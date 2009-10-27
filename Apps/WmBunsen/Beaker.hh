@@ -58,11 +58,10 @@ public:
       m_world->property( m_gravity ) = gravity;
     }
 
-    
     RodTimeStepper* getRodTimeStepper(ElasticRod& rod);
     
     void display(void);
-    void idle();
+    void takeTimeStep();
     
     void addRod( vector<Vec3d>& i_initialVertexPositions, 
                  vector<Vec3d>& i_undeformedVertexPositions,
@@ -71,21 +70,14 @@ public:
 private:
     World* m_world;
     
-    bool m_dynamicsProps;
     ObjPropHandle<Scalar> m_time;
     ObjPropHandle<Scalar> m_dt;
     ObjPropHandle<Vec3d> m_gravity;
-    
-    void AtEachTimestep();
     
     ElasticRod* rod;
     RodTimeStepper* stepper;
     
     RodRenderer* m_rod_renderer;
-    
-    Scalar m_maxTwist;
-    Scalar m_twistRate;
-    Scalar m_currentTwist;
 };
 
 #endif // BASIMULATOR_HH

@@ -47,7 +47,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             if ( m_initialised )
    			{
                 // take a step
-                m_beaker->idle();
+                m_beaker->takeTimeStep();
             }
     	}
 
