@@ -1,0 +1,159 @@
+/**
+ * \file TopologicalObject.inl
+ *
+ * \author miklos@cs.columbia.edu
+ * \date 09/12/2009
+ */
+
+inline TopologicalObject::TopologicalObject()
+{
+  add_property(m_nv, "number_of_vertices", 0);
+  add_property(m_ne, "number_of_edges", 0);
+
+  add_property(m_vertTop, "vertex_topology");
+  add_property(m_edgeTop, "edge_topology");
+}
+
+inline TopologicalObject::vertex_handle TopologicalObject::addVertex()
+{
+  int idx = nv();
+  property(m_nv) += 1;
+  m_vertexProps.resize(nv());
+
+  return vertex_handle(idx);
+}
+
+inline TopologicalObject::edge_handle
+TopologicalObject::addEdge(const vertex_handle& v0, const vertex_handle& v1)
+{
+  int idx = ne();
+  property(m_ne) += 1;
+  m_edgeProps.resize(ne());
+  edge_handle ehnd(idx);
+
+  edge_topology& etop = getEdgeTopology(ehnd);
+  etop.setFromVertex(v0);
+  etop.setToVertex(v1);
+
+  vertex_topology& vtop0 = getVertexTopology(v0);
+  vtop0.addEdge(ehnd);
+
+  vertex_topology& vtop1 = getVertexTopology(v1);
+  vtop1.addEdge(ehnd);
+
+  return ehnd;
+}
+
+inline TopologicalObject::vertex_iter TopologicalObject::vertices_begin()
+{
+  return vertex_iter(this, vertex_handle(0));
+}
+
+inline TopologicalObject::const_vertex_iter
+TopologicalObject::vertices_begin() const
+{
+  return vertex_iter(this, vertex_handle(0));
+}
+
+inline TopologicalObject::vertex_iter TopologicalObject::vertices_end()
+{
+  return vertex_iter(this, vertex_handle(nv()));
+}
+
+inline TopologicalObject::const_vertex_iter
+TopologicalObject::vertices_end() const
+{
+  return vertex_iter(this, vertex_handle(nv()));
+}
+
+inline TopologicalObject::edge_iter TopologicalObject::edges_begin()
+{
+  return edge_iter(this, edge_handle(0));
+}
+
+inline TopologicalObject::const_edge_iter TopologicalObject::edges_begin() const
+{
+  return edge_iter(this, edge_handle(0));
+}
+
+inline TopologicalObject::edge_iter TopologicalObject::edges_end()
+{
+  return edge_iter(this, edge_handle(ne()));
+}
+
+inline TopologicalObject::const_edge_iter TopologicalObject::edges_end() const
+{
+  return edge_iter(this, edge_handle(ne()));
+}
+
+inline TopologicalObject::vertex_topology&
+TopologicalObject::getVertexTopology(const vertex_handle& vh)
+{
+  return property(m_vertTop)[vh];
+}
+
+inline const TopologicalObject::vertex_topology&
+TopologicalObject::getVertexTopology(const vertex_handle& vh) const
+{
+  return property(m_vertTop)[vh];
+}
+
+inline TopologicalObject::edge_topology&
+TopologicalObject::getEdgeTopology(const edge_handle& eh)
+{
+  return property(m_edgeTop)[eh];
+}
+
+inline const TopologicalObject::edge_topology&
+TopologicalObject::getEdgeTopology(const edge_handle& eh) const
+{
+  return property(m_edgeTop)[eh];
+}
+
+inline TopologicalObject::VertexEdgeIter
+TopologicalObject::ve_iter(const vertex_handle& vh)
+{
+  return VertexEdgeIter(this, vh);
+}
+
+inline TopologicalObject::ConstVertexEdgeIter
+TopologicalObject::ve_iter(const vertex_handle& vh) const
+{
+  return VertexEdgeIter(this, vh);
+}
+
+inline TopologicalObject::EdgeVertexIter
+TopologicalObject::ev_iter(const edge_handle& eh)
+{
+  return EdgeVertexIter(this, eh);
+}
+
+inline TopologicalObject::ConstEdgeVertexIter
+TopologicalObject::ev_iter(const edge_handle& eh) const
+{
+  return EdgeVertexIter(this, eh);
+}
+
+inline TopologicalObject::VertexVertexIter
+TopologicalObject::vv_iter(const vertex_handle& vh)
+{
+  return VertexVertexIter(this, vh);
+}
+
+inline TopologicalObject::ConstVertexVertexIter
+TopologicalObject::vv_iter(const vertex_handle& vh) const
+{
+  return VertexVertexIter(this, vh);
+}
+
+inline TopologicalObject::vertex_handle
+TopologicalObject::fromVertex(const edge_handle& eh) const
+{
+  return getEdgeTopology(eh).getFromVertex();
+}
+
+inline TopologicalObject::vertex_handle
+TopologicalObject::toVertex(const edge_handle& eh) const
+{
+  return getEdgeTopology(eh).getToVertex();
+}

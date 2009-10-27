@@ -1,0 +1,38 @@
+/**
+ * \file RodExternalForce.hh
+ *
+ * \author miklos@cs.columbia.edu
+ * \date 09/04/2009
+ */
+
+#ifndef RODEXTERNALFORCE_HH
+#define RODEXTERNALFORCE_HH
+
+namespace BASim {
+
+class ElasticRod;
+
+/** Base class for external forces applied to a rod. */
+class RodExternalForce
+{
+public:
+
+  RodExternalForce(bool implicit = true) : m_implicit(implicit) {}
+
+  virtual ~RodExternalForce() {}
+
+  virtual void computeForce(const ElasticRod& rod, VecXd& force) = 0;
+  virtual void computeForceDX(const ElasticRod& rod, MatrixBase& J) {}
+  virtual void computeForceDV(const ElasticRod& rod, MatrixBase& J) {}
+
+  bool isImplicit() const { return m_implicit; }
+  void setImplicit(bool implicit) { m_implicit = implicit; }
+
+protected:
+
+  bool m_implicit;
+};
+
+} // namespace BASim
+
+#endif // RODEXTERNALFORCE_HH
