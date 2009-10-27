@@ -14,6 +14,32 @@
 using namespace BASim;
 using namespace std;
 
+// This class holds all the info needed to simulate and render a single rod.
+// It feels like stepper and RodRenderer should perhaps be members of the
+// ElasticRod class.
+class RodData
+{
+public:
+    RodData() { rod = NULL; stepper = NULL; rodRenderer = NULL; }
+    RodData( ElasticRod* i_rod, RodTimeStepper* i_stepper, RodRenderer* i_rodRenderer ) 
+    { 
+        rod = i_rod; stepper = i_stepper; rodRenderer = i_rodRenderer; 
+    }
+    ~RodData()
+    {
+        if ( rod != NULL )
+            delete rod;
+        if ( stepper != NULL )
+            delete stepper;
+        if ( rodRenderer != NULL )
+            delete rodRenderer;
+    }
+    
+    ElasticRod* rod;
+    RodTimeStepper* stepper;
+    RodRenderer* rodRenderer;
+};
+
 class Beaker
 {
 public:
@@ -58,9 +84,9 @@ public:
       m_world->property( m_gravity ) = gravity;
     }
 
-    RodTimeStepper* getRodTimeStepper(ElasticRod& rod);
+    RodTimeStepper* setupRodTimeStepper(ElasticRod& rod);
     
-    void display(void);
+    void draw(void);
     void takeTimeStep();
     
     void addRod( vector<Vec3d>& i_initialVertexPositions, 
@@ -69,15 +95,12 @@ public:
 
 private:
     World* m_world;
+    vector<RodData*> m_rods;
     
     ObjPropHandle<Scalar> m_time;
     ObjPropHandle<Scalar> m_dt;
     ObjPropHandle<Vec3d> m_gravity;
-    
-    ElasticRod* rod;
-    RodTimeStepper* stepper;
-    
-    RodRenderer* m_rod_renderer;
+
 };
 
 #endif // BASIMULATOR_HH

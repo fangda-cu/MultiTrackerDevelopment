@@ -123,7 +123,7 @@ void WmBunsenNode::draw( M3dView& i_view, const MDagPath& i_path,
         m_initialised = true;
     }
     else
-        m_beaker->display();
+        m_beaker->draw();
     
 	// draw dynamic Hair
 

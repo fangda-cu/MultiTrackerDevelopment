@@ -21,11 +21,10 @@
 
 using namespace BASim;
 
-Beaker::Beaker() :
-  rod( NULL )
-  , stepper( NULL )
-  , m_rod_renderer( NULL )
+Beaker::Beaker()
 {
+    m_rods.clear();
+    
     m_world = new World();
     m_world->add_property( m_time, "time", 0.0 );
     m_world->add_property( m_dt, "time-step", 0.1 );
@@ -39,6 +38,15 @@ Beaker::~Beaker()
 {
     PetscUtils::finalizePetsc();
 
+    size_t numRods = m_rods.size();
+    for ( size_t r=0; r<numRods; r++ )
+    {
+        // We're safe to clear this vector as the individual destructors will safely delete the 
+        // rod data in each vector element.
+        delete m_rods[ r ];
+    }
+    m_rods.clear();
+    
     delete m_world;
 }
 
@@ -47,11 +55,7 @@ void Beaker::addRod( vector<Vec3d>& i_initialVertexPositions,
                      RodOptions& i_options )
 {
     // setupRod() is defined in ../BASim/src/Physics/ElasticRods/RodUtils.hh
-    rod = setupRod( i_options, i_initialVertexPositions, i_undeformedVertexPositions );
-
-    // FIXME: we will need a vector of rods, or a map of vectors and a rod_renderer per rod.
-    // why is the rod_renderer not a member of rods. Then we would could just ask the rod
-    // to render itself.
+    ElasticRod* rod = setupRod( i_options, i_initialVertexPositions, i_undeformedVertexPositions );
 
     rod->fixVert(0);
     rod->fixVert(1);
@@ -60,12 +64,18 @@ void Beaker::addRod( vector<Vec3d>& i_initialVertexPositions,
     rod->fixEdge(0);
     rod->fixEdge(rod->ne() - 1);
     
-    stepper = getRodTimeStepper( *rod );
+    RodTimeStepper* stepper = setupRodTimeStepper( *rod );
     
-    m_world->addObject(rod);
-    m_world->addController(stepper);
+    // FIXME: 
+    // Why do we have to add rods and steppers seperately? It feels like the stepper should
+    // be part of the rod?
+    m_world->addObject( rod );
+    m_world->addController( stepper );
     
-    m_rod_renderer = new RodRenderer(*rod);
+    RodRenderer* rodRenderer = new RodRenderer( *rod );
+    
+    RodData* rodData = new RodData( rod, stepper, rodRenderer );
+    m_rods.push_back( rodData );
 }
 
 void Beaker::takeTimeStep()
@@ -75,7 +85,7 @@ void Beaker::takeTimeStep()
     setTime( getTime() + getDt() );
 }
 
-RodTimeStepper* Beaker::getRodTimeStepper( ElasticRod& rod )
+RodTimeStepper* Beaker::setupRodTimeStepper( ElasticRod& rod )
 {
     RodTimeStepper* stepper = new RodTimeStepper( rod );
     
@@ -114,9 +124,12 @@ RodTimeStepper* Beaker::getRodTimeStepper( ElasticRod& rod )
     return stepper;
 }
 
-void Beaker::display()
+void Beaker::draw()
 {
-    if ( m_rod_renderer != NULL )
-        m_rod_renderer->render();
+    size_t numRods = m_rods.size();
+    for ( size_t r=0; r<numRods; r++ )
+    {
+        m_rods[ r ]->rodRenderer->render();
+    }
 }
 
