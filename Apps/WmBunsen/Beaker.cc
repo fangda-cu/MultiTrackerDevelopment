@@ -50,7 +50,8 @@ Beaker::~Beaker()
     delete m_world;
 }
 
-void Beaker::addRod( vector<Vec3d>& i_initialVertexPositions, 
+void Beaker::addRod( size_t i_rodGroup,
+                     vector<Vec3d>& i_initialVertexPositions, 
                      vector<Vec3d>& i_undeformedVertexPositions,
                      RodOptions& i_options )
 {
@@ -75,7 +76,7 @@ void Beaker::addRod( vector<Vec3d>& i_initialVertexPositions,
     RodRenderer* rodRenderer = new RodRenderer( *rod );
     
     RodData* rodData = new RodData( rod, stepper, rodRenderer );
-    m_rods.push_back( rodData );
+    m_rodDataMap[ i_group ].push_back( rodData );
 }
 
 void Beaker::takeTimeStep()
@@ -126,10 +127,14 @@ RodTimeStepper* Beaker::setupRodTimeStepper( ElasticRod& rod )
 
 void Beaker::draw()
 {
-    size_t numRods = m_rods.size();
-    for ( size_t r=0; r<numRods; r++ )
+    for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rmItr != m_rodDataMap.end(); ++rdmItr )
     {
-        m_rods[ r ]->rodRenderer->render();
+        vector<RodData*>& rodData = rdmItr->second;
+        size_t numRods = rodData.size();
+        for ( size_t r=0; r<numRods; r++ )
+        {
+            rodData[ r ]->rodRenderer->render();
+        }
     }
 }
 

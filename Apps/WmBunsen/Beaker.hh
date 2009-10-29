@@ -40,6 +40,9 @@ public:
     RodRenderer* rodRenderer;
 };
 
+typedef __gnu_cxx::hash_map<size_t, vector<RodData*> > RodDataMap;
+typedef RodDataMap::iterator RodDataMapIterator;
+
 class Beaker
 {
 public:
@@ -84,7 +87,7 @@ public:
       m_world->property( m_gravity ) = gravity;
     }
 
-    RodTimeStepper* setupRodTimeStepper(ElasticRod& rod);
+    RodTimeStepper* setupRodTimeStepper( ElasticRod& rod );
     
     void draw(void);
     void takeTimeStep();
@@ -95,7 +98,7 @@ public:
 
 private:
     World* m_world;
-    vector<RodData*> m_rods;
+    RodDataMap m_rodDataMap;
     
     ObjPropHandle<Scalar> m_time;
     ObjPropHandle<Scalar> m_dt;
@@ -103,4 +106,4 @@ private:
 
 };
 
-#endif // BASIMULATOR_HH
+#endif // BEAKER_HH_
