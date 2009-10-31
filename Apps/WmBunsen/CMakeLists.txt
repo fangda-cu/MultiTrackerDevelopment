@@ -21,6 +21,7 @@ find_package (PETSc REQUIRED)
 
 find_package (Maya REQUIRED)
 include_directories (${MAYA_INCLUDE_DIR})
+#include_directories ("/usr/include/c++/4.1.2/")
 ###################
 ## Not sure if there are CMake commands for this but this works for just now
 if (CMAKE_SYSTEM_NAME MATCHES Linux)

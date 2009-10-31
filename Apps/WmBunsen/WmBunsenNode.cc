@@ -13,6 +13,7 @@ MString WmBunsenNode::ia_typeName( "wmBunsenNode" );
 MObject WmBunsenNode::ca_syncAttrs;
 MObject WmBunsenNode::ia_time;
 MObject WmBunsenNode::ia_startTime;
+MObject WmBunsenNode::ia_rodsNodes;
 
 WmBunsenNode::WmBunsenNode() : m_initialised( false ), m_beaker( NULL )
 {
@@ -111,12 +112,12 @@ void WmBunsenNode::draw( M3dView& i_view, const MDagPath& i_path,
         std::vector<Vec3d> vertices, undeformed;
         for (int i = 0; i < opts.numVertices; ++i) 
         {
-            vertices.push_back(Vec3d(radius * cos(i * M_PI / (opts.numVertices - 1)),
+            vertices.push_back( Vec3d(radius * cos(i * M_PI / (opts.numVertices - 1)),
                                      radius * sin(i * M_PI / (opts.numVertices - 1)),
-                                     0));
+                                     0) );
         }
         
-        m_beaker->addRod( vertices,
+        m_beaker->addRod( 1, vertices,
                           vertices,
                           opts );
         
@@ -164,7 +165,7 @@ MStatus WmBunsenNode::initialize()
     }
     
     {
-        MFnNumericAttribute	nAttr;
+        MFnNumericAttribute nAttr;
     	ia_startTime = nAttr.create( "startTime", "stt", MFnNumericData::kDouble, 1.0, &stat );
         if ( !stat ) 
         {
@@ -176,6 +177,19 @@ MStatus WmBunsenNode::initialize()
         nAttr.setKeyable( true );  
         stat = addAttribute( ia_startTime );
         if ( !stat ) { stat.perror( "addAttribute ia_startTime" ); return stat; }
+    }
+    
+    {
+        MFnNumericAttribute nAttr;
+        ia_rodsNodes = nAttr.create( "rodsNodes", "rod", MFnNumericData::kBoolean, true, &stat );
+        CHECK_MSTATUS (stat );
+        CHECK_MSTATUS( nAttr.setWritable( true ) );
+        CHECK_MSTATUS( nAttr.setReadable( false ) );
+        CHECK_MSTATUS( nAttr.setConnectable( true ) );
+        CHECK_MSTATUS( nAttr.setArray( true ) );
+        //CHECK_MSTATUS( tAttr.setStorable( false ) );
+        stat = addAttribute( ia_rodsNodes );
+        if (!stat) { stat.perror( "addAttribute ia_rodsNodes" ); return stat;}
     }
     
     {
@@ -198,6 +212,8 @@ MStatus WmBunsenNode::initialize()
 	if (!stat) { stat.perror( "attributeAffects ia_time->ca_syncAttrs" ); return stat; }
 	stat = attributeAffects( ia_startTime, ca_syncAttrs );
 	if (!stat) { stat.perror( "attributeAffects ia_startTimer->ca_syncAttrs" ); return stat; }
+	stat = attributeAffects( ia_rodsNodes, ca_syncAttrs );
+	if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
 
 	return MS::kSuccess;
 }

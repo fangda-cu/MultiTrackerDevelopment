@@ -5,6 +5,8 @@
  * \date 10/26/2009
  */
 
+#include "Beaker.hh"
+ 
 #include <BASim/BASim>
 #include <cassert>
 #include <cmath>
@@ -17,13 +19,12 @@
 #include <sys/time.h>
 #include <tclap/CmdLine.h>
 
-#include "Beaker.hh"
-
 using namespace BASim;
+using namespace tr1;
 
 Beaker::Beaker()
 {
-    m_rods.clear();
+    m_rodDataMap.clear();
     
     m_world = new World();
     m_world->add_property( m_time, "time", 0.0 );
@@ -38,14 +39,18 @@ Beaker::~Beaker()
 {
     PetscUtils::finalizePetsc();
 
-    size_t numRods = m_rods.size();
-    for ( size_t r=0; r<numRods; r++ )
+    for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
     {
-        // We're safe to clear this vector as the individual destructors will safely delete the 
-        // rod data in each vector element.
-        delete m_rods[ r ];
+        vector<RodData*>& rodData = rdmItr->second;
+        size_t numRods = rodData.size();
+        for ( size_t r=0; r<numRods; r++ )
+        {
+            // We're safe to clear this vector as the individual destructors will safely delete the 
+            // rod data in each vector element.
+            delete rodData[ r ];
+        }
     }
-    m_rods.clear();
+    m_rodDataMap.clear();
     
     delete m_world;
 }
@@ -58,12 +63,12 @@ void Beaker::addRod( size_t i_rodGroup,
     // setupRod() is defined in ../BASim/src/Physics/ElasticRods/RodUtils.hh
     ElasticRod* rod = setupRod( i_options, i_initialVertexPositions, i_undeformedVertexPositions );
 
-    rod->fixVert(0);
-    rod->fixVert(1);
-    rod->fixVert(rod->nv() - 2);
-    rod->fixVert(rod->nv() - 1);
-    rod->fixEdge(0);
-    rod->fixEdge(rod->ne() - 1);
+    rod->fixVert( 0 );
+    rod->fixVert( 1 );
+    rod->fixVert( rod->nv() - 2 );
+    rod->fixVert( rod->nv() - 1 );
+    rod->fixEdge( 0 );
+    rod->fixEdge( rod->ne() - 1 );
     
     RodTimeStepper* stepper = setupRodTimeStepper( *rod );
     
@@ -76,7 +81,7 @@ void Beaker::addRod( size_t i_rodGroup,
     RodRenderer* rodRenderer = new RodRenderer( *rod );
     
     RodData* rodData = new RodData( rod, stepper, rodRenderer );
-    m_rodDataMap[ i_group ].push_back( rodData );
+    m_rodDataMap[ i_rodGroup ].push_back( rodData );
 }
 
 void Beaker::takeTimeStep()
@@ -127,7 +132,7 @@ RodTimeStepper* Beaker::setupRodTimeStepper( ElasticRod& rod )
 
 void Beaker::draw()
 {
-    for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rmItr != m_rodDataMap.end(); ++rdmItr )
+    for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
     {
         vector<RodData*>& rodData = rdmItr->second;
         size_t numRods = rodData.size();

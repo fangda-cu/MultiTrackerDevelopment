@@ -12,6 +12,7 @@ MTypeId WmBunsenRodNode::ia_typeID( 0x80007 );
 MString WmBunsenRodNode::ia_typeName( "wmBunsenRodNode" );
 MObject WmBunsenRodNode::ia_time;
 MObject WmBunsenRodNode::ia_startTime;
+MObject WmBunsenRodNode::ia_nurbsCurves;
 
 MObject WmBunsenRodNode::ca_syncAttrs;
 MObject WmBunsenRodNode::oa_rodsChanged;
@@ -159,7 +160,7 @@ MStatus WmBunsenRodNode::initialize()
     }
     
     {
-        MFnNumericAttribute	nAttr;
+        MFnNumericAttribute	 nAttr;
         ca_syncAttrs = nAttr.create( "syncAttrs", "sya", MFnNumericData::kDouble, 1.0, &stat );
         if ( !stat) 
         {
@@ -175,12 +176,12 @@ MStatus WmBunsenRodNode::initialize()
 	}
     
     {
-        MFnTypedAttribute tAttr;
-        oa_rodsChanged = tAttr.create( "rodsChanged", "rch", MFnData::kPlugin , &stat );
+        MFnNumericAttribute nAttr;
+        oa_rodsChanged = nAttr.create( "rodsChanged", "rch", MFnNumericData::kBoolean, true , &stat );
         CHECK_MSTATUS ( stat );
-        CHECK_MSTATUS( tAttr.setWritable( false ) );
-        CHECK_MSTATUS( tAttr.setReadable( true ) );
-        CHECK_MSTATUS( tAttr.setConnectable( true ) );
+        CHECK_MSTATUS( nAttr.setWritable( false ) );
+        CHECK_MSTATUS( nAttr.setReadable( true ) );
+        CHECK_MSTATUS( nAttr.setConnectable( true ) );
         stat = addAttribute( oa_rodsChanged );
         if ( !stat ) { stat.perror( "addAttribute oa_rodsChanged" ); return stat;}
     }

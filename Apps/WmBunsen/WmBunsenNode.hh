@@ -43,10 +43,12 @@ public:
 
     static MTypeId ia_typeID;
     static MString ia_typeName;
-    static MObject ca_syncAttrs;
     static MObject ia_time;
     static MObject ia_startTime;
-
+    static MObject ia_rodsNodes;
+    
+    static MObject ca_syncAttrs;
+    
 private:
     double m_currentTime;
     double m_previousTime;

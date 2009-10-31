@@ -1,7 +1,9 @@
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
 
+#include "WmBunsenRodNode.hh"
 #include "WmBunsenNode.hh"
+#include "WmBunsenCmd.hh"
 
 MStatus initializePlugin( MObject obj )
 { 
@@ -25,6 +27,28 @@ MStatus initializePlugin( MObject obj )
         return stat;
     }
     
+    stat = plugin.registerNode( WmBunsenRodNode::ia_typeName, WmBunsenRodNode::ia_typeID,
+                                WmBunsenRodNode::creator,
+                                WmBunsenRodNode::initialize,
+                                WmBunsenRodNode::kLocatorNode );
+    if ( !stat )
+    {
+        stat.perror( "RegisterNode WmBunsenRodNode failed" );
+        return stat;
+    }
+    
+    stat = plugin.registerCommand( WmBunsenCmd::typeName, WmBunsenCmd::creator, 
+                                   WmBunsenCmd::syntaxCreator );
+    if ( !stat ) {
+        stat.perror( "registerCommand wmBunsen failed" );
+        return stat;     
+    }
+
+    MGlobal::executeCommand( "source WmBunsen.mel", false );
+    CHECK_MSTATUS( plugin.registerUI( "wmBunsenAddMainMenu", "wmBunsenRemoveMainMenu" ) );
+    return stat;
+
+    
     return MS::kSuccess;
 }
 
@@ -39,10 +63,22 @@ MStatus uninitializePlugin( MObject obj)
 	stat = plugin.deregisterNode( WmBunsenNode::ia_typeID );
     if( !stat ) 
     {
-        stat.perror("DeregisterNode WmBunsenNode failed");        
+        stat.perror( "DeregisterNode WmBunsenNode failed" );
+    }
+    
+    stat = plugin.deregisterNode( WmBunsenRodNode::ia_typeID );
+    if( !stat ) 
+    {
+        stat.perror( "DeregisterNode WmBunsenRodNode failed" );
+    }
+    
+    // Deregister custom commands
+    stat = plugin.deregisterCommand( WmBunsenCmd::typeName );
+    if (!stat) {
+        stat.perror( "deregister command wmBunsen failed" );
     }
 
     MGlobal::stopErrorLogging();
 
-	return stat;	
+	return stat;
 }

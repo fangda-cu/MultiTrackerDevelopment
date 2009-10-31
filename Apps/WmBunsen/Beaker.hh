@@ -6,13 +6,16 @@
  */
 
 #ifndef BEAKER_HH_
-#define BEAKER_HH
+#define BEAKER_HH_
 
+#include <tr1/unordered_map>
 #include <BASim/BASim>
 #include <iostream>
+#include <ext/hash_map>
 
 using namespace BASim;
 using namespace std;
+//using namespace tr1;
 
 // This class holds all the info needed to simulate and render a single rod.
 // It feels like stepper and RodRenderer should perhaps be members of the
@@ -40,7 +43,7 @@ public:
     RodRenderer* rodRenderer;
 };
 
-typedef __gnu_cxx::hash_map<size_t, vector<RodData*> > RodDataMap;
+typedef tr1::unordered_map<size_t, vector<RodData*> > RodDataMap;
 typedef RodDataMap::iterator RodDataMapIterator;
 
 class Beaker
@@ -92,7 +95,8 @@ public:
     void draw(void);
     void takeTimeStep();
     
-    void addRod( vector<Vec3d>& i_initialVertexPositions, 
+    void addRod( size_t i_rodGroup,
+                 vector<Vec3d>& i_initialVertexPositions, 
                  vector<Vec3d>& i_undeformedVertexPositions,
                  RodOptions& i_options );
 
