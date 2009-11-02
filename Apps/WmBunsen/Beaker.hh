@@ -90,6 +90,14 @@ public:
       m_world->property( m_gravity ) = gravity;
     }
 
+    vector<RodData*>& rodData( size_t i_rodGroup )
+    {
+        return m_rodDataMap[ i_rodGroup ];
+    }
+
+    
+    
+    
     RodTimeStepper* setupRodTimeStepper( ElasticRod& rod );
     
     void draw(void);

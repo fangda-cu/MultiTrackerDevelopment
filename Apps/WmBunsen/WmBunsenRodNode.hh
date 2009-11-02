@@ -51,6 +51,8 @@ public:
     static MObject ca_syncAttrs;
     static MObject oa_rodsChanged;
 
+    void initialiseRodData( vector<RodData*>* mx_rodDataMap );
+    
 private:
     double m_currentTime;
     double m_previousTime;
@@ -58,7 +60,20 @@ private:
     
     bool m_initialised;
     
-    Beaker* m_beaker;
+    /// This is a pointer to the rod data stored in the beaker class that this node is supplying
+    /// input data for. If it is not NULL then the beaker node has created the rods and whenever
+    /// the BunsenNode asks for our rod data we actually dump it into this pointer. For efficiency
+    /// there is  no point in passing it to Bunsen then having it stick it into Beaker. So we
+    /// use the connection to Bunsen as a flag to indicate it's time to update the data in this
+    /// pointer.
+    //vector<RodData*>* mx_rodData;
+    
+    // We take a pointer to the map not the individual vector of rodData for this node because
+    // the map is likely to be resized and the data will move around. The only pointer that will
+    // not move is the pointer to the map.
+    RodDataMap* mx_rodDataMap;
+    
+    Beaker* mx_beaker;
 };
 
 #endif

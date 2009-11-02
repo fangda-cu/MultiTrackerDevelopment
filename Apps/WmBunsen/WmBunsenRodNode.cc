@@ -17,12 +17,17 @@ MObject WmBunsenRodNode::ia_nurbsCurves;
 MObject WmBunsenRodNode::ca_syncAttrs;
 MObject WmBunsenRodNode::oa_rodsChanged;
 
-WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), m_beaker( NULL )
+WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_beaker( NULL ), mx_rodData( NULL )
 {
 }
 
 WmBunsenRodNode::~WmBunsenRodNode()
 {
+}
+
+void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
+{
+    mx_rodData = i_rodData;
 }
 
 MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock ) 
@@ -66,7 +71,16 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 			stat.perror("WmBunsenRodNode::compute setClean");
 			return stat;
 		}
-	} else
+	} 
+    else if (  i_plug == oa_rodsChanged )
+    {
+        if ( mx_rodData != NULL )
+        {
+            // The Bunsen node is asking us to update the rod data in Beaker for our inputs
+            // so do so here.....
+        }
+    }
+    else
     {
 		return MS::kUnknownParameter;
 	}

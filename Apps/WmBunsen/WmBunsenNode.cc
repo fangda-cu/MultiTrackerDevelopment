@@ -26,6 +26,64 @@ WmBunsenNode::~WmBunsenNode()
         delete m_beaker;
 }
 
+void WmBunsenNode::pullOnAllRodNodes( MDataBlock& i_dataBlock )
+{
+    // Pull all on all input rod nodes, causing them to update the rod data owned by beaker
+    // that they each have pointers to.
+    MArrayDataHandle inArrayH = data.inputArrayValue( ia_rodsNodes, &stat );
+    CHECK_MSTATUS(stat);
+    size_t numRodsConnected = inArrayH.elementCount();
+  
+    for ( unsigned int r=0; r < numRodsConnected; r++ ) 
+    {
+        inArrayH.jumpToElement( r );
+        inArrayH.inputValue( &stat );
+        CHECK_MSTATUS( stat );
+        
+        // and thats it! The rod node will get the signal that it needs to update its output
+        // and will directly change the data in m_beaker. It's dumb to pass it along Maya connections
+        // to here then to beaker. So we cut out the middle man.
+    }
+}
+
+void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock )
+{
+    // Run through each attached rod node and create the associated rod data structure inside 
+    // Beaker. This will get called after all the rods have been deleted as Maya has
+    // just been moved to start time.
+    MArrayDataHandle inArrayH = data.inputArrayValue( ia_rodsNodes, &stat );
+    CHECK_MSTATUS(stat);
+    size_t numRodsConnected = inArrayH.elementCount();
+  
+    MPlug rodPlugArray( thisMObject(), ia_collisionMeshes );
+    CHECK_MSTATUS( stat );
+    for ( unsigned int r=0; r < numRodsConnected; r++ ) 
+    {
+        if ( rodPlugArray.isArray( &stat ) )
+        {
+            MPlug rodPlug = rodPlugArray.elementByLogicalIndex( r, &stat );
+            CHECK_MSTATUS( stat );
+            if ( rodPlug.isConnected( &stat ) ) 
+            {
+                MPlugArray inPlugArr;
+                indexPlug.connectedTo( inPlugArr, true, false, &stat );
+                CHECK_MSTATUS( stat );
+                
+                // Since we asked for the destination there can only be one plug in the array
+                MPlug rodNodePlug = inPlugArr[0];
+                MObject rodNodeObj = rodNodePlug.node( &stat );
+                CHECK_MSTATUS( stat );
+                MFnDependencyNode rodNodeFn( rodNodeObj );
+                WmBunsenRodNode* wmBunsenRodNode = ( WmBunsenRodNode* )rodNodeFn.userNode();
+                
+                wmBunseRodNode->initialiseRodData( m_beaker->rodData( r ) );
+            }
+            else
+                CHECK_MSTATUS( stat );
+        }
+    }
+}
+
 MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock ) 
 {
     MStatus stat;
@@ -39,13 +97,17 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 	    m_startTime = i_dataBlock.inputValue( ia_startTime, &stat ).asDouble();
 		CHECK_MSTATUS( stat );
 		
-		if ( m_currentTime == m_startTime )
+     	if ( m_currentTime == m_startTime )
         {
-			// reinitialise
+            m_beaker->resetEverything();
+            createRodDataFromRodNodes( i_dataBlock );
 		}
-		else if ( m_currentTime > m_previousTime ) 
+        
+        pullOnAllRodNodes( i_dataBlock );
+        
+		if ( m_currentTime > m_previousTime ) 
         {
-            if ( m_initialised )
+          //  if ( m_initialised )
    			{
                 // take a step
                 m_beaker->takeTimeStep();
@@ -95,7 +157,7 @@ void WmBunsenNode::draw( M3dView& i_view, const MDagPath& i_path,
 	i_view.beginGL(); 
 	glPushAttrib( GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT );
     
-    if ( !m_initialised )
+   /* if ( !m_initialised )
     {
         RodOptions opts;
         opts.numVertices = 50;
@@ -123,7 +185,7 @@ void WmBunsenNode::draw( M3dView& i_view, const MDagPath& i_path,
         
         m_initialised = true;
     }
-    else
+    else*/
         m_beaker->draw();
     
 	// draw dynamic Hair

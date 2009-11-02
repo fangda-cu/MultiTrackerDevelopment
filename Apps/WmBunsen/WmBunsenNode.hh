@@ -50,6 +50,9 @@ public:
     static MObject ca_syncAttrs;
     
 private:
+    void pullOnAllRodNodes( MDataBlock& i_dataBlock );
+    void createRodDataFromRodNodes( MDataBlock& i_dataBlock );
+    
     double m_currentTime;
     double m_previousTime;
     double m_startTime;
