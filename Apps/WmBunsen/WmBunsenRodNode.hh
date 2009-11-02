@@ -50,8 +50,16 @@ public:
 
     static MObject ca_syncAttrs;
     static MObject oa_rodsChanged;
+    
+    
+    // Returns the number of rods this node has input data for
+    size_t numberOfRods()
+    {
+        return 1;
+    }
 
-    void initialiseRodData( vector<RodData*>* mx_rodDataMap );
+    void initialiseRodData( vector<RodData*>* i_rodDataMap );
+    void updateRodDataFromInputs();
     
 private:
     double m_currentTime;
@@ -66,14 +74,9 @@ private:
     /// there is  no point in passing it to Bunsen then having it stick it into Beaker. So we
     /// use the connection to Bunsen as a flag to indicate it's time to update the data in this
     /// pointer.
-    //vector<RodData*>* mx_rodData;
+    vector<RodData*>* mx_rodData;
     
-    // We take a pointer to the map not the individual vector of rodData for this node because
-    // the map is likely to be resized and the data will move around. The only pointer that will
-    // not move is the pointer to the map.
-    RodDataMap* mx_rodDataMap;
-    
-    Beaker* mx_beaker;
+    World* mx_world;
 };
 
 #endif

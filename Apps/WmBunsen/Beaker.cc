@@ -25,11 +25,7 @@ using namespace tr1;
 Beaker::Beaker()
 {
     m_rodDataMap.clear();
-    
-    m_world = new World();
-    m_world->add_property( m_time, "time", 0.0 );
-    m_world->add_property( m_dt, "time-step", 0.1 );
-    m_world->add_property( m_gravity, "gravity", Vec3d(0, 0.0, 0) );
+    initialiseWorld();
     
     int argc = 0; char **argv = NULL;
     PetscUtils::initializePetsc( &argc, &argv );
@@ -39,6 +35,21 @@ Beaker::~Beaker()
 {
     PetscUtils::finalizePetsc();
 
+    resetEverything();
+}
+
+void Beaker::initialiseWorld()
+{
+    m_world = new World();
+    m_world->add_property( m_time, "time", 0.0 );
+    m_world->add_property( m_dt, "time-step", 0.1 );
+    m_world->add_property( m_gravity, "gravity", Vec3d(0, -9.81, 0) );
+}
+
+void Beaker::resetEverything()
+{
+    cerr << "Beaker::resetEverything()\n";
+    
     for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
     {
         vector<RodData*>& rodData = rdmItr->second;
@@ -53,6 +64,47 @@ Beaker::~Beaker()
     m_rodDataMap.clear();
     
     delete m_world;
+    
+    initialiseWorld();
+}
+
+void Beaker::createSpaceForRods( size_t i_rodGroup, size_t i_numRods )
+{
+    //size_t numRods = m_rodDataMap[ i_rodGroup ].size();
+    m_rodDataMap[ i_rodGroup ].resize( i_numRods );
+
+    for ( size_t r=0; r<i_numRods; r++ )
+    {
+        m_rodDataMap[ i_rodGroup ][ r ] = new RodData();
+    }
+}
+
+void Beaker::createRods( size_t i_rodGroup )
+{
+    vector<RodData*>& rodDataVector = m_rodDataMap[ i_rodGroup ];
+    size_t numRods = rodDataVector.size();
+    
+    for ( size_t r=0; r<numRods; r++ )
+    {
+         // setupRod() is defined in ../BASim/src/Physics/ElasticRods/RodUtils.hh
+        ElasticRod* rod = setupRod( rodDataVector[ r ]->rodOptions, 
+                                    rodDataVector[ r ]->initialVertexPositions, 
+                                    rodDataVector[ r ]->undeformedVertexPositions );
+    
+        rod->fixVert( 0 );
+        rod->fixVert( 1 );
+        //rod->fixVert( rod->nv() - 2 );
+        //rod->fixVert( rod->nv() - 1 );
+        rod->fixEdge( 0 );
+        //rod->fixEdge( rod->ne() - 1 );
+        
+        rodDataVector[ r ]->stepper = setupRodTimeStepper( *rod );
+        
+        m_world->addObject( rod );
+        m_world->addController( rodDataVector[ r ]->stepper );
+        
+        rodDataVector[ r ]->rodRenderer = new RodRenderer( *rod );
+    }
 }
 
 void Beaker::addRod( size_t i_rodGroup,
@@ -86,6 +138,8 @@ void Beaker::addRod( size_t i_rodGroup,
 
 void Beaker::takeTimeStep()
 {
+    cerr << "Beaker::takeTimeStep()\n";
+    
     m_world->execute();
 
     setTime( getTime() + getDt() );

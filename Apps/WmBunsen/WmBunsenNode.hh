@@ -5,6 +5,7 @@
 #include <maya/MString.h> 
 #include <maya/MTypeId.h> 
 #include <maya/MPlug.h>
+#include <maya/MPlugArray.h>
 #include <maya/MMatrix.h>
 #include <maya/MPoint.h>
 #include <maya/MPointArray.h>
@@ -27,6 +28,7 @@
 #include <maya/MVectorArray.h>
 
 #include "Beaker.hh"
+#include "WmBunsenRodNode.hh"
 
 class WmBunsenNode : public MPxLocatorNode 
 {
@@ -46,6 +48,7 @@ public:
     static MObject ia_time;
     static MObject ia_startTime;
     static MObject ia_rodsNodes;
+    static MObject ia_gravity;
     
     static MObject ca_syncAttrs;
     

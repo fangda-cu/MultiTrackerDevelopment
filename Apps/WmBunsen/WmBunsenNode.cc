@@ -14,6 +14,7 @@ MObject WmBunsenNode::ca_syncAttrs;
 MObject WmBunsenNode::ia_time;
 MObject WmBunsenNode::ia_startTime;
 MObject WmBunsenNode::ia_rodsNodes;
+MObject WmBunsenNode::ia_gravity;
 
 WmBunsenNode::WmBunsenNode() : m_initialised( false ), m_beaker( NULL )
 {
@@ -28,9 +29,11 @@ WmBunsenNode::~WmBunsenNode()
 
 void WmBunsenNode::pullOnAllRodNodes( MDataBlock& i_dataBlock )
 {
+    MStatus stat;
+    
     // Pull all on all input rod nodes, causing them to update the rod data owned by beaker
     // that they each have pointers to.
-    MArrayDataHandle inArrayH = data.inputArrayValue( ia_rodsNodes, &stat );
+    MArrayDataHandle inArrayH = i_dataBlock.inputArrayValue( ia_rodsNodes, &stat );
     CHECK_MSTATUS(stat);
     size_t numRodsConnected = inArrayH.elementCount();
   
@@ -48,14 +51,16 @@ void WmBunsenNode::pullOnAllRodNodes( MDataBlock& i_dataBlock )
 
 void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock )
 {
+    MStatus stat;
+    
     // Run through each attached rod node and create the associated rod data structure inside 
     // Beaker. This will get called after all the rods have been deleted as Maya has
     // just been moved to start time.
-    MArrayDataHandle inArrayH = data.inputArrayValue( ia_rodsNodes, &stat );
+    MArrayDataHandle inArrayH = i_dataBlock.inputArrayValue( ia_rodsNodes, &stat );
     CHECK_MSTATUS(stat);
     size_t numRodsConnected = inArrayH.elementCount();
   
-    MPlug rodPlugArray( thisMObject(), ia_collisionMeshes );
+    MPlug rodPlugArray( thisMObject(), ia_rodsNodes );
     CHECK_MSTATUS( stat );
     for ( unsigned int r=0; r < numRodsConnected; r++ ) 
     {
@@ -66,7 +71,7 @@ void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock )
             if ( rodPlug.isConnected( &stat ) ) 
             {
                 MPlugArray inPlugArr;
-                indexPlug.connectedTo( inPlugArr, true, false, &stat );
+                rodPlug.connectedTo( inPlugArr, true, false, &stat );
                 CHECK_MSTATUS( stat );
                 
                 // Since we asked for the destination there can only be one plug in the array
@@ -76,7 +81,18 @@ void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock )
                 MFnDependencyNode rodNodeFn( rodNodeObj );
                 WmBunsenRodNode* wmBunsenRodNode = ( WmBunsenRodNode* )rodNodeFn.userNode();
                 
-                wmBunseRodNode->initialiseRodData( m_beaker->rodData( r ) );
+                // Since the rod node is purely there to fill in data that comes from its inputs
+                // and attributes, we don't let it deal with memory allocation. This node is in 
+                // charge of all that.
+                m_beaker->createSpaceForRods( r, wmBunsenRodNode->numberOfRods() );
+                
+                wmBunsenRodNode->initialiseRodData( m_beaker->rodData( r ) );
+                
+                // Now the rod node has used initialised the undeformed postitions for the rods
+                // it owns. Since we are resetting the sim we need to actually now create the
+                // rods and add them to the world.
+                
+                m_beaker->createRods( r );
             }
             else
                 CHECK_MSTATUS( stat );
@@ -87,6 +103,8 @@ void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock )
 MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock ) 
 {
     MStatus stat;
+    
+    cerr << "WmBunsenNode::compute plug = " << i_plug.name() << endl;
 	
     if ( i_plug == ca_syncAttrs )
     {
@@ -96,6 +114,10 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         
 	    m_startTime = i_dataBlock.inputValue( ia_startTime, &stat ).asDouble();
 		CHECK_MSTATUS( stat );
+        
+        const double3 &gravity = i_dataBlock.inputValue( ia_gravity, &stat ).asDouble3();
+        CHECK_MSTATUS( stat );
+        m_beaker->setGravity( Vec3d( gravity[0], gravity[1], gravity[2] ) );
 		
      	if ( m_currentTime == m_startTime )
         {
@@ -157,36 +179,7 @@ void WmBunsenNode::draw( M3dView& i_view, const MDagPath& i_path,
 	i_view.beginGL(); 
 	glPushAttrib( GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT );
     
-   /* if ( !m_initialised )
-    {
-        RodOptions opts;
-        opts.numVertices = 50;
-        opts.YoungsModulus = 1000.0;
-        opts.ShearModulus = 375.0;
-        opts.radiusA = 0.5;
-        opts.radiusB = 1.0;
-        std::string frame = "time";
-        if (frame == "time") opts.refFrame = ElasticRod::TimeParallel;
-        else if (frame == "space") opts.refFrame = ElasticRod::SpaceParallel;
-
-        Scalar radius = 20.0;
-
-        std::vector<Vec3d> vertices, undeformed;
-        for (int i = 0; i < opts.numVertices; ++i) 
-        {
-            vertices.push_back( Vec3d(radius * cos(i * M_PI / (opts.numVertices - 1)),
-                                     radius * sin(i * M_PI / (opts.numVertices - 1)),
-                                     0) );
-        }
-        
-        m_beaker->addRod( 1, vertices,
-                          vertices,
-                          opts );
-        
-        m_initialised = true;
-    }
-    else*/
-        m_beaker->draw();
+    m_beaker->draw();
     
 	// draw dynamic Hair
 
@@ -251,7 +244,21 @@ MStatus WmBunsenNode::initialize()
         CHECK_MSTATUS( nAttr.setArray( true ) );
         //CHECK_MSTATUS( tAttr.setStorable( false ) );
         stat = addAttribute( ia_rodsNodes );
-        if (!stat) { stat.perror( "addAttribute ia_rodsNodes" ); return stat;}
+        if ( !stat ) { stat.perror( "addAttribute ia_rodsNodes" ); return stat;}
+    }
+    
+    {
+        MFnNumericAttribute nAttr;
+        ia_gravity = nAttr.create( "gravity", "gr", MFnNumericData::k3Double, 0, &stat );
+        if ( !stat ) {
+            stat.perror( "create gravity attribute" );
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_gravity );
+        if (!stat) { stat.perror( "addAttribute ia_gravity" ); return stat; }
     }
     
     {
@@ -275,6 +282,8 @@ MStatus WmBunsenNode::initialize()
 	stat = attributeAffects( ia_startTime, ca_syncAttrs );
 	if (!stat) { stat.perror( "attributeAffects ia_startTimer->ca_syncAttrs" ); return stat; }
 	stat = attributeAffects( ia_rodsNodes, ca_syncAttrs );
+	if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
+	stat = attributeAffects( ia_gravity, ca_syncAttrs );
 	if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
 
 	return MS::kSuccess;

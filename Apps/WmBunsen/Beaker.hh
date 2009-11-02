@@ -12,36 +12,12 @@
 #include <BASim/BASim>
 #include <iostream>
 #include <ext/hash_map>
+#include "RodData.hh"
 
 using namespace BASim;
 using namespace std;
 //using namespace tr1;
 
-// This class holds all the info needed to simulate and render a single rod.
-// It feels like stepper and RodRenderer should perhaps be members of the
-// ElasticRod class.
-class RodData
-{
-public:
-    RodData() { rod = NULL; stepper = NULL; rodRenderer = NULL; }
-    RodData( ElasticRod* i_rod, RodTimeStepper* i_stepper, RodRenderer* i_rodRenderer ) 
-    { 
-        rod = i_rod; stepper = i_stepper; rodRenderer = i_rodRenderer; 
-    }
-    ~RodData()
-    {
-        if ( rod != NULL )
-            delete rod;
-        if ( stepper != NULL )
-            delete stepper;
-        if ( rodRenderer != NULL )
-            delete rodRenderer;
-    }
-    
-    ElasticRod* rod;
-    RodTimeStepper* stepper;
-    RodRenderer* rodRenderer;
-};
 
 typedef tr1::unordered_map<size_t, vector<RodData*> > RodDataMap;
 typedef RodDataMap::iterator RodDataMapIterator;
@@ -85,18 +61,17 @@ public:
       return m_world->property( m_gravity );
     }
     
+    // FIXME:
+    // Changing this does nothing!
     void setGravity( const Vec3d& gravity )
     {
       m_world->property( m_gravity ) = gravity;
     }
 
-    vector<RodData*>& rodData( size_t i_rodGroup )
+    vector<RodData*>* rodData( size_t i_rodGroup )
     {
-        return m_rodDataMap[ i_rodGroup ];
+        return &( m_rodDataMap[ i_rodGroup ] );
     }
-
-    
-    
     
     RodTimeStepper* setupRodTimeStepper( ElasticRod& rod );
     
@@ -107,6 +82,11 @@ public:
                  vector<Vec3d>& i_initialVertexPositions, 
                  vector<Vec3d>& i_undeformedVertexPositions,
                  RodOptions& i_options );
+    
+    void initialiseWorld();
+    void resetEverything();
+    void createSpaceForRods( size_t i_rodGroup, size_t i_numRods );
+    void createRods( size_t i_rodGroup );
 
 private:
     World* m_world;
