@@ -26,6 +26,7 @@
 #include <maya/MFnVectorArrayData.h>
 #include <maya/MVectorArray.h>
 #include <maya/MFnNurbsCurveData.h>
+#include <maya/MFnNurbsCurve.h>
 
 #include "Beaker.hh"
 
@@ -41,6 +42,8 @@ public:
     virtual bool isBounded() const;
     static void* creator();
     static MStatus initialize();
+    virtual MStatus connectionMade( const  MPlug & plug, const  MPlug & otherPlug, bool asSrc );
+    virtual MStatus connectionBroken( const  MPlug & plug, const  MPlug & otherPlug, bool asSrc );
 
     static MTypeId ia_typeID;
     static MString ia_typeName;
@@ -55,7 +58,7 @@ public:
     // Returns the number of rods this node has input data for
     size_t numberOfRods()
     {
-        return 1;
+        return m_numberOfInputCurves;
     }
 
     void initialiseRodData( vector<RodData*>* i_rodDataMap );
@@ -77,6 +80,8 @@ private:
     vector<RodData*>* mx_rodData;
     
     World* mx_world;
+    
+    size_t m_numberOfInputCurves;
 };
 
 #endif

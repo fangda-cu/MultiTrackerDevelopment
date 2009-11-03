@@ -17,7 +17,8 @@ MObject WmBunsenRodNode::ia_nurbsCurves;
 MObject WmBunsenRodNode::ca_syncAttrs;
 MObject WmBunsenRodNode::oa_rodsChanged;
 
-WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_rodData( NULL ), mx_world( NULL )
+WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_rodData( NULL ), mx_world( NULL ),
+                                     m_numberOfInputCurves( 0 )
 {
 }
 
@@ -47,35 +48,71 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
     }
 }
 
-void WmBunsenRodNode::updateRodDataFromInputs()
+void WmBunsenRodNode::updateRodDataFromInputs( )
 {    
-    // just update a single imaginary rod to test...
- 
-    //mx_rodData->resize( 1 );
     
-    // Create the data for the rods here, it is deleted by beaker when it is finished with it.
-    // That's because this class has no control over when it is deleted and cleaning things up in
-    // Beaker. The user may kill us in Maya at any time so Beaker/WmBunsenNode take responsibility
-    // for cleaning up.
-    
-    (*mx_rodData)[0]->rodOptions.numVertices = 50;
-    (*mx_rodData)[0]->rodOptions.YoungsModulus = 1000.0;
-    (*mx_rodData)[0]->rodOptions.ShearModulus = 375.0;
-    (*mx_rodData)[0]->rodOptions.radiusA = 0.5;
-    (*mx_rodData)[0]->rodOptions.radiusB = 1.0;
-    std::string frame = "time";
-    if (frame == "time") (*mx_rodData)[0]->rodOptions.refFrame = ElasticRod::TimeParallel;
-    else if (frame == "space") (*mx_rodData)[0]->rodOptions.refFrame = ElasticRod::SpaceParallel;
-
-    Scalar radius = 20.0;
-
-    //std::vector<Vec3d> vertices, undeformed;
-    (*mx_rodData)[ 0 ]->undeformedVertexPositions.clear();
-    for (int i = 0; i < (*mx_rodData)[0]->rodOptions.numVertices; ++i) 
+    if ( mx_rodData->size() != m_numberOfInputCurves )
     {
-        (*mx_rodData)[ 0 ]->undeformedVertexPositions.push_back( Vec3d(radius * cos(i * M_PI / ((*mx_rodData)[0]->rodOptions.numVertices - 1)),
-                                 radius * sin(i * M_PI / ((*mx_rodData)[0]->rodOptions.numVertices - 1)),
-                                 0) );
+        MGlobal::displayError( "Number of rods does not equal number of input curves, rewind simulation to reset" );
+        return;
+    }
+    
+    MDataHandle inputCurveH;
+    MObject inputCurveObj;
+    MPoint pt;
+    MFnNurbsCurveData dataCreator;
+    MMatrix mat;
+    MPoint rootP;
+    MStatus stat;
+ 
+    // We may get called from not inside a compute by the WmBunsenNode initialising all its
+    // data. So build our own datablock to use.
+    MDataBlock dataBlock = MPxNode::forceCache();
+    
+    MArrayDataHandle inArrayH = dataBlock.inputArrayValue( ia_nurbsCurves, &stat );
+    CHECK_MSTATUS(stat);
+   
+    size_t numCurvesConnected = inArrayH.elementCount();
+
+    for ( unsigned int i = 0; i < numCurvesConnected; i++ )
+    {
+        inArrayH.jumpToElement( i );
+        inputCurveH = inArrayH.inputValue( &stat );
+        CHECK_MSTATUS( stat );
+
+        // Use asNurbsCurveTransformed to get the curve data as we
+        // want it in world space.
+        inputCurveObj = inputCurveH.asNurbsCurveTransformed();
+        MFnNurbsCurve inCurveFn( inputCurveObj );
+        
+        MPoint cv;
+        int nCVs = inCurveFn.numCVs();
+        
+        (*mx_rodData)[i]->rodOptions.numVertices = nCVs;
+        (*mx_rodData)[ i ]->undeformedVertexPositions.resize( nCVs );
+         
+        (*mx_rodData)[i]->rodOptions.YoungsModulus = 1000.0;
+        (*mx_rodData)[i]->rodOptions.ShearModulus = 375.0;
+        (*mx_rodData)[i]->rodOptions.radiusA = 0.5;
+        (*mx_rodData)[i]->rodOptions.radiusB = 1.0;
+        
+        std::string frame = "time";
+        if (frame == "time") 
+            (*mx_rodData)[i]->rodOptions.refFrame = ElasticRod::TimeParallel;
+        else if (frame == "space") 
+            (*mx_rodData)[i]->rodOptions.refFrame = ElasticRod::SpaceParallel;
+    
+        //Scalar radius = 20.0;
+    
+        //std::vector<Vec3d> vertices, undeformed;
+        //(*mx_rodData)[ 0 ]->undeformedVertexPositions.clear();
+        for ( int c = 0; c < (*mx_rodData)[ i ]->rodOptions.numVertices; ++c ) 
+        {
+            MPoint cv;
+            stat = inCurveFn.getCV( c,cv,MSpace::kWorld );
+            CHECK_MSTATUS( stat );
+            (*mx_rodData)[ i ]->undeformedVertexPositions[ c ] = Vec3d( cv.x, cv.y, cv.z );
+        }
     }
 }
 
@@ -166,6 +203,33 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
 	glPopAttrib();
 	i_view.endGL();
 }
+
+MStatus WmBunsenRodNode::connectionMade( const  MPlug & plug, const  MPlug & otherPlug, bool asSrc ) 
+{    
+    MStatus stat;
+    MStatus retVal(MS::kUnknownParameter );
+
+    if( plug == ia_nurbsCurves )
+    {
+        m_numberOfInputCurves++;
+    }
+
+    return retVal;
+}
+
+MStatus WmBunsenRodNode::connectionBroken( const  MPlug & plug, const  MPlug & otherPlug, bool asSrc )
+{
+    MStatus stat;
+    MStatus retVal( MS::kUnknownParameter );
+
+    if( plug == ia_nurbsCurves )
+    {
+        m_numberOfInputCurves--;
+    }
+
+    return retVal;
+}
+
 
 bool WmBunsenRodNode::isBounded() const
 { 
