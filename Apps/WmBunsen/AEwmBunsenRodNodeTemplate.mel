@@ -1,0 +1,16 @@
+global proc AEwmBunsenRodNodeTemplate(string $nodeName) 
+{
+    //AEswatchDisplay $nodeName;
+    editorTemplate -beginScrollLayout;
+
+    editorTemplate -beginLayout "Rod Attributes" -collapse 0;        
+        editorTemplate -addControl "cvsPerRod";
+        editorTemplate -addControl "minorRadius";
+        editorTemplate -addControl "majorRadius";
+        editorTemplate -addControl "youngsModulus";
+        editorTemplate -addControl "shearModulus";
+    editorTemplate -endLayout;
+
+    editorTemplate -addExtraControls;
+    editorTemplate -endScrollLayout;
+}

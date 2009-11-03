@@ -51,6 +51,13 @@ public:
     static MObject ia_startTime;
     static MObject ia_nurbsCurves;
 
+    // Rod options
+    static MObject ia_cvsPerRod;
+    static MObject ia_youngsModulus;
+    static MObject ia_shearModulus;
+    static MObject ia_minorRadius;
+    static MObject ia_majorRadius;
+    
     static MObject ca_syncAttrs;
     static MObject oa_rodsChanged;
     
@@ -63,6 +70,11 @@ public:
 
     void initialiseRodData( vector<RodData*>* i_rodDataMap );
     void updateRodDataFromInputs();
+    
+    static MStatus addNumericAttribute( MObject& i_attribute, MString i_longName, 
+                                        MString i_shortName,
+                                        MFnNumericData::Type i_type, double i_defaultValue,
+                                        bool i_isInput );
     
 private:
     double m_currentTime;
@@ -78,6 +90,7 @@ private:
     /// use the connection to Bunsen as a flag to indicate it's time to update the data in this
     /// pointer.
     vector<RodData*>* mx_rodData;
+    RodOptions m_rodOptions;
     
     World* mx_world;
     

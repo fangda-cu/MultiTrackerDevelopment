@@ -8,18 +8,33 @@
 // WARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNING
 ///////////////////////////////////////////////////////////////////////////////////
 
-MTypeId WmBunsenRodNode::ia_typeID( 0x80007 ); 
-MString WmBunsenRodNode::ia_typeName( "wmBunsenRodNode" );
-MObject WmBunsenRodNode::ia_time;
-MObject WmBunsenRodNode::ia_startTime;
-MObject WmBunsenRodNode::ia_nurbsCurves;
+// Required by Maya to identify node
+/* static */ MTypeId WmBunsenRodNode::ia_typeID( 0x80007 ); 
+/* static */ MString WmBunsenRodNode::ia_typeName( "wmBunsenRodNode" );
 
-MObject WmBunsenRodNode::ca_syncAttrs;
-MObject WmBunsenRodNode::oa_rodsChanged;
+// 
+/* static */ MObject WmBunsenRodNode::ia_time;
+/* static */ MObject WmBunsenRodNode::ia_startTime;
+/* static */ MObject WmBunsenRodNode::ia_nurbsCurves;
+
+// User adjustable rod Options
+/* static */ MObject WmBunsenRodNode::ia_cvsPerRod;
+/* static */ MObject WmBunsenRodNode::ia_youngsModulus;
+/* static */ MObject WmBunsenRodNode::ia_shearModulus;
+/* static */ MObject WmBunsenRodNode::ia_minorRadius;
+/* static */ MObject WmBunsenRodNode::ia_majorRadius;
+
+// Output and cache attributes
+/* static */ MObject WmBunsenRodNode::ca_syncAttrs;
+/* static */ MObject WmBunsenRodNode::oa_rodsChanged;
 
 WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_rodData( NULL ), mx_world( NULL ),
                                      m_numberOfInputCurves( 0 )
 {
+    m_rodOptions.YoungsModulus = 1000.0;
+    m_rodOptions.ShearModulus = 375.0;
+    m_rodOptions.radiusA = 0.5;
+    m_rodOptions.radiusB = 1.0;
 }
 
 WmBunsenRodNode::~WmBunsenRodNode()
@@ -29,6 +44,9 @@ WmBunsenRodNode::~WmBunsenRodNode()
 void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
 {
     mx_rodData = i_rodData;
+    
+    // We need to resize the rodData vectors to hold the correct number of per vertex data
+    // for all our inputs
     
     updateRodDataFromInputs();
     
@@ -87,14 +105,16 @@ void WmBunsenRodNode::updateRodDataFromInputs( )
         
         MPoint cv;
         int nCVs = inCurveFn.numCVs();
+       
+        (*mx_rodData)[i]->rodOptions = m_rodOptions;
         
+        // Overrid the number of cvs at the moment to match the input curve
         (*mx_rodData)[i]->rodOptions.numVertices = nCVs;
+        
+        // Make sure we have enough space to store the date for each CV. This should only
+        // ever cause a resize when we are called by initialiseRodData().
         (*mx_rodData)[ i ]->undeformedVertexPositions.resize( nCVs );
-         
-        (*mx_rodData)[i]->rodOptions.YoungsModulus = 1000.0;
-        (*mx_rodData)[i]->rodOptions.ShearModulus = 375.0;
-        (*mx_rodData)[i]->rodOptions.radiusA = 0.5;
-        (*mx_rodData)[i]->rodOptions.radiusB = 1.0;
+        (*mx_rodData)[ i ]->initialVertexPositions.resize( nCVs );
         
         std::string frame = "time";
         if (frame == "time") 
@@ -102,10 +122,6 @@ void WmBunsenRodNode::updateRodDataFromInputs( )
         else if (frame == "space") 
             (*mx_rodData)[i]->rodOptions.refFrame = ElasticRod::SpaceParallel;
     
-        //Scalar radius = 20.0;
-    
-        //std::vector<Vec3d> vertices, undeformed;
-        //(*mx_rodData)[ 0 ]->undeformedVertexPositions.clear();
         for ( int c = 0; c < (*mx_rodData)[ i ]->rodOptions.numVertices; ++c ) 
         {
             MPoint cv;
@@ -128,20 +144,17 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         
 	    m_startTime = i_dataBlock.inputValue( ia_startTime, &stat ).asDouble();
 		CHECK_MSTATUS( stat );
+        
+        m_rodOptions.YoungsModulus = i_dataBlock.inputValue( ia_youngsModulus, &stat ).asDouble();
+        CHECK_MSTATUS( stat );
+        m_rodOptions.ShearModulus = i_dataBlock.inputValue( ia_shearModulus, &stat ).asDouble();
+        CHECK_MSTATUS( stat );
+        m_rodOptions.radiusA = i_dataBlock.inputValue( ia_minorRadius, &stat ).asDouble();
+        CHECK_MSTATUS( stat );
+        m_rodOptions.radiusB = i_dataBlock.inputValue( ia_majorRadius, &stat ).asDouble();
+        CHECK_MSTATUS( stat );
 		
         updateRodDataFromInputs();
-        
-		/*if ( m_currentTime == m_startTime )
-        {
-			// reinitialise
-		}
-		else if ( m_currentTime > m_previousTime ) 
-        {
-            if ( m_initialised )
-   			{
-                // take a step
-            }
-    	}*/
 
 		MDataHandle outputData = i_dataBlock.outputValue ( ca_syncAttrs, &stat );
 		if ( !stat )
@@ -241,10 +254,37 @@ void* WmBunsenRodNode::creator()
 	return new WmBunsenRodNode();
 }
 
-MStatus WmBunsenRodNode::initialize()
+/*static */ MStatus WmBunsenRodNode::addNumericAttribute( MObject& i_attribute, MString i_longName, 
+    MString i_shortName, MFnNumericData::Type i_type, double i_defaultValue, bool i_isInput )
+{
+    // Creates a numeric attribute with default attributes
+    MStatus stat = MS::kSuccess;
+    
+    MFnNumericAttribute nAttr;
+    i_attribute = nAttr.create( i_longName, i_shortName, i_type, i_defaultValue, &stat );
+    if ( !stat )
+    {
+        cerr << "Failed to create attribute " << i_longName << endl;
+        return stat;
+    }
+    if ( i_isInput )
+        nAttr.setWritable( true );
+    else
+        nAttr.setWritable( false );
+    
+    stat = addAttribute( i_attribute );
+    if ( !stat ) { stat.perror( "addAttribute " + i_longName ); return stat; }
+
+    return stat;
+}
+
+/* static */ MStatus WmBunsenRodNode::initialize()
 { 
     MStatus stat;
 
+    addNumericAttribute( ca_syncAttrs, "syncAttrs", "sya", MFnNumericData::kDouble, 1.0, false );
+    addNumericAttribute( oa_rodsChanged, "rodsChanged", "rch", MFnNumericData::kBoolean, true, false );
+    
     {
         MFnUnitAttribute	uAttr;
         ia_time = uAttr.create( "time", "t", MTime( 0.0 ), &stat );
@@ -260,20 +300,25 @@ MStatus WmBunsenRodNode::initialize()
         if ( !stat ) { stat.perror( "addAttribute ia_time" ); return stat; }
     }
     
-    {
-        MFnNumericAttribute	nAttr;
-    	ia_startTime = nAttr.create( "startTime", "stt", MFnNumericData::kDouble, 1.0, &stat );
-        if ( !stat ) 
-        {
-            stat.perror( "create aStartTime attribute");
-            return stat;
-        }
-        nAttr.setWritable( true );
-        nAttr.setReadable( false );
-        nAttr.setKeyable( true );  
-        stat = addAttribute( ia_startTime );
-        if ( !stat ) { stat.perror( "addAttribute ia_startTime" ); return stat; }
-    }
+    addNumericAttribute( ia_startTime, "startTime", "stt", MFnNumericData::kDouble, 1.0, true );
+	stat = attributeAffects( ia_startTime, ca_syncAttrs );
+	if ( !stat ) { stat.perror( "attributeAffects ia_startTime->ca_syncAttrs" ); return stat; }
+
+    addNumericAttribute( ia_youngsModulus, "youngsModulus", "ymo", MFnNumericData::kDouble, 1000.0, true );
+    stat = attributeAffects( ia_youngsModulus, ca_syncAttrs );
+	if ( !stat ) { stat.perror( "attributeAffects ia_youngsModulus->ca_syncAttrs" ); return stat; }
+
+    addNumericAttribute( ia_shearModulus, "shearModulus", "shm", MFnNumericData::kDouble, 375.0, true );
+    stat = attributeAffects( ia_shearModulus, ca_syncAttrs );
+	if ( !stat ) { stat.perror( "attributeAffects ia_shearModulus->ca_syncAttrs" ); return stat; }
+    
+    addNumericAttribute( ia_minorRadius, "minorRadius", "mir", MFnNumericData::kDouble, 0.5, true );
+    stat = attributeAffects( ia_minorRadius, ca_syncAttrs );
+	if ( !stat ) { stat.perror( "attributeAffects ia_minorRadius->ca_syncAttrs" ); return stat; }
+
+    addNumericAttribute( ia_majorRadius, "majorRadius", "mar", MFnNumericData::kDouble, 1.0, true );
+    stat = attributeAffects( ia_majorRadius, ca_syncAttrs );
+	if ( !stat ) { stat.perror( "attributeAffects ia_majorRadius->ca_syncAttrs" ); return stat; }
     
     {
         MFnTypedAttribute   tAttr;  
@@ -288,37 +333,8 @@ MStatus WmBunsenRodNode::initialize()
         CHECK_MSTATUS( stat );
     }
     
-    {
-        MFnNumericAttribute	 nAttr;
-        ca_syncAttrs = nAttr.create( "syncAttrs", "sya", MFnNumericData::kDouble, 1.0, &stat );
-        if ( !stat) 
-        {
-            stat.perror( "create ca_syncAttrs attribute" );
-            return stat;
-        }
-        nAttr.setWritable( false );
-        nAttr.setReadable( true );
-        nAttr.setConnectable( true );
-        nAttr.setKeyable( false );  
-        stat = addAttribute( ca_syncAttrs );
-        if (!stat) { stat.perror( "addAttribute ca_syncAttrs" ); return stat; }
-	}
-    
-    {
-        MFnNumericAttribute nAttr;
-        oa_rodsChanged = nAttr.create( "rodsChanged", "rch", MFnNumericData::kBoolean, true , &stat );
-        CHECK_MSTATUS ( stat );
-        CHECK_MSTATUS( nAttr.setWritable( false ) );
-        CHECK_MSTATUS( nAttr.setReadable( true ) );
-        CHECK_MSTATUS( nAttr.setConnectable( true ) );
-        stat = addAttribute( oa_rodsChanged );
-        if ( !stat ) { stat.perror( "addAttribute oa_rodsChanged" ); return stat;}
-    }
-    
 	stat = attributeAffects( ia_time, ca_syncAttrs );
 	if ( !stat ) { stat.perror( "attributeAffects ia_time->ca_syncAttrs" ); return stat; }
-	stat = attributeAffects( ia_startTime, ca_syncAttrs );
-	if ( !stat ) { stat.perror( "attributeAffects ia_startTimer->ca_syncAttrs" ); return stat; }
 
     stat = attributeAffects( ia_nurbsCurves, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_nurbsCurves->oa_rodsChanged" ); return stat; }

@@ -1,0 +1,13 @@
+global proc AEwmBunsenNodeTemplate(string $nodeName) 
+{
+    //AEswatchDisplay $nodeName;
+    editorTemplate -beginScrollLayout;
+
+    editorTemplate -beginLayout "Solver Attributes" -collapse 0;
+        editorTemplate -addControl "startTime";
+        editorTemplate -addControl "gravity";
+    editorTemplate -endLayout;
+
+    editorTemplate -addExtraControls;
+    editorTemplate -endScrollLayout;
+}
