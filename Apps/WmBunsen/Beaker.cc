@@ -27,12 +27,23 @@ Beaker::Beaker()
     m_rodDataMap.clear();
     initialiseWorld();
     
-    int argc = 0; char **argv = NULL;
-    PetscUtils::initializePetsc( &argc, &argv );
+    PetscTruth isInitialised;
+    PetscInitialized( &isInitialised );
+    if ( isInitialised != PETSC_TRUE )
+    {
+        cerr << "Initialising Petsc\n";
+        int argc = 0; char **argv = NULL;
+        PetscUtils::initializePetsc( &argc, &argv );
+    }
+    else
+        cerr << "Skipping initalisation of Petsc\n";
+    
+    cerr << "Done with initialisation\n";
 }
 
 Beaker::~Beaker()
 {
+    cerr << "Finalising petsc\n";
     PetscUtils::finalizePetsc();
 
     resetEverything();
