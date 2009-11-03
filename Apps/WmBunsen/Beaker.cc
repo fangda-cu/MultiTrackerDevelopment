@@ -44,7 +44,7 @@ Beaker::Beaker()
 Beaker::~Beaker()
 {
     cerr << "Finalising petsc\n";
-    PetscUtils::finalizePetsc();
+///    PetscUtils::finalizePetsc();
 
     resetEverything();
 }
