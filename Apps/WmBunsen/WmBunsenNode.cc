@@ -8,8 +8,8 @@
 // WARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNING
 ///////////////////////////////////////////////////////////////////////////////////
 
-MTypeId WmBunsenNode::ia_typeID( 0x80006 ); 
-MString WmBunsenNode::ia_typeName( "wmBunsenNode" );
+MTypeId WmBunsenNode::typeID( 0x80006 ); 
+MString WmBunsenNode::typeName( "wmBunsenNode" );
 MObject WmBunsenNode::ca_syncAttrs;
 MObject WmBunsenNode::ia_time;
 MObject WmBunsenNode::ia_startTime;

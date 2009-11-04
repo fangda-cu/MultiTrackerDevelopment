@@ -17,7 +17,7 @@ MStatus initializePlugin( MObject obj )
     MGlobal::startErrorLogging("/tmp/MayaErrorLog.txt");
     cerr << "WmBunsen loading....Maya is logging errors to " << MGlobal::errorLogPathName() << endl;
 
-    stat = plugin.registerNode( WmBunsenNode::ia_typeName, WmBunsenNode::ia_typeID,
+    stat = plugin.registerNode( WmBunsenNode::typeName, WmBunsenNode::typeID,
                                 WmBunsenNode::creator,
                                 WmBunsenNode::initialize,
                                 WmBunsenNode::kLocatorNode );
@@ -27,7 +27,7 @@ MStatus initializePlugin( MObject obj )
         return stat;
     }
     
-    stat = plugin.registerNode( WmBunsenRodNode::ia_typeName, WmBunsenRodNode::ia_typeID,
+    stat = plugin.registerNode( WmBunsenRodNode::typeName, WmBunsenRodNode::typeID,
                                 WmBunsenRodNode::creator,
                                 WmBunsenRodNode::initialize,
                                 WmBunsenRodNode::kLocatorNode );
@@ -60,13 +60,13 @@ MStatus uninitializePlugin( MObject obj)
 	
     //
     // Deregister nodes
-	stat = plugin.deregisterNode( WmBunsenNode::ia_typeID );
+	stat = plugin.deregisterNode( WmBunsenNode::typeID );
     if( !stat ) 
     {
         stat.perror( "DeregisterNode WmBunsenNode failed" );
     }
     
-    stat = plugin.deregisterNode( WmBunsenRodNode::ia_typeID );
+    stat = plugin.deregisterNode( WmBunsenRodNode::typeID );
     if( !stat ) 
     {
         stat.perror( "DeregisterNode WmBunsenRodNode failed" );

@@ -43,8 +43,8 @@ public:
     static void* creator();
     static MStatus initialize();
 
-    static MTypeId ia_typeID;
-    static MString ia_typeName;
+    static MTypeId typeID;
+    static MString typeName;
     static MObject ia_time;
     static MObject ia_startTime;
     static MObject ia_rodsNodes;

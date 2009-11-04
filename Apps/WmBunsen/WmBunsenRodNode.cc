@@ -9,8 +9,8 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 // Required by Maya to identify node
-/* static */ MTypeId WmBunsenRodNode::ia_typeID( 0x80007 ); 
-/* static */ MString WmBunsenRodNode::ia_typeName( "wmBunsenRodNode" );
+/* static */ MTypeId WmBunsenRodNode::typeID( 0x80007 ); 
+/* static */ MString WmBunsenRodNode::typeName( "wmBunsenRodNode" );
 
 // 
 /* static */ MObject WmBunsenRodNode::ia_time;
@@ -68,7 +68,11 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
 
 void WmBunsenRodNode::updateRodDataFromInputs( )
 {    
-    
+    if ( mx_rodData == NULL )
+    {
+        MGlobal::displayError( "Please rewind simulation to initialise\n" );
+        return;
+    }
     if ( mx_rodData->size() != m_numberOfInputCurves )
     {
         MGlobal::displayError( "Number of rods does not equal number of input curves, rewind simulation to reset" );

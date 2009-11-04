@@ -39,9 +39,10 @@ MString WmBunsenCmd::typeName("wmBunsen");
 // CTOR
 
 WmBunsenCmd::WmBunsenCmd()
-  : m_undoable(false),
-    m_mArgDatabase(NULL),
-    m_mDagModifier(NULL)/*,
+  : m_undoable( false ),
+    m_mArgDatabase( NULL ),
+    m_mDagModifier( NULL ),
+    m_selectedwmBunsenNode( MObject::kNullObj )/*,
     m_undo(NULL)*/
 {
 }
@@ -161,9 +162,10 @@ void WmBunsenCmd::createWmBunsenRodNode( bool useNURBSInput )
     MStatus stat;
     size_t nCurves = 0;
     
-    MObject wmBunsenNode;    
+    MObject wmBunsenNode = m_selectedwmBunsenNode;
 
-    createWmBunsenNode( wmBunsenNode );
+    if ( wmBunsenNode == MObject::kNullObj )
+        createWmBunsenNode( wmBunsenNode );
 
     // Create the rods node
     MObject rodTObj;  // Object for transform node
@@ -172,7 +174,7 @@ void WmBunsenCmd::createWmBunsenRodNode( bool useNURBSInput )
     MObject pObj;
     MDagModifier dagModifier;
 
-    createDagNode( WmBunsenRodNode::ia_typeName.asChar(), WmBunsenRodNode::ia_typeName.asChar(), 
+    createDagNode( WmBunsenRodNode::typeName.asChar(), WmBunsenRodNode::typeName.asChar(), 
                    pObj, &rodTObj, &rodSObj, &dagModifier );
                           
     MDagPath rodDagPath;
@@ -343,7 +345,7 @@ void WmBunsenCmd::createWmBunsenNode( MObject &o_wmBunsenNodeObj )
     MObject pObj;
     MDagModifier dagModifier;
 
-    createDagNode( WmBunsenNode::ia_typeName.asChar(), WmBunsenNode::ia_typeName.asChar(), 
+    createDagNode( WmBunsenNode::typeName.asChar(), WmBunsenNode::typeName.asChar(), 
                    pObj, &bunsenNodeTObj, &bunsenNodeSObj, &dagModifier );
                           
     MDagPath bunsenNodeDagPath;
@@ -418,16 +420,24 @@ void WmBunsenCmd::getNodes( MSelectionList i_opt_nodes )
         stat = dagFn.getPath( childPath );
         CHECK_MSTATUS( stat );
         childPath.extendToShape();
-        //MFnDependencyNode nodeFn(childPath.node(&stat), &stat);
         
-         if(( childPath.apiType() == MFn::kNurbsCurve ) )
+        if(( childPath.apiType() == MFn::kNurbsCurve ) )
+        {
+            mObj = childPath.node();
+            
+            m_curve_list.add( childPath, mObj, true);
+            
+            //MFnDependencyNode curfn( childPath.node() );
+        }
+        else
+        {
+            MFnDependencyNode nodeFn( childPath.node( &stat ) );
+            CHECK_MSTATUS( stat );
+            if ( nodeFn.typeName() == WmBunsenNode::typeName )
             {
-                mObj = childPath.node();
-
-                m_curve_list.add( childPath, mObj, true);
-
-                //MFnDependencyNode curfn( childPath.node() );
+                m_selectedwmBunsenNode = childPath.node();
             }
+        }
         
         // In this case we let the user select a root group, and then iterate through all
         // the curves below
