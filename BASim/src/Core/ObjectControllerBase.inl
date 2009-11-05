@@ -41,3 +41,13 @@ ObjectControllerBase::getObjects() const
 {
   return m_objects;
 }
+
+inline bool ObjectControllerBase::isEnabled() 
+{
+    return m_enabled;
+}
+  
+inline void ObjectControllerBase::setEnabled( bool enabled )
+{
+    m_enabled = enabled;
+}

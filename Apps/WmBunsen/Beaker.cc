@@ -81,6 +81,8 @@ void Beaker::resetEverything()
 
 void Beaker::createSpaceForRods( size_t i_rodGroup, size_t i_numRods )
 {
+    cerr << "Creating space for rods\n";
+    
     //size_t numRods = m_rodDataMap[ i_rodGroup ].size();
     m_rodDataMap[ i_rodGroup ].resize( i_numRods );
 
@@ -115,6 +117,8 @@ void Beaker::createRods( size_t i_rodGroup )
         m_world->addController( rodDataVector[ r ]->stepper );
         
         rodDataVector[ r ]->rodRenderer = new RodRenderer( *(rodDataVector[ r ]->rod) );
+        
+        rodDataVector[ r ]->shouldSimulate = true;
     }
 }
 

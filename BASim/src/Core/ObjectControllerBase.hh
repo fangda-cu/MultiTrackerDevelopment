@@ -26,14 +26,18 @@ public:
   const std::vector<ObjectBase*>& getObjects() const;
 
   virtual void execute() = 0;
+  
+  bool isEnabled();
+  void setEnabled( bool enabled );
 
 protected:
-
-  ObjectControllerBase() {}
+  ObjectControllerBase() { m_enabled = true; }
 
   virtual ~ObjectControllerBase() {}
 
   std::vector<ObjectBase*> m_objects;
+
+  bool m_enabled;
 };
 
 /**

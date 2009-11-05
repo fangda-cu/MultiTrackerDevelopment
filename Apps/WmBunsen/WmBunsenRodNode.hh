@@ -84,7 +84,8 @@ public:
                                         bool i_isInput );
     
 private:
-    void writeRodDataToDisk( MString i_cachePath );
+    void writeRodDataToCacheFile( MString i_cachePath );
+    void readRodDataFromCacheFile( MString i_cachePath );
     
     double m_currentTime;
     double m_previousTime;

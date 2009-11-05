@@ -85,6 +85,7 @@ void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock )
                 // Since the rod node is purely there to fill in data that comes from its inputs
                 // and attributes, we don't let it deal with memory allocation. This node is in 
                 // charge of all that.
+                m_beaker->resetEverything();
                 m_beaker->createSpaceForRods( r, wmBunsenRodNode->numberOfRods() );
                 
                 wmBunsenRodNode->initialiseRodData( m_beaker->rodData( r ) );
@@ -122,7 +123,6 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		
      	if ( m_currentTime == m_startTime )
         {
-            m_beaker->resetEverything();
             createRodDataFromRodNodes( i_dataBlock );
 		}
         

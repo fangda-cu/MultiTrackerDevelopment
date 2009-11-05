@@ -32,7 +32,8 @@ public:
 
   void execute()
   {
-    m_diffEqSolver->execute();
+    if ( m_enabled )
+      m_diffEqSolver->execute();
   }
 
   void setTime(Scalar time)
