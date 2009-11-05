@@ -27,6 +27,7 @@
 #include <maya/MVectorArray.h>
 #include <maya/MFnNurbsCurveData.h>
 #include <maya/MFnNurbsCurve.h>
+#include <maya/MFnStringData.h>
 
 #include "Beaker.hh"
 
@@ -50,17 +51,23 @@ public:
     static MObject ia_time;
     static MObject ia_startTime;
     static MObject ia_nurbsCurves;
-
+    
     // Rod options
     static MObject ia_cvsPerRod;
     static MObject ia_youngsModulus;
     static MObject ia_shearModulus;
     static MObject ia_minorRadius;
     static MObject ia_majorRadius;
+
+    // Caching
+    static MObject ia_cachePath;
+    static MObject ia_cacheFrame;
+    static MObject ia_readFromCache;
     
     static MObject ca_syncAttrs;
     static MObject oa_rodsChanged;
-    
+    static MObject ia_simStepTaken;
+    static MObject ca_simulationSync;
     
     // Returns the number of rods this node has input data for
     size_t numberOfRods()
@@ -77,6 +84,8 @@ public:
                                         bool i_isInput );
     
 private:
+    void writeRodDataToDisk( MString i_cachePath );
+    
     double m_currentTime;
     double m_previousTime;
     double m_startTime;

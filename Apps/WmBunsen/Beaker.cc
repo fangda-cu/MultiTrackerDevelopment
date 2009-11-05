@@ -98,23 +98,23 @@ void Beaker::createRods( size_t i_rodGroup )
     for ( size_t r=0; r<numRods; r++ )
     {
          // setupRod() is defined in ../BASim/src/Physics/ElasticRods/RodUtils.hh
-        ElasticRod* rod = setupRod( rodDataVector[ r ]->rodOptions, 
-                                    rodDataVector[ r ]->initialVertexPositions, 
-                                    rodDataVector[ r ]->undeformedVertexPositions );
+        rodDataVector[ r ]->rod = setupRod( rodDataVector[ r ]->rodOptions, 
+                                            rodDataVector[ r ]->initialVertexPositions, 
+                                            rodDataVector[ r ]->undeformedVertexPositions );
     
-        rod->fixVert( 0 );
-        rod->fixVert( 1 );
+        rodDataVector[ r ]->rod->fixVert( 0 );
+        rodDataVector[ r ]->rod->fixVert( 1 );
         //rod->fixVert( rod->nv() - 2 );
         //rod->fixVert( rod->nv() - 1 );
-        rod->fixEdge( 0 );
+        rodDataVector[ r ]->rod->fixEdge( 0 );
         //rod->fixEdge( rod->ne() - 1 );
         
-        rodDataVector[ r ]->stepper = setupRodTimeStepper( *rod );
+        rodDataVector[ r ]->stepper = setupRodTimeStepper( *(rodDataVector[ r ]->rod) );
         
-        m_world->addObject( rod );
+        m_world->addObject( rodDataVector[ r ]->rod );
         m_world->addController( rodDataVector[ r ]->stepper );
         
-        rodDataVector[ r ]->rodRenderer = new RodRenderer( *rod );
+        rodDataVector[ r ]->rodRenderer = new RodRenderer( *(rodDataVector[ r ]->rod) );
     }
 }
 
@@ -149,8 +149,6 @@ void Beaker::addRod( size_t i_rodGroup,
 
 void Beaker::takeTimeStep()
 {
-    cerr << "Beaker::takeTimeStep()\n";
-    
     m_world->execute();
 
     setTime( getTime() + getDt() );

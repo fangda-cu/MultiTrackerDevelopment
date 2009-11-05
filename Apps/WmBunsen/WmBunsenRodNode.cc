@@ -24,9 +24,16 @@
 /* static */ MObject WmBunsenRodNode::ia_minorRadius;
 /* static */ MObject WmBunsenRodNode::ia_majorRadius;
 
-// Output and cache attributes
+// Disk cacheing
+/* static */ MObject WmBunsenRodNode::ia_cachePath;
+/* static */ MObject WmBunsenRodNode::ia_cacheFrame;
+/* static */ MObject WmBunsenRodNode::ia_readFromCache;
+
+// Output and cached attributes
 /* static */ MObject WmBunsenRodNode::ca_syncAttrs;
 /* static */ MObject WmBunsenRodNode::oa_rodsChanged;
+/* static */ MObject WmBunsenRodNode::ia_simStepTaken;
+/* static */ MObject WmBunsenRodNode::ca_simulationSync;
 
 WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_rodData( NULL ), mx_world( NULL ),
                                      m_numberOfInputCurves( 0 )
@@ -139,6 +146,8 @@ void WmBunsenRodNode::updateRodDataFromInputs( )
 MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock ) 
 {
     MStatus stat;
+    
+  //  cerr << "WmBunsenRodNode::compute plug = " << i_plug.name() << endl;
 	
     if ( i_plug == ca_syncAttrs )
     {
@@ -157,8 +166,6 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         CHECK_MSTATUS( stat );
         m_rodOptions.radiusB = i_dataBlock.inputValue( ia_majorRadius, &stat ).asDouble();
         CHECK_MSTATUS( stat );
-		
-        updateRodDataFromInputs();
 
 		MDataHandle outputData = i_dataBlock.outputValue ( ca_syncAttrs, &stat );
 		if ( !stat )
@@ -183,7 +190,42 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         {
             // The Bunsen node is asking us to update the rod data in Beaker for our inputs
             // so do so here.....
+            updateRodDataFromInputs();
         }
+        
+        stat = i_dataBlock.setClean( i_plug );
+		if ( !stat )
+        {
+			stat.perror("WmBunsenRodNode::compute setClean");
+			return stat;
+		}
+    }
+    else if ( i_plug == ca_simulationSync )
+    {
+        // If we're here then the Bunsen node has moved forward in time and we should pull the
+        // simulated data from mx_rodData.
+        
+        // Later when we add nurbs curve outputs we should do everything we do in here, so maybe
+        // make this if i_plug == ca_simulationSync || i_plug == oa_nurbsCurves
+        
+        i_dataBlock.inputValue( ia_simStepTaken, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+        
+        bool cacheFrame = i_dataBlock.inputValue( ia_cacheFrame, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+		
+        MString cachePath = i_dataBlock.inputValue( ia_cachePath, &stat ).asString();
+        CHECK_MSTATUS( stat );
+        
+        if ( cacheFrame )
+            writeRodDataToDisk( cachePath );
+        
+        stat = i_dataBlock.setClean( i_plug );
+		if ( !stat )
+        {
+			stat.perror("WmBunsenRodNode::compute setClean");
+			return stat;
+		}
     }
     else
     {
@@ -191,6 +233,71 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 	}
 
 	return MS::kSuccess;
+}
+
+void WmBunsenRodNode::writeRodDataToDisk( MString i_cachePath )
+{
+    long magicNumber = 2051978;
+    
+    if ( mx_rodData == NULL )
+        return;     // No rod data then nothing to put in the file
+    
+    if ( i_cachePath == "" )
+    {
+        MGlobal::displayError( "Empty cache path, not writing anything to disk." );
+        return;
+    }
+    
+    MString fileName = i_cachePath + "." + m_currentTime + ".bun";
+    
+    cerr << "Writing sim data to disk in file: '" << fileName << "'\n";
+    
+    FILE *fp;
+    fp = fopen( fileName.asChar(), "w" );
+    if ( fp == NULL )
+    {
+        MGlobal::displayError( MString( "Problem opening file " + fileName + " for writing." ) );
+        return;
+    }
+    
+    // write data from mx_rodData into the file....
+    
+    // FIXME: create a proper cache file format. This one is bad, it at least needs a proper header.
+    size_t numRods = mx_rodData->size();
+    fwrite( &numRods, sizeof( size_t ), 1, fp );
+  
+    for ( size_t r=0; r<numRods; r++ )
+    {
+        // Write number of vertices in this rod
+        ElasticRod* rod = (*mx_rodData)[ r ]->rod;
+     
+        if ( rod == NULL )
+        {
+            cerr << "WTF, rod is NULL \n";
+            continue;
+        }
+        
+        size_t numVertices = rod->nv();
+        
+        for ( size_t v=0; v<numVertices; v++ )
+        {
+            double pos[3];
+            
+            // Wonder if its safe to write Vec3ds. Need to check what's in them.
+            // Really should package all this and write it as one.
+            Vec3d vertex = rod->getVertex( v );
+            pos[ 0 ] = vertex.x();
+            pos[ 1 ] = vertex.y();
+            pos[ 2 ] = vertex.z();
+            
+            fwrite( &pos[0], sizeof( double ), 3, fp );
+                
+            // We should write velocities and anything else we need into the file too so that
+            // we can restart a simulation from a cached file.
+        }
+    }
+    
+    fclose ( fp );
 }
 
 void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
@@ -206,6 +313,13 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
 	if ( !stat ) 
     {
 		stat.perror( "WmBunsenRodNode::draw getting ca_syncAttrs" );
+		return;
+	}
+    MPlug syncPlug2( thisNode, ca_simulationSync );
+	stat = syncPlug2.getValue( d );
+	if ( !stat ) 
+    {
+		stat.perror( "WmBunsenRodNode::draw getting ca_simulationSync" );
 		return;
 	}
 
@@ -288,6 +402,11 @@ void* WmBunsenRodNode::creator()
 
     addNumericAttribute( ca_syncAttrs, "syncAttrs", "sya", MFnNumericData::kDouble, 1.0, false );
     addNumericAttribute( oa_rodsChanged, "rodsChanged", "rch", MFnNumericData::kBoolean, true, false );
+    addNumericAttribute( ca_simulationSync, "simulationSync", "sis", MFnNumericData::kBoolean, false, false );
+    
+    addNumericAttribute( ia_simStepTaken, "simStepTaken", "sst", MFnNumericData::kBoolean, false, true );
+	stat = attributeAffects( ia_simStepTaken, ca_simulationSync );
+	if ( !stat ) { stat.perror( "attributeAffects ia_simStepTaken->ca_syncAttrs" ); return stat; }
     
     {
         MFnUnitAttribute	uAttr;
@@ -323,6 +442,33 @@ void* WmBunsenRodNode::creator()
     addNumericAttribute( ia_majorRadius, "majorRadius", "mar", MFnNumericData::kDouble, 1.0, true );
     stat = attributeAffects( ia_majorRadius, ca_syncAttrs );
 	if ( !stat ) { stat.perror( "attributeAffects ia_majorRadius->ca_syncAttrs" ); return stat; }
+    
+    addNumericAttribute( ia_cacheFrame, "cacheFrame", "caf", MFnNumericData::kBoolean, false, true );
+    stat = attributeAffects( ia_cacheFrame, ca_simulationSync );
+	if ( !stat ) { stat.perror( "attributeAffects ia_cacheFrame->ca_syncAttrs" ); return stat; }
+    
+    addNumericAttribute( ia_readFromCache, "readFromCache", "rfc", MFnNumericData::kBoolean, false, true );
+    stat = attributeAffects( ia_readFromCache, ca_simulationSync );
+	if ( !stat ) { stat.perror( "attributeAffects ia_readFromCache->ca_syncAttrs" ); return stat; }
+    
+    {
+        MFnTypedAttribute tAttr;
+        MFnStringData fnStringData;
+        MObject defaultString = fnStringData.create("");
+        ia_cachePath = tAttr.create( "cachePath", "cap", MFnData::kString, defaultString, &stat );
+        if ( !stat ) 
+        {
+            stat.perror( "create cachePath attribute" );
+            return stat;
+        }
+        tAttr.setWritable( true );
+        tAttr.setReadable( false );
+        tAttr.setConnectable( true );
+        stat = addAttribute( ia_cachePath );
+        if (!stat) { stat.perror( "addAttribute cachePath" ); return stat; }
+    }
+    stat = attributeAffects( ia_cachePath, ca_simulationSync );
+	if ( !stat ) { stat.perror( "attributeAffects ia_cachePath->ca_simulationSync" ); return stat; }
     
     {
         MFnTypedAttribute   tAttr;  

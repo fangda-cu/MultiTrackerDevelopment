@@ -15,6 +15,7 @@ MObject WmBunsenNode::ia_time;
 MObject WmBunsenNode::ia_startTime;
 MObject WmBunsenNode::ia_rodsNodes;
 MObject WmBunsenNode::ia_gravity;
+MObject WmBunsenNode::oa_simStepTaken;
 
 WmBunsenNode::WmBunsenNode() : m_initialised( false ), m_beaker( NULL )
 {
@@ -104,7 +105,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
     
-    cerr << "WmBunsenNode::compute plug = " << i_plug.name() << endl;
+   // cerr << "WmBunsenNode::compute plug = " << i_plug.name() << endl;
 	
     if ( i_plug == ca_syncAttrs )
     {
@@ -152,7 +153,37 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 			stat.perror("WmBunsenNode::compute setClean");
 			return stat;
 		}
-	} else
+	}
+    else if ( i_plug == oa_simStepTaken )
+    {
+        // Get time so Maya knows we care about it.
+        i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
+        CHECK_MSTATUS(stat);
+        
+        // Get ca_StepTime so that we know it has moved the sim forward
+        i_dataBlock.inputValue( ca_syncAttrs, &stat ).asTime().value();
+        CHECK_MSTATUS(stat);
+        
+        //////////////////////////////////////////////////////////////////
+        //
+        // We don't actually output any data here. For speed we have the
+        // connection that is really a message attribute. It tells the
+        // node on the other end that things have changed. It will then
+        // get a pointer to this class and grab the data it needs.
+        // This could be done with compound attributes or an MPxData class
+        // but that is a pain in the ass for such a simple task and we never
+        // want to save the data so we don't need to do it.
+        //
+        //////////////////////////////////////////////////////////////////
+        
+        stat = i_dataBlock.setClean( i_plug );
+        if ( !stat ) 
+        {
+            stat.perror( "WmBunsenNode::compute oa_simStepTaken setClean()" );
+            return stat;
+        }
+    }
+    else
     {
 		return MS::kUnknownParameter;
 	}
@@ -249,6 +280,17 @@ MStatus WmBunsenNode::initialize()
     
     {
         MFnNumericAttribute nAttr;
+        oa_simStepTaken = nAttr.create( "simStepTaken", "sst", MFnNumericData::kBoolean, true, &stat );
+        CHECK_MSTATUS (stat );
+        CHECK_MSTATUS( nAttr.setWritable( false ) );
+        CHECK_MSTATUS( nAttr.setReadable( true ) );
+        CHECK_MSTATUS( nAttr.setConnectable( true ) );
+        stat = addAttribute( oa_simStepTaken );
+        if ( !stat ) { stat.perror( "addAttribute oa_simulatedRods" ); return stat; }
+    }
+    
+    {
+        MFnNumericAttribute nAttr;
         ia_gravity = nAttr.create( "gravity", "gr", MFnNumericData::k3Double, 0, &stat );
         if ( !stat ) {
             stat.perror( "create gravity attribute" );
@@ -286,5 +328,8 @@ MStatus WmBunsenNode::initialize()
 	stat = attributeAffects( ia_gravity, ca_syncAttrs );
 	if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
 
+	stat = attributeAffects( ia_time, oa_simStepTaken );
+	if (!stat) { stat.perror( "attributeAffects ia_time->oa_simulatedRods" ); return stat; }
+    
 	return MS::kSuccess;
 }

@@ -3,12 +3,17 @@ global proc AEwmBunsenRodNodeTemplate(string $nodeName)
     //AEswatchDisplay $nodeName;
     editorTemplate -beginScrollLayout;
 
-    editorTemplate -beginLayout "Rod Attributes" -collapse 0;        
+    editorTemplate -beginLayout "Rod Attributes" -collapse 0;
+        // This should not appear in the AE but is there for testing currently
+        editorTemplate -addControl "cacheFrame";
+        
+        editorTemplate -addControl "readFromCache";
         editorTemplate -addControl "cvsPerRod";
         editorTemplate -addControl "minorRadius";
         editorTemplate -addControl "majorRadius";
         editorTemplate -addControl "youngsModulus";
         editorTemplate -addControl "shearModulus";
+        editorTemplate -addControl "cachePath";
     editorTemplate -endLayout;
 
     editorTemplate -addExtraControls;

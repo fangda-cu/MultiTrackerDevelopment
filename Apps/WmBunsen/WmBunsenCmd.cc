@@ -322,6 +322,15 @@ void WmBunsenCmd::createWmBunsenRodNode( bool useNURBSInput )
     stat = dagModifier.connect( rodNodeOutPlug, bunsenNodeRodPlug );
     CHECK_MSTATUS( stat );
     
+    // Connect up the rod output sim plug so we know when the sim moves forward in time
+    MPlug rodNodeSimPlug( sFn.findPlug( "simStepTaken", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    MPlug bunsenSimPlug = bunsenDependNodeFn.findPlug( "simStepTaken", true, &stat ); 
+    CHECK_MSTATUS( stat );
+    stat = dagModifier.connect( bunsenSimPlug, rodNodeSimPlug );
+    CHECK_MSTATUS( stat );
+    
+    
     stat = dagModifier.doIt();
     CHECK_MSTATUS( stat );
             

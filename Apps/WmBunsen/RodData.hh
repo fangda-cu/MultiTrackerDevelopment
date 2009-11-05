@@ -16,6 +16,13 @@ public:
     RodData( ElasticRod* i_rod, RodTimeStepper* i_stepper, RodRenderer* i_rodRenderer );
     ~RodData();
     
+    
+    // If for some reason this rod shouldn't be simulated then set this flag to false. This
+    // usually happens when the user has set the rod node to playback from cache.
+    bool shouldSimulate;
+    
+    
+    // Should we keep the ObjectHandle returned by World rather than the actual rod?
     ElasticRod* rod;
     RodTimeStepper* stepper;
     RodRenderer* rodRenderer;

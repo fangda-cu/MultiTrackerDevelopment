@@ -51,6 +51,7 @@ public:
     static MObject ia_gravity;
     
     static MObject ca_syncAttrs;
+    static MObject oa_simStepTaken;
     
 private:
     void pullOnAllRodNodes( MDataBlock& i_dataBlock );
