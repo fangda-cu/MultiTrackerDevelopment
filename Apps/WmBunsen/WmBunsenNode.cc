@@ -124,36 +124,36 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
      	if ( m_currentTime == m_startTime )
         {
             createRodDataFromRodNodes( i_dataBlock );
-		}
+	}
         
         pullOnAllRodNodes( i_dataBlock );
         
-		if ( m_currentTime > m_previousTime ) 
+	if ( m_currentTime > m_previousTime ) 
         {
-          //  if ( m_initialised )
-   			{
-                // take a step
-                m_beaker->takeTimeStep();
+	    //  if ( m_initialised )
+	    {
+                // take a step of size 1.0/24.0
+                m_beaker->takeTimeStep(1.0/24.0 ); 
             }
     	}
-
-		MDataHandle outputData = i_dataBlock.outputValue ( ca_syncAttrs, &stat );
-		if ( !stat )
+	
+	MDataHandle outputData = i_dataBlock.outputValue ( ca_syncAttrs, &stat );
+	if ( !stat )
         {
-			stat.perror("WmBunsenNode::compute get ca_syncAttrs");
-			return stat;
-		}
-		
+	    stat.perror("WmBunsenNode::compute get ca_syncAttrs");
+	    return stat;
+	}
+	
         // We don't even need to put anything in the output handle as nothing uses it.
         // Just tell Maya it's clean so it doesn't repeatedly evaluate it.
-
-		stat = i_dataBlock.setClean( i_plug );
-		if ( !stat )
+	
+	stat = i_dataBlock.setClean( i_plug );
+	if ( !stat )
         {
-			stat.perror("WmBunsenNode::compute setClean");
-			return stat;
-		}
+	    stat.perror("WmBunsenNode::compute setClean");
+	    return stat;
 	}
+    }
     else if ( i_plug == oa_simStepTaken )
     {
         // Get time so Maya knows we care about it.
@@ -185,56 +185,56 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     }
     else
     {
-		return MS::kUnknownParameter;
-	}
+	return MS::kUnknownParameter;
+    }
 
-	return MS::kSuccess;
+    return MS::kSuccess;
 }
 
 void WmBunsenNode::draw( M3dView& i_view, const MDagPath& i_path,
                          M3dView::DisplayStyle i_style,
                          M3dView::DisplayStatus i_status )
 { 
-	MStatus stat;
-	MObject thisNode = thisMObject();
-
-	MPlug syncPlug( thisNode, ca_syncAttrs );
-	double d; 
-	stat = syncPlug.getValue( d );
-	if ( !stat ) 
+    MStatus stat;
+    MObject thisNode = thisMObject();
+    
+    MPlug syncPlug( thisNode, ca_syncAttrs );
+    double d; 
+    stat = syncPlug.getValue( d );
+    if ( !stat ) 
     {
-		stat.perror( "WmBunsenNode::draw getting ca_syncAttrs" );
-		return;
-	}
-
-	i_view.beginGL(); 
-	glPushAttrib( GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT );
+	stat.perror( "WmBunsenNode::draw getting ca_syncAttrs" );
+	return;
+    }
+    
+    i_view.beginGL(); 
+    glPushAttrib( GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT );
     
     m_beaker->draw();
     
-	// draw dynamic Hair
-
-	// What did this line do? it was here from the devkit example. Is it to with point colouring
-	//view.setDrawColor ( WmBunsenNode );
-
-	glPopAttrib();
-	i_view.endGL();
+    // draw dynamic Hair
+    
+    // What did this line do? it was here from the devkit example. Is it to with point colouring
+    //view.setDrawColor ( WmBunsenNode );
+    
+    glPopAttrib();
+    i_view.endGL();
 }
 
 bool WmBunsenNode::isBounded() const
 { 
-	return false;
+    return false;
 }
 
 void* WmBunsenNode::creator()
 {
-	return new WmBunsenNode();
+    return new WmBunsenNode();
 }
 
 MStatus WmBunsenNode::initialize()
 { 
     MStatus stat;
-
+    
     {
         MFnUnitAttribute	uAttr;
         ia_time = uAttr.create( "time", "t", MTime( 0.0 ), &stat );
@@ -317,19 +317,19 @@ MStatus WmBunsenNode::initialize()
         nAttr.setKeyable( false );  
         stat = addAttribute( ca_syncAttrs );
         if (!stat) { stat.perror( "addAttribute ca_syncAttrs" ); return stat; }
-	}
+    }
 
-	stat = attributeAffects( ia_time, ca_syncAttrs );
-	if (!stat) { stat.perror( "attributeAffects ia_time->ca_syncAttrs" ); return stat; }
-	stat = attributeAffects( ia_startTime, ca_syncAttrs );
-	if (!stat) { stat.perror( "attributeAffects ia_startTimer->ca_syncAttrs" ); return stat; }
-	stat = attributeAffects( ia_rodsNodes, ca_syncAttrs );
-	if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
-	stat = attributeAffects( ia_gravity, ca_syncAttrs );
-	if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
-
-	stat = attributeAffects( ia_time, oa_simStepTaken );
-	if (!stat) { stat.perror( "attributeAffects ia_time->oa_simulatedRods" ); return stat; }
+    stat = attributeAffects( ia_time, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_time->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_startTime, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_startTimer->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_rodsNodes, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_gravity, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
     
-	return MS::kSuccess;
+    stat = attributeAffects( ia_time, oa_simStepTaken );
+    if (!stat) { stat.perror( "attributeAffects ia_time->oa_simulatedRods" ); return stat; }
+    
+    return MS::kSuccess;
 }

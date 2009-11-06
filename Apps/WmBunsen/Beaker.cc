@@ -151,11 +151,21 @@ void Beaker::addRod( size_t i_rodGroup,
     m_rodDataMap[ i_rodGroup ].push_back( rodData );
 }
 
-void Beaker::takeTimeStep()
+void Beaker::takeTimeStep(Scalar stepsize)
 {
-    m_world->execute();
-
-    setTime( getTime() + getDt() );
+    Scalar dt_save = getDt();
+    Scalar currentTime = getTime();
+    Scalar targetTime = currentTime + stepsize;
+    while(currentTime < targetTime)
+    {
+	if(targetTime - currentTime < getDt()+SMALL_NUMBER)
+	    setDt(targetTime - currentTime);
+	m_world->execute();
+	setTime( currentTime + getDt() );
+	currentTime = getTime();
+    }
+    // restore dt
+    setDt(dt_save);
 }
 
 RodTimeStepper* Beaker::setupRodTimeStepper( ElasticRod& rod )
@@ -178,7 +188,7 @@ RodTimeStepper* Beaker::setupRodTimeStepper( ElasticRod& rod )
                   << "Using default instead." << std::endl;
     }
     
-    stepper->setTimeStep(0.1);
+    stepper->setTimeStep(.01);
     
     Scalar massDamping = 0.0;
     if (massDamping != 0) 
@@ -191,7 +201,7 @@ RodTimeStepper* Beaker::setupRodTimeStepper( ElasticRod& rod )
         stepper->addExternalForce( new RodGravity( getGravity() ) );
     }
     
-    int iterations = 1;
+    int iterations = 10;
     stepper->setMaxIterations( iterations );
     
     return stepper;
