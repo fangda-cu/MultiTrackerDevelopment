@@ -100,12 +100,12 @@ void RodRenderer::drawSmoothRod()
       }
 
       const Vec3d& x0 = m_tube.getPointAtVert(j, k);
-      Vec3d n = (x0 - v0).normalized();
+      Vec3d n = (v0 - x0).normalized();
       OpenGL::normal(n);
       OpenGL::vertex(x0);
 
       const Vec3d& x1 = m_tube.getPointAtVert(j + 1, k);
-      n = (x1 - v1).normalized();
+      n = (v1 - x1).normalized();
       OpenGL::normal(n);
       OpenGL::vertex(x1);
     }

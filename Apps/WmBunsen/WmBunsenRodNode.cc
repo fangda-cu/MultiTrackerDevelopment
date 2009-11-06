@@ -51,11 +51,60 @@ WmBunsenRodNode::~WmBunsenRodNode()
 void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
 {
     mx_rodData = i_rodData;
+    MStatus stat;
+ 
+    // We may get called from not inside a compute by the WmBunsenNode initialising all its
+    // data. So build our own datablock to use.
+    MDataBlock dataBlock = MPxNode::forceCache();
+
+    MDataHandle inputCurveH;
+    MObject inputCurveObj;    
+    MArrayDataHandle inArrayH = dataBlock.inputArrayValue( ia_nurbsCurves, &stat );
+    CHECK_MSTATUS(stat);
+   
+    size_t numCurvesConnected = inArrayH.elementCount();
+
+    for ( unsigned int i = 0; i < numCurvesConnected; i++ )
+    {
+        inArrayH.jumpToElement( i );
+        inputCurveH = inArrayH.inputValue( &stat );
+        CHECK_MSTATUS( stat );
+
+        // Use asNurbsCurveTransformed to get the curve data as we
+        // want it in world space.
+        inputCurveObj = inputCurveH.asNurbsCurveTransformed();
+        MFnNurbsCurve inCurveFn( inputCurveObj );
+        
+        MPoint cv;
+        int nCVs = inCurveFn.numCVs();
+       
+        (*mx_rodData)[i]->rodOptions = m_rodOptions;
+        
+        // Override the number of cvs at the moment to match the input curve
+        (*mx_rodData)[i]->rodOptions.numVertices = nCVs;
+        
+        // Make sure we have enough space to store the date for each CV. This should only
+        // ever cause a resize when we are called by initialiseRodData().
+        (*mx_rodData)[ i ]->undeformedVertexPositions.resize( nCVs );
+        (*mx_rodData)[ i ]->initialVertexPositions.resize( nCVs );
+        
+        std::string frame = "time";
+        if ( frame == "time" ) 
+            (*mx_rodData)[ i ]->rodOptions.refFrame = ElasticRod::TimeParallel;
+        else if (frame == "space") 
+            (*mx_rodData)[ i ]->rodOptions.refFrame = ElasticRod::SpaceParallel;
     
-    // We need to resize the rodData vectors to hold the correct number of per vertex data
-    // for all our inputs
-    
-    updateRodDataFromInputs();
+        for ( int c = 0; c < (*mx_rodData)[ i ]->rodOptions.numVertices; ++c ) 
+        {
+            MPoint cv;
+           // stat = inCurveFn.getCV( c,cv,MSpace::kWorld );
+            stat = inCurveFn.getCV( c,cv,MSpace::kObject );
+            CHECK_MSTATUS( stat );
+            
+            Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
+            (*mx_rodData)[ i ]->undeformedVertexPositions[ c ] = inputCurveVertex;
+        }    
+    }
     
     // Since we're initialising the rod data that means the rod is about to be created. In which
     // case we need to set the current vertex positions since they will not get set by the
@@ -73,7 +122,7 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
     }
 }
 
-void WmBunsenRodNode::updateRodDataFromInputs( )
+void WmBunsenRodNode::updateRodDataFromInputs()
 {    
     if ( mx_rodData == NULL )
     {
@@ -117,38 +166,26 @@ void WmBunsenRodNode::updateRodDataFromInputs( )
         MPoint cv;
         int nCVs = inCurveFn.numCVs();
        
-        (*mx_rodData)[i]->rodOptions = m_rodOptions;
-        
-        // Overrid the number of cvs at the moment to match the input curve
-        (*mx_rodData)[i]->rodOptions.numVertices = nCVs;
-        
-        // Make sure we have enough space to store the date for each CV. This should only
-        // ever cause a resize when we are called by initialiseRodData().
-        (*mx_rodData)[ i ]->undeformedVertexPositions.resize( nCVs );
-        (*mx_rodData)[ i ]->initialVertexPositions.resize( nCVs );
-        
-        std::string frame = "time";
-        if ( frame == "time" ) 
-            (*mx_rodData)[ i ]->rodOptions.refFrame = ElasticRod::TimeParallel;
-        else if (frame == "space") 
-            (*mx_rodData)[ i ]->rodOptions.refFrame = ElasticRod::SpaceParallel;
-    
-        for ( int c = 0; c < (*mx_rodData)[ i ]->rodOptions.numVertices; ++c ) 
+        ElasticRod* rod = (*mx_rodData)[ i ]->rod;
+        if ( rod != NULL )
         {
-            MPoint cv;
-           // stat = inCurveFn.getCV( c,cv,MSpace::kWorld );
-            stat = inCurveFn.getCV( c,cv,MSpace::kObject );
-            CHECK_MSTATUS( stat );
+            rod->setRadius( m_rodOptions.radiusA, m_rodOptions.radiusB );
+            rod->setYoungsModulus( m_rodOptions.YoungsModulus );
+            rod->setShearModulus( m_rodOptions.ShearModulus );
             
-            Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
-            (*mx_rodData)[ i ]->undeformedVertexPositions[ c ] = inputCurveVertex;
-            
-            if ( (*mx_rodData)[ i ]->rod != NULL )
+            int numVertices = rod->nv();
+            for ( int c = 0; c < numVertices ; ++c ) 
             {
-                // If the rod is not NULL then it's been created and we're simulating, so 
-                // update the position of any vertices that are fixed ( not simulated )
-                if ( (*mx_rodData)[ i ]->rod->vertFixed( c ) )
-                    (*mx_rodData)[ i ]->rod->setVertex( c,  inputCurveVertex );
+                MPoint cv;
+               // stat = inCurveFn.getCV( c,cv,MSpace::kWorld );
+                stat = inCurveFn.getCV( c,cv,MSpace::kObject );
+                CHECK_MSTATUS( stat );
+                
+                if ( rod->vertFixed( c ) )
+                {
+                     Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
+                    rod->setVertex( c,  inputCurveVertex );
+                }
             }
         }
     }

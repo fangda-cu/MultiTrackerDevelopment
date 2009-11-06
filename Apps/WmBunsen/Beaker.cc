@@ -117,6 +117,7 @@ void Beaker::createRods( size_t i_rodGroup )
         m_world->addController( rodDataVector[ r ]->stepper );
         
         rodDataVector[ r ]->rodRenderer = new RodRenderer( *(rodDataVector[ r ]->rod) );
+       // rodDataVector[ r ]->rodRenderer->setMode( RodRenderer::SIMPLE );
         
         rodDataVector[ r ]->shouldSimulate = true;
     }
