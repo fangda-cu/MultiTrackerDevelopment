@@ -195,30 +195,29 @@ void WmBunsenNode::draw( M3dView& i_view, const MDagPath& i_path,
                          M3dView::DisplayStyle i_style,
                          M3dView::DisplayStatus i_status )
 { 
-    MStatus stat;
-    MObject thisNode = thisMObject();
-    
-    MPlug syncPlug( thisNode, ca_syncAttrs );
-    double d; 
-    stat = syncPlug.getValue( d );
-    if ( !stat ) 
+
+	MStatus stat;
+	MObject thisNode = thisMObject();
+
+	MPlug syncPlug( thisNode, ca_syncAttrs );
+	double d; 
+	stat = syncPlug.getValue( d );
+	if ( !stat )
     {
-	stat.perror( "WmBunsenNode::draw getting ca_syncAttrs" );
-	return;
-    }
-    
-    i_view.beginGL(); 
-    glPushAttrib( GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT );
+		stat.perror( "WmBunsenNode::draw getting ca_syncAttrs" );
+		return;
+	}
+
+	i_view.beginGL(); 
+    glPushAttrib( GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT | GL_ENABLE_BIT |  GL_LIGHTING_BIT );
     
     m_beaker->draw();
-    
-    // draw dynamic Hair
-    
-    // What did this line do? it was here from the devkit example. Is it to with point colouring
-    //view.setDrawColor ( WmBunsenNode );
-    
-    glPopAttrib();
-    i_view.endGL();
+
+	// What did this line do? it was here from the devkit example. Is it to with point colouring
+	//view.setDrawColor ( WmBunsenNode );
+
+	glPopAttrib();
+	i_view.endGL();
 }
 
 bool WmBunsenNode::isBounded() const
