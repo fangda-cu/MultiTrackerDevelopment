@@ -139,7 +139,17 @@ void WmBunsenRodNode::updateRodDataFromInputs( )
            // stat = inCurveFn.getCV( c,cv,MSpace::kWorld );
             stat = inCurveFn.getCV( c,cv,MSpace::kObject );
             CHECK_MSTATUS( stat );
-            (*mx_rodData)[ i ]->undeformedVertexPositions[ c ] = Vec3d( cv.x, cv.y, cv.z );
+            
+            Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
+            (*mx_rodData)[ i ]->undeformedVertexPositions[ c ] = inputCurveVertex;
+            
+            if ( (*mx_rodData)[ i ]->rod != NULL )
+            {
+                // If the rod is not NULL then it's been created and we're simulating, so 
+                // update the position of any vertices that are fixed ( not simulated )
+                if ( (*mx_rodData)[ i ]->rod->vertFixed( c ) )
+                    (*mx_rodData)[ i ]->rod->setVertex( c,  inputCurveVertex );
+            }
         }
     }
 }
@@ -342,8 +352,6 @@ void WmBunsenRodNode::readRodDataFromCacheFile( MString i_cachePath )
     size_t numRods;
     fread( &numRods, sizeof( size_t ), 1, fp );
     
-    cerr << "File contains " << numRods << " rods\n";
-    
     if ( numRods != mx_rodData->size() )
     {
         cerr << "Wrong number of rods in file, have not implemented changing it yet\n";
@@ -362,7 +370,7 @@ void WmBunsenRodNode::readRodDataFromCacheFile( MString i_cachePath )
         size_t numVertices;
         fread( &numVertices, sizeof( size_t ), 1, fp );
         
-        if ( numVertices != rod->nv() )
+        if ( (int)numVertices != rod->nv() )
         {
             // FIXME: We really should be able to do this. The users should be able to just stick any cache file
             // on the attribute and we should allocate rodData for the correct number.
@@ -378,7 +386,6 @@ void WmBunsenRodNode::readRodDataFromCacheFile( MString i_cachePath )
             // Wonder if its safe to write Vec3ds. Need to check what's in them.
             // Really should package all this and write it as one.
             fread( &pos[0], sizeof( double ), 3, fp );
-            cerr << "vtx: " << pos[0] << ", " << pos[1] << ", " << pos[2] << endl;
             
             Vec3d vertex( pos[0], pos[1], pos[2] );
             rod->setVertex( v, vertex );
