@@ -46,7 +46,7 @@ inline bool approxEq(const Scalar& a, const Scalar& b,
 
 /** Uses dynamic_cast if debugging is turned on and static_cast for
     efficiency when debugging is turned off (by defining NDEBUG. */
-template <typename target_ptr, typename source>
+/*template <typename target_ptr, typename source>
 inline target_ptr smart_cast(source* s)
 {
 
@@ -62,7 +62,7 @@ inline target_ptr smart_cast(source* s)
 
 #endif
 
-}
+}*/
 
 /** Uses dynamic_cast if debugging is turned on and static_cast for
     efficiency when debugging is turned off (by defining NDEBUG. */

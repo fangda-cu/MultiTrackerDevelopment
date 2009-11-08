@@ -16,8 +16,6 @@
 
 using namespace BASim;
 using namespace std;
-//using namespace tr1;
-
 
 typedef tr1::unordered_map<size_t, vector<RodData*> > RodDataMap;
 typedef RodDataMap::iterator RodDataMapIterator;
@@ -76,7 +74,7 @@ public:
     RodTimeStepper* setupRodTimeStepper( ElasticRod& rod );
     
     void draw(void);
-    void takeTimeStep();
+    void takeTimeStep( int i_numberOfThreadsToUse );
     
     void addRod( size_t i_rodGroup,
                  vector<Vec3d>& i_initialVertexPositions, 

@@ -15,6 +15,7 @@ MObject WmBunsenNode::ia_time;
 MObject WmBunsenNode::ia_startTime;
 MObject WmBunsenNode::ia_rodsNodes;
 MObject WmBunsenNode::ia_gravity;
+MObject WmBunsenNode::ia_numberOfThreads;
 MObject WmBunsenNode::oa_simStepTaken;
 
 WmBunsenNode::WmBunsenNode() : m_initialised( false ), m_beaker( NULL )
@@ -121,6 +122,9 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         CHECK_MSTATUS( stat );
         m_beaker->setGravity( Vec3d( gravity[0], gravity[1], gravity[2] ) );
 		
+        int numberOfThreads = i_dataBlock.inputValue( ia_numberOfThreads, &stat ).asInt();
+		CHECK_MSTATUS( stat );
+        
      	if ( m_currentTime == m_startTime )
         {
             createRodDataFromRodNodes( i_dataBlock );
@@ -130,11 +134,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         
 		if ( m_currentTime > m_previousTime ) 
         {
-          //  if ( m_initialised )
-   			{
-                // take a step
-                m_beaker->takeTimeStep();
-            }
+            m_beaker->takeTimeStep( numberOfThreads );
     	}
 
 		MDataHandle outputData = i_dataBlock.outputValue ( ca_syncAttrs, &stat );
@@ -289,6 +289,17 @@ MStatus WmBunsenNode::initialize()
     
     {
         MFnNumericAttribute nAttr;
+        ia_numberOfThreads = nAttr.create( "numberOfThreads", "nut", MFnNumericData::kInt, 1, &stat );
+        CHECK_MSTATUS (stat );
+        CHECK_MSTATUS( nAttr.setWritable( true ) );
+        CHECK_MSTATUS( nAttr.setReadable( false ) );
+        CHECK_MSTATUS( nAttr.setConnectable( true ) );
+        stat = addAttribute( ia_numberOfThreads );
+        if ( !stat ) { stat.perror( "addAttribute ia_numberOfThreads" ); return stat; }
+    }
+    
+    {
+        MFnNumericAttribute nAttr;
         ia_gravity = nAttr.create( "gravity", "gr", MFnNumericData::k3Double, 0, &stat );
         if ( !stat ) {
             stat.perror( "create gravity attribute" );
@@ -324,7 +335,9 @@ MStatus WmBunsenNode::initialize()
 	stat = attributeAffects( ia_rodsNodes, ca_syncAttrs );
 	if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
 	stat = attributeAffects( ia_gravity, ca_syncAttrs );
-	if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
+	if (!stat) { stat.perror( "attributeAffects ia_gravity->ca_syncAttrs" ); return stat; }
+	stat = attributeAffects( ia_numberOfThreads, ca_syncAttrs );
+	if (!stat) { stat.perror( "attributeAffects ia_numberOfThreads->ca_syncAttrs" ); return stat; }
 
 	stat = attributeAffects( ia_time, oa_simStepTaken );
 	if (!stat) { stat.perror( "attributeAffects ia_time->oa_simulatedRods" ); return stat; }

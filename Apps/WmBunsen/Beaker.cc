@@ -152,9 +152,9 @@ void Beaker::addRod( size_t i_rodGroup,
     m_rodDataMap[ i_rodGroup ].push_back( rodData );
 }
 
-void Beaker::takeTimeStep()
+void Beaker::takeTimeStep( int i_numberOfThreadsToUse )
 {
-    m_world->execute();
+    m_world->executeInParallel( i_numberOfThreadsToUse );
 
     setTime( getTime() + getDt() );
 }
