@@ -46,7 +46,9 @@ public:
     static MTypeId typeID;
     static MString typeName;
     static MObject ia_time;
+    static MObject ia_maxDt;
     static MObject ia_startTime;
+    static MObject ia_fps;
     static MObject ia_rodsNodes;
     static MObject ia_gravity;
     
@@ -60,6 +62,7 @@ private:
     double m_currentTime;
     double m_previousTime;
     double m_startTime;
+    double m_framedt;
     
     bool m_initialised;
     

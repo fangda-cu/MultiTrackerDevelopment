@@ -53,7 +53,7 @@ void Beaker::initialiseWorld()
 {
     m_world = new World();
     m_world->add_property( m_time, "time", 0.0 );
-    m_world->add_property( m_dt, "time-step", 0.005 );
+    m_world->add_property( m_dt, "time-step", 0.1 );
     m_world->add_property( m_gravity, "gravity", Vec3d(0, -9.81, 0) );
 }
 
@@ -73,6 +73,7 @@ void Beaker::resetEverything()
         }
     }
     m_rodDataMap.clear();
+    
     
     delete m_world;
     
@@ -157,10 +158,34 @@ void Beaker::takeTimeStep(Scalar stepsize)
     Scalar dt_save = getDt();
     Scalar currentTime = getTime();
     Scalar targetTime = currentTime + stepsize;
+    
     while(currentTime < targetTime)
     {
 	if(targetTime - currentTime < getDt()+SMALL_NUMBER)
 	    setDt(targetTime - currentTime);
+
+	// interpolate fixed vertex positions and set timestep
+	//
+	Scalar normalisedTime = (targetTime - (currentTime + getDt())) / stepsize; //this is actually 1-normalisedTime
+	for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
+	{
+	    vector<RodData*>& rodData = rdmItr->second;
+	    size_t numRods = rodData.size();
+	    for ( size_t r=0; r<numRods; r++ )
+	    {
+		rodData[r]->stepper->setTimeStep(getDt());
+		ElasticRod* rod = rodData[r]->rod;
+		for( int c = 0; c < rod->nv(); c++)
+		{
+		    if(rod->vertFixed( c ) )
+		    {
+			rod->setVertex(c,normalisedTime*rodData[r]->prevVertexPositions[c] + 
+				       (1.0-normalisedTime)*rodData[r]->nextVertexPositions[c]);
+		    }
+		}
+	    }
+	}
+
 	m_world->execute();
 	setTime( currentTime + getDt() );
 	currentTime = getTime();
@@ -189,9 +214,9 @@ RodTimeStepper* Beaker::setupRodTimeStepper( ElasticRod& rod )
                   << "Using default instead." << std::endl;
     }
     
-    stepper->setTimeStep(.005);
+    stepper->setTimeStep(getDt());
     
-    Scalar massDamping = 0.01;
+    Scalar massDamping = 0.1;
     if (massDamping != 0) 
     {
         stepper->addExternalForce( new RodMassDamping( massDamping ) );
@@ -202,7 +227,7 @@ RodTimeStepper* Beaker::setupRodTimeStepper( ElasticRod& rod )
         stepper->addExternalForce( new RodGravity( getGravity() ) );
     }
     
-    int iterations = 10;
+    int iterations = 100;
     stepper->setMaxIterations( iterations );
     
     return stepper;

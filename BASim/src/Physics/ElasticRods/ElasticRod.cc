@@ -28,7 +28,7 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   add_property(m_quasistatic, "quasistatic", false);
   add_property(m_viscous, "viscous", false);
   add_property(m_refFrameType, "reference-frame", TimeParallel);
-  add_property(m_density, "density", 0.1);
+  add_property(m_density, "density", 1.0);
   add_property(m_fixed, "fixed_dofs");
   add_property(m_fixedVerts, "fixed_verts");
   add_property(m_fixedEdges, "fixed_edges");
