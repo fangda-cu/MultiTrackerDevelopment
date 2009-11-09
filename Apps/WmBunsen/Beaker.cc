@@ -53,8 +53,8 @@ void Beaker::initialiseWorld()
 {
     m_world = new World();
     m_world->add_property( m_time, "time", 0.0 );
-    m_world->add_property( m_dt, "time-step", 0.1 );
-    m_world->add_property( m_gravity, "gravity", Vec3d(0, -9.81, 0) );
+    m_world->add_property( m_dt, "time-step", 0.01 );
+    m_world->add_property( m_gravity, "gravity", Vec3d(0, -981.0, 0) );
 }
 
 void Beaker::resetEverything()
@@ -216,7 +216,7 @@ RodTimeStepper* Beaker::setupRodTimeStepper( ElasticRod& rod )
     
     stepper->setTimeStep(getDt());
     
-    Scalar massDamping = 0.1;
+    Scalar massDamping = 10.0;
     if (massDamping != 0) 
     {
         stepper->addExternalForce( new RodMassDamping( massDamping ) );

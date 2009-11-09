@@ -294,7 +294,7 @@ MStatus WmBunsenNode::initialize()
 
     {
 	MFnNumericAttribute nAttr;
-    	ia_maxDt = nAttr.create( "maxDt", "mdt", MFnNumericData::kDouble, 1.0, &stat );
+    	ia_maxDt = nAttr.create( "maxDt", "mdt", MFnNumericData::kDouble, 0.01, &stat );
         if ( !stat ) 
         {
             stat.perror( "create maxDt attribute");
