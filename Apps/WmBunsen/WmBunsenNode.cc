@@ -50,7 +50,7 @@ void WmBunsenNode::pullOnAllRodNodes( MDataBlock& i_dataBlock )
         // and will directly change the data in m_beaker. It's dumb to pass it along Maya connections
         // to here then to beaker. So we cut out the middle man.
     }
-}
+}  
 
 void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock )
 {
@@ -65,6 +65,13 @@ void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock )
   
     MPlug rodPlugArray( thisMObject(), ia_rodsNodes );
     CHECK_MSTATUS( stat );
+	    
+
+    m_beaker->resetEverything();
+    const double3 &gravity = i_dataBlock.inputValue( ia_gravity, &stat ).asDouble3();
+    CHECK_MSTATUS( stat );
+    m_beaker->setGravity( Vec3d( gravity[0], gravity[1], gravity[2] ) );
+
     for ( unsigned int r=0; r < numRodsConnected; r++ ) 
     {
         if ( rodPlugArray.isArray( &stat ) )
@@ -87,12 +94,12 @@ void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock )
                 // Since the rod node is purely there to fill in data that comes from its inputs
                 // and attributes, we don't let it deal with memory allocation. This node is in 
                 // charge of all that.
-                m_beaker->resetEverything();
+
                 m_beaker->createSpaceForRods( r, wmBunsenRodNode->numberOfRods() );
                 
                 wmBunsenRodNode->initialiseRodData( m_beaker->rodData( r ) );
-                
-                // Now the rod node has used initialised the undeformed postitions for the rods
+
+		// Now the rod node has used initialised the undeformed positions for the rods
                 // it owns. Since we are resetting the sim we need to actually now create the
                 // rods and add them to the world.
                 
@@ -116,11 +123,6 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_currentTime = i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
 	CHECK_MSTATUS( stat );
 
-     	if ( m_currentTime == m_startTime )
-        {
-            createRodDataFromRodNodes( i_dataBlock );
-	}
-                
 	m_startTime = i_dataBlock.inputValue( ia_startTime, &stat ).asDouble();
 	CHECK_MSTATUS( stat );
 
@@ -128,12 +130,14 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 	CHECK_MSTATUS( stat );
 
 	m_beaker->setDt(i_dataBlock.inputValue(ia_maxDt, &stat ).asDouble());
-	CHECK_MSTATUS( stat );
+	CHECK_MSTATUS( stat );	
         
-        const double3 &gravity = i_dataBlock.inputValue( ia_gravity, &stat ).asDouble3();
-        CHECK_MSTATUS( stat );
-        m_beaker->setGravity( Vec3d( gravity[0], gravity[1], gravity[2] ) );
-		
+
+
+	if ( m_currentTime == m_startTime )
+        {
+            createRodDataFromRodNodes( i_dataBlock );
+	}
 
         pullOnAllRodNodes( i_dataBlock );
         

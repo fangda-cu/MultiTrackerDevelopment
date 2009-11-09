@@ -191,14 +191,6 @@ void WmBunsenRodNode::updateRodDataFromInputs()
 		Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
 		(*mx_rodData)[ i ]->prevVertexPositions[ c ] = (*mx_rodData)[ i ]->nextVertexPositions[ c ];
 		(*mx_rodData)[ i ]->nextVertexPositions[ c ] = inputCurveVertex;
-		/*
-                
-                if ( rod->vertFixed( c ) )
-                {
-                     Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
-                    rod->setVertex( c,  inputCurveVertex );
-                }
-		*/
             }
         }
     }
