@@ -12,6 +12,8 @@ MTypeId WmBunsenNode::typeID( 0x80006 );
 MString WmBunsenNode::typeName( "wmBunsenNode" );
 MObject WmBunsenNode::ca_syncAttrs;
 MObject WmBunsenNode::ia_time;
+MObject WmBunsenNode::ia_fps;
+MObject WmBunsenNode::ia_maxDt;
 MObject WmBunsenNode::ia_startTime;
 MObject WmBunsenNode::ia_rodsNodes;
 MObject WmBunsenNode::ia_gravity;
@@ -49,7 +51,7 @@ void WmBunsenNode::pullOnAllRodNodes( MDataBlock& i_dataBlock )
         // and will directly change the data in m_beaker. It's dumb to pass it along Maya connections
         // to here then to beaker. So we cut out the middle man.
     }
-}
+}  
 
 void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock )
 {
@@ -64,6 +66,13 @@ void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock )
   
     MPlug rodPlugArray( thisMObject(), ia_rodsNodes );
     CHECK_MSTATUS( stat );
+	    
+
+    m_beaker->resetEverything();
+    const double3 &gravity = i_dataBlock.inputValue( ia_gravity, &stat ).asDouble3();
+    CHECK_MSTATUS( stat );
+    m_beaker->setGravity( Vec3d( gravity[0], gravity[1], gravity[2] ) );
+
     for ( unsigned int r=0; r < numRodsConnected; r++ ) 
     {
         if ( rodPlugArray.isArray( &stat ) )
@@ -86,12 +95,12 @@ void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock )
                 // Since the rod node is purely there to fill in data that comes from its inputs
                 // and attributes, we don't let it deal with memory allocation. This node is in 
                 // charge of all that.
-                m_beaker->resetEverything();
+
                 m_beaker->createSpaceForRods( r, wmBunsenRodNode->numberOfRods() );
                 
                 wmBunsenRodNode->initialiseRodData( m_beaker->rodData( r ) );
-                
-                // Now the rod node has used initialised the undeformed postitions for the rods
+
+		// Now the rod node has used initialised the undeformed positions for the rods
                 // it owns. Since we are resetting the sim we need to actually now create the
                 // rods and add them to the world.
                 
@@ -113,47 +122,54 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     {
         m_previousTime = m_currentTime;
         m_currentTime = i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
-		CHECK_MSTATUS( stat );
-        
-	    m_startTime = i_dataBlock.inputValue( ia_startTime, &stat ).asDouble();
-		CHECK_MSTATUS( stat );
-        
-        const double3 &gravity = i_dataBlock.inputValue( ia_gravity, &stat ).asDouble3();
-        CHECK_MSTATUS( stat );
-        m_beaker->setGravity( Vec3d( gravity[0], gravity[1], gravity[2] ) );
-		
-        int numberOfThreads = i_dataBlock.inputValue( ia_numberOfThreads, &stat ).asInt();
-		CHECK_MSTATUS( stat );
-        
-     	if ( m_currentTime == m_startTime )
-        {
-            createRodDataFromRodNodes( i_dataBlock );
-		}
-        
-        pullOnAllRodNodes( i_dataBlock );
-        
-		if ( m_currentTime > m_previousTime ) 
-        {
-            m_beaker->takeTimeStep( numberOfThreads );
-    	}
+	CHECK_MSTATUS( stat );
 
-		MDataHandle outputData = i_dataBlock.outputValue ( ca_syncAttrs, &stat );
-		if ( !stat )
+	m_startTime = i_dataBlock.inputValue( ia_startTime, &stat ).asDouble();
+	CHECK_MSTATUS( stat );
+
+	m_framedt = 1.0 / i_dataBlock.inputValue(ia_fps, &stat).asDouble();
+	CHECK_MSTATUS( stat );
+
+	m_beaker->setDt(i_dataBlock.inputValue(ia_maxDt, &stat ).asDouble());
+	CHECK_MSTATUS( stat );	
+
+    const double3 &gravity = i_dataBlock.inputValue( ia_gravity, &stat ).asDouble3();
+    CHECK_MSTATUS( stat );
+    m_beaker->setGravity( Vec3d( gravity[0], gravity[1], gravity[2] ) );
+    
+    int numberOfThreads = i_dataBlock.inputValue( ia_numberOfThreads, &stat ).asInt();
+    CHECK_MSTATUS( stat );
+    
+    if ( m_currentTime == m_startTime )
+    {
+        createRodDataFromRodNodes( i_dataBlock );
+	}
+
+    pullOnAllRodNodes( i_dataBlock );
+        
+	if ( m_currentTime > m_previousTime ) 
+    {
+        // take a step of size 1.0/24.0
+        m_beaker->takeTimeStep( numberOfThreads, m_framedt ); 
+    }
+    
+	MDataHandle outputData = i_dataBlock.outputValue ( ca_syncAttrs, &stat );
+	if ( !stat )
         {
-			stat.perror("WmBunsenNode::compute get ca_syncAttrs");
-			return stat;
-		}
-		
+	    stat.perror("WmBunsenNode::compute get ca_syncAttrs");
+	    return stat;
+	}
+	
         // We don't even need to put anything in the output handle as nothing uses it.
         // Just tell Maya it's clean so it doesn't repeatedly evaluate it.
-
-		stat = i_dataBlock.setClean( i_plug );
-		if ( !stat )
+	
+	stat = i_dataBlock.setClean( i_plug );
+	if ( !stat )
         {
-			stat.perror("WmBunsenNode::compute setClean");
-			return stat;
-		}
+	    stat.perror("WmBunsenNode::compute setClean");
+	    return stat;
 	}
+    }
     else if ( i_plug == oa_simStepTaken )
     {
         // Get time so Maya knows we care about it.
@@ -185,16 +201,17 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     }
     else
     {
-		return MS::kUnknownParameter;
-	}
+	return MS::kUnknownParameter;
+    }
 
-	return MS::kSuccess;
+    return MS::kSuccess;
 }
 
 void WmBunsenNode::draw( M3dView& i_view, const MDagPath& i_path,
                          M3dView::DisplayStyle i_style,
                          M3dView::DisplayStatus i_status )
 { 
+
 	MStatus stat;
 	MObject thisNode = thisMObject();
 
@@ -221,18 +238,18 @@ void WmBunsenNode::draw( M3dView& i_view, const MDagPath& i_path,
 
 bool WmBunsenNode::isBounded() const
 { 
-	return false;
+    return false;
 }
 
 void* WmBunsenNode::creator()
 {
-	return new WmBunsenNode();
+    return new WmBunsenNode();
 }
 
 MStatus WmBunsenNode::initialize()
 { 
     MStatus stat;
-
+    
     {
         MFnUnitAttribute	uAttr;
         ia_time = uAttr.create( "time", "t", MTime( 0.0 ), &stat );
@@ -261,6 +278,36 @@ MStatus WmBunsenNode::initialize()
         nAttr.setKeyable( true );  
         stat = addAttribute( ia_startTime );
         if ( !stat ) { stat.perror( "addAttribute ia_startTime" ); return stat; }
+    }
+
+    {
+	MFnNumericAttribute nAttr;
+    	ia_fps = nAttr.create( "framesPerSecond", "fps", MFnNumericData::kDouble, 24.0, &stat );
+        if ( !stat ) 
+        {
+            stat.perror( "create framesPerSecond attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setKeyable( true );  
+        stat = addAttribute( ia_fps );
+        if ( !stat ) { stat.perror( "addAttribute ia_fps" ); return stat; }
+    }
+
+    {
+	MFnNumericAttribute nAttr;
+    	ia_maxDt = nAttr.create( "maxDt", "mdt", MFnNumericData::kDouble, 1.0, &stat );
+        if ( !stat ) 
+        {
+            stat.perror( "create maxDt attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setKeyable( true );  
+        stat = addAttribute( ia_maxDt );
+        if ( !stat ) { stat.perror( "addAttribute ia_maxDt" ); return stat; }
     }
     
     {
@@ -328,19 +375,23 @@ MStatus WmBunsenNode::initialize()
         if (!stat) { stat.perror( "addAttribute ca_syncAttrs" ); return stat; }
 	}
 
-	stat = attributeAffects( ia_time, ca_syncAttrs );
-	if (!stat) { stat.perror( "attributeAffects ia_time->ca_syncAttrs" ); return stat; }
-	stat = attributeAffects( ia_startTime, ca_syncAttrs );
-	if (!stat) { stat.perror( "attributeAffects ia_startTimer->ca_syncAttrs" ); return stat; }
-	stat = attributeAffects( ia_rodsNodes, ca_syncAttrs );
-	if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
-	stat = attributeAffects( ia_gravity, ca_syncAttrs );
-	if (!stat) { stat.perror( "attributeAffects ia_gravity->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_time, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_time->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_startTime, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_startTimer->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_fps, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_fps->ca_syncAttrs" );return stat;}
+    stat = attributeAffects( ia_maxDt, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_maxDt->ca_syncAttrs" );return stat;}
+    stat = attributeAffects( ia_rodsNodes, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_gravity, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
 	stat = attributeAffects( ia_numberOfThreads, ca_syncAttrs );
 	if (!stat) { stat.perror( "attributeAffects ia_numberOfThreads->ca_syncAttrs" ); return stat; }
-
-	stat = attributeAffects( ia_time, oa_simStepTaken );
-	if (!stat) { stat.perror( "attributeAffects ia_time->oa_simulatedRods" ); return stat; }
     
-	return MS::kSuccess;
+    stat = attributeAffects( ia_time, oa_simStepTaken );
+    if (!stat) { stat.perror( "attributeAffects ia_time->oa_simulatedRods" ); return stat; }
+    
+    return MS::kSuccess;
 }

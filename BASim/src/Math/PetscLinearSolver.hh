@@ -27,6 +27,7 @@ public:
     Mat& pA = smart_cast<PetscMatrix&>(m_A).getPetscMatrix();
     KSPSetOperators(m_kspSolver, pA, pA, SAME_NONZERO_PATTERN);
     KSPSetFromOptions(m_kspSolver);
+
     /*
     const KSPType kspType;
     KSPGetType(m_kspSolver, &kspType);

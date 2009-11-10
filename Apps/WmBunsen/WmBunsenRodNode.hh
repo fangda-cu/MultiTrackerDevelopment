@@ -56,6 +56,7 @@ public:
     static MObject ia_cvsPerRod;
     static MObject ia_youngsModulus;
     static MObject ia_shearModulus;
+    static MObject ia_density;
     static MObject ia_minorRadius;
     static MObject ia_majorRadius;
 

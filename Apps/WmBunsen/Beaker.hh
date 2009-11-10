@@ -74,7 +74,8 @@ public:
     RodTimeStepper* setupRodTimeStepper( ElasticRod& rod );
     
     void draw(void);
-    void takeTimeStep( int i_numberOfThreadsToUse );
+
+    void takeTimeStep( int i_numberOfThreadsToUse, Scalar stepSize );
     
     void addRod( size_t i_rodGroup,
                  vector<Vec3d>& i_initialVertexPositions, 
