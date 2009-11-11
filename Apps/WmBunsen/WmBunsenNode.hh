@@ -52,6 +52,7 @@ public:
     static MObject ia_fps;
     static MObject ia_rodsNodes;
     static MObject ia_gravity;
+    static MObject ia_numberOfThreads;
     
     static MObject ca_syncAttrs;
     static MObject oa_simStepTaken;

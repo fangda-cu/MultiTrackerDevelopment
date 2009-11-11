@@ -154,7 +154,7 @@ void Beaker::addRod( size_t i_rodGroup,
     m_rodDataMap[ i_rodGroup ].push_back( rodData );
 }
 
-void Beaker::takeTimeStep(Scalar stepsize)
+void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar stepsize )
 {
     Scalar dt_save = getDt();
     Scalar currentTime = getTime();
@@ -188,9 +188,8 @@ void Beaker::takeTimeStep(Scalar stepsize)
 	    }
 	}
 
-	
-
-	m_world->execute();
+	//m_world->execute();
+	m_world->executeInParallel( i_numberOfThreadsToUse );
 	setTime( currentTime + getDt() );
 	currentTime = getTime();
     }

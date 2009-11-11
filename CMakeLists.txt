@@ -21,6 +21,7 @@ set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 include (BASimCommon)
 
 # set options
+option (USE_INTEL_COMPILER "Use Intel Compiler" ON)
 option (BUILD_APPS "Build applications" ON)
 option (TEST_ROD_STRETCHING_FORCE "Tests RodStretchingForce" OFF)
 option (TEST_ROD_TWISTING_FORCE "Tests RodTwistingForce" OFF)
@@ -30,9 +31,21 @@ option (BUILD_MAYA_NODES "Build Maya nodes" ON)
 # add some extra warnings
 if (CMAKE_COMPILER_IS_GNUCXX)
   if (CMAKE_SYSTEM_NAME MATCHES Linux)
-    set (CMAKE_C_COMPILER gcc-4.1)
-    set ( CMAKE_CXX_COMPILER  g++-4.1)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wnon-virtual-dtor -ansi -Wcast-align -Wall -Wextra -Wpointer-arith -Wwrite-strings -Wformat-security -fno-common -Wno-unused")
+    if (USE_INTEL_COMPILER)
+      set (CMAKE_C_COMPILER icc)
+      set (CMAKE_CXX_COMPILER  icpc)
+      #add_definitions (-DUSING_INTEL_COMPILER)
+      set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSING_INTEL_COMPILER -openmp")
+      # TBB and Maya do not play nicely, or at least not ICC 11 and Maya 2008, need to get 2010 install
+      # on the laptop to check it out. But Tnn not moving to 2010 till Jan/Feb.
+      #      set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+      #      include_directories ($ENV{TBB_INSTALL_DIR}/include)
+      #      set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I$ENV{TBB_INSTALL_DIR}/include")
+    else (USE_INTEL_COMPILER)
+      set (CMAKE_C_COMPILER gcc-4.1)
+      set ( CMAKE_CXX_COMPILER  g++-4.1)
+      set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wnon-virtual-dtor -ansi -Wcast-align -Wall -Wextra -Wpointer-arith -Wwrite-strings -Wformat-security -fno-common -Wno-unused")
+    endif (USE_INTEL_COMPILER)
     if (CMAKE_BUILD_TYPE MATCHES Release)
       add_definitions (-DNDEBUG)
       set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpmath=sse -msse2 -fno-check-new -fstrict-aliasing") # -fno-exceptions

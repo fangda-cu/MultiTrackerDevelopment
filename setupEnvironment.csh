@@ -8,5 +8,16 @@ setenv MAYA_PLUG_IN_PATH `pwd`/Apps/WmBunsen/:${MAYA_PLUG_IN_PATH}
 setenv MAYA_SCRIPT_PATH `pwd`/../Apps/WmBunsen/:${MAYA_SCRIPT_PATH}
 setenv XBMLANGPATH `pwd`/../Apps/WmBunsen/icons/%B:${XBMLANGPATH}
 
+# weta specific...
+need intel-11.1.056_64
+# Why do I need this, do I need it if I build on my workstation at Weta?
+setenv LD_LIBRARY_PATH /vol/apps_master/apps.Linux64/intel_64/compiler11.1.056/lib/intel64/:/vol/apps_master/apps.Linux64/intel_64/compiler11.1.056/tbb/lib/intel64/:${LD_LIBRARY_PATH}
+#Need to fix the license path as the VPN connection messes up sometimes. Get Jason in systems to
+# change it on the laptop next time I'm up at Manuka...
+setenv LM_LICENSE_FILE   28518@linux-license.wetafx.co.nz:$LM_LICENSE_FILE  
+
+setenv TBB_INSTALL_DIR /vol/apps/intel_64/compiler11.1.056/tbb/
+
+
 
                                                                                       
