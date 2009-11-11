@@ -28,7 +28,7 @@ find_package (OpenCurrent REQUIRED)
 include_directories (${OCU_INCLUDE_DIR})
 
 #include_directories ("/usr/include/c++/4.1.2/")
-=======
+
 # bad, should have a findMKL.cmake
 include_directories (${MKLROOT}/include)
 include_directories (${TBB_INSTALL_DIR}/include)
