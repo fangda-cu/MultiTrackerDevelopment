@@ -78,8 +78,26 @@ public:
       m_A->zeroRows(fixed);
 
       m_solver->solve(m_increment, m_rhs);
-
       m_deltaV += m_increment;
+
+/*
+      if(!m_solver->solve(m_increment, m_rhs)) //solver returns 0 if it succeeds
+	  m_deltaV += m_increment;
+      else // using unconverged results but clamp them first
+	  for(int i=0; i<m_deltaV.size(); i++)
+	  {
+	      Scalar inc, clamp;
+	      clamp = 1.0;
+	      if(m_increment[i] > clamp)
+		  inc = clamp;
+	      else if(m_increment[i] < -clamp)
+		  inc = -clamp;
+	      else
+		  inc = m_increment[i];
+	      m_deltaV[i] += inc;
+	  }
+*/	  
+    
 
       for (int i = 0; i < m_deltaV.size(); ++i) {
         m_diffEq.setV(i, v0(i) + m_deltaV(i));

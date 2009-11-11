@@ -55,6 +55,7 @@ void Beaker::initialiseWorld()
     m_world->add_property( m_time, "time", 0.0 );
     m_world->add_property( m_dt, "time-step", 0.01 );
     m_world->add_property( m_gravity, "gravity", Vec3d(0, -981.0, 0) );
+    m_world->add_property( m_maxIter, "maxIter", 100);
 }
 
 void Beaker::resetEverything()
@@ -166,7 +167,7 @@ void Beaker::takeTimeStep(Scalar stepsize)
 
 	// interpolate fixed vertex positions and set timestep
 	//
-	Scalar normalisedTime = (targetTime - (currentTime + getDt())) / stepsize; //this is actually 1-normalisedTime
+	Scalar normalisedTime = (targetTime - (currentTime + getDt())) / stepsize;
 	for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
 	{
 	    vector<RodData*>& rodData = rdmItr->second;
@@ -174,6 +175,7 @@ void Beaker::takeTimeStep(Scalar stepsize)
 	    for ( size_t r=0; r<numRods; r++ )
 	    {
 		rodData[r]->stepper->setTimeStep(getDt());
+		rodData[r]->stepper->setMaxIterations(getMaxIter());
 		ElasticRod* rod = rodData[r]->rod;
 		for( int c = 0; c < rod->nv(); c++)
 		{
@@ -185,6 +187,8 @@ void Beaker::takeTimeStep(Scalar stepsize)
 		}
 	    }
 	}
+
+	
 
 	m_world->execute();
 	setTime( currentTime + getDt() );

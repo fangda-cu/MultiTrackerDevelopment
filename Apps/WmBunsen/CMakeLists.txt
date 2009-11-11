@@ -21,6 +21,12 @@ find_package (PETSc REQUIRED)
 
 find_package (Maya REQUIRED)
 include_directories (${MAYA_INCLUDE_DIR})
+
+find_package (CUDA REQUIRED)
+
+find_package (OpenCurrent REQUIRED)
+include_directories (${OCU_INCLUDE_DIR})
+
 #include_directories ("/usr/include/c++/4.1.2/")
 ###################
 ## Not sure if there are CMake commands for this but this works for just now
@@ -34,5 +40,5 @@ ADD_LIBRARY(wmBunsen SHARED ${Headers} ${Templates} ${Sources})
 ## We absolutely must link with -Bsymbolic or Maya will crash when the plugin is running!
 SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -shared -fPIC -Wl,-Bsymbolic -pthread -lGLU")
 
-target_link_libraries (wmBunsen BASim ${MAYA_LIBRARIES} ${GLUT_glut_LIBRARY} ${OPENMESH_LIBRARY} ${SMV_LIBRARY} ${wxWidgets_LIBRARIES} ${FLENS_LIBRARIES} ${PETSC_LIBRARIES})
+target_link_libraries (wmBunsen BASim ${MAYA_LIBRARIES} ${GLUT_glut_LIBRARY} ${OPENMESH_LIBRARY} ${SMV_LIBRARY} ${wxWidgets_LIBRARIES} ${FLENS_LIBRARIES} ${PETSC_LIBRARIES} ${OCU_LIBRARIES})
 

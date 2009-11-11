@@ -14,6 +14,7 @@ MObject WmBunsenNode::ca_syncAttrs;
 MObject WmBunsenNode::ia_time;
 MObject WmBunsenNode::ia_fps;
 MObject WmBunsenNode::ia_maxDt;
+MObject WmBunsenNode::ia_maxIter;
 MObject WmBunsenNode::ia_startTime;
 MObject WmBunsenNode::ia_rodsNodes;
 MObject WmBunsenNode::ia_gravity;
@@ -131,6 +132,9 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
 	m_beaker->setDt(i_dataBlock.inputValue(ia_maxDt, &stat ).asDouble());
 	CHECK_MSTATUS( stat );	
+
+	m_beaker->setMaxIter(i_dataBlock.inputValue(ia_maxIter, &stat).asInt());
+	CHECK_MSTATUS( stat );
         
 
 
@@ -306,6 +310,21 @@ MStatus WmBunsenNode::initialize()
         stat = addAttribute( ia_maxDt );
         if ( !stat ) { stat.perror( "addAttribute ia_maxDt" ); return stat; }
     }
+
+   {
+	MFnNumericAttribute nAttr;
+    	ia_maxIter = nAttr.create( "maxIter", "mitr", MFnNumericData::kInt, 100 , &stat );
+        if ( !stat ) 
+        {
+            stat.perror( "create maxIter attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setKeyable( true );  
+        stat = addAttribute( ia_maxIter );
+        if ( !stat ) { stat.perror( "addAttribute ia_maxIter" ); return stat; }
+    }
     
     {
         MFnNumericAttribute nAttr;
@@ -369,6 +388,8 @@ MStatus WmBunsenNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_fps->ca_syncAttrs" );return stat;}
     stat = attributeAffects( ia_maxDt, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_maxDt->ca_syncAttrs" );return stat;}
+    stat = attributeAffects( ia_maxIter, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_maxIter->ca_syncAttrs" );return stat;}
     stat = attributeAffects( ia_rodsNodes, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_gravity, ca_syncAttrs );

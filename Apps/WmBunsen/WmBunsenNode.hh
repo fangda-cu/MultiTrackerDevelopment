@@ -47,6 +47,7 @@ public:
     static MString typeName;
     static MObject ia_time;
     static MObject ia_maxDt;
+    static MObject ia_maxIter; //maximum number of newton iterations
     static MObject ia_startTime;
     static MObject ia_fps;
     static MObject ia_rodsNodes;

@@ -61,11 +61,19 @@ public:
       return m_world->property( m_gravity );
     }
     
-    // FIXME:
-    // Changing this does nothing!
     void setGravity( const Vec3d& gravity )
     {
       m_world->property( m_gravity ) = gravity;
+    }
+
+    const int& getMaxIter() const
+    {
+	return m_world->property( m_maxIter );
+    }
+
+    void setMaxIter(const int& maxIter)
+    {
+	m_world->property( m_maxIter ) = std::max(maxIter,1);
     }
 
     vector<RodData*>* rodData( size_t i_rodGroup )
@@ -95,6 +103,7 @@ private:
     ObjPropHandle<Scalar> m_time;
     ObjPropHandle<Scalar> m_dt;
     ObjPropHandle<Vec3d> m_gravity;
+    ObjPropHandle<int> m_maxIter;
 
 };
 
