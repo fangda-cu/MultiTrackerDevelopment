@@ -51,6 +51,15 @@ public:
   void setFlag(const Flags& flag) { m_flags = (Flags) (m_flags | flag); }
   void unsetFlag(const Flags& flag) { m_flags = (Flags) (m_flags & (~flag)); }
 
+  friend std::ostream& operator<< (std::ostream& os, const MatrixBase& M)
+  {
+    os << "[";
+    for (uint i = 0; i < M.m_rows; i++)
+      for (uint j = 0; j < M.m_cols; j++)
+        os << M(i,j) << (j < M.m_cols-1 ? " " : (i < M.m_rows-1 ? "\n" : "]"));
+    return os;
+  }
+  
 protected:
 
   MatrixBase(int r, int c)

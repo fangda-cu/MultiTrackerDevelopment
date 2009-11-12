@@ -10,12 +10,6 @@
 
 #ifdef USING_INTEL_COMPILER
 
-//#include <tbb/tbb.h>
-//using namespace tbb;
-// Disable warning about using a local type to declare a function. It's a c++98 error and 
-// fine for the lambda usage we use which is from c++0x.
-//#pragma warning(disable: 588)
-
 #include <omp.h>
 
 #endif
@@ -109,11 +103,11 @@ public:
     for ( int i=0; i<numControllers; ++i )
     {
       int threadID = omp_get_thread_num();
-      /* only master node print the number of threads */
+      // only master thread prints the number of threads
       if ( threadID == 0 )
       {
         int nthreads = omp_get_num_threads();
-        printf("World::executeInParallel, using %d threads\n", nthreads );
+       // printf("World::executeInParallel, using %d threads\n", nthreads );
       }
 
       m_controllers[ i ]->execute();

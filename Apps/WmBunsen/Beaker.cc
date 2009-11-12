@@ -155,35 +155,39 @@ void Beaker::addRod( size_t i_rodGroup,
 
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar stepsize )
 {
-    Scalar dt_save = getDt();
+    m_world->executeInParallel( i_numberOfThreadsToUse );
+	setTime( getTime() + getDt() );
+    
+  /*  Scalar dt_save = getDt();
     Scalar currentTime = getTime();
     Scalar targetTime = currentTime + stepsize;
     
     while(currentTime < targetTime)
     {
-	if(targetTime - currentTime < getDt()+SMALL_NUMBER)
-	    setDt(targetTime - currentTime);
+        if(targetTime - currentTime < getDt()+SMALL_NUMBER)
+            setDt(targetTime - currentTime);
 
-	// interpolate fixed vertex positions and set timestep
-	//
-	Scalar normalisedTime = (targetTime - (currentTime + getDt())) / stepsize; //this is actually 1-normalisedTime
-	for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
-	{
-	    vector<RodData*>& rodData = rdmItr->second;
-	    size_t numRods = rodData.size();
-	    for ( size_t r=0; r<numRods; r++ )
-	    {
-		rodData[r]->stepper->setTimeStep(getDt());
-		ElasticRod* rod = rodData[r]->rod;
-		for( int c = 0; c < rod->nv(); c++)
-		{
-		    if(rod->vertFixed( c ) )
-		    {
-			rod->setVertex(c,normalisedTime*rodData[r]->prevVertexPositions[c] + 
-				       (1.0-normalisedTime)*rodData[r]->nextVertexPositions[c]);
-		    }
-		}
-	    }
+        // interpolate fixed vertex positions and set timestep
+        //
+        Scalar normalisedTime = (targetTime - (currentTime + getDt())) / stepsize; //this is actually 1-normalisedTime
+        for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
+        {
+            vector<RodData*>& rodData = rdmItr->second;
+            size_t numRods = rodData.size();
+            for ( size_t r=0; r<numRods; r++ )
+            {
+                rodData[r]->stepper->setTimeStep(getDt());
+                ElasticRod* rod = rodData[r]->rod;
+                for( int c = 0; c < rod->nv(); c++)
+                {
+                    if(rod->vertFixed( c ) )
+                    {
+                        rod->setVertex(c,normalisedTime*rodData[r]->prevVertexPositions[c] + 
+                                       (1.0-normalisedTime)*rodData[r]->nextVertexPositions[c]);
+                    }
+                }
+            }
+        }
 	}
 
 	//m_world->execute();
@@ -192,7 +196,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar stepsize )
 	currentTime = getTime();
     }
     // restore dt
-    setDt(dt_save);
+    setDt(dt_save);*/
 }
 
 RodTimeStepper* Beaker::setupRodTimeStepper( ElasticRod& rod )

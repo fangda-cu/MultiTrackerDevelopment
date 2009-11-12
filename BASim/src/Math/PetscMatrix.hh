@@ -8,8 +8,10 @@
 #ifndef PETSCMATRIX_HH
 #define PETSCMATRIX_HH
 
-namespace BASim {
+using namespace std;
 
+namespace BASim {
+   
 class PetscMatrix : public MatrixBase
 {
 public:

@@ -21,9 +21,11 @@ find_package (PETSc REQUIRED)
 
 find_package (Maya REQUIRED)
 include_directories (${MAYA_INCLUDE_DIR})
-# bad, should have a findMKL.cmake
-include_directories (${MKLROOT}/include)
-include_directories (${TBB_INSTALL_DIR}/include)
+
+if (USE_INTEL_COMPILER)
+    find_package (MKL REQUIRED)
+    include_directories (${MKL_INCLUDE_DIR})
+endif (USE_INTEL_COMPILER)
 
 
 ###################
@@ -36,9 +38,7 @@ ADD_LIBRARY(wmBunsen SHARED ${Headers} ${Templates} ${Sources})
 
 #######
 ## We absolutely must link with -Bsymbolic or Maya will crash when the plugin is running!
-#SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -shared -fPIC -Wl,-Bsymbolic -pthread -lGLU -L$ENV{TBB_INSTALL_DIR}/lib/intel64/ -ltbb")
 SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -shared -fPIC -Wl,-Bsymbolic -pthread -lGLU -openmp")
 
-
-target_link_libraries (wmBunsen BASim ${MAYA_LIBRARIES} ${GLUT_glut_LIBRARY} ${OPENMESH_LIBRARY} ${SMV_LIBRARY} ${wxWidgets_LIBRARIES} ${FLENS_LIBRARIES} ${PETSC_LIBRARIES})
-
+#target_link_libraries (wmBunsen BASim ${MAYA_LIBRARIES} ${GLUT_glut_LIBRARY} ${OPENMESH_LIBRARY} ${SMV_LIBRARY} ${wxWidgets_LIBRARIES} ${FLENS_LIBRARIES} ${PETSC_LIBRARIES}  ${MKL_LIBRARIES})
+target_link_libraries (wmBunsen BASim ${MAYA_LIBRARIES} ${GLUT_glut_LIBRARY} ${OPENMESH_LIBRARY} ${SMV_LIBRARY} ${wxWidgets_LIBRARIES} ${FLENS_LIBRARIES} ${PETSC_LIBRARIES}  $ENV{MKLROOT}/lib/em64t/libmkl_solver_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/em64t/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/em64t/libmkl_intel_thread.a $ENV{MKLROOT}/lib/em64t/libmkl_core.a -Wl,--end-group -openmp -lpthread)

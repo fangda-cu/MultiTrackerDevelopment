@@ -20,7 +20,7 @@ endif (MAYA_INCLUDE_DIR AND MAYA_LIBRARIES)
 ##############################################################
 find_path (MAYA_INCLUDE_PATH
   /include/maya/MPxNode.h
-  HINTS MAYA_LOCATION ENV MAYA_LOCATION
+  HINTS ENV MAYA_LOCATION
   )
 
 ##############################################################
@@ -33,10 +33,9 @@ set (MAYA_LIBRARIES_MISSING)
 set (MAYA_LIBS OpenMaya OpenMayaUI OpenMayaAnim OpenMayaFX OpenMayaRender)
 foreach (MAYALIB ${MAYA_LIBS})
     set (MAYA_SEARCH_LIB "MAYA_SEARCH_LIB-NOTFOUND" CACHE FILEPATH "Cleared" FORCE)
-    find_library (MAYA_SEARCH_LIB ${MAYALIB} HINTS ${MAYA_LOCATION}/lib)
+    find_library (MAYA_SEARCH_LIB ${MAYALIB} PATHS $ENV{MAYA_LOCATION}/lib)
     if (MAYA_SEARCH_LIB)
         list (APPEND MAYA_LIBRARIES_FOUND ${MAYA_SEARCH_LIB})
-        #MESSAGE("searching for: ${MAYALIB}, found ${MAYA_SEARCH_LIB}")
     else (MAYA_SEARCH_LIB)
         list (APPEND MAYA_LIBRARIES_MISSING ${MAYA_SEARCH_LIB})
         message (SEND_ERROR "Unable to find Maya library ${MAYA_SEARCH_LIB}")
@@ -52,7 +51,7 @@ include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (MAYA "MAYA not found. Set MAYA_LOCATION " MAYA_INCLUDE_PATH MAYA_LIBRARY)
 
 if (MAYA_FOUND)
-  set (MAYA_INCLUDE_DIR ${MAYA_LOCATION}/include)
+  set (MAYA_INCLUDE_DIR ${MAYA_INCLUDE_PATH}/include)
   set (MAYA_LIBRARIES ${MAYA_LIBRARY})
   set (MAYA_CXX_FLAGS "-Dlinux -DLINUX -DREQUIRE_IOSTREAM -D_BOOL -fPIC -g")
 else (MAYA_FOUND)

@@ -19,5 +19,13 @@ include_directories (${TCLAP_INCLUDE_DIR})
 
 find_package (PETSc REQUIRED)
 
+if (USE_INTEL_COMPILER)
+    find_package (MKL REQUIRED)
+    include_directories (${MKL_INCLUDE_DIR})
+endif (USE_INTEL_COMPILER)
+
+SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pthread -openmp")
+
 add_executable (BASimulator ${Headers} ${Templates} ${Sources})
-target_link_libraries (BASimulator BASim ${OPENGL_LIBRARIES} ${GLUT_glut_LIBRARY} ${OPENMESH_LIBRARY} ${SMV_LIBRARY} ${wxWidgets_LIBRARIES} ${FLENS_LIBRARIES} ${PETSC_LIBRARIES})
+target_link_libraries (BASimulator BASim ${OPENGL_LIBRARIES} ${GLUT_glut_LIBRARY} ${OPENMESH_LIBRARY} ${SMV_LIBRARY} ${wxWidgets_LIBRARIES} ${FLENS_LIBRARIES} ${PETSC_LIBRARIES} ${MKL_LIBRARIES})
+

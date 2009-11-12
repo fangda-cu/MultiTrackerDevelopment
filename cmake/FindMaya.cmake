@@ -38,7 +38,7 @@ foreach (MAYALIB ${MAYA_LIBS})
         list (APPEND MAYA_LIBRARIES_FOUND ${MAYA_SEARCH_LIB})
     else (MAYA_SEARCH_LIB)
         list (APPEND MAYA_LIBRARIES_MISSING ${MAYA_SEARCH_LIB})
-        message (SEND_ERROR "Unable to find Maya library ${MAYA_SEARCH_LIB}")
+        message (SEND_ERROR "Unable to find Maya library ${MAYALIB}")
     endif (MAYA_SEARCH_LIB)
 endforeach (MAYALIB)
 

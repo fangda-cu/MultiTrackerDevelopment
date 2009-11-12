@@ -34,21 +34,15 @@ if (CMAKE_COMPILER_IS_GNUCXX)
     if (USE_INTEL_COMPILER)
       set (CMAKE_C_COMPILER icc)
       set (CMAKE_CXX_COMPILER  icpc)
-      #add_definitions (-DUSING_INTEL_COMPILER)
       set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSING_INTEL_COMPILER -openmp")
-      # TBB and Maya do not play nicely, or at least not ICC 11 and Maya 2008, need to get 2010 install
-      # on the laptop to check it out. But Tnn not moving to 2010 till Jan/Feb.
-      #      set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-      #      include_directories ($ENV{TBB_INSTALL_DIR}/include)
-      #      set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I$ENV{TBB_INSTALL_DIR}/include")
     else (USE_INTEL_COMPILER)
       set (CMAKE_C_COMPILER gcc-4.1)
       set ( CMAKE_CXX_COMPILER  g++-4.1)
-      set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wnon-virtual-dtor -ansi -Wcast-align -Wall -Wextra -Wpointer-arith -Wwrite-strings -Wformat-security -fno-common -Wno-unused")
     endif (USE_INTEL_COMPILER)
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wnon-virtual-dtor -ansi -Wcast-align -Wall -Wextra -Wpointer-arith -Wwrite-strings -Wformat-security -fno-common -Wno-unused")
     if (CMAKE_BUILD_TYPE MATCHES Release)
       add_definitions (-DNDEBUG)
-      set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpmath=sse -msse2 -fno-check-new -fstrict-aliasing") # -fno-exceptions
+      set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-check-new -fstrict-aliasing") # -fno-exceptions
     endif (CMAKE_BUILD_TYPE MATCHES Release)
   endif (CMAKE_SYSTEM_NAME MATCHES Linux)
 endif (CMAKE_COMPILER_IS_GNUCXX)
@@ -66,6 +60,11 @@ include_directories (${EIGEN_INCLUDE_DIR})
 
 find_package (PETSc REQUIRED)
 include_directories (${PETSC_INCLUDE_PATH})
+
+if (USE_INTEL_COMPILER)
+    find_package (MKL REQUIRED)
+    include_directories (${MKL_INCLUDE_DIR})
+endif (USE_INTEL_COMPILER)
 
 find_package (PNG)
 if (PNG_FOUND)
