@@ -22,7 +22,7 @@
 using namespace BASim;
 using namespace tr1;
 
-Beaker::Beaker()
+Beaker::Beaker() : m_gravity( 0, -981.0, 0 )
 {
     m_rodDataMap.clear();
     initialiseWorld();
@@ -52,10 +52,10 @@ Beaker::~Beaker()
 void Beaker::initialiseWorld()
 {
     m_world = new World();
-    m_world->add_property( m_time, "time", 0.0 );
-    m_world->add_property( m_dt, "time-step", 0.01 );
-    m_world->add_property( m_gravity, "gravity", Vec3d(0, -981.0, 0) );
-    m_world->add_property( m_maxIter, "maxIter", 100);
+    m_world->add_property( m_timeHandle, "time", 0.0 );
+    m_world->add_property( m_dtHandle, "time-step", 0.01 );
+    m_world->add_property( m_gravityHandle, "gravity", m_gravity );
+    m_world->add_property( m_maxIterHandle, "maxIter", 100);
 }
 
 void Beaker::resetEverything()

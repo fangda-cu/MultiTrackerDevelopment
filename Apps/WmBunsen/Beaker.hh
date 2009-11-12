@@ -36,42 +36,43 @@ public:
     
     const Scalar& getTime() const
     {
-        return m_world->property( m_time );
+        return m_world->property( m_timeHandle );
     }
 
     void setTime( const Scalar& time )
     {
-        m_world->property( m_time ) = time;
+        m_world->property( m_timeHandle ) = time;
     }
 
     const Scalar& getDt() const
     {
-        return m_world->property( m_dt );
+        return m_world->property( m_dtHandle );
     }
 
     void setDt( const Scalar& dt )
     {
-        m_world->property( m_dt ) = dt;
+        m_world->property( m_dtHandle ) = dt;
     }
 
     const Vec3d& getGravity() const
     {
-      return m_world->property( m_gravity );
+      return m_world->property( m_gravityHandle );
     }
     
     void setGravity( const Vec3d& gravity )
     {
-      m_world->property( m_gravity ) = gravity;
+        m_gravity = gravity;
+        m_world->property( m_gravityHandle ) = m_gravity;
     }
 
     const int& getMaxIter() const
     {
-	return m_world->property( m_maxIter );
+        return m_world->property( m_maxIterHandle );
     }
 
     void setMaxIter(const int& maxIter)
     {
-	m_world->property( m_maxIter ) = std::max(maxIter,1);
+        m_world->property( m_maxIterHandle ) = std::max(maxIter,1);
     }
 
     vector<RodData*>* rodData( size_t i_rodGroup )
@@ -100,11 +101,12 @@ private:
     World* m_world;
     RodDataMap m_rodDataMap;
     
-    ObjPropHandle<Scalar> m_time;
-    ObjPropHandle<Scalar> m_dt;
-    ObjPropHandle<Vec3d> m_gravity;
-    ObjPropHandle<int> m_maxIter;
-
+    ObjPropHandle<Scalar> m_timeHandle;
+    ObjPropHandle<Scalar> m_dtHandle;
+    ObjPropHandle<Vec3d> m_gravityHandle;
+    ObjPropHandle<int> m_maxIterHandle;
+    
+    Vec3d m_gravity;
 };
 
 #endif // BEAKER_HH_
