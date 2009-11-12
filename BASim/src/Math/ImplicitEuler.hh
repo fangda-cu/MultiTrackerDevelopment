@@ -57,8 +57,10 @@ public:
 
     m_diffEq.evaluatePDot(m_rhs);
     m_rhs *= m_dt;
+    int iter;
+    double residual = 0;
 
-    for (int iter = 0; iter < m_maxIterations; ++iter) {
+    for (iter = 0; iter < m_maxIterations; ++iter) {
       m_diffEq.evaluatePDotDX(*m_A);
       m_A->finalize();
       m_A->scale(m_dt);
@@ -87,8 +89,26 @@ public:
       m_A->zeroRows(fixed);
       
       m_solver->solve(m_increment, m_rhs);
-
       m_deltaV += m_increment;
+
+/*
+      if(!m_solver->solve(m_increment, m_rhs)) //solver returns 0 if it succeeds
+	  m_deltaV += m_increment;
+      else // using unconverged results but clamp them first
+	  for(int i=0; i<m_deltaV.size(); i++)
+	  {
+	      Scalar inc, clamp;
+	      clamp = 1.0;
+	      if(m_increment[i] > clamp)
+		  inc = clamp;
+	      else if(m_increment[i] < -clamp)
+		  inc = -clamp;
+	      else
+		  inc = m_increment[i];
+	      m_deltaV[i] += inc;
+	  }
+*/	  
+    
 
       for (int i = 0; i < m_deltaV.size(); ++i) {
         m_diffEq.setV(i, v0(i) + m_deltaV(i));
@@ -97,7 +117,7 @@ public:
 
       m_diffEq.flush();
 
-      if (iter == m_maxIterations - 1) break;
+//      if (iter == m_maxIterations - 1) break;
 
       // check for convergence
       m_rhs.setZero();
@@ -106,12 +126,16 @@ public:
       for (int i = 0; i < m_increment.size(); ++i)
         m_increment(i) = m_diffEq.getMass(i) * m_deltaV(i);
       for (size_t i = 0; i < fixed.size(); ++i) m_rhs(fixed[i]) = 0;
-      if ((m_increment - m_rhs).norm() < 1.0e-10) {
+      residual = (m_increment - m_rhs).norm();
+      if (residual< 1.0e-10) {
         break;
       }
       m_increment.setZero();
       m_A->setZero();      
     }
+    if(iter == m_maxIterations)
+	std::cout<<"Newton failed to converge after "<<m_maxIterations<<" iterations with residual "<< residual<<std::endl;
+
   }
 
   void resize()

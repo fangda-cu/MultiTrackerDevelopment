@@ -41,9 +41,9 @@ WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_rodData( NULL ),
 {
     m_rodOptions.YoungsModulus = 100000.0;
     m_rodOptions.ShearModulus = 375.0;
-    m_rodOptions.density = 1.0;
-    m_rodOptions.radiusA = 0.5;
-    m_rodOptions.radiusB = 1.0;
+    m_rodOptions.density = 0.01;
+    m_rodOptions.radiusA = 0.1;
+    m_rodOptions.radiusB = 0.1;
 }
 
 WmBunsenRodNode::~WmBunsenRodNode()
@@ -569,15 +569,15 @@ void* WmBunsenRodNode::creator()
     stat = attributeAffects( ia_shearModulus, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_shearModulus->ca_syncAttrs" ); return stat; }
 
-	addNumericAttribute( ia_density, "density", "dns", MFnNumericData::kDouble, 1.0, true);
+	addNumericAttribute( ia_density, "density", "dns", MFnNumericData::kDouble, 0.01, true);
 	stat = attributeAffects(ia_density, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_density->ca_syncAttrs" ); return stat; }
     
-    addNumericAttribute( ia_minorRadius, "minorRadius", "mir", MFnNumericData::kDouble, 0.5, true );
+    addNumericAttribute( ia_minorRadius, "minorRadius", "mir", MFnNumericData::kDouble, 0.1, true );
     stat = attributeAffects( ia_minorRadius, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_minorRadius->ca_syncAttrs" ); return stat; }
 
-    addNumericAttribute( ia_majorRadius, "majorRadius", "mar", MFnNumericData::kDouble, 1.0, true );
+    addNumericAttribute( ia_majorRadius, "majorRadius", "mar", MFnNumericData::kDouble, 0.1, true );
     stat = attributeAffects( ia_majorRadius, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_majorRadius->ca_syncAttrs" ); return stat; }
     

@@ -6,10 +6,10 @@ global proc AEwmBunsenNodeTemplate(string $nodeName)
     editorTemplate -beginLayout "Solver Attributes" -collapse 0;
     	editorTemplate -callCustom "setSolverNew" "setSolverReplace" "solver";
         editorTemplate -addControl "numberOfThreads";
-        
         editorTemplate -addControl "startTime";
         editorTemplate -addControl "framesPerSecond";
         editorTemplate -addControl "maxDt";
+        editorTemplate -addControl "maxIter";
         editorTemplate -addControl "gravity";
     editorTemplate -endLayout;
 

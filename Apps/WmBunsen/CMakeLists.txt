@@ -27,9 +27,23 @@ if (USE_INTEL_COMPILER)
     include_directories (${MKL_INCLUDE_DIR})
 endif (USE_INTEL_COMPILER)
 
+find_package (CUDA REQUIRED)
 
-###################
-## Not sure if there are CMake commands for this but this works for just now
+find_package (OpenCurrent REQUIRED)
+include_directories (${OCU_INCLUDE_DIR})
+
+#include_directories ("/usr/include/c++/4.1.2/")
+
+# bad, should have a findMKL.cmake
+include_directories (${MKLROOT}/include)
+include_directories (${TBB_INSTALL_DIR}/include)
+
+###########################################################################################
+#
+# I'm still working on the dependencies for MKL etc, I'll tidy this file up as I figure
+# out how to get it running on my workstation and my laptop.
+#
+###########################################################################################
 if (CMAKE_SYSTEM_NAME MATCHES Linux)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MAYA_CXX_FLAGS}")
 endif (CMAKE_SYSTEM_NAME MATCHES Linux)
@@ -40,5 +54,5 @@ ADD_LIBRARY(wmBunsen SHARED ${Headers} ${Templates} ${Sources})
 ## We absolutely must link with -Bsymbolic or Maya will crash when the plugin is running!
 SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -shared -fPIC -Wl,-Bsymbolic -pthread -lGLU -openmp")
 
-#target_link_libraries (wmBunsen BASim ${MAYA_LIBRARIES} ${GLUT_glut_LIBRARY} ${OPENMESH_LIBRARY} ${SMV_LIBRARY} ${wxWidgets_LIBRARIES} ${FLENS_LIBRARIES} ${PETSC_LIBRARIES}  ${MKL_LIBRARIES})
 target_link_libraries (wmBunsen BASim ${MAYA_LIBRARIES} ${GLUT_glut_LIBRARY} ${OPENMESH_LIBRARY} ${SMV_LIBRARY} ${wxWidgets_LIBRARIES} ${FLENS_LIBRARIES} ${PETSC_LIBRARIES}  $ENV{MKLROOT}/lib/em64t/libmkl_solver_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/em64t/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/em64t/libmkl_intel_thread.a $ENV{MKLROOT}/lib/em64t/libmkl_core.a -Wl,--end-group -openmp -lpthread)
+
