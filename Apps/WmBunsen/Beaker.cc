@@ -74,7 +74,6 @@ void Beaker::resetEverything()
     }
     m_rodDataMap.clear();
     
-    
     delete m_world;
     
     initialiseWorld();
@@ -93,7 +92,7 @@ void Beaker::createSpaceForRods( size_t i_rodGroup, size_t i_numRods )
     }
 }
 
-void Beaker::createRods( size_t i_rodGroup )
+void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary solverLibrary )
 {
     vector<RodData*>& rodDataVector = m_rodDataMap[ i_rodGroup ];
     size_t numRods = rodDataVector.size();
@@ -112,7 +111,7 @@ void Beaker::createRods( size_t i_rodGroup )
         rodDataVector[ r ]->rod->fixEdge( 0 );
         //rod->fixEdge( rod->ne() - 1 );
         
-        rodDataVector[ r ]->stepper = setupRodTimeStepper( *(rodDataVector[ r ]->rod) );
+        rodDataVector[ r ]->stepper = setupRodTimeStepper( *(rodDataVector[ r ]->rod), solverLibrary );
         
         m_world->addObject( rodDataVector[ r ]->rod );
         m_world->addController( rodDataVector[ r ]->stepper );
@@ -123,7 +122,7 @@ void Beaker::createRods( size_t i_rodGroup )
         rodDataVector[ r ]->shouldSimulate = true;
     }
 }
-
+/*
 void Beaker::addRod( size_t i_rodGroup,
                      vector<Vec3d>& i_initialVertexPositions, 
                      vector<Vec3d>& i_undeformedVertexPositions,
@@ -151,7 +150,7 @@ void Beaker::addRod( size_t i_rodGroup,
     
     RodData* rodData = new RodData( rod, stepper, rodRenderer );
     m_rodDataMap[ i_rodGroup ].push_back( rodData );
-}
+}*/
 
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar stepsize )
 {
@@ -199,7 +198,8 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar stepsize )
     setDt(dt_save);*/
 }
 
-RodTimeStepper* Beaker::setupRodTimeStepper( ElasticRod& rod )
+RodTimeStepper* Beaker::setupRodTimeStepper( ElasticRod& rod, 
+    ObjectControllerBase::SolverLibrary solverLibrary )
 {
     RodTimeStepper* stepper = new RodTimeStepper( rod );
     
@@ -211,7 +211,7 @@ RodTimeStepper* Beaker::setupRodTimeStepper( ElasticRod& rod )
     } 
     else if (integrator == "implicit") 
     {
-        stepper->setDiffEqSolver( RodTimeStepper::IMPL_EULER );
+        stepper->setDiffEqSolver( RodTimeStepper::IMPL_EULER, solverLibrary );
     } 
     else 
     {

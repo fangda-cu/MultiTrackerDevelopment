@@ -14,6 +14,7 @@ namespace BASim {
 class ObjectControllerBase
 {
 public:
+  enum SolverLibrary { PETSC_SOLVER, MKL_SOLVER }; 
 
   ObjectHandle addObject(ObjectBase& object);
 

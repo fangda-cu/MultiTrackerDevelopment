@@ -63,7 +63,7 @@ public:
     return *m_diffEqSolver;
   }
 
-  void setDiffEqSolver(Method method)
+  void setDiffEqSolver(Method method, ObjectControllerBase::SolverLibrary solverLibrary=PETSC_SOLVER)
   {
     if (method == m_method) return;
 
@@ -75,7 +75,7 @@ public:
       m_diffEqSolver = new SymplecticEuler<RodTimeStepper>(*this);
 
     } else if (method == IMPL_EULER) {
-      m_diffEqSolver = new ImplicitEuler<RodTimeStepper>(*this);
+      m_diffEqSolver = new ImplicitEuler<RodTimeStepper>(*this, solverLibrary);
 
     } else if (method == NONE) {
       m_diffEqSolver = NULL;

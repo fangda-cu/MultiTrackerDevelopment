@@ -18,6 +18,7 @@ MObject WmBunsenNode::ia_startTime;
 MObject WmBunsenNode::ia_rodsNodes;
 MObject WmBunsenNode::ia_gravity;
 MObject WmBunsenNode::ia_numberOfThreads;
+MObject WmBunsenNode::ia_solver;
 MObject WmBunsenNode::oa_simStepTaken;
 
 WmBunsenNode::WmBunsenNode() : m_initialised( false ), m_beaker( NULL )
@@ -53,25 +54,19 @@ void WmBunsenNode::pullOnAllRodNodes( MDataBlock& i_dataBlock )
     }
 }  
 
-void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock )
+void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock, 
+    ObjectControllerBase::SolverLibrary solverLibrary )
 {
     MStatus stat;
     
     // Run through each attached rod node and create the associated rod data structure inside 
     // Beaker. This will get called after all the rods have been deleted as Maya has
     // just been moved to start time.
-    MArrayDataHandle inArrayH = i_dataBlock.inputArrayValue( ia_rodsNodes, &stat );
-    CHECK_MSTATUS(stat);
-    size_t numRodsConnected = inArrayH.elementCount();
   
     MPlug rodPlugArray( thisMObject(), ia_rodsNodes );
     CHECK_MSTATUS( stat );
-	    
-
-    m_beaker->resetEverything();
-    const double3 &gravity = i_dataBlock.inputValue( ia_gravity, &stat ).asDouble3();
+    size_t numRodsConnected = rodPlugArray.numConnectedElements( &stat );
     CHECK_MSTATUS( stat );
-    m_beaker->setGravity( Vec3d( gravity[0], gravity[1], gravity[2] ) );
 
     for ( unsigned int r=0; r < numRodsConnected; r++ ) 
     {
@@ -95,16 +90,15 @@ void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock )
                 // Since the rod node is purely there to fill in data that comes from its inputs
                 // and attributes, we don't let it deal with memory allocation. This node is in 
                 // charge of all that.
-
                 m_beaker->createSpaceForRods( r, wmBunsenRodNode->numberOfRods() );
                 
                 wmBunsenRodNode->initialiseRodData( m_beaker->rodData( r ) );
 
-		// Now the rod node has used initialised the undeformed positions for the rods
+                // Now the rod node has used initialised the undeformed positions for the rods
                 // it owns. Since we are resetting the sim we need to actually now create the
                 // rods and add them to the world.
                 
-                m_beaker->createRods( r );
+                m_beaker->createRods( r, solverLibrary );
             }
             else
                 CHECK_MSTATUS( stat );
@@ -122,53 +116,63 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     {
         m_previousTime = m_currentTime;
         m_currentTime = i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
-	CHECK_MSTATUS( stat );
+        CHECK_MSTATUS( stat );
 
-	m_startTime = i_dataBlock.inputValue( ia_startTime, &stat ).asDouble();
-	CHECK_MSTATUS( stat );
+        m_startTime = i_dataBlock.inputValue( ia_startTime, &stat ).asDouble();
+        CHECK_MSTATUS( stat );
 
-	m_framedt = 1.0 / i_dataBlock.inputValue(ia_fps, &stat).asDouble();
-	CHECK_MSTATUS( stat );
+        m_framedt = 1.0 / i_dataBlock.inputValue(ia_fps, &stat).asDouble();
+        CHECK_MSTATUS( stat );
 
-	m_beaker->setDt(i_dataBlock.inputValue(ia_maxDt, &stat ).asDouble());
-	CHECK_MSTATUS( stat );	
+        m_beaker->setDt(i_dataBlock.inputValue(ia_maxDt, &stat ).asDouble());
+        CHECK_MSTATUS( stat );	
 
-    const double3 &gravity = i_dataBlock.inputValue( ia_gravity, &stat ).asDouble3();
-    CHECK_MSTATUS( stat );
-    m_beaker->setGravity( Vec3d( gravity[0], gravity[1], gravity[2] ) );
+        const double3 &gravity = i_dataBlock.inputValue( ia_gravity, &stat ).asDouble3();
+        CHECK_MSTATUS( stat );
+        m_beaker->setGravity( Vec3d( gravity[0], gravity[1], gravity[2] ) );
     
-    int numberOfThreads = i_dataBlock.inputValue( ia_numberOfThreads, &stat ).asInt();
-    CHECK_MSTATUS( stat );
-    
-    if ( m_currentTime == m_startTime )
-    {
-        createRodDataFromRodNodes( i_dataBlock );
-	}
-
-    pullOnAllRodNodes( i_dataBlock );
+        int numberOfThreads = i_dataBlock.inputValue( ia_numberOfThreads, &stat ).asInt();
+        CHECK_MSTATUS( stat );
         
-	if ( m_currentTime > m_previousTime ) 
-    {
-        // take a step of size 1.0/24.0
-        m_beaker->takeTimeStep( numberOfThreads, m_framedt ); 
-    }
-    
-	MDataHandle outputData = i_dataBlock.outputValue ( ca_syncAttrs, &stat );
-	if ( !stat )
+        int solver = i_dataBlock.inputValue( ia_solver, &stat ).asInt();
+        
+        if ( m_currentTime == m_startTime )
         {
-	    stat.perror("WmBunsenNode::compute get ca_syncAttrs");
-	    return stat;
-	}
+            m_beaker->resetEverything();
+            
+            ObjectControllerBase::SolverLibrary solverLibrary;
+            if ( solver == 0 )
+                solverLibrary = ObjectControllerBase::MKL_SOLVER;
+            else
+                solverLibrary = ObjectControllerBase::PETSC_SOLVER;
+            
+            createRodDataFromRodNodes( i_dataBlock, solverLibrary );
+        }
+
+        pullOnAllRodNodes( i_dataBlock );
+        
+        if ( m_currentTime > m_previousTime ) 
+        {
+            // take a step of size 1.0/24.0
+            m_beaker->takeTimeStep( numberOfThreads, m_framedt ); 
+        }
+    
+        MDataHandle outputData = i_dataBlock.outputValue ( ca_syncAttrs, &stat );
+        if ( !stat )
+        {
+            stat.perror("WmBunsenNode::compute get ca_syncAttrs");
+            return stat;
+        }
 	
         // We don't even need to put anything in the output handle as nothing uses it.
         // Just tell Maya it's clean so it doesn't repeatedly evaluate it.
 	
-	stat = i_dataBlock.setClean( i_plug );
-	if ( !stat )
+        stat = i_dataBlock.setClean( i_plug );
+        if ( !stat )
         {
-	    stat.perror("WmBunsenNode::compute setClean");
-	    return stat;
-	}
+            stat.perror("WmBunsenNode::compute setClean");
+            return stat;
+        }
     }
     else if ( i_plug == oa_simStepTaken )
     {
@@ -358,7 +362,21 @@ MStatus WmBunsenNode::initialize()
         stat = addAttribute( ia_gravity );
         if (!stat) { stat.perror( "addAttribute ia_gravity" ); return stat; }
     }
-    
+ 
+   {
+        MFnNumericAttribute nAttr;
+        ia_solver = nAttr.create( "solver", "sol", MFnNumericData::kInt, 0, &stat );
+        if ( !stat ) {
+            stat.perror( "create solver attribute" );
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_solver );
+        if (!stat) { stat.perror( "addAttribute ia_solver" ); return stat; }
+    }
+ 
     {
         MFnNumericAttribute	nAttr;
         ca_syncAttrs = nAttr.create( "syncAttrs", "sya", MFnNumericData::kDouble, 1.0, &stat );
@@ -386,6 +404,8 @@ MStatus WmBunsenNode::initialize()
     stat = attributeAffects( ia_rodsNodes, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_gravity, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
+	stat = attributeAffects( ia_solver, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
 	stat = attributeAffects( ia_numberOfThreads, ca_syncAttrs );
 	if (!stat) { stat.perror( "attributeAffects ia_numberOfThreads->ca_syncAttrs" ); return stat; }

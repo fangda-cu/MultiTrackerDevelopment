@@ -4,13 +4,36 @@ global proc AEwmBunsenNodeTemplate(string $nodeName)
     editorTemplate -beginScrollLayout;
 
     editorTemplate -beginLayout "Solver Attributes" -collapse 0;
+    	editorTemplate -callCustom "setSolverNew" "setSolverReplace" "solver";
         editorTemplate -addControl "numberOfThreads";
+        
         editorTemplate -addControl "startTime";
-	editorTemplate -addControl "framesPerSecond";
-	editorTemplate -addControl "maxDt";
+        editorTemplate -addControl "framesPerSecond";
+        editorTemplate -addControl "maxDt";
         editorTemplate -addControl "gravity";
     editorTemplate -endLayout;
 
     editorTemplate -addExtraControls;
     editorTemplate -endScrollLayout;
+}
+
+global proc setSolverNew( string $attrName )
+{
+	// Maya the "quick set" control for the scale attribute
+	radioButtonGrp
+		-label "Solver"
+		-numberOfRadioButtons 2
+		-label1 "MKL"
+		-data1 0
+		-label2 "Petsc"
+		-data2 1
+		solverGrp;
+	connectControl solverGrp $attrName;
+}
+
+global proc setSolverReplace( string $attrName )
+{
+   // Install the connection between the radioButtonGrp and the
+   // actual solver attribute
+   connectControl solverGrp $attrName;
 }

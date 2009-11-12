@@ -71,21 +71,22 @@ public:
         return &( m_rodDataMap[ i_rodGroup ] );
     }
     
-    RodTimeStepper* setupRodTimeStepper( ElasticRod& rod );
+    RodTimeStepper* setupRodTimeStepper( ElasticRod& rod, 
+        ObjectControllerBase::SolverLibrary solverLibrary );
     
     void draw(void);
 
     void takeTimeStep( int i_numberOfThreadsToUse, Scalar stepSize );
     
-    void addRod( size_t i_rodGroup,
+    /*(void addRod( size_t i_rodGroup,
                  vector<Vec3d>& i_initialVertexPositions, 
                  vector<Vec3d>& i_undeformedVertexPositions,
-                 RodOptions& i_options );
+                 RodOptions& i_options );*/
     
     void initialiseWorld();
     void resetEverything();
     void createSpaceForRods( size_t i_rodGroup, size_t i_numRods );
-    void createRods( size_t i_rodGroup );
+    void createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary solverLibrary );
 
 private:
     World* m_world;

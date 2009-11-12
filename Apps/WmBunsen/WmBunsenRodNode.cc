@@ -89,8 +89,8 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
         // ever cause a resize when we are called by initialiseRodData().
         (*mx_rodData)[ i ]->undeformedVertexPositions.resize( nCVs );
         (*mx_rodData)[ i ]->initialVertexPositions.resize( nCVs );
-	(*mx_rodData)[ i ]->prevVertexPositions.resize( nCVs );
-	(*mx_rodData)[ i ]->nextVertexPositions.resize( nCVs );
+        (*mx_rodData)[ i ]->prevVertexPositions.resize( nCVs );
+        (*mx_rodData)[ i ]->nextVertexPositions.resize( nCVs );
         
         std::string frame = "time";
         if ( frame == "time" ) 
@@ -122,8 +122,8 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
         for ( size_t v=0; v<numVertices; v++ )
         {
             (*mx_rodData)[ r ]->initialVertexPositions[ v ] = (*mx_rodData)[ r ]->undeformedVertexPositions[ v ];
-	    (*mx_rodData)[ r ]->prevVertexPositions[ v ] = (*mx_rodData)[ r ]->undeformedVertexPositions[ v ];
-	    (*mx_rodData)[ r ]->nextVertexPositions[ v ] = (*mx_rodData)[ r ]->undeformedVertexPositions[ v ];
+            (*mx_rodData)[ r ]->prevVertexPositions[ v ] = (*mx_rodData)[ r ]->undeformedVertexPositions[ v ];
+            (*mx_rodData)[ r ]->nextVertexPositions[ v ] = (*mx_rodData)[ r ]->undeformedVertexPositions[ v ];
         }
     }
 }
@@ -178,7 +178,7 @@ void WmBunsenRodNode::updateRodDataFromInputs()
             rod->setRadius( m_rodOptions.radiusA, m_rodOptions.radiusB );
             rod->setYoungsModulus( m_rodOptions.YoungsModulus );
             rod->setShearModulus( m_rodOptions.ShearModulus );
-	    rod->setDensity(m_rodOptions.density);
+            rod->setDensity(m_rodOptions.density);
             
             int numVertices = rod->nv();
             for ( int c = 0; c < numVertices ; ++c ) 
@@ -188,9 +188,9 @@ void WmBunsenRodNode::updateRodDataFromInputs()
                 stat = inCurveFn.getCV( c,cv,MSpace::kObject );
                 CHECK_MSTATUS( stat );
 
-		Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
-		(*mx_rodData)[ i ]->prevVertexPositions[ c ] = (*mx_rodData)[ i ]->nextVertexPositions[ c ];
-		(*mx_rodData)[ i ]->nextVertexPositions[ c ] = inputCurveVertex;
+                Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
+                (*mx_rodData)[ i ]->prevVertexPositions[ c ] = (*mx_rodData)[ i ]->nextVertexPositions[ c ];
+                (*mx_rodData)[ i ]->nextVertexPositions[ c ] = inputCurveVertex;
             }
         }
     }
@@ -215,8 +215,8 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         CHECK_MSTATUS( stat );
         m_rodOptions.ShearModulus = i_dataBlock.inputValue( ia_shearModulus, &stat ).asDouble();
         CHECK_MSTATUS( stat );
-	m_rodOptions.density = i_dataBlock.inputValue( ia_density, &stat).asDouble();
-	CHECK_MSTATUS( stat );
+        m_rodOptions.density = i_dataBlock.inputValue( ia_density, &stat).asDouble();
+        CHECK_MSTATUS( stat );
         m_rodOptions.radiusA = i_dataBlock.inputValue( ia_minorRadius, &stat ).asDouble();
         CHECK_MSTATUS( stat );
         m_rodOptions.radiusB = i_dataBlock.inputValue( ia_majorRadius, &stat ).asDouble();

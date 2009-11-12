@@ -64,7 +64,6 @@ inline Scalar PetscMatrix::operator() (int r, int c) const
 
 inline int PetscMatrix::set(int r, int c, Scalar val)
 {
-cerr << "PetscMatrix::set\n";
   int ierr = MatSetValue(m_M, r, c, val, INSERT_VALUES);
   CHKERRQ(ierr);
   return 0;
@@ -72,7 +71,6 @@ cerr << "PetscMatrix::set\n";
 
 inline int PetscMatrix::add(int r, int c, Scalar val)
 {
-cerr << "PetscMatrix::add(int r, int c, Scalar val)\n";
   int ierr = MatSetValue(m_M, r, c, val, ADD_VALUES);
   CHKERRQ(ierr);
   return 0;
@@ -81,7 +79,6 @@ cerr << "PetscMatrix::add(int r, int c, Scalar val)\n";
 inline int PetscMatrix::add(const IntArray& rowIdx, const IntArray& colIdx,
                             const MatXd& values)
 {
-cerr << "PetscMatrix::add(const IntArray& rowIdx, const IntArray& colIdx,const MatXd& values)\n";
   int ierr;
   ierr = MatSetValues(m_M, rowIdx.size(), &(rowIdx[0]),
                       colIdx.size(), &(colIdx[0]),
@@ -93,7 +90,6 @@ cerr << "PetscMatrix::add(const IntArray& rowIdx, const IntArray& colIdx,const M
 inline int PetscMatrix::add(const IndexArray& rowIdx, const IndexArray& colIdx,
                             const MatXd& values)
 {
-cerr << "PetscMatrix::add(const IndexArray& rowIdx, const IndexArray& colIdx, const MatXd& values)\n";
   int ierr;
   ierr = MatSetValues(m_M, rowIdx.size(), rowIdx.data(),
                       colIdx.size(), colIdx.data(),
@@ -104,7 +100,6 @@ cerr << "PetscMatrix::add(const IndexArray& rowIdx, const IndexArray& colIdx, co
 
 inline int PetscMatrix::scale(Scalar val)
 {
-cerr << "PetscMatrix::scale()\n";
   int ierr = MatScale(m_M, val);
   CHKERRQ(ierr);
   return 0;
@@ -112,7 +107,6 @@ cerr << "PetscMatrix::scale()\n";
 
 inline int PetscMatrix::multiply(VecXd& y, Scalar s, const VecXd& x)
 {
-cerr << "PetscMatrix::multiply(VecXd& y, Scalar s, const VecXd& x)\n";
   assert(cols() == x.size());
   assert(rows() == y.size());
 
@@ -215,7 +209,6 @@ inline int PetscMatrix::setZero()
 
 inline int PetscMatrix::zeroRows(const IntArray& idx, Scalar diag)
 {
-cerr << "petscMatrix::zeroRows(const IntArray& idx, Scalar diag)\n";
   MatSetOption(m_M, MAT_KEEP_ZEROED_ROWS, PETSC_TRUE);
   int ierr = MatZeroRows(m_M, idx.size(), &idx[0], diag);
   CHKERRQ(ierr);

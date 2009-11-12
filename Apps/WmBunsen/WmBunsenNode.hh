@@ -52,13 +52,15 @@ public:
     static MObject ia_rodsNodes;
     static MObject ia_gravity;
     static MObject ia_numberOfThreads;
+    static MObject ia_solver;
     
     static MObject ca_syncAttrs;
     static MObject oa_simStepTaken;
     
 private:
     void pullOnAllRodNodes( MDataBlock& i_dataBlock );
-    void createRodDataFromRodNodes( MDataBlock& i_dataBlock );
+    void createRodDataFromRodNodes( MDataBlock& i_dataBlock, 
+                                    ObjectControllerBase::SolverLibrary solverLibrary );
     
     double m_currentTime;
     double m_previousTime;

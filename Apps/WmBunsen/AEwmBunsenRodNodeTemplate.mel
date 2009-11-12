@@ -13,7 +13,7 @@ global proc AEwmBunsenRodNodeTemplate(string $nodeName)
         editorTemplate -addControl "majorRadius";
         editorTemplate -addControl "youngsModulus";
         editorTemplate -addControl "shearModulus";
-	editorTemplate -addControl "density";
+        editorTemplate -addControl "density";
         editorTemplate -addControl "cachePath";
     editorTemplate -endLayout;
 

@@ -93,8 +93,6 @@ inline int MKLMatrix::scale(Scalar val)
 // y = s*M*x
 inline int MKLMatrix::multiply(VecXd& y, Scalar s, const VecXd& x)
 {
-    cerr << "multiple s*M*x\n";
-    
   assert(cols() == x.size());
   assert(rows() == y.size());
 

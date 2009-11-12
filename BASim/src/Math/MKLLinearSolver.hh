@@ -31,8 +31,6 @@ public:
   int solve(VecXd& x, const VecXd& b)
   {
 
-    cerr << "x.size() = " << x.size() << endl;
-    cerr << "b.size() = " << b.size() << endl;
     vector<Scalar> c;
     size_t numElements = b.size();
     c.resize(numElements);
@@ -52,7 +50,6 @@ public:
 
     dgesv(&n, &nrhs, &a[0], &lda, &ipiv[0], &c[0], &ldb, &info);
 
-    cerr << "numElements = " << numElements << endl;
     for (size_t e=0; e<numElements; e++)
         x[e] = c[e];
     
