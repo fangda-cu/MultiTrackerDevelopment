@@ -155,9 +155,6 @@ void Beaker::addRod( size_t i_rodGroup,
 
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar stepsize )
 {
-    m_world->executeInParallel( i_numberOfThreadsToUse );
-	setTime( getTime() + getDt() );
-    
     Scalar dt_save = getDt();
     Scalar currentTime = getTime();
     Scalar targetTime = currentTime + stepsize;

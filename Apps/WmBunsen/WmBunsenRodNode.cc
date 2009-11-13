@@ -24,6 +24,7 @@
 /* static */ MObject WmBunsenRodNode::ia_density;
 /* static */ MObject WmBunsenRodNode::ia_minorRadius;
 /* static */ MObject WmBunsenRodNode::ia_majorRadius;
+/* static */ MObject WmBunsenRodNode::ia_vertexSpacing;
 
 // Disk cacheing
 /* static */ MObject WmBunsenRodNode::ia_cachePath;
@@ -78,7 +79,13 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
         MFnNurbsCurve inCurveFn( inputCurveObj );
         
         MPoint cv;
-        int nCVs = inCurveFn.numCVs();
+        int nCVs = 0;
+        //if ( m_vertexSpacing == 0.0 )
+            nCVs = inCurveFn.numCVs();
+        /*else
+        {
+            nCVs = inCurveFn.length() / m_vertexSpacing + 1;
+        }*/
        
         (*mx_rodData)[i]->rodOptions = m_rodOptions;
         
@@ -93,12 +100,12 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
         (*mx_rodData)[ i ]->nextVertexPositions.resize( nCVs );
         
         std::string frame = "time";
-        if ( frame == "time" ) 
+        if ( frame == "time" )
             (*mx_rodData)[ i ]->rodOptions.refFrame = ElasticRod::TimeParallel;
-        else if (frame == "space") 
+        else if (frame == "space")
             (*mx_rodData)[ i ]->rodOptions.refFrame = ElasticRod::SpaceParallel;
     
-        for ( int c = 0; c < (*mx_rodData)[ i ]->rodOptions.numVertices; ++c ) 
+        for ( int c = 0; c < (*mx_rodData)[ i ]->rodOptions.numVertices; ++c )
         {
             MPoint cv;
            // stat = inCurveFn.getCV( c,cv,MSpace::kWorld );
@@ -106,7 +113,7 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             CHECK_MSTATUS( stat );
             
             Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
-            (*mx_rodData)[ i ]->undeformedVertexPositions[ c ] = inputCurveVertex;
+            (*mx_rodData)[ i ]->undeformedVertexPositions[ c ] = inputCurveVertex; 
         }    
     }
     
@@ -223,8 +230,10 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         CHECK_MSTATUS( stat );
         MString cachePath = i_dataBlock.inputValue( ia_cachePath, &stat ).asString();
         CHECK_MSTATUS( stat );
-		bool readFromCache = i_dataBlock.inputValue( ia_readFromCache, &stat ).asDouble();
-        
+        //m_vertexSpacing = i_dataBlock.inputValue( ia_vertexSpacing, &stat ).asDouble();
+        //CHECK_MSTATUS( stat );
+		
+        bool readFromCache = i_dataBlock.inputValue( ia_readFromCache, &stat ).asDouble();
         if ( readFromCache )
         {
             // Make sure that every rod is disabled before we read from the cache file
@@ -579,6 +588,10 @@ void* WmBunsenRodNode::creator()
 
     addNumericAttribute( ia_majorRadius, "majorRadius", "mar", MFnNumericData::kDouble, 0.1, true );
     stat = attributeAffects( ia_majorRadius, oa_rodsChanged );
+	if ( !stat ) { stat.perror( "attributeAffects ia_majorRadius->ca_syncAttrs" ); return stat; }
+    
+    addNumericAttribute( ia_vertexSpacing, "vertexSpacing", "rvs", MFnNumericData::kDouble, 0.0, true );
+    stat = attributeAffects( ia_vertexSpacing, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_majorRadius->ca_syncAttrs" ); return stat; }
     
     addNumericAttribute( ia_cacheFrame, "cacheFrame", "caf", MFnNumericData::kBoolean, false, true );

@@ -59,6 +59,7 @@ public:
     static MObject ia_density;
     static MObject ia_minorRadius;
     static MObject ia_majorRadius;
+    static MObject ia_vertexSpacing;
 
     // Caching
     static MObject ia_cachePath;
