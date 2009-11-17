@@ -1,14 +1,6 @@
 #include "WmBunsenNode.hh"
 
-///////////////////////////////////////////////////////////////////////////////////
-// WARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNING
-// WARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNING
-// The below typeID is NOT A VALID WETA ID
-// WARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNING
-// WARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNING
-///////////////////////////////////////////////////////////////////////////////////
-
-MTypeId WmBunsenNode::typeID( 0x80006 ); 
+MTypeId WmBunsenNode::typeID( 0x001135, 0x18 ); 
 MString WmBunsenNode::typeName( "wmBunsenNode" );
 MObject WmBunsenNode::ca_syncAttrs;
 MObject WmBunsenNode::ia_time;

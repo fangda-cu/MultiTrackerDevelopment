@@ -167,6 +167,17 @@ void WmBunsenCmd::createWmBunsenRodNode( bool useNURBSInput )
     
     MObject wmBunsenNode = m_selectedwmBunsenNode;
 
+    if ( useNURBSInput && m_nurbsCurveList.isEmpty() )
+    {
+        MGlobal::displayError( "Please select some NURBS curves to create rods from\n" );
+        return;
+    }
+    else if ( !useNURBSInput && m_fozzieNodeList.isEmpty() )
+    {
+        MGlobal::displayError( "Please select a Fozzie furset node to create rods from\n" );
+        return;
+    }
+    
     if ( wmBunsenNode == MObject::kNullObj )
         createWmBunsenNode( wmBunsenNode );
 
@@ -243,11 +254,11 @@ void WmBunsenCmd::createWmBunsenRodNode( bool useNURBSInput )
             cvsPerCurve = m_cvsPerRod;
     
         // Check if there are any NURBS curves connected as we can't create rods without curves    
-        for ( uint l = 0; l < m_curve_list.length(); l++ ) 
+        for ( uint l = 0; l < m_nurbsCurveList.length(); l++ ) 
         {
             MDagPath dagPath;
             MObject component;
-            m_curve_list.getDagPath( l, dagPath, component );
+            m_nurbsCurveList.getDagPath( l, dagPath, component );
             dagPath.extendToShape();
     
             MObject nodeObj = dagPath.node( &stat );        
@@ -297,7 +308,7 @@ void WmBunsenCmd::createWmBunsenRodNode( bool useNURBSInput )
                 
                 /*MDagPath curveTransformPath;
                 MString cmd;
-                m_curve_list.getDagPath( l, curveTransformPath, component );
+                m_nurbsCurveList.getDagPath( l, curveTransformPath, component );
                 MString result;
                 MStringArray results;
                 cmd = "duplicate " +  curveTransformPath.fullPathName();
@@ -315,11 +326,6 @@ void WmBunsenCmd::createWmBunsenRodNode( bool useNURBSInput )
     }
     else
     {
-        if ( m_fozzieNodeList.length() == 0 )
-        {
-            MGlobal::displayError( "Please select a Fozzie furset node to create rods from\n" );
-            return;
-        }
         cerr << "Connecting fur set\n";
         // Just take the first furset selected, selecting multiple sets is pointless anyway
         MDagPath dagPath;
@@ -455,7 +461,7 @@ void WmBunsenCmd::getNodes( MSelectionList i_opt_nodes )
     MItDag dagit;
     MStatus stat;
 
-    m_curve_list.clear();
+    m_nurbsCurveList.clear();
 
     for (MItSelectionList sIt(i_opt_nodes); !sIt.isDone(); sIt.next())
     {
@@ -472,7 +478,7 @@ void WmBunsenCmd::getNodes( MSelectionList i_opt_nodes )
         {
             mObj = childPath.node();
             
-            m_curve_list.add( childPath, mObj, true);
+            m_nurbsCurveList.add( childPath, mObj, true);
             
             //MFnDependencyNode curfn( childPath.node() );
         }

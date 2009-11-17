@@ -1,15 +1,7 @@
 #include "WmBunsenRodNode.hh"
 
-///////////////////////////////////////////////////////////////////////////////////
-// WARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNING
-// WARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNING
-// The below typeID is NOT A VALID WETA ID
-// WARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNING
-// WARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNINGWARNING
-///////////////////////////////////////////////////////////////////////////////////
-
 // Required by Maya to identify node
-/* static */ MTypeId WmBunsenRodNode::typeID( 0x80007 ); 
+/* static */ MTypeId WmBunsenRodNode::typeID ( 0x001135, 0x19 ); 
 /* static */ MString WmBunsenRodNode::typeName( "wmBunsenRodNode" );
 
 // 

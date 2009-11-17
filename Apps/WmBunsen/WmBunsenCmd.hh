@@ -115,7 +115,7 @@ protected:  // Data
     /// Undo Selection List
     MSelectionList m_undoSelectionList;
 
-    MSelectionList m_curve_list;    // list of nurbs curves
+    MSelectionList m_nurbsCurveList;    // list of nurbs curves
     MSelectionList m_meshList;      // list of meshes
     MSelectionList m_fozzieNodeList;
     MObject  m_selectedwmBunsenNode;
