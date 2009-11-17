@@ -117,6 +117,7 @@ protected:  // Data
 
     MSelectionList m_curve_list;    // list of nurbs curves
     MSelectionList m_meshList;      // list of meshes
+    MSelectionList m_fozzieNodeList;
     MObject  m_selectedwmBunsenNode;
 
     static std::map<std::string, WmBunsenHelp> m_help;

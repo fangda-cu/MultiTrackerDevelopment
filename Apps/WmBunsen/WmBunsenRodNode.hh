@@ -51,6 +51,7 @@ public:
     static MObject ia_time;
     static MObject ia_startTime;
     static MObject ia_nurbsCurves;
+    static MObject ia_fozzieVertices;
     
     // Rod options
     static MObject ia_cvsPerRod;
@@ -72,10 +73,7 @@ public:
     static MObject ca_simulationSync;
     
     // Returns the number of rods this node has input data for
-    size_t numberOfRods()
-    {
-        return m_numberOfInputCurves;
-    }
+    size_t numberOfRods();
 
     void initialiseRodData( vector<RodData*>* i_rodDataMap );
     void updateRodDataFromInputs();
@@ -107,6 +105,9 @@ private:
     World* mx_world;
     
     size_t m_numberOfInputCurves;
+    
+    // If we're overriding the number of cvs per rod then this will be not -1
+    int m_cvsPerRod;
 };
 
 #endif

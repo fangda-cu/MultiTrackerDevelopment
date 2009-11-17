@@ -35,6 +35,7 @@ public:
     // These variables are for interpolating substeps between frames
     vector<Vec3d> prevVertexPositions;
     vector<Vec3d> nextVertexPositions;
+    
 };
 
 #endif

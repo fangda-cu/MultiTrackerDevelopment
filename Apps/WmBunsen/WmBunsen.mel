@@ -14,7 +14,8 @@ global proc wmBunsenAddMainMenu()
         $gWmBunsenMainMenu = `menu -p $gMainWindow -l "Dr Bunsen" -tearOff true -allowOptionBoxes true WmBunsenMainMenu`;
 
         //menuItem -label "Create a DER from Fozzie fur set" -annotation "Create dynamic elastic rods from a selected Fozzie fur set node" -command "dyno -crf";
-        menuItem -label "Create rods from NURBS Curves" -annotation "Create elastic rod from NURBS" -command "wmBunsen -cr -cpr 20";
+        menuItem -label "Create rods from NURBS curves" -annotation "Create elastic rod from NURBS" -command "wmBunsen -cr -cpr 20";
+        menuItem -label "Create rods from Fozzie node" -annotation "Create elastic rod from a Fozzie furset" -command "wmBunsen -crf -cpr 20";
    //     menuItem -label "Create rods from varying NURBS Curves" -annotation "Create elastic rod from NURBS curves that have different numbers of cvs" -command "wmBunsen -cr -cpr 20";
       //  menuItem -label "Add selected meshes as collision objects" -annotation "Add meshes as collision objects to the selected dynamics node"-command "dyno -acm";
      //   menuItem -label "Create constraint" -annotation "Creates a spring constraint between two selected input curve CVs" -command"dyno -crr";

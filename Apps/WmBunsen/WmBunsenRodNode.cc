@@ -16,6 +16,7 @@
 /* static */ MObject WmBunsenRodNode::ia_time;
 /* static */ MObject WmBunsenRodNode::ia_startTime;
 /* static */ MObject WmBunsenRodNode::ia_nurbsCurves;
+/* static */ MObject WmBunsenRodNode::ia_fozzieVertices;
 
 // User adjustable rod Options
 /* static */ MObject WmBunsenRodNode::ia_cvsPerRod;
@@ -38,7 +39,7 @@
 /* static */ MObject WmBunsenRodNode::ca_simulationSync;
 
 WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_rodData( NULL ), mx_world( NULL ),
-                                     m_numberOfInputCurves( 0 )
+                                     m_numberOfInputCurves( 0 ), m_cvsPerRod( -1 )
 {
     m_rodOptions.YoungsModulus = 100000.0;
     m_rodOptions.ShearModulus = 375.0;
@@ -60,61 +61,109 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
     // data. So build our own datablock to use.
     MDataBlock dataBlock = MPxNode::forceCache();
 
-    MDataHandle inputCurveH;
-    MObject inputCurveObj;    
-    MArrayDataHandle inArrayH = dataBlock.inputArrayValue( ia_nurbsCurves, &stat );
-    CHECK_MSTATUS(stat);
-   
-    size_t numCurvesConnected = inArrayH.elementCount();
-
-    for ( unsigned int i = 0; i < numCurvesConnected; i++ )
+    ///////////////////////////////////////////////////////////////////////////////
+    // If there is a Fozzie node connected then it takes control over any connected
+    // NURBS curves.
+    ///////////////////////////////////////////////////////////////////////////////    
+    bool fozzieNodeConnected;
+    MPlug fozziePlug( thisMObject(), ia_fozzieVertices );
+    if ( fozziePlug.isConnected() )
     {
-        inArrayH.jumpToElement( i );
-        inputCurveH = inArrayH.inputValue( &stat );
+        MDataHandle verticesH = dataBlock.inputValue( ia_fozzieVertices, &stat );
         CHECK_MSTATUS( stat );
-
-        // Use asNurbsCurveTransformed to get the curve data as we
-        // want it in world space.
-        inputCurveObj = inputCurveH.asNurbsCurveTransformed();
-        MFnNurbsCurve inCurveFn( inputCurveObj );
-        
-        MPoint cv;
-        int nCVs = 0;
-        //if ( m_vertexSpacing == 0.0 )
-            nCVs = inCurveFn.numCVs();
-        /*else
-        {
-            nCVs = inCurveFn.length() / m_vertexSpacing + 1;
-        }*/
-       
-        (*mx_rodData)[i]->rodOptions = m_rodOptions;
-        
-        // Override the number of cvs at the moment to match the input curve
-        (*mx_rodData)[i]->rodOptions.numVertices = nCVs;
-        
-        // Make sure we have enough space to store the date for each CV. This should only
-        // ever cause a resize when we are called by initialiseRodData().
-        (*mx_rodData)[ i ]->undeformedVertexPositions.resize( nCVs );
-        (*mx_rodData)[ i ]->initialVertexPositions.resize( nCVs );
-        (*mx_rodData)[ i ]->prevVertexPositions.resize( nCVs );
-        (*mx_rodData)[ i ]->nextVertexPositions.resize( nCVs );
-        
-        std::string frame = "time";
-        if ( frame == "time" )
-            (*mx_rodData)[ i ]->rodOptions.refFrame = ElasticRod::TimeParallel;
-        else if (frame == "space")
-            (*mx_rodData)[ i ]->rodOptions.refFrame = ElasticRod::SpaceParallel;
+        MFnVectorArrayData verticesData( verticesH.data(), &stat );
+        CHECK_MSTATUS( stat );
+        MVectorArray vertices = verticesData.array( &stat );
     
-        for ( int c = 0; c < (*mx_rodData)[ i ]->rodOptions.numVertices; ++c )
-        {
-            MPoint cv;
-           // stat = inCurveFn.getCV( c,cv,MSpace::kWorld );
-            stat = inCurveFn.getCV( c,cv,MSpace::kObject );
-            CHECK_MSTATUS( stat );
+        int numStrands = vertices.length() / m_cvsPerRod;
             
-            Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
-            (*mx_rodData)[ i ]->undeformedVertexPositions[ c ] = inputCurveVertex; 
-        }    
+        size_t inputVertexIndex = 0;
+        for ( unsigned int i = 0; i < numStrands; i++ ) 
+        {
+            (*mx_rodData)[i]->rodOptions = m_rodOptions;
+            
+            // Override the number of cvs at the moment to match the input curve
+            (*mx_rodData)[i]->rodOptions.numVertices = m_cvsPerRod;
+            
+            // Make sure we have enough space to store the date for each CV. This should only
+            // ever cause a resize when we are called by initialiseRodData().
+            (*mx_rodData)[ i ]->undeformedVertexPositions.resize( m_cvsPerRod );
+            (*mx_rodData)[ i ]->initialVertexPositions.resize( m_cvsPerRod );
+            (*mx_rodData)[ i ]->prevVertexPositions.resize( m_cvsPerRod );
+            (*mx_rodData)[ i ]->nextVertexPositions.resize( m_cvsPerRod );
+            
+            std::string frame = "time";
+            if ( frame == "time" )
+                (*mx_rodData)[ i ]->rodOptions.refFrame = ElasticRod::TimeParallel;
+            else if (frame == "space")
+                (*mx_rodData)[ i ]->rodOptions.refFrame = ElasticRod::SpaceParallel;
+
+            for ( int c=0; c<m_cvsPerRod; c++ ) 
+            {
+                MVector cv = vertices[ inputVertexIndex ];
+                (*mx_rodData)[ i ]->undeformedVertexPositions[ c ]  = Vec3d( cv.x, cv.y, cv.z );
+                inputVertexIndex++;
+            } 
+        }
+    }
+    else
+    {
+        MDataHandle inputCurveH;
+        MObject inputCurveObj;    
+        MArrayDataHandle inArrayH = dataBlock.inputArrayValue( ia_nurbsCurves, &stat );
+        CHECK_MSTATUS(stat);
+       
+        size_t numCurvesConnected = inArrayH.elementCount();
+    
+        for ( unsigned int i = 0; i < numCurvesConnected; i++ )
+        {
+            inArrayH.jumpToElement( i );
+            inputCurveH = inArrayH.inputValue( &stat );
+            CHECK_MSTATUS( stat );
+    
+            // Use asNurbsCurveTransformed to get the curve data as we
+            // want it in world space.
+            inputCurveObj = inputCurveH.asNurbsCurveTransformed();
+            MFnNurbsCurve inCurveFn( inputCurveObj );
+            
+            MPoint cv;
+            int nCVs = 0;
+            //if ( m_vertexSpacing == 0.0 )
+                nCVs = inCurveFn.numCVs();
+            /*else
+            {
+                nCVs = inCurveFn.length() / m_vertexSpacing + 1;
+            }*/
+           
+            (*mx_rodData)[i]->rodOptions = m_rodOptions;
+            
+            // Override the number of cvs at the moment to match the input curve
+            (*mx_rodData)[i]->rodOptions.numVertices = nCVs;
+            
+            // Make sure we have enough space to store the date for each CV. This should only
+            // ever cause a resize when we are called by initialiseRodData().
+            (*mx_rodData)[ i ]->undeformedVertexPositions.resize( nCVs );
+            (*mx_rodData)[ i ]->initialVertexPositions.resize( nCVs );
+            (*mx_rodData)[ i ]->prevVertexPositions.resize( nCVs );
+            (*mx_rodData)[ i ]->nextVertexPositions.resize( nCVs );
+            
+            std::string frame = "time";
+            if ( frame == "time" )
+                (*mx_rodData)[ i ]->rodOptions.refFrame = ElasticRod::TimeParallel;
+            else if (frame == "space")
+                (*mx_rodData)[ i ]->rodOptions.refFrame = ElasticRod::SpaceParallel;
+        
+            for ( int c = 0; c < (*mx_rodData)[ i ]->rodOptions.numVertices; ++c )
+            {
+                MPoint cv;
+               // stat = inCurveFn.getCV( c,cv,MSpace::kWorld );
+                stat = inCurveFn.getCV( c,cv,MSpace::kObject );
+                CHECK_MSTATUS( stat );
+                
+                Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
+                (*mx_rodData)[ i ]->undeformedVertexPositions[ c ] = inputCurveVertex; 
+            }    
+        }
     }
     
     // Since we're initialising the rod data that means the rod is about to be created. In which
@@ -142,62 +191,110 @@ void WmBunsenRodNode::updateRodDataFromInputs()
         MGlobal::displayError( "Please rewind simulation to initialise\n" );
         return;
     }
-    if ( mx_rodData->size() != m_numberOfInputCurves )
-    {
-        MGlobal::displayError( "Number of rods does not equal number of input curves, rewind simulation to reset" );
-        return;
-    }
     
-    MDataHandle inputCurveH;
-    MObject inputCurveObj;
-    MPoint pt;
-    MFnNurbsCurveData dataCreator;
-    MMatrix mat;
-    MPoint rootP;
     MStatus stat;
  
     // We may get called from not inside a compute by the WmBunsenNode initialising all its
     // data. So build our own datablock to use.
     MDataBlock dataBlock = MPxNode::forceCache();
     
-    MArrayDataHandle inArrayH = dataBlock.inputArrayValue( ia_nurbsCurves, &stat );
-    CHECK_MSTATUS(stat);
-   
-    size_t numCurvesConnected = inArrayH.elementCount();
-
-    for ( unsigned int i = 0; i < numCurvesConnected; i++ )
+    bool fozzieNodeConnected;
+    MPlug fozziePlug( thisMObject(), ia_fozzieVertices );
+    if ( fozziePlug.isConnected() )
     {
-        inArrayH.jumpToElement( i );
-        inputCurveH = inArrayH.inputValue( &stat );
+        MDataHandle verticesH = dataBlock.inputValue( ia_fozzieVertices, &stat );
         CHECK_MSTATUS( stat );
-
-        // Use asNurbsCurveTransformed to get the curve data as we
-        // want it in world space.
-        inputCurveObj = inputCurveH.asNurbsCurveTransformed();
-        MFnNurbsCurve inCurveFn( inputCurveObj );
+        MFnVectorArrayData verticesData( verticesH.data(), &stat );
+        CHECK_MSTATUS( stat );
+        MVectorArray vertices = verticesData.array( &stat );
+    
+        int numStrands = vertices.length() / m_cvsPerRod;
         
-        MPoint cv;
-        int nCVs = inCurveFn.numCVs();
-       
-        ElasticRod* rod = (*mx_rodData)[ i ]->rod;
-        if ( rod != NULL )
+        if ( mx_rodData->size() != numStrands )
         {
-            rod->setRadius( m_rodOptions.radiusA, m_rodOptions.radiusB );
-            rod->setYoungsModulus( m_rodOptions.YoungsModulus );
-            rod->setShearModulus( m_rodOptions.ShearModulus );
-            rod->setDensity(m_rodOptions.density);
+            MGlobal::displayError( "Number of rods does not equal number of Fozzie strands, rewind simulation to reset" );
+            cerr << "Number of rods does not equal number of Fozzie strands, rewind simulation to reset";
+            return;
+        }
             
-            int numVertices = rod->nv();
-            for ( int c = 0; c < numVertices ; ++c ) 
+        size_t inputVertexIndex = 0;
+        for ( unsigned int i = 0; i < numStrands; i++ ) 
+        {
+            ElasticRod* rod = (*mx_rodData)[ i ]->rod;
+            if ( rod != NULL )
             {
-                MPoint cv;
-               // stat = inCurveFn.getCV( c,cv,MSpace::kWorld );
-                stat = inCurveFn.getCV( c,cv,MSpace::kObject );
-                CHECK_MSTATUS( stat );
-
-                Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
-                (*mx_rodData)[ i ]->prevVertexPositions[ c ] = (*mx_rodData)[ i ]->nextVertexPositions[ c ];
-                (*mx_rodData)[ i ]->nextVertexPositions[ c ] = inputCurveVertex;
+                rod->setRadius( m_rodOptions.radiusA, m_rodOptions.radiusB );
+                rod->setYoungsModulus( m_rodOptions.YoungsModulus );
+                rod->setShearModulus( m_rodOptions.ShearModulus );
+                rod->setDensity(m_rodOptions.density);
+                
+                for ( int c = 0; c < m_cvsPerRod ; ++c ) 
+                {
+                    MVector cv = vertices[ inputVertexIndex ];
+            
+                    Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
+                    (*mx_rodData)[ i ]->prevVertexPositions[ c ] = (*mx_rodData)[ i ]->nextVertexPositions[ c ];
+                    (*mx_rodData)[ i ]->nextVertexPositions[ c ] = inputCurveVertex;
+                    
+                    inputVertexIndex++;
+                }
+            }
+        }
+    }
+    else
+    {
+        if ( mx_rodData->size() != m_numberOfInputCurves )
+        {
+            MGlobal::displayError( "Number of rods does not equal number of input curves, rewind simulation to reset" );
+            cerr << "Number of rods does not equal number of input curves, rewind simulation to reset";
+            return;
+        }
+        
+        MDataHandle inputCurveH;
+        MObject inputCurveObj;
+        MPoint pt;
+        MFnNurbsCurveData dataCreator;
+        MMatrix mat;
+        MPoint rootP;
+        MArrayDataHandle inArrayH = dataBlock.inputArrayValue( ia_nurbsCurves, &stat );
+        CHECK_MSTATUS(stat);
+       
+        size_t numCurvesConnected = inArrayH.elementCount();
+    
+        for ( unsigned int i = 0; i < numCurvesConnected; i++ )
+        {
+            inArrayH.jumpToElement( i );
+            inputCurveH = inArrayH.inputValue( &stat );
+            CHECK_MSTATUS( stat );
+    
+            // Use asNurbsCurveTransformed to get the curve data as we
+            // want it in world space.
+            inputCurveObj = inputCurveH.asNurbsCurveTransformed();
+            MFnNurbsCurve inCurveFn( inputCurveObj );
+            
+            MPoint cv;
+            int nCVs = inCurveFn.numCVs();
+           
+            ElasticRod* rod = (*mx_rodData)[ i ]->rod;
+            if ( rod != NULL )
+            {
+                rod->setRadius( m_rodOptions.radiusA, m_rodOptions.radiusB );
+                rod->setYoungsModulus( m_rodOptions.YoungsModulus );
+                rod->setShearModulus( m_rodOptions.ShearModulus );
+                rod->setDensity(m_rodOptions.density);
+                
+                int numVertices = rod->nv();
+                for ( int c = 0; c < numVertices ; ++c ) 
+                {
+                    MPoint cv;
+                   // stat = inCurveFn.getCV( c,cv,MSpace::kWorld );
+                    stat = inCurveFn.getCV( c,cv,MSpace::kObject );
+                    CHECK_MSTATUS( stat );
+    
+                    Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
+                    (*mx_rodData)[ i ]->prevVertexPositions[ c ] = (*mx_rodData)[ i ]->nextVertexPositions[ c ];
+                    (*mx_rodData)[ i ]->nextVertexPositions[ c ] = inputCurveVertex;
+                }
             }
         }
     }
@@ -232,6 +329,8 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         CHECK_MSTATUS( stat );
         //m_vertexSpacing = i_dataBlock.inputValue( ia_vertexSpacing, &stat ).asDouble();
         //CHECK_MSTATUS( stat );
+        m_cvsPerRod = i_dataBlock.inputValue( ia_cvsPerRod, &stat ).asInt();
+        CHECK_MSTATUS( stat );
 		
         bool readFromCache = i_dataBlock.inputValue( ia_readFromCache, &stat ).asDouble();
         if ( readFromCache )
@@ -308,6 +407,32 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 	}
 
 	return MS::kSuccess;
+}
+
+size_t WmBunsenRodNode::numberOfRods()
+{
+    // Fozzie nodes take precidence over nurbs curve inputs. We currently do not handle
+    // both on the one node ( although this would probably be easy to do ).
+    
+    MStatus stat;
+    MDataBlock dataBlock = MPxNode::forceCache();
+    
+    bool fozzieNodeConnected;
+    MPlug fozziePlug( thisMObject(), ia_fozzieVertices );
+    if ( fozziePlug.isConnected() )
+    {
+        MDataHandle verticesH = dataBlock.inputValue( ia_fozzieVertices, &stat );
+        CHECK_MSTATUS( stat );
+        MFnVectorArrayData verticesData( verticesH.data(), &stat );
+        CHECK_MSTATUS( stat );
+        MVectorArray vertices = verticesData.array( &stat );
+    
+        return ( vertices.length() / m_cvsPerRod );
+    }
+    else
+    {
+        return m_numberOfInputCurves;
+    }
 }
 
 void WmBunsenRodNode::writeRodDataToCacheFile( MString i_cachePath )
@@ -593,6 +718,10 @@ void* WmBunsenRodNode::creator()
     addNumericAttribute( ia_vertexSpacing, "vertexSpacing", "rvs", MFnNumericData::kDouble, 0.0, true );
     stat = attributeAffects( ia_vertexSpacing, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_majorRadius->ca_syncAttrs" ); return stat; }
+ 
+    addNumericAttribute( ia_cvsPerRod, "cvsPerRod", "cvr", MFnNumericData::kInt, -1, true );
+    stat = attributeAffects( ia_cvsPerRod, oa_rodsChanged );
+	if ( !stat ) { stat.perror( "attributeAffects ia_cvsPerRod->ca_syncAttrs" ); return stat; }
     
     addNumericAttribute( ia_cacheFrame, "cacheFrame", "caf", MFnNumericData::kBoolean, false, true );
     stat = attributeAffects( ia_cacheFrame, oa_rodsChanged );
@@ -640,9 +769,21 @@ void* WmBunsenRodNode::creator()
         stat = addAttribute( ia_nurbsCurves );
         CHECK_MSTATUS( stat );
     }
-
     stat = attributeAffects( ia_nurbsCurves, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_nurbsCurves->oa_rodsChanged" ); return stat; }
+    
+    {
+        MFnTypedAttribute tAttr;  
+        ia_fozzieVertices = tAttr.create( "fozzieVertices", "fov",
+                                          MFnData::kVectorArray, &stat );
+        CHECK_MSTATUS( stat );
+        CHECK_MSTATUS( tAttr.setReadable( false ) );
+        CHECK_MSTATUS( tAttr.setWritable( true ) );
+        stat = addAttribute( ia_fozzieVertices );
+        CHECK_MSTATUS( stat );
+    }
+    stat = attributeAffects( ia_fozzieVertices, oa_rodsChanged );
+    if ( !stat ) { stat.perror( "attributeAffects ia_fozzieVertices->oa_rodsChanged" ); return stat; }
     
 	return MS::kSuccess;
 }

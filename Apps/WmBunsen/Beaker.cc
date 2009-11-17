@@ -178,7 +178,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar stepsize )
                 ElasticRod* rod = rodData[r]->rod;
                 for( int c = 0; c < rod->nv(); c++)
                 {
-                    if(rod->vertFixed( c ) )
+                    if( rod->vertFixed( c ) )
                     {
                         rod->setVertex(c,normalisedTime*rodData[r]->prevVertexPositions[c] + 
                                (1.0-normalisedTime)*rodData[r]->nextVertexPositions[c]);

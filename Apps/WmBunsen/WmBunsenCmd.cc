@@ -70,6 +70,7 @@ void* WmBunsenCmd::creator()
 }
 
 const char *const kCreateRods( "-cr" );
+const char *const kCreateRodsFromFozzie( "-crf" );
 const char *const kCVsPerRod( "-cpr" );
 const char *const kName( "-n" );
 const char *const kHelp( "-h" );
@@ -87,6 +88,8 @@ MSyntax WmBunsenCmd::syntaxCreator()
                MSyntax::kString );
     p_AddFlag( mSyntax, kCreateRods, "-createRods",
                "creates discrete elastic rods from the selected NURBS curves." );
+    p_AddFlag( mSyntax, kCreateRodsFromFozzie, "-createRodsFromFozzie",
+               "creates discrete elastic rods from the selected Fozzie node." );
     p_AddFlag( mSyntax, kCVsPerRod, "-cvsPerRod",
                "Sets the number of CVs to use for each created elastic rod.", MSyntax::kLong );
     
@@ -310,6 +313,41 @@ void WmBunsenCmd::createWmBunsenRodNode( bool useNURBSInput )
             }
         }
     }
+    else
+    {
+        if ( m_fozzieNodeList.length() == 0 )
+        {
+            MGlobal::displayError( "Please select a Fozzie furset node to create rods from\n" );
+            return;
+        }
+        cerr << "Connecting fur set\n";
+        // Just take the first furset selected, selecting multiple sets is pointless anyway
+        MDagPath dagPath;
+        MObject component;
+        m_fozzieNodeList.getDagPath( 0, dagPath, component );
+        dagPath.extendToShape();
+
+        MObject nodeObj = dagPath.node( &stat );
+        CHECK_MSTATUS( stat );
+        MFnDependencyNode fozzieNodeFn( nodeObj,&stat );
+        
+        MPlug fozzieStrandsPlug = fozzieNodeFn.findPlug( "strandVertices", true, &stat );
+        CHECK_MSTATUS( stat );
+        
+        MPlug fozzieVerticesPlug( sFn.findPlug( "fozzieVertices", true, &stat ) );
+        CHECK_MSTATUS( stat );
+        stat = dagModifier.connect( fozzieStrandsPlug, fozzieVerticesPlug );
+        CHECK_MSTATUS( stat );
+        
+        MPlug numFozzieCVsPlug = fozzieNodeFn.findPlug( "outCvsPerStrand", true, &stat );
+        CHECK_MSTATUS( stat );
+        MPlug numCVsPlug( sFn.findPlug( "cvsPerRod", true, &stat ) );
+        CHECK_MSTATUS( stat );
+        stat = dagModifier.connect( numFozzieCVsPlug, numCVsPlug );
+        CHECK_MSTATUS( stat );
+        stat = dagModifier.doIt();
+        CHECK_MSTATUS( stat );
+    }
 
     // Connect up the rods node to the dynamics node
     MPlug rodNodeOutPlug( sFn.findPlug( "rodsChanged", true, &stat ) );
@@ -446,7 +484,12 @@ void WmBunsenCmd::getNodes( MSelectionList i_opt_nodes )
             {
                 m_selectedwmBunsenNode = childPath.node();
             }
+            if ( nodeFn.typeName() == "wmFozFurSetNode" )
+            {
+                m_fozzieNodeList.add( childPath, mObj, true );
+            }
         }
+        
         
         // In this case we let the user select a root group, and then iterate through all
         // the curves below
@@ -490,6 +533,11 @@ MStatus WmBunsenCmd::redoIt()
         {
             // Create
             createWmBunsenRodNode( true );
+        }
+        if ( m_mArgDatabase->isFlagSet( kCreateRodsFromFozzie ) )
+        {
+            // Create
+            createWmBunsenRodNode( false );
         }
         else
         {
