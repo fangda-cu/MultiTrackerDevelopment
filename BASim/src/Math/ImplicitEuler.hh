@@ -25,13 +25,13 @@ public:
   {
     if ( solver == ObjectControllerBase::PETSC_SOLVER )
     {
-      cerr << "Creating new Petsc solver\n";
+      //cerr << "Creating new Petsc solver\n";
       m_A = new PetscMatrix(m_diffEq.ndof(), m_diffEq.ndof(), 11);
       m_solver = new PetscLinearSolver(*m_A);
     }
     else if ( solver == ObjectControllerBase::MKL_SOLVER )
     {  
-      cerr << "Creating new MKL solver\n";
+      //cerr << "Creating new MKL solver\n";
       m_A = new MKLMatrix(m_diffEq.ndof(), m_diffEq.ndof(), 11);
       m_solver = new MKLLinearSolver(*m_A);
     }

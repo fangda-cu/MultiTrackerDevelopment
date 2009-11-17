@@ -213,7 +213,6 @@ void WmBunsenRodNode::updateRodDataFromInputs()
         if ( mx_rodData->size() != numStrands )
         {
             MGlobal::displayError( "Number of rods does not equal number of Fozzie strands, rewind simulation to reset" );
-            cerr << "Number of rods does not equal number of Fozzie strands, rewind simulation to reset";
             return;
         }
             
@@ -246,7 +245,6 @@ void WmBunsenRodNode::updateRodDataFromInputs()
         if ( mx_rodData->size() != m_numberOfInputCurves )
         {
             MGlobal::displayError( "Number of rods does not equal number of input curves, rewind simulation to reset" );
-            cerr << "Number of rods does not equal number of input curves, rewind simulation to reset";
             return;
         }
         

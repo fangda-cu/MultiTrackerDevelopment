@@ -60,8 +60,6 @@ void Beaker::initialiseWorld()
 
 void Beaker::resetEverything()
 {
-    cerr << "Beaker::resetEverything()\n";
-    
     for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
     {
         vector<RodData*>& rodData = rdmItr->second;
@@ -82,8 +80,6 @@ void Beaker::resetEverything()
 
 void Beaker::createSpaceForRods( size_t i_rodGroup, size_t i_numRods )
 {
-    cerr << "Creating space for rods\n";
-    
     //size_t numRods = m_rodDataMap[ i_rodGroup ].size();
     m_rodDataMap[ i_rodGroup ].resize( i_numRods );
 
@@ -122,6 +118,8 @@ void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary 
         
         rodDataVector[ r ]->shouldSimulate = true;
     }
+    
+    cerr << "Beaker - Created " << numRods << " rods\n";
 }
 /*
 void Beaker::addRod( size_t i_rodGroup,
