@@ -1,0 +1,12 @@
+#ifndef BASIM_COLLISIONS
+#define BASIM_COLLISIONS
+
+#include "Core"
+
+#include "src/Collisions/CollisionObject.hh"
+
+#endif // BASIM_COLLISIONS
+
+// Local Variables:
+// mode: c++
+// End:

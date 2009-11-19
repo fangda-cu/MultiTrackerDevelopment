@@ -1,4 +1,5 @@
 #include "WmBunsenNode.hh"
+#include "WmBunsenCollisionMeshNode.hh"
 
 MTypeId WmBunsenNode::typeID( 0x001135, 0x18 ); 
 MString WmBunsenNode::typeName( "wmBunsenNode" );
@@ -12,6 +13,7 @@ MObject WmBunsenNode::ia_rodsNodes;
 MObject WmBunsenNode::ia_gravity;
 MObject WmBunsenNode::ia_numberOfThreads;
 MObject WmBunsenNode::ia_solver;
+MObject WmBunsenNode::ia_collisionMeshes;
 MObject WmBunsenNode::oa_simStepTaken;
 
 WmBunsenNode::WmBunsenNode() : m_initialised( false ), m_beaker( NULL )
@@ -99,6 +101,75 @@ void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock,
     }
 }
 
+
+void WmBunsenNode::updateAllCollisionMeshes( MDataBlock &data )
+{
+    //
+    // Kinematic Objects
+    // Each Kinematic Object in m_derManager holds a pointer to the mesh data in the collisionMeshNode.
+    // This means that we don't need to update the mesh data in Kinematic objects, they will always 
+    // have the up to date info. 
+    // However - when Maya loads a scene it connects attributes in an arbitrary fashion and so
+    // it is possible that the Kinematic object is created before the collision Mesh node had
+    // been created. In that situation we can't pass that pointer when this node is connected to 
+    // collision mesh nodes ( in connectionMade() ). So rather than having code to connect the ones
+    // we can connect there in connectionMade() and also code here we just do it here each time 
+    // step. It's a super low overhead test so it is ok to do it once per frame.
+    // What we do - for each connected kinematic object check if it has been initialised
+    // and if it hasn't and we now have valid data from the collision mesh node then initialise
+    // the kinematic object.
+    MStatus stat;
+    
+    MArrayDataHandle inArrayH = data.inputArrayValue( ia_collisionMeshes, &stat );
+    CHECK_MSTATUS(stat);
+    size_t numMeshesConnected = inArrayH.elementCount();
+  
+    for ( unsigned int i=0; i < numMeshesConnected; i++ ) 
+    {
+        // First check if the kinematic object has been initialised, if it has then don't bother
+        // continuing as we would be updating the pointer with the same pointer.
+        if ( m_beaker->collisionMeshInitialised( i ) )
+            continue;
+
+        inArrayH.jumpToElement(i);
+        MDataHandle collisionMeshH = inArrayH.inputValue( &stat);
+        CHECK_MSTATUS(stat);
+
+        MObject collisionMeshDataObj = collisionMeshH.data();
+
+        MPlug plug( thisMObject(), ia_collisionMeshes );
+        CHECK_MSTATUS( stat );
+        if ( plug.isArray( &stat ) )
+        {
+            MPlug indxPlug = plug.elementByLogicalIndex( i, &stat );
+            CHECK_MSTATUS( stat );
+            if ( indxPlug.isConnected( &stat ) ) 
+            {
+                MPlugArray inPlugArr;
+                indxPlug.connectedTo( inPlugArr, true, false, &stat );
+                CHECK_MSTATUS( stat );
+                
+                // Since we asked for the destination there can only be one plug in the array
+                MPlug meshPlug = inPlugArr[0];
+                MObject collisionMeshNodeObj = meshPlug.node( &stat );
+                CHECK_MSTATUS( stat );
+                MFnDependencyNode collisionMeshNodeFn( collisionMeshNodeObj );
+                WmBunsenCollisionMeshNode* collisionMeshNode = (WmBunsenCollisionMeshNode*)collisionMeshNodeFn.userNode();
+                BASim::CollisionMeshData* collisionMeshData = collisionMeshNode->collisionMeshData();
+
+                // If the connection was made on file load then it is possible the collision mesh
+                // node had not yet created the data from the mesh. If so then skip it and we'll 
+                // get it when we are finished loading and time moves.
+                if (collisionMeshData != NULL)
+                    m_beaker->initialiseCollisionMesh(collisionMeshData, i);
+            }
+            else
+                CHECK_MSTATUS( stat );            
+        }
+    }
+}
+
+
 MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock ) 
 {
     MStatus stat;
@@ -122,7 +193,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
         const double3 &gravity = i_dataBlock.inputValue( ia_gravity, &stat ).asDouble3();
         CHECK_MSTATUS( stat );
-        m_beaker->setGravity( Vec3d( gravity[0], gravity[1], gravity[2] ) );
+        m_beaker->setGravity( BASim::Vec3d( gravity[0], gravity[1], gravity[2] ) );
 
     	m_beaker->setMaxIter(i_dataBlock.inputValue(ia_maxIter, &stat).asInt());
         CHECK_MSTATUS( stat );
@@ -146,6 +217,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         }
 
         pullOnAllRodNodes( i_dataBlock );
+        updateAllCollisionMeshes( i_dataBlock );
         
         if ( m_currentTime > m_previousTime ) 
         {
@@ -234,6 +306,47 @@ void WmBunsenNode::draw( M3dView& i_view, const MDagPath& i_path,
 
 	glPopAttrib();
 	i_view.endGL();
+}
+
+
+MStatus WmBunsenNode::connectionMade( const MPlug& i_plug, const MPlug& i_otherPlug, bool i_asSrc ) 
+{    
+    MStatus stat;
+    MStatus retVal( MS::kUnknownParameter );
+
+    if ( i_plug == ia_collisionMeshes)
+    {
+        cerr << "Connecting collision mesh to dynamics node\n";
+
+        size_t idx = i_plug.logicalIndex();
+       
+        // It would be so great if we could do this here but Maya loads objects in some random order
+        // so we can't guarantee that the mesh node will have a mesh attached when it is connected
+        // here.         
+     /*  MObject collisionMeshDataObj = otherPlug.node( &stat );
+        CHECK_MSTATUS( stat );
+        MFnDependencyNode collisionMeshNodeFn( collisionMeshDataObj );
+        CollisionMeshNode *collisionMeshNode = (CollisionMeshNode*)collisionMeshNodeFn.userNode();
+        
+        CollisionMeshData* collisionMeshData = collisionMeshNode->collisionMeshData();*/
+        
+        m_beaker->addCollisionMesh( idx );
+    }
+
+    return retVal;
+}
+
+MStatus WmBunsenNode::connectionBroken( const MPlug& i_plug, const MPlug& i_otherPlug, bool i_asSrc )
+{
+    MStatus retVal( MS::kUnknownParameter );
+
+    if ( i_plug == ia_collisionMeshes )
+    {
+        size_t idx = i_plug.logicalIndex();
+        m_beaker->removeCollisionMesh( idx );
+    }
+
+    return MStatus::kUnknownParameter;
 }
 
 bool WmBunsenNode::isBounded() const
@@ -403,6 +516,22 @@ MStatus WmBunsenNode::initialize()
         stat = addAttribute( ca_syncAttrs );
         if (!stat) { stat.perror( "addAttribute ca_syncAttrs" ); return stat; }
 	}
+    
+    {
+        MFnNumericAttribute nAttr;
+        ia_collisionMeshes = nAttr.create( "collisionMeshes", "com", MFnNumericData::kBoolean, false, &stat);
+        if (!stat) {
+            stat.perror("create ia_collisionMeshes attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        nAttr.setDisconnectBehavior( MFnAttribute::kDelete );
+        nAttr.setArray( true );
+        stat = addAttribute( ia_collisionMeshes );
+        if (!stat) { stat.perror( "addAttribute ia_collisionMeshes" ); return stat; }
+    }
 
     stat = attributeAffects( ia_time, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_time->ca_syncAttrs" ); return stat; }
@@ -421,6 +550,8 @@ MStatus WmBunsenNode::initialize()
 	stat = attributeAffects( ia_solver, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
 	stat = attributeAffects( ia_numberOfThreads, ca_syncAttrs );
+	if (!stat) { stat.perror( "attributeAffects ia_numberOfThreads->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_collisionMeshes, ca_syncAttrs );
 	if (!stat) { stat.perror( "attributeAffects ia_numberOfThreads->ca_syncAttrs" ); return stat; }
     
     stat = attributeAffects( ia_time, oa_simStepTaken );

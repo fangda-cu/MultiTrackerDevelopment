@@ -40,9 +40,12 @@ public:
                        M3dView::DisplayStyle i_style,
                        M3dView::DisplayStatus i_status );
     virtual bool isBounded() const;
+    virtual MStatus connectionMade( const  MPlug & i_plug, const  MPlug & i_otherPlug, bool i_asSrc );
+    virtual MStatus connectionBroken( const  MPlug & i_plug, const  MPlug & i_otherPlug, bool i_asSrc );
+
     static void* creator();
     static MStatus initialize();
-
+    
     static MTypeId typeID;
     static MString typeName;
     static MObject ia_time;
@@ -55,6 +58,8 @@ public:
     static MObject ia_numberOfThreads;
     static MObject ia_solver;
     
+    static MObject ia_collisionMeshes;
+    
     static MObject ca_syncAttrs;
     static MObject oa_simStepTaken;
     
@@ -62,6 +67,7 @@ private:
     void pullOnAllRodNodes( MDataBlock& i_dataBlock );
     void createRodDataFromRodNodes( MDataBlock& i_dataBlock, 
                                     ObjectControllerBase::SolverLibrary solverLibrary );
+    void updateAllCollisionMeshes( MDataBlock& i_dataBlock );
     
     double m_currentTime;
     double m_previousTime;

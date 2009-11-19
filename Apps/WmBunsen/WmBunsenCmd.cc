@@ -1,4 +1,5 @@
 #include "WmBunsenCmd.hh"
+#include "WmBunsenCollisionMeshNode.hh"
 
 #include <inttypes.h>
 #include <map>
@@ -73,6 +74,8 @@ const char *const kCreateRods( "-cr" );
 const char *const kCreateRodsFromFozzie( "-crf" );
 const char *const kCVsPerRod( "-cpr" );
 const char *const kName( "-n" );
+const char *const kAddCollisionMeshes( "-acm" );
+
 const char *const kHelp( "-h" );
 
 MSyntax WmBunsenCmd::syntaxCreator()
@@ -92,6 +95,8 @@ MSyntax WmBunsenCmd::syntaxCreator()
                "creates discrete elastic rods from the selected Fozzie node." );
     p_AddFlag( mSyntax, kCVsPerRod, "-cvsPerRod",
                "Sets the number of CVs to use for each created elastic rod.", MSyntax::kLong );
+    p_AddFlag( mSyntax, kAddCollisionMeshes, "-addCollisionMesh",
+               "Adds a a selected polygon mesh as a collision object for the selected Bunsen node." );
     
     mSyntax.setObjectType( MSyntax::kSelectionList );
     mSyntax.useSelectionAsDefault( true );
@@ -462,6 +467,8 @@ void WmBunsenCmd::getNodes( MSelectionList i_opt_nodes )
     MStatus stat;
 
     m_nurbsCurveList.clear();
+    m_fozzieNodeList.clear();
+    m_meshList.clear();
 
     for (MItSelectionList sIt(i_opt_nodes); !sIt.isDone(); sIt.next())
     {
@@ -473,28 +480,41 @@ void WmBunsenCmd::getNodes( MSelectionList i_opt_nodes )
         stat = dagFn.getPath( childPath );
         CHECK_MSTATUS( stat );
         childPath.extendToShape();
+
+        //////////////////
+        //
+        // First check for Maya in built nodes
         
-        if(( childPath.apiType() == MFn::kNurbsCurve ) )
+        if ( childPath.apiType() == MFn::kNurbsCurve )
         {
             mObj = childPath.node();
             
             m_nurbsCurveList.add( childPath, mObj, true);
-            
-            //MFnDependencyNode curfn( childPath.node() );
         }
-        else
+        else if ( childPath.apiType() == MFn::kMesh )
         {
+            mObj = childPath.node();
+            
+            m_meshList.add( childPath, mObj, true);            
+        } 
+        else            
+        {
+            /////////////////////
+            //
+            // Now check for user created plugin nodes
+            
             MFnDependencyNode nodeFn( childPath.node( &stat ) );
             CHECK_MSTATUS( stat );
             if ( nodeFn.typeName() == WmBunsenNode::typeName )
             {
                 m_selectedwmBunsenNode = childPath.node();
             }
-            if ( nodeFn.typeName() == "wmFozFurSetNode" )
+            else if ( nodeFn.typeName() == "wmFozFurSetNode" )
             {
                 m_fozzieNodeList.add( childPath, mObj, true );
-            }
+            } 
         }
+        
         
         
         // In this case we let the user select a root group, and then iterate through all
@@ -545,6 +565,10 @@ MStatus WmBunsenCmd::redoIt()
             // Create
             createWmBunsenRodNode( false );
         }
+        if ( m_mArgDatabase->isFlagSet( kAddCollisionMeshes ) )
+        {
+            addCollisionMeshes();
+        }
         else
         {
             // Do other stuff such as return number of rods or whatever
@@ -559,6 +583,86 @@ MStatus WmBunsenCmd::undoIt()
     return MS::kSuccess;
 }
 
+void WmBunsenCmd::addCollisionMeshes()
+{
+    MStatus stat;
+    
+    if ( m_selectedwmBunsenNode == MObject::kNullObj )
+    {
+       MGlobal::displayError( "Please select a wmBunsen node to connect the mesh to." );
+       return;
+    }
+    
+    MFnDependencyNode bunsenNodeFn( m_selectedwmBunsenNode, &stat );
+    CHECK_MSTATUS( stat );
+    
+    MPlug bunsenInputPlugArr = bunsenNodeFn.findPlug( "collisionMeshes", true, &stat );
+    CHECK_MSTATUS( stat );
+    
+    for ( uint l=0; l<m_meshList.length(); l++ )
+    {
+        MDagPath dagPath;
+        MObject component;
+        m_meshList.getDagPath( l, dagPath, component );
+        dagPath.extendToShape();
+
+        MObject nodeObj = dagPath.node( &stat );
+        CHECK_MSTATUS( stat );
+        MFnDependencyNode nodeFn( nodeObj, &stat );
+
+        // Create a collisionMeshNode to pipe the mesh through on the way to the dynamics node
+    
+        MObject collisionMeshNodeTObj;  // Object for transform node
+        MObject collisionMeshNodeSObj;  // Object for shape node
+        MDagPath shapeDagPath;    
+        MObject pObj;
+        MDagModifier dagModifier;
+
+        createDagNode( WmBunsenCollisionMeshNode::typeName.asChar(), 
+                       WmBunsenCollisionMeshNode::typeName.asChar(), 
+                       pObj, &collisionMeshNodeTObj, &collisionMeshNodeSObj, &dagModifier );
+                          
+        MDagPath collisionMeshNodeDagPath;
+        stat = MDagPath::getAPathTo( collisionMeshNodeSObj, collisionMeshNodeDagPath );
+        CHECK_MSTATUS( stat );
+
+        MString timeStr( "connectAttr -f time1.outTime " + collisionMeshNodeDagPath.fullPathName() + ".time" );
+        dagModifier.commandToExecute( timeStr );
+        dagModifier.doIt();   
+            
+        if ( nodeFn.typeName() == "mesh" )
+        {
+            MFnMesh meshFn( dagPath, &stat );
+            CHECK_MSTATUS( stat );
+
+            MPlug worldMeshPlug = meshFn.findPlug( "worldMesh", true, &stat ).elementByLogicalIndex( 0, &stat );
+            CHECK_MSTATUS( stat );
+
+            MPlug collisionMeshNodeInPlug( collisionMeshNodeSObj, WmBunsenCollisionMeshNode::ia_inMesh );
+            
+            stat = dagModifier.connect( worldMeshPlug, collisionMeshNodeInPlug );
+            CHECK_MSTATUS( stat );
+            stat = dagModifier.doIt();
+            CHECK_MSTATUS( stat );    
+
+            MPlug collisionMeshNodeOutPlug( collisionMeshNodeSObj, WmBunsenCollisionMeshNode::oa_meshData );
+            
+            unsigned int numElements = bunsenInputPlugArr.numElements( &stat );
+            CHECK_MSTATUS( stat );
+            MPlug bunsenMeshPlug = bunsenInputPlugArr.elementByLogicalIndex( numElements );
+            CHECK_MSTATUS( stat );
+            if ( stat.error() )
+            {
+                MGlobal::displayError( stat.errorString() );
+                return;
+            }
+            stat = dagModifier.connect( collisionMeshNodeOutPlug, bunsenMeshPlug );
+            CHECK_MSTATUS( stat );
+            stat = dagModifier.doIt();
+            CHECK_MSTATUS( stat );                               
+        }
+    }
+}
 
 void WmBunsenCmd::p_AddFlag(
                         MSyntax &i_mSyntax,

@@ -5,14 +5,15 @@ find_package (GLUT REQUIRED glut)
 include_directories (${GLUT_INCLUDE_DIR})
 
 set (Directories
-	.
-	Core
+  .
+  Core
   Core/TopologicalObject
   Math
   Physics
   Physics/ElasticRods
   Render
-	Util
+  Util
+  Collisions
 )
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})

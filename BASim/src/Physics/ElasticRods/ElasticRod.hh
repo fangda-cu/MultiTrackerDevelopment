@@ -8,6 +8,8 @@
 #ifndef ELASTICROD_HH
 #define ELASTICROD_HH
 
+#include <BASim/Collisions>
+
 namespace BASim {
 
 class RodForce;
@@ -19,7 +21,7 @@ class RodForce;
     degrees of freedom with the edge degrees of freedom as follows:
     \f$\left<x_0,y_0,z_0,\theta_0,x_1,y_1,z_1,\theta_1,...\right>\f$.
 */
-class ElasticRod : public PhysObject
+class ElasticRod : public PhysObject, public CollisionObject
 {
 public:
 
@@ -263,6 +265,49 @@ public:
   virtual void updateReferenceProperties();
   virtual void verifyProperties();
 
+  ////////////////////////////////////////////////////////////////////////////////
+  // 
+  // Needed for collisions. Really rods should be based off of CollisionObject
+  // so there is a uniform interface for colliding objects.
+  
+  std::vector<Vec3d>& getStartPositions() { return m_previousPositions; }
+  std::vector<Vec3d>& getEndPositions() { return m_currentPositions; }
+  
+  // Interface from CollisionObject base clasee
+  
+  virtual Positions& getPositions() { return m_previousPositions; }
+  virtual Velocities& getVelocities() { return m_currentVelocities; }
+  virtual Indices& getEdgeIndices() { return m_edgeIndices; }
+  virtual Indices& getTriangleIndices()
+  {
+     // What are you doing trying to get
+     // triangle indices from a rod?!?
+     //
+     assert(false);
+
+     // Compiler doesn't like it if you
+     // don't return something, even if
+     // it will never get here
+     //
+     return m_edgeIndices;
+  }
+
+  virtual Real getMassInverse(uint vertex)
+  {
+    if (vertFixed(vertex))
+      return 0.0;
+    else
+      return (1.0 / getVertexMass(vertex));
+  }
+
+  virtual Real getFrictionCoefficient() { return m_friction; }
+  // Again we assume rods are cylindrical for collision
+  virtual Real getThickness() { return radius(); }
+
+  
+  ////////////////////////////////////////////////////////////////////////////////
+  
+  
 protected:
 
   void computeEdges();
@@ -321,7 +366,26 @@ protected:
   EPropHandle<Scalar> m_edgeLengths; ///< lengths of edges
   EPropHandle<bool> m_edgeFixed;
   VPropHandle<int> m_edgeIdx;
+  
+  ////////////////////////////////////////////////////////////////////////////////
+  //
+  // Needed for collisions. They should really be integrated with the the rest of
+  // the data but to get this working I'm leaving them seperate as it's easier
+  // to debug
+  
+  std::vector<Vec3d> m_currentPositions;
+  std::vector<Vec3d> m_previousPositions;
+  std::vector<Vec3d> m_currentVelocities;
+  std::vector<uint> m_edgeIndices;
+  
+  // This should be a property like everything else
+  double m_friction;
+  //  
+  ////////////////////////////////////////////////////////////////////////////////
 };
+
+typedef std::vector<ElasticRod *> ElasticRods;
+typedef std::vector<ElasticRod *>::iterator ElasticRodsIterator;
 
 #include "ElasticRod.inl"
 

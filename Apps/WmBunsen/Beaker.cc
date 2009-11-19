@@ -157,14 +157,14 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar stepsize )
     Scalar currentTime = getTime();
     Scalar targetTime = currentTime + stepsize;
     
-    while(currentTime < targetTime)
+    while( currentTime < targetTime )
     {
-        if(targetTime - currentTime < getDt()+SMALL_NUMBER)
-            setDt(targetTime - currentTime);
+        if( targetTime - currentTime < getDt() + SMALL_NUMBER )
+            setDt( targetTime - currentTime );
     
         // interpolate fixed vertex positions and set timestep
         //
-        Scalar normalisedTime = (targetTime - (currentTime + getDt())) / stepsize;
+        Scalar normalisedTime = ( targetTime - ( currentTime + getDt() ) ) / stepsize;
         for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
         {
             vector<RodData*>& rodData = rdmItr->second;
@@ -178,8 +178,8 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar stepsize )
                 {
                     if( rod->vertFixed( c ) )
                     {
-                        rod->setVertex(c,normalisedTime*rodData[r]->prevVertexPositions[c] + 
-                               (1.0-normalisedTime)*rodData[r]->nextVertexPositions[c]);
+                        rod->setVertex( c,normalisedTime * rodData[r]->prevVertexPositions[c] + 
+                               ( 1.0 - normalisedTime ) * rodData[r]->nextVertexPositions[c] );
                     }
                 }
             }
@@ -191,7 +191,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar stepsize )
     }
     
     // restore dt
-    setDt(dt_save);
+    setDt( dt_save );
 }
 
 RodTimeStepper* Beaker::setupRodTimeStepper( ElasticRod& rod, 

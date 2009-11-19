@@ -79,6 +79,7 @@ protected:
 
     void createWmBunsenRodNode( bool useNURBSInput = true );
     void createWmBunsenNode( MObject &o_wmBunsenNodeObj );
+    void addCollisionMeshes();
 
 public:     // Data
 protected:  // Data
@@ -89,7 +90,7 @@ protected:  // Data
     enum Operation {
         Error = 0,
         Help,
-        CreateRods,        
+        CreateRods,
     };
 
     // The operation we're supposed to be performing
