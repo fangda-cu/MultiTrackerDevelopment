@@ -13,6 +13,7 @@
 #include <iostream>
 #include <ext/hash_map>
 #include "RodData.hh"
+#include <BASim/src/Collisions/CollisionMeshData.hh>
 
 using namespace BASim;
 using namespace std;
@@ -80,7 +81,7 @@ public:
         return &( m_rodDataMap[ i_rodGroup ] );
     }
     
-    RodTimeStepper* setupRodTimeStepper( ElasticRod& rod, 
+    RodTimeStepper* setupRodTimeStepper( BASim::ElasticRod& rod, 
         ObjectControllerBase::SolverLibrary solverLibrary );
     
     void draw(void);
@@ -96,10 +97,14 @@ public:
     void resetEverything();
     void createSpaceForRods( size_t i_rodGroup, size_t i_numRods );
     void createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary solverLibrary );
-
+    bool collisionMeshInitialised( const size_t id );
+    void initialiseCollisionMesh( BASim::CollisionMeshData *collisionMeshData, size_t id );
+    void removeCollisionMesh( const size_t id );
+    
 private:
     World* m_world;
     RodDataMap m_rodDataMap;
+    CollisionMeshDataHashMap m_collisionMeshMap;
     
     ObjPropHandle<Scalar> m_timeHandle;
     ObjPropHandle<Scalar> m_dtHandle;

@@ -310,29 +310,33 @@ void WmBunsenNode::draw( M3dView& i_view, const MDagPath& i_path,
 
 
 MStatus WmBunsenNode::connectionMade( const MPlug& i_plug, const MPlug& i_otherPlug, bool i_asSrc ) 
-{    
+{     
     MStatus stat;
     MStatus retVal( MS::kUnknownParameter );
 
+    // It would be so great if we could do this here but Maya loads objects in some random order
+    // so we can't guarantee that the mesh node will have a mesh attached when it is connected
+    // here.
+    /*
     if ( i_plug == ia_collisionMeshes)
     {
         cerr << "Connecting collision mesh to dynamics node\n";
 
         size_t idx = i_plug.logicalIndex();
        
-        // It would be so great if we could do this here but Maya loads objects in some random order
-        // so we can't guarantee that the mesh node will have a mesh attached when it is connected
-        // here.         
-     /*  MObject collisionMeshDataObj = otherPlug.node( &stat );
+                 
+       MObject collisionMeshDataObj = otherPlug.node( &stat );
         CHECK_MSTATUS( stat );
         MFnDependencyNode collisionMeshNodeFn( collisionMeshDataObj );
         CollisionMeshNode *collisionMeshNode = (CollisionMeshNode*)collisionMeshNodeFn.userNode();
         
-        CollisionMeshData* collisionMeshData = collisionMeshNode->collisionMeshData();*/
+        CollisionMeshData* collisionMeshData = collisionMeshNode->collisionMeshData();
         
         m_beaker->addCollisionMesh( idx );
     }
 
+    */
+    
     return retVal;
 }
 

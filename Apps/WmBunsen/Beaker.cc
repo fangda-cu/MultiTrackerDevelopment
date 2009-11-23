@@ -154,6 +154,7 @@ void Beaker::addRod( size_t i_rodGroup,
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar stepsize )
 {
     Scalar dt_save = getDt();
+    Scalar startTime = getTime();
     Scalar currentTime = getTime();
     Scalar targetTime = currentTime + stepsize;
     
@@ -162,6 +163,12 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar stepsize )
         if( targetTime - currentTime < getDt() + SMALL_NUMBER )
             setDt( targetTime - currentTime );
     
+        // Update CollisionMeshData for this substep
+        //
+        Scalar interpolateFactor = ( 1 - ( (getTime()-startTime)/(targetTime-startTime)) );
+        for ( CollisionMeshDataHashMapIterator cmItr  = m_collisionMeshMap.begin();
+                                              cmItr != m_collisionMeshMap.end(); ++cmItr )
+            cmItr->second->interpolate( interpolateFactor );
         // interpolate fixed vertex positions and set timestep
         //
         Scalar normalisedTime = ( targetTime - ( currentTime + getDt() ) ) / stepsize;
@@ -173,7 +180,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar stepsize )
             {
                 rodData[r]->stepper->setTimeStep(getDt());
                 rodData[r]->stepper->setMaxIterations(getMaxIter());
-                ElasticRod* rod = rodData[r]->rod;
+                BASim::ElasticRod* rod = rodData[r]->rod;
                 for( int c = 0; c < rod->nv(); c++)
                 {
                     if( rod->vertFixed( c ) )
@@ -194,7 +201,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar stepsize )
     setDt( dt_save );
 }
 
-RodTimeStepper* Beaker::setupRodTimeStepper( ElasticRod& rod, 
+RodTimeStepper* Beaker::setupRodTimeStepper( BASim::ElasticRod& rod, 
     ObjectControllerBase::SolverLibrary solverLibrary )
 {
     RodTimeStepper* stepper = new RodTimeStepper( rod );
@@ -246,4 +253,28 @@ void Beaker::draw()
         }
     }
 }
+
+
+bool Beaker::collisionMeshInitialised( const size_t id )
+{
+    BASim::CollisionMeshDataHashMapIterator itr = m_collisionMeshMap.find( id );
+    if ( itr != m_collisionMeshMap.end() && itr->second )
+        return itr->second->initialized();
+
+    return false;
+}
+
+void Beaker::initialiseCollisionMesh( BASim::CollisionMeshData *collisionMeshData, size_t id )
+{
+    m_collisionMeshMap[ id ] = collisionMeshData;
+    m_collisionMeshMap[ id ]->initialize();
+}
+
+void Beaker::removeCollisionMesh( const size_t id )
+{
+    std::cout << "Removing collision mesh with id " << id << std::endl;
+
+    m_collisionMeshMap.erase(id);
+}
+
 

@@ -2,7 +2,7 @@
 //
 
 #include "CandidateCollision.hh"
-#include "BridsonVec.hh"
+//#include "BridsonVec.hh"
 //#include "objects/Rod.hh"
 
 #include <cmath>

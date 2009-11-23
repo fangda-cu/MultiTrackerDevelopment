@@ -10,7 +10,7 @@
 
 #include <BASim/Math>
 #include "BridsonArray.hh"
-#include "BridsonVec.hh"
+//#include "BridsonVec.hh"
 
 namespace BASim {
 

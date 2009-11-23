@@ -7,7 +7,7 @@
 #include "UniformGrid.hh"
 
 #include <string>
-#include <ext/hash_map>
+#include <tr1/unordered_map>
 
 
 //#include "BoundingVolumeTree.hh"
@@ -82,7 +82,7 @@ public:
     // Level set functions
     //
 
-    void sizeLevelSet(bridson::Vec3f &origin, Vec3i &dims, Real &dx, Real length[3]);
+    void sizeLevelSet(Vec3d &origin, Vec3i &dims, Real &dx, Real length[3]);
     void buildLevelSet();
 //   void buildLevelSet(int currFrame);
     Real getLevelSetValue(Vec3d& x, Vec3d& v);
@@ -160,8 +160,8 @@ protected:
 
 };
 
-typedef __gnu_cxx::hash_map<size_t, CollisionMeshData *> CollisionMeshDataHashMap;
-typedef __gnu_cxx::hash_map<size_t, CollisionMeshData *>::iterator CollisionMeshDataHashMapIterator;
+typedef tr1::unordered_map<size_t, CollisionMeshData *> CollisionMeshDataHashMap;
+typedef tr1::unordered_map<size_t, CollisionMeshData *>::iterator CollisionMeshDataHashMapIterator;
 
 }
 

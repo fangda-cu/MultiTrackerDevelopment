@@ -287,7 +287,7 @@ void CollisionMeshData::draw()
 
 }
 
-void CollisionMeshData::sizeLevelSet(bridson::Vec3f &origin,Vec3i &dims, Real &dx, Real length[3])
+void CollisionMeshData::sizeLevelSet(Vec3d &origin,Vec3i &dims, Real &dx, Real length[3])
 {
    /* Vec3d xmin,xmax,dX;
     _grid.getGridDims(xmin,xmax,dX);

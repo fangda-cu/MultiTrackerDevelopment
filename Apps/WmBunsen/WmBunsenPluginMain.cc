@@ -3,6 +3,7 @@
 
 #include "WmBunsenRodNode.hh"
 #include "WmBunsenNode.hh"
+#include "WmBunsenCollisionMeshNode.hh"
 #include "WmBunsenCmd.hh"
 
 MStatus initializePlugin( MObject obj )
@@ -34,6 +35,16 @@ MStatus initializePlugin( MObject obj )
     if ( !stat )
     {
         stat.perror( "RegisterNode WmBunsenRodNode failed" );
+        return stat;
+    }
+
+    stat = plugin.registerNode( WmBunsenCollisionMeshNode::typeName, WmBunsenCollisionMeshNode::typeId,
+                                WmBunsenCollisionMeshNode::creator,
+                                WmBunsenCollisionMeshNode::initialize,
+                                WmBunsenCollisionMeshNode::kLocatorNode );
+    if ( !stat )
+    {
+        stat.perror( "RegisterNode WmBunsenCollisionMeshNode failed" );
         return stat;
     }
     
@@ -70,6 +81,12 @@ MStatus uninitializePlugin( MObject obj)
     if( !stat ) 
     {
         stat.perror( "DeregisterNode WmBunsenRodNode failed" );
+    }
+    
+    stat = plugin.deregisterNode( WmBunsenCollisionMeshNode::typeId );
+    if( !stat ) 
+    {
+        stat.perror( "DeregisterNode WmBunsenCollisionMeshNode failed" );
     }
     
     // Deregister custom commands

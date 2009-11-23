@@ -1,5 +1,7 @@
 #include "WmBunsenRodNode.hh"
 
+using namespace BASim;
+
 // Required by Maya to identify node
 /* static */ MTypeId WmBunsenRodNode::typeID ( 0x001135, 0x19 ); 
 /* static */ MString WmBunsenRodNode::typeName( "wmBunsenRodNode" );
@@ -86,9 +88,9 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             
             std::string frame = "time";
             if ( frame == "time" )
-                (*mx_rodData)[ i ]->rodOptions.refFrame = ElasticRod::TimeParallel;
+                (*mx_rodData)[ i ]->rodOptions.refFrame = BASim::ElasticRod::TimeParallel;
             else if (frame == "space")
-                (*mx_rodData)[ i ]->rodOptions.refFrame = ElasticRod::SpaceParallel;
+                (*mx_rodData)[ i ]->rodOptions.refFrame = BASim::ElasticRod::SpaceParallel;
 
             for ( int c=0; c<m_cvsPerRod; c++ ) 
             {
@@ -141,9 +143,9 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             
             std::string frame = "time";
             if ( frame == "time" )
-                (*mx_rodData)[ i ]->rodOptions.refFrame = ElasticRod::TimeParallel;
+                (*mx_rodData)[ i ]->rodOptions.refFrame = BASim::ElasticRod::TimeParallel;
             else if (frame == "space")
-                (*mx_rodData)[ i ]->rodOptions.refFrame = ElasticRod::SpaceParallel;
+                (*mx_rodData)[ i ]->rodOptions.refFrame = BASim::ElasticRod::SpaceParallel;
         
             for ( int c = 0; c < (*mx_rodData)[ i ]->rodOptions.numVertices; ++c )
             {
@@ -211,7 +213,7 @@ void WmBunsenRodNode::updateRodDataFromInputs()
         size_t inputVertexIndex = 0;
         for ( unsigned int i = 0; i < numStrands; i++ ) 
         {
-            ElasticRod* rod = (*mx_rodData)[ i ]->rod;
+            BASim::ElasticRod* rod = (*mx_rodData)[ i ]->rod;
             if ( rod != NULL )
             {
                 rod->setRadius( m_rodOptions.radiusA, m_rodOptions.radiusB );
@@ -265,7 +267,7 @@ void WmBunsenRodNode::updateRodDataFromInputs()
             MPoint cv;
             int nCVs = inCurveFn.numCVs();
            
-            ElasticRod* rod = (*mx_rodData)[ i ]->rod;
+            BASim::ElasticRod* rod = (*mx_rodData)[ i ]->rod;
             if ( rod != NULL )
             {
                 rod->setRadius( m_rodOptions.radiusA, m_rodOptions.radiusB );
@@ -459,7 +461,7 @@ void WmBunsenRodNode::writeRodDataToCacheFile( MString i_cachePath )
     for ( size_t r=0; r<numRods; r++ )
     {
         // Write number of vertices in this rod
-        ElasticRod* rod = (*mx_rodData)[ r ]->rod;
+        BASim::ElasticRod* rod = (*mx_rodData)[ r ]->rod;
      
         if ( rod == NULL )
         {
@@ -528,7 +530,7 @@ void WmBunsenRodNode::readRodDataFromCacheFile( MString i_cachePath )
     
     for ( size_t r=0; r<numRods; r++ )
     {
-        ElasticRod* rod = (*mx_rodData)[ r ]->rod;
+        BASim::ElasticRod* rod = (*mx_rodData)[ r ]->rod;
         if ( rod == NULL )
         {
             cerr << "WTF, rod is NULL \n";
