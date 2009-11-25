@@ -932,7 +932,7 @@ void* WmBunsenRodNode::creator()
     // Outputs to plug back into Fozzie, should really be a compound attribute
     //
     {
-        MFnTypedAttribute tAttr;  
+        MFnTypedAttribute tAttr;
         oa_simulatedVertices = tAttr.create( "simulatedVertices", "sve",
                                              MFnData::kVectorArray, &stat );
         CHECK_MSTATUS( stat );
