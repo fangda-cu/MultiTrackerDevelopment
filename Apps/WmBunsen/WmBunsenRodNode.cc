@@ -32,6 +32,10 @@ using namespace BASim;
 /* static */ MObject WmBunsenRodNode::ia_simStepTaken;
 /* static */ MObject WmBunsenRodNode::ca_simulationSync;
 
+/* static */ MObject WmBunsenRodNode::oa_simulatedVertices;
+/* static */ MObject WmBunsenRodNode::oa_nonSimulatedVertices;
+/* static */ MObject WmBunsenRodNode::oa_verticesInEachRod;
+
 WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_rodData( NULL ), mx_world( NULL ),
                                      m_numberOfInputCurves( 0 ), m_cvsPerRod( -1 )
 {
@@ -97,7 +101,7 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
                 MVector cv = vertices[ inputVertexIndex ];
                 (*mx_rodData)[ i ]->undeformedVertexPositions[ c ]  = Vec3d( cv.x, cv.y, cv.z );
                 inputVertexIndex++;
-            } 
+            }
         }
     }
     else
@@ -156,7 +160,7 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
                 
                 Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
                 (*mx_rodData)[ i ]->undeformedVertexPositions[ c ] = inputCurveVertex; 
-            }    
+            }
         }
     }
     
@@ -296,7 +300,7 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
     
-  //  cerr << "WmBunsenRodNode::compute plug = " << i_plug.name() << endl;
+    cerr << "WmBunsenRodNode::compute plug = " << i_plug.name() << endl;
 	
     if (  i_plug == oa_rodsChanged )
     {
@@ -392,6 +396,155 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 			stat.perror("WmBunsenRodNode::compute setClean");
 			return stat;
 		}
+    }
+    else if ( i_plug == oa_simulatedVertices )
+    {        
+        // We're here because a Fozzie fur set's wire deformer is asking for information
+        // on how to deform the hair.
+        
+        // First pull all the inputs to make sure we're up to date.
+        i_dataBlock.inputValue( ca_simulationSync, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+        i_dataBlock.inputValue( oa_rodsChanged, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+
+        // The above may have been clean so just make sure we actually read time
+        i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
+		CHECK_MSTATUS( stat );
+
+        MDataHandle simulatedVerticesH = i_dataBlock.outputValue( oa_simulatedVertices, &stat );
+        CHECK_MSTATUS( stat );
+        MFnVectorArrayData simulatedVerticesArrayData;
+        MStatus stat2=simulatedVerticesH.set( simulatedVerticesArrayData.create( &stat ) );
+        CHECK_MSTATUS( stat );
+        CHECK_MSTATUS( stat2 );
+        
+        MVectorArray simulatedVerticesArray = simulatedVerticesArrayData.array( &stat );
+        CHECK_MSTATUS( stat );
+       
+        if ( mx_rodData != NULL )
+        {            
+            size_t numRods = mx_rodData->size();
+            unsigned int idx = 0;
+            cerr << "TO FOZZIE: numRods = " << numRods << endl;
+            for ( size_t r = 0; r < numRods; r++ )
+            {
+                unsigned int verticesInRod = (*mx_rodData)[ r ]->rod->nv();
+                simulatedVerticesArray.setLength( (unsigned int) ( simulatedVerticesArray.length() + verticesInRod ) );
+                
+                for ( unsigned int v = 0; v < verticesInRod; v++ )
+                {
+                    Vec3d pos = (*mx_rodData)[ r ]->rod->getVertex( v );
+                    simulatedVerticesArray[ idx ] = MVector( pos[0], pos[1], pos[2] );
+                    idx++;
+                }
+            }
+        }
+        
+        cerr << "TO FOZZIE: simulated vertices array is " << simulatedVerticesArray.length() << " elements long " << endl;
+        
+        if ( simulatedVerticesArray.length() > 5 )
+            for ( unsigned int p=0; p<5; p++ )
+                cerr << "simulated verts array, point " << p << simulatedVerticesArray[p] << endl;
+        
+        simulatedVerticesH.setClean();
+        i_dataBlock.setClean( i_plug );
+        
+        /*MPlug sPlug(thisMObject(), oa_simulatedVertices);
+        MObject nodeAttr;
+        stat = sPlug.getValue( nodeAttr );
+        CHECK_MSTATUS( stat );
+
+        MFnPointArrayData ptFn( nodeAttr, &stat);
+        CHECK_MSTATUS( stat );
+
+        MPointArray simulatedPts = ptFn.array( &stat );
+        CHECK_MSTATUS( stat );
+
+        cout<<"TO FOZZIE: Get Connected simpulated array : "<<simulatedPts.length()<<endl;*/
+    }
+    else if ( i_plug == oa_nonSimulatedVertices )
+    {
+        // First pull all the inputs to make sure we're up to date.
+        i_dataBlock.inputValue( ca_simulationSync, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+        i_dataBlock.inputValue( oa_rodsChanged, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+
+        // The above may have been clean so just make sure we actually read time
+        i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
+		CHECK_MSTATUS( stat );
+
+        MDataHandle nonSimulatedVerticesH = i_dataBlock.outputValue( oa_nonSimulatedVertices, &stat );
+        CHECK_MSTATUS( stat );        
+        MFnVectorArrayData nonSimulatedVerticesArrayData;
+        nonSimulatedVerticesH.set( nonSimulatedVerticesArrayData.create( &stat ) );
+        CHECK_MSTATUS( stat );
+
+        MVectorArray nonSimulatedVerticesArray = nonSimulatedVerticesArrayData.array( &stat );
+        CHECK_MSTATUS( stat );
+
+        unsigned int idx = 0; 
+        if ( mx_rodData != NULL )
+        {
+            size_t numRods = mx_rodData->size();            
+            
+            unsigned int idx = 0;
+            
+            cerr << "TO FOZZIE: numRods = " << numRods << endl;
+            for ( size_t r = 0; r < numRods; r++ )
+            {
+                unsigned int verticesInRod = (*mx_rodData)[ r ]->rod->nv();
+                nonSimulatedVerticesArray.setLength( (unsigned int) ( nonSimulatedVerticesArray.length() + verticesInRod ) );
+                
+                for ( unsigned int v = 0; v < verticesInRod; v++ )
+                {
+                    Vec3d pos = (*mx_rodData)[ r ]->nextVertexPositions[ v ];
+                    nonSimulatedVerticesArray[ idx ] = MVector( pos[0], pos[1], pos[2] );
+                    idx++;
+                }
+            }
+            cerr << "TO FOZZIE: NON simulated vertices array is " << nonSimulatedVerticesArray.length() << " elements long " << endl;
+        }
+        
+        nonSimulatedVerticesH.setClean();
+        i_dataBlock.setClean( i_plug );
+    }
+    else if ( i_plug ==  oa_verticesInEachRod )
+    {
+        // First pull all the inputs to make sure we're up to date.
+        i_dataBlock.inputValue( ca_simulationSync, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+        i_dataBlock.inputValue( oa_rodsChanged, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+
+        // The above may have been clean so just make sure we actually read time
+        i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
+		CHECK_MSTATUS( stat );
+
+        MDataHandle verticesPerRodH = i_dataBlock.outputValue( oa_verticesInEachRod, &stat );
+        CHECK_MSTATUS( stat );        
+        MFnIntArrayData verticesPerRodArrayData;
+        verticesPerRodH.set( verticesPerRodArrayData.create( &stat ) );
+        CHECK_MSTATUS( stat );
+        
+        if ( mx_rodData != NULL )
+        {
+            MIntArray verticesPerRodArray = verticesPerRodArrayData.array( &stat );
+            size_t numRods = mx_rodData->size();
+            verticesPerRodArray.setLength( numRods );
+            unsigned int idx = 0;
+            
+            cerr << "TO FOZZIE: numRods = " << numRods << endl;
+            for ( size_t r = 0; r < numRods; r++ )
+            {
+                unsigned int verticesInRod = (*mx_rodData)[ r ]->rod->nv();
+                verticesPerRodArray[ r ] = verticesInRod;
+            }
+        }
+        
+        verticesPerRodH.setClean();        
+        i_dataBlock.setClean( i_plug );
     }
     else
     {
@@ -727,7 +880,6 @@ void* WmBunsenRodNode::creator()
     stat = attributeAffects( ia_cacheFrame, ca_simulationSync );
 	if ( !stat ) { stat.perror( "attributeAffects ia_cacheFrame->ca_syncAttrs" ); return stat; }
     
-    
     {
         MFnTypedAttribute tAttr;
         MFnStringData fnStringData;
@@ -776,6 +928,45 @@ void* WmBunsenRodNode::creator()
     }
     stat = attributeAffects( ia_fozzieVertices, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_fozzieVertices->oa_rodsChanged" ); return stat; }
+    
+    // Outputs to plug back into Fozzie, should really be a compound attribute
+    //
+    {
+        MFnTypedAttribute tAttr;  
+        oa_simulatedVertices = tAttr.create( "simulatedVertices", "sve",
+                                             MFnData::kVectorArray, &stat );
+        CHECK_MSTATUS( stat );
+        CHECK_MSTATUS( tAttr.setReadable( true ) );
+        CHECK_MSTATUS( tAttr.setWritable( false ) );
+        stat = addAttribute( oa_simulatedVertices );
+        CHECK_MSTATUS( stat );
+    }
+    
+    {
+        MFnTypedAttribute tAttr;  
+        oa_nonSimulatedVertices = tAttr.create( "nonSimulatedVertices", "nsv",
+                                             MFnData::kVectorArray, &stat );
+        CHECK_MSTATUS( stat );
+        CHECK_MSTATUS( tAttr.setReadable( true ) );
+        CHECK_MSTATUS( tAttr.setWritable( false ) );
+        stat = addAttribute( oa_nonSimulatedVertices );
+        CHECK_MSTATUS( stat );
+    }
+    
+    {
+        MFnTypedAttribute tAttr;  
+        oa_verticesInEachRod = tAttr.create( "verticesInEachRod", "ver",
+                                             MFnData::kIntArray, &stat );
+        CHECK_MSTATUS( stat );
+        CHECK_MSTATUS( tAttr.setReadable( true ) );
+        CHECK_MSTATUS( tAttr.setWritable( false ) );
+        stat = addAttribute( oa_verticesInEachRod );
+        CHECK_MSTATUS( stat );
+    }
+    
+    stat = attributeAffects( ia_time, oa_verticesInEachRod );
+	stat = attributeAffects( ia_time, oa_nonSimulatedVertices );
+	stat = attributeAffects( ia_time, oa_simulatedVertices );
     
 	return MS::kSuccess;
 }

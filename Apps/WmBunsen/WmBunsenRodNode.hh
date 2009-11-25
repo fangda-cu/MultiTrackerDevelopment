@@ -23,6 +23,7 @@
 #include <maya/MTime.h>
 #include <maya/MGlobal.h>
 #include <maya/MFnDoubleArrayData.h>
+#include <maya/MFnIntArrayData.h>
 #include <maya/MFnVectorArrayData.h>
 #include <maya/MVectorArray.h>
 #include <maya/MFnNurbsCurveData.h>
@@ -71,6 +72,11 @@ public:
     static MObject oa_rodsChanged;
     static MObject ia_simStepTaken;
     static MObject ca_simulationSync;
+    
+    // Output attributes heading to Fozzie
+    static MObject oa_simulatedVertices;
+    static MObject oa_nonSimulatedVertices;
+    static MObject oa_verticesInEachRod;
     
     // Returns the number of rods this node has input data for
     size_t numberOfRods();
