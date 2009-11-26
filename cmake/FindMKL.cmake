@@ -57,3 +57,5 @@ else (MKL_FOUND)
   set (MKL_INCLUDE_DIR)
   set (MKL_LIBRARIES)
 endif (MKL_FOUND)
+
+mark_as_advanced (MKL_LIBRARIES MKL_SEARCH_LIB MKL_LIBRARY)

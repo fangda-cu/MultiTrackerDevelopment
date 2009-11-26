@@ -27,10 +27,10 @@ if (USE_INTEL_COMPILER)
     include_directories (${MKL_INCLUDE_DIR})
 endif (USE_INTEL_COMPILER)
 
-find_package (CUDA REQUIRED)
+#find_package (CUDA REQUIRED)
 
-find_package (OpenCurrent REQUIRED)
-include_directories (${OCU_INCLUDE_DIR})
+#$find_package (OpenCurrent REQUIRED)
+#$include_directories (${OCU_INCLUDE_DIR})
 
 #include_directories ("/usr/include/c++/4.1.2/")
 
