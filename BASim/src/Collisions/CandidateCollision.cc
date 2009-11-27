@@ -15,7 +15,7 @@ using namespace bridson;
 
 CandidateCollision::CandidateCollision(CollisionObject *object1, uint primitive1,
                                        CollisionObject *object2, uint primitive2, CollisionType type)
- : _object1(object1), _primitive1(primitive1), _object2(object2), _primitive2(primitive2), _type(type)
+ : _object1(object1), _object2(object2), _primitive1(primitive1), _primitive2(primitive2), _type(type)
 {
 }
 

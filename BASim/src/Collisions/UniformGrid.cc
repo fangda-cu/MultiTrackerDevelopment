@@ -31,7 +31,7 @@ void UniformGrid::getProximities(ElasticRods &rods, Collisions &collisions)
     for (ElasticRodsIterator rItr=rods.begin(); rItr!=rods.end(); ++rItr)
     {
         ElasticRod *rod = *rItr;
-        for (uint j=0; j<rod->nv(); ++j)
+        for (int j=0; j<rod->nv(); ++j)
         {
             Vec3d x = rod->getVertex(j);
             for (uint i=0; i<3; ++i)
@@ -50,7 +50,7 @@ void UniformGrid::getProximities(ElasticRods &rods, Collisions &collisions)
     {
         for (uint i=0; i<3; ++i)
         {
-            uint d = (unsigned int)std::ceil(rodMax[i] - rodMin[i]) / dx;
+            uint d = (unsigned int)(std::ceil(rodMax[i] - rodMin[i]) / dx);
             if (d < 1)
                 d = 1;
 
@@ -66,7 +66,7 @@ void UniformGrid::getProximities(ElasticRods &rods, Collisions &collisions)
     {
         ElasticRod *rod = *rItr;
 
-        for (uint i=0; i<rod->ne(); ++i)
+        for (int i=0; i<rod->ne(); ++i)
             edgeIndexMap.insert(std::make_pair(currTotal + i, std::make_pair(currTotal, rod)));
 
         currTotal += rod->ne();
@@ -79,7 +79,7 @@ void UniformGrid::getProximities(ElasticRods &rods, Collisions &collisions)
         ElasticRod *rod = *rItr;
 
         std::vector<Vec3d> edgeMins(rod->ne()), edgeMaxs(rod->ne());
-        for (uint i=0; i<rod->ne(); ++i)
+        for (int i=0; i<rod->ne(); ++i)
         {
             if (!rod->vertFixed(i) && !rod->vertFixed((i+1)%rod->nv()))
             {
@@ -124,7 +124,7 @@ void UniformGrid::getContinuousTimeCollisions(ElasticRods &rods, Real dt, Collis
     for (ElasticRodsIterator rItr=rods.begin(); rItr!=rods.end(); ++rItr)
     {
         ElasticRod *rod = *rItr;
-        for (uint j=0; j<rod->nv(); ++j)
+        for (int j=0; j<rod->nv(); ++j)
         {
             Vec3d x0 = rod->getStartPositions()[j];
             Vec3d x1 = rod->getEndPositions()[j];
@@ -141,9 +141,9 @@ void UniformGrid::getContinuousTimeCollisions(ElasticRods &rods, Real dt, Collis
     Vec3i dims(1,1,1);
     if ((rodMax-rodMin).norm() > 1e-6)
     {
-        for (uint i=0; i<3; ++i)
+        for (int i=0; i<3; ++i)
         {
-            uint d = (unsigned int)std::ceil(rodMax[i] - rodMin[i]) / dx;
+            int d = (unsigned int)(std::ceil(rodMax[i] - rodMin[i]) / dx);
             if (d < 1)
                 d = 1;
 
@@ -170,7 +170,7 @@ void UniformGrid::getContinuousTimeCollisions(ElasticRods &rods, Real dt, Collis
     {
         ElasticRod *rod = *rItr;
 
-        for (uint i=0; i<rod->ne(); ++i)
+        for (int i=0; i<rod->ne(); ++i)
             edgeIndexMap.insert(std::make_pair(currTotal + i, std::make_pair(currTotal, rod)));
 
         currTotal += rod->ne();
@@ -183,7 +183,7 @@ void UniformGrid::getContinuousTimeCollisions(ElasticRods &rods, Real dt, Collis
         ElasticRod *rod = *rItr;
 
         std::vector<Vec3d> edgeMins(rod->ne()), edgeMaxs(rod->ne());
-        for (uint i=0; i<rod->ne(); ++i)
+        for (int i=0; i<rod->ne(); ++i)
         {
             if (!rod->vertFixed(i) && !rod->vertFixed((i+1)%rod->nv()))
             {

@@ -16,7 +16,7 @@ RodPenaltyForce::RodPenaltyForce()
 RodPenaltyForce::~RodPenaltyForce()
 {
 }
-/*
+
 void RodPenaltyForce::computeEnergy(Scalar& e)
 {
     for (VertexObjectMapIterator voItr=_vertexObjects.begin(); voItr!=_vertexObjects.end(); ++voItr)
@@ -68,8 +68,8 @@ void RodPenaltyForce::computeEnergy(Scalar& e)
         }
     }
 }
-*/
-/*
+
+
 void RodPenaltyForce::computeForce(const ElasticRod& rod, VecXd& F)
 {
     // Record pairs whose distance is greatern than the influence of the force

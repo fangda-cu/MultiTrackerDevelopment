@@ -28,19 +28,20 @@ option (TEST_ROD_TWISTING_FORCE "Tests RodTwistingForce" OFF)
 option (TEST_ROD_BENDING_FORCE "Tests RodBendingForce" OFF)
 option (BUILD_MAYA_NODES "Build Maya nodes" ON)
 
-# add some extra warnings
+# Deal with the intel compiler vs gcc
 if (CMAKE_COMPILER_IS_GNUCXX)
   if (CMAKE_SYSTEM_NAME MATCHES Linux)
     if (USE_INTEL_COMPILER)
       set (CMAKE_C_COMPILER icc)
       set (CMAKE_CXX_COMPILER  icpc)
       set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSING_INTEL_COMPILER -openmp")
+      # setup some things and disable a bunch of warnings because Intel is painfully strict
+      set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCONST=const -w1 -diag-disable vec -diag-disable ipo -vec-report0 -opt-report 0 -wd981 -wd1572 -wd1684 -wd2012 -wd2017 -wd2304 -std=c++0x") 
     else (USE_INTEL_COMPILER)
       set (CMAKE_C_COMPILER gcc-4.1)
       set ( CMAKE_CXX_COMPILER  g++-4.1)
     endif (USE_INTEL_COMPILER)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wnon-virtual-dtor -ansi -Wcast-align -Wall -Wextra -Wpointer-arith -Wwrite-strings -Wformat-security -fno-common -Wno-unused")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCONST=const -w1 -diag-disable vec -diag-disable ipo -vec-report0 -opt-report 0 -wd981 -wd1572 -wd1684 -wd2012 -wd2017 -wd2304 -std=c++0x") 
     if (CMAKE_BUILD_TYPE MATCHES Release)
       add_definitions (-DNDEBUG)
       set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-check-new -fstrict-aliasing") # -fno-exceptions

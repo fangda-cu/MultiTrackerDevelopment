@@ -7,6 +7,7 @@
 #ifndef MKLLINEARSOLVER_HH
 #define MKLLINEARSOLVER_HH
 
+#ifdef USING_INTEL_COMPILER
 
 namespace BASim {
 
@@ -91,5 +92,7 @@ protected:
 };
 
 } // namespace BASim
+
+#endif // USING_INTEL_COMPILER
 
 #endif // MKLLINEARSOLVER_HH

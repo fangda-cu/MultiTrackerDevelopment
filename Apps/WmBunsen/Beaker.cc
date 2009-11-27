@@ -191,8 +191,11 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar stepsize )
                 }
             }
         }
-
+#ifdef USING_INTEL_COMPILER
         m_world->executeInParallel( i_numberOfThreadsToUse );
+#else
+        m_world->execute();
+#endif
         setTime( currentTime + getDt() );
         currentTime = getTime();
     }

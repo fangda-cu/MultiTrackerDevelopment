@@ -1,4 +1,6 @@
 #include "MKLMatrix.hh"
+
+#ifdef USING_INTEL_COMPILER
 #include "mkl_cblas.h"
 
 
@@ -191,3 +193,4 @@ inline void MKLMatrix::transpose()
     std::swap(m_rows, m_cols);
 }
 
+#endif

@@ -26,6 +26,7 @@ class CollisionObject
 {
 public:
 
+    virtual ~CollisionObject() {};
     virtual Positions&  getPositions()=0;
     virtual Velocities& getVelocities()=0;
 

@@ -21,19 +21,20 @@ class ImplicitEuler : public DiffEqSolver
 public:
 
   ImplicitEuler(ODE& ode, ObjectControllerBase::SolverLibrary solver)
-    : m_diffEq(ode)
+    : m_diffEq(ode), m_solverLibrary(solver)
   {
-    if ( solver == ObjectControllerBase::PETSC_SOLVER )
+    
+    if ( m_solverLibrary == ObjectControllerBase::PETSC_SOLVER )
     {
-      //cerr << "Creating new Petsc solver\n";
       m_A = new PetscMatrix(m_diffEq.ndof(), m_diffEq.ndof(), 11);
       m_solver = new PetscLinearSolver(*m_A);
     }
-    else if ( solver == ObjectControllerBase::MKL_SOLVER )
-    {  
-      //cerr << "Creating new MKL solver\n";
+    else if ( m_solverLibrary == ObjectControllerBase::MKL_SOLVER )
+    { 
+#ifdef USING_INTEL_COMPILER
       m_A = new MKLMatrix(m_diffEq.ndof(), m_diffEq.ndof(), 11);
       m_solver = new MKLLinearSolver(*m_A);
+#endif
     }
   }
 
@@ -147,11 +148,19 @@ public:
     m_increment.resize(m_diffEq.ndof());
     if (m_A->rows() != m_diffEq.ndof()) {
       delete m_A;
-      //m_A = new PetscMatrix(m_diffEq.ndof(), m_diffEq.ndof(), 11);
-      m_A = new MKLMatrix(m_diffEq.ndof(), m_diffEq.ndof(), 11);
       delete m_solver;
-      //m_solver = new PetscLinearSolver(*m_A);
-      m_solver = new MKLLinearSolver(*m_A);
+      if ( m_solverLibrary == ObjectControllerBase::PETSC_SOLVER )
+      {
+        m_A = new PetscMatrix(m_diffEq.ndof(), m_diffEq.ndof(), 11);
+        m_solver = new PetscLinearSolver(*m_A);
+      }
+      else if ( m_solverLibrary == ObjectControllerBase::MKL_SOLVER )
+      {   
+#ifdef USING_INTEL_COMPILER
+        m_A = new MKLMatrix(m_diffEq.ndof(), m_diffEq.ndof(), 11);
+        m_solver = new MKLLinearSolver(*m_A);
+#endif
+      }
     }
   }
 
@@ -177,6 +186,7 @@ protected:
 
   MatrixBase* m_A;
   LinearSolverBase* m_solver;
+  ObjectControllerBase::SolverLibrary m_solverLibrary;
 };
 
 } // namespace BASim

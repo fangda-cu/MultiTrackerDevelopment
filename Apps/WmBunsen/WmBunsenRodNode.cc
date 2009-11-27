@@ -73,7 +73,7 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
         CHECK_MSTATUS( stat );
         MVectorArray vertices = verticesData.array( &stat );
     
-        int numStrands = vertices.length() / m_cvsPerRod;
+        unsigned int numStrands = vertices.length() / m_cvsPerRod;
             
         size_t inputVertexIndex = 0;
         for ( unsigned int i = 0; i < numStrands; i++ ) 
@@ -206,7 +206,7 @@ void WmBunsenRodNode::updateRodDataFromInputs()
         CHECK_MSTATUS( stat );
         MVectorArray vertices = verticesData.array( &stat );
     
-        int numStrands = vertices.length() / m_cvsPerRod;
+        size_t numStrands = vertices.length() / m_cvsPerRod;
         
         if ( mx_rodData->size() != numStrands )
         {
@@ -215,7 +215,7 @@ void WmBunsenRodNode::updateRodDataFromInputs()
         }
             
         size_t inputVertexIndex = 0;
-        for ( unsigned int i = 0; i < numStrands; i++ ) 
+        for ( size_t i = 0; i < numStrands; i++ ) 
         {
             BASim::ElasticRod* rod = (*mx_rodData)[ i ]->rod;
             if ( rod != NULL )
