@@ -121,15 +121,20 @@ bool operator!=(const Array<T>& a, const Array<T>& b)
 template<class T>
 bool operator<(const Array<T>& a, const Array<T>& b)
 {
-   if (a.nx<b.nx) return true;
-   else if(a.nx==b.nx){
-      if(a.ny<b.ny) return true;
-      else if(a.ny==b.ny)
-         if(a.nz<b.nz) return true;
-         else if(a.nz == b.nz)
-            return a.a<b.a;
-   }
-   return false;
+  if (a.nx<b.nx) {
+    return true;
+  } else if(a.nx==b.nx) {
+    if(a.ny<b.ny) {
+      return true;
+    } else if(a.ny==b.ny) {
+      if(a.nz<b.nz) {
+        return true;
+      } else if(a.nz == b.nz) {
+        return a.a<b.a;
+      }
+    }
+  }
+  return false;
 }
 
 template<class T>

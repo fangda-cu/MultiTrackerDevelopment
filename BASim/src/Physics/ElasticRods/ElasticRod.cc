@@ -56,6 +56,10 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   add_property(m_edgeFixed, "is edge fixed", false);
   add_property(m_edgeIdx, "edge index", 0);
 
+  m_friction = 0;
+  m_cor = 0;
+  m_separationStrength = 1;
+
   setupDofIndices();
 }
 

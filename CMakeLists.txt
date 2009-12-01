@@ -38,10 +38,10 @@ if (CMAKE_COMPILER_IS_GNUCXX)
       # setup some things and disable a bunch of warnings because Intel is painfully strict
       set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCONST=const -w1 -diag-disable vec -diag-disable ipo -vec-report0 -opt-report 0 -wd981 -wd1572 -wd1684 -wd2012 -wd2017 -wd2304 -std=c++0x") 
     else (USE_INTEL_COMPILER)
-      set (CMAKE_C_COMPILER gcc-4.1)
-      set ( CMAKE_CXX_COMPILER  g++-4.1)
+      #set (CMAKE_C_COMPILER gcc-4.1)
+      #set ( CMAKE_CXX_COMPILER  g++)
     endif (USE_INTEL_COMPILER)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wnon-virtual-dtor -ansi -Wcast-align -Wall -Wextra -Wpointer-arith -Wwrite-strings -Wformat-security -fno-common -Wno-unused")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wnon-virtual-dtor -ansi -Wcast-align -Wall -Wextra -Wpointer-arith -Wwrite-strings -Wformat-security -fno-common -Wno-unused -Wno-deprecated")
     if (CMAKE_BUILD_TYPE MATCHES Release)
       add_definitions (-DNDEBUG)
       set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-check-new -fstrict-aliasing") # -fno-exceptions

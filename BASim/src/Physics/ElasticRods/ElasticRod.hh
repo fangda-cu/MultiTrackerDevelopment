@@ -301,6 +301,11 @@ public:
   }
 
   virtual Real getFrictionCoefficient() { return m_friction; }
+  void setFrictionCoefficient(Real k) { m_friction = k; }
+  virtual double getCoefficientOfRestitution() { return m_cor; }
+  void setCoefficientOfRestitution(double cor) { m_cor = cor; }
+  virtual double getSeparationStrength() { return m_separationStrength; }
+  void setSeparationStrength(double k) { m_separationStrength = k; }
   // Again we assume rods are cylindrical for collision
   virtual Real getThickness() { return radius(); }
 
@@ -380,6 +385,8 @@ protected:
   
   // This should be a property like everything else
   double m_friction;
+  double m_cor;
+  double m_separationStrength;
   //  
   ////////////////////////////////////////////////////////////////////////////////
 };
