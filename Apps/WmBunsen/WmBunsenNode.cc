@@ -493,7 +493,7 @@ MStatus WmBunsenNode::initialize()
  
    {
         MFnNumericAttribute nAttr;
-        ia_solver = nAttr.create( "solver", "sol", MFnNumericData::kInt, 0, &stat );
+        ia_solver = nAttr.create( "solver", "sol", MFnNumericData::kInt, 1, &stat );
         if ( !stat ) {
             stat.perror( "create solver attribute" );
             return stat;

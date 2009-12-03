@@ -1,9 +1,14 @@
 #ifndef BASIM_COLLISIONS
 #define BASIM_COLLISIONS
 
-#include "Core"
-
+/*#include "Core"
+#include "Math"
+#include "Physics"
+*/
+#include "src/Collisions/Collision.hh"
 #include "src/Collisions/CollisionObject.hh"
+#include "src/Collisions/CandidateCollision.hh"
+#include "src/Collisions/UniformGrid.hh"
 
 #endif // BASIM_COLLISIONS
 

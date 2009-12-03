@@ -8,6 +8,9 @@
 #ifndef RODTIMESTEPPER_HH
 #define RODTIMESTEPPER_HH
 
+//#include <BASim/src/Core/ObjectControllerBase.hh>
+#include <BASim/Core>
+
 namespace BASim {
 
 /** Class to time step a rod. */

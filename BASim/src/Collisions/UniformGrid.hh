@@ -11,10 +11,15 @@
 
 #include <tr1/unordered_map>
 #include"CandidateCollision.hh"
-#include <BASim/Physics>
+//#include <BASim/src/Physics/ElasticRods/ElasticRod.hh>
+#include "BASim/src/Physics/ElasticRods/Stencil.hh"
+
+#include "BASim/src/Physics/DegreeOfFreedom.hh"
+#include "BASim/src/Physics/PhysObject.hh"
+#include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
+
 
 namespace BASim {
-
 
 typedef tr1::unordered_map<int, std::pair<int, ElasticRod *> > EdgeIndexMap;
 typedef tr1::unordered_map<int, std::pair<int, ElasticRod *> >::iterator EdgeIndexMapIterator;
@@ -25,7 +30,7 @@ public:
     UniformGrid();
     ~UniformGrid();
 
-    void getProximities(ElasticRods &rods, Collisions &collisions);
+    void getProximities(std::vector<ElasticRod *> &rods, Collisions &collisions);
     void getContinuousTimeCollisions(std::vector<ElasticRod*> &rods, Real dt, Collisions &collisions);
 
     void addElement(unsigned int idx, Vec3d &xmin, Vec3d &xmax);

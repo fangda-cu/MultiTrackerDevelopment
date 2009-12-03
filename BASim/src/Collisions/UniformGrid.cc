@@ -36,7 +36,7 @@ void UniformGrid::getProximities(ElasticRods &rods, Collisions &collisions)
             Vec3d x = rod->getVertex(j);
             for (uint i=0; i<3; ++i)
             {
-                // FIXME: This is assuming the rod has a circular cross section
+                // This is assuming the rod has a circular cross section
                 rodMin[i] = std::min(rodMin[i], x[i] - rod->radius());
                 rodMax[i] = std::max(rodMax[i], x[i] + rod->radius());
             }

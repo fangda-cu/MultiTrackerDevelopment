@@ -28,11 +28,12 @@
 #include "src/Physics/ElasticRods/RodGravity.hh"
 #include "src/Physics/ElasticRods/RodMassDamping.hh"
 
-#include "src/Physics/ElasticRods/RodTimeStepper.hh"
-
 #include "src/Physics/ElasticRods/RodTube.hh"
 
 #include "src/Physics/World.hh"
+
+#include "src/Physics/ElasticRods/RodTimeStepper.hh"
+#include "src/Physics/ElasticRods/RodCollisionTimeStepper.hh"
 
 #endif // BASIM_PHYSICS
 

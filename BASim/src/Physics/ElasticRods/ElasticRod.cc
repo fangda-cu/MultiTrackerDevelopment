@@ -61,6 +61,17 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   m_separationStrength = 1;
 
   setupDofIndices();
+
+  // For collisions
+  m_currentPositions.resize(numVertices);
+  m_previousPositions.resize(numVertices);
+  m_currentVelocities.resize(numVertices);
+  m_edgeIndices.resize(2 * ne());
+  for (int i=0; i<ne(); ++i)
+  {
+    m_edgeIndices[2*i  ] = i;
+    m_edgeIndices[2*i+1] = (i+1)%numVertices;
+  }
 }
 
 ElasticRod::~ElasticRod()

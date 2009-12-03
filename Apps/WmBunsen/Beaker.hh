@@ -81,7 +81,7 @@ public:
         return &( m_rodDataMap[ i_rodGroup ] );
     }
     
-    RodTimeStepper* setupRodTimeStepper( BASim::ElasticRod& rod, 
+    ObjectControllerBase* setupRodTimeStepper( BASim::ElasticRod& rod, 
         ObjectControllerBase::SolverLibrary solverLibrary );
     
     void draw(void);

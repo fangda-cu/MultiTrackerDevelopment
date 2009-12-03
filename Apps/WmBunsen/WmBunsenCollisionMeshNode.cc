@@ -302,7 +302,7 @@ MStatus WmBunsenCollisionMeshNode::initialize()
 
     {
 	    MFnNumericAttribute nAttr;
-        ia_separationStrength = nAttr.create("separationStrength", "ss", MFnNumericData::kDouble, 10000.0, &stat);
+        ia_separationStrength = nAttr.create("separationStrength", "ss", MFnNumericData::kDouble, 100.0, &stat);
 	    if (!stat) {
             stat.perror( "create ia_separationStrength attribute" );
             return stat;
@@ -329,8 +329,8 @@ MStatus WmBunsenCollisionMeshNode::initialize()
     }
 
     {
-	    MFnNumericAttribute nAttr;
-        ia_thickness = nAttr.create("thickness", "thk", MFnNumericData::kDouble, 1.0, &stat);
+	MFnNumericAttribute nAttr;
+        ia_thickness = nAttr.create("thickness", "thk", MFnNumericData::kDouble, 0.1, &stat);
 	    if (!stat) {
             stat.perror( "create ia_thickness attribute" );
             return stat;
@@ -338,8 +338,8 @@ MStatus WmBunsenCollisionMeshNode::initialize()
         nAttr.setWritable( true );
         nAttr.setReadable( false );
         nAttr.setKeyable( true );
-	    stat = addAttribute(ia_thickness);
-	    if (!stat) { stat.perror("addAttribute thickness"); return stat;}
+        stat = addAttribute(ia_thickness);
+        if (!stat) { stat.perror("addAttribute thickness"); return stat;}
     }
 
     {

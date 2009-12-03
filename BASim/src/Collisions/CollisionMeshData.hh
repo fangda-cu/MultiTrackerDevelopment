@@ -160,9 +160,6 @@ protected:
 
 };
 
-typedef tr1::unordered_map<size_t, CollisionMeshData *> CollisionMeshDataHashMap;
-typedef tr1::unordered_map<size_t, CollisionMeshData *>::iterator CollisionMeshDataHashMapIterator;
-
 }
 
 #endif

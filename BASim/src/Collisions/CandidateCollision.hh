@@ -7,11 +7,11 @@
 #ifndef _CANDIDATE_COLLISION_H_
 #define _CANDIDATE_COLLISION_H_
 
-
+#include <tr1/unordered_map>
 #include "Collision.hh"
-#include <ext/hash_set>
+//#include <ext/hash_set>
 
-class ElasticRod;
+//class ElasticRod;
 
 namespace BASim {
 
@@ -152,8 +152,10 @@ public:
     }
 };
 
-typedef __gnu_cxx::hash_set<CandidateCollision, CCHash> CandidateCollisionSet;
-typedef __gnu_cxx::hash_set<CandidateCollision, CCHash>::iterator CandidateCollisionSetIterator;
+//typedef __gnu_cxx::hash_set<CandidateCollision, CCHash> CandidateCollisionSet;
+//typedef __gnu_cxx::hash_set<CandidateCollision, CCHash>::iterator CandidateCollisionSetIterator;
+typedef std::vector<CandidateCollision> CandidateCollisionSet;
+typedef std::vector<CandidateCollision>::iterator CandidateCollisionSetIterator;
 
 }
 

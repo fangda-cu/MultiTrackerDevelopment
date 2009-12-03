@@ -16,6 +16,9 @@
 
 namespace BASim {
 
+typedef std::vector<ObjectBase*> Objects;
+typedef std::vector<ObjectControllerBase*> Controllers;
+
 /** Class that collects all of the objects in the world. */
 class World : public ObjectBase
 {

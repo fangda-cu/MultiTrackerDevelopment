@@ -1,7 +1,7 @@
 // RodPenaltyForce.cc
 //
 
-#include "BASim/src/Collisions/CollisionMeshData.hh"
+//#include "BASim/src/Collisions/CollisionMeshData.hh"
 #include "RodPenaltyForce.hh"
 
 namespace BASim {
@@ -73,7 +73,7 @@ RodPenaltyForce::~RodPenaltyForce()
 
 void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
 {
-  ElasticRod& rod = const_cast<ElasticRod&>(rod);
+  ElasticRod& rod = const_cast<ElasticRod&>(const_rod);
   // Record pairs whose distance is greatern than the influence of the
   // force we will delete these later
   //
@@ -85,27 +85,39 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
     int vertex   = voItr->first;
     int triangle = voItr->second.second;
 
+
+    cerr << "candidate collision between vertex " << vertex << " and triangle " << triangle << endl;
+
+    
     // Get distance between vertex and triangle
     //
     Scalar t1, t2, t3;
-    Scalar distance = std::sqrt(getClosestPointsVertexTriangle(rod.getVertex(vertex),
+    /*Scalar distance = std::sqrt(getClosestPointsVertexTriangle(rod.getVertex(vertex),
                                                                cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]],
                                                                cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 1]],
                                                                cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 2]],
+                                                               t1, t2, t3));*/
+    Scalar distance = std::sqrt(getClosestPointsVertexTriangle(rod.getVertex(vertex),
+                                                               cmData->oldPositions[cmData->triangleIndices[(3 * triangle)    ]],
+                                                               cmData->oldPositions[cmData->triangleIndices[(3 * triangle) + 1]],
+                                                               cmData->oldPositions[cmData->triangleIndices[(3 * triangle) + 2]],
                                                                t1, t2, t3));
+
+    cerr << "possible collision has distance " << distance << endl;
 
     if (distance < (cmData->getThickness() + rod.radius()))
     {
-      Vec3d n = (cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 1]] -
-                 cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]]).cross(
-                                                                                           cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 2]] -
-                                                                                           cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]]);
 
+      cerr << "Found collision so applying penalty force\n";
+      Vec3d n = (cmData->oldPositions[cmData->triangleIndices[(3 * triangle) + 1]] -
+                 cmData->oldPositions[cmData->triangleIndices[(3 * triangle)    ]]).cross(
+                                                                                           cmData->oldPositions[cmData->triangleIndices[(3 * triangle) + 2]] -
+                                                                                           cmData->oldPositions[cmData->triangleIndices[(3 * triangle)    ]]);
 
       Vec3d normal = rod.getVertex(vertex) -
-        (t1 * cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]] +
-         t2 * cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 1]] +
-         t3 * cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 2]]);
+        (t1 * cmData->oldPositions[cmData->triangleIndices[(3 * triangle)    ]] +
+         t2 * cmData->oldPositions[cmData->triangleIndices[(3 * triangle) + 1]] +
+         t3 * cmData->oldPositions[cmData->triangleIndices[(3 * triangle) + 2]]);
 
       // Vertex is inside object or the distance is too small to trust the normal
       //

@@ -121,39 +121,10 @@ void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary 
     
     cerr << "Beaker - Created " << numRods << " rods\n";
 }
-/*
-void Beaker::addRod( size_t i_rodGroup,
-                     vector<Vec3d>& i_initialVertexPositions, 
-                     vector<Vec3d>& i_undeformedVertexPositions,
-                     RodOptions& i_options )
-{
-    // setupRod() is defined in ../BASim/src/Physics/ElasticRods/RodUtils.hh
-    ElasticRod* rod = setupRod( i_options, i_initialVertexPositions, i_undeformedVertexPositions );
-
-    rod->fixVert( 0 );
-    rod->fixVert( 1 );
-    rod->fixVert( rod->nv() - 2 );
-    rod->fixVert( rod->nv() - 1 );
-    rod->fixEdge( 0 );
-    rod->fixEdge( rod->ne() - 1 );
-    
-    RodTimeStepper* stepper = setupRodTimeStepper( *rod );
-    
-    // FIXME: 
-    // Why do we have to add rods and steppers seperately? It feels like the stepper should
-    // be part of the rod?
-    m_world->addObject( rod );
-    m_world->addController( stepper );
-    
-    RodRenderer* rodRenderer = new RodRenderer( *rod );
-    
-    RodData* rodData = new RodData( rod, stepper, rodRenderer );
-    m_rodDataMap[ i_rodGroup ].push_back( rodData );
-}*/
 
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar stepsize )
 {
-    Scalar dt_save = getDt();
+   /* Scalar dt_save = getDt();
     Scalar startTime = getTime();
     Scalar currentTime = getTime();
     Scalar targetTime = currentTime + stepsize;
@@ -190,21 +161,41 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar stepsize )
                     }
                 }
             }
+        }*/
+    for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
+    {
+        vector<RodData*>& rodData = rdmItr->second;
+        size_t numRods = rodData.size();
+        for ( size_t r=0; r<numRods; r++ )
+        {
+            BASim::ElasticRod* rod = rodData[r]->rod;
+            rod->setCollisionStartPositions();
         }
+    }
 #ifdef USING_INTEL_COMPILER
         m_world->executeInParallel( i_numberOfThreadsToUse );
 #else
-        m_world->execute();
+    //m_world->execute();
+    // There is no way to pass in the collision meshes to world so I'm going to
+    // iterate over its controllers myself.
+    Controllers& controllers = m_world->getControllers();
+    Controllers::iterator it;
+    for (it = controllers.begin(); it != controllers.end(); ++it) {
+      if ( dynamic_cast<RodCollisionTimeStepper*>(*it) )
+        dynamic_cast<RodCollisionTimeStepper*>(*it)->execute(m_collisionMeshMap, getDt());
+      else
+        (*it)->execute();
+    } 
 #endif
-        setTime( currentTime + getDt() );
+   /*     setTime( currentTime + getDt() );
         currentTime = getTime();
     }
     
     // restore dt
-    setDt( dt_save );
+    setDt( dt_save );*/
 }
 
-RodTimeStepper* Beaker::setupRodTimeStepper( BASim::ElasticRod& rod, 
+ObjectControllerBase* Beaker::setupRodTimeStepper( BASim::ElasticRod& rod, 
     ObjectControllerBase::SolverLibrary solverLibrary )
 {
     RodTimeStepper* stepper = new RodTimeStepper( rod );
@@ -238,10 +229,13 @@ RodTimeStepper* Beaker::setupRodTimeStepper( BASim::ElasticRod& rod,
         stepper->addExternalForce( new RodGravity( getGravity() ) );
     }
     
-    int iterations = 100;
-    stepper->setMaxIterations( iterations );
+    // We use 1 iteration on purpose, it should work well.
+    //int iterations = 1;
+    //stepper->setMaxIterations( iterations );
+
+    RodCollisionTimeStepper* rodCollisionTimeStepper = new RodCollisionTimeStepper( stepper, &rod );
     
-    return stepper;
+    return rodCollisionTimeStepper;
 }
 
 void Beaker::draw()

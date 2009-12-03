@@ -8,7 +8,7 @@
 #ifndef ELASTICROD_HH
 #define ELASTICROD_HH
 
-#include <BASim/Collisions>
+#include <BASim/src/Collisions/CollisionObject.hh>
 
 namespace BASim {
 
@@ -270,11 +270,64 @@ public:
   // Needed for collisions. Really rods should be based off of CollisionObject
   // so there is a uniform interface for colliding objects.
   
+  void collisionsBegin(Real dt)
+  {
+      //getStartPositions().resize(nv());
+      //getEndPositions().resize(nv());
+      //getVelocities().resize(nv());
+
+      for (int i=0; i<nv(); ++i)
+      {
+          // Start positions for this timestep are the end positions from last timestep
+          //
+          getStartPositions()[i] = getEndPositions()[i];
+  
+          // Candidate end positions are the current positions
+          //
+          getEndPositions()[i] = getVertex(i);
+  
+          // Average velocity
+          //
+          getVelocities()[i] = (getEndPositions()[i] - getStartPositions()[i]) / dt;
+      }
+  }
+
+  void collisionsEnd(Real dt)
+  {
+      // Compute final, end-of-timestep positions
+      //
+      updateEndPositions(dt);
+  
+      for (int i=0; i<nv(); ++i)
+      {
+          Vec3d velocityChange = (getEndPositions()[i] - getVertex(i)) / dt;
+          setVelocity(i, velocityChange);
+          setVertex(i, getEndPositions()[i]);
+      }
+  }
+
+  void updateEndPositions(Real dt)
+  {
+      // Update the end-of-timestep positions using the current velocity
+      //
+      for (int i=0; i<nv(); ++i)
+          getEndPositions()[i] = getStartPositions()[i] + getVelocities()[i] * dt;
+  }
+
+  void setCollisionStartPositions()
+  {
+    // Collision code uses the start position data, so update it using the
+    // current vertex positions
+    //
+    //getStartPositions().resize(nv());
+    for (int i=0; i<nv(); ++i)
+        getStartPositions()[i] = getVertex(i);
+  }
+
   std::vector<Vec3d>& getStartPositions() { return m_previousPositions; }
   std::vector<Vec3d>& getEndPositions() { return m_currentPositions; }
   
   // Interface from CollisionObject base clasee
-  
   virtual Positions& getPositions() { return m_previousPositions; }
   virtual Velocities& getVelocities() { return m_currentVelocities; }
   virtual Indices& getEdgeIndices() { return m_edgeIndices; }

@@ -30,7 +30,7 @@ setenv LD_LIBRARY_PATH "${MKLROOT}/lib/64:${MKLROOT}/lib/32":${LD_LIBRARY_PATH}
 #setup the maya environment to pick up the local version of Barber Shop
 setenv MAYA_PLUG_IN_PATH /local1/apps/mayaPlugins:${MAYA_PLUG_IN_PATH}
 setenv MAYA_SCRIPT_PATH /local1/apps/mayaPlugins/scripts:${MAYA_SCRIPT_PATH}
-setenv XBMLANGPATH /local1/apps/mayaPlugins/icons%B:${XBMLANGPATH}
+setenv XBMLANGPATH /local1/apps/mayaPlugins/icons/%B:${XBMLANGPATH}
 
 
 
