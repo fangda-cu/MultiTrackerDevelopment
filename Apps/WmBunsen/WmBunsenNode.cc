@@ -15,6 +15,7 @@ MObject WmBunsenNode::ia_gravity;
 MObject WmBunsenNode::ia_numberOfThreads;
 MObject WmBunsenNode::ia_solver;
 MObject WmBunsenNode::ia_collisionMeshes;
+MObject WmBunsenNode::ia_collisionsEnabled;
 MObject WmBunsenNode::oa_simStepTaken;
 
 WmBunsenNode::WmBunsenNode() : m_initialised( false ), m_beaker( NULL )
@@ -204,6 +205,9 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     
         int numberOfThreads = i_dataBlock.inputValue( ia_numberOfThreads, &stat ).asInt();
         CHECK_MSTATUS( stat );
+
+        bool collisionsEnabled = i_dataBlock.inputValue( ia_collisionsEnabled, &stat ).asBool();
+        CHECK_MSTATUS( stat );
         
         int solver = i_dataBlock.inputValue( ia_solver, &stat ).asInt();
         
@@ -225,7 +229,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         
         if ( m_currentTime > m_previousTime && m_currentTime != m_startTime) 
         {
-            m_beaker->takeTimeStep( numberOfThreads, m_framedt, substeps ); 
+            m_beaker->takeTimeStep( numberOfThreads, m_framedt, substeps, collisionsEnabled ); 
         }
     
         MDataHandle outputData = i_dataBlock.outputValue ( ca_syncAttrs, &stat );
@@ -555,6 +559,20 @@ MStatus WmBunsenNode::initialize()
         if (!stat) { stat.perror( "addAttribute ia_collisionMeshes" ); return stat; }
     }
 
+    {
+        MFnNumericAttribute nAttr;
+        ia_collisionsEnabled = nAttr.create( "collisionsEnabled", "coe", MFnNumericData::kBoolean, true, &stat);
+        if (!stat) {
+            stat.perror("create ia_collisionsEnabled attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_collisionsEnabled );
+        if (!stat) { stat.perror( "addAttribute ia_collisionsEnabled" ); return stat; }
+    }
+
     stat = attributeAffects( ia_time, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_time->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_startTime, ca_syncAttrs );
@@ -576,7 +594,9 @@ MStatus WmBunsenNode::initialize()
     stat = attributeAffects( ia_numberOfThreads, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_numberOfThreads->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_collisionMeshes, ca_syncAttrs );
-    if (!stat) { stat.perror( "attributeAffects ia_numberOfThreads->ca_syncAttrs" ); return stat; }
+    if (!stat) { stat.perror( "attributeAffects ia_collisionMeshes->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_collisionsEnabled, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_collisionsEnabled->ca_syncAttrs" ); return stat; }
     
     stat = attributeAffects( ia_time, oa_simStepTaken );
     if (!stat) { stat.perror( "attributeAffects ia_time->oa_simulatedRods" ); return stat; }

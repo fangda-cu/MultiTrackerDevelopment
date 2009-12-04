@@ -86,7 +86,8 @@ public:
     
     void draw(void);
 
-    void takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, int i_subSteps );
+    void takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, 
+                       int i_subSteps, bool i_collisionsEnabled );
     
     /*(void addRod( size_t i_rodGroup,
                  vector<Vec3d>& i_initialVertexPositions, 

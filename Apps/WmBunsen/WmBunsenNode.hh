@@ -58,6 +58,7 @@ public:
     static MObject ia_gravity;
     static MObject ia_numberOfThreads;
     static MObject ia_solver;
+    static MObject ia_collisionsEnabled;
     
     static MObject ia_collisionMeshes;
     

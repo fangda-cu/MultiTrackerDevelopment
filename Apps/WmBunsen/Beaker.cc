@@ -119,7 +119,8 @@ void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary 
     cerr << "Beaker - Created " << numRods << " rods\n";
 }
 
-void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, int i_subSteps )
+void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, 
+  int i_subSteps, bool i_collisionsEnabled  )
 {
     cerr << "Taking " << i_subSteps << " step(s) of size " << i_stepSize/i_subSteps << endl;
 
@@ -134,10 +135,13 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, int i_
         // Update CollisionMeshData for this substep
         //
         Scalar interpolateFactor = ( 1 - ( (getTime()-startTime)/(targetTime-startTime)) );
-        for ( CollisionMeshDataHashMapIterator cmItr  = m_collisionMeshMap.begin();
-                                              cmItr != m_collisionMeshMap.end(); ++cmItr )
+        if ( !i_collisionsEnabled )
         {
-            cmItr->second->interpolate( interpolateFactor ); 
+            for ( CollisionMeshDataHashMapIterator cmItr  = m_collisionMeshMap.begin();
+                                                    cmItr != m_collisionMeshMap.end(); ++cmItr )
+            {
+                cmItr->second->interpolate( interpolateFactor ); 
+            }
         }
         // interpolate fixed vertex positions and set timestep
         //
@@ -163,16 +167,23 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, int i_
 #ifdef USING_INTEL_COMPILER
         m_world->executeInParallel( i_numberOfThreadsToUse );
 #else
-        //m_world->execute();
-        // There is no way to pass in the collision meshes to world so I'm going to
-        // iterate over its controllers myself.
-        Controllers& controllers = m_world->getControllers();
-        Controllers::iterator it;
-        for (it = controllers.begin(); it != controllers.end(); ++it) {
-          if ( dynamic_cast<RodCollisionTimeStepper*>(*it) )
-            dynamic_cast<RodCollisionTimeStepper*>(*it)->execute(m_collisionMeshMap, getDt());
-          else
-            (*it)->execute();
+
+        if ( !i_collisionsEnabled )
+        {
+            m_world->execute();
+        }
+        else
+        {
+          // There is no way to pass in the collision meshes to world so I'm going to
+          // iterate over its controllers myself.
+          Controllers& controllers = m_world->getControllers();
+          Controllers::iterator it;
+          for (it = controllers.begin(); it != controllers.end(); ++it) {
+            if ( dynamic_cast<RodCollisionTimeStepper*>(*it) )
+              dynamic_cast<RodCollisionTimeStepper*>(*it)->execute(m_collisionMeshMap, getDt());
+            else
+              (*it)->execute();
+          }
         }
 #endif
         setTime( currentTime + getDt() );
