@@ -29,6 +29,11 @@ public:
 
   ~RodCollisionTimeStepper();
 
+  ObjectControllerBase* getTimeStepper()
+  {
+    return m_rodTimeStepper;
+  }
+  
   void execute()
   {
     m_rodTimeStepper->execute();
@@ -36,12 +41,14 @@ public:
 
   void execute(CollisionMeshDataHashMap &collisionMeshes, Scalar dt)
   {
+    m_rod->setCollisionStartPositions();
     getProximities(collisionMeshes);
     m_rodTimeStepper->execute();
-
     m_rod->collisionsBegin(dt);
+    
  //   if (m_fullSelfCollisionsEnabled)
-   //   Rod::respondRodCollisions(_rods, collisionDT, m_selfCollisionsIterations, m_collisionsCoefficientOfRestitution);
+   //   Rod::respondRodCollisions(_rods, collisionDT, m_selfCollisionsIterations,
+   //                             m_collisionsCoefficientOfRestitution);
     respondObjectCollisions(collisionMeshes, dt);
     m_rod->collisionsEnd(dt);
   }

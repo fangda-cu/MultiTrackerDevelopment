@@ -81,12 +81,12 @@ public:
         return &( m_rodDataMap[ i_rodGroup ] );
     }
     
-    ObjectControllerBase* setupRodTimeStepper( BASim::ElasticRod& rod, 
+    RodCollisionTimeStepper* setupRodTimeStepper( BASim::ElasticRod& rod, 
         ObjectControllerBase::SolverLibrary solverLibrary );
     
     void draw(void);
 
-    void takeTimeStep( int i_numberOfThreadsToUse, Scalar stepSize );
+    void takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, int i_subSteps );
     
     /*(void addRod( size_t i_rodGroup,
                  vector<Vec3d>& i_initialVertexPositions, 

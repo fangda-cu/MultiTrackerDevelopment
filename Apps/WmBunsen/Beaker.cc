@@ -103,10 +103,7 @@ void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary 
     
         rodDataVector[ r ]->rod->fixVert( 0 );
         rodDataVector[ r ]->rod->fixVert( 1 );
-        //rod->fixVert( rod->nv() - 2 );
-        //rod->fixVert( rod->nv() - 1 );
         rodDataVector[ r ]->rod->fixEdge( 0 );
-        //rod->fixEdge( rod->ne() - 1 );
         
         rodDataVector[ r ]->stepper = setupRodTimeStepper( *(rodDataVector[ r ]->rod), solverLibrary );
         
@@ -122,80 +119,71 @@ void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary 
     cerr << "Beaker - Created " << numRods << " rods\n";
 }
 
-void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar stepsize )
+void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, int i_subSteps )
 {
-   /* Scalar dt_save = getDt();
+    cerr << "Taking " << i_subSteps << " step(s) of size " << i_stepSize/i_subSteps << endl;
+
+    Scalar dt_save = getDt();
     Scalar startTime = getTime();
     Scalar currentTime = getTime();
-    Scalar targetTime = currentTime + stepsize;
+    Scalar targetTime = currentTime + i_stepSize*i_subSteps;
+    setDt( i_stepSize/i_subSteps );
     
-    while( currentTime < targetTime )
+    for ( int s=0; s<i_subSteps; s++ )
     {
-        if( targetTime - currentTime < getDt() + SMALL_NUMBER )
-            setDt( targetTime - currentTime );
-    
         // Update CollisionMeshData for this substep
         //
         Scalar interpolateFactor = ( 1 - ( (getTime()-startTime)/(targetTime-startTime)) );
         for ( CollisionMeshDataHashMapIterator cmItr  = m_collisionMeshMap.begin();
                                               cmItr != m_collisionMeshMap.end(); ++cmItr )
-            cmItr->second->interpolate( interpolateFactor );
+        {
+            cmItr->second->interpolate( interpolateFactor ); 
+        }
         // interpolate fixed vertex positions and set timestep
         //
-        Scalar normalisedTime = ( targetTime - ( currentTime + getDt() ) ) / stepsize;
         for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
         {
             vector<RodData*>& rodData = rdmItr->second;
             size_t numRods = rodData.size();
             for ( size_t r=0; r<numRods; r++ )
             {
-                rodData[r]->stepper->setTimeStep(getDt());
-                rodData[r]->stepper->setMaxIterations(getMaxIter());
+                dynamic_cast<RodTimeStepper*>(rodData[r]->stepper->getTimeStepper())->setTimeStep(getDt());
                 BASim::ElasticRod* rod = rodData[r]->rod;
                 for( int c = 0; c < rod->nv(); c++)
                 {
                     if( rod->vertFixed( c ) )
                     {
-                        rod->setVertex( c,normalisedTime * rodData[r]->prevVertexPositions[c] + 
-                               ( 1.0 - normalisedTime ) * rodData[r]->nextVertexPositions[c] );
+                        rod->setVertex( c,interpolateFactor * rodData[r]->prevVertexPositions[c] + 
+                               ( 1.0 - interpolateFactor ) * rodData[r]->nextVertexPositions[c] );
                     }
                 }
             }
-        }*/
-    for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
-    {
-        vector<RodData*>& rodData = rdmItr->second;
-        size_t numRods = rodData.size();
-        for ( size_t r=0; r<numRods; r++ )
-        {
-            BASim::ElasticRod* rod = rodData[r]->rod;
-            rod->setCollisionStartPositions();
         }
-    }
+        
 #ifdef USING_INTEL_COMPILER
         m_world->executeInParallel( i_numberOfThreadsToUse );
 #else
-    //m_world->execute();
-    // There is no way to pass in the collision meshes to world so I'm going to
-    // iterate over its controllers myself.
-    Controllers& controllers = m_world->getControllers();
-    Controllers::iterator it;
-    for (it = controllers.begin(); it != controllers.end(); ++it) {
-      if ( dynamic_cast<RodCollisionTimeStepper*>(*it) )
-        dynamic_cast<RodCollisionTimeStepper*>(*it)->execute(m_collisionMeshMap, getDt());
-      else
-        (*it)->execute();
-    } 
+        //m_world->execute();
+        // There is no way to pass in the collision meshes to world so I'm going to
+        // iterate over its controllers myself.
+        Controllers& controllers = m_world->getControllers();
+        Controllers::iterator it;
+        for (it = controllers.begin(); it != controllers.end(); ++it) {
+          if ( dynamic_cast<RodCollisionTimeStepper*>(*it) )
+            dynamic_cast<RodCollisionTimeStepper*>(*it)->execute(m_collisionMeshMap, getDt());
+          else
+            (*it)->execute();
+        }
 #endif
-   /*     setTime( currentTime + getDt() );
+        setTime( currentTime + getDt() );
         currentTime = getTime();
     }
     
     // restore dt
-    setDt( dt_save );*/
+    setDt( dt_save );
 }
 
-ObjectControllerBase* Beaker::setupRodTimeStepper( BASim::ElasticRod& rod, 
+RodCollisionTimeStepper* Beaker::setupRodTimeStepper( BASim::ElasticRod& rod, 
     ObjectControllerBase::SolverLibrary solverLibrary )
 {
     RodTimeStepper* stepper = new RodTimeStepper( rod );
@@ -229,7 +217,7 @@ ObjectControllerBase* Beaker::setupRodTimeStepper( BASim::ElasticRod& rod,
         stepper->addExternalForce( new RodGravity( getGravity() ) );
     }
     
-    // We use 1 iteration on purpose, it should work well.
+    // We use 1 iteration on purpose, it should work well. See 'Large steps in cloth simulation' paper
     //int iterations = 1;
     //stepper->setMaxIterations( iterations );
 

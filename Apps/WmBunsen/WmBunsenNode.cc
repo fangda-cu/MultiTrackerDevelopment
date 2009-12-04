@@ -6,6 +6,7 @@ MString WmBunsenNode::typeName( "wmBunsenNode" );
 MObject WmBunsenNode::ca_syncAttrs;
 MObject WmBunsenNode::ia_time;
 MObject WmBunsenNode::ia_fps;
+MObject WmBunsenNode::ia_substeps;
 MObject WmBunsenNode::ia_maxDt;
 MObject WmBunsenNode::ia_maxIter;
 MObject WmBunsenNode::ia_startTime;
@@ -188,15 +189,18 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_framedt = 1.0 / i_dataBlock.inputValue(ia_fps, &stat).asDouble();
         CHECK_MSTATUS( stat );
 
-        m_beaker->setDt(i_dataBlock.inputValue(ia_maxDt, &stat ).asDouble());
-        CHECK_MSTATUS( stat );	
+        int substeps = i_dataBlock.inputValue(ia_substeps, &stat).asInt();
+        CHECK_MSTATUS( stat );
+
+        //m_beaker->setDt(i_dataBlock.inputValue(ia_maxDt, &stat ).asDouble());
+        //CHECK_MSTATUS( stat );	
 
         const double3 &gravity = i_dataBlock.inputValue( ia_gravity, &stat ).asDouble3();
         CHECK_MSTATUS( stat );
         m_beaker->setGravity( BASim::Vec3d( gravity[0], gravity[1], gravity[2] ) );
 
-    	m_beaker->setMaxIter(i_dataBlock.inputValue(ia_maxIter, &stat).asInt());
-        CHECK_MSTATUS( stat );
+    	//m_beaker->setMaxIter(i_dataBlock.inputValue(ia_maxIter, &stat).asInt());
+        //CHECK_MSTATUS( stat );
     
         int numberOfThreads = i_dataBlock.inputValue( ia_numberOfThreads, &stat ).asInt();
         CHECK_MSTATUS( stat );
@@ -219,10 +223,9 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         pullOnAllRodNodes( i_dataBlock );
         updateAllCollisionMeshes( i_dataBlock );
         
-        if ( m_currentTime > m_previousTime ) 
+        if ( m_currentTime > m_previousTime && m_currentTime != m_startTime) 
         {
-            // take a step of size 1.0/24.0
-            m_beaker->takeTimeStep( numberOfThreads, m_framedt ); 
+            m_beaker->takeTimeStep( numberOfThreads, m_framedt, substeps ); 
         }
     
         MDataHandle outputData = i_dataBlock.outputValue ( ca_syncAttrs, &stat );
@@ -368,7 +371,7 @@ MStatus WmBunsenNode::initialize()
     MStatus stat;
     
     {
-        MFnUnitAttribute	uAttr;
+        MFnUnitAttribute uAttr;
         ia_time = uAttr.create( "time", "t", MTime( 0.0 ), &stat );
         if ( !stat) 
         {
@@ -397,12 +400,12 @@ MStatus WmBunsenNode::initialize()
         if ( !stat ) { stat.perror( "addAttribute ia_startTime" ); return stat; }
     }
 
-    {
+   {
 	MFnNumericAttribute nAttr;
     	ia_fps = nAttr.create( "framesPerSecond", "fps", MFnNumericData::kDouble, 24.0, &stat );
         if ( !stat ) 
         {
-            stat.perror( "create framesPerSecond attribute");
+            stat.perror( "create fps attribute");
             return stat;
         }
         nAttr.setWritable( true );
@@ -410,6 +413,21 @@ MStatus WmBunsenNode::initialize()
         nAttr.setKeyable( true );  
         stat = addAttribute( ia_fps );
         if ( !stat ) { stat.perror( "addAttribute ia_fps" ); return stat; }
+    }
+
+    {
+	MFnNumericAttribute nAttr;
+    	ia_substeps = nAttr.create( "subSteps", "sub", MFnNumericData::kInt, 1, &stat );
+        if ( !stat ) 
+        {
+            stat.perror( "create substeps attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setKeyable( true );  
+        stat = addAttribute( ia_substeps );
+        if ( !stat ) { stat.perror( "addAttribute ia_substeps" ); return stat; }
     }
 
     {
@@ -543,6 +561,8 @@ MStatus WmBunsenNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_startTimer->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_fps, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_fps->ca_syncAttrs" );return stat;}
+    stat = attributeAffects( ia_substeps, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_substeps->ca_syncAttrs" );return stat;}
     stat = attributeAffects( ia_maxDt, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_maxDt->ca_syncAttrs" );return stat;}
     stat = attributeAffects( ia_maxIter, ca_syncAttrs );
@@ -551,12 +571,12 @@ MStatus WmBunsenNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_gravity, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
-	stat = attributeAffects( ia_solver, ca_syncAttrs );
+    stat = attributeAffects( ia_solver, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
-	stat = attributeAffects( ia_numberOfThreads, ca_syncAttrs );
-	if (!stat) { stat.perror( "attributeAffects ia_numberOfThreads->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_numberOfThreads, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_numberOfThreads->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_collisionMeshes, ca_syncAttrs );
-	if (!stat) { stat.perror( "attributeAffects ia_numberOfThreads->ca_syncAttrs" ); return stat; }
+    if (!stat) { stat.perror( "attributeAffects ia_numberOfThreads->ca_syncAttrs" ); return stat; }
     
     stat = attributeAffects( ia_time, oa_simStepTaken );
     if (!stat) { stat.perror( "attributeAffects ia_time->oa_simulatedRods" ); return stat; }

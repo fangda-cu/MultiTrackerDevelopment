@@ -23,10 +23,8 @@ public:
   ImplicitEuler(ODE& ode, ObjectControllerBase::SolverLibrary solver)
     : m_diffEq(ode), m_solverLibrary(solver)
   {
-    cerr << "ABOUT TO CREATE SOLVERr\n";
     if ( m_solverLibrary == ObjectControllerBase::PETSC_SOLVER )
     {
-      cerr << "creating petsc solver\n";
       m_A = new PetscMatrix(m_diffEq.ndof(), m_diffEq.ndof(), 11);
       m_solver = new PetscLinearSolver(*m_A);
     }

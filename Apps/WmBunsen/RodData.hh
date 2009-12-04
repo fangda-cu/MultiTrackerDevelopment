@@ -13,7 +13,7 @@ class RodData
 {
 public:
     RodData();
-    RodData( ElasticRod* i_rod, ObjectControllerBase* i_stepper, RodRenderer* i_rodRenderer );
+    RodData( ElasticRod* i_rod, RodCollisionTimeStepper* i_stepper, RodRenderer* i_rodRenderer );
     ~RodData();
     
     
@@ -24,7 +24,7 @@ public:
     
     // Should we keep the ObjectHandle returned by World rather than the actual rod?
     ElasticRod* rod;
-    ObjectControllerBase* stepper;
+    RodCollisionTimeStepper* stepper;
     RodRenderer* rodRenderer;
     
     // These variables are updated directly by the WmBunsenRodNode each frame.
