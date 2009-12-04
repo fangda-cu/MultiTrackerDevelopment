@@ -122,8 +122,6 @@ void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary 
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, 
   int i_subSteps, bool i_collisionsEnabled  )
 {
-    cerr << "Taking " << i_subSteps << " step(s) of size " << i_stepSize/i_subSteps << endl;
-
     Scalar dt_save = getDt();
     Scalar startTime = getTime();
     Scalar currentTime = getTime();
@@ -132,9 +130,12 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     
     for ( int s=0; s<i_subSteps; s++ )
     {
+        if ( targetTime - currentTime < getDt() + SMALL_NUMBER )
+            setDt( targetTime - currentTime );
+
         // Update CollisionMeshData for this substep
         //
-        Scalar interpolateFactor = ( 1 - ( (getTime()-startTime)/(targetTime-startTime)) );
+        Scalar interpolateFactor = ( (double)(s+1) / i_subSteps );
         if ( !i_collisionsEnabled )
         {
             for ( CollisionMeshDataHashMapIterator cmItr  = m_collisionMeshMap.begin();
@@ -157,13 +158,13 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 {
                     if( rod->vertFixed( c ) )
                     {
-                        rod->setVertex( c,interpolateFactor * rodData[r]->prevVertexPositions[c] + 
-                               ( 1.0 - interpolateFactor ) * rodData[r]->nextVertexPositions[c] );
+                        rod->setVertex( c,interpolateFactor * rodData[r]->nextVertexPositions[c] + 
+                               ( 1.0 - interpolateFactor ) * rodData[r]->prevVertexPositions[c] );
                     }
                 }
             }
         }
-        
+    
 #ifdef USING_INTEL_COMPILER
         m_world->executeInParallel( i_numberOfThreadsToUse );
 #else

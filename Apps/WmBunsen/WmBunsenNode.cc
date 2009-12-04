@@ -176,7 +176,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
     
-   // cerr << "WmBunsenNode::compute plug = " << i_plug.name() << endl;
+    cerr << "WmBunsenNode::compute plug = " << i_plug.name() << endl;
 	
     if ( i_plug == ca_syncAttrs )
     {
@@ -588,7 +588,7 @@ MStatus WmBunsenNode::initialize()
     stat = attributeAffects( ia_rodsNodes, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_gravity, ca_syncAttrs );
-    if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
+    if (!stat) { stat.perror( "attributeAffects ia_gravity->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_solver, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_rodsNodes->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_numberOfThreads, ca_syncAttrs );

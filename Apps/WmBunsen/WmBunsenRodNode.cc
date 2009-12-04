@@ -300,9 +300,9 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
     
- //   cerr << "WmBunsenRodNode::compute plug = " << i_plug.name() << endl;
+    cerr << "WmBunsenRodNode::compute plug = " << i_plug.name() << endl;
 	
-    if (  i_plug == oa_rodsChanged )
+    if ( i_plug == oa_rodsChanged )
     {
         m_previousTime = m_currentTime;
         m_currentTime = i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
