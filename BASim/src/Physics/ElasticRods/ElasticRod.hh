@@ -272,10 +272,6 @@ public:
   
   void collisionsBegin(Real dt)
   {
-      //getStartPositions().resize(nv());
-      //getEndPositions().resize(nv());
-      //getVelocities().resize(nv());
-
       for (int i=0; i<nv(); ++i)
       {
           // Start positions for this timestep are the end positions from last timestep
@@ -289,7 +285,7 @@ public:
           // Average velocity
           //
           getVelocities()[i] = (getEndPositions()[i] - getStartPositions()[i]) / dt;
-      }
+      }      
   }
 
   void collisionsEnd(Real dt)
@@ -301,9 +297,9 @@ public:
       for (int i=0; i<nv(); ++i)
       {
           Vec3d velocityChange = (getEndPositions()[i] - getVertex(i)) / dt;
-          setVelocity(i, velocityChange);
+          setVelocity(i, getVelocity(i) + velocityChange);
           setVertex(i, getEndPositions()[i]);
-      }
+      }      
   }
 
   void updateEndPositions(Real dt)

@@ -130,7 +130,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     
     for ( int s=0; s<i_subSteps; s++ )
     {
-        if ( targetTime - currentTime < getDt() + SMALL_NUMBER )
+        if ( (targetTime - currentTime) < getDt() + SMALL_NUMBER )
             setDt( targetTime - currentTime );
 
         // Update CollisionMeshData for this substep
@@ -138,7 +138,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         Scalar interpolateFactor = ( (double)(s+1) / i_subSteps );
         if ( !i_collisionsEnabled )
         {
-            for ( CollisionMeshDataHashMapIterator cmItr  = m_collisionMeshMap.begin();
+            for ( CollisionMeshDataHashMapIterator cmItr = m_collisionMeshMap.begin();
                                                     cmItr != m_collisionMeshMap.end(); ++cmItr )
             {
                 cmItr->second->interpolate( interpolateFactor ); 
@@ -164,7 +164,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 }
             }
         }
-    
+
 #ifdef USING_INTEL_COMPILER
         m_world->executeInParallel( i_numberOfThreadsToUse );
 #else
@@ -180,10 +180,10 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
           Controllers& controllers = m_world->getControllers();
           Controllers::iterator it;
           for (it = controllers.begin(); it != controllers.end(); ++it) {
-            if ( dynamic_cast<RodCollisionTimeStepper*>(*it) )
+            //if ( dynamic_cast<RodCollisionTimeStepper*>(*it) )
               dynamic_cast<RodCollisionTimeStepper*>(*it)->execute(m_collisionMeshMap, getDt());
-            else
-              (*it)->execute();
+           // else
+           //   (*it)->execute();
           }
         }
 #endif

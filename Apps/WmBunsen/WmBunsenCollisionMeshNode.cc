@@ -403,7 +403,7 @@ MStatus WmBunsenCollisionMeshNode::initialize()
     stat = attributeAffects( ia_drawCollisionData, oa_meshData );
     if (!stat) { stat.perror( "attributeAffects ia_drawCollisionData->oa_meshData" ); return stat;}
     
-	return MS::kSuccess;
+    return MS::kSuccess;
 }
 
 

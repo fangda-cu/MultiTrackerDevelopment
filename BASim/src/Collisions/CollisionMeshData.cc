@@ -156,7 +156,7 @@ void CollisionMeshData::update(vector<Vec3d>& points, std::string filename, int 
 
             // TODO: Replace hard-coded 24 with fps as given by user
             //
-            velocities[currVertex][i] = (newPositions[currVertex][i] - oldPositions[currVertex][i]) * 24.0;
+            velocities[currVertex][i] = (newPositions[currVertex][i] - oldPositions[currVertex][i]) * _fps;
         }
     }    
     

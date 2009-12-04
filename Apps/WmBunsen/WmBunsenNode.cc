@@ -176,7 +176,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
     
-    cerr << "WmBunsenNode::compute plug = " << i_plug.name() << endl;
+ //   cerr << "WmBunsenNode::compute plug = " << i_plug.name() << endl;
 	
     if ( i_plug == ca_syncAttrs )
     {
