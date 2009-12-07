@@ -73,6 +73,10 @@ RodPenaltyForce::~RodPenaltyForce()
 
 void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
 {
+  VecXd beforeF = F;
+
+  //cerr << "Forces (BEFORE) = \n " << F << endl;
+
   ElasticRod& rod = const_cast<ElasticRod&>(const_rod);
   // Record pairs whose distance is greatern than the influence of the
   // force we will delete these later
@@ -85,39 +89,32 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
     int vertex   = voItr->first;
     int triangle = voItr->second.second;
 
-
-    cerr << "candidate collision between vertex " << vertex << " and triangle " << triangle << endl;
-
-    
     // Get distance between vertex and triangle
     //
     Scalar t1, t2, t3;
+    Scalar distance = std::sqrt(getClosestPointsVertexTriangle(rod.getVertex(vertex),
+                                                               cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]],
+                                                               cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 1]],
+                                                               cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 2]],
+                                                               t1, t2, t3));
     /*Scalar distance = std::sqrt(getClosestPointsVertexTriangle(rod.getVertex(vertex),
                                                                cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]],
                                                                cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 1]],
                                                                cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 2]],
                                                                t1, t2, t3));*/
-    Scalar distance = std::sqrt(getClosestPointsVertexTriangle(rod.getVertex(vertex),
-                                                               cmData->oldPositions[cmData->triangleIndices[(3 * triangle)    ]],
-                                                               cmData->oldPositions[cmData->triangleIndices[(3 * triangle) + 1]],
-                                                               cmData->oldPositions[cmData->triangleIndices[(3 * triangle) + 2]],
-                                                               t1, t2, t3));
-
-    cerr << "possible collision has distance " << distance << endl;
 
     if (distance < (cmData->getThickness() + rod.radius()))
     {
 
-      cerr << "Found collision so applying penalty force\n";
-      Vec3d n = (cmData->oldPositions[cmData->triangleIndices[(3 * triangle) + 1]] -
-                 cmData->oldPositions[cmData->triangleIndices[(3 * triangle)    ]]).cross(
-                                                                                           cmData->oldPositions[cmData->triangleIndices[(3 * triangle) + 2]] -
-                                                                                           cmData->oldPositions[cmData->triangleIndices[(3 * triangle)    ]]);
+      Vec3d n = (cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 1]] -
+                 cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]]).cross(
+                 cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 2]] - 
+                 cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]]);
 
       Vec3d normal = rod.getVertex(vertex) -
-        (t1 * cmData->oldPositions[cmData->triangleIndices[(3 * triangle)    ]] +
-         t2 * cmData->oldPositions[cmData->triangleIndices[(3 * triangle) + 1]] +
-         t3 * cmData->oldPositions[cmData->triangleIndices[(3 * triangle) + 2]]);
+        (t1 * cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]] +
+         t2 * cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 1]] +
+         t3 * cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 2]]);
 
       // Vertex is inside object or the distance is too small to trust the normal
       //
@@ -141,7 +138,7 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
       Scalar stiffness = cmData->getSeparationStrength();
       Vec3d force = e * stiffness * ((cmData->getThickness() + rod.radius()) - distance) * normal;
 
-      // TODO: It is very hard to achieven static friction with a friction force,
+      // TODO: It is very hard to achieve static friction with a friction force,
       // in fact, I don't know of a way to do it (maybe somebody has figured it out)
       // As such, keep the friction coeff low, otherwise you may get weird behavior
       // Try using a velocity based damping for friction, it may work better
@@ -162,11 +159,20 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
 
       for (int i=0; i<3; ++i)
         F[rod.vertIdx(vertex, i)] += force[i];
+
+      //cerr << "Collision, applying force to vertex " << vertex << ": " << force << endl;
+      
     }
     else
+    {
+    //  cerr << "Scheduling force on vertex " << vertex << " for deletion\n";
       toDelete.push_back(std::make_pair(vertex, std::make_pair(cmData, triangle)));
+    }
   }
 
+  /*cerr << "about to delete forces, num forces = " << _vertexObjects.size() << endl;
+  cerr << "toDelete.size() = " << toDelete.size() << endl;
+  */
   // Kill all pairs flagged for deletion
   //
   std::vector<std::pair<int, std::pair<CollisionMeshData *, int> > >::iterator itr=toDelete.begin();
@@ -182,6 +188,11 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
       }
     }
   }
+
+  /*cerr << "done deleting: " << endl;
+  cerr << "num forces = " << _vertexObjects.size() << endl;
+  cerr << "toDelete.size() = " << toDelete.size() << endl;
+  */
 
   // Now compute all edge-edge forces
   //
@@ -260,6 +271,10 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
       }
     }
   }
+
+
+ // cerr << "Forces (AFTER) = \n " << F - beforeF << endl;
+
 }
 
 void RodPenaltyForce::addRodPenaltyForce(int vertex, CollisionMeshData *cmData, int triangle)

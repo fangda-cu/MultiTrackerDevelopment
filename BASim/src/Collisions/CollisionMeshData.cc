@@ -252,11 +252,15 @@ void CollisionMeshData::updateGrid(vector<Vec3d>& points, std::string filename)
 
 
 void CollisionMeshData::interpolate(Real percentage)
-{
+{    
+  //  allPositions.resize(allPositions.size()+1);
+   // cerr << "interpolating and allPositions.size() = " << allPositions.size() << endl;
     for (size_t i=0; i<currPositions.size(); ++i)
     {
         prevPositions[i] = currPositions[i];
         currPositions[i] = (1.0 - percentage) * oldPositions[i] + percentage * newPositions[i];
+
+     //   allPositions[allPositions.size()-1][i] = currPositions[i];
     }
 //    _bvTree.fitTree(prevPositions, currPositions, triangleIndices);
 
@@ -269,22 +273,21 @@ void CollisionMeshData::draw()
     //
      //if(_phiCurrent->isInitialized())
 	//_phiCurrent->draw();
-     
-     /*
-     glBegin(GL_TRIANGLES);
-     for (size_t i=0; i<_nbrTriangles; ++i)
-     {    
-	 float c = (float)(i)/(float)(_nbrTriangles);
-	 glColor3f(c, c, c);
-	 
-	 glVertex3dv(currPositions[triangleIndices[(3 * i)    ]].data());
-	 glVertex3dv(currPositions[triangleIndices[(3 * i) + 1]].data());
-	 glVertex3dv(currPositions[triangleIndices[(3 * i) + 2]].data());
-     }
-     glEnd();
-     
-     */
-
+         
+  /*  for ( size_t p=0; p<allPositions.size(); p++ )     
+    {
+      glBegin(GL_TRIANGLES);
+      for (size_t i=0; i<_nbrTriangles; ++i)
+      {    
+          float c = (float)(i)/(float)(_nbrTriangles);
+          glColor3f(c, c, c);
+          
+          glVertex3dv(allPositions[p][triangleIndices[(3 * i)    ]].data());
+          glVertex3dv(allPositions[p][triangleIndices[(3 * i) + 1]].data());
+          glVertex3dv(allPositions[p][triangleIndices[(3 * i) + 2]].data());
+      }
+      glEnd();
+    }*/
 }
 
 void CollisionMeshData::sizeLevelSet(Vec3d &origin,Vec3i &dims, Real &dx, Real length[3])

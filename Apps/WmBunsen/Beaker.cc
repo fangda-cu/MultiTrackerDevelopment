@@ -122,6 +122,9 @@ void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary 
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, 
   int i_subSteps, bool i_collisionsEnabled  )
 {
+
+  cerr << "i_collisionsEnabled = " << i_collisionsEnabled << endl;
+
     Scalar dt_save = getDt();
     Scalar startTime = getTime();
     Scalar currentTime = getTime();
@@ -136,7 +139,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         // Update CollisionMeshData for this substep
         //
         Scalar interpolateFactor = ( (double)(s+1) / i_subSteps );
-        if ( !i_collisionsEnabled )
+        if ( i_collisionsEnabled )
         {
             for ( CollisionMeshDataHashMapIterator cmItr = m_collisionMeshMap.begin();
                                                     cmItr != m_collisionMeshMap.end(); ++cmItr )
@@ -144,6 +147,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 cmItr->second->interpolate( interpolateFactor ); 
             }
         }
+        
         // interpolate fixed vertex positions and set timestep
         //
         for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
@@ -164,7 +168,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 }
             }
         }
-
+        
 #ifdef USING_INTEL_COMPILER
         m_world->executeInParallel( i_numberOfThreadsToUse );
 #else
@@ -179,11 +183,10 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
           // iterate over its controllers myself.
           Controllers& controllers = m_world->getControllers();
           Controllers::iterator it;
-          for (it = controllers.begin(); it != controllers.end(); ++it) {
-            //if ( dynamic_cast<RodCollisionTimeStepper*>(*it) )
+          for (it = controllers.begin(); it != controllers.end(); ++it) 
+          {
+              cerr << "passing in dt for collisions of " << getDt() << endl;
               dynamic_cast<RodCollisionTimeStepper*>(*it)->execute(m_collisionMeshMap, getDt());
-           // else
-           //   (*it)->execute();
           }
         }
 #endif
@@ -248,6 +251,12 @@ void Beaker::draw()
         {
             rodData[ r ]->rodRenderer->render();
         }
+    }
+
+    for ( CollisionMeshDataHashMapIterator cmItr = m_collisionMeshMap.begin();
+                                                   cmItr != m_collisionMeshMap.end(); ++cmItr )
+    {
+        cmItr->second->draw(); 
     }
 }
 

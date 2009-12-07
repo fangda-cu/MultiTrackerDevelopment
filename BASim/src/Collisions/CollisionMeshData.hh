@@ -117,6 +117,8 @@ public:
     Positions oldPositions;
     Positions newPositions;
 
+    vector<Positions> allPositions;
+
     // The velocities that take us from oldPositions to newPositions
     // in (1 / fps) time
     //
