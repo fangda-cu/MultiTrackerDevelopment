@@ -20,21 +20,10 @@ class ImplicitEuler : public DiffEqSolver
 {
 public:
 
-  ImplicitEuler(ODE& ode, ObjectControllerBase::SolverLibrary solver)
-    : m_diffEq(ode), m_solverLibrary(solver)
+  ImplicitEuler(ODE& ode) : m_diffEq(ode)
   {
-    if ( m_solverLibrary == ObjectControllerBase::PETSC_SOLVER )
-    {
-      m_A = new PetscMatrix(m_diffEq.ndof(), m_diffEq.ndof(), 11);
-      m_solver = new PetscLinearSolver(*m_A);
-    }
-    else if ( m_solverLibrary == ObjectControllerBase::MKL_SOLVER )
-    {
-#ifdef USING_INTEL_COMPILER 
-      m_A = new MKLMatrix(m_diffEq.ndof(), m_diffEq.ndof(), 11);
-      m_solver = new MKLLinearSolver(*m_A);
-#endif
-    }
+    m_A = m_diffEq.createMatrix();
+    m_solver = SolverUtils::instance()->createLinearSolver(m_A);
   }
 
   ~ImplicitEuler()
@@ -43,7 +32,7 @@ public:
     delete m_solver;
   }
 
- void execute()
+  void execute()
   {
     resize();
     setZero();
@@ -59,6 +48,7 @@ public:
     m_rhs *= m_dt;
 
     for (int iter = 0; iter < m_maxIterations; ++iter) {
+      START_TIMER("setup");
       m_diffEq.evaluatePDotDX(*m_A);
       m_A->finalize();
       m_A->scale(m_dt);
@@ -84,9 +74,13 @@ public:
 
       for (size_t i = 0; i < fixed.size(); ++i) m_rhs(fixed[i]) = 0;
       m_A->zeroRows(fixed);
+      STOP_TIMER("setup");
 
+      START_TIMER("solver");
       m_solver->solve(m_increment, m_rhs);
+      STOP_TIMER("solver");
 
+      START_TIMER("setup");
       m_deltaV += m_increment;
 
       for (int i = 0; i < m_deltaV.size(); ++i) {
@@ -110,6 +104,7 @@ public:
       }
       m_increment.setZero();
       m_A->setZero();
+      STOP_TIMER("setup");
     }
   }
 
@@ -122,19 +117,9 @@ public:
     m_increment.resize(m_diffEq.ndof());
     if (m_A->rows() != m_diffEq.ndof()) {
       delete m_A;
+      m_A = m_diffEq.createMatrix();
       delete m_solver;
-      if ( m_solverLibrary == ObjectControllerBase::PETSC_SOLVER )
-      {
-        m_A = new PetscMatrix(m_diffEq.ndof(), m_diffEq.ndof(), 11);
-        m_solver = new PetscLinearSolver(*m_A);
-      }
-      else if ( m_solverLibrary == ObjectControllerBase::MKL_SOLVER )
-      {   
-#ifdef USING_INTEL_COMPILER 
-        m_A = new MKLMatrix(m_diffEq.ndof(), m_diffEq.ndof(), 11);
-        m_solver = new MKLLinearSolver(*m_A);
-#endif
-      }
+      m_solver = SolverUtils::instance()->createLinearSolver(m_A);
     }
   }
 
@@ -145,7 +130,7 @@ public:
     m_rhs.setZero();
     m_deltaV.setZero();
     m_increment.setZero();
-    m_A->setZero();    
+    m_A->setZero();
   }
 
 protected:
@@ -160,7 +145,6 @@ protected:
 
   MatrixBase* m_A;
   LinearSolverBase* m_solver;
-  ObjectControllerBase::SolverLibrary m_solverLibrary;
 };
 
 } // namespace BASim

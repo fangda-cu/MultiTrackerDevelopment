@@ -18,7 +18,6 @@ setenv MKLROOT /local1/apps/mkl-10.2.1.017/
 #setenv INCLUDE "${MKLROOT}/include"
 setenv LD_LIBRARY_PATH "${MKLROOT}/lib/64:${MKLROOT}/lib/32":${LD_LIBRARY_PATH}
 
-
 #need cuda-2.3_64
 #setenv OCU_LOCATION /vol/weta/src/amcadams/opencurrent
 

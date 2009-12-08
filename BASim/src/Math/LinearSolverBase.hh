@@ -8,6 +8,8 @@
 #ifndef LINEARSOLVERBASE_HH
 #define LINEARSOLVERBASE_HH
 
+#include "BASim/src/Math/MatrixBase.hh"
+
 namespace BASim {
 
 /** Interface for linear solvers. */

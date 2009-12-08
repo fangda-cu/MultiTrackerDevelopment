@@ -27,7 +27,7 @@ Beaker::Beaker() : m_gravity( 0, -981.0, 0 )
     m_rodDataMap.clear();
     initialiseWorld();
     
-    PetscTruth isInitialised;
+    /*PetscTruth isInitialised;
     PetscInitialized( &isInitialised );
     if ( isInitialised != PETSC_TRUE )
     {
@@ -37,7 +37,7 @@ Beaker::Beaker() : m_gravity( 0, -981.0, 0 )
     }
     else
         cerr << "Skipping initalisation of Petsc\n";
-    
+    */
     cerr << "Done with initialisation\n";
 }
 
@@ -186,7 +186,6 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
           Controllers::iterator it;
           for (it = controllers.begin(); it != controllers.end(); ++it) 
           {
-              cerr << "passing in dt for collisions of " << getDt() << endl;
               dynamic_cast<RodCollisionTimeStepper*>(*it)->execute(m_collisionMeshMap, getDt());
           }
         }
@@ -212,7 +211,8 @@ RodCollisionTimeStepper* Beaker::setupRodTimeStepper( BASim::ElasticRod& rod,
     } 
     else if (integrator == "implicit") 
     {
-        stepper->setDiffEqSolver( RodTimeStepper::IMPL_EULER, solverLibrary );
+        //stepper->setDiffEqSolver( RodTimeStepper::IMPL_EULER, solverLibrary );
+        stepper->setDiffEqSolver( RodTimeStepper::IMPL_EULER );
     } 
     else 
     {

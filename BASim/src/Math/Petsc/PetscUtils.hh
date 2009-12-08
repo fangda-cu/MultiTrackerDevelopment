@@ -7,6 +7,7 @@
 
 #ifndef PETSCUTILS_HH
 #define PETSCUTILS_HH
+#include <petscmat.h>
 
 namespace BASim {
 
@@ -24,7 +25,7 @@ inline void finalizePetsc()
 }
 
 template <class Vector>
-inline int copyToPetscVector(Vec& petscVec, const Vector& otherVec)
+inline int copyToPetscVector(Vec petscVec, const Vector& otherVec)
 {
   PetscScalar* petscDat;
   int ierr = VecGetArray(petscVec, &petscDat);

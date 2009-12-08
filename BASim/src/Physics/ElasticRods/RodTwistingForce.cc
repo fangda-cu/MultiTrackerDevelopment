@@ -48,7 +48,7 @@ void RodTwistingForce::updateStiffness()
     Scalar G = m_rod.getShearModulus();
     Scalar a = (m_rod.radiusA(eh0) + m_rod.radiusA(eh1)) / 2.0;
     Scalar b = (m_rod.radiusB(eh0) + m_rod.radiusB(eh1)) / 2.0;
-    setKt(vh, M_PI * (pow(a, 4) + pow(b, 4)) * G / 8.0);
+    setKt(vh, M_PI * (pow(a, 4) + pow(b, 4)) * G / 4.0);
   }
 }
 

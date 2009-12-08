@@ -12,6 +12,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <iostream>
 #include <map>
 #include <string>

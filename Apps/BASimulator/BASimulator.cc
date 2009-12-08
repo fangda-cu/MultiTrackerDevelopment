@@ -37,6 +37,7 @@ bool progress_indicator = false;
 
 void cleanup()
 {
+  Timer::report();
   if (current_problem != NULL) current_problem->BaseFinalize();
   for (size_t i = 1; i < problems.size(); ++i) {
     delete problems[i];
@@ -442,7 +443,7 @@ void menu(int id)
 /// Copy the current OpenGL render buffer and save it to a PNG-format file.
 bool saveScreen(const std::string& filename)
 {
-#ifndef NO_LIBPNG
+#ifdef HAVE_PNG
   int w, h;
   controller.getCamera().getViewport(&w, &h);
 
@@ -454,9 +455,9 @@ bool saveScreen(const std::string& filename)
 
   return image.save(filename.c_str());
 #else
-  std::cerr << "Not compiled with libPNG support, can't save images.\n"
-            << "Recompile with NO_LIBPNG undefined to enable saving images."
+  std::cerr << "Not compiled with PNG support, can't save images."
             << std::endl;
+  return false;
 #endif
 }
 
@@ -627,7 +628,15 @@ int parseCommandLine(int argc, char** argv)
       gen("g", "generate","Generate a default options file for a problem",
           false, 1, &allowedProblems, cmd);
 
+    TCLAP::ValueArg<std::string>
+      solver("s", "solver", "File describing options for solver", false, "",
+             "string", cmd);
+
     cmd.parse(argc, argv);
+
+    if (solver.isSet()) {
+      if (readSolverFile(solver.getValue()) != 0) return -1;
+    }
 
     if (print.getValue()) {
       PrintProblemTypes();

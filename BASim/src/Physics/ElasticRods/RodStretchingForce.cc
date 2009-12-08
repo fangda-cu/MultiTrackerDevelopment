@@ -23,6 +23,18 @@ RodStretchingForce::RodStretchingForce(ElasticRod& rod)
   updateUndeformedStrain();
 }
 
+void RodStretchingForce::gatherDofs(SpringDofStruct& dofs,
+                                    const edge_handle& eh)
+{
+  dofs.x[0] = m_rod.getFromVertex(eh);
+  dofs.x[1] = m_rod.getToVertex(eh);
+  dofs.edge = m_rod.getEdge(eh);
+  dofs.tangent = m_rod.getTangent(eh);
+  dofs.currLength = m_rod.getEdgeLength(eh);
+  dofs.restLength = getRefLength(eh);
+  dofs.stiffness = getKs(eh);
+}
+
 Scalar RodStretchingForce::globalEnergy()
 {
   Scalar energy = 0;

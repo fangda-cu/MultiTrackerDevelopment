@@ -48,8 +48,6 @@ protected:
 
   static Mat2d J;
   static Mat2d Jt;
-
-  Stencil* m_stencil;
 };
 
 template <class Stencil>

@@ -31,9 +31,9 @@ public:
   bool isEnabled();
   void setEnabled( bool enabled );
 
+  ObjectControllerBase() { m_enabled = true; }
   virtual ~ObjectControllerBase() {}
 protected:
-  ObjectControllerBase() { m_enabled = true; }
 
   std::vector<ObjectBase*> m_objects;
 

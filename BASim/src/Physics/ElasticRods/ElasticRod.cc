@@ -48,8 +48,8 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   add_property(m_thetaDot, "theta dot", 0.0);
   add_property(m_edgeRadius, "edge radius");
   add_property(m_edgeInertias, "edge inertia", 0.0);
-  add_property(m_referenceDirectors, "reference directors");
-  add_property(m_materialDirectors, "material directors");
+  add_property(m_referenceDirectors, "reference directors", Util::pair<Vec3d,Vec3d>(Vec3d(1,0,0), Vec3d(0,1,0)));
+  add_property(m_materialDirectors, "material directors", Util::pair<Vec3d,Vec3d>(Vec3d(1,0,0), Vec3d(0,1,0)));
   add_property(m_edges, "edges", Vec3d(0,0,0));
   add_property(m_tangents, "tangents", Vec3d(0,0,0));
   add_property(m_edgeLengths, "edge lengths", 0.0);

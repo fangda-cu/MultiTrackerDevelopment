@@ -28,8 +28,47 @@ BentTwisting::BentTwisting()
   GetVecOpt("gravity") = Vec3d::Zero();
 }
 
+BentTwisting::~BentTwisting()
+{
+  if (rod != NULL) delete rod;
+  if (stepper != NULL) delete stepper;
+}
+
 void BentTwisting::Setup()
 {
+  /*BandMatrix mat(100, 100, 7, 7);
+  int num = 1;
+  for (int i = 0; i < mat.rows(); ++i) {
+    int lower = std::max(i - 7, 0);
+    int upper = std::min(i + 7 + 1, mat.cols());
+    for (int j = lower; j < upper; ++j) {
+      mat(i, j) = num;
+      ++num;
+    }
+    }*/
+
+  /*BandMatrix A(2, 2, 1, 1);
+  A(0, 0) = 4;
+  A(0, 1) = 1;
+  A(1, 0) = 1;
+  A(1, 1) = 3;
+  A.print();
+
+  VecXd b(2);
+  b(0) = 1;
+  b(1) = 2;
+  std::cout << b << std::endl;
+
+  VecXd x(2);
+  x(0) = 2;
+  x(1) = 1;
+
+  ConjugateGradient cg(A);
+  cg.solve(x, b);
+
+  std::cout << x << std::endl;
+
+  exit(0);*/
   loadDynamicsProps();
 
   RodOptions opts;

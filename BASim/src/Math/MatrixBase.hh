@@ -37,29 +37,22 @@ public:
   virtual int scale(Scalar val) = 0;
   virtual int setZero() = 0;
   virtual int zeroRows(const IntArray& idx, Scalar diag = 1.0) = 0;
-  virtual int multiply(VecXd& y, Scalar s, const VecXd& x) = 0;
+  virtual int multiply(VecXd& y, Scalar s, const VecXd& x) const = 0;
 
   /**
    * Called after all matrix values have been set.
    */
   virtual int finalize() { return 0; }
 
-  int rows() const { return m_rows; }
-  int cols() const { return m_cols; }
+  inline int rows() const { return m_rows; }
+  inline int cols() const { return m_cols; }
 
-  bool isFlagSet(const Flags& flag) const { return (m_flags & flag); }
-  void setFlag(const Flags& flag) { m_flags = (Flags) (m_flags | flag); }
-  void unsetFlag(const Flags& flag) { m_flags = (Flags) (m_flags & (~flag)); }
+  inline bool isFlagSet(const Flags& flag) const { return (m_flags & flag); }
+  inline void setFlag(const Flags& flag) { m_flags = (Flags) (m_flags | flag); }
+  inline void unsetFlag(const Flags& flag) { m_flags = (Flags) (m_flags & (~flag)); }
 
-  friend std::ostream& operator<< (std::ostream& os, const MatrixBase& M)
-  {
-    os << "[";
-    for (int i = 0; i < M.m_rows; i++)
-      for (int j = 0; j < M.m_cols; j++)
-        os << M(i,j) << (j < M.m_cols-1 ? " " : (i < M.m_rows-1 ? "\n" : "]"));
-    return os;
-  }
-  
+  virtual void print() const {}
+
 protected:
 
   MatrixBase(int r, int c)
@@ -77,4 +70,3 @@ protected:
 } // namespace BASim
 
 #endif // MATRIXBASE_HH
-

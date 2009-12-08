@@ -8,10 +8,11 @@
 #ifndef PETSCMATRIX_HH
 #define PETSCMATRIX_HH
 
-using namespace std;
+#include <petscmat.h>
+#include "BASim/src/Math/MatrixBase.hh"
+#include "BASim/src/Math/Petsc/PetscUtils.hh"
 
 namespace BASim {
-   
 class PetscMatrix : public MatrixBase
 {
 public:
@@ -30,7 +31,7 @@ public:
   int scale(Scalar val);
   int setZero();
   int zeroRows(const IntArray& idx, Scalar diag = 1.0);
-  int multiply(VecXd& y, Scalar s, const VecXd& x);
+  int multiply(VecXd& y, Scalar s, const VecXd& x) const;
 
   /*
   template <class IndexArray, class ValueMatrix>

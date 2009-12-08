@@ -19,9 +19,9 @@
 #include "src/Render/RodRenderer.hh"
 #include "src/Render/Scene.hh"
 
-#ifndef NO_LIBPNG
+#ifdef HAVE_PNG
 #include "src/Render/YImage/YImage.hh"
-#endif // NO_LIBPNG
+#endif // HAVE_PNG
 
 #endif // BASIM_RENDER
 

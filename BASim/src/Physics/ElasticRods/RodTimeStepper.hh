@@ -66,7 +66,7 @@ public:
     return *m_diffEqSolver;
   }
 
-  void setDiffEqSolver(Method method, ObjectControllerBase::SolverLibrary solverLibrary=PETSC_SOLVER)
+  void setDiffEqSolver(Method method)
   {
     if (method == m_method) return;
 
@@ -78,7 +78,7 @@ public:
       m_diffEqSolver = new SymplecticEuler<RodTimeStepper>(*this);
 
     } else if (method == IMPL_EULER) {
-      m_diffEqSolver = new ImplicitEuler<RodTimeStepper>(*this, solverLibrary);
+      m_diffEqSolver = new ImplicitEuler<RodTimeStepper>(*this);
 
     } else if (method == NONE) {
       m_diffEqSolver = NULL;
@@ -219,6 +219,12 @@ public:
   void setMaxIterations(int iterations)
   {
     m_diffEqSolver->setMaxIterations(iterations);
+  }
+
+  MatrixBase* createMatrix() const
+  {
+    SolverUtils* s = SolverUtils::instance();
+    return s->createBandMatrix(m_rod.ndof(), m_rod.ndof(), 10, 10);
   }
 
 protected:

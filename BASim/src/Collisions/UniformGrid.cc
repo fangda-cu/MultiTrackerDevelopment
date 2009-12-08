@@ -2,7 +2,7 @@
 //
 
 #include "UniformGrid.hh"
-#include "BridsonUtil.hh"
+//#include "BridsonUtil.hh"
 #include <fstream>
 
 namespace BASim {

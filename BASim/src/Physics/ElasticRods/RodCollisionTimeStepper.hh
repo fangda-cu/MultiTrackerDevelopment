@@ -17,6 +17,7 @@ namespace BASim {
 
 class RodPenaltyForce;
 class CollisionMeshData;
+class RodTimeStepper;
 
 typedef std::tr1::unordered_map<size_t, CollisionMeshData *> CollisionMeshDataHashMap;
 typedef std::tr1::unordered_map<size_t, CollisionMeshData *>::iterator CollisionMeshDataHashMapIterator;
@@ -55,7 +56,6 @@ public:
 
   void getProximities(CollisionMeshDataHashMap &collisionMeshes);
   void respondObjectCollisions(CollisionMeshDataHashMap &collisionMeshes, Real dt);
-
 
 protected:
   RodPenaltyForce* m_rodPenaltyForce;

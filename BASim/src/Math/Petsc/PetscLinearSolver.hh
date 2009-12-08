@@ -7,6 +7,8 @@
 
 #ifndef PETSCLINEARSOLVER_HH
 #define PETSCLINEARSOLVER_HH
+#include <petscksp.h>
+#include "BASim/src/Math/LinearSolverBase.hh"
 
 namespace BASim {
 
@@ -27,7 +29,6 @@ public:
     Mat& pA = smart_cast<PetscMatrix&>(m_A).getPetscMatrix();
     KSPSetOperators(m_kspSolver, pA, pA, SAME_NONZERO_PATTERN);
     KSPSetFromOptions(m_kspSolver);
-    KSPSetTolerances(m_kspSolver, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT, 10*std::min(m_A.rows()*m_A.cols(),10000));
     /*
     const KSPType kspType;
     KSPGetType(m_kspSolver, &kspType);
@@ -57,6 +58,10 @@ public:
     PetscUtils::copyToPetscVector(m_x, x);
 
     KSPSolve(m_kspSolver, m_b, m_x);
+    /*PetscInt its;
+    KSPGetIterationNumber(m_kspSolver, &its);
+    std::cout << "converged in " << its << " iterations" << std::endl;
+    */
 
     PetscUtils::copyFromPetscVector(x, m_x);
 
@@ -72,7 +77,7 @@ public:
     if (reason == KSP_DIVERGED_NULL)
       std::cout << "Diverged null" << std::endl;
     else if (reason == KSP_DIVERGED_ITS)
-	std::cout << "Diverged its"<< std::endl;
+      std::cout << "Diverged its" << std::endl;
     else if (reason == KSP_DIVERGED_NAN)
       std::cout << "Diverged nan" << std::endl;
     else if (reason == KSP_DIVERGED_BREAKDOWN_BICG)

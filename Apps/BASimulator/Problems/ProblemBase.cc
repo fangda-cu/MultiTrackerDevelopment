@@ -151,13 +151,17 @@ int Problem::LoadOptions(int argc, char** argv)
 
 void Problem::BaseSetup(int argc, char** argv)
 {
+#ifdef HAVE_PETSC
   PetscUtils::initializePetsc(&argc, &argv);
+#endif // HAVE_PETSC
   Setup();
 }
 
 void Problem::BaseFinalize()
 {
+#ifdef HAVE_PETSC
   PetscUtils::finalizePetsc();
+#endif // HAVE_PETSC
 }
 
 void Problem::BaseAtEachTimestep()

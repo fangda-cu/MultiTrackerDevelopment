@@ -366,12 +366,14 @@ void RodBendingForce::globalJacobian(MatrixBase& Jacobian)
 #endif // TEST_ROD_BENDING
   }
 
+  /*
 #ifdef TIMING_ON
   double comp = Timer::getTimer("computation").getTotal();
   double stuff = Timer::getTimer("stuff").getTotal();
   double loop = Timer::getTimer("loop").getTotal();
   std::cout << stuff/comp << "\t" << loop/comp << std::endl;
 #endif // TIMING_ON
+  */
 }
 
 void RodBendingForce::localJacobian(ElementJacobian& jac,

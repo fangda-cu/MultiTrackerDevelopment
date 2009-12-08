@@ -10,6 +10,17 @@
 
 namespace BASim {
 
+class SpringDofStruct
+{
+public:
+  Vec3d x[2];           ///< position of two endpoints
+  Vec3d edge;           ///< vector from x[0] to x[1]
+  Vec3d tangent;        ///< normalized vector from x[0] to x[1]
+  Scalar currLength;    ///< current length
+  Scalar restLength;    ///< rest length
+  Scalar stiffness;     ///< spring stiffness
+};
+
 /** This class implements the stretching force for an elastic rod. */
 class RodStretchingForce : public RodForceT<EdgeStencil>
 {
@@ -20,11 +31,14 @@ public:
 
   RodStretchingForce(ElasticRod& rod);
 
+  void gatherDofs(SpringDofStruct& dofs, const edge_handle& eh);
+
   virtual Scalar globalEnergy();
   virtual void globalForce(VecXd& force);
   virtual void globalJacobian(MatrixBase& Jacobian);
 
   Scalar elementEnergy(const edge_handle& eh);
+  void elementForce(ElementForce& force, const SpringDofStruct& dofs);
   void elementForce(ElementForce& force, const edge_handle& eh);
   void elementJacobian(ElementJacobian& Jacobian, const edge_handle& eh);
 

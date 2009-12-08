@@ -22,10 +22,10 @@ find_package (PETSc REQUIRED)
 find_package (Maya REQUIRED)
 include_directories (${MAYA_INCLUDE_DIR})
 
-if (USE_INTEL_COMPILER)
-    find_package (MKL REQUIRED)
-    include_directories (${MKL_INCLUDE_DIR})
-endif (USE_INTEL_COMPILER)
+#if (USE_INTEL_COMPILER)
+find_package (MKL REQUIRED)
+include_directories (${MKL_INCLUDE_DIR})
+#endif (USE_INTEL_COMPILER)
 
 #find_package (CUDA REQUIRED)
 
@@ -35,8 +35,8 @@ endif (USE_INTEL_COMPILER)
 #include_directories ("/usr/include/c++/4.1.2/")
 
 # bad, should have a findMKL.cmake
-include_directories (${MKLROOT}/include)
-include_directories (${TBB_INSTALL_DIR}/include)
+include_directories ($ENV{MKLROOT}/include)
+#include_directories (${TBB_INSTALL_DIR}/include)
 
 ###########################################################################################
 #
@@ -52,16 +52,16 @@ ADD_LIBRARY(wmBunsen SHARED ${Headers} ${Templates} ${Sources})
 
 #######
 ## We absolutely must link with -Bsymbolic or Maya will crash when the plugin is running!
-if (USE_INTEL_COMPILER)
-  SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -shared -fPIC -Wl,-Bsymbolic -pthread -lGLU -openmp")
-else (USE_INTEL_COMPILER)
-  SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -shared -fPIC -Wl,-Bsymbolic -pthread -lGLU")
-endif (USE_INTEL_COMPILER)
+#if (USE_INTEL_COMPILER)
+  SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -shared -fPIC -Wl,-Bsymbolic -pthread -lGLU -openmp -pthread")
+#else (USE_INTEL_COMPILER)
+#  SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -shared -fPIC -Wl,-Bsymbolic -pthread -lGLU -openmp")
+#endif (USE_INTEL_COMPILER)
 
 if (USE_INTEL_COMPILER)
 	target_link_libraries (wmBunsen BASim ${MAYA_LIBRARIES} ${GLUT_glut_LIBRARY} ${OPENMESH_LIBRARY} ${SMV_LIBRARY} ${wxWidgets_LIBRARIES} ${FLENS_LIBRARIES} ${PETSC_LIBRARIES}  $ENV{MKLROOT}/lib/em64t/libmkl_solver_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/em64t/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/em64t/libmkl_intel_thread.a $ENV{MKLROOT}/lib/em64t/libmkl_core.a -Wl,--end-group)
 else (USE_INTEL_COMPILER)
-	target_link_libraries (wmBunsen BASim ${MAYA_LIBRARIES} ${GLUT_glut_LIBRARY} ${OPENMESH_LIBRARY} ${SMV_LIBRARY} ${wxWidgets_LIBRARIES} ${FLENS_LIBRARIES} ${PETSC_LIBRARIES})
+	target_link_libraries (wmBunsen BASim ${MAYA_LIBRARIES} ${GLUT_glut_LIBRARY} ${OPENMESH_LIBRARY} ${SMV_LIBRARY} ${wxWidgets_LIBRARIES} ${FLENS_LIBRARIES} ${PETSC_LIBRARIES} $ENV{MKLROOT}/lib/em64t/libmkl_solver_ilp64.a -Wl,--start-group $ENV{MKLROOT}/lib/em64t/libmkl_intel_ilp64.a $ENV{MKLROOT}/lib/em64t/libmkl_gnu_thread.a $ENV{MKLROOT}/lib/em64t/libmkl_core.a -Wl,--end-group -fopenmp -lpthread)
 endif (USE_INTEL_COMPILER)
 
 

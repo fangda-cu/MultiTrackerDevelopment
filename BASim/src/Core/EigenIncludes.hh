@@ -13,6 +13,8 @@
 #define EIGEN_SPACES_ONLY_IO Eigen::IOFormat(8, Eigen::Raw, " ", " ", "", "", "", "")
 #define EIGEN_DEFAULT_IO_FORMAT EIGEN_MATRIX_IO
 
+#define EIGEN_INITIALIZE_MATRICES_BY_ZERO 1
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>

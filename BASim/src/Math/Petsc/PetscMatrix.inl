@@ -105,7 +105,7 @@ inline int PetscMatrix::scale(Scalar val)
   return 0;
 }
 
-inline int PetscMatrix::multiply(VecXd& y, Scalar s, const VecXd& x)
+inline int PetscMatrix::multiply(VecXd& y, Scalar s, const VecXd& x) const
 {
   assert(cols() == x.size());
   assert(rows() == y.size());

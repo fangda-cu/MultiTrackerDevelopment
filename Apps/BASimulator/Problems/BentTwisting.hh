@@ -19,6 +19,7 @@ class BentTwisting : public Problem
 public:
 
   BentTwisting();
+  virtual ~BentTwisting();
 
 protected:
 

@@ -7,8 +7,6 @@
 #ifndef MKLLINEARSOLVER_HH
 #define MKLLINEARSOLVER_HH
 
-#ifdef USING_INTEL_COMPILER
-
 namespace BASim {
 
 #include <mkl_solver.h>
@@ -31,7 +29,6 @@ public:
 
   int solve(VecXd& x, const VecXd& b)
   {
-
     vector<Scalar> c;
     size_t numElements = b.size();
     c.resize(numElements);
@@ -92,7 +89,5 @@ protected:
 };
 
 } // namespace BASim
-
-#endif // USING_INTEL_COMPILER
 
 #endif // MKLLINEARSOLVER_HH

@@ -8,11 +8,7 @@
 #ifndef WORLD_HH
 #define WORLD_HH
 
-#ifdef USING_INTEL_COMPILER
-
 #include <omp.h>
-
-#endif
 
 namespace BASim {
 
@@ -32,12 +28,16 @@ public:
 
   void initialize(int argc, char** argv)
   {
+#ifdef HAVE_PETSC
     PetscUtils::initializePetsc(&argc, &argv);
+#endif // HAVE_PETSC
   }
 
   void finalize()
   {
+#ifdef HAVE_PETSC
     PetscUtils::finalizePetsc();
+#endif // HAVE_PETSC
   }
 
   ObjectHandle addObject(ObjectBase* object)

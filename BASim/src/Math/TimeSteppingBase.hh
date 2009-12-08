@@ -14,7 +14,7 @@ namespace BASim {
 class DiffEqSolver
 {
 public:
-    
+
   virtual ~DiffEqSolver() {}
 
   Scalar getTime() const { return m_time; }

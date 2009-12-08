@@ -18,6 +18,7 @@
 #include "BASim/src/Physics/PhysObject.hh"
 #include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
 
+using namespace std;
 
 namespace BASim {
 
