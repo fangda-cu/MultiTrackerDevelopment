@@ -484,7 +484,6 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         MVectorArray nonSimulatedVerticesArray = nonSimulatedVerticesArrayData.array( &stat );
         CHECK_MSTATUS( stat );
 
-        unsigned int idx = 0; 
         if ( mx_rodData != NULL )
         {
             size_t numRods = mx_rodData->size();            

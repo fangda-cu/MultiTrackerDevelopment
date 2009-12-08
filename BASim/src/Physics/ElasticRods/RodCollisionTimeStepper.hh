@@ -52,6 +52,9 @@ public:
 
   void execute()
   {
+    if (!m_enabled)
+      return;
+
     // Sanity check, m_dt MUST EQUAL m_rodTimeStepper->getDt();
     // get it from m_rodTimeStepper rather than using the one here.
     if ( !m_collisionsEnabled || m_collisionMeshes == NULL || m_collisionMeshes->size()==0 )
