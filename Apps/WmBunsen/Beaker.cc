@@ -122,9 +122,6 @@ void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary 
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, 
   int i_subSteps, bool i_collisionsEnabled  )
 {
-
-    cerr << "i_collisionsEnabled = " << i_collisionsEnabled << endl;
-
     Scalar dt_save = getDt();
     Scalar startTime = getTime();
     Scalar currentTime = getTime();
@@ -167,29 +164,22 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     }
                 }
                 rod->updateProperties();
+
+                //
+                // This is a bit weird, I'm setting stuff in the RodCollisionTimeStepper as well
+                // as the RodTimeStepper it contains. It would work better as class based on
+                // RodTimeStepper or if setting it in RodCollisionTimeStepper also set it in
+                // the contained RodTimeStepper. I need to fix some #include conflicts before
+                // I can do that.
+                dynamic_cast<RodCollisionTimeStepper*>(rodData[r]->stepper)->doCollisions( i_collisionsEnabled );
+                dynamic_cast<RodCollisionTimeStepper*>(rodData[r]->stepper)->setTimeStep( getDt() );
+                dynamic_cast<RodCollisionTimeStepper*>(rodData[r]->stepper)->setCollisionMeshesMap( &m_collisionMeshMap );
+        
             }
         }
-        
-#ifdef USING_INTEL_COMPILER
-        m_world->executeInParallel( i_numberOfThreadsToUse );
-#else
 
-        if ( !i_collisionsEnabled )
-        {
-            m_world->execute();
-        }
-        else
-        {
-          // There is no way to pass in the collision meshes to world so I'm going to
-          // iterate over its controllers myself.
-          Controllers& controllers = m_world->getControllers();
-          Controllers::iterator it;
-          for (it = controllers.begin(); it != controllers.end(); ++it) 
-          {
-              dynamic_cast<RodCollisionTimeStepper*>(*it)->execute(m_collisionMeshMap, getDt());
-          }
-        }
-#endif
+        m_world->executeInParallel( i_numberOfThreadsToUse );
+
         setTime( currentTime + getDt() );
         currentTime = getTime();
     }

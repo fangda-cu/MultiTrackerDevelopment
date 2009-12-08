@@ -97,10 +97,9 @@ public:
     }
   }
 
-#ifdef USING_INTEL_COMPILER
   void executeInParallel( int i_numberOfThreads )
   {
-    size_t numControllers = m_controllers.size();
+    int numControllers = (int)m_controllers.size();
     
     #pragma omp parallel for num_threads( i_numberOfThreads )
     for ( int i=0; i<numControllers; ++i )
@@ -116,7 +115,6 @@ public:
       m_controllers[ i ]->execute();
     }
   }
-#endif
   
 protected:
 
