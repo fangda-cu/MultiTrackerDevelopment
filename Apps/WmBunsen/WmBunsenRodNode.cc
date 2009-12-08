@@ -909,6 +909,7 @@ void* WmBunsenRodNode::creator()
         CHECK_MSTATUS( tAttr.setArray(true) );
         CHECK_MSTATUS( tAttr.setReadable(false) );
         CHECK_MSTATUS( tAttr.setWritable(true) );
+        CHECK_MSTATUS( tAttr.setDisconnectBehavior( MFnAttribute::kDelete ) );
         CHECK_MSTATUS( tAttr.setUsesArrayDataBuilder(true) );
         stat = addAttribute( ia_nurbsCurves );
         CHECK_MSTATUS( stat );

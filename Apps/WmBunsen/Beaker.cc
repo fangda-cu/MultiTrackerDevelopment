@@ -123,7 +123,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
   int i_subSteps, bool i_collisionsEnabled  )
 {
 
-  cerr << "i_collisionsEnabled = " << i_collisionsEnabled << endl;
+    cerr << "i_collisionsEnabled = " << i_collisionsEnabled << endl;
 
     Scalar dt_save = getDt();
     Scalar startTime = getTime();
@@ -166,6 +166,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                                ( 1.0 - interpolateFactor ) * rodData[r]->prevVertexPositions[c] );
                     }
                 }
+                rod->updateProperties();
             }
         }
         

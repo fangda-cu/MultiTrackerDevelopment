@@ -42,7 +42,7 @@ public:
   void execute(CollisionMeshDataHashMap &collisionMeshes, Scalar dt)
   {
     m_rod->setCollisionStartPositions();
-  //  getProximities(collisionMeshes);
+    getProximities(collisionMeshes);
     m_rodTimeStepper->execute();
     m_rod->collisionsBegin(dt);
     

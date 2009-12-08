@@ -300,8 +300,7 @@ public:
           setVelocity(i, getVelocity(i) + velocityChange);
           setVertex(i, getEndPositions()[i]);
 
-          if ( velocityChange.size() > 0.0 )
-            cerr << "Vertex " << i << ", velocity change = " << velocityChange << endl;
+       //   cerr << "Vertex " << i << ", velocity change = " << velocityChange << endl;
       }      
   }
 
