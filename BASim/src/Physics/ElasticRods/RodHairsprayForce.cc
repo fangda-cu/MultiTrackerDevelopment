@@ -27,6 +27,11 @@ void RodHairsprayForce::computeForce(const ElasticRod& rod, VecXd& F)
 
   for (int i=0; i<rod.nv(); ++i)
   {
+    if (m_ks[i] == 0 || m_rod.vertFixed(i))
+      continue;
+    else
+      cerr << "Calculating vertex " << i << "\n";
+    
     Vec3d f = m_ks[i] * (m_curvePositions[i] - m_rod.getVertex(i)) - m_ds[i] * m_rod.getVelocity(i);
 
     if (!rod.vertFixed(i))

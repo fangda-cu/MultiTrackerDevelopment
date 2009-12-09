@@ -165,7 +165,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
                     if( rod->vertFixed( c ) )
                     {
-                        rod->setVertex( c, rodData[r]->currVertexPositions[c]);
+                        rod->setVertex( c, rodData[r]->currVertexPositions[c] );
                     }
                 }
                 rod->updateProperties();
