@@ -20,6 +20,8 @@ using namespace BASim;
 /* static */ MObject WmBunsenRodNode::ia_minorRadius;
 /* static */ MObject WmBunsenRodNode::ia_majorRadius;
 /* static */ MObject WmBunsenRodNode::ia_vertexSpacing;
+/* static */ MObject WmBunsenRodNode::ia_hairSpray;
+/* static */ MObject WmBunsenRodNode::ia_hairSprayScaleFactor;
 
 // Disk cacheing
 /* static */ MObject WmBunsenRodNode::ia_cachePath;
@@ -183,6 +185,9 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             (*mx_rodData)[ r ]->nextVertexPositions[ v ] = (*mx_rodData)[ r ]->undeformedVertexPositions[ v ];
         }
     }
+
+    // We need to make sure we have the spline attr data for the rods since compute may not have been called yet
+    updateHairsprayScales( dataBlock );
 }
 
 void WmBunsenRodNode::updateRodDataFromInputs()
@@ -305,6 +310,58 @@ void WmBunsenRodNode::updateRodDataFromInputs()
     }
 }
 
+void WmBunsenRodNode::updateHairsprayScales( MDataBlock& i_dataBlock )
+{
+    if ( mx_rodData == NULL )
+        return;
+
+    // FIXME:
+    // This is crazy, each rod does not need a copy of this data. It should
+    // be stored once.
+
+    MStatus stat;
+    MIntArray indexes;
+    MFloatArray positions;
+    MFloatArray values;
+    MIntArray interps;
+
+    Scalar hairSprayScaleFactor = i_dataBlock.inputValue( ia_hairSprayScaleFactor, &stat ).asDouble();
+    CHECK_MSTATUS(stat);
+
+    MPlug hsPlug( thisMObject(), ia_hairSpray);
+    MRampAttribute weightRamp(hsPlug, &stat);
+    CHECK_MSTATUS( stat );
+    weightRamp.getEntries(indexes, positions, values, interps, &stat);
+    CHECK_MSTATUS( stat );
+
+    // FIXME:
+    // doing this so many times is insanely inefficient...
+    // Although it will let the user paint per strand attraction values.
+
+    for ( size_t s=0; s<(*mx_rodData).size(); s++ )
+    {
+        (*mx_rodData)[s]->hairSprayScaleFactor = hairSprayScaleFactor;
+        (*mx_rodData)[s]->forceWeightMap.clear();
+    
+        if ( indexes.length() > 0 )
+        {
+            for(unsigned int i=0; i<indexes.length(); i++)
+            {
+                (*mx_rodData)[s]->forceWeightMap[positions[i]] = std::pair<float, int16_t>(values[i], interps[i]);                
+            }
+        }
+        else
+        {
+            positions.append( 0.0 );
+            values.append( 0.0 );
+            interps.append( 1 );
+    
+            (*mx_rodData)[s]->forceWeightMap[positions[0]] = std::pair< float, int16_t>( 0.0, 0 );
+            weightRamp.addEntries( positions, values, interps, &stat );
+        }
+    }
+}
+
 MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock ) 
 {
     MStatus stat;
@@ -315,10 +372,10 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     {
         m_previousTime = m_currentTime;
         m_currentTime = i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
-		CHECK_MSTATUS( stat );
+	CHECK_MSTATUS( stat );
         
-	    m_startTime = i_dataBlock.inputValue( ia_startTime, &stat ).asDouble();
-		CHECK_MSTATUS( stat );
+	m_startTime = i_dataBlock.inputValue( ia_startTime, &stat ).asDouble();
+	CHECK_MSTATUS( stat );
         
         m_rodOptions.YoungsModulus = i_dataBlock.inputValue( ia_youngsModulus, &stat ).asDouble();
         CHECK_MSTATUS( stat );
@@ -363,6 +420,8 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                 (*mx_rodData)[r]->stepper->setEnabled( true );
             
             updateRodDataFromInputs();
+
+            updateHairsprayScales( i_dataBlock );
         }
         
         stat = i_dataBlock.setClean( i_plug );
@@ -845,8 +904,8 @@ void* WmBunsenRodNode::creator()
 	if ( !stat ) { stat.perror( "attributeAffects ia_time->ca_syncAttrs" ); return stat; }
     
     addNumericAttribute( ia_startTime, "startTime", "stt", MFnNumericData::kDouble, 1.0, true );
-	stat = attributeAffects( ia_startTime, oa_rodsChanged );
-	if ( !stat ) { stat.perror( "attributeAffects ia_startTime->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_startTime, oa_rodsChanged );
+    if ( !stat ) { stat.perror( "attributeAffects ia_startTime->ca_syncAttrs" ); return stat; }
 
     addNumericAttribute( ia_youngsModulus, "youngsModulus", "ymo", MFnNumericData::kDouble, 100000.0, true );
     stat = attributeAffects( ia_youngsModulus, oa_rodsChanged );
@@ -886,8 +945,12 @@ void* WmBunsenRodNode::creator()
     stat = attributeAffects( ia_readFromCache, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_readFromCache->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_cacheFrame, ca_simulationSync );
-	if ( !stat ) { stat.perror( "attributeAffects ia_cacheFrame->ca_syncAttrs" ); return stat; }
+    if( !stat ) { stat.perror( "attributeAffects ia_cacheFrame->ca_syncAttrs" ); return stat; }
     
+    addNumericAttribute( ia_hairSprayScaleFactor, "hairSprayScaleFactor", "hsf", MFnNumericData::kDouble, 1.0, true );
+    stat = attributeAffects( ia_hairSprayScaleFactor, oa_rodsChanged );
+    if ( !stat ) { stat.perror( "attributeAffects ia_hairSprayScaleFactor->ca_syncAttrs" ); return stat; }
+
     {
         MFnTypedAttribute tAttr;
         MFnStringData fnStringData;
@@ -905,9 +968,9 @@ void* WmBunsenRodNode::creator()
         if (!stat) { stat.perror( "addAttribute cachePath" ); return stat; }
     }
     stat = attributeAffects( ia_cachePath, oa_rodsChanged );
-	if ( !stat ) { stat.perror( "attributeAffects ia_cachePath->ca_simulationSync" ); return stat; }
+    if ( !stat ) { stat.perror( "attributeAffects ia_cachePath->ca_simulationSync" ); return stat; }
     stat = attributeAffects( ia_cachePath, ca_simulationSync );
-	if ( !stat ) { stat.perror( "attributeAffects ia_cachePath->ca_simulationSync" ); return stat; }
+    if ( !stat ) { stat.perror( "attributeAffects ia_cachePath->ca_simulationSync" ); return stat; }
     
     {
         MFnTypedAttribute   tAttr;  
@@ -937,6 +1000,14 @@ void* WmBunsenRodNode::creator()
     }
     stat = attributeAffects( ia_fozzieVertices, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_fozzieVertices->oa_rodsChanged" ); return stat; }
+
+    {
+        ia_hairSpray = MRampAttribute::createCurveRamp("hairSpray", "hs");
+        stat = addAttribute( ia_hairSpray );
+        CHECK_MSTATUS( stat );
+    }
+    stat = attributeAffects( ia_hairSpray, oa_rodsChanged );
+    if ( !stat ) { stat.perror( "attributeAffects ia_hairSpray->oa_rodsChanged" ); return stat; }
     
     // Outputs to plug back into Fozzie, should really be a compound attribute
     //
@@ -972,10 +1043,10 @@ void* WmBunsenRodNode::creator()
         stat = addAttribute( oa_verticesInEachRod );
         CHECK_MSTATUS( stat );
     }
-    
+
     stat = attributeAffects( ia_time, oa_verticesInEachRod );
-	stat = attributeAffects( ia_time, oa_nonSimulatedVertices );
-	stat = attributeAffects( ia_time, oa_simulatedVertices );
+    stat = attributeAffects( ia_time, oa_nonSimulatedVertices );
+    stat = attributeAffects( ia_time, oa_simulatedVertices );
     
-	return MS::kSuccess;
+    return MS::kSuccess;
 }

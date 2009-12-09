@@ -29,6 +29,8 @@
 #include <maya/MFnNurbsCurveData.h>
 #include <maya/MFnNurbsCurve.h>
 #include <maya/MFnStringData.h>
+#include <maya/MFloatArray.h>
+#include <maya/MRampAttribute.h>
 
 #include "Beaker.hh"
 
@@ -38,7 +40,7 @@ public:
     WmBunsenRodNode();
     virtual	~WmBunsenRodNode();
     virtual MStatus compute( const MPlug& i_plug, MDataBlock& i_dataBlock );
-	virtual void draw( M3dView& i_view, const MDagPath& i_path, 
+    virtual void draw( M3dView& i_view, const MDagPath& i_path, 
                        M3dView::DisplayStyle i_style,
                        M3dView::DisplayStatus i_status );
     virtual bool isBounded() const;
@@ -62,6 +64,8 @@ public:
     static MObject ia_minorRadius;
     static MObject ia_majorRadius;
     static MObject ia_vertexSpacing;
+    static MObject ia_hairSpray;
+    static MObject ia_hairSprayScaleFactor;
 
     // Caching
     static MObject ia_cachePath;
@@ -92,6 +96,7 @@ public:
 private:
     void writeRodDataToCacheFile( MString i_cachePath );
     void readRodDataFromCacheFile( MString i_cachePath );
+    void updateHairsprayScales( MDataBlock& i_dataBlock );
     
     double m_currentTime;
     double m_previousTime;

@@ -81,9 +81,7 @@ public:
         return &( m_rodDataMap[ i_rodGroup ] );
     }
     
-    RodCollisionTimeStepper* setupRodTimeStepper( BASim::ElasticRod& rod, 
-            vector<Vec3d>& currVertexPositions,
-            ObjectControllerBase::SolverLibrary solverLibrary );
+    RodCollisionTimeStepper* setupRodTimeStepper( RodData* i_rodData );
     
     void draw(void);
 
