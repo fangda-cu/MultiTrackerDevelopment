@@ -88,6 +88,7 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             (*mx_rodData)[ i ]->undeformedVertexPositions.resize( m_cvsPerRod );
             (*mx_rodData)[ i ]->initialVertexPositions.resize( m_cvsPerRod );
             (*mx_rodData)[ i ]->prevVertexPositions.resize( m_cvsPerRod );
+            (*mx_rodData)[ i ]->currVertexPositions.resize( m_cvsPerRod );
             (*mx_rodData)[ i ]->nextVertexPositions.resize( m_cvsPerRod );
             
             std::string frame = "time";
@@ -143,6 +144,7 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             (*mx_rodData)[ i ]->undeformedVertexPositions.resize( nCVs );
             (*mx_rodData)[ i ]->initialVertexPositions.resize( nCVs );
             (*mx_rodData)[ i ]->prevVertexPositions.resize( nCVs );
+            (*mx_rodData)[ i ]->currVertexPositions.resize( nCVs );
             (*mx_rodData)[ i ]->nextVertexPositions.resize( nCVs );
             
             std::string frame = "time";
@@ -177,6 +179,7 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
         {
             (*mx_rodData)[ r ]->initialVertexPositions[ v ] = (*mx_rodData)[ r ]->undeformedVertexPositions[ v ];
             (*mx_rodData)[ r ]->prevVertexPositions[ v ] = (*mx_rodData)[ r ]->undeformedVertexPositions[ v ];
+            (*mx_rodData)[ r ]->currVertexPositions[ v ] = (*mx_rodData)[ r ]->undeformedVertexPositions[ v ];
             (*mx_rodData)[ r ]->nextVertexPositions[ v ] = (*mx_rodData)[ r ]->undeformedVertexPositions[ v ];
         }
     }
@@ -231,6 +234,9 @@ void WmBunsenRodNode::updateRodDataFromInputs()
             
                     Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
                     (*mx_rodData)[ i ]->prevVertexPositions[ c ] = (*mx_rodData)[ i ]->nextVertexPositions[ c ];
+                    // Set the current position to be the prev as it will be moved forward in substeps by
+                    // Beaker as it takes simulation steps.
+                    (*mx_rodData)[ i ]->currVertexPositions[ c ] = (*mx_rodData)[ i ]->nextVertexPositions[ c ];                    
                     (*mx_rodData)[ i ]->nextVertexPositions[ c ] = inputCurveVertex;
                     
                     inputVertexIndex++;
@@ -289,6 +295,9 @@ void WmBunsenRodNode::updateRodDataFromInputs()
     
                     Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
                     (*mx_rodData)[ i ]->prevVertexPositions[ c ] = (*mx_rodData)[ i ]->nextVertexPositions[ c ];
+                    // Set the current position to be the prev as it will be moved forward in substeps by
+                    // Beaker as it takes simulation steps.
+                    (*mx_rodData)[ i ]->currVertexPositions[ c ] = (*mx_rodData)[ i ]->nextVertexPositions[ c ];                    
                     (*mx_rodData)[ i ]->nextVertexPositions[ c ] = inputCurveVertex;
                 }
             }

@@ -32,8 +32,12 @@ public:
     vector<Vec3d> initialVertexPositions;
     RodOptions rodOptions;
 
-    // These variables are for interpolating substeps between frames
+    // These variables are for interpolating substeps between frames.
+    // The position of the input curve vertices at the last frame
     vector<Vec3d> prevVertexPositions;
+    // The position of the input curve vertices at the current substep
+    vector<Vec3d> currVertexPositions;
+    // The position of the input curve vertices at the next frame
     vector<Vec3d> nextVertexPositions;
     
 };

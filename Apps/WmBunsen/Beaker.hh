@@ -82,7 +82,8 @@ public:
     }
     
     RodCollisionTimeStepper* setupRodTimeStepper( BASim::ElasticRod& rod, 
-        ObjectControllerBase::SolverLibrary solverLibrary );
+            vector<Vec3d>& currVertexPositions,
+            ObjectControllerBase::SolverLibrary solverLibrary );
     
     void draw(void);
 

@@ -18,6 +18,7 @@
 #include <sstream>
 #include <sys/time.h>
 #include <tclap/CmdLine.h>
+#include <BASim/src/Physics/ElasticRods/RodHairsprayForce.hh>
 
 using namespace BASim;
 using namespace tr1;
@@ -105,7 +106,8 @@ void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary 
         rodDataVector[ r ]->rod->fixVert( 1 );
         rodDataVector[ r ]->rod->fixEdge( 0 );
         
-        rodDataVector[ r ]->stepper = setupRodTimeStepper( *(rodDataVector[ r ]->rod), solverLibrary );
+        rodDataVector[ r ]->stepper = setupRodTimeStepper( *(rodDataVector[ r ]->rod), 
+                                        rodDataVector[ r ]->currVertexPositions, solverLibrary );
         
         m_world->addObject( rodDataVector[ r ]->rod );
         m_world->addController( rodDataVector[ r ]->stepper );
@@ -157,10 +159,14 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 BASim::ElasticRod* rod = rodData[r]->rod;
                 for( int c = 0; c < rod->nv(); c++)
                 {
+                    // Calculate the position of the input curve for this rod at the current substep.
+                    // This is used to set fixed vertices and also to calculate the hairspray force.
+                    rodData[r]->currVertexPositions[c] = ( interpolateFactor * rodData[r]->nextVertexPositions[c] + 
+                               ( 1.0 - interpolateFactor ) * rodData[r]->prevVertexPositions[c] );
+
                     if( rod->vertFixed( c ) )
                     {
-                        rod->setVertex( c,interpolateFactor * rodData[r]->nextVertexPositions[c] + 
-                               ( 1.0 - interpolateFactor ) * rodData[r]->prevVertexPositions[c] );
+                        rod->setVertex( c, rodData[r]->currVertexPositions[c]);
                     }
                 }
                 rod->updateProperties();
@@ -189,6 +195,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 }
 
 RodCollisionTimeStepper* Beaker::setupRodTimeStepper( BASim::ElasticRod& rod, 
+    vector<Vec3d>& currVertexPositions,
     ObjectControllerBase::SolverLibrary solverLibrary )
 {
     RodTimeStepper* stepper = new RodTimeStepper( rod );
@@ -222,6 +229,15 @@ RodCollisionTimeStepper* Beaker::setupRodTimeStepper( BASim::ElasticRod& rod,
     {
         stepper->addExternalForce( new RodGravity( getGravity() ) );
     }
+  
+    // Add the hairspray force to attract the rods back to their input curves    
+    vector<Scalar> ks;
+    // this vector will come from a Maya ramp soon
+    ks.resize( rod.nv() );
+    for ( int s=0; s<rod.nv(); s++ )
+        ks[ s ] = 0.5;
+
+    stepper->addExternalForce( new RodHairsprayForce( rod, ks, currVertexPositions ) );  
     
     // We use 1 iteration on purpose, it should work well. See 'Large steps in cloth simulation' paper
     //int iterations = 1;
