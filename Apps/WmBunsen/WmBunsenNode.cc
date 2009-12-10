@@ -95,7 +95,8 @@ void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock,
                 // it owns. Since we are resetting the sim we need to actually now create the
                 // rods and add them to the world.
                 
-                m_beaker->createRods( r, solverLibrary );
+                //m_beaker->createRods( r, solverLibrary );
+                m_beaker->createTree( r, solverLibrary );
             }
             else
                 CHECK_MSTATUS( stat );

@@ -8,8 +8,7 @@
 #ifndef RODTIMESTEPPER_HH
 #define RODTIMESTEPPER_HH
 
-//#include <BASim/src/Core/ObjectControllerBase.hh>
-#include <BASim/Core>
+#include "BASim/src/Physics/ElasticRods/RodBoundaryCondition.hh"
 
 namespace BASim {
 
@@ -24,6 +23,7 @@ public:
     : m_rod(rod)
     , m_method(NONE)
     , m_diffEqSolver(NULL)
+    , m_boundaryCondition(NULL)
   {
     setDiffEqSolver(SYMPL_EULER);
   }
@@ -31,6 +31,7 @@ public:
   ~RodTimeStepper()
   {
     if (m_diffEqSolver != NULL) delete m_diffEqSolver;
+    if (m_boundaryCondition != NULL) delete m_boundaryCondition;
   }
 
   void execute()
@@ -112,12 +113,6 @@ public:
     for (size_t i = 0; i < m_externalForces.size(); ++i) {
       m_externalForces[i]->computeForce(m_rod, f);
     }
-
-    // zero the forces on fixed degrees of freedom.
-    const IntArray& fixed = m_rod.fixed();
-    for (size_t i = 0; i < fixed.size(); ++i) {
-      f(fixed[i]) = 0;
-    }
   }
 
   /**
@@ -144,14 +139,6 @@ public:
     for (size_t i = 0; i < m_externalForces.size(); ++i) {
       m_externalForces[i]->computeForceDV(m_rod, J);
     }
-  }
-
-  /**
-   * Returns an array with the indices of the fixed degrees of freedom.
-   */
-  const IntArray& getFixedDofs()
-  {
-    return m_rod.fixed();
   }
 
   /**
@@ -227,12 +214,58 @@ public:
     return s->createBandMatrix(m_rod.ndof(), m_rod.ndof(), 10, 10);
   }
 
+  RodBoundaryCondition* getBoundaryCondition()
+  {
+    if (m_boundaryCondition == NULL) {
+      m_boundaryCondition = new RodBoundaryCondition(m_rod);
+    }
+    return m_boundaryCondition;
+  }
+
+  void setBoundaryCondition(RodBoundaryCondition* bc)
+  {
+    m_boundaryCondition = bc;
+  }
+
+  void getScriptedDofs(IntArray& indices, std::vector<Scalar>& desired)
+  {
+    if (m_boundaryCondition == NULL) {
+      indices.resize(0);
+      desired.resize(0);
+      return;
+    }
+
+    const RodBoundaryCondition::BCList& verts
+      = m_boundaryCondition->scriptedVertices();
+    const RodBoundaryCondition::BCList& edges
+      = m_boundaryCondition->scriptedEdges();
+
+    int nb = 3 * verts.size() + edges.size(); // # of scripted dofs
+    indices.resize(nb);
+    desired.resize(nb);
+
+    for (size_t i = 0; i < verts.size(); ++i) {
+      for (int k = 0; k < 3; ++k) {
+        indices[3 * i + k] = m_rod.vertIdx(verts[i], k);
+        desired[3 * i + k]
+          = m_boundaryCondition->getDesiredVertexPosition(verts[i])[k];
+      }
+    }
+
+    for (size_t i = 0; i < edges.size(); ++i) {
+      indices[3 * verts.size() + i] = m_rod.edgeIdx(edges[i]);
+      desired[3 * verts.size() + i]
+        = m_boundaryCondition->getDesiredEdgeAngle(edges[i]);
+    }
+  }
+
 protected:
 
   ElasticRod& m_rod;
   std::vector<RodExternalForce*> m_externalForces;
   Method m_method;
   DiffEqSolver* m_diffEqSolver;
+  RodBoundaryCondition* m_boundaryCondition;
 };
 
 } // namespace BASim

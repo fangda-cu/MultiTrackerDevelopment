@@ -8,6 +8,8 @@
 #ifndef TOPOLOGY_HH
 #define TOPOLOGY_HH
 
+#include "BASim/src/Core/Definitions.hh"
+
 namespace BASim {
 
 /** Class that holds the topology (connectivity information) of a

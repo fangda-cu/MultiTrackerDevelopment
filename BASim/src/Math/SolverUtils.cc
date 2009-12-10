@@ -78,7 +78,7 @@ LinearSolverBase* SolverUtils::createLinearSolver(MatrixBase* A) const
   }
 #endif // HAVE_MKL
 
-  //std::cout << "cg" << std::endl;
+  std::cout << "cg" << std::endl;
   return new ConjugateGradient(*A);
 }
 

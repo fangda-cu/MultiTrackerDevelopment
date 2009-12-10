@@ -13,6 +13,7 @@
 #include <iostream>
 #include <ext/hash_map>
 #include "RodData.hh"
+#include <BASim/src/Physics/ElasticRods/RodTree.hh>
 #include <BASim/src/Collisions/CollisionMeshData.hh>
 
 using namespace BASim;
@@ -97,6 +98,7 @@ public:
     void resetEverything();
     void createSpaceForRods( size_t i_rodGroup, size_t i_numRods );
     void createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary solverLibrary );
+    void createTree( size_t i_rodGroup, ObjectControllerBase::SolverLibrary solverLibrary );
     bool collisionMeshInitialised( const size_t id );
     void initialiseCollisionMesh( BASim::CollisionMeshData *collisionMeshData, size_t id );
     void removeCollisionMesh( const size_t id );
@@ -112,6 +114,9 @@ private:
     ObjPropHandle<int> m_maxIterHandle;
     
     Vec3d m_gravity;
+
+    // For testing...
+    RodTree *m_rodTree;
 };
 
 #endif // BEAKER_HH_

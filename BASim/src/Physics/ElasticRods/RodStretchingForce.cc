@@ -66,11 +66,14 @@ void RodStretchingForce::globalForce(VecXd& force)
 {
   IndexArray indices;
   ElementForce localForce;
+  SpringDofStruct dofs;
 
   iterator end = m_stencil.end();
   for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
     edge_handle& eh = m_stencil.handle();
-    elementForce(localForce, eh);
+    //elementForce(localForce, eh);
+    gatherDofs(dofs, eh);
+    elementForce(localForce, dofs);
     m_stencil.indices(indices);
     for (int i = 0; i < indices.size(); ++i)
       force(indices(i)) += localForce(i);
@@ -83,6 +86,15 @@ void RodStretchingForce::globalForce(VecXd& force)
 #ifdef TEST_ROD_STRETCHING
   globalEnergy();
 #endif // TEST_ROD_STRETCHING
+}
+
+void RodStretchingForce::elementForce(ElementForce& force,
+                                      const SpringDofStruct& dofs)
+{
+  Vec3d f =
+    dofs.stiffness * (dofs.currLength / dofs.restLength - 1.0) * dofs.tangent;
+  force.segment(0, 3) =  f;
+  force.segment(3, 3) = -f;
 }
 
 void RodStretchingForce::elementForce(ElementForce& force,

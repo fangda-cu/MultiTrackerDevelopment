@@ -23,7 +23,7 @@
 using namespace BASim;
 using namespace tr1;
 
-Beaker::Beaker() : m_gravity( 0, -981.0, 0 )
+Beaker::Beaker() : m_gravity( 0, -981.0, 0 ), m_rodTree(NULL)
 {
     m_rodDataMap.clear();
     initialiseWorld();
@@ -120,6 +120,50 @@ void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary 
     cerr << "Beaker - Created " << numRods << " rods\n";
 }
 
+void Beaker::createTree( size_t i_rodGroup, ObjectControllerBase::SolverLibrary solverLibrary )
+{
+    vector<RodData*>& rodDataVector = m_rodDataMap[ i_rodGroup ];
+    size_t numRods = rodDataVector.size();
+    
+    for ( size_t r=0; r<numRods; r++ )
+    {
+         // setupRod() is defined in ../BASim/src/Physics/ElasticRods/RodUtils.hh
+        rodDataVector[ r ]->rod = setupRod( rodDataVector[ r ]->rodOptions, 
+                                            rodDataVector[ r ]->initialVertexPositions, 
+                                            rodDataVector[ r ]->undeformedVertexPositions );
+    
+        if ( r==0 )
+        {
+            rodDataVector[ r ]->rod->fixVert( 0 );
+            rodDataVector[ r ]->rod->fixVert( 1 );
+            rodDataVector[ r ]->rod->fixEdge( 0 );
+        }
+        
+        rodDataVector[ r ]->stepper = setupRodTimeStepper( rodDataVector[ r ] );
+        
+        m_world->addObject( rodDataVector[ r ]->rod );
+        m_world->addController( rodDataVector[ r ]->stepper );
+        
+        rodDataVector[ r ]->rodRenderer = new RodRenderer( *(rodDataVector[ r ]->rod) );
+        rodDataVector[ r ]->rodRenderer->drawMaterial() = true;
+        
+        rodDataVector[ r ]->shouldSimulate = true;
+    }
+
+    // FIXME:
+    // for testing, assume that rod 1 parents to 0 and 2 and 3 parent to 1
+    // This is retarded. What we should do is let the user select a bunch of curves
+    // and we assume that any start/ends that are within some tolerence should be connected.
+    m_rodTree = new RodTree( NULL, rodDataVector[ 0 ]->rod, Vec3d(0.0,0.0,0.0) );
+    RodTree* rodTree2 = new RodTree( rodDataVector[ 0 ]->rod, rodDataVector[ 1 ]->rod );
+    m_rodTree->addChildNode( rodTree2 );
+    RodTree* rodTree3 = new RodTree( rodDataVector[ 0 ]->rod, rodDataVector[ 2 ]->rod );
+    m_rodTree->addChildNode( rodTree3 );
+
+    cerr << "Beaker - Created " << numRods << " rods\n";
+}
+
+
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, 
   int i_subSteps, bool i_collisionsEnabled  )
 {
@@ -179,7 +223,6 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 dynamic_cast<RodCollisionTimeStepper*>(rodData[r]->stepper)->doCollisions( i_collisionsEnabled );
                 dynamic_cast<RodCollisionTimeStepper*>(rodData[r]->stepper)->setTimeStep( getDt() );
                 dynamic_cast<RodCollisionTimeStepper*>(rodData[r]->stepper)->setCollisionMeshesMap( &m_collisionMeshMap );
-        
             }
         }
 
@@ -187,6 +230,9 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
         setTime( currentTime + getDt() );
         currentTime = getTime();
+
+        if ( m_rodTree != NULL )
+            m_rodTree->enforceParentConnections();
     }
     
     // restore dt
@@ -276,6 +322,9 @@ void Beaker::draw()
     {
         cmItr->second->draw(); 
     }
+
+    if ( m_rodTree != NULL )
+      m_rodTree->draw();
 }
 
 

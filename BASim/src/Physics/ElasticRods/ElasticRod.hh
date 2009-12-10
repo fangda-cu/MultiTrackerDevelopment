@@ -8,11 +8,13 @@
 #ifndef ELASTICROD_HH
 #define ELASTICROD_HH
 
+#include "BASim/src/Physics/PhysObject.hh"
 #include <BASim/src/Collisions/CollisionObject.hh>
 
 namespace BASim {
 
 class RodForce;
+class MatrixBase;
 
 /** Base class for rods. The degrees of freedom for rods are the
     vertex positions (3 dofs per vertex) and the angles between the
@@ -396,9 +398,6 @@ protected:
   ObjPropHandle<bool> m_viscous;
   ObjPropHandle<RefFrameType> m_refFrameType;
   ObjPropHandle<Scalar> m_density;
-  ObjPropHandle<IntArray> m_fixed;
-  ObjPropHandle<IntArray> m_fixedVerts;
-  ObjPropHandle<IntArray> m_fixedEdges;
   ObjPropHandle<Scalar> m_YoungsModulus;
   ObjPropHandle<Scalar> m_ShearModulus;
 
@@ -406,7 +405,6 @@ protected:
   VPropHandle<Vec3d> m_vertexVelocities;
   VPropHandle<Scalar> m_voronoiLengths;
   VPropHandle<Scalar> m_vertexMasses;
-  VPropHandle<bool> m_vertexFixed;
   VPropHandle<Scalar> m_phi; ///< twist of the reference frame
   VPropHandle<Vec3d> m_curvatureBinormal;
   VPropHandle<int> m_vertIdx;
@@ -420,8 +418,7 @@ protected:
   EPropHandle<Vec3d> m_edges;
   EPropHandle<Vec3d> m_tangents;
   EPropHandle<Scalar> m_edgeLengths; ///< lengths of edges
-  EPropHandle<bool> m_edgeFixed;
-  VPropHandle<int> m_edgeIdx;
+  EPropHandle<int> m_edgeIdx;
   
   ////////////////////////////////////////////////////////////////////////////////
   //

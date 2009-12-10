@@ -13,6 +13,7 @@
 #include "BASim/src/Math/Petsc/PetscUtils.hh"
 
 namespace BASim {
+
 class PetscMatrix : public MatrixBase
 {
 public:

@@ -8,6 +8,10 @@
 #ifndef PROPERTY_HH
 #define PROPERTY_HH
 
+#include "BASim/src/Core/Definitions.hh"
+#include "BASim/src/Core/Handle.hh"
+#include "BASim/src/Core/Util.hh"
+
 namespace BASim {
 
 /** Base class for storing properties. A property essentially just
@@ -79,25 +83,25 @@ public:
     m_data.push_back(T());
   }
 
-  const_pointer data() const
+  inline const_pointer data() const
   {
     if (m_data.empty()) return NULL;
     return &m_data[0];
   }
 
-  reference operator[] (size_t idx)
+  inline reference operator[] (size_t idx)
   {
     assert(idx < m_data.size());
     return m_data[idx];
   }
 
-  const_reference operator[] (size_t idx) const
+  inline const_reference operator[] (size_t idx) const
   {
     assert(idx < m_data.size());
     return m_data[idx];
   }
 
-  reference operator[] (const HandleBase& h)
+  inline reference operator[] (const HandleBase& h)
   {
     assert(h.isValid());
     assert(h.idx() >= 0);
@@ -105,7 +109,7 @@ public:
     return m_data[h.idx()];
   }
 
-  const_reference operator[] (const HandleBase& h) const
+  inline const_reference operator[] (const HandleBase& h) const
   {
     assert(h.isValid());
     assert(h.idx() >= 0);
@@ -150,7 +154,7 @@ public:
     return PropertyHandleBase<T>(idx);
   }
 
-  template <class T> Property<T>&
+  template <class T> inline Property<T>&
   property(const PropertyHandleBase<T>& h)
   {
     assert(h.idx() >= 0);
@@ -160,7 +164,7 @@ public:
     return *smart_cast<Property<T>*>(m_properties[h.idx()]);
   }
 
-  template <class T> const Property<T>&
+  template <class T> inline const Property<T>&
   property(const PropertyHandleBase<T>& h) const
   {
     assert(h.idx() >= 0);

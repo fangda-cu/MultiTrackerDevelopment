@@ -1,7 +1,6 @@
 #include <iostream>
 #include <map>
 #include <string>
-#include <vector>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include "Timer.hh"

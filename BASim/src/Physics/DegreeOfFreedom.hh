@@ -8,6 +8,9 @@
 #ifndef DEGREEOFFREEDOM_HH
 #define DEGREEOFFREEDOM_HH
 
+#include "BASim/src/Core/Definitions.hh"
+#include "BASim/src/Core/Handle.hh"
+
 namespace BASim {
 
 /** Handle for referring to a degree of freedom.  */

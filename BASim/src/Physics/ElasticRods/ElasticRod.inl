@@ -209,64 +209,6 @@ inline const Vec3d& ElasticRod::getMaterial2(int j) const
   return property(m_materialDirectors)[j].second;
 }
 
-inline bool ElasticRod::vertFixed(const vertex_handle& vh) const
-{
-  return property(m_vertexFixed)[vh];
-}
-
-inline bool ElasticRod::vertFixed(int i) const
-{
-  return property(m_vertexFixed)[i];
-}
-
-inline void ElasticRod::fixVert(int i)
-{
-  if (vertFixed(i)) return;
-
-  property(m_vertexFixed)[i] = true;
-  property(m_fixedVerts).push_back(i);
-  for (int coordinate = 0; coordinate < 3; ++coordinate)
-    property(m_fixed).push_back(vertIdx(i, coordinate));
-}
-
-inline void ElasticRod::unfixVert(int i)
-{
-  if (!vertFixed(i)) return;
-
-  assert(!"unfixVert not implemented!");
-}
-
-inline bool ElasticRod::edgeFixed(const edge_handle& eh) const
-{
-  return property(m_edgeFixed)[eh];
-}
-
-inline bool ElasticRod::edgeFixed(int i) const
-{
-  return property(m_edgeFixed)[i];
-}
-
-inline void ElasticRod::fixEdge(int i)
-{
-  if (edgeFixed(i)) return;
-
-  property(m_edgeFixed)[i] = true;
-  property(m_fixedEdges).push_back(i);
-  property(m_fixed).push_back(edgeIdx(i));
-}
-
-inline void ElasticRod::unfixEdge(int i)
-{
-  if (!edgeFixed(i)) return;
-
-  assert(!"unfixEdge not implemented!");
-}
-
-inline const IntArray& ElasticRod::fixed() const
-{
-  return property(m_fixed);
-}
-
 inline const Scalar& ElasticRod::getEdgeLength(const edge_handle& eh) const
 {
   return property(m_edgeLengths)[eh];

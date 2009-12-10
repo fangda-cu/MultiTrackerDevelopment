@@ -7,6 +7,7 @@
 
 #ifndef PETSCLINEARSOLVER_HH
 #define PETSCLINEARSOLVER_HH
+
 #include <petscksp.h>
 #include "BASim/src/Math/LinearSolverBase.hh"
 

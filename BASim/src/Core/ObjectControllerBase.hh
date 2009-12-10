@@ -8,6 +8,8 @@
 #ifndef OBJECTCONTROLLERBASE_HH
 #define OBJECTCONTROLLERBASE_HH
 
+#include "BASim/src/Core/ObjectBase.hh"
+
 namespace BASim {
 
 /** Base class for all object controllers. */
@@ -36,7 +38,6 @@ public:
 protected:
 
   std::vector<ObjectBase*> m_objects;
-
   bool m_enabled;
 };
 

@@ -8,6 +8,8 @@
 #ifndef TOPOBJITERATORS_HH
 #define TOPOBJITERATORS_HH
 
+#include "BASim/src/Core/Definitions.hh"
+
 namespace BASim {
 
 /** Iterator over vertices */

@@ -8,6 +8,8 @@
 #ifndef UTIL_HH
 #define UTIL_HH
 
+#include "BASim/src/Core/Definitions.hh"
+
 namespace BASim {
 
 /** Converts from a string to the given type */

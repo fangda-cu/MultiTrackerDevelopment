@@ -29,9 +29,6 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   add_property(m_viscous, "viscous", false);
   add_property(m_refFrameType, "reference-frame", TimeParallel);
   add_property(m_density, "density", 1.0);
-  add_property(m_fixed, "fixed_dofs");
-  add_property(m_fixedVerts, "fixed_verts");
-  add_property(m_fixedEdges, "fixed_edges");
   add_property(m_YoungsModulus, "Young's modulus", 1.0);
   add_property(m_ShearModulus, "shear modulus", 1.0);
 
@@ -39,7 +36,6 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   add_property(m_vertexVelocities, "vertex velocities", Vec3d(0,0,0));
   add_property(m_voronoiLengths, "voronoi legths", 0.0);
   add_property(m_vertexMasses, "vertex masses", 0.0);
-  add_property(m_vertexFixed, "is vertex fixed", false);
   add_property(m_phi, "phi", 0.0);
   add_property(m_curvatureBinormal, "curvature binormal", Vec3d(0,0,0));
   add_property(m_vertIdx, "vertex index", 0);
@@ -53,7 +49,6 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   add_property(m_edges, "edges", Vec3d(0,0,0));
   add_property(m_tangents, "tangents", Vec3d(0,0,0));
   add_property(m_edgeLengths, "edge lengths", 0.0);
-  add_property(m_edgeFixed, "is edge fixed", false);
   add_property(m_edgeIdx, "edge index", 0);
 
   m_friction = 0;
@@ -61,7 +56,6 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   m_separationStrength = 1;
 
   setupDofIndices();
-
   // For collisions
   m_currentPositions.resize(numVertices);
   m_previousPositions.resize(numVertices);
