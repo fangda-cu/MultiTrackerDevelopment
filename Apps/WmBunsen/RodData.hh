@@ -2,6 +2,7 @@
 #define RODDATA_HH_
 
 #include <BASim/BASim>
+#include "SplineAttrEval.hh"
 
 using namespace BASim;
 using namespace std;
@@ -39,7 +40,11 @@ public:
     vector<Vec3d> currVertexPositions;
     // The position of the input curve vertices at the next frame
     vector<Vec3d> nextVertexPositions;
-    
+    // whether this vertex is locked in place or not
+   // vector<Bool> vertexFixed;
+
+    double hairSprayScaleFactor;
+    cvDataMap forceWeightMap;
 };
 
 #endif

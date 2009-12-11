@@ -106,8 +106,7 @@ void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary 
         rodDataVector[ r ]->rod->fixVert( 1 );
         rodDataVector[ r ]->rod->fixEdge( 0 );
         
-        rodDataVector[ r ]->stepper = setupRodTimeStepper( *(rodDataVector[ r ]->rod), 
-                                        rodDataVector[ r ]->currVertexPositions, solverLibrary );
+        rodDataVector[ r ]->stepper = setupRodTimeStepper( rodDataVector[ r ] );
         
         m_world->addObject( rodDataVector[ r ]->rod );
         m_world->addController( rodDataVector[ r ]->stepper );
@@ -156,6 +155,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             for ( size_t r=0; r<numRods; r++ )
             {
                 dynamic_cast<RodTimeStepper*>(rodData[r]->stepper->getTimeStepper())->setTimeStep(getDt());
+                RodBoundaryCondition* boundary = dynamic_cast<RodTimeStepper*>(rodData[r]->stepper->getTimeStepper())->getBoundaryCondition();
                 BASim::ElasticRod* rod = rodData[r]->rod;
                 for( int c = 0; c < rod->nv(); c++)
                 {
@@ -164,9 +164,23 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     rodData[r]->currVertexPositions[c] = ( interpolateFactor * rodData[r]->nextVertexPositions[c] + 
                                ( 1.0 - interpolateFactor ) * rodData[r]->prevVertexPositions[c] );
 
-                    if( rod->vertFixed( c ) )
+                    /* if( rod->vertFixed( c ) )
                     {
-                        rod->setVertex( c, rodData[r]->currVertexPositions[c]);
+                        rod->setVertex( c, rodData[r]->currVertexPositions[c] );
+                    }*/
+
+                    // FIXME: THIS IS INSANE, This MUST go in RodCollisionTimeStepper but there are include issues there and I can't
+                    // includ RodTimeStepper. FIX THESE AND MOVE THIS
+                    
+                    // First enforce the boundary conditions. Setting a vertex to fixed on the rod does
+                    // not enforce anything any more. The fixed vertices must be explicitly added in here/
+                    
+                    if ( rod->vertFixed(c) )
+                    {  
+                      boundary->setDesiredVertexPosition(c, rodData[r]->currVertexPositions[c]);
+                      if (c>0)
+                        if (rod->vertFixed(c-1))  
+                          boundary->setDesiredEdgeAngle(c-1, rod->getTheta(c-1));
                     }
                 }
                 rod->updateProperties();
@@ -194,10 +208,10 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     setDt( dt_save );
 }
 
-RodCollisionTimeStepper* Beaker::setupRodTimeStepper( BASim::ElasticRod& rod, 
-    vector<Vec3d>& currVertexPositions,
-    ObjectControllerBase::SolverLibrary solverLibrary )
+RodCollisionTimeStepper* Beaker::setupRodTimeStepper( RodData* i_rodData )
 {
+
+    ElasticRod& rod = (*i_rodData->rod);
     RodTimeStepper* stepper = new RodTimeStepper( rod );
     
     std::string integrator = "implicit";
@@ -231,13 +245,26 @@ RodCollisionTimeStepper* Beaker::setupRodTimeStepper( BASim::ElasticRod& rod,
     }
   
     // Add the hairspray force to attract the rods back to their input curves    
-    vector<Scalar> ks;
-    // this vector will come from a Maya ramp soon
-    ks.resize( rod.nv() );
-    for ( int s=0; s<rod.nv(); s++ )
-        ks[ s ] = 0.5;
+    WsplineAttr  splineArr;
+    splineArr.set( i_rodData->forceWeightMap );
 
-    stepper->addExternalForce( new RodHairsprayForce( rod, ks, currVertexPositions ) );  
+    vector<Scalar> ks( rod.nv() );
+    for ( int i=0; i<rod.nv(); ++i )
+    {
+        // Caclulate the hairspray force for this CV
+        // FIXME: this should be how far along the rod the cv is rather than just cv/nCVs
+        // cvs may not be evenly spaced (although that will make them more stable).
+        double t = double( i ) / double( rod.nv() - 1  );
+        ks[ i ] = splineArr.getValue( t );
+        ks[ i ] *= i_rodData->hairSprayScaleFactor;
+ 
+        // If the force is 100% then there is no point in using a force, just lock the 
+        // vertex in place and it won't move.
+        if ( ks[ i ] == 1.0 )
+            rod.fixVert( i );
+    }
+    
+  //  stepper->addExternalForce( new RodHairsprayForce( rod, ks, i_rodData->currVertexPositions ) );  
     
     // We use 1 iteration on purpose, it should work well. See 'Large steps in cloth simulation' paper
     //int iterations = 1;

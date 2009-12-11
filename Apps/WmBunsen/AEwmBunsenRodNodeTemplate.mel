@@ -14,7 +14,14 @@ global proc AEwmBunsenRodNodeTemplate(string $nodeName)
         editorTemplate -addControl "youngsModulus";
         editorTemplate -addControl "shearModulus";
         editorTemplate -addControl "density";
-        editorTemplate -addControl "cachePath";
+        editorTemplate -addControl  "hairSprayScaleFactor";
+    editorTemplate -endLayout;
+
+    AEaddRampControl ("hairSpray");
+    setAttr ($nodeName + ".hairSpray[0].hairSpray_Interp") 3;
+    
+    editorTemplate -beginLayout "Files" -collapse 0;
+      editorTemplate -addControl "cachePath";
     editorTemplate -endLayout;
 
     editorTemplate -addExtraControls;
