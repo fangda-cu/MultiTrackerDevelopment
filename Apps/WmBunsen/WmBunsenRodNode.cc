@@ -185,6 +185,9 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             (*mx_rodData)[ r ]->nextVertexPositions[ v ] = (*mx_rodData)[ r ]->undeformedVertexPositions[ v ];
         }
     }
+
+    // We need to make sure we have the spline attr data for the rods since compute may not have been called yet
+    updateHairsprayScales( dataBlock );
 }
 
 void WmBunsenRodNode::updateRodDataFromInputs()

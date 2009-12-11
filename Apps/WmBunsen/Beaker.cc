@@ -117,7 +117,7 @@ void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary 
         rodDataVector[ r ]->shouldSimulate = true;
     }
     
-    cerr << "Beaker - Created " << numRods << " rods\n";
+    //cerr << "Beaker - Created " << numRods << " rods\n";
 }
 
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, 
@@ -163,11 +163,6 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     // This is used to set fixed vertices and also to calculate the hairspray force.
                     rodData[r]->currVertexPositions[c] = ( interpolateFactor * rodData[r]->nextVertexPositions[c] + 
                                ( 1.0 - interpolateFactor ) * rodData[r]->prevVertexPositions[c] );
-
-                    /* if( rod->vertFixed( c ) )
-                    {
-                        rod->setVertex( c, rodData[r]->currVertexPositions[c] );
-                    }*/
 
                     // FIXME: THIS IS INSANE, This MUST go in RodCollisionTimeStepper but there are include issues there and I can't
                     // includ RodTimeStepper. FIX THESE AND MOVE THIS
@@ -264,7 +259,7 @@ RodCollisionTimeStepper* Beaker::setupRodTimeStepper( RodData* i_rodData )
             rod.fixVert( i );
     }
     
-  //  stepper->addExternalForce( new RodHairsprayForce( rod, ks, i_rodData->currVertexPositions ) );  
+    stepper->addExternalForce( new RodHairsprayForce( rod, ks, i_rodData->currVertexPositions ) );  
     
     // We use 1 iteration on purpose, it should work well. See 'Large steps in cloth simulation' paper
     //int iterations = 1;
