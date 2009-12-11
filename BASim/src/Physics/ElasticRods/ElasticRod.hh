@@ -398,6 +398,9 @@ protected:
   ObjPropHandle<bool> m_viscous;
   ObjPropHandle<RefFrameType> m_refFrameType;
   ObjPropHandle<Scalar> m_density;
+  ObjPropHandle<IntArray> m_fixed;
+  ObjPropHandle<IntArray> m_fixedVerts;
+  ObjPropHandle<IntArray> m_fixedEdges;
   ObjPropHandle<Scalar> m_YoungsModulus;
   ObjPropHandle<Scalar> m_ShearModulus;
 
@@ -405,6 +408,7 @@ protected:
   VPropHandle<Vec3d> m_vertexVelocities;
   VPropHandle<Scalar> m_voronoiLengths;
   VPropHandle<Scalar> m_vertexMasses;
+  VPropHandle<bool> m_vertexFixed;
   VPropHandle<Scalar> m_phi; ///< twist of the reference frame
   VPropHandle<Vec3d> m_curvatureBinormal;
   VPropHandle<int> m_vertIdx;
@@ -418,6 +422,7 @@ protected:
   EPropHandle<Vec3d> m_edges;
   EPropHandle<Vec3d> m_tangents;
   EPropHandle<Scalar> m_edgeLengths; ///< lengths of edges
+  EPropHandle<bool> m_edgeFixed;
   EPropHandle<int> m_edgeIdx;
   
   ////////////////////////////////////////////////////////////////////////////////

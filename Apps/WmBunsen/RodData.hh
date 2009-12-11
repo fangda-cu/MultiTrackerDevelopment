@@ -41,6 +41,9 @@ public:
     // The position of the input curve vertices at the next frame
     vector<Vec3d> nextVertexPositions;
 
+    // whether this vertex is locked in place or not
+   // vector<Bool> vertexFixed;
+
     double hairSprayScaleFactor;
     cvDataMap forceWeightMap;
 };

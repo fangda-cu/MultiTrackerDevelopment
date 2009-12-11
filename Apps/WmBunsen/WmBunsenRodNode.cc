@@ -92,6 +92,7 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             (*mx_rodData)[ i ]->prevVertexPositions.resize( m_cvsPerRod );
             (*mx_rodData)[ i ]->currVertexPositions.resize( m_cvsPerRod );
             (*mx_rodData)[ i ]->nextVertexPositions.resize( m_cvsPerRod );
+           // (*mx_rodData)[ i ]->vertexFixed.resize( m_cvsPerRod );
             
             std::string frame = "time";
             if ( frame == "time" )
@@ -148,6 +149,7 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             (*mx_rodData)[ i ]->prevVertexPositions.resize( nCVs );
             (*mx_rodData)[ i ]->currVertexPositions.resize( nCVs );
             (*mx_rodData)[ i ]->nextVertexPositions.resize( nCVs );
+           // (*mx_rodData)[ i ]->vertexFixed.resize( m_cvsPerRod );
             
             std::string frame = "time";
             if ( frame == "time" )
@@ -186,6 +188,15 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
         }
     }
 
+ /*   // Lock the first segment as we need that for hair.
+    for ( v=0; v<(*mx_rodData)[ i ]->vertexFixed.size(); v++ )
+    {
+        if ( v<2 )
+            (*mx_rodData)[ i ]->vertexFixed[v] = true;
+        else
+            (*mx_rodData)[ i ]->vertexFixed[v] = false;
+    }
+*/
     // We need to make sure we have the spline attr data for the rods since compute may not have been called yet
     updateHairsprayScales( dataBlock );
 }

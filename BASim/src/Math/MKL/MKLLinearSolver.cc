@@ -20,6 +20,10 @@ MKLLinearSolver::MKLLinearSolver(BandMatrix& A)
   int kl = smart_cast<BandMatrix&>(A).kl();
   int ku = smart_cast<BandMatrix&>(A).ku();
 
+  std::cerr << "in constructor n " << n << std::endl;
+  std::cerr << "in constructor kl " << kl << std::endl;
+  std::cerr << "in constructor ku " << ku << std::endl;
+
   MKL_INT* ipiv_mkl_int = new MKL_INT[n];
   ipiv = ipiv_mkl_int;
   // ab holds the entries of the matrix. Space must be made for an
@@ -60,6 +64,14 @@ int MKLLinearSolver::solve(VecXd& x, const VecXd& b)
   ldb = n;
   convert(ab, A, kl, ku, n);
   x = b;
+
+  std::cerr << "n = " << n << std::endl;
+  std::cerr << "kl = " << kl << std::endl;
+  std::cerr << "ku = " << ku << std::endl;
+  std::cerr << "ldab = " << ldab << std::endl;
+  std::cerr << "ldb = " << ldb << std::endl;
+  std::cerr << "ab=" << std::endl;
+  A.print();
 
   dgbsv(&n, &kl, &ku, &nrhs, ab, &ldab, (MKL_INT*)ipiv, x.data(), &ldb, &info);
 

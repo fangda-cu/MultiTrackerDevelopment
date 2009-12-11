@@ -61,7 +61,7 @@ ADD_LIBRARY(wmBunsen SHARED ${Headers} ${Templates} ${Sources})
 if (USE_INTEL_COMPILER)
 	target_link_libraries (wmBunsen BASim ${MAYA_LIBRARIES} ${GLUT_glut_LIBRARY} ${OPENMESH_LIBRARY} ${SMV_LIBRARY} ${wxWidgets_LIBRARIES} ${FLENS_LIBRARIES} ${PETSC_LIBRARIES}  $ENV{MKLROOT}/lib/em64t/libmkl_solver_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/em64t/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/em64t/libmkl_intel_thread.a $ENV{MKLROOT}/lib/em64t/libmkl_core.a -Wl,--end-group)
 else (USE_INTEL_COMPILER)
-	target_link_libraries (wmBunsen BASim ${MAYA_LIBRARIES} ${GLUT_glut_LIBRARY} ${OPENMESH_LIBRARY} ${SMV_LIBRARY} ${wxWidgets_LIBRARIES} ${FLENS_LIBRARIES} ${PETSC_LIBRARIES} $ENV{MKLROOT}/lib/em64t/libmkl_solver_ilp64.a -Wl,--start-group $ENV{MKLROOT}/lib/em64t/libmkl_intel_ilp64.a $ENV{MKLROOT}/lib/em64t/libmkl_gnu_thread.a $ENV{MKLROOT}/lib/em64t/libmkl_core.a -Wl,--end-group -fopenmp -lpthread)
+	target_link_libraries (wmBunsen BASim ${MAYA_LIBRARIES} ${GLUT_glut_LIBRARY} ${OPENMESH_LIBRARY} ${SMV_LIBRARY} ${wxWidgets_LIBRARIES} ${FLENS_LIBRARIES} ${PETSC_LIBRARIES} $ENV{MKLLIB}/libmkl_solver_ilp64.a -Wl,--start-group $ENV{MKLLIB}/libmkl_intel_ilp64.a $ENV{MKLLIB}/libmkl_gnu_thread.a $ENV{MKLLIB}/libmkl_core.a -Wl,--end-group -fopenmp -lpthread)
 endif (USE_INTEL_COMPILER)
 
 

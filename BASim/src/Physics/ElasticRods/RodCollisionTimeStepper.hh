@@ -57,11 +57,11 @@ public:
 
     // Sanity check, m_dt MUST EQUAL m_rodTimeStepper->getDt();
     // get it from m_rodTimeStepper rather than using the one here.
-    if ( !m_collisionsEnabled || m_collisionMeshes == NULL || m_collisionMeshes->size()==0 )
+   // if ( !m_collisionsEnabled || m_collisionMeshes == NULL || m_collisionMeshes->size()==0 )
     {
         m_rodTimeStepper->execute();
     }
-    
+    /*
     m_rod->setCollisionStartPositions();
     getProximities(*m_collisionMeshes);
     m_rodTimeStepper->execute();
@@ -71,7 +71,7 @@ public:
     //   Rod::respondRodCollisions(_rods, collisionDT, m_selfCollisionsIterations,
     //                             m_collisionsCoefficientOfRestitution);
     respondObjectCollisions(*m_collisionMeshes, m_dt);
-    m_rod->collisionsEnd(m_dt);
+    m_rod->collisionsEnd(m_dt);*/
   }
 
 protected:
@@ -84,6 +84,9 @@ protected:
   ObjectControllerBase* m_rodTimeStepper;
   ElasticRod* m_rod;
   Scalar m_dt;
+
+  // Tracks which vertices are fixed for this rod.
+ // vector<bool>& m_vertexFixed;
 };
 
 

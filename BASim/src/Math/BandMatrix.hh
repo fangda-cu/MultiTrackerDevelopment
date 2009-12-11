@@ -146,8 +146,9 @@ public:
     std::cout << "[";
     for (int i = 0; i < m_rows; ++i) {
       for (int j = 0; j < m_cols; ++j) {
-        std::cout << (*this)(i, j);
+        std::cout << std::fixed << /*std::setprecision(4) <<*/ (*this)(i, j);
         if (j < m_cols - 1) std::cout << ", ";
+        else std::cout << "\n";
       }
       if (i < m_rows - 1) std::cout << "; ";
     }

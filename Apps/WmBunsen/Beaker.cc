@@ -200,6 +200,11 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             {
                 dynamic_cast<RodTimeStepper*>(rodData[r]->stepper->getTimeStepper())->setTimeStep(getDt());
                 BASim::ElasticRod* rod = rodData[r]->rod;
+                RodBoundaryCondition* boundary = dynamic_cast<RodTimeStepper*>(rodData[r]->stepper->getTimeStepper())->getBoundaryCondition();
+                boundary->setDesiredVertexPosition(0, rod->getVertex(0));
+                boundary->setDesiredVertexPosition(1, rod->getVertex(1));
+                boundary->setDesiredEdgeAngle(0, rod->getTheta(0));
+                
                 for( int c = 0; c < rod->nv(); c++)
                 {
                     // Calculate the position of the input curve for this rod at the current substep.
@@ -207,12 +212,26 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     rodData[r]->currVertexPositions[c] = ( interpolateFactor * rodData[r]->nextVertexPositions[c] + 
                                ( 1.0 - interpolateFactor ) * rodData[r]->prevVertexPositions[c] );
 
-                    if( rod->vertFixed( c ) )
+                   /* if( rod->vertFixed( c ) )
                     {
                         rod->setVertex( c, rodData[r]->currVertexPositions[c] );
-                    }
+                    }*/
+
+                    // FIXME: THIS IS INSANE, This MUST go in RodCollisionTimeStepper but there are include issues there and I can't
+                    // includ RodTimeStepper. FIX THESE AND MOVE THIS
+                    
+                    // First enforce the boundary conditions. Setting a vertex to fixed on the rod does
+                    // not enforce anything any more. The fixed vertices must be explicitly added in here/
+                    
+            /*        if ( rod->vertFixed(c) )
+                    {  
+                      boundary->setDesiredVertexPosition(c, rodData[r]->currVertexPositions[c]);
+                      if (c>0)
+                        if (rod->vertFixed(c-1))  
+                          boundary->setDesiredEdgeAngle(c-1, rod->getTheta(c-1));
+                    }*/
                 }
-                rod->updateProperties();
+                //rod->updateProperties();
 
                 //
                 // This is a bit weird, I'm setting stuff in the RodCollisionTimeStepper as well
@@ -226,7 +245,8 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             }
         }
 
-        m_world->executeInParallel( i_numberOfThreadsToUse );
+        m_world->execute();
+      //  m_world->executeInParallel( i_numberOfThreadsToUse );
 
         setTime( currentTime + getDt() );
         currentTime = getTime();
