@@ -8,6 +8,7 @@
 #ifndef ELASTICROD_HH
 #define ELASTICROD_HH
 
+#include "BASim/src/Physics/PhysObject.hh"
 #include <BASim/src/Collisions/CollisionObject.hh>
 
 namespace BASim {
@@ -421,7 +422,7 @@ protected:
   EPropHandle<Vec3d> m_tangents;
   EPropHandle<Scalar> m_edgeLengths; ///< lengths of edges
   EPropHandle<bool> m_edgeFixed;
-  VPropHandle<int> m_edgeIdx;
+  EPropHandle<int> m_edgeIdx;
   
   ////////////////////////////////////////////////////////////////////////////////
   //

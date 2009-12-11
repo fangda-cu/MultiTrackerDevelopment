@@ -19,41 +19,41 @@ namespace BASim {
     container.property(ph).set_default(t);                        \
   }
 
-#define BA_ACCESS_PROPERTY(handle, container)   \
-  template <typename T> Property<T>&            \
-  property(const handle<T>& ph)                 \
-  {                                             \
-    return container.property(ph);              \
-  }                                             \
-                                                \
-  template <typename T> const Property<T>&      \
-  property(const handle<T>& ph) const           \
-  {                                             \
-    return container.property(ph);              \
+#define BA_ACCESS_PROPERTY(handle, container)     \
+  template <typename T> inline Property<T>&       \
+  property(const handle<T>& ph)                   \
+  {                                               \
+    return container.property(ph);                \
+  }                                               \
+                                                  \
+  template <typename T> inline const Property<T>& \
+  property(const handle<T>& ph) const             \
+  {                                               \
+    return container.property(ph);                \
   }
 
-#define BA_ACCESS_SINGULAR_PROPERTY(handle, container)        \
-  template <typename T> typename Property<T>::reference       \
-  property(const handle<T>& ph)                               \
-  {                                                           \
-    return container.property(ph)[0];                         \
-  }                                                           \
-                                                              \
-  template <typename T> typename Property<T>::const_reference \
-  property(const handle<T>& ph) const                         \
-  {                                                           \
-    return container.property(ph)[0];                         \
+#define BA_ACCESS_SINGULAR_PROPERTY(handle, container)                \
+  template <typename T> inline typename Property<T>::reference        \
+  property(const handle<T>& ph)                                       \
+  {                                                                   \
+    return container.property(ph)[0];                                 \
+  }                                                                   \
+                                                                      \
+  template <typename T> inline typename Property<T>::const_reference  \
+  property(const handle<T>& ph) const                                 \
+  {                                                                   \
+    return container.property(ph)[0];                                 \
   }
 
 #define BA_PROPERTY_EXISTS(handle, container)                 \
-  template <typename T> bool                                  \
+  template <typename T> inline bool                           \
   property_exists(const handle<T>&, const std::string& name)  \
   {                                                           \
     return container.exists(T(), name);                       \
   }
 
 #define BA_PROPERTY_HANDLE(hndl, container)             \
-  template <typename T> void                            \
+  template <typename T> inline void                     \
   property_handle(hndl<T>& ph, const std::string& name) \
   {                                                     \
     ph = hndl<T>( container.handle(T(), name) );        \

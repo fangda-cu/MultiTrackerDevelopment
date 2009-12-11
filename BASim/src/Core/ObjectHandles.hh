@@ -8,6 +8,9 @@
 #ifndef OBJECTHANDLES_HH
 #define OBJECTHANDLES_HH
 
+#include "BASim/src/Core/Handle.hh"
+#include "BASim/src/Core/Property.hh"
+
 namespace BASim {
 
 /** Handle for referring to objects. */

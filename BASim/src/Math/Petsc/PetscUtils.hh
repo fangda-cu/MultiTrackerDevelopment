@@ -7,6 +7,7 @@
 
 #ifndef PETSCUTILS_HH
 #define PETSCUTILS_HH
+
 #include <petscmat.h>
 
 namespace BASim {

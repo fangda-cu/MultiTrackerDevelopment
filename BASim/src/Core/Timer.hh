@@ -1,6 +1,8 @@
 #ifndef TIMER_HH
 #define TIMER_HH
 
+#include "BASim/src/Core/Definitions.hh"
+
 namespace BASim {
 
 // macros to compile timing in/out

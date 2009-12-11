@@ -8,6 +8,10 @@
 #ifndef OBJECTBASE_HH
 #define OBJECTBASE_HH
 
+#include "BASim/src/Core/Macros.hh"
+#include "BASim/src/Core/Property.hh"
+#include "BASim/src/Core/ObjectHandles.hh"
+
 namespace BASim {
 
 /** Base class for all objects. Objects derived from this class can

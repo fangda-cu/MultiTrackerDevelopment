@@ -8,6 +8,9 @@
 #ifndef DEFINITIONS_HH
 #define DEFINITIONS_HH
 
+#include "BASim/src/Core/EigenIncludes.hh"
+#include "BASim/src/Core/STLIncludes.hh"
+
 namespace BASim {
 
 typedef double Scalar; ///< the scalar type

@@ -8,7 +8,11 @@
 #ifndef PHYSOBJECT_HH
 #define PHYSOBJECT_HH
 
+#include "BASim/src/Core/TopologicalObject/TopologicalObject.hh"
+#include "BASim/src/Physics/DegreeOfFreedom.hh"
+
 namespace BASim {
+class MatrixBase;
 
 /** Base class for physics objects. Provides an array-like interface
     to the degrees of freedom of the object. Derived classes and/or

@@ -34,8 +34,8 @@ void SHO::Setup()
   }
 
   rod = setupRod(opts, vertices, vertices);
-  rod->fixVert(0);
   stepper = new RodTimeStepper(*rod);
+  stepper->getBoundaryCondition()->setDesiredVertexPosition(0, rod->getVertex(0));
   //stepper->addExternalForce(new RodMassDamping(10.0));
   if (getGravity().norm() > 0)
     stepper->addExternalForce(new RodGravity(getGravity()));
@@ -60,8 +60,8 @@ void SHO::Setup()
 
 void SHO::AtEachTimestep()
 {
-  VecXd F(rod->ndof());
-  F.setZero();
+  //VecXd F(rod->ndof());
+  //F.setZero();
   //stepper->evaluatePDot(F);
   //std::cout << F << std::endl;
   /*

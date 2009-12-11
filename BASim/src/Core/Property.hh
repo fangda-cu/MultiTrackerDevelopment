@@ -8,6 +8,10 @@
 #ifndef PROPERTY_HH
 #define PROPERTY_HH
 
+#include "BASim/src/Core/Definitions.hh"
+#include "BASim/src/Core/Handle.hh"
+#include "BASim/src/Core/Util.hh"
+
 namespace BASim {
 
 /** Base class for storing properties. A property essentially just

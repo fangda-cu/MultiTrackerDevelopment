@@ -36,7 +36,9 @@ public:
   {
     resize();
     setZero();
-    const IntArray& fixed = m_diffEq.getFixedDofs();
+    IntArray fixed;
+    std::vector<Scalar> desired;
+    m_diffEq.getScriptedDofs(fixed, desired);
 
     // copy start of step positions and velocities
     for (int i = 0; i < x0.size(); ++i) {
@@ -72,7 +74,10 @@ public:
       }
       m_A->finalize();
 
-      for (size_t i = 0; i < fixed.size(); ++i) m_rhs(fixed[i]) = 0;
+      for (size_t i = 0; i < fixed.size(); ++i) {
+        int idx = fixed[i];
+        m_rhs(idx) = (desired[i] - x0[idx]) / m_dt - (v0[idx] + m_deltaV[idx]);
+      }
       m_A->zeroRows(fixed);
       STOP_TIMER("setup");
 
@@ -98,7 +103,11 @@ public:
       m_rhs *= m_dt;
       for (int i = 0; i < m_increment.size(); ++i)
         m_increment(i) = m_diffEq.getMass(i) * m_deltaV(i);
-      for (size_t i = 0; i < fixed.size(); ++i) m_rhs(fixed[i]) = 0;
+      for (size_t i = 0; i < fixed.size(); ++i) {
+        int idx = fixed[i];
+        m_increment[idx] = m_deltaV[idx] + v0[idx];
+        m_rhs[idx] = (desired[i] - x0[idx]) / m_dt;
+      }
       if ((m_increment - m_rhs).norm() < 1.0e-10) {
         break;
       }

@@ -36,39 +36,6 @@ BentTwisting::~BentTwisting()
 
 void BentTwisting::Setup()
 {
-  /*BandMatrix mat(100, 100, 7, 7);
-  int num = 1;
-  for (int i = 0; i < mat.rows(); ++i) {
-    int lower = std::max(i - 7, 0);
-    int upper = std::min(i + 7 + 1, mat.cols());
-    for (int j = lower; j < upper; ++j) {
-      mat(i, j) = num;
-      ++num;
-    }
-    }*/
-
-  /*BandMatrix A(2, 2, 1, 1);
-  A(0, 0) = 4;
-  A(0, 1) = 1;
-  A(1, 0) = 1;
-  A(1, 1) = 3;
-  A.print();
-
-  VecXd b(2);
-  b(0) = 1;
-  b(1) = 2;
-  std::cout << b << std::endl;
-
-  VecXd x(2);
-  x(0) = 2;
-  x(1) = 1;
-
-  ConjugateGradient cg(A);
-  cg.solve(x, b);
-
-  std::cout << x << std::endl;
-
-  exit(0);*/
   loadDynamicsProps();
 
   RodOptions opts;
@@ -86,15 +53,18 @@ void BentTwisting::Setup()
   }
 
   rod = setupRod(opts, vertices, vertices);
-
-  rod->fixVert(0);
-  rod->fixVert(1);
-  rod->fixVert(rod->nv() - 2);
-  rod->fixVert(rod->nv() - 1);
-  rod->fixEdge(0);
-  rod->fixEdge(rod->ne() - 1);
+  int nv = rod->nv();
+  int ne = rod->ne();
 
   stepper = getRodTimeStepper(*rod);
+
+  RodBoundaryCondition* boundary = stepper->getBoundaryCondition();
+  boundary->setDesiredVertexPosition(0, rod->getVertex(0));
+  boundary->setDesiredVertexPosition(1, rod->getVertex(1));
+  boundary->setDesiredEdgeAngle(0, rod->getTheta(0));
+  boundary->setDesiredVertexPosition(nv - 2, rod->getVertex(nv - 2));
+  boundary->setDesiredVertexPosition(nv - 1, rod->getVertex(nv - 1));
+  boundary->setDesiredEdgeAngle(ne - 1, rod->getTheta(ne - 1));
 
   m_world->addObject(rod);
   m_world->addController(stepper);
@@ -106,7 +76,7 @@ void BentTwisting::AtEachTimestep()
 
   Scalar twistIncrement = getDt() * m_twistRate;
   int edge = rod->ne() - 1;
-  rod->setTheta(edge, rod->getTheta(edge) - twistIncrement);
-  rod->updateProperties();
+  Scalar theta = rod->getTheta(edge) - twistIncrement;
+  stepper->getBoundaryCondition()->setDesiredEdgeAngle(edge, theta);
   m_currentTwist += twistIncrement;
 }

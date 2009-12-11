@@ -18,6 +18,7 @@ RodBendingForce::RodBendingForce(ElasticRod& rod)
 {
   m_rod.add_property(m_denominators, "denominators");
   m_rod.add_property(m_derivKb, "curvature binormal derivative");
+  m_rod.add_property(m_edgeRotationMatrix, "rotation matrix from reference to material frame");
   updateProperties();
 }
 
@@ -25,11 +26,21 @@ void RodBendingForce::updateProperties()
 {
   RodAnisoBending::updateProperties();
 
+  computeRotationMatrix();
   computeDenominators();
   computeDkb();
 
   firstDerivs = false;
   secondDerivs = false;
+}
+
+void RodBendingForce::computeRotationMatrix()
+{
+  for (int j = 0; j < m_rod.ne(); ++j) {
+    const Scalar& theta = m_rod.getTheta(j);
+    Mat2d& Rot = m_rod.property(m_edgeRotationMatrix)[j];
+    Rot << -sin(theta), cos(theta), -cos(theta), -sin(theta);
+  }
 }
 
 void RodBendingForce::computeDenominators()
@@ -44,6 +55,53 @@ void RodBendingForce::computeDenominators()
     const Scalar& e0len = m_rod.getEdgeLength(eh0);
     const Scalar& e1len = m_rod.getEdgeLength(eh1);
     m_rod.property(m_denominators)[vh] = e0len * e1len + e0.dot(e1);
+  }
+}
+
+void RodBendingForce::computeDxDenominator()
+{
+  m_DxDenominator.resize(m_rod.nv());
+
+  for (int i = 1; i < m_rod.nv()-1; ++i) {
+    const Vec3d& e0 = m_rod.getEdge(i - 1);
+    const Vec3d& e1 = m_rod.getEdge(i);
+
+    Vec9d& DxDenominator = m_DxDenominator[i];
+
+    DxDenominator.segment(0,3) = -e1 - e1.norm() / e0.norm() * e0;
+    DxDenominator.segment(6,3) =  e0 + e0.norm() / e1.norm() * e1;
+    DxDenominator.segment(3,3) = -(DxDenominator.segment(0,3)+DxDenominator.segment(6,3));
+  }
+}
+
+void RodBendingForce::computeDxDxDenominator()
+{
+  m_DxDxDenominator.resize(m_rod.nv());
+  Mat3d Id = Mat3d::Identity();
+
+  for (int k = 1; k < m_rod.nv()-1; ++k) {
+    Mat9d& DxDxDenominator = m_DxDxDenominator[k];
+
+    const Vec3d& e0 = m_rod.getEdge(k - 1);
+    const Vec3d& e1 = m_rod.getEdge(k);
+
+    Mat3d Id = Mat3d::Identity();
+    Mat3d term1 = Id + outerProd(e1, e0) / (e0.norm() * e1.norm());
+    Mat3d term2 = e0.norm() / e1.norm() * Id
+      - e0.norm() / cube(e1.norm()) * outerProd(e1, e1);
+    Mat3d term3 = Id + outerProd(e0, e1) / (e0.norm() * e1.norm());
+    Mat3d term4 = e1.norm() / e0.norm() * Id
+      - e1.norm() / cube(e0.norm()) * outerProd(e0, e0);
+
+    DxDxDenominator.block(0, 0, 3, 3) = term4;
+    DxDxDenominator.block(0, 3, 3, 3) = term3 - term4;
+    DxDxDenominator.block(0, 6, 3, 3) = -term3;
+    DxDxDenominator.block(3, 0, 3, 3) = term1 - term4;
+    DxDxDenominator.block(3, 3, 3, 3) = -term1 + term2 - term3 + term4;
+    DxDxDenominator.block(3, 6, 3, 3) = -term2 + term3;
+    DxDxDenominator.block(6, 0, 3, 3) = -term1;
+    DxDxDenominator.block(6, 3, 3, 3) = term1 - term2;
+    DxDxDenominator.block(6, 6, 3, 3) = term2;
   }
 }
 
@@ -98,66 +156,6 @@ RodBendingForce::Vec9d RodBendingForce::computeDxDenominator(const Vec3d& x0,
   return DxDenominator;
 }
 
-void RodBendingForce::computeDxDxDenominator()
-{
-  m_DxDxDenominator.resize(m_rod.nv());
-  Mat3d Id = Mat3d::Identity();
-
-  for (int k = 1; k < m_rod.nv()-1; ++k) {
-    Mat9d& DxDxDenominator = m_DxDxDenominator[k];
-
-    const Vec3d& e0 = m_rod.getEdge(k - 1);
-    const Vec3d& e1 = m_rod.getEdge(k);
-
-    Mat3d Id = Mat3d::Identity();
-    Mat3d term1 = Id + outerProd(e1, e0) / (e0.norm() * e1.norm());
-    Mat3d term2 = e0.norm() / e1.norm() * Id
-      - e0.norm() / cube(e1.norm()) * outerProd(e1, e1);
-    Mat3d term3 = Id + outerProd(e0, e1) / (e0.norm() * e1.norm());
-    Mat3d term4 = e1.norm() / e0.norm() * Id
-      - e1.norm() / cube(e0.norm()) * outerProd(e0, e0);
-
-    DxDxDenominator.block(0, 0, 3, 3) = term4;
-    DxDxDenominator.block(0, 3, 3, 3) = term3 - term4;
-    DxDxDenominator.block(0, 6, 3, 3) = -term3;
-    DxDxDenominator.block(3, 0, 3, 3) = term1 - term4;
-    DxDxDenominator.block(3, 3, 3, 3) = -term1 + term2 - term3 + term4;
-    DxDxDenominator.block(3, 6, 3, 3) = -term2 + term3;
-    DxDxDenominator.block(6, 0, 3, 3) = -term1;
-    DxDxDenominator.block(6, 3, 3, 3) = term1 - term2;
-    DxDxDenominator.block(6, 6, 3, 3) = term2;
-  }
-}
-
-RodBendingForce::Mat9d RodBendingForce::computeDxDxDenominator(const Vec3d& x0,
-                                                               const Vec3d& x1,
-                                                               const Vec3d& x2)
-{
-  Vec3d e0 = x1 - x0;
-  Vec3d e1 = x2 - x1;
-
-  Mat3d Id = Mat3d::Identity();
-  Mat3d term1 = Id + outerProd(e1, e0) / (e0.norm() * e1.norm());
-  Mat3d term2 = e0.norm() / e1.norm() * Id
-    - e0.norm() / cube(e1.norm()) * outerProd(e1, e1);
-  Mat3d term3 = Id + outerProd(e0, e1) / (e0.norm() * e1.norm());
-  Mat3d term4 = e1.norm() / e0.norm() * Id
-    - e1.norm() / cube(e0.norm()) * outerProd(e0, e0);
-
-  Mat9d DxDxDenominator;
-  DxDxDenominator.block(0, 0, 3, 3) = term4;
-  DxDxDenominator.block(0, 3, 3, 3) = term3 - term4;
-  DxDxDenominator.block(0, 6, 3, 3) = -term3;
-  DxDxDenominator.block(3, 0, 3, 3) = term1 - term4;
-  DxDxDenominator.block(3, 3, 3, 3) = -term1 + term2 - term3 + term4;
-  DxDxDenominator.block(3, 6, 3, 3) = -term2 + term3;
-  DxDxDenominator.block(6, 0, 3, 3) = -term1;
-  DxDxDenominator.block(6, 3, 3, 3) = term1 - term2;
-  DxDxDenominator.block(6, 6, 3, 3) = term2;
-
-  return DxDxDenominator;
-}
-
 Scalar RodBendingForce::computeKbDotRef(const Vec3d& x0,
                                         const Vec3d& x1,
                                         const Vec3d& x2,
@@ -186,6 +184,73 @@ RodBendingForce::Vec9d RodBendingForce::computeDxKbDotRef(const Vec3d& x0,
   DxKbDotRef -= 2.0 * u.dot(e0.cross(e1)) / square(d) * DxDenominator;
 
   return DxKbDotRef;
+}
+
+void RodBendingForce::computeDxDxKbDotRef()
+{
+  m_DxDxKbDotRef.resize(m_rod.nv());
+
+  iterator end = m_stencil.end();
+  for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
+    vertex_handle& vh = m_stencil.handle();
+    int idx = vh.idx();
+    edge_handle eh0 = m_stencil.inEdge();
+    edge_handle eh1 = m_stencil.outEdge();
+    const Vec3d& e0 = m_rod.getEdge(eh0);
+    const Vec3d& e1 = m_rod.getEdge(eh1);
+    assert(approxEq(e0, m_rod.getEdge(idx-1)));
+    assert(approxEq(e1, m_rod.getEdge(idx)));
+
+    m_DxDxKbDotRef[idx].resize(4);
+    const Vec3d& x0 = m_rod.getVertex(idx - 1);
+    const Vec3d& x1 = m_rod.getVertex(idx);
+    const Vec3d& x2 = m_rod.getVertex(idx + 1);
+    Scalar d = m_rod.property(m_denominators)[vh];
+    Scalar dSquared = d*d;
+    Vec9d DxDenom = computeDxDenominator(x0, x1, x2);
+    Mat9d& DxDxDenom = m_DxDxDenominator[idx];
+
+    Mat9d temp = DxDxDenom - 2.0 / d * DxDenom * DxDenom.transpose();
+    for (int j = idx - 1; j <= idx; ++j) {
+      int j2 = j + 1 - idx;
+      const Vec3d& ek = (j2 == 0 ? e0 : e1);
+      Scalar div = ek.squaredNorm();
+
+      for (int k = 0; k <= 1; ++k) {
+        Mat9d& DxDxKbDotRef = m_DxDxKbDotRef[idx][2 * j2 + k];
+        const Vec3d& u = ( k == 0 ?
+                           m_rod.getReferenceDirector1(j) :
+                           m_rod.getReferenceDirector2(j) );
+
+        DxDxKbDotRef = -2.0 * u.dot(e0.cross(e1)) / dSquared * temp;
+
+        Vec9d myTemp;
+        myTemp.segment<3>(0) = -2.0 * u.cross(e1) / dSquared;
+        myTemp.segment<3>(6) = -2.0 * u.cross(e0) / dSquared;
+        myTemp.segment<3>(3) = -(myTemp.segment<3>(0) + myTemp.segment<3>(6));
+
+        DxDxKbDotRef += DxDenom * myTemp.transpose()
+          + myTemp * DxDenom.transpose();
+
+        Mat3d term1 = 2.0 / d * crossMat(u);
+        Mat3d term2 = 2.0 / (d * div) * e0.cross(ek) * u.transpose();
+        Mat3d term3 = 2.0 / (d * div) * ek.cross(e1) * u.transpose();
+
+        DxDxKbDotRef.block(0,3,3,3) -= term1;
+        DxDxKbDotRef.block(0,6,3,3) += term1;
+        DxDxKbDotRef.block(3,0,3,3) += term1;
+        DxDxKbDotRef.block(3,6,3,3) -= term1;
+        DxDxKbDotRef.block(6,0,3,3) -= term1;
+        DxDxKbDotRef.block(6,3,3,3) += term1;
+        DxDxKbDotRef.block(3,3*j2,3,3) -= term3 - term2;
+        DxDxKbDotRef.block(6,3*j2,3,3) -= term2;
+        DxDxKbDotRef.block(0,3*j2,3,3) += term3;
+        DxDxKbDotRef.block(3,3*(j2+1),3,3) += term3 - term2;
+        DxDxKbDotRef.block(6,3*(j2+1),3,3) += term2;
+        DxDxKbDotRef.block(0,3*(j2+1),3,3) -= term3;
+      }
+    }
+  }
 }
 
 RodBendingForce::Mat9d RodBendingForce::computeDxDxKbDotRef(const Vec3d& x0,
@@ -317,7 +382,7 @@ void RodBendingForce::localForce(ElementForce& force, const vertex_handle& vh)
   const Mat3dArray& Dkb = m_rod.property(m_derivKb)[vh];
   for (int j = i - 1; j <= i; ++j) {
     int j2 = j + 1 - i;
-    const Eigen::Matrix<Scalar, 2, 3>& m = getMaterialMatrix(j);
+    const MaterialMatrix& m = getMaterialMatrix(j);
     Eigen::Matrix<Scalar, 1, 3> temp
       = -0.5 / len * (getOmega(vh, j2) - getOmegaBar(vh, j2)).transpose()
       * B * m;
@@ -346,7 +411,9 @@ void RodBendingForce::localForce(ElementForce& force, const vertex_handle& vh)
 
 void RodBendingForce::globalJacobian(MatrixBase& Jacobian)
 {
+  computeDxDenominator();
   computeDxDxDenominator();
+  computeDxDxKbDotRef();
 
   ElementJacobian localJ;
   MatXd adder;
@@ -381,49 +448,43 @@ void RodBendingForce::localJacobian(ElementJacobian& jac,
 {
   int idx = vh.idx();
   Mat2d B = (getB(idx - 1) + getB(idx)) / 2.0;
-  const Vec3d& x0 = m_rod.getVertex(idx-1);
-  const Vec3d& x1 = m_rod.getVertex(idx);
-  const Vec3d& x2 = m_rod.getVertex(idx+1);
   Scalar len = getRefVertexLength(idx);
 
   const Mat3dArray& Dkb = m_rod.property(m_derivKb)[vh];
 
   // \frac{ \partial^2 E }{ \partial^2\theta^j }
+  Mat2d JBJt =  J * B * Jt;
   for (int j = idx - 1; j <= idx; ++j) {
+    int j2 = j + 1 - idx;
     const Vec2d& omega = getOmega(idx, j);
     const Vec2d& omegaBar = getOmegaBar(idx, j);
-    jac(3 + 4 * (j + 1 - idx), 3 + 4 * (j + 1 - idx)) =
-      -0.5 / len * (omega.dot(J * B * Jt * omega)
+    jac(3 + 4 * j2, 3 + 4 * j2) =
+      -0.5 / len * (omega.dot(JBJt * omega)
                     - (omega - omegaBar).dot(B * omega));
   }
   jac(3,7) = jac(7,3) = 0;
 
   Mat9d DxDxKbDotU, DxDxKbDotV;
-  Mat2d Rot;
   for (int j = idx - 1; j <= idx; ++j) {
     int j2 = j + 1 - idx;
-    const Eigen::Matrix<Scalar, 2, 3>& matVec = getMaterialMatrix(j);
-    Scalar theta = m_rod.getTheta(j);
-    Rot << -sin(theta), cos(theta), -cos(theta), -sin(theta);
+    const MaterialMatrix& matVec = getMaterialMatrix(j);
+    const Mat2d& Rot = m_rod.property(m_edgeRotationMatrix)[j];
     const Vec2d& omega = getOmega(idx, j);
     const Vec2d& omegaBar = getOmegaBar(idx, j);
-
-    Vec2d temp = (omega - omegaBar).transpose() * B * Rot;
-    if (temp.isZero()) {
-      DxDxKbDotU.setZero();
-      DxDxKbDotV.setZero();
-    } else {
-      DxDxKbDotU =
-        computeDxDxKbDotRef(x0, x1, x2,
-                            m_rod.getReferenceDirector1(j), j2, idx);
-      DxDxKbDotV =
-        computeDxDxKbDotRef(x0, x1, x2,
-                            m_rod.getReferenceDirector2(j), j2, idx);
-    }
 
     Eigen::Matrix<Scalar, 1, 3> term1
       = -0.5 / len * ((omega - omegaBar).transpose() * B * Jt
                       + omega.transpose() * J * B) * matVec;
+
+    Vec2d term2 = -0.5 / len * (omega - omegaBar).transpose() * B * Rot;
+    /*if (term2.isZero()) {
+      DxDxKbDotU.setZero();
+      DxDxKbDotV.setZero();
+      } else {*/
+      DxDxKbDotU = m_DxDxKbDotRef[idx][2 * (j + 1 - idx) + 0];
+      DxDxKbDotV = m_DxDxKbDotRef[idx][2 * (j + 1 - idx) + 1];
+      //}
+
     for (int i = 0; i < 3; ++i) {
       // \frac{ \partial^2 E }{ \partial\x_i \partial\theta^j }
       jac.block(4 * j2 + 3, 4 * i, 1, 3) = term1 * Dkb[i];
@@ -431,11 +492,22 @@ void RodBendingForce::localJacobian(ElementJacobian& jac,
 
       for (int k = 0; k < 3; ++k) {
         // \frac{ \partial^2 E }{ \partial\x_i \partial\x_k }
-        jac.block(4*i,4*k,3,3) +=
-          -0.5 / len * ((matVec * Dkb[i]).transpose() * B * matVec * Dkb[k]
-                        + temp(0) * DxDxKbDotU.block(3*i,3*k,3,3)
-                        + temp(1) * DxDxKbDotV.block(3*i,3*k,3,3));
+        jac.block(4*i,4*k,3,3) += term2(0) * DxDxKbDotU.block(3*i,3*k,3,3)
+          + term2(1) * DxDxKbDotV.block(3*i,3*k,3,3);
       }
+    }
+  }
+
+  Mat3d accum(Mat3d::Zero());
+  for (int j = idx - 1; j <= idx; ++j) {
+    const MaterialMatrix& matVec = getMaterialMatrix(j);
+    accum += matVec.transpose() * B * matVec;
+  }
+  accum *= -0.5 / len;
+  for (int i = 0; i < 3; ++i) {
+    for (int k = 0; k < 3; ++k) {
+      // \frac{ \partial^2 E }{ \partial\x_i \partial\x_k }
+      jac.block(4*i,4*k,3,3) += Dkb[i].transpose() * accum * Dkb[k];
     }
   }
 }

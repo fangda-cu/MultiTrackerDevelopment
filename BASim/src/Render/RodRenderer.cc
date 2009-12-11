@@ -49,8 +49,9 @@ void RodRenderer::drawSimpleRod()
 
   ElasticRod::edge_iter eit;
   for (eit = m_rod.edges_begin(); eit != m_rod.edges_end(); ++eit) {
-    if (m_rod.edgeFixed(*eit)) OpenGL::color(fixedColor);
-    else OpenGL::color(edgeColor);
+    //if (m_rod.edgeFixed(*eit)) OpenGL::color(fixedColor);
+    //else OpenGL::color(edgeColor);
+    OpenGL::color(edgeColor);
     ElasticRod::EdgeVertexIter evit = m_rod.ev_iter(*eit);
     for (evit = m_rod.ev_iter(*eit); evit; ++evit) {
       Vec3d x = m_rod.getVertex(*evit);
@@ -65,8 +66,9 @@ void RodRenderer::drawSimpleRod()
 
   ElasticRod::vertex_iter vit;
   for (vit = m_rod.vertices_begin(); vit != m_rod.vertices_end(); ++vit) {
-    if (m_rod.vertFixed(*vit)) OpenGL::color(fixedColor);
-    else OpenGL::color(edgeColor);
+    //if (m_rod.vertFixed(*vit)) OpenGL::color(fixedColor);
+    //else OpenGL::color(edgeColor);
+    OpenGL::color(edgeColor);
     const Vec3d& x = m_rod.getVertex(*vit);
     OpenGL::vertex(x);
   }

@@ -29,18 +29,20 @@ public:
   void localForce(ElementForce& force, const vertex_handle& vh);
   void localJacobian(ElementJacobian& J, const vertex_handle& vh);
 
-  void computeDxDxDenominator();
-
   Scalar computeDenominator(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2);
   Vec9d computeDxDenominator(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2);
-  Mat9d computeDxDxDenominator(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2);
+  //Mat9d computeDxDxDenominator(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2);
 
   Scalar computeKbDotRef(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2, const Vec3d& u);
   Vec9d computeDxKbDotRef(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2, const Vec3d& u);
   Mat9d computeDxDxKbDotRef(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2, const Vec3d& u, int k, int vertIdx);
+  void computeDxDxKbDotRef();
 
   virtual void updateProperties();
+  void computeRotationMatrix();
   void computeDenominators();
+  void computeDxDenominator();
+  void computeDxDxDenominator();
 
   void computeDkb();
 
@@ -57,11 +59,14 @@ protected:
 
   bool firstDerivs;
   bool secondDerivs;
-  std::vector<Mat9d> m_DxDxDenominator;
   std::vector<Vec2dArray> m_kbDotRef;
 
   VPropHandle<Scalar> m_denominators; ///< denominator of expression for curvature binormal
+  std::vector<Vec9d> m_DxDenominator;
+  std::vector<Mat9d> m_DxDxDenominator;
+  std::vector< std::vector<Mat9d> > m_DxDxKbDotRef;
   VPropHandle<Mat3dArray> m_derivKb; ///< derivative of curvature binormal w.r.t. vertices
+  EPropHandle<Mat2d> m_edgeRotationMatrix;
 };
 
 } // namespace BASim

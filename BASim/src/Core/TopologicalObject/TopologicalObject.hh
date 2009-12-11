@@ -8,6 +8,11 @@
 #ifndef TOPOLOGICALOBJECT_HH
 #define TOPOLOGICALOBJECT_HH
 
+#include "BASim/src/Core/ObjectBase.hh"
+#include "BASim/src/Core/TopologicalObject/TopObjHandles.hh"
+#include "BASim/src/Core/TopologicalObject/TopObjIterators.hh"
+#include "BASim/src/Core/TopologicalObject/Topology.hh"
+
 namespace BASim {
 
 /** An object that represents a collection of vertices and edges with
