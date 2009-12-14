@@ -15,7 +15,7 @@ global proc wmBunsenAddMainMenu()
 
         //menuItem -label "Create a DER from Fozzie fur set" -annotation "Create dynamic elastic rods from a selected Fozzie fur set node" -command "dyno -crf";
         menuItem -label "Create rods from NURBS curves" -annotation "Create elastic rod from NURBS" -command "wmBunsen -cr -cpr 20";
-        menuItem -label "Create rods from Fozzie node" -annotation "Create elastic rod from a Fozzie furset" -command "wmBunsen -crf -cpr 20";
+        menuItem -label "Create rods from BarberSHop node" -annotation "Create elastic rods from a BarberShop furset" -command "wmBunsen -crf -cpr 20";
         menuItem -label "Add selected meshes as collision objects" -annotation "Add meshes as collision objects to the selected wmBunsen node"-command "wmBunsen -acm";
       
       //   menuItem -label "Create constraint" -annotation "Creates a spring constraint between two selected input curve CVs" -command"dyno -crr";

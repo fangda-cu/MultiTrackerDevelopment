@@ -92,7 +92,7 @@ MSyntax WmBunsenCmd::syntaxCreator()
     p_AddFlag( mSyntax, kCreateRods, "-createRods",
                "creates discrete elastic rods from the selected NURBS curves." );
     p_AddFlag( mSyntax, kCreateRodsFromFozzie, "-createRodsFromFozzie",
-               "creates discrete elastic rods from the selected Fozzie node." );
+               "creates discrete elastic rods from the selected BarberShop node." );
     p_AddFlag( mSyntax, kCVsPerRod, "-cvsPerRod",
                "Sets the number of CVs to use for each created elastic rod.", MSyntax::kLong );
     p_AddFlag( mSyntax, kAddCollisionMeshes, "-addCollisionMesh",
@@ -505,11 +505,13 @@ void WmBunsenCmd::getNodes( MSelectionList i_opt_nodes )
             
             MFnDependencyNode nodeFn( childPath.node( &stat ) );
             CHECK_MSTATUS( stat );
+            
+            cerr << "Node typename = " << nodeFn.typeName() << endl;
             if ( nodeFn.typeName() == WmBunsenNode::typeName )
             {
                 m_selectedwmBunsenNode = childPath.node();
             }
-            else if ( nodeFn.typeName() == "wmFozFurSetNode" )
+            else if ( nodeFn.typeName() == "wmBarbFurSetNode" )
             {
                 m_fozzieNodeList.add( childPath, mObj, true );
             } 

@@ -61,14 +61,102 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
     // data. So build our own datablock to use.
     MDataBlock dataBlock = MPxNode::forceCache();
 
-    ///////////////////////////////////////////////////////////////////////////////
-    // If there is a Fozzie node connected then it takes control over any connected
-    // NURBS curves.
-    ///////////////////////////////////////////////////////////////////////////////    
     bool fozzieNodeConnected;
     MPlug fozziePlug( thisMObject(), ia_fozzieVertices );
-    if ( fozziePlug.isConnected() )
+    bool readFromCache = dataBlock.inputValue( ia_readFromCache, &stat ).asDouble();
+     
+    if ( readFromCache ) 
     {
+      //FIXME: This is copied from the readRodsFromCache() function below. It's late Sunday night
+      // and this has to work before tomorrow so I'm doing a cut and paste
+      
+      
+        // Reading from the cache takes precidence over anything else connected in
+        MString cachePath = dataBlock.inputValue( ia_cachePath, &stat ).asString();
+        CHECK_MSTATUS( stat );
+        
+        long magicNumber = 2051978;
+    
+        if ( mx_rodData == NULL )
+            return;     // No rod data, nowhere to store rod data
+        
+        if ( cachePath == "" )
+        {
+            MGlobal::displayError( "Empty cache path, can't read in rod data!" );
+            return;
+        }
+        
+        MString fileName = cachePath + "." + m_currentTime + ".bun";
+        
+        cerr << "Reading sim data from disk in file: '" << fileName << "'\n";
+        
+        FILE *fp;
+        fp = fopen( fileName.asChar(), "r" );
+        if ( fp == NULL )
+        {
+            MGlobal::displayError( MString( "Problem opening file " + fileName + " for reading." ) );
+            return;
+        }
+        
+        // FIXME: create a proper cache class which I can call just to read or write.
+        size_t numRods;
+        fread( &numRods, sizeof( size_t ), 1, fp );
+        
+        if ( numRods != mx_rodData->size() )
+        {
+            cerr << "Wrong number of rods in file, have not implemented changing it yet\n";
+            return;
+        }
+        
+        for ( size_t i=0; i<numRods; i++ )
+        {
+            (*mx_rodData)[i]->rodOptions = m_rodOptions;
+            
+            // Make sure we have enough space to store the date for each CV. This should only
+            // ever cause a resize when we are called by initialiseRodData().
+            (*mx_rodData)[ i ]->undeformedVertexPositions.resize( m_cvsPerRod );
+            (*mx_rodData)[ i ]->initialVertexPositions.resize( m_cvsPerRod );
+            (*mx_rodData)[ i ]->prevVertexPositions.resize( m_cvsPerRod );
+            (*mx_rodData)[ i ]->currVertexPositions.resize( m_cvsPerRod );
+            (*mx_rodData)[ i ]->nextVertexPositions.resize( m_cvsPerRod );
+            
+            std::string frame = "time";
+            if ( frame == "time" )
+                (*mx_rodData)[ i ]->rodOptions.refFrame = BASim::ElasticRod::TimeParallel;
+            else if (frame == "space")
+                (*mx_rodData)[ i ]->rodOptions.refFrame = BASim::ElasticRod::SpaceParallel;
+
+            
+            size_t numVertices;
+            fread( &numVertices, sizeof( size_t ), 1, fp );
+            
+            (*mx_rodData)[i]->rodOptions.numVertices = numVertices;
+            
+            
+            for ( size_t v=0; v<numVertices; v++ )
+            {
+                double pos[3];
+                
+                // Wonder if its safe to write Vec3ds. Need to check what's in them.
+                // Really should package all this and write it as one.
+                fread( &pos[0], sizeof( double ), 3, fp );
+                
+                (*mx_rodData)[ i ]->undeformedVertexPositions[ v ]  = Vec3d( pos[0], pos[1], pos[2] );
+            }
+        }
+        
+    //    Barbershop comb cache is here, this is what you need to be able to load
+     //   /local1/cache/barberShop/combing
+        
+        fclose ( fp );
+        
+    }
+    else if ( fozziePlug.isConnected() )
+    {
+        ///////////////////////////////////////////////////////////////////////////////
+        // If there is a Fozzie node connected then it takes control over any connected
+        // NURBS curves.
+        ///////////////////////////////////////////////////////////////////////////////    
         MDataHandle verticesH = dataBlock.inputValue( ia_fozzieVertices, &stat );
         CHECK_MSTATUS( stat );
         MFnVectorArrayData verticesData( verticesH.data(), &stat );
@@ -352,11 +440,35 @@ void WmBunsenRodNode::updateHairsprayScales( MDataBlock& i_dataBlock )
         }
         else
         {
+          // There is a weird bug where it only lets me add one point sometimes so default to 4
+          // points then i can move them.
+          
             positions.append( 0.0 );
-            values.append( 0.0 );
-            interps.append( 1 );
+            values.append( 0 );
+            interps.append( 2 );
     
             (*mx_rodData)[s]->forceWeightMap[positions[0]] = std::pair< float, int16_t>( 0.0, 0 );
+            weightRamp.addEntries( positions, values, interps, &stat );
+            
+            positions.append( 0.25 );
+            values.append( 0. );
+            interps.append( 2 );
+    
+            (*mx_rodData)[s]->forceWeightMap[positions[1]] = std::pair< float, int16_t>( 0.25, 0 );
+            weightRamp.addEntries( positions, values, interps, &stat );
+            
+            positions.append( 0.5 );
+            values.append( 0 );
+            interps.append( 2 );
+    
+            (*mx_rodData)[s]->forceWeightMap[positions[2]] = std::pair< float, int16_t>( 0.5, 0 );
+            weightRamp.addEntries( positions, values, interps, &stat );
+            
+            positions.append( 0.75 );
+            values.append( 0 );
+            interps.append( 2 );
+    
+            (*mx_rodData)[s]->forceWeightMap[positions[3]] = std::pair< float, int16_t>( 0.75, 0 );
             weightRamp.addEntries( positions, values, interps, &stat );
         }
     }
@@ -372,10 +484,10 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     {
         m_previousTime = m_currentTime;
         m_currentTime = i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
-		CHECK_MSTATUS( stat );
+        CHECK_MSTATUS( stat );
         
-	    m_startTime = i_dataBlock.inputValue( ia_startTime, &stat ).asDouble();
-		CHECK_MSTATUS( stat );
+        m_startTime = i_dataBlock.inputValue( ia_startTime, &stat ).asDouble();
+        CHECK_MSTATUS( stat );
         
         m_rodOptions.YoungsModulus = i_dataBlock.inputValue( ia_youngsModulus, &stat ).asDouble();
         CHECK_MSTATUS( stat );
@@ -419,16 +531,15 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             for ( size_t r=0; r<numRods; r++ )
                 (*mx_rodData)[r]->stepper->setEnabled( true );
             
-            updateRodDataFromInputs();
             updateHairsprayScales( i_dataBlock );
         }
         
         stat = i_dataBlock.setClean( i_plug );
-		if ( !stat )
+        if ( !stat )
         {
-			stat.perror("WmBunsenRodNode::compute setClean");
-			return stat;
-		}
+            stat.perror("WmBunsenRodNode::compute setClean");
+            return stat;
+        }
     }
     else if ( i_plug == ca_simulationSync )
     {
@@ -458,11 +569,11 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         }
         
         stat = i_dataBlock.setClean( i_plug );
-		if ( !stat )
+        if ( !stat )
         {
-			stat.perror("WmBunsenRodNode::compute setClean");
-			return stat;
-		}
+            stat.perror("WmBunsenRodNode::compute setClean");
+            return stat;
+        }
     }
     else if ( i_plug == oa_simulatedVertices )
     {        
@@ -477,7 +588,7 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
         // The above may have been clean so just make sure we actually read time
         i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
-		CHECK_MSTATUS( stat );
+        CHECK_MSTATUS( stat );
 
         MDataHandle simulatedVerticesH = i_dataBlock.outputValue( oa_simulatedVertices, &stat );
         CHECK_MSTATUS( stat );
@@ -540,7 +651,7 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
         // The above may have been clean so just make sure we actually read time
         i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
-		CHECK_MSTATUS( stat );
+        CHECK_MSTATUS( stat );
 
         MDataHandle nonSimulatedVerticesH = i_dataBlock.outputValue( oa_nonSimulatedVertices, &stat );
         CHECK_MSTATUS( stat );        
@@ -553,7 +664,7 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
         if ( mx_rodData != NULL )
         {
-            size_t numRods = mx_rodData->size();            
+            size_t numRods = mx_rodData->size();
             
             unsigned int idx = 0;
             
@@ -586,7 +697,7 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
         // The above may have been clean so just make sure we actually read time
         i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
-		CHECK_MSTATUS( stat );
+        CHECK_MSTATUS( stat );
 
         MDataHandle verticesPerRodH = i_dataBlock.outputValue( oa_verticesInEachRod, &stat );
         CHECK_MSTATUS( stat );        
@@ -630,7 +741,41 @@ size_t WmBunsenRodNode::numberOfRods()
     
     bool fozzieNodeConnected;
     MPlug fozziePlug( thisMObject(), ia_fozzieVertices );
-    if ( fozziePlug.isConnected() )
+    bool readFromCache = dataBlock.inputValue( ia_readFromCache, &stat ).asDouble();
+  
+    if ( readFromCache )
+    {
+        MString cachePath = dataBlock.inputValue( ia_cachePath, &stat ).asString();
+        CHECK_MSTATUS( stat );
+        
+        long magicNumber = 2051978;
+    
+        if ( cachePath == "" )
+        {
+            MGlobal::displayError( "Empty cache path, can't read in rod data!" );
+            return 0;
+        }
+        
+        MString fileName = cachePath + "." + m_currentTime + ".bun";
+        
+        cerr << "Reading sim data from disk in file: '" << fileName << "'\n";
+        
+        FILE *fp;
+        fp = fopen( fileName.asChar(), "r" );
+        if ( fp == NULL )
+        {
+            MGlobal::displayError( MString( "Problem opening file " + fileName + " for reading." ) );
+            return 0;
+        }
+        
+        // FIXME: create a proper cache class which I can call just to read or write.
+        size_t numRods;
+        fread( &numRods, sizeof( size_t ), 1, fp );
+        
+        return numRods;
+        
+    }
+    else if ( fozziePlug.isConnected() )
     {
         MDataHandle verticesH = dataBlock.inputValue( ia_fozzieVertices, &stat );
         CHECK_MSTATUS( stat );
