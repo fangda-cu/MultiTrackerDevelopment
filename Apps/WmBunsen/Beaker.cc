@@ -23,7 +23,7 @@
 using namespace BASim;
 using namespace tr1;
 
-Beaker::Beaker() : m_gravity( 0, -981.0, 0 )
+Beaker::Beaker() : m_plasticDeformations( false ), m_gravity( 0, -981.0, 0 )
 {
     m_rodDataMap.clear();
     initialiseWorld();
@@ -194,6 +194,24 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         }
 
         m_world->executeInParallel( i_numberOfThreadsToUse );
+
+        // This sets the undeformed rod configuration to be the same as the current configuration. 
+        // I'm not sure if this is actually what we want to do, is this just like pushing around line
+        // segments. Maybe we should only run this on rods that have collided.
+
+        if ( m_plasticDeformations )
+        {
+            for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
+            {
+                vector<RodData*>& rodData = rdmItr->second;
+                size_t numRods = rodData.size();
+                for ( size_t r=0; r<numRods; r++ )
+                {
+                    BASim::ElasticRod* rod = rodData[r]->rod;                         
+                    rod->updateReferenceProperties();
+                }
+            }
+        }
 
         setTime( currentTime + getDt() );
         currentTime = getTime();

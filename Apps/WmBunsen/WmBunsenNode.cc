@@ -16,6 +16,7 @@ MObject WmBunsenNode::ia_numberOfThreads;
 MObject WmBunsenNode::ia_solver;
 MObject WmBunsenNode::ia_collisionMeshes;
 MObject WmBunsenNode::ia_collisionsEnabled;
+MObject WmBunsenNode::ia_plasticDeformations;
 MObject WmBunsenNode::oa_simStepTaken;
 
 WmBunsenNode::WmBunsenNode() : m_initialised( false ), m_beaker( NULL )
@@ -210,6 +211,10 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         CHECK_MSTATUS( stat );
         
         int solver = i_dataBlock.inputValue( ia_solver, &stat ).asInt();
+
+        bool plasticDeformations = i_dataBlock.inputValue( ia_plasticDeformations, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+        m_beaker->setPlasticDeformations( plasticDeformations );
         
         if ( m_currentTime == m_startTime )
         {
@@ -561,6 +566,20 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnNumericAttribute nAttr;
+        ia_plasticDeformations = nAttr.create( "plasticDeformations", "pde", MFnNumericData::kBoolean, false, &stat);
+        if (!stat) {
+            stat.perror("create ia_plasticDeformations attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_plasticDeformations );
+        if (!stat) { stat.perror( "addAttribute ia_plasticDeformations" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
         ia_collisionsEnabled = nAttr.create( "collisionsEnabled", "coe", MFnNumericData::kBoolean, true, &stat);
         if (!stat) {
             stat.perror("create ia_collisionsEnabled attribute");
@@ -597,6 +616,8 @@ MStatus WmBunsenNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_collisionMeshes->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_collisionsEnabled, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_collisionsEnabled->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_plasticDeformations, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_plasticDeformations->ca_syncAttrs" ); return stat; }
     
     stat = attributeAffects( ia_time, oa_simStepTaken );
     if (!stat) { stat.perror( "attributeAffects ia_time->oa_simulatedRods" ); return stat; }

@@ -80,6 +80,11 @@ public:
     {
         return &( m_rodDataMap[ i_rodGroup ] );
     }
+
+    void setPlasticDeformations( bool i_plasticDeformations )
+    {
+        m_plasticDeformations = i_plasticDeformations;
+    }
     
     RodCollisionTimeStepper* setupRodTimeStepper( RodData* i_rodData );
     
@@ -110,7 +115,8 @@ private:
     ObjPropHandle<Scalar> m_dtHandle;
     ObjPropHandle<Vec3d> m_gravityHandle;
     ObjPropHandle<int> m_maxIterHandle;
-    
+    bool m_plasticDeformations;    
+
     Vec3d m_gravity;
 };
 
