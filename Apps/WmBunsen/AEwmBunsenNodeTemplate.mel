@@ -13,6 +13,7 @@ global proc AEwmBunsenNodeTemplate(string $nodeName)
         //editorTemplate -addControl "maxDt";
         //editorTemplate -addControl "maxIter";
         editorTemplate -addControl "gravity";
+        editorTemplate -addControl "plasticDeformations";
     editorTemplate -endLayout;
 
     editorTemplate -addExtraControls;
