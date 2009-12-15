@@ -172,13 +172,13 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     
                     if ( rod->vertFixed(c) )
                     {  
-                      boundary->setDesiredVertexPosition(c, rodData[r]->currVertexPositions[c]);
-                      if (c>0)
-                        if (rod->vertFixed(c-1))  
-                          boundary->setDesiredEdgeAngle(c-1, rod->getTheta(c-1));
+                        boundary->setDesiredVertexPosition(c, rodData[r]->currVertexPositions[c]);
+                        if (c>0)
+                          if (rod->vertFixed(c-1))  
+                            boundary->setDesiredEdgeAngle(c-1, rod->getTheta(c-1));
                     }
                 }
-                rod->updateProperties();
+                //rod->updateProperties();
 
                 //
                 // This is a bit weird, I'm setting stuff in the RodCollisionTimeStepper as well
@@ -273,8 +273,10 @@ RodCollisionTimeStepper* Beaker::setupRodTimeStepper( RodData* i_rodData )
  
         // If the force is 100% then there is no point in using a force, just lock the 
         // vertex in place and it won't move.
-        if ( ks[ i ] == 1.0 )
+        if ( ks[ i ] >= 1.0 )
+        {
             rod.fixVert( i );
+        }
     }
     
     stepper->addExternalForce( new RodHairsprayForce( rod, ks, i_rodData->currVertexPositions ) );  

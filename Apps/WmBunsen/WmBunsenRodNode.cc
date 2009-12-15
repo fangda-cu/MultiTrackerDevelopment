@@ -531,6 +531,7 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             for ( size_t r=0; r<numRods; r++ )
                 (*mx_rodData)[r]->stepper->setEnabled( true );
             
+            updateRodDataFromInputs();
             updateHairsprayScales( i_dataBlock );
         }
         
