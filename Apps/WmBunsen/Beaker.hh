@@ -91,7 +91,9 @@ public:
     void draw(void);
 
     void takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, 
-                       int i_subSteps, bool i_collisionsEnabled );
+                       int i_subSteps, bool i_collisionsEnabled,
+                       bool i_selfCollisionPenaltyForcesEnabled,
+                       bool i_fullSelfCollisionsEnabled );
     
     /*(void addRod( size_t i_rodGroup,
                  vector<Vec3d>& i_initialVertexPositions, 
@@ -116,8 +118,14 @@ private:
     ObjPropHandle<Vec3d> m_gravityHandle;
     ObjPropHandle<int> m_maxIterHandle;
     bool m_plasticDeformations;    
-
     Vec3d m_gravity;
+
+    // FIXME:
+    // Pointless vector with pointers to the rods. Get rid of it. It 
+    // is here simply because the self collision code needed it and I have
+    // to get some numbers out of this before I leave Columbia.
+    vector<ElasticRod*> m_rods;
+    
 };
 
 #endif // BEAKER_HH_

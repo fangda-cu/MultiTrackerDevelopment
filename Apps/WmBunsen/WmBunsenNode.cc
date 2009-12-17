@@ -17,6 +17,8 @@ MObject WmBunsenNode::ia_solver;
 MObject WmBunsenNode::ia_collisionMeshes;
 MObject WmBunsenNode::ia_collisionsEnabled;
 MObject WmBunsenNode::ia_plasticDeformations;
+MObject WmBunsenNode::ia_selfCollisionPenaltyForces;
+MObject WmBunsenNode::ia_fullSelfCollisions;
 MObject WmBunsenNode::oa_simStepTaken;
 
 WmBunsenNode::WmBunsenNode() : m_initialised( false ), m_beaker( NULL )
@@ -209,6 +211,10 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
         bool collisionsEnabled = i_dataBlock.inputValue( ia_collisionsEnabled, &stat ).asBool();
         CHECK_MSTATUS( stat );
+        bool selfCollisionPenaltyForces = i_dataBlock.inputValue( ia_selfCollisionPenaltyForces, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+        bool fullSelfCollisions = i_dataBlock.inputValue( ia_fullSelfCollisions, &stat ).asBool();
+        CHECK_MSTATUS( stat );
         
         int solver = i_dataBlock.inputValue( ia_solver, &stat ).asInt();
 
@@ -234,7 +240,8 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         
         if ( m_currentTime > m_previousTime && m_currentTime != m_startTime) 
         {
-            m_beaker->takeTimeStep( numberOfThreads, m_framedt, substeps, collisionsEnabled ); 
+            m_beaker->takeTimeStep( numberOfThreads, m_framedt, substeps, collisionsEnabled, 
+                                    selfCollisionPenaltyForces, fullSelfCollisions ); 
         }
     
         MDataHandle outputData = i_dataBlock.outputValue ( ca_syncAttrs, &stat );
@@ -592,6 +599,34 @@ MStatus WmBunsenNode::initialize()
         if (!stat) { stat.perror( "addAttribute ia_collisionsEnabled" ); return stat; }
     }
 
+    {
+        MFnNumericAttribute nAttr;
+        ia_selfCollisionPenaltyForces = nAttr.create( "selfCollisionPenaltyForces", "scp", MFnNumericData::kBoolean, true, &stat);
+        if (!stat) {
+            stat.perror("create ia_selfCollisionPenaltyForces attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_selfCollisionPenaltyForces );
+        if (!stat) { stat.perror( "addAttribute ia_selfCollisionPenaltyForces" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_fullSelfCollisions = nAttr.create( "fullSelfCollisions", "fsc", MFnNumericData::kBoolean, true, &stat);
+        if (!stat) {
+            stat.perror("create ia_fullSelfCollisions attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_fullSelfCollisions );
+        if (!stat) { stat.perror( "addAttribute ia_fullSelfCollisions" ); return stat; }
+    }
+
     stat = attributeAffects( ia_time, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_time->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_startTime, ca_syncAttrs );
@@ -618,6 +653,10 @@ MStatus WmBunsenNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_collisionsEnabled->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_plasticDeformations, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_plasticDeformations->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_selfCollisionPenaltyForces, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_selfCollisionPenaltyForces->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_fullSelfCollisions, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_fullSelfCollisions->ca_syncAttrs" ); return stat; }
     
     stat = attributeAffects( ia_time, oa_simStepTaken );
     if (!stat) { stat.perror( "attributeAffects ia_time->oa_simulatedRods" ); return stat; }

@@ -94,13 +94,16 @@ void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary 
 {
     vector<RodData*>& rodDataVector = m_rodDataMap[ i_rodGroup ];
     size_t numRods = rodDataVector.size();
-    
+    m_rods.clear();
+
     for ( size_t r=0; r<numRods; r++ )
     {
          // setupRod() is defined in ../BASim/src/Physics/ElasticRods/RodUtils.hh
         rodDataVector[ r ]->rod = setupRod( rodDataVector[ r ]->rodOptions, 
                                             rodDataVector[ r ]->initialVertexPositions, 
                                             rodDataVector[ r ]->undeformedVertexPositions );
+
+        m_rods.push_back( rodDataVector[ r ]->rod );
     
         rodDataVector[ r ]->rod->fixVert( 0 );
         rodDataVector[ r ]->rod->fixVert( 1 );
@@ -121,7 +124,8 @@ void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary 
 }
 
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, 
-  int i_subSteps, bool i_collisionsEnabled  )
+  int i_subSteps, bool i_collisionsEnabled,  bool i_selfCollisionPenaltyForcesEnabled,
+  bool i_fullSelfCollisionsEnabled  )
 {
     Scalar dt_save = getDt();
     Scalar startTime = getTime();
@@ -193,7 +197,44 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             }
         }
 
-        m_world->executeInParallel( i_numberOfThreadsToUse );
+        //m_world->executeInParallel( i_numberOfThreadsToUse );
+        // Self collisions have to be done on all rods together so we split the time step into two steps.
+        Controllers controllers = m_world->getControllers();
+        int numControllers = (int)controllers.size();
+    
+        #pragma omp parallel for num_threads( i_numberOfThreadsToUse )
+        for ( int i=0; i<numControllers; ++i )
+        {
+            int threadID = omp_get_thread_num();
+            // only master thread prints the number of threads
+            if ( threadID == 0 )
+            {
+                int nthreads = omp_get_num_threads();
+                // printf("World::executeInParallel, using %d threads\n", nthreads );
+            }
+            // Dangerous cast...
+            dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->executePart1();
+        }
+
+        if(i_selfCollisionPenaltyForcesEnabled)
+        {
+           cerr << "Doing self collisions with proximities\n";
+            RodCollisionTimeStepper::getProximities(m_rods);
+        }
+        else
+           cerr << "NOOOOT Doing self collisions with proximities\n";
+          
+        if (i_fullSelfCollisionsEnabled)
+           RodCollisionTimeStepper::respondRodCollisions( m_rods, getDt(), 10,
+                                                          0.1 );            
+        // the above max iterations and cor should be parameters on the maya node
+
+        #pragma omp parallel for num_threads( i_numberOfThreadsToUse )
+        for ( int i=0; i<numControllers; ++i )
+        {
+            dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->executePart2();
+        }
+
 
         // This sets the undeformed rod configuration to be the same as the current configuration. 
         // I'm not sure if this is actually what we want to do, is this just like pushing around line

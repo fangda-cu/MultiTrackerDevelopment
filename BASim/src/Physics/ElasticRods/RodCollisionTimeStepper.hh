@@ -50,6 +50,30 @@ public:
     m_collisionsEnabled = doCollisionsFlag;
   }
 
+  void executePart1()
+  {
+    if (!m_enabled)
+      return;
+
+    // Sanity check, m_dt MUST EQUAL m_rodTimeStepper->getDt();
+    // get it from m_rodTimeStepper rather than using the one here.
+    if ( !m_collisionsEnabled || m_collisionMeshes == NULL || m_collisionMeshes->size()==0 )
+    {
+        m_rodTimeStepper->execute();
+    }
+    
+    m_rod->setCollisionStartPositions();
+    getProximities(*m_collisionMeshes);
+    m_rodTimeStepper->execute();
+    m_rod->collisionsBegin(m_dt);
+  }
+
+  void executePart2()
+  {
+    respondObjectCollisions(*m_collisionMeshes, m_dt);
+    m_rod->collisionsEnd(m_dt);
+  }
+
   void execute()
   {
     if (!m_enabled)
@@ -66,13 +90,14 @@ public:
     getProximities(*m_collisionMeshes);
     m_rodTimeStepper->execute();
     m_rod->collisionsBegin(m_dt);
-    
-    //   if (m_fullSelfCollisionsEnabled)
-    //   Rod::respondRodCollisions(_rods, collisionDT, m_selfCollisionsIterations,
-    //                             m_collisionsCoefficientOfRestitution);
+
     respondObjectCollisions(*m_collisionMeshes, m_dt);
     m_rod->collisionsEnd(m_dt);
   }
+
+
+  static void getProximities(vector<ElasticRod*> &rods);
+  static void respondRodCollisions(vector<ElasticRod*> &rods, Scalar dt, int maxIterations, Scalar COR);
 
 protected:
   void getProximities(CollisionMeshDataHashMap &collisionMeshes);

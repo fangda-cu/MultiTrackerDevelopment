@@ -10,6 +10,7 @@ RodCollisionTimeStepper::RodCollisionTimeStepper(ObjectControllerBase* rodTimeSt
   m_rodPenaltyForce = new RodPenaltyForce();
   dynamic_cast<RodTimeStepper*>(m_rodTimeStepper)->addExternalForce(m_rodPenaltyForce);  
   m_collisionMeshes = NULL;
+  m_rod->setPenaltyForce(m_rodPenaltyForce);
 }
 
 RodCollisionTimeStepper::~RodCollisionTimeStepper()
@@ -18,6 +19,30 @@ RodCollisionTimeStepper::~RodCollisionTimeStepper()
     delete m_rodTimeStepper;
   if (m_rodPenaltyForce != NULL)
     delete m_rodPenaltyForce;
+}
+
+/* static */ void RodCollisionTimeStepper::getProximities(vector<ElasticRod*> &rods)
+{
+    // Get list of edge-edge proximities
+    //
+    UniformGrid grid;
+    Collisions collisions;
+    grid.getProximities(rods, collisions);
+
+    for (CollisionsIterator cItr=collisions.begin(); cItr!=collisions.end(); ++cItr)
+    {
+        // Add penalty forces for each proximity
+        // It must be added to BOTH rods, since a force computation for a rod
+        // can only be for that particular rod, a little wasteful but not many options
+        // without changing the framework
+        //
+        ElasticRod *rod1 = dynamic_cast<ElasticRod *>(cItr->getFirstObject());
+        ElasticRod *rod2 = dynamic_cast<ElasticRod *>(cItr->getSecondObject());
+        rod1->getPenaltyForce()->addRodPenaltyForce(cItr->getFirstPrimitiveIndex(0),
+                                          rod2, cItr->getSecondPrimitiveIndex(0));
+        rod2->getPenaltyForce()->addRodPenaltyForce(cItr->getSecondPrimitiveIndex(0),
+                                          rod1, cItr->getFirstPrimitiveIndex(0));
+    }
 }
 
 void RodCollisionTimeStepper::getProximities(CollisionMeshDataHashMap &collisionMeshes)
@@ -182,6 +207,53 @@ void RodCollisionTimeStepper::respondObjectCollisions(CollisionMeshDataHashMap &
         //
         for (CollisionsIterator cItr=colls.begin(); cItr!=colls.end(); ++cItr)
             cItr->applyImpulse(0.01);
+    }
+}
+
+void RodCollisionTimeStepper::respondRodCollisions(vector<ElasticRod*> &rods, Real dt, int maxIterations, Real COR)
+{
+    int iterations = 0;
+
+    // Below is the code that applies iterative impulses//
+
+    // Only do anything if full (continuous time) collisions are turned on and
+    // the maximum number of iterations is positive
+    //
+    Collisions collisions;
+    if ( maxIterations > 0)
+    {
+        // Loop until there are no more collisions are the maximum number of iterations
+        // is reached
+        //
+        do
+        {
+            // TODO: Re-use the grid somehow?
+            //
+            UniformGrid grid;
+            collisions.clear();
+            grid.getContinuousTimeCollisions(rods, dt, collisions);
+
+            for (CollisionsIterator cItr=collisions.begin(); cItr!=collisions.end(); ++cItr)
+                cItr->applyImpulse(COR);
+
+            ++iterations;
+        } while (collisions.size() && iterations < maxIterations);
+    
+        if (collisions.size() && iterations == maxIterations)
+        {
+            // TODO: Fail-safe call would go here
+            //
+            std::cout << "WARNING: Maximum number of iterations reached. There may be unresolved collisions." << std::endl;
+        }
+
+        if (collisions.size())
+        {
+            // If we actually modified any velocities, update the candidate end positions
+            // for any collision detection done after this
+            //
+            for (vector<ElasticRod*>::iterator rItr=rods.begin(); rItr!=rods.end(); ++rItr)
+                (*rItr)->updateEndPositions(dt);
+        }
     }
 }
 

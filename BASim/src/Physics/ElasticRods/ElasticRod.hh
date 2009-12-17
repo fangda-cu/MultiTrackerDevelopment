@@ -14,6 +14,7 @@
 namespace BASim {
 
 class RodForce;
+class RodPenaltyForce;
 
 /** Base class for rods. The degrees of freedom for rods are the
     vertex positions (3 dofs per vertex) and the angles between the
@@ -229,8 +230,7 @@ public:
 
   const Vec3d& getCurvatureBinormal(const vertex_handle& vh) const;
   void setCurvatureBinormal(const vertex_handle& vh, const Vec3d& kb);
-
-  const Vec3d& getCurvatureBinormal(int i) const;
+const Vec3d& getCurvatureBinormal(int i) const;
   void setCurvatureBinormal(int i, const Vec3d& kb);
 
   bool vertFixed(const vertex_handle& vh) const;
@@ -361,6 +361,11 @@ public:
   // Again we assume rods are cylindrical for collision
   virtual Real getThickness() { return radius(); }
 
+  RodPenaltyForce *getPenaltyForce()
+  { return m_rodPenaltyForce; }
+
+  void setPenaltyForce(RodPenaltyForce* force)
+  { m_rodPenaltyForce = force; }
   
   ////////////////////////////////////////////////////////////////////////////////
   
@@ -439,6 +444,11 @@ protected:
   double m_friction;
   double m_cor;
   double m_separationStrength;
+
+  // This is silly. The force now lives in the time stepper but the collision code
+  // only has the rods currently so needs to ask the rod for the penalty force
+  // so it can apply a force.
+  RodPenaltyForce* m_rodPenaltyForce;
   //  
   ////////////////////////////////////////////////////////////////////////////////
 };
