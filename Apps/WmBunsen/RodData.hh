@@ -48,7 +48,8 @@ public:
 
     // debug info
     vector<Vec3d> ALLprevVertexPositions;
-    vector<Vec3d> ALLNextVertexPositions;
+    vector<Vec3d> ALLnextVertexPositions;
+    vector<Vec3d> ALLcurrVertexPositions;
 };
 
 #endif

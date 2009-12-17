@@ -128,6 +128,10 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
   bool i_fullSelfCollisionsEnabled, int i_fullSelfCollisionIters,
   double i_selfCollisionCOR )
 {
+    // Check if anything has actually been initialised yet. We may still be being loaded by Maya.
+    if ( m_rodDataMap.size() == 0 )
+        return;
+
     Scalar dt_save = getDt();
     Scalar startTime = getTime();
     Scalar currentTime = getTime();
@@ -164,7 +168,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 BASim::ElasticRod* rod = rodData[r]->rod;
 
                 // DEBUG INFO
-#if 1
+#if 0
                 // prev/next only change per frame so don't store them each substep
                 if ( s == 0 )
                 {
@@ -174,14 +178,30 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     {
                         rodData[r]->ALLprevVertexPositions[oldSize+c] = rodData[r]->prevVertexPositions[c];
                     }
+                    oldSize = rodData[r]->ALLnextVertexPositions.size();
+                    rodData[r]->ALLnextVertexPositions.resize( oldSize + rod->nv() );
+                    for( int c = 0; c < rod->nv(); c++)
+                    {
+                        // Move it slightly so we can see it when under prevVertexPositions
+                        rodData[r]->ALLnextVertexPositions[oldSize+c] = rodData[r]->nextVertexPositions[c]+Vec3d(0.01,0.0,0.0);
+                    }
                 }
 #endif                  
+                
+#if 0
+                size_t oldSize = rodData[r]->ALLcurrVertexPositions.size();
+                rodData[r]->ALLcurrVertexPositions.resize( oldSize + rod->nv() );          
+#endif
                 for( int c = 0; c < rod->nv(); c++)
                 {
                     // Calculate the position of the input curve for this rod at the current substep.
                     // This is used to set fixed vertices and also to calculate the hairspray force.
                     rodData[r]->currVertexPositions[c] = ( interpolateFactor * rodData[r]->nextVertexPositions[c] + 
                                ( 1.0 - interpolateFactor ) * rodData[r]->prevVertexPositions[c] );
+
+#if 0
+                    rodData[r]->ALLcurrVertexPositions[oldSize+c] = rodData[r]->currVertexPositions[c]+Vec3d(-0.01,0.0,0.0);
+#endif
 
                     // FIXME: THIS IS INSANE, This MUST go in RodCollisionTimeStepper but there are include issues there and I can't
                     // includ RodTimeStepper. FIX THESE AND MOVE THIS
@@ -196,8 +216,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                             boundary->setDesiredEdgeAngle(c-1, rod->getTheta(c-1));
                     }
                 }
-                //rod->updateProperties();
-
+                
                 //
                 // This is a bit weird, I'm setting stuff in the RodCollisionTimeStepper as well
                 // as the RodTimeStepper it contains. It would work better as class based on
@@ -344,7 +363,7 @@ RodCollisionTimeStepper* Beaker::setupRodTimeStepper( RodData* i_rodData )
         }
     }
     
-    stepper->addExternalForce( new RodHairsprayForce( rod, ks, i_rodData->currVertexPositions ) );  
+    //stepper->addExternalForce( new RodHairsprayForce( rod, ks, i_rodData->currVertexPositions ) );  
     
     // We use 1 iteration on purpose, it should work well. See 'Large steps in cloth simulation' paper
     //int iterations = 1;
@@ -373,16 +392,70 @@ void Beaker::draw()
         cmItr->second->draw(); 
     }
 
-#if 1
-  /*  for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
+#if 0
+    for ( RodDataMapIterator rdmItr = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
     {
         vector<RodData*>& rodData = rdmItr->second;
         size_t numRods = rodData.size();
         for ( size_t r=0; r<numRods; r++ )
         {
-            rodData[ r ]->rodRenderer->render();
+            BASim::ElasticRod* rod = rodData[r]->rod;
+            if ( rodData[r]->ALLprevVertexPositions.size() != 0 )
+            {       
+                glColor3d(0,0,1);
+                glBegin( GL_LINE_STRIP ); 
+                size_t total = rodData[r]->ALLprevVertexPositions.size();
+                for ( int c=0; c<total; c++ )
+                {
+                    if ( c>0 && c%rod->nv()==0 )
+                    {
+                        glEnd();
+                        glBegin( GL_LINE_STRIP );
+                    }
+                    glVertex3d( rodData[r]->ALLprevVertexPositions[c][0],  
+                                rodData[r]->ALLprevVertexPositions[c][1],  
+                                rodData[r]->ALLprevVertexPositions[c][2] );
+                }
+                glEnd();
+            }
+            if ( rodData[r]->ALLnextVertexPositions.size() != 0 )
+            {       
+                glColor3d(1,0,0);
+                glBegin( GL_LINE_STRIP ); 
+                size_t total = rodData[r]->ALLnextVertexPositions.size();
+                for ( int c=0; c<total; c++ )
+                {
+                    if ( c>0 && c%rod->nv()==0 )
+                    {
+                        glEnd();
+                        glBegin( GL_LINE_STRIP );
+                    }
+                    glVertex3d( rodData[r]->ALLnextVertexPositions[c][0],  
+                                rodData[r]->ALLnextVertexPositions[c][1],  
+                                rodData[r]->ALLnextVertexPositions[c][2] );
+                }
+                glEnd();
+            }
+            if ( rodData[r]->ALLcurrVertexPositions.size() != 0 )
+            {       
+                glColor3d(0,1,0);
+                glBegin( GL_LINE_STRIP ); 
+                size_t total = rodData[r]->ALLcurrVertexPositions.size();
+                for ( int c=0; c<total; c++ )
+                {
+                    if ( c>0 && c%rod->nv()==0 )
+                    {
+                        glEnd();
+                        glBegin( GL_LINE_STRIP );
+                    }
+                    glVertex3d( rodData[r]->ALLcurrVertexPositions[c][0],  
+                                rodData[r]->ALLcurrVertexPositions[c][1],  
+                                rodData[r]->ALLcurrVertexPositions[c][2] );
+                }
+                glEnd();
+            }
         }
-    }*/
+    }
 #endif
 }
 
