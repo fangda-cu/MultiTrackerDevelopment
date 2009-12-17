@@ -125,7 +125,8 @@ void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary 
 
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, 
   int i_subSteps, bool i_collisionsEnabled,  bool i_selfCollisionPenaltyForcesEnabled,
-  bool i_fullSelfCollisionsEnabled  )
+  bool i_fullSelfCollisionsEnabled, int i_fullSelfCollisionIters,
+  double i_selfCollisionCOR )
 {
     Scalar dt_save = getDt();
     Scalar startTime = getTime();
@@ -218,15 +219,12 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
         if(i_selfCollisionPenaltyForcesEnabled)
         {
-           cerr << "Doing self collisions with proximities\n";
             RodCollisionTimeStepper::getProximities(m_rods);
         }
-        else
-           cerr << "NOOOOT Doing self collisions with proximities\n";
           
         if (i_fullSelfCollisionsEnabled)
-           RodCollisionTimeStepper::respondRodCollisions( m_rods, getDt(), 10,
-                                                          0.1 );            
+           RodCollisionTimeStepper::respondRodCollisions( m_rods, getDt(), i_fullSelfCollisionIters,
+                                                          i_selfCollisionCOR );            
         // the above max iterations and cor should be parameters on the maya node
 
         #pragma omp parallel for num_threads( i_numberOfThreadsToUse )

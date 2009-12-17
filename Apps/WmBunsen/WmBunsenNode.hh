@@ -66,6 +66,8 @@ public:
     static MObject ia_plasticDeformations;
     static MObject ia_selfCollisionPenaltyForces;
     static MObject ia_fullSelfCollisions;
+    static MObject ia_fullSelfCollisionIterations;
+    static MObject ia_fullSelfCollisionCOR;
     
     static MObject ca_syncAttrs;
     static MObject oa_simStepTaken;

@@ -93,7 +93,9 @@ public:
     void takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, 
                        int i_subSteps, bool i_collisionsEnabled,
                        bool i_selfCollisionPenaltyForcesEnabled,
-                       bool i_fullSelfCollisionsEnabled );
+                       bool i_fullSelfCollisionsEnabled,
+                       int i_fullSelfCollisionIters,
+                       double i_selfCollisionCOR );
     
     /*(void addRod( size_t i_rodGroup,
                  vector<Vec3d>& i_initialVertexPositions, 

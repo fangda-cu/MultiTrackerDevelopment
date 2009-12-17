@@ -9,13 +9,17 @@ global proc AEwmBunsenNodeTemplate(string $nodeName)
         editorTemplate -addControl "startTime";
         editorTemplate -addControl "framesPerSecond";
         editorTemplate -addControl "subSteps";
-        editorTemplate -addControl "collisionsEnabled";
-        editorTemplate -addControl "selfCollisionPenaltyForces";
-        editorTemplate -addControl "fullSelfCollisions";
         //editorTemplate -addControl "maxDt";
         //editorTemplate -addControl "maxIter";
         editorTemplate -addControl "gravity";
         editorTemplate -addControl "plasticDeformations";
+    editorTemplate -endLayout;
+    editorTemplate -beginLayout "Collision Attributes" -collapse 0;
+        editorTemplate -addControl "objectCollisionsEnabled";
+        editorTemplate -addControl "selfCollisionPenaltyForces";
+        editorTemplate -addControl "fullSelfCollisions";
+        editorTemplate -addControl "fullSelfCollisionIterations";
+        editorTemplate -addControl "fullSelfCollisionCOR";        
     editorTemplate -endLayout;
 
     editorTemplate -addExtraControls;
