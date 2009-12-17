@@ -162,6 +162,20 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 dynamic_cast<RodTimeStepper*>(rodData[r]->stepper->getTimeStepper())->setTimeStep(getDt());
                 RodBoundaryCondition* boundary = dynamic_cast<RodTimeStepper*>(rodData[r]->stepper->getTimeStepper())->getBoundaryCondition();
                 BASim::ElasticRod* rod = rodData[r]->rod;
+
+                // DEBUG INFO
+#if 1
+                // prev/next only change per frame so don't store them each substep
+                if ( s == 0 )
+                {
+                    size_t oldSize = rodData[r]->ALLprevVertexPositions.size();
+                    rodData[r]->ALLprevVertexPositions.resize( oldSize + rod->nv() );
+                    for( int c = 0; c < rod->nv(); c++)
+                    {
+                        rodData[r]->ALLprevVertexPositions[oldSize+c] = rodData[r]->prevVertexPositions[c];
+                    }
+                }
+#endif                  
                 for( int c = 0; c < rod->nv(); c++)
                 {
                     // Calculate the position of the input curve for this rod at the current substep.
@@ -173,8 +187,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     // includ RodTimeStepper. FIX THESE AND MOVE THIS
                     
                     // First enforce the boundary conditions. Setting a vertex to fixed on the rod does
-                    // not enforce anything any more. The fixed vertices must be explicitly added in here/
-                    
+                    // not enforce anything any more. The fixed vertices must be explicitly added in here/                    
                     if ( rod->vertFixed(c) )
                     {  
                         boundary->setDesiredVertexPosition(c, rodData[r]->currVertexPositions[c]);
@@ -217,20 +230,33 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->executePart1();
         }
 
+        // FIXME: Think this can be parallelised
         if(i_selfCollisionPenaltyForcesEnabled)
         {
             RodCollisionTimeStepper::getProximities(m_rods);
         }
-          
-        if (i_fullSelfCollisionsEnabled)
-           RodCollisionTimeStepper::respondRodCollisions( m_rods, getDt(), i_fullSelfCollisionIters,
-                                                          i_selfCollisionCOR );            
-        // the above max iterations and cor should be parameters on the maya node
+        
+        #pragma omp parallel for num_threads( i_numberOfThreadsToUse )
+        for ( int i=0; i<numControllers; ++i )
+        {
+            dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->execute();
+        }
+
 
         #pragma omp parallel for num_threads( i_numberOfThreadsToUse )
         for ( int i=0; i<numControllers; ++i )
         {
             dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->executePart2();
+        }
+
+        if (i_fullSelfCollisionsEnabled)
+           RodCollisionTimeStepper::respondRodCollisions( m_rods, getDt(), i_fullSelfCollisionIters,
+                                                          i_selfCollisionCOR );            
+        
+        #pragma omp parallel for num_threads( i_numberOfThreadsToUse )
+        for ( int i=0; i<numControllers; ++i )
+        {
+            dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->executePart3();
         }
 
 
@@ -346,6 +372,18 @@ void Beaker::draw()
     {
         cmItr->second->draw(); 
     }
+
+#if 1
+  /*  for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
+    {
+        vector<RodData*>& rodData = rdmItr->second;
+        size_t numRods = rodData.size();
+        for ( size_t r=0; r<numRods; r++ )
+        {
+            rodData[ r ]->rodRenderer->render();
+        }
+    }*/
+#endif
 }
 
 

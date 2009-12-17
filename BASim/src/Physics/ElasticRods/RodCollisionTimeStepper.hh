@@ -59,24 +59,30 @@ public:
     // get it from m_rodTimeStepper rather than using the one here.
     if ( !m_collisionsEnabled || m_collisionMeshes == NULL || m_collisionMeshes->size()==0 )
     {
-        m_rodTimeStepper->execute();
+    //    m_rodTimeStepper->execute();
+        return;
     }
     
     m_rod->setCollisionStartPositions();
-    getProximities(*m_collisionMeshes);
-    m_rodTimeStepper->execute();
-    m_rod->collisionsBegin(m_dt);
+    getProximities(*m_collisionMeshes);    
   }
 
   void executePart2()
   {
-    respondObjectCollisions(*m_collisionMeshes, m_dt);
-    m_rod->collisionsEnd(m_dt);
+    m_rod->collisionsBegin(m_dt);
+    respondObjectCollisions(*m_collisionMeshes, m_dt);   
+  }
+
+  void executePart3()
+  {
+     m_rod->collisionsEnd(m_dt);
   }
 
   void execute()
   {
-    if (!m_enabled)
+    m_rodTimeStepper->execute();
+
+   /* if (!m_enabled)
       return;
 
     // Sanity check, m_dt MUST EQUAL m_rodTimeStepper->getDt();
@@ -92,7 +98,8 @@ public:
     m_rod->collisionsBegin(m_dt);
 
     respondObjectCollisions(*m_collisionMeshes, m_dt);
-    m_rod->collisionsEnd(m_dt);
+    m_rod->collisionsEnd(m_dt);*/
+
   }
 
 

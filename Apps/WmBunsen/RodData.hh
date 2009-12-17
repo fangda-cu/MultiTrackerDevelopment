@@ -45,6 +45,10 @@ public:
 
     double hairSprayScaleFactor;
     cvDataMap forceWeightMap;
+
+    // debug info
+    vector<Vec3d> ALLprevVertexPositions;
+    vector<Vec3d> ALLNextVertexPositions;
 };
 
 #endif
