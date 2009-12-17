@@ -63,7 +63,7 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
 
     bool fozzieNodeConnected;
     MPlug fozziePlug( thisMObject(), ia_fozzieVertices );
-    bool readFromCache = dataBlock.inputValue( ia_readFromCache, &stat ).asDouble();
+    bool readFromCache = dataBlock.inputValue( ia_readFromCache, &stat ).asBool();
      
     if ( readFromCache ) 
     {
@@ -88,7 +88,7 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
         
         MString fileName = cachePath + "." + m_currentTime + ".bun";
         
-        cerr << "Reading sim data from disk in file: '" << fileName << "'\n";
+        cerr << "Initialising rods from file: '" << fileName << "'\n";
         
         FILE *fp;
         fp = fopen( fileName.asChar(), "r" );
@@ -105,8 +105,11 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
         if ( numRods != mx_rodData->size() )
         {
             cerr << "Wrong number of rods in file, have not implemented changing it yet\n";
+            cerr << "Expected " << mx_rodData->size() << ", got " << numRods << endl;
             return;
         }
+        
+        cerr << "Reading " << numRods << " from file " << endl;
         
         for ( size_t i=0; i<numRods; i++ )
         {
@@ -137,11 +140,13 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             {
                 double pos[3];
                 
-                // Wonder if its safe to write Vec3ds. Need to check what's in them.
-                // Really should package all this and write it as one.
                 fread( &pos[0], sizeof( double ), 3, fp );
                 
                 (*mx_rodData)[ i ]->undeformedVertexPositions[ v ]  = Vec3d( pos[0], pos[1], pos[2] );
+                
+                fread( &pos[0], sizeof( double ), 3, fp );
+                Vec3d vertexU( pos[0], pos[1], pos[2] );
+                (*mx_rodData)[ i ]->nextVertexPositions[ v ] = vertexU;
             }
         }
         
@@ -759,7 +764,7 @@ size_t WmBunsenRodNode::numberOfRods()
         
         MString fileName = cachePath + "." + m_currentTime + ".bun";
         
-        cerr << "Reading sim data from disk in file: '" << fileName << "'\n";
+        cerr << "Finding number of rods in file: '" << fileName << "'\n";
         
         FILE *fp;
         fp = fopen( fileName.asChar(), "r" );
@@ -849,6 +854,15 @@ void WmBunsenRodNode::writeRodDataToCacheFile( MString i_cachePath )
             pos[ 2 ] = vertex.z();
             
             fwrite( &pos[0], sizeof( double ), 3, fp );
+            
+            // Now store the unsimulated positions so that we can send them to Barbershop
+            // when we want to simulate with it.
+            vertex = (*mx_rodData)[ r ]->nextVertexPositions[ v ];
+            pos[ 0 ] = vertex.x();
+            pos[ 1 ] = vertex.y();
+            pos[ 2 ] = vertex.z();
+            
+            fwrite( &pos[0], sizeof( double ), 3, fp );
                 
             // We should write velocities and anything else we need into the file too so that
             // we can restart a simulation from a cached file.
@@ -914,6 +928,7 @@ void WmBunsenRodNode::readRodDataFromCacheFile( MString i_cachePath )
             continue;
         }
         
+        cerr << " (*mx_rodData)[ r ]->nextVertexPositions.size() = " <<  (*mx_rodData)[ r ]->nextVertexPositions.size() << endl;
         for ( size_t v=0; v<numVertices; v++ )
         {
             double pos[3];
@@ -924,6 +939,10 @@ void WmBunsenRodNode::readRodDataFromCacheFile( MString i_cachePath )
             
             Vec3d vertex( pos[0], pos[1], pos[2] );
             rod->setVertex( v, vertex );
+            
+            fread( &pos[0], sizeof( double ), 3, fp );
+            Vec3d vertexU( pos[0], pos[1], pos[2] );
+            (*mx_rodData)[ r ]->nextVertexPositions[ v ] = vertexU;
         }
     }
     
