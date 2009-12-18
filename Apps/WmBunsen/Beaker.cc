@@ -260,6 +260,11 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         {
             dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->execute();
         }
+  
+        //////////////////////////////////////////////
+        //
+        // Check forces to see if any rods need to be simulated at a slower pace
+        checkAllRodForces();
 
 
         #pragma omp parallel for num_threads( i_numberOfThreadsToUse )
@@ -303,6 +308,20 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     
     // restore dt
     setDt( dt_save );
+}
+
+void Beaker::checkAllRodForces()
+{
+    for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
+    {
+        vector<RodData*>& rodData = rdmItr->second;
+        size_t numRods = rodData.size();
+        for ( size_t r=0; r<numRods; r++ )
+        {
+            VecXd& forces = dynamic_cast<RodTimeStepper*>(rodData[r]->stepper->getTimeStepper())->getForcesAtLastStep();
+            cerr << "forces at last step = \n" << forces << endl;
+        }
+    }
 }
 
 RodCollisionTimeStepper* Beaker::setupRodTimeStepper( RodData* i_rodData )

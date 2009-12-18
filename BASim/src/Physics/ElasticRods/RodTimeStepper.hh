@@ -105,6 +105,7 @@ public:
    */
   void evaluatePDot(VecXd& f)
   {
+    m_forces = f;
     // add internal forces
     m_rod.computeForces(f);
 
@@ -114,6 +115,8 @@ public:
     for (size_t i = 0; i < m_externalForces.size(); ++i) {
       m_externalForces[i]->computeForce(m_rod, f);
     }
+  
+    m_forces = f - m_forces;
   }
 
   /**
@@ -268,6 +271,11 @@ public:
     }
   }
 
+  VecXd& getForcesAtLastStep()
+  {
+    return m_forces;
+  }
+
 protected:
 
   ElasticRod& m_rod;
@@ -275,6 +283,10 @@ protected:
   Method m_method;
   DiffEqSolver* m_diffEqSolver;
   RodBoundaryCondition* m_boundaryCondition;
+
+  // Copy of the forces on the rod, used in Beaker 
+  // to check if the sim is going to explode.
+  VecXd m_forces;
 };
 
 } // namespace BASim

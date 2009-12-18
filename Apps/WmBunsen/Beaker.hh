@@ -109,7 +109,8 @@ public:
     bool collisionMeshInitialised( const size_t id );
     void initialiseCollisionMesh( BASim::CollisionMeshData *collisionMeshData, size_t id );
     void removeCollisionMesh( const size_t id );
-    
+    void checkAllRodForces(); 
+
 private:
     World* m_world;
     RodDataMap m_rodDataMap;
