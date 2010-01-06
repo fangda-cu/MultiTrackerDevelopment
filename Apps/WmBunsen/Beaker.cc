@@ -159,6 +159,8 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         //
         for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
         {
+            // FIXME: Should check if rod is enabled, if not then continue
+            
             vector<RodData*>& rodData = rdmItr->second;
             size_t numRods = rodData.size();
             for ( size_t r=0; r<numRods; r++ )
@@ -264,8 +266,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         //////////////////////////////////////////////
         //
         // Check forces to see if any rods need to be simulated at a slower pace
-        checkAllRodForces();
-
+       // checkAllRodForces();
 
         #pragma omp parallel for num_threads( i_numberOfThreadsToUse )
         for ( int i=0; i<numControllers; ++i )

@@ -69,17 +69,26 @@ public:
 
   void executePart2()
   {
+    if (!m_enabled)
+      return;
+    
     m_rod->collisionsBegin(m_dt);
     respondObjectCollisions(*m_collisionMeshes, m_dt);   
   }
 
   void executePart3()
   {
+     if (!m_enabled)
+      return;
+
      m_rod->collisionsEnd(m_dt);
   }
 
   void execute()
   {
+    if (!m_enabled)
+      return;
+
     m_rodTimeStepper->execute();
 
    /* if (!m_enabled)
