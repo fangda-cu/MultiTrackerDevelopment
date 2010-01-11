@@ -115,14 +115,6 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
         {
             (*mx_rodData)[i]->rodOptions = m_rodOptions;
             
-            // Make sure we have enough space to store the date for each CV. This should only
-            // ever cause a resize when we are called by initialiseRodData().
-            (*mx_rodData)[ i ]->undeformedVertexPositions.resize( m_cvsPerRod );
-            (*mx_rodData)[ i ]->initialVertexPositions.resize( m_cvsPerRod );
-            (*mx_rodData)[ i ]->prevVertexPositions.resize( m_cvsPerRod );
-            (*mx_rodData)[ i ]->currVertexPositions.resize( m_cvsPerRod );
-            (*mx_rodData)[ i ]->nextVertexPositions.resize( m_cvsPerRod );
-            
             std::string frame = "time";
             if ( frame == "time" )
                 (*mx_rodData)[ i ]->rodOptions.refFrame = BASim::ElasticRod::TimeParallel;
@@ -133,9 +125,16 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             size_t numVertices;
             fread( &numVertices, sizeof( size_t ), 1, fp );
             
-            (*mx_rodData)[i]->rodOptions.numVertices = numVertices;
+            (*mx_rodData)[i]->rodOptions.numVertices = numVertices;   
             
-            
+            // Make sure we have enough space to store the date for each CV. This should only
+            // ever cause a resize when we are called by initialiseRodData().
+            (*mx_rodData)[ i ]->undeformedVertexPositions.resize( numVertices );
+            (*mx_rodData)[ i ]->initialVertexPositions.resize( numVertices );
+            (*mx_rodData)[ i ]->prevVertexPositions.resize( numVertices );
+            (*mx_rodData)[ i ]->currVertexPositions.resize( numVertices );
+            (*mx_rodData)[ i ]->nextVertexPositions.resize( numVertices );
+                        
             for ( size_t v=0; v<numVertices; v++ )
             {
                 double pos[3];
@@ -150,7 +149,7 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             }
         }
         
-    //    Barbershop comb cache is here, this is what you need to be able to load
+     //    Barbershop comb cache is here, this is what you need to be able to load
      //   /local1/cache/barberShop/combing
         
         fclose ( fp );
@@ -928,7 +927,7 @@ void WmBunsenRodNode::readRodDataFromCacheFile( MString i_cachePath )
             continue;
         }
         
-        cerr << " (*mx_rodData)[ r ]->nextVertexPositions.size() = " <<  (*mx_rodData)[ r ]->nextVertexPositions.size() << endl;
+     //   cerr << " (*mx_rodData)[ r ]->nextVertexPositions.size() = " <<  (*mx_rodData)[ r ]->nextVertexPositions.size() << endl;
         for ( size_t v=0; v<numVertices; v++ )
         {
             double pos[3];
