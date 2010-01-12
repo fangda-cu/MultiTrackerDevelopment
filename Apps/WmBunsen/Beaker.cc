@@ -350,7 +350,7 @@ RodCollisionTimeStepper* Beaker::setupRodTimeStepper( RodData* i_rodData )
     
     stepper->setTimeStep(getDt());
     
-    Scalar massDamping = 10.0;
+    Scalar massDamping = i_rodData->massDamping;
     if (massDamping != 0) 
     {
         stepper->addExternalForce( new RodMassDamping( massDamping ) );

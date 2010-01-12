@@ -126,11 +126,39 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
     bool forceReset, std::string i_filename )
 {    
     MStatus stat;
-
+    
     MPointArray points;
     i_meshFn.getPoints( points, MSpace::kWorld );
-    
     vector<BASim::Vec3d> vPoints;
+    
+    // If we are being driven by an EZBake node and the scene was just loaded it's possible
+    // that the first time we updated from the mesh it had no data. EZbake scenes have a weird
+    // thing where until time moves the mesh is not properly setup.
+    // So we must initialise these here, not in connection made because at the time of connection
+    // made the input mesh may be empty!
+    if ( m_collisionMeshData->currPositions.size() != points.length() ||
+         m_collisionMeshData->oldPositions.size() != points.length() ||
+         m_collisionMeshData->newPositions.size() != points.length() ||
+         m_collisionMeshData->velocities.size() != points.length() ) {
+        
+        m_collisionMeshData->currPositions.resize( points.length() );
+        m_collisionMeshData->prevPositions.resize( points.length() );
+        m_collisionMeshData->oldPositions.resize( points.length() );
+        m_collisionMeshData->newPositions.resize( points.length() );
+        m_collisionMeshData->velocities.resize( points.length() );
+
+        // If any of the above arrays were not filled out then we can safely assume the edge data
+        // was not filled out so go ahead and add it too.
+        MIntArray triangleCounts;
+        MIntArray triangleInds;
+        i_meshFn.getTriangles( triangleCounts, triangleInds );
+    
+        m_collisionMeshData->triangleIndices.resize( triangleInds.length() );
+        
+        for ( size_t i=0; i<triangleInds.length(); ++i )
+            m_collisionMeshData->triangleIndices[i] = triangleInds[i];
+    }
+
     
     // We don't want anything in BASim knowing about Maya so convert all the points
     // into a BASim format before passing them in.
@@ -163,21 +191,6 @@ MStatus WmBunsenCollisionMeshNode::connectionMade( const  MPlug & i_plug, const 
         CHECK_MSTATUS( stat );
         MFnMesh meshFn( meshObj, &stat );
         CHECK_MSTATUS( stat );
-       
-        m_collisionMeshData->currPositions.resize( meshFn.numVertices() );
-        m_collisionMeshData->prevPositions.resize( meshFn.numVertices() );
-        m_collisionMeshData->oldPositions.resize( meshFn.numVertices() );
-        m_collisionMeshData->newPositions.resize( meshFn.numVertices() );
-        m_collisionMeshData->velocities.resize( meshFn.numVertices() );
-
-        MIntArray triangleCounts;
-        MIntArray triangleInds;
-        meshFn.getTriangles( triangleCounts, triangleInds );
-    
-        m_collisionMeshData->triangleIndices.resize( triangleInds.length() );
-        
-        for ( size_t i=0; i<triangleInds.length(); ++i )
-            m_collisionMeshData->triangleIndices[i] = triangleInds[i];
 
         updateCollisionMeshFromMayaMesh( meshFn, true );
     }

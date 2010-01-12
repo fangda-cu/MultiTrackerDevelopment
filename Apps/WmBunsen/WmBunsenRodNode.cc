@@ -22,6 +22,7 @@ using namespace BASim;
 /* static */ MObject WmBunsenRodNode::ia_vertexSpacing;
 /* static */ MObject WmBunsenRodNode::ia_hairSpray;
 /* static */ MObject WmBunsenRodNode::ia_hairSprayScaleFactor;
+/* static */ MObject WmBunsenRodNode::ia_massDamping;
 
 // Disk cacheing
 /* static */ MObject WmBunsenRodNode::ia_cachePath;
@@ -39,7 +40,8 @@ using namespace BASim;
 /* static */ MObject WmBunsenRodNode::oa_verticesInEachRod;
 
 WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_rodData( NULL ), mx_world( NULL ),
-                                     m_numberOfInputCurves( 0 ), m_cvsPerRod( -1 )
+                                     m_numberOfInputCurves( 0 ), m_cvsPerRod( -1 ), 
+                                     m_massDamping( 10 )
 {
     m_rodOptions.YoungsModulus = 100000.0;
     m_rodOptions.ShearModulus = 375.0;
@@ -260,13 +262,17 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
         }
     }
     
-    // Since we're initialising the rod data that means the rod is about to be created. In which
-    // case we need to set the current vertex positions since they will not get set by the
-    // simulation until the user moves forward a frame.
     
+    // Set things that are the same no matter what input is being used.
     size_t numRods = mx_rodData->size();
     for ( size_t r=0; r<numRods; r++ )
     {
+        // Set mass damping for this rod
+        (*mx_rodData)[ r ]->massDamping = m_massDamping;
+        
+        // Since we're initialising the rod data that means the rod is about to be created. In which
+        // case we need to set the current vertex positions since they will not get set by the
+        // simulation until the user moves forward a frame.
         size_t numVertices = (*mx_rodData)[ r ]->undeformedVertexPositions.size();
         (*mx_rodData)[ r ]->initialVertexPositions.resize( numVertices );
         for ( size_t v=0; v<numVertices; v++ )
@@ -503,8 +509,12 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         CHECK_MSTATUS( stat );
         m_rodOptions.radiusB = i_dataBlock.inputValue( ia_majorRadius, &stat ).asDouble();
         CHECK_MSTATUS( stat );
-        MString cachePath = i_dataBlock.inputValue( ia_cachePath, &stat ).asString();
+        m_massDamping = i_dataBlock.inputValue( ia_massDamping, &stat ).asDouble();
         CHECK_MSTATUS( stat );
+        
+        MString cachePath = i_dataBlock.inputValue( ia_cachePath, &stat ).asString();
+        CHECK_MSTATUS( stat );        
+        
         //m_vertexSpacing = i_dataBlock.inputValue( ia_vertexSpacing, &stat ).asDouble();
         //CHECK_MSTATUS( stat );
         m_cvsPerRod = i_dataBlock.inputValue( ia_cvsPerRod, &stat ).asInt();
@@ -1112,7 +1122,11 @@ void* WmBunsenRodNode::creator()
     
     addNumericAttribute( ia_hairSprayScaleFactor, "hairSprayScaleFactor", "hsf", MFnNumericData::kDouble, 1.0, true );
     stat = attributeAffects( ia_hairSprayScaleFactor, oa_rodsChanged );
-    if ( !stat ) { stat.perror( "attributeAffects ia_hairSprayScaleFactor->ca_syncAttrs" ); return stat; }
+    if ( !stat ) { stat.perror( "attributeAffects ia_hairSprayScaleFactor->oa_rodsChanged" ); return stat; }
+
+    addNumericAttribute( ia_massDamping, "massDamping", "mda", MFnNumericData::kDouble, 10.0, true );
+    stat = attributeAffects( ia_massDamping, oa_rodsChanged );
+    if ( !stat ) { stat.perror( "attributeAffects ia_massDamping->oa_rodsChanged" ); return stat; }
 
     {
         MFnTypedAttribute tAttr;

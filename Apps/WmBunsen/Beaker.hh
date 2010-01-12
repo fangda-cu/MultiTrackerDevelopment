@@ -128,7 +128,6 @@ private:
     // is here simply because the self collision code needed it and I have
     // to get some numbers out of this before I leave Columbia.
     vector<ElasticRod*> m_rods;
-    
 };
 
 #endif // BEAKER_HH_

@@ -66,6 +66,7 @@ public:
     static MObject ia_vertexSpacing;
     static MObject ia_hairSpray;
     static MObject ia_hairSprayScaleFactor;
+    static MObject ia_massDamping;
 
     // Caching
     static MObject ia_cachePath;
@@ -101,6 +102,7 @@ private:
     double m_currentTime;
     double m_previousTime;
     double m_startTime;
+    double m_massDamping;
     
     bool m_initialised;
     
@@ -116,6 +118,8 @@ private:
     World* mx_world;
     
     size_t m_numberOfInputCurves;
+    
+    
     
     // If we're overriding the number of cvs per rod then this will be not -1
     int m_cvsPerRod;

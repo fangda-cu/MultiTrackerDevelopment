@@ -30,7 +30,7 @@ CollisionMeshData::~CollisionMeshData()
 
 void CollisionMeshData::initialize()
 {
-    std::cout<<"initializing... ";
+    std::cout << "CollisionMeshData::initialize()... ";
     if (!_initialized)
     {
         _nbrTriangles = triangleIndices.size() / 3;
@@ -108,7 +108,7 @@ void CollisionMeshData::initialize()
 
         _initialized = true;
     }
-    std::cout<<"complete"<<std::endl;
+    std::cout<<"CollisionMeshData::initialize()...complete"<<std::endl;
 }
 
 void CollisionMeshData::clearAll()
