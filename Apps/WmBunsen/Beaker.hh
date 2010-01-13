@@ -110,6 +110,8 @@ public:
     void initialiseCollisionMesh( BASim::CollisionMeshData *collisionMeshData, size_t id );
     void removeCollisionMesh( const size_t id );
     void checkAllRodForces(); 
+    void startTimer();
+    double stopTimer();
 
 private:
     World* m_world;
@@ -128,6 +130,9 @@ private:
     // is here simply because the self collision code needed it and I have
     // to get some numbers out of this before I leave Columbia.
     vector<ElasticRod*> m_rods;
+    
+    bool m_timing;
+    timeval m_timerStart;
 };
 
 #endif // BEAKER_HH_
