@@ -55,6 +55,7 @@ public:
     static MObject ia_startTime;
     static MObject ia_nurbsCurves;
     static MObject ia_fozzieVertices;
+    static MObject ia_percentageOfFozzieStrands;
     
     // Rod options
     static MObject ia_cvsPerRod;
@@ -119,7 +120,7 @@ private:
     
     size_t m_numberOfInputCurves;
     
-    
+    int m_percentageOfFozzieStrands;
     
     // If we're overriding the number of cvs per rod then this will be not -1
     int m_cvsPerRod;

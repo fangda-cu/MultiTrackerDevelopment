@@ -116,7 +116,14 @@ void WmBunsenCollisionMeshNode::draw( M3dView & view, const MDagPath & path,
 	glPushAttrib(GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT);
 
     if ( m_drawCollisionData && m_collisionMeshData )
+    {
+        //cerr << "Drawing collision mesh\n";
         m_collisionMeshData->draw();
+    }
+    else
+    {
+        //cerr << "NOT Drawing collision mesh\n";
+    }
 
 	glPopAttrib();
 	view.endGL();
@@ -140,6 +147,8 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
          m_collisionMeshData->oldPositions.size() != points.length() ||
          m_collisionMeshData->newPositions.size() != points.length() ||
          m_collisionMeshData->velocities.size() != points.length() ) {
+    
+        cerr << "Initialising size and data for collision mesh\n";
         
         m_collisionMeshData->currPositions.resize( points.length() );
         m_collisionMeshData->prevPositions.resize( points.length() );
@@ -159,6 +168,18 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
             m_collisionMeshData->triangleIndices[i] = triangleInds[i];
     }
 
+    
+    cerr << "Updating mesh with m_collisionMeshData->triangleIndices.size() = " << m_collisionMeshData->triangleIndices.size() << endl;
+    
+    // FIXME: This is slow but for safety lets just do it every frame as there may be issues with
+    // initialisation from ezbakes
+    MIntArray triangleCounts;
+    MIntArray triangleInds;
+    i_meshFn.getTriangles( triangleCounts, triangleInds );
+    m_collisionMeshData->triangleIndices.resize( triangleInds.length() );
+        
+    for ( size_t i=0; i<triangleInds.length(); ++i )
+        m_collisionMeshData->triangleIndices[i] = triangleInds[i];
     
     // We don't want anything in BASim knowing about Maya so convert all the points
     // into a BASim format before passing them in.

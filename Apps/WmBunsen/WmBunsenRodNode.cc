@@ -11,6 +11,7 @@ using namespace BASim;
 /* static */ MObject WmBunsenRodNode::ia_startTime;
 /* static */ MObject WmBunsenRodNode::ia_nurbsCurves;
 /* static */ MObject WmBunsenRodNode::ia_fozzieVertices;
+/* static */ MObject WmBunsenRodNode::ia_percentageOfFozzieStrands;
 
 // User adjustable rod Options
 /* static */ MObject WmBunsenRodNode::ia_cvsPerRod;
@@ -41,7 +42,7 @@ using namespace BASim;
 
 WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_rodData( NULL ), mx_world( NULL ),
                                      m_numberOfInputCurves( 0 ), m_cvsPerRod( -1 ), 
-                                     m_massDamping( 10 )
+                                     m_massDamping( 10 ), m_percentageOfFozzieStrands( 100 )
 {
     m_rodOptions.YoungsModulus = 100000.0;
     m_rodOptions.ShearModulus = 375.0;
@@ -518,6 +519,9 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         //m_vertexSpacing = i_dataBlock.inputValue( ia_vertexSpacing, &stat ).asDouble();
         //CHECK_MSTATUS( stat );
         m_cvsPerRod = i_dataBlock.inputValue( ia_cvsPerRod, &stat ).asInt();
+        CHECK_MSTATUS( stat );
+        
+        m_percentageOfFozzieStrands = i_dataBlock.inputValue( ia_percentageOfFozzieStrands, &stat ).asInt();
         CHECK_MSTATUS( stat );
 		
         bool readFromCache = i_dataBlock.inputValue( ia_readFromCache, &stat ).asDouble();
@@ -1128,6 +1132,11 @@ void* WmBunsenRodNode::creator()
     stat = attributeAffects( ia_massDamping, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_massDamping->oa_rodsChanged" ); return stat; }
 
+    addNumericAttribute( ia_percentageOfFozzieStrands, "percentageOfFozzieStrands", "pfs", MFnNumericData::kInt, 100, true );
+    stat = attributeAffects( ia_percentageOfFozzieStrands, oa_rodsChanged );
+    if ( !stat ) { stat.perror( "attributeAffects ia_fozzieVertices->oa_rodsChanged" ); return stat; }
+
+    
     {
         MFnTypedAttribute tAttr;
         MFnStringData fnStringData;
@@ -1178,6 +1187,7 @@ void* WmBunsenRodNode::creator()
     stat = attributeAffects( ia_fozzieVertices, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_fozzieVertices->oa_rodsChanged" ); return stat; }
    
+
     {
         ia_hairSpray = MRampAttribute::createCurveRamp("hairSpray", "hs");
         stat = addAttribute( ia_hairSpray );

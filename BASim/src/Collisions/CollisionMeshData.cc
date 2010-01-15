@@ -274,20 +274,39 @@ void CollisionMeshData::draw()
      //if(_phiCurrent->isInitialized())
 	//_phiCurrent->draw();
          
-  /*  for ( size_t p=0; p<allPositions.size(); p++ )     
+    //for ( size_t p=0; p<currPositions.size(); p++ )     
     {
+      glColor3f(0, 1, 0);
       glBegin(GL_TRIANGLES);
       for (size_t i=0; i<_nbrTriangles; ++i)
       {    
-          float c = (float)(i)/(float)(_nbrTriangles);
-          glColor3f(c, c, c);
+          float c = (float)(i)/(float)(_nbrTriangles);          
           
-          glVertex3dv(allPositions[p][triangleIndices[(3 * i)    ]].data());
-          glVertex3dv(allPositions[p][triangleIndices[(3 * i) + 1]].data());
-          glVertex3dv(allPositions[p][triangleIndices[(3 * i) + 2]].data());
+          glVertex3dv(currPositions[triangleIndices[(3 * i)    ]].data());
+          glVertex3dv(currPositions[triangleIndices[(3 * i) + 1]].data());
+          glVertex3dv(currPositions[triangleIndices[(3 * i) + 2]].data());
       }
       glEnd();
-    }*/
+      
+      glLineWidth(5.0);
+      glColor3f(0, 0, 0);          
+      glBegin(GL_LINES);
+      for (size_t i=0; i<_nbrTriangles; ++i)
+      {    
+          float c = (float)(i)/(float)(_nbrTriangles);
+          
+          glVertex3dv(currPositions[triangleIndices[(3 * i)    ]].data());
+          glVertex3dv(currPositions[triangleIndices[(3 * i) + 1]].data());
+          
+          glVertex3dv(currPositions[triangleIndices[(3 * i) + 1]].data());
+          glVertex3dv(currPositions[triangleIndices[(3 * i) + 2]].data());
+          
+          glVertex3dv(currPositions[triangleIndices[(3 * i) + 2]].data());
+          glVertex3dv(currPositions[triangleIndices[(3 * i)    ]].data());
+      }
+      glEnd();
+      glLineWidth(1.0);
+    }
 }
 
 void CollisionMeshData::sizeLevelSet(Vec3d &origin,Vec3i &dims, Real &dx, Real length[3])

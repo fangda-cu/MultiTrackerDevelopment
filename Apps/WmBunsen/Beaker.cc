@@ -424,11 +424,11 @@ void Beaker::draw()
         }
     }
 
-    for ( CollisionMeshDataHashMapIterator cmItr = m_collisionMeshMap.begin();
+  /*  for ( CollisionMeshDataHashMapIterator cmItr = m_collisionMeshMap.begin();
                                                    cmItr != m_collisionMeshMap.end(); ++cmItr )
     {
         cmItr->second->draw(); 
-    }
+    }*/
 
 #if 0
     for ( RodDataMapIterator rdmItr = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )

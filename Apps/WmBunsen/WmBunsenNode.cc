@@ -439,7 +439,7 @@ MStatus WmBunsenNode::initialize()
     }
 
     {
-	MFnNumericAttribute nAttr;
+        MFnNumericAttribute nAttr;
     	ia_substeps = nAttr.create( "subSteps", "sub", MFnNumericData::kInt, 3, &stat );
         if ( !stat ) 
         {
@@ -447,7 +447,7 @@ MStatus WmBunsenNode::initialize()
             return stat;
         }
         nAttr.setWritable( true );
-        nAttr.setReadable( false );
+        //nAttr.setReadable( false );
         nAttr.setKeyable( true );  
         stat = addAttribute( ia_substeps );
         if ( !stat ) { stat.perror( "addAttribute ia_substeps" ); return stat; }
