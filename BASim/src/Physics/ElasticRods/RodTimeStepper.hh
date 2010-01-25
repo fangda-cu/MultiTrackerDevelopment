@@ -8,8 +8,13 @@
 #ifndef RODTIMESTEPPER_HH
 #define RODTIMESTEPPER_HH
 
-//#include <BASim/src/Core/ObjectControllerBase.hh>
-#include <BASim/Core>
+#include "../../Core/ObjectControllerBase.hh"
+#include "../../Math/TimeSteppingBase.hh"
+#include "../../Math/SymplecticEuler.hh"
+#include "../../Math/ImplicitEuler.hh"
+#include "RodExternalForce.hh"
+#include "RodBoundaryCondition.hh"
+
 
 namespace BASim {
 

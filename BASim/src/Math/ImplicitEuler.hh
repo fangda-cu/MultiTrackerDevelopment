@@ -8,6 +8,11 @@
 #ifndef IMPLICITEULER_HH
 #define IMPLICITEULER_HH
 
+#include "TimeSteppingBase.hh"
+#include "LinearSolverBase.hh"
+#include "SolverUtils.hh"
+#include "../Core/Timer.hh"
+
 namespace BASim {
 
 /** This class implements the implicit Euler time-stepping

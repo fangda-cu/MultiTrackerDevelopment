@@ -8,10 +8,12 @@ setenv MAYA_SCRIPT_PATH `pwd`/../Apps/WmBunsen/:${MAYA_SCRIPT_PATH}
 setenv XBMLANGPATH `pwd`/../Apps/WmBunsen/icons/%B:${XBMLANGPATH}
 
 # weta specific...
+
+# Is this safe, I think Maya 2010 was built with intel 10?
 need intel-11.1.056_64
-setenv PATH /vol/apps/intel_64/compiler11.1.056/bin/intel64:${PATH}
+#setenv PATH /vol/apps/intel_64/compiler11.1.056/bin/intel64:${PATH}
 #setenv LM_LICENSE_FILE /vol/apps/intel_64/compiler11.1.056/licenses:28518@linux-license.wetafx.co.nz:${LM_LICENSE_FILE}
-setenv LD_LIBRARY_PATH /vol/apps_master/apps.Linux64/intel_64/compiler11.1.056/lib/intel64/:${LD_LIBRARY_PATH}
+#setenv LD_LIBRARY_PATH /vol/apps_master/apps.Linux64/intel_64/compiler11.1.056/lib/intel64/:${LD_LIBRARY_PATH}
 
 need mkl-10.2.1.017
 #setenv MKLROOT /local1/apps/mkl-10.2.1.017/
@@ -27,9 +29,9 @@ need mkl-10.2.1.017
 
 
 #setup the maya environment to pick up the local version of Barber Shop
-setenv MAYA_PLUG_IN_PATH /local1/apps/mayaPlugins:${MAYA_PLUG_IN_PATH}
-setenv MAYA_SCRIPT_PATH /local1/apps/mayaPlugins/scripts:${MAYA_SCRIPT_PATH}
-setenv XBMLANGPATH /local1/apps/mayaPlugins/icons/%B:${XBMLANGPATH}
+#setenv MAYA_PLUG_IN_PATH /local1/apps/mayaPlugins:${MAYA_PLUG_IN_PATH}
+#setenv MAYA_SCRIPT_PATH /local1/apps/mayaPlugins/scripts:${MAYA_SCRIPT_PATH}
+#setenv XBMLANGPATH /local1/apps/mayaPlugins/icons/%B:${XBMLANGPATH}
 
 
 

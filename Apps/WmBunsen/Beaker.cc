@@ -6,8 +6,10 @@
  */
 
 #include "Beaker.hh"
+#include <weta/Wfigaro/Physics/ElasticRods/RodHairsprayForce.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/RodMassDamping.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/RodGravity.hh>
  
-#include <BASim/BASim>
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
@@ -17,8 +19,6 @@
 #include <string>
 #include <sstream>
 #include <sys/time.h>
-#include <tclap/CmdLine.h>
-#include <BASim/src/Physics/ElasticRods/RodHairsprayForce.hh>
 
 using namespace BASim;
 using namespace tr1;

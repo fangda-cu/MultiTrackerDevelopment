@@ -8,7 +8,7 @@
  * \date 11/16/2009
  */
 
-#include "BASim/src/Math/MatrixBase.hh"
+#include "MatrixBase.hh"
 
 namespace BASim {
 

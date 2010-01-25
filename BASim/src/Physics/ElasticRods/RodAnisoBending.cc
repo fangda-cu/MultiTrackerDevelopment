@@ -5,8 +5,9 @@
  * \date 09/11/2009
  */
 
-#include "BASim/Physics"
-
+ #include "RodAnisoBending.hh"
+ #include "../../Math/Math.hh"
+ 
 namespace BASim {
 
 RodAnisoBending::RodAnisoBending(ElasticRod& rod, const std::string& name)

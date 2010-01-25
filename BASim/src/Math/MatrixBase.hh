@@ -8,7 +8,9 @@
  * \date 09/05/2009
  */
 
-namespace BASim {
+ #include "../Core/Definitions.hh"
+
+namespace BASim {    
 
 /** Interface for matrices. */
 class MatrixBase

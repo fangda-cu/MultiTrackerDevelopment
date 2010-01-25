@@ -18,9 +18,6 @@ set (Directories
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
-#find_package (FLENS REQUIRED)
-#include_directories (${FLENS_INCLUDE_DIR})
-
 append_files (Headers "hh" ${Directories})
 append_files (Inlines "inl" ${Directories})
 append_files (Templates "tcc" ${Directories})
@@ -57,4 +54,4 @@ if (TEST_ROD_BENDING_FORCE)
 endif (TEST_ROD_BENDING_FORCE)
 
 add_library (BASim SHARED ${Headers} ${Inlines} ${Templates} ${Sources})
-target_link_libraries (BASim ${PETSC_LIBRARIES} ${PNG_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_glut_LIBRARY})
+target_link_libraries (BASim ${PNG_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_glut_LIBRARY})

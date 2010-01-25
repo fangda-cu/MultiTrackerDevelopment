@@ -4,14 +4,14 @@ global proc wmBunsenAddMainMenu()
 	global string $gWmBunsenMainMenu;
 	  
     // check in case somehow the menu add function is called and the plugin aint loaded
-	if(!`pluginInfo -q -loaded libwmBunsen`) 
+	if(!`pluginInfo -q -loaded wmFigaro`) 
     {
-		print "\nloading wmBunsen plugin...";
-		loadPlugin libwmBunsen;
+		print "\nloading wmFigaro plugin...";
+		loadPlugin wmFigaro;
 	}
 
     if(!`menu -exists $gWmBunsenMainMenu`)     {
-        $gWmBunsenMainMenu = `menu -p $gMainWindow -l "Dr Bunsen" -tearOff true -allowOptionBoxes true WmBunsenMainMenu`;
+        $gWmBunsenMainMenu = `menu -p $gMainWindow -l "Figaro" -tearOff true -allowOptionBoxes true WmBunsenMainMenu`;
 
         //menuItem -label "Create a DER from Fozzie fur set" -annotation "Create dynamic elastic rods from a selected Fozzie fur set node" -command "dyno -crf";
         menuItem -label "Create rods from NURBS curves" -annotation "Create elastic rod from NURBS" -command "wmBunsen -cr -cpr 20";

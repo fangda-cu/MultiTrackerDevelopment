@@ -1,5 +1,6 @@
 
 #include "RodCollisionTimeStepper.hh"
+#include "RodTimeStepper.hh"
 #include "RodPenaltyForce.hh"
 
 namespace BASim {

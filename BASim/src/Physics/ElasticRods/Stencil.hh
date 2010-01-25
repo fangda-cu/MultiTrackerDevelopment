@@ -8,6 +8,8 @@
 #ifndef STENCIL_HH
 #define STENCIL_HH
 
+#include "../../Core/TopologicalObject/TopologicalObject.hh"
+
 namespace BASim {
 
 /** Stencil interface. A stencil is essentially an iterator over an

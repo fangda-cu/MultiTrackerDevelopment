@@ -8,9 +8,9 @@
 #ifndef OBJECTBASE_HH
 #define OBJECTBASE_HH
 
-#include "BASim/src/Core/Macros.hh"
-#include "BASim/src/Core/Property.hh"
-#include "BASim/src/Core/ObjectHandles.hh"
+#include "Macros.hh"
+#include "Property.hh"
+#include "ObjectHandles.hh"
 
 namespace BASim {
 

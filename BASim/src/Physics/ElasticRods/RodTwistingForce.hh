@@ -8,6 +8,9 @@
 #ifndef RODTWISTINGFORCE_HH
 #define RODTWISTINGFORCE_HH
 
+#include "RodForce.hh"
+#include "VertexStencil.hh"
+
 namespace BASim {
 
 class RodTwistingForce : public RodForceT<VertexStencil>

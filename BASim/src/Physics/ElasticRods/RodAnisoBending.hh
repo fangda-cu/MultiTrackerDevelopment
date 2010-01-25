@@ -8,6 +8,9 @@
 #ifndef RODANISOBENDING_HH
 #define RODANISOBENDING_HH
 
+#include "RodForce.hh"
+#include "VertexStencil.hh"
+
 namespace BASim {
 
 /** Base class for anisotropic/curved rod bending force. */

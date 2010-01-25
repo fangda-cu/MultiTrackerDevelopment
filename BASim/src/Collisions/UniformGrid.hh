@@ -11,12 +11,13 @@
 
 #include <tr1/unordered_map>
 #include"CandidateCollision.hh"
+#include "../Math/Math.hh"
 //#include <BASim/src/Physics/ElasticRods/ElasticRod.hh>
-#include "BASim/src/Physics/ElasticRods/Stencil.hh"
+#include "../Physics/ElasticRods/Stencil.hh"
 
-#include "BASim/src/Physics/DegreeOfFreedom.hh"
-#include "BASim/src/Physics/PhysObject.hh"
-#include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
+#include "../Physics/DegreeOfFreedom.hh"
+#include "../Physics/PhysObject.hh"
+#include "../Physics/ElasticRods/ElasticRod.hh"
 
 using namespace std;
 

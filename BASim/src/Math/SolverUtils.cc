@@ -5,7 +5,6 @@
  * \date 11/17/2009
  */
 
-#include "BASim/Math"
 #include "SolverUtils.hh"
 
 namespace BASim {

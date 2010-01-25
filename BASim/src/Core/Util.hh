@@ -8,7 +8,7 @@
 #ifndef UTIL_HH
 #define UTIL_HH
 
-#include "BASim/src/Core/Definitions.hh"
+#include "Definitions.hh"
 
 namespace BASim {
 

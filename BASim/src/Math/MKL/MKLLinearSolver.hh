@@ -8,7 +8,9 @@
 #ifndef MKLLINEARSOLVER_HH
 #define MKLLINEARSOLVER_HH
 
-#include "BASim/src/Math/LinearSolverBase.hh"
+#include "../LinearSolverBase.hh"
+#include "../BandMatrix.hh"
+#include "../../Core/Util.hh"
 
 namespace BASim {
 

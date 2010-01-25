@@ -8,8 +8,8 @@
 #ifndef ELASTICROD_HH
 #define ELASTICROD_HH
 
-#include "BASim/src/Physics/PhysObject.hh"
-#include <BASim/src/Collisions/CollisionObject.hh>
+#include "../PhysObject.hh"
+#include "../../Collisions/CollisionObject.hh"
 
 namespace BASim {
 

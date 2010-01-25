@@ -8,6 +8,8 @@
 #ifndef VISCOUSROD_HH
 #define VISCOUSROD_HH
 
+#include "ElasticRod.hh"
+
 namespace BASim {
 
 /** Class for simulating viscous rods. */

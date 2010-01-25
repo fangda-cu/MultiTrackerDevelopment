@@ -8,6 +8,8 @@
 #ifndef RODBENDINGFORCE_HH
 #define RODBENDINGFORCE_HH
 
+#include "RodAnisoBending.hh"
+
 namespace BASim {
 
 /** This class implements the anisotropic bending force for an elastic

@@ -5,7 +5,8 @@
  * \date 09/01/2009
  */
 
-#include "BASim/Physics"
+#include "RodForce.hh"
+#include "../../Math/Math.hh"
 
 namespace BASim {
 

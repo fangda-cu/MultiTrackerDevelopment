@@ -5,10 +5,9 @@
  * \date 11/29/2009
  */
 
-#include "BASim/Core"
-#include "BASim/src/Math/BandMatrix.hh"
 #include "MKLLinearSolver.hh"
 #include <mkl_lapack.h>
+#include "../BandMatrix.hh"
 
 namespace BASim {
 

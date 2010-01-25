@@ -5,9 +5,9 @@
  * \date 09/11/2009
  */
 
-#include "Core/EigenIncludes.hh"
-#include "Core/STLIncludes.hh"
-#include "Core/Definitions.hh"
+#include "../Core/EigenIncludes.hh"
+#include "../Core/STLIncludes.hh"
+#include "../Core/Definitions.hh"
 #include "OpenGLHeaders.hh"
 #include "RenderBase.hh"
 

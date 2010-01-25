@@ -8,6 +8,8 @@
 #ifndef RENDERUTILS_HH
 #define RENDERUTILS_HH
 
+#include "../Math/Math.hh"
+
 namespace BASim {
 
 inline void drawArrow(const Vec3d& start, Vec3d dir, Scalar scale = 1.0)

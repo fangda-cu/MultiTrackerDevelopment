@@ -4,9 +4,9 @@
  * \author miklos@cs.columbia.edu
  * \date 09/06/2009
  */
-
-#include "BASim/Physics"
-
+#include "RodBendingForce.hh"
+#include "../../Math/Math.hh"
+ 
 #ifdef TEST_ROD_BENDING
 #include "BASim/src/Physics/ElasticRods/Tests/RodBendingTest.hh"
 #endif // TEST_ROD_BENDING

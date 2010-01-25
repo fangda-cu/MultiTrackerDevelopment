@@ -5,7 +5,11 @@
  * \date 08/29/2009
  */
 
-#include "BASim/Physics"
+#include "AnisotropicRod.hh"
+#include "RodStretchingForce.hh"
+#include "RodTwistingForce.hh"
+#include "RodBendingForce.hh"
+#include "RodAnisoForce.hh"
 
 namespace BASim {
 

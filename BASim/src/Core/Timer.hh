@@ -1,7 +1,7 @@
 #ifndef TIMER_HH
 #define TIMER_HH
 
-#include "BASim/src/Core/Definitions.hh"
+#include "Definitions.hh"
 
 namespace BASim {
 

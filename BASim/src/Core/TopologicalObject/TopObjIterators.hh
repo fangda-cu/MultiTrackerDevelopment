@@ -8,7 +8,7 @@
 #ifndef TOPOBJITERATORS_HH
 #define TOPOBJITERATORS_HH
 
-#include "BASim/src/Core/Definitions.hh"
+#include "../Definitions.hh"
 
 namespace BASim {
 

@@ -8,9 +8,9 @@
 #ifndef PROPERTY_HH
 #define PROPERTY_HH
 
-#include "BASim/src/Core/Definitions.hh"
-#include "BASim/src/Core/Handle.hh"
-#include "BASim/src/Core/Util.hh"
+#include "Definitions.hh"
+#include "Handle.hh"
+#include "Util.hh"
 
 namespace BASim {
 

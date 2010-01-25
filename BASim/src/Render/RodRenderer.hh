@@ -8,6 +8,13 @@
 #ifndef RODRENDERER_HH
 #define RODRENDERER_HH
 
+#include "../Core/EigenIncludes.hh"
+#include "RenderBase.hh"
+#include "../Physics/ElasticRods/ElasticRod.hh"
+#include "../Physics/ElasticRods/RodTube.hh"
+#include "Color.hh"
+#include "OpenGLDecl.hh"
+
 namespace BASim {
 
 /** Class that implements OpenGL rendering for rods. */

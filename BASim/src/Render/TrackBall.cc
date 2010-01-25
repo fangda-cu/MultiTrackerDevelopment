@@ -2,9 +2,9 @@
  * \file TrackBall.cc
  */
 
-#include "Core/EigenIncludes.hh"
-#include "Core/STLIncludes.hh"
-#include "Core/Definitions.hh"
+#include "../Core/EigenIncludes.hh"
+#include "../Core/STLIncludes.hh"
+#include "../Core/Definitions.hh"
 #include "OpenGLHeaders.hh"
 #include "Camera.hh"
 #include "TrackBall.hh"

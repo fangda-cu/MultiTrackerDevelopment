@@ -8,7 +8,7 @@
 #ifndef OBJECTCONTROLLERBASE_HH
 #define OBJECTCONTROLLERBASE_HH
 
-#include "BASim/src/Core/ObjectBase.hh"
+#include "ObjectBase.hh"
 
 namespace BASim {
 

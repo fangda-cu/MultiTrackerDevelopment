@@ -8,6 +8,9 @@
 #ifndef RENDERBASE_HH
 #define RENDERBASE_HH
 
+#include <vector>
+#include "OpenGLHeaders.hh"
+
 namespace BASim {
 
 /** Interface for all renderers. */

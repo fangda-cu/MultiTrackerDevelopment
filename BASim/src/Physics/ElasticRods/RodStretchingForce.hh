@@ -8,6 +8,9 @@
 #ifndef RODSTRETCHINGFORCE_HH
 #define RODSTRETCHINGFORCE_HH
 
+#include "RodForce.hh"
+#include "EdgeStencil.hh"
+
 namespace BASim {
 
 class SpringDofStruct

@@ -8,6 +8,8 @@
 #ifndef COLOR_HH
 #define COLOR_HH
 
+#include "Camera.hh"
+
 namespace BASim {
 
 /**

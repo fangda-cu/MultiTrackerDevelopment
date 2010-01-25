@@ -1,4 +1,4 @@
-#include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
+#include "ElasticRod.hh"
 #include "RodBoundaryCondition.hh"
 
 namespace BASim {

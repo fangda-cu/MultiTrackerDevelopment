@@ -8,6 +8,8 @@
 #ifndef VERTEXSTENCIL_HH
 #define VERTEXSTENCIL_HH
 
+#include "Stencil.hh"
+
 namespace BASim {
 
 class VertexStencil;

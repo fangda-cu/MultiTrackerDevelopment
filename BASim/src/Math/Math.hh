@@ -8,6 +8,8 @@
 #ifndef MATH_HH
 #define MATH_HH
 
+#include "../Core/Util.hh"
+
 namespace BASim {
 
 /** Returns the square of the input value. */

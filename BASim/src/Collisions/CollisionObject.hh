@@ -8,7 +8,8 @@
 #ifndef COLLISIONOBJECT_HH
 #define COLLISIONOBJECT_HH
 
-#include <BASim/Math>
+//#include <BASim/Math>
+#include "../Core/Definitions.hh"
 #include "BridsonArray.hh"
 //#include "BridsonVec.hh"
 

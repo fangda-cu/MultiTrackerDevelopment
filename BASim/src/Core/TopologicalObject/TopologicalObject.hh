@@ -8,10 +8,10 @@
 #ifndef TOPOLOGICALOBJECT_HH
 #define TOPOLOGICALOBJECT_HH
 
-#include "BASim/src/Core/ObjectBase.hh"
-#include "BASim/src/Core/TopologicalObject/TopObjHandles.hh"
-#include "BASim/src/Core/TopologicalObject/TopObjIterators.hh"
-#include "BASim/src/Core/TopologicalObject/Topology.hh"
+#include "../ObjectBase.hh"
+#include "TopObjHandles.hh"
+#include "TopObjIterators.hh"
+#include "Topology.hh"
 
 namespace BASim {
 

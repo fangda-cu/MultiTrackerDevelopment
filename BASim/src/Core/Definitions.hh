@@ -8,8 +8,8 @@
 #ifndef DEFINITIONS_HH
 #define DEFINITIONS_HH
 
-#include "BASim/src/Core/EigenIncludes.hh"
-#include "BASim/src/Core/STLIncludes.hh"
+#include "EigenIncludes.hh"
+#include "STLIncludes.hh"
 
 namespace BASim {
 

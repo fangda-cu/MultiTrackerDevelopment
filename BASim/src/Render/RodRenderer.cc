@@ -5,8 +5,9 @@
  * \date 08/30/2009
  */
 
-#include "BASim/Render"
-
+#include "RodRenderer.hh"
+#include "RenderUtils.hh"
+ 
 namespace BASim {
 
 RodRenderer::RodRenderer(ElasticRod& rod)

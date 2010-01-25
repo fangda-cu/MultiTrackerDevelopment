@@ -8,6 +8,9 @@
 #ifndef ANISOTROPICROD_HH
 #define ANISOTROPICROD_HH
 
+
+#include "ElasticRod.hh"
+
 namespace BASim {
 
 /** Class for simulating anisotropic rods. */

@@ -4,9 +4,9 @@
 #ifndef RODRodPenaltyForce_HH
 #define RODRodPenaltyForce_HH
 
-#include <BASim/BASim>
 #include "ElasticRod.hh"
 #include "RodExternalForce.hh"
+#include "../../Collisions/CollisionMeshData.hh"
 
 //#include <ext/hash_map>
 #include <map>

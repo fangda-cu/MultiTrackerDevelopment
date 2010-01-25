@@ -1,7 +1,11 @@
 #ifndef RODDATA_HH_
 #define RODDATA_HH_
 
-#include <BASim/BASim>
+#include <weta/Wfigaro/Physics/ElasticRods/ElasticRod.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/AnisotropicRod.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/RodCollisionTimeStepper.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/RodUtils.hh>
+#include <weta/Wfigaro/Render/RodRenderer.hh>
 #include "SplineAttrEval.hh"
 
 using namespace BASim;

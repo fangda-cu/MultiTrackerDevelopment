@@ -8,6 +8,8 @@
 #ifndef EDGESTENCIL_HH
 #define EDGESTENCIL_HH
 
+#include "Stencil.hh"
+
 namespace BASim {
 
 class EdgeStencil;

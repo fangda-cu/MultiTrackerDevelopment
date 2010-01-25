@@ -8,6 +8,8 @@
 #ifndef RODANISOFORCE_HH
 #define RODANISOFORCE_HH
 
+#include "RodAnisoBending.hh"
+
 namespace BASim {
 
 /** Class that computes forces for the rod assuming the reference

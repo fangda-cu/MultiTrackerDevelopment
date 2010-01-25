@@ -10,14 +10,14 @@
 
 #include <tr1/unordered_map>
 
-#include <BASim/src/Collisions/CollisionMeshData.hh>
-//#include "RodTimeStepper.hh"
+#include "../../Collisions/CollisionMeshData.hh"
+#include "../../Core/ObjectControllerBase.hh"
+#include "RodTimeStepper.hh"
 
 namespace BASim {
 
 class RodPenaltyForce;
 class CollisionMeshData;
-class RodTimeStepper;
 
 typedef std::tr1::unordered_map<size_t, CollisionMeshData *> CollisionMeshDataHashMap;
 typedef std::tr1::unordered_map<size_t, CollisionMeshData *>::iterator CollisionMeshDataHashMapIterator;

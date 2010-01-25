@@ -5,7 +5,7 @@
 #define COLLISIONMESHDATA_H
 
 #include "UniformGrid.hh"
-
+#include "../Math/Math.hh"
 #include <string>
 #include <tr1/unordered_map>
 

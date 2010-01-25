@@ -8,7 +8,7 @@
 #ifndef RODBOUNDARYCONDITION_HH
 #define RODBOUNDARYCONDITION_HH
 
-#include "BASim/src/Core/TopologicalObject/TopObjHandles.hh"
+#include "../../Core/TopologicalObject/TopObjHandles.hh"
 
 namespace BASim {
 

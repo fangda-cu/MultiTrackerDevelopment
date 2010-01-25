@@ -5,7 +5,8 @@
  * \date 09/01/2009
  */
 
-#include "BASim/Physics"
+#include "RodStretchingForce.hh"
+#include "../../Math/Math.hh"
 
 #ifdef TEST_ROD_STRETCHING
 #include "BASim/src/Physics/ElasticRods/Tests/RodStretchingTest.hh"

@@ -57,24 +57,10 @@ endif (CMAKE_BUILD_TYPE MATCHES Debug)
 find_package (Eigen REQUIRED)
 include_directories (${EIGEN_INCLUDE_DIR})
 
-#find_package (FLENS REQUIRED)
-#include_directories (${FLENS_INCLUDE_DIR})
-
-find_package (PETSc REQUIRED)
-include_directories (${PETSC_INCLUDE_PATH})
-
 #if (USE_INTEL_COMPILER)
 find_package (MKL REQUIRED)
 include_directories (${MKL_INCLUDE_DIR})
 #endif (USE_INTEL_COMPILER)
-
-find_package (PNG)
-if (PNG_FOUND)
-  add_definitions (${PNG_DEFINITIONS})
-  include_directories (${PNG_INCLUDE_DIR})
-else (PNG_FOUND)
-  add_definitions (-DNO_LIBPNG)
-endif (PNG_FOUND)
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory (BASim)

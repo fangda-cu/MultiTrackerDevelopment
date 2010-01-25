@@ -8,7 +8,7 @@
 #ifndef LINEARSOLVERBASE_HH
 #define LINEARSOLVERBASE_HH
 
-#include "BASim/src/Math/MatrixBase.hh"
+#include "MatrixBase.hh"
 
 namespace BASim {
 

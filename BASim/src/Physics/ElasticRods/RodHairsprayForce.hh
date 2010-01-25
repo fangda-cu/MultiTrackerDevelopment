@@ -1,11 +1,13 @@
 #ifndef RODHAIRSPRAYFORCE_HH
 #define RODHAIRSPRAYFORCE_HH
 
-#include <BASim/BASim>
 #include "ElasticRod.hh"
 #include "RodExternalForce.hh"
+#include <vector>
 
 namespace BASim {
+
+using namespace std;
 
 class RodHairsprayForce : public RodExternalForce
 {

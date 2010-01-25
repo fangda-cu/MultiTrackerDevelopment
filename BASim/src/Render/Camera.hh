@@ -5,6 +5,8 @@
 #ifndef CAMERA_HH
 #define CAMERA_HH
 
+#include "../Core/Definitions.hh"
+
 namespace BASim {
 
 /** Class that holds camera parameters written by Adrian Secord, with

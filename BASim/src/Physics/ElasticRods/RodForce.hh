@@ -8,6 +8,8 @@
 #ifndef RODFORCE_HH
 #define RODFORCE_HH
 
+#include "ElasticRod.hh"
+
 namespace BASim {
 
 /** Base class for a force that acts on rods. */

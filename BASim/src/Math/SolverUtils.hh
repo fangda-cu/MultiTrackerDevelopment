@@ -8,8 +8,8 @@
 #ifndef SOLVERUTILS_HH
 #define SOLVERUTILS_HH
 
-#include "BASim/src/Math/BandMatrix.hh"
-#include "BASim/src/Math/ConjugateGradient.hh"
+#include "BandMatrix.hh"
+#include "ConjugateGradient.hh"
 
 #ifdef HAVE_PETSC
 #include "BASim/src/Math/Petsc/PetscMatrix.hh"

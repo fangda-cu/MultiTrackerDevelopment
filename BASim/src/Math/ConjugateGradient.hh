@@ -8,7 +8,8 @@
 #ifndef CONJUGATEGRADIENT_HH
 #define CONJUGATEGRADIENT_HH
 
-#include "BASim/src/Math/DiagonalPreconditioner.hh"
+#include "DiagonalPreconditioner.hh"
+#include "LinearSolverBase.hh"
 
 namespace BASim {
 

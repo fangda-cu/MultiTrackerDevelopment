@@ -8,6 +8,8 @@
 #ifndef RODTUBE_HH
 #define RODTUBE_HH
 
+#include "ElasticRod.hh"
+
 namespace BASim {
 
 /** Creates an extruded surface for a rod. */

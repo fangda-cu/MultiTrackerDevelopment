@@ -8,7 +8,7 @@
 #ifndef DIAGONALPRECONDITIONER_HH
 #define DIAGONALPRECONDITIONER_HH
 
-#include "BASim/src/Math/Preconditioner.hh"
+#include "Preconditioner.hh"
 
 namespace BASim {
 

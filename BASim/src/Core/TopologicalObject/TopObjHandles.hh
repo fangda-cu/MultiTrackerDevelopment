@@ -8,8 +8,8 @@
 #ifndef TOPOBJHANDLES_HH
 #define TOPOBJHANDLES_HH
 
-#include "BASim/src/Core/Handle.hh"
-#include "BASim/src/Core/Property.hh"
+#include "../Handle.hh"
+#include "../Property.hh"
 
 namespace BASim {
 
