@@ -56,7 +56,7 @@ MStatus initializePlugin( MObject obj )
     }
 
     MGlobal::executeCommand( "source WmBunsen.mel", false );
-    CHECK_MSTATUS( plugin.registerUI( "wmBunsenAddMainMenu", "wmBunsenRemoveMainMenu" ) );
+    CHECK_MSTATUS( plugin.registerUI( "wmFigaroAddMainMenu", "wmFigaroRemoveMainMenu" ) );
     return stat;
 
     
