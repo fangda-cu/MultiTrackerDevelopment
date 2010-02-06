@@ -25,7 +25,7 @@ using namespace BASim;
 /* static */ MObject WmBunsenRodNode::ia_hairSprayScaleFactor;
 /* static */ MObject WmBunsenRodNode::ia_massDamping;
 
-// Disk cacheing
+// Disk caching
 /* static */ MObject WmBunsenRodNode::ia_cachePath;
 /* static */ MObject WmBunsenRodNode::ia_cacheFrame;
 /* static */ MObject WmBunsenRodNode::ia_readFromCache;
@@ -225,7 +225,10 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
         MVectorArray vertices = verticesData.array( &stat );
     
         unsigned int numStrands = vertices.length() / m_cvsPerRod;
-            
+        // The user may have requested that we use less than the total number
+        // of Fozzie strands, so scale by that %
+        numStrands *= (m_percentageOfFozzieStrands/100.0);
+        
         size_t inputVertexIndex = 0;
         for ( unsigned int i = 0; i < numStrands; i++ ) 
         {
@@ -384,7 +387,7 @@ void WmBunsenRodNode::readRodDataFromCacheFile()
         
         for ( size_t v=0; v<numVertices; v++ )
             {
-                rod->setVertex( v, rodVertices[ r ][ v ] );
+                rod->setVertex( (int)v, rodVertices[ r ][ v ] );
                 
                 // FIXME: Why do i set the next position to be the unsimulated position,
                 // this seems wrong!
@@ -419,6 +422,10 @@ void WmBunsenRodNode::updateRodDataFromInputs()
         MVectorArray vertices = verticesData.array( &stat );
     
         size_t numStrands = vertices.length() / m_cvsPerRod;
+        
+        // The user may have requested that we use less than the total number
+        // of Fozzie strands, so scale by that %
+        numStrands *= (m_percentageOfFozzieStrands/100.0);
         
         if ( mx_rodData->size() != numStrands )
         {
@@ -885,7 +892,7 @@ size_t WmBunsenRodNode::numberOfRods()
         CHECK_MSTATUS( stat );
         MVectorArray vertices = verticesData.array( &stat );
     
-        return ( vertices.length() / m_cvsPerRod );
+        return ( vertices.length() / m_cvsPerRod ) * (m_percentageOfFozzieStrands/100.0);
     }
     else
     {
@@ -1098,7 +1105,7 @@ void* WmBunsenRodNode::creator()
 	addNumericAttribute( ia_density, "density", "dns", MFnNumericData::kDouble, 0.01, true);
 	stat = attributeAffects(ia_density, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_density->ca_syncAttrs" ); return stat; }
-    
+
     addNumericAttribute( ia_minorRadius, "minorRadius", "mir", MFnNumericData::kDouble, 0.1, true );
     stat = attributeAffects( ia_minorRadius, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_minorRadius->ca_syncAttrs" ); return stat; }
@@ -1106,27 +1113,27 @@ void* WmBunsenRodNode::creator()
     addNumericAttribute( ia_majorRadius, "majorRadius", "mar", MFnNumericData::kDouble, 0.1, true );
     stat = attributeAffects( ia_majorRadius, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_majorRadius->ca_syncAttrs" ); return stat; }
-    
+
     addNumericAttribute( ia_vertexSpacing, "vertexSpacing", "rvs", MFnNumericData::kDouble, 0.0, true );
     stat = attributeAffects( ia_vertexSpacing, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_majorRadius->ca_syncAttrs" ); return stat; }
- 
+
     addNumericAttribute( ia_cvsPerRod, "cvsPerRod", "cvr", MFnNumericData::kInt, -1, true );
     stat = attributeAffects( ia_cvsPerRod, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_cvsPerRod->ca_syncAttrs" ); return stat; }
-    
+
     addNumericAttribute( ia_cacheFrame, "cacheFrame", "caf", MFnNumericData::kBoolean, false, true );
     stat = attributeAffects( ia_cacheFrame, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_cacheFrame->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_cacheFrame, ca_simulationSync );
 	if ( !stat ) { stat.perror( "attributeAffects ia_cacheFrame->ca_syncAttrs" ); return stat; }
-        
+
     addNumericAttribute( ia_readFromCache, "readFromCache", "rfc", MFnNumericData::kBoolean, false, true );
     stat = attributeAffects( ia_readFromCache, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_readFromCache->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_cacheFrame, ca_simulationSync );
     if ( !stat ) { stat.perror( "attributeAffects ia_cacheFrame->ca_syncAttrs" ); return stat; }
-    
+
     addNumericAttribute( ia_hairSprayScaleFactor, "hairSprayScaleFactor", "hsf", MFnNumericData::kDouble, 1.0, true );
     stat = attributeAffects( ia_hairSprayScaleFactor, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_hairSprayScaleFactor->oa_rodsChanged" ); return stat; }
@@ -1139,7 +1146,6 @@ void* WmBunsenRodNode::creator()
     stat = attributeAffects( ia_percentageOfFozzieStrands, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_fozzieVertices->oa_rodsChanged" ); return stat; }
 
-    
     {
         MFnTypedAttribute tAttr;
         MFnStringData fnStringData;
