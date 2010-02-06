@@ -33,8 +33,8 @@ RodRenderer::RodRenderer(ElasticRod& rod)
 
 void RodRenderer::render()
 {
-  if (m_mode == SMOOTH) drawSmoothRod();
-  else if (m_mode == SIMPLE) drawSimpleRod();
+ /* if (m_mode == SMOOTH) drawSmoothRod();
+  else if (m_mode == SIMPLE)*/ drawSimpleRod();
 
   if (m_drawMaterial) drawMaterialFrame();
   if (m_drawReference) drawReferenceFrame();
