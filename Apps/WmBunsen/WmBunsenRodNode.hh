@@ -96,10 +96,17 @@ public:
                                         bool i_isInput );
     
 private:
-    void writeRodDataToCacheFile( MString i_cachePath );
-    void readRodDataFromCacheFile( MString i_cachePath );
+    void writeRodDataToCacheFile();
+    void readRodDataFromCacheFile();
     void updateHairsprayScales( MDataBlock& i_dataBlock );
+
+    bool readDataFromRodCacheFile( const MString i_cacheFilename, size_t& o_numRodsInFile,
+        vector<vector<Vec3d> >& o_rodVertices, vector<vector<Vec3d> >& o_unsimulatedRodVertices );
+    FILE* readNumberOfRodsFromFile( const MString i_cacheFilename, size_t& o_numRodsInFile,
+        bool closeFileAfterReading = true );
+    MString getCacheFilename( MDataBlock& i_dataBlock );
     
+
     double m_currentTime;
     double m_previousTime;
     double m_startTime;
@@ -124,6 +131,9 @@ private:
     
     // If we're overriding the number of cvs per rod then this will be not -1
     int m_cvsPerRod;
+    
+    MString m_cachePath;
+    MString m_cacheFilename;
 };
 
 #endif

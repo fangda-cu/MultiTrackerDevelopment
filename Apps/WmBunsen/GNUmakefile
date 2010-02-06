@@ -45,6 +45,10 @@ endif
 
 PLG1_MAYA       := 1
 PLG1_INSD       := $(PLG_INSD)
+
+# Turn of IPO as it takes ages and may not do much at all.
+ABIOPTS_o   := $(filter-out -ipo-separate, $(ABIOPTS_o))
+
 PLG1_I          := \
 Beaker.hh \
 RodData.hh \

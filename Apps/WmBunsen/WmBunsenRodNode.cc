@@ -42,7 +42,8 @@ using namespace BASim;
 
 WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_rodData( NULL ), mx_world( NULL ),
                                      m_numberOfInputCurves( 0 ), m_cvsPerRod( -1 ), 
-                                     m_massDamping( 10 ), m_percentageOfFozzieStrands( 100 )
+                                     m_massDamping( 10 ), m_percentageOfFozzieStrands( 100 ),
+                                     m_cachePath( "" ), m_cacheFilename( "" )
 {
     m_rodOptions.YoungsModulus = 100000.0;
     m_rodOptions.ShearModulus = 375.0;
@@ -55,66 +56,132 @@ WmBunsenRodNode::~WmBunsenRodNode()
 {
 }
 
+FILE* WmBunsenRodNode::readNumberOfRodsFromFile( const MString i_cacheFilename, size_t& o_numRodsInFile,
+    bool closeFileAfterReading )
+{
+    FILE *fp = NULL;
+
+    if ( i_cacheFilename == "" )
+    {
+        MGlobal::displayError( "Empty cache path, can't read in rod data!" );
+        return NULL;
+    }
+    
+    fp = fopen( i_cacheFilename.asChar(), "r" );
+    if ( fp == NULL )
+    {
+        MGlobal::displayError( MString( "Problem opening file " + i_cacheFilename + " for reading." ) );
+        return NULL;
+    }
+    
+    fread( &o_numRodsInFile, sizeof( size_t ), 1, fp );
+    
+    if ( closeFileAfterReading )
+    {
+        fclose( fp );
+        fp = NULL;
+    }
+    
+    return fp;
+}
+
+bool WmBunsenRodNode::readDataFromRodCacheFile( const MString i_cacheFilename, size_t& o_numRodsInFile,
+    vector<vector<Vec3d> >& o_rodVertices, vector<vector<Vec3d> >& o_unsimulatedRodVertices )
+{
+    
+    FILE* fp = readNumberOfRodsFromFile( i_cacheFilename, o_numRodsInFile, false );
+    if ( fp == NULL )
+        return false;
+    
+    o_rodVertices.resize( o_numRodsInFile );
+    o_unsimulatedRodVertices.resize( o_numRodsInFile );
+
+    for ( size_t r=0; r<o_numRodsInFile; r++ )
+    {
+        size_t numVertices;
+        fread( &numVertices, sizeof( size_t ), 1, fp );
+        
+        o_rodVertices[ r ].resize( numVertices );
+        o_unsimulatedRodVertices[ r ].resize( numVertices );
+        
+        for ( size_t v=0; v<numVertices; v++ )
+        {
+            double pos[3];
+            
+            fread( &pos[0], sizeof( double ), 3, fp );
+            o_rodVertices[ r ][ v ] = Vec3d( pos[0], pos[1], pos[2] );
+            
+            fread( &pos[0], sizeof( double ), 3, fp );
+            o_unsimulatedRodVertices[ r ][ v ] = Vec3d( pos[0], pos[1], pos[2] );
+        }
+    }
+    
+    fclose( fp );
+    return true;
+}
+
+MString WmBunsenRodNode::getCacheFilename( MDataBlock& i_dataBlock )
+{
+    MStatus stat;
+    
+    m_cachePath = i_dataBlock.inputValue( ia_cachePath, &stat ).asString();
+    CHECK_MSTATUS( stat );
+    
+    if ( m_cachePath == "" )
+        return "";
+    
+    m_currentTime = i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
+    CHECK_MSTATUS( stat );
+    
+    m_cacheFilename = ( m_cachePath + "." + m_currentTime + ".bun" );
+    
+    return m_cacheFilename; 
+}
+
+/**
+    This function initialises the RodData vector to the correct size and the initial
+    rod data. It is called when we are about to recreate all the rods so time has just been
+    set back to 'startTime'.
+*/
 void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
 {
     mx_rodData = i_rodData;
     MStatus stat;
  
-    // We may get called from not inside a compute by the WmBunsenNode initialising all its
-    // data. So build our own datablock to use.
+    // We may get called from _outside_ a compute by the WmBunsenNode initialising all its
+    // data and it may be inside a compute and ours may not have been called
+    // to get all this data yet. So build our own datablock to use... Some may say this
+    // should be done with maya DG connections...
+    
     MDataBlock dataBlock = MPxNode::forceCache();
 
     bool fozzieNodeConnected;
     MPlug fozziePlug( thisMObject(), ia_fozzieVertices );
     bool readFromCache = dataBlock.inputValue( ia_readFromCache, &stat ).asBool();
-     
+
+    // Reading from the cache takes precidence over anything else connected in     
     if ( readFromCache ) 
     {
-      //FIXME: This is copied from the readRodsFromCache() function below. It's late Sunday night
-      // and this has to work before tomorrow so I'm doing a cut and paste
-      
-      
-        // Reading from the cache takes precidence over anything else connected in
-        MString cachePath = dataBlock.inputValue( ia_cachePath, &stat ).asString();
-        CHECK_MSTATUS( stat );
+        MString cacheFilename = getCacheFilename( dataBlock );
         
-        long magicNumber = 2051978;
-    
         if ( mx_rodData == NULL )
             return;     // No rod data, nowhere to store rod data
         
-        if ( cachePath == "" )
+        size_t numRodsInFile;
+        vector<vector<Vec3d> > rodVertices;
+        vector<vector<Vec3d> > unsimulatedRodVertices;
+        
+        if ( !readDataFromRodCacheFile( cacheFilename, numRodsInFile, rodVertices, unsimulatedRodVertices ) )
+            return;
+
+        if ( numRodsInFile != mx_rodData->size() )
         {
-            MGlobal::displayError( "Empty cache path, can't read in rod data!" );
+            MGlobal::displayError( "Wrong number of rods in file, have not implemented changing it yet" );
+            MGlobal::displayError( MString( "Expected " ) +  (double)mx_rodData->size() + ", got " + (double)numRodsInFile );
             return;
         }
         
-        MString fileName = cachePath + "." + m_currentTime + ".bun";
-        
-        cerr << "Initialising rods from file: '" << fileName << "'\n";
-        
-        FILE *fp;
-        fp = fopen( fileName.asChar(), "r" );
-        if ( fp == NULL )
-        {
-            MGlobal::displayError( MString( "Problem opening file " + fileName + " for reading." ) );
-            return;
-        }
-        
-        // FIXME: create a proper cache class which I can call just to read or write.
-        size_t numRods;
-        fread( &numRods, sizeof( size_t ), 1, fp );
-        
-        if ( numRods != mx_rodData->size() )
-        {
-            cerr << "Wrong number of rods in file, have not implemented changing it yet\n";
-            cerr << "Expected " << mx_rodData->size() << ", got " << numRods << endl;
-            return;
-        }
-        
-        cerr << "Reading " << numRods << " from file " << endl;
-        
-        for ( size_t i=0; i<numRods; i++ )
+        for ( size_t i=0; i<numRodsInFile; i++ )
         {
             (*mx_rodData)[i]->rodOptions = m_rodOptions;
             
@@ -124,11 +191,8 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             else if (frame == "space")
                 (*mx_rodData)[ i ]->rodOptions.refFrame = BASim::ElasticRod::SpaceParallel;
 
-            
-            size_t numVertices;
-            fread( &numVertices, sizeof( size_t ), 1, fp );
-            
-            (*mx_rodData)[i]->rodOptions.numVertices = numVertices;   
+            size_t numVertices = rodVertices[ i ].size();
+            (*mx_rodData)[i]->rodOptions.numVertices = (int)numVertices;
             
             // Make sure we have enough space to store the date for each CV. This should only
             // ever cause a resize when we are called by initialiseRodData().
@@ -137,26 +201,16 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             (*mx_rodData)[ i ]->prevVertexPositions.resize( numVertices );
             (*mx_rodData)[ i ]->currVertexPositions.resize( numVertices );
             (*mx_rodData)[ i ]->nextVertexPositions.resize( numVertices );
-                        
+
             for ( size_t v=0; v<numVertices; v++ )
             {
-                double pos[3];
+                (*mx_rodData)[ i ]->undeformedVertexPositions[ v ]  = rodVertices[ i ][ v ];
                 
-                fread( &pos[0], sizeof( double ), 3, fp );
-                
-                (*mx_rodData)[ i ]->undeformedVertexPositions[ v ]  = Vec3d( pos[0], pos[1], pos[2] );
-                
-                fread( &pos[0], sizeof( double ), 3, fp );
-                Vec3d vertexU( pos[0], pos[1], pos[2] );
-                (*mx_rodData)[ i ]->nextVertexPositions[ v ] = vertexU;
+                // FIXME: Why do i set the next position to be the unsimulated position,
+                // this seems wrong!
+                (*mx_rodData)[ i ]->nextVertexPositions[ v ] = unsimulatedRodVertices[ i ][ v ];    
             }
         }
-        
-     //    Barbershop comb cache is here, this is what you need to be able to load
-     //   /local1/cache/barberShop/combing
-        
-        fclose ( fp );
-        
     }
     else if ( fozziePlug.isConnected() )
     {
@@ -196,7 +250,7 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
 
             for ( int c=0; c<m_cvsPerRod; c++ ) 
             {
-                MVector cv = vertices[ inputVertexIndex ];
+                MVector cv = vertices[ (int)inputVertexIndex ];
                 (*mx_rodData)[ i ]->undeformedVertexPositions[ c ]  = Vec3d( cv.x, cv.y, cv.z );
                 inputVertexIndex++;
             }
@@ -289,6 +343,57 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
     updateHairsprayScales( dataBlock );
 }
 
+void WmBunsenRodNode::readRodDataFromCacheFile()
+{
+    if ( mx_rodData == NULL )
+        return;     // No rod data, nowhere to store rod data 
+    
+    size_t numRodsInFile;
+    vector<vector<Vec3d> > rodVertices;
+    vector<vector<Vec3d> > unsimulatedRodVertices;
+    
+    if ( !readDataFromRodCacheFile( m_cacheFilename, numRodsInFile, rodVertices, 
+                                    unsimulatedRodVertices ) )
+        return;
+    
+    if ( numRodsInFile != mx_rodData->size() )
+    {
+        MGlobal::displayError( "Rewind simulation to reset before cache file can be read" );
+        return;
+    }
+    
+    for ( size_t r=0; r<numRodsInFile; r++ )
+    {
+        BASim::ElasticRod* rod = (*mx_rodData)[ r ]->rod;
+        if ( rod == NULL )
+        {
+            MGlobal::displayError( "Rewind simulation to reset before cache file can be read" );
+            continue;
+        }
+        
+        size_t numVertices = rodVertices[ r ].size(); 
+                
+        if ( (int)numVertices != rod->nv() )
+        {
+            // FIXME: We really should be able to do this. The users should be able to just stick any cache file
+            // on the attribute and we should allocate rodData for the correct number.
+            // Maybe we need a cache node pluggin in to this node?
+            MGlobal::displayError( "Can't read in cached rod data as number of vertices do not match rods in scene\n" );
+            continue;
+        }
+        
+        for ( size_t v=0; v<numVertices; v++ )
+            {
+                rod->setVertex( v, rodVertices[ r ][ v ] );
+                
+                // FIXME: Why do i set the next position to be the unsimulated position,
+                // this seems wrong!
+                (*mx_rodData)[ r ]->nextVertexPositions[ v ] = unsimulatedRodVertices[ r ][ v ];    
+            }
+    }
+}
+
+
 void WmBunsenRodNode::updateRodDataFromInputs()
 {    
     if ( mx_rodData == NULL )
@@ -334,7 +439,7 @@ void WmBunsenRodNode::updateRodDataFromInputs()
                 
                 for ( int c = 0; c < m_cvsPerRod ; ++c ) 
                 {
-                    MVector cv = vertices[ inputVertexIndex ];
+                    MVector cv = vertices[ (int)inputVertexIndex ];
             
                     Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
                     (*mx_rodData)[ i ]->prevVertexPositions[ c ] = (*mx_rodData)[ i ]->nextVertexPositions[ c ];
@@ -513,8 +618,8 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_massDamping = i_dataBlock.inputValue( ia_massDamping, &stat ).asDouble();
         CHECK_MSTATUS( stat );
         
-        MString cachePath = i_dataBlock.inputValue( ia_cachePath, &stat ).asString();
-        CHECK_MSTATUS( stat );        
+        // This will get and store the cache filename for the current frame
+        getCacheFilename( i_dataBlock );
         
         //m_vertexSpacing = i_dataBlock.inputValue( ia_vertexSpacing, &stat ).asDouble();
         //CHECK_MSTATUS( stat );
@@ -536,7 +641,7 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                     (*mx_rodData)[r]->stepper->setEnabled( false );
                 }
                 
-                readRodDataFromCacheFile( cachePath );
+                readRodDataFromCacheFile();
             }
         }
         else if ( mx_rodData != NULL )
@@ -582,7 +687,7 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         if ( cacheFrame )
         {
             if ( !readFromCache )
-                writeRodDataToCacheFile( cachePath );
+                writeRodDataToCacheFile();
             else
                 MGlobal::displayWarning( "Ignoring request to cache frame as reading from cache!\n" );
         }
@@ -728,14 +833,14 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         {
             MIntArray verticesPerRodArray = verticesPerRodArrayData.array( &stat );
             size_t numRods = mx_rodData->size();
-            verticesPerRodArray.setLength( numRods );
+            verticesPerRodArray.setLength( (unsigned int)numRods );
             unsigned int idx = 0;
             
             cerr << "TO FOZZIE: numRods = " << numRods << endl;
             for ( size_t r = 0; r < numRods; r++ )
             {
                 unsigned int verticesInRod = (*mx_rodData)[ r ]->rod->nv();
-                verticesPerRodArray[ r ] = verticesInRod;
+                verticesPerRodArray[ (int)r ] = verticesInRod;
             }
         }
         
@@ -764,32 +869,10 @@ size_t WmBunsenRodNode::numberOfRods()
   
     if ( readFromCache )
     {
-        MString cachePath = dataBlock.inputValue( ia_cachePath, &stat ).asString();
-        CHECK_MSTATUS( stat );
+        MString fileName = getCacheFilename( dataBlock );
         
-        long magicNumber = 2051978;
-    
-        if ( cachePath == "" )
-        {
-            MGlobal::displayError( "Empty cache path, can't read in rod data!" );
-            return 0;
-        }
-        
-        MString fileName = cachePath + "." + m_currentTime + ".bun";
-        
-        cerr << "Finding number of rods in file: '" << fileName << "'\n";
-        
-        FILE *fp;
-        fp = fopen( fileName.asChar(), "r" );
-        if ( fp == NULL )
-        {
-            MGlobal::displayError( MString( "Problem opening file " + fileName + " for reading." ) );
-            return 0;
-        }
-        
-        // FIXME: create a proper cache class which I can call just to read or write.
-        size_t numRods;
-        fread( &numRods, sizeof( size_t ), 1, fp );
+        size_t numRods = 0;
+        readNumberOfRodsFromFile( fileName, numRods );
         
         return numRods;
         
@@ -810,28 +893,24 @@ size_t WmBunsenRodNode::numberOfRods()
     }
 }
 
-void WmBunsenRodNode::writeRodDataToCacheFile( MString i_cachePath )
+void WmBunsenRodNode::writeRodDataToCacheFile()
 {
-    long magicNumber = 2051978;
-    
     if ( mx_rodData == NULL )
         return;     // No rod data then nothing to put in the file
     
-    if ( i_cachePath == "" )
+    if ( m_cacheFilename == "" )
     {
         MGlobal::displayError( "Empty cache path, not writing anything to disk." );
         return;
     }
     
-    MString fileName = i_cachePath + "." + m_currentTime + ".bun";
-    
-    cerr << "Writing sim data to disk in file: '" << fileName << "'\n";
+    cerr << "Writing sim data to disk in file: '" << m_cacheFilename << "'\n";
     
     FILE *fp;
-    fp = fopen( fileName.asChar(), "w" );
+    fp = fopen( m_cacheFilename.asChar(), "w" );
     if ( fp == NULL )
     {
-        MGlobal::displayError( MString( "Problem opening file " + fileName + " for writing." ) );
+        MGlobal::displayError( MString( "Problem opening file " + m_cacheFilename + " for writing." ) );
         return;
     }
     
@@ -861,7 +940,7 @@ void WmBunsenRodNode::writeRodDataToCacheFile( MString i_cachePath )
             
             // Wonder if its safe to write Vec3ds. Need to check what's in them.
             // Really should package all this and write it as one.
-            Vec3d vertex = rod->getVertex( v );
+            Vec3d vertex = rod->getVertex( (unsigned int)v );
             pos[ 0 ] = vertex.x();
             pos[ 1 ] = vertex.y();
             pos[ 2 ] = vertex.z();
@@ -885,82 +964,6 @@ void WmBunsenRodNode::writeRodDataToCacheFile( MString i_cachePath )
     fclose ( fp );
 }
 
-void WmBunsenRodNode::readRodDataFromCacheFile( MString i_cachePath )
-{
-    long magicNumber = 2051978;
-    
-    if ( mx_rodData == NULL )
-        return;     // No rod data, nowhere to store rod data
-    
-    if ( i_cachePath == "" )
-    {
-        MGlobal::displayError( "Empty cache path, can't read in rod data!" );
-        return;
-    }
-    
-    MString fileName = i_cachePath + "." + m_currentTime + ".bun";
-    
-    cerr << "Reading sim data from disk in file: '" << fileName << "'\n";
-    
-    FILE *fp;
-    fp = fopen( fileName.asChar(), "r" );
-    if ( fp == NULL )
-    {
-        MGlobal::displayError( MString( "Problem opening file " + fileName + " for reading." ) );
-        return;
-    }
-    
-    // FIXME: create a proper cache class which I can call just to read or write.
-    size_t numRods;
-    fread( &numRods, sizeof( size_t ), 1, fp );
-    
-    if ( numRods != mx_rodData->size() )
-    {
-        cerr << "Wrong number of rods in file, have not implemented changing it yet\n";
-        return;
-    }
-    
-    for ( size_t r=0; r<numRods; r++ )
-    {
-        BASim::ElasticRod* rod = (*mx_rodData)[ r ]->rod;
-        if ( rod == NULL )
-        {
-            cerr << "WTF, rod is NULL \n";
-            continue;
-        }
-        
-        size_t numVertices;
-        fread( &numVertices, sizeof( size_t ), 1, fp );
-        
-        if ( (int)numVertices != rod->nv() )
-        {
-            // FIXME: We really should be able to do this. The users should be able to just stick any cache file
-            // on the attribute and we should allocate rodData for the correct number.
-            // Maybe we need a cache node pluggin in to this node?
-            MGlobal::displayError( "Can't read in cached rod data as number of vertices do not match rods in scene\n" );
-            continue;
-        }
-        
-     //   cerr << " (*mx_rodData)[ r ]->nextVertexPositions.size() = " <<  (*mx_rodData)[ r ]->nextVertexPositions.size() << endl;
-        for ( size_t v=0; v<numVertices; v++ )
-        {
-            double pos[3];
-            
-            // Wonder if its safe to write Vec3ds. Need to check what's in them.
-            // Really should package all this and write it as one.
-            fread( &pos[0], sizeof( double ), 3, fp );
-            
-            Vec3d vertex( pos[0], pos[1], pos[2] );
-            rod->setVertex( v, vertex );
-            
-            fread( &pos[0], sizeof( double ), 3, fp );
-            Vec3d vertexU( pos[0], pos[1], pos[2] );
-            (*mx_rodData)[ r ]->nextVertexPositions[ v ] = vertexU;
-        }
-    }
-    
-    fclose ( fp );
-}
 
 void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
                             M3dView::DisplayStyle i_style,
