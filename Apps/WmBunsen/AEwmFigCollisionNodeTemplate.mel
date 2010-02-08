@@ -8,9 +8,9 @@ global proc AEwmFigCollisionNodeTemplate(string $nodeName)
     editorTemplate -addControl "coefficientOfRestitution";
     editorTemplate -addControl "separationStrength";
     editorTemplate -addControl "thickness";
-    editorTemplate -addControl "fullCollisions";
+    editorTemplate -beginNoOptimize -addControl "fullCollisions";
     editorTemplate -addControl "drawCollisionData";
-    
+        
     editorTemplate -addExtraControls;
     editorTemplate -endScrollLayout;
 }

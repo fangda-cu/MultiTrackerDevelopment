@@ -161,7 +161,7 @@ void RodCollisionTimeStepper::respondObjectCollisions(CollisionMeshDataHashMap &
 
         // Full collisions means we check the rod segments against the grid as well
         //
-      //  if (cmData->getFullCollisions())
+        if (cmData->getFullCollisions())
         {
             for (int i=0; i<rod->ne(); ++i)
             {

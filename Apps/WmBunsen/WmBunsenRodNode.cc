@@ -1143,7 +1143,7 @@ void* WmBunsenRodNode::creator()
     stat = attributeAffects( ia_massDamping, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_massDamping->oa_rodsChanged" ); return stat; }
 
-    addNumericAttribute( ia_percentageOfFozzieStrands, "percentageOfFozzieStrands", "pfs", MFnNumericData::kInt, 100, true );
+    addNumericAttribute( ia_percentageOfFozzieStrands, "percentageOfFozzieStrands", "pfs", MFnNumericData::kInt, 5, true );
     stat = attributeAffects( ia_percentageOfFozzieStrands, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_fozzieVertices->oa_rodsChanged" ); return stat; }
 
