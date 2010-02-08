@@ -163,6 +163,7 @@ void RodCollisionTimeStepper::respondObjectCollisions(CollisionMeshDataHashMap &
         //
         if (cmData->getFullCollisions())
         {
+            cerr << "Doing full collisions!\n";
             for (int i=0; i<rod->ne(); ++i)
             {
                 if (!rod->vertFixed(i) && !rod->vertFixed((i+1)%rod->nv()))
@@ -194,6 +195,8 @@ void RodCollisionTimeStepper::respondObjectCollisions(CollisionMeshDataHashMap &
                 }
             }
         }
+        else
+            cerr << "NOT doing full collisions\n";
 
         Collisions colls;
         for (CandidateCollisionSetIterator ccsItr=candCollisions.begin();

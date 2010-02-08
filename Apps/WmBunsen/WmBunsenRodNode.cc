@@ -46,8 +46,8 @@ WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_rodData( NULL ),
                                      m_massDamping( 10 ), m_percentageOfFozzieStrands( 100 ),
                                      m_cachePath( "" ), m_cacheFilename( "" )
 {
-    m_rodOptions.YoungsModulus = 10.0;
-    m_rodOptions.ShearModulus = 4.0;
+    m_rodOptions.YoungsModulus = 10000.0;
+    m_rodOptions.ShearModulus = 400.0;
     m_rodOptions.density = 0.01;
     m_rodOptions.radiusA = 0.1;
     m_rodOptions.radiusB = 0.1;
