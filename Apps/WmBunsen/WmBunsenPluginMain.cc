@@ -24,7 +24,7 @@ MStatus initializePlugin( MObject obj )
                                 WmBunsenNode::kLocatorNode );
     if ( !stat )
     {
-        stat.perror( "RegisterNode WmBunsenNode failed" );
+        stat.perror( "RegisterNode WmFigaroNode failed" );
         return stat;
     }
     
@@ -34,7 +34,7 @@ MStatus initializePlugin( MObject obj )
                                 WmBunsenRodNode::kLocatorNode );
     if ( !stat )
     {
-        stat.perror( "RegisterNode WmBunsenRodNode failed" );
+        stat.perror( "RegisterNode WmFigRodNode failed" );
         return stat;
     }
 
@@ -44,18 +44,18 @@ MStatus initializePlugin( MObject obj )
                                 WmBunsenCollisionMeshNode::kLocatorNode );
     if ( !stat )
     {
-        stat.perror( "RegisterNode WmBunsenCollisionMeshNode failed" );
+        stat.perror( "RegisterNode WmFigCollisionNode failed" );
         return stat;
     }
     
     stat = plugin.registerCommand( WmBunsenCmd::typeName, WmBunsenCmd::creator, 
                                    WmBunsenCmd::syntaxCreator );
     if ( !stat ) {
-        stat.perror( "registerCommand wmBunsen failed" );
+        stat.perror( "registerCommand wmFigaro failed" );
         return stat;     
     }
 
-    MGlobal::executeCommand( "source WmBunsen.mel", false );
+    MGlobal::executeCommand( "source WmFigaro.mel", false );
     CHECK_MSTATUS( plugin.registerUI( "wmFigaroAddMainMenu", "wmFigaroRemoveMainMenu" ) );
     return stat;
 
@@ -74,25 +74,25 @@ MStatus uninitializePlugin( MObject obj)
 	stat = plugin.deregisterNode( WmBunsenNode::typeID );
     if( !stat ) 
     {
-        stat.perror( "DeregisterNode WmBunsenNode failed" );
+        stat.perror( "DeregisterNode WmFigaroNode failed" );
     }
     
     stat = plugin.deregisterNode( WmBunsenRodNode::typeID );
     if( !stat ) 
     {
-        stat.perror( "DeregisterNode WmBunsenRodNode failed" );
+        stat.perror( "DeregisterNode WmFigRodNode failed" );
     }
     
     stat = plugin.deregisterNode( WmBunsenCollisionMeshNode::typeId );
     if( !stat ) 
     {
-        stat.perror( "DeregisterNode WmBunsenCollisionMeshNode failed" );
+        stat.perror( "DeregisterNode WmFigCollisionNode failed" );
     }
     
     // Deregister custom commands
     stat = plugin.deregisterCommand( WmBunsenCmd::typeName );
     if (!stat) {
-        stat.perror( "deregister command wmBunsen failed" );
+        stat.perror( "deregister command wmFigaro failed" );
     }
 
     MGlobal::stopErrorLogging();

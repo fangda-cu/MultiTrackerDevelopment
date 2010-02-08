@@ -54,6 +54,7 @@ public:
     static MObject ia_time;
     static MObject ia_startTime;
     static MObject ia_nurbsCurves;
+    static MObject oa_nurbsCurves;
     static MObject ia_fozzieVertices;
     static MObject ia_percentageOfFozzieStrands;
     

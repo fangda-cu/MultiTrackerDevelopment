@@ -2,7 +2,7 @@
 #include "WmBunsenCollisionMeshNode.hh"
 
 MTypeId WmBunsenNode::typeID( 0x001135, 0x18 ); 
-MString WmBunsenNode::typeName( "wmBunsenNode" );
+MString WmBunsenNode::typeName( "wmFigaroNode" );
 MObject WmBunsenNode::ca_syncAttrs;
 MObject WmBunsenNode::ia_time;
 MObject WmBunsenNode::ia_fps;

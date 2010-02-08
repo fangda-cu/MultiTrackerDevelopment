@@ -3,7 +3,7 @@
 #include <sstream>
 
 MTypeId WmBunsenCollisionMeshNode::typeId( 0x001135, 0x1C );
-MString WmBunsenCollisionMeshNode::typeName( "wmBunsenCollisionMeshNode" );
+MString WmBunsenCollisionMeshNode::typeName( "wmFigCollisionNode" );
 MObject WmBunsenCollisionMeshNode::ia_time;
 MObject WmBunsenCollisionMeshNode::ia_startTime;
 MObject WmBunsenCollisionMeshNode::ia_inMesh;

@@ -4,12 +4,13 @@ using namespace BASim;
 
 // Required by Maya to identify node
 /* static */ MTypeId WmBunsenRodNode::typeID ( 0x001135, 0x19 ); 
-/* static */ MString WmBunsenRodNode::typeName( "wmBunsenRodNode" );
+/* static */ MString WmBunsenRodNode::typeName( "wmFigRodNode" );
 
 // 
 /* static */ MObject WmBunsenRodNode::ia_time;
 /* static */ MObject WmBunsenRodNode::ia_startTime;
 /* static */ MObject WmBunsenRodNode::ia_nurbsCurves;
+/* static */ MObject WmBunsenRodNode::oa_nurbsCurves;
 /* static */ MObject WmBunsenRodNode::ia_fozzieVertices;
 /* static */ MObject WmBunsenRodNode::ia_percentageOfFozzieStrands;
 
@@ -29,7 +30,7 @@ using namespace BASim;
 /* static */ MObject WmBunsenRodNode::ia_cachePath;
 /* static */ MObject WmBunsenRodNode::ia_cacheFrame;
 /* static */ MObject WmBunsenRodNode::ia_readFromCache;
-
+                                                                    
 // Output and cached attributes
 /* static */ MObject WmBunsenRodNode::ca_syncAttrs;
 /* static */ MObject WmBunsenRodNode::oa_rodsChanged;
@@ -1182,7 +1183,7 @@ void* WmBunsenRodNode::creator()
     }
     stat = attributeAffects( ia_nurbsCurves, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_nurbsCurves->oa_rodsChanged" ); return stat; }
-    
+ 
     {
         MFnTypedAttribute tAttr;  
         ia_fozzieVertices = tAttr.create( "fozzieVertices", "fov",
@@ -1243,6 +1244,7 @@ void* WmBunsenRodNode::creator()
     stat = attributeAffects( ia_time, oa_verticesInEachRod );
 	stat = attributeAffects( ia_time, oa_nonSimulatedVertices );
 	stat = attributeAffects( ia_time, oa_simulatedVertices );
+    
     
 	return MS::kSuccess;
 }
