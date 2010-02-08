@@ -336,7 +336,7 @@ MStatus WmBunsenCollisionMeshNode::initialize()
 
     {
 	    MFnNumericAttribute nAttr;
-        ia_separationStrength = nAttr.create("separationStrength", "ss", MFnNumericData::kDouble, 100.0, &stat);
+        ia_separationStrength = nAttr.create("separationStrength", "ss", MFnNumericData::kDouble, 40.0, &stat);
 	    if (!stat) {
             stat.perror( "create ia_separationStrength attribute" );
             return stat;

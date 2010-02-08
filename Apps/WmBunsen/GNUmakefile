@@ -1,5 +1,3 @@
-WITHKITS += Wmaya-2B1370
-
 USEMAYA         := 1
 
 BUILD := "$(shell perl -e '$$pwd = $$ENV{PWD}; $$time=localtime(); print "\\\"$$pwd $$time\\\"";')"
@@ -88,7 +86,7 @@ SCR2_MAYA       := 1
 SCR2_INSD       := $(SCR_INSD)
 
 
-SCR3            := WmBunsen.mel
+SCR3            := WmFigaro.mel
 SCR3_MAYA       := 1
 SCR3_INSD       := $(SCR_INSD)
 

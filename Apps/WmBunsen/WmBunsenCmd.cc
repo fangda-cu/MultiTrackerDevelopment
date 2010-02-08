@@ -591,7 +591,7 @@ void WmBunsenCmd::addCollisionMeshes()
     
     if ( m_selectedwmBunsenNode == MObject::kNullObj )
     {
-       MGlobal::displayError( "Please select a wmBunsen node to connect the mesh to." );
+       MGlobal::displayError( "Please select a wmFigaro node to connect the mesh to." );
        return;
     }
     
