@@ -51,7 +51,7 @@ PLG1_I          := \
 Beaker.hh \
 RodData.hh \
 SplineAttrEval.hh \
-WmBunsenCmd.hh \
+WmFigaroCmd.hh \
 WmBunsenCollisionMeshNode.hh \
 WmBunsenHelpers.hh \
 WmBunsenNode.hh \
@@ -61,7 +61,7 @@ PLG1_S          := \
 Beaker.cc \
 RodData.cc \
 SplineAttrEval.cc \
-WmBunsenCmd.cc \
+WmFigaroCmd.cc \
 WmBunsenCollisionMeshNode.cc \
 WmBunsenNode.cc \
 WmBunsenPluginMain.cc \

@@ -4,7 +4,7 @@
 #include "WmBunsenRodNode.hh"
 #include "WmBunsenNode.hh"
 #include "WmBunsenCollisionMeshNode.hh"
-#include "WmBunsenCmd.hh"
+#include "WmFigaroCmd.hh"
 
 MStatus initializePlugin( MObject obj )
 { 
@@ -48,8 +48,8 @@ MStatus initializePlugin( MObject obj )
         return stat;
     }
     
-    stat = plugin.registerCommand( WmBunsenCmd::typeName, WmBunsenCmd::creator, 
-                                   WmBunsenCmd::syntaxCreator );
+    stat = plugin.registerCommand( WmFigaroCmd::typeName, WmFigaroCmd::creator, 
+                                   WmFigaroCmd::syntaxCreator );
     if ( !stat ) {
         stat.perror( "registerCommand wmFigaro failed" );
         return stat;     
@@ -90,7 +90,7 @@ MStatus uninitializePlugin( MObject obj)
     }
     
     // Deregister custom commands
-    stat = plugin.deregisterCommand( WmBunsenCmd::typeName );
+    stat = plugin.deregisterCommand( WmFigaroCmd::typeName );
     if (!stat) {
         stat.perror( "deregister command wmFigaro failed" );
     }

@@ -46,8 +46,8 @@ WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_rodData( NULL ),
                                      m_massDamping( 10 ), m_percentageOfFozzieStrands( 100 ),
                                      m_cachePath( "" ), m_cacheFilename( "" )
 {
-    m_rodOptions.YoungsModulus = 100000.0;
-    m_rodOptions.ShearModulus = 375.0;
+    m_rodOptions.YoungsModulus = 10.0;
+    m_rodOptions.ShearModulus = 4.0;
     m_rodOptions.density = 0.01;
     m_rodOptions.radiusA = 0.1;
     m_rodOptions.radiusB = 0.1;
@@ -613,9 +613,9 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_startTime = i_dataBlock.inputValue( ia_startTime, &stat ).asDouble();
         CHECK_MSTATUS( stat );
         
-        m_rodOptions.YoungsModulus = i_dataBlock.inputValue( ia_youngsModulus, &stat ).asDouble();
+        m_rodOptions.YoungsModulus = 10000.0 * i_dataBlock.inputValue( ia_youngsModulus, &stat ).asDouble();
         CHECK_MSTATUS( stat );
-        m_rodOptions.ShearModulus = i_dataBlock.inputValue( ia_shearModulus, &stat ).asDouble();
+        m_rodOptions.ShearModulus = 100.0 * i_dataBlock.inputValue( ia_shearModulus, &stat ).asDouble();
         CHECK_MSTATUS( stat );
         m_rodOptions.density = i_dataBlock.inputValue( ia_density, &stat).asDouble();
         CHECK_MSTATUS( stat );
@@ -1095,11 +1095,11 @@ void* WmBunsenRodNode::creator()
 	stat = attributeAffects( ia_startTime, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_startTime->ca_syncAttrs" ); return stat; }
 
-    addNumericAttribute( ia_youngsModulus, "youngsModulus", "ymo", MFnNumericData::kDouble, 100000.0, true );
+    addNumericAttribute( ia_youngsModulus, "youngsModulus", "ymo", MFnNumericData::kDouble, 10.0, true );
     stat = attributeAffects( ia_youngsModulus, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_youngsModulus->ca_syncAttrs" ); return stat; }
 
-    addNumericAttribute( ia_shearModulus, "shearModulus", "shm", MFnNumericData::kDouble, 375.0, true );
+    addNumericAttribute( ia_shearModulus, "shearModulus", "shm", MFnNumericData::kDouble, 4.0, true );
     stat = attributeAffects( ia_shearModulus, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_shearModulus->ca_syncAttrs" ); return stat; }
 
