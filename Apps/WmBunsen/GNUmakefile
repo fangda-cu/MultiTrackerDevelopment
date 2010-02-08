@@ -76,19 +76,23 @@ PLG1_L          := \
 	-lOpenMayaUI \
     -lglut
 	
-SCR1            := AEwmBunsenNodeTemplate.mel
+SCR1            := AEwmFigaroNodeTemplate.mel
 SCR1_MAYA       := 1
 SCR1_INSD       := $(SCR_INSD)
 
 
-SCR2            := AEwmBunsenRodNodeTemplate.mel
+SCR2            := AEwmFigRodNodeTemplate.mel
 SCR2_MAYA       := 1
 SCR2_INSD       := $(SCR_INSD)
 
 
-SCR3            := WmFigaro.mel
+SCR3            := AEwmFigCollisionNodeTemplate.mel
 SCR3_MAYA       := 1
 SCR3_INSD       := $(SCR_INSD)
+
+SCR4            := WmFigaro.mel
+SCR4_MAYA       := 1
+SCR4_INSD       := $(SCR_INSD)
 
 
 # i somehow broke this .. butg do we need it? -SHANE -

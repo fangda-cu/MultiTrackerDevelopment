@@ -1,0 +1,16 @@
+global proc AEwmFigCollisionNodeTemplate(string $nodeName) 
+{
+    //AEswatchDisplay $nodeName;
+    editorTemplate -beginScrollLayout;
+
+    editorTemplate -addControl "startTime";
+    editorTemplate -addControl "friction";
+    editorTemplate -addControl "coefficientOfRestitution";
+    editorTemplate -addControl "separationStrength";
+    editorTemplate -addControl "thickness";
+    editorTemplate -addControl "fullCollisions";
+    editorTemplate -addControl "drawCollisionData";
+    
+    editorTemplate -addExtraControls;
+    editorTemplate -endScrollLayout;
+}

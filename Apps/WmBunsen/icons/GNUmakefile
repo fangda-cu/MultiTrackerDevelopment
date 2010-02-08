@@ -15,11 +15,11 @@ SCR_INSD	:= $(wmayaicon)/wmFigaro-$(VERSION)
 endif
 endif
 
-SCR1		:= out_wmBunsenNode.xpm
+SCR1		:= out_wmFigaroNode.xpm
 SCR1_MAYAIC	:= 1
 SCR1_INSD	:= $(SCR_INSD)
 
-SCR2		:= out_wmBunsenRodNode.xpm
+SCR2		:= out_wmFigRodNode.xpm
 SCR2_MAYAIC	:= 1
 SCR2_INSD	:= $(SCR_INSD)
 

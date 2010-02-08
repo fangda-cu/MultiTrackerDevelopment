@@ -1,4 +1,4 @@
-global proc AEwmBunsenRodNodeTemplate(string $nodeName) 
+global proc AEwmFigRodNodeTemplate(string $nodeName) 
 {
     //AEswatchDisplay $nodeName;
     editorTemplate -beginScrollLayout;
