@@ -379,6 +379,13 @@ void WmFigaroCmd::createWmBunsenRodNode( bool useNURBSInput )
     stat = dagModifier.connect( bunsenSimPlug, rodNodeSimPlug );
     CHECK_MSTATUS( stat );
     
+    // Connect startTime so the rods reset when the Figaro node resets
+    MPlug rodStartTimePlug( sFn.findPlug( "startTime", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    MPlug bunsenNodeStartTimePlug = bunsenDependNodeFn.findPlug( "startTime", true, &stat ); 
+    CHECK_MSTATUS( stat );
+    stat = dagModifier.connect( bunsenNodeStartTimePlug, rodStartTimePlug );
+    CHECK_MSTATUS( stat );
     
     stat = dagModifier.doIt();
     CHECK_MSTATUS( stat );
@@ -661,7 +668,17 @@ void WmFigaroCmd::addCollisionMeshes()
             stat = dagModifier.connect( collisionMeshNodeOutPlug, bunsenMeshPlug );
             CHECK_MSTATUS( stat );
             stat = dagModifier.doIt();
-            CHECK_MSTATUS( stat );                               
+            CHECK_MSTATUS( stat );
+            
+            // Connect startTime so the rods reset when the Figaro node resets
+            MPlug collisionNodeStartTimePlug( collisionMeshNodeSObj, WmBunsenCollisionMeshNode::ia_startTime );
+            CHECK_MSTATUS( stat );
+            MPlug bunsenNodeStartTimePlug = bunsenNodeFn.findPlug( "startTime", true, &stat ); 
+            CHECK_MSTATUS( stat );
+            stat = dagModifier.connect( bunsenNodeStartTimePlug, collisionNodeStartTimePlug );
+            CHECK_MSTATUS( stat );
+            stat = dagModifier.doIt();
+            CHECK_MSTATUS( stat );
         }
     }
 }

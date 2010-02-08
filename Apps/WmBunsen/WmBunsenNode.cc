@@ -417,7 +417,7 @@ MStatus WmBunsenNode::initialize()
             return stat;
         }
         nAttr.setWritable( true );
-        nAttr.setReadable( false );
+        nAttr.setReadable( true );
         nAttr.setKeyable( true );  
         stat = addAttribute( ia_startTime );
         if ( !stat ) { stat.perror( "addAttribute ia_startTime" ); return stat; }
