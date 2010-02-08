@@ -34,7 +34,7 @@
 
 // Statics
 std::map<std::string, WmBunsenHelp> WmBunsenCmd::m_help;
-MString WmBunsenCmd::typeName("wmBunsen");
+MString WmBunsenCmd::typeName("wmFigaro");
 //MObject WmBunsenCmd::m_dynNode;
 
 // CTOR
@@ -87,7 +87,7 @@ MSyntax WmBunsenCmd::syntaxCreator()
     p_AddFlag( mSyntax, kHelp, "-help",
                "Prints this information" );
     p_AddFlag( mSyntax, kName, "-name",
-               "Sets the name of the created WmBunsen node",
+               "Sets the name of the created WmFigaro node",
                MSyntax::kString );
     p_AddFlag( mSyntax, kCreateRods, "-createRods",
                "creates discrete elastic rods from the selected NURBS curves." );
@@ -127,7 +127,7 @@ MStatus WmBunsenCmd::doIt( const MArgList &i_mArgList )
             // We first copy out all the default values
             m_mArgDatabase = mArgDatabase;
 
-            m_node_name = MString("wmBunsen");
+            m_node_name = MString("wmFigaro");
 
             m_cvsPerRod = -1; // Use the number of cvs from the first curve unless the user specifies a number of cvs
 
