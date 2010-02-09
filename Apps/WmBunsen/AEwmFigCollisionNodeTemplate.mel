@@ -1,16 +1,18 @@
 global proc AEwmFigCollisionNodeTemplate(string $nodeName) 
 {
     //AEswatchDisplay $nodeName;
-    editorTemplate -beginScrollLayout;
-
-    editorTemplate -addControl "startTime";
-    editorTemplate -addControl "friction";
-    editorTemplate -addControl "coefficientOfRestitution";
-    editorTemplate -addControl "separationStrength";
-    editorTemplate -addControl "thickness";
-    editorTemplate -beginNoOptimize -addControl "fullCollisions";
-    editorTemplate -addControl "drawCollisionData";
-        
+    editorTemplate -beginLayout "Collision Attributes" -collapse 0;
+        editorTemplate -beginScrollLayout;
+    
+        editorTemplate -addControl "startTime";
+        editorTemplate -addControl "friction";
+        editorTemplate -addControl "coefficientOfRestitution";
+        editorTemplate -addControl "separationStrength";
+        editorTemplate -addControl "thickness";
+        editorTemplate -beginNoOptimize -addControl "edgeCollisions";
+        editorTemplate -addControl "drawCollisionData";
+    editorTemplate -endLayout;
+       
     editorTemplate -addExtraControls;
     editorTemplate -endScrollLayout;
 }

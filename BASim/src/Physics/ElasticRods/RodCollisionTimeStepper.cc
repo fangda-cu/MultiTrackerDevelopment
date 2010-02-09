@@ -163,11 +163,44 @@ void RodCollisionTimeStepper::respondObjectCollisions(CollisionMeshDataHashMap &
         //
         if (cmData->getFullCollisions())
         {
-            cerr << "Doing full collisions!\n";
-            for (int i=0; i<rod->ne(); ++i)
+            for (int i=0; i<rod->nv()-1; ++i)
+            {
+                if ( !rod->vertFixed(i) && !rod->vertFixed((i+1)) )
+                {
+                    // Start and end positions for both rod vertices, so four points in all
+                    //
+                    Vec3d vMin, vMax;
+                    minmax(rod->getStartPositions()[i],
+                           rod->getEndPositions()[i],
+                           rod->getStartPositions()[(i+1)],
+                           rod->getEndPositions()[(i+1)],
+                           vMin, vMax);
+                    Vec3d thickness((cmData->getThickness() + rod->radius()),
+                                    (cmData->getThickness() + rod->radius()),
+                                    (cmData->getThickness() + rod->radius()));
+                    vMin += -thickness;
+                    vMax += thickness;
+
+                    cands.clear();
+                    cmData->_grid.findOverlappingElements(vMin, vMax, cands);
+                    for (std::vector<uint>::iterator uiItr=cands.begin(); uiItr!=cands.end(); ++uiItr)
+                    {
+                        // We are looking for edge-edge collisions (vertex-triangle are covered)
+                        // So check the rod segment against each of the tri's 3 edges
+                        //
+                        for (uint j=0; j<3; ++j)
+                            candCollisions.push_back(CandidateCollision(rod, i, cmData, cmData->_triangleEdgeIndices[*uiItr][j], EDGE_EDGE));
+                    }
+                }
+            }
+            
+            // This is how David wrote it for Rodney
+            /*for (int i=0; i<rod->ne(); ++i)
             {
                 if (!rod->vertFixed(i) && !rod->vertFixed((i+1)%rod->nv()))
                 {
+                    Can I just remove the % nv in here?
+                    
                     // Start and end positions for both rod vertices, so four points in all
                     //
                     Vec3d vMin, vMax;
@@ -193,11 +226,9 @@ void RodCollisionTimeStepper::respondObjectCollisions(CollisionMeshDataHashMap &
                             candCollisions.push_back(CandidateCollision(rod, i, cmData, cmData->_triangleEdgeIndices[*uiItr][j], EDGE_EDGE));
                     }
                 }
-            }
+            }*/
         }
-        else
-            cerr << "NOT doing full collisions\n";
-
+        
         Collisions colls;
         for (CandidateCollisionSetIterator ccsItr=candCollisions.begin();
                                            ccsItr!=candCollisions.end(); ++ccsItr)

@@ -322,7 +322,7 @@ MStatus WmBunsenCollisionMeshNode::initialize()
 
     {
 	    MFnNumericAttribute nAttr;
-        ia_friction = nAttr.create("friction", "fri", MFnNumericData::kDouble, 0.0, &stat);
+        ia_friction = nAttr.create("friction", "fri", MFnNumericData::kDouble, 0.4, &stat);
 	    if (!stat) {
             stat.perror( "create ia_friction attribute" );
             return stat;
@@ -378,7 +378,7 @@ MStatus WmBunsenCollisionMeshNode::initialize()
 
     {
 	    MFnNumericAttribute nAttr;
-        ia_fullCollisions = nAttr.create("fullCollisions", "fc", MFnNumericData::kBoolean, false, &stat);
+        ia_fullCollisions = nAttr.create("edgeCollisions", "ec", MFnNumericData::kBoolean, false, &stat);
 	    if (!stat) {
             stat.perror( "create ia_fullCollisions attribute" );
             return stat;

@@ -181,8 +181,6 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
     
- //   cerr << "WmBunsenNode::compute plug = " << i_plug.name() << endl;
-	
     if ( i_plug == ca_syncAttrs )
     {
         m_previousTime = m_currentTime;
@@ -440,7 +438,7 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnNumericAttribute nAttr;
-    	ia_substeps = nAttr.create( "subSteps", "sub", MFnNumericData::kInt, 3, &stat );
+    	ia_substeps = nAttr.create( "subSteps", "sub", MFnNumericData::kInt, 10, &stat );
         if ( !stat ) 
         {
             stat.perror( "create substeps attribute");

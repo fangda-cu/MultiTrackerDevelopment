@@ -134,7 +134,7 @@ MString WmBunsenRodNode::getCacheFilename( MDataBlock& i_dataBlock )
     m_currentTime = i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
     CHECK_MSTATUS( stat );
     
-    m_cacheFilename = ( m_cachePath + "." + m_currentTime + ".bun" );
+    m_cacheFilename = ( m_cachePath + "." + m_currentTime + ".fig" );
     
     return m_cacheFilename; 
 }
@@ -686,7 +686,7 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         
         bool cacheFrame = i_dataBlock.inputValue( ia_cacheFrame, &stat ).asBool();
         CHECK_MSTATUS( stat );
-		
+        
         MString cachePath = i_dataBlock.inputValue( ia_cachePath, &stat ).asString();
         CHECK_MSTATUS( stat );
         

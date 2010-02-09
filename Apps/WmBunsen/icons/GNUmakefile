@@ -23,6 +23,10 @@ SCR2		:= out_wmFigRodNode.xpm
 SCR2_MAYAIC	:= 1
 SCR2_INSD	:= $(SCR_INSD)
 
+SCR3		:= out_wmFigCollisionNode.xpm
+SCR3_MAYAIC	:= 1
+SCR3_INSD	:= $(SCR_INSD)
+
 ifdef HAVEMAYA
 package_help:
 		@$(ECHO)\
