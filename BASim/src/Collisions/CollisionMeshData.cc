@@ -30,8 +30,8 @@ CollisionMeshData::~CollisionMeshData()
 
 void CollisionMeshData::initialize()
 {
-    std::cout << "CollisionMeshData::initialize()... ";
-    if (!_initialized)
+    std::cout << "CollisionMeshData::initialize()...\n";
+   // if (!_initialized)
     {
         _nbrTriangles = triangleIndices.size() / 3;
  //       _x.resize(_nbrTriangles);
@@ -108,7 +108,7 @@ void CollisionMeshData::initialize()
 
         _initialized = true;
     }
-    std::cout<<"CollisionMeshData::initialize()...complete"<<std::endl;
+   // std::cout<<"CollisionMeshData::initialize()...complete"<<std::endl;
 }
 
 void CollisionMeshData::clearAll()
@@ -121,7 +121,7 @@ void CollisionMeshData::clearAll()
 void CollisionMeshData::reset(vector<Vec3d>& points)
 {
 
-    if (!_initialized)
+   // if (!_initialized)
         initialize();
 
     for (size_t currVertex=0; currVertex<points.size(); ++currVertex)
@@ -145,7 +145,12 @@ void CollisionMeshData::update(vector<Vec3d>& points, std::string filename, int 
     // This should probably be an assertion
     //
     if (!_initialized)
-        initialize();
+    {
+        cerr << "Cannot update collision data before it has been initialised, please rewind simulation to start time\n"; 
+        //initialize();
+        return;
+    }
+        
 
     for (size_t currVertex=0; currVertex<points.size(); ++currVertex)
     {

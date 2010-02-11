@@ -43,8 +43,17 @@ MStatus WmBunsenCollisionMeshNode::compute( const MPlug& i_plug, MDataBlock& i_d
         m_startTime = i_data.inputValue( ia_startTime, &stat ).asDouble();
         CHECK_MSTATUS( stat );
 
-        if ( m_currentTime != m_previousTime ) 
+        if ( m_currentTime != m_previousTime || m_currentTime == m_startTime ) 
         {
+            // We need to force a mesh update even if time hasn't changed but
+            // currentTime == startTime. This is because if the scene loaded on start time then
+            // the EZBake node won't have been initialised and the user is likely to click 
+            // <- meaning go to start frame. This will initialise EZBake and the rods
+            // but not the collision data unless we have this exception. 
+            // This shouldn't cause extra work because this compute will only get
+            // called if one of our inputs has changed and we need to do work anyway.
+            // FIXME: Could we just get rid of the entire 'if' then?
+            
             MDataHandle meshH = i_data.inputValue( ia_inMesh, &stat );
             if ( !stat.error() && meshH.type() == MFnData::kMesh )
             {
@@ -148,7 +157,7 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
          m_collisionMeshData->newPositions.size() != points.length() ||
          m_collisionMeshData->velocities.size() != points.length() ) {
     
-        cerr << "Initialising size and data for collision mesh\n";
+        cerr << "Initialising size and data for collision mesh ( " << points.length() << " points\n";
         
         m_collisionMeshData->currPositions.resize( points.length() );
         m_collisionMeshData->prevPositions.resize( points.length() );
@@ -168,8 +177,7 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
             m_collisionMeshData->triangleIndices[i] = triangleInds[i];
     }
 
-    
-    cerr << "Updating mesh with m_collisionMeshData->triangleIndices.size() = " << m_collisionMeshData->triangleIndices.size() << endl;
+   // cerr << "Updating mesh with m_collisionMeshData->triangleIndices.size() = " << m_collisionMeshData->triangleIndices.size() << endl;
     
     // FIXME: This is slow but for safety lets just do it every frame as there may be issues with
     // initialisation from ezbakes
@@ -191,11 +199,15 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
         vPoints[p][1] = points[p][1];
         vPoints[p][2] = points[p][2];
     }
-        
+
     if ( m_currentTime == m_startTime || forceReset )
+    {
         m_collisionMeshData->reset( vPoints );
+    }
     else
+    {
         m_collisionMeshData->update( vPoints, "", (int)m_currentTime );
+    }
 
     return stat;
 }
@@ -213,7 +225,7 @@ MStatus WmBunsenCollisionMeshNode::connectionMade( const  MPlug & i_plug, const 
         MFnMesh meshFn( meshObj, &stat );
         CHECK_MSTATUS( stat );
 
-        updateCollisionMeshFromMayaMesh( meshFn, true );
+       // updateCollisionMeshFromMayaMesh( meshFn, true );
     }
 
     return MS::kUnknownParameter;

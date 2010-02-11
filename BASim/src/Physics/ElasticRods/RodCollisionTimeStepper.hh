@@ -26,7 +26,7 @@ typedef std::tr1::unordered_map<size_t, CollisionMeshData *>::iterator Collision
 class RodCollisionTimeStepper : public ObjectControllerBase
 {
 public:
-  RodCollisionTimeStepper(ObjectControllerBase* rodTimeStepper, ElasticRod* rod);
+  RodCollisionTimeStepper(RodTimeStepper* rodTimeStepper, ElasticRod* rod);
 
   ~RodCollisionTimeStepper();
 
@@ -37,7 +37,17 @@ public:
 
   void setTimeStep(Scalar dt)
   {
-    m_dt = dt;   
+    m_rodTimeStepper->setTimeStep(dt);
+  }
+  
+  void setBoundaryCondition(RodBoundaryCondition* bc)
+  {
+    m_rodTimeStepper->setBoundaryCondition(bc);
+  }
+
+  RodBoundaryCondition* getBoundaryCondition()
+  {
+    return m_rodTimeStepper->getBoundaryCondition();
   }
   
   void setCollisionMeshesMap(CollisionMeshDataHashMap* collisionMeshes)
@@ -50,16 +60,13 @@ public:
     m_collisionsEnabled = doCollisionsFlag;
   }
 
-  void executePart1()
+  void initialiseCollisionsAndApplyObjectCollisionForces()
   {
     if (!m_enabled)
       return;
 
-    // Sanity check, m_dt MUST EQUAL m_rodTimeStepper->getDt();
-    // get it from m_rodTimeStepper rather than using the one here.
     if ( !m_collisionsEnabled || m_collisionMeshes == NULL || m_collisionMeshes->size()==0 )
     {
-    //    m_rodTimeStepper->execute();
         return;
     }
     
@@ -67,21 +74,21 @@ public:
     getProximities(*m_collisionMeshes);    
   }
 
-  void executePart2()
+  void respondToObjectCollisions()
   {
     if (!m_enabled)
       return;
     
-    m_rod->collisionsBegin(m_dt);
-    respondObjectCollisions(*m_collisionMeshes, m_dt);   
+    m_rod->collisionsBegin(m_rodTimeStepper->getTimeStep());
+    respondObjectCollisions(*m_collisionMeshes, m_rodTimeStepper->getTimeStep());   
   }
 
-  void executePart3()
+  void tidyUpCollisionStructuresForNextStep()
   {
      if (!m_enabled)
       return;
 
-     m_rod->collisionsEnd(m_dt);
+     m_rod->collisionsEnd(m_rodTimeStepper->getTimeStep());
   }
 
   void execute()
@@ -90,25 +97,6 @@ public:
       return;
 
     m_rodTimeStepper->execute();
-
-   /* if (!m_enabled)
-      return;
-
-    // Sanity check, m_dt MUST EQUAL m_rodTimeStepper->getDt();
-    // get it from m_rodTimeStepper rather than using the one here.
-    if ( !m_collisionsEnabled || m_collisionMeshes == NULL || m_collisionMeshes->size()==0 )
-    {
-        m_rodTimeStepper->execute();
-    }
-    
-    m_rod->setCollisionStartPositions();
-    getProximities(*m_collisionMeshes);
-    m_rodTimeStepper->execute();
-    m_rod->collisionsBegin(m_dt);
-
-    respondObjectCollisions(*m_collisionMeshes, m_dt);
-    m_rod->collisionsEnd(m_dt);*/
-
   }
 
 
@@ -122,9 +110,8 @@ protected:
   bool m_collisionsEnabled;
   CollisionMeshDataHashMap* m_collisionMeshes;
   RodPenaltyForce* m_rodPenaltyForce;
-  ObjectControllerBase* m_rodTimeStepper;
+  RodTimeStepper* m_rodTimeStepper;
   ElasticRod* m_rod;
-  Scalar m_dt;
 };
 
 

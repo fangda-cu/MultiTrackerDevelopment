@@ -22,22 +22,22 @@ IPATHS 	+= -I$(MKLROOT)/include
 
 PLG1            := wmFigaro.so
 #PLG1_CF	        += -Werror -DBUILD=${BUILD}
-PLG1_CF	        += -DBUILD=${BUILD}
+PLG1_CF	        += -DBUILD=${BUILD} -openmp -pthread
 
 ifeq "$(ABI)" "LI40"
-PLG1_LCF        += $MKLROOT/libmkl_solver_lp64.a \
+PLG1_LCF        += $MKLROOT/lib/em64t/libmkl_solver_lp64.a \
                    -Wl,--start-group \
-                   $MKLROOT/libmkl_intel_lp64.a \
-                   $MKROOT/libmkl_intel_thread.a \
-                   $MKLROOT/libmkl_core.a \
+                   $MKLROOT/lib/em64t/libmkl_intel_lp64.a \
+                   $MKROOT/lib/em64t/libmkl_intel_thread.a \
+                   $MKLROOT/lib/em64t/libmkl_core.a \
                    -Wl,--end-group -openmp -lpthread
 endif
 ifeq "$(ABI)" "L40"
-PLG1_LCF        +=  $MKLROOT/libmkl_solver_lp64.a \
+PLG1_LCF        +=  $MKLROOT/lib/em64t/libmkl_solver_lp64.a \
                     -Wl,--start-group \
-                    $MKLPATH/libmkl_intel_lp64.a \
-                    $MKLPATH/libmkl_intel_thread.a \
-                    $MKLPATH/libmkl_core.a \
+                    $MKLROOT/lib/em64t/libmkl_intel_lp64.a \
+                    $MKLROOT/lib/em64t/libmkl_intel_thread.a \
+                    $MKLROOT/lib/em64t/libmkl_core.a \
                     -Wl,--end-group -liomp5 -lpthread
 endif
 

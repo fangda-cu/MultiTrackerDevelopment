@@ -20,20 +20,36 @@
 #include <sstream>
 #include <sys/time.h>
 
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
+
 using namespace BASim;
 using namespace tr1;
+using namespace boost;
 
-Beaker::Beaker() : m_plasticDeformations( false ), m_gravity( 0, -981.0, 0 ), m_timing( false )
+Beaker::Beaker() : m_plasticDeformations( false ), m_gravity( 0, -981.0, 0 ), 
+    m_timingEnabled( false ), m_timingsFile( "" ),
+    m_meshInterpolationTime( 0.0 ), m_vertexInterpolationTime( 0.0 ), m_objectCollisionForces( 0.0 ),
+    m_objectCollisionResponse( 0.0 ), m_collisionStructuresTidyup( 0.0 ),
+    m_selfCollisionPenaltyForceTime( 0.0 ), m_selfCollisionsResponseTime( 0.0 ),
+    m_integrationStepTime( 0.0 ), m_slowestIntegrationTime( 0.0 ), m_fastestIntegrationTime( 0.0 ),
+    m_fastestSelfCollisionPenaltyForceTime( 0.0 ), m_slowestSelfCollisionPenaltyForceTime( 0.0 ),
+    m_fastestSelfCollisionsResponseTime( 0.0 ), m_slowestSelfCollisionsResponseTime( 0.0 ),
+    m_slowestCollisionForcesTime( 0.0 ), m_fastestCollisionForcesTime( 0.0 ),
+    m_slowestCollisionResponseTime( 0.0 ), m_fastestCollisionResponseTime( 0.0 ),
+    m_fastestFrameTime( 9999999999999999.0 ), m_slowestFrameTime( 0.0 ), m_totalSimTime( 0.0 ), 
+    m_numberOfFramesSimulated( 0 ), m_numberofThreadsUsed( 0 ), m_numRods( 0 )
 {
     m_rodDataMap.clear();
     initialiseWorld();
-    
-    cerr << "Done with initialisation\n";
 }
 
 Beaker::~Beaker()
 {
     resetEverything();
+    
+    if ( m_timingsFP.is_open() )
+        m_timingsFP.close();
 }
 
 void Beaker::initialiseWorld()
@@ -65,22 +81,153 @@ void Beaker::resetEverything()
     initialiseWorld();
 }
 
-void Beaker::startTimer()
+void Beaker::setTimingsFile( std::string i_fileName )
 {
-    if ( m_timing )
-        gettimeofday( &m_timerStart, NULL );
+    m_timingsFile = i_fileName;
 }
 
-double Beaker::stopTimer()
+void Beaker::setTimingEnabled( bool i_timingsEnabled )
 {
-    if (!m_timing)
+    if ( i_timingsEnabled == true && m_timingEnabled == false )
+    {
+        m_timingEnabled = i_timingsEnabled;
+        resetTimers();
+                
+        // Open timings file for timer code to output to
+        if ( m_timingsFP.is_open() )
+            m_timingsFP.close();
+        
+        if ( m_timingsFile != "" )
+        {
+            m_timingsFP.open( m_timingsFile.c_str(), ios::out | ios::trunc );
+        }
+    }
+    else if ( i_timingsEnabled == false && m_timingEnabled == true )
+    {
+        printTimingInfo();
+        
+        // Close timings file
+        if ( m_timingsFP.is_open() )
+            m_timingsFP.close();
+    }
+    else
+    {
+        // Do nothing as the state hasn't changed
+    }
+    
+    m_timingEnabled = i_timingsEnabled;
+}
+
+void Beaker::resetTimers()
+{
+    m_meshInterpolationTime = 0.0;
+    m_vertexInterpolationTime = 0.0;
+    m_objectCollisionForces = 0.0;
+    m_objectCollisionResponse = 0.0;
+    m_collisionStructuresTidyup = 0.0;
+    m_selfCollisionPenaltyForceTime = 0.0;
+    m_selfCollisionsResponseTime = 0.0;
+    m_fastestSelfCollisionPenaltyForceTime = 0.0;
+    m_slowestSelfCollisionPenaltyForceTime = 0.0;
+    m_fastestSelfCollisionsResponseTime = 0.0;
+    m_slowestSelfCollisionsResponseTime = 0.0;
+    m_integrationStepTime = 0.0;
+    m_slowestIntegrationTime = 0.0;
+    m_fastestIntegrationTime = 0.0;
+    m_slowestCollisionForcesTime = 0.0;
+    m_fastestCollisionForcesTime = 0.0;
+    m_slowestCollisionResponseTime = 0.0;
+    m_fastestCollisionResponseTime = 0.0;
+    m_fastestFrameTime = 99999999999.999;
+    m_slowestFrameTime = 0.0;
+    m_numberOfFramesSimulated = 0;
+    m_totalSimTime = 0.0;
+}
+
+std::string Beaker::makeString( double i_val )
+{
+    return str( boost::format( "%.2f" ) % i_val );
+}
+
+void Beaker::printTimingInfo()
+{
+    if ( m_numberOfFramesSimulated == 0 )
+        return;
+    
+    // Calculate the timing results and output them to stderr and file.
+    
+    double totalSimTime = m_totalSimTime;
+                                
+    /*double totalSimTime =  m_meshInterpolationTime + m_vertexInterpolationTime +
+                                m_objectCollisionForces + m_objectCollisionResponse +
+                                m_collisionStructuresTidyup + m_selfCollisionPenaltyForceTime +
+                                m_selfCollisionsResponseTime + m_integrationStepTime;*/
+    double averageFrameTime = totalSimTime / m_numberOfFramesSimulated;
+    double averageIntgeration = m_integrationStepTime / m_numberOfFramesSimulated;
+    double averageObjectCollisionForces = m_objectCollisionForces / m_numberOfFramesSimulated;
+    double averageObjectCollisionResponse = m_objectCollisionResponse / m_numberOfFramesSimulated;
+    double averageSelfCollisionPenalty = m_selfCollisionPenaltyForceTime / m_numberOfFramesSimulated;
+    double averageSelfCollisionsResponseTime = m_selfCollisionsResponseTime / m_numberOfFramesSimulated;
+    
+    string resultString = "\nSummary of simulation (in seconds)\n============================\n";
+    resultString += "Number of rods = " + makeString(m_numRods)+"\n";
+    resultString += "Number of threads used = " + makeString(m_numberofThreadsUsed)+"\n";
+    resultString += "Total frames simulated = " + makeString(m_numberOfFramesSimulated) + "\n";
+    resultString += "Total simulation time = " + makeString(totalSimTime) + "\n";
+    resultString += "Fastest frame = " + makeString(m_fastestFrameTime) + "\n";
+    resultString += "Slowest frame = " + makeString(m_slowestFrameTime) + "\n";
+    resultString += "Average frame = " + makeString(averageFrameTime)  + "\n";
+    resultString += "\nDetailed breakdown (Total / Average):\n";
+    resultString += "Mesh Interpolation (SINGLE THREADED) = " + makeString(m_meshInterpolationTime)
+        + " / " + makeString(m_meshInterpolationTime / m_numberOfFramesSimulated) +"\n";
+    resultString += "Vertex Interpolation (SINGLE THREADED) = " + makeString(m_vertexInterpolationTime) + " / " + 
+        makeString(m_vertexInterpolationTime / m_numberOfFramesSimulated) +"\n";
+    resultString += "Object Collision Forces = " + makeString(m_objectCollisionForces) + " / " 
+        + makeString(m_objectCollisionForces / m_numberOfFramesSimulated) +"\n";
+    resultString += "\tSlowest Frame = " + makeString(m_slowestCollisionForcesTime) + "\n";
+    resultString += "\tFastest Frame = " + makeString(m_fastestCollisionForcesTime) + "\n";
+    resultString += "Object Collision Response = " + makeString(m_objectCollisionResponse) + " / " 
+        + makeString(m_objectCollisionResponse / m_numberOfFramesSimulated) +"\n";
+    resultString += "\tSlowest Frame = " + makeString(m_slowestCollisionResponseTime) + "\n";
+    resultString += "\tFastest Frame = " + makeString(m_fastestCollisionResponseTime) + "\n";
+    resultString += "Collision Structures Tidy up = " + makeString(m_collisionStructuresTidyup) 
+        + " / " + makeString(m_collisionStructuresTidyup / m_numberOfFramesSimulated) +"\n";
+    resultString += "Self Collision Penalty Force (SINGLE THREADED) = " + makeString(m_selfCollisionPenaltyForceTime) + " / " 
+        + makeString(m_selfCollisionPenaltyForceTime / m_numberOfFramesSimulated) +"\n";
+    resultString += "\tSlowest Frame = " + makeString(m_slowestSelfCollisionPenaltyForceTime) + "\n";
+    resultString += "\tFastest Frame = " + makeString(m_fastestSelfCollisionPenaltyForceTime) + "\n";
+    resultString += "Self Collision Response (SINGLE_THREADED) = " + makeString(m_selfCollisionsResponseTime) + 
+        " / " + makeString(m_selfCollisionsResponseTime / m_numberOfFramesSimulated) +"\n";
+    resultString += "\tSlowest Frame = " + makeString(m_slowestSelfCollisionsResponseTime) + "\n";
+    resultString += "\tFastest Frame = " + makeString(m_fastestSelfCollisionsResponseTime) + "\n";
+    resultString += "Integration = " + makeString(m_integrationStepTime) + " / " 
+        + makeString(m_integrationStepTime / m_numberOfFramesSimulated) +"\n";
+    resultString += "\tSlowest Frame = " + makeString(m_slowestIntegrationTime) + "\n";
+    resultString += "\tFastest Frame = " + makeString(m_fastestIntegrationTime) + "\n";
+
+    cerr << resultString;
+    
+    if ( m_timingsFP.is_open() )
+        m_timingsFP << resultString;
+}
+
+void Beaker::startTimer( timeval& i_startTimer )
+{
+    if ( m_timingEnabled )
+        gettimeofday( &i_startTimer, NULL );
+        //gettimeofday( &m_timerStart, NULL );
+}
+
+double Beaker::stopTimer( timeval& i_startTimer )
+{
+    if ( !m_timingEnabled )
         return 0.0;
 
     timeval end;
     gettimeofday( &end, NULL );
 
     return (((         end.tv_sec * 1000000 +          end.tv_usec) -
-             (m_timerStart.tv_sec * 1000000 + m_timerStart.tv_usec)) / 1000000.0);
+             ( i_startTimer.tv_sec * 1000000 + i_startTimer.tv_usec)) / 1000000.0);
 }
 
 
@@ -103,7 +250,7 @@ void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary 
 
     for ( size_t r=0; r<numRods; r++ )
     {
-         // setupRod() is defined in ../BASim/src/Physics/ElasticRods/RodUtils.hh
+        // setupRod() is defined in ../BASim/src/Physics/ElasticRods/RodUtils.hh
         rodDataVector[ r ]->rod = setupRod( rodDataVector[ r ]->rodOptions, 
                                             rodDataVector[ r ]->initialVertexPositions, 
                                             rodDataVector[ r ]->undeformedVertexPositions );
@@ -143,28 +290,28 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     Scalar targetTime = currentTime + i_stepSize*i_subSteps;
     setDt( i_stepSize/i_subSteps );
     
-    double meshInterpolationTime = 0.0;
-    double vertexInterpolationTime = 0.0;
-    double executePart1Time = 0.0;
-    double executePart2Time = 0.0;
-    double executePart3Time = 0.0;
-    double selfCollisionPenaltyForceTime = 0.0;
-    double selfCollisionsRodResponseTime = 0.0;
-    double integrationStepTime = 0.0;
+    double frameObjectCollisionForceTime = 0.0;
+    double frameObjectCollisionResponse = 0.0;
+    double frameSelfCollisionPenaltyForceTime = 0.0;
+    double frameSelfCollisionsResponseTime = 0.0;
+    double frameIntegrationStepTime = 0.0;
     
-    m_timing = true;
+    double frameTime = 0.0;
     
-    if ( m_timing )
-        cerr << "Taking step using " << i_subSteps << " substeps (dt=" << getDt() << ")\n";
+    //if ( m_timingEnabled )
+      //  cerr << "Taking step using " << i_subSteps << " substeps (dt=" << getDt() << ")\n";
     
     for ( int s=0; s<i_subSteps; s++ )
     {
+        m_numRods = 0;
+    
         if ( (targetTime - currentTime) < getDt() + SMALL_NUMBER )
             setDt( targetTime - currentTime );
 
         // Update CollisionMeshData for this substep
         //
-        startTimer();
+        timeval timer;
+        startTimer(timer);
         Scalar interpolateFactor = ( (double)(s+1) / i_subSteps );
         if ( i_collisionsEnabled )
         {
@@ -174,23 +321,30 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 cmItr->second->interpolate( interpolateFactor ); 
             }
         }
-        meshInterpolationTime += stopTimer();
+        double timeTaken = stopTimer(timer);
+        frameTime += timeTaken;
+        m_meshInterpolationTime += timeTaken;
         
         // interpolate fixed vertex positions and set timestep
         //
-        startTimer();
+        startTimer(timer);
         for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
         {
             // FIXME: Should check if rod is enabled, if not then continue
             
             vector<RodData*>& rodData = rdmItr->second;
             size_t numRods = rodData.size();
+            m_numRods += numRods;
             for ( size_t r=0; r<numRods; r++ )
             {
-                dynamic_cast<RodTimeStepper*>(rodData[r]->stepper->getTimeStepper())->setTimeStep(getDt());
-                RodBoundaryCondition* boundary = dynamic_cast<RodTimeStepper*>(rodData[r]->stepper->getTimeStepper())->getBoundaryCondition();
+                RodCollisionTimeStepper* rodCollisionTimeStepper = dynamic_cast<RodCollisionTimeStepper*>(rodData[r]->stepper);
+                
+                rodCollisionTimeStepper->doCollisions( i_collisionsEnabled );
+                rodCollisionTimeStepper->setTimeStep( getDt() );
+                rodCollisionTimeStepper->setCollisionMeshesMap( &m_collisionMeshMap );
+                
+                RodBoundaryCondition* boundary = rodCollisionTimeStepper->getBoundaryCondition();                                
                 BASim::ElasticRod* rod = rodData[r]->rod;
-
                 
                 for( int c = 0; c < rod->nv(); c++)
                 {
@@ -199,10 +353,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     rodData[r]->currVertexPositions[c] = ( interpolateFactor * rodData[r]->nextVertexPositions[c] + 
                                ( 1.0 - interpolateFactor ) * rodData[r]->prevVertexPositions[c] );
 
-                    // FIXME: THIS IS INSANE, This MUST go in RodCollisionTimeStepper but there are include issues there and I can't
-                    // includ RodTimeStepper. FIX THESE AND MOVE THIS
-                    
-                    // First enforce the boundary conditions. Setting a vertex to fixed on the rod does
+                    // Now enforce the boundary conditions. Setting a vertex to fixed on the rod does
                     // not enforce anything any more. The fixed vertices must be explicitly added in here/                    
                     if ( rod->vertFixed(c) )
                     {  
@@ -212,86 +363,123 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                             boundary->setDesiredEdgeAngle(c-1, rod->getTheta(c-1));
                     }
                 }
-                
-                //
-                // This is a bit weird, I'm setting stuff in the RodCollisionTimeStepper as well
-                // as the RodTimeStepper it contains. It would work better as class based on
-                // RodTimeStepper or if setting it in RodCollisionTimeStepper also set it in
-                // the contained RodTimeStepper. I need to fix some #include conflicts before
-                // I can do that.
-                dynamic_cast<RodCollisionTimeStepper*>(rodData[r]->stepper)->doCollisions( i_collisionsEnabled );
-                dynamic_cast<RodCollisionTimeStepper*>(rodData[r]->stepper)->setTimeStep( getDt() );
-                dynamic_cast<RodCollisionTimeStepper*>(rodData[r]->stepper)->setCollisionMeshesMap( &m_collisionMeshMap );
-        
             }
         }
-        vertexInterpolationTime += stopTimer();
+        timeTaken = stopTimer( timer );
+        frameTime += timeTaken;
+        m_vertexInterpolationTime += timeTaken;
 
-        startTimer();
-        //m_world->executeInParallel( i_numberOfThreadsToUse );
-        // Self collisions have to be done on all rods together so we split the time step into two steps.
+        
+        // Now we have two code paths depending on if we're doing self collisions. If
+        // we're not then we are safe to parallelise the entire thing. If we are then 
+        // we need to break it into blocks so we can run the self collisions in one thread.
+
         Controllers controllers = m_world->getControllers();
         int numControllers = (int)controllers.size();
     
-        #pragma omp parallel for num_threads( i_numberOfThreadsToUse )
-        for ( int i=0; i<numControllers; ++i )
-        {
-            int threadID = omp_get_thread_num();
-            // only master thread prints the number of threads
-            if ( threadID == 0 )
-            {
-                int nthreads = omp_get_num_threads();
-                // printf("World::executeInParallel, using %d threads\n", nthreads );
-            }
-            // Dangerous cast...
-            dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->executePart1();
-        }
-        executePart1Time += stopTimer();
-
-        startTimer();
-        // FIXME: Think this can be parallelised
-        if(i_selfCollisionPenaltyForcesEnabled)
-        {
-            RodCollisionTimeStepper::getProximities(m_rods);
-        }
-        selfCollisionPenaltyForceTime += stopTimer();
-  
-        startTimer();
-        #pragma omp parallel for num_threads( i_numberOfThreadsToUse )
-        for ( int i=0; i<numControllers; ++i )
-        {
-            dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->execute();
-        }
-        integrationStepTime += stopTimer();
-  
-        //////////////////////////////////////////////
-        //
-        // Check forces to see if any rods need to be simulated at a slower pace
-       // checkAllRodForces();
-
-       startTimer();
-        #pragma omp parallel for num_threads( i_numberOfThreadsToUse )
-        for ( int i=0; i<numControllers; ++i )
-        {
-            dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->executePart2();
-        }
-        executePart2Time += stopTimer();
-
-        startTimer();
-        if (i_fullSelfCollisionsEnabled)
-           RodCollisionTimeStepper::respondRodCollisions( m_rods, getDt(), i_fullSelfCollisionIters,
-                                                          i_selfCollisionCOR );
-        selfCollisionsRodResponseTime += stopTimer();
+        // Trying to use more threads than we have controllers would be dumb.
+        // I think OpenMP will not let you as it doesn't make sense but I like
+        // to be deliberate about things.
+        int actualNumThreadsToUse = i_numberOfThreadsToUse;
+        if ( i_numberOfThreadsToUse > numControllers )
+            actualNumThreadsToUse = numControllers;
         
-        startTimer();
-        #pragma omp parallel for num_threads( i_numberOfThreadsToUse )
-        for ( int i=0; i<numControllers; ++i )
-        {
-            dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->executePart3();
+        m_numberofThreadsUsed = actualNumThreadsToUse;
+            
+        if ( !i_selfCollisionPenaltyForcesEnabled && !i_fullSelfCollisionsEnabled )
+        {            
+            // Fantastic let's just run it all threaded!
+            timeval threadFrameTimer;
+            startTimer( threadFrameTimer );
+            
+            #pragma omp parallel for num_threads( actualNumThreadsToUse )
+            for ( int i=0; i<numControllers; ++i )
+            {
+                RodCollisionTimeStepper* rodCollisionTimeStepper = dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ]);
+                
+                rodCollisionTimeStepper->initialiseCollisionsAndApplyObjectCollisionForces();
+                rodCollisionTimeStepper->execute();
+                rodCollisionTimeStepper->respondToObjectCollisions();
+                rodCollisionTimeStepper->tidyUpCollisionStructuresForNextStep();
+            }
+            
+            // should actually have each thread track its own time then sum them as doing this
+            // timer round the whole thing means we include the time the threads fight over
+            // the lock section. I guess in reality that would be very small.
+            frameTime += stopTimer( threadFrameTimer );
         }
-        executePart3Time += stopTimer();
-
-
+        /*else
+        {
+            // Boo, the user wants to use self collisions so we need to split it all up into sections.
+            startTimer(timer);
+            #pragma omp parallel for num_threads( actualNumThreadsToUse )
+            for ( int i=0; i<numControllers; ++i )
+            {
+                dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->initialiseCollisionsAndApplyObjectCollisionForces();
+            }
+            timeTaken = stopTimer(timer);
+            frameObjectCollisionForceTime += timeTaken;
+            m_objectCollisionForces += timeTaken;    
+            frameTime += timeTaken;
+            
+            startTimer(timer);
+            // FIXME: Think this can be parallelised
+            if( i_selfCollisionPenaltyForcesEnabled )
+            {
+                RodCollisionTimeStepper::getProximities(m_rods);
+            }
+            timeTaken = stopTimer(timer);
+            frameSelfCollisionPenaltyForceTime += timeTaken;
+            m_selfCollisionPenaltyForceTime += timeTaken;
+            frameTime += timeTaken;
+            
+            startTimer(timer);
+            #pragma omp parallel for num_threads( actualNumThreadsToUse )
+            for ( int i=0; i<numControllers; ++i )
+            {
+                dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->execute();
+            }
+            timeTaken = stopTimer(timer);
+            frameIntegrationStepTime += timeTaken;
+            m_integrationStepTime += timeTaken;
+            frameTime += timeTaken;
+            
+            //////////////////////////////////////////////
+            //
+            // Check forces to see if any rods need to be simulated at a slower pace
+            // checkAllRodForces();
+            //////////////////////////////////////////////
+            
+            startTimer(timer);
+            #pragma omp parallel for num_threads( actualNumThreadsToUse )
+            for ( int i=0; i<numControllers; ++i )
+            {
+                dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->respondToObjectCollisions();
+            }
+            timeTaken = stopTimer(timer);
+            frameObjectCollisionResponse += timeTaken;
+            m_objectCollisionResponse += timeTaken;
+            frameTime += timeTaken;
+            
+            startTimer(timer);
+            if (i_fullSelfCollisionsEnabled)
+               RodCollisionTimeStepper::respondRodCollisions( m_rods, getDt(), i_fullSelfCollisionIters,
+                                                              i_selfCollisionCOR );
+            timeTaken = stopTimer(timer);
+            frameSelfCollisionsResponseTime += timeTaken;
+            m_selfCollisionsResponseTime += timeTaken;
+            frameTime += timeTaken;
+            
+            startTimer(timer);
+            #pragma omp parallel for num_threads( actualNumThreadsToUse )
+            for ( int i=0; i<numControllers; ++i )
+            {
+                dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->tidyUpCollisionStructuresForNextStep();
+            }
+            timeTaken = stopTimer(timer);
+            m_collisionStructuresTidyup += timeTaken;
+            frameTime += timeTaken;
+        }*/
         // This sets the undeformed rod configuration to be the same as the current configuration. 
         // I'm not sure if this is actually what we want to do, is this just like pushing around line
         // segments. Maybe we should only run this on rods that have collided.
@@ -313,20 +501,45 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         setTime( currentTime + getDt() );
         currentTime = getTime();
     }
+ 
+/*    if ( frameObjectCollisionForceTime > m_slowestCollisionForcesTime )
+        m_slowestCollisionForcesTime = frameObjectCollisionForceTime;
+    if ( frameObjectCollisionForceTime < m_fastestCollisionForcesTime )
+        m_fastestCollisionForcesTime = frameObjectCollisionForceTime;
+                
+    if ( frameIntegrationStepTime > m_slowestIntegrationTime )
+        m_slowestIntegrationTime = frameIntegrationStepTime;
+    if ( frameIntegrationStepTime < m_fastestIntegrationTime )
+        m_fastestIntegrationTime = frameIntegrationStepTime;
+        
+    if ( frameObjectCollisionResponse > m_slowestCollisionResponseTime )
+        m_slowestCollisionResponseTime = frameObjectCollisionResponse;
+    if ( frameObjectCollisionResponse < m_fastestCollisionResponseTime )
+        m_fastestCollisionResponseTime = frameObjectCollisionResponse;
+            
+    if ( frameSelfCollisionPenaltyForceTime > m_slowestSelfCollisionPenaltyForceTime )
+        m_slowestSelfCollisionPenaltyForceTime = frameSelfCollisionPenaltyForceTime;
+    if ( frameSelfCollisionPenaltyForceTime < m_fastestSelfCollisionPenaltyForceTime )
+        m_fastestSelfCollisionPenaltyForceTime = frameSelfCollisionPenaltyForceTime;
     
-    cerr << "Finished all substeps, timings:\n";
-    cerr << "meshInterpolationTime = " << meshInterpolationTime << endl;
-    cerr << "vertexInterpolationTime = " << vertexInterpolationTime << endl;
-    cerr << "executePart1Time = " << executePart1Time << endl;
-    cerr << "executePart2Time = " << executePart2Time << endl;
-    cerr << "executePart3Time = " << executePart3Time << endl;
-    cerr << "selfCollisionPenaltyForceTime = " << selfCollisionPenaltyForceTime << endl;
-    cerr << "selfCollisionsRodResponseTime = " << selfCollisionsRodResponseTime << endl;
-    cerr << "integrationStepTime = " << integrationStepTime << endl;
+    if ( frameSelfCollisionsResponseTime > m_slowestSelfCollisionsResponseTime )
+        m_slowestSelfCollisionsResponseTime = frameSelfCollisionsResponseTime;
+    if ( frameSelfCollisionsResponseTime < m_fastestSelfCollisionsResponseTime )
+        m_fastestSelfCollisionsResponseTime = frameSelfCollisionsResponseTime;
+    */
     
+    m_numberOfFramesSimulated++;
+    if ( frameTime < m_fastestFrameTime )
+        m_fastestFrameTime = frameTime;
+    if ( frameTime > m_slowestFrameTime )
+        m_slowestFrameTime = frameTime;
     
+    m_totalSimTime += frameTime;
+ 
     // restore dt
     setDt( dt_save );
+    
+    printTimingInfo();
 }
 
 void Beaker::checkAllRodForces()

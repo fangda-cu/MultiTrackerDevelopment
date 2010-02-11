@@ -72,6 +72,10 @@ public:
     static MObject ca_syncAttrs;
     static MObject oa_simStepTaken;
     
+    // File to store results of timings taken during simulation
+    static MObject ia_timingsFile;
+    static MObject ia_timingEnabled;
+    
 private:
     void pullOnAllRodNodes( MDataBlock& i_dataBlock );
     void createRodDataFromRodNodes( MDataBlock& i_dataBlock, 

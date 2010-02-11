@@ -5,8 +5,8 @@
 
 namespace BASim {
 
-RodCollisionTimeStepper::RodCollisionTimeStepper(ObjectControllerBase* rodTimeStepper, ElasticRod* rod)
-    : m_collisionsEnabled(false), m_rodTimeStepper(rodTimeStepper), m_rod(rod), m_dt(0.01)
+RodCollisionTimeStepper::RodCollisionTimeStepper(RodTimeStepper* rodTimeStepper, ElasticRod* rod)
+    : m_collisionsEnabled(false), m_rodTimeStepper(rodTimeStepper), m_rod(rod)
 {
   m_rodPenaltyForce = new RodPenaltyForce();
   dynamic_cast<RodTimeStepper*>(m_rodTimeStepper)->addExternalForce(m_rodPenaltyForce);  

@@ -16,7 +16,7 @@ MStatus initializePlugin( MObject obj )
   	MFnPlugin plugin( obj,"Alasdair Coull", szVersion, "Any" );
 
     MGlobal::startErrorLogging("/tmp/MayaErrorLog.txt");
-    cerr << "WmBunsen loading....Maya is logging errors to " << MGlobal::errorLogPathName() << endl;
+    cerr << "WmFigaro loading....Maya is logging errors to " << MGlobal::errorLogPathName() << endl;
 
     stat = plugin.registerNode( WmBunsenNode::typeName, WmBunsenNode::typeID,
                                 WmBunsenNode::creator,

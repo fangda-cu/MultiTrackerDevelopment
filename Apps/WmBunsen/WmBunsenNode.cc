@@ -21,6 +21,8 @@ MObject WmBunsenNode::ia_selfCollisionPenaltyForces;
 MObject WmBunsenNode::ia_fullSelfCollisions;
 MObject WmBunsenNode::ia_fullSelfCollisionCOR;
 MObject WmBunsenNode::ia_fullSelfCollisionIterations;
+MObject WmBunsenNode::ia_timingsFile;
+MObject WmBunsenNode::ia_timingEnabled;
 MObject WmBunsenNode::oa_simStepTaken;
 
 WmBunsenNode::WmBunsenNode() : m_initialised( false ), m_beaker( NULL )
@@ -242,12 +244,19 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         pullOnAllRodNodes( i_dataBlock );
         updateAllCollisionMeshes( i_dataBlock );
         
-        if ( m_currentTime > m_previousTime && m_currentTime != m_startTime) 
+        if ( m_currentTime > m_previousTime && m_currentTime > m_startTime) 
         {
             m_beaker->takeTimeStep( numberOfThreads, m_framedt, substeps, collisionsEnabled, 
                                     selfCollisionPenaltyForces, fullSelfCollisions,
                                     selfCollisionsIters, selfCollisionsCOR ); 
         }
+        
+        bool timingEnabled = i_dataBlock.inputValue( ia_timingEnabled, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+        MString timingsFile = i_dataBlock.inputValue( ia_timingsFile, &stat ).asString();
+        CHECK_MSTATUS( stat );
+        m_beaker->setTimingsFile( timingsFile.asChar() );
+        m_beaker->setTimingEnabled( timingEnabled );
     
         MDataHandle outputData = i_dataBlock.outputValue ( ca_syncAttrs, &stat );
         if ( !stat )
@@ -659,7 +668,38 @@ MStatus WmBunsenNode::initialize()
         stat = addAttribute( ia_fullSelfCollisionCOR );
         if (!stat) { stat.perror( "addAttribute ia_fullSelfCollisionCOR" ); return stat; }
     }
+    
+    {
+        MFnTypedAttribute tAttr;
+        MFnStringData fnStringData;
+        MObject defaultString = fnStringData.create("");
+        ia_timingsFile = tAttr.create( "timingsFile", "tif", MFnData::kString, defaultString, &stat );
+        if ( !stat ) 
+        {
+            stat.perror( "create ia_timingsFile attribute" );
+            return stat;
+        }
+        tAttr.setWritable( true );
+        tAttr.setReadable( false );
+        tAttr.setConnectable( true );
+        stat = addAttribute( ia_timingsFile );
+        if (!stat) { stat.perror( "addAttribute ia_timingsFile" ); return stat; }
+    }
+    {
+        MFnNumericAttribute nAttr;
+        ia_timingEnabled = nAttr.create( "timingEnabled", "tie", MFnNumericData::kBoolean, false, &stat);
+        if (!stat) {
+            stat.perror("create ia_timingEnabled attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_timingEnabled );
+        if (!stat) { stat.perror( "addAttribute ia_timingEnabled" ); return stat; }
+    }
 
+    
     stat = attributeAffects( ia_time, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_time->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_startTime, ca_syncAttrs );
@@ -694,6 +734,10 @@ MStatus WmBunsenNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_fullCollisionIterations->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_fullSelfCollisionCOR, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_fullSelfCollisionCOR->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_timingsFile, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_timingsFile->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_timingEnabled, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_timingEnabled->ca_syncAttrs" ); return stat; }
     
     stat = attributeAffects( ia_time, oa_simStepTaken );
     if (!stat) { stat.perror( "attributeAffects ia_time->oa_simulatedRods" ); return stat; }

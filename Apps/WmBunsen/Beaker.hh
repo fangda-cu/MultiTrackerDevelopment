@@ -18,6 +18,8 @@
 #include <tr1/unordered_map>
 #include <iostream>
 #include <ext/hash_map>
+#include <iostream>
+#include <fstream>
 
 using namespace BASim;
 using namespace std;
@@ -114,8 +116,13 @@ public:
     void initialiseCollisionMesh( BASim::CollisionMeshData *collisionMeshData, size_t id );
     void removeCollisionMesh( const size_t id );
     void checkAllRodForces(); 
-    void startTimer();
-    double stopTimer();
+    void startTimer( timeval& i_startTimer );
+    double stopTimer( timeval& i_startTimer );
+    void resetTimers();
+    void printTimingInfo();
+    void setTimingsFile( std::string i_fileName );
+    void setTimingEnabled( bool i_timingsEnabled );
+    std::string makeString( double i_val );
 
 private:
     World* m_world;
@@ -135,8 +142,37 @@ private:
     // to get some numbers out of this before I leave Columbia.
     vector<ElasticRod*> m_rods;
     
-    bool m_timing;
+    bool m_timingEnabled;
+    std::string m_timingsFile;
     timeval m_timerStart;
+    
+    double m_meshInterpolationTime;
+    double m_vertexInterpolationTime;
+    double m_objectCollisionForces;
+    double m_objectCollisionResponse;
+    double m_collisionStructuresTidyup;
+    double m_selfCollisionPenaltyForceTime;
+    double m_selfCollisionsResponseTime;
+    double m_fastestSelfCollisionPenaltyForceTime;
+    double m_slowestSelfCollisionPenaltyForceTime;
+    double m_fastestSelfCollisionsResponseTime;
+    double m_slowestSelfCollisionsResponseTime;
+    double m_integrationStepTime;
+    double m_slowestIntegrationTime;
+    double m_fastestIntegrationTime;
+    double m_slowestCollisionForcesTime;
+    double m_fastestCollisionForcesTime;
+    double m_slowestCollisionResponseTime;
+    double m_fastestCollisionResponseTime;
+    double m_fastestFrameTime;
+    double m_slowestFrameTime;
+    double m_totalSimTime;
+    size_t m_numberOfFramesSimulated;
+    
+    ofstream m_timingsFP;
+    
+    int m_numberofThreadsUsed;
+    size_t m_numRods;
 };
 
 #endif // BEAKER_HH_

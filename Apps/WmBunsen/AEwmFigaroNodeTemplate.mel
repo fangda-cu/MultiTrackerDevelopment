@@ -21,6 +21,10 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
         editorTemplate -endNoOptimize -addControl "fullSelfCollisionIterations";
         editorTemplate -addControl "fullSelfCollisionCOR";
     editorTemplate -endLayout;
+    editorTemplate -beginLayout "Timings" -collapse 0;
+        editorTemplate -addControl "timingEnabled";
+        editorTemplate -addControl "timingsFile";        
+    editorTemplate -endLayout;
 
     editorTemplate -addExtraControls;
     editorTemplate -endScrollLayout;
