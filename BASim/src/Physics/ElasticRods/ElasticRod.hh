@@ -268,8 +268,8 @@ const Vec3d& getCurvatureBinormal(int i) const;
 
   ////////////////////////////////////////////////////////////////////////////////
   // 
-  // Needed for collisions. Really rods should be based off of CollisionObject
-  // so there is a uniform interface for colliding objects.
+  // Needed for collisions. Should rods be based off of CollisionObject
+  // so there is a uniform interface for colliding objects?
   
   void collisionsBegin(Real dt)
   {

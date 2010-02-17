@@ -85,6 +85,8 @@ public:
     static MObject oa_nonSimulatedVertices;
     static MObject oa_verticesInEachRod;
     
+    static MObject oa_materialFrames;
+    
     // Returns the number of rods this node has input data for
     size_t numberOfRods();
 

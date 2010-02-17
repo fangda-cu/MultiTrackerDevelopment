@@ -41,6 +41,8 @@ using namespace BASim;
 /* static */ MObject WmBunsenRodNode::oa_nonSimulatedVertices;
 /* static */ MObject WmBunsenRodNode::oa_verticesInEachRod;
 
+/* static */ MObject WmBunsenRodNode::oa_materialFrames;
+
 WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_rodData( NULL ), mx_world( NULL ),
                                      m_numberOfInputCurves( 0 ), m_cvsPerRod( -1 ), 
                                      m_massDamping( 10 ), m_percentageOfFozzieStrands( 100 ),
@@ -202,6 +204,10 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             (*mx_rodData)[ i ]->prevVertexPositions.resize( numVertices );
             (*mx_rodData)[ i ]->currVertexPositions.resize( numVertices );
             (*mx_rodData)[ i ]->nextVertexPositions.resize( numVertices );
+            
+            (*mx_rodData)[ i ]->materialFrame1.resize( numVertices - 1 );
+            (*mx_rodData)[ i ]->materialFrame2.resize( numVertices - 1 );
+            (*mx_rodData)[ i ]->materialFrame3.resize( numVertices - 1 );
 
             for ( size_t v=0; v<numVertices; v++ )
             {
@@ -245,6 +251,10 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             (*mx_rodData)[ i ]->prevVertexPositions.resize( m_cvsPerRod );
             (*mx_rodData)[ i ]->currVertexPositions.resize( m_cvsPerRod );
             (*mx_rodData)[ i ]->nextVertexPositions.resize( m_cvsPerRod );
+            
+            (*mx_rodData)[ i ]->materialFrame1.resize( m_cvsPerRod - 1 );
+            (*mx_rodData)[ i ]->materialFrame2.resize( m_cvsPerRod - 1 );
+            (*mx_rodData)[ i ]->materialFrame3.resize( m_cvsPerRod - 1 );
             
             std::string frame = "time";
             if ( frame == "time" )
@@ -301,6 +311,10 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             (*mx_rodData)[ i ]->prevVertexPositions.resize( nCVs );
             (*mx_rodData)[ i ]->currVertexPositions.resize( nCVs );
             (*mx_rodData)[ i ]->nextVertexPositions.resize( nCVs );
+            
+            (*mx_rodData)[ i ]->materialFrame1.resize( nCVs - 1 );
+            (*mx_rodData)[ i ]->materialFrame2.resize( nCVs - 1 );
+            (*mx_rodData)[ i ]->materialFrame3.resize( nCVs - 1 );
             
             std::string frame = "time";
             if ( frame == "time" )
@@ -855,6 +869,73 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         verticesPerRodH.setClean();        
         i_dataBlock.setClean( i_plug );
     }
+     else if ( i_plug == oa_materialFrames )
+    {   
+        //FIXME: All the barbershop output attributes can be done at the same time and then set
+        // all clean. We don't need to duplicate all this code.
+        // As soon as we have the pipeline working end to end then go back and refactor all this.
+        
+        // First pull all the inputs to make sure we're up to date.
+        i_dataBlock.inputValue( ca_simulationSync, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+        i_dataBlock.inputValue( oa_rodsChanged, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+
+        // The above may have been clean so just make sure we actually read time
+        i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
+        CHECK_MSTATUS( stat );
+
+        MDataHandle materialFramesH = i_dataBlock.outputValue( oa_materialFrames, &stat );
+        CHECK_MSTATUS( stat );
+        MFnVectorArrayData materialFramesArrayData;
+        MStatus stat2=materialFramesH.set( materialFramesArrayData.create( &stat ) );
+        CHECK_MSTATUS( stat );
+        CHECK_MSTATUS( stat2 );
+        
+        MVectorArray materialFramesArray = materialFramesArrayData.array( &stat );
+        CHECK_MSTATUS( stat );
+       
+        if ( mx_rodData != NULL )
+        {            
+            size_t numRods = mx_rodData->size();
+            unsigned int idx = 0;
+            for ( size_t r = 0; r < numRods; r++ )
+            {
+                unsigned int edgesInRod = (*mx_rodData)[ r ]->rod->ne();
+                materialFramesArray.setLength( (unsigned int) ( materialFramesArray.length() + edgesInRod*3 ) );
+                
+                for ( unsigned int e = 0; e < edgesInRod; e++ )
+                {
+                    Vec3d m1 =  (*mx_rodData)[ r ]->materialFrame1[ e ];
+                    Vec3d m2 =  (*mx_rodData)[ r ]->materialFrame2[ e ];
+                    Vec3d m3 =  (*mx_rodData)[ r ]->materialFrame3[ e ];
+                    
+                    materialFramesArray[ idx ] = MVector( m1[0], m1[1], m1[2] );
+                    idx++;
+                    materialFramesArray[ idx ] = MVector( m2[0], m2[1], m2[2] );
+                    idx++;
+                    materialFramesArray[ idx ] = MVector( m3[0], m3[1], m3[2] );
+                    idx++;
+                }
+            }
+        }
+        
+        materialFramesH.setClean();
+        i_dataBlock.setClean( i_plug );
+        
+        /*MPlug sPlug(thisMObject(), oa_simulatedVertices);
+        MObject nodeAttr;
+        stat = sPlug.getValue( nodeAttr );
+        CHECK_MSTATUS( stat );
+
+        MFnPointArrayData ptFn( nodeAttr, &stat);
+        CHECK_MSTATUS( stat );
+
+        MPointArray simulatedPts = ptFn.array( &stat );
+        CHECK_MSTATUS( stat );
+
+        cout<<"TO FOZZIE: Get Connected simpulated array : "<<simulatedPts.length()<<endl;*/
+    }
     else
     {
 		return MS::kUnknownParameter;
@@ -1241,9 +1322,21 @@ void* WmBunsenRodNode::creator()
         CHECK_MSTATUS( stat );
     }
     
+    {
+        MFnTypedAttribute tAttr; 
+        oa_materialFrames = tAttr.create( "materialFrames", "maf",
+                                           MFnData::kVectorArray, &stat );
+        CHECK_MSTATUS( stat );
+        CHECK_MSTATUS( tAttr.setReadable( true ) );
+        CHECK_MSTATUS( tAttr.setWritable( false ) );
+        stat = addAttribute( oa_materialFrames );
+        CHECK_MSTATUS( stat );
+    }
+    
     stat = attributeAffects( ia_time, oa_verticesInEachRod );
 	stat = attributeAffects( ia_time, oa_nonSimulatedVertices );
 	stat = attributeAffects( ia_time, oa_simulatedVertices );
+    stat = attributeAffects( ia_time, oa_materialFrames );
     
     
 	return MS::kSuccess;

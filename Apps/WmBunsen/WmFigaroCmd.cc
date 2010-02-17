@@ -43,7 +43,8 @@ WmFigaroCmd::WmFigaroCmd()
   : m_undoable( false ),
     m_mArgDatabase( NULL ),
     m_mDagModifier( NULL ),
-    m_selectedwmBunsenNode( MObject::kNullObj )/*,
+    m_selectedwmBunsenNode( MObject::kNullObj ),
+    m_cacheFile( "" )/*,
     m_undo(NULL)*/
 {
 }
@@ -75,6 +76,8 @@ const char *const kCreateRodsFromFozzie( "-crf" );
 const char *const kCVsPerRod( "-cpr" );
 const char *const kName( "-n" );
 const char *const kAddCollisionMeshes( "-acm" );
+const char *const kPreviewCache( "-prc" );
+const char *const kCacheFile( "-caf" );
 
 const char *const kHelp( "-h" );
 
@@ -97,6 +100,10 @@ MSyntax WmFigaroCmd::syntaxCreator()
                "Sets the number of CVs to use for each created elastic rod.", MSyntax::kLong );
     p_AddFlag( mSyntax, kAddCollisionMeshes, "-addCollisionMesh",
                "Adds a a selected polygon mesh as a collision object for the selected Bunsen node." );
+    p_AddFlag( mSyntax, kPreviewCache, "-previewCache",
+               "Creates wmFigaro and wmFigRodNodes and to load the specified cache file for preview." );
+    p_AddFlag( mSyntax, kCacheFile, "-cacheFile",
+        "Cache file to load and preview.", MSyntax::kString);
     
     mSyntax.setObjectType( MSyntax::kSelectionList );
     mSyntax.useSelectionAsDefault( true );
@@ -135,7 +142,12 @@ MStatus WmFigaroCmd::doIt( const MArgList &i_mArgList )
                 m_mArgDatabase->getFlagArgument( kName, 0, m_node_name );
             if ( m_mArgDatabase->isFlagSet( kCreateRods ) )
                 m_mArgDatabase->getFlagArgument( kCVsPerRod, 0, m_cvsPerRod );
-
+            if ( m_mArgDatabase->isFlagSet( kCacheFile ) )
+            {
+                 m_mArgDatabase->getFlagArgument( kCacheFile, 0, m_cacheFile );
+            }
+            
+            
             // The command usually operates on whatever we have selected, so filter the selection
             // into the various categories opeations are going to care about
             MGlobal::getActiveSelectionList( m_undoSelectionList );
@@ -165,7 +177,8 @@ MStatus WmFigaroCmd::doIt( const MArgList &i_mArgList )
 
 
 
-void WmFigaroCmd::createWmBunsenRodNode( bool useNURBSInput )
+void WmFigaroCmd::createWmBunsenRodNode( bool useNURBSInput, bool i_previewOnly,
+                                                      MObject* o_rodNode )
 {
     MStatus stat;
     size_t nCurves = 0;
@@ -177,7 +190,7 @@ void WmFigaroCmd::createWmBunsenRodNode( bool useNURBSInput )
         MGlobal::displayError( "Please select some NURBS curves to create rods from\n" );
         return;
     }
-    else if ( !useNURBSInput && m_fozzieNodeList.isEmpty() )
+    else if ( !useNURBSInput && m_fozzieNodeList.isEmpty() && !i_previewOnly )
     {
         MGlobal::displayError( "Please select a Fozzie furset node to create rods from\n" );
         return;
@@ -226,7 +239,8 @@ void WmFigaroCmd::createWmBunsenRodNode( bool useNURBSInput )
     CHECK_MSTATUS( stat );
     
     // Shape now    MFnDependencyNode sFn( rodSObj );
-    MFnDependencyNode sFn( rodSObj );    
+    MFnDependencyNode sFn( rodSObj );
+        
     MPlug localTransPlug( sFn.findPlug( "localPosition", true, &stat ) );
     CHECK_MSTATUS( stat );
     stat = localTransPlug.setLocked( true );
@@ -329,7 +343,7 @@ void WmFigaroCmd::createWmBunsenRodNode( bool useNURBSInput )
             }
         }
     }
-    else
+    else if ( !i_previewOnly )
     {
         cerr << "Connecting fur set\n";
         // Just take the first furset selected, selecting multiple sets is pointless anyway
@@ -389,7 +403,10 @@ void WmFigaroCmd::createWmBunsenRodNode( bool useNURBSInput )
     
     stat = dagModifier.doIt();
     CHECK_MSTATUS( stat );
-            
+    
+    if ( o_rodNode != NULL )
+        *o_rodNode = rodSObj;
+    
     //m_dynNode = rodSObj;
 
     // If we had no well formed curves to use for shaping then just return
@@ -578,6 +595,10 @@ MStatus WmFigaroCmd::redoIt()
         {
             addCollisionMeshes();
         }
+        if ( m_mArgDatabase->isFlagSet( kPreviewCache ) )
+        {
+            createPreviewNodes();
+        }
         else
         {
             // Do other stuff such as return number of rods or whatever
@@ -681,6 +702,31 @@ void WmFigaroCmd::addCollisionMeshes()
             CHECK_MSTATUS( stat );
         }
     }
+}
+
+void WmFigaroCmd::createPreviewNodes()
+{
+    MStatus stat;
+    
+    if ( m_cacheFile == "" )
+    {
+        MGlobal::displayError( "Please speicify a cache file using the -cacheFile flags" );
+        return;
+    }
+    // Set this to null so the rod creation function builds us a bunsen node
+    m_selectedwmBunsenNode = MObject::kNullObj;
+    MObject rodNode;
+    createWmBunsenRodNode( false, true, &rodNode );
+    
+    MFnDependencyNode rodNodeFn( rodNode );
+    MPlug cachePathPlug( rodNodeFn.findPlug( "cachePath", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    stat = cachePathPlug.setValue( m_cacheFile );
+    CHECK_MSTATUS( stat );
+    MPlug readFromCachePlug( rodNodeFn.findPlug( "readFromCache", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    stat = readFromCachePlug.setValue( true );
+    CHECK_MSTATUS( stat );
 }
 
 void WmFigaroCmd::p_AddFlag(

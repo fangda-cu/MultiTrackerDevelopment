@@ -32,11 +32,11 @@ Beaker::Beaker() : m_plasticDeformations( false ), m_gravity( 0, -981.0, 0 ),
     m_meshInterpolationTime( 0.0 ), m_vertexInterpolationTime( 0.0 ), m_objectCollisionForces( 0.0 ),
     m_objectCollisionResponse( 0.0 ), m_collisionStructuresTidyup( 0.0 ),
     m_selfCollisionPenaltyForceTime( 0.0 ), m_selfCollisionsResponseTime( 0.0 ),
-    m_integrationStepTime( 0.0 ), m_slowestIntegrationTime( 0.0 ), m_fastestIntegrationTime( 0.0 ),
-    m_fastestSelfCollisionPenaltyForceTime( 0.0 ), m_slowestSelfCollisionPenaltyForceTime( 0.0 ),
-    m_fastestSelfCollisionsResponseTime( 0.0 ), m_slowestSelfCollisionsResponseTime( 0.0 ),
-    m_slowestCollisionForcesTime( 0.0 ), m_fastestCollisionForcesTime( 0.0 ),
-    m_slowestCollisionResponseTime( 0.0 ), m_fastestCollisionResponseTime( 0.0 ),
+    m_integrationStepTime( 0.0 ), m_slowestIntegrationTime( 0.0 ), m_fastestIntegrationTime( 99999999999999.0 ),
+    m_fastestSelfCollisionPenaltyForceTime( 99999999999999.0 ), m_slowestSelfCollisionPenaltyForceTime( 0.0 ),
+    m_fastestSelfCollisionsResponseTime( 999999999999.0 ), m_slowestSelfCollisionsResponseTime( 0.0 ),
+    m_slowestCollisionForcesTime( 0.0 ), m_fastestCollisionForcesTime( 999999999.0 ),
+    m_slowestCollisionResponseTime( 0.0 ), m_fastestCollisionResponseTime( 9999999999999.0 ),
     m_fastestFrameTime( 9999999999999999.0 ), m_slowestFrameTime( 0.0 ), m_totalSimTime( 0.0 ), 
     m_numberOfFramesSimulated( 0 ), m_numberofThreadsUsed( 0 ), m_numRods( 0 )
 {
@@ -403,12 +403,9 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 rodCollisionTimeStepper->tidyUpCollisionStructuresForNextStep();
             }
             
-            // should actually have each thread track its own time then sum them as doing this
-            // timer round the whole thing means we include the time the threads fight over
-            // the lock section. I guess in reality that would be very small.
             frameTime += stopTimer( threadFrameTimer );
         }
-        /*else
+        else
         {
             // Boo, the user wants to use self collisions so we need to split it all up into sections.
             startTimer(timer);
@@ -454,8 +451,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             #pragma omp parallel for num_threads( actualNumThreadsToUse )
             for ( int i=0; i<numControllers; ++i )
             {
-                dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->respondToObjectCollisions();
-            }
+                dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->respondToObjectCollisions();              }
             timeTaken = stopTimer(timer);
             frameObjectCollisionResponse += timeTaken;
             m_objectCollisionResponse += timeTaken;
@@ -479,12 +475,12 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             timeTaken = stopTimer(timer);
             m_collisionStructuresTidyup += timeTaken;
             frameTime += timeTaken;
-        }*/
+        }
         // This sets the undeformed rod configuration to be the same as the current configuration. 
         // I'm not sure if this is actually what we want to do, is this just like pushing around line
         // segments. Maybe we should only run this on rods that have collided.
 
-        /*if ( m_plasticDeformations )
+        if ( m_plasticDeformations )
         {
             for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
             {
@@ -496,13 +492,13 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     rod->updateReferenceProperties();
                 }
             }
-        }*/
+        }
 
         setTime( currentTime + getDt() );
         currentTime = getTime();
     }
  
-/*    if ( frameObjectCollisionForceTime > m_slowestCollisionForcesTime )
+    if ( frameObjectCollisionForceTime > m_slowestCollisionForcesTime )
         m_slowestCollisionForcesTime = frameObjectCollisionForceTime;
     if ( frameObjectCollisionForceTime < m_fastestCollisionForcesTime )
         m_fastestCollisionForcesTime = frameObjectCollisionForceTime;
@@ -526,7 +522,6 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         m_slowestSelfCollisionsResponseTime = frameSelfCollisionsResponseTime;
     if ( frameSelfCollisionsResponseTime < m_fastestSelfCollisionsResponseTime )
         m_fastestSelfCollisionsResponseTime = frameSelfCollisionsResponseTime;
-    */
     
     m_numberOfFramesSimulated++;
     if ( frameTime < m_fastestFrameTime )
@@ -535,11 +530,33 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         m_slowestFrameTime = frameTime;
     
     m_totalSimTime += frameTime;
+    
+    storeMaterialFrames();
  
     // restore dt
     setDt( dt_save );
     
-    printTimingInfo();
+   // printTimingInfo();
+}
+
+void Beaker::storeMaterialFrames()
+{
+    for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
+    {
+        vector<RodData*>& rodData = rdmItr->second;
+        size_t numRods = rodData.size();
+        for ( size_t r=0; r<numRods; r++ )
+        {
+            ElasticRod* rod = rodData[ r ]->rod;
+            for ( size_t e=0; e<rod->ne(); e++ )
+            {                
+                rodData[ r ]->materialFrame1[ e ] = rod->getMaterial1( e );
+                rodData[ r ]->materialFrame2[ e ] = rod->getMaterial2( e );
+                rodData[ r ]->materialFrame3[ e ] = rod->getEdge( e );
+            }
+        }
+        
+    }
 }
 
 void Beaker::checkAllRodForces()

@@ -77,13 +77,15 @@ protected:
 
     void p_PerformConnect();
 
-    void createWmBunsenRodNode( bool useNURBSInput = true );
+    void createWmBunsenRodNode( bool useNURBSInput = true, bool i_previewOnly = false, MObject* o_rodNode = NULL );
     void createWmBunsenNode( MObject &o_wmBunsenNodeObj );
     void addCollisionMeshes();
 
 public:     // Data
 protected:  // Data
   
+    void createPreviewNodes();
+    
     /// True if the command is undoable, false otherwise
     bool m_undoable;
 
@@ -120,8 +122,10 @@ protected:  // Data
     MSelectionList m_meshList;      // list of meshes
     MSelectionList m_fozzieNodeList;
     MObject  m_selectedwmBunsenNode;
-
+    MString m_cacheFile;
+    
     static std::map<std::string, WmBunsenHelp> m_help;
+    
 };
 
 #endif

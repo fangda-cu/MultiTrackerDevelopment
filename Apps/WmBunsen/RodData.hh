@@ -55,6 +55,10 @@ public:
     vector<Vec3d> ALLprevVertexPositions;
     vector<Vec3d> ALLnextVertexPositions;
     vector<Vec3d> ALLcurrVertexPositions;
+    
+    vector<Vec3d> materialFrame1;
+    vector<Vec3d> materialFrame2;
+    vector<Vec3d> materialFrame3;
 };
 
 #endif

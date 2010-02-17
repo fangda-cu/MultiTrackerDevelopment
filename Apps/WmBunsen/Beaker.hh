@@ -125,6 +125,8 @@ public:
     std::string makeString( double i_val );
 
 private:
+    void storeMaterialFrames();
+    
     World* m_world;
     RodDataMap m_rodDataMap;
     CollisionMeshDataHashMap m_collisionMeshMap;
