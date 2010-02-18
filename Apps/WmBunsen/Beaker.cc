@@ -531,14 +531,14 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     
     m_totalSimTime += frameTime;
     
-    storeMaterialFrames();
+    //storeMaterialFrames();
  
     // restore dt
     setDt( dt_save );
     
    // printTimingInfo();
 }
-
+/*
 void Beaker::storeMaterialFrames()
 {
     for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
@@ -558,6 +558,7 @@ void Beaker::storeMaterialFrames()
         
     }
 }
+*/
 
 void Beaker::checkAllRodForces()
 {

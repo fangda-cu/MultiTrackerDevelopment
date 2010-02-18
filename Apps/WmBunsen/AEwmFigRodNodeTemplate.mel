@@ -18,6 +18,7 @@ global proc AEwmFigRodNodeTemplate(string $nodeName)
         editorTemplate -addControl "density";
         editorTemplate -addControl "massDamping";
         editorTemplate -addControl "hairSprayScaleFactor";
+        editorTemplate -addControl "drawMaterialFrames";
     editorTemplate -endLayout;
 
     AEaddRampControl ("hairSpray");

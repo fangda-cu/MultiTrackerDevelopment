@@ -125,7 +125,7 @@ public:
     std::string makeString( double i_val );
 
 private:
-    void storeMaterialFrames();
+    //void storeMaterialFrames();
     
     World* m_world;
     RodDataMap m_rodDataMap;

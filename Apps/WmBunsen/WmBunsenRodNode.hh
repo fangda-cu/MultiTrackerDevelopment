@@ -69,6 +69,7 @@ public:
     static MObject ia_hairSpray;
     static MObject ia_hairSprayScaleFactor;
     static MObject ia_massDamping;
+    static MObject ia_drawMaterialFrames;
 
     // Caching
     static MObject ia_cachePath;

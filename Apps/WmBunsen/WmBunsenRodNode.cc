@@ -25,6 +25,7 @@ using namespace BASim;
 /* static */ MObject WmBunsenRodNode::ia_hairSpray;
 /* static */ MObject WmBunsenRodNode::ia_hairSprayScaleFactor;
 /* static */ MObject WmBunsenRodNode::ia_massDamping;
+/* static */ MObject WmBunsenRodNode::ia_drawMaterialFrames;
 
 // Disk caching
 /* static */ MObject WmBunsenRodNode::ia_cachePath;
@@ -901,27 +902,46 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             unsigned int idx = 0;
             for ( size_t r = 0; r < numRods; r++ )
             {
-                unsigned int edgesInRod = (*mx_rodData)[ r ]->rod->ne();
-                materialFramesArray.setLength( (unsigned int) ( materialFramesArray.length() + edgesInRod*3 ) );
-                
-                for ( unsigned int e = 0; e < edgesInRod; e++ )
+                ElasticRod* rod = (*mx_rodData)[ r ]->rod;
+                if ( rod != NULL )
                 {
-                    Vec3d m1 =  (*mx_rodData)[ r ]->materialFrame1[ e ];
-                    Vec3d m2 =  (*mx_rodData)[ r ]->materialFrame2[ e ];
-                    Vec3d m3 =  (*mx_rodData)[ r ]->materialFrame3[ e ];
+                    unsigned int edgesInRod = rod->ne();
+                    materialFramesArray.setLength( (unsigned int) ( materialFramesArray.length() + edgesInRod*3 ) );
                     
-                    materialFramesArray[ idx ] = MVector( m1[0], m1[1], m1[2] );
-                    idx++;
-                    materialFramesArray[ idx ] = MVector( m2[0], m2[1], m2[2] );
-                    idx++;
-                    materialFramesArray[ idx ] = MVector( m3[0], m3[1], m3[2] );
-                    idx++;
+                    for ( unsigned int e = 0; e < edgesInRod; e++ )
+                    {
+                        Vec3d m1 =  rod->getMaterial1( e );
+                        Vec3d m2 =  rod->getMaterial2( e );
+                        Vec3d m3 =  rod->getEdge( e );
+                        m3.normalize();
+                        
+                        cerr << "sending rod " << r << ", edge " << e << ", m1 = " << m1 << endl;
+                        cerr << "sending rod " << r << ", edge " << e << ", m2 = " << m2 << endl;
+                        cerr << "sending rod " << r << ", edge " << e << ", m3 = " << m3 << endl;
+                        cerr << endl;
+                        
+                        materialFramesArray[ idx ] = MVector( m1[0], m1[1], m1[2] );
+                        idx++;
+                        materialFramesArray[ idx ] = MVector( m2[0], m2[1], m2[2] );
+                        idx++;
+                        materialFramesArray[ idx ] = MVector( m3[0], m3[1], m3[2] );
+                        idx++;
+                    }
                 }
             }
         }
         
         materialFramesH.setClean();
         i_dataBlock.setClean( i_plug );
+        
+        // now read it back for debug testing
+        
+        MVectorArray testMaterialFramesArray = materialFramesArrayData.array( &stat );
+        CHECK_MSTATUS( stat );
+       
+        cerr << "recieved 0 " << materialFramesArray[0];
+        cerr << "recieved 1 " << materialFramesArray[1];
+        
         
         /*MPlug sPlug(thisMObject(), oa_simulatedVertices);
         MObject nodeAttr;
@@ -1073,6 +1093,52 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
 	i_view.beginGL(); 
 	glPushAttrib( GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT );
     
+    
+    MPlug drawMaterialFramesPlug( thisNode, ia_drawMaterialFrames );
+	bool draw;
+	drawMaterialFramesPlug.getValue( draw );
+	
+    if ( draw && mx_rodData != NULL )
+    {
+        size_t numRods = mx_rodData->size();
+        unsigned int idx = 0;
+        for ( size_t r = 0; r < numRods; r++ )
+        {
+            ElasticRod* rod = (*mx_rodData)[ r ]->rod;
+            if ( rod != NULL )
+            {
+                unsigned int edgesInRod = rod->ne();
+                
+                glBegin( GL_LINES );
+                for ( unsigned int e = 0; e < edgesInRod; e++ )
+                {
+                    Vec3d m1 =  rod->getMaterial1( e );
+                    Vec3d m2 =  rod->getMaterial2( e );
+                    Vec3d m3 =  rod->getEdge( e );
+                    m3.normalize();
+                    
+                    Vec3d p = rod->getVertex( e );
+                    Vec3d p1 = rod->getVertex( e + 1 );
+                    p = ( p + p1 ) / 2.0;
+                    
+                    glColor3d(1,0,0);
+                    glVertex3d( p[0], p[1], p[2] );
+                    glVertex3d( p[0] + m1[0], p[1] + m1[1], p[2] + m1[2] );
+
+                    glColor3d(0,1,0);
+                    glVertex3d( p[0], p[1], p[2] );
+                    glVertex3d( p[0] + m2[0], p[1] + m2[1], p[2] + m2[2] );
+                    
+                    glColor3d(0,0,1);
+                    glVertex3d( p[0], p[1], p[2] );
+                    glVertex3d( p[0] + m3[0], p[1] + m3[1], p[2] + m3[2] );
+                }
+                glEnd();
+            }
+        }
+    }
+    
+    
 	// draw dynamic Hair
 
 	// What did this line do? it was here from the devkit example. Is it to with point colouring
@@ -1206,7 +1272,7 @@ void* WmBunsenRodNode::creator()
 
     addNumericAttribute( ia_cacheFrame, "cacheFrame", "caf", MFnNumericData::kBoolean, false, true );
     stat = attributeAffects( ia_cacheFrame, oa_rodsChanged );
-	if ( !stat ) { stat.perror( "attributeAffects ia_cacheFrame->ca_syncAttrs" ); return stat; }
+	if ( !stat ) { stat.perror( "attributeAffects ia_cacheFrame->oa_rodsChanged" ); return stat; }
     stat = attributeAffects( ia_cacheFrame, ca_simulationSync );
 	if ( !stat ) { stat.perror( "attributeAffects ia_cacheFrame->ca_syncAttrs" ); return stat; }
 
@@ -1228,6 +1294,10 @@ void* WmBunsenRodNode::creator()
     stat = attributeAffects( ia_percentageOfFozzieStrands, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_fozzieVertices->oa_rodsChanged" ); return stat; }
 
+    addNumericAttribute( ia_drawMaterialFrames, "drawMaterialFrames", "dmf", MFnNumericData::kBoolean, false, true );
+    stat = attributeAffects( ia_drawMaterialFrames, oa_rodsChanged );
+	if ( !stat ) { stat.perror( "attributeAffects ia_drawMaterialFrames->oa_rodsChanged" ); return stat; }
+        
     {
         MFnTypedAttribute tAttr;
         MFnStringData fnStringData;
