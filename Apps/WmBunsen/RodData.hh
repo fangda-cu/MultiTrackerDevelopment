@@ -11,6 +11,14 @@
 using namespace BASim;
 using namespace std;
 
+class MaterialFrame
+{
+public:
+    Vec3d m1;
+    Vec3d m2;
+    Vec3d m3;
+};
+
 // This class holds all the info needed to simulate and render a single rod.
 // It feels like stepper and RodRenderer should perhaps be members of the
 // ElasticRod class.
@@ -25,7 +33,6 @@ public:
     // If for some reason this rod shouldn't be simulated then set this flag to false. This
     // usually happens when the user has set the rod node to playback from cache.
     bool shouldSimulate;
-    
     
     // Should we keep the ObjectHandle returned by World rather than the actual rod?
     ElasticRod* rod;
@@ -56,9 +63,8 @@ public:
     vector<Vec3d> ALLnextVertexPositions;
     vector<Vec3d> ALLcurrVertexPositions;
     
-    vector<Vec3d> materialFrame1;
-    vector<Vec3d> materialFrame2;
-    vector<Vec3d> materialFrame3;
+    // The undeformed material frames for this rod at startTime
+    vector<MaterialFrame> undeformedMaterialFrame;
 };
 
 #endif

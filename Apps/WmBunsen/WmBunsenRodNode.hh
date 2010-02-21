@@ -34,6 +34,8 @@
 
 #include "Beaker.hh"
 
+static const int FILE_FORMAT_VERSION = 1;
+
 class WmBunsenRodNode : public MPxLocatorNode 
 {
 public:
@@ -86,7 +88,10 @@ public:
     static MObject oa_nonSimulatedVertices;
     static MObject oa_verticesInEachRod;
     
+    // Frames from and too Barbershop
     static MObject oa_materialFrames;
+    static MObject oa_undeformedMaterialFrames;
+    static MObject ia_strandRootFrames;
     
     // Returns the number of rods this node has input data for
     size_t numberOfRods();
@@ -110,7 +115,6 @@ private:
         bool closeFileAfterReading = true );
     MString getCacheFilename( MDataBlock& i_dataBlock );
     
-
     double m_currentTime;
     double m_previousTime;
     double m_startTime;
@@ -138,6 +142,9 @@ private:
     
     MString m_cachePath;
     MString m_cacheFilename;
+    
+    //vector<MaterialFrame> m_materialFrames;
+    vector<MaterialFrame> m_strandRootFrames;
 };
 
 #endif

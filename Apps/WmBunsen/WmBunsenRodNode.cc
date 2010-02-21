@@ -43,6 +43,8 @@ using namespace BASim;
 /* static */ MObject WmBunsenRodNode::oa_verticesInEachRod;
 
 /* static */ MObject WmBunsenRodNode::oa_materialFrames;
+/* static */ MObject WmBunsenRodNode::oa_undeformedMaterialFrames;
+/* static */ MObject WmBunsenRodNode::ia_strandRootFrames;
 
 WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_rodData( NULL ), mx_world( NULL ),
                                      m_numberOfInputCurves( 0 ), m_cvsPerRod( -1 ), 
@@ -54,6 +56,7 @@ WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_rodData( NULL ),
     m_rodOptions.density = 0.01;
     m_rodOptions.radiusA = 0.1;
     m_rodOptions.radiusB = 0.1;
+    m_strandRootFrames.clear();
 }
 
 WmBunsenRodNode::~WmBunsenRodNode()
@@ -77,6 +80,17 @@ FILE* WmBunsenRodNode::readNumberOfRodsFromFile( const MString i_cacheFilename, 
         MGlobal::displayError( MString( "Problem opening file " + i_cacheFilename + " for reading." ) );
         return NULL;
     }
+
+/*    int fileFormat;
+    fread( &fileFormat, sizeof( int ), 1, fp );
+    if ( fileFormat != FILE_FORMAT_VERSION )
+    {
+        Mglobal::displayError( "Unsupported cache file format version\n" );
+        fclose( fp );
+        fp = NULL
+        o_numRodsInFile = 0;
+        
+    }*/
     
     fread( &o_numRodsInFile, sizeof( size_t ), 1, fp );
     
@@ -206,10 +220,8 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             (*mx_rodData)[ i ]->currVertexPositions.resize( numVertices );
             (*mx_rodData)[ i ]->nextVertexPositions.resize( numVertices );
             
-            (*mx_rodData)[ i ]->materialFrame1.resize( numVertices - 1 );
-            (*mx_rodData)[ i ]->materialFrame2.resize( numVertices - 1 );
-            (*mx_rodData)[ i ]->materialFrame3.resize( numVertices - 1 );
-
+            (*mx_rodData)[ i ]->undeformedMaterialFrame.resize( numVertices - 1 );
+            
             for ( size_t v=0; v<numVertices; v++ )
             {
                 (*mx_rodData)[ i ]->undeformedVertexPositions[ v ]  = rodVertices[ i ][ v ];
@@ -253,9 +265,7 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             (*mx_rodData)[ i ]->currVertexPositions.resize( m_cvsPerRod );
             (*mx_rodData)[ i ]->nextVertexPositions.resize( m_cvsPerRod );
             
-            (*mx_rodData)[ i ]->materialFrame1.resize( m_cvsPerRod - 1 );
-            (*mx_rodData)[ i ]->materialFrame2.resize( m_cvsPerRod - 1 );
-            (*mx_rodData)[ i ]->materialFrame3.resize( m_cvsPerRod - 1 );
+            (*mx_rodData)[ i ]->undeformedMaterialFrame.resize( m_cvsPerRod - 1 );
             
             std::string frame = "time";
             if ( frame == "time" )
@@ -313,9 +323,7 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             (*mx_rodData)[ i ]->currVertexPositions.resize( nCVs );
             (*mx_rodData)[ i ]->nextVertexPositions.resize( nCVs );
             
-            (*mx_rodData)[ i ]->materialFrame1.resize( nCVs - 1 );
-            (*mx_rodData)[ i ]->materialFrame2.resize( nCVs - 1 );
-            (*mx_rodData)[ i ]->materialFrame3.resize( nCVs - 1 );
+            (*mx_rodData)[ i ]->undeformedMaterialFrame.resize( nCVs - 1 );
             
             std::string frame = "time";
             if ( frame == "time" )
@@ -870,7 +878,7 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         verticesPerRodH.setClean();        
         i_dataBlock.setClean( i_plug );
     }
-     else if ( i_plug == oa_materialFrames )
+    else if ( i_plug == oa_materialFrames )
     {   
         //FIXME: All the barbershop output attributes can be done at the same time and then set
         // all clean. We don't need to duplicate all this code.
@@ -915,11 +923,6 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                         Vec3d m3 =  rod->getEdge( e );
                         m3.normalize();
                         
-                        cerr << "sending rod " << r << ", edge " << e << ", m1 = " << m1 << endl;
-                        cerr << "sending rod " << r << ", edge " << e << ", m2 = " << m2 << endl;
-                        cerr << "sending rod " << r << ", edge " << e << ", m3 = " << m3 << endl;
-                        cerr << endl;
-                        
                         materialFramesArray[ idx ] = MVector( m1[0], m1[1], m1[2] );
                         idx++;
                         materialFramesArray[ idx ] = MVector( m2[0], m2[1], m2[2] );
@@ -934,15 +937,6 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         materialFramesH.setClean();
         i_dataBlock.setClean( i_plug );
         
-        // now read it back for debug testing
-        
-        MVectorArray testMaterialFramesArray = materialFramesArrayData.array( &stat );
-        CHECK_MSTATUS( stat );
-       
-        cerr << "recieved 0 " << materialFramesArray[0];
-        cerr << "recieved 1 " << materialFramesArray[1];
-        
-        
         /*MPlug sPlug(thisMObject(), oa_simulatedVertices);
         MObject nodeAttr;
         stat = sPlug.getValue( nodeAttr );
@@ -955,6 +949,186 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         CHECK_MSTATUS( stat );
 
         cout<<"TO FOZZIE: Get Connected simpulated array : "<<simulatedPts.length()<<endl;*/
+    }
+    else if ( i_plug == oa_undeformedMaterialFrames )
+    {   
+        // First pull all the inputs to make sure we're up to date.
+        i_dataBlock.inputValue( ca_simulationSync, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+        i_dataBlock.inputValue( oa_rodsChanged, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+
+        // The above may have been clean so just make sure we actually read time
+        double time = i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
+        CHECK_MSTATUS( stat );
+        double startTime = i_dataBlock.inputValue( ia_startTime, &stat ).asDouble();
+        CHECK_MSTATUS( stat );
+
+        MDataHandle strandRootFramesH = i_dataBlock.inputValue( ia_strandRootFrames, &stat );
+        CHECK_MSTATUS( stat );
+        MFnVectorArrayData strandRootFrameVecData( strandRootFramesH.data(), &stat );
+        CHECK_MSTATUS( stat );
+        MVectorArray strandRootFrameVec = strandRootFrameVecData.array( &stat );
+        
+        vector<MaterialFrame> strandRootFrames;
+        strandRootFrames.resize( strandRootFrameVec.length()/3 );
+        MVector v;
+        size_t idx = 0;
+        for ( size_t rIdx=0; rIdx<strandRootFrames.size(); rIdx++ )
+        {
+            v = strandRootFrameVec[idx++];
+            strandRootFrames[rIdx].m1 = Vec3d( v[0], v[1], v[2] );
+            v = strandRootFrameVec[idx++];
+            strandRootFrames[rIdx].m2 = Vec3d( v[0], v[1], v[2] );
+            v = strandRootFrameVec[idx++];
+            strandRootFrames[rIdx].m3 = Vec3d( v[0], v[1], v[2] );
+        }
+        
+        MDataHandle undeformedMaterialFramesH = i_dataBlock.outputValue( oa_undeformedMaterialFrames, &stat );
+        CHECK_MSTATUS( stat );
+        MFnVectorArrayData undeformedMaterialFramesData;
+        MStatus stat2=undeformedMaterialFramesH.set( undeformedMaterialFramesData.create( &stat ) );
+        CHECK_MSTATUS( stat );
+        CHECK_MSTATUS( stat2 );
+        
+        MVectorArray undeformedMaterialFramesArray = undeformedMaterialFramesData.array( &stat );
+        CHECK_MSTATUS( stat );
+       
+        // If time==startTime then we need to store the strand root frames as these
+        // are the strand root frames in the groom pose
+        if ( time == startTime )
+        {
+            m_strandRootFrames.resize( strandRootFrames.size() );
+            m_strandRootFrames = strandRootFrames;
+            
+            // since time==startTime and the rods should have been initialised before we
+            // got here then we can safely store the material frames as the frames
+            // in the groom pose
+            
+            if ( mx_rodData != NULL )
+            {            
+                size_t numRods = mx_rodData->size();
+                unsigned int idx = 0;
+                for ( size_t r = 0; r < numRods; r++ )
+                {
+                    ElasticRod* rod = (*mx_rodData)[ r ]->rod;
+                    if ( rod != NULL )
+                    {
+                        undeformedMaterialFramesArray.setLength( (unsigned int) ( undeformedMaterialFramesArray.length() + rod->ne()*3 ) );
+                        
+                        for ( size_t e=0; e<rod->ne(); e++ )
+                        {
+                            // currently we only store the undeformed frame for the first vertex
+                            Vec3d m1 =  rod->getMaterial1( e );
+                            Vec3d m2 =  rod->getMaterial2( e );
+                            Vec3d m3 =  rod->getEdge( e );
+                            m3.normalize();
+
+                            (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m1 = m1;
+                            (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m2 = m2;
+                            (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m3 = m3;
+                        
+                            undeformedMaterialFramesArray[ idx ] = MVector( m1[0], m1[1], m1[2] );
+                            idx++;
+                            undeformedMaterialFramesArray[ idx ] = MVector( m2[0], m2[1], m2[2] );
+                            idx++;
+                            undeformedMaterialFramesArray[ idx ] = MVector( m3[0], m3[1], m3[2] );
+                            idx++;
+                        }
+                    }
+                }
+            }
+        }
+        else 
+        {
+            // We're not at startTime so we must be simulating and need to work out what the
+            // unsimulated material frames would be at this point based on the input curve.
+            
+            if ( mx_rodData != NULL )
+            {            
+                size_t numRods = mx_rodData->size();
+                
+                // if we have no strand root frames for this frame then we can't do anything.
+                // We use < rather than == because we can choose to only use a percentage
+                // of the input strands from barbershop in which case rods is < strandRootFrames
+                if  ( strandRootFrames.size() <= numRods )
+                {
+                    MGlobal::displayError( "No strand root frames to use in deformation" );
+                }
+                else
+                {
+                    unsigned int idx = 0;
+                    for ( size_t r = 0; r < numRods; r++ )
+                    {
+                        ElasticRod* rod = (*mx_rodData)[ r ]->rod;
+                        if ( rod != NULL )
+                        {                    
+                        /*    The below code is wrong! What it should be doing is taking the rod
+                            material frame from stratTime, multiplying it by the inverse of the
+                            strand root frame at startTime then multiplying it by the current strand
+                            root frame.
+                            
+                            The current rod material frame is irrelivant here as its deforming in 
+                            unknown ways. We just want to do a rigid transform of the frames from
+                            startTime to currentTime.
+                            
+                        
+                            m_strandRootFrames is what we create the first matrix from then we create
+                            the second matrix from the strand root frames we were given this frame.
+                            The rod frames should not be in either matrix!!!!*/
+                            
+                            Vec3d im1 = m_strandRootFrames[r].m1;
+                            Vec3d im2 = m_strandRootFrames[r].m2;
+                            Vec3d im3 = m_strandRootFrames[r].m3;
+                                
+                            Vec3d cm1 = strandRootFrames[r].m1;
+                            Vec3d cm2 = strandRootFrames[r].m2;
+                            Vec3d cm3 = strandRootFrames[r].m3;
+                        
+                            double dim[4][4] = {{ im1[0], im1[1], im1[2], 0.0 },
+                                               { im2[0], im2[1], im2[2], 0.0 },
+                                               { im3[0], im3[1], im3[2], 0.0 },
+                                               {    0.0,    0.0,    0.0, 1.0 }};  
+                            MMatrix im( dim );
+                            
+                            double dcm[4][4] = {{ cm1[0], cm1[1], cm1[2], 0.0 },
+                                                { cm2[0], cm2[1], cm2[2], 0.0 },
+                                                { cm3[0], cm3[1], cm3[2], 0.0 },
+                                                {    0.0,    0.0,    0.0, 1.0 }};
+                            MMatrix cm( dcm );
+                                
+                            undeformedMaterialFramesArray.setLength( (unsigned int) ( undeformedMaterialFramesArray.length() + rod->ne()*3 ) );
+                               
+                            for ( size_t e=0; e<rod->ne(); e++ )
+                            {
+                                // currently we only store the undeformed frame for the first vertex
+                                Vec3d m1 =  (*mx_rodData)[ r ]->undeformedMaterialFrame[ r ].m1;
+                                MVector mayaM1( m1[0], m1[1], m1[2] );
+                                Vec3d m2 =   (*mx_rodData)[ r ]->undeformedMaterialFrame[ r ].m2;
+                                MVector mayaM2( m2[0], m2[1], m2[2] );                            
+                                Vec3d m3 = (*mx_rodData)[ r ]->undeformedMaterialFrame[ r ].m3;
+                                MVector mayaM3( m3[0], m3[1], m3[2] );
+    
+                                // remove initial transform and apply current...
+                                mayaM1 = mayaM1 * im.inverse() * cm;
+                                mayaM2 = mayaM2 * im.inverse() * cm;
+                                mayaM3 = mayaM3 * im.inverse() * cm;
+                                
+                                undeformedMaterialFramesArray[ idx ] = mayaM1;
+                                idx++;
+                                undeformedMaterialFramesArray[ idx ] = mayaM2;
+                                idx++;
+                                undeformedMaterialFramesArray[ idx ] = mayaM3;
+                                idx++;
+                            }
+                        }
+                    }
+                }
+            } 
+            
+        }
+        undeformedMaterialFramesH.setClean();
+        i_dataBlock.setClean( i_plug );
     }
     else
     {
@@ -1109,13 +1283,66 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
             {
                 unsigned int edgesInRod = rod->ne();
                 
-                glBegin( GL_LINES );
+                /*glBegin( GL_LINES );
                 for ( unsigned int e = 0; e < edgesInRod; e++ )
                 {
                     Vec3d m1 =  rod->getMaterial1( e );
                     Vec3d m2 =  rod->getMaterial2( e );
                     Vec3d m3 =  rod->getEdge( e );
                     m3.normalize();
+                    
+                    Vec3d p = rod->getVertex( e );
+                    Vec3d p1 = rod->getVertex( e + 1 );
+                    p = ( p + p1 ) / 2.0;
+                    
+                    glColor3d(1,0,0);
+                    glVertex3d( p[0], p[1], p[2] );
+                    glVertex3d( p[0] + m1[0], p[1] + m1[1], p[2] + m1[2] );
+
+                    glColor3d(0,1,0);
+                    glVertex3d( p[0], p[1], p[2] );
+                    glVertex3d( p[0] + m2[0], p[1] + m2[1], p[2] + m2[2] );
+                    
+                    glColor3d(0,0,1);
+                    glVertex3d( p[0], p[1], p[2] );
+                    glVertex3d( p[0] + m3[0], p[1] + m3[1], p[2] + m3[2] );
+                }
+                glEnd();
+                */
+                
+                /*if ( m_strandRootFrames.size() > r )
+                {
+                    // Temporary drawing of frames from barbershop
+                    glLineWidth( 5.0 );
+                    glBegin( GL_LINES );
+                
+                    Vec3d m1 =  m_strandRootFrames[ r ].m1;
+                    Vec3d m2 =  m_strandRootFrames[ r ].m2;
+                    Vec3d m3 =  m_strandRootFrames[ r ].m3;
+                    
+                    Vec3d p = rod->getVertex( 0 );
+                    
+                    glColor3d(1,0,0);
+                    glVertex3d( p[0], p[1], p[2] );
+                    glVertex3d( p[0] + m1[0], p[1] + m1[1], p[2] + m1[2] );
+    
+                    glColor3d(0,1,0);
+                    glVertex3d( p[0], p[1], p[2] );
+                    glVertex3d( p[0] + m2[0], p[1] + m2[1], p[2] + m2[2] );
+                    
+                    glColor3d(0,0,1);
+                    glVertex3d( p[0], p[1], p[2] );
+                    glVertex3d( p[0] + m3[0], p[1] + m3[1], p[2] + m3[2] );
+                    glEnd();
+                    glLineWidth( 1.0 );
+                }*/
+                
+                glBegin( GL_LINES );
+                for ( unsigned int e = 0; e < edgesInRod; e++ )
+                {
+                    Vec3d m1 = (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m1;
+                    Vec3d m2 = (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m2;
+                    Vec3d m3 = (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m3;
                     
                     Vec3d p = rod->getVertex( e );
                     Vec3d p1 = rod->getVertex( e + 1 );
@@ -1402,12 +1629,34 @@ void* WmBunsenRodNode::creator()
         stat = addAttribute( oa_materialFrames );
         CHECK_MSTATUS( stat );
     }
-    
+    {
+        MFnTypedAttribute tAttr; 
+        oa_undeformedMaterialFrames = tAttr.create( "undeformedMaterialFrames", "umf",
+                                           MFnData::kVectorArray, &stat );
+        CHECK_MSTATUS( stat );
+        CHECK_MSTATUS( tAttr.setReadable( true ) );
+        CHECK_MSTATUS( tAttr.setWritable( false ) );
+        stat = addAttribute( oa_undeformedMaterialFrames );
+        CHECK_MSTATUS( stat );
+    }
+    {
+        MFnTypedAttribute tAttr; 
+        ia_strandRootFrames = tAttr.create( "strandRootFrames", "srf",
+                                           MFnData::kVectorArray, &stat );
+        CHECK_MSTATUS( stat );
+        CHECK_MSTATUS( tAttr.setReadable( false ) );
+        CHECK_MSTATUS( tAttr.setWritable( true ) );
+        stat = addAttribute( ia_strandRootFrames );
+        CHECK_MSTATUS( stat );
+    }
+     
     stat = attributeAffects( ia_time, oa_verticesInEachRod );
 	stat = attributeAffects( ia_time, oa_nonSimulatedVertices );
 	stat = attributeAffects( ia_time, oa_simulatedVertices );
     stat = attributeAffects( ia_time, oa_materialFrames );
-    
+    stat = attributeAffects( ia_time, oa_undeformedMaterialFrames );
+    stat = attributeAffects( ia_startTime, oa_undeformedMaterialFrames );
+    stat = attributeAffects( ia_strandRootFrames, oa_undeformedMaterialFrames );
     
 	return MS::kSuccess;
 }
