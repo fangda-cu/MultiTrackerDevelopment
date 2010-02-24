@@ -257,9 +257,9 @@ void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary 
 
         m_rods.push_back( rodDataVector[ r ]->rod );
     
-        rodDataVector[ r ]->rod->fixVert( 0 );
+/*        rodDataVector[ r ]->rod->fixVert( 0 );
         rodDataVector[ r ]->rod->fixVert( 1 );
-        rodDataVector[ r ]->rod->fixEdge( 0 );
+        rodDataVector[ r ]->rod->fixEdge( 0 );*/
         
         rodDataVector[ r ]->stepper = setupRodTimeStepper( rodDataVector[ r ] );
         
@@ -335,6 +335,14 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             vector<RodData*>& rodData = rdmItr->second;
             size_t numRods = rodData.size();
             m_numRods += numRods;
+            
+            
+            // for visualising
+            m_rodRootMaterialFrame.resize( numRods );
+            m_strandRootMaterialFrame.resize( numRods );
+            m_rodRefMaterialFrame.resize( numRods );
+                    
+            
             for ( size_t r=0; r<numRods; r++ )
             {
                 RodCollisionTimeStepper* rodCollisionTimeStepper = dynamic_cast<RodCollisionTimeStepper*>(rodData[r]->stepper);
@@ -348,12 +356,17 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 
                 for( int c = 0; c < rod->nv(); c++)
                 {
+                    
+                    
+                 //   in wmbunsenrodnode the next position of the vertices have to be over-ruled by
+                //    any kinematic controllers connected into the rod node.
+                    
                     // Calculate the position of the input curve for this rod at the current substep.
                     // This is used to set fixed vertices and also to calculate the hairspray force.
                     rodData[r]->currVertexPositions[c] = ( interpolateFactor * rodData[r]->nextVertexPositions[c] + 
                                ( 1.0 - interpolateFactor ) * rodData[r]->prevVertexPositions[c] );
 
-                    // Now enforce the boundary conditions. Setting a vertex to fixed on the rod does
+                 /*   // Now enforce the boundary conditions. Setting a vertex to fixed on the rod does
                     // not enforce anything any more. The fixed vertices must be explicitly added in here/                    
                     if ( rod->vertFixed(c) )
                     {  
@@ -361,6 +374,48 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                         if (c>0)
                           if (rod->vertFixed(c-1))  
                             boundary->setDesiredEdgeAngle(c-1, rod->getTheta(c-1));
+                    }*/
+                }
+                
+                // Now look and see if we have any user controlled vertices or edges, if so we 
+                // need to apply those as boundary conditions
+                for ( KinematicEdgeDataMap::iterator it = rodData[r]->kinematicEdgeDataMap.begin();
+                      it != rodData[r]->kinematicEdgeDataMap.end();
+                      it++ )
+                {
+                    // First make sure these vertices are marked as fixed on the rod
+                    // or they'll get taken into account on collision calculations.
+                    unsigned int edgeNum = it->first;
+                    KinematicEdgeData kinematicEdgeData = it->second;
+                    rod->fixEdge( edgeNum );
+                    rod->fixVert( edgeNum );
+                    rod->fixVert( edgeNum+1 );
+
+                    boundary->setDesiredVertexPosition( edgeNum, rodData[r]->currVertexPositions[ edgeNum ]);
+                    boundary->setDesiredVertexPosition( edgeNum+1, rodData[r]->currVertexPositions[ edgeNum+1 ]);
+                    
+                    if ( rodData[r]->rootFrameDefined )
+                    {
+                        MaterialFrame m = it->second.materialFrame;
+                        
+                        m.m1 = rodData[r]->rod->getMaterial1( edgeNum );
+                        m.m2 = rodData[r]->rod->getMaterial2( edgeNum );
+                        m.m3 = rodData[r]->rod->getEdge( edgeNum );
+                        m.m3.normalize();
+                        
+                        m_rodRootMaterialFrame[ r ] = m;
+                        MaterialFrame vm = it->second.materialFrame;                    
+                        m_strandRootMaterialFrame[ r ] = vm;
+                        
+                        vm.m1 = rodData[r]->rod->getReferenceDirector1( edgeNum );
+                        vm.m2 = rodData[r]->rod->getReferenceDirector2( edgeNum );
+                        vm.m3 = m.m3;
+                        m_rodRefMaterialFrame[ r ] = vm;
+                        
+                        // work out the angle that the material frame is off the reference frame by.
+                        double diff = acos( m_rodRefMaterialFrame[ r ].m2.dot( m_strandRootMaterialFrame[ r ].m3 ) );
+                        
+                        boundary->setDesiredEdgeAngle( edgeNum, diff );
                     }
                 }
             }
@@ -655,6 +710,48 @@ void Beaker::draw()
         }
     }
 
+    /*glLineWidth(5.0);
+    glBegin( GL_LINES );
+    for ( size_t r=0; r<m_rodRootMaterialFrame.size(); r++ )
+    {
+        glColor3d(1,1,1);
+        Vec3d p0 = Vec3d(0,0,0);
+        Vec3d p1 = p0 + m_rodRootMaterialFrame[r].m1;
+        glVertex3d( p0[0], p0[1], p0[2] );
+        glVertex3d( p1[0], p1[1], p1[2] );
+        p1 = p0 + m_rodRootMaterialFrame[r].m2;
+        glVertex3d( p0[0], p0[1], p0[2] );
+        glVertex3d( p1[0], p1[1], p1[2] );
+        p1 = p0 + m_rodRootMaterialFrame[r].m3;
+        glVertex3d( p0[0], p0[1], p0[2] );
+        glVertex3d( p1[0], p1[1], p1[2] );
+        
+        glColor3d(0,0,1);
+        p1 = p0 + m_strandRootMaterialFrame[r].m1;
+        glVertex3d( p0[0], p0[1], p0[2] );
+        glVertex3d( p1[0], p1[1], p1[2] );
+        p1 = p0 + m_strandRootMaterialFrame[r].m2;
+        glVertex3d( p0[0], p0[1], p0[2] );
+        glVertex3d( p1[0], p1[1], p1[2] );
+        p1 = p0 + m_strandRootMaterialFrame[r].m3;
+        glVertex3d( p0[0], p0[1], p0[2] );
+        glVertex3d( p1[0], p1[1], p1[2] );
+        
+        glColor3d(1,0,0);
+        p1 = p0 + m_rodRefMaterialFrame[r].m1*2;
+        glVertex3d( p0[0], p0[1], p0[2] );
+        glVertex3d( p1[0], p1[1], p1[2] );
+        p1 = p0 + m_rodRefMaterialFrame[r].m2*2;
+        glVertex3d( p0[0], p0[1], p0[2] );
+        glVertex3d( p1[0], p1[1], p1[2] );
+        p1 = p0 + m_rodRefMaterialFrame[r].m3*2;
+        glVertex3d( p0[0], p0[1], p0[2] );
+        glVertex3d( p1[0], p1[1], p1[2] );
+    }    
+    glEnd();
+    glLineWidth(1.0);*/
+    
+    
   /*  for ( CollisionMeshDataHashMapIterator cmItr = m_collisionMeshMap.begin();
                                                    cmItr != m_collisionMeshMap.end(); ++cmItr )
     {

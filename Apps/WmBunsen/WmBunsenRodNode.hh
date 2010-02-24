@@ -105,6 +105,7 @@ public:
                                         bool i_isInput );
     
 private:
+    void getStrandRootFrames( MDataBlock& i_dataBlock, vector<MaterialFrame>& o_strandRootFrames );
     void writeRodDataToCacheFile();
     void readRodDataFromCacheFile();
     void updateHairsprayScales( MDataBlock& i_dataBlock );

@@ -249,6 +249,10 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
         // of Fozzie strands, so scale by that %
         numStrands *= (m_percentageOfFozzieStrands/100.0);
         
+        // store the material frames coming from barbershop
+        vector<MaterialFrame> strandRootFrames;
+        getStrandRootFrames( dataBlock, strandRootFrames );
+        
         size_t inputVertexIndex = 0;
         for ( unsigned int i = 0; i < numStrands; i++ ) 
         {
@@ -279,6 +283,21 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
                 (*mx_rodData)[ i ]->undeformedVertexPositions[ c ]  = Vec3d( cv.x, cv.y, cv.z );
                 inputVertexIndex++;
             }
+            
+            // We need to add edge data so that each from the first edge will be locked to the input curve
+            KinematicEdgeData kinematicEdgeData;
+            
+            // The strand root frames may not have been connected for some reason so this don't
+            // rely on having data
+            if ( strandRootFrames.size() > i )
+            {
+                kinematicEdgeData.materialFrame = strandRootFrames[ i ];                 
+                (*mx_rodData)[ i ]->rootFrameDefined = true;
+            }
+            else
+                (*mx_rodData)[ i ]->rootFrameDefined = false;
+            
+            (*mx_rodData)[ i ]->kinematicEdgeDataMap[ 0 ] = kinematicEdgeData;
         }
     }
     else
@@ -341,9 +360,18 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
                 Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
                 (*mx_rodData)[ i ]->undeformedVertexPositions[ c ] = inputCurveVertex; 
             }
+            
+            // We need to add edge data so that each from the first edge will be locked to the input curve
+            KinematicEdgeData kinematicEdgeData;
+            
+            // It doesnt matter that the edge data is garbage because we don't use the frames
+            // from the nurb curve (since there are none!)
+            (*mx_rodData)[ i ]->kinematicEdgeDataMap[ 0 ] = kinematicEdgeData;
+            
+            // We don't have frames coming from the NURBS so let the sim know that
+            (*mx_rodData)[ i ]->rootFrameDefined = false;
         }
     }
-    
     
     // Set things that are the same no matter what input is being used.
     size_t numRods = mx_rodData->size();
@@ -456,7 +484,11 @@ void WmBunsenRodNode::updateRodDataFromInputs()
             MGlobal::displayError( "Number of rods does not equal number of Fozzie strands, rewind simulation to reset" );
             return;
         }
-            
+        
+        // store the material frames coming from barbershop
+        vector<MaterialFrame> strandRootFrames;
+        getStrandRootFrames( dataBlock, strandRootFrames );
+        
         size_t inputVertexIndex = 0;
         for ( size_t i = 0; i < numStrands; i++ ) 
         {
@@ -481,6 +513,16 @@ void WmBunsenRodNode::updateRodDataFromInputs()
                     
                     inputVertexIndex++;
                 }
+                
+                // We need to add edge data so that each from the first edge will be locked to the input curve
+                KinematicEdgeData kinematicEdgeData;
+                
+                // The strand root frames may not have been connected for some reason so this don't
+                // rely on having data
+                if ( strandRootFrames.size() > i )
+                    kinematicEdgeData.materialFrame = strandRootFrames[ i ];
+                
+                (*mx_rodData)[ i ]->kinematicEdgeDataMap[ 0 ] = kinematicEdgeData;
             }
         }
     }
@@ -964,24 +1006,14 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         double startTime = i_dataBlock.inputValue( ia_startTime, &stat ).asDouble();
         CHECK_MSTATUS( stat );
 
-        MDataHandle strandRootFramesH = i_dataBlock.inputValue( ia_strandRootFrames, &stat );
-        CHECK_MSTATUS( stat );
-        MFnVectorArrayData strandRootFrameVecData( strandRootFramesH.data(), &stat );
-        CHECK_MSTATUS( stat );
-        MVectorArray strandRootFrameVec = strandRootFrameVecData.array( &stat );
-        
         vector<MaterialFrame> strandRootFrames;
-        strandRootFrames.resize( strandRootFrameVec.length()/3 );
-        MVector v;
-        size_t idx = 0;
-        for ( size_t rIdx=0; rIdx<strandRootFrames.size(); rIdx++ )
+                    
+        if ( stat == MS::kSuccess )
+            getStrandRootFrames( i_dataBlock, strandRootFrames );
+        else
         {
-            v = strandRootFrameVec[idx++];
-            strandRootFrames[rIdx].m1 = Vec3d( v[0], v[1], v[2] );
-            v = strandRootFrameVec[idx++];
-            strandRootFrames[rIdx].m2 = Vec3d( v[0], v[1], v[2] );
-            v = strandRootFrameVec[idx++];
-            strandRootFrames[rIdx].m3 = Vec3d( v[0], v[1], v[2] );
+            // Make sure there is no data in this so we don't try and use it below.
+            strandRootFrames.clear();
         }
         
         MDataHandle undeformedMaterialFramesH = i_dataBlock.outputValue( oa_undeformedMaterialFrames, &stat );
@@ -1063,17 +1095,7 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                         ElasticRod* rod = (*mx_rodData)[ r ]->rod;
                         if ( rod != NULL )
                         {                    
-                        /*    The below code is wrong! What it should be doing is taking the rod
-                            material frame from stratTime, multiplying it by the inverse of the
-                            strand root frame at startTime then multiplying it by the current strand
-                            root frame.
-                            
-                            The current rod material frame is irrelivant here as its deforming in 
-                            unknown ways. We just want to do a rigid transform of the frames from
-                            startTime to currentTime.
-                            
-                        
-                            m_strandRootFrames is what we create the first matrix from then we create
+                        /*  m_strandRootFrames is what we create the first matrix from then we create
                             the second matrix from the strand root frames we were given this frame.
                             The rod frames should not be in either matrix!!!!*/
                             
@@ -1136,6 +1158,32 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 	}
 
 	return MS::kSuccess;
+}
+
+void WmBunsenRodNode::getStrandRootFrames( MDataBlock& i_dataBlock, vector<MaterialFrame>& o_strandRootFrames )
+{
+    MStatus stat;
+    
+    MDataHandle strandRootFramesH = i_dataBlock.inputValue( ia_strandRootFrames, &stat );
+    CHECK_MSTATUS( stat );
+    MFnVectorArrayData strandRootFrameVecData( strandRootFramesH.data(), &stat );
+    CHECK_MSTATUS( stat );
+        
+    MVectorArray strandRootFrameVec;
+    strandRootFrameVec = strandRootFrameVecData.array( &stat );
+
+    o_strandRootFrames.resize( strandRootFrameVec.length()/3 );
+    MVector v;
+    size_t idx = 0;
+    for ( size_t rIdx=0; rIdx<o_strandRootFrames.size(); rIdx++ )
+    {
+        v = strandRootFrameVec[idx++];
+        o_strandRootFrames[rIdx].m1 = Vec3d( v[0], v[1], v[2] );
+        v = strandRootFrameVec[idx++];
+        o_strandRootFrames[rIdx].m2 = Vec3d( v[0], v[1], v[2] );
+        v = strandRootFrameVec[idx++];
+        o_strandRootFrames[rIdx].m3 = Vec3d( v[0], v[1], v[2] );
+    }
 }
 
 size_t WmBunsenRodNode::numberOfRods()

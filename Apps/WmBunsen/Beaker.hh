@@ -175,6 +175,10 @@ private:
     
     int m_numberofThreadsUsed;
     size_t m_numRods;
+    
+    vector<MaterialFrame> m_rodRootMaterialFrame;
+    vector<MaterialFrame> m_strandRootMaterialFrame;
+    vector<MaterialFrame> m_rodRefMaterialFrame;
 };
 
 #endif // BEAKER_HH_
