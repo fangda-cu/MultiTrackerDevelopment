@@ -5,10 +5,10 @@ global proc AEwmFigRodNodeTemplate(string $nodeName)
 
     editorTemplate -beginLayout "Rod Attributes" -collapse 0;
         // This should not appear in the AE but is there for testing currently
-        editorTemplate -addControl "cacheFrame";
-        
+        editorTemplate -addControl "cacheFrame";        
         editorTemplate -addControl "readFromCache";
-        editorTemplate -addControl "startTime";
+        editorTemplate -beginNoOptimize -addControl "lockFirstEdgeToInput";
+        editorTemplate -endNoOptimize -addControl "startTime";
         editorTemplate -addControl "percentageOfFozzieStrands";
         editorTemplate -addControl "cvsPerRod";
         editorTemplate -addControl "minorRadius";

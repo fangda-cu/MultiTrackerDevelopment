@@ -72,6 +72,7 @@ public:
     static MObject ia_hairSprayScaleFactor;
     static MObject ia_massDamping;
     static MObject ia_drawMaterialFrames;
+    static MObject ia_lockFirstEdgeToInput;
 
     // Caching
     static MObject ia_cachePath;
@@ -143,6 +144,8 @@ private:
     
     MString m_cachePath;
     MString m_cacheFilename;
+  
+    bool m_lockFirstEdgeToInput;
     
     //vector<MaterialFrame> m_materialFrames;
     vector<MaterialFrame> m_strandRootFrames;

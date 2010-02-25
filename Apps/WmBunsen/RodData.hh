@@ -19,21 +19,55 @@ public:
     Vec3d m3;
 };
 
+// FIXME:
+// This class has too much in it. The functionality should be moved up to RodData and just the data
+// kept in here.
+
 class KinematicEdgeData
 {
 public:
-    MaterialFrame materialFrame;
-    
-    // This returns the rotation angle between materialframe.m2 and the passed in vector v.
-    // It can be used to know how much the rod should be rotated to line up with this edge
-    // when defining boundary conditions.
-    double getRotationAngle( Vec3d v )
-    {
-        return acos( materialFrame.m2.dot( v ) );
+    KinematicEdgeData( unsigned int i_edgeNumber, ElasticRod* i_rod = NULL, MaterialFrame* i_materialframe = NULL ) 
+    { 
+        if ( i_materialframe != NULL )
+        {
+            materialFrame = *i_materialframe;
+            rootFrameDefined = true;
+        }
+        else
+            rootFrameDefined = false;
+            
+        edgeNumber = i_edgeNumber;
+        rod = i_rod;
+        
+        offsetFromRodRefFrame = getAngleFromRodmaterialFrame();
     }
+    
+    // Since we were probably initislised before the rods were create we need to let the user
+    // add the rod ptr here.
+    void resetMaterialFrame( ElasticRod* i_rod, MaterialFrame& i_materialframe )
+    {
+        rod = i_rod;
+        materialFrame = i_materialframe;
+        offsetFromRodRefFrame = getAngleFromRodmaterialFrame();
+    }
+
+    void updateMaterialFrame( MaterialFrame& i_materialframe )
+    {
+        materialFrame = i_materialframe;
+    }
+    // As the rod material frame and input material frame both require one of the vectors
+    // to be tangent to the edge then the other two vectors are offset only by some rotation
+    // around that edge.
+    double getAngleFromRodmaterialFrame();
+    
+    ElasticRod *rod;
+    bool rootFrameDefined;
+    double offsetFromRodRefFrame;
+    unsigned int edgeNumber; // This defines which edge on the rod the frame refers to    
+    MaterialFrame materialFrame;
 };
 
-typedef std::tr1::unordered_map< unsigned int, KinematicEdgeData > KinematicEdgeDataMap;
+typedef std::tr1::unordered_map< unsigned int, KinematicEdgeData* > KinematicEdgeDataMap;
     
 
 // This class holds all the info from Maya needed to simulate and render a single rod.
@@ -44,6 +78,10 @@ public:
     RodData( ElasticRod* i_rod, RodCollisionTimeStepper* i_stepper, RodRenderer* i_rodRenderer );
     ~RodData();
     
+    void removeKinematicEdge( unsigned int i_edgeNumber );
+    void addKinematicEdge( unsigned int i_edgeNumber, ElasticRod* i_rod = NULL, MaterialFrame* i_materialframe = NULL );
+    void resetKinematicEdge( unsigned int i_edgeNumber, ElasticRod* i_rod, MaterialFrame& i_materialframe );
+    void updateKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_materialframe );
     
     // If for some reason this rod shouldn't be simulated then set this flag to false. This
     // usually happens when the user has set the rod node to playback from cache.
@@ -78,9 +116,6 @@ public:
     std::vector<Vec3d> ALLprevVertexPositions;
     std::vector<Vec3d> ALLnextVertexPositions;
     std::vector<Vec3d> ALLcurrVertexPositions;
-
-    // Used to tell Beaker whether we are giving it root frames (from rods) or nothing (nurbs)
-    bool rootFrameDefined;
     
     // The undeformed material frames for this rod at startTime
     std::vector<MaterialFrame> undeformedMaterialFrame;

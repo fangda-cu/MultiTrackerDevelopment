@@ -26,6 +26,7 @@ using namespace BASim;
 /* static */ MObject WmBunsenRodNode::ia_hairSprayScaleFactor;
 /* static */ MObject WmBunsenRodNode::ia_massDamping;
 /* static */ MObject WmBunsenRodNode::ia_drawMaterialFrames;
+/* static */ MObject WmBunsenRodNode::ia_lockFirstEdgeToInput;
 
 // Disk caching
 /* static */ MObject WmBunsenRodNode::ia_cachePath;
@@ -285,19 +286,18 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             }
             
             // We need to add edge data so that each from the first edge will be locked to the input curve
-            KinematicEdgeData kinematicEdgeData;
-            
-            // The strand root frames may not have been connected for some reason so this don't
-            // rely on having data
-            if ( strandRootFrames.size() > i )
+            if ( strandRootFrames.size() > i && m_lockFirstEdgeToInput )
             {
-                kinematicEdgeData.materialFrame = strandRootFrames[ i ];                 
-                (*mx_rodData)[ i ]->rootFrameDefined = true;
+                // The strand root frames may not have been connected for some reason so this don't
+                // rely on having data
+                
+                // rod is probably null at this point but rodData will deal with it nicely
+                (*mx_rodData)[ i ]->addKinematicEdge( 0, (*mx_rodData)[ i ]->rod, &strandRootFrames[ i ] );
             }
             else
-                (*mx_rodData)[ i ]->rootFrameDefined = false;
-            
-            (*mx_rodData)[ i ]->kinematicEdgeDataMap[ 0 ] = kinematicEdgeData;
+            {
+                (*mx_rodData)[ i ]->addKinematicEdge( 0 );
+            }
         }
     }
     else
@@ -361,15 +361,14 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
                 (*mx_rodData)[ i ]->undeformedVertexPositions[ c ] = inputCurveVertex; 
             }
             
-            // We need to add edge data so that each from the first edge will be locked to the input curve
-            KinematicEdgeData kinematicEdgeData;
-            
-            // It doesnt matter that the edge data is garbage because we don't use the frames
-            // from the nurb curve (since there are none!)
-            (*mx_rodData)[ i ]->kinematicEdgeDataMap[ 0 ] = kinematicEdgeData;
-            
-            // We don't have frames coming from the NURBS so let the sim know that
-            (*mx_rodData)[ i ]->rootFrameDefined = false;
+            if ( m_lockFirstEdgeToInput )
+            {
+                // It doesnt matter that the edge data is garbage because we don't use the frames
+                // from the nurb curve (since there are none!) We just add it so that Beaker
+                // knows it isn't to be simulated. Since we didn't pass in a material frame
+                // it will know not to use frame locking.
+                (*mx_rodData)[ i ]->addKinematicEdge( 0 );
+            }
         }
     }
     
@@ -514,15 +513,17 @@ void WmBunsenRodNode::updateRodDataFromInputs()
                     inputVertexIndex++;
                 }
                 
-                // We need to add edge data so that each from the first edge will be locked to the input curve
-                KinematicEdgeData kinematicEdgeData;
-                
                 // The strand root frames may not have been connected for some reason so this don't
                 // rely on having data
-                if ( strandRootFrames.size() > i )
-                    kinematicEdgeData.materialFrame = strandRootFrames[ i ];
-                
-                (*mx_rodData)[ i ]->kinematicEdgeDataMap[ 0 ] = kinematicEdgeData;
+                if ( strandRootFrames.size() > i && m_lockFirstEdgeToInput )
+                {
+                    if ( m_currentTime == m_startTime )
+                        (*mx_rodData)[ i ]->resetKinematicEdge( 0, (*mx_rodData)[ i ]->rod, strandRootFrames[ i ] );
+                    else
+                        (*mx_rodData)[ i ]->updateKinematicEdge( 0, strandRootFrames[ i ] );
+                }
+                else // remove the entry in the map
+                    (*mx_rodData)[ i ]->removeKinematicEdge( 0 );
             }
         }
     }
@@ -690,7 +691,10 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         CHECK_MSTATUS( stat );
         m_massDamping = i_dataBlock.inputValue( ia_massDamping, &stat ).asDouble();
         CHECK_MSTATUS( stat );
-        
+     
+        m_lockFirstEdgeToInput = i_dataBlock.inputValue( ia_lockFirstEdgeToInput, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+     
         // This will get and store the cache filename for the current frame
         getCacheFilename( i_dataBlock );
         
@@ -1331,7 +1335,7 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
             {
                 unsigned int edgesInRod = rod->ne();
                 
-                /*glBegin( GL_LINES );
+                glBegin( GL_LINES );
                 for ( unsigned int e = 0; e < edgesInRod; e++ )
                 {
                     Vec3d m1 =  rod->getMaterial1( e );
@@ -1356,7 +1360,7 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
                     glVertex3d( p[0] + m3[0], p[1] + m3[1], p[2] + m3[2] );
                 }
                 glEnd();
-                */
+                
                 
                 /*if ( m_strandRootFrames.size() > r )
                 {
@@ -1572,7 +1576,11 @@ void* WmBunsenRodNode::creator()
     addNumericAttribute( ia_drawMaterialFrames, "drawMaterialFrames", "dmf", MFnNumericData::kBoolean, false, true );
     stat = attributeAffects( ia_drawMaterialFrames, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_drawMaterialFrames->oa_rodsChanged" ); return stat; }
-        
+ 
+    addNumericAttribute( ia_lockFirstEdgeToInput, "lockFirstEdgeToInput", "lfe", MFnNumericData::kBoolean, true, true );
+    stat = attributeAffects( ia_lockFirstEdgeToInput, oa_rodsChanged );
+	if ( !stat ) { stat.perror( "attributeAffects ia_lockFirstEdgeToInput->oa_rodsChanged" ); return stat; }
+ 
     {
         MFnTypedAttribute tAttr;
         MFnStringData fnStringData;

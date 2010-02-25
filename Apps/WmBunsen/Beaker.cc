@@ -386,7 +386,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     // First make sure these vertices are marked as fixed on the rod
                     // or they'll get taken into account on collision calculations.
                     unsigned int edgeNum = it->first;
-                    KinematicEdgeData kinematicEdgeData = it->second;
+                    KinematicEdgeData* kinematicEdgeData = it->second;
                     rod->fixEdge( edgeNum );
                     rod->fixVert( edgeNum );
                     rod->fixVert( edgeNum+1 );
@@ -394,17 +394,17 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     boundary->setDesiredVertexPosition( edgeNum, rodData[r]->currVertexPositions[ edgeNum ]);
                     boundary->setDesiredVertexPosition( edgeNum+1, rodData[r]->currVertexPositions[ edgeNum+1 ]);
                     
-                    if ( rodData[r]->rootFrameDefined )
+//                    if ( rodData[r]->rootFrameDefined )
                     {
-                        MaterialFrame m = it->second.materialFrame;
+                        MaterialFrame m;
                         
                         m.m1 = rodData[r]->rod->getMaterial1( edgeNum );
                         m.m2 = rodData[r]->rod->getMaterial2( edgeNum );
                         m.m3 = rodData[r]->rod->getEdge( edgeNum );
                         m.m3.normalize();
-                        
                         m_rodRootMaterialFrame[ r ] = m;
-                        MaterialFrame vm = it->second.materialFrame;                    
+                        
+                        MaterialFrame vm = kinematicEdgeData->materialFrame;                    
                         m_strandRootMaterialFrame[ r ] = vm;
                         
                         vm.m1 = rodData[r]->rod->getReferenceDirector1( edgeNum );
@@ -413,9 +413,11 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                         m_rodRefMaterialFrame[ r ] = vm;
                         
                         // work out the angle that the material frame is off the reference frame by.
-                        double diff = acos( m_rodRefMaterialFrame[ r ].m2.dot( m_strandRootMaterialFrame[ r ].m3 ) );
+                        //cerr << "kinematicEdgeData->getAngleFromRodmaterialFrame() = " << kinematicEdgeData->getAngleFromRodmaterialFrame() << endl;
                         
-                        boundary->setDesiredEdgeAngle( edgeNum, diff );
+                        
+                        // FIXME: Disabling this until Miklos comes up with something to make it work.
+                        //boundary->setDesiredEdgeAngle( edgeNum, kinematicEdgeData->getAngleFromRodmaterialFrame() );
                     }
                 }
             }
@@ -709,8 +711,8 @@ void Beaker::draw()
             rodData[ r ]->rodRenderer->render();
         }
     }
-
-    /*glLineWidth(5.0);
+/*
+    glLineWidth(5.0);
     glBegin( GL_LINES );
     for ( size_t r=0; r<m_rodRootMaterialFrame.size(); r++ )
     {
@@ -749,8 +751,8 @@ void Beaker::draw()
         glVertex3d( p1[0], p1[1], p1[2] );
     }    
     glEnd();
-    glLineWidth(1.0);*/
-    
+    glLineWidth(1.0);
+  */  
     
   /*  for ( CollisionMeshDataHashMapIterator cmItr = m_collisionMeshMap.begin();
                                                    cmItr != m_collisionMeshMap.end(); ++cmItr )
