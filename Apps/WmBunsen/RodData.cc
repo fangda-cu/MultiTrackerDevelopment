@@ -60,7 +60,51 @@ void RodData::updateKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_m
         kinematicEdgeDataMap[ i_edgeNumber ]->updateMaterialFrame( i_materialframe );
     }
 }
+
+
+    double KinematicEdgeData::getAngleBetweenReferenceAndStrand()
+    { 
+          double pi = 3.14159265358979323846264338327950288;
+          double theta = 0.0;
+          
+          if ( rod != NULL )
+          {   
+                Vec3d m = rod->getMaterial2( edgeNumber );
+                m.normalize();
+                Vec3d b = materialFrame.m3;
+                b.normalize();
     
+                Vec3d x = rod->getEdge( edgeNumber );
+                x.normalize();
+                            
+                Vec3d c = m.cross( b );
+                double dot = x.dot(c);
+                double sign;
+                if ( dot == 0 )
+                    sign = 0;
+                else if ( dot > 0 )
+                    sign = 1;
+                else if ( dot < 0 )
+                    sign = -1;
+                
+                theta = atan2( c.norm(), m.dot(b) );
+                
+                if ( sign < 0 && theta != 0 )
+                   theta = 360*(pi/180.0) - theta;
+               
+          //     theta = acos( rod->getMaterial2( edgeNumber ).dot( materialFrame.m3 ) );
+               //theta = acos( rod->getReferenceDirector2( edgeNumber ).dot( materialFrame.m3 ) );
+          }
+          
+          double tt = (theta - 2*pi);
+          cerr << "tt = " << tt << endl;
+          if ( tt < 0.0001 && tt > -0.0001 )
+              theta = 0.0;
+          
+          cerr << "Offset is " << theta*(180.0/pi) << endl;
+          
+          return theta;
+    }
 
     // around that edge.
     double KinematicEdgeData::getAngleFromRodmaterialFrame()
@@ -69,19 +113,19 @@ void RodData::updateKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_m
         {
             // Annoyingly the vectors we care about are different axes of the strand frame and
             // the material frame.
-            Vec3d rodRefMaterial = rod->getReferenceDirector2( edgeNumber );
+            Vec3d rodRefMaterial = rod->getMaterial2( edgeNumber );
             
             double pi = 3.14159265358979323846264338327950288;
-            //double angle = acos( rodRefMaterial.dot( materialFrame.m3 ) );
-            
-            //double angle = atan2(norm(cross(a,b)),dot(a,b));
-            Vec3d x =  rod->getEdge( edgeNumber );
+
+            Vec3d x = rod->getEdge( edgeNumber );
             x.normalize();
-            Vec3d y = rodRefMaterial;
-            y.normalize();
-            Vec3d z = materialFrame.m3;
+            Vec3d r = rodRefMaterial;
+            r.normalize();
+            //Vec3d m = rod->getMaterial2( edgeNumber );
+            Vec3d m = materialFrame.m3;
+            m.normalize();
             
-            Vec3d c = y.cross( z );
+            Vec3d c = r.cross( m );
             double dot = x.dot(c);
             double sign;
             if ( dot == 0 )
@@ -91,21 +135,25 @@ void RodData::updateKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_m
             else if ( dot < 0 )
                 sign = -1;
             
-            cerr << "sign = " << sign << endl;
-            double angle = atan2( c.norm(), y.dot(z) );
+            double theta = atan2( c.norm(), r.dot(m) );
             
-            if ( sign < 0 )
-                angle = 360*(pi/180.0) - angle;
+            if ( sign < 0 && theta != 0 ) 
+               theta = 360*(pi/180.0) - theta;
+          
+            double tt = (theta - 2*pi);
+            cerr << "tt = " << tt << endl;
+            if ( tt < 0.0001 && tt > -0.0001 )
+              theta = 0.0;
+          
+            //double theta = acos( rod->getMaterial2( edgeNumber ).dot( materialFrame.m3 ) );
+          
+            double rTheta = rod->getTheta( edgeNumber );
+            cerr << "rTheta = " << rTheta*(180.0/pi) << endl;
+            cerr << "Theta = " << theta*(180.0/pi) << endl;
             
-            //angle = angle - offsetFromRodRefFrame;
-            
-            
-            cerr << "angle = " << angle << endl;
-            
-            //if ( angle < 0 )
-              //  angle = 180.0*(pi/180.0) - angle;
-            
-            
+            cerr << "total angle = " << (rTheta + ( offsetFromRodRefFrame - theta ))*(180.0/pi) << endl;
+            //return rTheta + ( offsetFromRodRefFrame - theta );
+            return rTheta +  theta - offsetFromRodRefFrame;
         }
         else
             return 0;

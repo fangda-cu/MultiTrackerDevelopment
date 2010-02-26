@@ -94,6 +94,7 @@ public:
     static MObject oa_undeformedMaterialFrames;
     static MObject ia_strandRootFrames;
     
+        
     // Returns the number of rods this node has input data for
     size_t numberOfRods();
 

@@ -39,7 +39,7 @@ public:
         edgeNumber = i_edgeNumber;
         rod = i_rod;
         
-        offsetFromRodRefFrame = getAngleFromRodmaterialFrame();
+        offsetFromRodRefFrame = getAngleBetweenReferenceAndStrand();
     }
     
     // Since we were probably initislised before the rods were create we need to let the user
@@ -48,7 +48,8 @@ public:
     {
         rod = i_rod;
         materialFrame = i_materialframe;
-        offsetFromRodRefFrame = getAngleFromRodmaterialFrame();
+        offsetFromRodRefFrame = 0;
+        offsetFromRodRefFrame = getAngleBetweenReferenceAndStrand();
     }
 
     void updateMaterialFrame( MaterialFrame& i_materialframe )
@@ -59,7 +60,8 @@ public:
     // to be tangent to the edge then the other two vectors are offset only by some rotation
     // around that edge.
     double getAngleFromRodmaterialFrame();
-    
+    double getAngleBetweenReferenceAndStrand();
+       
     ElasticRod *rod;
     bool rootFrameDefined;
     double offsetFromRodRefFrame;

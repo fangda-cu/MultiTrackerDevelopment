@@ -415,9 +415,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                         // work out the angle that the material frame is off the reference frame by.
                         //cerr << "kinematicEdgeData->getAngleFromRodmaterialFrame() = " << kinematicEdgeData->getAngleFromRodmaterialFrame() << endl;
                         
-                        
-                        // FIXME: Disabling this until Miklos comes up with something to make it work.
-                        //boundary->setDesiredEdgeAngle( edgeNum, kinematicEdgeData->getAngleFromRodmaterialFrame() );
+                        boundary->setDesiredEdgeAngle( edgeNum, kinematicEdgeData->getAngleFromRodmaterialFrame() );
                     }
                 }
             }
@@ -711,7 +709,7 @@ void Beaker::draw()
             rodData[ r ]->rodRenderer->render();
         }
     }
-/*
+
     glLineWidth(5.0);
     glBegin( GL_LINES );
     for ( size_t r=0; r<m_rodRootMaterialFrame.size(); r++ )
@@ -752,7 +750,7 @@ void Beaker::draw()
     }    
     glEnd();
     glLineWidth(1.0);
-  */  
+  
     
   /*  for ( CollisionMeshDataHashMapIterator cmItr = m_collisionMeshMap.begin();
                                                    cmItr != m_collisionMeshMap.end(); ++cmItr )
