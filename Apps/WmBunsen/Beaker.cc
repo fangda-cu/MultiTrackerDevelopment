@@ -710,7 +710,7 @@ void Beaker::draw()
         }
     }
 
-    glLineWidth(5.0);
+    /*glLineWidth(5.0);
     glBegin( GL_LINES );
     for ( size_t r=0; r<m_rodRootMaterialFrame.size(); r++ )
     {
@@ -749,7 +749,7 @@ void Beaker::draw()
         glVertex3d( p1[0], p1[1], p1[2] );
     }    
     glEnd();
-    glLineWidth(1.0);
+    glLineWidth(1.0);*/
   
     
   /*  for ( CollisionMeshDataHashMapIterator cmItr = m_collisionMeshMap.begin();

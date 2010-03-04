@@ -14,6 +14,7 @@ MObject WmBunsenNode::ia_rodsNodes;
 MObject WmBunsenNode::ia_gravity;
 MObject WmBunsenNode::ia_numberOfThreads;
 MObject WmBunsenNode::ia_solver;
+MObject WmBunsenNode::ia_enabled;
 MObject WmBunsenNode::ia_collisionMeshes;
 MObject WmBunsenNode::ia_collisionsEnabled;
 MObject WmBunsenNode::ia_plasticDeformations;
@@ -25,7 +26,7 @@ MObject WmBunsenNode::ia_timingsFile;
 MObject WmBunsenNode::ia_timingEnabled;
 MObject WmBunsenNode::oa_simStepTaken;
 
-WmBunsenNode::WmBunsenNode() : m_initialised( false ), m_beaker( NULL )
+WmBunsenNode::WmBunsenNode() : m_initialised( false ), m_enabled( true ), m_beaker( NULL )
 {
     m_beaker = new Beaker();
 }
@@ -185,6 +186,9 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     
     if ( i_plug == ca_syncAttrs )
     {
+        m_enabled = i_dataBlock.inputValue( ia_enabled, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+        
         m_previousTime = m_currentTime;
         m_currentTime = i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
         CHECK_MSTATUS( stat );
@@ -228,7 +232,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         CHECK_MSTATUS( stat );
         m_beaker->setPlasticDeformations( plasticDeformations );
         
-        if ( m_currentTime == m_startTime )
+        if ( m_enabled && m_currentTime == m_startTime )
         {
             m_beaker->resetEverything();
             
@@ -241,10 +245,13 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             createRodDataFromRodNodes( i_dataBlock, solverLibrary );
         }
 
-        pullOnAllRodNodes( i_dataBlock );
-        updateAllCollisionMeshes( i_dataBlock );
+        if ( m_enabled )
+        {
+            pullOnAllRodNodes( i_dataBlock );
+            updateAllCollisionMeshes( i_dataBlock );
+        }
         
-        if ( m_currentTime > m_previousTime && m_currentTime > m_startTime) 
+        if ( m_enabled && m_currentTime > m_previousTime && m_currentTime > m_startTime) 
         {
             m_beaker->takeTimeStep( numberOfThreads, m_framedt, substeps, collisionsEnabled, 
                                     selfCollisionPenaltyForces, fullSelfCollisions,
@@ -687,7 +694,7 @@ MStatus WmBunsenNode::initialize()
     }
     {
         MFnNumericAttribute nAttr;
-        ia_timingEnabled = nAttr.create( "timingEnabled", "tie", MFnNumericData::kBoolean, false, &stat);
+        ia_timingEnabled = nAttr.create( "timingEnabled", "tie", MFnNumericData::kBoolean, false, &stat );
         if (!stat) {
             stat.perror("create ia_timingEnabled attribute");
             return stat;
@@ -698,7 +705,21 @@ MStatus WmBunsenNode::initialize()
         stat = addAttribute( ia_timingEnabled );
         if (!stat) { stat.perror( "addAttribute ia_timingEnabled" ); return stat; }
     }
-
+    {
+        MFnNumericAttribute nAttr;
+        ia_enabled = nAttr.create( "enabled", "en", MFnNumericData::kBoolean, true, &stat );
+        if (!stat) {
+            stat.perror("create ia_enabled attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_enabled );
+        if (!stat) { stat.perror( "addAttribute ia_enabled" ); return stat; }
+    }
+    stat = attributeAffects( ia_enabled, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_enabled->ca_syncAttrs" ); return stat; }
     
     stat = attributeAffects( ia_time, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_time->ca_syncAttrs" ); return stat; }

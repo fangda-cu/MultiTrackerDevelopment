@@ -59,6 +59,7 @@ public:
     static MObject ia_numberOfThreads;
     static MObject ia_solver;
     static MObject ia_collisionsEnabled;
+    static MObject ia_enabled;
     static MObject oa_dt;
     
     static MObject ia_collisionMeshes;
@@ -88,6 +89,8 @@ private:
     double m_framedt;
     
     bool m_initialised;
+    
+    bool m_enabled;
     
     Beaker* m_beaker;
 };

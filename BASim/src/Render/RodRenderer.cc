@@ -62,7 +62,7 @@ void RodRenderer::drawSimpleRod()
 
   glEnd();
 
-  glPointSize(5);
+ /* glPointSize(5);
   glBegin(GL_POINTS);
 
   ElasticRod::vertex_iter vit;
@@ -74,7 +74,7 @@ void RodRenderer::drawSimpleRod()
     OpenGL::vertex(x);
   }
 
-  glEnd();
+  glEnd();*/
 }
 
 void RodRenderer::drawSmoothRod()

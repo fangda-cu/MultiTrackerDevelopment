@@ -32,7 +32,7 @@ using namespace BASim;
 /* static */ MObject WmBunsenRodNode::ia_cachePath;
 /* static */ MObject WmBunsenRodNode::ia_cacheFrame;
 /* static */ MObject WmBunsenRodNode::ia_readFromCache;
-                                                                    
+
 // Output and cached attributes
 /* static */ MObject WmBunsenRodNode::ca_syncAttrs;
 /* static */ MObject WmBunsenRodNode::oa_rodsChanged;
@@ -523,7 +523,14 @@ void WmBunsenRodNode::updateRodDataFromInputs()
                         (*mx_rodData)[ i ]->updateKinematicEdge( 0, strandRootFrames[ i ] );
                 }
                 else // remove the entry in the map
-                    (*mx_rodData)[ i ]->removeKinematicEdge( 0 );
+                {
+                    // FIXME:
+                    // We haven't released a version of barbershop that gives the frames so
+                    // dont remove the edge just yet, leave it and we'll get the first edge
+                    // locked we just won't track rotation properly without the frames.
+                    
+                    //(*mx_rodData)[ i ]->removeKinematicEdge( 0 );
+                }
             }
         }
     }
@@ -1324,7 +1331,7 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
 	bool draw;
 	drawMaterialFramesPlug.getValue( draw );
 	
-    if ( draw && mx_rodData != NULL )
+    /*if ( draw && mx_rodData != NULL )
     {
         size_t numRods = mx_rodData->size();
         unsigned int idx = 0;
@@ -1389,7 +1396,7 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
                     glLineWidth( 1.0 );
                 }*/
                 
-                glBegin( GL_LINES );
+      /*          glBegin( GL_LINES );
                 for ( unsigned int e = 0; e < edgesInRod; e++ )
                 {
                     Vec3d m1 = (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m1;
@@ -1415,7 +1422,7 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
                 glEnd();
             }
         }
-    }
+    }*/
     
     
 	// draw dynamic Hair

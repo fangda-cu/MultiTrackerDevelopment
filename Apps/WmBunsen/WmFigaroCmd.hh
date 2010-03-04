@@ -68,7 +68,8 @@ protected:
                            const MSyntax::MArgType i_argType6 = MSyntax::kNoArg);
 
     MStatus createDagNode( const char *transformName, const char *nodeType, MObject &parentObj, 
-                           MObject *transformObjP, MObject *shapeObjP, MDagModifier *iDagModifier );
+                           MObject *transformObjP, MObject *shapeObjP, MDagModifier *iDagModifier,
+                           MString& o_shapeName );
 
     static void printHelp();
 
@@ -80,11 +81,13 @@ protected:
     void createWmBunsenRodNode( bool useNURBSInput = true, bool i_previewOnly = false, MObject* o_rodNode = NULL );
     void createWmBunsenNode( MObject &o_wmBunsenNodeObj );
     void addCollisionMeshes();
+    void attatchEdgeToObject();
 
 public:     // Data
 protected:  // Data
   
     void createPreviewNodes();
+    static void appendToResultString( MString& i_resultString );
     
     /// True if the command is undoable, false otherwise
     bool m_undoable;
@@ -124,6 +127,8 @@ protected:  // Data
     MObject  m_selectedwmBunsenNode;
     MString m_cacheFile;
     
+    static MStringArray m_results;
+        
     static std::map<std::string, WmBunsenHelp> m_help;
     
 };

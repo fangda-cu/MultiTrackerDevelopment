@@ -65,7 +65,8 @@ WmFigaroCmd.hh \
 WmBunsenCollisionMeshNode.hh \
 WmBunsenHelpers.hh \
 WmBunsenNode.hh \
-WmBunsenRodNode.hh
+WmBunsenRodNode.hh \
+WmFigConnectionNode.hh
 
 PLG1_S          := \
 Beaker.cc \
@@ -75,8 +76,8 @@ WmFigaroCmd.cc \
 WmBunsenCollisionMeshNode.cc \
 WmBunsenNode.cc \
 WmBunsenPluginMain.cc \
-WmBunsenRodNode.cc
-
+WmBunsenRodNode.cc \
+WmFigConnectionNode.cc
         
 PLG1_L          := \
 	-lWfigaro_dbg \

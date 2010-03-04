@@ -33,8 +33,9 @@
 #include <maya/MAnimControl.h>
 
 // Statics
-std::map<std::string, WmBunsenHelp> WmFigaroCmd::m_help;
-MString WmFigaroCmd::typeName("wmFigaro");
+/* static */ std::map<std::string, WmBunsenHelp> WmFigaroCmd::m_help;
+/* static */ MString WmFigaroCmd::typeName("wmFigaro");
+/* static */ MStringArray WmFigaroCmd::m_results;
 //MObject WmFigaroCmd::m_dynNode;
 
 // CTOR
@@ -47,6 +48,7 @@ WmFigaroCmd::WmFigaroCmd()
     m_cacheFile( "" )/*,
     m_undo(NULL)*/
 {
+    m_results.clear();
 }
 
 // DTOR
@@ -78,6 +80,7 @@ const char *const kName( "-n" );
 const char *const kAddCollisionMeshes( "-acm" );
 const char *const kPreviewCache( "-prc" );
 const char *const kCacheFile( "-caf" );
+const char *const kAttachEdgeToObject( "-aeo" );
 
 const char *const kHelp( "-h" );
 
@@ -100,6 +103,8 @@ MSyntax WmFigaroCmd::syntaxCreator()
                "Sets the number of CVs to use for each created elastic rod.", MSyntax::kLong );
     p_AddFlag( mSyntax, kAddCollisionMeshes, "-addCollisionMesh",
                "Adds a a selected polygon mesh as a collision object for the selected Bunsen node." );
+    p_AddFlag( mSyntax, kAttachEdgeToObject, "-attachEdgeToObject",
+               "Creates a connection node to allow a rod edge to be controlled by the selected object." );
     p_AddFlag( mSyntax, kPreviewCache, "-previewCache",
                "Creates wmFigaro and wmFigRodNodes and to load the specified cache file for preview." );
     p_AddFlag( mSyntax, kCacheFile, "-cacheFile",
@@ -146,7 +151,6 @@ MStatus WmFigaroCmd::doIt( const MArgList &i_mArgList )
             {
                  m_mArgDatabase->getFlagArgument( kCacheFile, 0, m_cacheFile );
             }
-            
             
             // The command usually operates on whatever we have selected, so filter the selection
             // into the various categories opeations are going to care about
@@ -205,10 +209,13 @@ void WmFigaroCmd::createWmBunsenRodNode( bool useNURBSInput, bool i_previewOnly,
     MDagPath shapeDagPath;    
     MObject pObj;
     MDagModifier dagModifier;
+    MString rodShapeName = "";
 
-    createDagNode( WmBunsenRodNode::typeName.asChar(), WmBunsenRodNode::typeName.asChar(), 
-                   pObj, &rodTObj, &rodSObj, &dagModifier );
-                          
+    createDagNode( WmBunsenRodNode::typeName.asChar(), WmBunsenRodNode::typeName.asChar(),
+                   pObj, &rodTObj, &rodSObj, &dagModifier, rodShapeName );
+
+    appendToResultString( rodShapeName );
+    
     MDagPath rodDagPath;
     stat = MDagPath::getAPathTo( rodSObj, rodDagPath );
     CHECK_MSTATUS( stat );
@@ -238,7 +245,7 @@ void WmFigaroCmd::createWmBunsenRodNode( bool useNURBSInput, bool i_previewOnly,
     stat = shearPlug.setLocked( true );
     CHECK_MSTATUS( stat );
     
-    // Shape now    MFnDependencyNode sFn( rodSObj );
+    // Shape now MFnDependencyNode sFn( rodSObj );
     MFnDependencyNode sFn( rodSObj );
         
     MPlug localTransPlug( sFn.findPlug( "localPosition", true, &stat ) );
@@ -416,6 +423,31 @@ void WmFigaroCmd::createWmBunsenRodNode( bool useNURBSInput, bool i_previewOnly,
     }*/
 }
 
+void WmFigaroCmd::appendToResultString( MString& i_resultString )
+{
+    MStatus stat;
+
+    // FIXME:
+    // I can't get appendToResult to work so I just store all the results and set them in one
+    // go at the end of redoit
+    
+ //  MString s = currentStringResult( &stat );
+  // cerr << "s = " << s << endl;
+    
+  /*  if ( !stat )
+    {
+        cerr << "setting!\n";
+        setResult( i_resultString );
+    }
+    else*/
+    {
+        m_results.append( i_resultString );
+    }
+    
+//    MString s = currentStringResult( &stat );
+  //  cerr << " after s = " << s << endl;
+}
+
 void WmFigaroCmd::createWmBunsenNode( MObject &o_wmBunsenNodeObj ) 
 {    
  
@@ -423,12 +455,15 @@ void WmFigaroCmd::createWmBunsenNode( MObject &o_wmBunsenNodeObj )
     
     MObject bunsenNodeTObj;  // Object for transform node
     MObject bunsenNodeSObj;  // Object for shape node
-    MDagPath shapeDagPath;    
+    MDagPath shapeDagPath;
     MObject pObj;
     MDagModifier dagModifier;
+    MString bunsenShapeName = "";
 
     createDagNode( WmBunsenNode::typeName.asChar(), WmBunsenNode::typeName.asChar(), 
-                   pObj, &bunsenNodeTObj, &bunsenNodeSObj, &dagModifier );
+                   pObj, &bunsenNodeTObj, &bunsenNodeSObj, &dagModifier, bunsenShapeName );
+    
+    appendToResultString( bunsenShapeName );
                           
     MDagPath bunsenNodeDagPath;
     stat = MDagPath::getAPathTo( bunsenNodeSObj, bunsenNodeDagPath );
@@ -519,9 +554,9 @@ void WmFigaroCmd::getNodes( MSelectionList i_opt_nodes )
         {
             mObj = childPath.node();
             
-            m_meshList.add( childPath, mObj, true);            
+            m_meshList.add( childPath, mObj, true);
         } 
-        else            
+        else
         {
             /////////////////////
             //
@@ -599,10 +634,16 @@ MStatus WmFigaroCmd::redoIt()
         {
             createPreviewNodes();
         }
+        if ( m_mArgDatabase->isFlagSet( kAttachEdgeToObject ) )
+        {
+            attatchEdgeToObject();
+        }
         else
         {
             // Do other stuff such as return number of rods or whatever
         }
+        
+        setResult( m_results );
     }
 
     return mStatus;
@@ -611,6 +652,11 @@ MStatus WmFigaroCmd::redoIt()
 MStatus WmFigaroCmd::undoIt()
 {
     return MS::kSuccess;
+}
+
+void WmFigaroCmd::attatchEdgeToObject()
+{
+    
 }
 
 void WmFigaroCmd::addCollisionMeshes()
@@ -647,10 +693,14 @@ void WmFigaroCmd::addCollisionMeshes()
         MDagPath shapeDagPath;    
         MObject pObj;
         MDagModifier dagModifier;
+        MString collisionNodeShapeName = "";
 
         createDagNode( WmBunsenCollisionMeshNode::typeName.asChar(), 
                        WmBunsenCollisionMeshNode::typeName.asChar(), 
-                       pObj, &collisionMeshNodeTObj, &collisionMeshNodeSObj, &dagModifier );
+                       pObj, &collisionMeshNodeTObj, &collisionMeshNodeSObj, &dagModifier,
+                       collisionNodeShapeName );
+        
+        appendToResultString( collisionNodeShapeName );
                           
         MDagPath collisionMeshNodeDagPath;
         stat = MDagPath::getAPathTo( collisionMeshNodeSObj, collisionMeshNodeDagPath );
@@ -937,7 +987,8 @@ void WmFigaroCmd::getSelectedCurves( const MSelectionList &i_selectionList,
 }
 
 MStatus WmFigaroCmd::createDagNode( const char *transformName, const char *nodeType, 
-    MObject &parentObj, MObject *transformObjP, MObject *shapeObjP, MDagModifier *iDagModifier )
+    MObject &parentObj, MObject *transformObjP, MObject *shapeObjP, MDagModifier *iDagModifier,
+    MString& o_shapeName )
 {
     MStatus rStatus = MS::kSuccess;
 
@@ -998,9 +1049,15 @@ MStatus WmFigaroCmd::createDagNode( const char *transformName, const char *nodeT
     
               rStatus = mDagModifier.renameNode(shapeObj, shapeName);
               if (rStatus)
+              {
                 mDagModifier.doIt();
+                o_shapeName = shapeName;
+              }
               else
+              {
                 cerr << "Couldn't Rename Shape To: \"" << shapeName << "\"" << endl;
+                o_shapeName = "";
+              }
             }
             else {
               if (shapeObjP)

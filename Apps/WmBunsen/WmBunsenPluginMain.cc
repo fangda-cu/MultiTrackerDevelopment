@@ -5,6 +5,7 @@
 #include "WmBunsenNode.hh"
 #include "WmBunsenCollisionMeshNode.hh"
 #include "WmFigaroCmd.hh"
+#include "WmFigConnectionNode.hh"
 
 MStatus initializePlugin( MObject obj )
 { 
@@ -47,6 +48,16 @@ MStatus initializePlugin( MObject obj )
         stat.perror( "RegisterNode WmFigCollisionNode failed" );
         return stat;
     }
+
+    stat = plugin.registerNode( WmFigConnectionNode::typeName, WmFigConnectionNode::typeID,
+                                WmFigConnectionNode::creator,
+                                WmFigConnectionNode::initialize,
+                                WmFigConnectionNode::kLocatorNode );
+    if ( !stat )
+    {
+        stat.perror( "RegisterNode WmFigConnectionNode failed" );
+        return stat;
+    }
     
     stat = plugin.registerCommand( WmFigaroCmd::typeName, WmFigaroCmd::creator, 
                                    WmFigaroCmd::syntaxCreator );
@@ -87,6 +98,12 @@ MStatus uninitializePlugin( MObject obj)
     if( !stat ) 
     {
         stat.perror( "DeregisterNode WmFigCollisionNode failed" );
+    }
+    
+    stat = plugin.deregisterNode( WmFigConnectionNode::typeID );
+    if( !stat ) 
+    {
+        stat.perror( "DeregisterNode WmFigConnectionNode failed" );
     }
     
     // Deregister custom commands
