@@ -184,7 +184,7 @@ void RodStretchingForce::updateStiffness()
     if (viscous()) {
       E = 3 * m_rod.getViscosity() / m_rod.getTimeStep();
     }
-    setKs(eh, E * M_PI * (square(a) + square(b)) / 2.0);
+    setKs(eh, E * M_PI * a * b);
   }
 }
 
