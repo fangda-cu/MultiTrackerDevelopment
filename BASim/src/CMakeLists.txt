@@ -1,8 +1,10 @@
 find_package (OpenGL REQUIRED)
 include_directories (${OPENGL_INCLUDE_DIR})
+set (DEFAULT_LIBRARIES ${DEFAULT_LIBRARIES} ${OPENGL_LIBRARIES})
 
 find_package (GLUT REQUIRED glut)
 include_directories (${GLUT_INCLUDE_DIR})
+set (DEFAULT_LIBRARIES ${DEFAULT_LIBRARIES} ${GLUT_glut_LIBRARY})
 
 set (Directories
   .
@@ -27,6 +29,20 @@ if (PNG_FOUND)
   set (Headers ${Headers} Render/YImage/YImage.hh)
   set (Sources ${Sources} Render/YImage/YImage.cc)
 endif (PNG_FOUND)
+
+if (PETSC_FOUND)
+  append_files (Headers "hh" Math/Petsc)
+  append_files (Inlines "inl" Math/Petsc)
+  append_files (Templates "tcc" Math/Petsc)
+  append_files (Sources "cc" Math/Petsc)
+endif (PETSC_FOUND)
+
+if (MKL_FOUND)
+  append_files (Headers "hh" Math/MKL)
+  append_files (Inlines "inl" Math/MKL)
+  append_files (Templates "tcc" Math/MKL)
+  append_files (Sources "cc" Math/MKL)
+endif (MKL_FOUND)
 
 if (TEST_ROD_STRETCHING_FORCE)
   add_definitions (-DTEST_ROD_STRETCHING)
@@ -54,4 +70,4 @@ if (TEST_ROD_BENDING_FORCE)
 endif (TEST_ROD_BENDING_FORCE)
 
 add_library (BASim SHARED ${Headers} ${Inlines} ${Templates} ${Sources})
-target_link_libraries (BASim ${PNG_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_glut_LIBRARY})
+target_link_libraries (BASim ${DEFAULT_LIBRARIES})

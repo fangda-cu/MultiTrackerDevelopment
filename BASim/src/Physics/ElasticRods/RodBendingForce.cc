@@ -368,9 +368,9 @@ void RodBendingForce::localForce(ElementForce& force, const vertex_handle& vh)
   vertex_handle vh1 = m_stencil.nextVert();
 
   Mat2d B = (getB(eh0) + getB(eh1)) / 2.0;
-  const Vec3d& x0 = m_rod.getVertex(vh0);
-  const Vec3d& x1 = m_rod.getVertex(vh);
-  const Vec3d& x2 = m_rod.getVertex(vh1);
+  //const Vec3d& x0 = m_rod.getVertex(vh0);
+  //const Vec3d& x1 = m_rod.getVertex(vh);
+  //const Vec3d& x2 = m_rod.getVertex(vh1);
   Scalar len = getRefVertexLength(vh);
 
   for (int j = 0; j <= 1; ++j) {
@@ -379,34 +379,19 @@ void RodBendingForce::localForce(ElementForce& force, const vertex_handle& vh)
   }
 
   int i = vh.idx();
-  const Mat3dArray& Dkb = m_rod.property(m_derivKb)[vh];
+  Eigen::Matrix<Scalar, 1, 3> temp(Eigen::Matrix<Scalar, 1, 3>::Zero().eval());
   for (int j = i - 1; j <= i; ++j) {
-    int j2 = j + 1 - i;
     const MaterialMatrix& m = getMaterialMatrix(j);
-    Eigen::Matrix<Scalar, 1, 3> temp
-      = -0.5 / len * (getOmega(vh, j2) - getOmegaBar(vh, j2)).transpose()
+    int j2 = j + 1 - i;
+    temp
+      += -0.5 / len * (getOmega(vh, j2) - getOmegaBar(vh, j2)).transpose()
       * B * m;
-    for (int k = 0; k < 3; ++k) {
-      force.segment(4 * k, 3) += (temp * Dkb[k]).transpose();
-    }
   }
 
-  /*
-  int i = vh.idx();
-  for (int j = i - 1; j <= i; ++j) {
-    Vec9d DxU = computeDxKbDotRef(x0, x1, x2, m_rod.getReferenceDirector1(j));
-    Vec9d DxV = computeDxKbDotRef(x0, x1, x2, m_rod.getReferenceDirector2(j));
-    Scalar theta = m_rod.getTheta(j);
-    Mat2d Rot;
-    Rot << -sin(theta), cos(theta), -cos(theta), -sin(theta);
-    Vec2d temp = 0.5 / len * (getOmega(i, j) - getOmegaBar(i, j)).transpose()
-      * B * Rot;
-    for (int k = 0; k < 3; ++k) {
-      force.segment(4 * k, 3) += -temp(0) * DxU.segment(3 * k, 3)
-        - temp(1) * DxV.segment(3 * k, 3);
-    }
+  const Mat3dArray& Dkb = m_rod.property(m_derivKb)[vh];
+  for (int k = 0; k < 3; ++k) {
+    force.segment(4 * k, 3) += (temp * Dkb[k]).transpose();
   }
-  */
 }
 
 void RodBendingForce::globalJacobian(MatrixBase& Jacobian)

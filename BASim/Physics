@@ -18,8 +18,10 @@
 #include "src/Physics/ElasticRods/RodForce.hh"
 #include "src/Physics/ElasticRods/RodStretchingForce.hh"
 #include "src/Physics/ElasticRods/RodTwistingForce.hh"
+#include "src/Physics/ElasticRods/RodTwistingForceSym.hh"
 #include "src/Physics/ElasticRods/RodAnisoBending.hh"
 #include "src/Physics/ElasticRods/RodBendingForce.hh"
+#include "src/Physics/ElasticRods/RodBendingForceSym.hh"
 #include "src/Physics/ElasticRods/RodAnisoForce.hh"
 
 #include "src/Physics/ElasticRods/RodUtils.hh"

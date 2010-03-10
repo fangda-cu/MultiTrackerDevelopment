@@ -87,6 +87,9 @@ public:
   const Scalar& getShearModulus() const;
   void setShearModulus(const Scalar& G);
 
+  const Scalar& getViscosity() const;
+  void setViscosity(const Scalar& mu);
+
   virtual int vertIdx(const vertex_handle& vh, int coordinate) const;
   virtual int edgeIdx(const edge_handle& eh) const;
 
@@ -145,7 +148,7 @@ public:
   */
   void setRadius(const Scalar& a, const Scalar& b);
 
-  /** Sets a circular cross-section for a specifig edge in the rod.
+  /** Sets a circular cross-section for a specific edge in the rod.
 
       \param[in] j The edge number.
       \param[in] r The radius of the cross-section.
@@ -230,7 +233,8 @@ public:
 
   const Vec3d& getCurvatureBinormal(const vertex_handle& vh) const;
   void setCurvatureBinormal(const vertex_handle& vh, const Vec3d& kb);
-const Vec3d& getCurvatureBinormal(int i) const;
+
+  const Vec3d& getCurvatureBinormal(int i) const;
   void setCurvatureBinormal(int i, const Vec3d& kb);
 
   bool vertFixed(const vertex_handle& vh) const;
@@ -247,9 +251,6 @@ const Vec3d& getCurvatureBinormal(int i) const;
 
   bool quasistatic() const;
   void setQuasistatic(bool q);
-
-  bool viscous() const;
-  void setViscous(bool v);
 
   enum RefFrameType { SpaceParallel, TimeParallel };
   RefFrameType refFrameType() const;
@@ -399,7 +400,6 @@ protected:
 
   ObjPropHandle<RodForces> m_forces; ///< forces acting on the rod
   ObjPropHandle<bool> m_quasistatic;
-  ObjPropHandle<bool> m_viscous;
   ObjPropHandle<RefFrameType> m_refFrameType;
   ObjPropHandle<Scalar> m_density;
   ObjPropHandle<IntArray> m_fixed;
@@ -407,6 +407,7 @@ protected:
   ObjPropHandle<IntArray> m_fixedEdges;
   ObjPropHandle<Scalar> m_YoungsModulus;
   ObjPropHandle<Scalar> m_ShearModulus;
+  ObjPropHandle<Scalar> m_viscosity;
 
   VPropHandle<Vec3d> m_vertexPositions;
   VPropHandle<Vec3d> m_vertexVelocities;

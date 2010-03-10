@@ -34,14 +34,6 @@ public:
       m_lower[i] = std::max(i - m_kl, 0);
       m_upper[i] = std::min(i + m_ku + 1, m_cols);
     }
-    /*
-      m_lower = new int[m_cols];
-      m_upper = new int[m_cols];
-      for (int j = 0; j < m_cols; ++j) {
-      m_lower[j] = std::max(j - m_ku, 0);
-      m_upper[j] = std::min(j + m_kl + 1, m_rows);
-      }
-    */
   }
 
   virtual ~BandMatrix()
@@ -53,15 +45,13 @@ public:
 
   virtual Scalar operator() (int i, int j) const
   {
-    if (j - i > m_ku) return 0;
-    if (i - j > m_kl) return 0;
+    if (!indicesValid(i, j)) return 0;
     return m_data[(m_ku + i - j) * cols() + j];
   }
 
   Scalar& operator() (int i, int j)
   {
-    assert(j - i <= m_ku);
-    assert(i - j <= m_kl);
+    assert(indicesValid(i, j));
     return m_data[(m_ku + i - j) * cols() + j];
   }
 
@@ -80,22 +70,38 @@ public:
   virtual int add(const IntArray& rowIdx, const IntArray& colIdx,
                   const MatXd& values)
   {
-    for (size_t i = 0; i < rowIdx.size(); ++i) {
-      for (size_t j = 0; j < colIdx.size(); ++j) {
-        (*this)(rowIdx[i], colIdx[j]) += values(i, j);
+    size_t nr = rowIdx.size();
+    size_t nc = colIdx.size();
+
+    for (size_t i = 0; i < nr; ++i) {
+      int r = rowIdx[i];
+      assert(r >= 0);
+      assert(r < rows());
+      Scalar* val = &m_data[(m_ku + r) * m_cols];
+      for (size_t j = 0; j < nc; ++j) {
+        assert(indicesValid(r, colIdx[j]));
+        *(val + colIdx[j] * (1 - m_cols)) += values(i, j);
       }
     }
+
     return 0;
   }
 
   virtual int add(const IndexArray& rowIdx, const IndexArray& colIdx,
                   const MatXd& values)
   {
-    for (int i = 0; i < rowIdx.size(); ++i) {
-      for (int j = 0; j < colIdx.size(); ++j) {
-        (*this)(rowIdx[i], colIdx[j]) += values(i, j);
+    int nr = rowIdx.size();
+    int nc = colIdx.size();
+
+    for (int i = 0; i < nr; ++i) {
+      int r = rowIdx[i];
+      Scalar* val = &m_data[(m_ku + r) * m_cols];
+      for (int j = 0; j < nc; ++j) {
+        assert(indicesValid(r, colIdx[j]));
+        *(val + colIdx[j] * (1 - m_cols)) += values(i, j);
       }
     }
+
     return 0;
   }
 
@@ -115,7 +121,7 @@ public:
   {
     for (int i = 0; i < (int) idx.size(); ++i) {
       int r = idx[i];
-      assert(r < m_rows);
+      assert(r >=0 && r < m_rows);
       int lower = m_lower[r];
       int upper = m_upper[r];
       for (int j = lower; j < upper; ++j) {
@@ -128,6 +134,9 @@ public:
 
   virtual int multiply(VecXd& y, Scalar s, const VecXd& x) const
   {
+    assert(y.size() == m_rows);
+    assert(x.size() == m_cols);
+
     for (int i = 0; i < m_rows; ++i) {
       int lower = m_lower[i];
       int upper = m_upper[i];
@@ -164,6 +173,12 @@ public:
   Scalar* data() { return m_data; }
 
 protected:
+
+  bool indicesValid(int r, int c) const
+  {
+    return ((r >= 0) && (r < rows()) && (c >= 0) && (c < cols())
+            && (r - c <= m_kl) && (c - r <= m_ku));
+  }
 
   int m_kl; ///< Number of sub-diagonals
   int m_ku; ///< Number of super-diagonals

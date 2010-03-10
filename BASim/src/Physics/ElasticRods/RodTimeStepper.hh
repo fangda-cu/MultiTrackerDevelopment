@@ -114,7 +114,7 @@ public:
     // add internal forces
     m_rod.computeForces(f);
 
-    if (m_rod.viscous()) f /= m_diffEqSolver->getTimeStep();
+    //if (m_rod.viscous()) f /= m_diffEqSolver->getTimeStep();
 
     // add external forces
     for (size_t i = 0; i < m_externalForces.size(); ++i) {
@@ -133,10 +133,10 @@ public:
   {
     m_rod.computeJacobian(J);
 
-    if (m_rod.viscous()) {
-      J.finalize();
-      J.scale(1.0 / m_diffEqSolver->getTimeStep());
-    }
+//     if (m_rod.viscous()) {
+//       J.finalize();
+//       J.scale(1.0 / m_diffEqSolver->getTimeStep());
+//     }
 
     for (size_t i = 0; i < m_externalForces.size(); ++i) {
       m_externalForces[i]->computeForceDX(m_rod, J);

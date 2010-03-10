@@ -16,6 +16,10 @@
 #include "BASim/src/Math/Petsc/PetscLinearSolver.hh"
 #endif // HAVE_PETSC
 
+#ifdef HAVE_MKL
+#include "BASim/src/Math/MKL/MKLLinearSolver.hh"
+#endif // HAVE_MKL
+
 namespace BASim {
 
 class SolverUtils

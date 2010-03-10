@@ -8,7 +8,9 @@
 #include "AnisotropicRod.hh"
 #include "RodStretchingForce.hh"
 #include "RodTwistingForce.hh"
+#include "RodTwistingForceSym.hh"
 #include "RodBendingForce.hh"
+#include "RodBendingForceSym.hh"
 #include "RodAnisoForce.hh"
 
 namespace BASim {
@@ -24,9 +26,12 @@ void AnisotropicRod::setup()
   ElasticRod::setup();
 
   addForce(new RodStretchingForce(*this));
-  addForce(new RodTwistingForce(*this));
-  if (refFrameType() == TimeParallel) addForce(new RodBendingForce(*this));
-  else addForce(new RodAnisoForce(*this));
+  //addForce(new RodTwistingForce(*this));
+  addForce(new RodTwistingForceSym(*this));
+  if (refFrameType() == TimeParallel) {
+    //addForce(new RodBendingForce(*this));
+    addForce(new RodBendingForceSym(*this));
+  } else addForce(new RodAnisoForce(*this));
 }
 
 } // namespace BASim

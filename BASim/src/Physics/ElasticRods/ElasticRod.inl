@@ -307,16 +307,6 @@ inline void ElasticRod::setQuasistatic(bool q)
   property(m_quasistatic) = q;
 }
 
-inline bool ElasticRod::viscous() const
-{
-  return property(m_viscous);
-}
-
-inline void ElasticRod::setViscous(bool v)
-{
-  property(m_quasistatic) = v;
-}
-
 inline ElasticRod::RefFrameType ElasticRod::refFrameType() const
 {
   return property(m_refFrameType);
@@ -355,6 +345,16 @@ inline const Scalar& ElasticRod::getShearModulus() const
 inline void ElasticRod::setShearModulus(const Scalar& G)
 {
   property(m_ShearModulus) = G;
+}
+
+inline const Scalar& ElasticRod::getViscosity() const
+{
+  return property(m_viscosity);
+}
+
+inline void ElasticRod::setViscosity(const Scalar& mu)
+{
+  property(m_viscosity) = mu;
 }
 
 inline int ElasticRod::vertIdx(int vertexNumber, int coordinate) const
