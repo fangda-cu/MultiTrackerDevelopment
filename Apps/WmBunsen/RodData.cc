@@ -84,8 +84,10 @@ void RodData::updateKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_m
                     sign = 0;
                 else if ( dot > 0 )
                     sign = 1;
-                else if ( dot < 0 )
+                else {
+                    assert( dot < 0 );
                     sign = -1;
+                }
                 
                 theta = atan2( c.norm(), m.dot(b) );
                 
@@ -132,8 +134,10 @@ void RodData::updateKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_m
                 sign = 0;
             else if ( dot > 0 )
                 sign = 1;
-            else if ( dot < 0 )
+            else {
+                assert( dot < 0 );
                 sign = -1;
+            }
             
             double theta = atan2( c.norm(), r.dot(m) );
             

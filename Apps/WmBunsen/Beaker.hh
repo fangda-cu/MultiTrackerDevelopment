@@ -8,12 +8,12 @@
 #ifndef BEAKER_HH_
 #define BEAKER_HH_
 
-#include <weta/Wfigaro/Core/EigenIncludes.hh>
-#include <weta/Wfigaro/Collisions/CollisionMeshData.hh>
-#include <weta/Wfigaro/Core/ObjectControllerBase.hh>
-#include <weta/Wfigaro/Physics/World.hh>
-#include <weta/Wfigaro/Physics/ElasticRods/RodCollisionTimeStepper.hh>
-#include <weta/Wfigaro/Render/RodRenderer.hh>
+#include <BASim/src/Core/EigenIncludes.hh>
+#include <BASim/src/Collisions/CollisionMeshData.hh>
+#include <BASim/src/Core/ObjectControllerBase.hh>
+#include <BASim/src/Physics/World.hh>
+#include <BASim/src/Physics/ElasticRods/RodCollisionTimeStepper.hh>
+#include <BASim/src/Render/RodRenderer.hh>
 #include "RodData.hh"
 #include <tr1/unordered_map>
 #include <iostream>
