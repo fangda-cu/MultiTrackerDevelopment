@@ -34,7 +34,7 @@ struct RodOptions {
     , viscosity(100)
     , anisotropic(true)
     , elastic(true)
-    , quasistatic(false)
+    , quasistatic(true)
     , inextensible(false)
     , refFrame(ElasticRod::TimeParallel)
   {}

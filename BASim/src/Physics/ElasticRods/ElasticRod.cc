@@ -27,7 +27,7 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   }
 
   add_property(m_forces, "forces");
-  add_property(m_quasistatic, "quasistatic", false);
+  add_property(m_quasistatic, "quasistatic", true);
   add_property(m_refFrameType, "reference-frame", TimeParallel);
   add_property(m_density, "density", 1.0);
   add_property(m_fixed, "fixed_dofs");
@@ -97,8 +97,8 @@ void ElasticRod::setup()
   computeSpaceParallel();
   computeMaterialDirectors();
   computeVertexMasses();
-  //computeEdgeInertias();
-  property(m_ndof) = quasistatic() ? 3 * nv() : 3 * nv() + ne();
+  if (!quasistatic()) computeEdgeInertias();
+  property(m_ndof) = 3 * nv() + ne();
 }
 
 void ElasticRod::addForce(RodForce* force)
