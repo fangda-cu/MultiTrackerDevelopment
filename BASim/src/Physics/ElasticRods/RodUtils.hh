@@ -17,9 +17,9 @@ struct RodOptions {
   Scalar radiusB;
   Scalar YoungsModulus;
   Scalar ShearModulus;
+  Scalar viscosity;
   bool anisotropic;
   bool elastic;
-  bool viscous;
   bool quasistatic;
   bool inextensible;
   ElasticRod::RefFrameType refFrame;
@@ -31,9 +31,9 @@ struct RodOptions {
     , radiusB(0.1)
     , YoungsModulus(1000)
     , ShearModulus(1000)
+    , viscosity(100)
     , anisotropic(true)
     , elastic(true)
-    , viscous(false)
     , quasistatic(false)
     , inextensible(false)
     , refFrame(ElasticRod::TimeParallel)
@@ -55,6 +55,7 @@ inline ElasticRod* setupRod(const RodOptions& opts,
   rod->setDensity(opts.density);
   rod->setYoungsModulus(opts.YoungsModulus);
   rod->setShearModulus(opts.ShearModulus);
+  rod->setViscosity(opts.viscosity);
   rod->setQuasistatic(opts.quasistatic);
   rod->setRefFrameType(opts.refFrame);
 

@@ -59,6 +59,7 @@ public:
   void setTimeStep(Scalar dt)
   {
     m_diffEqSolver->setTimeStep(dt);
+    m_rod.setTimeStep(dt);
   }
 
   Scalar getTimeStep() const
@@ -94,6 +95,10 @@ public:
       std::cout << "Unknown method specified" << std::endl;
       m_diffEqSolver = NULL;
 
+    }
+
+    if (m_diffEqSolver != NULL) {
+      m_rod.setTimeStep(m_diffEqSolver->getTimeStep());
     }
   }
 
@@ -210,7 +215,19 @@ public:
     return m_externalForces;
   }
 
-  void flush()
+  void startStep()
+  {
+    m_rod.viscousUpdate();
+  }
+
+  void endStep()
+  {
+    m_rod.updateProperties();
+  }
+
+  void startIteration() {}
+
+  void endIteration()
   {
     m_rod.updateProperties();
   }

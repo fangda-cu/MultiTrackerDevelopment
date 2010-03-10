@@ -267,6 +267,17 @@ public:
   virtual void updateReferenceProperties();
   virtual void verifyProperties();
 
+  /** At the beginning of the time step, the undeformed configuration
+      must be set to the current configuration for the viscous
+      forces */
+  virtual void viscousUpdate();
+
+  /** The stiffness of the viscous forces (internal damping) depend on
+      the size of the time step being taken, so they must be
+      recomputed whenever the size of the time step is changed. */
+  void setTimeStep(Scalar dt);
+  Scalar getTimeStep() const { return property(m_dt); }
+
   ////////////////////////////////////////////////////////////////////////////////
   // 
   // Needed for collisions. Should rods be based off of CollisionObject
@@ -408,6 +419,7 @@ protected:
   ObjPropHandle<Scalar> m_YoungsModulus;
   ObjPropHandle<Scalar> m_ShearModulus;
   ObjPropHandle<Scalar> m_viscosity;
+  ObjPropHandle<Scalar> m_dt;
 
   VPropHandle<Vec3d> m_vertexPositions;
   VPropHandle<Vec3d> m_vertexVelocities;

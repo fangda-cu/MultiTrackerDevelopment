@@ -32,6 +32,20 @@ void AnisotropicRod::setup()
     //addForce(new RodBendingForce(*this));
     addForce(new RodBendingForceSym(*this));
   } else addForce(new RodAnisoForce(*this));
+
+  if (getViscosity() != 0.0) {
+    RodStretchingForce* stretching = new RodStretchingForce(*this);
+    RodBendingForceSym* bending = new RodBendingForceSym(*this);
+    RodTwistingForceSym* twisting = new RodTwistingForceSym(*this);
+
+    stretching->setViscous(true);
+    bending->setViscous(true);
+    twisting->setViscous(true);
+
+    addForce(stretching);
+    addForce(bending);
+    addForce(twisting);
+  }
 }
 
 } // namespace BASim

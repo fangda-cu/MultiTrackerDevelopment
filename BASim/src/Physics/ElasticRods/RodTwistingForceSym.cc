@@ -50,6 +50,9 @@ void RodTwistingForceSym::updateStiffness()
     edge_handle eh0 = m_stencil.inEdge();
     edge_handle eh1 = m_stencil.outEdge();
     Scalar G = m_rod.getShearModulus();
+    if (viscous()) {
+      G = m_rod.getViscosity() / m_rod.getTimeStep();
+    }
     Scalar a = (m_rod.radiusA(eh0) + m_rod.radiusA(eh1)) / 2.0;
     Scalar b = (m_rod.radiusB(eh0) + m_rod.radiusB(eh1)) / 2.0;
     setKt(vh, G * M_PI * a * b * (square(a) + square(b)) / 4.0);

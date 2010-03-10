@@ -12,6 +12,8 @@
 #include "BASim/src/Physics/ElasticRods/Tests/RodStretchingTest.hh"
 #endif // TEST_ROD_STRETCHING
 
+using namespace std;
+
 namespace BASim {
 
 RodStretchingForce::RodStretchingForce(ElasticRod& rod)
@@ -176,9 +178,12 @@ void RodStretchingForce::updateStiffness()
   iterator end = m_stencil.end();
   for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
     edge_handle& eh = m_stencil.handle();
-    const Scalar& a = m_rod.radiusA(eh);
-    const Scalar& b = m_rod.radiusB(eh);
-    const Scalar& E = m_rod.getYoungsModulus();
+    Scalar a = m_rod.radiusA(eh);
+    Scalar b = m_rod.radiusB(eh);
+    Scalar E = m_rod.getYoungsModulus();
+    if (viscous()) {
+      E = 3 * m_rod.getViscosity() / m_rod.getTimeStep();
+    }
     setKs(eh, E * M_PI * (square(a) + square(b)) / 2.0);
   }
 }

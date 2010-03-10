@@ -57,6 +57,9 @@ void RodBendingForceSym::updateStiffness()
     edge_handle eh0 = m_stencil.inEdge();
     edge_handle eh1 = m_stencil.outEdge();
     Scalar E = m_rod.getYoungsModulus();
+    if (viscous()) {
+      E = 3 * m_rod.getViscosity() / m_rod.getTimeStep();
+    }
     Scalar a = (m_rod.radiusA(eh0) + m_rod.radiusA(eh1)) / 2.0;
     Scalar b = (m_rod.radiusB(eh0) + m_rod.radiusB(eh1)) / 2.0;
     Mat2d B(Mat2d::Zero());
