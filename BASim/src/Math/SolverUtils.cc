@@ -70,12 +70,12 @@ LinearSolverBase* SolverUtils::createLinearSolver(MatrixBase* A) const
     return new PetscLinearSolver(*A);
 #endif // HAVE_PETSC
 
-#ifdef HAVE_MKL
+#ifdef HAVE_LAPACK
   if ((solverType == MKL_LINEAR_SOLVER || solverType == AUTO_SOLVER)
       && dynamic_cast<BandMatrix*>(A) != NULL) {
     return new MKLLinearSolver(dynamic_cast<BandMatrix&>(*A));
   }
-#endif // HAVE_MKL
+#endif // HAVE_LAPACK
 
   //std::cout << "cg" << std::endl;
   return new ConjugateGradient(*A);

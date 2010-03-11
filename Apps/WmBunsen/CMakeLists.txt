@@ -35,6 +35,7 @@ if (CMAKE_SYSTEM_NAME MATCHES Linux)
 endif (CMAKE_SYSTEM_NAME MATCHES Linux)
 
 ADD_LIBRARY(wmFigaro SHARED ${Headers} ${Templates} ${Sources})
+set_target_properties (wmFigaro PROPERTIES PREFIX "")
 
 #######
 ## We absolutely must link with -Bsymbolic or Maya will crash when the plugin is running!

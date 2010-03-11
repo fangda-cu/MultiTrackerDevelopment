@@ -26,7 +26,7 @@ public:
 
 private:
 
-  void* ipiv;
+  int* ipiv;
   double* ab;
 };
 

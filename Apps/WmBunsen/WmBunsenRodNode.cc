@@ -18,6 +18,7 @@ using namespace BASim;
 /* static */ MObject WmBunsenRodNode::ia_cvsPerRod;
 /* static */ MObject WmBunsenRodNode::ia_youngsModulus;
 /* static */ MObject WmBunsenRodNode::ia_shearModulus;
+/* static */ MObject WmBunsenRodNode::ia_viscosity;
 /* static */ MObject WmBunsenRodNode::ia_density;
 /* static */ MObject WmBunsenRodNode::ia_minorRadius;
 /* static */ MObject WmBunsenRodNode::ia_majorRadius;
@@ -53,11 +54,12 @@ WmBunsenRodNode::WmBunsenRodNode() : m_massDamping( 10 ), m_initialised( false )
                                      m_cvsPerRod( -1 ),
                                      m_cachePath( "" ), m_cacheFilename( "" )
 {
-    m_rodOptions.YoungsModulus = 10000.0;
-    m_rodOptions.ShearModulus = 400.0;
-    m_rodOptions.density = 0.01;
-    m_rodOptions.radiusA = 0.1;
-    m_rodOptions.radiusB = 0.1;
+    m_rodOptions.YoungsModulus = 1000.0; /* megapascal */
+    m_rodOptions.ShearModulus = 340.0;   /* megapascal */
+    m_rodOptions.viscosity = 10.0;       /* poise */
+    m_rodOptions.density = 1.3;          /* grams per cubic centimeter */
+    m_rodOptions.radiusA = 0.05;         /* millimeter */
+    m_rodOptions.radiusB = 0.05;         /* millimeter */
     m_strandRootFrames.clear();
 }
 
@@ -498,6 +500,7 @@ void WmBunsenRodNode::updateRodDataFromInputs()
                 rod->setRadius( m_rodOptions.radiusA, m_rodOptions.radiusB );
                 rod->setYoungsModulus( m_rodOptions.YoungsModulus );
                 rod->setShearModulus( m_rodOptions.ShearModulus );
+                rod->setViscosity( m_rodOptions.viscosity );
                 rod->setDensity(m_rodOptions.density);
 
                 for ( int c = 0; c < m_cvsPerRod ; ++c )
@@ -574,6 +577,7 @@ void WmBunsenRodNode::updateRodDataFromInputs()
                 rod->setRadius( m_rodOptions.radiusA, m_rodOptions.radiusB );
                 rod->setYoungsModulus( m_rodOptions.YoungsModulus );
                 rod->setShearModulus( m_rodOptions.ShearModulus );
+                rod->setViscosity( m_rodOptions.viscosity );
                 rod->setDensity(m_rodOptions.density);
 
                 int numVertices = rod->nv();
@@ -687,15 +691,17 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_startTime = i_dataBlock.inputValue( ia_startTime, &stat ).asDouble();
         CHECK_MSTATUS( stat );
 
-        m_rodOptions.YoungsModulus = 10000.0 * i_dataBlock.inputValue( ia_youngsModulus, &stat ).asDouble();
+        m_rodOptions.YoungsModulus = 1e7 * i_dataBlock.inputValue( ia_youngsModulus, &stat ).asDouble();
         CHECK_MSTATUS( stat );
-        m_rodOptions.ShearModulus = 100.0 * i_dataBlock.inputValue( ia_shearModulus, &stat ).asDouble();
+        m_rodOptions.ShearModulus = 1e7 * i_dataBlock.inputValue( ia_shearModulus, &stat ).asDouble();
+        CHECK_MSTATUS( stat );
+        m_rodOptions.viscosity = i_dataBlock.inputValue( ia_viscosity, &stat ).asDouble();
         CHECK_MSTATUS( stat );
         m_rodOptions.density = i_dataBlock.inputValue( ia_density, &stat).asDouble();
         CHECK_MSTATUS( stat );
-        m_rodOptions.radiusA = i_dataBlock.inputValue( ia_minorRadius, &stat ).asDouble();
+        m_rodOptions.radiusA = 1e-1 * i_dataBlock.inputValue( ia_minorRadius, &stat ).asDouble();
         CHECK_MSTATUS( stat );
-        m_rodOptions.radiusB = i_dataBlock.inputValue( ia_majorRadius, &stat ).asDouble();
+        m_rodOptions.radiusB = 1e-1 * i_dataBlock.inputValue( ia_majorRadius, &stat ).asDouble();
         CHECK_MSTATUS( stat );
         m_massDamping = i_dataBlock.inputValue( ia_massDamping, &stat ).asDouble();
         CHECK_MSTATUS( stat );
@@ -1529,23 +1535,27 @@ void* WmBunsenRodNode::creator()
 	stat = attributeAffects( ia_startTime, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_startTime->ca_syncAttrs" ); return stat; }
 
-    addNumericAttribute( ia_youngsModulus, "youngsModulus", "ymo", MFnNumericData::kDouble, 10.0, true );
+    addNumericAttribute( ia_youngsModulus, "youngsModulus", "ymo", MFnNumericData::kDouble, 1000.0, true );
     stat = attributeAffects( ia_youngsModulus, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_youngsModulus->ca_syncAttrs" ); return stat; }
 
-    addNumericAttribute( ia_shearModulus, "shearModulus", "shm", MFnNumericData::kDouble, 4.0, true );
+    addNumericAttribute( ia_shearModulus, "shearModulus", "shm", MFnNumericData::kDouble, 340.0, true );
     stat = attributeAffects( ia_shearModulus, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_shearModulus->ca_syncAttrs" ); return stat; }
 
-	addNumericAttribute( ia_density, "density", "dns", MFnNumericData::kDouble, 0.01, true);
+    addNumericAttribute( ia_viscosity, "internalDamping", "ind", MFnNumericData::kDouble, 10.0, true );
+    stat = attributeAffects( ia_viscosity, oa_rodsChanged );
+	if ( !stat ) { stat.perror( "attributeAffects ia_viscosity->ca_syncAttrs" ); return stat; }
+
+	addNumericAttribute( ia_density, "density", "dns", MFnNumericData::kDouble, 1.3, true);
 	stat = attributeAffects(ia_density, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_density->ca_syncAttrs" ); return stat; }
 
-    addNumericAttribute( ia_minorRadius, "minorRadius", "mir", MFnNumericData::kDouble, 0.1, true );
+    addNumericAttribute( ia_minorRadius, "minorRadius", "mir", MFnNumericData::kDouble, 0.05, true );
     stat = attributeAffects( ia_minorRadius, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_minorRadius->ca_syncAttrs" ); return stat; }
 
-    addNumericAttribute( ia_majorRadius, "majorRadius", "mar", MFnNumericData::kDouble, 0.1, true );
+    addNumericAttribute( ia_majorRadius, "majorRadius", "mar", MFnNumericData::kDouble, 0.05, true );
     stat = attributeAffects( ia_majorRadius, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_majorRadius->ca_syncAttrs" ); return stat; }
 

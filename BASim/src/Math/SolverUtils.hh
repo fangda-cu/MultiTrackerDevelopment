@@ -16,9 +16,9 @@
 #include "BASim/src/Math/Petsc/PetscLinearSolver.hh"
 #endif // HAVE_PETSC
 
-#ifdef HAVE_MKL
+#ifdef HAVE_LAPACK
 #include "BASim/src/Math/MKL/MKLLinearSolver.hh"
-#endif // HAVE_MKL
+#endif // HAVE_LAPACK
 
 namespace BASim {
 
@@ -33,9 +33,9 @@ public:
 #ifdef HAVE_PETSC
     PETSC_SOLVER,
 #endif // HAVE_PETSC
-#ifdef HAVE_MKL
+#ifdef HAVE_LAPACK
     MKL_LINEAR_SOLVER,
-#endif // HAVE_MKL
+#endif // HAVE_LAPACK
     CONJUGATE_GRADIENT,
     AUTO_SOLVER
   };

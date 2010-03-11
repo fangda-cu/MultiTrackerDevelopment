@@ -38,7 +38,12 @@ inline int parseSolver(Tokenizer& tokenizer)
 #ifdef HAVE_MKL
   } else if (solver == "mkl") {
     SolverUtils::instance()->setSolverType(SolverUtils::MKL_LINEAR_SOLVER);
-#endif //HAVE_MKL
+#endif // HAVE_MKL
+
+#ifdef HAVE_LAPACK
+  } else if (solver == "lapack") {
+    SolverUtils::instance()->setSolverType(SolverUtils::MKL_LINEAR_SOLVER);
+#endif // HAVE_LAPACK
 
   } else {
     std::cerr << "Unknown solver type " << solver << std::endl;

@@ -9,7 +9,7 @@ set (BASIM_VERSION "${BASIM_VERSION_NUMBER}")
 add_definitions (-DBASIM_VERSION="${BASIM_VERSION}")
 
 if (NOT CMAKE_BUILD_TYPE)
-  set (CMAKE_BUILD_TYPE Debug CACHE STRING
+  set (CMAKE_BUILD_TYPE Release CACHE STRING
     "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel."
     FORCE)
 endif (NOT CMAKE_BUILD_TYPE)
@@ -21,7 +21,7 @@ set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 include (BASimCommon)
 
 # set options
-option (USE_INTEL_COMPILER "Use Intel Compiler" ON)
+option (USE_INTEL_COMPILER "Use Intel Compiler" OFF)
 option (BUILD_APPS "Build applications" ON)
 option (TEST_ROD_STRETCHING_FORCE "Tests RodStretchingForce" OFF)
 option (TEST_ROD_TWISTING_FORCE "Tests RodTwistingForce" OFF)
@@ -85,15 +85,25 @@ endif (USE_PETSc)
 #find_package (FLENS REQUIRED)
 #include_directories (${FLENS_INCLUDE_DIR})
 
-option (USE_MKL "Builds in support for Intel's MKL" ON)
+option (USE_MKL "Builds in support for Intel's MKL" OFF)
 if (USE_MKL)
   find_package (MKL)
   if (MKL_FOUND)
+    add_definitions (-DHAVE_LAPACK)
     add_definitions (-DHAVE_MKL)
     include_directories (${MKL_INCLUDES})
     set (DEFAULT_LIBRARIES ${DEFAULT_LIBRARIES} ${MKL_LIBRARIES})
   endif (MKL_FOUND)
 endif (USE_MKL)
+
+option (USE_LAPACK "Builds in support for generic LAPACK" ON)
+if (USE_LAPACK)
+  find_package (LAPACK)
+  if (LAPACK_FOUND)
+    add_definitions (-DHAVE_LAPACK)
+    set (DEFAULT_LIBRARIES ${DEFAULT_LIBRARIES} ${LAPACK_LIBRARIES})
+  endif(LAPACK_FOUND)
+endif (USE_LAPACK)
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory (BASim)

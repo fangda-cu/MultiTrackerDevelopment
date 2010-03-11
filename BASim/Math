@@ -18,9 +18,9 @@
 #include "src/Math/Petsc/PetscLinearSolver.hh"
 #endif // HAVE_PETSC
 
-#ifdef HAVE_MKL
+#ifdef HAVE_LAPACK
 #include "src/Math/MKL/MKLLinearSolver.hh"
-#endif // HAVE_MKL
+#endif // HAVE_LAPACK
 
 //#include "src/Math/FlensMatrix.hh"
 

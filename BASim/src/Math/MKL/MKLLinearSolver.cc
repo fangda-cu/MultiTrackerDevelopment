@@ -6,8 +6,13 @@
  */
 
 #include "MKLLinearSolver.hh"
-#include <mkl_lapack.h>
 #include "../BandMatrix.hh"
+#ifdef HAVE_MKL
+#include <mkl_lapack.h>
+#else // HAVE_MKL
+extern "C" void dgbsv_( int* n, int* kl, int* ku, int* nrhs, double* ab, int* ldab, int* ipiv, double* b, int* ldb, int* info );
+#define dgbsv dgbsv_
+#endif // HAVE_MKL
 
 namespace BASim {
 
@@ -18,9 +23,8 @@ MKLLinearSolver::MKLLinearSolver(BandMatrix& A)
   int n = A.rows();
   int kl = smart_cast<BandMatrix&>(A).kl();
   int ku = smart_cast<BandMatrix&>(A).ku();
+  ipiv = new int[n];
 
-  MKL_INT* ipiv_mkl_int = new MKL_INT[n];
-  ipiv = ipiv_mkl_int;
   // ab holds the entries of the matrix. Space must be made for an
   // additional kl super-diagonals for LU factorization
   ab = new double[(2 * kl + ku + 1) * n];
@@ -28,8 +32,7 @@ MKLLinearSolver::MKLLinearSolver(BandMatrix& A)
 
 MKLLinearSolver::~MKLLinearSolver()
 {
-  MKL_INT* ipiv_mkl_int = (MKL_INT*) ipiv;
-  delete [] ipiv_mkl_int;
+  delete [] ipiv;
   delete [] ab;
 }
 
@@ -48,7 +51,7 @@ inline void convert(double* ab, BandMatrix& A, int kl, int ku, int n)
 
 int MKLLinearSolver::solve(VecXd& x, const VecXd& b)
 {
-  MKL_INT n, kl, ku, nrhs, ldab, ldb, info;
+  int n, kl, ku, nrhs, ldab, ldb, info;
 
   BandMatrix& A = smart_cast<BandMatrix&>(m_A);
   n = A.rows();
@@ -60,7 +63,7 @@ int MKLLinearSolver::solve(VecXd& x, const VecXd& b)
   convert(ab, A, kl, ku, n);
   x = b;
 
-  dgbsv(&n, &kl, &ku, &nrhs, ab, &ldab, (MKL_INT*)ipiv, x.data(), &ldb, &info);
+  dgbsv(&n, &kl, &ku, &nrhs, ab, &ldab, ipiv, x.data(), &ldb, &info);
 
   // check return value for errors
   if (info < 0) {

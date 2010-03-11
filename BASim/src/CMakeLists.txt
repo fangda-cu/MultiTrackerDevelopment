@@ -44,6 +44,13 @@ if (MKL_FOUND)
   append_files (Sources "cc" Math/MKL)
 endif (MKL_FOUND)
 
+if (LAPACK_FOUND)
+  append_files (Headers "hh" Math/MKL)
+  append_files (Inlines "inl" Math/MKL)
+  append_files (Templates "tcc" Math/MKL)
+  append_files (Sources "cc" Math/MKL)
+endif (LAPACK_FOUND)
+
 if (TEST_ROD_STRETCHING_FORCE)
   add_definitions (-DTEST_ROD_STRETCHING)
   set (Headers ${Headers} Physics/ElasticRods/Tests/RodStretchingTest.hh)
