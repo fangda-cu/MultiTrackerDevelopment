@@ -7,12 +7,7 @@
 
 #include "MKLLinearSolver.hh"
 #include "../BandMatrix.hh"
-#ifdef HAVE_MKL
-#include <mkl_lapack.h>
-#else // HAVE_MKL
-extern "C" void dgbsv_( int* n, int* kl, int* ku, int* nrhs, double* ab, int* ldab, int* ipiv, double* b, int* ldb, int* info );
-#define dgbsv dgbsv_
-#endif // HAVE_MKL
+#include "LAPACKPrototypes.h"
 
 namespace BASim {
 
