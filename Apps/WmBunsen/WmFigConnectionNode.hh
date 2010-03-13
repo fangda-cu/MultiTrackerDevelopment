@@ -66,17 +66,28 @@ public:
     static MObject ia_controllingEdge;
     static MObject ia_rodEdgeTransforms;
     static MObject oa_outTransformMatrix;
+    static MObject oa_edgeTransform;
 
     static MStatus addNumericAttribute( MObject& i_attribute, MString i_longName, 
                                         MString i_shortName,
                                         MFnNumericData::Type i_type, double i_defaultValue,
                                         bool i_isInput, bool i_isOutput  );
     
+    void getControlledRodInfo( unsigned int& o_rodIndex, unsigned int& o_edgeIndex, 
+                               EdgeTransform& o_edgeTransform );
 private:
+    void calculateMaterialFrame();
+    
     double m_currentTime;
     double m_previousTime;
     double m_startTime;
-    bool m_controllingEdge;
+    bool m_controllingEdge;    
+    
+    unsigned int m_controlledRodIndex;
+    unsigned int m_controlledEdgeIndex;
+    EdgeTransform m_edgeTransform;
+    
+    MMatrix m_inputTransformMatrix;
 };
 
 #endif

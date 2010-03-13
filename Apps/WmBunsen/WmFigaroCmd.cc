@@ -780,17 +780,15 @@ void WmFigaroCmd::attatchEdgeToObject()
     MFnDependencyNode figRodNodeDepFn( figRodNodeObj, &stat );
     CHECK_MSTATUS( stat );
     
-    MPlug edgeTransformPlug = figRodNodeDepFn.findPlug( "outEdgeTransforms", true, &stat );
+    MPlug outEdgeTransformPlug = figRodNodeDepFn.findPlug( "outEdgeTransforms", true, &stat );
     CHECK_MSTATUS( stat );
     
     MPlug connectionEdgeInputPlug( connectionNodeSObj, WmFigConnectionNode::ia_rodEdgeTransforms );
     CHECK_MSTATUS( stat );
-    stat = dagModifier.connect( edgeTransformPlug, connectionEdgeInputPlug );
+    stat = dagModifier.connect( outEdgeTransformPlug, connectionEdgeInputPlug );
     CHECK_MSTATUS( stat );
     stat = dagModifier.doIt();
     CHECK_MSTATUS( stat );
-    
-    cerr << "connected edge plugs, pulling transform info\n";
     
     MPlug outputTransformPlug( connectionNodeSObj, WmFigConnectionNode::oa_outTransformMatrix );
     CHECK_MSTATUS( stat );
@@ -801,8 +799,6 @@ void WmFigaroCmd::attatchEdgeToObject()
     
     MFnMatrixData matrixData( matrixObj, &stat );
     CHECK_MSTATUS( stat );
-    
-    cerr << "Transform matrix is " << matrixData.matrix() << endl;
     
     // Set the input objects transform to match this data so that it lies on the edge before
     // it starts controlling the edge. Unfortunatley we can't set a matrix directly for some
@@ -837,7 +833,18 @@ void WmFigaroCmd::attatchEdgeToObject()
     zRotatePlug.setValue( eulerRotation.z );
     
     // Now the input object is sitting on the correct segment of the rod and oriented correctly.
-    // It is ready to control that rod segment.
+    // It is ready to control that rod segment so connect the connection node to the rod node
+    // so it knows the segment is being controlled.
+    
+    MPlug edgeTransformPlug = figRodNodeDepFn.findPlug( "edgeTransforms", true, &stat );
+    CHECK_MSTATUS( stat );
+    
+    MPlug connectionEdgeTransformPlug( connectionNodeSObj, WmFigConnectionNode::oa_edgeTransform );
+    CHECK_MSTATUS( stat );
+    stat = dagModifier.connect( connectionEdgeTransformPlug, edgeTransformPlug );
+    CHECK_MSTATUS( stat );
+    stat = dagModifier.doIt();
+    CHECK_MSTATUS( stat );
 }
 
 void WmFigaroCmd::addCollisionMeshes()

@@ -21,13 +21,15 @@ using namespace BASim;
 /* static */ MObject WmFigConnectionNode::oa_outTransformMatrix;
 
 /* static */ MObject WmFigConnectionNode::ia_rodEdgeTransforms;
+/* static */ MObject WmFigConnectionNode::oa_edgeTransform;
 
 // We output the material frame to the rod node rather than having it connect directly because
 // if this node is deleted we want the frame connection to be deleted too. So this node 
 // routes it through.
 /* static */ MObject WmFigConnectionNode::oa_materialFrame;
 
-WmFigConnectionNode::WmFigConnectionNode() : m_startTime( 1 ), m_currentTime( 1 ), m_previousTime( 1 )
+WmFigConnectionNode::WmFigConnectionNode() : m_startTime( 1 ), m_currentTime( 1 ), 
+    m_previousTime( 1 ), m_controlledRodIndex( 0 ), m_controlledEdgeIndex( 0 )
 {
 }
 
@@ -35,13 +37,22 @@ WmFigConnectionNode::~WmFigConnectionNode()
 {
 }
 
+void WmFigConnectionNode::getControlledRodInfo( unsigned int& o_rodIndex, unsigned int& o_edgeIndex, 
+                                                EdgeTransform& o_edgeTransform )
+{
+    o_rodIndex = m_controlledRodIndex;
+    o_edgeIndex = m_controlledEdgeIndex;
+    o_edgeTransform = m_edgeTransform;
+}
+
+
 MStatus WmFigConnectionNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock ) 
 {
     MStatus stat;
     
     //cerr << "WmFigConnectionNode::compute plug = " << i_plug.name() << endl;
 	
-    if ( i_plug == oa_materialFrame )
+    /*if ( i_plug == oa_materialFrame )
     {
         m_previousTime = m_currentTime;
         m_currentTime = i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
@@ -50,15 +61,12 @@ MStatus WmFigConnectionNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlo
         m_startTime = i_dataBlock.inputValue( ia_startTime, &stat ).asDouble();
         CHECK_MSTATUS( stat );
         
-        int edgeNumber = i_dataBlock.inputValue( ia_edgeNumber, &stat ).asInt();
+        m_controlledEdgeIndex = i_dataBlock.inputValue( ia_edgeNumber, &stat ).asInt();
         CHECK_MSTATUS( stat );
 
-        int rodNumber = i_dataBlock.inputValue( ia_rodNumber, &stat ).asInt();
+        m_controlledRodIndex = i_dataBlock.inputValue( ia_rodNumber, &stat ).asInt();
         CHECK_MSTATUS( stat );
 
-        MMatrix transformMatrix = i_dataBlock.inputValue( ia_transformMatrix, &stat ).asMatrix();
-        CHECK_MSTATUS( stat );
-        
         m_controllingEdge = i_dataBlock.inputValue( ia_controllingEdge, &stat ).asBool();
         CHECK_MSTATUS( stat );
         
@@ -70,13 +78,13 @@ MStatus WmFigConnectionNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlo
         materialFrameH.setClean();
         i_dataBlock.setClean( i_plug );
     }
-    else if ( i_plug == oa_outTransformMatrix )
+    else*/ if ( i_plug == oa_outTransformMatrix )
     {
         // If the output transform matrix is being asked for then
-        int edgeNumber = i_dataBlock.inputValue( ia_edgeNumber, &stat ).asInt();
+        m_controlledEdgeIndex = i_dataBlock.inputValue( ia_edgeNumber, &stat ).asInt();
         CHECK_MSTATUS( stat );
 
-        int rodNumber = i_dataBlock.inputValue( ia_rodNumber, &stat ).asInt();
+        m_controlledRodIndex = i_dataBlock.inputValue( ia_rodNumber, &stat ).asInt();
         CHECK_MSTATUS( stat );
 
         // pull this so maya knows we care but it has no data, we need to go mining for it
@@ -104,7 +112,7 @@ MStatus WmFigConnectionNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlo
                 outMatrix( 2, 1 ) = edgePosition[1];
                 outMatrix( 2, 2 ) = edgePosition[2];*/
                 
-                outMatrix = rodNode->getRodEdgeMatrix( edgeNumber, rodNumber );
+                outMatrix = rodNode->getRodEdgeMatrix( m_controlledEdgeIndex, m_controlledRodIndex );
             }
             else
                 outMatrix.setToIdentity();
@@ -117,6 +125,30 @@ MStatus WmFigConnectionNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlo
         outMatrixH.set( outMatrix );
         
         outMatrixH.setClean();
+        i_dataBlock.setClean( i_plug );
+    }
+    else if ( i_plug == oa_edgeTransform ) 
+    {
+        // We don't actually send the data to the rod node as we'd also have to send the rod number
+        // and index so the rod node follows this connection and asks us for the data. We need to
+        // get the inputs to make sure the data is correct when we're asked for it.
+        
+        m_controlledRodIndex = i_dataBlock.inputValue( ia_rodNumber ).asInt();
+        m_controlledEdgeIndex = i_dataBlock.inputValue( ia_edgeNumber ).asInt();
+        m_inputTransformMatrix = i_dataBlock.inputValue( ia_transformMatrix ).asMatrix();
+
+        // Work out the material frame to send to the rod node when we are asked for it.
+        m_edgeTransform.materialFrame.m1 = Vec3d( m_inputTransformMatrix( 0, 0 ),
+                                m_inputTransformMatrix( 0, 1 ), m_inputTransformMatrix( 0, 2 ) );
+        m_edgeTransform.materialFrame.m2 = Vec3d( m_inputTransformMatrix( 1, 0 ),
+                                m_inputTransformMatrix( 1, 1 ), m_inputTransformMatrix( 1, 2 ) );
+        m_edgeTransform.materialFrame.m3 = Vec3d( m_inputTransformMatrix( 2, 0 ),
+                                m_inputTransformMatrix( 2, 1 ), m_inputTransformMatrix( 2, 2 ) );
+        
+        m_edgeTransform.position = Vec3d( m_inputTransformMatrix( 3, 0 ),
+                                m_inputTransformMatrix( 3, 1 ), m_inputTransformMatrix( 3, 2 ) );
+        
+        i_dataBlock.outputValue( oa_edgeTransform ).setClean();
         i_dataBlock.setClean( i_plug );
     }
     else
@@ -279,5 +311,10 @@ void* WmFigConnectionNode::creator()
     stat = attributeAffects( ia_edgeNumber, oa_outTransformMatrix );
 	if ( !stat ) { stat.perror( "attributeAffects ia_rodEdgeTransforms->oa_outTransformMatrix" ); return stat; }
  
+    addNumericAttribute( oa_edgeTransform, "edgeTransform", "oet", MFnNumericData::kBoolean, false, false, true );
+	stat = attributeAffects( ia_rodNumber, oa_edgeTransform );
+    stat = attributeAffects( ia_edgeNumber, oa_edgeTransform );
+    stat = attributeAffects( ia_transformMatrix, oa_edgeTransform );
+	
 	return MS::kSuccess;
 }

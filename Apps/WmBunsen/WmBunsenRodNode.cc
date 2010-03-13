@@ -1,6 +1,8 @@
 #include "WmBunsenRodNode.hh"
+#include "WmFigConnectionNode.hh"
 
 #include <maya/MFnMatrixAttribute.h>
+#include <maya/MPlugArray.h>
 
 using namespace BASim;
 
@@ -67,6 +69,7 @@ WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_rodData( NULL ),
     m_rodOptions.radiusA = 0.1;
     m_rodOptions.radiusB = 0.1;
     m_strandRootFrames.clear();
+    m_controlledEdgeTransforms.clear();
 }
 
 WmBunsenRodNode::~WmBunsenRodNode()
@@ -413,6 +416,31 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
                 // it will know not to use frame locking.
                 (*mx_rodData)[ i ]->addKinematicEdge( 0 );
             }
+            
+            EdgeTransformRodMap::iterator rodIt = m_controlledEdgeTransforms.find( i );
+            if ( rodIt != m_controlledEdgeTransforms.end() )
+            {
+                for ( EdgeTransformMap::iterator edgeIt = m_controlledEdgeTransforms[ i ].begin();
+                      edgeIt != m_controlledEdgeTransforms[ i ].end();
+                      edgeIt++ )
+                {
+                    (*mx_rodData)[ i ]->addKinematicEdge( edgeIt->first, (*mx_rodData)[ i ]->rod, &(edgeIt->second.materialFrame) );
+                    
+                    // Set the next positions of these vertices to be wherever the input controller
+                    // says they should be.
+                    Vec3d position =  edgeIt->second.position;
+                    if ( (*mx_rodData)[ i ]->rod != NULL )
+                    {
+                        double length = (*mx_rodData)[ i ]->rod->getEdge( edgeIt->first ).norm();
+                        Vec3d edge = edgeIt->second.materialFrame.m1;
+                        edge.normalize();
+                        Vec3d start = position - ( edge * length / 2.0 );
+                        Vec3d end = position + ( edge * length / 2.0 );
+                        (*mx_rodData)[ i ]->undeformedVertexPositions[ edgeIt->first ] = start;
+                        (*mx_rodData)[ i ]->undeformedVertexPositions[ edgeIt->first + 1 ] = end;                        
+                    }
+                }
+            }
         }
     }
     
@@ -634,6 +662,34 @@ void WmBunsenRodNode::updateRodDataFromInputs()
                     (*mx_rodData)[ i ]->currVertexPositions[ c ] = (*mx_rodData)[ i ]->nextVertexPositions[ c ];                    
                     (*mx_rodData)[ i ]->nextVertexPositions[ c ] = inputCurveVertex;
                 }
+             
+                EdgeTransformRodMap::iterator rodIt = m_controlledEdgeTransforms.find( i );
+                if ( rodIt != m_controlledEdgeTransforms.end() )
+                {
+                    for ( EdgeTransformMap::iterator edgeIt = m_controlledEdgeTransforms[ i ].begin();
+                          edgeIt != m_controlledEdgeTransforms[ i ].end();
+                          edgeIt++ )
+                    {
+                        if ( m_currentTime == m_startTime )
+                            (*mx_rodData)[ i ]->resetKinematicEdge( edgeIt->first, (*mx_rodData)[ i ]->rod, (edgeIt->second.materialFrame) );
+                        else
+                            (*mx_rodData)[ i ]->updateKinematicEdge( edgeIt->first, (edgeIt->second.materialFrame) );
+                        
+                        // Set the next positions of these vertices to be wherever the input controller
+                        // says they should be.
+                        Vec3d position =  edgeIt->second.position;
+                        if ( (*mx_rodData)[ i ]->rod != NULL )
+                        {
+                            double length = (*mx_rodData)[ i ]->rod->getEdge( edgeIt->first ).norm();
+                            Vec3d edge = edgeIt->second.materialFrame.m1;
+                            edge.normalize();
+                            Vec3d start = position - ( edge * length / 2.0 );
+                            Vec3d end = position + ( edge * length / 2.0 );
+                            (*mx_rodData)[ i ]->nextVertexPositions[ edgeIt->first ] = start;
+                            (*mx_rodData)[ i ]->nextVertexPositions[ edgeIt->first + 1 ] = end;
+                        }
+                    }
+                }
             }
         }
     }
@@ -757,6 +813,40 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_percentageOfFozzieStrands = i_dataBlock.inputValue( ia_percentageOfFozzieStrands, &stat ).asInt();
         CHECK_MSTATUS( stat );
 		
+        //////////////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////////////
+        
+        // FIXME: this has to be an array so that we can have multiple controller nodes connected in.
+        
+        // Check if any of the edges on any of the rods are being controlled 
+        i_dataBlock.inputValue( ia_edgeTransforms, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+
+        MPlug myEdgePlug( thisMObject(), ia_edgeTransforms );
+        
+        MPlugArray connectionNodePlugs;
+        if ( myEdgePlug.connectedTo( connectionNodePlugs, true, false, &stat ) )
+        {
+            MPlug connectionNodePlug = connectionNodePlugs[0];
+            MObject connectionNodeObj = connectionNodePlug.node( &stat );
+            CHECK_MSTATUS( stat );
+            
+            MFnDependencyNode connectionNodeDepFn( connectionNodeObj );
+            WmFigConnectionNode* connectionNode = static_cast<WmFigConnectionNode*>( connectionNodeDepFn.userNode() );
+            
+            if ( connectionNode != NULL )
+            {
+                unsigned int rod, edge;
+                EdgeTransform edgeTransform;
+                connectionNode->getControlledRodInfo( rod, edge, edgeTransform );
+                
+                m_controlledEdgeTransforms[ rod ][ edge ] = edgeTransform;
+            }                      
+        }
+        
+        //////////////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////////////
+        
         bool readFromCache = i_dataBlock.inputValue( ia_readFromCache, &stat ).asDouble();
         if ( readFromCache )
         {
@@ -1795,7 +1885,7 @@ void* WmBunsenRodNode::creator()
 	if ( !stat ) { stat.perror( "attributeAffects ia_simStepTaken->oa_numberOfRods" ); return stat; }
  
     // Controlling and being controlled by external objects
-    {
+    /*{
         MFnMatrixAttribute mAttr;
         ia_edgeTransforms = mAttr.create( "inEdgeTransforms", "iet", MFnMatrixAttribute::kDouble, &stat );
         if ( !stat ) 
@@ -1808,13 +1898,11 @@ void* WmBunsenRodNode::creator()
         CHECK_MSTATUS( mAttr.setArray( true ) );
         stat = addAttribute( ia_edgeTransforms );
         if ( !stat ) { stat.perror( "addAttribute ia_edgeTransforms" ); return stat; }
-    }
+    }*/
+    
+    addNumericAttribute( ia_edgeTransforms, "edgeTransforms", "iet", MFnNumericData::kBoolean, false, true );
     stat = attributeAffects( ia_edgeTransforms, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_edgeTransforms->oa_rodsChanged" ); return stat; }
-    stat = attributeAffects( ia_edgeTransforms, oa_simulatedVertices );
-	if ( !stat ) { stat.perror( "attributeAffects ia_edgeTransforms->oa_simulatedVertices" ); return stat; }
-    stat = attributeAffects( ia_edgeTransforms, oa_materialFrames );
-	if ( !stat ) { stat.perror( "attributeAffects ia_edgeTransforms->oa_materialFrames" ); return stat; }
  
  /*   {
         MFnMatrixAttribute mAttr;

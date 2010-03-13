@@ -19,6 +19,15 @@ public:
     Vec3d m3;
 };
 
+
+class EdgeTransform
+{
+public:
+    MaterialFrame materialFrame;
+    Vec3d position;
+};
+
+
 // FIXME:
 // This class has too much in it. The functionality should be moved up to RodData and just the data
 // kept in here.

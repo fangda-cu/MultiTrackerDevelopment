@@ -36,6 +36,9 @@
 
 static const int FILE_FORMAT_VERSION = 1;
 
+typedef std::tr1::unordered_map<unsigned int, EdgeTransform> EdgeTransformMap;
+typedef std::tr1::unordered_map<unsigned int, EdgeTransformMap > EdgeTransformRodMap;
+
 class WmBunsenRodNode : public MPxLocatorNode 
 {
 public:
@@ -156,6 +159,9 @@ private:
     
     //vector<MaterialFrame> m_materialFrames;
     vector<MaterialFrame> m_strandRootFrames;
+    
+    // this is a map of maps. The first map is for the rod, the second is for the edge.
+    EdgeTransformRodMap m_controlledEdgeTransforms;
 };
 
 #endif
