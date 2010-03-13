@@ -130,6 +130,8 @@ protected:  // Data
     MSelectionList m_allOtherTransformNodesList;
     MObject  m_selectedwmBunsenNode;
     MString m_cacheFile;
+    int m_rodNumber;
+    int m_edgeNumber;
     
     static MStringArray m_results;
         

@@ -49,7 +49,9 @@ WmFigaroCmd::WmFigaroCmd()
     m_mArgDatabase( NULL ),
     m_mDagModifier( NULL ),
     m_selectedwmBunsenNode( MObject::kNullObj ),
-    m_cacheFile( "" )/*,
+    m_cacheFile( "" ),
+    m_rodNumber( 0 ),
+    m_edgeNumber( 0 )/*,
     m_undo(NULL)*/
 {
     m_results.clear();
@@ -85,6 +87,8 @@ const char *const kAddCollisionMeshes( "-acm" );
 const char *const kPreviewCache( "-prc" );
 const char *const kCacheFile( "-caf" );
 const char *const kAttachEdgeToObject( "-aeo" );
+const char *const kEdge( "-ed" );
+const char *const kRod( "-ro" );
 
 const char *const kHelp( "-h" );
 
@@ -107,8 +111,14 @@ MSyntax WmFigaroCmd::syntaxCreator()
                "Sets the number of CVs to use for each created elastic rod.", MSyntax::kLong );
     p_AddFlag( mSyntax, kAddCollisionMeshes, "-addCollisionMesh",
                "Adds a a selected polygon mesh as a collision object for the selected Bunsen node." );
+    
     p_AddFlag( mSyntax, kAttachEdgeToObject, "-attachEdgeToObject",
                "Creates a connection node to allow a rod edge to be controlled by the selected object." );
+    p_AddFlag( mSyntax, kEdge, "-edgeNumber",
+        "Edge to apply operation to.", MSyntax::kLong);
+    p_AddFlag( mSyntax, kRod, "-rodNumber",
+        "Rod to apply operation to.", MSyntax::kLong);
+    
     p_AddFlag( mSyntax, kPreviewCache, "-previewCache",
                "Creates wmFigaro and wmFigRodNodes and to load the specified cache file for preview." );
     p_AddFlag( mSyntax, kCacheFile, "-cacheFile",
@@ -154,6 +164,14 @@ MStatus WmFigaroCmd::doIt( const MArgList &i_mArgList )
             if ( m_mArgDatabase->isFlagSet( kCacheFile ) )
             {
                  m_mArgDatabase->getFlagArgument( kCacheFile, 0, m_cacheFile );
+            }
+            if ( m_mArgDatabase->isFlagSet( kEdge ) )
+            {
+                 m_mArgDatabase->getFlagArgument( kEdge, 0, m_edgeNumber );
+            }
+            if ( m_mArgDatabase->isFlagSet( kRod ) )
+            {
+                 m_mArgDatabase->getFlagArgument( kRod, 0, m_rodNumber );
             }
             
             // The command usually operates on whatever we have selected, so filter the selection
@@ -749,12 +767,31 @@ void WmFigaroCmd::attatchEdgeToObject()
     stat = MDagPath::getAPathTo( connectionNodeSObj, connnectionNodePath );
     CHECK_MSTATUS( stat );
 
-    MPlug connectionTransformPlug( connectionNodeSObj, WmFigConnectionNode::ia_transformMatrix );
+    /*
+    MPlug connectionEdgePlug( connectionNodeSObj, WmFigConnectionNode::ia_edgeNumber );
+    CHECK_MSTATUS( stat );
+    stat = connectionEdgePlug.setValue( m_edgeNumber );
     CHECK_MSTATUS( stat );
     
-    // At this point we should set the input attrs to define the edge the object will attach to
-    // FIXME: When those input attrs change the connection from the connection node to the fig rod 
-    // node should change to reflect the new location that is being driven.
+    MPlug connectionRodPlug( connectionNodeSObj, WmFigConnectionNode::ia_rodNumber );
+    CHECK_MSTATUS( stat );
+    stat = connectionEdgePlug.setValue( m_rodNumber );
+    CHECK_MSTATUS( stat );
+    */
+    
+    // The above code appears to work but in Maya the attribute is never updated, the below works
+    // but I am unsure why one does and the other doesn't.
+    MFnDependencyNode connectionNodeFn( connectionNodeSObj, &stat );
+    CHECK_MSTATUS( stat );
+    MPlug edgeNumPlug = connectionNodeFn.findPlug( "edgeNumber", true, &stat );
+    CHECK_MSTATUS( stat );
+    edgeNumPlug.setValue( m_edgeNumber );
+    MPlug rodNumPlug = connectionNodeFn.findPlug( "rodNumber", true, &stat );
+    CHECK_MSTATUS( stat );
+    rodNumPlug.setValue( m_rodNumber );
+    
+    MPlug connectionTransformPlug( connectionNodeSObj, WmFigConnectionNode::ia_transformMatrix );
+    CHECK_MSTATUS( stat );
     
     MObject transformNodeObj;
     stat = m_allOtherTransformNodesList.getDependNode( 0, transformNodeObj );
@@ -836,7 +873,10 @@ void WmFigaroCmd::attatchEdgeToObject()
     // It is ready to control that rod segment so connect the connection node to the rod node
     // so it knows the segment is being controlled.
     
-    MPlug edgeTransformPlug = figRodNodeDepFn.findPlug( "edgeTransforms", true, &stat );
+    MPlug edgeTransformPlugArr = figRodNodeDepFn.findPlug( "edgeTransforms", true, &stat );
+    CHECK_MSTATUS( stat );
+    
+    MPlug edgeTransformPlug = edgeTransformPlugArr.elementByLogicalIndex( edgeTransformPlugArr.numElements(), &stat );
     CHECK_MSTATUS( stat );
     
     MPlug connectionEdgeTransformPlug( connectionNodeSObj, WmFigConnectionNode::oa_edgeTransform );
@@ -979,7 +1019,8 @@ void WmFigaroCmd::p_AddFlag(
                         const MSyntax::MArgType i_argType5,
                         const MSyntax::MArgType i_argType6)
 {
-    i_mSyntax.addFlag(i_shortName, i_longName, i_argType1, i_argType2, i_argType3, i_argType4, i_argType5, i_argType6);
+    CHECK_MSTATUS( i_mSyntax.addFlag(i_shortName, i_longName, i_argType1, 
+        i_argType2, i_argType3, i_argType4, i_argType5, i_argType6) );
     WmBunsenHelp &furHelp = m_help[i_shortName];
     furHelp.m_longName = i_longName;
     furHelp.m_help = i_help;

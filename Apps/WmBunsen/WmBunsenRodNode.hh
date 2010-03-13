@@ -111,7 +111,7 @@ public:
     static MStatus addNumericAttribute( MObject& i_attribute, MString i_longName, 
                                         MString i_shortName,
                                         MFnNumericData::Type i_type, double i_defaultValue,
-                                        bool i_isInput );
+                                        bool i_isInput = true, bool i_isArray = false );
     
     MMatrix getRodEdgeMatrix( size_t i_rod, size_t i_edge );
     

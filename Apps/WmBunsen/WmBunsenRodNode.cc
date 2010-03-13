@@ -816,33 +816,55 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         //////////////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////
         
-        // FIXME: this has to be an array so that we can have multiple controller nodes connected in.
-        
-        // Check if any of the edges on any of the rods are being controlled 
-        i_dataBlock.inputValue( ia_edgeTransforms, &stat ).asBool();
-        CHECK_MSTATUS( stat );
-
-        MPlug myEdgePlug( thisMObject(), ia_edgeTransforms );
-        
-        MPlugArray connectionNodePlugs;
-        if ( myEdgePlug.connectedTo( connectionNodePlugs, true, false, &stat ) )
+        MDataHandle inputCurveH;
+        MObject inputCurveObj;    
+        MArrayDataHandle inEdgeArrayH = i_dataBlock.inputArrayValue( ia_edgeTransforms, &stat );
+        CHECK_MSTATUS(stat);
+       
+        size_t numNodesConnected = inEdgeArrayH.elementCount();
+    
+        for ( unsigned int e = 0; e < numNodesConnected; e++ )
         {
-            MPlug connectionNodePlug = connectionNodePlugs[0];
-            MObject connectionNodeObj = connectionNodePlug.node( &stat );
+            // Ask for the input on them all to make sure the connection nodes evaluate
+            inEdgeArrayH.jumpToElement( e );
+            inEdgeArrayH.inputValue( &stat );
             CHECK_MSTATUS( stat );
-            
-            MFnDependencyNode connectionNodeDepFn( connectionNodeObj );
-            WmFigConnectionNode* connectionNode = static_cast<WmFigConnectionNode*>( connectionNodeDepFn.userNode() );
-            
-            if ( connectionNode != NULL )
-            {
-                unsigned int rod, edge;
-                EdgeTransform edgeTransform;
-                connectionNode->getControlledRodInfo( rod, edge, edgeTransform );
-                
-                m_controlledEdgeTransforms[ rod ][ edge ] = edgeTransform;
-            }                      
         }
+        
+        // I don't think we need the above since the below will pull on all the attrs. Is the stuff
+        // below even safe in a compute() since we're not using the data block? I can't see how
+        // it can cause any evaluation that the above wouldn't.
+        
+        MPlug myEdgePlugs( thisMObject(), ia_edgeTransforms );
+        if ( myEdgePlugs.isArray() )
+        {
+            for ( unsigned int p=0; p<myEdgePlugs.numElements(); p++ )
+            {
+                MPlug edgePlug = myEdgePlugs.elementByPhysicalIndex( p, &stat );
+                CHECK_MSTATUS( stat );
+                
+                MPlugArray connectionNodePlugs;
+                if ( edgePlug.connectedTo( connectionNodePlugs, true, false, &stat ) )
+                {
+                    MPlug connectionNodePlug = connectionNodePlugs[0];
+                    MObject connectionNodeObj = connectionNodePlug.node( &stat );
+                    CHECK_MSTATUS( stat );
+                    
+                    MFnDependencyNode connectionNodeDepFn( connectionNodeObj );
+                    WmFigConnectionNode* connectionNode = static_cast<WmFigConnectionNode*>( connectionNodeDepFn.userNode() );
+                    
+                    if ( connectionNode != NULL )
+                    {
+                        unsigned int rod, edge;
+                        EdgeTransform edgeTransform;
+                        connectionNode->getControlledRodInfo( rod, edge, edgeTransform );
+                        
+                        m_controlledEdgeTransforms[ rod ][ edge ] = edgeTransform;
+                    }
+                }
+            }
+        }
+        inEdgeArrayH.setClean();
         
         //////////////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////
@@ -1631,7 +1653,8 @@ void* WmBunsenRodNode::creator()
 }
 
 /*static */ MStatus WmBunsenRodNode::addNumericAttribute( MObject& i_attribute, MString i_longName, 
-    MString i_shortName, MFnNumericData::Type i_type, double i_defaultValue, bool i_isInput )
+    MString i_shortName, MFnNumericData::Type i_type, double i_defaultValue, bool i_isInput,
+    bool i_isArray )
 {
     // Creates a numeric attribute with default attributes
     MStatus stat = MS::kSuccess;
@@ -1647,6 +1670,9 @@ void* WmBunsenRodNode::creator()
         nAttr.setWritable( true );
     else
         nAttr.setWritable( false );
+    
+    if ( i_isArray )
+        nAttr.setArray( true );
     
     stat = addAttribute( i_attribute );
     if ( !stat ) { stat.perror( "addAttribute " + i_longName ); return stat; }
@@ -1900,7 +1926,7 @@ void* WmBunsenRodNode::creator()
         if ( !stat ) { stat.perror( "addAttribute ia_edgeTransforms" ); return stat; }
     }*/
     
-    addNumericAttribute( ia_edgeTransforms, "edgeTransforms", "iet", MFnNumericData::kBoolean, false, true );
+    addNumericAttribute( ia_edgeTransforms, "edgeTransforms", "iet", MFnNumericData::kBoolean, false, true, true );
     stat = attributeAffects( ia_edgeTransforms, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_edgeTransforms->oa_rodsChanged" ); return stat; }
  

@@ -26,7 +26,7 @@ using namespace BASim;
 // We output the material frame to the rod node rather than having it connect directly because
 // if this node is deleted we want the frame connection to be deleted too. So this node 
 // routes it through.
-/* static */ MObject WmFigConnectionNode::oa_materialFrame;
+///* static */ MObject WmFigConnectionNode::oa_materialFrame;
 
 WmFigConnectionNode::WmFigConnectionNode() : m_startTime( 1 ), m_currentTime( 1 ), 
     m_previousTime( 1 ), m_controlledRodIndex( 0 ), m_controlledEdgeIndex( 0 )
@@ -107,12 +107,7 @@ MStatus WmFigConnectionNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlo
             
             if ( rodNode != NULL )
             {
-                /*MVector edgePosition = rodNode->getRodEdgePosition( edgeNumber, rodNumber );
-                outMatrix( 2, 0 ) = edgePosition[0];
-                outMatrix( 2, 1 ) = edgePosition[1];
-                outMatrix( 2, 2 ) = edgePosition[2];*/
-                
-                outMatrix = rodNode->getRodEdgeMatrix( m_controlledEdgeIndex, m_controlledRodIndex );
+                outMatrix = rodNode->getRodEdgeMatrix( m_controlledRodIndex, m_controlledEdgeIndex );
             }
             else
                 outMatrix.setToIdentity();
@@ -228,7 +223,7 @@ void* WmFigConnectionNode::creator()
 { 
     MStatus stat;
 
-    {
+ /*   {
         MFnMatrixAttribute mAttr;
         oa_materialFrame = mAttr.create( "materialFrame", "mf", MFnMatrixAttribute::kDouble, &stat );
         if ( !stat ) 
@@ -240,7 +235,7 @@ void* WmFigConnectionNode::creator()
         CHECK_MSTATUS( mAttr.setReadable( true ) );
         stat = addAttribute( oa_materialFrame );
         if ( !stat ) { stat.perror( "addAttribute oa_materialFrame" ); return stat; }
-    }
+    }*/
     
     {
         MFnMatrixAttribute mAttr;
@@ -256,7 +251,7 @@ void* WmFigConnectionNode::creator()
         if ( !stat ) { stat.perror( "addAttribute ia_transformMatrix" ); return stat; }
     }
     
-    {
+   /*{
         MFnUnitAttribute	uAttr;
         ia_time = uAttr.create( "time", "t", MTime( 0.0 ), &stat );
         if ( !stat ) 
@@ -270,24 +265,24 @@ void* WmFigConnectionNode::creator()
         stat = addAttribute( ia_time );
         if ( !stat ) { stat.perror( "addAttribute ia_time" ); return stat; }
     }
-	stat = attributeAffects( ia_time, oa_materialFrame );
-	if ( !stat ) { stat.perror( "attributeAffects ia_time->oa_materialFrame" ); return stat; }
+	//stat = attributeAffects( ia_time, oa_materialFrame );
+	//if ( !stat ) { stat.perror( "attributeAffects ia_time->oa_materialFrame" ); return stat; }
 
     addNumericAttribute( ia_startTime, "startTime", "stt", MFnNumericData::kDouble, 1.0, true, false );
 	stat = attributeAffects( ia_startTime, oa_materialFrame );
 	if ( !stat ) { stat.perror( "attributeAffects ia_startTime->oa_materialFrame" ); return stat; }
 
     addNumericAttribute( ia_controllingEdge, "controllingEdge", "coe", MFnNumericData::kBoolean, false, true, false );
-	stat = attributeAffects( ia_controllingEdge, oa_materialFrame );
-	if ( !stat ) { stat.perror( "attributeAffects ia_controllingEdge->oa_materialFrame" ); return stat; }
+	//stat = attributeAffects( ia_controllingEdge, oa_materialFrame );
+	//if ( !stat ) { stat.perror( "attributeAffects ia_controllingEdge->oa_materialFrame" ); return stat; }*/
     
     addNumericAttribute( ia_rodNumber, "rodNumber", "rn", MFnNumericData::kInt, 0, true, true );
-	stat = attributeAffects( ia_rodNumber, oa_materialFrame );
-	if ( !stat ) { stat.perror( "attributeAffects ia_rodNumber->oa_materialFrame" ); return stat; }
+	//stat = attributeAffects( ia_rodNumber, oa_materialFrame );
+	//if ( !stat ) { stat.perror( "attributeAffects ia_rodNumber->oa_materialFrame" ); return stat; }
     
     addNumericAttribute( ia_edgeNumber, "edgeNumber", "en", MFnNumericData::kInt, 0, true, true );
-	stat = attributeAffects( ia_edgeNumber, oa_materialFrame );
-	if ( !stat ) { stat.perror( "attributeAffects ia_edgeNumber->oa_materialFrame" ); return stat; }
+	//stat = attributeAffects( ia_edgeNumber, oa_materialFrame );
+	//if ( !stat ) { stat.perror( "attributeAffects ia_edgeNumber->oa_materialFrame" ); return stat; }
  
     {
         MFnMatrixAttribute mAttr;

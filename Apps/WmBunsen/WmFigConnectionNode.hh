@@ -61,7 +61,7 @@ public:
     static MObject ia_edgeNumber;
     static MObject ia_transformMatrix;
     
-    static MObject oa_materialFrame;
+   // static MObject oa_materialFrame;
     
     static MObject ia_controllingEdge;
     static MObject ia_rodEdgeTransforms;
