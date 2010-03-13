@@ -1490,7 +1490,7 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
 	bool draw;
 	drawMaterialFramesPlug.getValue( draw );
 	
-    /*if ( draw && mx_rodData != NULL )
+    if ( draw && mx_rodData != NULL )
     {
         size_t numRods = mx_rodData->size();
         unsigned int idx = 0;
@@ -1528,7 +1528,7 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
                 glEnd();
                 
                 
-                /*if ( m_strandRootFrames.size() > r )
+                if ( m_strandRootFrames.size() > r )
                 {
                     // Temporary drawing of frames from barbershop
                     glLineWidth( 5.0 );
@@ -1553,9 +1553,9 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
                     glVertex3d( p[0] + m3[0], p[1] + m3[1], p[2] + m3[2] );
                     glEnd();
                     glLineWidth( 1.0 );
-                }*/
+                }
                 
-      /*          glBegin( GL_LINES );
+                glBegin( GL_LINES );
                 for ( unsigned int e = 0; e < edgesInRod; e++ )
                 {
                     Vec3d m1 = (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m1;
@@ -1581,7 +1581,7 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
                 glEnd();
             }
         }
-    }*/
+    }
     
     
 	// draw dynamic Hair
