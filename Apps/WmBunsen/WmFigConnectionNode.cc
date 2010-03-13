@@ -1,4 +1,7 @@
 #include "WmFigConnectionNode.hh"
+#include "WmBunsenRodNode.hh"
+
+#include <maya/MPlugArray.h>
 
 using namespace BASim;
 
@@ -13,6 +16,11 @@ using namespace BASim;
 /* static */ MObject WmFigConnectionNode::ia_rodNumber;
 /* static */ MObject WmFigConnectionNode::ia_edgeNumber;
 /* static */ MObject WmFigConnectionNode::ia_transformMatrix;
+
+/* static */ MObject WmFigConnectionNode::ia_controllingEdge;
+/* static */ MObject WmFigConnectionNode::oa_outTransformMatrix;
+
+/* static */ MObject WmFigConnectionNode::ia_rodEdgeTransforms;
 
 // We output the material frame to the rod node rather than having it connect directly because
 // if this node is deleted we want the frame connection to be deleted too. So this node 
@@ -51,14 +59,65 @@ MStatus WmFigConnectionNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlo
         MMatrix transformMatrix = i_dataBlock.inputValue( ia_transformMatrix, &stat ).asMatrix();
         CHECK_MSTATUS( stat );
         
-        MDataHandle materialFrameH = i_dataBlock.outputValue( oa_materialFrame, &stat );
+        m_controllingEdge = i_dataBlock.inputValue( ia_controllingEdge, &stat ).asBool();
         CHECK_MSTATUS( stat );
         
+        MDataHandle materialFrameH = i_dataBlock.outputValue( oa_materialFrame, &stat );
+        CHECK_MSTATUS( stat );
+                
         materialFrameH.set( transformMatrix );
         
         materialFrameH.setClean();
         i_dataBlock.setClean( i_plug );
-    
+    }
+    else if ( i_plug == oa_outTransformMatrix )
+    {
+        // If the output transform matrix is being asked for then
+        int edgeNumber = i_dataBlock.inputValue( ia_edgeNumber, &stat ).asInt();
+        CHECK_MSTATUS( stat );
+
+        int rodNumber = i_dataBlock.inputValue( ia_rodNumber, &stat ).asInt();
+        CHECK_MSTATUS( stat );
+
+        // pull this so maya knows we care but it has no data, we need to go mining for it
+        // on the node itself
+        i_dataBlock.inputValue( ia_rodEdgeTransforms, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+
+        MPlug rodEdgePlug( thisMObject(), ia_rodEdgeTransforms );
+        
+        MPlugArray rodsPlugs;
+        MMatrix outMatrix;
+        if ( rodEdgePlug.connectedTo( rodsPlugs, true, false, &stat ) )
+        {
+            MPlug rodEdgePlug = rodsPlugs[0];
+            MObject rodNodeObj = rodEdgePlug.node( &stat );
+            CHECK_MSTATUS( stat );
+            
+            MFnDependencyNode rodNodeDepFn( rodNodeObj );
+            WmBunsenRodNode* rodNode = static_cast<WmBunsenRodNode*>( rodNodeDepFn.userNode() );
+            
+            if ( rodNode != NULL )
+            {
+                /*MVector edgePosition = rodNode->getRodEdgePosition( edgeNumber, rodNumber );
+                outMatrix( 2, 0 ) = edgePosition[0];
+                outMatrix( 2, 1 ) = edgePosition[1];
+                outMatrix( 2, 2 ) = edgePosition[2];*/
+                
+                outMatrix = rodNode->getRodEdgeMatrix( edgeNumber, rodNumber );
+            }
+            else
+                outMatrix.setToIdentity();
+        }
+        else
+            outMatrix.setToIdentity();
+        
+        MDataHandle outMatrixH = i_dataBlock.outputValue( oa_outTransformMatrix, &stat );
+        CHECK_MSTATUS( stat );
+        outMatrixH.set( outMatrix );
+        
+        outMatrixH.setClean();
+        i_dataBlock.setClean( i_plug );
     }
     else
     {
@@ -181,10 +240,14 @@ void* WmFigConnectionNode::creator()
     }
 	stat = attributeAffects( ia_time, oa_materialFrame );
 	if ( !stat ) { stat.perror( "attributeAffects ia_time->oa_materialFrame" ); return stat; }
-    
+
     addNumericAttribute( ia_startTime, "startTime", "stt", MFnNumericData::kDouble, 1.0, true, false );
 	stat = attributeAffects( ia_startTime, oa_materialFrame );
 	if ( !stat ) { stat.perror( "attributeAffects ia_startTime->oa_materialFrame" ); return stat; }
+
+    addNumericAttribute( ia_controllingEdge, "controllingEdge", "coe", MFnNumericData::kBoolean, false, true, false );
+	stat = attributeAffects( ia_controllingEdge, oa_materialFrame );
+	if ( !stat ) { stat.perror( "attributeAffects ia_controllingEdge->oa_materialFrame" ); return stat; }
     
     addNumericAttribute( ia_rodNumber, "rodNumber", "rn", MFnNumericData::kInt, 0, true, true );
 	stat = attributeAffects( ia_rodNumber, oa_materialFrame );
@@ -193,6 +256,28 @@ void* WmFigConnectionNode::creator()
     addNumericAttribute( ia_edgeNumber, "edgeNumber", "en", MFnNumericData::kInt, 0, true, true );
 	stat = attributeAffects( ia_edgeNumber, oa_materialFrame );
 	if ( !stat ) { stat.perror( "attributeAffects ia_edgeNumber->oa_materialFrame" ); return stat; }
+ 
+    {
+        MFnMatrixAttribute mAttr;
+        oa_outTransformMatrix = mAttr.create( "outTransformMatrix", "otm", MFnMatrixAttribute::kDouble, &stat );
+        if ( !stat ) 
+        {
+            stat.perror("create oa_outTransformMatrix attribute");
+            return stat;
+        }
+        CHECK_MSTATUS( mAttr.setWritable( false ) );
+        CHECK_MSTATUS( mAttr.setReadable( true ) );
+        stat = addAttribute( oa_outTransformMatrix );
+        if ( !stat ) { stat.perror( "addAttribute oa_outTransformMatrix" ); return stat; }
+    }
     
+    addNumericAttribute( ia_rodEdgeTransforms, "rodEdgeTransforms", "ret", MFnNumericData::kBoolean, false, true, false );
+	stat = attributeAffects( ia_rodEdgeTransforms, oa_outTransformMatrix );
+	if ( !stat ) { stat.perror( "attributeAffects ia_rodEdgeTransforms->oa_outTransformMatrix" ); return stat; }
+    stat = attributeAffects( ia_rodNumber, oa_outTransformMatrix );
+	if ( !stat ) { stat.perror( "attributeAffects ia_rodEdgeTransforms->oa_outTransformMatrix" ); return stat; }
+    stat = attributeAffects( ia_edgeNumber, oa_outTransformMatrix );
+	if ( !stat ) { stat.perror( "attributeAffects ia_rodEdgeTransforms->oa_outTransformMatrix" ); return stat; }
+ 
 	return MS::kSuccess;
 }

@@ -57,6 +57,7 @@ SolverUtils::createBandMatrix(int rows, int cols, int kl, int ku) const
 #endif // HAVE_PETSC
 
   assert(matrixType == AUTO_MATRIX);
+  
   return new BandMatrix(rows, cols, kl, ku);
 }
 

@@ -22,34 +22,16 @@ IPATHS 	+= -I$(MKLROOT)/include
 
 PLG1            := wmFigaro.so
 #PLG1_CF	        += -Werror -DBUILD=${BUILD}
-PLG1_CF	        += -DBUILD=${BUILD} -openmp -pthread
+PLG1_CF	        += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL
 
-ifeq "$(ABI)" "LI40"
-PLG1_L        += $(MKLROOT)/lib/em64t/libmkl_solver_lp64.a \
-                $(MKLROOT)/lib/em64t/libmkl_solver_ilp64.a \
-                 $(MKLROOT)/lib/em64t/libmkl_lapack95_lp64.a \
-                 $(MKLROOT)/lib/em64t/libguide.a \
-                 $(MKLROOT)/lib/em64t/libiomp5.a \
-                 $(MKLROOT)/lib/em64t/libmkl_blacs_lp64.a \
-                  -Wl,--start-group \
-                  $(MKLROOT)/lib/em64t/libmkl_intel_lp64.a \
-                  $(MKLROOT)/lib/em64t/libmkl_intel_thread.a \
-                  $(MKLROOT)/lib/em64t/libmkl_core.a \
-                  -Wl,--end-group -openmp -lpthread
-endif
-ifeq "$(ABI)" "L40"
-PLG1_L        +=  $(MKLROOT)/lib/em64t/libmkl_solver_lp64.a \
-                 $(MKLROOT)/lib/em64t/libmkl_lapack95_lp64.a \
-                 $(MKLROOT)/lib/em64t/libmkl_solver_ilp64.a \
-                 $(MKLROOT)/lib/em64t/libguide.a \
-                 $(MKLROOT)/lib/em64t/libiomp5.a \
-                 $(MKLROOT)/lib/em64t/libmkl_blacs_lp64.a \
-                   -Wl,--start-group \
-                   $(MKLROOT)/lib/em64t/libmkl_intel_lp64.a \
-                   $(MKLROOT)/lib/em64t/libmkl_intel_thread.a \
-                   $(MKLROOT)/lib/em64t/libmkl_core.a \
-                   -Wl,--end-group -liomp5 -lpthread
-endif 
+#ifeq "$(ABI)" "LI40"
+
+#PLG1_L += -L$(MKLROOT)/lib/em64t/ $(MKLROOT)/lib/em64t/libmkl_solver_lp64.a -Wl,--start-group -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -Wl,--end-group -openmp -lpthread
+                   
+#endif
+#ifeq "$(ABI)" "L40"
+# L40 doesn't support -openmp so this won't build and you're out of luck...  
+#endif 
 
 PLG1_MAYA       := 1
 PLG1_INSD       := $(PLG_INSD)
@@ -79,14 +61,20 @@ WmBunsenPluginMain.cc \
 WmBunsenRodNode.cc \
 WmFigConnectionNode.cc
         
-PLG1_L          := \
+PLG1_L          += \
 	-lWfigaro_dbg \
 	-lWexcept_dbg \
 	-lOpenMaya \
 	-lOpenMayaAnim \
 	-lOpenMayaUI \
     -lglut
-	
+
+PLG1_L        += -Wl,--start-group \
+                  $(MKLROOT)/lib/em64t/libmkl_intel_lp64.a \
+                  $(MKLROOT)/lib/em64t/libmkl_intel_thread.a \
+                  $(MKLROOT)/lib/em64t/libmkl_core.a \
+                 -Wl,--end-group -openmp -lpthread
+
 SCR1            := AEwmFigaroNodeTemplate.mel
 SCR1_MAYA       := 1
 SCR1_INSD       := $(SCR_INSD)

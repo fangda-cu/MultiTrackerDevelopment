@@ -1,5 +1,6 @@
 #include "WmFigaroCmd.hh"
 #include "WmBunsenCollisionMeshNode.hh"
+#include "WmFigConnectionNode.hh"
 
 #include <inttypes.h>
 #include <map>
@@ -27,6 +28,9 @@
 #include <maya/MFnPointArrayData.h>
 #include <maya/MFnStringArrayData.h>
 #include <maya/MFnSingleIndexedComponent.h>
+#include <maya/MQuaternion.h>
+#include <maya/MEulerRotation.h>
+#include <maya/MPxTransformationMatrix.h>
 
 #include <values.h>
 #include <maya/MProgressWindow.h>
@@ -528,6 +532,8 @@ void WmFigaroCmd::getNodes( MSelectionList i_opt_nodes )
     m_nurbsCurveList.clear();
     m_fozzieNodeList.clear();
     m_meshList.clear();
+    m_figRodNodeList.clear();
+    m_allOtherTransformNodesList.clear();
 
     for (MItSelectionList sIt(i_opt_nodes); !sIt.isDone(); sIt.next())
     {
@@ -548,13 +554,18 @@ void WmFigaroCmd::getNodes( MSelectionList i_opt_nodes )
         {
             mObj = childPath.node();
             
-            m_nurbsCurveList.add( childPath, mObj, true);
+            m_nurbsCurveList.add( childPath, mObj, false);
         }
         else if ( childPath.apiType() == MFn::kMesh )
         {
+            // First we add it to the list of all other objects since the user may just be wanting
+            // to use this mesh to attach to ta rod.
+            stat = m_allOtherTransformNodesList.add( mDagPath, mObj, false );
+            CHECK_MSTATUS( stat );
+            
             mObj = childPath.node();
             
-            m_meshList.add( childPath, mObj, true);
+            m_meshList.add( childPath, mObj, false);
         } 
         else
         {
@@ -565,15 +576,25 @@ void WmFigaroCmd::getNodes( MSelectionList i_opt_nodes )
             MFnDependencyNode nodeFn( childPath.node( &stat ) );
             CHECK_MSTATUS( stat );
             
-            cerr << "Node typename = " << nodeFn.typeName() << endl;
             if ( nodeFn.typeName() == WmBunsenNode::typeName )
             {
                 m_selectedwmBunsenNode = childPath.node();
             }
             else if ( nodeFn.typeName() == "wmBarbFurSetNode" )
             {
-                m_fozzieNodeList.add( childPath, mObj, true );
+                mObj = childPath.node();
+                m_fozzieNodeList.add( childPath, mObj, false );
             } 
+            else if ( nodeFn.typeName() == WmBunsenRodNode::typeName )
+            {
+                mObj = childPath.node();
+                m_figRodNodeList.add( childPath, mObj, false );
+            } 
+            else
+            {
+                stat = m_allOtherTransformNodesList.add( mDagPath, mObj, false );
+                CHECK_MSTATUS( stat );
+            }
         }
         
         
@@ -654,9 +675,169 @@ MStatus WmFigaroCmd::undoIt()
     return MS::kSuccess;
 }
 
+void WmFigaroCmd::quaternionFromMatrix( MMatrix& a, MQuaternion& q ) 
+{
+  double trace = a( 0 ,0 ) + a( 1, 1 ) + a( 2, 2 );
+  if( trace > 0 ) 
+  {
+    double s = 0.5f / sqrtf( trace + 1.0f );
+    q.w = 0.25f / s;
+    q.x = ( a(2,1) - a(1,2) ) * s;
+    q.y = ( a(0,2) - a(2,0) ) * s;
+    q.z = ( a(1,0) - a(0,1) ) * s;
+  } else {
+    if ( a(0,0) > a(1,1) && a(0,0) > a(2,2) ) {
+      double s = 2.0f * sqrtf( 1.0f + a(0,0) - a(1,1) - a(2,2));
+      q.w = (a(2,1) - a(1,2) ) / s;
+      q.x = 0.25f * s;
+      q.y = (a(0,1) + a(1,0) ) / s;
+      q.z = (a(0,2) + a(2,0) ) / s;
+    } else if (a(1,1) > a(2,2)) {
+      double s = 2.0f * sqrtf( 1.0f + a(1,1) - a(0,0) - a(2,2));
+      q.w = (a(0,2) - a(2,0) ) / s;
+      q.x = (a(0,1) + a(1,0) ) / s;
+      q.y = 0.25f * s;
+      q.z = (a(1,2) + a(2,1) ) / s;
+    } else {
+      double s = 2.0f * sqrtf( 1.0f + a(2,2) - a(0,0) - a(1,1) );
+      q.w = (a(1,0) - a(0,1) ) / s;
+      q.x = (a(0,2) + a(2,0) ) / s;
+      q.y = (a(1,2) + a(2,1) ) / s;
+      q.z = 0.25f * s;
+    }
+  }
+}
+
+
 void WmFigaroCmd::attatchEdgeToObject()
 {
+    // Find the first selected object
+    MDagPath mDagPath;
+    MObject mObj;
+    MItDag dagit;
+    MStatus stat;
+
+    if ( m_allOtherTransformNodesList.isEmpty() )
+    {
+        displayError( "Please select an object to attach to the rod edge." );
+        return;
+    }
+    if ( m_figRodNodeList.isEmpty() )
+    {
+        displayError( "Please select a Figaro rod node to attach to the object." );
+        return;
+    }
     
+    // Currently we just force it to be controlling edge 0 of the rod
+    // Which edge an object controls is defined by the index of the array
+    // it connects into on the rod node.
+
+    MObject connectionNodeTObj;  // Object for transform node
+    MObject connectionNodeSObj;  // Object for shape node
+    MObject pObj;
+    MString connectionShapeName;
+    MDagModifier dagModifier;
+            
+    createDagNode( WmFigConnectionNode::typeName.asChar(), 
+                   WmFigConnectionNode::typeName.asChar(), 
+                   pObj, &connectionNodeTObj, &connectionNodeSObj, &dagModifier,
+                   connectionShapeName );
+    
+    appendToResultString( connectionShapeName );
+    
+    MDagPath connnectionNodePath;
+    stat = MDagPath::getAPathTo( connectionNodeSObj, connnectionNodePath );
+    CHECK_MSTATUS( stat );
+
+    MPlug connectionTransformPlug( connectionNodeSObj, WmFigConnectionNode::ia_transformMatrix );
+    CHECK_MSTATUS( stat );
+    
+    // At this point we should set the input attrs to define the edge the object will attach to
+    // FIXME: When those input attrs change the connection from the connection node to the fig rod 
+    // node should change to reflect the new location that is being driven.
+    
+    MObject transformNodeObj;
+    stat = m_allOtherTransformNodesList.getDependNode( 0, transformNodeObj );
+    CHECK_MSTATUS( stat );
+    
+    MFnDependencyNode transformDepFn( transformNodeObj, &stat );
+    CHECK_MSTATUS( stat );
+    
+    MPlug inputTransformPlug = transformDepFn.findPlug( "xformMatrix", true, &stat );
+    CHECK_MSTATUS( stat );
+    stat = dagModifier.connect( inputTransformPlug, connectionTransformPlug );
+    CHECK_MSTATUS( stat );
+    stat = dagModifier.doIt();
+    CHECK_MSTATUS( stat );
+    
+    // Connect edge output connection to input on connection node so the edges can drive
+    // meshes.
+    
+    MObject figRodNodeObj;
+    stat = m_figRodNodeList.getDependNode( 0, figRodNodeObj );
+    CHECK_MSTATUS( stat );
+    
+    MFnDependencyNode figRodNodeDepFn( figRodNodeObj, &stat );
+    CHECK_MSTATUS( stat );
+    
+    MPlug edgeTransformPlug = figRodNodeDepFn.findPlug( "outEdgeTransforms", true, &stat );
+    CHECK_MSTATUS( stat );
+    
+    MPlug connectionEdgeInputPlug( connectionNodeSObj, WmFigConnectionNode::ia_rodEdgeTransforms );
+    CHECK_MSTATUS( stat );
+    stat = dagModifier.connect( edgeTransformPlug, connectionEdgeInputPlug );
+    CHECK_MSTATUS( stat );
+    stat = dagModifier.doIt();
+    CHECK_MSTATUS( stat );
+    
+    cerr << "connected edge plugs, pulling transform info\n";
+    
+    MPlug outputTransformPlug( connectionNodeSObj, WmFigConnectionNode::oa_outTransformMatrix );
+    CHECK_MSTATUS( stat );
+    
+    MObject matrixObj;
+    stat = outputTransformPlug.getValue( matrixObj );
+    CHECK_MSTATUS( stat );
+    
+    MFnMatrixData matrixData( matrixObj, &stat );
+    CHECK_MSTATUS( stat );
+    
+    cerr << "Transform matrix is " << matrixData.matrix() << endl;
+    
+    // Set the input objects transform to match this data so that it lies on the edge before
+    // it starts controlling the edge. Unfortunatley we can't set a matrix directly for some
+    // reason we need to set a quaternion.
+    
+    MPxTransformationMatrix transformMatrix( matrixData.matrix() );
+    MVector translation = transformMatrix.translation();
+    
+    // Now set the translation part of the transform
+    MPlug xTranslatePlug = transformDepFn.findPlug( "translateX", true, &stat );
+    CHECK_MSTATUS( stat );
+    xTranslatePlug.setValue( translation[ 0 ] );
+    MPlug yTranslatePlug = transformDepFn.findPlug( "translateY", true, &stat );
+    CHECK_MSTATUS( stat );
+    yTranslatePlug.setValue( translation[ 1 ] );
+    MPlug zTranslatePlug = transformDepFn.findPlug( "translateZ", true, &stat );
+    CHECK_MSTATUS( stat );
+    zTranslatePlug.setValue( translation[ 2 ] );
+    
+    // And the rotation which is nastily in euler angles...
+    
+    MEulerRotation eulerRotation = transformMatrix.eulerRotation();
+    
+    MPlug xRotatePlug = transformDepFn.findPlug( "rotateX", true, &stat );
+    CHECK_MSTATUS( stat );
+    xRotatePlug.setValue( eulerRotation.x );
+    MPlug yRotatePlug = transformDepFn.findPlug( "rotateY", true, &stat );
+    CHECK_MSTATUS( stat );
+    yRotatePlug.setValue( eulerRotation.y );
+    MPlug zRotatePlug = transformDepFn.findPlug( "rotateZ", true, &stat );
+    CHECK_MSTATUS( stat );
+    zRotatePlug.setValue( eulerRotation.z );
+    
+    // Now the input object is sitting on the correct segment of the rod and oriented correctly.
+    // It is ready to control that rod segment.
 }
 
 void WmFigaroCmd::addCollisionMeshes()

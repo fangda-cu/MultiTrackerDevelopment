@@ -17,6 +17,7 @@ global proc wmFigaroAddMainMenu()
         menuItem -label "Create rods from NURBS curves" -annotation "Create elastic rod from NURBS" -command "wmFigaro -cr -cpr 20";
         menuItem -label "Create rods from BarberShop node" -annotation "Create elastic rods from a BarberShop furset" -command "wmFigaro -crf -cpr 20";
         menuItem -label "Add selected meshes as collision objects" -annotation "Add meshes as collision objects to the selected wmFigaro node"-command "wmFigaro -acm";
+        menuItem -label "Attach selected object to rod edge" -annotation "Attaches the selected object to a rod to control or be controlled by an edge."-command "wmFigaro -aeo";
       
       //   menuItem -label "Create constraint" -annotation "Creates a spring constraint between two selected input curve CVs" -command"dyno -crr";
        // menuItem -label "Disconnect selected collision objects" -command "dyno -rcm";

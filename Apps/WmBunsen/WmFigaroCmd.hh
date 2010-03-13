@@ -88,6 +88,8 @@ protected:  // Data
   
     void createPreviewNodes();
     static void appendToResultString( MString& i_resultString );
+    void quaternionFromMatrix( MMatrix& a, MQuaternion& Q );
+
     
     /// True if the command is undoable, false otherwise
     bool m_undoable;
@@ -124,6 +126,8 @@ protected:  // Data
     MSelectionList m_nurbsCurveList;    // list of nurbs curves
     MSelectionList m_meshList;      // list of meshes
     MSelectionList m_fozzieNodeList;
+    MSelectionList m_figRodNodeList;
+    MSelectionList m_allOtherTransformNodesList;
     MObject  m_selectedwmBunsenNode;
     MString m_cacheFile;
     

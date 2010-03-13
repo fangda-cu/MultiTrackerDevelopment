@@ -94,6 +94,10 @@ public:
     static MObject oa_undeformedMaterialFrames;
     static MObject ia_strandRootFrames;
     
+    static MObject ia_edgeTransforms;
+    static MObject oa_edgeTransforms;
+    
+    static MObject oa_numberOfRods;
         
     // Returns the number of rods this node has input data for
     size_t numberOfRods();
@@ -105,6 +109,8 @@ public:
                                         MString i_shortName,
                                         MFnNumericData::Type i_type, double i_defaultValue,
                                         bool i_isInput );
+    
+    MMatrix getRodEdgeMatrix( size_t i_rod, size_t i_edge );
     
 private:
     void getStrandRootFrames( MDataBlock& i_dataBlock, vector<MaterialFrame>& o_strandRootFrames );

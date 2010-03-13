@@ -1,5 +1,7 @@
 #include "WmBunsenRodNode.hh"
 
+#include <maya/MFnMatrixAttribute.h>
+
 using namespace BASim;
 
 // Required by Maya to identify node
@@ -47,6 +49,13 @@ using namespace BASim;
 /* static */ MObject WmBunsenRodNode::oa_undeformedMaterialFrames;
 /* static */ MObject WmBunsenRodNode::ia_strandRootFrames;
 
+/* static */ MObject WmBunsenRodNode::oa_numberOfRods;
+
+
+// For being controlled by external objects and for controlling external objects
+/* static */ MObject WmBunsenRodNode::ia_edgeTransforms;
+/* static */ MObject WmBunsenRodNode::oa_edgeTransforms;
+
 WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_rodData( NULL ), mx_world( NULL ),
                                      m_numberOfInputCurves( 0 ), m_cvsPerRod( -1 ), 
                                      m_massDamping( 10 ), m_percentageOfFozzieStrands( 100 ),
@@ -62,6 +71,41 @@ WmBunsenRodNode::WmBunsenRodNode() : m_initialised( false ), mx_rodData( NULL ),
 
 WmBunsenRodNode::~WmBunsenRodNode()
 {
+}
+
+MMatrix WmBunsenRodNode::getRodEdgeMatrix( size_t i_rod, size_t i_edge )
+{
+    MMatrix identMatrix;
+    identMatrix.setToIdentity();
+    
+    if ( mx_rodData == NULL )
+        return identMatrix;
+    
+    if ( i_rod >= mx_rodData->size() )
+        return identMatrix;
+    
+    if ( (*mx_rodData)[ i_rod ]->rod == NULL )
+        return identMatrix;
+    
+    if ( i_edge >= (*mx_rodData)[ i_rod ]->rod->ne() )
+        return identMatrix;
+    
+    Vec3d edgePos = ( (*mx_rodData)[ i_rod ]->rod->getVertex( i_edge ) + 
+                      (*mx_rodData)[ i_rod ]->rod->getVertex( i_edge + 1 ) ) / 2.0;
+    
+    MMatrix edgeMatrix;
+    edgeMatrix( 3, 0 ) = edgePos[ 0 ]; edgeMatrix( 3, 1 ) = edgePos[ 1 ]; edgeMatrix( 3, 2 ) = edgePos[ 2 ];
+    
+    Vec3d edge = (*mx_rodData)[ i_rod ]->rod->getEdge( i_edge );
+    edgeMatrix( 0, 0 ) = edge[ 0 ]; edgeMatrix( 0, 1 ) = edge[ 1 ]; edgeMatrix( 0, 2 ) = edge[ 2 ];
+    
+    Vec3d material1 = (*mx_rodData)[ i_rod ]->rod->getMaterial1( i_edge );
+    edgeMatrix( 1, 0 ) = material1[ 0 ]; edgeMatrix( 1, 1 ) = material1[ 1 ]; edgeMatrix( 1, 2 ) = material1[ 2 ];
+    
+    Vec3d material2 = (*mx_rodData)[ i_rod ]->rod->getMaterial2( i_edge );
+    edgeMatrix( 2, 0 ) = material2[ 0 ]; edgeMatrix( 2, 1 ) = material2[ 1 ]; edgeMatrix( 2, 2 ) = material2[ 2 ];
+    
+    return edgeMatrix;
 }
 
 FILE* WmBunsenRodNode::readNumberOfRodsFromFile( const MString i_cacheFilename, size_t& o_numRodsInFile,
@@ -742,6 +786,8 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             updateHairsprayScales( i_dataBlock );
         }
         
+        
+        
         stat = i_dataBlock.setClean( i_plug );
         if ( !stat )
         {
@@ -749,7 +795,7 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             return stat;
         }
     }
-    else if ( i_plug == ca_simulationSync )
+    else if ( i_plug == ca_simulationSync || i_plug == oa_numberOfRods )
     {
         // If we're here then the Bunsen node has moved forward in time and we should pull the
         // simulated data from mx_rodData.
@@ -775,6 +821,13 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             else
                 MGlobal::displayWarning( "Ignoring request to cache frame as reading from cache!\n" );
         }
+        
+        MDataHandle numRodsH = i_dataBlock.outputValue( oa_numberOfRods, &stat);
+        CHECK_MSTATUS( stat );
+        if ( mx_rodData != NULL )
+            numRodsH.set( (int)mx_rodData->size() );
+        else
+            numRodsH.set( 0 );
         
         stat = i_dataBlock.setClean( i_plug );
         if ( !stat )
@@ -1161,6 +1214,22 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             
         }
         undeformedMaterialFramesH.setClean();
+        i_dataBlock.setClean( i_plug );
+    }
+    else if ( i_plug == oa_edgeTransforms )
+    {
+        i_dataBlock.inputValue( ia_edgeTransforms, &stat );
+        CHECK_MSTATUS( stat );
+        i_dataBlock.inputValue( ia_simStepTaken, &stat );
+        CHECK_MSTATUS( stat );
+        
+        // Due to the complexities of the number of vertices changing on a rod we
+        // dont actually pass any info here, we merely signal that the output has changed.
+        // Then it is up to the connection node to grab the correct data from mx_rodData.
+        MDataHandle edgeTransforms = i_dataBlock.outputValue( oa_edgeTransforms, &stat );
+        CHECK_MSTATUS( stat );
+        
+        edgeTransforms.setClean();
         i_dataBlock.setClean( i_plug );
     }
     else
@@ -1720,6 +1789,53 @@ void* WmBunsenRodNode::creator()
     stat = attributeAffects( ia_time, oa_undeformedMaterialFrames );
     stat = attributeAffects( ia_startTime, oa_undeformedMaterialFrames );
     stat = attributeAffects( ia_strandRootFrames, oa_undeformedMaterialFrames );
+ 
+    addNumericAttribute( oa_numberOfRods, "numberOfRods", "nor", MFnNumericData::kInt, 0, false );
+    stat = attributeAffects( ia_simStepTaken, oa_numberOfRods );
+	if ( !stat ) { stat.perror( "attributeAffects ia_simStepTaken->oa_numberOfRods" ); return stat; }
+ 
+    // Controlling and being controlled by external objects
+    {
+        MFnMatrixAttribute mAttr;
+        ia_edgeTransforms = mAttr.create( "inEdgeTransforms", "iet", MFnMatrixAttribute::kDouble, &stat );
+        if ( !stat ) 
+        {
+            stat.perror("create ia_edgeTransforms attribute");
+            return stat;
+        }
+        CHECK_MSTATUS( mAttr.setWritable( true ) );
+        CHECK_MSTATUS( mAttr.setReadable( false ) );
+        CHECK_MSTATUS( mAttr.setArray( true ) );
+        stat = addAttribute( ia_edgeTransforms );
+        if ( !stat ) { stat.perror( "addAttribute ia_edgeTransforms" ); return stat; }
+    }
+    stat = attributeAffects( ia_edgeTransforms, oa_rodsChanged );
+	if ( !stat ) { stat.perror( "attributeAffects ia_edgeTransforms->oa_rodsChanged" ); return stat; }
+    stat = attributeAffects( ia_edgeTransforms, oa_simulatedVertices );
+	if ( !stat ) { stat.perror( "attributeAffects ia_edgeTransforms->oa_simulatedVertices" ); return stat; }
+    stat = attributeAffects( ia_edgeTransforms, oa_materialFrames );
+	if ( !stat ) { stat.perror( "attributeAffects ia_edgeTransforms->oa_materialFrames" ); return stat; }
+ 
+ /*   {
+        MFnMatrixAttribute mAttr;
+        oa_edgeTransforms = mAttr.create( "outEdgeTransforms", "oet", MFnMatrixAttribute::kDouble, &stat );
+        if ( !stat ) 
+        {
+            stat.perror("create oa_edgeTransforms attribute");
+            return stat;
+        }
+        CHECK_MSTATUS( mAttr.setWritable( false ) );
+        CHECK_MSTATUS( mAttr.setReadable( true ) );
+        CHECK_MSTATUS( mAttr.setArray( true ) );
+        stat = addAttribute( oa_edgeTransforms );
+        if ( !stat ) { stat.perror( "addAttribute oa_edgeTransforms" ); return stat; }
+    }*/
     
+    addNumericAttribute( oa_edgeTransforms, "outEdgeTransforms", "oet", MFnNumericData::kBoolean, false, false );
+    stat = attributeAffects( ia_edgeTransforms, oa_edgeTransforms );
+	if ( !stat ) { stat.perror( "attributeAffects ia_edgeTransforms->oa_edgeTransforms" ); return stat; }
+    stat = attributeAffects( ia_simStepTaken, oa_edgeTransforms );
+	if ( !stat ) { stat.perror( "attributeAffects ia_simStepTaken->oa_edgeTransforms" ); return stat; }
+ 
 	return MS::kSuccess;
 }

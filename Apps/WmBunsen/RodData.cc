@@ -26,9 +26,9 @@ RodData::~RodData()
         if ( it->second != NULL )
             delete it->second;
 }
-
+         
 void RodData::removeKinematicEdge( unsigned int i_edgeNumber )
-{
+{ 
     if ( kinematicEdgeDataMap.find( i_edgeNumber ) != kinematicEdgeDataMap.end() )
     {
         delete kinematicEdgeDataMap[ i_edgeNumber ];
@@ -97,11 +97,11 @@ void RodData::updateKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_m
           }
           
           double tt = (theta - 2*pi);
-          cerr << "tt = " << tt << endl;
+      //    cerr << "tt = " << tt << endl;
           if ( tt < 0.0001 && tt > -0.0001 )
               theta = 0.0;
           
-          cerr << "Offset is " << theta*(180.0/pi) << endl;
+       //   cerr << "Offset is " << theta*(180.0/pi) << endl;
           
           return theta;
     }
@@ -141,17 +141,17 @@ void RodData::updateKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_m
                theta = 360*(pi/180.0) - theta;
           
             double tt = (theta - 2*pi);
-            cerr << "tt = " << tt << endl;
+         //   cerr << "tt = " << tt << endl;
             if ( tt < 0.0001 && tt > -0.0001 )
               theta = 0.0;
           
             //double theta = acos( rod->getMaterial2( edgeNumber ).dot( materialFrame.m3 ) );
           
             double rTheta = rod->getTheta( edgeNumber );
-            cerr << "rTheta = " << rTheta*(180.0/pi) << endl;
-            cerr << "Theta = " << theta*(180.0/pi) << endl;
+           // cerr << "rTheta = " << rTheta*(180.0/pi) << endl;
+            //cerr << "Theta = " << theta*(180.0/pi) << endl;
             
-            cerr << "total angle = " << (rTheta + ( offsetFromRodRefFrame - theta ))*(180.0/pi) << endl;
+            //cerr << "total angle = " << (rTheta + ( offsetFromRodRefFrame - theta ))*(180.0/pi) << endl;
             //return rTheta + ( offsetFromRodRefFrame - theta );
             return rTheta +  theta - offsetFromRodRefFrame;
         }

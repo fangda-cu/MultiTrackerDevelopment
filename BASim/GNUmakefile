@@ -9,7 +9,7 @@ include /vol/bob/make/head.mk
 IPATHS 	+= -I$(MKLROOT)/include 
 
 LIB1       := Wfigaro
-LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread
+LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL -fPIC
 LIB1_HSD   := Wfigaro
 LIB1_HDIR := src
 LIB1_H     := \

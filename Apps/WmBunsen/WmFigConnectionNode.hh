@@ -62,6 +62,10 @@ public:
     static MObject ia_transformMatrix;
     
     static MObject oa_materialFrame;
+    
+    static MObject ia_controllingEdge;
+    static MObject ia_rodEdgeTransforms;
+    static MObject oa_outTransformMatrix;
 
     static MStatus addNumericAttribute( MObject& i_attribute, MString i_longName, 
                                         MString i_shortName,
@@ -72,6 +76,7 @@ private:
     double m_currentTime;
     double m_previousTime;
     double m_startTime;
+    bool m_controllingEdge;
 };
 
 #endif
