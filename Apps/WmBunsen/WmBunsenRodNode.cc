@@ -424,7 +424,8 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
                       edgeIt != m_controlledEdgeTransforms[ i ].end();
                       edgeIt++ )
                 {
-                    (*mx_rodData)[ i ]->addKinematicEdge( edgeIt->first, (*mx_rodData)[ i ]->rod, &(edgeIt->second.materialFrame) );
+                    // Now add in ::compute()
+                    //(*mx_rodData)[ i ]->addKinematicEdge( edgeIt->first, (*mx_rodData)[ i ]->rod, &(edgeIt->second.materialFrame) );
                     
                     // Set the next positions of these vertices to be wherever the input controller
                     // says they should be.
@@ -835,6 +836,30 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         // below even safe in a compute() since we're not using the data block? I can't see how
         // it can cause any evaluation that the above wouldn't.
         
+        // First get rid of all the constraints as some of them may have been removed.
+        // We could do this in connectionBroken but there is always weirdness when loading
+        // and tracking stuff in connection made/broken.
+        
+        // FIXME: This is pretty darn innefficient, deleting then recreating
+        // Although it does let us create and delete them at any frame in the simulation
+        
+        if ( mx_rodData != NULL )
+        {            
+            for ( EdgeTransformRodMap::iterator rodIt = m_controlledEdgeTransforms.begin();
+                rodIt != m_controlledEdgeTransforms.end(); rodIt++ )
+            {
+                for ( EdgeTransformMap::iterator edgeIt = rodIt->second.begin();
+                      edgeIt != rodIt->second.end();
+                      edgeIt++ )
+                {
+                    //if ( (*mx_rodData)[ rodIt->first ]->rod != NULL )
+                        (*mx_rodData)[ rodIt->first ]->removeKinematicEdge( edgeIt->first );
+                }
+                m_controlledEdgeTransforms[ rodIt->first ].clear();
+            }
+            m_controlledEdgeTransforms.clear();
+        }
+        
         MPlug myEdgePlugs( thisMObject(), ia_edgeTransforms );
         if ( myEdgePlugs.isArray() )
         {
@@ -860,6 +885,8 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                         connectionNode->getControlledRodInfo( rod, edge, edgeTransform );
                         
                         m_controlledEdgeTransforms[ rod ][ edge ] = edgeTransform;
+                        
+                        (*mx_rodData)[ rod ]->addKinematicEdge( edge, (*mx_rodData)[ rod ]->rod, &(edgeTransform.materialFrame) );
                     }
                 }
             }

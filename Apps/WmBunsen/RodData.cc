@@ -32,7 +32,7 @@ void RodData::removeKinematicEdge( unsigned int i_edgeNumber )
     if ( kinematicEdgeDataMap.find( i_edgeNumber ) != kinematicEdgeDataMap.end() )
     {
         delete kinematicEdgeDataMap[ i_edgeNumber ];
-        kinematicEdgeDataMap.erase( 0 );
+        kinematicEdgeDataMap.erase( i_edgeNumber );
     }
 }
 

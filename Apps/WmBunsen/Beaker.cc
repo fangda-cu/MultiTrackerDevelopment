@@ -749,9 +749,9 @@ void Beaker::draw()
         glVertex3d( p1[0], p1[1], p1[2] );
     }    
     glEnd();
-    glLineWidth(1.0);*/
+    glLineWidth(1.0);
   
-    
+    */
   /*  for ( CollisionMeshDataHashMapIterator cmItr = m_collisionMeshMap.begin();
                                                    cmItr != m_collisionMeshMap.end(); ++cmItr )
     {
