@@ -217,7 +217,7 @@ MStatus WmBunsenCollisionMeshNode::connectionMade( const  MPlug & i_plug, const 
 {    
     MStatus stat;
 
-    if( i_plug == ia_inMesh )
+/*    if( i_plug == ia_inMesh )
     {
         MObject meshObj;
         stat = i_plug.getValue( meshObj );
@@ -226,7 +226,7 @@ MStatus WmBunsenCollisionMeshNode::connectionMade( const  MPlug & i_plug, const 
         CHECK_MSTATUS( stat );
 
        // updateCollisionMeshFromMayaMesh( meshFn, true );
-    }
+    }*/
 
     return MS::kUnknownParameter;
 }

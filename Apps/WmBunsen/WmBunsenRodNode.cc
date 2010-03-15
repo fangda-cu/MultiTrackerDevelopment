@@ -1386,7 +1386,9 @@ void WmBunsenRodNode::getStrandRootFrames( MDataBlock& i_dataBlock, vector<Mater
     MDataHandle strandRootFramesH = i_dataBlock.inputValue( ia_strandRootFrames, &stat );
     CHECK_MSTATUS( stat );
     MFnVectorArrayData strandRootFrameVecData( strandRootFramesH.data(), &stat );
-    CHECK_MSTATUS( stat );
+    
+    if ( !stat )    // Strand root frames are not connected so just leave
+        return;
         
     MVectorArray strandRootFrameVec;
     strandRootFrameVec = strandRootFrameVecData.array( &stat );
