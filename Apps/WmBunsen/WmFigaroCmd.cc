@@ -91,6 +91,7 @@ const char *const kAttachEdgeToObject( "-aeo" );
 const char *const kEdge( "-ed" );
 const char *const kRod( "-ro" );
 const char *const kUserDefinedColour( "-udc" );
+const char *const kDeleteDefinedColour( "-ddc" );
 
 const char *const kHelp( "-h" );
 
@@ -123,6 +124,8 @@ MSyntax WmFigaroCmd::syntaxCreator()
     
     p_AddFlag( mSyntax, kUserDefinedColour, "-userDefinedColour",
         "Colour to draw specified rods in.", MSyntax::kString);
+    p_AddFlag( mSyntax, kDeleteDefinedColour, "-deleteUserDefinedColour",
+        "Remove colour override from a rod.", MSyntax::kString);
     
     p_AddFlag( mSyntax, kPreviewCache, "-previewCache",
                "Creates wmFigaro and wmFigRodNodes and to load the specified cache file for preview." );
@@ -196,8 +199,6 @@ MStatus WmFigaroCmd::doIt( const MArgList &i_mArgList )
                    m_color[ 1 ] = subStrings[ 1 ].asFloat();
                    m_color[ 2 ] = subStrings[ 2 ].asFloat();
                }
-               
-               cerr << "color = " << m_color << endl;
             }
             
             // The command usually operates on whatever we have selected, so filter the selection
@@ -268,6 +269,10 @@ MStatus WmFigaroCmd::redoIt()
         {
             setColorOfRod();
         }
+        if ( m_mArgDatabase->isFlagSet( kDeleteDefinedColour ) )
+        {
+            setColorOfRod( true );
+        }
         else
         {
             // Do other stuff such as return number of rods or whatever
@@ -284,7 +289,7 @@ MStatus WmFigaroCmd::undoIt()
     return MS::kSuccess;
 }
 
-void WmFigaroCmd::setColorOfRod()
+void WmFigaroCmd::setColorOfRod( bool i_unset )
 {
     MStatus stat;
     
@@ -298,17 +303,7 @@ void WmFigaroCmd::setColorOfRod()
     stat = m_figRodNodeList.getDependNode( 0, rodNodeObj);
     CHECK_MSTATUS( stat );
     
-    /*MFnDependencyNode rodNodeFn( rodNodeObj, &stat );
-    CHECK_MSTATUS( stat );
-    
-    MObject colorAttr = rodNodeFn.attribute( "userDefinedColor", &stat );
-    CHECK_MSTATUS( stat );*/
-    
     MPlug colorPlugArray( rodNodeObj, WmBunsenRodNode::ia_userDefinedColors );
-    if ( colorPlugArray.isArray() )
-        cerr << "yes it is isarray = "<< endl;
-    else
-        cerr << "not it is no array = "<< endl;
     
     MPlug colorPlug = colorPlugArray.elementByLogicalIndex( m_rodNumber, &stat );
     CHECK_MSTATUS( stat );
@@ -316,8 +311,12 @@ void WmFigaroCmd::setColorOfRod()
     MFnNumericData colorData;
     MObject colorObj = colorData.create( MFnNumericData::k3Double, &stat );
     CHECK_MSTATUS( stat );
+ 
+    if ( i_unset )
+        stat = colorData.setData3Double( -1, -1, -1 );
+    else
+        stat = colorData.setData3Double( m_color[ 0 ], m_color[ 1 ], m_color[ 2 ] );
     
-    stat = colorData.setData3Double( m_color[ 0 ], m_color[ 1 ], m_color[ 2 ] );
     CHECK_MSTATUS( stat );
     
     stat = colorPlug.setValue( colorObj );

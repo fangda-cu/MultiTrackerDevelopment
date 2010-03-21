@@ -89,7 +89,7 @@ protected:  // Data
     void createPreviewNodes();
     static void appendToResultString( MString& i_resultString );
     void quaternionFromMatrix( MMatrix& a, MQuaternion& Q );
-    void setColorOfRod();
+    void setColorOfRod( bool i_unset = false );
     
     /// True if the command is undoable, false otherwise
     bool m_undoable;

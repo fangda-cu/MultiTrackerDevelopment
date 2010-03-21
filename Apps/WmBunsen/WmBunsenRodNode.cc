@@ -1405,7 +1405,11 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             const double3& colour = inArrayH.inputValue( &stat ).asDouble3();
             CHECK_MSTATUS( stat );
 
-            m_rodColourMap[ elementIndex ] = Vec3d( colour[0], colour[1], colour[2] );
+            // We use -1 to indicate not to colour this rod any more. Should really
+            // remove the element from the array. But it was unclear how to do that
+            // and since I'm leaving tomorrow for three weeks I put in this.
+            if ( colour[ 0 ] != -1 )
+                m_rodColourMap[ elementIndex ] = Vec3d( colour[0], colour[1], colour[2] );
         }
         inArrayH.setClean();
         i_dataBlock.setClean( i_plug );
