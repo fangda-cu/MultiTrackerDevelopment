@@ -1,7 +1,10 @@
+global string $gWmFigSelectionContextName = "";
+
 global proc wmFigaroAddMainMenu() 
 {
 	global string $gMainWindow;
 	global string $gWmFigaroMainMenu;
+    global string $gWmFigSelectionContextName;
 	  
     // check in case somehow the menu add function is called and the plugin aint loaded
 	if(!`pluginInfo -q -loaded wmFigaro`) 
@@ -9,23 +12,32 @@ global proc wmFigaroAddMainMenu()
 		print "\nloading wmFigaro plugin...";
 		loadPlugin wmFigaro;
 	}
+    
+  	// Create all the contexts we need so they can be called later by the menu	
+	if ( !`eval("wmFigSelectionContext -query -exists \"" + $gWmFigSelectionContextName + "\"" ) `) 
+    {        
+		$gWmFigSelectionContextName = `eval wmFigSelectionContext`;
+	}
 
-    if(!`menu -exists $gWmFigaroMainMenu`)     {
+    if( !`menu -exists $gWmFigaroMainMenu` )
+    {
         $gWmFigaroMainMenu = `menu -p $gMainWindow -l "Figaro" -tearOff true -allowOptionBoxes true WmFigaroMainMenu`;
 
-        //menuItem -label "Create a DER from Fozzie fur set" -annotation "Create dynamic elastic rods from a selected Fozzie fur set node" -command "dyno -crf";
         menuItem -label "Create rods from NURBS curves" -annotation "Create elastic rod from NURBS" -command "wmFigaro -cr -cpr 20";
         menuItem -label "Create rods from BarberShop node" -annotation "Create elastic rods from a BarberShop furset" -command "wmFigaro -crf -cpr 20";
         menuItem -label "Add selected meshes as collision objects" -annotation "Add meshes as collision objects to the selected wmFigaro node"-command "wmFigaro -acm";
         menuItem -label "Attach selected object to rod edge" -annotation "Attaches the selected object to a rod to control or be controlled by an edge."-command "wmFigaro -aeo";
       
-      //   menuItem -label "Create constraint" -annotation "Creates a spring constraint between two selected input curve CVs" -command"dyno -crr";
-       // menuItem -label "Disconnect selected collision objects" -command "dyno -rcm";
+        menuItem -label "Selection Tool" -annotation "Select rods" -command "setToolTo $gWmFigSelectionContextName";
+
+        // menuItem -label "Create constraint" -annotation "Creates a spring constraint between two selected input curve CVs" -command"dyno -crr";
+        // menuItem -label "Disconnect selected collision objects" -command "dyno -rcm";
     }
 }
 
-global proc wmFigaroRemoveMainMenu() {
-   global string $gWmFigaroMainMenu;;
-    if(`menu -exists $gWmFigaroMainMenu`)
+global proc wmFigaroRemoveMainMenu() 
+{
+   global string $gWmFigaroMainMenu;
+    if( `menu -exists $gWmFigaroMainMenu` )
         deleteUI -menu $gWmFigaroMainMenu;
 }

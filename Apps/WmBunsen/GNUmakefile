@@ -48,7 +48,10 @@ WmBunsenCollisionMeshNode.hh \
 WmBunsenHelpers.hh \
 WmBunsenNode.hh \
 WmBunsenRodNode.hh \
-WmFigConnectionNode.hh
+WmFigConnectionNode.hh \
+WmFigSelectionContext.hh \
+WmFigSelectionContextCommand.hh \
+WmFigSelectionToolCommand.hh
 
 PLG1_S          := \
 Beaker.cc \
@@ -59,8 +62,11 @@ WmBunsenCollisionMeshNode.cc \
 WmBunsenNode.cc \
 WmBunsenPluginMain.cc \
 WmBunsenRodNode.cc \
-WmFigConnectionNode.cc
-        
+WmFigConnectionNode.cc \
+WmFigSelectionContext.cc \
+WmFigSelectionContextCommand.cc \
+WmFigSelectionToolCommand.cc
+
 PLG1_L          += \
 	-lWfigaro_dbg \
 	-lWexcept_dbg \
@@ -89,31 +95,18 @@ SCR3            := AEwmFigCollisionNodeTemplate.mel
 SCR3_MAYA       := 1
 SCR3_INSD       := $(SCR_INSD)
 
-SCR4            := WmFigaro.mel
+SCR4            := wmFigSelectionContextProperties.mel
 SCR4_MAYA       := 1
 SCR4_INSD       := $(SCR_INSD)
 
+SCR5            := wmFigSelectionContextValues.mel
+SCR5_MAYA       := 1
+SCR5_INSD       := $(SCR_INSD)
 
-# i somehow broke this .. butg do we need it? -SHANE -
-#ifdef HAVEMAYA
-#package_help:
-#        @$(ECHO)\
-#"\nAdditional notes for wmFur:\n\
-# If you are in a working copy (or 'wip' is set), then wmFur will be installed\n\
-# below these directories:\n\
-#\t\t$(wetaos)/$(MAYANEED)/plug-ins/wetaWIP/wmFur-"'$$(VERSION)'"\n\
-#\t\t$(weta)/$(MAYANEED)/mel/wetaWIP/wmFur-"'$$(VERSION)'"\n\
-# If you are in a tag (and 'wip' is not set) and INSTALL_AS_DEFAULT is not set,\n\
-# then wmFur will be installed below these directories:\n\
-#\t\t$(wetaos)/$(MAYANEED)/plug-ins/weta/wmFur-"'$$(VERSION)'"\n\
-#\t\t$(weta)/$(MAYANEED)/mel/weta/wmFur-"'$$(VERSION)'"\n\
-# If you are in a tag (and 'wip' is not set) and INSTALL_AS_DEFAULT is set,\n\
-# then wmFur will be installed below these directories:\n\
-#\t\t$(wetaos)/$(MAYANEED)/plug-ins/weta\n\
-#\t\t$(weta)/$(MAYANEED)/mel/weta\n\
-#Note: 'wip' is currently $(if $(WIP),set,not set).\n\
-#Note: Versioned paths would currently have: wmFur-$(VERSION)"
-#endif
+SCR6            := WmFigaro.mel
+SCR6_MAYA       := 1
+SCR6_INSD       := $(SCR_INSD)
+
 
 ##############################################################################
 include /vol/bob/make/tail.mk

@@ -6,6 +6,9 @@
 #include "WmBunsenCollisionMeshNode.hh"
 #include "WmFigaroCmd.hh"
 #include "WmFigConnectionNode.hh"
+#include "WmFigSelectionContext.hh"
+#include "WmFigSelectionContextCommand.hh"
+#include "WmFigSelectionToolCommand.hh"
 
 MStatus initializePlugin( MObject obj )
 { 
@@ -65,6 +68,15 @@ MStatus initializePlugin( MObject obj )
         stat.perror( "registerCommand wmFigaro failed" );
         return stat;     
     }
+    
+    if ( plugin.registerContextCommand( WmFigSelectionContext::typeName,
+            WmFigSelectionContextCommand::creator,
+            WmFigSelectionToolCommand::typeName,
+            WmFigSelectionToolCommand::creator ) != MS::kSuccess )
+    if ( !stat ) {
+        stat.perror( "registerContextCommand WmFigSelectionContext failed" );
+        return stat;     
+    }
 
     MGlobal::executeCommand( "source WmFigaro.mel", false );
     CHECK_MSTATUS( plugin.registerUI( "wmFigaroAddMainMenu", "wmFigaroRemoveMainMenu" ) );
@@ -108,8 +120,14 @@ MStatus uninitializePlugin( MObject obj)
     
     // Deregister custom commands
     stat = plugin.deregisterCommand( WmFigaroCmd::typeName );
-    if (!stat) {
+    if (!stat) 
+    {
         stat.perror( "deregister command wmFigaro failed" );
+    }
+
+    if ( plugin.deregisterContextCommand( WmFigSelectionContext::typeName, WmFigSelectionToolCommand::typeName ) != MS::kSuccess )
+    {
+        stat.perror( "deregister context command wmFigSelection failed" );
     }
 
     MGlobal::stopErrorLogging();
