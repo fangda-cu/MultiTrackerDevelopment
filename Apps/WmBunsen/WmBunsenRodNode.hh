@@ -78,7 +78,9 @@ public:
     static MObject ia_drawMaterialFrames;
     static MObject ia_lockFirstEdgeToInput;
     
+    // Drawing 
     static MObject ia_userDefinedColors;
+    static MObject ca_drawDataChanged;
 
     // Caching
     static MObject ia_cachePath;
@@ -176,6 +178,8 @@ private:
     
     // this is a map of maps. The first map is for the rod, the second is for the edge.
     EdgeTransformRodMap m_controlledEdgeTransforms;
+    
+    std::tr1::unordered_map< unsigned int, Vec3d > m_rodColourMap;
 };
 
 #endif

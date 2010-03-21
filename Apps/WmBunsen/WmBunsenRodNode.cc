@@ -32,7 +32,10 @@ using namespace BASim;
 /* static */ MObject WmBunsenRodNode::ia_massDamping;
 /* static */ MObject WmBunsenRodNode::ia_drawMaterialFrames;
 /* static */ MObject WmBunsenRodNode::ia_lockFirstEdgeToInput;
+
+// Drawing
 /* static */ MObject WmBunsenRodNode::ia_userDefinedColors;
+/* static */ MObject WmBunsenRodNode::ca_drawDataChanged;
 
 // Disk caching
 /* static */ MObject WmBunsenRodNode::ia_cachePath;
@@ -1378,6 +1381,35 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         edgeTransforms.setClean();
         i_dataBlock.setClean( i_plug );
     }
+    else if ( i_plug == ca_drawDataChanged )
+    {
+        MDataHandle inputColourHandle;
+        MObject inputColourObj;
+        MArrayDataHandle inArrayH = i_dataBlock.inputArrayValue( ia_userDefinedColors, &stat );
+        CHECK_MSTATUS(stat);
+
+        size_t numColoursSet = inArrayH.elementCount();
+
+        // Get rid of all previously stored colours as the user may have removed some
+        m_rodColourMap.clear();
+        
+        for ( unsigned int i = 0; i < numColoursSet; i++ )
+        {
+            inArrayH.jumpToArrayElement( i );
+            
+            // We're iterating over the actual indices 'i', as the array
+            // is sparse we need to find out the logical index as seen
+            // by the user in MEL.
+            unsigned int elementIndex = inArrayH.elementIndex();
+            
+            const double3& colour = inArrayH.inputValue( &stat ).asDouble3();
+            CHECK_MSTATUS( stat );
+
+            m_rodColourMap[ elementIndex ] = Vec3d( colour[0], colour[1], colour[2] );
+        }
+        inArrayH.setClean();
+        i_dataBlock.setClean( i_plug );
+    }
     else
     {
 		return MS::kUnknownParameter;
@@ -1541,14 +1573,42 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
 		stat.perror( "WmBunsenRodNode::draw getting ca_simulationSync" );
 		return;
 	}
+    
+    // Pull on the draw data changed as this is the only function that ever will
+    // as no one else cares.
+    MPlug drawPlug( thisNode, ca_drawDataChanged );
+	stat = drawPlug.getValue( d );
+	if ( !stat )
+    {
+		stat.perror( "WmBunsenRodNode::draw getting ca_drawDataChanged" );
+		return;
+	}
 
 	i_view.beginGL();
 	glPushAttrib( GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT );
 
     if ( mx_rodData != NULL )
     {
+        GLfloat currentColour[4];
+        
         for ( size_t r=0; r<mx_rodData->size(); r++ )
+        {
+            bool colourOverride = false;
+            if ( m_rodColourMap.find( r ) != m_rodColourMap.end() )
+            {
+                colourOverride = true;
+                glGetFloatv( GL_CURRENT_COLOR, currentColour );
+                
+                Vec3d colour = m_rodColourMap[ r ];
+                glColor3ub( colour[0], colour[1], colour[2] );
+            }
+            
             (*mx_rodData)[ r ]->rodRenderer->render();
+            
+            if ( colourOverride )
+                glColor4fv( currentColour );
+        }
+        
     }
 
     MPlug drawMaterialFramesPlug( thisNode, ia_drawMaterialFrames );
@@ -1997,8 +2057,14 @@ void* WmBunsenRodNode::creator()
     stat = attributeAffects( ia_simStepTaken, oa_edgeTransforms );
 	if ( !stat ) { stat.perror( "attributeAffects ia_simStepTaken->oa_edgeTransforms" ); return stat; }
  
+    // This array holds the colours of any rods the user has decided to colour differently.
     addNumericAttribute( ia_userDefinedColors, "userDefinedColors", "udc", MFnNumericData::k3Double, 0, true, true );
-    // This affects nothing as it is only cared about during drawing when we read it directly.
-
-	return MS::kSuccess;
+    // This output attribute is purely so that we can get notified when the colour changes on the input
+    // It will also be affected by the rods changing when we add the VBO code in here.
+    addNumericAttribute( ca_drawDataChanged, "drawDataChanged", "ddc", MFnNumericData::kBoolean, true, false, false );
+    stat = attributeAffects( ia_userDefinedColors, ca_drawDataChanged );
+	if ( !stat ) { stat.perror( "attributeAffects ia_userDefinedColors->ca_drawDataChanged" ); return stat; }
+    
+    
+ 	return MS::kSuccess;
 }
