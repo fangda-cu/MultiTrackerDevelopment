@@ -1,7 +1,12 @@
 #ifndef _WMBUNSENCOLLISIONMESHNODE_HH_
 #define _WMBUNSENCOLLISIONMESHNODE_HH_
 
+#ifdef WETA
 #include <weta/Wfigaro/Collisions/CollisionMeshData.hh>
+#else
+#include <BASim/src/Collisions/CollisionMeshData.hh>
+#endif
+
 #include <maya/MPxLocatorNode.h>
 #include <maya/MString.h> 
 #include <maya/MTypeId.h> 

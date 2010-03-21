@@ -8,6 +8,9 @@
 #ifndef RODFORCE_HH
 #define RODFORCE_HH
 
+#ifdef WETA
+#include "Stencil.hh"
+#endif
 #include "ElasticRod.hh"
 
 namespace BASim {
@@ -43,10 +46,14 @@ public:
 
   virtual void verifyProperties() {}
 
+  bool viscous() const { return m_viscous; }
+  void setViscous(bool v) { m_viscous = v; updateStiffness(); }
+
 protected:
 
   ElasticRod& m_rod;
   std::string m_name;
+  bool m_viscous;
 
   static Mat2d J;
   static Mat2d Jt;

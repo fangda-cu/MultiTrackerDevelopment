@@ -27,8 +27,7 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   }
 
   add_property(m_forces, "forces");
-  add_property(m_quasistatic, "quasistatic", false);
-  add_property(m_viscous, "viscous", false);
+  add_property(m_quasistatic, "quasistatic", true);
   add_property(m_refFrameType, "reference-frame", TimeParallel);
   add_property(m_density, "density", 1.0);
   add_property(m_fixed, "fixed_dofs");
@@ -36,6 +35,8 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   add_property(m_fixedEdges, "fixed_edges");
   add_property(m_YoungsModulus, "Young's modulus", 1.0);
   add_property(m_ShearModulus, "shear modulus", 1.0);
+  add_property(m_viscosity, "dynamic viscosity", 0.0);
+  add_property(m_dt, "rod's time step size", 0.1);
 
   add_property(m_vertexPositions, "vertex_positions", Vec3d(0,0,0));
   add_property(m_vertexVelocities, "vertex velocities", Vec3d(0,0,0));
@@ -89,14 +90,15 @@ void ElasticRod::setup()
 {
   computeEdges();
   computeTangents();
+  computeCurvatureBinormals();
   computeEdgeLengths();
   computeVoronoiLengths();
   findOrthogonal(const_cast<Vec3d&>(getReferenceDirector1(0)), getTangent(0));
   computeSpaceParallel();
   computeMaterialDirectors();
   computeVertexMasses();
-  computeEdgeInertias();
-  property(m_ndof) = quasistatic() ? 3 * nv() : 3 * nv() + ne();
+  if (!quasistatic()) computeEdgeInertias();
+  property(m_ndof) = 3 * nv() + ne();
 }
 
 void ElasticRod::addForce(RodForce* force)
@@ -401,6 +403,15 @@ void ElasticRod::verifyProperties()
   }
 }
 
+void ElasticRod::viscousUpdate()
+{
+  RodForces forces = getForces();
+  RodForces::iterator it;
+  for (it = forces.begin(); it != forces.end(); ++it) {
+    if ((*it)->viscous()) (*it)->updateUndeformedStrain();
+  }
+}
+
 void ElasticRod::setupDofIndices()
 {
   vertex_iter vit, vend = vertices_end();
@@ -492,6 +503,16 @@ void
 ElasticRod::setEdgeMass(const edge_handle& eh, int num, const Scalar& mass)
 {
   property(m_edgeInertias)[eh] = mass;
+}
+
+void ElasticRod::setTimeStep(Scalar dt)
+{
+  property(m_dt) = dt;
+  RodForces& forces = getForces();
+  RodForces::iterator fIt;
+  for (fIt = forces.begin(); fIt != forces.end(); ++fIt) {
+    if ((*fIt)->viscous()) (*fIt)->updateStiffness();
+  }
 }
 
 } // namespace BASim

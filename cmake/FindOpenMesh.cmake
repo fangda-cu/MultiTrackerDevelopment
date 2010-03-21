@@ -13,14 +13,14 @@ endif (OPENMESH_INCLUDE_DIR AND OPENMESH_LIBRARIES)
 # find the headers
 find_path (OPENMESH_INCLUDE_PATH
   OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh
-  HINTS OpenMesh_INC_DIR ENV OpenMesh_INC_DIR
+  HINTS OpenMesh_INC_DIR $ENV{OpenMesh_INC_DIR}
   )
 
 # find the libraries
 set (OPENMESH_NAMES OpenMeshCore)
 find_library (OPENMESH_LIBRARY NAMES
   NAMES ${OPENMESH_NAMES}
-  HINTS OpenMesh_LIB_DIR ENV OpenMesh_LIB_DIR
+  HINTS OpenMesh_LIB_DIR $ENV{OpenMesh_LIB_DIR}
   )
 
 # handle the QUIETLY and REQUIRED arguments and set OPENMESH_FOUND to

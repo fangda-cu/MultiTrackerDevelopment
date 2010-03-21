@@ -45,18 +45,18 @@ namespace BASim {
     return container.property(ph)[0];                                 \
   }
 
-#define BA_PROPERTY_EXISTS(handle, container)                 \
-  template <typename T> inline bool                           \
-  property_exists(const handle<T>&, const std::string& name)  \
-  {                                                           \
-    return container.exists(T(), name);                       \
+#define BA_PROPERTY_EXISTS(handle, container)                       \
+  template <typename T> inline bool                                 \
+  property_exists(const handle<T>&, const std::string& name) const  \
+  {                                                                 \
+    return container.exists(T(), name);                             \
   }
 
-#define BA_PROPERTY_HANDLE(hndl, container)             \
-  template <typename T> inline void                     \
-  property_handle(hndl<T>& ph, const std::string& name) \
-  {                                                     \
-    ph = hndl<T>( container.handle(T(), name) );        \
+#define BA_PROPERTY_HANDLE(hndl, container)                   \
+  template <typename T> inline void                           \
+  property_handle(hndl<T>& ph, const std::string& name) const \
+  {                                                           \
+    ph = hndl<T>( container.handle(T(), name) );              \
   }
 
 

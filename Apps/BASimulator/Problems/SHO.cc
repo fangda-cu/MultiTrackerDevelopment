@@ -15,7 +15,7 @@ SHO::SHO()
   addDynamicsProps();
 
   AddOption("integrator", "type of integrator to use for the rod",
-            "symplectic");
+            "implicit");
 }
 
 void SHO::Setup()
@@ -36,6 +36,8 @@ void SHO::Setup()
   rod = setupRod(opts, vertices, vertices);
   stepper = new RodTimeStepper(*rod);
   stepper->getBoundaryCondition()->setDesiredVertexPosition(0, rod->getVertex(0));
+  stepper->getBoundaryCondition()->setDesiredVertexPosition(1, rod->getVertex(1));
+  stepper->getBoundaryCondition()->setDesiredEdgeAngle(0, rod->getTheta(0));
   //stepper->addExternalForce(new RodMassDamping(10.0));
   if (getGravity().norm() > 0)
     stepper->addExternalForce(new RodGravity(getGravity()));
@@ -44,18 +46,9 @@ void SHO::Setup()
     stepper->setDiffEqSolver(RodTimeStepper::IMPL_EULER);
   else if (method == "symplectic")
     stepper->setDiffEqSolver(RodTimeStepper::SYMPL_EULER);
+  stepper->setTimeStep(0.001);
   m_world->addObject(rod);
   m_world->addController(stepper);
-
-  TopologicalObject obj;
-  TopologicalObject::vertex_handle vh0 = obj.addVertex();
-  TopologicalObject::vertex_handle vh1 = obj.addVertex();
-  TopologicalObject::edge_handle eh = obj.addEdge(vh0, vh1);
-
-  TopologicalObject::vertex_iter vit;
-  for (vit = obj.vertices_begin(); vit != obj.vertices_end(); ++vit) {
-    std::cout << vit->idx() << std::endl;
-  }
 }
 
 void SHO::AtEachTimestep()

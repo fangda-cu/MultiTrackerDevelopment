@@ -35,7 +35,7 @@ public:
       m_diffEq.setX(i, m_diffEq.getX(i) + m_dt * v);
     }
 
-    m_diffEq.flush();
+    m_diffEq.endIteration();
   }
 
 protected:

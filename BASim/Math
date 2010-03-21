@@ -7,6 +7,7 @@
 #include "src/Math/MatrixBase.hh"
 #include "src/Math/Preconditioner.hh"
 #include "src/Math/LinearSolverBase.hh"
+
 #include "src/Math/BandMatrix.hh"
 #include "src/Math/DiagonalPreconditioner.hh"
 #include "src/Math/ConjugateGradient.hh"
@@ -17,11 +18,12 @@
 #include "src/Math/Petsc/PetscLinearSolver.hh"
 #endif // HAVE_PETSC
 
-#ifdef HAVE_MKL
+#ifdef HAVE_LAPACK
 #include "src/Math/MKL/MKLLinearSolver.hh"
-#endif // HAVE_MKL
+#endif // HAVE_LAPACK
 
 //#include "src/Math/FlensMatrix.hh"
+
 //#include <itpp/itbase.h>
 //#include "src/Math/ITPPMatrix.hh"
 

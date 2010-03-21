@@ -9,7 +9,7 @@ include /vol/bob/make/head.mk
 IPATHS 	+= -I$(MKLROOT)/include 
 
 LIB1       := Wfigaro
-LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL -fPIC
+LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA
 LIB1_HSD   := Wfigaro
 LIB1_HDIR := src
 LIB1_H     := \
@@ -185,6 +185,7 @@ Physics/ElasticRods/Force.hh \
 Physics/ElasticRods/RodAnisoBending.hh \
 Physics/ElasticRods/RodAnisoForce.hh \
 Physics/ElasticRods/RodBendingForce.hh \
+Physics/ElasticRods/RodBendingForceSym.hh \
 Physics/ElasticRods/RodBendingForceIncludes.hh \
 Physics/ElasticRods/RodBoundaryCondition.hh \
 Physics/ElasticRods/RodCollisionTimeStepper.hh \
@@ -198,6 +199,7 @@ Physics/ElasticRods/RodStretchingForce.hh \
 Physics/ElasticRods/RodTimeStepper.hh \
 Physics/ElasticRods/RodTube.hh \
 Physics/ElasticRods/RodTwistingForce.hh \
+Physics/ElasticRods/RodTwistingForceSym.hh \
 Physics/ElasticRods/RodUtils.hh \
 Physics/ElasticRods/Stencil.hh \
 Physics/ElasticRods/VertexStencil.hh \
@@ -249,6 +251,7 @@ src/Physics/ElasticRods/ElasticRod.cc \
 src/Physics/ElasticRods/RodAnisoBending.cc \
 src/Physics/ElasticRods/RodAnisoForce.cc \
 src/Physics/ElasticRods/RodBendingForce.cc \
+src/Physics/ElasticRods/RodBendingForceSym.cc \
 src/Physics/ElasticRods/RodBoundaryCondition.cc \
 src/Physics/ElasticRods/RodCollisionTimeStepper.cc \
 src/Physics/ElasticRods/RodForce.cc \
@@ -257,6 +260,7 @@ src/Physics/ElasticRods/RodPenaltyForce.cc \
 src/Physics/ElasticRods/RodStretchingForce.cc \
 src/Physics/ElasticRods/RodTube.cc \
 src/Physics/ElasticRods/RodTwistingForce.cc \
+src/Physics/ElasticRods/RodTwistingForceSym.cc \
 src/Physics/ElasticRods/ViscousRod.cc \
 src/Render/Camera.cc \
 src/Render/RenderBase.cc \

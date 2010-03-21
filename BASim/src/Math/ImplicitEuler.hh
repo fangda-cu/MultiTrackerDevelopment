@@ -39,6 +39,8 @@ public:
 
   void execute()
   {
+    m_diffEq.startStep();
+
     resize();
     setZero();
     IntArray fixed;
@@ -56,6 +58,7 @@ public:
 
     for (int iter = 0; iter < m_maxIterations; ++iter) {
       START_TIMER("setup");
+      m_diffEq.startIteration();
       m_diffEq.evaluatePDotDX(*m_A);
       m_A->finalize();
       m_A->scale(m_dt);
@@ -98,7 +101,7 @@ public:
         m_diffEq.setX(i, x0(i) + m_dt * m_diffEq.getV(i));
       }
 
-      m_diffEq.flush();
+      m_diffEq.endIteration();
 
       if (iter == m_maxIterations - 1) break;
 
@@ -120,6 +123,8 @@ public:
       m_A->setZero();
       STOP_TIMER("setup");
     }
+
+    m_diffEq.endStep();
   }
 
   void resize()

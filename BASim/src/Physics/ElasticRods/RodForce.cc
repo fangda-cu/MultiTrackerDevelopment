@@ -18,6 +18,7 @@ Mat2d RodForce::Jt(Mat2d::Zero());
 RodForce::RodForce(ElasticRod& rod, const std::string& name)
   : m_rod(rod)
   , m_name(name)
+  , m_viscous(false)
 {
   J << 0, -1, 1, 0;
   Jt << 0, 1, -1, 0;

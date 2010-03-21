@@ -2,12 +2,6 @@ append_files (Headers "hh" . Problems)
 append_files (Templates "tcc" . Problems)
 append_files (Sources "cc" . Problems)
 
-find_package (OpenGL REQUIRED)
-include_directories (${OPENGL_INCLUDE_DIR})
-
-find_package (GLUT REQUIRED glut)
-include_directories (${GLUT_INCLUDE_DIR})
-
 find_package (TCLAP REQUIRED)
 include_directories (${TCLAP_INCLUDE_DIR})
 
@@ -21,11 +15,6 @@ include_directories (${TCLAP_INCLUDE_DIR})
 
 find_package (Maya REQUIRED)
 include_directories (${MAYA_INCLUDE_DIR})
-
-#if (USE_INTEL_COMPILER)
-find_package (MKL REQUIRED)
-include_directories (${MKL_INCLUDE_DIR})
-#endif (USE_INTEL_COMPILER)
 
 #find_package (CUDA REQUIRED)
 
@@ -45,7 +34,8 @@ if (CMAKE_SYSTEM_NAME MATCHES Linux)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MAYA_CXX_FLAGS}")
 endif (CMAKE_SYSTEM_NAME MATCHES Linux)
 
-ADD_LIBRARY(wmBunsen SHARED ${Headers} ${Templates} ${Sources})
+ADD_LIBRARY(wmFigaro SHARED ${Headers} ${Templates} ${Sources})
+set_target_properties (wmFigaro PROPERTIES PREFIX "")
 
 #######
 ## We absolutely must link with -Bsymbolic or Maya will crash when the plugin is running!
@@ -56,10 +46,7 @@ ADD_LIBRARY(wmBunsen SHARED ${Headers} ${Templates} ${Sources})
 #endif (USE_INTEL_COMPILER)
 
 if (USE_INTEL_COMPILER)
-	target_link_libraries (wmBunsen ${MAYA_LIBRARIES} ${GLUT_glut_LIBRARY} ${OPENMESH_LIBRARY} ${SMV_LIBRARY} ${wxWidgets_LIBRARIES} $ENV{MKLROOT}/lib/em64t/libmkl_solver_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/em64t/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/em64t/libmkl_intel_thread.a $ENV{MKLROOT}/lib/em64t/libmkl_core.a -Wl,--end-group BASim )
+	target_link_libraries (wmFigaro ${MAYA_LIBRARIES} BASim)
 else (USE_INTEL_COMPILER)
-	target_link_libraries (wmBunsen ${MAYA_LIBRARIES} ${GLUT_glut_LIBRARY} ${OPENMESH_LIBRARY} ${SMV_LIBRARY} ${wxWidgets_LIBRARIES} $ENV{MKLROOT}/lib/em64t/libmkl_solver_ilp64.a -Wl,--start-group $ENV{MKLROOT}/lib/em64t/libmkl_intel_ilp64.a $ENV{MKLROOT}/lib/em64t/libmkl_gnu_thread.a $ENV{MKLROOT}/lib/em64t/libmkl_core.a -Wl,--end-group -fopenmp -lpthread BASim )
+	target_link_libraries (wmFigaro ${MAYA_LIBRARIES} -fopenmp -lpthread BASim)
 endif (USE_INTEL_COMPILER)
-
-
-

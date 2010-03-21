@@ -1,11 +1,20 @@
 #ifndef RODDATA_HH_
 #define RODDATA_HH_
 
+#ifdef WETA
 #include <weta/Wfigaro/Physics/ElasticRods/ElasticRod.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/AnisotropicRod.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodCollisionTimeStepper.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodUtils.hh>
 #include <weta/Wfigaro/Render/RodRenderer.hh>
+#else
+#include <BASim/src/Physics/ElasticRods/ElasticRod.hh>
+#include <BASim/src/Physics/ElasticRods/AnisotropicRod.hh>
+#include <BASim/src/Physics/ElasticRods/RodCollisionTimeStepper.hh>
+#include <BASim/src/Physics/ElasticRods/RodUtils.hh>
+#include <BASim/src/Render/RodRenderer.hh>
+#endif
+
 #include "SplineAttrEval.hh"
 #include <tr1/unordered_map>
 

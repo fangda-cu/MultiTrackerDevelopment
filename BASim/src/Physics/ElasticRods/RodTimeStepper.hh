@@ -59,6 +59,7 @@ public:
   void setTimeStep(Scalar dt)
   {
     m_diffEqSolver->setTimeStep(dt);
+    m_rod.setTimeStep(dt);
   }
 
   Scalar getTimeStep() const
@@ -95,6 +96,10 @@ public:
       m_diffEqSolver = NULL;
 
     }
+
+    if (m_diffEqSolver != NULL) {
+      m_rod.setTimeStep(m_diffEqSolver->getTimeStep());
+    }
   }
 
   int ndof() const
@@ -114,7 +119,7 @@ public:
     // add internal forces
     m_rod.computeForces(f);
 
-    if (m_rod.viscous()) f /= m_diffEqSolver->getTimeStep();
+    //if (m_rod.viscous()) f /= m_diffEqSolver->getTimeStep();
 
     // add external forces
     for (size_t i = 0; i < m_externalForces.size(); ++i) {
@@ -133,10 +138,10 @@ public:
   {
     m_rod.computeJacobian(J);
 
-    if (m_rod.viscous()) {
-      J.finalize();
-      J.scale(1.0 / m_diffEqSolver->getTimeStep());
-    }
+//     if (m_rod.viscous()) {
+//       J.finalize();
+//       J.scale(1.0 / m_diffEqSolver->getTimeStep());
+//     }
 
     for (size_t i = 0; i < m_externalForces.size(); ++i) {
       m_externalForces[i]->computeForceDX(m_rod, J);
@@ -210,7 +215,19 @@ public:
     return m_externalForces;
   }
 
-  void flush()
+  void startStep()
+  {
+    m_rod.viscousUpdate();
+  }
+
+  void endStep()
+  {
+    m_rod.updateProperties();
+  }
+
+  void startIteration() {}
+
+  void endIteration()
   {
     m_rod.updateProperties();
   }
