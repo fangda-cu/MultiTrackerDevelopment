@@ -77,6 +77,8 @@ public:
     static MObject ia_massDamping;
     static MObject ia_drawMaterialFrames;
     static MObject ia_lockFirstEdgeToInput;
+    
+    static MObject ia_userDefinedColors;
 
     // Caching
     static MObject ia_cachePath;

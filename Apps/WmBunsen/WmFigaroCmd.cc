@@ -51,7 +51,8 @@ WmFigaroCmd::WmFigaroCmd()
     m_selectedwmBunsenNode( MObject::kNullObj ),
     m_cacheFile( "" ),
     m_rodNumber( 0 ),
-    m_edgeNumber( 0 )/*,
+    m_edgeNumber( 0 ),
+    m_color( 0, 0, 0 )/*,
     m_undo(NULL)*/
 {
     m_results.clear();
@@ -89,6 +90,7 @@ const char *const kCacheFile( "-caf" );
 const char *const kAttachEdgeToObject( "-aeo" );
 const char *const kEdge( "-ed" );
 const char *const kRod( "-ro" );
+const char *const kUserDefinedColour( "-udc" );
 
 const char *const kHelp( "-h" );
 
@@ -118,6 +120,9 @@ MSyntax WmFigaroCmd::syntaxCreator()
         "Edge to apply operation to.", MSyntax::kLong);
     p_AddFlag( mSyntax, kRod, "-rodNumber",
         "Rod to apply operation to.", MSyntax::kLong);
+    
+    p_AddFlag( mSyntax, kUserDefinedColour, "-userDefinedColour",
+        "Colour to draw specified rods in.", MSyntax::kString);
     
     p_AddFlag( mSyntax, kPreviewCache, "-previewCache",
                "Creates wmFigaro and wmFigRodNodes and to load the specified cache file for preview." );
@@ -163,15 +168,36 @@ MStatus WmFigaroCmd::doIt( const MArgList &i_mArgList )
                 m_mArgDatabase->getFlagArgument( kCVsPerRod, 0, m_cvsPerRod );
             if ( m_mArgDatabase->isFlagSet( kCacheFile ) )
             {
-                 m_mArgDatabase->getFlagArgument( kCacheFile, 0, m_cacheFile );
+                m_mArgDatabase->getFlagArgument( kCacheFile, 0, m_cacheFile );
             }
             if ( m_mArgDatabase->isFlagSet( kEdge ) )
             {
-                 m_mArgDatabase->getFlagArgument( kEdge, 0, m_edgeNumber );
+                m_mArgDatabase->getFlagArgument( kEdge, 0, m_edgeNumber );
             }
             if ( m_mArgDatabase->isFlagSet( kRod ) )
             {
-                 m_mArgDatabase->getFlagArgument( kRod, 0, m_rodNumber );
+                m_mArgDatabase->getFlagArgument( kRod, 0, m_rodNumber );
+            }
+            if ( m_mArgDatabase->isFlagSet( kUserDefinedColour ) )
+            {
+                MString colourString;
+                m_mArgDatabase->getFlagArgument( kUserDefinedColour, 0, colourString );
+                
+                // We pass the colour as a string because there is no int3 option
+                // to commands. So we now need to split it up
+                MStringArray subStrings;
+                colourString.split( ' ', subStrings );
+                
+                if ( subStrings.length() != 3 )
+                   displayError( "Please enter a colour with 3 components - r,g and b." );
+               else
+               {
+                   m_color[ 0 ] = subStrings[ 0 ].asFloat();
+                   m_color[ 1 ] = subStrings[ 1 ].asFloat();
+                   m_color[ 2 ] = subStrings[ 2 ].asFloat();
+               }
+               
+               cerr << "color = " << m_color << endl;
             }
             
             // The command usually operates on whatever we have selected, so filter the selection
@@ -201,7 +227,102 @@ MStatus WmFigaroCmd::doIt( const MArgList &i_mArgList )
     return mStatus;
 }
 
+MStatus WmFigaroCmd::redoIt()
+{
+    MStatus mStatus(MS::kSuccess);
 
+    MString opt_fo;
+
+    if (m_mArgDatabase->isFlagSet(kHelp))
+    {
+        printHelp();
+    }
+    else
+    {
+        m_mDagModifier = new MDagModifier;
+        m_undoable = true;
+
+        if ( m_mArgDatabase->isFlagSet( kCreateRods ) )
+        {
+            // Create
+            createWmBunsenRodNode( true );
+        }
+        if ( m_mArgDatabase->isFlagSet( kCreateRodsFromFozzie ) )
+        {
+            // Create
+            createWmBunsenRodNode( false );
+        }
+        if ( m_mArgDatabase->isFlagSet( kAddCollisionMeshes ) )
+        {
+            addCollisionMeshes();
+        }
+        if ( m_mArgDatabase->isFlagSet( kPreviewCache ) )
+        {
+            createPreviewNodes();
+        }
+        if ( m_mArgDatabase->isFlagSet( kAttachEdgeToObject ) )
+        {
+            attatchEdgeToObject();
+        }
+        if ( m_mArgDatabase->isFlagSet( kUserDefinedColour ) )
+        {
+            setColorOfRod();
+        }
+        else
+        {
+            // Do other stuff such as return number of rods or whatever
+        }
+        
+        setResult( m_results );
+    }
+
+    return mStatus;
+}
+
+MStatus WmFigaroCmd::undoIt()
+{
+    return MS::kSuccess;
+}
+
+void WmFigaroCmd::setColorOfRod()
+{
+    MStatus stat;
+    
+    if ( m_figRodNodeList.length() != 1 )
+    {
+        displayError( "Please select the single wmFigRodNode that you wish to set the color of." );
+        return;
+    }
+    
+    MObject rodNodeObj;
+    stat = m_figRodNodeList.getDependNode( 0, rodNodeObj);
+    CHECK_MSTATUS( stat );
+    
+    /*MFnDependencyNode rodNodeFn( rodNodeObj, &stat );
+    CHECK_MSTATUS( stat );
+    
+    MObject colorAttr = rodNodeFn.attribute( "userDefinedColor", &stat );
+    CHECK_MSTATUS( stat );*/
+    
+    MPlug colorPlugArray( rodNodeObj, WmBunsenRodNode::ia_userDefinedColors );
+    if ( colorPlugArray.isArray() )
+        cerr << "yes it is isarray = "<< endl;
+    else
+        cerr << "not it is no array = "<< endl;
+    
+    MPlug colorPlug = colorPlugArray.elementByLogicalIndex( m_rodNumber, &stat );
+    CHECK_MSTATUS( stat );
+    
+    MFnNumericData colorData;
+    MObject colorObj = colorData.create( MFnNumericData::k3Double, &stat );
+    CHECK_MSTATUS( stat );
+    
+    stat = colorData.setData3Double( m_color[ 0 ], m_color[ 1 ], m_color[ 2 ] );
+    CHECK_MSTATUS( stat );
+    
+    stat = colorPlug.setValue( colorObj );
+    CHECK_MSTATUS( stat );
+}
 
 void WmFigaroCmd::createWmBunsenRodNode( bool useNURBSInput, bool i_previewOnly,
                                                       MObject* o_rodNode )
@@ -638,59 +759,6 @@ void WmFigaroCmd::getNodes( MSelectionList i_opt_nodes )
 //            dagit.next();
 //        }
     }
-}
-
-MStatus WmFigaroCmd::redoIt()
-{
-    MStatus mStatus(MS::kSuccess);
-
-    MString opt_fo;
-
-    if (m_mArgDatabase->isFlagSet(kHelp))
-    {
-        printHelp();
-    }
-    else
-    {
-        m_mDagModifier = new MDagModifier;
-        m_undoable = true;
-
-        if ( m_mArgDatabase->isFlagSet( kCreateRods ) )
-        {
-            // Create
-            createWmBunsenRodNode( true );
-        }
-        if ( m_mArgDatabase->isFlagSet( kCreateRodsFromFozzie ) )
-        {
-            // Create
-            createWmBunsenRodNode( false );
-        }
-        if ( m_mArgDatabase->isFlagSet( kAddCollisionMeshes ) )
-        {
-            addCollisionMeshes();
-        }
-        if ( m_mArgDatabase->isFlagSet( kPreviewCache ) )
-        {
-            createPreviewNodes();
-        }
-        if ( m_mArgDatabase->isFlagSet( kAttachEdgeToObject ) )
-        {
-            attatchEdgeToObject();
-        }
-        else
-        {
-            // Do other stuff such as return number of rods or whatever
-        }
-        
-        setResult( m_results );
-    }
-
-    return mStatus;
-}
-
-MStatus WmFigaroCmd::undoIt()
-{
-    return MS::kSuccess;
 }
 
 void WmFigaroCmd::quaternionFromMatrix( MMatrix& a, MQuaternion& q ) 

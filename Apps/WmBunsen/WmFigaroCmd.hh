@@ -89,7 +89,7 @@ protected:  // Data
     void createPreviewNodes();
     static void appendToResultString( MString& i_resultString );
     void quaternionFromMatrix( MMatrix& a, MQuaternion& Q );
-
+    void setColorOfRod();
     
     /// True if the command is undoable, false otherwise
     bool m_undoable;
@@ -132,6 +132,7 @@ protected:  // Data
     MString m_cacheFile;
     int m_rodNumber;
     int m_edgeNumber;
+    MColor m_color;
     
     static MStringArray m_results;
         

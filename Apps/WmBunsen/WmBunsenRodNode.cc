@@ -32,6 +32,7 @@ using namespace BASim;
 /* static */ MObject WmBunsenRodNode::ia_massDamping;
 /* static */ MObject WmBunsenRodNode::ia_drawMaterialFrames;
 /* static */ MObject WmBunsenRodNode::ia_lockFirstEdgeToInput;
+/* static */ MObject WmBunsenRodNode::ia_userDefinedColors;
 
 // Disk caching
 /* static */ MObject WmBunsenRodNode::ia_cachePath;
@@ -1994,5 +1995,8 @@ void* WmBunsenRodNode::creator()
     stat = attributeAffects( ia_simStepTaken, oa_edgeTransforms );
 	if ( !stat ) { stat.perror( "attributeAffects ia_simStepTaken->oa_edgeTransforms" ); return stat; }
  
+    addNumericAttribute( ia_userDefinedColors, "userDefinedColors", "udc", MFnNumericData::k3Double, 0, true, true );
+    // This affects nothing as it is only cared about during drawing when we read it directly.
+
 	return MS::kSuccess;
 }
