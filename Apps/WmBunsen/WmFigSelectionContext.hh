@@ -2,6 +2,7 @@
 #define _WMFIGSELECTIONCONTEXT_HH_
 
 #include "WmFigSelectionToolCommand.hh"
+#include "WmBunsenRodNode.hh"
 
 #include <maya/MIOStream.h>
 #include <math.h>
@@ -24,6 +25,8 @@
 #include <maya/MItCurveCV.h>
 #include <maya/MPxContext.h>
 #include <maya/MEventMessage.h>
+#include <maya/MFloatMatrix.h>
+#include <maya/MFnCamera.h>
 
 class WmFigSelectionContext : public MPxContext 
 {
@@ -58,15 +61,44 @@ public:
     // context functions.
     // 
     //////////////////////////////////////////////////////
+    
+     /**
+     * @brief Implement this method to return the current 3D projection matrix of the camera being used to draw the furSet.
+     * @return 16 floats (right handed coordinate system)
+     */
+    const float* projectionMatrix();
+    
+    /**
+     * @brief Implement this method to return the current 3D modelview matrix of the camera being used to draw the furSet.
+     * @return 16 floats (right handed coordinate system)
+     */
+    const float* modelViewMatrix();
 
 private:
-    MStatus             drawMarqueeSelectBox() const;
-    void                doTool( MEvent &event );
+    GLint findRodsUsingOpenGLSelection( const double i_centreX, const double i_centreY,
+            const double i_width, const double i_height,  WmBunsenRodNode* rodNode,
+            vector<GLuint>& o_selectedRodIndices );
+    
+    bool searchForRodsIn2DScreenRectangle( vector<size_t>& o_rodIndices );
 
-    MString             m_helpString;
+    MStatus drawMarqueeSelectBox() const;
+    void doTool( MEvent &event );
+
+    MString m_helpString;
     
     short m_xStartMouse, m_yStartMouse;
     short m_xMouse, m_yMouse;
+    
+    //////////////////////////////////////////////////////
+    //
+    // Projection and modelview matrix, stored in case they
+    // are needed when Maya has changed them to 2D for
+    // selection
+    //
+    //////////////////////////////////////////////////////
+    
+    mutable MFloatMatrix m_projectionMatrix;
+    mutable MFloatMatrix m_modelViewMatrix;
     
     //////////////////////////////////////////////////////
     // 

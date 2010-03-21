@@ -114,7 +114,18 @@ public:
                                         MFnNumericData::Type i_type, double i_defaultValue,
                                         bool i_isInput = true, bool i_isArray = false );
     
+    ///////////////////////////////////////////////////////////
+    //
+    // Accessors
+    //
+    ///////////////////////////////////////////////////////////
+    
     MMatrix getRodEdgeMatrix( size_t i_rod, size_t i_edge );
+    
+    vector<RodData*>* getRodData()
+    {
+        return mx_rodData;
+    }
     
 private:
     void getStrandRootFrames( MDataBlock& i_dataBlock, vector<MaterialFrame>& o_strandRootFrames );
