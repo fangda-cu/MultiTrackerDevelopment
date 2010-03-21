@@ -339,7 +339,7 @@ void WmBunsenNode::draw( M3dView& i_view, const MDagPath& i_path,
     i_view.beginGL(); 
     glPushAttrib( GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT | GL_ENABLE_BIT |  GL_LIGHTING_BIT );
     
-    m_beaker->draw();
+    //m_beaker->draw();
     
     // What did this line do? it was here from the devkit example. Is it to with point colouring
     //view.setDrawColor ( WmBunsenNode );

@@ -45,14 +45,14 @@ void RodRenderer::drawSimpleRod()
   glLineWidth(2);
   glBegin(GL_LINES);
 
-  const Color& edgeColor = m_palette[1];
-  const Color& fixedColor = m_palette[0];
+  //const Color& edgeColor = m_palette[1];
+  //const Color& fixedColor = m_palette[0];
 
   ElasticRod::edge_iter eit;
   for (eit = m_rod.edges_begin(); eit != m_rod.edges_end(); ++eit) {
     //if (m_rod.edgeFixed(*eit)) OpenGL::color(fixedColor);
     //else OpenGL::color(edgeColor);
-    OpenGL::color(edgeColor);
+    //OpenGL::color(edgeColor);
     ElasticRod::EdgeVertexIter evit = m_rod.ev_iter(*eit);
     for (evit = m_rod.ev_iter(*eit); evit; ++evit) {
       Vec3d x = m_rod.getVertex(*evit);

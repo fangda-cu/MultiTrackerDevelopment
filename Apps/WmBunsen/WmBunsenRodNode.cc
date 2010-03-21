@@ -1545,13 +1545,16 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
 	i_view.beginGL();
 	glPushAttrib( GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT );
 
+    if ( mx_rodData != NULL )
+    {
+        for ( size_t r=0; r<mx_rodData->size(); r++ )
+            (*mx_rodData)[ r ]->rodRenderer->render();
+    }
 
     MPlug drawMaterialFramesPlug( thisNode, ia_drawMaterialFrames );
 	bool draw;
 	drawMaterialFramesPlug.getValue( draw );
 	
-    if ( draw && mx_rodData != NULL )
-
     /*if ( draw && mx_rodData != NULL )
     {
         size_t numRods = mx_rodData->size();
@@ -1644,7 +1647,6 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
         }
     }
 	}*/
-
 
 	// draw dynamic Hair
 

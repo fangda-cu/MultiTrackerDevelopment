@@ -707,7 +707,7 @@ RodCollisionTimeStepper* Beaker::setupRodTimeStepper( RodData* i_rodData )
 
 void Beaker::draw()
 {
-    for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
+    /*for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
     {
         vector<RodData*>& rodData = rdmItr->second;
         size_t numRods = rodData.size();
@@ -715,7 +715,7 @@ void Beaker::draw()
         {
             rodData[ r ]->rodRenderer->render();
         }
-    }
+    }*/
 
     /*glLineWidth(5.0);
     glBegin( GL_LINES );
