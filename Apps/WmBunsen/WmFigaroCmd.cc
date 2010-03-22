@@ -348,7 +348,7 @@ void WmFigaroCmd::createWmBunsenRodNode( bool useNURBSInput, bool i_previewOnly,
     // Create the rods node
     MObject rodTObj;  // Object for transform node
     MObject rodSObj;  // Object for shape node
-    MDagPath shapeDagPath;    
+    MDagPath shapeDagPath;
     MObject pObj;
     MDagModifier dagModifier;
     MString rodShapeName = "";
@@ -519,6 +519,14 @@ void WmFigaroCmd::createWmBunsenRodNode( bool useNURBSInput, bool i_previewOnly,
         CHECK_MSTATUS( stat );
         stat = dagModifier.connect( numFozzieCVsPlug, numCVsPlug );
         CHECK_MSTATUS( stat );
+        
+        MPlug strandRootsBarbPlug = fozzieNodeFn.findPlug( "strandRootFrames", true, &stat );
+        CHECK_MSTATUS( stat );
+        MPlug strandRootPlug( sFn.findPlug( "strandRootFrames", true, &stat ) );
+        CHECK_MSTATUS( stat );
+        stat = dagModifier.connect( strandRootsBarbPlug, strandRootPlug );
+        CHECK_MSTATUS( stat );
+                                  
         stat = dagModifier.doIt();
         CHECK_MSTATUS( stat );
     }
