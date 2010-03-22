@@ -454,7 +454,7 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnNumericAttribute nAttr;
-    	ia_substeps = nAttr.create( "subSteps", "sub", MFnNumericData::kInt, 10, &stat );
+    	ia_substeps = nAttr.create( "subSteps", "sub", MFnNumericData::kInt, 100, &stat );
         if ( !stat ) 
         {
             stat.perror( "create substeps attribute");
@@ -523,7 +523,7 @@ MStatus WmBunsenNode::initialize()
     
     {
         MFnNumericAttribute nAttr;
-        ia_numberOfThreads = nAttr.create( "numberOfThreads", "nut", MFnNumericData::kInt, 1, &stat );
+        ia_numberOfThreads = nAttr.create( "numberOfThreads", "nut", MFnNumericData::kInt, 2, &stat );
         CHECK_MSTATUS (stat );
         CHECK_MSTATUS( nAttr.setWritable( true ) );
         CHECK_MSTATUS( nAttr.setReadable( false ) );
