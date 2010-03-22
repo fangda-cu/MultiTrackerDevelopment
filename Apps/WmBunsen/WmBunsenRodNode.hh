@@ -163,7 +163,7 @@ private:
     
     size_t m_numberOfInputCurves;
     
-    int m_percentageOfFozzieStrands;
+    double m_percentageOfFozzieStrands;
     
     // If we're overriding the number of cvs per rod then this will be not -1
     int m_cvsPerRod;

@@ -822,7 +822,7 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_cvsPerRod = i_dataBlock.inputValue( ia_cvsPerRod, &stat ).asInt();
         CHECK_MSTATUS( stat );
 
-        m_percentageOfFozzieStrands = i_dataBlock.inputValue( ia_percentageOfFozzieStrands, &stat ).asInt();
+        m_percentageOfFozzieStrands = i_dataBlock.inputValue( ia_percentageOfFozzieStrands, &stat ).asDouble();
         CHECK_MSTATUS( stat );
 		
         //////////////////////////////////////////////////////////////////////////////////////////
@@ -1014,7 +1014,6 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         {
             size_t numRods = mx_rodData->size();
             unsigned int idx = 0;
-            cerr << "TO FOZZIE: numRods = " << numRods << endl;
             for ( size_t r = 0; r < numRods; r++ )
             {
                 unsigned int verticesInRod = (*mx_rodData)[ r ]->rod->nv();
@@ -1029,12 +1028,10 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             }
         }
 
-        cerr << "TO FOZZIE: simulated vertices array is " << simulatedVerticesArray.length() << " elements long " << endl;
-
-        if ( simulatedVerticesArray.length() > 5 )
+        /*if ( simulatedVerticesArray.length() > 5 )
             for ( unsigned int p=0; p<5; p++ )
                 cerr << "simulated verts array, point " << p << simulatedVerticesArray[p] << endl;
-
+*/
         simulatedVerticesH.setClean();
         i_dataBlock.setClean( i_plug );
 
@@ -1871,7 +1868,7 @@ void* WmBunsenRodNode::creator()
     stat = attributeAffects( ia_massDamping, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_massDamping->oa_rodsChanged" ); return stat; }
 
-    addNumericAttribute( ia_percentageOfFozzieStrands, "percentageOfFozzieStrands", "pfs", MFnNumericData::kInt, 5, true );
+    addNumericAttribute( ia_percentageOfFozzieStrands, "percentageOfFozzieStrands", "pfs", MFnNumericData::kDouble, 1.0, true );
     stat = attributeAffects( ia_percentageOfFozzieStrands, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_fozzieVertices->oa_rodsChanged" ); return stat; }
 
