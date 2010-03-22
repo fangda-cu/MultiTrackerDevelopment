@@ -22,6 +22,9 @@
 #include <maya/MArgList.h>
 #include <maya/MPxToolCommand.h>
 
+#include <weta/Wfigaro/Core/EigenIncludes.hh>
+#include <vector>
+
 class WmFigSelectionToolCommand : public MPxToolCommand
 {
 public:
@@ -71,6 +74,12 @@ public:
     {
         return m_editRunState;
     }
+    
+    // Set the list of rods the user selected using the context.
+    void setSelectedRods( std::vector<size_t>& i_selectedRods )
+    {
+        m_selectedRods = i_selectedRods;
+    }
 
 private:
     EditRunState m_editRunState;
@@ -85,6 +94,9 @@ private:
     MArgList m_args;
 
     MStatus updateContextOptions();
+    
+    // This is the list of rods the user selected in the viewport.
+    std::vector<size_t> m_selectedRods;
 };
 
 #endif

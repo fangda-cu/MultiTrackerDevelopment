@@ -62,6 +62,12 @@ MStatus WmFigSelectionToolCommand::redoIt()
         return MS::kSuccess;
     }
 
+    // We actually do nothing in here because we need mouseUp to happen
+    // before we can figure out all the rods that were selected.
+    // Unfortunately we only get the args sent to us on mouseDown.
+    // So all the work is done in the context and it simply tells us
+    // what it finds and we return it to Maya as a result.
+    
     //////////////////////////////////////////////////////
     // 
     // parse the args we got from the first call to doIt().
@@ -69,7 +75,7 @@ MStatus WmFigSelectionToolCommand::redoIt()
     // 
     //////////////////////////////////////////////////////
 
-    if ( m_args.length() != (uint) WmFigSelectionToolCommand::expectedArgCount ) 
+ /*   if ( m_args.length() != (uint) WmFigSelectionToolCommand::expectedArgCount ) 
     {
         MGlobal::displayError( "WmFigSelectionToolCommand::redoIt() recieved "
                                "wrong number of args." );
@@ -77,7 +83,7 @@ MStatus WmFigSelectionToolCommand::redoIt()
     }
 
     int xMouse = m_args.asInt( 0 );
-    int yMouse = m_args.asInt( 1 );
+    int yMouse = m_args.asInt( 1 );*/
     
     //////////////////////////////////////////////////////
     // 
@@ -85,11 +91,8 @@ MStatus WmFigSelectionToolCommand::redoIt()
     // 
     //////////////////////////////////////////////////////
     
-    MPoint clickCentre;
-    MVector clickNormal;
-    
-    // Here is where we work out which rods were selected by the click.
-    
+    //MPoint clickCentre;
+    //MVector clickNormal;
     
     //////////////////////////////////////////////////////
     // 
@@ -142,8 +145,26 @@ MStatus WmFigSelectionToolCommand::finalize()
     //
     //////////////////////////////////////////////////////
     MArgList command;
-    command.addArg( commandString() );    
-
+    command.addArg( commandString() );
+    
+    //////////////////////////////////////////////////////
+    // This is slightly weird because we run the base class 
+    // finalize after this which means that the user will 
+    // see the result before the command. But that's just
+    // the interesting way Maya makes us do things...
+    //////////////////////////////////////////////////////
+    
+    MStringArray results;
+    results.setLength( m_selectedRods.size() );
+    
+    for ( size_t r=0; r<m_selectedRods.size(); r++ )
+    {
+     //   appendToResult( results[ r ] );
+        results[ r ] = m_selectedRods[ r ];
+    }
+    
+    setResult( results );
+    
     return MPxToolCommand::finalize();
 }
 

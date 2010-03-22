@@ -70,6 +70,12 @@ MStatus WmFigSelectionContext::doRelease( MEvent& i_event )
     vector<size_t> rodIndices;
     searchForRodsIn2DScreenRectangle( rodIndices );
 
+    M3dView view = M3dView::active3dView();
+    view.refresh( true, true );
+	
+    // Tell the command which rods the user selected in the context
+    m_toolCommand->setSelectedRods( rodIndices );
+    
     m_toolCommand->finalize();
 
     return MS::kSuccess;
@@ -109,10 +115,6 @@ bool WmFigSelectionContext::searchForRodsIn2DScreenRectangle( vector<size_t>& o_
     glPushMatrix();
     glLoadMatrixf( modelViewMatrix() );
     
-    cerr << "projection = " << m_projectionMatrix << endl;
-    cerr << "modelView = " << m_modelViewMatrix << endl;
-    
-    
     //////////////////////////////////////////////////////
     //
     // Find the selected rod node in which to find
@@ -123,15 +125,56 @@ bool WmFigSelectionContext::searchForRodsIn2DScreenRectangle( vector<size_t>& o_
     MSelectionList selectionList;
     MGlobal::getActiveSelectionList( selectionList );
     
-    if ( selectionList.length() != 1 )
+    MDagPath rodNodeDagPath;
+    MObject rodNodeObj = MObject::kNullObj;
+    bool foundRodNode = true;
+    
+    if ( selectionList.length() == 1 )
+    {
+        selectionList.getDagPath( 0, rodNodeDagPath, rodNodeObj );
+
+        MDagPath childPath;
+        
+        // Look for a child as the user probably selected the transform
+        MFnDagNode rodDagNodeFn( rodNodeDagPath.child( 0, &stat ), &stat );
+        if ( stat )
+        {
+            stat = rodDagNodeFn.getPath( childPath );
+            CHECK_MSTATUS( stat );
+            childPath.extendToShape();
+        
+            MFnDependencyNode nodeFn( childPath.node( &stat ) );
+            CHECK_MSTATUS( stat );
+        
+            if ( nodeFn.typeName() == WmBunsenRodNode::typeName )
+            {
+                rodNodeObj = childPath.node();
+            }
+            else
+                foundRodNode = false;
+        }
+        else // Perhaps no child as the user selected the shape node directly
+        {
+            MFnDependencyNode nodeFn( rodNodeDagPath.node( &stat ) );
+            CHECK_MSTATUS( stat );
+        
+            if ( nodeFn.typeName() == WmBunsenRodNode::typeName )
+            {
+                //    rodNodeObj = nodeFn.node();
+                rodNodeObj = rodNodeDagPath.node( &stat );
+            }
+            else
+                foundRodNode = false;
+        }
+    }
+    else
+        foundRodNode = false;
+    
+    if ( !foundRodNode )
     {
         MGlobal::displayError( "Please select a single wmFigRodNode to find rods within." );
         return false;
     }
-    
-    MObject rodNodeObj;
-    stat = selectionList.getDependNode( 0, rodNodeObj );
-    CHECK_MSTATUS( stat );
     
     MFnDependencyNode rodNodeDepFn( rodNodeObj );
     WmBunsenRodNode* rodNode = static_cast<WmBunsenRodNode*>( rodNodeDepFn.userNode() );
@@ -145,19 +188,36 @@ bool WmFigSelectionContext::searchForRodsIn2DScreenRectangle( vector<size_t>& o_
     //
     //////////////////////////////////////////////////////
     
-    cerr << "start = " << m_xStartMouse << ", " << m_yStartMouse << endl;
-    cerr << "end = " << m_xMouse << ", " << m_yMouse << endl;
-    cerr << "selectedCentre = " << selectedCentreX << ", " << selectedCentreY << endl;
-    cerr << "selectedSize = " << selectedWidth << " X " << selectedHeight << endl;
-    
     vector<GLuint> selectedRodIndices;
     GLint numHits = findRodsUsingOpenGLSelection( selectedCentreX, selectedCentreY, selectedWidth, 
                         selectedHeight, rodNode, selectedRodIndices );
     
+    
+    //////////////////////////////////////////////////////
+    //
+    // Process hits. 
+    //
+    //////////////////////////////////////////////////////
+    
     if ( numHits > 0 )
     {
+        o_rodIndices.resize( numHits );
+        
+        ///////////////////////////////////////////////////
+        // Skip through the results array picking out the 
+        // indices of rods that were hit. We can safely
+        // ignore most stuff as we know there is only
+        // one name per rod due to the way we did selection
+        // below.
+        ///////////////////////////////////////////////////
+        
+        size_t index = 0;
         for ( size_t i=0; i<numHits; i++ )
-            cerr << "found " << selectedRodIndices[i] << endl;
+        {
+            index += 3;
+            o_rodIndices[ i ] = selectedRodIndices[ index ];
+            index++;
+        }
     }
     
     glMatrixMode( GL_MODELVIEW );
@@ -165,18 +225,6 @@ bool WmFigSelectionContext::searchForRodsIn2DScreenRectangle( vector<size_t>& o_
     glMatrixMode( GL_PROJECTION );
     glPopMatrix();
     
-    //////////////////////////////////////////////////////
-    //
-    // Process hits. All hit strands will be stored, possibly
-    // only the enabled strands.
-    //
-    //////////////////////////////////////////////////////
-    
-    /*if ( selectRange.size() > 0 )
-    {
-        std::copy( selectRange.begin(), selectRange.end(), std::back_inserter( o_strandIndices ) );
-    }*/
-
     return true;
 }
 
@@ -201,18 +249,17 @@ GLint WmFigSelectionContext::findRodsUsingOpenGLSelection( const double i_centre
     glMultMatrixf( projectionMatrix );
     
     const size_t nRods = allRodData->size();
-    
-    o_selectedRodIndices.resize( nRods );
+
+    // *4 because selection returns a bunch of stuff with each hit.
+    o_selectedRodIndices.resize( nRods * 4 );
     GLint numHits;
     
-    glSelectBuffer( nRods, &(o_selectedRodIndices[0]) );
+    glSelectBuffer( nRods * 4, &(o_selectedRodIndices[0]) );
     glRenderMode( GL_SELECT );
     
     glInitNames();
 	glPushName( 0 );
 	
-    cerr << "drawing " << nRods << " rods\n"; 
-    
     for( size_t r = 0u; r < nRods; ++r )
     {
         if ( (*allRodData)[ r ]->rod == NULL )
@@ -225,15 +272,12 @@ GLint WmFigSelectionContext::findRodsUsingOpenGLSelection( const double i_centre
         {
             const Vec3d p = (*allRodData)[ r ]->rod->getVertex( v );
             glVertex3f( p[0], p[1], p[2] );
-            cerr << "rod " << r << ", drew vertex " << p << endl;
         }
 
         glEnd();
     }
     
     numHits = glRenderMode( GL_RENDER );
-    
-    cerr << "number of hits = " << numHits << endl;
     
     glMatrixMode( GL_PROJECTION );
     glPopMatrix();
