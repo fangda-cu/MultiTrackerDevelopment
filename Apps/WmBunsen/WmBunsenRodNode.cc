@@ -6,17 +6,41 @@
 
 using namespace BASim;
 
-// Required by Maya to identify node
+// Required by Maya to identify the node
 /* static */ MTypeId WmBunsenRodNode::typeID ( 0x001135, 0x19 );
 /* static */ MString WmBunsenRodNode::typeName( "wmFigRodNode" );
 
-//
+// Input attributes
 /* static */ MObject WmBunsenRodNode::ia_time;
 /* static */ MObject WmBunsenRodNode::ia_startTime;
 /* static */ MObject WmBunsenRodNode::ia_nurbsCurves;
 /* static */ MObject WmBunsenRodNode::oa_nurbsCurves;
 /* static */ MObject WmBunsenRodNode::ia_fozzieVertices;
 /* static */ MObject WmBunsenRodNode::ia_percentageOfFozzieStrands;
+/* static */ MObject WmBunsenRodNode::ia_simStepTaken;
+/* static */ MObject WmBunsenRodNode::ia_strandRootFrames;
+
+// Drawing
+/* static */ MObject WmBunsenRodNode::ia_userDefinedColors;
+/* static */ MObject WmBunsenRodNode::ca_drawDataChanged;
+
+// Disk caching
+/* static */ MObject WmBunsenRodNode::ia_cachePath;
+/* static */ MObject WmBunsenRodNode::ia_cacheFrame;
+/* static */ MObject WmBunsenRodNode::ia_readFromCache;
+
+// Output attributes
+/* static */ MObject WmBunsenRodNode::oa_rodsChanged;
+/* static */ MObject WmBunsenRodNode::oa_simulatedVertices;
+/* static */ MObject WmBunsenRodNode::oa_nonSimulatedVertices;
+/* static */ MObject WmBunsenRodNode::oa_verticesInEachRod;
+/* static */ MObject WmBunsenRodNode::oa_materialFrames;
+/* static */ MObject WmBunsenRodNode::oa_undeformedMaterialFrames;
+/* static */ MObject WmBunsenRodNode::oa_numberOfRods;
+
+// Cache attributes
+/* static */ MObject WmBunsenRodNode::ca_simulationSync;
+/* static */ MObject WmBunsenRodNode::ca_syncAttrs;
 
 // User adjustable rod Options
 /* static */ MObject WmBunsenRodNode::ia_cvsPerRod;
@@ -33,41 +57,15 @@ using namespace BASim;
 /* static */ MObject WmBunsenRodNode::ia_drawMaterialFrames;
 /* static */ MObject WmBunsenRodNode::ia_lockFirstEdgeToInput;
 
-// Drawing
-/* static */ MObject WmBunsenRodNode::ia_userDefinedColors;
-/* static */ MObject WmBunsenRodNode::ca_drawDataChanged;
-
-// Disk caching
-/* static */ MObject WmBunsenRodNode::ia_cachePath;
-/* static */ MObject WmBunsenRodNode::ia_cacheFrame;
-/* static */ MObject WmBunsenRodNode::ia_readFromCache;
-
-// Output and cached attributes
-/* static */ MObject WmBunsenRodNode::ca_syncAttrs;
-/* static */ MObject WmBunsenRodNode::oa_rodsChanged;
-/* static */ MObject WmBunsenRodNode::ia_simStepTaken;
-/* static */ MObject WmBunsenRodNode::ca_simulationSync;
-
-/* static */ MObject WmBunsenRodNode::oa_simulatedVertices;
-/* static */ MObject WmBunsenRodNode::oa_nonSimulatedVertices;
-/* static */ MObject WmBunsenRodNode::oa_verticesInEachRod;
-
-/* static */ MObject WmBunsenRodNode::oa_materialFrames;
-/* static */ MObject WmBunsenRodNode::oa_undeformedMaterialFrames;
-/* static */ MObject WmBunsenRodNode::ia_strandRootFrames;
-
-/* static */ MObject WmBunsenRodNode::oa_numberOfRods;
-
-
 // For being controlled by external objects and for controlling external objects
 /* static */ MObject WmBunsenRodNode::ia_edgeTransforms;
 /* static */ MObject WmBunsenRodNode::oa_edgeTransforms;
 
+
 WmBunsenRodNode::WmBunsenRodNode() : m_massDamping( 10 ), m_initialised( false ),
-                                     mx_rodData( NULL ), mx_world( NULL ),
-                                     m_numberOfInputCurves( 0 ), m_percentageOfFozzieStrands( 100 ),
-                                     m_cvsPerRod( -1 ),
-                                     m_cachePath( "" ), m_cacheFilename( "" )
+    mx_rodData( NULL ), mx_world( NULL ), m_numberOfInputCurves( 0 ), 
+    m_percentageOfFozzieStrands( 100 ), m_cvsPerRod( -1 ), m_cachePath( "" ), m_cacheFilename( "" ),
+    m_pRodInput( NULL )
 {
     m_rodOptions.YoungsModulus = 1000.0; /* megapascal */
     m_rodOptions.ShearModulus = 340.0;   /* megapascal */
@@ -83,11 +81,28 @@ WmBunsenRodNode::~WmBunsenRodNode()
 {
 }
 
+/** @detail Returns the material frame matrix for a specific rod's edge.
+    @param i_rod The index of the rod you wish the edge of (0 based indices).
+    @param i_edge The index of the edge you are interested in (0 based indices).
+    @return An MMatrix containing the matrial frame and the position of the edge. 
+            | m1x, m1y, m1z, 0 |
+            | m2x, m2y, m2z, 0 |
+            | m3x, m3y, m3z, 0 |
+            |   x,   y,   z, 1 |
+            The position is defined as the mid point of the edge:
+
+    @note If data does not exist for this rod, for example it hasn't yet been created
+          or one of the indices is out of range then the identity matrix will be
+          returned.
+  */
 MMatrix WmBunsenRodNode::getRodEdgeMatrix( size_t i_rod, size_t i_edge )
 {
     MMatrix identMatrix;
     identMatrix.setToIdentity();
     
+    // Check if the input parameters index a valid rod and edge, if not
+    // return the identity matrix.
+
     if ( mx_rodData == NULL )
         return identMatrix;
     
@@ -99,10 +114,16 @@ MMatrix WmBunsenRodNode::getRodEdgeMatrix( size_t i_rod, size_t i_edge )
     
     if ( i_edge >= (*mx_rodData)[ i_rod ]->rod->ne() )
         return identMatrix;
-    
+
+    // If we got here then the input data indexes a valid rod.
+
+    // The position of the edge is defined as the mid point of the ege.   
     Vec3d edgePos = ( (*mx_rodData)[ i_rod ]->rod->getVertex( i_edge ) + 
                       (*mx_rodData)[ i_rod ]->rod->getVertex( i_edge + 1 ) ) / 2.0;
     
+
+    // The material frame is taken directly from the rod and packaged up into a Maya MMatrix format.
+
     MMatrix edgeMatrix;
     edgeMatrix( 3, 0 ) = edgePos[ 0 ]; edgeMatrix( 3, 1 ) = edgePos[ 1 ]; edgeMatrix( 3, 2 ) = edgePos[ 2 ];
     
@@ -211,10 +232,11 @@ MString WmBunsenRodNode::getCacheFilename( MDataBlock& i_dataBlock )
     return m_cacheFilename;
 }
 
-/**
-    This function initialises the RodData vector to the correct size and the initial
+/** @detail Initialises the RodData vector to the correct size and the initial
     rod data. It is called when we are about to recreate all the rods so time has just been
     set back to 'startTime'.
+
+    @param i_rodData A pointer to a vector of pointers to rod data. This????
 */
 void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
 {
@@ -225,13 +247,60 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
     // data and it may be inside a compute and ours may not have been called
     // to get all this data yet. So build our own datablock to use... Some may say this
     // should be done with maya DG connections...
-
     MDataBlock dataBlock = MPxNode::forceCache();
 
-    bool fozzieNodeConnected;
-    MPlug fozziePlug( thisMObject(), ia_fozzieVertices );
+    MPlug barberShopPlug( thisMObject(), ia_fozzieVertices );
     bool readFromCache = dataBlock.inputValue( ia_readFromCache, &stat ).asBool();
 
+    if ( m_pRodInput != NULL )
+        delete m_pRodInput;
+
+    if ( readFromCache)
+    {
+        m_pRodInput = new WmFigRodFileInput( ia_cachePath, ia_time );
+    }
+    else if ( barberShopPlug.isConnected() )
+    {
+        m_pRodInput = new WmFigRodBarbInput( ia_fozzieVertices, ia_strandRootFrames,
+                                             m_percentageOfFozzieStrands, m_cvsPerRod,
+                                             m_lockFirstEdgeToInput );
+    }
+    else // Assume we have nurbs connected
+    {
+        m_pRodInput = new WmFigRodNurbsInput( ia_nurbsCurves, m_lockFirstEdgeToInput );
+    }
+    
+    m_pRodInput->initialiseRodDataFromInput( dataBlock, mx_rodData );
+
+    //
+    // Now set some rod attributes that need set no matter what the input method is
+    //
+
+    if ( mx_rodData != NULL )
+    {
+        // FIXME: These rod options replicate some data in mx_rodData. We need rodOptions as it's the
+        // format things are passed to the core. We should reorganised RodData and work out how
+        // to have the two coexist in a more elegant fashion.
+    
+        size_t numRods = mx_rodData->size();
+        for ( size_t r = 0; r < numRods; r++ )
+        {
+            ( *mx_rodData )[ r ]->rodOptions = m_rodOptions;            
+            
+            // We want time parallel frames
+            ( *mx_rodData )[ r ]->rodOptions.refFrame = BASim::ElasticRod::TimeParallel;
+        
+            // Override the number of vertices to match the input data. We can't ask the rod for
+            // how many vertices it has because it hasn't been created yet.
+            ( *mx_rodData )[ r ]->rodOptions.numVertices =  ( *mx_rodData )[ r ]->undeformedVertexPositions.size();
+        
+            // Set mass damping for this rod
+            ( *mx_rodData )[ r ]->massDamping = m_massDamping;
+         }
+    }
+
+
+    /*
     // Reading from the cache takes precidence over anything else connected in
     if ( readFromCache )
     {
@@ -287,194 +356,8 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
             }
         }
     }
-    else if ( fozziePlug.isConnected() )
-    {
-        ///////////////////////////////////////////////////////////////////////////////
-        // If there is a Fozzie node connected then it takes control over any connected
-        // NURBS curves.
-        ///////////////////////////////////////////////////////////////////////////////
-        MDataHandle verticesH = dataBlock.inputValue( ia_fozzieVertices, &stat );
-        CHECK_MSTATUS( stat );
-        MFnVectorArrayData verticesData( verticesH.data(), &stat );
-        CHECK_MSTATUS( stat );
-        MVectorArray vertices = verticesData.array( &stat );
-
-        unsigned int numStrands = vertices.length() / m_cvsPerRod;
-        // The user may have requested that we use less than the total number
-        // of Fozzie strands, so scale by that %
-        numStrands *= (m_percentageOfFozzieStrands/100.0);
-
-        // store the material frames coming from barbershop
-        vector<MaterialFrame> strandRootFrames;
-        getStrandRootFrames( dataBlock, strandRootFrames );
-
-        size_t inputVertexIndex = 0;
-        for ( unsigned int i = 0; i < numStrands; i++ )
-        {
-            (*mx_rodData)[i]->rodOptions = m_rodOptions;
-
-            // Override the number of cvs at the moment to match the input curve
-            (*mx_rodData)[i]->rodOptions.numVertices = m_cvsPerRod;
-
-            // Make sure we have enough space to store the date for each CV. This should only
-            // ever cause a resize when we are called by initialiseRodData().
-            (*mx_rodData)[ i ]->undeformedVertexPositions.resize( m_cvsPerRod );
-            (*mx_rodData)[ i ]->initialVertexPositions.resize( m_cvsPerRod );
-            (*mx_rodData)[ i ]->prevVertexPositions.resize( m_cvsPerRod );
-            (*mx_rodData)[ i ]->currVertexPositions.resize( m_cvsPerRod );
-            (*mx_rodData)[ i ]->nextVertexPositions.resize( m_cvsPerRod );
-
-            (*mx_rodData)[ i ]->undeformedMaterialFrame.resize( m_cvsPerRod - 1 );
-
-            std::string frame = "time";
-            if ( frame == "time" )
-                (*mx_rodData)[ i ]->rodOptions.refFrame = BASim::ElasticRod::TimeParallel;
-            else if (frame == "space")
-                (*mx_rodData)[ i ]->rodOptions.refFrame = BASim::ElasticRod::SpaceParallel;
-
-            for ( int c=0; c<m_cvsPerRod; c++ )
-            {
-                MVector cv = vertices[ (int)inputVertexIndex ];
-                (*mx_rodData)[ i ]->undeformedVertexPositions[ c ]  = Vec3d( cv.x, cv.y, cv.z );
-                inputVertexIndex++;
-            }
-
-            // We need to add edge data so that each from the first edge will be locked to the input curve
-            if ( strandRootFrames.size() > i && m_lockFirstEdgeToInput )
-            {
-                // The strand root frames may not have been connected for some reason so this don't
-                // rely on having data
-
-                // rod is probably null at this point but rodData will deal with it nicely
-                (*mx_rodData)[ i ]->addKinematicEdge( 0, (*mx_rodData)[ i ]->rod, &strandRootFrames[ i ] );
-            }
-            else
-            {
-                (*mx_rodData)[ i ]->addKinematicEdge( 0 );
-            }
-        }
-    }
-    else
-    {
-        MDataHandle inputCurveH;
-        MObject inputCurveObj;
-        MArrayDataHandle inArrayH = dataBlock.inputArrayValue( ia_nurbsCurves, &stat );
-        CHECK_MSTATUS(stat);
-
-        size_t numCurvesConnected = inArrayH.elementCount();
-
-        for ( unsigned int i = 0; i < numCurvesConnected; i++ )
-        {
-            inArrayH.jumpToElement( i );
-            inputCurveH = inArrayH.inputValue( &stat );
-            CHECK_MSTATUS( stat );
-
-            // Use asNurbsCurveTransformed to get the curve data as we
-            // want it in world space.
-            inputCurveObj = inputCurveH.asNurbsCurveTransformed();
-            MFnNurbsCurve inCurveFn( inputCurveObj );
-
-            MPoint cv;
-            int nCVs = 0;
-            //if ( m_vertexSpacing == 0.0 )
-                nCVs = inCurveFn.numCVs();
-            /*else
-            {
-                nCVs = inCurveFn.length() / m_vertexSpacing + 1;
-            }*/
-
-            (*mx_rodData)[i]->rodOptions = m_rodOptions;
-
-            // Override the number of cvs at the moment to match the input curve
-            (*mx_rodData)[i]->rodOptions.numVertices = nCVs;
-
-            // Make sure we have enough space to store the date for each CV. This should only
-            // ever cause a resize when we are called by initialiseRodData().
-            (*mx_rodData)[ i ]->undeformedVertexPositions.resize( nCVs );
-            (*mx_rodData)[ i ]->initialVertexPositions.resize( nCVs );
-            (*mx_rodData)[ i ]->prevVertexPositions.resize( nCVs );
-            (*mx_rodData)[ i ]->currVertexPositions.resize( nCVs );
-            (*mx_rodData)[ i ]->nextVertexPositions.resize( nCVs );
-
-            (*mx_rodData)[ i ]->undeformedMaterialFrame.resize( nCVs - 1 );
-
-            std::string frame = "time";
-            if ( frame == "time" )
-                (*mx_rodData)[ i ]->rodOptions.refFrame = BASim::ElasticRod::TimeParallel;
-            else if (frame == "space")
-                (*mx_rodData)[ i ]->rodOptions.refFrame = BASim::ElasticRod::SpaceParallel;
-
-            for ( int c = 0; c < (*mx_rodData)[ i ]->rodOptions.numVertices; ++c )
-            {
-                MPoint cv;
-               // stat = inCurveFn.getCV( c,cv,MSpace::kWorld );
-                stat = inCurveFn.getCV( c,cv,MSpace::kObject );
-                CHECK_MSTATUS( stat );
-
-                Vec3d inputCurveVertex( cv.x, cv.y, cv.z );
-                (*mx_rodData)[ i ]->undeformedVertexPositions[ c ] = inputCurveVertex;
-            }
-
-            if ( m_lockFirstEdgeToInput )
-            {
-                // It doesnt matter that the edge data is garbage because we don't use the frames
-                // from the nurb curve (since there are none!) We just add it so that Beaker
-                // knows it isn't to be simulated. Since we didn't pass in a material frame
-                // it will know not to use frame locking.
-                (*mx_rodData)[ i ]->addKinematicEdge( 0 );
-            }
-            
-            EdgeTransformRodMap::iterator rodIt = m_controlledEdgeTransforms.find( i );
-            if ( rodIt != m_controlledEdgeTransforms.end() )
-            {
-                for ( EdgeTransformMap::iterator edgeIt = m_controlledEdgeTransforms[ i ].begin();
-                      edgeIt != m_controlledEdgeTransforms[ i ].end();
-                      edgeIt++ )
-                {
-                    // Now add in ::compute()
-                    //(*mx_rodData)[ i ]->addKinematicEdge( edgeIt->first, (*mx_rodData)[ i ]->rod, &(edgeIt->second.materialFrame) );
-                    
-                    // Set the next positions of these vertices to be wherever the input controller
-                    // says they should be.
-                    Vec3d position =  edgeIt->second.position;
-                    if ( (*mx_rodData)[ i ]->rod != NULL )
-                    {
-                        double length = (*mx_rodData)[ i ]->rod->getEdge( edgeIt->first ).norm();
-                        Vec3d edge = edgeIt->second.materialFrame.m1;
-                        edge.normalize();
-                        Vec3d start = position - ( edge * length / 2.0 );
-                        Vec3d end = position + ( edge * length / 2.0 );
-                        (*mx_rodData)[ i ]->undeformedVertexPositions[ edgeIt->first ] = start;
-                        (*mx_rodData)[ i ]->undeformedVertexPositions[ edgeIt->first + 1 ] = end;                        
-                    }
-                }
-            }
-        }
-    }
-
-    // Set things that are the same no matter what input is being used.
-    size_t numRods = mx_rodData->size();
-    for ( size_t r=0; r<numRods; r++ )
-    {
-        // Set mass damping for this rod
-        (*mx_rodData)[ r ]->massDamping = m_massDamping;
-
-        // Since we're initialising the rod data that means the rod is about to be created. In which
-        // case we need to set the current vertex positions since they will not get set by the
-        // simulation until the user moves forward a frame.
-        size_t numVertices = (*mx_rodData)[ r ]->undeformedVertexPositions.size();
-        (*mx_rodData)[ r ]->initialVertexPositions.resize( numVertices );
-        for ( size_t v=0; v<numVertices; v++ )
-        {
-            (*mx_rodData)[ r ]->initialVertexPositions[ v ] = (*mx_rodData)[ r ]->undeformedVertexPositions[ v ];
-            (*mx_rodData)[ r ]->prevVertexPositions[ v ] = (*mx_rodData)[ r ]->undeformedVertexPositions[ v ];
-            (*mx_rodData)[ r ]->currVertexPositions[ v ] = (*mx_rodData)[ r ]->undeformedVertexPositions[ v ];
-            (*mx_rodData)[ r ]->nextVertexPositions[ v ] = (*mx_rodData)[ r ]->undeformedVertexPositions[ v ];
-        }
-    }
-
     // We need to make sure we have the spline attr data for the rods since compute may not have been called yet
-    updateHairsprayScales( dataBlock );
+    updateHairsprayScales( dataBlock ); */
 }
 
 void WmBunsenRodNode::readRodDataFromCacheFile()
@@ -973,6 +856,9 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         
         MDataHandle numRodsH = i_dataBlock.outputValue( oa_numberOfRods, &stat);
         CHECK_MSTATUS( stat );
+
+        cerr << "mx_rodData = " << mx_rodData << endl;
+
         if ( mx_rodData != NULL )
             numRodsH.set( (int)mx_rodData->size() );
         else
@@ -1726,6 +1612,8 @@ MStatus WmBunsenRodNode::connectionMade( const  MPlug & plug, const  MPlug & oth
     if( plug == ia_nurbsCurves )
     {
         m_numberOfInputCurves++;
+        
+        cerr << "Increasing number of curves (" << m_numberOfInputCurves << ")\n";
     }
 
     return retVal;
@@ -1739,6 +1627,7 @@ MStatus WmBunsenRodNode::connectionBroken( const  MPlug & plug, const  MPlug & o
     if( plug == ia_nurbsCurves )
     {
         m_numberOfInputCurves--;
+        cerr << "Decreasing number of curves (" << m_numberOfInputCurves << ")\n";
     }
 
     return retVal;

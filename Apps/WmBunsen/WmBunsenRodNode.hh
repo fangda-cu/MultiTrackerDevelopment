@@ -33,6 +33,9 @@
 #include <maya/MRampAttribute.h>
 
 #include "Beaker.hh"
+#include "WmFigRodNurbsInput.hh"
+#include "WmFigRodBarbInput.hh"
+#include "WmFigRodFileInput.hh"
 
 static const int FILE_FORMAT_VERSION = 1;
 
@@ -180,6 +183,8 @@ private:
     EdgeTransformRodMap m_controlledEdgeTransforms;
     
     std::tr1::unordered_map< unsigned int, Vec3d > m_rodColourMap;
+
+    WmFigRodInputType* m_pRodInput;
 };
 
 #endif

@@ -18,7 +18,7 @@ GLSL_INSD       := $(wetaglsl)/wmFigaro-$(VERSION)
 endif
 endif
 
-IPATHS 	+= -I$(MKLROOT)/include 
+IPATHS 	+= -I$(MKLROOT)/include
 
 PLG1            := wmFigaro.so
 #PLG1_CF	        += -Werror -DBUILD=${BUILD}
@@ -51,7 +51,11 @@ WmBunsenRodNode.hh \
 WmFigConnectionNode.hh \
 WmFigSelectionContext.hh \
 WmFigSelectionContextCommand.hh \
-WmFigSelectionToolCommand.hh
+WmFigSelectionToolCommand.hh \
+WmFigRodInputType.hh \
+WmFigRodNurbsInput.hh \
+WmFigRodBarbInput.hh \
+WmFigRodFileInput.hh
 
 PLG1_S          := \
 Beaker.cc \
@@ -65,7 +69,11 @@ WmBunsenRodNode.cc \
 WmFigConnectionNode.cc \
 WmFigSelectionContext.cc \
 WmFigSelectionContextCommand.cc \
-WmFigSelectionToolCommand.cc
+WmFigSelectionToolCommand.cc \
+WmFigRodInputType.cc \
+WmFigRodNurbsInput.cc \
+WmFigRodBarbInput.cc \
+WmFigRodFileInput.cc
 
 PLG1_L          += \
 	-lWfigaro_dbg \

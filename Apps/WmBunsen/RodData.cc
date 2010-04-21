@@ -61,6 +61,27 @@ void RodData::updateKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_m
     }
 }
 
+void RodData::allocateStorage( size_t i_numCVs )
+{
+    // Make sure we have enough space to store the date for each CV.
+    undeformedVertexPositions.resize( i_numCVs );
+    initialVertexPositions.resize( i_numCVs );
+    prevVertexPositions.resize( i_numCVs );
+    currVertexPositions.resize( i_numCVs );
+    nextVertexPositions.resize( i_numCVs );
+
+    undeformedMaterialFrame.resize( i_numCVs - 1 );
+}
+
+void RodData::resetVertexPositions( vector< Vec3d >& i_vertexPositions )
+{
+    undeformedVertexPositions = i_vertexPositions;
+    initialVertexPositions = i_vertexPositions;
+    prevVertexPositions = i_vertexPositions;
+    currVertexPositions = i_vertexPositions;
+    nextVertexPositions = i_vertexPositions;
+}
+
 
     double KinematicEdgeData::getAngleBetweenReferenceAndStrand()
     { 
