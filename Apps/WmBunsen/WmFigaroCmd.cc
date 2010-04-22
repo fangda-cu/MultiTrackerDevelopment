@@ -246,12 +246,12 @@ MStatus WmFigaroCmd::redoIt()
         if ( m_mArgDatabase->isFlagSet( kCreateRods ) )
         {
             // Create
-            createWmBunsenRodNode( true );
+            createWmFigRodNode( true );
         }
         if ( m_mArgDatabase->isFlagSet( kCreateRodsFromFozzie ) )
         {
             // Create
-            createWmBunsenRodNode( false );
+            createWmFigRodNode( false );
         }
         if ( m_mArgDatabase->isFlagSet( kAddCollisionMeshes ) )
         {
@@ -303,7 +303,7 @@ void WmFigaroCmd::setColorOfRod( bool i_unset )
     stat = m_figRodNodeList.getDependNode( 0, rodNodeObj);
     CHECK_MSTATUS( stat );
     
-    MPlug colorPlugArray( rodNodeObj, WmBunsenRodNode::ia_userDefinedColors );
+    MPlug colorPlugArray( rodNodeObj, WmFigRodNode::ia_userDefinedColors );
     
     MPlug colorPlug = colorPlugArray.elementByLogicalIndex( m_rodNumber, &stat );
     CHECK_MSTATUS( stat );
@@ -323,7 +323,7 @@ void WmFigaroCmd::setColorOfRod( bool i_unset )
     CHECK_MSTATUS( stat );
 }
 
-void WmFigaroCmd::createWmBunsenRodNode( bool useNURBSInput, bool i_previewOnly,
+void WmFigaroCmd::createWmFigRodNode( bool useNURBSInput, bool i_previewOnly,
                                                       MObject* o_rodNode )
 {
     MStatus stat;
@@ -353,7 +353,7 @@ void WmFigaroCmd::createWmBunsenRodNode( bool useNURBSInput, bool i_previewOnly,
     MDagModifier dagModifier;
     MString rodShapeName = "";
 
-    createDagNode( WmBunsenRodNode::typeName.asChar(), WmBunsenRodNode::typeName.asChar(),
+    createDagNode( WmFigRodNode::typeName.asChar(), WmFigRodNode::typeName.asChar(),
                    pObj, &rodTObj, &rodSObj, &dagModifier, rodShapeName );
 
     appendToResultString( rodShapeName );
@@ -731,7 +731,7 @@ void WmFigaroCmd::getNodes( MSelectionList i_opt_nodes )
                 mObj = childPath.node();
                 m_fozzieNodeList.add( childPath, mObj, false );
             } 
-            else if ( nodeFn.typeName() == WmBunsenRodNode::typeName )
+            else if ( nodeFn.typeName() == WmFigRodNode::typeName )
             {
                 mObj = childPath.node();
                 m_figRodNodeList.add( childPath, mObj, false );
@@ -1069,7 +1069,7 @@ void WmFigaroCmd::createPreviewNodes()
     // Set this to null so the rod creation function builds us a bunsen node
     m_selectedwmBunsenNode = MObject::kNullObj;
     MObject rodNode;
-    createWmBunsenRodNode( false, true, &rodNode );
+    createWmFigRodNode( false, true, &rodNode );
     
     MFnDependencyNode rodNodeFn( rodNode );
     MPlug cachePathPlug( rodNodeFn.findPlug( "cachePath", true, &stat ) );

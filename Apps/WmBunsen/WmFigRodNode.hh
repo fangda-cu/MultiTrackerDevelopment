@@ -1,5 +1,11 @@
-#ifndef WMBUNSENRODNODE_HH_
-#define WMBUNSENRODNODE_HH_
+#ifndef WMFIGRODNODE_HH_
+#define WMFIGRODNODE_HH_
+
+/**
+  * @file Apps/WmFigaro/WmFigRodNode.hh
+  * @author Alasdair Coull (acoull@wetafx.co.nz)
+  * @date 20-04-2010
+  */
 
 #include <maya/MPxLocatorNode.h> 
 #include <maya/MString.h> 
@@ -42,11 +48,11 @@ static const int FILE_FORMAT_VERSION = 1;
 typedef std::tr1::unordered_map<unsigned int, EdgeTransform> EdgeTransformMap;
 typedef std::tr1::unordered_map<unsigned int, EdgeTransformMap > EdgeTransformRodMap;
 
-class WmBunsenRodNode : public MPxLocatorNode 
+class WmFigRodNode : public MPxLocatorNode 
 {
 public:
-    WmBunsenRodNode();
-    virtual	~WmBunsenRodNode();
+    WmFigRodNode();
+    virtual	~WmFigRodNode();
     virtual MStatus compute( const MPlug& i_plug, MDataBlock& i_dataBlock );
 	virtual void draw( M3dView& i_view, const MDagPath& i_path, 
                        M3dView::DisplayStyle i_style,
@@ -194,4 +200,4 @@ private:
     WmFigRodInputType* m_pRodInput;
 };
 
-#endif
+#endif // WMFIGRODNODE_HH_

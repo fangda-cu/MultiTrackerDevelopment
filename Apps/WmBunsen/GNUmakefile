@@ -47,7 +47,7 @@ WmFigaroCmd.hh \
 WmBunsenCollisionMeshNode.hh \
 WmBunsenHelpers.hh \
 WmBunsenNode.hh \
-WmBunsenRodNode.hh \
+WmFigRodNode.hh \
 WmFigConnectionNode.hh \
 WmFigSelectionContext.hh \
 WmFigSelectionContextCommand.hh \
@@ -66,7 +66,7 @@ WmFigaroCmd.cc \
 WmBunsenCollisionMeshNode.cc \
 WmBunsenNode.cc \
 WmBunsenPluginMain.cc \
-WmBunsenRodNode.cc \
+WmFigRodNode.cc \
 WmFigConnectionNode.cc \
 WmFigSelectionContext.cc \
 WmFigSelectionContextCommand.cc \

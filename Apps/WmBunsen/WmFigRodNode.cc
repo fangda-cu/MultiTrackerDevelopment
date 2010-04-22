@@ -1,4 +1,4 @@
-#include "WmBunsenRodNode.hh"
+#include "WmFigRodNode.hh"
 #include "WmFigConnectionNode.hh"
 
 #include <maya/MFnMatrixAttribute.h>
@@ -7,62 +7,62 @@
 using namespace BASim;
 
 // Required by Maya to identify the node
-/* static */ MTypeId WmBunsenRodNode::typeID ( 0x001135, 0x19 );
-/* static */ MString WmBunsenRodNode::typeName( "wmFigRodNode" );
+/* static */ MTypeId WmFigRodNode::typeID ( 0x001135, 0x19 );
+/* static */ MString WmFigRodNode::typeName( "wmFigRodNode" );
 
 // Input attributes
-/* static */ MObject WmBunsenRodNode::ia_time;
-/* static */ MObject WmBunsenRodNode::ia_startTime;
-/* static */ MObject WmBunsenRodNode::ia_nurbsCurves;
-/* static */ MObject WmBunsenRodNode::oa_nurbsCurves;
-/* static */ MObject WmBunsenRodNode::ia_barberShopVertices;
-/* static */ MObject WmBunsenRodNode::ia_percentageOfBarberShopStrands;
-/* static */ MObject WmBunsenRodNode::ia_simStepTaken;
-/* static */ MObject WmBunsenRodNode::ia_strandRootFrames;
+/* static */ MObject WmFigRodNode::ia_time;
+/* static */ MObject WmFigRodNode::ia_startTime;
+/* static */ MObject WmFigRodNode::ia_nurbsCurves;
+/* static */ MObject WmFigRodNode::oa_nurbsCurves;
+/* static */ MObject WmFigRodNode::ia_barberShopVertices;
+/* static */ MObject WmFigRodNode::ia_percentageOfBarberShopStrands;
+/* static */ MObject WmFigRodNode::ia_simStepTaken;
+/* static */ MObject WmFigRodNode::ia_strandRootFrames;
 
 // Drawing
-/* static */ MObject WmBunsenRodNode::ia_userDefinedColors;
-/* static */ MObject WmBunsenRodNode::ca_drawDataChanged;
+/* static */ MObject WmFigRodNode::ia_userDefinedColors;
+/* static */ MObject WmFigRodNode::ca_drawDataChanged;
 
 // Disk caching
-/* static */ MObject WmBunsenRodNode::ia_cachePath;
-/* static */ MObject WmBunsenRodNode::ia_cacheFrame;
-/* static */ MObject WmBunsenRodNode::ia_readFromCache;
+/* static */ MObject WmFigRodNode::ia_cachePath;
+/* static */ MObject WmFigRodNode::ia_cacheFrame;
+/* static */ MObject WmFigRodNode::ia_readFromCache;
 
 // Output attributes
-/* static */ MObject WmBunsenRodNode::oa_rodsChanged;
-/* static */ MObject WmBunsenRodNode::oa_simulatedVertices;
-/* static */ MObject WmBunsenRodNode::oa_nonSimulatedVertices;
-/* static */ MObject WmBunsenRodNode::oa_verticesInEachRod;
-/* static */ MObject WmBunsenRodNode::oa_materialFrames;
-/* static */ MObject WmBunsenRodNode::oa_undeformedMaterialFrames;
-/* static */ MObject WmBunsenRodNode::oa_numberOfRods;
+/* static */ MObject WmFigRodNode::oa_rodsChanged;
+/* static */ MObject WmFigRodNode::oa_simulatedVertices;
+/* static */ MObject WmFigRodNode::oa_nonSimulatedVertices;
+/* static */ MObject WmFigRodNode::oa_verticesInEachRod;
+/* static */ MObject WmFigRodNode::oa_materialFrames;
+/* static */ MObject WmFigRodNode::oa_undeformedMaterialFrames;
+/* static */ MObject WmFigRodNode::oa_numberOfRods;
 
 // Cache attributes
-/* static */ MObject WmBunsenRodNode::ca_simulationSync;
-/* static */ MObject WmBunsenRodNode::ca_syncAttrs;
+/* static */ MObject WmFigRodNode::ca_simulationSync;
+/* static */ MObject WmFigRodNode::ca_syncAttrs;
 
 // User adjustable rod Options
-/* static */ MObject WmBunsenRodNode::ia_cvsPerRod;
-/* static */ MObject WmBunsenRodNode::ia_youngsModulus;
-/* static */ MObject WmBunsenRodNode::ia_shearModulus;
-/* static */ MObject WmBunsenRodNode::ia_viscosity;
-/* static */ MObject WmBunsenRodNode::ia_density;
-/* static */ MObject WmBunsenRodNode::ia_minorRadius;
-/* static */ MObject WmBunsenRodNode::ia_majorRadius;
-/* static */ MObject WmBunsenRodNode::ia_vertexSpacing;
-/* static */ MObject WmBunsenRodNode::ia_hairSpray;
-/* static */ MObject WmBunsenRodNode::ia_hairSprayScaleFactor;
-/* static */ MObject WmBunsenRodNode::ia_massDamping;
-/* static */ MObject WmBunsenRodNode::ia_drawMaterialFrames;
-/* static */ MObject WmBunsenRodNode::ia_lockFirstEdgeToInput;
+/* static */ MObject WmFigRodNode::ia_cvsPerRod;
+/* static */ MObject WmFigRodNode::ia_youngsModulus;
+/* static */ MObject WmFigRodNode::ia_shearModulus;
+/* static */ MObject WmFigRodNode::ia_viscosity;
+/* static */ MObject WmFigRodNode::ia_density;
+/* static */ MObject WmFigRodNode::ia_minorRadius;
+/* static */ MObject WmFigRodNode::ia_majorRadius;
+/* static */ MObject WmFigRodNode::ia_vertexSpacing;
+/* static */ MObject WmFigRodNode::ia_hairSpray;
+/* static */ MObject WmFigRodNode::ia_hairSprayScaleFactor;
+/* static */ MObject WmFigRodNode::ia_massDamping;
+/* static */ MObject WmFigRodNode::ia_drawMaterialFrames;
+/* static */ MObject WmFigRodNode::ia_lockFirstEdgeToInput;
 
 // For being controlled by external objects and for controlling external objects
-/* static */ MObject WmBunsenRodNode::ia_edgeTransforms;
-/* static */ MObject WmBunsenRodNode::oa_edgeTransforms;
+/* static */ MObject WmFigRodNode::ia_edgeTransforms;
+/* static */ MObject WmFigRodNode::oa_edgeTransforms;
 
 
-WmBunsenRodNode::WmBunsenRodNode() : m_massDamping( 10 ), m_initialised( false ),
+WmFigRodNode::WmFigRodNode() : m_massDamping( 10 ), m_initialised( false ),
     mx_rodData( NULL ), mx_world( NULL ), m_numberOfInputCurves( 0 ), 
     m_percentageOfBarberShopStrands( 100 ), m_verticesPerRod( -1 ), m_cachePath( "" ), m_cacheFilename( "" ),
     m_pRodInput( NULL )
@@ -77,11 +77,11 @@ WmBunsenRodNode::WmBunsenRodNode() : m_massDamping( 10 ), m_initialised( false )
     m_controlledEdgeTransforms.clear();
 }
 
-WmBunsenRodNode::~WmBunsenRodNode()
+WmFigRodNode::~WmFigRodNode()
 {
 }
 
-MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
+MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
@@ -156,7 +156,7 @@ MStatus WmBunsenRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
     @param i_rodData A pointer to a vector of pointers to rod data. This????
 */
-void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
+void WmFigRodNode::initialiseRodData( vector<RodData*>* i_rodData )
 {
     mx_rodData = i_rodData;
     MStatus stat;
@@ -234,7 +234,7 @@ void WmBunsenRodNode::initialiseRodData( vector<RodData*>* i_rodData )
     //updateHairsprayScales( dataBlock );
 }
 
-void WmBunsenRodNode::updateRodDataFromInputs()
+void WmFigRodNode::updateRodDataFromInputs()
 {
     if ( mx_rodData == NULL )
     {
@@ -275,7 +275,7 @@ void WmBunsenRodNode::updateRodDataFromInputs()
           or one of the indices is out of range then the identity matrix will be
           returned.
   */
-MMatrix WmBunsenRodNode::getRodEdgeMatrix( size_t i_rod, size_t i_edge )
+MMatrix WmFigRodNode::getRodEdgeMatrix( size_t i_rod, size_t i_edge )
 {
     MMatrix identMatrix;
     identMatrix.setToIdentity();
@@ -319,7 +319,7 @@ MMatrix WmBunsenRodNode::getRodEdgeMatrix( size_t i_rod, size_t i_edge )
     return edgeMatrix;
 }
 
-MString WmBunsenRodNode::getCacheFilename( MDataBlock& i_dataBlock )
+MString WmFigRodNode::getCacheFilename( MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
@@ -337,7 +337,7 @@ MString WmBunsenRodNode::getCacheFilename( MDataBlock& i_dataBlock )
     return m_cacheFilename;
 }
 
-void WmBunsenRodNode::updateHairsprayScales( MDataBlock& i_dataBlock )
+void WmFigRodNode::updateHairsprayScales( MDataBlock& i_dataBlock )
 {
     if ( mx_rodData == NULL )
         return;
@@ -400,7 +400,7 @@ void WmBunsenRodNode::updateHairsprayScales( MDataBlock& i_dataBlock )
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void WmBunsenRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_dataBlock )
+void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
@@ -474,12 +474,12 @@ void WmBunsenRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i
     stat = i_dataBlock.setClean( i_plug );
     if ( !stat )
     {
-        stat.perror("WmBunsenRodNode::compute setClean");
+        stat.perror("WmFigRodNode::compute setClean");
         return;
     }
 }
 
-void WmBunsenRodNode::updateControlledEdgeArrayFromInputs( MDataBlock& i_dataBlock )
+void WmFigRodNode::updateControlledEdgeArrayFromInputs( MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
@@ -565,7 +565,7 @@ void WmBunsenRodNode::updateControlledEdgeArrayFromInputs( MDataBlock& i_dataBlo
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void WmBunsenRodNode::compute_ca_simulationSync_and_oa_numberOfRods( const MPlug& i_plug, 
+void WmFigRodNode::compute_ca_simulationSync_and_oa_numberOfRods( const MPlug& i_plug, 
     MDataBlock i_dataBlock )
 {
     MStatus stat;
@@ -600,7 +600,7 @@ void WmBunsenRodNode::compute_ca_simulationSync_and_oa_numberOfRods( const MPlug
     stat = i_dataBlock.setClean( i_plug );
     if ( !stat )
     {
-        stat.perror("WmBunsenRodNode::compute setClean");
+        stat.perror("WmFigRodNode::compute setClean");
         return;
     }
 }
@@ -614,7 +614,7 @@ void WmBunsenRodNode::compute_ca_simulationSync_and_oa_numberOfRods( const MPlug
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void WmBunsenRodNode::compute_oa_simulatedVertices( const MPlug& i_plug, MDataBlock& i_dataBlock )
+void WmFigRodNode::compute_oa_simulatedVertices( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
@@ -669,7 +669,7 @@ void WmBunsenRodNode::compute_oa_simulatedVertices( const MPlug& i_plug, MDataBl
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void WmBunsenRodNode::compute_oa_nonSimulatedVertices( const MPlug& i_plug, MDataBlock& i_dataBlock )
+void WmFigRodNode::compute_oa_nonSimulatedVertices( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
@@ -726,7 +726,7 @@ void WmBunsenRodNode::compute_oa_nonSimulatedVertices( const MPlug& i_plug, MDat
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void WmBunsenRodNode::compute_oa_verticesInEachRod( const MPlug& i_plug, MDataBlock& i_dataBlock )
+void WmFigRodNode::compute_oa_verticesInEachRod( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
@@ -773,7 +773,7 @@ void WmBunsenRodNode::compute_oa_verticesInEachRod( const MPlug& i_plug, MDataBl
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void WmBunsenRodNode::compute_oa_materialFrames( const MPlug& i_plug, MDataBlock& i_dataBlock )
+void WmFigRodNode::compute_oa_materialFrames( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
@@ -842,7 +842,7 @@ void WmBunsenRodNode::compute_oa_materialFrames( const MPlug& i_plug, MDataBlock
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void WmBunsenRodNode::compute_oa_undeformedMaterialFrames( const MPlug& i_plug, MDataBlock& i_dataBlock )
+void WmFigRodNode::compute_oa_undeformedMaterialFrames( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
@@ -1016,7 +1016,7 @@ void WmBunsenRodNode::compute_oa_undeformedMaterialFrames( const MPlug& i_plug, 
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void WmBunsenRodNode::compute_oa_EdgeTransforms( const MPlug& i_plug, MDataBlock& i_dataBlock )
+void WmFigRodNode::compute_oa_EdgeTransforms( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
@@ -1044,7 +1044,7 @@ void WmBunsenRodNode::compute_oa_EdgeTransforms( const MPlug& i_plug, MDataBlock
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void WmBunsenRodNode::compute_ca_drawDataChanged( const MPlug& i_plug, MDataBlock& i_dataBlock )
+void WmFigRodNode::compute_ca_drawDataChanged( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
     MDataHandle inputColourHandle;
@@ -1079,7 +1079,7 @@ void WmBunsenRodNode::compute_ca_drawDataChanged( const MPlug& i_plug, MDataBloc
     i_dataBlock.setClean( i_plug );
 }
 
-void WmBunsenRodNode::getStrandRootFrames( MDataBlock& i_dataBlock, vector<MaterialFrame>& o_strandRootFrames )
+void WmFigRodNode::getStrandRootFrames( MDataBlock& i_dataBlock, vector<MaterialFrame>& o_strandRootFrames )
 {
     MStatus stat;
 
@@ -1109,7 +1109,7 @@ void WmBunsenRodNode::getStrandRootFrames( MDataBlock& i_dataBlock, vector<Mater
     }
 }
 
-size_t WmBunsenRodNode::numberOfRods()
+size_t WmFigRodNode::numberOfRods()
 {
     // This will get called before initialiseRodData() is called.
     // FIXME: why does this get called early?
@@ -1149,7 +1149,7 @@ size_t WmBunsenRodNode::numberOfRods()
     }
 }
 
-void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
+void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
                             M3dView::DisplayStyle i_style,
                             M3dView::DisplayStatus i_status )
 {
@@ -1161,7 +1161,7 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
 	stat = syncPlug.getValue( d );
 	if ( !stat )
     {
-		stat.perror( "WmBunsenRodNode::draw getting ca_simulationSync" );
+		stat.perror( "WmFigRodNode::draw getting ca_simulationSync" );
 		return;
 	}
     
@@ -1171,7 +1171,7 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
 	stat = drawPlug.getValue( d );
 	if ( !stat )
     {
-		stat.perror( "WmBunsenRodNode::draw getting ca_drawDataChanged" );
+		stat.perror( "WmFigRodNode::draw getting ca_drawDataChanged" );
 		return;
 	}
 
@@ -1302,13 +1302,13 @@ void WmBunsenRodNode::draw( M3dView& i_view, const MDagPath& i_path,
 	// draw dynamic Hair
 
 	// What did this line do? it was here from the devkit example. Is it to with point colouring
-	//view.setDrawColor ( WmBunsenRodNode );
+	//view.setDrawColor ( WmFigRodNode );
 
 	glPopAttrib();
 	i_view.endGL();
 }
 
-MStatus WmBunsenRodNode::connectionMade( const  MPlug & plug, const  MPlug & otherPlug, bool asSrc )
+MStatus WmFigRodNode::connectionMade( const  MPlug & plug, const  MPlug & otherPlug, bool asSrc )
 {
     MStatus stat;
     MStatus retVal(MS::kUnknownParameter );
@@ -1323,7 +1323,7 @@ MStatus WmBunsenRodNode::connectionMade( const  MPlug & plug, const  MPlug & oth
     return retVal;
 }
 
-MStatus WmBunsenRodNode::connectionBroken( const  MPlug & plug, const  MPlug & otherPlug, bool asSrc )
+MStatus WmFigRodNode::connectionBroken( const  MPlug & plug, const  MPlug & otherPlug, bool asSrc )
 {
     MStatus stat;
     MStatus retVal( MS::kUnknownParameter );
@@ -1338,17 +1338,17 @@ MStatus WmBunsenRodNode::connectionBroken( const  MPlug & plug, const  MPlug & o
 }
 
 
-bool WmBunsenRodNode::isBounded() const
+bool WmFigRodNode::isBounded() const
 {
 	return false;
 }
 
-void* WmBunsenRodNode::creator()
+void* WmFigRodNode::creator()
 {
-	return new WmBunsenRodNode();
+	return new WmFigRodNode();
 }
 
-/*static */ MStatus WmBunsenRodNode::addNumericAttribute( MObject& i_attribute, MString i_longName, 
+/*static */ MStatus WmFigRodNode::addNumericAttribute( MObject& i_attribute, MString i_longName, 
     MString i_shortName, MFnNumericData::Type i_type, double i_defaultValue, bool i_isInput,
     bool i_isArray )
 {
@@ -1376,7 +1376,7 @@ void* WmBunsenRodNode::creator()
     return stat;
 }
 
-/* static */ MStatus WmBunsenRodNode::initialize()
+/* static */ MStatus WmFigRodNode::initialize()
 {
     MStatus stat;
 

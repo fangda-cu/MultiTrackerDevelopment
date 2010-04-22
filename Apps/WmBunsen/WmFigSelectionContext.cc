@@ -146,7 +146,7 @@ bool WmFigSelectionContext::searchForRodsIn2DScreenRectangle( vector<size_t>& o_
             MFnDependencyNode nodeFn( childPath.node( &stat ) );
             CHECK_MSTATUS( stat );
         
-            if ( nodeFn.typeName() == WmBunsenRodNode::typeName )
+            if ( nodeFn.typeName() == WmFigRodNode::typeName )
             {
                 rodNodeObj = childPath.node();
             }
@@ -158,7 +158,7 @@ bool WmFigSelectionContext::searchForRodsIn2DScreenRectangle( vector<size_t>& o_
             MFnDependencyNode nodeFn( rodNodeDagPath.node( &stat ) );
             CHECK_MSTATUS( stat );
         
-            if ( nodeFn.typeName() == WmBunsenRodNode::typeName )
+            if ( nodeFn.typeName() == WmFigRodNode::typeName )
             {
                 //    rodNodeObj = nodeFn.node();
                 rodNodeObj = rodNodeDagPath.node( &stat );
@@ -177,7 +177,7 @@ bool WmFigSelectionContext::searchForRodsIn2DScreenRectangle( vector<size_t>& o_
     }
     
     MFnDependencyNode rodNodeDepFn( rodNodeObj );
-    WmBunsenRodNode* rodNode = static_cast<WmBunsenRodNode*>( rodNodeDepFn.userNode() );
+    WmFigRodNode* rodNode = static_cast<WmFigRodNode*>( rodNodeDepFn.userNode() );
     
     if ( !rodNode )
         return false;
@@ -229,7 +229,7 @@ bool WmFigSelectionContext::searchForRodsIn2DScreenRectangle( vector<size_t>& o_
 }
 
 GLint WmFigSelectionContext::findRodsUsingOpenGLSelection( const double i_centreX, const double i_centreY,
-    const double i_width, const double i_height, WmBunsenRodNode* i_rodNode,
+    const double i_width, const double i_height, WmFigRodNode* i_rodNode,
     vector<GLuint>& o_selectedRodIndices )
 {
     vector<RodData*>* allRodData = i_rodNode->getRodData();

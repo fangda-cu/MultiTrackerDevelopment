@@ -2,7 +2,7 @@
 #define WMFIGAROCMD_HH_
 
 #include "WmBunsenNode.hh"
-#include "WmBunsenRodNode.hh"
+#include "WmFigRodNode.hh"
 
 #include <map>
 #include <set>
@@ -78,7 +78,7 @@ protected:
 
     void p_PerformConnect();
 
-    void createWmBunsenRodNode( bool useNURBSInput = true, bool i_previewOnly = false, MObject* o_rodNode = NULL );
+    void createWmFigRodNode( bool useNURBSInput = true, bool i_previewOnly = false, MObject* o_rodNode = NULL );
     void createWmBunsenNode( MObject &o_wmBunsenNodeObj );
     void addCollisionMeshes();
     void attatchEdgeToObject();

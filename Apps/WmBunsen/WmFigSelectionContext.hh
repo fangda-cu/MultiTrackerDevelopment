@@ -2,7 +2,7 @@
 #define _WMFIGSELECTIONCONTEXT_HH_
 
 #include "WmFigSelectionToolCommand.hh"
-#include "WmBunsenRodNode.hh"
+#include "WmFigRodNode.hh"
 
 #include <maya/MIOStream.h>
 #include <math.h>
@@ -76,7 +76,7 @@ public:
 
 private:
     GLint findRodsUsingOpenGLSelection( const double i_centreX, const double i_centreY,
-            const double i_width, const double i_height,  WmBunsenRodNode* rodNode,
+            const double i_width, const double i_height,  WmFigRodNode* rodNode,
             vector<GLuint>& o_selectedRodIndices );
     
     bool searchForRodsIn2DScreenRectangle( vector<size_t>& o_rodIndices );

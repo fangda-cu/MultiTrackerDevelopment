@@ -1,5 +1,5 @@
 #include "WmFigConnectionNode.hh"
-#include "WmBunsenRodNode.hh"
+#include "WmFigRodNode.hh"
 
 #include <maya/MPlugArray.h>
 
@@ -103,7 +103,7 @@ MStatus WmFigConnectionNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlo
             CHECK_MSTATUS( stat );
             
             MFnDependencyNode rodNodeDepFn( rodNodeObj );
-            WmBunsenRodNode* rodNode = static_cast<WmBunsenRodNode*>( rodNodeDepFn.userNode() );
+            WmFigRodNode* rodNode = static_cast<WmFigRodNode*>( rodNodeDepFn.userNode() );
             
             if ( rodNode != NULL )
             {

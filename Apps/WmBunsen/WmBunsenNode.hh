@@ -28,7 +28,7 @@
 #include <maya/MVectorArray.h>
 
 #include "Beaker.hh"
-#include "WmBunsenRodNode.hh"
+#include "WmFigRodNode.hh"
 
 class WmBunsenNode : public MPxLocatorNode 
 {

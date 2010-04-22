@@ -90,7 +90,7 @@ void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock,
                 MObject rodNodeObj = rodNodePlug.node( &stat );
                 CHECK_MSTATUS( stat );
                 MFnDependencyNode rodNodeFn( rodNodeObj );
-                WmBunsenRodNode* wmBunsenRodNode = ( WmBunsenRodNode* )rodNodeFn.userNode();
+                WmFigRodNode* wmBunsenRodNode = ( WmFigRodNode* )rodNodeFn.userNode();
                 
                 // Since the rod node is purely there to fill in data that comes from its inputs
                 // and attributes, we don't let it deal with memory allocation. This node is in 

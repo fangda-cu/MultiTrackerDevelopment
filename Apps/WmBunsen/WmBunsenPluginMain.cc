@@ -1,7 +1,7 @@
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
 
-#include "WmBunsenRodNode.hh"
+#include "WmFigRodNode.hh"
 #include "WmBunsenNode.hh"
 #include "WmBunsenCollisionMeshNode.hh"
 #include "WmFigaroCmd.hh"
@@ -32,10 +32,10 @@ MStatus initializePlugin( MObject obj )
         return stat;
     }
     
-    stat = plugin.registerNode( WmBunsenRodNode::typeName, WmBunsenRodNode::typeID,
-                                WmBunsenRodNode::creator,
-                                WmBunsenRodNode::initialize,
-                                WmBunsenRodNode::kLocatorNode );
+    stat = plugin.registerNode( WmFigRodNode::typeName, WmFigRodNode::typeID,
+                                WmFigRodNode::creator,
+                                WmFigRodNode::initialize,
+                                WmFigRodNode::kLocatorNode );
     if ( !stat )
     {
         stat.perror( "RegisterNode WmFigRodNode failed" );
@@ -100,7 +100,7 @@ MStatus uninitializePlugin( MObject obj)
         stat.perror( "DeregisterNode WmFigaroNode failed" );
     }
     
-    stat = plugin.deregisterNode( WmBunsenRodNode::typeID );
+    stat = plugin.deregisterNode( WmFigRodNode::typeID );
     if( !stat ) 
     {
         stat.perror( "DeregisterNode WmFigRodNode failed" );
