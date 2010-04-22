@@ -15,6 +15,7 @@
 #include <maya/MPoint.h>
 
 #include "WmFigRodInputType.hh"
+#include "WmFigRodFileIO.hh"
 
 /**
   * @brief Class to load rod data from a cached file and make it look like live data for the rod node
@@ -24,13 +25,13 @@
   *
   */ 
 
-class WmFigRodFileInput : public WmFigRodInputType
+class WmFigRodFileInput : public WmFigRodInputType, WmFigRodFileIO
 { 
 public:
      /**
       * @brief Default constructor
       */
-     WmFigRodFileInput( MObject& i_filePathAttribute, MObject& i_timeAttribute );
+     WmFigRodFileInput( MString& i_cacheFilename );
    
     /**
       * @brief Default destructor
@@ -40,19 +41,10 @@ public:
     /**
       * @brief Initialise rod data from input types.
       */
-    virtual void initialiseRodDataFromInput( MDataBlock& i_dataBlock, std::vector<RodData*>* i_pRodData  );
-
+    virtual void initialiseRodDataFromInput( MDataBlock& i_dataBlock, std::vector<RodData*>* i_pRodData  );    
+    
 private:
-    MString getCacheFilename( MDataBlock& i_dataBlock );
-    
-    bool readDataFromRodCacheFile( const MString i_cacheFilename, size_t& o_numRodsInFile,
-          vector<vector<Vec3d> >& o_rodVertices, vector<vector<Vec3d> >& o_unsimulatedRodVertices );
-    
-    FILE* readNumberOfRodsFromFile( const MString i_cacheFilename, size_t& o_numRodsInFile, 
-            bool closeFileAfterReading );
-
-    MObject& m_filePathAttribute;
-    MObject& m_timeAttribute;
+    MString m_cacheFilename;
 };
 
 #endif // WMFIGRODFILEINPUT_H_

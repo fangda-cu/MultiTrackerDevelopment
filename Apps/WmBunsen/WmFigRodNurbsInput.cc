@@ -1,5 +1,7 @@
 #include "WmFigRodNurbsInput.hh"
 
+#include <maya/MGlobal.h>
+
 WmFigRodNurbsInput::WmFigRodNurbsInput( MObject& i_nurbsAttribute, bool i_lockFirstEdgeToInput ) : 
     m_inputNurbsAttribute( i_nurbsAttribute ), m_lockFirstEdgeToInput( i_lockFirstEdgeToInput )
 {
@@ -97,4 +99,100 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock, ve
                     }
                 }
   */  
+}
+
+void WmFigRodNurbsInput::updateRodDataFromInput( MDataBlock& i_dataBlock, vector<RodData*>* i_pRodData )
+{
+    MStatus stat;
+    
+    MArrayDataHandle inArrayH = i_dataBlock.inputArrayValue( m_inputNurbsAttribute, &stat );
+    CHECK_MSTATUS(stat);
+    size_t numCurvesConnected = inArrayH.elementCount(); 
+
+    if ( i_pRodData->size() != numCurvesConnected )
+    {
+        MGlobal::displayError( "Number of rods does not equal number of input curves, rewind simulation to reset" );
+        return;
+    }
+
+    for ( unsigned int i = 0; i < numCurvesConnected; i++ )
+    {
+        inArrayH.jumpToElement( i );
+        MDataHandle inputCurveH = inArrayH.inputValue( &stat );
+        CHECK_MSTATUS( stat );
+
+        // Use asNurbsCurveTransformed to get the curve data as we
+        // want it in world space.
+        MObject inputCurveObj = inputCurveH.asNurbsCurveTransformed();
+        MFnNurbsCurve inCurveFn( inputCurveObj );
+
+        MPoint cv;
+        int numCurveCVs = inCurveFn.numCVs();
+
+        BASim::ElasticRod* pRod = (*i_pRodData)[ i ]->rod;
+        if ( pRod != NULL )
+        {
+            int numRodVertices = pRod->nv();
+
+            if ( numRodVertices != numCurveCVs )
+            {
+                MGlobal::displayError( "Number of vertices in rod does not equal number of CVs in input curve! Did you change the input? Rewind sim to reset." );
+                return;
+            }
+
+            vector<Vec3d> inputCurveVertices;
+            inputCurveVertices.resize( numCurveCVs );
+
+            for ( int c = 0; c < numCurveCVs ; ++c )
+            {
+                MPoint cv;
+                // stat = inCurveFn.getCV( c,cv,MSpace::kWorld );
+                stat = inCurveFn.getCV( c,cv,MSpace::kObject );
+                CHECK_MSTATUS( stat );
+
+                inputCurveVertices[ c ] = Vec3d( cv.x, cv.y, cv.z );
+            }
+
+            (*i_pRodData)[ i ]->updateNextRodVertexPositions( inputCurveVertices );
+            
+            /*  FIXME: Again this should be resurrected as soon as the refactoring is complete.
+
+            EdgeTransformRodMap::iterator rodIt = m_controlledEdgeTransforms.find( i );
+            if ( rodIt != m_controlledEdgeTransforms.end() )
+            {
+                for ( EdgeTransformMap::iterator edgeIt = m_controlledEdgeTransforms[ i ].begin();
+                        edgeIt != m_controlledEdgeTransforms[ i ].end();
+                        edgeIt++ )
+                {
+                    if ( m_currentTime == m_startTime )
+                        (*mx_rodData)[ i ]->resetKinematicEdge( edgeIt->first, (*mx_rodData)[ i ]->rod, (edgeIt->second.materialFrame) );
+                    else
+                        (*mx_rodData)[ i ]->updateKinematicEdge( edgeIt->first, (edgeIt->second.materialFrame) );
+                    
+                    // Set the next positions of these vertices to be wherever the input controller
+                    // says they should be.
+                    Vec3d position =  edgeIt->second.position;
+                    if ( (*mx_rodData)[ i ]->rod != NULL )
+                    {
+                        double length = (*mx_rodData)[ i ]->rod->getEdge( edgeIt->first ).norm();
+                        Vec3d edge = edgeIt->second.materialFrame.m1;
+                        edge.normalize();
+                        Vec3d start = position - ( edge * length / 2.0 );
+                        Vec3d end = position + ( edge * length / 2.0 );
+                        (*mx_rodData)[ i ]->nextVertexPositions[ edgeIt->first ] = start;
+                        (*mx_rodData)[ i ]->nextVertexPositions[ edgeIt->first + 1 ] = end;
+                    }
+                }
+            }*/
+        }
+    }
+}
+
+size_t WmFigRodNurbsInput::numberOfInputs( MDataBlock& i_dataBlock )
+{
+    MStatus stat;
+
+    MArrayDataHandle inArrayH = i_dataBlock.inputArrayValue( m_inputNurbsAttribute, &stat );
+    CHECK_MSTATUS(stat);
+    return inArrayH.elementCount(); 
 }

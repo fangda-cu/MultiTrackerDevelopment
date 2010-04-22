@@ -104,7 +104,8 @@ public:
     void updateKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_materialframe );
     void allocateStorage( size_t i_numCVs );
     void resetVertexPositions( vector< Vec3d >& i_vertexPositions );
-    
+    void updateNextRodVertexPositions( vector< Vec3d >& i_vertexPositions );
+
     // If for some reason this rod shouldn't be simulated then set this flag to false. This
     // usually happens when the user has set the rod node to playback from cache.
     bool shouldSimulate;

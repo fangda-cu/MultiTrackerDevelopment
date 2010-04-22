@@ -37,6 +37,8 @@ public:
       * @brief Initialise rod data from input types.
       */
     virtual void initialiseRodDataFromInput( MDataBlock& i_dataBlock, std::vector<RodData*>* i_pRodData  ) = 0;
+    virtual void updateRodDataFromInput( MDataBlock& i_dataBlock, std::vector<RodData*>* i_pRodData );
+    virtual size_t numberOfInputs( MDataBlock& i_dataBlock ) { return 0; };
 
 protected:
 private:

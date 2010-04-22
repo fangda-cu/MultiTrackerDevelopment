@@ -41,9 +41,12 @@ public:
       * @brief Initialise rod data from input types.
       */
     virtual void initialiseRodDataFromInput( MDataBlock& i_dataBlock, std::vector<RodData*>* i_pRodData  );
+    virtual void updateRodDataFromInput( MDataBlock& i_dataBlock, std::vector<RodData*>* i_pRodData );
+    virtual size_t numberOfInputs( MDataBlock& i_dataBlock );
 
 private:
     void getStrandRootFrames( MDataBlock& i_dataBlock, std::vector<MaterialFrame>& o_strandRootFrames );
+    void getStrandVertices( MDataBlock& i_dataBlock, MVectorArray& o_vertices, size_t& o_numStrands );
 
     MObject& m_verticesAttribute;
     MObject& m_strandRootFramesAttribute;

@@ -82,6 +82,17 @@ void RodData::resetVertexPositions( vector< Vec3d >& i_vertexPositions )
     nextVertexPositions = i_vertexPositions;
 }
 
+void RodData::updateNextRodVertexPositions( vector< Vec3d >& i_vertexPositions )
+{
+    prevVertexPositions = currVertexPositions;
+
+    // Set the current position to be the prev as it will be moved forward in substeps by
+    // Beaker as it takes simulation steps.
+    //FIXME: Doesn't currVertexPositions already equal nextVertexPositions at the end of a time
+    // step?
+    currVertexPositions = nextVertexPositions;
+    nextVertexPositions = i_vertexPositions;
+}
 
     double KinematicEdgeData::getAngleBetweenReferenceAndStrand()
     { 

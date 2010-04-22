@@ -63,8 +63,8 @@ public:
     static MObject ia_startTime;
     static MObject ia_nurbsCurves;
     static MObject oa_nurbsCurves;
-    static MObject ia_fozzieVertices;
-    static MObject ia_percentageOfFozzieStrands;    
+    static MObject ia_barberShopVertices;
+    static MObject ia_percentageOfBarberShopStrands;    
     
     // Rod options
     static MObject ia_cvsPerRod;
@@ -135,15 +135,22 @@ public:
     }
     
 private:
+    // Compute helper functions
+    void compute_oa_simulatedVertices( const MPlug& i_plug, MDataBlock& i_dataBlock );
+    void compute_ca_simulationSync_and_oa_numberOfRods( const MPlug& i_plug, MDataBlock i_dataBlock );
+    void compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_dataBlock );
+    void compute_oa_nonSimulatedVertices( const MPlug& i_plug, MDataBlock& i_dataBlock );
+    void compute_oa_verticesInEachRod( const MPlug& i_plug, MDataBlock& i_dataBlock );
+    void compute_oa_materialFrames( const MPlug& i_plug, MDataBlock& i_dataBlock );
+    void compute_oa_undeformedMaterialFrames( const MPlug& i_plug, MDataBlock& i_dataBlock );
+    void compute_oa_EdgeTransforms( const MPlug& i_plug, MDataBlock& i_dataBlock );
+    void compute_ca_drawDataChanged( const MPlug& i_plug, MDataBlock& i_dataBlock );
+
+    void updateControlledEdgeArrayFromInputs( MDataBlock& i_dataBlock );
+
     void getStrandRootFrames( MDataBlock& i_dataBlock, vector<MaterialFrame>& o_strandRootFrames );
-    void writeRodDataToCacheFile();
-    void readRodDataFromCacheFile();
     void updateHairsprayScales( MDataBlock& i_dataBlock );
 
-    bool readDataFromRodCacheFile( const MString i_cacheFilename, size_t& o_numRodsInFile,
-        vector<vector<Vec3d> >& o_rodVertices, vector<vector<Vec3d> >& o_unsimulatedRodVertices );
-    FILE* readNumberOfRodsFromFile( const MString i_cacheFilename, size_t& o_numRodsInFile,
-        bool closeFileAfterReading = true );
     MString getCacheFilename( MDataBlock& i_dataBlock );
     
     double m_currentTime;
@@ -166,10 +173,10 @@ private:
     
     size_t m_numberOfInputCurves;
     
-    double m_percentageOfFozzieStrands;
+    double m_percentageOfBarberShopStrands;
     
     // If we're overriding the number of cvs per rod then this will be not -1
-    int m_cvsPerRod;
+    int m_verticesPerRod;
     
     MString m_cachePath;
     MString m_cacheFilename;

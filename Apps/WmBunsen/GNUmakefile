@@ -55,6 +55,7 @@ WmFigSelectionToolCommand.hh \
 WmFigRodInputType.hh \
 WmFigRodNurbsInput.hh \
 WmFigRodBarbInput.hh \
+WmFigRodFileIO.hh \
 WmFigRodFileInput.hh
 
 PLG1_S          := \
@@ -73,6 +74,7 @@ WmFigSelectionToolCommand.cc \
 WmFigRodInputType.cc \
 WmFigRodNurbsInput.cc \
 WmFigRodBarbInput.cc \
+WmFigRodFileIO.cc \
 WmFigRodFileInput.cc
 
 PLG1_L          += \
