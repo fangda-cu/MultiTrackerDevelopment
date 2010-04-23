@@ -294,7 +294,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     Scalar dt_save = getDt();
     Scalar startTime = getTime();
     Scalar currentTime = getTime();
-    Scalar targetTime = currentTime + i_stepSize*i_subSteps;
+    Scalar targetTime = currentTime + i_stepSize;
     setDt( i_stepSize/i_subSteps );
 
     double frameObjectCollisionForceTime = 0.0;

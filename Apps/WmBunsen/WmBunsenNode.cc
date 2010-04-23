@@ -73,6 +73,8 @@ void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock,
     size_t numRodsConnected = rodPlugArray.numConnectedElements( &stat );
     CHECK_MSTATUS( stat );
 
+    cerr << "numRodsConnected = " << numRodsConnected << endl;
+    
     for ( unsigned int r=0; r < numRodsConnected; r++ ) 
     {
         if ( rodPlugArray.isArray( &stat ) )
@@ -96,7 +98,7 @@ void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock,
                 // and attributes, we don't let it deal with memory allocation. This node is in 
                 // charge of all that.
                 m_beaker->createSpaceForRods( r, wmBunsenRodNode->numberOfRods() );
-                
+
                 wmBunsenRodNode->initialiseRodData( m_beaker->rodData( r ) );
 
                 // Now the rod node has used initialised the undeformed positions for the rods
@@ -183,7 +185,7 @@ void WmBunsenNode::updateAllCollisionMeshes( MDataBlock &data )
 MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock ) 
 {
     MStatus stat;
-    
+
     if ( i_plug == ca_syncAttrs )
     {
         m_enabled = i_dataBlock.inputValue( ia_enabled, &stat ).asBool();

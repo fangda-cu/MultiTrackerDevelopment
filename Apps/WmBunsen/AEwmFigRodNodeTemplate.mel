@@ -22,8 +22,8 @@ global proc AEwmFigRodNodeTemplate(string $nodeName)
         editorTemplate -addControl "drawMaterialFrames";
     editorTemplate -endLayout;
 
-    AEaddRampControl ("hairSpray");
-    setAttr ($nodeName + ".hairSpray[0].hairSpray_Interp") 3;
+    //AEaddRampControl ("hairSpray");
+    //setAttr ($nodeName + ".hairSpray[0].hairSpray_Interp") 3;
     
     editorTemplate -beginLayout "Files" -collapse 0;
       editorTemplate -addControl "cachePath";

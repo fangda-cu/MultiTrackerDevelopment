@@ -1317,7 +1317,7 @@ MStatus WmFigRodNode::connectionMade( const  MPlug & plug, const  MPlug & otherP
     {
         m_numberOfInputCurves++;
         
-        cerr << "Increasing number of curves (" << m_numberOfInputCurves << ")\n";
+//        cerr << "Increasing number of curves (" << m_numberOfInputCurves << ")\n";
     }
 
     return retVal;
@@ -1331,7 +1331,7 @@ MStatus WmFigRodNode::connectionBroken( const  MPlug & plug, const  MPlug & othe
     if( plug == ia_nurbsCurves )
     {
         m_numberOfInputCurves--;
-        cerr << "Decreasing number of curves (" << m_numberOfInputCurves << ")\n";
+  //      cerr << "Decreasing number of curves (" << m_numberOfInputCurves << ")\n";
     }
 
     return retVal;
