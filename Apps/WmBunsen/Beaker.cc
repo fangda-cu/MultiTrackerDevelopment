@@ -127,6 +127,8 @@ void Beaker::setTimingEnabled( bool i_timingsEnabled )
 
 void Beaker::resetTimers()
 {
+    cerr << "Resetting timers \n";
+
     m_meshInterpolationTime = 0.0;
     m_vertexInterpolationTime = 0.0;
     m_objectCollisionForces = 0.0;
@@ -354,7 +356,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             {
                 RodCollisionTimeStepper* rodCollisionTimeStepper = dynamic_cast<RodCollisionTimeStepper*>(rodData[r]->stepper);
 
-                rodCollisionTimeStepper->doCollisions( i_collisionsEnabled );
+                rodCollisionTimeStepper->shouldDoCollisions( i_collisionsEnabled );
                 rodCollisionTimeStepper->setTimeStep( getDt() );
                 rodCollisionTimeStepper->setCollisionMeshesMap( &m_collisionMeshMap );
 
@@ -363,8 +365,6 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
                 for( int c = 0; c < rod->nv(); c++)
                 {
-
-
                  //   in wmbunsenrodnode the next position of the vertices have to be over-ruled by
                 //    any kinematic controllers connected into the rod node.
 
@@ -431,7 +431,6 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         frameTime += timeTaken;
         m_vertexInterpolationTime += timeTaken;
 
-
         // Now we have two code paths depending on if we're doing self collisions. If
         // we're not then we are safe to parallelise the entire thing. If we are then
         // we need to break it into blocks so we can run the self collisions in one thread.
@@ -454,6 +453,11 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             timeval threadFrameTimer;
             startTimer( threadFrameTimer );
 
+            /*
+            
+            Miklos wants timing showing how long it spent in collisions so we need to split this up
+            like below.
+
             #pragma omp parallel for num_threads( actualNumThreadsToUse )
             for ( int i=0; i<numControllers; ++i )
             {
@@ -463,8 +467,45 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 rodCollisionTimeStepper->execute();
                 rodCollisionTimeStepper->respondToObjectCollisions();
                 rodCollisionTimeStepper->tidyUpCollisionStructuresForNextStep();
-            }
+            }*/
 
+            startTimer(timer);
+            #pragma omp parallel for num_threads( actualNumThreadsToUse )
+            for ( int i=0; i<numControllers; ++i )
+            {
+                RodCollisionTimeStepper* rodCollisionTimeStepper = dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ]);
+
+                rodCollisionTimeStepper->initialiseCollisionsAndApplyObjectCollisionForces();
+            }
+            timeTaken = stopTimer(timer);
+            frameObjectCollisionForceTime += timeTaken;
+            m_objectCollisionForces += timeTaken;
+            
+            startTimer(timer);
+            #pragma omp parallel for num_threads( actualNumThreadsToUse )
+            for ( int i=0; i<numControllers; ++i )
+            {
+                RodCollisionTimeStepper* rodCollisionTimeStepper = dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ]);
+
+                rodCollisionTimeStepper->execute();
+            }
+            timeTaken = stopTimer(timer);
+            frameIntegrationStepTime += timeTaken;
+            m_integrationStepTime += timeTaken;
+            
+            startTimer(timer);
+            #pragma omp parallel for num_threads( actualNumThreadsToUse )
+            for ( int i=0; i<numControllers; ++i )
+            {
+                RodCollisionTimeStepper* rodCollisionTimeStepper = dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ]);
+
+                rodCollisionTimeStepper->respondToObjectCollisions();
+                rodCollisionTimeStepper->tidyUpCollisionStructuresForNextStep();
+            }
+            timeTaken = stopTimer(timer);
+            frameObjectCollisionResponse += timeTaken;
+            m_objectCollisionResponse += timeTaken;
+            
             frameTime += stopTimer( threadFrameTimer );
         }
         else
@@ -598,7 +639,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     // restore dt
     setDt( dt_save );
 
-   // printTimingInfo();
+    printTimingInfo();
 }
 /*
 void Beaker::storeMaterialFrames()

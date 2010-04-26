@@ -55,7 +55,7 @@ public:
       m_collisionMeshes = collisionMeshes;
   }
 
-  void doCollisions(bool doCollisionsFlag)
+  void shouldDoCollisions(bool doCollisionsFlag)
   {
     m_collisionsEnabled = doCollisionsFlag;
   }
