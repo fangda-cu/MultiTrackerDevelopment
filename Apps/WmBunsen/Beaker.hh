@@ -102,6 +102,11 @@ public:
         m_plasticDeformations = i_plasticDeformations;
     }
     
+    void shouldDrawSubsteppedVertices( bool i_shouldDrawSubsteppedVertices )
+    {
+        m_shouldDrawSubsteppedVertices = i_shouldDrawSubsteppedVertices;
+    }
+
     RodCollisionTimeStepper* setupRodTimeStepper( RodData* i_rodData );
     
     void draw(void);
@@ -189,6 +194,9 @@ private:
     vector<MaterialFrame> m_rodRootMaterialFrame;
     vector<MaterialFrame> m_strandRootMaterialFrame;
     vector<MaterialFrame> m_rodRefMaterialFrame;
+
+    vector< vector < vector < Vec3d > > > m_subSteppedVertexPositions;
+    bool m_shouldDrawSubsteppedVertices;
 };
 
 #endif // BEAKER_HH_

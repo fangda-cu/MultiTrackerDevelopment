@@ -76,6 +76,9 @@ public:
     // File to store results of timings taken during simulation
     static MObject ia_timingsFile;
     static MObject ia_timingEnabled;
+
+    // Drawing
+    static MObject ia_drawSubSteppedVertices;
     
 private:
     void pullOnAllRodNodes( MDataBlock& i_dataBlock );

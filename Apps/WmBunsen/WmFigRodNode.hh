@@ -88,9 +88,9 @@ public:
     static MObject ia_lockFirstEdgeToInput;
     
     // Drawing 
-    static MObject ia_userDefinedColors;
+    static MObject ia_userDefinedColors;    
     static MObject ca_drawDataChanged;
-
+    
     // Caching
     static MObject ia_cachePath;
     static MObject ia_cacheFrame;

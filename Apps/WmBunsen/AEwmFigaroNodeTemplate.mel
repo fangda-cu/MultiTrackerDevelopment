@@ -26,7 +26,10 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
         editorTemplate -addControl "timingEnabled";
         editorTemplate -addControl "timingsFile";        
     editorTemplate -endLayout;
-
+    editorTemplate -beginLayout "Drawing" -collapse 0;
+        editorTemplate -addControl "drawSubSteppedVertices";
+    editorTemplate -endLayout;
+    
     editorTemplate -addExtraControls;
     editorTemplate -endScrollLayout;
 }

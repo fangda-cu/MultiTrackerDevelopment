@@ -64,7 +64,7 @@ LinearSolverBase* SolverUtils::createLinearSolver(MatrixBase* A) const
 {
   if (solverType == CONJUGATE_GRADIENT)
     return new ConjugateGradient(*A);
-
+  
 #ifdef HAVE_PETSC
   if (solverType == PETSC_SOLVER)
     return new PetscLinearSolver(*A);

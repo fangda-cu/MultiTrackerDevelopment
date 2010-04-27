@@ -5,11 +5,11 @@ BUILD := "$(shell perl -e '$$pwd=$$ENV{PWD}; $$time=localtime(); print "\\\"$$pw
 include /vol/bob/make/head.mk
 ##############################################################################
 
-
 IPATHS 	+= -I$(MKLROOT)/include 
 
 LIB1       := Wfigaro
-LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA
+#LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA
+LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -fPIC -DHAVE_LAPACK -DWETA
 LIB1_HSD   := Wfigaro
 LIB1_HDIR := src
 LIB1_H     := \

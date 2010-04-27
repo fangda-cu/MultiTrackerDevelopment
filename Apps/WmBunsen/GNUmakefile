@@ -22,7 +22,8 @@ IPATHS 	+= -I$(MKLROOT)/include
 
 PLG1            := wmFigaro.so
 #PLG1_CF	        += -Werror -DBUILD=${BUILD}
-PLG1_CF	        += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL -DHAVE_LAPACK -DWETA
+#PLG1_CF	        += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL -DHAVE_LAPACK -DWETA
+PLG1_CF	        += -DBUILD=${BUILD} -openmp -pthread -DHAVE_LAPACK -DWETA
 
 #ifeq "$(ABI)" "LI40"
 

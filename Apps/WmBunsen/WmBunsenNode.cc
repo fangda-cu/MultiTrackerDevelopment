@@ -26,6 +26,9 @@ MObject WmBunsenNode::ia_timingsFile;
 MObject WmBunsenNode::ia_timingEnabled;
 MObject WmBunsenNode::oa_simStepTaken;
 
+// Drawing
+/* static */ MObject WmBunsenNode::ia_drawSubSteppedVertices;
+
 WmBunsenNode::WmBunsenNode() : m_initialised( false ), m_enabled( true ), m_beaker( NULL )
 {
     m_beaker = new Beaker();
@@ -73,8 +76,6 @@ void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock,
     size_t numRodsConnected = rodPlugArray.numConnectedElements( &stat );
     CHECK_MSTATUS( stat );
 
-    cerr << "numRodsConnected = " << numRodsConnected << endl;
-    
     for ( unsigned int r=0; r < numRodsConnected; r++ ) 
     {
         if ( rodPlugArray.isArray( &stat ) )
@@ -185,7 +186,7 @@ void WmBunsenNode::updateAllCollisionMeshes( MDataBlock &data )
 MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock ) 
 {
     MStatus stat;
-
+    
     if ( i_plug == ca_syncAttrs )
     {
         m_enabled = i_dataBlock.inputValue( ia_enabled, &stat ).asBool();
@@ -233,6 +234,8 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         bool plasticDeformations = i_dataBlock.inputValue( ia_plasticDeformations, &stat ).asBool();
         CHECK_MSTATUS( stat );
         m_beaker->setPlasticDeformations( plasticDeformations );
+
+        m_beaker->shouldDrawSubsteppedVertices( i_dataBlock.inputValue( ia_drawSubSteppedVertices, &stat ).asBool() ) ;
         
         if ( m_enabled && m_currentTime == m_startTime )
         {
@@ -341,7 +344,10 @@ void WmBunsenNode::draw( M3dView& i_view, const MDagPath& i_path,
     i_view.beginGL(); 
     glPushAttrib( GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT | GL_ENABLE_BIT |  GL_LIGHTING_BIT );
     
-    //m_beaker->draw();
+    // Only draw beaker if it's not start time as what it draws only makes sense
+    // when the sim is running.
+    if ( m_currentTime != m_startTime )
+        m_beaker->draw();
     
     // What did this line do? it was here from the devkit example. Is it to with point colouring
     //view.setDrawColor ( WmBunsenNode );
@@ -707,6 +713,7 @@ MStatus WmBunsenNode::initialize()
         stat = addAttribute( ia_timingEnabled );
         if (!stat) { stat.perror( "addAttribute ia_timingEnabled" ); return stat; }
     }
+    
     {
         MFnNumericAttribute nAttr;
         ia_enabled = nAttr.create( "enabled", "en", MFnNumericData::kBoolean, true, &stat );
@@ -721,6 +728,22 @@ MStatus WmBunsenNode::initialize()
         if (!stat) { stat.perror( "addAttribute ia_enabled" ); return stat; }
     }
     stat = attributeAffects( ia_enabled, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_enabled->ca_syncAttrs" ); return stat; }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_drawSubSteppedVertices = nAttr.create( "drawSubSteppedVertices", "dsv", MFnNumericData::kBoolean, false, &stat );
+        if (!stat) {
+            stat.perror("create ia_drawSubSteppedVertices attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_drawSubSteppedVertices );
+        if (!stat) { stat.perror( "addAttribute ia_drawSubSteppedVertices" ); return stat; }
+    }
+    stat = attributeAffects( ia_drawSubSteppedVertices, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_enabled->ca_syncAttrs" ); return stat; }
     
     stat = attributeAffects( ia_time, ca_syncAttrs );
