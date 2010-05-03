@@ -30,6 +30,9 @@ include_directories (${MAYA_INCLUDE_DIR})
 # out how to get it running on my workstation and my laptop.
 #
 ###########################################################################################
+
+SET(LIBRARY_OUTPUT_PATH "~/local/lib")
+
 if (CMAKE_SYSTEM_NAME MATCHES Linux)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MAYA_CXX_FLAGS}")
 endif (CMAKE_SYSTEM_NAME MATCHES Linux)

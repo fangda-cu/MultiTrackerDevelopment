@@ -29,14 +29,20 @@ public:
   RodPenaltyForce();
   ~RodPenaltyForce();
 
+	void clearCollisions();
+	
   //void computeEnergy(Real& e)
 
   virtual void computeForce(const ElasticRod& rod, VecXd& F);
-  //virtual void computeForceDX(const ElasticRod& rod, MatrixBase& J);
 
+  virtual void computeForceDX(const ElasticRod& rod, MatrixBase& J);
+  virtual void computeForceDV(const ElasticRod& rod, MatrixBase& J);
+  
   void addRodPenaltyForce(int vertex, CollisionMeshData *cmData, int triangle);
   void addRodPenaltyForce(int edge, ElasticRod *rod, int otherEdge);
 
+	void clearPenaltyForces();
+	
 protected:
   VertexObjectMap _vertexObjects;
   EdgeRodMap _edgeRods;
@@ -48,6 +54,9 @@ protected:
   Real getClosestPointsEdgeEdge(const Vec3d& e11, const Vec3d& e12,
                                 const Vec3d& e21, const Vec3d& e22,
                                 Real &s, Real &t) const;
+                                
+	void localJacobian(MatXd& J, const Scalar stiffness, const Vec3d& normal);
+                                
 };
 
 }

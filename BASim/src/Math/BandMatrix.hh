@@ -126,6 +126,7 @@ public:
       int upper = m_upper[r];
       for (int j = lower; j < upper; ++j) {
         (*this)(r, j) = 0;
+        (*this)(j, r) = 0;
       }
       (*this)(r, r) = diag;
     }
@@ -158,6 +159,7 @@ public:
         std::cout << (*this)(i, j);
         if (j < m_cols - 1) std::cout << ", ";
       }
+      std::cout << "\n";
       if (i < m_rows - 1) std::cout << "; ";
     }
     std::cout << "]" << std::endl;

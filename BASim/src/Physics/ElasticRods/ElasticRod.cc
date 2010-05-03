@@ -27,7 +27,7 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   }
 
   add_property(m_forces, "forces");
-  add_property(m_quasistatic, "quasistatic", true);
+  add_property(m_quasistatic, "quasistatic", false);
   add_property(m_refFrameType, "reference-frame", TimeParallel);
   add_property(m_density, "density", 1.0);
   add_property(m_fixed, "fixed_dofs");
@@ -112,8 +112,12 @@ void ElasticRod::computeForces(VecXd& force)
 {
   RodForces& forces = getForces();
   RodForces::iterator fIt;
+
+// std::cout << "computeForces " << force << "\n";
+
   for (fIt = forces.begin(); fIt != forces.end(); ++fIt) {
     (*fIt)->globalForce(force);
+//    std::cout << (*fIt)->getName() << " " << force.segment(0,11) << "\n";
   }
 }
 

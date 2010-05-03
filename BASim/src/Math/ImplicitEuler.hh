@@ -96,6 +96,18 @@ public:
       START_TIMER("setup");
       m_deltaV += m_increment;
 
+/*			std::cout << "\n\n[A] ";
+			m_A->print();
+      std::cout << "\n[RHS] " << m_rhs << "\n";
+      std::cout << "[sol] " << m_increment << "\n";
+      
+      VecXd y(m_diffEq.ndof());
+      y.setZero();
+      m_A->multiply(y, 1.0, m_increment);
+      std::cout << "[Ax] " << y << "\n";
+      std::cout << "[Ax-b] " << y - m_rhs<< "\n";
+      */
+  
       for (int i = 0; i < m_deltaV.size(); ++i) {
         m_diffEq.setV(i, v0(i) + m_deltaV(i));
         m_diffEq.setX(i, x0(i) + m_dt * m_diffEq.getV(i));

@@ -1,6 +1,6 @@
 #include "WmFigSelectionContext.hh"
 
-#include <weta/Wmaya.hh>
+//#include <weta/Wmaya.hh>
 
 #include <GL/glu.h>
 

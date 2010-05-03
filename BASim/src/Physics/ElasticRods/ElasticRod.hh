@@ -300,7 +300,7 @@ public:
           getVelocities()[i] = (getEndPositions()[i] - getStartPositions()[i]) / dt;
       }      
   }
-
+	
   void collisionsEnd(Real dt)
   {
       // Compute final, end-of-timestep positions
@@ -313,8 +313,11 @@ public:
           setVelocity(i, getVelocity(i) + velocityChange);
           setVertex(i, getEndPositions()[i]);
 
-       //   cerr << "Vertex " << i << ", velocity change = " << velocityChange << endl;
+//          std::cerr << dt << " Vertex " << i << ", velocity change = " << velocityChange << std::endl;
       }      
+      
+      // updateProperties should be called after positions change.
+      updateProperties();
   }
 
   void updateEndPositions(Real dt)

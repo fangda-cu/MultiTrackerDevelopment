@@ -307,6 +307,9 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     double frameIntegrationStepTime = 0.0;
 
     double frameTime = 0.0;
+    
+//		cerr << "[JS msg / Beaker::takeTimeStep] " << startTime << " startTime " << targetTime << " targetTime\n";
+//		cerr << "[JS msg / Beaker::takeTimeStep] " << i_stepSize << " i_stepSize " << getDt() << " getDt()\n";
 
     // Create space to track the target vertex positions of each rod as they substep towards 
     // their goal
@@ -335,6 +338,8 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         double timeTaken = stopTimer(timer);
         frameTime += timeTaken;
         m_meshInterpolationTime += timeTaken;
+
+//				cerr << "[JS msg / Beaker::takeTimeStep] " << s << " " << getDt() << " " << interpolateFactor << " interpolateFactor \n";
 
         // interpolate fixed vertex positions and set timestep
         //

@@ -14,6 +14,53 @@ RodCollisionTimeStepper::RodCollisionTimeStepper(RodTimeStepper* rodTimeStepper,
   m_rod->setPenaltyForce(m_rodPenaltyForce);
 }
 
+void RodCollisionTimeStepper::execute()
+  {
+    if (!m_enabled)
+      return;
+      /*
+    if (m_rod) {
+			std::cout << "\n\n\n\n\n\nBEFORE dynamic execute vertex \n" << m_rod->quasistatic() << "\n";
+		  for(int i=0; i < (int)m_rod->nv(); i++) {
+			  std::cout << m_rod->getVertex(i) << " ";
+			  if (i < (int)m_rod->nv() - 1) std::cout << m_rod->getTheta(i) << "       ";
+			}
+			std::cout << "\n";
+			std::cout << "execute vel\n";
+		  for(int i=0; i < (int)m_rod->nv(); i++) {
+			  std::cout << m_rod->getVelocity(i) << " ";
+			  if (i < (int)m_rod->nv() - 1) std::cout << m_rod->getThetaDot(i) << "       ";
+			}
+		  for(int i=0; i < (int)m_rod->nv() * 4 - 1; i++) {
+			  std::cout << m_rod->getMass(i) << " ";
+			}
+			std::cout << "\n";
+			std::cout << "\n\n";
+    } else {
+			std::cout << "m_rod null\n\n";
+    
+    }
+      */
+
+    m_rodTimeStepper->execute();
+/*
+		std::cout << "after dynamic execute vertex\n";
+	  for(int i=0; i < (int)m_rod->nv(); i++) {
+		  std::cout << m_rod->getVertex(i) << " ";
+		  if (i < (int)m_rod->nv() - 1) std::cout << m_rod->getTheta(i) << "       ";
+		}
+		std::cout << "\n";
+		std::cout << "execute vel\n";
+	  for(int i=0; i < (int)m_rod->nv(); i++) {
+		  std::cout << m_rod->getVelocity(i) << " ";
+		  if (i < (int)m_rod->nv() - 1) std::cout << m_rod->getThetaDot(i) << "       ";
+		}
+		std::cout << "\n";
+		*/
+
+  }
+
+
 RodCollisionTimeStepper::~RodCollisionTimeStepper()
 {
   if (m_rodTimeStepper != NULL)
@@ -61,6 +108,9 @@ void RodCollisionTimeStepper::getProximities(CollisionMeshDataHashMap &collision
     Collisions colls;
     std::vector<uint> cands;
 
+		// Jungseock - This might be necessary for the future.
+		m_rodPenaltyForce->clearPenaltyForces();
+		
     // Check for proximities against every collision mesh
     //
     for (CollisionMeshDataHashMapIterator cmItr =collisionMeshes.begin();
@@ -125,9 +175,9 @@ void RodCollisionTimeStepper::respondObjectCollisions(CollisionMeshDataHashMap &
 {
     // Mostly the same as the getProximities function above, except where noted
     //
-    
-    ElasticRod *rod = m_rod;
 
+    ElasticRod *rod = m_rod;
+		
     std::vector<uint> cands;
     for (CollisionMeshDataHashMapIterator cmItr=collisionMeshes.begin(); cmItr!=collisionMeshes.end(); ++cmItr)
     {

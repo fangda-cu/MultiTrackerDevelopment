@@ -91,13 +91,9 @@ public:
      m_rod->collisionsEnd(m_rodTimeStepper->getTimeStep());
   }
 
-  void execute()
-  {
-    if (!m_enabled)
-      return;
-
-    m_rodTimeStepper->execute();
-  }
+  void execute();
+  
+  ElasticRod* getRod() { return m_rod; }
 
 
   static void getProximities(vector<ElasticRod*> &rods);

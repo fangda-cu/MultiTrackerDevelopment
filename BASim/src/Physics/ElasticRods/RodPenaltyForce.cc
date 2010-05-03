@@ -71,6 +71,73 @@ RodPenaltyForce::~RodPenaltyForce()
   }
 */
 
+
+
+void RodPenaltyForce::computeForceDX(const ElasticRod& rod, MatrixBase& J)
+{
+  MatXd localJ(3, 3);
+  IntArray indices(3);
+  int nv = rod.nv();
+  Scalar r = rod.radius();
+  
+  for (VertexObjectMapIterator voItr=_vertexObjects.begin(); voItr!=_vertexObjects.end(); ++voItr)
+  {
+    CollisionMeshData *cmData = voItr->second.first;
+
+    int vertex   = voItr->first;
+    int triangle = voItr->second.second;
+
+  	Scalar thickness = cmData->getThickness() + rod.radius();
+
+    Vec3d n = (cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 1]] -
+               cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]]).cross(
+               cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 2]] - 
+               cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]]);
+
+    Scalar stiffness = cmData->getSeparationStrength();
+
+    localJ.setZero();
+    localJacobian(localJ, stiffness, n);
+  
+	  for (int i = 0; i < 3; ++i) {
+	    indices[i] = rod.vertIdx(vertex,i);
+	  }
+	  J.add(indices, indices, localJ);
+	    
+  }
+}
+
+
+
+void RodPenaltyForce::localJacobian(MatXd& J, const Scalar stiffness, const Vec3d& normal)
+{
+	Mat3d M = -stiffness * outerProd(normal, normal);
+
+	for (int j = 0; j < 3; ++j) {
+		for (int k = 0; k < 3; ++k) {
+			J(j,k) += M(j,k);
+		}
+	}
+
+}
+
+
+			
+void RodPenaltyForce::computeForceDV(const ElasticRod& rod, MatrixBase& J)
+{
+
+
+}
+
+
+void RodPenaltyForce::clearPenaltyForces() {
+
+	_vertexObjects.clear();
+
+
+}
+
+
 void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
 {
   VecXd beforeF = F;
@@ -105,6 +172,7 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
 
     if (distance < (cmData->getThickness() + rod.radius()))
     {
+    	Scalar thickness = cmData->getThickness() + rod.radius();
 
       Vec3d n = (cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 1]] -
                  cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]]).cross(
@@ -115,13 +183,24 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
         (t1 * cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]] +
          t2 * cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 1]] +
          t3 * cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 2]]);
+				
+	//					if (m_damping > 0) {
+	//						mag += -m_damping * (v.dot(normal));
+	//					}
+				
+//						Vec3d f = mag * normal;
+
+//						for (int j = 0; j < 3; ++j) {
+//							force(j) += f(j);
+//						}					
 
       // Vertex is inside object or the distance is too small to trust the normal
       //
-      if (n.dot(normal) < 0.0 || distance < 1e-6)
+//      if (n.dot(normal) < 0.0 || distance < 1e-6)
+      if (distance < 1e-6)
         continue;
 
-      normal.normalize();
+//      normal.normalize();
 
       Vec3d relVel = rod.getVelocity(vertex) -
         (t1 * cmData->velocities[cmData->triangleIndices[(3 * triangle)    ]] +
@@ -132,17 +211,24 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
       // is exactly zero when the distance is equal to thickness + radius?
       //
       Scalar e = 1.0;
-      if (!(relVel.dot(normal) < 0.0))
-        e = cmData->getCoefficientOfRestitution();
+//      if (!(relVel.dot(normal) < 0.0))
+//        e = cmData->getCoefficientOfRestitution();
 
       Scalar stiffness = cmData->getSeparationStrength();
-      Vec3d force = e * stiffness * ((cmData->getThickness() + rod.radius()) - distance) * normal;
+
+			// surface normal			
+			n.normalize();
+			
+//      Vec3d force = e * stiffness * ((cmData->getThickness() + rod.radius()) - distance) * normal;
+			Vec3d force = -e * stiffness * (n.dot(normal) - thickness) * n;
+
 
       // TODO: It is very hard to achieve static friction with a friction force,
       // in fact, I don't know of a way to do it (maybe somebody has figured it out)
       // As such, keep the friction coeff low, otherwise you may get weird behavior
       // Try using a velocity based damping for friction, it may work better
       //
+      /*
       double frc = rod.getFrictionCoefficient();
       Scalar friction = std::max(frc, cmData->getFrictionCoefficient());
       if (friction > 0.0)
@@ -156,6 +242,7 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
           force -= force.norm() * friction * tangent;
         }
       }
+      */
 
       for (int i=0; i<3; ++i)
         F[rod.vertIdx(vertex, i)] += force[i];
@@ -175,6 +262,7 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
   */
   // Kill all pairs flagged for deletion
   //
+  
   std::vector<std::pair<int, std::pair<CollisionMeshData *, int> > >::iterator itr=toDelete.begin();
   for( ; itr!=toDelete.end(); ++itr)
   {
@@ -193,6 +281,8 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
   cerr << "num forces = " << _vertexObjects.size() << endl;
   cerr << "toDelete.size() = " << toDelete.size() << endl;
   */
+  
+  
 
   // Now compute all edge-edge forces
   //

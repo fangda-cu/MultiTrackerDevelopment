@@ -72,6 +72,9 @@ void RodStretchingForce::globalForce(VecXd& force)
   SpringDofStruct dofs;
 
   iterator end = m_stencil.end();
+  
+  int q = 0;
+  
   for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
     edge_handle& eh = m_stencil.handle();
     //elementForce(localForce, eh);
@@ -81,6 +84,12 @@ void RodStretchingForce::globalForce(VecXd& force)
     for (int i = 0; i < indices.size(); ++i)
       force(indices(i)) += localForce(i);
 
+		if (q == 0) {
+//			std::cout << localForce << " stretch force 0 \n";
+//			std::cout << dofs.stiffness << " " << dofs.currLength  << " " << dofs.restLength  << " " << dofs.tangent  << "\n";
+
+		}
+		q++;
 #ifdef TEST_ROD_STRETCHING
     testForce(localForce, eh);
 #endif // TEST_ROD_STRETCHING
