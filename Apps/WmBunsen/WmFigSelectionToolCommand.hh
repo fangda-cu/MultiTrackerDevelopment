@@ -22,8 +22,12 @@
 #include <maya/MArgList.h>
 #include <maya/MPxToolCommand.h>
 
+#ifdef WETA
+#include <weta/Wfigaro/Core/EigenIncludes.hh>
+#else
 #include <BASim/Core>
-//#include <weta/Wfigaro/Core/EigenIncludes.hh>
+#endif
+
 #include <vector>
 
 class WmFigSelectionToolCommand : public MPxToolCommand
