@@ -1,6 +1,6 @@
 #include "RodData.hh"
 
-RodData::RodData() : shouldSimulate( true )
+RodData::RodData() : shouldSimulate( true ), m_isFakeRod( false )
 {
     rod = NULL; stepper = NULL; rodRenderer = NULL; 
 }

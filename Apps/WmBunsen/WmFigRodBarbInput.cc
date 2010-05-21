@@ -34,7 +34,7 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock, vec
 
     size_t inputStrandVertexIndex = 0;
     for ( size_t i = 0; i < numStrands; i++ )
-    {        
+    {       
         // If the user has specificed a vertex spacing > 0 then they want to override the vertices
         // that came from Barbershop. Very sensible of them as the rods stability is much reduced 
         // with vertices that are very close together.
@@ -63,6 +63,7 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock, vec
 
                 // We still create a placeholder so that the indices match up from the inputs to the
                 // rods.
+
                 (*i_pRodData)[i]->initialiseFakeRod();
                 continue;
             }
@@ -108,8 +109,9 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock, vec
                 // us the first strand.
                 MVector vertex = vertices[ (int)inputStrandVertexIndex++ ];
     
-                inputStrandVertices[ v ] = Vec3d( vertex[0], vertex[1], vertex[2] );                                                                    
+                inputStrandVertices[ v ] = Vec3d( vertex[0], vertex[1], vertex[2] );                                          
             }
+
             (*i_pRodData)[ i ]->resetVertexPositions( inputStrandVertices );
         }
 
@@ -140,7 +142,10 @@ void WmFigRodBarbInput::updateRodDataFromInput( MDataBlock& i_dataBlock,
 
     // If there are no strands to use to update then don't update
     if ( numStrands == 0 )
+    {
+        cerr << "No input strands to update with\n";
         return;
+    }
 
     // Every Barbershop strand has the same number of vertices
     //size_t numStrandVertices = strandVertices.length() / numStrands;
@@ -161,7 +166,9 @@ void WmFigRodBarbInput::updateRodDataFromInput( MDataBlock& i_dataBlock,
     {
         // Check if this is a real rod before we actually do anything
         if ( (*i_pRodData)[ i ]->isFakeRod() )
+        {
             continue;
+        }
 
         BASim::ElasticRod* pRod = (*i_pRodData)[ i ]->rod;
         if ( pRod != NULL )
