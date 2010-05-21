@@ -461,7 +461,7 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
             size_t numRods = mx_rodData->size();
             for ( size_t r=0; r<numRods; r++ )
             {
-                (*mx_rodData)[r]->stepper->setEnabled( false );
+                (*mx_rodData)[r]->setStepperEnabled( false );                
             }
 
             //readRodDataFromCacheFile();
