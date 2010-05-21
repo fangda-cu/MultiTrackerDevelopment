@@ -106,9 +106,15 @@ public:
     void resetVertexPositions( vector< Vec3d >& i_vertexPositions );
     void updateNextRodVertexPositions( vector< Vec3d >& i_vertexPositions );
 
-    void initialiseFakeRod()
+    void initialiseFakeRod( int i_numberOfVertices )
     {
         m_isFakeRod = true;
+        m_numVerticesInFakeRod = i_numberOfVertices;
+    }
+
+    int verticesInFakeRod()
+    {
+        return m_numVerticesInFakeRod;
     }
 
     bool isFakeRod()
@@ -198,6 +204,11 @@ public:
     KinematicEdgeDataMap kinematicEdgeDataMap;
 
     bool m_isFakeRod;
+
+    // As we don't create a rod for fake rods we need to store the number of vertices the rod would
+    // have had. So that when updating from input we know how many input vertices to skip past
+    // in the big input vertex array.
+    int m_numVerticesInFakeRod;
 };
 
 #endif

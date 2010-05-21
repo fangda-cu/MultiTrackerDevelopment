@@ -64,7 +64,7 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock, vec
                 // We still create a placeholder so that the indices match up from the inputs to the
                 // rods.
 
-                (*i_pRodData)[i]->initialiseFakeRod();
+                (*i_pRodData)[i]->initialiseFakeRod( m_verticesPerRod );
                 continue;
             }
     
@@ -167,10 +167,18 @@ void WmFigRodBarbInput::updateRodDataFromInput( MDataBlock& i_dataBlock,
         // Check if this is a real rod before we actually do anything
         if ( (*i_pRodData)[ i ]->isFakeRod() )
         {
+            // As all the input strands come from the same array we need to skip it forward
+            // past this strand, ready for the next rod.
+
+            // We could just use m_verticesPerRod because the input strands all have the same number
+            // of vertices. But doing this means this code matches the nurbs input code so is
+            // easier to follow.
+            inputStrandVertexIndex += (*i_pRodData)[ i ]->verticesInFakeRod();
             continue;
         }
 
         BASim::ElasticRod* pRod = (*i_pRodData)[ i ]->rod;
+        
         if ( pRod != NULL )
         {
             size_t numVerticesInRod = (*i_pRodData)[ i ]->rod->nv();
