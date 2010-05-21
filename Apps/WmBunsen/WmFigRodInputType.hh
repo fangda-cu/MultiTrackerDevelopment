@@ -8,6 +8,7 @@
   */
 
 #include <maya/MDataBlock.h>
+#include <maya/MVector.h>
 
 #include "RodData.hh"
 #include <vector>
@@ -39,6 +40,8 @@ public:
     virtual void initialiseRodDataFromInput( MDataBlock& i_dataBlock, std::vector<RodData*>* i_pRodData  ) = 0;
     virtual void updateRodDataFromInput( MDataBlock& i_dataBlock, std::vector<RodData*>* i_pRodData );
     virtual size_t numberOfInputs( MDataBlock& i_dataBlock ) { return 0; };
+    void resampleCurve( size_t i_numVerticesToResample, vector<MVector>& i_curve, 
+                        vector<MVector>& o_resampledCurve );
 
 protected:
 private:

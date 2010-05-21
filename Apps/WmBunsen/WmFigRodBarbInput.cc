@@ -4,11 +4,13 @@
 
 WmFigRodBarbInput::WmFigRodBarbInput( MObject& i_verticesAttribute,
     MObject& i_strandRootFramesAttribute, double i_percentageOfBarbStrands,
-    size_t i_verticesPerRod, bool i_lockFirstEdgeToInput ) : 
+    size_t i_verticesPerRod, bool i_lockFirstEdgeToInput, double i_vertexSpacing,
+    double i_minimumRodLength ) : 
     m_verticesAttribute( i_verticesAttribute ),
     m_strandRootFramesAttribute( i_strandRootFramesAttribute ),
     m_percentageOfBarbStrands( i_percentageOfBarbStrands ),
-    m_verticesPerRod( i_verticesPerRod ), m_lockFirstEdgeToInput( i_lockFirstEdgeToInput )
+    m_verticesPerRod( i_verticesPerRod ), m_lockFirstEdgeToInput( i_lockFirstEdgeToInput ),
+    m_vertexSpacing( i_vertexSpacing ), m_minimumRodLength( i_minimumRodLength )
 {
     // we need to get pass the attribute here so that when we initialise data or
     // reload it we can just pull on the attribute
@@ -30,22 +32,86 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock, vec
     vector<MaterialFrame> strandRootFrames;
     getStrandRootFrames( i_dataBlock, strandRootFrames );
 
-    size_t inputVertexIndex = 0;
+    size_t inputStrandVertexIndex = 0;
     for ( size_t i = 0; i < numStrands; i++ )
-    {
-        // Make sure we have enough space to store the date for each CV.
-        (*i_pRodData)[i]->allocateStorage( m_verticesPerRod );
-
-        vector<Vec3d> inputStrandVertices;
-        inputStrandVertices.resize( m_verticesPerRod );
-
-        for ( size_t v=0; v<m_verticesPerRod; v++ )
+    {        
+        // If the user has specificed a vertex spacing > 0 then they want to override the vertices
+        // that came from Barbershop. Very sensible of them as the rods stability is much reduced 
+        // with vertices that are very close together.
+        if ( m_vertexSpacing > 0.0 )
         {
-            MVector vertex = vertices[ (int)inputVertexIndex++ ];
+            // First find how many vertices we need based on the length of the strand
+            
+            vector< MVector > curve;
+            curve.resize( m_verticesPerRod );
 
-            inputStrandVertices[ v ] = Vec3d( vertex[0], vertex[1], vertex[2] );                                                                    
+            curve[ 0 ] = vertices[ inputStrandVertexIndex++ ]; 
+            double length = 0.0;
+
+            for ( size_t v = 1; v < m_verticesPerRod; v++ )
+            {
+                // The vertices array contains the vertices of *all* input strands
+                // so we need to keep a seperate counter for it or it will always be giving
+                // us the first strand.
+                curve[ v ] = vertices[ (int)inputStrandVertexIndex++ ];
+                length += ( curve[ v ] - curve[ v - 1 ] ).length();
+            }
+
+            if ( length < m_minimumRodLength )
+            {
+                MGlobal::displayWarning( MString( "Input strand " ) + i + " is less than minimum length (" + m_minimumRodLength + "), not turning it into a rod." );
+
+                // We still create a placeholder so that the indices match up from the inputs to the
+                // rods.
+                (*i_pRodData)[i]->initialiseFakeRod();
+                continue;
+            }
+    
+            int numVerticesRequired = length / m_vertexSpacing;
+
+            if ( numVerticesRequired < 2 )
+            {
+                numVerticesRequired = 2;
+                MGlobal::displayWarning( MString( "Input strand " ) + i + " was going to have less than 2 vertices in the rod, setting it to 2." );
+            }
+
+            vector< MVector > resampledCurve;
+            resampleCurve( numVerticesRequired, curve, resampledCurve );
+
+            // Create space to store the data for each CV.
+            (*i_pRodData)[i]->allocateStorage( numVerticesRequired );
+        
+            vector<Vec3d> inputStrandVertices;
+            inputStrandVertices.resize( numVerticesRequired );
+            
+            for ( size_t v = 0; v < numVerticesRequired; v++ )
+            {
+                MVector vertex = resampledCurve[ (int)v ];
+    
+                inputStrandVertices[ v ] = Vec3d( vertex[0], vertex[1], vertex[2] );                                                                  
+            }
+            (*i_pRodData)[ i ]->resetVertexPositions( inputStrandVertices );
         }
-        (*i_pRodData)[ i ]->resetVertexPositions( inputStrandVertices );
+        else
+        {
+            vector<Vec3d> inputStrandVertices;
+            inputStrandVertices.resize( m_verticesPerRod );
+            
+            // Just use the vertices that came from Barbershop
+            // Make sure we have enough space to store the data for each CV.
+            (*i_pRodData)[i]->allocateStorage( m_verticesPerRod );
+        
+            for ( size_t v=0; v<m_verticesPerRod; v++ )
+            {
+                // The vertices array contains the vertices of *all* input strands
+                // so we need to keep a seperate counter for it or it will always be giving
+                // us the first strand.
+                MVector vertex = vertices[ (int)inputStrandVertexIndex++ ];
+    
+                inputStrandVertices[ v ] = Vec3d( vertex[0], vertex[1], vertex[2] );                                                                    
+            }
+            (*i_pRodData)[ i ]->resetVertexPositions( inputStrandVertices );
+        }
 
         // We need to add edge data so that each from the first edge will be locked to the input curve
         if ( strandRootFrames.size() > i && m_lockFirstEdgeToInput )
@@ -77,7 +143,7 @@ void WmFigRodBarbInput::updateRodDataFromInput( MDataBlock& i_dataBlock,
         return;
 
     // Every Barbershop strand has the same number of vertices
-    size_t numStrandVertices = strandVertices.length() / numStrands;
+    //size_t numStrandVertices = strandVertices.length() / numStrands;
 
     // store the material frames coming from barbershop
     vector<MaterialFrame> strandRootFrames;
@@ -90,20 +156,46 @@ void WmFigRodBarbInput::updateRodDataFromInput( MDataBlock& i_dataBlock,
         return;
     }
 
-    size_t inputVertexIndex = 0;
+    size_t inputStrandVertexIndex = 0;
     for ( size_t i = 0; i < numStrands; i++ )
     {
+        // Check if this is a real rod before we actually do anything
+        if ( (*i_pRodData)[ i ]->isFakeRod() )
+            continue;
+
         BASim::ElasticRod* pRod = (*i_pRodData)[ i ]->rod;
         if ( pRod != NULL )
         {
-            vector<Vec3d> inputStrandVertices;
-            inputStrandVertices.resize( m_verticesPerRod );
+            size_t numVerticesInRod = (*i_pRodData)[ i ]->rod->nv();
 
-            for ( int c = 0; c < m_verticesPerRod ; ++c )
+            vector<Vec3d> inputStrandVertices;         
+            inputStrandVertices.resize( numVerticesInRod );
+
+            if ( numVerticesInRod != m_verticesPerRod )
             {
-                MVector vertex = strandVertices[ (int)inputVertexIndex++ ];
+                vector< MVector > curve;
+                curve.resize( m_verticesPerRod );
+    
+                for ( size_t v = 0; v < m_verticesPerRod; v++ )
+                {
+                    curve[ v ] = strandVertices[ (int)inputStrandVertexIndex++ ];
+                }
+    
+                vector< MVector > resampledCurve;
+                resampleCurve( numVerticesInRod, curve, resampledCurve );
 
-                inputStrandVertices[ c ] = Vec3d( vertex.x, vertex.y, vertex.z );
+                for ( size_t v = 0; v < numVerticesInRod; v++ )
+                {
+                    inputStrandVertices[ v ] = Vec3d( resampledCurve[ v ][ 0 ], resampledCurve[ v ][ 1 ], resampledCurve[ v ][ 2 ] );
+                }
+            }
+            else
+            {
+                for ( size_t v = 0; v < m_verticesPerRod; v++ )
+                {
+                    MVector vertex = strandVertices[ (int)inputStrandVertexIndex++ ];
+                    inputStrandVertices[ v ] = Vec3d( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ] );
+                }
             }
 
             (*i_pRodData)[ i ]->updateNextRodVertexPositions( inputStrandVertices );

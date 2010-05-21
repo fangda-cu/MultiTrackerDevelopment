@@ -36,6 +36,11 @@ public:
   bool& scaleToRadius() { return m_scaleToRadius; }
   bool& drawArrows() { return m_drawArrows; }
 
+  void setDrawScale(double scale)
+  {
+      m_tube.setScale(scale);
+  }
+
 protected:
 
   void drawSimpleRod();

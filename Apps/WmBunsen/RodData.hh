@@ -106,6 +106,55 @@ public:
     void resetVertexPositions( vector< Vec3d >& i_vertexPositions );
     void updateNextRodVertexPositions( vector< Vec3d >& i_vertexPositions );
 
+    void initialiseFakeRod()
+    {
+        m_isFakeRod = true;
+    }
+
+    bool isFakeRod()
+    {
+        return m_isFakeRod;
+    }
+
+    void setStepperEnabled( bool i_isEnabled )
+    {
+        if ( !m_isFakeRod )
+            stepper->setEnabled( true );
+    }
+
+    void setRodParameters( double i_radiusA, double i_radiusB, double i_youngsModulus,
+                           double i_shearModulus, double i_viscosity, double i_density )
+    {
+        if ( !m_isFakeRod )
+        {
+            rod->setRadius( i_radiusA, i_radiusB );
+            rod->setYoungsModulus( i_youngsModulus );
+            rod->setShearModulus( i_shearModulus );
+            rod->setViscosity( i_viscosity );
+            rod->setDensity( i_density );
+        }
+    }
+
+    void setDrawScale( double i_drawScale )
+    {
+        if ( !m_isFakeRod )
+            rodRenderer->setDrawScale( i_drawScale );
+    }
+
+    void setDrawMode( RodRenderer::DrawMode i_drawMode )
+    {
+        if ( !m_isFakeRod )
+            rodRenderer->setMode( i_drawMode );
+    }
+
+    void render()
+    {
+        if ( !m_isFakeRod )
+            rodRenderer->render();
+    }
+
+//private:
+
     // If for some reason this rod shouldn't be simulated then set this flag to false. This
     // usually happens when the user has set the rod node to playback from cache.
     bool shouldSimulate;
@@ -147,6 +196,8 @@ public:
     // edge. This is used for the first edge when Barbershop is driving the rods and for
     // other edges when the user is controlling the rod edge by a Maya transform.
     KinematicEdgeDataMap kinematicEdgeDataMap;
+
+    bool m_isFakeRod;
 };
 
 #endif

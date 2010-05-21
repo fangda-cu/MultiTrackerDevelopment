@@ -13,7 +13,7 @@ namespace BASim {
 RodRenderer::RodRenderer(ElasticRod& rod)
   : m_rod(rod)
   , m_tube(m_rod)
-  , m_mode(SMOOTH)
+  , m_mode(SIMPLE)
   , m_drawMaterial(false)
   , m_drawReference(false)
   , m_scaleToRadius(true)
@@ -33,8 +33,10 @@ RodRenderer::RodRenderer(ElasticRod& rod)
 
 void RodRenderer::render()
 {
- /* if (m_mode == SMOOTH) drawSmoothRod();
-  else if (m_mode == SIMPLE)*/ drawSimpleRod();
+  if (m_mode == SMOOTH)
+    drawSmoothRod();
+  else if (m_mode == SIMPLE)
+    drawSimpleRod();
 
   if (m_drawMaterial) drawMaterialFrame();
   if (m_drawReference) drawReferenceFrame();
@@ -42,6 +44,7 @@ void RodRenderer::render()
 
 void RodRenderer::drawSimpleRod()
 {
+
   glLineWidth(2);
   glBegin(GL_LINES);
 
@@ -104,13 +107,19 @@ void RodRenderer::drawSmoothRod()
 
       const Vec3d& x0 = m_tube.getPointAtVert(j, k);
 	  //Vec3d n = (v0 - x0).normalized();
-      Vec3d n = (x0 - v0).normalized();
+      Vec3d n = (x0 - v0).normalized();      
+#ifdef WETA
+      n *= -1.0;
+#endif
       OpenGL::normal(n);
       OpenGL::vertex(x0);
 
       const Vec3d& x1 = m_tube.getPointAtVert(j + 1, k);
       //n = (v1 - x1).normalized();
-      n = (x1 - v1).normalized();
+      n = (x1 - v1).normalized();      
+#ifdef WETA
+      n *= -1.0;
+#endif
       OpenGL::normal(n);
       OpenGL::vertex(x1);
     }

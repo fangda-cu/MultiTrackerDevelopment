@@ -81,6 +81,8 @@ WmFigRodFileInput.cc
 PLG1_L          += \
 	-lWfigaro_dbg \
 	-lWexcept_dbg \
+	-lWnurbs_dbg \
+	-lWmath_dbg \
 	-lOpenMaya \
 	-lOpenMayaAnim \
 	-lOpenMayaUI \

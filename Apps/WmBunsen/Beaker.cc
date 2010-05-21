@@ -260,6 +260,9 @@ void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary 
 
     for ( size_t r=0; r<numRods; r++ )
     {
+        if ( rodDataVector[ r ]->isFakeRod() )
+            continue;
+        
         // setupRod() is defined in ../BASim/src/Physics/ElasticRods/RodUtils.hh
         rodDataVector[ r ]->rod = setupRod( rodDataVector[ r ]->rodOptions,
                                             rodDataVector[ r ]->initialVertexPositions,
@@ -361,6 +364,10 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
             for ( size_t r=0; r<numRods; r++ )
             {
+                // Check if this is a rod or just a fake place holder as the input was too short
+                if ( rodData[ r ]->isFakeRod() )
+                    continue;
+
                 RodCollisionTimeStepper* rodCollisionTimeStepper = dynamic_cast<RodCollisionTimeStepper*>(rodData[r]->stepper);
 
                 rodCollisionTimeStepper->shouldDoCollisions( i_collisionsEnabled );

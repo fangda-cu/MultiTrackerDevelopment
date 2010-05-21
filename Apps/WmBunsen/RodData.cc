@@ -6,7 +6,7 @@ RodData::RodData() : shouldSimulate( true )
 }
 
 RodData::RodData( ElasticRod* i_rod, RodCollisionTimeStepper* i_stepper, RodRenderer* i_rodRenderer ) :
-    shouldSimulate( true )
+    shouldSimulate( true ), m_isFakeRod( false )
 {
     rod = i_rod; stepper = i_stepper; rodRenderer = i_rodRenderer; 
 }

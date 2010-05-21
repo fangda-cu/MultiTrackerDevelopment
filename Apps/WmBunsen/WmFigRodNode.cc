@@ -22,6 +22,8 @@ using namespace BASim;
 
 // Drawing
 /* static */ MObject WmFigRodNode::ia_userDefinedColors;
+/* static */ MObject WmFigRodNode::ia_draw3DRod;
+/* static */ MObject WmFigRodNode::ia_drawScale;
 /* static */ MObject WmFigRodNode::ca_drawDataChanged;
 
 // Disk caching
@@ -51,6 +53,7 @@ using namespace BASim;
 /* static */ MObject WmFigRodNode::ia_minorRadius;
 /* static */ MObject WmFigRodNode::ia_majorRadius;
 /* static */ MObject WmFigRodNode::ia_vertexSpacing;
+/* static */ MObject WmFigRodNode::ia_minimumRodLength;
 /* static */ MObject WmFigRodNode::ia_hairSpray;
 /* static */ MObject WmFigRodNode::ia_hairSprayScaleFactor;
 /* static */ MObject WmFigRodNode::ia_massDamping;
@@ -65,7 +68,7 @@ using namespace BASim;
 WmFigRodNode::WmFigRodNode() : m_massDamping( 10 ), m_initialised( false ),
     mx_rodData( NULL ), mx_world( NULL ), m_numberOfInputCurves( 0 ), 
     m_percentageOfBarberShopStrands( 100 ), m_verticesPerRod( -1 ), m_cachePath( "" ), m_cacheFilename( "" ),
-    m_pRodInput( NULL )
+    m_pRodInput( NULL ), m_vertexSpacing( 0.0 ), m_minimumRodLength( 2.0 )
 {
     m_rodOptions.YoungsModulus = 1000.0; /* megapascal */
     m_rodOptions.ShearModulus = 340.0;   /* megapascal */
@@ -193,7 +196,8 @@ void WmFigRodNode::initialiseRodData( vector<RodData*>* i_rodData )
     {
         m_pRodInput = new WmFigRodBarbInput( ia_barberShopVertices, ia_strandRootFrames,
                                              m_percentageOfBarberShopStrands, m_verticesPerRod,
-                                             m_lockFirstEdgeToInput );
+                                             m_lockFirstEdgeToInput, m_vertexSpacing,
+                                             m_minimumRodLength );
     }
     else // Assume we have nurbs connected
     {
@@ -253,11 +257,11 @@ void WmFigRodNode::updateRodDataFromInputs()
     size_t numRods = mx_rodData->size();
     for ( size_t r = 0; r < numRods; r++ )
     {
-        ( *mx_rodData )[ r ]->rod->setRadius( m_rodOptions.radiusA, m_rodOptions.radiusB );
-        ( *mx_rodData )[ r ]->rod->setYoungsModulus( m_rodOptions.YoungsModulus );
-        ( *mx_rodData )[ r ]->rod->setShearModulus( m_rodOptions.ShearModulus );
-        ( *mx_rodData )[ r ]->rod->setViscosity( m_rodOptions.viscosity );
-        ( *mx_rodData )[ r ]->rod->setDensity(m_rodOptions.density);
+         ( *mx_rodData )[ r ]->setRodParameters( m_rodOptions.radiusA, m_rodOptions.radiusB,
+                                                 m_rodOptions.YoungsModulus,
+                                                 m_rodOptions.ShearModulus,
+                                                 m_rodOptions.viscosity,
+                                                 m_rodOptions.density );
     }
 }
 
@@ -435,6 +439,12 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
     m_verticesPerRod = i_dataBlock.inputValue( ia_cvsPerRod, &stat ).asInt();
     CHECK_MSTATUS( stat );
 
+    m_vertexSpacing = i_dataBlock.inputValue( ia_vertexSpacing, &stat ).asDouble();
+    CHECK_MSTATUS( stat );
+
+    m_minimumRodLength = i_dataBlock.inputValue( ia_minimumRodLength, &stat ).asDouble();
+    CHECK_MSTATUS( stat );
+
     m_percentageOfBarberShopStrands = i_dataBlock.inputValue( ia_percentageOfBarberShopStrands, &stat ).asDouble();
     CHECK_MSTATUS( stat );
     
@@ -460,12 +470,14 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
     }
     else if ( mx_rodData != NULL )
     {
-        // The Bunsen node is asking us to update the rod data in Beaker for our inputs
+        // The Figaro node is asking us to update the rod data in Beaker for our inputs
         // so do so here.....
         // Make sure that every rod is enabled incase we just stopped reading from a cache file.
         size_t numRods = mx_rodData->size();
         for ( size_t r=0; r<numRods; r++ )
-            (*mx_rodData)[r]->stepper->setEnabled( true );
+        {
+            (*mx_rodData)[r]->setStepperEnabled( true );
+        }
 
         updateRodDataFromInputs();
         updateHairsprayScales( i_dataBlock );
@@ -1047,6 +1059,31 @@ void WmFigRodNode::compute_oa_EdgeTransforms( const MPlug& i_plug, MDataBlock& i
 void WmFigRodNode::compute_ca_drawDataChanged( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
+
+    bool draw3DRod = i_dataBlock.inputValue( ia_draw3DRod, &stat ).asBool();
+    CHECK_MSTATUS( stat );
+
+    double drawScale = i_dataBlock.inputValue( ia_drawScale, &stat ).asDouble();
+    CHECK_MSTATUS( stat );
+
+    if ( mx_rodData != NULL )
+    {
+        RodRenderer::DrawMode drawMode = RodRenderer::SIMPLE;
+
+        if ( draw3DRod )
+        {
+            drawMode = RodRenderer::SMOOTH;
+        }
+
+        size_t numRods = mx_rodData->size();
+        for ( size_t r = 0; r < numRods; r++ )
+        {
+            (*mx_rodData)[ r ]->setDrawScale( drawScale );
+            (*mx_rodData)[ r ]->setDrawMode( drawMode );            
+        }
+    }
+
+
     MDataHandle inputColourHandle;
     MObject inputColourObj;
     MArrayDataHandle inArrayH = i_dataBlock.inputArrayValue( ia_userDefinedColors, &stat );
@@ -1153,32 +1190,66 @@ void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
                             M3dView::DisplayStyle i_style,
                             M3dView::DisplayStatus i_status )
 {
-	MStatus stat;
-	MObject thisNode = thisMObject();
+    MStatus stat;
+    MObject thisNode = thisMObject();
 
-	MPlug syncPlug( thisNode, ca_simulationSync );
-	double d;
-	stat = syncPlug.getValue( d );
-	if ( !stat )
+    MPlug syncPlug( thisNode, ca_simulationSync );
+    double d;
+    stat = syncPlug.getValue( d );
+    if ( !stat )
     {
-		stat.perror( "WmFigRodNode::draw getting ca_simulationSync" );
-		return;
-	}
+        stat.perror( "WmFigRodNode::draw getting ca_simulationSync" );
+        return;
+    }
     
     // Pull on the draw data changed as this is the only function that ever will
     // as no one else cares.
     MPlug drawPlug( thisNode, ca_drawDataChanged );
-	stat = drawPlug.getValue( d );
-	if ( !stat )
+    stat = drawPlug.getValue( d );
+    if ( !stat )
     {
-		stat.perror( "WmFigRodNode::draw getting ca_drawDataChanged" );
-		return;
-	}
+        stat.perror( "WmFigRodNode::draw getting ca_drawDataChanged" );
+        return;
+    }
 
-	i_view.beginGL();
-	glPushAttrib( GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT );
+    // FIXME: Debugging code, this also happens in compute_ca_DrawDataChanged
+    // but it appears to happen after the rods are created so the render
+    // is not getting update correctly.
+    {
+        bool draw3DRod;
+        MPlug draw3DPlug( thisNode, ia_draw3DRod );
+        stat = draw3DPlug.getValue( draw3DRod );
+        CHECK_MSTATUS( stat );
 
-    if ( mx_rodData != NULL )
+        double drawScale;
+        MPlug drawScalePlug( thisNode, ia_drawScale );
+        stat = drawScalePlug.getValue( drawScale );
+        CHECK_MSTATUS( stat );
+
+        if ( mx_rodData != NULL )
+        {
+            RodRenderer::DrawMode drawMode = RodRenderer::SIMPLE;
+
+            if ( draw3DRod )
+            {
+                drawMode = RodRenderer::SMOOTH;
+            }
+
+            size_t numRods = mx_rodData->size();
+            for ( size_t r = 0; r < numRods; r++ )
+            {
+                (*mx_rodData)[ r ]->setDrawScale( drawScale );
+                (*mx_rodData)[ r ]->setDrawMode( drawMode );
+            }
+        }
+    }
+
+
+
+    i_view.beginGL();
+    glPushAttrib( GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT );
+
+/*    if ( mx_rodData != NULL )
     {
         GLfloat currentColour[4];
         
@@ -1200,11 +1271,19 @@ void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
                 glColor4fv( currentColour );
         }
         
+    }*/
+
+    if ( mx_rodData != NULL )
+    {
+        for ( size_t r=0; r<mx_rodData->size(); ++r )
+        {
+            (*mx_rodData)[ r ]->render();
+        }
     }
 
     MPlug drawMaterialFramesPlug( thisNode, ia_drawMaterialFrames );
-	bool draw;
-	drawMaterialFramesPlug.getValue( draw );
+    bool draw;
+    drawMaterialFramesPlug.getValue( draw );
 	
     /*if ( draw && mx_rodData != NULL )
     {
@@ -1433,9 +1512,13 @@ void* WmFigRodNode::creator()
     stat = attributeAffects( ia_majorRadius, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_majorRadius->ca_syncAttrs" ); return stat; }
 
-    addNumericAttribute( ia_vertexSpacing, "vertexSpacing", "rvs", MFnNumericData::kDouble, 0.0, true );
+    addNumericAttribute( ia_vertexSpacing, "vertexSpacing", "vsp", MFnNumericData::kDouble, 0.0, true );
     stat = attributeAffects( ia_vertexSpacing, oa_rodsChanged );
-	if ( !stat ) { stat.perror( "attributeAffects ia_majorRadius->ca_syncAttrs" ); return stat; }
+    if ( !stat ) { stat.perror( "attributeAffects ia_vertexSpacing->oa_rodsChanged" ); return stat; }
+
+    addNumericAttribute( ia_minimumRodLength, "minimumRodLength", "mrl", MFnNumericData::kDouble, 2.0, true );
+    stat = attributeAffects( ia_minimumRodLength, oa_rodsChanged );
+    if ( !stat ) { stat.perror( "attributeAffects ia_minimumRodLength->oa_rodsChanged" ); return stat; }
 
     addNumericAttribute( ia_cvsPerRod, "cvsPerRod", "cvr", MFnNumericData::kInt, -1, true );
     stat = attributeAffects( ia_cvsPerRod, oa_rodsChanged );
@@ -1467,11 +1550,11 @@ void* WmFigRodNode::creator()
 
     addNumericAttribute( ia_drawMaterialFrames, "drawMaterialFrames", "dmf", MFnNumericData::kBoolean, false, true );
     stat = attributeAffects( ia_drawMaterialFrames, oa_rodsChanged );
-	if ( !stat ) { stat.perror( "attributeAffects ia_drawMaterialFrames->oa_rodsChanged" ); return stat; }
+    if ( !stat ) { stat.perror( "attributeAffects ia_drawMaterialFrames->oa_rodsChanged" ); return stat; }
 
     addNumericAttribute( ia_lockFirstEdgeToInput, "lockFirstEdgeToInput", "lfe", MFnNumericData::kBoolean, true, true );
     stat = attributeAffects( ia_lockFirstEdgeToInput, oa_rodsChanged );
-	if ( !stat ) { stat.perror( "attributeAffects ia_lockFirstEdgeToInput->oa_rodsChanged" ); return stat; }
+    if ( !stat ) { stat.perror( "attributeAffects ia_lockFirstEdgeToInput->oa_rodsChanged" ); return stat; }
 
     {
         MFnTypedAttribute tAttr;
@@ -1659,6 +1742,14 @@ void* WmFigRodNode::creator()
     stat = attributeAffects( ia_userDefinedColors, ca_drawDataChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_userDefinedColors->ca_drawDataChanged" ); return stat; }
     
-    
- 	return MS::kSuccess;
+    addNumericAttribute( ia_draw3DRod, "draw3DRod", "d3d", MFnNumericData::kBoolean, false, true );
+    stat = attributeAffects( ia_draw3DRod, ca_drawDataChanged );
+    if ( !stat ) { stat.perror( "attributeAffects ia_draw3DRod->ca_drawDataChanged" ); return stat; }
+
+    addNumericAttribute( ia_drawScale, "drawScale", "dsc", MFnNumericData::kDouble, 10.0, true );
+    stat = attributeAffects( ia_drawScale, ca_drawDataChanged );
+    if ( !stat ) { stat.perror( "attributeAffects ia_drawScale->ca_drawDataChanged" ); return stat; }
+
+
+    return MS::kSuccess;
 }

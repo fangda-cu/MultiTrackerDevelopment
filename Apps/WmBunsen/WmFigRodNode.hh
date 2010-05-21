@@ -81,6 +81,7 @@ public:
     static MObject ia_minorRadius;
     static MObject ia_majorRadius;
     static MObject ia_vertexSpacing;
+    static MObject ia_minimumRodLength;
     static MObject ia_hairSpray;
     static MObject ia_hairSprayScaleFactor;
     static MObject ia_massDamping;
@@ -88,7 +89,9 @@ public:
     static MObject ia_lockFirstEdgeToInput;
     
     // Drawing 
-    static MObject ia_userDefinedColors;    
+    static MObject ia_userDefinedColors;
+    static MObject ia_draw3DRod;
+    static MObject ia_drawScale;
     static MObject ca_drawDataChanged;
     
     // Caching
@@ -198,6 +201,9 @@ private:
     std::tr1::unordered_map< unsigned int, Vec3d > m_rodColourMap;
 
     WmFigRodInputType* m_pRodInput;
+
+    double m_vertexSpacing;
+    double m_minimumRodLength;
 };
 
 #endif // WMFIGRODNODE_HH_

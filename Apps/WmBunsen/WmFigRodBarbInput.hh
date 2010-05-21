@@ -30,7 +30,8 @@ public:
       */
      WmFigRodBarbInput( MObject& i_verticesAttribute, MObject& i_strandRootFramesAttribute, 
                         double i_percentageOfBarbStrands, size_t i_verticesPerRod,
-                        bool i_lockFirstEdgeToInput );
+                        bool i_lockFirstEdgeToInput, double i_vertexSpacing,
+                        double i_minimumRodLength );
 
     /**
       * @brief Default destructor
@@ -53,6 +54,8 @@ private:
     double m_percentageOfBarbStrands;
     size_t m_verticesPerRod;
     bool m_lockFirstEdgeToInput;
+    double m_vertexSpacing;
+    double m_minimumRodLength;
 };
 
 #endif // WMFIGRODNURBSINPUT_H_

@@ -3,6 +3,11 @@ global proc AEwmFigRodNodeTemplate(string $nodeName)
     //AEswatchDisplay $nodeName;
     editorTemplate -beginScrollLayout;
 
+    editorTemplate -beginLayout "Input Resampling" -collapse 0;
+        editorTemplate -addControl "vertexSpacing";
+        editorTemplate -addControl "minimumRodLength";
+    editorTemplate -endLayout;
+
     editorTemplate -beginLayout "Rod Attributes" -collapse 0;
         editorTemplate -addControl "numberOfRods";
         editorTemplate -addControl "cacheFrame";        
@@ -10,7 +15,7 @@ global proc AEwmFigRodNodeTemplate(string $nodeName)
         editorTemplate -beginNoOptimize -addControl "lockFirstEdgeToInput";
         editorTemplate -endNoOptimize -addControl "startTime";
         editorTemplate -addControl "percentageOfFozzieStrands";
-        editorTemplate -addControl "cvsPerRod";
+       // editorTemplate -addControl "cvsPerRod";
         editorTemplate -addControl "minorRadius";
         editorTemplate -addControl "majorRadius";
         editorTemplate -addControl "youngsModulus";
@@ -20,6 +25,8 @@ global proc AEwmFigRodNodeTemplate(string $nodeName)
         editorTemplate -addControl "massDamping";
         editorTemplate -addControl "hairSprayScaleFactor";
         editorTemplate -addControl "drawMaterialFrames";
+        editorTemplate -addControl "draw3DRod";
+        editorTemplate -addControl "drawScale";
     editorTemplate -endLayout;
 
     //AEaddRampControl ("hairSpray");

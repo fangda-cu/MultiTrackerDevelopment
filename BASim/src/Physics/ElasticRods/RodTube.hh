@@ -31,6 +31,11 @@ public:
   const Vec3d& getPointAtVert(int vertIdx, int pointIdx) const;
   std::pair<Scalar,Scalar> getUVforPointAtVert(int vertIdx, int pointIdx);
 
+  void setScale(double scale)
+  {
+      m_scale = scale;
+  }
+
 protected:
 
   void computeAngles();
@@ -47,6 +52,8 @@ protected:
   VPropHandle< std::vector<Vec3d> > m_points; ///< extruded points at a vertex
   VPropHandle< std::vector< std::pair<Scalar, Scalar> > > m_uvCoord; ///< texture coordinates at a vertex
   VPropHandle<Scalar> m_twist; ///< twist at a vertex
+
+  double m_scale;
 };
 
 } // namespace BASim

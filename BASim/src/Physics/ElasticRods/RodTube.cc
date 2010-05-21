@@ -7,6 +7,7 @@ RodTube::RodTube(ElasticRod& rod, int slices, bool twistPoints)
   : m_rod(rod)
   , m_slices(slices)
   , m_twistPoints(twistPoints)
+  , m_scale(1.0)
 {
   m_rod.add_property(m_frame, "render frame");
   m_rod.add_property(m_points, "render points");
@@ -78,22 +79,22 @@ void RodTube::buildTube()
     const Vec3d& vertex = m_rod.getVertex(i);
 
     if (i == 0) {
-      a = m_rod.radiusA(0);
-      b = m_rod.radiusB(0);
+      a = m_rod.radiusA(0) * m_scale;
+      b = m_rod.radiusB(0) * m_scale;
       axis = m_rod.getTangent(0);
       m = 0;
       v = m_rod.property(m_frame)[0];
 
     } else if (i == m_rod.nv()-1) {
-      a = m_rod.radiusA(i-1);
-      b = m_rod.radiusB(i-1);
+      a = m_rod.radiusA(i-1) * m_scale;
+      b = m_rod.radiusB(i-1) * m_scale;
       axis = m_rod.getTangent(i-1);
       m = 0;
       v = m_rod.property(m_frame)[i-1];
 
     } else {
-      a = 0.5 * (m_rod.radiusA(i-1) + m_rod.radiusA(i));
-      b = 0.5 * (m_rod.radiusB(i-1) + m_rod.radiusB(i));
+      a = 0.5 * (m_rod.radiusA(i-1) * m_scale + m_rod.radiusA(i) * m_scale);
+      b = 0.5 * (m_rod.radiusB(i-1) * m_scale + m_rod.radiusB(i) * m_scale);
 
       t0 = m_rod.getTangent(i-1);
       t1 = m_rod.getTangent(i);
