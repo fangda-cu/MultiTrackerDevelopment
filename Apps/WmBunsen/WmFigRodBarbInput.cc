@@ -2,15 +2,17 @@
 
 #include <maya/MGlobal.h>
 
-WmFigRodBarbInput::WmFigRodBarbInput( MObject& i_verticesAttribute,
-    MObject& i_strandRootFramesAttribute, double i_percentageOfBarbStrands,
-    size_t i_verticesPerRod, bool i_lockFirstEdgeToInput, double i_vertexSpacing,
-    double i_minimumRodLength ) : 
+WmFigRodBarbInput::WmFigRodBarbInput( MObject& i_verticesAttribute, MObject& i_strandRootFramesAttribute, 
+                        double i_percentageOfBarbStrands, size_t i_verticesPerRod,
+                        bool i_lockFirstEdgeToInput, double i_vertexSpacing,
+                        double i_minimumRodLength, RodOptions& i_rodOptions,
+                        double i_massDamping, WmFigRodGroup& i_rodGroup ) : 
     m_verticesAttribute( i_verticesAttribute ),
     m_strandRootFramesAttribute( i_strandRootFramesAttribute ),
     m_percentageOfBarbStrands( i_percentageOfBarbStrands ),
     m_verticesPerRod( i_verticesPerRod ), m_lockFirstEdgeToInput( i_lockFirstEdgeToInput ),
-    m_vertexSpacing( i_vertexSpacing ), m_minimumRodLength( i_minimumRodLength )
+    m_vertexSpacing( i_vertexSpacing ), m_minimumRodLength( i_minimumRodLength ),
+    m_rodGroup( i_rodGroup ), m_rodOptions( i_rodOptions ), m_massDamping( i_massDamping )
 {
     // we need to get pass the attribute here so that when we initialise data or
     // reload it we can just pull on the attribute
@@ -20,7 +22,7 @@ WmFigRodBarbInput::~WmFigRodBarbInput()
 {
 }
 
-void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock, vector<RodData*>* i_pRodData )
+void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
@@ -31,6 +33,10 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock, vec
     // store the material frames coming from barbershop
     vector<MaterialFrame> strandRootFrames;
     getStrandRootFrames( i_dataBlock, strandRootFrames );
+
+    m_rodGroup.removeAllRods();
+
+    size_t rodIndex = 0;
 
     size_t inputStrandVertexIndex = 0;
     for ( size_t i = 0; i < numStrands; i++ )
@@ -63,35 +69,41 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock, vec
 
                 // We still create a placeholder so that the indices match up from the inputs to the
                 // rods.
-
-                (*i_pRodData)[i]->initialiseFakeRod( m_verticesPerRod );
-                continue;
+                size_t rodIndex = m_rodGroup.addRod();
             }
-    
-            int numVerticesRequired = length / m_vertexSpacing;
-
-            if ( numVerticesRequired < 2 )
+            else
             {
-                numVerticesRequired = 2;
-                MGlobal::displayWarning( MString( "Input strand " ) + i + " was going to have less than 2 vertices in the rod, setting it to 2." );
-            }
+                int numVerticesRequired = length / m_vertexSpacing;
+    
+                if ( numVerticesRequired < 2 )
+                {
+                    numVerticesRequired = 2;
+                    MGlobal::displayWarning( MString( "Input strand " ) + i + " was going to have less than 2 vertices in the rod, setting it to 2." );
+                }
+    
+                vector< MVector > resampledCurve;
+                resampleCurve( numVerticesRequired, curve, resampledCurve );
+                 
+                vector<Vec3d> inputStrandVertices;
+                inputStrandVertices.resize( numVerticesRequired );
 
-            vector< MVector > resampledCurve;
-            resampleCurve( numVerticesRequired, curve, resampledCurve );
-
-            // Create space to store the data for each CV.
-            (*i_pRodData)[i]->allocateStorage( numVerticesRequired );
+                for ( size_t v = 0; v < numVerticesRequired; v++ )
+                {
+                    MVector vertex = resampledCurve[ (int)v ];
         
-            vector<Vec3d> inputStrandVertices;
-            inputStrandVertices.resize( numVerticesRequired );
-            
-            for ( size_t v = 0; v < numVerticesRequired; v++ )
-            {
-                MVector vertex = resampledCurve[ (int)v ];
-    
-                inputStrandVertices[ v ] = Vec3d( vertex[0], vertex[1], vertex[2] );                                                                  
+                    inputStrandVertices[ v ] = Vec3d( vertex[0], vertex[1], vertex[2] );                                                                  
+                }
+                
+                // Create space to store the data for each CV.
+                //(*i_pRodData)[i]->allocateStorage( numVerticesRequired );
+                //(*i_pRodData)[ i ]->resetVertexPositions( inputStrandVertices );
+
+                RodOptions rodOptions = m_rodOptions;
+                rodOptions.numVertices = inputStrandVertices.size();
+
+                // Mass damping should be in rod options, it's dumb to pass it seperately.
+                rodIndex = m_rodGroup.addRod( inputStrandVertices, rodOptions, m_massDamping );
             }
-            (*i_pRodData)[ i ]->resetVertexPositions( inputStrandVertices );
         }
         else
         {
@@ -100,7 +112,7 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock, vec
             
             // Just use the vertices that came from Barbershop
             // Make sure we have enough space to store the data for each CV.
-            (*i_pRodData)[i]->allocateStorage( m_verticesPerRod );
+            //(*i_pRodData)[i]->allocateStorage( m_verticesPerRod );
         
             for ( size_t v=0; v<m_verticesPerRod; v++ )
             {
@@ -112,7 +124,12 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock, vec
                 inputStrandVertices[ v ] = Vec3d( vertex[0], vertex[1], vertex[2] );                                          
             }
 
-            (*i_pRodData)[ i ]->resetVertexPositions( inputStrandVertices );
+            RodOptions rodOptions = m_rodOptions;
+            rodOptions.numVertices = m_verticesPerRod;
+
+
+            //(*i_pRodData)[ i ]->resetVertexPositions( inputStrandVertices );
+            rodIndex = m_rodGroup.addRod( inputStrandVertices, rodOptions, m_massDamping );
         }
 
         // We need to add edge data so that each from the first edge will be locked to the input curve
@@ -122,17 +139,18 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock, vec
             // rely on this having data
 
             // rod is probably null at this point but rodData will deal with it nicely
-            (*i_pRodData)[ i ]->addKinematicEdge( 0, (*i_pRodData)[ i ]->rod, &strandRootFrames[ i ] );
+            //(*i_pRodData)[ i ]->addKinematicEdge( 0, (*i_pRodData)[ i ]->rod, &strandRootFrames[ i ] );
+            
+            m_rodGroup.addKinematicEdge( rodIndex, 0, &strandRootFrames[ i ] );
         }
         else
         {   // If there's no root frame data then just lock the edge and it will not rotate.
-            (*i_pRodData)[ i ]->addKinematicEdge( 0 );
+            m_rodGroup.addKinematicEdge( rodIndex, 0 );
         }
     }
 }
 
-void WmFigRodBarbInput::updateRodDataFromInput( MDataBlock& i_dataBlock, 
-    std::vector<RodData*>* i_pRodData )
+void WmFigRodBarbInput::updateRodDataFromInput( MDataBlock& i_dataBlock )
 {
  
     MVectorArray strandVertices;
@@ -154,7 +172,7 @@ void WmFigRodBarbInput::updateRodDataFromInput( MDataBlock& i_dataBlock,
     vector<MaterialFrame> strandRootFrames;
     getStrandRootFrames( i_dataBlock, strandRootFrames );
 
-    if ( numStrands != i_pRodData->size() )
+    if ( numStrands != m_rodGroup.numberOfRods() )
     {
         MGlobal::displayError( "Number of Barbershop strands does not equal number of rods!"
                                 "Did you change the input? Rewind sim to reset." );
@@ -165,23 +183,20 @@ void WmFigRodBarbInput::updateRodDataFromInput( MDataBlock& i_dataBlock,
     for ( size_t i = 0; i < numStrands; i++ )
     {
         // Check if this is a real rod before we actually do anything
-        if ( (*i_pRodData)[ i ]->isFakeRod() )
+        if ( m_rodGroup.isPlaceHolderRod( i ) )
         {
             // As all the input strands come from the same array we need to skip it forward
             // past this strand, ready for the next rod.
 
-            // We could just use m_verticesPerRod because the input strands all have the same number
-            // of vertices. But doing this means this code matches the nurbs input code so is
-            // easier to follow.
-            inputStrandVertexIndex += (*i_pRodData)[ i ]->verticesInFakeRod();
+            inputStrandVertexIndex += m_verticesPerRod;
             continue;
         }
 
-        BASim::ElasticRod* pRod = (*i_pRodData)[ i ]->rod;
+        //BASim::ElasticRod* pRod = (*i_pRodData)[ i ]->rod;
         
-        if ( pRod != NULL )
+        //if ( pRod != NULL )
         {
-            size_t numVerticesInRod = (*i_pRodData)[ i ]->rod->nv();
+            size_t numVerticesInRod = m_rodGroup.numberOfVerticesInRod( i );
 
             vector<Vec3d> inputStrandVertices;         
             inputStrandVertices.resize( numVerticesInRod );
@@ -213,13 +228,14 @@ void WmFigRodBarbInput::updateRodDataFromInput( MDataBlock& i_dataBlock,
                 }
             }
 
-            (*i_pRodData)[ i ]->updateNextRodVertexPositions( inputStrandVertices );
+            m_rodGroup.updateRodNextVertexPositions( i, inputStrandVertices );
 
             // The strand root frames may not have been connected for some reason so don't
             // rely on having that data
             if ( strandRootFrames.size() > i && m_lockFirstEdgeToInput )
             {
-                    (*i_pRodData)[ i ]->updateKinematicEdge( 0, strandRootFrames[ i ] );
+                //(*i_pRodData)[ i ]->updateKinematicEdge( 0, strandRootFrames[ i ] );
+                m_rodGroup.updateKinematicEdge( i, 0, strandRootFrames[ i ] );
             }
             else // remove the entry in the map
             {

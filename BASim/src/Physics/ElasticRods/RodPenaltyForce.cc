@@ -363,6 +363,54 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
   }
 
 
+// Apply clumping force
+
+	if (clumping_enbld) {
+		std::vector<std::pair<int, std::pair<ElasticRod *, int> > > rodsToDelete;
+		for (VertexRodMapIterator vrItr=_clumpingVerts.begin(); vrItr!=_clumpingVerts.end(); ++vrItr)
+		{
+		  ElasticRod *otherRod = vrItr->second.first;
+
+		  int v1 = vrItr->first;
+		  int v2 = vrItr->second.second;
+			
+			if (rod.vertFixed(v1) || otherRod->vertFixed(v2)) {
+				rodsToDelete.push_back(std::make_pair(v1, std::make_pair(otherRod, v2)));
+				continue;
+			}
+			
+			Vec3d d = rod.getVertex(v1) - otherRod->getVertex(v2);
+			Scalar distance = d.norm();
+			
+			if (true || distance > (rod.radius() + otherRod->radius()) + 1e-4) {
+                Vec3d force = - clumping_coeff * d / (distance * distance);
+				
+		        F.segment(rod.vertIdx(v1, 0), 3) += force;			
+			
+			} else {
+				rodsToDelete.push_back(std::make_pair(v1, std::make_pair(otherRod, v2)));
+				continue;
+			}
+  	}
+
+		for (std::vector<std::pair<int, std::pair<ElasticRod *, int> > >::iterator itr=rodsToDelete.begin();
+		     itr!=rodsToDelete.end(); ++itr)
+		{
+		  std::pair<VertexRodMapIterator, VertexRodMapIterator> p=_clumpingVerts.equal_range(itr->first);
+		  for (VertexRodMapIterator i=p.first; i!=p.second; ++i)
+		  {
+		    if (i->second.first == itr->second.first && i->second.second == itr->second.second)
+		    {
+		      _clumpingVerts.erase(i);
+		      break;
+		    }
+		  }
+		}
+	
+	
+	
+	}
+
  // cerr << "Forces (AFTER) = \n " << F - beforeF << endl;
 
 }
@@ -397,6 +445,23 @@ void RodPenaltyForce::addRodPenaltyForce(int edge, ElasticRod *rod, int otherEdg
   }
 
   _edgeRods.insert(EdgeRodMap::value_type(edge, std::make_pair(rod, otherEdge)));
+}
+
+
+// Add a force to make clumps, for possible pairs of vertices 
+void RodPenaltyForce::addRodClumpingForce(int vertex, ElasticRod *rod, int otherVertex)
+{
+	if (clumping_enbld) {
+		std::pair<VertexRodMapIterator, VertexRodMapIterator> p = _clumpingVerts.equal_range(vertex);
+
+		for (VertexRodMapIterator i=p.first; i!=p.second; ++i)
+		{
+		  if (i->second.first == rod && i->second.second == otherVertex)
+		    return;
+		}
+
+		_clumpingVerts.insert(VertexRodMap::value_type(vertex, std::make_pair(rod, otherVertex)));
+	}
 }
 
 // Helper routines for getting closest distance between vertex-triangle pairs and

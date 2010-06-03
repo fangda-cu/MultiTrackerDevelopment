@@ -14,6 +14,12 @@ RodCollisionTimeStepper::RodCollisionTimeStepper(RodTimeStepper* rodTimeStepper,
   m_rod->setPenaltyForce(m_rodPenaltyForce);
 }
 
+void RodCollisionTimeStepper::setClumping(bool flag, Scalar coeff) {
+	if (m_rodPenaltyForce) {
+		m_rodPenaltyForce->setClumping(flag, coeff);
+	}
+}
+
 void RodCollisionTimeStepper::execute()
   {
     if (!m_enabled)
@@ -92,6 +98,66 @@ RodCollisionTimeStepper::~RodCollisionTimeStepper()
                                           rod1, cItr->getFirstPrimitiveIndex(0));
     }
 }
+
+void RodCollisionTimeStepper::getClumpingPairs(vector<ElasticRod*> &rods)
+{
+////// Use collision grid /////
+/*
+    UniformGrid grid;
+    Collisions collisions;
+    grid.getProximities(rods, collisions);
+
+    for (CollisionsIterator cItr=collisions.begin(); cItr!=collisions.end(); ++cItr)
+    {
+        // Add penalty forces for each proximity
+        // It must be added to BOTH rods, since a force computation for a rod
+        // can only be for that particular rod, a little wasteful but not many options
+        // without changing the framework
+        //
+        ElasticRod *rod1 = dynamic_cast<ElasticRod *>(cItr->getFirstObject());
+        ElasticRod *rod2 = dynamic_cast<ElasticRod *>(cItr->getSecondObject());
+        rod1->getPenaltyForce()->addRodClumpingForce(cItr->getFirstPrimitiveIndex(0),
+                                          rod2, cItr->getSecondPrimitiveIndex(0));
+        rod2->getPenaltyForce()->addRodClumpingForce(cItr->getSecondPrimitiveIndex(0),
+                                          rod1, cItr->getFirstPrimitiveIndex(0));
+    }
+*/
+
+  const Scalar max_clump_size = 5.0;
+	
+  for (int i=0; i<(int) rods.size(); i++)   
+  {
+    ElasticRod *rod1 = rods[i];
+    Vec3d x1 = rod1->getVertex(0);
+  	
+	for (int j=i+1; j<(int) rods.size(); j++) 		
+    {
+	  ElasticRod *rod2 = rods[j];
+	  Vec3d x2 = rod2->getVertex(0);
+
+	  Scalar dist = (x1 - x2).norm();
+			
+	  if (dist < max_clump_size) 
+      {
+	    for (int v1=0; v1<rod1->nv(); v1++) 
+        {
+		  if (!rod1->vertFixed(v1)) 
+          {
+		    for (int v2=0; v2<rod2->nv(); v2++) 
+            {
+			  if (!rod2->vertFixed(v2)) 
+              {
+			    rod1->getPenaltyForce()->addRodClumpingForce(v1, rod2, v2);
+				rod2->getPenaltyForce()->addRodClumpingForce(v2, rod1, v1);
+			  }
+			}
+		  }
+		}
+	  }	  
+	}
+  }      
+}
+
 
 void RodCollisionTimeStepper::getProximities(CollisionMeshDataHashMap &collisionMeshes)
 {

@@ -98,6 +98,10 @@ public:
 
   static void getProximities(vector<ElasticRod*> &rods);
   static void respondRodCollisions(vector<ElasticRod*> &rods, Scalar dt, int maxIterations, Scalar COR);
+  
+  static void getClumpingPairs(vector<ElasticRod*> &rods);
+
+  void setClumping(bool flag, Scalar coeff = 0.0);
 
 protected:
   void getProximities(CollisionMeshDataHashMap &collisionMeshes);

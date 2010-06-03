@@ -18,6 +18,11 @@ MObject WmBunsenNode::ia_enabled;
 MObject WmBunsenNode::ia_collisionMeshes;
 MObject WmBunsenNode::ia_collisionsEnabled;
 MObject WmBunsenNode::ia_plasticDeformations;
+
+// Clumping
+/* static */ MObject WmBunsenNode::ia_isClumpingEnabled;
+/* static */ MObject WmBunsenNode::ia_clumpingCoefficient;
+
 MObject WmBunsenNode::ia_selfCollisionPenaltyForces;
 MObject WmBunsenNode::ia_fullSelfCollisions;
 MObject WmBunsenNode::ia_fullSelfCollisionCOR;
@@ -29,7 +34,7 @@ MObject WmBunsenNode::oa_simStepTaken;
 // Drawing
 /* static */ MObject WmBunsenNode::ia_drawSubSteppedVertices;
 
-WmBunsenNode::WmBunsenNode() : m_initialised( false ), m_enabled( true ), m_beaker( NULL )
+WmBunsenNode::WmBunsenNode() : m_initialised( false ), m_enabled( true ), m_beaker( NULL )    
 {
     m_beaker = new Beaker();
 }
@@ -62,8 +67,7 @@ void WmBunsenNode::pullOnAllRodNodes( MDataBlock& i_dataBlock )
     }
 }  
 
-void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock, 
-    ObjectControllerBase::SolverLibrary solverLibrary )
+void WmBunsenNode::addRodsToWorld( MDataBlock& i_dataBlock )
 {
     MStatus stat;
     
@@ -76,13 +80,13 @@ void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock,
     size_t numRodsConnected = rodPlugArray.numConnectedElements( &stat );
     CHECK_MSTATUS( stat );
 
-    for ( unsigned int r=0; r < numRodsConnected; r++ ) 
+    for ( unsigned int r=0; r < numRodsConnected; r++ )
     {
         if ( rodPlugArray.isArray( &stat ) )
         {
             MPlug rodPlug = rodPlugArray.elementByLogicalIndex( r, &stat );
             CHECK_MSTATUS( stat );
-            if ( rodPlug.isConnected( &stat ) ) 
+            if ( rodPlug.isConnected( &stat ) )
             {
                 MPlugArray inPlugArr;
                 rodPlug.connectedTo( inPlugArr, true, false, &stat );
@@ -93,20 +97,13 @@ void WmBunsenNode::createRodDataFromRodNodes( MDataBlock& i_dataBlock,
                 MObject rodNodeObj = rodNodePlug.node( &stat );
                 CHECK_MSTATUS( stat );
                 MFnDependencyNode rodNodeFn( rodNodeObj );
-                WmFigRodNode* wmBunsenRodNode = ( WmFigRodNode* )rodNodeFn.userNode();
-                
-                // Since the rod node is purely there to fill in data that comes from its inputs
-                // and attributes, we don't let it deal with memory allocation. This node is in 
-                // charge of all that.
-                m_beaker->createSpaceForRods( r, wmBunsenRodNode->numberOfRods() );
-
-                wmBunsenRodNode->initialiseRodData( m_beaker->rodData( r ) );
-
-                // Now the rod node has used initialised the undeformed positions for the rods
+                WmFigRodNode* wmFigRodNode = ( WmFigRodNode* )rodNodeFn.userNode();
+    
+                // Now the rod node has been initialised the undeformed positions for the rods
                 // it owns. Since we are resetting the sim we need to actually now create the
                 // rods and add them to the world.
                 
-                m_beaker->createRods( r, solverLibrary );
+                m_beaker->addRodsToWorld( r, wmFigRodNode->rodGroup() );
             }
             else
                 CHECK_MSTATUS( stat );
@@ -139,16 +136,18 @@ void WmBunsenNode::updateAllCollisionMeshes( MDataBlock &data )
   
     for ( unsigned int i=0; i < numMeshesConnected; i++ ) 
     {
-        // First check if the kinematic object has been initialised, if it has then don't bother
-        // continuing as we would be updating the pointer with the same pointer.
-        if ( m_beaker->collisionMeshInitialised( i ) )
-            continue;
 
+        // Even if we don't use it, grab the data so Maya knows to evaluate the node    
         inArrayH.jumpToElement(i);
         MDataHandle collisionMeshH = inArrayH.inputValue( &stat);
         CHECK_MSTATUS(stat);
 
         MObject collisionMeshDataObj = collisionMeshH.data();
+
+        // First check if the kinematic object has been initialised, if it has then don't bother
+        // continuing as we would be updating the pointer with the same pointer.
+        if ( m_beaker->collisionMeshInitialised( i ) )
+            continue;
 
         MPlug plug( thisMObject(), ia_collisionMeshes );
         CHECK_MSTATUS( stat );
@@ -182,10 +181,33 @@ void WmBunsenNode::updateAllCollisionMeshes( MDataBlock &data )
     }
 }
 
+void WmBunsenNode::updateAllRodNodes( MDataBlock &i_dataBlock )
+{
+    MStatus stat;
+    
+    // Pull all on all input rod nodes, causing them to update the rod data owned by beaker
+    // that they each have pointers to.
+    MArrayDataHandle inArrayH = i_dataBlock.inputArrayValue( ia_rodsNodes, &stat );
+    CHECK_MSTATUS(stat);
+    size_t numRodsConnected = inArrayH.elementCount();
+  
+    for ( unsigned int r=0; r < numRodsConnected; r++ ) 
+    {
+        inArrayH.jumpToElement( r );
+        inArrayH.inputValue( &stat );
+        CHECK_MSTATUS( stat );
+
+        // and thats it! The rod node will get the signal that it needs to update its output
+        // and will directly change the data in m_beaker. It's dumb to pass it along Maya connections
+        // to here then to beaker. So we cut out the middle man.
+    }
+}
 
 MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock ) 
 {
     MStatus stat;
+
+    //cerr << "WmBunsenNode::compute() with i_plug = " << i_plug.name() << endl;
     
     if ( i_plug == ca_syncAttrs )
     {
@@ -229,6 +251,12 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         double selfCollisionsCOR = i_dataBlock.inputValue( ia_fullSelfCollisionCOR, &stat ).asDouble();
         CHECK_MSTATUS( stat );
         
+        // Clumping
+        m_beaker->clumpingEnabled( i_dataBlock.inputValue( ia_isClumpingEnabled, &stat ).asBool() );
+        CHECK_MSTATUS( stat );
+        m_beaker->clumpingCoefficient( i_dataBlock.inputValue( ia_clumpingCoefficient, &stat ).asDouble() );
+        CHECK_MSTATUS( stat );
+
         int solver = i_dataBlock.inputValue( ia_solver, &stat ).asInt();
 
         bool plasticDeformations = i_dataBlock.inputValue( ia_plasticDeformations, &stat ).asBool();
@@ -237,23 +265,23 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
         m_beaker->shouldDrawSubsteppedVertices( i_dataBlock.inputValue( ia_drawSubSteppedVertices, &stat ).asBool() ) ;
         
-        if ( m_enabled && m_currentTime == m_startTime )
-        {
-            m_beaker->resetEverything();
-            
-            ObjectControllerBase::SolverLibrary solverLibrary;
-            if ( solver == 0 )
-                solverLibrary = ObjectControllerBase::MKL_SOLVER;
-            else
-                solverLibrary = ObjectControllerBase::PETSC_SOLVER;
-            
-            createRodDataFromRodNodes( i_dataBlock, solverLibrary );
-        }
-
         if ( m_enabled )
         {
-            pullOnAllRodNodes( i_dataBlock );
-            updateAllCollisionMeshes( i_dataBlock );
+            if ( m_currentTime == m_startTime )
+            {
+                m_beaker->resetEverything();
+
+                updateAllRodNodes( i_dataBlock );
+                updateAllCollisionMeshes( i_dataBlock );
+
+                addRodsToWorld( i_dataBlock );
+            }
+            else
+            {
+                updateAllRodNodes( i_dataBlock );
+                updateAllCollisionMeshes( i_dataBlock );
+            }
+            
         }
         
         if ( m_enabled && m_currentTime > m_previousTime && m_currentTime > m_startTime) 
@@ -644,6 +672,34 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnNumericAttribute nAttr;
+        ia_isClumpingEnabled = nAttr.create( "clumping", "clu", MFnNumericData::kBoolean, false, &stat);
+        if (!stat) {
+            stat.perror("create ia_isClumpingEnabled attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_isClumpingEnabled );
+        if (!stat) { stat.perror( "addAttribute ia_isClumpingEnabled" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_clumpingCoefficient = nAttr.create( "clumpingCoefficient", "clc", MFnNumericData::kDouble, 0.3, &stat );
+        if ( !stat ) {
+            stat.perror("create ia_clumpingCoefficient attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_clumpingCoefficient );
+        if (!stat) { stat.perror( "addAttribute ia_clumpingCoefficient" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
         ia_fullSelfCollisions = nAttr.create( "fullSelfCollisions", "fsc", MFnNumericData::kBoolean, false, &stat);
         if (!stat) {
             stat.perror("create ia_fullSelfCollisions attribute");
@@ -784,6 +840,13 @@ MStatus WmBunsenNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_timingsFile->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_timingEnabled, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_timingEnabled->ca_syncAttrs" ); return stat; }
+
+    // Clumping
+    stat = attributeAffects( ia_isClumpingEnabled, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_isClumpingEnabled->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_clumpingCoefficient, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_clumpingCoefficient->ca_syncAttrs" ); return stat; }
+
     
     stat = attributeAffects( ia_time, oa_simStepTaken );
     if (!stat) { stat.perror( "attributeAffects ia_time->oa_simulatedRods" ); return stat; }

@@ -30,11 +30,12 @@
 #include <ext/hash_map>
 #include <iostream>
 #include <fstream>
+#include "WmFigRodGroup.hh"
 
 using namespace BASim;
 using namespace std;
 
-typedef tr1::unordered_map<size_t, vector<RodData*> > RodDataMap;
+typedef tr1::unordered_map<size_t, WmFigRodGroup* > RodDataMap;
 typedef RodDataMap::iterator RodDataMapIterator;
 
 class Beaker
@@ -92,10 +93,10 @@ public:
         m_world->property( m_maxIterHandle ) = std::max(maxIter,1);
     }
 
-    vector<RodData*>* rodData( size_t i_rodGroup )
+    /*vector<RodData*>* rodData( size_t i_rodGroup )
     {
         return &( m_rodDataMap[ i_rodGroup ] );
-    }
+    }*/
 
     void setPlasticDeformations( bool i_plasticDeformations )
     {
@@ -107,7 +108,17 @@ public:
         m_shouldDrawSubsteppedVertices = i_shouldDrawSubsteppedVertices;
     }
 
-    RodCollisionTimeStepper* setupRodTimeStepper( RodData* i_rodData );
+    void clumpingEnabled( bool i_isClumpingEnabled )
+    {
+        m_isClumpingEnabled = i_isClumpingEnabled;
+    }
+
+    void clumpingCoefficient( double i_clumpingCoefficient )
+    {
+        m_clumpingCoefficient = i_clumpingCoefficient;
+    }
+
+   // RodCollisionTimeStepper* setupRodTimeStepper( RodData* i_rodData );
     
     void draw(void);
 
@@ -125,12 +136,12 @@ public:
     
     void initialiseWorld();
     void resetEverything();
-    void createSpaceForRods( size_t i_rodGroup, size_t i_numRods );
-    void createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary solverLibrary );
+    //void createSpaceForRods( size_t i_rodGroup, size_t i_numRods );
+    void addRodsToWorld( size_t i_rodGroupIndex, WmFigRodGroup* i_rodGroup );
     bool collisionMeshInitialised( const size_t id );
     void initialiseCollisionMesh( BASim::CollisionMeshData *collisionMeshData, size_t id );
     void removeCollisionMesh( const size_t id );
-    void checkAllRodForces(); 
+  // void checkAllRodForces(); 
     void startTimer( timeval& i_startTimer );
     double stopTimer( timeval& i_startTimer );
     void resetTimers();
@@ -197,6 +208,9 @@ private:
 
     vector< vector < vector < Vec3d > > > m_subSteppedVertexPositions;
     bool m_shouldDrawSubsteppedVertices;
+
+    bool m_isClumpingEnabled;
+    double m_clumpingCoefficient;
 };
 
 #endif // BEAKER_HH_

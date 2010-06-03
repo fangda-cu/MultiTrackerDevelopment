@@ -232,7 +232,7 @@ GLint WmFigSelectionContext::findRodsUsingOpenGLSelection( const double i_centre
     const double i_width, const double i_height, WmFigRodNode* i_rodNode,
     vector<GLuint>& o_selectedRodIndices )
 {
-    vector<RodData*>* allRodData = i_rodNode->getRodData();
+    /*vector<RodData*>* allRodData = i_rodNode->getRodData();
     if ( allRodData == NULL )
         return 0;
     
@@ -282,7 +282,7 @@ GLint WmFigSelectionContext::findRodsUsingOpenGLSelection( const double i_centre
     glMatrixMode( GL_PROJECTION );
     glPopMatrix();
 
-    return numHits;
+    return numHits;*/
 }
 
 

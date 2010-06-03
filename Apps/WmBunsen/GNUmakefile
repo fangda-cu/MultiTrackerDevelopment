@@ -57,7 +57,8 @@ WmFigRodInputType.hh \
 WmFigRodNurbsInput.hh \
 WmFigRodBarbInput.hh \
 WmFigRodFileIO.hh \
-WmFigRodFileInput.hh
+WmFigRodFileInput.hh \
+WmFigRodGroup.hh
 
 PLG1_S          := \
 Beaker.cc \
@@ -76,7 +77,8 @@ WmFigRodInputType.cc \
 WmFigRodNurbsInput.cc \
 WmFigRodBarbInput.cc \
 WmFigRodFileIO.cc \
-WmFigRodFileInput.cc
+WmFigRodFileInput.cc \
+WmFigRodGroup.cc
 
 PLG1_L          += \
 	-lWfigaro_dbg \

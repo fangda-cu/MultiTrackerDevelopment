@@ -46,7 +46,7 @@ Beaker::Beaker() : m_plasticDeformations( false ), m_gravity( 0, -981.0, 0 ),
     m_slowestCollisionResponseTime( 0.0 ), m_fastestCollisionResponseTime( 9999999999999.0 ),
     m_fastestFrameTime( 9999999999999999.0 ), m_slowestFrameTime( 0.0 ), m_totalSimTime( 0.0 ), 
     m_numberOfFramesSimulated( 0 ), m_numberofThreadsUsed( 0 ), m_numRods( 0 ),
-    m_shouldDrawSubsteppedVertices( false )
+    m_shouldDrawSubsteppedVertices( false ), m_isClumpingEnabled( false ), m_clumpingCoefficient( 0.3 )
 {
     m_rodDataMap.clear();
     initialiseWorld();
@@ -71,7 +71,7 @@ void Beaker::initialiseWorld()
 
 void Beaker::resetEverything()
 {
-    for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
+    /*for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
     {
         vector<RodData*>& rodData = rdmItr->second;
         size_t numRods = rodData.size();
@@ -81,8 +81,10 @@ void Beaker::resetEverything()
             // rod data in each vector element.
             delete rodData[ r ];
         }
-    }
+    }*/
     m_rodDataMap.clear();
+
+    m_rods.clear();
 
     delete m_world;
 
@@ -241,7 +243,7 @@ double Beaker::stopTimer( timeval& i_startTimer )
 }
 
 
-void Beaker::createSpaceForRods( size_t i_rodGroup, size_t i_numRods )
+/*void Beaker::createSpaceForRods( size_t i_rodGroup, size_t i_numRods )
 {
     //size_t numRods = m_rodDataMap[ i_rodGroup ].size();
     m_rodDataMap[ i_rodGroup ].resize( i_numRods );
@@ -250,42 +252,24 @@ void Beaker::createSpaceForRods( size_t i_rodGroup, size_t i_numRods )
     {
         m_rodDataMap[ i_rodGroup ][ r ] = new RodData();
     }
-}
+}*/
 
-void Beaker::createRods( size_t i_rodGroup, ObjectControllerBase::SolverLibrary solverLibrary )
+void Beaker::addRodsToWorld( size_t i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
 {
-    vector<RodData*>& rodDataVector = m_rodDataMap[ i_rodGroup ];
-    size_t numRods = rodDataVector.size();
-    m_rods.clear();
-
+    m_rodDataMap[ i_rodGroupIndex ] = i_rodGroup;
+    
+    size_t numRods = m_rodDataMap[ i_rodGroupIndex ]->numberOfRods();
+    
     for ( size_t r=0; r<numRods; r++ )
     {
-        if ( rodDataVector[ r ]->isFakeRod() )
+        if ( !m_rodDataMap[ i_rodGroupIndex ]->shouldSimulateRod( r ) )
             continue;
         
-        // setupRod() is defined in ../BASim/src/Physics/ElasticRods/RodUtils.hh
-        rodDataVector[ r ]->rod = setupRod( rodDataVector[ r ]->rodOptions,
-                                            rodDataVector[ r ]->initialVertexPositions,
-                                            rodDataVector[ r ]->undeformedVertexPositions );
+        m_rods.push_back( m_rodDataMap[ i_rodGroupIndex ]->elasticRod( r ) );
 
-        m_rods.push_back( rodDataVector[ r ]->rod );
-
-/*        rodDataVector[ r ]->rod->fixVert( 0 );
-        rodDataVector[ r ]->rod->fixVert( 1 );
-        rodDataVector[ r ]->rod->fixEdge( 0 );*/
-
-        rodDataVector[ r ]->stepper = setupRodTimeStepper( rodDataVector[ r ] );
-
-        m_world->addObject( rodDataVector[ r ]->rod );
-        m_world->addController( rodDataVector[ r ]->stepper );
-
-        rodDataVector[ r ]->rodRenderer = new RodRenderer( *(rodDataVector[ r ]->rod) );
-       // rodDataVector[ r ]->rodRenderer->setMode( RodRenderer::SIMPLE );
-
-        rodDataVector[ r ]->shouldSimulate = true;
+        m_world->addObject( m_rodDataMap[ i_rodGroupIndex ]->elasticRod( r ) );
+        m_world->addController( m_rodDataMap[ i_rodGroupIndex ]->collisionStepper( r ) );
     }
-
-    //cerr << "Beaker - Created " << numRods << " rods\n";
 }
 
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
@@ -311,6 +295,39 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
     double frameTime = 0.0;
     
+    // Do a quick check, if no rods are enabled then do nothing.
+    bool noRodsToSimulate = true;
+    for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
+    {
+        WmFigRodGroup* pRodGroup = rdmItr->second;
+
+        size_t numRods = pRodGroup->numberOfRods();
+        for ( size_t r=0; r<numRods; ++r )
+        {
+            if ( pRodGroup->shouldSimulateRod( r ) )
+            {
+              //  cerr << "rod " << r << " is enabled " << endl;
+                noRodsToSimulate = false;
+                break;
+            }   
+            else         
+            {
+                //cerr << "rod " << r << " is disabled " << endl;
+            }
+        }
+        
+        if ( !noRodsToSimulate )
+        {
+            break;
+        }
+    }
+
+    if ( noRodsToSimulate )
+    {
+        cerr << "Not doing anything as all rods are disabled!\n";
+        return;
+    }
+
 //		cerr << "[JS msg / Beaker::takeTimeStep] " << startTime << " startTime " << targetTime << " targetTime\n";
 //		cerr << "[JS msg / Beaker::takeTimeStep] " << i_stepSize << " i_stepSize " << getDt() << " getDt()\n";
 
@@ -349,10 +366,8 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         startTimer(timer);
         for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
         {
-            // FIXME: Should check if rod is enabled, if not then continue
-
-            vector<RodData*>& rodData = rdmItr->second;
-            size_t numRods = rodData.size();
+            WmFigRodGroup* pRodGroup = rdmItr->second;
+            size_t numRods = pRodGroup->numberOfRods();
             m_numRods += numRods;
 
             // for visualising
@@ -365,76 +380,28 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             for ( size_t r=0; r<numRods; r++ )
             {
                 // Check if this is a rod or just a fake place holder as the input was too short
-                if ( rodData[ r ]->isFakeRod() )
+                if ( !pRodGroup->shouldSimulateRod( r ) )
+                {
                     continue;
+                }
+                
+                //RodCollisionTimeStepper* rodCollisionTimeStepper = dynamic_cast<RodCollisionTimeStepper*>(rodData[r]->stepper);
+                RodCollisionTimeStepper* rodCollisionTimeStepper = pRodGroup->collisionStepper( r );
 
-                RodCollisionTimeStepper* rodCollisionTimeStepper = dynamic_cast<RodCollisionTimeStepper*>(rodData[r]->stepper);
-
+                // Setup Rod collision time stepper before we do any work
                 rodCollisionTimeStepper->shouldDoCollisions( i_collisionsEnabled );
                 rodCollisionTimeStepper->setTimeStep( getDt() );
                 rodCollisionTimeStepper->setCollisionMeshesMap( &m_collisionMeshMap );
+                rodCollisionTimeStepper->setClumping( m_isClumpingEnabled, m_clumpingCoefficient );
+    
+                BASim::ElasticRod* rod = pRodGroup->elasticRod( r );
 
-                RodBoundaryCondition* boundary = rodCollisionTimeStepper->getBoundaryCondition();
-                BASim::ElasticRod* rod = rodData[r]->rod;
-
-                m_subSteppedVertexPositions[ s ][ r ].resize( rod->nv() );
-
-                for( int c = 0; c < rod->nv(); c++)
-                {
-                    // Calculate the position of the input curve for this rod at the current substep.
-                    // This is used to set fixed vertices and also to calculate the hairspray force.
-                    rodData[r]->currVertexPositions[c] = ( interpolateFactor * rodData[r]->nextVertexPositions[c] +
-                               ( 1.0 - interpolateFactor ) * rodData[r]->prevVertexPositions[c] );
-
-                    m_subSteppedVertexPositions[ s ][ r ][ c ] = rodData[r]->currVertexPositions[ c ];
-                }
-
-                // Now look and see if we have any user controlled vertices or edges, if so we
-                // need to apply those as boundary conditions
-                for ( KinematicEdgeDataMap::iterator it = rodData[r]->kinematicEdgeDataMap.begin();
-                      it != rodData[r]->kinematicEdgeDataMap.end();
-                      it++ )
-                {
-                    // First make sure these vertices are marked as fixed on the rod
-                    // or they'll get taken into account on collision calculations.
-                    unsigned int edgeNum = it->first;
-                    KinematicEdgeData* kinematicEdgeData = it->second;
-                    rod->fixEdge( edgeNum );
-                    rod->fixVert( edgeNum );
-                    rod->fixVert( edgeNum +1 );
-
-                    boundary->setDesiredVertexPosition( edgeNum, rodData[r]->currVertexPositions[ edgeNum ]);
-                    boundary->setDesiredVertexPosition( edgeNum+1, rodData[r]->currVertexPositions[ edgeNum+1 ]);
-
-                    if ( kinematicEdgeData->rootFrameDefined )
-                    {
-                        MaterialFrame m;
-
-                        m.m1 = rodData[r]->rod->getMaterial1( edgeNum );
-                        m.m2 = rodData[r]->rod->getMaterial2( edgeNum );
-                        m.m3 = rodData[r]->rod->getEdge( edgeNum );
-                        m.m3.normalize();
-                        m_rodRootMaterialFrame[ r ] = m;
-
-                        MaterialFrame vm = kinematicEdgeData->materialFrame;
-                        m_strandRootMaterialFrame[ r ] = vm;
-
-                        vm.m1 = rodData[r]->rod->getReferenceDirector1( edgeNum );
-                        vm.m2 = rodData[r]->rod->getReferenceDirector2( edgeNum );
-                        vm.m3 = m.m3;
-                        m_rodRefMaterialFrame[ r ] = vm;
-
-                        // work out the angle that the material frame is off the reference frame by.
-                        //cerr << "kinematicEdgeData->getAngleFromRodmaterialFrame() = " << kinematicEdgeData->getAngleFromRodmaterialFrame() << endl;
-
-                        boundary->setDesiredEdgeAngle( edgeNum, kinematicEdgeData->getAngleFromRodmaterialFrame() );
-                    }
-                    else
-                    {
-                        boundary->setDesiredEdgeAngle( edgeNum, rod->getTheta( edgeNum ) );
-                    }
-                }
+                m_subSteppedVertexPositions[ s ][ r ].resize( rod->nv() );                
             }
+
+            pRodGroup->updateCurrentVertexPositions( interpolateFactor );
+
+            pRodGroup->updateAllBoundaryConditions();
         }
         timeTaken = stopTimer( timer );
         frameTime += timeTaken;
@@ -464,51 +431,30 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
             #pragma omp parallel for num_threads( actualNumThreadsToUse )
             for ( int i=0; i<numControllers; ++i )
-            {
-                RodCollisionTimeStepper* rodCollisionTimeStepper = dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ]);
-
-                rodCollisionTimeStepper->initialiseCollisionsAndApplyObjectCollisionForces();
-                rodCollisionTimeStepper->execute();
-                rodCollisionTimeStepper->respondToObjectCollisions();
-                rodCollisionTimeStepper->tidyUpCollisionStructuresForNextStep();
-            }
-
-           /* startTimer(timer);
-            #pragma omp parallel for num_threads( actualNumThreadsToUse )
-            for ( int i=0; i<numControllers; ++i )
-            {
+            {                
                 RodCollisionTimeStepper* rodCollisionTimeStepper = dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ]);
 
                 rodCollisionTimeStepper->initialiseCollisionsAndApplyObjectCollisionForces();
             }
-            timeTaken = stopTimer(timer);
-            frameObjectCollisionForceTime += timeTaken;
-            m_objectCollisionForces += timeTaken;
-            
-            startTimer(timer);
+
+            // Clumping is like self collisions, has to all be done at the same time
+            if ( m_isClumpingEnabled )
+            {
+                RodCollisionTimeStepper::getClumpingPairs( m_rods );
+            }
+
             #pragma omp parallel for num_threads( actualNumThreadsToUse )
             for ( int i=0; i<numControllers; ++i )
             {
                 RodCollisionTimeStepper* rodCollisionTimeStepper = dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ]);
 
+                ElasticRod* elasticRod = rodCollisionTimeStepper->getRod();
+
                 rodCollisionTimeStepper->execute();
-            }
-            timeTaken = stopTimer(timer);
-            frameIntegrationStepTime += timeTaken;
-            m_integrationStepTime += timeTaken;
-            
-            startTimer(timer);
-            #pragma omp parallel for num_threads( actualNumThreadsToUse )
-            for ( int i=0; i<numControllers; ++i )
-            {
-                RodCollisionTimeStepper* rodCollisionTimeStepper = dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ]);
 
                 rodCollisionTimeStepper->respondToObjectCollisions();
                 rodCollisionTimeStepper->tidyUpCollisionStructuresForNextStep();
             }
-            timeTaken = stopTimer(timer);
-            frameObjectCollisionResponse += timeTaken;
-            m_objectCollisionResponse += timeTaken;*/
             
             frameTime += stopTimer( threadFrameTimer );
         }
@@ -525,6 +471,11 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             frameObjectCollisionForceTime += timeTaken;
             m_objectCollisionForces += timeTaken;
             frameTime += timeTaken;
+            
+            if ( m_isClumpingEnabled )
+            {
+                RodCollisionTimeStepper::getClumpingPairs(m_rods);
+            }
 
             startTimer(timer);
             // FIXME: Think this can be parallelised
@@ -591,11 +542,12 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         {
             for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
             {
-                vector<RodData*>& rodData = rdmItr->second;
-                size_t numRods = rodData.size();
+                WmFigRodGroup* pRodGroup = rdmItr->second;
+                size_t numRods = pRodGroup->numberOfRods();
+
                 for ( size_t r=0; r<numRods; r++ )
                 {
-                    BASim::ElasticRod* rod = rodData[r]->rod;
+                    BASim::ElasticRod* rod = pRodGroup->elasticRod( r );
                     rod->updateReferenceProperties();
                 }
             }
@@ -667,7 +619,7 @@ void Beaker::storeMaterialFrames()
 }
 */
 
-void Beaker::checkAllRodForces()
+/*void Beaker::checkAllRodForces()
 {
     for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
     {
@@ -679,9 +631,9 @@ void Beaker::checkAllRodForces()
             cerr << "forces at last step = \n" << forces << endl;
         }
     }
-}
+}*/
 
-RodCollisionTimeStepper* Beaker::setupRodTimeStepper( RodData* i_rodData )
+/*RodCollisionTimeStepper* Beaker::setupRodTimeStepper( RodData* i_rodData )
 {
 
     ElasticRod& rod = (*i_rodData->rod);
@@ -746,9 +698,9 @@ RodCollisionTimeStepper* Beaker::setupRodTimeStepper( RodData* i_rodData )
     //stepper->setMaxIterations( iterations );
 
     RodCollisionTimeStepper* rodCollisionTimeStepper = new RodCollisionTimeStepper( stepper, &rod );
-
+	
     return rodCollisionTimeStepper;
-}
+}*/
 
 void Beaker::draw()
 {   if ( m_shouldDrawSubsteppedVertices )

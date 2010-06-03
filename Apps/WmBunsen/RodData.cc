@@ -1,24 +1,57 @@
 #include "RodData.hh"
 
-RodData::RodData() : shouldSimulate( true ), m_isFakeRod( false )
+RodData::RodData() : m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ) 
 {
-    rod = NULL; stepper = NULL; rodRenderer = NULL; 
+    m_isPlaceHolderRod = true;
 }
 
-RodData::RodData( ElasticRod* i_rod, RodCollisionTimeStepper* i_stepper, RodRenderer* i_rodRenderer ) :
-    shouldSimulate( true ), m_isFakeRod( false )
+RodData::RodData( RodOptions& i_rodOptions, std::vector<Vec3d>& i_rodVertexPositions,
+                  double i_massDamping, Vec3d& i_gravity, bool i_isReadingFromCache ) : 
+m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDamping )
 {
-    rod = i_rod; stepper = i_stepper; rodRenderer = i_rodRenderer; 
+    m_rod = setupRod( i_rodOptions,
+                      i_rodVertexPositions,
+                      i_rodVertexPositions );
+
+    m_rodRenderer = new RodRenderer( *m_rod );
+
+    // If the rod is coming from the cache file then we don't need the stepper or forces.
+    // FIXME: The above setup rod code does not need to be called either really. We need
+    // a fake setupRod function that just gives space for the vertices.
+    if ( !i_isReadingFromCache )
+    {
+        RodTimeStepper* stepper = new RodTimeStepper( *m_rod );
+    
+        stepper->setDiffEqSolver( RodTimeStepper::IMPL_EULER );
+    
+        // FIXME:
+        // Do external forces actually get deleted by RodTimeStepper, I can't see that in the code!
+        stepper->addExternalForce( new RodMassDamping( m_massDamping ) );
+        
+        if ( i_gravity.norm() > 0)
+        {
+            stepper->addExternalForce( new RodGravity( i_gravity ) );
+        }
+    
+        m_stepper = new RodCollisionTimeStepper( stepper, m_rod );        
+    }
+    
+    m_isPlaceHolderRod = false;
+
+    // Create space to store the data for each input cv for the previous, current and next positions
+    // Used in substepping and for collisions.
+    allocateStorage( i_rodVertexPositions.size() );
+    resetVertexPositions( i_rodVertexPositions );
 }
 
 RodData::~RodData()
 {
-    if ( rod != NULL )
-        delete rod;
-    if ( stepper != NULL )
-        delete stepper;
-    if ( rodRenderer != NULL )
-        delete rodRenderer;
+    if ( m_rod != NULL )
+        delete m_rod;
+    if ( m_stepper != NULL )
+        delete m_stepper;
+    if ( m_rodRenderer != NULL )
+        delete m_rodRenderer;
     
     for ( KinematicEdgeDataMap::iterator it = kinematicEdgeDataMap.begin();
               it != kinematicEdgeDataMap.end();
@@ -36,20 +69,18 @@ void RodData::removeKinematicEdge( unsigned int i_edgeNumber )
     }
 }
 
-void RodData::addKinematicEdge( unsigned int i_edgeNumber, ElasticRod* i_rod,
-    MaterialFrame* i_materialframe )
+void RodData::addKinematicEdge( unsigned int i_edgeNumber, MaterialFrame* i_materialframe )
 {
     removeKinematicEdge( i_edgeNumber );
-    KinematicEdgeData* kinematicEdgeData = new KinematicEdgeData( i_edgeNumber, i_rod, i_materialframe );
+    KinematicEdgeData* kinematicEdgeData = new KinematicEdgeData( i_edgeNumber, m_rod, i_materialframe );
     kinematicEdgeDataMap[ i_edgeNumber ] = kinematicEdgeData;
 }
 
-void RodData::resetKinematicEdge( unsigned int i_edgeNumber, ElasticRod* i_rod, 
-    MaterialFrame& i_materialframe )
+void RodData::resetKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_materialframe )
 {
     if ( kinematicEdgeDataMap.find( i_edgeNumber ) != kinematicEdgeDataMap.end() )
     {
-        kinematicEdgeDataMap[ i_edgeNumber ]->resetMaterialFrame( i_rod, i_materialframe );
+        kinematicEdgeDataMap[ i_edgeNumber ]->resetMaterialFrame( m_rod, i_materialframe );
     }
 }
 
@@ -91,6 +122,69 @@ void RodData::updateNextRodVertexPositions( vector< Vec3d >& i_vertexPositions )
     currVertexPositions = nextVertexPositions;
     nextVertexPositions = i_vertexPositions;
 }
+
+void RodData::updateBoundaryConditions()
+{
+    // Look and see if we have any user controlled vertices or edges, if so we
+    // need to apply those as boundary conditions
+    
+    RodBoundaryCondition* boundary = m_stepper->getBoundaryCondition();
+                
+    for ( KinematicEdgeDataMap::iterator it = kinematicEdgeDataMap.begin();
+            it != kinematicEdgeDataMap.end();
+            it++ )
+    {
+        // First make sure these vertices are marked as fixed on the rod
+        // or they'll get taken into account on collision calculations.
+        unsigned int edgeNum = it->first;
+        KinematicEdgeData* kinematicEdgeData = it->second;
+        m_rod->fixEdge( edgeNum );
+        m_rod->fixVert( edgeNum );
+        m_rod->fixVert( edgeNum +1 );
+
+        boundary->setDesiredVertexPosition( edgeNum, currVertexPositions[ edgeNum ]);
+        boundary->setDesiredVertexPosition( edgeNum+1, currVertexPositions[ edgeNum+1 ]);
+
+        if ( kinematicEdgeData->rootFrameDefined )
+        {
+            MaterialFrame m;
+
+            m.m1 = m_rod->getMaterial1( edgeNum );
+            m.m2 = m_rod->getMaterial2( edgeNum );
+            m.m3 = m_rod->getEdge( edgeNum );
+            m.m3.normalize();
+            
+            MaterialFrame vm = kinematicEdgeData->materialFrame;
+            
+            vm.m1 = m_rod->getReferenceDirector1( edgeNum );
+            vm.m2 = m_rod->getReferenceDirector2( edgeNum );
+            vm.m3 = m.m3;
+            
+            // work out the angle that the material frame is off the reference frame by.
+            //cerr << "kinematicEdgeData->getAngleFromRodmaterialFrame() = " << kinematicEdgeData->getAngleFromRodmaterialFrame() << endl;
+
+            boundary->setDesiredEdgeAngle( edgeNum, kinematicEdgeData->getAngleFromRodmaterialFrame() );
+        }
+        else
+        {
+            boundary->setDesiredEdgeAngle( edgeNum, m_rod->getTheta( edgeNum ) );
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     double KinematicEdgeData::getAngleBetweenReferenceAndStrand()
     { 

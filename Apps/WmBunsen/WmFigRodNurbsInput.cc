@@ -13,9 +13,9 @@ WmFigRodNurbsInput::~WmFigRodNurbsInput()
 {
 }
 
-void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock, vector<RodData*>* i_pRodData )
+void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
 {
-    MStatus stat;
+   /* MStatus stat;
 
     MDataHandle inputCurveH;
     MObject inputCurveObj;
@@ -101,9 +101,9 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock, ve
   */  
 }
 
-void WmFigRodNurbsInput::updateRodDataFromInput( MDataBlock& i_dataBlock, vector<RodData*>* i_pRodData )
+void WmFigRodNurbsInput::updateRodDataFromInput( MDataBlock& i_dataBlock )
 {
-    MStatus stat;
+   /* MStatus stat;
     
     MArrayDataHandle inArrayH = i_dataBlock.inputArrayValue( m_inputNurbsAttribute, &stat );
     CHECK_MSTATUS(stat);
@@ -184,8 +184,8 @@ void WmFigRodNurbsInput::updateRodDataFromInput( MDataBlock& i_dataBlock, vector
                     }
                 }
             }*/
-        }
-    }
+      /* }
+    }*/
 }
 
 size_t WmFigRodNurbsInput::numberOfInputs( MDataBlock& i_dataBlock )

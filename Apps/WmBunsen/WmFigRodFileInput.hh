@@ -16,6 +16,7 @@
 
 #include "WmFigRodInputType.hh"
 #include "WmFigRodFileIO.hh"
+#include "WmFigRodGroup.hh"
 
 /**
   * @brief Class to load rod data from a cached file and make it look like live data for the rod node
@@ -31,7 +32,8 @@ public:
      /**
       * @brief Default constructor
       */
-     WmFigRodFileInput( MString& i_cacheFilename );
+     WmFigRodFileInput( MString& i_cacheFilename, WmFigRodGroup& i_rodGroup, 
+                        RodOptions& i_rodOptions );
    
     /**
       * @brief Default destructor
@@ -41,10 +43,12 @@ public:
     /**
       * @brief Initialise rod data from input types.
       */
-    virtual void initialiseRodDataFromInput( MDataBlock& i_dataBlock, std::vector<RodData*>* i_pRodData  );    
+    virtual void initialiseRodDataFromInput( MDataBlock& i_dataBlock );    
     
 private:
     MString m_cacheFilename;
+    WmFigRodGroup& m_rodGroup;
+    RodOptions m_rodOptions;
 };
 
 #endif // WMFIGRODFILEINPUT_H_

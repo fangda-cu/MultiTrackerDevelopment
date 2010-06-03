@@ -5,6 +5,8 @@
 #include <weta/Wfigaro/Physics/ElasticRods/ElasticRod.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/AnisotropicRod.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodCollisionTimeStepper.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/RodMassDamping.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/RodGravity.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodUtils.hh>
 #include <weta/Wfigaro/Render/RodRenderer.hh>
 #else
@@ -95,18 +97,45 @@ class RodData
 {
 public:
     RodData();
-    RodData( ElasticRod* i_rod, RodCollisionTimeStepper* i_stepper, RodRenderer* i_rodRenderer );
+    RodData( RodOptions& i_rodOptions, std::vector<Vec3d>& i_rodVertexPositions,
+             double i_massDamping, Vec3d& i_gravity, bool i_isReadingFromCache = false );
+    //RodData( ElasticRod* i_rod, RodCollisionTimeStepper* i_stepper, RodRenderer* i_rodRenderer );
     ~RodData();
     
     void removeKinematicEdge( unsigned int i_edgeNumber );
-    void addKinematicEdge( unsigned int i_edgeNumber, ElasticRod* i_rod = NULL, MaterialFrame* i_materialframe = NULL );
-    void resetKinematicEdge( unsigned int i_edgeNumber, ElasticRod* i_rod, MaterialFrame& i_materialframe );
+
+    // if no frame passed in then Null means just lock the edge and ignore rotation.
+    void addKinematicEdge( unsigned int i_edgeNumber, MaterialFrame* i_materialframe = NULL );
+    void resetKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_materialframe );
     void updateKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_materialframe );
     void allocateStorage( size_t i_numCVs );
     void resetVertexPositions( vector< Vec3d >& i_vertexPositions );
     void updateNextRodVertexPositions( vector< Vec3d >& i_vertexPositions );
 
-    void initialiseFakeRod( int i_numberOfVertices )
+    void updateBoundaryConditions();
+
+    bool isPlaceHolderRod()
+    {
+        return m_isPlaceHolderRod;
+    }
+
+    size_t numberOfVerticesInRod()
+    {
+        if ( m_rod != NULL )
+        {
+            return m_rod->nv();
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+
+    // We store the number of vertices in the fake rod because this is used to skip over the input
+    // when coming from Barbershop as the input vertices are one big array so we need to keep
+    // track of which verts come from which strand.
+    /*void initialiseFakeRod( int i_numberOfVertices )
     {
         m_isFakeRod = true;
         m_numVerticesInFakeRod = i_numberOfVertices;
@@ -122,54 +151,140 @@ public:
         return m_isFakeRod;
     }
 
-    void setStepperEnabled( bool i_isEnabled )
+    void setRodComingFromCache( bool i_isRodComingFromCache )
+    {
+        m_isRodComingFromCache = i_isRodComingFromCache;
+    }
+
+    bool isRodComingFromCache()
+    {
+        return m_isRodComingFromCache;
+    }
+
+    bool shouldSimulate()
+    {
+        if ( m_isFakeRod || m_isRodComingFromCache )
+        {
+            return false;
+        }
+        
+        return true;
+    }
+
+    void setSimulationNeedsReset( bool i_simulationNeedsReset )
+    {
+        m_simulationNeedsReset = i_simulationNeedsReset;
+    }
+
+    /*void setStepperEnabled( bool i_isEnabled )
     {
         if ( !m_isFakeRod )
-            stepper->setEnabled( true );
+            stepper->setEnabled( i_isEnabled );
     }
+
+    bool isStepperEnabled()
+    {
+        if ( m_isFakeRod )
+        {
+            cerr << "rod is fake\n";
+            return false;
+        }
+        else
+        {
+            return stepper->isEnabled();
+        }
+    }*/
 
     void setRodParameters( double i_radiusA, double i_radiusB, double i_youngsModulus,
                            double i_shearModulus, double i_viscosity, double i_density )
     {
-        if ( !m_isFakeRod )
+        if ( !m_isPlaceHolderRod )
         {
-            rod->setRadius( i_radiusA, i_radiusB );
-            rod->setYoungsModulus( i_youngsModulus );
-            rod->setShearModulus( i_shearModulus );
-            rod->setViscosity( i_viscosity );
-            rod->setDensity( i_density );
+            m_rod->setRadius( i_radiusA, i_radiusB );
+            m_rod->setYoungsModulus( i_youngsModulus );
+            m_rod->setShearModulus( i_shearModulus );
+            m_rod->setViscosity( i_viscosity );
+            m_rod->setDensity( i_density );
         }
     }
 
     void setDrawScale( double i_drawScale )
     {
-        if ( !m_isFakeRod )
-            rodRenderer->setDrawScale( i_drawScale );
+        if ( !m_isPlaceHolderRod )
+            m_rodRenderer->setDrawScale( i_drawScale );
     }
 
     void setDrawMode( RodRenderer::DrawMode i_drawMode )
     {
-        if ( !m_isFakeRod )
-            rodRenderer->setMode( i_drawMode );
+        if ( !m_isPlaceHolderRod )
+            m_rodRenderer->setMode( i_drawMode );
     }
 
     void render()
     {
-        if ( !m_isFakeRod )
-            rodRenderer->render();
+        if ( !m_isPlaceHolderRod )
+            m_rodRenderer->render();
+    }
+
+ /*   static size_t numberOfRealRods( std::vector< RodData* >* i_pRodData )
+    {
+        if ( i_pRodData == NULL )
+        {
+            return 0;
+        }
+
+        size_t numberOfRods = 0;
+        for ( size_t r = 0; r < i_pRodData->size(); ++r )
+        {
+            if ( !( (*i_pRodData)[ r ]->isFakeRod() ) )
+            {
+                numberOfRods++;
+            }            
+        }
+
+        return numberOfRods;
+    }*/
+
+    ElasticRod* elasticRod()
+    {
+        return m_rod;
+    }
+
+     RodCollisionTimeStepper* collisionStepper()
+    {
+        return m_stepper;
+    }
+
+    // FIXME: commented out as it does nothing useful.
+    /*void setMassDamping( double i_massDamping )
+    {
+        m_massDamping = i_massDamping;
+    }*/
+
+    Vec3d nextVertexPosition( size_t i_vertexIndex )
+    {
+        return nextVertexPositions[ i_vertexIndex ];
+    }
+
+    void setUndeformedMaterialFrame( size_t i_frameIndex, Vec3d i_v1, Vec3d i_v2, Vec3d i_v3 )
+    {        
+        undeformedMaterialFrame[ i_frameIndex ].m1 = i_v1;
+        undeformedMaterialFrame[ i_frameIndex ].m2 = i_v1;
+        undeformedMaterialFrame[ i_frameIndex ].m3 = i_v3;
+    }
+
+    MaterialFrame getUndeformedMaterialFrame( size_t i_frameIndex )
+    {
+        return undeformedMaterialFrame[ i_frameIndex ];
     }
 
 //private:
-
-    // If for some reason this rod shouldn't be simulated then set this flag to false. This
-    // usually happens when the user has set the rod node to playback from cache.
-    bool shouldSimulate;
     
     // Should we keep the ObjectHandle returned by World rather than the actual rod?
-    ElasticRod* rod;
+    ElasticRod* m_rod;
     
-    RodCollisionTimeStepper* stepper;
-    RodRenderer* rodRenderer;
+    RodCollisionTimeStepper* m_stepper;
+    RodRenderer* m_rodRenderer;
     
     // These variables are updated directly by the WmBunsenRodNode each frame.
     std::vector<Vec3d> undeformedVertexPositions;
@@ -188,12 +303,11 @@ public:
 
     double hairSprayScaleFactor;
     cvDataMap forceWeightMap;
-    double massDamping;
-
+    
     // debug info
-    std::vector<Vec3d> ALLprevVertexPositions;
-    std::vector<Vec3d> ALLnextVertexPositions;
-    std::vector<Vec3d> ALLcurrVertexPositions;
+    //std::vector<Vec3d> ALLprevVertexPositions;
+    //std::vector<Vec3d> ALLnextVertexPositions;
+    //std::vector<Vec3d> ALLcurrVertexPositions;
     
     // The undeformed material frames for this rod at startTime
     std::vector<MaterialFrame> undeformedMaterialFrame;
@@ -209,6 +323,12 @@ public:
     // have had. So that when updating from input we know how many input vertices to skip past
     // in the big input vertex array.
     int m_numVerticesInFakeRod;
+
+    bool m_isRodComingFromCache;
+    bool m_simulationNeedsReset;
+
+    bool m_isPlaceHolderRod;
+    double m_massDamping;
 };
 
 #endif

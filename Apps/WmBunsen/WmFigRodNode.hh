@@ -42,6 +42,7 @@
 #include "WmFigRodNurbsInput.hh"
 #include "WmFigRodBarbInput.hh"
 #include "WmFigRodFileInput.hh"
+#include "WmFigRodGroup.hh"
 
 static const int FILE_FORMAT_VERSION = 1;
 
@@ -98,6 +99,9 @@ public:
     static MObject ia_cachePath;
     static MObject ia_cacheFrame;
     static MObject ia_readFromCache;
+        // If the user changes ia_readFromCache this will evaluated and caused the node to 
+        // stop doing anything until time==startTime
+    static MObject ca_cachingHasBeenToggled; 
     
     static MObject ca_syncAttrs;
     static MObject oa_rodsChanged;
@@ -120,10 +124,9 @@ public:
     static MObject oa_numberOfRods;
         
     // Returns the number of rods this node has input data for
-    size_t numberOfRods();
+    //size_t numberOfRods();
 
-    void initialiseRodData( vector<RodData*>* i_rodDataMap );
-    void updateRodDataFromInputs();
+   // void initialiseRodData( vector<RodData*>* i_rodDataMap );
     
     static MStatus addNumericAttribute( MObject& i_attribute, MString i_longName, 
                                         MString i_shortName,
@@ -138,15 +141,20 @@ public:
     
     MMatrix getRodEdgeMatrix( size_t i_rod, size_t i_edge );
     
-    vector<RodData*>* getRodData()
+    /*vector<RodData*>* getRodData()
     {
         return mx_rodData;
+    }*/
+
+    WmFigRodGroup* rodGroup()
+    {
+        return &m_rodGroup;
     }
     
 private:
     // Compute helper functions
     void compute_oa_simulatedVertices( const MPlug& i_plug, MDataBlock& i_dataBlock );
-    void compute_ca_simulationSync_and_oa_numberOfRods( const MPlug& i_plug, MDataBlock i_dataBlock );
+    void compute_ca_simulationSync( const MPlug& i_plug, MDataBlock i_dataBlock );
     void compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_dataBlock );
     void compute_oa_nonSimulatedVertices( const MPlug& i_plug, MDataBlock& i_dataBlock );
     void compute_oa_verticesInEachRod( const MPlug& i_plug, MDataBlock& i_dataBlock );
@@ -154,11 +162,15 @@ private:
     void compute_oa_undeformedMaterialFrames( const MPlug& i_plug, MDataBlock& i_dataBlock );
     void compute_oa_EdgeTransforms( const MPlug& i_plug, MDataBlock& i_dataBlock );
     void compute_ca_drawDataChanged( const MPlug& i_plug, MDataBlock& i_dataBlock );
+    void readCacheRelatedInputs( MDataBlock& i_dataBlock );
+    void writeCacheIfNeeded( MDataBlock& i_dataBlock );
 
     void updateControlledEdgeArrayFromInputs( MDataBlock& i_dataBlock );
-
+    void updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock );
+    
     void getStrandRootFrames( MDataBlock& i_dataBlock, vector<MaterialFrame>& o_strandRootFrames );
     void updateHairsprayScales( MDataBlock& i_dataBlock );
+    void initialiseRodData( MDataBlock& i_dataBlock );
 
     MString getCacheFilename( MDataBlock& i_dataBlock );
     
@@ -175,7 +187,9 @@ private:
     /// there is  no point in passing it to Bunsen then having it stick it into Beaker. So we
     /// use the connection to Bunsen as a flag to indicate it's time to update the data in this
     /// pointer.
-    vector<RodData*>* mx_rodData;
+  //  vector<RodData*>* mx_rodData;
+    WmFigRodGroup m_rodGroup;
+
     RodOptions m_rodOptions;
     
     World* mx_world;
@@ -187,7 +201,6 @@ private:
     // If we're overriding the number of cvs per rod then this will be not -1
     int m_verticesPerRod;
     
-    MString m_cachePath;
     MString m_cacheFilename;
   
     bool m_lockFirstEdgeToInput;
@@ -204,6 +217,10 @@ private:
 
     double m_vertexSpacing;
     double m_minimumRodLength;
+
+    bool m_readFromCache;
+    bool m_writeToCache;
+    MString m_cachePath;
 };
 
 #endif // WMFIGRODNODE_HH_

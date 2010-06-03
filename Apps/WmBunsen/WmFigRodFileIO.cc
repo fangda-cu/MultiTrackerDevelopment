@@ -28,16 +28,7 @@ WmFigRodFileIO::~WmFigRodFileIO()
         return NULL; 
     }
 
-/*    int fileFormat;
-    fread( &fileFormat, sizeof( int ), 1, fp );
-    if ( fileFormat != FILE_FORMAT_VERSION )
-    {
-        Mglobal::displayError( "Unsupported cache file format version\n" );
-        fclose( fp );
-        fp = NULL
-        o_numRodsInFile = 0;
-
-    }*/
+    cerr << "Reading file " << i_cacheFilename << endl;
 
     size_t ret = fread( &o_numRodsInFile, sizeof( size_t ), 1, fp );
 
@@ -54,10 +45,11 @@ WmFigRodFileIO::~WmFigRodFileIO()
     size_t& o_numRodsInFile, vector<vector<Vec3d> >& o_rodVertices, 
     vector<vector<Vec3d> >& o_unsimulatedRodVertices )
 {
-
     FILE* fp = readNumberOfRodsFromFile( i_cacheFilename, o_numRodsInFile, false );
     if ( fp == NULL )
+    {
         return false;
+    }
 
     o_rodVertices.resize( o_numRodsInFile );
     o_unsimulatedRodVertices.resize( o_numRodsInFile );
@@ -87,21 +79,23 @@ WmFigRodFileIO::~WmFigRodFileIO()
 }
 
 
-/* static */ void WmFigRodFileIO::updateRodDataFromCacheFile( MString i_cacheFileName, 
-    vector<RodData*>* i_pRodData )
+/* static */ void WmFigRodFileIO::updateRodDataFromCacheFile( MString i_cacheFileName, WmFigRodGroup& i_rodGroup )
 {
-    if ( i_pRodData == NULL )
-        return;     // No rod data, nowhere to store rod data
-
     size_t numRodsInFile;
     vector<vector<Vec3d> > rodVertices;
     vector<vector<Vec3d> > unsimulatedRodVertices;
 
     if ( !readDataFromRodCacheFile( i_cacheFileName, numRodsInFile, rodVertices,
                                     unsimulatedRodVertices ) )
+    {
+        cerr << "Failed to read\n";
         return;
+    }
 
-    if ( numRodsInFile != i_pRodData->size() )
+    cerr << "numRodsInFile << " << numRodsInFile << endl;
+    cerr << "i_rodGroup.numberOfRods()  << " << i_rodGroup.numberOfRods() << endl;
+
+    if ( numRodsInFile != i_rodGroup.numberOfRods() )
     {
         MGlobal::displayError( "Rewind simulation to reset before cache file can be read" );
         return;
@@ -109,7 +103,8 @@ WmFigRodFileIO::~WmFigRodFileIO()
 
     for ( size_t r=0; r<numRodsInFile; r++ )
     {
-        BASim::ElasticRod* rod = (*i_pRodData)[ r ]->rod;
+        
+        BASim::ElasticRod* rod = i_rodGroup.elasticRod( r );
         if ( rod == NULL )
         {
             MGlobal::displayError( "Rewind simulation to reset before cache file can be read" );
@@ -132,11 +127,8 @@ WmFigRodFileIO::~WmFigRodFileIO()
 }
 
 /* static */ void WmFigRodFileIO::writeRodDataToCacheFile( MString& i_cacheFileame, 
-    vector<RodData*>* i_pRodData )
+     WmFigRodGroup& i_rodGroup  )
 {
-    if ( i_pRodData == NULL )
-        return;     // No rod data then nothing to put in the file
-
     if ( i_cacheFileame == "" )
     {
         MGlobal::displayError( "Empty cache path, not writing anything to disk." );
@@ -154,25 +146,29 @@ WmFigRodFileIO::~WmFigRodFileIO()
     }
 
     // FIXME: create a proper cache file format. This one is bad, it at least needs a proper header.
-    size_t numRods = i_pRodData->size();
-    fwrite( &numRods, sizeof( size_t ), 1, fp );
+    
+    size_t numberOfRealRods = i_rodGroup.numberOfRealRods();
+    size_t totalNumberOfRods = i_rodGroup.numberOfRods();
+    fwrite( &numberOfRealRods, sizeof( size_t ), 1, fp );
 
-    for ( size_t r=0; r<numRods; r++ )
+    for ( size_t r=0; r<totalNumberOfRods; r++ )
     {
-        // Write number of vertices in this rod
-        BASim::ElasticRod* rod = (*i_pRodData)[ r ]->rod;
-
-        if ( rod == NULL )
+        if ( !i_rodGroup.isPlaceHolderRod( r ) )
         {
-            cerr << "WTF, rod is NULL \n";
-            continue;
-        }
+            // Write number of vertices in this rod
+            BASim::ElasticRod* rod = i_rodGroup.elasticRod( r );
+    
+            if ( rod == NULL )
+            {
+                cerr << "WTF, rod is NULL \n";
+                continue;
+            }
 
-        size_t numVertices = rod->nv();
-        fwrite( &numVertices, sizeof( size_t ), 1, fp );
-
-        for ( size_t v=0; v<numVertices; v++ )
-        {
+            size_t numVertices = rod->nv();
+            fwrite( &numVertices, sizeof( size_t ), 1, fp );
+            
+            for ( size_t v=0; v<numVertices; v++ )
+            {
             double pos[3];
 
             // Wonder if its safe to write Vec3ds. Need to check what's in them.
@@ -186,7 +182,7 @@ WmFigRodFileIO::~WmFigRodFileIO()
 
             // Now store the unsimulated positions so that we can send them to Barbershop
             // when we want to simulate with it.
-            vertex = (*i_pRodData)[ r ]->nextVertexPositions[ v ];
+            vertex = i_rodGroup.nextVertexPosition( r, v );
             pos[ 0 ] = vertex.x();
             pos[ 1 ] = vertex.y();
             pos[ 2 ] = vertex.z();
@@ -195,9 +191,8 @@ WmFigRodFileIO::~WmFigRodFileIO()
 
             // We should write velocities and anything else we need into the file too so that
             // we can restart a simulation from a cached file.
+            }
         }
     }
-
     fclose ( fp );
-
 }

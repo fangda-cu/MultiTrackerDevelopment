@@ -65,6 +65,8 @@ public:
     static MObject ia_collisionMeshes;
 
     static MObject ia_plasticDeformations;
+    static MObject ia_isClumpingEnabled;
+    static MObject ia_clumpingCoefficient;
     static MObject ia_selfCollisionPenaltyForces;
     static MObject ia_fullSelfCollisions;
     static MObject ia_fullSelfCollisionIterations;
@@ -82,10 +84,11 @@ public:
     
 private:
     void pullOnAllRodNodes( MDataBlock& i_dataBlock );
-    void createRodDataFromRodNodes( MDataBlock& i_dataBlock, 
-                                    ObjectControllerBase::SolverLibrary solverLibrary );
+    void createRodDataFromRodNodes( MDataBlock& i_dataBlock );
     void updateAllCollisionMeshes( MDataBlock& i_dataBlock );
-    
+    void updateAllRodNodes( MDataBlock &i_dataBlock );
+    void addRodsToWorld( MDataBlock& i_dataBlock );
+
     double m_currentTime;
     double m_previousTime;
     double m_startTime;
@@ -94,7 +97,7 @@ private:
     bool m_initialised;
     
     bool m_enabled;
-    
+
     Beaker* m_beaker;
 };
 

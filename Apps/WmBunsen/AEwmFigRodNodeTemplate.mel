@@ -8,9 +8,9 @@ global proc AEwmFigRodNodeTemplate(string $nodeName)
         editorTemplate -addControl "minimumRodLength";
     editorTemplate -endLayout;
 
-    editorTemplate -beginLayout "Rod Attributes" -collapse 0;
+    editorTemplate -beginLayout "Rod Parameters" -collapse 0;
         editorTemplate -addControl "numberOfRods";
-        editorTemplate -addControl "cacheFrame";        
+        editorTemplate -addControl "cacheFrame";
         editorTemplate -addControl "readFromCache";
         editorTemplate -beginNoOptimize -addControl "lockFirstEdgeToInput";
         editorTemplate -endNoOptimize -addControl "startTime";
@@ -23,7 +23,10 @@ global proc AEwmFigRodNodeTemplate(string $nodeName)
         editorTemplate -addControl "internalDamping";
         editorTemplate -addControl "density";
         editorTemplate -addControl "massDamping";
-        editorTemplate -addControl "hairSprayScaleFactor";
+    //    editorTemplate -addControl "hairSprayScaleFactor";
+    editorTemplate -endLayout;
+
+    editorTemplate -beginLayout "Drawing" -collapse 0;
         editorTemplate -addControl "drawMaterialFrames";
         editorTemplate -addControl "draw3DRod";
         editorTemplate -addControl "drawScale";

@@ -16,6 +16,7 @@
 
 #include "WmFigRodInputType.hh"
 #include "WmFigRodFileIO.hh"
+#include "WmFigRodGroup.hh"
 
 /**
   * @brief Base class providing file IO operations for Figaro rod cache files
@@ -44,9 +45,9 @@ public:
     static bool readDataFromRodCacheFile( const MString i_cacheFilename, size_t& o_numRodsInFile,
           vector<vector<Vec3d> >& o_rodVertices, vector<vector<Vec3d> >& o_unsimulatedRodVertices );
     
-    static void updateRodDataFromCacheFile( MString i_cacheFileName, vector<RodData*>* i_pRodData );
+    static void updateRodDataFromCacheFile( MString i_cacheFileName, WmFigRodGroup& i_rodGroup );
 
-    static void writeRodDataToCacheFile( MString& i_cacheFileame, vector<RodData*>* i_pRodData );
+    static void writeRodDataToCacheFile( MString& i_cacheFileame, WmFigRodGroup& i_rodGroup );
 
 private:
     

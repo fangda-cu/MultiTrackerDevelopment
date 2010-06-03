@@ -30,6 +30,7 @@ using namespace BASim;
 /* static */ MObject WmFigRodNode::ia_cachePath;
 /* static */ MObject WmFigRodNode::ia_cacheFrame;
 /* static */ MObject WmFigRodNode::ia_readFromCache;
+/* static */ MObject WmFigRodNode::ca_cachingHasBeenToggled;
 
 // Output attributes
 /* static */ MObject WmFigRodNode::oa_rodsChanged;
@@ -66,9 +67,10 @@ using namespace BASim;
 
 
 WmFigRodNode::WmFigRodNode() : m_massDamping( 10 ), m_initialised( false ),
-    mx_rodData( NULL ), mx_world( NULL ), m_numberOfInputCurves( 0 ), 
-    m_percentageOfBarberShopStrands( 100 ), m_verticesPerRod( -1 ), m_cachePath( "" ), m_cacheFilename( "" ),
-    m_pRodInput( NULL ), m_vertexSpacing( 0.0 ), m_minimumRodLength( 2.0 )
+    /*mx_rodData( NULL ),*/ mx_world( NULL ), m_numberOfInputCurves( 0 ), 
+    m_percentageOfBarberShopStrands( 100 ), m_verticesPerRod( -1 ), m_cacheFilename( "" ),
+    m_pRodInput( NULL ), m_vertexSpacing( 0.0 ), m_minimumRodLength( 2.0 ),
+    m_readFromCache( false ), m_writeToCache( false ), m_cachePath ( "" )
 {
     m_rodOptions.YoungsModulus = 1000.0; /* megapascal */
     m_rodOptions.ShearModulus = 340.0;   /* megapascal */
@@ -76,6 +78,7 @@ WmFigRodNode::WmFigRodNode() : m_massDamping( 10 ), m_initialised( false ),
     m_rodOptions.density = 1.3;          /* grams per cubic centimeter */
     m_rodOptions.radiusA = 0.05;         /* millimeter */
     m_rodOptions.radiusB = 0.05;         /* millimeter */
+    m_rodOptions.refFrame = BASim::ElasticRod::TimeParallel;
     m_strandRootFrames.clear();
     m_controlledEdgeTransforms.clear();
 }
@@ -88,17 +91,41 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
-    if ( i_plug == oa_rodsChanged )
+    //cerr << "WmFigRodNode::compute() with i_plug = " << i_plug.name() << endl;
+
+    if ( i_plug == oa_numberOfRods )
+    {
+        // oa_numberOfRods only depends on time. This is because it is displayed in the AE
+        // and so even if the node is hidden then it will evaluate everytime the AE is refreshed.
+        // If it depends on the actual rod change inputs then the rods will do a lot of work.
+        // This is not ideal...
+
+        i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
+        CHECK_MSTATUS( stat );
+
+        MDataHandle numRodsH = i_dataBlock.outputValue( oa_numberOfRods, &stat);
+        CHECK_MSTATUS( stat );
+    
+        numRodsH.set( (int)m_rodGroup.numberOfRods() );
+        
+        stat = i_dataBlock.setClean( i_plug );
+        if ( !stat )
+        {
+            stat.perror("WmFigRodNode::compute setClean");
+            return;
+        }
+    }
+    else if ( i_plug == oa_rodsChanged )
     {
         // One of the inputs to the node has changed that should cause the simulation to 
         // either take a step or change some parameter.
         compute_oa_rodsChanged( i_plug, i_dataBlock );
     }
-    else if ( i_plug == ca_simulationSync || i_plug == oa_numberOfRods )
+    else if ( i_plug == ca_simulationSync )
     {
         // The simulation has moved forward in time, we need to cache the result or update 
         // our OpenGL data for the rods.
-        compute_ca_simulationSync_and_oa_numberOfRods( i_plug, i_dataBlock );
+        compute_ca_simulationSync( i_plug, i_dataBlock );
     }
     else if ( i_plug == oa_simulatedVertices )
     {
@@ -153,25 +180,50 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     return MS::kSuccess;
 }
 
+void WmFigRodNode::readCacheRelatedInputs( MDataBlock& i_dataBlock )
+{
+    MStatus stat;
+
+    m_writeToCache = i_dataBlock.inputValue( ia_cacheFrame, &stat ).asBool();
+    CHECK_MSTATUS( stat );
+
+    m_cachePath = i_dataBlock.inputValue( ia_cachePath, &stat ).asString();
+    CHECK_MSTATUS( stat );
+
+    m_readFromCache = i_dataBlock.inputValue( ia_readFromCache, &stat ).asDouble();
+}
+
+void WmFigRodNode::writeCacheIfNeeded( MDataBlock& i_dataBlock )
+{
+    if ( m_writeToCache && !m_rodGroup.simulationNeedsReset() )
+    {
+        if ( !m_readFromCache )
+        {
+            getCacheFilename( i_dataBlock );
+            WmFigRodFileIO::writeRodDataToCacheFile( m_cacheFilename, m_rodGroup );
+        }
+        else
+        {
+            MGlobal::displayWarning( "Ignoring request to cache frame as reading from cache!\n" );
+        }
+    }
+}
+
 /** @detail Initialises the RodData vector to the correct size and the initial
     rod data. It is called when we are about to recreate all the rods so time has just been
     set back to 'startTime'.
 
     @param i_rodData A pointer to a vector of pointers to rod data. This????
 */
-void WmFigRodNode::initialiseRodData( vector<RodData*>* i_rodData )
+void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
 {
-    mx_rodData = i_rodData;
     MStatus stat;
 
-    // We may get called from _outside_ a compute by the WmBunsenNode initialising all its
-    // data and it may be inside a compute and ours may not have been called
-    // to get all this data yet. So build our own datablock to use... Some may say this
-    // should be done with maya DG connections...
-    MDataBlock dataBlock = MPxNode::forceCache();
-
     MPlug barberShopPlug( thisMObject(), ia_barberShopVertices );
-    bool readFromCache = dataBlock.inputValue( ia_readFromCache, &stat ).asBool();
+    readCacheRelatedInputs( i_dataBlock );
+
+    // Remove all rods as we're about to build new ones from one of our inputs
+    m_rodGroup.removeAllRods();
 
     // Delete the old rod input class as the user may have switched inputs and we're
     // recreating it no matter what.
@@ -187,82 +239,77 @@ void WmFigRodNode::initialiseRodData( vector<RodData*>* i_rodData )
     // an ordering to what takes precidence. Only one input is currently used at a time,
     // although it may not be too hard to handle multiple inputs.
     //
-    if ( readFromCache)
+    if ( m_readFromCache)
     {
-        getCacheFilename( dataBlock );
-        m_pRodInput = new WmFigRodFileInput( m_cacheFilename );
+        getCacheFilename( i_dataBlock );
+        m_pRodInput = new WmFigRodFileInput( m_cacheFilename, m_rodGroup, m_rodOptions );
     }
     else if ( barberShopPlug.isConnected() )
     {
         m_pRodInput = new WmFigRodBarbInput( ia_barberShopVertices, ia_strandRootFrames,
                                              m_percentageOfBarberShopStrands, m_verticesPerRod,
                                              m_lockFirstEdgeToInput, m_vertexSpacing,
-                                             m_minimumRodLength );
+                                             m_minimumRodLength,
+                                             m_rodOptions, m_massDamping, m_rodGroup );
     }
     else // Assume we have nurbs connected
     {
         m_pRodInput = new WmFigRodNurbsInput( ia_nurbsCurves, m_lockFirstEdgeToInput );
     }
     
-    m_pRodInput->initialiseRodDataFromInput( dataBlock, mx_rodData );
+    m_pRodInput->initialiseRodDataFromInput( i_dataBlock );
 
-    //
-    // Now set some rod attributes that need set no matter what the input method is
-    //
+    // The sim has been re-initialised so it no longer needs reset.
+    m_rodGroup.setSimulationNeedsReset( false );
 
-    if ( mx_rodData != NULL )
-    {
-        // FIXME: These rod options replicate some data in mx_rodData. We need rodOptions as it's the
-        // format things are passed to the core. We should reorganised RodData and work out how
-        // to have the two coexist in a more elegant fashion.
-    
-        size_t numRods = mx_rodData->size();
-        for ( size_t r = 0; r < numRods; r++ )
-        {
-            ( *mx_rodData )[ r ]->rodOptions = m_rodOptions;            
-            
-            // We want time parallel frames
-            ( *mx_rodData )[ r ]->rodOptions.refFrame = BASim::ElasticRod::TimeParallel;
-        
-            // Override the number of vertices to match the input data. We can't ask the rod for
-            // how many vertices it has because it hasn't been created yet.
-            ( *mx_rodData )[ r ]->rodOptions.numVertices =  ( *mx_rodData )[ r ]->undeformedVertexPositions.size();
-        
-            // Set mass damping for this rod
-            ( *mx_rodData )[ r ]->massDamping = m_massDamping;
-         }
-    }
+    // Write out this frame as it doesn't need simulated, we just need to store what was just
+    // initialised.
+    writeCacheIfNeeded( i_dataBlock );
 
     // We need to make sure we have the spline attr data for the rods since compute may not have been called yet
     // FIXME: These are broken so I'm removing them for just now.
     //updateHairsprayScales( dataBlock );
 }
 
-void WmFigRodNode::updateRodDataFromInputs()
+void WmFigRodNode::updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock )
 {
-    if ( mx_rodData == NULL )
-    {
-        MGlobal::displayError( "Please rewind simulation to initialise\n" );
-        return;
-    }
-
     MStatus stat;
 
-    // We may get called from not inside a compute by the WmBunsenNode initialising all its
-    // data. So build our own datablock to use.
-    MDataBlock dataBlock = MPxNode::forceCache();
+    readCacheRelatedInputs( i_dataBlock );
 
-    m_pRodInput->updateRodDataFromInput( dataBlock, mx_rodData );
-
-    size_t numRods = mx_rodData->size();
-    for ( size_t r = 0; r < numRods; r++ )
+    if ( m_currentTime == m_startTime )
     {
-         ( *mx_rodData )[ r ]->setRodParameters( m_rodOptions.radiusA, m_rodOptions.radiusB,
-                                                 m_rodOptions.YoungsModulus,
-                                                 m_rodOptions.ShearModulus,
-                                                 m_rodOptions.viscosity,
-                                                 m_rodOptions.density );
+        initialiseRodData( i_dataBlock );     
     }
+    else
+    {
+        if ( m_pRodInput == NULL )
+        {
+            return;
+        }
+
+        if ( !m_rodGroup.simulationNeedsReset() )
+        {
+            if ( !m_readFromCache )
+            {
+                m_pRodInput->updateRodDataFromInput( i_dataBlock );
+            }
+            else
+            {
+                WmFigRodFileIO::updateRodDataFromCacheFile( m_cacheFilename, m_rodGroup );
+            }
+        }
+        else
+        {
+            MGlobal::displayWarning( "Please rewind simulation to reset\n" );
+        }
+    }
+
+    m_rodGroup.setRodParameters( m_rodOptions.radiusA, m_rodOptions.radiusB,
+                                 m_rodOptions.YoungsModulus,
+                                 m_rodOptions.ShearModulus,
+                                 m_rodOptions.viscosity,
+                                 m_rodOptions.density );
 }
 
 /** @detail Returns the material frame matrix for a specific rod's edge.
@@ -287,7 +334,7 @@ MMatrix WmFigRodNode::getRodEdgeMatrix( size_t i_rod, size_t i_edge )
     // Check if the input parameters index a valid rod and edge, if not
     // return the identity matrix.
 
-    if ( mx_rodData == NULL )
+ /*   if ( mx_rodData == NULL )
         return identMatrix;
     
     if ( i_rod >= mx_rodData->size() )
@@ -320,7 +367,9 @@ MMatrix WmFigRodNode::getRodEdgeMatrix( size_t i_rod, size_t i_edge )
     Vec3d material2 = (*mx_rodData)[ i_rod ]->rod->getMaterial2( i_edge );
     edgeMatrix( 2, 0 ) = material2[ 0 ]; edgeMatrix( 2, 1 ) = material2[ 1 ]; edgeMatrix( 2, 2 ) = material2[ 2 ];
     
-    return edgeMatrix;
+    return edgeMatrix;*/
+
+    return identMatrix;
 }
 
 MString WmFigRodNode::getCacheFilename( MDataBlock& i_dataBlock )
@@ -343,7 +392,7 @@ MString WmFigRodNode::getCacheFilename( MDataBlock& i_dataBlock )
 
 void WmFigRodNode::updateHairsprayScales( MDataBlock& i_dataBlock )
 {
-    if ( mx_rodData == NULL )
+    /*if ( mx_rodData == NULL )
         return;
 
     // FIXME:
@@ -393,7 +442,7 @@ void WmFigRodNode::updateHairsprayScales( MDataBlock& i_dataBlock )
             (*mx_rodData)[s]->forceWeightMap[positions[0]] = std::pair< float, int16_t>( 0.0, 0 );
             weightRamp.addEntries( positions, values, interps, &stat );
         }
-    }
+    }*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -452,36 +501,26 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
    
     //////////////////////////////////////////////////////////////////////////////////////////
     
+    // FIXME:
+    // We should really just disable all rods at when this is toggled and make the user
+    // go back to start time before they can see the cached rods?
+
     bool readFromCache = i_dataBlock.inputValue( ia_readFromCache, &stat ).asDouble();
-    if ( readFromCache )
+
+    if ( m_readFromCache != readFromCache )
     {
+        // We changed reading from cache status not at startTime so stop doing anything until
+        // the user resets the sim to be sure all is safe.
         // Make sure that every rod is disabled before we read from the cache file
-        if ( mx_rodData != NULL )
-        {
-            size_t numRods = mx_rodData->size();
-            for ( size_t r=0; r<numRods; r++ )
-            {
-                (*mx_rodData)[r]->setStepperEnabled( false );                
-            }
-
-            //readRodDataFromCacheFile();
-            WmFigRodFileIO::updateRodDataFromCacheFile( m_cacheFilename, mx_rodData );
-        }
+        
+        cerr << "read status changed disabling all rods\n";
+        m_rodGroup.setSimulationNeedsReset( true );
+        
+        m_readFromCache = readFromCache;
     }
-    else if ( mx_rodData != NULL )
-    {
-        // The Figaro node is asking us to update the rod data in Beaker for our inputs
-        // so do so here.....
-        // Make sure that every rod is enabled incase we just stopped reading from a cache file.
-        size_t numRods = mx_rodData->size();
-        for ( size_t r=0; r<numRods; r++ )
-        {
-            (*mx_rodData)[r]->setStepperEnabled( true );
-        }
 
-        updateRodDataFromInputs();
-        updateHairsprayScales( i_dataBlock );
-    }
+    m_rodGroup.setIsReadingFromCache( m_readFromCache );
+    updateOrInitialiseRodDataFromInputs( i_dataBlock );
     
     stat = i_dataBlock.setClean( i_plug );
     if ( !stat )
@@ -493,7 +532,7 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
 
 void WmFigRodNode::updateControlledEdgeArrayFromInputs( MDataBlock& i_dataBlock )
 {
-    MStatus stat;
+    /*MStatus stat;
 
     MDataHandle inputCurveH;
     MObject inputCurveObj;    
@@ -565,7 +604,7 @@ void WmFigRodNode::updateControlledEdgeArrayFromInputs( MDataBlock& i_dataBlock 
             }
         }
     }
-    inEdgeArrayH.setClean();
+    inEdgeArrayH.setClean();*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -577,7 +616,7 @@ void WmFigRodNode::updateControlledEdgeArrayFromInputs( MDataBlock& i_dataBlock 
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void WmFigRodNode::compute_ca_simulationSync_and_oa_numberOfRods( const MPlug& i_plug, 
+void WmFigRodNode::compute_ca_simulationSync( const MPlug& i_plug, 
     MDataBlock i_dataBlock )
 {
     MStatus stat;
@@ -585,29 +624,14 @@ void WmFigRodNode::compute_ca_simulationSync_and_oa_numberOfRods( const MPlug& i
     i_dataBlock.inputValue( ia_simStepTaken, &stat ).asBool();
     CHECK_MSTATUS( stat );
 
-    bool cacheFrame = i_dataBlock.inputValue( ia_cacheFrame, &stat ).asBool();
-    CHECK_MSTATUS( stat );
+    readCacheRelatedInputs( i_dataBlock );
 
-    MString cachePath = i_dataBlock.inputValue( ia_cachePath, &stat ).asString();
-    CHECK_MSTATUS( stat );
-
-    bool readFromCache = i_dataBlock.inputValue( ia_readFromCache, &stat ).asDouble();
-
-    if ( cacheFrame )
-    {
-        if ( !readFromCache )
-            WmFigRodFileIO::writeRodDataToCacheFile( m_cacheFilename, mx_rodData );
-        else
-            MGlobal::displayWarning( "Ignoring request to cache frame as reading from cache!\n" );
-    }
+    writeCacheIfNeeded( i_dataBlock );
     
     MDataHandle numRodsH = i_dataBlock.outputValue( oa_numberOfRods, &stat);
     CHECK_MSTATUS( stat );
 
-    if ( mx_rodData != NULL )
-        numRodsH.set( (int)mx_rodData->size() );
-    else
-        numRodsH.set( 0 );
+    numRodsH.set( (int)m_rodGroup.numberOfRods() );
     
     stat = i_dataBlock.setClean( i_plug );
     if ( !stat )
@@ -650,23 +674,21 @@ void WmFigRodNode::compute_oa_simulatedVertices( const MPlug& i_plug, MDataBlock
     MVectorArray simulatedVerticesArray = simulatedVerticesArrayData.array( &stat );
     CHECK_MSTATUS( stat );
 
-    if ( mx_rodData != NULL )
+    size_t numRods = m_rodGroup.numberOfRods();
+    unsigned int idx = 0;
+    for ( size_t r = 0; r < numRods; r++ )
     {
-        size_t numRods = mx_rodData->size();
-        unsigned int idx = 0;
-        for ( size_t r = 0; r < numRods; r++ )
-        {
-            unsigned int verticesInRod = (*mx_rodData)[ r ]->rod->nv();
-            simulatedVerticesArray.setLength( (unsigned int) ( simulatedVerticesArray.length() + verticesInRod ) );
+        unsigned int verticesInRod = m_rodGroup.numberOfVerticesInRod( r );
+        simulatedVerticesArray.setLength( (unsigned int) ( simulatedVerticesArray.length() + verticesInRod ) );
 
-            for ( unsigned int v = 0; v < verticesInRod; v++ )
-            {
-                Vec3d pos = (*mx_rodData)[ r ]->rod->getVertex( v );
-                simulatedVerticesArray[ idx ] = MVector( pos[0], pos[1], pos[2] );
-                idx++;
-            }
+        for ( unsigned int v = 0; v < verticesInRod; v++ )
+        {
+            Vec3d pos = m_rodGroup.elasticRod( r )->getVertex( v );
+            simulatedVerticesArray[ idx ] = MVector( pos[0], pos[1], pos[2] );
+            idx++;
         }
     }
+
 
     simulatedVerticesH.setClean();
     i_dataBlock.setClean( i_plug );
@@ -704,25 +726,22 @@ void WmFigRodNode::compute_oa_nonSimulatedVertices( const MPlug& i_plug, MDataBl
     MVectorArray nonSimulatedVerticesArray = nonSimulatedVerticesArrayData.array( &stat );
     CHECK_MSTATUS( stat );
 
-    if ( mx_rodData != NULL )
+    size_t numRods = m_rodGroup.numberOfRods();
+
+    unsigned int idx = 0;
+
+    for ( size_t r = 0; r < numRods; r++ )
     {
-        size_t numRods = mx_rodData->size();
+        unsigned int verticesInRod = m_rodGroup.numberOfVerticesInRod( r );
+        nonSimulatedVerticesArray.setLength( (unsigned int) ( nonSimulatedVerticesArray.length() + verticesInRod ) );
 
-        unsigned int idx = 0;
-
-        for ( size_t r = 0; r < numRods; r++ )
+        for ( unsigned int v = 0; v < verticesInRod; v++ )
         {
-            unsigned int verticesInRod = (*mx_rodData)[ r ]->rod->nv();
-            nonSimulatedVerticesArray.setLength( (unsigned int) ( nonSimulatedVerticesArray.length() + verticesInRod ) );
-
-            for ( unsigned int v = 0; v < verticesInRod; v++ )
-            {
-                Vec3d pos = (*mx_rodData)[ r ]->nextVertexPositions[ v ];
-                nonSimulatedVerticesArray[ idx ] = MVector( pos[0], pos[1], pos[2] );
-                idx++;
-            }
-        }        
-    }
+            Vec3d pos = m_rodGroup.nextVertexPosition( r, v );
+            nonSimulatedVerticesArray[ idx ] = MVector( pos[0], pos[1], pos[2] );
+            idx++;
+        }
+    }        
 
     nonSimulatedVerticesH.setClean();
     i_dataBlock.setClean( i_plug );
@@ -758,18 +777,15 @@ void WmFigRodNode::compute_oa_verticesInEachRod( const MPlug& i_plug, MDataBlock
     verticesPerRodH.set( verticesPerRodArrayData.create( &stat ) );
     CHECK_MSTATUS( stat );
 
-    if ( mx_rodData != NULL )
-    {
-        MIntArray verticesPerRodArray = verticesPerRodArrayData.array( &stat );
-        size_t numRods = mx_rodData->size();
-        verticesPerRodArray.setLength( (unsigned int)numRods );
-        unsigned int idx = 0;
+    MIntArray verticesPerRodArray = verticesPerRodArrayData.array( &stat );
+    size_t numRods = m_rodGroup.numberOfRods();
+    verticesPerRodArray.setLength( (unsigned int)numRods );
+    unsigned int idx = 0;
 
-        for ( size_t r = 0; r < numRods; r++ )
-        {
-            unsigned int verticesInRod = (*mx_rodData)[ r ]->rod->nv();
-            verticesPerRodArray[ (int)r ] = verticesInRod;
-        }
+    for ( size_t r = 0; r < numRods; r++ )
+    {
+        unsigned int verticesInRod = m_rodGroup.numberOfVerticesInRod( r );
+        verticesPerRodArray[ (int)r ] = verticesInRod;
     }
 
     verticesPerRodH.setClean();
@@ -809,32 +825,29 @@ void WmFigRodNode::compute_oa_materialFrames( const MPlug& i_plug, MDataBlock& i
     MVectorArray materialFramesArray = materialFramesArrayData.array( &stat );
     CHECK_MSTATUS( stat );
 
-    if ( mx_rodData != NULL )
+    size_t numRods = m_rodGroup.numberOfRods();
+    unsigned int idx = 0;
+    for ( size_t r = 0; r < numRods; r++ )
     {
-        size_t numRods = mx_rodData->size();
-        unsigned int idx = 0;
-        for ( size_t r = 0; r < numRods; r++ )
+        ElasticRod* rod = m_rodGroup.elasticRod( r );
+        if ( rod != NULL )
         {
-            ElasticRod* rod = (*mx_rodData)[ r ]->rod;
-            if ( rod != NULL )
+            unsigned int edgesInRod = rod->ne();
+            materialFramesArray.setLength( (unsigned int) ( materialFramesArray.length() + edgesInRod*3 ) );
+
+            for ( unsigned int e = 0; e < edgesInRod; e++ )
             {
-                unsigned int edgesInRod = rod->ne();
-                materialFramesArray.setLength( (unsigned int) ( materialFramesArray.length() + edgesInRod*3 ) );
+                Vec3d m1 =  rod->getMaterial1( e );
+                Vec3d m2 =  rod->getMaterial2( e );
+                Vec3d m3 =  rod->getEdge( e );
+                m3.normalize();
 
-                for ( unsigned int e = 0; e < edgesInRod; e++ )
-                {
-                    Vec3d m1 =  rod->getMaterial1( e );
-                    Vec3d m2 =  rod->getMaterial2( e );
-                    Vec3d m3 =  rod->getEdge( e );
-                    m3.normalize();
-
-                    materialFramesArray[ idx ] = MVector( m1[0], m1[1], m1[2] );
-                    idx++;
-                    materialFramesArray[ idx ] = MVector( m2[0], m2[1], m2[2] );
-                    idx++;
-                    materialFramesArray[ idx ] = MVector( m3[0], m3[1], m3[2] );
-                    idx++;
-                }
+                materialFramesArray[ idx ] = MVector( m1[0], m1[1], m1[2] );
+                idx++;
+                materialFramesArray[ idx ] = MVector( m2[0], m2[1], m2[2] );
+                idx++;
+                materialFramesArray[ idx ] = MVector( m3[0], m3[1], m3[2] );
+                idx++;
             }
         }
     }
@@ -901,36 +914,35 @@ void WmFigRodNode::compute_oa_undeformedMaterialFrames( const MPlug& i_plug, MDa
         // got here then we can safely store the material frames as the frames
         // in the groom pose
 
-        if ( mx_rodData != NULL )
+        size_t numRods = m_rodGroup.numberOfRods();
+        unsigned int idx = 0;
+        for ( size_t r = 0; r < numRods; r++ )
         {
-            size_t numRods = mx_rodData->size();
-            unsigned int idx = 0;
-            for ( size_t r = 0; r < numRods; r++ )
+            ElasticRod* rod = m_rodGroup.elasticRod( r );
+            if ( rod != NULL )
             {
-                ElasticRod* rod = (*mx_rodData)[ r ]->rod;
-                if ( rod != NULL )
+                undeformedMaterialFramesArray.setLength( (unsigned int) ( undeformedMaterialFramesArray.length() + rod->ne()*3 ) );
+
+                for ( size_t e=0; e<(size_t)rod->ne(); e++ )
                 {
-                    undeformedMaterialFramesArray.setLength( (unsigned int) ( undeformedMaterialFramesArray.length() + rod->ne()*3 ) );
+                    // currently we only store the undeformed frame for the first vertex
+                    Vec3d m1 =  rod->getMaterial1( e );
+                    Vec3d m2 =  rod->getMaterial2( e );
+                    Vec3d m3 =  rod->getEdge( e );
+                    m3.normalize();
 
-                    for ( size_t e=0; e<(size_t)rod->ne(); e++ )
-                    {
-                        // currently we only store the undeformed frame for the first vertex
-                        Vec3d m1 =  rod->getMaterial1( e );
-                        Vec3d m2 =  rod->getMaterial2( e );
-                        Vec3d m3 =  rod->getEdge( e );
-                        m3.normalize();
+                    /*(*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m1 = m1;
+                    (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m2 = m2;
+                    (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m3 = m3;*/
 
-                        (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m1 = m1;
-                        (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m2 = m2;
-                        (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m3 = m3;
+                    m_rodGroup.setUndeformedMaterialFrame( r, e, m1, m2, m3 );
 
-                        undeformedMaterialFramesArray[ idx ] = MVector( m1[0], m1[1], m1[2] );
-                        idx++;
-                        undeformedMaterialFramesArray[ idx ] = MVector( m2[0], m2[1], m2[2] );
-                        idx++;
-                        undeformedMaterialFramesArray[ idx ] = MVector( m3[0], m3[1], m3[2] );
-                        idx++;
-                    }
+                    undeformedMaterialFramesArray[ idx ] = MVector( m1[0], m1[1], m1[2] );
+                    idx++;
+                    undeformedMaterialFramesArray[ idx ] = MVector( m2[0], m2[1], m2[2] );
+                    idx++;
+                    undeformedMaterialFramesArray[ idx ] = MVector( m3[0], m3[1], m3[2] );
+                    idx++;
                 }
             }
         }
@@ -940,78 +952,76 @@ void WmFigRodNode::compute_oa_undeformedMaterialFrames( const MPlug& i_plug, MDa
         // We're not at startTime so we must be simulating and need to work out what the
         // unsimulated material frames would be at this point based on the input curve.
 
-        if ( mx_rodData != NULL )
+        size_t numRods = m_rodGroup.numberOfRods();
+
+        // if we have no strand root frames for this frame then we can't do anything.
+        // We use < rather than == because we can choose to only use a percentage
+        // of the input strands from barbershop in which case rods is < strandRootFrames
+        if  ( strandRootFrames.size() <= numRods )
         {
-            size_t numRods = mx_rodData->size();
-
-            // if we have no strand root frames for this frame then we can't do anything.
-            // We use < rather than == because we can choose to only use a percentage
-            // of the input strands from barbershop in which case rods is < strandRootFrames
-            if  ( strandRootFrames.size() <= numRods )
+            MGlobal::displayError( "No strand root frames to use in deformation" );
+        }
+        else
+        {
+            unsigned int idx = 0;
+            for ( size_t r = 0; r < numRods; r++ )
             {
-                MGlobal::displayError( "No strand root frames to use in deformation" );
-            }
-            else
-            {
-                unsigned int idx = 0;
-                for ( size_t r = 0; r < numRods; r++ )
+                ElasticRod* rod = m_rodGroup.elasticRod( r );
+                if ( rod != NULL )
                 {
-                    ElasticRod* rod = (*mx_rodData)[ r ]->rod;
-                    if ( rod != NULL )
+                /*  m_strandRootFrames is what we create the first matrix from then we create
+                    the second matrix from the strand root frames we were given this frame.
+                    The rod frames should not be in either matrix!!!!*/
+
+                    Vec3d im1 = m_strandRootFrames[r].m1;
+                    Vec3d im2 = m_strandRootFrames[r].m2;
+                    Vec3d im3 = m_strandRootFrames[r].m3;
+
+                    Vec3d cm1 = strandRootFrames[r].m1;
+                    Vec3d cm2 = strandRootFrames[r].m2;
+                    Vec3d cm3 = strandRootFrames[r].m3;
+
+                    double dim[4][4] = {{ im1[0], im1[1], im1[2], 0.0 },
+                                        { im2[0], im2[1], im2[2], 0.0 },
+                                        { im3[0], im3[1], im3[2], 0.0 },
+                                        {    0.0,    0.0,    0.0, 1.0 }};
+                    MMatrix im( dim );
+
+                    double dcm[4][4] = {{ cm1[0], cm1[1], cm1[2], 0.0 },
+                                        { cm2[0], cm2[1], cm2[2], 0.0 },
+                                        { cm3[0], cm3[1], cm3[2], 0.0 },
+                                        {    0.0,    0.0,    0.0, 1.0 }};
+                    MMatrix cm( dcm );
+
+                    undeformedMaterialFramesArray.setLength( (unsigned int) ( undeformedMaterialFramesArray.length() + rod->ne()*3 ) );
+
+                    for ( size_t e=0; e<(size_t)rod->ne(); e++ )
                     {
-                    /*  m_strandRootFrames is what we create the first matrix from then we create
-                        the second matrix from the strand root frames we were given this frame.
-                        The rod frames should not be in either matrix!!!!*/
 
-                        Vec3d im1 = m_strandRootFrames[r].m1;
-                        Vec3d im2 = m_strandRootFrames[r].m2;
-                        Vec3d im3 = m_strandRootFrames[r].m3;
+                        MaterialFrame materialFrame = m_rodGroup.undeformedMaterialFrame( r, e );
+                        // currently we only store the undeformed frame for the first vertex
+                        Vec3d m1 =  materialFrame.m1;
+                        MVector mayaM1( m1[0], m1[1], m1[2] );
+                        Vec3d m2 =  materialFrame.m2;
+                        MVector mayaM2( m2[0], m2[1], m2[2] );
+                        Vec3d m3 = materialFrame.m3;
+                        MVector mayaM3( m3[0], m3[1], m3[2] );
 
-                        Vec3d cm1 = strandRootFrames[r].m1;
-                        Vec3d cm2 = strandRootFrames[r].m2;
-                        Vec3d cm3 = strandRootFrames[r].m3;
+                        // remove initial transform and apply current...
+                        mayaM1 = mayaM1 * im.inverse() * cm;
+                        mayaM2 = mayaM2 * im.inverse() * cm;
+                        mayaM3 = mayaM3 * im.inverse() * cm;
 
-                        double dim[4][4] = {{ im1[0], im1[1], im1[2], 0.0 },
-                                            { im2[0], im2[1], im2[2], 0.0 },
-                                            { im3[0], im3[1], im3[2], 0.0 },
-                                            {    0.0,    0.0,    0.0, 1.0 }};
-                        MMatrix im( dim );
-
-                        double dcm[4][4] = {{ cm1[0], cm1[1], cm1[2], 0.0 },
-                                            { cm2[0], cm2[1], cm2[2], 0.0 },
-                                            { cm3[0], cm3[1], cm3[2], 0.0 },
-                                            {    0.0,    0.0,    0.0, 1.0 }};
-                        MMatrix cm( dcm );
-
-                        undeformedMaterialFramesArray.setLength( (unsigned int) ( undeformedMaterialFramesArray.length() + rod->ne()*3 ) );
-
-                        for ( size_t e=0; e<(size_t)rod->ne(); e++ )
-                        {
-                            // currently we only store the undeformed frame for the first vertex
-                            Vec3d m1 =  (*mx_rodData)[ r ]->undeformedMaterialFrame[ r ].m1;
-                            MVector mayaM1( m1[0], m1[1], m1[2] );
-                            Vec3d m2 =   (*mx_rodData)[ r ]->undeformedMaterialFrame[ r ].m2;
-                            MVector mayaM2( m2[0], m2[1], m2[2] );
-                            Vec3d m3 = (*mx_rodData)[ r ]->undeformedMaterialFrame[ r ].m3;
-                            MVector mayaM3( m3[0], m3[1], m3[2] );
-
-                            // remove initial transform and apply current...
-                            mayaM1 = mayaM1 * im.inverse() * cm;
-                            mayaM2 = mayaM2 * im.inverse() * cm;
-                            mayaM3 = mayaM3 * im.inverse() * cm;
-
-                            undeformedMaterialFramesArray[ idx ] = mayaM1;
-                            idx++;
-                            undeformedMaterialFramesArray[ idx ] = mayaM2;
-                            idx++;
-                            undeformedMaterialFramesArray[ idx ] = mayaM3;
-                            idx++;
-                        }
+                        undeformedMaterialFramesArray[ idx ] = mayaM1;
+                        idx++;
+                        undeformedMaterialFramesArray[ idx ] = mayaM2;
+                        idx++;
+                        undeformedMaterialFramesArray[ idx ] = mayaM3;
+                        idx++;
                     }
                 }
             }
         }
-
     }
     undeformedMaterialFramesH.setClean();
     i_dataBlock.setClean( i_plug );
@@ -1066,24 +1076,20 @@ void WmFigRodNode::compute_ca_drawDataChanged( const MPlug& i_plug, MDataBlock& 
     double drawScale = i_dataBlock.inputValue( ia_drawScale, &stat ).asDouble();
     CHECK_MSTATUS( stat );
 
-    if ( mx_rodData != NULL )
+    RodRenderer::DrawMode drawMode = RodRenderer::SIMPLE;
+
+    if ( draw3DRod )
     {
-        RodRenderer::DrawMode drawMode = RodRenderer::SIMPLE;
-
-        if ( draw3DRod )
-        {
-            drawMode = RodRenderer::SMOOTH;
-        }
-
-        size_t numRods = mx_rodData->size();
-        for ( size_t r = 0; r < numRods; r++ )
-        {
-            (*mx_rodData)[ r ]->setDrawScale( drawScale );
-            (*mx_rodData)[ r ]->setDrawMode( drawMode );            
-        }
+        drawMode = RodRenderer::SMOOTH;
     }
 
-
+    size_t numRods = m_rodGroup.numberOfRods();
+    for ( size_t r = 0; r < numRods; r++ )
+    {
+        m_rodGroup.setDrawScale( drawScale );
+        m_rodGroup.setDrawMode( drawMode );
+    }
+    
     MDataHandle inputColourHandle;
     MObject inputColourObj;
     MArrayDataHandle inArrayH = i_dataBlock.inputArrayValue( ia_userDefinedColors, &stat );
@@ -1146,7 +1152,7 @@ void WmFigRodNode::getStrandRootFrames( MDataBlock& i_dataBlock, vector<Material
     }
 }
 
-size_t WmFigRodNode::numberOfRods()
+/*size_t WmFigRodNode::numberOfRods()
 {
     // This will get called before initialiseRodData() is called.
     // FIXME: why does this get called early?
@@ -1184,14 +1190,19 @@ size_t WmFigRodNode::numberOfRods()
     {
         return m_numberOfInputCurves;
     }
-}
+}*/
 
 void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
                             M3dView::DisplayStyle i_style,
                             M3dView::DisplayStatus i_status )
 {
+    
     MStatus stat;
     MObject thisNode = thisMObject();
+
+    bool b;
+    MPlug cachingToggledPlug( thisNode, ca_cachingHasBeenToggled );
+    cachingToggledPlug.getValue( b );
 
     MPlug syncPlug( thisNode, ca_simulationSync );
     double d;
@@ -1226,24 +1237,17 @@ void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
         stat = drawScalePlug.getValue( drawScale );
         CHECK_MSTATUS( stat );
 
-        if ( mx_rodData != NULL )
+        RodRenderer::DrawMode drawMode = RodRenderer::SIMPLE;
+
+        if ( draw3DRod )
         {
-            RodRenderer::DrawMode drawMode = RodRenderer::SIMPLE;
-
-            if ( draw3DRod )
-            {
-                drawMode = RodRenderer::SMOOTH;
-            }
-
-            size_t numRods = mx_rodData->size();
-            for ( size_t r = 0; r < numRods; r++ )
-            {
-                (*mx_rodData)[ r ]->setDrawScale( drawScale );
-                (*mx_rodData)[ r ]->setDrawMode( drawMode );
-            }
+            drawMode = RodRenderer::SMOOTH;
         }
-    }
 
+        size_t numRods = m_rodGroup.numberOfRods();
+        m_rodGroup.setDrawScale( drawScale );
+        m_rodGroup.setDrawMode( drawMode );        
+    }
 
 
     i_view.beginGL();
@@ -1273,18 +1277,15 @@ void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
         
     }*/
 
-    if ( mx_rodData != NULL )
-    {
-        for ( size_t r=0; r<mx_rodData->size(); ++r )
-        {
-            (*mx_rodData)[ r ]->render();
-        }
-    }
-
+    
+    m_rodGroup.render();
+    
+    
     MPlug drawMaterialFramesPlug( thisNode, ia_drawMaterialFrames );
     bool draw;
     drawMaterialFramesPlug.getValue( draw );
-	
+
+    
     /*if ( draw && mx_rodData != NULL )
     {
         size_t numRods = mx_rodData->size();
@@ -1512,7 +1513,7 @@ void* WmFigRodNode::creator()
     stat = attributeAffects( ia_majorRadius, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_majorRadius->ca_syncAttrs" ); return stat; }
 
-    addNumericAttribute( ia_vertexSpacing, "vertexSpacing", "vsp", MFnNumericData::kDouble, 0.0, true );
+    addNumericAttribute( ia_vertexSpacing, "vertexSpacing", "vsp", MFnNumericData::kDouble, 1.0, true );
     stat = attributeAffects( ia_vertexSpacing, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_vertexSpacing->oa_rodsChanged" ); return stat; }
 
@@ -1530,12 +1531,16 @@ void* WmFigRodNode::creator()
     stat = attributeAffects( ia_cacheFrame, ca_simulationSync );
 	if ( !stat ) { stat.perror( "attributeAffects ia_cacheFrame->ca_syncAttrs" ); return stat; }
 
+    addNumericAttribute( ca_cachingHasBeenToggled, "cachingHasBeenToggled", "cht", MFnNumericData::kBoolean, false, false );
+
     addNumericAttribute( ia_readFromCache, "readFromCache", "rfc", MFnNumericData::kBoolean, false, true );
     stat = attributeAffects( ia_readFromCache, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_readFromCache->ca_syncAttrs" ); return stat; }
-    stat = attributeAffects( ia_cacheFrame, ca_simulationSync );
+    stat = attributeAffects( ia_readFromCache, ca_simulationSync );
     if ( !stat ) { stat.perror( "attributeAffects ia_cacheFrame->ca_syncAttrs" ); return stat; }
-
+    stat = attributeAffects( ia_readFromCache, ca_cachingHasBeenToggled );
+    if ( !stat ) { stat.perror( "attributeAffects ia_cacheFrame->ca_cachingHasBeenToggled" ); return stat; }
+    
     addNumericAttribute( ia_hairSprayScaleFactor, "hairSprayScaleFactor", "hsf", MFnNumericData::kDouble, 1.0, true );
     stat = attributeAffects( ia_hairSprayScaleFactor, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_hairSprayScaleFactor->oa_rodsChanged" ); return stat; }
@@ -1690,8 +1695,8 @@ void* WmFigRodNode::creator()
     stat = attributeAffects( ia_strandRootFrames, oa_undeformedMaterialFrames );
  
     addNumericAttribute( oa_numberOfRods, "numberOfRods", "nor", MFnNumericData::kInt, 0, false );
-    stat = attributeAffects( ia_simStepTaken, oa_numberOfRods );
-	if ( !stat ) { stat.perror( "attributeAffects ia_simStepTaken->oa_numberOfRods" ); return stat; }
+    stat = attributeAffects( ia_time, oa_numberOfRods );
+	if ( !stat ) { stat.perror( "attributeAffects ia_time->oa_numberOfRods" ); return stat; }
  
     // Controlling and being controlled by external objects
     /*{

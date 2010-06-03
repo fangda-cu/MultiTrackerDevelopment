@@ -3,7 +3,7 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
     //AEswatchDisplay $nodeName;
     editorTemplate -beginScrollLayout;
 
-    editorTemplate -beginLayout "Solver Attributes" -collapse 0;
+    editorTemplate -beginLayout "Solver" -collapse 0;
     //	editorTemplate -callCustom "setSolverNew" "setSolverReplace" "solver";
         editorTemplate -addControl "enabled";
         editorTemplate -addControl "numberOfThreads";
@@ -12,10 +12,16 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
         editorTemplate -addControl "subSteps";
         //editorTemplate -addControl "maxDt";
         //editorTemplate -addControl "maxIter";
-        editorTemplate -addControl "gravity";
+        editorTemplate -addControl "gravity";        
         editorTemplate -addControl "plasticDeformations";
     editorTemplate -endLayout;
-    editorTemplate -beginLayout "Collision Attributes" -collapse 0;
+
+    editorTemplate -beginLayout "Clumping" -collapse 0;
+        editorTemplate -addControl "clumping";
+        editorTemplate -addControl "clumpingCoefficient";
+    editorTemplate -endLayout;
+
+    editorTemplate -beginLayout "Collisions" -collapse 0;
         editorTemplate -beginNoOptimize -addControl "objectCollisionsEnabled";
         editorTemplate -addControl "selfCollisionPenaltyForces";
         editorTemplate -addControl "fullSelfCollisions";

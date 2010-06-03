@@ -14,6 +14,8 @@
 
 #include "WmFigRodInputType.hh"
 
+#include "WmFigRodGroup.hh"
+
 /**
   * @brief Class to convert Barbershop strands into a format suitable for creating rods
   *
@@ -31,7 +33,8 @@ public:
      WmFigRodBarbInput( MObject& i_verticesAttribute, MObject& i_strandRootFramesAttribute, 
                         double i_percentageOfBarbStrands, size_t i_verticesPerRod,
                         bool i_lockFirstEdgeToInput, double i_vertexSpacing,
-                        double i_minimumRodLength );
+                        double i_minimumRodLength, RodOptions& i_rodOptions,
+                        double i_massDamping, WmFigRodGroup& i_rodGroup );
 
     /**
       * @brief Default destructor
@@ -41,8 +44,8 @@ public:
     /**
       * @brief Initialise rod data from input types.
       */
-    virtual void initialiseRodDataFromInput( MDataBlock& i_dataBlock, std::vector<RodData*>* i_pRodData  );
-    virtual void updateRodDataFromInput( MDataBlock& i_dataBlock, std::vector<RodData*>* i_pRodData );
+    virtual void initialiseRodDataFromInput( MDataBlock& i_dataBlock );
+    virtual void updateRodDataFromInput( MDataBlock& i_dataBlock );
     virtual size_t numberOfInputs( MDataBlock& i_dataBlock );
 
 private:
@@ -56,6 +59,11 @@ private:
     bool m_lockFirstEdgeToInput;
     double m_vertexSpacing;
     double m_minimumRodLength;
+
+    WmFigRodGroup& m_rodGroup;
+
+    RodOptions m_rodOptions;
+    double m_massDamping;
 };
 
 #endif // WMFIGRODNURBSINPUT_H_

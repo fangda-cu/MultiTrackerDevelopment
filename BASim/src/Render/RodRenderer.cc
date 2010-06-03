@@ -44,7 +44,6 @@ void RodRenderer::render()
 
 void RodRenderer::drawSimpleRod()
 {
-
   glLineWidth(2);
   glBegin(GL_LINES);
 
