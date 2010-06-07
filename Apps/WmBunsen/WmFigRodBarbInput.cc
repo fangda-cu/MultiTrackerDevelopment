@@ -127,8 +127,6 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
             RodOptions rodOptions = m_rodOptions;
             rodOptions.numVertices = m_verticesPerRod;
 
-
-            //(*i_pRodData)[ i ]->resetVertexPositions( inputStrandVertices );
             rodIndex = m_rodGroup.addRod( inputStrandVertices, rodOptions, m_massDamping );
         }
 

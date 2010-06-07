@@ -15,6 +15,7 @@
 #include <maya/MPoint.h>
 
 #include "WmFigRodInputType.hh"
+#include "WmFigRodGroup.hh"
 
 /**
   * @brief Class to convert Maya NURBS curves into a format suitable for creating rods
@@ -30,7 +31,9 @@ public:
      /**
       * @brief Default constructor
       */
-     WmFigRodNurbsInput( MObject& i_nurbsAttribute, bool i_lockFirstEdgeToInput );
+     WmFigRodNurbsInput( MObject& i_nurbsAttribute, bool i_lockFirstEdgeToInput, WmFigRodGroup& i_rodGroup,
+                         double i_vertexSpacing, double i_minimumRodLength, RodOptions& i_rodOptions,
+                         double i_massDamping );
 
     /**
       * @brief Default destructor
@@ -48,6 +51,11 @@ private:
 
     MObject& m_inputNurbsAttribute;
     bool m_lockFirstEdgeToInput;
+    WmFigRodGroup& m_rodGroup;
+    double m_vertexSpacing;
+    double m_minimumRodLength;
+    RodOptions m_rodOptions;
+    double m_massDamping;
 };
 
 #endif // WMFIGRODNURBSINPUT_H_

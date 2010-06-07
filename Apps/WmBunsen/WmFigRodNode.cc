@@ -254,7 +254,8 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
     }
     else // Assume we have nurbs connected
     {
-        m_pRodInput = new WmFigRodNurbsInput( ia_nurbsCurves, m_lockFirstEdgeToInput );
+        m_pRodInput = new WmFigRodNurbsInput( ia_nurbsCurves, m_lockFirstEdgeToInput, m_rodGroup,
+                           m_vertexSpacing, m_minimumRodLength, m_rodOptions, m_massDamping  );
     }
     
     m_pRodInput->initialiseRodDataFromInput( i_dataBlock );

@@ -209,7 +209,8 @@ void RodData::updateBoundaryConditions()
                 else if ( dot > 0 )
                     sign = 1;
                 else {
-                    assert( dot < 0 );
+                    // ? Why was this an assert when it's dealt with below?
+                   // assert( dot < 0 );
                     sign = -1;
                 }
                 

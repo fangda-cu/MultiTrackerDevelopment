@@ -2,8 +2,12 @@
 
 #include <maya/MGlobal.h>
 
-WmFigRodNurbsInput::WmFigRodNurbsInput( MObject& i_nurbsAttribute, bool i_lockFirstEdgeToInput ) : 
-    m_inputNurbsAttribute( i_nurbsAttribute ), m_lockFirstEdgeToInput( i_lockFirstEdgeToInput )
+WmFigRodNurbsInput::WmFigRodNurbsInput( MObject& i_nurbsAttribute, bool i_lockFirstEdgeToInput,
+    WmFigRodGroup& i_rodGroup, double i_vertexSpacing, double i_minimumRodLength, RodOptions& i_rodOptions,
+    double i_massDamping ) : 
+    m_inputNurbsAttribute( i_nurbsAttribute ), m_lockFirstEdgeToInput( i_lockFirstEdgeToInput ),
+    m_rodGroup( i_rodGroup ), m_vertexSpacing( i_vertexSpacing ), m_minimumRodLength( i_minimumRodLength ),
+    m_rodOptions( i_rodOptions ), m_massDamping( i_massDamping )
 {
     // we need to get pass the attribute here so that when we initialise data or
     // reload it we can just pull on the attribute
@@ -15,7 +19,7 @@ WmFigRodNurbsInput::~WmFigRodNurbsInput()
 
 void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
 {
-   /* MStatus stat;
+    MStatus stat;
 
     MDataHandle inputCurveH;
     MObject inputCurveObj;
@@ -37,34 +41,86 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
 
         MPoint cv;
         int numCVs = inCurveFn.numCVs();;
-        
-        // Resize all the data vectors to make sure they're large enough for the number of cvs
-        // we're getting from the input NURBS
-        (*i_pRodData)[i]->allocateStorage( numCVs );
 
-        vector<Vec3d> inputCurveVertices;
-        inputCurveVertices.resize( numCVs );
+        vector< MVector > curve;
+        curve.resize( numCVs );
 
-        for ( int c = 0; c < numCVs; ++c )
+        // If the user has specificed a vertex spacing > 0 then they want to override the vertices
+        // that came from Barbershop. Very sensible of them as the rods stability is much reduced 
+        // with vertices that are very close together.
+        if ( m_vertexSpacing > 0.0 )
         {
-            MPoint cv;
-
+            // First find how many vertices we need based on the length of the strand
+            
             // FIXME: This should be world, why isn't it?
             // stat = inCurveFn.getCV( c,cv,MSpace::kWorld );
-            stat = inCurveFn.getCV( c,cv,MSpace::kObject );
-            CHECK_MSTATUS( stat );
+            MPoint cv;
+            double length = 0.0;
 
-            inputCurveVertices[ c ] = Vec3d( cv.x, cv.y, cv.z );            
+            for ( size_t v = 0; v < numCVs; v++ )
+            {                
+                stat = inCurveFn.getCV( v, cv, MSpace::kObject );
+                CHECK_MSTATUS( stat );
+
+                curve[ v ] = cv;
+
+                if ( v > 0 )
+                {
+                    length += ( curve[ v ] - curve[ v - 1 ] ).length();
+                }
+            }
+
+            if ( length < m_minimumRodLength )
+            {
+                MGlobal::displayWarning( MString( "Input curve " ) + i + " is less than minimum length (" + m_minimumRodLength + "), not turning it into a rod." );
+            }
+            else
+            {
+                int numVerticesRequired = length / m_vertexSpacing;
+    
+                if ( numVerticesRequired < 2 )
+                {
+                    numVerticesRequired = 2;
+                    MGlobal::displayWarning( MString( "Input strand " ) + i + " was going to have less than 2 vertices in the rod, setting it to 2." );
+                }
+    
+                vector< MVector > resampledCurve;
+                resampleCurve( numVerticesRequired, curve, resampledCurve );
+
+                // Store the new curve back on curve as we use it below to create the actual rod
+                curve = resampledCurve;
+            }
         }
-        (*i_pRodData)[ i ]->resetVertexPositions( inputCurveVertices );
+        else
+        {
+            for ( int c = 0; c < numCVs; ++c )
+            {
+                // FIXME: This should be world, why isn't it?
+                // stat = inCurveFn.getCV( c,cv,MSpace::kWorld );
+                stat = inCurveFn.getCV( c, cv, MSpace::kObject );
+                CHECK_MSTATUS( stat );
+
+                curve[ c ] = cv;
+            }
+        }
+
+        // convert cvs to Vec3d
+        vector<Vec3d> inputCurveVertices;
+        inputCurveVertices.resize( curve.size() );
+        for ( int c = 0; c < curve.size(); ++c )
+        {
+            inputCurveVertices[ c ] = Vec3d( curve[ c ].x, curve[ c ].y, curve[ c ].z );
+        }
+
+        RodOptions rodOptions = m_rodOptions;
+        rodOptions.numVertices = inputCurveVertices.size();
+
+        // Mass damping should be in rod options, it's dumb to pass it seperately.
+        size_t rodIndex = m_rodGroup.addRod( inputCurveVertices, rodOptions, m_massDamping );
 
         if ( m_lockFirstEdgeToInput )
         {
-            // It doesnt matter that the edge data is garbage because we don't use the frames
-            // from the nurb curve (since there are none!) We just add it so that Beaker
-            // knows it isn't to be simulated. Since we didn't pass in a material frame
-            // it will know not to use frame locking.
-            (*i_pRodData)[ i ]->addKinematicEdge( 0 );
+            m_rodGroup.addKinematicEdge( rodIndex, 0 );
         }
     }
 
