@@ -83,25 +83,25 @@ public:
     m_data.push_back(T());
   }
 
-  const_pointer data() const
+  inline const_pointer data() const
   {
     if (m_data.empty()) return NULL;
     return &m_data[0];
   }
 
-  reference operator[] (size_t idx)
+  inline reference operator[] (size_t idx)
   {
     assert(idx < m_data.size());
     return m_data[idx];
   }
 
-  const_reference operator[] (size_t idx) const
+  inline const_reference operator[] (size_t idx) const
   {
     assert(idx < m_data.size());
     return m_data[idx];
   }
 
-  reference operator[] (const HandleBase& h)
+  inline reference operator[] (const HandleBase& h)
   {
     assert(h.isValid());
     assert(h.idx() >= 0);
@@ -109,7 +109,7 @@ public:
     return m_data[h.idx()];
   }
 
-  const_reference operator[] (const HandleBase& h) const
+  inline const_reference operator[] (const HandleBase& h) const
   {
     assert(h.isValid());
     assert(h.idx() >= 0);
@@ -146,7 +146,7 @@ public:
   }
 
   template <class T> PropertyHandleBase<T>
-  add(const T&, const std::string& name = "<unknown>")
+  add(const std::string& name)
   {
     int idx = m_properties.size();
     m_properties.push_back(new Property<T>(name));
@@ -154,7 +154,7 @@ public:
     return PropertyHandleBase<T>(idx);
   }
 
-  template <class T> Property<T>&
+  template <class T> inline Property<T>&
   property(const PropertyHandleBase<T>& h)
   {
     assert(h.idx() >= 0);
@@ -164,7 +164,7 @@ public:
     return *smart_cast<Property<T>*>(m_properties[h.idx()]);
   }
 
-  template <class T> const Property<T>&
+  template <class T> inline const Property<T>&
   property(const PropertyHandleBase<T>& h) const
   {
     assert(h.idx() >= 0);
@@ -175,7 +175,7 @@ public:
   }
 
   template <class T>
-  bool exists(const T&, const std::string& name) const
+  bool exists(const std::string& name) const
   {
     for (size_t i = 0; i < m_properties.size(); ++i) {
       if (m_properties[i]->name() == name) {
@@ -187,15 +187,17 @@ public:
   }
 
   template <class T> PropertyHandleBase<T>
-  handle(const T&, const std::string& name) const
+  handle(const std::string& name)
   {
-    assert(exists(T(), name));
+    if (exists<T>(name)) {
 
-    for (size_t i = 0; i < m_properties.size(); ++i) {
-      if (m_properties[i]->name() == name) {
-        Property<T>* test = dynamic_cast<Property<T>*>(m_properties[i]);
-        if (test != NULL) return PropertyHandleBase<T>((int) i);
+      for (size_t i = 0; i < m_properties.size(); ++i) {
+        if (m_properties[i]->name() == name) {
+          Property<T>* test = dynamic_cast<Property<T>*>(m_properties[i]);
+          if (test != NULL) return PropertyHandleBase<T>((int) i);
+        }
       }
+
     }
 
     std::cerr << "Property " << name << " not found in container"

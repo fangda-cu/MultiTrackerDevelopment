@@ -16,10 +16,12 @@
 #define EIGEN_INITIALIZE_MATRICES_BY_ZERO 1
 
 #ifdef WETA
+#include <weta/Wfigaro/Eigen/LU>
 #include <weta/Wfigaro/Eigen/Core>
 #include <weta/Wfigaro/Eigen/Geometry>
 #include <weta/Wfigaro/Eigen/StdVector>
 #else
+#include <Eigen/LU>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>

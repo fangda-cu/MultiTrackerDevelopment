@@ -55,6 +55,11 @@ public:
 
   int size() const { return m_color.size(); }
 
+  Color inverse() const
+  {
+    return Color(1.0-m_color(0),1.0-m_color(1),1.0-m_color(2),m_color(3));
+  }
+
 protected:
 
   Eigen::Matrix<Channel, 4, 1> m_color;

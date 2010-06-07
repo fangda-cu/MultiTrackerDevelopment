@@ -45,6 +45,8 @@ public:
   void mirror() ;
   /// average rgb
   void greyscale() ;
+  /// sets the alpha channel of each pixel to alpha
+  void setAllAlpha( unsigned char alpha );
 
 protected:
   int m_width ;

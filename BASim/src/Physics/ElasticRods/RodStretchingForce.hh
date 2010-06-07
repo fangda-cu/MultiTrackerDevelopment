@@ -38,7 +38,7 @@ public:
 
   virtual Scalar globalEnergy();
   virtual void globalForce(VecXd& force);
-  virtual void globalJacobian(MatrixBase& Jacobian);
+  virtual void globalJacobian(Scalar scale, MatrixBase& Jacobian);
 
   Scalar elementEnergy(const edge_handle& eh);
   void elementForce(ElementForce& force, const SpringDofStruct& dofs);

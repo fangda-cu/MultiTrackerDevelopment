@@ -35,7 +35,8 @@ void RodTwistingForce::updateProperties()
     vertex_handle& vh = m_stencil.handle();
     edge_handle eh0 = m_stencil.inEdge();
     edge_handle eh1 = m_stencil.outEdge();
-    setTwist(vh, m_rod.getPhi(vh) + m_rod.getTheta(eh1) - m_rod.getTheta(eh0));
+    setTwist(vh, m_rod.getReferenceTwist(vh)
+             + m_rod.getTheta(eh1) - m_rod.getTheta(eh0));
   }
 }
 
@@ -133,7 +134,7 @@ void RodTwistingForce::localForce(ElementForce& force,
   }
 }
 
-void RodTwistingForce::globalJacobian(MatrixBase& J)
+void RodTwistingForce::globalJacobian(Scalar scale, MatrixBase& J)
 {
   ElementJacobian localJ;
   MatXd adder;
@@ -146,6 +147,7 @@ void RodTwistingForce::globalJacobian(MatrixBase& J)
     localJacobian(localJ, vh);
     m_stencil.indices(indices);
     adder = localJ;
+    adder *= scale;
     J.add(indices, indices, localJ);
 
 #ifdef TEST_ROD_TWISTING
@@ -277,15 +279,15 @@ void RodTwistingForce::setRefVertexLength(const vertex_handle& vh,
 void RodTwistingForce::testEnergy(const Scalar& energy,
                                   const vertex_handle& vh) const
 {
-  Scalar phi = m_rod.getPhi(vh);
+  Scalar referenceTwist = m_rod.getReferenceTwist(vh);
   Scalar theta0 = m_rod.getTheta(m_stencil.inEdge());
   Scalar theta1 = m_rod.getTheta(m_stencil.outEdge());
   Scalar kt = getKt(vh);
   Scalar undefTwist = getUndeformedTwist(vh);
   Scalar len = getRefVertexLength(vh);
   Scalar mathEnergy;
-  rodTwistingEnergyTest(mathEnergy, energy, phi, theta0, theta1, undefTwist,
-                        kt, len);
+  rodTwistingEnergyTest(mathEnergy, energy, referenceTwist, theta0, theta1,
+                        undefTwist, kt, len);
 }
 
 void RodTwistingForce::testForce(const ElementForce& force,
@@ -297,12 +299,12 @@ void RodTwistingForce::testForce(const ElementForce& force,
   Scalar theta0 = m_rod.getTheta(m_stencil.inEdge());
   Scalar theta1 = m_rod.getTheta(m_stencil.outEdge());
   Scalar kt = getKt(vh);
-  Scalar phi = m_rod.getPhi(vh);
+  Scalar referenceTwist = m_rod.getReferenceTwist(vh);
   Scalar undefTwist = getUndeformedTwist(vh);
   Scalar len = getRefVertexLength(vh);
   ElementForce mathF;
-  rodTwistingForceTest(mathF, force, x0, x1, x2, theta0, theta1, phi,
-                       undefTwist, kt, len);
+  rodTwistingForceTest(mathF, force, x0, x1, x2, theta0, theta1,
+                       referenceTwist, undefTwist, kt, len);
 }
 
 void RodTwistingForce::testJacobian(const ElementJacobian& Jacobian,
@@ -314,12 +316,12 @@ void RodTwistingForce::testJacobian(const ElementJacobian& Jacobian,
   Scalar theta0 = m_rod.getTheta(m_stencil.inEdge());
   Scalar theta1 = m_rod.getTheta(m_stencil.outEdge());
   Scalar kt = getKt(vh);
-  Scalar phi = m_rod.getPhi(vh);
+  Scalar referenceTwist = m_rod.getReferenceTwist(vh);
   Scalar undefTwist = getUndeformedTwist(vh);
   Scalar len = getRefVertexLength(vh);
   ElementJacobian mathJ;
-  rodTwistingJacobianTest(mathJ, Jacobian, x0, x1, x2, theta0, theta1, phi,
-                          undefTwist, kt, len);
+  rodTwistingJacobianTest(mathJ, Jacobian, x0, x1, x2, theta0, theta1,
+                          referenceTwist, undefTwist, kt, len);
 }
 
 #endif // TEST_ROD_TWISTING

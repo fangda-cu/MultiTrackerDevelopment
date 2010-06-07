@@ -23,7 +23,7 @@ public:
 
   virtual Scalar globalEnergy();
   virtual void globalForce(VecXd& F);
-  virtual void globalJacobian(MatrixBase& J);
+  virtual void globalJacobian(Scalar scale, MatrixBase& J);
 
   Scalar localEnergy(const vertex_handle& vh);
   void localForce(VecXd& F, const vertex_handle& vh);
@@ -60,11 +60,10 @@ private:
   VPropHandle<Scalar> m_undeformedTwist; ///< undeformed twist
   VPropHandle<Scalar> m_refVertexLength; ///< length of domain of integration
 
+  ObjPropHandle<bool> m_gradTwistValid;
+  ObjPropHandle<bool> m_hessTwistValid;
   VPropHandle<VecXd> m_gradTwist; ///< gradient of twist
   VPropHandle<MatXd> m_hessTwist; ///< Hessian of twist
-
-  bool m_gradTwistValid;
-  bool m_hessTwistValid;
 };
 
 } // namespace BASim

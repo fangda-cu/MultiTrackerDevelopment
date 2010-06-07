@@ -26,7 +26,6 @@ public:
   void BaseSetup(int argc, char** argv);
   void BaseFinalize();
   void BaseAtEachTimestep();
-  void BaseAfterLoad();
 
   const std::string& ProblemName() const { return m_problemName; }
   const std::string& ProblemDescription() const { return m_problemDesc; }

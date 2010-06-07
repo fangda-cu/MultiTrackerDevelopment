@@ -6,6 +6,13 @@
  */
 
 #include "SolverUtils.hh"
+#ifdef HAVE_LAPACK
+#ifdef WETA
+#include "MKL/MKLLinearSolver.hh"
+#else
+#include "BASim/src/Math/MKL/MKLLinearSolver.hh"
+#endif
+#endif // HAVE_LAPACK
 
 namespace BASim {
 
@@ -22,6 +29,36 @@ SolverUtils::SolverType SolverUtils::getSolverType() const
   return solverType;
 }
 
+std::string SolverUtils::getSolverName() const
+{
+  if (solverType == CONJUGATE_GRADIENT)
+    return "CONJUGATE_GRADIENT";
+
+#ifdef HAVE_PARDISO
+  if (solverType == PARDISO_SOLVER)
+    return "PARDISO_SOLVER";
+#endif
+
+#ifdef HAVE_PETSC
+  if (solverType == PETSC_SOLVER)
+    return "PETSC_SOLVER";
+#endif // HAVE_PETSC
+
+#ifdef HAVE_LAPACK
+  if ((solverType == MKL_LINEAR_SOLVER || solverType == AUTO_SOLVER) )
+    //&& dynamic_cast<BandMatrix*>(A) != NULL)
+    {
+#ifdef HAVE_MKL
+      return "MKL_LINEAR_SOLVER";
+#else
+      return "LAPACK_LINEAR_SOLVER";
+#endif // HAVE_MKL
+    }
+#endif // HAVE_LAPACK
+
+  return "CONJUGATE_GRADIENT";
+}
+
 void SolverUtils::setSolverType(SolverType t) { solverType = t; }
 
 SolverUtils::MatrixType SolverUtils::getMatrixType() const
@@ -34,7 +71,13 @@ void SolverUtils::setMatrixType(MatrixType t) {matrixType = t; }
 MatrixBase*
 SolverUtils::createSparseMatrix(int rows, int cols, int nnzPerRow) const
 {
+#ifdef HAVE_PARDISO
+  if (matrixType == PARDISO_MATRIX)
+    return new PardisoMatrix(rows,cols);
+#endif // HAVE_PARDISO  
+  
 #ifdef HAVE_PETSC
+  if (matrixType == PETSC_MATRIX)
   return new PetscMatrix(rows, cols, nnzPerRow);
 #endif // HAVE_PETSC
 
@@ -50,6 +93,11 @@ SolverUtils::createBandMatrix(int rows, int cols, int kl, int ku) const
     return new BandMatrix(rows, cols, kl, ku);
   }
 
+#ifdef HAVE_PARDISO
+  if (matrixType == PARDISO_MATRIX)
+    return new PardisoMatrix(rows,cols);
+#endif // HAVE_PARDISO
+
 #ifdef HAVE_PETSC
   if (matrixType == PETSC_MATRIX) {
     return new PetscMatrix(rows, cols, kl + ku + 1);
@@ -64,6 +112,11 @@ LinearSolverBase* SolverUtils::createLinearSolver(MatrixBase* A) const
 {
   if (solverType == CONJUGATE_GRADIENT)
     return new ConjugateGradient(*A);
+
+#ifdef HAVE_PARDISO
+  if (solverType == PARDISO_SOLVER)
+    return new PardisoLinearSolver(dynamic_cast<PardisoMatrix&>(*A));
+#endif // HAVE_PARDISO
   
 #ifdef HAVE_PETSC
   if (solverType == PETSC_SOLVER)

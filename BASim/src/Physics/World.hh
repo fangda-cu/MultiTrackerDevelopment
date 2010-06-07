@@ -42,6 +42,8 @@ public:
 
   ObjectHandle addObject(ObjectBase* object)
   {
+    assert( object != NULL );
+
     int idx = m_objects.size();
     m_objects.push_back(object);
 
@@ -69,6 +71,8 @@ public:
 
   ObjectControllerHandle addController(ObjectControllerBase* controller)
   {
+    assert( controller != NULL );
+    
     int idx = m_controllers.size();
     m_controllers.push_back(controller);
 

@@ -38,6 +38,11 @@ public:
     m_diffEq.endIteration();
   }
 
+  std::string getName() const
+  {
+    return "Symplectic Euler";
+  }
+
 protected:
 
   ODE& m_diffEq;

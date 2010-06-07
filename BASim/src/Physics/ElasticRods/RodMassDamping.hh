@@ -36,12 +36,14 @@ public:
     }
   }
 
+  void computeForceDX(const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
+
   /** Computes the derivative of the mass damping force with respect
       to the velocities of the rod. */
-  void computeForceDV(const ElasticRod& rod, MatrixBase& J)
+  void computeForceDV(const ElasticRod& rod, Scalar scale, MatrixBase& J)
   {
     for (int i = 0; i < rod.ndof(); ++i) {
-      J.add(i, i, -m_damping * rod.getMass(i));
+      J.add(i, i, -m_damping * rod.getMass(i) * scale);
     }
   }
 

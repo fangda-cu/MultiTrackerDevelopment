@@ -35,9 +35,9 @@ public:
                   const Vec3d& x2);
   Mat3dArray computeDkb(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2);
 
-  virtual Scalar globalEnergy() { return 0; }
-  virtual void globalForce(VecXd& force) {}
-  virtual void globalJacobian(MatrixBase& Jacobian) {}
+  virtual Scalar globalEnergy() = 0;
+  virtual void globalForce(VecXd& force) = 0;
+  virtual void globalJacobian(Scalar scale, MatrixBase& Jacobian) = 0;
 
   virtual void updateProperties() {}
   virtual void updateStiffness() {}
@@ -67,7 +67,7 @@ public:
   typedef typename Stencil::iterator iterator;
 
   RodForceT(ElasticRod& rod, const std::string& name = "RodForce")
-    : RodForce(rod)
+    : RodForce(rod,name)
     , m_stencil(rod)
   {}
 

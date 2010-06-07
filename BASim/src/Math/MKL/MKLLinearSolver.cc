@@ -9,6 +9,8 @@
 #include "../BandMatrix.hh"
 #include "LAPACKPrototypes.h"
 
+using namespace std;
+
 namespace BASim {
 
 MKLLinearSolver::MKLLinearSolver(BandMatrix& A)
@@ -31,7 +33,7 @@ MKLLinearSolver::~MKLLinearSolver()
   delete [] ab;
 }
 
-inline void convert(double* ab, BandMatrix& A, int kl, int ku, int n)
+static inline void convert(double* ab, BandMatrix& A, int kl, int ku, int n)
 {
   int NUMROWS = 2 * kl + ku + 1;
   for (int j = 0; j < n; ++j) {
@@ -58,7 +60,7 @@ int MKLLinearSolver::solve(VecXd& x, const VecXd& b)
   convert(ab, A, kl, ku, n);
   x = b;
 
-  dgbsv(&n, &kl, &ku, &nrhs, ab, &ldab, ipiv, x.data(), &ldb, &info);
+  dgbsv_(&n, &kl, &ku, &nrhs, ab, &ldab, ipiv, x.data(), &ldb, &info);
 
   // check return value for errors
   if (info < 0) {
@@ -70,6 +72,22 @@ int MKLLinearSolver::solve(VecXd& x, const VecXd& b)
     return -1;
   }
 
+  assert( info == 0 );
+  
+  // Check the inf norm of the residual
+  #ifdef DEBUG
+    VecXd residual(x.size());
+    residual.setZero();
+    A.multiply(residual,1.0,x);
+    residual -= b;
+    double infnorm = fabs(residual.maxCoeff());
+    if( infnorm > 1.0e-6 )
+    {
+      std::cout << "\033[31;1mWARNING IN MKLLinearSolver:\033[m Large residual detected. ||residual||_{inf} = " << infnorm << std::endl;
+      return -1;
+    }
+  #endif
+  
   return 0;
 }
 

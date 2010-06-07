@@ -70,9 +70,11 @@ void RodCollisionTimeStepper::execute()
 RodCollisionTimeStepper::~RodCollisionTimeStepper()
 {
   if (m_rodTimeStepper != NULL)
+  {
     delete m_rodTimeStepper;
-  if (m_rodPenaltyForce != NULL)
-    delete m_rodPenaltyForce;
+  }
+
+  // Don't delete penalty forces here any more, they are removed in RodTimeStepper  
 }
 
 /* static */ void RodCollisionTimeStepper::getProximities(vector<ElasticRod*> &rods)
@@ -99,29 +101,9 @@ RodCollisionTimeStepper::~RodCollisionTimeStepper()
     }
 }
 
+
 void RodCollisionTimeStepper::getClumpingPairs(vector<ElasticRod*> &rods)
 {
-////// Use collision grid /////
-/*
-    UniformGrid grid;
-    Collisions collisions;
-    grid.getProximities(rods, collisions);
-
-    for (CollisionsIterator cItr=collisions.begin(); cItr!=collisions.end(); ++cItr)
-    {
-        // Add penalty forces for each proximity
-        // It must be added to BOTH rods, since a force computation for a rod
-        // can only be for that particular rod, a little wasteful but not many options
-        // without changing the framework
-        //
-        ElasticRod *rod1 = dynamic_cast<ElasticRod *>(cItr->getFirstObject());
-        ElasticRod *rod2 = dynamic_cast<ElasticRod *>(cItr->getSecondObject());
-        rod1->getPenaltyForce()->addRodClumpingForce(cItr->getFirstPrimitiveIndex(0),
-                                          rod2, cItr->getSecondPrimitiveIndex(0));
-        rod2->getPenaltyForce()->addRodClumpingForce(cItr->getSecondPrimitiveIndex(0),
-                                          rod1, cItr->getFirstPrimitiveIndex(0));
-    }
-*/
 
   const Scalar max_clump_size = 5.0;
 	

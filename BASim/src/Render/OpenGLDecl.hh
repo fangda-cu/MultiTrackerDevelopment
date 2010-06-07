@@ -50,13 +50,8 @@
 /// directly, change the script and regenerate!  Copyright 2006 Adrian Secord
 /// http://stippling.org
 
+#include "OpenGLHeaders.hh"
 #include <cassert>
-
-#ifdef __APPLE__
-#include <OpenGL/gl.h>
-#else
-#include <GL/gl.h>
-#endif
 
 /// OpenGL declarations for using OpenGL with unknown types.
 namespace OpenGL {

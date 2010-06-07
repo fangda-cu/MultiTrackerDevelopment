@@ -30,6 +30,11 @@ inline int parseSolver(Tokenizer& tokenizer)
   } else if (solver == "conjugate-gradient") {
     SolverUtils::instance()->setSolverType(SolverUtils::CONJUGATE_GRADIENT);
 
+#ifdef HAVE_PARDISO
+  } else if (solver == "pardiso") {
+    SolverUtils::instance()->setSolverType(SolverUtils::PARDISO_SOLVER);
+#endif // HAVE_PARDISO
+
 #ifdef HAVE_PETSC
   } else if (solver == "petsc") {
     SolverUtils::instance()->setSolverType(SolverUtils::PETSC_SOLVER);
@@ -67,6 +72,11 @@ inline int parseMatrix(Tokenizer& tokenizer)
 
   } else if (matrix == "band-matrix") {
     SolverUtils::instance()->setMatrixType(SolverUtils::BAND_MATRIX);
+
+#ifdef HAVE_PARDISO
+  } else if (matrix == "pardiso") {
+    SolverUtils::instance()->setMatrixType(SolverUtils::PARDISO_MATRIX);
+#endif // HAVE_PARDISO
 
 #ifdef HAVE_PETSC
   } else if (matrix == "petsc") {

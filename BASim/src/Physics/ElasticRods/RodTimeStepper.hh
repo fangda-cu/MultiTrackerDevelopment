@@ -12,6 +12,7 @@
 #include "../../Math/TimeSteppingBase.hh"
 #include "../../Math/SymplecticEuler.hh"
 #include "../../Math/ImplicitEuler.hh"
+#include "../../Math/StaticsSolver.hh"
 #include "RodExternalForce.hh"
 #include "RodBoundaryCondition.hh"
 
@@ -23,13 +24,13 @@ class RodTimeStepper : public ObjectControllerBase
 {
 public:
 
-  enum Method { SYMPL_EULER, IMPL_EULER, NONE };
+  enum Method { SYMPL_EULER, IMPL_EULER, STATICS, NONE };
 
   RodTimeStepper(ElasticRod& rod)
     : m_rod(rod)
     , m_method(NONE)
     , m_diffEqSolver(NULL)
-    , m_boundaryCondition(NULL)
+    //, m_boundaryCondition(NULL)
   {
     setDiffEqSolver(SYMPL_EULER);
   }
@@ -37,7 +38,13 @@ public:
   ~RodTimeStepper()
   {
     if (m_diffEqSolver != NULL) delete m_diffEqSolver;
-    if (m_boundaryCondition != NULL) delete m_boundaryCondition;
+    //if (m_boundaryCondition != NULL) delete m_boundaryCondition;
+    for( int i = 0; i < (int) m_externalForces.size(); ++i )
+    {
+      assert( m_externalForces[i] != NULL );
+      delete m_externalForces[i];
+      m_externalForces[i] = NULL;
+    }	
   }
 
   void execute()
@@ -88,6 +95,9 @@ public:
     } else if (method == IMPL_EULER) {
       m_diffEqSolver = new ImplicitEuler<RodTimeStepper>(*this);
 
+    } else if (method == STATICS) {
+      m_diffEqSolver = new StaticsSolver<RodTimeStepper>(*this);
+
     } else if (method == NONE) {
       m_diffEqSolver = NULL;
 
@@ -105,6 +115,51 @@ public:
   int ndof() const
   {
     return m_rod.ndof();
+  }
+
+  /**
+   * Returns all "masses" in this differential equation in a flat vector.
+   *
+   * \param[out] masses Vector that will contain masses. Must be the proper size.
+   */
+  void getMass( VecXd& masses )
+  {
+    assert( masses.size() == m_rod.ndof() );
+    for( int i = 0; i < m_rod.ndof(); ++i ) masses(i) = m_rod.getMass(i);
+  }
+
+  void setX( const VecXd& positions )
+  {
+    assert( positions.size() == m_rod.ndof() );
+    for( int i = 0; i < m_rod.ndof(); ++i ) m_rod.setDof(i, positions(i));
+  }
+
+  /**
+   * Returns all "positions" in this differential equation in a flat vector.
+   *
+   * \param[out] masses Vector that will contain positions. Must be the proper size.
+   */
+  void getX( VecXd& positions ) const
+  {
+    assert( positions.size() == m_rod.ndof() );
+    for( int i = 0; i < m_rod.ndof(); ++i ) positions(i) = m_rod.getDof(i);
+  }
+  
+  void setV( const VecXd& velocities )
+  {
+    assert( velocities.size() == m_rod.ndof() );
+    for( int i = 0; i < m_rod.ndof(); ++i ) m_rod.setVel(i, velocities(i));
+  }
+  
+  /**
+   * Returns all "velocities" in this differential equation in a flat vector.
+   *
+   * \param[out] masses Vector that will contain velocities. Must be the proper size.
+   */
+  void getV( VecXd& velocities ) const
+  {
+    assert( velocities.size() == m_rod.ndof() );
+    for( int i = 0; i < m_rod.ndof(); ++i ) velocities(i) = m_rod.getVel(i);
   }
 
   /**
@@ -138,9 +193,9 @@ public:
    *
    * \param[out] J The Jacobian of the forces on the rod.
    */
-  void evaluatePDotDX(MatrixBase& J)
+  void evaluatePDotDX(Scalar scale, MatrixBase& J)
   {
-    m_rod.computeJacobian(J);
+    m_rod.computeJacobian(scale, J);
 
 //     if (m_rod.viscous()) {
 //       J.finalize();
@@ -148,14 +203,14 @@ public:
 //     }
 
     for (size_t i = 0; i < m_externalForces.size(); ++i) {
-      m_externalForces[i]->computeForceDX(m_rod, J);
+      m_externalForces[i]->computeForceDX(m_rod, scale, J);
     }
   }
 
-  void evaluatePDotDV(MatrixBase& J)
+  void evaluatePDotDV(Scalar scale, MatrixBase& J)
   {
     for (size_t i = 0; i < m_externalForces.size(); ++i) {
-      m_externalForces[i]->computeForceDV(m_rod, J);
+      m_externalForces[i]->computeForceDV(m_rod, scale, J);
     }
   }
 
@@ -202,6 +257,35 @@ public:
     m_rod.setVel(i, v);
   }
 
+  void increment_q(const VecXd& dq)
+  {
+    for (int i = 0; i < dq.size(); ++i) {
+      //setX(i, getX(i) + dq[i]);
+      //setX(i, m_rod.getDof(i) + dq[i]);
+      m_rod.setDof(i, m_rod.getDof(i) + dq[i]);
+    }
+  }
+
+  void increment_qdot(const VecXd& dqd)
+  {
+    if (m_rod.quasistatic()) {
+      for (int i = 0; i < m_rod.nv(); ++i) {
+        for (int coord = 0; coord < 3; ++coord) {
+          int idx = m_rod.vertIdx(i, coord);
+          //setV(idx, getV(idx) + dqd[idx]);
+          //setV(idx, m_rod.getVel(idx) + dqd[idx]);
+          m_rod.setVel(idx, m_rod.getVel(idx) + dqd[idx]);
+        }
+      }
+    } else {
+      for (int i = 0; i < dqd.size(); ++i) {
+        //setV(i, getV(i) + dqd[i]);
+        //setV(i, m_rod.getVel(i) + dqd[i]);
+        m_rod.setVel(i, m_rod.getVel(i) + dqd[i]);
+      }
+    }
+  }
+
   /**
    * Adds an external force to be applied to the rod. On destruction,
    * this class will be responsible for de-allocating the memory
@@ -246,6 +330,18 @@ public:
     m_diffEqSolver->setMaxIterations(iterations);
   }
 
+  Scalar get_stol() const { return m_diffEqSolver->get_stol(); }
+  void set_stol(Scalar s) { m_diffEqSolver->set_stol(s); }
+
+  Scalar get_atol() const { return m_diffEqSolver->get_atol(); }
+  void set_atol(Scalar a) { m_diffEqSolver->set_atol(a); }
+
+  Scalar get_rtol() const { return m_diffEqSolver->get_rtol(); }
+  void set_rtol(Scalar r) { m_diffEqSolver->set_rtol(r); }
+
+  Scalar get_inftol() const { return m_diffEqSolver->get_inftol(); }
+  void set_inftol(Scalar i) { m_diffEqSolver->set_inftol(i); }
+
   MatrixBase* createMatrix() const
   {
     SolverUtils* s = SolverUtils::instance();
@@ -254,29 +350,35 @@ public:
 
   RodBoundaryCondition* getBoundaryCondition()
   {
-    if (m_boundaryCondition == NULL) {
-      m_boundaryCondition = new RodBoundaryCondition(m_rod);
-    }
-    return m_boundaryCondition;
+    //if (m_boundaryCondition == NULL) {
+    //  m_boundaryCondition = new RodBoundaryCondition(m_rod);
+    //}
+    //return m_boundaryCondition;
+    return m_rod.getBoundaryCondition();
   }
 
+  // TODO: Does anyone use this method? It seems kind of dangerous letting any user
+  //       mess with our internal pointers :)
   void setBoundaryCondition(RodBoundaryCondition* bc)
   {
-    m_boundaryCondition = bc;
+    assert( false );
+    //m_boundaryCondition = bc;
   }
 
   void getScriptedDofs(IntArray& indices, std::vector<Scalar>& desired)
   {
-    if (m_boundaryCondition == NULL) {
-      indices.resize(0);
-      desired.resize(0);
-      return;
-    }
+    //if (m_boundaryCondition == NULL) {
+    //  indices.resize(0);
+    //  desired.resize(0);
+    //  return;
+    //}
 
     const RodBoundaryCondition::BCList& verts
-      = m_boundaryCondition->scriptedVertices();
+        = m_rod.getBoundaryCondition()->scriptedVertices();
+      //= m_boundaryCondition->scriptedVertices();
     const RodBoundaryCondition::BCList& edges
-      = m_boundaryCondition->scriptedEdges();
+        = m_rod.getBoundaryCondition()->scriptedEdges();
+      //= m_boundaryCondition->scriptedEdges();
 
     int nb = 3 * verts.size() + edges.size(); // # of scripted dofs
     indices.resize(nb);
@@ -286,14 +388,16 @@ public:
       for (int k = 0; k < 3; ++k) {
         indices[3 * i + k] = m_rod.vertIdx(verts[i], k);
         desired[3 * i + k]
-          = m_boundaryCondition->getDesiredVertexPosition(verts[i])[k];
+          = m_rod.getBoundaryCondition()->getDesiredVertexPosition(verts[i])[k];
+          //= m_boundaryCondition->getDesiredVertexPosition(verts[i])[k];
       }
     }
 
     for (size_t i = 0; i < edges.size(); ++i) {
       indices[3 * verts.size() + i] = m_rod.edgeIdx(edges[i]);
       desired[3 * verts.size() + i]
-        = m_boundaryCondition->getDesiredEdgeAngle(edges[i]);
+        = m_rod.getBoundaryCondition()->getDesiredEdgeAngle(edges[i]);
+        //= m_boundaryCondition->getDesiredEdgeAngle(edges[i]);
     }
   }
 
@@ -308,7 +412,7 @@ protected:
   std::vector<RodExternalForce*> m_externalForces;
   Method m_method;
   DiffEqSolver* m_diffEqSolver;
-  RodBoundaryCondition* m_boundaryCondition;
+  //RodBoundaryCondition* m_boundaryCondition;
 
   // Copy of the forces on the rod, used in Beaker 
   // to check if the sim is going to explode.

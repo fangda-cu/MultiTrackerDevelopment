@@ -15,6 +15,9 @@ namespace BASim {
 class ElasticRod;
 
 /** Class for managing fixed/scripted vertices and edges of a rod */
+// TODO: For consistency, methods in RodBoundaryCondition should acccept
+//       edge and/or vertex iterators to be consistent with the rest of
+//       BASim.
 class RodBoundaryCondition
 {
 public:

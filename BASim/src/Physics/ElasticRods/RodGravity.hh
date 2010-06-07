@@ -43,6 +43,11 @@ public:
     }
   }
 
+  void computeForceDX(const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
+
+  void computeForceDV(const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
+
+
 protected:
 
   Vec3d m_gravity;

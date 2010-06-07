@@ -79,6 +79,20 @@ public:
     delete m_preconditioner;
     m_preconditioner = NULL;
 
+    // Check the inf norm of the residual
+    #ifdef DEBUG
+      VecXd residual(x.size());
+      residual.setZero();
+      m_A.multiply(residual,1.0,x);
+      residual -= b;
+      double infnorm = fabs(residual.maxCoeff());
+      if( infnorm > 1.0e-6 )
+      {
+        std::cout << "\033[31;1mWARNING IN ConjugateGradient:\033[m Large residual detected. ||residual||_{inf} = " << infnorm << std::endl;
+        return -1;
+      }
+    #endif
+
     return 0;
   }
 

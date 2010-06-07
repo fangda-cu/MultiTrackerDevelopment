@@ -25,15 +25,15 @@ void AnisotropicRod::setup()
 {
   ElasticRod::setup();
 
+  { // add elastic forces
   addForce(new RodStretchingForce(*this));
-  //addForce(new RodTwistingForce(*this));
   addForce(new RodTwistingForceSym(*this));
   if (refFrameType() == TimeParallel) {
-    //addForce(new RodBendingForce(*this));
     addForce(new RodBendingForceSym(*this));
   } else addForce(new RodAnisoForce(*this));
+  }
 
-  if (getViscosity() != 0.0) {
+  { // add viscous forces
     RodStretchingForce* stretching = new RodStretchingForce(*this);
     RodBendingForceSym* bending = new RodBendingForceSym(*this);
     RodTwistingForceSym* twisting = new RodTwistingForceSym(*this);

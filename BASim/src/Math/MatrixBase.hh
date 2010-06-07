@@ -44,6 +44,16 @@ public:
   /**
    * Called after all matrix values have been set.
    */
+  virtual int finalizeNonzeros() { return 0; }
+
+  /**
+   * Called if a new set of matrix values is going to be set.
+   */
+  virtual int resetNonzeros() { return 0; }
+   
+  /**
+   * Some petsc stuff here
+   */ 
   virtual int finalize() { return 0; }
 
   inline int rows() const { return m_rows; }

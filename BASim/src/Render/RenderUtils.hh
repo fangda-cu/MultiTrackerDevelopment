@@ -24,7 +24,7 @@ inline void drawArrow(const Vec3d& start, Vec3d dir, Scalar scale = 1.0)
   Vec3d y = (end - start).cross(x).normalized();
 
   glBegin(GL_QUAD_STRIP);
-  for (uint i = 0; i < 33; ++i) {
+  for (unsigned int i = 0; i < 33; ++i) {
     Scalar angle = 2.0 * M_PI * i / 32.0;
     Vec3d norm = cos(angle) * x - sin(angle) * y;
     Vec3d point = rad * norm;

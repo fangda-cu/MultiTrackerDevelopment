@@ -12,11 +12,21 @@
 
 namespace BASim {
 
+const double pi = 3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067982148086513282306647093844609550582231725359408128481117450284102701938521105559644622948954930381964428810975665933446128475648233786783165271201909145648566923460348610454326648213393607260249141273724587006606315588174881520920962829254091715364367892590360011330530548820466521384146951941511609;
+
 /** Returns the square of the input value. */
 template <typename T> inline T square(const T& x) { return x * x; }
 
 /** Returns the cube of the input value. */
 template <typename T> inline T cube(const T& x) { return x * x * x; }
+
+/** Clamps scalar to the range [min,max]. */
+template <typename T> inline T clamp( const T& scalar, const T& min, const T& max) 
+{
+  if (scalar < min) return min;
+  if (scalar > max) return max;
+  return scalar;
+}
 
 /** The Kronecker delta function. Returns 1 if \p i = \p j and 0
     otherwise. */
@@ -42,6 +52,20 @@ inline Vec3d parallelTransport(const Vec3d& u, Vec3d t1, Vec3d t2)
 
   Vec3d b = t1.cross(t2);
   return d*u + 1/(1+d) * b.dot(u) * b + b.cross(u);
+}
+
+inline Vec3d parallel_transport(const Vec3d& u,
+                                const Vec3d& t1,
+                                const Vec3d& t2)
+{
+  Vec3d b = t1.cross(t2);
+  if (b.norm() == 0) return u;
+  b.normalize();
+  b = (b - (b.dot(t1) * t1)).normalized();
+  b = (b - (b.dot(t2) * t2)).normalized();
+  Vec3d n1 = t1.cross(b);
+  Vec3d n2 = t2.cross(b);
+  return u.dot(t1) * t2 + u.dot(n1) * n2 + u.dot(b) * b;
 }
 
 /** Finds an orthonormal vector to the given input vector.
@@ -247,6 +271,20 @@ inline void update_minmax(const Vec3d &x, Vec3d &xmin, Vec3d &xmax)
         else if (x[i] > xmax[i])
             xmax[i] = x[i];
     }
+}
+
+inline double triple(const Vec3d &a, const Vec3d &b, const Vec3d &c)
+{ 
+    return a[0]*(b[1]*c[2]-b[2]*c[1])
+           +a[1]*(b[2]*c[0]-b[0]*c[2])
+           +a[2]*(b[0]*c[1]-b[1]*c[0]); 
+}
+
+inline void addUnique(std::vector<double>& a, double e)
+{
+    for(unsigned int i=0; i<a.size(); ++i)
+        if(a[i]==e) return;
+            a.push_back(e);
 }
 
 

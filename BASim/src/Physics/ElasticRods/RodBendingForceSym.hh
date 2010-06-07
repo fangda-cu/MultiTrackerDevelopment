@@ -22,7 +22,7 @@ public:
 
   virtual Scalar globalEnergy();
   virtual void globalForce(VecXd& force);
-  virtual void globalJacobian(MatrixBase& J);
+  virtual void globalJacobian(Scalar scale, MatrixBase& J);
 
   Scalar localEnergy(const vertex_handle& vh);
   void localForce(VecXd& F, const vertex_handle& vh);
@@ -53,11 +53,11 @@ protected:
   void computeGradKappa();
   void computeHessKappa();
 
-  bool m_gradKappaValid;
-  bool m_hessKappaValid;
-
   VPropHandle<Vec2d> m_kappa;
   VPropHandle<Vec2d> m_kappaBar;
+
+  ObjPropHandle<bool> m_gradKappaValid;
+  ObjPropHandle<bool> m_hessKappaValid;
   VPropHandle<MatXd> m_gradKappa; ///< each entry is a 11x2 matrix
   VPropHandle< std::pair<MatXd, MatXd> > m_hessKappa;
 

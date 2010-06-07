@@ -10,6 +10,7 @@
 
 #include <vector>
 #include "OpenGLHeaders.hh"
+#include "../Core/Definitions.hh"
 
 namespace BASim {
 
@@ -49,6 +50,9 @@ public:
   bool& enableVertices() { return m_enableVertices; }
   bool& enableNormals() { return m_enableNormals; }
   bool& enableColors() { return m_enableColors; }
+
+  virtual Vec3d calculateObjectCenter() = 0;
+  virtual Scalar calculateObjectBoundingRadius(const Vec3d& center) = 0;
 
 protected:
 

@@ -9,9 +9,10 @@
 #include <BASim/BASim>
 #include <fstream>
 
+using namespace std;
 using namespace BASim;
 
-Problem::Problem(const std::string& name, const std::string& desc)
+Problem::Problem(const string& name, const string& desc)
   : m_problemName(name)
   , m_problemDesc(desc)
   , m_dynamicsProps(false)
@@ -21,55 +22,57 @@ Problem::Problem(const std::string& name, const std::string& desc)
 
 Problem::~Problem()
 {
-  delete m_world;
+  assert( m_world != NULL );
+  if( m_world != NULL ) delete m_world;
+  m_world = NULL;
 }
 
-Option* Problem::GetOption(const std::string& name)
+Option* Problem::GetOption(const string& name)
 {
   if (m_options.find(name) == m_options.end()) {
-    std::cerr << "Option " << name << " does not exist" << std::endl;
+    cerr << "Option " << name << " does not exist" << endl;
     exit(-1);
   }
 
   return &(m_options.find(name)->second);
 }
 
-bool& Problem::GetBoolOpt(const std::string& name)
+bool& Problem::GetBoolOpt(const string& name)
 {
   return GetOption(name)->b;
 }
 
-int& Problem::GetIntOpt(const std::string& name)
+int& Problem::GetIntOpt(const string& name)
 {
   return GetOption(name)->i;
 }
 
-Scalar& Problem::GetScalarOpt(const std::string& name)
+Scalar& Problem::GetScalarOpt(const string& name)
 {
   return GetOption(name)->r;
 }
 
-Vec3d& Problem::GetVecOpt(const std::string& name)
+Vec3d& Problem::GetVecOpt(const string& name)
 {
   return GetOption(name)->v;
 }
 
-std::string& Problem::GetStringOpt(const std::string& name)
+string& Problem::GetStringOpt(const string& name)
 {
   return GetOption(name)->s;
 }
 
 int Problem::LoadOptions(const char* filename)
 {
-  std::ifstream input(filename);
+  ifstream input(filename);
   if (!input.is_open()) {
-    std::cerr << "ERROR: File " << filename << " not found" << std::endl;
+    cerr << "ERROR: File " << filename << " not found" << endl;
     return -1;
   }
 
-  std::string line, option;
-  std::istringstream sIn;
-  std::string tmp;
+  string line, option;
+  istringstream sIn;
+  string tmp;
   for (getline(input, line); !input.eof(); getline(input, line)) {
     sIn.clear();
     option.clear();
@@ -79,7 +82,7 @@ int Problem::LoadOptions(const char* filename)
     OptionMap::iterator itr;
     itr = m_options.find(option);
     if (itr == m_options.end()) {
-      std::cerr << "Invalid option: " << option << std::endl;
+      cerr << "Invalid option: " << option << endl;
       continue;
     }
     if (itr->second.type == Option::BOOL) {
@@ -98,7 +101,7 @@ int Problem::LoadOptions(const char* filename)
     } else if (itr->second.type == Option::STRING) {
       sIn >> itr->second.s;
     } else {
-      std::cerr << "Invalid option type" << std::endl;
+      cerr << "Invalid option type" << endl;
     }
   }
   input.close();
@@ -108,19 +111,19 @@ int Problem::LoadOptions(const char* filename)
 
 int Problem::LoadOptions(int argc, char** argv)
 {
-  std::string option, tmp;
+  string option, tmp;
   int start = 0;
-  while (start < argc && std::string(argv[start]) != "--") ++start;
+  while (start < argc && string(argv[start]) != "--") ++start;
   for (int i = start + 1; i < argc; ++i) {
     option = argv[i];
     OptionMap::iterator itr;
     itr = m_options.find(option);
     if (itr == m_options.end()) {
-      std::cerr << "Invalid option on command line: " << option << std::endl;
+      cerr << "Invalid option on command line: " << option << endl;
       continue;
     }
     if (i == argc - 1) {
-      std::cerr << "Too few arguments on command line" << std::endl;
+      cerr << "Too few arguments on command line" << endl;
       break;
     }
     if (itr->second.type == Option::BOOL) {
@@ -133,7 +136,7 @@ int Problem::LoadOptions(int argc, char** argv)
       itr->second.r = atof(argv[i+1]); ++i;
     } else if (itr->second.type == Option::VEC) {
       if (i >= argc - 3) {
-        std::cerr << "Too few arguments on command line" << std::endl;
+        cerr << "Too few arguments on command line" << endl;
         break;
       }
       Vec3d& v = itr->second.v;
@@ -143,7 +146,7 @@ int Problem::LoadOptions(int argc, char** argv)
     } else if (itr->second.type == Option::STRING) {
       itr->second.s = argv[i+1]; ++i;
     } else {
-      //std::cerr << "Invalid option type" << std::endl;
+      //cerr << "Invalid option type" << endl;
     }
   }
   return 0;
@@ -174,7 +177,7 @@ void Problem::BaseAtEachTimestep()
   }
 }
 
-void Problem::PrintOptions(std::ostream& os)
+void Problem::PrintOptions(ostream& os)
 {
   OptionMap::const_iterator itr;
   for (itr = m_options.begin(); itr != m_options.end(); ++itr) {
@@ -201,14 +204,14 @@ void Problem::PrintOptions(std::ostream& os)
       os << opt->s;
       break;
     }
-    os << "\t# " << opt->label << std::endl;
+    os << "\t# " << opt->label << endl;
   }
 }
 
 void Problem::addDynamicsProps()
 {
   if (m_dynamicsProps) {
-    std::cerr << "Dynamics properties already exist" << std::endl;
+    cerr << "Dynamics properties already exist" << endl;
     return;
   }
   m_dynamicsProps = true;
@@ -218,7 +221,7 @@ void Problem::addDynamicsProps()
   m_world->add_property(m_dt, "time-step", 0.1);
   AddOption("dt", "time-step size", getDt());
 
-  m_world->add_property(m_gravity, "gravity", Vec3d(0, -9.8, 0));
+  m_world->add_property(m_gravity, "gravity", Vec3d(0, -981, 0));
   AddOption("gravity", "gravity", getGravity());
 }
 
@@ -274,29 +277,38 @@ void Problem::setGravity(const Vec3d& gravity)
 
 void Problem::addRodOptions()
 {
-  AddOption("nv", "number of vertices in the rod", (int) 50);
-  AddOption("youngs-modulus", "Young's modulus for the rod", 1000.0);
-  AddOption("shear-modulus", "Shear modulus for the rod", 375.0);
-  AddOption("major-radius", "radius of major axis of cross-section", 0.5);
-  AddOption("minor-radius", "radius of minor axis of cross-section", 1.0);
+  RodOptions opts;
+  AddOption("nv", "number of vertices in the rod", opts.numVertices);
+  AddOption("density", "volumetric density of the rod", opts.density);
+  AddOption("youngs-modulus", "Young's modulus for the rod", opts.YoungsModulus);
+  AddOption("shear-modulus", "Shear modulus for the rod", opts.ShearModulus);
+  AddOption("viscosity", "Dynamic viscosity for the rod", opts.viscosity);
+  AddOption("major-radius", "radius of major axis of cross-section", opts.radiusA);
+  AddOption("minor-radius", "radius of minor axis of cross-section", opts.radiusB);
+  AddOption("radius-scale", "scaling for rendering and collisions", opts.radiusScale);
   AddOption("reference-frame", "type of reference frame to use (time/space)",
-            "time");
+            opts.refFrame == ElasticRod::TimeParallel ? "time" : "space");
+  AddOption("quasistatic", "update material frame quasistatically", opts.quasistatic);
 }
 
 void Problem::getRodOptions(RodOptions& opts)
 {
   opts.numVertices = GetIntOpt("nv");
+  opts.density = GetScalarOpt("density");
   opts.YoungsModulus = GetScalarOpt("youngs-modulus");
   opts.ShearModulus = GetScalarOpt("shear-modulus");
+  opts.viscosity = GetScalarOpt("viscosity");
   opts.radiusA = GetScalarOpt("major-radius");
   opts.radiusB = GetScalarOpt("minor-radius");
-  std::string& frame = GetStringOpt("reference-frame");
+  opts.radiusScale = GetScalarOpt("radius-scale");
+  string& frame = GetStringOpt("reference-frame");
   if (frame == "time") opts.refFrame = ElasticRod::TimeParallel;
   else if (frame == "space") opts.refFrame = ElasticRod::SpaceParallel;
   else {
-    std::cerr << "Unknown reference frame type " << frame << ". Using default"
-              << std::endl;
+    cerr << "Unknown reference frame type " << frame << ". Using default"
+         << endl;
   }
+  opts.quasistatic = GetBoolOpt("quasistatic");
 }
 
 void Problem::addRodTimeStepperOptions()
@@ -305,22 +317,30 @@ void Problem::addRodTimeStepperOptions()
   AddOption("integrator", "type of integrator to use for the rod", "implicit");
   AddOption("iterations", "maximum number of iterations for implicit method",
             (int) 1);
+  AddOption("atol", "absolute convergence tolerance", 1e-8);
+  AddOption("rtol", "relative convergence tolerance", 1e-8);
+  AddOption("stol", "convergence tolerance in terms of the norm of the change in the solution between steps", 1e-8);
+  AddOption("inftol", "infinity norm convergence tolerance", 1e-8);
+  AddOption("velocity-solve", "solve for velocity increments in implicit Euler (if false, the solve is for position increments)", false);
 }
 
 RodTimeStepper* Problem::getRodTimeStepper(ElasticRod& rod)
 {
   RodTimeStepper* stepper = new RodTimeStepper(rod);
 
-  std::string& integrator = GetStringOpt("integrator");
+  string& integrator = GetStringOpt("integrator");
   if (integrator == "symplectic") {
     stepper->setDiffEqSolver(RodTimeStepper::SYMPL_EULER);
 
   } else if (integrator == "implicit") {
     stepper->setDiffEqSolver(RodTimeStepper::IMPL_EULER);
 
+  } else if (integrator == "statics") {
+    stepper->setDiffEqSolver(RodTimeStepper::STATICS);
+
   } else {
-    std::cerr << "Unknown integrator " << integrator
-              << ". Using default instead." << std::endl;
+    cerr << "Unknown integrator " << integrator
+         << ". Using default instead." << endl;
   }
 
   stepper->setTimeStep(getDt());
@@ -334,8 +354,17 @@ RodTimeStepper* Problem::getRodTimeStepper(ElasticRod& rod)
     stepper->addExternalForce(new RodGravity(getGravity()));
   }
 
-  int iterations = GetIntOpt("iterations");
-  stepper->setMaxIterations(iterations);
+  stepper->setMaxIterations(GetIntOpt("iterations"));
+  stepper->set_stol(GetScalarOpt("stol"));
+  stepper->set_atol(GetScalarOpt("atol"));
+  stepper->set_rtol(GetScalarOpt("rtol"));
+  stepper->set_inftol(GetScalarOpt("inftol"));
+
+//   cout << "stol " << stepper->get_stol() << endl
+//        << "atol " << stepper->get_atol() << endl
+//        << "rtol " << stepper->get_rtol() << endl
+//        << "inftol " << stepper->get_inftol() << endl
+//        << "maxit " << stepper->getMaxIterations() << endl;
 
   return stepper;
 }
@@ -474,7 +503,7 @@ RodTimeStepper* Problem::getRodTimeStepper(ElasticRod& rod)
 
   Setup();
 
-  std::string type = GetStringOpt("integrator");
+  string type = GetStringOpt("integrator");
 
   if (type == "static") {
   _integrator = new Static(_rods, _bodies, _forces);
@@ -487,7 +516,7 @@ RodTimeStepper* Problem::getRodTimeStepper(ElasticRod& rod)
   } else if (type == "implicit") {
   _integrator = new ImplicitIntegrator(_rods, _bodies, _forces);
   } else {
-  std::cerr << "Unknown integrator type \'" << type << "\'" << std::endl;
+  cerr << "Unknown integrator type \'" << type << "\'" << endl;
   assert(0);
   exit(1);
   }
@@ -498,7 +527,7 @@ RodTimeStepper* Problem::getRodTimeStepper(ElasticRod& rod)
   }
   }
 
-  bool Problem::AddOption(const OptionKey& name, const std::string& desc,
+  bool Problem::AddOption(const OptionKey& name, const string& desc,
   const bool& def)
   {
   if(m_options.find(name) != m_options.end()) return false;
@@ -509,7 +538,7 @@ RodTimeStepper* Problem::getRodTimeStepper(ElasticRod& rod)
   }
 
 
-  bool Problem::AddOption(const OptionKey& name, const std::string& desc,
+  bool Problem::AddOption(const OptionKey& name, const string& desc,
   const int& def)
   {
   if(m_options.find(name) != m_options.end()) return false;
@@ -519,14 +548,14 @@ RodTimeStepper* Problem::getRodTimeStepper(ElasticRod& rod)
   return true;
   }
 
-  bool Problem::AddOption(const OptionKey& name, const std::string& desc,
+  bool Problem::AddOption(const OptionKey& name, const string& desc,
   const uint& def)
   {
   int iDef = def;
   return AddOption(name, desc, iDef);
   }
 
-  bool Problem::AddOption(const OptionKey& name, const std::string& desc,
+  bool Problem::AddOption(const OptionKey& name, const string& desc,
   const Real& def)
   {
   if(m_options.find(name) != m_options.end()) return false;
@@ -536,7 +565,7 @@ RodTimeStepper* Problem::getRodTimeStepper(ElasticRod& rod)
   return true;
   }
 
-  bool Problem::AddOption(const OptionKey& name, const std::string& desc,
+  bool Problem::AddOption(const OptionKey& name, const string& desc,
   const Vec3d& def)
   {
   if(m_options.find(name) != m_options.end()) return false;
@@ -546,8 +575,8 @@ RodTimeStepper* Problem::getRodTimeStepper(ElasticRod& rod)
   return true;
   }
 
-  bool Problem::AddOption(const OptionKey& name, const std::string& desc,
-  const std::string& def)
+  bool Problem::AddOption(const OptionKey& name, const string& desc,
+  const string& def)
   {
   if(m_options.find(name) != m_options.end()) return false;
 
@@ -557,19 +586,19 @@ RodTimeStepper* Problem::getRodTimeStepper(ElasticRod& rod)
   }
 
   // added by basile
-  // for options defined by C strings, we explicitly cast to std::char, as implicit cast yields wrong answer (i.e. converts def to bool)
-  bool Problem::AddOption(const OptionKey& name, const std::string& desc,
+  // for options defined by C strings, we explicitly cast to char, as implicit cast yields wrong answer (i.e. converts def to bool)
+  bool Problem::AddOption(const OptionKey& name, const string& desc,
   const char* def)
   {
   // in case of ambiguity, issue a warning
   if(  !strcmp(def, "true") || !strcmp(def, "1")  || !strcmp(def, "false") || !strcmp(def, "0") ) {
-  std::cout << " ************ WARNING !! ************************************" << std::endl;
-  std::cout << " ************ ambiguous option initialization found in AddOption(..., ..., \"" << def << "\");" << std::endl;
-  std::cout << " ************ option assumed to be of type string" << std::endl;
-  std::cout << " ************ if bool is intended instead, make last argument of AddOption a bool, not a string " << std::endl;
-  std::cout << " ************************************************************" << std::endl;
+  cout << " ************ WARNING !! ************************************" << endl;
+  cout << " ************ ambiguous option initialization found in AddOption(..., ..., \"" << def << "\");" << endl;
+  cout << " ************ option assumed to be of type string" << endl;
+  cout << " ************ if bool is intended instead, make last argument of AddOption a bool, not a string " << endl;
+  cout << " ************************************************************" << endl;
   }
-  std::string strdef(def);
+  string strdef(def);
   return AddOption(name, desc, strdef);
   }
 
@@ -587,7 +616,7 @@ RodTimeStepper* Problem::getRodTimeStepper(ElasticRod& rod)
   }
 
   RodController* controller = new RodController(*rod);
-  std::string type = GetStringOpt("integrator");
+  string type = GetStringOpt("integrator");
   if (type == "dynamic" || type == "smart" || type == "explicit") {
   controller->setIntegrator(RodController::EXPLICIT);
   } else if (type == "implicit") {
@@ -630,11 +659,11 @@ RodTimeStepper* Problem::getRodTimeStepper(ElasticRod& rod)
 
   Option* Problem::GetOption(OptionKey s)
   {
-  std::map<std::string, Option>::iterator itr = m_options.find(s);
+  map<string, Option>::iterator itr = m_options.find(s);
   if (itr != m_options.end()) {
   return &(itr->second);
   } else {
-  std::cerr << "No such option: " << s << std::endl;
+  cerr << "No such option: " << s << endl;
   exit(1);
   }
   }
@@ -655,7 +684,7 @@ RodTimeStepper* Problem::getRodTimeStepper(ElasticRod& rod)
   return GetOption(s)->v;
   }
 
-  std::string& Problem::GetStringOpt(OptionKey s) {
+  string& Problem::GetStringOpt(OptionKey s) {
   return GetOption(s)->s;
   }
 
@@ -797,13 +826,13 @@ STOP_TIMER("QUASISTATIC");
   STOP_TIMER("TIMER");
 
   if (cutTimeStep) {
-  std::cout << "time step divisor increased to " << divisor << " (2^"
-  << level << ")" << std::endl;
+  cout << "time step divisor increased to " << divisor << " (2^"
+  << level << ")" << endl;
   } else if (level > 0) {
   --level;
   divisor = pow(2.0, level);
-  std::cout << "time step divisor decreased to " << divisor << " (2^"
-  << level << ")" << std::endl;
+  cout << "time step divisor decreased to " << divisor << " (2^"
+  << level << ")" << endl;
   }
 
   STOP_TIMER("TOTAL");
@@ -1124,7 +1153,7 @@ AddBody(body);
 return body;
 }
 
-RigidBody* Problem::AddTrimesh(const std::string& file,
+RigidBody* Problem::AddTrimesh(const string& file,
 const Vec3d& pos,
 const Quaternion& orn,
 const Vec3d& lvel,
@@ -1142,7 +1171,7 @@ AddBody(body);
 return body;
 }
 
-RigidBody* Problem::AddTrimesh(const std::string& file,
+RigidBody* Problem::AddTrimesh(const string& file,
 const Vec3d& pos,
 const Quaternion& orn,
 bool fixed) {

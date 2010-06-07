@@ -204,6 +204,38 @@ void RodRenderer::drawReferenceFrame()
   }
 
   glEnd();
+  glEnable(GL_LIGHTING);
+}
+
+Vec3d RodRenderer::calculateObjectCenter()
+{
+  Vec3d center = Vec3d::Zero();
+  
+  ElasticRod::vertex_iter vit, end = m_rod.vertices_end();
+  for (vit = m_rod.vertices_begin(); vit != end; ++vit) {
+    center += m_rod.getVertex(*vit);
+  }
+  
+  center /= m_rod.nv();
+  
+  return center;
+}
+
+Scalar RodRenderer::calculateObjectBoundingRadius(const Vec3d& center)
+{
+  Scalar radius = 0.0;
+  
+  ElasticRod::vertex_iter vit, end = m_rod.vertices_end();
+  for (vit = m_rod.vertices_begin(); vit != end; ++vit) {
+    radius = std::max(radius, (m_rod.getVertex(*vit) - center).norm());
+  }
+  
+  return radius;
+}
+
+void RodRenderer::setDrawScale(Scalar s)
+{
+  m_rod.setRadiusScale(s);
 }
 
 } // namespace BASim

@@ -40,14 +40,19 @@ public:
 
   virtual void computeForceDX(const ElasticRod& rod, MatrixBase& J);
   virtual void computeForceDV(const ElasticRod& rod, MatrixBase& J);
+
+
   
   void addRodPenaltyForce(int vertex, CollisionMeshData *cmData, int triangle);
   void addRodPenaltyForce(int edge, ElasticRod *rod, int otherEdge);
 
+  void clearPenaltyForces();
+
+  void computeForceDX(const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
+  void computeForceDV(const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
+
   void addRodClumpingForce(int vertex, ElasticRod *rod, int otherVertex);
 
-  void clearPenaltyForces();
-	
   void setClumping(bool flag, Real coeff = 0.0) 
   {
     clumping_enbld = flag;
@@ -70,7 +75,7 @@ protected:
                                 Real &s, Real &t) const;
                                 
   void localJacobian(MatXd& J, const Scalar stiffness, const Vec3d& normal);
-	
+
   bool clumping_enbld;
   Real clumping_coeff;
                                 

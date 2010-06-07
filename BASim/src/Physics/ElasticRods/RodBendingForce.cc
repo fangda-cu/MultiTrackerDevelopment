@@ -394,7 +394,7 @@ void RodBendingForce::localForce(ElementForce& force, const vertex_handle& vh)
   }
 }
 
-void RodBendingForce::globalJacobian(MatrixBase& Jacobian)
+void RodBendingForce::globalJacobian(Scalar scale, MatrixBase& Jacobian)
 {
   computeDxDenominator();
   computeDxDxDenominator();
@@ -411,6 +411,7 @@ void RodBendingForce::globalJacobian(MatrixBase& Jacobian)
     localJacobian(localJ, vh);
     m_stencil.indices(indices);
     adder = localJ;
+    adder *= scale;
     Jacobian.add(indices, indices, adder);
 
 #ifdef TEST_ROD_BENDING

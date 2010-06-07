@@ -19,6 +19,7 @@ class SHO : public Problem
 public:
 
   SHO();
+  ~SHO();
 
 protected:
 

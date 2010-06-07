@@ -5,6 +5,7 @@
 
 #include "src/IO/Tokenizer.hh"
 #include "src/IO/SolverIO.hh"
+#include "src/IO/ObjParser.hh"
 
 #endif // BASIM_IO
 

@@ -18,6 +18,21 @@ SHO::SHO()
             "implicit");
 }
 
+SHO::~SHO()
+{
+  if( stepper != NULL ) 
+  {
+    delete stepper;
+    stepper = NULL;
+  }
+
+  if( rod != NULL )
+  {
+    delete rod;
+    rod = NULL;
+  }
+}
+
 void SHO::Setup()
 {
   loadDynamicsProps();

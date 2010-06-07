@@ -11,6 +11,10 @@
 #include <BASim/BASim>
 #include "Problems/ProblemBase.hh"
 
+#ifdef HAVE_OPENMP
+#include <omp.h>
+#endif
+
 using namespace BASim;
 
 void CreateProblemVector();

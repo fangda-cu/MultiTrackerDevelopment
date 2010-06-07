@@ -101,7 +101,10 @@ void RodTube::buildTube()
       binorm = t0.cross(t1);
       half = 0.5 * atan2(binorm.norm(), t0.dot(t1));
       v = m_rod.property(m_frame)[i-1];
+      if( binorm.norm() != 0.0 ) {
+        binorm.normalize();
       rotateAxisAngle(v, binorm.normalized(), half);
+      }
 
       axis = (t0+t1).normalized();
       m = m_rod.property(m_twist)[ElasticRod::vertex_handle(i)];

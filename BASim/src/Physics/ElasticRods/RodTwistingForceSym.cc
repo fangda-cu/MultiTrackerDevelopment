@@ -20,15 +20,16 @@ namespace BASim {
 
 RodTwistingForceSym::RodTwistingForceSym(ElasticRod& rod)
   : RodForceT<VertexStencil>(rod, "RodTwistingForceSym")
-  , m_gradTwistValid(false)
-  , m_hessTwistValid(false)
 {
   m_rod.add_property(m_kt, "twist stiffness");
   m_rod.add_property(m_twist, "twist");
   m_rod.add_property(m_undeformedTwist, "undeformed twist");
   m_rod.add_property(m_refVertexLength, "twisting ref length");
-  m_rod.add_property(m_gradTwist, "gradient of twist", VecXd(11));
-  m_rod.add_property(m_hessTwist, "Hessian of twist", MatXd(11, 11));
+
+  m_rod.property_handle(m_gradTwistValid, "grad twist valid", false);
+  m_rod.property_handle(m_hessTwistValid, "hess twist valid", false);
+  m_rod.property_handle(m_gradTwist, "gradient of twist", VecXd(11));
+  m_rod.property_handle(m_hessTwist, "Hessian of twist", MatXd(11, 11));
 
   updateProperties();
   updateUndeformedStrain();
@@ -43,23 +44,25 @@ void RodTwistingForceSym::updateProperties()
     vertex_handle& vh = m_stencil.handle();
     edge_handle eh0 = m_stencil.inEdge();
     edge_handle eh1 = m_stencil.outEdge();
-    setTwist(vh, m_rod.getPhi(vh) + m_rod.getTheta(eh1) - m_rod.getTheta(eh0));
+    setTwist(vh, m_rod.getReferenceTwist(vh)
+             + m_rod.getTheta(eh1) - m_rod.getTheta(eh0));
   }
-  m_gradTwistValid = false;
-  m_hessTwistValid = false;
+  m_rod.property(m_gradTwistValid) = false;
+  m_rod.property(m_hessTwistValid) = false;
 }
 
 void RodTwistingForceSym::updateStiffness()
 {
+    Scalar G = m_rod.getShearModulus();
+    if (viscous()) {
+      G = m_rod.getViscosity() / m_rod.getTimeStep();
+    }
+
   iterator end = m_stencil.end();
   for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
     vertex_handle& vh = m_stencil.handle();
     edge_handle eh0 = m_stencil.inEdge();
     edge_handle eh1 = m_stencil.outEdge();
-    Scalar G = m_rod.getShearModulus();
-    if (viscous()) {
-      G = m_rod.getViscosity() / m_rod.getTimeStep();
-    }
     Scalar a = (m_rod.radiusA(eh0) + m_rod.radiusA(eh1)) / 2.0;
     Scalar b = (m_rod.radiusB(eh0) + m_rod.radiusB(eh1)) / 2.0;
     setKt(vh, G * M_PI * a * b * (square(a) + square(b)) / 4.0);
@@ -87,8 +90,9 @@ void RodTwistingForceSym::updateReferenceDomain()
 
 Scalar RodTwistingForceSym::globalEnergy()
 {
-  Scalar energy = 0;
+  if (viscous() && m_rod.getViscosity() == 0.0) return 0.0;
 
+  Scalar energy = 0;
   iterator end = m_stencil.end();
   for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
     vertex_handle& vh = m_stencil.handle();
@@ -110,7 +114,9 @@ Scalar RodTwistingForceSym::localEnergy(const vertex_handle& vh)
 
 void RodTwistingForceSym::globalForce(VecXd& force)
 {
-  START_TIMER("globalForce");
+  if (viscous() && m_rod.getViscosity() == 0.0) return;
+
+  //START_TIMER("globalForce");
   computeGradTwist();
 
   VecXd f(11);
@@ -126,7 +132,7 @@ void RodTwistingForceSym::globalForce(VecXd& force)
       force(indices[j]) += f(j);
     }
   }
-  STOP_TIMER("globalForce");
+  //STOP_TIMER("globalForce");
 }
 
 void RodTwistingForceSym::localForce(VecXd& force, const vertex_handle& vh)
@@ -137,9 +143,11 @@ void RodTwistingForceSym::localForce(VecXd& force, const vertex_handle& vh)
   force = -value * getGradTwist(vh);
 }
 
-void RodTwistingForceSym::globalJacobian(MatrixBase& J)
+void RodTwistingForceSym::globalJacobian(Scalar scale, MatrixBase& J)
 {
-  START_TIMER("globalJacobian");
+  if (viscous() && m_rod.getViscosity() == 0.0) return;
+
+  //START_TIMER("globalJacobian");
   computeGradTwist();
   computeHessTwist();
 
@@ -153,9 +161,10 @@ void RodTwistingForceSym::globalJacobian(MatrixBase& J)
     localJ.setZero();
     localJacobian(localJ, vh);
     m_stencil.indices(indices);
+    localJ *= scale;
     J.add(indices, indices, localJ);
   }
-  STOP_TIMER("globalJacobian");
+  //STOP_TIMER("globalJacobian");
 }
 
 inline void RodTwistingForceSym::localJacobian(MatXd& J, const vertex_handle& vh)
@@ -237,7 +246,7 @@ const MatXd& RodTwistingForceSym::getHessTwist(const vertex_handle& vh) const
 
 void RodTwistingForceSym::computeGradTwist()
 {
-  if (m_gradTwistValid) return;
+  if (m_rod.property(m_gradTwistValid)) return;
 
   iterator end = m_stencil.end();
   for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
@@ -252,12 +261,12 @@ void RodTwistingForceSym::computeGradTwist()
     Dtwist(7) = 1;
   }
 
-  m_gradTwistValid = true;
+  m_rod.property(m_gradTwistValid) = true;
 }
 
 void RodTwistingForceSym::computeHessTwist()
 {
-  if (m_hessTwistValid) return;
+  if (m_rod.property(m_hessTwistValid)) return;
 
   iterator end = m_stencil.end();
   for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
@@ -293,7 +302,7 @@ void RodTwistingForceSym::computeHessTwist()
     DDtwist.block<3,3>(8,8) =                                D2mDf2;
   }
 
-  m_hessTwistValid = true;
+  m_rod.property(m_hessTwistValid) = true;
 }
 
 } // namespace BASim

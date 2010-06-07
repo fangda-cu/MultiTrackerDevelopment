@@ -367,24 +367,27 @@ inline int ElasticRod::vertIdx(const vertex_handle& vh, int coordinate) const
   return property(m_vertIdx)[vh] + coordinate;
 }
 
-inline const Scalar& ElasticRod::getPhi(const vertex_handle& vh) const
+inline const Scalar&
+ElasticRod::getReferenceTwist(const vertex_handle& vh) const
 {
-  return property(m_phi)[vh];
+  return property(m_referenceTwist)[vh];
 }
 
-inline void ElasticRod::setPhi(const vertex_handle& vh, const Scalar& phi)
+inline void
+ElasticRod::setReferenceTwist(const vertex_handle& vh,
+                              const Scalar& referenceTwist)
 {
-  property(m_phi)[vh] = phi;
+  property(m_referenceTwist)[vh] = referenceTwist;
 }
 
-inline const Scalar& ElasticRod::getPhi(int i) const
+inline const Scalar& ElasticRod::getReferenceTwist(int i) const
 {
-  return property(m_phi)[i];
+  return property(m_referenceTwist)[i];
 }
 
-inline void ElasticRod::setPhi(int i, const Scalar& phi)
+inline void ElasticRod::setReferenceTwist(int i, const Scalar& referenceTwist)
 {
-  property(m_phi)[i] = phi;
+  property(m_referenceTwist)[i] = referenceTwist;
 }
 
 inline const Vec3d&

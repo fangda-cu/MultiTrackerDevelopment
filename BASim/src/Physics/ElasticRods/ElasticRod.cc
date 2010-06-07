@@ -9,6 +9,8 @@
 #include "../../Math/Math.hh"
 #include "RodForce.hh"
 
+using namespace std;
+
 namespace BASim {
 
 using namespace Util;
@@ -27,7 +29,7 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   }
 
   add_property(m_forces, "forces");
-  add_property(m_quasistatic, "quasistatic", false);
+  add_property(m_quasistatic, "quasistatic", true);
   add_property(m_refFrameType, "reference-frame", TimeParallel);
   add_property(m_density, "density", 1.0);
   add_property(m_fixed, "fixed_dofs");
@@ -37,13 +39,14 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   add_property(m_ShearModulus, "shear modulus", 1.0);
   add_property(m_viscosity, "dynamic viscosity", 0.0);
   add_property(m_dt, "rod's time step size", 0.1);
+  add_property(m_radius_scale, "scaling for rendering and collisions", 1.0);
 
   add_property(m_vertexPositions, "vertex_positions", Vec3d(0,0,0));
   add_property(m_vertexVelocities, "vertex velocities", Vec3d(0,0,0));
   add_property(m_voronoiLengths, "voronoi legths", 0.0);
   add_property(m_vertexMasses, "vertex masses", 0.0);
   add_property(m_vertexFixed, "is vertex fixed", false);
-  add_property(m_phi, "phi", 0.0);
+  add_property(m_referenceTwist, "reference twist", 0.0);
   add_property(m_curvatureBinormal, "curvature binormal", Vec3d(0,0,0));
   add_property(m_vertIdx, "vertex index", 0);
 
@@ -65,6 +68,8 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
 
   setupDofIndices();
 
+  m_boundaryConditions = NULL;
+
   // For collisions
   m_currentPositions.resize(numVertices);
   m_previousPositions.resize(numVertices);
@@ -83,6 +88,12 @@ ElasticRod::~ElasticRod()
   RodForces::iterator it;
   for (it = forces.begin(); it != forces.end(); ++it) {
     delete (*it);
+  }
+  
+  if( m_boundaryConditions != NULL )
+  {
+    delete m_boundaryConditions;
+    m_boundaryConditions = NULL;
   }
 }
 
@@ -112,21 +123,21 @@ void ElasticRod::computeForces(VecXd& force)
 {
   RodForces& forces = getForces();
   RodForces::iterator fIt;
-
-// std::cout << "computeForces " << force << "\n";
-
+  VecXd curr_force(force.size());
   for (fIt = forces.begin(); fIt != forces.end(); ++fIt) {
-    (*fIt)->globalForce(force);
-//    std::cout << (*fIt)->getName() << " " << force.segment(0,11) << "\n";
+    curr_force.setZero();
+    (*fIt)->globalForce(curr_force);
+    force += curr_force;
+    //cout << (*fIt)->getName() << " = " << curr_force.norm() << endl;
   }
 }
 
-void ElasticRod::computeJacobian(MatrixBase& J)
+void ElasticRod::computeJacobian(Scalar scale, MatrixBase& J)
 {
   RodForces& forces = getForces();
   RodForces::iterator fIt;
   for (fIt = forces.begin(); fIt != forces.end(); ++fIt)
-    (*fIt)->globalJacobian(J);
+    (*fIt)->globalJacobian(scale, J);
 }
 
 void ElasticRod::computeEdges()
@@ -170,7 +181,7 @@ void ElasticRod::computeSpaceParallel()
   edge_iter eit = edges_begin(), end = edges_end();
   edge_handle eh = *eit;
   Vec3d t0 = getEdge(eh).normalized();
-  Vec3d u = parallelTransport(getReferenceDirector1(eh), getTangent(eh), t0);
+  Vec3d u = parallel_transport(getReferenceDirector1(eh), getTangent(eh), t0);
   u = (u - u.dot(t0) * t0).normalized();
   setReferenceDirector1(eh, u);
   setReferenceDirector2(eh, t0.cross(u));
@@ -179,7 +190,7 @@ void ElasticRod::computeSpaceParallel()
   for (++eit; eit != end; ++eit) {
     eh = *eit;
     Vec3d t1 = getEdge(eh).normalized();
-    u = parallelTransport(u, t0, t1);
+    u = parallel_transport(u, t0, t1);
     u = (u - u.dot(t1) * t1).normalized();
     setReferenceDirector1(eh, u);
     setReferenceDirector2(eh, t1.cross(u));
@@ -193,7 +204,7 @@ void ElasticRod::computeTimeParallel()
   for (eit = edges_begin(); eit != end; ++eit) {
     edge_handle& eh = *eit;
     Vec3d t = getEdge(eh).normalized();
-    Vec3d u = parallelTransport(getReferenceDirector1(eh), getTangent(eh), t);
+    Vec3d u = parallel_transport(getReferenceDirector1(eh), getTangent(eh), t);
     u = (u - u.dot(t) * t).normalized();
     setReferenceDirector1(eh, u);
     setReferenceDirector2(eh, t.cross(u));
@@ -208,7 +219,7 @@ void ElasticRod::computeCurvatureBinormals()
   }
 }
 
-void ElasticRod::computePhi()
+void ElasticRod::computeReferenceTwist()
 {
   if (refFrameType() == SpaceParallel) return;
 
@@ -216,16 +227,16 @@ void ElasticRod::computePhi()
     const Vec3d& u0 = getReferenceDirector1(i - 1);
     const Vec3d& u1 = getReferenceDirector1(i);
     const Vec3d& tangent = getTangent(i);
-    Scalar& phi = property(m_phi)[i];
+    Scalar& referenceTwist = property(m_referenceTwist)[i];
 
     // transport reference frame to next edge
-    Vec3d ut = parallelTransport(u0, getTangent(i - 1), tangent);
+    Vec3d ut = parallel_transport(u0, getTangent(i - 1), tangent);
 
-    // rotate by current value of phi
-    rotateAxisAngle(ut, tangent, phi);
+    // rotate by current value of reference twist
+    rotateAxisAngle(ut, tangent, referenceTwist);
 
-    // compute increment to phi to align reference frames
-    phi += signedAngle(ut, u1, tangent);
+    // compute increment to reference twist to align reference frames
+    referenceTwist += signedAngle(ut, u1, tangent);
   }
 }
 
@@ -345,7 +356,7 @@ void ElasticRod::updateProperties()
   computeEdges();
   computeReferenceDirectors();
   computeTangents();
-  computePhi();
+  computeReferenceTwist();
   computeCurvatureBinormals();
   computeEdgeLengths();
   computeVoronoiLengths();
@@ -517,6 +528,16 @@ void ElasticRod::setTimeStep(Scalar dt)
   for (fIt = forces.begin(); fIt != forces.end(); ++fIt) {
     if ((*fIt)->viscous()) (*fIt)->updateStiffness();
   }
+}
+
+Scalar ElasticRod::getRadiusScale() const
+{
+  return property(m_radius_scale);
+}
+
+void ElasticRod::setRadiusScale(Scalar s)
+{
+  property(m_radius_scale) = s;
 }
 
 } // namespace BASim

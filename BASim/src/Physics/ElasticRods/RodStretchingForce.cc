@@ -59,6 +59,8 @@ Scalar RodStretchingForce::globalEnergy()
 Scalar RodStretchingForce::elementEnergy(const edge_handle& eh)
 {
   Scalar ks = getKs(eh);
+  if (ks == 0.0) return 0;
+
   Scalar refLength = getRefLength(eh);
   Scalar len = m_rod.getEdgeLength(eh);
 
@@ -113,6 +115,8 @@ void RodStretchingForce::elementForce(ElementForce& force,
                                       const edge_handle& eh)
 {
   Scalar ks = getKs(eh);
+  if (ks == 0.0) return;
+
   Scalar refLength = getRefLength(eh);
   Scalar len = m_rod.getEdgeLength(eh);
   const Vec3d& tangent = m_rod.getTangent(eh);
@@ -122,7 +126,7 @@ void RodStretchingForce::elementForce(ElementForce& force,
   force.segment(3, 3) = -f;
 }
 
-void RodStretchingForce::globalJacobian(MatrixBase& Jacobian)
+void RodStretchingForce::globalJacobian(Scalar scale, MatrixBase& Jacobian)
 {
   IndexArray indices;
   ElementJacobian localJ;
@@ -134,6 +138,7 @@ void RodStretchingForce::globalJacobian(MatrixBase& Jacobian)
     localJ.setZero();
     elementJacobian(localJ, eh);
     adder = localJ;
+    adder *= scale;
     m_stencil.indices(indices);
     Jacobian.add(indices, indices, adder);
 
@@ -146,10 +151,12 @@ void RodStretchingForce::globalJacobian(MatrixBase& Jacobian)
 void RodStretchingForce::elementJacobian(ElementJacobian& Jacobian,
                                          const edge_handle& eh)
 {
+  Scalar ks = getKs(eh);
+  if (ks == 0.0) return;
+
   const Vec3d& e = m_rod.getEdge(eh);
   Scalar len = m_rod.getEdgeLength(eh);
   Scalar refLength = getRefLength(eh);
-  Scalar ks = getKs(eh);
   Mat3d M = ks * ( (1.0 / refLength - 1.0 / len) * Mat3d::Identity()
                    + 1.0 / len * outerProd(e,e) / square(len) );
 
@@ -184,15 +191,16 @@ void RodStretchingForce::setRefLength(const edge_handle& eh,
 
 void RodStretchingForce::updateStiffness()
 {
+    Scalar E = m_rod.getYoungsModulus();
+    if (viscous()) {
+      E = 3 * m_rod.getViscosity() / m_rod.getTimeStep();
+    }
+
   iterator end = m_stencil.end();
   for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
     edge_handle& eh = m_stencil.handle();
     Scalar a = m_rod.radiusA(eh);
     Scalar b = m_rod.radiusB(eh);
-    Scalar E = m_rod.getYoungsModulus();
-    if (viscous()) {
-      E = 3 * m_rod.getViscosity() / m_rod.getTimeStep();
-    }
     setKs(eh, E * M_PI * a * b);
   }
 }

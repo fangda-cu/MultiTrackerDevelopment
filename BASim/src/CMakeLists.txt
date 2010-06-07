@@ -10,12 +10,13 @@ set (Directories
   .
   Core
   Core/TopologicalObject
+  Collisions
+  IO
   Math
   Physics
   Physics/ElasticRods
   Render
   Util
-  Collisions
 )
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
@@ -50,6 +51,13 @@ if (LAPACK_FOUND)
   append_files (Templates "tcc" Math/MKL)
   append_files (Sources "cc" Math/MKL)
 endif (LAPACK_FOUND)
+
+if (PARDISO_FOUND)
+  append_files (Headers "hh" Math/Pardiso)
+  append_files (Inlines "inl" Math/Pardiso)
+  append_files (Templates "tcc" Math/Pardiso)
+  append_files (Sources "cc" Math/Pardiso)
+endif (PARDISO_FOUND)
 
 if (TEST_ROD_STRETCHING_FORCE)
   add_definitions (-DTEST_ROD_STRETCHING)

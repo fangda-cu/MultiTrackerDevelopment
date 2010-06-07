@@ -16,6 +16,11 @@
 #include "BASim/src/Math/Petsc/PetscLinearSolver.hh"
 #endif // HAVE_PETSC
 
+#ifdef HAVE_PARDISO
+#include "BASim/src/Math/PardisoMatrix.hh"
+#include "BASim/src/Math/Pardiso/PardisoLinearSolver.hh"
+#endif // HAVE_PARDISO
+
 #ifdef HAVE_LAPACK
 #ifdef WETA
 #include "MKL/MKLLinearSolver.hh"
@@ -34,6 +39,9 @@ public:
 
   // define solver types
   enum SolverType {
+#ifdef HAVE_PARDISO
+    PARDISO_SOLVER,
+#endif // HAVE_PETSC
 #ifdef HAVE_PETSC
     PETSC_SOLVER,
 #endif // HAVE_PETSC
@@ -46,6 +54,9 @@ public:
 
   // define matrix types
   enum MatrixType {
+#ifdef HAVE_PARDISO
+    PARDISO_MATRIX,
+#endif // HAVE_PETSC
 #ifdef HAVE_PETSC
     PETSC_MATRIX,
 #endif // HAVE_PETSC
@@ -64,6 +75,7 @@ public:
 
   LinearSolverBase* createLinearSolver(MatrixBase* A) const;
 
+  std::string getSolverName() const;
 private:
 
   SolverUtils()

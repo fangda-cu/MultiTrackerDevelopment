@@ -3,6 +3,8 @@
  *
  * \author miklos@cs.columbia.edu
  * \date 09/13/2009
+ * \author smith@cs.columbia.edu
+ * \date 03/14/2010
  */
 
 #ifndef TOPOLOGY_HH
@@ -127,6 +129,70 @@ public:
 protected:
 
   std::vector<vertex_handle> m_verts; ///< Vertices adjacent to the edge
+};
+
+/** Class that holds the topology (connectivity information) of a face */
+template <class T>
+class FaceTopology
+{
+public:
+
+  typedef typename T::vertex_handle vertex_handle;
+  typedef typename T::face_handle   face_handle;
+
+  FaceTopology()
+    : m_verts(3)
+  {}
+
+  FaceTopology( const int& n )
+    : m_verts(n)
+  {
+    assert( n >= 3 );
+  }
+
+  FaceTopology(const FaceTopology& ft)
+    : m_verts(ft.m_verts)
+  {}
+
+  FaceTopology& operator= (const FaceTopology& ft)
+  {
+    m_verts = ft.m_verts;
+    return *this;
+  }
+
+  const vertex_handle& getVertex( const size_t& i ) const
+  {
+    assert(i < m_verts.size());
+    return m_verts[i];
+  }
+
+  void setVertex( const size_t& i, const vertex_handle& vh )
+  {
+    assert(i < m_verts.size());
+    m_verts[i] = vh;
+  }
+
+  vertex_handle& operator[] ( const size_t& i)
+  {
+    assert(i < m_verts.size());
+    return m_verts[i];
+  }
+
+  const vertex_handle& operator[] ( const size_t& i) const
+  {
+    assert(i < m_verts.size());
+    return m_verts[i];
+  }
+
+  /** Number of edges making up the face (always >= 3) */
+  size_t size() const
+  {
+    return m_verts.size();
+  }
+
+protected:
+
+  std::vector<vertex_handle> m_verts; ///< Edges adjacent to the face
 };
 
 } // namespace BASim

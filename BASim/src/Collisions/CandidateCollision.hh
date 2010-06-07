@@ -15,29 +15,6 @@
 
 namespace BASim {
 
-using namespace bridson;
-
-inline double clamp(double a, double lower, double upper)
-{
-    if(a<lower) return lower;
-    else if(a>upper) return upper;
-    else return a;
-}
-
-inline double triple(const Vec3d &a, const Vec3d &b, const Vec3d &c)
-{ 
-    return a[0]*(b[1]*c[2]-b[2]*c[1])
-           +a[1]*(b[2]*c[0]-b[0]*c[2])
-           +a[2]*(b[0]*c[1]-b[1]*c[0]); 
-}
-
-inline void addUnique(std::vector<double>& a, double e)
-{
-    for(unsigned int i=0; i<a.size(); ++i)
-        if(a[i]==e) return;
-            a.push_back(e);
-}
-
 class CandidateCollision
 {
 public:

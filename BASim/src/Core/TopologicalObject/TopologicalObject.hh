@@ -3,6 +3,8 @@
  *
  * \author miklos@cs.columbia.edu
  * \date 09/12/2009
+ * \author smith@cs.columbia.edu
+ * \date 03/14/2010
  */
 
 #ifndef TOPOLOGICALOBJECT_HH
@@ -15,8 +17,9 @@
 
 namespace BASim {
 
-/** An object that represents a collection of vertices and edges with
-    associated connectivity information. */
+/** An object that represents a collection of vertices, edges and faces
+   with associated connectivity information. Warning: Face support is
+   still largely untested and subject to revision. */
 class TopologicalObject : public ObjectBase
 {
 public:
@@ -31,6 +34,11 @@ public:
   typedef const EdgeIterator<TopologicalObject>         const_edge_iter;
   typedef EdgeTopology<TopologicalObject>               edge_topology;
 
+  typedef FaceHandle<TopologicalObject>                 face_handle;
+  typedef FaceIterator<TopologicalObject>               face_iter;
+  typedef const FaceIterator<TopologicalObject>         const_face_iter;
+  typedef FaceTopology<TopologicalObject>               face_topology;
+
   typedef VertexEdgeIterator<TopologicalObject>         VertexEdgeIter;
   typedef const VertexEdgeIterator<TopologicalObject>   ConstVertexEdgeIter;
 
@@ -40,6 +48,9 @@ public:
   typedef VertexVertexIterator<TopologicalObject>       VertexVertexIter;
   typedef const VertexVertexIterator<TopologicalObject> ConstVertexVertexIter;
 
+  typedef FaceVertexIterator<TopologicalObject>         FaceVertexIter;
+  typedef const FaceVertexIterator<TopologicalObject>   ConstFaceVertexIter;
+
   TopologicalObject();
 
   virtual ~TopologicalObject() {}
@@ -48,16 +59,22 @@ public:
   int nv() const { return property(m_nv); }
   /** Number of edges */
   int ne() const { return property(m_ne); }
+  /** Number of faces */
+  int nf() const { return property(m_nf); }
 
   /** Add a vertex to the object */
   vertex_handle addVertex();
   /** Add a directed edge that connects the two given vertices */
   edge_handle addEdge(const vertex_handle& v0, const vertex_handle& v1);
+  /** Add a triangular face to the object */
+  face_handle addFace(const vertex_handle& v0, const vertex_handle& v1, const vertex_handle& v2);
 
-  /** Deletes the given vertex and associated edges */
+  /** Deletes the given vertex and associated edges, faces (NOT IMPLEMENTED) */
   void deleteVertex(const vertex_handle& vertex);
-  /** Deletes the given edge */
+  /** Deletes the given edge and associated faces (NOT IMPLEMENTED) */
   void deleteEdge(const edge_handle& edge);
+  /** Deletes the given face (NOT IMPLEMENTED) */
+  void deleteFace(const face_handle& face);
 
   /** Returns a handle to the vertex at the head of the edge */
   vertex_handle fromVertex(const edge_handle& eh) const;
@@ -88,18 +105,28 @@ public:
   /** Const version */
   const_edge_iter edges_end() const;
 
+  /** Returns an iterator to the first face */
+  face_iter faces_begin();
+  /** Const version */
+  const_face_iter faces_begin() const;
+
+  /** Returns an iterator to the past-the-end face */
+  face_iter faces_end();
+  /** Const version */
+  const_face_iter faces_end() const;
+
   //@}
 
   /** \name Circulators */
 
   //@{
 
-  /** Circulator over vertices adjacent to an edge */
+  /** Circulator over edges adjacent to a vertex */
   VertexEdgeIter ve_iter(const vertex_handle& vh);
   /** Const version */
   ConstVertexEdgeIter ve_iter(const vertex_handle& vh) const;
 
-  /** Circulator over edges adjacent to a vertex */
+  /** Circulator over vertices adjacent to an edge */
   EdgeVertexIter ev_iter(const edge_handle& eh);
   /** Const version */
   ConstEdgeVertexIter ev_iter(const edge_handle& eh) const;
@@ -108,6 +135,11 @@ public:
   VertexVertexIter vv_iter(const vertex_handle& vh);
   /** Const version */
   ConstVertexVertexIter vv_iter(const vertex_handle& vh) const;
+
+  /** Circulator over vertices adjacent to a face */
+  FaceVertexIter fv_iter(const face_handle& fh);
+  /** Const version */
+  ConstFaceVertexIter fv_iter(const face_handle& fh) const;
 
   //@}
 
@@ -125,6 +157,11 @@ public:
   /** Const version */
   const edge_topology& getEdgeTopology(const edge_handle& eh) const;
 
+  /** Returns topology associated to a face */
+  face_topology& getFaceTopology(const face_handle& fh);
+  /** Const version */
+  const face_topology& getFaceTopology(const face_handle& eh) const;
+
   //@}
 
   /** \name Vertex properties */
@@ -137,18 +174,26 @@ public:
   BA_CREATE_PROPERTY(EPropHandle, m_edgeProps, ne());
   //@}
 
+  /** \name Face properties */
+  //@{
+  BA_CREATE_PROPERTY(FPropHandle, m_faceProps, nf());
+  //@}
+
   BA_INHERIT_BASE(ObjectBase);
 
 protected:
 
   PropertyContainer m_vertexProps; ///< Vertex property container
   PropertyContainer m_edgeProps;   ///< Edge property container
+  PropertyContainer m_faceProps;   ///< Face property container
 
   ObjPropHandle<int> m_nv; ///< number of vertices
   ObjPropHandle<int> m_ne; ///< number of edges
+  ObjPropHandle<int> m_nf; ///< number of faces
 
   VPropHandle<vertex_topology> m_vertTop; ///< Topology of the vertices
   EPropHandle<edge_topology> m_edgeTop;   ///< Topology of the edges
+  FPropHandle<face_topology> m_faceTop;   ///< Topology of the faces
 };
 
 #include "TopologicalObject.inl"

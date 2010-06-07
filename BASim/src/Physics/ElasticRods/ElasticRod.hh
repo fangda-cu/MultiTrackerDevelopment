@@ -10,6 +10,7 @@
 
 #include "../PhysObject.hh"
 #include "../../Collisions/CollisionObject.hh"
+#include "RodBoundaryCondition.hh"
 
 namespace BASim {
 
@@ -38,7 +39,7 @@ public:
 
   virtual void setup();
   virtual void computeForces(VecXd& force);
-  virtual void computeJacobian(MatrixBase& J);
+  virtual void computeJacobian(Scalar scale, MatrixBase& J);
 
   virtual const Scalar&
   getVertexDof(const vertex_handle& vh, int num) const;
@@ -196,6 +197,14 @@ public:
   const Scalar& radiusB(int j) const;
   const Scalar& radiusB(const edge_handle& eh) const;
 
+  /** Multiplicative factor that scales the radius for rendering and
+      collision detection. Defaults to 1.
+
+      \return radius scale factor
+   */
+  Scalar getRadiusScale() const;
+  void setRadiusScale(Scalar s);
+
   const Vec3d& getReferenceDirector1(const edge_handle& eh) const;
   void setReferenceDirector1(const edge_handle& eh, const Vec3d& u);
   const Vec3d& getReferenceDirector2(const edge_handle& eh) const;
@@ -225,11 +234,11 @@ public:
   const Scalar& getVoronoiLength(int i) const;
   void setVoronoiLength(int i, const Scalar& len);
 
-  const Scalar& getPhi(const vertex_handle& vh) const;
-  void setPhi(const vertex_handle& vh, const Scalar& phi);
+  const Scalar& getReferenceTwist(const vertex_handle& vh) const;
+  void setReferenceTwist(const vertex_handle& vh, const Scalar& referenceTwist);
 
-  const Scalar& getPhi(int i) const;
-  void setPhi(int i, const Scalar& phi);
+  const Scalar& getReferenceTwist(int i) const;
+  void setReferenceTwist(int i, const Scalar& referenceTwist);
 
   const Vec3d& getCurvatureBinormal(const vertex_handle& vh) const;
   void setCurvatureBinormal(const vertex_handle& vh, const Vec3d& kb);
@@ -262,6 +271,13 @@ public:
   const RodForces& getForces() const;
   RodForces& getForces();
   void addForce(RodForce* force);
+
+  RodBoundaryCondition* getBoundaryCondition()
+  {
+    if (m_boundaryConditions == NULL)
+      m_boundaryConditions = new RodBoundaryCondition(*this);
+    return m_boundaryConditions;
+  }
 
   virtual void updateProperties();
   virtual void updateReferenceProperties();
@@ -395,7 +411,7 @@ protected:
   void computeSpaceParallel();
   void computeTimeParallel();
   void computeCurvatureBinormals();
-  void computePhi();
+  void computeReferenceTwist();
   void computeMaterialDirectors();
   void computeVertexMasses();
   void computeEdgeInertias();
@@ -423,13 +439,14 @@ protected:
   ObjPropHandle<Scalar> m_ShearModulus;
   ObjPropHandle<Scalar> m_viscosity;
   ObjPropHandle<Scalar> m_dt;
+  ObjPropHandle<Scalar> m_radius_scale;
 
   VPropHandle<Vec3d> m_vertexPositions;
   VPropHandle<Vec3d> m_vertexVelocities;
   VPropHandle<Scalar> m_voronoiLengths;
   VPropHandle<Scalar> m_vertexMasses;
   VPropHandle<bool> m_vertexFixed;
-  VPropHandle<Scalar> m_phi; ///< twist of the reference frame
+  VPropHandle<Scalar> m_referenceTwist; ///< twist of the reference frame
   VPropHandle<Vec3d> m_curvatureBinormal;
   VPropHandle<int> m_vertIdx;
 
@@ -445,6 +462,8 @@ protected:
   EPropHandle<bool> m_edgeFixed;
   EPropHandle<int> m_edgeIdx;
   
+  RodBoundaryCondition* m_boundaryConditions;
+
   ////////////////////////////////////////////////////////////////////////////////
   //
   // Needed for collisions. They should really be integrated with the the rest of
