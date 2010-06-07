@@ -17,7 +17,7 @@ WmFigRodNurbsInput::~WmFigRodNurbsInput()
 {
 }
 
-void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
+void WmFigRodNurbsInput::getAndResampleInputCurves( MDataBlock& i_dataBlock, vector< vector<Vec3d > >& o_inputCurveVertices )
 {
     MStatus stat;
 
@@ -27,6 +27,8 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
     CHECK_MSTATUS(stat);
 
     size_t numCurvesConnected = inArrayH.elementCount();
+
+    o_inputCurveVertices.resize( numCurvesConnected );
 
     for ( unsigned int i = 0; i < numCurvesConnected; i++ )
     {
@@ -73,6 +75,9 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
             if ( length < m_minimumRodLength )
             {
                 MGlobal::displayWarning( MString( "Input curve " ) + i + " is less than minimum length (" + m_minimumRodLength + "), not turning it into a rod." );
+
+                // Remove all vertices from the curve so it doesn't get turned into a rod later
+                curve.clear();
             }
             else
             {
@@ -105,22 +110,40 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
         }
 
         // convert cvs to Vec3d
-        vector<Vec3d> inputCurveVertices;
-        inputCurveVertices.resize( curve.size() );
+        o_inputCurveVertices[ i ].resize( curve.size() );
         for ( int c = 0; c < curve.size(); ++c )
         {
-            inputCurveVertices[ c ] = Vec3d( curve[ c ].x, curve[ c ].y, curve[ c ].z );
+            o_inputCurveVertices[ i ][ c ] = Vec3d( curve[ c ].x, curve[ c ].y, curve[ c ].z );
         }
+    }
+}
 
-        RodOptions rodOptions = m_rodOptions;
-        rodOptions.numVertices = inputCurveVertices.size();
+void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
+{
+    vector< vector< Vec3d > > inputCurveVertices;
 
-        // Mass damping should be in rod options, it's dumb to pass it seperately.
-        size_t rodIndex = m_rodGroup.addRod( inputCurveVertices, rodOptions, m_massDamping );
+    getAndResampleInputCurves( i_dataBlock, inputCurveVertices );
 
-        if ( m_lockFirstEdgeToInput )
+    for ( size_t c=0; c< inputCurveVertices.size(); ++c )
+    {
+        if ( inputCurveVertices[ c ].size() == 0 )
         {
-            m_rodGroup.addKinematicEdge( rodIndex, 0 );
+            // Add a placeholder rod, most likely too small to actually be a real rod.
+             m_rodGroup.addRod();
+        }
+        else
+        {
+
+            RodOptions rodOptions = m_rodOptions;
+            rodOptions.numVertices = inputCurveVertices[ c ].size();
+
+            // Mass damping should be in rod options, it's dumb to pass it seperately.
+            size_t rodIndex = m_rodGroup.addRod( inputCurveVertices[ c ], rodOptions, m_massDamping );
+    
+            if ( m_lockFirstEdgeToInput )
+            {
+                m_rodGroup.addKinematicEdge( rodIndex, 0 );
+            }
         }
     }
 
@@ -159,88 +182,46 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
 
 void WmFigRodNurbsInput::updateRodDataFromInput( MDataBlock& i_dataBlock )
 {
-   /* MStatus stat;
-    
-    MArrayDataHandle inArrayH = i_dataBlock.inputArrayValue( m_inputNurbsAttribute, &stat );
-    CHECK_MSTATUS(stat);
-    size_t numCurvesConnected = inArrayH.elementCount(); 
+    vector< vector< Vec3d > > inputCurveVertices;
 
-    if ( i_pRodData->size() != numCurvesConnected )
+    getAndResampleInputCurves( i_dataBlock, inputCurveVertices );
+
+    for ( size_t c=0; c< inputCurveVertices.size(); ++c )
     {
-        MGlobal::displayError( "Number of rods does not equal number of input curves, rewind simulation to reset" );
-        return;
-    }
-
-    for ( unsigned int i = 0; i < numCurvesConnected; i++ )
-    {
-        inArrayH.jumpToElement( i );
-        MDataHandle inputCurveH = inArrayH.inputValue( &stat );
-        CHECK_MSTATUS( stat );
-
-        // Use asNurbsCurveTransformed to get the curve data as we
-        // want it in world space.
-        MObject inputCurveObj = inputCurveH.asNurbsCurveTransformed();
-        MFnNurbsCurve inCurveFn( inputCurveObj );
-
-        MPoint cv;
-        int numCurveCVs = inCurveFn.numCVs();
-
-        BASim::ElasticRod* pRod = (*i_pRodData)[ i ]->rod;
-        if ( pRod != NULL )
+        if ( !m_rodGroup.isPlaceHolderRod( c ) )        
         {
-            int numRodVertices = pRod->nv();
-
-            if ( numRodVertices != numCurveCVs )
-            {
-                MGlobal::displayError( "Number of vertices in rod does not equal number of CVs in input curve! Did you change the input? Rewind sim to reset." );
-                return;
-            }
-
-            vector<Vec3d> inputCurveVertices;
-            inputCurveVertices.resize( numCurveCVs );
-
-            for ( int c = 0; c < numCurveCVs ; ++c )
-            {
-                MPoint cv;
-                // stat = inCurveFn.getCV( c,cv,MSpace::kWorld );
-                stat = inCurveFn.getCV( c,cv,MSpace::kObject );
-                CHECK_MSTATUS( stat );
-
-                inputCurveVertices[ c ] = Vec3d( cv.x, cv.y, cv.z );
-            }
-
-            (*i_pRodData)[ i ]->updateNextRodVertexPositions( inputCurveVertices );
+            m_rodGroup.updateRodNextVertexPositions( c, inputCurveVertices[ c ] );
+        }
+    }    
             
-            /*  FIXME: Again this should be resurrected as soon as the refactoring is complete.
+    /*  FIXME: Again this should be resurrected as soon as the refactoring is complete.
 
-            EdgeTransformRodMap::iterator rodIt = m_controlledEdgeTransforms.find( i );
-            if ( rodIt != m_controlledEdgeTransforms.end() )
+    EdgeTransformRodMap::iterator rodIt = m_controlledEdgeTransforms.find( i );
+    if ( rodIt != m_controlledEdgeTransforms.end() )
+    {
+        for ( EdgeTransformMap::iterator edgeIt = m_controlledEdgeTransforms[ i ].begin();
+                edgeIt != m_controlledEdgeTransforms[ i ].end();
+                edgeIt++ )
+        {
+            if ( m_currentTime == m_startTime )
+                (*mx_rodData)[ i ]->resetKinematicEdge( edgeIt->first, (*mx_rodData)[ i ]->rod, (edgeIt->second.materialFrame) );
+            else
+                (*mx_rodData)[ i ]->updateKinematicEdge( edgeIt->first, (edgeIt->second.materialFrame) );
+            
+            // Set the next positions of these vertices to be wherever the input controller
+            // says they should be.
+            Vec3d position =  edgeIt->second.position;
+            if ( (*mx_rodData)[ i ]->rod != NULL )
             {
-                for ( EdgeTransformMap::iterator edgeIt = m_controlledEdgeTransforms[ i ].begin();
-                        edgeIt != m_controlledEdgeTransforms[ i ].end();
-                        edgeIt++ )
-                {
-                    if ( m_currentTime == m_startTime )
-                        (*mx_rodData)[ i ]->resetKinematicEdge( edgeIt->first, (*mx_rodData)[ i ]->rod, (edgeIt->second.materialFrame) );
-                    else
-                        (*mx_rodData)[ i ]->updateKinematicEdge( edgeIt->first, (edgeIt->second.materialFrame) );
-                    
-                    // Set the next positions of these vertices to be wherever the input controller
-                    // says they should be.
-                    Vec3d position =  edgeIt->second.position;
-                    if ( (*mx_rodData)[ i ]->rod != NULL )
-                    {
-                        double length = (*mx_rodData)[ i ]->rod->getEdge( edgeIt->first ).norm();
-                        Vec3d edge = edgeIt->second.materialFrame.m1;
-                        edge.normalize();
-                        Vec3d start = position - ( edge * length / 2.0 );
-                        Vec3d end = position + ( edge * length / 2.0 );
-                        (*mx_rodData)[ i ]->nextVertexPositions[ edgeIt->first ] = start;
-                        (*mx_rodData)[ i ]->nextVertexPositions[ edgeIt->first + 1 ] = end;
-                    }
-                }
-            }*/
-      /* }
+                double length = (*mx_rodData)[ i ]->rod->getEdge( edgeIt->first ).norm();
+                Vec3d edge = edgeIt->second.materialFrame.m1;
+                edge.normalize();
+                Vec3d start = position - ( edge * length / 2.0 );
+                Vec3d end = position + ( edge * length / 2.0 );
+                (*mx_rodData)[ i ]->nextVertexPositions[ edgeIt->first ] = start;
+                (*mx_rodData)[ i ]->nextVertexPositions[ edgeIt->first + 1 ] = end;
+            }
+        }
     }*/
 }
 

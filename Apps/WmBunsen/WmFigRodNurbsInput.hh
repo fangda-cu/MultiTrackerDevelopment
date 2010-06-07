@@ -47,6 +47,7 @@ public:
     virtual void updateRodDataFromInput( MDataBlock& i_dataBlock );
     virtual size_t numberOfInputs( MDataBlock& i_dataBlock );
 
+    void getAndResampleInputCurves(  MDataBlock& i_dataBlock, vector< vector<Vec3d > >& o_inputCurveVertices );
 private:
 
     MObject& m_inputNurbsAttribute;
