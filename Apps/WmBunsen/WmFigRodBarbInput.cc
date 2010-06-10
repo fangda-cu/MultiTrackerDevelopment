@@ -6,16 +6,16 @@ WmFigRodBarbInput::WmFigRodBarbInput( MObject& i_verticesAttribute, MObject& i_s
                         double i_percentageOfBarbStrands, size_t i_verticesPerRod,
                         bool i_lockFirstEdgeToInput, double i_vertexSpacing,
                         double i_minimumRodLength, RodOptions& i_rodOptions,
-                        double i_massDamping, WmFigRodGroup& i_rodGroup ) : 
+                        double i_massDamping, WmFigRodGroup& i_rodGroup,
+                        RodTimeStepper::Method i_solverType ) : 
     m_verticesAttribute( i_verticesAttribute ),
     m_strandRootFramesAttribute( i_strandRootFramesAttribute ),
     m_percentageOfBarbStrands( i_percentageOfBarbStrands ),
     m_verticesPerRod( i_verticesPerRod ), m_lockFirstEdgeToInput( i_lockFirstEdgeToInput ),
     m_vertexSpacing( i_vertexSpacing ), m_minimumRodLength( i_minimumRodLength ),
-    m_rodGroup( i_rodGroup ), m_rodOptions( i_rodOptions ), m_massDamping( i_massDamping )
-{
-    // we need to get pass the attribute here so that when we initialise data or
-    // reload it we can just pull on the attribute
+    m_rodGroup( i_rodGroup ), m_rodOptions( i_rodOptions ), m_massDamping( i_massDamping ),
+    m_solverType( i_solverType )
+{    
 }
 
 WmFigRodBarbInput::~WmFigRodBarbInput()
@@ -102,7 +102,7 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
                 rodOptions.numVertices = inputStrandVertices.size();
 
                 // Mass damping should be in rod options, it's dumb to pass it seperately.
-                rodIndex = m_rodGroup.addRod( inputStrandVertices, rodOptions, m_massDamping );
+                rodIndex = m_rodGroup.addRod( inputStrandVertices, rodOptions, m_massDamping, m_solverType );
             }
         }
         else
@@ -127,7 +127,7 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
             RodOptions rodOptions = m_rodOptions;
             rodOptions.numVertices = m_verticesPerRod;
 
-            rodIndex = m_rodGroup.addRod( inputStrandVertices, rodOptions, m_massDamping );
+            rodIndex = m_rodGroup.addRod( inputStrandVertices, rodOptions, m_massDamping, m_solverType );
         }
 
         // We need to add edge data so that each from the first edge will be locked to the input curve

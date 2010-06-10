@@ -34,7 +34,8 @@ public:
                         double i_percentageOfBarbStrands, size_t i_verticesPerRod,
                         bool i_lockFirstEdgeToInput, double i_vertexSpacing,
                         double i_minimumRodLength, RodOptions& i_rodOptions,
-                        double i_massDamping, WmFigRodGroup& i_rodGroup );
+                        double i_massDamping, WmFigRodGroup& i_rodGroup,
+                        RodTimeStepper::Method i_solverType );
 
     /**
       * @brief Default destructor
@@ -64,6 +65,7 @@ private:
 
     RodOptions m_rodOptions;
     double m_massDamping;
+    RodTimeStepper::Method m_solverType;
 };
 
 #endif // WMFIGRODNURBSINPUT_H_

@@ -1,10 +1,12 @@
 global string $gWmFigSelectionContextName = "";
+global string $gWmFigControllerContextName = "";
 
 global proc wmFigaroAddMainMenu() 
 {
 	global string $gMainWindow;
 	global string $gWmFigaroMainMenu;
     global string $gWmFigSelectionContextName;
+    global string $gWmFigControllerContextName;
 	  
     // check in case somehow the menu add function is called and the plugin aint loaded
 	if(!`pluginInfo -q -loaded wmFigaro`) 
@@ -18,6 +20,10 @@ global proc wmFigaroAddMainMenu()
     {        
 		$gWmFigSelectionContextName = `eval wmFigSelectionContext`;
 	}
+    if ( !`eval("wmFigControllerContext -query -exists \"" + $gWmFigControllerContextName + "\"" ) `) 
+    {        
+        $gWmFigControllerContextName = `eval wmFigControllerContext`;
+    }
 
     if( !`menu -exists $gWmFigaroMainMenu` )
     {
@@ -27,8 +33,8 @@ global proc wmFigaroAddMainMenu()
         menuItem -label "Create rods from BarberShop node" -annotation "Create elastic rods from a BarberShop furset" -command "wmFigaro -crf -cpr 20";
         menuItem -label "Add selected meshes as collision objects" -annotation "Add meshes as collision objects to the selected wmFigaro node"-command "wmFigaro -acm";
         menuItem -label "Attach selected object to rod edge" -annotation "Attaches the selected object to a rod to control or be controlled by an edge."-command "wmFigaro -aeo";
-      
         menuItem -label "Selection Tool" -annotation "Select rods" -command "setToolTo $gWmFigSelectionContextName";
+        menuItem -label "Add controllers Tool" -annotation "Attach a controller to a rod" -command "setToolTo $gWmFigControllerContextName";
 
         // menuItem -label "Create constraint" -annotation "Creates a spring constraint between two selected input curve CVs" -command"dyno -crr";
         // menuItem -label "Disconnect selected collision objects" -command "dyno -rcm";

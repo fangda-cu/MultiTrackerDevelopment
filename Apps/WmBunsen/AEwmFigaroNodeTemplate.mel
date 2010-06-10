@@ -5,6 +5,7 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
 
     editorTemplate -beginLayout "Solver" -collapse 0;
     //	editorTemplate -callCustom "setSolverNew" "setSolverReplace" "solver";
+        editorTemplate -addControl "solverType";
         editorTemplate -addControl "enabled";
         editorTemplate -addControl "numberOfThreads";
         editorTemplate -addControl "startTime";

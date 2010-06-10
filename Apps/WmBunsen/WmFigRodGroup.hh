@@ -11,6 +11,11 @@ public:
 
   //  void setRodOptions( size_t i_rodNumber, RodOptions i_rodOptions );
 
+    void setUndeformedVertexPosition( size_t i_rodIndex, size_t i_vertexIndex, Vec3d& i_newPosition )
+    {
+        m_rodData[ i_rodIndex ]->setUndeformedVertexPosition( i_vertexIndex, i_newPosition );
+    }
+
     bool simulationNeedsReset()
     {
         return m_simulationNeedsReset;
@@ -23,7 +28,7 @@ public:
 
     size_t addRod();
     size_t addRod( std::vector<Vec3d>& i_rodVertices, RodOptions& i_rodOptions, 
-                   double i_massDamping, bool i_isFromCache = false );
+                   double i_massDamping, RodTimeStepper::Method i_solverType, bool i_isFromCache = false );
 
     void addRodsFromCache( vector<vector<Vec3d> >& i_rodVertices, RodOptions& i_rodOptions, 
                              double i_massDamping )
@@ -33,7 +38,7 @@ public:
             RodOptions rodOptions = i_rodOptions;
             rodOptions.numVertices = i_rodVertices[ r ].size();
 
-            addRod( i_rodVertices[ r ], rodOptions, i_massDamping, true );
+            addRod( i_rodVertices[ r ], rodOptions, i_massDamping, RodTimeStepper::NONE, true );
         }
     }
 
@@ -69,6 +74,11 @@ public:
     size_t numberOfVerticesInRod( size_t i_rodIndex )
     {
         return (size_t) m_rodData[ i_rodIndex ]->elasticRod()->nv();
+    }
+
+    size_t numberOfEdgesInRod( size_t i_rodIndex )
+    {
+        return (size_t) m_rodData[ i_rodIndex ]->elasticRod()->ne();
     }
 
     bool shouldSimulateRod( size_t i_rodIndex )
@@ -137,6 +147,16 @@ public:
         m_rodData[ i_rodIndex ]->addKinematicEdge( i_edgeIndex, i_materialframe );
     }
 
+    void removeKinematicEdge( size_t i_rodIndex, size_t i_edgeIndex )
+    {
+        m_rodData[ i_rodIndex ]->removeKinematicEdge( i_edgeIndex );
+    }
+
+    void resetKinematicEdge( size_t i_rodIndex, unsigned int i_edgeNumber, MaterialFrame& i_materialframe )
+    {
+        m_rodData[ i_rodIndex ]->resetKinematicEdge( i_edgeNumber, i_materialframe );
+    }
+
     void updateKinematicEdge( size_t i_rodIndex, size_t i_edgeIndex, MaterialFrame& i_materialframe )
     {
         m_rodData[ i_rodIndex ]->updateKinematicEdge( i_edgeIndex, i_materialframe );
@@ -161,6 +181,11 @@ public:
                 m_rodData[ r ]->updateBoundaryConditions();
             }
         }
+    }
+
+    void setNextVertexPosition( size_t i_rodIndex, size_t i_vertexIndex, Vec3d& i_newPosition )
+    {
+        m_rodData[ i_rodIndex ]->setNextVertexPosition( i_vertexIndex, i_newPosition );
     }
 
     ElasticRod* elasticRod( size_t i_rodIndex )

@@ -46,6 +46,7 @@ using namespace BASim;
 /* static */ MObject WmFigRodNode::ca_syncAttrs;
 
 // User adjustable rod Options
+/* static */ MObject WmFigRodNode::ia_solverType;
 /* static */ MObject WmFigRodNode::ia_cvsPerRod;
 /* static */ MObject WmFigRodNode::ia_youngsModulus;
 /* static */ MObject WmFigRodNode::ia_shearModulus;
@@ -70,7 +71,8 @@ WmFigRodNode::WmFigRodNode() : m_massDamping( 10 ), m_initialised( false ),
     /*mx_rodData( NULL ),*/ mx_world( NULL ), m_numberOfInputCurves( 0 ), 
     m_percentageOfBarberShopStrands( 100 ), m_verticesPerRod( -1 ), m_cacheFilename( "" ),
     m_pRodInput( NULL ), m_vertexSpacing( 0.0 ), m_minimumRodLength( 2.0 ),
-    m_readFromCache( false ), m_writeToCache( false ), m_cachePath ( "" )
+    m_readFromCache( false ), m_writeToCache( false ), m_cachePath ( "" ),
+    m_solverType( RodTimeStepper::IMPL_EULER )
 {
     m_rodOptions.YoungsModulus = 1000.0; /* megapascal */
     m_rodOptions.ShearModulus = 340.0;   /* megapascal */
@@ -250,12 +252,14 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
                                              m_percentageOfBarberShopStrands, m_verticesPerRod,
                                              m_lockFirstEdgeToInput, m_vertexSpacing,
                                              m_minimumRodLength,
-                                             m_rodOptions, m_massDamping, m_rodGroup );
+                                             m_rodOptions, m_massDamping, m_rodGroup,
+                                             m_solverType );
     }
     else // Assume we have nurbs connected
     {
         m_pRodInput = new WmFigRodNurbsInput( ia_nurbsCurves, m_lockFirstEdgeToInput, m_rodGroup,
-                           m_vertexSpacing, m_minimumRodLength, m_rodOptions, m_massDamping  );
+                           m_vertexSpacing, m_minimumRodLength, m_rodOptions, m_massDamping,
+                           m_solverType );
     }
     
     m_pRodInput->initialiseRodDataFromInput( i_dataBlock );
@@ -270,6 +274,42 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
     // We need to make sure we have the spline attr data for the rods since compute may not have been called yet
     // FIXME: These are broken so I'm removing them for just now.
     //updateHairsprayScales( dataBlock );
+}
+
+void WmFigRodNode::updateKinematicEdgesFromInput()
+{
+
+    for ( size_t r = 0; r < m_rodGroup.numberOfRods(); ++r )
+    {
+        EdgeTransformRodMap::iterator rodIt = m_controlledEdgeTransforms.find( r );
+        if ( rodIt != m_controlledEdgeTransforms.end() )
+        {
+            for ( EdgeTransformMap::iterator edgeIt = m_controlledEdgeTransforms[ r ].begin();
+                    edgeIt != m_controlledEdgeTransforms[ r ].end();
+                    edgeIt++ )
+            {
+                if ( m_currentTime == m_startTime )
+                {
+                    m_rodGroup.resetKinematicEdge( r, edgeIt->first, edgeIt->second.materialFrame );
+                }
+                else
+                {
+                    m_rodGroup.updateKinematicEdge( r, edgeIt->first, edgeIt->second.materialFrame );
+                }
+                
+                // Set the next positions of these vertices to be wherever the input controller
+                // says they should be.
+                Vec3d position =  edgeIt->second.position;
+                double length = m_rodGroup.elasticRod( r )->getEdge( edgeIt->first ).norm();
+                Vec3d edge = edgeIt->second.materialFrame.m1;
+                edge.normalize();
+                Vec3d start = position - ( edge * length / 2.0 );
+                Vec3d end = position + ( edge * length / 2.0 );
+                m_rodGroup.setNextVertexPosition( r, edgeIt->first, start );
+                m_rodGroup.setNextVertexPosition( r, edgeIt->first + 1, end );
+            }
+        }
+    }
 }
 
 void WmFigRodNode::updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock )
@@ -304,6 +344,8 @@ void WmFigRodNode::updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock 
         {
             MGlobal::displayWarning( "Please rewind simulation to reset\n" );
         }
+
+        updateKinematicEdgesFromInput();
     }
 
     m_rodGroup.setRodParameters( m_rodOptions.radiusA, m_rodOptions.radiusB,
@@ -335,23 +377,22 @@ MMatrix WmFigRodNode::getRodEdgeMatrix( size_t i_rod, size_t i_edge )
     // Check if the input parameters index a valid rod and edge, if not
     // return the identity matrix.
 
- /*   if ( mx_rodData == NULL )
+    if ( i_rod > m_rodGroup.numberOfRods() )
         return identMatrix;
     
-    if ( i_rod >= mx_rodData->size() )
+    if ( m_rodGroup.elasticRod( i_rod ) == NULL )
         return identMatrix;
     
-    if ( (*mx_rodData)[ i_rod ]->rod == NULL )
-        return identMatrix;
-    
-    if ( i_edge >= (*mx_rodData)[ i_rod ]->rod->ne() )
+    if ( i_edge >= m_rodGroup.numberOfEdgesInRod( i_rod ) )
         return identMatrix;
 
     // If we got here then the input data indexes a valid rod.
 
+    ElasticRod* rod = m_rodGroup.elasticRod( i_rod );
+
     // The position of the edge is defined as the mid point of the ege.   
-    Vec3d edgePos = ( (*mx_rodData)[ i_rod ]->rod->getVertex( i_edge ) + 
-                      (*mx_rodData)[ i_rod ]->rod->getVertex( i_edge + 1 ) ) / 2.0;
+    Vec3d edgePos = ( rod->getVertex( i_edge ) + 
+                      rod->getVertex( i_edge + 1 ) ) / 2.0;
     
 
     // The material frame is taken directly from the rod and packaged up into a Maya MMatrix format.
@@ -359,18 +400,16 @@ MMatrix WmFigRodNode::getRodEdgeMatrix( size_t i_rod, size_t i_edge )
     MMatrix edgeMatrix;
     edgeMatrix( 3, 0 ) = edgePos[ 0 ]; edgeMatrix( 3, 1 ) = edgePos[ 1 ]; edgeMatrix( 3, 2 ) = edgePos[ 2 ];
     
-    Vec3d edge = (*mx_rodData)[ i_rod ]->rod->getEdge( i_edge );
+    Vec3d edge = rod->getEdge( i_edge );
     edgeMatrix( 0, 0 ) = edge[ 0 ]; edgeMatrix( 0, 1 ) = edge[ 1 ]; edgeMatrix( 0, 2 ) = edge[ 2 ];
     
-    Vec3d material1 = (*mx_rodData)[ i_rod ]->rod->getMaterial1( i_edge );
+    Vec3d material1 = rod->getMaterial1( i_edge );
     edgeMatrix( 1, 0 ) = material1[ 0 ]; edgeMatrix( 1, 1 ) = material1[ 1 ]; edgeMatrix( 1, 2 ) = material1[ 2 ];
     
-    Vec3d material2 = (*mx_rodData)[ i_rod ]->rod->getMaterial2( i_edge );
+    Vec3d material2 = rod->getMaterial2( i_edge );
     edgeMatrix( 2, 0 ) = material2[ 0 ]; edgeMatrix( 2, 1 ) = material2[ 1 ]; edgeMatrix( 2, 2 ) = material2[ 2 ];
     
-    return edgeMatrix;*/
-
-    return identMatrix;
+    return edgeMatrix;
 }
 
 MString WmFigRodNode::getCacheFilename( MDataBlock& i_dataBlock )
@@ -498,8 +537,11 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
     m_percentageOfBarberShopStrands = i_dataBlock.inputValue( ia_percentageOfBarberShopStrands, &stat ).asDouble();
     CHECK_MSTATUS( stat );
     
+    m_solverType = ( RodTimeStepper::Method)  ( i_dataBlock.inputValue( ia_solverType, &stat ).asInt() );
+    CHECK_MSTATUS( stat );
+    
     updateControlledEdgeArrayFromInputs( i_dataBlock );
-   
+
     //////////////////////////////////////////////////////////////////////////////////////////
     
     // FIXME:
@@ -522,7 +564,7 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
 
     m_rodGroup.setIsReadingFromCache( m_readFromCache );
     updateOrInitialiseRodDataFromInputs( i_dataBlock );
-    
+        
     stat = i_dataBlock.setClean( i_plug );
     if ( !stat )
     {
@@ -533,13 +575,18 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
 
 void WmFigRodNode::updateControlledEdgeArrayFromInputs( MDataBlock& i_dataBlock )
 {
-    /*MStatus stat;
+    MStatus stat;
 
     MDataHandle inputCurveH;
     MObject inputCurveObj;    
     MArrayDataHandle inEdgeArrayH = i_dataBlock.inputArrayValue( ia_edgeTransforms, &stat );
     CHECK_MSTATUS(stat);
     
+    if ( m_rodGroup.numberOfRods() == 0 )
+    {
+        return;
+    }
+
     size_t numNodesConnected = inEdgeArrayH.elementCount();
 
     for ( unsigned int e = 0; e < numNodesConnected; e++ )
@@ -557,22 +604,18 @@ void WmFigRodNode::updateControlledEdgeArrayFromInputs( MDataBlock& i_dataBlock 
     // FIXME: This is pretty darn innefficient, deleting then recreating
     // Although it does let us create and delete them at any frame in the simulation
     
-    if ( mx_rodData != NULL )
-    {            
-        for ( EdgeTransformRodMap::iterator rodIt = m_controlledEdgeTransforms.begin();
-            rodIt != m_controlledEdgeTransforms.end(); rodIt++ )
+    for ( EdgeTransformRodMap::iterator rodIt = m_controlledEdgeTransforms.begin();
+        rodIt != m_controlledEdgeTransforms.end(); rodIt++ )
+    {
+        for ( EdgeTransformMap::iterator edgeIt = rodIt->second.begin();
+                edgeIt != rodIt->second.end();
+                edgeIt++ )
         {
-            for ( EdgeTransformMap::iterator edgeIt = rodIt->second.begin();
-                    edgeIt != rodIt->second.end();
-                    edgeIt++ )
-            {
-                //if ( (*mx_rodData)[ rodIt->first ]->rod != NULL )
-                    (*mx_rodData)[ rodIt->first ]->removeKinematicEdge( edgeIt->first );
-            }
-            m_controlledEdgeTransforms[ rodIt->first ].clear();
+            m_rodGroup.removeKinematicEdge( rodIt->first, edgeIt->first );
         }
-        m_controlledEdgeTransforms.clear();
+        m_controlledEdgeTransforms[ rodIt->first ].clear();
     }
+    m_controlledEdgeTransforms.clear();
     
     MPlug myEdgePlugs( thisMObject(), ia_edgeTransforms );
     if ( myEdgePlugs.isArray() )
@@ -594,18 +637,18 @@ void WmFigRodNode::updateControlledEdgeArrayFromInputs( MDataBlock& i_dataBlock 
                 
                 if ( connectionNode != NULL )
                 {
-                    unsigned int rod, edge;
+                    unsigned int rodIndex, edgeIndex;
                     EdgeTransform edgeTransform;
-                    connectionNode->getControlledRodInfo( rod, edge, edgeTransform );
+                    connectionNode->getControlledRodInfo( rodIndex, edgeIndex, edgeTransform );
                     
-                    m_controlledEdgeTransforms[ rod ][ edge ] = edgeTransform;
+                    m_controlledEdgeTransforms[ rodIndex ][ edgeIndex ] = edgeTransform;
                     
-                    (*mx_rodData)[ rod ]->addKinematicEdge( edge, (*mx_rodData)[ rod ]->rod, &(edgeTransform.materialFrame) );
+                    m_rodGroup.addKinematicEdge( rodIndex, edgeIndex, &edgeTransform.materialFrame );
                 }
             }
         }
     }
-    inEdgeArrayH.setClean();*/
+    inEdgeArrayH.setClean();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1718,21 +1761,6 @@ void* WmFigRodNode::creator()
     addNumericAttribute( ia_edgeTransforms, "edgeTransforms", "iet", MFnNumericData::kBoolean, false, true, true );
     stat = attributeAffects( ia_edgeTransforms, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_edgeTransforms->oa_rodsChanged" ); return stat; }
- 
- /*   {
-        MFnMatrixAttribute mAttr;
-        oa_edgeTransforms = mAttr.create( "outEdgeTransforms", "oet", MFnMatrixAttribute::kDouble, &stat );
-        if ( !stat ) 
-        {
-            stat.perror("create oa_edgeTransforms attribute");
-            return stat;
-        }
-        CHECK_MSTATUS( mAttr.setWritable( false ) );
-        CHECK_MSTATUS( mAttr.setReadable( true ) );
-        CHECK_MSTATUS( mAttr.setArray( true ) );
-        stat = addAttribute( oa_edgeTransforms );
-        if ( !stat ) { stat.perror( "addAttribute oa_edgeTransforms" ); return stat; }
-    }*/
     
     addNumericAttribute( oa_edgeTransforms, "outEdgeTransforms", "oet", MFnNumericData::kBoolean, false, false );
     stat = attributeAffects( ia_edgeTransforms, oa_edgeTransforms );
@@ -1756,6 +1784,22 @@ void* WmFigRodNode::creator()
     stat = attributeAffects( ia_drawScale, ca_drawDataChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_drawScale->ca_drawDataChanged" ); return stat; }
 
+    {
+        MFnEnumAttribute enumAttrFn;
+        ia_solverType = enumAttrFn.create( "solverType", "sot", (short) RodTimeStepper::IMPL_EULER, & stat );
+        CHECK_MSTATUS( stat );
+        enumAttrFn.addField( "Implicit Euler",   (short) RodTimeStepper::IMPL_EULER );
+        enumAttrFn.addField( "Symplectic Euler",  (short) RodTimeStepper::SYMPL_EULER );
+        enumAttrFn.addField( "Statics",   (short) RodTimeStepper::STATICS );
+        enumAttrFn.setKeyable( false );
+        enumAttrFn.setStorable( true );
+        enumAttrFn.setWritable( true );
+        enumAttrFn.setReadable( true );
+        stat = addAttribute( ia_solverType );
+        CHECK_MSTATUS( stat );
+    }
+    stat = attributeAffects( ia_solverType, oa_rodsChanged );
+    if ( !stat ) { stat.perror( "attributeAffects ia_solverType->oa_rodsChanged" ); return stat; }
 
     return MS::kSuccess;
 }

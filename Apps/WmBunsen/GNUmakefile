@@ -53,6 +53,9 @@ WmFigConnectionNode.hh \
 WmFigSelectionContext.hh \
 WmFigSelectionContextCommand.hh \
 WmFigSelectionToolCommand.hh \
+WmFigControllerContext.hh \
+WmFigControllerContextCommand.hh \
+WmFigControllerToolCommand.hh \
 WmFigRodInputType.hh \
 WmFigRodNurbsInput.hh \
 WmFigRodBarbInput.hh \
@@ -73,6 +76,9 @@ WmFigConnectionNode.cc \
 WmFigSelectionContext.cc \
 WmFigSelectionContextCommand.cc \
 WmFigSelectionToolCommand.cc \
+WmFigControllerContext.cc \
+WmFigControllerContextCommand.cc \
+WmFigControllerToolCommand.cc \
 WmFigRodInputType.cc \
 WmFigRodNurbsInput.cc \
 WmFigRodBarbInput.cc \
@@ -118,9 +124,17 @@ SCR5            := wmFigSelectionContextValues.mel
 SCR5_MAYA       := 1
 SCR5_INSD       := $(SCR_INSD)
 
-SCR6            := WmFigaro.mel
+SCR5            := wmFigControllerContextProperties.mel
+SCR5_MAYA       := 1
+SCR5_INSD       := $(SCR_INSD)
+
+SCR6            := wmFigControllerContextValues.mel
 SCR6_MAYA       := 1
 SCR6_INSD       := $(SCR_INSD)
+
+SCR7            := WmFigaro.mel
+SCR7_MAYA       := 1
+SCR7_INSD       := $(SCR_INSD)
 
 
 ##############################################################################

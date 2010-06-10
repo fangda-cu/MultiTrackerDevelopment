@@ -18,6 +18,7 @@ MObject WmBunsenNode::ia_enabled;
 MObject WmBunsenNode::ia_collisionMeshes;
 MObject WmBunsenNode::ia_collisionsEnabled;
 MObject WmBunsenNode::ia_plasticDeformations;
+MObject WmBunsenNode::ia_solverType;
 
 // Clumping
 /* static */ MObject WmBunsenNode::ia_isClumpingEnabled;
@@ -34,7 +35,8 @@ MObject WmBunsenNode::oa_simStepTaken;
 // Drawing
 /* static */ MObject WmBunsenNode::ia_drawSubSteppedVertices;
 
-WmBunsenNode::WmBunsenNode() : m_initialised( false ), m_enabled( true ), m_beaker( NULL )    
+WmBunsenNode::WmBunsenNode() : m_initialised( false ), m_enabled( true ), m_beaker( NULL ),
+    m_solverType( RodTimeStepper::NONE )
 {
     m_beaker = new Beaker();
 }
@@ -283,8 +285,11 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             }
             
         }
+
+        m_solverType = ( RodTimeStepper::Method) ( i_dataBlock.inputValue( ia_solverType, &stat ).asInt() );
+        CHECK_MSTATUS( stat );
         
-        if ( m_enabled && m_currentTime > m_previousTime && m_currentTime > m_startTime) 
+        if ( m_enabled && ( ( m_solverType == RodTimeStepper::STATICS ) || ( m_currentTime > m_previousTime && m_currentTime > m_startTime ) ) ) 
         {
             m_beaker->takeTimeStep( numberOfThreads, m_framedt, substeps, collisionsEnabled, 
                                     selfCollisionPenaltyForces, fullSelfCollisions,
@@ -443,6 +448,21 @@ MStatus WmBunsenNode::initialize()
 { 
     MStatus stat;
     
+    {
+        MFnEnumAttribute enumAttrFn;
+        ia_solverType = enumAttrFn.create( "solverType", "sot", (short) RodTimeStepper::IMPL_EULER, & stat );
+        CHECK_MSTATUS( stat );
+        enumAttrFn.addField( "Implicit Euler",   (short) RodTimeStepper::IMPL_EULER );
+        //enumAttrFn.addField( "Symplectic Euler",  (short) RodTimeStepper::SYMPL_EULER );
+        enumAttrFn.addField( "Statics",   (short) RodTimeStepper::STATICS );
+        enumAttrFn.setKeyable( false );
+        enumAttrFn.setStorable( true );
+        enumAttrFn.setWritable( true );
+        enumAttrFn.setReadable( true );
+        stat = addAttribute( ia_solverType );
+        CHECK_MSTATUS( stat );
+    }
+
     {
         MFnUnitAttribute uAttr;
         ia_time = uAttr.create( "time", "t", MTime( 0.0 ), &stat );
@@ -846,10 +866,12 @@ MStatus WmBunsenNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_isClumpingEnabled->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_clumpingCoefficient, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_clumpingCoefficient->ca_syncAttrs" ); return stat; }
-
     
     stat = attributeAffects( ia_time, oa_simStepTaken );
     if (!stat) { stat.perror( "attributeAffects ia_time->oa_simulatedRods" ); return stat; }
+
+    stat = attributeAffects( ia_solverType, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_solverType->ca_syncAttrs" ); return stat; }
     
     return MS::kSuccess;
 }

@@ -6,7 +6,8 @@ RodData::RodData() : m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL )
 }
 
 RodData::RodData( RodOptions& i_rodOptions, std::vector<Vec3d>& i_rodVertexPositions,
-                  double i_massDamping, Vec3d& i_gravity, bool i_isReadingFromCache ) : 
+                  double i_massDamping, Vec3d& i_gravity, RodTimeStepper::Method i_solverType, 
+                  bool i_isReadingFromCache ) : 
 m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDamping )
 {
     m_rod = setupRod( i_rodOptions,
@@ -21,11 +22,12 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
     if ( !i_isReadingFromCache )
     {
         RodTimeStepper* stepper = new RodTimeStepper( *m_rod );
+
+        cerr << "Creating rod with solver type " << i_solverType << endl;
     
-        stepper->setDiffEqSolver( RodTimeStepper::IMPL_EULER );
+        stepper->setDiffEqSolver( i_solverType );
     
-        // FIXME:
-        // Do external forces actually get deleted by RodTimeStepper, I can't see that in the code!
+        // These get deleted by RodTimeStepper
         stepper->addExternalForce( new RodMassDamping( m_massDamping ) );
         
         if ( i_gravity.norm() > 0)
@@ -130,10 +132,14 @@ void RodData::updateBoundaryConditions()
     
     RodBoundaryCondition* boundary = m_stepper->getBoundaryCondition();
                 
+    int b = 0;
+
     for ( KinematicEdgeDataMap::iterator it = kinematicEdgeDataMap.begin();
             it != kinematicEdgeDataMap.end();
             it++ )
     {
+        cerr << "updating boundary condition " << b << endl;
+
         // First make sure these vertices are marked as fixed on the rod
         // or they'll get taken into account on collision calculations.
         unsigned int edgeNum = it->first;

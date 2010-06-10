@@ -33,7 +33,7 @@ public:
       */
      WmFigRodNurbsInput( MObject& i_nurbsAttribute, bool i_lockFirstEdgeToInput, WmFigRodGroup& i_rodGroup,
                          double i_vertexSpacing, double i_minimumRodLength, RodOptions& i_rodOptions,
-                         double i_massDamping );
+                         double i_massDamping, RodTimeStepper::Method i_solverType );
 
     /**
       * @brief Default destructor
@@ -57,6 +57,7 @@ private:
     double m_minimumRodLength;
     RodOptions m_rodOptions;
     double m_massDamping;
+    RodTimeStepper::Method m_solverType;
 };
 
 #endif // WMFIGRODNURBSINPUT_H_

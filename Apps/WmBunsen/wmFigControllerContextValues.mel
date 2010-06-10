@@ -1,0 +1,12 @@
+
+global proc wmFigSelectionContextValues( string $context )
+{
+   string $parent = `toolPropertyWindow -query -location`;
+   setParent $parent;
+  
+   string $icon = "wmFigSelectionContext.xpm";
+   string $help = "wmFigSelectionContext Editing";
+   toolPropertySetCommon $context $icon $help;
+  
+   toolPropertySelect "wmFigSelectionContext";
+}

@@ -549,6 +549,16 @@ void WmFigaroCmd::createWmFigRodNode( bool useNURBSInput, bool i_previewOnly,
     CHECK_MSTATUS( stat );
     stat = dagModifier.connect( bunsenSimPlug, rodNodeSimPlug );
     CHECK_MSTATUS( stat );
+
+    // Connect the solver type so that rod nodes know what type of solver to create
+    // when building the Elastic rods
+    MPlug rodNodeSolverPlug( sFn.findPlug( "solverType", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    MPlug figaroSolverPlug = bunsenDependNodeFn.findPlug( "solverType", true, &stat ); 
+    CHECK_MSTATUS( stat );
+    stat = dagModifier.connect( figaroSolverPlug, rodNodeSolverPlug );
+    CHECK_MSTATUS( stat );
+
     
     // Connect startTime so the rods reset when the Figaro node resets
     MPlug rodStartTimePlug( sFn.findPlug( "startTime", true, &stat ) );

@@ -4,10 +4,10 @@
 
 WmFigRodNurbsInput::WmFigRodNurbsInput( MObject& i_nurbsAttribute, bool i_lockFirstEdgeToInput,
     WmFigRodGroup& i_rodGroup, double i_vertexSpacing, double i_minimumRodLength, RodOptions& i_rodOptions,
-    double i_massDamping ) : 
+    double i_massDamping, RodTimeStepper::Method i_solverType ) : 
     m_inputNurbsAttribute( i_nurbsAttribute ), m_lockFirstEdgeToInput( i_lockFirstEdgeToInput ),
     m_rodGroup( i_rodGroup ), m_vertexSpacing( i_vertexSpacing ), m_minimumRodLength( i_minimumRodLength ),
-    m_rodOptions( i_rodOptions ), m_massDamping( i_massDamping )
+    m_rodOptions( i_rodOptions ), m_massDamping( i_massDamping ), m_solverType( i_solverType )
 {
     // we need to get pass the attribute here so that when we initialise data or
     // reload it we can just pull on the attribute
@@ -138,7 +138,7 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
             rodOptions.numVertices = inputCurveVertices[ c ].size();
 
             // Mass damping should be in rod options, it's dumb to pass it seperately.
-            size_t rodIndex = m_rodGroup.addRod( inputCurveVertices[ c ], rodOptions, m_massDamping );
+            size_t rodIndex = m_rodGroup.addRod( inputCurveVertices[ c ], rodOptions, m_massDamping, m_solverType );
     
             if ( m_lockFirstEdgeToInput )
             {
@@ -146,38 +146,6 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
             }
         }
     }
-
-    // FIXME:
-    // The below code is what was used when this function was in WmBunsenRodNode to track
-    // edges that were being controlled by attached Maya objects. It should work and should be
-    // brought back to life as soon as the refactoring is done.
-
-/*
-        EdgeTransformRodMap::iterator rodIt = m_controlledEdgeTransforms.find( i );
-            if ( rodIt != m_controlledEdgeTransforms.end() )
-            {
-                for ( EdgeTransformMap::iterator edgeIt = m_controlledEdgeTransforms[ i ].begin();
-                      edgeIt != m_controlledEdgeTransforms[ i ].end();
-                      edgeIt++ )
-                {
-                    // Now add in ::compute()
-                    //(*mx_rodData)[ i ]->addKinematicEdge( edgeIt->first, (*mx_rodData)[ i ]->rod, &(edgeIt->second.materialFrame) );
-                    
-                    // Set the next positions of these vertices to be wherever the input controller
-                    // says they should be.
-                    Vec3d position =  edgeIt->second.position;
-                    if ( (*mx_rodData)[ i ]->rod != NULL )
-                    {
-                        double length = (*mx_rodData)[ i ]->rod->getEdge( edgeIt->first ).norm();
-                        Vec3d edge = edgeIt->second.materialFrame.m1;
-                        edge.normalize();
-                        Vec3d start = position - ( edge * length / 2.0 );
-                        Vec3d end = position + ( edge * length / 2.0 );
-                        (*mx_rodData)[ i ]->undeformedVertexPositions[ edgeIt->first ] = start;
-                        (*mx_rodData)[ i ]->undeformedVertexPositions[ edgeIt->first + 1 ] = end;                        
-                    }
-                }
-  */  
 }
 
 void WmFigRodNurbsInput::updateRodDataFromInput( MDataBlock& i_dataBlock )
@@ -192,37 +160,7 @@ void WmFigRodNurbsInput::updateRodDataFromInput( MDataBlock& i_dataBlock )
         {
             m_rodGroup.updateRodNextVertexPositions( c, inputCurveVertices[ c ] );
         }
-    }    
-            
-    /*  FIXME: Again this should be resurrected as soon as the refactoring is complete.
-
-    EdgeTransformRodMap::iterator rodIt = m_controlledEdgeTransforms.find( i );
-    if ( rodIt != m_controlledEdgeTransforms.end() )
-    {
-        for ( EdgeTransformMap::iterator edgeIt = m_controlledEdgeTransforms[ i ].begin();
-                edgeIt != m_controlledEdgeTransforms[ i ].end();
-                edgeIt++ )
-        {
-            if ( m_currentTime == m_startTime )
-                (*mx_rodData)[ i ]->resetKinematicEdge( edgeIt->first, (*mx_rodData)[ i ]->rod, (edgeIt->second.materialFrame) );
-            else
-                (*mx_rodData)[ i ]->updateKinematicEdge( edgeIt->first, (edgeIt->second.materialFrame) );
-            
-            // Set the next positions of these vertices to be wherever the input controller
-            // says they should be.
-            Vec3d position =  edgeIt->second.position;
-            if ( (*mx_rodData)[ i ]->rod != NULL )
-            {
-                double length = (*mx_rodData)[ i ]->rod->getEdge( edgeIt->first ).norm();
-                Vec3d edge = edgeIt->second.materialFrame.m1;
-                edge.normalize();
-                Vec3d start = position - ( edge * length / 2.0 );
-                Vec3d end = position + ( edge * length / 2.0 );
-                (*mx_rodData)[ i ]->nextVertexPositions[ edgeIt->first ] = start;
-                (*mx_rodData)[ i ]->nextVertexPositions[ edgeIt->first + 1 ] = end;
-            }
-        }
-    }*/
+    }
 }
 
 size_t WmFigRodNurbsInput::numberOfInputs( MDataBlock& i_dataBlock )

@@ -98,7 +98,8 @@ class RodData
 public:
     RodData();
     RodData( RodOptions& i_rodOptions, std::vector<Vec3d>& i_rodVertexPositions,
-             double i_massDamping, Vec3d& i_gravity, bool i_isReadingFromCache = false );
+             double i_massDamping, Vec3d& i_gravity, RodTimeStepper::Method i_solverType,
+             bool i_isReadingFromCache = false );
     //RodData( ElasticRod* i_rod, RodCollisionTimeStepper* i_stepper, RodRenderer* i_rodRenderer );
     ~RodData();
     
@@ -276,6 +277,17 @@ public:
     MaterialFrame getUndeformedMaterialFrame( size_t i_frameIndex )
     {
         return undeformedMaterialFrame[ i_frameIndex ];
+    }
+
+
+    void setUndeformedVertexPosition( size_t i_vertexIndex, Vec3d& i_newPosition )
+    {
+        undeformedVertexPositions[ i_vertexIndex ] = i_newPosition;
+    }
+
+    void setNextVertexPosition( size_t i_vertexIndex, Vec3d& i_newPosition )
+    {
+        nextVertexPositions[ i_vertexIndex ] = i_newPosition;
     }
 
 //private:

@@ -37,6 +37,7 @@
 #include <maya/MFnStringData.h>
 #include <maya/MFloatArray.h>
 #include <maya/MRampAttribute.h>
+#include <maya/MFnEnumAttribute.h>
 
 #include "Beaker.hh"
 #include "WmFigRodNurbsInput.hh"
@@ -74,6 +75,7 @@ public:
     static MObject ia_percentageOfBarberShopStrands;    
     
     // Rod options
+    static MObject ia_solverType;
     static MObject ia_cvsPerRod;
     static MObject ia_youngsModulus;
     static MObject ia_shearModulus;
@@ -174,6 +176,8 @@ private:
 
     MString getCacheFilename( MDataBlock& i_dataBlock );
     
+    void updateKinematicEdgesFromInput();
+
     double m_currentTime;
     double m_previousTime;
     double m_startTime;
@@ -221,6 +225,7 @@ private:
     bool m_readFromCache;
     bool m_writeToCache;
     MString m_cachePath;
+    RodTimeStepper::Method m_solverType;
 };
 
 #endif // WMFIGRODNODE_HH_

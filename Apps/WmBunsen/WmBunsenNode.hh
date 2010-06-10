@@ -26,6 +26,7 @@
 #include <maya/MFnDoubleArrayData.h>
 #include <maya/MFnVectorArrayData.h>
 #include <maya/MVectorArray.h>
+#include <maya/MFnEnumAttribute.h>
 
 #include "Beaker.hh"
 #include "WmFigRodNode.hh"
@@ -48,6 +49,7 @@ public:
     
     static MTypeId typeID;
     static MString typeName;
+    static MObject ia_solverType;
     static MObject ia_time;
     static MObject ia_maxDt;
     static MObject ia_maxIter; //maximum number of newton iterations
@@ -99,6 +101,8 @@ private:
     bool m_enabled;
 
     Beaker* m_beaker;
+
+    RodTimeStepper::Method m_solverType;
 };
 
 #endif
