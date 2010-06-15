@@ -4,10 +4,11 @@
 
 WmFigRodNurbsInput::WmFigRodNurbsInput( MObject& i_nurbsAttribute, bool i_lockFirstEdgeToInput,
     WmFigRodGroup& i_rodGroup, double i_vertexSpacing, double i_minimumRodLength, RodOptions& i_rodOptions,
-    double i_massDamping, RodTimeStepper::Method i_solverType ) : 
+    double i_massDamping, RodTimeStepper::Method i_solverType, std::set< size_t >& i_simulationSet ) : 
     m_inputNurbsAttribute( i_nurbsAttribute ), m_lockFirstEdgeToInput( i_lockFirstEdgeToInput ),
     m_rodGroup( i_rodGroup ), m_vertexSpacing( i_vertexSpacing ), m_minimumRodLength( i_minimumRodLength ),
-    m_rodOptions( i_rodOptions ), m_massDamping( i_massDamping ), m_solverType( i_solverType )
+    m_rodOptions( i_rodOptions ), m_massDamping( i_massDamping ), m_solverType( i_solverType ),
+    m_simulationSet( i_simulationSet )
 {
     // we need to get pass the attribute here so that when we initialise data or
     // reload it we can just pull on the attribute
@@ -126,7 +127,14 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
 
     for ( size_t c=0; c< inputCurveVertices.size(); ++c )
     {
-        if ( inputCurveVertices[ c ].size() == 0 )
+        bool isPlaceHolderRod = false;
+
+        if ( m_simulationSet.size() != 0 )
+        {   
+            isPlaceHolderRod = ( m_simulationSet.count( c ) == 0 );
+        }
+
+        if ( inputCurveVertices[ c ].size() == 0 || isPlaceHolderRod)
         {
             // Add a placeholder rod, most likely too small to actually be a real rod.
              m_rodGroup.addRod();

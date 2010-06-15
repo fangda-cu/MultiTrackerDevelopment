@@ -39,6 +39,8 @@
 #include <maya/MRampAttribute.h>
 #include <maya/MFnEnumAttribute.h>
 
+#include <set>
+
 #include "Beaker.hh"
 #include "WmFigRodNurbsInput.hh"
 #include "WmFigRodBarbInput.hh"
@@ -90,6 +92,7 @@ public:
     static MObject ia_massDamping;
     static MObject ia_drawMaterialFrames;
     static MObject ia_lockFirstEdgeToInput;
+    static MObject ia_simulationSet;
     
     // Drawing 
     static MObject ia_userDefinedColors;
@@ -173,6 +176,7 @@ private:
     void getStrandRootFrames( MDataBlock& i_dataBlock, vector<MaterialFrame>& o_strandRootFrames );
     void updateHairsprayScales( MDataBlock& i_dataBlock );
     void initialiseRodData( MDataBlock& i_dataBlock );
+    void updateSimulationSet( MString i_simulationSetString );
 
     MString getCacheFilename( MDataBlock& i_dataBlock );
     
@@ -226,6 +230,8 @@ private:
     bool m_writeToCache;
     MString m_cachePath;
     RodTimeStepper::Method m_solverType;
+
+    std::set< size_t > m_simulationSet;
 };
 
 #endif // WMFIGRODNODE_HH_

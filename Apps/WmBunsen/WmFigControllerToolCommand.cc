@@ -62,6 +62,12 @@ MStatus WmFigControllerToolCommand::redoIt()
         return MS::kSuccess;
     }
 
+    // We actually do nothing in here because we need mouseUp to happen
+    // before we can figure out all the rods that were selected.
+    // Unfortunately we only get the args sent to us on mouseDown.
+    // So all the work is done in the context and it simply tells us
+    // what it finds and we return it to Maya as a result.
+    
     //////////////////////////////////////////////////////
     // 
     // parse the args we got from the first call to doIt().
@@ -69,27 +75,24 @@ MStatus WmFigControllerToolCommand::redoIt()
     // 
     //////////////////////////////////////////////////////
 
+ /*   if ( m_args.length() != (uint) WmFigControllerToolCommand::expectedArgCount ) 
+    {
+        MGlobal::displayError( "WmFigControllerToolCommand::redoIt() recieved "
+                               "wrong number of args." );
+        return MS::kFailure;
+    }
+
+    int xMouse = m_args.asInt( 0 );
+    int yMouse = m_args.asInt( 1 );*/
     
     //////////////////////////////////////////////////////
     // 
     // Handle the click and make the command do the work
     // 
     //////////////////////////////////////////////////////
-
-    if ( m_selectedRods.size() > 0 )
-    {
-        /*MGlobal::executeCommand( MString( "$rodNode = `ls -sl`; \
-                                    $locator = `spaceLocator -p 0 0 0`; \
-                                    select -add $rodNode; " ) + 
-                                    "wmFigaro -aeo -ro " + m_selectedRods[ 0 ] + " -ed 0;" );*/
-
-        MSelectionList selectionList;
-
-        MGlobal::getActiveSelectionList( selectionList );
-        cerr << "selection list has " << selectionList.length() << " entries\n";
-        
-        
-    }
+    
+    //MPoint clickCentre;
+    //MVector clickNormal;
     
     //////////////////////////////////////////////////////
     // 

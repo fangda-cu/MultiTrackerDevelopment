@@ -122,7 +122,7 @@ void RodData::updateNextRodVertexPositions( vector< Vec3d >& i_vertexPositions )
     //FIXME: Doesn't currVertexPositions already equal nextVertexPositions at the end of a time
     // step?
     currVertexPositions = nextVertexPositions;
-    nextVertexPositions = i_vertexPositions;
+//     nextVertexPositions = i_vertexPositions;
 }
 
 void RodData::updateBoundaryConditions()
@@ -138,8 +138,6 @@ void RodData::updateBoundaryConditions()
             it != kinematicEdgeDataMap.end();
             it++ )
     {
-        cerr << "updating boundary condition " << b << endl;
-
         // First make sure these vertices are marked as fixed on the rod
         // or they'll get taken into account on collision calculations.
         unsigned int edgeNum = it->first;

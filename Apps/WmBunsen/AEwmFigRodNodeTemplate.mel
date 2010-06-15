@@ -23,6 +23,7 @@ global proc AEwmFigRodNodeTemplate(string $nodeName)
         editorTemplate -addControl "internalDamping";
         editorTemplate -addControl "density";
         editorTemplate -addControl "massDamping";
+        editorTemplate -addControl "simulationSet";
     //    editorTemplate -addControl "hairSprayScaleFactor";
     editorTemplate -endLayout;
 

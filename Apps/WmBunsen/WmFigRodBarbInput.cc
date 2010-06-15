@@ -7,14 +7,14 @@ WmFigRodBarbInput::WmFigRodBarbInput( MObject& i_verticesAttribute, MObject& i_s
                         bool i_lockFirstEdgeToInput, double i_vertexSpacing,
                         double i_minimumRodLength, RodOptions& i_rodOptions,
                         double i_massDamping, WmFigRodGroup& i_rodGroup,
-                        RodTimeStepper::Method i_solverType ) : 
+                        RodTimeStepper::Method i_solverType, std::set< size_t >& i_simulationSet ) : 
     m_verticesAttribute( i_verticesAttribute ),
     m_strandRootFramesAttribute( i_strandRootFramesAttribute ),
     m_percentageOfBarbStrands( i_percentageOfBarbStrands ),
     m_verticesPerRod( i_verticesPerRod ), m_lockFirstEdgeToInput( i_lockFirstEdgeToInput ),
     m_vertexSpacing( i_vertexSpacing ), m_minimumRodLength( i_minimumRodLength ),
     m_rodGroup( i_rodGroup ), m_rodOptions( i_rodOptions ), m_massDamping( i_massDamping ),
-    m_solverType( i_solverType )
+    m_solverType( i_solverType ), m_simulationSet( i_simulationSet )
 {    
 }
 
@@ -41,6 +41,22 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
     size_t inputStrandVertexIndex = 0;
     for ( size_t i = 0; i < numStrands; i++ )
     {       
+
+        // First check if the user has decided to specify a set of rods they want to simulate.
+        bool isPlaceHolderRod = false;
+        if ( m_simulationSet.size() != 0 )
+        {   
+            isPlaceHolderRod = ( m_simulationSet.count( i ) == 0 );
+        
+            if ( isPlaceHolderRod)
+            {
+                // Add a placeholder rod, most likely too small to actually be a real rod.
+                m_rodGroup.addRod();
+
+                continue;
+            }
+        }
+
         // If the user has specificed a vertex spacing > 0 then they want to override the vertices
         // that came from Barbershop. Very sensible of them as the rods stability is much reduced 
         // with vertices that are very close together.

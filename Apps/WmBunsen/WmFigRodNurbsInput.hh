@@ -14,6 +14,8 @@
 #include <maya/MFnNurbsCurve.h>
 #include <maya/MPoint.h>
 
+#include <set>
+
 #include "WmFigRodInputType.hh"
 #include "WmFigRodGroup.hh"
 
@@ -33,7 +35,7 @@ public:
       */
      WmFigRodNurbsInput( MObject& i_nurbsAttribute, bool i_lockFirstEdgeToInput, WmFigRodGroup& i_rodGroup,
                          double i_vertexSpacing, double i_minimumRodLength, RodOptions& i_rodOptions,
-                         double i_massDamping, RodTimeStepper::Method i_solverType );
+                         double i_massDamping, RodTimeStepper::Method i_solverType, std::set< size_t >& i_simulationSet );
 
     /**
       * @brief Default destructor
@@ -58,6 +60,7 @@ private:
     RodOptions m_rodOptions;
     double m_massDamping;
     RodTimeStepper::Method m_solverType;
+    std::set< size_t >& m_simulationSet;
 };
 
 #endif // WMFIGRODNURBSINPUT_H_

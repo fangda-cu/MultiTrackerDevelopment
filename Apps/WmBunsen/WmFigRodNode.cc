@@ -61,6 +61,7 @@ using namespace BASim;
 /* static */ MObject WmFigRodNode::ia_massDamping;
 /* static */ MObject WmFigRodNode::ia_drawMaterialFrames;
 /* static */ MObject WmFigRodNode::ia_lockFirstEdgeToInput;
+/* static */ MObject WmFigRodNode::ia_simulationSet;
 
 // For being controlled by external objects and for controlling external objects
 /* static */ MObject WmFigRodNode::ia_edgeTransforms;
@@ -83,6 +84,7 @@ WmFigRodNode::WmFigRodNode() : m_massDamping( 10 ), m_initialised( false ),
     m_rodOptions.refFrame = BASim::ElasticRod::TimeParallel;
     m_strandRootFrames.clear();
     m_controlledEdgeTransforms.clear();
+    m_simulationSet.clear();
 }
 
 WmFigRodNode::~WmFigRodNode()
@@ -253,13 +255,13 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
                                              m_lockFirstEdgeToInput, m_vertexSpacing,
                                              m_minimumRodLength,
                                              m_rodOptions, m_massDamping, m_rodGroup,
-                                             m_solverType );
+                                             m_solverType, m_simulationSet );
     }
     else // Assume we have nurbs connected
     {
         m_pRodInput = new WmFigRodNurbsInput( ia_nurbsCurves, m_lockFirstEdgeToInput, m_rodGroup,
                            m_vertexSpacing, m_minimumRodLength, m_rodOptions, m_massDamping,
-                           m_solverType );
+                           m_solverType, m_simulationSet );
     }
     
     m_pRodInput->initialiseRodDataFromInput( i_dataBlock );
@@ -540,6 +542,11 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
     m_solverType = ( RodTimeStepper::Method)  ( i_dataBlock.inputValue( ia_solverType, &stat ).asInt() );
     CHECK_MSTATUS( stat );
     
+    MString simulationSet = i_dataBlock.inputValue( ia_simulationSet, &stat ).asString();
+    CHECK_MSTATUS( stat );
+
+    updateSimulationSet( simulationSet );
+
     updateControlledEdgeArrayFromInputs( i_dataBlock );
 
     //////////////////////////////////////////////////////////////////////////////////////////
@@ -570,6 +577,20 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
     {
         stat.perror("WmFigRodNode::compute setClean");
         return;
+    }
+}
+
+void WmFigRodNode::updateSimulationSet( MString i_simulationSetString )
+{
+    m_simulationSet.clear();
+
+    MStringArray subStrings;
+    
+    i_simulationSetString.split( ',', subStrings );
+
+    for ( size_t c=0; c< subStrings.length(); ++c )
+    {
+        m_simulationSet.insert( subStrings[ c ].asInt() );
     }
 }
 
@@ -1626,6 +1647,25 @@ void* WmFigRodNode::creator()
     stat = attributeAffects( ia_cachePath, ca_simulationSync );
     if ( !stat ) { stat.perror( "attributeAffects ia_cachePath->ca_simulationSync" ); return stat; }
 
+    {
+        MFnTypedAttribute tAttr;
+        MFnStringData fnStringData;
+        MObject defaultString = fnStringData.create("");
+        ia_simulationSet = tAttr.create( "simulationSet", "sse", MFnData::kString, defaultString, &stat );
+        if ( !stat )
+        {
+            stat.perror( "create ia_simulationSet attribute" );
+            return stat;
+        }
+        tAttr.setWritable( true );
+        tAttr.setReadable( false );
+        tAttr.setConnectable( true );
+        stat = addAttribute( ia_simulationSet );
+        if (!stat) { stat.perror( "addAttribute ia_simulationSet" ); return stat; }
+    }
+    stat = attributeAffects( ia_simulationSet, oa_rodsChanged );
+    if ( !stat ) { stat.perror( "attributeAffects ia_simulationSet->oa_rodsChanged" ); return stat; }
+    
     {
         MFnTypedAttribute   tAttr;
         ia_nurbsCurves = tAttr.create( "nurbsCurves", "nc",

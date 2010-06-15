@@ -263,7 +263,7 @@ GLint WmFigControllerContext::findRodsUsingOpenGLSelection( const double i_centr
     gluPickMatrix( i_centreX, i_centreY, i_width, i_height, viewport );
     glMultMatrixf( projectionMatrix );
     
-    const size_t nRods = rodGroup->numberOfRealRods();
+    const size_t nRods = rodGroup->numberOfRods();
 
     // *4 because selection returns a bunch of stuff with each hit.
     o_selectionBuffer.resize( nRods * 4 );

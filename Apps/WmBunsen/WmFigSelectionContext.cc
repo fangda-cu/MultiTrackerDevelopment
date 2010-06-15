@@ -192,7 +192,6 @@ bool WmFigSelectionContext::searchForRodsIn2DScreenRectangle( vector<size_t>& o_
     GLint numHits = findRodsUsingOpenGLSelection( selectedCentreX, selectedCentreY, selectedWidth, 
                         selectedHeight, rodNode, selectedRodIndices );
     
-    
     //////////////////////////////////////////////////////
     //
     // Process hits. 
@@ -232,8 +231,8 @@ GLint WmFigSelectionContext::findRodsUsingOpenGLSelection( const double i_centre
     const double i_width, const double i_height, WmFigRodNode* i_rodNode,
     vector<GLuint>& o_selectedRodIndices )
 {
-    /*vector<RodData*>* allRodData = i_rodNode->getRodData();
-    if ( allRodData == NULL )
+    WmFigRodGroup* rodGroup = i_rodNode->rodGroup();
+    if ( rodGroup->numberOfRealRods() == 0 )
         return 0;
     
     GLint viewport[4];
@@ -248,32 +247,28 @@ GLint WmFigSelectionContext::findRodsUsingOpenGLSelection( const double i_centre
     gluPickMatrix( i_centreX, i_centreY, i_width, i_height, viewport );
     glMultMatrixf( projectionMatrix );
     
-    const size_t nRods = allRodData->size();
+    const size_t nRods = rodGroup->numberOfRods();
 
     // *4 because selection returns a bunch of stuff with each hit.
     o_selectedRodIndices.resize( nRods * 4 );
     GLint numHits;
-    
+
     glSelectBuffer( nRods * 4, &(o_selectedRodIndices[0]) );
     glRenderMode( GL_SELECT );
     
     glInitNames();
-	glPushName( 0 );
-	
+    glPushName( 0 );
+    
     for( size_t r = 0u; r < nRods; ++r )
-    {
-        if ( (*allRodData)[ r ]->rod == NULL )
-            continue;
-        
+    {       
         glLoadName( (GLuint) r );
-        glBegin( GL_LINE_STRIP );
-        
-        for( size_t v = 0, n = (*allRodData)[ r ]->rod->nv(); v < n; ++v )
+ 
+        glBegin( GL_LINE_STRIP );        
+        for( size_t v = 1, n = rodGroup->elasticRod( r )->nv(); v < n; ++v )
         {
-            const Vec3d p = (*allRodData)[ r ]->rod->getVertex( v );
+            const Vec3d p = rodGroup->elasticRod( r )->getVertex( v - 1 );
             glVertex3f( p[0], p[1], p[2] );
         }
-
         glEnd();
     }
     
@@ -282,7 +277,7 @@ GLint WmFigSelectionContext::findRodsUsingOpenGLSelection( const double i_centre
     glMatrixMode( GL_PROJECTION );
     glPopMatrix();
 
-    return numHits;*/
+    return numHits;
 }
 
 
