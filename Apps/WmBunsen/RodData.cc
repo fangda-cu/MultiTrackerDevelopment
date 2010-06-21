@@ -23,8 +23,6 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
     {
         RodTimeStepper* stepper = new RodTimeStepper( *m_rod );
 
-        cerr << "Creating rod with solver type " << i_solverType << endl;
-    
         stepper->setDiffEqSolver( i_solverType );
     
         // These get deleted by RodTimeStepper
@@ -122,7 +120,8 @@ void RodData::updateNextRodVertexPositions( vector< Vec3d >& i_vertexPositions )
     //FIXME: Doesn't currVertexPositions already equal nextVertexPositions at the end of a time
     // step?
     currVertexPositions = nextVertexPositions;
-//     nextVertexPositions = i_vertexPositions;
+
+    nextVertexPositions = i_vertexPositions;
 }
 
 void RodData::updateBoundaryConditions()
@@ -146,8 +145,8 @@ void RodData::updateBoundaryConditions()
         m_rod->fixVert( edgeNum );
         m_rod->fixVert( edgeNum +1 );
 
-        boundary->setDesiredVertexPosition( edgeNum, currVertexPositions[ edgeNum ]);
-        boundary->setDesiredVertexPosition( edgeNum+1, currVertexPositions[ edgeNum+1 ]);
+        boundary->setDesiredVertexPosition( edgeNum, currVertexPositions[ edgeNum ] );
+        boundary->setDesiredVertexPosition( edgeNum + 1, currVertexPositions[ edgeNum + 1 ]);
 
         if ( kinematicEdgeData->rootFrameDefined )
         {

@@ -79,6 +79,7 @@ public:
     // Rod options
     static MObject ia_solverType;
     static MObject ia_cvsPerRod;
+    static MObject ia_gravity;
     static MObject ia_youngsModulus;
     static MObject ia_shearModulus;
     static MObject ia_viscosity;
@@ -231,6 +232,7 @@ private:
     MString m_cachePath;
     RodTimeStepper::Method m_solverType;
 
+    Vec3d m_gravity;
     std::set< size_t > m_simulationSet;
 };
 

@@ -28,9 +28,9 @@ public:
 
     size_t addRod();
     size_t addRod( std::vector<Vec3d>& i_rodVertices, RodOptions& i_rodOptions, 
-                   double i_massDamping, RodTimeStepper::Method i_solverType, bool i_isFromCache = false );
+                   double i_massDamping, BASim::Vec3d& i_gravity,  RodTimeStepper::Method i_solverType, bool i_isFromCache = false );
 
-    void addRodsFromCache( vector<vector<Vec3d> >& i_rodVertices, RodOptions& i_rodOptions, 
+    void addRodsFromCache( vector<vector<BASim::Vec3d> >& i_rodVertices, RodOptions& i_rodOptions, 
                              double i_massDamping )
     {
         for ( size_t r=0; r < i_rodVertices.size(); ++r )
@@ -38,7 +38,8 @@ public:
             RodOptions rodOptions = i_rodOptions;
             rodOptions.numVertices = i_rodVertices[ r ].size();
 
-            addRod( i_rodVertices[ r ], rodOptions, i_massDamping, RodTimeStepper::NONE, true );
+            Vec3d gravity( 0, 0, 0 );
+            addRod( i_rodVertices[ r ], rodOptions, i_massDamping, gravity, RodTimeStepper::NONE, true );
         }
     }
 
@@ -108,9 +109,9 @@ public:
         return m_rodData[ i_rodIndex ]->nextVertexPosition( i_vertexIndex );
     }
     
-    void updateRodNextVertexPositions( size_t rodIndex, vector<Vec3d>& inputStrandVertices )
+    void updateRodNextVertexPositions( size_t i_rodIndex, vector<Vec3d>& inputStrandVertices )
     {
-        m_rodData[ rodIndex ]->updateNextRodVertexPositions( inputStrandVertices );
+        m_rodData[ i_rodIndex ]->updateNextRodVertexPositions( inputStrandVertices );
     }
 
     void setUndeformedMaterialFrame( size_t i_rodIndex, size_t i_frameIndex, Vec3d i_v1, Vec3d i_v2, Vec3d i_v3 )

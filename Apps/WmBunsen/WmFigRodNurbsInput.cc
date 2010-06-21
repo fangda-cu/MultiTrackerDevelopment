@@ -4,10 +4,10 @@
 
 WmFigRodNurbsInput::WmFigRodNurbsInput( MObject& i_nurbsAttribute, bool i_lockFirstEdgeToInput,
     WmFigRodGroup& i_rodGroup, double i_vertexSpacing, double i_minimumRodLength, RodOptions& i_rodOptions,
-    double i_massDamping, RodTimeStepper::Method i_solverType, std::set< size_t >& i_simulationSet ) : 
+    double i_massDamping, Vec3d& i_gravity,  RodTimeStepper::Method i_solverType, std::set< size_t >& i_simulationSet ) : 
     m_inputNurbsAttribute( i_nurbsAttribute ), m_lockFirstEdgeToInput( i_lockFirstEdgeToInput ),
     m_rodGroup( i_rodGroup ), m_vertexSpacing( i_vertexSpacing ), m_minimumRodLength( i_minimumRodLength ),
-    m_rodOptions( i_rodOptions ), m_massDamping( i_massDamping ), m_solverType( i_solverType ),
+    m_rodOptions( i_rodOptions ), m_massDamping( i_massDamping ), m_gravity( i_gravity ),  m_solverType( i_solverType ),
     m_simulationSet( i_simulationSet )
 {
     // we need to get pass the attribute here so that when we initialise data or
@@ -146,7 +146,7 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
             rodOptions.numVertices = inputCurveVertices[ c ].size();
 
             // Mass damping should be in rod options, it's dumb to pass it seperately.
-            size_t rodIndex = m_rodGroup.addRod( inputCurveVertices[ c ], rodOptions, m_massDamping, m_solverType );
+            size_t rodIndex = m_rodGroup.addRod( inputCurveVertices[ c ], rodOptions, m_massDamping, m_gravity, m_solverType );
     
             if ( m_lockFirstEdgeToInput )
             {

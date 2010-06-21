@@ -16,6 +16,7 @@ global proc AEwmFigRodNodeTemplate(string $nodeName)
         editorTemplate -endNoOptimize -addControl "startTime";
         editorTemplate -addControl "percentageOfFozzieStrands";
        // editorTemplate -addControl "cvsPerRod";
+        editorTemplate -addControl "gravity";
         editorTemplate -addControl "minorRadius";
         editorTemplate -addControl "majorRadius";
         editorTemplate -addControl "youngsModulus";

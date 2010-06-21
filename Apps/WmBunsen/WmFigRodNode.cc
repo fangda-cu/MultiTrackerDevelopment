@@ -47,6 +47,7 @@ using namespace BASim;
 
 // User adjustable rod Options
 /* static */ MObject WmFigRodNode::ia_solverType;
+/* static */ MObject WmFigRodNode::ia_gravity;
 /* static */ MObject WmFigRodNode::ia_cvsPerRod;
 /* static */ MObject WmFigRodNode::ia_youngsModulus;
 /* static */ MObject WmFigRodNode::ia_shearModulus;
@@ -73,7 +74,7 @@ WmFigRodNode::WmFigRodNode() : m_massDamping( 10 ), m_initialised( false ),
     m_percentageOfBarberShopStrands( 100 ), m_verticesPerRod( -1 ), m_cacheFilename( "" ),
     m_pRodInput( NULL ), m_vertexSpacing( 0.0 ), m_minimumRodLength( 2.0 ),
     m_readFromCache( false ), m_writeToCache( false ), m_cachePath ( "" ),
-    m_solverType( RodTimeStepper::IMPL_EULER )
+    m_solverType( RodTimeStepper::IMPL_EULER ), m_gravity( 0, -980, 0 )
 {
     m_rodOptions.YoungsModulus = 1000.0; /* megapascal */
     m_rodOptions.ShearModulus = 340.0;   /* megapascal */
@@ -95,7 +96,7 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
-    //cerr << "WmFigRodNode::compute() with i_plug = " << i_plug.name() << endl;
+    cerr << "WmFigRodNode::compute() with i_plug = " << i_plug.name() << endl;
 
     if ( i_plug == oa_numberOfRods )
     {
@@ -223,7 +224,6 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
-    MPlug barberShopPlug( thisMObject(), ia_barberShopVertices );
     readCacheRelatedInputs( i_dataBlock );
 
     // Remove all rods as we're about to build new ones from one of our inputs
@@ -243,6 +243,9 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
     // an ordering to what takes precidence. Only one input is currently used at a time,
     // although it may not be too hard to handle multiple inputs.
     //
+   
+    MPlug barberShopPlug( thisMObject(), ia_barberShopVertices );
+   
     if ( m_readFromCache)
     {
         getCacheFilename( i_dataBlock );
@@ -254,14 +257,14 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
                                              m_percentageOfBarberShopStrands, m_verticesPerRod,
                                              m_lockFirstEdgeToInput, m_vertexSpacing,
                                              m_minimumRodLength,
-                                             m_rodOptions, m_massDamping, m_rodGroup,
+                                             m_rodOptions, m_massDamping, m_gravity, m_rodGroup,
                                              m_solverType, m_simulationSet );
     }
     else // Assume we have nurbs connected
     {
         m_pRodInput = new WmFigRodNurbsInput( ia_nurbsCurves, m_lockFirstEdgeToInput, m_rodGroup,
                            m_vertexSpacing, m_minimumRodLength, m_rodOptions, m_massDamping,
-                           m_solverType, m_simulationSet );
+                           m_gravity, m_solverType, m_simulationSet );
     }
     
     m_pRodInput->initialiseRodDataFromInput( i_dataBlock );
@@ -521,6 +524,10 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
     m_massDamping = i_dataBlock.inputValue( ia_massDamping, &stat ).asDouble();
     CHECK_MSTATUS( stat );
 
+    const double3 &gravity = i_dataBlock.inputValue( ia_gravity, &stat ).asDouble3();
+    CHECK_MSTATUS( stat );
+    m_gravity = Vec3d( gravity[0], gravity[1], gravity[2] );
+
     m_lockFirstEdgeToInput = i_dataBlock.inputValue( ia_lockFirstEdgeToInput, &stat ).asBool();
     CHECK_MSTATUS( stat );
 
@@ -548,6 +555,9 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
     updateSimulationSet( simulationSet );
 
     updateControlledEdgeArrayFromInputs( i_dataBlock );
+
+    MDataHandle verticesH = i_dataBlock.inputValue( ia_barberShopVertices, &stat );
+    CHECK_MSTATUS( stat );    
 
     //////////////////////////////////////////////////////////////////////////////////////////
     
@@ -1616,7 +1626,7 @@ void* WmFigRodNode::creator()
 
     addNumericAttribute( ia_percentageOfBarberShopStrands, "percentageOfFozzieStrands", "pfs", MFnNumericData::kDouble, 1.0, true );
     stat = attributeAffects( ia_percentageOfBarberShopStrands, oa_rodsChanged );
-    if ( !stat ) { stat.perror( "attributeAffects ia_barberShopVertices->oa_rodsChanged" ); return stat; }
+    if ( !stat ) { stat.perror( "attributeAffects ia_percentageOfBarberShopStrands->oa_rodsChanged" ); return stat; }
 
     addNumericAttribute( ia_drawMaterialFrames, "drawMaterialFrames", "dmf", MFnNumericData::kBoolean, false, true );
     stat = attributeAffects( ia_drawMaterialFrames, oa_rodsChanged );
@@ -1797,6 +1807,10 @@ void* WmFigRodNode::creator()
         stat = addAttribute( ia_edgeTransforms );
         if ( !stat ) { stat.perror( "addAttribute ia_edgeTransforms" ); return stat; }
     }*/
+
+    addNumericAttribute( ia_gravity, "gravity", "gra", MFnNumericData::k3Double, 0, true, false );
+    stat = attributeAffects( ia_gravity, oa_rodsChanged );
+    if ( !stat ) { stat.perror( "attributeAffects ia_gravity->oa_rodsChanged" ); return stat; }
     
     addNumericAttribute( ia_edgeTransforms, "edgeTransforms", "iet", MFnNumericData::kBoolean, false, true, true );
     stat = attributeAffects( ia_edgeTransforms, oa_rodsChanged );

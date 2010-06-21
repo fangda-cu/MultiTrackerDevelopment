@@ -56,6 +56,9 @@ WmFigSelectionToolCommand.hh \
 WmFigControllerContext.hh \
 WmFigControllerContextCommand.hh \
 WmFigControllerToolCommand.hh \
+WmFigCombContext.hh \
+WmFigCombContextCommand.hh \
+WmFigCombToolCommand.hh \
 WmFigRodInputType.hh \
 WmFigRodNurbsInput.hh \
 WmFigRodBarbInput.hh \
@@ -79,6 +82,9 @@ WmFigSelectionToolCommand.cc \
 WmFigControllerContext.cc \
 WmFigControllerContextCommand.cc \
 WmFigControllerToolCommand.cc \
+WmFigCombContext.cc \
+WmFigCombContextCommand.cc \
+WmFigCombToolCommand.cc \
 WmFigRodInputType.cc \
 WmFigRodNurbsInput.cc \
 WmFigRodBarbInput.cc \
@@ -106,11 +112,9 @@ SCR1            := AEwmFigaroNodeTemplate.mel
 SCR1_MAYA       := 1
 SCR1_INSD       := $(SCR_INSD)
 
-
 SCR2            := AEwmFigRodNodeTemplate.mel
 SCR2_MAYA       := 1
 SCR2_INSD       := $(SCR_INSD)
-
 
 SCR3            := AEwmFigCollisionNodeTemplate.mel
 SCR3_MAYA       := 1
@@ -135,6 +139,14 @@ SCR6_INSD       := $(SCR_INSD)
 SCR7            := WmFigaro.mel
 SCR7_MAYA       := 1
 SCR7_INSD       := $(SCR_INSD)
+
+SCR8            := wmFigCombContextProperties.mel
+SCR8_MAYA       := 1
+SCR8_INSD       := $(SCR_INSD)
+
+SCR9            := wmFigCombContextValues.mel
+SCR9_MAYA       := 1
+SCR9_INSD       := $(SCR_INSD)
 
 
 ##############################################################################

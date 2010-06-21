@@ -328,6 +328,8 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         return;
     }
 
+    cerr << "Simulating\n";
+
 //		cerr << "[JS msg / Beaker::takeTimeStep] " << startTime << " startTime " << targetTime << " targetTime\n";
 //		cerr << "[JS msg / Beaker::takeTimeStep] " << i_stepSize << " i_stepSize " << getDt() << " getDt()\n";
 

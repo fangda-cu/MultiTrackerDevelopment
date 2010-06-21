@@ -20,14 +20,12 @@ size_t WmFigRodGroup::addRod()
 }
 
 size_t WmFigRodGroup::addRod( std::vector<Vec3d>& i_rodVertices, RodOptions& i_rodOptions, 
-                              double i_massDamping, RodTimeStepper::Method i_solverType,
-                              bool i_isFromCache )
+                              double i_massDamping, BASim::Vec3d& i_gravity,  
+                              RodTimeStepper::Method i_solverType, bool i_isFromCache )
 {
     // We have rod vertices so lets build a real rod.
     
-    Vec3d gravity( 0.0, -980.0, 0.0 );
-
-    RodData* rodData = new RodData( i_rodOptions, i_rodVertices, i_massDamping, gravity, 
+    RodData* rodData = new RodData( i_rodOptions, i_rodVertices, i_massDamping, i_gravity, 
                                     i_solverType, i_isFromCache );
 
     m_rodData.push_back( rodData );

@@ -6,7 +6,7 @@ WmFigRodBarbInput::WmFigRodBarbInput( MObject& i_verticesAttribute, MObject& i_s
                         double i_percentageOfBarbStrands, size_t i_verticesPerRod,
                         bool i_lockFirstEdgeToInput, double i_vertexSpacing,
                         double i_minimumRodLength, RodOptions& i_rodOptions,
-                        double i_massDamping, WmFigRodGroup& i_rodGroup,
+                        double i_massDamping, Vec3d& i_gravity,  WmFigRodGroup& i_rodGroup,
                         RodTimeStepper::Method i_solverType, std::set< size_t >& i_simulationSet ) : 
     m_verticesAttribute( i_verticesAttribute ),
     m_strandRootFramesAttribute( i_strandRootFramesAttribute ),
@@ -14,8 +14,9 @@ WmFigRodBarbInput::WmFigRodBarbInput( MObject& i_verticesAttribute, MObject& i_s
     m_verticesPerRod( i_verticesPerRod ), m_lockFirstEdgeToInput( i_lockFirstEdgeToInput ),
     m_vertexSpacing( i_vertexSpacing ), m_minimumRodLength( i_minimumRodLength ),
     m_rodGroup( i_rodGroup ), m_rodOptions( i_rodOptions ), m_massDamping( i_massDamping ),
+    m_gravity( i_gravity ),
     m_solverType( i_solverType ), m_simulationSet( i_simulationSet )
-{    
+{
 }
 
 WmFigRodBarbInput::~WmFigRodBarbInput()
@@ -118,7 +119,7 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
                 rodOptions.numVertices = inputStrandVertices.size();
 
                 // Mass damping should be in rod options, it's dumb to pass it seperately.
-                rodIndex = m_rodGroup.addRod( inputStrandVertices, rodOptions, m_massDamping, m_solverType );
+                rodIndex = m_rodGroup.addRod( inputStrandVertices, rodOptions, m_massDamping, m_gravity, m_solverType );
             }
         }
         else
@@ -143,7 +144,7 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
             RodOptions rodOptions = m_rodOptions;
             rodOptions.numVertices = m_verticesPerRod;
 
-            rodIndex = m_rodGroup.addRod( inputStrandVertices, rodOptions, m_massDamping, m_solverType );
+            rodIndex = m_rodGroup.addRod( inputStrandVertices, rodOptions, m_massDamping, m_gravity, m_solverType );
         }
 
         // We need to add edge data so that each from the first edge will be locked to the input curve
@@ -206,60 +207,55 @@ void WmFigRodBarbInput::updateRodDataFromInput( MDataBlock& i_dataBlock )
             continue;
         }
 
-        //BASim::ElasticRod* pRod = (*i_pRodData)[ i ]->rod;
-        
-        //if ( pRod != NULL )
+        size_t numVerticesInRod = m_rodGroup.numberOfVerticesInRod( i );
+
+        vector<Vec3d> inputStrandVertices;         
+        inputStrandVertices.resize( numVerticesInRod );
+
+        if ( numVerticesInRod != m_verticesPerRod )
         {
-            size_t numVerticesInRod = m_rodGroup.numberOfVerticesInRod( i );
+            vector< MVector > curve;
+            curve.resize( m_verticesPerRod );
 
-            vector<Vec3d> inputStrandVertices;         
-            inputStrandVertices.resize( numVerticesInRod );
-
-            if ( numVerticesInRod != m_verticesPerRod )
+            for ( size_t v = 0; v < m_verticesPerRod; v++ )
             {
-                vector< MVector > curve;
-                curve.resize( m_verticesPerRod );
-    
-                for ( size_t v = 0; v < m_verticesPerRod; v++ )
-                {
-                    curve[ v ] = strandVertices[ (int)inputStrandVertexIndex++ ];
-                }
-    
-                vector< MVector > resampledCurve;
-                resampleCurve( numVerticesInRod, curve, resampledCurve );
-
-                for ( size_t v = 0; v < numVerticesInRod; v++ )
-                {
-                    inputStrandVertices[ v ] = Vec3d( resampledCurve[ v ][ 0 ], resampledCurve[ v ][ 1 ], resampledCurve[ v ][ 2 ] );
-                }
-            }
-            else
-            {
-                for ( size_t v = 0; v < m_verticesPerRod; v++ )
-                {
-                    MVector vertex = strandVertices[ (int)inputStrandVertexIndex++ ];
-                    inputStrandVertices[ v ] = Vec3d( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ] );
-                }
+                curve[ v ] = strandVertices[ (int)inputStrandVertexIndex++ ];
             }
 
-            m_rodGroup.updateRodNextVertexPositions( i, inputStrandVertices );
+            vector< MVector > resampledCurve;
+            resampleCurve( numVerticesInRod, curve, resampledCurve );
 
-            // The strand root frames may not have been connected for some reason so don't
-            // rely on having that data
-            if ( strandRootFrames.size() > i && m_lockFirstEdgeToInput )
+            for ( size_t v = 0; v < numVerticesInRod; v++ )
             {
-                //(*i_pRodData)[ i ]->updateKinematicEdge( 0, strandRootFrames[ i ] );
-                m_rodGroup.updateKinematicEdge( i, 0, strandRootFrames[ i ] );
+                inputStrandVertices[ v ] = Vec3d( resampledCurve[ v ][ 0 ], resampledCurve[ v ][ 1 ], resampledCurve[ v ][ 2 ] );
             }
-            else // remove the entry in the map
+        }
+        else
+        {
+            for ( size_t v = 0; v < m_verticesPerRod; v++ )
             {
-                // FIXME:
-                // We haven't released a version of barbershop that gives the frames so
-                // dont remove the edge just yet, leave it and we'll get the first edge
-                // locked we just won't track rotation properly without the frames.
+                MVector vertex = strandVertices[ (int)inputStrandVertexIndex++ ];
+                inputStrandVertices[ v ] = Vec3d( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ] );
+            }
+        }
 
-                //(*mx_rodData)[ i ]->removeKinematicEdge( 0 );
-            }
+        m_rodGroup.updateRodNextVertexPositions( i, inputStrandVertices );
+
+        // The strand root frames may not have been connected for some reason so don't
+        // rely on having that data
+        if ( strandRootFrames.size() > i && m_lockFirstEdgeToInput )
+        {
+            //(*i_pRodData)[ i ]->updateKinematicEdge( 0, strandRootFrames[ i ] );
+            m_rodGroup.updateKinematicEdge( i, 0, strandRootFrames[ i ] );
+        }
+        else // remove the entry in the map
+        {
+            // FIXME:
+            // We haven't released a version of barbershop that gives the frames so
+            // dont remove the edge just yet, leave it and we'll get the first edge
+            // locked we just won't track rotation properly without the frames.
+
+            //(*mx_rodData)[ i ]->removeKinematicEdge( 0 );
         }
     }
 }

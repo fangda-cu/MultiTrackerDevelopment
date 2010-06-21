@@ -12,6 +12,9 @@
 #include "WmFigControllerContext.hh"
 #include "WmFigControllerContextCommand.hh"
 #include "WmFigControllerToolCommand.hh"
+#include "WmFigCombContext.hh"
+#include "WmFigCombContextCommand.hh"
+#include "WmFigCombToolCommand.hh"
 
 MStatus initializePlugin( MObject obj )
 { 
@@ -90,6 +93,15 @@ MStatus initializePlugin( MObject obj )
         return stat;     
     }
 
+    if ( plugin.registerContextCommand( WmFigCombContext::typeName,
+            WmFigCombContextCommand::creator,
+            WmFigCombToolCommand::typeName,
+            WmFigCombToolCommand::creator ) != MS::kSuccess )
+    if ( !stat ) {
+        stat.perror( "registerContextCommand WmFigCombContext failed" );
+        return stat;     
+    }
+
     MGlobal::executeCommand( "source WmFigaro.mel", false );
     CHECK_MSTATUS( plugin.registerUI( "wmFigaroAddMainMenu", "wmFigaroRemoveMainMenu" ) );
     return stat;
@@ -145,6 +157,11 @@ MStatus uninitializePlugin( MObject obj)
     if ( plugin.deregisterContextCommand( WmFigControllerContext::typeName, WmFigControllerToolCommand::typeName ) != MS::kSuccess )
     {
         stat.perror( "deregister context command wmFigController failed" );
+    }
+
+    if ( plugin.deregisterContextCommand( WmFigCombContext::typeName, WmFigCombToolCommand::typeName ) != MS::kSuccess )
+    {
+        stat.perror( "deregister context command wmFigComb failed" );
     }
 
     MGlobal::stopErrorLogging();
