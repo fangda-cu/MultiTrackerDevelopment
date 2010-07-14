@@ -1,6 +1,6 @@
 #include "RodData.hh"
 
-RodData::RodData() : m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ) 
+RodData::RodData() : m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_gravity( 0.0, 0.0, 0.0 )
 {
     m_isPlaceHolderRod = true;
 }
@@ -31,6 +31,7 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
         if ( i_gravity.norm() > 0)
         {
             stepper->addExternalForce( new RodGravity( i_gravity ) );
+            m_gravity = i_gravity;
         }
     
         m_stepper = new RodCollisionTimeStepper( stepper, m_rod );        

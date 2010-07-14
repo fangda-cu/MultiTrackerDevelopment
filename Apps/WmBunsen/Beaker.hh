@@ -31,6 +31,7 @@
 #include <iostream>
 #include <fstream>
 #include "WmFigRodGroup.hh"
+#include <weta/Wfigaro/SceneXML/SceneXML.hh>
 
 using namespace BASim;
 using namespace std;
@@ -150,6 +151,10 @@ public:
     void setTimingEnabled( bool i_timingsEnabled );
     std::string makeString( double i_val );
 
+    void startXMLLogging( std::string& i_xmlFilePath, std::string& i_mayaSceneFilename );
+    void writeXMLFileToDisk();
+
+
 private:
     //void storeMaterialFrames();
     
@@ -211,6 +216,11 @@ private:
 
     bool m_isClumpingEnabled;
     double m_clumpingCoefficient;
+
+    bool m_isXMLLoggingEnabled;
+    SceneXML* m_sceneXML;
+
+    std::vector< InitialRodConfiguration > m_initialRodConfigurations;
 };
 
 #endif // BEAKER_HH_

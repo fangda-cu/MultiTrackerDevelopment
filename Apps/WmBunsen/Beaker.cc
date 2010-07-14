@@ -46,9 +46,12 @@ Beaker::Beaker() : m_plasticDeformations( false ), m_gravity( 0, -981.0, 0 ),
     m_slowestCollisionResponseTime( 0.0 ), m_fastestCollisionResponseTime( 9999999999999.0 ),
     m_fastestFrameTime( 9999999999999999.0 ), m_slowestFrameTime( 0.0 ), m_totalSimTime( 0.0 ), 
     m_numberOfFramesSimulated( 0 ), m_numberofThreadsUsed( 0 ), m_numRods( 0 ),
-    m_shouldDrawSubsteppedVertices( false ), m_isClumpingEnabled( false ), m_clumpingCoefficient( 0.3 )
+    m_shouldDrawSubsteppedVertices( false ), m_isClumpingEnabled( false ), m_clumpingCoefficient( 0.3 ),
+    m_isXMLLoggingEnabled( false ), m_sceneXML( NULL )
 {
     m_rodDataMap.clear();
+    m_initialRodConfigurations.clear();
+
     initialiseWorld();
 }
 
@@ -58,6 +61,9 @@ Beaker::~Beaker()
 
     if ( m_timingsFP.is_open() )
         m_timingsFP.close();
+
+    if ( m_sceneXML != NULL )
+        delete m_sceneXML;
 }
 
 void Beaker::initialiseWorld()
@@ -89,6 +95,15 @@ void Beaker::resetEverything()
     delete m_world;
 
     initialiseWorld();
+}
+
+void Beaker::startXMLLogging( std::string& i_xmlFilePath, std::string& i_mayaSceneFilename )
+{
+    m_sceneXML = new SceneXML();
+
+    double stepSize = 999.99;
+
+    m_sceneXML->setInitialSceneState( i_xmlFilePath, m_initialRodConfigurations, i_mayaSceneFilename, stepSize );
 }
 
 void Beaker::setTimingsFile( std::string i_fileName )
@@ -260,15 +275,45 @@ void Beaker::addRodsToWorld( size_t i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
     
     size_t numRods = m_rodDataMap[ i_rodGroupIndex ]->numberOfRods();
     
+    m_initialRodConfigurations.clear();
+
     for ( size_t r=0; r<numRods; r++ )
     {
         if ( !m_rodDataMap[ i_rodGroupIndex ]->shouldSimulateRod( r ) )
             continue;
+
+        // Store data so it can be written to an XML file later        
+        InitialRodConfiguration initialRodConfiguration;
+
+        initialRodConfiguration.rodOptions = m_rodDataMap[ i_rodGroupIndex ]->getRodOptions( r );
+        initialRodConfiguration.gravity = m_rodDataMap[ i_rodGroupIndex ]->getGravity( r );
+        initialRodConfiguration.gravity = m_rodDataMap[ i_rodGroupIndex ]->getMassDamping( r );
+
+        initialRodConfiguration.initialRodVertexPositions.resize( m_rodDataMap[ i_rodGroupIndex ]->elasticRod( r )->nv() );
         
+        for ( size_t v=0;v<initialRodConfiguration.initialRodVertexPositions.size(); ++v )
+        {
+            initialRodConfiguration.initialRodVertexPositions[ v ] = 
+                m_rodDataMap[ i_rodGroupIndex ]->elasticRod( r )->getVertex( v );
+        }
+    
+        m_initialRodConfigurations.push_back( initialRodConfiguration );
+      
         m_rods.push_back( m_rodDataMap[ i_rodGroupIndex ]->elasticRod( r ) );
 
         m_world->addObject( m_rodDataMap[ i_rodGroupIndex ]->elasticRod( r ) );
         m_world->addController( m_rodDataMap[ i_rodGroupIndex ]->collisionStepper( r ) );
+    }
+}
+
+void Beaker::writeXMLFileToDisk()
+{
+    if ( m_sceneXML != NULL )
+    {
+        m_sceneXML->writeFile(); 
+    
+        delete m_sceneXML;
+        m_sceneXML = NULL;
     }
 }
 

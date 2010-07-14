@@ -341,6 +341,7 @@ public:
 
     bool m_isPlaceHolderRod;
     double m_massDamping;
+    Vec3d m_gravity;
 };
 
 #endif

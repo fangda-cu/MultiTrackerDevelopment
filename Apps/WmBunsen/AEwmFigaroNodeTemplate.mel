@@ -37,6 +37,12 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
         editorTemplate -addControl "drawSubSteppedVertices";
     editorTemplate -endLayout;
     
+    editorTemplate -beginLayout "XML Output" -collapse 0;
+        editorTemplate -addControl "writeToXMLFile";
+        editorTemplate -addControl "XMLFilePath";
+    editorTemplate -endLayout;
+
+    
     editorTemplate -addExtraControls;
     editorTemplate -endScrollLayout;
 }

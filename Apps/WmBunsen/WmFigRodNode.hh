@@ -38,6 +38,7 @@
 #include <maya/MFloatArray.h>
 #include <maya/MRampAttribute.h>
 #include <maya/MFnEnumAttribute.h>
+#include <maya/MFileIO.h>
 
 #include <set>
 
@@ -46,6 +47,7 @@
 #include "WmFigRodBarbInput.hh"
 #include "WmFigRodFileInput.hh"
 #include "WmFigRodGroup.hh"
+
 
 static const int FILE_FORMAT_VERSION = 1;
 
@@ -128,7 +130,7 @@ public:
     static MObject oa_edgeTransforms;
     
     static MObject oa_numberOfRods;
-        
+
     // Returns the number of rods this node has input data for
     //size_t numberOfRods();
 
@@ -234,6 +236,7 @@ private:
 
     Vec3d m_gravity;
     std::set< size_t > m_simulationSet;
+
 };
 
 #endif // WMFIGRODNODE_HH_

@@ -43,6 +43,16 @@ public:
         }
     }
 
+    RodOptions& getRodOptions( size_t i_rodIndex )
+    {
+        return m_rodData[ i_rodIndex ]->rodOptions;
+    }
+
+    Vec3d& getGravity( size_t i_rodIndex )
+    {
+        return m_rodData[ i_rodIndex ]->m_gravity;
+    }
+
     void removeAllRods()
     {
         for ( size_t r = 0; r < m_rodData.size(); ++r )

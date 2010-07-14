@@ -81,6 +81,10 @@ public:
     static MObject ia_timingsFile;
     static MObject ia_timingEnabled;
 
+    // XML Output info
+    static MObject ia_writeToXMLFile;
+    static MObject ia_XMLFilePath;
+    
     // Drawing
     static MObject ia_drawSubSteppedVertices;
     
@@ -103,6 +107,9 @@ private:
     Beaker* m_beaker;
 
     RodTimeStepper::Method m_solverType;
+
+    bool m_writeXMLData;
+    std::string m_xmlFilePath;
 };
 
 #endif

@@ -68,13 +68,12 @@ using namespace BASim;
 /* static */ MObject WmFigRodNode::ia_edgeTransforms;
 /* static */ MObject WmFigRodNode::oa_edgeTransforms;
 
-
 WmFigRodNode::WmFigRodNode() : m_massDamping( 10 ), m_initialised( false ),
     /*mx_rodData( NULL ),*/ mx_world( NULL ), m_numberOfInputCurves( 0 ), 
     m_percentageOfBarberShopStrands( 100 ), m_verticesPerRod( -1 ), m_cacheFilename( "" ),
     m_pRodInput( NULL ), m_vertexSpacing( 0.0 ), m_minimumRodLength( 2.0 ),
     m_readFromCache( false ), m_writeToCache( false ), m_cachePath ( "" ),
-    m_solverType( RodTimeStepper::IMPL_EULER ), m_gravity( 0, -980, 0 )
+    m_solverType( RodTimeStepper::IMPL_EULER ), m_gravity( 0, -980, 0 )    
 {
     m_rodOptions.YoungsModulus = 1000.0; /* megapascal */
     m_rodOptions.ShearModulus = 340.0;   /* megapascal */
@@ -96,7 +95,7 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
-    cerr << "WmFigRodNode::compute() with i_plug = " << i_plug.name() << endl;
+    //cerr << "WmFigRodNode::compute() with i_plug = " << i_plug.name() << endl;
 
     if ( i_plug == oa_numberOfRods )
     {
@@ -1227,45 +1226,6 @@ void WmFigRodNode::getStrandRootFrames( MDataBlock& i_dataBlock, vector<Material
     }
 }
 
-/*size_t WmFigRodNode::numberOfRods()
-{
-    // This will get called before initialiseRodData() is called.
-    // FIXME: why does this get called early?
-    // FIXME: I made nice numberOfInput functions in the WmFigRodInput classes
-    // I'd like to use those.
-
-    // Barbershop nodes take precidence over nurbs curve inputs. We currently do not handle
-    // both on the one node ( although this would probably be easy to do ).
-
-    MStatus stat;
-    MDataBlock dataBlock = MPxNode::forceCache();
-
-    MPlug barberShopPlug( thisMObject(), ia_barberShopVertices );
-    bool shouldReadFromCache = dataBlock.inputValue( ia_readFromCache, &stat ).asBool();
-
-    if ( shouldReadFromCache )
-    {
-        MString fileName = getCacheFilename( dataBlock );
-
-        size_t numRods = 0;
-        WmFigRodFileIO::readNumberOfRodsFromFile( fileName, numRods );
-
-        return numRods;
-    }
-    else if ( barberShopPlug.isConnected() )
-    {
-        MDataHandle verticesH = dataBlock.inputValue( ia_barberShopVertices, &stat );
-        CHECK_MSTATUS( stat );
-        MFnVectorArrayData verticesData( verticesH.data(), &stat );
-        CHECK_MSTATUS( stat );
-        MVectorArray vertices = verticesData.array( &stat );
-        return ( vertices.length() / m_verticesPerRod ) * (m_percentageOfBarberShopStrands/100.0);
-    }
-    else
-    {
-        return m_numberOfInputCurves;
-    }
-}*/
 
 void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
                             M3dView::DisplayStyle i_style,
@@ -1675,6 +1635,7 @@ void* WmFigRodNode::creator()
     }
     stat = attributeAffects( ia_simulationSet, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_simulationSet->oa_rodsChanged" ); return stat; }
+
     
     {
         MFnTypedAttribute   tAttr;

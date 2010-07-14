@@ -13,6 +13,9 @@ LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -fPIC -DHAVE_LAPACK -DWETA
 LIB1_HSD   := Wfigaro
 LIB1_HDIR := src
 LIB1_H     := \
+SceneXML/tinyxml/tinyxml.h \
+SceneXML/tinyxml/tinystr.h \
+SceneXML/SceneXML.hh \
 Eigen/Array \
 Eigen/Cholesky \
 Eigen/Core \
@@ -253,6 +256,11 @@ Physics/PhysObject.inl
 
 
 LIB1_S     := \
+src/SceneXML/tinyxml/tinyxml.cpp \
+src/SceneXML/tinyxml/tinyxmlerror.cpp \
+src/SceneXML/tinyxml/tinyxmlparser.cpp \
+src/SceneXML/tinyxml/tinystr.cpp \
+src/SceneXML/SceneXML.cc \
 src/Collisions/CandidateCollision.cc \
 src/Collisions/Collision.cc \
 src/Collisions/CollisionMeshData.cc \

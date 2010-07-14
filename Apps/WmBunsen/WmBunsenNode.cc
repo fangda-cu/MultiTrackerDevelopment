@@ -35,8 +35,12 @@ MObject WmBunsenNode::oa_simStepTaken;
 // Drawing
 /* static */ MObject WmBunsenNode::ia_drawSubSteppedVertices;
 
+// XML output
+/* static */ MObject WmBunsenNode::ia_writeToXMLFile;
+/* static */ MObject WmBunsenNode::ia_XMLFilePath;
+
 WmBunsenNode::WmBunsenNode() : m_initialised( false ), m_enabled( true ), m_beaker( NULL ),
-    m_solverType( RodTimeStepper::NONE )
+    m_solverType( RodTimeStepper::NONE ), m_writeXMLData( false ), m_xmlFilePath( "" )
 {
     m_beaker = new Beaker();
 }
@@ -110,6 +114,13 @@ void WmBunsenNode::addRodsToWorld( MDataBlock& i_dataBlock )
             else
                 CHECK_MSTATUS( stat );
         }
+    }
+
+    if ( m_writeXMLData )
+    {        
+        std::string filename =  MFileIO::currentFile().asChar();
+        m_beaker->startXMLLogging( m_xmlFilePath, filename );
+        m_writeXMLData = true;
     }
 }
 
@@ -266,7 +277,22 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_beaker->setPlasticDeformations( plasticDeformations );
 
         m_beaker->shouldDrawSubsteppedVertices( i_dataBlock.inputValue( ia_drawSubSteppedVertices, &stat ).asBool() ) ;
+
+        MString xmlPath = i_dataBlock.inputValue( ia_XMLFilePath, &stat ).asString();
+        CHECK_MSTATUS( stat );
+
+        m_xmlFilePath = xmlPath.asChar();
+
+        bool writeXMLData = i_dataBlock.inputValue( ia_writeToXMLFile, &stat ).asBool();
+        CHECK_MSTATUS( stat );
         
+        if ( writeXMLData == false && m_writeXMLData == true )
+        {
+            m_beaker->writeXMLFileToDisk();
+        }
+
+        m_writeXMLData = writeXMLData;
+
         if ( m_enabled )
         {
             if ( m_currentTime == m_startTime )
@@ -285,7 +311,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             }
             
         }
-
+        
         m_solverType = ( RodTimeStepper::Method) ( i_dataBlock.inputValue( ia_solverType, &stat ).asInt() );
         CHECK_MSTATUS( stat );
         
@@ -872,6 +898,49 @@ MStatus WmBunsenNode::initialize()
 
     stat = attributeAffects( ia_solverType, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_solverType->ca_syncAttrs" ); return stat; }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    //
+    // XML File attributes
+    //
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+    {
+        MFnTypedAttribute tAttr;
+        MFnStringData fnStringData;
+        MObject defaultString = fnStringData.create("");
+        ia_XMLFilePath = tAttr.create( "XMLFilePath", "xfp", MFnData::kString, defaultString, &stat );
+        if ( !stat )
+        {
+            stat.perror( "create ia_XMLFilePath attribute" );
+            return stat;
+        }
+        tAttr.setWritable( true );
+        tAttr.setReadable( false );
+        tAttr.setConnectable( true );
+        stat = addAttribute( ia_XMLFilePath );
+        if (!stat) { stat.perror( "addAttribute ia_XMLFilePath" ); return stat; }
+    }
+    stat = attributeAffects( ia_XMLFilePath, ca_syncAttrs );
+    if ( !stat ) { stat.perror( "attributeAffects ia_XMLFilePath->oa_rodsChanged" ); return stat; }
+    
+    {
+        MFnNumericAttribute nAttr;
+        ia_writeToXMLFile = nAttr.create( "writeToXMLFile", "wtx", MFnNumericData::kBoolean, false, &stat );
+        if (!stat) {
+            stat.perror("create ia_drawSubSteppedVertices attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_writeToXMLFile );
+        if (!stat) { stat.perror( "addAttribute ia_writeToXMLFile" ); return stat; }
+    }
+    stat = attributeAffects( ia_writeToXMLFile, ca_syncAttrs );
+    if ( !stat ) { stat.perror( "attributeAffects ia_writeToXMLFile->oa_rodsChanged" ); return stat; }
+    
+
     
     return MS::kSuccess;
 }
