@@ -5,7 +5,17 @@
  * \date 09/09/2009
  */
 
+#ifdef WETA
+#include <weta/Wfigaro/Render/TriangleMeshRenderer.hh>
+#include <weta/Wfigaro/IO/XMLSceneOutputter.hh>
+#else
 #include <BASim/BASim>
+#include "BASim/src/Render/TriangleMeshRenderer.hh"
+#include "BASim/src/IO/XMLSceneOutputter.hh"
+#endif
+
+#include "BASimulator.hh"
+
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
@@ -18,11 +28,6 @@
 #include <tclap/CmdLine.h>
 #include <typeinfo>
 
-#include "BASimulator.hh"
-
-#include "BASim/src/Render/TriangleMeshRenderer.hh"
-
-#include "BASim/src/IO/XMLSceneOutputter.hh"
 
 // Might not work in windows? :'(
 #include <sys/stat.h>

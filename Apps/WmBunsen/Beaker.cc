@@ -97,15 +97,6 @@ void Beaker::resetEverything()
     initialiseWorld();
 }
 
-void Beaker::startXMLLogging( std::string& i_xmlFilePath, std::string& i_mayaSceneFilename )
-{
-    m_sceneXML = new SceneXML();
-
-    double stepSize = 999.99;
-
-    m_sceneXML->setInitialSceneState( i_xmlFilePath, m_initialRodConfigurations, i_mayaSceneFilename, stepSize );
-}
-
 void Beaker::setTimingsFile( std::string i_fileName )
 {
     m_timingsFile = i_fileName;
@@ -287,7 +278,7 @@ void Beaker::addRodsToWorld( size_t i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
 
         initialRodConfiguration.rodOptions = m_rodDataMap[ i_rodGroupIndex ]->getRodOptions( r );
         initialRodConfiguration.gravity = m_rodDataMap[ i_rodGroupIndex ]->getGravity( r );
-        initialRodConfiguration.gravity = m_rodDataMap[ i_rodGroupIndex ]->getMassDamping( r );
+        initialRodConfiguration.massDamping = m_rodDataMap[ i_rodGroupIndex ]->getMassDamping( r );
 
         initialRodConfiguration.initialRodVertexPositions.resize( m_rodDataMap[ i_rodGroupIndex ]->elasticRod( r )->nv() );
         
@@ -306,8 +297,21 @@ void Beaker::addRodsToWorld( size_t i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
     }
 }
 
+void Beaker::startXMLLogging( std::string& i_xmlFilePath, std::string& i_mayaSceneFilename )
+{
+    m_sceneXML = new SceneXML();
+
+    double stepSize = 999.99;
+
+    cerr << "Starting xml logging to file '" << i_xmlFilePath << "'\n";
+
+    m_sceneXML->setInitialSceneState( i_xmlFilePath, m_initialRodConfigurations, i_mayaSceneFilename, stepSize );
+}
+
 void Beaker::writeXMLFileToDisk()
 {
+    cerr << "Writing xml data to disk\n";
+
     if ( m_sceneXML != NULL )
     {
         m_sceneXML->writeFile(); 
@@ -449,6 +453,28 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             pRodGroup->updateCurrentVertexPositions( interpolateFactor );
 
             pRodGroup->updateAllBoundaryConditions();
+
+            // Update the xml data with the rod positions for this time step
+            // FIXME: The scene xml data only works if there is *ONLY* one rod group.
+            if ( m_sceneXML )
+            {
+                vector< FrameData > frameData;
+                frameData.resize( numRods );
+
+                for ( size_t r=0; r<numRods; ++r )
+                {
+                    ElasticRod* rod = pRodGroup->elasticRod( r );
+                    for ( int v=0; v<rod->nv(); ++v )
+                    {
+                        if ( rod->vertFixed( v ) )
+                        {
+                            frameData[ r ].fixedVertices[ v ] = rod->getVertex( v );
+                        }
+                    }
+                }
+
+                m_sceneXML->addFrameData( frameData );
+            }
         }
         timeTaken = stopTimer( timer );
         frameTime += timeTaken;

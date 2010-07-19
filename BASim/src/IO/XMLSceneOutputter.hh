@@ -11,7 +11,12 @@
 #include "rapidxml.hpp"
 #include "rapidxml_print.hpp"
 
+#ifdef WETA
+//#include "../Apps/BASimulator/Problems/ProblemBase.hh"
+#else
 #include "Apps/BASimulator/Problems/ProblemBase.hh"
+#endif
+
 #include <iomanip>
 #include <fstream>
 #include <typeinfo>

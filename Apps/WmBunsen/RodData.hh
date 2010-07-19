@@ -290,6 +290,11 @@ public:
         nextVertexPositions[ i_vertexIndex ] = i_newPosition;
     }
 
+     double massDamping()
+    {
+        return m_massDamping;
+    }
+
 //private:
     
     // Should we keep the ObjectHandle returned by World rather than the actual rod?
