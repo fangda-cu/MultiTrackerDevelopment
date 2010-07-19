@@ -1,0 +1,50 @@
+#ifndef SCENEXML_HH
+#define SCENEXML_HH
+
+/**
+ * \file SceneXML.hh
+ *
+ * \author acoull@wetafx.co.nz
+ * \date 06/23/2010
+ */
+
+#include "tinyxml/tinyxml.h"
+
+#ifdef WETA
+#include "../Physics/ElasticRods/RodUtils.hh"
+#else
+// Put Columbia includes here
+#endif
+
+struct FrameFixedVertices
+{
+    std::unordered_map< size_t, 
+};
+
+namespace BASim {
+
+/** Class that handles loading and saving of BASim scene data. It's called scene because it comes
+    from Maya. Perhaps WorldXML might be better? */
+class SceneXML
+{
+public:
+
+  /// Default constructor
+  SceneXML();
+
+  /// Default Destructor
+  ~SceneXML() {}
+
+private:
+    TiXmlDocument m_xmlDocument;
+    
+    std::vector< RodOptions > m_rodOptions;
+    BASim::Vec3d m_gravity;
+    std::string m_mayaSceneFilename;
+    
+    vector< FrameFixedVertices > > m_frameFixedVertices;
+};
+
+}
+
+#endif
