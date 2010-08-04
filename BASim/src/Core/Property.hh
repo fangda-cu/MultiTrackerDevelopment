@@ -31,6 +31,13 @@ public:
 
   virtual void push_back() = 0;
 
+  virtual void delete_element(const HandleBase& h) = 0;
+  
+  
+  virtual PropertyBase* clone() = 0;
+  
+  virtual void copy( PropertyBase* other ) = 0;
+
   const std::string& name() const { return m_name; }
 
 protected:
@@ -65,7 +72,7 @@ public:
   typedef typename vector_type::iterator          iterator;
 
   Property(const std::string& name)
-    : PropertyBase(name)
+    : PropertyBase(name), default_value_assigned(false)
   {}
 
   virtual void reserve(size_t n)
@@ -75,7 +82,11 @@ public:
 
   virtual void resize(size_t n)
   {
-    m_data.resize(n);
+  	if (default_value_assigned) {
+	    m_data.resize(n, default_value);
+	  } else {
+	    m_data.resize(n);
+	  }
   }
 
   virtual void push_back()
@@ -117,14 +128,54 @@ public:
     return m_data[h.idx()];
   }
 
+  // Sets all members of the property to def. 
   void set_default(const T& def)
   {
     for (iterator it = m_data.begin(); it != m_data.end(); ++it) *it = def;
+    
+    default_value = def;
+    default_value_assigned = true;
+  }
+
+  virtual void delete_element(const HandleBase& h)
+  {
+    assert(h.isValid());
+    assert(h.idx() >= 0);
+    assert((size_t) h.idx() < m_data.size());
+    
+    m_data.erase(m_data.begin() + h.idx()); 
+  }
+
+  virtual Property<T>* clone()
+  {
+    Property<T>* cloned = new Property<T>(PropertyBase::name());
+    cloned->m_data = m_data;
+    return cloned;
+  }
+
+  virtual void copy( PropertyBase* other )
+  {
+    Property<T>* otherptr = dynamic_cast<Property<T>*>(other);
+    if( otherptr == NULL )
+    {
+      std::cerr << "Fatal error in copy of Property, mixed types used. Exiting." << std::endl;
+      exit(1);
+    }
+    m_data = otherptr->m_data;
+  }
+
+  size_t size() const
+  {
+    return m_data.size();
   }
 
 protected:
 
   vector_type m_data;
+  T default_value;
+  bool default_value_assigned;
+  
+  
 };
 
 /** Container for properties. */
@@ -137,12 +188,38 @@ public:
 
   PropertyContainer() {}
 
+  PropertyContainer( const PropertyContainer& othrctr )
+  {
+    for( int i = 0; i < (int) othrctr.m_properties.size(); ++i ) m_properties.push_back( othrctr.m_properties[i]->clone() );
+  }
+
   ~PropertyContainer()
+  {
+    clear();
+  }
+
+  void clear()
   {
     iterator pIt;
     for (pIt = m_properties.begin(); pIt != m_properties.end(); ++pIt) {
       delete (*pIt);
     }
+    m_properties.clear();
+  }
+
+  PropertyContainer& operator=( const PropertyContainer& rhs ) 
+  {
+    if (this != &rhs) 
+    {
+      clear();
+      for( Properties::const_iterator pIt = rhs.m_properties.begin(); pIt != rhs.m_properties.end(); ++pIt )
+      {
+        (*pIt)->clone();
+        //m_properties.push_back( pIt->clone() );
+      }
+    }
+
+    return *this;
   }
 
   template <class T> PropertyHandleBase<T>
@@ -205,12 +282,37 @@ public:
     return PropertyHandleBase<T>(m_properties.size());
   }
 
+  // Resizes the properties of the container, not the container itself.
   void resize(size_t size)
   {
     iterator it;
     for (it = m_properties.begin(); it != m_properties.end(); ++it) {
       (*it)->resize(size);
     }
+  }
+
+  void delete_element(const HandleBase& h)
+  {
+    iterator it;
+    for (it = m_properties.begin(); it != m_properties.end(); ++it) {
+      (*it)->delete_element(h);
+    }
+  }
+  
+  
+  size_t size() const
+  {
+    return m_properties.size();
+  }
+  
+  const Properties& getProperties() const
+  {
+    return m_properties;
+  }
+  
+  Properties& getProperties()
+  {
+    return m_properties;
   }
 
 protected:

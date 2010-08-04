@@ -19,11 +19,11 @@ class RodTwistingForceSym : public RodForceT<VertexStencil>
 {
 public:
 
-  RodTwistingForceSym(ElasticRod& rod);
+  RodTwistingForceSym(ElasticRod& rod, bool vscs = false);
 
   virtual Scalar globalEnergy();
   virtual void globalForce(VecXd& F);
-  virtual void globalJacobian(Scalar scale, MatrixBase& J);
+  virtual void globalJacobian(int baseidx, Scalar scale, MatrixBase& J);
 
   Scalar localEnergy(const vertex_handle& vh);
   void localForce(VecXd& F, const vertex_handle& vh);

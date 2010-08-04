@@ -91,7 +91,7 @@ public:
      m_rod->collisionsEnd(m_rodTimeStepper->getTimeStep());
   }
 
-  void execute();
+  bool execute();
   
   ElasticRod* getRod() { return m_rod; }
 

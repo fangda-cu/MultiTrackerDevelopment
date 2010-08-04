@@ -28,7 +28,7 @@ public:
 
   const std::vector<ObjectBase*>& getObjects() const;
 
-  virtual void execute() = 0;
+  virtual bool execute() = 0;
   
   bool isEnabled();
   void setEnabled( bool enabled );

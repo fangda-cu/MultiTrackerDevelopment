@@ -15,6 +15,7 @@
 #include "src/Core/ObjectHandles.hh"
 #include "src/Core/ObjectBase.hh"
 #include "src/Core/ObjectControllerBase.hh"
+#include "src/Core/StatTracker.hh"
 #include "src/Core/TopologicalObject/Topology.hh"
 #include "src/Core/TopologicalObject/TopObjHandles.hh"
 #include "src/Core/TopologicalObject/TopObjIterators.hh"

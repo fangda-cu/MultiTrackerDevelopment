@@ -25,7 +25,7 @@ public:
 
   void setTimeStep(Scalar dt) { m_dt = dt;} 
 
-  virtual void execute() = 0;
+  virtual bool execute() = 0;
 
   virtual std::string getName() const = 0;
 

@@ -32,8 +32,8 @@ PardisoMatrix::PardisoMatrix( int rows, int cols )
 , m_rowstarts()
 , m_matrix()
 {
-  assert( m_rows > 0 );
-  assert( m_cols > 0 );
+  assert( m_rows >= 0 );
+  assert( m_cols >= 0 );
 }
 
 PardisoMatrix::~PardisoMatrix()

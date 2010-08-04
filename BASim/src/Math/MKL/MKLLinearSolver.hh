@@ -13,6 +13,7 @@
 #include "../../Core/Util.hh"
 
 namespace BASim {
+class BandMatrix;
 
 /** LU-based linear solver for band matrices. */
 class MKLLinearSolver : public LinearSolverBase

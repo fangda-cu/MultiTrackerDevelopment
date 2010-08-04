@@ -21,7 +21,7 @@ public:
 
   Scalar globalEnergy();
   void globalForce(VecXd& force);
-  void globalJacobian(Scalar scale, MatrixBase& Jacobian);
+  void globalJacobian(int baseidx, Scalar scale, MatrixBase& Jacobian);
   /*
   void grad(VecXd& G);
   void hess(Matrix& H);

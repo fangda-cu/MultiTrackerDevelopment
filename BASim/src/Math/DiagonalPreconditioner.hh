@@ -9,6 +9,7 @@
 #define DIAGONALPRECONDITIONER_HH
 
 #include "Preconditioner.hh"
+#include "MatrixBase.hh"
 
 namespace BASim {
 

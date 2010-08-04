@@ -78,7 +78,7 @@ SolverUtils::createSparseMatrix(int rows, int cols, int nnzPerRow) const
   
 #ifdef HAVE_PETSC
   if (matrixType == PETSC_MATRIX)
-  return new PetscMatrix(rows, cols, nnzPerRow);
+    return new PetscMatrix(rows, cols, nnzPerRow);
 #endif // HAVE_PETSC
 
   std::cerr << "createSparseMatrix failure" << std::endl;

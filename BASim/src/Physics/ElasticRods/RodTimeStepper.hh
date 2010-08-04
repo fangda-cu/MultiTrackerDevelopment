@@ -9,13 +9,16 @@
 #define RODTIMESTEPPER_HH
 
 #include "../../Core/ObjectControllerBase.hh"
+#include "RodBoundaryCondition.hh"
 #include "../../Math/TimeSteppingBase.hh"
+#include "../../Math/SolverUtils.hh"
+#include "RodExternalForce.hh"
 #include "../../Math/SymplecticEuler.hh"
 #include "../../Math/ImplicitEuler.hh"
+#include "../../Math/SymmetricImplicitEuler.hh"
 #include "../../Math/StaticsSolver.hh"
-#include "RodExternalForce.hh"
-#include "RodBoundaryCondition.hh"
 
+#include "MinimalRodStateBackup.hh"
 
 namespace BASim {
 
@@ -24,13 +27,14 @@ class RodTimeStepper : public ObjectControllerBase
 {
 public:
 
-  enum Method { SYMPL_EULER, IMPL_EULER, STATICS, NONE };
+  enum Method { SYMPL_EULER, IMPL_EULER, SYM_IMPL_EULER, STATICS, NONE };
 
   RodTimeStepper(ElasticRod& rod)
     : m_rod(rod)
     , m_method(NONE)
     , m_diffEqSolver(NULL)
     //, m_boundaryCondition(NULL)
+    , m_backupstate()
   {
     setDiffEqSolver(SYMPL_EULER);
   }
@@ -47,10 +51,10 @@ public:
     }	
   }
 
-  void execute()
+  bool execute()
   {
-    if ( m_enabled )
-      m_diffEqSolver->execute();
+    assert( getTimeStep() == m_rod.getTimeStep() );
+    return m_diffEqSolver->execute();
   }
 
   void setTime(Scalar time)
@@ -94,6 +98,9 @@ public:
 
     } else if (method == IMPL_EULER) {
       m_diffEqSolver = new ImplicitEuler<RodTimeStepper>(*this);
+
+	} else if (method == SYM_IMPL_EULER) {
+      m_diffEqSolver = new SymmetricImplicitEuler<RodTimeStepper>(*this);
 
     } else if (method == STATICS) {
       m_diffEqSolver = new StaticsSolver<RodTimeStepper>(*this);
@@ -195,7 +202,7 @@ public:
    */
   void evaluatePDotDX(Scalar scale, MatrixBase& J)
   {
-    m_rod.computeJacobian(scale, J);
+    m_rod.computeJacobian(0, scale, J);
 
 //     if (m_rod.viscous()) {
 //       J.finalize();
@@ -203,14 +210,14 @@ public:
 //     }
 
     for (size_t i = 0; i < m_externalForces.size(); ++i) {
-      m_externalForces[i]->computeForceDX(m_rod, scale, J);
+      m_externalForces[i]->computeForceDX(0, m_rod, scale, J);
     }
   }
 
   void evaluatePDotDV(Scalar scale, MatrixBase& J)
   {
     for (size_t i = 0; i < m_externalForces.size(); ++i) {
-      m_externalForces[i]->computeForceDV(m_rod, scale, J);
+      m_externalForces[i]->computeForceDV(0, m_rod, scale, J);
     }
   }
 
@@ -265,6 +272,15 @@ public:
       m_rod.setDof(i, m_rod.getDof(i) + dq[i]);
     }
   }
+  
+  void set_q(const VecXd& q)
+  {
+    assert( q.size() == ndof() );
+    for (int i = 0; i < q.size(); ++i) 
+    {
+      m_rod.setDof(i,q(i));
+    }
+  }
 
   void increment_qdot(const VecXd& dqd)
   {
@@ -282,6 +298,29 @@ public:
         //setV(i, getV(i) + dqd[i]);
         //setV(i, m_rod.getVel(i) + dqd[i]);
         m_rod.setVel(i, m_rod.getVel(i) + dqd[i]);
+      }
+    }
+  }
+  
+  void set_qdot(const VecXd& qd)
+  {
+    assert( qd.size() == ndof() );
+    if (m_rod.quasistatic()) 
+    {
+      for (int i = 0; i < m_rod.nv(); ++i) 
+      {
+        for (int coord = 0; coord < 3; ++coord) 
+        {
+          int idx = m_rod.vertIdx(i, coord);
+          m_rod.setVel(idx, qd(idx));
+        }
+      }
+    }
+    else
+    {
+      for (int i = 0; i < qd.size(); ++i)
+      {
+        m_rod.setVel(i, qd(i));
       }
     }
   }
@@ -401,6 +440,31 @@ public:
     }
   }
 
+  ElasticRod* getRod()
+  {
+    return &m_rod;
+  }
+
+  void backup()
+  {
+    m_backupstate.backupRod(m_rod);
+  }
+  
+  void backupResize()
+  {
+    m_backupstate.resize(m_rod);
+  }
+  
+  void backupRestore()
+  {
+    m_backupstate.restoreRod(m_rod);
+  }
+  
+  void backupClear()
+  {
+    m_backupstate.clear();
+  }
+
   VecXd& getForcesAtLastStep()
   {
     return m_forces;
@@ -413,7 +477,8 @@ protected:
   Method m_method;
   DiffEqSolver* m_diffEqSolver;
   //RodBoundaryCondition* m_boundaryCondition;
-
+  
+  MinimalRodStateBackup m_backupstate;
   // Copy of the forces on the rod, used in Beaker 
   // to check if the sim is going to explode.
   VecXd m_forces;

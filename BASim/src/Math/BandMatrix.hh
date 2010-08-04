@@ -6,9 +6,12 @@
  *
  * \author miklos@cs.columbia.edu
  * \date 11/16/2009
+ * Modified by smith@cs.columbia.edu
+ *   06/26/2010
  */
 
 #include "MatrixBase.hh"
+#include "../Core/Util.hh"
 
 namespace BASim {
 
@@ -28,31 +31,32 @@ public:
     m_data = new Scalar[m_size];
     setZero();
 
-    m_lower = new int[m_rows];
-    m_upper = new int[m_rows];
-    for (int i = 0; i < m_rows; ++i) {
+    m_lower = new int[MatrixBase::m_rows];
+    m_upper = new int[MatrixBase::m_rows];
+    for (int i = 0; i < MatrixBase::m_rows; ++i)
+    {
       m_lower[i] = std::max(i - m_kl, 0);
-      m_upper[i] = std::min(i + m_ku + 1, m_cols);
+      m_upper[i] = std::min(i + m_ku + 1, MatrixBase::m_cols);
     }
   }
 
   virtual ~BandMatrix()
   {
-    delete [] m_data;
-    delete [] m_lower;
-    delete [] m_upper;
+    if( m_data != NULL )  delete[] m_data;
+    if( m_lower != NULL ) delete[] m_lower;
+    if( m_upper != NULL ) delete[] m_upper;
   }
 
   virtual Scalar operator() (int i, int j) const
   {
     if (!indicesValid(i, j)) return 0;
-    return m_data[(m_ku + i - j) * cols() + j];
+    return m_data[(m_ku + i - j) * MatrixBase::cols() + j];
   }
 
   Scalar& operator() (int i, int j)
   {
     assert(indicesValid(i, j));
-    return m_data[(m_ku + i - j) * cols() + j];
+    return m_data[(m_ku + i - j) * MatrixBase::cols() + j];
   }
 
   virtual int set(int i, int j, Scalar val)
@@ -77,10 +81,10 @@ public:
       int r = rowIdx[i];
       assert(r >= 0);
       assert(r < rows());
-      Scalar* val = &m_data[(m_ku + r) * m_cols];
+      Scalar* val = &m_data[(m_ku + r) * MatrixBase::m_cols];
       for (size_t j = 0; j < nc; ++j) {
         assert(indicesValid(r, colIdx[j]));
-        *(val + colIdx[j] * (1 - m_cols)) += values(i, j);
+        *(val + colIdx[j] * (1 - MatrixBase::m_cols)) += values(i, j);
       }
     }
 
@@ -95,10 +99,10 @@ public:
 
     for (int i = 0; i < nr; ++i) {
       int r = rowIdx[i];
-      Scalar* val = &m_data[(m_ku + r) * m_cols];
+      Scalar* val = &m_data[(m_ku + r) * MatrixBase::m_cols];
       for (int j = 0; j < nc; ++j) {
         assert(indicesValid(r, colIdx[j]));
-        *(val + colIdx[j] * (1 - m_cols)) += values(i, j);
+        *(val + colIdx[j] * (1 - MatrixBase::m_cols)) += values(i, j);
       }
     }
 
@@ -121,29 +125,62 @@ public:
   {
     for (int i = 0; i < (int) idx.size(); ++i) {
       int r = idx[i];
-      assert(r >=0 && r < m_rows);
+      assert(r >=0 && r < MatrixBase::m_rows);
       int lower = m_lower[r];
       int upper = m_upper[r];
       for (int j = lower; j < upper; ++j) {
         (*this)(r, j) = 0;
-        (*this)(j, r) = 0;
       }
       (*this)(r, r) = diag;
     }
     return 0;
   }
 
+  int computeStartOfCol( int col )
+  {
+    assert( col >= 0 ); assert( col < MatrixBase::cols() );
+    return std::max(col-ku(),0);
+  }
+  
+  int computeEndOfCol( int col )
+  {
+    assert( col >= 0 ); assert( col < MatrixBase::cols() );
+    return std::min(col+kl(),MatrixBase::rows()-1);
+  }
+
+  virtual int zeroCols(const IntArray& idx, Scalar diag)
+  {
+    #ifdef DEBUG
+      for( int i = 0; i < (int) idx.size(); ++i ) assert( idx[i] >= 0 );
+      for( int i = 0; i < (int) idx.size(); ++i ) assert( idx[i] < MatrixBase::cols() );
+    #endif
+    
+    // For each column the user provided
+    for( int i = 0; i < (int) idx.size(); ++i )
+    {
+      int col = idx[i];
+      for( int row = computeStartOfCol(col); row <= computeEndOfCol(col); ++row )
+      {
+        assert( indicesValid(row,col) );
+        if( row != col ) (*this)(row,col) = 0.0;
+        else             (*this)(row,col) = diag;
+      }
+    }
+
+    return 0;
+  }
+
   virtual int multiply(VecXd& y, Scalar s, const VecXd& x) const
   {
-    assert(y.size() == m_rows);
-    assert(x.size() == m_cols);
+    assert(y.size() == MatrixBase::m_rows);
+    assert(x.size() == MatrixBase::m_cols);
 
-    for (int i = 0; i < m_rows; ++i) {
+    for (int i = 0; i < MatrixBase::m_rows; ++i) {
       int lower = m_lower[i];
       int upper = m_upper[i];
-      const Scalar* val = &m_data[(m_ku + i - lower) * m_cols + lower];
+      const Scalar* val = &m_data[(m_ku + i - lower) * MatrixBase::m_cols + lower];
       Scalar sum = 0;
-      for (int j = lower; j < upper; ++j, val += (1 - m_cols)) {
+      for (int j = lower; j < upper; ++j, val += (1 - MatrixBase::m_cols)) {
         sum += (*val) * x[j];
       }
       y[i] += s * sum;
@@ -154,22 +191,36 @@ public:
   virtual void print() const
   {
     std::cout << "[";
-    for (int i = 0; i < m_rows; ++i) {
-      for (int j = 0; j < m_cols; ++j) {
+    for (int i = 0; i < MatrixBase::m_rows; ++i) {
+      for (int j = 0; j < MatrixBase::m_cols; ++j) {
         std::cout << (*this)(i, j);
-        if (j < m_cols - 1) std::cout << ", ";
+        if (j < MatrixBase::m_cols - 1) std::cout << ", ";
       }
-      std::cout << "\n";
-      if (i < m_rows - 1) std::cout << "; ";
+      if (i < MatrixBase::m_rows - 1) std::cout << "; ";
     }
     std::cout << "]" << std::endl;
   }
 
+  // NOTE: Assumes not symmetric if lower band is not same size as upper (could be a bunch of zeros in bigger band)
+  virtual bool isApproxSymmetric( Scalar eps ) const
+  {
+    if( MatrixBase::rows() != MatrixBase::cols() ) return false;
+    if( kl() != ku() ) return false;
+    for( int i = 0; i < MatrixBase::rows(); ++i )
+    {
+      for( int j = i+1; j <= i + ku(); ++j )
+      {
+        if( !approxEq((*this)(i,j),(*this)(j,i),eps) ) return false;
+      }
+    }
+    return true;
+  }
+
   /** Number of sub-diagonals */
-  int kl() const { return m_kl; }
+  inline int kl() const { return m_kl; }
 
   /** Number of super-diagonals */
-  int ku() const { return m_ku; }
+  inline int ku() const { return m_ku; }
 
   /** Returns underlying array of values */
   Scalar* data() { return m_data; }

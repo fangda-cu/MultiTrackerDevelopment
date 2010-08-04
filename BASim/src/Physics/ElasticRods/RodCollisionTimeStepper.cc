@@ -20,10 +20,10 @@ void RodCollisionTimeStepper::setClumping(bool flag, Scalar coeff) {
 	}
 }
 
-void RodCollisionTimeStepper::execute()
+bool RodCollisionTimeStepper::execute()
   {
     if (!m_enabled)
-      return;
+      return false;
       /*
     if (m_rod) {
 			std::cout << "\n\n\n\n\n\nBEFORE dynamic execute vertex \n" << m_rod->quasistatic() << "\n";
@@ -48,7 +48,7 @@ void RodCollisionTimeStepper::execute()
     }
       */
 
-    m_rodTimeStepper->execute();
+    return m_rodTimeStepper->execute();
 /*
 		std::cout << "after dynamic execute vertex\n";
 	  for(int i=0; i < (int)m_rod->nv(); i++) {

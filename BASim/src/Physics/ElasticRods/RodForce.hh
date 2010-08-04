@@ -37,7 +37,7 @@ public:
 
   virtual Scalar globalEnergy() = 0;
   virtual void globalForce(VecXd& force) = 0;
-  virtual void globalJacobian(Scalar scale, MatrixBase& Jacobian) = 0;
+  virtual void globalJacobian(int baseidx, Scalar scale, MatrixBase& Jacobian) = 0;
 
   virtual void updateProperties() {}
   virtual void updateStiffness() {}
@@ -46,6 +46,9 @@ public:
 
   virtual void verifyProperties() {}
 
+	
+	virtual void updatePlasticity(Scalar maxKappa) {}
+  
   bool viscous() const { return m_viscous; }
   void setViscous(bool v) { m_viscous = v; updateStiffness(); }
 

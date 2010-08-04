@@ -252,7 +252,10 @@ Physics/ElasticRods/Tests/stretchingJacobian.inl \
 Physics/ElasticRods/Tests/twistingEnergy.inl \
 Physics/ElasticRods/Tests/twistingForce.inl \
 Physics/ElasticRods/Tests/twistingJacobian.inl \
-Physics/PhysObject.inl
+Physics/PhysObject.inl \
+Core/StatTracker.hh \
+Math/SymmetricImplicitEuler.hh \
+Physics/ElasticRods/MinimalRodStateBackup.hh
 
 
 LIB1_S     := \
@@ -304,7 +307,9 @@ src/Core/ObjectControllerBase.inl \
 src/Core/TopologicalObject/TopologicalObject.inl \
 src/Math/Petsc/PetscMatrix.inl \
 src/Physics/ElasticRods/ElasticRod.inl \
-src/Physics/PhysObject.inl
+src/Physics/PhysObject.inl \
+src/Core/StatTracker.cc \
+src/Physics/ElasticRods/MinimalRodStateBackup.cc
 
 
 

@@ -18,11 +18,11 @@ namespace BASim {
 class RodBendingForceSym : public RodForceT<VertexStencil>
 {
 public:
-  RodBendingForceSym(ElasticRod& rod);
+  RodBendingForceSym(ElasticRod& rod, bool vscs = false);
 
   virtual Scalar globalEnergy();
   virtual void globalForce(VecXd& force);
-  virtual void globalJacobian(Scalar scale, MatrixBase& J);
+  virtual void globalJacobian(int baseidx, Scalar scale, MatrixBase& J);
 
   Scalar localEnergy(const vertex_handle& vh);
   void localForce(VecXd& F, const vertex_handle& vh);
@@ -44,6 +44,8 @@ public:
   virtual void updateStiffness();
   virtual void updateUndeformedStrain();
   virtual void updateReferenceDomain();
+
+	virtual void updatePlasticity(Scalar maxKappa);
 
 protected:
 

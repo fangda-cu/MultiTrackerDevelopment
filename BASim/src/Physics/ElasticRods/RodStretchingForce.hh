@@ -32,13 +32,13 @@ public:
   typedef Eigen::Matrix<Scalar, 6, 1> ElementForce;
   typedef Eigen::Matrix<Scalar, 6, 6> ElementJacobian;
 
-  RodStretchingForce(ElasticRod& rod);
+  RodStretchingForce(ElasticRod& rod, bool vscs = false);
 
   void gatherDofs(SpringDofStruct& dofs, const edge_handle& eh);
 
   virtual Scalar globalEnergy();
   virtual void globalForce(VecXd& force);
-  virtual void globalJacobian(Scalar scale, MatrixBase& Jacobian);
+  virtual void globalJacobian(int baseidx, Scalar scale, MatrixBase& Jacobian);
 
   Scalar elementEnergy(const edge_handle& eh);
   void elementForce(ElementForce& force, const SpringDofStruct& dofs);

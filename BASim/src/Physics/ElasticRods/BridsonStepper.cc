@@ -5,6 +5,7 @@
  * \date 02/16/2010
  */
 
+#include <typeinfo>
 #include "BridsonStepper.hh"
 
 
@@ -354,7 +355,7 @@ void BridsonStepper::exertInelasticImpulses( std::vector<EdgeEdgeContinuousTimeC
 }
 
 
-void BridsonStepper::execute()
+bool BridsonStepper::execute()
 {
   if( m_respns_enbld )
   {
@@ -464,6 +465,8 @@ void BridsonStepper::execute()
     
     STOP_TIMER("BridsonStepperResponse");
   } // if( m_respns_enbld )
+
+  return true;
 }
   
 void BridsonStepper::enableReseponse()

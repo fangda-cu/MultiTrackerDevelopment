@@ -57,12 +57,19 @@ namespace BASim {
     void addController( ObjectControllerBase* controller );
 
     /**
+     * Adds a controller that, for example, sets boundary conditions and MUST
+     * be executed before other controllers. 
+     */
+    void addScriptingController( ObjectControllerBase* controller );
+
+    /**
      * Executes all inserted controllers in parallel. 
      */
-    void execute();
+    bool execute();
     
   private:
     std::vector<ObjectControllerBase*> m_controllers;
+    std::vector<ObjectControllerBase*> m_scripting_controllers;
 
   };
   

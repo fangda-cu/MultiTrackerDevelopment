@@ -8,6 +8,8 @@
 #ifndef PRECONDITIONER_HH
 #define PRECONDITIONER_HH
 
+#include "../Core/Definitions.hh"
+
 namespace BASim {
 
 class Preconditioner

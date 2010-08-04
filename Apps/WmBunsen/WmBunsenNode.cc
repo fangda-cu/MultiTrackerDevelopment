@@ -479,7 +479,7 @@ MStatus WmBunsenNode::initialize()
         ia_solverType = enumAttrFn.create( "solverType", "sot", (short) RodTimeStepper::IMPL_EULER, & stat );
         CHECK_MSTATUS( stat );
         enumAttrFn.addField( "Implicit Euler",   (short) RodTimeStepper::IMPL_EULER );
-        //enumAttrFn.addField( "Symplectic Euler",  (short) RodTimeStepper::SYMPL_EULER );
+        enumAttrFn.addField( "Symmetric Implicit Euler",  (short) RodTimeStepper::SYM_IMPL_EULER );
         enumAttrFn.addField( "Statics",   (short) RodTimeStepper::STATICS );
         enumAttrFn.setKeyable( false );
         enumAttrFn.setStorable( true );

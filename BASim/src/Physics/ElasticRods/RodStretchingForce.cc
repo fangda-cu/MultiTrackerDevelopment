@@ -16,11 +16,21 @@ using namespace std;
 
 namespace BASim {
 
-RodStretchingForce::RodStretchingForce(ElasticRod& rod)
+RodStretchingForce::RodStretchingForce(ElasticRod& rod, bool vscs)
   : RodForceT<EdgeStencil>(rod, "RodStretchingForce")
 {
-  m_rod.add_property(m_ks, "stretching stiffness");
-  m_rod.add_property(m_refLength, "stretching ref length");
+  if( !vscs ) 
+  {
+    m_rod.add_property(m_ks, "stretching stiffness");
+    m_rod.add_property(m_refLength, "stretching ref length");
+  }
+  else 
+  {
+    m_rod.add_property(m_ks, "viscous stretching stiffness");
+    m_rod.add_property(m_refLength, "viscous stretching ref length");
+  }
+
+  setViscous(vscs);
 
   updateStiffness();
   updateUndeformedStrain();
@@ -107,8 +117,8 @@ void RodStretchingForce::elementForce(ElementForce& force,
 {
   Vec3d f =
     dofs.stiffness * (dofs.currLength / dofs.restLength - 1.0) * dofs.tangent;
-  force.segment(0, 3) =  f;
-  force.segment(3, 3) = -f;
+  force.segment<3>(0) =  f;
+  force.segment<3>(3) = -f;
 }
 
 void RodStretchingForce::elementForce(ElementForce& force,
@@ -122,11 +132,11 @@ void RodStretchingForce::elementForce(ElementForce& force,
   const Vec3d& tangent = m_rod.getTangent(eh);
 
   Vec3d f = ks * (len / refLength - 1.0) * tangent;
-  force.segment(0, 3) =  f;
-  force.segment(3, 3) = -f;
+  force.segment<3>(0) =  f;
+  force.segment<3>(3) = -f;
 }
 
-void RodStretchingForce::globalJacobian(Scalar scale, MatrixBase& Jacobian)
+void RodStretchingForce::globalJacobian(int baseidx, Scalar scale, MatrixBase& Jacobian)
 {
   IndexArray indices;
   ElementJacobian localJ;
@@ -140,6 +150,7 @@ void RodStretchingForce::globalJacobian(Scalar scale, MatrixBase& Jacobian)
     adder = localJ;
     adder *= scale;
     m_stencil.indices(indices);
+    for( int i = 0; i < (int) indices.size(); ++i ) indices(i) += baseidx;
     Jacobian.add(indices, indices, adder);
 
 #ifdef TEST_ROD_STRETCHING
@@ -191,10 +202,10 @@ void RodStretchingForce::setRefLength(const edge_handle& eh,
 
 void RodStretchingForce::updateStiffness()
 {
-    Scalar E = m_rod.getYoungsModulus();
-    if (viscous()) {
-      E = 3 * m_rod.getViscosity() / m_rod.getTimeStep();
-    }
+  Scalar E = m_rod.getYoungsModulus();
+  if (viscous()) {
+    E = 3 * m_rod.getViscosity() / m_rod.getTimeStep();
+  }
 
   iterator end = m_stencil.end();
   for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {

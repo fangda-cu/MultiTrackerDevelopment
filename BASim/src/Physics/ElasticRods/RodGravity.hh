@@ -43,9 +43,9 @@ public:
     }
   }
 
-  void computeForceDX(const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
+  void computeForceDX(int baseidx, const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
 
-  void computeForceDV(const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
+  void computeForceDV(int baseidx, const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
 
 
 protected:

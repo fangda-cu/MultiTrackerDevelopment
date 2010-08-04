@@ -46,8 +46,10 @@ public:
     delete m_solver;
   }
 
-  void execute()
+  bool execute()
   {
+    bool successfull_solve = true;
+    
     m_diffEq.startStep();
 
     resize();
@@ -65,7 +67,7 @@ public:
     m_increment[0] = 1;
     if ( isConverged() ) {
       m_diffEq.endStep();
-      return;
+      return successfull_solve;
     }
     m_increment.setZero();
     int m_curit = 0;
@@ -89,7 +91,11 @@ public:
 
       START_TIMER("solver");
       int status = m_solver->solve(m_increment, m_rhs);
-      if( status < 0 ) std::cout << "\033[31;1mWARNING IN STATICSSOLVER:\033[m Problem during linear solve detected. " << std::endl;
+      if( status < 0 )
+      {
+        successfull_solve = false;
+        std::cout << "\033[31;1mWARNING IN STATICSSOLVER:\033[m Problem during linear solve detected. " << std::endl;
+      }
       STOP_TIMER("solver");
 
       START_TIMER("setup");
@@ -110,10 +116,12 @@ public:
     //std::cout << m_curit << std::endl;
     if (m_curit == m_maxit - 1)
     {
+      successfull_solve = false;
       std::cout << "\033[31;1mWARNING IN STATICSSOLVER:\033[m Newton solver failed to converge in max iterations: " << m_maxit << std::endl;
     }
 
     m_diffEq.endStep();
+    return successfull_solve;
   }
 
   std::string getName() const

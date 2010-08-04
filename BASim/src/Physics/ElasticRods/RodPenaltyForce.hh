@@ -38,8 +38,8 @@ public:
 
   virtual void computeForce(const ElasticRod& rod, VecXd& F);
 
-  virtual void computeForceDX(const ElasticRod& rod, MatrixBase& J);
-  virtual void computeForceDV(const ElasticRod& rod, MatrixBase& J);
+  virtual void computeForceDX(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J);
+  virtual void computeForceDV(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
 
 
   
@@ -48,7 +48,7 @@ public:
 
   void clearPenaltyForces();
 
-  void computeForceDX(const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
+  void computeForceDX(const ElasticRod& rod, Scalar scale, MatrixBase& J);
   void computeForceDV(const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
 
   void addRodClumpingForce(int vertex, ElasticRod *rod, int otherVertex);

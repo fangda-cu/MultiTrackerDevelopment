@@ -47,7 +47,7 @@ void RodTwistingForce::updateStiffness()
     vertex_handle& vh = m_stencil.handle();
     edge_handle eh0 = m_stencil.inEdge();
     edge_handle eh1 = m_stencil.outEdge();
-    Scalar G = m_rod.getShearModulus();
+    Scalar G = m_rod.getShearModulus(); 
     Scalar a = (m_rod.radiusA(eh0) + m_rod.radiusA(eh1)) / 2.0;
     Scalar b = (m_rod.radiusB(eh0) + m_rod.radiusB(eh1)) / 2.0;
     setKt(vh, M_PI * (pow(a, 4) + pow(b, 4)) * G / 4.0);
@@ -134,7 +134,7 @@ void RodTwistingForce::localForce(ElementForce& force,
   }
 }
 
-void RodTwistingForce::globalJacobian(Scalar scale, MatrixBase& J)
+void RodTwistingForce::globalJacobian(int baseidx, Scalar scale, MatrixBase& J)
 {
   ElementJacobian localJ;
   MatXd adder;
@@ -146,6 +146,7 @@ void RodTwistingForce::globalJacobian(Scalar scale, MatrixBase& J)
     localJ.setZero();
     localJacobian(localJ, vh);
     m_stencil.indices(indices);
+    for( int i = 0; i < (int) indices.size(); ++i ) indices[i] += baseidx;
     adder = localJ;
     adder *= scale;
     J.add(indices, indices, localJ);
@@ -210,15 +211,15 @@ void RodTwistingForce::localJacobian(ElementJacobian& Jacobian,
     * (kbkb - 2 * (twist - undefTwist) / e1.norm() * kbe1);
   Scalar t0 = -kt * (twist - undefTwist) / (2 * len * e0.norm());
   Scalar t1 = -kt * (twist - undefTwist) / (2 * len * e1.norm());
-  Jacobian.block(0, 0, 3, 3) = term1 - t0 * Dkb[0];
-  Jacobian.block(0, 4, 3, 3) = -term1 + term2 - t0 * Dkb[1];
-  Jacobian.block(0, 8, 3, 3) = -term2 - t0 * Dkb[2];
-  Jacobian.block(4, 0, 3, 3) = -term1 + term2 + (t0 - t1) * Dkb[0];
-  Jacobian.block(4, 4, 3, 3) = term1 - 2.0 * term2 + term3 + (t0 - t1) * Dkb[1];
-  Jacobian.block(4, 8, 3, 3) = term2 - term3 + (t0 - t1) * Dkb[2];
-  Jacobian.block(8, 0, 3, 3) = -term2 + t1 * Dkb[0];
-  Jacobian.block(8, 4, 3, 3) = term2 - term3 + t1 * Dkb[1];
-  Jacobian.block(8, 8, 3, 3) = term3 + t1 * Dkb[2];
+  Jacobian.block<3,3>(0, 0) = term1 - t0 * Dkb[0];
+  Jacobian.block<3,3>(0, 4) = -term1 + term2 - t0 * Dkb[1];
+  Jacobian.block<3,3>(0, 8) = -term2 - t0 * Dkb[2];
+  Jacobian.block<3,3>(4, 0) = -term1 + term2 + (t0 - t1) * Dkb[0];
+  Jacobian.block<3,3>(4, 4) = term1 - 2.0 * term2 + term3 + (t0 - t1) * Dkb[1];
+  Jacobian.block<3,3>(4, 8) = term2 - term3 + (t0 - t1) * Dkb[2];
+  Jacobian.block<3,3>(8, 0) = -term2 + t1 * Dkb[0];
+  Jacobian.block<3,3>(8, 4) = term2 - term3 + t1 * Dkb[1];
+  Jacobian.block<3,3>(8, 8) = term3 + t1 * Dkb[2];
 }
 
 void RodTwistingForce::updateUndeformedStrain()

@@ -25,27 +25,16 @@ void AnisotropicRod::setup()
 {
   ElasticRod::setup();
 
-  { // add elastic forces
+  // Add elastic forces
   addForce(new RodStretchingForce(*this));
   addForce(new RodTwistingForceSym(*this));
-  if (refFrameType() == TimeParallel) {
-    addForce(new RodBendingForceSym(*this));
-  } else addForce(new RodAnisoForce(*this));
-  }
+  if (refFrameType() == TimeParallel) addForce(new RodBendingForceSym(*this));
+  else addForce(new RodAnisoForce(*this));
 
-  { // add viscous forces
-    RodStretchingForce* stretching = new RodStretchingForce(*this);
-    RodBendingForceSym* bending = new RodBendingForceSym(*this);
-    RodTwistingForceSym* twisting = new RodTwistingForceSym(*this);
-
-    stretching->setViscous(true);
-    bending->setViscous(true);
-    twisting->setViscous(true);
-
-    addForce(stretching);
-    addForce(bending);
-    addForce(twisting);
-  }
+  // Add viscous forces
+  addForce(new RodStretchingForce(*this,true));
+  addForce(new RodBendingForceSym(*this,true));
+  addForce(new RodTwistingForceSym(*this,true));
 }
 
 } // namespace BASim

@@ -22,8 +22,8 @@ public:
   virtual ~RodExternalForce() {}
 
   virtual void computeForce(const ElasticRod& rod, VecXd& force) = 0;
-  virtual void computeForceDX(const ElasticRod& rod, Scalar scale, MatrixBase& J) = 0;
-  virtual void computeForceDV(const ElasticRod& rod, Scalar scale, MatrixBase& J) = 0;
+  virtual void computeForceDX(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) = 0;
+  virtual void computeForceDV(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) = 0;
 
   bool isImplicit() const { return m_implicit; }
   void setImplicit(bool implicit) { m_implicit = implicit; }

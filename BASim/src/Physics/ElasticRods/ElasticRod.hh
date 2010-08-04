@@ -15,6 +15,7 @@
 namespace BASim {
 
 class RodForce;
+class MatrixBase;
 class RodPenaltyForce;
 
 /** Base class for rods. The degrees of freedom for rods are the
@@ -39,7 +40,7 @@ public:
 
   virtual void setup();
   virtual void computeForces(VecXd& force);
-  virtual void computeJacobian(Scalar scale, MatrixBase& J);
+  virtual void computeJacobian(int baseidx, Scalar scale, MatrixBase& J);
 
   virtual const Scalar&
   getVertexDof(const vertex_handle& vh, int num) const;
@@ -261,6 +262,14 @@ public:
   bool quasistatic() const;
   void setQuasistatic(bool q);
 
+	bool plasticity() const { return property(m_plasticity); }
+	Scalar plasticityThreshold() const { return property(m_plasticThreshold); }
+	
+	void setPlasticity(bool p) { property(m_plasticity) = p; }
+	void setPlasticityThreshold(Scalar p) { property(m_plasticThreshold) = p; }
+	
+	void updatePlasticities();
+	
   enum RefFrameType { SpaceParallel, TimeParallel };
   RefFrameType refFrameType() const;
   void setRefFrameType(RefFrameType type);
@@ -401,7 +410,6 @@ public:
   ////////////////////////////////////////////////////////////////////////////////
   
   
-protected:
 
   void computeEdges();
   void computeTangents();
@@ -416,6 +424,11 @@ protected:
   void computeVertexMasses();
   void computeEdgeInertias();
   void setupDofIndices();
+
+  void updateForceProperties();
+
+
+protected:
 
   /** Computes the mass of an elliptical cylinder, which is the
       generic representation of each edge of the rod.
@@ -440,6 +453,9 @@ protected:
   ObjPropHandle<Scalar> m_viscosity;
   ObjPropHandle<Scalar> m_dt;
   ObjPropHandle<Scalar> m_radius_scale;
+
+  ObjPropHandle<bool> m_plasticity;
+  ObjPropHandle<Scalar> m_plasticThreshold;
 
   VPropHandle<Vec3d> m_vertexPositions;
   VPropHandle<Vec3d> m_vertexVelocities;

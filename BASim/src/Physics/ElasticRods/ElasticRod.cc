@@ -62,6 +62,9 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   add_property(m_edgeFixed, "is edge fixed", false);
   add_property(m_edgeIdx, "edge index", 0);
 
+  add_property(m_plasticity, "use plastic deformation", false);
+  add_property(m_plasticThreshold, "threshold for turning into plastic deformation", 0.0);
+
   m_friction = 0;
   m_cor = 0;
   m_separationStrength = 1;
@@ -132,12 +135,12 @@ void ElasticRod::computeForces(VecXd& force)
   }
 }
 
-void ElasticRod::computeJacobian(Scalar scale, MatrixBase& J)
+void ElasticRod::computeJacobian(int baseidx, Scalar scale, MatrixBase& J)
 {
   RodForces& forces = getForces();
   RodForces::iterator fIt;
   for (fIt = forces.begin(); fIt != forces.end(); ++fIt)
-    (*fIt)->globalJacobian(scale, J);
+    (*fIt)->globalJacobian(baseidx, scale, J);
 }
 
 void ElasticRod::computeEdges()
@@ -351,6 +354,19 @@ void ElasticRod::setMaterial2(int j, const Vec3d& m2)
   property(m_materialDirectors)[j].second = m2;
 }
 
+void ElasticRod::updatePlasticities()
+{
+	if (plasticity()) {
+		RodForces forces = getForces();
+		RodForces::iterator it;
+		for (it = forces.begin(); it != forces.end(); ++it) {
+		  (*it)->updatePlasticity(plasticityThreshold());
+		}
+	}
+	
+	updateProperties();
+}
+
 void ElasticRod::updateProperties()
 {
   computeEdges();
@@ -362,16 +378,24 @@ void ElasticRod::updateProperties()
   computeVoronoiLengths();
   computeMaterialDirectors();
 
+  updateForceProperties();
+
+  // This messes up the adaptive stepping...
+  #ifdef DEBUG
+  //  verifyProperties();
+  #endif // DEBUG
+}
+
+void ElasticRod::updateForceProperties()
+{
   RodForces& forces = getForces();
   RodForces::iterator fIt;
   for (fIt = forces.begin(); fIt != forces.end(); ++fIt)
     (*fIt)->updateProperties();
 
-#ifdef DEBUG
-  verifyProperties();
-#endif // DEBUG
 }
 
+  
 void ElasticRod::updateReferenceProperties()
 {
   RodForces forces = getForces();

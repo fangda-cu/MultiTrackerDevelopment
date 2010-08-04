@@ -117,7 +117,7 @@ void RodAnisoForce::globalForce(VecXd& F)
   }
 }
 
-void RodAnisoForce::globalJacobian(Scalar scale, MatrixBase& Jacobian)
+void RodAnisoForce::globalJacobian(int baseidx, Scalar scale, MatrixBase& Jacobian)
 {
   assert(!"RodAnisoForce::globalJacobian not implemented");
 }

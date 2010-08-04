@@ -9,9 +9,11 @@
 #define IMPLICITEULER_HH
 
 #include "TimeSteppingBase.hh"
+#include "MatrixBase.hh"
 #include "LinearSolverBase.hh"
 #include "SolverUtils.hh"
 #include "../Core/Timer.hh"
+#include "../Core/StatTracker.hh"
 
 namespace BASim {
 
@@ -56,26 +58,29 @@ public:
     
     if( m_A != NULL ) 
     {
-    delete m_A;
+      delete m_A;
       m_A = NULL;
     }
     
     if( m_solver != NULL )
     {
-    delete m_solver;
+      delete m_solver;
       m_solver = NULL;
     }
   }
 
-  void execute()
+  bool execute()
   {
-    if (m_solve_for_dv) velocity_solve();
-    else position_solve();
-    }
+    if (m_solve_for_dv) return velocity_solve();
+    else return position_solve();
+  }
 
   std::string getName() const
   {
-    return "Implicit Euler";
+    std::string name;
+    if (m_solve_for_dv) name = "Implicit Euler, velocity-dof solve";
+    else name = "Implicit Euler, position-dof solve";
+    return name;
   }
 
   void resize()
@@ -113,14 +118,20 @@ public:
     m_A->setZero();
   }
 
+  // Computes the inf norm of the residual
   Scalar computeResidual()
   {
+    // Sanity checks for NANs
+    assert( (x0.cwise() == x0).all() );
+    assert( (m_deltaV.cwise() == m_deltaV).all() );
+    assert( (m_deltaX.cwise() == m_deltaX).all() );
+    
+    // rhs == forces
     m_rhs.setZero();
     m_diffEq.evaluatePDot(m_rhs);
 
-    m_lhs.setZero();
-    for (int i = 0; i < m_ndof; ++i) m_lhs(i) = m_diffEq.getMass(i) * m_deltaV(i);
-    m_lhs /= m_dt;
+    // lhs == M*deltaV/dt
+    m_lhs = m_mass.cwise()*m_deltaV/m_dt;
 
     for (size_t i = 0; i < m_fixed.size(); ++i) 
     {
@@ -133,22 +144,26 @@ public:
       m_lhs[idx] = x0(idx) + m_deltaX(idx);
     }
 
+    // Save the infinity norm
     m_infnorm = (m_lhs - m_rhs).lpNorm<Eigen::Infinity>();
 
+    // Return the L2 norm
     return (m_lhs - m_rhs).norm();
   }
 
   bool isConverged()
   {
     m_residual = computeResidual();
-//    std::cout << "atol " << m_residual << std::endl
-//               << "infnorm " << m_infnorm << std::endl
-//              << "rtol " << m_residual / m_initial_residual << std::endl
-//              << "stol " << m_increment.norm() << std::endl;
+    //std::cout << "atol " << m_residual << std::endl
+    //          << "infnorm " << m_infnorm << std::endl
+    //          << "rtol " << m_residual / m_initial_residual << std::endl
+    //          << "stol " << m_increment.norm() << std::endl;
+    // L2 norm of the residual is less than tolerance
     if ( m_residual < m_atol ) {
       //std::cout << "converged atol" << std::endl;
       return true;
     }
+    // Infinity norm of residual is less than tolerance
     if ( m_infnorm < m_inftol ) {
       //std::cout << "converged inftol" << std::endl;
       return true;
@@ -157,6 +172,7 @@ public:
       //std::cout << "converged rtol" << std::endl;
       return true;
     }
+    // L2 norm of change in solution at last step of solve is less than tolerance
     if ( m_increment.norm() < m_stol ) {
       //std::cout << "converged stol" << std::endl;
       return true;
@@ -168,25 +184,28 @@ public:
 
 protected:
 
-  void velocity_solve()
+  bool velocity_solve()
   {
+    bool successfull_solve = true;
+
     m_diffEq.startStep();
 
     resize();
     setZero();
     m_diffEq.getScriptedDofs(m_fixed, m_desired);
 
+    #ifdef TIMING_ON
+      m_rhs.setZero();
+      m_diffEq.evaluatePDot(m_rhs);
+      double timing_force_at_start_over_dt_timing = m_rhs.norm()/m_dt;
+    #endif
+
     // Copy masses
     m_diffEq.getMass(m_mass);
-    //std::cout << m_mass.transpose() << std::endl;
 
     // copy start of step positions and velocities
     m_diffEq.getX(x0);
     m_diffEq.getV(v0);
-    //for (int i = 0; i < m_ndof; ++i) {
-      //v0(i) = m_diffEq.getV(i);
-      //x0(i) = m_diffEq.getX(i);
-    //}
 
     // computeResidual also sets m_rhs = F
     m_initial_residual = computeResidual();
@@ -210,9 +229,6 @@ protected:
       else
       {
         m_rhs -= m_mass.cwise()*m_deltaV;
-        //for (int i = 0; i < m_ndof; ++i) {
-        //  m_rhs(i) -= m_diffEq.getMass(i) * m_deltaV(i);
-        //}
       }
 
       m_diffEq.evaluatePDotDV(1.0, *m_A);
@@ -220,15 +236,15 @@ protected:
       m_A->scale(-m_dt);
 
       for (int i = 0; i < m_ndof; ++i) {
-        m_A->add(i, i, m_diffEq.getMass(i));
+        m_A->add(i, i, m_mass(i));
       }
       m_A->finalize();
 
       for (size_t i = 0; i < m_fixed.size(); ++i)
       {
         int idx = m_fixed[i];
-          m_rhs(idx)
-            = (m_desired[i] - x0[idx]) / m_dt - (v0[idx] + m_deltaV[idx]);
+        m_rhs(idx)
+          = (m_desired[i] - x0[idx]) / m_dt - (v0[idx] + m_deltaV[idx]);
       }
       m_A->zeroRows(m_fixed);
       
@@ -238,7 +254,11 @@ protected:
 
       START_TIMER("solver");
       int status = m_solver->solve(m_increment, m_rhs);
-      if( status < 0 ) std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Problem during linear solve detected. " << std::endl;
+      if( status < 0 )
+      {
+        successfull_solve = false;
+        std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Problem during linear solve detected. " << std::endl;
+      }
       STOP_TIMER("solver");
 
       START_TIMER("setup");
@@ -246,11 +266,6 @@ protected:
 
       m_diffEq.setV(v0+m_deltaV);
       m_diffEq.setX(x0+m_dt*(v0+m_deltaV));
-      //for (int i = 0; i < m_ndof; ++i)
-      //{
-      //  m_diffEq.setV(i, v0(i) + m_deltaV(i));
-      //  m_diffEq.setX(i, x0(i) + m_dt * m_diffEq.getV(i));
-      //}
 
       m_diffEq.endIteration();
 
@@ -266,24 +281,42 @@ protected:
       STOP_TIMER("setup");
     }
 
-    //std::cout << m_curit << std::endl;
+    //std::cout << "Iterations: " << m_curit << std::endl;
     if (m_curit == m_maxit - 1)
     {
+      successfull_solve = false;
       std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: " << m_maxit << std::endl;
     }
 
-    m_diffEq.endStep();
+    #ifdef TIMING_ON
+      std::string itrstrng = toString(m_curit+1);
+      while( itrstrng.size() < 3 ) itrstrng = "0" + itrstrng;
+      itrstrng = "NEWTON_SOLVES_OF_LENGTH_" + itrstrng;
+      IntStatTracker::getIntTracker(itrstrng) += 1;
 
-    //for( int p = 0; p < 10000; ++p ) m_diffEq.endStep();
+      PairVectorBase::insertPair( "ForcesVsIterations", std::pair<double,int>(timing_force_at_start_over_dt_timing,m_curit+1), PairVectorBase::StringPair("ForceNorm","ImplicitIterations") );
+    #endif
+
+    m_diffEq.endStep();
+    
+    return successfull_solve;
   }
 
-  void position_solve()
+  bool position_solve()
   {
+    bool successfull_solve = true;
+
     m_diffEq.startStep();
 
     resize();
     setZero();
     m_diffEq.getScriptedDofs(m_fixed, m_desired);
+
+    #ifdef TIMING_ON
+      m_rhs.setZero();
+      m_diffEq.evaluatePDot(m_rhs);
+      double timing_force_at_start = m_rhs.norm();
+    #endif
 
     // Copy masses
     m_diffEq.getMass(m_mass);
@@ -291,10 +324,6 @@ protected:
     // copy start of step positions and velocities
     m_diffEq.getX(x0);
     m_diffEq.getV(v0);
-    //for (int i = 0; i < x0.size(); ++i) {
-    //  v0(i) = m_diffEq.getV(i);
-    //  x0(i) = m_diffEq.getX(i);
-    //}
 
     // computeResidual also sets m_rhs = F
     m_initial_residual = computeResidual();
@@ -366,7 +395,11 @@ protected:
 
       START_TIMER("solver");
       int status = m_solver->solve(m_increment, m_rhs);
-      if( status < 0 ) std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Problem during linear solve detected. " << std::endl;
+      if( status < 0 )
+      {
+        successfull_solve = false;
+        std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Problem during linear solve detected. " << std::endl;
+      }
       STOP_TIMER("solver");
 
       START_TIMER("setup");
@@ -397,19 +430,29 @@ protected:
       STOP_TIMER("setup");
     }
 
-    //std::cout << m_curit << std::endl;
+    //std::cout << "Iterations: " << m_curit << std::endl;
     if (m_curit == m_maxit - 1)
     {
+      successfull_solve = false;
       std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: " << m_maxit << std::endl;
     }
 
-    m_diffEq.endStep();
+    #ifdef TIMING_ON
+      std::string itrstrng = toString(m_curit+1);
+      while( itrstrng.size() < 3 ) itrstrng = "0" + itrstrng;
+      itrstrng = "NEWTON_SOLVES_OF_LENGTH_" + itrstrng;
+      IntStatTracker::getIntTracker(itrstrng) += 1;
 
-    //for( int p = 0; p < 10000; ++p ) m_diffEq.endStep();
+      PairVectorBase::insertPair( "ForcesVsIterations", std::pair<double,int>(timing_force_at_start,(m_curit+1)/m_dt), PairVectorBase::StringPair("ForceNorm","ImplicitIterations") );
+    #endif
+    
+    m_diffEq.endStep();
+    
+    return successfull_solve;
   }
 
   ODE& m_diffEq;
-
+  
   int m_ndof;
 
   VecXd m_mass;

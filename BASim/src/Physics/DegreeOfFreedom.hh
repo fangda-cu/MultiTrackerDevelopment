@@ -39,6 +39,19 @@ public:
     return *this;
   }
 
+  bool operator==( const DofHandle& rhs ) const
+  {
+    if( this->getType() != rhs.getType() ) return false;
+    if( this->getNum() != rhs.getNum() ) return false;
+    if( this->getHandle() != rhs.getHandle() ) return false;
+    return true;
+  }
+  
+  bool operator!=( const DofHandle& rhs ) const
+  {
+    return !((*this)==rhs);
+  }
+
   Type getType() const { return m_type; }
   void setType(const Type& type) { m_type = type; }
 
@@ -81,6 +94,16 @@ public:
     std::map<DofHandle, int>::const_iterator it = m_dofToIndex.find(handle);
     assert(it != m_dofToIndex.end());
     return it->second;
+  }
+
+  const std::map<DofHandle,int>& getDofToIndexMap() const
+  {
+    return m_dofToIndex;
+  }
+
+  const std::map<int,DofHandle>& getIndexToDofMap() const
+  {
+    return m_indexToDof;
   }
 
 protected:

@@ -25,7 +25,7 @@ public:
 
   virtual Scalar globalEnergy();
   virtual void globalForce(VecXd& force);
-  virtual void globalJacobian(Scalar scale, MatrixBase& J);
+  virtual void globalJacobian(int baseidx, Scalar scale, MatrixBase& J);
 
   Scalar localEnergy(const vertex_handle& vh);
   void localForce(ElementForce& force, const vertex_handle& vh);

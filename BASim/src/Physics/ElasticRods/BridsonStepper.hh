@@ -95,7 +95,7 @@ namespace BASim {
     /**
      * Evolves all inserted rods forward in time. 
      */
-    void execute();
+    bool execute();
     
     /**
      * Modifies the timestep.

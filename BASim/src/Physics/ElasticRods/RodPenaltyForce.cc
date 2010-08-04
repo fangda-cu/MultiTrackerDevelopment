@@ -72,8 +72,7 @@ RodPenaltyForce::~RodPenaltyForce()
 */
 
 
-
-void RodPenaltyForce::computeForceDX(const ElasticRod& rod, MatrixBase& J)
+void RodPenaltyForce::computeForceDX(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J)
 {
   MatXd localJ(3, 3);
   IntArray indices(3);
@@ -100,8 +99,9 @@ void RodPenaltyForce::computeForceDX(const ElasticRod& rod, MatrixBase& J)
     localJacobian(localJ, stiffness, n);
   
 	  for (int i = 0; i < 3; ++i) {
-	    indices[i] = rod.vertIdx(vertex,i);
+	    indices[i] = baseindex + rod.vertIdx(vertex,i);
 	  }
+	  localJ *= scale;
 	  J.add(indices, indices, localJ);
 	    
   }
@@ -118,14 +118,6 @@ void RodPenaltyForce::localJacobian(MatXd& J, const Scalar stiffness, const Vec3
 			J(j,k) += M(j,k);
 		}
 	}
-
-}
-
-
-			
-void RodPenaltyForce::computeForceDV(const ElasticRod& rod, MatrixBase& J)
-{
-
 
 }
 

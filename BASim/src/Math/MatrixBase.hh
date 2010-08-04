@@ -39,7 +39,9 @@ public:
   virtual int scale(Scalar val) = 0;
   virtual int setZero() = 0;
   virtual int zeroRows(const IntArray& idx, Scalar diag = 1.0) = 0;
+  virtual int zeroCols(const IntArray& idx, Scalar diag) = 0;
   virtual int multiply(VecXd& y, Scalar s, const VecXd& x) const = 0;
+  virtual bool isApproxSymmetric( Scalar eps ) const = 0;
 
   /**
    * Called after all matrix values have been set.
