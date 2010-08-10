@@ -379,15 +379,14 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
     cerr << "Simulating\n";
 
-//		cerr << "[JS msg / Beaker::takeTimeStep] " << startTime << " startTime " << targetTime << " targetTime\n";
-//		cerr << "[JS msg / Beaker::takeTimeStep] " << i_stepSize << " i_stepSize " << getDt() << " getDt()\n";
-
     // Create space to track the target vertex positions of each rod as they substep towards 
     // their goal
     m_subSteppedVertexPositions.resize( i_subSteps );
 
     for ( int s=0; s<i_subSteps; s++ )
     {
+        int rod_gid = 0;
+
         m_numRods = 0;
 
         if ( (targetTime - currentTime) < getDt() + SMALL_NUMBER )
@@ -409,8 +408,6 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         double timeTaken = stopTimer(timer);
         frameTime += timeTaken;
         m_meshInterpolationTime += timeTaken;
-
-//				cerr << "[JS msg / Beaker::takeTimeStep] " << s << " " << getDt() << " " << interpolateFactor << " interpolateFactor \n";
 
         // interpolate fixed vertex positions and set timestep
         //
@@ -446,6 +443,9 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 rodCollisionTimeStepper->setClumping( m_isClumpingEnabled, m_clumpingCoefficient );
     
                 BASim::ElasticRod* rod = pRodGroup->elasticRod( r );
+
+                rod->global_rodID = rod_gid;
+                rod_gid++;
 
                 m_subSteppedVertexPositions[ s ][ r ].resize( rod->nv() );                
             }

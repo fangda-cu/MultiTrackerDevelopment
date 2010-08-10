@@ -242,6 +242,9 @@ bool CandidateCollision::getContinuousTimeVertexTriangle(Vec3d &x0,
         //
         if (distance < COLLISION_EPSILON)
         {
+//          std::cout << "  CTNS " << x0 << x1 << x2 << x3 << v0 << v1 << v2 << v3 << "\n";
+//          std::cout << "       " << xt0 << xt1 << xt2 << xt3 << "\n";
+          
 //            normal = xt0 - (s1 * xt1 + s2 * xt2 + s3 * xt3);
 
             // now figure out a decent normal

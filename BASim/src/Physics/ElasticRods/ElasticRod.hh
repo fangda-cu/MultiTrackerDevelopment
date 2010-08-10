@@ -427,6 +427,7 @@ public:
 
   void updateForceProperties();
 
+  int global_rodID;
 
 protected:
 

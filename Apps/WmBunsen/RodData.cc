@@ -21,20 +21,40 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
     // a fake setupRod function that just gives space for the vertices.
     if ( !i_isReadingFromCache )
     {
-        RodTimeStepper* stepper = new RodTimeStepper( *m_rod );
-
-        stepper->setDiffEqSolver( i_solverType );
+      // If Adaptive Time Stepping is used,
+	    if(1) {
+		    RodTimeStepper* stepper = new RodTimeStepper( *m_rod );
+		    stepper->setDiffEqSolver( i_solverType );
+	    
+		    // These get deleted by RodTimeStepper
+		    stepper->addExternalForce( new RodMassDamping( m_massDamping ) );
+		    
+		    if ( i_gravity.norm() > 0)
+		    {
+		      stepper->addExternalForce( new RodGravity( i_gravity ) );
+		      m_gravity = i_gravity;
+		    }
     
-        // These get deleted by RodTimeStepper
-        stepper->addExternalForce( new RodMassDamping( m_massDamping ) );
-        
-        if ( i_gravity.norm() > 0)
-        {
-            stepper->addExternalForce( new RodGravity( i_gravity ) );
-            m_gravity = i_gravity;
-        }
-    
-        m_stepper = new RodCollisionTimeStepper( stepper, m_rod );        
+		    AdaptiveBinaryStepper* adpstep = new AdaptiveBinaryStepper( m_rod, stepper );
+		    //m_steppers.push_back(adpstep);
+	    
+		    m_stepper = new RodCollisionTimeStepper( adpstep, m_rod );        
+	    } else
+	    {
+		    RodTimeStepper* stepper = new RodTimeStepper( *m_rod );
+		    stepper->setDiffEqSolver( i_solverType );
+	    
+		    // These get deleted by RodTimeStepper
+		    stepper->addExternalForce( new RodMassDamping( m_massDamping ) );
+		    
+		    if ( i_gravity.norm() > 0)
+		    {
+		      stepper->addExternalForce( new RodGravity( i_gravity ) );
+		      m_gravity = i_gravity;
+		    }
+	    
+		    m_stepper = new RodCollisionTimeStepper( stepper, m_rod );        
+	    }
     }
     
     m_isPlaceHolderRod = false;
@@ -149,6 +169,7 @@ void RodData::updateBoundaryConditions()
         boundary->setDesiredVertexPosition( edgeNum, currVertexPositions[ edgeNum ] );
         boundary->setDesiredVertexPosition( edgeNum + 1, currVertexPositions[ edgeNum + 1 ]);
 
+/*
         if ( kinematicEdgeData->rootFrameDefined )
         {
             MaterialFrame m;
@@ -173,6 +194,7 @@ void RodData::updateBoundaryConditions()
         {
             boundary->setDesiredEdgeAngle( edgeNum, m_rod->getTheta( edgeNum ) );
         }
+*/
     }
 }
 

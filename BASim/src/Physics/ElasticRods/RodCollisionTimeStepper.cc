@@ -48,6 +48,8 @@ bool RodCollisionTimeStepper::execute()
     }
       */
 
+  //std::cout << "COLLISION execute\n";
+
     return m_rodTimeStepper->execute();
 /*
 		std::cout << "after dynamic execute vertex\n";
@@ -156,9 +158,13 @@ void RodCollisionTimeStepper::getProximities(CollisionMeshDataHashMap &collision
     Collisions colls;
     std::vector<uint> cands;
 
+//std::cout << "RCTS getProximities \n";
+
 		// Jungseock - This might be necessary for the future.
 		m_rodPenaltyForce->clearPenaltyForces();
 		
+//    return;
+
     // Check for proximities against every collision mesh
     //
     for (CollisionMeshDataHashMapIterator cmItr =collisionMeshes.begin();
@@ -204,7 +210,7 @@ void RodCollisionTimeStepper::getProximities(CollisionMeshDataHashMap &collision
                     CandidateCollision cand(rod, i, cmData, *uiItr, VERTEX_TRIANGLE);
                     if (cand.getProximity(colls))
                     {
-                       // cerr << "Found candidate Collision!\n";
+                        //cerr << "Found candidate Collision!\n";
                         // If they are, add a penalty force for this vertex-triangle pair
                         //
                         m_rodPenaltyForce->addRodPenaltyForce(cand.getFirstPrimitive(),
@@ -223,6 +229,8 @@ void RodCollisionTimeStepper::respondObjectCollisions(CollisionMeshDataHashMap &
 {
     // Mostly the same as the getProximities function above, except where noted
     //
+
+//  return;
 
     ElasticRod *rod = m_rod;
 		

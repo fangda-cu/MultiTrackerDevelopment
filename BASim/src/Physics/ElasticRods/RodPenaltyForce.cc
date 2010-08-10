@@ -134,7 +134,7 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
 {
   VecXd beforeF = F;
 
-  //cerr << "Forces (BEFORE) = \n " << F << endl;
+//  cerr << "Forces (BEFORE) = \n " << F << endl;
 
   ElasticRod& rod = const_cast<ElasticRod&>(const_rod);
   // Record pairs whose distance is greatern than the influence of the
@@ -162,7 +162,7 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
                                                                cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 2]],
                                                                t1, t2, t3));*/
 
-    if (distance < (cmData->getThickness() + rod.radius()))
+    if (1 || distance < (cmData->getThickness() + rod.radius()))
     {
     	Scalar thickness = cmData->getThickness() + rod.radius();
 
@@ -214,6 +214,7 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
 //      Vec3d force = e * stiffness * ((cmData->getThickness() + rod.radius()) - distance) * normal;
 			Vec3d force = -e * stiffness * (n.dot(normal) - thickness) * n;
 
+//      std::cout << vertex << " VERT " << force << "\n";
 
       // TODO: It is very hard to achieve static friction with a friction force,
       // in fact, I don't know of a way to do it (maybe somebody has figured it out)
@@ -269,6 +270,8 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
     }
   }
 
+  return;
+  
   /*cerr << "done deleting: " << endl;
   cerr << "num forces = " << _vertexObjects.size() << endl;
   cerr << "toDelete.size() = " << toDelete.size() << endl;

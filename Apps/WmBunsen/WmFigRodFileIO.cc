@@ -182,6 +182,7 @@ WmFigRodFileIO::~WmFigRodFileIO()
 
             // Now store the unsimulated positions so that we can send them to Barbershop
             // when we want to simulate with it.
+	    // Boundary Condition
             vertex = i_rodGroup.nextVertexPosition( r, v );
             pos[ 0 ] = vertex.x();
             pos[ 1 ] = vertex.y();

@@ -77,6 +77,8 @@ namespace BASim
 
     bool execute()
     {
+//      std::cout << "SYM execute\n";
+      
       m_diffEq.backupResize();
       m_diffEq.backup();
 
@@ -122,7 +124,7 @@ namespace BASim
         return true;
       }      
       
-      std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: " << m_maxit << "." << std::endl;
+      std::cerr << "\033[31;1mWARNING IN SYMMETRICIMPLICITEULER:\033[m Newton solver failed to converge in max iterations: " << m_maxit << "." << std::endl;
       m_diffEq.backupClear();
       return false;
     }

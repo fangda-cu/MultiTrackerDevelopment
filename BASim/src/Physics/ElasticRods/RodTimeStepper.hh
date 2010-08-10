@@ -67,8 +67,10 @@ public:
     return m_diffEqSolver->getTime();
   }
 
-  void setTimeStep(Scalar dt)
+  virtual void setTimeStep(Scalar dt)
   {
+//std::cout << "RTS dt " << dt << "\n";
+
     m_diffEqSolver->setTimeStep(dt);
     m_rod.setTimeStep(dt);
   }
@@ -332,7 +334,7 @@ public:
    *
    * \param[in] force The external force to be applied to rods.
    */
-  void addExternalForce(RodExternalForce* force)
+  virtual void addExternalForce(RodExternalForce* force)
   {
     m_externalForces.push_back(force);
   }

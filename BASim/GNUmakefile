@@ -255,7 +255,8 @@ Physics/ElasticRods/Tests/twistingJacobian.inl \
 Physics/PhysObject.inl \
 Core/StatTracker.hh \
 Math/SymmetricImplicitEuler.hh \
-Physics/ElasticRods/MinimalRodStateBackup.hh
+Physics/ElasticRods/AdaptiveBinaryStepper.hh \
+Physics/ElasticRods/MinimalRodStateBackup.hh 
 
 
 LIB1_S     := \

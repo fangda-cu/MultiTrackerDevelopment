@@ -5,6 +5,7 @@
 #include <weta/Wfigaro/Physics/ElasticRods/ElasticRod.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/AnisotropicRod.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodCollisionTimeStepper.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/AdaptiveBinaryStepper.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodMassDamping.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodGravity.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodUtils.hh>
