@@ -157,13 +157,11 @@ void RodCollisionTimeStepper::getProximities(CollisionMeshDataHashMap &collision
 
     Collisions colls;
     std::vector<uint> cands;
-
-//std::cout << "RCTS getProximities \n";
+    
+    Scalar radius_scale = rod->getRadiusScale();
 
 		// Jungseock - This might be necessary for the future.
 		m_rodPenaltyForce->clearPenaltyForces();
-		
-//    return;
 
     // Check for proximities against every collision mesh
     //
@@ -185,9 +183,9 @@ void RodCollisionTimeStepper::getProximities(CollisionMeshDataHashMap &collision
                 //
                 Vec3d vMin = *(Vec3d *)&rod->getVertex(i);
                 Vec3d vMax = *(Vec3d *)&rod->getVertex(i);
-                Vec3d thickness((cmData->getThickness() + rod->radius()),
-                                (cmData->getThickness() + rod->radius()),
-                                (cmData->getThickness() + rod->radius()));
+                Vec3d thickness((cmData->getThickness() + radius_scale * rod->radius()),
+                                (cmData->getThickness() + radius_scale * rod->radius()),
+                                (cmData->getThickness() + radius_scale * rod->radius()));
                 vMin += -thickness;
                 vMax += thickness;
 
@@ -233,6 +231,7 @@ void RodCollisionTimeStepper::respondObjectCollisions(CollisionMeshDataHashMap &
 //  return;
 
     ElasticRod *rod = m_rod;
+    Scalar radius_scale = rod->getRadiusScale();
 		
     std::vector<uint> cands;
     for (CollisionMeshDataHashMapIterator cmItr=collisionMeshes.begin(); cmItr!=collisionMeshes.end(); ++cmItr)
@@ -252,9 +251,9 @@ void RodCollisionTimeStepper::respondObjectCollisions(CollisionMeshDataHashMap &
                 minmax(rod->getStartPositions()[i],
                        rod->getEndPositions()[i],
                        vMin, vMax);
-                Vec3d thickness((cmData->getThickness() + rod->radius()),
-                                (cmData->getThickness() + rod->radius()),
-                                (cmData->getThickness() + rod->radius()));
+                Vec3d thickness((cmData->getThickness() + radius_scale * rod->radius()),
+                                (cmData->getThickness() + radius_scale * rod->radius()),
+                                (cmData->getThickness() + radius_scale * rod->radius()));
                 vMin += -thickness;
                 vMax += thickness;
                 
@@ -281,9 +280,9 @@ void RodCollisionTimeStepper::respondObjectCollisions(CollisionMeshDataHashMap &
                            rod->getStartPositions()[(i+1)],
                            rod->getEndPositions()[(i+1)],
                            vMin, vMax);
-                    Vec3d thickness((cmData->getThickness() + rod->radius()),
-                                    (cmData->getThickness() + rod->radius()),
-                                    (cmData->getThickness() + rod->radius()));
+                    Vec3d thickness((cmData->getThickness() + radius_scale * rod->radius()),
+                                    (cmData->getThickness() + radius_scale * rod->radius()),
+                                    (cmData->getThickness() + radius_scale * rod->radius()));
                     vMin += -thickness;
                     vMax += thickness;
 

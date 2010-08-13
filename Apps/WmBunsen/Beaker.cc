@@ -582,7 +582,8 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             #pragma omp parallel for num_threads( actualNumThreadsToUse )
             for ( int i=0; i<numControllers; ++i )
             {
-                dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->respondToObjectCollisions();              }
+                dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->respondToObjectCollisions();              
+            }
             timeTaken = stopTimer(timer);
             frameObjectCollisionResponse += timeTaken;
             m_objectCollisionResponse += timeTaken;

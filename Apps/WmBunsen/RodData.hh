@@ -212,8 +212,11 @@ public:
 
     void setDrawScale( double i_drawScale )
     {
-        if ( !m_isPlaceHolderRod )
-            m_rodRenderer->setDrawScale( i_drawScale );
+        if ( !m_isPlaceHolderRod ) {
+            //m_rodRenderer->setDrawScale( i_drawScale );
+            m_rod->setRadiusScale( i_drawScale );
+        }
+
     }
 
     void setDrawMode( RodRenderer::DrawMode i_drawMode )

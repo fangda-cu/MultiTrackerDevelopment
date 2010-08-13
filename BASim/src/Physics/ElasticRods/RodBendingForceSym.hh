@@ -47,13 +47,14 @@ public:
 
 	virtual void updatePlasticity(Scalar maxKappa);
 
-protected:
-
   const MatXd& getGradKappa(const vertex_handle& vh) const;
   const std::pair<MatXd, MatXd>& getHessKappa(const vertex_handle& vh) const;
 
   void computeGradKappa();
   void computeHessKappa();
+
+protected:
+
 
   VPropHandle<Vec2d> m_kappa;
   VPropHandle<Vec2d> m_kappaBar;

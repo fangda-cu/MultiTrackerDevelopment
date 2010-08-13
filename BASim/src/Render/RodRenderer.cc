@@ -232,10 +232,5 @@ Scalar RodRenderer::calculateObjectBoundingRadius(const Vec3d& center)
   
   return radius;
 }
-
-void RodRenderer::setDrawScale(Scalar s)
-{
-  m_rod.setRadiusScale(s);
-}
-
+  
 } // namespace BASim

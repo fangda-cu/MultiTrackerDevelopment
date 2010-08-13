@@ -111,10 +111,10 @@ public:
 
     int ne = edges.size(); // # of scripted dofs
 
-    for (size_t i = 0; i < edges.size(); ++i) {
-      std::cout << edges[i] << " " << m_rod->getBoundaryCondition()->getDesiredEdgeAngle(edges[i]) << " ";
-    }
-    std::cout << "\n";
+//    for (size_t i = 0; i < edges.size(); ++i) {
+//      std::cout << edges[i] << " " << m_rod->getBoundaryCondition()->getDesiredEdgeAngle(edges[i]) << " ";
+//    }
+    //std::cout << "\n";
 
 
     #ifdef TIMING_ON
