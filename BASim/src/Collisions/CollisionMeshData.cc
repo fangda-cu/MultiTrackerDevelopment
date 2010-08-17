@@ -20,6 +20,13 @@ CollisionMeshData::CollisionMeshData()
     //_phiPrevious = new AdaptiveLevelSet;
     //_phiCurrent = new AdaptiveLevelSet;
     //std::cout<<"complete"<<std::endl;
+  
+  recordToFile = false;
+  recordFrames = 0;
+  
+  //recordFilename = "/local1/jjoo/scenes/sac2/sac_mesh.";
+  recordFilename = "/local1/jjoo/scenes/maurice160mesh.";
+
 }
 
 CollisionMeshData::~CollisionMeshData()
@@ -30,7 +37,8 @@ CollisionMeshData::~CollisionMeshData()
 
 void CollisionMeshData::initialize()
 {
-    std::cout << "CollisionMeshData::initialize()...\n";
+  
+  std::cout << "CollisionMeshData::initialize()...\n";
    // if (!_initialized)
     {
         _nbrTriangles = triangleIndices.size() / 3;
@@ -107,8 +115,69 @@ void CollisionMeshData::initialize()
 //      _bvTree.buildTree(centroids, _triIndices);
 
         _initialized = true;
+        
+        recordFrames = 0;
+        writeMeshesToFile();
+        
     }
    // std::cout<<"CollisionMeshData::initialize()...complete"<<std::endl;
+}
+
+void CollisionMeshData::writeMeshesToFile() {
+  if (recordToFile) {
+    std::cout << "recording meshes\n";
+    
+    std::stringstream ss;
+    std::string filename = recordFilename;
+    
+    ss << recordFilename;
+    ss << recordFrames;
+    ss >> filename;
+    ss >> ".mesh";
+    
+    std::cout << filename << "\n";
+    
+    FILE *fp;
+    fp = fopen( filename.c_str(), "w" );
+    if ( fp == NULL )
+    {
+      std::cout << "can't open file\n";
+      return;
+    }
+
+    size_t numberOfVerts = currPositions.size();
+    size_t numberOfFaces = _nbrTriangles;
+    fwrite( &numberOfVerts, sizeof( size_t ), 1, fp );
+    fwrite( &numberOfFaces, sizeof( size_t ), 1, fp );
+
+    for ( size_t r=0; r<numberOfVerts; r++ )
+    {
+      double pos[3];
+      
+      Vec3d vertex = oldPositions[r];
+
+      pos[ 0 ] = vertex.x();
+      pos[ 1 ] = vertex.y();
+      pos[ 2 ] = vertex.z();
+
+      fwrite( &pos[0], sizeof( double ), 3, fp );
+    }
+    
+    for ( size_t r=0; r<numberOfFaces; r++ )
+    {
+      uint idx[3];
+
+      idx[ 0 ] = _tri[r][0];
+      idx[ 1 ] = _tri[r][1];
+      idx[ 2 ] = _tri[r][2];
+
+      fwrite( &idx[0], sizeof( uint ), 3, fp );
+    }
+    
+    fclose ( fp );
+    
+    recordFrames++;
+  }
 }
 
 void CollisionMeshData::clearAll()
@@ -166,6 +235,8 @@ void CollisionMeshData::update(vector<Vec3d>& points, std::string filename, int 
     }    
     
     updateGrid(points, filename);
+    
+    writeMeshesToFile();
     
  //   buildLevelSet();
 }

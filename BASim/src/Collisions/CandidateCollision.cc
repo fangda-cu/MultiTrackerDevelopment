@@ -67,6 +67,8 @@ bool CandidateCollision::getContinuousTime(Real dt, Collisions &collisions) cons
                                                 v2[indices2[(3 * _primitive2) + 2]],
                                                 dt, collision))
             {
+//              std::cout << "CC v-t : " << x1[_primitive1] << x2[indices2[(3 * _primitive2)    ]] << x2[indices2[(3 * _primitive2)+1]] << x2[indices2[(3 * _primitive2)+2]] << "\n";
+//              std::cout << "       : " << v1[_primitive1] << v2[indices2[(3 * _primitive2)    ]] << v2[indices2[(3 * _primitive2)+1]] << v2[indices2[(3 * _primitive2)+2]] << "\n";
                 // Fill out the rest of the collision info
                 //
                 collision.setFirstPrimitiveIndex(0, _primitive1);
@@ -228,6 +230,8 @@ bool CandidateCollision::getContinuousTimeVertexTriangle(Vec3d &x0,
         // Times are given between [0,1], so scale by timestep
         //
         Real t = times[a] * dt;
+        
+//        std::cout << "candidate time : " << t << " " << times[a] << "\n";
 
         Vec3d xt0 = x0 + t * v0;
         Vec3d xt1 = x1 + t * v1;
@@ -242,7 +246,8 @@ bool CandidateCollision::getContinuousTimeVertexTriangle(Vec3d &x0,
         //
         if (distance < COLLISION_EPSILON)
         {
-//          std::cout << "  CTNS " << x0 << x1 << x2 << x3 << v0 << v1 << v2 << v3 << "\n";
+//          std::cout << "  CTNS " << t << " " << distance << " " << s1 << " " << s2 << " " << s3 << "\n" << x0 << x1 << x2 << x3 << "\n";
+//          std::cout << v0 << v1 << v2 << v3 << "\n";
 //          std::cout << "       " << xt0 << xt1 << xt2 << xt3 << "\n";
           
 //            normal = xt0 - (s1 * xt1 + s2 * xt2 + s3 * xt3);

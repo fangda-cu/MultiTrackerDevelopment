@@ -59,13 +59,15 @@ bool generate_movie = false;
 // Display the simulation time or not
 bool g_dsp_sim_tm = true;
 
+bool render_meshes = true;
+
 // For outputting time-stamped simulation captures,
 // for matching current simulation run to output directory.
 time_t g_rawtime;
 struct tm* g_timeinfo;
 
 // For dumping movies, etc
-Scalar fps = 30;
+Scalar fps = 60;
 double frame_period;
 int current_frame;
 std::string outputdirectory;
@@ -138,6 +140,8 @@ void InitMenu()
   //glutAddMenuEntry("Force (f)", 'f');
   //glutAddMenuEntry("Camera (p)", 'p');
   glutAddMenuEntry("Scale to radius (r)", 'r');
+
+  glutAddMenuEntry("Draw/hide meshes (t)", 't');
 
   glutCreateMenu(menu);
   glutAddMenuEntry("Quit (q)", 'q');
@@ -300,7 +304,10 @@ void display()
   //controller.setDefault2D();
   //drawSimpleAxis();
   
-  for( int i = 0; i < (int) renderable_objects.size(); ++i ) renderable_objects[i]->render();
+  for( int i = 0; i < (int) renderable_objects.size(); ++i ) {
+    if (!render_meshes && dynamic_cast<TriangleMeshRenderer*>(renderable_objects[i]) != NULL) continue;
+    renderable_objects[i]->render();
+  }
 
   setOrthographicProjection();
   glColor3f(0.0,0.0,0.0);
@@ -491,6 +498,12 @@ void menu(int id)
     glutPostRedisplay();
     break;
   }
+  
+    case 't' : {
+      
+      render_meshes = !render_meshes;      
+      break;
+    }
 
   case 'm': {
     for( int i = 0; i < (int) rod_renderers.size(); ++i )

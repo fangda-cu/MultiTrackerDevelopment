@@ -157,6 +157,12 @@ public:
 //    AdaptiveLevelSet *_phiPrevious;
 //    AdaptiveLevelSet *_phiCurrent;
 
+    bool recordToFile;
+    int recordFrames;
+    std::string recordFilename;
+    
+    void writeMeshesToFile();
+    
 protected:
     void updateGrid(vector<Vec3d>& points, std::string filename="");
 

@@ -148,6 +148,8 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
     int vertex   = voItr->first;
     int triangle = voItr->second.second;
 
+//    std::cout << "pf " << vertex << "\n";
+    
     // Get distance between vertex and triangle
     //
     Scalar t1, t2, t3;

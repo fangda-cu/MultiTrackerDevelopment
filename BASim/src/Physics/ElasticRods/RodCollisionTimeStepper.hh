@@ -103,6 +103,8 @@ public:
 
   void setClumping(bool flag, Scalar coeff = 0.0);
 
+  bool impulse_enabled;
+
 protected:
   void getProximities(CollisionMeshDataHashMap &collisionMeshes);
   void respondObjectCollisions(CollisionMeshDataHashMap &collisionMeshes, Real dt);

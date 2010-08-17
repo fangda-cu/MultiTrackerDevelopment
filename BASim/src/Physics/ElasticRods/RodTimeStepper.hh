@@ -75,7 +75,7 @@ public:
     m_rod.setTimeStep(dt);
   }
 
-  Scalar getTimeStep() const
+  virtual Scalar getTimeStep() const
   {
     return m_diffEqSolver->getTimeStep();
   }

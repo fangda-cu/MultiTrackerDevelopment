@@ -60,6 +60,12 @@ public:
     // Sets timestep of rod too
     m_stepper->setTimeStep(dt);
   }
+
+  Scalar getTimeStep() const
+  {
+    return m_stepper->getTimeStep();
+  }
+
   
   bool execute()
   {

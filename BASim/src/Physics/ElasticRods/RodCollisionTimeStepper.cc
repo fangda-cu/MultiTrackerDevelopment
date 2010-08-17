@@ -12,6 +12,9 @@ RodCollisionTimeStepper::RodCollisionTimeStepper(RodTimeStepper* rodTimeStepper,
   dynamic_cast<RodTimeStepper*>(m_rodTimeStepper)->addExternalForce(m_rodPenaltyForce);  
   m_collisionMeshes = NULL;
   m_rod->setPenaltyForce(m_rodPenaltyForce);
+  
+  impulse_enabled = true;
+  
 }
 
 void RodCollisionTimeStepper::setClumping(bool flag, Scalar coeff) {
@@ -229,10 +232,12 @@ void RodCollisionTimeStepper::respondObjectCollisions(CollisionMeshDataHashMap &
     //
 
 //  return;
+  
+  if (!impulse_enabled) return;
 
     ElasticRod *rod = m_rod;
     Scalar radius_scale = rod->getRadiusScale();
-		
+    
     std::vector<uint> cands;
     for (CollisionMeshDataHashMapIterator cmItr=collisionMeshes.begin(); cmItr!=collisionMeshes.end(); ++cmItr)
     {
@@ -343,10 +348,12 @@ void RodCollisionTimeStepper::respondObjectCollisions(CollisionMeshDataHashMap &
             ccsItr->getContinuousTime(dt, colls);
         }
 
+//        std::cout << "Collision time stepper : detected collisions in respondObjectCollisions : " << colls.size() << "\n";
         // For all collisions, apply an inelastic impulse
         //
-        for (CollisionsIterator cItr=colls.begin(); cItr!=colls.end(); ++cItr)
+        for (CollisionsIterator cItr=colls.begin(); cItr!=colls.end(); ++cItr) {
             cItr->applyImpulse(0.01);
+        }
     }
 }
 
