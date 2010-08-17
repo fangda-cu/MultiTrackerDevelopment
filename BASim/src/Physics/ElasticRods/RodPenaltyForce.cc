@@ -86,13 +86,15 @@ void RodPenaltyForce::computeForceDX(int baseindex, const ElasticRod& rod, Scala
     int vertex   = voItr->first;
     int triangle = voItr->second.second;
 
-  	Scalar thickness = cmData->getThickness() + rod.radius();
+//  	Scalar thickness = cmData->getThickness() + rod.radius();
 
     Vec3d n = (cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 1]] -
                cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]]).cross(
                cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 2]] - 
                cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]]);
 
+    n.normalize();
+    
     Scalar stiffness = cmData->getSeparationStrength();
 
     localJ.setZero();
@@ -164,6 +166,11 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
                                                                cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 2]],
                                                                t1, t2, t3));*/
 
+    //Scalar distance = (v0 - vertex_face_collisions[i].cp).dot(vertex_face_collisions[i].n) - (vertex_face_collisions[i].r0 + vertex_face_collisions[i].r1 + vertex_face_collisions[i].h);
+
+    //Vec3d force = -vertex_face_collisions[i].k * distance * vertex_face_collisions[i].n;
+
+    
     if (1 || distance < (cmData->getThickness() + rod.radius()))
     {
     	Scalar thickness = cmData->getThickness() + rod.radius();
@@ -191,15 +198,14 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
       // Vertex is inside object or the distance is too small to trust the normal
       //
 //      if (n.dot(normal) < 0.0 || distance < 1e-6)
-      if (distance < 1e-6)
-        continue;
+      //if (distance < 1e-6)   continue;
 
 //      normal.normalize();
 
-      Vec3d relVel = rod.getVelocity(vertex) -
-        (t1 * cmData->velocities[cmData->triangleIndices[(3 * triangle)    ]] +
-         t2 * cmData->velocities[cmData->triangleIndices[(3 * triangle) + 1]] +
-         t3 * cmData->velocities[cmData->triangleIndices[(3 * triangle) + 2]]);
+//      Vec3d relVel = rod.getVelocity(vertex) -
+//        (t1 * cmData->velocities[cmData->triangleIndices[(3 * triangle)    ]] +
+//         t2 * cmData->velocities[cmData->triangleIndices[(3 * triangle) + 1]] +
+//         t3 * cmData->velocities[cmData->triangleIndices[(3 * triangle) + 2]]);
 
       // TODO: Should the COR automatically be set so that the separating velocity
       // is exactly zero when the distance is equal to thickness + radius?
