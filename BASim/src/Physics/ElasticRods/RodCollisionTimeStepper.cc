@@ -6,17 +6,53 @@
 namespace BASim {
 
 RodCollisionTimeStepper::RodCollisionTimeStepper(RodTimeStepper* rodTimeStepper, ElasticRod* rod)
-    : m_collisionsEnabled(false), m_rodTimeStepper(rodTimeStepper), m_rod(rod)
+  : m_collisionsEnabled(false), m_rodPenaltyForce(NULL), m_rodTimeStepper(rodTimeStepper), m_rod(rod), is_multiple_stepper(false)
 {
-  m_rodPenaltyForce = new RodPenaltyForce();
-  dynamic_cast<RodTimeStepper*>(m_rodTimeStepper)->addExternalForce(m_rodPenaltyForce);  
-  m_collisionMeshes = NULL;
-  m_rod->setPenaltyForce(m_rodPenaltyForce);
+  if (m_rodTimeStepper) {
+    m_rodPenaltyForce = new RodPenaltyForce();
+    dynamic_cast<RodTimeStepper*>(m_rodTimeStepper)->addExternalForce(m_rodPenaltyForce);  
+    m_rod->setPenaltyForce(m_rodPenaltyForce);
+  } else {
+    // multiple rod time stepper is being used
+    
+    is_multiple_stepper = true;
+    m_rodPenaltyForce = NULL;
+    
+  }
   
+  m_collisionMeshes = NULL;
   impulse_enabled = true;
   
 }
 
+void RodCollisionTimeStepper::setVertexPositionPenalty(int vertex_id, Vec3d& target_position, double stiffness) 
+{
+  if (m_rodPenaltyForce) {
+    if (vertex_id < m_rod->nv() && vertex_id >= 0) {
+      m_rodPenaltyForce->setVertexPositionPenalty(vertex_id, target_position, stiffness);
+    } else {
+      std::cout << "invalid vertex id\n";
+    }
+  } else {
+    std::cout << "add penatly force first\n";
+  }
+}
+
+// id vertex_id = -1, delete all
+void RodCollisionTimeStepper::clearVertexPositionPenalty(int vertex_id) 
+{
+  if (m_rodPenaltyForce) {
+    if (vertex_id == -1 || (vertex_id< m_rod->nv() && vertex_id >= 0)) {
+      m_rodPenaltyForce->clearVertexPositionPenalty(vertex_id);
+    } else {
+      std::cout << "invalid vertex id\n";
+    }
+  } else {
+    std::cout << "add penatly force first\n";
+  }
+}
+
+  
 void RodCollisionTimeStepper::setClumping(bool flag, Scalar coeff) {
 	if (m_rodPenaltyForce) {
 		m_rodPenaltyForce->setClumping(flag, coeff);
@@ -148,6 +184,8 @@ void RodCollisionTimeStepper::getClumpingPairs(vector<ElasticRod*> &rods)
 
 void RodCollisionTimeStepper::getProximities(CollisionMeshDataHashMap &collisionMeshes)
 {
+  if (is_multiple_stepper) return;
+
     if (m_rod == NULL)
     {
       cerr << "Rod is null in getProximities!\n";
@@ -233,7 +271,7 @@ void RodCollisionTimeStepper::respondObjectCollisions(CollisionMeshDataHashMap &
 
 //  return;
   
-  if (!impulse_enabled) return;
+  if (!m_collisionsEnabled || !impulse_enabled) return;
 
     ElasticRod *rod = m_rod;
     Scalar radius_scale = rod->getRadiusScale();

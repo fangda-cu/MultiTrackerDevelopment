@@ -35,8 +35,17 @@ public:
     return m_rodTimeStepper;
   }
 
+  void setVertexPositionPenalty(int vertex_id, Vec3d& target_position, double stiffness);
+
+  // id vertex_id = -1, delete all
+  void clearVertexPositionPenalty(int vertex_id = -1);
+
   void setTimeStep(Scalar dt)
   {
+    if (is_multiple_stepper) {
+      m_dt = dt; return;
+    } 
+  
     m_rodTimeStepper->setTimeStep(dt);
   }
   
@@ -78,9 +87,15 @@ public:
   {
     if (!m_enabled)
       return;
-    
+
+    if (is_multiple_stepper) {
+      m_rod->collisionsBegin(m_dt);
+      respondObjectCollisions(*m_collisionMeshes, m_dt);
+      return;
+    } 
+
     m_rod->collisionsBegin(m_rodTimeStepper->getTimeStep());
-    respondObjectCollisions(*m_collisionMeshes, m_rodTimeStepper->getTimeStep());   
+    respondObjectCollisions(*m_collisionMeshes, m_rodTimeStepper->getTimeStep());
   }
 
   void tidyUpCollisionStructuresForNextStep()
@@ -88,7 +103,13 @@ public:
      if (!m_enabled)
       return;
 
+     if (is_multiple_stepper) {
+       m_rod->collisionsEnd(m_dt);
+       return;
+     } 
+
      m_rod->collisionsEnd(m_rodTimeStepper->getTimeStep());
+
   }
 
   bool execute();
@@ -114,6 +135,10 @@ protected:
   RodPenaltyForce* m_rodPenaltyForce;
   RodTimeStepper* m_rodTimeStepper;
   ElasticRod* m_rod;
+
+  bool is_multiple_stepper; // no penalty method, no m_rodTimeStepper
+  double m_dt; // only used in multiple stepping
+
 };
 
 

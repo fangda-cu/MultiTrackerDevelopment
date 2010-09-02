@@ -8,6 +8,8 @@
 #include "RodExternalForce.hh"
 #include "../../Collisions/CollisionMeshData.hh"
 
+#include "RodRodExternalForce.hh"
+
 //#include <ext/hash_map>
 #include <map>
 
@@ -26,6 +28,9 @@ typedef EdgeRodMap::iterator VertexRodMapIterator;
 
 typedef std::vector<Scalar> RealArray;
 
+typedef std::multimap<int, std::pair<Vec3d, double>> VertexPositionMap;
+typedef VertexPositionMap::iterator VertexPositionMapIterator;
+
 class RodPenaltyForce : public RodExternalForce
 {
 public:
@@ -40,8 +45,6 @@ public:
 
   virtual void computeForceDX(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J);
   virtual void computeForceDV(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
-
-
   
   void addRodPenaltyForce(int vertex, CollisionMeshData *cmData, int triangle);
   void addRodPenaltyForce(int edge, ElasticRod *rod, int otherEdge);
@@ -51,6 +54,11 @@ public:
   void computeForceDX(const ElasticRod& rod, Scalar scale, MatrixBase& J);
   void computeForceDV(const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
 
+  void setVertexPositionPenalty(int vertex_id, Vec3d& target_position, double stiffness);
+
+  // id vertex_id = -1, delete all
+  void clearVertexPositionPenalty(int vertex_id = -1);
+  
   void addRodClumpingForce(int vertex, ElasticRod *rod, int otherVertex);
 
   void setClumping(bool flag, Real coeff = 0.0) 
@@ -59,6 +67,13 @@ public:
     clumping_coeff = coeff;
   }
 	
+  //void clearBulkSprings() {
+//    m_bulk_springs.clear();
+//  }
+  
+//  void activateBulkSpring( RodGroupManager::RodRodSpring spr ) {
+//    m_bulk_springs.push_back(spr);
+//  }
 	
 protected:
   VertexObjectMap _vertexObjects;
@@ -76,10 +91,133 @@ protected:
                                 
   void localJacobian(MatXd& J, const Scalar stiffness, const Vec3d& normal);
 
+  std::vector <Vec3d> surface_normals;
+  
   bool clumping_enbld;
   Real clumping_coeff;
+  
+  //std::vector <RodGroupManager::RodRodSpring> m_bulk_springs;
                                 
+  // position based spring penalty force
+  VertexPositionMap m_vertex_position_penalties;
+  
 };
+
+
+ 
+/*struct _RodRodBulkSpringPenalty {
+  uint start_v;
+  uint nv;
+  double rest_length;
+  Vec3d opposite_end;
+};
+
+typedef struct _RodRodBulkSpringPenalty RodRodBulkSpringPenalty;
+
+  
+class RodGroupManager
+{
+  struct _RodRodSpring {
+    uint g;
+    uint id1;
+    uint id2;
+    ElasticRod* rod1;
+    ElasticRod* rod2;
+    uint start_v;
+    uint nv;
+    double rest_length;
+    double stiff;
+    Vec3d opposite_end;
+};
+  
+  typedef struct _RodRodSpring RodRodSpring;
+  
+  struct RodRodSpringCompare {
+    bool operator() (RodRodSpring i,RodRodSpring j) { return (i.rest_length < j.rest_length);}
+};
+  
+  public:
+    
+    RodGroupManager( std::vector<ElasticRod*> & rods, int ngs, double gap, double stf );
+    
+    void Setup();
+    int ClusterRods( int K );
+    void SetupSpring();
+    void PrecomputeSpring();
+
+    void ActivateSpring(double dt);
+
+    
+  
+  
+  public:  
+    int nr;
+    int ns;
+    int ng;
+    
+    double layer_gap;
+    double stiffness;
+    
+    std::vector<ElasticRod*> m_rods;
+    std::vector<RodRodSpring> m_springs;
+    std::vector<Vec3d> m_rod_locs;
+    std::vector<int> m_rod_groups;
+    std::vector<int> m_group_nrs;
+    
+};
+
+
+//typedef std::vector < std::pair<ElasticRod*, int> > RodVertexVec;
+typedef std::vector < std::pair<int, int> > RodVertexVec;
+typedef RodVertexVec::iterator RodVertexVecIterator;
+
+class RodGroupSpringForce : public RodRodExternalForce
+{
+  public:
+    RodGroupSpringForce(std::vector<ElasticRod*>& rods);
+    ~RodGroupSpringForce();
+    
+    virtual void computeForce( VecXd& force );
+    virtual void computeForceDX( Scalar scale, MatrixBase& J );
+    virtual void computeForceDV( Scalar scale, MatrixBase& J ) {}
+        
+    void checkActivatingCondition();
+    int binaryClustering(std::vector<int>& idx, int gid);
+    
+    void setStiffness(double s) { stiffness = s; }
+    double getStiffness() { return stiffness; }
+    
+    int getNumberOfSprings() { return ns; }
+    
+    Vec3d& computeCenterPosition( RodVertexVec& rv );
+    
+  public:
+    // spring direction : groupB ==> groupA
+    
+    int ns; // total number of springs
+    int nr;
+    int ng;
+    std::vector<RodVertexVec> groupA;
+    std::vector<RodVertexVec> groupB;
+    std::vector<double> restL;
+    std::vector<bool> is_activated;
+    
+    double stiffness;
+    
+    // each rod info
+    std::vector<ElasticRod*> m_rods;
+    std::vector<Vec3d> m_rod_locs;     // representative position of each rod for clustering, e.g. each root
+    std::vector<int> m_base_id;    // as in global force vector
+  
+    std::vector<int> m_group_id;
+    
+    std::vector < std::vector<int> > m_group_rods;  // { {1,3,5}, {2,4}, {7,8,9}, ... }
+    
+  
+};
+
+*/
+
 
 }
 
