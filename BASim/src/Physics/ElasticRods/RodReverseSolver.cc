@@ -44,7 +44,7 @@ RodReverseSolver::~RodReverseSolver()
 
 bool RodReverseSolver::execute() 
 {
-  //std::cout << "Reverse Solver / execute\n";
+  std::cout << "Reverse Solver / execute\n";
   
   if (m_rod->nv() < 3) return true;
   
@@ -105,24 +105,25 @@ bool RodReverseSolver::execute()
     
   // Newton iteration
   const int max_iterations = 50;
-  const double stol = 0.0000000001;
+  const double stol = 0.00000001;
   int curr_it = 0;
   
   while(curr_it < max_iterations)
   {
-//    std::cout << curr_it << " iter\n" << x << "\n";
+//    std::cout << curr_it << " \033[31;1m ITERATION :\033[m " << "\n";
     
-//    std::cout << "CURRENT UNDEFORMED STRAIN : " << x << "\n";
+    //std::cout << "\033[31;1mCURRENT UNDEFORMED STRAIN:\033[m : " << x << "\n";
     
     VecXd f(m_rod->ndof());
+    f.setZero();
     // Fill r = force through force classes
     m_stepper->evaluatePDot(f);
 
 //    std::cout << "entire force \n" << f << "\n";
-    
+    r.setZero();
     r = - f.segment(7, size); // b as in Ax=b
     
-//    std::cout << "free force  " << r.norm() << "\n" << r << "\n";
+    //std::cout << "\033[31;1mFORCE:\033[m  " << r.norm() << "\n" << r << "\n";
     
     if ( r.norm() < stol ) {
       return true;
@@ -147,7 +148,7 @@ bool RodReverseSolver::execute()
       std::cerr << "\033[31;1mWARNING IN REVERSE SOLVER:\033[m Problem during linear solve detected. " << std::endl;
     }
         
-//    std::cout << "dx  " << dx.norm() << "\n" << dx << "\n";
+    //std::cout << "dx  " << dx.norm() << "\n" << dx << "\n";
     
     //VecXd test_Adx (size);
     //test_Adx.setZero();

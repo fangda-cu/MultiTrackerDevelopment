@@ -35,10 +35,15 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
 		      m_gravity = i_gravity;
 		    }
     
+        
 		    AdaptiveBinaryStepper* adpstep = new AdaptiveBinaryStepper( m_rod, stepper );
 		    //m_steppers.push_back(adpstep);
 	    
 		    m_stepper = new RodCollisionTimeStepper( adpstep, m_rod );        
+        
+        // REVERSE HAIRDO
+        m_rod->doReverseHairdo(stepper);
+        
 	    } else
 	    {
 		    RodTimeStepper* stepper = new RodTimeStepper( *m_rod );
