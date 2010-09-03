@@ -39,6 +39,14 @@ public:
     return *this;
   }
 
+  bool operator<( const DofHandle& rhs ) const
+  {
+    if( this->getType() != rhs.getType() ) return this->getType() < rhs.getType();
+    if( this->getNum() != rhs.getNum() ) return this->getNum() < rhs.getNum();
+    if( this->getHandle() != rhs.getHandle() ) return this->getHandle() < rhs.getHandle();
+    return false;
+  }
+
   bool operator==( const DofHandle& rhs ) const
   {
     if( this->getType() != rhs.getType() ) return false;
@@ -73,13 +81,15 @@ class DOFMap
 {
 public:
 
-  DOFMap() {}
+  DOFMap() { assert( m_dofToIndex.size() == m_indexToDof.size() ); }
   ~DOFMap() {}
 
   void addMapping(const DofHandle& dof, int index)
   {
+    assert( m_dofToIndex.size() == m_indexToDof.size() );
     m_dofToIndex.insert(std::make_pair(dof, index));
     m_indexToDof.insert(std::make_pair(index, dof));
+    assert( m_dofToIndex.size() == m_indexToDof.size() );
   }
 
   const DofHandle& getDof(int index) const
@@ -104,6 +114,20 @@ public:
   const std::map<int,DofHandle>& getIndexToDofMap() const
   {
     return m_indexToDof;
+  }
+
+  void clearMappings()
+  {
+    m_dofToIndex.clear();
+    m_indexToDof.clear();
+    assert( m_dofToIndex.size() == 0 );
+    assert( m_indexToDof.size() == 0 );
+  }
+  
+  size_t size() const
+  {
+    assert( m_dofToIndex.size() == m_indexToDof.size() );
+    return m_dofToIndex.size();
   }
 
 protected:

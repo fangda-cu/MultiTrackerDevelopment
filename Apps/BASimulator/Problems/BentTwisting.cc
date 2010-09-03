@@ -72,6 +72,21 @@ void BentTwisting::Setup()
 
 void BentTwisting::AtEachTimestep()
 {
+  // Test of object serializaiton
+  //RodState origrodstate;
+  //origrodstate.copyState(*rod);
+  //rodstate.print(*rod);
+  
+  //TopologicalObjectSerializer testserializer;
+  //testserializer.saveTopologicalObject( *rod, "testoutput.bin" );
+
+  //ElasticRod* testrod = NULL;
+  //testserializer.loadTopologicalObject( &testrod, "testoutput.bin" );
+  //assert( testrod != NULL );
+
+  //origrodstate.compareProperties(*testrod);
+  //delete[] testrod;
+  
   if (m_maxTwist > 0 && m_currentTwist >= m_maxTwist) return;
 
   Scalar twistIncrement = getDt() * m_twistRate;

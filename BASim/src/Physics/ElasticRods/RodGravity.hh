@@ -35,12 +35,17 @@ public:
 
   void computeForce(const ElasticRod& rod, VecXd& force)
   {
+    VecXd force1 = force;
+    
     for (int i = 0; i < rod.nv(); ++i) {
       Vec3d f = rod.getVertexMass(i) * m_gravity;
       for (int coord = 0; coord < 3; ++coord) {
         force(rod.vertIdx(i, coord)) += f(coord);
       }
     }
+    
+//    std::cout << "gravity\n" << force - force1 <<"\n";
+    
   }
 
   void computeForceDX(int baseidx, const ElasticRod& rod, Scalar scale, MatrixBase& J) {}

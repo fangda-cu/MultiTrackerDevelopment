@@ -218,7 +218,7 @@ void Problem::addDynamicsProps()
 
   m_world->add_property(m_time, "time", 0.0);
 
-  m_world->add_property(m_dt, "time-step", 0.1);
+  m_world->add_property(m_dt, "time-step", 0.01);
   AddOption("dt", "time-step size", getDt());
 
   m_world->add_property(m_gravity, "gravity", Vec3d(0, -981, 0));
@@ -316,7 +316,7 @@ void Problem::addRodTimeStepperOptions()
   AddOption("mass-damping", "mass damping for the rod", 0.0);
   AddOption("integrator", "type of integrator to use for the rod", "implicit");
   AddOption("iterations", "maximum number of iterations for implicit method",
-            (int) 1);
+            (int) 50);
   AddOption("atol", "absolute convergence tolerance", 1e-8);
   AddOption("rtol", "relative convergence tolerance", 1e-8);
   AddOption("stol", "convergence tolerance in terms of the norm of the change in the solution between steps", 1e-8);
@@ -368,6 +368,56 @@ RodTimeStepper* Problem::getRodTimeStepper(ElasticRod& rod)
 
   return stepper;
 }
+
+MultipleRodTimeStepper* Problem::getMultipleRodTimeStepper()
+{
+  MultipleRodTimeStepper* stepper = new MultipleRodTimeStepper();
+
+  string& integrator = GetStringOpt("integrator");
+
+  if (integrator == "symplectic") {
+    stepper->setDiffEqSolver(MultipleRodTimeStepper::SYMPL_EULER);
+  } 
+  if (integrator == "implicit")
+  {
+    stepper->setDiffEqSolver(MultipleRodTimeStepper::IMPL_EULER);
+  } 
+  else 
+  {
+    cerr << "Unknown integrator " << integrator
+    << ". Using default instead." << endl;
+  }
+  //else if (integrator == "statics") {
+  //  stepper->setDiffEqSolver(RodTimeStepper::STATICS);
+  //} 
+  
+  stepper->setTimeStep(getDt());
+  
+  Scalar massDamping = GetScalarOpt("mass-damping");
+  if (massDamping != 0) {
+    stepper->addExternalForce(new RodMassDamping(massDamping));
+  }
+  
+  if (getGravity().norm() > 0) {
+    stepper->addExternalForce(new RodGravity(getGravity()));
+  }
+  
+  stepper->setMaxIterations(GetIntOpt("iterations"));
+  stepper->set_stol(GetScalarOpt("stol"));
+  stepper->set_atol(GetScalarOpt("atol"));
+  stepper->set_rtol(GetScalarOpt("rtol"));
+  stepper->set_inftol(GetScalarOpt("inftol"));
+  
+  //   cout << "stol " << stepper->get_stol() << endl
+  //        << "atol " << stepper->get_atol() << endl
+  //        << "rtol " << stepper->get_rtol() << endl
+  //        << "inftol " << stepper->get_inftol() << endl
+  //        << "maxit " << stepper->getMaxIterations() << endl;
+  
+  return stepper;  
+}
+
+
 
 /*Problem::Problem()
   : m_time(0.0)

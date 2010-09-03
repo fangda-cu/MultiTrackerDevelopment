@@ -22,6 +22,12 @@
 #include "src/Math/MKL/MKLLinearSolver.hh"
 #endif // HAVE_LAPACK
 
+#ifdef HAVE_PARDISO
+#include "src/Math/PardisoMatrix.hh"
+#include "src/Math/Pardiso/PardisoLinearSolver.hh"
+#endif // HAVE_PARDISO
+
+
 //#include "src/Math/FlensMatrix.hh"
 
 //#include <itpp/itbase.h>

@@ -49,6 +49,11 @@ public:
 	
 	virtual void updatePlasticity(Scalar maxKappa) {}
   
+  virtual void updateUndeformedConfiguration(std::vector<Scalar>& vals) {}
+  
+  virtual void globalReverseJacobian(MatrixBase& Jacobian) {}
+  virtual void updateReverseUndeformedStrain(const VecXd& e) {}
+  
   bool viscous() const { return m_viscous; }
   void setViscous(bool v) { m_viscous = v; updateStiffness(); }
 

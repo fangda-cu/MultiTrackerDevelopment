@@ -16,25 +16,57 @@ using namespace std;
 
 namespace BASim {
 
-RodStretchingForce::RodStretchingForce(ElasticRod& rod, bool vscs)
+RodStretchingForce::RodStretchingForce(ElasticRod& rod, bool vscs, bool runinit)
   : RodForceT<EdgeStencil>(rod, "RodStretchingForce")
 {
-  if( !vscs ) 
+  if( runinit )
   {
-    m_rod.add_property(m_ks, "stretching stiffness");
-    m_rod.add_property(m_refLength, "stretching ref length");
+    if( !vscs ) 
+    {
+      m_rod.add_property(m_ks, "stretching stiffness");
+      m_rod.add_property(m_refLength, "stretching ref length");
+    }
+    else 
+    {
+      m_rod.add_property(m_ks, "viscous stretching stiffness");
+      m_rod.add_property(m_refLength, "viscous stretching ref length");
+    }
+
+    setViscous(vscs);
+  
+    updateStiffness();
+    updateUndeformedStrain();
   }
   else 
   {
-    m_rod.add_property(m_ks, "viscous stretching stiffness");
-    m_rod.add_property(m_refLength, "viscous stretching ref length");
+    m_viscous = vscs;
   }
-
-  setViscous(vscs);
-
-  updateStiffness();
-  updateUndeformedStrain();
 }
+  
+  
+void RodStretchingForce::updateUndeformedConfiguration(std::vector<Scalar>& vals) {
+  /*std::cout << "stretch origin\n";
+  
+  {
+    iterator end = m_stencil.end();
+    for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
+      edge_handle& eh = m_stencil.handle();
+      std::cout << getRefLength(eh) << "\n";
+    }
+  }*/
+
+  //std::cout << "stretch new\n";
+  
+  int i=0;
+  iterator end = m_stencil.end();
+  for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil, ++i) {
+    if (i==0) continue;
+    edge_handle& eh = m_stencil.handle();
+    setRefLength(eh, vals[i-1]);
+//    std::cout << getRefLength(eh) << "\n";
+  }    
+}
+
 
 void RodStretchingForce::gatherDofs(SpringDofStruct& dofs,
                                     const edge_handle& eh)
@@ -87,6 +119,8 @@ void RodStretchingForce::globalForce(VecXd& force)
   
   int q = 0;
   
+  VecXd force1 = force;
+  
   for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
     edge_handle& eh = m_stencil.handle();
     //elementForce(localForce, eh);
@@ -110,6 +144,11 @@ void RodStretchingForce::globalForce(VecXd& force)
 #ifdef TEST_ROD_STRETCHING
   globalEnergy();
 #endif // TEST_ROD_STRETCHING
+  
+  
+  //std::cout << "STRETCHING FORCE\n";
+  //std::cout << force - force1 << "\n\n";
+    
 }
 
 void RodStretchingForce::elementForce(ElementForce& force,
@@ -179,6 +218,68 @@ void RodStretchingForce::elementJacobian(ElementJacobian& Jacobian,
   }
 }
 
+void RodStretchingForce::globalReverseJacobian(MatrixBase& J)
+{
+  if (viscous()) return;  // don't need to include viscous force - zero 
+  
+  IndexArray indices;
+    
+  iterator end = m_stencil.end();
+  m_stencil = m_stencil.begin();
+  
+  ++m_stencil; // skip first edge
+      
+  uint eid = 1;
+  for (; m_stencil != end; ++m_stencil, ++eid) {
+    edge_handle& eh = m_stencil.handle();
+    
+    Scalar ks = getKs(eh);
+    if (ks == 0.0) return;
+
+    const Vec3d& e = m_rod.getEdge(eh);
+    //Scalar len = m_rod.getEdgeLength(eh);
+    Scalar refLength = getRefLength(eh);
+    
+    Vec3d fdx = - ks / (refLength * refLength) * e;
+    
+    m_stencil.indices(indices);
+    
+//    std::cout << "str id  " << indices << "\n" << fdx << "\n";
+    
+    if (eid > 1) {
+      for(int i=0; i<3; i++) {
+        J.add(indices[i] - 7, (eid-1) * 4 + 3, fdx(i));
+      }
+    }
+    
+//    J.print();
+    
+    for(int i=3; i<6; i++) {
+//      cout << indices[i] - 7 << " " << (eid-1) * 4 + 3 << " "<< -fdx(i-3) <<"\n";
+      J.add(indices[i] - 7, (eid-1) * 4 + 3, -fdx(i-3));
+    }
+    
+//    J.print();
+  }
+}
+
+// we know index
+void RodStretchingForce::updateReverseUndeformedStrain(const VecXd& e)
+{
+  if (viscous()) return; 
+    
+  m_stencil = m_stencil.begin();
+  iterator end = m_stencil.end();
+  
+  ++m_stencil;
+  uint eid = 1;  // eh.id() ?
+  
+  for (; m_stencil != end; ++m_stencil, ++eid) {
+    edge_handle& eh = m_stencil.handle();
+    setRefLength(eh, e( (eid-1) * 4 + 3 ));
+  }  
+}
+
 const Scalar& RodStretchingForce::getKs(const edge_handle& eh) const
 {
   return m_rod.property(m_ks)[eh];
@@ -213,6 +314,9 @@ void RodStretchingForce::updateStiffness()
     Scalar a = m_rod.radiusA(eh);
     Scalar b = m_rod.radiusB(eh);
     setKs(eh, E * M_PI * a * b);
+    
+    //std::cout << E * M_PI * a * b << "\n";
+
   }
 }
 

@@ -54,6 +54,7 @@ namespace BASim
         IntStatTracker::getIntTracker("INITIAL_ITERATE_2_SUCCESSES",0);
         IntStatTracker::getIntTracker("INITIAL_ITERATE_3_SUCCESSES",0);
         IntStatTracker::getIntTracker("INITIAL_ITERATE_4_SUCCESSES",0);
+        IntStatTracker::getIntTracker("INITIAL_ITERATE_5_SUCCESSES",0);
       #endif
     }
 
@@ -77,55 +78,86 @@ namespace BASim
 
     bool execute()
     {
-//      std::cout << "SYM execute\n";
-      
+      START_TIMER("backup");
       m_diffEq.backupResize();
       m_diffEq.backup();
+      STOP_TIMER("backup");
 
       if( position_solve(0) ) 
       {
         #ifdef TIMING_ON
           IntStatTracker::getIntTracker("INITIAL_ITERATE_1_SUCCESSES") += 1;
         #endif
+        START_TIMER("backup");
         m_diffEq.backupClear();
+        STOP_TIMER("backup");
         return true;
       }
       
       //std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: " << m_maxit << ". Attempting alternate initial iterate 2." << std::endl;
+      START_TIMER("backup");
       m_diffEq.backupRestore();
+      STOP_TIMER("backup");
       if( position_solve(1) ) 
       {
         #ifdef TIMING_ON
           IntStatTracker::getIntTracker("INITIAL_ITERATE_2_SUCCESSES") += 1;
         #endif
-        m_diffEq.backupClear();  
+        START_TIMER("backup");
+        m_diffEq.backupClear();
+        STOP_TIMER("backup");
         return true;
       }
 
       //std::cerr << "                          Newton solver failed to converge in max iterations: " << m_maxit << ". Attempting alternate initial iterate 3." << std::endl;
+      START_TIMER("backup");
       m_diffEq.backupRestore();
+      STOP_TIMER("backup");
       if( position_solve(2) )
       {
         #ifdef TIMING_ON
           IntStatTracker::getIntTracker("INITIAL_ITERATE_3_SUCCESSES") += 1;
         #endif        
+        START_TIMER("backup");
         m_diffEq.backupClear();
+        STOP_TIMER("backup");
         return true;
       }
 
       //std::cerr << "                          Newton solver failed to converge in max iterations: " << m_maxit << ". Attempting alternate initial iterate 4." << std::endl;
+      START_TIMER("backup");
       m_diffEq.backupRestore();
+      STOP_TIMER("backup");
       if( position_solve(3) )
       {
         #ifdef TIMING_ON
           IntStatTracker::getIntTracker("INITIAL_ITERATE_4_SUCCESSES") += 1;
         #endif
+        START_TIMER("backup");
         m_diffEq.backupClear();
+        STOP_TIMER("backup");
         return true;
       }      
       
-      std::cerr << "\033[31;1mWARNING IN SYMMETRICIMPLICITEULER:\033[m Newton solver failed to converge in max iterations: " << m_maxit << "." << std::endl;
+      //std::cerr << "                          Newton solver failed to converge in max iterations: " << m_maxit << ". Attempting alternate initial iterate 4." << std::endl;
+      START_TIMER("backup");
+      m_diffEq.backupRestore();
+      STOP_TIMER("backup");
+      if( position_solve(4) )
+      {
+        #ifdef TIMING_ON
+          IntStatTracker::getIntTracker("INITIAL_ITERATE_5_SUCCESSES") += 1;
+        #endif
+        START_TIMER("backup");
+        m_diffEq.backupClear();
+        STOP_TIMER("backup");
+        return true;
+      }
+      
+      std::cerr << "\033[31;1mWARNING IN SYM IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: " << m_maxit << "." << std::endl;
+      START_TIMER("backup");
       m_diffEq.backupClear();
+      STOP_TIMER("backup");
       return false;
     }
 
@@ -245,8 +277,13 @@ namespace BASim
       dx = 1.5*m_dt*v0;
     }    
     
+    void generateInitialIterate5( VecXd& dx )
+    {
+      dx = 2.0*m_dt*v0;
+    }
+    
     bool position_solve( int guess_to_use )
-    {      
+    {
       START_TIMER("setup");
       
       bool successfull_solve = true;
@@ -276,12 +313,16 @@ namespace BASim
       m_diffEq.getV(v0);
       
       // Set velocites for fixed degrees of freedom.
-      for( int i = 0; i < (int) m_fixed.size(); ++i )
-      {
-        int dof = m_fixed[i];
-        v0(dof) = (m_desired[i]-x0(dof))/m_dt;
-      }
-      
+      //for( int i = 0; i < (int) m_fixed.size(); ++i )
+      //{
+      //  int dof = m_fixed[i];
+      //  v0(dof) = (m_desired[i]-x0(dof))/m_dt;
+      //}
+
+      //#ifdef DEBUG
+      //  for( int i = 0; i < (int) m_fixed.size(); ++i ) assert( approxEq(m_desired[i],x0(m_fixed[i])+v0[m_fixed[i]]*m_dt,1.0e-6) );
+      //#endif
+
       // Initialize guess for the root.
       switch (guess_to_use) 
       {
@@ -305,12 +346,25 @@ namespace BASim
           generateInitialIterate4(m_deltaX);
           break;
         }
+        case 4:
+        {
+          generateInitialIterate5(m_deltaX);
+          break;
+        }
         default:
         {
           std::cerr << "\033[31;1mERROR IN IMPLICITEULER:\033[m Invalid initial iterate requested, exiting." << std::endl;
           exit(1);
           break;
         }
+      }
+
+      // Set deltaX and v0 for fixed degrees of freedom.
+      for( int i = 0; i < (int) m_fixed.size(); ++i )
+      {
+        int dof = m_fixed[i];
+        m_deltaX(dof) = m_desired[i]-x0(dof);
+        v0(dof) = (m_desired[i]-x0(dof))/m_dt;
       }
 
       // Update the differential equation with the current guess
@@ -323,7 +377,15 @@ namespace BASim
       m_initial_residual = computeResidual();
       
       #ifdef DEBUG
-      for( int i = 0; i < (int) m_fixed.size(); ++i ) assert( approxEq(m_desired[i],x0(m_fixed[i])+m_deltaX(m_fixed[i]),1.0e-6) );
+        for( int i = 0; i < (int) m_fixed.size(); ++i ) 
+        {
+          //if( !approxEq(m_desired[i],x0(m_fixed[i])+m_deltaX(m_fixed[i]),1.0e-6) )
+          //{
+          //  std::cout << "Residual: " << -m_desired[i]+x0(m_fixed[i])+m_deltaX(m_fixed[i]) << std::endl;
+          //  std::cout << "Initial guess: " << guess_to_use << std::endl;
+          //}
+          assert( approxEq(m_desired[i],x0(m_fixed[i])+m_deltaX(m_fixed[i]),1.0e-6) );
+        }
       #endif
       
       STOP_TIMER("setup");
@@ -343,24 +405,42 @@ namespace BASim
         m_diffEq.evaluatePDotDX(-m_dt*m_dt, *m_A);
         m_A->finalize();
         
+        //std::cout << "m_A = -h^2*dF/dx" << std::endl;
+        //m_A->print();
+        
         // m_A = -h*dF/dv -h^2*dF/dx
         m_diffEq.evaluatePDotDV(-m_dt, *m_A);
         m_A->finalize();
+        //assert( m_A->isApproxSymmetric(1.0e-6) );
+
+        //std::cout << "m_A = -h*dF/dv -h^2*dF/dx" << std::endl;
+        //m_A->print();
 
         // m_A = M -h*dF/dv -h^2*dF/dx
         for (int i = 0; i < m_ndof; ++i) m_A->add(i,i,m_mass(i));
         m_A->finalize();
-        
+        //assert( m_A->isApproxSymmetric(1.0e-6) );
+
+        //std::cout << "m_A = -h*dF/dv -h^2*dF/dx" << std::endl;
+        //m_A->print();
+
         // Set the rows and columns corresponding to fixed degrees of freedom to 0
         m_A->zeroRows(m_fixed,1.0);
         m_A->finalize();
-        m_A->zeroCols(m_fixed,1.0);
-        m_A->finalize();        
         
+        //std::cout << "m_A rows cleared" << std::endl;
+        //m_A->print();
+        
+        m_A->zeroCols(m_fixed,1.0);
+        m_A->finalize();
+
+        //std::cout << "m_A cols cleared" << std::endl;
+        //m_A->print();
+
         // Finalize the nonzero structure before the linear solve (for sparse matrices only)
         m_A->finalizeNonzeros();
         STOP_TIMER("setup");
-        
+
         assert( m_A->isApproxSymmetric(1.0e-6) );
         
         START_TIMER("solver");
@@ -408,18 +488,39 @@ namespace BASim
         itrstrng = "NEWTON_SOLVES_OF_LENGTH_" + itrstrng;
         IntStatTracker::getIntTracker(itrstrng) += 1;
 
-        PairVectorBase::insertPair( "ForcesVsIterations", std::pair<double,int>(timing_force_at_start,(m_curit+1)/m_dt), PairVectorBase::StringPair("ForceNorm","ImplicitIterations") );
+        PairVectorBase::insertPair( "ForcesVsIterations", std::pair<double,int>(timing_force_at_start,(m_curit+1)/m_dt), PairVectorBase::StringPair("ForceNorm","ImplicitIterationsPerSec") );
+
+        ObjPropHandle<double> ophndl;
+        if( m_diffEq.getRod()->property_exists(ophndl,"collision_induced_strain") )
+        {
+          m_diffEq.getRod()->property_handle(ophndl,"collision_induced_strain");
+          double strain = m_diffEq.getRod()->property(ophndl);
+          PairVectorBase::insertPair( "StrainVsIterations", std::pair<double,int>(strain,(m_curit+1)/m_dt), PairVectorBase::StringPair("Strain","ImplicitIterationsPerSec") );
+        }
+        //m_rods[i]->add_property(ophndl,"collision_induced_strain");
+        //m_rods[i]->property(ophndl) = total_strain;
+      
+        if( successfull_solve )
+        {
+          ObjPropHandle<std::pair<double,int> > ophndl2;
+          if( m_diffEq.getRod()->property_exists(ophndl2,"collision_induced_force_change") )
+          {
+            m_diffEq.getRod()->property_handle(ophndl2,"collision_induced_force_change");
+            m_diffEq.getRod()->property(ophndl2).second += m_curit+1;
+            //std::cout << m_diffEq.getRod()->property(ophndl2).first << "  -  " << m_diffEq.getRod()->property(ophndl2).second << std::endl;
+          }
+        }
       #endif
 
       m_diffEq.endStep();
 
       #ifdef DEBUG
-      if( successfull_solve )
-      {
-        VecXd xf(m_ndof);
-        m_diffEq.getX(xf);
-        for( int i = 0; i < (int) m_fixed.size(); ++i ) assert( approxEq(m_desired[i],xf(m_fixed[i]),1.0e-6) );
-      }
+        if( successfull_solve )
+        {
+          VecXd xf(m_ndof);
+          m_diffEq.getX(xf);
+          for( int i = 0; i < (int) m_fixed.size(); ++i ) assert( approxEq(m_desired[i],xf(m_fixed[i]),1.0e-6) );
+        }
       #endif
 
       //std::cout << m_curit << std::endl;

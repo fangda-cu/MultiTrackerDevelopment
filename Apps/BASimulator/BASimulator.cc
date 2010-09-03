@@ -28,6 +28,15 @@
 #include <tclap/CmdLine.h>
 #include <typeinfo>
 
+#include <queue>
+
+#include "BASimulator.hh"
+
+#include "BASim/src/Render/TriangleMeshRenderer.hh"
+
+#include "BASim/src/IO/XMLSceneOutputter.hh"
+
+#include "BASim/src/Core/StatTracker.hh"
 
 // Might not work in windows? :'(
 #include <sys/stat.h>
@@ -49,8 +58,8 @@ std::vector<TriangleMeshRenderer*> triangle_mesh_renderers;
 bool render = true;
 bool paused = true;
 bool continuous = true;
-int window_width = 512;
-int window_height = 512;
+int window_width = 800;
+int window_height = 800;
 int max_frames = -1;
 Scalar max_time = -1;
 bool progress_indicator = false;
@@ -60,6 +69,7 @@ bool generate_movie = false;
 bool g_dsp_sim_tm = true;
 
 bool render_meshes = true;
+bool render_springs = false;
 
 // For outputting time-stamped simulation captures,
 // for matching current simulation run to output directory.
@@ -67,14 +77,28 @@ time_t g_rawtime;
 struct tm* g_timeinfo;
 
 // For dumping movies, etc
-Scalar fps = 60;
+Scalar fps = 30;
 double frame_period;
-int current_frame;
+int current_frame = 0;
+int steps_per_frame;
 std::string outputdirectory;
+
+// Simulation "breakpoints" for debugging purpouses. Times at which the simulation should be paused. 
+std::queue<double> g_sim_breakpoints;
 
 void cleanup()
 {
   Timer::report();
+  Timer::deleteAllTimers();
+
+  IntStatTracker::reportIntTrackers();
+  IntStatTracker::deleteAllIntTrackers();
+  DoubleStatTracker::reportDoubleTrackers();
+  DoubleStatTracker::deleteAllDoubleTrackers();
+
+  PairVectorBase::saveToFiles("stats");
+  PairVectorBase::clear();
+  
   if (current_problem != NULL) current_problem->BaseFinalize();
   for( size_t i = 1; i < problems.size(); ++i )
   {
@@ -138,10 +162,11 @@ void InitMenu()
   glutAddMenuEntry("Mode (m)", 'm');
   glutAddMenuEntry("Draw arrows (a)", 'a');
   //glutAddMenuEntry("Force (f)", 'f');
-  //glutAddMenuEntry("Camera (p)", 'p');
+  glutAddMenuEntry("Camera (p)", 'p');
   glutAddMenuEntry("Scale to radius (r)", 'r');
 
   glutAddMenuEntry("Draw/hide meshes (t)", 't');
+  glutAddMenuEntry("Draw/hide springs (z)", 'z');
 
   glutCreateMenu(menu);
   glutAddMenuEntry("Quit (q)", 'q');
@@ -160,29 +185,47 @@ Vec3d calcSimCenter()
   Vec3d center = Vec3d::Zero();
   int n = 0;
 
-  for( int i = 0; i < (int) renderable_objects.size(); ++i ) 
+  
+  for( int i = 0; i < (int) rod_renderers.size(); ++i ) 
   {
-    center += renderable_objects[i]->calculateObjectCenter();
-    ++n;
+    center += rod_renderers[i]->calculateObjectCenter();
+    n ++;
   }
+      
+//  for( int i = 0; i < (int) renderable_objects.size(); ++i ) 
+//  {
+//    center += renderable_objects[i]->calculateObjectCenter();
+//    ++n;
+//  }
   
   if( n != 0 ) center /= ((double)n);
 
+  center += Vec3d(0, -10, 0);
+  
   return center;
 }
 
 Scalar calcViewRadius(Vec3d& simCenter)
 {
   Scalar radius = 0.0;
-
-  for( int i = 0; i < (int) renderable_objects.size(); ++i ) 
+  
+  for( int i = 0; i < (int) rod_renderers.size(); ++i ) 
   {
-    Vec3d center = renderable_objects[i]->calculateObjectCenter();
-    Scalar r = renderable_objects[i]->calculateObjectBoundingRadius(center);
+    Vec3d center = rod_renderers[i]->calculateObjectCenter();
+    Scalar r = rod_renderers[i]->calculateObjectBoundingRadius(center);
     radius = std::max(radius, r + (center - simCenter).norm());
   }
+
+//  for( int i = 0; i < (int) renderable_objects.size(); ++i ) 
+//  {
+//    Vec3d center = renderable_objects[i]->calculateObjectCenter();
+//    Scalar r = renderable_objects[i]->calculateObjectBoundingRadius(center);
+//    radius = std::max(radius, r + (center - simCenter).norm());
+//  }
   
   if( radius == 0.0 ) radius += 0.1;
+  
+//  radius *= 0.2;
   
   return radius;
 }
@@ -195,31 +238,34 @@ void centerObject()
 
   Scalar radius = calcViewRadius(simCenter);
   controller.setBoundingRadius(radius);
+
+  Vec3d cc = controller.getCamera().getViewCenter();
+  Vec3d ee = controller.getCamera().getEye() + Vec3d(0, -20, 0);
+  
+  ee = cc + Vec3d(45, 0, 45);
+  
+  controller.getCamera().setEye(ee);
+  
 }
 
 void InitCamera()
 {
   controller.setViewDirection(Vec3d(0, 0, -2));
   centerObject();
-  /*
-    if (current_problem->GetBoolOpt("read-camera")) {
+  
+  
+  if (current_problem->GetBoolOpt("read-camera")) {
+    std::cout << " init\n";
+    
     Vec3d& eye = current_problem->GetVecOpt("eye");
     Vec3d& up = current_problem->GetVecOpt("up");
     Vec3d& center = current_problem->GetVecOpt("center");
+  
+    controller.getCamera().setEye(eye);
+    controller.getCamera().setUp(up);
+    controller.getCamera().setViewCenter(center);
 
-    SMV::Vec3 e(eye(0), eye(1), eye(2));
-    SMV::Vec3 u(up(0), up(1), up(2));
-    SMV::Vec3 c(center(0), center(1), center(2));
-    SMV::Camera& cam = controller.getCamera();
-    cam.setEye(e);
-    cam.setUp(u);
-    cam.setViewCenter(c);
-
-    } else {
-    SMV::Vec3 view_dir(0.0, 0.0, -2.0);
-    controller.setViewDirection(view_dir);
-    centerObject();
-    }*/
+  } 
 }
 
 void setOrthographicProjection() 
@@ -304,9 +350,69 @@ void display()
   //controller.setDefault2D();
   //drawSimpleAxis();
   
-  for( int i = 0; i < (int) renderable_objects.size(); ++i ) {
-    if (!render_meshes && dynamic_cast<TriangleMeshRenderer*>(renderable_objects[i]) != NULL) continue;
-    renderable_objects[i]->render();
+  if (render_springs) {
+    for( int i = 0; i < (int) renderable_objects.size(); ++i ) {
+      if (dynamic_cast<TriangleMeshRenderer*>(renderable_objects[i]) != NULL && !render_meshes ) {
+        renderable_objects[i]->render();
+      }
+    }
+    
+    MayaSceneTest *prob = dynamic_cast<MayaSceneTest *> (current_problem);
+    
+/*    if (prob) {
+      RodGroupManager *gm = prob->rodGroupManager;
+      
+      //const Color& edgeColor = Color(255, 0, 0);
+      std::vector<Color> m_palette;
+      m_palette.push_back(Color(255, 000, 000));
+      m_palette.push_back(Color(200, 000, 000));
+      m_palette.push_back(Color(155, 000, 000));
+      m_palette.push_back(Color(105, 000, 000));
+      m_palette.push_back(Color(255, 100, 000));
+      m_palette.push_back(Color(200, 100, 000));
+      m_palette.push_back(Color(155, 100, 000));
+      m_palette.push_back(Color(105, 100, 000));
+      m_palette.push_back(Color(255, 200, 000));
+      m_palette.push_back(Color(200, 200, 000));
+      m_palette.push_back(Color(155, 200, 000));
+      m_palette.push_back(Color(105, 200, 000));
+      m_palette.push_back(Color(255, 000, 100));
+      m_palette.push_back(Color(200, 000, 100));
+      m_palette.push_back(Color(155, 000, 100));
+      m_palette.push_back(Color(105, 000, 100));
+      m_palette.push_back(Color(255, 100, 100));
+      m_palette.push_back(Color(200, 100, 100));
+      m_palette.push_back(Color(155, 100, 100));
+      m_palette.push_back(Color(105, 100, 100));
+      m_palette.push_back(Color(255, 200, 100));
+      m_palette.push_back(Color(200, 200, 100));
+      m_palette.push_back(Color(155, 200, 100));
+      m_palette.push_back(Color(105, 200, 100));
+      
+      for (int i=0; i<(int) gm->m_springs.size(); i++) {
+       
+        OpenGL::color(m_palette[(gm->m_springs[i].g % (int)m_palette.size())]);
+            
+        glLineWidth(2);
+        glBegin(GL_LINES);
+        
+        Vec3d x = (gm->m_springs[i].rod1->getVertex(0) + gm->m_springs[i].rod1->getVertex(1)) * 0.5;
+        OpenGL::vertex(x);
+        
+        Vec3d y = (gm->m_springs[i].rod2->getVertex(0) + gm->m_springs[i].rod2->getVertex(1)) * 0.5;
+        OpenGL::vertex(y);
+        
+        glEnd();    
+        
+      }
+  
+    }*/
+    
+  } else {
+    for( int i = 0; i < (int) renderable_objects.size(); ++i ) {
+      if (!render_meshes && dynamic_cast<TriangleMeshRenderer*>(renderable_objects[i]) != NULL) continue;
+      renderable_objects[i]->render();
+    }
   }
 
   setOrthographicProjection();
@@ -328,10 +434,22 @@ void reshape(int w, int h)
   Scalar radius = controller.getBoundingRadius();
   c.setZClipping(0.01 * radius, 3 * radius);
   c.setViewport(w, h);
+  
+  glutPostRedisplay();
 }
+
+int last_frame_num = -1;
 
 void idle()
 {
+  // Some stuff for dumping movies
+  if( fps > 0 ) 
+  {
+    double seconds_per_frame = 1.0/((double)fps);
+    double steps_per_second = 1.0/((double)current_problem->getDt());
+    steps_per_frame = floor(seconds_per_frame*steps_per_second+0.5); // < rounds
+  }  
+  
   if (max_frames != -1) {
     if (current_problem->dynamicsPropsLoaded()) {
       if (current_problem->getTime() * fps >= max_frames) {
@@ -352,7 +470,18 @@ void idle()
     }
   }
 
+  if( current_problem->getTime() >= g_sim_breakpoints.front() )
+  {
+    std::cout << "\033[35;1mBASIMULATOR MESSAGE:\033[m Pausing for breakpoint at time " << current_problem->getTime() << "." << std::endl;
+    paused = true;
+    g_sim_breakpoints.pop();
+  }
+
   if (!paused) {
+    centerObject();
+    controller.setCenterMode(ViewController::CENTER_OBJECT);
+    glutPostRedisplay();
+    
     if (!continuous) paused = true;
     current_problem->BaseAtEachTimestep();
     if (render) glutPostRedisplay();
@@ -369,8 +498,11 @@ void idle()
   
   if( render && generate_movie )
   {
-    if( floor(current_problem->getTime()/frame_period) == current_frame ) 
+    int frame = floor( current_problem->getTime()/current_problem->getDt() + 0.5 );
+    //if( floor(current_problem->getTime()/frame_period) >= current_frame ) 
+    if( frame%steps_per_frame == 0 && last_frame_num != frame )
     {
+      last_frame_num = frame;
       //std::cout << outputdirectory << std::endl;
       mkdir(outputdirectory.c_str(), 0755);
   
@@ -505,6 +637,12 @@ void menu(int id)
       break;
     }
 
+    case 'z' : {
+      
+      render_springs = !render_springs;      
+      break;
+    }
+        
   case 'm': {
     for( int i = 0; i < (int) rod_renderers.size(); ++i )
     {
@@ -566,6 +704,16 @@ void menu(int id)
     current_problem->BaseAtEachTimestep();
     glutPostRedisplay();
     break;
+    
+    case 'p':
+    {
+      Camera& c = controller.getCamera();
+      std::cout << "eye: " << c.getEye() << std::endl;
+      std::cout << "up: " << c.getUp() << std::endl;
+      std::cout << "center: " << c.getViewCenter() << std::endl;
+      break;
+    }
+    
       
   }
   /*
@@ -678,8 +826,9 @@ void initializeOpenGL(int argc, char** argv)
   glutCreateWindow(argv[0]);
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
-  glClearColor(161.0/255.0,161.0/255.0,161.0/255.0,0.0);
+  //glClearColor(161.0/255.0,161.0/255.0,161.0/255.0,0.0);
   //glClearColor(0.0/255.0,0.0/255.0,0.0/255.0,0.0);
+  glClearColor(1.0,1.0,1.0,0.0);
 
   glutDisplayFunc(display);
   glutReshapeFunc(reshape);
@@ -760,8 +909,19 @@ void RunProblem(int argc, char** argv)
       }
     }
     
+    World::Renderers& rndrs = world.getRenderers();
+    World::Renderers::iterator renderitr;
+    for( renderitr = rndrs.begin(); renderitr != rndrs.end(); ++renderitr )
+    {
+      renderable_objects.push_back(*renderitr);
+    }
+
     centerObject();
 
+    // Extract simulation time breakpoints from the problem
+    g_sim_breakpoints = current_problem->getBreakpoints();
+    g_sim_breakpoints.push(std::numeric_limits<double>::infinity());
+    
     glutMainLoop();
 
   } else {
@@ -935,13 +1095,13 @@ void printCommandLineSplashScreen()
   std::cout << " Build mode: RELEASE" << std::endl;
   #endif
   std::cout << std::setfill('0');
-  std::cout << " Timestamp:  " << (1900+g_timeinfo->tm_year) << "/" << std::setw(2) << (1+g_timeinfo->tm_mon) << "/";
+  std::cout << " Timestamp: " << (1900+g_timeinfo->tm_year) << "/" << std::setw(2) << (1+g_timeinfo->tm_mon) << "/";
   std::cout << (g_timeinfo->tm_mday) << "  " << std::setw(2) << (g_timeinfo->tm_hour) << ":" << std::setw(2) << (g_timeinfo->tm_min);
   std::cout << ":" << std::setw(2) << (g_timeinfo->tm_sec) << std::endl;
   
   std::cout << " Simulation: " << current_problem->ProblemName() << std::endl;
   
-  std::cout << " Linear Solver:   " << SolverUtils::instance()->getSolverName() << std::endl;
+  std::cout << " Linear Solver: " << SolverUtils::instance()->getSolverName() << std::endl;
 
   #ifdef HAVE_OPENMP
   std::cout << " OpenMP: Enabled" << std::endl;
@@ -972,13 +1132,6 @@ int main(int argc, char** argv)
   time(&g_rawtime);
   g_timeinfo = localtime(&g_rawtime);
   outputdirectory = generateOutputDirName();
-  
-  // Some stuff for dumping movies
-  if( fps > 0 ) 
-  {
-    frame_period = 1.0/((double)fps);
-    current_frame = 0;
-  }
 
   CreateProblemVector();
   atexit(cleanup);

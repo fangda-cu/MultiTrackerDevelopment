@@ -44,25 +44,92 @@ void RodRenderer::render()
 
 void RodRenderer::drawSimpleRod()
 {
-  glLineWidth(2);
-  glBegin(GL_LINES);
+  if (m_rod.draw_cl == 0) {
+    glLineWidth(2);
+    glBegin(GL_LINES);
+  
+    //const Color& edgeColor = m_palette[1];
+    //const Color& fixedColor = m_palette[0];
+  
+    ElasticRod::edge_iter eit;
+    for (eit = m_rod.edges_begin(); eit != m_rod.edges_end(); ++eit) {
+      //if (m_rod.edgeFixed(*eit)) OpenGL::color(fixedColor);
+      //else OpenGL::color(edgeColor);
+      //OpenGL::color(edgeColor);
+      ElasticRod::EdgeVertexIter evit = m_rod.ev_iter(*eit);
+      for (evit = m_rod.ev_iter(*eit); evit; ++evit) {
+        Vec3d x = m_rod.getVertex(*evit);
+        OpenGL::vertex(x);
+      }
+    }
+  
+    glEnd();
+  } else {
+    
+    std::vector<Color> m_paletteq;
+    m_paletteq.push_back(Color(200, 200, 100));
+    m_paletteq.push_back(Color(155, 200, 100));
+    m_paletteq.push_back(Color(255, 000, 000));
+    m_paletteq.push_back(Color(105, 100, 100));
+    m_paletteq.push_back(Color(255, 200, 100));
+    m_paletteq.push_back(Color(200, 000, 000));
+    m_paletteq.push_back(Color(255, 100, 000));
+    m_paletteq.push_back(Color(200, 100, 000));
+    m_paletteq.push_back(Color(155, 000, 000));
+    m_paletteq.push_back(Color(105, 000, 000));
+    m_paletteq.push_back(Color(155, 100, 000));
+    m_paletteq.push_back(Color(155, 000, 100));
+    m_paletteq.push_back(Color(105, 000, 100));
+    m_paletteq.push_back(Color(105, 100, 000));
+    m_paletteq.push_back(Color(255, 200, 000));
+    m_paletteq.push_back(Color(200, 200, 000));
+    m_paletteq.push_back(Color(155, 200, 000));
+    m_paletteq.push_back(Color(105, 200, 000));
+    m_paletteq.push_back(Color(255, 000, 100));
+    m_paletteq.push_back(Color(200, 000, 100));
+    m_paletteq.push_back(Color(255, 100, 100));
+    m_paletteq.push_back(Color(200, 100, 100));
+    m_paletteq.push_back(Color(155, 100, 100));
+    m_paletteq.push_back(Color(105, 200, 100));
+      
+    glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+    
+    OpenGL::color(m_paletteq[(m_rod.draw_cl % (int)m_paletteq.size())]);
+    
+    glLineWidth(2);
+    glBegin(GL_LINES);
+  
+    //const Color& edgeColor = m_palette[1];
+    //const Color& fixedColor = m_palette[0];
+  
+    ElasticRod::edge_iter eit;
+    for (eit = m_rod.edges_begin(); eit != m_rod.edges_end(); ++eit) {
+      ElasticRod::EdgeVertexIter evit = m_rod.ev_iter(*eit);
+      for (evit = m_rod.ev_iter(*eit); evit; ++evit) {
+        Vec3d x = m_rod.getVertex(*evit);
+        OpenGL::vertex(x);
+      }
+    }
+  
+    glEnd();
+    
+    glPointSize(5);
+    glBegin(GL_POINTS);
 
-  //const Color& edgeColor = m_palette[1];
-  //const Color& fixedColor = m_palette[0];
-
-  ElasticRod::edge_iter eit;
-  for (eit = m_rod.edges_begin(); eit != m_rod.edges_end(); ++eit) {
-    //if (m_rod.edgeFixed(*eit)) OpenGL::color(fixedColor);
-    //else OpenGL::color(edgeColor);
-    //OpenGL::color(edgeColor);
-    ElasticRod::EdgeVertexIter evit = m_rod.ev_iter(*eit);
-    for (evit = m_rod.ev_iter(*eit); evit; ++evit) {
-      Vec3d x = m_rod.getVertex(*evit);
+    ElasticRod::vertex_iter vit;
+    for (vit = m_rod.vertices_begin(); vit != m_rod.vertices_end(); ++vit) {
+      const Vec3d& x = m_rod.getVertex(*vit);
       OpenGL::vertex(x);
     }
-  }
 
-  glEnd();
+    glEnd();
+    
+    glDisable(GL_COLOR_MATERIAL);
+//    glDisable(GL_LIGHTING);
+    
+    
+  }
 
  /* glPointSize(5);
   glBegin(GL_POINTS);
@@ -146,7 +213,7 @@ void RodRenderer::drawMaterialFrame()
     ElasticRod::vertex_handle vh1 = m_rod.toVertex(eh);
 
     Vec3d x = (m_rod.getVertex(vh0) + m_rod.getVertex(vh1)) / 2.0;
-    if (m_scaleToRadius) r = m_rod.radiusA(eh);
+//    if (m_scaleToRadius) r = m_rod.radiusA(eh);
 
     OpenGL::color(color1);
     if (m_drawArrows) drawArrow(x, m_rod.getMaterial1(eh), r);
@@ -156,7 +223,7 @@ void RodRenderer::drawMaterialFrame()
       OpenGL::vertex(y);
     }
 
-    if (m_scaleToRadius) r = m_rod.radiusB(eh);
+//    if (m_scaleToRadius) r = m_rod.radiusB(eh);
 
     OpenGL::color(color2);
     if (m_drawArrows) drawArrow(x, m_rod.getMaterial2(eh), r);

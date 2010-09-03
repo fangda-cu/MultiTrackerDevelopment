@@ -32,7 +32,7 @@ public:
   typedef Eigen::Matrix<Scalar, 6, 1> ElementForce;
   typedef Eigen::Matrix<Scalar, 6, 6> ElementJacobian;
 
-  RodStretchingForce(ElasticRod& rod, bool vscs = false);
+  RodStretchingForce(ElasticRod& rod, bool vscs = false, bool runinit = true);
 
   void gatherDofs(SpringDofStruct& dofs, const edge_handle& eh);
 
@@ -40,6 +40,8 @@ public:
   virtual void globalForce(VecXd& force);
   virtual void globalJacobian(int baseidx, Scalar scale, MatrixBase& Jacobian);
 
+  virtual void globalReverseJacobian(MatrixBase& Jacobian);
+  
   Scalar elementEnergy(const edge_handle& eh);
   void elementForce(ElementForce& force, const SpringDofStruct& dofs);
   void elementForce(ElementForce& force, const edge_handle& eh);
@@ -54,6 +56,9 @@ public:
   void updateStiffness();
   void updateUndeformedStrain();
 
+  virtual void updateUndeformedConfiguration(std::vector<Scalar>& vals);
+  virtual void updateReverseUndeformedStrain(const VecXd& e);
+  
 protected:
 
 #ifdef TEST_ROD_STRETCHING

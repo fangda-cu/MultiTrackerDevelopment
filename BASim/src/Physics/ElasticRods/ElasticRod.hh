@@ -17,6 +17,7 @@ namespace BASim {
 class RodForce;
 class MatrixBase;
 class RodPenaltyForce;
+class RodTimeStepper;
 
 /** Base class for rods. The degrees of freedom for rods are the
     vertex positions (3 dofs per vertex) and the angles between the
@@ -302,6 +303,15 @@ public:
       recomputed whenever the size of the time step is changed. */
   void setTimeStep(Scalar dt);
   Scalar getTimeStep() const { return property(m_dt); }
+  
+  ////////////////////////////////////////////////////////////////////////////////
+  // Reverse Hairdo Stuffs
+  
+  bool doReverseHairdo(RodTimeStepper *stepper);
+  
+  void computeReverseJacobian(MatrixBase& J);
+  void updateReverseUndeformedStrain(const VecXd& e);
+  
 
   ////////////////////////////////////////////////////////////////////////////////
   // 
@@ -428,6 +438,7 @@ public:
   void updateForceProperties();
 
   int global_rodID;
+  int draw_cl;
 
 protected:
 

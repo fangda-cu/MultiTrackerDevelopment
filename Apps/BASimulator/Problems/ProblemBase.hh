@@ -12,7 +12,10 @@
 
 #include <map>
 #include <string>
+#include <queue>
 #include <BASim/BASim>
+
+#include "BASim/src/Physics/ElasticRods/MultipleRodTimeStepper.hh"
 
 class Problem
 {
@@ -79,6 +82,10 @@ public:
   void getRodOptions(RodOptions& opts);
   void addRodTimeStepperOptions();
   RodTimeStepper* getRodTimeStepper(ElasticRod& rod);
+  MultipleRodTimeStepper* getMultipleRodTimeStepper();
+
+  const std::queue<double>& getBreakpoints() const { return m_sim_breakpoints; }
+  void insertBreakpoint( double t ) { m_sim_breakpoints.push(t); }
 
 protected:
 
@@ -97,6 +104,9 @@ protected:
   ObjPropHandle<Scalar> m_time;
   ObjPropHandle<Scalar> m_dt;
   ObjPropHandle<Vec3d> m_gravity;
+  
+  // Times to pause the simulation for debugging purpouses
+  std::queue<double> m_sim_breakpoints;
 };
 
 #include "ProblemBase.tcc"

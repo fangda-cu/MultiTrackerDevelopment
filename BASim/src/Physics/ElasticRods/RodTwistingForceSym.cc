@@ -18,34 +18,65 @@ using namespace std;
 
 namespace BASim {
 
-RodTwistingForceSym::RodTwistingForceSym(ElasticRod& rod, bool vscs)
+RodTwistingForceSym::RodTwistingForceSym(ElasticRod& rod, bool vscs, bool runinit)
   : RodForceT<VertexStencil>(rod, "RodTwistingForceSym")
 {
-  m_rod.add_property(m_twist, "twist");
-  m_rod.add_property(m_gradTwistValid, "grad twist valid", false);
-  m_rod.add_property(m_hessTwistValid, "hess twist valid", false);
-  m_rod.add_property(m_gradTwist, "gradient of twist", VecXd(11));
-  m_rod.add_property(m_hessTwist, "Hessian of twist", MatXd(11, 11));
-  
-  if( !vscs )
+  if( runinit )
   {
-    m_rod.add_property(m_kt, "twist stiffness");
-    m_rod.add_property(m_undeformedTwist, "undeformed twist");
-    m_rod.add_property(m_refVertexLength, "twisting ref length");
+    m_rod.add_property(m_twist, "twist");
+    m_rod.add_property(m_gradTwistValid, "grad twist valid", false);
+    m_rod.add_property(m_hessTwistValid, "hess twist valid", false);
+    m_rod.add_property(m_gradTwist, "gradient of twist", VecXd(11));
+    m_rod.add_property(m_hessTwist, "Hessian of twist", MatXd(11, 11));
+    
+    if( !vscs )
+    {
+      m_rod.add_property(m_kt, "twist stiffness");
+      m_rod.add_property(m_undeformedTwist, "undeformed twist");
+      m_rod.add_property(m_refVertexLength, "twisting ref length");
+    }
+    else
+    {
+      m_rod.add_property(m_kt, "viscous twist stiffness");
+      m_rod.add_property(m_undeformedTwist, "viscous undeformed twist");
+      m_rod.add_property(m_refVertexLength, "viscous twisting ref length");
+    }
+
+    setViscous(vscs);
+
+    updateProperties();
+    updateUndeformedStrain();
+    updateStiffness();
+    updateReferenceDomain();
   }
   else
   {
-    m_rod.add_property(m_kt, "viscous twist stiffness");
-    m_rod.add_property(m_undeformedTwist, "viscous undeformed twist");
-    m_rod.add_property(m_refVertexLength, "viscous twisting ref length");
+    m_viscous = vscs;
   }
+}
 
-  setViscous(vscs);
+void RodTwistingForceSym::updateUndeformedConfiguration(std::vector<Scalar>& vals) {
+  /*
+  std::cout << "twist origin\n";
+  
+  {
+    iterator end = m_stencil.end();
+    for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
+      vertex_handle& vh = m_stencil.handle();
+      std::cout << getUndeformedTwist(vh) << "\n";
+    }  
+  }*/
 
-  updateProperties();
-  updateUndeformedStrain();
-  updateStiffness();
-  updateReferenceDomain();
+  //std::cout << "twist new\n";
+  
+  int i=0;
+  iterator end = m_stencil.end();
+  for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil, ++i) {
+    vertex_handle& vh = m_stencil.handle();
+    setUndeformedTwist(vh, vals[i]);
+//    std::cout << getUndeformedTwist(vh) << "\n";
+  }  
+  
 }
 
 void RodTwistingForceSym::updateProperties()
@@ -77,6 +108,9 @@ void RodTwistingForceSym::updateStiffness()
     Scalar a = (m_rod.radiusA(eh0) + m_rod.radiusA(eh1)) / 2.0;
     Scalar b = (m_rod.radiusB(eh0) + m_rod.radiusB(eh1)) / 2.0;
     setKt(vh, G * M_PI * a * b * (square(a) + square(b)) / 4.0);
+    
+//    std::cout << G * M_PI * a * b * (square(a) + square(b)) / 4.0 << "\n";
+    
   }
 }
 
@@ -133,9 +167,13 @@ void RodTwistingForceSym::globalForce(VecXd& force)
   VecXd f(11);
   IndexArray indices(11);
 
+  VecXd force1 = force;
+  
   iterator end = m_stencil.end();
   for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
     //if (stencilFixed(m_rod, i)) continue;
+    //std::cout << "TWISTING local FORCE\n";
+
     vertex_handle& vh = m_stencil.handle();
     localForce(f, vh);
     m_stencil.indices(indices);
@@ -144,6 +182,12 @@ void RodTwistingForceSym::globalForce(VecXd& force)
     }
   }
   //STOP_TIMER("globalForce");
+  
+  
+  
+  //std::cout << "TWISTING FORCE\n";
+  //std::cout << force - force1 << "\n\n";
+    
 }
 
 void RodTwistingForceSym::localForce(VecXd& force, const vertex_handle& vh)
@@ -151,6 +195,10 @@ void RodTwistingForceSym::localForce(VecXd& force, const vertex_handle& vh)
   Scalar value = getKt(vh) / getRefVertexLength(vh)
     * (getTwist(vh) - getUndeformedTwist(vh));
 
+  //std::cout << "-value    : " << -value << "\n";
+  //std::cout << "GradTwist : " << getGradTwist(vh) << "\n";
+  //std::cout << "local for : " << -value * getGradTwist(vh) << "\n";
+  
   force = -value * getGradTwist(vh);
 }
 
@@ -191,6 +239,86 @@ inline void RodTwistingForceSym::localJacobian(MatXd& J, const vertex_handle& vh
 
   J = -kt / len * ((twist - undeformedTwist) * hessTwist
                    + gradTwist * gradTwist.transpose());
+}
+
+void RodTwistingForceSym::globalReverseJacobian(MatrixBase& J)
+{
+  if (viscous()) return;
+
+//  return;
+
+  computeGradTwist();
+  computeHessTwist(); // do we need hessian?
+
+  //MatXd localJ(11, 11);
+  IndexArray indices(11);
+  iterator end = m_stencil.end();
+
+  uint vid = 1;
+  for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil, ++vid) {
+    vertex_handle& vh = m_stencil.handle();
+    
+    Scalar m = getTwist(vh);
+    Scalar mbar = getUndeformedTwist(vh);
+    Scalar kt = getKt(vh);
+    Scalar refLen = getRefVertexLength(vh);
+
+    VecXd fde(11);
+    VecXd fdm(11);
+    
+    fde = 0.5 * kt / (refLen * refLen) * (m - mbar) * getGradTwist(vh);
+    fdm = 1.0 * kt / refLen * getGradTwist(vh); 
+
+    m_stencil.indices(indices);
+    
+    for(int i=0; i<indices.size(); i++) indices[i] -= 7;
+    
+//    std::cout << "twst fde  " << fde << "\n";
+//    std::cout << "twst fdm  " << fdm << "\n";
+    
+    // edge length bar
+    if (vid == 1) {
+      for(int i=0; i<11; i++) {
+        if (indices[i] >= 0) {
+          J.add(indices[i], (vid - 1) * 4 + 3, fde(i));
+        }
+      }
+    } else {
+      for(int i=0; i<11; i++) {
+        if (indices[i] >= 0) {
+          J.add(indices[i], (vid - 2) * 4 + 3, fde(i));
+          J.add(indices[i], (vid - 1) * 4 + 3, fde(i));
+        }
+      }
+    }
+    
+    // m bar
+    for(int i=0; i<11; i++) {
+      if (indices[i] >= 0) {
+        J.add(indices[i], (vid - 1) * 4 + 2, fdm(i));
+      }
+    }
+  }  
+}
+
+void RodTwistingForceSym::updateReverseUndeformedStrain(const VecXd& e)
+{
+  if (viscous()) return; 
+    
+  m_stencil = m_stencil.begin();
+  iterator end = m_stencil.end();
+  
+  uint vid = 1;  // eh.id() ?
+  
+  for (; m_stencil != end; ++m_stencil, ++vid) {
+    vertex_handle& vh = m_stencil.handle();
+    setUndeformedTwist(vh, e( (vid-1) * 4 + 2 ));
+    
+    setRefVertexLength(vh, e( (vid-1) * 4 + 3 ));
+    if (vid > 1) {
+      setRefVertexLength(vh, e( (vid-2) * 4 + 3 ));
+    }
+  }  
 }
 
 void RodTwistingForceSym::updateUndeformedStrain()

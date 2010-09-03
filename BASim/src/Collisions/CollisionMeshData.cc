@@ -21,11 +21,13 @@ CollisionMeshData::CollisionMeshData()
     //_phiCurrent = new AdaptiveLevelSet;
     //std::cout<<"complete"<<std::endl;
   
+  
+  // To export mesh data into files so as to run in BASimulator
   recordToFile = false;
   recordFrames = 0;
   
   //recordFilename = "/local1/jjoo/scenes/sac2/sac_mesh.";
-  recordFilename = "/local1/jjoo/scenes/maurice160mesh.";
+  recordFilename = "/local1/jjoo/scenes/sak_full/mesh.";
 
 }
 

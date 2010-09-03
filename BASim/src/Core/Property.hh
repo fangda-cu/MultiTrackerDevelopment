@@ -27,6 +27,8 @@ public:
 
   virtual void reserve(size_t n) = 0;
 
+  virtual size_t size() const = 0;
+
   virtual void resize(size_t n) = 0;
 
   virtual void push_back() = 0;
@@ -164,7 +166,7 @@ public:
     m_data = otherptr->m_data;
   }
 
-  size_t size() const
+  virtual size_t size() const
   {
     return m_data.size();
   }
@@ -299,7 +301,7 @@ public:
     }
   }
   
-  
+  // Number of properties in this property container
   size_t size() const
   {
     return m_properties.size();

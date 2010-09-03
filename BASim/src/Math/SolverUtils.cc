@@ -72,7 +72,7 @@ MatrixBase*
 SolverUtils::createSparseMatrix(int rows, int cols, int nnzPerRow) const
 {
 #ifdef HAVE_PARDISO
-  if (matrixType == PARDISO_MATRIX)
+//  if (matrixType == PARDISO_MATRIX)
     return new PardisoMatrix(rows,cols);
 #endif // HAVE_PARDISO  
   
@@ -81,7 +81,7 @@ SolverUtils::createSparseMatrix(int rows, int cols, int nnzPerRow) const
     return new PetscMatrix(rows, cols, nnzPerRow);
 #endif // HAVE_PETSC
 
-  std::cerr << "createSparseMatrix failure" << std::endl;
+  std::cerr << "\033[31;1mWARNING IN SOLVERUTILS:\033[m Failed to create sparse matrix. " << std::endl;
   exit(-1);
   return NULL;
 }

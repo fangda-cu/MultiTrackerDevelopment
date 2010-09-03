@@ -25,6 +25,8 @@ public:
   bool operator> (const HandleBase& rhs) const { return m_idx > rhs.m_idx; }
 
   int idx() const { return m_idx; }
+  int& idx() { return m_idx; }
+
 
   bool isValid() const { return m_idx != -1; }
 

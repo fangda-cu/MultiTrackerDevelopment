@@ -9,6 +9,8 @@
 #include "../../Math/Math.hh"
 #include "RodForce.hh"
 
+#include "RodReverseSolver.hh"
+
 using namespace std;
 
 namespace BASim {
@@ -17,6 +19,8 @@ using namespace Util;
 
 ElasticRod::ElasticRod(int numVertices, bool closed)
 {
+  draw_cl = 0;
+
   // create vertices
   for (int i = 0; i < numVertices; ++i) addVertex();
 
@@ -562,6 +566,43 @@ Scalar ElasticRod::getRadiusScale() const
 void ElasticRod::setRadiusScale(Scalar s)
 {
   property(m_radius_scale) = s;
+}
+
+bool ElasticRod::doReverseHairdo(RodTimeStepper *stepper)
+{
+  if (nv() < 3) return false;
+  
+  RodReverseSolver *r_solver = new RodReverseSolver(this, stepper);
+
+  bool result = r_solver->execute();
+  
+  delete r_solver;
+  
+  return result;
+}
+
+void ElasticRod::computeReverseJacobian(MatrixBase& J) 
+{
+  RodForces& forces = getForces();
+  RodForces::iterator fIt;
+//  VecXd curr_force(force.size());
+  for (fIt = forces.begin(); fIt != forces.end(); ++fIt) {
+    if (!(*fIt)->viscous())
+//    curr_force.setZero();
+      (*fIt)->globalReverseJacobian(J);
+//    force += curr_force;
+    //cout << (*fIt)->getName() << " = " << curr_force.norm() << endl;
+  }
+}
+
+void ElasticRod::updateReverseUndeformedStrain(const VecXd& e)
+{
+  RodForces& forces = getForces();
+  RodForces::iterator fIt;
+  for (fIt = forces.begin(); fIt != forces.end(); ++fIt) {
+    if (!(*fIt)->viscous())
+      (*fIt)->updateReverseUndeformedStrain(e);
+  }  
 }
 
 } // namespace BASim

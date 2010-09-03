@@ -30,7 +30,7 @@ class EdgeHandle : public HandleBase
 {
 public:
 
-  explicit EdgeHandle(int idx = -1) : HandleBase(idx) {}
+  explicit EdgeHandle(int idx = -1) : HandleBase(idx) {}  
 };
 
 /** Handle for referring to a face */

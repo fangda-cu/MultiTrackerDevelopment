@@ -10,6 +10,12 @@
 
 #include <omp.h>
 
+#ifdef WETA
+#include "../Render/RenderBase.hh"
+#else
+#include "BASim/src/Render/RenderBase.hh"
+#endif
+
 namespace BASim {
 
 typedef std::vector<ObjectBase*> Objects;
@@ -22,6 +28,7 @@ public:
 
   typedef std::vector<ObjectBase*> Objects;
   typedef std::vector<ObjectControllerBase*> Controllers;
+  typedef std::vector<RenderBase*> Renderers;
 
   World() {}
   ~World() {}
@@ -93,6 +100,17 @@ public:
     return m_controllers;
   }
 
+  void addRenderer(RenderBase* renderer)
+  {
+    assert( renderer != NULL );
+    m_renderers.push_back(renderer);
+  }
+  
+  Renderers& getRenderers()
+  {
+    return m_renderers;
+  }
+
   void execute()
   {
     Controllers::iterator it;
@@ -124,6 +142,7 @@ protected:
 
   Objects m_objects;
   Controllers m_controllers;
+  Renderers m_renderers;
 };
 
 } // namespace BASim

@@ -46,6 +46,17 @@ inline bool approxEq(const Scalar& a, const Scalar& b,
   return (fabs(a - b) < tol);
 }
 
+/** Chekcs if a matrix is approximately symmetric */
+template <typename Derived>
+inline bool approxSymmetric(const Eigen::MatrixBase<Derived>& A,
+                     Scalar tol = SMALL_NUMBER)
+{
+  for( int i = 0; i < A.rows(); ++i ) for( int j = i+1; j < A.cols(); ++j ) 
+    if( !approxEq(A(i,j),A(j,i),tol) ) return false;
+  
+  return true;
+}
+
 /** Uses dynamic_cast if debugging is turned on and static_cast for
     efficiency when debugging is turned off (by defining NDEBUG. */
 /*template <typename target_ptr, typename source>

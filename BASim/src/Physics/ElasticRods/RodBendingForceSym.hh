@@ -18,7 +18,7 @@ namespace BASim {
 class RodBendingForceSym : public RodForceT<VertexStencil>
 {
 public:
-  RodBendingForceSym(ElasticRod& rod, bool vscs = false);
+  RodBendingForceSym(ElasticRod& rod, bool vscs = false, bool runinit = true);
 
   virtual Scalar globalEnergy();
   virtual void globalForce(VecXd& force);
@@ -28,6 +28,9 @@ public:
   void localForce(VecXd& F, const vertex_handle& vh);
   void localJacobian(MatXd& J, const vertex_handle& vh);
 
+  virtual void globalReverseJacobian(MatrixBase& Jacobian);
+  virtual void updateReverseUndeformedStrain(const VecXd& e);
+  
   const Mat2d& getB(const vertex_handle& vh) const;
   void setB(const vertex_handle& vh, const Mat2d& B);
 
@@ -46,6 +49,7 @@ public:
   virtual void updateReferenceDomain();
 
 	virtual void updatePlasticity(Scalar maxKappa);
+  virtual void updateUndeformedConfiguration(std::vector<Scalar>& vals);
 
   const MatXd& getGradKappa(const vertex_handle& vh) const;
   const std::pair<MatXd, MatXd>& getHessKappa(const vertex_handle& vh) const;

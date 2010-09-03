@@ -15,8 +15,10 @@
 
 #ifdef WETA
 #include "MatrixBase.hh"
+#include "../Core/Util.hh"
 #else
 #include "BASim/src/Math/MatrixBase.hh"
+#include "BASim/src/Core/Util.hh"
 #endif
 
 #include <vector>
@@ -158,6 +160,15 @@ namespace BASim
     int zeroRows( const IntArray& idx, double diag = 1.0 );
     
     /**
+     * Zeros the off-diagonal elements of columns sepcified in idx, sets the diagonal
+     * elements to diag. Does not modify the sparsity structure.
+     *
+     * @param idx array of column indices.
+     * @param diag value to set diagonal elements to
+     */    
+    int zeroCols( const IntArray& idx, double diag );
+
+    /**
      * Computes the matrix-vector multiplication y = s*this*x
      *
      * @param y vector to store s*this*x in
@@ -166,12 +177,23 @@ namespace BASim
      */  
     int multiply( VecXd& y, double s, const VecXd& x ) const;
     
-    void print();
-    
+    void print() const;
+
     /**
      * Asserts some invariants.
      */
     void runSanityChecks();
+
+    /**
+     * Returns true if the matrix is approximately symmetric
+     * within the tolerance specified by eps.
+     */
+    bool isApproxSymmetric( Scalar eps ) const;
+    
+    /**
+     * Returns 'PardisoMatrix'.
+     */
+    std::string name() const;
     
   private:
     
@@ -183,20 +205,20 @@ namespace BASim
      *  @param col A column of the matrix
      */
     int findValueIndex( const int& row, const int& col ) const;
-    
+
     // True if the matrix's non-zero structure has been finalized
     bool m_finalized;
-    
+
     // Number of non-zero elements in the matrix
     int m_nnz;
-    
-    // Values of nonzero elements in row-major order
+
+    // Values of non-zero elements in row-major order
     VecXd m_vals;
-    // Column indices of nonzer elements in row-major order
+    // Column indices of non-zero elements in row-major order
     Eigen::VectorXi m_colindices;
     // rowstarts[i] is the start of row i in colindices and vals
     Eigen::VectorXi m_rowstarts;
-    
+
     std::map<int, std::map<int, double> > m_matrix;
   };  
 }

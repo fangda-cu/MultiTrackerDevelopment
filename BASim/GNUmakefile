@@ -256,7 +256,8 @@ Physics/PhysObject.inl \
 Core/StatTracker.hh \
 Math/SymmetricImplicitEuler.hh \
 Physics/ElasticRods/AdaptiveBinaryStepper.hh \
-Physics/ElasticRods/MinimalRodStateBackup.hh 
+Physics/ElasticRods/MinimalRodStateBackup.hh \
+Physics/ElasticRods/RodReverseSolver.hh 
 
 
 LIB1_S     := \
@@ -310,7 +311,8 @@ src/Math/Petsc/PetscMatrix.inl \
 src/Physics/ElasticRods/ElasticRod.inl \
 src/Physics/PhysObject.inl \
 src/Core/StatTracker.cc \
-src/Physics/ElasticRods/MinimalRodStateBackup.cc
+src/Physics/ElasticRods/MinimalRodStateBackup.cc \
+src/Physics/ElasticRods/RodReverseSolver.cc 
 
 
 

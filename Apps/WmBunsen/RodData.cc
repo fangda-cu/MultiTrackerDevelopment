@@ -171,6 +171,19 @@ void RodData::updateBoundaryConditions()
 
         boundary->setDesiredVertexPosition( edgeNum, currVertexPositions[ edgeNum ] );
         boundary->setDesiredVertexPosition( edgeNum + 1, currVertexPositions[ edgeNum + 1 ]);
+        
+        // js - TO BE DELETED
+        // i don't want to simulate when exporting positions 
+        if (0) {
+          Vec3d x = currVertexPositions[ edgeNum + 1 ] - m_rod->getVertex(1);
+          for(int i=2; i<m_rod->nv(); i++) {
+            boundary->setDesiredVertexPosition( i, m_rod->getVertex(i) + x );
+          }
+        }
+
+
+
+
 
 /*
         if ( kinematicEdgeData->rootFrameDefined )

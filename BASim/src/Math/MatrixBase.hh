@@ -67,6 +67,8 @@ public:
 
   virtual void print() const {}
 
+  virtual std::string name() const = 0;
+
 protected:
 
   MatrixBase(int r, int c)

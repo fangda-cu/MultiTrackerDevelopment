@@ -225,6 +225,11 @@ public:
   /** Returns underlying array of values */
   Scalar* data() { return m_data; }
 
+  std::string name() const
+  {
+    return "BandMatrix";
+  }
+
 protected:
 
   bool indicesValid(int r, int c) const

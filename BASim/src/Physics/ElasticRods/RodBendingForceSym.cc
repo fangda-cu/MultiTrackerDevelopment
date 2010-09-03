@@ -17,36 +17,56 @@ using namespace std;
 
 namespace BASim {
 
-RodBendingForceSym::RodBendingForceSym(ElasticRod& rod, bool vscs)
+RodBendingForceSym::RodBendingForceSym(ElasticRod& rod, bool vscs, bool runinit)
   : RodForceT<VertexStencil>(rod, "RodBendingForceSym")
 {
-  m_rod.add_property(m_kappa, "material curvature vector");
-  m_rod.add_property(m_gradKappaValid, "grad kappa valid", false);
-  m_rod.add_property(m_hessKappaValid, "hess kappa valid", false);
-  m_rod.add_property(m_gradKappa, "gradient of material curvature vector",MatXd(11,2));
-  m_rod.add_property(m_hessKappa, "Hessian of material curvature vector",make_pair<MatXd,MatXd>(MatXd(11,11), MatXd(11,11)));
-
-  if( !vscs ) 
+  if( runinit )
   {
-    m_rod.add_property(m_B, "bending metric");
-    m_rod.add_property(m_refVertexLength, "Voronoi length of vertex");
-    m_rod.add_property(m_kappaBar, "undeformed material curvature vector");
+    m_rod.add_property(m_kappa, "material curvature vector");
+    m_rod.add_property(m_gradKappaValid, "grad kappa valid", false);
+    m_rod.add_property(m_hessKappaValid, "hess kappa valid", false);
+    m_rod.add_property(m_gradKappa, "gradient of material curvature vector",MatXd(11,2));
+    m_rod.add_property(m_hessKappa, "Hessian of material curvature vector",make_pair<MatXd,MatXd>(MatXd(11,11), MatXd(11,11)));
+
+    if( !vscs ) 
+    {
+      m_rod.add_property(m_B, "bending metric");
+      m_rod.add_property(m_refVertexLength, "Voronoi length of vertex");
+      m_rod.add_property(m_kappaBar, "undeformed material curvature vector");
+    }
+    else 
+    {
+      m_rod.add_property(m_B, "viscous bending metric");
+      m_rod.add_property(m_refVertexLength, "viscous Voronoi length of vertex");
+      m_rod.add_property(m_kappaBar, "viscous undeformed material curvature vector");  
+    }
+
+    setViscous(vscs);
+
+    updateProperties();
+    updateUndeformedStrain();
+    updateStiffness();
+    updateReferenceDomain();
   }
-  else 
+  else
   {
-    m_rod.add_property(m_B, "viscous bending metric");
-    m_rod.add_property(m_refVertexLength, "viscous Voronoi length of vertex");
-    m_rod.add_property(m_kappaBar, "viscous undeformed material curvature vector");  
+    m_viscous = vscs;
   }
-
-  setViscous(vscs);
-
-  updateProperties();
-  updateUndeformedStrain();
-  updateStiffness();
-  updateReferenceDomain();
 }
 
+void RodBendingForceSym::updateUndeformedConfiguration(std::vector<Scalar>& vals) 
+{
+  int i=0;
+  
+//  std::cout << "kappa\n";
+  iterator end = m_stencil.end();
+  for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil, ++i) {
+    Vec2d newKappaBar = Vec2d(vals[i*2], vals[i*2+1]);
+    //std::cout << newKappaBar <<"\n";
+    vertex_handle& vh = m_stencil.handle();
+    setKappaBar(vh, newKappaBar);
+  }
+}
 
 void RodBendingForceSym::updatePlasticity(Scalar maxKappa) {
 
@@ -201,9 +221,15 @@ void RodBendingForceSym::globalForce(VecXd& force)
   IndexArray indices(11);
   // Unused? unsigned int nv = m_rod.nv();
 
+//  VecXd force1 = force;
+  
   iterator end = m_stencil.end();
   for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
     vertex_handle& vh = m_stencil.handle();
+    
+    //double st = getB(vh)(0,0);
+    //std::cout << st << "\n";
+    
     f.setZero();
     localForce(f, vh);
     m_stencil.indices(indices);
@@ -211,6 +237,10 @@ void RodBendingForceSym::globalForce(VecXd& force)
       force(indices[j]) += f(j);
     }
   }
+  
+//  std::cout << "BENDING FORCE\n" ;
+//  std::cout << force - force1 << "\n\n";
+  
 }
 void RodBendingForceSym::localForce(VecXd& force, const vertex_handle& vh)
 {
@@ -278,6 +308,92 @@ inline void RodBendingForceSym::localJacobian(MatXd& localJ,
   localJ += temp(0) * hessKappa.first + temp(1) * hessKappa.second;
 }
 
+void RodBendingForceSym::globalReverseJacobian(MatrixBase& J) 
+{
+  if (viscous()) return;
+
+  //return;
+  
+  computeGradKappa();
+  computeHessKappa();
+
+  //MatXd localJ(11, 11);
+  IndexArray indices(11);
+  iterator end = m_stencil.end();
+
+  uint vid = 1;
+  for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil, ++vid) {
+    vertex_handle& vh = m_stencil.handle();
+    
+    Mat2d B = getB(vh);
+    Scalar refLen = getRefVertexLength(vh);
+    const Vec2d& kappa = getKappa(vh);
+    const Vec2d& kappaBar = getKappaBar(vh);
+
+    VecXd fde(11);
+    MatXd fdk(11, 2);
+    
+    fde = 0.5 / (refLen * refLen) * getGradKappa(vh) * B * (kappa - kappaBar);
+    fdk = 1.0 / refLen * getGradKappa(vh) * B; 
+
+    m_stencil.indices(indices);
+    
+    for(int i=0; i<indices.size(); i++) indices[i] -= 7;
+    
+//    std::cout << "bend id  " << indices << "\n";
+    
+    // edge length bar
+    if (vid == 1) {
+      for(int i=0; i<11; i++) {
+        if (indices[i] >= 0)
+          J.add(indices[i], (vid - 1) * 4 + 3, fde(i));
+      }
+    } else {
+      for(int i=0; i<11; i++) {
+        if (indices[i] >= 0) {
+          J.add(indices[i], (vid - 2) * 4 + 3, fde(i));
+          J.add(indices[i], (vid - 1) * 4 + 3, fde(i));
+        }
+      }
+    }
+    
+    // kappa bar
+    for(int i=0; i<11; i++) {
+      for(int j=0; j<2; j++) {
+        if (indices[i] >= 0) 
+          J.add(indices[i], (vid - 1) * 4 + j, fdk(i, j));
+      }
+    }
+    
+    m_stencil.indices(indices);
+    
+//    std::cout << "bend id  recover? " << indices << "\n";
+    
+  }
+}
+
+void RodBendingForceSym::updateReverseUndeformedStrain(const VecXd& e)
+{
+  if (viscous()) return; 
+    
+  m_stencil = m_stencil.begin();
+  iterator end = m_stencil.end();
+  
+  uint vid = 1;  // eh.id() ?
+  
+  for (; m_stencil != end; ++m_stencil, ++vid) {
+    vertex_handle& vh = m_stencil.handle();
+    Vec2d newKappaBar = Vec2d(e( (vid-1) * 4 ), e( (vid-1) * 4 + 1 ));
+    
+    setKappaBar(vh, newKappaBar);
+    
+    setRefVertexLength(vh, e( (vid-1) * 4 + 3 ));
+    if (vid > 1) {
+      setRefVertexLength(vh, e( (vid-2) * 4 + 3 ));
+    }
+  }  
+}
+  
 const MatXd& RodBendingForceSym::getGradKappa(const vertex_handle& vh) const
 {
   return m_rod.property(m_gradKappa)[vh];

@@ -59,6 +59,7 @@ public:
 
     // Sets timestep of rod too
     m_stepper->setTimeStep(dt);
+    RodTimeStepper::setTimeStep(dt);
   }
 
   Scalar getTimeStep() const
@@ -90,10 +91,11 @@ public:
     if( dt < m_min_step ) 
     {
       std::cerr << "\033[31;1mERROR IN ADAPTIVE BINARY STEPPER:\033[m Timestep fell below minimum, aborting recursive solve." << std::endl;
-      exit(1);
+      return false;
+//      exit(1);
     }
 
-    setTimeStep(dt);
+    this->setTimeStep(dt);
 
     // Backup the rod in case the solve fails.
     m_stepper->backupResize();
@@ -143,7 +145,7 @@ public:
     bool secondsucceeded = recursiveSolve( 0.5*dt );
     if( !secondsucceeded ) { setTimeStep(dt); return false; }
     
-    setTimeStep(dt);
+    this->setTimeStep(dt);
     return firstsucceeded && secondsucceeded;
   }
 

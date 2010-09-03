@@ -405,7 +405,7 @@ int PardisoMatrix::zeroRows( const IntArray& idx, double diag )
         }
       }
     }
-  } 
+  }
   else
   {
     assert( m_rowstarts.size() == rows()+1 );
@@ -433,6 +433,79 @@ int PardisoMatrix::zeroRows( const IntArray& idx, double diag )
   
   return 0;
 }
+  
+int PardisoMatrix::zeroCols( const IntArray& idx, double diag )
+{
+  //std::cout << "Zeroing cols:";
+  //for( size_t i = 0; i < idx.size(); ++i ) std::cout << " " << idx[i];
+  //std::cout << std::endl;
+  
+  if( !m_finalized ) 
+  {
+    assert( (int) m_matrix.size() == rows() );
+    // For each row
+    std::map<int, std::map<int, double> >::iterator rowitr;
+    for( rowitr = m_matrix.begin(); rowitr != m_matrix.end(); ++rowitr )
+    {
+      int row = rowitr->first;
+      // For each user-provided column
+      for( int i = 0; i < (int) idx.size(); ++i )
+      {
+        // If the row has an entry for the column
+        std::map<int, double>::iterator colitr = rowitr->second.find(idx[i]);
+        if( colitr != rowitr->second.end() )
+        {
+          int col = colitr->first;
+          //std::cout << "row: " << row << "    col: " << col << std::endl;
+          // If the entry is not the diagonal, zero it
+          if( row != col ) colitr->second = 0.0;
+          // Otherwise, set it to the user requested diagonal value
+          else colitr->second = diag;
+        }
+      }
+    }
+  }
+  // Note that the following code was never really tested :(
+  else
+  {
+    assert( m_rowstarts.size() == rows()+1 );
+
+    // TODO: We can make this faster by exploiting the fact that
+    //       entries in m_rowstarts[i] ... m_rowstarts[i+1] are sorted
+    // but for now, just do the slow thing
+
+    // For each row
+    for( int row = 0; row < rows(); ++row )
+    {
+      int rowstart = m_rowstarts[row];
+      int onepastrowend = m_rowstarts[row+1];
+      assert( rowstart <= onepastrowend );
+
+      // For each element in this row
+      for( int i = rowstart; i < onepastrowend; ++i )
+      {
+        assert( i >= 0 ); assert( i <= m_vals.size() );
+        int col = m_colindices(i);
+        // For each user provided column
+        for( int j = 0; j < (int) idx.size(); ++j )
+        {
+          int usercol = idx[j];
+          // If the column is in the row and is a user provided column
+          if( col == usercol )
+          {
+            // If the entry is the diagonal, set it to the user-requested value
+            if( row == col ) m_vals[i] = diag;
+            // Otherwise, set it to 0
+            else m_vals[i] = 0.0;            
+          }
+        }
+      }      
+    }
+  }
+
+  return 0;
+}
+
 
 int PardisoMatrix::multiply( VecXd& y, double s, const VecXd& x ) const
 {
@@ -480,7 +553,7 @@ int PardisoMatrix::multiply( VecXd& y, double s, const VecXd& x ) const
   return 0;  
 }
 
-void PardisoMatrix::print()
+void PardisoMatrix::print() const
 {
   if( !m_finalized )
   {
@@ -551,7 +624,25 @@ void PardisoMatrix::runSanityChecks()
   else
   {
   }
-}  
+}
+
+bool PardisoMatrix::isApproxSymmetric( Scalar eps ) const
+{
+  for( int i = 0; i < rows(); ++i )
+  {
+    for( int j = 0; j < cols(); ++ j )
+    {
+      if( !approxEq((*this)(i,j),(*this)(j,i),eps) ) return false;
+    }
+  }
+  
+  return true;
+}
+
+std::string PardisoMatrix::name() const
+{
+  return "PardisoMatrix";
+}
 
 int PardisoMatrix::findValueIndex( const int& row, const int& col ) const
 {

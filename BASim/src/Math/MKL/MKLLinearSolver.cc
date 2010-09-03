@@ -64,14 +64,15 @@ int MKLLinearSolver::solve(VecXd& x, const VecXd& b)
 
   // check return value for errors
   if (info < 0) {
-    std::cerr << "Error in parameter " << -info << " in call to dgbsv"
+    std::cerr << "\033[31;1mWARNING IN MKLLinearSolver:\033[m Error in parameter " << -info << " in call to dgbsv"
               << std::endl;
     return -1;
   } else if (info > 0) {
-    std::cerr << "Factor U is singular (" << info << std::endl;
+    std::cerr << "\033[31;1mWARNING IN MKLLinearSolver:\033[m Factor U is singular, info code: " << info << std::endl;
     return -1;
   }
 
+  
   assert( info == 0 );
   
   // Check the inf norm of the residual

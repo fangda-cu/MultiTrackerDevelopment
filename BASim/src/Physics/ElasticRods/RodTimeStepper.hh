@@ -69,8 +69,6 @@ public:
 
   virtual void setTimeStep(Scalar dt)
   {
-//std::cout << "RTS dt " << dt << "\n";
-
     m_diffEqSolver->setTimeStep(dt);
     m_rod.setTimeStep(dt);
   }
@@ -188,11 +186,7 @@ public:
     // add external forces
     for (size_t i = 0; i < m_externalForces.size(); ++i) {
       m_externalForces[i]->computeForce(m_rod, f);
-      
-//	    std::cout << "ext " << f.segment(0,11) << "\n";
-      
     }
-
   
     m_forces = f - m_forces;
   }

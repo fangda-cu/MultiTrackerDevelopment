@@ -158,7 +158,7 @@ void YImage::setAllAlpha( unsigned char alpha )
   for(int i = 0; i < m_width * m_height; ++i) {
     YPixel* pix = m_data + i;
     pix->a = alpha;
-      }
+  }
 }
 
 // We use our own reading/writing functions because libpng may have
