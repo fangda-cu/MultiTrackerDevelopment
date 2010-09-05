@@ -160,6 +160,17 @@ void RodData::updateBoundaryConditions()
     
     RodBoundaryCondition* boundary = m_stepper->getBoundaryCondition();
                 
+    // It looks like we need to erase boundary conditions that were previously set. 
+    // When did this happen, it didn't used to be like that?!
+
+    for ( int v=0; v<m_rod->nv(); ++v )
+    {
+        // Probably most of these were not fixed, this may be slow to do.
+        // ??? Benchmark this and check what is going on.
+        boundary->releaseVertex( v );
+    }
+    
+
     int b = 0;
 
     for ( KinematicEdgeDataMap::iterator it = kinematicEdgeDataMap.begin();
