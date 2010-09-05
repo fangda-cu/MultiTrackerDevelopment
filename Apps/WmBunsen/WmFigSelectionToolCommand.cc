@@ -157,7 +157,7 @@ MStatus WmFigSelectionToolCommand::finalize()
     MStringArray results;
     results.setLength( m_selectedRods.size() );
     
-    for ( size_t r=0; r<m_selectedRods.size(); r++ )
+    for ( size_t r=0; r<m_selectedRods.size(); ++r )
     {
      //   appendToResult( results[ r ] );
         results[ r ] = m_selectedRods[ r ];

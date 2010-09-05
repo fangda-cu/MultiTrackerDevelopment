@@ -1,6 +1,7 @@
 #include "WmFigaroCmd.hh"
 #include "WmBunsenCollisionMeshNode.hh"
 #include "WmFigConnectionNode.hh"
+#include "WmFigaroRodShape/WmFigaroRodShape.hh"
 
 #include <inttypes.h>
 #include <map>
@@ -92,6 +93,7 @@ const char *const kEdge( "-ed" );
 const char *const kRod( "-ro" );
 const char *const kUserDefinedColour( "-udc" );
 const char *const kDeleteDefinedColour( "-ddc" );
+const char *const kCreateRodShapeNode( "-crs" );
 
 const char *const kHelp( "-h" );
 
@@ -131,6 +133,8 @@ MSyntax WmFigaroCmd::syntaxCreator()
                "Creates wmFigaro and wmFigRodNodes and to load the specified cache file for preview." );
     p_AddFlag( mSyntax, kCacheFile, "-cacheFile",
         "Cache file to load and preview.", MSyntax::kString);
+    p_AddFlag( mSyntax, kCreateRodShapeNode, "-createRodShape",
+               "Creates a single rod as a shape node from a selected NURBS curve." );
     
     mSyntax.setObjectType( MSyntax::kSelectionList );
     mSyntax.useSelectionAsDefault( true );
@@ -272,6 +276,10 @@ MStatus WmFigaroCmd::redoIt()
         if ( m_mArgDatabase->isFlagSet( kDeleteDefinedColour ) )
         {
             setColorOfRod( true );
+        }
+        if ( m_mArgDatabase->isFlagSet( kCreateRodShapeNode ) )
+        {
+            createRodShapeNode();
         }
         else
         {
@@ -559,6 +567,13 @@ void WmFigaroCmd::createWmFigRodNode( bool useNURBSInput, bool i_previewOnly,
     stat = dagModifier.connect( figaroSolverPlug, rodNodeSolverPlug );
     CHECK_MSTATUS( stat );
 
+    // Connect gravity so the rods inherit the global system gravity
+    MPlug rodNodeGravityPlug( sFn.findPlug( "gravity", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    MPlug figaroGravityPlug = bunsenDependNodeFn.findPlug( "gravity", true, &stat ); 
+    CHECK_MSTATUS( stat );
+    stat = dagModifier.connect( figaroGravityPlug, rodNodeGravityPlug );
+    CHECK_MSTATUS( stat );
     
     // Connect startTime so the rods reset when the Figaro node resets
     MPlug rodStartTimePlug( sFn.findPlug( "startTime", true, &stat ) );
@@ -674,6 +689,88 @@ void WmFigaroCmd::createWmBunsenNode( MObject &o_wmBunsenNodeObj )
     dagModifier.doIt();
 
     o_wmBunsenNodeObj = bunsenNodeSObj;
+}
+
+void WmFigaroCmd::createRodShapeNode()
+{
+    if ( m_nurbsCurveList.isEmpty() )
+    {
+        MGlobal::displayError( "Please select a NURBS curves to create a rod from.\n" );
+        return;
+    }
+
+    MStatus stat;
+    // Create the rods node
+    MObject rodTObj;  // Object for transform node
+    MObject rodSObj;  // Object for shape node
+    MDagPath shapeDagPath;
+    MObject pObj;
+    MDagModifier dagModifier;
+    MString rodShapeName = "";
+
+    createDagNode( WmFigaroRodShape::typeName.asChar(), WmFigaroRodShape::typeName.asChar(),
+                   pObj, &rodTObj, &rodSObj, &dagModifier, rodShapeName );
+
+    appendToResultString( rodShapeName );
+    
+    MDagPath rodDagPath;
+    stat = MDagPath::getAPathTo( rodSObj, rodDagPath );
+    CHECK_MSTATUS( stat );
+    
+    // Set the control points of the rod shape to be the vertices of the input NURBS curve
+    MDagPath dagPath;
+    MObject component;
+    m_nurbsCurveList.getDagPath( 0, dagPath, component );
+    dagPath.extendToShape();
+
+    MFnNurbsCurve curveFn( dagPath, &stat );
+    CHECK_MSTATUS( stat );
+    
+    MPointArray nurbsPoints;
+    curveFn.getCVs( nurbsPoints, MSpace::kWorld );
+    
+    MFnDependencyNode rodShapeFn( rodSObj );
+
+    // Now get the input attribute of the rod and set
+    MPlug controlPointsPlugArr = rodShapeFn.findPlug( "controlPoints", true, &stat );
+    CHECK_MSTATUS( stat );
+
+    for ( int p=0; p<nurbsPoints.length(); ++p )
+    {
+        MPlug cvPlug = controlPointsPlugArr.elementByLogicalIndex( p, &stat );
+        CHECK_MSTATUS( stat );
+        MPlug xPlug = cvPlug.child( 0, &stat );
+        CHECK_MSTATUS( stat );
+        MPlug yPlug = cvPlug.child( 1, &stat );
+        CHECK_MSTATUS( stat );
+        MPlug zPlug = cvPlug.child( 2, &stat );
+        CHECK_MSTATUS( stat );
+        xPlug.setValue( nurbsPoints[ p ].x );
+        yPlug.setValue( nurbsPoints[ p ].y );
+        zPlug.setValue( nurbsPoints[ p ].z );        
+    }
+
+    // Now connect the output from the rod to the NURBS curve
+    MPlug cvsPlug = rodShapeFn.findPlug( "controlVertex", & stat );
+    CHECK_MSTATUS( stat );
+
+    for( unsigned int cv = 0; cv < nurbsPoints.length(); cv++ )
+    {
+        MPlug cvPlug = cvsPlug.elementByLogicalIndex( cv, &stat );
+        CHECK_MSTATUS( stat );
+
+        stat = dagModifier.connect( cvPlug, curveFn.findPlug( "controlPoints" ).elementByLogicalIndex( cv, & stat ) );
+        CHECK_MSTATUS( stat );
+    }
+
+    dagModifier.doIt();
+
+    // Tell the node to initialise itself. Seems like pulling on a plug would be nice
+    WmFigaroRodShape* wmFigaroRodShape = dynamic_cast< WmFigaroRodShape* >( rodShapeFn.userNode( &stat ) );
+    CHECK_MSTATUS( stat );
+
+    wmFigaroRodShape->resetSimulation();
+
 }
 
 void WmFigaroCmd::getNodes( MSelectionList i_opt_nodes )

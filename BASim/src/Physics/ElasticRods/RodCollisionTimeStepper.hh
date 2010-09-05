@@ -74,19 +74,41 @@ public:
     if (!m_enabled)
       return;
 
+    m_rod->setCollisionStartPositions();
+    
     if ( !m_collisionsEnabled || m_collisionMeshes == NULL || m_collisionMeshes->size()==0 )
     {
         return;
     }
     
-    m_rod->setCollisionStartPositions();
     getProximities(*m_collisionMeshes);    
+  }
+
+  void collisionsBegin()
+  {
+    if (!m_enabled)
+      return; 
+   
+     m_rod->collisionsBegin(m_rodTimeStepper->getTimeStep());
+  }
+
+  void updateEndPositions()
+  {
+    if (!m_enabled)
+      return; 
+
+    m_rod->updateEndPositions(m_rodTimeStepper->getTimeStep());    
   }
 
   void respondToObjectCollisions()
   {
     if (!m_enabled)
       return;
+
+	if ( !m_collisionsEnabled || m_collisionMeshes == NULL || m_collisionMeshes->size()==0 )
+    {
+        return;
+    }
 
     if (is_multiple_stepper) {
       m_rod->collisionsBegin(m_dt);

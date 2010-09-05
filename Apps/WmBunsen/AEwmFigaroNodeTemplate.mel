@@ -29,6 +29,22 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
         editorTemplate -endNoOptimize -addControl "fullSelfCollisionIterations";
         editorTemplate -addControl "fullSelfCollisionCOR";
     editorTemplate -endLayout;
+
+    editorTemplate -beginLayout "Volumetric Collisions" -collapse 0;
+        editorTemplate -addControl "volumetricCollisions";
+        editorTemplate -addControl "gridDX";
+        editorTemplate -addControl "targetEdgeDensity";
+        editorTemplate -addControl "volumetricRadius";
+        editorTemplate -addControl "flip";
+        editorTemplate -addControl "slip";
+        editorTemplate -addControl "separationCondition";
+        editorTemplate -beginNoOptimize -addControl "displayGrid";
+        editorTemplate -addControl "displayCollisionBoundary";
+        editorTemplate -addControl "displayAirBoundary";
+        editorTemplate -endNoOptimize -addControl "maxDisplayDensity";        
+        editorTemplate -addControl "displayGridVelocitiesMultiplier";
+    editorTemplate -endLayout;
+
     editorTemplate -beginLayout "Timings" -collapse 0;
         editorTemplate -addControl "timingEnabled";
         editorTemplate -addControl "timingsFile";        

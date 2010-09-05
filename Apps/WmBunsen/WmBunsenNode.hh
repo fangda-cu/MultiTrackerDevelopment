@@ -74,6 +74,20 @@ public:
     static MObject ia_fullSelfCollisionIterations;
     static MObject ia_fullSelfCollisionCOR;
     
+    // Volumetric Collisions
+    static MObject ia_volumetricCollisions;
+    static MObject ia_gridDX;
+    static MObject ia_targetEdgeDensity;
+    static MObject ia_volumetricRadius;
+    static MObject ia_flip;
+    static MObject ia_slip;
+    static MObject ia_separationCondition;
+    static MObject ia_displayGrid;
+    static MObject ia_displayAirBoundary;
+    static MObject ia_displayCollisionBoundary;
+    static MObject ia_displayGridVelocitiesMultiplier;
+    static MObject ia_maxDisplayDensity;
+
     static MObject ca_syncAttrs;
     static MObject oa_simStepTaken;
     
@@ -94,6 +108,11 @@ private:
     void updateAllCollisionMeshes( MDataBlock& i_dataBlock );
     void updateAllRodNodes( MDataBlock &i_dataBlock );
     void addRodsToWorld( MDataBlock& i_dataBlock );
+    static MStatus addNumericAttribute( MObject& i_attribute, MString i_longName, MString i_shortName, 
+                                 MFnNumericData::Type i_type, double i_defaultValue, bool i_isInput,
+                                 bool i_isArray = false );
+    void getAllVolumetricCollisionAttributes( MDataBlock& i_dataBlock );
+
 
     double m_currentTime;
     double m_previousTime;

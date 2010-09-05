@@ -82,6 +82,7 @@ protected:
     void createWmBunsenNode( MObject &o_wmBunsenNodeObj );
     void addCollisionMeshes();
     void attatchEdgeToObject();
+    void createRodShapeNode();
 
 public:     // Data
 protected:  // Data

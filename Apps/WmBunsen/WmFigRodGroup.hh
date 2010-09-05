@@ -246,4 +246,8 @@ private:
     bool m_simulationNeedsReset;
 };
 
+typedef tr1::unordered_map<size_t, WmFigRodGroup* > RodDataMap;
+typedef RodDataMap::iterator RodDataMapIterator;
+
+
 #endif

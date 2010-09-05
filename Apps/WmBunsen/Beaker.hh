@@ -33,11 +33,19 @@
 #include "WmFigRodGroup.hh"
 #include <weta/Wfigaro/SceneXML/SceneXML.hh>
 
+#undef USE_MPI
+
+/*#include <Geometry/SEGMENTED_CURVE.h>
+#include <Grids/GRID_3D.h>
+#include <Incompressible_Flows/INCOMPRESSIBLE_UNIFORM.h>
+#include <Matrices_And_Vectors/VECTOR.h>*/
+#include "VolumetricCollisions/VolumetricCollisionsCPU.hh"
+
 using namespace BASim;
 using namespace std;
 
-typedef tr1::unordered_map<size_t, WmFigRodGroup* > RodDataMap;
-typedef RodDataMap::iterator RodDataMapIterator;
+typedef std::tr1::unordered_map< int, Vec3d > FixedVertexMap ;
+typedef std::tr1::unordered_map< int, FixedVertexMap > FixedRodVertexMap ;
 
 class Beaker
 {
@@ -119,6 +127,74 @@ public:
         m_clumpingCoefficient = i_clumpingCoefficient;
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Volumetric collision stuff
+    //
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    void setFlip( double i_flip )
+    {
+        m_flip = i_flip;
+    }
+    
+    void setSlip( double i_slip )
+    {
+        m_slip = i_slip;
+    }
+    
+    void setDoVolumetricCollisions( bool i_doVolumetricCollisions )
+    {
+        m_doVolumetricCollisions = i_doVolumetricCollisions;
+    }
+
+    void setTargetEdgeDensity( double i_targetEdgeDensity )
+    {
+        m_targetEdgeDensity = i_targetEdgeDensity;
+    }
+
+    void setVolumetricRadius( double i_volumetricRadius )
+    {
+        m_volumetricRadius = i_volumetricRadius;
+    }
+
+    void setGridDX( double i_gridDX )
+    {
+        m_gridDX = i_gridDX;
+    }
+
+    void setSeparationCondition( double i_separationConditionX, double i_separationConditionY, double i_separationConditionZ )
+    {
+        m_separationCondition[ 0 ] = i_separationConditionX;
+        m_separationCondition[ 1 ] = i_separationConditionY;
+        m_separationCondition[ 2 ] = i_separationConditionZ;
+    }
+
+    void setDisplayGrid( bool i_displayGrid )
+    {
+        m_displayGrid = i_displayGrid;
+    }    
+
+    void setDisplayGridVelocitiesMultiplier( double i_displayGridVelocitiesMultiplier )
+    {
+        m_displayGridVelocitiesMultiplier = i_displayGridVelocitiesMultiplier;
+    }
+    
+    void setMaxDisplayDensity( double i_maxDisplayDensity )
+    {
+        m_maxDisplayDensity = i_maxDisplayDensity;
+    }
+    
+    void setDisplayCollisionBoundary( bool i_displayCollisionBoundary )
+    {
+        m_displayCollisionBoundary = i_displayCollisionBoundary;
+    }
+
+    void setDisplayAirBoundary( bool i_displayAirBoundary )
+    {
+        m_displayAirBoundary = i_displayAirBoundary;
+    }
+    
    // RodCollisionTimeStepper* setupRodTimeStepper( RodData* i_rodData );
     
     void draw(void);
@@ -128,7 +204,9 @@ public:
                        bool i_selfCollisionPenaltyForcesEnabled,
                        bool i_fullSelfCollisionsEnabled,
                        int i_fullSelfCollisionIters,
-                       double i_selfCollisionCOR );
+                       double i_selfCollisionCOR,
+                       FixedRodVertexMap* i_fixedVertices = NULL,
+                       bool i_zeroAllTwist = false );
     
     /*(void addRod( size_t i_rodGroup,
                  vector<Vec3d>& i_initialVertexPositions, 
@@ -221,6 +299,21 @@ private:
     SceneXML* m_sceneXML;
 
     std::vector< InitialRodConfiguration > m_initialRodConfigurations;
+
+    VolumetricCollisions* m_volumetricCollisions;
+    
+    double m_flip;
+    double m_slip;
+    bool m_doVolumetricCollisions;
+    double m_targetEdgeDensity;
+    double m_volumetricRadius;
+    double m_gridDX;    
+    bool m_displayGrid;
+    double m_displayGridVelocitiesMultiplier;
+    double m_maxDisplayDensity;
+    bool m_displayCollisionBoundary;
+    bool m_displayAirBoundary;
+    Vec3d m_separationCondition;
 };
 
 #endif // BEAKER_HH_

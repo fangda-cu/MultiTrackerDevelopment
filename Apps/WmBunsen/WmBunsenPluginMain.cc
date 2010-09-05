@@ -15,9 +15,12 @@
 #include "WmFigCombContext.hh"
 #include "WmFigCombContextCommand.hh"
 #include "WmFigCombToolCommand.hh"
+#include "WmFigaroRodShape/WmFigaroRodShape.hh"
+#include "WmFigaroRodShape/WmFigaroRodShapeUI.hh"
+#include "WmFigaroRodShape/WmFigaroRodShapeIterator.hh"
 
 MStatus initializePlugin( MObject obj )
-{ 
+{
 	MStatus stat;
 	MString errStr;
 	char szVersion[1024];
@@ -93,12 +96,21 @@ MStatus initializePlugin( MObject obj )
         return stat;     
     }
 
-    if ( plugin.registerContextCommand( WmFigCombContext::typeName,
+    stat = plugin.registerContextCommand( WmFigCombContext::typeName,
             WmFigCombContextCommand::creator,
             WmFigCombToolCommand::typeName,
-            WmFigCombToolCommand::creator ) != MS::kSuccess )
+            WmFigCombToolCommand::creator );
     if ( !stat ) {
         stat.perror( "registerContextCommand WmFigCombContext failed" );
+        return stat;     
+    }
+
+    stat = plugin.registerShape( WmFigaroRodShape::typeName, WmFigaroRodShape::id,
+                                   &WmFigaroRodShape::creator,
+                                   &WmFigaroRodShape::initialize,
+                                   &WmFigaroRodShapeUI::creator );
+    if ( !stat ) {
+        stat.perror( "registerShape WmFigaroRodShape failed" );
         return stat;     
     }
 
@@ -162,6 +174,11 @@ MStatus uninitializePlugin( MObject obj)
     if ( plugin.deregisterContextCommand( WmFigCombContext::typeName, WmFigCombToolCommand::typeName ) != MS::kSuccess )
     {
         stat.perror( "deregister context command wmFigComb failed" );
+    }
+
+    if ( plugin.deregisterNode( WmFigaroRodShape::id ) != MS::kSuccess )
+    {
+        stat.perror( "deregisterNode WmFigaroRodShape failed" );
     }
 
     MGlobal::stopErrorLogging();

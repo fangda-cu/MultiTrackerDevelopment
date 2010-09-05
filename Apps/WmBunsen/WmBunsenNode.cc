@@ -32,6 +32,20 @@ MObject WmBunsenNode::ia_timingsFile;
 MObject WmBunsenNode::ia_timingEnabled;
 MObject WmBunsenNode::oa_simStepTaken;
 
+// Volumetric Collisions
+/* static */ MObject WmBunsenNode::ia_volumetricCollisions;
+/* static */ MObject WmBunsenNode::ia_gridDX;
+/* static */ MObject WmBunsenNode::ia_targetEdgeDensity;
+/* static */ MObject WmBunsenNode::ia_volumetricRadius;
+/* static */ MObject WmBunsenNode::ia_flip;
+/* static */ MObject WmBunsenNode::ia_slip;
+/* static */ MObject WmBunsenNode::ia_separationCondition;
+/* static */ MObject WmBunsenNode::ia_displayGrid;
+/* static */ MObject WmBunsenNode::ia_displayAirBoundary;
+/* static */ MObject WmBunsenNode::ia_displayCollisionBoundary;
+/* static */ MObject WmBunsenNode::ia_displayGridVelocitiesMultiplier;
+/* static */ MObject WmBunsenNode::ia_maxDisplayDensity;
+
 // Drawing
 /* static */ MObject WmBunsenNode::ia_drawSubSteppedVertices;
 
@@ -270,6 +284,15 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_beaker->clumpingCoefficient( i_dataBlock.inputValue( ia_clumpingCoefficient, &stat ).asDouble() );
         CHECK_MSTATUS( stat );
 
+        
+        ////////////////////////////////////////////////////////////////////////////////////////////////
+        //
+        // Volumetric Collision attributes
+        //
+        ////////////////////////////////////////////////////////////////////////////////////////////////
+    
+        getAllVolumetricCollisionAttributes( i_dataBlock );
+
         int solver = i_dataBlock.inputValue( ia_solver, &stat ).asInt();
 
         bool plasticDeformations = i_dataBlock.inputValue( ia_plasticDeformations, &stat ).asBool();
@@ -415,6 +438,60 @@ void WmBunsenNode::draw( M3dView& i_view, const MDagPath& i_path,
     i_view.endGL();
 }
 
+void WmBunsenNode::getAllVolumetricCollisionAttributes( MDataBlock& i_dataBlock )
+{
+    MStatus stat;
+
+    double flip = i_dataBlock.inputValue( ia_flip, &stat).asDouble();
+    CHECK_MSTATUS(stat);
+    m_beaker->setFlip( flip );
+
+    double slip = i_dataBlock.inputValue( ia_slip, &stat).asDouble();
+    CHECK_MSTATUS(stat);
+    m_beaker->setSlip( slip );
+
+    bool doVolumetricCollisions = i_dataBlock.inputValue( ia_volumetricCollisions, &stat).asBool();
+    CHECK_MSTATUS(stat);
+    m_beaker->setDoVolumetricCollisions( doVolumetricCollisions );
+
+    double targetEdgeDensity = i_dataBlock.inputValue( ia_targetEdgeDensity, &stat).asDouble();
+    CHECK_MSTATUS(stat);
+    m_beaker->setTargetEdgeDensity( targetEdgeDensity );
+
+    double volumetricRadius = i_dataBlock.inputValue( ia_volumetricRadius, &stat).asDouble();
+    CHECK_MSTATUS(stat);
+    m_beaker->setVolumetricRadius( volumetricRadius );
+
+    double gridDX = i_dataBlock.inputValue( ia_gridDX, &stat).asDouble();
+    CHECK_MSTATUS( stat );
+    m_beaker->setGridDX( gridDX );
+
+    const double3 &separationCondition = i_dataBlock.inputValue( ia_separationCondition, &stat).asDouble3();    
+    CHECK_MSTATUS(stat);
+    m_beaker->setSeparationCondition( separationCondition[ 0 ], separationCondition[ 1 ],
+                                      separationCondition[ 2 ] );
+    
+    bool displayGrid = i_dataBlock.inputValue( ia_displayGrid, &stat).asBool();
+    CHECK_MSTATUS(stat);
+    m_beaker->setDisplayGrid( displayGrid );
+
+    double displayGridVelocitiesMultiplier = i_dataBlock.inputValue(ia_displayGridVelocitiesMultiplier, &stat).asDouble();
+    CHECK_MSTATUS(stat);
+    m_beaker->setDisplayGridVelocitiesMultiplier( displayGridVelocitiesMultiplier );
+
+    double maxDisplayDensity = i_dataBlock.inputValue(ia_maxDisplayDensity, &stat).asDouble();
+    CHECK_MSTATUS(stat);
+    m_beaker->setMaxDisplayDensity( maxDisplayDensity );
+
+    bool displayCollisionBoundary = i_dataBlock.inputValue(ia_displayCollisionBoundary, &stat).asBool();
+    CHECK_MSTATUS(stat);
+    m_beaker->setDisplayCollisionBoundary( displayCollisionBoundary );
+
+    bool displayAirBoundary = i_dataBlock.inputValue(ia_displayAirBoundary, &stat).asBool();
+    CHECK_MSTATUS(stat);
+    m_beaker->setDisplayAirBoundary( displayAirBoundary );
+}
+
 
 MStatus WmBunsenNode::connectionMade( const MPlug& i_plug, const MPlug& i_otherPlug, bool i_asSrc ) 
 {     
@@ -470,13 +547,41 @@ void* WmBunsenNode::creator()
     return new WmBunsenNode();
 }
 
+/*static */ MStatus WmBunsenNode::addNumericAttribute( MObject& i_attribute, MString i_longName, 
+    MString i_shortName, MFnNumericData::Type i_type, double i_defaultValue, bool i_isInput,
+    bool i_isArray )
+{
+    // Creates a numeric attribute with default attributes
+    MStatus stat = MS::kSuccess;
+
+    MFnNumericAttribute nAttr;
+    i_attribute = nAttr.create( i_longName, i_shortName, i_type, i_defaultValue, &stat );
+    if ( !stat )
+    {
+        cerr << "Failed to create attribute " << i_longName << endl;
+        return stat;
+    }
+    if ( i_isInput )
+        nAttr.setWritable( true );
+    else
+        nAttr.setWritable( false );
+    
+    if ( i_isArray )
+        nAttr.setArray( true );
+
+    stat = addAttribute( i_attribute );
+    if ( !stat ) { stat.perror( "addAttribute " + i_longName ); return stat; }
+
+    return stat;
+}
+
 MStatus WmBunsenNode::initialize()
 { 
     MStatus stat;
     
     {
         MFnEnumAttribute enumAttrFn;
-        ia_solverType = enumAttrFn.create( "solverType", "sot", (short) RodTimeStepper::IMPL_EULER, & stat );
+        ia_solverType = enumAttrFn.create( "solverType", "sot", (short) RodTimeStepper::SYM_IMPL_EULER, & stat );
         CHECK_MSTATUS( stat );
         enumAttrFn.addField( "Implicit Euler",   (short) RodTimeStepper::IMPL_EULER );
         enumAttrFn.addField( "Symmetric Implicit Euler",  (short) RodTimeStepper::SYM_IMPL_EULER );
@@ -536,7 +641,7 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnNumericAttribute nAttr;
-    	ia_substeps = nAttr.create( "subSteps", "sub", MFnNumericData::kInt, 100, &stat );
+    	ia_substeps = nAttr.create( "subSteps", "sub", MFnNumericData::kInt, 10, &stat );
         if ( !stat ) 
         {
             stat.perror( "create substeps attribute");
@@ -622,7 +727,7 @@ MStatus WmBunsenNode::initialize()
             return stat;
         }
         nAttr.setWritable( true );
-        nAttr.setReadable( false );
+        nAttr.setReadable( true );
         nAttr.setConnectable( true );
         stat = addAttribute( ia_gravity );
         if (!stat) { stat.perror( "addAttribute ia_gravity" ); return stat; }
@@ -898,6 +1003,60 @@ MStatus WmBunsenNode::initialize()
 
     stat = attributeAffects( ia_solverType, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_solverType->ca_syncAttrs" ); return stat; }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Volumetric Collisions
+    //
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    addNumericAttribute( ia_volumetricCollisions, "volumetricCollisions", "voc", MFnNumericData::kBoolean, false, true );
+    stat = attributeAffects( ia_volumetricCollisions, ca_syncAttrs );
+    if ( !stat ) { stat.perror( "attributeAffects ia_volumetricCollisions->ca_syncAttrs" ); return stat; }
+
+    addNumericAttribute( ia_gridDX, "gridDX", "gdx", MFnNumericData::kDouble, 1.0, true );
+    stat = attributeAffects( ia_gridDX, ca_syncAttrs );
+    if ( !stat ) { stat.perror( "attributeAffects ia_gridDX->ca_syncAttrs" ); return stat; }
+
+    addNumericAttribute( ia_targetEdgeDensity, "targetEdgeDensity", "ted", MFnNumericData::kDouble, 100.0, true );
+    stat = attributeAffects( ia_targetEdgeDensity, ca_syncAttrs );
+    if ( !stat ) { stat.perror( "attributeAffects ia_targetEdgeDensity->ca_syncAttrs" ); return stat; }
+
+    addNumericAttribute( ia_volumetricRadius, "volumetricRadius", "vra", MFnNumericData::kDouble, 1.0, true );
+    stat = attributeAffects( ia_volumetricRadius, ca_syncAttrs );
+    if ( !stat ) { stat.perror( "attributeAffects ia_volumetricRadius->ca_syncAttrs" ); return stat; }
+
+    addNumericAttribute( ia_flip, "flip", "flp", MFnNumericData::kDouble, 0.95, true );
+    stat = attributeAffects( ia_flip, ca_syncAttrs );
+    if ( !stat ) { stat.perror( "attributeAffects ia_flip->ca_syncAttrs" ); return stat; }
+
+    addNumericAttribute( ia_slip, "slip", "slp", MFnNumericData::kDouble, .1, true );
+    stat = attributeAffects( ia_slip, ca_syncAttrs );
+    if ( !stat ) { stat.perror( "attributeAffects ia_slip->ca_syncAttrs" ); return stat; }
+
+    addNumericAttribute( ia_separationCondition, "separationCondition", "vsc", MFnNumericData::k3Double, -1.0, true );
+    stat = attributeAffects( ia_separationCondition, ca_syncAttrs );
+    if ( !stat ) { stat.perror( "attributeAffects ia_seperationCondition->ca_syncAttrs" ); return stat; }
+
+    addNumericAttribute( ia_displayGrid, "displayGrid", "dgr", MFnNumericData::kBoolean, false, true );
+    stat = attributeAffects( ia_displayGrid, ca_syncAttrs );
+    if ( !stat ) { stat.perror( "attributeAffects ia_displayGrid->ca_syncAttrs" ); return stat; }
+
+    addNumericAttribute( ia_displayAirBoundary, "displayAirBoundary", "dab", MFnNumericData::kBoolean, false, true );
+    stat = attributeAffects( ia_displayAirBoundary, ca_syncAttrs );
+    if ( !stat ) { stat.perror( "attributeAffects ia_displayAirBoundary->ca_syncAttrs" ); return stat; }
+
+    addNumericAttribute( ia_displayCollisionBoundary, "displayCollisionBoundary", "dcb", MFnNumericData::kBoolean, false, true );
+    stat = attributeAffects( ia_displayCollisionBoundary, ca_syncAttrs );
+    if ( !stat ) { stat.perror( "attributeAffects ia_displayCollisionBoundary->ca_syncAttrs" ); return stat; }
+
+    addNumericAttribute( ia_displayGridVelocitiesMultiplier, "displayGridVelocitiesMultiplier", "dvm", MFnNumericData::kDouble, 0.0, true );
+    stat = attributeAffects( ia_displayGridVelocitiesMultiplier, ca_syncAttrs );
+    if ( !stat ) { stat.perror( "attributeAffects ia_displayGridVelocitiesMultiplier->ca_syncAttrs" ); return stat; }
+
+    addNumericAttribute( ia_maxDisplayDensity, "maxDisplayDensity", "mdd", MFnNumericData::kDouble, 0.0, true );
+    stat = attributeAffects( ia_maxDisplayDensity, ca_syncAttrs );
+    if ( !stat ) { stat.perror( "attributeAffects ia_maxDisplayDensity->ca_syncAttrs" ); return stat; }
+
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     //

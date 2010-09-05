@@ -24,6 +24,26 @@ PLG1            := wmFigaro.so
 #PLG1_CF	        += -Werror -DBUILD=${BUILD}
 #PLG1_CF	        += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL -DHAVE_LAPACK -DWETA
 PLG1_CF	        += -DBUILD=${BUILD} -openmp -pthread -DHAVE_LAPACK -DWETA
+PLG1_CF	        += -no-ipo
+
+# PhysBAM libraries
+PHYSBAM_LOCATION := /vol/weta/src/amcadams/PhysBAM-svn
+#PHYSBAM_LOCATION := /vol/bob/src/code/PhysBAM/work/girving-trunk
+PHYSBAM_LIBS 	 := -lPhysBAM_Advection_Equations -lPhysBAM_Arrays -lPhysBAM_Articulated_Rigid_Bodies -lPhysBAM_Boundaries -lPhysBAM_Collisions_And_Interactions \
+		    -lPhysBAM_Conservation_Law_Solvers -lPhysBAM_Constitutive_Models -lPhysBAM_OpenGL -lPhysBAM_Data_Structures -lPhysBAM_Optimization \
+		    -lPhysBAM_Deformable_Objects -lPhysBAM_Ordinary_Differential_Equations -lPhysBAM_Euler_Equations -lPhysBAM_Parallel_Computation \
+		    -lPhysBAM_Forces_And_Torques -lPhysBAM_Particles -lPhysBAM_Fourier_Transforms -lPhysBAM_Poisson_Equations \
+		    -lPhysBAM_Fracture -lPhysBAM_Random_Numbers -lPhysBAM_Geometry -lPhysBAM_Read_Write -lPhysBAM_Grid_Based_Fields \
+		    -lPhysBAM_Grids -lPhysBAM_Rigid_Bodies -lPhysBAM_Heat_Flows -lPhysBAM_Solids_And_Fluids -lPhysBAM_Incompressible_Flows -lPhysBAM_Solids_Evolution \
+		    -lPhysBAM_Arrays -lPhysBAM_Interpolation -lPhysBAM_Standard_Tests -lPhysBAM_Lagrange_Equations -lPhysBAM_Turbulence \
+		    -lPhysBAM_Level_Sets -lPhysBAM_Utilities -lPhysBAM_Matrices_And_Vectors -lPhysBAM_Meshing -lPhysBAM_Motion \
+		    -lboost_iostreams -lboost_filesystem -lpng -ljpeg -lglut
+PHYSBAM_RPATH := -Wl,-rpath,$(PHYSBAM_LOCATION)/build/release/Public_Library -Wl,-rpath,$(PHYSBAM_LOCATION)/External_Libraries/boost/lib 
+PHYSBAM_LIB_PATH := -L$(PHYSBAM_LOCATION)/build/release/Public_Library -L/vol/bob/built/linux64/L40/bless/hugekits/boost/lib
+PHYSBAM_INCLUDE  := -I$(PHYSBAM_LOCATION)/Public_Library
+
+PLG1_CF += $(PHYSBAM_INCLUDE) -Wno-overloaded-virtual -Wno-unused -pipe -O3 -fPIC -g -fomit-frame-pointer -funroll-loops 
+
 
 #ifeq "$(ABI)" "LI40"
 
@@ -38,7 +58,7 @@ PLG1_MAYA       := 1
 PLG1_INSD       := $(PLG_INSD)
 
 # Turn of IPO as it takes ages and may not do much at all.
-ABIOPTS_o   := $(filter-out -ipo-separate, $(ABIOPTS_o))
+#ABIOPTS_o   := $(filter-out -ipo-separate, $(ABIOPTS_o))
 
 PLG1_I          := \
 Beaker.hh \
@@ -64,7 +84,12 @@ WmFigRodNurbsInput.hh \
 WmFigRodBarbInput.hh \
 WmFigRodFileIO.hh \
 WmFigRodFileInput.hh \
-WmFigRodGroup.hh
+WmFigRodGroup.hh \
+VolumetricCollisions/VolumetricCollisions.hh \
+VolumetricCollisions/VolumetricCollisionsCPU.hh \
+WmFigaroRodShape/WmFigaroRodShape.hh \
+WmFigaroRodShape/WmFigaroRodShapeIterator.hh \
+WmFigaroRodShape/WmFigaroRodShapeUI.hh
 
 PLG1_S          := \
 Beaker.cc \
@@ -90,7 +115,11 @@ WmFigRodNurbsInput.cc \
 WmFigRodBarbInput.cc \
 WmFigRodFileIO.cc \
 WmFigRodFileInput.cc \
-WmFigRodGroup.cc
+WmFigRodGroup.cc \
+VolumetricCollisions/VolumetricCollisionsCPU.cc \
+WmFigaroRodShape/WmFigaroRodShape.cc \
+WmFigaroRodShape/WmFigaroRodShapeIterator.cc \
+WmFigaroRodShape/WmFigaroRodShapeUI.cc
 
 PLG1_L          += \
 	-lWfigaro_dbg \
@@ -107,6 +136,10 @@ PLG1_L        += -Wl,--start-group \
                   $(MKLROOT)/lib/em64t/libmkl_intel_thread.a \
                   $(MKLROOT)/lib/em64t/libmkl_core.a \
                  -Wl,--end-group -openmp -lpthread
+
+# PhysBAM libraries
+PLG1_L += $(PHYSBAM_RPATH) $(PHYSBAM_LIB_PATH) $(PHYSBAM_LIBS)
+
 
 SCR1            := AEwmFigaroNodeTemplate.mel
 SCR1_MAYA       := 1
