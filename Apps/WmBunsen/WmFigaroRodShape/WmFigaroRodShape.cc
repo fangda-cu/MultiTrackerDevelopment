@@ -1,0 +1,718 @@
+#include <math.h>           
+#include <maya/MIOStream.h>
+#include <maya/MFnSingleIndexedComponent.h>
+#include <maya/MFnCompoundAttribute.h>
+#include <maya/MFnPointArrayData.h>
+
+#include "WmFigaroRodShape.hh"         
+#include "WmFigaroRodShapeUI.hh"     
+#include "WmFigaroRodShapeIterator.hh"
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Shape implementation
+//
+////////////////////////////////////////////////////////////////////////////////
+
+MTypeId WmFigaroRodShape::id( ( 0x00101A, 0x07 ) );
+MString WmFigaroRodShape::typeName( "wmFigaroRodShape" );
+MObject WmFigaroRodShape::oa_cv;
+MObject WmFigaroRodShape::oa_cvX;
+MObject WmFigaroRodShape::oa_cvY;
+MObject WmFigaroRodShape::oa_cvZ;
+    
+MObject WmFigaroRodShape::i_bboxCorner1;
+MObject WmFigaroRodShape::i_bboxCorner2;
+
+WmFigaroRodShape::WmFigaroRodShape() : m_initialisedRod( true )
+{    
+}
+
+WmFigaroRodShape::~WmFigaroRodShape() {}
+
+void WmFigaroRodShape::resetSimulation()
+{
+    m_beaker.resetEverything();
+
+    initialiseRod();   
+
+    m_rodGroup.setSimulationNeedsReset( false );
+    
+    m_beaker.addRodsToWorld( 0, &m_rodGroup );
+}
+
+void WmFigaroRodShape::initialiseRod()
+{
+    MStatus stat;
+
+    MVectorArray vertices;
+
+    m_rodGroup.removeAllRods();
+
+    MVectorArray& controlPoints = *( getControlPoints() );
+
+    vector<Vec3d> rodVertices;
+    rodVertices.resize( controlPoints.length() );
+    for ( size_t v=0; v<controlPoints.length(); v++ )
+    {
+        rodVertices[ v ] = Vec3d( controlPoints[ v ].x, controlPoints[ v ].y, controlPoints[ v ].z );
+    }
+
+    double massDamping = 10.0;
+    Vec3d gravity( 0.0, -981.0, 0.0 );
+    RodTimeStepper::Method solverType = RodTimeStepper::SYM_IMPL_EULER;
+    //RodTimeStepper::Method solverType = RodTimeStepper::STATICS;
+    RodOptions rodOptions;
+    rodOptions.YoungsModulus = 10000.0 * 1e7; /* pascal */
+    rodOptions.ShearModulus = 340.0 * 1e7;   /* pascal */
+    rodOptions.viscosity = 10.0;       /* poise */
+    rodOptions.density = 1.3;          /* grams per cubic centimeter */
+    rodOptions.radiusA = 0.05 * 1e-1;         /* centimetre */
+    rodOptions.radiusB = 0.05 * 1e-1;         /* centimetre */
+    rodOptions.refFrame = BASim::ElasticRod::TimeParallel;
+    rodOptions.numVertices = (int)rodVertices.size();
+
+    size_t rodIndex = m_rodGroup.addRod( rodVertices, rodOptions, massDamping, gravity, solverType );
+
+    m_rodGroup.addKinematicEdge( rodIndex, 0 );
+
+    m_rodGroup.setDrawMode( RodRenderer::SMOOTH );
+    m_rodGroup.setDrawScale( 50.0 );
+
+    // Store all the rod edge lengths so we can stop the user moving a vertex and stretching an edge
+    m_edgeLengths.resize( rodVertices.size() -1 );
+    for ( size_t e=0; e<rodVertices.size() - 1; ++e )
+    {
+        m_edgeLengths[ e ] = ( rodVertices[ e + 1 ] - rodVertices[ e ] ).norm();        
+//        cerr << "m_edgeLength[ e ] = " << m_edgeLengths[ e ] << endl;        
+    }
+
+    m_initialisedRod = true;
+}
+
+void WmFigaroRodShape::solve( FixedRodVertexMap& i_fixedRodVertexMap )
+{
+    m_beaker.takeTimeStep( 8, 1.0/24.0, 10, false, false, false, 10, 1.0, &i_fixedRodVertexMap, false );    
+}
+
+void WmFigaroRodShape::postConstructor()
+{
+    // The control points are now set by the command when we are generated from a nurbs curve,
+    
+
+    // Set the control points of the shape to match the vertices of the rod
+    // no need to set them here.
+    //MVectorArray controlPoints;
+    //getRodVertices( controlPoints );
+    //buildControlPoints( controlPoints );
+}
+
+void WmFigaroRodShape::getRodVertices( MVectorArray& o_controlPoints )
+{
+    ElasticRod* rod = m_rodGroup.elasticRod( 0 );
+
+    o_controlPoints.setLength( rod->nv() );
+    for ( int p=0; p<rod->nv(); ++p )
+    {
+        Vec3d vertex = rod->getVertex( p );
+        o_controlPoints[ p ] = MVector( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ] );
+    }
+}
+
+MStatus WmFigaroRodShape::buildControlPoints( MVectorArray& i_controlPoints )
+{
+    MStatus stat;
+
+    MDataBlock datablock = forceCache();
+
+    MArrayDataHandle cpH = datablock.outputArrayValue( mControlPoints, &stat );
+    MCHECKERROR( stat, "compute get cpH" )
+        
+    // Create a builder to aid in the array construction efficiently.
+    //
+    MArrayDataBuilder bOutArray = cpH.builder( &stat );
+    CHECK_MSTATUS( stat );
+
+    for ( int vtx=0; vtx<i_controlPoints.length(); vtx++ )
+    {
+        double3 &pt = bOutArray.addElement( vtx ).asDouble3();
+        pt[ 0 ] = i_controlPoints[ vtx ][ 0 ];
+        pt[ 1 ] = i_controlPoints[ vtx ][ 1 ];
+        pt[ 2 ] = i_controlPoints[ vtx ][ 2 ];
+    }
+
+    cpH.set( bOutArray );
+        
+    cpH.setAllClean();
+
+    return stat;
+}
+
+void WmFigaroRodShape::updateControlPointsFromRod()
+{
+    MStatus status;
+
+    MVectorArray controlPoints;
+    getRodVertices( controlPoints );
+
+    status = setControlPoints( &controlPoints );
+    CHECK_MSTATUS( status );
+
+    // Now get the input attribute of the rod and set
+    MPlug controlPointsPlugArr( thisMObject(), oa_cv );
+    CHECK_MSTATUS( status );
+
+    for ( int p=0; p<controlPoints.length(); ++p )
+    {
+        MPlug cvPlug = controlPointsPlugArr.elementByLogicalIndex( p, &status );
+        CHECK_MSTATUS( status );
+        MPlug xPlug = cvPlug.child( 0, &status );
+        CHECK_MSTATUS( status );
+        MPlug yPlug = cvPlug.child( 1, &status );
+        CHECK_MSTATUS( status );
+        MPlug zPlug = cvPlug.child( 2, &status );
+        CHECK_MSTATUS( status );
+        xPlug.setValue( controlPoints[ p ].x );
+        yPlug.setValue( controlPoints[ p ].y );
+        zPlug.setValue( controlPoints[ p ].z );        
+    }
+}
+
+void WmFigaroRodShape::drawRod()
+{
+    m_rodGroup.render();
+}
+
+void* WmFigaroRodShape::creator()
+//
+// Description
+//
+//    Called internally to create a new instance of the users MPx node.
+//
+{
+	return new WmFigaroRodShape();
+}
+
+MStatus WmFigaroRodShape::initialize()
+//
+// Description
+//
+//    Attribute (static) initialization.
+//    See api_macros.h.
+//
+{ 
+    MStatus status;
+
+    // bbox attributes
+    //
+    MAKE_NUMERIC_ATTR(  i_bboxCorner1, "bboxCorner1", "bb1",
+                        MFnNumericData::k3Double, 0,
+                        false, false, false );
+    MAKE_NUMERIC_ATTR(  i_bboxCorner2, "bboxCorner2", "bb2",
+                        MFnNumericData::k3Double, 0,
+                        false, false, false );
+
+    MFnNumericAttribute nAttr;
+    oa_cvX = nAttr.create( "cvX", "cx", MFnNumericData::kDouble, 0.0, & status );
+    nAttr.setConnectable( true );
+    status = addAttribute( oa_cvX );
+    oa_cvY = nAttr.create( "cvY", "cy", MFnNumericData::kDouble, 0.0, & status );
+    nAttr.setConnectable( true );
+    status = addAttribute( oa_cvY );
+    oa_cvZ = nAttr.create( "cvZ", "cz", MFnNumericData::kDouble, 0.0, & status );
+    nAttr.setConnectable( true );
+    status = addAttribute( oa_cvZ );
+
+    MFnCompoundAttribute cAttr;
+    oa_cv = cAttr.create( "controlVertex", "cv" );
+    cAttr.addChild( oa_cvX );
+    cAttr.addChild( oa_cvY );
+    cAttr.addChild( oa_cvZ );
+    cAttr.setArray( true );
+    status = addAttribute( oa_cv );
+    CHECK_MSTATUS( status );
+
+    attributeAffects( mControlPoints, oa_cv ); 
+    attributeAffects( mControlPoints, oa_cvX );
+    attributeAffects( mControlPoints, oa_cvY );
+    attributeAffects( mControlPoints, oa_cvZ );
+
+	return MS::kSuccess;
+}
+
+MStatus WmFigaroRodShape::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
+{
+    cerr << "shape called with plug " << i_plug.name() << endl;
+
+    MStatus status;
+
+    if( i_plug == oa_cv || i_plug == oa_cvX ||
+       i_plug == oa_cvY || i_plug == oa_cvZ )
+    {
+        if ( m_initialisedRod )
+        {
+            // FIXME: Why not use the handle?!
+
+            MDataHandle pointsH = i_dataBlock.inputValue( mControlPoints, &status );
+            CHECK_MSTATUS( status );
+            /*MObject pointsDataObj = pointsH.data();
+            MFnPointArrayData pointArrayData( pointsDataObj );
+            MPointArray pointArray = pointArrayData.array( &status );
+            CHECK_MSTATUS( status );*/
+
+            MVectorArray& pointArray = *( getControlPoints() );
+
+            MPlug cvArrPlug( thisMObject(), oa_cv );
+
+            for( unsigned int cv = 0; cv < pointArray.length(); cv++ )
+            {
+                MPlug cvPlug = cvArrPlug.elementByLogicalIndex( cv );
+                cvPlug.child( 0, & status ).setDouble( pointArray[ cv ].x );
+                cvPlug.child( 1, & status ).setDouble( pointArray[ cv ].y );
+                cvPlug.child( 2, & status ).setDouble( pointArray[ cv ].z );
+
+                cerr << "cv " << cv << " == " << pointArray[ cv ] << endl;
+            }            
+        }
+
+        i_dataBlock.setClean( i_plug );
+
+        return MS::kSuccess;
+    }
+    
+    return MS::kUnknownParameter;
+}
+
+
+MPxGeometryIterator* WmFigaroRodShape::geometryIteratorSetup(MObjectArray& componentList,
+													MObject& components,
+													bool forReadOnly )
+//
+// Description
+//
+//    Creates a geometry iterator compatible with his shape.
+//
+// Arguments
+//
+//    componentList - list of components to be iterated
+//    components    - component to be iterator
+//    forReadOnly   -
+//
+// Returns
+//
+//    An iterator for the components
+//
+{
+	WmFigaroRodShapeIterator * result = NULL;
+	if ( components.isNull() ) 
+	{
+		result = new WmFigaroRodShapeIterator( getControlPoints(), componentList );
+	}
+	else 
+	{
+		result = new WmFigaroRodShapeIterator( getControlPoints(), components );
+	}
+	return result;
+}
+
+bool WmFigaroRodShape::acceptsGeometryIterator( bool writeable )
+//
+// Description
+//
+//    Specifies that this shape can provide an iterator for getting/setting
+//    control point values.
+//
+// Arguments
+//
+//    writable - maya asks for an iterator that can set points if this is true
+//
+{
+	return true;
+}
+
+bool WmFigaroRodShape::acceptsGeometryIterator( MObject&, bool writeable, bool forReadOnly )
+//
+// Description
+//
+//    Specifies that this shape can provide an iterator for getting/setting
+//    control point values.
+//
+// Arguments
+//
+//    writable   - maya asks for an iterator that can set points if this is true
+//    forReadOnly - maya asking for an iterator for querying only
+//
+{
+	return true;
+}
+
+void WmFigaroRodShape::transformUsing( const MMatrix& matrix, const MObjectArray &componentList )
+{
+    // let the other version of transformUsing do the work
+    transformUsing( matrix, componentList, MPxSurfaceShape::kNoPointCaching, NULL );
+}
+
+void WmFigaroRodShape::updatePointIfNotStretching( MPointArray& io_controlPoints, 
+        const size_t i_index, const MMatrix& i_matrix )
+{
+    size_t edgeIndex = i_index - 1;
+    double currLength = ( io_controlPoints[ i_index ] - io_controlPoints[ i_index - 1 ] ).length();
+
+    if ( currLength > m_edgeLengths[ edgeIndex ] )
+    {
+  //      cerr << "this edge is > rest length, correcting!\n";
+        MVector edge = io_controlPoints[ i_index ] - io_controlPoints[ i_index - 1 ];
+        edge.normalize();
+        edge *= m_edgeLengths[ edgeIndex ];
+        io_controlPoints[ i_index ] = io_controlPoints[ i_index - 1 ] + edge;
+    }
+
+    MPoint oldPoint = io_controlPoints[ i_index ];
+    MPoint newPoint = io_controlPoints[ i_index ] * i_matrix;
+
+    // Check if this movement stretch the rod
+    
+    if ( edgeIndex > 0 )
+    {    
+        double newLength = ( io_controlPoints[ i_index ] - io_controlPoints[ i_index - 1 ] ).length();
+        
+        double lengthPlus10Percent = m_edgeLengths[ edgeIndex ] + 0.0001 * m_edgeLengths[ edgeIndex ];
+    //    cerr << "end Length = " << newLength << ", old length was " << m_edgeLengths[ edgeIndex ] << ", .001% = " << lengthPlus10Percent << endl;
+    
+        if ( newLength < lengthPlus10Percent )
+        {
+            io_controlPoints[ i_index ] = newPoint;
+        }
+    }
+}
+
+
+void WmFigaroRodShape::transformUsing(const MMatrix& mat, const MObjectArray& componentList,
+                     MPxSurfaceShape::MVertexCachingMode cachingMode, MPointArray* pointCache )
+{
+    MStatus stat;
+    MVectorArray& controlPointsVec = *( getControlPoints() );
+    MVectorArray unmovedControlPointsVec = controlPointsVec;
+    MPointArray controlPoints;
+    controlPoints.setLength( controlPointsVec.length() );
+    
+    // Turn the vectors into Points or the matrix multiplication doesn't work correctly below
+    for ( int p=0; p<controlPointsVec.length(); ++p )
+    {
+        controlPoints[ p ] = controlPointsVec[ p ];
+    }
+
+    bool savePoints    = (cachingMode == MPxSurfaceShape::kSavePoints);
+    unsigned int i=0,j=0;
+    unsigned int len = componentList.length();
+    
+    if ( cachingMode == MPxSurfaceShape::kRestorePoints ) 
+    {
+        // restore the points based on the data provided in the pointCache attribute
+        //
+        unsigned int cacheLen = pointCache->length();
+        if (len > 0) 
+        {
+            // traverse the component list
+            //
+            for ( i = 0; i < len && j < cacheLen; i++ )
+            {
+                MObject comp = componentList[i];
+                MFnSingleIndexedComponent fnComp( comp );
+                int elemCount = fnComp.elementCount();
+                for ( int idx=0; idx<elemCount && j < cacheLen; idx++, ++j ) 
+                {
+                    int elemIndex = fnComp.element( idx );
+                    controlPoints[ elemIndex ] = (*pointCache)[ j ];
+                }
+            }
+        } 
+        else
+        {
+            // if the component list is of zero-length, it indicates that we
+            // should transform the entire surface
+            //
+            len = controlPoints.length();
+            for ( unsigned int idx = 0; idx < len && j < cacheLen; ++idx, ++j ) 
+            {
+                controlPoints[ idx ] = (*pointCache)[ j ];
+            }
+        }
+    }
+    else 
+    {    
+        // Transform the surface vertices with the matrix.
+        // If savePoints is true, save the points to the pointCache.
+        //
+        if (len > 0) 
+        {
+            // Traverse the componentList 
+            //
+            for ( i=0; i<len; i++ )
+            {
+                MObject comp = componentList[i];
+                MFnSingleIndexedComponent fnComp( comp );
+                int elemCount = fnComp.elementCount();
+
+                if (savePoints && 0 == i) 
+                {
+                    pointCache->setSizeIncrement( elemCount );
+                }
+                for ( int idx=0; idx<elemCount; idx++ )
+                {
+                    int elemIndex = fnComp.element( idx );
+                    if ( savePoints ) {
+                        pointCache->append( controlPoints[ elemIndex ] );
+                    }
+                    
+                    updatePointIfNotStretching( controlPoints, elemIndex, mat );
+                  //  controlPoints[ elemIndex ] *= mat;                                        
+                }
+            }
+        }
+        else
+        {
+            // If the component list is of zero-length, it indicates that we
+            // should transform the entire surface
+            //
+            len = controlPoints.length();
+            if ( savePoints ) 
+            {
+                pointCache->setSizeIncrement( len );
+            }
+            for ( unsigned int idx = 0; idx < len; ++idx ) 
+            {
+                if ( savePoints ) 
+                {
+                    pointCache->append( controlPoints[idx]) ;
+                }
+                updatePointIfNotStretching( controlPoints, idx, mat );
+               // controlPoints[ idx ] *= mat;
+            }
+        }
+    }
+
+    FixedRodVertexMap fixedRodVertexMap;
+    FixedVertexMap fixedVertexMap;
+
+    bool haveFixedVertices = false;        
+    for ( int p=0; p<controlPointsVec.length(); ++p )
+    {
+        controlPointsVec[ p ] = controlPoints[ p ];
+
+        if ( controlPointsVec[ p ] != unmovedControlPointsVec[ p ] )
+        {
+            fixedVertexMap[ p ] = Vec3d( controlPointsVec[ p ][ 0 ],
+                                         controlPointsVec[ p ][ 1 ],
+                                         controlPointsVec[ p ][ 2 ] );            
+            
+            haveFixedVertices = true;
+        }
+    }    
+
+  /*  for ( FixedVertexMap::iterator it=fixedVertexMap.begin(); it!=fixedVertexMap.end(); ++it )
+    {
+        // The rod seems to get really twisted if we only lock single vertices,
+        // lock edges next to each fixed vertex to stop it twisting up nastily
+        int fixedVertex = it->first;
+        int nextFixed = fixedVertex + 1;
+        if ( nextFixed >= controlPointsVec.length() )
+        {
+            nextFixed = fixedVertex - 1; 
+        }
+        if ( nextFixed < 0 )
+        {
+            continue;
+        }
+
+        // Check if nextFixed is already fixed (ie moved by the user )
+        if ( controlPointsVec[ nextFixed ] == unmovedControlPointsVec[ nextFixed ] )
+        {
+            // We need to fix this one as the user didn't move it.
+            // Since vertex nextFixed is possible not getting moved by the user then we have to
+            // move it so it keeps up
+            MVector unmovedDelta = unmovedControlPointsVec[ nextFixed ] - unmovedControlPointsVec[ fixedVertex ];
+            controlPointsVec[ nextFixed ] = controlPointsVec[ fixedVertex ] + unmovedDelta;
+        
+            fixedVertexMap[ nextFixed ] = Vec3d( controlPointsVec[ nextFixed ][ 0 ],
+                                                 controlPointsVec[ nextFixed ][ 1 ],
+                                                 controlPointsVec[ nextFixed ][ 2 ] );
+        }
+    }
+*/
+    fixedRodVertexMap[ 0 ] = fixedVertexMap;
+
+    if ( haveFixedVertices )
+    {
+        solve( fixedRodVertexMap );solve( fixedRodVertexMap );solve( fixedRodVertexMap );
+        solve( fixedRodVertexMap );solve( fixedRodVertexMap );solve( fixedRodVertexMap );
+        solve( fixedRodVertexMap );solve( fixedRodVertexMap );solve( fixedRodVertexMap );        
+    }
+    else
+    {
+        // If the user hasn't fixed any vertices then assume they're done moving and make it
+        // a plastic deformation
+        //m_rodGroup.elasticRod( 0 )->updateReferenceProperties();
+      //  cerr << "creating new rod!\n";
+      //  resetSimulation();
+    }
+
+    updateControlPointsFromRod();
+
+    //stat = setControlPoints( &controlPointsVec );
+    //CHECK_MSTATUS( stat );
+
+    // Retrieve the value of the cached surface attribute.
+    // We will set the new geometry data into the cached surface attribute
+    //
+    // Access the datablock directly. This code has to be efficient
+    // and so we bypass the compute mechanism completely.
+    // NOTE: In general we should always go though compute for getting
+    // and setting attributes.
+    //
+    MDataBlock datablock = forceCache();
+
+    /* We do not currently support history on the shape */
+    /*
+    
+    MDataHandle cachedHandle = datablock.outputValue( cachedSurface, &stat );
+    MCHECKERRORNORET( stat, "computeInputSurface error getting cachedSurface")
+    apiMeshData* cached = (apiMeshData*) cachedHandle.asPluginData();
+
+    MDataHandle dHandle = datablock.outputValue( mControlPoints, &stat );
+    MCHECKERRORNORET( stat, "transformUsing get dHandle" )      
+    
+    // If there is history then calculate the tweaks necessary for
+    // setting the final positions of the vertices.
+    // 
+    if ( hasHistory() && (NULL != cached) ) {
+        // Since the shape has history, we need to store the tweaks (deltas)
+        // between the input shape and the tweaked shape in the control points
+        // attribute.
+        //
+        stat = buildControlPoints( datablock, geomPtr->vertices.length() );
+        MCHECKERRORNORET( stat, "transformUsing buildControlPoints" )
+
+        MArrayDataHandle cpHandle( dHandle, &stat );
+        MCHECKERRORNORET( stat, "transformUsing get cpHandle" )
+
+        // Loop through the component list and transform each vertex.
+        //
+        for ( i=0; i<len; i++ )
+        {
+            MObject comp = componentList[i];
+            MFnSingleIndexedComponent fnComp( comp );
+            int elemCount = fnComp.elementCount();
+            for ( int idx=0; idx<elemCount; idx++ )
+            {
+                int elemIndex = fnComp.element( idx );
+                cpHandle.jumpToElement( elemIndex );
+                MDataHandle pntHandle = cpHandle.outputValue(); 
+                double3& pnt = pntHandle.asDouble3();       
+
+                MPoint oldPnt = cached->fGeometry->vertices[elemIndex];
+                MPoint newPnt = geomPtr->vertices[elemIndex];
+                MPoint offset = newPnt - oldPnt;
+
+                pnt[0] += offset[0];
+                pnt[1] += offset[1];
+                pnt[2] += offset[2];                
+            }
+        }
+    }
+
+    // Copy outputSurface to cachedSurface
+    //
+    if ( NULL == cached ) {
+        cerr << "NULL cachedSurface data found\n";
+    }
+    else {
+        *(cached->fGeometry) = *geomPtr;
+    }
+
+    MPlug pCPs(thisMObject(),mControlPoints);
+    pCPs.setValue(dHandle); */
+
+    // Moving vertices will likely change the bounding box.
+    //
+    computeBoundingBox( datablock );
+}
+
+MStatus WmFigaroRodShape::computeBoundingBox( MDataBlock& datablock )
+//
+// Description
+//
+//    Use the larges/smallest vertex positions to set the corners 
+//    of the bounding box.
+//
+{
+    MStatus stat = MS::kSuccess;
+
+    // Update bounding box
+    //
+    MDataHandle lowerHandle = datablock.outputValue( i_bboxCorner1 );
+    MDataHandle upperHandle = datablock.outputValue( i_bboxCorner2 );
+    double3 &lower = lowerHandle.asDouble3();
+    double3 &upper = upperHandle.asDouble3();
+
+    MVectorArray& controlPoints = *( getControlPoints() );
+    int cnt = controlPoints.length();
+    if ( cnt == 0 ) return stat;
+
+    // This clears any old bbox values
+    //
+    MPoint tmppnt = controlPoints[ 0 ];
+    lower[0] = tmppnt[0]; lower[1] = tmppnt[1]; lower[2] = tmppnt[2];
+    upper[0] = tmppnt[0]; upper[1] = tmppnt[1]; upper[2] = tmppnt[2];
+
+
+    for ( int i=0; i<cnt; i++ )
+    {
+        MPoint pnt = controlPoints[ i ];
+
+        if ( pnt[0] < lower[0] ) lower[0] = pnt[0];
+        if ( pnt[1] < lower[1] ) lower[1] = pnt[1];
+        if ( pnt[2] > lower[2] ) lower[2] = pnt[2];
+        if ( pnt[0] > upper[0] ) upper[0] = pnt[0];
+        if ( pnt[1] > upper[1] ) upper[1] = pnt[1];
+        if ( pnt[2] < upper[2] ) upper[2] = pnt[2];
+    }
+    
+    lowerHandle.setClean();
+    upperHandle.setClean();
+
+    // Signal that the bounding box has changed.
+    //
+    childChanged( MPxSurfaceShape::kBoundingBoxChanged );
+
+    return stat;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
