@@ -486,7 +486,20 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     int rodNum = it->first;
                     FixedVertexMap fixedVertexMap = it->second;
                     RodCollisionTimeStepper* collisionStepper = pRodGroup->collisionStepper( rodNum );
-                    RodBoundaryCondition* boundary = collisionStepper->getBoundaryCondition();
+
+                    // Remove all weak constraints before we start
+                    collisionStepper->clearVertexPositionPenalty();
+
+                    // We treat these as weak constraints
+                    for ( FixedVertexMap::iterator vIt=fixedVertexMap.begin(); vIt!=fixedVertexMap.end(); ++vIt )
+                    {    
+                        int fixedVertex = vIt->first;
+                        Vec3d fixedPosition = vIt->second;
+                        
+                        collisionStepper->setVertexPositionPenalty( fixedVertex, fixedPosition, 10.0 );
+                    }                    
+
+                    /*RodBoundaryCondition* boundary = collisionStepper->getBoundaryCondition();
     
                     for ( FixedVertexMap::iterator vIt=fixedVertexMap.begin(); vIt!=fixedVertexMap.end(); ++vIt )
                     {    
@@ -494,7 +507,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                         Vec3d fixedPosition = vIt->second;
                         
                         boundary->setDesiredVertexPosition( fixedVertex, fixedPosition );
-                    }
+                    }*/
                 }
             }
 

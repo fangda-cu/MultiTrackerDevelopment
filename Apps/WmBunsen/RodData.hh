@@ -100,7 +100,7 @@ public:
     RodData();
     RodData( RodOptions& i_rodOptions, std::vector<Vec3d>& i_rodVertexPositions,
              double i_massDamping, Vec3d& i_gravity, RodTimeStepper::Method i_solverType,
-             bool i_isReadingFromCache = false );
+             bool i_isReadingFromCache = false, bool i_doReverseHairdo = false );
     //RodData( ElasticRod* i_rod, RodCollisionTimeStepper* i_stepper, RodRenderer* i_rodRenderer );
     ~RodData();
     

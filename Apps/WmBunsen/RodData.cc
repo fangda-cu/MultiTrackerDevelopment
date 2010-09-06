@@ -7,7 +7,7 @@ RodData::RodData() : m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_g
 
 RodData::RodData( RodOptions& i_rodOptions, std::vector<Vec3d>& i_rodVertexPositions,
                   double i_massDamping, Vec3d& i_gravity, RodTimeStepper::Method i_solverType, 
-                  bool i_isReadingFromCache ) : 
+                  bool i_isReadingFromCache, bool i_doReverseHairdo ) : 
 m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDamping )
 {
     m_rod = setupRod( i_rodOptions,
@@ -41,10 +41,14 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
 	    
 		    m_stepper = new RodCollisionTimeStepper( adpstep, m_rod );        
         
-        // REVERSE HAIRDO
-        m_rod->doReverseHairdo(stepper);
+            // REVERSE HAIRDO
+            if ( i_doReverseHairdo )
+            {
+                m_rod->doReverseHairdo(stepper);
+            }
         
-	    } else
+	    } 
+        else
 	    {
 		    RodTimeStepper* stepper = new RodTimeStepper( *m_rod );
 		    stepper->setDiffEqSolver( i_solverType );
