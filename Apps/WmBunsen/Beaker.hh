@@ -47,6 +47,9 @@ using namespace std;
 typedef std::tr1::unordered_map< int, Vec3d > FixedVertexMap ;
 typedef std::tr1::unordered_map< int, FixedVertexMap > FixedRodVertexMap ;
 
+typedef std::tr1::unordered_map< int, Vec3d > LockedVertexMap ;
+typedef std::tr1::unordered_map< int, LockedVertexMap > LockedRodVertexMap ;
+
 class Beaker
 {
 public:
@@ -206,7 +209,8 @@ public:
                        int i_fullSelfCollisionIters,
                        double i_selfCollisionCOR,
                        FixedRodVertexMap* i_fixedVertices = NULL,
-                       bool i_zeroAllTwist = false );
+                       bool i_zeroAllTwist = false, double i_constraintSrength = 10.0,
+                       LockedRodVertexMap* i_lockedRodVertexMap = NULL );
     
     /*(void addRod( size_t i_rodGroup,
                  vector<Vec3d>& i_initialVertexPositions, 

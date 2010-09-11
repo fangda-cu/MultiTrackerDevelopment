@@ -263,6 +263,28 @@ void WmFigaroRodShapeUI::draw( const MDrawRequest & request, M3dView & view ) co
 	//
 	int token = request.token();
 
+    view.beginGL(); 
+
+    // For now, always draw the rod
+    WmFigaroRodShape* shape = (WmFigaroRodShape*) surfaceShape();
+    shape->drawRod();
+
+    // draw the edges
+    MDrawData data = request.drawData();
+    MVectorArray * geom = (MVectorArray*)data.geometry();
+
+    glBegin( GL_LINE_STRIP );
+    for ( unsigned int i=0; i<geom->length(); i++ )
+    {        
+        MVector point = (*geom)[ i ];
+        glVertex3f( (float)point[0], (float)point[1], (float)point[2] );        
+    }
+    glEnd();
+    
+    view.endGL();
+
+    // vertices need shaded differently depending on what is selected so figure that out
+    // and draw appropriately
     drawVertices( request, view );
         
 	/*switch( token )
@@ -356,8 +378,8 @@ void WmFigaroRodShapeUI::drawVertices( const MDrawRequest & request,
 	view.beginGL(); 
 
     // For now, always draw the rod
-    WmFigaroRodShape* shape = (WmFigaroRodShape*) surfaceShape();
-    shape->drawRod();
+    //WmFigaroRodShape* shape = (WmFigaroRodShape*) surfaceShape();
+    //shape->drawRod();
     
 	// Query current state so it can be restored
 	//
@@ -372,7 +394,7 @@ void WmFigaroRodShapeUI::drawVertices( const MDrawRequest & request,
 	//
     //glPointSize( POINT_SIZE );
     glEnable( GL_POINT_SMOOTH );
-    glPointSize( 10.0 );
+    glPointSize( 6.0 );
 
 	// If there is a component specified by the draw request
 	// then loop over comp (using an MFnComponent class) and draw the
@@ -391,9 +413,9 @@ void WmFigaroRodShapeUI::drawVertices( const MDrawRequest & request,
 						(float)point[2] );
 			glEnd();
 
-			char annotation[32];
-			sprintf( annotation, "%d", index );
-			view.drawText( annotation, point );
+			//char annotation[32];
+			//sprintf( annotation, "%d", index );
+			//view.drawText( annotation, point );
 		}
 	}
 	else {

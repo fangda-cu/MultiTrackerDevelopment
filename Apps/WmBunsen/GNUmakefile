@@ -181,6 +181,10 @@ SCR9            := wmFigCombContextValues.mel
 SCR9_MAYA       := 1
 SCR9_INSD       := $(SCR_INSD)
 
+SCR10            := WmFigaroRodShape/AEwmFigaroRodShapeTemplate.mel
+SCR10_MAYA       := 1
+SCR10_INSD       := $(SCR_INSD)
+
 
 ##############################################################################
 include /vol/bob/make/tail.mk

@@ -61,11 +61,12 @@ public:
 	virtual bool acceptsGeometryIterator( bool  writeable=true );
 	virtual bool acceptsGeometryIterator( MObject&, bool writeable=true, bool forReadOnly = false );
     virtual void transformUsing( const MMatrix& matrix, const MObjectArray &componentList ); 
-    virtual void transformUsing(const MMatrix& mat, const MObjectArray& componentList,
-                                MPxSurfaceShape::MVertexCachingMode cachingMode, MPointArray* pointCache );
+    virtual void transformUsing( const MMatrix& mat, const MObjectArray& componentList,
+                                 MPxSurfaceShape::MVertexCachingMode cachingMode, MPointArray* pointCache );
+    bool virtual setInternalValueInContext( const MPlug& i_plug, const MDataHandle& handle, MDGContext& i_context );
 
-	static  void *          creator();
-	static  MStatus         initialize();
+	static  void *creator();
+	static  MStatus initialize();
 
     static MObject i_bboxCorner1;
     static MObject i_bboxCorner2;
@@ -78,6 +79,18 @@ public:
 	static	MTypeId	id;
     static  MString typeName;
 
+    static MObject ia_triggerSolve;
+
+    static MObject ia_doPlasticDeformations;
+    static MObject ia_constraintStrength;
+
+    static MObject ca_sync;
+
+   /* static MObject ia_inCV;
+    static MObject ia_inCVX;
+    static MObject ia_inCVY;
+    static MObject ia_inCVZ;*/
+
     void drawRod();
     void resetSimulation();
     
@@ -88,6 +101,7 @@ private:
     void updateControlPointsFromRod();
     void initialiseRod();
     void updatePointIfNotStretching( MPointArray& io_controlPoints, const size_t i_index, const MMatrix& i_matrix );
+    bool doSolverIterations( FixedRodVertexMap& i_fixedRodVertexMap );
 
     void solve( FixedRodVertexMap& i_fixedRodVertexMap );
     
@@ -96,6 +110,12 @@ private:
     
     std::vector< double > m_edgeLengths;
     bool m_initialisedRod;
+    double m_constraintStrength;
+
+    FixedVertexMap m_fixedVertexMap;    
+    LockedVertexMap m_lockedVertexMap;    
+
+    bool m_drawRodTube;
 };
 
 

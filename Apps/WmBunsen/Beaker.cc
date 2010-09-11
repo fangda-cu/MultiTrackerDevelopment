@@ -342,7 +342,8 @@ void Beaker::writeXMLFileToDisk()
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
   int i_subSteps, bool i_collisionsEnabled,  bool i_selfCollisionPenaltyForcesEnabled,
   bool i_fullSelfCollisionsEnabled, int i_fullSelfCollisionIters,
-  double i_selfCollisionCOR, FixedRodVertexMap* i_fixedVertices, bool i_zeroAllTwist )
+  double i_selfCollisionCOR, FixedRodVertexMap* i_fixedVertices, bool i_zeroAllTwist,
+  double i_constraintSrength,  LockedRodVertexMap* i_lockedRodVertexMap )
 {
     // i_fixedVertices is a thing I'm trying out where vertices can be fixed temporarily, only
     // for this time step. It's getting used in the rod shape where users can select vertices
@@ -489,14 +490,34 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
                     // Remove all weak constraints before we start
                     collisionStepper->clearVertexPositionPenalty();
+                
+                    ElasticRod* elasticRod = pRodGroup->elasticRod( rodNum );
 
                     // We treat these as weak constraints
                     for ( FixedVertexMap::iterator vIt=fixedVertexMap.begin(); vIt!=fixedVertexMap.end(); ++vIt )
                     {    
                         int fixedVertex = vIt->first;
-                        Vec3d fixedPosition = vIt->second;
+                        Vec3d fixedPosition = vIt->second;                   
+    
+                        // A vertex position of 999999 means use the old position as we don't have an 
+                        // updated position from the user yet.
+                        Vec3d oldVertexPosition = elasticRod->getVertex( fixedVertex );
+                        if ( fixedPosition[ 0 ] == 999999 )
+                        {
+                            fixedPosition[ 0 ] = oldVertexPosition[ 0 ];
+                        }     
+                        if ( fixedPosition[ 1 ] == 999999 )
+                        {
+                            fixedPosition[ 1 ] = oldVertexPosition[ 1 ];
+                        }
+                        if ( fixedPosition[ 2 ] == 999999 )
+                        {
+                            fixedPosition[ 2 ] = oldVertexPosition[ 2 ];
+                        }
+
+                        //cerr << "setting vertex " << fixedVertex << " to be locked at " << fixedPosition << endl;
                         
-                        collisionStepper->setVertexPositionPenalty( fixedVertex, fixedPosition, 10.0 );
+                        collisionStepper->setVertexPositionPenalty( fixedVertex, fixedPosition, i_constraintSrength );
                     }                    
 
                     /*RodBoundaryCondition* boundary = collisionStepper->getBoundaryCondition();
@@ -510,6 +531,29 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     }*/
                 }
             }
+
+            if ( i_lockedRodVertexMap != NULL )
+            {
+                // As described above, i_fixedVertices defines vertices fixed only for this time step
+                // This should move into rod group rather than being here
+                for ( LockedRodVertexMap::iterator it=i_lockedRodVertexMap->begin(); it != i_lockedRodVertexMap->end();
+                    ++it )
+                {
+                    int rodNum = it->first;
+                    LockedVertexMap lockedVertexMap = it->second;
+                    RodCollisionTimeStepper* collisionStepper = pRodGroup->collisionStepper( rodNum );
+
+                    RodBoundaryCondition* boundary = collisionStepper->getBoundaryCondition();
+    
+                    for ( LockedVertexMap::iterator vIt=lockedVertexMap.begin(); vIt!=lockedVertexMap.end(); ++vIt )
+                    {    
+                        int lockedVertex = vIt->first;
+                        Vec3d lockedPosition = vIt->second;
+                        
+                        boundary->setDesiredVertexPosition( lockedVertex, lockedPosition );
+                    }
+                }
+            }            
 
             if ( i_zeroAllTwist )
             {
@@ -741,7 +785,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 for ( size_t r=0; r<numRods; r++ )
                 {
                     BASim::ElasticRod* rod = pRodGroup->elasticRod( r );
-                    rod->updateReferenceProperties();
+                    rod->updateReferrenceProperties();
                 }
             }
         }*/

@@ -21,11 +21,18 @@ MObject WmFigaroRodShape::oa_cv;
 MObject WmFigaroRodShape::oa_cvX;
 MObject WmFigaroRodShape::oa_cvY;
 MObject WmFigaroRodShape::oa_cvZ;
-    
+
 MObject WmFigaroRodShape::i_bboxCorner1;
 MObject WmFigaroRodShape::i_bboxCorner2;
 
-WmFigaroRodShape::WmFigaroRodShape() : m_initialisedRod( true )
+MObject WmFigaroRodShape::ia_triggerSolve;
+MObject WmFigaroRodShape::ia_doPlasticDeformations;
+MObject WmFigaroRodShape::ia_constraintStrength;
+
+MObject WmFigaroRodShape::ca_sync;
+
+WmFigaroRodShape::WmFigaroRodShape() : m_initialisedRod( false ), m_constraintStrength( 20.0 ), 
+    m_drawRodTube( false )
 {    
 }
 
@@ -34,6 +41,8 @@ WmFigaroRodShape::~WmFigaroRodShape() {}
 void WmFigaroRodShape::resetSimulation()
 {
     m_beaker.resetEverything();
+
+    MVectorArray& controlPoints = *( getControlPoints() );
 
     initialiseRod();   
 
@@ -60,7 +69,8 @@ void WmFigaroRodShape::initialiseRod()
     }
 
     double massDamping = 10.0;
-    Vec3d gravity( 0.0, -981.0, 0.0 );
+    //Vec3d gravity( 0.0, -981.0, 0.0 );
+    Vec3d gravity( 0.0, 0.0, 0.0 );
     RodTimeStepper::Method solverType = RodTimeStepper::SYM_IMPL_EULER;
     //RodTimeStepper::Method solverType = RodTimeStepper::STATICS;
     RodOptions rodOptions;
@@ -75,7 +85,11 @@ void WmFigaroRodShape::initialiseRod()
 
     size_t rodIndex = m_rodGroup.addRod( rodVertices, rodOptions, massDamping, gravity, solverType );
 
-    m_rodGroup.addKinematicEdge( rodIndex, 0 );
+//    m_rodGroup.addKinematicEdge( rodIndex, 0 );
+
+    // This will get passed to Beaker later, we are saying that the 0th verex must remain locked
+    // where it started.
+    m_lockedVertexMap[ 0 ] = rodVertices[ 0 ];
 
     m_rodGroup.setDrawMode( RodRenderer::SMOOTH );
     m_rodGroup.setDrawScale( 50.0 );
@@ -93,7 +107,10 @@ void WmFigaroRodShape::initialiseRod()
 
 void WmFigaroRodShape::solve( FixedRodVertexMap& i_fixedRodVertexMap )
 {
-    m_beaker.takeTimeStep( 8, 1.0/24.0, 10, false, false, false, 10, 1.0, &i_fixedRodVertexMap, false );    
+    LockedRodVertexMap lockedRodVertexMap;
+    lockedRodVertexMap[ 0 ] = m_lockedVertexMap;
+
+    m_beaker.takeTimeStep( 8, 1.0/24.0, 10, false, false, false, 10, 1.0, &i_fixedRodVertexMap, false, m_constraintStrength, &lockedRodVertexMap );
 }
 
 void WmFigaroRodShape::postConstructor()
@@ -110,6 +127,11 @@ void WmFigaroRodShape::postConstructor()
 
 void WmFigaroRodShape::getRodVertices( MVectorArray& o_controlPoints )
 {
+    if ( m_rodGroup.numberOfRods() == 0 )
+    {
+        return;
+    }
+
     ElasticRod* rod = m_rodGroup.elasticRod( 0 );
 
     o_controlPoints.setLength( rod->nv() );
@@ -213,32 +235,124 @@ MStatus WmFigaroRodShape::initialize()
                         MFnNumericData::k3Double, 0,
                         false, false, false );
 
-    MFnNumericAttribute nAttr;
-    oa_cvX = nAttr.create( "cvX", "cx", MFnNumericData::kDouble, 0.0, & status );
-    nAttr.setConnectable( true );
-    status = addAttribute( oa_cvX );
-    oa_cvY = nAttr.create( "cvY", "cy", MFnNumericData::kDouble, 0.0, & status );
-    nAttr.setConnectable( true );
-    status = addAttribute( oa_cvY );
-    oa_cvZ = nAttr.create( "cvZ", "cz", MFnNumericData::kDouble, 0.0, & status );
-    nAttr.setConnectable( true );
-    status = addAttribute( oa_cvZ );
+    {
+        MFnNumericAttribute nAttr;
+        oa_cvX = nAttr.create( "cvX", "cx", MFnNumericData::kDouble, 0.0, & status );
+        nAttr.setConnectable( true );
+        status = addAttribute( oa_cvX );
+        oa_cvY = nAttr.create( "cvY", "cy", MFnNumericData::kDouble, 0.0, & status );
+        nAttr.setConnectable( true );
+        status = addAttribute( oa_cvY );
+        oa_cvZ = nAttr.create( "cvZ", "cz", MFnNumericData::kDouble, 0.0, & status );
+        nAttr.setConnectable( true );
+        status = addAttribute( oa_cvZ );
+    }
 
-    MFnCompoundAttribute cAttr;
-    oa_cv = cAttr.create( "controlVertex", "cv" );
-    cAttr.addChild( oa_cvX );
-    cAttr.addChild( oa_cvY );
-    cAttr.addChild( oa_cvZ );
-    cAttr.setArray( true );
-    status = addAttribute( oa_cv );
-    CHECK_MSTATUS( status );
+    {
+        MFnCompoundAttribute cAttr;
+        oa_cv = cAttr.create( "controlVertex", "cv" );
+        cAttr.addChild( oa_cvX );
+        cAttr.addChild( oa_cvY );
+        cAttr.addChild( oa_cvZ );
+        cAttr.setArray( true );
+        status = addAttribute( oa_cv );
+        CHECK_MSTATUS( status );
+    }
 
     attributeAffects( mControlPoints, oa_cv ); 
     attributeAffects( mControlPoints, oa_cvX );
     attributeAffects( mControlPoints, oa_cvY );
     attributeAffects( mControlPoints, oa_cvZ );
 
-	return MS::kSuccess;
+    {
+        MFnNumericAttribute nAttr;
+        ca_sync = nAttr.create( "sync", "syn", MFnNumericData::kDouble, 0.0, & status );
+        nAttr.setConnectable( true );
+        status = addAttribute( ca_sync );
+    }
+
+    /////////////////////////////////////////////////////////////////////
+    //
+    // Inputs
+    //
+    ////////////////////////////////////////////////////////////////////
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_triggerSolve = nAttr.create( "triggerSolve", "ts", MFnNumericData::kDouble, 0.0, & status );
+        nAttr.setConnectable( true );
+        nAttr.setReadable( false );
+        nAttr.setWritable(true );
+        status = addAttribute( ia_triggerSolve );        
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_doPlasticDeformations = nAttr.create( "doPlasticDeformations", "dpd", MFnNumericData::kBoolean, false, & status );
+        nAttr.setConnectable( true );
+        nAttr.setReadable( false );
+        nAttr.setWritable(true );
+        status = addAttribute( ia_doPlasticDeformations );        
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_constraintStrength = nAttr.create( "constraintStrength", "cos", MFnNumericData::kDouble, 10.0, & status );
+        nAttr.setConnectable( true );
+        nAttr.setReadable( false );
+        nAttr.setWritable(true );
+        status = addAttribute( ia_constraintStrength );        
+    }
+
+    attributeAffects( ia_triggerSolve, ca_sync );
+    attributeAffects( ia_triggerSolve, oa_cv ); 
+    attributeAffects( ia_triggerSolve, oa_cvX );
+    attributeAffects( ia_triggerSolve, oa_cvY );
+    attributeAffects( ia_triggerSolve, oa_cvZ );
+
+    attributeAffects( ia_doPlasticDeformations, ca_sync ); 
+    attributeAffects( ia_doPlasticDeformations, oa_cv ); 
+    attributeAffects( ia_doPlasticDeformations, oa_cvX );
+    attributeAffects( ia_doPlasticDeformations, oa_cvY );
+    attributeAffects( ia_doPlasticDeformations, oa_cvZ );
+
+    attributeAffects( ia_constraintStrength, ca_sync ); 
+    attributeAffects( ia_constraintStrength, oa_cv ); 
+    attributeAffects( ia_constraintStrength, oa_cvX );
+    attributeAffects( ia_constraintStrength, oa_cvY );
+    attributeAffects( ia_constraintStrength, oa_cvZ );
+    
+    attributeAffects( ca_sync, oa_cv ); 
+    attributeAffects( ca_sync, oa_cvX );
+    attributeAffects( ca_sync, oa_cvY );
+    attributeAffects( ca_sync, oa_cvZ );
+
+
+/*    {
+        MFnNumericAttribute nAttr;
+        ia_inCVX = nAttr.create( "inCVX", "icx", MFnNumericData::kDouble, 0.0, & status );
+        nAttr.setConnectable( true );
+        status = addAttribute( oa_cvX );
+        ia_inCVY = nAttr.create( "inCVY", "icy", MFnNumericData::kDouble, 0.0, & status );
+        nAttr.setConnectable( true );
+        status = addAttribute( oa_cvY );
+        ia_inCVZ = nAttr.create( "inCVZ", "icz", MFnNumericData::kDouble, 0.0, & status );
+        nAttr.setConnectable( true );
+        status = addAttribute( oa_cvZ );
+    }
+
+    {
+        MFnCompoundAttribute cAttr;
+        ia_inCV = cAttr.create( "inControlVertex", "icv" );
+        cAttr.addChild( ia_inCVX );
+        cAttr.addChild( ia_inCVY );
+        cAttr.addChild( ia_inCVZ );
+        cAttr.setArray( true );
+        status = addAttribute( ia_inCV );
+        CHECK_MSTATUS( status );
+    }*/
+
+    return MS::kSuccess;
 }
 
 MStatus WmFigaroRodShape::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
@@ -250,10 +364,15 @@ MStatus WmFigaroRodShape::compute( const MPlug& i_plug, MDataBlock& i_dataBlock 
     if( i_plug == oa_cv || i_plug == oa_cvX ||
        i_plug == oa_cvY || i_plug == oa_cvZ )
     {
+        i_dataBlock.inputValue( ca_sync, &status );
+        CHECK_MSTATUS( status );
+
         if ( m_initialisedRod )
         {
-            // FIXME: Why not use the handle?!
+            i_dataBlock.inputValue( ia_triggerSolve, &status ).asDouble();
+            CHECK_MSTATUS( status );            
 
+            // FIXME: Why not use the datablock....
             MDataHandle pointsH = i_dataBlock.inputValue( mControlPoints, &status );
             CHECK_MSTATUS( status );
             /*MObject pointsDataObj = pointsH.data();
@@ -272,9 +391,79 @@ MStatus WmFigaroRodShape::compute( const MPlug& i_plug, MDataBlock& i_dataBlock 
                 cvPlug.child( 1, & status ).setDouble( pointArray[ cv ].y );
                 cvPlug.child( 2, & status ).setDouble( pointArray[ cv ].z );
 
-                cerr << "cv " << cv << " == " << pointArray[ cv ] << endl;
-            }            
+                //cerr << "cv " << cv << " == " << pointArray[ cv ] << endl;
+            }
         }
+
+        i_dataBlock.setClean( i_plug );
+
+        return MS::kSuccess;
+    }
+    else if ( i_plug == ca_sync )
+    {
+        if ( !m_initialisedRod )
+        {
+            resetSimulation();
+        }
+
+        i_dataBlock.inputValue( ia_triggerSolve );
+
+        // First we need to flag the vertex that was passed to compute as a fixed point
+        // FIXME: These fixed vertices should be in the rodData class so they are attached
+        // to a specific rod. Have a set of fixed vertices and a set of constrained Vertices
+
+        m_constraintStrength = i_dataBlock.inputValue( ia_constraintStrength ).asDouble();        
+
+        
+        // We fix the 2nd vertex with one of these constraints so that it tries to maintain
+        // the flow direction
+        ElasticRod* elasticRod = m_rodGroup.elasticRod( 0 );
+        m_fixedVertexMap[ 1 ] = elasticRod->getVertex( 1 );
+
+    
+        FixedRodVertexMap fixedRodVertexMap;
+        fixedRodVertexMap[ 0 ] = m_fixedVertexMap;
+
+        cerr << "there are " << m_fixedVertexMap.size() << " vertices fixed\n";
+        
+        cerr << "DOING SOLVE\n";
+        doSolverIterations( fixedRodVertexMap );
+        //solve( fixedRodVertexMap );
+        cerr << "END SOLVE\n";
+
+        if ( i_dataBlock.inputValue( ia_doPlasticDeformations, &status ).asBool() )
+        {
+            cerr << "doing plastic Deformation\n";
+            // Make this a plastic deformation
+            m_rodGroup.elasticRod( 0 )->updateReferenceProperties();
+        }
+
+        // Now copy the simulated positions of all vertices onto the controlPoints attribute
+            
+        MVectorArray rodVertices;
+        getRodVertices( rodVertices );
+
+        MArrayDataHandle pointsH = i_dataBlock.outputValue( mControlPoints, &status );
+        CHECK_MSTATUS( status );
+
+        unsigned int elementCount = pointsH.elementCount( &status );
+        CHECK_MSTATUS( status );
+
+        if ( rodVertices.length() == elementCount )
+        {
+            for ( unsigned int e=0; e<elementCount; ++e )
+            {
+                status = pointsH.jumpToElement( e );
+                CHECK_MSTATUS( status );
+    
+                MDataHandle pointHandle = pointsH.outputValue( &status );
+                CHECK_MSTATUS( status );
+            
+                pointHandle.set( rodVertices[ e ].x, rodVertices[ e ].y, rodVertices[ e ]. z );
+            }
+        }
+
+        m_fixedVertexMap.clear();
 
         i_dataBlock.setClean( i_plug );
 
@@ -314,6 +503,71 @@ MPxGeometryIterator* WmFigaroRodShape::geometryIteratorSetup(MObjectArray& compo
 		result = new WmFigaroRodShapeIterator( getControlPoints(), components );
 	}
 	return result;
+}
+
+bool WmFigaroRodShape::setInternalValueInContext( const MPlug& i_plug, const MDataHandle& handle, MDGContext& i_context )
+{
+    MStatus status;
+
+    int index = -1;
+
+    // We get called to set one component of the attribute at a time so we use 999999 to
+    // signify Beaker to leave that component where it is rather than moving it to some
+    // unknown location when it does the solve
+    MPoint newPoint( 999999, 999999, 999999 );
+
+    if (  (i_plug == mControlPoints) ||
+          (i_plug == mControlValueX) ||
+          (i_plug == mControlValueY) ||
+          (i_plug == mControlValueZ) )
+    {
+        if ( i_plug == mControlPoints && !i_plug.isArray() ) 
+        {
+            index = i_plug.logicalIndex();
+            double3& ptData = handle.asDouble3();
+            newPoint.x = ptData[0];
+            newPoint.y = ptData[1];
+            newPoint.z = ptData[2];
+
+            m_fixedVertexMap[ index ] = Vec3d( newPoint.x, newPoint.y, newPoint.z );
+        }
+        else if ( i_plug == mControlValueX ) 
+        {
+            MPlug parentPlug = i_plug.parent();
+            index = parentPlug.logicalIndex();
+            newPoint.x = handle.asDouble();
+        
+            m_fixedVertexMap[ index ][0] =newPoint.x;
+        }
+        else if ( i_plug == mControlValueY ) 
+        {
+            MPlug parentPlug = i_plug.parent();
+            index = parentPlug.logicalIndex();
+            newPoint.y = handle.asDouble();
+
+            m_fixedVertexMap[ index ][1] =newPoint.y;
+        }
+        else if ( i_plug == mControlValueZ ) 
+        {
+            MPlug parentPlug = i_plug.parent();
+            index = parentPlug.logicalIndex();
+            newPoint.z = handle.asDouble();
+
+            m_fixedVertexMap[ index ][2] =newPoint.z;
+        }
+    }
+
+    // Signal that Maya still has to store the data
+    return false;
+}
+
+bool WmFigaroRodShape::doSolverIterations( FixedRodVertexMap& i_fixedRodVertexMap )
+{
+    solve( i_fixedRodVertexMap );solve( i_fixedRodVertexMap );solve( i_fixedRodVertexMap );
+    solve( i_fixedRodVertexMap );solve( i_fixedRodVertexMap );solve( i_fixedRodVertexMap );
+    solve( i_fixedRodVertexMap );solve( i_fixedRodVertexMap );solve( i_fixedRodVertexMap );
+
+    return true;
 }
 
 bool WmFigaroRodShape::acceptsGeometryIterator( bool writeable )
@@ -545,9 +799,7 @@ void WmFigaroRodShape::transformUsing(const MMatrix& mat, const MObjectArray& co
 
     if ( haveFixedVertices )
     {
-        solve( fixedRodVertexMap );solve( fixedRodVertexMap );solve( fixedRodVertexMap );
-        solve( fixedRodVertexMap );solve( fixedRodVertexMap );solve( fixedRodVertexMap );
-        solve( fixedRodVertexMap );solve( fixedRodVertexMap );solve( fixedRodVertexMap );        
+        doSolverIterations( fixedRodVertexMap );
     }
     else
     {

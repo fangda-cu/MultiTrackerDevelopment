@@ -407,6 +407,7 @@ void ElasticRod::updateReferenceProperties()
   for (it = forces.begin(); it != forces.end(); ++it) {
     (*it)->updateUndeformedStrain();
     (*it)->updateStiffness();
+    (*it)->updateReferenceDomain();
   }
 }
 

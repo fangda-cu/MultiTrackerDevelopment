@@ -766,10 +766,10 @@ void WmFigaroCmd::createRodShapeNode()
     dagModifier.doIt();
 
     // Tell the node to initialise itself. Seems like pulling on a plug would be nice
-    WmFigaroRodShape* wmFigaroRodShape = dynamic_cast< WmFigaroRodShape* >( rodShapeFn.userNode( &stat ) );
+    /*WmFigaroRodShape* wmFigaroRodShape = dynamic_cast< WmFigaroRodShape* >( rodShapeFn.userNode( &stat ) );
     CHECK_MSTATUS( stat );
 
-    wmFigaroRodShape->resetSimulation();
+    wmFigaroRodShape->resetSimulation();*/
 
 }
 
