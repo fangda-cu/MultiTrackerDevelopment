@@ -1,0 +1,13 @@
+global proc AEwmFigaroRodShapeTemplate(string $nodeName) 
+{
+    //AEswatchDisplay $nodeName;
+    editorTemplate -beginScrollLayout;
+
+    editorTemplate -beginLayout "Settings" -collapse 0;
+        editorTemplate -addControl "doPlasticDeformations";
+        editorTemplate -addControl "constraintStrength";        
+    editorTemplate -endLayout;
+
+    editorTemplate -addExtraControls;
+    editorTemplate -endScrollLayout;
+}
