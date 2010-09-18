@@ -269,6 +269,9 @@ void WmFigaroRodShapeUI::draw( const MDrawRequest & request, M3dView & view ) co
 
     view.beginGL(); 
 
+    glPushAttrib( GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT | GL_ENABLE_BIT |  GL_LIGHTING_BIT );
+
+
     // For now, always draw the rod
     WmFigaroRodShape* shape = (WmFigaroRodShape*) surfaceShape();
     shape->drawRod();
@@ -303,6 +306,9 @@ void WmFigaroRodShapeUI::draw( const MDrawRequest & request, M3dView & view ) co
         glVertex3f( (float)point[0], (float)point[1], (float)point[2] );        
     }
     glEnd();*/
+
+    glPopAttrib();
+
     
     view.endGL();
         

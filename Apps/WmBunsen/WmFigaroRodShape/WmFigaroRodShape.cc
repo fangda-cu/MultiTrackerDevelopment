@@ -37,13 +37,16 @@ MObject WmFigaroRodShape::ia_density;
 MObject WmFigaroRodShape::ia_radiusA;
 MObject WmFigaroRodShape::ia_radiusB;
 
+MObject WmFigaroRodShape::ia_numberOfIterations;
+
 MObject WmFigaroRodShape::ca_sync;
 
 WmFigaroRodShape::WmFigaroRodShape() : m_initialisedRod( false ), m_constraintStrength( 20.0 ), 
     m_drawRodTube( false ), m_numberOfLockedVertices( 0 ), m_cylinderDrawScale( 10.0 ),
     m_youngsModulus( 10000.0 * 1e7 /* pascal */ ), m_shearModulus( 340.0 * 1e7  /* pascal */ ),
     m_viscosity( 10.0 /* poise */ ), m_density( 1.3 /* grams per cubic centimeter */ ),
-    m_radiusA( 0.05 * 1e-1 /* centimetre */ ), m_radiusB( 0.05 * 1e-1 /* centimetre */ )
+    m_radiusA( 0.05 * 1e-1 /* centimetre */ ), m_radiusB( 0.05 * 1e-1 /* centimetre */ ),
+    m_numberOfIterations( 6 )
 {        
 }
 
@@ -398,6 +401,22 @@ MStatus WmFigaroRodShape::initialize()
         status = addAttribute( ia_radiusB );        
     }
 
+    {
+        MFnNumericAttribute nAttr;
+        ia_numberOfIterations = nAttr.create( "numberOfIterations", "noi", MFnNumericData::kInt, 6, & status );
+        nAttr.setConnectable( true );
+        nAttr.setReadable( false );
+        nAttr.setWritable(true );
+        status = addAttribute( ia_numberOfIterations );        
+    }
+
+    attributeAffects( ia_numberOfIterations, ca_sync );
+    attributeAffects( ia_numberOfIterations, oa_cv ); 
+    attributeAffects( ia_numberOfIterations, oa_cvX );
+    attributeAffects( ia_numberOfIterations, oa_cvY );
+    attributeAffects( ia_numberOfIterations, oa_cvZ );
+    
+
     attributeAffects( ia_youngsModulus, ca_sync );
     attributeAffects( ia_youngsModulus, oa_cv ); 
     attributeAffects( ia_youngsModulus, oa_cvX );
@@ -544,6 +563,8 @@ MStatus WmFigaroRodShape::compute( const MPlug& i_plug, MDataBlock& i_dataBlock 
         m_radiusA = i_dataBlock.inputValue( ia_radiusA ).asDouble() * 1e-1; /* centimetre */
         m_radiusB = i_dataBlock.inputValue( ia_radiusB ).asDouble() * 1e-1; /* centimetre */
          
+        m_numberOfIterations = i_dataBlock.inputValue( ia_numberOfIterations ).asInt();
+        
         // Rebuild the rod in this new configuration
         if ( !m_initialisedRod )
         {
@@ -764,9 +785,10 @@ bool WmFigaroRodShape::setInternalValueInContext( const MPlug& i_plug, const MDa
 
 bool WmFigaroRodShape::doSolverIterations( FixedRodVertexMap& i_fixedRodVertexMap )
 {
-    solve( i_fixedRodVertexMap );solve( i_fixedRodVertexMap );solve( i_fixedRodVertexMap );
-    solve( i_fixedRodVertexMap );solve( i_fixedRodVertexMap );solve( i_fixedRodVertexMap );
-    solve( i_fixedRodVertexMap );solve( i_fixedRodVertexMap );solve( i_fixedRodVertexMap );
+    for ( int i=0; i<m_numberOfIterations; ++i )
+    {
+        solve( i_fixedRodVertexMap );
+    }
 
     return true;
 }

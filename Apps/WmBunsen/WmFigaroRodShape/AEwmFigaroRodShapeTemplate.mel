@@ -5,6 +5,7 @@ global proc AEwmFigaroRodShapeTemplate(string $nodeName)
 
     editorTemplate -beginLayout "Settings" -collapse 0;
         //editorTemplate -addControl "doPlasticDeformations";
+        editorTemplate -addControl "numberOfIterations";
         editorTemplate -addControl "youngsModulus";
         editorTemplate -addControl "shearModulus";
         editorTemplate -addControl "viscosity";

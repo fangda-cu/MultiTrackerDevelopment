@@ -95,6 +95,8 @@ public:
     static MObject ia_radiusA;
     static MObject ia_radiusB;
 
+    static MObject ia_numberOfIterations;
+
     static MObject ca_sync;
 
    /* static MObject ia_inCV;
@@ -141,6 +143,7 @@ private:
     double m_density;
     double m_radiusA;
     double m_radiusB;
+    int m_numberOfIterations;
 };
 
 
