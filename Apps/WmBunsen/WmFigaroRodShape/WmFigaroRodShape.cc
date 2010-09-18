@@ -28,30 +28,48 @@ MObject WmFigaroRodShape::i_bboxCorner2;
 MObject WmFigaroRodShape::ia_triggerSolve;
 MObject WmFigaroRodShape::ia_doPlasticDeformations;
 MObject WmFigaroRodShape::ia_constraintStrength;
+MObject WmFigaroRodShape::ia_percentLocked;
+MObject WmFigaroRodShape::ia_cylinderDrawScale;
+MObject WmFigaroRodShape::ia_youngsModulus;
+MObject WmFigaroRodShape::ia_shearModulus;
+MObject WmFigaroRodShape::ia_viscosity;
+MObject WmFigaroRodShape::ia_density;
+MObject WmFigaroRodShape::ia_radiusA;
+MObject WmFigaroRodShape::ia_radiusB;
 
 MObject WmFigaroRodShape::ca_sync;
 
 WmFigaroRodShape::WmFigaroRodShape() : m_initialisedRod( false ), m_constraintStrength( 20.0 ), 
-    m_drawRodTube( false )
-{    
+    m_drawRodTube( false ), m_numberOfLockedVertices( 0 ), m_cylinderDrawScale( 10.0 ),
+    m_youngsModulus( 10000.0 * 1e7 /* pascal */ ), m_shearModulus( 340.0 * 1e7  /* pascal */ ),
+    m_viscosity( 10.0 /* poise */ ), m_density( 1.3 /* grams per cubic centimeter */ ),
+    m_radiusA( 0.05 * 1e-1 /* centimetre */ ), m_radiusB( 0.05 * 1e-1 /* centimetre */ )
+{        
 }
 
 WmFigaroRodShape::~WmFigaroRodShape() {}
 
-void WmFigaroRodShape::resetSimulation()
+void WmFigaroRodShape::resetSimulation( MVectorArray* i_controlPoints )
 {
     m_beaker.resetEverything();
 
-    MVectorArray& controlPoints = *( getControlPoints() );
+    MVectorArray* controlPoints = getControlPoints();
 
-    initialiseRod();   
+    if ( i_controlPoints == NULL )
+    {
+        initialiseRod( controlPoints );   
+    }
+    else
+    {
+        initialiseRod( i_controlPoints );
+    }
 
     m_rodGroup.setSimulationNeedsReset( false );
     
     m_beaker.addRodsToWorld( 0, &m_rodGroup );
 }
 
-void WmFigaroRodShape::initialiseRod()
+void WmFigaroRodShape::initialiseRod( MVectorArray* i_controlPoints )
 {
     MStatus stat;
 
@@ -59,13 +77,11 @@ void WmFigaroRodShape::initialiseRod()
 
     m_rodGroup.removeAllRods();
 
-    MVectorArray& controlPoints = *( getControlPoints() );
-
     vector<Vec3d> rodVertices;
-    rodVertices.resize( controlPoints.length() );
-    for ( size_t v=0; v<controlPoints.length(); v++ )
+    rodVertices.resize( i_controlPoints->length() );
+    for ( size_t v=0; v<i_controlPoints->length(); v++ )
     {
-        rodVertices[ v ] = Vec3d( controlPoints[ v ].x, controlPoints[ v ].y, controlPoints[ v ].z );
+        rodVertices[ v ] = Vec3d( (*i_controlPoints)[ v ].x, (*i_controlPoints)[ v ].y, (*i_controlPoints)[ v ].z );
     }
 
     double massDamping = 10.0;
@@ -74,12 +90,12 @@ void WmFigaroRodShape::initialiseRod()
     RodTimeStepper::Method solverType = RodTimeStepper::SYM_IMPL_EULER;
     //RodTimeStepper::Method solverType = RodTimeStepper::STATICS;
     RodOptions rodOptions;
-    rodOptions.YoungsModulus = 10000.0 * 1e7; /* pascal */
-    rodOptions.ShearModulus = 340.0 * 1e7;   /* pascal */
-    rodOptions.viscosity = 10.0;       /* poise */
-    rodOptions.density = 1.3;          /* grams per cubic centimeter */
-    rodOptions.radiusA = 0.05 * 1e-1;         /* centimetre */
-    rodOptions.radiusB = 0.05 * 1e-1;         /* centimetre */
+    rodOptions.YoungsModulus = m_youngsModulus;
+    rodOptions.ShearModulus = m_shearModulus;
+    rodOptions.viscosity = m_viscosity;
+    rodOptions.density = m_density;
+    rodOptions.radiusA = m_radiusA;
+    rodOptions.radiusB = m_radiusB;
     rodOptions.refFrame = BASim::ElasticRod::TimeParallel;
     rodOptions.numVertices = (int)rodVertices.size();
 
@@ -304,6 +320,115 @@ MStatus WmFigaroRodShape::initialize()
         status = addAttribute( ia_constraintStrength );        
     }
 
+    {
+        MFnNumericAttribute nAttr;
+        ia_percentLocked = nAttr.create( "percentLocked", "plo", MFnNumericData::kInt, 0, & status );
+        nAttr.setConnectable( true );
+        nAttr.setReadable( false );
+        nAttr.setWritable(true );
+        nAttr.setMin( 0 );
+        nAttr.setMax( 100 );
+        status = addAttribute( ia_percentLocked );        
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_cylinderDrawScale = nAttr.create( "cylinderDrawScale", "cds", MFnNumericData::kDouble, 10.0, & status );
+        nAttr.setConnectable( true );
+        nAttr.setReadable( false );
+        nAttr.setWritable(true );
+        nAttr.setMin( 1 );
+        nAttr.setMax( 50 );
+        status = addAttribute( ia_cylinderDrawScale );        
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_youngsModulus = nAttr.create( "youngsModulus", "ymo", MFnNumericData::kDouble, 10000.0 , & status );
+        nAttr.setConnectable( true );
+        nAttr.setReadable( false );
+        nAttr.setWritable(true );
+        status = addAttribute( ia_youngsModulus );        
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_shearModulus = nAttr.create( "shearModulus", "sho", MFnNumericData::kDouble, 340.0, & status );
+        CHECK_MSTATUS( status );
+        nAttr.setConnectable( true );
+        nAttr.setReadable( false );
+        nAttr.setWritable(true );
+        status = addAttribute( ia_shearModulus );        
+        CHECK_MSTATUS( status );
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_viscosity = nAttr.create( "viscosity", "vis", MFnNumericData::kDouble, 10.0, & status );
+        nAttr.setConnectable( true );
+        nAttr.setReadable( false );
+        nAttr.setWritable(true );
+        status = addAttribute( ia_viscosity );        
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_density = nAttr.create( "density", "den", MFnNumericData::kDouble, 1.3, & status );
+        nAttr.setConnectable( true );
+        nAttr.setReadable( false );
+        nAttr.setWritable(true );
+        status = addAttribute( ia_density );        
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_radiusA = nAttr.create( "minorRadius", "mir", MFnNumericData::kDouble, 0.05, & status );
+        nAttr.setConnectable( true );
+        nAttr.setReadable( false );
+        nAttr.setWritable(true );
+        status = addAttribute( ia_radiusA );        
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_radiusB = nAttr.create( "majorRadius", "mar", MFnNumericData::kDouble, 0.05, & status );
+        nAttr.setConnectable( true );
+        nAttr.setReadable( false );
+        nAttr.setWritable(true );
+        status = addAttribute( ia_radiusB );        
+    }
+
+    attributeAffects( ia_youngsModulus, ca_sync );
+    attributeAffects( ia_youngsModulus, oa_cv ); 
+    attributeAffects( ia_youngsModulus, oa_cvX );
+    attributeAffects( ia_youngsModulus, oa_cvY );
+    attributeAffects( ia_youngsModulus, oa_cvZ );
+    attributeAffects( ia_shearModulus, ca_sync );
+    attributeAffects( ia_shearModulus, oa_cv ); 
+    attributeAffects( ia_shearModulus, oa_cvX );
+    attributeAffects( ia_shearModulus, oa_cvY );
+    attributeAffects( ia_shearModulus, oa_cvZ );
+    attributeAffects( ia_viscosity, ca_sync );
+    attributeAffects( ia_viscosity, oa_cv ); 
+    attributeAffects( ia_viscosity, oa_cvX );
+    attributeAffects( ia_viscosity, oa_cvY );
+    attributeAffects( ia_viscosity, oa_cvZ );
+    attributeAffects( ia_density, ca_sync );
+    attributeAffects( ia_density, oa_cv ); 
+    attributeAffects( ia_density, oa_cvX );
+    attributeAffects( ia_density, oa_cvY );
+    attributeAffects( ia_density, oa_cvZ );
+    attributeAffects( ia_radiusA, ca_sync );
+    attributeAffects( ia_radiusA, oa_cv ); 
+    attributeAffects( ia_radiusA, oa_cvX );
+    attributeAffects( ia_radiusA, oa_cvY );
+    attributeAffects( ia_radiusA, oa_cvZ );
+    attributeAffects( ia_radiusB, ca_sync );
+    attributeAffects( ia_radiusB, oa_cv ); 
+    attributeAffects( ia_radiusB, oa_cvX );
+    attributeAffects( ia_radiusB, oa_cvY );
+    attributeAffects( ia_radiusB, oa_cvZ );
+
     attributeAffects( ia_triggerSolve, ca_sync );
     attributeAffects( ia_triggerSolve, oa_cv ); 
     attributeAffects( ia_triggerSolve, oa_cvX );
@@ -322,11 +447,22 @@ MStatus WmFigaroRodShape::initialize()
     attributeAffects( ia_constraintStrength, oa_cvY );
     attributeAffects( ia_constraintStrength, oa_cvZ );
     
+    attributeAffects( ia_percentLocked, ca_sync ); 
+    attributeAffects( ia_percentLocked, oa_cv ); 
+    attributeAffects( ia_percentLocked, oa_cvX );
+    attributeAffects( ia_percentLocked, oa_cvY );
+    attributeAffects( ia_percentLocked, oa_cvZ );
+
+    attributeAffects( ia_cylinderDrawScale, ca_sync ); 
+    attributeAffects( ia_cylinderDrawScale, oa_cv ); 
+    attributeAffects( ia_cylinderDrawScale, oa_cvX );
+    attributeAffects( ia_cylinderDrawScale, oa_cvY );
+    attributeAffects( ia_cylinderDrawScale, oa_cvZ );    
+
     attributeAffects( ca_sync, oa_cv ); 
     attributeAffects( ca_sync, oa_cvX );
     attributeAffects( ca_sync, oa_cvY );
     attributeAffects( ca_sync, oa_cvZ );
-
 
 /*    {
         MFnNumericAttribute nAttr;
@@ -401,12 +537,39 @@ MStatus WmFigaroRodShape::compute( const MPlug& i_plug, MDataBlock& i_dataBlock 
     }
     else if ( i_plug == ca_sync )
     {
+        m_youngsModulus = i_dataBlock.inputValue( ia_youngsModulus ).asDouble() * 1e7; /* pascal */
+        m_shearModulus = i_dataBlock.inputValue( ia_shearModulus ).asDouble() * 1e7;  /* pascal */
+        m_viscosity = i_dataBlock.inputValue( ia_viscosity ).asDouble(); /* poise */ 
+        m_density = i_dataBlock.inputValue( ia_density ).asDouble(); /* grams per cubic centimeter */
+        m_radiusA = i_dataBlock.inputValue( ia_radiusA ).asDouble() * 1e-1; /* centimetre */
+        m_radiusB = i_dataBlock.inputValue( ia_radiusB ).asDouble() * 1e-1; /* centimetre */
+         
+        // Rebuild the rod in this new configuration
         if ( !m_initialisedRod )
         {
             resetSimulation();
         }
+        else
+        {
+            // we need to recreate the rod with its vertices in the same position as they 
+            // currently are but with the new stiffness etc settings.
+
+            ElasticRod* elasticRod = m_rodGroup.elasticRod( 0 );
+            MVectorArray rodVertices;
+            rodVertices.setLength( elasticRod->nv() );
+
+            for ( int v=0; v<elasticRod->nv(); ++v )
+            {
+                Vec3d vertex = elasticRod->getVertex( v );
+                rodVertices[ v ] = MVector( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ] );
+            }
+
+            resetSimulation( &rodVertices );
+        }
 
         i_dataBlock.inputValue( ia_triggerSolve );
+
+        m_cylinderDrawScale = i_dataBlock.inputValue( ia_cylinderDrawScale ).asDouble();        
 
         // First we need to flag the vertex that was passed to compute as a fixed point
         // FIXME: These fixed vertices should be in the rodData class so they are attached
@@ -414,13 +577,40 @@ MStatus WmFigaroRodShape::compute( const MPlug& i_plug, MDataBlock& i_dataBlock 
 
         m_constraintStrength = i_dataBlock.inputValue( ia_constraintStrength ).asDouble();        
 
+        int percentLocked = i_dataBlock.inputValue( ia_percentLocked ).asInt();
         
         // We fix the 2nd vertex with one of these constraints so that it tries to maintain
         // the flow direction
         ElasticRod* elasticRod = m_rodGroup.elasticRod( 0 );
         m_fixedVertexMap[ 1 ] = elasticRod->getVertex( 1 );
 
-    
+        // Set the display scale to match what the user specified
+        elasticRod->setRadiusScale( m_cylinderDrawScale );
+
+        // Fix all vertices in the range 0 -> m_percentLocked 
+        double length = 0.0;
+        for ( int v=2; v<elasticRod->nv(); ++v )
+        {
+            length += ( elasticRod->getVertex( v ) - elasticRod->getVertex( v - 1 ) ).norm();
+        }
+
+        double lockedLength = ( percentLocked / 100.0 ) * length;
+
+        m_numberOfLockedVertices = 1;
+
+        length = 0.0;
+        for ( int v=2; v<elasticRod->nv(); ++v )
+        {
+            length += ( elasticRod->getVertex( v ) - elasticRod->getVertex( v - 1 ) ).norm();
+            if ( length < lockedLength ) 
+            {
+                cerr << "locking vertex " << v << endl;
+                m_fixedVertexMap[ v ] = elasticRod->getVertex( v );
+
+                m_numberOfLockedVertices = v;
+            }
+        }
+
         FixedRodVertexMap fixedRodVertexMap;
         fixedRodVertexMap[ 0 ] = m_fixedVertexMap;
 
@@ -431,12 +621,14 @@ MStatus WmFigaroRodShape::compute( const MPlug& i_plug, MDataBlock& i_dataBlock 
         //solve( fixedRodVertexMap );
         cerr << "END SOLVE\n";
 
-        if ( i_dataBlock.inputValue( ia_doPlasticDeformations, &status ).asBool() )
+        // Only plastic deformations make sense and as we want the user to be able to control
+        // all the rod attributes we shall recreate the rod every frame.
+        /*if ( i_dataBlock.inputValue( ia_doPlasticDeformations, &status ).asBool() )
         {
             cerr << "doing plastic Deformation\n";
             // Make this a plastic deformation
             m_rodGroup.elasticRod( 0 )->updateReferenceProperties();
-        }
+        }*/        
 
         // Now copy the simulated positions of all vertices onto the controlPoints attribute
             
@@ -463,6 +655,15 @@ MStatus WmFigaroRodShape::compute( const MPlug& i_plug, MDataBlock& i_dataBlock 
             }
         }
 
+        // Only plastic deformations make sense and as we want the user to be able to control
+        // all the rod attributes we shall recreate the rod every frame.
+        /*if ( i_dataBlock.inputValue( ia_doPlasticDeformations, &status ).asBool() )
+        {
+            cerr << "doing plastic Deformation\n";
+            // Make this a plastic deformation
+            m_rodGroup.elasticRod( 0 )->updateReferenceProperties();
+        }*/
+        
         m_fixedVertexMap.clear();
 
         i_dataBlock.setClean( i_plug );
@@ -558,7 +759,7 @@ bool WmFigaroRodShape::setInternalValueInContext( const MPlug& i_plug, const MDa
     }
 
     // Signal that Maya still has to store the data
-    return false;
+    return false;    
 }
 
 bool WmFigaroRodShape::doSolverIterations( FixedRodVertexMap& i_fixedRodVertexMap )

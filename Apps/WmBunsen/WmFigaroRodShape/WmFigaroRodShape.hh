@@ -84,6 +84,17 @@ public:
     static MObject ia_doPlasticDeformations;
     static MObject ia_constraintStrength;
 
+    static MObject ia_percentLocked;
+
+    static MObject ia_cylinderDrawScale;
+
+    static MObject ia_youngsModulus;
+    static MObject ia_shearModulus;
+    static MObject ia_viscosity;
+    static MObject ia_density;
+    static MObject ia_radiusA;
+    static MObject ia_radiusB;
+
     static MObject ca_sync;
 
    /* static MObject ia_inCV;
@@ -92,14 +103,19 @@ public:
     static MObject ia_inCVZ;*/
 
     void drawRod();
-    void resetSimulation();
+    void resetSimulation( MVectorArray* i_controlPoints = NULL );
+
+    int numberOfLockedvertices()
+    {
+        return m_numberOfLockedVertices;
+    }
     
 private:
     MStatus computeBoundingBox( MDataBlock& datablock );
     MStatus buildControlPoints( MVectorArray& i_controlPoints );
     void getRodVertices( MVectorArray& o_controlPoints );
     void updateControlPointsFromRod();
-    void initialiseRod();
+    void initialiseRod( MVectorArray* i_controlPoints );
     void updatePointIfNotStretching( MPointArray& io_controlPoints, const size_t i_index, const MMatrix& i_matrix );
     bool doSolverIterations( FixedRodVertexMap& i_fixedRodVertexMap );
 
@@ -116,6 +132,15 @@ private:
     LockedVertexMap m_lockedVertexMap;    
 
     bool m_drawRodTube;
+
+    int m_numberOfLockedVertices;
+    double m_cylinderDrawScale;
+    double m_youngsModulus;
+    double m_shearModulus;
+    double m_viscosity;
+    double m_density;
+    double m_radiusA;
+    double m_radiusB;
 };
 
 

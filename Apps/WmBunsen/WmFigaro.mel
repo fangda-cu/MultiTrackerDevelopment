@@ -42,6 +42,7 @@ global proc wmFigaroAddMainMenu()
         menuItem -label "Selection Tool" -annotation "Select rods" -command "setToolTo $gWmFigSelectionContextName";
         menuItem -label "Add controllers Tool" -annotation "Attach a controller to a rod" -command "setToolTo $gWmFigControllerContextName";
         menuItem -label "Comb Tool" -annotation "Comb rods" -command "setToolTo $gWmFigCombContextName";
+        menuItem -label "Create rod shape from NURBS" -annotation "Turn the selected nurbs curve into an elastic rod" -command "wmFigaro -crs";
 
         // menuItem -label "Create constraint" -annotation "Creates a spring constraint between two selected input curve CVs" -command"dyno -crr";
         // menuItem -label "Disconnect selected collision objects" -command "dyno -rcm";

@@ -263,14 +263,37 @@ void WmFigaroRodShapeUI::draw( const MDrawRequest & request, M3dView & view ) co
 	//
 	int token = request.token();
 
+    // vertices need shaded differently depending on what is selected so figure that out
+    // and draw appropriately
+    drawVertices( request, view );
+
     view.beginGL(); 
 
     // For now, always draw the rod
     WmFigaroRodShape* shape = (WmFigaroRodShape*) surfaceShape();
     shape->drawRod();
 
+    int numberOfLockedVertices = shape->numberOfLockedvertices();
+
+    if ( numberOfLockedVertices > 0 )
+    {
+        MDrawData data = request.drawData();
+        MVectorArray * geom = (MVectorArray*)data.geometry();
+    
+        glLineWidth( 5.0 );
+        glColor3f( 1.0f, 0.0f, 0.0f );
+        glBegin( GL_LINE_STRIP );
+        for ( unsigned int i=0; i<numberOfLockedVertices; i++ )
+        {        
+            MVector point = (*geom)[ i ];
+            glVertex3f( (float)point[0], (float)point[1], (float)point[2] );        
+        }
+        glEnd();
+        glLineWidth( 1.0 );
+    }
+
     // draw the edges
-    MDrawData data = request.drawData();
+    /*MDrawData data = request.drawData();
     MVectorArray * geom = (MVectorArray*)data.geometry();
 
     glBegin( GL_LINE_STRIP );
@@ -279,13 +302,9 @@ void WmFigaroRodShapeUI::draw( const MDrawRequest & request, M3dView & view ) co
         MVector point = (*geom)[ i ];
         glVertex3f( (float)point[0], (float)point[1], (float)point[2] );        
     }
-    glEnd();
+    glEnd();*/
     
     view.endGL();
-
-    // vertices need shaded differently depending on what is selected so figure that out
-    // and draw appropriately
-    drawVertices( request, view );
         
 	/*switch( token )
 	{
@@ -378,9 +397,11 @@ void WmFigaroRodShapeUI::drawVertices( const MDrawRequest & request,
 	view.beginGL(); 
 
     // For now, always draw the rod
-    //WmFigaroRodShape* shape = (WmFigaroRodShape*) surfaceShape();
-    //shape->drawRod();
-    
+/*    WmFigaroRodShape* shape = (WmFigaroRodShape*) surfaceShape();
+    shape->drawRod();
+
+    int numberOfLockedVertices = shape->numberOfLockedvertices();
+    */
 	// Query current state so it can be restored
 	//
 	bool lightingWasOn = glIsEnabled( GL_LIGHTING ) ? true : false;
@@ -413,9 +434,9 @@ void WmFigaroRodShapeUI::drawVertices( const MDrawRequest & request,
 						(float)point[2] );
 			glEnd();
 
-			//char annotation[32];
-			//sprintf( annotation, "%d", index );
-			//view.drawText( annotation, point );
+			char annotation[32];
+			sprintf( annotation, "%d", index );
+		    view.drawText( annotation, point );
 		}
 	}
 	else {
