@@ -43,7 +43,7 @@ MObject WmFigaroRodShape::ca_sync;
 
 WmFigaroRodShape::WmFigaroRodShape() : m_initialisedRod( false ), m_constraintStrength( 20.0 ), 
     m_drawRodTube( false ), m_numberOfLockedVertices( 0 ), m_cylinderDrawScale( 10.0 ),
-    m_youngsModulus( 10000.0 * 1e7 /* pascal */ ), m_shearModulus( 340.0 * 1e7  /* pascal */ ),
+    m_youngsModulus( 100.0 * 1e7 /* pascal */ ), m_shearModulus( 34.0 * 1e7  /* pascal */ ),
     m_viscosity( 10.0 /* poise */ ), m_density( 1.3 /* grams per cubic centimeter */ ),
     m_radiusA( 0.05 * 1e-1 /* centimetre */ ), m_radiusB( 0.05 * 1e-1 /* centimetre */ ),
     m_numberOfIterations( 6 )
@@ -347,7 +347,7 @@ MStatus WmFigaroRodShape::initialize()
 
     {
         MFnNumericAttribute nAttr;
-        ia_youngsModulus = nAttr.create( "youngsModulus", "ymo", MFnNumericData::kDouble, 10000.0 , & status );
+        ia_youngsModulus = nAttr.create( "youngsModulus", "ymo", MFnNumericData::kDouble, 100.0 , & status );
         nAttr.setConnectable( true );
         nAttr.setReadable( false );
         nAttr.setWritable(true );
@@ -356,7 +356,7 @@ MStatus WmFigaroRodShape::initialize()
 
     {
         MFnNumericAttribute nAttr;
-        ia_shearModulus = nAttr.create( "shearModulus", "sho", MFnNumericData::kDouble, 340.0, & status );
+        ia_shearModulus = nAttr.create( "shearModulus", "sho", MFnNumericData::kDouble, 34.0, & status );
         CHECK_MSTATUS( status );
         nAttr.setConnectable( true );
         nAttr.setReadable( false );
