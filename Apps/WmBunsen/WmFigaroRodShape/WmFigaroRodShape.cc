@@ -563,7 +563,7 @@ MStatus WmFigaroRodShape::compute( const MPlug& i_plug, MDataBlock& i_dataBlock 
         m_radiusA = i_dataBlock.inputValue( ia_radiusA ).asDouble() * 1e-1; /* centimetre */
         m_radiusB = i_dataBlock.inputValue( ia_radiusB ).asDouble() * 1e-1; /* centimetre */
          
-        m_numberOfIterations = i_dataBlock.inputValue( ia_numberOfIterations ).asInt();
+        //m_numberOfIterations = i_dataBlock.inputValue( ia_numberOfIterations ).asInt();
         
         // Rebuild the rod in this new configuration
         if ( !m_initialisedRod )
@@ -688,6 +688,8 @@ MStatus WmFigaroRodShape::compute( const MPlug& i_plug, MDataBlock& i_dataBlock 
         m_fixedVertexMap.clear();
 
         i_dataBlock.setClean( i_plug );
+
+        computeBoundingBox( i_dataBlock );
 
         return MS::kSuccess;
     }
@@ -1148,10 +1150,10 @@ MStatus WmFigaroRodShape::computeBoundingBox( MDataBlock& datablock )
 
         if ( pnt[0] < lower[0] ) lower[0] = pnt[0];
         if ( pnt[1] < lower[1] ) lower[1] = pnt[1];
-        if ( pnt[2] > lower[2] ) lower[2] = pnt[2];
+        if ( pnt[2] < lower[2] ) lower[2] = pnt[2];
         if ( pnt[0] > upper[0] ) upper[0] = pnt[0];
         if ( pnt[1] > upper[1] ) upper[1] = pnt[1];
-        if ( pnt[2] < upper[2] ) upper[2] = pnt[2];
+        if ( pnt[2] > upper[2] ) upper[2] = pnt[2];
     }
     
     lowerHandle.setClean();
