@@ -230,6 +230,11 @@ public:
         if ( !m_isPlaceHolderRod )
             m_rodRenderer->render();
     }
+       
+    RodRenderer* rodRenderer()
+    {
+        return m_rodRenderer;
+    }
 
  /*   static size_t numberOfRealRods( std::vector< RodData* >* i_pRodData )
     {

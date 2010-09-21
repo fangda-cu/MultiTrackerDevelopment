@@ -223,6 +223,9 @@ void WmFigaroRodShape::updateControlPointsFromRod()
 void WmFigaroRodShape::drawRod()
 {
     m_rodGroup.render();
+
+    RodRenderer* rodRenderer = m_rodGroup.rodRenderer( 0 );
+    rodRenderer->drawSmoothPartialRod( 0, m_numberOfLockedVertices, Vec3d( 1.0, 0.0, 0.0 ) );
 }
 
 void* WmFigaroRodShape::creator()

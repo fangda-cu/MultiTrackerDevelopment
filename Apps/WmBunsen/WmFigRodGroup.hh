@@ -238,6 +238,11 @@ public:
         }
     }
 
+    RodRenderer* rodRenderer( const size_t i_index )
+    {
+        return m_rodData[ i_index ]->rodRenderer();
+    }
+
 private:
     std::vector< RodData* > m_rodData;
 

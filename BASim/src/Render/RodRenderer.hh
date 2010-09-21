@@ -39,6 +39,8 @@ public:
   virtual Vec3d calculateObjectCenter();
   virtual Scalar calculateObjectBoundingRadius(const Vec3d& center);
 
+  void drawSmoothPartialRod( const int i_startVertex, const int i_endVertex, const Vec3d i_color );
+
 protected:
 
   void drawSimpleRod();

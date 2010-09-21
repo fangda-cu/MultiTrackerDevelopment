@@ -275,9 +275,9 @@ void WmFigaroRodShapeUI::draw( const MDrawRequest & request, M3dView & view ) co
     WmFigaroRodShape* shape = (WmFigaroRodShape*) surfaceShape();
     shape->drawRod();
 
-    int numberOfLockedVertices = shape->numberOfLockedvertices();
+    //int numberOfLockedVertices = shape->numberOfLockedvertices();
 
-    if ( numberOfLockedVertices > 0 )
+    /*if ( numberOfLockedVertices > 0 )
     {
         MDrawData data = request.drawData();
         MVectorArray * geom = (MVectorArray*)data.geometry();
@@ -294,35 +294,7 @@ void WmFigaroRodShapeUI::draw( const MDrawRequest & request, M3dView & view ) co
         glLineWidth( 1.0 );
     }
 
-    /*MPlug bboxCorner1Plug( shape->thisMObject(), WmFigaroRodShape::i_bboxCorner1 );
-    MPoint corner1;
-    bboxCorner1Plug.child( 0 ).getValue( corner1.x );
-    bboxCorner1Plug.child( 1 ).getValue( corner1.y );
-    bboxCorner1Plug.child( 2 ).getValue( corner1.z );
     
-    MPlug bboxCorner2Plug( shape->thisMObject(), WmFigaroRodShape::i_bboxCorner2 );    
-    MPoint corner2;
-    bboxCorner2Plug.child( 0 ).getValue( corner2.x );
-    bboxCorner2Plug.child( 1 ).getValue( corner2.y );
-    bboxCorner2Plug.child( 2 ).getValue( corner2.z );
-    
-    glBegin( GL_LINE_STRIP );
-    glVertex3d( corner1.x, corner1.y, corner1.z );
-    glVertex3d( corner2.x, corner1.y, corner1.z );
-    glVertex3d( corner2.x, corner1.y, corner2.z );
-    glVertex3d( corner1.x, corner1.y, corner2.z );
-    glVertex3d( corner1.x, corner1.y, corner1.z );    
-    glEnd();
-    
-    glBegin( GL_LINE_STRIP );
-    glVertex3d( corner1.x, corner2.y, corner1.z );
-    glVertex3d( corner2.x, corner2.y, corner1.z );
-    glVertex3d( corner2.x, corner2.y, corner2.z );
-    glVertex3d( corner1.x, corner2.y, corner2.z );
-    glVertex3d( corner1.x, corner2.y, corner1.z );    
-    glEnd();*/
-    
-
     // draw the edges
     /*MDrawData data = request.drawData();
     MVectorArray * geom = (MVectorArray*)data.geometry();

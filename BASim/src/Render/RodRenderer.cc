@@ -197,6 +197,53 @@ void RodRenderer::drawSmoothRod()
   glDisable(GL_LIGHTING);
 }
 
+void RodRenderer::drawSmoothPartialRod( const int i_startVertex, const int i_endVertex, const Vec3d i_color )
+{
+  m_tube.buildTube();
+
+  glEnable(GL_LIGHTING);
+  glEnable(GL_COLOR_MATERIAL);
+  glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+
+  const Color& color1 = m_palette[0];
+  const Color& color2 = m_palette[1];
+
+  int slices = m_tube.getSlices();
+  for (int j = i_startVertex; j < i_endVertex; ++j) {
+    const Vec3d& v0 = m_rod.getVertex(j);
+    const Vec3d& v1 = m_rod.getVertex((j + 1) % m_rod.nv());
+    glBegin(GL_QUAD_STRIP);
+
+    for (int k = 0; k <= slices; ++k) {
+      OpenGL::color( i_color[0], i_color[1], i_color[2] );
+      
+      const Vec3d& x0 = m_tube.getPointAtVert(j, k);
+      //Vec3d n = (v0 - x0).normalized();
+      Vec3d n = (x0 - v0).normalized();      
+#ifdef WETA
+      n *= -1.0;
+#endif
+      OpenGL::normal(n);
+      OpenGL::vertex(x0);
+
+      const Vec3d& x1 = m_tube.getPointAtVert(j + 1, k);
+      //n = (v1 - x1).normalized();
+      n = (x1 - v1).normalized();      
+#ifdef WETA
+      n *= -1.0;
+#endif
+      OpenGL::normal(n);
+      OpenGL::vertex(x1);
+    }
+
+    glEnd();
+  }
+
+  glDisable(GL_COLOR_MATERIAL);
+  glDisable(GL_LIGHTING);
+}
+
+
 void RodRenderer::drawMaterialFrame()
 {
   glLineWidth(2);
