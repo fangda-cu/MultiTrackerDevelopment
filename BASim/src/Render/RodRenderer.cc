@@ -150,9 +150,11 @@ void RodRenderer::drawSmoothRod()
 {
   m_tube.buildTube();
 
+#ifndef WETA
   glEnable(GL_LIGHTING);
-  glEnable(GL_COLOR_MATERIAL);
   glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+  glEnable(GL_COLOR_MATERIAL);
+#endif
 
   const Color& color1 = m_palette[0];
   const Color& color2 = m_palette[1];
@@ -193,17 +195,20 @@ void RodRenderer::drawSmoothRod()
     glEnd();
   }
 
+#ifndef WETA
   glDisable(GL_COLOR_MATERIAL);
   glDisable(GL_LIGHTING);
+#endif
+
 }
 
 void RodRenderer::drawSmoothPartialRod( const int i_startVertex, const int i_endVertex, const Vec3d i_color )
 {
   m_tube.buildTube();
 
-  glEnable(GL_LIGHTING);
+  /*glEnable(GL_LIGHTING);
   glEnable(GL_COLOR_MATERIAL);
-  glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+  glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);*/
 
   const Color& color1 = m_palette[0];
   const Color& color2 = m_palette[1];
@@ -239,8 +244,8 @@ void RodRenderer::drawSmoothPartialRod( const int i_startVertex, const int i_end
     glEnd();
   }
 
-  glDisable(GL_COLOR_MATERIAL);
-  glDisable(GL_LIGHTING);
+  /*glDisable(GL_COLOR_MATERIAL);
+  glDisable(GL_LIGHTING);*/
 }
 
 

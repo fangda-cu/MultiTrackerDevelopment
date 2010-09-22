@@ -11,6 +11,24 @@
 #include <maya/MPxSurfaceShapeUI.h> 
 #include "WmFigaroRodShape.hh"
 
+inline bool wBarbGLCheckError( const char *file, int line )
+{
+    bool ret = false;
+    GLenum err = glGetError();
+
+    while( err != GL_NO_ERROR ) 
+    {
+        cerr << "OpenGL Error : " << gluErrorString( err ) << " caught at " << file << ":" << line << std::endl;
+        err = glGetError();
+        ret = true;
+    }
+    
+    return ret;
+}
+
+#define CHECK_GL_ERROR()  (void) wBarbGLCheckError( __FILE__, __LINE__ );
+
+
 class WmFigaroRodShapeUI : public MPxSurfaceShapeUI
 {
 public:

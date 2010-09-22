@@ -46,8 +46,7 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
             {
                 m_rod->doReverseHairdo(stepper);
             }
-        
-	    } 
+        } 
         else
 	    {
 		    RodTimeStepper* stepper = new RodTimeStepper( *m_rod );

@@ -222,6 +222,11 @@ void WmFigaroRodShape::updateControlPointsFromRod()
 
 void WmFigaroRodShape::drawRod()
 {
+    if ( m_rodGroup.numberOfRods() == 0 )
+    {
+        return;
+    }
+
     m_rodGroup.render();
 
     RodRenderer* rodRenderer = m_rodGroup.rodRenderer( 0 );
