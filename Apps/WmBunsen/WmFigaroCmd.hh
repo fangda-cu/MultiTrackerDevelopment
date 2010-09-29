@@ -84,6 +84,9 @@ protected:
     void attatchEdgeToObject();
     void createRodShapeNode();
 
+    void resampleNurbsPoints( MFnNurbsCurve &i_curveFn,
+        double i_vertSpace, MPointArray &o_samplePts);
+
 public:     // Data
 protected:  // Data
   

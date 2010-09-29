@@ -96,6 +96,7 @@ public:
     static MObject ia_radiusB;
 
     static MObject ia_numberOfIterations;
+    static MObject ia_vertexSpacing;
 
     static MObject ca_sync;
 
@@ -121,6 +122,11 @@ private:
     void updatePointIfNotStretching( MPointArray& io_controlPoints, const size_t i_index, const MMatrix& i_matrix );
     bool doSolverIterations( FixedRodVertexMap& i_fixedRodVertexMap );
 
+    void getResampledRodCVs( bool i_needResample, MVectorArray &o_controlCVs );
+    void resampleRodCVsForControlVertices( MVectorArray &i_rodCVs,
+    int i_numCVs,
+        MVectorArray &o_outputCVs );
+
     void solve( FixedRodVertexMap& i_fixedRodVertexMap );
     
     WmFigRodGroup m_rodGroup;
@@ -144,6 +150,7 @@ private:
     double m_radiusA;
     double m_radiusB;
     int m_numberOfIterations;
+    double m_vertexSpacing;
 };
 
 

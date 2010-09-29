@@ -4,6 +4,11 @@
 #include <maya/MFnCompoundAttribute.h>
 #include <maya/MFnPointArrayData.h>
 
+
+#include <weta/Wvec3.hh>
+#include <weta/Wvec4.hh>
+#include <weta/Wnunbsc.hh>
+
 #include "WmFigaroRodShape.hh"         
 #include "WmFigaroRodShapeUI.hh"     
 #include "WmFigaroRodShapeIterator.hh"
@@ -36,6 +41,7 @@ MObject WmFigaroRodShape::ia_viscosity;
 MObject WmFigaroRodShape::ia_density;
 MObject WmFigaroRodShape::ia_radiusA;
 MObject WmFigaroRodShape::ia_radiusB;
+MObject WmFigaroRodShape::ia_vertexSpacing;
 
 MObject WmFigaroRodShape::ia_numberOfIterations;
 
@@ -46,7 +52,7 @@ WmFigaroRodShape::WmFigaroRodShape() : m_initialisedRod( false ), m_constraintSt
     m_youngsModulus( 100.0 * 1e7 /* pascal */ ), m_shearModulus( 34.0 * 1e7  /* pascal */ ),
     m_viscosity( 10.0 /* poise */ ), m_density( 1.3 /* grams per cubic centimeter */ ),
     m_radiusA( 0.05 * 1e-1 /* centimetre */ ), m_radiusB( 0.05 * 1e-1 /* centimetre */ ),
-    m_numberOfIterations( 6 )
+    m_numberOfIterations( 6 ), m_vertexSpacing(1.0)
 {        
 }
 
@@ -82,9 +88,12 @@ void WmFigaroRodShape::initialiseRod( MVectorArray* i_controlPoints )
 
     vector<Vec3d> rodVertices;
     rodVertices.resize( i_controlPoints->length() );
+    //cout<<" add new rod : "<<i_controlPoints->length()<<" number of CVs "<<endl;
+    
     for ( size_t v=0; v<i_controlPoints->length(); v++ )
     {
         rodVertices[ v ] = Vec3d( (*i_controlPoints)[ v ].x, (*i_controlPoints)[ v ].y, (*i_controlPoints)[ v ].z );
+        //cout<<" -- > cv : "<<v<<" : "<<(*i_controlPoints)[ v ]<<endl;
     }
 
     double massDamping = 10.0;
@@ -418,6 +427,15 @@ MStatus WmFigaroRodShape::initialize()
         status = addAttribute( ia_numberOfIterations );        
     }
 
+    {
+         MFnNumericAttribute nAttr;
+         ia_vertexSpacing = nAttr.create( "vertexSpacing", "vsp", MFnNumericData::kDouble, 1.0, &status );
+         nAttr.setConnectable( true );
+         nAttr.setReadable( false );
+         nAttr.setWritable(true );
+         status = addAttribute( ia_vertexSpacing );
+    }
+
     attributeAffects( ia_numberOfIterations, ca_sync );
     attributeAffects( ia_numberOfIterations, oa_cv ); 
     attributeAffects( ia_numberOfIterations, oa_cvX );
@@ -484,7 +502,14 @@ MStatus WmFigaroRodShape::initialize()
     attributeAffects( ia_cylinderDrawScale, oa_cv ); 
     attributeAffects( ia_cylinderDrawScale, oa_cvX );
     attributeAffects( ia_cylinderDrawScale, oa_cvY );
-    attributeAffects( ia_cylinderDrawScale, oa_cvZ );    
+    attributeAffects( ia_cylinderDrawScale, oa_cvZ );
+
+    attributeAffects( ia_vertexSpacing, ca_sync );
+    attributeAffects( ia_vertexSpacing, oa_cv );
+    attributeAffects( ia_vertexSpacing, oa_cvX );
+    attributeAffects( ia_vertexSpacing, oa_cvY );
+    attributeAffects( ia_vertexSpacing, oa_cvZ );
+    
 
     attributeAffects( ca_sync, oa_cv ); 
     attributeAffects( ca_sync, oa_cvX );
@@ -518,6 +543,112 @@ MStatus WmFigaroRodShape::initialize()
     return MS::kSuccess;
 }
 
+void WmFigaroRodShape::getResampledRodCVs(bool i_needResample, MVectorArray &o_controlCVs )
+{
+
+    ElasticRod* elasticRod = m_rodGroup.elasticRod( 0 );
+    int numPts  =  elasticRod->nv();
+  
+    o_controlCVs.setLength( numPts );
+
+    MVectorArray rodCVs;
+    rodCVs.setLength( numPts );
+    Wvec3d currentCVs[ numPts ];
+
+    for ( int v=0; v<numPts; ++v )
+    {
+        Vec3d vertex = elasticRod->getVertex( v );
+        rodCVs[ v ] = MVector( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ] );
+        currentCVs[ v  ] = Wvec3d( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ]  );
+        o_controlCVs[ v ] = MVector( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ] );
+    }
+
+    if( !i_needResample ||  m_vertexSpacing <= 0 )
+    {
+        // if do not need resample or the vertex spacing is a invalid value
+        // simple copy the old rod CVs and return. 
+        return;
+    }
+
+
+    // we need to resample so, clear it.
+    o_controlCVs.clear();
+
+    //build a curve for the old rod, cause we need to figure out
+    // how many number of cvs for the new rod given different
+    // value of vertex spacing. 
+    Wnunbsc cubicCurve, sampleCurve;
+    cubicCurve.centripetalbesselcubicinterp( currentCVs, numPts );
+    cubicCurve.calcpointsperspan( sampleCurve, 3 );
+
+    //new number of cv!
+    numPts = int( sampleCurve.chordlength() / m_vertexSpacing );
+
+    // resample!
+    resampleRodCVsForControlVertices( rodCVs, numPts, o_controlCVs );
+   
+}
+
+//
+// given a bunch of CVs "i_rodCVs"  either from rods or from curves. and a different number
+// "i_numCVs", output the resample CVs "o_outputCVs" based on the input.
+//
+void WmFigaroRodShape::resampleRodCVsForControlVertices( MVectorArray &i_rodCVs,
+          int i_numCVs,
+        MVectorArray &o_outputCVs )
+{
+
+    MStatus status;
+    CHECK_MSTATUS( status );
+
+    int numRodCVs = i_rodCVs.length();
+    Wvec3d currentCVs[ numRodCVs ];
+    for( int i = 0; i <  numRodCVs; i++ )
+    {
+        currentCVs[ i ] = Wvec3d( i_rodCVs[i].x,
+                i_rodCVs[i].y, i_rodCVs[i].z );
+
+    }
+
+    Wnunbsc cubicCurve, sampleCurve;
+    cubicCurve.centripetalbesselcubicinterp( currentCVs, numRodCVs );
+    cubicCurve.calcpointsperspan( sampleCurve, 3 );
+
+
+    double start = sampleCurve.Knot.K[ sampleCurve.Knot.Deg   - 1 ];
+    double end   = sampleCurve.Knot.K[ sampleCurve.Knot.NumCV - 1 ];
+
+    double step = ( end - start ) / double( i_numCVs - 1 );
+    double t = 0;
+    Wvec3d pt;
+    for( int i = 0; i < i_numCVs; i++ )
+    {
+        if ( i == 0 )
+        {
+            t = start;
+        }
+        else if( i == i_numCVs - 1  )
+        {
+             t = end;
+        }
+        else
+        {
+            t = start + double(i)*step;
+        }
+
+        if ( t > end )
+        {
+            t = end;
+        }
+
+        sampleCurve.calcpoint( pt, t );
+        o_outputCVs.append( MVector( pt.X, pt.Y, pt.Z));
+
+    }
+
+}
+
+
 MStatus WmFigaroRodShape::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     cerr << "shape called with plug " << i_plug.name() << endl;
@@ -546,13 +677,16 @@ MStatus WmFigaroRodShape::compute( const MPlug& i_plug, MDataBlock& i_dataBlock 
             MVectorArray& pointArray = *( getControlPoints() );
 
             MPlug cvArrPlug( thisMObject(), oa_cv );
+            int numOutputCvs = cvArrPlug.numElements();
+            MVectorArray outputCVs;
+            resampleRodCVsForControlVertices( pointArray, numOutputCvs,  outputCVs );
 
-            for( unsigned int cv = 0; cv < pointArray.length(); cv++ )
+            for( unsigned int cv = 0; cv < outputCVs.length(); cv++ )
             {
                 MPlug cvPlug = cvArrPlug.elementByLogicalIndex( cv );
-                cvPlug.child( 0, & status ).setDouble( pointArray[ cv ].x );
-                cvPlug.child( 1, & status ).setDouble( pointArray[ cv ].y );
-                cvPlug.child( 2, & status ).setDouble( pointArray[ cv ].z );
+                cvPlug.child( 0, & status ).setDouble( outputCVs[ cv ].x );
+                cvPlug.child( 1, & status ).setDouble( outputCVs[ cv ].y );
+                cvPlug.child( 2, & status ).setDouble( outputCVs[ cv ].z );
 
                 //cerr << "cv " << cv << " == " << pointArray[ cv ] << endl;
             }
@@ -570,7 +704,13 @@ MStatus WmFigaroRodShape::compute( const MPlug& i_plug, MDataBlock& i_dataBlock 
         m_density = i_dataBlock.inputValue( ia_density ).asDouble(); /* grams per cubic centimeter */
         m_radiusA = i_dataBlock.inputValue( ia_radiusA ).asDouble() * 1e-1; /* centimetre */
         m_radiusB = i_dataBlock.inputValue( ia_radiusB ).asDouble() * 1e-1; /* centimetre */
-         
+
+        bool needResample = ( m_vertexSpacing != i_dataBlock.inputValue( ia_vertexSpacing ).asDouble()) ;
+
+        if( needResample )
+        {
+            m_vertexSpacing = i_dataBlock.inputValue( ia_vertexSpacing ).asDouble();
+        }
         //m_numberOfIterations = i_dataBlock.inputValue( ia_numberOfIterations ).asInt();
         
         // Rebuild the rod in this new configuration
@@ -580,19 +720,9 @@ MStatus WmFigaroRodShape::compute( const MPlug& i_plug, MDataBlock& i_dataBlock 
         }
         else
         {
-            // we need to recreate the rod with its vertices in the same position as they 
-            // currently are but with the new stiffness etc settings.
-
-            ElasticRod* elasticRod = m_rodGroup.elasticRod( 0 );
+            //resample the rod CVs if we need resample ( when vertex spacing is changed)
             MVectorArray rodVertices;
-            rodVertices.setLength( elasticRod->nv() );
-
-            for ( int v=0; v<elasticRod->nv(); ++v )
-            {
-                Vec3d vertex = elasticRod->getVertex( v );
-                rodVertices[ v ] = MVector( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ] );
-            }
-
+            getResampledRodCVs( needResample, rodVertices );
             resetSimulation( &rodVertices );
         }
 
@@ -631,7 +761,7 @@ MStatus WmFigaroRodShape::compute( const MPlug& i_plug, MDataBlock& i_dataBlock 
         for ( int v=2; v<elasticRod->nv(); ++v )
         {
             length += ( elasticRod->getVertex( v ) - elasticRod->getVertex( v - 1 ) ).norm();
-            if ( length < lockedLength ) 
+            if ( length < lockedLength )
             {
                 cerr << "locking vertex " << v << endl;
                 m_fixedVertexMap[ v ] = elasticRod->getVertex( v );
@@ -667,22 +797,38 @@ MStatus WmFigaroRodShape::compute( const MPlug& i_plug, MDataBlock& i_dataBlock 
         MArrayDataHandle pointsH = i_dataBlock.outputValue( mControlPoints, &status );
         CHECK_MSTATUS( status );
 
-        unsigned int elementCount = pointsH.elementCount( &status );
+        MArrayDataBuilder newBuilder( &i_dataBlock, mControlPoints, 0, &status );
         CHECK_MSTATUS( status );
 
-        if ( rodVertices.length() == elementCount )
+        for(unsigned int e=0; e<rodVertices.length(); ++e )
         {
-            for ( unsigned int e=0; e<elementCount; ++e )
-            {
-                status = pointsH.jumpToElement( e );
-                CHECK_MSTATUS( status );
-    
-                MDataHandle pointHandle = pointsH.outputValue( &status );
-                CHECK_MSTATUS( status );
-            
-                pointHandle.set( rodVertices[ e ].x, rodVertices[ e ].y, rodVertices[ e ]. z );
-            }
+            newBuilder.addElement( e, &status).set( rodVertices[ e ] );
+            CHECK_MSTATUS( status );
+
         }
+
+        pointsH.set( newBuilder );
+        pointsH.setAllClean();
+
+        //resampleRodCVsForControlVertices( rodVertices, i_dataBlock, pointsH );
+
+
+//        unsigned int elementCount = pointsH.elementCount( &status );
+//        CHECK_MSTATUS( status );
+//
+//        if ( rodVertices.length() == elementCount )
+//        {
+//            for ( unsigned int e=0; e<elementCount; ++e )
+//            {
+//                status = pointsH.jumpToElement( e );
+//                CHECK_MSTATUS( status );
+//
+//                MDataHandle pointHandle = pointsH.outputValue( &status );
+//                CHECK_MSTATUS( status );
+//
+//                pointHandle.set( rodVertices[ e ].x, rodVertices[ e ].y, rodVertices[ e ]. z );
+//            }
+//        }
 
         // Only plastic deformations make sense and as we want the user to be able to control
         // all the rod attributes we shall recreate the rod every frame.

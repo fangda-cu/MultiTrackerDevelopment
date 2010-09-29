@@ -691,6 +691,45 @@ void WmFigaroCmd::createWmBunsenNode( MObject &o_wmBunsenNodeObj )
     o_wmBunsenNodeObj = bunsenNodeSObj;
 }
 
+
+void WmFigaroCmd::resampleNurbsPoints( MFnNurbsCurve &i_curveFn,
+        double i_vertSpace, MPointArray &o_samplePts)
+{
+    if( i_vertSpace <= 0.0 )
+        return;
+
+    MStatus status;
+    double curveLength = i_curveFn.length();
+    int numControlPts = int( curveLength / i_vertSpace );
+    MPoint pt;
+    for( int i = 0; i < numControlPts + 1; i++ )
+    {
+        double length = i_vertSpace * i;
+        double t = i_curveFn.findParamFromLength( length, &status );
+        CHECK_MSTATUS( status );
+
+        status = i_curveFn.getPointAtParam( t, pt, MSpace::kWorld );
+        CHECK_MSTATUS( status );
+
+        o_samplePts.append( pt );
+    }
+
+    // make sure the end of curve is added.
+    if( double( numControlPts ) < curveLength / i_vertSpace )
+    {
+        double t = i_curveFn.findParamFromLength( curveLength, &status );
+        CHECK_MSTATUS( status );
+        status = i_curveFn.getPointAtParam( t, pt, MSpace::kWorld );
+        CHECK_MSTATUS( status );
+
+        o_samplePts.append( pt );
+
+    }
+}
+
+
+
+
 void WmFigaroCmd::createRodShapeNode()
 {
     if ( m_nurbsCurveList.isEmpty() )
@@ -726,16 +765,18 @@ void WmFigaroCmd::createRodShapeNode()
     MFnNurbsCurve curveFn( dagPath, &stat );
     CHECK_MSTATUS( stat );
     
-    MPointArray nurbsPoints;
-    curveFn.getCVs( nurbsPoints, MSpace::kWorld );
-    
+    MPointArray rodControlPoints;
+    double vertSpace = 1.0;
+    resampleNurbsPoints( curveFn, vertSpace, rodControlPoints );
+    //
     MFnDependencyNode rodShapeFn( rodSObj );
 
     // Now get the input attribute of the rod and set
     MPlug controlPointsPlugArr = rodShapeFn.findPlug( "controlPoints", true, &stat );
     CHECK_MSTATUS( stat );
 
-    for ( int p=0; p<nurbsPoints.length(); ++p )
+
+    for ( int p=0; p<rodControlPoints.length(); ++p )
     {
         MPlug cvPlug = controlPointsPlugArr.elementByLogicalIndex( p, &stat );
         CHECK_MSTATUS( stat );
@@ -745,10 +786,13 @@ void WmFigaroCmd::createRodShapeNode()
         CHECK_MSTATUS( stat );
         MPlug zPlug = cvPlug.child( 2, &stat );
         CHECK_MSTATUS( stat );
-        xPlug.setValue( nurbsPoints[ p ].x );
-        yPlug.setValue( nurbsPoints[ p ].y );
-        zPlug.setValue( nurbsPoints[ p ].z );        
+        xPlug.setValue( rodControlPoints[ p ].x );
+        yPlug.setValue( rodControlPoints[ p ].y );
+        zPlug.setValue( rodControlPoints[ p ].z );
     }
+
+    MPointArray nurbsPoints;
+    curveFn.getCVs( nurbsPoints, MSpace::kWorld );
 
     // Now connect the output from the rod to the NURBS curve
     MPlug cvsPlug = rodShapeFn.findPlug( "controlVertex", & stat );
