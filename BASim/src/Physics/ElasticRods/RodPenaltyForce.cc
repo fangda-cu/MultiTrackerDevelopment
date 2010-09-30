@@ -2,6 +2,9 @@
 //
 
 //#include "BASim/src/Collisions/CollisionMeshData.hh"
+
+//#include <vector>
+
 #include "RodPenaltyForce.hh"
 
 namespace BASim {
@@ -18,17 +21,11 @@ RodPenaltyForce::~RodPenaltyForce()
 }
 
 
-void RodPenaltyForce::setVertexPositionPenalty(int vertex_id, Vec3d& target_position, double stiffness)
+void RodPenaltyForce::setVertexPositionPenalty(int vertex_id, Vec3d& target_position, double stiffness, short type)
 {
-//  VertexPositionMapIterator it = m_vertex_position_penalties.find(vertex_id);
-  
-  // now we want to enable a vertex to have multiple target positions
-//  if (it != m_vertex_position_penalties.end()) {
-    // already exists, replace the old one
-//    m_vertex_position_penalties.erase(it);
-//  }
-  
-  m_vertex_position_penalties.insert(VertexPositionMap::value_type(vertex_id, std::make_pair(target_position, stiffness)));
+    RodVertexConstraint newConstraint(target_position, stiffness, -1, type );
+    m_vertex_position_penalties.insert(VertexConstraintMap::value_type(
+        std::make_pair(vertex_id, newConstraint) ));
 }
 
 // id vertex_id = -1, delete all
@@ -37,9 +34,9 @@ void RodPenaltyForce::clearVertexPositionPenalty(int vertex_id)
   if (vertex_id == -1) {
     m_vertex_position_penalties.clear();
   } else {
-    std::pair<VertexPositionMapIterator, VertexPositionMapIterator> p = m_vertex_position_penalties.equal_range(vertex_id);
+    std::pair<VertexConstraintMapIter, VertexConstraintMapIter> p = m_vertex_position_penalties.equal_range(vertex_id);
 
-    for (VertexPositionMapIterator i=p.first; i!=p.second; ++i)
+    for (VertexConstraintMapIter i=p.first; i!=p.second; ++i)
     {
       if (i->first == vertex_id) {
         m_vertex_position_penalties.erase(i);
@@ -53,10 +50,10 @@ void RodPenaltyForce::computeForceDX(int baseindex, const ElasticRod& rod, Scala
 {
     
   // vertex - target position penalty
-  for (VertexPositionMapIterator it=m_vertex_position_penalties.begin(); it!=m_vertex_position_penalties.end(); ++it)
+  for (VertexConstraintMapIter it=m_vertex_position_penalties.begin(); it!=m_vertex_position_penalties.end(); ++it)
   {
     int vertex    = it->first;
-    Scalar stiff  = it->second.second;
+    Scalar stiff  = it->second.m_stiff;
 
     for (int i = 0; i < 3; ++i) {
       J.add(baseindex+rod.vertIdx(vertex, i), baseindex+rod.vertIdx(vertex, i), -stiff * scale);
@@ -151,7 +148,65 @@ void RodPenaltyForce::clearPenaltyForces() {
 void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
 {
   ElasticRod& rod = const_cast<ElasticRod&>(const_rod);
-  
+
+  //find distinct vertex ids attached to constraints
+  std::vector< int > vertexIds;
+  for (VertexConstraintMapIter it=m_vertex_position_penalties.begin(),
+          itEnd = m_vertex_position_penalties.end(); it!=itEnd; ++it)
+  {
+      if( std::find( vertexIds.begin(), vertexIds.end(), it->first )
+              == vertexIds.end() )
+      {
+          vertexIds.push_back( it->first );
+      }
+  }
+
+  for( std::vector< int >::iterator it = vertexIds.begin(),
+          endIt = vertexIds.end(); it != endIt; ++it )
+  {
+
+      int vertex_id = (*it);
+      std::pair<VertexConstraintMapIter, VertexConstraintMapIter> p
+              = m_vertex_position_penalties.equal_range( vertex_id );
+
+      Vec3d vertex = rod.getVertex( vertex_id );
+
+      for (VertexConstraintMapIter i=p.first; i!=p.second; ++i)
+      {
+          if (i->first == vertex_id) 
+          {
+              Vec3d target = i->second.m_target;
+              double stiff = i->second.m_stiff;
+              double distance = i->second.m_restDistance;
+
+              Vec3d n = vertex - target;
+
+              if( distance < 0 )
+              {
+                  i->second.m_restDistance = n.norm();
+
+              }
+              if( i->second.m_type == RodVertexConstraint::kRest )
+              {
+                  double norm = n.norm();
+                  Vec3d normalized = n * ( 1. / norm );
+                  Vec3d newTarget = target + distance * normalized;
+                  n = vertex - newTarget;
+              }
+              
+              
+              Vec3d force = - stiff * n;
+
+              // add force together
+              for (int i=0; i<3; ++i)
+              {
+                  F[rod.vertIdx(vertex_id, i)] += force[i];
+              }
+          }
+      }
+  }
+  /*
+  //std::vector<
   // vertex - target position penalty
   for (VertexPositionMapIterator it=m_vertex_position_penalties.begin(); it!=m_vertex_position_penalties.end(); ++it)
   {
@@ -169,7 +224,7 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
       F[rod.vertIdx(vertex, i)] += force[i];
     }
   }
-  
+  */
   
   /*
   for(int i=0; i<(int)m_bulk_springs.size(); i++) {

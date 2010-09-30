@@ -95,6 +95,13 @@ const char *const kUserDefinedColour( "-udc" );
 const char *const kDeleteDefinedColour( "-ddc" );
 const char *const kCreateRodShapeNode( "-crs" );
 
+const char *const kAddVertexConstraintToRod( "-avc");
+const char *const kRodId("-rid");
+const char *const kVertId("-vid");
+const char *const kDistance( "-dis");
+const char *const kPosition( "-pos");
+
+
 const char *const kHelp( "-h" );
 
 MSyntax WmFigaroCmd::syntaxCreator()
@@ -135,6 +142,20 @@ MSyntax WmFigaroCmd::syntaxCreator()
         "Cache file to load and preview.", MSyntax::kString);
     p_AddFlag( mSyntax, kCreateRodShapeNode, "-createRodShape",
                "Creates a single rod as a shape node from a selected NURBS curve." );
+
+
+    p_AddFlag( mSyntax, kAddVertexConstraintToRod, "-addVertexConstraint", 
+            "add vertex constraint for rod ");
+
+     
+    p_AddFlag( mSyntax,kRodId, "-rodIndex",
+            "the Index of the rod to be added constraint", MSyntax::kLong);
+    p_AddFlag(mSyntax, kVertId, "-vertIndex",
+            "the index of the vertex to be added constraint", MSyntax::kLong  );
+    p_AddFlag( mSyntax, kDistance, "-distanceToConstraint",
+            "distance to the vertex constraint", MSyntax::kDouble );
+    p_AddFlag( mSyntax, kPosition, "-position",
+            "vertex constraint position", MSyntax::kString );
     
     mSyntax.setObjectType( MSyntax::kSelectionList );
     mSyntax.useSelectionAsDefault( true );
@@ -280,6 +301,46 @@ MStatus WmFigaroCmd::redoIt()
         if ( m_mArgDatabase->isFlagSet( kCreateRodShapeNode ) )
         {
             createRodShapeNode();
+        }
+        if( m_mArgDatabase->isFlagSet( kAddVertexConstraintToRod ))
+        {
+            //get related arguments
+            int rodId = 0, vertId = -1;
+            double distance = 0.0;
+            MPoint pos(0,0,0);
+
+            if( m_mArgDatabase->isFlagSet( kRodId ) )
+                m_mArgDatabase->getFlagArgument( kRodId, 0, rodId );
+
+            if(  m_mArgDatabase->isFlagSet( kVertId ) )
+                m_mArgDatabase->getFlagArgument( kVertId, 0, vertId );
+
+            if(  m_mArgDatabase->isFlagSet( kDistance ) )
+                m_mArgDatabase->getFlagArgument( kDistance, 0, distance );
+
+            if(  m_mArgDatabase->isFlagSet( kPosition ) )
+            {
+               MString posString;
+               m_mArgDatabase->getFlagArgument( kPosition, 0, posString );
+
+                // We pass the colour as a string because there is no int3 option
+                // to commands. So we now need to split it up
+                MStringArray subStrings;
+                posString.split( ',', subStrings );
+
+                if ( subStrings.length() != 3 )
+                   displayError( "Please enter a position with 3 components - x,y and z." );
+               else
+               {
+                   pos[ 0 ] = subStrings[ 0 ].asFloat();
+                   pos[ 1 ] = subStrings[ 1 ].asFloat();
+                   pos[ 2 ] = subStrings[ 2 ].asFloat();
+               }
+            }
+
+            cout<<" Add attribute rod id: "<<rodId<<" vertex id: "<<vertId<<" position "<<pos<<endl;
+            addVertexConstraint( rodId, distance, vertId, pos );
+            
         }
         else
         {
@@ -691,45 +752,6 @@ void WmFigaroCmd::createWmBunsenNode( MObject &o_wmBunsenNodeObj )
     o_wmBunsenNodeObj = bunsenNodeSObj;
 }
 
-
-void WmFigaroCmd::resampleNurbsPoints( MFnNurbsCurve &i_curveFn,
-        double i_vertSpace, MPointArray &o_samplePts)
-{
-    if( i_vertSpace <= 0.0 )
-        return;
-
-    MStatus status;
-    double curveLength = i_curveFn.length();
-    int numControlPts = int( curveLength / i_vertSpace );
-    MPoint pt;
-    for( int i = 0; i < numControlPts + 1; i++ )
-    {
-        double length = i_vertSpace * i;
-        double t = i_curveFn.findParamFromLength( length, &status );
-        CHECK_MSTATUS( status );
-
-        status = i_curveFn.getPointAtParam( t, pt, MSpace::kWorld );
-        CHECK_MSTATUS( status );
-
-        o_samplePts.append( pt );
-    }
-
-    // make sure the end of curve is added.
-    if( double( numControlPts ) < curveLength / i_vertSpace )
-    {
-        double t = i_curveFn.findParamFromLength( curveLength, &status );
-        CHECK_MSTATUS( status );
-        status = i_curveFn.getPointAtParam( t, pt, MSpace::kWorld );
-        CHECK_MSTATUS( status );
-
-        o_samplePts.append( pt );
-
-    }
-}
-
-
-
-
 void WmFigaroCmd::createRodShapeNode()
 {
     if ( m_nurbsCurveList.isEmpty() )
@@ -765,18 +787,16 @@ void WmFigaroCmd::createRodShapeNode()
     MFnNurbsCurve curveFn( dagPath, &stat );
     CHECK_MSTATUS( stat );
     
-    MPointArray rodControlPoints;
-    double vertSpace = 1.0;
-    resampleNurbsPoints( curveFn, vertSpace, rodControlPoints );
-    //
+    MPointArray nurbsPoints;
+    curveFn.getCVs( nurbsPoints, MSpace::kWorld );
+    
     MFnDependencyNode rodShapeFn( rodSObj );
 
     // Now get the input attribute of the rod and set
     MPlug controlPointsPlugArr = rodShapeFn.findPlug( "controlPoints", true, &stat );
     CHECK_MSTATUS( stat );
 
-
-    for ( int p=0; p<rodControlPoints.length(); ++p )
+    for ( int p=0; p<nurbsPoints.length(); ++p )
     {
         MPlug cvPlug = controlPointsPlugArr.elementByLogicalIndex( p, &stat );
         CHECK_MSTATUS( stat );
@@ -786,13 +806,10 @@ void WmFigaroCmd::createRodShapeNode()
         CHECK_MSTATUS( stat );
         MPlug zPlug = cvPlug.child( 2, &stat );
         CHECK_MSTATUS( stat );
-        xPlug.setValue( rodControlPoints[ p ].x );
-        yPlug.setValue( rodControlPoints[ p ].y );
-        zPlug.setValue( rodControlPoints[ p ].z );
+        xPlug.setValue( nurbsPoints[ p ].x );
+        yPlug.setValue( nurbsPoints[ p ].y );
+        zPlug.setValue( nurbsPoints[ p ].z );        
     }
-
-    MPointArray nurbsPoints;
-    curveFn.getCVs( nurbsPoints, MSpace::kWorld );
 
     // Now connect the output from the rod to the NURBS curve
     MPlug cvsPlug = rodShapeFn.findPlug( "controlVertex", & stat );
@@ -1544,5 +1561,65 @@ MStatus WmFigaroCmd::createDagNode( const char *transformName, const char *nodeT
       }
     
     return rStatus;
+}
+
+void WmFigaroCmd::addVertexConstraint( int i_rodInd, double i_dis, int i_vertId, MPoint i_pos )
+{
+    //get selected rod node
+    MObject rodNode = MObject::kNullObj;
+
+    MStatus status;
+    MSelectionList list;
+    MGlobal::getActiveSelectionList( list );
+
+    for( unsigned int l = 0; l < list.length(); l++ )
+    {
+        MDagPath path;
+        list.getDagPath( l, path );
+        path.extendToShape();
+
+        MFnDependencyNode fn( path.node(), &status );
+        CHECK_MSTATUS( status );
+
+        if( fn.typeId() == WmFigRodNode::typeID )
+        {
+            rodNode = path.node();
+            break;
+        }
+    }
+
+    if( rodNode != MObject::kNullObj )
+    {
+        MFnDependencyNode rodFn( rodNode );
+        WmFigRodNode *rodNode = static_cast< WmFigRodNode*>( rodFn.userNode());
+
+        WmFigRodGroup*  rodGroup = rodNode->rodGroup();
+
+        if( i_rodInd < rodGroup->numberOfRods() )
+        {
+            if( i_vertId < 0 )
+                i_vertId = rodGroup->elasticRod( i_rodInd )->nv() -1 ;
+            
+            if( i_vertId < rodGroup->elasticRod( i_rodInd )->nv() )
+            {
+                Vec3d target_position = Vec3d( i_pos.x, i_pos.y, i_pos.z );
+                rodGroup->collisionStepper( i_rodInd )->setVertexPositionPenalty(i_vertId, target_position, 50. , 1);
+            }
+            else
+            {
+                displayError( "Invalid input vertex id!" );
+            }
+        }
+        else
+        {
+            displayError( "Invalid input rod id! " );
+        }
+
+    }
+    else
+    {
+        displayError( "Please select a figaro rod node! " );
+    }
+
 }
 

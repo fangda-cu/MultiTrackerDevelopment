@@ -25,11 +25,11 @@ RodCollisionTimeStepper::RodCollisionTimeStepper(RodTimeStepper* rodTimeStepper,
   
 }
 
-void RodCollisionTimeStepper::setVertexPositionPenalty(int vertex_id, Vec3d& target_position, double stiffness) 
+void RodCollisionTimeStepper::setVertexPositionPenalty(int vertex_id, Vec3d& target_position, double stiffness, short type)
 {
   if (m_rodPenaltyForce) {
     if (vertex_id < m_rod->nv() && vertex_id >= 0) {
-      m_rodPenaltyForce->setVertexPositionPenalty(vertex_id, target_position, stiffness);
+      m_rodPenaltyForce->setVertexPositionPenalty(vertex_id, target_position, stiffness, type);
     } else {
       std::cout << "invalid vertex id\n";
     }

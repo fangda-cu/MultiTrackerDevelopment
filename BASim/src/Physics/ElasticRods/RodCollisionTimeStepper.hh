@@ -13,6 +13,7 @@
 #include "../../Collisions/CollisionMeshData.hh"
 #include "../../Core/ObjectControllerBase.hh"
 #include "RodTimeStepper.hh"
+#include "RodPenaltyForce.hh"
 
 namespace BASim {
 
@@ -35,7 +36,7 @@ public:
     return m_rodTimeStepper;
   }
 
-  void setVertexPositionPenalty(int vertex_id, Vec3d& target_position, double stiffness);
+  void setVertexPositionPenalty(int vertex_id, Vec3d& target_position, double stiffness, short type = 0 );
 
   // id vertex_id = -1, delete all
   void clearVertexPositionPenalty(int vertex_id = -1);

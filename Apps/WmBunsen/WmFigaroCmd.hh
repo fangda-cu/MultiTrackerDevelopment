@@ -84,8 +84,7 @@ protected:
     void attatchEdgeToObject();
     void createRodShapeNode();
 
-    void resampleNurbsPoints( MFnNurbsCurve &i_curveFn,
-        double i_vertSpace, MPointArray &o_samplePts);
+    void addVertexConstraint( int i_rodInd = 0, double i_dis = 0.0, int i_vertId = -1, MPoint i_pos = MPoint(0,0,0) );
 
 public:     // Data
 protected:  // Data

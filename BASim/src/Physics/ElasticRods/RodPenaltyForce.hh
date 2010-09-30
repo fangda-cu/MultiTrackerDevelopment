@@ -8,7 +8,7 @@
 #include "RodExternalForce.hh"
 #include "../../Collisions/CollisionMeshData.hh"
 
-#include "RodRodExternalForce.hh"
+//#include "RodRodExternalForce.hh"
 
 //#include <ext/hash_map>
 #include <map>
@@ -30,6 +30,31 @@ typedef std::vector<Scalar> RealArray;
 
 typedef std::multimap<int, std::pair<Vec3d, double>> VertexPositionMap;
 typedef VertexPositionMap::iterator VertexPositionMapIterator;
+
+// class defined by XX.
+class RodVertexConstraint
+{
+public:
+    RodVertexConstraint(  Vec3d target, double stiff, double dis, short type = 0 )
+            : m_target( target ),
+              m_stiff( stiff ),
+              m_restDistance( dis ),
+              m_type( type )
+            {}
+
+    ~RodVertexConstraint(){}
+
+    enum RodVertexConstraintType {kFix, kRest, kDistance};
+
+    Vec3d  m_target;
+    double m_restDistance;
+    double m_stiff;
+    short  m_type;
+};
+
+typedef std::multimap<int, RodVertexConstraint> VertexConstraintMap;
+typedef VertexConstraintMap::iterator  VertexConstraintMapIter;
+
 
 class RodPenaltyForce : public RodExternalForce
 {
@@ -54,7 +79,7 @@ public:
   void computeForceDX(const ElasticRod& rod, Scalar scale, MatrixBase& J);
   void computeForceDV(const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
 
-  void setVertexPositionPenalty(int vertex_id, Vec3d& target_position, double stiffness);
+  void setVertexPositionPenalty(int vertex_id, Vec3d& target_position, double stiffness, short type = RodVertexConstraint::kFix);
 
   // id vertex_id = -1, delete all
   void clearVertexPositionPenalty(int vertex_id = -1);
@@ -99,8 +124,8 @@ protected:
   //std::vector <RodGroupManager::RodRodSpring> m_bulk_springs;
                                 
   // position based spring penalty force
-  VertexPositionMap m_vertex_position_penalties;
-  
+  //VertexPositionMap m_vertex_position_penalties;
+  VertexConstraintMap m_vertex_position_penalties;
 };
 
 
