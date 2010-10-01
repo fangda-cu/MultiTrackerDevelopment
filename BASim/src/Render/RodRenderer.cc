@@ -38,6 +38,7 @@ void RodRenderer::render()
   else if (m_mode == SIMPLE)
     drawSimpleRod();
 
+  
   if (m_drawMaterial) drawMaterialFrame();
   if (m_drawReference) drawReferenceFrame();
 }
@@ -96,7 +97,6 @@ void RodRenderer::drawSimpleRod()
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
     
     OpenGL::color(m_paletteq[(m_rod.draw_cl % (int)m_paletteq.size())]);
-    
     glLineWidth(2);
     glBegin(GL_LINES);
   
@@ -113,7 +113,6 @@ void RodRenderer::drawSimpleRod()
     }
   
     glEnd();
-    
     glPointSize(5);
     glBegin(GL_POINTS);
 

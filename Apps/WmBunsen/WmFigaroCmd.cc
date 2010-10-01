@@ -782,6 +782,15 @@ void WmFigaroCmd::createRodShapeNode()
     MDagPath dagPath;
     MObject component;
     m_nurbsCurveList.getDagPath( 0, dagPath, component );
+
+    //before to extend to shape, we need to freeze the transformation
+    MFnDagNode dagFn( dagPath, &stat);
+    CHECK_MSTATUS( stat );
+    MString freezeXform = "makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 ";
+    freezeXform == dagFn.name();
+    stat = MGlobal::executeCommand( freezeXform );
+    CHECK_MSTATUS( stat );
+
     dagPath.extendToShape();
 
     MFnNurbsCurve curveFn( dagPath, &stat );
