@@ -3,6 +3,7 @@
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MFnCompoundAttribute.h>
 #include <maya/MFnPointArrayData.h>
+#include <maya/MDagPath.h>
 
 
 #include <weta/Wvec3.hh>
@@ -680,6 +681,29 @@ MStatus WmFigaroRodShape::compute( const MPlug& i_plug, MDataBlock& i_dataBlock 
             int numOutputCvs = cvArrPlug.numElements();
             MVectorArray outputCVs;
             resampleRodCVsForControlVertices( pointArray, numOutputCvs,  outputCVs );
+
+	    //need to apply the inverse transformation of the curve for the outputCVS
+	    MPlugArray plugs;
+            i_plug.connectedTo( plugs, false, true, &status);
+	    CHECK_MSTATUS( status );
+	    if( plugs.length() > 0 )
+	    {
+		MFnDagNode dagFn( plugs[0].node(), &status);
+		CHECK_MSTATUS( status );
+	        MDagPath path;
+		dagFn.getPath( path );
+		CHECK_MSTATUS( status );
+		MMatrix xform = path.inclusiveMatrix();
+                MMatrix invXform = xform.inverse();
+                
+		for( unsigned int i = 0; i < outputCVs.length(); i++ )
+                {
+                        MPoint pt = outputCVs[ i ];
+                        pt *= invXform;
+                        outputCVs[ i ] = MVector( pt.x, pt.y, pt.z );
+		}
+		
+	    }		
 
             for( unsigned int cv = 0; cv < outputCVs.length(); cv++ )
             {
