@@ -19,7 +19,7 @@ using namespace Util;
 
 ElasticRod::ElasticRod(int numVertices, bool closed)
 {
-  draw_cl = 0;
+  draw_cl = 1;
 
   // create vertices
   for (int i = 0; i < numVertices; ++i) addVertex();

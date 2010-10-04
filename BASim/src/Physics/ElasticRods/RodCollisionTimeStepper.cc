@@ -25,11 +25,31 @@ RodCollisionTimeStepper::RodCollisionTimeStepper(RodTimeStepper* rodTimeStepper,
   
 }
 
+//void RodCollisionTimeStepper::updateVertexPositionConstraints()
+//{
+//    //this is dummy test, meaningless at all
+//    for( size_t s = 0; s < m_vertexContraints.size(); s++ )
+//    {
+//        Vec3d direction = m_vertexContraints[ s ]->second.m_target;
+//        double norm = direction.norm();
+//        if( norm > 0 )
+//            direction = direction * ( 1. / norm );
+//
+//        //make the target position step forward a little bit...
+//        m_vertexContraints[ s ]->second.m_target =
+//                m_vertexContraints[ s ]->second.m_target + 0.1 * direction;
+//    }
+//
+//}
+
 void RodCollisionTimeStepper::setVertexPositionPenalty(int vertex_id, Vec3d& target_position, double stiffness, short type)
 {
   if (m_rodPenaltyForce) {
-    if (vertex_id < m_rod->nv() && vertex_id >= 0) {
-      m_rodPenaltyForce->setVertexPositionPenalty(vertex_id, target_position, stiffness, type);
+    if (vertex_id < m_rod->nv() && vertex_id >= 0)
+    {
+      m_vertexContraints.push_back(m_rodPenaltyForce->setVertexPositionPenalty( m_rod,
+                vertex_id, target_position, stiffness, type));
+               
     } else {
       std::cout << "invalid vertex id\n";
     }

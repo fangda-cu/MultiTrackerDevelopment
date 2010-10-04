@@ -470,7 +470,9 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 rod->global_rodID = rod_gid;
                 rod_gid++;
 
-                m_subSteppedVertexPositions[ s ][ r ].resize( rod->nv() );                
+                m_subSteppedVertexPositions[ s ][ r ].resize( rod->nv() );
+
+                //rodCollisionTimeStepper->updateVertexPositionConstraints();
             }
 
             pRodGroup->updateCurrentVertexPositions( interpolateFactor );
@@ -620,6 +622,10 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
         m_numberofThreadsUsed = actualNumThreadsToUse;
 
+        //rodCollisionTimeStepper->updateVertexPositionConstraints();
+
+        //  RodCollisionTimeStepper* collisionStepper = pRodGroup->collisionStepper(
+
         if ( !i_selfCollisionPenaltyForcesEnabled && !i_fullSelfCollisionsEnabled && !m_volumetricCollisions )
         {
             // Fantastic let's just run it all threaded!
@@ -665,6 +671,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 rodCollisionTimeStepper->collisionsBegin();
                 rodCollisionTimeStepper->respondToObjectCollisions();
                 rodCollisionTimeStepper->tidyUpCollisionStructuresForNextStep();
+                
             }
             
             frameTime += stopTimer( threadFrameTimer );

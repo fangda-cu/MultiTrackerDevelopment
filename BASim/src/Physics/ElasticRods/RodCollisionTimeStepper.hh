@@ -38,6 +38,8 @@ public:
 
   void setVertexPositionPenalty(int vertex_id, Vec3d& target_position, double stiffness, short type = 0 );
 
+
+
   // id vertex_id = -1, delete all
   void clearVertexPositionPenalty(int vertex_id = -1);
 
@@ -149,6 +151,15 @@ public:
 
   bool impulse_enabled;
 
+    // the following two functions are temp, just to test how to
+  // change the constraints in one sim
+//  void addVertexPositionContstraints( VertexConstraintMapIter &i_iter )
+//  {
+//      m_vertexContraints.push_back( i_iter );
+//  }
+
+  void updateVertexPositionConstraints();
+
 protected:
   void getProximities(CollisionMeshDataHashMap &collisionMeshes);
   void respondObjectCollisions(CollisionMeshDataHashMap &collisionMeshes, Real dt);
@@ -161,6 +172,8 @@ protected:
 
   bool is_multiple_stepper; // no penalty method, no m_rodTimeStepper
   double m_dt; // only used in multiple stepping
+
+  std::vector< VertexConstraintMapIter > m_vertexContraints;
 
 };
 

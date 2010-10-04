@@ -21,10 +21,13 @@ RodPenaltyForce::~RodPenaltyForce()
 }
 
 
-void RodPenaltyForce::setVertexPositionPenalty(int vertex_id, Vec3d& target_position, double stiffness, short type)
+VertexConstraintMapIter RodPenaltyForce::setVertexPositionPenalty(const ElasticRod* rod,
+        int vertex_id, Vec3d& target_position, double stiffness, short type)
 {
-    RodVertexConstraint newConstraint(target_position, stiffness, -1, type );
-    m_vertex_position_penalties.insert(VertexConstraintMap::value_type(
+    Vec3d direction = rod->getVertex( vertex_id ) - target_position ;
+    RodVertexConstraint newConstraint(target_position, stiffness, direction.norm(), type );
+    
+    return m_vertex_position_penalties.insert(VertexConstraintMap::value_type(
         std::make_pair(vertex_id, newConstraint) ));
 }
 
@@ -181,11 +184,12 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
 
               Vec3d n = vertex - target;
 
-              if( distance < 0 )
-              {
-                  i->second.m_restDistance = n.norm();
+//              if( distance < 0 )
+//              {
+//                  i->second.m_restDistance = n.norm();
+//
+//              }
 
-              }
               if( i->second.m_type == RodVertexConstraint::kRest )
               {
                   double norm = n.norm();

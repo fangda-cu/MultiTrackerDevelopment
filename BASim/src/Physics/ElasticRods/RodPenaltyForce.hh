@@ -79,7 +79,8 @@ public:
   void computeForceDX(const ElasticRod& rod, Scalar scale, MatrixBase& J);
   void computeForceDV(const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
 
-  void setVertexPositionPenalty(int vertex_id, Vec3d& target_position, double stiffness, short type = RodVertexConstraint::kFix);
+  VertexConstraintMapIter setVertexPositionPenalty(const ElasticRod* rod,
+    int vertex_id, Vec3d& target_position, double stiffness, short type = RodVertexConstraint::kFix);
 
   // id vertex_id = -1, delete all
   void clearVertexPositionPenalty(int vertex_id = -1);
@@ -99,6 +100,7 @@ public:
 //  void activateBulkSpring( RodGroupManager::RodRodSpring spr ) {
 //    m_bulk_springs.push_back(spr);
 //  }
+
 	
 protected:
   VertexObjectMap _vertexObjects;
