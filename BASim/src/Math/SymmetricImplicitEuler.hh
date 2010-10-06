@@ -82,7 +82,6 @@ namespace BASim
       m_diffEq.backupResize();
       m_diffEq.backup();
       STOP_TIMER("backup");
-
       if( position_solve(0) ) 
       {
         #ifdef TIMING_ON
@@ -449,6 +448,7 @@ namespace BASim
         {
           successfull_solve = false;
           std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Problem during linear solve detected. " << std::endl;
+          return successfull_solve;
         }
         STOP_TIMER("solver");
         

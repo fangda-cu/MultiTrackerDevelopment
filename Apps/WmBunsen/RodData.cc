@@ -71,6 +71,7 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
     // Used in substepping and for collisions.
     allocateStorage( i_rodVertexPositions.size() );
     resetVertexPositions( i_rodVertexPositions );
+
 }
 
 RodData::~RodData()

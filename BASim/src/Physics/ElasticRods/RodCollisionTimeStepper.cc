@@ -108,7 +108,6 @@ bool RodCollisionTimeStepper::execute()
       */
 
   //std::cout << "COLLISION execute\n";
-
     return m_rodTimeStepper->execute();
 /*
 		std::cout << "after dynamic execute vertex\n";

@@ -658,6 +658,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     if ( !rodCollisionTimeStepper->execute() )
                     {
                         cerr << "rod " << i << " did not execute correctly!\n";
+                        continue;
                     }
                 }
 
@@ -707,10 +708,14 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             frameTime += timeTaken;
 
             startTimer(timer);
+
             #pragma omp parallel for num_threads( actualNumThreadsToUse )
             for ( int i=0; i<numControllers; ++i )
             {
-                dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->execute();
+                if( !dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->execute())
+                {
+                    continue;
+                }
             }
             timeTaken = stopTimer(timer);
             frameIntegrationStepTime += timeTaken;

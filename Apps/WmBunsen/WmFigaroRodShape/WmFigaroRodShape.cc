@@ -138,7 +138,6 @@ void WmFigaroRodShape::solve( FixedRodVertexMap& i_fixedRodVertexMap )
 {
     LockedRodVertexMap lockedRodVertexMap;
     lockedRodVertexMap[ 0 ] = m_lockedVertexMap;
-
     m_beaker.takeTimeStep( 8, 1.0/24.0, 10, false, false, false, 10, 1.0, &i_fixedRodVertexMap, false, m_constraintStrength, &lockedRodVertexMap );
 }
 
