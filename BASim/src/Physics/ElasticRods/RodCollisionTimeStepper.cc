@@ -58,6 +58,23 @@ void RodCollisionTimeStepper::setVertexPositionPenalty(int vertex_id, Vec3d& tar
   }
 }
 
+RodVertexConstraint *RodCollisionTimeStepper::setVertexPositionPenalty2(int vertex_id, Vec3d& target_position, double stiffness, short type)
+{
+  if (m_rodPenaltyForce) {
+    if (vertex_id < m_rod->nv() && vertex_id >= 0)
+    {
+      m_vertexContraints.push_back(m_rodPenaltyForce->setVertexPositionPenalty( m_rod,
+                vertex_id, target_position, stiffness, type));
+      return &(m_vertexContraints.back()->second);
+
+    } else {
+      std::cout << "invalid vertex id\n";
+    }
+  } else {
+    std::cout << "add penatly force first\n";
+  }
+}
+
 // id vertex_id = -1, delete all
 void RodCollisionTimeStepper::clearVertexPositionPenalty(int vertex_id) 
 {

@@ -1,5 +1,7 @@
 #include "WmBunsenNode.hh"
 #include "WmBunsenCollisionMeshNode.hh"
+#include "constraints/WmFigConstraintNode.hh"
+#include <maya/MFnMessageAttribute.h>
 
 MTypeId WmBunsenNode::typeID( 0x001135, 0x18 ); 
 MString WmBunsenNode::typeName( "wmFigaroNode" );
@@ -19,6 +21,8 @@ MObject WmBunsenNode::ia_collisionMeshes;
 MObject WmBunsenNode::ia_collisionsEnabled;
 MObject WmBunsenNode::ia_plasticDeformations;
 MObject WmBunsenNode::ia_solverType;
+
+MObject WmBunsenNode::ia_msgConstraintNodes;
 
 // Clumping
 /* static */ MObject WmBunsenNode::ia_isClumpingEnabled;
@@ -230,6 +234,169 @@ void WmBunsenNode::updateAllRodNodes( MDataBlock &i_dataBlock )
     }
 }
 
+void WmBunsenNode::addAllConstraints( MDataBlock &i_dataBlock )
+{
+	MStatus stat;
+
+	MArrayDataHandle msgConstraintNodesH = i_dataBlock.inputArrayValue( ia_msgConstraintNodes, &stat );
+	CHECK_MSTATUS(stat);
+	size_t numConstraints = msgConstraintNodesH.elementCount();
+
+	//MGlobal::displayInfo( MString("Num constraints: ") + numConstraints );
+
+	MPlug msgConstraintNodesPlug( thisMObject(), ia_msgConstraintNodes );
+	//MGlobal::displayInfo( MString("Num constraints2: ") + msgConstraintNodesPlug.numElements() );
+
+	unsigned int i;
+	for( i=0; i < numConstraints; i++ )
+	{
+		MPlug msgConstraintNodePlug = msgConstraintNodesPlug.elementByPhysicalIndex( i );
+		if( !msgConstraintNodePlug.isNull() )
+		{
+			//MGlobal::displayInfo( MString("found element: ") + i );
+
+			MPlugArray srcPlugs;
+			msgConstraintNodePlug.connectedTo( srcPlugs, true, false );
+			if( srcPlugs.length() )
+			{
+				MObject figConstraintNode = srcPlugs[0].node();
+				MFnDependencyNode figConstraintFn( figConstraintNode );
+				//MGlobal::displayInfo( "Constraint node: " + figConstraintFn.name() );
+
+		        MPlug enablePlug = figConstraintFn.findPlug( "enable" );
+		        if( !enablePlug.asBool() )
+		        	continue;
+
+				WmFigConstraintNode &constraint = *static_cast<WmFigConstraintNode*>( figConstraintFn.userNode() );
+				constraint.rodVertexConstraints.clear();
+
+		        MPlug stiffnessPlug = figConstraintFn.findPlug( "stiffness" );
+			    double stiffness = stiffnessPlug.asInt();
+
+		        MPlug worldPositionPlug = figConstraintFn.findPlug( "worldPosition" );
+			    MObject worldPositionData = worldPositionPlug.asMObject();
+			    MFnNumericData numericDataFn( worldPositionData );
+		        MPoint worldPosition;
+			    numericDataFn.getData3Double( worldPosition.x, worldPosition.y, worldPosition.z );
+
+		        MPlug rodIdPlug = figConstraintFn.findPlug( "rodId" );
+			    int rodId = rodIdPlug.asInt();
+
+			    MPlug vertexIdPlug = figConstraintFn.findPlug( "vertexId" );
+			    int vertexId = vertexIdPlug.asInt();
+
+				MPlug constraintTypePlug = figConstraintFn.findPlug( "constraintType" );
+				int constraintType = constraintTypePlug.asInt();
+
+				MObject figRodNode;
+				MPlug figRodNodeMsgPlug = figConstraintFn.findPlug( "figRodNodeMsg" );
+				figRodNodeMsgPlug.connectedTo( srcPlugs, true, false );
+				if( srcPlugs.length() )
+				{
+					figRodNode = srcPlugs[0].node();
+				}
+				MFnDependencyNode figRodNodeFn( figRodNode );
+
+#if 0
+				MGlobal::displayInfo( "Setting vertex position penalty. Constraint node: " + figConstraintFn.name() + " rodId: " + rodId + " vertexId: " + vertexId + " constraintType: " + constraintType + \
+									  " worldPosition: " + worldPosition.x + ", " + worldPosition.y + ", " + worldPosition.z + \
+									  " figRodNode: " + figRodNodeFn.name() );
+#endif
+
+				WmFigRodNode *rodNode = static_cast< WmFigRodNode*>( figRodNodeFn.userNode());
+			    WmFigRodGroup*  rodGroup = rodNode->rodGroup();
+		        if( rodId < rodGroup->numberOfRods() )
+		        {
+		            if( vertexId < 0 )
+		            	vertexId = rodGroup->elasticRod( rodId )->nv() -1 ;
+
+		            if( vertexId < rodGroup->elasticRod( rodId )->nv() )
+		            {
+		                //Vec3d target_position = Vec3d( i_pos.x, i_pos.y, i_pos.z );
+		                Vec3d target_position = Vec3d( worldPosition.x, worldPosition.y, worldPosition.z );
+
+		                BASim::RodVertexConstraint *rodVertexConstraint = rodGroup->collisionStepper( rodId )->setVertexPositionPenalty2( vertexId, target_position, stiffness, constraintType );
+		                constraint.rodVertexConstraints.push_back( rodVertexConstraint );
+		            }
+		        }
+			}
+		}
+	}
+}
+
+void WmBunsenNode::updateAllConstraints( MDataBlock &i_dataBlock )
+{
+	MPlug msgConstraintNodesPlug( thisMObject(), ia_msgConstraintNodes );
+	const unsigned int numConstraints = msgConstraintNodesPlug.numElements();
+
+	unsigned int i;
+	for( i=0; i < numConstraints; i++ )
+	{
+		MPlug msgConstraintNodePlug = msgConstraintNodesPlug.elementByPhysicalIndex( i );
+		if( !msgConstraintNodePlug.isNull() )
+		{
+			//MGlobal::displayInfo( MString("found element: ") + i );
+
+			MPlugArray srcPlugs;
+			msgConstraintNodePlug.connectedTo( srcPlugs, true, false );
+			if( srcPlugs.length() )
+			{
+				MObject figConstraintNode = srcPlugs[0].node();
+				MFnDependencyNode figConstraintFn( figConstraintNode );
+				//MGlobal::displayInfo( "Updating Constraint node: " + figConstraintFn.name() );
+
+		        MPlug enablePlug = figConstraintFn.findPlug( "enable" );
+		        if( !enablePlug.asBool() )
+		        	continue;
+
+				WmFigConstraintNode &constraint = *static_cast<WmFigConstraintNode*>( figConstraintFn.userNode() );
+
+		        MPlug stiffnessPlug = figConstraintFn.findPlug( "stiffness" );
+			    double stiffness = stiffnessPlug.asInt();
+
+		        MPlug worldPositionPlug = figConstraintFn.findPlug( "worldPosition" );
+			    MObject worldPositionData = worldPositionPlug.asMObject();
+			    MFnNumericData numericDataFn( worldPositionData );
+		        MPoint worldPosition;
+			    numericDataFn.getData3Double( worldPosition.x, worldPosition.y, worldPosition.z );
+
+#if 0
+			    MGlobal::displayInfo( "Updating vertex position penalty. Constraint node: " + figConstraintFn.name() + " stiffness: " + stiffness + \
+									  " worldPosition: " + worldPosition.x + ", " + worldPosition.y + ", " + worldPosition.z  );
+#endif
+
+			    BASim::RodVertexConstraint *rodVertexConstraint;
+			    std::list<BASim::RodVertexConstraint *>::iterator it;
+			    for( it=constraint.rodVertexConstraints.begin(); it != constraint.rodVertexConstraints.end(); it++ )
+			    {
+			    	rodVertexConstraint = *it;
+			    	rodVertexConstraint->m_stiff = stiffness;
+			    	rodVertexConstraint->m_target = Vec3d( worldPosition.x, worldPosition.y, worldPosition.z );
+			    }
+			}
+		}
+	}
+}
+
+//void RodCollisionTimeStepper::updateVertexPositionConstraints()
+//{
+//    //this is dummy test, meaningless at all
+//    for( size_t s = 0; s < m_vertexContraints.size(); s++ )
+//    {
+//        Vec3d direction = m_vertexContraints[ s ]->second.m_target;
+//        double norm = direction.norm();
+//        if( norm > 0 )
+//            direction = direction * ( 1. / norm );
+//
+//        //make the target position step forward a little bit...
+//        m_vertexContraints[ s ]->second.m_target =
+//                m_vertexContraints[ s ]->second.m_target + 0.1 * direction;
+//    }
+//
+//}
+
+
+
 MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock ) 
 {
     MStatus stat;
@@ -324,13 +491,16 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
                 updateAllRodNodes( i_dataBlock );
                 updateAllCollisionMeshes( i_dataBlock );
-
                 addRodsToWorld( i_dataBlock );
+
+                //MGlobal::displayInfo( "COMPUTE AT START TIME" );
+                addAllConstraints( i_dataBlock );
             }
             else
             {
                 updateAllRodNodes( i_dataBlock );
                 updateAllCollisionMeshes( i_dataBlock );
+                updateAllConstraints( i_dataBlock );
             }
             
         }
@@ -777,6 +947,18 @@ MStatus WmBunsenNode::initialize()
         nAttr.setArray( true );
         stat = addAttribute( ia_collisionMeshes );
         if (!stat) { stat.perror( "addAttribute ia_collisionMeshes" ); return stat; }
+    }
+
+    {
+    	MFnMessageAttribute msgAttr;
+    	ia_msgConstraintNodes = msgAttr.create( "ia_msgConstraintNodes", "cnm", &stat  );
+        if (!stat) {
+            stat.perror("create ia_msgConstraintNodes attribute");
+            return stat;
+        }
+    	msgAttr.setArray( true );
+        stat = addAttribute( ia_msgConstraintNodes );
+        if (!stat) { stat.perror( "addAttribute ia_msgConstraintNodes" ); return stat; }
     }
 
     {

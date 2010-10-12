@@ -21,6 +21,7 @@
 #include <maya/MQuaternion.h>
 #include <maya/MArgList.h>
 #include <maya/MPxToolCommand.h>
+#include <float.h>
 
 #ifdef WETA
 #include <weta/Wfigaro/Core/EigenIncludes.hh>
@@ -29,6 +30,25 @@
 #endif
 
 #include <vector>
+#include <list>
+
+class WmFigSelectedItem
+{
+public:
+	WmFigSelectedItem()
+	{
+		rodId = -1;
+		rodVertexId = -1;
+		rodU = DBL_MAX;
+	}
+
+	MObject figRodNode;
+	int rodId;
+	int rodVertexId;
+	double rodU;
+};
+
+typedef std::list<WmFigSelectedItem> WmFigSelections;
 
 class WmFigSelectionToolCommand : public MPxToolCommand
 {
@@ -85,6 +105,8 @@ public:
     {
         m_selectedRods = i_selectedRods;
     }
+
+    WmFigSelections m_selected;
 
 private:
     EditRunState m_editRunState;

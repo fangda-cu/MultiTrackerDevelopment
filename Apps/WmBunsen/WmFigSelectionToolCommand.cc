@@ -155,15 +155,44 @@ MStatus WmFigSelectionToolCommand::finalize()
     //////////////////////////////////////////////////////
     
     MStringArray results;
-    results.setLength( m_selectedRods.size() );
     
-    for ( size_t r=0; r<m_selectedRods.size(); ++r )
+    if( m_selected.size() )
     {
-     //   appendToResult( results[ r ] );
-        results[ r ] = m_selectedRods[ r ];
+    	results.setLength( (unsigned int)m_selected.size() );
+
+    	WmFigSelections::iterator it=m_selected.begin();
+    	unsigned int i;
+    	for( i=0; it!=m_selected.end(); ++it, i++ )
+    	{
+    		WmFigSelectedItem &selItem = *it;
+    		MFnDependencyNode nodeFn( selItem.figRodNode );
+    		MString selItemTxt( nodeFn.name() );
+    		if( selItem.rodId != -1 )
+    			selItemTxt += MString(".rod[") + selItem.rodId + "]";
+    		if( selItem.rodVertexId != -1 )
+    			selItemTxt += MString(".vtx[") + selItem.rodVertexId + "]";
+    	    if( selItem.rodU != DBL_MAX )
+    	    	selItemTxt += MString(".u[") + selItem.rodU + "]";
+
+    	    results[i] = selItemTxt;
+    	}
+    }
+    else
+    {
+        results.setLength( (unsigned int) m_selectedRods.size() );
+
+        for ( unsigned int r=0; r < m_selectedRods.size(); ++r )
+        {
+         //   appendToResult( results[ r ] );
+            //results[r] = MString( (unsigned int)m_selectedRods[r] );
+            results[r] = MString() + (int)m_selectedRods[r];
+        }
     }
     
     setResult( results );
+
+    //MString result;
+    //setResult( "yeh baby" );
     
     return MPxToolCommand::finalize();
 }
