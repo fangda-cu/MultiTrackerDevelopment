@@ -111,9 +111,9 @@ void CollisionMeshData::initialize()
                     _triangleEdgeIndices[i][j] = itr->second;
             }
         }
-	
-	
-//	buildLevelSet();
+
+
+//      buildLevelSet();
 //      _bvTree.buildTree(centroids, _triIndices);
 
         _initialized = true;
@@ -350,7 +350,7 @@ void CollisionMeshData::draw()
     // Useful for debugging
     //
      //if(_phiCurrent->isInitialized())
-	//_phiCurrent->draw();
+        //_phiCurrent->draw();
          
     //for ( size_t p=0; p<currPositions.size(); p++ )     
     {
@@ -394,17 +394,17 @@ void CollisionMeshData::sizeLevelSet(Vec3d &origin,Vec3i &dims, Real &dx, Real l
     Real mindx = dX[0];
     for(uint i=0; i<3; i++)
     {
-	origin[i]=xmin[i];
-	mindx =std:: min(mindx, dX[i]);
-	length[i]=xmax[i]-xmin[i];
+        origin[i]=xmin[i];
+        mindx =std:: min(mindx, dX[i]);
+        length[i]=xmax[i]-xmin[i];
     }
     if(_levelsetDx)
-	dx = _levelsetDx;
+        dx = _levelsetDx;
     else
-	dx = mindx; 
+        dx = mindx; 
 
     for(uint i=0; i<3; i++)
-	dims[i] = (int)ceil(length[i] / dx);*/
+        dims[i] = (int)ceil(length[i] / dx);*/
 }
 
 void CollisionMeshData::buildLevelSet()
@@ -430,9 +430,9 @@ void CollisionMeshData::buildLevelSet()
 
     if(_phiCurrent->isInitialized())
     {
-	delete _phiPrevious;
-	_phiPrevious = _phiCurrent;
-	_phiCurrent = new LevelSet;
+        delete _phiPrevious;
+        _phiPrevious = _phiCurrent;
+        _phiCurrent = new LevelSet;
     }
 
 

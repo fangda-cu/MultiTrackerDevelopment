@@ -23,7 +23,7 @@ public:
     m_j = std::max(i,j);
   }
 
-	bool operator==( const IntPair& rhs ) const
+  bool operator==( const IntPair& rhs ) const
   {
     assert( m_i <= m_j );
     assert( rhs.m_i <= rhs.m_j );

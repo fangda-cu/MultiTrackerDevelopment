@@ -47,8 +47,8 @@ public:
     //
     bool getProximity(Collisions &collisions) const;
 
-	bool operator<(const CandidateCollision &cc) const;
-	bool operator==(const CandidateCollision &cc) const;
+    bool operator<(const CandidateCollision &cc) const;
+    bool operator==(const CandidateCollision &cc) const;
     
   
 

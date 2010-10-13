@@ -620,103 +620,103 @@ Real CandidateCollision::getClosestPointsEdgeEdge(const Vec3d& e11, const Vec3d&
     const double *p2 = e21.data();
     const double *q2 = e22.data();
 
-	Real d1[3], d2[3], r[3], a, e, f;
-	Real c1[3], c2[3];
+    Real d1[3], d2[3], r[3], a, e, f;
+    Real c1[3], c2[3];
 
-	d1[0] = q1[0] - p1[0];
-	d1[1] = q1[1] - p1[1];
-	d1[2] = q1[2] - p1[2];
+    d1[0] = q1[0] - p1[0];
+    d1[1] = q1[1] - p1[1];
+    d1[2] = q1[2] - p1[2];
 
-	d2[0] = q2[0] - p2[0];
-	d2[1] = q2[1] - p2[1];
-	d2[2] = q2[2] - p2[2];
+    d2[0] = q2[0] - p2[0];
+    d2[1] = q2[1] - p2[1];
+    d2[2] = q2[2] - p2[2];
 
-	r[0] = p1[0] - p2[0];
-	r[1] = p1[1] - p2[1];
-	r[2] = p1[2] - p2[2];
+    r[0] = p1[0] - p2[0];
+    r[1] = p1[1] - p2[1];
+    r[2] = p1[2] - p2[2];
 
-	a = d1[0]*d1[0] + d1[1]*d1[1] + d1[2]*d1[2];
-	e = d2[0]*d2[0] + d2[1]*d2[1] + d2[2]*d2[2];
-	f = d2[0]*r[0] + d2[1]*r[1] + d2[2]*r[2];
+    a = d1[0]*d1[0] + d1[1]*d1[1] + d1[2]*d1[2];
+    e = d2[0]*d2[0] + d2[1]*d2[1] + d2[2]*d2[2];
+    f = d2[0]*r[0] + d2[1]*r[1] + d2[2]*r[2];
 
-	// check if either or both segments degenerate into points
-	//
-	if ((a <= COLLISION_EPSILON) && (e <= COLLISION_EPSILON))
-	{
-		s = t = 0.0f;
-		c1[0] = p1[0]; c1[1] = p1[1]; c1[2] = p1[2];
-		c2[0] = p2[0]; c2[1] = p2[1]; c2[2] = p2[2];
+    // check if either or both segments degenerate into points
+    //
+    if ((a <= COLLISION_EPSILON) && (e <= COLLISION_EPSILON))
+    {
+        s = t = 0.0f;
+        c1[0] = p1[0]; c1[1] = p1[1]; c1[2] = p1[2];
+        c2[0] = p2[0]; c2[1] = p2[1]; c2[2] = p2[2];
 
-		return ((c1[0]-c2[0])*(c1[0]-c2[0]) + (c1[1]-c2[1])*(c1[1]-c2[1]) + (c1[2]-c2[2])*(c1[2]-c2[2]));
-	}
+        return ((c1[0]-c2[0])*(c1[0]-c2[0]) + (c1[1]-c2[1])*(c1[1]-c2[1]) + (c1[2]-c2[2])*(c1[2]-c2[2]));
+    }
 
-	if (a <= COLLISION_EPSILON)
-	{
-		// first segment degenerates into a point
-		//
-		s = 0.0f;
-		t = f / e;
-		if (t<0.0f) t = 0.0f;
-		if (t>1.0f) t = 1.0f;
-	}
-	else
-	{
-		Real c = d1[0]*r[0] + d1[1]*r[1] + d1[2]*r[2];
+    if (a <= COLLISION_EPSILON)
+    {
+        // first segment degenerates into a point
+        //
+        s = 0.0f;
+        t = f / e;
+        if (t<0.0f) t = 0.0f;
+        if (t>1.0f) t = 1.0f;
+    }
+    else
+    {
+        Real c = d1[0]*r[0] + d1[1]*r[1] + d1[2]*r[2];
 
-		if (e <= COLLISION_EPSILON)
-		{
-			// second segment degenerates into a point
-			//
-			t = 0.0f;
-			s = -c / a;
-			if (s<0.0f) s = 0.0f;
-			if (s>1.0f) s = 1.0f;
-		}
-		else
-		{
-			// nondegenerate case
-			//
-			Real b = d1[0]*d2[0] + d1[1]*d2[1] + d1[2]*d2[2];
-			Real denom = a*e - b*b;
+        if (e <= COLLISION_EPSILON)
+        {
+            // second segment degenerates into a point
+            //
+            t = 0.0f;
+            s = -c / a;
+            if (s<0.0f) s = 0.0f;
+            if (s>1.0f) s = 1.0f;
+        }
+        else
+        {
+            // nondegenerate case
+            //
+            Real b = d1[0]*d2[0] + d1[1]*d2[1] + d1[2]*d2[2];
+            Real denom = a*e - b*b;
 
-			if (denom != 0.0f)
-			{
-				s = (b*f - c*e) / denom;
-				if (s<0.0f) s = 0.0f;
-				if (s>1.0f) s = 1.0f;
-			}
-			else
-				s = 0.0f;
+            if (denom != 0.0f)
+            {
+                s = (b*f - c*e) / denom;
+                if (s<0.0f) s = 0.0f;
+                if (s>1.0f) s = 1.0f;
+            }
+            else
+                s = 0.0f;
 
-			Real tnom = b*s + f;
-			if (tnom < 0.0f)
-			{
-				t = 0.0f;
-				s = -c / a;
-				if (s<0.0f) s = 0.0f;
-				if (s>1.0f) s = 1.0f;
-			}
-			else if (tnom > e)
-			{
-				t = 1.0f;
-				s = (b - c) / a;
-				if (s<0.0f) s = 0.0f;
-				if (s>1.0f) s = 1.0f;
-			}
-			else
-				t = tnom / e;
-		}
-	}
+            Real tnom = b*s + f;
+            if (tnom < 0.0f)
+            {
+                t = 0.0f;
+                s = -c / a;
+                if (s<0.0f) s = 0.0f;
+                if (s>1.0f) s = 1.0f;
+            }
+            else if (tnom > e)
+            {
+                t = 1.0f;
+                s = (b - c) / a;
+                if (s<0.0f) s = 0.0f;
+                if (s>1.0f) s = 1.0f;
+            }
+            else
+                t = tnom / e;
+        }
+    }
 
-	c1[0] = p1[0] + d1[0] * s;
-	c1[1] = p1[1] + d1[1] * s;
-	c1[2] = p1[2] + d1[2] * s;
+    c1[0] = p1[0] + d1[0] * s;
+    c1[1] = p1[1] + d1[1] * s;
+    c1[2] = p1[2] + d1[2] * s;
 
-	c2[0] = p2[0] + d2[0] * t;
-	c2[1] = p2[1] + d2[1] * t;
-	c2[2] = p2[2] + d2[2] * t;
+    c2[0] = p2[0] + d2[0] * t;
+    c2[1] = p2[1] + d2[1] * t;
+    c2[2] = p2[2] + d2[2] * t;
 
-	return ((c1[0]-c2[0])*(c1[0]-c2[0]) + (c1[1]-c2[1])*(c1[1]-c2[1]) + (c1[2]-c2[2])*(c1[2]-c2[2]));
+    return ((c1[0]-c2[0])*(c1[0]-c2[0]) + (c1[1]-c2[1])*(c1[1]-c2[1]) + (c1[2]-c2[2])*(c1[2]-c2[2]));
 
 }
 
@@ -739,76 +739,76 @@ void CandidateCollision::getCoplanarityTimes(const Vec3d &x0, const Vec3d &x1,
            C=triple(x03,x13,v23)+triple(x03,v13,x23)+triple(v03,x13,x23),
            D=triple(x03,x13,x23);
 
-//	Real x21[3], v21[3], x31[3], v31[3], x41[3], v41[3];
-//	for (int i=0; i<3; ++i)
-//	{
-//		x21[i] = x1[i] - x0[i];
-//		x31[i] = x2[i] - x0[i];
-//		x41[i] = x3[i] - x0[i];
-//		v21[i] = v1[i] - v0[i];
-//		v31[i] = v2[i] - v0[i];
-//		v41[i] = v3[i] - v0[i];
-//	}
+//    Real x21[3], v21[3], x31[3], v31[3], x41[3], v41[3];
+//    for (int i=0; i<3; ++i)
+//    {
+//        x21[i] = x1[i] - x0[i];
+//        x31[i] = x2[i] - x0[i];
+//        x41[i] = x3[i] - x0[i];
+//        v21[i] = v1[i] - v0[i];
+//        v31[i] = v2[i] - v0[i];
+//        v41[i] = v3[i] - v0[i];
+//    }
 
-	// The polynomial coefficients
-	//
-//	Real A = -v21[2]*v31[1]*v41[0] + v21[1]*v31[2]*v41[0] + v21[2]*v31[0]*v41[1] -
-//			  v21[0]*v31[2]*v41[1] - v21[1]*v31[0]*v41[2] + v21[0]*v31[1]*v41[2];
+    // The polynomial coefficients
+    //
+//    Real A = -v21[2]*v31[1]*v41[0] + v21[1]*v31[2]*v41[0] + v21[2]*v31[0]*v41[1] -
+//              v21[0]*v31[2]*v41[1] - v21[1]*v31[0]*v41[2] + v21[0]*v31[1]*v41[2];
 //
-//	Real B = -v31[2]*v41[1]*x21[0] + v31[1]*v41[2]*x21[0] + v31[2]*v41[0]*x21[1] -
-//			  v31[0]*v41[2]*x21[1] - v31[1]*v41[0]*x21[2] + v31[0]*v41[1]*x21[2] +
-//			  v21[2]*v41[1]*x31[0] - v21[1]*v41[2]*x31[0] - v21[2]*v41[0]*x31[1] +
-//			  v21[0]*v41[2]*x31[1] + v21[1]*v41[0]*x31[2] - v21[0]*v41[1]*x31[2] -
-//			  v21[2]*v31[1]*x41[0] + v21[1]*v31[2]*x41[0] + v21[2]*v31[0]*x41[1] -
-//			  v21[0]*v31[2]*x41[1] - v21[1]*v31[0]*x41[2] + v21[0]*v31[1]*x41[2];
+//    Real B = -v31[2]*v41[1]*x21[0] + v31[1]*v41[2]*x21[0] + v31[2]*v41[0]*x21[1] -
+//              v31[0]*v41[2]*x21[1] - v31[1]*v41[0]*x21[2] + v31[0]*v41[1]*x21[2] +
+//              v21[2]*v41[1]*x31[0] - v21[1]*v41[2]*x31[0] - v21[2]*v41[0]*x31[1] +
+//              v21[0]*v41[2]*x31[1] + v21[1]*v41[0]*x31[2] - v21[0]*v41[1]*x31[2] -
+//              v21[2]*v31[1]*x41[0] + v21[1]*v31[2]*x41[0] + v21[2]*v31[0]*x41[1] -
+//              v21[0]*v31[2]*x41[1] - v21[1]*v31[0]*x41[2] + v21[0]*v31[1]*x41[2];
 //
-//	Real C = -v41[2]*x21[1]*x31[0] + v41[1]*x21[2]*x31[0] + v41[2]*x21[0]*x31[1] -
-//			  v41[0]*x21[2]*x31[1] - v41[1]*x21[0]*x31[2] + v41[0]*x21[1]*x31[2] +
-//			  v31[2]*x21[1]*x41[0] - v31[1]*x21[2]*x41[0] - v31[2]*x21[0]*x41[1] +
-//			  v31[0]*x21[2]*x41[1] + v21[2]*x31[0]*x41[1] - v21[0]*x31[2]*x41[1] +
-//			  v31[1]*x21[0]*x41[2] - v31[0]*x21[1]*x41[2] - v21[1]*x31[0]*x41[2] -
-//			  v21[2]*x31[1]*x41[0] + v21[1]*x31[2]*x41[0] + v21[0]*x31[1]*x41[2];
+//    Real C = -v41[2]*x21[1]*x31[0] + v41[1]*x21[2]*x31[0] + v41[2]*x21[0]*x31[1] -
+//              v41[0]*x21[2]*x31[1] - v41[1]*x21[0]*x31[2] + v41[0]*x21[1]*x31[2] +
+//              v31[2]*x21[1]*x41[0] - v31[1]*x21[2]*x41[0] - v31[2]*x21[0]*x41[1] +
+//              v31[0]*x21[2]*x41[1] + v21[2]*x31[0]*x41[1] - v21[0]*x31[2]*x41[1] +
+//              v31[1]*x21[0]*x41[2] - v31[0]*x21[1]*x41[2] - v21[1]*x31[0]*x41[2] -
+//              v21[2]*x31[1]*x41[0] + v21[1]*x31[2]*x41[0] + v21[0]*x31[1]*x41[2];
 //
-//	Real D = -x21[2]*x31[1]*x41[0] + x21[1]*x31[2]*x41[0] + x21[2]*x31[0]*x41[1] -
-//			  x21[0]*x31[2]*x41[1] - x21[1]*x31[0]*x41[2] + x21[0]*x31[1]*x41[2];
+//    Real D = -x21[2]*x31[1]*x41[0] + x21[1]*x31[2]*x41[0] + x21[2]*x31[0]*x41[1] -
+//              x21[0]*x31[2]*x41[1] - x21[1]*x31[0]*x41[2] + x21[0]*x31[1]*x41[2];
 
 /*
-	int leadCoeff = 3;
-	Real coeffs[4];
-	if (a == 0.0)
-	{
-		leadCoeff = 2;
-		if (b == 0.0)
-		{
-			leadCoeff = 1;
-			if (c == 0.0)
-			{
-				// Degenerate polynomial
-				//
-				return;
-			}
-			else
-			{
+    int leadCoeff = 3;
+    Real coeffs[4];
+    if (a == 0.0)
+    {
+        leadCoeff = 2;
+        if (b == 0.0)
+        {
+            leadCoeff = 1;
+            if (c == 0.0)
+            {
+                // Degenerate polynomial
+                //
+                return;
+            }
+            else
+            {
                 times.push_back(-d / c);
                 return;
-//				coeffs[0] = c;
-//				coeffs[1] = d;
-			}
-		}
-		else
-		{
-			coeffs[0] = b;
-			coeffs[1] = c;
-			coeffs[2] = d;
-		}
-	}
-	else
-	{
-		coeffs[0] = a;
-		coeffs[1] = b;
-		coeffs[2] = c;
-		coeffs[3] = d;
-	}
+//                coeffs[0] = c;
+//                coeffs[1] = d;
+            }
+        }
+        else
+        {
+            coeffs[0] = b;
+            coeffs[1] = c;
+            coeffs[2] = d;
+        }
+    }
+    else
+    {
+        coeffs[0] = a;
+        coeffs[1] = b;
+        coeffs[2] = c;
+        coeffs[3] = d;
+    }
 
     RootFinder rf;
     Real realRoots[3];
@@ -816,11 +816,11 @@ void CandidateCollision::getCoplanarityTimes(const Vec3d &x0, const Vec3d &x1,
  
     int count = rf.rpoly(coeffs, leadCoeff, realRoots, imagRoots);
  
-	for (int i=0; i<count; ++i)
-	{
-		if (!imagRoots[i])
+    for (int i=0; i<count; ++i)
+    {
+        if (!imagRoots[i])
             times.push_back(realRoots[i]);
-	}
+    }
 
     std::sort(times.begin(), times.end());
 */
