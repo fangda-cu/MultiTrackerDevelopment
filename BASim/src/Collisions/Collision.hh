@@ -11,10 +11,10 @@
 
 namespace BASim {
     
-// All possible collision types, more may be added. VERTEX_EDGE
+// All possible collision types, more may be added.
 // is currently not implemented
 //
-enum CollisionType { VERTEX_TRIANGLE=0, VERTEX_EDGE, EDGE_EDGE };
+enum CollisionType { VERTEX_TRIANGLE=0, EDGE_EDGE };
 
 
 class Collision

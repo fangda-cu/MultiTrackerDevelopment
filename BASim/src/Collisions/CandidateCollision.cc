@@ -84,11 +84,6 @@ bool CandidateCollision::getContinuousTime(Real dt, Collisions &collisions) cons
 
             return false;
         }
-        case VERTEX_EDGE:
-        {
-            assert(0);
-            break;
-        }
         case EDGE_EDGE:
         {
             Indices& indices1 = _object1->getEdgeIndices();
@@ -166,11 +161,6 @@ bool CandidateCollision::getProximity(Collisions &collisions) const
             }
 
             return false;
-        }
-        case VERTEX_EDGE:
-        {
-            assert(0);
-            break;
         }
         case EDGE_EDGE:
         {

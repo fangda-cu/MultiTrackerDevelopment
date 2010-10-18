@@ -30,14 +30,6 @@ Collision::Collision(uint index1, uint index2, uint index3, uint index4,
 
             break;
         }
-        case VERTEX_EDGE:
-        {
-            _primitiveIndex1[0] = index1;
-            _primitiveIndex2[0] = index2;
-            _primitiveIndex2[1] = index3;
-
-            break;
-        }
         case EDGE_EDGE:
         {
             _primitiveIndex1[0] = index1;
@@ -58,8 +50,6 @@ uint Collision::getFirstPrimitiveIndex(int index) const
 {
     if (_type == VERTEX_TRIANGLE)
         assert(index >= 0 && index < 1);
-    else if (_type == VERTEX_EDGE)
-        assert(index >= 0 && index < 1);
     else if (_type == EDGE_EDGE)
         assert(index >= 0 && index < 2);
 
@@ -70,8 +60,6 @@ uint Collision::getSecondPrimitiveIndex(int index) const
 {
     if (_type == VERTEX_TRIANGLE)
         assert(index >= 0 && index < 3);
-    else if (_type == VERTEX_EDGE)
-        assert(index >= 0 && index < 2);
     else if (_type == EDGE_EDGE)
         assert(index >= 0 && index < 2);
 
