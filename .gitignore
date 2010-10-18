@@ -6,3 +6,4 @@ build/
 CMakeFiles/
 CMakeCache.txt
 *.o.bks
+*.d.bks
