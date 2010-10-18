@@ -108,6 +108,8 @@ public:
 
     WmFigSelections m_selected;
 
+    MObject selectionDisplayNode;
+
 private:
     EditRunState m_editRunState;
 

@@ -9,7 +9,7 @@ global proc wmFigaroAddMainMenu()
     global string $gWmFigSelectionContextName;
     global string $gWmFigControllerContextName;
     global string $gWmFigCombContextName = "";
-	  
+
     // check in case somehow the menu add function is called and the plugin aint loaded
 	if(!`pluginInfo -q -loaded wmFigaro`) 
     {
@@ -17,6 +17,8 @@ global proc wmFigaroAddMainMenu()
 		loadPlugin wmFigaro;
 	}
     
+	optionVar -intValue "figSelectionMode" 0;
+
   	// Create all the contexts we need so they can be called later by the menu	
 	if ( !`eval("wmFigSelectionContext -query -exists \"" + $gWmFigSelectionContextName + "\"" ) `) 
     {        
@@ -39,11 +41,15 @@ global proc wmFigaroAddMainMenu()
         menuItem -label "Create rods from BarberShop node" -annotation "Create elastic rods from a BarberShop furset" -command "wmFigaro -crf -cpr 20";
         menuItem -label "Add selected meshes as collision objects" -annotation "Add meshes as collision objects to the selected wmFigaro node"-command "wmFigaro -acm";
         menuItem -label "Attach selected object to rod edge" -annotation "Attaches the selected object to a rod to control or be controlled by an edge."-command "wmFigaro -aeo";
-        menuItem -label "Selection Tool" -annotation "Select rods" -command "setToolTo $gWmFigSelectionContextName";
         menuItem -label "Add controllers Tool" -annotation "Attach a controller to a rod" -command "setToolTo $gWmFigControllerContextName";
         menuItem -label "Comb Tool" -annotation "Comb rods" -command "setToolTo $gWmFigCombContextName";
         menuItem -label "Create rod shape from NURBS" -annotation "Turn the selected nurbs curve into an elastic rod" -command "wmFigaro -crs";
-        //menuItem -divider true;
+
+        menuItem -divider true;
+        //menuItem -label "Selection Tool" -annotation "Select rods" -command "setToolTo $gWmFigSelectionContextName";
+        menuItem -label "Select Rods Tool" -annotation "Select rods" -command "optionVar -intValue \"figSelectionMode\" 0; setToolTo $gWmFigSelectionContextName";
+        menuItem -label "Select Rod Vertex Tool" -annotation "Select rod vertices" -command "optionVar -intValue \"figSelectionMode\" 1; setToolTo $gWmFigSelectionContextName";
+
         //menuItem -label "Selection Rod Vertex Tool" -annotation "Select a vertex in rod" -command "setToolTo $gWmFigSelectionContextName";
         //menuItem -label "Create Rod Vertex Constraint" -annotation "Create rod vertex constraint" -command "wmFigaro -addVertexConstraint -useSelection";
 

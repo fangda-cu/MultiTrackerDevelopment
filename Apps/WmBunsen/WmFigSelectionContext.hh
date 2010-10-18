@@ -75,15 +75,22 @@ public:
     const float* modelViewMatrix();
 
 private:
-    bool searchForRodPoint( const double i_centreX, const double i_centreY, const double i_width, const double i_height, WmFigRodNode* i_rodNode, MIntArray &selCompHierarchy );
+    enum ModifySelection {
+    	REPLACE,
+    	ADD,
+    	TOGGLE,
+    	REMOVE
+    };
 
+    //bool searchForRodPoint( const double i_centreX, const double i_centreY, const double i_width, const double i_height, WmFigRodNode* i_rodNode, MIntArray &selCompHierarchy );
+    bool searchForRodVertices( const double i_centreX, const double i_centreY, const double i_width, const double i_height, WmFigRodNode* i_rodNode, MIntArray &selCompHierarchy );
 
     GLint findRodsUsingOpenGLSelection( const double i_centreX, const double i_centreY,
             const double i_width, const double i_height,  WmFigRodNode* rodNode,
             vector<GLuint>& o_selectedRodIndices );
     
 //    bool searchForRodsIn2DScreenRectangle( vector<size_t>& o_rodIndices );
-    bool searchForRodsIn2DScreenRectangle( WmFigSelections &selection, vector<size_t>& o_rodIndices );
+    bool searchForRodsIn2DScreenRectangle( WmFigSelections &selection, vector<size_t>& o_rodIndices, ModifySelection &modifySelection );
 
     MStatus drawMarqueeSelectBox() const;
     void doTool( MEvent &event );
@@ -112,6 +119,10 @@ private:
     //////////////////////////////////////////////////////
 
     WmFigSelectionToolCommand* m_toolCommand;
+
+
+    MObject figSelectionDisplayNode;
+    int selectionMode; // 0 = RODS, 1 = RODVERTICES
 };
 
 #endif

@@ -18,7 +18,7 @@ GLSL_INSD       := $(wetaglsl)/wmFigaro-$(VERSION)
 endif
 endif
 
-IPATHS 	+= -I$(MKLROOT)/include
+IPATHS 	+= -I$(MKLROOT)/include -I. -I./utils/
 
 PLG1            := wmFigaro.so
 #PLG1_CF	        += -Werror -DBUILD=${BUILD}
@@ -90,7 +90,10 @@ VolumetricCollisions/VolumetricCollisionsCPU.hh \
 WmFigaroRodShape/WmFigaroRodShape.hh \
 WmFigaroRodShape/WmFigaroRodShapeIterator.hh \
 WmFigaroRodShape/WmFigaroRodShapeUI.hh \
-constraints/WmFigConstraintNode.hh
+constraints/WmFigConstraintNode.hh \
+WmFigSelectionDisplayNode.hh \
+WmFigUtils.hh \
+WmFigRodComponentList.hh 
 
 PLG1_S          := \
 Beaker.cc \
@@ -121,7 +124,10 @@ VolumetricCollisions/VolumetricCollisionsCPU.cc \
 WmFigaroRodShape/WmFigaroRodShape.cc \
 WmFigaroRodShape/WmFigaroRodShapeIterator.cc \
 WmFigaroRodShape/WmFigaroRodShapeUI.cc \
-constraints/WmFigConstraintNode.cc
+constraints/WmFigConstraintNode.cc \
+WmFigSelectionDisplayNode.cc \
+utils/WmFigUtils.cc \
+WmFigRodComponentList.cc
 
 PLG1_L          += \
 	-lWfigaro_dbg \

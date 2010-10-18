@@ -1,4 +1,7 @@
 #include "WmFigSelectionToolCommand.hh"
+#include "WmFigSelectionDisplayNode.hh"
+#include "WmFigUtils.hh"
+#include <maya/MFnDependencyNode.h>
 
 using namespace std;
 
@@ -9,6 +12,7 @@ MString WmFigSelectionToolCommand::typeName( "wmFigSelectionToolCommand" );
 WmFigSelectionToolCommand::WmFigSelectionToolCommand()
 {
     setCommandString( typeName );
+    selectionDisplayNode = MObject::kNullObj;
 }
 
 WmFigSelectionToolCommand::~WmFigSelectionToolCommand() 
@@ -154,6 +158,60 @@ MStatus WmFigSelectionToolCommand::finalize()
     // the interesting way Maya makes us do things...
     //////////////////////////////////////////////////////
     
+    MString result;
+
+    if( !selectionDisplayNode.isNull() ) {
+		MFnDependencyNode nodeFn( selectionDisplayNode );
+		WmFigSelectionDisplayNode &displayNode = *static_cast<WmFigSelectionDisplayNode*>( nodeFn.userNode() );
+
+//		MObject figRodNode = getFigRodNodeFromSelection();
+//		nodeFn.setObject( figRodNode );
+
+		displayNode.selection.serialise( result );
+    }
+
+#if 0
+    MStringArray results;
+
+    if( !selectionDisplayNode.isNull() ) {
+		MFnDependencyNode nodeFn( selectionDisplayNode );
+		WmFigSelectionDisplayNode &displayNode = *static_cast<WmFigSelectionDisplayNode*>( nodeFn.userNode() );
+
+		MObject figRodNode = getFigRodNodeFromSelection();
+		nodeFn.setObject( figRodNode );
+
+	    MIntArray selectedRodIds;
+	    MIntArray selectedRodVertexIds;
+	    displayNode.getSelectedRodIds( selectedRodIds );
+
+	    //MGlobal::displayInfo( MString("# selected rods: ") + selectedRodIds.length() );
+	    unsigned int iVertex;
+	    unsigned int iRod;
+	    unsigned int rodId, vertexId;
+	    for( iRod=0; iRod < selectedRodIds.length(); iRod++ ) {
+	    	rodId = selectedRodIds[iRod];
+
+	    	MString selItemTxt( nodeFn.name() );
+	    	selItemTxt += MString(".rod[") + rodId + "]";
+
+	    	// @@@ combine contiguous indices like Maya does
+
+	    	selItemTxt += MString(".vtx[");
+	    	displayNode.getSelectedRodVertexIds( rodId, selectedRodVertexIds );
+	    	for( iVertex=0; iVertex < selectedRodVertexIds.length(); iVertex++ ) {
+	    		vertexId = selectedRodVertexIds[ iVertex ];
+	    		selItemTxt += vertexId;
+	    		if( iVertex < selectedRodVertexIds.length()-1 )
+	    			selItemTxt += " ";
+	    	}
+	    	selItemTxt += MString("]");
+
+	    	results.append( selItemTxt );
+	    }
+    }
+#endif
+
+#if 0
     MStringArray results;
     
     if( m_selected.size() )
@@ -188,12 +246,13 @@ MStatus WmFigSelectionToolCommand::finalize()
             results[r] = MString() + (int)m_selectedRods[r];
         }
     }
+#endif
     
-    setResult( results );
+    setResult( result );
 
     //MString result;
     //setResult( "yeh baby" );
-    
+
     return MPxToolCommand::finalize();
 }
 

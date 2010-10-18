@@ -3,6 +3,9 @@
 //#include <weta/Wmaya.hh>
 
 #include <GL/glu.h>
+#include <maya/MDagModifier.h>
+#include "WmFigUtils.hh"
+#include "WmFigSelectionDisplayNode.hh"
 
 using namespace std;
 
@@ -16,6 +19,7 @@ WmFigSelectionContext::WmFigSelectionContext() : m_helpString( "Click or drag to
     // Tell the context which XPM to use so the tool can properly
     // be a candidate for the 6th position on the mini-bar.
     setImage( "WmFigSelectionContext.xpm", MPxContext::kImage1 );
+    selectionMode = 0;
 }
 
 void WmFigSelectionContext::getClassName( MString& name ) const 
@@ -27,10 +31,28 @@ void WmFigSelectionContext::toolOnSetup(MEvent &)
 {
     MStatus stat;
     setHelpString( m_helpString );
+
+    MGlobal::executeCommand( "optionVar -q \"figSelectionMode\";", selectionMode );
+    MGlobal::displayInfo( MString("Selection mode: ") + selectionMode );
+
+    MObject figRodNode = getFigRodNodeFromSelection();
+
+    // Get the parent of the figRodNode (the transform)
+    //
+    MFnDagNode dagNodeFn( figRodNode );
+    MObject parentNode = dagNodeFn.parent( 0 );
+
+    MDagModifier dagMod;
+    figSelectionDisplayNode = dagMod.createNode( WmFigSelectionDisplayNode::TypeId, parentNode );
+    dagMod.doIt();
 }
 
 void WmFigSelectionContext::toolOffCleanup()
 {
+    if( !figSelectionDisplayNode.isNull() ) {
+		MGlobal::deleteNode( figSelectionDisplayNode );
+		figSelectionDisplayNode = MObject::kNullObj;
+	}
 }
 
 MStatus WmFigSelectionContext::doPress( MEvent& i_event ) 
@@ -66,23 +88,34 @@ MStatus WmFigSelectionContext::doRelease( MEvent& i_event )
     
     i_event.getPosition( m_xMouse, m_yMouse );
  
-//    // Simple click and release, not a marque selection and Ctrl held down
-//    if( i_event.isModifierControl() &&
-//        m_xStartMouse == m_xMouse && m_yStartMouse == m_yMouse ) {
-//    	MGlobal::displayInfo( "my selection");
-//    }
+    m_toolCommand->selectionDisplayNode = figSelectionDisplayNode;
 
-    // Work out which rods were selected
-    vector<size_t> rodIndices;
-    //searchForRodsIn2DScreenRectangle( rodIndices );
-    searchForRodsIn2DScreenRectangle( m_toolCommand->m_selected, rodIndices );
+    if( i_event.mouseButton() == MEvent::kLeftMouse ) {
+		bool shiftPressed = i_event.isModifierShift();
+		bool ctrlPressed = i_event.isModifierControl();
+		ModifySelection modifySelection = REPLACE;
 
-    M3dView view = M3dView::active3dView();
-    view.refresh( true, true );
-	
-    // Tell the command which rods the user selected in the context
-    m_toolCommand->setSelectedRods( rodIndices );
-    
+		if( shiftPressed ) {
+			if( ctrlPressed )
+				modifySelection = ADD;
+			else
+				modifySelection = TOGGLE;
+		} else {
+			if( ctrlPressed )
+				modifySelection = REMOVE;
+		}
+
+		// Work out which rods were selected
+		vector<size_t> rodIndices;
+		searchForRodsIn2DScreenRectangle( m_toolCommand->m_selected, rodIndices, modifySelection );
+
+		M3dView view = M3dView::active3dView();
+		view.refresh( true, true );
+
+		// Tell the command which rods the user selected in the context
+		m_toolCommand->setSelectedRods( rodIndices );
+    }
+
     m_toolCommand->finalize();
 
     return MS::kSuccess;
@@ -289,7 +322,8 @@ GLint WmFigSelectionContext::findRodsUsingOpenGLSelection( const double i_centre
 }
 #else
 bool WmFigSelectionContext::searchForRodsIn2DScreenRectangle( WmFigSelections &selection,
-															  vector<size_t>& o_rodIndices )
+															  vector<size_t>& o_rodIndices,
+															  ModifySelection &modifySelection )
 {
     selection.clear();
 
@@ -396,62 +430,122 @@ bool WmFigSelectionContext::searchForRodsIn2DScreenRectangle( WmFigSelections &s
     //
     //////////////////////////////////////////////////////
 
-    if( selectedWidth == 0 && selectedHeight == 0 ) // Single click
-    {
-    	//MGlobal::displayInfo( MString("SINGLE CLICK") );
-    	MIntArray selCompHierarchy;
-        if( searchForRodPoint( selectedCentreX, selectedCentreY, selectedWidth, selectedHeight, rodNode, selCompHierarchy ) )
-        {
-        	selection.push_back( WmFigSelectedItem() );
-        	WmFigSelectedItem &selItem = selection.back();
+	if( selectionMode == 0 ) { // Select rods
+		MGlobal::displayWarning( "Selection of rods currently unsupported." );
+	} else {
+		if( selectionMode == 1 ) { // Select rod vertices
+		    if( !figSelectionDisplayNode.isNull() ) {
+				MFnDependencyNode nodeFn( figSelectionDisplayNode );
+				WmFigSelectionDisplayNode &displayNode = *static_cast<WmFigSelectionDisplayNode*>( nodeFn.userNode() );
+
+				//	selection.push_back( WmFigSelectedItem() );
+				//	WmFigSelectedItem &selItem = selection.back();
+				//	//selItem.figRodNode = rodNodeObj;
+
+				MIntArray selCompHierarchy;
+		    	searchForRodVertices( selectedCentreX, selectedCentreY, selectedWidth, selectedHeight, rodNode, selCompHierarchy );
+
+		    	if( modifySelection == REPLACE ) {
+		    		displayNode.selection.removeAllRodVertices();
+					modifySelection = ADD;
+		    	}
+
+		    	if( selCompHierarchy.length() ) {
+					unsigned int i;
+					unsigned int rodId, vertexId;
+					for( i=0; i < selCompHierarchy.length()-1; i+=2 ) {
+						rodId = selCompHierarchy[i];
+						vertexId = selCompHierarchy[i+1];
+
+						bool selected = false;
+						if( modifySelection == ADD )
+							selected = true;
+						else {
+							if( modifySelection == TOGGLE ) {
+								selected = displayNode.selection.containsRodVertex( rodId, vertexId );
+								selected = !selected;
+							}
+						}
+
+						displayNode.selection.addOrRemoveRodVertex( rodId, vertexId, selected );
+						//MGlobal::displayInfo( MString("selected ") + rodId + " " + vertexId );
+					}
+		    	}
+			}
+		}
+	}
+
+//		selItem.rodId = selCompHierarchy[1];
+//		selItem.rodVertexId = selCompHierarchy[2];
+//
+//		if( !figSelectionDisplayNode.isNull() ) {
+//			MFnDependencyNode nodeFn( figSelectionDisplayNode );
+//			WmFigSelectionDisplayNode &displayNode = *static_cast<WmFigSelectionDisplayNode*>( nodeFn.userNode() );
+//			displayNode.setRodVertexSelected( selCompHierarchy[1], selCompHierarchy[2], true );
+//		}
+
+		//MGlobal::displayInfo( MString("Found hit: ") + selCompHierarchy[0] + ".rod[" + selCompHierarchy[1] + "].vtx[" + selCompHierarchy[2] + "]" );
+
+
+#if 0
+    MIntArray selCompHierarchy;
+	if( searchForRodPoint( selectedCentreX, selectedCentreY, selectedWidth, selectedHeight, rodNode, selCompHierarchy ) )
+	{
+		selection.push_back( WmFigSelectedItem() );
+		WmFigSelectedItem &selItem = selection.back();
 
 //        	MSelectionList selList;
 //        	MDagPath dagPath;
 //        	selList.add( rodNodeObj );
 //        	selList.getDagPath( 0, dagPath );
 
-        	//selItem.figRodPath = rodNodeDagPath;
-        	selItem.figRodNode = rodNodeObj;
-        	selItem.rodId = selCompHierarchy[1];
-        	selItem.rodVertexId = selCompHierarchy[2];
+		//selItem.figRodPath = rodNodeDagPath;
+		selItem.figRodNode = rodNodeObj;
+		selItem.rodId = selCompHierarchy[1];
+		selItem.rodVertexId = selCompHierarchy[2];
 
-        	//MGlobal::displayInfo( MString("Found hit: ") + selCompHierarchy[0] + ".rod[" + selCompHierarchy[1] + "].vtx[" + selCompHierarchy[2] + "]" );
-        }
+		if( !figSelectionDisplayNode.isNull() ) {
+			MFnDependencyNode nodeFn( figSelectionDisplayNode );
+			WmFigSelectionDisplayNode &displayNode = *static_cast<WmFigSelectionDisplayNode*>( nodeFn.userNode() );
+			displayNode.setRodVertexSelected( selCompHierarchy[1], selCompHierarchy[2], true );
+		}
 
-    } else
-    {
-        vector<GLuint> selectedRodIndices;
-        GLint numHits = findRodsUsingOpenGLSelection( selectedCentreX, selectedCentreY, selectedWidth,
-                            selectedHeight, rodNode, selectedRodIndices );
+		//MGlobal::displayInfo( MString("Found hit: ") + selCompHierarchy[0] + ".rod[" + selCompHierarchy[1] + "].vtx[" + selCompHierarchy[2] + "]" );
+	}
+#endif
 
-        //////////////////////////////////////////////////////
-        //
-        // Process hits.
-        //
-        //////////////////////////////////////////////////////
+#if 0 // This is selection of rods not rod vertices
+    vector<GLuint> selectedRodIndices;
+	GLint numHits = findRodsUsingOpenGLSelection( selectedCentreX, selectedCentreY, selectedWidth,
+						selectedHeight, rodNode, selectedRodIndices );
 
-        if ( numHits > 0 )
-        {
-            o_rodIndices.resize( numHits );
+	//////////////////////////////////////////////////////
+	//
+	// Process hits.
+	//
+	//////////////////////////////////////////////////////
 
-            ///////////////////////////////////////////////////
-            // Skip through the results array picking out the
-            // indices of rods that were hit. We can safely
-            // ignore most stuff as we know there is only
-            // one name per rod due to the way we did selection
-            // below.
-            ///////////////////////////////////////////////////
+	if ( numHits > 0 )
+	{
+		o_rodIndices.resize( numHits );
 
-            size_t index = 0;
-            for ( size_t i=0; i<numHits; i++ )
-            {
-                index += 3;
-                o_rodIndices[ i ] = selectedRodIndices[ index ];
-                index++;
-            }
-        }
-    }
+		///////////////////////////////////////////////////
+		// Skip through the results array picking out the
+		// indices of rods that were hit. We can safely
+		// ignore most stuff as we know there is only
+		// one name per rod due to the way we did selection
+		// below.
+		///////////////////////////////////////////////////
 
+		size_t index = 0;
+		for ( size_t i=0; i<numHits; i++ )
+		{
+			index += 3;
+			o_rodIndices[ i ] = selectedRodIndices[ index ];
+			index++;
+		}
+	}
+#endif
 
     glMatrixMode( GL_MODELVIEW );
     glPopMatrix();
@@ -461,6 +555,7 @@ bool WmFigSelectionContext::searchForRodsIn2DScreenRectangle( WmFigSelections &s
     return true;
 }
 
+#if 0 // PREVIOUS CODE
 bool WmFigSelectionContext::searchForRodPoint(
 	const double i_centreX, const double i_centreY,
     const double i_width, const double i_height,
@@ -592,6 +687,131 @@ bool WmFigSelectionContext::searchForRodPoint(
 
     return (selCompHierarchy.length() != 0);
 }
+#endif
+
+bool WmFigSelectionContext::searchForRodVertices(
+	const double i_centreX, const double i_centreY,
+    const double i_width, const double i_height,
+    WmFigRodNode* i_rodNode,
+    MIntArray &selCompHierarchy )
+{
+	selCompHierarchy.clear();
+
+    WmFigRodGroup* rodGroup = i_rodNode->rodGroup();
+    if ( rodGroup->numberOfRealRods() == 0 )
+        return false;
+
+    GLint viewport[4];
+    glGetIntegerv( GL_VIEWPORT, viewport );
+
+    GLfloat projectionMatrix[16];
+    glGetFloatv( GL_PROJECTION_MATRIX, projectionMatrix );
+
+    glMatrixMode( GL_PROJECTION );
+    glPushMatrix();
+    glLoadIdentity();
+    gluPickMatrix( i_centreX, i_centreY, fmax( i_width, 5.0 ), fmax( i_height, 5.0 ), viewport );
+    //gluPickMatrix( i_centreX, i_centreY, 5, 5, viewport );
+    glMultMatrixf( projectionMatrix );
+
+    const int BUFSIZE = 512;
+    GLuint selectBuf[BUFSIZE]; // @@@ This will cause the compiler to error as I'd expect but no line number or details in the compiler output
+    GLint numHits;
+
+    glSelectBuffer( BUFSIZE, selectBuf );
+    glRenderMode( GL_SELECT );
+
+    glInitNames();
+    //glPushName( 0 ); // There is only one wmFigRodNode being selected so it will always be 0
+
+	const size_t nRods = rodGroup->numberOfRods();
+
+#if 1
+	glColor3f( 1.0, 0.0, 0.0 );
+	glPointSize( 10.0 );
+
+//	for( size_t r = 0u; r < nRods; ++r )
+//    {
+//        glLoadName( (GLuint) r );
+//
+//        for( size_t v = 1, n = rodGroup->elasticRod( r )->nv(); v < n; ++v )
+//        {
+//        	glBegin( GL_POINTS );
+//        	const Vec3d p = rodGroup->elasticRod( r )->getVertex( v - 1 );
+//        	//MGlobal::displayInfo( MString("pt: ") + p[0] + ", " + p[1] + ", " + p[2] );
+//            glVertex3f( p[0], p[1], p[2] );
+//            glEnd();
+//        }
+//    }
+
+	for( size_t ri = 0; ri < nRods; ri++ )
+    {
+		glPushName( (GLuint)ri ); // Rod Id
+
+		const int nVerts = rodGroup->elasticRod( ri )->nv();
+        for( size_t vi = 0; vi < nVerts; vi++ )
+        {
+        	glPushName( (GLuint)vi ); // Vertex Id
+        	glBegin( GL_POINTS );
+        	const Vec3d p = rodGroup->elasticRod( ri )->getVertex( vi );
+            glVertex3f( p[0], p[1], p[2] );
+            glEnd();
+            glPopName();
+        }
+        glPopName();
+    }
+	//glPopName();
+
+#else
+	glLineWidth(4);
+
+	for( size_t r = 0u; r < nRods; ++r )
+    {
+        glLoadName( (GLuint) r );
+
+        // @@@ draw these as vertices
+
+        glBegin( GL_LINE_STRIP );
+        for( size_t v = 1, n = rodGroup->elasticRod( r )->nv(); v < n; ++v )
+        {
+            const Vec3d p = rodGroup->elasticRod( r )->getVertex( v - 1 );
+            glVertex3f( p[0], p[1], p[2] );
+        }
+        glEnd();
+    }
+#endif
+
+    numHits = glRenderMode( GL_RENDER );
+
+    // Restore the previous projection
+    //
+    glMatrixMode( GL_PROJECTION );
+    glPopMatrix();
+
+    //MGlobal::displayInfo( MString("Found Hits: ") + numHits );
+
+    // Process the hits
+    //
+    if ( numHits > 0 )
+    {
+    	GLuint *ptr = selectBuf;
+    	GLuint nNames, iName;
+    	for( size_t iHit=0; iHit < numHits; iHit++ )
+    	{
+    		nNames = *ptr;
+    		if( nNames != 2 ) {
+    			MGlobal::displayInfo( MString("# of OpenGL selection names != 2: ") + nNames );
+    		}
+    		ptr += 3;
+    		for( iName=0; iName < nNames; iName++, ptr++ ) {
+    			selCompHierarchy.append( (int)*ptr );
+    		}
+    	}
+    }
+
+    return (selCompHierarchy.length() != 0);
+}
+
 
 GLint WmFigSelectionContext::findRodsUsingOpenGLSelection(
 	const double i_centreX, const double i_centreY,
