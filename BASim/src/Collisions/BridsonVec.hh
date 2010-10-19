@@ -66,7 +66,7 @@ struct Vec
       return v[index];
    }
 
-   Vec<N,T> operator+=(const Vec<N,T> &w)
+   Vec<N,T>& operator+=(const Vec<N,T> &w)
    {
       for(unsigned int i=0; i<N; ++i) v[i]+=w[i];
       return *this;
@@ -79,7 +79,7 @@ struct Vec
       return sum;
    }
    
-   Vec<N,T> operator+=(const T &w)
+   Vec<N,T>& operator+=(const T &w)
    {
       for(unsigned int i=0; i<N; ++i) v[i]+=w;
       return *this;
@@ -93,9 +93,15 @@ struct Vec
    }
 
    
-   Vec<N,T> operator-=(const Vec<N,T> &w)
+   Vec<N,T>& operator-=(const Vec<N,T> &w)
    {
       for(unsigned int i=0; i<N; ++i) v[i]-=w[i];
+      return *this;
+   }
+
+   Vec<N,T>& operator-=(const T &w)
+   {
+      for(unsigned int i=0; i<N; ++i) v[i]-=w;
       return *this;
    }
 
