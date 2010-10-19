@@ -17,7 +17,7 @@ class RodExternalForce
 {
 public:
 
-  RodExternalForce(bool implicit = true) : m_implicit(implicit) {}
+  explicit RodExternalForce(bool implicit = true) : m_implicit(implicit) {}
 
   virtual ~RodExternalForce() {}
 

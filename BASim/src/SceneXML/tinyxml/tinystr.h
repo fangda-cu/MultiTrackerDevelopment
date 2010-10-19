@@ -94,7 +94,7 @@ class TiXmlString
 	}
 
 	// TiXmlString constructor, based on a string
-	TIXML_EXPLICIT TiXmlString ( const char * str, size_type len) : rep_(0)
+	TiXmlString ( const char * str, size_type len) : rep_(0)
 	{
 		init(len);
 		memcpy(start(), str, len);

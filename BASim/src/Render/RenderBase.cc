@@ -34,7 +34,7 @@ void RenderBase::drawVertices()
   glVertexPointer(3, GL_FLOAT, 0, &(vertices[0]));
 
   // draw the triangles
-  glDrawElements(GL_TRIANGLES, vertices.size() / 3, GL_UNSIGNED_INT, &(indices[0]));
+  glDrawElements(GL_TRIANGLES, (int)vertices.size() / 3, GL_UNSIGNED_INT, &(indices[0]));
 
   // deactivate vertex array
   glDisableClientState(GL_VERTEX_ARRAY);

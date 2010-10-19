@@ -35,7 +35,7 @@ public:
       */
      WmFigRodNurbsInput( MObject& i_nurbsAttribute, bool i_lockFirstEdgeToInput, WmFigRodGroup& i_rodGroup,
                          double i_vertexSpacing, double i_minimumRodLength, RodOptions& i_rodOptions,
-                         double i_massDamping, Vec3d& i_gravity,  RodTimeStepper::Method i_solverType, std::set< size_t >& i_simulationSet );
+                         double i_massDamping, Vec3d& i_gravity,  RodTimeStepper::Method i_solverType, std::set< int >& i_simulationSet );
 
     /**
       * @brief Default destructor
@@ -47,7 +47,7 @@ public:
       */
     virtual void initialiseRodDataFromInput( MDataBlock& i_dataBlock );
     virtual void updateRodDataFromInput( MDataBlock& i_dataBlock );
-    virtual size_t numberOfInputs( MDataBlock& i_dataBlock );
+    virtual int numberOfInputs( MDataBlock& i_dataBlock );
 
     void getAndResampleInputCurves(  MDataBlock& i_dataBlock, vector< vector<Vec3d > >& o_inputCurveVertices );
 private:
@@ -61,7 +61,7 @@ private:
     double m_massDamping;
     Vec3d m_gravity;
     RodTimeStepper::Method m_solverType;
-    std::set< size_t >& m_simulationSet;
+    std::set< int >& m_simulationSet;
 };
 
 #endif // WMFIGRODNURBSINPUT_H_

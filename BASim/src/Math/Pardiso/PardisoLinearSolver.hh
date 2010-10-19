@@ -39,7 +39,7 @@ class PardisoLinearSolver : public LinearSolverBase
 {
 public:
 
-  PardisoLinearSolver( PardisoMatrix& A );
+  explicit PardisoLinearSolver( PardisoMatrix& A );
   virtual ~PardisoLinearSolver();
 
   void parsePardisoError( int error ) const;

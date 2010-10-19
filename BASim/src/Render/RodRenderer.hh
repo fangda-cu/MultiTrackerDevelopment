@@ -24,7 +24,7 @@ public:
 
   enum DrawMode { SIMPLE, SMOOTH, NONE };
 
-  RodRenderer(ElasticRod& rod);
+  explicit RodRenderer(ElasticRod& rod);
 
   void render();
 

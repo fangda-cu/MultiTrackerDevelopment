@@ -155,9 +155,9 @@ MStatus WmFigCombToolCommand::finalize()
     //////////////////////////////////////////////////////
     
     MStringArray results;
-    results.setLength( m_selectedRods.size() );
+    results.setLength( (int)m_selectedRods.size() );
     
-    for ( size_t r=0; r<m_selectedRods.size(); r++ )
+    for ( int r=0; r<(int)m_selectedRods.size(); r++ )
     {
      //   appendToResult( results[ r ] );
         results[ r ] = m_selectedRods[ r ];

@@ -19,7 +19,7 @@ namespace BASim {
       RodReverseSolver(ElasticRod *rod, RodTimeStepper *stepper);
       ~RodReverseSolver();
   
-      bool RodReverseSolver::execute();
+      bool execute();
       
     private:
       ElasticRod* m_rod;

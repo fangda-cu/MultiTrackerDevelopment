@@ -17,7 +17,7 @@ class RodTube
 {
 public:
 
-  RodTube(ElasticRod& rod, int slices = 12, bool twistPoints = true);
+  explicit RodTube(ElasticRod& rod, int slices = 12, bool twistPoints = true);
   ~RodTube() {}
 
   void setSlices(int slices);

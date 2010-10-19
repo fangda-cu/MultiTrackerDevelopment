@@ -159,12 +159,12 @@ namespace BASim {
     /**
      * Number of rods this controller is responsible for.
      */
-    int getNumRods() const { return m_rods.size(); };
+    int getNumRods() const { return (int)m_rods.size(); };
 
     /**
      * Number of triangle meshes this controller is responsible for.
      */
-    int getNumTriangleMeshes() const { return m_triangle_meshes.size(); };
+    int getNumTriangleMeshes() const { return (int)m_triangle_meshes.size(); };
     
     // TODO: Move these to some kind of automated test suite    
     void testCoplanarityTime();

@@ -505,8 +505,8 @@ private:
     // If we found a leaf, add to the total number of objects
     if( isLeaf(node) )
     {
-      num_edges += node->edge_indcs.size();
-      num_faces += node->face_indcs.size();
+      num_edges += (int)node->edge_indcs.size();
+      num_faces += (int)node->face_indcs.size();
     }
     // Otherwise recurse on the children
     if( hasLeftChild(node)  ) computeNumEnclosedObjects( node->children[0], num_edges, num_faces );
@@ -621,7 +621,7 @@ private:
   int numContainedObjects( BVHAABBNode* node )
   {
     assert( node != NULL );
-    return node->edge_indcs.size() + node->face_indcs.size();
+    return int(node->edge_indcs.size() + node->face_indcs.size());
   }
   
   double computeNodeVolume( BVHAABBNode* node )
@@ -1242,7 +1242,7 @@ private:
     axis_extents.push_back(ypair);
     axis_extents.push_back(zpair);
     std::sort(axis_extents.begin(),axis_extents.end());
-    for( int i = axis_extents.size()-1; i >= 0; --i )
+    for( int i = (int)axis_extents.size()-1; i >= 0; --i )
     {
       if     ( axis_extents[i].second == 0 ) { if( splitOnXMedian( edge_indcs, face_indcs, to_divide ) ) {return;} }
       else if( axis_extents[i].second == 1 ) { if( splitOnYMedian( edge_indcs, face_indcs, to_divide ) ) {return;} }

@@ -132,7 +132,7 @@ public:
     static MObject oa_numberOfRods;
 
     // Returns the number of rods this node has input data for
-    //size_t numberOfRods();
+    //int numberOfRods();
 
    // void initialiseRodData( vector<RodData*>* i_rodDataMap );
     
@@ -147,7 +147,7 @@ public:
     //
     ///////////////////////////////////////////////////////////
     
-    MMatrix getRodEdgeMatrix( size_t i_rod, size_t i_edge );
+    MMatrix getRodEdgeMatrix( int i_rod, int i_edge );
     
     /*vector<RodData*>* getRodData()
     {
@@ -205,7 +205,7 @@ private:
     
     World* mx_world;
     
-    size_t m_numberOfInputCurves;
+    int m_numberOfInputCurves;
     
     double m_percentageOfBarberShopStrands;
     
@@ -235,7 +235,7 @@ private:
     RodTimeStepper::Method m_solverType;
 
     Vec3d m_gravity;
-    std::set< size_t > m_simulationSet;
+    std::set< int > m_simulationSet;
 
 };
 

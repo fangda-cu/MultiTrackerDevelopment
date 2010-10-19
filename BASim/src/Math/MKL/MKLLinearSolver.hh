@@ -20,7 +20,7 @@ class MKLLinearSolver : public LinearSolverBase
 {
 public:
 
-  MKLLinearSolver(BandMatrix& A);
+  explicit MKLLinearSolver(BandMatrix& A);
   virtual ~MKLLinearSolver();
 
   virtual int solve(VecXd& x, const VecXd& b);

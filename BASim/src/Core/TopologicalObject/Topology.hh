@@ -144,7 +144,7 @@ public:
     : m_verts(3)
   {}
 
-  FaceTopology( const int& n )
+  explicit FaceTopology( const int& n )
     : m_verts(n)
   {
     assert( n >= 3 );

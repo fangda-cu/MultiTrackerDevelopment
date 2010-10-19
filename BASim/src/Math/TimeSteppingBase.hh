@@ -50,7 +50,7 @@ public:
 
 protected:
 
-  DiffEqSolver(Scalar time = 0, Scalar dt = 0.1)
+  explicit DiffEqSolver(Scalar time = 0, Scalar dt = 0.1)
     : m_time(time)
     , m_dt(dt)
     , m_maxit(50)

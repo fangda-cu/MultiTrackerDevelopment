@@ -85,8 +85,8 @@ void Beaker::resetEverything()
     /*for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
     {
         vector<RodData*>& rodData = rdmItr->second;
-        size_t numRods = rodData.size();
-        for ( size_t r=0; r<numRods; r++ )
+        int numRods = rodData.size();
+        for ( int r=0; r<numRods; r++ )
         {
             // We're safe to clear this vector as the individual destructors will safely delete the
             // rod data in each vector element.
@@ -173,7 +173,17 @@ void Beaker::resetTimers()
     m_totalSimTime = 0.0;
 }
 
-std::string Beaker::makeString( double i_val )
+inline std::string makeString( int i_val )
+{
+    return str( boost::format( "%d" ) % i_val );
+}
+
+inline std::string makeString( size_t i_val )
+{
+    return str( boost::format( "%z" ) % i_val );
+}
+
+inline std::string makeString( double i_val )
 {
     return str( boost::format( "%.2f" ) % i_val );
 }
@@ -271,15 +281,15 @@ double Beaker::stopTimer( timeval& i_startTimer )
     }
 }*/
 
-void Beaker::addRodsToWorld( size_t i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
+void Beaker::addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
 {
     m_rodDataMap[ i_rodGroupIndex ] = i_rodGroup;
     
-    size_t numRods = m_rodDataMap[ i_rodGroupIndex ]->numberOfRods();
+    int numRods = m_rodDataMap[ i_rodGroupIndex ]->numberOfRods();
     
     m_initialRodConfigurations.clear();
 
-    for ( size_t r=0; r<numRods; r++ )
+    for ( int r=0; r<numRods; r++ )
     {
         if ( !m_rodDataMap[ i_rodGroupIndex ]->shouldSimulateRod( r ) )
             continue;
@@ -296,7 +306,7 @@ void Beaker::addRodsToWorld( size_t i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
         for ( size_t v=0;v<initialRodConfiguration.initialRodVertexPositions.size(); ++v )
         {
             initialRodConfiguration.initialRodVertexPositions[ v ] = 
-                m_rodDataMap[ i_rodGroupIndex ]->elasticRod( r )->getVertex( v );
+                m_rodDataMap[ i_rodGroupIndex ]->elasticRod( r )->getVertex( (int)v );
         }
     
         m_initialRodConfigurations.push_back( initialRodConfiguration );
@@ -373,8 +383,8 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     {
         WmFigRodGroup* pRodGroup = rdmItr->second;
 
-        size_t numRods = pRodGroup->numberOfRods();
-        for ( size_t r=0; r<numRods; ++r )
+        int numRods = pRodGroup->numberOfRods();
+        for ( int r=0; r<numRods; ++r )
         {
             if ( pRodGroup->shouldSimulateRod( r ) )
             {
@@ -438,7 +448,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
         {
             WmFigRodGroup* pRodGroup = rdmItr->second;
-            size_t numRods = pRodGroup->numberOfRods();
+            int numRods = pRodGroup->numberOfRods();
             m_numRods += numRods;
 
             // for visualising
@@ -448,7 +458,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
             m_subSteppedVertexPositions[ s ].resize( numRods );
 
-            for ( size_t r=0; r<numRods; r++ )
+            for ( int r=0; r<numRods; r++ )
             {
                 // Check if this is a rod or just a fake place holder as the input was too short
                 if ( !pRodGroup->shouldSimulateRod( r ) )
@@ -560,7 +570,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             if ( i_zeroAllTwist )
             {
                 cerr << " zeroing all twist on rods\n";
-                 for ( size_t r=0; r<numRods; r++ )
+                 for ( int r=0; r<numRods; r++ )
                 {
                     // Check if this is a rod or just a fake place holder as the input was too short
                     if ( !pRodGroup->shouldSimulateRod( r ) )
@@ -587,7 +597,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 vector< FrameData > frameData;
                 frameData.resize( numRods );
 
-                for ( size_t r=0; r<numRods; ++r )
+                for ( int r=0; r<numRods; ++r )
                 {
                     ElasticRod* rod = pRodGroup->elasticRod( r );
                     for ( int v=0; v<rod->nv(); ++v )
@@ -792,9 +802,9 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
             {
                 WmFigRodGroup* pRodGroup = rdmItr->second;
-                size_t numRods = pRodGroup->numberOfRods();
+                int numRods = pRodGroup->numberOfRods();
 
-                for ( size_t r=0; r<numRods; r++ )
+                for ( int r=0; r<numRods; r++ )
                 {
                     BASim::ElasticRod* rod = pRodGroup->elasticRod( r );
                     rod->updateReferrenceProperties();
@@ -853,11 +863,11 @@ void Beaker::storeMaterialFrames()
     for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
     {
         vector<RodData*>& rodData = rdmItr->second;
-        size_t numRods = rodData.size();
-        for ( size_t r=0; r<numRods; r++ )
+        int numRods = rodData.size();
+        for ( int r=0; r<numRods; r++ )
         {
             ElasticRod* rod = rodData[ r ]->rod;
-            for ( size_t e=0; e<rod->ne(); e++ )
+            for ( int e=0; e<rod->ne(); e++ )
             {
                 rodData[ r ]->materialFrame1[ e ] = rod->getMaterial1( e );
                 rodData[ r ]->materialFrame2[ e ] = rod->getMaterial2( e );
@@ -874,8 +884,8 @@ void Beaker::storeMaterialFrames()
     for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
     {
         vector<RodData*>& rodData = rdmItr->second;
-        size_t numRods = rodData.size();
-        for ( size_t r=0; r<numRods; r++ )
+        int numRods = rodData.size();
+        for ( int r=0; r<numRods; r++ )
         {
             VecXd& forces = dynamic_cast<RodTimeStepper*>(rodData[r]->stepper->getTimeStepper())->getForcesAtLastStep();
             cerr << "forces at last step = \n" << forces << endl;
@@ -962,15 +972,15 @@ void Beaker::draw()
     if ( m_shouldDrawSubsteppedVertices )
     {
         // Draw the onion skinned interpolated vertex positions
-        for ( size_t s=0; s<m_subSteppedVertexPositions.size(); ++s )
+        for ( int s=0; s<(int)m_subSteppedVertexPositions.size(); ++s )
         {
-            for ( size_t r=0; r<m_subSteppedVertexPositions[ s ].size(); ++r )
+            for ( int r=0; r<m_subSteppedVertexPositions[ s ].size(); ++r )
             {
                 float fraction = (float)(s)/m_subSteppedVertexPositions.size();
                 glColor3f( fraction, fraction, fraction );
                 glBegin( GL_LINE_STRIP );
                     
-                for ( size_t c=0; c<m_subSteppedVertexPositions[ s ][ r ].size(); ++c )
+                for ( int c=0; c<m_subSteppedVertexPositions[ s ][ r ].size(); ++c )
                 {
                     Vec3d p = m_subSteppedVertexPositions[ s ][ r ][ c ];
                     glVertex3d( p[ 0 ], p[ 1 ], p[ 2 ] );
@@ -984,8 +994,8 @@ void Beaker::draw()
     /*for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
     {
         vector<RodData*>& rodData = rdmItr->second;
-        size_t numRods = rodData.size();
-        for ( size_t r=0; r<numRods; r++ )
+        int numRods = rodData.size();
+        for ( int r=0; r<numRods; r++ )
         {
             rodData[ r ]->rodRenderer->render();
         }
@@ -993,7 +1003,7 @@ void Beaker::draw()
 
     /*glLineWidth(5.0);
     glBegin( GL_LINES );
-    for ( size_t r=0; r<m_rodRootMaterialFrame.size(); r++ )
+    for ( int r=0; r<m_rodRootMaterialFrame.size(); r++ )
     {
         glColor3d(1,1,1);
         Vec3d p0 = Vec3d(0,0,0);
@@ -1042,15 +1052,15 @@ void Beaker::draw()
     for ( RodDataMapIterator rdmItr = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
     {
         vector<RodData*>& rodData = rdmItr->second;
-        size_t numRods = rodData.size();
-        for ( size_t r=0; r<numRods; r++ )
+        int numRods = rodData.size();
+        for ( int r=0; r<numRods; r++ )
         {
             BASim::ElasticRod* rod = rodData[r]->rod;
             if ( rodData[r]->ALLprevVertexPositions.size() != 0 )
             {
                 glColor3d(0,0,1);
                 glBegin( GL_LINE_STRIP );
-                size_t total = rodData[r]->ALLprevVertexPositions.size();
+                int total = rodData[r]->ALLprevVertexPositions.size();
                 for ( int c=0; c<total; c++ )
                 {
                     if ( c>0 && c%rod->nv()==0 )
@@ -1068,7 +1078,7 @@ void Beaker::draw()
             {
                 glColor3d(1,0,0);
                 glBegin( GL_LINE_STRIP );
-                size_t total = rodData[r]->ALLnextVertexPositions.size();
+                int total = rodData[r]->ALLnextVertexPositions.size();
                 for ( int c=0; c<total; c++ )
                 {
                     if ( c>0 && c%rod->nv()==0 )
@@ -1086,7 +1096,7 @@ void Beaker::draw()
             {
                 glColor3d(0,1,0);
                 glBegin( GL_LINE_STRIP );
-                size_t total = rodData[r]->ALLcurrVertexPositions.size();
+                int total = rodData[r]->ALLcurrVertexPositions.size();
                 for ( int c=0; c<total; c++ )
                 {
                     if ( c>0 && c%rod->nv()==0 )
@@ -1106,7 +1116,7 @@ void Beaker::draw()
 }
 
 
-bool Beaker::collisionMeshInitialised( const size_t id )
+bool Beaker::collisionMeshInitialised( const int id )
 {
     BASim::CollisionMeshDataHashMapIterator itr = m_collisionMeshMap.find( id );
     if ( itr != m_collisionMeshMap.end() && itr->second )
@@ -1115,13 +1125,13 @@ bool Beaker::collisionMeshInitialised( const size_t id )
     return false;
 }
 
-void Beaker::initialiseCollisionMesh( BASim::CollisionMeshData *collisionMeshData, size_t id )
+void Beaker::initialiseCollisionMesh( BASim::CollisionMeshData *collisionMeshData, int id )
 {
     m_collisionMeshMap[ id ] = collisionMeshData;
     m_collisionMeshMap[ id ]->initialize();
 }
 
-void Beaker::removeCollisionMesh( const size_t id )
+void Beaker::removeCollisionMesh( const int id )
 {
     std::cout << "Removing collision mesh with id " << id << std::endl;
 

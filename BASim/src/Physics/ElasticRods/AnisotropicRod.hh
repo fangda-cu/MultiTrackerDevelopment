@@ -18,7 +18,7 @@ class AnisotropicRod : public ElasticRod
 {
 public:
 
-  AnisotropicRod(int numVertices = 3);
+  explicit AnisotropicRod(int numVertices = 3);
 
   void setup();
 };

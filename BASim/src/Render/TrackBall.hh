@@ -59,7 +59,7 @@ public:
   };
 
   /// Default constructor.
-  TrackBall(Camera* c);
+  explicit TrackBall(Camera* c);
 
   /// Start a rotational mouse motion.
   /// Position in [-1,1] x [-1,1].

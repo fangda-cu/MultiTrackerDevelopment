@@ -18,7 +18,7 @@ namespace BASim {
 class RodBendingForceSym : public RodForceT<VertexStencil>
 {
 public:
-  RodBendingForceSym(ElasticRod& rod, bool vscs = false, bool runinit = true);
+  explicit RodBendingForceSym(ElasticRod& rod, bool vscs = false, bool runinit = true);
 
   virtual Scalar globalEnergy();
   virtual void globalForce(VecXd& force);

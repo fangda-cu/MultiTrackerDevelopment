@@ -25,7 +25,7 @@ namespace BASim {
   
     enum DrawMode { DBG, FLAT, NONE };
 
-    TriangleMeshRenderer( const TriangleMesh& mesh );
+    explicit TriangleMeshRenderer( const TriangleMesh& mesh );
     
     void render();
     

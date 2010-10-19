@@ -20,7 +20,7 @@ public:
   typedef Eigen::Matrix<Scalar, 11, 1> ElementForce;
   typedef Eigen::Matrix<Scalar, 11, 11> ElementJacobian;
 
-  RodTwistingForce(ElasticRod& rod);
+  explicit RodTwistingForce(ElasticRod& rod);
 
   virtual Scalar globalEnergy();
   virtual void globalForce(VecXd& force);

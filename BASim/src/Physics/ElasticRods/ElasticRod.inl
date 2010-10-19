@@ -229,13 +229,6 @@ inline void ElasticRod::fixVert(int i)
     property(m_fixed).push_back(vertIdx(i, coordinate));
 }
 
-inline void ElasticRod::unfixVert(int i)
-{
-  if (!vertFixed(i)) return;
-
-  assert(!"unfixVert not implemented!");
-}
-
 inline bool ElasticRod::edgeFixed(const edge_handle& eh) const
 {
   return property(m_edgeFixed)[eh];
@@ -253,13 +246,6 @@ inline void ElasticRod::fixEdge(int i)
   property(m_edgeFixed)[i] = true;
   property(m_fixedEdges).push_back(i);
   property(m_fixed).push_back(edgeIdx(i));
-}
-
-inline void ElasticRod::unfixEdge(int i)
-{
-  if (!edgeFixed(i)) return;
-
-  assert(!"unfixEdge not implemented!");
 }
 
 inline const IntArray& ElasticRod::fixed() const

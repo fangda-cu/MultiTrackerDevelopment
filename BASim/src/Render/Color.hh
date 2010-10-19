@@ -24,7 +24,7 @@ public:
 
   typedef double Channel;
 
-  Color(const Channel& r = 1, const Channel& g = 1, const Channel& b = 1,
+  explicit Color(const Channel& r = 1, const Channel& g = 1, const Channel& b = 1,
         const Channel& alpha = 1)
     : m_color(r, g, b, alpha)
   {}

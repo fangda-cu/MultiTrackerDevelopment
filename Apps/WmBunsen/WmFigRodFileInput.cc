@@ -15,7 +15,7 @@ WmFigRodFileInput::~WmFigRodFileInput()
 
 void WmFigRodFileInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
 {
-    size_t numRodsInFile;
+    int numRodsInFile;
     vector<vector<Vec3d> > rodVertices;
     vector<vector<Vec3d> > unsimulatedRodVertices;
 

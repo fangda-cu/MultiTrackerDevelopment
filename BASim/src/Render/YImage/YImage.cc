@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <png.h>
+#include <boost/static_assert.hpp>
 
 // for: #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 // we use this to determine the pixel format on the fly
@@ -16,7 +17,7 @@ YImage::YImage()
   , m_height(0)
   , m_data(NULL)
 {
-  assert(sizeof(YPixel) == 4 && "YPixel struct shouldn't be padded");
+  BOOST_STATIC_ASSERT(sizeof(YPixel) == 4); // YPixel struct shouldn't be padded
 }
 
 YImage::YImage(const YImage& rhs)
@@ -424,7 +425,7 @@ bool YImage::load(const char* fname)
 
     // fprintf(stderr, "width: %d, height: %d\n", (int) widthh, (int) heightt);
 
-    resize(widthh, heightt);
+    resize((int)widthh, (int)heightt);
   }
 
   // Now we can create a rows[] pointing into our data* and read the

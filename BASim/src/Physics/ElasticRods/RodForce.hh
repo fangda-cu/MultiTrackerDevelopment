@@ -23,7 +23,7 @@ public:
   typedef ElasticRod::vertex_handle vertex_handle;
   typedef ElasticRod::edge_handle   edge_handle;
 
-  RodForce(ElasticRod& rod, const std::string& name = "RodForce");
+  explicit RodForce(ElasticRod& rod, const std::string& name = "RodForce");
   virtual ~RodForce() {}
 
   const std::string& getName() const;
@@ -74,7 +74,7 @@ public:
 
   typedef typename Stencil::iterator iterator;
 
-  RodForceT(ElasticRod& rod, const std::string& name = "RodForce")
+  explicit RodForceT(ElasticRod& rod, const std::string& name = "RodForce")
     : RodForce(rod,name)
     , m_stencil(rod)
   {}

@@ -98,7 +98,7 @@ namespace BASim {
     //typedef std::map<std::string,PairVectorBase*> PairVectorBaseMap;
     typedef std::pair<std::string,std::string> StringPair;
 
-    PairVectorBase( const std::pair<std::string,std::string>& label );
+    explicit PairVectorBase( const std::pair<std::string,std::string>& label );
     virtual ~PairVectorBase();
     
     const std::pair<std::string,std::string>& getLabel() const;
@@ -139,7 +139,7 @@ namespace BASim {
   {
   public:
 
-    PairVector( const std::pair<std::string,std::string>& label )
+    explicit PairVector( const std::pair<std::string,std::string>& label )
     : PairVectorBase( label )
     {}
     virtual ~PairVector() {}

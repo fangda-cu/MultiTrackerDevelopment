@@ -19,7 +19,7 @@ class SymplecticEuler : public DiffEqSolver
 {
 public:
 
-  SymplecticEuler(ODE& ode)
+  explicit SymplecticEuler(ODE& ode)
     : m_diffEq(ode)
     , m_pDot()
     , m_x()

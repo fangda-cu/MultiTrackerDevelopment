@@ -1528,14 +1528,14 @@ MStatus WmFigaroCmd::createDagNode( const char *transformName, const char *nodeT
     
               MString shapeName;
               if (cp != sp)
-                shapeName = transformNameStr.substring(0, cp - sp);
+                shapeName = transformNameStr.substring(0, int(cp - sp));
               else
                 shapeName = transformNameStr;
     
               shapeName += "Shape";
     
               if (cp != ep)
-                shapeName += transformNameStr.substring(cp - sp + 1, ep - sp);
+                shapeName += transformNameStr.substring(int(cp - sp + 1), int(ep - sp));
     
               rStatus = mDagModifier.renameNode(shapeObj, shapeName);
               if (rStatus)

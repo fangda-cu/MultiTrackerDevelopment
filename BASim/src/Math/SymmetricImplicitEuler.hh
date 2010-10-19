@@ -29,7 +29,7 @@ namespace BASim
   {
   public:
     
-    SymmetricImplicitEuler(ODE& ode)
+    explicit SymmetricImplicitEuler(ODE& ode)
     : m_diffEq(ode)
     , m_ndof(-1)
     , m_mass()

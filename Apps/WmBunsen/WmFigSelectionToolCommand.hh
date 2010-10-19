@@ -81,7 +81,7 @@ public:
     }
     
     // Set the list of rods the user selected using the context.
-    void setSelectedRods( std::vector<size_t>& i_selectedRods )
+    void setSelectedRods( std::vector<int>& i_selectedRods )
     {
         m_selectedRods = i_selectedRods;
     }
@@ -101,7 +101,7 @@ private:
     MStatus updateContextOptions();
     
     // This is the list of rods the user selected in the viewport.
-    std::vector<size_t> m_selectedRods;
+    std::vector<int> m_selectedRods;
 };
 
 #endif

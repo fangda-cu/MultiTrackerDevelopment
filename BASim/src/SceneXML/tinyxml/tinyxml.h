@@ -738,7 +738,7 @@ public:
 	virtual bool Accept( TiXmlVisitor* visitor ) const = 0;
 
 protected:
-	TiXmlNode( NodeType _type );
+	explicit TiXmlNode( NodeType _type );
 
 	// Copy to the allocated object. Shared functionality between Clone, Copy constructor,
 	// and the assignment operator.
@@ -941,7 +941,7 @@ class TiXmlElement : public TiXmlNode
 {
 public:
 	/// Construct an element.
-	TiXmlElement (const char * in_value);
+	explicit TiXmlElement (const char * in_value);
 
 	#ifdef TIXML_USE_STL
 	/// std::string constructor.
@@ -1158,7 +1158,7 @@ public:
 	/// Constructs an empty comment.
 	TiXmlComment() : TiXmlNode( TiXmlNode::TINYXML_COMMENT ) {}
 	/// Construct a comment from text.
-	TiXmlComment( const char* _value ) : TiXmlNode( TiXmlNode::TINYXML_COMMENT ) {
+	explicit TiXmlComment( const char* _value ) : TiXmlNode( TiXmlNode::TINYXML_COMMENT ) {
 		SetValue( _value );
 	}
 	TiXmlComment( const TiXmlComment& );
@@ -1210,7 +1210,7 @@ public:
 		normal, encoded text. If you want it be output as a CDATA text
 		element, set the parameter _cdata to 'true'
 	*/
-	TiXmlText (const char * initValue ) : TiXmlNode (TiXmlNode::TINYXML_TEXT)
+	explicit TiXmlText (const char * initValue ) : TiXmlNode (TiXmlNode::TINYXML_TEXT)
 	{
 		SetValue( initValue );
 		cdata = false;
@@ -1389,7 +1389,7 @@ public:
 	/// Create an empty document, that has no name.
 	TiXmlDocument();
 	/// Create a document with a name. The name of the document is also the filename of the xml.
-	TiXmlDocument( const char * documentName );
+	explicit TiXmlDocument( const char * documentName );
 
 	#ifdef TIXML_USE_STL
 	/// Constructor.
@@ -1632,7 +1632,7 @@ class TiXmlHandle
 {
 public:
 	/// Create a handle from any node (at any depth of the tree.) This can be a null pointer.
-	TiXmlHandle( TiXmlNode* _node )					{ this->node = _node; }
+	explicit TiXmlHandle( TiXmlNode* _node )					{ this->node = _node; }
 	/// Copy constructor
 	TiXmlHandle( const TiXmlHandle& ref )			{ this->node = ref.node; }
 	TiXmlHandle operator=( const TiXmlHandle& ref ) { this->node = ref.node; return *this; }

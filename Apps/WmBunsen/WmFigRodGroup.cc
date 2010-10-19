@@ -9,17 +9,17 @@ WmFigRodGroup::~WmFigRodGroup()
     removeAllRods();
 }
 
-size_t WmFigRodGroup::addRod()
+int WmFigRodGroup::addRod()
 {
     // This is a place holder rod really has no data but exists so that the input curves/strand
     // indices line up with which rod is which.
     RodData* rodData = new RodData();
     m_rodData.push_back( rodData );
 
-    return m_rodData.size() - 1;
+    return (int)m_rodData.size() - 1;
 }
 
-size_t WmFigRodGroup::addRod( std::vector<Vec3d>& i_rodVertices, RodOptions& i_rodOptions, 
+int WmFigRodGroup::addRod( std::vector<Vec3d>& i_rodVertices, RodOptions& i_rodOptions, 
                               double i_massDamping, BASim::Vec3d& i_gravity,  
                               RodTimeStepper::Method i_solverType, bool i_isFromCache )
 {
@@ -30,5 +30,5 @@ size_t WmFigRodGroup::addRod( std::vector<Vec3d>& i_rodVertices, RodOptions& i_r
 
     m_rodData.push_back( rodData );
 
-    return m_rodData.size() - 1;
+    return (int)m_rodData.size() - 1;
 }

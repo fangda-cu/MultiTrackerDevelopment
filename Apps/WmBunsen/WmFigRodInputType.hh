@@ -39,8 +39,8 @@ public:
       */
     virtual void initialiseRodDataFromInput( MDataBlock& i_dataBlock ) = 0;
     virtual void updateRodDataFromInput( MDataBlock& i_dataBlock );
-    virtual size_t numberOfInputs( MDataBlock& i_dataBlock ) { return 0; };
-    void resampleCurve( size_t i_numVerticesToResample, vector<MVector>& i_curve, 
+    virtual int numberOfInputs( MDataBlock& i_dataBlock ) { return 0; };
+    void resampleCurve( int i_numVerticesToResample, vector<MVector>& i_curve, 
                         vector<MVector>& o_resampledCurve );
 
 protected:

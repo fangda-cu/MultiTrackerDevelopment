@@ -7,7 +7,7 @@ RodHairsprayForce::RodHairsprayForce(ElasticRod &rod, vector<Scalar>& ks, vector
 {
   m_ks.resize(ks.size());
   m_ds.resize(ks.size());
-  for (size_t i=0; i<ks.size(); ++i)
+  for (int i=0; i<(int)ks.size(); ++i)
   {
       m_ks[i] = ks[i];
       m_ds[i] = 2.0 * std::sqrt(m_ks[i] * rod.getVertexMass(i));

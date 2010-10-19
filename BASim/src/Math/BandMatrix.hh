@@ -74,15 +74,15 @@ public:
   virtual int add(const IntArray& rowIdx, const IntArray& colIdx,
                   const MatXd& values)
   {
-    size_t nr = rowIdx.size();
-    size_t nc = colIdx.size();
+    int nr = (int)rowIdx.size();
+    int nc = (int)colIdx.size();
 
-    for (size_t i = 0; i < nr; ++i) {
+    for (int i = 0; i < nr; ++i) {
       int r = rowIdx[i];
       assert(r >= 0);
       assert(r < rows());
       Scalar* val = &m_data[(m_ku + r) * MatrixBase::m_cols];
-      for (size_t j = 0; j < nc; ++j) {
+      for (int j = 0; j < nc; ++j) {
         assert(indicesValid(r, colIdx[j]));
         *(val + colIdx[j] * (1 - MatrixBase::m_cols)) += values(i, j);
       }

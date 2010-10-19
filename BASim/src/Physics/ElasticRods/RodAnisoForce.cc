@@ -119,7 +119,7 @@ void RodAnisoForce::globalForce(VecXd& F)
 
 void RodAnisoForce::globalJacobian(int baseidx, Scalar scale, MatrixBase& Jacobian)
 {
-  assert(!"RodAnisoForce::globalJacobian not implemented");
+  BA_ERROR("RodAnisoForce::globalJacobian not implemented");
 }
 
 void RodAnisoForce::computeNablaKappa()

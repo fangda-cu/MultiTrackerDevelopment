@@ -29,7 +29,7 @@ public:
 
   enum Method { SYMPL_EULER, IMPL_EULER, SYM_IMPL_EULER, STATICS, NONE };
 
-  RodTimeStepper(ElasticRod& rod)
+  explicit RodTimeStepper(ElasticRod& rod)
     : m_rod(rod)
     , m_method(NONE)
     , m_diffEqSolver(NULL)
@@ -415,7 +415,7 @@ public:
         = m_rod.getBoundaryCondition()->scriptedEdges();
       //= m_boundaryCondition->scriptedEdges();
 
-    int nb = 3 * verts.size() + edges.size(); // # of scripted dofs
+    int nb = 3 * (int)verts.size() + (int)edges.size(); // # of scripted dofs
     indices.resize(nb);
     desired.resize(nb);
 

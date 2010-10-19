@@ -19,7 +19,7 @@ class ConjugateGradient : public LinearSolverBase
 {
 public:
 
-  ConjugateGradient(MatrixBase& A)
+  explicit ConjugateGradient(MatrixBase& A)
     : LinearSolverBase(A)
     , m_maxIterations(std::max(A.rows(), A.cols()))
     , m_currentIterations(0)

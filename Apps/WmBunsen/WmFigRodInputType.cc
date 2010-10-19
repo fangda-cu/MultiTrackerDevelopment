@@ -17,7 +17,7 @@ void WmFigRodInputType::updateRodDataFromInput( MDataBlock& i_dataBlock )
 {
 }
 
-void WmFigRodInputType::resampleCurve( size_t i_numVerticesToResample, vector<MVector>& i_curve, 
+void WmFigRodInputType::resampleCurve( int i_numVerticesToResample, vector<MVector>& i_curve, 
     vector<MVector>& o_resampledCurve )
 {
     //////////////////////////////////////////////////////
@@ -28,7 +28,7 @@ void WmFigRodInputType::resampleCurve( size_t i_numVerticesToResample, vector<MV
     //////////////////////////////////////////////////////
 
     Wvec3d positions[ i_curve.size() ];
-    for( size_t v = 0; v < i_curve.size(); ++v )
+    for( int v = 0; v < (int)i_curve.size(); ++v )
     {
         positions[ v ] = Wvec3d( i_curve[ v ].x, i_curve[ v ].y, i_curve[ v ].z );
     }
@@ -47,7 +47,7 @@ void WmFigRodInputType::resampleCurve( size_t i_numVerticesToResample, vector<MV
     
     o_resampledCurve.resize( i_numVerticesToResample );
 
-    for( size_t v = 0; v < i_numVerticesToResample; ++v )
+    for( int v = 0; v < i_numVerticesToResample; ++v )
     {
         double t = 0.0;
         float w = float( v ) / float( i_numVerticesToResample - 1 );

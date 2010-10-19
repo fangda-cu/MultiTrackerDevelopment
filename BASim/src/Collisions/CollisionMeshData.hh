@@ -124,7 +124,7 @@ public:
     //
     Velocities velocities;
     
-    size_t _nbrTriangles;
+    int _nbrTriangles;
     
     Indices _triIndices;
     Indices _edgeIndices;

@@ -105,7 +105,7 @@ public:
         m_world->property( m_maxIterHandle ) = std::max(maxIter,1);
     }
 
-    /*vector<RodData*>* rodData( size_t i_rodGroup )
+    /*vector<RodData*>* rodData( int i_rodGroup )
     {
         return &( m_rodDataMap[ i_rodGroup ] );
     }*/
@@ -212,18 +212,18 @@ public:
                        bool i_zeroAllTwist = false, double i_constraintSrength = 10.0,
                        LockedRodVertexMap* i_lockedRodVertexMap = NULL );
     
-    /*(void addRod( size_t i_rodGroup,
+    /*(void addRod( int i_rodGroup,
                  vector<Vec3d>& i_initialVertexPositions, 
                  vector<Vec3d>& i_undeformedVertexPositions,
                  RodOptions& i_options );*/
     
     void initialiseWorld();
     void resetEverything();
-    //void createSpaceForRods( size_t i_rodGroup, size_t i_numRods );
-    void addRodsToWorld( size_t i_rodGroupIndex, WmFigRodGroup* i_rodGroup );
-    bool collisionMeshInitialised( const size_t id );
-    void initialiseCollisionMesh( BASim::CollisionMeshData *collisionMeshData, size_t id );
-    void removeCollisionMesh( const size_t id );
+    //void createSpaceForRods( int i_rodGroup, int i_numRods );
+    void addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup );
+    bool collisionMeshInitialised( const int id );
+    void initialiseCollisionMesh( BASim::CollisionMeshData *collisionMeshData, int id );
+    void removeCollisionMesh( const int id );
   // void checkAllRodForces(); 
     void startTimer( timeval& i_startTimer );
     double stopTimer( timeval& i_startTimer );
@@ -231,7 +231,6 @@ public:
     void printTimingInfo();
     void setTimingsFile( std::string i_fileName );
     void setTimingEnabled( bool i_timingsEnabled );
-    std::string makeString( double i_val );
 
     void startXMLLogging( std::string& i_xmlFilePath, std::string& i_mayaSceneFilename );
     void writeXMLFileToDisk();
@@ -282,12 +281,12 @@ private:
     double m_fastestFrameTime;
     double m_slowestFrameTime;
     double m_totalSimTime;
-    size_t m_numberOfFramesSimulated;
+    int m_numberOfFramesSimulated;
     
     ofstream m_timingsFP;
     
     int m_numberofThreadsUsed;
-    size_t m_numRods;
+    int m_numRods;
     
     vector<MaterialFrame> m_rodRootMaterialFrame;
     vector<MaterialFrame> m_strandRootMaterialFrame;

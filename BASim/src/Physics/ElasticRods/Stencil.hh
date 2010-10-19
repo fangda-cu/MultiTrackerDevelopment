@@ -19,7 +19,7 @@ class Stencil
 {
 public:
 
-  Stencil(TopologicalObject& obj) : m_obj(&obj) {}
+  explicit Stencil(TopologicalObject& obj) : m_obj(&obj) {}
 
   virtual ~Stencil() {}
 
@@ -43,7 +43,7 @@ public:
   typedef typename TypeInfo<Derived>::iterator         iterator;
   typedef const typename TypeInfo<Derived>::iterator   const_iterator;
 
-  StencilT(TopologicalObject& obj) : Stencil(obj) {}
+  explicit StencilT(TopologicalObject& obj) : Stencil(obj) {}
 
   virtual Derived& operator++ () = 0;
   virtual handle_ref handle() = 0;

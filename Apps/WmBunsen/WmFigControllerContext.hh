@@ -79,7 +79,7 @@ private:
             const double i_width, const double i_height,  WmFigRodNode* rodNode,
             vector<GLuint>& o_selectionBuffer );
     
-    bool searchForRodsIn2DScreenRectangle( vector<size_t>& o_rodIndices, vector<size_t>& o_edgeIndices );
+    bool searchForRodsIn2DScreenRectangle( vector<int>& o_rodIndices, vector<int>& o_edgeIndices );
 
     MStatus drawMarqueeSelectBox() const;
     void doTool( MEvent &event );

@@ -32,7 +32,7 @@ public:
 
   typedef std::vector<RodForce*> RodForces;
 
-  ElasticRod(int numVertices = 3, bool closed = false);
+  explicit ElasticRod(int numVertices = 3, bool closed = false);
   virtual ~ElasticRod();
 
   /** \name Inherited from PhysObject */
@@ -251,12 +251,10 @@ public:
   bool vertFixed(const vertex_handle& vh) const;
   bool vertFixed(int i) const;
   void fixVert(int i);
-  void unfixVert(int i);
 
   bool edgeFixed(const edge_handle& eh) const;
   bool edgeFixed(int j) const;
   void fixEdge(int j);
-  void unfixEdge(int j);
 
   const IntArray& fixed() const;
 

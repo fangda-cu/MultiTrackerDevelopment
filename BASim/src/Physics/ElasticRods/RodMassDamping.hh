@@ -19,7 +19,7 @@ public:
 
       \param[in] damping The damping coefficient.
   */
-  RodMassDamping(const Scalar& damping)
+  explicit RodMassDamping(const Scalar& damping)
     : m_damping(damping)
   {}
 

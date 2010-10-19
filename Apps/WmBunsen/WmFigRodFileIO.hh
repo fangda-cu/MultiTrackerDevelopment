@@ -39,10 +39,10 @@ public:
       */
      ~WmFigRodFileIO();
 
-    static FILE* readNumberOfRodsFromFile( const MString i_cacheFilename, size_t& o_numRodsInFile, 
+    static FILE* readNumberOfRodsFromFile( const MString i_cacheFilename, int& o_numRodsInFile, 
             bool closeFileAfterReading = true );
     
-    static bool readDataFromRodCacheFile( const MString i_cacheFilename, size_t& o_numRodsInFile,
+    static bool readDataFromRodCacheFile( const MString i_cacheFilename, int& o_numRodsInFile,
           vector<vector<Vec3d> >& o_rodVertices, vector<vector<Vec3d> >& o_unsimulatedRodVertices );
     
     static void updateRodDataFromCacheFile( MString i_cacheFileName, WmFigRodGroup& i_rodGroup );

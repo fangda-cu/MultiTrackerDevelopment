@@ -17,7 +17,7 @@ class ViscousRod : public ElasticRod
 {
 public:
 
-  ViscousRod(int numVertices = 3);
+  explicit ViscousRod(int numVertices = 3);
 
   void setup();
 

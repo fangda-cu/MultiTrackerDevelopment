@@ -4,7 +4,7 @@
 
 WmFigRodNurbsInput::WmFigRodNurbsInput( MObject& i_nurbsAttribute, bool i_lockFirstEdgeToInput,
     WmFigRodGroup& i_rodGroup, double i_vertexSpacing, double i_minimumRodLength, RodOptions& i_rodOptions,
-    double i_massDamping, Vec3d& i_gravity,  RodTimeStepper::Method i_solverType, std::set< size_t >& i_simulationSet ) : 
+    double i_massDamping, Vec3d& i_gravity,  RodTimeStepper::Method i_solverType, std::set< int >& i_simulationSet ) : 
     m_inputNurbsAttribute( i_nurbsAttribute ), m_lockFirstEdgeToInput( i_lockFirstEdgeToInput ),
     m_rodGroup( i_rodGroup ), m_vertexSpacing( i_vertexSpacing ), m_minimumRodLength( i_minimumRodLength ),
     m_rodOptions( i_rodOptions ), m_massDamping( i_massDamping ), m_gravity( i_gravity ),  m_solverType( i_solverType ),
@@ -60,7 +60,7 @@ void WmFigRodNurbsInput::getAndResampleInputCurves( MDataBlock& i_dataBlock, vec
             MPoint cv;
             double length = 0.0;
 
-            for ( size_t v = 0; v < numCVs; v++ )
+            for ( int v = 0; v < numCVs; v++ )
             {                
                 stat = inCurveFn.getCV( v, cv, MSpace::kObject );
                 CHECK_MSTATUS( stat );
@@ -125,7 +125,7 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
 
     getAndResampleInputCurves( i_dataBlock, inputCurveVertices );
 
-    for ( size_t c=0; c< inputCurveVertices.size(); ++c )
+    for ( int c=0; c< (int)inputCurveVertices.size(); ++c )
     {
         bool isPlaceHolderRod = false;
 
@@ -143,10 +143,10 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
         {
 
             RodOptions rodOptions = m_rodOptions;
-            rodOptions.numVertices = inputCurveVertices[ c ].size();
+            rodOptions.numVertices = (int)inputCurveVertices[ c ].size();
 
             // Mass damping should be in rod options, it's dumb to pass it seperately.
-            size_t rodIndex = m_rodGroup.addRod( inputCurveVertices[ c ], rodOptions, m_massDamping, m_gravity, m_solverType );
+            int rodIndex = m_rodGroup.addRod( inputCurveVertices[ c ], rodOptions, m_massDamping, m_gravity, m_solverType );
     
             if ( m_lockFirstEdgeToInput )
             {
@@ -162,7 +162,7 @@ void WmFigRodNurbsInput::updateRodDataFromInput( MDataBlock& i_dataBlock )
 
     getAndResampleInputCurves( i_dataBlock, inputCurveVertices );
 
-    for ( size_t c=0; c< inputCurveVertices.size(); ++c )
+    for ( int c=0; c< (int)inputCurveVertices.size(); ++c )
     {
         if ( !m_rodGroup.isPlaceHolderRod( c ) )        
         {
@@ -171,7 +171,7 @@ void WmFigRodNurbsInput::updateRodDataFromInput( MDataBlock& i_dataBlock )
     }
 }
 
-size_t WmFigRodNurbsInput::numberOfInputs( MDataBlock& i_dataBlock )
+int WmFigRodNurbsInput::numberOfInputs( MDataBlock& i_dataBlock )
 {
     MStatus stat;
 

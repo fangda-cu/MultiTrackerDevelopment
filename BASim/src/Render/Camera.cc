@@ -5,6 +5,7 @@
 #include "../Core/EigenIncludes.hh"
 #include "../Core/STLIncludes.hh"
 #include "../Core/Definitions.hh"
+#include "../Core/Util.hh"
 #include "OpenGLHeaders.hh"
 #include "Camera.hh"
 
@@ -214,7 +215,7 @@ void Camera::applyProjection() const
                    m_zClipping[0], m_zClipping[1]);
 
   } else {
-    assert(!"Unknown mode");
+    BA_ERROR("Unknown mode");
   }
 
   glMatrixMode(GL_MODELVIEW);

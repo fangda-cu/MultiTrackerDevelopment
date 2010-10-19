@@ -119,7 +119,7 @@ private:
     void getRodVertices( MVectorArray& o_controlPoints );
     void updateControlPointsFromRod();
     void initialiseRod( MVectorArray* i_controlPoints );
-    void updatePointIfNotStretching( MPointArray& io_controlPoints, const size_t i_index, const MMatrix& i_matrix );
+    void updatePointIfNotStretching( MPointArray& io_controlPoints, const int i_index, const MMatrix& i_matrix );
     bool doSolverIterations( FixedRodVertexMap& i_fixedRodVertexMap );
 
     void getResampledRodCVs( bool i_needResample, MVectorArray &o_controlCVs );

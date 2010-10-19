@@ -91,7 +91,7 @@ void WmFigaroRodShape::initialiseRod( MVectorArray* i_controlPoints )
     rodVertices.resize( i_controlPoints->length() );
     //cout<<" add new rod : "<<i_controlPoints->length()<<" number of CVs "<<endl;
     
-    for ( size_t v=0; v<i_controlPoints->length(); v++ )
+    for ( int v=0; v<i_controlPoints->length(); v++ )
     {
         rodVertices[ v ] = Vec3d( (*i_controlPoints)[ v ].x, (*i_controlPoints)[ v ].y, (*i_controlPoints)[ v ].z );
         //cout<<" -- > cv : "<<v<<" : "<<(*i_controlPoints)[ v ]<<endl;
@@ -1010,9 +1010,9 @@ void WmFigaroRodShape::transformUsing( const MMatrix& matrix, const MObjectArray
 }
 
 void WmFigaroRodShape::updatePointIfNotStretching( MPointArray& io_controlPoints, 
-        const size_t i_index, const MMatrix& i_matrix )
+        const int i_index, const MMatrix& i_matrix )
 {
-    size_t edgeIndex = i_index - 1;
+    int edgeIndex = i_index - 1;
     double currLength = ( io_controlPoints[ i_index ] - io_controlPoints[ i_index - 1 ] ).length();
 
     if ( currLength > m_edgeLengths[ edgeIndex ] )

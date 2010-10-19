@@ -26,7 +26,7 @@ class VertexStencil : public StencilT<VertexStencil>
 {
 public:
 
-  VertexStencil(ElasticRod& obj)
+  explicit VertexStencil(ElasticRod& obj)
     : StencilT<VertexStencil>(obj)
   {}
 
@@ -78,7 +78,7 @@ public:
   {
     indices.resize(11);
     handle_ref h = handle();
-    ElasticRod& rod = *smart_cast<ElasticRod*>(m_obj);
+    ElasticRod& rod = smart_cast<ElasticRod&>(*m_obj);
     ElasticRod::VertexVertexIter vvit = rod.vv_iter(h);
     handle_type h_prev = *vvit;
     ++vvit;
@@ -120,8 +120,8 @@ public:
 protected:
 
   inline const ElasticRod& getRod() const
-  { return *smart_cast<const ElasticRod*>(m_obj); }
-  inline ElasticRod& getRod() { return *smart_cast<ElasticRod*>(m_obj); }
+  { return smart_cast<const ElasticRod&>(*m_obj); }
+  inline ElasticRod& getRod() { return smart_cast<ElasticRod&>(*m_obj); }
 
   iterator m_iter;
 };

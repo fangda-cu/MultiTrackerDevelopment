@@ -27,7 +27,7 @@ class ImplicitEuler : public DiffEqSolver
 {
 public:
 
-  ImplicitEuler(ODE& ode)
+  explicit ImplicitEuler(ODE& ode)
     : m_diffEq(ode)
     , m_ndof(-1)
     , m_mass()

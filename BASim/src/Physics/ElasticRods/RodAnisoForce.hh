@@ -17,7 +17,7 @@ namespace BASim {
 class RodAnisoForce : public RodAnisoBending
 {
 public:
-  RodAnisoForce(ElasticRod& rod);
+  explicit RodAnisoForce(ElasticRod& rod);
 
   Scalar globalEnergy();
   void globalForce(VecXd& force);

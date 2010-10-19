@@ -101,7 +101,7 @@ public:
   //@{
 
   virtual void computeForces(VecXd& force) {}
-  virtual void computeJacobian(MatrixBase& J) {}
+  // virtual void computeJacobian(MatrixBase& J) {}
 
   //@}
 

@@ -116,7 +116,7 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         if ( !stat )
         {
             stat.perror("WmFigRodNode::compute setClean");
-            return;
+            return MS::kFailure;
         }
     }
     else if ( i_plug == oa_rodsChanged )
@@ -283,7 +283,7 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
 void WmFigRodNode::updateKinematicEdgesFromInput()
 {
 
-    for ( size_t r = 0; r < m_rodGroup.numberOfRods(); ++r )
+    for ( int r = 0; r < (int)m_rodGroup.numberOfRods(); ++r )
     {
         EdgeTransformRodMap::iterator rodIt = m_controlledEdgeTransforms.find( r );
         if ( rodIt != m_controlledEdgeTransforms.end() )
@@ -373,7 +373,7 @@ void WmFigRodNode::updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock 
           or one of the indices is out of range then the identity matrix will be
           returned.
   */
-MMatrix WmFigRodNode::getRodEdgeMatrix( size_t i_rod, size_t i_edge )
+MMatrix WmFigRodNode::getRodEdgeMatrix( int i_rod, int i_edge )
 {
     MMatrix identMatrix;
     identMatrix.setToIdentity();
@@ -597,7 +597,7 @@ void WmFigRodNode::updateSimulationSet( MString i_simulationSetString )
     
     i_simulationSetString.split( ',', subStrings );
 
-    for ( size_t c=0; c< subStrings.length(); ++c )
+    for ( int c=0; c< subStrings.length(); ++c )
     {
         m_simulationSet.insert( subStrings[ c ].asInt() );
     }
@@ -748,9 +748,9 @@ void WmFigRodNode::compute_oa_simulatedVertices( const MPlug& i_plug, MDataBlock
     MVectorArray simulatedVerticesArray = simulatedVerticesArrayData.array( &stat );
     CHECK_MSTATUS( stat );
 
-    size_t numRods = m_rodGroup.numberOfRods();
+    int numRods = m_rodGroup.numberOfRods();
     unsigned int idx = 0;
-    for ( size_t r = 0; r < numRods; r++ )
+    for ( int r = 0; r < numRods; r++ )
     {
         unsigned int verticesInRod = m_rodGroup.numberOfVerticesInRod( r );
         simulatedVerticesArray.setLength( (unsigned int) ( simulatedVerticesArray.length() + verticesInRod ) );
@@ -800,11 +800,11 @@ void WmFigRodNode::compute_oa_nonSimulatedVertices( const MPlug& i_plug, MDataBl
     MVectorArray nonSimulatedVerticesArray = nonSimulatedVerticesArrayData.array( &stat );
     CHECK_MSTATUS( stat );
 
-    size_t numRods = m_rodGroup.numberOfRods();
+    int numRods = m_rodGroup.numberOfRods();
 
     unsigned int idx = 0;
 
-    for ( size_t r = 0; r < numRods; r++ )
+    for ( int r = 0; r < numRods; r++ )
     {
         unsigned int verticesInRod = m_rodGroup.numberOfVerticesInRod( r );
         nonSimulatedVerticesArray.setLength( (unsigned int) ( nonSimulatedVerticesArray.length() + verticesInRod ) );
@@ -852,11 +852,11 @@ void WmFigRodNode::compute_oa_verticesInEachRod( const MPlug& i_plug, MDataBlock
     CHECK_MSTATUS( stat );
 
     MIntArray verticesPerRodArray = verticesPerRodArrayData.array( &stat );
-    size_t numRods = m_rodGroup.numberOfRods();
+    int numRods = m_rodGroup.numberOfRods();
     verticesPerRodArray.setLength( (unsigned int)numRods );
     unsigned int idx = 0;
 
-    for ( size_t r = 0; r < numRods; r++ )
+    for ( int r = 0; r < numRods; r++ )
     {
         unsigned int verticesInRod = m_rodGroup.numberOfVerticesInRod( r );
         verticesPerRodArray[ (int)r ] = verticesInRod;
@@ -899,9 +899,9 @@ void WmFigRodNode::compute_oa_materialFrames( const MPlug& i_plug, MDataBlock& i
     MVectorArray materialFramesArray = materialFramesArrayData.array( &stat );
     CHECK_MSTATUS( stat );
 
-    size_t numRods = m_rodGroup.numberOfRods();
+    int numRods = m_rodGroup.numberOfRods();
     unsigned int idx = 0;
-    for ( size_t r = 0; r < numRods; r++ )
+    for ( int r = 0; r < numRods; r++ )
     {
         ElasticRod* rod = m_rodGroup.elasticRod( r );
         if ( rod != NULL )
@@ -988,16 +988,16 @@ void WmFigRodNode::compute_oa_undeformedMaterialFrames( const MPlug& i_plug, MDa
         // got here then we can safely store the material frames as the frames
         // in the groom pose
 
-        size_t numRods = m_rodGroup.numberOfRods();
+        int numRods = m_rodGroup.numberOfRods();
         unsigned int idx = 0;
-        for ( size_t r = 0; r < numRods; r++ )
+        for ( int r = 0; r < numRods; r++ )
         {
             ElasticRod* rod = m_rodGroup.elasticRod( r );
             if ( rod != NULL )
             {
                 undeformedMaterialFramesArray.setLength( (unsigned int) ( undeformedMaterialFramesArray.length() + rod->ne()*3 ) );
 
-                for ( size_t e=0; e<(size_t)rod->ne(); e++ )
+                for ( int e=0; e<rod->ne(); e++ )
                 {
                     // currently we only store the undeformed frame for the first vertex
                     Vec3d m1 =  rod->getMaterial1( e );
@@ -1026,7 +1026,7 @@ void WmFigRodNode::compute_oa_undeformedMaterialFrames( const MPlug& i_plug, MDa
         // We're not at startTime so we must be simulating and need to work out what the
         // unsimulated material frames would be at this point based on the input curve.
 
-        size_t numRods = m_rodGroup.numberOfRods();
+        int numRods = m_rodGroup.numberOfRods();
 
         // if we have no strand root frames for this frame then we can't do anything.
         // We use < rather than == because we can choose to only use a percentage
@@ -1038,7 +1038,7 @@ void WmFigRodNode::compute_oa_undeformedMaterialFrames( const MPlug& i_plug, MDa
         else
         {
             unsigned int idx = 0;
-            for ( size_t r = 0; r < numRods; r++ )
+            for ( int r = 0; r < numRods; r++ )
             {
                 ElasticRod* rod = m_rodGroup.elasticRod( r );
                 if ( rod != NULL )
@@ -1069,7 +1069,7 @@ void WmFigRodNode::compute_oa_undeformedMaterialFrames( const MPlug& i_plug, MDa
 
                     undeformedMaterialFramesArray.setLength( (unsigned int) ( undeformedMaterialFramesArray.length() + rod->ne()*3 ) );
 
-                    for ( size_t e=0; e<(size_t)rod->ne(); e++ )
+                    for ( int e=0; e<rod->ne(); e++ )
                     {
 
                         MaterialFrame materialFrame = m_rodGroup.undeformedMaterialFrame( r, e );
@@ -1157,8 +1157,8 @@ void WmFigRodNode::compute_ca_drawDataChanged( const MPlug& i_plug, MDataBlock& 
         drawMode = RodRenderer::SMOOTH;
     }
 
-    size_t numRods = m_rodGroup.numberOfRods();
-    for ( size_t r = 0; r < numRods; r++ )
+    int numRods = m_rodGroup.numberOfRods();
+    for ( int r = 0; r < numRods; r++ )
     {
         m_rodGroup.setDrawScale( drawScale );
         m_rodGroup.setDrawMode( drawMode );
@@ -1169,7 +1169,7 @@ void WmFigRodNode::compute_ca_drawDataChanged( const MPlug& i_plug, MDataBlock& 
     MArrayDataHandle inArrayH = i_dataBlock.inputArrayValue( ia_userDefinedColors, &stat );
     CHECK_MSTATUS(stat);
 
-    size_t numColoursSet = inArrayH.elementCount();
+    int numColoursSet = inArrayH.elementCount();
 
     // Get rid of all previously stored colours as the user may have removed some
     m_rodColourMap.clear();
@@ -1214,8 +1214,8 @@ void WmFigRodNode::getStrandRootFrames( MDataBlock& i_dataBlock, vector<Material
 
     o_strandRootFrames.resize( strandRootFrameVec.length()/3 );
     MVector v;
-    size_t idx = 0;
-    for ( size_t rIdx=0; rIdx<o_strandRootFrames.size(); rIdx++ )
+    int idx = 0;
+    for ( int rIdx=0; rIdx<o_strandRootFrames.size(); rIdx++ )
     {
         v = strandRootFrameVec[idx++];
         o_strandRootFrames[rIdx].m1 = Vec3d( v[0], v[1], v[2] );

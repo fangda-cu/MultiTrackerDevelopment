@@ -42,7 +42,7 @@ PHYSBAM_RPATH := -Wl,-rpath,$(PHYSBAM_LOCATION)/build/release/Public_Library -Wl
 PHYSBAM_LIB_PATH := -L$(PHYSBAM_LOCATION)/build/release/Public_Library -L/vol/bob/built/linux64/L40/bless/hugekits/boost/lib
 PHYSBAM_INCLUDE  := -I$(PHYSBAM_LOCATION)/Public_Library
 
-PLG1_CF += $(PHYSBAM_INCLUDE) -Wno-overloaded-virtual -Wno-unused -pipe -O3 -fPIC -g -fomit-frame-pointer -funroll-loops 
+PLG1_CF += $(PHYSBAM_INCLUDE) -Wno-overloaded-virtual -Wno-unused -pipe -fPIC -g -funroll-loops 
 
 
 #ifeq "$(ABI)" "LI40"

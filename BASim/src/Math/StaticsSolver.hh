@@ -30,7 +30,7 @@ class StaticsSolver : public DiffEqSolver
 {
 public:
 
-  StaticsSolver(ODE& ode)
+  explicit StaticsSolver(ODE& ode)
     : m_diffEq(ode)
     , m_initial_residual(0)
     , m_residual(0)

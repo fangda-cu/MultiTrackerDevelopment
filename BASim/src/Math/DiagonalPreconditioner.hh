@@ -17,7 +17,7 @@ class DiagonalPreconditioner : public Preconditioner
 {
 public:
 
-  DiagonalPreconditioner(const MatrixBase& M)
+  explicit DiagonalPreconditioner(const MatrixBase& M)
     : diagonals(M.rows())
   {
     for (int i = 0; i < M.rows(); ++i) {

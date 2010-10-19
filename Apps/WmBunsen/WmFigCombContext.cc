@@ -168,7 +168,7 @@ void WmFigCombContext::applyForceToRods()
     //short yScreenNew = yScreen + short( float( dyMouseSmooth ) );
 
     WmFigRodGroup* rodGroup = m_figRodNode->rodGroup();
-    size_t numberOfRods = rodGroup->numberOfRealRods();
+    int numberOfRods = rodGroup->numberOfRealRods();
     if ( numberOfRods == 0 )
     {
         return;
@@ -189,11 +189,11 @@ void WmFigCombContext::applyForceToRods()
 
     cerr << "forcevector = " << forceVector << endl;
 
-    for ( size_t r=0; r<numberOfRods; ++r )
+    for ( int r=0; r<numberOfRods; ++r )
     {
         ElasticRod* elasticRod = rodGroup->elasticRod( r );
 
-        for ( size_t v=0; v<elasticRod->nv(); ++v )
+        for ( int v=0; v<elasticRod->nv(); ++v )
         {
             Vec3d vert = elasticRod->getVertex( v );
             MPoint vertex( vert[ 0 ], vert[ 1 ], vert[ 2 ] );
@@ -272,7 +272,7 @@ MStatus WmFigCombContext::doRelease( MEvent& i_event )
     i_event.getPosition( m_xMouse, m_yMouse );
  
     // Work out which rods were selected
-    //vector<size_t> rodIndices;
+    //vector<int> rodIndices;
     //searchForRodsIn2DScreenRectangle( rodIndices );
 
     M3dView view = M3dView::active3dView();
@@ -288,7 +288,7 @@ MStatus WmFigCombContext::doRelease( MEvent& i_event )
     return MS::kSuccess;
 }
 
-bool WmFigCombContext::searchForRodsIn2DScreenRectangle( vector<size_t>& o_rodIndices )
+bool WmFigCombContext::searchForRodsIn2DScreenRectangle( vector<int>& o_rodIndices )
 {
     MStatus stat;
     
@@ -417,8 +417,8 @@ bool WmFigCombContext::searchForRodsIn2DScreenRectangle( vector<size_t>& o_rodIn
         // below.
         ///////////////////////////////////////////////////
         
-        size_t index = 0;
-        for ( size_t i=0; i<numHits; i++ )
+        int index = 0;
+        for ( int i=0; i<numHits; i++ )
         {
             index += 3;
             o_rodIndices[ i ] = selectedRodIndices[ index ];
@@ -454,7 +454,7 @@ GLint WmFigCombContext::findRodsUsingOpenGLSelection( const double i_centreX, co
     gluPickMatrix( i_centreX, i_centreY, i_width, i_height, viewport );
     glMultMatrixf( projectionMatrix );
     
-    const size_t nRods = rodGroup->numberOfRods();
+    const int nRods = rodGroup->numberOfRods();
 
     // *4 because selection returns a bunch of stuff with each hit.
     o_selectedRodIndices.resize( nRods * 4 );
@@ -466,12 +466,12 @@ GLint WmFigCombContext::findRodsUsingOpenGLSelection( const double i_centreX, co
     glInitNames();
     glPushName( 0 );
     
-    for( size_t r = 0u; r < nRods; ++r )
+    for( int r = 0; r < nRods; ++r )
     {       
         glLoadName( (GLuint) r );
  
         glBegin( GL_LINE_STRIP );        
-        for( size_t v = 1, n = rodGroup->elasticRod( r )->nv(); v < n; ++v )
+        for( int v = 1, n = rodGroup->elasticRod( r )->nv(); v < n; ++v )
         {
             const Vec3d p = rodGroup->elasticRod( r )->getVertex( v - 1 );
             glVertex3f( p[0], p[1], p[2] );

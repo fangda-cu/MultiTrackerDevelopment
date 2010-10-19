@@ -173,7 +173,7 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
     
         m_collisionMeshData->triangleIndices.resize( triangleInds.length() );
         
-        for ( size_t i=0; i<triangleInds.length(); ++i )
+        for ( int i=0; i<triangleInds.length(); ++i )
             m_collisionMeshData->triangleIndices[i] = triangleInds[i];
     }
 
@@ -186,7 +186,7 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
     i_meshFn.getTriangles( triangleCounts, triangleInds );
     m_collisionMeshData->triangleIndices.resize( triangleInds.length() );
         
-    for ( size_t i=0; i<triangleInds.length(); ++i )
+    for ( int i=0; i<triangleInds.length(); ++i )
         m_collisionMeshData->triangleIndices[i] = triangleInds[i];
     
     // We don't want anything in BASim knowing about Maya so convert all the points

@@ -22,7 +22,7 @@ public:
   typedef Eigen::Matrix<Scalar, 11, 11> ElementJacobian;
   typedef Eigen::Matrix<Scalar, 2, 3> MaterialMatrix;
 
-  RodAnisoBending(ElasticRod& rod, const std::string& name = "RodAnisoBending");
+  explicit RodAnisoBending(ElasticRod& rod, const std::string& name = "RodAnisoBending");
 
   void computeCurvatureBinormals();
   void computeOmega();

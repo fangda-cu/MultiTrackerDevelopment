@@ -69,7 +69,7 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
 
     // Create space to store the data for each input cv for the previous, current and next positions
     // Used in substepping and for collisions.
-    allocateStorage( i_rodVertexPositions.size() );
+    allocateStorage( (int)i_rodVertexPositions.size() );
     resetVertexPositions( i_rodVertexPositions );
 
 }
@@ -125,7 +125,7 @@ void RodData::updateKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_m
     }
 }
 
-void RodData::allocateStorage( size_t i_numCVs )
+void RodData::allocateStorage( int i_numCVs )
 {
     // Make sure we have enough space to store the date for each CV.
     undeformedVertexPositions.resize( i_numCVs );

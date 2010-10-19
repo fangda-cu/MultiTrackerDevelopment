@@ -11,7 +11,7 @@ WmFigRodFileIO::~WmFigRodFileIO()
 }
 
 /* static */ FILE* WmFigRodFileIO::readNumberOfRodsFromFile( const MString i_cacheFilename, 
-    size_t& o_numRodsInFile, bool closeFileAfterReading )
+    int& o_numRodsInFile, bool closeFileAfterReading )
 {
     FILE *fp = NULL;
 
@@ -30,7 +30,10 @@ WmFigRodFileIO::~WmFigRodFileIO()
 
     cerr << "Reading file " << i_cacheFilename << endl;
 
-    size_t ret = fread( &o_numRodsInFile, sizeof( size_t ), 1, fp );
+    size_t numRodsInFile;
+    size_t ret = fread( &numRodsInFile, sizeof( size_t ), 1, fp );
+    o_numRodsInFile = (int)numRodsInFile;
+    assert ( numRodsInFile == o_numRodsInFile );
 
     if ( closeFileAfterReading )
     {
@@ -42,7 +45,7 @@ WmFigRodFileIO::~WmFigRodFileIO()
 }
 
 /* static */ bool WmFigRodFileIO::readDataFromRodCacheFile( const MString i_cacheFilename, 
-    size_t& o_numRodsInFile, vector<vector<Vec3d> >& o_rodVertices, 
+    int& o_numRodsInFile, vector<vector<Vec3d> >& o_rodVertices, 
     vector<vector<Vec3d> >& o_unsimulatedRodVertices )
 {
     FILE* fp = readNumberOfRodsFromFile( i_cacheFilename, o_numRodsInFile, false );
@@ -54,7 +57,7 @@ WmFigRodFileIO::~WmFigRodFileIO()
     o_rodVertices.resize( o_numRodsInFile );
     o_unsimulatedRodVertices.resize( o_numRodsInFile );
 
-    for ( size_t r=0; r<o_numRodsInFile; r++ )
+    for ( int r=0; r<o_numRodsInFile; r++ )
     {
         size_t numVertices;
         size_t ret = fread( &numVertices, sizeof( size_t ), 1, fp );
@@ -81,7 +84,7 @@ WmFigRodFileIO::~WmFigRodFileIO()
 
 /* static */ void WmFigRodFileIO::updateRodDataFromCacheFile( MString i_cacheFileName, WmFigRodGroup& i_rodGroup )
 {
-    size_t numRodsInFile;
+    int numRodsInFile;
     vector<vector<Vec3d> > rodVertices;
     vector<vector<Vec3d> > unsimulatedRodVertices;
 
@@ -101,7 +104,7 @@ WmFigRodFileIO::~WmFigRodFileIO()
         return;
     }
 
-    for ( size_t r=0; r<numRodsInFile; r++ )
+    for ( int r=0; r<numRodsInFile; r++ )
     {
         
         BASim::ElasticRod* rod = i_rodGroup.elasticRod( r );
@@ -111,7 +114,7 @@ WmFigRodFileIO::~WmFigRodFileIO()
             continue;
         }
 
-        size_t numVertices = rodVertices[ r ].size();
+        int numVertices = (int)rodVertices[ r ].size();
 
         if ( (int)numVertices != rod->nv() )
         {
@@ -119,9 +122,9 @@ WmFigRodFileIO::~WmFigRodFileIO()
             continue;
         }
 
-        for ( size_t v=0; v<numVertices; v++ )
+        for ( int v=0; v<numVertices; v++ )
         {
-            rod->setVertex( (int)v, rodVertices[ r ][ v ] );
+            rod->setVertex( v, rodVertices[ r ][ v ] );
         }
     }
 }
@@ -148,10 +151,10 @@ WmFigRodFileIO::~WmFigRodFileIO()
     // FIXME: create a proper cache file format. This one is bad, it at least needs a proper header.
     
     size_t numberOfRealRods = i_rodGroup.numberOfRealRods();
-    size_t totalNumberOfRods = i_rodGroup.numberOfRods();
+    int totalNumberOfRods = i_rodGroup.numberOfRods();
     fwrite( &numberOfRealRods, sizeof( size_t ), 1, fp );
 
-    for ( size_t r=0; r<totalNumberOfRods; r++ )
+    for ( int r=0; r<totalNumberOfRods; r++ )
     {
         if ( !i_rodGroup.isPlaceHolderRod( r ) )
         {
@@ -167,7 +170,7 @@ WmFigRodFileIO::~WmFigRodFileIO()
             size_t numVertices = rod->nv();
             fwrite( &numVertices, sizeof( size_t ), 1, fp );
             
-            for ( size_t v=0; v<numVertices; v++ )
+            for ( int v=0; v<numVertices; v++ )
             {
             double pos[3];
 

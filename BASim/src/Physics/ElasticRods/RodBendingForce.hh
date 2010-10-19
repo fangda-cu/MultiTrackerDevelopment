@@ -21,7 +21,7 @@ public:
   typedef Eigen::Matrix<Scalar, 9, 1> Vec9d;
   typedef Eigen::Matrix<Scalar, 9, 9> Mat9d;
 
-  RodBendingForce(ElasticRod& rod);
+  explicit RodBendingForce(ElasticRod& rod);
 
   virtual Scalar globalEnergy();
   virtual void globalForce(VecXd& force);

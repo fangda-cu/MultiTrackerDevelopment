@@ -24,7 +24,7 @@ public:
 
   typedef std::vector<int> BCList;
 
-  RodBoundaryCondition(ElasticRod& rod);
+  explicit RodBoundaryCondition(ElasticRod& rod);
 
   const BCList& scriptedVertices() const;
   bool isVertexScripted(int vertIdx) const;

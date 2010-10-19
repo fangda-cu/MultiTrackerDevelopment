@@ -21,7 +21,7 @@ public:
    * \param[in] gravity The acceleration due to gravity to be applied to rods.
    */
 
-  RodGravity(const Vec3d& gravity)
+  explicit RodGravity(const Vec3d& gravity)
     : m_gravity(gravity)
   {}
 

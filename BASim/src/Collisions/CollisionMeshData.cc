@@ -43,7 +43,7 @@ void CollisionMeshData::initialize()
   std::cout << "CollisionMeshData::initialize()...\n";
    // if (!_initialized)
     {
-        _nbrTriangles = triangleIndices.size() / 3;
+        _nbrTriangles = (int)triangleIndices.size() / 3;
  //       _x.resize(_nbrTriangles);
  //       _v.resize(_nbrTriangles);
 
@@ -67,7 +67,7 @@ void CollisionMeshData::initialize()
         _triangleEdgeIndices.resize(_nbrTriangles);
 
         std::map<std::pair<uint, uint>, uint> edgeMap;
-        for (size_t i=0; i<_nbrTriangles; ++i)
+        for (int i=0; i<_nbrTriangles; ++i)
         {
             Vec3d v1 = triangleVertex(i, 0);
             Vec3d v2 = triangleVertex(i, 1);
@@ -102,7 +102,7 @@ void CollisionMeshData::initialize()
                     //
                     _edgeIndices.push_back(idx1);
                     _edgeIndices.push_back(idx2);
-                    uint idx = (_edgeIndices.size() / 2) - 1;
+                    uint idx = (int)_edgeIndices.size() / 2 - 1;
                     edgeMap.insert(std::make_pair(std::make_pair(idx1, idx2), idx));
 
                     _triangleEdgeIndices[i][j] = idx;
@@ -197,7 +197,7 @@ void CollisionMeshData::reset(vector<Vec3d>& points)
 
     for (size_t currVertex=0; currVertex<points.size(); ++currVertex)
     {
-        for (size_t i=0; i<3; ++i)
+        for (int i=0; i<3; ++i)
         {
             oldPositions[currVertex][i]  = newPositions[currVertex][i] =
             currPositions[currVertex][i] = points[currVertex][i];
@@ -225,7 +225,7 @@ void CollisionMeshData::update(vector<Vec3d>& points, std::string filename, int 
 
     for (size_t currVertex=0; currVertex<points.size(); ++currVertex)
     {
-        for (size_t i=0; i<3; ++i)
+        for (int i=0; i<3; ++i)
         {
             oldPositions[currVertex][i] = currPositions[currVertex][i] = newPositions[currVertex][i];
             newPositions[currVertex][i] = points[currVertex][i];
@@ -274,7 +274,7 @@ void CollisionMeshData::updateGrid(vector<Vec3d>& points, std::string filename)
         Vec3d xmin = xmins[0];
         Real maxdistance = 0.0;
 
-        unsigned int n = xmins.size();
+        unsigned int n = (int)xmins.size();
         for (unsigned int i=0; i<n; i++)
         {
             update_minmax(xmins[i], xmin, xmax);

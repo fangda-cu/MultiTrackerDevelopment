@@ -70,7 +70,7 @@ private:
 
     RodDataMap* m_rodDataMap;
     RodDataMapIterator m_rodDataMapIterator;    
-    size_t m_rodIndex;
+    int m_rodIndex;
     double m_flip;
     double m_slip;
 };

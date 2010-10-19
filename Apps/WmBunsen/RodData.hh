@@ -47,7 +47,7 @@ public:
 class KinematicEdgeData
 {
 public:
-    KinematicEdgeData( unsigned int i_edgeNumber, ElasticRod* i_rod = NULL, MaterialFrame* i_materialframe = NULL ) 
+    explicit KinematicEdgeData( unsigned int i_edgeNumber, ElasticRod* i_rod = NULL, MaterialFrame* i_materialframe = NULL ) 
     { 
         if ( i_materialframe != NULL )
         {
@@ -110,7 +110,7 @@ public:
     void addKinematicEdge( unsigned int i_edgeNumber, MaterialFrame* i_materialframe = NULL );
     void resetKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_materialframe );
     void updateKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_materialframe );
-    void allocateStorage( size_t i_numCVs );
+    void allocateStorage( int i_numCVs );
     void resetVertexPositions( vector< Vec3d >& i_vertexPositions );
     void updateNextRodVertexPositions( vector< Vec3d >& i_vertexPositions );
 
@@ -121,7 +121,7 @@ public:
         return m_isPlaceHolderRod;
     }
 
-    size_t numberOfVerticesInRod()
+    int numberOfVerticesInRod()
     {
         if ( m_rod != NULL )
         {
@@ -236,15 +236,15 @@ public:
         return m_rodRenderer;
     }
 
- /*   static size_t numberOfRealRods( std::vector< RodData* >* i_pRodData )
+ /*   static int numberOfRealRods( std::vector< RodData* >* i_pRodData )
     {
         if ( i_pRodData == NULL )
         {
             return 0;
         }
 
-        size_t numberOfRods = 0;
-        for ( size_t r = 0; r < i_pRodData->size(); ++r )
+        int numberOfRods = 0;
+        for ( int r = 0; r < (int)i_pRodData->size(); ++r )
         {
             if ( !( (*i_pRodData)[ r ]->isFakeRod() ) )
             {
@@ -271,30 +271,30 @@ public:
         m_massDamping = i_massDamping;
     }*/
 
-    Vec3d nextVertexPosition( size_t i_vertexIndex )
+    Vec3d nextVertexPosition( int i_vertexIndex )
     {
         return nextVertexPositions[ i_vertexIndex ];
     }
 
-    void setUndeformedMaterialFrame( size_t i_frameIndex, Vec3d i_v1, Vec3d i_v2, Vec3d i_v3 )
+    void setUndeformedMaterialFrame( int i_frameIndex, Vec3d i_v1, Vec3d i_v2, Vec3d i_v3 )
     {        
         undeformedMaterialFrame[ i_frameIndex ].m1 = i_v1;
         undeformedMaterialFrame[ i_frameIndex ].m2 = i_v1;
         undeformedMaterialFrame[ i_frameIndex ].m3 = i_v3;
     }
 
-    MaterialFrame getUndeformedMaterialFrame( size_t i_frameIndex )
+    MaterialFrame getUndeformedMaterialFrame( int i_frameIndex )
     {
         return undeformedMaterialFrame[ i_frameIndex ];
     }
 
 
-    void setUndeformedVertexPosition( size_t i_vertexIndex, Vec3d& i_newPosition )
+    void setUndeformedVertexPosition( int i_vertexIndex, Vec3d& i_newPosition )
     {
         undeformedVertexPositions[ i_vertexIndex ] = i_newPosition;
     }
 
-    void setNextVertexPosition( size_t i_vertexIndex, Vec3d& i_newPosition )
+    void setNextVertexPosition( int i_vertexIndex, Vec3d& i_newPosition )
     {
         nextVertexPositions[ i_vertexIndex ] = i_newPosition;
     }

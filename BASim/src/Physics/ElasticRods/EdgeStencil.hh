@@ -26,7 +26,7 @@ class EdgeStencil : public StencilT<EdgeStencil>
 {
 public:
 
-  EdgeStencil(ElasticRod& obj)
+  explicit EdgeStencil(ElasticRod& obj)
     : StencilT<EdgeStencil>(obj)
   {}
 
@@ -78,7 +78,7 @@ public:
   {
     indices.resize(6);
     handle_ref h = handle();
-    ElasticRod& rod = *smart_cast<ElasticRod*>(m_obj);
+    ElasticRod& rod = smart_cast<ElasticRod&>(*m_obj);
     for (int i = 0; i < 3; ++i) {
       indices(i) = rod.vertIdx(rod.fromVertex(h), i);
       indices(3 + i) = rod.vertIdx(rod.toVertex(h), i);

@@ -271,6 +271,7 @@ src/Collisions/Collision.cc \
 src/Collisions/CollisionMeshData.cc \
 src/Collisions/UniformGrid.cc \
 src/Collisions/CollisionUtils.cc \
+src/Core/Util.cc \
 src/Core/Timer.cc \
 src/Core/TriangleMesh.hh \
 src/IO/ObjParser.cc \

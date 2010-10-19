@@ -10,7 +10,7 @@ class Zoomer
 public:
 
   /// Default constructor
-  Zoomer(Camera* c, const Scalar scale = 1.0);
+  explicit Zoomer(Camera* c, const Scalar scale = 1.0);
 
   /// Set a particular camera to use.
   void setCamera(Camera* c);

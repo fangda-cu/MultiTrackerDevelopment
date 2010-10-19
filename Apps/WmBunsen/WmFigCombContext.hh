@@ -83,7 +83,7 @@ private:
             const double i_width, const double i_height,  WmFigRodNode* rodNode,
             vector<GLuint>& o_selectedRodIndices );
     
-    bool searchForRodsIn2DScreenRectangle( vector<size_t>& o_rodIndices );
+    bool searchForRodsIn2DScreenRectangle( vector<int>& o_rodIndices );
     bool findRodNode();
     void makeRodNodeEvaluate();
 

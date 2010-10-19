@@ -32,7 +32,7 @@ public:
   typedef Eigen::Matrix<Scalar, 6, 1> ElementForce;
   typedef Eigen::Matrix<Scalar, 6, 6> ElementJacobian;
 
-  RodStretchingForce(ElasticRod& rod, bool vscs = false, bool runinit = true);
+  explicit RodStretchingForce(ElasticRod& rod, bool vscs = false, bool runinit = true);
 
   void gatherDofs(SpringDofStruct& dofs, const edge_handle& eh);
 

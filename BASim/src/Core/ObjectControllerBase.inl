@@ -7,7 +7,7 @@
 
 inline ObjectHandle ObjectControllerBase::addObject(ObjectBase& object)
 {
-  int idx = m_objects.size();
+  int idx = (int)m_objects.size();
   m_objects.push_back(&object);
 
   return ObjectHandle(idx);

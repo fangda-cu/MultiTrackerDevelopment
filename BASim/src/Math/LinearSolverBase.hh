@@ -17,7 +17,7 @@ class LinearSolverBase
 {
 public:
 
-  LinearSolverBase(MatrixBase& A)
+  explicit LinearSolverBase(MatrixBase& A)
     : m_A(A)
   {}
 

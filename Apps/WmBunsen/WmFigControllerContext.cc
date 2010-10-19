@@ -67,8 +67,8 @@ MStatus WmFigControllerContext::doRelease( MEvent& i_event )
     i_event.getPosition( m_xMouse, m_yMouse );
  
     // Work out which rods were selected
-    vector<size_t> rodIndices;
-    vector<size_t> edgeIndices;
+    vector<int> rodIndices;
+    vector<int> edgeIndices;
     searchForRodsIn2DScreenRectangle( rodIndices, edgeIndices );
 
     M3dView view = M3dView::active3dView();
@@ -93,7 +93,7 @@ MStatus WmFigControllerContext::doRelease( MEvent& i_event )
     return MS::kSuccess;
 }
 
-bool WmFigControllerContext::searchForRodsIn2DScreenRectangle( vector<size_t>& o_rodIndices, vector<size_t>& o_edgeIndices )
+bool WmFigControllerContext::searchForRodsIn2DScreenRectangle( vector<int>& o_rodIndices, vector<int>& o_edgeIndices )
 {
     MStatus stat;
     
@@ -263,7 +263,7 @@ GLint WmFigControllerContext::findRodsUsingOpenGLSelection( const double i_centr
     gluPickMatrix( i_centreX, i_centreY, i_width, i_height, viewport );
     glMultMatrixf( projectionMatrix );
     
-    const size_t nRods = rodGroup->numberOfRods();
+    const int nRods = rodGroup->numberOfRods();
 
     // *4 because selection returns a bunch of stuff with each hit.
     o_selectionBuffer.resize( nRods * 4 );
@@ -275,12 +275,12 @@ GLint WmFigControllerContext::findRodsUsingOpenGLSelection( const double i_centr
     glInitNames();
 	glPushName( 0 );
 	
-    for( size_t r = 0u; r < nRods; ++r )
+    for( int r = 0; r < nRods; ++r )
     {       
         //glLoadName( (GLuint) r << 16 );
  
      //   glBegin( GL_LINE_STRIP );        
-        for( size_t v = 1, n = rodGroup->elasticRod( r )->nv(); v < n; ++v )
+        for( int v = 1, n = rodGroup->elasticRod( r )->nv(); v < n; ++v )
         {
             glLoadName( ( (GLuint) r << 16 ) + v );
             

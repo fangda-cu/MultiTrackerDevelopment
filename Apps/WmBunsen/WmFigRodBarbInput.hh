@@ -33,11 +33,11 @@ public:
       * @brief Default constructor
       */
      WmFigRodBarbInput( MObject& i_verticesAttribute, MObject& i_strandRootFramesAttribute, 
-                        double i_percentageOfBarbStrands, size_t i_verticesPerRod,
+                        double i_percentageOfBarbStrands, int i_verticesPerRod,
                         bool i_lockFirstEdgeToInput, double i_vertexSpacing,
                         double i_minimumRodLength, RodOptions& i_rodOptions,
                         double i_massDamping, Vec3d& i_gravity, WmFigRodGroup& i_rodGroup,
-                        RodTimeStepper::Method i_solverType, std::set< size_t >& i_simulationSet );
+                        RodTimeStepper::Method i_solverType, std::set< int >& i_simulationSet );
 
     /**
       * @brief Default destructor
@@ -49,16 +49,16 @@ public:
       */
     virtual void initialiseRodDataFromInput( MDataBlock& i_dataBlock );
     virtual void updateRodDataFromInput( MDataBlock& i_dataBlock );
-    virtual size_t numberOfInputs( MDataBlock& i_dataBlock );
+    virtual int numberOfInputs( MDataBlock& i_dataBlock );
 
 private:
     void getStrandRootFrames( MDataBlock& i_dataBlock, std::vector<MaterialFrame>& o_strandRootFrames );
-    void getStrandVertices( MDataBlock& i_dataBlock, MVectorArray& o_vertices, size_t& o_numStrands );
+    void getStrandVertices( MDataBlock& i_dataBlock, MVectorArray& o_vertices, int& o_numStrands );
 
     MObject& m_verticesAttribute;
     MObject& m_strandRootFramesAttribute;
     double m_percentageOfBarbStrands;
-    size_t m_verticesPerRod;
+    int m_verticesPerRod;
     bool m_lockFirstEdgeToInput;
     double m_vertexSpacing;
     double m_minimumRodLength;
@@ -69,7 +69,7 @@ private:
     double m_massDamping;
     Vec3d m_gravity;
     RodTimeStepper::Method m_solverType;
-    std::set< size_t >& m_simulationSet;
+    std::set< int >& m_simulationSet;
 };
 
 #endif // WMFIGRODNURBSINPUT_H_

@@ -19,7 +19,7 @@ class RodTwistingForceSym : public RodForceT<VertexStencil>
 {
 public:
 
-  RodTwistingForceSym(ElasticRod& rod, bool vscs = false, bool runinit = true);
+  explicit RodTwistingForceSym(ElasticRod& rod, bool vscs = false, bool runinit = true);
 
   virtual Scalar globalEnergy();
   virtual void globalForce(VecXd& F);

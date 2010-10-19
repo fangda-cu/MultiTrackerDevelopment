@@ -21,7 +21,7 @@ class PropertyBase
 {
 public:
 
-  PropertyBase(const std::string& name) : m_name(name) {}
+  explicit PropertyBase(const std::string& name) : m_name(name) {}
 
   virtual ~PropertyBase() {}
 
@@ -73,7 +73,7 @@ public:
   typedef typename vector_type::const_pointer     const_pointer;
   typedef typename vector_type::iterator          iterator;
 
-  Property(const std::string& name)
+  explicit Property(const std::string& name)
     : PropertyBase(name), default_value_assigned(false)
   {}
 
@@ -227,7 +227,7 @@ public:
   template <class T> PropertyHandleBase<T>
   add(const std::string& name)
   {
-    int idx = m_properties.size();
+    int idx = (int)m_properties.size();
     m_properties.push_back(new Property<T>(name));
 
     return PropertyHandleBase<T>(idx);
@@ -240,7 +240,7 @@ public:
     assert((size_t) h.idx() < m_properties.size());
     assert(m_properties[h.idx()] != NULL);
 
-    return *smart_cast<Property<T>*>(m_properties[h.idx()]);
+    return smart_cast<Property<T>&>(*m_properties[h.idx()]);
   }
 
   template <class T> inline const Property<T>&
@@ -250,7 +250,7 @@ public:
     assert((size_t) h.idx() < m_properties.size());
     assert(m_properties[h.idx()] != NULL);
 
-    return *smart_cast<const Property<T>*>(m_properties[h.idx()]);
+    return smart_cast<const Property<T>&>(*m_properties[h.idx()]);
   }
 
   template <class T>
@@ -281,7 +281,7 @@ public:
 
     std::cerr << "Property " << name << " not found in container"
               << std::endl;
-    return PropertyHandleBase<T>(m_properties.size());
+    return PropertyHandleBase<T>((int)m_properties.size());
   }
 
   // Resizes the properties of the container, not the container itself.

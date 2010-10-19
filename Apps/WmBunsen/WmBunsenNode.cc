@@ -530,7 +530,7 @@ MStatus WmBunsenNode::connectionBroken( const MPlug& i_plug, const MPlug& i_othe
 
     if ( i_plug == ia_collisionMeshes )
     {
-        size_t idx = i_plug.logicalIndex();
+        int idx = i_plug.logicalIndex();
         m_beaker->removeCollisionMesh( idx );
     }
 
