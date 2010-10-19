@@ -31,15 +31,15 @@ WmBunsenCollisionMeshNode::~WmBunsenCollisionMeshNode()
 
 MStatus WmBunsenCollisionMeshNode::compute( const MPlug& i_plug, MDataBlock& i_data ) 
 {
-	MStatus stat;
+    MStatus stat;
 
     //cerr << "WmBunsenCollisionMeshNode::compute() called with plug = " << plug.name() << endl;
 
-	if ( i_plug == oa_meshData ) 
+    if ( i_plug == oa_meshData ) 
     {
         m_previousTime = m_currentTime;
-	    m_currentTime = i_data.inputValue( ia_time, &stat).asTime().value();
-			
+        m_currentTime = i_data.inputValue( ia_time, &stat).asTime().value();
+            
         m_startTime = i_data.inputValue( ia_startTime, &stat ).asDouble();
         CHECK_MSTATUS( stat );
 
@@ -60,9 +60,9 @@ MStatus WmBunsenCollisionMeshNode::compute( const MPlug& i_plug, MDataBlock& i_d
                 MObject inMeshObj = meshH.asMeshTransformed();
                 MFnMesh meshFn( inMeshObj );
    
-    		    updateCollisionMeshFromMayaMesh( meshFn );
+                updateCollisionMeshFromMayaMesh( meshFn );
             }
-		}
+        }
 
         m_levelsetDx = i_data.inputValue( ia_levelsetDx, &stat ).asDouble();
         CHECK_MSTATUS( stat );
@@ -90,39 +90,39 @@ MStatus WmBunsenCollisionMeshNode::compute( const MPlug& i_plug, MDataBlock& i_d
         Real coefficientOfRestitution = i_data.inputValue( ia_coefficientOfRestitution, &stat ).asDouble();
         CHECK_MSTATUS( stat );
         m_collisionMeshData->setCoefficientOfRestitution( coefficientOfRestitution );
-		
-		MDataHandle outputData = i_data.outputValue ( oa_meshData, &stat );
-		if (!stat) 
+        
+        MDataHandle outputData = i_data.outputValue ( oa_meshData, &stat );
+        if (!stat) 
         {
-			stat.perror( "wmBunsenCollisionMeshNode::compute get oa_meshData" );
-			return stat;
-		}
-		
+            stat.perror( "wmBunsenCollisionMeshNode::compute get oa_meshData" );
+            return stat;
+        }
+        
         outputData.set( true );
-		
-		stat = i_data.setClean( i_plug );
-		if (!stat) 
+        
+        stat = i_data.setClean( i_plug );
+        if (!stat) 
         {
-			stat.perror( "wmBunsenCollisionMeshNode::compute setClean" );
-			return stat;
-		}
-	} 
+            stat.perror( "wmBunsenCollisionMeshNode::compute setClean" );
+            return stat;
+        }
+    } 
     else 
     {
-		return MS::kUnknownParameter;
-	}
+        return MS::kUnknownParameter;
+    }
 
-	return MS::kSuccess;
+    return MS::kSuccess;
 }
 
 void WmBunsenCollisionMeshNode::draw( M3dView & view, const MDagPath & path,
         M3dView::DisplayStyle style, M3dView::DisplayStatus status )
-{ 	
-	MStatus stat;
-	MObject thisNode = thisMObject();
+{     
+    MStatus stat;
+    MObject thisNode = thisMObject();
 
-	view.beginGL(); 
-	glPushAttrib(GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT);
+    view.beginGL(); 
+    glPushAttrib(GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT);
 
     if ( m_drawCollisionData && m_collisionMeshData )
     {
@@ -134,8 +134,8 @@ void WmBunsenCollisionMeshNode::draw( M3dView & view, const MDagPath & path,
         //cerr << "NOT Drawing collision mesh\n";
     }
 
-	glPopAttrib();
-	view.endGL();
+    glPopAttrib();
+    view.endGL();
 }
 
 MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_meshFn, 
@@ -235,7 +235,7 @@ MStatus WmBunsenCollisionMeshNode::connectionBroken( const  MPlug& i_plug,
             const  MPlug& i_otherPlug, bool i_asSrc) 
 {
 
-	if ( i_plug == ia_inMesh)
+    if ( i_plug == ia_inMesh)
     {
         // Get rid of all the mesh data so that Beaker knows we have nothing to provide.
         // Otherwise will get ghost collisions happening with whatever mesh positions were left
@@ -244,18 +244,18 @@ MStatus WmBunsenCollisionMeshNode::connectionBroken( const  MPlug& i_plug,
         
         m_meshConnected = true;
     }    
-				
-	return MStatus::kUnknownParameter;
+                
+    return MStatus::kUnknownParameter;
 }
 
 bool WmBunsenCollisionMeshNode::isBounded() const
 { 
-	return false;
+    return false;
 }
 
 void* WmBunsenCollisionMeshNode::creator()
 {
-	return new WmBunsenCollisionMeshNode();
+    return new WmBunsenCollisionMeshNode();
 }
 
 void WmBunsenCollisionMeshNode::postConstructor()
@@ -265,10 +265,10 @@ void WmBunsenCollisionMeshNode::postConstructor()
 
 MStatus WmBunsenCollisionMeshNode::initialize()
 { 
-	MStatus	stat;
-	
-    {	
-	    MFnUnitAttribute    uAttr;
+    MStatus    stat;
+    
+    {    
+        MFnUnitAttribute    uAttr;
         ia_time = uAttr.create( "time", "t", MTime( 0.0 ), &stat );
         if (!stat) {
             stat.perror( "create ia_time attribute" );
@@ -282,17 +282,17 @@ MStatus WmBunsenCollisionMeshNode::initialize()
     }
     
     {
-	    MFnNumericAttribute nAttr;
+        MFnNumericAttribute nAttr;
         ia_startTime = nAttr.create("startTime", "stt", MFnNumericData::kDouble, 1.0, &stat);
-	    if (!stat) {
+        if (!stat) {
             stat.perror( "create ia_startTime attribute" );
             return stat;
         }
         nAttr.setWritable( true );
         nAttr.setReadable( false );
         nAttr.setKeyable( true );
-	    stat = addAttribute(ia_startTime);
-	    if (!stat) { stat.perror("addAttribute startTime"); return stat;}
+        stat = addAttribute(ia_startTime);
+        if (!stat) { stat.perror("addAttribute startTime"); return stat;}
     }
 
     {
@@ -319,65 +319,65 @@ MStatus WmBunsenCollisionMeshNode::initialize()
     }
 
     {
-	MFnNumericAttribute nAttr;
-	ia_levelsetDx = nAttr.create("levelsetDx", "ldx", MFnNumericData::kDouble, 0.0, &stat);
-	if (!stat) {
-	    stat.perror( "create ia_levelsetDx attribute" );
-	    return stat;
-	}
-	nAttr.setWritable( true );
-	nAttr.setReadable( false );
-	nAttr.setKeyable( true );
-	stat = addAttribute(ia_levelsetDx);
-	if(!stat){ stat.perror("addAttribute levelsetDx"); return stat;}
+    MFnNumericAttribute nAttr;
+    ia_levelsetDx = nAttr.create("levelsetDx", "ldx", MFnNumericData::kDouble, 0.0, &stat);
+    if (!stat) {
+        stat.perror( "create ia_levelsetDx attribute" );
+        return stat;
+    }
+    nAttr.setWritable( true );
+    nAttr.setReadable( false );
+    nAttr.setKeyable( true );
+    stat = addAttribute(ia_levelsetDx);
+    if(!stat){ stat.perror("addAttribute levelsetDx"); return stat;}
     }
 
     {
-	    MFnNumericAttribute nAttr;
+        MFnNumericAttribute nAttr;
         ia_friction = nAttr.create("friction", "fri", MFnNumericData::kDouble, 0.4, &stat);
-	    if (!stat) {
+        if (!stat) {
             stat.perror( "create ia_friction attribute" );
             return stat;
         }
         nAttr.setWritable( true );
         nAttr.setReadable( false );
         nAttr.setKeyable( true );
-	    stat = addAttribute(ia_friction);
-	    if (!stat) { stat.perror("addAttribute friction"); return stat;}
+        stat = addAttribute(ia_friction);
+        if (!stat) { stat.perror("addAttribute friction"); return stat;}
     }
 
     {
-	    MFnNumericAttribute nAttr;
+        MFnNumericAttribute nAttr;
         ia_separationStrength = nAttr.create("separationStrength", "ss", MFnNumericData::kDouble, 40.0, &stat);
-	    if (!stat) {
+        if (!stat) {
             stat.perror( "create ia_separationStrength attribute" );
             return stat;
         }
         nAttr.setWritable( true );
         nAttr.setReadable( false );
         nAttr.setKeyable( true );
-	    stat = addAttribute(ia_separationStrength);
-	    if (!stat) { stat.perror("addAttribute separationStrength"); return stat;}
+        stat = addAttribute(ia_separationStrength);
+        if (!stat) { stat.perror("addAttribute separationStrength"); return stat;}
     }
 
     {
-	    MFnNumericAttribute nAttr;
+        MFnNumericAttribute nAttr;
         ia_coefficientOfRestitution = nAttr.create("coefficientOfRestitution", "cor", MFnNumericData::kDouble, 0.1, &stat);
-	    if (!stat) {
+        if (!stat) {
             stat.perror( "create ia_coefficientOfRestitution attribute" );
             return stat;
         }
         nAttr.setWritable( true );
         nAttr.setReadable( false );
         nAttr.setKeyable( true );
-	    stat = addAttribute(ia_coefficientOfRestitution);
-	    if (!stat) { stat.perror("addAttribute coefficientOfRestitution"); return stat;}
+        stat = addAttribute(ia_coefficientOfRestitution);
+        if (!stat) { stat.perror("addAttribute coefficientOfRestitution"); return stat;}
     }
 
     {
-	MFnNumericAttribute nAttr;
+        MFnNumericAttribute nAttr;
         ia_thickness = nAttr.create("thickness", "thk", MFnNumericData::kDouble, 0.1, &stat);
-	    if (!stat) {
+        if (!stat) {
             stat.perror( "create ia_thickness attribute" );
             return stat;
         }
@@ -389,31 +389,31 @@ MStatus WmBunsenCollisionMeshNode::initialize()
     }
 
     {
-	    MFnNumericAttribute nAttr;
+        MFnNumericAttribute nAttr;
         ia_fullCollisions = nAttr.create("edgeCollisions", "ec", MFnNumericData::kBoolean, false, &stat);
-	    if (!stat) {
+        if (!stat) {
             stat.perror( "create ia_fullCollisions attribute" );
             return stat;
         }
         nAttr.setWritable( true );
         nAttr.setReadable( false );
         nAttr.setKeyable( true );
-	    stat = addAttribute(ia_fullCollisions);
-	    if (!stat) { stat.perror("addAttribute fullCollisions"); return stat;}
+        stat = addAttribute(ia_fullCollisions);
+        if (!stat) { stat.perror("addAttribute fullCollisions"); return stat;}
     }
 
     {
-	    MFnNumericAttribute nAttr;
+        MFnNumericAttribute nAttr;
         ia_drawCollisionData = nAttr.create("drawCollisionData", "dcd", MFnNumericData::kBoolean, false, &stat);
-	    if (!stat) {
+        if (!stat) {
             stat.perror( "create ia_drawCollisionData attribute" );
             return stat;
         }
         nAttr.setWritable( true );
         nAttr.setReadable( false );
         nAttr.setKeyable( true );
-	    stat = addAttribute(ia_drawCollisionData);
-	    if (!stat) { stat.perror("addAttribute drawCollisionData"); return stat;}
+        stat = addAttribute(ia_drawCollisionData);
+        if (!stat) { stat.perror("addAttribute drawCollisionData"); return stat;}
     }
 
     {
