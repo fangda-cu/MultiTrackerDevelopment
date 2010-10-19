@@ -66,7 +66,8 @@ MStatus initializePlugin( MObject obj )
     stat = plugin.registerNode( WmFigConstraintNode::TypeName,
 								WmFigConstraintNode::TypeId,
 								WmFigConstraintNode::creator,
-								WmFigConstraintNode::initialize );
+								WmFigConstraintNode::initialize,
+								MPxNode::kLocatorNode);
     if ( !stat )
     {
         stat.perror( "RegisterNode WmFigConstraintNode failed" );

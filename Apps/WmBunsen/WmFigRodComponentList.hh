@@ -15,6 +15,8 @@
 class WmFigRodComponentList
 {
 public:
+	void clear();
+
 	bool containsRodVertex( const unsigned int rodId, const unsigned int vertexId );
 	void addOrRemoveRodVertex( const unsigned int rodId, const unsigned int vertexId, const bool doAdd=true );
     void removeAllRodVertices();

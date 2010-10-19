@@ -101,29 +101,22 @@ const char *const kCreateRodShapeNode( "-crs" );
 //
 const char *const kAddVertexConstraintFlag( "-avc");
 const char *const kAddVertexConstraintLongFlag( "-addVertexConstraint");
-//const char *const kUseSelectionFlag( "-us");
-//const char *const kUseSelectionLongFlag( "-useSelection");
+const char *const kRodNodeNameFlag( "-rn");
+const char *const kRodNodeNameLongFlag( "-rodNode");
+const char *const kRodVerticesFlag( "-rv");
+const char *const kRodVerticesLongFlag( "-rodVertices");
+const char *const kTargetPositionFlag( "-tp");
+const char *const kTargetPositionLongFlag( "-targetPosition");
+const char *const kStiffnessFlag( "-st");
+const char *const kStiffnessLongFlag( "-stiffness");
 const char *const kVertexConstraintTypeFlag("-vct");
 const char *const kVertexConstraintTypeLongFlag("-vertexConstraintType");
 
-// Give the rod vertex path as a string
-//
-const char *const kRodVertexPathFlag( "-rvp");
-const char *const kRodVertexPathLongFlag( "-rodVertexPath");
-// Give the rod vertex path as separate parts
-//
-const char *const kRodNodeNameFlag( "-rn");
-const char *const kRodNodeNameLongFlag( "-rodNode");
-const char *const kRodIdFlag("-rid");
-const char *const kRodIdLongFlag("-rodId");
-const char *const kVertIdFlag("-vid");
-const char *const kVertIdLongFlag("-vertexId");
-const char *const kWorldPositionFlag( "-wp");
-const char *const kWorldPositionLongFlag( "-worldPosition");
-const char *const kStiffnessFlag( "-st");
-const char *const kStiffnessLongFlag( "-stiffness");
-
-//const char *const kDistance( "-dis");
+// Rod vertices
+const char *const kRodVertexPositionFlag("-rvp");
+const char *const kRodVertexPositionLongFlag("-rodVertexPosition");
+const char *const kWorldSpaceFlag("-ws");
+const char *const kWorldSpaceLongFlag("-worldSpace");
 
 const char *const kHelp( "-h" );
 
@@ -166,49 +159,29 @@ MSyntax WmFigaroCmd::syntaxCreator()
     p_AddFlag( mSyntax, kCreateRodShapeNode, "-createRodShape",
                "Creates a single rod as a shape node from a selected NURBS curve." );
 
-
+    // Rod vertex constraints
+    //
     p_AddFlag( mSyntax,
     		   kAddVertexConstraintFlag,
     		   kAddVertexConstraintLongFlag,
     		   "add vertex constraint for rod ");
-
-    p_AddFlag( mSyntax,
-    		   kVertexConstraintTypeFlag,
-    		   kVertexConstraintTypeLongFlag,
-    		   "specify the vertex constraint type",
-    		   MSyntax::kString );
-
-//    p_AddFlag( mSyntax,
-//    		   kUseSelectionFlag,
-//    		   kUseSelectionLongFlag,
-//    		   "use selection when creating rod vertex constraint" );
-
-    p_AddFlag(  mSyntax,
-    			kRodVertexPathFlag,
-    			kRodVertexPathLongFlag,
-    			"specify path to rod vertex path",
-    			MSyntax::kString );
 
     p_AddFlag(  mSyntax,
     			kRodNodeNameFlag,
     			kRodNodeNameLongFlag,
     			"specify rod node name",
     			MSyntax::kString );
-    p_AddFlag(  mSyntax,
-    			kRodIdFlag,
-    			kRodIdLongFlag,
-    			"specify rod index",
-    			MSyntax::kLong );
-    p_AddFlag(  mSyntax,
-    			kVertIdFlag,
-    			kVertIdLongFlag,
-    			"specify vertex index",
-    			MSyntax::kLong );
 
     p_AddFlag(  mSyntax,
-    			kWorldPositionFlag,
-    			kWorldPositionLongFlag,
-    			"specify world position of the contraint",
+    			kRodVerticesFlag,
+    			kRodVerticesLongFlag,
+    			"specify rod vertices",
+    			MSyntax::kString );
+
+    p_AddFlag(  mSyntax,
+    			kTargetPositionFlag,
+    			kTargetPositionLongFlag,
+    			"specify target world position of the contraint",
     			MSyntax::kDouble,
     			MSyntax::kDouble,
     			MSyntax::kDouble );
@@ -219,17 +192,25 @@ MSyntax WmFigaroCmd::syntaxCreator()
     			"specify the constraint's stiffness",
     			MSyntax::kDouble );
 
-
-//    p_AddFlag( mSyntax,kRodId, "-rodIndex",
-//            "the Index of the rod to be added constraint", MSyntax::kLong);
-//    p_AddFlag(mSyntax, kVertId, "-vertIndex",
-//            "the index of the vertex to be added constraint", MSyntax::kLong  );
-
-//    p_AddFlag( mSyntax, kDistance, "-distanceToConstraint",
-//            "distance to the vertex constraint", MSyntax::kDouble );
-//    p_AddFlag( mSyntax, kPosition, "-position",
-//            "vertex constraint position", MSyntax::kString );
+    p_AddFlag( mSyntax,
+    		   kVertexConstraintTypeFlag,
+    		   kVertexConstraintTypeLongFlag,
+    		   "specify the vertex constraint type",
+    		   MSyntax::kString );
     
+    // Rod vertex position
+    //
+    p_AddFlag( mSyntax,
+    			kRodVertexPositionFlag,
+    			kRodVertexPositionLongFlag,
+    		   "get the position of the rod vertex",
+    		   MSyntax::kLong,
+    		   MSyntax::kLong );
+    p_AddFlag(  mSyntax,
+    			kWorldSpaceFlag,
+    			kWorldSpaceLongFlag,
+    			"get position in world space");
+
     mSyntax.setObjectType( MSyntax::kSelectionList );
     mSyntax.useSelectionAsDefault( true );
     mSyntax.enableEdit( true );
@@ -381,26 +362,23 @@ MStatus WmFigaroCmd::redoIt()
 /*
 	Example:
 
-        	The following two commands are equivalent:
-
-        	wmFigaro -addVertexConstraint -rodVertexPath "wmFigRodNodeShape1.rod[0].vtx[21]"
-        	wmFigaro -addVertexConstraint -rodNode "wmFigRodNodeShape1" -rodId 0 -vertexId 21
+        	wmFigaro -addVertexConstraint -rodNode "wmFigRodNodeShape1" -rodVertices "1 rod[0].vtx[21]"; // The rodVertices string the string result from the "Select Rod Vertices Tool"
 
 			Others:
 
-			wmFigaro -addVertexConstraint -rodNode "wmFigRodNodeShape1" -rodId 0 -vertexId 21 -vertexConstraintType "fixed"
+			wmFigaro -addVertexConstraint -rodNode "wmFigRodNodeShape1" -rodIdVertices "1 rod[0].vtx[21]" -vertexConstraintType "fixed"
 
 			- select wmFigRodNode then execute:
-			wmFigaro -addVertexConstraint -rodId 0 -vertexId 21 -vertexConstraintType "fixed"
+			wmFigaro -addVertexConstraint -rodVertices "1 rod[0].vtx[21]" -vertexConstraintType "fixed"
 
 			World Position:
 
 			// Set it explicitly
-			wmFigaro -addVertexConstraint -rodNode "wmFigRodNodeShape1" -rodId 0 -vertexId 21 -vertexConstraintType "fixed" -worldPosition 20 0 0
+			wmFigaro -addVertexConstraint -rodNode "wmFigRodNodeShape1"  -rodVertices "1 rod[0].vtx[21]" -vertexConstraintType "fixed" -worldPosition 20 0 0
 
 			// Use a locator
 			- select the locator then execute:
-			wmFigaro -addVertexConstraint -rodNode "wmFigRodNodeShape1" -rodId 0 -vertexId 21 -vertexConstraintType "fixed"
+			wmFigaro -addVertexConstraint -rodNode "wmFigRodNodeShape1"  -rodVertices "1 rod[0].vtx[21]" -vertexConstraintType "fixed"
 
 */
         	MStatus stat;
@@ -415,18 +393,17 @@ MStatus WmFigaroCmd::redoIt()
 
 			    if( constraintTypeTxt == "fixed" )
 			    	constraintType = 0;
-//			    else
-//			    {
-//				    if( constraintTypeTxt == "rest" )
-//				    	constraintType = 1;
-//			    }
 			}
 
-			MString rodVertexPath;
-			if( m_mArgDatabase->isFlagSet( kRodVertexPathFlag ) )
-				m_mArgDatabase->getFlagArgument( kRodVertexPathFlag, 0, rodVertexPath );
+			MString rodVerticesTxt;
+			if( m_mArgDatabase->isFlagSet( kRodVerticesFlag ) )
+				m_mArgDatabase->getFlagArgument( kRodVerticesFlag, 0, rodVerticesTxt );
 
 			MString figRodNodeName;
+			if( m_mArgDatabase->isFlagSet( kRodNodeNameFlag ) )
+				m_mArgDatabase->getFlagArgument( kRodNodeNameFlag, 0, figRodNodeName );
+
+#if 0
 			int rodId = -1;
 			int vertexId = -1;
 
@@ -458,6 +435,7 @@ MStatus WmFigaroCmd::redoIt()
 				if(  m_mArgDatabase->isFlagSet( kVertIdFlag ) )
 					m_mArgDatabase->getFlagArgument( kVertIdFlag, 0, vertexId );
 			}
+#endif
 
 			// The rod's shape path wasn't given explicitly, get the first rod shape in the selection
 			//
@@ -478,7 +456,6 @@ MStatus WmFigaroCmd::redoIt()
 			        }
 			    }
 			}
-
 
 			if( !figRodNodeName.length() )
 			{
@@ -521,32 +498,6 @@ MStatus WmFigaroCmd::redoIt()
 
 			MFnDependencyNode figNodeFn( figNode );
 
-			// Given the worldPosition explicitly
-			//
-			MObject worldPositionLocatorNode;
-			MPoint pos(0.0,0.0,0.0);
-			if( m_mArgDatabase->isFlagSet( kWorldPositionFlag ) )
-			{
-				m_mArgDatabase->getFlagArgument( kWorldPositionFlag, 0, pos.x );
-				m_mArgDatabase->getFlagArgument( kWorldPositionFlag, 1, pos.y );
-				m_mArgDatabase->getFlagArgument( kWorldPositionFlag, 2, pos.z );
-			}
-			else // Is there a locator in the selection?
-			{
-			    unsigned int i;
-				for( i=0; i < selList.length(); i++ )
-			    {
-			        MDagPath dagPath;
-			        selList.getDagPath( i, dagPath );
-			        dagPath.extendToShape();
-			        if( dagPath.apiType() == MFn::kLocator )
-			        {
-			        	worldPositionLocatorNode = dagPath.node();
-			        	break;
-			        }
-			    }
-			}
-
 			// Set the stiffness
 			//
 			double stiffness = 50.0;
@@ -573,11 +524,38 @@ MStatus WmFigaroCmd::redoIt()
 			MPlug constraintTypePlug = constraintNodeFn.findPlug( "constraintType" );
 			constraintTypePlug.setValue( constraintType );
 
-			MPlug worldPositionPlug = constraintNodeFn.findPlug( "worldPosition" );
+			// Given the worldPosition explicitly
+			//
+			MObject worldPositionLocatorNode;
+			MPoint pos(0.0,0.0,0.0);
+			if( m_mArgDatabase->isFlagSet( kTargetPositionFlag ) )
+			{
+				m_mArgDatabase->getFlagArgument( kTargetPositionFlag, 0, pos.x );
+				m_mArgDatabase->getFlagArgument( kTargetPositionFlag, 1, pos.y );
+				m_mArgDatabase->getFlagArgument( kTargetPositionFlag, 2, pos.z );
+			}
+			else // Is there a locator in the selection?
+			{
+			    unsigned int i;
+				for( i=0; i < selList.length(); i++ )
+			    {
+			        MDagPath dagPath;
+			        selList.getDagPath( i, dagPath );
+			        dagPath.extendToShape();
+			        if( dagPath.apiType() == MFn::kLocator )
+			        {
+			        	worldPositionLocatorNode = dagPath.node();
+			        	break;
+			        }
+			    }
+			}
+
+			MPlug worldPositionPlug = constraintNodeFn.findPlug( "targetWorldPosition" );
 			if( !worldPositionLocatorNode.isNull() )
 			{
+
 				MFnDependencyNode locatorFn( worldPositionLocatorNode );
-				MPlug srcWorldPosPlug =  locatorFn.findPlug( "worldPosition" );
+				MPlug srcWorldPosPlug = locatorFn.findPlug( "worldPosition" );
 				srcWorldPosPlug.selectAncestorLogicalIndex(0);
 
 				MPlug srcWorldPosXPlug = srcWorldPosPlug.child(0);
@@ -587,13 +565,15 @@ MStatus WmFigaroCmd::redoIt()
 				//srcWorldPosXPlug = srcWorldPosXPlug.elementByPhysicalIndex(0);
 				//srcWorldPosXPlug.selectAncestorLogicalIndex( 0 );
 
-				MPlug destWorldPosXPlug = constraintNodeFn.findPlug( "worldPosition0" );
-				MPlug destWorldPosYPlug = constraintNodeFn.findPlug( "worldPosition1" );
-				MPlug destWorldPosZPlug = constraintNodeFn.findPlug( "worldPosition2" );
+				MPlug destWorldPosXPlug = constraintNodeFn.findPlug( "targetWorldPosition0" );
+				MPlug destWorldPosYPlug = constraintNodeFn.findPlug( "targetWorldPosition1" );
+				MPlug destWorldPosZPlug = constraintNodeFn.findPlug( "targetWorldPosition2" );
 
 				MGlobal::executeCommand( "connectAttr -f " + srcWorldPosXPlug.info() + " " +  destWorldPosXPlug.info() );
 				MGlobal::executeCommand( "connectAttr -f " + srcWorldPosYPlug.info() + " " +  destWorldPosYPlug.info() );
 				MGlobal::executeCommand( "connectAttr -f " + srcWorldPosZPlug.info() + " " +  destWorldPosZPlug.info() );
+
+				//MGlobal::displayInfo( MString("FOUND LOCATOR: ") + locatorFn.name() );
 			}
 			else
 			{
@@ -603,13 +583,19 @@ MStatus WmFigaroCmd::redoIt()
 				worldPositionPlug.setMObject( posData );
 			}
 
-			MPlug rodIdPlug = constraintNodeFn.findPlug( "rodId" );
-		    rodIdPlug.setValue( rodId );
+//			MPlug rodIdPlug = constraintNodeFn.findPlug( "rodId" );
+//		    rodIdPlug.setValue( rodId );
+//
+//		    MPlug vertexIdPlug = constraintNodeFn.findPlug( "vertexId" );
+//		    vertexIdPlug.setValue( vertexId );
 
-		    MPlug vertexIdPlug = constraintNodeFn.findPlug( "vertexId" );
-		    vertexIdPlug.setValue( vertexId );
+			MPlug rodVerticesPlug = constraintNodeFn.findPlug( "rodVertices" );
+			rodVerticesPlug.setValue( rodVerticesTxt );
+//			MFnStringData stringDataFn( rodVerticesPlug.asMObject() );
+//			stringDataFn.create( rodVerticesTxt );
+//			stringDataFn.set( rodVerticesTxt );
 
-		    MPlug stiffnessPlug = constraintNodeFn.findPlug( "stiffness" );
+			MPlug stiffnessPlug = constraintNodeFn.findPlug( "stiffness" );
 		    stiffnessPlug.setValue( stiffness );
 
 		    MPlug figRodNodeMsgPlug = constraintNodeFn.findPlug( "figRodNodeMsg" );
@@ -627,82 +613,104 @@ MStatus WmFigaroCmd::redoIt()
 
 			MGlobal::displayInfo( MString("figConstraintNode: ") + figConstraintNodeName );
 			MGlobal::displayInfo( figRodNodeName );
-			MGlobal::displayInfo( MString( "rodId: ") + rodId );
-			MGlobal::displayInfo( MString( "vertexId: ") + vertexId );
+//			MGlobal::displayInfo( MString( "rodId: ") + rodId );
+//			MGlobal::displayInfo( MString( "vertexId: ") + vertexId );
+			MGlobal::displayInfo( MString( "rodVertices: ") + rodVerticesTxt );
 			MGlobal::displayInfo( MString( "constraintType: ") + constraintType );
 			MGlobal::displayInfo( MString( "worldPosition: ") + pos.x + ", " + pos.y + ", " + pos.z );
 			MGlobal::displayInfo( MString( "stiffness: ") + stiffness );
-
-#if 0
-		    if( rodNode != MObject::kNullObj )
-		    {
-		        MFnDependencyNode rodFn( rodNode );
-		        WmFigRodNode *rodNode = static_cast< WmFigRodNode*>( rodFn.userNode());
-
-		        WmFigRodGroup*  rodGroup = rodNode->rodGroup();
-
-		        if( i_rodInd < rodGroup->numberOfRods() )
-		        {
-		            if( i_vertId < 0 )
-		                i_vertId = rodGroup->elasticRod( i_rodInd )->nv() -1 ;
-
-		            if( i_vertId < rodGroup->elasticRod( i_rodInd )->nv() )
-		            {
-		                Vec3d target_position = Vec3d( i_pos.x, i_pos.y, i_pos.z );
-		                rodGroup->collisionStepper( i_rodInd )->setVertexPositionPenalty(i_vertId, target_position, 50. , 1);
-		            }
-		            else
-		            {
-		                displayError( "Invalid input vertex id!" );
-		            }
-		        }
-		        else
-		        {
-		            displayError( "Invalid input rod id! " );
-		        }
-
-		    }
-		    else
-		    {
-		        displayError( "Please select a figaro rod node! " );
-		    }
-
-#endif
-#if 0
-			double distance = 0.0;
-
-			if(  m_mArgDatabase->isFlagSet( kDistance ) )
-				m_mArgDatabase->getFlagArgument( kDistance, 0, distance );
-
-			if(  m_mArgDatabase->isFlagSet( kPosition ) )
-			{
-			   MString posString;
-			   m_mArgDatabase->getFlagArgument( kPosition, 0, posString );
-
-				// We pass the colour as a string because there is no int3 option
-				// to commands. So we now need to split it up
-				MStringArray subStrings;
-				posString.split( ',', subStrings );
-
-				if ( subStrings.length() != 3 )
-				   displayError( "Please enter a position with 3 components - x,y and z." );
-			   else
-			   {
-				   pos[ 0 ] = subStrings[ 0 ].asFloat();
-				   pos[ 1 ] = subStrings[ 1 ].asFloat();
-				   pos[ 2 ] = subStrings[ 2 ].asFloat();
-			   }
-			}
-
-			cout<<" Add attribute rod id: "<<rodId<<" vertex id: "<<vertId<<" position "<<pos<<endl;
-			addVertexConstraint( rodId, distance, vertId, pos );
-#endif
-        }
-        else
-        {
-            // Do other stuff such as return number of rods or whatever
         }
         
+        // Get rod vertex position
+        //
+/*
+		Example:
+
+			wmFigaro -addVertexConstraint -rodNode "wmFigRodNodeShape1" -rodVertices "1 rod[0].vtx[21]"; // The rodVertices string the string result from the "Select Rod Vertices Tool"
+*/
+        if( m_mArgDatabase->isFlagSet( kRodVertexPositionFlag ) )
+        {
+        	int rodId;
+        	int vertexId;
+        	m_mArgDatabase->getFlagArgument( kRodVertexPositionFlag, 0, rodId );
+        	m_mArgDatabase->getFlagArgument( kRodVertexPositionFlag, 1, vertexId );
+
+        	bool inWorldSpace = false;
+        	if( m_mArgDatabase->isFlagSet( kWorldSpaceFlag ) )
+        		inWorldSpace = true;
+
+			MString figRodNodeName;
+			if( m_mArgDatabase->isFlagSet( kRodNodeNameFlag ) )
+				m_mArgDatabase->getFlagArgument( kRodNodeNameFlag, 0, figRodNodeName );
+
+			if( !figRodNodeName.length() )
+			{
+				MGlobal::displayInfo( "No rod shape name given." );
+				return MS::kFailure;
+			}
+
+			// Convert figRodNodeName into MObject
+			MSelectionList sel;
+			MObject figRodNode;
+			sel.add( figRodNodeName );
+			sel.getDependNode( 0, figRodNode );
+
+			if( figRodNode.isNull() )
+			{
+				MGlobal::displayInfo( "Rod shape: " + figRodNodeName + " doesn't exist." );
+				return MS::kFailure;
+			}
+
+			MFnDependencyNode figRodNodeFn( figRodNode );
+		    WmFigRodNode *figRod = static_cast<WmFigRodNode*>( figRodNodeFn.userNode() );
+		    if( !figRod )
+		    {
+				MGlobal::displayInfo( "Unable to get WmFigRodNode." );
+				return MS::kFailure;
+		    }
+
+		    WmFigRodGroup* rodGroup = figRod->rodGroup();
+		    const int nRods = rodGroup->numberOfRods();
+
+		    if( rodId < 0 || rodId >= nRods ) {
+				MGlobal::displayInfo( MString("Rod index ") + rodId + " is invalid. The node contains " + nRods + " rods." );
+				return MS::kFailure;
+		    }
+
+		    const int nVerts = rodGroup->elasticRod( rodId )->nv();
+
+		    if( vertexId < 0 || vertexId >= nVerts ) {
+				MGlobal::displayInfo( MString("Vertex index ") + vertexId + " is invalid. The rod contains " + nVerts + " vertices." );
+				return MS::kFailure;
+		    }
+
+			const Vec3d p = rodGroup->elasticRod( rodId )->getVertex( vertexId );
+			MPoint pt( p[0], p[1], p[2] );
+
+			// Transform local space position to world space
+			//
+			if( inWorldSpace ) {
+				MFnDagNode dagNodeFn( figRodNode );
+				MObject transformNode = dagNodeFn.parent( 0 );
+				dagNodeFn.setObject( transformNode );
+
+				MDagPath transformDagPath;
+				dagNodeFn.getPath( transformDagPath );
+
+				MMatrix worldMtx = transformDagPath.inclusiveMatrix();
+				pt *= worldMtx;
+			}
+
+			MDoubleArray coordinates( 3 );
+			coordinates[0] = pt.x;
+			coordinates[1] = pt.y;
+			coordinates[2] = pt.z;
+			setResult( coordinates );
+
+			return MS::kSuccess;
+        }
+
+
         setResult( m_results );
     }
 

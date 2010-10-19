@@ -8,6 +8,11 @@
 #include <maya/MStringArray.h>
 #include <maya/MGlobal.h>
 
+void WmFigRodComponentList::clear()
+{
+	removeAllRodVertices();
+}
+
 bool WmFigRodComponentList::containsRodVertex( const unsigned int rodId, const unsigned int vertexId )
 {
 	unsigned int key = rodId;
@@ -140,6 +145,8 @@ bool WmFigRodComponentList::serialise( MString &toString ) const
 
 bool WmFigRodComponentList::unserialise( MString &fromString )
 {
+	clear();
+
 	if( !fromString.length() )
 		return false;
 
@@ -154,9 +161,27 @@ bool WmFigRodComponentList::unserialise( MString &fromString )
 		return false;
 	}
 
-	// @@@ to do...extract the rest
+	MString rodIdTxt;
+	MStringArray rodVertexTxtElements;
+	unsigned int i;
+	unsigned int iRodVertex;
+	for( i=1; i < stringElements.length(); i++ ) {
+		MString rodVerticesTxt = stringElements[i];
+
+		unsigned int rodId;
+
+		MGlobal::executePythonCommand( MString("\"") + rodVerticesTxt.asChar() + "\".split('rod[')[-1].rsplit(']')[0]", rodIdTxt );
+		rodId = rodIdTxt.asInt();
+
+		//MGlobal::displayInfo( MString("rodId: ") + rodId );
+
+		MGlobal::executePythonCommand( MString("\"") + rodVerticesTxt.asChar() + "\".split('vtx[')[-1].rsplit(']')[0].split(',')", rodVertexTxtElements );
+		for( iRodVertex=0; iRodVertex < rodVertexTxtElements.length(); iRodVertex++ ) {
+			unsigned int vertexId = rodVertexTxtElements[ iRodVertex ].asInt();
+			//MGlobal::displayInfo( MString("vertexId: ") + vertexId );
+			addOrRemoveRodVertex( rodId, vertexId, true );
+		}
+	}
 
 	return true;
 }
-
-

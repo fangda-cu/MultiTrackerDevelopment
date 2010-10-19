@@ -47,8 +47,9 @@ global proc wmFigaroAddMainMenu()
 
         menuItem -divider true;
         //menuItem -label "Selection Tool" -annotation "Select rods" -command "setToolTo $gWmFigSelectionContextName";
+        menuItem -label "Select Rod Vertices Tool" -annotation "Select rod vertices" -command "optionVar -intValue \"figSelectionMode\" 1; setToolTo $gWmFigSelectionContextName";
         menuItem -label "Select Rods Tool" -annotation "Select rods" -command "optionVar -intValue \"figSelectionMode\" 0; setToolTo $gWmFigSelectionContextName";
-        menuItem -label "Select Rod Vertex Tool" -annotation "Select rod vertices" -command "optionVar -intValue \"figSelectionMode\" 1; setToolTo $gWmFigSelectionContextName";
+
 
         //menuItem -label "Selection Rod Vertex Tool" -annotation "Select a vertex in rod" -command "setToolTo $gWmFigSelectionContextName";
         //menuItem -label "Create Rod Vertex Constraint" -annotation "Create rod vertex constraint" -command "wmFigaro -addVertexConstraint -useSelection";
