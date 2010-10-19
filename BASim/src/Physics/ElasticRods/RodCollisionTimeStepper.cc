@@ -74,9 +74,9 @@ void RodCollisionTimeStepper::clearVertexPositionPenalty(int vertex_id)
 
   
 void RodCollisionTimeStepper::setClumping(bool flag, Scalar coeff) {
-	if (m_rodPenaltyForce) {
-		m_rodPenaltyForce->setClumping(flag, coeff);
-	}
+    if (m_rodPenaltyForce) {
+        m_rodPenaltyForce->setClumping(flag, coeff);
+    }
 }
 
 bool RodCollisionTimeStepper::execute()
@@ -85,24 +85,24 @@ bool RodCollisionTimeStepper::execute()
       return false;
       /*
     if (m_rod) {
-			std::cout << "\n\n\n\n\n\nBEFORE dynamic execute vertex \n" << m_rod->quasistatic() << "\n";
-		  for(int i=0; i < (int)m_rod->nv(); i++) {
-			  std::cout << m_rod->getVertex(i) << " ";
-			  if (i < (int)m_rod->nv() - 1) std::cout << m_rod->getTheta(i) << "       ";
-			}
-			std::cout << "\n";
-			std::cout << "execute vel\n";
-		  for(int i=0; i < (int)m_rod->nv(); i++) {
-			  std::cout << m_rod->getVelocity(i) << " ";
-			  if (i < (int)m_rod->nv() - 1) std::cout << m_rod->getThetaDot(i) << "       ";
-			}
-		  for(int i=0; i < (int)m_rod->nv() * 4 - 1; i++) {
-			  std::cout << m_rod->getMass(i) << " ";
-			}
-			std::cout << "\n";
-			std::cout << "\n\n";
+            std::cout << "\n\n\n\n\n\nBEFORE dynamic execute vertex \n" << m_rod->quasistatic() << "\n";
+          for(int i=0; i < (int)m_rod->nv(); i++) {
+              std::cout << m_rod->getVertex(i) << " ";
+              if (i < (int)m_rod->nv() - 1) std::cout << m_rod->getTheta(i) << "       ";
+            }
+            std::cout << "\n";
+            std::cout << "execute vel\n";
+          for(int i=0; i < (int)m_rod->nv(); i++) {
+              std::cout << m_rod->getVelocity(i) << " ";
+              if (i < (int)m_rod->nv() - 1) std::cout << m_rod->getThetaDot(i) << "       ";
+            }
+          for(int i=0; i < (int)m_rod->nv() * 4 - 1; i++) {
+              std::cout << m_rod->getMass(i) << " ";
+            }
+            std::cout << "\n";
+            std::cout << "\n\n";
     } else {
-			std::cout << "m_rod null\n\n";
+            std::cout << "m_rod null\n\n";
     
     }
       */
@@ -110,19 +110,19 @@ bool RodCollisionTimeStepper::execute()
   //std::cout << "COLLISION execute\n";
     return m_rodTimeStepper->execute();
 /*
-		std::cout << "after dynamic execute vertex\n";
-	  for(int i=0; i < (int)m_rod->nv(); i++) {
-		  std::cout << m_rod->getVertex(i) << " ";
-		  if (i < (int)m_rod->nv() - 1) std::cout << m_rod->getTheta(i) << "       ";
-		}
-		std::cout << "\n";
-		std::cout << "execute vel\n";
-	  for(int i=0; i < (int)m_rod->nv(); i++) {
-		  std::cout << m_rod->getVelocity(i) << " ";
-		  if (i < (int)m_rod->nv() - 1) std::cout << m_rod->getThetaDot(i) << "       ";
-		}
-		std::cout << "\n";
-		*/
+        std::cout << "after dynamic execute vertex\n";
+      for(int i=0; i < (int)m_rod->nv(); i++) {
+          std::cout << m_rod->getVertex(i) << " ";
+          if (i < (int)m_rod->nv() - 1) std::cout << m_rod->getTheta(i) << "       ";
+        }
+        std::cout << "\n";
+        std::cout << "execute vel\n";
+      for(int i=0; i < (int)m_rod->nv(); i++) {
+          std::cout << m_rod->getVelocity(i) << " ";
+          if (i < (int)m_rod->nv() - 1) std::cout << m_rod->getThetaDot(i) << "       ";
+        }
+        std::cout << "\n";
+        */
 
   }
 
@@ -166,37 +166,37 @@ void RodCollisionTimeStepper::getClumpingPairs(vector<ElasticRod*> &rods)
 {
 
   const Scalar max_clump_size = 5.0;
-	
+    
   for (int i=0; i<(int) rods.size(); i++)   
   {
     ElasticRod *rod1 = rods[i];
     Vec3d x1 = rod1->getVertex(0);
-  	
-	for (int j=i+1; j<(int) rods.size(); j++) 		
+      
+    for (int j=i+1; j<(int) rods.size(); j++)         
     {
-	  ElasticRod *rod2 = rods[j];
-	  Vec3d x2 = rod2->getVertex(0);
+      ElasticRod *rod2 = rods[j];
+      Vec3d x2 = rod2->getVertex(0);
 
-	  Scalar dist = (x1 - x2).norm();
-			
-	  if (dist < max_clump_size) 
+      Scalar dist = (x1 - x2).norm();
+            
+      if (dist < max_clump_size) 
       {
-	    for (int v1=0; v1<rod1->nv(); v1++) 
+        for (int v1=0; v1<rod1->nv(); v1++) 
         {
-		  if (!rod1->vertFixed(v1)) 
+          if (!rod1->vertFixed(v1)) 
           {
-		    for (int v2=0; v2<rod2->nv(); v2++) 
+            for (int v2=0; v2<rod2->nv(); v2++) 
             {
-			  if (!rod2->vertFixed(v2)) 
+              if (!rod2->vertFixed(v2)) 
               {
-			    rod1->getPenaltyForce()->addRodClumpingForce(v1, rod2, v2);
-				rod2->getPenaltyForce()->addRodClumpingForce(v2, rod1, v1);
-			  }
-			}
-		  }
-		}
-	  }	  
-	}
+                rod1->getPenaltyForce()->addRodClumpingForce(v1, rod2, v2);
+                rod2->getPenaltyForce()->addRodClumpingForce(v2, rod1, v1);
+              }
+            }
+          }
+        }
+      }      
+    }
   }      
 }
 
@@ -220,8 +220,8 @@ void RodCollisionTimeStepper::getProximities(CollisionMeshDataHashMap &collision
     
     Scalar radius_scale = rod->getRadiusScale();
 
-		// Jungseock - This might be necessary for the future.
-		m_rodPenaltyForce->clearPenaltyForces();
+    // Jungseock - This might be necessary for the future.
+    m_rodPenaltyForce->clearPenaltyForces();
 
     // Check for proximities against every collision mesh
     //
@@ -246,7 +246,7 @@ void RodCollisionTimeStepper::getProximities(CollisionMeshDataHashMap &collision
                 Vec3d thickness((cmData->getThickness() + radius_scale * rod->radius()),
                                 (cmData->getThickness() + radius_scale * rod->radius()),
                                 (cmData->getThickness() + radius_scale * rod->radius()));
-                vMin += -thickness;
+                vMin -= thickness;
                 vMax += thickness;
 
                 // We're re-using the uint vector (to save memory allocs), so clear out
@@ -316,7 +316,7 @@ void RodCollisionTimeStepper::respondObjectCollisions(CollisionMeshDataHashMap &
                 Vec3d thickness((cmData->getThickness() + radius_scale * rod->radius()),
                                 (cmData->getThickness() + radius_scale * rod->radius()),
                                 (cmData->getThickness() + radius_scale * rod->radius()));
-                vMin += -thickness;
+                vMin -= thickness;
                 vMax += thickness;
                 
                 cands.clear();
@@ -345,7 +345,7 @@ void RodCollisionTimeStepper::respondObjectCollisions(CollisionMeshDataHashMap &
                     Vec3d thickness((cmData->getThickness() + radius_scale * rod->radius()),
                                     (cmData->getThickness() + radius_scale * rod->radius()),
                                     (cmData->getThickness() + radius_scale * rod->radius()));
-                    vMin += -thickness;
+                    vMin -= thickness;
                     vMax += thickness;
 
                     cands.clear();
@@ -379,7 +379,7 @@ void RodCollisionTimeStepper::respondObjectCollisions(CollisionMeshDataHashMap &
                     Vec3d thickness((cmData->getThickness() + rod->radius()),
                                     (cmData->getThickness() + rod->radius()),
                                     (cmData->getThickness() + rod->radius()));
-                    vMin += -thickness;
+                    vMin -= thickness;
                     vMax += thickness;
 
                     cands.clear();
