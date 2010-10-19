@@ -351,15 +351,15 @@ void CollisionMeshData::draw()
     //
      //if(_phiCurrent->isInitialized())
         //_phiCurrent->draw();
-         
+
+    glPushAttrib(GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT);
+
     //for ( size_t p=0; p<currPositions.size(); p++ )     
     {
       glColor3f(0, 1, 0);
       glBegin(GL_TRIANGLES);
       for (size_t i=0; i<_nbrTriangles; ++i)
       {    
-          float c = (float)(i)/(float)(_nbrTriangles);          
-          
           glVertex3dv(currPositions[triangleIndices[(3 * i)    ]].data());
           glVertex3dv(currPositions[triangleIndices[(3 * i) + 1]].data());
           glVertex3dv(currPositions[triangleIndices[(3 * i) + 2]].data());
@@ -371,8 +371,6 @@ void CollisionMeshData::draw()
       glBegin(GL_LINES);
       for (size_t i=0; i<_nbrTriangles; ++i)
       {    
-          float c = (float)(i)/(float)(_nbrTriangles);
-          
           glVertex3dv(currPositions[triangleIndices[(3 * i)    ]].data());
           glVertex3dv(currPositions[triangleIndices[(3 * i) + 1]].data());
           
@@ -385,6 +383,8 @@ void CollisionMeshData::draw()
       glEnd();
       glLineWidth(1.0);
     }
+
+    glPopAttrib();
 }
 
 void CollisionMeshData::sizeLevelSet(Vec3d &origin,Vec3i &dims, Real &dx, Real length[3])

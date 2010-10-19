@@ -118,24 +118,12 @@ MStatus WmBunsenCollisionMeshNode::compute( const MPlug& i_plug, MDataBlock& i_d
 void WmBunsenCollisionMeshNode::draw( M3dView & view, const MDagPath & path,
         M3dView::DisplayStyle style, M3dView::DisplayStatus status )
 {     
-    MStatus stat;
-    MObject thisNode = thisMObject();
-
-    view.beginGL(); 
-    glPushAttrib(GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT);
-
     if ( m_drawCollisionData && m_collisionMeshData )
     {
-        //cerr << "Drawing collision mesh\n";
+        view.beginGL(); 
         m_collisionMeshData->draw();
+        view.endGL();
     }
-    else
-    {
-        //cerr << "NOT Drawing collision mesh\n";
-    }
-
-    glPopAttrib();
-    view.endGL();
 }
 
 MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_meshFn, 
