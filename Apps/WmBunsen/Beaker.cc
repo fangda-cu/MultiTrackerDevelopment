@@ -101,11 +101,8 @@ void Beaker::resetEverything()
 
     initialiseWorld();
 
-    if ( m_volumetricCollisions )
-    {    
-        delete m_volumetricCollisions;
-        m_volumetricCollisions = NULL;
-    }
+    delete m_volumetricCollisions;
+    m_volumetricCollisions = NULL;
 }
 
 void Beaker::setTimingsFile( std::string i_fileName )
@@ -317,11 +314,7 @@ void Beaker::addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
         m_world->addController( m_rodDataMap[ i_rodGroupIndex ]->collisionStepper( r ) );
     }
 
-    if ( m_volumetricCollisions != NULL )
-    {
-        delete m_volumetricCollisions;
-    }
-
+    delete m_volumetricCollisions;
     m_volumetricCollisions = new VolumetricCollisionsCPU( m_rodDataMap );
 }
 
@@ -636,7 +629,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
         //  RodCollisionTimeStepper* collisionStepper = pRodGroup->collisionStepper(
 
-        if ( !i_selfCollisionPenaltyForcesEnabled && !i_fullSelfCollisionsEnabled && !m_volumetricCollisions )
+        if ( !i_selfCollisionPenaltyForcesEnabled && !i_fullSelfCollisionsEnabled && !m_doVolumetricCollisions )
         {
             // Fantastic let's just run it all threaded!
             timeval threadFrameTimer;
@@ -676,7 +669,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 // it? Then just pass it each timestep? Would make it simpler than tracking
                 // active rods in the volumetric code
 
-                //if(m_volumetricCollisionsEnabled){
+                //if(m_volumetricCollisionsEnabled)
                 //m_volumetricCollisions->respondVolumetricCollisions( m_rodDataMap, m_targetEdgeDensity, 
                   //           m_volumetricRadius, m_gridDx, m_separationCondition, m_collisionMeshMap );
                 rodCollisionTimeStepper->collisionsBegin();
