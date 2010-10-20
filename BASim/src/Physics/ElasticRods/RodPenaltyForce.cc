@@ -121,29 +121,29 @@ void RodPenaltyForce::computeForceDX(int baseindex, const ElasticRod& rod, Scala
     localJ.setZero();
     localJacobian(localJ, stiffness, n);
   
-	  for (int i = 0; i < 3; ++i) {
-	    indices[i] = baseindex + rod.vertIdx(vertex,i);
-	  }
-	  localJ *= scale;
-	  J.add(indices, indices, localJ);
+    for (int i = 0; i < 3; ++i) {
+      indices[i] = baseindex + rod.vertIdx(vertex,i);
+    }
+    localJ *= scale;
+    J.add(indices, indices, localJ);
   }
 }
 
 void RodPenaltyForce::localJacobian(MatXd& J, const Scalar stiffness, const Vec3d& normal)
 {
-	Mat3d M = -stiffness * outerProd(normal, normal);
+    Mat3d M = -stiffness * outerProd(normal, normal);
 
-	for (int j = 0; j < 3; ++j) {
-		for (int k = 0; k < 3; ++k) {
-			J(j,k) += M(j,k);
-		}
-	}
+    for (int j = 0; j < 3; ++j) {
+        for (int k = 0; k < 3; ++k) {
+            J(j,k) += M(j,k);
+        }
+    }
 
 }
 
 
 void RodPenaltyForce::clearPenaltyForces() {
-	_vertexObjects.clear();
+  _vertexObjects.clear();
   surface_normals.clear();
 }
 
