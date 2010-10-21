@@ -8,7 +8,7 @@
 
 namespace BASim {
 
-#define COLLISION_EPSILON 1e-6
+static const double collision_thickness = 1e-4;
 
 using namespace bridson;
 
@@ -234,7 +234,7 @@ bool CandidateCollision::getContinuousTimeVertexTriangle(Vec3d &x0,
 
         // Was this a real collision or a false positive?
         //
-        if (distance < COLLISION_EPSILON)
+        if (distance < collision_thickness)
         {
 //          std::cout << "  CTNS " << t << " " << distance << " " << s1 << " " << s2 << " " << s3 << "\n" << x0 << x1 << x2 << x3 << "\n";
 //          std::cout << v0 << v1 << v2 << v3 << "\n";
@@ -244,7 +244,7 @@ bool CandidateCollision::getContinuousTimeVertexTriangle(Vec3d &x0,
 
             // now figure out a decent normal
             //
-//           if (distance < (1e-2 * COLLISION_EPSILON))
+//           if (distance < (1e-2 * collision_thickness))
             {
                 // if we don't trust the normal...
                 // first try the triangle normal at collision time
@@ -252,7 +252,7 @@ bool CandidateCollision::getContinuousTimeVertexTriangle(Vec3d &x0,
                 normal = (xt2 - xt1).cross(xt3 - xt1);
 
                 Real m = normal.norm();
-                if (m > COLLISION_EPSILON)
+                if (m)
                 {
                     normal /= m;
                 }
@@ -262,7 +262,7 @@ bool CandidateCollision::getContinuousTimeVertexTriangle(Vec3d &x0,
                     //
                     normal = (x2 - x1).cross(x3 - x1);
                     m = normal.norm();
-                    if (m > COLLISION_EPSILON)
+                    if (m)
                     {
                         normal /= m;
                     }
@@ -272,7 +272,7 @@ bool CandidateCollision::getContinuousTimeVertexTriangle(Vec3d &x0,
                         //
                         normal = x0 - (s1 * x1 + s2 * x2 + s3 * x3);
                         m = normal.norm();
-                        if (m > COLLISION_EPSILON)
+                        if (m)
                         {
                             normal /= m;
                         }
@@ -321,9 +321,9 @@ bool CandidateCollision::getProximityVertexTriangle(Vec3d &v,
                                                     Real h, Collision &collision) const
 {
     Real a1, a2, a3;
-    Real distance = getClosestPointsVertexTriangle(v, t1, t2, t3, a1, a2, a3);
+    Real sqr_distance = getClosestPointsVertexTriangle(v, t1, t2, t3, a1, a2, a3);
 
-    if (distance < h * h && distance > COLLISION_EPSILON)
+    if (sqr_distance < h * h)
     {
 //        Vec3d normal = (v - (a1 * t1 + a2 * t2 + a3 * t3));
         Vec3d normal = (t2 - t1).cross(t3 - t1);
@@ -331,7 +331,7 @@ bool CandidateCollision::getProximityVertexTriangle(Vec3d &v,
 
         collision.setNormal(normal);
         collision.setBarycentricCoordinates(a1, a2, a3);
-        collision.setDistance(std::sqrt(distance));
+        collision.setDistance(std::sqrt(sqr_distance));
         collision.setType(VERTEX_TRIANGLE);
 
         return true;
@@ -366,7 +366,7 @@ bool CandidateCollision::getContinuousTimeEdgeEdge(Vec3d &x00,
         Real s1, s2;
         Real distance = std::sqrt(getClosestPointsEdgeEdge(xt00, xt01, xt10, xt11, s1, s2));
 
-        if (distance < COLLISION_EPSILON)
+        if (distance < collision_thickness)
         {
 //            normal = ((1.0 - s1) * xt00 + s1 * xt01) -
 //                     ((1.0 - s2) * xt10 + s2 * xt11);
@@ -378,7 +378,7 @@ bool CandidateCollision::getContinuousTimeEdgeEdge(Vec3d &x00,
                 normal = (xt11 - xt10).cross(xt01 - xt00);
 
                 Real m = normal.norm();
-                if (m > COLLISION_EPSILON)
+                if (m)
                 {
                     normal /= m;
                 }
@@ -388,7 +388,7 @@ bool CandidateCollision::getContinuousTimeEdgeEdge(Vec3d &x00,
                              ((1.0 - s2) * x10 + s2 * x11);
 
                     m = normal.norm();
-                    if (m > COLLISION_EPSILON)
+                    if (m)
                     {
                         normal /= m;
                     }
@@ -442,20 +442,24 @@ bool CandidateCollision::getProximityEdgeEdge(Vec3d &e11, Vec3d &e12,
                                               Real h, Collision &collision) const
 {
     Real alpha, beta;
-    Real distance = getClosestPointsEdgeEdge(e11, e12, e21, e22, alpha, beta);
+    Real sqr_distance = getClosestPointsEdgeEdge(e11, e12, e21, e22, alpha, beta);
 
-    if (distance < h * h && distance > COLLISION_EPSILON)
+    if (sqr_distance < h * h)
     {
         Vec3d normal = ((1.0 - alpha) * e11 + alpha * e12) -
                             ((1.0 -  beta) * e21 +  beta * e22);
-        normal.normalize();
+        double n = normal.norm();
+        if (n)
+        {
+            normal /= n;
 
-        collision.setNormal(normal);
-        collision.setBarycentricCoordinates(alpha, beta);
-        collision.setDistance(std::sqrt(distance));
-        collision.setType(EDGE_EDGE);
+            collision.setNormal(normal);
+            collision.setBarycentricCoordinates(alpha, beta);
+            collision.setDistance(std::sqrt(sqr_distance));
+            collision.setType(EDGE_EDGE);
 
-        return true;
+            return true;
+        }
     }
 
     return false;
@@ -605,6 +609,7 @@ Real CandidateCollision::getClosestPointsEdgeEdge(const Vec3d& e11, const Vec3d&
                                                   const Vec3d& e21, const Vec3d& e22,
                                                   Real &s, Real &t) const
 {
+    static const double epsilon = 1e-6;
     const double *p1 = e11.data();
     const double *q1 = e12.data();
     const double *p2 = e21.data();
@@ -631,7 +636,7 @@ Real CandidateCollision::getClosestPointsEdgeEdge(const Vec3d& e11, const Vec3d&
 
     // check if either or both segments degenerate into points
     //
-    if ((a <= COLLISION_EPSILON) && (e <= COLLISION_EPSILON))
+    if ((a <= epsilon) && (e <= epsilon))
     {
         s = t = 0.0f;
         c1[0] = p1[0]; c1[1] = p1[1]; c1[2] = p1[2];
@@ -640,7 +645,7 @@ Real CandidateCollision::getClosestPointsEdgeEdge(const Vec3d& e11, const Vec3d&
         return ((c1[0]-c2[0])*(c1[0]-c2[0]) + (c1[1]-c2[1])*(c1[1]-c2[1]) + (c1[2]-c2[2])*(c1[2]-c2[2]));
     }
 
-    if (a <= COLLISION_EPSILON)
+    if (a <= epsilon)
     {
         // first segment degenerates into a point
         //
@@ -653,7 +658,7 @@ Real CandidateCollision::getClosestPointsEdgeEdge(const Vec3d& e11, const Vec3d&
     {
         Real c = d1[0]*r[0] + d1[1]*r[1] + d1[2]*r[2];
 
-        if (e <= COLLISION_EPSILON)
+        if (e <= epsilon)
         {
             // second segment degenerates into a point
             //
