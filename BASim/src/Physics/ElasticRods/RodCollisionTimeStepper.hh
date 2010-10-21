@@ -91,8 +91,13 @@ public:
   {
     if (!m_enabled)
       return; 
+
+    if (is_multiple_stepper) {
+      m_rod->collisionsBegin(m_dt);
+      return;
+    }
    
-     m_rod->collisionsBegin(m_rodTimeStepper->getTimeStep());
+    m_rod->collisionsBegin(m_rodTimeStepper->getTimeStep());
   }
 
   void updateEndPositions()
@@ -114,12 +119,10 @@ public:
     }
 
     if (is_multiple_stepper) {
-      m_rod->collisionsBegin(m_dt);
       respondObjectCollisions(*m_collisionMeshes, m_dt);
       return;
     } 
 
-    m_rod->collisionsBegin(m_rodTimeStepper->getTimeStep());
     respondObjectCollisions(*m_collisionMeshes, m_rodTimeStepper->getTimeStep());
   }
 
