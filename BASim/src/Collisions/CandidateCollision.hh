@@ -45,7 +45,7 @@ public:
     // Checks if two primitives are within proximity, where proximity
     // is defined as the sum of their two object's thicknesses
     //
-    bool getProximity(Collisions &collisions) const;
+    bool getProximity(Collision& collision) const;
 
     bool operator<(const CandidateCollision &cc) const;
     bool operator==(const CandidateCollision &cc) const;

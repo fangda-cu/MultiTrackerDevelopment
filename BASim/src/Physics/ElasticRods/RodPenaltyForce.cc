@@ -105,16 +105,13 @@ void RodPenaltyForce::computeForceDX(int baseindex, const ElasticRod& rod, Scala
   MatXd localJ(3, 3);
   IntArray indices(3);
   
-  uint id = 0;
-  
-  for (VertexObjectMapIterator voItr=_vertexObjects.begin(); voItr!=_vertexObjects.end(); ++voItr, ++id)
+  for (VertexObjectMapIterator voItr=_vertexObjects.begin(); voItr!=_vertexObjects.end(); ++voItr)
   {
-    CollisionMeshData *cmData = voItr->second.first;
+    CollisionMeshData *cmData = voItr->second.cmData;
 
     int vertex   = voItr->first;
-    int triangle = voItr->second.second;
-    
-    Vec3d n = surface_normals[id];
+    int triangle = voItr->second.triangle;
+    Vec3d n      = voItr->second.normal;
 
     Scalar stiffness = cmData->getSeparationStrength();
 
@@ -144,7 +141,6 @@ void RodPenaltyForce::localJacobian(MatXd& J, const Scalar stiffness, const Vec3
 
 void RodPenaltyForce::clearPenaltyForces() {
   _vertexObjects.clear();
-  surface_normals.clear();
 }
 
 
@@ -258,20 +254,19 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
   // => Don't delete (even though the distance is bigger than the influence) cause we need to maintain consistency of equations during Newton solver
   //
   //std::vector<std::pair<int, std::pair<CollisionMeshData *, int> > > toDelete;
-  uint id = 0;
-  for (VertexObjectMapIterator voItr=_vertexObjects.begin(); voItr!=_vertexObjects.end(); ++voItr, ++id)
+  for (VertexObjectMapIterator voItr=_vertexObjects.begin(); voItr!=_vertexObjects.end(); ++voItr)
   {
-    CollisionMeshData *cmData = voItr->second.first;
+    CollisionMeshData *cmData = voItr->second.cmData;
 
     int vertex   = voItr->first;
-    int triangle = voItr->second.second;
+    int triangle = voItr->second.triangle;
+    Vec3d n      = voItr->second.normal;
     
 //    if (1 || distance < (cmData->getThickness() + rod.radius()))
     {
       Scalar thickness = cmData->getThickness() + rod.radius() * rod.getRadiusScale();
       Scalar stiffness = cmData->getSeparationStrength();
 
-      Vec3d n = surface_normals[id];
 
       Scalar nnormal = (rod.getVertex(vertex) - cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]]).dot(n); 
       Vec3d force = - stiffness * (nnormal - thickness) * n;
@@ -442,29 +437,25 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
 
 }
 
-void RodPenaltyForce::addRodPenaltyForce(int vertex, CollisionMeshData *cmData, int triangle)
+void RodPenaltyForce::addRodPenaltyForce(int vertex, CollisionMeshData *cmData, int triangle,
+                                         Collision& collision)
 {
-  // Adding a vertex-triangle penalty force, where the triangle is part of a collision
-  // object mesh. First make sure it's not already in our list
-  //
-  std::pair<VertexObjectMapIterator, VertexObjectMapIterator> p = _vertexObjects.equal_range(vertex);
+  // Adding a vertex-triangle penalty force, where the triangle is part of a collision object mesh.
 
-  for (VertexObjectMapIterator i=p.first; i!=p.second; ++i)
-  {
-    if (i->second.first == cmData && i->second.second == triangle)
+  // If a previous collision exists, use the one with smaller distance
+  VertexObjectMapIterator p = _vertexObjects.find(vertex);
+  if (p != _vertexObjects.end() && p->second.distance <= collision.getDistance())
       return;
-  }
 
-  _vertexObjects.insert(VertexObjectMap::value_type(vertex, std::make_pair(cmData, triangle)));
-  
-  Vec3d n = (cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 1]] -
+  ObjectCollisionInfo& info = _vertexObjects[vertex];
+  info.cmData = cmData;
+  info.triangle = triangle;
+  info.distance = collision.getDistance();
+  info.normal = (cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 1]] -
       cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]]).cross(
       cmData->prevPositions[cmData->triangleIndices[(3 * triangle) + 2]] - 
       cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]]);
-  n.normalize();
-  
-  surface_normals.push_back(n);
-
+  info.normal.normalize();
 }
 
 void RodPenaltyForce::addRodPenaltyForce(int edge, ElasticRod *rod, int otherEdge)

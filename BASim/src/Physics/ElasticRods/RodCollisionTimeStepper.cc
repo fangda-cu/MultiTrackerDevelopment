@@ -215,7 +215,6 @@ void RodCollisionTimeStepper::getProximities(CollisionMeshDataHashMap &collision
 
     ElasticRod *rod = m_rod;
 
-    Collisions colls;
     std::vector<uint> cands;
     
     Scalar radius_scale = rod->getRadiusScale();
@@ -266,13 +265,14 @@ void RodCollisionTimeStepper::getProximities(CollisionMeshDataHashMap &collision
                     // proximity
                     //
                     CandidateCollision cand(rod, i, cmData, *uiItr, VERTEX_TRIANGLE);
-                    if (cand.getProximity(colls))
+                    Collision coll;
+                    if (cand.getProximity(coll))
                     {
                         //cerr << "Found candidate Collision!\n";
                         // If they are, add a penalty force for this vertex-triangle pair
                         //
                         m_rodPenaltyForce->addRodPenaltyForce(cand.getFirstPrimitive(),
-                                               cmData, cand.getSecondPrimitive());
+                                               cmData, cand.getSecondPrimitive(), coll);
                     }
                     //else
                    //     cerr << "FAILED to find candidate Collision!\n";

@@ -98,7 +98,9 @@ void UniformGrid::getProximities(ElasticRods &rods, Collisions &collisions)
                     ElasticRod *rod2 = eimItr->second.second;
                     int idx2 = *uiItr - eimItr->second.first;
                     CandidateCollision cand(rod, i, rod2, idx2, EDGE_EDGE);
-                    cand.getProximity(collisions);
+                    Collision collision;
+                    if (cand.getProximity(collision))
+                        collisions.push_back(collision);
                 }
             }
         }

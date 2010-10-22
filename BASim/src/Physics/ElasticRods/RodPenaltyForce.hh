@@ -15,8 +15,16 @@
 
 namespace BASim {
 
-//typedef __gnu_cxx::hash_map<int, std::pair<CollisionMeshData *, int> > VertexObjectMap;
-typedef std::map<int, std::pair<CollisionMeshData *, int> > VertexObjectMap;
+struct ObjectCollisionInfo
+{
+    CollisionMeshData* cmData;
+    int triangle;
+    Vec3d normal;
+    double distance;
+};
+
+//typedef __gnu_cxx::hash_map<int, ObjectCollisionInfo> VertexObjectMap;
+typedef std::map<int, ObjectCollisionInfo> VertexObjectMap;
 typedef VertexObjectMap::iterator VertexObjectMapIterator;
 
 //typedef __gnu_cxx::hash_map<int, std::pair<ElasticRod *, int> > EdgeRodMap;
@@ -71,7 +79,7 @@ public:
   virtual void computeForceDX(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J);
   virtual void computeForceDV(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
   
-  void addRodPenaltyForce(int vertex, CollisionMeshData *cmData, int triangle);
+  void addRodPenaltyForce(int vertex, CollisionMeshData *cmData, int triangle, Collision& collision);
   void addRodPenaltyForce(int edge, ElasticRod *rod, int otherEdge);
 
   void clearPenaltyForces();
@@ -118,8 +126,6 @@ protected:
                                 
   void localJacobian(MatXd& J, const Scalar stiffness, const Vec3d& normal);
 
-  std::vector <Vec3d> surface_normals;
-  
   bool clumping_enbld;
   Real clumping_coeff;
   

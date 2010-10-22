@@ -127,7 +127,7 @@ bool CandidateCollision::getContinuousTime(Real dt, Collisions &collisions) cons
     return false;
 }
 
-bool CandidateCollision::getProximity(Collisions &collisions) const
+bool CandidateCollision::getProximity(Collision& collision) const
 {
     Positions&  x1 = _object1->getPositions();
     Positions&  x2 = _object2->getPositions();
@@ -142,7 +142,6 @@ bool CandidateCollision::getProximity(Collisions &collisions) const
         {
             Indices& indices2 = _object2->getTriangleIndices();
 
-            Collision collision;
             if (getProximityVertexTriangle(x1[_primitive1],
                                            x2[indices2[(3 * _primitive2)    ]],
                                            x2[indices2[(3 * _primitive2) + 1]],
@@ -155,7 +154,6 @@ bool CandidateCollision::getProximity(Collisions &collisions) const
                 collision.setSecondPrimitiveIndex(2, indices2[(3 * _primitive2) + 2]);
                 collision.setFirstObject(_object1);
                 collision.setSecondObject(_object2);
-                collisions.push_back(collision);
 
                 return true;
             }
@@ -167,7 +165,6 @@ bool CandidateCollision::getProximity(Collisions &collisions) const
             Indices& indices1 = _object1->getEdgeIndices();
             Indices& indices2 = _object2->getEdgeIndices();
 
-            Collision collision;
             if (getProximityEdgeEdge(x1[indices1[(2 * _primitive1)    ]],
                                      x1[indices1[(2 * _primitive1) + 1]],
                                      x2[indices2[(2 * _primitive2)    ]],
@@ -180,7 +177,6 @@ bool CandidateCollision::getProximity(Collisions &collisions) const
                 collision.setSecondPrimitiveIndex(1, indices2[(2 * _primitive2) + 1]);
                 collision.setFirstObject(_object1);
                 collision.setSecondObject(_object2);
-                collisions.push_back(collision);
 
                 return true;
             }
