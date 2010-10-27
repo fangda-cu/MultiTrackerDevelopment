@@ -5,10 +5,15 @@
  *      Author: dgould
  */
 #include "WmFigConstraintNode.hh"
+#include "WmFigRodComponentList.hh"
+#include "WmFigRodNode.hh"
 #include <maya/MFnEnumAttribute.h>
 #include <maya/MFnMatrixAttribute.h>
 #include <maya/MFnMessageAttribute.h>
 #include <maya/MFnNumericAttribute.h>
+#include <maya/MFnTypedAttribute.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MPlugArray.h>
 
 const MTypeId WmFigConstraintNode::TypeId( 0x001156, 0x60 ); // Registered in /vol/weta/src/Wcommon/MTypeId.txt
 const MString WmFigConstraintNode::TypeName( "wmFigConstraintNode" );
@@ -18,10 +23,8 @@ const MString WmFigConstraintNode::TypeName( "wmFigConstraintNode" );
 MObject WmFigConstraintNode::enable;
 MObject WmFigConstraintNode::constraintType;
 MObject WmFigConstraintNode::stiffness;
-MObject WmFigConstraintNode::worldPosition;
-MObject WmFigConstraintNode::rodId;
-MObject WmFigConstraintNode::vertexId;
-
+MObject WmFigConstraintNode::targetWorldPosition;
+MObject WmFigConstraintNode::rodVertices;
 MObject WmFigConstraintNode::figRodNodeMsg;
 //MObject WmFigConstraintNode::inWorldMatrix;
 
@@ -35,241 +38,121 @@ WmFigConstraintNode::~WmFigConstraintNode()
 
 }
 
+void WmFigConstraintNode::draw( M3dView &view, const MDagPath &path, M3dView::DisplayStyle style, M3dView::DisplayStatus status )
+{
+	MFnDependencyNode figConstraintFn( thisMObject() );
+
+	MObject figRodNode;
+	MPlugArray srcPlugs;
+	MPlug figRodNodeMsgPlug = figConstraintFn.findPlug( "figRodNodeMsg" );
+	figRodNodeMsgPlug.connectedTo( srcPlugs, true, false );
+	if( srcPlugs.length() )
+	{
+		figRodNode = srcPlugs[0].node();
+	}
+
+	MFnDependencyNode figRodNodeFn( figRodNode );
+    WmFigRodNode *figRod = static_cast<WmFigRodNode*>( figRodNodeFn.userNode() );
+    if( !figRod )
+        return;
+
+    MPlug rodVerticesPlug = figConstraintFn.findPlug( "rodVertices" );
+    MString rodVerticesTxt( rodVerticesPlug.asString() );
+    WmFigRodComponentList rodComponentList;
+    rodComponentList.unserialise( rodVerticesTxt );
+
+    MPlug targetWorldPositionPlug = figConstraintFn.findPlug( "targetWorldPosition" );
+    MObject targetWorldPositionData = targetWorldPositionPlug.asMObject();
+    MFnNumericData numericDataFn( targetWorldPositionData );
+    MPoint targetWorldPosition;
+    numericDataFn.getData3Double( targetWorldPosition.x, targetWorldPosition.y, targetWorldPosition.z );
+
+    WmFigRodGroup* rodGroup = figRod->rodGroup();
+    //MGlobal::displayInfo( MString("# real rods: ") + rodGroup->numberOfRealRods() );
+    if ( rodGroup->numberOfRealRods() == 0 )
+        return;
+
+    view.beginGL();
+	glPushAttrib( GL_CURRENT_BIT );
+
+    GLboolean lineStipple[ 1 ];
+    glGetBooleanv( GL_LINE_STIPPLE, lineStipple );
+
+    //glLineWidth( 2.0 );
+    //glLineStipple( 1, 0x1111 );
+    //glLineStipple(3, 0xAAAA);
+    glLineStipple(2, 0x0C0F);
+    glEnable( GL_LINE_STIPPLE );
+
+	MColor clr( 0.85, 0.4, 0.0 );
+	glColor3f( clr.r, clr.g, clr.b );
+
+	glPointSize( 6 );
+	glBegin( GL_POINTS );
+	glVertex3f( targetWorldPosition.x, targetWorldPosition.y, targetWorldPosition.z );
+	glEnd();
+
+	MIntArray rodIds;
+	MIntArray rodVertexIds;
+	unsigned int iVertex;
+	unsigned int iRod;
+	unsigned int rodId, vertexId;
+
+	rodComponentList.getRodIds( rodIds );
+	for( iRod=0; iRod < rodIds.length(); iRod++ ) {
+		rodId = rodIds[iRod];
+
+		rodComponentList.getRodVertexIds( rodId, rodVertexIds );
+		for( iVertex=0; iVertex < rodVertexIds.length(); iVertex++ ) {
+			vertexId = rodVertexIds[ iVertex ];
+
+			const Vec3d p = rodGroup->elasticRod( rodId )->getVertex( vertexId );
+
+			glBegin( GL_POINTS );
+			glVertex3f( p[0], p[1], p[2] );
+			glEnd();
+
+			// Draw line from rod vertex to world space position
+			glBegin( GL_LINE_LOOP );
+			glVertex3f( p[0], p[1], p[2] );
+			glVertex3f( targetWorldPosition.x, targetWorldPosition.y, targetWorldPosition.z );
+			glEnd();
+		}
+	}
+
+//	glColor3f( 1.0, 0.0, 0.0 );
+//	glBegin( GL_LINE_LOOP );
+//	glVertex3f( 0.0, 0.0, 0.0 );
+//	glVertex3f( 10.0, 0.0, 0.0 );
+//	glEnd();
+//	glBegin( GL_LINE_LOOP );
+//	glVertex3f( 0.0, 0.0, 0.0 );
+//	glVertex3f( 0.0, 10.0, 0.0 );
+//	glEnd();
+//	glBegin( GL_LINE_LOOP );
+//	glVertex3f( 0.0, 0.0, 0.0 );
+//	glVertex3f( 0.0, 0.0, 10.0 );
+//	glEnd();
+
+    if( lineStipple[0] )
+    	glEnable( GL_LINE_STIPPLE );
+    else
+    	glDisable( GL_LINE_STIPPLE );
+
+	glPopAttrib();
+	view.endGL();
+}
+
+bool WmFigConstraintNode::isBounded() const
+{
+	return false;
+}
+
+
 MStatus WmFigConstraintNode::compute( const MPlug &plug, MDataBlock &data )
 {
 	MStatus stat;
 	return MS::kUnknownParameter; // Haven't computed the plug, pass it back up the class hierarchy
-
-#if 0
-	MDataHandle stateHnd = data.inputValue( state );
-	int state = stateHnd.asInt();
-	bool hasNoEffect = (state == 1); // No Effect/Pass through
-
-	if( plug == outWPSDDataRef ) {
-	    // Even though it is the outWPSSDataRef that is being requested, ensure that the outWPSDData MPxData that it will reference
-		// has been created. It will be empty by default.
-	    //
-		MDataHandle outWPSDDataHnd = data.inputValue( __wpsdData );
-		WmWeightedPSDData *wpsdData = (WmWeightedPSDData *)outWPSDDataHnd.asPluginData();
-		if( !wpsdData ) {
-			MFnPluginData pluginDataFn;
-			MObject wpsdDataObj = pluginDataFn.create( WmWeightedPSDData::TypeId );
-			outWPSDDataHnd.set( wpsdDataObj );
-			outWPSDDataHnd.setClean();
-
-			outWPSDDataHnd = data.inputValue( __wpsdData );
-			wpsdData = (WmWeightedPSDData *)outWPSDDataHnd.asPluginData();
-		}
-
-		//cout << "------- computing outWPSDDataRef" << std::endl;
-		MDataHandle outWPSDDataRefHnd = data.outputValue( outWPSDDataRef );
-
-		//cout << "------- creating instance of WmWeightedPSDDataRef " << std::endl;
-		MFnPluginData pluginDataFn;
-		MObject wpsdDataRefObj = pluginDataFn.create( WmWeightedPSDDataRef::TypeId, &stat );
-		if( !stat ) {
-			//cout << "------- unabled to create instance of WmWeightedPSDDataRef" << std::endl;
-			MGlobal::displayWarning( MString( "Unable to create instance of ") + WmWeightedPSDDataRef::TypeName );
-			return MS::kFailure;
-		}
-
-		WmWeightedPSDDataRef *wpsdDataRefPtr = (WmWeightedPSDDataRef *) pluginDataFn.data();
-		wpsdDataRefPtr->wpsdDataPtr_weak = wpsdData; // Set the pointer to the the WmWeightedPSDData within this node
-
-		outWPSDDataRefHnd.set( wpsdDataRefObj );
-		outWPSDDataRefHnd.setClean();
-	} else {
-		// Compute the outMesh
-		//
-		if( plug == outMesh ) {
-			//cout << "computing outMesh" << std::endl;
-
-			MDataHandle inMeshHnd = data.inputValue( inMesh );
-			MDataHandle outMeshHnd = data.outputValue( outMesh );
-
-			outMeshHnd.copy( inMeshHnd );
-			MObject inMesh = inMeshHnd.asMesh();
-			MObject newMesh = outMeshHnd.asMesh();
-
-			if( !hasNoEffect ) {
-				MDataHandle applyHnd = data.inputValue( applyDeformer );
-			    bool applyValue = applyHnd.asBool();
-
-			    MDataHandle envelopeHnd = data.inputValue( envelope );
-			    double envelopeValue = envelopeHnd.asDouble();
-
-			    MDataHandle displayTrainingHnd = data.inputValue( displayTraining );
-			    bool displayTraining = displayTrainingHnd.asBool();
-
-			    if( displayTraining ) {
-				    MDataHandle displayWhichTrainingSampleHnd = data.inputValue( displayWhichTrainingSample );
-				    int tsIndex = displayWhichTrainingSampleHnd.asInt();
-
-				    MObject thisObj = thisMObject();
-				    WFnWeightedPSD wpsdFn( thisObj );
-				    int numTrainingSamples = wpsdFn.numTrainingSamples();
-				    if( numTrainingSamples > 0 ) {
-						tsIndex--; // Convert from 1-based index to 0-based index
-
-				    	if( tsIndex < 1 )
-							tsIndex = 0;
-						else {
-							if (tsIndex >= numTrainingSamples )
-								tsIndex = numTrainingSamples-1;
-						}
-
-						//cout << "updating mesh with training sample mesh " << tsIndex << std::endl;
-
-						// Get the training shape data
-						WmWeightedPSDData::TrainingSample &trainingSample = *wpsdFn.getTrainingSample( tsIndex );
-
-						// Set the mesh vertices to the training shape positions
-						//
-						MFnMesh meshFn( newMesh );
-//						MPointArray trainingPoints( trainingSample.positionValues );
-//						if( wpsdFn.getPositionsAreFaceRelative() ) {
-//							ConvertFaceRelativePositionsToLocalPositions( inMesh, trainingPoints );
-//						}
-
-						MPointArray trainingPoints;
-						if( wpsdFn.getPositionsAreFaceRelative() ) {
-							ConvertFaceRelativePositionsToLocalPositions( inMesh,
-																		  trainingSample.sparseVertexIndices,
-																		  trainingSample.sparseVertexPositions,
-																		  trainingSample._mapVertexIndexToSparseIndex,
-																		  trainingPoints );
-						} else { // Absolute positions (and not sparse)
-							trainingPoints = trainingSample.sparseVertexPositions;
-						}
-
-						meshFn.setPoints( trainingPoints, MSpace::kObject );
-						meshFn.updateSurface();
-					}
-			    } else {
-			    	if( applyValue ) {
-			    		// Get the wpsdData
-			    		//
-			    		MDataHandle outWPSDDataRefHnd = data.inputValue( outWPSDDataRef );
-			    		WmWeightedPSDDataRef &wpsdDataRef = *(WmWeightedPSDDataRef *)outWPSDDataRefHnd.asPluginData();
-			    		WmWeightedPSDData &wpsdData = *wpsdDataRef.wpsdDataPtr_weak;
-
-			    		// There has been some training
-			    		//
-			    		if( wpsdData.trainingSamples.size() ) {
-							// Get the input parameters (they are not normalized since they could come from attribute connections
-			    			// to say, a rotation which is an angle in degrees)
-							//
-							MArrayDataHandle parameterValuesHnd = data.inputArrayValue( parameterValues );
-							unsigned int nParameterValues = parameterValuesHnd.elementCount();
-
-							MDataHandle parameterValueHnd;
-							MDoubleArray parameterValues;
-							parameterValues.setLength( nParameterValues );
-							unsigned int i;
-							for( i=0; i < nParameterValues; i++ ) {
-								parameterValueHnd = parameterValuesHnd.inputValue();
-								parameterValues[i] = parameterValueHnd.asDouble();
-								parameterValuesHnd.next();
-							}
-
-//							MString txt( "Current parameters: " );
-//							for( i=0; i < parameterValues.length(); i++ )
-//								txt = txt + parameterValues[i] + " ";
-//							MGlobal::displayInfo( txt );
-
-							// Check that the parameters are within the parameter bounds
-							//
-							if( wpsdData.areParametersWithinBounds( parameterValues, true ) ) {
-
-								// Normalize parameter values so that they are each in the range [0,1]
-								//
-								wpsdData.normalizeParameters( parameterValues );
-
-								MDataHandle deformUsingParameterWeightsHnd = data.inputValue( deformUsingParameterWeights );
-							    bool useParameterWeights = deformUsingParameterWeightsHnd.asBool();
-
-								MFnMesh meshFn( newMesh );
-								unsigned int nVerts = meshFn.numVertices();
-								assert( wpsdData.numVertices() != nVerts );
-
-								//cout << "ENVELOPE: " << envelopeValue << std::endl;
-
-								MPointArray newLocalPositions( nVerts );
-								//wpsdData.calcWPSDPositions( parameterValues, useParameterWeights, blendedPositions );
-								wpsdData.setUseParameterWeights( useParameterWeights );
-								//wpsdData.calcWPSDPositions( newMesh, parameterValues, useParameterWeights, newLocalPositions );
-								wpsdData.calcWPSDPositions( newMesh, parameterValues, envelopeValue, newLocalPositions );
-
-	//							cout << "--> nVerts " << meshFn.numVertices() << std::endl;
-	//							cout << "--> nParameterWeightsPerVertex " << wpsdData.parameterWeightsPerVertex.size() << std::endl;
-
-/*
-								// The weighted psd blended the face-relative positions. Convert these to local-space positions.
-								//
-								if( wpsdData.positionsAreFaceRelative ) {
-									ConvertFaceRelativePositionsToLocalPositions( inMesh, blendedPositions );
-								}
-*/
-								meshFn.setPoints( newLocalPositions, MSpace::kObject );
-								meshFn.updateSurface();
-							}
-			    		}
-			    	}
-			    }
-			}
-
-//			cout << "computed mesh " << (computedMesh ? "yes" : "no") << std::endl;
-
-//			// No new mesh created, just pass the inMesh through to the outMesh
-//			if( !computedMesh ) {
-//				MFnMesh meshFn( inMeshCopy );
-//				meshFn.updateSurface();
-//			}
-
-			outMeshHnd.set( newMesh );
-			outMeshHnd.setClean();
-		} else {
-			if( plug == _parameterWeightsPerVertex ) {
-				cout << "compute _parameterWeightsPerVertex" << std::endl;
-
-				MArrayDataHandle paramWeightsPerVertHnd = data.outputArrayValue( _parameterWeightsPerVertex );
-
-				MObject thisObj = thisMObject();
-				WFnWeightedPSD wpsdFn( thisObj );
-				WmWeightedPSDData::ParameterWeightsPerVertex *paramWeightsPerVertex = wpsdFn.getParameterWeightsPerVertex();
-
-				const unsigned int nVertices = paramWeightsPerVertex->size();
-
-				MArrayDataBuilder builder = paramWeightsPerVertHnd.builder();
-
-				// Remove the existing elements
-				unsigned int i;
-				for( i=0; i < nVertices; i++ )
-					builder.removeElement(0);
-
-				builder.growArray( nVertices );
-
-				//cout << "num verts " << paramWeightsPerVertex->size() << std::endl;
-
-				unsigned int vi;
-				for( vi=0; vi < paramWeightsPerVertex->size(); vi++ ) {
-					MDataHandle elemDataHandle = builder.addLast();
-
-					MFnDoubleArrayData weightsArrayFn;
-					MObject paramWeightsObj = weightsArrayFn.create( (*paramWeightsPerVertex)[vi] );
-					elemDataHandle.set( paramWeightsObj );
-				}
-
-				paramWeightsPerVertHnd.set( builder );
-				paramWeightsPerVertHnd.setAllClean();
-			} else
-				return MS::kUnknownParameter; // Haven't computed the plug, pass it back up the class hierarchy
-		}
-	}
-#endif
-
-	data.setClean( plug );
-	return stat;
 }
 
 void *WmFigConstraintNode::creator()
@@ -287,6 +170,7 @@ MStatus WmFigConstraintNode::initialize()
     //MFnMatrixAttribute mAttr;
     MFnMessageAttribute msgAttr;
     MFnNumericAttribute nAttr;
+    MFnTypedAttribute tAttr;
 
 	enable = nAttr.create( "enable", "e", MFnNumericData::kBoolean, true );
 
@@ -298,14 +182,16 @@ MStatus WmFigConstraintNode::initialize()
 	stiffness = nAttr.create( "stiffness", "stf", MFnNumericData::kDouble, 50.0 );
 	nAttr.setKeyable( true );
 
-	worldPosition = nAttr.create( "worldPosition", "wp", MFnNumericData::k3Double );
+	targetWorldPosition = nAttr.create( "targetWorldPosition", "twp", MFnNumericData::k3Double );
 	nAttr.setDefault( 1.0, 0.0, 0.0 );
 	nAttr.setKeyable( true );
 
-    rodId = nAttr.create( "rodId", "ri", MFnNumericData::kInt, -1 );
-    vertexId = nAttr.create( "vertexId", "vi", MFnNumericData::kInt, -1 );
+//    rodId = nAttr.create( "rodId", "ri", MFnNumericData::kInt, -1 );
+//    vertexId = nAttr.create( "vertexId", "vi", MFnNumericData::kInt, -1 );
 
-    figRodNodeMsg = msgAttr.create( "figRodNodeMsg", "frm" );
+	rodVertices = tAttr.create( "rodVertices", "rvt", MFnData::kString );
+
+	figRodNodeMsg = msgAttr.create( "figRodNodeMsg", "frm" );
     msgAttr.setHidden( true );
 
     //inWorldMatrix = mAttr.create( "inWorldMatrix", "iwm" );
@@ -313,140 +199,12 @@ MStatus WmFigConstraintNode::initialize()
     addAttribute( enable );
     addAttribute( constraintType );
     addAttribute( stiffness );
-    addAttribute( worldPosition );
-    addAttribute( rodId );
-    addAttribute( vertexId );
+    addAttribute( targetWorldPosition );
+//    addAttribute( rodId );
+//    addAttribute( vertexId );
+    addAttribute( rodVertices );
     addAttribute( figRodNodeMsg );
     //addAttribute( inWorldMatrix );
-
-
-#if 0
-	MFnNumericAttribute nAttr;
-	MFnTypedAttribute tAttr;
-
-
-	// Basic attributes
-	applyDeformer = nAttr.create( "applyDeformer", "a", MFnNumericData::kBoolean, false );
-
-	envelope = nAttr.create( "envelope", "env", MFnNumericData::kDouble, 1.0 );
-	nAttr.setMin( 0.0 );
-	nAttr.setMax( 1.0 );
-
-	deformUsingParameterWeights = nAttr.create( "deformUsingParameterWeights", "dupw", MFnNumericData::kBoolean, true );
-	parameterValues = nAttr.create( "parameterValues", "pvs", MFnNumericData::kDouble, 0.0 );
-	nAttr.setArray( true );
-	nAttr.setUsesArrayDataBuilder( true );
-
-	outWPSDDataRef = tAttr.create( "outWPSDDataRef", "owpsdref", WmWeightedPSDDataRef::TypeId, MObject::kNullObj, &stat );
-	if (!stat) {
-		MGlobal::displayWarning( "Unable to create \"outWPSDDataRef\" attribute" );
-		return stat;
-	}
-	tAttr.setStorable(false); // This is just a runtime reference (pointer) so no need to store
-
-	minDistanceThreshold = nAttr.create( "minDistanceThreshold", "mdt", MFnNumericData::kDouble, 0.01 );
-	nAttr.setMin( 0.0 );
-	nAttr.setMax( 5.0 );
-
-	// Display attributes
-	displayParameters = nAttr.create( "displayParameters", "dbp", MFnNumericData::kBoolean, false );
-	displayParametersNonConstant = nAttr.create( "displayParametersNonConstant", "dbn", MFnNumericData::kBoolean, true );
-	displayFlagVerticesForExactMatch = nAttr.create( "displayFlagVerticesForExactMatch", "dbe", MFnNumericData::kBoolean, true );
-	displayParametersDetails = nAttr.create( "displayParametersDetails", "dpr", MFnNumericData::kBoolean, false );
-	displayTraining = nAttr.create( "displayTraining", "dtrn", MFnNumericData::kBoolean, false );
-	displayWhichTrainingSample = nAttr.create( "displayWhichTrainingSample", "dwts", MFnNumericData::kInt, 0 );
-	nAttr.setMin( 1 );
-    displayFontSizeChoice = eAttr.create( "displayFontSizeChoice", "dfsc", 0 );
-    eAttr.addField( "10 point", 0 );
-    eAttr.addField( "12 point", 1 );
-    eAttr.addField( "18 point", 2 );
-
-	// Internal attributes
-	//
-	_numTrainingSamples = nAttr.create( "_numTrainingSamples", "_nts", MFnNumericData::kInt, 0 );
-	nAttr.setStorable(false);
-	nAttr.setWritable(false);
-	nAttr.setInternal(true);
-	_parameterWeightsPerVertex = tAttr.create( "_parameterWeightsPerVertex", "_pwpv", MFnData::kDoubleArray );
-	tAttr.setArray(true);
-	tAttr.setStorable(false);
-	tAttr.setWritable(false);
-	//tAttr.setInternal(true);
-	tAttr.setUsesArrayDataBuilder(true);
-
-	// Private attributes
-	//
-	__wpsdData = tAttr.create( "__wpsdData", "__wpsd", WmWeightedPSDData::TypeId, MObject::kNullObj, &stat );
-	if (!stat) {
-		MGlobal::displayWarning( "Unable to create \"__wpsdData\" attribute" );
-		return stat;
-	}
-	tAttr.setHidden(true);
-	// Use the outWPSDataRef to make connections to other nodes rather than directly to this
-	// attribute otherwise getting the attribute will more likely result in copying of the data
-	// which can be heavy.
-	//
-	tAttr.setConnectable(false);
-
-	// Basic attributes
-	//
-	addAttribute( applyDeformer );
-	addAttribute( envelope );
-	addAttribute( deformUsingParameterWeights );
-	addAttribute( parameterValues );
-	addAttribute( outWPSDDataRef );
-
-	// During training Attributes
-	//
-	addAttribute( minDistanceThreshold );
-
-	// Display Attributes
-	//
-	//addAttribute( displayBlending );
-	addAttribute( displayParameters );
-	addAttribute( displayParametersNonConstant );
-	addAttribute( displayFlagVerticesForExactMatch );
-	addAttribute( displayParametersDetails );
-	addAttribute( displayTraining );
-	addAttribute( displayWhichTrainingSample );
-	addAttribute( displayFontSizeChoice );
-
-	// Internal/compute attributes
-	//
-	addAttribute( _numTrainingSamples );
-	addAttribute( _parameterWeightsPerVertex );
-
-	// Private attributes
-	//
-	addAttribute( __wpsdData );
-
-	// N.B. Maya doesn't understand "implicit" affects very well. e.g. A affects B affect C. It runs great the first time but then if A is changed it doesn't update C.
-	// To overcome this specify all affects explcitly, i.e. A affect B, B affects C, A affects C
-	//
-	MObject affected;
-	unsigned int i;
-	MObjectArray isAffectedList;
-	isAffectedList.append( outWPSDDataRef );
-	isAffectedList.append( outMesh );
-	for( i=0; i < isAffectedList.length(); i++ ) {
-		affected = isAffectedList[i];
-
-		attributeAffects( inMesh, affected );
-		attributeAffects( applyDeformer, affected );
-		attributeAffects( envelope, affected );
-		attributeAffects( deformUsingParameterWeights, affected );
-		attributeAffects( parameterValues, affected );
-	}
-
-	attributeAffects( __wpsdData, outWPSDDataRef );
-	attributeAffects( __wpsdData, outMesh );
-	attributeAffects( outWPSDDataRef, outMesh );
-
-	attributeAffects( inMesh, _parameterWeightsPerVertex );
-
-	attributeAffects( displayTraining, outMesh );
-	attributeAffects( displayWhichTrainingSample, outMesh );
-#endif
 
 	return MS::kSuccess;
 }

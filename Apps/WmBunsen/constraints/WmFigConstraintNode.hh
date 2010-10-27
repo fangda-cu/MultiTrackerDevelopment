@@ -9,11 +9,11 @@
 #define WMFIGCONSTRAINTNODE_HH
 
 #include <maya/MTypeId.h>
-#include <maya/MPxNode.h>
+#include <maya/MPxLocatorNode.h>
 #include "../../..//BASim/src/Physics/ElasticRods/RodPenaltyForce.hh"
 #include <list>
 
-class WmFigConstraintNode : public MPxNode
+class WmFigConstraintNode : public MPxLocatorNode
 {
 public:
 	WmFigConstraintNode();
@@ -23,6 +23,9 @@ public:
 	static  void *creator();
 	static  MStatus initialize();
 
+    virtual void draw( M3dView &view, const MDagPath &path, M3dView::DisplayStyle style, M3dView::DisplayStatus status );
+    virtual bool isBounded() const;
+
 	static const MTypeId TypeId;
     static const MString TypeName;
 
@@ -31,9 +34,8 @@ public:
     static MObject enable;
     static MObject constraintType;
     static MObject stiffness;
-    static MObject worldPosition;
-    static MObject rodId;
-    static MObject vertexId;
+    static MObject targetWorldPosition;
+    static MObject rodVertices;
     static MObject figRodNodeMsg;
 
     std::list<BASim::RodVertexConstraint *> rodVertexConstraints;

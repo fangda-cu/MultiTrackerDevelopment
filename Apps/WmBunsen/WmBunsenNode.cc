@@ -1,6 +1,7 @@
 #include "WmBunsenNode.hh"
 #include "WmBunsenCollisionMeshNode.hh"
 #include "constraints/WmFigConstraintNode.hh"
+#include "WmFigRodComponentList.hh"
 #include <maya/MFnMessageAttribute.h>
 
 MTypeId WmBunsenNode::typeID( 0x001135, 0x18 ); 
@@ -273,19 +274,22 @@ void WmBunsenNode::addAllConstraints( MDataBlock &i_dataBlock )
 		        MPlug stiffnessPlug = figConstraintFn.findPlug( "stiffness" );
 			    double stiffness = stiffnessPlug.asInt();
 
-		        MPlug worldPositionPlug = figConstraintFn.findPlug( "worldPosition" );
-			    MObject worldPositionData = worldPositionPlug.asMObject();
-			    MFnNumericData numericDataFn( worldPositionData );
-		        MPoint worldPosition;
-			    numericDataFn.getData3Double( worldPosition.x, worldPosition.y, worldPosition.z );
+		        MPlug targetWorldPositionPlug = figConstraintFn.findPlug( "targetWorldPosition" );
+			    MObject targetWorldPositionData = targetWorldPositionPlug.asMObject();
+			    MFnNumericData numericDataFn( targetWorldPositionData );
+		        MPoint targetWorldPosition;
+			    numericDataFn.getData3Double( targetWorldPosition.x, targetWorldPosition.y, targetWorldPosition.z );
 
-		        MPlug rodIdPlug = figConstraintFn.findPlug( "rodId" );
-			    int rodId = rodIdPlug.asInt();
+//		        MPlug rodIdPlug = figConstraintFn.findPlug( "rodId" );
+//			    int rodId = rodIdPlug.asInt();
+//
+//			    MPlug vertexIdPlug = figConstraintFn.findPlug( "vertexId" );
+//			    int vertexId = vertexIdPlug.asInt();
 
-			    MPlug vertexIdPlug = figConstraintFn.findPlug( "vertexId" );
-			    int vertexId = vertexIdPlug.asInt();
+			    MPlug rodVerticesPlug = figConstraintFn.findPlug( "rodVertices" );
+			    MString rodVerticesTxt( rodVerticesPlug.asString() );
 
-				MPlug constraintTypePlug = figConstraintFn.findPlug( "constraintType" );
+			    MPlug constraintTypePlug = figConstraintFn.findPlug( "constraintType" );
 				int constraintType = constraintTypePlug.asInt();
 
 				MObject figRodNode;
@@ -303,6 +307,7 @@ void WmBunsenNode::addAllConstraints( MDataBlock &i_dataBlock )
 									  " figRodNode: " + figRodNodeFn.name() );
 #endif
 
+#if 0
 				WmFigRodNode *rodNode = static_cast< WmFigRodNode*>( figRodNodeFn.userNode());
 			    WmFigRodGroup*  rodGroup = rodNode->rodGroup();
 		        if( rodId < rodGroup->numberOfRods() )
@@ -313,12 +318,35 @@ void WmBunsenNode::addAllConstraints( MDataBlock &i_dataBlock )
 		            if( vertexId < rodGroup->elasticRod( rodId )->nv() )
 		            {
 		                //Vec3d target_position = Vec3d( i_pos.x, i_pos.y, i_pos.z );
-		                Vec3d target_position = Vec3d( worldPosition.x, worldPosition.y, worldPosition.z );
+		                Vec3d target_position = Vec3d( targetWorldPosition.x, targetWorldPosition.y, targetWorldPosition.z );
 
 		                BASim::RodVertexConstraint *rodVertexConstraint = rodGroup->collisionStepper( rodId )->setVertexPositionPenalty2( vertexId, target_position, stiffness, constraintType );
 		                constraint.rodVertexConstraints.push_back( rodVertexConstraint );
 		            }
 		        }
+#endif
+
+		        WmFigRodComponentList rodComponentList;
+		        rodComponentList.unserialise( rodVerticesTxt );
+
+				WmFigRodNode *rodNode = static_cast< WmFigRodNode*>( figRodNodeFn.userNode());
+			    WmFigRodGroup*  rodGroup = rodNode->rodGroup();
+			    unsigned int iRod, rodId, iVert, vertexId, nVerts;
+			    for( iRod=0; iRod < rodGroup->numberOfRods(); iRod++ ) {
+			    	rodId = iRod;
+
+			    	nVerts = rodGroup->elasticRod( rodId )->nv();
+			    	for( iVert=0; iVert < nVerts; iVert++ ) {
+			    		vertexId = iVert;
+
+			    		if( rodComponentList.containsRodVertex( rodId, vertexId ) ) {
+			                Vec3d target_position = Vec3d( targetWorldPosition.x, targetWorldPosition.y, targetWorldPosition.z );
+
+			                BASim::RodVertexConstraint *rodVertexConstraint = rodGroup->collisionStepper( rodId )->setVertexPositionPenalty2( vertexId, target_position, stiffness, constraintType );
+			                constraint.rodVertexConstraints.push_back( rodVertexConstraint );
+			    		}
+			    	}
+			    }
 			}
 		}
 	}
