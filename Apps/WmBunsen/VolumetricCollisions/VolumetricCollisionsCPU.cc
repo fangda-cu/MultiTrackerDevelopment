@@ -254,7 +254,7 @@ void VolumetricCollisionsCPU::respondVolumetricCollisions( RodDataMap& i_rodData
     //
     if(printdbg)
         std::cout << "rasterizing face data... \n";
-    
+
     PhysBAM::LIST_ARRAY<int> intersectionList;
     for(pbFaceIterator faceItr(_grid,1); faceItr.Valid(); faceItr.Next())
     {
@@ -315,7 +315,6 @@ void VolumetricCollisionsCPU::respondVolumetricCollisions( RodDataMap& i_rodData
         }
     }
 
-
     // Rasterize cell weights and 
     // set up projection density control
     //
@@ -353,8 +352,11 @@ void VolumetricCollisionsCPU::respondVolumetricCollisions( RodDataMap& i_rodData
         if(insideCollisionObject)
         {
             _cellWeights(cell)=targetWeightPerCell;
-            _projection->divergence_multiplier(cell)=1.0;
-            _projection->divergence(cell)=0.0;
+            if (_projection->divergence.Valid_Index(cell))
+            {
+                _projection->divergence_multiplier(cell)=1.0;
+                _projection->divergence(cell)=0.0;
+            }
             for(int d=0; d<3; d++)
                 _cellVelocities(cell)[d+1]=v[d];
         }

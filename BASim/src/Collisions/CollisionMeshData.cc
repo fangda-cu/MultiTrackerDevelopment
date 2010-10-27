@@ -452,7 +452,7 @@ Real CollisionMeshData::getLevelSetValue(Vec3d& x, Vec3d& v)
         distPrev = distCurr;
 
     return (bridson::lerp(distPrev, distCurr, _percent));*/
-    return 0;
+    return 1;
 }
 
 
