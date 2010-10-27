@@ -37,7 +37,7 @@ public:
   }
 
   void setVertexPositionPenalty(int vertex_id, Vec3d& target_position, double stiffness, short type = 0 );
-
+  RodVertexConstraint *setVertexPositionPenalty2(int vertex_id, Vec3d& target_position, double stiffness, short type);
 
 
   // id vertex_id = -1, delete all

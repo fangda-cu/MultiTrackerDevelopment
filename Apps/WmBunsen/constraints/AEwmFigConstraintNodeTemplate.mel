@@ -1,0 +1,18 @@
+global proc AEwmFigConstraintNodeTemplate(string $nodeName)
+{
+    editorTemplate -beginScrollLayout;
+    	editorTemplate -beginNoOptimize;
+    		editorTemplate -beginLayout "Constraint" -collapse false;
+    		editorTemplate -label "Enable" -addControl "enable";
+    		editorTemplate -label "Type" -addControl "constraintType";
+    		editorTemplate -label "Stiffness" -addControl "stiffness";
+    		editorTemplate -label "Constraint World Position" -addControl "worldPosition";
+    		editorTemplate -label "Rod Id" -addControl "rodId";
+    		editorTemplate -label "Vertex Id" -addControl "vertexId";
+    		editorTemplate -label "Rod Node" -addControl "figRodNodeMsg";
+    		editorTemplate -endNoOptimize;
+    	editorTemplate -endLayout;
+    	editorTemplate -suppress "inWorldMatrix";
+        editorTemplate -addExtraControls;
+    editorTemplate -endScrollLayout;
+}

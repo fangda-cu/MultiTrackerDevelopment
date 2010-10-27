@@ -18,6 +18,7 @@
 #include "WmFigaroRodShape/WmFigaroRodShape.hh"
 #include "WmFigaroRodShape/WmFigaroRodShapeUI.hh"
 #include "WmFigaroRodShape/WmFigaroRodShapeIterator.hh"
+#include "constraints/WmFigConstraintNode.hh"
 
 MStatus initializePlugin( MObject obj )
 {
@@ -58,6 +59,16 @@ MStatus initializePlugin( MObject obj )
     if ( !stat )
     {
         stat.perror( "RegisterNode WmFigCollisionNode failed" );
+        return stat;
+    }
+
+    stat = plugin.registerNode( WmFigConstraintNode::TypeName,
+								WmFigConstraintNode::TypeId,
+								WmFigConstraintNode::creator,
+								WmFigConstraintNode::initialize );
+    if ( !stat )
+    {
+        stat.perror( "RegisterNode WmFigConstraintNode failed" );
         return stat;
     }
 
@@ -148,6 +159,12 @@ MStatus uninitializePlugin( MObject obj)
         stat.perror( "DeregisterNode WmFigCollisionNode failed" );
     }
     
+    stat = plugin.deregisterNode( WmFigConstraintNode::TypeId );
+    if( !stat )
+    {
+        stat.perror( "DeregisterNode WmFigConstraintNode failed" );
+    }
+
     stat = plugin.deregisterNode( WmFigConnectionNode::typeID );
     if( !stat ) 
     {

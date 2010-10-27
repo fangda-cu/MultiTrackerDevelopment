@@ -89,7 +89,8 @@ VolumetricCollisions/VolumetricCollisions.hh \
 VolumetricCollisions/VolumetricCollisionsCPU.hh \
 WmFigaroRodShape/WmFigaroRodShape.hh \
 WmFigaroRodShape/WmFigaroRodShapeIterator.hh \
-WmFigaroRodShape/WmFigaroRodShapeUI.hh
+WmFigaroRodShape/WmFigaroRodShapeUI.hh \
+constraints/WmFigConstraintNode.hh
 
 PLG1_S          := \
 Beaker.cc \
@@ -119,7 +120,8 @@ WmFigRodGroup.cc \
 VolumetricCollisions/VolumetricCollisionsCPU.cc \
 WmFigaroRodShape/WmFigaroRodShape.cc \
 WmFigaroRodShape/WmFigaroRodShapeIterator.cc \
-WmFigaroRodShape/WmFigaroRodShapeUI.cc
+WmFigaroRodShape/WmFigaroRodShapeUI.cc \
+constraints/WmFigConstraintNode.cc
 
 PLG1_L          += \
 	-lWfigaro_dbg \
@@ -184,6 +186,10 @@ SCR9_INSD       := $(SCR_INSD)
 SCR10            := WmFigaroRodShape/AEwmFigaroRodShapeTemplate.mel
 SCR10_MAYA       := 1
 SCR10_INSD       := $(SCR_INSD)
+
+SCR11            := constraints/AEwmFigConstraintNodeTemplate.mel
+SCR11_MAYA       := 1
+SCR11_INSD       := $(SCR_INSD)
 
 
 ##############################################################################

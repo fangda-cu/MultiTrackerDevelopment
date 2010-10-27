@@ -66,9 +66,16 @@ MStatus WmFigSelectionContext::doRelease( MEvent& i_event )
     
     i_event.getPosition( m_xMouse, m_yMouse );
  
+//    // Simple click and release, not a marque selection and Ctrl held down
+//    if( i_event.isModifierControl() &&
+//        m_xStartMouse == m_xMouse && m_yStartMouse == m_yMouse ) {
+//    	MGlobal::displayInfo( "my selection");
+//    }
+
     // Work out which rods were selected
     vector<int> rodIndices;
-    searchForRodsIn2DScreenRectangle( rodIndices );
+    //searchForRodsIn2DScreenRectangle( rodIndices );
+    searchForRodsIn2DScreenRectangle( m_toolCommand->m_selected, rodIndices );
 
     M3dView view = M3dView::active3dView();
     view.refresh( true, true );
@@ -81,6 +88,7 @@ MStatus WmFigSelectionContext::doRelease( MEvent& i_event )
     return MS::kSuccess;
 }
 
+#if 0
 bool WmFigSelectionContext::searchForRodsIn2DScreenRectangle( vector<int>& o_rodIndices )
 {
     MStatus stat;
@@ -98,8 +106,8 @@ bool WmFigSelectionContext::searchForRodsIn2DScreenRectangle( vector<int>& o_rod
     short selectedCentreX = ( m_xMouse + m_xStartMouse ) / 2.0;
     short selectedCentreY = ( m_yMouse + m_yStartMouse ) / 2.0;
     
-    if ( selectedWidth == 0 && selectedHeight == 0 )
-        return false;
+//    if ( selectedWidth == 0 && selectedHeight == 0 )
+//        return false;
     
     //////////////////////////////////////////////////////
     //
@@ -279,7 +287,367 @@ GLint WmFigSelectionContext::findRodsUsingOpenGLSelection( const double i_centre
 
     return numHits;
 }
+#else
+bool WmFigSelectionContext::searchForRodsIn2DScreenRectangle( WmFigSelections &selection,
+															  vector<int>& o_rodIndices )
+{
+    selection.clear();
 
+	MStatus stat;
+
+    //////////////////////////////////////////////////////
+    //
+    // At first, no strands are found.
+    //
+    //////////////////////////////////////////////////////
+
+    o_rodIndices.clear();
+
+    short selectedWidth = abs( m_xMouse - m_xStartMouse );
+    short selectedHeight = abs( m_yMouse - m_yStartMouse );
+    short selectedCentreX = ( m_xMouse + m_xStartMouse ) / 2.0;
+    short selectedCentreY = ( m_yMouse + m_yStartMouse ) / 2.0;
+
+
+    //////////////////////////////////////////////////////
+    //
+    // Set projection and modelview matrices stored from
+    // the last draw call.
+    //
+    //////////////////////////////////////////////////////
+
+    glMatrixMode( GL_PROJECTION );
+    glPushMatrix();
+    glLoadMatrixf( projectionMatrix() );
+    glMatrixMode( GL_MODELVIEW );
+    glPushMatrix();
+    glLoadMatrixf( modelViewMatrix() );
+
+    //////////////////////////////////////////////////////
+    //
+    // Find the selected rod node in which to find
+    // rod indices.
+    //
+    //////////////////////////////////////////////////////
+
+    MSelectionList selectionList;
+    MGlobal::getActiveSelectionList( selectionList );
+
+    MDagPath rodNodeDagPath;
+    MObject rodNodeObj = MObject::kNullObj;
+    bool foundRodNode = true;
+
+    if ( selectionList.length() == 1 )
+    {
+        selectionList.getDagPath( 0, rodNodeDagPath, rodNodeObj );
+
+        MDagPath childPath;
+
+        // Look for a child as the user probably selected the transform
+        MFnDagNode rodDagNodeFn( rodNodeDagPath.child( 0, &stat ), &stat );
+        if ( stat )
+        {
+            stat = rodDagNodeFn.getPath( childPath );
+            CHECK_MSTATUS( stat );
+            childPath.extendToShape();
+
+            MFnDependencyNode nodeFn( childPath.node( &stat ) );
+            CHECK_MSTATUS( stat );
+
+            if ( nodeFn.typeName() == WmFigRodNode::typeName )
+            {
+                rodNodeObj = childPath.node();
+            }
+            else
+                foundRodNode = false;
+        }
+        else // Perhaps no child as the user selected the shape node directly
+        {
+            MFnDependencyNode nodeFn( rodNodeDagPath.node( &stat ) );
+            CHECK_MSTATUS( stat );
+
+            if ( nodeFn.typeName() == WmFigRodNode::typeName )
+            {
+                //    rodNodeObj = nodeFn.node();
+                rodNodeObj = rodNodeDagPath.node( &stat );
+            }
+            else
+                foundRodNode = false;
+        }
+    }
+    else
+        foundRodNode = false;
+
+    if ( !foundRodNode )
+    {
+        MGlobal::displayError( "Please select a single wmFigRodNode to find rods within." );
+        return false;
+    }
+
+    MFnDependencyNode rodNodeDepFn( rodNodeObj );
+    WmFigRodNode* rodNode = static_cast<WmFigRodNode*>( rodNodeDepFn.userNode() );
+
+    if ( !rodNode )
+        return false;
+
+    //////////////////////////////////////////////////////
+    //
+    // Do GL selection.
+    //
+    //////////////////////////////////////////////////////
+
+    if( selectedWidth == 0 && selectedHeight == 0 ) // Single click
+    {
+    	//MGlobal::displayInfo( MString("SINGLE CLICK") );
+    	MIntArray selCompHierarchy;
+        if( searchForRodPoint( selectedCentreX, selectedCentreY, selectedWidth, selectedHeight, rodNode, selCompHierarchy ) )
+        {
+        	selection.push_back( WmFigSelectedItem() );
+        	WmFigSelectedItem &selItem = selection.back();
+
+//        	MSelectionList selList;
+//        	MDagPath dagPath;
+//        	selList.add( rodNodeObj );
+//        	selList.getDagPath( 0, dagPath );
+
+        	//selItem.figRodPath = rodNodeDagPath;
+        	selItem.figRodNode = rodNodeObj;
+        	selItem.rodId = selCompHierarchy[1];
+        	selItem.rodVertexId = selCompHierarchy[2];
+
+        	//MGlobal::displayInfo( MString("Found hit: ") + selCompHierarchy[0] + ".rod[" + selCompHierarchy[1] + "].vtx[" + selCompHierarchy[2] + "]" );
+        }
+
+    } else
+    {
+        vector<GLuint> selectedRodIndices;
+        GLint numHits = findRodsUsingOpenGLSelection( selectedCentreX, selectedCentreY, selectedWidth,
+                            selectedHeight, rodNode, selectedRodIndices );
+
+        //////////////////////////////////////////////////////
+        //
+        // Process hits.
+        //
+        //////////////////////////////////////////////////////
+
+        if ( numHits > 0 )
+        {
+            o_rodIndices.resize( numHits );
+
+            ///////////////////////////////////////////////////
+            // Skip through the results array picking out the
+            // indices of rods that were hit. We can safely
+            // ignore most stuff as we know there is only
+            // one name per rod due to the way we did selection
+            // below.
+            ///////////////////////////////////////////////////
+
+            size_t index = 0;
+            for ( size_t i=0; i<numHits; i++ )
+            {
+                index += 3;
+                o_rodIndices[ i ] = selectedRodIndices[ index ];
+                index++;
+            }
+        }
+    }
+
+
+    glMatrixMode( GL_MODELVIEW );
+    glPopMatrix();
+    glMatrixMode( GL_PROJECTION );
+    glPopMatrix();
+
+    return true;
+}
+
+bool WmFigSelectionContext::searchForRodPoint(
+	const double i_centreX, const double i_centreY,
+    const double i_width, const double i_height,
+    WmFigRodNode* i_rodNode,
+    MIntArray &selCompHierarchy )
+{
+
+	selCompHierarchy.clear();
+
+    WmFigRodGroup* rodGroup = i_rodNode->rodGroup();
+    if ( rodGroup->numberOfRealRods() == 0 )
+        return 0;
+
+    GLint viewport[4];
+    glGetIntegerv( GL_VIEWPORT, viewport );
+
+    GLfloat projectionMatrix[16];
+    glGetFloatv( GL_PROJECTION_MATRIX, projectionMatrix );
+
+    glMatrixMode( GL_PROJECTION );
+    glPushMatrix();
+    glLoadIdentity();
+    gluPickMatrix( i_centreX, i_centreY, fmax( i_width, 5.0 ), fmax( i_height, 5.0 ), viewport );
+    //gluPickMatrix( i_centreX, i_centreY, 5, 5, viewport );
+    glMultMatrixf( projectionMatrix );
+
+    const int BUFSIZE = 512;
+    GLuint selectBuf[BUFSIZE]; // @@@ This will cause the compiler to error as I'd expect but no line number or details in the compiler output
+    GLint numHits;
+
+    glSelectBuffer( BUFSIZE, selectBuf );
+    glRenderMode( GL_SELECT );
+
+    glInitNames();
+    glPushName( 0 ); // There is only one wmFigRodNode being selected so it will always be 0
+
+	const size_t nRods = rodGroup->numberOfRods();
+
+#if 1
+	glColor3f( 1.0, 0.0, 0.0 );
+	glPointSize( 10.0 );
+
+//	for( size_t r = 0u; r < nRods; ++r )
+//    {
+//        glLoadName( (GLuint) r );
+//
+//        for( size_t v = 1, n = rodGroup->elasticRod( r )->nv(); v < n; ++v )
+//        {
+//        	glBegin( GL_POINTS );
+//        	const Vec3d p = rodGroup->elasticRod( r )->getVertex( v - 1 );
+//        	//MGlobal::displayInfo( MString("pt: ") + p[0] + ", " + p[1] + ", " + p[2] );
+//            glVertex3f( p[0], p[1], p[2] );
+//            glEnd();
+//        }
+//    }
+
+	for( size_t ri = 0; ri < nRods; ri++ )
+    {
+		glPushName( (GLuint)ri );
+
+		const int nVerts = rodGroup->elasticRod( ri )->nv();
+        for( size_t vi = 0; vi < nVerts; vi++ )
+        {
+        	glPushName( (GLuint)vi );
+        	glBegin( GL_POINTS );
+        	const Vec3d p = rodGroup->elasticRod( ri )->getVertex( vi );
+            glVertex3f( p[0], p[1], p[2] );
+            glEnd();
+            glPopName();
+        }
+        glPopName();
+    }
+	glPopName();
+
+#else
+	glLineWidth(4);
+
+	for( size_t r = 0u; r < nRods; ++r )
+    {
+        glLoadName( (GLuint) r );
+
+        // @@@ draw these as vertices
+
+        glBegin( GL_LINE_STRIP );
+        for( size_t v = 1, n = rodGroup->elasticRod( r )->nv(); v < n; ++v )
+        {
+            const Vec3d p = rodGroup->elasticRod( r )->getVertex( v - 1 );
+            glVertex3f( p[0], p[1], p[2] );
+        }
+        glEnd();
+    }
+#endif
+
+    numHits = glRenderMode( GL_RENDER );
+
+    // Restore the previous projection
+    //
+    glMatrixMode( GL_PROJECTION );
+    glPopMatrix();
+
+    //MGlobal::displayInfo( MString("Found Hits: ") + numHits );
+
+    // Process the hits
+    //
+    if ( numHits > 0 )
+    {
+    	unsigned int i, j;
+    	GLuint names, *ptr, minZ, *ptrNames, nNames;
+    	ptr = selectBuf;
+    	minZ = 0xffffffff;
+    	for( size_t iHit=0; iHit < numHits; iHit++ )
+    	{
+    		names = *ptr;
+    		ptr++;
+    		if( *ptr < minZ )
+    		{
+    			nNames = names;
+    			minZ = *ptr;
+    			ptrNames = ptr+2;
+    		}
+    		ptr += names+2;
+    	}
+    	ptr = ptrNames;
+    	for( j=0; j < nNames; j++, ptr++ ) {
+    		//MGlobal::displayInfo( MString("name: ") + *ptr );
+    		selCompHierarchy.append( (int)*ptr );
+    	}
+    }
+
+    return (selCompHierarchy.length() != 0);
+}
+
+GLint WmFigSelectionContext::findRodsUsingOpenGLSelection(
+	const double i_centreX, const double i_centreY,
+    const double i_width, const double i_height,
+    WmFigRodNode* i_rodNode,
+    vector<GLuint>& o_selectedRodIndices )
+{
+    WmFigRodGroup* rodGroup = i_rodNode->rodGroup();
+    if ( rodGroup->numberOfRealRods() == 0 )
+        return 0;
+
+    GLint viewport[4];
+    glGetIntegerv( GL_VIEWPORT, viewport );
+
+    GLfloat projectionMatrix[16];
+    glGetFloatv( GL_PROJECTION_MATRIX, projectionMatrix );
+
+    glMatrixMode( GL_PROJECTION );
+    glPushMatrix();
+    glLoadIdentity();
+    gluPickMatrix( i_centreX, i_centreY, i_width, i_height, viewport );
+    glMultMatrixf( projectionMatrix );
+
+    const size_t nRods = rodGroup->numberOfRods();
+
+    // *4 because selection returns a bunch of stuff with each hit.
+    o_selectedRodIndices.resize( nRods * 4 );
+    GLint numHits;
+
+    glSelectBuffer( nRods * 4, &(o_selectedRodIndices[0]) );
+    glRenderMode( GL_SELECT );
+
+    glInitNames();
+    glPushName( 0 );
+
+    for( size_t r = 0u; r < nRods; ++r )
+    {
+        glLoadName( (GLuint) r );
+
+        glBegin( GL_LINE_STRIP );
+        for( size_t v = 1, n = rodGroup->elasticRod( r )->nv(); v < n; ++v )
+        {
+            const Vec3d p = rodGroup->elasticRod( r )->getVertex( v - 1 );
+            glVertex3f( p[0], p[1], p[2] );
+        }
+        glEnd();
+    }
+
+    numHits = glRenderMode( GL_RENDER );
+
+    glMatrixMode( GL_PROJECTION );
+    glPopMatrix();
+
+    return numHits;
+}
+#endif
 
 
 MStatus WmFigSelectionContext::doEnterRegion( MEvent & )

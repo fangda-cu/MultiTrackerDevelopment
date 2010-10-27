@@ -75,11 +75,15 @@ public:
     const float* modelViewMatrix();
 
 private:
+    bool searchForRodPoint( const double i_centreX, const double i_centreY, const double i_width, const double i_height, WmFigRodNode* i_rodNode, MIntArray &selCompHierarchy );
+
+
     GLint findRodsUsingOpenGLSelection( const double i_centreX, const double i_centreY,
             const double i_width, const double i_height,  WmFigRodNode* rodNode,
             vector<GLuint>& o_selectedRodIndices );
     
-    bool searchForRodsIn2DScreenRectangle( vector<int>& o_rodIndices );
+//    bool searchForRodsIn2DScreenRectangle( vector<int>& o_rodIndices );
+    bool searchForRodsIn2DScreenRectangle( WmFigSelections &selection, vector<int>& o_rodIndices );
 
     MStatus drawMarqueeSelectBox() const;
     void doTool( MEvent &event );
