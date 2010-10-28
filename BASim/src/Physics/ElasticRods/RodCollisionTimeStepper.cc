@@ -73,6 +73,7 @@ RodVertexConstraint *RodCollisionTimeStepper::setVertexPositionPenalty2(int vert
   } else {
     std::cout << "add penatly force first\n";
   }
+  return 0; // if we reach this point someone will crash
 }
 
 // id vertex_id = -1, delete all
