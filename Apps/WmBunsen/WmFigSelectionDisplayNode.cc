@@ -52,7 +52,7 @@ void WmFigSelectionDisplayNode::draw(
     if ( rodGroup->numberOfRealRods() == 0 )
         return;
 
-    const size_t nRods = rodGroup->numberOfRods();
+    const int nRods = rodGroup->numberOfRods();
     //MGlobal::displayInfo( MString("# rods: ") + rodGroup->numberOfRealRods() );
 
     MColor clr( 1.0, 1.0, 0.0 );
