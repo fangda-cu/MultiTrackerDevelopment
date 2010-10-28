@@ -280,12 +280,6 @@ void WmBunsenNode::addAllConstraints( MDataBlock &i_dataBlock )
 		        MPoint targetWorldPosition;
 			    numericDataFn.getData3Double( targetWorldPosition.x, targetWorldPosition.y, targetWorldPosition.z );
 
-//		        MPlug rodIdPlug = figConstraintFn.findPlug( "rodId" );
-//			    int rodId = rodIdPlug.asInt();
-//
-//			    MPlug vertexIdPlug = figConstraintFn.findPlug( "vertexId" );
-//			    int vertexId = vertexIdPlug.asInt();
-
 			    MPlug rodVerticesPlug = figConstraintFn.findPlug( "rodVertices" );
 			    MString rodVerticesTxt( rodVerticesPlug.asString() );
 
@@ -301,30 +295,9 @@ void WmBunsenNode::addAllConstraints( MDataBlock &i_dataBlock )
 				}
 				MFnDependencyNode figRodNodeFn( figRodNode );
 
-#if 0
-				MGlobal::displayInfo( "Setting vertex position penalty. Constraint node: " + figConstraintFn.name() + " rodId: " + rodId + " vertexId: " + vertexId + " constraintType: " + constraintType + \
-									  " worldPosition: " + worldPosition.x + ", " + worldPosition.y + ", " + worldPosition.z + \
-									  " figRodNode: " + figRodNodeFn.name() );
-#endif
-
-#if 0
-				WmFigRodNode *rodNode = static_cast< WmFigRodNode*>( figRodNodeFn.userNode());
-			    WmFigRodGroup*  rodGroup = rodNode->rodGroup();
-		        if( rodId < rodGroup->numberOfRods() )
-		        {
-		            if( vertexId < 0 )
-		            	vertexId = rodGroup->elasticRod( rodId )->nv() -1 ;
-
-		            if( vertexId < rodGroup->elasticRod( rodId )->nv() )
-		            {
-		                //Vec3d target_position = Vec3d( i_pos.x, i_pos.y, i_pos.z );
-		                Vec3d target_position = Vec3d( targetWorldPosition.x, targetWorldPosition.y, targetWorldPosition.z );
-
-		                BASim::RodVertexConstraint *rodVertexConstraint = rodGroup->collisionStepper( rodId )->setVertexPositionPenalty2( vertexId, target_position, stiffness, constraintType );
-		                constraint.rodVertexConstraints.push_back( rodVertexConstraint );
-		            }
-		        }
-#endif
+//				MGlobal::displayInfo( "Setting vertex position penalty. Constraint node: " + figConstraintFn.name() + " rodId: " + rodId + " vertexId: " + vertexId + " constraintType: " + constraintType + \
+//									  " worldPosition: " + worldPosition.x + ", " + worldPosition.y + ", " + worldPosition.z + \
+//									  " figRodNode: " + figRodNodeFn.name() );
 
 		        WmFigRodComponentList rodComponentList;
 		        rodComponentList.unserialise( rodVerticesTxt );
@@ -388,10 +361,8 @@ void WmBunsenNode::updateAllConstraints( MDataBlock &i_dataBlock )
 		        MPoint worldPosition;
 			    numericDataFn.getData3Double( worldPosition.x, worldPosition.y, worldPosition.z );
 
-#if 0
-			    MGlobal::displayInfo( "Updating vertex position penalty. Constraint node: " + figConstraintFn.name() + " stiffness: " + stiffness + \
-									  " worldPosition: " + worldPosition.x + ", " + worldPosition.y + ", " + worldPosition.z  );
-#endif
+//			    MGlobal::displayInfo( "Updating vertex position penalty. Constraint node: " + figConstraintFn.name() + " stiffness: " + stiffness + \
+//									  " worldPosition: " + worldPosition.x + ", " + worldPosition.y + ", " + worldPosition.z  );
 
 			    BASim::RodVertexConstraint *rodVertexConstraint;
 			    std::list<BASim::RodVertexConstraint *>::iterator it;
@@ -405,25 +376,6 @@ void WmBunsenNode::updateAllConstraints( MDataBlock &i_dataBlock )
 		}
 	}
 }
-
-//void RodCollisionTimeStepper::updateVertexPositionConstraints()
-//{
-//    //this is dummy test, meaningless at all
-//    for( size_t s = 0; s < m_vertexContraints.size(); s++ )
-//    {
-//        Vec3d direction = m_vertexContraints[ s ]->second.m_target;
-//        double norm = direction.norm();
-//        if( norm > 0 )
-//            direction = direction * ( 1. / norm );
-//
-//        //make the target position step forward a little bit...
-//        m_vertexContraints[ s ]->second.m_target =
-//                m_vertexContraints[ s ]->second.m_target + 0.1 * direction;
-//    }
-//
-//}
-
-
 
 MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock ) 
 {

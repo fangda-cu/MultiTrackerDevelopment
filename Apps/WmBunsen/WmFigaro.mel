@@ -46,17 +46,8 @@ global proc wmFigaroAddMainMenu()
         menuItem -label "Create rod shape from NURBS" -annotation "Turn the selected nurbs curve into an elastic rod" -command "wmFigaro -crs";
 
         menuItem -divider true;
-        //menuItem -label "Selection Tool" -annotation "Select rods" -command "setToolTo $gWmFigSelectionContextName";
         menuItem -label "Select Rod Vertices Tool" -annotation "Select rod vertices" -command "optionVar -intValue \"figSelectionMode\" 1; setToolTo $gWmFigSelectionContextName";
         menuItem -label "Select Rods Tool" -annotation "Select rods" -command "optionVar -intValue \"figSelectionMode\" 0; setToolTo $gWmFigSelectionContextName";
-
-
-        //menuItem -label "Selection Rod Vertex Tool" -annotation "Select a vertex in rod" -command "setToolTo $gWmFigSelectionContextName";
-        //menuItem -label "Create Rod Vertex Constraint" -annotation "Create rod vertex constraint" -command "wmFigaro -addVertexConstraint -useSelection";
-
-
-        // menuItem -label "Create constraint" -annotation "Creates a spring constraint between two selected input curve CVs" -command"dyno -crr";
-        // menuItem -label "Disconnect selected collision objects" -command "dyno -rcm";
     }
 }
 

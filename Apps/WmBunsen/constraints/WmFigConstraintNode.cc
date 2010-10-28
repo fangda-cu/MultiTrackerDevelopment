@@ -26,16 +26,13 @@ MObject WmFigConstraintNode::stiffness;
 MObject WmFigConstraintNode::targetWorldPosition;
 MObject WmFigConstraintNode::rodVertices;
 MObject WmFigConstraintNode::figRodNodeMsg;
-//MObject WmFigConstraintNode::inWorldMatrix;
 
 WmFigConstraintNode::WmFigConstraintNode()
 {
-
 }
 
 WmFigConstraintNode::~WmFigConstraintNode()
 {
-
 }
 
 void WmFigConstraintNode::draw( M3dView &view, const MDagPath &path, M3dView::DisplayStyle style, M3dView::DisplayStatus status )
@@ -78,9 +75,6 @@ void WmFigConstraintNode::draw( M3dView &view, const MDagPath &path, M3dView::Di
     GLboolean lineStipple[ 1 ];
     glGetBooleanv( GL_LINE_STIPPLE, lineStipple );
 
-    //glLineWidth( 2.0 );
-    //glLineStipple( 1, 0x1111 );
-    //glLineStipple(3, 0xAAAA);
     glLineStipple(2, 0x0C0F);
     glEnable( GL_LINE_STIPPLE );
 
@@ -120,20 +114,6 @@ void WmFigConstraintNode::draw( M3dView &view, const MDagPath &path, M3dView::Di
 		}
 	}
 
-//	glColor3f( 1.0, 0.0, 0.0 );
-//	glBegin( GL_LINE_LOOP );
-//	glVertex3f( 0.0, 0.0, 0.0 );
-//	glVertex3f( 10.0, 0.0, 0.0 );
-//	glEnd();
-//	glBegin( GL_LINE_LOOP );
-//	glVertex3f( 0.0, 0.0, 0.0 );
-//	glVertex3f( 0.0, 10.0, 0.0 );
-//	glEnd();
-//	glBegin( GL_LINE_LOOP );
-//	glVertex3f( 0.0, 0.0, 0.0 );
-//	glVertex3f( 0.0, 0.0, 10.0 );
-//	glEnd();
-
     if( lineStipple[0] )
     	glEnable( GL_LINE_STIPPLE );
     else
@@ -167,7 +147,6 @@ MStatus WmFigConstraintNode::initialize()
 	// Create and initialize custom attributes
 	//
 	MFnEnumAttribute eAttr;
-    //MFnMatrixAttribute mAttr;
     MFnMessageAttribute msgAttr;
     MFnNumericAttribute nAttr;
     MFnTypedAttribute tAttr;
@@ -177,7 +156,6 @@ MStatus WmFigConstraintNode::initialize()
 	constraintType = eAttr.create( "constraintType", "ct", 1 );
     eAttr.addField( "Fixed", 0 );
     eAttr.addField( "Rest", 1 );
-    //eAttr.addField( "Distance", 2 );
 
 	stiffness = nAttr.create( "stiffness", "stf", MFnNumericData::kDouble, 50.0 );
 	nAttr.setKeyable( true );
@@ -186,25 +164,17 @@ MStatus WmFigConstraintNode::initialize()
 	nAttr.setDefault( 1.0, 0.0, 0.0 );
 	nAttr.setKeyable( true );
 
-//    rodId = nAttr.create( "rodId", "ri", MFnNumericData::kInt, -1 );
-//    vertexId = nAttr.create( "vertexId", "vi", MFnNumericData::kInt, -1 );
-
 	rodVertices = tAttr.create( "rodVertices", "rvt", MFnData::kString );
 
 	figRodNodeMsg = msgAttr.create( "figRodNodeMsg", "frm" );
     msgAttr.setHidden( true );
 
-    //inWorldMatrix = mAttr.create( "inWorldMatrix", "iwm" );
-
     addAttribute( enable );
     addAttribute( constraintType );
     addAttribute( stiffness );
     addAttribute( targetWorldPosition );
-//    addAttribute( rodId );
-//    addAttribute( vertexId );
     addAttribute( rodVertices );
     addAttribute( figRodNodeMsg );
-    //addAttribute( inWorldMatrix );
 
 	return MS::kSuccess;
 }

@@ -39,44 +39,6 @@ public:
     static MObject figRodNodeMsg;
 
     std::list<BASim::RodVertexConstraint *> rodVertexConstraints;
-
-#if 0
-    // Basic attributes
-    //
-	static MObject applyDeformer;
-	static MObject envelope;
-	static MObject deformUsingParameterWeights;
-	static MObject parameterValues;
-	static MObject outWPSDDataRef;
-
-	// During training attributes
-	//
-	static MObject minDistanceThreshold;
-
-	// Display attributes
-	//
-    //static MObject displayBlending;
-    static MObject displayParameters;
-    static MObject displayParametersNonConstant;
-    static MObject displayParametersDetails;
-    static MObject displayFlagVerticesForExactMatch;
-
-	static MObject displayTraining;
-	static MObject displayWhichTrainingSample;
-	static MObject displayFontSizeChoice;
-
-	// Internal/compute attributes
-	//
-	static MObject _numTrainingSamples;
-	static MObject _parameterWeightsPerVertex;
-
-	// Private attributes
-	//
-	static MObject __wpsdData;
-
-	static void DeleteCallback(MObject &node, void *clientData);
-	static void AttributeChangedCallback(MNodeMessage::AttributeMessage msg, MPlug  &plug, MPlug  &otherPlug, void *clientData);
-#endif
 };
 
 #endif
