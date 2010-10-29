@@ -445,6 +445,27 @@ namespace BASim
           return successfull_solve;
         }
         STOP_TIMER("solver");
+
+        // Verify that we have the correct linearization
+        if(0)
+        {
+            VecXd residual0(m_rhs);
+            Scalar residual0_norm = residual0.norm();
+            Scalar steps[7] = {1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1};
+            std::cout<<"check:\n";
+            for (int ss=0; ss<7; ss++)
+            {
+                Scalar s=steps[ss];
+                m_diffEq.set_qdot( (m_deltaX+s*m_increment)/m_dt );
+                m_diffEq.set_q( x0+m_deltaX+s*m_increment );
+                m_diffEq.endIteration();
+                computeResidual();
+                VecXd change(m_rhs-residual0), predicted(-s*residual0);
+                Scalar error = (change-predicted).norm()/predicted.norm();
+                std::cout<<"  step "<<s<<", change "<<change.norm()
+                         <<", predicted "<<predicted.norm()<<", error "<<error<<std::endl;
+            }
+        }
         
         START_TIMER("setup");
         m_deltaX += m_increment;
