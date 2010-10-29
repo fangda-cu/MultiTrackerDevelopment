@@ -36,7 +36,6 @@ namespace BASim
     , x0()
     , v0()
     , m_rhs()
-    , m_lhs()
     , m_deltaX()
     , m_increment()
     , m_fixed()
@@ -174,7 +173,6 @@ namespace BASim
         x0.resize(m_ndof);
         v0.resize(m_ndof);
         m_rhs.resize(m_ndof);
-        m_lhs.resize(m_ndof);
         m_deltaX.resize(m_ndof);
         m_increment.resize(m_ndof);
       }
@@ -195,7 +193,6 @@ namespace BASim
       x0.setZero();
       v0.setZero();
       m_rhs.setZero();
-      m_lhs.setZero();
       m_deltaX.setZero();
       m_increment.setZero();
       m_A->setZero();
@@ -214,38 +211,40 @@ namespace BASim
       m_rhs *= m_dt*m_dt;
       
       // lhs == M*deltaV == M*(deltax-h*v_n)
-      m_lhs = m_mass.cwise()*(m_deltaX-m_dt*v0);
+      m_rhs -= m_mass.cwise()*(m_deltaX-m_dt*v0);
       
-      for( int i = 0; i < (int) m_fixed.size(); ++i ) m_lhs(m_fixed[i]) = m_rhs(m_fixed[i]) = 0.0;
+      for( int i = 0; i < (int) m_fixed.size(); ++i ) m_rhs(m_fixed[i]) = 0.0;
       
       // Save the infinity norm
-      m_infnorm = (m_lhs - m_rhs).lpNorm<Eigen::Infinity>();
+      m_infnorm = m_rhs.lpNorm<Eigen::Infinity>();
       
       // Return the L2 norm
-      return (m_lhs - m_rhs).norm();
+      return m_rhs.norm();
     }
     
     bool isConverged()
     {
       m_residual = computeResidual();
-      //std::cout << "atol " << m_residual << std::endl
-      //          << "infnorm " << m_infnorm << std::endl
-      //          << "rtol " << m_residual / m_initial_residual << std::endl
-      //          << "stol " << m_increment.norm() << std::endl;
+/*
+      std::cout << "atol " << m_residual << std::endl
+                << "infnorm " << m_infnorm << std::endl
+                << "rtol " << m_residual / m_initial_residual << std::endl
+                << "stol " << m_increment.norm() << std::endl;
+*/
       // L2 norm of the residual is less than tolerance
-      //if ( m_residual < m_atol ) {
-      //std::cout << "converged atol" << std::endl;
-      //  return true;
-      //}
+      if ( m_residual < m_atol ) {
+        //std::cout << "converged atol" << std::endl;
+        return true;
+      }
       // Infinity norm of residual is less than tolerance
-      //if ( m_infnorm < m_inftol ) {
-      //std::cout << "converged inftol" << std::endl;
-      //  return true;
-      //}
-      //if ( m_residual / m_initial_residual < m_rtol ) {
-      //std::cout << "converged rtol" << std::endl;
-      //  return true;
-      //}
+      if ( m_infnorm < m_inftol ) {
+        //std::cout << "converged inftol" << std::endl;
+        return true;
+      }
+      if ( m_residual <= m_rtol * m_initial_residual ) {
+        //std::cout << "converged rtol" << std::endl;
+        return true;
+      }
       // L2 norm of change in solution at last step of solve is less than tolerance
       if ( m_increment.norm() < m_stol ) {
         //std::cout << "converged stol" << std::endl;
@@ -372,7 +371,7 @@ namespace BASim
       
       m_diffEq.endIteration();
       
-      // Calling computeResidual also sets m_rhs = h^2*F.
+      // Calling computeResidual also sets m_rhs = M(m_dt*v_n-m_deltaX) + h^2*F.
       m_initial_residual = computeResidual();
       
       #ifdef DEBUG
@@ -394,9 +393,6 @@ namespace BASim
       {
         // TODO: Assert m_A, increment are zero
         START_TIMER("setup");
-
-        // m_rhs = M(m_dt*v_n-m_deltaX) + m_dt^2 * F
-        m_rhs += m_mass.cwise()*(m_dt*v0-m_deltaX);
 
         for( int i = 0; i < (int) m_fixed.size(); ++i ) m_rhs(m_fixed[i]) = m_dt*v0(m_fixed[i])-m_deltaX(m_fixed[i]);
 
@@ -451,6 +447,27 @@ namespace BASim
           return successfull_solve;
         }
         STOP_TIMER("solver");
+
+        // Verify that we have the correct linearization
+        if(0)
+        {
+            VecXd residual0(m_rhs);
+            Scalar residual0_norm = residual0.norm();
+            Scalar steps[7] = {1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1};
+            std::cout<<"check:\n";
+            for (int ss=0; ss<7; ss++)
+            {
+                Scalar s=steps[ss];
+                m_diffEq.set_qdot( (m_deltaX+s*m_increment)/m_dt );
+                m_diffEq.set_q( x0+m_deltaX+s*m_increment );
+                m_diffEq.endIteration();
+                computeResidual();
+                VecXd change(m_rhs-residual0), predicted(-s*residual0);
+                Scalar error = (change-predicted).norm()/predicted.norm();
+                std::cout<<"  step "<<s<<", change "<<change.norm()
+                         <<", predicted "<<predicted.norm()<<", error "<<error<<std::endl;
+            }
+        }
         
         START_TIMER("setup");
         m_deltaX += m_increment;
@@ -463,7 +480,7 @@ namespace BASim
         
         if (m_curit == m_maxit - 1) break;
         
-        // Check for convergence. Calling computeResidual also sets m_rhs = h^2*F.
+        // Check for convergence. Calling computeResidual also sets m_rhs = M(m_dt*v_n-m_deltaX) + h^2*F.
         if ( isConverged() ) break;
         
         m_increment.setZero();
@@ -535,7 +552,6 @@ namespace BASim
     VecXd x0;
     VecXd v0;
     VecXd m_rhs;
-    VecXd m_lhs;
     VecXd m_deltaX;
     //VecXd m_deltaV;
     VecXd m_increment;
