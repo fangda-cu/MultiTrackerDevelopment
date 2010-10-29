@@ -95,7 +95,7 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
-    //cerr << "WmFigRodNode::compute() with i_plug = " << i_plug.name() << endl;
+    cerr << "WmFigRodNode::compute() with i_plug = " << i_plug.name() << endl;
 
     if ( i_plug == oa_numberOfRods )
     {
@@ -1286,7 +1286,8 @@ void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
 
 
     i_view.beginGL();
-    glPushAttrib( GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT );
+    //glPushAttrib( GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT );
+	glPushAttrib( GL_ALL_ATTRIB_BITS );
 
 /*    if ( mx_rodData != NULL )
     {
@@ -1679,7 +1680,7 @@ void* WmFigRodNode::creator()
     //
     {
         MFnTypedAttribute tAttr;
-        oa_simulatedVertices = tAttr.create( "simulatedVertices", "sve",
+        oa_simulatedVertices = tAttr.create( "simulatedCurveCVs", "sve",
                                              MFnData::kVectorArray, &stat );
         CHECK_MSTATUS( stat );
         CHECK_MSTATUS( tAttr.setReadable( true ) );
@@ -1701,7 +1702,7 @@ void* WmFigRodNode::creator()
 
     {
         MFnTypedAttribute tAttr;
-        oa_verticesInEachRod = tAttr.create( "verticesInEachRod", "ver",
+        oa_verticesInEachRod = tAttr.create( "curveCVCounts", "ver",
                                              MFnData::kIntArray, &stat );
         CHECK_MSTATUS( stat );
         CHECK_MSTATUS( tAttr.setReadable( true ) );
@@ -1749,7 +1750,7 @@ void* WmFigRodNode::creator()
     stat = attributeAffects( ia_startTime, oa_undeformedMaterialFrames );
     stat = attributeAffects( ia_strandRootFrames, oa_undeformedMaterialFrames );
  
-    addNumericAttribute( oa_numberOfRods, "numberOfRods", "nor", MFnNumericData::kInt, 0, false );
+    addNumericAttribute( oa_numberOfRods, "curveCount", "nor", MFnNumericData::kInt, 0, false );
     stat = attributeAffects( ia_time, oa_numberOfRods );
 	if ( !stat ) { stat.perror( "attributeAffects ia_time->oa_numberOfRods" ); return stat; }
  
@@ -1817,4 +1818,5 @@ void* WmFigRodNode::creator()
     if ( !stat ) { stat.perror( "attributeAffects ia_solverType->oa_rodsChanged" ); return stat; }
 
     return MS::kSuccess;
+
 }
