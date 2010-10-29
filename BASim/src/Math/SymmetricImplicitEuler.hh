@@ -225,24 +225,26 @@ namespace BASim
     bool isConverged()
     {
       m_residual = computeResidual();
-      //std::cout << "atol " << m_residual << std::endl
-      //          << "infnorm " << m_infnorm << std::endl
-      //          << "rtol " << m_residual / m_initial_residual << std::endl
-      //          << "stol " << m_increment.norm() << std::endl;
+/*
+      std::cout << "atol " << m_residual << std::endl
+                << "infnorm " << m_infnorm << std::endl
+                << "rtol " << m_residual / m_initial_residual << std::endl
+                << "stol " << m_increment.norm() << std::endl;
+*/
       // L2 norm of the residual is less than tolerance
-      //if ( m_residual < m_atol ) {
-      //std::cout << "converged atol" << std::endl;
-      //  return true;
-      //}
+      if ( m_residual < m_atol ) {
+        //std::cout << "converged atol" << std::endl;
+        return true;
+      }
       // Infinity norm of residual is less than tolerance
-      //if ( m_infnorm < m_inftol ) {
-      //std::cout << "converged inftol" << std::endl;
-      //  return true;
-      //}
-      //if ( m_residual / m_initial_residual < m_rtol ) {
-      //std::cout << "converged rtol" << std::endl;
-      //  return true;
-      //}
+      if ( m_infnorm < m_inftol ) {
+        //std::cout << "converged inftol" << std::endl;
+        return true;
+      }
+      if ( m_residual <= m_rtol * m_initial_residual ) {
+        //std::cout << "converged rtol" << std::endl;
+        return true;
+      }
       // L2 norm of change in solution at last step of solve is less than tolerance
       if ( m_increment.norm() < m_stol ) {
         //std::cout << "converged stol" << std::endl;
