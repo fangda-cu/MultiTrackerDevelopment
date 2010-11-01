@@ -132,6 +132,18 @@ public:
             return 0;
         }
     }
+	
+	int numberOfEdgesInRod()
+    {
+        if ( m_rod != NULL )
+        {
+            return m_rod->ne();
+        }
+        else
+        {
+            return 0;
+        }
+    }
 
 
     // We store the number of vertices in the fake rod because this is used to skip over the input

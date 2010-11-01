@@ -89,12 +89,12 @@ public:
 
     int numberOfVerticesInRod( int i_rodIndex )
     {
-        return (int) m_rodData[ i_rodIndex ]->elasticRod()->nv();
+        return (int) m_rodData[ i_rodIndex ]->numberOfVerticesInRod();
     }
 
     int numberOfEdgesInRod( int i_rodIndex )
     {
-        return (int) m_rodData[ i_rodIndex ]->elasticRod()->ne();
+        return (int) m_rodData[ i_rodIndex ]->numberOfEdgesInRod();
     }
 
     bool shouldSimulateRod( int i_rodIndex )
