@@ -70,6 +70,7 @@ public:
     static MObject ia_friction;
     static MObject ia_thickness;
     static MObject ia_separationStrength;
+    static MObject ia_damping;
     static MObject ia_coefficientOfRestitution;
     static MObject ia_fullCollisions;
     static MObject ia_drawCollisionData;

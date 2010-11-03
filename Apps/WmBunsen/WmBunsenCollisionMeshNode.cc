@@ -12,6 +12,7 @@ MObject WmBunsenCollisionMeshNode::ia_levelsetDx;
 MObject WmBunsenCollisionMeshNode::ia_friction;
 MObject WmBunsenCollisionMeshNode::ia_thickness;
 MObject WmBunsenCollisionMeshNode::ia_separationStrength;
+MObject WmBunsenCollisionMeshNode::ia_damping;
 MObject WmBunsenCollisionMeshNode::ia_coefficientOfRestitution;
 MObject WmBunsenCollisionMeshNode::ia_fullCollisions;
 MObject WmBunsenCollisionMeshNode::ia_drawCollisionData;
@@ -87,6 +88,10 @@ MStatus WmBunsenCollisionMeshNode::compute( const MPlug& i_plug, MDataBlock& i_d
         CHECK_MSTATUS( stat );
         m_collisionMeshData->setSeparationStrength( separationStrength );
         
+        Real damping = i_data.inputValue( ia_damping, &stat ).asDouble();
+        CHECK_MSTATUS( stat );
+        m_collisionMeshData->setDamping( damping );
+
         Real coefficientOfRestitution = i_data.inputValue( ia_coefficientOfRestitution, &stat ).asDouble();
         CHECK_MSTATUS( stat );
         m_collisionMeshData->setCoefficientOfRestitution( coefficientOfRestitution );
@@ -350,6 +355,20 @@ MStatus WmBunsenCollisionMeshNode::initialize()
 
     {
         MFnNumericAttribute nAttr;
+        ia_damping = nAttr.create("damping", "dmp", MFnNumericData::kDouble, 0.7, &stat);
+        if (!stat) {
+            stat.perror( "create ia_damping attribute" );
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setKeyable( true );
+        stat = addAttribute(ia_damping);
+        if (!stat) { stat.perror("addAttribute damping"); return stat;}
+    }
+
+    {
+        MFnNumericAttribute nAttr;
         ia_coefficientOfRestitution = nAttr.create("coefficientOfRestitution", "cor", MFnNumericData::kDouble, 0.1, &stat);
         if (!stat) {
             stat.perror( "create ia_coefficientOfRestitution attribute" );
@@ -430,6 +449,8 @@ MStatus WmBunsenCollisionMeshNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_friction->oa_meshData" ); return stat;}
     stat = attributeAffects( ia_separationStrength, oa_meshData );
     if (!stat) { stat.perror("attributeAffects ia_separationStrength->oa_meshData"); return stat;}
+    stat = attributeAffects( ia_damping, oa_meshData );
+    if (!stat) { stat.perror("attributeAffects ia_damping->oa_meshData"); return stat;}
     stat = attributeAffects( ia_coefficientOfRestitution, oa_meshData );
     if (!stat) { stat.perror("attributeAffects ia_coefficientOfRestitution->oa_meshData"); return stat;}
     stat = attributeAffects( ia_fullCollisions, oa_meshData );

@@ -9,7 +9,8 @@
 
 namespace BASim {
 
-  
+ //const double damping=0.5f;
+
 #define COLLISION_EPSILON 1e-6
 
 RodPenaltyForce::RodPenaltyForce()
@@ -118,6 +119,34 @@ void RodPenaltyForce::computeForceDX(int baseindex, const ElasticRod& rod, Scala
     localJ.setZero();
     localJacobian(localJ, stiffness, n);
   
+    for (int i = 0; i < 3; ++i) {
+      indices[i] = baseindex + rod.vertIdx(vertex,i);
+    }
+    localJ *= scale;
+    J.add(indices, indices, localJ);
+  }
+}
+
+void RodPenaltyForce::computeForceDV(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J)
+{
+    //std::cout<<"compute force dv2\n";
+
+  MatXd localJ(3, 3);
+  IntArray indices(3);
+
+  for (VertexObjectMapIterator voItr=_vertexObjects.begin(); voItr!=_vertexObjects.end(); ++voItr)
+  {
+    CollisionMeshData *cmData = voItr->second.cmData;
+
+    int vertex   = voItr->first;
+    int triangle = voItr->second.triangle;
+    Vec3d n      = voItr->second.normal;
+
+    Scalar damping = cmData->getDamping();
+
+    localJ.setZero();
+    localJacobian(localJ, damping, n);
+
     for (int i = 0; i < 3; ++i) {
       indices[i] = baseindex + rod.vertIdx(vertex,i);
     }
@@ -266,10 +295,11 @@ void RodPenaltyForce::computeForce(const ElasticRod& const_rod, VecXd& F)
     {
       Scalar thickness = cmData->getThickness() + rod.radius() * rod.getRadiusScale();
       Scalar stiffness = cmData->getSeparationStrength();
-
+      Scalar damping = cmData->getDamping();
 
       Scalar nnormal = (rod.getVertex(vertex) - cmData->prevPositions[cmData->triangleIndices[(3 * triangle)    ]]).dot(n); 
-      Vec3d force = - stiffness * (nnormal - thickness) * n;
+      Scalar dampingForce= (rod.getVelocity(vertex) - cmData->velocities[cmData->triangleIndices[(3 * triangle)    ]]).dot(n);
+      Vec3d force = - stiffness * (nnormal - thickness) * n - damping * dampingForce * n;
 
       for (int i=0; i<3; ++i)
         F[rod.vertIdx(vertex, i)] += force[i];

@@ -77,7 +77,7 @@ public:
   virtual void computeForce(const ElasticRod& rod, VecXd& F);
 
   virtual void computeForceDX(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J);
-  virtual void computeForceDV(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
+  virtual void computeForceDV(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J);
   
   void addRodPenaltyForce(int vertex, CollisionMeshData *cmData, int triangle, Collision& collision);
   void addRodPenaltyForce(int edge, ElasticRod *rod, int otherEdge);

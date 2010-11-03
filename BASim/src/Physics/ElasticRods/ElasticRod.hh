@@ -406,6 +406,8 @@ public:
   void setCoefficientOfRestitution(double cor) { m_cor = cor; }
   virtual double getSeparationStrength() { return m_separationStrength; }
   void setSeparationStrength(double k) { m_separationStrength = k; }
+  virtual double getDamping() { return m_damping; }
+  void setDamping(double kdamp) { m_damping = kdamp; }
   // Again we assume rods are cylindrical for collision
   virtual Real getThickness() { return radius(); }
 
@@ -505,6 +507,7 @@ protected:
   double m_friction;
   double m_cor;
   double m_separationStrength;
+  double m_damping;
 
   // This is silly. The force now lives in the time stepper but the collision code
   // only has the rods currently so needs to ask the rod for the penalty force

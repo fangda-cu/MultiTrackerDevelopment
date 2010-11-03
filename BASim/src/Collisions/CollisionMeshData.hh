@@ -71,6 +71,10 @@ public:
 
     Real getSeparationStrength() const { return _separationStrength; }
 
+    void setDamping(Real dmp) { _damping = dmp; }
+
+    Real getDamping() const { return _damping; }
+
     void setCoefficientOfRestitution(Real cor) { _coefficientOfRestitution = cor; }
 
     Real getCoefficientOfRestitution() const { return _coefficientOfRestitution; }
@@ -139,6 +143,7 @@ public:
     Real _friction;
     Real _separationStrength;
     Real _coefficientOfRestitution;
+    Real _damping;
 
     bool _fullCollisions;
     bool _initialized;

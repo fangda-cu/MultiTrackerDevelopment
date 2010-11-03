@@ -72,6 +72,7 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   m_friction = 0;
   m_cor = 0;
   m_separationStrength = 1;
+  m_damping = 0.5;
 
   setupDofIndices();
 
