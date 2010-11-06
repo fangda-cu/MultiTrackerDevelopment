@@ -148,7 +148,9 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
         }
 
         // We need to add edge data so that each from the first edge will be locked to the input curve
-        if ( strandRootFrames.size() > i && m_lockFirstEdgeToInput )
+		// 
+		// We're not actually passing the orientation to BASim so no point in pretending we are
+        /*if ( strandRootFrames.size() > i && m_lockFirstEdgeToInput )
         {
             // The strand root frames may not have been connected for some reason so don't
             // rely on this having data
@@ -158,7 +160,7 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
             
             m_rodGroup.addKinematicEdge( rodIndex, 0, &strandRootFrames[ i ] );
         }
-        else
+        else*/
         {   // If there's no root frame data then just lock the edge and it will not rotate.
             m_rodGroup.addKinematicEdge( rodIndex, 0 );
         }
