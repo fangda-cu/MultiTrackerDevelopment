@@ -6,6 +6,7 @@
 
 using namespace BASim;
 
+
 // Required by Maya to identify the node
 /* static */ MTypeId WmFigRodNode::typeID ( 0x001135, 0x19 );
 /* static */ MString WmFigRodNode::typeName( "wmFigRodNode" );
@@ -73,7 +74,8 @@ WmFigRodNode::WmFigRodNode() : m_massDamping( 10 ), m_initialised( false ),
     m_percentageOfBarberShopStrands( 100 ), m_verticesPerRod( -1 ), m_cacheFilename( "" ),
     m_pRodInput( NULL ), m_vertexSpacing( 0.0 ), m_minimumRodLength( 2.0 ),
     m_readFromCache( false ), m_writeToCache( false ), m_cachePath ( "" ),
-    m_solverType( RodTimeStepper::IMPL_EULER ), m_gravity( 0, -980, 0 )    
+    m_solverType( RodTimeStepper::IMPL_EULER ), m_gravity( 0, -980, 0 ), m_rodDisplayList(0),
+    m_rodGeoChanged(true)
 {
     m_rodOptions.YoungsModulus = 1000.0; /* megapascal */
     m_rodOptions.ShearModulus = 340.0;   /* megapascal */
@@ -87,8 +89,13 @@ WmFigRodNode::WmFigRodNode() : m_massDamping( 10 ), m_initialised( false ),
     m_simulationSet.clear();
 }
 
+
 WmFigRodNode::~WmFigRodNode()
 {
+    if(m_rodDisplayList)
+    {
+        glDeleteLists(m_rodDisplayList, 1);
+    }
 }
 
 MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
@@ -707,6 +714,8 @@ void WmFigRodNode::compute_ca_simulationSync( const MPlug& i_plug,
 
     numRodsH.set( (int)m_rodGroup.numberOfRods() );
     
+    m_rodGeoChanged = true;
+
     stat = i_dataBlock.setClean( i_plug );
     if ( !stat )
     {
@@ -1194,6 +1203,8 @@ void WmFigRodNode::compute_ca_drawDataChanged( const MPlug& i_plug, MDataBlock& 
     }
     inArrayH.setClean();
     i_dataBlock.setClean( i_plug );
+
+    m_rodGeoChanged = true;
 }
 
 void WmFigRodNode::getStrandRootFrames( MDataBlock& i_dataBlock, vector<MaterialFrame>& o_strandRootFrames )
@@ -1313,9 +1324,28 @@ void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
         
     }*/
 
-    
-    m_rodGroup.render();
-    
+    if(m_rodDisplayList == 0)
+    {
+        m_rodDisplayList = glGenLists(1);
+
+        glNewList(m_rodDisplayList, GL_COMPILE);
+            m_rodGroup.render();
+        glEndList();
+
+        m_rodGeoChanged = false;
+    }
+    else if(m_rodGeoChanged)
+    {
+        glDeleteLists(m_rodDisplayList, 1);
+
+        glNewList(m_rodDisplayList, GL_COMPILE);
+            m_rodGroup.render();
+        glEndList();
+
+        m_rodGeoChanged = false;
+    }
+
+    glCallList(m_rodDisplayList);
     
     MPlug drawMaterialFramesPlug( thisNode, ia_drawMaterialFrames );
     bool draw;
