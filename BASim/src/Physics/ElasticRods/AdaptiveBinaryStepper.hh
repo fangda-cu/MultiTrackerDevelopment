@@ -45,6 +45,18 @@ public:
     }
   }
 
+  Scalar get_stol() const { return m_stepper->get_stol(); }
+  void set_stol(Scalar s) { m_stepper->set_stol(s); }
+
+  Scalar get_atol() const { return m_stepper->get_atol(); }
+  void set_atol(Scalar a) { m_stepper->set_atol(a); }
+
+  Scalar get_rtol() const { return m_stepper->get_rtol(); }
+  void set_rtol(Scalar r) { m_stepper->set_rtol(r); }
+
+  Scalar get_inftol() const { return m_stepper->get_inftol(); }
+  void set_inftol(Scalar i) { m_stepper->set_inftol(i); }
+
   void addExternalForce(RodExternalForce* force)
   {
     m_stepper->addExternalForce(force);

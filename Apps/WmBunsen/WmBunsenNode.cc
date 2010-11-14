@@ -25,6 +25,12 @@ MObject WmBunsenNode::ia_solverType;
 
 MObject WmBunsenNode::ia_msgConstraintNodes;
 
+//Solver Tolerances
+MObject WmBunsenNode::ia_stol;
+MObject WmBunsenNode::ia_atol;
+MObject WmBunsenNode::ia_rtol;
+MObject WmBunsenNode::ia_inftol;
+
 // Clumping
 /* static */ MObject WmBunsenNode::ia_isClumpingEnabled;
 /* static */ MObject WmBunsenNode::ia_clumpingCoefficient;
@@ -431,7 +437,19 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_beaker->clumpingCoefficient( i_dataBlock.inputValue( ia_clumpingCoefficient, &stat ).asDouble() );
         CHECK_MSTATUS( stat );
 
-        
+        // Tolerances
+        m_beaker->set_stol(1.0e-6f * i_dataBlock.inputValue( ia_stol, &stat ).asDouble() );
+        CHECK_MSTATUS( stat );
+
+        m_beaker->set_atol( 1.0e-6f * i_dataBlock.inputValue( ia_atol, &stat ).asDouble() );
+        CHECK_MSTATUS( stat );
+
+        m_beaker->set_rtol(1.0e-6f * i_dataBlock.inputValue( ia_rtol, &stat ).asDouble() );
+        CHECK_MSTATUS( stat );
+
+        m_beaker->set_inftol(1.0e-6f * i_dataBlock.inputValue( ia_inftol, &stat ).asDouble() );
+        CHECK_MSTATUS( stat );
+
         ////////////////////////////////////////////////////////////////////////////////////////////////
         //
         // Volumetric Collision attributes
@@ -834,6 +852,67 @@ MStatus WmBunsenNode::initialize()
         if ( !stat ) { stat.perror( "addAttribute ia_maxIter" ); return stat; }
     }
     
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_stol = nAttr.create( "stol", "stl", MFnNumericData::kDouble, 0.01, &stat );
+        if ( !stat )
+        {
+            stat.perror( "create stol attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setKeyable( false );
+        stat = addAttribute( ia_stol );
+        if ( !stat ) { stat.perror( "addAttribute ia_stol" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_atol = nAttr.create( "atol", "atl", MFnNumericData::kDouble, 0.01, &stat );
+        if ( !stat )
+        {
+            stat.perror( "create atol attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setKeyable( false );
+        stat = addAttribute( ia_atol );
+        if ( !stat ) { stat.perror( "addAttribute ia_atol" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_rtol = nAttr.create( "rtol", "rtl", MFnNumericData::kDouble, 0.01, &stat );
+        if ( !stat )
+        {
+            stat.perror( "create rtol attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setKeyable( false );
+        stat = addAttribute( ia_rtol );
+        if ( !stat ) { stat.perror( "addAttribute ia_rtol" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_inftol = nAttr.create( "inftol", "itl", MFnNumericData::kDouble, 0.01, &stat );
+        if ( !stat )
+        {
+            stat.perror( "create inftol attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setKeyable( false );
+        stat = addAttribute( ia_inftol );
+        if ( !stat ) { stat.perror( "addAttribute ia_inftol" ); return stat; }
+    }
+
     {
         MFnNumericAttribute nAttr;
         ia_rodsNodes = nAttr.create( "rodsNodes", "rod", MFnNumericData::kBoolean, true, &stat );
@@ -1153,6 +1232,16 @@ MStatus WmBunsenNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_timingsFile->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_timingEnabled, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_timingEnabled->ca_syncAttrs" ); return stat; }
+
+    //Tolerances
+    if (!stat) { stat.perror( "attributeAffects ia_stol->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_stol, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_atol->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_atol, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_rtol->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_rtol, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_inftol->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_inftol, ca_syncAttrs );
 
     // Clumping
     stat = attributeAffects( ia_isClumpingEnabled, ca_syncAttrs );
