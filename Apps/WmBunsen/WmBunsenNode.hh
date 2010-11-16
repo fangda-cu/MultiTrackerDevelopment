@@ -64,6 +64,12 @@ public:
     static MObject ia_enabled;
     static MObject oa_dt;
     
+    //Solver Tolerances
+    static MObject ia_stol;
+    static MObject ia_atol;
+    static MObject ia_rtol;
+    static MObject ia_inftol;
+
     static MObject ia_collisionMeshes;
 
     static MObject ia_msgConstraintNodes;

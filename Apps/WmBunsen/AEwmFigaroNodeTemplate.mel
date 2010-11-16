@@ -17,6 +17,13 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
         editorTemplate -addControl "plasticDeformations";
     editorTemplate -endLayout;
 
+    editorTemplate -beginLayout "Solver Tolerances" -collapse 0;
+        editorTemplate -addControl "stol";
+        editorTemplate -addControl "atol";
+        editorTemplate -addControl "rtol";
+        editorTemplate -addControl "inftol";
+    editorTemplate -endLayout;
+
     editorTemplate -beginLayout "Clumping" -collapse 0;
         editorTemplate -addControl "clumping";
         editorTemplate -addControl "clumpingCoefficient";

@@ -365,17 +365,17 @@ public:
     m_diffEqSolver->setMaxIterations(iterations);
   }
 
-  Scalar get_stol() const { return m_diffEqSolver->get_stol(); }
-  void set_stol(Scalar s) { m_diffEqSolver->set_stol(s); }
+  virtual Scalar get_stol() const { return m_diffEqSolver->get_stol(); }
+  virtual void set_stol(Scalar s) { m_diffEqSolver->set_stol(s); }
 
-  Scalar get_atol() const { return m_diffEqSolver->get_atol(); }
-  void set_atol(Scalar a) { m_diffEqSolver->set_atol(a); }
+  virtual Scalar get_atol() const { return m_diffEqSolver->get_atol(); }
+  virtual void set_atol(Scalar a) { m_diffEqSolver->set_atol(a); }
 
-  Scalar get_rtol() const { return m_diffEqSolver->get_rtol(); }
-  void set_rtol(Scalar r) { m_diffEqSolver->set_rtol(r); }
+  virtual Scalar get_rtol() const { return m_diffEqSolver->get_rtol(); }
+  virtual void set_rtol(Scalar r) { m_diffEqSolver->set_rtol(r); }
 
-  Scalar get_inftol() const { return m_diffEqSolver->get_inftol(); }
-  void set_inftol(Scalar i) { m_diffEqSolver->set_inftol(i); }
+  virtual Scalar get_inftol() const { return m_diffEqSolver->get_inftol(); }
+  virtual void set_inftol(Scalar i) { m_diffEqSolver->set_inftol(i); }
 
   MatrixBase* createMatrix() const
   {
