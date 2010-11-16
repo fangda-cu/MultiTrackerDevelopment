@@ -1,0 +1,332 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Node attributes &mdash; Figaro v32 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '32',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Figaro v32 documentation" href="index.html" />
+    <link rel="prev" title="Attaching collision objects" href="attaching_collision_objects.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="attaching_collision_objects.html" title="Attaching collision objects"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Figaro v32 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="node-attributes">
+<span id="index-0"></span><h1>Node attributes<a class="headerlink" href="#node-attributes" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="wmfigaro-node-attributes">
+<span id="attributes-wmfigaronode"></span><h2>wmFigaro node attributes<a class="headerlink" href="#wmfigaro-node-attributes" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Attribute</th>
+<th class="head">Definition</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>Solver Type</td>
+<td>Sets the simulation type. At present, leave this as <strong>Symmetric Implicit Euler</strong>, as this is the most stable choice.</td>
+</tr>
+<tr><td>Enabled</td>
+<td>Turns the simulation on and off.</td>
+</tr>
+<tr><td>Number of Threads</td>
+<td>The number of threads to use in the simulation. Most of the simulation calculations are threaded, except self-collisions (if they are on).</td>
+</tr>
+<tr><td>Start Time</td>
+<td>The frame that the simulation resets at. Everything gets rebuilt at this frame.</td>
+</tr>
+<tr><td>Frames Per Second</td>
+<td>The animation speed the scene is meant to run at. For example, if this is 24, the simulation assumes the scene is at 24fps.
+If you this setting does not match the scene as a whole, the simulation can look very strange.</td>
+</tr>
+<tr><td>Sub Steps</td>
+<td>The minimum number of steps to take per frame. The simulation is adaptively stepped when it needs to be. The lower the number of steps, the faster the simulation runs, so this sets the maximum speed of the simulation.
+Be careful setting this to low values, as it can make the simulation too &#8220;bouncy&#8221;.</td>
+</tr>
+<tr><td>Gravity</td>
+<td>Sets the gravity. By default, this attribute is connected to all rod nodes so they pick up the world gravity from the Figaro node.</td>
+</tr>
+<tr><td>Plastic Deformations</td>
+<td>Ignore this at present.</td>
+</tr>
+<tr><td><strong>Clumping</strong> section</td>
+<td>Ignore this at present.</td>
+</tr>
+<tr><td><strong>Collisions</strong>  section</td>
+<td>&nbsp;</td>
+</tr>
+<tr><td>Object Collisions Enabled</td>
+<td>Turns the collision handling for meshes on and off.</td>
+</tr>
+<tr><td>Self Collision Penalty Forces</td>
+<td>Controls whether the self collision penalty is on. If this is on, all rods found to be too close to each other at the start of a time step are pushed apart slightly.</td>
+</tr>
+<tr><td>Full Self Collisions</td>
+<td>Controls whether to use the full iterative edge/edge collision detection and response. .</td>
+</tr>
+<tr><td>Full Self Collision Iterations</td>
+<td>When <strong>Full Self Collisions</strong> is on, this sets the number of iterations of edge/edge self collisions to do. Higher values take longer to calculate, but if the value is too low, the self-collision may not be evaluated properly.</td>
+</tr>
+<tr><td>Full Self Collision COR</td>
+<td>When <strong>Full Self Collisions</strong> is on, this sets the coefficient of restitution to use in edge/edge collisions. At 1, the collision is very elastic (things bounce back with the entire collision force).  At 0, the objects stop dead when they collide (no bounce at all).  xxxAny reason not to rename this to &#8220;Bounce force&#8221; and namecheck CoR in the docs?</td>
+</tr>
+<tr><td><strong>Volumetric Collisions</strong></td>
+<td>&nbsp;</td>
+</tr>
+<tr><td>Volumetric Collisions</td>
+<td>Turns on the volumetric collision handling.</td>
+</tr>
+<tr><td>Grid DX</td>
+<td>The edge length of the grid cells used for calculating the volumetric collision.</td>
+</tr>
+<tr><td>Target Edge Density</td>
+<td>The density desired in each cell. Numbers smaller than the hair density will pull hairs in, larger will puff them out.</td>
+</tr>
+<tr><td>Volumetric Radius</td>
+<td>The radius of influence of a hair on the grid. This should usually be at least the actual radius of the individual hair.</td>
+</tr>
+<tr><td>Flip</td>
+<td>Sets how grid velocities are interpolated to particles. At 0, you get a viscous effect. At 1, you get much more free results, but some collisions may be missed. .</td>
+</tr>
+<tr><td>Slip</td>
+<td>Affects how much of the grid velocity is used. At 0, Figaro uses the grid velocities; at 1, Figaro ignores volumetric collisions entirely.</td>
+</tr>
+<tr><td>Separation Condition</td>
+<td>Debug information, ignore.</td>
+</tr>
+<tr><td>Display Grid etc</td>
+<td>Debug information, ignore.</td>
+</tr>
+<tr><td><strong>Timings</strong> section</td>
+<td>Debug information, ignore.</td>
+</tr>
+<tr><td><strong>Drawing</strong> Section</td>
+<td>Debug information, ignore.</td>
+</tr>
+<tr><td><strong>XML Output</strong> section</td>
+<td>Debug information, ignore.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="wmfigrodnode-attributes">
+<span id="attributes-wmfigrodnode"></span><h2>wmFigRodNode attributes<a class="headerlink" href="#wmfigrodnode-attributes" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Attribute</th>
+<th class="head">Definition</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td><strong>Input Resampling</strong> section</td>
+<td>&nbsp;</td>
+</tr>
+<tr><td>Vertex Spacing</td>
+<td>Set this to 0 to use the vertex spacing from the original model. Otherwise, Figaro resamples the input. This produces much more stable results than using input from the original models (which may have too many vertices, or vertices that are not well spaced out).</td>
+</tr>
+<tr><td>Minimum Rod Length</td>
+<td>Any rods shorter than this will not be simulated.</td>
+</tr>
+<tr><td><strong>Rod Parameters</strong> section</td>
+<td>&nbsp;</td>
+</tr>
+<tr><td>Cache Frame</td>
+<td>Turn this on to write out the rod positions to disk for later playback.</td>
+</tr>
+<tr><td>Read from Cache</td>
+<td>Turn this on to read from the cached file rather than running the simulation. This needs you to have previously run the simulation with <em>Cache Frame</em> turned on.</td>
+</tr>
+<tr><td>Lock first edge to input</td>
+<td>Locks the first edge so it can&#8217;t move from the input. xxx explanation?</td>
+</tr>
+<tr><td>Percentage of Fozzie strands</td>
+<td>The percentage of Barbershop hairs in the furset to simulate.</td>
+</tr>
+<tr><td>Gravity</td>
+<td>Sets the gravity. Initially, this is driven by the Figaro node. xxx what does it end up driven by?</td>
+</tr>
+<tr><td>Minor Radius</td>
+<td>The minor radius of the rods.</td>
+</tr>
+<tr><td>Major Radius</td>
+<td>The major radius of the rods.</td>
+</tr>
+<tr><td>Youngs Modulus</td>
+<td>Sets how stiff the rod is (how much it resists bending). xxx sensible values?</td>
+</tr>
+<tr><td>Shear Modulus</td>
+<td>How much the rod resists twisting along its length. xxx sensible values?</td>
+</tr>
+<tr><td>Internal Damping</td>
+<td>How much internal resistence the rod has to resist oscillating. If you find your hair is too floppy, try increasing the <strong>Youngs Modulus</strong> and this value.</td>
+</tr>
+<tr><td>Density</td>
+<td>The density of the rod, defined in cm^3.
+This is not defined as mass per vertex (as with Maya hair) because it means the behaviour changes depending on the number of vertices. The hair behaves consistently even if you change the number of vertices.</td>
+</tr>
+<tr><td>Mass Damping</td>
+<td>Amount of damping to apply (this is a standard sim system damping).</td>
+</tr>
+<tr><td>Simulation Set</td>
+<td>If you want to only simulate some of the rods, enter the indices of those rods.
+<em>This may be broken at present.</em></td>
+</tr>
+<tr><td><strong>Drawing</strong> section</td>
+<td>&nbsp;</td>
+</tr>
+<tr><td>Draw Material Frames</td>
+<td>xxx ?</td>
+</tr>
+<tr><td>Draw 3DRod</td>
+<td>xxx ?</td>
+</tr>
+<tr><td>Draw Scale</td>
+<td>xxx ?</td>
+</tr>
+<tr><td>Cache Path</td>
+<td>The location to read or write cache data from/to.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="collision-node-attributes">
+<span id="attributes-collision-node"></span><h2>Collision node attributes<a class="headerlink" href="#collision-node-attributes" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="14%" />
+<col width="86%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Attribute</th>
+<th class="head">Definition</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>Start Time</td>
+<td>xxx eh? When the sim resets, should really be hidden as it needs to match what the Figaro node is doing which is why it&#8217;s connected.</td>
+</tr>
+<tr><td>Friction</td>
+<td>The amount of friction to use during collisions. This makes the rods stick rather than slide on the mesh.</td>
+</tr>
+<tr><td>Coefficient of Restitution</td>
+<td>The amount of bounce to use during collisions. This makes the rods stick or bounce as they hit the mesh.</td>
+</tr>
+<tr><td>Separation Strength</td>
+<td>This scales the amount of separation force (how much the two objects &#8220;don&#8217;t want&#8221; to collide) in the initial stage of the collision. Higher values give more bounce out, but less stability.</td>
+</tr>
+<tr><td>Thickness</td>
+<td>The distance from the surface where things are considered in collision.</td>
+</tr>
+<tr><td>Edge Collisions</td>
+<td>Turn this on to calculate full edge/edge collisions rather than just point-triangle.</td>
+</tr>
+<tr><td>Draw Collision Data</td>
+<td>Debug, ignore.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/weta_200px.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Node attributes</a><ul>
+<li><a class="reference internal" href="#wmfigaro-node-attributes">wmFigaro node attributes</a></li>
+<li><a class="reference internal" href="#wmfigrodnode-attributes">wmFigRodNode attributes</a></li>
+<li><a class="reference internal" href="#collision-node-attributes">Collision node attributes</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="attaching_collision_objects.html"
+                        title="previous chapter">Attaching collision objects</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/node_reference.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="attaching_collision_objects.html" title="Attaching collision objects"
+             >previous</a> |</li>
+        <li><a href="index.html">Figaro v32 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2010, Weta Digital.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.4.
+    </div>
+  </body>
+</html>
