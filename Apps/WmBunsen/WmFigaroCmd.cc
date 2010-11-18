@@ -1133,79 +1133,85 @@ void WmFigaroCmd::createRodShapeNode()
     MDagModifier dagModifier;
     MString rodShapeName = "";
 
-    createDagNode( WmFigaroRodShape::typeName.asChar(), WmFigaroRodShape::typeName.asChar(),
-                   pObj, &rodTObj, &rodSObj, &dagModifier, rodShapeName );
-
-    appendToResultString( rodShapeName );
-    
-    MDagPath rodDagPath;
-    stat = MDagPath::getAPathTo( rodSObj, rodDagPath );
-    CHECK_MSTATUS( stat );
-    
     // Set the control points of the rod shape to be the vertices of the input NURBS curve
     MDagPath dagPath;
     MObject component;
-    m_nurbsCurveList.getDagPath( 0, dagPath, component );
-
-    dagPath.extendToShape();
-
-    MFnNurbsCurve curveFn( dagPath, &stat );
-    CHECK_MSTATUS( stat );
-    
-    MPointArray nurbsPoints;
-    curveFn.getCVs( nurbsPoints, MSpace::kWorld );
-    
-    MFnDependencyNode rodShapeFn( rodSObj );
-
-    // Now get the input attribute of the rod and set
-    MPlug controlPointsPlugArr = rodShapeFn.findPlug( "controlPoints", true, &stat );
-    CHECK_MSTATUS( stat );
-
-    for ( int p=0; p<nurbsPoints.length(); ++p )
+    for(int curve_idx = 0; curve_idx < m_nurbsCurveList.length(); curve_idx++)
     {
-        MPlug cvPlug = controlPointsPlugArr.elementByLogicalIndex( p, &stat );
+
+        createDagNode( WmFigaroRodShape::typeName.asChar(), WmFigaroRodShape::typeName.asChar(),
+                       pObj, &rodTObj, &rodSObj, &dagModifier, rodShapeName );
+
+        appendToResultString( rodShapeName );
+
+        MDagPath rodDagPath;
+        stat = MDagPath::getAPathTo( rodSObj, rodDagPath );
         CHECK_MSTATUS( stat );
-        MPlug xPlug = cvPlug.child( 0, &stat );
+
+
+        //m_nurbsCurveList.getDagPath( 0, dagPath, component );
+        m_nurbsCurveList.getDagPath( curve_idx, dagPath, component );
+
+        dagPath.extendToShape();
+
+        MFnNurbsCurve curveFn( dagPath, &stat );
         CHECK_MSTATUS( stat );
-        MPlug yPlug = cvPlug.child( 1, &stat );
+
+        MPointArray nurbsPoints;
+        curveFn.getCVs( nurbsPoints, MSpace::kWorld );
+
+        MFnDependencyNode rodShapeFn( rodSObj );
+
+        // Now get the input attribute of the rod and set
+        MPlug controlPointsPlugArr = rodShapeFn.findPlug( "controlPoints", true, &stat );
         CHECK_MSTATUS( stat );
-        MPlug zPlug = cvPlug.child( 2, &stat );
+
+        for ( int p=0; p<nurbsPoints.length(); ++p )
+        {
+            MPlug cvPlug = controlPointsPlugArr.elementByLogicalIndex( p, &stat );
+            CHECK_MSTATUS( stat );
+            MPlug xPlug = cvPlug.child( 0, &stat );
+            CHECK_MSTATUS( stat );
+            MPlug yPlug = cvPlug.child( 1, &stat );
+            CHECK_MSTATUS( stat );
+            MPlug zPlug = cvPlug.child( 2, &stat );
+            CHECK_MSTATUS( stat );
+            xPlug.setValue( nurbsPoints[ p ].x );
+            yPlug.setValue( nurbsPoints[ p ].y );
+            zPlug.setValue( nurbsPoints[ p ].z );
+        }
+
+        //now connect the transformation of the rod and the curve
+    //    MFnDependencyNode rodTransformFn( rodTObj, &stat);
+    //    CHECK_MSTATUS( stat );
+    //    MFnDagNode curveTransformFn( dagPath.transform(), &stat );
+    //    CHECK_MSTATUS( stat );
+    //    dagModifier.connect( curveTransformFn.findPlug("translate"),
+    //            rodTransformFn.findPlug( "translate"));
+    //    dagModifier.connect( curveTransformFn.findPlug("rotate"),
+    //            rodTransformFn.findPlug( "rotate"));
+    //    dagModifier.connect( curveTransformFn.findPlug("scale"),
+    //            rodTransformFn.findPlug( "scale"));
+    //
+    //    stat = dagModifier.doIt();
+    //    CHECK_MSTATUS( stat );
+
+
+
+        // Now connect the output from the rod to the NURBS curve
+        MPlug cvsPlug = rodShapeFn.findPlug( "controlVertex", & stat );
         CHECK_MSTATUS( stat );
-        xPlug.setValue( nurbsPoints[ p ].x );
-        yPlug.setValue( nurbsPoints[ p ].y );
-        zPlug.setValue( nurbsPoints[ p ].z );        
+
+        for( unsigned int cv = 0; cv < nurbsPoints.length(); cv++ )
+        {
+            MPlug cvPlug = cvsPlug.elementByLogicalIndex( cv, &stat );
+            CHECK_MSTATUS( stat );
+
+            stat = dagModifier.connect( cvPlug, curveFn.findPlug( "controlPoints" ).elementByLogicalIndex( cv, & stat ) );
+            CHECK_MSTATUS( stat );
+        }
+
     }
-
-    //now connect the transformation of the rod and the curve
-//    MFnDependencyNode rodTransformFn( rodTObj, &stat);
-//    CHECK_MSTATUS( stat );
-//    MFnDagNode curveTransformFn( dagPath.transform(), &stat );
-//    CHECK_MSTATUS( stat );
-//    dagModifier.connect( curveTransformFn.findPlug("translate"),
-//            rodTransformFn.findPlug( "translate"));
-//    dagModifier.connect( curveTransformFn.findPlug("rotate"),
-//            rodTransformFn.findPlug( "rotate"));
-//    dagModifier.connect( curveTransformFn.findPlug("scale"),
-//            rodTransformFn.findPlug( "scale"));
-//
-//    stat = dagModifier.doIt();
-//    CHECK_MSTATUS( stat );
-
-    
-
-    // Now connect the output from the rod to the NURBS curve
-    MPlug cvsPlug = rodShapeFn.findPlug( "controlVertex", & stat );
-    CHECK_MSTATUS( stat );
-
-    for( unsigned int cv = 0; cv < nurbsPoints.length(); cv++ )
-    {
-        MPlug cvPlug = cvsPlug.elementByLogicalIndex( cv, &stat );
-        CHECK_MSTATUS( stat );
-
-        stat = dagModifier.connect( cvPlug, curveFn.findPlug( "controlPoints" ).elementByLogicalIndex( cv, & stat ) );
-        CHECK_MSTATUS( stat );
-    }
-
     dagModifier.doIt();
 
     // Tell the node to initialise itself. Seems like pulling on a plug would be nice

@@ -1,0 +1,178 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Create your rods &mdash; Figaro v32 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '32',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Figaro v32 documentation" href="index.html" />
+    <link rel="next" title="Attaching collision objects" href="attaching_collision_objects.html" />
+    <link rel="prev" title="Figaro" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="attaching_collision_objects.html" title="Attaching collision objects"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Figaro"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Figaro v32 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="create-your-rods">
+<span id="create-rods"></span><span id="index-0"></span><h1>Create your rods<a class="headerlink" href="#create-your-rods" title="Permalink to this headline">¶</a></h1>
+<p>You have two options to create rods. You can create rods:</p>
+<ul class="simple">
+<li>from a <a class="reference internal" href="#creating-rods-from-curves"><em>specific set of curves</em></a>, or</li>
+<li>from the <a class="reference internal" href="#creating-rods-from-a-furset"><em>entire furset</em></a>.
+This creates rods from a subset of the hairs, not all the hairs on the furset!</li>
+</ul>
+<p>You can also <a class="reference internal" href="#adding-rods-to-existing-nodes"><em>add rods to an existing Figaro node</em></a>.</p>
+<div class="section" id="creating-rods">
+<h2>Creating rods<a class="headerlink" href="#creating-rods" title="Permalink to this headline">¶</a></h2>
+<p id="creating-rods-from-curves">To create rods from a set of curves:</p>
+<ol class="arabic">
+<li><p class="first">Select the curves to base the rods on.</p>
+<p>For example, you could create a set of curves from the groom using Barbershop&#8217;s Wire-Pin tool, and then use these as the basis to create your rods.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Select the curves themselves, rather than the group containing them.</p>
+</div>
+</li>
+<li><p class="first">From the <strong>Figaro</strong> menu, select <strong>Create Rods from NURBS curves</strong>.</p>
+<p>Figaro creates a set of rods based on the curves.</p>
+</li>
+</ol>
+<p id="creating-rods-from-a-furset">To create rods from a furset:</p>
+<ol class="arabic simple">
+<li>Select the furset node (not the subd node).</li>
+<li>From the <strong>Figaro</strong> menu, select <strong>Create Rods from Barbershop Node</strong>.</li>
+</ol>
+<p>Once you have created the rods, you will see the following new nodes:</p>
+<ul class="simple">
+<li><a class="reference internal" href="node_reference.html#attributes-wmfigaronode"><em>wmFigaro</em></a> - this holds the overall solver information that affects all rods within the node.</li>
+<li><a class="reference internal" href="node_reference.html#attributes-wmfigrodnode"><em>wmFigRodNode</em></a> - this controls each subset of rods.</li>
+</ul>
+<p>You can now configure the rod attributes. In particular, you should:</p>
+<ul class="simple">
+<li>in the <a class="reference internal" href="node_reference.html#attributes-wmfigaronode"><em>wmFigaro</em></a>, set:<ul>
+<li>the <strong>Number of Threads</strong> to 8.</li>
+<li>whether to use standard or volumetric collisions. To use volumetric collisions, turn <strong>Volumetric Collisions</strong> on, and set the volumetric sim details, especially the <strong>Flip</strong> and <strong>Slip</strong>.</li>
+</ul>
+</li>
+<li>in the <a class="reference internal" href="node_reference.html#attributes-wmfigrodnode"><em>wmFigRodNode</em></a>, set:<ul>
+<li>the <strong>Percentage of Barbershop Strands</strong> to create rods for.</li>
+<li>the <strong>Young&#8217;s Modulus</strong> (stiffness) and <strong>Shear Modulus</strong> (resistence to twisting) for the rods.</li>
+<li>damping details for the rods.</li>
+</ul>
+</li>
+</ul>
+<div class="section" id="adding-rods-to-existing-nodes">
+<span id="id1"></span><h3>Adding rods to existing nodes<a class="headerlink" href="#adding-rods-to-existing-nodes" title="Permalink to this headline">¶</a></h3>
+<p>To add rods to an existing Figaro node:</p>
+<ol class="arabic simple">
+<li>Select the wmFigRodNode to add the rods to.</li>
+<li>Create the rods as normal, either from a furset or from a set of curves.</li>
+</ol>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/weta_200px.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Create your rods</a><ul>
+<li><a class="reference internal" href="#creating-rods">Creating rods</a><ul>
+<li><a class="reference internal" href="#adding-rods-to-existing-nodes">Adding rods to existing nodes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Figaro</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="attaching_collision_objects.html"
+                        title="next chapter">Attaching collision objects</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/creating_rods.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="attaching_collision_objects.html" title="Attaching collision objects"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Figaro"
+             >previous</a> |</li>
+        <li><a href="index.html">Figaro v32 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2010, Weta Digital.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.4.
+    </div>
+  </body>
+</html>

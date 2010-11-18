@@ -48,6 +48,7 @@
 #include "WmFigRodFileInput.hh"
 #include "WmFigRodGroup.hh"
 
+#include <GL/glu.h>
 
 static const int FILE_FORMAT_VERSION = 1;
 
@@ -236,6 +237,9 @@ private:
 
     BASim::Vec3d m_gravity;
     std::set< int > m_simulationSet;
+
+    bool m_rodGeoChanged;
+    GLuint m_rodDisplayList;
 
 };
 

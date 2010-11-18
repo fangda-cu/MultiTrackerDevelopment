@@ -130,6 +130,26 @@ public:
         m_clumpingCoefficient = i_clumpingCoefficient;
     }
 
+    void set_stol( double tols )
+    {
+        m_stol = tols;
+    }
+
+    void set_atol( double tola )
+    {
+        m_atol = tola;
+    }
+
+    void set_rtol( double tolr )
+    {
+        m_rtol = tolr;
+    }
+
+    void set_inftol( double tolinf )
+    {
+        m_inftol = tolinf;
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////
     //
     // Volumetric collision stuff
@@ -297,6 +317,11 @@ private:
 
     bool m_isClumpingEnabled;
     double m_clumpingCoefficient;
+
+    double m_stol;
+    double m_atol;
+    double m_rtol;
+    double m_inftol;
 
     bool m_isXMLLoggingEnabled;
     SceneXML* m_sceneXML;
