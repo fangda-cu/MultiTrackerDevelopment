@@ -7,7 +7,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Attaching collision objects &mdash; Figaro v32 documentation</title>
+    <title>Animating the rods &mdash; Figaro v32 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -23,8 +23,8 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="Figaro v32 documentation" href="index.html" />
-    <link rel="next" title="Animating the rods" href="animating_rods.html" />
-    <link rel="prev" title="Create your rods" href="creating_rods.html" /> 
+    <link rel="next" title="Node attributes" href="node_reference.html" />
+    <link rel="prev" title="Attaching collision objects" href="attaching_collision_objects.html" /> 
   </head>
   <body>
     <div class="related">
@@ -34,10 +34,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="animating_rods.html" title="Animating the rods"
+          <a href="node_reference.html" title="Node attributes"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="creating_rods.html" title="Create your rods"
+          <a href="attaching_collision_objects.html" title="Attaching collision objects"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">Figaro v32 documentation</a> &raquo;</li> 
       </ul>
@@ -48,20 +48,18 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="attaching-collision-objects">
-<span id="index-0"></span><h1>Attaching collision objects<a class="headerlink" href="#attaching-collision-objects" title="Permalink to this headline">¶</a></h1>
-<p>If other objects are going to collide with the hiar, you need to attach them as collision objects.</p>
-<ol class="arabic">
-<li><p class="first">Select:</p>
-<ul class="simple">
-<li>the polygon mesh(es) for the object(s) to collide with the hair, and</li>
-<li>the wmFigaro node for the hair.</li>
+  <div class="section" id="animating-the-rods">
+<span id="animating-rods"></span><span id="index-0"></span><h1>Animating the rods<a class="headerlink" href="#animating-the-rods" title="Permalink to this headline">¶</a></h1>
+<p>To animate the rods, you need to use the wmBarbershop guide curve deformer.</p>
+<ol class="arabic simple">
+<li>Select:<ul>
+<li>the wmFigRodNode, and</li>
+<li>the wmFurSetNode.</li>
 </ul>
 </li>
-<li><p class="first">From the Figaro menu, select <strong>Add selected meshes as collision objects</strong>.</p>
-<p>Figaro creates a wmFigCollisionNode. This lets you control the <a class="reference internal" href="node_reference.html#attributes-collision-node"><em>attributes of the collision object</em></a>.</p>
-</li>
+<li>Run the script <tt class="docutils literal"><span class="pre">wmBarberShop</span> <span class="pre">-gcd</span></tt>.</li>
 </ol>
+<p>The rods and hair will now animate in sync.</p>
 </div>
 
 
@@ -74,14 +72,14 @@
               <img class="logo" src="_static/weta_200px.png" alt="Logo"/>
             </a></p>
   <h4>Previous topic</h4>
-  <p class="topless"><a href="creating_rods.html"
-                        title="previous chapter">Create your rods</a></p>
+  <p class="topless"><a href="attaching_collision_objects.html"
+                        title="previous chapter">Attaching collision objects</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="animating_rods.html"
-                        title="next chapter">Animating the rods</a></p>
+  <p class="topless"><a href="node_reference.html"
+                        title="next chapter">Node attributes</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
-    <li><a href="_sources/attaching_collision_objects.txt"
+    <li><a href="_sources/animating_rods.txt"
            rel="nofollow">Show Source</a></li>
   </ul>
 <div id="searchbox" style="display: none">
@@ -108,10 +106,10 @@
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="animating_rods.html" title="Animating the rods"
+          <a href="node_reference.html" title="Node attributes"
              >next</a> |</li>
         <li class="right" >
-          <a href="creating_rods.html" title="Create your rods"
+          <a href="attaching_collision_objects.html" title="Attaching collision objects"
              >previous</a> |</li>
         <li><a href="index.html">Figaro v32 documentation</a> &raquo;</li> 
       </ul>

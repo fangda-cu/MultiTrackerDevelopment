@@ -82,7 +82,20 @@ This creates rods from a subset of the hairs, not all the hairs on the furset!</
 <li><a class="reference internal" href="node_reference.html#attributes-wmfigaronode"><em>wmFigaro</em></a> - this holds the overall solver information that affects all rods within the node.</li>
 <li><a class="reference internal" href="node_reference.html#attributes-wmfigrodnode"><em>wmFigRodNode</em></a> - this controls each subset of rods.</li>
 </ul>
-<p>xxx obvious question: can you add new wmFigRodNodes to an existing wmFigaro node?</p>
+<p>You can now configure the rod attributes. In particular, you should:</p>
+<ul class="simple">
+<li>in the <a class="reference internal" href="node_reference.html#attributes-wmfigaronode"><em>wmFigaro</em></a>, set:<ul>
+<li>the <strong>Number of Threads</strong> to 8.</li>
+<li>whether to use standard or volumetric collisions. To use volumetric collisions, turn <strong>Volumetric Collisions</strong> on, and set the volumetric sim details, especially the <strong>Flip</strong> and <strong>Slip</strong>.</li>
+</ul>
+</li>
+<li>in the <a class="reference internal" href="node_reference.html#attributes-wmfigrodnode"><em>wmFigRodNode</em></a>, set:<ul>
+<li>the <strong>Percentage of Barbershop Strands</strong> to create rods for.</li>
+<li>the <strong>Young&#8217;s Modulus</strong> (stiffness) and <strong>Shear Modulus</strong> (resistence to twisting) for the rods.</li>
+<li>damping details for the rods.</li>
+</ul>
+</li>
+</ul>
 <div class="section" id="adding-rods-to-existing-nodes">
 <span id="id1"></span><h3>Adding rods to existing nodes<a class="headerlink" href="#adding-rods-to-existing-nodes" title="Permalink to this headline">¶</a></h3>
 <p>To add rods to an existing Figaro node:</p>

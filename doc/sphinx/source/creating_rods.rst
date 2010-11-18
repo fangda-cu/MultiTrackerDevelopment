@@ -1,4 +1,4 @@
-.. index:: rods, creating rods, curves, furset, wmFigaro node, nodes:wmFigaro, nodes:wmFigRodNode, wmFigRodNode
+.. index:: rods, creating rods, curves, furset, wmFigaro node, nodes:wmFigaro, nodes:wmFigRodNode, wmFigRodNode, volumetric collisions, collisions, 
 
 
 .. _create_rods:
@@ -45,9 +45,18 @@ Once you have created the rods, you will see the following new nodes:
 * 	:ref:`wmFigaro<attributes_wmFigaroNode>` - this holds the overall solver information that affects all rods within the node. 
 *	:ref:`wmFigRodNode<attributes_wmFigRodNode>` - this controls each subset of rods. 
 
-xxx obvious question: can you add new wmFigRodNodes to an existing wmFigaro node?  
-
-
+You can now configure the rod attributes. In particular, you should:
+ 
+* 	in the :ref:`wmFigaro<attributes_wmFigaroNode>`, set:
+	
+	* 	the **Number of Threads** to 8.
+	* 	whether to use standard or volumetric collisions. To use volumetric collisions, turn **Volumetric Collisions** on, and set the volumetric sim details, especially the **Flip** and **Slip**. 
+	
+*	in the :ref:`wmFigRodNode<attributes_wmFigRodNode>`, set:
+	
+	* the **Percentage of Barbershop Strands** to create rods for.
+	* the **Young's Modulus** (stiffness) and **Shear Modulus** (resistence to twisting) for the rods. 
+	* damping details for the rods. 
 
 
 .. _adding_rods_to_existing_nodes:

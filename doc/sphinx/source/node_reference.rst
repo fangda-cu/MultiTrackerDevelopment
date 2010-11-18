@@ -28,7 +28,7 @@ Plastic Deformations 			Ignore this at present.
 **Collisions**	section		
 Object Collisions Enabled		Turns the collision handling for meshes on and off. 
 Self Collision Penalty Forces		Controls whether the self collision penalty is on. If this is on, all rods found to be too close to each other at the start of a time step are pushed apart slightly.
-Full Self Collisions 			Controls whether to use the full iterative edge/edge collision detection and response. . 
+Full Self Collisions 			Controls whether to use the full iterative edge/edge collision detection and response. xxx What if this is off? Do self-collsions use a point-triangle calculation?   
 Full Self Collision Iterations		When **Full Self Collisions** is on, this sets the number of iterations of edge/edge self collisions to do. Higher values take longer to calculate, but if the value is too low, the self-collision may not be evaluated properly. 
 Full Self Collision COR			When **Full Self Collisions** is on, this sets the coefficient of restitution to use in edge/edge collisions. At 1, the collision is very elastic (things bounce back with the entire collision force).  At 0, the objects stop dead when they collide (no bounce at all).  xxxAny reason not to rename this to "Bounce force" and namecheck CoR in the docs?
 **Volumetric Collisions**	

@@ -16,6 +16,7 @@ Figaro is Weta's hair dynamics simulation.  It takes the air created in Barbersh
    
    creating_rods.rst
    attaching_collision_objects.rst
+   animating_rods.rst	
    node_reference.rst
    
    
@@ -26,19 +27,34 @@ Needs
 The latest need is wmFigaro-0032_M2010_64
 
 
-Concepts
+Rods
 ---------
 
-Rods - Figaro uses rods to solve the dynamics for the hair. To create the dynamics, you need to create rods.  
+Figaro uses rods to solve the dynamics for the hair. To create the dynamics, you need to create rods.  The rods then drive the hair when it is animated. 
 
-Collisions - Collisions happen in two parts. The first part is applies a (configurable) force to try and stop things colliding. The second part 
+=============================================	============================
+.. image:: images/example_rodsuncreated.png 	.. image:: images/example_rodscreated.png
+*Initial furset*.				*Rods created. The rods are shown in green.* 
+=============================================	============================
 
-Edge/edge vs point-triangle. 
+You can control the details of the rods, including:
 
+* 	how many rods are created.
+* 	the collision model to use.
+* 	rod details such as size, stiffness (lateral and torsional), damping, and so on. 
 
-xx types of collisions:
-Normal collisions
-Volumetric collisions
+Collisions
+-----------
+
+Figaro supports both *standard* and *volumetric* collisions. 
+
+Standard collisions can be either:
+
+* 	Edge/edge - this calculates collisions by checking the entire edge of each hair. This gives accurate collisions, but takes time.
+* 	Point/triangle - this calculates collisons by sampling points along the hair. This is less accurate but much faster.
+
+Volumetric collisions are quite different from standard collisions.  Volumetric collisions calculate the collision by dividing the worldspace into cubes, calculating density within those cubes, and using this density to figure out probable collisions. Volumetric collisions are not as accurate as standard collisions, but are fast to calculate and give quite naturalistic effects. Volumetric collisions are particularly good at interactions between groups of hair, for example when one set of hair is pulling away from another. 
+
 
 
 

@@ -17,4 +17,4 @@ If other objects are going to collide with the hiar, you need to attach them as 
 #.	From the Figaro menu, select **Add selected meshes as collision objects**. 
 
 
-	Figaro creates a wmFigCollisionNode. This lets you control the :ref:`attributes of the collision object<attributes_collision_node>`. :ref:`wmFigaro<attributes_wmFigaroNode>`
+	Figaro creates a wmFigCollisionNode. This lets you control the :ref:`attributes of the collision object<attributes_collision_node>`. 
