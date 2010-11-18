@@ -10,13 +10,13 @@
 namespace BASim {
 
 CollisionMeshData::CollisionMeshData()
-    :/*_levelsetDx(0.0),*/  _thickness(1.0), _friction(0.0), _fullCollisions(false), _initialized(false),_fps(24)
+    :_levelsetDx(0.0),  _thickness(1.0), _friction(0.0), _fullCollisions(false), _initialized(false),_fps(24)
 {
     //_bvTree(TRIANGLE_TREE),
     //std::cout<<"Constructing... ";
  
-    //_phiPrevious = new LevelSet;
-    //_phiCurrent = new LevelSet;
+    _phiPrevious = new LevelSet;
+    _phiCurrent = new LevelSet;
     //_phiPrevious = new AdaptiveLevelSet;
     //_phiCurrent = new AdaptiveLevelSet;
     //std::cout<<"complete"<<std::endl;
@@ -33,8 +33,8 @@ CollisionMeshData::CollisionMeshData()
 
 CollisionMeshData::~CollisionMeshData()
 {
-    //delete _phiPrevious;
-    //delete _phiCurrent;
+    delete _phiPrevious;
+    delete _phiCurrent;
 }
 
 void CollisionMeshData::initialize()
@@ -44,8 +44,8 @@ void CollisionMeshData::initialize()
    // if (!_initialized)
     {
         _nbrTriangles = (int)triangleIndices.size() / 3;
- //       _x.resize(_nbrTriangles);
- //       _v.resize(_nbrTriangles);
+        _x.resize(_nbrTriangles);
+        _v.resize(_nbrTriangles);
 
         // Centroids of the triangles are used to build a bounding
         // volume hierarchy
@@ -207,7 +207,7 @@ void CollisionMeshData::reset(vector<Vec3d>& points)
 
     updateGrid(points);     
 //    _bvTree.fitTree(oldPositions, triangleIndices);
-    //buildLevelSet();
+    buildLevelSet();
 
 }
 
@@ -240,7 +240,7 @@ void CollisionMeshData::update(vector<Vec3d>& points, std::string filename, int 
     
     writeMeshesToFile();
     
- //   buildLevelSet();
+    buildLevelSet();
 }
 
 void CollisionMeshData::updateGrid(vector<Vec3d>& points, std::string filename)
@@ -349,8 +349,8 @@ void CollisionMeshData::draw()
 {
     // Useful for debugging
     //
-     //if(_phiCurrent->isInitialized())
-        //_phiCurrent->draw();
+     if(_phiCurrent->isInitialized())
+        _phiCurrent->draw();
 
     glPushAttrib(GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT);
 
@@ -387,9 +387,9 @@ void CollisionMeshData::draw()
     glPopAttrib();
 }
 
-void CollisionMeshData::sizeLevelSet(Vec3d &origin,Vec3i &dims, Real &dx, Real length[3])
+void CollisionMeshData::sizeLevelSet( Vec3d &origin, bridson::Vec3ui &dims, Real &dx, Real length[3])
 {
-   /* Vec3d xmin,xmax,dX;
+    Vec3d xmin,xmax,dX;
     _grid.getGridDims(xmin,xmax,dX);
     Real mindx = dX[0];
     for(uint i=0; i<3; i++)
@@ -404,12 +404,12 @@ void CollisionMeshData::sizeLevelSet(Vec3d &origin,Vec3i &dims, Real &dx, Real l
         dx = mindx; 
 
     for(uint i=0; i<3; i++)
-        dims[i] = (int)ceil(length[i] / dx);*/
+        dims[i] = (int)ceil(length[i] / dx);
 }
 
 void CollisionMeshData::buildLevelSet()
 {   
-    /*std::cout<<"building level set ...";
+    std::cout<<"building level set ...";
 
     for (int currVertex=0; currVertex<currPositions.size(); ++currVertex)
     {
@@ -420,10 +420,10 @@ void CollisionMeshData::buildLevelSet()
         }
     }
 
-    bridson::Vec3f origin;
+    Vec3d origin;
     
     Real dx;
-    Vec3ui dims;
+    bridson::Vec3ui dims;
     Real length[3];
     sizeLevelSet(origin,dims,dx,length);
     
@@ -435,15 +435,14 @@ void CollisionMeshData::buildLevelSet()
         _phiCurrent = new LevelSet;
     }
 
-
     _phiCurrent->buildLevelSet(_tri, _triIndices, _x, _v, origin, length, dx, dims[0], dims[1], dims[2], _nbrTriangles);
     std::cout<<"Complete!"<<std::endl;
-*/
+
 }
 
-Real CollisionMeshData::getLevelSetValue(Vec3d& x, Vec3d& v)
+Real CollisionMeshData::getLevelSetValue( Vec3d& x, Vec3d& v)
 {
-    /*Real distPrev;
+    Real distPrev;
     Real distCurr;
     distCurr = _phiCurrent->getLevelSetValueVelocity(x, v);
     if (_phiPrevious->isInitialized())
@@ -451,8 +450,7 @@ Real CollisionMeshData::getLevelSetValue(Vec3d& x, Vec3d& v)
     else
         distPrev = distCurr;
 
-    return (bridson::lerp(distPrev, distCurr, _percent));*/
-    return 1;
+    return (bridson::lerp(distPrev, distCurr, _percent));
 }
 
 

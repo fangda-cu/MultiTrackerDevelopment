@@ -19,7 +19,7 @@ int WmFigRodGroup::addRod()
     return (int)m_rodData.size() - 1;
 }
 
-int WmFigRodGroup::addRod( std::vector<Vec3d>& i_rodVertices, RodOptions& i_rodOptions, 
+int WmFigRodGroup::addRod( std::vector<BASim::Vec3d>& i_rodVertices, RodOptions& i_rodOptions, 
                               double i_massDamping, BASim::Vec3d& i_gravity,  
                               RodTimeStepper::Method i_solverType, bool i_isFromCache )
 {

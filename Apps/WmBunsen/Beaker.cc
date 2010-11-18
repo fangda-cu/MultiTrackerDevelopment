@@ -502,11 +502,11 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     for ( FixedVertexMap::iterator vIt=fixedVertexMap.begin(); vIt!=fixedVertexMap.end(); ++vIt )
                     {    
                         int fixedVertex = vIt->first;
-                        Vec3d fixedPosition = vIt->second;                   
+                        BASim::Vec3d fixedPosition = vIt->second;                   
     
                         // A vertex position of 999999 means use the old position as we don't have an 
                         // updated position from the user yet.
-                        Vec3d oldVertexPosition = elasticRod->getVertex( fixedVertex );
+                        BASim::Vec3d oldVertexPosition = elasticRod->getVertex( fixedVertex );
                         if ( fixedPosition[ 0 ] == 999999 )
                         {
                             fixedPosition[ 0 ] = oldVertexPosition[ 0 ];
@@ -530,7 +530,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     for ( FixedVertexMap::iterator vIt=fixedVertexMap.begin(); vIt!=fixedVertexMap.end(); ++vIt )
                     {    
                         int fixedVertex = vIt->first;
-                        Vec3d fixedPosition = vIt->second;
+                        BASim::Vec3d fixedPosition = vIt->second;
                         
                         boundary->setDesiredVertexPosition( fixedVertex, fixedPosition );
                     }*/
@@ -553,7 +553,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     for ( LockedVertexMap::iterator vIt=lockedVertexMap.begin(); vIt!=lockedVertexMap.end(); ++vIt )
                     {    
                         int lockedVertex = vIt->first;
-                        Vec3d lockedPosition = vIt->second;
+                        BASim::Vec3d lockedPosition = vIt->second;
                         
                         boundary->setDesiredVertexPosition( lockedVertex, lockedPosition );
                     }
@@ -975,7 +975,7 @@ void Beaker::draw()
                     
                 for ( int c=0; c<m_subSteppedVertexPositions[ s ][ r ].size(); ++c )
                 {
-                    Vec3d p = m_subSteppedVertexPositions[ s ][ r ][ c ];
+                    BASim::Vec3d p = m_subSteppedVertexPositions[ s ][ r ][ c ];
                     glVertex3d( p[ 0 ], p[ 1 ], p[ 2 ] );
                 }
     
@@ -999,8 +999,8 @@ void Beaker::draw()
     for ( int r=0; r<m_rodRootMaterialFrame.size(); r++ )
     {
         glColor3d(1,1,1);
-        Vec3d p0 = Vec3d(0,0,0);
-        Vec3d p1 = p0 + m_rodRootMaterialFrame[r].m1;
+        BASim::Vec3d p0 = BASim::Vec3d(0,0,0);
+        BASim::Vec3d p1 = p0 + m_rodRootMaterialFrame[r].m1;
         glVertex3d( p0[0], p0[1], p0[2] );
         glVertex3d( p1[0], p1[1], p1[2] );
         p1 = p0 + m_rodRootMaterialFrame[r].m2;

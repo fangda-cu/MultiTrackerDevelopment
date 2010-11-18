@@ -43,7 +43,7 @@ public:
             bool closeFileAfterReading = true );
     
     static bool readDataFromRodCacheFile( const MString i_cacheFilename, int& o_numRodsInFile,
-          vector<vector<Vec3d> >& o_rodVertices, vector<vector<Vec3d> >& o_unsimulatedRodVertices );
+          vector<vector<BASim::Vec3d> >& o_rodVertices, vector<vector<BASim::Vec3d> >& o_unsimulatedRodVertices );
     
     static void updateRodDataFromCacheFile( MString i_cacheFileName, WmFigRodGroup& i_rodGroup );
 

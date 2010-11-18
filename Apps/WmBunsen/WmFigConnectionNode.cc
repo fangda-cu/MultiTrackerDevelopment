@@ -133,14 +133,14 @@ MStatus WmFigConnectionNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlo
         m_inputTransformMatrix = i_dataBlock.inputValue( ia_transformMatrix ).asMatrix();
 
         // Work out the material frame to send to the rod node when we are asked for it.
-        m_edgeTransform.materialFrame.m1 = Vec3d( m_inputTransformMatrix( 0, 0 ),
+        m_edgeTransform.materialFrame.m1 = BASim::Vec3d( m_inputTransformMatrix( 0, 0 ),
                                 m_inputTransformMatrix( 0, 1 ), m_inputTransformMatrix( 0, 2 ) );
-        m_edgeTransform.materialFrame.m2 = Vec3d( m_inputTransformMatrix( 1, 0 ),
+        m_edgeTransform.materialFrame.m2 = BASim::Vec3d( m_inputTransformMatrix( 1, 0 ),
                                 m_inputTransformMatrix( 1, 1 ), m_inputTransformMatrix( 1, 2 ) );
-        m_edgeTransform.materialFrame.m3 = Vec3d( m_inputTransformMatrix( 2, 0 ),
+        m_edgeTransform.materialFrame.m3 = BASim::Vec3d( m_inputTransformMatrix( 2, 0 ),
                                 m_inputTransformMatrix( 2, 1 ), m_inputTransformMatrix( 2, 2 ) );
         
-        m_edgeTransform.position = Vec3d( m_inputTransformMatrix( 3, 0 ),
+        m_edgeTransform.position = BASim::Vec3d( m_inputTransformMatrix( 3, 0 ),
                                 m_inputTransformMatrix( 3, 1 ), m_inputTransformMatrix( 3, 2 ) );
         
         i_dataBlock.outputValue( oa_edgeTransform ).setClean();

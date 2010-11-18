@@ -4,7 +4,7 @@
 
 WmFigRodNurbsInput::WmFigRodNurbsInput( MObject& i_nurbsAttribute, bool i_lockFirstEdgeToInput,
     WmFigRodGroup& i_rodGroup, double i_vertexSpacing, double i_minimumRodLength, RodOptions& i_rodOptions,
-    double i_massDamping, Vec3d& i_gravity,  RodTimeStepper::Method i_solverType, std::set< int >& i_simulationSet ) : 
+    double i_massDamping, BASim::Vec3d& i_gravity,  RodTimeStepper::Method i_solverType, std::set< int >& i_simulationSet ) : 
     m_inputNurbsAttribute( i_nurbsAttribute ), m_lockFirstEdgeToInput( i_lockFirstEdgeToInput ),
     m_rodGroup( i_rodGroup ), m_vertexSpacing( i_vertexSpacing ), m_minimumRodLength( i_minimumRodLength ),
     m_rodOptions( i_rodOptions ), m_massDamping( i_massDamping ), m_gravity( i_gravity ),  m_solverType( i_solverType ),
@@ -18,7 +18,7 @@ WmFigRodNurbsInput::~WmFigRodNurbsInput()
 {
 }
 
-void WmFigRodNurbsInput::getAndResampleInputCurves( MDataBlock& i_dataBlock, vector< vector<Vec3d > >& o_inputCurveVertices )
+void WmFigRodNurbsInput::getAndResampleInputCurves( MDataBlock& i_dataBlock, vector< vector<BASim::Vec3d > >& o_inputCurveVertices )
 {
     MStatus stat;
 
@@ -110,18 +110,18 @@ void WmFigRodNurbsInput::getAndResampleInputCurves( MDataBlock& i_dataBlock, vec
             }
         }
 
-        // convert cvs to Vec3d
+        // convert cvs to BASim::Vec3d
         o_inputCurveVertices[ i ].resize( curve.size() );
         for ( int c = 0; c < curve.size(); ++c )
         {
-            o_inputCurveVertices[ i ][ c ] = Vec3d( curve[ c ].x, curve[ c ].y, curve[ c ].z );
+            o_inputCurveVertices[ i ][ c ] = BASim::Vec3d( curve[ c ].x, curve[ c ].y, curve[ c ].z );
         }
     }
 }
 
 void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
 {
-    vector< vector< Vec3d > > inputCurveVertices;
+    vector< vector< BASim::Vec3d > > inputCurveVertices;
 
     getAndResampleInputCurves( i_dataBlock, inputCurveVertices );
 
@@ -158,7 +158,7 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
 
 void WmFigRodNurbsInput::updateRodDataFromInput( MDataBlock& i_dataBlock )
 {
-    vector< vector< Vec3d > > inputCurveVertices;
+    vector< vector< BASim::Vec3d > > inputCurveVertices;
 
     getAndResampleInputCurves( i_dataBlock, inputCurveVertices );
 

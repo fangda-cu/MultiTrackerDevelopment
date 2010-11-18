@@ -26,9 +26,9 @@ using namespace BASim;
 class MaterialFrame
 {
 public:
-    Vec3d m1;
-    Vec3d m2;
-    Vec3d m3;
+    BASim::Vec3d m1;
+    BASim::Vec3d m2;
+    BASim::Vec3d m3;
 };
 
 
@@ -36,7 +36,7 @@ class EdgeTransform
 {
 public:
     MaterialFrame materialFrame;
-    Vec3d position;
+    BASim::Vec3d position;
 };
 
 
@@ -98,8 +98,8 @@ class RodData
 {
 public:
     RodData();
-    RodData( RodOptions& i_rodOptions, std::vector<Vec3d>& i_rodVertexPositions,
-             double i_massDamping, Vec3d& i_gravity, RodTimeStepper::Method i_solverType,
+    RodData( RodOptions& i_rodOptions, std::vector<BASim::Vec3d>& i_rodVertexPositions,
+             double i_massDamping, BASim::Vec3d& i_gravity, RodTimeStepper::Method i_solverType,
              bool i_isReadingFromCache = false, bool i_doReverseHairdo = false );
     //RodData( ElasticRod* i_rod, RodCollisionTimeStepper* i_stepper, RodRenderer* i_rodRenderer );
     ~RodData();
@@ -111,8 +111,8 @@ public:
     void resetKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_materialframe );
     void updateKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_materialframe );
     void allocateStorage( int i_numCVs );
-    void resetVertexPositions( vector< Vec3d >& i_vertexPositions );
-    void updateNextRodVertexPositions( vector< Vec3d >& i_vertexPositions );
+    void resetVertexPositions( vector< BASim::Vec3d >& i_vertexPositions );
+    void updateNextRodVertexPositions( vector< BASim::Vec3d >& i_vertexPositions );
 
     void updateBoundaryConditions();
 
@@ -283,12 +283,12 @@ public:
         m_massDamping = i_massDamping;
     }*/
 
-    Vec3d nextVertexPosition( int i_vertexIndex )
+    BASim::Vec3d nextVertexPosition( int i_vertexIndex )
     {
         return nextVertexPositions[ i_vertexIndex ];
     }
 
-    void setUndeformedMaterialFrame( int i_frameIndex, Vec3d i_v1, Vec3d i_v2, Vec3d i_v3 )
+    void setUndeformedMaterialFrame( int i_frameIndex, BASim::Vec3d i_v1, BASim::Vec3d i_v2, BASim::Vec3d i_v3 )
     {        
         undeformedMaterialFrame[ i_frameIndex ].m1 = i_v1;
         undeformedMaterialFrame[ i_frameIndex ].m2 = i_v1;
@@ -301,12 +301,12 @@ public:
     }
 
 
-    void setUndeformedVertexPosition( int i_vertexIndex, Vec3d& i_newPosition )
+    void setUndeformedVertexPosition( int i_vertexIndex, BASim::Vec3d& i_newPosition )
     {
         undeformedVertexPositions[ i_vertexIndex ] = i_newPosition;
     }
 
-    void setNextVertexPosition( int i_vertexIndex, Vec3d& i_newPosition )
+    void setNextVertexPosition( int i_vertexIndex, BASim::Vec3d& i_newPosition )
     {
         nextVertexPositions[ i_vertexIndex ] = i_newPosition;
     }
@@ -325,17 +325,17 @@ public:
     RodRenderer* m_rodRenderer;
     
     // These variables are updated directly by the WmBunsenRodNode each frame.
-    std::vector<Vec3d> undeformedVertexPositions;
-    std::vector<Vec3d> initialVertexPositions;
+    std::vector<BASim::Vec3d> undeformedVertexPositions;
+    std::vector<BASim::Vec3d> initialVertexPositions;
     RodOptions rodOptions;
 
     // These variables are for interpolating substeps between frames.
     // The position of the input curve vertices at the last frame
-    std::vector<Vec3d> prevVertexPositions;
+    std::vector<BASim::Vec3d> prevVertexPositions;
     // The position of the input curve vertices at the current substep
-    std::vector<Vec3d> currVertexPositions;
+    std::vector<BASim::Vec3d> currVertexPositions;
     // The position of the input curve vertices at the next frame
-    std::vector<Vec3d> nextVertexPositions;
+    std::vector<BASim::Vec3d> nextVertexPositions;
     // whether this vertex is locked in place or not
    // vector<Bool> vertexFixed;
 
@@ -343,9 +343,9 @@ public:
     cvDataMap forceWeightMap;
     
     // debug info
-    //std::vector<Vec3d> ALLprevVertexPositions;
-    //std::vector<Vec3d> ALLnextVertexPositions;
-    //std::vector<Vec3d> ALLcurrVertexPositions;
+    //std::vector<BASim::Vec3d> ALLprevVertexPositions;
+    //std::vector<BASim::Vec3d> ALLnextVertexPositions;
+    //std::vector<BASim::Vec3d> ALLcurrVertexPositions;
     
     // The undeformed material frames for this rod at startTime
     std::vector<MaterialFrame> undeformedMaterialFrame;
@@ -367,7 +367,7 @@ public:
 
     bool m_isPlaceHolderRod;
     double m_massDamping;
-    Vec3d m_gravity;
+    BASim::Vec3d m_gravity;
 };
 
 #endif

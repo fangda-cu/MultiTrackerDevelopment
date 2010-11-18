@@ -5,8 +5,8 @@ RodData::RodData() : m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_g
     m_isPlaceHolderRod = true;
 }
 
-RodData::RodData( RodOptions& i_rodOptions, std::vector<Vec3d>& i_rodVertexPositions,
-                  double i_massDamping, Vec3d& i_gravity, RodTimeStepper::Method i_solverType, 
+RodData::RodData( RodOptions& i_rodOptions, std::vector<BASim::Vec3d>& i_rodVertexPositions,
+                  double i_massDamping, BASim::Vec3d& i_gravity, RodTimeStepper::Method i_solverType, 
                   bool i_isReadingFromCache, bool i_doReverseHairdo ) : 
 m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDamping )
 {
@@ -134,7 +134,7 @@ void RodData::allocateStorage( int i_numCVs )
     undeformedMaterialFrame.resize( i_numCVs - 1 );
 }
 
-void RodData::resetVertexPositions( vector< Vec3d >& i_vertexPositions )
+void RodData::resetVertexPositions( vector< BASim::Vec3d >& i_vertexPositions )
 {
     undeformedVertexPositions = i_vertexPositions;
     initialVertexPositions = i_vertexPositions;
@@ -143,7 +143,7 @@ void RodData::resetVertexPositions( vector< Vec3d >& i_vertexPositions )
     nextVertexPositions = i_vertexPositions;
 }
 
-void RodData::updateNextRodVertexPositions( vector< Vec3d >& i_vertexPositions )
+void RodData::updateNextRodVertexPositions( vector< BASim::Vec3d >& i_vertexPositions )
 {
     prevVertexPositions = currVertexPositions;
 
@@ -192,15 +192,11 @@ void RodData::updateBoundaryConditions()
         // js - TO BE DELETED
         // i don't want to simulate when exporting positions 
         if (0) {
-          Vec3d x = currVertexPositions[ edgeNum + 1 ] - m_rod->getVertex(1);
+          BASim::Vec3d x = currVertexPositions[ edgeNum + 1 ] - m_rod->getVertex(1);
           for(int i=2; i<m_rod->nv(); i++) {
             boundary->setDesiredVertexPosition( i, m_rod->getVertex(i) + x );
           }
         }
-
-
-
-
 
 /*
         if ( kinematicEdgeData->rootFrameDefined )
@@ -252,15 +248,15 @@ void RodData::updateBoundaryConditions()
           
           if ( rod != NULL )
           {   
-                Vec3d m = rod->getMaterial2( edgeNumber );
+                BASim::Vec3d m = rod->getMaterial2( edgeNumber );
                 m.normalize();
-                Vec3d b = materialFrame.m3;
+                BASim::Vec3d b = materialFrame.m3;
                 b.normalize();
     
-                Vec3d x = rod->getEdge( edgeNumber );
+                BASim::Vec3d x = rod->getEdge( edgeNumber );
                 x.normalize();
                             
-                Vec3d c = m.cross( b );
+                BASim::Vec3d c = m.cross( b );
                 double dot = x.dot(c);
                 double sign;
                 if ( dot == 0 )
@@ -299,19 +295,19 @@ void RodData::updateBoundaryConditions()
         {
             // Annoyingly the vectors we care about are different axes of the strand frame and
             // the material frame.
-            Vec3d rodRefMaterial = rod->getMaterial2( edgeNumber );
+            BASim::Vec3d rodRefMaterial = rod->getMaterial2( edgeNumber );
             
             double pi = 3.14159265358979323846264338327950288;
 
-            Vec3d x = rod->getEdge( edgeNumber );
+            BASim::Vec3d x = rod->getEdge( edgeNumber );
             x.normalize();
-            Vec3d r = rodRefMaterial;
+            BASim::Vec3d r = rodRefMaterial;
             r.normalize();
-            //Vec3d m = rod->getMaterial2( edgeNumber );
-            Vec3d m = materialFrame.m3;
+            //BASim::Vec3d m = rod->getMaterial2( edgeNumber );
+            BASim::Vec3d m = materialFrame.m3;
             m.normalize();
             
-            Vec3d c = r.cross( m );
+            BASim::Vec3d c = r.cross( m );
             double dot = x.dot(c);
             double sign;
             if ( dot == 0 )

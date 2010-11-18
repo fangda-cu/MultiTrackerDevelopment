@@ -9,9 +9,10 @@
 #include <string>
 #include <tr1/unordered_map>
 
+#include "../Core/Definitions.hh"
 
 //#include "BoundingVolumeTree.hh"
-//#include "LevelSet.hh"
+#include "LevelSet.hh"
 //#include "AdaptiveLevelSet.hh"
 
 namespace BASim {
@@ -59,7 +60,7 @@ public:
     virtual Real getThickness()
     { return _thickness; }
 
-    //void setLevelsetDx(Real levelsetDx){ _levelsetDx = levelsetDx; }
+    void setLevelsetDx(Real levelsetDx){ _levelsetDx = levelsetDx; }
     
     void setFPS(int fps){_fps = fps;}
 
@@ -86,11 +87,11 @@ public:
     // Level set functions
     //
 
-    void sizeLevelSet(Vec3d &origin, Vec3i &dims, Real &dx, Real length[3]);
+    void sizeLevelSet( Vec3d &origin, bridson::Vec3ui &dims, Real &dx, Real length[3]);
     void buildLevelSet();
-//   void buildLevelSet(int currFrame);
+    void buildLevelSet(int currFrame);
     Real getLevelSetValue(Vec3d& x, Vec3d& v);
-//    void getGradient(Vec3<Real> &x, Vec3<Real> &grad);
+    void getGradient(Vec3d &x, Vec3f &grad);
 
     Vec3d& vertex(uint i);
     const Vec3d& vertex(uint i) const;
@@ -152,13 +153,13 @@ public:
 
     // Level set data
     //
-    //Real _levelsetDx;
+    Real _levelsetDx;
     Real _percent;
-    //std::vector<bridson::Vec3f> _x;
-    //std::vector<bridson::Vec3f> _v;
+    std::vector< Vec3d > _x;
+    std::vector< Vec3d > _v;
      
-    //LevelSet *_phiPrevious;
-    //LevelSet *_phiCurrent;
+    LevelSet *_phiPrevious;
+    LevelSet *_phiCurrent;
 //    AdaptiveLevelSet *_phiPrevious;
 //    AdaptiveLevelSet *_phiCurrent;
 

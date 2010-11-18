@@ -45,8 +45,8 @@ WmFigRodFileIO::~WmFigRodFileIO()
 }
 
 /* static */ bool WmFigRodFileIO::readDataFromRodCacheFile( const MString i_cacheFilename, 
-    int& o_numRodsInFile, vector<vector<Vec3d> >& o_rodVertices, 
-    vector<vector<Vec3d> >& o_unsimulatedRodVertices )
+    int& o_numRodsInFile, vector<vector<BASim::Vec3d> >& o_rodVertices, 
+    vector<vector<BASim::Vec3d> >& o_unsimulatedRodVertices )
 {
     FILE* fp = readNumberOfRodsFromFile( i_cacheFilename, o_numRodsInFile, false );
     if ( fp == NULL )
@@ -70,10 +70,10 @@ WmFigRodFileIO::~WmFigRodFileIO()
             double pos[3];
 
             ret = fread( &pos[0], sizeof( double ), 3, fp );
-            o_rodVertices[ r ][ v ] = Vec3d( pos[0], pos[1], pos[2] );
+            o_rodVertices[ r ][ v ] = BASim::Vec3d( pos[0], pos[1], pos[2] );
 
             ret = fread( &pos[0], sizeof( double ), 3, fp );
-            o_unsimulatedRodVertices[ r ][ v ] = Vec3d( pos[0], pos[1], pos[2] );
+            o_unsimulatedRodVertices[ r ][ v ] = BASim::Vec3d( pos[0], pos[1], pos[2] );
         }
     }
 
@@ -85,8 +85,8 @@ WmFigRodFileIO::~WmFigRodFileIO()
 /* static */ void WmFigRodFileIO::updateRodDataFromCacheFile( MString i_cacheFileName, WmFigRodGroup& i_rodGroup )
 {
     int numRodsInFile;
-    vector<vector<Vec3d> > rodVertices;
-    vector<vector<Vec3d> > unsimulatedRodVertices;
+    vector<vector<BASim::Vec3d> > rodVertices;
+    vector<vector<BASim::Vec3d> > unsimulatedRodVertices;
 
     if ( !readDataFromRodCacheFile( i_cacheFileName, numRodsInFile, rodVertices,
                                     unsimulatedRodVertices ) )
@@ -174,9 +174,9 @@ WmFigRodFileIO::~WmFigRodFileIO()
             {
             double pos[3];
 
-            // Wonder if its safe to write Vec3ds. Need to check what's in them.
+            // Wonder if its safe to write BASim::Vec3ds. Need to check what's in them.
             // Really should package all this and write it as one.
-            Vec3d vertex = rod->getVertex( (unsigned int)v );
+            BASim::Vec3d vertex = rod->getVertex( (unsigned int)v );
             pos[ 0 ] = vertex.x();
             pos[ 1 ] = vertex.y();
             pos[ 2 ] = vertex.z();

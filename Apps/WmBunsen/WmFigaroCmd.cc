@@ -684,7 +684,7 @@ MStatus WmFigaroCmd::redoIt()
 				return MS::kFailure;
 		    }
 
-			const Vec3d p = rodGroup->elasticRod( rodId )->getVertex( vertexId );
+			const BASim::Vec3d p = rodGroup->elasticRod( rodId )->getVertex( vertexId );
 			MPoint pt( p[0], p[1], p[2] );
 
 			// Transform local space position to world space
@@ -1984,7 +1984,7 @@ void WmFigaroCmd::addVertexConstraint( int i_rodInd, double i_dis, int i_vertId,
             
             if( i_vertId < rodGroup->elasticRod( i_rodInd )->nv() )
             {
-                Vec3d target_position = Vec3d( i_pos.x, i_pos.y, i_pos.z );
+                BASim::Vec3d target_position = BASim::Vec3d( i_pos.x, i_pos.y, i_pos.z );
                 rodGroup->collisionStepper( i_rodInd )->setVertexPositionPenalty(i_vertId, target_position, 50. , 1);
             }
             else

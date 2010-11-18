@@ -44,10 +44,10 @@
 using namespace BASim;
 using namespace std;
 
-typedef std::tr1::unordered_map< int, Vec3d > FixedVertexMap ;
+typedef std::tr1::unordered_map< int, BASim::Vec3d > FixedVertexMap ;
 typedef std::tr1::unordered_map< int, FixedVertexMap > FixedRodVertexMap ;
 
-typedef std::tr1::unordered_map< int, Vec3d > LockedVertexMap ;
+typedef std::tr1::unordered_map< int, BASim::Vec3d > LockedVertexMap ;
 typedef std::tr1::unordered_map< int, LockedVertexMap > LockedRodVertexMap ;
 
 class Beaker
@@ -84,12 +84,12 @@ public:
         m_world->property( m_dtHandle ) = dt;
     }
 
-    const Vec3d& getGravity() const
+    const BASim::Vec3d& getGravity() const
     {
       return m_world->property( m_gravityHandle );
     }
     
-    void setGravity( const Vec3d& gravity )
+    void setGravity( const BASim::Vec3d& gravity )
     {
         m_gravity = gravity;
         m_world->property( m_gravityHandle ) = m_gravity;
@@ -213,8 +213,8 @@ public:
                        LockedRodVertexMap* i_lockedRodVertexMap = NULL );
     
     /*(void addRod( int i_rodGroup,
-                 vector<Vec3d>& i_initialVertexPositions, 
-                 vector<Vec3d>& i_undeformedVertexPositions,
+                 vector<BASim::Vec3d>& i_initialVertexPositions, 
+                 vector<BASim::Vec3d>& i_undeformedVertexPositions,
                  RodOptions& i_options );*/
     
     void initialiseWorld();
@@ -245,10 +245,10 @@ private:
     
     ObjPropHandle<Scalar> m_timeHandle;
     ObjPropHandle<Scalar> m_dtHandle;
-    ObjPropHandle<Vec3d> m_gravityHandle;
+    ObjPropHandle<BASim::Vec3d> m_gravityHandle;
     ObjPropHandle<int> m_maxIterHandle;
     bool m_plasticDeformations;    
-    Vec3d m_gravity;
+    BASim::Vec3d m_gravity;
 
     // FIXME:
     // Pointless vector with pointers to the rods. Get rid of it. It 
@@ -292,7 +292,7 @@ private:
     vector<MaterialFrame> m_strandRootMaterialFrame;
     vector<MaterialFrame> m_rodRefMaterialFrame;
 
-    vector< vector < vector < Vec3d > > > m_subSteppedVertexPositions;
+    vector< vector < vector < BASim::Vec3d > > > m_subSteppedVertexPositions;
     bool m_shouldDrawSubsteppedVertices;
 
     bool m_isClumpingEnabled;
@@ -316,7 +316,7 @@ private:
     double m_maxDisplayDensity;
     bool m_displayCollisionBoundary;
     bool m_displayAirBoundary;
-    Vec3d m_separationCondition;
+    BASim::Vec3d m_separationCondition;
 };
 
 #endif // BEAKER_HH_

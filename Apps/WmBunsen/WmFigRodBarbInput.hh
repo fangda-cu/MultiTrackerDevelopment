@@ -36,7 +36,7 @@ public:
                         double i_percentageOfBarbStrands, int i_verticesPerRod,
                         bool i_lockFirstEdgeToInput, double i_vertexSpacing,
                         double i_minimumRodLength, RodOptions& i_rodOptions,
-                        double i_massDamping, Vec3d& i_gravity, WmFigRodGroup& i_rodGroup,
+                        double i_massDamping, BASim::Vec3d& i_gravity, WmFigRodGroup& i_rodGroup,
                         RodTimeStepper::Method i_solverType, std::set< int >& i_simulationSet );
 
     /**
@@ -67,7 +67,7 @@ private:
 
     RodOptions m_rodOptions;
     double m_massDamping;
-    Vec3d m_gravity;
+    BASim::Vec3d m_gravity;
     RodTimeStepper::Method m_solverType;
     std::set< int >& m_simulationSet;
 };

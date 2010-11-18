@@ -286,8 +286,8 @@ GLint WmFigControllerContext::findRodsUsingOpenGLSelection( const double i_centr
             
             glBegin( GL_LINES );
 
-            const Vec3d p = rodGroup->elasticRod( r )->getVertex( v - 1 );
-            const Vec3d p2 = rodGroup->elasticRod( r )->getVertex( v );
+            const BASim::Vec3d p = rodGroup->elasticRod( r )->getVertex( v - 1 );
+            const BASim::Vec3d p2 = rodGroup->elasticRod( r )->getVertex( v );
             glVertex3f( p[0], p[1], p[2] );
             glVertex3f( p2[0], p2[1], p2[2] );
 

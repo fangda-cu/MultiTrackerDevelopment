@@ -1,5 +1,5 @@
-#ifndef VEC_H
-#define VEC_H
+#ifndef BRIDSONVEC_H
+#define BRIDSONVEC_H
 
 #include <cassert>
 #include <cmath>

@@ -45,7 +45,7 @@ public:
 
     
     virtual void respondVolumetricCollisions( RodDataMap &rodDataMap, Real targetEdgeDensity, 
-				     Real volumetricRadius, Real gridDx, Vec3d separationCondition,  double flip,
+				     Real volumetricRadius, Real gridDx, BASim::Vec3d separationCondition,  double flip,
                      double slip, CollisionMeshDataHashMap &collisionMeshes) = 0;
 
     virtual void draw( bool displayGrid, Real displayGridVelocitiesMultiplier, 

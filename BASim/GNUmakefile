@@ -10,6 +10,11 @@ IPATHS 	+= -I$(MKLROOT)/include
 LIB1       := Wfigaro
 #LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA
 LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -fPIC -DHAVE_LAPACK -DWETA
+
+PHYSBAM_LOCATION := /vol/weta/src/amcadams/PhysBAM-svn
+PHYSBAM_INCLUDE  := -I$(PHYSBAM_LOCATION)/Public_Library
+LIB1_CF += $(PHYSBAM_INCLUDE)
+
 LIB1_HSD   := Wfigaro
 LIB1_HDIR := src
 LIB1_H     := \
@@ -139,6 +144,8 @@ Eigen/src/Sparse/TriangularSolver.h \
 Eigen/src/Sparse/UmfPackSupport.h \
 Collisions/BVHAABB.hh \
 Collisions/BridsonArray.hh \
+Collisions/BridsonArray1.hh \
+Collisions/BridsonArray3.hh \
 Collisions/BridsonUtil.hh \
 Collisions/BridsonVec.hh \
 Collisions/CandidateCollision.hh \
@@ -147,6 +154,8 @@ Collisions/CollisionMeshData.hh \
 Collisions/CollisionObject.hh \
 Collisions/CollisionUtils.hh \
 Collisions/UniformGrid.hh \
+Collisions/LevelSet.hh \
+Collisions/RodneyVector.hh \
 Core/Definitions.hh \
 Core/EigenIncludes.hh \
 Core/Handle.hh \
@@ -271,6 +280,7 @@ src/Collisions/Collision.cc \
 src/Collisions/CollisionMeshData.cc \
 src/Collisions/UniformGrid.cc \
 src/Collisions/CollisionUtils.cc \
+src/Collisions/LevelSet.cc \
 src/Core/Util.cc \
 src/Core/Timer.cc \
 src/Core/TriangleMesh.hh \

@@ -100,7 +100,7 @@ void WmFigConstraintNode::draw( M3dView &view, const MDagPath &path, M3dView::Di
 		for( iVertex=0; iVertex < rodVertexIds.length(); iVertex++ ) {
 			vertexId = rodVertexIds[ iVertex ];
 
-			const Vec3d p = rodGroup->elasticRod( rodId )->getVertex( vertexId );
+			const BASim::Vec3d p = rodGroup->elasticRod( rodId )->getVertex( vertexId );
 
 			glBegin( GL_POINTS );
 			glVertex3f( p[0], p[1], p[2] );

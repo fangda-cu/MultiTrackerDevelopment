@@ -195,7 +195,7 @@ void WmFigCombContext::applyForceToRods()
 
         for ( int v=0; v<elasticRod->nv(); ++v )
         {
-            Vec3d vert = elasticRod->getVertex( v );
+            BASim::Vec3d vert = elasticRod->getVertex( v );
             MPoint vertex( vert[ 0 ], vert[ 1 ], vert[ 2 ] );
 
             short screenX, screenY;
@@ -219,7 +219,7 @@ void WmFigCombContext::applyForceToRods()
                     MPoint newPoint;
                     closestPointOnLine( vertex, nearNewPt, farNewPt, newPoint ); 
                     
-                    elasticRod->setVertex( v, Vec3d( newPoint[ 0 ], newPoint[ 1 ], newPoint[ 2 ] ) );                    
+                    elasticRod->setVertex( v, BASim::Vec3d( newPoint[ 0 ], newPoint[ 1 ], newPoint[ 2 ] ) );                    
                 }
             }
         }
@@ -473,7 +473,7 @@ GLint WmFigCombContext::findRodsUsingOpenGLSelection( const double i_centreX, co
         glBegin( GL_LINE_STRIP );        
         for( int v = 1, n = rodGroup->elasticRod( r )->nv(); v < n; ++v )
         {
-            const Vec3d p = rodGroup->elasticRod( r )->getVertex( v - 1 );
+            const BASim::Vec3d p = rodGroup->elasticRod( r )->getVertex( v - 1 );
             glVertex3f( p[0], p[1], p[2] );
         }
         glEnd();

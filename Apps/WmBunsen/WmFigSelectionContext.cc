@@ -331,7 +331,7 @@ bool WmFigSelectionContext::searchForRodVertices(
         {
         	glPushName( (GLuint)vi ); // Vertex Id
         	glBegin( GL_POINTS );
-        	const Vec3d p = rodGroup->elasticRod( ri )->getVertex( vi );
+        	const BASim::Vec3d p = rodGroup->elasticRod( ri )->getVertex( vi );
             glVertex3f( p[0], p[1], p[2] );
             glEnd();
             glPopName();
@@ -413,7 +413,7 @@ GLint WmFigSelectionContext::findRodsUsingOpenGLSelection(
         glBegin( GL_LINE_STRIP );
         for( int v = 1, n = rodGroup->elasticRod( r )->nv(); v < n; ++v )
         {
-            const Vec3d p = rodGroup->elasticRod( r )->getVertex( v - 1 );
+            const BASim::Vec3d p = rodGroup->elasticRod( r )->getVertex( v - 1 );
             glVertex3f( p[0], p[1], p[2] );
         }
         glEnd();

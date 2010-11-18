@@ -313,7 +313,7 @@ void WmBunsenNode::addAllConstraints( MDataBlock &i_dataBlock )
 			    		vertexId = iVert;
 
 			    		if( rodComponentList.containsRodVertex( rodId, vertexId ) ) {
-			                Vec3d target_position = Vec3d( targetWorldPosition.x, targetWorldPosition.y, targetWorldPosition.z );
+			                BASim::Vec3d target_position = BASim::Vec3d( targetWorldPosition.x, targetWorldPosition.y, targetWorldPosition.z );
 
 			                BASim::RodVertexConstraint *rodVertexConstraint = rodGroup->collisionStepper( rodId )->setVertexPositionPenalty2( vertexId, target_position, stiffness, constraintType );
 			                constraint.rodVertexConstraints.push_back( rodVertexConstraint );
@@ -370,7 +370,7 @@ void WmBunsenNode::updateAllConstraints( MDataBlock &i_dataBlock )
 			    {
 			    	rodVertexConstraint = *it;
 			    	rodVertexConstraint->m_stiff = stiffness;
-			    	rodVertexConstraint->m_target = Vec3d( worldPosition.x, worldPosition.y, worldPosition.z );
+			    	rodVertexConstraint->m_target = BASim::Vec3d( worldPosition.x, worldPosition.y, worldPosition.z );
 			    }
 			}
 		}

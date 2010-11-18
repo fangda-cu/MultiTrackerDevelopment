@@ -107,8 +107,8 @@ void VolumetricCollisionsCPU::reinitialiseRods( RodDataMap& i_rodDataMap )
         for (uint j=0; j<rod->nv(); ++j)
         {
 
-            Vec3d x = rod->getStartPositions()[j];
-            Vec3d v = rod->getVelocities()[j];
+            BASim::Vec3d x = rod->getStartPositions()[j];
+            BASim::Vec3d v = rod->getVelocities()[j];
             for (uint i=0; i<3; ++i)
             {
                 _hairCurve->particles.X(id)[i+1]=x[i];
@@ -140,7 +140,7 @@ void VolumetricCollisionsCPU::deleteRods()
 
 void VolumetricCollisionsCPU::respondVolumetricCollisions( RodDataMap& i_rodDataMap, Real targetEdgeDensity, 
                                                        Real volumetricRadius, Real gridDx,
-                                                       Vec3d separationCondition, double flip,
+                                                       BASim::Vec3d separationCondition, double flip,
                                                        double slip,
                                                        CollisionMeshDataHashMap &collisionMeshes)
 {
@@ -165,8 +165,8 @@ void VolumetricCollisionsCPU::respondVolumetricCollisions( RodDataMap& i_rodData
         for (uint j=0; j<rod->nv(); ++j)
         {
             id++;
-            Vec3d x = rod->getStartPositions()[j];
-            Vec3d v = rod->getVelocities()[j];
+            BASim::Vec3d x = rod->getStartPositions()[j];
+            BASim::Vec3d v = rod->getVelocities()[j];
             for (uint i=0; i<3; ++i)
             {
                 _hairCurve->particles.X(id)[i+1]=x[i];
@@ -262,7 +262,7 @@ void VolumetricCollisionsCPU::respondVolumetricCollisions( RodDataMap& i_rodData
         int axis = faceItr.Axis();
         TV faceCenter = _grid.Face(axis,face);
         
-        Vec3d x,v;
+        BASim::Vec3d x,v;
         for(int d=0; d<3; d++)
             x[d] = faceCenter[d+1];
 
@@ -332,7 +332,7 @@ void VolumetricCollisionsCPU::respondVolumetricCollisions( RodDataMap& i_rodData
         PhysBAM::VECTOR<int,3> cell = cellItr.Cell_Index();
         TV cellCenter = _grid.Center(cell);
 
-        Vec3d x,v;
+        BASim::Vec3d x,v;
         for(int d=0; d<3; d++)
             x[d] = cellCenter[d+1];
 
@@ -528,9 +528,9 @@ void VolumetricCollisionsCPU::respondVolumetricCollisions( RodDataMap& i_rodData
     
     PhysBAM::LINEAR_INTERPOLATION_UNIFORM<GRID_3D,double> interpolation;
     id=0;
-    Vec3d maxV(0,0,0);
-    Vec3d startMaxV(0,0,0);
-    Vec3d maxdV(0,0,0);
+    BASim::Vec3d maxV(0,0,0);
+    BASim::Vec3d startMaxV(0,0,0);
+    BASim::Vec3d maxdV(0,0,0);
     double oldVi;
 
     rod = initialiseRodMap( i_rodDataMap );
@@ -557,7 +557,7 @@ void VolumetricCollisionsCPU::respondVolumetricCollisions( RodDataMap& i_rodData
                     //
                     if(_cellWeights(cell) > 2.0 && !_separatingCells(cell)){
 
-                        Vec3d& v = rod->getVelocities()[j];
+                        BASim::Vec3d& v = rod->getVelocities()[j];
                      //   cerr << "veclocity before (" << j << ") = " << v << endl;
                       
                         TV divFreeV = interpolation.Clamped_To_Array_Face(_grid,

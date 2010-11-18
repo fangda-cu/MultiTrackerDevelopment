@@ -6,7 +6,7 @@ WmFigRodBarbInput::WmFigRodBarbInput( MObject& i_verticesAttribute, MObject& i_s
                         double i_percentageOfBarbStrands, int i_verticesPerRod,
                         bool i_lockFirstEdgeToInput, double i_vertexSpacing,
                         double i_minimumRodLength, RodOptions& i_rodOptions,
-                        double i_massDamping, Vec3d& i_gravity,  WmFigRodGroup& i_rodGroup,
+                        double i_massDamping, BASim::Vec3d& i_gravity,  WmFigRodGroup& i_rodGroup,
                         RodTimeStepper::Method i_solverType, std::set< int >& i_simulationSet ) : 
     m_verticesAttribute( i_verticesAttribute ),
     m_strandRootFramesAttribute( i_strandRootFramesAttribute ),
@@ -101,14 +101,14 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
                 vector< MVector > resampledCurve;
                 resampleCurve( numVerticesRequired, curve, resampledCurve );
                  
-                vector<Vec3d> inputStrandVertices;
+                vector<BASim::Vec3d> inputStrandVertices;
                 inputStrandVertices.resize( numVerticesRequired );
 
                 for ( int v = 0; v < numVerticesRequired; v++ )
                 {
                     MVector vertex = resampledCurve[ (int)v ];
         
-                    inputStrandVertices[ v ] = Vec3d( vertex[0], vertex[1], vertex[2] );                                                                  
+                    inputStrandVertices[ v ] = BASim::Vec3d( vertex[0], vertex[1], vertex[2] );                                                                  
                 }
                 
                 // Create space to store the data for each CV.
@@ -124,7 +124,7 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
         }
         else
         {
-            vector<Vec3d> inputStrandVertices;
+            vector<BASim::Vec3d> inputStrandVertices;
             inputStrandVertices.resize( m_verticesPerRod );
             
             // Just use the vertices that came from Barbershop
@@ -138,7 +138,7 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
                 // us the first strand.
                 MVector vertex = vertices[ inputStrandVertexIndex++ ];
     
-                inputStrandVertices[ v ] = Vec3d( vertex[0], vertex[1], vertex[2] );                                          
+                inputStrandVertices[ v ] = BASim::Vec3d( vertex[0], vertex[1], vertex[2] );                                          
             }
 
             RodOptions rodOptions = m_rodOptions;
@@ -211,7 +211,7 @@ void WmFigRodBarbInput::updateRodDataFromInput( MDataBlock& i_dataBlock )
 
         int numVerticesInRod = m_rodGroup.numberOfVerticesInRod( i );
 
-        vector<Vec3d> inputStrandVertices;         
+        vector<BASim::Vec3d> inputStrandVertices;         
         inputStrandVertices.resize( numVerticesInRod );
 
         if ( numVerticesInRod != m_verticesPerRod )
@@ -229,7 +229,7 @@ void WmFigRodBarbInput::updateRodDataFromInput( MDataBlock& i_dataBlock )
 
             for ( int v = 0; v < numVerticesInRod; v++ )
             {
-                inputStrandVertices[ v ] = Vec3d( resampledCurve[ v ][ 0 ], resampledCurve[ v ][ 1 ], resampledCurve[ v ][ 2 ] );
+                inputStrandVertices[ v ] = BASim::Vec3d( resampledCurve[ v ][ 0 ], resampledCurve[ v ][ 1 ], resampledCurve[ v ][ 2 ] );
             }
         }
         else
@@ -237,7 +237,7 @@ void WmFigRodBarbInput::updateRodDataFromInput( MDataBlock& i_dataBlock )
             for ( int v = 0; v < m_verticesPerRod; v++ )
             {
                 MVector vertex = strandVertices[ inputStrandVertexIndex++ ];
-                inputStrandVertices[ v ] = Vec3d( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ] );
+                inputStrandVertices[ v ] = BASim::Vec3d( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ] );
             }
         }
 
@@ -316,10 +316,10 @@ void WmFigRodBarbInput::getStrandRootFrames( MDataBlock& i_dataBlock,
     for ( unsigned int rIdx=0; rIdx < o_strandRootFrames.size(); rIdx++ )
     {
         v = strandRootFrameVec[ idx++ ];
-        o_strandRootFrames[ rIdx ].m1 = Vec3d( v[0], v[1], v[2] );
+        o_strandRootFrames[ rIdx ].m1 = BASim::Vec3d( v[0], v[1], v[2] );
         v = strandRootFrameVec[ idx++ ];
-        o_strandRootFrames[ rIdx ].m2 = Vec3d( v[0], v[1], v[2] );
+        o_strandRootFrames[ rIdx ].m2 = BASim::Vec3d( v[0], v[1], v[2] );
         v = strandRootFrameVec[ idx++ ];
-        o_strandRootFrames[ rIdx ].m3 = Vec3d( v[0], v[1], v[2] );
+        o_strandRootFrames[ rIdx ].m3 = BASim::Vec3d( v[0], v[1], v[2] );
     }
 }

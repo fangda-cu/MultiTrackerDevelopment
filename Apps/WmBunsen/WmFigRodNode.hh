@@ -222,7 +222,7 @@ private:
     // this is a map of maps. The first map is for the rod, the second is for the edge.
     EdgeTransformRodMap m_controlledEdgeTransforms;
     
-    std::tr1::unordered_map< unsigned int, Vec3d > m_rodColourMap;
+    std::tr1::unordered_map< unsigned int, BASim::Vec3d > m_rodColourMap;
 
     WmFigRodInputType* m_pRodInput;
 
@@ -234,7 +234,7 @@ private:
     MString m_cachePath;
     RodTimeStepper::Method m_solverType;
 
-    Vec3d m_gravity;
+    BASim::Vec3d m_gravity;
     std::set< int > m_simulationSet;
 
 };

@@ -87,19 +87,19 @@ void WmFigaroRodShape::initialiseRod( MVectorArray* i_controlPoints )
 
     m_rodGroup.removeAllRods();
 
-    vector<Vec3d> rodVertices;
+    vector<BASim::Vec3d> rodVertices;
     rodVertices.resize( i_controlPoints->length() );
     //cout<<" add new rod : "<<i_controlPoints->length()<<" number of CVs "<<endl;
     
     for ( int v=0; v<i_controlPoints->length(); v++ )
     {
-        rodVertices[ v ] = Vec3d( (*i_controlPoints)[ v ].x, (*i_controlPoints)[ v ].y, (*i_controlPoints)[ v ].z );
+        rodVertices[ v ] = BASim::Vec3d( (*i_controlPoints)[ v ].x, (*i_controlPoints)[ v ].y, (*i_controlPoints)[ v ].z );
         //cout<<" -- > cv : "<<v<<" : "<<(*i_controlPoints)[ v ]<<endl;
     }
 
     double massDamping = 10.0;
-    //Vec3d gravity( 0.0, -981.0, 0.0 );
-    Vec3d gravity( 0.0, 0.0, 0.0 );
+    //BASim::Vec3d gravity( 0.0, -981.0, 0.0 );
+    BASim::Vec3d gravity( 0.0, 0.0, 0.0 );
     RodTimeStepper::Method solverType = RodTimeStepper::SYM_IMPL_EULER;
     //RodTimeStepper::Method solverType = RodTimeStepper::STATICS;
     RodOptions rodOptions;
@@ -165,7 +165,7 @@ void WmFigaroRodShape::getRodVertices( MVectorArray& o_controlPoints )
     o_controlPoints.setLength( rod->nv() );
     for ( int p=0; p<rod->nv(); ++p )
     {
-        Vec3d vertex = rod->getVertex( p );
+        BASim::Vec3d vertex = rod->getVertex( p );
         o_controlPoints[ p ] = MVector( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ] );
     }
 }
@@ -239,7 +239,7 @@ void WmFigaroRodShape::drawRod()
     m_rodGroup.render();
 
     RodRenderer* rodRenderer = m_rodGroup.rodRenderer( 0 );
-    rodRenderer->drawSmoothPartialRod( 0, m_numberOfLockedVertices, Vec3d( 1.0, 0.0, 0.0 ) );
+    rodRenderer->drawSmoothPartialRod( 0, m_numberOfLockedVertices, BASim::Vec3d( 1.0, 0.0, 0.0 ) );
 }
 
 void* WmFigaroRodShape::creator()
@@ -557,7 +557,7 @@ void WmFigaroRodShape::getResampledRodCVs(bool i_needResample, MVectorArray &o_c
 
     for ( int v=0; v<numPts; ++v )
     {
-        Vec3d vertex = elasticRod->getVertex( v );
+        BASim::Vec3d vertex = elasticRod->getVertex( v );
         rodCVs[ v ] = MVector( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ] );
         currentCVs[ v  ] = Wvec3d( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ]  );
         o_controlCVs[ v ] = MVector( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ] );
@@ -930,7 +930,7 @@ bool WmFigaroRodShape::setInternalValueInContext( const MPlug& i_plug, const MDa
             newPoint.y = ptData[1];
             newPoint.z = ptData[2];
 
-            m_fixedVertexMap[ index ] = Vec3d( newPoint.x, newPoint.y, newPoint.z );
+            m_fixedVertexMap[ index ] = BASim::Vec3d( newPoint.x, newPoint.y, newPoint.z );
         }
         else if ( i_plug == mControlValueX ) 
         {
@@ -1159,7 +1159,7 @@ void WmFigaroRodShape::transformUsing(const MMatrix& mat, const MObjectArray& co
 
         if ( controlPointsVec[ p ] != unmovedControlPointsVec[ p ] )
         {
-            fixedVertexMap[ p ] = Vec3d( controlPointsVec[ p ][ 0 ],
+            fixedVertexMap[ p ] = BASim::Vec3d( controlPointsVec[ p ][ 0 ],
                                          controlPointsVec[ p ][ 1 ],
                                          controlPointsVec[ p ][ 2 ] );            
             
@@ -1191,7 +1191,7 @@ void WmFigaroRodShape::transformUsing(const MMatrix& mat, const MObjectArray& co
             MVector unmovedDelta = unmovedControlPointsVec[ nextFixed ] - unmovedControlPointsVec[ fixedVertex ];
             controlPointsVec[ nextFixed ] = controlPointsVec[ fixedVertex ] + unmovedDelta;
         
-            fixedVertexMap[ nextFixed ] = Vec3d( controlPointsVec[ nextFixed ][ 0 ],
+            fixedVertexMap[ nextFixed ] = BASim::Vec3d( controlPointsVec[ nextFixed ][ 0 ],
                                                  controlPointsVec[ nextFixed ][ 1 ],
                                                  controlPointsVec[ nextFixed ][ 2 ] );
         }

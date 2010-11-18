@@ -1,5 +1,5 @@
-#ifndef ARRAY_H
-#define ARRAY_H
+#ifndef BRIDSONARRAY_H
+#define BRIDSONARRAY_H
 
 #include <cassert>
 #include <algorithm>

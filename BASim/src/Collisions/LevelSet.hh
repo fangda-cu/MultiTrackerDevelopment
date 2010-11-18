@@ -40,21 +40,18 @@ public:
 */
     void buildLevelSet(const Vec3Indices &triangles,
                        const Indices &triIndices,
-                       //const std::vector<bridson::Vec3f>  &x,
-                       //const std::vector<bridson::Vec3f>  &v,
-                       //const bridson::Vec3f &origin, Real length[3],
-                       const std::vector<Vec3d>  &x,
-                       const std::vector<Vec3d>  &v,
-                       const bridson::Vec3f &origin, Real length[3],
+                       const std::vector<BASim::Vec3d>  &x,
+                       const std::vector<BASim::Vec3d>  &v,
+                       const BASim::Vec3d &origin, Real length[3],
                        Real dx, int nx, int ny, int nz, int nbrTriangles);
 
 
 
     Real getLevelSetValue(Vec3d x);
-    Real getLevelSetValueVelocity(Vec3d &x, Vec3d &v);
+    Real getLevelSetValueVelocity(BASim::Vec3d &x, BASim::Vec3d &v);
     void getGradient(Vec3<Real> &x, Vec3<Real> &grad);
 
-    bridson::Vec3f& getOrigin() { return _origin; }
+    Vec3d& getOrigin() { return _origin; }
 
     Real getGridSize() { return _dx; }
 
@@ -63,7 +60,7 @@ public:
     int getNbrZ() { return _phi.nk; }
 
     bridson::Array3f& getPhi() { return _phi; }
-    bridson::Array3<bridson::Vec3f, bridson::Array1<bridson::Vec3f> >& getPhiVel() { return _phiVel; }
+    bridson::Array3<BASim::Vec3d, bridson::Array1<BASim::Vec3d> >& getPhiVel() { return _phiVel; }
 
     void draw();
 
@@ -74,9 +71,9 @@ public:
 
 protected:
     bridson::Array3f _phi;
-    bridson::Array3<bridson::Vec3f, bridson::Array1<bridson::Vec3f> > _phiVel;
+    bridson::Array3<BASim::Vec3d, bridson::Array1<BASim::Vec3d> > _phiVel;
 
-    bridson::Vec3f _origin;
+    Vec3d _origin;
     Real _dx;
 
     bool _initialized;
@@ -84,36 +81,36 @@ protected:
 protected:
     void buildLevelSet(const Vec3Indices &triangles,
                        const Indices &triIndices,
-                       const std::vector<Vec3d>  &x,
-                       const std::vector<Vec3d>  &v,
-                       const bridson::Vec3f &origin,
+                       const std::vector<BASim::Vec3d>  &x,
+                       const std::vector<BASim::Vec3d>  &v,
+                       const Vec3d &origin,
                        float dx,
                        int ni, int nj, int nk,
                        bridson::Array3f &phi,
-                       bridson::Array3<bridson::Vec3f, bridson::Array1<bridson::Vec3f> > &phiVel);
+                       bridson::Array3<BASim::Vec3d, bridson::Array1<BASim::Vec3d> > &phiVel);
 
-    float point_triangle_distance(const bridson::Vec3f &p,
-                                  const bridson::Vec3f &a, const bridson::Vec3f &b, const bridson::Vec3f &c,
+    float point_triangle_distance(const BASim::Vec3d &p,
+                                  const BASim::Vec3d &a, const BASim::Vec3d &b, const BASim::Vec3d &c,
                                   float &t1, float &t2, float &t3);
 
     void check_neighbour(const Vec3Indices &tri,
-                         const std::vector<bridson::Vec3f> &x,
-                         const std::vector<bridson::Vec3f> &v,
+                         const std::vector<BASim::Vec3d> &x,
+                         const std::vector<BASim::Vec3d> &v,
                          bridson::Array3f &phi,
-                         bridson::Array3<bridson::Vec3f, bridson::Array1<bridson::Vec3f> > &phi_vel,
+                         bridson::Array3<BASim::Vec3d, bridson::Array1<BASim::Vec3d> > &phi_vel,
                          bridson::Array3i &closest_tri,
-                         const bridson::Vec3f &gx,
+                         const BASim::Vec3d &gx,
                          int i0, int j0, int k0, int i1, int j1, int k1);
 
     void sweep(const Vec3Indices &tri,
-               const std::vector<bridson::Vec3f> &x,
-               const std::vector<bridson::Vec3f> &v,
-               bridson::Array3f &phi,
-               bridson::Array3<bridson::Vec3f, bridson::Array1<bridson::Vec3f> > &phi_vel,
-               bridson::Array3i &closest_tri,
-               const bridson::Vec3f &origin,
-               float dx,
-               int di, int dj, int dk);
+                             const std::vector<Vec3d> &x,
+                             const std::vector<Vec3d> &v,
+                             bridson::Array3f &phi,
+                             bridson::Array3<Vec3d, bridson::Array1<Vec3d> > &phi_vel,
+                             bridson::Array3i &closest_tri,
+                             const Vec3d &origin,
+                             float dx,
+                             int di, int dj, int dk);
 
     int orientation(double x1, double y1, double x2, double y2, double &twice_signed_area);
 

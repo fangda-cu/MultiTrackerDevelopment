@@ -303,12 +303,12 @@ void WmFigRodNode::updateKinematicEdgesFromInput()
                 
                 // Set the next positions of these vertices to be wherever the input controller
                 // says they should be.
-                Vec3d position =  edgeIt->second.position;
+                BASim::Vec3d position =  edgeIt->second.position;
                 double length = m_rodGroup.elasticRod( r )->getEdge( edgeIt->first ).norm();
-                Vec3d edge = edgeIt->second.materialFrame.m1;
+                BASim::Vec3d edge = edgeIt->second.materialFrame.m1;
                 edge.normalize();
-                Vec3d start = position - ( edge * length / 2.0 );
-                Vec3d end = position + ( edge * length / 2.0 );
+                BASim::Vec3d start = position - ( edge * length / 2.0 );
+                BASim::Vec3d end = position + ( edge * length / 2.0 );
                 m_rodGroup.setNextVertexPosition( r, edgeIt->first, start );
                 m_rodGroup.setNextVertexPosition( r, edgeIt->first + 1, end );
             }
@@ -395,7 +395,7 @@ MMatrix WmFigRodNode::getRodEdgeMatrix( int i_rod, int i_edge )
     ElasticRod* rod = m_rodGroup.elasticRod( i_rod );
 
     // The position of the edge is defined as the mid point of the ege.   
-    Vec3d edgePos = ( rod->getVertex( i_edge ) + 
+    BASim::Vec3d edgePos = ( rod->getVertex( i_edge ) + 
                       rod->getVertex( i_edge + 1 ) ) / 2.0;
     
 
@@ -404,13 +404,13 @@ MMatrix WmFigRodNode::getRodEdgeMatrix( int i_rod, int i_edge )
     MMatrix edgeMatrix;
     edgeMatrix( 3, 0 ) = edgePos[ 0 ]; edgeMatrix( 3, 1 ) = edgePos[ 1 ]; edgeMatrix( 3, 2 ) = edgePos[ 2 ];
     
-    Vec3d edge = rod->getEdge( i_edge );
+    BASim::Vec3d edge = rod->getEdge( i_edge );
     edgeMatrix( 0, 0 ) = edge[ 0 ]; edgeMatrix( 0, 1 ) = edge[ 1 ]; edgeMatrix( 0, 2 ) = edge[ 2 ];
     
-    Vec3d material1 = rod->getMaterial1( i_edge );
+    BASim::Vec3d material1 = rod->getMaterial1( i_edge );
     edgeMatrix( 1, 0 ) = material1[ 0 ]; edgeMatrix( 1, 1 ) = material1[ 1 ]; edgeMatrix( 1, 2 ) = material1[ 2 ];
     
-    Vec3d material2 = rod->getMaterial2( i_edge );
+    BASim::Vec3d material2 = rod->getMaterial2( i_edge );
     edgeMatrix( 2, 0 ) = material2[ 0 ]; edgeMatrix( 2, 1 ) = material2[ 1 ]; edgeMatrix( 2, 2 ) = material2[ 2 ];
     
     return edgeMatrix;
@@ -525,7 +525,7 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
 
     const double3 &gravity = i_dataBlock.inputValue( ia_gravity, &stat ).asDouble3();
     CHECK_MSTATUS( stat );
-    m_gravity = Vec3d( gravity[0], gravity[1], gravity[2] );
+    m_gravity = BASim::Vec3d( gravity[0], gravity[1], gravity[2] );
 
     m_lockFirstEdgeToInput = i_dataBlock.inputValue( ia_lockFirstEdgeToInput, &stat ).asBool();
     CHECK_MSTATUS( stat );
@@ -757,7 +757,7 @@ void WmFigRodNode::compute_oa_simulatedVertices( const MPlug& i_plug, MDataBlock
 
         for ( unsigned int v = 0; v < verticesInRod; v++ )
         {
-            Vec3d pos = m_rodGroup.elasticRod( r )->getVertex( v );
+            BASim::Vec3d pos = m_rodGroup.elasticRod( r )->getVertex( v );
             simulatedVerticesArray[ idx ] = MVector( pos[0], pos[1], pos[2] );
             idx++;
         }
@@ -811,7 +811,7 @@ void WmFigRodNode::compute_oa_nonSimulatedVertices( const MPlug& i_plug, MDataBl
 
         for ( unsigned int v = 0; v < verticesInRod; v++ )
         {
-            Vec3d pos = m_rodGroup.nextVertexPosition( r, v );
+            BASim::Vec3d pos = m_rodGroup.nextVertexPosition( r, v );
             nonSimulatedVerticesArray[ idx ] = MVector( pos[0], pos[1], pos[2] );
             idx++;
         }
@@ -911,9 +911,9 @@ void WmFigRodNode::compute_oa_materialFrames( const MPlug& i_plug, MDataBlock& i
 
             for ( unsigned int e = 0; e < edgesInRod; e++ )
             {
-                Vec3d m1 =  rod->getMaterial1( e );
-                Vec3d m2 =  rod->getMaterial2( e );
-                Vec3d m3 =  rod->getEdge( e );
+                BASim::Vec3d m1 =  rod->getMaterial1( e );
+                BASim::Vec3d m2 =  rod->getMaterial2( e );
+                BASim::Vec3d m3 =  rod->getEdge( e );
                 m3.normalize();
 
                 materialFramesArray[ idx ] = MVector( m1[0], m1[1], m1[2] );
@@ -1000,9 +1000,9 @@ void WmFigRodNode::compute_oa_undeformedMaterialFrames( const MPlug& i_plug, MDa
                 for ( int e=0; e<rod->ne(); e++ )
                 {
                     // currently we only store the undeformed frame for the first vertex
-                    Vec3d m1 =  rod->getMaterial1( e );
-                    Vec3d m2 =  rod->getMaterial2( e );
-                    Vec3d m3 =  rod->getEdge( e );
+                    BASim::Vec3d m1 =  rod->getMaterial1( e );
+                    BASim::Vec3d m2 =  rod->getMaterial2( e );
+                    BASim::Vec3d m3 =  rod->getEdge( e );
                     m3.normalize();
 
                     /*(*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m1 = m1;
@@ -1047,13 +1047,13 @@ void WmFigRodNode::compute_oa_undeformedMaterialFrames( const MPlug& i_plug, MDa
                     the second matrix from the strand root frames we were given this frame.
                     The rod frames should not be in either matrix!!!!*/
 
-                    Vec3d im1 = m_strandRootFrames[r].m1;
-                    Vec3d im2 = m_strandRootFrames[r].m2;
-                    Vec3d im3 = m_strandRootFrames[r].m3;
+                    BASim::Vec3d im1 = m_strandRootFrames[r].m1;
+                    BASim::Vec3d im2 = m_strandRootFrames[r].m2;
+                    BASim::Vec3d im3 = m_strandRootFrames[r].m3;
 
-                    Vec3d cm1 = strandRootFrames[r].m1;
-                    Vec3d cm2 = strandRootFrames[r].m2;
-                    Vec3d cm3 = strandRootFrames[r].m3;
+                    BASim::Vec3d cm1 = strandRootFrames[r].m1;
+                    BASim::Vec3d cm2 = strandRootFrames[r].m2;
+                    BASim::Vec3d cm3 = strandRootFrames[r].m3;
 
                     double dim[4][4] = {{ im1[0], im1[1], im1[2], 0.0 },
                                         { im2[0], im2[1], im2[2], 0.0 },
@@ -1074,11 +1074,11 @@ void WmFigRodNode::compute_oa_undeformedMaterialFrames( const MPlug& i_plug, MDa
 
                         MaterialFrame materialFrame = m_rodGroup.undeformedMaterialFrame( r, e );
                         // currently we only store the undeformed frame for the first vertex
-                        Vec3d m1 =  materialFrame.m1;
+                        BASim::Vec3d m1 =  materialFrame.m1;
                         MVector mayaM1( m1[0], m1[1], m1[2] );
-                        Vec3d m2 =  materialFrame.m2;
+                        BASim::Vec3d m2 =  materialFrame.m2;
                         MVector mayaM2( m2[0], m2[1], m2[2] );
-                        Vec3d m3 = materialFrame.m3;
+                        BASim::Vec3d m3 = materialFrame.m3;
                         MVector mayaM3( m3[0], m3[1], m3[2] );
 
                         // remove initial transform and apply current...
@@ -1190,7 +1190,7 @@ void WmFigRodNode::compute_ca_drawDataChanged( const MPlug& i_plug, MDataBlock& 
         // We use -1 to indicate not to colour this rod any more. Should really
         // remove the element from the array, but the APIs unclear.
         if ( colour[ 0 ] != -1 )
-            m_rodColourMap[ elementIndex ] = Vec3d( colour[0], colour[1], colour[2] );
+            m_rodColourMap[ elementIndex ] = BASim::Vec3d( colour[0], colour[1], colour[2] );
     }
     inArrayH.setClean();
     i_dataBlock.setClean( i_plug );
@@ -1218,11 +1218,11 @@ void WmFigRodNode::getStrandRootFrames( MDataBlock& i_dataBlock, vector<Material
     for ( int rIdx=0; rIdx<o_strandRootFrames.size(); rIdx++ )
     {
         v = strandRootFrameVec[idx++];
-        o_strandRootFrames[rIdx].m1 = Vec3d( v[0], v[1], v[2] );
+        o_strandRootFrames[rIdx].m1 = BASim::Vec3d( v[0], v[1], v[2] );
         v = strandRootFrameVec[idx++];
-        o_strandRootFrames[rIdx].m2 = Vec3d( v[0], v[1], v[2] );
+        o_strandRootFrames[rIdx].m2 = BASim::Vec3d( v[0], v[1], v[2] );
         v = strandRootFrameVec[idx++];
-        o_strandRootFrames[rIdx].m3 = Vec3d( v[0], v[1], v[2] );
+        o_strandRootFrames[rIdx].m3 = BASim::Vec3d( v[0], v[1], v[2] );
     }
 }
 
@@ -1301,7 +1301,7 @@ void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
                 colourOverride = true;
                 glGetFloatv( GL_CURRENT_COLOR, currentColour );
                 
-                Vec3d colour = m_rodColourMap[ r ];
+                BASim::Vec3d colour = m_rodColourMap[ r ];
                 glColor3ub( colour[0], colour[1], colour[2] );
             }
             
@@ -1336,13 +1336,13 @@ void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
                 glBegin( GL_LINES );
                 for ( unsigned int e = 0; e < edgesInRod; e++ )
                 {
-                    Vec3d m1 =  rod->getMaterial1( e );
-                    Vec3d m2 =  rod->getMaterial2( e );
-                    Vec3d m3 =  rod->getEdge( e );
+                    BASim::Vec3d m1 =  rod->getMaterial1( e );
+                    BASim::Vec3d m2 =  rod->getMaterial2( e );
+                    BASim::Vec3d m3 =  rod->getEdge( e );
                     m3.normalize();
 
-                    Vec3d p = rod->getVertex( e );
-                    Vec3d p1 = rod->getVertex( e + 1 );
+                    BASim::Vec3d p = rod->getVertex( e );
+                    BASim::Vec3d p1 = rod->getVertex( e + 1 );
                     p = ( p + p1 ) / 2.0;
 
                     glColor3d(1,0,0);
@@ -1365,11 +1365,11 @@ void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
                     glLineWidth( 5.0 );
                     glBegin( GL_LINES );
 
-                    Vec3d m1 =  m_strandRootFrames[ r ].m1;
-                    Vec3d m2 =  m_strandRootFrames[ r ].m2;
-                    Vec3d m3 =  m_strandRootFrames[ r ].m3;
+                    BASim::Vec3d m1 =  m_strandRootFrames[ r ].m1;
+                    BASim::Vec3d m2 =  m_strandRootFrames[ r ].m2;
+                    BASim::Vec3d m3 =  m_strandRootFrames[ r ].m3;
 
-                    Vec3d p = rod->getVertex( 0 );
+                    BASim::Vec3d p = rod->getVertex( 0 );
 
                     glColor3d(1,0,0);
                     glVertex3d( p[0], p[1], p[2] );
@@ -1389,12 +1389,12 @@ void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
                 glBegin( GL_LINES );
                 for ( unsigned int e = 0; e < edgesInRod; e++ )
                 {
-                    Vec3d m1 = (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m1;
-                    Vec3d m2 = (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m2;
-                    Vec3d m3 = (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m3;
+                    BASim::Vec3d m1 = (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m1;
+                    BASim::Vec3d m2 = (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m2;
+                    BASim::Vec3d m3 = (*mx_rodData)[ r ]->undeformedMaterialFrame[ e ].m3;
 
-                    Vec3d p = rod->getVertex( e );
-                    Vec3d p1 = rod->getVertex( e + 1 );
+                    BASim::Vec3d p = rod->getVertex( e );
+                    BASim::Vec3d p1 = rod->getVertex( e + 1 );
                     p = ( p + p1 ) / 2.0;
 
                     glColor3d(1,0,0);

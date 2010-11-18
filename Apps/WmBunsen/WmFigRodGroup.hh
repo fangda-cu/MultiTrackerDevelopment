@@ -11,7 +11,7 @@ public:
 
   //  void setRodOptions( int i_rodNumber, RodOptions i_rodOptions );
 
-    void setUndeformedVertexPosition( int i_rodIndex, int i_vertexIndex, Vec3d& i_newPosition )
+    void setUndeformedVertexPosition( int i_rodIndex, int i_vertexIndex, BASim::Vec3d& i_newPosition )
     {
         m_rodData[ i_rodIndex ]->setUndeformedVertexPosition( i_vertexIndex, i_newPosition );
     }
@@ -27,7 +27,7 @@ public:
     }
 
     int addRod();
-    int addRod( std::vector<Vec3d>& i_rodVertices, RodOptions& i_rodOptions, 
+    int addRod( std::vector<BASim::Vec3d>& i_rodVertices, RodOptions& i_rodOptions, 
                    double i_massDamping, BASim::Vec3d& i_gravity,  RodTimeStepper::Method i_solverType, bool i_isFromCache = false );
 
     void addRodsFromCache( vector<vector<BASim::Vec3d> >& i_rodVertices, RodOptions& i_rodOptions, 
@@ -38,7 +38,7 @@ public:
             RodOptions rodOptions = i_rodOptions;
             rodOptions.numVertices = (int)i_rodVertices[ r ].size();
 
-            Vec3d gravity( 0, 0, 0 );
+            BASim::Vec3d gravity( 0, 0, 0 );
             addRod( i_rodVertices[ r ], rodOptions, i_massDamping, gravity, RodTimeStepper::NONE, true );
         }
     }
@@ -48,7 +48,7 @@ public:
         return m_rodData[ i_rodIndex ]->rodOptions;
     }
 
-    Vec3d& getGravity( int i_rodIndex )
+    BASim::Vec3d& getGravity( int i_rodIndex )
     {
         return m_rodData[ i_rodIndex ]->m_gravity;
     }
@@ -119,17 +119,17 @@ public:
         return m_rodData[ rodIndex ]->isPlaceHolderRod();
     }
 
-    Vec3d nextVertexPosition( int i_rodIndex, int i_vertexIndex )
+    BASim::Vec3d nextVertexPosition( int i_rodIndex, int i_vertexIndex )
     {
         return m_rodData[ i_rodIndex ]->nextVertexPosition( i_vertexIndex );
     }
     
-    void updateRodNextVertexPositions( int i_rodIndex, vector<Vec3d>& inputStrandVertices )
+    void updateRodNextVertexPositions( int i_rodIndex, vector<BASim::Vec3d>& inputStrandVertices )
     {
         m_rodData[ i_rodIndex ]->updateNextRodVertexPositions( inputStrandVertices );
     }
 
-    void setUndeformedMaterialFrame( int i_rodIndex, int i_frameIndex, Vec3d i_v1, Vec3d i_v2, Vec3d i_v3 )
+    void setUndeformedMaterialFrame( int i_rodIndex, int i_frameIndex, BASim::Vec3d i_v1, BASim::Vec3d i_v2, BASim::Vec3d i_v3 )
     {        
         m_rodData[ i_rodIndex ]->setUndeformedMaterialFrame( i_frameIndex, i_v1, i_v2, i_v3 );
     }
@@ -199,7 +199,7 @@ public:
         }
     }
 
-    void setNextVertexPosition( int i_rodIndex, int i_vertexIndex, Vec3d& i_newPosition )
+    void setNextVertexPosition( int i_rodIndex, int i_vertexIndex, BASim::Vec3d& i_newPosition )
     {
         m_rodData[ i_rodIndex ]->setNextVertexPosition( i_vertexIndex, i_newPosition );
     }
