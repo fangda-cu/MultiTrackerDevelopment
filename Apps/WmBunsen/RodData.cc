@@ -104,6 +104,8 @@ void RodData::addKinematicEdge( unsigned int i_edgeNumber, MaterialFrame* i_mate
     removeKinematicEdge( i_edgeNumber );
     KinematicEdgeData* kinematicEdgeData = new KinematicEdgeData( i_edgeNumber, m_rod, i_materialframe );
     kinematicEdgeDataMap[ i_edgeNumber ] = kinematicEdgeData;
+
+    m_rod->getBoundaryCondition()->setDesiredEdgeAngle(i_edgeNumber, m_rod->getTheta(i_edgeNumber)); 
 }
 
 void RodData::resetKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_materialframe )

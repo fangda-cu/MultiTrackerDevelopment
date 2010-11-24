@@ -162,7 +162,11 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
         }
         else*/
         {   // If there's no root frame data then just lock the edge and it will not rotate.
-            m_rodGroup.addKinematicEdge( rodIndex, 0 );
+
+            if ( !m_rodGroup.isPlaceHolderRod( rodIndex ) )
+            {
+                m_rodGroup.addKinematicEdge( rodIndex, 0 );
+            }
         }
     }
 }

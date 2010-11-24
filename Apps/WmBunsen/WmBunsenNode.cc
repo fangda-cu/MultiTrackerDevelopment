@@ -939,7 +939,7 @@ MStatus WmBunsenNode::initialize()
     
     {
         MFnNumericAttribute nAttr;
-        ia_numberOfThreads = nAttr.create( "numberOfThreads", "nut", MFnNumericData::kInt, 1, &stat );
+        ia_numberOfThreads = nAttr.create( "numberOfThreads", "nut", MFnNumericData::kInt, 8, &stat );
         CHECK_MSTATUS (stat );
         CHECK_MSTATUS( nAttr.setWritable( true ) );
         CHECK_MSTATUS( nAttr.setReadable( false ) );
