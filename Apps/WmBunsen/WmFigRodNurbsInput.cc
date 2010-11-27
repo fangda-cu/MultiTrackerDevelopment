@@ -148,7 +148,7 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
             // Mass damping should be in rod options, it's dumb to pass it seperately.
             int rodIndex = m_rodGroup.addRod( inputCurveVertices[ c ], rodOptions, m_massDamping, m_gravity, m_solverType );
     
-            if ( m_lockFirstEdgeToInput && m_rodGroup.isPlaceHolderRod( rodIndex ) )
+            if ( m_lockFirstEdgeToInput && !m_rodGroup.isPlaceHolderRod( rodIndex ) )
             {
                 m_rodGroup.addKinematicEdge( rodIndex, 0 );
             }
