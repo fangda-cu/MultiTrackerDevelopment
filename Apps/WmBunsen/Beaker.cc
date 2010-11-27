@@ -725,10 +725,21 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             #pragma omp parallel for num_threads( actualNumThreadsToUse )
             for ( int i=0; i<numControllers; ++i )
             {
-                if( !dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->execute())
+                RodCollisionTimeStepper* rodCollisionTimeStepper = dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ]);
+                RodTimeStepper *pStepper = dynamic_cast< RodTimeStepper *>( rodCollisionTimeStepper->getTimeStepper() );
+                if ( pStepper != NULL )
+                {
+                    pStepper->set_stol( m_stol );
+                    pStepper->set_atol( m_atol );
+                    pStepper->set_rtol( m_rtol );
+                    pStepper->set_inftol( m_inftol );
+                }
+
+                
+                if( !rodCollisionTimeStepper->execute())
                 {
                     cerr << "Rod " << i << " did not could not solve at minimum step size. DISABLING\n";
-                    dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->setEnabled( false );
+                    rodCollisionTimeStepper->setEnabled( false );
                     continue;
                 }
             }
