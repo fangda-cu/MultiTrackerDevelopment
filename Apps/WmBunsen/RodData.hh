@@ -368,6 +368,8 @@ public:
     bool m_isPlaceHolderRod;
     double m_massDamping;
     BASim::Vec3d m_gravity;
+    
+    std::vector< float > m_targetDensityPerEdge;
 };
 
 #endif

@@ -89,9 +89,85 @@ public:
 
     // Clean this up in a minute
     double dt = m_stepper->getTimeStep();
-    bool returnstatus = recursiveSolve( m_stepper->getTimeStep() );
+    //bool returnstatus = recursiveSolve( m_stepper->getTimeStep() );
+    bool returnstatus = adaptiveSolve( m_stepper->getTimeStep() );
     assert( dt == m_stepper->getTimeStep() );
     return returnstatus;
+  }
+  
+  bool adaptiveSolve( double dt )
+  {   
+    if( dt < m_min_step ) 
+    {
+        std::cerr << "Attempt to do solve with dt < minimum threshold. Ignoring request.\n";
+        return false;
+    }
+    
+    bool firstStepSuccess;
+    bool secondStepSuccess;
+    
+    // Backup the rod in case the solve fails.
+    m_stepper->backupResize();
+    m_stepper->backup();
+
+    if ( !takeStep( dt ) )
+    {
+      // The solve failed, restore the rod to its previous state.
+      m_stepper->backupRestore();
+      m_stepper->backupClear();
+
+      do 
+      {
+        dt *= 0.5;
+        m_stepper->backupResize();
+        m_stepper->backup();
+        firstStepSuccess = takeStep( dt );
+        
+        if ( !firstStepSuccess )
+        {
+          m_stepper->backupRestore();
+          m_stepper->backupClear();         
+        }
+        else
+        {
+          m_stepper->backupClear();
+          m_stepper->backupResize();
+          m_stepper->backup();
+          secondStepSuccess = takeStep( dt );
+          if ( !secondStepSuccess )
+          {
+            m_stepper->backupRestore();
+            m_stepper->backupClear();              
+          }
+        }
+      }
+      while ( ( dt > m_min_step ) && ( !firstStepSuccess || !secondStepSuccess ) );
+    }
+    
+    if ( dt > m_min_step )
+    {
+      return true;
+    }
+    else
+    {
+      return false;
+    }
+  }
+  
+  bool takeStep( double dt )
+  {
+    #ifdef TIMING_ON
+      if( dt < DoubleStatTracker::getDoubleTracker("MIN_TIME_STEP_ENCOUNTERED").getVal() ) DoubleStatTracker::getDoubleTracker("MIN_TIME_STEP_ENCOUNTERED") = dt;
+    #endif
+    
+    this->setTimeStep(dt);
+    
+    // If solve was successfull, we are done.
+    if( m_stepper->execute() ) return true;
+
+    std::cerr << "ROD # " << m_rod->global_rodID << " \033[31;1mWARNING IN ADAPTIVE BINARY STEPPER:\033[m Solve failed for timestep: " << dt << ". Taking two timesteps of half length." << std::endl;
+    
+    return false;
   }
   
   bool recursiveSolve( double dt )

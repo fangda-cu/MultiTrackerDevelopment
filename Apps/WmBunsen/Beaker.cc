@@ -669,7 +669,8 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 {
                     if ( !rodCollisionTimeStepper->execute() )
                     {
-                        cerr << "rod " << i << " did not execute correctly!\n";
+                        cerr << "rod " << i << " did not could not solve at minimum step size. DISABLING\n";
+                        rodCollisionTimeStepper->setEnabled( false );
                         continue;
                     }
                 }
@@ -726,6 +727,8 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             {
                 if( !dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->execute())
                 {
+                    cerr << "Rod " << i << " did not could not solve at minimum step size. DISABLING\n";
+                    dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ])->setEnabled( false );
                     continue;
                 }
             }
