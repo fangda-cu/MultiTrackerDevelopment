@@ -257,6 +257,15 @@ public:
 
 
 private:
+    //! Returns true if any rods are active, false otherwise.
+    /*!
+      All rods can be too short to be simulated or the rod node may just be being used as a
+      way to store simulated nurbs curve data in a handy file on disk. In which case there will
+      be no rods active.
+    */
+    bool anyRodsActive();
+
+
     //void storeMaterialFrames();
     
     World* m_world;

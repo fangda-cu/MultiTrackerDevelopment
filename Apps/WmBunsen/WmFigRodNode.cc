@@ -102,8 +102,6 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
-    cerr << "WmFigRodNode::compute() with i_plug = " << i_plug.name() << endl;
-
     if ( i_plug == oa_numberOfRods )
     {
         // oa_numberOfRods only depends on time. This is because it is displayed in the AE

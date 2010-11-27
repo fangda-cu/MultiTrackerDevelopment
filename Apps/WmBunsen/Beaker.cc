@@ -342,6 +342,32 @@ void Beaker::writeXMLFileToDisk()
     }
 }
 
+bool Beaker::anyRodsActive()
+{
+    bool rodsToSimulate = false;
+    for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
+    {
+        WmFigRodGroup* pRodGroup = rdmItr->second;
+
+        int numRods = pRodGroup->numberOfRods();
+        for ( int r=0; r<numRods; ++r )
+        {
+            if ( pRodGroup->shouldSimulateRod( r ) )
+            {
+                rodsToSimulate = true;
+                break;
+            }               
+        }
+        
+        if ( !rodsToSimulate )
+        {
+            break;
+        }
+    }
+    
+    return rodsToSimulate;
+}
+
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
   int i_subSteps, bool i_collisionsEnabled,  bool i_selfCollisionPenaltyForcesEnabled,
   bool i_fullSelfCollisionsEnabled, int i_fullSelfCollisionIters,
@@ -370,40 +396,11 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
     double frameTime = 0.0;
     
-    // Do a quick check, if no rods are enabled then do nothing.
-    bool noRodsToSimulate = true;
-    for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
-    {
-        WmFigRodGroup* pRodGroup = rdmItr->second;
-
-        int numRods = pRodGroup->numberOfRods();
-        for ( int r=0; r<numRods; ++r )
-        {
-            if ( pRodGroup->shouldSimulateRod( r ) )
-            {
-              //  cerr << "rod " << r << " is enabled " << endl;
-                noRodsToSimulate = false;
-                break;
-            }   
-            else         
-            {
-                //cerr << "rod " << r << " is disabled " << endl;
-            }
-        }
-        
-        if ( !noRodsToSimulate )
-        {
-            break;
-        }
-    }
-
-    if ( noRodsToSimulate )
+    if ( !anyRodsActive() )
     {
         cerr << "Not doing anything as all rods are disabled!\n";
         return;
     }
-
-    //cerr << "Simulating\n";
 
     // Create space to track the target vertex positions of each rod as they substep towards 
     // their goal
@@ -734,7 +731,6 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     pStepper->set_rtol( m_rtol );
                     pStepper->set_inftol( m_inftol );
                 }
-
                 
                 if( !rodCollisionTimeStepper->execute())
                 {
