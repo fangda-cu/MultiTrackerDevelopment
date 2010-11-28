@@ -276,9 +276,18 @@ private:
     */
     void interpolateCollisionMeshesForSubstep( const float i_interpolateFactor, float* o_timeTaken = NULL );
 
+    //! Sets a few parameters on the RodCollisionTimeStepper ready for the sim
+    /*!
+      FIXME: This function is very nearly pointless. It could all be done once before the substeps
+      start.
+      @param i_pRodGroup Pointer to a WmFigRodGroup that contains the rods to be initialised
+      @param i_subStep The currently being evalued sumStep
+      @param i_collisionsEnabled Whether collisions are turned on or not
+    */    
+    void setupRodTimeStepperForSubStep( WmFigRodGroup* i_pRodGroup, const int i_subStep,
+                                        const bool i_collisionsEnabled );
 
-    void interpolateCollisionMeshesForSubstep( float* o_timeTaken );
-
+    
     //void storeMaterialFrames();
     
     World* m_world;

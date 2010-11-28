@@ -384,6 +384,36 @@ void Beaker::interpolateCollisionMeshesForSubstep( const float i_interpolateFact
     *o_timeTaken = stopTimer( timer );
 }
 
+void Beaker::setupRodTimeStepperForSubStep( WmFigRodGroup* i_pRodGroup, const int i_subStep,
+    const bool i_collisionsEnabled )
+{
+    int rod_gid = 0;
+    int numRods = i_pRodGroup->numberOfRods();
+    
+    for ( int r=0; r<numRods; r++ )
+    {
+        // Check if this is a rod or just a fake place holder as the input was too short
+        if ( !i_pRodGroup->shouldSimulateRod( r ) )
+        {
+            continue;
+        }
+        
+        RodCollisionTimeStepper* rodCollisionTimeStepper = i_pRodGroup->collisionStepper( r );
+
+        // Setup Rod collision time stepper before we do any work
+        rodCollisionTimeStepper->shouldDoCollisions( i_collisionsEnabled );
+        rodCollisionTimeStepper->setTimeStep( getDt() );
+        rodCollisionTimeStepper->setCollisionMeshesMap( &m_collisionMeshMap );
+        rodCollisionTimeStepper->setClumping( m_isClumpingEnabled, m_clumpingCoefficient );
+
+        BASim::ElasticRod* rod = i_pRodGroup->elasticRod( r );
+
+        rod->global_rodID = rod_gid;
+        rod_gid++;
+
+        m_subSteppedVertexPositions[ i_subStep ][ r ].resize( rod->nv() );
+    }
+}
 
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
   int i_subSteps, bool i_collisionsEnabled,  bool i_selfCollisionPenaltyForcesEnabled,
@@ -427,10 +457,11 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
     for ( int s=0; s<i_subSteps; s++ )
     {
-        int rod_gid = 0;
-
         m_numRods = 0;
 
+        // Make sure we don't step past the end of this frame, depending on
+        // the size of dt, we may need to take a smaller step so we land exactly
+        // on the frame boundary.
         if ( (targetTime - currentTime) < getDt() + SMALL_NUMBER )
             setDt( targetTime - currentTime );
 
@@ -457,44 +488,13 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             int numRods = pRodGroup->numberOfRods();
             m_numRods += numRods;
 
-            // for visualising
-            m_rodRootMaterialFrame.resize( numRods );
-            m_strandRootMaterialFrame.resize( numRods );
-            m_rodRefMaterialFrame.resize( numRods );
-
+            // Make space to store the substepped positions (used only for debug drawing)
             m_subSteppedVertexPositions[ s ].resize( numRods );
-
-            for ( int r=0; r<numRods; r++ )
-            {
-                // Check if this is a rod or just a fake place holder as the input was too short
-                if ( !pRodGroup->shouldSimulateRod( r ) )
-                {
-                    continue;
-                }
-                
-                RodCollisionTimeStepper* rodCollisionTimeStepper = pRodGroup->collisionStepper( r );
-
-                This stuff doesn't need to be done per substep, move it into a seprate function
-                and call it once?
-
-                // Setup Rod collision time stepper before we do any work
-                rodCollisionTimeStepper->shouldDoCollisions( i_collisionsEnabled );
-                rodCollisionTimeStepper->setTimeStep( getDt() );
-                rodCollisionTimeStepper->setCollisionMeshesMap( &m_collisionMeshMap );
-                rodCollisionTimeStepper->setClumping( m_isClumpingEnabled, m_clumpingCoefficient );
-    
-                BASim::ElasticRod* rod = pRodGroup->elasticRod( r );
-
-                rod->global_rodID = rod_gid;
-                rod_gid++;
-
-                m_subSteppedVertexPositions[ s ][ r ].resize( rod->nv() );
-
-                //rodCollisionTimeStepper->updateVertexPositionConstraints();
-            }
-
+            
+            // Setup the time stepper for the substep. (Could be done once rather than per substep)
+            setupRodTimeStepperForSubStep( pRodGroup, s, i_collisionsEnabled );
+         
             pRodGroup->updateCurrentVertexPositions( interpolateFactor );
-
             pRodGroup->updateAllBoundaryConditions();
 
             if ( i_fixedVertices != NULL )
