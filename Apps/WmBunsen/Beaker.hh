@@ -265,6 +265,19 @@ private:
     */
     bool anyRodsActive();
 
+    //! Calculates the interpolated position of collision meshes for a specific substep
+    /*!
+      The simulation steps at a different speed from Maya animations. Since we only get the 
+      positions of the meshes at the Maya frame rate we need to work out where the meshes are
+      at each simulation substep. This function does that interpolation and stores it in
+      m_collisionMeshMap.
+      @param i_interpolateFactor (0.0 - 1.0) The time to evaluate at between the start mesh and end mesh positions.   
+      @param o_timeTaken Optional parameter which is filled in with the time the function takes to evaluate.
+    */
+    void interpolateCollisionMeshesForSubstep( const float i_interpolateFactor, float* o_timeTaken = NULL );
+
+
+    void interpolateCollisionMeshesForSubstep( float* o_timeTaken );
 
     //void storeMaterialFrames();
     

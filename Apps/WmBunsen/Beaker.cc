@@ -368,6 +368,23 @@ bool Beaker::anyRodsActive()
     return rodsToSimulate;
 }
 
+void Beaker::interpolateCollisionMeshesForSubstep( const float i_interpolateFactor, float* o_timeTaken )
+{
+    // Update CollisionMeshData for this substep
+    //
+    timeval timer;
+    startTimer( timer );
+    
+    for ( CollisionMeshDataHashMapIterator cmItr = m_collisionMeshMap.begin();
+                                           cmItr != m_collisionMeshMap.end(); ++cmItr )
+    {
+        cmItr->second->interpolate( i_interpolateFactor );
+    }    
+    
+    *o_timeTaken = stopTimer( timer );
+}
+
+
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
   int i_subSteps, bool i_collisionsEnabled,  bool i_selfCollisionPenaltyForcesEnabled,
   bool i_fullSelfCollisionsEnabled, int i_fullSelfCollisionIters,
@@ -387,7 +404,9 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     Scalar currentTime = getTime();
     Scalar targetTime = currentTime + i_stepSize;
     setDt( i_stepSize/i_subSteps );
-
+    
+    // Initialise all the timers to 0
+    
     double frameObjectCollisionForceTime = 0.0;
     double frameObjectCollisionResponse = 0.0;
     double frameSelfCollisionPenaltyForceTime = 0.0;
@@ -415,25 +434,22 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         if ( (targetTime - currentTime) < getDt() + SMALL_NUMBER )
             setDt( targetTime - currentTime );
 
-        // Update CollisionMeshData for this substep
-        //
-        timeval timer;
-        startTimer(timer);
-        Scalar interpolateFactor = ( (double)(s+1) / i_subSteps );
+        float timeTaken;
+        Scalar interpolateFactor = ( (double)( s + 1 ) / i_subSteps );
+        
+        // If we're doing collisions then interpolate the mesh positions for this substep. Maya
+        // only provides the meshes on frames so we need to figure out the intervening mesh
+        // positions
         if ( i_collisionsEnabled )
         {
-            for ( CollisionMeshDataHashMapIterator cmItr = m_collisionMeshMap.begin();
-                                                    cmItr != m_collisionMeshMap.end(); ++cmItr )
-            {
-                cmItr->second->interpolate( interpolateFactor );
-            }
+            interpolateCollisionMeshesForSubstep( interpolateFactor, &timeTaken );
+            frameTime += timeTaken;
+            m_meshInterpolationTime += timeTaken;        
         }
-        double timeTaken = stopTimer(timer);
-        frameTime += timeTaken;
-        m_meshInterpolationTime += timeTaken;
 
-        // interpolate fixed vertex positions and set timestep
+        // Interpolate fixed vertex positions and set timestep
         //
+        timeval timer;
         startTimer(timer);
         for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
         {
@@ -456,8 +472,10 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                     continue;
                 }
                 
-                //RodCollisionTimeStepper* rodCollisionTimeStepper = dynamic_cast<RodCollisionTimeStepper*>(rodData[r]->stepper);
                 RodCollisionTimeStepper* rodCollisionTimeStepper = pRodGroup->collisionStepper( r );
+
+                This stuff doesn't need to be done per substep, move it into a seprate function
+                and call it once?
 
                 // Setup Rod collision time stepper before we do any work
                 rodCollisionTimeStepper->shouldDoCollisions( i_collisionsEnabled );
