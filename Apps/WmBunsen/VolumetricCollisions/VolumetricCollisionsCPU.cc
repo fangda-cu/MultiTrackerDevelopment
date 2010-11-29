@@ -238,7 +238,7 @@ void VolumetricCollisionsCPU::respondVolumetricCollisions( RodDataMap& i_rodData
     gettimeofday(&t2, NULL);
     elapsedTime = ( ( t2.tv_sec * 1000000 + t2.tv_usec ) - ( t1.tv_sec * 1000000 + t1.tv_usec) ) / 1000.0;
     if(printdbg)
-        std::cout<<"Total initialization time: "<<elapsedTime<<std::endl;
+        std::cout<<"Total initialization time: "<<elapsedTime<<" ms"<<std::endl;
 
 
     gettimeofday(&t1, NULL);
@@ -410,7 +410,7 @@ void VolumetricCollisionsCPU::respondVolumetricCollisions( RodDataMap& i_rodData
     gettimeofday(&t2, NULL);
     elapsedTime = ( ( t2.tv_sec * 1000000 + t2.tv_usec ) - ( t1.tv_sec * 1000000 + t1.tv_usec) ) / 1000.0;
     if(printdbg)
-        std::cout<<"Total rasterization time: "<<elapsedTime<<std::endl;
+        std::cout<<"Total rasterization time: "<<elapsedTime<<" ms"<<std::endl;
 
 
     // Apply separation condition
@@ -505,7 +505,7 @@ void VolumetricCollisionsCPU::respondVolumetricCollisions( RodDataMap& i_rodData
     gettimeofday(&t2,NULL);
     elapsedTime = ( ( t2.tv_sec * 1000000 + t2.tv_usec ) - ( t1.tv_sec * 1000000 + t1.tv_usec) ) / 1000.0;
     if(printdbg)
-        std::cout<<"Total projection time: "<<elapsedTime<<std::endl;
+        std::cout<<"Total projection time: "<<elapsedTime<<" ms"<<std::endl;
 
     // Compute change in velocity
     //
@@ -591,7 +591,7 @@ void VolumetricCollisionsCPU::respondVolumetricCollisions( RodDataMap& i_rodData
     gettimeofday(&t2,NULL);
     elapsedTime = ( ( t2.tv_sec * 1000000 + t2.tv_usec ) - ( t1.tv_sec * 1000000 + t1.tv_usec) ) / 1000.0;
     if(printdbg)
-        std::cout<<"Total interpolation time: "<<elapsedTime<<std::endl;
+        std::cout<<"Total interpolation time: "<<elapsedTime<<" ms"<<std::endl;
 
     m_stepNumber++;
 }
