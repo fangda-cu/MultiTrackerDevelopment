@@ -465,6 +465,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
     for ( int s=0; s<i_subSteps; s++ )
     {
+        cout << "\nframe "<<24*currentTime<<", substep " << s << " / " << i_subSteps << endl;
         m_numRods = 0;
 
         // Make sure we don't step past the end of this frame, depending on
