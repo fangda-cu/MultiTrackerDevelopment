@@ -50,7 +50,8 @@ Beaker::Beaker() : m_plasticDeformations( false ), m_gravity( 0, -981.0, 0 ),
     m_isXMLLoggingEnabled( false ), m_sceneXML( NULL ), m_volumetricCollisions( NULL ),
     m_flip(), m_slip(), m_doVolumetricCollisions( false ), m_targetEdgeDensity( 100.0 ), m_volumetricRadius( 1.0 ),
     m_gridDX( 1.0 ), m_displayGrid( false ), m_displayGridVelocitiesMultiplier( 0.0 ), m_maxDisplayDensity(),
-    m_displayCollisionBoundary( false ), m_displayAirBoundary( false )
+    m_displayCollisionBoundary( false ), m_displayAirBoundary( false ), m_stol( 1.0e-6f * 0.01 ),
+    m_atol( 1.0e-6f * 0.01 ), m_rtol( 1.0e-6f * 0.01 ),  m_inftol( 1.0e-6f * 0.01 )
 {
     m_separationCondition[ 0 ] = m_separationCondition[ 1 ] = m_separationCondition[ 2 ] = -1.0;
 
@@ -742,13 +743,13 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             {
                 RodCollisionTimeStepper* rodCollisionTimeStepper = dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ]);
                 RodTimeStepper *pStepper = dynamic_cast< RodTimeStepper *>( rodCollisionTimeStepper->getTimeStepper() );
-                if ( pStepper != NULL )
+                /*if ( pStepper != NULL )
                 {
                     pStepper->set_stol( m_stol );
                     pStepper->set_atol( m_atol );
                     pStepper->set_rtol( m_rtol );
                     pStepper->set_inftol( m_inftol );
-                }
+                }*/
                 
                 if( !rodCollisionTimeStepper->execute())
                 {
