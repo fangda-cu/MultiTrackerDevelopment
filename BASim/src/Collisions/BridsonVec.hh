@@ -17,7 +17,7 @@ struct Vec
    Vec<N,T>(void)
    {}
 
-   Vec<N,T>(T value_for_all)
+   explicit Vec<N,T>(T value_for_all)
    { for(unsigned int i=0; i<N; ++i) v[i]=value_for_all; }
 
    template<class S>
