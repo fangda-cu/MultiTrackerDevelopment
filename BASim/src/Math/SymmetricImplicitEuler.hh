@@ -224,12 +224,11 @@ namespace BASim
     
     bool isConverged()
     {
-      m_residual = computeResidual();
 /*
-      std::cout << "atol " << m_residual << std::endl
-                << "infnorm " << m_infnorm << std::endl
-                << "rtol " << m_residual / m_initial_residual << std::endl
-                << "stol " << m_increment.norm() << std::endl;
+      std::cout << "atol " << m_residual << " (tol " << m_atol << ")\n"
+                << "infnorm " << m_infnorm << " (tol " << m_inftol << ")\n"
+                << "rtol " << m_residual / m_initial_residual << " (tol " << m_rtol << ")\n"
+                << "stol " << m_increment.norm() << " (tol " << m_stol << ")\n";
 */
       // L2 norm of the residual is less than tolerance
       if ( m_residual < m_atol ) {
@@ -372,7 +371,7 @@ namespace BASim
       m_diffEq.endIteration();
       
       // Calling computeResidual also sets m_rhs = M(m_dt*v_n-m_deltaX) + h^2*F.
-      m_initial_residual = computeResidual();
+      m_initial_residual = m_residual = computeResidual();
       
       #ifdef DEBUG
         for( int i = 0; i < (int) m_fixed.size(); ++i ) 
@@ -469,18 +468,39 @@ namespace BASim
             }
         }
         
+        START_TIMER("line search");
+        double alpha = 1;
+        double previous_residual = m_residual;
+        for (int i = 0; ; i++)
+        {
+            m_diffEq.set_qdot( (m_deltaX + alpha*m_increment) / m_dt );
+            m_diffEq.set_q( x0 + m_deltaX + alpha*m_increment );
+            m_diffEq.endIteration();
+            // Calling computeResidual also sets m_rhs = M(m_dt*v_n-m_deltaX) + h^2*F.
+            m_residual = computeResidual();
+            //std::cout << "line search: i "<<i<<", alpha "<<alpha<<", previous "<<previous_residual<<", residual "<<m_residual<<std::endl;
+            if (m_residual < previous_residual)
+            {
+                m_deltaX += alpha*m_increment; 
+                break;
+            }
+            else if( i >= 20)
+            {
+                std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Line search failed" << std::endl;
+                successfull_solve = false; 
+                break;
+            }
+            alpha *= .5;
+        }
+        if( !successfull_solve)
+            break;
+        STOP_TIMER("line search");
+
         START_TIMER("setup");
-        m_deltaX += m_increment;
-        //m_deltaV = m_deltaX / m_dt - v0;
-        
-        m_diffEq.set_qdot( m_deltaX / m_dt );
-        m_diffEq.set_q( x0 + m_deltaX );
-        
-        m_diffEq.endIteration();
         
         if (m_curit == m_maxit - 1) break;
         
-        // Check for convergence. Calling computeResidual also sets m_rhs = M(m_dt*v_n-m_deltaX) + h^2*F.
+        // Check for convergence.
         if ( isConverged() ) break;
         
         m_increment.setZero();
