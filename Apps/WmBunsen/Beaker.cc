@@ -743,13 +743,13 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             {
                 RodCollisionTimeStepper* rodCollisionTimeStepper = dynamic_cast<RodCollisionTimeStepper*>(controllers[ i ]);
                 RodTimeStepper *pStepper = dynamic_cast< RodTimeStepper *>( rodCollisionTimeStepper->getTimeStepper() );
-                /*if ( pStepper != NULL )
+                if ( pStepper != NULL )
                 {
                     pStepper->set_stol( m_stol );
                     pStepper->set_atol( m_atol );
                     pStepper->set_rtol( m_rtol );
                     pStepper->set_inftol( m_inftol );
-                }*/
+                }
                 
                 if( !rodCollisionTimeStepper->execute())
                 {
