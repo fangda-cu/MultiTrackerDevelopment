@@ -145,7 +145,6 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     }
     else if ( i_plug == oa_simulatedNurbs )
     {
-fprintf(stderr,"____COMP\n");
         // The Barbershop dynamic wire deformer is asking for the simulated rod vertices so it can
         // deform the hair appropriately.
         compute_oa_simulatedNurbs( i_plug, i_dataBlock );   
@@ -794,7 +793,6 @@ void WmFigRodNode::compute_oa_simulatedVertices( const MPlug& i_plug, MDataBlock
 
 void WmFigRodNode::compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
-fprintf(stderr,"____FUNC\n");
     MStatus stat;
 
     // First pull all the inputs to make sure we're up to date.
