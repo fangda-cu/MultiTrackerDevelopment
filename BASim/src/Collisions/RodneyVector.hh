@@ -1161,7 +1161,7 @@ class Vector
 public:
    enum { X = 0, Y = 1, Z = 2 };
 
-   Vector(uint n = 3) : _n(n)
+   explicit Vector(uint n = 3) : _n(n)
    {
       v = new T[_n];
       for (uint i = 0; i < _n; ++i) v[i] = 0;

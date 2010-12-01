@@ -69,7 +69,7 @@ struct Array1
    {}
 
    // note: default initial values are zero
-   Array1(unsigned long n_)
+   explicit Array1(unsigned long n_)
       : n(0), max_n(0), data(0)
    {
       if(n_>ULONG_MAX/sizeof(T)) throw std::bad_alloc();
@@ -512,11 +512,11 @@ struct WrapArray1
    // Allow for simple shallow copies of existing arrays
    // Note that if the underlying arrays change where their data is, the WrapArray may be screwed up
 
-   WrapArray1(Array1<T>& a)
+   explicit WrapArray1(Array1<T>& a)
       : n(a.n), max_n(a.max_n), data(a.data)
    {}
 
-   WrapArray1(std::vector<T>& a)
+   explicit WrapArray1(std::vector<T>& a)
       : n(a.size()), max_n(a.capacity()), data(&a[0])
    {}
 
