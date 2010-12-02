@@ -844,7 +844,7 @@ void WmFigRodNode::compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i
         MObject nurbsDataObj = nurbsDataFn.create();
         MFnNurbsCurve nurbsFn;
         MObject nurbsObj = nurbsFn.createWithEditPoints( nurbsEditPoints, 1, MFnNurbsCurve::kOpen, 
-            false /*not 2d*/, false /*rational*/, true /*uniform params*/, nurbsDataObj, & stat );
+            false /*not 2d*/, false /*not rational*/, true /*uniform params*/, nurbsDataObj, & stat );
         CHECK_MSTATUS( stat );
 
 
