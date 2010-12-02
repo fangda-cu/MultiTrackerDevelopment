@@ -144,6 +144,14 @@ public:
             return 0;
         }
     }
+    
+    void disableRod()
+    {
+        if ( m_stepper != NULL )
+        {
+            m_stepper->setEnabled( false );
+        }
+    }
 
 
     // We store the number of vertices in the fake rod because this is used to skip over the input

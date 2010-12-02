@@ -287,10 +287,13 @@ void Beaker::addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
     
     m_initialRodConfigurations.clear();
 
+    bool areSimulatingAnyRods = false;
     for ( int r=0; r<numRods; r++ )
     {
         if ( !m_rodDataMap[ i_rodGroupIndex ]->shouldSimulateRod( r ) )
             continue;
+            
+        areSimulatingAnyRods = true;
 
         // Store data so it can be written to an XML file later        
         InitialRodConfiguration initialRodConfiguration;
@@ -316,7 +319,11 @@ void Beaker::addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
     }
 
     delete m_volumetricCollisions;
-    m_volumetricCollisions = new VolumetricCollisionsCPU( m_rodDataMap );
+    
+    if ( areSimulatingAnyRods )
+    {
+        m_volumetricCollisions = new VolumetricCollisionsCPU( m_rodDataMap );        
+    }
 }
 
 void Beaker::startXMLLogging( std::string& i_xmlFilePath, std::string& i_mayaSceneFilename )
