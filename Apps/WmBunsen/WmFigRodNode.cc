@@ -42,6 +42,7 @@ using namespace BASim;
 /* static */ MObject WmFigRodNode::oa_materialFrames;
 /* static */ MObject WmFigRodNode::oa_undeformedMaterialFrames;
 /* static */ MObject WmFigRodNode::oa_numberOfRods;
+/* static */ MObject WmFigRodNode::ia_simEnabled;
 
 // Cache attributes
 /* static */ MObject WmFigRodNode::ca_simulationSync;
@@ -99,9 +100,22 @@ WmFigRodNode::~WmFigRodNode()
     }
 }
 
+void WmFigRodNode::enableSim()
+{
+    m_rodGroup.enableSimulationAllRods();
+}
+
+void WmFigRodNode::disableSim()
+{
+    m_rodGroup.disableSimulationAllRods();
+}
+
 MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
+
+    i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool() ? enableSim() : disableSim();
+
 
     if ( i_plug == oa_numberOfRods )
     {
@@ -1615,6 +1629,9 @@ void* WmFigRodNode::creator()
    // addNumericAttribute( ca_syncAttrs, "syncAttrs", "sya", MFnNumericData::kDouble, 1.0, false );
     addNumericAttribute( oa_rodsChanged, "rodsChanged", "rch", MFnNumericData::kBoolean, true, false );
     addNumericAttribute( ca_simulationSync, "simulationSync", "sis", MFnNumericData::kBoolean, false, false );
+
+    addNumericAttribute( ia_simEnabled, "simEnabled", "sme", MFnNumericData::kBoolean, true, true, false);
+
 
     addNumericAttribute( ia_simStepTaken, "simStepTaken", "sst", MFnNumericData::kBoolean, false, true );
 	stat = attributeAffects( ia_simStepTaken, ca_simulationSync );
