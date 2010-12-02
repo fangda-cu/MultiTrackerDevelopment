@@ -99,7 +99,7 @@ public:
 
     bool shouldSimulateRod( int i_rodIndex )
     {
-        if ( !m_isReadingFromCache && !m_simulationNeedsReset && !isPlaceHolderRod( i_rodIndex ) )
+        if ( !m_isReadingFromCache && !m_simulationNeedsReset && !isPlaceHolderRod( i_rodIndex ) && isRodSimulationEnabled(i_rodIndex))
         {
             return true;
         }
@@ -118,6 +118,38 @@ public:
     {
         return m_rodData[ rodIndex ]->isPlaceHolderRod();
     }
+
+    bool isRodSimulationEnabled( int rodIndex )
+    {
+        return m_rodData[ rodIndex ]->isSimulationEnabled();
+    }
+
+    void disableSimulationAllRods()
+    {
+        for( int r = 0; r < m_rodData.size(); ++r )
+        {
+            m_rodData[ r ]->disableSimulation();
+        }
+    }
+
+    void enableSimulationAllRods()
+    {
+        for( int r = 0; r < m_rodData.size(); ++r )
+        {
+            m_rodData[ r ]->enableSimulation();
+        }
+    }
+
+    void disableSimulation( int rodIndex )
+    {
+        m_rodData[ rodIndex ]->disableSimulation();
+    }
+
+    void enableSimulation( int rodIndex )
+    {
+        m_rodData[ rodIndex ]->enableSimulation();
+    }
+
 
     BASim::Vec3d nextVertexPosition( int i_rodIndex, int i_vertexIndex )
     {
@@ -206,6 +238,10 @@ public:
 
     ElasticRod* elasticRod( int i_rodIndex )
     {
+        if(m_rodData.size() == 0)
+        {
+            return NULL;
+        }
         return m_rodData[ i_rodIndex ]->elasticRod();
     }
 
