@@ -15,7 +15,6 @@ using namespace BASim;
 /* static */ MObject WmFigRodNode::ia_time;
 /* static */ MObject WmFigRodNode::ia_startTime;
 /* static */ MObject WmFigRodNode::ia_nurbsCurves;
-/* static */ MObject WmFigRodNode::oa_nurbsCurves;
 /* static */ MObject WmFigRodNode::ia_barberShopVertices;
 /* static */ MObject WmFigRodNode::ia_percentageOfBarberShopStrands;
 /* static */ MObject WmFigRodNode::ia_simStepTaken;
@@ -36,7 +35,9 @@ using namespace BASim;
 // Output attributes
 /* static */ MObject WmFigRodNode::oa_rodsChanged;
 /* static */ MObject WmFigRodNode::oa_simulatedVertices;
+/* static */ MObject WmFigRodNode::oa_simulatedNurbs;
 /* static */ MObject WmFigRodNode::oa_nonSimulatedVertices;
+/* static */ // MObject WmFigRodNode::oa_nonSimulatedNurbs; // didn't do this yet
 /* static */ MObject WmFigRodNode::oa_verticesInEachRod;
 /* static */ MObject WmFigRodNode::oa_materialFrames;
 /* static */ MObject WmFigRodNode::oa_undeformedMaterialFrames;
@@ -145,6 +146,12 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         // The Barbershop dynamic wire deformer is asking for the simulated rod vertices so it can
         // deform the hair appropriately.
         compute_oa_simulatedVertices( i_plug, i_dataBlock );   
+    }
+    else if ( i_plug == oa_simulatedNurbs )
+    {
+        // The Barbershop dynamic wire deformer is asking for the simulated rod vertices so it can
+        // deform the hair appropriately.
+        compute_oa_simulatedNurbs( i_plug, i_dataBlock );   
     }
     else if ( i_plug == oa_nonSimulatedVertices )
     {
@@ -788,7 +795,86 @@ void WmFigRodNode::compute_oa_simulatedVertices( const MPlug& i_plug, MDataBlock
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// Compute oa_simulatedVertices
+// Compute oa_simulatedNurbs
+//
+// The Barbershop dynamic wire deformer is asking for the simulated rod vertices so it can
+// deform the hair appropriately. This is oa_simulatedVertices but as individual nurbs curves.
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void WmFigRodNode::compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i_dataBlock )
+{
+    MStatus stat;
+
+    // First pull all the inputs to make sure we're up to date.
+    i_dataBlock.inputValue( ca_simulationSync, &stat ).asBool();
+    CHECK_MSTATUS( stat );
+    i_dataBlock.inputValue( oa_rodsChanged, &stat ).asBool();
+    CHECK_MSTATUS( stat );
+
+    // The above may have been clean so just make sure we actually read time
+    i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
+    CHECK_MSTATUS( stat );
+
+
+    // Get nurbs vertices
+    MObject simulatedVerticesObj = i_dataBlock.inputValue( oa_simulatedVertices, & stat ).data();
+    CHECK_MSTATUS( stat );
+    MFnVectorArrayData simulatedVerticesFn( simulatedVerticesObj, & stat );
+    CHECK_MSTATUS( stat );
+    MVectorArray simulatedVertices = simulatedVerticesFn.array( & stat );
+    CHECK_MSTATUS( stat );
+
+    // Get num nurbs vertices per nurbs
+    MObject verticesInEachRodObj = i_dataBlock.inputValue( oa_verticesInEachRod, & stat ).data();
+    CHECK_MSTATUS( stat );
+    MFnIntArrayData verticesInEachRodFn( verticesInEachRodObj, & stat );
+    CHECK_MSTATUS( stat );
+    MIntArray verticesInEachRod = verticesInEachRodFn.array( & stat );
+    unsigned int numNurbs = verticesInEachRod.length();
+    CHECK_MSTATUS( stat );
+
+
+    MArrayDataHandle simulatedNurbsArrayHandle = i_dataBlock.outputArrayValue( oa_simulatedNurbs, &stat );
+    CHECK_MSTATUS( stat );
+
+    MArrayDataBuilder simulatedNurbsArrayDataBuilder( & i_dataBlock, oa_simulatedNurbs, numNurbs, & stat );
+    CHECK_MSTATUS( stat );
+    for ( unsigned int n = 0, p = 0; n < numNurbs; n++ )
+    {
+        MPointArray nurbsEditPoints;
+        for ( unsigned int v = 0; v < verticesInEachRod[ n ]; v++ )
+        {
+            MPoint nurbsEditPoint( simulatedVertices[ p ].x, simulatedVertices[ p ].y, simulatedVertices[ p ].z ); 
+            nurbsEditPoints.append( nurbsEditPoint );
+            ++p;
+        }
+
+
+        MFnNurbsCurveData nurbsDataFn;
+        MObject nurbsDataObj = nurbsDataFn.create();
+        MFnNurbsCurve nurbsFn;
+        MObject nurbsObj = nurbsFn.createWithEditPoints( nurbsEditPoints, 1, MFnNurbsCurve::kOpen, 
+            false /*not 2d*/, false /*not rational*/, true /*uniform params*/, nurbsDataObj, & stat );
+        CHECK_MSTATUS( stat );
+
+
+        MDataHandle simulatedNurbsHandle = simulatedNurbsArrayDataBuilder.addElement( n, & stat );
+        CHECK_MSTATUS( stat );
+
+        stat = simulatedNurbsHandle.set( nurbsDataObj );
+        CHECK_MSTATUS( stat );
+    }
+
+    simulatedNurbsArrayHandle.set( simulatedNurbsArrayDataBuilder );
+
+    simulatedNurbsArrayHandle.setAllClean();
+    i_dataBlock.setClean( i_plug );
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Compute oa_nonSimulatedVertices
 //
 // The Barbershop dynamic wire deformer is asking for the simulated rod vertices so it can
 // deform the hair appropriately.
@@ -1753,6 +1839,22 @@ void* WmFigRodNode::creator()
         CHECK_MSTATUS( stat );
     }
 
+    // This is the same data as simulatedCurveCVs, but as nurbs curves
+    //
+    {
+        MFnTypedAttribute tAttr;  
+        oa_simulatedNurbs = tAttr.create( "simulatedNurbs", "sns",
+            MFnData::kNurbsCurve, & stat );
+        CHECK_MSTATUS( stat );
+        CHECK_MSTATUS( tAttr.setArray( true ) );
+        CHECK_MSTATUS( tAttr.setReadable( true ) );
+        CHECK_MSTATUS( tAttr.setWritable( true ) );
+        CHECK_MSTATUS( tAttr.setConnectable( true ) );
+        CHECK_MSTATUS( tAttr.setUsesArrayDataBuilder( true ) );
+        stat = addAttribute( oa_simulatedNurbs );
+        CHECK_MSTATUS( stat );
+    }
+
     {
         MFnTypedAttribute tAttr;
         oa_nonSimulatedVertices = tAttr.create( "nonSimulatedVertices", "nsv",
@@ -1813,6 +1915,12 @@ void* WmFigRodNode::creator()
     stat = attributeAffects( ia_time, oa_undeformedMaterialFrames );
     stat = attributeAffects( ia_startTime, oa_undeformedMaterialFrames );
     stat = attributeAffects( ia_strandRootFrames, oa_undeformedMaterialFrames );
+
+    stat = attributeAffects( oa_verticesInEachRod, oa_simulatedNurbs );
+    stat = attributeAffects( oa_simulatedVertices, oa_simulatedNurbs );
+    stat = attributeAffects( ca_simulationSync, oa_simulatedNurbs );
+    stat = attributeAffects( oa_rodsChanged, oa_simulatedNurbs );
+    stat = attributeAffects( ia_time, oa_simulatedNurbs );
  
     addNumericAttribute( oa_numberOfRods, "curveCount", "nor", MFnNumericData::kInt, 0, false );
     stat = attributeAffects( ia_time, oa_numberOfRods );

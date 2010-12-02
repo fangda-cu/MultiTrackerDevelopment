@@ -76,7 +76,6 @@ public:
     static MObject ia_time;
     static MObject ia_startTime;
     static MObject ia_nurbsCurves;
-    static MObject oa_nurbsCurves;
     static MObject ia_barberShopVertices;
     static MObject ia_percentageOfBarberShopStrands;    
     
@@ -120,7 +119,9 @@ public:
     
     // Output attributes heading to Fozzie
     static MObject oa_simulatedVertices;
+    static MObject oa_simulatedNurbs;
     static MObject oa_nonSimulatedVertices;
+    //static MObject oa_nonSimulatedNurbs; // didn't make this yet
     static MObject oa_verticesInEachRod;
     
     // Frames from and too Barbershop
@@ -169,6 +170,7 @@ public:
 private:
     // Compute helper functions
     void compute_oa_simulatedVertices( const MPlug& i_plug, MDataBlock& i_dataBlock );
+    void compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i_dataBlock );
     void compute_ca_simulationSync( const MPlug& i_plug, MDataBlock i_dataBlock );
     void compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_dataBlock );
     void compute_oa_nonSimulatedVertices( const MPlug& i_plug, MDataBlock& i_dataBlock );
