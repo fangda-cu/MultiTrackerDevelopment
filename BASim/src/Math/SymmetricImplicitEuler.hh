@@ -37,6 +37,7 @@ namespace BASim
     , v0()
     , m_rhs()
     , m_deltaX()
+    , m_deltaX_save()
     , m_increment()
     , m_fixed()
     , m_desired()
@@ -174,6 +175,7 @@ namespace BASim
         v0.resize(m_ndof);
         m_rhs.resize(m_ndof);
         m_deltaX.resize(m_ndof);
+        m_deltaX_save.resize(m_ndof);
         m_increment.resize(m_ndof);
       }
       assert( m_A->rows() == m_A->cols() );
@@ -225,10 +227,10 @@ namespace BASim
     bool isConverged()
     {
 /*
-      std::cout << "atol " << m_residual << " (tol " << m_atol << ")\n"
-                << "infnorm " << m_infnorm << " (tol " << m_inftol << ")\n"
-                << "rtol " << m_residual / m_initial_residual << " (tol " << m_rtol << ")\n"
-                << "stol " << m_increment.norm() << " (tol " << m_stol << ")\n";
+      std::cout << "atol " << m_residual
+                << ", infnorm " << m_infnorm
+                << ", rtol " << m_residual / m_initial_residual
+                << ", stol " << m_increment.norm() << std::endl;
 */
       // L2 norm of the residual is less than tolerance
       if ( m_residual < m_atol ) {
@@ -372,6 +374,12 @@ namespace BASim
       
       // Calling computeResidual also sets m_rhs = M(m_dt*v_n-m_deltaX) + h^2*F.
       m_initial_residual = m_residual = computeResidual();
+/*
+      std::cout << "atol " << m_residual
+                << ", infnorm " << m_infnorm
+                << ", rtol " << m_residual / m_initial_residual
+                << ", stol " << m_increment.norm() << std::endl;
+*/
       
       #ifdef DEBUG
         for( int i = 0; i < (int) m_fixed.size(); ++i ) 
@@ -447,18 +455,22 @@ namespace BASim
         }
         STOP_TIMER("solver");
 
+        // Save m_deltaX for line search purposes
+        m_deltaX_save = m_deltaX;
+
         // Verify that we have the correct linearization
         if(0)
         {
             VecXd residual0(m_rhs);
             Scalar residual0_norm = residual0.norm();
             Scalar steps[7] = {1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1};
-            std::cout<<"check:\n";
+            std::cout<<"check:\n  x0 "<<x0.norm()<<", deltaX "<<m_deltaX.norm()<<", increment "<<m_increment.norm()<<"\n";
             for (int ss=0; ss<7; ss++)
             {
                 Scalar s=steps[ss];
-                m_diffEq.set_qdot( (m_deltaX+s*m_increment)/m_dt );
-                m_diffEq.set_q( x0+m_deltaX+s*m_increment );
+                m_deltaX = m_deltaX_save + s*m_increment;
+                m_diffEq.set_qdot( m_deltaX/m_dt );
+                m_diffEq.set_q( x0+m_deltaX );
                 m_diffEq.endIteration();
                 computeResidual();
                 VecXd change(m_rhs-residual0), predicted(-s*residual0);
@@ -471,19 +483,17 @@ namespace BASim
         START_TIMER("line search");
         double alpha = 1;
         double previous_residual = m_residual;
+        m_deltaX += m_increment;
         for (int i = 0; ; i++)
         {
-            m_diffEq.set_qdot( (m_deltaX + alpha*m_increment) / m_dt );
-            m_diffEq.set_q( x0 + m_deltaX + alpha*m_increment );
+            m_diffEq.set_qdot( m_deltaX / m_dt );
+            m_diffEq.set_q( x0 + m_deltaX );
             m_diffEq.endIteration();
             // Calling computeResidual also sets m_rhs = M(m_dt*v_n-m_deltaX) + h^2*F.
             m_residual = computeResidual();
             //std::cout << "line search: i "<<i<<", alpha "<<alpha<<", previous "<<previous_residual<<", residual "<<m_residual<<std::endl;
-            if (m_residual < previous_residual)
-            {
-                m_deltaX += alpha*m_increment; 
+            if (m_residual < 10*previous_residual)
                 break;
-            }
             else if( i >= 20)
             {
                 std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Line search failed" << std::endl;
@@ -491,6 +501,7 @@ namespace BASim
                 break;
             }
             alpha *= .5;
+            m_deltaX = m_deltaX_save + alpha*m_increment;
         }
         if( !successfull_solve)
             break;
@@ -516,7 +527,7 @@ namespace BASim
       if( m_curit == m_maxit - 1 )
       {
         successfull_solve = false;
-        //std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: " << m_maxit << std::endl;
+        std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: " << m_maxit << std::endl;
       }
       
       #ifdef TIMING_ON
@@ -573,6 +584,7 @@ namespace BASim
     VecXd v0;
     VecXd m_rhs;
     VecXd m_deltaX;
+    VecXd m_deltaX_save;
     //VecXd m_deltaV;
     VecXd m_increment;
 

@@ -116,6 +116,21 @@ public:
 
     void updateBoundaryConditions();
 
+    void enableSimulation()
+    {
+        m_enabled = true;
+    }
+
+    void disableSimulation()
+    {
+        m_enabled = false;
+    }
+
+    bool isSimulationEnabled()
+    {
+        return m_enabled;
+    }
+
     bool isPlaceHolderRod()
     {
         return m_isPlaceHolderRod;
@@ -378,6 +393,8 @@ public:
     BASim::Vec3d m_gravity;
     
     std::vector< float > m_targetDensityPerEdge;
+
+    bool m_enabled;
 };
 
 #endif

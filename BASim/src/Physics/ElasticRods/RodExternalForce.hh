@@ -11,6 +11,7 @@
 namespace BASim {
 
 class ElasticRod;
+class MatrixBase;
 
 /** Base class for external forces applied to a rod. */
 class RodExternalForce

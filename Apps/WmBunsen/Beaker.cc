@@ -50,8 +50,8 @@ Beaker::Beaker() : m_plasticDeformations( false ), m_gravity( 0, -981.0, 0 ),
     m_isXMLLoggingEnabled( false ), m_sceneXML( NULL ), m_volumetricCollisions( NULL ),
     m_flip(), m_slip(), m_doVolumetricCollisions( false ), m_targetEdgeDensity( 100.0 ), m_volumetricRadius( 1.0 ),
     m_gridDX( 1.0 ), m_displayGrid( false ), m_displayGridVelocitiesMultiplier( 0.0 ), m_maxDisplayDensity(),
-    m_displayCollisionBoundary( false ), m_displayAirBoundary( false ), m_stol( 1.0e-6f * 10 ),
-    m_atol( 1.0e-6f * 10 ), m_rtol( 1.0e-6f * 10 ),  m_inftol( 1.0e-6f * 10 )
+    m_displayCollisionBoundary( false ), m_displayAirBoundary( false ), m_stol( 1.0e-6f * 0.01 ),
+    m_atol( 1.0e-6f * 0.01 ), m_rtol( 1.0e-6f * 0.01 ),  m_inftol( 1.0e-6f * 0.01 )
 {
     m_separationCondition[ 0 ] = m_separationCondition[ 1 ] = m_separationCondition[ 2 ] = -1.0;
 
@@ -465,6 +465,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
     for ( int s=0; s<i_subSteps; s++ )
     {
+        cout << "\nframe "<<24*currentTime<<", substep " << s << " / " << i_subSteps << endl;
         m_numRods = 0;
 
         // Make sure we don't step past the end of this frame, depending on

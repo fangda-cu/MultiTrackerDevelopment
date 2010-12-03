@@ -97,7 +97,8 @@ public:
     static MObject ia_drawMaterialFrames;
     static MObject ia_lockFirstEdgeToInput;
     static MObject ia_simulationSet;
-    
+    static MObject ia_simEnabled;
+
     // Drawing 
     static MObject ia_userDefinedColors;
     static MObject ia_draw3DRod;
@@ -192,6 +193,9 @@ private:
 
     MString getCacheFilename( MDataBlock& i_dataBlock );
     
+    void enableSim();
+    void disableSim();
+
     void updateKinematicEdgesFromInput();
 
     double m_currentTime;

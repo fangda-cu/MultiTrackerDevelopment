@@ -3,6 +3,7 @@
 RodData::RodData() : m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_gravity( 0.0, 0.0, 0.0 )
 {
     m_isPlaceHolderRod = true;
+    m_enabled = true;
 }
 
 RodData::RodData( RodOptions& i_rodOptions, std::vector<BASim::Vec3d>& i_rodVertexPositions,
@@ -10,6 +11,8 @@ RodData::RodData( RodOptions& i_rodOptions, std::vector<BASim::Vec3d>& i_rodVert
                   bool i_isReadingFromCache, bool i_doReverseHairdo ) : 
 m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDamping )
 {
+    m_enabled = true;
+
     m_rod = setupRod( i_rodOptions,
                       i_rodVertexPositions,
                       i_rodVertexPositions );
