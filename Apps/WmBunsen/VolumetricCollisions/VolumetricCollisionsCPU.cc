@@ -46,40 +46,49 @@ ElasticRod* VolumetricCollisionsCPU::initialiseRodMap( RodDataMap& i_rodDataMap 
     m_rodDataMapIterator = m_rodDataMap->begin();
 
     WmFigRodGroup* pRodGroup = m_rodDataMapIterator->second;
-    m_rodIndex = 0;
+    
+    // Set this to be -1 as it will get incremented in nextRod() and we'll
+    // get the 0th rod back.
+    m_rodIndex = -1;
 
-    // This assumes every group has at least one rod...
-    return pRodGroup->elasticRod( m_rodIndex );
+    return nextRod();
 }
 
 ElasticRod* VolumetricCollisionsCPU::nextRod()
 {
-    // This will add in placeholder rods, need to remove those...
-
+   
     if ( m_rodDataMapIterator == m_rodDataMap->end() )
     {
         return NULL;
     }
-
+    
     WmFigRodGroup* pRodGroup = m_rodDataMapIterator->second;
 
-    if ( m_rodIndex <  (pRodGroup->numberOfRods() - 1 ) )
+    ElasticRod* pRod = NULL;
+    
+    // Placeholder rods have a NULL rod so we need to skip over them
+    // until we found a non-NULL rod.
+    while ( pRod == NULL )
     {
-        ++m_rodIndex;        
-    }
-    else // End of this rod group, move onto the next
-    {
-        ++m_rodDataMapIterator;
-        if ( m_rodDataMapIterator == m_rodDataMap->end() )
+        if ( m_rodIndex < (pRodGroup->numberOfRods() - 1 ) )
         {
-            return NULL;
+            ++m_rodIndex;        
         }
-        // otherwise we still have another group to go so reset the index
-        m_rodIndex = 0;
+        else // End of this rod group, move onto the next
+        {
+            ++m_rodDataMapIterator;
+            if ( m_rodDataMapIterator == m_rodDataMap->end() )
+            {
+                return NULL;
+            }
+            // otherwise we still have another group to go so reset the index
+            m_rodIndex = 0;
+        }
+        
+        pRod = pRodGroup->elasticRod( m_rodIndex );
     }
-
-    // This assumes every group has at least one rod...
-    return pRodGroup->elasticRod( m_rodIndex );
+    
+    return pRod;
 }
 
 void VolumetricCollisionsCPU::reinitialiseRods( RodDataMap& i_rodDataMap )
@@ -188,13 +197,16 @@ void VolumetricCollisionsCPU::respondVolumetricCollisions( RodDataMap& i_rodData
     TV rodMin = boundingBox.Minimum_Corner();
     TV rodMax = boundingBox.Maximum_Corner();
 
+    cerr << "Bounding box min " << rodMin << endl;
+    cerr << "Bounding box max " << rodMax << endl;
+
     // Create grid
     //
     PhysBAM::VECTOR<int,3> dims;
     for(int d=1; d<=3; d++)
     {
-        rodMin(d) = std::floor((rodMin(d) - volumetricRadius)* oneOverDx - 1.0);
-        rodMax(d) = std::floor((rodMax(d) + volumetricRadius) * oneOverDx + 1.0);
+        rodMin(d) = std::floor((rodMin(d) - volumetricRadius) * oneOverDx - 1.0);
+        rodMax(d) = std::ceil((rodMax(d) + volumetricRadius) * oneOverDx + 1.0);
         dims(d) = (int)(rodMax(d) - rodMin(d));
         rodMin(d) *= gridDx;
         rodMax(d) *= gridDx;
