@@ -93,7 +93,8 @@ WmFigaroRodShape/WmFigaroRodShapeUI.hh \
 constraints/WmFigConstraintNode.hh \
 WmFigSelectionDisplayNode.hh \
 WmFigUtils.hh \
-WmFigRodComponentList.hh 
+WmFigRodComponentList.hh  \
+WmFigRodParticleInput.hh
 
 PLG1_S          := \
 Beaker.cc \
@@ -127,7 +128,8 @@ WmFigaroRodShape/WmFigaroRodShapeUI.cc \
 constraints/WmFigConstraintNode.cc \
 WmFigSelectionDisplayNode.cc \
 utils/WmFigUtils.cc \
-WmFigRodComponentList.cc
+WmFigRodComponentList.cc \
+WmFigRodParticleInput.cc
 
 PLG1_L          += \
 	-lWfigaro_dbg \

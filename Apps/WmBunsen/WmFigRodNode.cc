@@ -71,6 +71,10 @@ using namespace BASim;
 /* static */ MObject WmFigRodNode::ia_edgeTransforms;
 /* static */ MObject WmFigRodNode::oa_edgeTransforms;
 
+// Input attributes from nParticles
+/* static */ MObject WmFigRodNode::ia_particlePositions;
+/* static */ MObject WmFigRodNode::ia_perRodParticleCounts;
+
 WmFigRodNode::WmFigRodNode() : m_massDamping( 10 ), m_initialised( false ),
     /*mx_rodData( NULL ),*/ mx_world( NULL ), m_numberOfInputCurves( 0 ), 
     m_percentageOfBarberShopStrands( 100 ), m_verticesPerRod( -1 ), m_cacheFilename( "" ),
@@ -159,7 +163,6 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     }
     else if ( i_plug == oa_simulatedNurbs )
     {
-fprintf(stderr,"____COMP\n");
         // The Barbershop dynamic wire deformer is asking for the simulated rod vertices so it can
         // deform the hair appropriately.
         compute_oa_simulatedNurbs( i_plug, i_dataBlock );   
@@ -271,6 +274,7 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
     //
    
     MPlug barberShopPlug( thisMObject(), ia_barberShopVertices );
+    MPlug particlesPlug( thisMObject(), ia_particlePositions );
    
     if ( m_readFromCache)
     {
@@ -283,6 +287,12 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
                                              m_percentageOfBarberShopStrands, m_verticesPerRod,
                                              m_lockFirstEdgeToInput, m_vertexSpacing,
                                              m_minimumRodLength,
+                                             m_rodOptions, m_massDamping, m_gravity, m_rodGroup,
+                                             m_solverType, m_simulationSet );
+    }
+    else if ( particlesPlug.isConnected() )
+    {        
+        m_pRodInput = new WmFigRodParticleInput( ia_particlePositions, ia_perRodParticleCounts,                                             
                                              m_rodOptions, m_massDamping, m_gravity, m_rodGroup,
                                              m_solverType, m_simulationSet );
     }
@@ -808,7 +818,6 @@ void WmFigRodNode::compute_oa_simulatedVertices( const MPlug& i_plug, MDataBlock
 
 void WmFigRodNode::compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
-fprintf(stderr,"____FUNC\n");
     MStatus stat;
 
     // First pull all the inputs to make sure we're up to date.
@@ -860,7 +869,7 @@ fprintf(stderr,"____FUNC\n");
         MObject nurbsDataObj = nurbsDataFn.create();
         MFnNurbsCurve nurbsFn;
         MObject nurbsObj = nurbsFn.createWithEditPoints( nurbsEditPoints, 1, MFnNurbsCurve::kOpen, 
-            false /*not 2d*/, false /*rational*/, true /*uniform params*/, nurbsDataObj, & stat );
+            false /*not 2d*/, false /*not rational*/, true /*uniform params*/, nurbsDataObj, & stat );
         CHECK_MSTATUS( stat );
 
 
@@ -1799,7 +1808,32 @@ void* WmFigRodNode::creator()
     }
     stat = attributeAffects( ia_barberShopVertices, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_barberShopVertices->oa_rodsChanged" ); return stat; }
+    
+    {
+        MFnTypedAttribute tAttr;
+        ia_particlePositions = tAttr.create( "particlePositions", "ppo",
+                                          MFnData::kVectorArray, &stat );
+        CHECK_MSTATUS( stat );
+        CHECK_MSTATUS( tAttr.setReadable( false ) );
+        CHECK_MSTATUS( tAttr.setWritable( true ) );
+        stat = addAttribute( ia_particlePositions );
+        CHECK_MSTATUS( stat );
+    }
+    stat = attributeAffects( ia_particlePositions, oa_rodsChanged );
+    if ( !stat ) { stat.perror( "attributeAffects ia_particlePositions->oa_rodsChanged" ); return stat; }
 
+    {
+        MFnTypedAttribute tAttr;
+        ia_perRodParticleCounts = tAttr.create( "perRodParticleCounts", "prp",
+                                          MFnData::kIntArray, &stat );
+        CHECK_MSTATUS( stat );
+        CHECK_MSTATUS( tAttr.setReadable( false ) );
+        CHECK_MSTATUS( tAttr.setWritable( true ) );
+        stat = addAttribute( ia_perRodParticleCounts );
+        CHECK_MSTATUS( stat );
+    }
+    stat = attributeAffects( ia_perRodParticleCounts, oa_rodsChanged );
+    if ( !stat ) { stat.perror( "attributeAffects ia_perRodParticleCounts->oa_rodsChanged" ); return stat; }
 
     {
         ia_hairSpray = MRampAttribute::createCurveRamp("hairSpray", "hs");

@@ -46,6 +46,7 @@
 #include "WmFigRodNurbsInput.hh"
 #include "WmFigRodBarbInput.hh"
 #include "WmFigRodFileInput.hh"
+#include "WmFigRodParticleInput.hh"
 #include "WmFigRodGroup.hh"
 
 #include <GL/glu.h>
@@ -129,10 +130,15 @@ public:
     static MObject oa_undeformedMaterialFrames;
     static MObject ia_strandRootFrames;
     
+    // Rods can be used as a caching mechanism for nParticle hair sims
+    static MObject ia_particlePositions;
+    static MObject ia_perRodParticleCounts;
+    
     static MObject ia_edgeTransforms;
     static MObject oa_edgeTransforms;
     
     static MObject oa_numberOfRods;
+    
 
     // Returns the number of rods this node has input data for
     //int numberOfRods();

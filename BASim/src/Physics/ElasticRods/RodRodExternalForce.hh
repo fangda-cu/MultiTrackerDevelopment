@@ -28,7 +28,7 @@ class RodRodExternalForce
 {
 public:
 
-  RodRodExternalForce( bool implicit = true )
+  explicit RodRodExternalForce( bool implicit = true )
   : m_implicit(implicit), m_active(true)
   {}
 

@@ -278,6 +278,14 @@ public:
     {
         return m_rodData[ i_index ]->rodRenderer();
     }
+    
+    void disableAllRods()
+    {
+        for ( int r=0; r < m_rodData.size(); ++r )
+        {
+            m_rodData[ r ]->disableRod();
+        }
+    }
 
 private:
     std::vector< RodData* > m_rodData;
