@@ -394,6 +394,8 @@ void WmFigRodNode::updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock 
                                  m_rodOptions.ShearModulus,
                                  m_rodOptions.viscosity,
                                  m_rodOptions.density );
+    
+    cerr << "*** Number of Rods is " << m_rodGroup.numberOfRods();
 }
 
 /** @detail Returns the material frame matrix for a specific rod's edge.
