@@ -386,7 +386,14 @@ void WmFigRodNode::updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock 
             MGlobal::displayWarning( "Please rewind simulation to reset\n" );
         }
 
-        updateKinematicEdgesFromInput();
+        if(!i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool())
+        {
+            m_pRodInput->updateRodDataFromInput( i_dataBlock );
+        }
+        else
+        {
+            updateKinematicEdgesFromInput();
+        }
     }
 
     m_rodGroup.setRodParameters( m_rodOptions.radiusA, m_rodOptions.radiusB,
