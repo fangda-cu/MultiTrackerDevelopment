@@ -99,7 +99,7 @@ void RodCollisionTimeStepper::setClumping(bool flag, Scalar coeff) {
 
 bool RodCollisionTimeStepper::execute()
   {
-    if (!m_enabled)
+    if ( !m_enabled )
       return false;
       /*
     if (m_rod) {
