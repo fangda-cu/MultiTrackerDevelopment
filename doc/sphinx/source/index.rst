@@ -58,16 +58,6 @@ Volumetric collisions are quite different from standard collisions.  Volumetric 
 
 
 
-
-
-
-
-
-
-
-
-
-
 Indices and tables
 ==================
 

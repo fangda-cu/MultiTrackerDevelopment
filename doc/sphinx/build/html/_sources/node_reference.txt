@@ -12,7 +12,7 @@ wmFigaro node attributes
 --------------------------
 
 =======================================	===========
-Attribute					Definition
+Attribute				Definition
 =======================================	===========
 Solver Type 				Sets the simulation type. At present, leave this as **Symmetric Implicit Euler**, as this is the most stable choice.
 Enabled 				Turns the simulation on and off. 
@@ -24,6 +24,11 @@ Sub Steps 				The minimum number of steps to take per frame. The simulation is a
 					Be careful setting this to low values, as it can make the simulation too "bouncy". 
 Gravity 				Sets the gravity. By default, this attribute is connected to all rod nodes so they pick up the world gravity from the Figaro node.
 Plastic Deformations 			Ignore this at present.
+**Solver Tolerances** section
+Stol					xx
+Atol					xx
+Rtol					xx
+Inftol					xx
 **Clumping** section 				Ignore this at present. 
 **Collisions**	section		
 Object Collisions Enabled		Turns the collision handling for meshes on and off. 
@@ -36,7 +41,7 @@ Volumetric Collisions			Turns on the volumetric collision handling.
 Grid DX  				The edge length of the grid cells used for calculating the volumetric collision.
 Target Edge Density  			The density desired in each cell. Numbers smaller than the hair density will pull hairs in, larger will puff them out.
 Volumetric Radius			The radius of influence of a hair on the grid. This should usually be at least the actual radius of the individual hair. 
-Flip					Sets how grid velocities are interpolated to particles. At 0, you get a viscous effect. At 1, you get much more free results, but some collisions may be missed. .
+Flip					Sets how grid velocities are interpolated to particles. At 0, you get a viscous effect. At 1, you get much more free results, but some collisions may be missed.
 Slip 					Affects how much of the grid velocity is used. At 0, Figaro uses the grid velocities; at 1, Figaro ignores volumetric collisions entirely.
 Separation Condition			Debug information, ignore.  
 Display Grid etc 			Debug information, ignore. 
