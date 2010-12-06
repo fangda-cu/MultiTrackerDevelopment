@@ -9,6 +9,7 @@ global proc AEwmFigRodNodeTemplate(string $nodeName)
     editorTemplate -endLayout;
 
     editorTemplate -beginLayout "Rod Parameters" -collapse 0;
+        editorTemplate -addControl "simEnabled"; 
         editorTemplate -addControl "numberOfRods";
         editorTemplate -addControl "cacheFrame";
         editorTemplate -addControl "readFromCache";
