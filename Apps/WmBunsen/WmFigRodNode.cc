@@ -399,7 +399,7 @@ void WmFigRodNode::updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock 
                                  m_rodOptions.viscosity,
                                  m_rodOptions.density );
     
-    cerr << "*** Number of Rods is " << m_rodGroup.numberOfRods();
+    //cerr << "*** Number of Rods is " << m_rodGroup.numberOfRods();
 }
 
 
