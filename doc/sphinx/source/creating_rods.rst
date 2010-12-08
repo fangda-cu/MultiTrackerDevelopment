@@ -40,6 +40,11 @@ To create rods from a furset:
 #. 	From the **Figaro** menu, select **Create Rods from Barbershop Node**.
 
 
+==========================================	===========================================
+.. image:: images/rods_creation_before.png	.. image:: images/rods_creation_after.png
+*Initial state of fur set*			*Rods created from clump curves*
+==========================================	===========================================
+
 Once you have created the rods, you will see the following new nodes:
 
 * 	:ref:`wmFigaro<attributes_wmFigaroNode>` - this holds the overall solver information that affects all rods within the node. 

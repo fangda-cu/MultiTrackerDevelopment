@@ -527,7 +527,7 @@ namespace BASim
       if( m_curit == m_maxit - 1 )
       {
         successfull_solve = false;
-        std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: " << m_maxit << std::endl;
+        //std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: " << m_maxit << std::endl;
       }
       
       #ifdef TIMING_ON
