@@ -633,7 +633,7 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
 
     m_pRodInput->setSimulating(i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool());
 
-    if(!i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool())
+    if(!i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool() && !m_readFromCache)
     {
        m_pRodInput->initialiseRodDataFromInput( i_dataBlock );
     }
