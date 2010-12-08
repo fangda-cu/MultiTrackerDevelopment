@@ -118,8 +118,8 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
-    i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool() ? enableSim() : disableSim();
-
+    bool simEnabled = i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool();
+    simEnabled ? enableSim() : disableSim();
 
     if ( i_plug == oa_numberOfRods )
     {
@@ -303,7 +303,11 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
                            m_gravity, m_solverType, m_simulationSet );
     }
     
+    m_pRodInput->setSimulating(i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool());
+
     m_pRodInput->initialiseRodDataFromInput( i_dataBlock );
+
+
 
     // The sim has been re-initialised so it no longer needs reset.
     m_rodGroup.setSimulationNeedsReset( false );
@@ -386,14 +390,7 @@ void WmFigRodNode::updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock 
             MGlobal::displayWarning( "Please rewind simulation to reset\n" );
         }
 
-        if(!i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool())
-        {
-            m_pRodInput->updateRodDataFromInput( i_dataBlock );
-        }
-        else
-        {
-            updateKinematicEdgesFromInput();
-        }
+        updateKinematicEdgesFromInput();
     }
 
     m_rodGroup.setRodParameters( m_rodOptions.radiusA, m_rodOptions.radiusB,
@@ -402,8 +399,9 @@ void WmFigRodNode::updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock 
                                  m_rodOptions.viscosity,
                                  m_rodOptions.density );
     
-    cerr << "*** Number of Rods is " << m_rodGroup.numberOfRods();
+    //cerr << "*** Number of Rods is " << m_rodGroup.numberOfRods();
 }
+
 
 /** @detail Returns the material frame matrix for a specific rod's edge.
     @param i_rod The index of the rod you wish the edge of (0 based indices).
@@ -545,6 +543,7 @@ void WmFigRodNode::updateHairsprayScales( MDataBlock& i_dataBlock )
 
 void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
+
     MStatus stat;
 
     m_previousTime = m_currentTime;
@@ -625,8 +624,20 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
     }
 
     m_rodGroup.setIsReadingFromCache( m_readFromCache );
+
+    if(m_pRodInput)
+    {
+        m_pRodInput->setSimulating(true);
+    }
     updateOrInitialiseRodDataFromInputs( i_dataBlock );
-        
+
+    m_pRodInput->setSimulating(i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool());
+
+    if(!i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool() && !m_readFromCache)
+    {
+       m_pRodInput->initialiseRodDataFromInput( i_dataBlock );
+    }
+
     stat = i_dataBlock.setClean( i_plug );
     if ( !stat )
     {

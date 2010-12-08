@@ -43,7 +43,15 @@ public:
     void resampleCurve( int i_numVerticesToResample, vector<MVector>& i_curve, 
                         vector<MVector>& o_resampledCurve );
 
+
+    // may be helpful for the input class to know if sim has been turned off
+    void setSimulating(bool);
+    bool getSimulating();
+
 protected:
+
+    bool m_simulating;
+
 private:
 };
 

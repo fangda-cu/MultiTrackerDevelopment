@@ -43,7 +43,7 @@ void WmFigRodNurbsInput::getAndResampleInputCurves( MDataBlock& i_dataBlock, vec
         MFnNurbsCurve inCurveFn( inputCurveObj );
 
         MPoint cv;
-        int numCVs = inCurveFn.numCVs();;
+        int numCVs = inCurveFn.numCVs();
 
         vector< MVector > curve;
         curve.resize( numCVs );
@@ -51,7 +51,7 @@ void WmFigRodNurbsInput::getAndResampleInputCurves( MDataBlock& i_dataBlock, vec
         // If the user has specificed a vertex spacing > 0 then they want to override the vertices
         // that came from Barbershop. Very sensible of them as the rods stability is much reduced 
         // with vertices that are very close together.
-        if ( m_vertexSpacing > 0.0 )
+        if ( m_vertexSpacing > 0.0 && m_simulating)
         {
             // First find how many vertices we need based on the length of the strand
             
@@ -119,11 +119,31 @@ void WmFigRodNurbsInput::getAndResampleInputCurves( MDataBlock& i_dataBlock, vec
     }
 }
 
-void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
+void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock)
 {
     vector< vector< BASim::Vec3d > > inputCurveVertices;
 
     getAndResampleInputCurves( i_dataBlock, inputCurveVertices );
+
+    if(!m_simulating && m_rodGroup.numberOfRods() != 0)
+    {
+        // just want to set the rod vertices to inputCurveVertices; no
+        // adding of rods.
+        for ( int c=0; c< (int)inputCurveVertices.size(); ++c )
+        {
+            vector< BASim::Vec3d > curveVertices = inputCurveVertices[c];
+            ElasticRod *rod = m_rodGroup.elasticRod( c );
+            if(rod)
+            {
+                for(int v = 0; v < (int)curveVertices.size(); v++)
+                {
+                    rod->setVertex( v, curveVertices[v] );
+                }
+            }
+        }
+
+        return;
+    }
 
     for ( int c=0; c< (int)inputCurveVertices.size(); ++c )
     {

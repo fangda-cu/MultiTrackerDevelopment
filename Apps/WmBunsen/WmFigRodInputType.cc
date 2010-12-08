@@ -6,6 +6,7 @@
 using namespace std;
 
 WmFigRodInputType::WmFigRodInputType()
+    : m_simulating(true)
 {
 }
 
@@ -16,6 +17,17 @@ WmFigRodInputType::~WmFigRodInputType()
 void WmFigRodInputType::updateRodDataFromInput( MDataBlock& i_dataBlock )
 {
 }
+
+void WmFigRodInputType::setSimulating(bool simulating)
+{
+    m_simulating = simulating;
+}
+
+bool WmFigRodInputType::getSimulating()
+{
+    return m_simulating;
+}
+
 
 void WmFigRodInputType::resampleCurve( int i_numVerticesToResample, vector<MVector>& i_curve, 
     vector<MVector>& o_resampledCurve )
