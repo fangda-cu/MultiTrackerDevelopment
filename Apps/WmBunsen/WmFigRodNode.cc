@@ -363,7 +363,7 @@ void WmFigRodNode::updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock 
 
     readCacheRelatedInputs( i_dataBlock );
 
-    if ( m_currentTime == m_startTime )
+    if ( m_currentTime == m_startTime || m_pRodInput == NULL)
     {
         initialiseRodData( i_dataBlock );     
     }
@@ -631,7 +631,16 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
     }
     updateOrInitialiseRodDataFromInputs( i_dataBlock );
 
-    m_pRodInput->setSimulating(i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool());
+    if(m_pRodInput)
+    {
+        m_pRodInput->setSimulating(i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool());
+    }
+    // KA DEBUG
+    else
+    {
+        cout << "WmFigRodNode::m_pRodInput is NULL where it shouldn't be!" << endl;
+    }
+    // KA END DEBUG
 
     if(!i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool() && !m_readFromCache)
     {
