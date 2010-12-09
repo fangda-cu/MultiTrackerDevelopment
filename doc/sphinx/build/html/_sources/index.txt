@@ -24,7 +24,7 @@ Figaro is Weta's hair dynamics simulation.  It takes the air created in Barbersh
 Needs
 ------
 
-The latest need is wmFigaro-0032_M2010_64
+The latest need is wmFigaro-0043_M2010_64
 
 
 Rods

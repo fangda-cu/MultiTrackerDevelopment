@@ -24,18 +24,14 @@ Sub Steps 				The minimum number of steps to take per frame. The simulation is a
 					Be careful setting this to low values, as it can make the simulation too "bouncy". 
 Gravity 				Sets the gravity. By default, this attribute is connected to all rod nodes so they pick up the world gravity from the Figaro node.
 Plastic Deformations 			Ignore this at present.
-**Solver Tolerances** section
-Stol					xx
-Atol					xx
-Rtol					xx
-Inftol					xx
-**Clumping** section 				Ignore this at present. 
+**Solver Tolerances** section		These settings control the tolerances of the Newtonian solver used to calculate the rod movement. The solver works iteratively until it gets a result within these tolerances. Use higher values to get faster but less accurate results, lower values for more accuracy at the expense of computation time.
+**Clumping** section 			Ignore this at present. 
 **Collisions**	section		
 Object Collisions Enabled		Turns the collision handling for meshes on and off. 
 Self Collision Penalty Forces		Controls whether the self collision penalty is on. If this is on, all rods found to be too close to each other at the start of a time step are pushed apart slightly.
-Full Self Collisions 			Controls whether to use the full iterative edge/edge collision detection and response. xxx What if this is off? Do self-collsions use a point-triangle calculation?   
+Full Self Collisions 			Controls whether to use the full iterative edge/edge collision detection and response. If this is off, Figaro does not calculate self-collisions. 
 Full Self Collision Iterations		When **Full Self Collisions** is on, this sets the number of iterations of edge/edge self collisions to do. Higher values take longer to calculate, but if the value is too low, the self-collision may not be evaluated properly. 
-Full Self Collision COR			When **Full Self Collisions** is on, this sets the coefficient of restitution to use in edge/edge collisions. At 1, the collision is very elastic (things bounce back with the entire collision force).  At 0, the objects stop dead when they collide (no bounce at all).  xxxAny reason not to rename this to "Bounce force" and namecheck CoR in the docs?
+Full Self Collision COR			When **Full Self Collisions** is on, this sets the coefficient of restitution to use in edge/edge collisions. At 1, the collision is very elastic (things bounce back with the entire collision force).  At 0, the objects stop dead when they collide (no bounce at all).  
 **Volumetric Collisions**	
 Volumetric Collisions			Turns on the volumetric collision handling. 
 Grid DX  				The edge length of the grid cells used for calculating the volumetric collision.
@@ -57,34 +53,33 @@ Display Grid etc 			Debug information, ignore.
 wmFigRodNode attributes
 -------------------------
 
-=============================	================
-Attribute			Definition
-=============================	================
+======================================	================
+Attribute				Definition
+======================================	================
 **Input Resampling** section		
-Vertex Spacing	 		Set this to 0 to use the vertex spacing from the original model. Otherwise, Figaro resamples the input. This produces much more stable results than using input from the original models (which may have too many vertices, or vertices that are not well spaced out).
-Minimum Rod Length		Any rods shorter than this will not be simulated.
+Vertex Spacing	 			Set this to 0 to use the vertex spacing from the original model. Otherwise, Figaro resamples the input. This produces much more stable results than using input from the original models (which may have too many vertices, or vertices that are not well spaced out).
+Minimum Rod Length			Any rods shorter than this will not be simulated.
 **Rod Parameters** section
-Cache Frame 			Turn this on to write out the rod positions to disk for later playback.
-Read from Cache			Turn this on to read from the cached file rather than running the simulation. This needs you to have previously run the simulation with *Cache Frame* turned on. 
-Lock first edge to input	Locks the first edge so it can't move from the input. xxx explanation? 
-Percentage of Fozzie strands 	The percentage of Barbershop hairs in the furset to simulate.
-Gravity 			Sets the gravity. Initially, this is driven by the Figaro node. xxx what does it end up driven by?
-Minor Radius 			The minor radius of the rods.
-Major Radius 			The major radius of the rods.
-Youngs Modulus 			Sets how stiff the rod is (how much it resists bending). xxx sensible values? 
-Shear Modulus 			How much the rod resists twisting along its length. xxx sensible values? 
-Internal Damping 		How much internal resistence the rod has to resist oscillating. If you find your hair is too floppy, try increasing the **Youngs Modulus** and this value. 
-Density 			The density of the rod, defined in cm^3. 
-				This is not defined as mass per vertex (as with Maya hair) because it means the behaviour changes depending on the number of vertices. The hair behaves consistently even if you change the number of vertices.
-Mass Damping 			Amount of damping to apply (this is a standard sim system damping).
-Simulation Set 			If you want to only simulate some of the rods, enter the indices of those rods.  
-				*This may be broken at present.* 
+Cache Frame 				Turn this on to write out the rod positions to disk for later playback.
+Read from Cache				Turn this on to read from the cached file rather than running the simulation. This needs you to have previously run the simulation with *Cache Frame* turned on. 
+Lock first edge to input		Locks the segment of the rod in place. If this is off, the entire rod (all segments) can move; if it's on, the bottom segment of the rod stays fixed in position as the rest of the rod deforms.
+Percentage of Barbershop strands 	The percentage of Barbershop hairs in the furset to simulate.
+Gravity 				Sets the gravity. Use this if you want to use a value different from the global gravity for the rods in this node. 
+Minor Radius 				The minor radius of the rods.
+Major Radius 				The major radius of the rods.
+Youngs Modulus 				Sets how stiff the rod is (how much it resists bending). xxx sensible values? 
+Shear Modulus 				How much the rod resists twisting along its length. xxx sensible values? 
+Internal Damping 			How much internal resistence the rod has to resist oscillating. If you find your hair is too floppy, try increasing the **Youngs Modulus** and this value. 
+Density 				The density of the rod, defined in cm^3. 
+					This is not defined as mass per vertex (as with Maya hair) because it means the behaviour changes depending on the number of vertices. The hair behaves consistently even if you change the number of vertices.
+Mass Damping 				Amount of damping to apply (this is a standard sim system damping).
+Simulation Set 				If you want to only simulate some of the rods, enter the indices of those rods.  
+					*This may be broken at present.* 
 **Drawing** section		
-Draw Material Frames		xxx ? 	
-Draw 3DRod			xxx ?
-Draw Scale			xxx ?
-Cache Path 			The location to read or write cache data from/to.
-=============================	================
+Draw 3DRod				Draws the rods in a 3d view, rather than as a series of CVs linked by lines. 
+Draw Scale				When **Draw 3DRod** is on, this sets the width scale for the 3d representations of the rods. Increase this to make the rods thicker onscreen. 
+Cache Path 				The location to read or write cache data from/to.
+======================================	================
 
 
 .. _attributes_collision_node:
@@ -95,7 +90,6 @@ Collision node attributes
 ===============================	============
 Attribute			Definition
 ===============================	============
-Start Time			xxx eh? When the sim resets, should really be hidden as it needs to match what the Figaro node is doing which is why it's connected.
 Friction 			The amount of friction to use during collisions. This makes the rods stick rather than slide on the mesh.
 Coefficient of Restitution	The amount of bounce to use during collisions. This makes the rods stick or bounce as they hit the mesh.
 Separation Strength 		This scales the amount of separation force (how much the two objects "don't want" to collide) in the initial stage of the collision. Higher values give more bounce out, but less stability. 
