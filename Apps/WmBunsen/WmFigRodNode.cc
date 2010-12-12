@@ -116,6 +116,7 @@ void WmFigRodNode::disableSim()
 
 MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
+
     MStatus stat;
 
     bool simEnabled = i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool();
@@ -145,7 +146,7 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     }
     else if ( i_plug == oa_rodsChanged )
     {
-        // One of the inputs to the node has changed that should cause the simulation to 
+        // One of the inputs to the node has changed that should cause the simulation to
         // either take a step or change some parameter.
         compute_oa_rodsChanged( i_plug, i_dataBlock );
     }
@@ -195,7 +196,7 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     }
     else if ( i_plug == oa_edgeTransforms )
     {
-        // The connection node wants the edge transform data, we're not going to give it as 
+        // The connection node wants the edge transform data, we're not going to give it as
         // it's complicated but by having the connection it can follow it come get it when it wants
         // it and if we ever need to do some work before giving it we can do it here.
         compute_oa_EdgeTransforms( i_plug, i_dataBlock );
@@ -292,7 +293,7 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
     }
     else if ( particlesPlug.isConnected() )
     {        
-        m_pRodInput = new WmFigRodParticleInput( ia_particlePositions, ia_perRodParticleCounts,                                             
+        m_pRodInput = new WmFigRodParticleInput( ia_particlePositions, ia_perRodParticleCounts,
                                              m_rodOptions, m_massDamping, m_gravity, m_rodGroup,
                                              m_solverType, m_simulationSet );
     }
@@ -635,12 +636,6 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
     {
         m_pRodInput->setSimulating(i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool());
     }
-    // KA DEBUG
-    else
-    {
-        cout << "WmFigRodNode::m_pRodInput is NULL where it shouldn't be!" << endl;
-    }
-    // KA END DEBUG
 
     if(!i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool() && !m_readFromCache)
     {
@@ -763,6 +758,20 @@ void WmFigRodNode::compute_ca_simulationSync( const MPlug& i_plug,
 
     i_dataBlock.inputValue( ia_simStepTaken, &stat ).asBool();
     CHECK_MSTATUS( stat );
+
+    MPlug particlesPlug( thisMObject(), ia_particlePositions );
+    if(particlesPlug.isConnected())
+    {
+        if(!m_pRodInput)
+        {
+            updateOrInitialiseRodDataFromInputs(i_dataBlock);
+        }
+        else
+        {
+            m_pRodInput->initialiseRodDataFromInput( i_dataBlock );
+        }
+    }
+
 
     readCacheRelatedInputs( i_dataBlock );
 

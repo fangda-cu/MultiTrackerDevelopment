@@ -22,13 +22,14 @@ WmFigRodParticleInput::~WmFigRodParticleInput()
 
 void WmFigRodParticleInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
 {
+
     MStatus stat;
 
     MVectorArray vertices;
     MIntArray perRodParticleCount;
     getRodVertices( i_dataBlock, vertices, perRodParticleCount );
 
-    m_rodGroup.removeAllRods();
+    //m_rodGroup.removeAllRods();
 
     int numRods = perRodParticleCount.length();
 
@@ -45,7 +46,7 @@ void WmFigRodParticleInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock 
         int verticesInRod = perRodParticleCount[ r ];
 
         inputStrandVertices[ r ].resize( verticesInRod );
-        
+
         for ( int v = 0; v < verticesInRod; v++ )
         {
             MVector vertex = vertices[ inputStrandVertexIndex++ ];
@@ -56,7 +57,26 @@ void WmFigRodParticleInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock 
     
     // Pretend the rods are coming from a cache as they are not going to be simmed
     // FIXME: Sending mass damping is pointless!
-    m_rodGroup.addRodsFromCache( inputStrandVertices, m_rodOptions, 10.0 );    
+    if(m_rodGroup.numberOfRods() == 0)
+    {
+        m_rodGroup.addRodsFromCache( inputStrandVertices, m_rodOptions, 10.0 );
+    }
+    else
+    {
+        for ( int c=0; c< (int)inputStrandVertices.size(); ++c )
+        {
+            vector< BASim::Vec3d > curveVertices = inputStrandVertices[c];
+            ElasticRod *rod = m_rodGroup.elasticRod( c );
+            if(rod)
+            {
+                for(int v = 0; v < (int)curveVertices.size(); v++)
+                {
+                    rod->setVertex( v, curveVertices[v] );
+                }
+            }
+        }
+
+    }
 }
 
 void WmFigRodParticleInput::updateRodDataFromInput( MDataBlock& i_dataBlock )
@@ -95,7 +115,7 @@ void WmFigRodParticleInput::updateRodDataFromInput( MDataBlock& i_dataBlock )
             inputStrandVertices[ v ] = BASim::Vec3d( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ] );
         }
 
-        m_rodGroup.updateRodNextVertexPositions( i, inputStrandVertices );        
+        m_rodGroup.updateRodNextVertexPositions( i, inputStrandVertices );
     }
 }
 
