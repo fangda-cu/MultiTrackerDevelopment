@@ -18,6 +18,9 @@
 #include "WmFigRodFileIO.hh"
 #include "WmFigRodGroup.hh"
 
+// (W)eta (F)igaro (R)od (C)ache
+#define ROD_CACHE_FILE_TAG "WFRC"
+
 /**
   * @brief Base class providing file IO operations for Figaro rod cache files
   *
@@ -39,6 +42,8 @@ public:
       */
      ~WmFigRodFileIO();
 
+    static  bool checkTagAndVersion( const MString i_cacheFilename, int &versionNumber);
+
     static FILE* readNumberOfRodsFromFile( const MString i_cacheFilename, int& o_numRodsInFile, 
             bool closeFileAfterReading = true );
     
@@ -50,7 +55,8 @@ public:
     static void writeRodDataToCacheFile( MString& i_cacheFileame, WmFigRodGroup& i_rodGroup );
 
 private:
-    
+
+    static const int m_versionNumber;
 };
 
 #endif // WMFIGRODFILEIO_H_

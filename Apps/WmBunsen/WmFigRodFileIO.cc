@@ -2,6 +2,42 @@
 
 #include <maya/MGlobal.h>
 
+
+const int WmFigRodFileIO::m_versionNumber = 1;
+
+/*
+FILE FORMAT NOTES
+=================
+
+For now it's just a four character tag ("WFRC"), followed
+by a binary integer giving the file format version, followed
+by a binary size_t field giving the number of rods in the file.
+
+Then for each rod in the file, number of vertices as a size_t,
+then the vertices are written as six floats: 3 for the
+xyz of the simulated position, followed by 3 for the xyz
+of the unsimulated position.
+
+TAG
+VERSION NUMBER
+NUM RODS
+
+NUM VERTICES
+6 COORDS
+6 COORDS
+6 COORDS
+...
+NUM VERTICES
+6 COORDS
+6 COORDS
+6 COORDS
+...
+
+etc.
+
+*/
+
+
 WmFigRodFileIO::WmFigRodFileIO()
 {
 }
@@ -28,7 +64,8 @@ WmFigRodFileIO::~WmFigRodFileIO()
         return NULL; 
     }
 
-    cerr << "Reading file " << i_cacheFilename << endl;
+    // skip tag and version number
+    fseek(fp, 4 + sizeof(int), SEEK_SET);
 
     size_t numRodsInFile;
     size_t ret = fread( &numRodsInFile, sizeof( size_t ), 1, fp );
@@ -44,10 +81,74 @@ WmFigRodFileIO::~WmFigRodFileIO()
     return fp;
 }
 
-/* static */ bool WmFigRodFileIO::readDataFromRodCacheFile( const MString i_cacheFilename, 
+/* static */ bool WmFigRodFileIO::checkTagAndVersion( const MString i_cacheFilename, int &versionNumber )
+{
+     FILE *fp = NULL;
+
+     if ( i_cacheFilename == "" )
+     {
+         MGlobal::displayError( "Empty cache path, can't read in rod data!" );
+         return NULL;
+     }
+
+     fp = fopen( i_cacheFilename.asChar(), "r" );
+     if ( fp == NULL )
+     {
+         MGlobal::displayError( MString( "Problem opening file " + i_cacheFilename + " for reading." ) );
+         return NULL;
+     }
+
+     char tagBuf[5];
+     size_t ret = fread( tagBuf, 1, 4, fp );
+     tagBuf[4] = '\0';
+
+     if(0 != strcmp(tagBuf, ROD_CACHE_FILE_TAG))
+     {
+         fclose( fp );
+         MGlobal::displayError( MString( i_cacheFilename + " doesn't appear to be a figaro cache file (tag missing)." ) );
+         return false;
+     }
+
+
+     ret = fread( &versionNumber, sizeof( int ), 1, fp );
+
+     if(ret != 1)
+     {
+         fclose( fp );
+         MGlobal::displayError( MString( "Error reading version number from figaro cache file " + i_cacheFilename + ".") );
+         return false;
+     }
+
+     return true;
+ }
+
+
+/* static */ bool WmFigRodFileIO::readDataFromRodCacheFile( const MString i_cacheFilename,
     int& o_numRodsInFile, vector<vector<BASim::Vec3d> >& o_rodVertices, 
     vector<vector<BASim::Vec3d> >& o_unsimulatedRodVertices )
 {
+    int versionNumber = -1;
+    bool isValid = checkTagAndVersion( i_cacheFilename, versionNumber );
+
+    if(!isValid)
+    {
+        // this may an un-versioned rod cache file; let's warn, but still try to read it
+        MGlobal::displayError( i_cacheFilename + " doesn't appear to be a valid rod cache file." );
+
+        return false;
+    }
+
+    if(versionNumber != m_versionNumber)
+    {
+        char versionFromFile[10];
+        sprintf(versionFromFile, "%d", versionNumber);
+        char versionWeNeed[10];
+        sprintf(versionWeNeed, "%d", m_versionNumber);
+        MGlobal::displayError( MString( "Error: " + i_cacheFilename + " is file version " + MString(versionFromFile) + "; we need version " + MString(versionWeNeed) ) );
+
+        return false;
+    }
+
     FILE* fp = readNumberOfRodsFromFile( i_cacheFilename, o_numRodsInFile, false );
     if ( fp == NULL )
     {
@@ -91,7 +192,7 @@ WmFigRodFileIO::~WmFigRodFileIO()
     if ( !readDataFromRodCacheFile( i_cacheFileName, numRodsInFile, rodVertices,
                                     unsimulatedRodVertices ) )
     {
-        cerr << "Failed to read\n";
+        cerr << "Failed to read cache file " << i_cacheFileName << ".\n";
         return;
     }
 
@@ -148,7 +249,9 @@ WmFigRodFileIO::~WmFigRodFileIO()
         return;
     }
 
-    // FIXME: create a proper cache file format. This one is bad, it at least needs a proper header.
+
+    fwrite( ROD_CACHE_FILE_TAG, 1, 4, fp );
+    fwrite( &m_versionNumber, sizeof(int), 1, fp );
     
     size_t numberOfRealRods = i_rodGroup.numberOfRealRods();
     int totalNumberOfRods = i_rodGroup.numberOfRods();
@@ -172,29 +275,29 @@ WmFigRodFileIO::~WmFigRodFileIO()
             
             for ( int v=0; v<numVertices; v++ )
             {
-            double pos[3];
+                double pos[3];
 
-            // Wonder if its safe to write BASim::Vec3ds. Need to check what's in them.
-            // Really should package all this and write it as one.
-            BASim::Vec3d vertex = rod->getVertex( (unsigned int)v );
-            pos[ 0 ] = vertex.x();
-            pos[ 1 ] = vertex.y();
-            pos[ 2 ] = vertex.z();
+                // Wonder if its safe to write BASim::Vec3ds. Need to check what's in them.
+                // Really should package all this and write it as one.
+                BASim::Vec3d vertex = rod->getVertex( (unsigned int)v );
+                pos[ 0 ] = vertex.x();
+                pos[ 1 ] = vertex.y();
+                pos[ 2 ] = vertex.z();
 
-            fwrite( &pos[0], sizeof( double ), 3, fp );
+                fwrite( &pos[0], sizeof( double ), 3, fp );
 
-            // Now store the unsimulated positions so that we can send them to Barbershop
-            // when we want to simulate with it.
-	    // Boundary Condition
-            vertex = i_rodGroup.nextVertexPosition( r, v );
-            pos[ 0 ] = vertex.x();
-            pos[ 1 ] = vertex.y();
-            pos[ 2 ] = vertex.z();
+                // Now store the unsimulated positions so that we can send them to Barbershop
+                // when we want to simulate with it.
+                // Boundary Condition
+                vertex = i_rodGroup.nextVertexPosition( r, v );
+                pos[ 0 ] = vertex.x();
+                pos[ 1 ] = vertex.y();
+                pos[ 2 ] = vertex.z();
 
-            fwrite( &pos[0], sizeof( double ), 3, fp );
+                fwrite( &pos[0], sizeof( double ), 3, fp );
 
-            // We should write velocities and anything else we need into the file too so that
-            // we can restart a simulation from a cached file.
+                // We should write velocities and anything else we need into the file too so that
+                // we can restart a simulation from a cached file.
             }
         }
     }
