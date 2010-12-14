@@ -96,6 +96,7 @@ const char *const kRod( "-ro" );
 const char *const kUserDefinedColour( "-udc" );
 const char *const kDeleteDefinedColour( "-ddc" );
 const char *const kCreateRodShapeNode( "-crs" );
+const char *const kAttachParticles( "-aps" );
 
 // Rod vertex constraints
 //
@@ -158,6 +159,10 @@ MSyntax WmFigaroCmd::syntaxCreator()
         "Cache file to load and preview.", MSyntax::kString);
     p_AddFlag( mSyntax, kCreateRodShapeNode, "-createRodShape",
                "Creates a single rod as a shape node from a selected NURBS curve." );
+
+    p_AddFlag( mSyntax, kAttachParticles, "-attachParticles",
+               "Creates rods from a particle system." );
+
 
     // Rod vertex constraints
     //
@@ -355,6 +360,10 @@ MStatus WmFigaroCmd::redoIt()
         if ( m_mArgDatabase->isFlagSet( kCreateRodShapeNode ) )
         {
             createRodShapeNode();
+        }
+        if ( m_mArgDatabase->isFlagSet( kAttachParticles) )
+        {
+            attachParticles();
         }
 
         if( m_mArgDatabase->isFlagSet( kAddVertexConstraintFlag ))
@@ -1115,6 +1124,162 @@ void WmFigaroCmd::createWmBunsenNode( MObject &o_wmBunsenNodeObj )
 
     o_wmBunsenNodeObj = bunsenNodeSObj;
 }
+
+void WmFigaroCmd::attachParticles()
+{
+    MStatus stat;
+
+    MSelectionList selList;
+    MGlobal::getActiveSelectionList( selList );
+    // we're looking for a ParticleShape node
+    bool foundParticleNode = false;
+    MDagPath particleDagPath;
+    for( int i=0; i < selList.length(); i++ )
+    {
+        selList.getDagPath( i, particleDagPath );
+        particleDagPath.extendToShape();
+
+        MFnDependencyNode nodeFn( particleDagPath.node() );
+        if( nodeFn.typeId().id() == 1313882450 ) // typeid of nParticleShape; TODO: surely there's a better way?
+        {
+            foundParticleNode = true;
+            break;
+        }
+    }
+
+    if(!foundParticleNode)
+    {
+        MGlobal::displayError( "No particle node selected!\n" );
+        return;
+    }
+
+    MObject wmBunsenNode = m_selectedwmBunsenNode;
+
+    if ( wmBunsenNode == MObject::kNullObj )
+        createWmBunsenNode( wmBunsenNode );
+
+    // Create the rods node
+    MObject rodTObj;  // Object for transform node
+    MObject rodSObj;  // Object for shape node
+    MDagPath shapeDagPath;
+    MObject pObj;
+    MDagModifier dagModifier;
+    MString rodShapeName = "";
+
+    createDagNode( WmFigRodNode::typeName.asChar(), WmFigRodNode::typeName.asChar(),
+                   pObj, &rodTObj, &rodSObj, &dagModifier, rodShapeName );
+
+    appendToResultString( rodShapeName );
+
+    MDagPath rodDagPath;
+    stat = MDagPath::getAPathTo( rodSObj, rodDagPath );
+    CHECK_MSTATUS( stat );
+
+    // Turn Off Inherits Transform On Transform Node as the rod node should never move from the origin
+    MFnDependencyNode tFn( rodTObj );
+    MPlug mPlug( tFn.findPlug( "inheritsTransform", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    mPlug.setValue( false );
+
+    // Lock the transform attributes because the object should not be moved
+    // Transform first
+    MPlug translatePlug( tFn.findPlug( "translate", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    stat = translatePlug.setLocked( true );
+    CHECK_MSTATUS( stat );
+    MPlug scalePlug( tFn.findPlug( "scale", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    stat = scalePlug.setLocked( true );
+    CHECK_MSTATUS( stat );
+    MPlug rotatePlug( tFn.findPlug( "rotate", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    stat = rotatePlug.setLocked( true );
+    CHECK_MSTATUS( stat );
+    MPlug shearPlug( tFn.findPlug( "shear", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    stat = shearPlug.setLocked( true );
+    CHECK_MSTATUS( stat );
+
+    // Shape now MFnDependencyNode sFn( rodSObj );
+    MFnDependencyNode sFn( rodSObj );
+
+    MPlug localTransPlug( sFn.findPlug( "localPosition", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    stat = localTransPlug.setLocked( true );
+    CHECK_MSTATUS( stat );
+    MPlug localScalePlug(sFn.findPlug( "localScale", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    stat = localScalePlug.setLocked( true );
+    CHECK_MSTATUS( stat );
+
+    MString timeStr( "connectAttr -f time1.outTime " + rodDagPath.fullPathName() + ".time" );
+    dagModifier.commandToExecute( timeStr );
+    dagModifier.doIt();
+
+    // Connect up the rods node to the dynamics node
+    MPlug rodNodeOutPlug( sFn.findPlug( "rodsChanged", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    MFnDependencyNode bunsenDependNodeFn( wmBunsenNode );
+    MPlug bunsenNodeRodArrayPlug( bunsenDependNodeFn.findPlug( "rodsNodes", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    MPlug bunsenNodeRodPlug = bunsenNodeRodArrayPlug.elementByLogicalIndex( bunsenNodeRodArrayPlug.numElements(), &stat );
+    CHECK_MSTATUS( stat );
+    stat = dagModifier.connect( rodNodeOutPlug, bunsenNodeRodPlug );
+    CHECK_MSTATUS( stat );
+
+
+
+    MPlug bunsenEnabledPlug = bunsenDependNodeFn.findPlug("enabled", &stat);
+    CHECK_MSTATUS( stat );
+    bunsenEnabledPlug.setBool(false);
+
+    // Connect up the rod output sim plug so we know when the sim moves forward in time
+    MPlug rodNodeSimPlug( sFn.findPlug( "simStepTaken", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    MPlug bunsenSimPlug = bunsenDependNodeFn.findPlug( "simStepTaken", true, &stat );
+    CHECK_MSTATUS( stat );
+    stat = dagModifier.connect( bunsenSimPlug, rodNodeSimPlug );
+    CHECK_MSTATUS( stat );
+
+    // Connect the solver type so that rod nodes know what type of solver to create
+    // when building the Elastic rods
+    MPlug rodNodeSolverPlug( sFn.findPlug( "solverType", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    MPlug figaroSolverPlug = bunsenDependNodeFn.findPlug( "solverType", true, &stat );
+    CHECK_MSTATUS( stat );
+    stat = dagModifier.connect( figaroSolverPlug, rodNodeSolverPlug );
+    CHECK_MSTATUS( stat );
+
+    // Connect gravity so the rods inherit the global system gravity
+    MPlug rodNodeGravityPlug( sFn.findPlug( "gravity", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    MPlug figaroGravityPlug = bunsenDependNodeFn.findPlug( "gravity", true, &stat );
+    CHECK_MSTATUS( stat );
+    stat = dagModifier.connect( figaroGravityPlug, rodNodeGravityPlug );
+    CHECK_MSTATUS( stat );
+
+    // Connect startTime so the rods reset when the Figaro node resets
+    MPlug rodStartTimePlug( sFn.findPlug( "startTime", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    MPlug bunsenNodeStartTimePlug = bunsenDependNodeFn.findPlug( "startTime", true, &stat );
+    CHECK_MSTATUS( stat );
+    stat = dagModifier.connect( bunsenNodeStartTimePlug, rodStartTimePlug );
+    CHECK_MSTATUS( stat );
+
+    stat = dagModifier.doIt();
+    CHECK_MSTATUS( stat );
+
+    // connect the partice node and the rod node
+    MFnDependencyNode particleNodeFn( particleDagPath.node() );
+    MString cmdStr("connectAttr -f " + particleNodeFn.name() + ".position " + rodDagPath.fullPathName() + ".particlePositions;");
+    dagModifier.commandToExecute( cmdStr );
+    dagModifier.doIt();
+
+    cmdStr = MString("connectAttr -f " + particleNodeFn.name() + ".curveCounts " + rodDagPath.fullPathName() + ".perRodParticleCounts;");
+    dagModifier.commandToExecute( cmdStr );
+    dagModifier.doIt();
+}
+
 
 void WmFigaroCmd::createRodShapeNode()
 {
