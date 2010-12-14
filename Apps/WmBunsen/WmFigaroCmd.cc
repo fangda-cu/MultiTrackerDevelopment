@@ -1271,7 +1271,7 @@ void WmFigaroCmd::attachParticles()
 
     // connect the partice node and the rod node
     MFnDependencyNode particleNodeFn( particleDagPath.node() );
-    MString cmdStr("connectAttr -f " + particleNodeFn.name() + ".position " + rodDagPath.fullPathName() + ".particlePositions;");
+    MString cmdStr("connectAttr -f " + particleNodeFn.name() + ".worldPosition " + rodDagPath.fullPathName() + ".particlePositions;");
     dagModifier.commandToExecute( cmdStr );
     dagModifier.doIt();
 
