@@ -3,7 +3,7 @@ global proc AEwmFigCollisionNodeTemplate(string $nodeName)
     //AEswatchDisplay $nodeName;
     editorTemplate -beginScrollLayout;
         editorTemplate -beginLayout "Collision Attributes" -collapse 0;;
-            editorTemplate -addControl "startTime";
+            //editorTemplate -addControl "startTime";
             editorTemplate -addControl "friction";
             editorTemplate -addControl "coefficientOfRestitution";
             editorTemplate -addControl "separationStrength";

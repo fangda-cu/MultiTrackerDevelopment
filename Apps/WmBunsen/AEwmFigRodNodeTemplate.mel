@@ -14,7 +14,7 @@ global proc AEwmFigRodNodeTemplate(string $nodeName)
         editorTemplate -addControl "cacheFrame";
         editorTemplate -addControl "readFromCache";
         editorTemplate -beginNoOptimize -addControl "lockFirstEdgeToInput";
-        editorTemplate -endNoOptimize -addControl "percentageOfFozzieStrands";
+        editorTemplate -endNoOptimize -addControl "percentBarbershopStrands";
         editorTemplate -addControl "gravity";
         editorTemplate -addControl "minorRadius";
         editorTemplate -addControl "majorRadius";
@@ -28,7 +28,7 @@ global proc AEwmFigRodNodeTemplate(string $nodeName)
     editorTemplate -endLayout;
 
     editorTemplate -beginLayout "Drawing" -collapse 0;
-        editorTemplate -addControl "drawMaterialFrames";
+        //editorTemplate -addControl "drawMaterialFrames";
         editorTemplate -addControl "draw3DRod";
         editorTemplate -addControl "drawScale";
     editorTemplate -endLayout;

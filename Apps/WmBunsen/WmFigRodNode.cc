@@ -1765,7 +1765,7 @@ void* WmFigRodNode::creator()
     stat = attributeAffects( ia_massDamping, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_massDamping->oa_rodsChanged" ); return stat; }
 
-    addNumericAttribute( ia_percentageOfBarberShopStrands, "percentageOfFozzieStrands", "pfs", MFnNumericData::kDouble, 1.0, true );
+    addNumericAttribute( ia_percentageOfBarberShopStrands, "percentBarbershopStrands", "pfs", MFnNumericData::kDouble, 1.0, true );
     stat = attributeAffects( ia_percentageOfBarberShopStrands, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_percentageOfBarberShopStrands->oa_rodsChanged" ); return stat; }
 
