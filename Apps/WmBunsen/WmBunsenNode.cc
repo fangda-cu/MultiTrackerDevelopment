@@ -10,6 +10,7 @@ MObject WmBunsenNode::ca_syncAttrs;
 MObject WmBunsenNode::ia_time;
 MObject WmBunsenNode::ia_fps;
 MObject WmBunsenNode::ia_substeps;
+MObject WmBunsenNode::ia_subDistanceMax;
 MObject WmBunsenNode::ia_maxDt;
 MObject WmBunsenNode::ia_maxIter;
 MObject WmBunsenNode::ia_startTime;
@@ -407,6 +408,9 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         int substeps = i_dataBlock.inputValue(ia_substeps, &stat).asInt();
         CHECK_MSTATUS( stat );
 
+        double subDistanceMax = i_dataBlock.inputValue(ia_subDistanceMax, &stat).asDouble();
+        CHECK_MSTATUS( stat );
+
         //m_beaker->setDt(i_dataBlock.inputValue(ia_maxDt, &stat ).asDouble());
         //CHECK_MSTATUS( stat );	
 
@@ -508,7 +512,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         
         if ( m_enabled && ( ( m_solverType == RodTimeStepper::STATICS ) || ( m_currentTime > m_previousTime && m_currentTime > m_startTime ) ) ) 
         {
-            m_beaker->takeTimeStep( numberOfThreads, m_framedt, substeps, collisionsEnabled, 
+            m_beaker->takeTimeStep( numberOfThreads, m_framedt, substeps, subDistanceMax, collisionsEnabled,
                                     selfCollisionPenaltyForces, fullSelfCollisions,
                                     selfCollisionsIters, selfCollisionsCOR ); 
         }
@@ -820,6 +824,21 @@ MStatus WmBunsenNode::initialize()
         nAttr.setKeyable( true );  
         stat = addAttribute( ia_substeps );
         if ( !stat ) { stat.perror( "addAttribute ia_substeps" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_subDistanceMax = nAttr.create( "subDistanceMax", "subDM", MFnNumericData::kDouble, 0.5, &stat );
+        if ( !stat )
+        {
+            stat.perror( "create substep position change distance max attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        //nAttr.setReadable( false );
+        nAttr.setKeyable( true );
+        stat = addAttribute( ia_subDistanceMax );
+        if ( !stat ) { stat.perror( "addAttribute ia_subDistanceMax" ); return stat; }
     }
 
     {
@@ -1202,6 +1221,8 @@ MStatus WmBunsenNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_fps->ca_syncAttrs" );return stat;}
     stat = attributeAffects( ia_substeps, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_substeps->ca_syncAttrs" );return stat;}
+    stat = attributeAffects( ia_subDistanceMax, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_subDistanceMax->ca_syncAttrs" );return stat;}
     stat = attributeAffects( ia_maxDt, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_maxDt->ca_syncAttrs" );return stat;}
     stat = attributeAffects( ia_maxIter, ca_syncAttrs );

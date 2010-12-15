@@ -56,6 +56,7 @@ public:
     static MObject ia_startTime;
     static MObject ia_fps;
     static MObject ia_substeps;
+    static MObject ia_subDistanceMax;
     static MObject ia_rodsNodes;
     static MObject ia_gravity;
     static MObject ia_numberOfThreads;

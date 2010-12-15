@@ -423,8 +423,35 @@ void Beaker::setupRodTimeStepperForSubStep( WmFigRodGroup* i_pRodGroup, const in
     }
 }
 
+int Beaker::calculateNumSubSteps(int numSubSteps, Scalar deltaT, double subDistMax)
+{
+     // Set an adaptive substep if velocity change is too great.  The subDistanceMax is a tunable parameter.
+     int steps=numSubSteps;
+
+     float biggestMax = 0.0f;
+     for ( CollisionMeshDataHashMapIterator cmItr = m_collisionMeshMap.begin();
+                                            cmItr != m_collisionMeshMap.end(); ++cmItr )
+     {
+         float maxVelMag = cmItr->second->m_maxVelocityMag;
+         if ( maxVelMag > biggestMax )
+             biggestMax = maxVelMag;
+     }
+
+     if ( ((biggestMax *deltaT)/numSubSteps) > subDistMax)
+     {
+         steps= (biggestMax * deltaT)/subDistMax;
+         if (steps < numSubSteps)
+         {
+             steps= numSubSteps;
+         }
+     }
+     std::cout<< "Max velocity = " << biggestMax <<" Substeps = " << steps << std::endl;
+
+     return steps;
+}
+
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
-  int i_subSteps, bool i_collisionsEnabled,  bool i_selfCollisionPenaltyForcesEnabled,
+  int i_subSteps, double i_subDistanceMax, bool i_collisionsEnabled,  bool i_selfCollisionPenaltyForcesEnabled,
   bool i_fullSelfCollisionsEnabled, int i_fullSelfCollisionIters,
   double i_selfCollisionCOR, FixedRodVertexMap* i_fixedVertices, bool i_zeroAllTwist,
   double i_constraintSrength,  LockedRodVertexMap* i_lockedRodVertexMap )
@@ -436,6 +463,8 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     // Check if anything has actually been initialised yet. We may still be being loaded by Maya.
     if ( m_rodDataMap.size() == 0 )
         return;
+
+    i_subSteps = calculateNumSubSteps( i_subSteps, i_stepSize, i_subDistanceMax);
 
     Scalar dt_save = getDt();
     Scalar startTime = getTime();

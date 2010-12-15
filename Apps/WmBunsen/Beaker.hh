@@ -222,8 +222,10 @@ public:
     
     void draw(void);
 
+    int calculateNumSubSteps(int i_subSteps,Scalar i_stepSize, double i_subDistanceMax);
+
     void takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, 
-                       int i_subSteps, bool i_collisionsEnabled,
+                       int i_subSteps, double i_subDistanceMax, bool i_collisionsEnabled,
                        bool i_selfCollisionPenaltyForcesEnabled,
                        bool i_fullSelfCollisionsEnabled,
                        int i_fullSelfCollisionIters,

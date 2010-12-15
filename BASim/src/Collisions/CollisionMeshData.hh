@@ -129,6 +129,9 @@ public:
     //
     Velocities velocities;
     
+    // Maximum velocity per frame
+    float m_maxVelocityMag;
+
     int _nbrTriangles;
     
     Indices _triIndices;

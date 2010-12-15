@@ -10,7 +10,8 @@
 namespace BASim {
 
 CollisionMeshData::CollisionMeshData()
-    :_levelsetDx(0.0),  _thickness(1.0), _friction(0.0), _fullCollisions(false), _initialized(false),_fps(24)
+    :_levelsetDx(0.0),  _thickness(1.0), _friction(0.0), _fullCollisions(false), _initialized(false),_fps(24),
+    m_maxVelocityMag( 0.0 )
 {
     //_bvTree(TRIANGLE_TREE),
     //std::cout<<"Constructing... ";
@@ -222,17 +223,34 @@ void CollisionMeshData::update(vector<Vec3d>& points, std::string filename, int 
         return;
     }
         
+    m_maxVelocityMag = 0.0f;
 
     for (size_t currVertex=0; currVertex<points.size(); ++currVertex)
     {
+        float squareComp[3];
         for (int i=0; i<3; ++i)
         {
             oldPositions[currVertex][i] = currPositions[currVertex][i] = newPositions[currVertex][i];
             newPositions[currVertex][i] = points[currVertex][i];
 
+
             // TODO: Replace hard-coded 24 with fps as given by user
             //
             velocities[currVertex][i] = (newPositions[currVertex][i] - oldPositions[currVertex][i]) * _fps;
+
+            // Store maximum velocity
+            squareComp[i] = velocities[currVertex][i] * velocities[currVertex][i];
+        }
+
+        float maxVelMag;
+        for ( int i = 0; i < 3; ++i )
+            maxVelMag += squareComp[i];
+
+        maxVelMag = sqrtf( maxVelMag );
+
+        if (maxVelMag > m_maxVelocityMag)
+        {
+            m_maxVelocityMag = maxVelMag;
         }
     }    
     
