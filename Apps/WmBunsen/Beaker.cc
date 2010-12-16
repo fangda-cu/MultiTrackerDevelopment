@@ -464,6 +464,12 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     if ( m_rodDataMap.size() == 0 )
         return;
 
+    if ( !anyRodsActive() )
+    {
+        //cerr << "Not doing anything as all rods are disabled!\n";
+        return;
+    }
+
     i_subSteps = calculateNumSubSteps( i_subSteps, i_stepSize, i_subDistanceMax);
 
     Scalar dt_save = getDt();
@@ -481,12 +487,6 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     double frameIntegrationStepTime = 0.0;
 
     double frameTime = 0.0;
-    
-    if ( !anyRodsActive() )
-    {
-        cerr << "Not doing anything as all rods are disabled!\n";
-        return;
-    }
 
     // Create space to track the target vertex positions of each rod as they substep towards 
     // their goal

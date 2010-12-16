@@ -50,7 +50,7 @@ public:
     static bool readDataFromRodCacheFile( const MString i_cacheFilename, int& o_numRodsInFile,
           vector<vector<BASim::Vec3d> >& o_rodVertices, vector<vector<BASim::Vec3d> >& o_unsimulatedRodVertices );
     
-    static void updateRodDataFromCacheFile( MString i_cacheFileName, WmFigRodGroup& i_rodGroup );
+    static bool updateRodDataFromCacheFile( MString i_cacheFileName, WmFigRodGroup& i_rodGroup );
 
     static void writeRodDataToCacheFile( MString& i_cacheFileame, WmFigRodGroup& i_rodGroup );
 

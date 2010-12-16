@@ -183,7 +183,7 @@ WmFigRodFileIO::~WmFigRodFileIO()
 }
 
 
-/* static */ void WmFigRodFileIO::updateRodDataFromCacheFile( MString i_cacheFileName, WmFigRodGroup& i_rodGroup )
+/* static */ bool WmFigRodFileIO::updateRodDataFromCacheFile( MString i_cacheFileName, WmFigRodGroup& i_rodGroup )
 {
     int numRodsInFile;
     vector<vector<BASim::Vec3d> > rodVertices;
@@ -193,21 +193,20 @@ WmFigRodFileIO::~WmFigRodFileIO()
                                     unsimulatedRodVertices ) )
     {
         cerr << "Failed to read cache file " << i_cacheFileName << ".\n";
-        return;
+        return false;
     }
 
-    cerr << "numRodsInFile << " << numRodsInFile << endl;
-    cerr << "i_rodGroup.numberOfRods()  << " << i_rodGroup.numberOfRods() << endl;
+    //cerr << "numRodsInFile << " << numRodsInFile << endl;
+    //cerr << "i_rodGroup.numberOfRods()  << " << i_rodGroup.numberOfRods() << endl;
 
     if ( numRodsInFile != i_rodGroup.numberOfRods() )
     {
         MGlobal::displayError( "Rewind simulation to reset before cache file can be read" );
-        return;
+        return false;
     }
 
     for ( int r=0; r<numRodsInFile; r++ )
-    {
-        
+    {        
         BASim::ElasticRod* rod = i_rodGroup.elasticRod( r );
         if ( rod == NULL )
         {
@@ -228,6 +227,8 @@ WmFigRodFileIO::~WmFigRodFileIO()
             rod->setVertex( v, rodVertices[ r ][ v ] );
         }
     }
+    
+    return true;
 }
 
 /* static */ void WmFigRodFileIO::writeRodDataToCacheFile( MString& i_cacheFileame, 

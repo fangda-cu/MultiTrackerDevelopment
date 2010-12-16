@@ -4,6 +4,8 @@
 #include <maya/MFnMatrixAttribute.h>
 #include <maya/MPlugArray.h>
 
+#include <sys/stat.h>
+
 using namespace BASim;
 
 
@@ -360,10 +362,8 @@ void WmFigRodNode::updateKinematicEdgesFromInput()
 
 void WmFigRodNode::updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock )
 {
-    MStatus stat;
-
     readCacheRelatedInputs( i_dataBlock );
-
+    
     if ( m_currentTime == m_startTime || m_pRodInput == NULL ||
          ( m_rodGroup.simulationNeedsReset() && m_readFromCache ) )
     {
@@ -476,6 +476,17 @@ MString WmFigRodNode::getCacheFilename( MDataBlock& i_dataBlock )
     CHECK_MSTATUS( stat );
 
     m_cacheFilename = ( m_cachePath + "." + m_currentTime + ".fig" );
+
+    // If reading from cache then check we have a valid cache file, if not then read the frame
+    // at start time.     
+    if ( m_readFromCache )
+    {
+        ifstream cacheFile( m_cacheFilename.asChar() );
+        if ( !cacheFile )
+        {            
+            m_cacheFilename = ( m_cachePath + "." + m_startTime + ".fig" );
+        }
+    }
 
     return m_cacheFilename;
 }
@@ -772,7 +783,6 @@ void WmFigRodNode::compute_ca_simulationSync( const MPlug& i_plug,
             m_pRodInput->initialiseRodDataFromInput( i_dataBlock );
         }
     }
-
 
     readCacheRelatedInputs( i_dataBlock );
 
