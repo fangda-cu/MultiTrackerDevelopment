@@ -364,7 +364,8 @@ void WmFigRodNode::updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock 
 
     readCacheRelatedInputs( i_dataBlock );
 
-    if ( m_currentTime == m_startTime || m_pRodInput == NULL)
+    if ( m_currentTime == m_startTime || m_pRodInput == NULL ||
+         ( m_rodGroup.simulationNeedsReset() && m_readFromCache ) )
     {
         initialiseRodData( i_dataBlock );     
     }
