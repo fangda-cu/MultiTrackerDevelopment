@@ -7,13 +7,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Node attributes &mdash; Figaro v43 documentation</title>
+    <title>Node attributes &mdash; Figaro v47 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '43',
+        VERSION:     '47',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -22,7 +22,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="Figaro v43 documentation" href="index.html" />
+    <link rel="top" title="Figaro v47 documentation" href="index.html" />
     <link rel="prev" title="Animating the rods" href="animating_rods.html" /> 
   </head>
   <body>
@@ -35,7 +35,7 @@
         <li class="right" >
           <a href="animating_rods.html" title="Animating the rods"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">Figaro v43 documentation</a> &raquo;</li> 
+        <li><a href="index.html">Figaro v47 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -79,6 +79,9 @@ If you this setting does not match the scene as a whole, the simulation can look
 <td>The minimum number of steps to take per frame. The simulation is adaptively stepped when it needs to be. The lower the number of steps, the faster the simulation runs, so this sets the maximum speed of the simulation.
 Be careful setting this to low values, as it can make the simulation too &#8220;bouncy&#8221;.</td>
 </tr>
+<tr><td>Sub Distance Max</td>
+<td>The maximum distance an object can travel in a single substep. This can force the simulation to use additional substeps for fast-moving objects.</td>
+</tr>
 <tr><td>Gravity</td>
 <td>Sets the gravity. By default, this attribute is connected to all rod nodes so they pick up the world gravity from the Figaro node.</td>
 </tr>
@@ -87,6 +90,18 @@ Be careful setting this to low values, as it can make the simulation too &#8220;
 </tr>
 <tr><td><strong>Solver Tolerances</strong> section</td>
 <td>These settings control the tolerances of the Newtonian solver used to calculate the rod movement. The solver works iteratively until it gets a result within these tolerances. Use higher values to get faster but less accurate results, lower values for more accuracy at the expense of computation time.</td>
+</tr>
+<tr><td>Stol</td>
+<td>The Least Squares norm of change in the solution at the last step of the solve.</td>
+</tr>
+<tr><td>Atol</td>
+<td>The Least Squares norm of the residual.</td>
+</tr>
+<tr><td>Rtol</td>
+<td>The ratio of the current residual to the initial residual.</td>
+</tr>
+<tr><td>Inftol</td>
+<td>The infinity norm of the residual.</td>
 </tr>
 <tr><td><strong>Clumping</strong> section</td>
 <td>Ignore this at present.</td>
@@ -182,7 +197,7 @@ Be careful setting this to low values, as it can make the simulation too &#8220;
 <tr><td>Lock first edge to input</td>
 <td>Locks the segment of the rod in place. If this is off, the entire rod (all segments) can move; if it&#8217;s on, the bottom segment of the rod stays fixed in position as the rest of the rod deforms.</td>
 </tr>
-<tr><td>Percentage of Barbershop strands</td>
+<tr><td>Percent Barbershop strands</td>
 <td>The percentage of Barbershop hairs in the furset to simulate.</td>
 </tr>
 <tr><td>Gravity</td>
@@ -223,6 +238,9 @@ This is not defined as mass per vertex (as with Maya hair) because it means the 
 <tr><td>Draw Scale</td>
 <td>When <strong>Draw 3DRod</strong> is on, this sets the width scale for the 3d representations of the rods. Increase this to make the rods thicker onscreen.</td>
 </tr>
+<tr><td><strong>Files section</strong></td>
+<td>&nbsp;</td>
+</tr>
 <tr><td>Cache Path</td>
 <td>The location to read or write cache data from/to.</td>
 </tr>
@@ -250,6 +268,9 @@ This is not defined as mass per vertex (as with Maya hair) because it means the 
 </tr>
 <tr><td>Separation Strength</td>
 <td>This scales the amount of separation force (how much the two objects &#8220;don&#8217;t want&#8221; to collide) in the initial stage of the collision. Higher values give more bounce out, but less stability.</td>
+</tr>
+<tr><td>Damping</td>
+<td>The amount of damping to apply to the collision. This &#8220;softens&#8221; the impact between the two objects.</td>
 </tr>
 <tr><td>Thickness</td>
 <td>The distance from the surface where things are considered in collision.</td>
@@ -330,12 +351,12 @@ This is not defined as mass per vertex (as with Maya hair) because it means the 
         <li class="right" >
           <a href="animating_rods.html" title="Animating the rods"
              >previous</a> |</li>
-        <li><a href="index.html">Figaro v43 documentation</a> &raquo;</li> 
+        <li><a href="index.html">Figaro v47 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
         &copy; Copyright 2010, Weta Digital.
-      Last updated on Dec 08, 2010.
+      Last updated on Dec 17, 2010.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.4.
     </div>
   </body>
