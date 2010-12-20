@@ -1227,11 +1227,10 @@ void WmFigaroCmd::attachParticles()
     stat = dagModifier.connect( rodNodeOutPlug, bunsenNodeRodPlug );
     CHECK_MSTATUS( stat );
 
-
-
-    MPlug bunsenEnabledPlug = bunsenDependNodeFn.findPlug("enabled", &stat);
-    CHECK_MSTATUS( stat );
-    bunsenEnabledPlug.setBool(false);
+    // We need to leave bunsen enabled as there may be other rod nodes that are not disabled
+//    MPlug bunsenEnabledPlug = bunsenDependNodeFn.findPlug("enabled", &stat);
+//    CHECK_MSTATUS( stat );
+//    bunsenEnabledPlug.setBool(false);
 
     // Connect up the rod output sim plug so we know when the sim moves forward in time
     MPlug rodNodeSimPlug( sFn.findPlug( "simStepTaken", true, &stat ) );
@@ -1268,6 +1267,11 @@ void WmFigaroCmd::attachParticles()
 
     stat = dagModifier.doIt();
     CHECK_MSTATUS( stat );
+    
+    // Tturn off the sim on the rod node as particle input means track exactly
+    MPlug rodSimEnabledPlug( sFn.findPlug( "simEnabled", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    rodSimEnabledPlug.setBool( false );
 
     // connect the partice node and the rod node
     MFnDependencyNode particleNodeFn( particleDagPath.node() );
