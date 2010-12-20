@@ -7,6 +7,7 @@ WmFigRodFileInput::WmFigRodFileInput( MString& i_cacheFilename, WmFigRodGroup& i
                                       RodOptions& i_rodOptions ) :
     m_cacheFilename( i_cacheFilename ), m_rodGroup( i_rodGroup ), m_rodOptions( i_rodOptions )
 {
+    m_simulating = false;
 }
 
 WmFigRodFileInput::~WmFigRodFileInput()
@@ -22,9 +23,11 @@ void WmFigRodFileInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
     if ( !readDataFromRodCacheFile( m_cacheFilename, numRodsInFile, rodVertices, 
                                     unsimulatedRodVertices ) )
     {
+        cerr << "Failed to initialise rod data from cache file\n";
         return;
     }
  
+    cerr << "initialising rods, " << numRodsInFile << " rods in file\n";
     m_rodGroup.setIsReadingFromCache( true );
 
     // FIXME: We need a new addRod that lets us create these cached rods without all the other stuff

@@ -253,6 +253,7 @@ private:
     bool m_rodGeoChanged;
     GLuint m_rodDisplayList;
 
+    bool m_isSimulationEnabled;
 };
 
 #endif // WMFIGRODNODE_HH_

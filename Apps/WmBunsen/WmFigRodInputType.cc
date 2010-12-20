@@ -28,6 +28,27 @@ bool WmFigRodInputType::getSimulating()
     return m_simulating;
 }
 
+void WmFigRodInputType::matchRodToInputIfRequired( WmFigRodGroup& i_rodGroup,
+        const vector< vector< BASim::Vec3d > >& i_inputVertices )
+{
+    if( !m_simulating && i_rodGroup.numberOfRods() != 0 )
+    {
+        // just want to set the rod vertices to inputCurveVertices
+        for ( int c=0; c< (int)i_inputVertices.size(); ++c )
+        {
+            vector< BASim::Vec3d > curveVertices = i_inputVertices[ c ];
+            ElasticRod *rod = i_rodGroup.elasticRod( c );
+            if(rod)
+            {
+                for(int v = 0; v < (int)curveVertices.size(); v++)
+                {
+                    rod->setVertex( v, curveVertices[ v ] );
+                }
+            }
+        }
+    }
+}
+
 
 void WmFigRodInputType::resampleCurve( int i_numVerticesToResample, vector<MVector>& i_curve, 
     vector<MVector>& o_resampledCurve )

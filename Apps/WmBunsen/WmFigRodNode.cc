@@ -83,7 +83,7 @@ WmFigRodNode::WmFigRodNode() : m_massDamping( 10 ), m_initialised( false ),
     m_pRodInput( NULL ), m_vertexSpacing( 0.0 ), m_minimumRodLength( 2.0 ),
     m_readFromCache( false ), m_writeToCache( false ), m_cachePath ( "" ),
     m_solverType( RodTimeStepper::IMPL_EULER ), m_gravity( 0, -980, 0 ), m_rodDisplayList(0),
-    m_rodGeoChanged(true)
+    m_rodGeoChanged(true), m_isSimulationEnabled( true )
 {
     m_rodOptions.YoungsModulus = 1000.0; /* megapascal */
     m_rodOptions.ShearModulus = 340.0;   /* megapascal */
@@ -118,11 +118,7 @@ void WmFigRodNode::disableSim()
 
 MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
-
     MStatus stat;
-
-    bool simEnabled = i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool();
-    simEnabled ? enableSim() : disableSim();
 
     if ( i_plug == oa_numberOfRods )
     {
@@ -306,11 +302,21 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
                            m_gravity, m_solverType, m_simulationSet );
     }
     
-    m_pRodInput->setSimulating(i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool());
-
+    // FIXME:
+    // This should be passed into the constructors above in case they have some special 
+    // work to do there depending on whether simulating or not.
+    m_pRodInput->setSimulating( m_isSimulationEnabled );
+    
     m_pRodInput->initialiseRodDataFromInput( i_dataBlock );
-
-
+    
+    if ( m_isSimulationEnabled )
+    {
+        enableSim();
+    }
+    else
+    {
+        disableSim();
+    }
 
     // The sim has been re-initialised so it no longer needs reset.
     m_rodGroup.setSimulationNeedsReset( false );
@@ -367,15 +373,15 @@ void WmFigRodNode::updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock 
     if ( m_currentTime == m_startTime || m_pRodInput == NULL ||
          ( m_rodGroup.simulationNeedsReset() && m_readFromCache ) )
     {
-        initialiseRodData( i_dataBlock );     
+        initialiseRodData( i_dataBlock );        
     }
     else
-    {
+    {        
         if ( m_pRodInput == NULL )
         {
             return;
         }
-
+        
         if ( !m_rodGroup.simulationNeedsReset() )
         {
             if ( !m_readFromCache )
@@ -630,29 +636,27 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
         // the user resets the sim to be sure all is safe.
         // Make sure that every rod is disabled before we read from the cache file
         
-        cerr << "read status changed disabling all rods\n";
+    //    cerr << "read status changed disabling all rods\n";
         m_rodGroup.setSimulationNeedsReset( true );
         
         m_readFromCache = readFromCache;
     }
+    
+    // If the user has toggled simEnabled then we need to reset the sim because the data
+    // structures are slightly different. 
+    bool simulationEnabled = i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool();
+    if ( m_isSimulationEnabled != simulationEnabled )
+    {
+        m_rodGroup.setSimulationNeedsReset( true );
+        
+        // Disable the sim till it resets
+        disableSim();
+    }
+    m_isSimulationEnabled = simulationEnabled;
 
     m_rodGroup.setIsReadingFromCache( m_readFromCache );
-
-    if(m_pRodInput)
-    {
-        m_pRodInput->setSimulating(true);
-    }
+        
     updateOrInitialiseRodDataFromInputs( i_dataBlock );
-
-    if(m_pRodInput)
-    {
-        m_pRodInput->setSimulating(i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool());
-    }
-
-    if(!i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool() && !m_readFromCache)
-    {
-       m_pRodInput->initialiseRodDataFromInput( i_dataBlock );
-    }
 
     stat = i_dataBlock.setClean( i_plug );
     if ( !stat )
@@ -763,32 +767,18 @@ void WmFigRodNode::updateControlledEdgeArrayFromInputs( MDataBlock& i_dataBlock 
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void WmFigRodNode::compute_ca_simulationSync( const MPlug& i_plug, 
-    MDataBlock i_dataBlock )
+void WmFigRodNode::compute_ca_simulationSync( const MPlug& i_plug, MDataBlock i_dataBlock )
 {
     MStatus stat;
 
     i_dataBlock.inputValue( ia_simStepTaken, &stat ).asBool();
     CHECK_MSTATUS( stat );
-
-    MPlug particlesPlug( thisMObject(), ia_particlePositions );
-    if(particlesPlug.isConnected())
-    {
-        if(!m_pRodInput)
-        {
-            updateOrInitialiseRodDataFromInputs(i_dataBlock);
-        }
-        else
-        {
-            m_pRodInput->initialiseRodDataFromInput( i_dataBlock );
-        }
-    }
-
+    
     readCacheRelatedInputs( i_dataBlock );
 
     writeCacheIfNeeded( i_dataBlock );
     
-    MDataHandle numRodsH = i_dataBlock.outputValue( oa_numberOfRods, &stat);
+    MDataHandle numRodsH = i_dataBlock.outputValue( oa_numberOfRods, &stat );
     CHECK_MSTATUS( stat );
 
     numRodsH.set( (int)m_rodGroup.numberOfRods() );
@@ -1689,7 +1679,8 @@ void* WmFigRodNode::creator()
     addNumericAttribute( ca_simulationSync, "simulationSync", "sis", MFnNumericData::kBoolean, false, false );
 
     addNumericAttribute( ia_simEnabled, "simEnabled", "sme", MFnNumericData::kBoolean, true, true, false);
-
+	stat = attributeAffects( ia_simEnabled, oa_rodsChanged );
+	if ( !stat ) { stat.perror( "attributeAffects ia_simEnabled->oa_rodsChanged" ); return stat; }
 
     addNumericAttribute( ia_simStepTaken, "simStepTaken", "sst", MFnNumericData::kBoolean, false, true );
 	stat = attributeAffects( ia_simStepTaken, ca_simulationSync );

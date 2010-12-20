@@ -44,7 +44,7 @@ public:
       * @brief Initialise rod data from input types.
       */
     virtual void initialiseRodDataFromInput( MDataBlock& i_dataBlock );    
-    
+
 private:
     MString m_cacheFilename;
     WmFigRodGroup& m_rodGroup;

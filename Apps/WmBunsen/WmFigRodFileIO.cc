@@ -250,13 +250,15 @@ WmFigRodFileIO::~WmFigRodFileIO()
         return;
     }
 
-
     fwrite( ROD_CACHE_FILE_TAG, 1, 4, fp );
     fwrite( &m_versionNumber, sizeof(int), 1, fp );
     
     size_t numberOfRealRods = i_rodGroup.numberOfRealRods();
     int totalNumberOfRods = i_rodGroup.numberOfRods();
     fwrite( &numberOfRealRods, sizeof( size_t ), 1, fp );
+    
+    cerr << "writing " << numberOfRealRods << " real rods to file\n";
+    cerr << "total number of rods is " << totalNumberOfRods << "\n";
 
     for ( int r=0; r<totalNumberOfRods; r++ )
     {

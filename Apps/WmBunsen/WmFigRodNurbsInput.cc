@@ -10,6 +10,7 @@ WmFigRodNurbsInput::WmFigRodNurbsInput( MObject& i_nurbsAttribute, bool i_lockFi
     m_rodOptions( i_rodOptions ), m_massDamping( i_massDamping ), m_gravity( i_gravity ),  m_solverType( i_solverType ),
     m_simulationSet( i_simulationSet )
 {
+    m_simulating = true;
     // we need to get pass the attribute here so that when we initialise data or
     // reload it we can just pull on the attribute
 }
@@ -125,26 +126,6 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock)
 
     getAndResampleInputCurves( i_dataBlock, inputCurveVertices );
 
-    if(!m_simulating && m_rodGroup.numberOfRods() != 0)
-    {
-        // just want to set the rod vertices to inputCurveVertices; no
-        // adding of rods.
-        for ( int c=0; c< (int)inputCurveVertices.size(); ++c )
-        {
-            vector< BASim::Vec3d > curveVertices = inputCurveVertices[c];
-            ElasticRod *rod = m_rodGroup.elasticRod( c );
-            if(rod)
-            {
-                for(int v = 0; v < (int)curveVertices.size(); v++)
-                {
-                    rod->setVertex( v, curveVertices[v] );
-                }
-            }
-        }
-
-        return;
-    }
-
     for ( int c=0; c< (int)inputCurveVertices.size(); ++c )
     {
         bool isPlaceHolderRod = false;
@@ -174,6 +155,8 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock)
             }
         }
     }
+    
+    matchRodToInputIfRequired( m_rodGroup, inputCurveVertices );
 }
 
 void WmFigRodNurbsInput::updateRodDataFromInput( MDataBlock& i_dataBlock )
@@ -189,6 +172,8 @@ void WmFigRodNurbsInput::updateRodDataFromInput( MDataBlock& i_dataBlock )
             m_rodGroup.updateRodNextVertexPositions( c, inputCurveVertices[ c ] );
         }
     }
+    
+    matchRodToInputIfRequired( m_rodGroup, inputCurveVertices );
 }
 
 int WmFigRodNurbsInput::numberOfInputs( MDataBlock& i_dataBlock )

@@ -13,6 +13,8 @@
 #include "RodData.hh"
 #include <vector>
 
+#include "WmFigRodGroup.hh"
+
 /**
   * @brief Base class for classes which convert Maya types into Rods structures.
   *
@@ -47,9 +49,11 @@ public:
     // may be helpful for the input class to know if sim has been turned off
     void setSimulating(bool);
     bool getSimulating();
+    
+    void matchRodToInputIfRequired( WmFigRodGroup& i_rodGroup,
+                                    const vector< vector< BASim::Vec3d > >& i_inputVertices );
 
 protected:
-
     bool m_simulating;
 
 private:

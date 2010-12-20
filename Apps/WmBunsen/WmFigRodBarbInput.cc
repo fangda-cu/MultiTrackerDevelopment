@@ -17,6 +17,7 @@ WmFigRodBarbInput::WmFigRodBarbInput( MObject& i_verticesAttribute, MObject& i_s
     m_gravity( i_gravity ),
     m_solverType( i_solverType ), m_simulationSet( i_simulationSet )
 {
+    m_simulating = true;
 }
 
 WmFigRodBarbInput::~WmFigRodBarbInput()

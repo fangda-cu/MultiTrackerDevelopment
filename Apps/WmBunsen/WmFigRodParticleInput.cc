@@ -14,6 +14,7 @@ WmFigRodParticleInput::WmFigRodParticleInput( MObject& i_verticesAttribute, MObj
     m_gravity( i_gravity ),
     m_solverType( i_solverType ), m_simulationSet( i_simulationSet )
 {
+    m_simulating = false;
 }
 
 WmFigRodParticleInput::~WmFigRodParticleInput()
@@ -22,7 +23,6 @@ WmFigRodParticleInput::~WmFigRodParticleInput()
 
 void WmFigRodParticleInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
 {
-
     MStatus stat;
 
     MVectorArray vertices;
@@ -54,29 +54,12 @@ void WmFigRodParticleInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock 
             inputStrandVertices[ r ][ v ] = BASim::Vec3d( vertex[0], vertex[1], vertex[2] );                                          
         }
     }
-    
+ 
     // Pretend the rods are coming from a cache as they are not going to be simmed
     // FIXME: Sending mass damping is pointless!
-    if(m_rodGroup.numberOfRods() == 0)
-    {
-        m_rodGroup.addRodsFromCache( inputStrandVertices, m_rodOptions, 10.0 );
-    }
-    else
-    {
-        for ( int c=0; c< (int)inputStrandVertices.size(); ++c )
-        {
-            vector< BASim::Vec3d > curveVertices = inputStrandVertices[c];
-            ElasticRod *rod = m_rodGroup.elasticRod( c );
-            if(rod)
-            {
-                for(int v = 0; v < (int)curveVertices.size(); v++)
-                {
-                    rod->setVertex( v, curveVertices[v] );
-                }
-            }
-        }
-
-    }
+    m_rodGroup.addRodsFromCache( inputStrandVertices, m_rodOptions, 10.0 );
+      
+    matchRodToInputIfRequired( m_rodGroup, inputStrandVertices );
 }
 
 void WmFigRodParticleInput::updateRodDataFromInput( MDataBlock& i_dataBlock )
@@ -102,21 +85,25 @@ void WmFigRodParticleInput::updateRodDataFromInput( MDataBlock& i_dataBlock )
     }
 
     int inputStrandVertexIndex = 0;
+    vector< vector< BASim::Vec3d > > inputStrandVertices;        
+    inputStrandVertices.resize( numInputRods );
+    
     for ( int i = 0; i < numInputRods; i++ )
     {
         int numVerticesInRod = m_rodGroup.numberOfVerticesInRod( i );
 
-        vector<BASim::Vec3d> inputStrandVertices;         
-        inputStrandVertices.resize( numVerticesInRod );
+        inputStrandVertices[ i ].resize( numVerticesInRod );
 
         for ( int v = 0; v < numVerticesInRod; v++ )
         {
             MVector vertex = vertices[ inputStrandVertexIndex++ ];
-            inputStrandVertices[ v ] = BASim::Vec3d( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ] );
+            inputStrandVertices[ i ][ v ] = BASim::Vec3d( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ] );
         }
 
-        m_rodGroup.updateRodNextVertexPositions( i, inputStrandVertices );
+        m_rodGroup.updateRodNextVertexPositions( i, inputStrandVertices[ i ] );
     }
+    
+    matchRodToInputIfRequired( m_rodGroup, inputStrandVertices );
 }
 
 int WmFigRodParticleInput::numberOfInputs( MDataBlock& i_dataBlock )
