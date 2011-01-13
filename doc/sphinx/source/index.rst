@@ -9,7 +9,7 @@ Figaro
 What is Figaro?
 -------------------
 
-Figaro is Weta's hair dynamics simulation.  It takes the air created in Barbershop and adds dynamic details to create hair that moves realistically.  
+Figaro is Weta's hair dynamics simulation.  It takes the hair created in Barbershop and adds dynamic details to create hair that moves realistically.  
 
 .. toctree::
    :maxdepth: 2
@@ -24,7 +24,7 @@ Figaro is Weta's hair dynamics simulation.  It takes the air created in Barbersh
 Needs
 ------
 
-The latest need is wmFigaro-0043_M2010_64
+The latest need is wmFigaro version |version|. 
 
 
 Rods

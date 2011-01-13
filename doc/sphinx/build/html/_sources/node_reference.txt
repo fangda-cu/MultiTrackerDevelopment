@@ -22,9 +22,14 @@ Frames Per Second 			The animation speed the scene is meant to run at. For examp
 					If you this setting does not match the scene as a whole, the simulation can look very strange. 
 Sub Steps 				The minimum number of steps to take per frame. The simulation is adaptively stepped when it needs to be. The lower the number of steps, the faster the simulation runs, so this sets the maximum speed of the simulation. 
 					Be careful setting this to low values, as it can make the simulation too "bouncy". 
+Sub Distance Max			The maximum distance an object can travel in a single substep. This can force the simulation to use additional substeps for fast-moving objects. 
 Gravity 				Sets the gravity. By default, this attribute is connected to all rod nodes so they pick up the world gravity from the Figaro node.
 Plastic Deformations 			Ignore this at present.
 **Solver Tolerances** section		These settings control the tolerances of the Newtonian solver used to calculate the rod movement. The solver works iteratively until it gets a result within these tolerances. Use higher values to get faster but less accurate results, lower values for more accuracy at the expense of computation time.
+Stol					The Least Squares norm of change in the solution at the last step of the solve. 	
+Atol					The Least Squares norm of the residual. 
+Rtol					The ratio of the current residual to the initial residual. 
+Inftol					The infinity norm of the residual. 
 **Clumping** section 			Ignore this at present. 
 **Collisions**	section		
 Object Collisions Enabled		Turns the collision handling for meshes on and off. 
@@ -63,7 +68,7 @@ Minimum Rod Length			Any rods shorter than this will not be simulated.
 Cache Frame 				Turn this on to write out the rod positions to disk for later playback.
 Read from Cache				Turn this on to read from the cached file rather than running the simulation. This needs you to have previously run the simulation with *Cache Frame* turned on. 
 Lock first edge to input		Locks the segment of the rod in place. If this is off, the entire rod (all segments) can move; if it's on, the bottom segment of the rod stays fixed in position as the rest of the rod deforms.
-Percentage of Barbershop strands 	The percentage of Barbershop hairs in the furset to simulate.
+Percent Barbershop strands 		The percentage of Barbershop hairs in the furset to simulate.
 Gravity 				Sets the gravity. Use this if you want to use a value different from the global gravity for the rods in this node. 
 Minor Radius 				The minor radius of the rods.
 Major Radius 				The major radius of the rods.
@@ -78,6 +83,7 @@ Simulation Set 				If you want to only simulate some of the rods, enter the indi
 **Drawing** section		
 Draw 3DRod				Draws the rods in a 3d view, rather than as a series of CVs linked by lines. 
 Draw Scale				When **Draw 3DRod** is on, this sets the width scale for the 3d representations of the rods. Increase this to make the rods thicker onscreen. 
+**Files section**
 Cache Path 				The location to read or write cache data from/to.
 ======================================	================
 
@@ -93,6 +99,7 @@ Attribute			Definition
 Friction 			The amount of friction to use during collisions. This makes the rods stick rather than slide on the mesh.
 Coefficient of Restitution	The amount of bounce to use during collisions. This makes the rods stick or bounce as they hit the mesh.
 Separation Strength 		This scales the amount of separation force (how much the two objects "don't want" to collide) in the initial stage of the collision. Higher values give more bounce out, but less stability. 
+Damping				The amount of damping to apply to the collision. This "softens" the impact between the two objects. 
 Thickness			The distance from the surface where things are considered in collision. 
 Edge Collisions			Turn this on to calculate full edge/edge collisions rather than just point-triangle.
 Draw Collision Data		Debug, ignore. 
