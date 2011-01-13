@@ -98,6 +98,7 @@ public:
     static MObject ia_lockFirstEdgeToInput;
     static MObject ia_simulationSet;
     static MObject ia_simEnabled;
+    static MObject ia_doReverseHairdo;
 
     // Drawing 
     static MObject ia_userDefinedColors;
@@ -254,6 +255,7 @@ private:
     GLuint m_rodDisplayList;
 
     bool m_isSimulationEnabled;
+    bool m_doReverseHairdo;
 };
 
 #endif // WMFIGRODNODE_HH_

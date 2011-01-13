@@ -35,7 +35,9 @@ public:
       */
      WmFigRodNurbsInput( MObject& i_nurbsAttribute, bool i_lockFirstEdgeToInput, WmFigRodGroup& i_rodGroup,
                          double i_vertexSpacing, double i_minimumRodLength, RodOptions& i_rodOptions,
-                         double i_massDamping, BASim::Vec3d& i_gravity,  RodTimeStepper::Method i_solverType, std::set< int >& i_simulationSet );
+                         double i_massDamping, BASim::Vec3d& i_gravity,  
+                         RodTimeStepper::Method i_solverType, std::set< int >& i_simulationSet,
+                         const bool i_doReverseHairdo );
 
     /**
       * @brief Default destructor
@@ -62,6 +64,7 @@ private:
     BASim::Vec3d m_gravity;
     RodTimeStepper::Method m_solverType;
     std::set< int >& m_simulationSet;
+    bool m_doReverseHairdo;
 };
 
 #endif // WMFIGRODNURBSINPUT_H_

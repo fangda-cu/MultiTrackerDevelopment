@@ -28,7 +28,8 @@ public:
 
     int addRod();
     int addRod( std::vector<BASim::Vec3d>& i_rodVertices, RodOptions& i_rodOptions, 
-                   double i_massDamping, BASim::Vec3d& i_gravity,  RodTimeStepper::Method i_solverType, bool i_isFromCache = false );
+                double i_massDamping, BASim::Vec3d& i_gravity,  RodTimeStepper::Method i_solverType, 
+                const bool i_isFromCache = false, const bool i_doReverseHairdo = false );
 
     void addRodsFromCache( vector<vector<BASim::Vec3d> >& i_rodVertices, RodOptions& i_rodOptions, 
                              double i_massDamping )

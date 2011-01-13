@@ -4,11 +4,12 @@
 
 WmFigRodNurbsInput::WmFigRodNurbsInput( MObject& i_nurbsAttribute, bool i_lockFirstEdgeToInput,
     WmFigRodGroup& i_rodGroup, double i_vertexSpacing, double i_minimumRodLength, RodOptions& i_rodOptions,
-    double i_massDamping, BASim::Vec3d& i_gravity,  RodTimeStepper::Method i_solverType, std::set< int >& i_simulationSet ) : 
+    double i_massDamping, BASim::Vec3d& i_gravity,  RodTimeStepper::Method i_solverType, 
+    std::set< int >& i_simulationSet, const bool i_doReverseHairdo ):    
     m_inputNurbsAttribute( i_nurbsAttribute ), m_lockFirstEdgeToInput( i_lockFirstEdgeToInput ),
     m_rodGroup( i_rodGroup ), m_vertexSpacing( i_vertexSpacing ), m_minimumRodLength( i_minimumRodLength ),
     m_rodOptions( i_rodOptions ), m_massDamping( i_massDamping ), m_gravity( i_gravity ),  m_solverType( i_solverType ),
-    m_simulationSet( i_simulationSet )
+    m_simulationSet( i_simulationSet ), m_doReverseHairdo( i_doReverseHairdo )
 {
     m_simulating = true;
     // we need to get pass the attribute here so that when we initialise data or
@@ -131,7 +132,7 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock)
         bool isPlaceHolderRod = false;
 
         if ( m_simulationSet.size() != 0 )
-        {   
+        {
             isPlaceHolderRod = ( m_simulationSet.count( c ) == 0 );
         }
 
@@ -142,13 +143,13 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock)
         }
         else
         {
-
             RodOptions rodOptions = m_rodOptions;
             rodOptions.numVertices = (int)inputCurveVertices[ c ].size();
 
             // Mass damping should be in rod options, it's dumb to pass it seperately.
-            int rodIndex = m_rodGroup.addRod( inputCurveVertices[ c ], rodOptions, m_massDamping, m_gravity, m_solverType );
-    
+            int rodIndex = m_rodGroup.addRod( inputCurveVertices[ c ], rodOptions, m_massDamping, 
+                                            m_gravity, m_solverType, m_doReverseHairdo );
+                                            
             if ( m_lockFirstEdgeToInput && !m_rodGroup.isPlaceHolderRod( rodIndex ) )
             {
                 m_rodGroup.addKinematicEdge( rodIndex, 0 );

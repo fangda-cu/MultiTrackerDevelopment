@@ -68,6 +68,7 @@ using namespace BASim;
 /* static */ MObject WmFigRodNode::ia_drawMaterialFrames;
 /* static */ MObject WmFigRodNode::ia_lockFirstEdgeToInput;
 /* static */ MObject WmFigRodNode::ia_simulationSet;
+/* static */ MObject WmFigRodNode::ia_doReverseHairdo;
 
 // For being controlled by external objects and for controlling external objects
 /* static */ MObject WmFigRodNode::ia_edgeTransforms;
@@ -83,7 +84,7 @@ WmFigRodNode::WmFigRodNode() : m_massDamping( 10 ), m_initialised( false ),
     m_pRodInput( NULL ), m_vertexSpacing( 0.0 ), m_minimumRodLength( 2.0 ),
     m_readFromCache( false ), m_writeToCache( false ), m_cachePath ( "" ),
     m_solverType( RodTimeStepper::IMPL_EULER ), m_gravity( 0, -980, 0 ), m_rodDisplayList(0),
-    m_rodGeoChanged(true), m_isSimulationEnabled( true )
+    m_rodGeoChanged(true), m_isSimulationEnabled( true ), m_doReverseHairdo( false )
 {
     m_rodOptions.YoungsModulus = 1000.0; /* megapascal */
     m_rodOptions.ShearModulus = 340.0;   /* megapascal */
@@ -96,7 +97,6 @@ WmFigRodNode::WmFigRodNode() : m_massDamping( 10 ), m_initialised( false ),
     m_controlledEdgeTransforms.clear();
     m_simulationSet.clear();
 }
-
 
 WmFigRodNode::~WmFigRodNode()
 {
@@ -299,7 +299,7 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
     {
         m_pRodInput = new WmFigRodNurbsInput( ia_nurbsCurves, m_lockFirstEdgeToInput, m_rodGroup,
                            m_vertexSpacing, m_minimumRodLength, m_rodOptions, m_massDamping,
-                           m_gravity, m_solverType, m_simulationSet );
+                           m_gravity, m_solverType, m_simulationSet, m_doReverseHairdo );
     }
     
     // FIXME:
@@ -332,7 +332,6 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
 
 void WmFigRodNode::updateKinematicEdgesFromInput()
 {
-
     for ( int r = 0; r < (int)m_rodGroup.numberOfRods(); ++r )
     {
         EdgeTransformRodMap::iterator rodIt = m_controlledEdgeTransforms.find( r );
@@ -615,6 +614,9 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
     MString simulationSet = i_dataBlock.inputValue( ia_simulationSet, &stat ).asString();
     CHECK_MSTATUS( stat );
 
+    m_doReverseHairdo = i_dataBlock.inputValue( ia_doReverseHairdo, &stat ).asBool();
+    CHECK_MSTATUS( stat );
+    
     updateSimulationSet( simulationSet );
 
     updateControlledEdgeArrayFromInputs( i_dataBlock );
@@ -1778,6 +1780,10 @@ void* WmFigRodNode::creator()
     addNumericAttribute( ia_lockFirstEdgeToInput, "lockFirstEdgeToInput", "lfe", MFnNumericData::kBoolean, true, true );
     stat = attributeAffects( ia_lockFirstEdgeToInput, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_lockFirstEdgeToInput->oa_rodsChanged" ); return stat; }
+
+    addNumericAttribute( ia_doReverseHairdo, "doReverseHairdo", "drh", MFnNumericData::kBoolean, true, true );
+    stat = attributeAffects( ia_doReverseHairdo, oa_rodsChanged );
+    if ( !stat ) { stat.perror( "attributeAffects ia_doReverseHairdo->oa_rodsChanged" ); return stat; }
 
     {
         MFnTypedAttribute tAttr;

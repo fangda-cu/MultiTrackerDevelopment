@@ -20,13 +20,14 @@ int WmFigRodGroup::addRod()
 }
 
 int WmFigRodGroup::addRod( std::vector<BASim::Vec3d>& i_rodVertices, RodOptions& i_rodOptions, 
-                              double i_massDamping, BASim::Vec3d& i_gravity,  
-                              RodTimeStepper::Method i_solverType, bool i_isFromCache )
+                           double i_massDamping, BASim::Vec3d& i_gravity,  
+                           RodTimeStepper::Method i_solverType, const bool i_isFromCache,
+                           const bool i_doReverseHairdo )
 {
     // We have rod vertices so lets build a real rod.
     
     RodData* rodData = new RodData( i_rodOptions, i_rodVertices, i_massDamping, i_gravity, 
-                                    i_solverType, i_isFromCache );
+                                    i_solverType, i_isFromCache, i_doReverseHairdo );
 
     m_rodData.push_back( rodData );
 
