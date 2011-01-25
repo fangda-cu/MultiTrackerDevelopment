@@ -120,7 +120,8 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
                 rodOptions.numVertices = (int)inputStrandVertices.size();
 
                 // Mass damping should be in rod options, it's dumb to pass it seperately.
-                rodIndex = m_rodGroup.addRod( inputStrandVertices, rodOptions, m_massDamping, m_gravity, m_solverType );
+                rodIndex = m_rodGroup.addRod( inputStrandVertices, rodOptions, m_massDamping, 
+                                              m_gravity, m_solverType );
             }
         }
         else

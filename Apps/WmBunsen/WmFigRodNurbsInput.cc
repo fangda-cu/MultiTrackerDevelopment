@@ -11,9 +11,7 @@ WmFigRodNurbsInput::WmFigRodNurbsInput( MObject& i_nurbsAttribute, bool i_lockFi
     m_rodOptions( i_rodOptions ), m_massDamping( i_massDamping ), m_gravity( i_gravity ),  m_solverType( i_solverType ),
     m_simulationSet( i_simulationSet ), m_doReverseHairdo( i_doReverseHairdo )
 {
-    m_simulating = true;
-    // we need to get pass the attribute here so that when we initialise data or
-    // reload it we can just pull on the attribute
+    m_simulating = true;    
 }
 
 WmFigRodNurbsInput::~WmFigRodNurbsInput()
@@ -63,7 +61,7 @@ void WmFigRodNurbsInput::getAndResampleInputCurves( MDataBlock& i_dataBlock, vec
             double length = 0.0;
 
             for ( int v = 0; v < numCVs; v++ )
-            {                
+            {
                 stat = inCurveFn.getCV( v, cv, MSpace::kObject );
                 CHECK_MSTATUS( stat );
 
@@ -138,8 +136,9 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock)
 
         if ( inputCurveVertices[ c ].size() == 0 || isPlaceHolderRod)
         {
-            // Add a placeholder rod, most likely too small to actually be a real rod.
+             // Add a placeholder rod, most likely too small to actually be a real rod.
              m_rodGroup.addRod();
+             cerr << "Adding fake rod!\n";
         }
         else
         {
@@ -148,7 +147,7 @@ void WmFigRodNurbsInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock)
 
             // Mass damping should be in rod options, it's dumb to pass it seperately.
             int rodIndex = m_rodGroup.addRod( inputCurveVertices[ c ], rodOptions, m_massDamping, 
-                                            m_gravity, m_solverType, m_doReverseHairdo );
+                                            m_gravity, m_solverType, false, m_doReverseHairdo );
                                             
             if ( m_lockFirstEdgeToInput && !m_rodGroup.isPlaceHolderRod( rodIndex ) )
             {

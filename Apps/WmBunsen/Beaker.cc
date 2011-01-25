@@ -315,6 +315,7 @@ void Beaker::addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
         m_rods.push_back( m_rodDataMap[ i_rodGroupIndex ]->elasticRod( r ) );
 
         m_world->addObject( m_rodDataMap[ i_rodGroupIndex ]->elasticRod( r ) );
+        
         m_world->addController( m_rodDataMap[ i_rodGroupIndex ]->collisionStepper( r ) );
     }
 
@@ -553,7 +554,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
                     // We treat these as weak constraints
                     for ( FixedVertexMap::iterator vIt=fixedVertexMap.begin(); vIt!=fixedVertexMap.end(); ++vIt )
-                    {    
+                    {
                         int fixedVertex = vIt->first;
                         BASim::Vec3d fixedPosition = vIt->second;                   
     

@@ -311,13 +311,14 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
     
     if ( m_isSimulationEnabled )
     {
+        cerr << "enabling sim\n";
         enableSim();
     }
     else
     {
         disableSim();
     }
-
+    
     // The sim has been re-initialised so it no longer needs reset.
     m_rodGroup.setSimulationNeedsReset( false );
 
@@ -369,13 +370,13 @@ void WmFigRodNode::updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock 
 {
     readCacheRelatedInputs( i_dataBlock );
     
-    if ( m_currentTime == m_startTime || m_pRodInput == NULL ||
+    if ( m_currentTime == m_startTime || /*m_pRodInput == NULL || */
          ( m_rodGroup.simulationNeedsReset() && m_readFromCache ) )
     {
-        initialiseRodData( i_dataBlock );        
+        initialiseRodData( i_dataBlock );
     }
     else
-    {        
+    {
         if ( m_pRodInput == NULL )
         {
             return;
@@ -1781,7 +1782,7 @@ void* WmFigRodNode::creator()
     stat = attributeAffects( ia_lockFirstEdgeToInput, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_lockFirstEdgeToInput->oa_rodsChanged" ); return stat; }
 
-    addNumericAttribute( ia_doReverseHairdo, "doReverseHairdo", "drh", MFnNumericData::kBoolean, true, true );
+    addNumericAttribute( ia_doReverseHairdo, "doReverseHairdo", "drh", MFnNumericData::kBoolean, false, true );
     stat = attributeAffects( ia_doReverseHairdo, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_doReverseHairdo->oa_rodsChanged" ); return stat; }
 

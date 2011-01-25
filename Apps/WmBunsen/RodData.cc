@@ -25,7 +25,8 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
     if ( !i_isReadingFromCache )
     {
       // If Adaptive Time Stepping is used,
-	    if(1) {
+	    if(1) 
+        {
 		    RodTimeStepper* stepper = new RodTimeStepper( *m_rod );
 		    stepper->setDiffEqSolver( i_solverType );
 	    
@@ -34,11 +35,10 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
 		    
 		    if ( i_gravity.norm() > 0)
 		    {
-		      stepper->addExternalForce( new RodGravity( i_gravity ) );
-		      m_gravity = i_gravity;
-		    }
-    
-        
+                stepper->addExternalForce( new RodGravity( i_gravity ) );
+                m_gravity = i_gravity;
+		    }    
+
 		    AdaptiveBinaryStepper* adpstep = new AdaptiveBinaryStepper( m_rod, stepper );
 		    //m_steppers.push_back(adpstep);
 	    
@@ -47,9 +47,10 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
             // REVERSE HAIRDO
             if ( i_doReverseHairdo )
             {
+                cerr << "Doing reverse hairdo!\n";
                 m_rod->doReverseHairdo(stepper);
             }
-        } 
+        }
         else
 	    {
 		    RodTimeStepper* stepper = new RodTimeStepper( *m_rod );
@@ -60,8 +61,8 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
 		    
 		    if ( i_gravity.norm() > 0)
 		    {
-		      stepper->addExternalForce( new RodGravity( i_gravity ) );
-		      m_gravity = i_gravity;
+                stepper->addExternalForce( new RodGravity( i_gravity ) );
+                m_gravity = i_gravity;
 		    }
 	    
 		    m_stepper = new RodCollisionTimeStepper( stepper, m_rod );        
@@ -74,7 +75,6 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
     // Used in substepping and for collisions.
     allocateStorage( (int)i_rodVertexPositions.size() );
     resetVertexPositions( i_rodVertexPositions );
-
 }
 
 RodData::~RodData()
