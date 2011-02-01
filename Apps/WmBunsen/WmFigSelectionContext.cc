@@ -324,14 +324,19 @@ bool WmFigSelectionContext::searchForRodVertices(
 
 	for( int ri = 0; ri < nRods; ri++ )
     {
-		glPushName( (GLuint)ri ); // Rod Id
+        ElasticRod *elasticRod = rodGroup->elasticRod( ri );
+        if ( elasticRod == NULL )
+            continue;
 
-		const int nVerts = rodGroup->elasticRod( ri )->nv();
+        glPushName( (GLuint)ri ); // Rod Id
+
+
+        const int nVerts = elasticRod->nv();
         for( int vi = 0; vi < nVerts; vi++ )
         {
         	glPushName( (GLuint)vi ); // Vertex Id
         	glBegin( GL_POINTS );
-        	const BASim::Vec3d p = rodGroup->elasticRod( ri )->getVertex( vi );
+            const BASim::Vec3d p = elasticRod->getVertex( vi );
             glVertex3f( p[0], p[1], p[2] );
             glEnd();
             glPopName();

@@ -63,12 +63,17 @@ void WmFigSelectionDisplayNode::draw(
 
 	for( int ri = 0; ri < nRods; ri++ )
     {
-		const int nVerts = rodGroup->elasticRod( ri )->nv();
+        ElasticRod *elasticRod = rodGroup->elasticRod( ri );
+        if ( elasticRod == NULL )
+           continue;
+
+        const int nVerts = elasticRod->nv();
         for( int vi = 0; vi < nVerts; vi++ )
         {
-            if( selection.containsRodVertex( ri, vi ) ) {
-            	const BASim::Vec3d p = rodGroup->elasticRod( ri )->getVertex( vi );
-                glVertex3f( p[0], p[1], p[2] );
+            if( selection.containsRodVertex( ri, vi ) )
+            {
+               const BASim::Vec3d p = elasticRod->getVertex( vi );
+               glVertex3f( p[0], p[1], p[2] );
             }
             //MGlobal::displayInfo( MString( "rod: ") + ri + " vertex: " + vi + " " + p[0] + ", " + p[1] + ", " + p[2] );
         }
