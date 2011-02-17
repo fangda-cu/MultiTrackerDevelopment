@@ -26,7 +26,7 @@ public:
   explicit RodForce(ElasticRod& rod, const std::string& name = "RodForce");
   virtual ~RodForce() {}
 
-  const std::string& getName() const;
+  std::string getName() const;
 
   void computeKb(Vec3d& kb, const Vec3d& x0, const Vec3d& x1, const Vec3d& x2);
   Vec3d computeKb(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2);
@@ -54,6 +54,9 @@ public:
   virtual void globalReverseJacobian(MatrixBase& Jacobian) {}
   virtual void updateReverseUndeformedStrain(const VecXd& e) {}
   
+  // 'Attaches' any links to properties within children. Used for serialization.
+  virtual void reattatchProperties() {};
+
   bool viscous() const { return m_viscous; }
   void setViscous(bool v) { m_viscous = v; updateStiffness(); }
 

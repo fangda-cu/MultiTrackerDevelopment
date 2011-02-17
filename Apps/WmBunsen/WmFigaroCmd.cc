@@ -1,8 +1,8 @@
 #include "WmFigaroCmd.hh"
-#include "WmBunsenCollisionMeshNode.hh"
+//#include "WmBunsenCollisionMeshNode.hh"
 #include "WmFigConnectionNode.hh"
 #include "WmFigaroRodShape/WmFigaroRodShape.hh"
-#include "constraints/WmFigConstraintNode.hh"
+//#include "constraints/WmFigConstraintNode.hh"
 
 #include <inttypes.h>
 #include <map>
@@ -390,7 +390,8 @@ MStatus WmFigaroCmd::redoIt()
 			wmFigaro -addVertexConstraint -rodNode "wmFigRodNodeShape1"  -rodVertices "1 rod[0].vtx[21]" -vertexConstraintType "fixed"
 
 */
-        	MStatus stat;
+        	
+            /*MStatus stat;
 		    MSelectionList selList;
 		    MGlobal::getActiveSelectionList( selList );
 
@@ -628,7 +629,7 @@ MStatus WmFigaroCmd::redoIt()
 			MGlobal::displayInfo( MString( "constraintType: ") + constraintType );
 			MGlobal::displayInfo( MString( "worldPosition: ") + pos.x + ", " + pos.y + ", " + pos.z );
 			MGlobal::displayInfo( MString( "stiffness: ") + stiffness );
-        }
+        }*/
         
         // Get rod vertex position
         //
@@ -637,7 +638,7 @@ MStatus WmFigaroCmd::redoIt()
 
 			wmFigaro -addVertexConstraint -rodNode "wmFigRodNodeShape1" -rodVertices "1 rod[0].vtx[21]"; // The rodVertices string the string result from the "Select Rod Vertices Tool"
 */
-        if( m_mArgDatabase->isFlagSet( kRodVertexPositionFlag ) )
+        /*if( m_mArgDatabase->isFlagSet( kRodVertexPositionFlag ) )
         {
         	int rodId;
         	int vertexId;
@@ -716,7 +717,7 @@ MStatus WmFigaroCmd::redoIt()
 			coordinates[2] = pt.z;
 			setResult( coordinates );
 
-			return MS::kSuccess;
+			return MS::kSuccess;*/
         }
 
 
@@ -1689,7 +1690,7 @@ void WmFigaroCmd::attatchEdgeToObject()
 
 void WmFigaroCmd::addCollisionMeshes()
 {
-    MStatus stat;
+    /*MStatus stat;
     
     if ( m_selectedwmBunsenNode == MObject::kNullObj )
     {
@@ -1779,7 +1780,7 @@ void WmFigaroCmd::addCollisionMeshes()
             stat = dagModifier.doIt();
             CHECK_MSTATUS( stat );
         }
-    }
+    }*/
 }
 
 void WmFigaroCmd::createPreviewNodes()
@@ -2123,7 +2124,7 @@ MStatus WmFigaroCmd::createDagNode( const char *transformName, const char *nodeT
 void WmFigaroCmd::addVertexConstraint( int i_rodInd, double i_dis, int i_vertId, MPoint i_pos )
 {
     //get selected rod node
-    MObject rodNode = MObject::kNullObj;
+  /*  MObject rodNode = MObject::kNullObj;
 
     MStatus status;
     MSelectionList list;
@@ -2160,7 +2161,7 @@ void WmFigaroCmd::addVertexConstraint( int i_rodInd, double i_dis, int i_vertId,
             if( i_vertId < rodGroup->elasticRod( i_rodInd )->nv() )
             {
                 BASim::Vec3d target_position = BASim::Vec3d( i_pos.x, i_pos.y, i_pos.z );
-                rodGroup->collisionStepper( i_rodInd )->setVertexPositionPenalty(i_vertId, target_position, 50. , 1);
+                rodGroup->stepper( i_rodInd )->setVertexPositionPenalty(i_vertId, target_position, 50. , 1);
             }
             else
             {
@@ -2177,6 +2178,6 @@ void WmFigaroCmd::addVertexConstraint( int i_rodInd, double i_dis, int i_vertId,
     {
         displayError( "Please select a figaro rod node! " );
     }
-
+*/
 }
 

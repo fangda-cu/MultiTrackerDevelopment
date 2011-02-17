@@ -9,7 +9,7 @@
 #define ELASTICROD_HH
 
 #include "../PhysObject.hh"
-#include "../../Collisions/CollisionObject.hh"
+//#include "../../Collisions/CollisionObject.hh"
 #include "RodBoundaryCondition.hh"
 
 namespace BASim {
@@ -26,7 +26,7 @@ class RodTimeStepper;
     degrees of freedom with the edge degrees of freedom as follows:
     \f$\left<x_0,y_0,z_0,\theta_0,x_1,y_1,z_1,\theta_1,...\right>\f$.
 */
-class ElasticRod : public PhysObject, public CollisionObject
+class ElasticRod : public PhysObject
 {
 public:
 
@@ -248,27 +248,9 @@ public:
   const Vec3d& getCurvatureBinormal(int i) const;
   void setCurvatureBinormal(int i, const Vec3d& kb);
 
-  bool vertFixed(const vertex_handle& vh) const;
-  bool vertFixed(int i) const;
-  void fixVert(int i);
-
-  bool edgeFixed(const edge_handle& eh) const;
-  bool edgeFixed(int j) const;
-  void fixEdge(int j);
-
-  const IntArray& fixed() const;
-
   bool quasistatic() const;
   void setQuasistatic(bool q);
 
-	bool plasticity() const { return property(m_plasticity); }
-	Scalar plasticityThreshold() const { return property(m_plasticThreshold); }
-	
-	void setPlasticity(bool p) { property(m_plasticity) = p; }
-	void setPlasticityThreshold(Scalar p) { property(m_plasticThreshold) = p; }
-	
-	void updatePlasticities();
-	
   enum RefFrameType { SpaceParallel, TimeParallel };
   RefFrameType refFrameType() const;
   void setRefFrameType(RefFrameType type);
@@ -301,125 +283,7 @@ public:
       recomputed whenever the size of the time step is changed. */
   void setTimeStep(Scalar dt);
   Scalar getTimeStep() const { return property(m_dt); }
-  
-  ////////////////////////////////////////////////////////////////////////////////
-  // Reverse Hairdo Stuffs
-  
-  bool doReverseHairdo(RodTimeStepper *stepper);
-  
-  void computeReverseJacobian(MatrixBase& J);
-  void updateReverseUndeformedStrain(const VecXd& e);
-  
 
-  ////////////////////////////////////////////////////////////////////////////////
-  // 
-  // Needed for collisions. Should rods be based off of CollisionObject
-  // so there is a uniform interface for colliding objects?
-  
-  void collisionsBegin(Real dt)
-  {
-      for (int i=0; i<nv(); ++i)
-      {
-          // Start positions for this timestep are the end positions from last timestep
-          //
-          getStartPositions()[i] = getEndPositions()[i];
-  
-          // Candidate end positions are the current positions
-          //
-          getEndPositions()[i] = getVertex(i);
-  
-          // Average velocity
-          //
-          getVelocities()[i] = (getEndPositions()[i] - getStartPositions()[i]) / dt;
-      }      
-  }
-	
-  void collisionsEnd(Real dt)
-  {
-      // Compute final, end-of-timestep positions
-      //
-      updateEndPositions(dt);
-  
-      for (int i=0; i<nv(); ++i)
-      {
-          Vec3d velocityChange = (getEndPositions()[i] - getVertex(i)) / dt;
-          setVelocity(i, getVelocity(i) + velocityChange);
-          setVertex(i, getEndPositions()[i]);
-
-//          std::cerr << dt << " Vertex " << i << ", velocity change = " << velocityChange << std::endl;
-      }      
-      
-      // updateProperties should be called after positions change.
-      updateProperties();
-  }
-
-  void updateEndPositions(Real dt)
-  {
-      // Update the end-of-timestep positions using the current velocity
-      //
-      for (int i=0; i<nv(); ++i)
-          getEndPositions()[i] = getStartPositions()[i] + getVelocities()[i] * dt;
-  }
-
-  void setCollisionStartPositions()
-  {
-    // Collision code uses the start position data, so update it using the
-    // current vertex positions
-    //
-    //getStartPositions().resize(nv());
-    for (int i=0; i<nv(); ++i)
-        getStartPositions()[i] = getVertex(i);
-  }
-
-  std::vector<Vec3d>& getStartPositions() { return m_previousPositions; }
-  std::vector<Vec3d>& getEndPositions() { return m_currentPositions; }
-  
-  // Interface from CollisionObject base clasee
-  virtual Positions& getPositions() { return m_previousPositions; }
-  virtual Velocities& getVelocities() { return m_currentVelocities; }
-  virtual Indices& getEdgeIndices() { return m_edgeIndices; }
-  virtual Indices& getTriangleIndices()
-  {
-     // What are you doing trying to get
-     // triangle indices from a rod?!?
-     //
-     assert(false);
-
-     // Compiler doesn't like it if you
-     // don't return something, even if
-     // it will never get here
-     //
-     return m_edgeIndices;
-  }
-
-  virtual Real getMassInverse(uint vertex)
-  {
-    if (vertFixed(vertex))
-      return 0.0;
-    else
-      return (1.0 / getVertexMass(vertex));
-  }
-
-  virtual Real getFrictionCoefficient() { return m_friction; }
-  void setFrictionCoefficient(Real k) { m_friction = k; }
-  virtual double getCoefficientOfRestitution() { return m_cor; }
-  void setCoefficientOfRestitution(double cor) { m_cor = cor; }
-  virtual double getSeparationStrength() { return m_separationStrength; }
-  void setSeparationStrength(double k) { m_separationStrength = k; }
-  virtual double getDamping() { return m_damping; }
-  void setDamping(double kdamp) { m_damping = kdamp; }
-  // Again we assume rods are cylindrical for collision
-  virtual Real getThickness() { return radius(); }
-
-  RodPenaltyForce *getPenaltyForce()
-  { return m_rodPenaltyForce; }
-
-  void setPenaltyForce(RodPenaltyForce* force)
-  { m_rodPenaltyForce = force; }
-  
-  ////////////////////////////////////////////////////////////////////////////////
-  
-  
 
   void computeEdges();
   void computeTangents();
@@ -440,6 +304,10 @@ public:
   int global_rodID;
   int draw_cl;
 
+  bool doReverseHairdo(RodTimeStepper *stepper);
+  void computeReverseJacobian(MatrixBase& J);
+  void updateReverseUndeformedStrain(const VecXd& e);
+
 protected:
 
   /** Computes the mass of an elliptical cylinder, which is the
@@ -457,23 +325,16 @@ protected:
   ObjPropHandle<bool> m_quasistatic;
   ObjPropHandle<RefFrameType> m_refFrameType;
   ObjPropHandle<Scalar> m_density;
-  ObjPropHandle<IntArray> m_fixed;
-  ObjPropHandle<IntArray> m_fixedVerts;
-  ObjPropHandle<IntArray> m_fixedEdges;
   ObjPropHandle<Scalar> m_YoungsModulus;
   ObjPropHandle<Scalar> m_ShearModulus;
   ObjPropHandle<Scalar> m_viscosity;
   ObjPropHandle<Scalar> m_dt;
   ObjPropHandle<Scalar> m_radius_scale;
 
-  ObjPropHandle<bool> m_plasticity;
-  ObjPropHandle<Scalar> m_plasticThreshold;
-
   VPropHandle<Vec3d> m_vertexPositions;
   VPropHandle<Vec3d> m_vertexVelocities;
   VPropHandle<Scalar> m_voronoiLengths;
   VPropHandle<Scalar> m_vertexMasses;
-  VPropHandle<bool> m_vertexFixed;
   VPropHandle<Scalar> m_referenceTwist; ///< twist of the reference frame
   VPropHandle<Vec3d> m_curvatureBinormal;
   VPropHandle<int> m_vertIdx;
@@ -487,34 +348,9 @@ protected:
   EPropHandle<Vec3d> m_edges;
   EPropHandle<Vec3d> m_tangents;
   EPropHandle<Scalar> m_edgeLengths; ///< lengths of edges
-  EPropHandle<bool> m_edgeFixed;
   EPropHandle<int> m_edgeIdx;
-  
+
   RodBoundaryCondition* m_boundaryConditions;
-
-  ////////////////////////////////////////////////////////////////////////////////
-  //
-  // Needed for collisions. They should really be integrated with the the rest of
-  // the data but to get this working I'm leaving them seperate as it's easier
-  // to debug
-  
-  std::vector<Vec3d> m_currentPositions;
-  std::vector<Vec3d> m_previousPositions;
-  std::vector<Vec3d> m_currentVelocities;
-  std::vector<uint> m_edgeIndices;
-  
-  // This should be a property like everything else
-  double m_friction;
-  double m_cor;
-  double m_separationStrength;
-  double m_damping;
-
-  // This is silly. The force now lives in the time stepper but the collision code
-  // only has the rods currently so needs to ask the rod for the penalty force
-  // so it can apply a force.
-  RodPenaltyForce* m_rodPenaltyForce;
-  //  
-  ////////////////////////////////////////////////////////////////////////////////
 };
 
 typedef std::vector<ElasticRod *> ElasticRods;

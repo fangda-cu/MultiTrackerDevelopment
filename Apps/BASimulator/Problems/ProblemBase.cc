@@ -8,14 +8,15 @@
 #include "ProblemBase.hh"
 #include <BASim/BASim>
 #include <fstream>
+#include "BASim/src/IO/ObjectSerializer.hh"
 
 using namespace std;
 using namespace BASim;
 
 Problem::Problem(const string& name, const string& desc)
-  : m_problemName(name)
-  , m_problemDesc(desc)
-  , m_dynamicsProps(false)
+: m_problemName(name)
+, m_problemDesc(desc)
+, m_dynamicsProps(false)
 {
   m_world = new World();
 }
@@ -79,7 +80,7 @@ int Problem::LoadOptions(const char* filename)
     sIn.str(line);
     sIn >> option;
     if (option.size() == 0 || option.c_str()[0] == '#') continue;
-    OptionMap::iterator itr;
+    std::map<std::string, Option>::iterator itr;
     itr = m_options.find(option);
     if (itr == m_options.end()) {
       cerr << "Invalid option: " << option << endl;
@@ -116,7 +117,7 @@ int Problem::LoadOptions(int argc, char** argv)
   while (start < argc && string(argv[start]) != "--") ++start;
   for (int i = start + 1; i < argc; ++i) {
     option = argv[i];
-    OptionMap::iterator itr;
+    std::map<std::string, Option>::iterator itr;
     itr = m_options.find(option);
     if (itr == m_options.end()) {
       cerr << "Invalid option on command line: " << option << endl;
@@ -154,17 +155,11 @@ int Problem::LoadOptions(int argc, char** argv)
 
 void Problem::BaseSetup(int argc, char** argv)
 {
-#ifdef HAVE_PETSC
-  PetscUtils::initializePetsc(&argc, &argv);
-#endif // HAVE_PETSC
   Setup();
 }
 
 void Problem::BaseFinalize()
 {
-#ifdef HAVE_PETSC
-  PetscUtils::finalizePetsc();
-#endif // HAVE_PETSC
 }
 
 void Problem::BaseAtEachTimestep()
@@ -179,7 +174,7 @@ void Problem::BaseAtEachTimestep()
 
 void Problem::PrintOptions(ostream& os)
 {
-  OptionMap::const_iterator itr;
+  std::map<std::string, Option>::const_iterator itr;
   for (itr = m_options.begin(); itr != m_options.end(); ++itr) {
     const Option* opt = &itr->second;
     os << opt->name << " ";

@@ -2,6 +2,8 @@
 
 #include <maya/MGlobal.h>
 
+using namespace std;
+
 WmFigRodBarbInput::WmFigRodBarbInput( MObject& i_verticesAttribute, MObject& i_strandRootFramesAttribute, 
                         double i_percentageOfBarbStrands, int i_verticesPerRod,
                         bool i_lockFirstEdgeToInput, double i_vertexSpacing,

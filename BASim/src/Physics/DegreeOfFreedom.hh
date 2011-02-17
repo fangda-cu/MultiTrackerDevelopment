@@ -9,6 +9,8 @@
 #define DEGREEOFFREEDOM_HH
 
 namespace BASim {
+// TODO: Why does DofHandle have a HandleBase and extend form HandleBase?
+//       It is not like its decorating methods or anything... look into this further
 
 /** Handle for referring to a degree of freedom.  */
 class DofHandle : public HandleBase
@@ -44,6 +46,8 @@ public:
     if( this->getType() != rhs.getType() ) return this->getType() < rhs.getType();
     if( this->getNum() != rhs.getNum() ) return this->getNum() < rhs.getNum();
     if( this->getHandle() != rhs.getHandle() ) return this->getHandle() < rhs.getHandle();
+    // Should this be here???
+    if( this->m_idx != rhs.m_idx ) return this->m_idx < rhs.m_idx;
     return false;
   }
 
@@ -52,6 +56,8 @@ public:
     if( this->getType() != rhs.getType() ) return false;
     if( this->getNum() != rhs.getNum() ) return false;
     if( this->getHandle() != rhs.getHandle() ) return false;
+    // Should this be here???
+    if( this->m_idx != rhs.m_idx ) return false;
     return true;
   }
   

@@ -82,7 +82,7 @@ namespace BASim
       m_diffEq.backupResize();
       m_diffEq.backup();
       STOP_TIMER("backup");
-      if( position_solve(0) ) 
+      if( position_solve(0) )
       {
         #ifdef TIMING_ON
           IntStatTracker::getIntTracker("INITIAL_ITERATE_1_SUCCESSES") += 1;
@@ -136,7 +136,7 @@ namespace BASim
         m_diffEq.backupClear();
         STOP_TIMER("backup");
         return true;
-      }      
+      }
       
       //std::cerr << "                          Newton solver failed to converge in max iterations: " << m_maxit << ". Attempting alternate initial iterate 4." << std::endl;
       START_TIMER("backup");

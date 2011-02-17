@@ -35,6 +35,16 @@ public:
 
   //@}
 
+  const PropertyContainer& getPropertyContainer() const
+  {
+    return m_objectProps;
+  }
+
+  PropertyContainer& getPropertyContainer()
+  {
+    return m_objectProps;
+  }
+
 protected:
 
   PropertyContainer m_objectProps; ///< properties associated to the object

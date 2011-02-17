@@ -10,17 +10,17 @@
 
 #ifdef WETA
 #include <weta/Wfigaro/Core/EigenIncludes.hh>
-#include <weta/Wfigaro/Collisions/CollisionMeshData.hh>
+//#include <weta/Wfigaro/Collisions/CollisionMeshData.hh>
 #include <weta/Wfigaro/Core/ObjectControllerBase.hh>
 #include <weta/Wfigaro/Physics/World.hh>
-#include <weta/Wfigaro/Physics/ElasticRods/RodCollisionTimeStepper.hh>
+//#include <weta/Wfigaro/Physics/ElasticRods/RodCollisionTimeStepper.hh>
 #include <weta/Wfigaro/Render/RodRenderer.hh>
 #else
 #include <BASim/src/Core/EigenIncludes.hh>
-#include <BASim/src/Collisions/CollisionMeshData.hh>
+//#include <BASim/src/Collisions/CollisionMeshData.hh>
 #include <BASim/src/Core/ObjectControllerBase.hh>
 #include <BASim/src/Physics/World.hh>
-#include <BASim/src/Physics/ElasticRods/RodCollisionTimeStepper.hh>
+//#include <BASim/src/Physics/ElasticRods/RodCollisionTimeStepper.hh>
 #include <BASim/src/Render/RodRenderer.hh>
 #endif
 
@@ -31,7 +31,7 @@
 #include <iostream>
 #include <fstream>
 #include "WmFigRodGroup.hh"
-#include <weta/Wfigaro/SceneXML/SceneXML.hh>
+//#include <weta/Wfigaro/SceneXML/SceneXML.hh>
 
 #undef USE_MPI
 
@@ -39,7 +39,7 @@
 #include <Grids/GRID_3D.h>
 #include <Incompressible_Flows/INCOMPRESSIBLE_UNIFORM.h>
 #include <Matrices_And_Vectors/VECTOR.h>*/
-#include "VolumetricCollisions/VolumetricCollisionsCPU.hh"
+//#include "VolumetricCollisions/VolumetricCollisionsCPU.hh"
 
 using namespace BASim;
 using namespace std;
@@ -243,9 +243,9 @@ public:
     void resetEverything();
     //void createSpaceForRods( int i_rodGroup, int i_numRods );
     void addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup );
-    bool collisionMeshInitialised( const int id );
-    void initialiseCollisionMesh( BASim::CollisionMeshData *collisionMeshData, int id );
-    void removeCollisionMesh( const int id );
+    //bool collisionMeshInitialised( const int id );
+    //void initialiseCollisionMesh( BASim::CollisionMeshData *collisionMeshData, int id );
+    //void removeCollisionMesh( const int id );
   // void checkAllRodForces(); 
     void startTimer( timeval& i_startTimer );
     double stopTimer( timeval& i_startTimer );
@@ -276,7 +276,7 @@ private:
       @param i_interpolateFactor (0.0 - 1.0) The time to evaluate at between the start mesh and end mesh positions.   
       @param o_timeTaken Optional parameter which is filled in with the time the function takes to evaluate.
     */
-    void interpolateCollisionMeshesForSubstep( const float i_interpolateFactor, float* o_timeTaken = NULL );
+   // void interpolateCollisionMeshesForSubstep( const float i_interpolateFactor, float* o_timeTaken = NULL );
 
     //! Sets a few parameters on the RodCollisionTimeStepper ready for the sim
     /*!
@@ -294,7 +294,7 @@ private:
     
     World* m_world;
     RodDataMap m_rodDataMap;
-    CollisionMeshDataHashMap m_collisionMeshMap;
+    //CollisionMeshDataHashMap m_collisionMeshMap;
     
     ObjPropHandle<Scalar> m_timeHandle;
     ObjPropHandle<Scalar> m_dtHandle;
@@ -357,11 +357,11 @@ private:
     double m_inftol;
 
     bool m_isXMLLoggingEnabled;
-    SceneXML* m_sceneXML;
+    //SceneXML* m_sceneXML;
 
-    std::vector< InitialRodConfiguration > m_initialRodConfigurations;
+    //std::vector< InitialRodConfiguration > m_initialRodConfigurations;
 
-    VolumetricCollisions* m_volumetricCollisions;
+    //VolumetricCollisions* m_volumetricCollisions;
     
     double m_flip;
     double m_slip;

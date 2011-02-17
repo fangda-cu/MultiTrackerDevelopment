@@ -1,6 +1,6 @@
 #include "WmBunsenNode.hh"
-#include "WmBunsenCollisionMeshNode.hh"
-#include "constraints/WmFigConstraintNode.hh"
+//#include "WmBunsenCollisionMeshNode.hh"
+//#include "constraints/WmFigConstraintNode.hh"
 #include "WmFigRodComponentList.hh"
 #include <maya/MFnMessageAttribute.h>
 
@@ -150,7 +150,7 @@ void WmBunsenNode::addRodsToWorld( MDataBlock& i_dataBlock )
     }
 }
 
-
+/*
 void WmBunsenNode::updateAllCollisionMeshes( MDataBlock &data )
 {
     //
@@ -219,6 +219,7 @@ void WmBunsenNode::updateAllCollisionMeshes( MDataBlock &data )
         }
     }
 }
+*/
 
 void WmBunsenNode::updateAllRodNodes( MDataBlock &i_dataBlock )
 {
@@ -242,6 +243,7 @@ void WmBunsenNode::updateAllRodNodes( MDataBlock &i_dataBlock )
     }
 }
 
+/*
 void WmBunsenNode::addAllConstraints( MDataBlock &i_dataBlock )
 {
 	MStatus stat;
@@ -322,7 +324,7 @@ void WmBunsenNode::addAllConstraints( MDataBlock &i_dataBlock )
 			    		if( rodComponentList.containsRodVertex( rodId, vertexId ) ) {
 			                BASim::Vec3d target_position = BASim::Vec3d( targetWorldPosition.x, targetWorldPosition.y, targetWorldPosition.z );
 
-			                BASim::RodVertexConstraint *rodVertexConstraint = rodGroup->collisionStepper( rodId )->setVertexPositionPenalty2( vertexId, target_position, stiffness, constraintType );
+			                BASim::RodVertexConstraint *rodVertexConstraint = rodGroup->stepper( rodId )->setVertexPositionPenalty2( vertexId, target_position, stiffness, constraintType );
 			                constraint.rodVertexConstraints.push_back( rodVertexConstraint );
 			    		}
 			    	}
@@ -383,6 +385,7 @@ void WmBunsenNode::updateAllConstraints( MDataBlock &i_dataBlock )
 		}
 	}
 }
+*/
 
 MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock ) 
 {
@@ -492,17 +495,17 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                 m_beaker->resetEverything();
 
                 updateAllRodNodes( i_dataBlock );
-                updateAllCollisionMeshes( i_dataBlock );
+                //updateAllCollisionMeshes( i_dataBlock );
                 addRodsToWorld( i_dataBlock );
 
                 //MGlobal::displayInfo( "COMPUTE AT START TIME" );
-                addAllConstraints( i_dataBlock );
+                //addAllConstraints( i_dataBlock );
             }
             else
             {
                 updateAllRodNodes( i_dataBlock );
-                updateAllCollisionMeshes( i_dataBlock );
-                updateAllConstraints( i_dataBlock );
+                //updateAllCollisionMeshes( i_dataBlock );
+                //updateAllConstraints( i_dataBlock );
             }
             
         }
@@ -703,7 +706,7 @@ MStatus WmBunsenNode::connectionBroken( const MPlug& i_plug, const MPlug& i_othe
     if ( i_plug == ia_collisionMeshes )
     {
         int idx = i_plug.logicalIndex();
-        m_beaker->removeCollisionMesh( idx );
+        //m_beaker->removeCollisionMesh( idx );
     }
 
     return MStatus::kUnknownParameter;
@@ -753,10 +756,10 @@ MStatus WmBunsenNode::initialize()
     
     {
         MFnEnumAttribute enumAttrFn;
-        ia_solverType = enumAttrFn.create( "solverType", "sot", (short) RodTimeStepper::SYM_IMPL_EULER, & stat );
+        ia_solverType = enumAttrFn.create( "solverType", "sot", (short) RodTimeStepper::IMPL_EULER, & stat );
         CHECK_MSTATUS( stat );
         enumAttrFn.addField( "Implicit Euler",   (short) RodTimeStepper::IMPL_EULER );
-        enumAttrFn.addField( "Symmetric Implicit Euler",  (short) RodTimeStepper::SYM_IMPL_EULER );
+        enumAttrFn.addField( "Symmetric Implicit Euler",  (short) RodTimeStepper::IMPL_EULER );
         enumAttrFn.addField( "Statics",   (short) RodTimeStepper::STATICS );
         enumAttrFn.setKeyable( false );
         enumAttrFn.setStorable( true );

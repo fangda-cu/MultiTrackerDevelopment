@@ -37,6 +37,8 @@ etc.
 
 */
 
+using namespace std;
+
 
 WmFigRodFileIO::WmFigRodFileIO()
 {

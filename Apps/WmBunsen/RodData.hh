@@ -4,7 +4,7 @@
 #ifdef WETA
 #include <weta/Wfigaro/Physics/ElasticRods/ElasticRod.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/AnisotropicRod.hh>
-#include <weta/Wfigaro/Physics/ElasticRods/RodCollisionTimeStepper.hh>
+//#include <weta/Wfigaro/Physics/ElasticRods/RodCollisionTimeStepper.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/AdaptiveBinaryStepper.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodMassDamping.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodGravity.hh>
@@ -13,7 +13,7 @@
 #else
 #include <BASim/src/Physics/ElasticRods/ElasticRod.hh>
 #include <BASim/src/Physics/ElasticRods/AnisotropicRod.hh>
-#include <BASim/src/Physics/ElasticRods/RodCollisionTimeStepper.hh>
+//#include <BASim/src/Physics/ElasticRods/RodCollisionTimeStepper.hh>
 #include <BASim/src/Physics/ElasticRods/RodUtils.hh>
 #include <BASim/src/Render/RodRenderer.hh>
 #endif
@@ -111,8 +111,8 @@ public:
     void resetKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_materialframe );
     void updateKinematicEdge( unsigned int i_edgeNumber, MaterialFrame& i_materialframe );
     void allocateStorage( int i_numCVs );
-    void resetVertexPositions( vector< BASim::Vec3d >& i_vertexPositions );
-    void updateNextRodVertexPositions( vector< BASim::Vec3d >& i_vertexPositions );
+    void resetVertexPositions( std::vector< BASim::Vec3d >& i_vertexPositions );
+    void updateNextRodVertexPositions( std::vector< BASim::Vec3d >& i_vertexPositions );
 
     void updateBoundaryConditions();
 
@@ -295,10 +295,16 @@ public:
         return m_rod;
     }
 
-     RodCollisionTimeStepper* collisionStepper()
+    /*RodCollisionTimeStepper* collisionStepper()
+    {
+        return m_stepper;
+    }*/
+
+    RodTimeStepper* stepper()
     {
         return m_stepper;
     }
+
 
     // FIXME: commented out as it does nothing useful.
     /*void setMassDamping( double i_massDamping )
@@ -323,7 +329,6 @@ public:
         return undeformedMaterialFrame[ i_frameIndex ];
     }
 
-
     void setUndeformedVertexPosition( int i_vertexIndex, BASim::Vec3d& i_newPosition )
     {
         undeformedVertexPositions[ i_vertexIndex ] = i_newPosition;
@@ -344,7 +349,8 @@ public:
     // Should we keep the ObjectHandle returned by World rather than the actual rod?
     ElasticRod* m_rod;
     
-    RodCollisionTimeStepper* m_stepper;
+    //RodCollisionTimeStepper* m_stepper;
+    RodTimeStepper* m_stepper;
     RodRenderer* m_rodRenderer;
     
     // These variables are updated directly by the WmBunsenRodNode each frame.

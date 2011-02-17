@@ -1,5 +1,7 @@
 #include "RodData.hh"
 
+using namespace std;
+
 RodData::RodData() : m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_gravity( 0.0, 0.0, 0.0 )
 {
     m_isPlaceHolderRod = true;
@@ -25,7 +27,7 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
     if ( !i_isReadingFromCache )
     {
       // If Adaptive Time Stepping is used,
-	    if(1) 
+	    if ( 1 )
         {
 		    RodTimeStepper* stepper = new RodTimeStepper( *m_rod );
 		    stepper->setDiffEqSolver( i_solverType );
@@ -42,7 +44,8 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
 		    AdaptiveBinaryStepper* adpstep = new AdaptiveBinaryStepper( m_rod, stepper );
 		    //m_steppers.push_back(adpstep);
 	    
-		    m_stepper = new RodCollisionTimeStepper( adpstep, m_rod );        
+            m_stepper = adpstep;
+		   // m_stepper = new RodCollisionTimeStepper( adpstep, m_rod );        
         
             // REVERSE HAIRDO
             if ( i_doReverseHairdo )
@@ -65,7 +68,8 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
                 m_gravity = i_gravity;
 		    }
 	    
-		    m_stepper = new RodCollisionTimeStepper( stepper, m_rod );        
+		    //m_stepper = new RodCollisionTimeStepper( stepper, m_rod );        
+            m_stepper = stepper;
 	    }
     }
     
@@ -187,9 +191,9 @@ void RodData::updateBoundaryConditions()
         // or they'll get taken into account on collision calculations.
         unsigned int edgeNum = it->first;
         KinematicEdgeData* kinematicEdgeData = it->second;
-        m_rod->fixEdge( edgeNum );
-        m_rod->fixVert( edgeNum );
-        m_rod->fixVert( edgeNum +1 );
+        //m_rod->fixEdge( edgeNum );
+        //m_rod->fixVert( edgeNum );
+        //m_rod->fixVert( edgeNum + 1 );
 
         boundary->setDesiredVertexPosition( edgeNum, currVertexPositions[ edgeNum ] );
         boundary->setDesiredVertexPosition( edgeNum + 1, currVertexPositions[ edgeNum + 1 ]);

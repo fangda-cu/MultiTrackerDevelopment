@@ -55,6 +55,7 @@ void RodBoundaryCondition::releaseVertex(int vertIdx)
   m_rod.property(m_isVertexScripted)[vertIdx] = false;
 
   BCList& verts = m_rod.property(m_scriptedVerts);
+
 //  std::remove(verts.begin(), verts.end(), vertIdx);   // this doesn't change the size of vector.
 	for(int i=0; i<(int)verts.size(); i++) {
 		if (verts[i] == vertIdx) {

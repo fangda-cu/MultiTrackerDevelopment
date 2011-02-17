@@ -65,7 +65,6 @@ Beaker.hh \
 RodData.hh \
 SplineAttrEval.hh \
 WmFigaroCmd.hh \
-WmBunsenCollisionMeshNode.hh \
 WmBunsenHelpers.hh \
 WmBunsenNode.hh \
 WmFigRodNode.hh \
@@ -76,32 +75,32 @@ WmFigSelectionToolCommand.hh \
 WmFigControllerContext.hh \
 WmFigControllerContextCommand.hh \
 WmFigControllerToolCommand.hh \
-WmFigCombContext.hh \
-WmFigCombContextCommand.hh \
-WmFigCombToolCommand.hh \
 WmFigRodInputType.hh \
 WmFigRodNurbsInput.hh \
 WmFigRodBarbInput.hh \
 WmFigRodFileIO.hh \
 WmFigRodFileInput.hh \
 WmFigRodGroup.hh \
-VolumetricCollisions/VolumetricCollisions.hh \
-VolumetricCollisions/VolumetricCollisionsCPU.hh \
 WmFigaroRodShape/WmFigaroRodShape.hh \
 WmFigaroRodShape/WmFigaroRodShapeIterator.hh \
 WmFigaroRodShape/WmFigaroRodShapeUI.hh \
-constraints/WmFigConstraintNode.hh \
 WmFigSelectionDisplayNode.hh \
 WmFigUtils.hh \
 WmFigRodComponentList.hh  \
 WmFigRodParticleInput.hh
+#VolumetricCollisions/VolumetricCollisions.hh \
+#VolumetricCollisions/VolumetricCollisionsCPU.hh \
+#WmBunsenCollisionMeshNode.hh \
+#constraints/WmFigConstraintNode.hh \
+#WmFigCombContext.hh \
+#WmFigCombContextCommand.hh \
+#WmFigCombToolCommand.hh \
 
 PLG1_S          := \
 Beaker.cc \
 RodData.cc \
 SplineAttrEval.cc \
 WmFigaroCmd.cc \
-WmBunsenCollisionMeshNode.cc \
 WmBunsenNode.cc \
 WmBunsenPluginMain.cc \
 WmFigRodNode.cc \
@@ -112,24 +111,25 @@ WmFigSelectionToolCommand.cc \
 WmFigControllerContext.cc \
 WmFigControllerContextCommand.cc \
 WmFigControllerToolCommand.cc \
-WmFigCombContext.cc \
-WmFigCombContextCommand.cc \
-WmFigCombToolCommand.cc \
 WmFigRodInputType.cc \
 WmFigRodNurbsInput.cc \
 WmFigRodBarbInput.cc \
 WmFigRodFileIO.cc \
 WmFigRodFileInput.cc \
 WmFigRodGroup.cc \
-VolumetricCollisions/VolumetricCollisionsCPU.cc \
 WmFigaroRodShape/WmFigaroRodShape.cc \
 WmFigaroRodShape/WmFigaroRodShapeIterator.cc \
 WmFigaroRodShape/WmFigaroRodShapeUI.cc \
-constraints/WmFigConstraintNode.cc \
 WmFigSelectionDisplayNode.cc \
 utils/WmFigUtils.cc \
 WmFigRodComponentList.cc \
 WmFigRodParticleInput.cc
+#WmBunsenCollisionMeshNode.cc \
+#VolumetricCollisions/VolumetricCollisionsCPU.cc \
+#constraints/WmFigConstraintNode.cc \
+#WmFigCombContext.cc \
+#WmFigCombContextCommand.cc \
+#WmFigCombToolCommand.cc \
 
 PLG1_L          += \
 	-lWfigaro_dbg \

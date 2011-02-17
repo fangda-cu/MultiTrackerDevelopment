@@ -9,6 +9,7 @@
 #ifndef ADAPTIVEBINARYSTEPPER_HH
 #define ADAPTIVEBINARYSTEPPER_HH
 
+#include "RodTimeStepper.hh"
 #include "../../Core/ObjectControllerBase.hh"
 #include "MinimalRodStateBackup.hh"
 
@@ -45,24 +46,7 @@ public:
     }
   }
 
-  Scalar get_stol() const { return m_stepper->get_stol(); }
-  void set_stol(Scalar s) { m_stepper->set_stol(s); }
-
-  Scalar get_atol() const { return m_stepper->get_atol(); }
-  void set_atol(Scalar a) { m_stepper->set_atol(a); }
-
-  Scalar get_rtol() const { return m_stepper->get_rtol(); }
-  void set_rtol(Scalar r) { m_stepper->set_rtol(r); }
-
-  Scalar get_inftol() const { return m_stepper->get_inftol(); }
-  void set_inftol(Scalar i) { m_stepper->set_inftol(i); }
-
-  void addExternalForce(RodExternalForce* force)
-  {
-    m_stepper->addExternalForce(force);
-  }
-
-  void setTimeStep( double dt )
+  virtual void setTimeStep( double dt )
   {
     assert( m_rod != NULL );
     assert( m_stepper != NULL );
@@ -85,89 +69,11 @@ public:
     assert( m_rod != NULL );
     assert( m_stepper != NULL );
 
-//std::cout << "ADAP execute\n";
-
     // Clean this up in a minute
     double dt = m_stepper->getTimeStep();
-    //bool returnstatus = recursiveSolve( m_stepper->getTimeStep() );
-    bool returnstatus = adaptiveSolve( m_stepper->getTimeStep() );
+    bool returnstatus = recursiveSolve( m_stepper->getTimeStep() );
     assert( dt == m_stepper->getTimeStep() );
     return returnstatus;
-  }
-  
-  bool adaptiveSolve( double dt )
-  {   
-    if( dt < m_min_step ) 
-    {
-        std::cerr << "Attempt to do solve with dt < minimum threshold. Ignoring request.\n";
-        return false;
-    }
-    
-    bool firstStepSuccess;
-    bool secondStepSuccess;
-    
-    // Backup the rod in case the solve fails.
-    m_stepper->backupResize();
-    m_stepper->backup();
-
-    if ( !takeStep( dt ) )
-    {
-      // The solve failed, restore the rod to its previous state.
-      m_stepper->backupRestore();
-      m_stepper->backupClear();
-
-      do 
-      {
-        dt *= 0.5;
-        m_stepper->backupResize();
-        m_stepper->backup();
-        firstStepSuccess = takeStep( dt );
-        
-        if ( !firstStepSuccess )
-        {
-          m_stepper->backupRestore();
-          m_stepper->backupClear();         
-        }
-        else
-        {
-          m_stepper->backupClear();
-          m_stepper->backupResize();
-          m_stepper->backup();
-          secondStepSuccess = takeStep( dt );
-          if ( !secondStepSuccess )
-          {
-            m_stepper->backupRestore();
-            m_stepper->backupClear();              
-          }
-        }
-      }
-      while ( ( dt > m_min_step ) && ( !firstStepSuccess || !secondStepSuccess ) );
-    }
-    
-    if ( dt > m_min_step )
-    {
-      return true;
-    }
-    else
-    {
-      return false;
-    }
-  }
-  
-  bool takeStep( double dt )
-  {
-    #ifdef TIMING_ON
-      if( dt < DoubleStatTracker::getDoubleTracker("MIN_TIME_STEP_ENCOUNTERED").getVal() ) DoubleStatTracker::getDoubleTracker("MIN_TIME_STEP_ENCOUNTERED") = dt;
-    #endif
-    
-    this->setTimeStep(dt);
-    
-    // If solve was successfull, we are done.
-    if( m_stepper->execute() ) return true;
-
-    std::cerr << "ROD # " << m_rod->global_rodID << " \033[31;1mWARNING IN ADAPTIVE BINARY STEPPER:\033[m Solve failed for timestep: " << dt << ". Taking two timesteps of half length." << std::endl;
-    
-    return false;
   }
   
   bool recursiveSolve( double dt )
@@ -179,8 +85,7 @@ public:
     if( dt < m_min_step ) 
     {
       std::cerr << "\033[31;1mERROR IN ADAPTIVE BINARY STEPPER:\033[m Timestep fell below minimum, aborting recursive solve." << std::endl;
-      return false;
-//      exit(1);
+      exit(1);
     }
 
     this->setTimeStep(dt);
@@ -197,21 +102,7 @@ public:
     
     // If solve was successfull, we are done.
     if( m_stepper->execute() ) return true;
-
-    std::cerr << "ROD # " << m_rod->global_rodID << " \033[31;1mWARNING IN ADAPTIVE BINARY STEPPER:\033[m Solve failed for timestep: " << dt << ". Taking two timesteps of half length." << std::endl;
-
-    RodBoundaryCondition *bc = m_rod->getBoundaryCondition();
-    const RodBoundaryCondition::BCList& edges
-        = m_rod->getBoundaryCondition()->scriptedEdges();
-      //= m_boundaryCondition->scriptedEdges();
-
-    int ne = edges.size(); // # of scripted dofs
-
-//    for (size_t i = 0; i < edges.size(); ++i) {
-//      std::cout << edges[i] << " " << m_rod->getBoundaryCondition()->getDesiredEdgeAngle(edges[i]) << " ";
-//    }
-    //std::cout << "\n";
-
+    std::cerr << "\033[31;1mWARNING IN ADAPTIVE BINARY STEPPER:\033[m Solve failed for timestep: " << dt << ". Taking two timesteps of half length." << std::endl;
 
     #ifdef TIMING_ON
       IntStatTracker::getIntTracker("ADAPTIVE_STEPS_NEEDED") += 1;
@@ -222,6 +113,7 @@ public:
     m_stepper->backupClear();
 
     // TMP DBG
+    //prestepstate.restoreState(*m_rod);
     //prestepstate.compareProperties(*m_rod);
     //std::cout << "FAILED STATE" << std::endl;
     //backupstate2.print(*m_rod);

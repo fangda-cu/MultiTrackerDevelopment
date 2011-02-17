@@ -8,12 +8,30 @@
 #ifndef RODTIMESTEPPER_HH
 #define RODTIMESTEPPER_HH
 
-#include "../../Core/ObjectControllerBase.hh"
+#ifdef WETA
+#include "../..//Core/ObjectControllerBase.hh"
+#include "RodBoundaryCondition.hh"
 #include "../../Math/TimeSteppingBase.hh"
 #include "../../Math/SolverUtils.hh"
-#include "RodBoundaryCondition.hh"
 #include "RodExternalForce.hh"
-#include "MinimalRodStateBackup.hh"
+#include "../../Math/SymplecticEuler.hh"
+#include "../../Math/ImplicitEuler.hh"
+#include "../../Math/SymmetricImplicitEuler.hh"
+#include "../../Math/StaticsSolver.hh"
+#include "../../Physics/ElasticRods/MinimalRodStateBackup.hh"
+#else
+#include "BASim/src/Core/ObjectControllerBase.hh"
+#include "BASim/src/Physics/ElasticRods/RodBoundaryCondition.hh"
+#include "BASim/src/Math/TimeSteppingBase.hh"
+#include "BASim/src/Math/SolverUtils.hh"
+#include "BASim/src/Physics/ElasticRods/RodExternalForce.hh"
+#include "BASim/src/Math/SymplecticEuler.hh"
+#include "BASim/src/Math/ImplicitEuler.hh"
+#include "BASim/src/Math/SymmetricImplicitEuler.hh"
+#include "BASim/src/Math/StaticsSolver.hh"
+
+#include "BASim/src/Physics/ElasticRods/MinimalRodStateBackup.hh"
+#endif
 
 namespace BASim {
 
@@ -22,11 +40,29 @@ class RodTimeStepper : public ObjectControllerBase
 {
 public:
 
-  enum Method { SYMPL_EULER, IMPL_EULER, SYM_IMPL_EULER, STATICS, NONE };
+  enum Method { SYMPL_EULER, IMPL_EULER, STATICS, NONE };
 
-  explicit RodTimeStepper(ElasticRod& rod);
+  explicit RodTimeStepper(ElasticRod& rod)
+    : m_rod(rod)
+    , m_method(NONE)
+    , m_diffEqSolver(NULL)
+    //, m_boundaryCondition(NULL)
+    , m_backupstate()
+  {
+    setDiffEqSolver(SYMPL_EULER);
+  }
 
-  ~RodTimeStepper();
+  ~RodTimeStepper()
+  {
+    if (m_diffEqSolver != NULL) delete m_diffEqSolver;
+    //if (m_boundaryCondition != NULL) delete m_boundaryCondition;
+    for( int i = 0; i < (int) m_externalForces.size(); ++i )
+    {
+      assert( m_externalForces[i] != NULL );
+      delete m_externalForces[i];
+      m_externalForces[i] = NULL;
+    }	
+  }
 
   bool execute()
   {
@@ -62,7 +98,43 @@ public:
     return *m_diffEqSolver;
   }
 
-  void setDiffEqSolver(Method method);
+  void setDiffEqSolver(Method method)
+  {
+    if (method == m_method) return;
+
+    m_method = method;
+    if (m_diffEqSolver != NULL) delete m_diffEqSolver;
+    m_diffEqSolver = NULL;
+
+    if (method == SYMPL_EULER)
+    {
+      m_diffEqSolver = new SymplecticEuler<RodTimeStepper>(*this);
+    } 
+    else if (method == IMPL_EULER)
+    {
+      //m_diffEqSolver = new ImplicitEuler<RodTimeStepper>(*this);
+      m_diffEqSolver = new SymmetricImplicitEuler<RodTimeStepper>(*this);
+      //m_diffEqSolver = new BacktrackingImplicitEuler<RodTimeStepper>(*this);
+    }
+    else if (method == STATICS) 
+    {
+      m_diffEqSolver = new StaticsSolver<RodTimeStepper>(*this);
+    } 
+    else if (method == NONE)
+    {
+      m_diffEqSolver = NULL;
+    }
+    else
+    {
+      std::cout << "Unknown method specified" << std::endl;
+      m_diffEqSolver = NULL;
+    }
+
+    if (m_diffEqSolver != NULL)
+    {
+      m_rod.setTimeStep(m_diffEqSolver->getTimeStep());
+    }
+  }
 
   int ndof() const
   {
@@ -122,7 +194,7 @@ public:
    */
   void evaluatePDot(VecXd& f)
   {
-    m_forces = f;
+   // m_forces = f;
     // add internal forces
     m_rod.computeForces(f);
 
@@ -133,7 +205,7 @@ public:
       m_externalForces[i]->computeForce(m_rod, f);
     }
   
-    m_forces = f - m_forces;
+   // m_forces = f - m_forces;
   }
 
   /**
@@ -160,14 +232,6 @@ public:
     for (size_t i = 0; i < m_externalForces.size(); ++i) {
       m_externalForces[i]->computeForceDV(0, m_rod, scale, J);
     }
-  }
-
-  /**
-   * Returns an array with the indices of the fixed degrees of freedom.
-   */
-  const IntArray& getFixedDofs()
-  {
-    return m_rod.fixed();
   }
 
   /**
@@ -225,6 +289,7 @@ public:
 
   void increment_qdot(const VecXd& dqd)
   {
+    // TODO: double check the indexing here :).
     if (m_rod.quasistatic()) {
       for (int i = 0; i < m_rod.nv(); ++i) {
         for (int coord = 0; coord < 3; ++coord) {
@@ -345,7 +410,41 @@ public:
     //m_boundaryCondition = bc;
   }
 
-  void getScriptedDofs(IntArray& indices, std::vector<Scalar>& desired);
+  void getScriptedDofs(IntArray& indices, std::vector<Scalar>& desired)
+  {
+    //if (m_boundaryCondition == NULL) {
+    //  indices.resize(0);
+    //  desired.resize(0);
+    //  return;
+    //}
+
+    const RodBoundaryCondition::BCList& verts
+        = m_rod.getBoundaryCondition()->scriptedVertices();
+      //= m_boundaryCondition->scriptedVertices();
+    const RodBoundaryCondition::BCList& edges
+        = m_rod.getBoundaryCondition()->scriptedEdges();
+      //= m_boundaryCondition->scriptedEdges();
+
+    int nb = 3 * (int)( verts.size() + edges.size() ); // # of scripted dofs
+    indices.resize(nb);
+    desired.resize(nb);
+
+    for (size_t i = 0; i < verts.size(); ++i) {
+      for (int k = 0; k < 3; ++k) {
+        indices[3 * i + k] = m_rod.vertIdx(verts[i], k);
+        desired[3 * i + k]
+          = m_rod.getBoundaryCondition()->getDesiredVertexPosition(verts[i])[k];
+          //= m_boundaryCondition->getDesiredVertexPosition(verts[i])[k];
+      }
+    }
+
+    for (size_t i = 0; i < edges.size(); ++i) {
+      indices[3 * verts.size() + i] = m_rod.edgeIdx(edges[i]);
+      desired[3 * verts.size() + i]
+        = m_rod.getBoundaryCondition()->getDesiredEdgeAngle(edges[i]);
+        //= m_boundaryCondition->getDesiredEdgeAngle(edges[i]);
+    }
+  }
 
   ElasticRod* getRod()
   {
@@ -372,11 +471,6 @@ public:
     m_backupstate.clear();
   }
 
-  VecXd& getForcesAtLastStep()
-  {
-    return m_forces;
-  }
-
 protected:
 
   ElasticRod& m_rod;
@@ -386,9 +480,6 @@ protected:
   //RodBoundaryCondition* m_boundaryCondition;
   
   MinimalRodStateBackup m_backupstate;
-  // Copy of the forces on the rod, used in Beaker 
-  // to check if the sim is going to explode.
-  VecXd m_forces;
 };
 
 } // namespace BASim

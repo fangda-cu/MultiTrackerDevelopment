@@ -2,6 +2,7 @@
 
 #include <maya/MGlobal.h>
 
+using namespace std;
 
 WmFigRodParticleInput::WmFigRodParticleInput( MObject& i_verticesAttribute, MObject& i_perRodParticleCountAttribute,
                         RodOptions& i_rodOptions,

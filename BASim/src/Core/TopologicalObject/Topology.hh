@@ -59,6 +59,11 @@ public:
     return m_edges.size();
   }
 
+  void resize( size_t size )
+  {
+    m_edges.resize(size);
+  }
+
 protected:
 
   std::vector<edge_handle> m_edges; ///< Edges that the vertex is part of
@@ -190,9 +195,14 @@ public:
     return m_verts.size();
   }
 
+  void resize( size_t size )
+  {
+    m_verts.resize(size);
+  }
+
 protected:
 
-  std::vector<vertex_handle> m_verts; ///< Edges adjacent to the face
+  std::vector<vertex_handle> m_verts; ///< Vertices adjacent to the face
 };
 
 } // namespace BASim

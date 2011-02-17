@@ -69,26 +69,26 @@ TopologicalObject::addFace(const vertex_handle& v0, const vertex_handle& v1, con
   return fhnd;
 }
 
-inline void TopologicalObject::deleteVertex(const vertex_handle& vertex)
-{
-  bool delete_vertex_is_implemnted = false;
-  if( !delete_vertex_is_implemnted ) std::cout << "DELETE VERTEX NOT SUPPORTED" << std::endl;
-  assert( delete_vertex_is_implemnted );
-}
+//inline void TopologicalObject::deleteVertex(const vertex_handle& vertex)
+//{
+//  bool delete_vertex_is_implemnted = false;
+//  if( !delete_vertex_is_implemnted ) std::cout << "DELETE VERTEX NOT SUPPORTED" << std::endl;
+//  assert( delete_vertex_is_implemnted );
+//}
 
-inline void TopologicalObject::deleteEdge(const edge_handle& edge)
-{
-  bool delete_edge_is_implemnted = false;
-  if( !delete_edge_is_implemnted ) std::cout << "DELETE EDGE NOT SUPPORTED" << std::endl;
-  assert( delete_edge_is_implemnted );
-}
+//inline void TopologicalObject::deleteEdge(const edge_handle& edge)
+//{
+//  bool delete_edge_is_implemnted = false;
+//  if( !delete_edge_is_implemnted ) std::cout << "DELETE EDGE NOT SUPPORTED" << std::endl;
+//  assert( delete_edge_is_implemnted );
+//}
 
-inline void TopologicalObject::deleteFace(const face_handle& face)
-{
-  bool delete_face_is_implemnted = false;
-  if( !delete_face_is_implemnted ) std::cout << "DELETE FACE NOT SUPPORTED" << std::endl;
-  assert( delete_face_is_implemnted );
-}
+//inline void TopologicalObject::deleteFace(const face_handle& face)
+//{
+//  bool delete_face_is_implemnted = false;
+//  if( !delete_face_is_implemnted ) std::cout << "DELETE FACE NOT SUPPORTED" << std::endl;
+//  assert( delete_face_is_implemnted );
+//}
 
 inline TopologicalObject::vertex_iter 
 TopologicalObject::vertices_begin()

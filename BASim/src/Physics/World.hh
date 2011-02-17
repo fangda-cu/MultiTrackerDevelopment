@@ -8,11 +8,13 @@
 #ifndef WORLD_HH
 #define WORLD_HH
 
-#include <omp.h>
-
 #ifdef WETA
+#include "../Core/ObjectBase.hh"
+#include "../Core/ObjectControllerBase.hh"
 #include "../Render/RenderBase.hh"
 #else
+#include "BASim/src/Core/ObjectBase.hh"
+#include "BASim/src/Core/ObjectControllerBase.hh"
 #include "BASim/src/Render/RenderBase.hh"
 #endif
 
@@ -20,124 +22,113 @@ namespace BASim {
 
 typedef std::vector<ObjectBase*> Objects;
 typedef std::vector<ObjectControllerBase*> Controllers;
+typedef std::vector<RenderBase*> Renderers;
+
 
 /** Class that collects all of the objects in the world. */
 class World : public ObjectBase
 {
 public:
+  World(); //{}
+  ~World(); //{}
 
-  typedef std::vector<ObjectBase*> Objects;
-  typedef std::vector<ObjectControllerBase*> Controllers;
-  typedef std::vector<RenderBase*> Renderers;
+  void initialize(int argc, char** argv);
+//  {
+//    #ifdef HAVE_PETSC
+//      PetscUtils::initializePetsc(&argc, &argv);
+//    #endif // HAVE_PETSC
+//  }
 
-  World() {}
-  ~World() {}
+  void finalize();
+//  {
+//    #ifdef HAVE_PETSC
+//      PetscUtils::finalizePetsc();
+//    #endif // HAVE_PETSC
+//  }
 
-  void initialize(int argc, char** argv)
-  {
-#ifdef HAVE_PETSC
-    PetscUtils::initializePetsc(&argc, &argv);
-#endif // HAVE_PETSC
-  }
+  ObjectHandle addObject(ObjectBase* object);
+//  {
+//    assert( object != NULL );
+//
+//    int idx = m_objects.size();
+//    m_objects.push_back(object);
+//
+//    return ObjectHandle(idx);
+//  }
 
-  void finalize()
-  {
-#ifdef HAVE_PETSC
-    PetscUtils::finalizePetsc();
-#endif // HAVE_PETSC
-  }
+  ObjectBase& getObject(const ObjectHandle& oh);
+//  {
+//    assert(oh.isValid());
+//    assert(oh.idx() >= 0);
+//    assert((size_t) oh.idx() < m_objects.size());
+//
+//    return *m_objects[oh.idx()];
+//  }
 
-  ObjectHandle addObject(ObjectBase* object)
-  {
-    assert( object != NULL );
+  const Objects& getObjects() const;
+//  {
+//    return m_objects;
+//  }
 
-    int idx = m_objects.size();
-    m_objects.push_back(object);
+  Objects& getObjects();
+//  {
+//    return m_objects;
+//  }
 
-    return ObjectHandle(idx);
-  }
+  ObjectControllerHandle addController(ObjectControllerBase* controller);
+//  {
+//    assert( controller != NULL );
+//    
+//    int idx = m_controllers.size();
+//    m_controllers.push_back(controller);
+//
+//    return ObjectControllerHandle(idx);
+//  }
 
-  ObjectBase& getObject(const ObjectHandle& oh)
-  {
-    assert(oh.isValid());
-    assert(oh.idx() >= 0);
-    assert((size_t) oh.idx() < m_objects.size());
+  ObjectControllerBase& getController(const ObjectControllerHandle& och);
+//  {
+//    assert(och.isValid());
+//    assert(och.idx() >= 0);
+//    assert(och.idx() < (int) m_controllers.size());
+//
+//    return *m_controllers[och.idx()];
+//  }
 
-    return *m_objects[oh.idx()];
-  }
+  Controllers& getControllers();
+//  {
+//    return m_controllers;
+//  }
 
-  const Objects& getObjects() const
-  {
-    return m_objects;
-  }
-
-  Objects& getObjects()
-  {
-    return m_objects;
-  }
-
-  ObjectControllerHandle addController(ObjectControllerBase* controller)
-  {
-    assert( controller != NULL );
-    
-    int idx = m_controllers.size();
-    m_controllers.push_back(controller);
-
-    return ObjectControllerHandle(idx);
-  }
-
-  ObjectControllerBase& getController(const ObjectControllerHandle& och)
-  {
-    assert(och.isValid());
-    assert(och.idx() >= 0);
-    assert(och.idx() < (int) m_controllers.size());
-
-    return *m_controllers[och.idx()];
-  }
-
-  Controllers& getControllers()
-  {
-    return m_controllers;
-  }
-
-  void addRenderer(RenderBase* renderer)
-  {
-    assert( renderer != NULL );
-    m_renderers.push_back(renderer);
-  }
+  void addRenderer(RenderBase* renderer);
+//  {
+//    assert( renderer != NULL );
+//    m_renderers.push_back(renderer);
+//  }
   
-  Renderers& getRenderers()
-  {
-    return m_renderers;
-  }
+  Renderers& getRenderers();
+//  {
+//    return m_renderers;
+//  }
 
-  void execute()
-  {
-    Controllers::iterator it;
-    for (it = m_controllers.begin(); it != m_controllers.end(); ++it) {
-      (*it)->execute();
-    }
-  }
+  void execute();
+//  {
+//    Controllers::iterator it;
+//    for (it = m_controllers.begin(); it != m_controllers.end(); ++it) {
+//      (*it)->execute();
+//    }
+//  }
 
-  void executeInParallel( int i_numberOfThreads )
-  {
-    int numControllers = (int)m_controllers.size();
-    
-    #pragma omp parallel for num_threads( i_numberOfThreads )
-    for ( int i=0; i<numControllers; ++i )
-    {
-      int threadID = omp_get_thread_num();
-      // only master thread prints the number of threads
-      if ( threadID == 0 )
-      {
-        int nthreads = omp_get_num_threads();
-       // printf("World::executeInParallel, using %d threads\n", nthreads );
-      }
+//  void serialize( std::ofstream& of )
+//  {
+//    assert( of.is_open() );
+//    
+//    // Serialize the object base this class inherits from
+//    ObjectBase::serialize(of);
+//
+//    // Serialize this class
+//    std::cout << "World::serialize()" << std::endl;
+//  }
 
-      m_controllers[ i ]->execute();
-    }
-  }
-  
 protected:
 
   Objects m_objects;

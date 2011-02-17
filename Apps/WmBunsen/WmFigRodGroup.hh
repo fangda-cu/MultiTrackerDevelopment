@@ -31,7 +31,7 @@ public:
                 double i_massDamping, BASim::Vec3d& i_gravity,  RodTimeStepper::Method i_solverType, 
                 const bool i_isFromCache = false, const bool i_doReverseHairdo = false );
 
-    void addRodsFromCache( vector<vector<BASim::Vec3d> >& i_rodVertices, RodOptions& i_rodOptions, 
+    void addRodsFromCache( std::vector<std::vector< BASim::Vec3d > >& i_rodVertices, RodOptions& i_rodOptions, 
                              double i_massDamping )
     {
         for ( int r=0; r < i_rodVertices.size(); ++r )
@@ -157,7 +157,7 @@ public:
         return m_rodData[ i_rodIndex ]->nextVertexPosition( i_vertexIndex );
     }
     
-    void updateRodNextVertexPositions( int i_rodIndex, vector<BASim::Vec3d>& inputStrandVertices )
+    void updateRodNextVertexPositions( int i_rodIndex, std::vector<BASim::Vec3d>& inputStrandVertices )
     {
         m_rodData[ i_rodIndex ]->updateNextRodVertexPositions( inputStrandVertices );
     }
@@ -189,6 +189,11 @@ public:
                 }
             }
         }
+    }
+
+    BASim::Vec3d currentVertexPosition( const int i_rodIndex, const int i_vertexIndex )
+    {
+        return m_rodData[ i_rodIndex ]->currVertexPositions[ i_vertexIndex ];
     }
 
     void addKinematicEdge( int i_rodIndex, int i_edgeIndex, MaterialFrame* i_materialframe = NULL )
@@ -246,10 +251,16 @@ public:
         return m_rodData[ i_rodIndex ]->elasticRod();
     }
 
-     RodCollisionTimeStepper* collisionStepper( int i_rodIndex )
+    /*RodCollisionTimeStepper* collisionStepper( int i_rodIndex )
     {
         return m_rodData[ i_rodIndex ]->collisionStepper();
+    }*/
+
+    RodTimeStepper* stepper( int i_rodIndex )
+    {
+        return m_rodData[ i_rodIndex ]->stepper();
     }
+
 
     void setDrawScale( double i_drawScale )
     {
@@ -296,7 +307,7 @@ private:
     bool m_simulationNeedsReset;
 };
 
-typedef tr1::unordered_map<int, WmFigRodGroup* > RodDataMap;
+typedef std::tr1::unordered_map<int, WmFigRodGroup* > RodDataMap;
 typedef RodDataMap::iterator RodDataMapIterator;
 
 

@@ -24,9 +24,11 @@ RodForce::RodForce(ElasticRod& rod, const std::string& name)
   Jt << 0, 1, -1, 0;
 }
 
-const std::string& RodForce::getName() const
+std::string RodForce::getName() const
 {
-  return m_name;
+  std::string name = m_name;
+  if( viscous() ) name = "Viscous" + name;
+  return name;
 }
 
 void RodForce::computeKb(Vec3d& kb, const Vec3d& x0, const Vec3d& x1,

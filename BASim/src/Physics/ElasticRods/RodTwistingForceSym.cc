@@ -75,8 +75,29 @@ void RodTwistingForceSym::updateUndeformedConfiguration(std::vector<Scalar>& val
     vertex_handle& vh = m_stencil.handle();
     setUndeformedTwist(vh, vals[i]);
 //    std::cout << getUndeformedTwist(vh) << "\n";
-  }  
+  }    
+}
+
+void RodTwistingForceSym::reattatchProperties()
+{
+  m_rod.add_property(m_twist, "twist");
+  m_rod.add_property(m_gradTwistValid, "grad twist valid", false);
+  m_rod.add_property(m_hessTwistValid, "hess twist valid", false);
+  m_rod.add_property(m_gradTwist, "gradient of twist", VecXd(11));
+  m_rod.add_property(m_hessTwist, "Hessian of twist", MatXd(11, 11));
   
+  if( !m_viscous )
+  {
+    m_rod.add_property(m_kt, "twist stiffness");
+    m_rod.add_property(m_undeformedTwist, "undeformed twist");
+    m_rod.add_property(m_refVertexLength, "twisting ref length");
+  }
+  else
+  {
+    m_rod.add_property(m_kt, "viscous twist stiffness");
+    m_rod.add_property(m_undeformedTwist, "viscous undeformed twist");
+    m_rod.add_property(m_refVertexLength, "viscous twisting ref length");
+  }  
 }
 
 void RodTwistingForceSym::updateProperties()

@@ -3,6 +3,8 @@
 #include <maya/MGlobal.h>
 #include <maya/MTime.h>
 
+using namespace std;
+
 WmFigRodFileInput::WmFigRodFileInput( MString& i_cacheFilename, WmFigRodGroup& i_rodGroup,
                                       RodOptions& i_rodOptions ) :
     m_cacheFilename( i_cacheFilename ), m_rodGroup( i_rodGroup ), m_rodOptions( i_rodOptions )

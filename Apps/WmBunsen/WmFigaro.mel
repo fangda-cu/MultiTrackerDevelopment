@@ -19,7 +19,7 @@ global proc wmFigaroAddMainMenu()
     
 	optionVar -intValue "figSelectionMode" 0;
 
-  	// Create all the contexts we need so they can be called later by the menu	
+  	/*// Create all the contexts we need so they can be called later by the menu	
 	if ( !`eval("wmFigSelectionContext -query -exists \"" + $gWmFigSelectionContextName + "\"" ) `) 
     {        
 		$gWmFigSelectionContextName = `eval wmFigSelectionContext`;
@@ -31,7 +31,7 @@ global proc wmFigaroAddMainMenu()
     if ( !`eval("wmFigCombContext -query -exists \"" + $gWmFigCombContextName + "\"" ) `) 
     {        
         $gWmFigCombContextName = `eval wmFigCombContext`;
-    }
+    }*/
 
     if( !`menu -exists $gWmFigaroMainMenu` )
     {

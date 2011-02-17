@@ -51,7 +51,7 @@ public:
     virtual void updateRodDataFromInput( MDataBlock& i_dataBlock );
     virtual int numberOfInputs( MDataBlock& i_dataBlock );
 
-    void getAndResampleInputCurves(  MDataBlock& i_dataBlock, vector< vector<BASim::Vec3d > >& o_inputCurveVertices );
+    void getAndResampleInputCurves(  MDataBlock& i_dataBlock, std::vector< std::vector<BASim::Vec3d > >& o_inputCurveVertices );
 private:
 
     MObject& m_inputNurbsAttribute;

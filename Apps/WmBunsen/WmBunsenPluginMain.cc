@@ -3,7 +3,7 @@
 
 #include "WmFigRodNode.hh"
 #include "WmBunsenNode.hh"
-#include "WmBunsenCollisionMeshNode.hh"
+//#include "WmBunsenCollisionMeshNode.hh"
 #include "WmFigaroCmd.hh"
 #include "WmFigConnectionNode.hh"
 #include "WmFigSelectionContext.hh"
@@ -12,13 +12,13 @@
 #include "WmFigControllerContext.hh"
 #include "WmFigControllerContextCommand.hh"
 #include "WmFigControllerToolCommand.hh"
-#include "WmFigCombContext.hh"
-#include "WmFigCombContextCommand.hh"
-#include "WmFigCombToolCommand.hh"
+//#include "WmFigCombContext.hh"
+//#include "WmFigCombContextCommand.hh"
+//#include "WmFigCombToolCommand.hh"
 #include "WmFigaroRodShape/WmFigaroRodShape.hh"
 #include "WmFigaroRodShape/WmFigaroRodShapeUI.hh"
 #include "WmFigaroRodShape/WmFigaroRodShapeIterator.hh"
-#include "constraints/WmFigConstraintNode.hh"
+//#include "constraints/WmFigConstraintNode.hh"
 #include "WmFigSelectionDisplayNode.hh"
 
 MStatus initializePlugin( MObject obj )
@@ -53,7 +53,7 @@ MStatus initializePlugin( MObject obj )
         return stat;
     }
 
-    stat = plugin.registerNode( WmBunsenCollisionMeshNode::typeName, WmBunsenCollisionMeshNode::typeId,
+    /*stat = plugin.registerNode( WmBunsenCollisionMeshNode::typeName, WmBunsenCollisionMeshNode::typeId,
                                 WmBunsenCollisionMeshNode::creator,
                                 WmBunsenCollisionMeshNode::initialize,
                                 WmBunsenCollisionMeshNode::kLocatorNode );
@@ -72,7 +72,7 @@ MStatus initializePlugin( MObject obj )
     {
         stat.perror( "RegisterNode WmFigConstraintNode failed" );
         return stat;
-    }
+    }*/
 
     stat = plugin.registerNode( WmFigSelectionDisplayNode::TypeName,
     							WmFigSelectionDisplayNode::TypeId,
@@ -120,14 +120,14 @@ MStatus initializePlugin( MObject obj )
         return stat;     
     }
 
-    stat = plugin.registerContextCommand( WmFigCombContext::typeName,
+    /*stat = plugin.registerContextCommand( WmFigCombContext::typeName,
             WmFigCombContextCommand::creator,
             WmFigCombToolCommand::typeName,
             WmFigCombToolCommand::creator );
     if ( !stat ) {
         stat.perror( "registerContextCommand WmFigCombContext failed" );
         return stat;     
-    }
+    }*/
 
     stat = plugin.registerShape( WmFigaroRodShape::typeName, WmFigaroRodShape::id,
                                    &WmFigaroRodShape::creator,
@@ -166,7 +166,7 @@ MStatus uninitializePlugin( MObject obj)
         stat.perror( "DeregisterNode WmFigRodNode failed" );
     }
     
-    stat = plugin.deregisterNode( WmBunsenCollisionMeshNode::typeId );
+    /*stat = plugin.deregisterNode( WmBunsenCollisionMeshNode::typeId );
     if( !stat ) 
     {
         stat.perror( "DeregisterNode WmFigCollisionNode failed" );
@@ -176,7 +176,7 @@ MStatus uninitializePlugin( MObject obj)
     if( !stat )
     {
         stat.perror( "DeregisterNode WmFigConstraintNode failed" );
-    }
+    }*/
 
     stat = plugin.deregisterNode( WmFigSelectionDisplayNode::TypeId );
     if( !stat )
@@ -207,10 +207,10 @@ MStatus uninitializePlugin( MObject obj)
         stat.perror( "deregister context command wmFigController failed" );
     }
 
-    if ( plugin.deregisterContextCommand( WmFigCombContext::typeName, WmFigCombToolCommand::typeName ) != MS::kSuccess )
+    /*if ( plugin.deregisterContextCommand( WmFigCombContext::typeName, WmFigCombToolCommand::typeName ) != MS::kSuccess )
     {
         stat.perror( "deregister context command wmFigComb failed" );
-    }
+    }*/
 
     if ( plugin.deregisterNode( WmFigaroRodShape::id ) != MS::kSuccess )
     {

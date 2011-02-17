@@ -71,14 +71,8 @@ inline ElasticRod* setupRod(const RodOptions& opts,
   for (int i = 0; i < rod->nv(); ++i)
   {
     rod->setVertex(i, initialPosition[i]);
-
-    // Setup initial collision structures storing previous 
-    // positions of the rod
-    Vec3d v = rod->getVertex(i);
-    rod->getStartPositions()[i] = v;
-    rod->getEndPositions()[i] = v;
-    rod->getVelocities()[i] = Vec3d(0.0,0.0,0.0);
   }
+
   rod->updateProperties();
 
   return rod;

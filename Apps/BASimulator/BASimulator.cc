@@ -30,6 +30,9 @@
 
 #include <queue>
 
+#include <iostream>
+#include <fstream>
+
 #include "BASimulator.hh"
 
 #include "BASim/src/Render/TriangleMeshRenderer.hh"
@@ -37,6 +40,7 @@
 #include "BASim/src/IO/XMLSceneOutputter.hh"
 
 #include "BASim/src/Core/StatTracker.hh"
+#include "BASim/src/IO/SerializationUtils.hh"
 
 // Might not work in windows? :'(
 #include <sys/stat.h>

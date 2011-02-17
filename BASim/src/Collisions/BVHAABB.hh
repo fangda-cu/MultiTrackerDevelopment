@@ -9,6 +9,10 @@
 #define BVHAABB_HH
 
 #include <set>
+#include <list>
+#include <assert.h>
+
+#include "../Core/Definitions.hh"
 
 namespace BASim 
 {
@@ -28,7 +32,7 @@ public:
     assert( m_i <= m_j );
     assert( rhs.m_i <= rhs.m_j );
     
-    return m_i == rhs.m_i && m_j == rhs.m_j;
+    return (m_i == rhs.m_i && m_j == rhs.m_j);
   }
   
   bool operator!=( const IntPair& rhs ) const
@@ -111,6 +115,30 @@ struct VertexFaceProximityCollision
 };  
 
 /**
+ * Struct to store information needed to resolve a "implicity penalty" collision between a vertex and a face.
+ */
+struct VertexFaceImplicitPenaltyCollision
+{
+  // Index of vertex
+  int v0;
+  // Index of face vertices
+  int f0;
+  int f1;
+  int f2;
+  // Radii of vertex and face
+  double r0;
+  double r1;
+  // Extra thickness
+  double h;
+  // Penalty stifness
+  double k;
+  // Collision normal, points OUTWARDS the object's face
+  Vec3d n;
+  // Contact (closest to the vertex) point on the face
+  Vec3d cp;
+};  
+
+/**
  * Struct to store information needed to resolve a continuous collision between two edges.
  */
 struct EdgeEdgeContinuousTimeCollision
@@ -123,10 +151,10 @@ struct EdgeEdgeContinuousTimeCollision
   // Barycentric coordinates of closest points between edges
   double s;
   double t;
-  // Penetration depth (sum of radii - minimum distance)
-  //double pen;
   // Collision normal
   Vec3d n;
+  // Time of the collision (scaled to be between 0 and 1)
+  double time;
 };
 
 /**
@@ -147,6 +175,96 @@ struct VertexFaceContinuousTimeCollision
   double w;
   // Collision normal, points TOWARDS the vertex
   Vec3d n;
+  // Time of the collision (scaled to be between 0 and 1)
+  double time;
+};
+
+// Super hacky and inefficient, but should get the job done for now
+class ContinuousTimeCollision
+{
+public:
+  explicit ContinuousTimeCollision( const EdgeEdgeContinuousTimeCollision& edgedg )
+  : m_edgedg(true)
+  , m_edgedgcllsn(edgedg)
+  , m_vrtfcecllsn()
+  {}
+
+  explicit ContinuousTimeCollision( const VertexFaceContinuousTimeCollision& vrtfce )
+  : m_edgedg(false)
+  , m_edgedgcllsn()
+  , m_vrtfcecllsn(vrtfce)
+  {}
+
+  bool isEdgeEdge() const
+  {
+    return m_edgedg;
+  }
+  
+  bool isVertexFace() const
+  {
+    return !isEdgeEdge();
+  }
+  
+  EdgeEdgeContinuousTimeCollision& getEdgeEdge()
+  {
+    return m_edgedgcllsn;
+  }
+  
+  VertexFaceContinuousTimeCollision& getVertexFace()
+  {
+    return m_vrtfcecllsn;
+  }
+
+  double getTime() const
+  {
+    if( isEdgeEdge() ) return m_edgedgcllsn.time;
+    return m_vrtfcecllsn.time;
+  }
+
+private:
+  bool m_edgedg;
+  EdgeEdgeContinuousTimeCollision m_edgedgcllsn;
+  VertexFaceContinuousTimeCollision m_vrtfcecllsn;
+};
+
+bool areEdgesEqual( int e0v0, int e0v1, int e1v0, int e1v1 );
+//{
+//  return ( (e0v0 == e1v0) && (e0v1 == e1v1) ) || ( (e0v0 == e1v1) && (e0v1 == e1v0) );
+//}
+
+bool areEdgeEdgeContinuousTimeTheSame( const EdgeEdgeContinuousTimeCollision& col0, const EdgeEdgeContinuousTimeCollision& col1 );
+//{
+//  // a == c && b == d
+//  if( areEdgesEqual( col0.e0_v0, col0.e0_v1, col1.e0_v0, col1.e0_v1 ) && areEdgesEqual( col0.e1_v0, col0.e1_v1, col1.e1_v0, col1.e1_v1 ) ) return true;
+//  // a == d && c == d
+//  if( areEdgesEqual( col0.e0_v0, col0.e0_v1, col1.e1_v0, col1.e1_v1 ) && areEdgesEqual( col0.e1_v0, col0.e1_v1, col1.e0_v0, col1.e0_v1 ) ) return true;
+//
+//  return false;
+//}
+
+struct EdgeVertexEdgePair
+{
+  int freeedge;
+  int facevert0;
+  int facevert1;
+  
+  bool operator<( const EdgeVertexEdgePair& rhs ) const
+  {
+    assert( this->facevert0 < this->facevert1 );
+    assert( rhs.facevert0 < rhs.facevert1 );
+
+    if( this->freeedge < rhs.freeedge ) return true;
+    if( this->freeedge == rhs.freeedge )
+    {
+      if( this->facevert0 < rhs.facevert0 ) return true;
+      if( this->facevert0 == rhs.facevert0 )
+      {
+        if( this->facevert1 < rhs.facevert1 ) return true;
+      }
+    }
+    return false;
+  }
+
 };
 
 // TODO: Rework this so I only store face, edge indcs for leaf nodes
@@ -327,6 +445,19 @@ public:
     }
   }
 
+  void getContinuousTimeCollisions( std::list<ContinuousTimeCollision>& cllsns )
+  {
+    std::vector<EdgeEdgeContinuousTimeCollision> edgedg;
+    std::vector<VertexFaceContinuousTimeCollision> vrtfce;
+    
+    getContinuousTimeCollisions(edgedg,vrtfce);
+    
+    for( int i = 0; i < (int) edgedg.size(); ++i ) cllsns.push_back(ContinuousTimeCollision(edgedg[i]));
+    edgedg.clear();
+    for( int i = 0; i < (int) vrtfce.size(); ++i ) cllsns.push_back(ContinuousTimeCollision(vrtfce[i]));
+    vrtfce.clear();
+  }
+
   void getContinuousTimeCollisions( std::vector<EdgeEdgeContinuousTimeCollision>& edg_edg, std::vector<VertexFaceContinuousTimeCollision>& vrt_fce )
   {
     if( m_x.size() == 0 ) return;
@@ -369,31 +500,121 @@ public:
       vrt_fce.push_back(vrt_fce_ct);
     }
 
+    // TODO: This could be buggy, i just hacked it together in 5 minutes. Test it!
+    std::set<EdgeVertexEdgePair> edge_vertex_edge_set;
     for( std::set<std::pair<int,int> >::const_iterator it = edg_fce_set.begin(); it != edg_fce_set.end(); ++it )
     {
-      EdgeEdgeContinuousTimeCollision edg_edg_ct0;
-      edg_edg_ct0.e0_v0 = m_edges[it->first].first;
-      edg_edg_ct0.e0_v1 = m_edges[it->first].second;
-      edg_edg_ct0.e1_v0 = m_faces[it->second].idx[0];
-      edg_edg_ct0.e1_v1 = m_faces[it->second].idx[1];
-      edg_edg.push_back(edg_edg_ct0);
+      EdgeVertexEdgePair pair0;
+      pair0.freeedge = it->first;
+      pair0.facevert0 = std::min(m_faces[it->second].idx[0],m_faces[it->second].idx[1]);
+      pair0.facevert1 = std::max(m_faces[it->second].idx[0],m_faces[it->second].idx[1]);
+      edge_vertex_edge_set.insert(pair0);
 
-      EdgeEdgeContinuousTimeCollision edg_edg_ct1;
-      edg_edg_ct1.e0_v0 = m_edges[it->first].first;
-      edg_edg_ct1.e0_v1 = m_edges[it->first].second;
-      edg_edg_ct1.e1_v0 = m_faces[it->second].idx[1];
-      edg_edg_ct1.e1_v1 = m_faces[it->second].idx[2];
-      edg_edg.push_back(edg_edg_ct1);
+      EdgeVertexEdgePair pair1;
+      pair1.freeedge = it->first;
+      pair1.facevert0 = std::min(m_faces[it->second].idx[1],m_faces[it->second].idx[2]);
+      pair1.facevert1 = std::max(m_faces[it->second].idx[1],m_faces[it->second].idx[2]);
+      edge_vertex_edge_set.insert(pair1);
 
-      EdgeEdgeContinuousTimeCollision edg_edg_ct2;
-      edg_edg_ct2.e0_v0 = m_edges[it->first].first;
-      edg_edg_ct2.e0_v1 = m_edges[it->first].second;
-      edg_edg_ct2.e1_v0 = m_faces[it->second].idx[2];
-      edg_edg_ct2.e1_v1 = m_faces[it->second].idx[0];
-      edg_edg.push_back(edg_edg_ct2);
+      EdgeVertexEdgePair pair2;
+      pair2.freeedge = it->first;
+      pair2.facevert0 = std::min(m_faces[it->second].idx[2],m_faces[it->second].idx[0]);
+      pair2.facevert1 = std::max(m_faces[it->second].idx[2],m_faces[it->second].idx[0]);
+      edge_vertex_edge_set.insert(pair2);
+
+//      EdgeEdgeContinuousTimeCollision edg_edg_ct0;
+//      edg_edg_ct0.e0_v0 = m_edges[it->first].first;
+//      edg_edg_ct0.e0_v1 = m_edges[it->first].second;
+//      edg_edg_ct0.e1_v0 = m_faces[it->second].idx[0];
+//      edg_edg_ct0.e1_v1 = m_faces[it->second].idx[1];
+//      edge_face_set.insert(edg_edg_ct0);
+//      //edg_edg.push_back(edg_edg_ct0);
+//
+//      EdgeEdgeContinuousTimeCollision edg_edg_ct1;
+//      edg_edg_ct1.e0_v0 = m_edges[it->first].first;
+//      edg_edg_ct1.e0_v1 = m_edges[it->first].second;
+//      edg_edg_ct1.e1_v0 = m_faces[it->second].idx[1];
+//      edg_edg_ct1.e1_v1 = m_faces[it->second].idx[2];
+//      edg_edg.push_back(edg_edg_ct1);
+//
+//      EdgeEdgeContinuousTimeCollision edg_edg_ct2;
+//      edg_edg_ct2.e0_v0 = m_edges[it->first].first;
+//      edg_edg_ct2.e0_v1 = m_edges[it->first].second;
+//      edg_edg_ct2.e1_v0 = m_faces[it->second].idx[2];
+//      edg_edg_ct2.e1_v1 = m_faces[it->second].idx[0];
+//      edg_edg.push_back(edg_edg_ct2);
     }
+    
+    for( std::set<EdgeVertexEdgePair>::const_iterator it = edge_vertex_edge_set.begin(); it != edge_vertex_edge_set.end(); ++it )
+    {
+      EdgeEdgeContinuousTimeCollision edgedgcol;
+      edgedgcol.e0_v0 = m_edges[it->freeedge].first;
+      edgedgcol.e0_v1 = m_edges[it->freeedge].second;
+      assert( it->facevert0 < it->facevert1 );
+      edgedgcol.e1_v0 = it->facevert0;
+      edgedgcol.e1_v1 = it->facevert1;
+      edg_edg.push_back(edgedgcol);
+    }
+
+    for( int i = 0; i < (int) edg_edg.size(); ++i )
+    {
+      for( int j = i+1; j < (int) edg_edg.size(); ++j )
+      {
+        assert( !areEdgeEdgeContinuousTimeTheSame( edg_edg[i], edg_edg[j] ) );
+        //if( areEdgeEdgeContinuousTimeTheSame( edg_edg[i], edg_edg[j] ) )
+        //{
+        //  std::cout << "Repeat collision detected in BVHAABB!" << std::endl;
+        //  exit(0);
+        //}
+      }
+    }
+    
+    //std::cout << "No repeats!" << std::endl;
+    //exit(0);
   }
   
+  // Only vertex - face collisions are available.
+  void getImplicitPenaltyCollisions( std::vector<EdgeEdgeProximityCollision>& edg_edg, std::vector<VertexFaceProximityCollision>& vrt_fce )
+  {
+    if( m_x.size() == 0 ) return;
+    
+    assert( m_root_node != NULL );
+    assert( treeBuiltCorrectly() );
+    
+    recomputeProximityBoundsBottomUp( m_root_node );
+
+    std::set<IntPair> edg_edg_set;
+    std::set<std::pair<int,int> > vrt_fce_set;
+    std::set<std::pair<int,int> > edg_fce_set;
+    std::set<IntPair> fce_fce_set;
+    computePossibleProximityCollisions( edg_edg_set, vrt_fce_set, edg_fce_set, fce_fce_set, m_root_node, m_root_node );
+
+    // TODO: Run some tests to ensure no duplicates in the four sets above
+    
+    for( std::set<std::pair<int,int> >::const_iterator it = vrt_fce_set.begin(); it != vrt_fce_set.end(); ++it )
+    {
+      VertexFaceProximityCollision vrt_fce_prxm;
+
+      assert( it->first >= 0 ); assert( it->first < (int) m_vert_radii.size() );
+      vrt_fce_prxm.v0 = it->first;
+
+      assert( it->second >= 0 ); assert( it->second < (int) m_faces.size() );
+      
+      assert( m_faces[it->second].idx[0] >= 0 ); assert( m_faces[it->second].idx[0] < (int) m_vert_radii.size() );
+      vrt_fce_prxm.f0 = m_faces[it->second].idx[0];
+      assert( m_faces[it->second].idx[1] >= 0 ); assert( m_faces[it->second].idx[1] < (int) m_vert_radii.size() );
+      vrt_fce_prxm.f1 = m_faces[it->second].idx[1];
+      assert( m_faces[it->second].idx[2] >= 0 ); assert( m_faces[it->second].idx[2] < (int) m_vert_radii.size() );
+      vrt_fce_prxm.f2 = m_faces[it->second].idx[2];
+
+      vrt_fce_prxm.r0 = m_vert_radii[vrt_fce_prxm.v0];
+      vrt_fce_prxm.r1 = m_vert_radii[vrt_fce_prxm.f0];
+      
+      vrt_fce.push_back(vrt_fce_prxm);
+    }
+    
+
+  }
 private:
   
   /////////////////////////////////////////////////////////////////////////////

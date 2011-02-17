@@ -114,12 +114,12 @@ public:
 private:
     void pullOnAllRodNodes( MDataBlock& i_dataBlock );
     void createRodDataFromRodNodes( MDataBlock& i_dataBlock );
-    void updateAllCollisionMeshes( MDataBlock& i_dataBlock );
+    //void updateAllCollisionMeshes( MDataBlock& i_dataBlock );
     void updateAllRodNodes( MDataBlock &i_dataBlock );
     void addRodsToWorld( MDataBlock& i_dataBlock );
 
-    void addAllConstraints( MDataBlock &i_dataBlock );
-    void updateAllConstraints( MDataBlock &i_dataBlock );
+    //void addAllConstraints( MDataBlock &i_dataBlock );
+    //void updateAllConstraints( MDataBlock &i_dataBlock );
 
     static MStatus addNumericAttribute( MObject& i_attribute, MString i_longName, MString i_shortName, 
                                  MFnNumericData::Type i_type, double i_defaultValue, bool i_isInput,

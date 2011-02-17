@@ -2,6 +2,8 @@
 
 #include <maya/MGlobal.h>
 
+using namespace std;
+
 WmFigRodNurbsInput::WmFigRodNurbsInput( MObject& i_nurbsAttribute, bool i_lockFirstEdgeToInput,
     WmFigRodGroup& i_rodGroup, double i_vertexSpacing, double i_minimumRodLength, RodOptions& i_rodOptions,
     double i_massDamping, BASim::Vec3d& i_gravity,  RodTimeStepper::Method i_solverType, 
@@ -18,7 +20,7 @@ WmFigRodNurbsInput::~WmFigRodNurbsInput()
 {
 }
 
-void WmFigRodNurbsInput::getAndResampleInputCurves( MDataBlock& i_dataBlock, vector< vector<BASim::Vec3d > >& o_inputCurveVertices )
+void WmFigRodNurbsInput::getAndResampleInputCurves( MDataBlock& i_dataBlock, std::vector< std::vector<BASim::Vec3d > >& o_inputCurveVertices )
 {
     MStatus stat;
 
@@ -45,7 +47,7 @@ void WmFigRodNurbsInput::getAndResampleInputCurves( MDataBlock& i_dataBlock, vec
         MPoint cv;
         int numCVs = inCurveFn.numCVs();
 
-        vector< MVector > curve;
+        std::vector< MVector > curve;
         curve.resize( numCVs );
 
         // If the user has specificed a vertex spacing > 0 then they want to override the vertices

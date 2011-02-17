@@ -69,12 +69,12 @@ public:
   /** Add a triangular face to the object */
   face_handle addFace(const vertex_handle& v0, const vertex_handle& v1, const vertex_handle& v2);
 
-  /** Deletes the given vertex and associated edges, faces (NOT IMPLEMENTED) */
-  void deleteVertex(const vertex_handle& vertex);
-  /** Deletes the given edge and associated faces (NOT IMPLEMENTED) */
-  void deleteEdge(const edge_handle& edge);
-  /** Deletes the given face (NOT IMPLEMENTED) */
-  void deleteFace(const face_handle& face);
+  // /** Deletes the given vertex and associated edges, faces (NOT IMPLEMENTED) */
+  // void deleteVertex(const vertex_handle& vertex);
+  // /** Deletes the given edge and associated faces (NOT IMPLEMENTED) */
+  // void deleteEdge(const edge_handle& edge);
+  // /** Deletes the given face (NOT IMPLEMENTED) */
+  // void deleteFace(const face_handle& face);
 
   /** Returns a handle to the vertex at the head of the edge */
   vertex_handle fromVertex(const edge_handle& eh) const;

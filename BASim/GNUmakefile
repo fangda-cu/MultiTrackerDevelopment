@@ -18,9 +18,6 @@ LIB1_CF += $(PHYSBAM_INCLUDE)
 LIB1_HSD   := Wfigaro
 LIB1_HDIR := src
 LIB1_H     := \
-SceneXML/tinyxml/tinyxml.h \
-SceneXML/tinyxml/tinystr.h \
-SceneXML/SceneXML.hh \
 Eigen/Array \
 Eigen/Cholesky \
 Eigen/Core \
@@ -143,19 +140,7 @@ Eigen/src/Sparse/TaucsSupport.h \
 Eigen/src/Sparse/TriangularSolver.h \
 Eigen/src/Sparse/UmfPackSupport.h \
 Collisions/BVHAABB.hh \
-Collisions/BridsonArray.hh \
-Collisions/BridsonArray1.hh \
-Collisions/BridsonArray3.hh \
-Collisions/BridsonUtil.hh \
-Collisions/BridsonVec.hh \
-Collisions/CandidateCollision.hh \
-Collisions/Collision.hh \
-Collisions/CollisionMeshData.hh \
-Collisions/CollisionObject.hh \
 Collisions/CollisionUtils.hh \
-Collisions/UniformGrid.hh \
-Collisions/LevelSet.hh \
-Collisions/RodneyVector.hh \
 Core/Definitions.hh \
 Core/EigenIncludes.hh \
 Core/Handle.hh \
@@ -214,11 +199,9 @@ Physics/ElasticRods/RodBendingForce.hh \
 Physics/ElasticRods/RodBendingForceSym.hh \
 Physics/ElasticRods/RodBendingForceIncludes.hh \
 Physics/ElasticRods/RodBoundaryCondition.hh \
-Physics/ElasticRods/RodCollisionTimeStepper.hh \
 Physics/ElasticRods/RodExternalForce.hh \
 Physics/ElasticRods/RodForce.hh \
 Physics/ElasticRods/RodGravity.hh \
-Physics/ElasticRods/RodHairsprayForce.hh \
 Physics/ElasticRods/RodMassDamping.hh \
 Physics/ElasticRods/RodPenaltyForce.hh \
 Physics/ElasticRods/RodStretchingForce.hh \
@@ -249,8 +232,6 @@ Render/TriangleMeshRenderer.hh \
 Util/KeyedValue.hh \
 Util/StringToolbox.hh \
 Util/Utils.hh \
-Core/ObjectControllerBase.inl \
-Core/TopologicalObject/TopologicalObject.inl \
 Math/Petsc/PetscMatrix.inl \
 Physics/ElasticRods/ElasticRod.inl \
 Physics/ElasticRods/Tests/bendingEnergy.inl \
@@ -262,26 +243,35 @@ Physics/ElasticRods/Tests/stretchingJacobian.inl \
 Physics/ElasticRods/Tests/twistingEnergy.inl \
 Physics/ElasticRods/Tests/twistingForce.inl \
 Physics/ElasticRods/Tests/twistingJacobian.inl \
+Physics/ElasticRods/MinimalTriangleMeshBackup.hh \
 Physics/PhysObject.inl \
 Core/StatTracker.hh \
 Math/SymmetricImplicitEuler.hh \
 Physics/ElasticRods/AdaptiveBinaryStepper.hh \
 Physics/ElasticRods/MinimalRodStateBackup.hh \
-Physics/ElasticRods/RodReverseSolver.hh 
+Physics/ElasticRods/RodReverseSolver.hh \
+Core/TopologicalObject/TopologicalObject.inl \
+Core/ObjectControllerBase.inl
+#Collisions/UniformGrid.hh \
+#Collisions/CollisionMeshData.hh \
+#Collisions/LevelSet.hh \
+#Collisions/RodneyVector.hh \
+#Collisions/BridsonArray.hh \
+#Collisions/BridsonArray1.hh \
+#Collisions/BridsonArray3.hh \
+#Collisions/BridsonUtil.hh \
+#Collisions/BridsonVec.hh \
+#Collisions/CandidateCollision.hh \
+#Collisions/Collision.hh \
+#Collisions/CollisionObject.hh \
+#SceneXML/tinyxml/tinyxml.h \
+#SceneXML/tinyxml/tinystr.h \
+#SceneXML/SceneXML.hh \
 
 
 LIB1_S     := \
-src/SceneXML/tinyxml/tinyxml.cpp \
-src/SceneXML/tinyxml/tinyxmlerror.cpp \
-src/SceneXML/tinyxml/tinyxmlparser.cpp \
-src/SceneXML/tinyxml/tinystr.cpp \
-src/SceneXML/SceneXML.cc \
-src/Collisions/CandidateCollision.cc \
-src/Collisions/Collision.cc \
-src/Collisions/CollisionMeshData.cc \
-src/Collisions/UniformGrid.cc \
+src/Collisions/BVHAABB.cc \
 src/Collisions/CollisionUtils.cc \
-src/Collisions/LevelSet.cc \
 src/Core/Util.cc \
 src/Core/Timer.cc \
 src/Core/TriangleMesh.hh \
@@ -292,23 +282,20 @@ src/Math/Pardiso/PardisoLinearSolver.cc \
 src/Physics/ElasticRods/AnisotropicRod.cc \
 src/Physics/ElasticRods/BridsonStepper.cc \
 src/Physics/ElasticRods/ElasticRod.cc \
-src/Physics/ElasticRods/MultipleRodTimeStepper.cc \
 src/Physics/ElasticRods/ParallelStepper.cc \
 src/Physics/ElasticRods/RodAnisoBending.cc \
 src/Physics/ElasticRods/RodAnisoForce.cc \
 src/Physics/ElasticRods/RodBendingForce.cc \
 src/Physics/ElasticRods/RodBendingForceSym.cc \
 src/Physics/ElasticRods/RodBoundaryCondition.cc \
-src/Physics/ElasticRods/RodCollisionTimeStepper.cc \
 src/Physics/ElasticRods/RodForce.cc \
-src/Physics/ElasticRods/RodHairsprayForce.cc \
 src/Physics/ElasticRods/RodPenaltyForce.cc \
 src/Physics/ElasticRods/RodStretchingForce.cc \
-src/Physics/ElasticRods/RodTimeStepper.cc \
 src/Physics/ElasticRods/RodTube.cc \
 src/Physics/ElasticRods/RodTwistingForce.cc \
 src/Physics/ElasticRods/RodTwistingForceSym.cc \
 src/Physics/ElasticRods/ViscousRod.cc \
+src/Physics/ElasticRods/MinimalTriangleMeshBackup.cc \
 src/Render/Camera.cc \
 src/Render/RenderBase.cc \
 src/Render/RodRenderer.cc \
@@ -319,14 +306,20 @@ src/Render/TriangleMeshRenderer.cc \
 src/Render/ViewController.cc \
 src/Render/YImage/YImage.cc \
 src/Render/Zoomer.cc \
-src/Core/ObjectControllerBase.inl \
-src/Core/TopologicalObject/TopologicalObject.inl \
-src/Math/Petsc/PetscMatrix.inl \
-src/Physics/ElasticRods/ElasticRod.inl \
-src/Physics/PhysObject.inl \
 src/Core/StatTracker.cc \
 src/Physics/ElasticRods/MinimalRodStateBackup.cc \
-src/Physics/ElasticRods/RodReverseSolver.cc 
+src/Physics/ElasticRods/RodReverseSolver.cc \
+src/Physics/World.cc
+#src/Collisions/CollisionMeshData.cc \
+#src/Collisions/UniformGrid.cc \
+#src/Collisions/LevelSet.cc \
+#src/Collisions/CandidateCollision.cc \
+#src/Collisions/Collision.cc \
+#src/SceneXML/tinyxml/tinyxml.cpp \
+#src/SceneXML/tinyxml/tinyxmlerror.cpp \
+#src/SceneXML/tinyxml/tinyxmlparser.cpp \
+#src/SceneXML/tinyxml/tinystr.cpp \
+#src/SceneXML/SceneXML.cc \
 
 
 

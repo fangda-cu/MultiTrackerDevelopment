@@ -36,9 +36,6 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   add_property(m_quasistatic, "quasistatic", true);
   add_property(m_refFrameType, "reference-frame", TimeParallel);
   add_property(m_density, "density", 1.0);
-  add_property(m_fixed, "fixed_dofs");
-  add_property(m_fixedVerts, "fixed_verts");
-  add_property(m_fixedEdges, "fixed_edges");
   add_property(m_YoungsModulus, "Young's modulus", 1.0);
   add_property(m_ShearModulus, "shear modulus", 1.0);
   add_property(m_viscosity, "dynamic viscosity", 0.0);
@@ -49,7 +46,6 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   add_property(m_vertexVelocities, "vertex velocities", Vec3d(0,0,0));
   add_property(m_voronoiLengths, "voronoi legths", 0.0);
   add_property(m_vertexMasses, "vertex masses", 0.0);
-  add_property(m_vertexFixed, "is vertex fixed", false);
   add_property(m_referenceTwist, "reference twist", 0.0);
   add_property(m_curvatureBinormal, "curvature binormal", Vec3d(0,0,0));
   add_property(m_vertIdx, "vertex index", 0);
@@ -63,31 +59,11 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
   add_property(m_edges, "edges", Vec3d(0,0,0));
   add_property(m_tangents, "tangents", Vec3d(0,0,0));
   add_property(m_edgeLengths, "edge lengths", 0.0);
-  add_property(m_edgeFixed, "is edge fixed", false);
   add_property(m_edgeIdx, "edge index", 0);
 
-  add_property(m_plasticity, "use plastic deformation", false);
-  add_property(m_plasticThreshold, "threshold for turning into plastic deformation", 0.0);
-
-  m_friction = 0;
-  m_cor = 0;
-  m_separationStrength = 1;
-  m_damping = 0.5;
-
   setupDofIndices();
-
+  
   m_boundaryConditions = NULL;
-
-  // For collisions
-  m_currentPositions.resize(numVertices);
-  m_previousPositions.resize(numVertices);
-  m_currentVelocities.resize(numVertices);
-  m_edgeIndices.resize(2 * ne());
-  for (int i=0; i<ne(); ++i)
-  {
-    m_edgeIndices[2*i  ] = i;
-    m_edgeIndices[2*i+1] = (i+1)%numVertices;
-  }
 }
 
 ElasticRod::~ElasticRod()
@@ -274,8 +250,9 @@ void ElasticRod::computeVertexMasses()
         computeMass(density(), radiusA(i), radiusB(i),
                     0.5 * getEdgeLength(i));
     }
+    //assert( mass > 0.0 );
     setVertexMass(i, mass);
-  }
+  }  
 }
 
 void ElasticRod::computeEdgeInertias()
@@ -290,6 +267,7 @@ void ElasticRod::computeEdgeInertias()
 
 Scalar ElasticRod::computeMass(Scalar density, Scalar a, Scalar b, Scalar h)
 {
+  //assert( density * M_PI * a * b * h > 0.0 );
   return (density * M_PI * a * b * h);
 }
 
@@ -359,19 +337,6 @@ void ElasticRod::setMaterial2(int j, const Vec3d& m2)
   property(m_materialDirectors)[j].second = m2;
 }
 
-void ElasticRod::updatePlasticities()
-{
-	if (plasticity()) {
-		RodForces forces = getForces();
-		RodForces::iterator it;
-		for (it = forces.begin(); it != forces.end(); ++it) {
-		  (*it)->updatePlasticity(plasticityThreshold());
-		}
-	}
-	
-	updateProperties();
-}
-
 void ElasticRod::updateProperties()
 {
   computeEdges();
@@ -397,7 +362,6 @@ void ElasticRod::updateForceProperties()
   RodForces::iterator fIt;
   for (fIt = forces.begin(); fIt != forces.end(); ++fIt)
     (*fIt)->updateProperties();
-
 }
 
   

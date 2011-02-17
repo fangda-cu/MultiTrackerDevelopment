@@ -62,18 +62,30 @@ inline bool approxSymmetric(const Eigen::MatrixBase<Derived>& A,
   return true;
 }
 
-template <typename Ref> struct referenceToPointer;
-template <typename T> struct referenceToPointer<T&>
+/** Uses dynamic_cast if debugging is turned on and static_cast for
+    efficiency when debugging is turned off (by defining NDEBUG. */
+template <typename target_ptr, typename source>
+inline target_ptr smart_cast(source* s)
 {
-    typedef T* type;
-};
+#ifdef NDEBUG
+
+  return static_cast<target_ptr>(s);
+
+#else
+
+  target_ptr t = dynamic_cast<target_ptr>(s);
+  assert( t != NULL );
+  return t;
+
+#endif
+
+}
 
 /** Uses dynamic_cast if debugging is turned on and static_cast for
     efficiency when debugging is turned off (by defining NDEBUG. */
 template <typename target_ref, typename source>
 inline target_ref smart_cast(source& s)
 {
-  typedef typename referenceToPointer<target_ref>::type target_ptr;
 
 #ifdef NDEBUG
 
@@ -81,9 +93,14 @@ inline target_ref smart_cast(source& s)
 
 #else
 
-  target_ptr t = dynamic_cast<target_ptr>(&s);
-  assert(t);
-  return *t;
+  try {
+    target_ref t = dynamic_cast<target_ref>(s);
+    return t;
+  } catch(...) {
+    assert(!"bad cast");
+  }
+
+  return dynamic_cast<target_ref>(s);
 
 #endif
 

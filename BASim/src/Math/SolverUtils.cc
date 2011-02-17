@@ -72,7 +72,7 @@ MatrixBase*
 SolverUtils::createSparseMatrix(int rows, int cols, int nnzPerRow) const
 {
 #ifdef HAVE_PARDISO
-//  if (matrixType == PARDISO_MATRIX)
+  if (matrixType == PARDISO_MATRIX)
     return new PardisoMatrix(rows,cols);
 #endif // HAVE_PARDISO  
   

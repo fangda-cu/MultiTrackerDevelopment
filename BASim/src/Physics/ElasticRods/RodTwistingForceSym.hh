@@ -52,6 +52,8 @@ public:
 
   virtual void updateUndeformedConfiguration(std::vector<Scalar>& vals);
 
+  virtual void reattatchProperties();
+
 private:
 
   const VecXd& getGradTwist(const vertex_handle& vh) const;

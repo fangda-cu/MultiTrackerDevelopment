@@ -8,7 +8,11 @@
 #ifndef SCRIPTINGCONTROLLER_HH
 #define SCRIPTINGCONTROLLER_HH
 
+#ifdef WETA
+#include "ObjectControllerBase.hh"
+#else
 #include "BASim/src/Core/ObjectControllerBase.hh"
+#endif
 
 namespace BASim {
 

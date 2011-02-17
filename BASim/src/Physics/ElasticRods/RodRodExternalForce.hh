@@ -8,7 +8,6 @@
 #ifndef RODRODEXTERNALFORCE_HH
 #define RODRODEXTERNALFORCE_HH
 
-
 #ifdef WETA
 #include "../../Core/Definitions.hh"
 #include "../../Math/MatrixBase.hh"
@@ -19,7 +18,6 @@
 #include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
 #endif
 
-
 namespace BASim
 {
 
@@ -29,7 +27,7 @@ class RodRodExternalForce
 public:
 
   explicit RodRodExternalForce( bool implicit = true )
-  : m_implicit(implicit), m_active(true)
+  : m_implicit(implicit)
   {}
 
   virtual ~RodRodExternalForce() {}
@@ -38,17 +36,12 @@ public:
   virtual void computeForceDX( Scalar scale, MatrixBase& J ) = 0;
   virtual void computeForceDV( Scalar scale, MatrixBase& J ) = 0;
 
-  virtual void checkActivatingCondition() {}
-  
   bool isImplicit() const { return m_implicit; }
   void setImplicit(bool implicit) { m_implicit = implicit; }
 
 protected:
 
   bool m_implicit;
-  
-  bool m_active;
-  
 };
 
 } // namespace BASim

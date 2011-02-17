@@ -11,6 +11,9 @@
 #ifdef WETA
 #include "RodForce.hh"
 #include "VertexStencil.hh"
+#else
+#include "BASim/src/Physics/ElasticRods/RodForce.hh"
+#include "BASim/src/Physics/ElasticRods/VertexStencil.hh"
 #endif
 
 namespace BASim {
@@ -47,18 +50,17 @@ public:
   virtual void updateStiffness();
   virtual void updateUndeformedStrain();
   virtual void updateReferenceDomain();
-
-	virtual void updatePlasticity(Scalar maxKappa);
+	
   virtual void updateUndeformedConfiguration(std::vector<Scalar>& vals);
+
+  virtual void reattatchProperties();
+protected:
 
   const MatXd& getGradKappa(const vertex_handle& vh) const;
   const std::pair<MatXd, MatXd>& getHessKappa(const vertex_handle& vh) const;
 
   void computeGradKappa();
   void computeHessKappa();
-
-protected:
-
 
   VPropHandle<Vec2d> m_kappa;
   VPropHandle<Vec2d> m_kappaBar;

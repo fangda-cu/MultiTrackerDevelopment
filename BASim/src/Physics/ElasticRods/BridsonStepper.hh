@@ -6,16 +6,19 @@
  */
 
 // This class is currently a little hacked together, and
-// does some inefficient stuff (copies all DOFs 
+// does some really inefficient stuff (copies all DOFs 
 // into flat arrays and such) just because it was
 // easier than using BASim iterators, for now :).
+
+// Note also that the detection acceleartion is as basic
+// as possible (AABB Hierarchy built with no knowledge of
+// connectivity). Lots of low hanging fruit for acceleration.
 
 #ifndef BRIDSONSTEPPER_HH
 #define BRIDSONSTEPPER_HH
 
-
 #ifdef WETA
-#include "../../Core/ObjectControllerBase.hh"
+#include "../../Core/ScriptingController.hh"
 #include "ElasticRod.hh"
 #include "RodTimeStepper.hh"
 #include "RodMassDamping.hh"
@@ -24,8 +27,12 @@
 #include "../../Core/TriangleMesh.hh"
 #include "../../Collisions/BVHAABB.hh"
 #include "../../Collisions/CollisionUtils.hh"
+//#include "../../../../Apps/BASimulator/Problems/ProblemBase.hh"
+#include "../../Core/StatTracker.hh"
+#include "MinimalTriangleMeshBackup.hh"
+#include "RodPenaltyForce.hh"
 #else
-#include "BASim/src/Core/ObjectControllerBase.hh"
+#include "BASim/src/Core/ScriptingController.hh"
 #include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
 #include "BASim/src/Physics/ElasticRods/RodTimeStepper.hh"
 #include "BASim/src/Physics/ElasticRods/RodMassDamping.hh"
@@ -36,6 +43,12 @@
 
 #include "BASim/src/Collisions/BVHAABB.hh"
 #include "BASim/src/Collisions/CollisionUtils.hh"
+
+#include "Apps/BASimulator/Problems/ProblemBase.hh"
+
+#include "BASim/src/Core/StatTracker.hh"
+
+#include "BASim/src/Physics/ElasticRods/MinimalTriangleMeshBackup.hh"
 #endif
 
 
@@ -44,8 +57,89 @@
 #endif
 
 #include <limits>
+#include <list>
+#include <queue>
+#include <typeinfo>
+
+#define SKIP_ROD_ROD true
 
 namespace BASim {
+
+  // Linear solver and matrix that will work together
+  class LinearSystemSolver
+  {
+  public:
+
+    LinearSystemSolver( MatrixBase* lhs, LinearSolverBase* solver )
+    : m_sys_size(lhs->rows())
+    , m_lhs(lhs)
+    , m_solver(solver)
+    {
+      assert( lhs->rows() == lhs->cols() );
+      assert( lhs->rows() == m_sys_size );
+    }
+
+    ~LinearSystemSolver()
+    {
+      if( m_lhs != NULL )
+      {
+        delete m_lhs;
+        m_lhs = NULL;
+      }
+      if( m_solver != NULL ) 
+      {
+        delete m_solver;
+        m_solver = NULL;
+      }
+    }
+
+    int m_sys_size;
+    MatrixBase* m_lhs;
+    LinearSolverBase* m_solver;
+  };
+
+  // Collection of linear system solvers of different sizes
+  //  NOT THREAD SAFE
+  //  ASSUMES YOU WANT A BAND MATRIX OF SIZE 10 :)
+  class LinearSystemSolverCollection
+  {
+  public:
+    
+    ~LinearSystemSolverCollection()
+    {
+      std::map<int,LinearSystemSolver*>::iterator it = m_solver_map.begin();
+      for( ; it != m_solver_map.end(); ++it )
+      {
+        assert( it->second != NULL );
+        delete it->second;
+        it->second = NULL;
+      }
+    }
+    
+    LinearSystemSolver* getLinearSystemSolver( int size )
+    {
+      assert( size > 0 );
+
+      // Attempt to locate a solver of the requested size
+      std::map<int,LinearSystemSolver*>::iterator it = m_solver_map.find(size);
+      // If a solver of the size exists, return it
+      if( it != m_solver_map.end() )
+      {
+        return it->second;
+      }
+      // Otherwise create a new solver
+      int band = 10;
+      MatrixBase* lhs = SolverUtils::instance()->createBandMatrix(size,size,band,band);
+      LinearSolverBase* solver = SolverUtils::instance()->createLinearSolver(lhs);
+      m_solver_map.insert(std::pair<int,LinearSystemSolver*>(size,new LinearSystemSolver(lhs,solver)));
+
+      it = m_solver_map.find(size);
+      return it->second;
+    }
+
+  private:
+    std::map<int,LinearSystemSolver*> m_solver_map;
+  };
 
   /**
    * Class to evolve a collection of rods forward in time, resolving collisions using
@@ -59,7 +153,7 @@ namespace BASim {
     /**
      * Default constructor.
      */
-    BridsonStepper();
+    //BridsonStepper();
 
     /**
      * Creates a BridsonStepper with user-supplied options. 
@@ -70,27 +164,47 @@ namespace BASim {
      * \param[in] mass_dmpng Amount of damping that acts in opposition to vertex velocities (I think? Miklos has been mucking with the damping :)).
      * \param[in] grav Three dimensional vector that specifies gravity.
      */
-    BridsonStepper( const RodTimeStepper::Method& intgrtr, const int& max_implct_itrtns, const double& dt, const double& mass_dmpng, const Vec3d& grav );
+    //BridsonStepper( const RodTimeStepper::Method& intgrtr, const int& max_implct_itrtns, const double& dt, const double& mass_dmpng, const Vec3d& grav );
+    BridsonStepper( std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes, std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt );
 
     /**
      * Destructor.
      */
     virtual ~BridsonStepper();
-    
+  
+  private:
     /**
      * After adding new rods or objects, this method must be called.
      */
     void prepareForExecution();
     
+  public:
+  
+    double computeMaxEdgeAngle( const ElasticRod& rod )
+    {
+      double maxangle = -std::numeric_limits<double>::infinity();
+      for( int i = 0; i < rod.ne()-1; ++i )
+      {
+        Vec3d edge0 = rod.getEdge(i);
+        Vec3d edge1 = rod.getEdge(i+1);
+        double numer = edge0.cross(edge1).norm();
+        double denom = edge0.dot(edge1);
+        double angle = atan2(numer,denom);
+        if( angle < 0.0 ) std::cout << "NEGATIVE ANGLE AGHHHHHH" << std::endl;
+        if( angle > maxangle ) maxangle = angle;
+      }
+      return maxangle;
+    }
+
     /**
      * Adds a rod that will be evolved in time using this BridsonStepper.
      */
-    void addRod( ElasticRod* rod );
+    //void addRod( ElasticRod* rod );
     
     /**
      * Adds a non-simulated triangle mesh for objects to collide with.
      */
-    void addTriangleMesh( TriangleMesh* tri_mesh );
+    //void addTriangleMesh( TriangleMesh* tri_mesh );
 
     /**
      * Evolves all inserted rods forward in time. 
@@ -100,16 +214,7 @@ namespace BASim {
     /**
      * Modifies the timestep.
      */
-    void setDt( const double& dt )
-    {
-      assert( dt > 0.0 );
-      m_dt = dt;
-    }
-
-    /**
-     * An unneccessary (sp?) method that I am deleting soon :). 
-     */
-    void setGravity( const Vec3d& gravity ) { m_gravity = gravity; };
+    void setDt( double dt );
 
     /**
      * Disables all response.
@@ -117,7 +222,7 @@ namespace BASim {
     void disableResponse();
 
     /**
-     * Enables response, subject to state of enablePenaltyImpulses() and enableIterativeInelasticImpulses().
+     * Enables response, subject to state of enableIterativeInelasticImpulses().
      */
     void enableReseponse();
 
@@ -147,27 +252,27 @@ namespace BASim {
     void setNumInelasticIterations( const int& num_itr );
 
     /**
-     * Sets the stiffness of edge-edge penalty impulses. 
-     */
-    void setEdgeEdgePenalty( const double& k );
-
-    /**
-     * Sets the stiffness of vertex-face penalty impulses. 
-     */
-    void setVertexFacePenalty( const double& k );
-
-    /**
      * Number of rods this controller is responsible for.
      */
-    int getNumRods() const { return (int)m_rods.size(); };
+    int getNumRods() const { return (int)( m_rods.size() ); };
 
     /**
      * Number of triangle meshes this controller is responsible for.
      */
-    int getNumTriangleMeshes() const { return (int)m_triangle_meshes.size(); };
+    int getNumTriangleMeshes() const { return (int)( m_triangle_meshes.size() ); };
     
     // TODO: Move these to some kind of automated test suite    
-    void testCoplanarityTime();
+    //void testCoplanarityTime();
+    
+    /**
+     * Options names for rods used in output.
+     */
+    void setRodLabels( const std::vector<std::string>& rod_labels );
+
+    double computeTotalForceNorm();
+    bool step( bool check_explosion );
+    bool nonAdaptiveExecute( double dt );
+    bool adaptiveExecute( double dt );
     
   private:
     /////////////////////////////////////////////////////
@@ -191,9 +296,6 @@ namespace BASim {
     
     // Returns the total number of vertices in the system
     int getNumVerts() const;
-    
-    // Creates a time stepper for a given rod
-    RodTimeStepper* createRodTimeStepper(ElasticRod& rod);
 
     void extractPositions( const std::vector<ElasticRod*>& rods, const std::vector<int>& base_indices, VecXd& positions );
     void extractVelocities( const std::vector<ElasticRod*>& rods, const std::vector<int>& base_indices, VecXd& velocities );
@@ -203,16 +305,25 @@ namespace BASim {
     
     void restorePositions( std::vector<ElasticRod*>& rods, const VecXd& positions );
     void restoreVelocities( std::vector<ElasticRod*>& rods, const VecXd& velocities );
-    
+
+    bool isRodVertex( int vert ) const;
+    bool isRodRodCollision( const EdgeEdgeContinuousTimeCollision& collision ) const;
+
+    int getContainingRod( int vert_idx ) const;
 
     /////////////////////////////////////////////////////
     // Collision detection routines
-    
+
+    bool isVertexFixed( int vert_idx ) const;
+    bool isEntireFaceFixed( int v0, int v1, int v2 ) const;
+    bool isEntireEdgeFree( int v0, int v1 ) const;
+    bool isEntireEdgeFixed( int v0, int v1 ) const;
+    bool isOneVertexFixed( int v0, int v1 ) const;
+
     // Determines if two edges share a vertex
     bool edgesShareVertex( const std::pair<int,int>& edgei, const std::pair<int,int>& edgej ) const;
     bool edgesSharevertex( const int& e0v0, const int& e0v1, const int& e1v0, const int& e1v1 ) const;
 
-    
     // Determines if a vertex and a face share a vertex
     bool vertexAndFaceShareVertex( const int& vertex, const int& face ) const;
     bool vertexAndFaceShareVertex( const int& v, const int& f0, const int& f1, const int& f2 ) const;
@@ -233,11 +344,15 @@ namespace BASim {
     // Returns a list of all vertex-face pairs that are in "proximity" for the positions specified in the vector x.
     void detectVertexFaceProximityCollisions( const VecXd& x, std::vector<VertexFaceProximityCollision>& pssbl_cllsns, std::vector<VertexFaceProximityCollision>& vetex_face_collisions ) const;
 
+    bool isProperCollisionTime( double time );
+
     // Detects all edge-edge continuous time collisions
-    void detectEdgeEdgeContinuousTimeCollisions( const VecXd& x, const VecXd& v, std::vector<EdgeEdgeContinuousTimeCollision>& edge_edge_collisions, std::vector<EdgeEdgeContinuousTimeCollision>& edge_edge_collisions_for_real );
+    void computeEdgeEdgeContinuousTimeInfo( EdgeEdgeContinuousTimeCollision& eecol, bool& happens );
+    //void detectEdgeEdgeContinuousTimeCollisions( const VecXd& x, const VecXd& v, std::vector<EdgeEdgeContinuousTimeCollision>& edge_edge_collisions, std::vector<EdgeEdgeContinuousTimeCollision>& edge_edge_collisions_for_real );
 
     // Detects all vertex-face continuous time collisions
-    void detectVertexFaceContinuousTimeCollisions( const VecXd& x, const VecXd& v, std::vector<VertexFaceContinuousTimeCollision>& vertex_face_collisions, std::vector<VertexFaceContinuousTimeCollision>& vertex_face_collisions_for_real );
+    void computeVertexFaceContinuousTimeInfo( VertexFaceContinuousTimeCollision& vfcol, bool& happens );
+    //void detectVertexFaceContinuousTimeCollisions( const VecXd& x, const VecXd& v, std::vector<VertexFaceContinuousTimeCollision>& vertex_face_collisions, std::vector<VertexFaceContinuousTimeCollision>& vertex_face_collisions_for_real );
 
     // Computes the relative velocity of fixed pieces of material (s and t assumed constant) of two edges
     Vec3d computeRelativeVelocity( const VecXd& v, const int& idxa0, const int& idxa1, const int& idxb0, const int& idxb1, const double& s, const double& t );
@@ -256,49 +371,57 @@ namespace BASim {
     /////////////////////////////////////////////////////
     // Collision response routines
     
+    void executePenaltyResponse();
+    void executeIterativeInelasticImpulseResponse();
+    void filterCollisions( std::list<ContinuousTimeCollision>& cllsns );
+
     void exertPenaltyImpulses( std::vector<EdgeEdgeProximityCollision>& edg_edg_cllsns, std::vector<VertexFaceProximityCollision>& vrtx_fce_cllsns, VecXd& v );
+
+    void exertInelasticImpluse( EdgeEdgeContinuousTimeCollision& clssn );
+    void exertInelasticImpluse( VertexFaceContinuousTimeCollision& clssn );
     void exertInelasticImpulses( std::vector<EdgeEdgeContinuousTimeCollision>& edg_edg_cllsns, std::vector<VertexFaceContinuousTimeCollision>& vrtx_fce_cllsns, VecXd& v );
-    
+
     void exertVertexImpulse( const Vec3d& I, const double& m, const int& idx, VecXd& v );
     void exertEdgeImpulse( const Vec3d& I, const double& m0, const double& m1, const double& alpha, const int& idx0, const int& idx1, VecXd& v );
     void exertFaceImpulse( const Vec3d& I, const double& m0, const double& m1, const double& m2, 
                            const double& u, const double& v, const double& w, 
                            const int& idx0, const int& idx1, const int& idx2, VecXd& vel );
-    
-    
-    
-    /////////////////////////////////////////////////////////////////
-    // Collision detection code adapted from Robert Bridson's website
-    
-    void addUnique( std::vector<double>& a, double e ) const;
-    double triple( const Vec3d &a, const Vec3d &b, const Vec3d &c ) const;
-    double signed_volume( const Vec3d& x0, const Vec3d& x1, const Vec3d& x2, const Vec3d& x3 ) const;
-    void getCoplanarityTimes( const Vec3d& x0, const Vec3d& x1, const Vec3d& x2, const Vec3d& x3,
-                              const Vec3d& xnew0, const Vec3d& xnew1, const Vec3d& xnew2, const Vec3d& xnew3,
-                              std::vector<double>& times, std::vector<double>& errors ) const;
-    
 
+    void computeCompliantLHS( MatrixBase* lhs, int rodidx );
 
+    void exertCompliantInelasticVertexFaceImpulse( const VertexFaceContinuousTimeCollision& vfcol );
 
+    void exertCompliantInelasticEdgeEdgeImpulse( const EdgeEdgeContinuousTimeCollision& eecol );
+    void exertCompliantInelasticEdgeEdgeImpulseOneFixed( const EdgeEdgeContinuousTimeCollision& eecol );
+    void exertCompliantInelasticEdgeEdgeImpulseBothFree( const EdgeEdgeContinuousTimeCollision& eecol );
 
+    //////////////////////////////////
+    // Jungseock's penalty response
+    void detectVertexFaceImplicitPenaltyCollisions( const VecXd& x, std::vector<VertexFaceProximityCollision>& pssbl_cllsns, std::vector<VertexFaceImplicitPenaltyCollision>& vetex_face_collisions ) const;
+    void executeImplicitPenaltyResponse();
+    
+  public:
+    void enableImplicitPenaltyImpulses();
+    void disableImplicitPenaltyImpulses();
+    void setImplicitPenaltyExtraThickness( const double& h );
+    void setVertexFacePenalty( const double& k );
+
+  private:
+    
     // Total number of degrees of freedom in the system
     int m_num_dof;
     // Vector of rods this BridsonStepper evolves in time
-    std::vector<ElasticRod*> m_rods;
+    std::vector<ElasticRod*>& m_rods;
     // Vector of ScriptedTriangleObjects in the system
-    std::vector<TriangleMesh*> m_triangle_meshes;
+    std::vector<TriangleMesh*>& m_triangle_meshes;
+    // Controllers to move scripted geometry/rods forward in time and to set boundary conditions
+    std::vector<ScriptingController*>& m_scripting_controllers;
     // Time steppers to evolve rods forward (ignoring collisions)
-    std::vector<RodTimeStepper*> m_steppers;
+    std::vector<RodTimeStepper*>& m_steppers;
     // Integrator selected by user
     RodTimeStepper::Method m_method;
     // Timestep selected by user
     double m_dt;
-    // Drag set by user
-    double m_mass_damping;
-    // Gravity selected by user
-    Vec3d m_gravity;
-    // Number of iterations of implicit solver selected by user
-    int m_max_implicit_iterations;
     
     // Entry i is base index of ith rod in global array of position dofs
     std::vector<int> m_base_indices;
@@ -328,7 +451,6 @@ namespace BASim {
     bool m_pnlty_enbld;
     bool m_itrv_inlstc_enbld;
     int m_num_inlstc_itrns;
-    double m_edg_edg_pnlty;
     double m_vrt_fc_pnlty;
     
     // Some debug stuff in for now.
@@ -339,17 +461,24 @@ namespace BASim {
     
     BVHAABB* m_bvh;
 
+    // Assuming rods are stored first (which they now are), the index that points one past the last rods data
+    int m_obj_start;
+
+    //Problem* m_problem;
+    double m_t;
+
+    std::vector<std::string> m_rod_labels;
+
+    LinearSystemSolverCollection m_solver_collection;
+    
+    //////////////////////////////////
+    // Jungseock's penalty response    
+    bool m_implicit_pnlty_enbld;
+    double m_implicit_thickness;
+    std::vector<RodPenaltyForce*> m_implicit_pnlty_forces;
+    
   };
   
 } // namespace BASim
 
 #endif // RODTIMESTEPPER_HH
-
-
-// TODO:
-//  o Bridson 2002 does some extra trapezoid-rule stuff at end of step. Look into this.
-//  o Add a little bit of extra "kick" to (currently) inelastic impulses to help with FPA errors
-//  o Clean up the internal state a bit
-//  o Add support for remaining corner cases in detection
-//  o There was some subtle indexing bug that was counting collisions twice, add some regression tests for this :). 
-//    The check of separting velocities ensures we don't overshoot, but a little caution won't hurt.

@@ -224,6 +224,14 @@ public:
     return *this;
   }
 
+  template <class T> inline bool
+  propertyHandleIsValid(const PropertyHandleBase<T>& h) const
+  {
+    if( h.idx() < 0 ) return false;
+    if( (size_t) h.idx() >= m_properties.size() ) return false;
+    return true;
+  }
+
   template <class T> PropertyHandleBase<T>
   add(const std::string& name)
   {
@@ -240,7 +248,7 @@ public:
     assert((size_t) h.idx() < m_properties.size());
     assert(m_properties[h.idx()] != NULL);
 
-    return smart_cast<Property<T>&>(*m_properties[h.idx()]);
+    return *smart_cast<Property<T>*>(m_properties[h.idx()]);
   }
 
   template <class T> inline const Property<T>&
@@ -250,7 +258,7 @@ public:
     assert((size_t) h.idx() < m_properties.size());
     assert(m_properties[h.idx()] != NULL);
 
-    return smart_cast<const Property<T>&>(*m_properties[h.idx()]);
+    return *smart_cast<const Property<T>*>(m_properties[h.idx()]);
   }
 
   template <class T>

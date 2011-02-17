@@ -100,7 +100,7 @@ void WmFigaroRodShape::initialiseRod( MVectorArray* i_controlPoints )
     double massDamping = 10.0;
     //BASim::Vec3d gravity( 0.0, -981.0, 0.0 );
     BASim::Vec3d gravity( 0.0, 0.0, 0.0 );
-    RodTimeStepper::Method solverType = RodTimeStepper::SYM_IMPL_EULER;
+    RodTimeStepper::Method solverType = RodTimeStepper::SYMPL_EULER;
     //RodTimeStepper::Method solverType = RodTimeStepper::STATICS;
     RodOptions rodOptions;
     rodOptions.YoungsModulus = m_youngsModulus;
