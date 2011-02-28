@@ -5,7 +5,11 @@
  * \date 07/21/2010
  */
 
+#ifdef WETA
+#include "ScriptingController.hh"
+#else
 #include "BASim/src/Core/ScriptingController.hh"
+#endif
 
 namespace BASim
 {

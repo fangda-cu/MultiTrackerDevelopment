@@ -1,0 +1,5 @@
+base referer
+rect $CmdLineInterface_8h.html 536,309 728,336
+rect $CmdLineOutput_8h.html 543,411 721,437
+rect $XorHandler_8h.html 196,360 343,387
+rect $Arg_8h.html 392,360 488,387

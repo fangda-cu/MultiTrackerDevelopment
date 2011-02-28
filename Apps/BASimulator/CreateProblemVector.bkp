@@ -1,0 +1,23 @@
+#include "Problems/BentTwisting.hh"
+#include "Problems/SHO.hh"
+#include "Problems/CollisionTest.hh"
+#include "Problems/RegressionTests.hh"
+#include "Problems/HairyBall.hh"
+#include "Problems/PlantRootGrowth.hh"
+
+#include "Problems/CollisionTestTwo.hh"
+#include "Problems/MultipleRodSolverTest.hh"
+
+void CreateProblemVector()
+{
+  problems.push_back(NULL);
+  problems.push_back(new BentTwisting());
+  problems.push_back(new SHO());
+  problems.push_back(new CollisionTest());
+  problems.push_back(new RegressionTests());
+  problems.push_back(new HairyBall());
+  problems.push_back(new PlantRootGrowth());
+
+  problems.push_back(new CollisionTestTwo());  
+  problems.push_back(new MultipleRodSolverTest());
+}

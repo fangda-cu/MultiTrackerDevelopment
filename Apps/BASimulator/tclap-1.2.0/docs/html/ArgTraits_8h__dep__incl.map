@@ -1,0 +1,14 @@
+base referer
+rect $Arg_8h.html 151,234 209,260
+rect $DocBookOutput_8h.html 477,259 619,286
+rect $IgnoreRestVisitor_8h.html 260,208 407,235
+rect $MultiArg_8h.html 288,107 379,134
+rect $StdOutput_8h.html 496,411 600,438
+rect $SwitchArg_8h.html 283,56 384,83
+rect $ValueArg_8h.html 285,158 381,184
+rect $XorHandler_8h.html 279,360 388,387
+rect $ZshCompletionOutput_8h.html 456,310 640,336
+rect $CmdLine_8h.html 689,158 783,184
+rect $UnlabeledMultiArg_8h.html 468,107 628,134
+rect $MultiSwitchArg_8h.html 480,6 616,32
+rect $UnlabeledValueArg_8h.html 467,158 629,184

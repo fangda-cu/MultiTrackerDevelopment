@@ -14,37 +14,37 @@ lib_fresh lib_zap lib_clean lib_wipe:
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C BASim USEMAYA=1 $@		
 
 all:	lib
-#		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen/icons
 
 dbg:	lib_d
-#		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator  $@
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator  $@
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen  $@
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen/icons
 
 opt:	lib_o
-#		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator  $@
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator  $@
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen  $@
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen/icons $@
 
 fresh:	lib_fresh
-#		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator  fresh
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator  fresh
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen  fresh
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen/icons fresh
 
 zap:	lib_zap
-#		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator zap
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator zap
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen zap
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen/icons zap
 
 clean:	lib_clean
-#		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator  clean
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator  clean
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen  clean
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen/icons clean
 
 wipe:	lib_wipe
-#		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator  wipe
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator  wipe
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen  wipe
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen/icons wipe
 

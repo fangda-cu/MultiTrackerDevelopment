@@ -9,6 +9,7 @@
 #define OBJPARSER_HH
 
 #include <string>
+
 #ifdef WETA
 #include "../Core/TriangleMesh.hh"
 #else

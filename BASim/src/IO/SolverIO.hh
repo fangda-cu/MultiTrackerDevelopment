@@ -8,8 +8,14 @@
 #ifndef SOLVERIO_HH
 #define SOLVERIO_HH
 
+#ifdef WETA
+#include "../Math/LinearSolverBase.hh"
+#include "../Math/SolverUtils.hh"
+#include "Tokenizer.hh"
+#else
 #include "BASim/src/Math/LinearSolverBase.hh"
 #include "BASim/src/Math/SolverUtils.hh"
+#endif
 
 namespace BASim {
 

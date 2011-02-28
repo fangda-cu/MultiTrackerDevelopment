@@ -6,14 +6,17 @@ include /vol/bob/make/head.mk
 ##############################################################################
 
 IPATHS 	+= -I$(MKLROOT)/include 
+# This is so that the library can access a header in BASimulator app. Nasty, but that's how the code it came
+IPATHS 	+= -I../../../
 
 LIB1       := Wfigaro
-#LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA
-LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -fPIC -DHAVE_LAPACK -DWETA
+#LIB1_CF    += -DBUILD=${BUILD} -pthread -fPIC -DHAVE_LAPACK -DWETA
+LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA
+#LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -fPIC -DHAVE_LAPACK -DWETA
 
 PHYSBAM_LOCATION := /vol/weta/src/amcadams/PhysBAM-svn
 PHYSBAM_INCLUDE  := -I$(PHYSBAM_LOCATION)/Public_Library
-LIB1_CF += $(PHYSBAM_INCLUDE)
+LIB1_CF += $(PHYSBAM_INCLUDE) -I../../../
 
 LIB1_HSD   := Wfigaro
 LIB1_HDIR := src
@@ -156,6 +159,8 @@ Core/TopologicalObject/TopObjIterators.hh \
 Core/TopologicalObject/TopologicalObject.hh \
 Core/TopologicalObject/Topology.hh \
 Core/TriangleMesh.hh \
+Core/Option.hh \
+Core/ScriptingController.hh \
 Core/Util.hh \
 IO/SolverIO.hh \
 IO/Tokenizer.hh \
@@ -165,6 +170,8 @@ IO/XMLSceneOutputter.hh \
 IO/XMLSceneParser.hh \
 IO/rapidxml.hpp \
 IO/rapidxml_print.hpp \
+IO/ObjectSerializer.hh \
+IO/SerializationUtils.hh \
 Math/BandMatrix.hh \
 Math/ConjugateGradient.hh \
 Math/DiagonalPreconditioner.hh \
@@ -213,7 +220,10 @@ Physics/ElasticRods/RodUtils.hh \
 Physics/ElasticRods/Stencil.hh \
 Physics/ElasticRods/VertexStencil.hh \
 Physics/ElasticRods/ViscousRod.hh \
+Physics/ElasticRods/TopologicalObjectSerializer.hh \
 Physics/PhysObject.hh \
+Physics/ElasticRods/RodRodExternalForce.hh  \
+Physics/ElasticRods/RodStateBackup.hh \
 Physics/World.hh \
 Render/Camera.hh \
 Render/Color.hh \
@@ -275,7 +285,11 @@ src/Collisions/CollisionUtils.cc \
 src/Core/Util.cc \
 src/Core/Timer.cc \
 src/Core/TriangleMesh.hh \
+src/Core/StatTracker.cc \
+src/Core/ScriptingController.cc \
 src/IO/ObjParser.cc \
+src/IO/ObjectSerializer.cc \
+src/IO/SerializationUtils.cc \
 src/Math/MKL/MKLLinearSolver.cc \
 src/Math/SolverUtils.cc \
 src/Math/Pardiso/PardisoLinearSolver.cc \
@@ -296,6 +310,8 @@ src/Physics/ElasticRods/RodTwistingForce.cc \
 src/Physics/ElasticRods/RodTwistingForceSym.cc \
 src/Physics/ElasticRods/ViscousRod.cc \
 src/Physics/ElasticRods/MinimalTriangleMeshBackup.cc \
+src/Physics/ElasticRods/TopologicalObjectSerializer.cc \
+src/Physics/ElasticRods/RodStateBackup.cc \
 src/Render/Camera.cc \
 src/Render/RenderBase.cc \
 src/Render/RodRenderer.cc \
@@ -306,7 +322,6 @@ src/Render/TriangleMeshRenderer.cc \
 src/Render/ViewController.cc \
 src/Render/YImage/YImage.cc \
 src/Render/Zoomer.cc \
-src/Core/StatTracker.cc \
 src/Physics/ElasticRods/MinimalRodStateBackup.cc \
 src/Physics/ElasticRods/RodReverseSolver.cc \
 src/Physics/World.cc

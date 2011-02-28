@@ -42,12 +42,12 @@ ObjectBase& World::getObject(const ObjectHandle& oh)
   return *m_objects[oh.idx()];
 }
 
-const Objects& World::getObjects() const
+const World::Objects& World::getObjects() const
 {
   return m_objects;
 }
 
-Objects& World::getObjects()
+World::Objects& World::getObjects()
 {
   return m_objects;
 }
@@ -71,7 +71,7 @@ ObjectControllerBase& World::getController(const ObjectControllerHandle& och)
   return *m_controllers[och.idx()];
 }
 
-Controllers& World::getControllers()
+World::Controllers& World::getControllers()
 {
   return m_controllers;
 }
@@ -82,7 +82,7 @@ void World::addRenderer(RenderBase* renderer)
   m_renderers.push_back(renderer);
 }
 
-Renderers& World::getRenderers()
+World::Renderers& World::getRenderers()
 {
   return m_renderers;
 }

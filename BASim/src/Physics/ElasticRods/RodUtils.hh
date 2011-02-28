@@ -8,6 +8,8 @@
 #ifndef RODUTILS_HH
 #define RODUTILS_HH
 
+#include "AnisotropicRod.hh"
+
 namespace BASim {
 
 struct RodOptions {
