@@ -578,7 +578,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         // we're not then we are safe to parallelise the entire thing. If we are then
         // we need to break it into blocks so we can run the self collisions in one thread.
 
-        Controllers controllers = m_world->getControllers();
+        World::Controllers controllers = m_world->getControllers();
         int numControllers = (int)controllers.size();
 
         // Trying to use more threads than we have controllers would be dumb.
