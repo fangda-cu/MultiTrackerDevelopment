@@ -15,6 +15,8 @@
 #include <weta/Wfigaro/Core/ObjectControllerBase.hh>
 //#include <weta/Wfigaro/Physics/ElasticRods/RodCollisionTimeStepper.hh>
 #include <weta/Wfigaro/Render/RodRenderer.hh>
+#include <weta/Wfigaro/Core/TriangleMesh.hh>
+#include <weta/Wfigaro/Core/ScriptingController.hh>
 #else
 #include <BASim/src/Core/EigenIncludes.hh>
 //#include <BASim/src/Collisions/CollisionMeshData.hh>
@@ -49,6 +51,36 @@ typedef std::tr1::unordered_map< int, FixedVertexMap > FixedRodVertexMap ;
 
 typedef std::tr1::unordered_map< int, BASim::Vec3d > LockedVertexMap ;
 typedef std::tr1::unordered_map< int, LockedVertexMap > LockedRodVertexMap ;
+
+//typedef std::tr1::unordered_map< int, TriangleMesh* > CollisionMeshHashMap;
+//typedef std::tr1::unordered_map< int, ScriptedController* > ScriptedControllerHashMap;
+
+class CollisionMeshData
+{
+public:
+    CollisionMeshData( TriangleMesh* i_triangleMesh, ScriptingController* i_scriptingController )
+    {
+        m_triangleMesh = i_triangleMesh;
+        m_scriptingController = i_scriptingController;
+    }
+
+    TriangleMesh* triangleMesh()
+    {
+        return m_triangleMesh;
+    }
+
+    ScriptingController* scriptingController()
+    {
+        return m_scriptingController;
+    }
+
+private:
+    TriangleMesh* m_triangleMesh;
+    ScriptingController* m_scriptingController;
+};
+
+typedef std::tr1::unordered_map< int, CollisionMeshData* > CollisionMeshDataHashMap;
+
 
 class Beaker
 {
@@ -243,9 +275,11 @@ public:
     void resetEverything();
     //void createSpaceForRods( int i_rodGroup, int i_numRods );
     void addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup );
-    //bool collisionMeshInitialised( const int id );
-    //void initialiseCollisionMesh( BASim::CollisionMeshData *collisionMeshData, int id );
-    //void removeCollisionMesh( const int id );
+    bool collisionMeshInitialised( const int i_collisionMeshIndex );
+    void initialiseCollisionMesh( TriangleMesh* i_collisionMesh, 
+                        ScriptingController* i_scriptingController, const int i_collisionMeshIndex );
+    void removeCollisionMesh( const int i_collisionMeshIndex );
+    
   // void checkAllRodForces(); 
     void startTimer( timeval& i_startTimer );
     double stopTimer( timeval& i_startTimer );
@@ -295,6 +329,7 @@ private:
     World* m_world;
     RodDataMap m_rodDataMap;
     //CollisionMeshDataHashMap m_collisionMeshMap;
+    CollisionMeshDataHashMap m_collisionMeshDataHashMap;    
     
     ObjPropHandle<Scalar> m_timeHandle;
     ObjPropHandle<Scalar> m_dtHandle;

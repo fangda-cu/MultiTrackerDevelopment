@@ -560,15 +560,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                         boundary->setDesiredVertexPosition( lockedVertex, lockedPosition );
                     }
                 }
-            }*/
-
-            for ( int r=0; r<numRods; ++r )
-            {
-                for ( int v=0; v<pRodGroup->numberOfVerticesInRod( r ); ++v )
-                {
-                    cerr << "curr vertex " << v << " = " << pRodGroup->currentVertexPosition( r, v ) << endl;
-                }
-            }
+            }*/            
         }
         timeTaken = stopTimer( timer );
         frameTime += timeTaken;
@@ -630,11 +622,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
 
                 ElasticRod* rod = stepper->getRod();
-                for ( int v = 0; v < rod->nv(); ++v )
-                {
-                    cerr << "Before vertex " << v << " = " << rod->getVertex( v ) << endl;
-                }                
-
+                
                 if ( stepper->isEnabled() )
                 {
                     if ( !stepper->execute() )
@@ -647,11 +635,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                         cerr << "Rod executed succesfully!\n";
                 }
               /// ElasticRod* rod = stepper->getRod();
-                for ( int v = 0; v < rod->nv(); ++v )
-                {
-                    cerr << "After vertex " << v << " = " << rod->getVertex( v ) << endl;
-                }
-
+                
                 // FIXME: Should I keep the rods vector with all actual active simulated rods in
                 // it? Then just pass it each timestep? Would make it simpler than tracking
                 // active rods in the volumetric code
@@ -1110,26 +1094,32 @@ void Beaker::draw()
 #endif
 }
 
-/*
-bool Beaker::collisionMeshInitialised( const int id )
+
+bool Beaker::collisionMeshInitialised( const int i_collisionMeshIndex )
 {
-    BASim::CollisionMeshDataHashMapIterator itr = m_collisionMeshMap.find( id );
-    if ( itr != m_collisionMeshMap.end() && itr->second )
-        return itr->second->initialized();
+    CollisionMeshDataHashMap::iterator itr = m_collisionMeshDataHashMap.find( i_collisionMeshIndex );
+    
+    if ( itr != m_collisionMeshDataHashMap.end() )
+    {
+        return true;
+    }
 
     return false;
 }
 
-void Beaker::initialiseCollisionMesh( BASim::CollisionMeshData *collisionMeshData, int id )
+void Beaker::initialiseCollisionMesh( TriangleMesh* i_collisionMesh, 
+                        ScriptingController* i_scriptingController, const int i_collisionMeshIndex )
 {
-    m_collisionMeshMap[ id ] = collisionMeshData;
-    m_collisionMeshMap[ id ]->initialize();
+    cout << "Beaker: Initialising collision mesh " << i_collisionMeshIndex << endl;
+
+    CollisionMeshData* collisionMeshData = new CollisionMeshData( i_collisionMesh, i_scriptingController );
+    m_collisionMeshDataHashMap[ i_collisionMeshIndex ] = collisionMeshData;
+    //m_collisionMeshHashMap[ i_collisionMeshIndex ]->initialize();
 }
 
-void Beaker::removeCollisionMesh( const int id )
+void Beaker::removeCollisionMesh( const int i_collisionMeshIndex )
 {
-    std::cout << "Removing collision mesh with id " << id << std::endl;
+    std::cout << "Removing collision mesh with id " << i_collisionMeshIndex << std::endl;
 
-    m_collisionMeshMap.erase(id);
+    m_collisionMeshDataHashMap.erase( i_collisionMeshIndex );
 }
-*/

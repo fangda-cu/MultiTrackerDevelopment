@@ -3,7 +3,7 @@
 
 #include "WmFigRodNode.hh"
 #include "WmBunsenNode.hh"
-//#include "WmBunsenCollisionMeshNode.hh"
+#include "WmBunsenCollisionMeshNode.hh"
 #include "WmFigaroCmd.hh"
 #include "WmFigConnectionNode.hh"
 #include "WmFigSelectionContext.hh"
@@ -53,7 +53,7 @@ MStatus initializePlugin( MObject obj )
         return stat;
     }
 
-    /*stat = plugin.registerNode( WmBunsenCollisionMeshNode::typeName, WmBunsenCollisionMeshNode::typeId,
+    stat = plugin.registerNode( WmBunsenCollisionMeshNode::typeName, WmBunsenCollisionMeshNode::typeId,
                                 WmBunsenCollisionMeshNode::creator,
                                 WmBunsenCollisionMeshNode::initialize,
                                 WmBunsenCollisionMeshNode::kLocatorNode );
@@ -62,7 +62,7 @@ MStatus initializePlugin( MObject obj )
         stat.perror( "RegisterNode WmFigCollisionNode failed" );
         return stat;
     }
-
+/*
     stat = plugin.registerNode( WmFigConstraintNode::TypeName,
 								WmFigConstraintNode::TypeId,
 								WmFigConstraintNode::creator,
@@ -166,12 +166,12 @@ MStatus uninitializePlugin( MObject obj)
         stat.perror( "DeregisterNode WmFigRodNode failed" );
     }
     
-    /*stat = plugin.deregisterNode( WmBunsenCollisionMeshNode::typeId );
+    stat = plugin.deregisterNode( WmBunsenCollisionMeshNode::typeId );
     if( !stat ) 
     {
         stat.perror( "DeregisterNode WmFigCollisionNode failed" );
     }
-    
+    /*
     stat = plugin.deregisterNode( WmFigConstraintNode::TypeId );
     if( !stat )
     {

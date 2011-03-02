@@ -1,5 +1,5 @@
 #include "WmBunsenNode.hh"
-//#include "WmBunsenCollisionMeshNode.hh"
+#include "WmBunsenCollisionMeshNode.hh"
 //#include "constraints/WmFigConstraintNode.hh"
 #include "WmFigRodComponentList.hh"
 #include <maya/MFnMessageAttribute.h>
@@ -150,7 +150,7 @@ void WmBunsenNode::addRodsToWorld( MDataBlock& i_dataBlock )
     }
 }
 
-/*
+
 void WmBunsenNode::updateAllCollisionMeshes( MDataBlock &data )
 {
     //
@@ -181,7 +181,7 @@ void WmBunsenNode::updateAllCollisionMeshes( MDataBlock &data )
         MDataHandle collisionMeshH = inArrayH.inputValue( &stat);
         CHECK_MSTATUS(stat);
 
-        MObject collisionMeshDataObj = collisionMeshH.data();
+        //MObject collisionMeshDataObj = collisionMeshH.data();
 
         // First check if the kinematic object has been initialised, if it has then don't bother
         // continuing as we would be updating the pointer with the same pointer.
@@ -206,20 +206,25 @@ void WmBunsenNode::updateAllCollisionMeshes( MDataBlock &data )
                 CHECK_MSTATUS( stat );
                 MFnDependencyNode collisionMeshNodeFn( collisionMeshNodeObj );
                 WmBunsenCollisionMeshNode* collisionMeshNode = (WmBunsenCollisionMeshNode*)collisionMeshNodeFn.userNode();
-                BASim::CollisionMeshData* collisionMeshData = collisionMeshNode->collisionMeshData();
+         
+                // Pass Beaker to the collision mesh node so that it can update Beaker with relevant
+                // data itself
+                collisionMeshNode->initialise( m_beaker, i );   
+
+                //BASim::CollisionMeshData* collisionMeshData = collisionMeshNode->collisionMeshData();
 
                 // If the connection was made on file load then it is possible the collision mesh
                 // node had not yet created the data from the mesh. If so then skip it and we'll 
                 // get it when we are finished loading and time moves.
-                if (collisionMeshData != NULL)
-                    m_beaker->initialiseCollisionMesh(collisionMeshData, i);
+                //if (collisionMeshData != NULL)
+                  //  m_beaker->initialiseCollisionMesh(collisionMeshData, i);
             }
             else
                 CHECK_MSTATUS( stat );            
         }
     }
 }
-*/
+
 
 void WmBunsenNode::updateAllRodNodes( MDataBlock &i_dataBlock )
 {
@@ -495,7 +500,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                 m_beaker->resetEverything();
 
                 updateAllRodNodes( i_dataBlock );
-                //updateAllCollisionMeshes( i_dataBlock );
+                updateAllCollisionMeshes( i_dataBlock );
                 addRodsToWorld( i_dataBlock );
 
                 //MGlobal::displayInfo( "COMPUTE AT START TIME" );
@@ -504,7 +509,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             else
             {
                 updateAllRodNodes( i_dataBlock );
-                //updateAllCollisionMeshes( i_dataBlock );
+                updateAllCollisionMeshes( i_dataBlock );
                 //updateAllConstraints( i_dataBlock );
             }
             

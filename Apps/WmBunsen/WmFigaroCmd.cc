@@ -1,5 +1,5 @@
 #include "WmFigaroCmd.hh"
-//#include "WmBunsenCollisionMeshNode.hh"
+#include "WmBunsenCollisionMeshNode.hh"
 #include "WmFigConnectionNode.hh"
 #include "WmFigaroRodShape/WmFigaroRodShape.hh"
 //#include "constraints/WmFigConstraintNode.hh"
@@ -1690,7 +1690,7 @@ void WmFigaroCmd::attatchEdgeToObject()
 
 void WmFigaroCmd::addCollisionMeshes()
 {
-    /*MStatus stat;
+    MStatus stat;
     
     if ( m_selectedwmBunsenNode == MObject::kNullObj )
     {
@@ -1780,7 +1780,7 @@ void WmFigaroCmd::addCollisionMeshes()
             stat = dagModifier.doIt();
             CHECK_MSTATUS( stat );
         }
-    }*/
+    }
 }
 
 void WmFigaroCmd::createPreviewNodes()

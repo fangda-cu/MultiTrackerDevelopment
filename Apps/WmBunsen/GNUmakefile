@@ -67,6 +67,7 @@ SplineAttrEval.hh \
 WmFigaroCmd.hh \
 WmBunsenHelpers.hh \
 WmBunsenNode.hh \
+WmBunsenCollisionMeshNode.hh \
 WmFigRodNode.hh \
 WmFigConnectionNode.hh \
 WmFigSelectionContext.hh \
@@ -87,7 +88,8 @@ WmFigaroRodShape/WmFigaroRodShapeUI.hh \
 WmFigSelectionDisplayNode.hh \
 WmFigUtils.hh \
 WmFigRodComponentList.hh  \
-WmFigRodParticleInput.hh
+WmFigRodParticleInput.hh \
+WmFigMeshController.hh
 #VolumetricCollisions/VolumetricCollisions.hh \
 #VolumetricCollisions/VolumetricCollisionsCPU.hh \
 #WmBunsenCollisionMeshNode.hh \
@@ -103,6 +105,7 @@ SplineAttrEval.cc \
 WmFigaroCmd.cc \
 WmBunsenNode.cc \
 WmBunsenPluginMain.cc \
+WmBunsenCollisionMeshNode.cc \
 WmFigRodNode.cc \
 WmFigConnectionNode.cc \
 WmFigSelectionContext.cc \
@@ -123,7 +126,8 @@ WmFigaroRodShape/WmFigaroRodShapeUI.cc \
 WmFigSelectionDisplayNode.cc \
 utils/WmFigUtils.cc \
 WmFigRodComponentList.cc \
-WmFigRodParticleInput.cc
+WmFigRodParticleInput.cc \
+WmFigMeshController.cc
 #WmBunsenCollisionMeshNode.cc \
 #VolumetricCollisions/VolumetricCollisionsCPU.cc \
 #constraints/WmFigConstraintNode.cc \

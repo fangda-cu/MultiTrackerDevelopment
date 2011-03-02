@@ -114,7 +114,7 @@ public:
 private:
     void pullOnAllRodNodes( MDataBlock& i_dataBlock );
     void createRodDataFromRodNodes( MDataBlock& i_dataBlock );
-    //void updateAllCollisionMeshes( MDataBlock& i_dataBlock );
+    void updateAllCollisionMeshes( MDataBlock& i_dataBlock );
     void updateAllRodNodes( MDataBlock &i_dataBlock );
     void addRodsToWorld( MDataBlock& i_dataBlock );
 
@@ -138,10 +138,12 @@ private:
 
     Beaker* m_beaker;
 
+
     RodTimeStepper::Method m_solverType;
 
     bool m_writeXMLData;
     std::string m_xmlFilePath;
+
 };
 
 #endif

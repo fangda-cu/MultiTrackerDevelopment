@@ -2,6 +2,8 @@
 
 #include <sstream>
 
+using namespace std;
+
 MTypeId WmBunsenCollisionMeshNode::typeId( 0x001135, 0x1C );
 MString WmBunsenCollisionMeshNode::typeName( "wmFigCollisionNode" );
 MObject WmBunsenCollisionMeshNode::ia_time;
@@ -18,23 +20,33 @@ MObject WmBunsenCollisionMeshNode::ia_fullCollisions;
 MObject WmBunsenCollisionMeshNode::ia_drawCollisionData;
 
 WmBunsenCollisionMeshNode::WmBunsenCollisionMeshNode()
-    : m_levelsetDx(0.0), m_friction(0.0), m_thickness(1.0), m_fullCollisions(false), 
-    m_drawCollisionData(false), m_collisionMeshData( NULL )
+    : m_levelsetDx( 0.0 ), m_friction( 0.0 ), m_thickness( 1.0 ), m_fullCollisions( false ),
+    m_beaker( NULL ), m_meshController( NULL )
 {
-    m_collisionMeshData = new CollisionMeshData;
 }
 
 WmBunsenCollisionMeshNode::~WmBunsenCollisionMeshNode() 
 {
-    if ( m_collisionMeshData != NULL )
-        delete m_collisionMeshData;
+    delete m_meshController;
 }
+
+void WmBunsenCollisionMeshNode::initialise( Beaker* i_beaker, const unsigned int i_collisionMeshIndex )
+{
+    m_beaker = i_beaker;
+    m_collisionMeshIndex = i_collisionMeshIndex;
+
+    // FIXME: THESE ARE NOT THE CORRECT TIMES TO INITIALISE WITH
+    // CHECK WHAT THESE INITIALISATIONS MEAN
+    m_meshController = new WmFigMeshController( &m_triangleMesh, 1.0, ( 1.0/24.0 ) / 10.0 );
+    m_beaker->initialiseCollisionMesh( &m_triangleMesh, m_meshController, m_collisionMeshIndex );    
+}
+
 
 MStatus WmBunsenCollisionMeshNode::compute( const MPlug& i_plug, MDataBlock& i_data ) 
 {
     MStatus stat;
 
-    //cerr << "WmBunsenCollisionMeshNode::compute() called with plug = " << plug.name() << endl;
+   // cerr << "WmBunsenCollisionMeshNode::compute() called with plug = " << i_plug.name() << endl;
 
     if ( i_plug == oa_meshData ) 
     {
@@ -67,9 +79,13 @@ MStatus WmBunsenCollisionMeshNode::compute( const MPlug& i_plug, MDataBlock& i_d
 
         m_levelsetDx = i_data.inputValue( ia_levelsetDx, &stat ).asDouble();
         CHECK_MSTATUS( stat );
+
+        m_drawCollisionData = i_data.inputValue( ia_drawCollisionData, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+        
 //        m_collisionMeshData->setLevelsetDx( m_levelsetDx );
 
-        m_friction = i_data.inputValue( ia_friction, &stat ).asDouble();
+        /*m_friction = i_data.inputValue( ia_friction, &stat ).asDouble();
         CHECK_MSTATUS( stat );
         m_collisionMeshData->setFriction( m_friction );
 
@@ -81,9 +97,6 @@ MStatus WmBunsenCollisionMeshNode::compute( const MPlug& i_plug, MDataBlock& i_d
         CHECK_MSTATUS( stat );
         m_collisionMeshData->setFullCollisions( m_fullCollisions );
         
-        m_drawCollisionData = i_data.inputValue( ia_drawCollisionData, &stat ).asBool();
-        CHECK_MSTATUS( stat );
-        
         Real separationStrength = i_data.inputValue( ia_separationStrength, &stat ).asDouble();
         CHECK_MSTATUS( stat );
         m_collisionMeshData->setSeparationStrength( separationStrength );
@@ -94,7 +107,7 @@ MStatus WmBunsenCollisionMeshNode::compute( const MPlug& i_plug, MDataBlock& i_d
 
         Real coefficientOfRestitution = i_data.inputValue( ia_coefficientOfRestitution, &stat ).asDouble();
         CHECK_MSTATUS( stat );
-        m_collisionMeshData->setCoefficientOfRestitution( coefficientOfRestitution );
+        m_collisionMeshData->setCoefficientOfRestitution( coefficientOfRestitution );*/
         
         MDataHandle outputData = i_data.outputValue ( oa_meshData, &stat );
         if (!stat) 
@@ -123,11 +136,26 @@ MStatus WmBunsenCollisionMeshNode::compute( const MPlug& i_plug, MDataBlock& i_d
 void WmBunsenCollisionMeshNode::draw( M3dView & view, const MDagPath & path,
         M3dView::DisplayStyle style, M3dView::DisplayStatus status )
 {     
-    if ( m_drawCollisionData && m_collisionMeshData )
+    if ( m_drawCollisionData )
     {
         view.beginGL(); 
-        m_collisionMeshData->draw();
+        
+        // TODO: I think we could use one of the BASim render classes to do this
+        
+        glPointSize( 5.0 );
+
+        glBegin( GL_POINTS );
+        for( TriangleMesh::vertex_iter itr = m_triangleMesh.vertices_begin(); 
+             itr != m_triangleMesh.vertices_end(); ++itr )
+        {
+            Vec3d p = m_triangleMesh.getVertex(*itr);
+            glVertex3d( p[ 0 ], p[ 1 ], p[ 2 ] );
+        }
+        glEnd();
+
         view.endGL();
+
+        glPointSize( 1.0 );
     }
 }
 
@@ -136,6 +164,8 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
 {    
     MStatus stat;
     
+    cerr << "Updating collision mesh from maya mesh\n";
+
     MPointArray points;
     i_meshFn.getPoints( points, MSpace::kWorld );
     vector<BASim::Vec3d> vPoints;
@@ -145,7 +175,7 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
     // thing where until time moves the mesh is not properly setup.
     // So we must initialise these here, not in connection made because at the time of connection
     // made the input mesh may be empty!
-    if ( m_collisionMeshData->currPositions.size() != points.length() ||
+    /*if ( m_collisionMeshData->currPositions.size() != points.length() ||
          m_collisionMeshData->oldPositions.size() != points.length() ||
          m_collisionMeshData->newPositions.size() != points.length() ||
          m_collisionMeshData->velocities.size() != points.length() ) {
@@ -168,18 +198,46 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
         
         for ( int i=0; i<triangleInds.length(); ++i )
             m_collisionMeshData->triangleIndices[i] = triangleInds[i];
-    }
+    }*/
 
    // cerr << "Updating mesh with m_collisionMeshData->triangleIndices.size() = " << m_collisionMeshData->triangleIndices.size() << endl;
     
     // FIXME: This is slow but for safety lets just do it every frame as there may be issues with
     // initialisation from ezbakes
     MIntArray triangleCounts;
-    MIntArray triangleInds;
-    i_meshFn.getTriangles( triangleCounts, triangleInds );
-    m_collisionMeshData->triangleIndices.resize( triangleInds.length() );
-        
-    for ( int i=0; i<triangleInds.length(); ++i )
+    MIntArray triangleVertexIndices;
+
+    i_meshFn.getTriangles( triangleCounts, triangleVertexIndices );
+
+    // TODO: Check if we can preallocate all the vertices/faces as this must be really slow
+    // adding things one at a time.
+  
+    for ( unsigned int v = 0; v < points.length(); ++v )
+    {
+        TriangleMesh::vertex_handle vertexHandle = m_triangleMesh.addVertex();
+        m_triangleMesh.getVertex( vertexHandle ) = Vec3d( points[ v ].x, points[ v ].y, points[ v ].z );
+    }
+
+    for ( int i = 0; i < triangleVertexIndices.length(); i += 3 )
+    {
+        int index1 = triangleVertexIndices[ i ];
+        int index2 = triangleVertexIndices[ i + 1 ];
+        int index3 = triangleVertexIndices[ i + 2 ];
+
+        TriangleMesh::vertex_handle vhx( index1 );
+        TriangleMesh::vertex_handle vhy( index2 );
+        TriangleMesh::vertex_handle vhz( index3 );
+    
+        // Generate three edges for the face
+        m_triangleMesh.addEdge( vhx, vhy );
+        m_triangleMesh.addEdge( vhy, vhz );
+        m_triangleMesh.addEdge( vhz, vhx );
+    
+        // Generate a triangular face
+        m_triangleMesh.addFace( vhx, vhy, vhz );
+    }
+      
+/*    for ( int i=0; i<triangleInds.length(); ++i )
         m_collisionMeshData->triangleIndices[i] = triangleInds[i];
     
     // We don't want anything in BASim knowing about Maya so convert all the points
@@ -201,7 +259,7 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
     {
         m_collisionMeshData->update( vPoints, "", (int)m_currentTime );
     }
-
+*/
     return stat;
 }
 
@@ -233,7 +291,7 @@ MStatus WmBunsenCollisionMeshNode::connectionBroken( const  MPlug& i_plug,
         // Get rid of all the mesh data so that Beaker knows we have nothing to provide.
         // Otherwise will get ghost collisions happening with whatever mesh positions were left
         // in the data.
-        m_collisionMeshData->clearAll();
+        //m_collisionMeshData->clearAll();
         
         m_meshConnected = true;
     }    

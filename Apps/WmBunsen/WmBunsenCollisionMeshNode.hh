@@ -2,10 +2,15 @@
 #define _WMBUNSENCOLLISIONMESHNODE_HH_
 
 #ifdef WETA
-#include <weta/Wfigaro/Collisions/CollisionMeshData.hh>
+//#include <weta/Wfigaro/Collisions/CollisionMeshData.hh>
+#include <weta/Wfigaro/Core/TriangleMesh.hh>
 #else
-#include <BASim/src/Collisions/CollisionMeshData.hh>
+//#include <BASim/src/Collisions/CollisionMeshData.hh>
+#include <BASim/src/Core/TriangleMesh.hh>
 #endif
+
+#include "Beaker.hh"
+#include "WmFigMeshController.hh"
 
 #include <maya/MPxLocatorNode.h>
 #include <maya/MString.h> 
@@ -75,7 +80,10 @@ public:
     static MObject ia_fullCollisions;
     static MObject ia_drawCollisionData;
     
-    CollisionMeshData* collisionMeshData() { return m_collisionMeshData; }
+    // Recieve a pointer to Beaker so that we can update beaker with the details for this mesh
+    void initialise( Beaker* i_beaker, const unsigned int i_collisionMeshIndex );
+
+    //CollisionMeshData* collisionMeshData() { return m_collisionMeshData; }
         			
 private:
     MStatus updateCollisionMeshFromMayaMesh( MFnMesh &meshFn, bool forceReset = false,
@@ -92,8 +100,13 @@ private:
     bool m_drawCollisionData;
     bool m_enableCaching;
     MString m_cacheDirectory;
-    CollisionMeshData *m_collisionMeshData;
+    //CollisionMeshData *m_collisionMeshData;
+    TriangleMesh m_triangleMesh;
     bool m_meshConnected;
+
+    unsigned int m_collisionMeshIndex;
+    Beaker* m_beaker;
+    WmFigMeshController* m_meshController;
 };
 
 
