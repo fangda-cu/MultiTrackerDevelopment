@@ -51,37 +51,43 @@ Beaker::Beaker() : m_plasticDeformations( false ), m_gravity( 0, -981.0, 0 ),
     m_flip(), m_slip(), m_doVolumetricCollisions( false ), m_targetEdgeDensity( 100.0 ), m_volumetricRadius( 1.0 ),
     m_gridDX( 1.0 ), m_displayGrid( false ), m_displayGridVelocitiesMultiplier( 0.0 ), m_maxDisplayDensity(),
     m_displayCollisionBoundary( false ), m_displayAirBoundary( false ), m_stol( 1.0e-6f * 0.01 ),
-    m_atol( 1.0e-6f * 0.01 ), m_rtol( 1.0e-6f * 0.01 ),  m_inftol( 1.0e-6f * 0.01 )
+    m_atol( 1.0e-6f * 0.01 ), m_rtol( 1.0e-6f * 0.01 ),  m_inftol( 1.0e-6f * 0.01 ),
+    m_bridsonStepper( NULL )
 {
     m_separationCondition[ 0 ] = m_separationCondition[ 1 ] = m_separationCondition[ 2 ] = -1.0;
 
     m_rodDataMap.clear();
+
     //m_initialRodConfigurations.clear();
 
-    initialiseWorld();
+    initialiseWorld( 0.0, 0.01 );
 }
 
 Beaker::~Beaker()
 {
-    resetEverything();
+    //resetEverything();
 
     if ( m_timingsFP.is_open() )
         m_timingsFP.close();
+
+    delete m_world;
+    delete m_bridsonStepper;
 
    // if ( m_sceneXML != NULL )
        // delete m_sceneXML;
 }
 
-void Beaker::initialiseWorld()
+void Beaker::initialiseWorld( const double i_time, const double i_dt )
 {
     m_world = new World();
-    m_world->add_property( m_timeHandle, "time", 0.0 );
-    m_world->add_property( m_dtHandle, "time-step", 0.01 );
+    cerr << "intialising world with time " << i_time << endl;
+    m_world->add_property( m_timeHandle, "time", i_time );
+    m_world->add_property( m_dtHandle, "time-step", i_dt );
     m_world->add_property( m_gravityHandle, "gravity", m_gravity );
     m_world->add_property( m_maxIterHandle, "maxIter", 100);
 }
 
-void Beaker::resetEverything()
+void Beaker::resetEverything( const double i_time, const double i_dt )
 {
     /*for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
     {
@@ -100,7 +106,7 @@ void Beaker::resetEverything()
 
     delete m_world;
 
-    initialiseWorld();
+    initialiseWorld( i_time, i_dt );
 
     //delete m_volumetricCollisions;
     //m_volumetricCollisions = NULL;
@@ -284,8 +290,14 @@ void Beaker::addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
     m_rodDataMap[ i_rodGroupIndex ] = i_rodGroup;
     
     int numRods = m_rodDataMap[ i_rodGroupIndex ]->numberOfRods();
-    
-    //m_initialRodConfigurations.clear();
+
+    m_rods.clear();
+    m_rodTimeSteppers.clear();
+    m_triangleMeshes.clear();
+    m_scriptingControllers.clear();  
+
+    cerr << "about to add rods to world, dt = " << getDt() << endl;
+
 
     bool areSimulatingAnyRods = false;
     for ( int r=0; r<numRods; r++ )
@@ -294,30 +306,30 @@ void Beaker::addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
             continue;
             
         areSimulatingAnyRods = true;
-
-        // Store data so it can be written to an XML file later        
-        /*InitialRodConfiguration initialRodConfiguration;
-
-        initialRodConfiguration.rodOptions = m_rodDataMap[ i_rodGroupIndex ]->getRodOptions( r );
-        initialRodConfiguration.gravity = m_rodDataMap[ i_rodGroupIndex ]->getGravity( r );
-        initialRodConfiguration.massDamping = m_rodDataMap[ i_rodGroupIndex ]->getMassDamping( r );
-
-        initialRodConfiguration.initialRodVertexPositions.resize( m_rodDataMap[ i_rodGroupIndex ]->elasticRod( r )->nv() );
-        
-        for ( size_t v=0;v<initialRodConfiguration.initialRodVertexPositions.size(); ++v )
-        {
-            initialRodConfiguration.initialRodVertexPositions[ v ] = 
-                m_rodDataMap[ i_rodGroupIndex ]->elasticRod( r )->getVertex( (int)v );
-        }
-    
-        m_initialRodConfigurations.push_back( initialRodConfiguration );*/
       
+        cerr << "Adding rod " << r << " to world\n";
         m_rods.push_back( m_rodDataMap[ i_rodGroupIndex ]->elasticRod( r ) );
-
         m_world->addObject( m_rodDataMap[ i_rodGroupIndex ]->elasticRod( r ) );
         
-        m_world->addController( m_rodDataMap[ i_rodGroupIndex ]->stepper( r ) );
+        cerr << "Adding rod time stepper " << r << " to world\n";
+        m_rodTimeSteppers.push_back( m_rodDataMap[ i_rodGroupIndex ]->stepper( r ) );              
     }
+
+    // Now add all the collision meshes and scripting controllers to the world
+    for ( CollisionMeshDataHashMap::iterator cmItr = m_collisionMeshDataHashMap.begin();
+                                             cmItr != m_collisionMeshDataHashMap.end(); ++cmItr )
+    {
+        m_scriptingControllers.push_back( cmItr->second->scriptingController() );
+        m_triangleMeshes.push_back( cmItr->second->triangleMesh() );
+
+        cerr << "Added scripting controller\n";
+        cerr << "Added triangle mesh\n";
+    }
+    
+    cerr << "adding rods to world, dt = " << getDt() << endl;
+
+    m_bridsonStepper = new BridsonStepper( m_rods, m_triangleMeshes, m_scriptingControllers, m_rodTimeSteppers, getDt(), getTime() );
+    m_world->addController( m_bridsonStepper );
 
    /* delete m_volumetricCollisions;
     
@@ -475,10 +487,10 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     //i_subSteps = calculateNumSubSteps( i_subSteps, i_stepSize, i_subDistanceMax);
 
     Scalar dt_save = getDt();
-    Scalar startTime = getTime();
-    Scalar currentTime = getTime();
-    Scalar targetTime = currentTime + i_stepSize;
-    setDt( i_stepSize/i_subSteps );
+    //Scalar startTime = getTime();
+    //Scalar currentTime = getTime();
+    //Scalar targetTime = currentTime + i_stepSize;
+    //setDt( i_stepSize/i_subSteps );
     
     // Initialise all the timers to 0
     
@@ -496,28 +508,18 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
     for ( int s=0; s<i_subSteps; s++ )
     {
-        cout << "\nframe "<<24*currentTime<<", substep " << s << " / " << i_subSteps << endl;
+        //cout << "\nframe "<<24*currentTime<<", substep " << s << " / " << i_subSteps << endl;
         m_numRods = 0;
 
         // Make sure we don't step past the end of this frame, depending on
         // the size of dt, we may need to take a smaller step so we land exactly
         // on the frame boundary.
-        if ( (targetTime - currentTime) < getDt() + SMALL_NUMBER )
-            setDt( targetTime - currentTime );
+//        if ( (targetTime - currentTime) < getDt() + SMALL_NUMBER )
+  //          setDt( targetTime - currentTime );
 
         float timeTaken;
         Scalar interpolateFactor = ( (double)( s + 1 ) / i_subSteps );
         
-        // If we're doing collisions then interpolate the mesh positions for this substep. Maya
-        // only provides the meshes on frames so we need to figure out the intervening mesh
-        // positions
-        /*if ( i_collisionsEnabled )
-        {
-            interpolateCollisionMeshesForSubstep( interpolateFactor, &timeTaken );
-            frameTime += timeTaken;
-            m_meshInterpolationTime += timeTaken;        
-        }*/
-
         // Interpolate fixed vertex positions and set timestep
         //
         timeval timer;
@@ -528,45 +530,19 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
             int numRods = pRodGroup->numberOfRods();
             m_numRods += numRods;
 
-            // Make space to store the substepped positions (used only for debug drawing)
-            m_subSteppedVertexPositions[ s ].resize( numRods );
-            
-            // Setup the time stepper for the substep. (Could be done once rather than per substep)
-            setupRodTimeStepperForSubStep( pRodGroup, s, i_collisionsEnabled );
-         
             pRodGroup->updateCurrentVertexPositions( interpolateFactor );
-            pRodGroup->updateAllBoundaryConditions();
-            
-           /* if ( i_lockedRodVertexMap != NULL )
-            {
-                cerr << "Locking vertices\n";
-
-                // As described above, i_fixedVertices defines vertices fixed only for this time step
-                // This should move into rod group rather than being here
-                for ( LockedRodVertexMap::iterator it=i_lockedRodVertexMap->begin(); it != i_lockedRodVertexMap->end();
-                    ++it )
-                {
-                    int rodNum = it->first;
-                    LockedVertexMap lockedVertexMap = it->second;
-                    RodTimeStepper* stepper = pRodGroup->stepper( rodNum );
-
-                    RodBoundaryCondition* boundary = stepper->getBoundaryCondition();
-    
-                    for ( LockedVertexMap::iterator vIt=lockedVertexMap.begin(); vIt!=lockedVertexMap.end(); ++vIt )
-                    {    
-                        int lockedVertex = vIt->first;
-                        BASim::Vec3d lockedPosition = vIt->second;
-                        
-                        boundary->setDesiredVertexPosition( lockedVertex, lockedPosition );
-                    }
-                }
-            }*/            
+            pRodGroup->updateAllBoundaryConditions();                                   
         }
         timeTaken = stopTimer( timer );
         frameTime += timeTaken;
         m_vertexInterpolationTime += timeTaken;
 
-        // Now we have two code paths depending on if we're doing self collisions. If
+        m_world->execute();
+    }
+    // restore dt
+    setDt( dt_save );
+
+        /*// Now we have two code paths depending on if we're doing self collisions. If
         // we're not then we are safe to parallelise the entire thing. If we are then
         // we need to break it into blocks so we can run the self collisions in one thread.
 
@@ -606,7 +582,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 RodCollisionTimeStepper::getClumpingPairs( m_rods );
             }*/
 
-            #pragma omp parallel for num_threads( actualNumThreadsToUse )
+          /*  #pragma omp parallel for num_threads( actualNumThreadsToUse )
             for ( int i=0; i<numControllers; ++i )
             {
                 RodTimeStepper *stepper = dynamic_cast<RodTimeStepper*>(controllers[ i ]);
@@ -621,7 +597,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 }*/
 
 
-                ElasticRod* rod = stepper->getRod();
+            /*    ElasticRod* rod = stepper->getRod();
                 
                 if ( stepper->isEnabled() )
                 {
@@ -647,7 +623,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 rodCollisionTimeStepper->respondToObjectCollisions();
                 rodCollisionTimeStepper->tidyUpCollisionStructuresForNextStep();*/
                 
-            }
+            /*}
             
             frameTime += stopTimer( threadFrameTimer );
         }
@@ -790,7 +766,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
                 }
             }
         }*/
-
+/*
         setTime( currentTime + getDt() );
         currentTime = getTime();
      //   cerr << "End of substep\n";
@@ -834,7 +810,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     // restore dt
     setDt( dt_save );
 
-//    printTimingInfo();
+//    printTimingInfo();*/
 }
 /*
 void Beaker::storeMaterialFrames()

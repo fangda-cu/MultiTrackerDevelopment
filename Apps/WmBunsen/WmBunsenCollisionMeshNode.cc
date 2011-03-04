@@ -21,24 +21,27 @@ MObject WmBunsenCollisionMeshNode::ia_drawCollisionData;
 
 WmBunsenCollisionMeshNode::WmBunsenCollisionMeshNode()
     : m_levelsetDx( 0.0 ), m_friction( 0.0 ), m_thickness( 1.0 ), m_fullCollisions( false ),
-    m_beaker( NULL ), m_meshController( NULL )
+    m_beaker( NULL ), m_meshController( NULL ), m_triangleMeshRenderer( NULL )
 {
 }
 
 WmBunsenCollisionMeshNode::~WmBunsenCollisionMeshNode() 
 {
     delete m_meshController;
+    delete m_triangleMeshRenderer;
 }
 
 void WmBunsenCollisionMeshNode::initialise( Beaker* i_beaker, const unsigned int i_collisionMeshIndex )
 {
+    MStatus status = MStatus::kSuccess;
+
     m_beaker = i_beaker;
     m_collisionMeshIndex = i_collisionMeshIndex;
-
-    // FIXME: THESE ARE NOT THE CORRECT TIMES TO INITIALISE WITH
-    // CHECK WHAT THESE INITIALISATIONS MEAN
-    m_meshController = new WmFigMeshController( &m_triangleMesh, 1.0, ( 1.0/24.0 ) / 10.0 );
+        
+    m_meshController = new WmFigMeshController( &m_triangleMesh, m_startTime, ( 1.0 / 24.0 ) / 10.0 );
     m_beaker->initialiseCollisionMesh( &m_triangleMesh, m_meshController, m_collisionMeshIndex );    
+
+    m_triangleMeshRenderer = new TriangleMeshRenderer( m_triangleMesh );
 }
 
 
@@ -162,104 +165,84 @@ void WmBunsenCollisionMeshNode::draw( M3dView & view, const MDagPath & path,
 MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_meshFn, 
     bool forceReset, std::string i_filename )
 {    
-    MStatus stat;
+    MStatus stat = MStatus::kSuccess;
     
     cerr << "Updating collision mesh from maya mesh\n";
-
+    
     MPointArray points;
     i_meshFn.getPoints( points, MSpace::kWorld );
-    vector<BASim::Vec3d> vPoints;
     
-    // If we are being driven by an EZBake node and the scene was just loaded it's possible
-    // that the first time we updated from the mesh it had no data. EZbake scenes have a weird
-    // thing where until time moves the mesh is not properly setup.
-    // So we must initialise these here, not in connection made because at the time of connection
-    // made the input mesh may be empty!
-    /*if ( m_collisionMeshData->currPositions.size() != points.length() ||
-         m_collisionMeshData->oldPositions.size() != points.length() ||
-         m_collisionMeshData->newPositions.size() != points.length() ||
-         m_collisionMeshData->velocities.size() != points.length() ) {
+    if ( points.length() == 0 )
+    {
+        cerr << "WmBunsenCollisionMeshNode::initialise ERROR, no points in mesh\n";
+        return MStatus::kFailure;
+    }
     
-        cerr << "Initialising size and data for collision mesh ( " << points.length() << " points\n";
+    if ( m_triangleMesh.nv() == 0 )
+    {
+        cerr << "Mesh not initialised, initialising\n";
         
-        m_collisionMeshData->currPositions.resize( points.length() );
-        m_collisionMeshData->prevPositions.resize( points.length() );
-        m_collisionMeshData->oldPositions.resize( points.length() );
-        m_collisionMeshData->newPositions.resize( points.length() );
-        m_collisionMeshData->velocities.resize( points.length() );
-
-        // If any of the above arrays were not filled out then we can safely assume the edge data
-        // was not filled out so go ahead and add it too.
         MIntArray triangleCounts;
-        MIntArray triangleInds;
-        i_meshFn.getTriangles( triangleCounts, triangleInds );
+        MIntArray triangleVertexIndices;
     
-        m_collisionMeshData->triangleIndices.resize( triangleInds.length() );
+        i_meshFn.getTriangles( triangleCounts, triangleVertexIndices );
+    
+        // TODO: Check if we can preallocate all the vertices/faces as this must be really slow
+        // adding things one at a time.  
+        for ( unsigned int v = 0; v < points.length(); ++v )
+        {
+            TriangleMesh::vertex_handle vertexHandle = m_triangleMesh.addVertex();
+            m_triangleMesh.getVertex( vertexHandle ) = Vec3d( points[ v ].x, points[ v ].y, points[ v ].z );
+        }
+    
+        for ( int i = 0; i < triangleVertexIndices.length(); i += 3 )
+        {
+            int index1 = triangleVertexIndices[ i ];
+            int index2 = triangleVertexIndices[ i + 1 ];
+            int index3 = triangleVertexIndices[ i + 2 ];
+    
+            TriangleMesh::vertex_handle vhx( index1 );
+            TriangleMesh::vertex_handle vhy( index2 );
+            TriangleMesh::vertex_handle vhz( index3 );
         
-        for ( int i=0; i<triangleInds.length(); ++i )
-            m_collisionMeshData->triangleIndices[i] = triangleInds[i];
-    }*/
-
-   // cerr << "Updating mesh with m_collisionMeshData->triangleIndices.size() = " << m_collisionMeshData->triangleIndices.size() << endl;
-    
-    // FIXME: This is slow but for safety lets just do it every frame as there may be issues with
-    // initialisation from ezbakes
-    MIntArray triangleCounts;
-    MIntArray triangleVertexIndices;
-
-    i_meshFn.getTriangles( triangleCounts, triangleVertexIndices );
-
-    // TODO: Check if we can preallocate all the vertices/faces as this must be really slow
-    // adding things one at a time.
-  
-    for ( unsigned int v = 0; v < points.length(); ++v )
-    {
-        TriangleMesh::vertex_handle vertexHandle = m_triangleMesh.addVertex();
-        m_triangleMesh.getVertex( vertexHandle ) = Vec3d( points[ v ].x, points[ v ].y, points[ v ].z );
-    }
-
-    for ( int i = 0; i < triangleVertexIndices.length(); i += 3 )
-    {
-        int index1 = triangleVertexIndices[ i ];
-        int index2 = triangleVertexIndices[ i + 1 ];
-        int index3 = triangleVertexIndices[ i + 2 ];
-
-        TriangleMesh::vertex_handle vhx( index1 );
-        TriangleMesh::vertex_handle vhy( index2 );
-        TriangleMesh::vertex_handle vhz( index3 );
-    
-        // Generate three edges for the face
-        m_triangleMesh.addEdge( vhx, vhy );
-        m_triangleMesh.addEdge( vhy, vhz );
-        m_triangleMesh.addEdge( vhz, vhx );
-    
-        // Generate a triangular face
-        m_triangleMesh.addFace( vhx, vhy, vhz );
-    }
-      
-/*    for ( int i=0; i<triangleInds.length(); ++i )
-        m_collisionMeshData->triangleIndices[i] = triangleInds[i];
-    
-    // We don't want anything in BASim knowing about Maya so convert all the points
-    // into a BASim format before passing them in.
-    unsigned int numPoints = points.length();
-    vPoints.resize( numPoints );
-    for ( unsigned int p=0; p<numPoints; p++ )
-    {
-        vPoints[p][0] = points[p][0];
-        vPoints[p][1] = points[p][1];
-        vPoints[p][2] = points[p][2];
-    }
-
-    if ( m_currentTime == m_startTime || forceReset )
-    {
-        m_collisionMeshData->reset( vPoints );
+            // Generate three edges for the face
+            m_triangleMesh.addEdge( vhx, vhy );
+            m_triangleMesh.addEdge( vhy, vhz );
+            m_triangleMesh.addEdge( vhz, vhx );
+        
+            // Generate a triangular face
+            m_triangleMesh.addFace( vhx, vhy, vhz );
+        }
     }
     else
     {
-        m_collisionMeshData->update( vPoints, "", (int)m_currentTime );
+        cerr << "Updating pre-initialised mesh\n";    
+
+        MPointArray points;
+        i_meshFn.getPoints( points, MSpace::kWorld );
+        vector<BASim::Vec3d> vPoints;
+                
+        if ( points.length() != m_triangleMesh.nv() )
+        {
+            cerr << "WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh ERROR - number of points in maya mesh != points in BASim mesh!\n";
+            return MStatus::kFailure;
+        }
+        
+        unsigned int v = 0;
+        for( TriangleMesh::vertex_iter itr = m_triangleMesh.vertices_begin(); 
+            itr != m_triangleMesh.vertices_end(); ++itr )
+        {
+            m_triangleMesh.getVertex( *itr ) = Vec3d( points[ v ].x, points[ v ].y, points[ v ].z );
+            ++v;
+        }
     }
-*/
+    
+    if ( m_meshController != NULL )
+    {
+        double simTime = m_currentTime - m_startTime;
+        m_meshController->updateInterpolatedMeshes( simTime );
+    }
+
     return stat;
 }
 

@@ -165,7 +165,7 @@ namespace BASim {
      * \param[in] grav Three dimensional vector that specifies gravity.
      */
     //BridsonStepper( const RodTimeStepper::Method& intgrtr, const int& max_implct_itrtns, const double& dt, const double& mass_dmpng, const Vec3d& grav );
-    BridsonStepper( std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes, std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt );
+    BridsonStepper( std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes, std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt, const double time = 0.0 );
 
     /**
      * Destructor.

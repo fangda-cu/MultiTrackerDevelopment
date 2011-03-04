@@ -4,9 +4,11 @@
 #ifdef WETA
 //#include <weta/Wfigaro/Collisions/CollisionMeshData.hh>
 #include <weta/Wfigaro/Core/TriangleMesh.hh>
+#include <weta/Wfigaro/Render/TriangleMeshRenderer.hh>
 #else
 //#include <BASim/src/Collisions/CollisionMeshData.hh>
-#include <BASim/src/Core/TriangleMesh.hh>
+#include "BASim/src/Core/TriangleMesh.hh"
+#include "BASim/src/Render/TriangleMeshRenderer.hh"
 #endif
 
 #include "Beaker.hh"
@@ -102,6 +104,7 @@ private:
     MString m_cacheDirectory;
     //CollisionMeshData *m_collisionMeshData;
     TriangleMesh m_triangleMesh;
+    TriangleMeshRenderer* m_triangleMeshRenderer;
     bool m_meshConnected;
 
     unsigned int m_collisionMeshIndex;

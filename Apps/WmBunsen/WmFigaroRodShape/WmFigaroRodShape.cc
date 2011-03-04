@@ -61,7 +61,7 @@ WmFigaroRodShape::~WmFigaroRodShape() {}
 
 void WmFigaroRodShape::resetSimulation( MVectorArray* i_controlPoints )
 {
-    m_beaker.resetEverything();
+    m_beaker.resetEverything( 0.0, ( 1.0 / 24.0 ) / 10.0 );
 
     MVectorArray* controlPoints = getControlPoints();
 

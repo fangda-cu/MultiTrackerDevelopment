@@ -415,7 +415,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
         int substeps = i_dataBlock.inputValue(ia_substeps, &stat).asInt();
         CHECK_MSTATUS( stat );
-
+        
         double subDistanceMax = i_dataBlock.inputValue(ia_subDistanceMax, &stat).asDouble();
         CHECK_MSTATUS( stat );
 
@@ -497,7 +497,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         {
             if ( m_currentTime == m_startTime )
             {
-                m_beaker->resetEverything();
+                m_beaker->resetEverything( m_startTime, m_framedt / substeps );
 
                 updateAllRodNodes( i_dataBlock );
                 updateAllCollisionMeshes( i_dataBlock );

@@ -9,11 +9,10 @@
 #include "BridsonStepper.hh"
 #include "../../Core/Timer.hh"
 
-
 namespace BASim 
 {
 
-BridsonStepper::BridsonStepper( std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes, std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt )
+BridsonStepper::BridsonStepper( std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes, std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt, const double time )
 : m_num_dof(0)
 , m_rods(rods)
 , m_triangle_meshes(trimeshes)
@@ -39,7 +38,7 @@ BridsonStepper::BridsonStepper( std::vector<ElasticRod*>& rods, std::vector<Tria
 , m_gt0_enc(false)
 , m_bvh(NULL)
 , m_obj_start(-1)
-, m_t(0.0)
+, m_t(time)
 , m_rod_labels()
 , m_implicit_pnlty_enbld(false)
 , m_implicit_thickness(1.0)
@@ -936,11 +935,14 @@ void BridsonStepper::extractPositions( const std::vector<ElasticRod*>& rods, con
 
   assert( m_triangle_meshes.size() == m_base_triangle_indices.size() );
 
+  std::cerr << "positions.size() = " << positions.size() << std::endl;
+  std::cerr << "m_base_triangle_indices.size() = " << m_base_triangle_indices.size() << std::endl;
+
   for( int i = 0; i < (int) m_triangle_meshes.size(); ++i )
   {
     int j = 0;
     for( TriangleMesh::vertex_iter vit = m_triangle_meshes[i]->vertices_begin(); vit != m_triangle_meshes[i]->vertices_end(); ++vit, ++j )
-    {
+    {      
       assert( m_base_triangle_indices[i]+3*j+2 < positions.size() );
       positions.segment<3>(m_base_triangle_indices[i]+3*j) = m_triangle_meshes[i]->getVertex(*vit);
     }

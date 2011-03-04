@@ -17,6 +17,7 @@
 #include <weta/Wfigaro/Render/RodRenderer.hh>
 #include <weta/Wfigaro/Core/TriangleMesh.hh>
 #include <weta/Wfigaro/Core/ScriptingController.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/BridsonStepper.hh>
 #else
 #include <BASim/src/Core/EigenIncludes.hh>
 //#include <BASim/src/Collisions/CollisionMeshData.hh>
@@ -24,6 +25,7 @@
 #include <BASim/src/Physics/World.hh>
 //#include <BASim/src/Physics/ElasticRods/RodCollisionTimeStepper.hh>
 #include <BASim/src/Render/RodRenderer.hh>
+#include <BASim/src/Physics/ElasticRods/BridsonStepper.hh>
 #endif
 
 #include "RodData.hh"
@@ -271,8 +273,8 @@ public:
                  vector<BASim::Vec3d>& i_undeformedVertexPositions,
                  RodOptions& i_options );*/
     
-    void initialiseWorld();
-    void resetEverything();
+    void initialiseWorld( const double i_time, const double i_dt );
+    void resetEverything(  const double i_time, const double i_dt );
     //void createSpaceForRods( int i_rodGroup, int i_numRods );
     void addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup );
     bool collisionMeshInitialised( const int i_collisionMeshIndex );
@@ -410,6 +412,14 @@ private:
     bool m_displayCollisionBoundary;
     bool m_displayAirBoundary;
     BASim::Vec3d m_separationCondition;
+
+    BridsonStepper* m_bridsonStepper;
+
+    // TODO: This is dumb, the meshes and controllers are stored in a hash map of collisionmeshdata
+    // now we have this representation just to send to bridsonStepper. Fix one or the other
+    vector< TriangleMesh* > m_triangleMeshes;
+    vector< ScriptingController* > m_scriptingControllers;
+    vector< RodTimeStepper* > m_rodTimeSteppers;
 };
 
 #endif // BEAKER_HH_
