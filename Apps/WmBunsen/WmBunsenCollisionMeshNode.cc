@@ -21,12 +21,16 @@ MObject WmBunsenCollisionMeshNode::ia_drawCollisionData;
 
 WmBunsenCollisionMeshNode::WmBunsenCollisionMeshNode()
     : m_levelsetDx( 0.0 ), m_friction( 0.0 ), m_thickness( 1.0 ), m_fullCollisions( false ),
-    m_beaker( NULL ), m_meshController( NULL ), m_triangleMeshRenderer( NULL )
+    m_beaker( NULL ), m_meshController( NULL ), m_triangleMeshRenderer( NULL ),
+    m_currentMesh( NULL ), m_previousMesh( NULL ), m_nextMesh( NULL )
 {
 }
 
 WmBunsenCollisionMeshNode::~WmBunsenCollisionMeshNode() 
 {
+    delete m_currentMesh;
+    delete m_previousMesh;
+    delete m_nextMesh;
     delete m_meshController;
     delete m_triangleMeshRenderer;
 }
@@ -38,10 +42,62 @@ void WmBunsenCollisionMeshNode::initialise( Beaker* i_beaker, const unsigned int
     m_beaker = i_beaker;
     m_collisionMeshIndex = i_collisionMeshIndex;
         
-    m_meshController = new WmFigMeshController( &m_triangleMesh, m_startTime, ( 1.0 / 24.0 ) / 10.0 );
-    m_beaker->initialiseCollisionMesh( &m_triangleMesh, m_meshController, m_collisionMeshIndex );    
+    if ( m_currentMesh != NULL )
+    {
+        delete m_currentMesh;
+    }
+    if ( m_previousMesh != NULL )
+    {
+        delete m_previousMesh;
+    }
+    if ( m_nextMesh != NULL )
+    {
+        delete m_nextMesh;
+    }
+    if ( m_triangleMeshRenderer != NULL )
+    {
+        delete m_triangleMeshRenderer;
+    }
+    if ( m_meshController != NULL )
+    {
+        delete m_meshController;
+    }
 
-    m_triangleMeshRenderer = new TriangleMeshRenderer( m_triangleMesh );
+    m_currentMesh = new TriangleMesh();
+    m_previousMesh = new TriangleMesh();
+    m_nextMesh = new TriangleMesh();
+
+    // NOTE: We're passing in bogus dt values but they are never used, the BridsonStepper overrides
+    // them.... Yes it's not clear but I'm working the Maya code into Breannan's BASimulator structure.
+    m_meshController = new WmFigMeshController( m_currentMesh, m_previousMesh, m_nextMesh, 
+                                                m_startTime, ( 1.0 / 24.0 ) / 10.0 );
+
+    // Now we need to ensure that the mesh variables have the mesh data from the input mesh.
+    // ::compute() has already been called and we could initialise the meshes there but then we
+    // have the problem of not knowing when the simulation has been reset and we need to delete
+    // and rebuild everything. The only time we know that is when this function is called. 
+    // So the safest thing to do is delete and rebuild everything here then call 
+    // updateCollisionMeshFromMayaMesh() to fill in the data *before* we pass it to Beaker. 
+    // The reason is that after this function is called, BunsenNode will call Beaker to add the
+    // rods to the world at which point the BridsonStepper will keep track of the ndof of the 
+    // meshes. If we don't fill the mesh with the correct number of vertices before that happens
+    // then it will screw up everything when it tries to do collision detection later.
+    MDataBlock dataBlock = forceCache();
+    MDataHandle meshH = dataBlock.inputValue( ia_inMesh, &status );
+    if ( status.error() || meshH.type() != MFnData::kMesh )
+    {
+        cerr << "Problem trying to get mesh from input\n";    
+        return;
+    }
+
+    MObject inMeshObj = meshH.asMeshTransformed();
+    MFnMesh meshFn( inMeshObj );
+
+    updateCollisionMeshFromMayaMesh( meshFn );
+
+    m_beaker->initialiseCollisionMesh( m_currentMesh, m_meshController, m_collisionMeshIndex );    
+
+    m_triangleMeshRenderer = new TriangleMeshRenderer( *m_currentMesh );
 }
 
 
@@ -148,10 +204,10 @@ void WmBunsenCollisionMeshNode::draw( M3dView & view, const MDagPath & path,
         glPointSize( 5.0 );
 
         glBegin( GL_POINTS );
-        for( TriangleMesh::vertex_iter itr = m_triangleMesh.vertices_begin(); 
-             itr != m_triangleMesh.vertices_end(); ++itr )
+        for( TriangleMesh::vertex_iter itr = m_currentMesh->vertices_begin(); 
+             itr != m_currentMesh->vertices_end(); ++itr )
         {
-            Vec3d p = m_triangleMesh.getVertex(*itr);
+            Vec3d p = m_currentMesh->getVertex( *itr );
             glVertex3d( p[ 0 ], p[ 1 ], p[ 2 ] );
         }
         glEnd();
@@ -178,7 +234,12 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
         return MStatus::kFailure;
     }
     
-    if ( m_triangleMesh.nv() == 0 )
+    if ( m_previousMesh == NULL )
+    {
+        return MStatus::kFailure;
+    }
+
+    if ( m_previousMesh->nv() == 0 )
     {
         cerr << "Mesh not initialised, initialising\n";
         
@@ -191,8 +252,14 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
         // adding things one at a time.  
         for ( unsigned int v = 0; v < points.length(); ++v )
         {
-            TriangleMesh::vertex_handle vertexHandle = m_triangleMesh.addVertex();
-            m_triangleMesh.getVertex( vertexHandle ) = Vec3d( points[ v ].x, points[ v ].y, points[ v ].z );
+            TriangleMesh::vertex_handle vertexHandle1 = m_currentMesh->addVertex();
+            m_currentMesh->getVertex( vertexHandle1 ) = Vec3d( points[ v ].x, points[ v ].y, points[ v ].z );
+
+            TriangleMesh::vertex_handle vertexHandle2 = m_previousMesh->addVertex();
+            m_previousMesh->getVertex( vertexHandle2 ) = Vec3d( points[ v ].x, points[ v ].y, points[ v ].z );
+
+            TriangleMesh::vertex_handle vertexHandle3 = m_nextMesh->addVertex();
+            m_nextMesh->getVertex( vertexHandle3 ) = Vec3d( points[ v ].x, points[ v ].y, points[ v ].z );
         }
     
         for ( int i = 0; i < triangleVertexIndices.length(); i += 3 )
@@ -206,12 +273,14 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
             TriangleMesh::vertex_handle vhz( index3 );
         
             // Generate three edges for the face
-            m_triangleMesh.addEdge( vhx, vhy );
-            m_triangleMesh.addEdge( vhy, vhz );
-            m_triangleMesh.addEdge( vhz, vhx );
+            m_currentMesh->addEdge( vhx, vhy ); m_currentMesh->addEdge( vhy, vhz ); m_currentMesh->addEdge( vhz, vhx );
+            m_previousMesh->addEdge( vhx, vhy ); m_previousMesh->addEdge( vhy, vhz ); m_previousMesh->addEdge( vhz, vhx );
+            m_nextMesh->addEdge( vhx, vhy ); m_nextMesh->addEdge( vhy, vhz ); m_nextMesh->addEdge( vhz, vhx );
         
             // Generate a triangular face
-            m_triangleMesh.addFace( vhx, vhy, vhz );
+            m_currentMesh->addFace( vhx, vhy, vhz );
+            m_previousMesh->addFace( vhx, vhy, vhz );
+            m_nextMesh->addFace( vhx, vhy, vhz );
         }
     }
     else
@@ -222,25 +291,34 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
         i_meshFn.getPoints( points, MSpace::kWorld );
         vector<BASim::Vec3d> vPoints;
                 
-        if ( points.length() != m_triangleMesh.nv() )
+        if ( points.length() != m_previousMesh->nv() )
         {
             cerr << "WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh ERROR - number of points in maya mesh != points in BASim mesh!\n";
             return MStatus::kFailure;
         }
-        
-        unsigned int v = 0;
-        for( TriangleMesh::vertex_iter itr = m_triangleMesh.vertices_begin(); 
-            itr != m_triangleMesh.vertices_end(); ++itr )
+
+        // First make the previous mesh equal the next mesh as we're about to update next mesh
+        for( TriangleMesh::vertex_iter previousMeshItr = m_previousMesh->vertices_begin(),
+             nextMeshItr = m_nextMesh->vertices_begin();
+             previousMeshItr != m_previousMesh->vertices_end(); ++previousMeshItr, ++nextMeshItr )
         {
-            m_triangleMesh.getVertex( *itr ) = Vec3d( points[ v ].x, points[ v ].y, points[ v ].z );
+            m_previousMesh->getVertex( *previousMeshItr ) = m_nextMesh->getVertex( *nextMeshItr );
+        }
+        
+        // Now update the next mesh with the points of the Maya mesh
+        unsigned int v = 0;
+        for( TriangleMesh::vertex_iter itr = m_nextMesh->vertices_begin(); 
+            itr != m_nextMesh->vertices_end(); ++itr )
+        {
+            m_nextMesh->getVertex( *itr ) = Vec3d( points[ v ].x, points[ v ].y, points[ v ].z );
             ++v;
         }
     }
     
     if ( m_meshController != NULL )
     {
-        double simTime = m_currentTime - m_startTime;
-        m_meshController->updateInterpolatedMeshes( simTime );
+        double simTime = m_currentTime;
+        m_meshController->updateNextMayaTime( simTime );
     }
 
     return stat;

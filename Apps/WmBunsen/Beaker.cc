@@ -104,6 +104,8 @@ void Beaker::resetEverything( const double i_time, const double i_dt )
 
     m_rods.clear();
 
+    m_collisionMeshDataHashMap.clear();
+
     delete m_world;
 
     initialiseWorld( i_time, i_dt );

@@ -103,7 +103,9 @@ private:
     bool m_enableCaching;
     MString m_cacheDirectory;
     //CollisionMeshData *m_collisionMeshData;
-    TriangleMesh m_triangleMesh;
+    TriangleMesh* m_nextMesh;        // Mesh at next full frame
+    TriangleMesh* m_previousMesh;    // mesh at previous full frame
+    TriangleMesh* m_currentMesh;     // Mesh at current in between frame in simulation substeps
     TriangleMeshRenderer* m_triangleMeshRenderer;
     bool m_meshConnected;
 
