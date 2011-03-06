@@ -1,0 +1,21 @@
+# Options for Implicit Euler Tests One:  4
+atol 1e-08 # absolute convergence tolerance
+rtol 1e-08	# relative convergence tolerance
+stol 1e-08	# convergence tolerance in terms of the norm of the change in the solution between steps
+density 1.3 # volumetric density of the rod
+dt 0.147   #time-step size
+gravity 0 -981 0	# gravity
+integrator implicit	# type of integrator to use for the rod
+iterations 1000	# maximum number of iterations for implicit method
+mass-damping 0	# mass damping for the rod
+nv 40	# number of vertices in the rod
+radius-scale 10	# scaling for rendering and collisions
+reference-frame time	# type of reference frame to use (time/space)
+shear-modulus 3.4e+09	# Shear modulus for the rod
+viscosity 0	# Dynamic viscosity for the rod
+youngs-modulus 1e+10	# Young's modulus for the rod
+
+quasistatic true # update material frame quasistatically
+straight-undeformed false # True generates a straight undeformed config, false generates a helix.
+major-radius 0.005 # radius of major axis of cross-section
+minor-radius 0.005 # radius of minor axis of cross-section
