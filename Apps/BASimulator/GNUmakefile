@@ -27,6 +27,7 @@ Problems/ProblemBase.hh \
 Problems/BentTwisting.hh \
 Problems/CollisionTest.hh \
 Problems/CollisionTestTwo.hh \
+Problems/CollisionTestWeta.hh \
 Problems/RegressionTests.hh \
 Problems/HairyBall.hh \
 Problems/SHO.hh \
@@ -42,6 +43,7 @@ PRG1_S		:= \
 		./Problems/BentTwisting.cc \
 		./Problems/CollisionTest.cc \
 		./Problems/CollisionTestTwo.cc \
+		./Problems/CollisionTestWeta.cc \
 		./Problems/ProblemBase.cc \
 		./Problems/RegressionTests.cc \
 		./Problems/HairyBall.cc \
