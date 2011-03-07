@@ -12,7 +12,7 @@
 #else
 #include <BASim/BASim>
 #include <fstream>
-#include "BASim/src/IO/ObjectSerializer.hh"
+//#include "BASim/src/IO/ObjectSerializer.hh"
 #endif
 
 using namespace std;

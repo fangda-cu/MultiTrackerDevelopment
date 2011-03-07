@@ -12,8 +12,13 @@
 
 //#include "BASim/src/Core/TriangleMesh.hh"
 //#include "BASim/src/IO/ObjParser.hh"
+#ifdef WETA
+#include <weta/Wfigaro/Physics/ElasticRods/BridsonStepper.hh>
+#include <weta/Wfigaro/Math/SolverUtils.hh>
+#else
 #include "BASim/src/Physics/ElasticRods/BridsonStepper.hh"
 #include "BASim/src/Math/SolverUtils.hh"
+#endif
 
 class RegressionTests : public Problem
 {

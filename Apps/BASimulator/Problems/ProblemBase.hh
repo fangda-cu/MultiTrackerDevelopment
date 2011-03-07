@@ -20,7 +20,7 @@
 
 #ifdef WETA
 #include <weta/Wfigaro/Physics/ElasticRods/MultipleRodTimeStepper.hh>
-#include <weta/Wfigaro/IO/ObjectSerializer.hh>
+//#include <weta/Wfigaro/IO/ObjectSerializer.hh>
 #include <weta/Wfigaro/Physics/World.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodUtils.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodTimeStepper.hh>
@@ -121,7 +121,7 @@ public:
 
   void serializeProblem( std::ofstream& of )
   {
-    assert( of.is_open() );
+    /*assert( of.is_open() );
     assert( m_world != NULL );
 
     // Serialize the world class
@@ -154,13 +154,13 @@ public:
     serializeDoubleQueue(of,m_sim_breakpoints);
     
     of.write((char*)&PROBLEMBASEMAGIC,sizeof(int));
-    of.write((char*)&PROBLEMBASEMAGIC,sizeof(int));
+    of.write((char*)&PROBLEMBASEMAGIC,sizeof(int));*/
   }
   
   void resumeProblem( std::ifstream& ifs )
   {
 //    std::cout << "Loading from resumeProblem" << std::endl;  
-    assert( ifs != NULL );
+/*    assert( ifs != NULL );
     assert( m_world != NULL );
     
     int byteeater;
@@ -209,7 +209,7 @@ public:
 //    std::cout << "m_gravity: " << m_world->property(m_gravity).transpose() << std::endl;
 
     ifs.read((char*)&byteeater,sizeof(int));
-    ifs.read((char*)&byteeater,sizeof(int));
+    ifs.read((char*)&byteeater,sizeof(int));*/
   }
 
 

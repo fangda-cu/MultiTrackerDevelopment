@@ -36,7 +36,7 @@
 #include <weta/Wfigaro/Render/Zoomer.hh>
 #include <weta/Wfigaro/Render/ViewController.hh>
 #include <weta/Wfigaro/Render/RodRenderer.hh>
-#include <weta/Wfigaro/IO/XMLSceneOutputter.hh>
+//#include <weta/Wfigaro/IO/XMLSceneOutputter.hh>
 #include <weta/Wfigaro/Core/StatTracker.hh>
 #include <weta/Wfigaro/IO/SerializationUtils.hh>
 #include <weta/Wfigaro/IO/SolverIO.hh>

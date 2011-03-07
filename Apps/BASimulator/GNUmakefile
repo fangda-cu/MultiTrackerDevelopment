@@ -15,8 +15,8 @@ include /vol/bob/make/head.mk
 PRG1_CF		:= -DWETA
 
 #Nasty but we need it to build BASimulator which uses a file in the BASim library which references a file back in BASim...
-PRG1_CF += -I../../../ -I. -I/vol/bob/src/code/Figaro/work/acoull-breannanCollisions/
-PRG1_CF += -I/vol/bob/src/code/Figaro/work/acoull-breannanCollisions/Apps/BASimulator/tclap-1.2.0/include/
+PRG1_CF += -I../../../ -I. #-I/vol/bob/src/code/Figaro/work/acoull-breannanCollisions/
+PRG1_CF += -Itclap-1.2.0/include/
 
 PRG1		:= basimulator
 
@@ -30,7 +30,6 @@ Problems/CollisionTestTwo.hh \
 Problems/RegressionTests.hh \
 Problems/HairyBall.hh \
 Problems/SHO.hh \
-Problems/SerializationTests.hh \
 Problems/ViscosityTests.hh \
 tclap-1.2.0/tclap/include/SwitchArg.h
 
@@ -47,7 +46,6 @@ PRG1_S		:= \
 		./Problems/RegressionTests.cc \
 		./Problems/HairyBall.cc \
 		./Problems/SHO.cc \
-		./Problems/SerializationTests.cc \
 		./Problems/ViscosityTests.cc 
 
 ###}

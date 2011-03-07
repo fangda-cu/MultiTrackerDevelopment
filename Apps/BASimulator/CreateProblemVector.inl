@@ -6,7 +6,7 @@
 //#include "Problems/PlantRootGrowth.hh"
 //#include "Problems/HandTest.hh"
 
-#include "Problems/SerializationTests.hh"
+//#include "Problems/SerializationTests.hh"
 
 #include "Problems/CollisionTestTwo.hh"
 
@@ -26,7 +26,7 @@ void CreateProblemVector()
   //problems.push_back(new PlantRootGrowth());
   //problems.push_back(new HandTest());
 
-  problems.push_back(new SerializationTests());
+ // problems.push_back(new SerializationTests());
 
   problems.push_back(new CollisionTestTwo());
 

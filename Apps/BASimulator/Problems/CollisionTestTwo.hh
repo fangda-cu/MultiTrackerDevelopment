@@ -9,6 +9,16 @@
 #define COLLISIONTEST_TWO_HH
 
 #include "ProblemBase.hh"
+
+#ifdef WETA
+#include <weta/Wfigaro/Physics/ElasticRods/BridsonStepper.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/RodForce.hh>
+#include <vector>
+#include <weta/Wfigaro/Physics/ElasticRods/RodStretchingForce.hh>
+#include <weta/Wfigaro/Core/TriangleMesh.hh>
+#include <weta/Wfigaro/IO/ObjParser.hh>
+#include <weta/Wfigaro/Core/ScriptingController.hh>
+#else
 #include "BASim/src/Physics/ElasticRods/BridsonStepper.hh"
 #include "BASim/src/Physics/ElasticRods/RodForce.hh"
 #include <vector>
@@ -16,6 +26,7 @@
 #include "BASim/src/Core/TriangleMesh.hh"
 #include "BASim/src/IO/ObjParser.hh"
 #include "BASim/src/Core/ScriptingController.hh"
+#endif
 
 class CollisionTestTwo : public Problem
 {
