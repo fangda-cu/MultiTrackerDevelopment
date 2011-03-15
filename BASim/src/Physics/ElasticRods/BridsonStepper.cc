@@ -1720,7 +1720,7 @@ void BridsonStepper::exertCompliantInelasticVertexFaceImpulse( const VertexFaceC
   //std::cout << desired_values << std::endl;
   
   Eigen::VectorXd alpha(numconstraints); // = lglhs.inverse()*lgrhs;
-  lglhs.lu().solve(lgrhs, &alpha);
+  lglhs.eigen2_lu().solve(lgrhs, &alpha);
   
   assert( alpha(0) >= 0.0 );
   
@@ -2185,7 +2185,7 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree( const EdgeE
   assert( lglhs.rows() == lglhs.cols() );
   assert( lglhs.rows() == lgrhs.size() );
   assert( lglhs.rows() == alpha.size() );
-  lglhs.lu().solve(lgrhs, &alpha);
+  lglhs.eigen2_lu().solve(lgrhs, &alpha);
 
   assert( alpha(0) >= 0.0 );
   
@@ -2491,7 +2491,7 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed( const EdgeE
   //std::cout << desired_values << std::endl;
   
   Eigen::VectorXd alpha(numconstraints); // = lglhs.inverse()*lgrhs;
-  lglhs.lu().solve(lgrhs, &alpha);
+  lglhs.eigen2_lu().solve(lgrhs, &alpha);
 
   // Contact constraint should 'push not pull'
   assert( alpha(0) >= 0.0 );

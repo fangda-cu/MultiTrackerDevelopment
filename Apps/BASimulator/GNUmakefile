@@ -12,11 +12,12 @@ include /vol/bob/make/head.mk
 
 ###{ Name of executable to be built.
 ###}
-PRG1_CF		:= -DWETA
+PRG1_CF		:= -DWETA -DHAVE_LAPACK
 
 #Nasty but we need it to build BASimulator which uses a file in the BASim library which references a file back in BASim...
 PRG1_CF += -I../../../ -I. #-I/vol/bob/src/code/Figaro/work/acoull-breannanCollisions/
 PRG1_CF += -Itclap-1.2.0/include/
+PRG1_CF += $(EIGEN2_COMPATIBILITY_LEVEL)
 
 PRG1		:= basimulator
 
