@@ -53,7 +53,7 @@ PRG1_S		:= \
 ###  linking this executable.
 PRG1_L		:= \
 	-lWfigaro_dbg \
-    -lglut
+    -lglut -lGLU
 
 # add in the MKL libraries
 PRG1_L        += -Wl,--start-group \
