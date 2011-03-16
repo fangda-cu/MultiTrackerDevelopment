@@ -407,7 +407,7 @@ void idle()
     }
   }
 
-  if( current_problem->getTime() >= g_sim_breakpoints->front() )
+  if(g_sim_breakpoints && current_problem->getTime() >= g_sim_breakpoints->front())
   {
     std::cout << "\033[35;1mBASIMULATOR MESSAGE:\033[m Pausing for breakpoint at time " << current_problem->getTime() << "." << std::endl;
     paused = true;
