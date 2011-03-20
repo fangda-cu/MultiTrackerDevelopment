@@ -41,7 +41,7 @@ public:
 
   //typedef std::map<std::string, Option> OptionMap;
 
-  Problem(const std::string& name = "", const std::string& desc = "");
+  explicit Problem(const std::string& name = "", const std::string& desc = "");
   virtual ~Problem();
 
   void BaseSetup(int argc, char** argv);

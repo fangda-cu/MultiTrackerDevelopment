@@ -530,7 +530,7 @@ namespace BASim
         //std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: " << m_maxit << std::endl;
       }
       
-      #ifdef TIMING_ON
+      #ifdef TIMING_ON_DISABLE // FIXME
         std::string itrstrng = toString(m_curit+1);
         while( itrstrng.size() < 3 ) itrstrng = "0" + itrstrng;
         itrstrng = "NEWTON_SOLVES_OF_LENGTH_" + itrstrng;
