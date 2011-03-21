@@ -18,16 +18,16 @@ namespace BASim
 class CollisionDetector
 {
 	const GeometricData m_geodata;
-	std::vector<TopologicalElement*> m_objects; // Copies of the original. What if the original topology changes? Assume nothing breaks.
-	const double m_time_step; // What if the time step changes? Shouldn't this be a reference?
+	std::vector<const TopologicalElement*> m_elements;
+	const double m_time_step;
 	BVH m_bvh;
-	std::list<ContinuousTimeCollision>* m_cllsns;
+	std::list<ContinuousTimeCollision>* m_collisions;
 
 public:
 	// During construction, the BVH tree is created around the initial geometry.
 	CollisionDetector(const VecXd& x, const VecXd& v, const std::vector<std::pair<int, int> >& edges,
-			const std::vector<TriangularFace>& faces, const std::vector<double>& vert_radii, const std::vector<double>& masses, int obj_start,
-			const double& timestep);
+			const std::vector<TriangularFace>& faces, const std::vector<double>& vert_radii, const std::vector<double>& masses,
+			int obj_start, const double& timestep);
 
 	virtual ~CollisionDetector();
 
@@ -43,14 +43,14 @@ private:
 
 	// Update the BVH tree starting from node, taking into account the evolution during the time step,
 	// i.e. insert m_geodata.m_points+m_time_step*m_geodata.m_velocities.
-	void expandBoundingBoxes(BVHNode& node);
+	void updateBoundingBox(BVHNode& node);
 
 	// Compute the collisions that happen during the time step between elements in the leaves node_a and node_b
 	void intersectContent(const BVHNode& node_a, const BVHNode& node_b);
 
 	void intersectContentSelf(const BVHNode& node);
 
-	// Determine if the collision happens; if so append the CTC to m_cllsns.
+	// Determine if the collision happens; if so append the CTC to m_collisions.
 	void appendContinuousTimeIntersection(const TopologicalElement* obj_a, const TopologicalElement* obj_b);
 	void appendContinuousTimeIntersection(const YAEdge* edge_a, const YAEdge* edge_b);
 	void appendContinuousTimeIntersection(const YAEdge* edge, const YATriangle* triangle);
@@ -65,8 +65,8 @@ private:
 	bool isRodVertex(int vert) const;
 	Vec3d computeRelativeVelocity(const int& idxa0, const int& idxa1, const int& idxb0, const int& idxb1, const double& s,
 			const double& t);
-	Vec3d computeRelativeVelocity(const int& vrtidx, const int& fcidx0, const int& fcidx1,
-			const int& fcidx2, const double& u, const double& v, const double& w);
+	Vec3d computeRelativeVelocity(const int& vrtidx, const int& fcidx0, const int& fcidx1, const int& fcidx2, const double& u,
+			const double& v, const double& w);
 };
 }
 

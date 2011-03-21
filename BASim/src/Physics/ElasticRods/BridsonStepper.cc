@@ -265,7 +265,8 @@ void BridsonStepper::prepareForExecution()
 	std::cout << "Created CollisionDetector" << std::endl;
 #else
 	std::cout << "About to create CollisionDetector" << std::endl;
-	m_collision_detector = new CollisionDetector(m_xn, m_vnphalf, m_edges, m_faces, m_vertex_radii, m_masses, m_obj_start, m_dt);
+	m_collision_detector
+			= new CollisionDetector(m_xn, m_vnphalf, m_edges, m_faces, m_vertex_radii, m_masses, m_obj_start, m_dt);
 	std::cout << "Created CollisionDetector" << std::endl;
 #endif
 }
@@ -438,8 +439,7 @@ void BridsonStepper::filterCollisions(std::list<ContinuousTimeCollision>& cllsns
 		else
 			++itr;
 	}
-	std::cerr << "Actual collisions: " << DEBUG_edgedg << " edge/edge and "
-			<< DEBUG_vtxfce << " face/face" << std::endl;
+	std::cerr << "Actual collisions: " << DEBUG_edgedg << " edge/edge and " << DEBUG_vtxfce << " face/face" << std::endl;
 }
 
 void BridsonStepper::executeIterativeInelasticImpulseResponse()
@@ -456,7 +456,7 @@ void BridsonStepper::executeIterativeInelasticImpulseResponse()
 #endif
 
 	// Iterativly apply inelastic impulses
-	int itr = 0;
+	int itr;
 	for (itr = 0; itr < m_num_inlstc_itrns; ++itr)
 	{
 		// TODO: Add debug checks for repeat collisions.
@@ -464,66 +464,38 @@ void BridsonStepper::executeIterativeInelasticImpulseResponse()
 			break;
 
 		// Just sort the collision times to maintain some rough sense of causality
+		cllsns.sort(compareCollisionTimes);
+		while (!cllsns.empty())
 		{
-			cllsns.sort(compareCollisionTimes);
-			while (!cllsns.empty())
-			{
-				ContinuousTimeCollision cllsn = cllsns.front();
-				cllsns.pop_front();
+			ContinuousTimeCollision cllsn = cllsns.front();
+			cllsns.pop_front();
 
 #ifdef BREANNAN_ORIGINAL
-				bool happens = false;
-				if (cllsn.isEdgeEdge())
-				computeEdgeEdgeContinuousTimeInfo(cllsn.getEdgeEdge(), happens);
-				else
-				computeVertexFaceContinuousTimeInfo(cllsn.getVertexFace(), happens);
-				if (!happens)
-				continue;
+			bool happens = false;
+			if (cllsn.isEdgeEdge())
+			computeEdgeEdgeContinuousTimeInfo(cllsn.getEdgeEdge(), happens);
+			else
+			computeVertexFaceContinuousTimeInfo(cllsn.getVertexFace(), happens);
+			if (!happens)
+			continue;
 #endif
-				if (cllsn.isEdgeEdge())
-				{
-					exertCompliantInelasticEdgeEdgeImpulse(cllsn.getEdgeEdge());
-					//exertInelasticImpluse(cllsn.getEdgeEdge());
-				}
-				else
-				{
-					exertCompliantInelasticVertexFaceImpulse(cllsn.getVertexFace());
-					//exertCompliantInelasticVertexFaceImpulse(cllsn.getVertexFace());
-					//exertInelasticImpluse(cllsn.getVertexFace());
-				}
+			if (cllsn.isEdgeEdge())
+			{
+				exertCompliantInelasticEdgeEdgeImpulse(cllsn.getEdgeEdge());
+				//exertInelasticImpluse(cllsn.getEdgeEdge());
+			}
+			else
+			{
+				exertCompliantInelasticVertexFaceImpulse(cllsn.getVertexFace());
+				//exertCompliantInelasticVertexFaceImpulse(cllsn.getVertexFace());
+				//exertInelasticImpluse(cllsn.getVertexFace());
+			}
 
 #ifndef BREANNAN_ORIGINAL
-				m_collision_detector->updateContinuousTimeCollisions();
+			m_collision_detector->updateContinuousTimeCollisions();
 #endif
 
-
-
-			}
 		}
-
-		// Use a priority queue to try and maintain causality
-		//{
-		//  std::priority_queue< ContinuousTimeCollision, std::vector<ContinuousTimeCollision>, mycomparison > sorted_collisions(cllsns.begin(),cllsns.end());
-		//  cllsns.clear();
-		//
-		//  while( !sorted_collisions.empty() )
-		//  {
-		//    ContinuousTimeCollision cllsn = sorted_collisions.top();
-		//    sorted_collisions.pop();
-		//    double old_time = cllsn.getTime();
-		//    bool happens = false;
-		//    if( cllsn.isEdgeEdge() ) computeEdgeEdgeContinuousTimeInfo(cllsn.getEdgeEdge(),happens);
-		//    else computeVertexFaceContinuousTimeInfo(cllsn.getVertexFace(),happens);
-		//    if( !happens ) continue;
-		//    double new_time = cllsn.getTime();
-		//    if( approxEq(old_time,new_time,1.0e-6) )
-		//    {
-		//      if( cllsn.isEdgeEdge() ) exertInelasticImpluse(cllsn.getEdgeEdge());
-		//      else exertInelasticImpluse(cllsn.getVertexFace());
-		//    }
-		//    else sorted_collisions.push(cllsn);
-		//  }
-		//}
 
 		assert(cllsns.empty());
 #ifdef BREANNAN_ORIGINAL
@@ -2488,7 +2460,8 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEd
 	Vec3d relvel = computeRelativeVelocity(m_vnphalf, eecol.e0_v0, eecol.e0_v1, eecol.e1_v0, eecol.e1_v1, eecol.s, eecol.t);
 	double magrelvel = relvel.dot(eecol.n);
 	//assert(magrelvel < 0.0);
-if (magrelvel >= 0) return;
+	if (magrelvel >= 0)
+		return;
 	// Extract the rod index, barycentric coordinate of the collision, and indices of the edge involved in the collision
 	int rodidx = -1;
 	double u = -1.0;

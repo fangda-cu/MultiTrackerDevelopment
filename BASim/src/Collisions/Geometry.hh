@@ -63,15 +63,15 @@ class TopologicalElement
 
 public:
 	// Return the bounding box of the object after it has moved for time_step
-	virtual BoundingBox<Scalar> GetBBox(const GeometricData& geodata, const double time_step = 0) = 0;
+	virtual BoundingBox<Scalar> GetBBox(const GeometricData& geodata, const double time_step = 0) const = 0;
 
 };
 
 class YAEdge: public TopologicalElement
 {
-public:
 	std::pair<int, int> m_edge;
 
+public:
 	explicit YAEdge(std::pair<int, int> edge) :
 		m_edge(edge)
 	{
@@ -82,31 +82,38 @@ public:
 	{
 	}
 
-	BoundingBox<Scalar> GetBBox(const GeometricData& geodata, const double time_step = 0);
+	int first() const { return m_edge.first; }
+	int second() const { return m_edge.second; }
+
+	BoundingBox<Scalar> GetBBox(const GeometricData& geodata, const double time_step = 0) const;
 
 };
 
 class YATriangle: public TopologicalElement
 {
-public:
 	TriangularFace m_triangle;
 
+public:
 	explicit YATriangle(TriangularFace triangle) :
 		m_triangle(triangle)
 	{
 	}
 
-	BoundingBox<Scalar> GetBBox(const GeometricData& geodata, const double time_step = 0);
+	int first() const { return m_triangle.idx[0]; }
+	int second() const { return m_triangle.idx[1]; }
+	int third() const { return m_triangle.idx[2]; }
+
+	BoundingBox<Scalar> GetBBox(const GeometricData& geodata, const double time_step = 0) const;
 
 };
 
 class GeometryBBoxFunctor
 {
-	std::vector<TopologicalElement*>& m_objects;
+	std::vector<const TopologicalElement*>& m_objects;
 	const GeometricData& m_geodata;
 
 public:
-	GeometryBBoxFunctor(std::vector<TopologicalElement*>& objects, const GeometricData& geodata) :
+	GeometryBBoxFunctor(std::vector<const TopologicalElement*>& objects, const GeometricData& geodata) :
 		m_objects(objects), m_geodata(geodata)
 	{
 	}

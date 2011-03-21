@@ -10,12 +10,14 @@
 namespace BASim
 {
 
-static const double MARGIN = 1.0e-6;
+static const double MARGIN = 0.0;
 
-BoundingBox<Scalar> YAEdge::GetBBox(const GeometricData& geodata, const double time_step)
+BoundingBox<Scalar> YAEdge::GetBBox(const GeometricData& geodata, const double time_step) const
 {
-	const Point<Scalar>& v0 = (Point<Scalar> ) (Vec3d) geodata.GetVelocity(m_edge.first);
-	const Point<Scalar>& v1 = (Point<Scalar> ) (Vec3d) geodata.GetVelocity(m_edge.second);
+	// std::cerr << "Computing bounding box for edge " << first() << " " << second() << std::endl;
+
+	const Point<Scalar>& v0 = (Point<Scalar> ) (Vec3d) geodata.GetVelocity(first());
+	const Point<Scalar>& v1 = (Point<Scalar> ) (Vec3d) geodata.GetVelocity(second());
 
 	const Point<Scalar>& p0 = (Point<Scalar> ) (Vec3d) geodata.GetPoint(m_edge.first) + v0 * time_step;
 	const Point<Scalar>& p1 = (Point<Scalar> ) (Vec3d) geodata.GetPoint(m_edge.second) + v1 * time_step;
@@ -29,7 +31,7 @@ BoundingBox<Scalar> YAEdge::GetBBox(const GeometricData& geodata, const double t
 	return bbox;
 }
 
-BoundingBox<Scalar> YATriangle::GetBBox(const GeometricData& geodata, const double time_step)
+BoundingBox<Scalar> YATriangle::GetBBox(const GeometricData& geodata, const double time_step) const
 {
 	const Point<Scalar>& v0 = (Point<Scalar> ) (Vec3d) geodata.GetVelocity(m_triangle.idx[0]);
 	const Point<Scalar>& v1 = (Point<Scalar> ) (Vec3d) geodata.GetVelocity(m_triangle.idx[1]);

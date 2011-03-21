@@ -10,6 +10,7 @@
 
 #include <limits>
 #include <algorithm>
+#include <iostream>
 #include "../Core/Definitions.hh"
 
 namespace BASim
@@ -358,7 +359,7 @@ struct BoundingBox
 	{
 	}
 
-	BoundingBox(float minx, float miny, float minz, float maxx, float maxy, float maxz) :
+	BoundingBox(T minx, T miny, T minz, T maxx, T maxy, T maxz) :
 		min(minx, miny, minz), max(maxx, maxy, maxz)
 	{
 	}
