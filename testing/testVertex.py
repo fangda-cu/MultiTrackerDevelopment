@@ -8,7 +8,7 @@ class VertexTest( TestCase ):
 	def testVertex( self ):
 		
 		# Uses python-2.6.4_64
-		self.shell.need( 'python-2.6.4_64' )
+		self.shell.need( 'python-3.1.1_64' )
 		
 		files = open('./testing/lists.txt', 'r')
 		
@@ -52,9 +52,9 @@ class VertexTest( TestCase ):
 		
 			#make sure files contain same data
 			for i in range(0,count_lines):
-				self.assertEqual(data[i][0],datatest[i][0])
-		        	self.assertEqual(data[i][1],datatest[i][1])
-				self.assertEqual(data[i][2],datatest[i][2])
+				self.assertTrue(abs(data[i][0]-datatest[i][0])< 0.02)
+		        	self.assertTrue(abs(data[i][1]-datatest[i][1])< 0.02)
+				self.assertTrue(abs(data[i][2]-datatest[i][2])< 0.02)
 		   
 			f.close()
 			ftest.close()

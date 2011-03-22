@@ -10,7 +10,7 @@
 #include <stdio.h>
 
 CollisionTestWeta::CollisionTestWeta()
-: Problem("Tricky Collisions", "A number of tests highlighting problems with naive collision response.")
+: Problem("Collision Tests Weta", "A number of tests highlighting problems with naive collision response.")
 , m_rods()
 , m_tri_objs()
 , m_controllers()
@@ -190,11 +190,26 @@ bool RodObjSnaggingController::execute()
    // std::cout << "rod vertex 10  position "<< m_rod.getVertex(10)<< std::endl;
    // std::cout << "rod vertex 19  position "<< m_rod.getVertex(19)<< std::endl;
     //fprintf(m_pFile, "this is a test");
-    fprintf(m_pFile, "%9.2f %9.2f %9.2f\n", test0(0), test0(1), test0(2));
-    fprintf(m_pFile, "%9.2f %9.2f %9.2f\n", test1(0), test1(1), test1(2));
-    fprintf(m_pFile, "%9.2f %9.2f %9.2f\n", test10(0), test10(1), test10(2));
-    fprintf(m_pFile, "%9.2f %9.2f %9.2f\n", test19(0), test19(1), test19(2));
-    fprintf(m_pFile, "%9.2f %9.2f %9.2f\n", test39(0), test39(1), test39(2));
+    float v0_0= roundto( test0(0), 10000.0 );
+    float v0_1= roundto( test0(1), 10000.0 );
+    float v0_2= roundto( test0(2), 10000.0 );
+    float v1_0= roundto( test1(0), 10000.0 );
+    float v1_1= roundto( test1(1), 10000.0 );
+    float v1_2= roundto( test1(2), 10000.0 );
+    float v10_0= roundto( test10(0), 10000.0 );
+    float v10_1= roundto( test10(1), 10000.0 );
+    float v10_2= roundto( test10(2), 10000.0 );
+    float v19_0= roundto( test19(0), 10000.0 );
+    float v19_1= roundto( test19(1), 10000.0 );
+    float v19_2= roundto( test19(2), 10000.0 );
+    float v39_0= roundto( test39(0), 10000.0 );
+    float v39_1= roundto( test39(1), 10000.0 );
+    float v39_2= roundto( test39(2), 10000.0 );
+    fprintf(m_pFile, "%9.4f %9.4f %9.4f\n",  v0_0, v0_1, v0_2);
+    fprintf(m_pFile, "%9.4f %9.4f %9.4f\n",  v1_0, v1_1, v1_2);
+    fprintf(m_pFile, "%9.4f %9.4f %9.4f\n", v10_0, v10_1, v10_2);
+    fprintf(m_pFile, "%9.4f %9.4f %9.4f\n", v19_0, v19_1, v19_2);
+    fprintf(m_pFile, "%9.4f %9.4f %9.4f\n", v39_0, v39_1, v39_2);
     //sleep(1);
   }
   
@@ -206,6 +221,9 @@ bool RodObjSnaggingController::execute()
   }
   return true;
 }
+
+float  RodObjSnaggingController::roundto(float val, float prec) { return floor( prec * val + 0.5 ) / prec; }
+
 
 void CollisionTestWeta::RodObjectSnaggingSetup()
 {
@@ -261,7 +279,7 @@ void CollisionTestWeta::RodObjectSnaggingSetup()
   m_tri_objs.push_back(tri_mesh);
   FILE * pFile;
 
-  pFile=fopen("./testing/run8_t0_test.txt","w");
+  pFile=fopen("./testing/run7_t0_test.txt","w");
    if ( pFile == NULL )
   {
        std::cerr << "Couldn't open the file!" << std::endl;
@@ -407,12 +425,27 @@ bool ObjTranslatorWeta::execute()
    // std::cout << "rod vertex 10  position "<< m_rod.getVertex(10)<< std::endl;
    // std::cout << "rod vertex 19  position "<< m_rod.getVertex(19)<< std::endl;
     //fprintf(m_pFile, "this is a test");
-    fprintf(m_pFile, "%9.2f %9.2f %9.2f\n", test0(0), test0(1), test0(2));
-    fprintf(m_pFile, "%9.2f %9.2f %9.2f\n", test1(0), test1(1), test1(2));
-    fprintf(m_pFile, "%9.2f %9.2f %9.2f\n", test10(0), test10(1), test10(2));
-    fprintf(m_pFile, "%9.2f %9.2f %9.2f\n", test19(0), test19(1), test19(2));
-    fprintf(m_pFile, "%9.2f %9.2f %9.2f\n", test39(0), test39(1), test39(2));
-    sleep(1);
+    float v0_0= roundto( test0(0), 10000.0 );
+    float v0_1= roundto( test0(1), 10000.0 );
+    float v0_2= roundto( test0(2), 10000.0 );
+    float v1_0= roundto( test1(0), 10000.0 );
+    float v1_1= roundto( test1(1), 10000.0 );
+    float v1_2= roundto( test1(2), 10000.0 );
+    float v10_0= roundto( test10(0), 10000.0 );
+    float v10_1= roundto( test10(1), 10000.0 );
+    float v10_2= roundto( test10(2), 10000.0 );
+    float v19_0= roundto( test19(0), 10000.0 );
+    float v19_1= roundto( test19(1), 10000.0 );
+    float v19_2= roundto( test19(2), 10000.0 );
+    float v39_0= roundto( test39(0), 10000.0 );
+    float v39_1= roundto( test39(1), 10000.0 );
+    float v39_2= roundto( test39(2), 10000.0 );
+    fprintf(m_pFile, "%9.4f %9.4f %9.4f\n",  v0_0, v0_1, v0_2);
+    fprintf(m_pFile, "%9.4f %9.4f %9.4f\n",  v1_0, v1_1, v1_2);
+    fprintf(m_pFile, "%9.4f %9.4f %9.4f\n", v10_0, v10_1, v10_2);
+    fprintf(m_pFile, "%9.4f %9.4f %9.4f\n", v19_0, v19_1, v19_2);
+    fprintf(m_pFile, "%9.4f %9.4f %9.4f\n", v39_0, v39_1, v39_2);
+    //sleep(1);
   }
   
   if( getTime() >0.3 )
@@ -425,6 +458,7 @@ bool ObjTranslatorWeta::execute()
   return true;
 }
 
+float  ObjTranslatorWeta::roundto(float val, float prec) { return floor( prec * val + 0.5 ) / prec; }
 
 void CollisionTestWeta::MovingSphereSetup()
 {
@@ -480,7 +514,7 @@ void CollisionTestWeta::MovingSphereSetup()
   m_tri_objs.push_back(tri_mesh);
   FILE * pFile;
 
-  pFile=fopen("./testing/run8_t10_test.txt","w");
+  pFile=fopen("./testing/run7_t10_test.txt","w");
   if ( pFile == NULL )
   {
        std::cerr << "Couldn't open the file!" << std::endl;
@@ -577,7 +611,7 @@ void CollisionTestWeta::RodObjectSnaggingVertFaceTwoSetup()
   int numy = 1;
   FILE * pFile;
 
-  pFile=fopen("./testing/run8_t3_test.txt","w");
+  pFile=fopen("./testing/run7_t3_test.txt","w");
    if ( pFile == NULL )
   {
        std::cerr << "Couldn't open the file!" << std::endl;

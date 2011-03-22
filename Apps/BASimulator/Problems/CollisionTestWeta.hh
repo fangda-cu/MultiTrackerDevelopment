@@ -90,9 +90,11 @@ public:
   RodObjSnaggingController( ElasticRod& rod, double time, double dt, FILE * pfile );
   bool execute();
 
+
 private:
   ElasticRod& m_rod;
   FILE * m_pFile;
+  float roundto(float val, float prec);
 };
 
 class RodRodSnagController : public ScriptingController
@@ -135,6 +137,7 @@ private:
   TriangleMesh& m_mesh;
   ElasticRod& m_rod;
   FILE * m_pFile;
+  float roundto(float val, float prec);
 };
 
 #endif // COLLISIONTEST_HH

@@ -1,21 +1,18 @@
-# Options for Hairy Ball
-adaptivestepper true	# true if adaptive timestepping should be used, failse otherwise
+# Options for Tricky Collisions
+RegressionTest 0	# Which regression test to execute.
 atol 1e-08	# absolute convergence tolerance
-curlyhair false	# curly if true, straight if false
 density 1.3	# volumetric density of the rod
-dt 0.05	# time-step size
-enablecollisions true	# true if collisions enabled, false otherwise
+dt 0.1	# time-step size
 gravity 0 -981 0	# gravity
-hairrootfile assets/hairyball/100normals.txt	# file with locations (specified as point on sphere) to grow hair from
 inftol 1e-08	# infinity norm convergence tolerance
 integrator implicit	# type of integrator to use for the rod
-iterations 100	# maximum number of iterations for implicit method
+iterations 1000	# maximum number of iterations for implicit method
 major-radius 0.005	# radius of major axis of cross-section
 mass-damping 0	# mass damping for the rod
 minor-radius 0.005	# radius of minor axis of cross-section
 nv 40	# number of vertices in the rod
-quasistatic false	# update material frame quasistatically
-radius-scale 10	# scaling for rendering and collisions
+quasistatic true	# update material frame quasistatically
+radius-scale 1	# scaling for rendering and collisions
 reference-frame time	# type of reference frame to use (time/space)
 rtol 1e-08	# relative convergence tolerance
 shear-modulus 3.4e+09	# Shear modulus for the rod
