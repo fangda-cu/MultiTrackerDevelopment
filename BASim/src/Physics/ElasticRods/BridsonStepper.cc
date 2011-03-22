@@ -118,31 +118,15 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
 
 BridsonStepper::~BridsonStepper()
 {
-#ifdef BREANNAN_ORIGINAL
-    if (m_bvh != NULL)
-    {
-        delete m_bvh;
-        m_bvh = NULL;
-    }
-#else
     delete m_collision_detector;
     m_collision_detector = NULL;
-#endif
 }
 
 // TODO: Check the indices here
 void BridsonStepper::prepareForExecution()
 {
-#ifdef BREANNAN_ORIGINAL
-    if (m_bvh != NULL)
-    {
-        delete m_bvh;
-        m_bvh = NULL;
-    }
-#else
     delete m_collision_detector;
     m_collision_detector = NULL;
-#endif
 
     //std::cout << "About to extract rod information" << std::endl;
     for (int i = 0; i < (int) m_rods.size(); ++i)
@@ -270,20 +254,21 @@ void BridsonStepper::setRodLabels(const std::vector<std::string>& rod_labels)
     m_rod_labels = rod_labels;
 }
 
-void BridsonStepper::exertInelasticImpluse(EdgeEdgeCTCollision& clssn)
+void BridsonStepper::exertInelasticImpluse(EdgeEdgeCTCollision& eecol)
 {
-    assert(clssn.e0_v0 >= 0);
-    assert(clssn.e0_v0 < getNumVerts());
-    assert(clssn.e0_v1 >= 0);
-    assert(clssn.e0_v1 < getNumVerts());
-    assert(clssn.e1_v0 >= 0);
-    assert(clssn.e1_v0 < getNumVerts());
-    assert(clssn.e1_v1 >= 0);
-    assert(clssn.e1_v1 < getNumVerts());
+    assert(eecol.e0_v0 >= 0);
+    assert(eecol.e0_v0 < getNumVerts());
+    assert(eecol.e0_v1 >= 0);
+    assert(eecol.e0_v1 < getNumVerts());
+    assert(eecol.e1_v0 >= 0);
+    assert(eecol.e1_v0 < getNumVerts());
+    assert(eecol.e1_v1 >= 0);
+    assert(eecol.e1_v1 < getNumVerts());
 
     // Compute the relative velocity of the edges at the collision point
-    Vec3d relvel = m_geodata.computeRelativeVelocity(clssn.e0_v0, clssn.e0_v1, clssn.e1_v0, clssn.e1_v1, clssn.s, clssn.t);
-    double magrelvel = relvel.dot(clssn.n);
+    //   Vec3d relvel = m_geodata.computeRelativeVelocity(clssn.e0_v0, clssn.e0_v1, clssn.e1_v0, clssn.e1_v1, clssn.s, clssn.t);
+    //   double magrelvel = relvel.dot(clssn.n);
+    double magrelvel = eecol.computeRelativeVelocity(m_geodata);
 
     if (magrelvel >= 0.0)
     {
@@ -291,103 +276,55 @@ void BridsonStepper::exertInelasticImpluse(EdgeEdgeCTCollision& clssn)
                 << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Relative velocity computed \
                   incorrectly before applying edge-edge inelastic impulse (bug in normal \
                   computation?). Magnitude of relative velocity: "
-                << magrelvel << ". Rod: " << getContainingRod(clssn.e0_v0) << std::endl;
+                << magrelvel << ". Rod: " << getContainingRod(eecol.e0_v0) << std::endl;
     }
     assert(magrelvel < 0.0);
 
     // Add some extra "kick" to relative velocity to account for FPA errors
     magrelvel -= 1.0e-6;
-    Vec3d I = computeEdgeEdgeInelasticImpulse(m_masses[clssn.e0_v0], m_masses[clssn.e0_v1], m_masses[clssn.e1_v0],
-            m_masses[clssn.e1_v1], clssn.s, clssn.t, magrelvel, clssn.n);
+    Vec3d I = eecol.computeInelasticImpulse(m_geodata, magrelvel);
+    //computeEdgeEdgeInelasticImpulse(m_masses[eecol.e0_v0], m_masses[eecol.e0_v1], m_masses[eecol.e1_v0],
+    //m_masses[eecol.e1_v1], eecol.s, eecol.t, magrelvel, eecol.n);
 
-    exertEdgeImpulse(-I, m_masses[clssn.e0_v0], m_masses[clssn.e0_v1], clssn.s, clssn.e0_v0, clssn.e0_v1, m_vnphalf);
-    exertEdgeImpulse(I, m_masses[clssn.e1_v0], m_masses[clssn.e1_v1], clssn.t, clssn.e1_v0, clssn.e1_v1, m_vnphalf);
+    exertEdgeImpulse(-I, m_masses[eecol.e0_v0], m_masses[eecol.e0_v1], eecol.s, eecol.e0_v0, eecol.e0_v1, m_vnphalf);
+    exertEdgeImpulse(I, m_masses[eecol.e1_v0], m_masses[eecol.e1_v1], eecol.t, eecol.e1_v0, eecol.e1_v1, m_vnphalf);
 
-    assert(
-            m_geodata.computeRelativeVelocity(clssn.e0_v0, clssn.e0_v1, clssn.e1_v0, clssn.e1_v1, clssn.s, clssn.t).dot(clssn.n)
-                    >= 0.0);
+    assert(eecol.computeRelativeVelocity(m_geodata) >= 0.0);
 }
 
-void BridsonStepper::exertInelasticImpluse(VertexFaceCTCollision& clssn)
+void BridsonStepper::exertInelasticImpluse(VertexFaceCTCollision& vfcol)
 {
-    assert(clssn.v0 >= 0);
-    assert(clssn.v0 < getNumVerts());
-    assert(clssn.f0 >= 0);
-    assert(clssn.f0 < getNumVerts());
-    assert(clssn.f1 >= 0);
-    assert(clssn.f1 < getNumVerts());
-    assert(clssn.f2 >= 0);
-    assert(clssn.f2 < getNumVerts());
+    assert(vfcol.v0 >= 0);
+    assert(vfcol.v0 < getNumVerts());
+    assert(vfcol.f0 >= 0);
+    assert(vfcol.f0 < getNumVerts());
+    assert(vfcol.f1 >= 0);
+    assert(vfcol.f1 < getNumVerts());
+    assert(vfcol.f2 >= 0);
+    assert(vfcol.f2 < getNumVerts());
 
     // Compute the relative velocity of the edges at the collision point
-    Vec3d relvel = m_geodata.computeRelativeVelocity(clssn.v0, clssn.f0, clssn.f1, clssn.f2, clssn.u, clssn.v, clssn.w);
-    double magrelvel = relvel.dot(clssn.n);
-
-    if (magrelvel >= 0.0)
-    {
-        std::cerr
-                << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Relative velocity computed \
-                  incorrectly before applying vertex-face inelastic impulse (bug in normal \
-                  computation?). Magnitude of relative velocity: "
-                << magrelvel << ". Rod: " << getContainingRod(clssn.v0) << std::endl;
-    }
+    double magrelvel = vfcol.computeRelativeVelocity(m_geodata);
     assert(magrelvel < 0.0);
-
-    //    // TODO: Remove once done debugging the hairry ball.
-    //    {
-    //      // For this convex object centered at origin, normals dotted into a position on the triangle must be positive.
-    //      const Vec3d p  = m_xn.segment<3>(3*clssn.v0);
-    //      const Vec3d f0 = m_xn.segment<3>(3*clssn.f0);
-    //      const Vec3d f1 = m_xn.segment<3>(3*clssn.f1);
-    //      const Vec3d f2 = m_xn.segment<3>(3*clssn.f2);
-    //
-    //      const Vec3d vp  = m_vnphalf.segment<3>(3*clssn.v0);
-    //      const Vec3d vf0 = m_vnphalf.segment<3>(3*clssn.f0);
-    //      const Vec3d vf1 = m_vnphalf.segment<3>(3*clssn.f1);
-    //      const Vec3d vf2 = m_vnphalf.segment<3>(3*clssn.f2);
-    //
-    //      const Vec3d pcol  = p +clssn.time*m_dt*vp;
-    //      const Vec3d f0col = f0+clssn.time*m_dt*vf0;
-    //      const Vec3d f1col = f1+clssn.time*m_dt*vf1;
-    //      const Vec3d f2col = f2+clssn.time*m_dt*vf2;
-    //
-    //      if( clssn.n.dot( f0col ) <= 0.0 || clssn.n.dot( f1col ) <= 0.0 || clssn.n.dot( f2col ) <= 0.0 )
-    //      {
-    //        std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m \"Backside\" collision detected. \
-//                     Probably not a big deal. Rod: " << getContainingRod(clssn.v0) << " Vertex: " 
-    //                     << clssn.v0 << " Time: " << m_t << std::endl;
-    //      }
-    //      //assert( clssn.n.dot( f0col ) > 0.0 );
-    //      //assert( clssn.n.dot( f1col ) > 0.0 );
-    //      //assert( clssn.n.dot( f2col ) > 0.0 );
-    //    }
 
     // Add some extra "kick" to relative velocity to account for FPA errors
     magrelvel -= 1.0e-6;
-    Vec3d I = computeVertexFaceInelasticImpulse(m_masses[clssn.v0], m_masses[clssn.f0], m_masses[clssn.f1], m_masses[clssn.f2],
-            clssn.u, clssn.v, clssn.w, magrelvel, clssn.n);
+    Vec3d I = vfcol.computeInelasticImpulse(m_geodata, magrelvel);
+    // computeVertexFaceInelasticImpulse(m_masses[vfcol.v0], m_masses[vfcol.f0], m_masses[vfcol.f1], m_masses[vfcol.f2],
+    // vfcol.u, vfcol.v, vfcol.w, magrelvel, vfcol.n);
 
-    exertFaceImpulse(-I, m_masses[clssn.f0], m_masses[clssn.f1], m_masses[clssn.f2], clssn.u, clssn.v, clssn.w, clssn.f0,
-            clssn.f1, clssn.f2, m_vnphalf);
-    exertVertexImpulse(I, m_masses[clssn.v0], clssn.v0, m_vnphalf);
+    exertFaceImpulse(-I, m_masses[vfcol.f0], m_masses[vfcol.f1], m_masses[vfcol.f2], vfcol.u, vfcol.v, vfcol.w, vfcol.f0,
+            vfcol.f1, vfcol.f2, m_vnphalf);
+    exertVertexImpulse(I, m_masses[vfcol.v0], vfcol.v0, m_vnphalf);
 
-    assert(
-            m_geodata.computeRelativeVelocity(clssn.v0, clssn.f0, clssn.f1, clssn.f2, clssn.u, clssn.v, clssn.w).dot(clssn.n)
-                    >= 0.0);
+    assert(vfcol.computeRelativeVelocity(m_geodata) >= 0.0);
 }
 
 void BridsonStepper::executeIterativeInelasticImpulseResponse()
 {
     // Detect possible continuous time collisions
     std::list<CTCollision*> cllsns;
-
-#ifdef BREANNAN_ORIGINAL
-    m_bvh->getContinuousTimeCollisions(cllsns);
-    filterCollisions(cllsns);
-#else
     m_collision_detector->getContinuousTimeCollisions(cllsns);
-    std::cerr << "Collision detector found " << cllsns.size() << " collisions" << std::endl;
-#endif
 
     // Iterativly apply inelastic impulses
     int itr;
@@ -404,42 +341,12 @@ void BridsonStepper::executeIterativeInelasticImpulseResponse()
             CTCollision* cllsn = cllsns.front();
             cllsns.pop_front();
 
-#ifdef BREANNAN_ORIGINAL
-            bool happens = false;
-            if (cllsn.isEdgeEdge())
-            computeEdgeEdgeContinuousTimeInfo(cllsn.getEdgeEdge(), happens);
-            else
-            computeVertexFaceContinuousTimeInfo(cllsn.getVertexFace(), happens);
-            if (!happens)
-            continue;
-#endif
-            EdgeEdgeCTCollision* eecol = dynamic_cast<EdgeEdgeCTCollision*> (cllsn);
-            VertexFaceCTCollision* vfcol = dynamic_cast<VertexFaceCTCollision*> (cllsn);
-            if (eecol)
-            {
-                exertCompliantInelasticEdgeEdgeImpulse(*eecol);
-                //exertInelasticImpluse(cllsn.getEdgeEdge());
-            }
-            else if (vfcol)
-            {
-                exertCompliantInelasticVertexFaceImpulse(*vfcol);
-                //exertCompliantInelasticVertexFaceImpulse(cllsn.getVertexFace());
-                //exertInelasticImpluse(cllsn.getVertexFace());
-            }
-
-#ifndef BREANNAN_ORIGINAL
+            exertCompliantInelasticImpulse(cllsn);
             m_collision_detector->updateContinuousTimeCollisions();
-#endif
-
         }
 
         assert(cllsns.empty());
-#ifdef BREANNAN_ORIGINAL
-        m_bvh->getContinuousTimeCollisions(cllsns);
-        filterCollisions(cllsns);
-#else
         m_collision_detector->getContinuousTimeCollisions(cllsns);
-#endif
     }
 
     if (itr == m_num_inlstc_itrns)
@@ -467,7 +374,6 @@ int BridsonStepper::getContainingRod(int vert_idx) const
             break;
         }
     }
-
     return rod;
 }
 
@@ -550,7 +456,7 @@ bool BridsonStepper::adaptiveExecute(double dt)
         return true;
     }
 
-    std::cout << "Adaptive stepping in bridson stepper" << std::endl;
+    std::cout << "Adaptive stepping in Bridson stepper" << std::endl;
 
     // Restore all rods
     for (int i = 0; i < (int) m_rods.size(); ++i)
@@ -1016,91 +922,6 @@ bool BridsonStepper::isRodVertex(int vert) const
     return vert < m_obj_start;
 }
 
-/*
- bool BridsonStepper::isRodRodCollision(const EdgeEdgeCTCollision& collision) const
- {
- // Ensure and edge doesn't have vertices from a rod AND and triangulated object
- assert(
- (isRodVertex(collision.e0_v0) && isRodVertex(collision.e0_v1)) || (!isRodVertex(collision.e0_v0) && !isRodVertex(
- collision.e0_v1)));
- assert(
- (isRodVertex(collision.e1_v0) && isRodVertex(collision.e1_v1)) || (!isRodVertex(collision.e1_v0) && !isRodVertex(
- collision.e1_v1)));
-
- return isRodVertex(collision.e0_v0) && isRodVertex(collision.e0_v1) && isRodVertex(collision.e1_v0) && isRodVertex(
- collision.e1_v1);
- }
-
- bool BridsonStepper::isVertexFixed(int vert_idx) const
- {
- assert(vert_idx >= 0);
- assert(vert_idx < getNumVerts());
-
- return m_masses[vert_idx] == std::numeric_limits<double>::infinity();
- }
-
- bool BridsonStepper::isEntireFaceFixed(int v0, int v1, int v2) const
- {
- assert(v0 >= 0);
- assert(v0 < getNumVerts());
- assert(v1 >= 0);
- assert(v1 < getNumVerts());
- assert(v2 >= 0);
- assert(v2 < getNumVerts());
-
- return isVertexFixed(v0) && isVertexFixed(v1) && isVertexFixed(v2);
- }
-
- bool BridsonStepper::edgesSharevertex(const int& e0v0, const int& e0v1, const int& e1v0, const int& e1v1) const
- {
- assert(e0v0 < getNumVerts());
- assert(e0v0 >= 0);
- assert(e0v1 < getNumVerts());
- assert(e0v1 >= 0);
- assert(e1v0 < getNumVerts());
- assert(e1v0 >= 0);
- assert(e1v1 < getNumVerts());
- assert(e1v1 >= 0);
-
- return e0v0 == e1v0 || e0v0 == e1v1 || e0v1 == e1v0 || e0v1 == e1v1;
- }
-
- bool BridsonStepper::edgesShareVertex(const std::pair<int, int>& edgei, const std::pair<int, int>& edgej) const
- {
- return edgesSharevertex(edgei.first, edgei.second, edgej.first, edgej.second);
- }
-
- bool BridsonStepper::isEntireEdgeFree(int v0, int v1) const
- {
- assert(v0 >= 0);
- assert(v0 < getNumVerts());
- assert(v1 >= 0);
- assert(v1 < getNumVerts());
-
- return !isVertexFixed(v0) && !isVertexFixed(v1);
- }
-
- bool BridsonStepper::isEntireEdgeFixed(int v0, int v1) const
- {
- assert(v0 >= 0);
- assert(v0 < getNumVerts());
- assert(v1 >= 0);
- assert(v1 < getNumVerts());
-
- return isVertexFixed(v0) && isVertexFixed(v1);
- }
-
- bool BridsonStepper::isOneVertexFixed(int v0, int v1) const
- {
- assert(v0 >= 0);
- assert(v0 < getNumVerts());
- assert(v1 >= 0);
- assert(v1 < getNumVerts());
-
- return (!isVertexFixed(v0) && isVertexFixed(v1)) || (isVertexFixed(v0) && !isVertexFixed(v1));
- }
- */
-
 bool BridsonStepper::vertexAndFaceShareVertex(const int& v, const int& f0, const int& f1, const int& f2) const
 {
     return v == f0 || v == f1 || v == f2;
@@ -1160,42 +981,45 @@ bool BridsonStepper::isProperCollisionTime(double time)
     return true;
 }
 
-Vec3d BridsonStepper::computeEdgeEdgeInelasticImpulse(const double& ma0, const double& ma1, const double& mb0,
-        const double& mb1, const double& s, const double& t, const double& relvel, const Vec3d& n)
-{
-    assert(ma0 > 0.0);
-    assert(ma1 > 0.0);
-    assert(mb0 > 0.0);
-    assert(mb1 > 0.0);
-    assert(s >= 0.0);
-    assert(s <= 1.0);
-    assert(t >= 0.0);
-    assert(t <= 1.0);
-    assert(relvel <= 0.0);
+/*
+ Vec3d BridsonStepper::computeEdgeEdgeInelasticImpulse(const double& ma0, const double& ma1, const double& mb0,
+ const double& mb1, const double& s, const double& t, const double& relvel, const Vec3d& n)
+ {
+ assert(ma0 > 0.0);
+ assert(ma1 > 0.0);
+ assert(mb0 > 0.0);
+ assert(mb1 > 0.0);
+ assert(s >= 0.0);
+ assert(s <= 1.0);
+ assert(t >= 0.0);
+ assert(t <= 1.0);
+ assert(relvel <= 0.0);
 
-    // Assumes negative relative velocity
-    Vec3d numerator = -relvel * n;
-    double denominator = (1 - s) * (1 - s) / ma0 + s * s / ma1 + (1 - t) * (1 - t) / mb0 + t * t / mb1;
-    assert(denominator != 0.0);
-    return numerator / denominator;
-}
+ // Assumes negative relative velocity
+ Vec3d numerator = -relvel * n;
+ double denominator = (1 - s) * (1 - s) / ma0 + s * s / ma1 + (1 - t) * (1 - t) / mb0 + t * t / mb1;
+ assert(denominator != 0.0);
+ return numerator / denominator;
+ }
+ */
+/*
+ Vec3d BridsonStepper::computeVertexFaceInelasticImpulse(const double& mvrt, const double& mfc0, const double& mfc1,
+ const double& mfc2, const double& u, const double& v, const double& w, const double& relvel, const Vec3d& n)
+ {
+ assert(mvrt >= 0.0);
+ assert(mfc0 >= 0.0);
+ assert(mfc1 >= 0.0);
+ assert(mfc2 >= 0.0);
+ assert(approxEq(u + v + w, 1.0));
+ //assert( u >= 0.0 ); assert( u <= 1.0 ); assert( v >= 0.0 ); assert( v <= 1.0 ); assert( w >= 0.0 ); assert( w <= 1.0 );
+ assert(relvel <= 0.0);
 
-Vec3d BridsonStepper::computeVertexFaceInelasticImpulse(const double& mvrt, const double& mfc0, const double& mfc1,
-        const double& mfc2, const double& u, const double& v, const double& w, const double& relvel, const Vec3d& n)
-{
-    assert(mvrt >= 0.0);
-    assert(mfc0 >= 0.0);
-    assert(mfc1 >= 0.0);
-    assert(mfc2 >= 0.0);
-    assert(approxEq(u + v + w, 1.0));
-    //assert( u >= 0.0 ); assert( u <= 1.0 ); assert( v >= 0.0 ); assert( v <= 1.0 ); assert( w >= 0.0 ); assert( w <= 1.0 );
-    assert(relvel <= 0.0);
-
-    Vec3d numerator = -relvel * n;
-    double denominator = 1 / mvrt + u * u / mfc0 + v * v / mfc1 + w * w / mfc2;
-    assert(denominator != 0.0);
-    return numerator / denominator;
-}
+ Vec3d numerator = -relvel * n;
+ double denominator = 1 / mvrt + u * u / mfc0 + v * v / mfc1 + w * w / mfc2;
+ assert(denominator != 0.0);
+ return numerator / denominator;
+ }
+ */
 
 void BridsonStepper::exertVertexImpulse(const Vec3d& I, const double& m, const int& idx, VecXd& v)
 {
@@ -1291,8 +1115,28 @@ void BridsonStepper::computeCompliantLHS(MatrixBase* lhs, int rodidx)
     // END TEMP
 }
 
+void BridsonStepper::exertCompliantInelasticImpulse(const CTCollision* cllsn)
+{
+    const EdgeEdgeCTCollision* eecol = dynamic_cast<const EdgeEdgeCTCollision*> (cllsn);
+    const VertexFaceCTCollision* vfcol = dynamic_cast<const VertexFaceCTCollision*> (cllsn);
+    if (eecol)
+    {
+        exertCompliantInelasticEdgeEdgeImpulse(*eecol);
+        //exertInelasticImpluse(cllsn.getEdgeEdge());
+    }
+    else if (vfcol)
+    {
+        exertCompliantInelasticVertexFaceImpulse(*vfcol);
+        //exertCompliantInelasticVertexFaceImpulse(cllsn.getVertexFace());
+        //exertInelasticImpluse(cllsn.getVertexFace());
+    }
+}
+
 void BridsonStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCollision& vfcol)
 {
+ //   std::cerr << "Vertex-face compliant inelastic impulse" << std::endl;
+ //   std::cerr << vfcol << std::endl;
+
     // For now, assume vertex is free and entire face is fixed
     assert(!m_geodata.isVertexFixed(vfcol.v0));
     assert(YATriangle(vfcol.f0, vfcol.f1, vfcol.f2).IsFixed(m_geodata));
@@ -1311,8 +1155,7 @@ void BridsonStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCT
     assert(v0 < m_rods[rodidx]->nv());
 
     // Compute the relative velocity of the collision
-    Vec3d relvel = m_geodata.computeRelativeVelocity(vfcol.v0, vfcol.f0, vfcol.f1, vfcol.f2, vfcol.u, vfcol.v, vfcol.w);
-    double magrelvel = relvel.dot(vfcol.n);
+    double magrelvel = vfcol.computeRelativeVelocity(m_geodata);
     assert(magrelvel < 0.0);
 
     // Get storage for lhs of linear system, get a solver
@@ -1334,11 +1177,11 @@ void BridsonStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCT
     int rodbase = m_base_indices[rodidx];
 
     // Compute the 'global' normal
-    std::vector<VecXd> n;
+    std::vector<VecXd> normal;
 
-    n.push_back(VecXd(ndof));
-    n.back().setZero();
-    n.back().segment<3> (base0) = vfcol.n;
+    normal.push_back(VecXd(ndof));
+    normal.back().setZero();
+    normal.back().segment<3> (base0) = vfcol.GetNormal();
 
     // Compute three normals per scripted vertex
     const std::vector<int>& scriptedverts = m_rods[rodidx]->getBoundaryCondition()->scriptedVertices();
@@ -1346,14 +1189,13 @@ void BridsonStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCT
     {
         for (int j = 0; j < 3; ++j)
         {
-            n.push_back(VecXd(ndof));
-            n.back().setZero();
+            normal.push_back(VecXd(ndof));
+            normal.back().setZero();
             // Zero the velocity of this particular dof of this particular vertex
-            n.back()(m_rods[rodidx]->vertIdx(scriptedverts[i], j)) = 1.0;
+            normal.back()(m_rods[rodidx]->vertIdx(scriptedverts[i], j)) = 1.0;
         }
     }
-
-    int numconstraints = (int) (n.size());
+    int numconstraints = (int) (normal.size());
     int nvdof = 3 * m_rods[rodidx]->nv();
 
     //std::cout << "nc: " << numconstraints << std::endl;
@@ -1383,7 +1225,7 @@ void BridsonStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCT
 
     // Currently, all fixed vertex constraints normalized
 #ifdef DEBUG
-    for( int i = 0; i < numconstraints; ++i ) assert( approxEq(n[i].norm(),1.0,1.0e-9) );
+    for( int i = 0; i < numconstraints; ++i ) assert( approxEq(normal[i].norm(),1.0,1.0e-9) );
 #endif
 
     std::vector<VecXd> ntilde;
@@ -1391,7 +1233,7 @@ void BridsonStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCT
     {
         ntilde.push_back(VecXd(ndof));
         ntilde.back().setZero();
-        int status = solver->solve(ntilde.back(), n[i]);
+        int status = solver->solve(ntilde.back(), normal[i]);
         if (status < 0)
             std::cerr
                     << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Problem during linear solve detected. exertCompliantInelasticVertexFaceImpulse. Time: "
@@ -1422,7 +1264,7 @@ void BridsonStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCT
 #endif
 
 #ifdef DEBUG
-    for( int i = 0; i < numconstraints; ++i ) assert( (n[i].cwise()==n[i]).all() );
+    for( int i = 0; i < numconstraints; ++i ) assert( (normal[i].cwise()==normal[i]).all() );
 #endif
     for (int i = 0; i < numconstraints; ++i)
     {
@@ -1430,7 +1272,7 @@ void BridsonStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCT
         for (ElasticRod::vertex_iter vit = m_rods[rodidx]->vertices_begin(); vit != m_rods[rodidx]->vertices_end(); ++vit)
         {
             int vert_dof = m_rods[rodidx]->vertIdx(*vit, 0);
-            posnn[i].segment<3> (3 * theidx) = n[i].segment<3> (vert_dof);
+            posnn[i].segment<3> (3 * theidx) = normal[i].segment<3> (vert_dof);
             ++theidx;
         }
     }
@@ -1494,7 +1336,7 @@ void BridsonStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCT
     // Ensure that the impulse eliminated the realtive velocity
 #ifdef DEBUG
     Vec3d postrelvel = computeRelativeVelocity(m_vnphalf,vfcol.v0,vfcol.f0,vfcol.f1,vfcol.f2,vfcol.u,vfcol.v,vfcol.w);
-    double postmagrelvel = postrelvel.dot(vfcol.n);
+    double postmagrelvel = postrelvel.dot(vfcol.normal);
     // Ensure the inelastic impulse decreased the realtive velocity
     assert( fabs(postmagrelvel) <= fabs(magrelvel) );
     // Should add some 'extra kick' to ensure collision gets killed, but for now just be content with small velocity
@@ -1525,6 +1367,9 @@ void BridsonStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCT
 
 void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulse(const EdgeEdgeCTCollision& eecol)
 {
+ //   std::cerr << "Edge-edge compliant inelastic impulse" << std::endl;
+ //   std::cerr << eecol << std::endl;
+
     // Determine if either edge is totally fixed
     bool rod0fixed = YAEdge(eecol.e0_v0, eecol.e0_v1).IsFixed(m_geodata);
     bool rod1fixed = YAEdge(eecol.e1_v0, eecol.e1_v1).IsFixed(m_geodata);
@@ -1558,8 +1403,9 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEd
     assert(rod0 != rod1);
 
     // Compute the relative velocity, which must be negative
-    Vec3d relvel = m_geodata.computeRelativeVelocity(eecol.e0_v0, eecol.e0_v1, eecol.e1_v0, eecol.e1_v1, eecol.s, eecol.t);
-    double magrelvel = relvel.dot(eecol.n);
+    //    Vec3d relvel = m_geodata.computeRelativeVelocity(eecol.e0_v0, eecol.e0_v1, eecol.e1_v0, eecol.e1_v1, eecol.s, eecol.t);
+    //    double magrelvel = relvel.dot(eecol.n);
+    double magrelvel = eecol.computeRelativeVelocity(m_geodata);
     assert(magrelvel < 0.0);
 
     // Determine the total number of degrees of freedom in each rod
@@ -1623,8 +1469,8 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEd
     // Collision constraint
     n0.push_back(VecXd(rod0ndof));
     n0.back().setZero();
-    n0.back().segment<3> (base_i0) = -(1.0 - eecol.s) * eecol.n;
-    n0.back().segment<3> (base_i1) = -eecol.s * eecol.n;
+    n0.back().segment<3> (base_i0) = -(1.0 - eecol.s) * eecol.GetNormal();
+    n0.back().segment<3> (base_i1) = -eecol.s * eecol.GetNormal();
     // 'Scripted vertex' constraints
     const std::vector<int>& scriptedverts0 = m_rods[rod0]->getBoundaryCondition()->scriptedVertices();
     for (size_t i = 0; i < scriptedverts0.size(); ++i)
@@ -1682,8 +1528,8 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEd
     // Collision constraint
     n1.push_back(VecXd(rod1ndof));
     n1.back().setZero();
-    n1.back().segment<3> (base_j0) = (1.0 - eecol.t) * eecol.n;
-    n1.back().segment<3> (base_j1) = eecol.t * eecol.n;
+    n1.back().segment<3> (base_j0) = (1.0 - eecol.t) * eecol.GetNormal();
+    n1.back().segment<3> (base_j1) = eecol.t * eecol.GetNormal();
     // 'Scripted vertex' constraints
     const std::vector<int>& scriptedverts1 = m_rods[rod1]->getBoundaryCondition()->scriptedVertices();
     for (size_t i = 0; i < scriptedverts1.size(); ++i)
@@ -2071,11 +1917,11 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEd
     assert(rod0fixed != rod1fixed);
 
     // Compute the relative velocity, which must be negative for a collision to have happened
-    Vec3d relvel = m_geodata.computeRelativeVelocity(eecol.e0_v0, eecol.e0_v1, eecol.e1_v0, eecol.e1_v1, eecol.s, eecol.t);
-    double magrelvel = relvel.dot(eecol.n);
-    //assert(magrelvel < 0.0);
-    if (magrelvel >= 0)
-        return;
+    //    Vec3d relvel = m_geodata.computeRelativeVelocity(eecol.e0_v0, eecol.e0_v1, eecol.e1_v0, eecol.e1_v1, eecol.s, eecol.t);
+    //    double magrelvel = relvel.dot(eecol.n);
+    double magrelvel = eecol.computeRelativeVelocity(m_geodata);
+    assert(magrelvel < 0.0);
+
     // Extract the rod index, barycentric coordinate of the collision, and indices of the edge involved in the collision
     int rodidx = -1;
     double u = -1.0;
@@ -2135,8 +1981,8 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEd
 
     n.push_back(VecXd(ndof));
     n.back().setZero();
-    n.back().segment<3> (base0) = (1 - u) * eecol.n;
-    n.back().segment<3> (base1) = u * eecol.n;
+    n.back().segment<3> (base0) = (1 - u) * eecol.GetNormal();
+    n.back().segment<3> (base1) = u * eecol.GetNormal();
 
     // If rod 0 has the free edge, need to invert sign of normal
     if (!rod0fixed)
@@ -2456,11 +2302,7 @@ void BridsonStepper::executeImplicitPenaltyResponse()
     // Detect possible "proximity" collisions based on pre-step positions
     std::vector<EdgeEdgeProximityCollision> edge_edge_collisions;
     std::vector<VertexFaceProximityCollision> vertex_face_collisions;
-#ifdef BREANNAN_ORIGINAL
-    m_bvh->getImplicitPenaltyCollisions(edge_edge_collisions, vertex_face_collisions);
-#else
     m_collision_detector->getImplicitPenaltyCollisions(edge_edge_collisions, vertex_face_collisions);
-#endif
 
     std::vector<VertexFaceImplicitPenaltyCollision> vertex_face_for_real;
     detectVertexFaceImplicitPenaltyCollisions(m_xn, vertex_face_collisions, vertex_face_for_real);

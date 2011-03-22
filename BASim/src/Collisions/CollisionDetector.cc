@@ -36,21 +36,24 @@ CollisionDetector::~CollisionDetector()
 
 void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cllsns)
 {
-    Timer::getTimer("Collision detector").start();
+ //   Timer::getTimer("Collision detector").start();
 
     m_collisions = &cllsns;
     m_collisions->clear();
     BVHNode& root = m_bvh.GetNode(0);
 
-    Timer::getTimer("Expanding boxes").start();
+//    Timer::getTimer("Expanding boxes").start();
     updateBoundingBox(root);
-    Timer::getTimer("Expanding boxes").stop();
+//    Timer::getTimer("Expanding boxes").stop();
 
-    Timer::getTimer("Computing collisions").start();
+//    Timer::getTimer("Computing collisions").start();
     computeContinuousTimeCollisions(root, root);
-    Timer::getTimer("Computing collisions").stop();
+//    Timer::getTimer("Computing collisions").stop();
 
-    Timer::getTimer("Collision detector").stop();
+//    if (cllsns.size())
+//        std::cerr << "\033[32mCollision detector found " << cllsns.size() << " collisions\033[0m" << std::endl;
+
+//    Timer::getTimer("Collision detector").stop();
 }
 
 void CollisionDetector::updateContinuousTimeCollisions()
@@ -63,7 +66,7 @@ void CollisionDetector::updateContinuousTimeCollisions()
 void CollisionDetector::getImplicitPenaltyCollisions(std::vector<EdgeEdgeProximityCollision>& edge_edge_collisions,
         std::vector<VertexFaceProximityCollision>& vertex_face_collisions)
 {
-    std::cerr << "IMPLICIT PENALTY COLLISION DETECTION NOT IMPLEMENTED YET";
+    std::cerr << "\033[31mIMPLICIT PENALTY COLLISION DETECTION NOT IMPLEMENTED YET\033[0m";
 }
 
 void CollisionDetector::updateBoundingBox(BVHNode& node)
@@ -132,26 +135,20 @@ void CollisionDetector::intersectContent(const BVHNode& node_a, const BVHNode& n
     const uint32_t leaf_a_end = node_a.LeafEnd();
     const uint32_t leaf_b_begin = node_b.LeafBegin();
     const uint32_t leaf_b_end = node_b.LeafEnd();
+
     for (uint32_t i = leaf_a_begin; i < leaf_a_end; ++i)
         for (uint32_t j = leaf_b_begin; j < leaf_b_end; ++j)
-        {
-            const TopologicalElement* object_a = m_elements[i];
-            const TopologicalElement* object_b = m_elements[j];
-            appendContinuousTimeIntersection(object_a, object_b);
-        }
+            appendContinuousTimeIntersection(m_elements[i], m_elements[j]);
 }
 
-void CollisionDetector::CollisionDetector::intersectContentSelf(const BVHNode& node)
+void CollisionDetector::intersectContentSelf(const BVHNode& node)
 {
     const uint32_t leaf_begin = node.LeafBegin();
     const uint32_t leaf_end = node.LeafEnd();
+
     for (uint32_t i = leaf_begin; i < leaf_end; ++i)
         for (uint32_t j = leaf_begin; j < i; ++j)
-        {
-            const TopologicalElement* object_a = m_elements[i];
-            const TopologicalElement* object_b = m_elements[j];
-            appendContinuousTimeIntersection(object_a, object_b);
-        }
+            appendContinuousTimeIntersection(m_elements[i], m_elements[j]);
 }
 
 void CollisionDetector::appendContinuousTimeIntersection(const TopologicalElement* elem_a, const TopologicalElement* elem_b)
@@ -201,14 +198,14 @@ void CollisionDetector::appendContinuousTimeIntersection(int v_index, const YATr
 
 void CollisionDetector::appendContinuousTimeIntersection(const YAEdge* edge, const YATriangle* triangle)
 {
-/*
+
     YAEdge edge_2(triangle->first(), triangle->second());
     YAEdge edge_1(triangle->third(), triangle->first());
     YAEdge edge_0(triangle->second(), triangle->third());
     appendContinuousTimeIntersection(edge, &edge_0);
     appendContinuousTimeIntersection(edge, &edge_1);
     appendContinuousTimeIntersection(edge, &edge_2);
-*/
+
     appendContinuousTimeIntersection(edge->first(), triangle);
     appendContinuousTimeIntersection(edge->second(), triangle);
 }
@@ -223,7 +220,5 @@ void CollisionDetector::appendContinuousTimeIntersection(const YATriangle* trian
     // Do nothing.
     return;
 }
-
-
 
 }

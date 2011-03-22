@@ -32,18 +32,18 @@ struct TriangularFace
 
 };
 
-// Holds the actual geometry
+// Holds a handle to the actual geometry and related info
 class GeometricData
 {
     const VecXd& m_points;
     const VecXd& m_velocities;
     const std::vector<double>& m_radii;
     const std::vector<double>& m_masses;
-    int m_obj_start;
+    int& m_obj_start;
 
 public:
     GeometricData(const VecXd& points, const VecXd& velocities, const std::vector<double>& radii,
-            const std::vector<double>& masses, int obj_start) :
+            const std::vector<double>& masses, int& obj_start) :
         m_points(points), m_velocities(velocities), m_radii(radii), m_masses(masses), m_obj_start(obj_start)
     {
     }
@@ -72,6 +72,7 @@ public:
         return m_obj_start;
     }
 
+    /*
     Vec3d computeRelativeVelocity(const int& idxa0, const int& idxa1, const int& idxb0, const int& idxb1, const double& s,
             const double& t) const
     {
@@ -82,7 +83,8 @@ public:
 
         return ((1.0 - t) * v2 + t * v3) - ((1.0 - s) * v0 + s * v1);
     }
-
+*/
+    /*
     Vec3d computeRelativeVelocity(const int& vrtidx, const int& fcidx0, const int& fcidx1, const int& fcidx2, const double& u,
             const double& v, const double& w) const
     {
@@ -93,7 +95,7 @@ public:
 
         return vp - (u * vt0 + v * vt1 + w * vt2);
     }
-
+*/
     bool isVertexFixed(int vert_idx) const
     {
         return GetMass(vert_idx) == std::numeric_limits<double>::infinity();
@@ -107,7 +109,7 @@ public:
 
 };
 
-static const double MARGIN = 0.0;
+static const double MARGIN = 1e-12;
 
 // A virtual class to abstract handling of edges and faces
 class TopologicalElement

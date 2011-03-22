@@ -10,6 +10,7 @@
 
 #include "../Core/Definitions.hh"
 #include "Geometry.hh"
+#include <iostream>
 
 namespace BASim
 {
@@ -84,18 +85,13 @@ struct VertexFaceImplicitPenaltyCollision
     Vec3d cp;
 };
 
-
-
-
 class CTCollision
 {
-    // Time of the collision (scaled to be between 0 and 1)
 protected:
+    // Time of the collision (scaled to be between 0 and 1)
     double m_time;
-
-public:
     // Collision normal
-    Vec3d n;
+    Vec3d m_normal;
 
 public:
 
@@ -113,11 +109,23 @@ public:
         return m_time;
     }
 
+    Vec3d GetNormal() const
+    {
+        return m_normal;
+    }
+
     // From the initial collision data (vertices, velocities and time step) determine whether the collision happened, where and when.
     virtual bool analyseCollision(const GeometricData& geodata, double time_step) = 0;
+
+    virtual double computeRelativeVelocity(const GeometricData& geodata) const = 0;
+    virtual Vec3d computeInelasticImpulse(const GeometricData& geodata, const double& relvel) = 0;
+
     virtual bool IsFixed(const GeometricData& geodata) = 0;
 
-    friend bool CompareTimes(const CTCollision* cllsnA, const CTCollision* cllsnB) { return cllsnA->m_time < cllsnB->m_time; }
+    friend bool CompareTimes(const CTCollision* cllsnA, const CTCollision* cllsnB)
+    {
+        return cllsnA->m_time < cllsnB->m_time;
+    }
 };
 
 /**
@@ -143,17 +151,21 @@ public:
         e1_v1 = edge_b->second();
     }
 
-    virtual bool analyseCollision(const GeometricData& geodata, double time_step);
-
     bool IsRodRod(const GeometricData& geodata)
     {
         return geodata.isRodVertex(e0_v0) && geodata.isRodVertex(e1_v0);
     }
 
-    bool IsFixed(const GeometricData& geodata)
+    virtual bool analyseCollision(const GeometricData& geodata, double time_step);
+    virtual double computeRelativeVelocity(const GeometricData& geodata) const;
+    virtual Vec3d computeInelasticImpulse(const GeometricData& geodata, const double& relvel);
+    virtual bool IsFixed(const GeometricData& geodata)
     {
-        return geodata.isVertexFixed(e0_v0) &&  geodata.isVertexFixed(e0_v1) && geodata.isVertexFixed(e1_v0) &&  geodata.isVertexFixed(e1_v1);
+        return geodata.isVertexFixed(e0_v0) && geodata.isVertexFixed(e0_v1) && geodata.isVertexFixed(e1_v0)
+                && geodata.isVertexFixed(e1_v1);
     }
+
+    friend std::ostream& operator<<(std::ostream& os, const EdgeEdgeCTCollision& eecol);
 
 };
 
@@ -184,13 +196,16 @@ public:
     }
 
     virtual bool analyseCollision(const GeometricData& geodata, double time_step);
-
-    bool IsFixed(const GeometricData& geodata)
+    virtual double computeRelativeVelocity(const GeometricData& geodata) const;
+    virtual Vec3d computeInelasticImpulse(const GeometricData& geodata, const double& relvel);
+    virtual bool IsFixed(const GeometricData& geodata)
     {
         return geodata.isVertexFixed(v0) && geodata.isVertexFixed(f0) && geodata.isVertexFixed(f1) && geodata.isVertexFixed(f2);
     }
-};
 
+    friend std::ostream& operator<<(std::ostream& os, const VertexFaceCTCollision& vfcol);
+
+};
 
 // TODO: Move this out of here!
 class mycomparison
@@ -201,8 +216,6 @@ public:
         return cllsnA.getTime() < cllsnB.getTime();
     }
 };
-
-
 
 }
 

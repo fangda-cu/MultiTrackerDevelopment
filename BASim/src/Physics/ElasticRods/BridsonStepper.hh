@@ -391,8 +391,8 @@ private:
 
     void computeCompliantLHS(MatrixBase* lhs, int rodidx);
 
+    void exertCompliantInelasticImpulse(const CTCollision* cllsn);
     void exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCollision& vfcol);
-
     void exertCompliantInelasticEdgeEdgeImpulse(const EdgeEdgeCTCollision& eecol);
     void exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdgeCTCollision& eecol);
     void exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdgeCTCollision& eecol);
