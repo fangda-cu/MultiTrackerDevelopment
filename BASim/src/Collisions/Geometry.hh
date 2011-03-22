@@ -20,6 +20,16 @@ namespace BASim
 struct TriangularFace
 {
     int idx[3];
+
+    TriangularFace() {}
+
+    TriangularFace(int un, int deux, int trois)
+    {
+        idx[0] = un;
+        idx[1] = deux;
+        idx[2] = trois;
+    }
+
 };
 
 // Holds the actual geometry
@@ -157,6 +167,10 @@ public:
     {
         return geodata.isVertexFixed(m_edge.first) && geodata.isVertexFixed(m_edge.second);
     }
+    bool IsFree(const GeometricData& geodata)
+    {
+        return !geodata.isVertexFixed(m_edge.first) && !geodata.isVertexFixed(m_edge.second);
+    }
 
 };
 
@@ -167,6 +181,11 @@ class YATriangle: public TopologicalElement
 public:
     explicit YATriangle(TriangularFace triangle) :
         m_triangle(triangle)
+    {
+    }
+
+    YATriangle(int un, int deux, int trois) :
+        m_triangle(un, deux, trois)
     {
     }
 

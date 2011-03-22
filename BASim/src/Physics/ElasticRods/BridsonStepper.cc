@@ -304,8 +304,8 @@ void BridsonStepper::exertInelasticImpluse(EdgeEdgeCTCollision& clssn)
     exertEdgeImpulse(I, m_masses[clssn.e1_v0], m_masses[clssn.e1_v1], clssn.t, clssn.e1_v0, clssn.e1_v1, m_vnphalf);
 
     assert(
-            m_geoadata.computeRelativeVelocity(clssn.e0_v0, clssn.e0_v1, clssn.e1_v0, clssn.e1_v1, clssn.s, clssn.t).dot(
-                    clssn.n) >= 0.0);
+            m_geodata.computeRelativeVelocity(clssn.e0_v0, clssn.e0_v1, clssn.e1_v0, clssn.e1_v1, clssn.s, clssn.t).dot(clssn.n)
+                    >= 0.0);
 }
 
 void BridsonStepper::exertInelasticImpluse(VertexFaceCTCollision& clssn)
@@ -372,7 +372,7 @@ void BridsonStepper::exertInelasticImpluse(VertexFaceCTCollision& clssn)
     exertVertexImpulse(I, m_masses[clssn.v0], clssn.v0, m_vnphalf);
 
     assert(
-            computeRelativeVelocity(m_vnphalf, clssn.v0, clssn.f0, clssn.f1, clssn.f2, clssn.u, clssn.v, clssn.w).dot(clssn.n)
+            m_geodata.computeRelativeVelocity(clssn.v0, clssn.f0, clssn.f1, clssn.f2, clssn.u, clssn.v, clssn.w).dot(clssn.n)
                     >= 0.0);
 }
 
@@ -1017,89 +1017,89 @@ bool BridsonStepper::isRodVertex(int vert) const
 }
 
 /*
-bool BridsonStepper::isRodRodCollision(const EdgeEdgeCTCollision& collision) const
-{
-    // Ensure and edge doesn't have vertices from a rod AND and triangulated object
-    assert(
-            (isRodVertex(collision.e0_v0) && isRodVertex(collision.e0_v1)) || (!isRodVertex(collision.e0_v0) && !isRodVertex(
-                    collision.e0_v1)));
-    assert(
-            (isRodVertex(collision.e1_v0) && isRodVertex(collision.e1_v1)) || (!isRodVertex(collision.e1_v0) && !isRodVertex(
-                    collision.e1_v1)));
+ bool BridsonStepper::isRodRodCollision(const EdgeEdgeCTCollision& collision) const
+ {
+ // Ensure and edge doesn't have vertices from a rod AND and triangulated object
+ assert(
+ (isRodVertex(collision.e0_v0) && isRodVertex(collision.e0_v1)) || (!isRodVertex(collision.e0_v0) && !isRodVertex(
+ collision.e0_v1)));
+ assert(
+ (isRodVertex(collision.e1_v0) && isRodVertex(collision.e1_v1)) || (!isRodVertex(collision.e1_v0) && !isRodVertex(
+ collision.e1_v1)));
 
-    return isRodVertex(collision.e0_v0) && isRodVertex(collision.e0_v1) && isRodVertex(collision.e1_v0) && isRodVertex(
-            collision.e1_v1);
-}
+ return isRodVertex(collision.e0_v0) && isRodVertex(collision.e0_v1) && isRodVertex(collision.e1_v0) && isRodVertex(
+ collision.e1_v1);
+ }
 
-bool BridsonStepper::isVertexFixed(int vert_idx) const
-{
-    assert(vert_idx >= 0);
-    assert(vert_idx < getNumVerts());
+ bool BridsonStepper::isVertexFixed(int vert_idx) const
+ {
+ assert(vert_idx >= 0);
+ assert(vert_idx < getNumVerts());
 
-    return m_masses[vert_idx] == std::numeric_limits<double>::infinity();
-}
+ return m_masses[vert_idx] == std::numeric_limits<double>::infinity();
+ }
 
-bool BridsonStepper::isEntireFaceFixed(int v0, int v1, int v2) const
-{
-    assert(v0 >= 0);
-    assert(v0 < getNumVerts());
-    assert(v1 >= 0);
-    assert(v1 < getNumVerts());
-    assert(v2 >= 0);
-    assert(v2 < getNumVerts());
+ bool BridsonStepper::isEntireFaceFixed(int v0, int v1, int v2) const
+ {
+ assert(v0 >= 0);
+ assert(v0 < getNumVerts());
+ assert(v1 >= 0);
+ assert(v1 < getNumVerts());
+ assert(v2 >= 0);
+ assert(v2 < getNumVerts());
 
-    return isVertexFixed(v0) && isVertexFixed(v1) && isVertexFixed(v2);
-}
+ return isVertexFixed(v0) && isVertexFixed(v1) && isVertexFixed(v2);
+ }
 
-bool BridsonStepper::edgesSharevertex(const int& e0v0, const int& e0v1, const int& e1v0, const int& e1v1) const
-{
-    assert(e0v0 < getNumVerts());
-    assert(e0v0 >= 0);
-    assert(e0v1 < getNumVerts());
-    assert(e0v1 >= 0);
-    assert(e1v0 < getNumVerts());
-    assert(e1v0 >= 0);
-    assert(e1v1 < getNumVerts());
-    assert(e1v1 >= 0);
+ bool BridsonStepper::edgesSharevertex(const int& e0v0, const int& e0v1, const int& e1v0, const int& e1v1) const
+ {
+ assert(e0v0 < getNumVerts());
+ assert(e0v0 >= 0);
+ assert(e0v1 < getNumVerts());
+ assert(e0v1 >= 0);
+ assert(e1v0 < getNumVerts());
+ assert(e1v0 >= 0);
+ assert(e1v1 < getNumVerts());
+ assert(e1v1 >= 0);
 
-    return e0v0 == e1v0 || e0v0 == e1v1 || e0v1 == e1v0 || e0v1 == e1v1;
-}
+ return e0v0 == e1v0 || e0v0 == e1v1 || e0v1 == e1v0 || e0v1 == e1v1;
+ }
 
-bool BridsonStepper::edgesShareVertex(const std::pair<int, int>& edgei, const std::pair<int, int>& edgej) const
-{
-    return edgesSharevertex(edgei.first, edgei.second, edgej.first, edgej.second);
-}
+ bool BridsonStepper::edgesShareVertex(const std::pair<int, int>& edgei, const std::pair<int, int>& edgej) const
+ {
+ return edgesSharevertex(edgei.first, edgei.second, edgej.first, edgej.second);
+ }
 
-bool BridsonStepper::isEntireEdgeFree(int v0, int v1) const
-{
-    assert(v0 >= 0);
-    assert(v0 < getNumVerts());
-    assert(v1 >= 0);
-    assert(v1 < getNumVerts());
+ bool BridsonStepper::isEntireEdgeFree(int v0, int v1) const
+ {
+ assert(v0 >= 0);
+ assert(v0 < getNumVerts());
+ assert(v1 >= 0);
+ assert(v1 < getNumVerts());
 
-    return !isVertexFixed(v0) && !isVertexFixed(v1);
-}
+ return !isVertexFixed(v0) && !isVertexFixed(v1);
+ }
 
-bool BridsonStepper::isEntireEdgeFixed(int v0, int v1) const
-{
-    assert(v0 >= 0);
-    assert(v0 < getNumVerts());
-    assert(v1 >= 0);
-    assert(v1 < getNumVerts());
+ bool BridsonStepper::isEntireEdgeFixed(int v0, int v1) const
+ {
+ assert(v0 >= 0);
+ assert(v0 < getNumVerts());
+ assert(v1 >= 0);
+ assert(v1 < getNumVerts());
 
-    return isVertexFixed(v0) && isVertexFixed(v1);
-}
+ return isVertexFixed(v0) && isVertexFixed(v1);
+ }
 
-bool BridsonStepper::isOneVertexFixed(int v0, int v1) const
-{
-    assert(v0 >= 0);
-    assert(v0 < getNumVerts());
-    assert(v1 >= 0);
-    assert(v1 < getNumVerts());
+ bool BridsonStepper::isOneVertexFixed(int v0, int v1) const
+ {
+ assert(v0 >= 0);
+ assert(v0 < getNumVerts());
+ assert(v1 >= 0);
+ assert(v1 < getNumVerts());
 
-    return (!isVertexFixed(v0) && isVertexFixed(v1)) || (isVertexFixed(v0) && !isVertexFixed(v1));
-}
-*/
+ return (!isVertexFixed(v0) && isVertexFixed(v1)) || (isVertexFixed(v0) && !isVertexFixed(v1));
+ }
+ */
 
 bool BridsonStepper::vertexAndFaceShareVertex(const int& v, const int& f0, const int& f1, const int& f2) const
 {
@@ -1120,7 +1120,6 @@ bool BridsonStepper::vertexAndFaceShareVertex(const int& vertex, const int& face
 
     return vertexAndFaceShareVertex(vertex, m_faces[face].idx[0], m_faces[face].idx[1], m_faces[face].idx[2]);
 }
-
 
 bool BridsonStepper::isProperCollisionTime(double time)
 {
@@ -1295,8 +1294,8 @@ void BridsonStepper::computeCompliantLHS(MatrixBase* lhs, int rodidx)
 void BridsonStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCollision& vfcol)
 {
     // For now, assume vertex is free and entire face is fixed
-    assert(!isVertexFixed(vfcol.v0));
-    assert(isEntireFaceFixed(vfcol.f0, vfcol.f1, vfcol.f2));
+    assert(!m_geodata.isVertexFixed(vfcol.v0));
+    assert(YATriangle(vfcol.f0, vfcol.f1, vfcol.f2).IsFixed(m_geodata));
 
     // Determine which rod the free vertex belongs to
     int rodidx = getContainingRod(vfcol.v0);
@@ -1547,7 +1546,7 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEd
     //assert( isEntireEdgeFree(eecol.e0_v0,eecol.e0_v1) );
     //assert( isEntireEdgeFree(eecol.e1_v0,eecol.e1_v1) );
 
-    assert(!isEntireEdgeFixed(eecol.e0_v0, eecol.e0_v1) && !isEntireEdgeFixed(eecol.e1_v0, eecol.e1_v1));
+    assert(!YAEdge(eecol.e0_v0, eecol.e0_v1).IsFixed(m_geodata) && !YAEdge(eecol.e1_v0, eecol.e1_v1).IsFixed(m_geodata));
 
     // Determine which rod each edge belongs to
     int rod0 = getContainingRod(eecol.e0_v0);
@@ -2062,8 +2061,9 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEd
 {
     // Must have one totally fixed and one totally free edge
     assert(
-            (isEntireEdgeFree(eecol.e0_v0, eecol.e0_v1) && isEntireEdgeFixed(eecol.e1_v0, eecol.e1_v1)) || (isEntireEdgeFree(
-                    eecol.e1_v0, eecol.e1_v1) && isEntireEdgeFixed(eecol.e0_v0, eecol.e0_v1)));
+            (YAEdge(eecol.e0_v0, eecol.e0_v1).IsFree(m_geodata) && YAEdge(eecol.e1_v0, eecol.e1_v1).IsFixed(m_geodata))
+                    || (YAEdge(eecol.e1_v0, eecol.e1_v1).IsFree(m_geodata) && YAEdge(eecol.e0_v0, eecol.e0_v1).IsFixed(
+                            m_geodata)));
 
     // Determine if either edge is fixed
     bool rod0fixed = YAEdge(eecol.e0_v0, eecol.e0_v1).IsFixed(m_geodata);
