@@ -6,7 +6,8 @@
 
 #include "ElasticRod.hh"
 #include "RodExternalForce.hh"
-#include "../../Collisions/BVHAABB.hh"
+//#include "../../Collisions/BVHAABB.hh"
+#include "../../Collisions/Collision.hh"
 
 //#include <ext/hash_map>
 #include <map>

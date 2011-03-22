@@ -10,6 +10,7 @@ IPATHS 	+= -I$(MKLROOT)/include
 IPATHS 	+= -I../../../
 
 LIB1       := Wfigaro
+#LIB1_CF += -DBUILD=${BUILD} -fPIC -DWETA
 #LIB1_CF    += -DBUILD=${BUILD} -pthread -fPIC -DHAVE_LAPACK -DWETA
 LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA 
 #LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -fPIC -DHAVE_LAPACK -DWETA
@@ -225,6 +226,13 @@ Eigen/src/StlSupport/StdList.h \
 Eigen/src/StlSupport/StdVector.h \
 Collisions/BVHAABB.hh \
 Collisions/CollisionUtils.hh \
+Collisions/Collision.hh \
+Collisions/BoundingBox.hh \
+Collisions/BVH.hh \
+Collisions/BVH_inline.hh \
+Collisions/BVHNode.hh \
+Collisions/CollisionDetector.hh \
+Collisions/Geometry.hh \
 Core/Definitions.hh \
 Core/EigenIncludes.hh \
 Core/Handle.hh \
@@ -362,7 +370,10 @@ Core/ObjectControllerBase.inl
 
 LIB1_S     := \
 src/Collisions/BVHAABB.cc \
+src/Collisions/Geometry.cc \
+src/Collisions/Collision.cc \
 src/Collisions/CollisionUtils.cc \
+src/Collisions/CollisionDetector.cc \
 src/Core/Util.cc \
 src/Core/Timer.cc \
 src/Core/TriangleMesh.hh \

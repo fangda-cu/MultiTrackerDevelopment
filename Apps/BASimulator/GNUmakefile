@@ -12,7 +12,7 @@ include /vol/bob/make/head.mk
 
 ###{ Name of executable to be built.
 ###}
-PRG1_CF		:= -DWETA -DHAVE_LAPACK
+PRG1_CF		:= -DWETA -DTIMING_ON
 
 #Nasty but we need it to build BASimulator which uses a file in the BASim library which references a file back in BASim...
 PRG1_CF += -I../../../ -I. #-I/vol/bob/src/code/Figaro/work/acoull-breannanCollisions/
@@ -67,7 +67,7 @@ PRG1_L        += -Wl,--start-group \
 ##############################################################################
 include /vol/bob/make/tail.mk
 ##############################################################################
-
+
 # Stuff for Emacs:
 # Local Variables:
 # mode:makefile-gmake

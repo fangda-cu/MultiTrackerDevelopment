@@ -548,7 +548,7 @@ void HairyBall::serialize( std::ofstream& of )
   TopologicalObjectSerializer objserializer;
 
   // Serialize the number of triangle meshes
-  int numtrimeshes = m_tri_meshes.size();
+  int numtrimeshes = (int) m_tri_meshes.size();
   assert( numtrimeshes == 1 );
   serializeVal(of,numtrimeshes);
 
@@ -560,7 +560,7 @@ void HairyBall::serialize( std::ofstream& of )
   }
 
   // Serialize the number of rods
-  int numrods = m_rods.size();
+  int numrods = (int) m_rods.size();
   serializeVal(of,numrods);  
 
   // Serialize each rod
