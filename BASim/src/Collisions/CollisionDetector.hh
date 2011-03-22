@@ -10,28 +10,29 @@
 
 #include "BoundingBox.hh"
 #include "Geometry.hh"
+#include "Collision.hh"
 #include "BVH.hh"
+#include <list>
 
 namespace BASim
 {
 
 class CollisionDetector
 {
-	const GeometricData m_geodata;
+	const GeometricData& m_geodata;
 	std::vector<const TopologicalElement*> m_elements;
 	const double m_time_step;
 	BVH m_bvh;
-	std::list<ContinuousTimeCollision>* m_collisions;
+	std::list<CTCollision*>* m_collisions;
 
 public:
 	// During construction, the BVH tree is created around the initial geometry.
-	CollisionDetector(const VecXd& x, const VecXd& v, const std::vector<std::pair<int, int> >& edges,
-			const std::vector<TriangularFace>& faces, const std::vector<double>& vert_radii, const std::vector<double>& masses,
-			int obj_start, const double& timestep);
+	CollisionDetector(const GeometricData& geodata, const std::vector<std::pair<int, int> >& edges,
+			const std::vector<TriangularFace>& faces, const double& timestep);
 
 	virtual ~CollisionDetector();
 
-	void getContinuousTimeCollisions(std::list<ContinuousTimeCollision>& cllsns);
+	void getContinuousTimeCollisions(std::list<CTCollision*>& cllsns);
 
 	void getImplicitPenaltyCollisions(std::vector<EdgeEdgeProximityCollision>& edge_edge_collisions,
 			std::vector<VertexFaceProximityCollision>& vertex_face_collisions);
@@ -57,9 +58,6 @@ private:
 	void appendContinuousTimeIntersection(const YATriangle* triangle, const YAEdge* edge);
 	void appendContinuousTimeIntersection(const YATriangle* triangle_a, const YATriangle* triangle_b);
 	void appendContinuousTimeIntersection(int v_index, const YATriangle* triangle);
-	// Do the actual collision computation.
-	bool analyseCollision(EdgeEdgeContinuousTimeCollision& edgeXedge);
-	bool analyseCollision(VertexFaceContinuousTimeCollision& vertexXface);
 
 	bool isVertexFixed(int vert_idx) const;
 	bool isRodVertex(int vert) const;

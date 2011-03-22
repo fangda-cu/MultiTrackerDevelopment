@@ -145,6 +145,7 @@ Eigen/src/Sparse/TriangularSolver.h \
 Eigen/src/Sparse/UmfPackSupport.h \
 Collisions/BVHAABB.hh \
 Collisions/CollisionUtils.hh \
+Collisions/Collision.hh \
 Collisions/BoundingBox.hh \
 Collisions/BVH.hh \
 Collisions/BVH_inline.hh \
@@ -289,6 +290,7 @@ Core/ObjectControllerBase.inl
 LIB1_S     := \
 src/Collisions/BVHAABB.cc \
 src/Collisions/Geometry.cc \
+src/Collisions/Collision.cc \
 src/Collisions/CollisionUtils.cc \
 src/Collisions/CollisionDetector.cc \
 src/Core/Util.cc \
