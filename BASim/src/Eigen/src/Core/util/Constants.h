@@ -274,7 +274,7 @@ enum QRPreconditioners {
 /** \brief Enum for reporting the status of a computation.
   */
 enum ComputationInfo {
-  Success = 0,        /**< \brief Computation was successful. */
+  Success_FIXME = 0,        /**< \brief Computation was successful. */
   NumericalIssue = 1, /**< \brief The provided data did not satisfy the prerequisites. */
   NoConvergence = 2   /**< \brief Iterative procedure did not converge. */
 };
