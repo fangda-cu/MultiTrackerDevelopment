@@ -724,9 +724,9 @@ bool BridsonStepper::step(bool check_explosion)
     //    }
     //  #endif
 
-    Timer::getTimer("BridsonStepperDynamics").report();
-    Timer::getTimer("BridsonStepperResponse").report();
-    Timer::getTimer("Collision detector").report();
+//    Timer::getTimer("BridsonStepperDynamics").report();
+//    Timer::getTimer("BridsonStepperResponse").report();
+//    Timer::getTimer("Collision detector").report();
 
     return dependable_solve;
 }

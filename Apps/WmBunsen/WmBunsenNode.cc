@@ -229,7 +229,8 @@ void WmBunsenNode::updateAllCollisionMeshes( MDataBlock &data )
 void WmBunsenNode::updateAllRodNodes( MDataBlock &i_dataBlock )
 {
     MStatus stat;
-    
+    Timer::getTimer("updateAllRodNodes").start();
+
     // Pull all on all input rod nodes, causing them to update the rod data owned by beaker
     // that they each have pointers to.
     MArrayDataHandle inArrayH = i_dataBlock.inputArrayValue( ia_rodsNodes, &stat );
@@ -246,6 +247,9 @@ void WmBunsenNode::updateAllRodNodes( MDataBlock &i_dataBlock )
         // and will directly change the data in m_beaker. It's dumb to pass it along Maya connections
         // to here then to beaker. So we cut out the middle man.
     }
+
+    Timer::getTimer("updateAllRodNodes").stop();
+
 }
 
 /*
@@ -583,6 +587,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 	return MS::kUnknownParameter;
     }
 
+    Timer::report();
     return MS::kSuccess;
 }
 
