@@ -1,12 +1,12 @@
 # Options for Hairy Ball
-adaptivestepper true	# true if adaptive timestepping should be used, failse otherwise
+adaptivestepper false	# true if adaptive timestepping should be used, failse otherwise
 atol 1e-08	# absolute convergence tolerance
 curlyhair false	# curly if true, straight if false
 density 1.3	# volumetric density of the rod
 dt 0.05	# time-step size
 enablecollisions true	# true if collisions enabled, false otherwise
 gravity 0 -981 0	# gravity
-hairrootfile assets/hairyball/100normals.txt	# file with locations (specified as point on sphere) to grow hair from
+hairrootfile assets/hairyball/32normals.txt	# file with locations (specified as point on sphere) to grow hair from
 inftol 1e-08	# infinity norm convergence tolerance
 integrator implicit	# type of integrator to use for the rod
 iterations 100	# maximum number of iterations for implicit method
