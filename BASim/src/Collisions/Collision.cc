@@ -30,6 +30,10 @@ bool EdgeEdgeCTCollision::analyseCollision(const GeometricData& geodata, double 
     const Vec3d& vp1 = geodata.GetVelocity(e1_v0);
     const Vec3d& vq1 = geodata.GetVelocity(e1_v1);
 
+    // If both edges are motionless, no collision. Shouldn't we catch that earlier?
+    if ((vp0.norm() == 0) && (vq0.norm() == 0) && (vp1.norm() == 0) && (vq1.norm() == 0))
+        return false;
+
     std::vector<double> times;
     std::vector<double> errors;
     getCoplanarityTimes(p0, q0, p1, q1, p0 + time_step * vp0, q0 + time_step * vq0, p1 + time_step * vp1, q1 + time_step * vq1,

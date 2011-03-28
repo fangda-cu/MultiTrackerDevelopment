@@ -12,7 +12,7 @@ IPATHS 	+= -I../../../
 LIB1       := Wfigaro
 #LIB1_CF += -DBUILD=${BUILD} -fPIC -DWETA
 #LIB1_CF    += -DBUILD=${BUILD} -pthread -fPIC -DHAVE_LAPACK -DWETA
-LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA 
+LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA -DTIMING_ON
 #LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -fPIC -DHAVE_LAPACK -DWETA
 LIB1_CF += -w
 LIB1_CF += $(EIGEN2_COMPATIBILITY_LEVEL)

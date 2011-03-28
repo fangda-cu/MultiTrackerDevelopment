@@ -1,0 +1,4 @@
+#Mon Mar 28 10:17:18 NZDT 2011
+content-types/enabled=true
+content-types/org.eclipse.cdt.core.cxxSource/file-extensions=inl
+eclipse.preferences.version=1

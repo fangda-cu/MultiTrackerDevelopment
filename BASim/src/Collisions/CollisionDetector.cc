@@ -36,7 +36,7 @@ CollisionDetector::~CollisionDetector()
 
 void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cllsns)
 {
- //   Timer::getTimer("Collision detector").start();
+   Timer::getTimer("Collision detector").start();
 
     m_collisions = &cllsns;
     m_collisions->clear();
@@ -53,7 +53,7 @@ void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cll
 //    if (cllsns.size())
 //        std::cerr << "\033[32mCollision detector found " << cllsns.size() << " collisions\033[0m" << std::endl;
 
-//    Timer::getTimer("Collision detector").stop();
+  Timer::getTimer("Collision detector").stop();
 }
 
 void CollisionDetector::updateContinuousTimeCollisions()

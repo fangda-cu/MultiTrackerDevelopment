@@ -3,6 +3,7 @@ include /vol/bob/make/head.mk
 ##############################################################################
 
 LINUX_COMPILER := I
+WITHKITS += dev/Figaro/work/jaubry-work
 
 # Eigen2 -> Eigen3 roadmap
 #EIGEN2_COMPATIBILITY_LEVEL := -DEIGEN2_SUPPORT_STAGE10_FULL_EIGEN2_API

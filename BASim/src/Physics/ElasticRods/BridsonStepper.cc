@@ -323,31 +323,28 @@ void BridsonStepper::exertInelasticImpluse(VertexFaceCTCollision& vfcol)
 void BridsonStepper::executeIterativeInelasticImpulseResponse()
 {
     // Detect possible continuous time collisions
-    std::list<CTCollision*> cllsns;
-    m_collision_detector->getContinuousTimeCollisions(cllsns);
+    std::list<CTCollision*> collisions;
+    m_collision_detector->getContinuousTimeCollisions(collisions);
 
     // Iterativly apply inelastic impulses
     int itr;
-    for (itr = 0; itr < m_num_inlstc_itrns; ++itr)
+    for (itr = 0; !collisions.empty() && itr < m_num_inlstc_itrns; ++itr)
     {
         // TODO: Add debug checks for repeat collisions.
-        if (cllsns.empty())
-            break;
 
         // Just sort the collision times to maintain some rough sense of causality
-        cllsns.sort(CompareTimes);
-        while (!cllsns.empty())
+        collisions.sort(CompareTimes);
+        while (!collisions.empty())
         {
-            CTCollision* cllsn = cllsns.front();
-            cllsns.pop_front();
+            CTCollision* collision = collisions.front();
+            collisions.pop_front();
 
-            exertCompliantInelasticImpulse(cllsn);
+            exertCompliantInelasticImpulse(collision);
             m_collision_detector->updateContinuousTimeCollisions();
         }
-
-        assert(cllsns.empty());
-        m_collision_detector->getContinuousTimeCollisions(cllsns);
+        m_collision_detector->getContinuousTimeCollisions(collisions);
     }
+    std::cerr << "Iterated collision response " << itr << " times" << std::endl;
 
     if (itr == m_num_inlstc_itrns)
         std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Exceeded maximum " << "number of inelastic iterations "
@@ -726,6 +723,10 @@ bool BridsonStepper::step(bool check_explosion)
     //      m_rods[i]->property(ophndl).second = 0;
     //    }
     //  #endif
+
+    Timer::getTimer("BridsonStepperDynamics").report();
+    Timer::getTimer("BridsonStepperResponse").report();
+    Timer::getTimer("Collision detector").report();
 
     return dependable_solve;
 }
@@ -1134,8 +1135,8 @@ void BridsonStepper::exertCompliantInelasticImpulse(const CTCollision* cllsn)
 
 void BridsonStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCollision& vfcol)
 {
- //   std::cerr << "Vertex-face compliant inelastic impulse" << std::endl;
- //   std::cerr << vfcol << std::endl;
+    //   std::cerr << "Vertex-face compliant inelastic impulse" << std::endl;
+    //   std::cerr << vfcol << std::endl;
 
     // For now, assume vertex is free and entire face is fixed
     assert(!m_geodata.isVertexFixed(vfcol.v0));
@@ -1367,8 +1368,8 @@ void BridsonStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCT
 
 void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulse(const EdgeEdgeCTCollision& eecol)
 {
- //   std::cerr << "Edge-edge compliant inelastic impulse" << std::endl;
- //   std::cerr << eecol << std::endl;
+    //   std::cerr << "Edge-edge compliant inelastic impulse" << std::endl;
+    //   std::cerr << eecol << std::endl;
 
     // Determine if either edge is totally fixed
     bool rod0fixed = YAEdge(eecol.e0_v0, eecol.e0_v1).IsFixed(m_geodata);
