@@ -15,7 +15,6 @@ LIB1       := Wfigaro
 LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA -DTIMING_ON
 #LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -fPIC -DHAVE_LAPACK -DWETA
 LIB1_CF += -w
-LIB1_CF += $(EIGEN2_COMPATIBILITY_LEVEL)
 
 PHYSBAM_LOCATION := /vol/weta/src/amcadams/PhysBAM-svn
 PHYSBAM_INCLUDE  := -I$(PHYSBAM_LOCATION)/Public_Library
@@ -224,7 +223,6 @@ Eigen/src/StlSupport/StdDeque.h \
 Eigen/src/StlSupport/details.h \
 Eigen/src/StlSupport/StdList.h \
 Eigen/src/StlSupport/StdVector.h \
-Collisions/BVHAABB.hh \
 Collisions/CollisionUtils.hh \
 Collisions/Collision.hh \
 Collisions/BoundingBox.hh \
@@ -369,7 +367,6 @@ Core/ObjectControllerBase.inl
 
 
 LIB1_S     := \
-src/Collisions/BVHAABB.cc \
 src/Collisions/Geometry.cc \
 src/Collisions/Collision.cc \
 src/Collisions/CollisionUtils.cc \

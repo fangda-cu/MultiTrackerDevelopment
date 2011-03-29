@@ -199,8 +199,8 @@ int PardisoLinearSolver::solve( VecXd& x, const VecXd& b )
   int msglvl = 0;
 
   // Convert matrix from 0-based C-notation to Fortran 1-based notation.
-  rowstarts.cwise() += 1;
-  colindices.cwise() += 1;
+  rowstarts.array() += 1;
+  colindices.array() += 1;
 
   // Reordering and Symbolic Factorization.  This step also allocates all memory that is necessary for the factorization.
   int phase = 11;
@@ -232,8 +232,8 @@ int PardisoLinearSolver::solve( VecXd& x, const VecXd& b )
   parsePardisoError( error );
 
   // Convert matrix back to 0-based C-notation.
-  rowstarts.cwise() -= 1;
-  colindices.cwise() -= 1;
+  rowstarts.array() -= 1;
+  colindices.array() -= 1;
 
   // Release internal memory
   phase = -1;

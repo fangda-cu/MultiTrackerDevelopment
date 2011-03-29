@@ -36,24 +36,11 @@ CollisionDetector::~CollisionDetector()
 
 void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cllsns)
 {
-   Timer::getTimer("Collision detector").start();
-
     m_collisions = &cllsns;
     m_collisions->clear();
     BVHNode& root = m_bvh.GetNode(0);
-
-//    Timer::getTimer("Expanding boxes").start();
     updateBoundingBox(root);
-//    Timer::getTimer("Expanding boxes").stop();
-
-//    Timer::getTimer("Computing collisions").start();
     computeContinuousTimeCollisions(root, root);
-//    Timer::getTimer("Computing collisions").stop();
-
-//    if (cllsns.size())
-//        std::cerr << "\033[32mCollision detector found " << cllsns.size() << " collisions\033[0m" << std::endl;
-
-  Timer::getTimer("Collision detector").stop();
 }
 
 void CollisionDetector::updateContinuousTimeCollisions()

@@ -42,7 +42,7 @@ public:
     m_m.resize(m_diffEq.ndof());
     m_diffEq.getMass(m_m);
 
-    m_v += m_dt*(m_pDot.cwise()/m_m);
+    m_v.array() += m_dt*(m_pDot.array()/m_m.array());
     m_x += m_dt*m_v;
     
     m_diffEq.setV(m_v);

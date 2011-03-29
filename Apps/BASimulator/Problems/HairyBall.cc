@@ -408,7 +408,7 @@ void HairyBall::Setup()
   getRodOptions(opts);
 
   // cm
-  double sphereradius = 4.0;
+  double sphereradius = 8.0;
 
   // 12 inches == 60.96 cm
   double L = 60.96/4.0;

@@ -25,7 +25,6 @@ PLG1            := wmFigaro.so
 #PLG1_CF	        += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL -DHAVE_LAPACK -DWETA
 PLG1_CF	        += -DBUILD=${BUILD} -openmp -pthread -DHAVE_LAPACK -DWETA -DHAVE_OPENMP
 PLG1_CF	        += -no-ipo
-PLG1_CF         += $(EIGEN2_COMPATIBILITY_LEVEL)
 
 # PhysBAM libraries
 PHYSBAM_LOCATION := /vol/weta/src/amcadams/PhysBAM-svn

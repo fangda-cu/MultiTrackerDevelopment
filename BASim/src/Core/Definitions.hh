@@ -36,7 +36,8 @@ typedef std::vector<Mat3d> Mat3dArray; ///< an array of 3x3 scalar matrices
 
 typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> MatXd; ///< arbitrary dimension scalar matrix
 
-typedef Eigen::eigen2_Quaternion<Scalar> Quaternion; ///< scalar quaternion
+//typedef Eigen::eigen2_Quaternion<Scalar> Quaternion; ///< scalar quaternion
+typedef Eigen::Quaternion<Scalar> Quaternion;
 
 #define SMALL_NUMBER 1.0e-10
 

@@ -192,8 +192,8 @@ public:
     Scalar computeResidual()
     {
         // Sanity checks for NANs
-        assert((x0.cwise() == x0).all());
-        assert((m_deltaX.cwise() == m_deltaX).all());
+//        assert((x0.cwise() == x0).all());
+//        assert((m_deltaX.cwise() == m_deltaX).all());
 
         // rhs == h*h*forces
         m_rhs.setZero();
@@ -201,7 +201,7 @@ public:
         m_rhs *= m_dt * m_dt;
 
         // lhs == M*deltaV == M*(deltax-h*v_n)
-        m_rhs -= m_mass.cwise() * (m_deltaX - m_dt * v0);
+        m_rhs.array() -= m_mass.array() * (m_deltaX - m_dt * v0).array();
 
         for (int i = 0; i < (int) m_fixed.size(); ++i)
             m_rhs(m_fixed[i]) = 0.0;

@@ -344,7 +344,8 @@ void BridsonStepper::executeIterativeInelasticImpulseResponse()
         }
         m_collision_detector->getContinuousTimeCollisions(collisions);
     }
-    std::cerr << "Iterated collision response " << itr << " times" << std::endl;
+    if (itr > 1)
+        std::cerr << "\033[33mIterated collision response " << itr << " times\033[0m" << std::endl;
 
     if (itr == m_num_inlstc_itrns)
         std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Exceeded maximum " << "number of inelastic iterations "
@@ -376,11 +377,18 @@ int BridsonStepper::getContainingRod(int vert_idx) const
 
 bool BridsonStepper::execute()
 {
+    Timer::getTimer("BridsonStepper::execute()").start();
     bool do_adaptive = false;
+    bool result;
 
     if (do_adaptive)
-        return adaptiveExecute(m_dt);
-    return nonAdaptiveExecute(m_dt);
+        result = adaptiveExecute(m_dt);
+    else
+        result = nonAdaptiveExecute(m_dt);
+
+    Timer::getTimer("BridsonStepper::execute()").stop();
+
+    return result;
 }
 
 double BridsonStepper::computeTotalForceNorm()
@@ -532,7 +540,7 @@ bool BridsonStepper::step(bool check_explosion)
     bool dependable_solve = true;
 
     // Step rods forward ignoring collisions
-    START_TIMER("BridsonStepperDynamics");
+   START_TIMER("BridsonStepperDynamics");
 
     // Step scripted objects forward, set boundary conditions
     for (int i = 0; i < (int) m_scripting_controllers.size(); ++i)
@@ -571,7 +579,7 @@ bool BridsonStepper::step(bool check_explosion)
         }
     }
 
-    STOP_TIMER("BridsonStepperDynamics");
+   STOP_TIMER("BridsonStepperDynamics");
 
     // BEGIN TEMP
     //  if( computeMaxEdgeAngle( *m_rods[23] ) > 1.0 ) std::cout << "Explosion detected after solve" << std::endl;
@@ -724,9 +732,9 @@ bool BridsonStepper::step(bool check_explosion)
     //    }
     //  #endif
 
-//    Timer::getTimer("BridsonStepperDynamics").report();
-//    Timer::getTimer("BridsonStepperResponse").report();
-//    Timer::getTimer("Collision detector").report();
+    //    Timer::getTimer("BridsonStepperDynamics").report();
+    //    Timer::getTimer("BridsonStepperResponse").report();
+    //    Timer::getTimer("Collision detector").report();
 
     return dependable_solve;
 }
@@ -838,7 +846,7 @@ void BridsonStepper::extractPositions(const std::vector<ElasticRod*>& rods, cons
         }
     }
 
-    assert((positions.cwise() == positions).all());
+//    assert((positions.cwise() == positions).all());
 
     // Ensure boundary conditions loaded properly
 #ifdef DEBUG
@@ -891,7 +899,7 @@ void BridsonStepper::extractVelocities(const std::vector<ElasticRod*>& rods, con
         }
     }
 
-    assert((velocities.cwise() == velocities).all());
+//    assert((velocities.cwise() == velocities).all());
 }
 
 void BridsonStepper::restorePositions(std::vector<ElasticRod*>& rods, const VecXd& positions)
@@ -1327,7 +1335,7 @@ void BridsonStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCT
     //std::cout << desired_values << std::endl;
 
     Eigen::VectorXd alpha(numconstraints); // = lglhs.inverse()*lgrhs;
-    lglhs.eigen2_lu().solve(lgrhs, &alpha);
+    alpha = lglhs.lu().solve(lgrhs);
 
     assert(alpha(0) >= 0.0);
 
@@ -1824,7 +1832,7 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEd
     assert(lglhs.rows() == lglhs.cols());
     assert(lglhs.rows() == lgrhs.size());
     assert(lglhs.rows() == alpha.size());
-    lglhs.eigen2_lu().solve(lgrhs, &alpha);
+    alpha = lglhs.lu().solve(lgrhs);
 
     assert(alpha(0) >= 0.0);
 
@@ -2146,7 +2154,7 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEd
     //std::cout << desired_values << std::endl;
 
     Eigen::VectorXd alpha(numconstraints); // = lglhs.inverse()*lgrhs;
-    lglhs.eigen2_lu().solve(lgrhs, &alpha);
+    alpha = lglhs.lu().solve(lgrhs);
 
     // Contact constraint should 'push not pull'
     assert(alpha(0) >= 0.0);
