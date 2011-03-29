@@ -88,7 +88,7 @@ public:
 
 	/// empty constructor
 	MiddleBVHBuilder() :
-		m_max_leaf_size(4u)
+		m_max_leaf_size(1u)
 	{
 	}
 

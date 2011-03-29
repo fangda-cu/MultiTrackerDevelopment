@@ -377,7 +377,7 @@ int BridsonStepper::getContainingRod(int vert_idx) const
 
 bool BridsonStepper::execute()
 {
-    Timer::getTimer("BridsonStepper::execute()").start();
+    Timer::getTimer("BridsonStepper::execute").start();
     bool do_adaptive = false;
     bool result;
 
@@ -386,7 +386,8 @@ bool BridsonStepper::execute()
     else
         result = nonAdaptiveExecute(m_dt);
 
-    Timer::getTimer("BridsonStepper::execute()").stop();
+    Timer::getTimer("BridsonStepper::execute").stop();
+    Timer::report();
 
     return result;
 }
@@ -540,7 +541,7 @@ bool BridsonStepper::step(bool check_explosion)
     bool dependable_solve = true;
 
     // Step rods forward ignoring collisions
-   START_TIMER("BridsonStepperDynamics");
+    START_TIMER("BridsonStepperDynamics");
 
     // Step scripted objects forward, set boundary conditions
     for (int i = 0; i < (int) m_scripting_controllers.size(); ++i)
@@ -579,7 +580,7 @@ bool BridsonStepper::step(bool check_explosion)
         }
     }
 
-   STOP_TIMER("BridsonStepperDynamics");
+    STOP_TIMER("BridsonStepperDynamics");
 
     // BEGIN TEMP
     //  if( computeMaxEdgeAngle( *m_rods[23] ) > 1.0 ) std::cout << "Explosion detected after solve" << std::endl;
@@ -846,7 +847,7 @@ void BridsonStepper::extractPositions(const std::vector<ElasticRod*>& rods, cons
         }
     }
 
-//    assert((positions.cwise() == positions).all());
+    //    assert((positions.cwise() == positions).all());
 
     // Ensure boundary conditions loaded properly
 #ifdef DEBUG
@@ -899,7 +900,7 @@ void BridsonStepper::extractVelocities(const std::vector<ElasticRod*>& rods, con
         }
     }
 
-//    assert((velocities.cwise() == velocities).all());
+    //    assert((velocities.cwise() == velocities).all());
 }
 
 void BridsonStepper::restorePositions(std::vector<ElasticRod*>& rods, const VecXd& positions)

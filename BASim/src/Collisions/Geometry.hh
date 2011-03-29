@@ -109,7 +109,7 @@ public:
 
 };
 
-static const double MARGIN = 1e-12;
+static const double MARGIN = 0.0;
 
 // A virtual class to abstract handling of edges and faces
 class TopologicalElement
@@ -127,7 +127,7 @@ class YAEdge: public TopologicalElement
     std::pair<int, int> m_edge;
 
 public:
-    explicit YAEdge(std::pair<int, int> edge) :
+    explicit YAEdge(const std::pair<int, int>& edge) :
         m_edge(edge)
     {
     }
@@ -181,7 +181,7 @@ class YATriangle: public TopologicalElement
     TriangularFace m_triangle;
 
 public:
-    explicit YATriangle(TriangularFace triangle) :
+    explicit YATriangle(const TriangularFace& triangle) :
         m_triangle(triangle)
     {
     }
