@@ -21,13 +21,13 @@ ScriptingController::ScriptingController( double time, double dt )
 
 void ScriptingController::setTime( double time )
 {
-  std::cerr << "ScriptingController::setTime() " << time << "\n";
+//  std::cerr << "ScriptingController::setTime() " << time << "\n";
   m_time = time;
 }
 
 void ScriptingController::setDt( double dt )
 {    
-  std::cerr << "ScriptingController::setDt() " << dt << "\n";
+//  std::cerr << "ScriptingController::setDt() " << dt << "\n";
   m_dt = dt;
 }
   

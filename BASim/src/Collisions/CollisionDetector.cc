@@ -35,13 +35,13 @@ CollisionDetector::~CollisionDetector()
 
 void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cllsns)
 {
-    Timer::getTimer("CollisionDetector::getContinuousTimeCollisions").start();
+    //    START_TIMER("CollisionDetector::getContinuousTimeCollisions");
     m_collisions = &cllsns;
     m_collisions->clear();
     BVHNode& root = m_bvh.GetNode(0);
     updateBoundingBox(root);
     computeContinuousTimeCollisions(root, root);
-    Timer::getTimer("CollisionDetector::getContinuousTimeCollisions").stop();
+    //    STOP_TIMER("CollisionDetector::getContinuousTimeCollisions");
 }
 
 void CollisionDetector::updateContinuousTimeCollisions()
@@ -54,24 +54,19 @@ void CollisionDetector::updateContinuousTimeCollisions()
 void CollisionDetector::getImplicitPenaltyCollisions(std::vector<EdgeEdgeProximityCollision>& edge_edge_collisions,
         std::vector<VertexFaceProximityCollision>& vertex_face_collisions)
 {
-    std::cerr << "\033[31mIMPLICIT PENALTY COLLISION DETECTION NOT IMPLEMENTED YET\033[0m";
+    std::cerr << "\033[31mIMPLICIT PENALTY COLLISION DETECTION NOT IMPLEMENTED YET\033[0m"; // FIXME
 }
 
 void CollisionDetector::updateBoundingBox(BVHNode& node)
 {
     BVHNode::BBoxType& bbox = node.BBox();
     bbox.Reset();
-    if (node.IsLeaf()) // Expand the leaf's bounding box to contain all its objects
+    if (node.IsLeaf()) // The leaf's bounding box contains the whole trajectory of its object during this time step.
     {
-        const uint32_t leaf_begin = node.LeafBegin();
-        const uint32_t leaf_end = node.LeafEnd();
-        for (uint32_t i = leaf_begin; i < leaf_end; ++i)
-        {
-            bbox.Insert(m_elements[i]->GetBBox(m_geodata, 0.0));
-            bbox.Insert(m_elements[i]->GetBBox(m_geodata, m_time_step));
-        }
+        bbox.Insert(m_elements[node.LeafBegin()]->GetBBox(m_geodata, 0.0));
+        bbox.Insert(m_elements[node.LeafBegin()]->GetBBox(m_geodata, m_time_step));
     }
-    else
+    else // Update the children, then this node's bounding box
     {
         BVHNode& hansel = m_bvh.GetNode(node.ChildIndex());
         updateBoundingBox(hansel);
@@ -84,15 +79,15 @@ void CollisionDetector::updateBoundingBox(BVHNode& node)
 
 void CollisionDetector::computeContinuousTimeCollisions(const BVHNode& node_a, const BVHNode& node_b)
 {
-    if (!Intersect(node_a.BBox(), node_b.BBox()))
+    if ( //(&node_a > &node_b) ||
+    (!Intersect(node_a.BBox(), node_b.BBox())))
         return;
 
     // If both nodes are leaves, intersect their contents
     if (node_a.IsLeaf() && node_b.IsLeaf())
     {
-        //	Timer::getTimer("Leaf leaf intersection").start();
-        intersectContent(node_a, node_b);
-        //	Timer::getTimer("Leaf leaf intersection").stop();
+        if (&node_a != &node_b)
+            appendContinuousTimeIntersection(m_elements[node_a.LeafBegin()], m_elements[node_b.LeafBegin()]);
     }
     // Else recurse on either the node that is not a leave, or the largest volume one.
     else if (node_a.IsLeaf())
@@ -110,22 +105,6 @@ void CollisionDetector::computeContinuousTimeCollisions(const BVHNode& node_a, c
         computeContinuousTimeCollisions(node_a, m_bvh.GetNode(node_b.ChildIndex()));
         computeContinuousTimeCollisions(node_a, m_bvh.GetNode(node_b.ChildIndex() + 1));
     }
-}
-
-void CollisionDetector::intersectContent(const BVHNode& leaf_a, const BVHNode& leaf_b)
-{
-    if (&leaf_a != &leaf_b)
-        appendContinuousTimeIntersection(m_elements[leaf_a.LeafBegin()], m_elements[leaf_b.LeafBegin()]);
-}
-
-void CollisionDetector::intersectContentSelf(const BVHNode& node)
-{
-    const uint32_t leaf_begin = node.LeafBegin();
-    const uint32_t leaf_end = node.LeafEnd();
-
-    for (uint32_t i = leaf_begin; i < leaf_end; ++i)
-        for (uint32_t j = leaf_begin; j < i; ++j)
-            appendContinuousTimeIntersection(m_elements[i], m_elements[j]);
 }
 
 void CollisionDetector::appendContinuousTimeIntersection(const TopologicalElement* elem_a, const TopologicalElement* elem_b)
@@ -147,7 +126,7 @@ void CollisionDetector::appendContinuousTimeIntersection(const TopologicalElemen
 
 void CollisionDetector::appendContinuousTimeIntersection(const YAEdge* edge_a, const YAEdge* edge_b)
 {
-//    Timer::getTimer("CollisionDetector::appendContinuousTimeIntersection edge edge").start();
+    //    Timer::getTimer("CollisionDetector::appendContinuousTimeIntersection edge edge").start();
 
     EdgeEdgeCTCollision* edgeXedge = new EdgeEdgeCTCollision(edge_a, edge_b);
 
@@ -157,12 +136,12 @@ void CollisionDetector::appendContinuousTimeIntersection(const YAEdge* edge_a, c
     if (edgeXedge->analyseCollision(m_geodata, m_time_step))
         m_collisions->push_back(edgeXedge);
 
-//    Timer::getTimer("CollisionDetector::appendContinuousTimeIntersection edge edge").stop();
+    //    Timer::getTimer("CollisionDetector::appendContinuousTimeIntersection edge edge").stop();
 }
 
 void CollisionDetector::appendContinuousTimeIntersection(int v_index, const YATriangle* triangle)
 {
-//    Timer::getTimer("CollisionDetector::appendContinuousTimeIntersection vertex face").start();
+    //    Timer::getTimer("CollisionDetector::appendContinuousTimeIntersection vertex face").start();
 
     VertexFaceCTCollision* vertexXface = new VertexFaceCTCollision(v_index, triangle);
 
@@ -173,7 +152,7 @@ void CollisionDetector::appendContinuousTimeIntersection(int v_index, const YATr
     if (vertexXface->analyseCollision(m_geodata, m_time_step))
         m_collisions->push_back(vertexXface);
 
-//    Timer::getTimer("CollisionDetector::appendContinuousTimeIntersection vertex face").stop();
+    //    Timer::getTimer("CollisionDetector::appendContinuousTimeIntersection vertex face").stop();
 }
 
 void CollisionDetector::appendContinuousTimeIntersection(const YAEdge* edge, const YATriangle* triangle)

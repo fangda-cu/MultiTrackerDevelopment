@@ -92,12 +92,6 @@ public:
 	{
 	}
 
-	/// set maximum leaf size
-	void SetMaxLeafSize(const uint32_t max_leaf_size)
-	{
-		m_max_leaf_size = max_leaf_size;
-	}
-
 	/// build a bvh
 	///
 	/// The BboxVectorT template argument must obey the following interface:
@@ -134,7 +128,7 @@ private:
 
 	BVH_Type* m_bvh; ///< output bvh
 	std::stack<StackNode> m_stack; ///< internal stack
-	uint32_t m_max_leaf_size;///< maximum leaf size
+	const uint32_t m_max_leaf_size;///< maximum leaf size
 };
 
 inline Scalar min(const Scalar x, const Scalar y)

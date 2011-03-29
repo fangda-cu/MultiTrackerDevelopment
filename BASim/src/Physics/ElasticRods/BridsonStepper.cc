@@ -377,6 +377,7 @@ int BridsonStepper::getContainingRod(int vert_idx) const
 
 bool BridsonStepper::execute()
 {
+    std::cerr << "Executing time step " << m_t << std::endl;
     Timer::getTimer("BridsonStepper::execute").start();
     bool do_adaptive = false;
     bool result;
@@ -387,7 +388,7 @@ bool BridsonStepper::execute()
         result = nonAdaptiveExecute(m_dt);
 
     Timer::getTimer("BridsonStepper::execute").stop();
-    Timer::report();
+    // Timer::report();
 
     return result;
 }
@@ -423,7 +424,7 @@ bool BridsonStepper::nonAdaptiveExecute(double dt)
 {
     setDt(dt);
     m_t += dt;
-    for (int i = 0; i < (int) m_scripting_controllers.size(); ++i)
+    for (int i = 0; i < m_scripting_controllers.size(); ++i)
         m_scripting_controllers[i]->setTime(m_t);
     return step(false);
 }
@@ -582,42 +583,8 @@ bool BridsonStepper::step(bool check_explosion)
 
     STOP_TIMER("BridsonStepperDynamics");
 
-    // BEGIN TEMP
-    //  if( computeMaxEdgeAngle( *m_rods[23] ) > 1.0 ) std::cout << "Explosion detected after solve" << std::endl;
-    // END TEMP
-
-    //  #ifdef TIMING_ON
-    //    for( int i = 0; i < (int) m_rods.size(); ++i )
-    //    {
-    //      ObjPropHandle<std::pair<double,int> > ophndl;
-    //      if( m_rods[i]->property_exists(ophndl,"collision_induced_force_change") )
-    //      {
-    //        m_rods[i]->property_handle(ophndl,"collision_induced_force_change");
-    //        //std::cout << m_rods[i]->property(ophndl).first << "  -  " << m_rods[i]->property(ophndl).second << std::endl;
-    //        PairVectorBase::insertPair( "IterationsVsCollisionInducedForce",
-    //                                    m_rods[i]->property(ophndl),
-    //                                    PairVectorBase::StringPair("CollisionInducedForce","NewtonIterations") );
-    //      }
-    //    }
-    //  #endif
-
-    //  #ifdef TIMING_ON
-    //    std::vector<std::pair<double,double> > collision_induced_force_change;
-    //    collision_induced_force_change.resize(m_rods.size());
-    //    for( int i = 0; i < (int) m_base_indices.size(); ++i )
-    //    {
-    //      VecXd totalforce(m_rods[i]->ndof());
-    //      totalforce.setZero();
-    //      m_rods[i]->computeForces(totalforce);
-    //      collision_induced_force_change[i].first = totalforce.norm();
-    //    }
-    //  #endif
-
-
     // Post time step position
     extractPositions(m_rods, m_base_indices, m_xnp1);
-
-    //std::cout << "m_xnp1: " << m_xnp1 << std::endl;
 
     // Average velocity over the timestep just completed
     m_vnphalf = (m_xnp1 - m_xn) / m_dt;
@@ -627,19 +594,6 @@ bool BridsonStepper::step(bool check_explosion)
     if (m_itrv_inlstc_enbld && m_num_inlstc_itrns > 0)
         executeIterativeInelasticImpulseResponse();
     STOP_TIMER("BridsonStepperResponse");
-
-    //  #ifdef TIMING_ON
-    //    VecXd collision_induced_strain = m_xn + m_dt*m_vnphalf - m_xnp1;
-    //    for( int i = 0; i < (int) m_base_indices.size(); ++i )
-    //    {
-    //      double total_strain = 0.0;
-    //      for( int j = 0; j < m_rods[i]->nv(); ++j ) total_strain += collision_induced_strain.segment<3>(m_base_indices[i]+3*j).norm();
-    //      ObjPropHandle<double> ophndl;
-    //      m_rods[i]->add_property(ophndl,"collision_induced_strain");
-    //      m_rods[i]->property(ophndl) = total_strain;
-    //      //std::cout << "Rod: " << i << "       Strain: " << total_strain << std::endl;
-    //    }
-    //  #endif
 
     // Compute final positions from corrected velocities
     m_xnp1 = m_xn + m_dt * m_vnphalf;
@@ -833,8 +787,8 @@ void BridsonStepper::extractPositions(const std::vector<ElasticRod*>& rods, cons
 
     assert(m_triangle_meshes.size() == m_base_triangle_indices.size());
 
-    std::cerr << "positions.size() = " << positions.size() << std::endl;
-    std::cerr << "m_base_triangle_indices.size() = " << m_base_triangle_indices.size() << std::endl;
+    //    std::cerr << "positions.size() = " << positions.size() << std::endl;
+    //    std::cerr << "m_base_triangle_indices.size() = " << m_base_triangle_indices.size() << std::endl;
 
     for (int i = 0; i < (int) m_triangle_meshes.size(); ++i)
     {
