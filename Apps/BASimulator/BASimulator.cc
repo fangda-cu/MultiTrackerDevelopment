@@ -69,7 +69,7 @@ std::vector<RodRenderer*> rod_renderers;
 std::vector<TriangleMeshRenderer*> triangle_mesh_renderers;
 
 bool render = true;
-bool paused = true;
+bool paused = false;
 bool continuous = true;
 int window_width = 512;
 int window_height = 512;

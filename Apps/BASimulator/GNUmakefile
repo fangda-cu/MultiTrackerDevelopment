@@ -27,8 +27,10 @@ Problems/ProblemBase.hh \
 Problems/BentTwisting.hh \
 Problems/CollisionTest.hh \
 Problems/CollisionTestTwo.hh \
+Problems/CollisionTestWeta.hh \
 Problems/RegressionTests.hh \
 Problems/HairyBall.hh \
+Problems/HairyBallWeta.hh \
 Problems/SHO.hh \
 Problems/ViscosityTests.hh \
 tclap-1.2.0/tclap/include/SwitchArg.h
@@ -42,9 +44,11 @@ PRG1_S		:= \
 		./Problems/BentTwisting.cc \
 		./Problems/CollisionTest.cc \
 		./Problems/CollisionTestTwo.cc \
+		./Problems/CollisionTestWeta.cc \
 		./Problems/ProblemBase.cc \
 		./Problems/RegressionTests.cc \
 		./Problems/HairyBall.cc \
+		./Problems/HairyBallWeta.cc \
 		./Problems/SHO.cc \
 		./Problems/ViscosityTests.cc 
 

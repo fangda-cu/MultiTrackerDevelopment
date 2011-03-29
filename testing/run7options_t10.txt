@@ -1,0 +1,22 @@
+# Options for Tricky Collisions
+RegressionTest 10	# Which regression test to execute.
+atol 1e-08	# absolute convergence tolerance
+density 1.3	# volumetric density of the rod
+dt 0.01	# time-step size
+gravity 0 -981 0	# gravity
+inftol 1e-08	# infinity norm convergence tolerance
+integrator implicit	# type of integrator to use for the rod
+iterations 1000	# maximum number of iterations for implicit method
+major-radius 0.005	# radius of major axis of cross-section
+mass-damping 0	# mass damping for the rod
+minor-radius 0.005	# radius of minor axis of cross-section
+nv 40	# number of vertices in the rod
+quasistatic true	# update material frame quasistatically
+radius-scale 1	# scaling for rendering and collisions
+reference-frame time	# type of reference frame to use (time/space)
+rtol 1e-08	# relative convergence tolerance
+shear-modulus 3.4e+09	# Shear modulus for the rod
+stol 1e-08	# convergence tolerance in terms of the norm of the change in the solution between steps
+velocity-solve false	# solve for velocity increments in implicit Euler (if false, the solve is for position increments)
+viscosity 0	# Dynamic viscosity for the rod
+youngs-modulus 1e+10	# Young's modulus for the rod

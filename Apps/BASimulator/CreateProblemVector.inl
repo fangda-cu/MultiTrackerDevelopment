@@ -9,6 +9,8 @@
 //#include "Problems/SerializationTests.hh"
 
 #include "Problems/CollisionTestTwo.hh"
+#include "Problems/CollisionTestWeta.hh"
+#include "Problems/HairyBallWeta.hh"
 
 #ifdef HAVE_PARDISO
 //#include "Problems/MicrotuboliDNA.hh"
@@ -27,9 +29,11 @@ void CreateProblemVector()
   //problems.push_back(new HandTest());
 
  // problems.push_back(new SerializationTests());
-
+  
   problems.push_back(new CollisionTestTwo());
-
+  problems.push_back(new CollisionTestWeta());
+  problems.push_back(new HairyBallWeta());
+ 
   #ifdef HAVE_PARDISO
   //problems.push_back(new MicrotuboliDNA());
   #endif

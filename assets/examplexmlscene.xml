@@ -1,0 +1,31 @@
+<?xml version="1.0" ?>
+
+<!-- Simulation related options -->
+<sim>
+	<integrator type="implicit-euler"/>
+	<timestep value="0.0001"/>
+	
+	<!-- Current simulation time -->
+	<time value="0.0"/>
+	
+	<!-- All forces that act on the entire system go here -->
+	<force type="gravity" gx="0.0" gy="-981.0" gz="0.0"/>
+	<force type="mass-damping" coefficient="0.0" />
+
+	<!-- Objects specified in other files (as opposed to inline) -->
+	<externalobject type="rod" file="rod0.txt"/>
+	<externalobject type="rod" file="rod1.txt"/>
+	<externalobject type="obj" file="TriangulatedSphere.obj"/>
+	
+	<!-- TODO: Add inline rod here -->
+</sim>
+
+
+
+<!-- UI relate options -->
+<ui>
+	<camera>
+		<center x="0.0" y="0.0" z="0.0"/>
+		<!-- TODO: Add polar coordinate stuff here -->
+	</camera>
+</ui>
