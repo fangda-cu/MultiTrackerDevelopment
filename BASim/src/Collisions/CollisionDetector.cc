@@ -87,7 +87,16 @@ void CollisionDetector::computeContinuousTimeCollisions(const BVHNode& node_a, c
     if (node_a.IsLeaf() && node_b.IsLeaf())
     {
         if (&node_a != &node_b)
-            appendContinuousTimeIntersection(m_elements[node_a.LeafBegin()], m_elements[node_b.LeafBegin()]);
+        {
+            const uint32_t leaf_a_begin = node_a.LeafBegin();
+            const uint32_t leaf_a_end = node_a.LeafEnd();
+            const uint32_t leaf_b_begin = node_b.LeafBegin();
+            const uint32_t leaf_b_end = node_b.LeafEnd();
+
+            for (uint32_t i = leaf_a_begin; i < leaf_a_end; ++i)
+                for (uint32_t j = leaf_b_begin; j < leaf_b_end; ++j)
+                    appendContinuousTimeIntersection(m_elements[i], m_elements[j]);
+        }
     }
     // Else recurse on either the node that is not a leave, or the largest volume one.
     else if (node_a.IsLeaf())
