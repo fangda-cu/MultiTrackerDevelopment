@@ -85,6 +85,7 @@ struct VertexFaceImplicitPenaltyCollision
     Vec3d cp;
 };
 
+// Virtual base class for continuous time collisions.
 class CTCollision
 {
 protected:
@@ -92,6 +93,10 @@ protected:
     double m_time;
     // Collision normal
     Vec3d m_normal;
+    // Relative velocity along the oriented normal
+    double m_relative_velocity;
+    // Flag indicating whether the collision has been analysed and the previous variables properly set.
+    bool m_analysed;
 
 public:
 
@@ -106,18 +111,31 @@ public:
 
     double getTime() const
     {
+        assert(m_analysed);
         return m_time;
     }
 
     Vec3d GetNormal() const
     {
+        assert(m_analysed);
         return m_normal;
+    }
+
+    double GetRelativeVelocity() const
+    {
+        assert(m_analysed);
+        return m_relative_velocity;
+    }
+
+    void ApplyRelativeVelocityKick()
+    {
+        assert(m_analysed);
+        m_relative_velocity -= 1.0e6;
     }
 
     // From the initial collision data (vertices, velocities and time step) determine whether the collision happened, where and when.
     virtual bool analyseCollision(const GeometricData& geodata, double time_step) = 0;
 
-    virtual double computeRelativeVelocity(const GeometricData& geodata) const = 0;
     virtual Vec3d computeInelasticImpulse(const GeometricData& geodata, const double& relvel) = 0;
 
     virtual bool IsFixed(const GeometricData& geodata) = 0;
@@ -126,6 +144,10 @@ public:
     {
         return cllsnA->m_time < cllsnB->m_time;
     }
+
+private:
+    virtual double computeRelativeVelocity(const GeometricData& geodata) const = 0;
+
 };
 
 /**
@@ -157,7 +179,6 @@ public:
     }
 
     virtual bool analyseCollision(const GeometricData& geodata, double time_step);
-    virtual double computeRelativeVelocity(const GeometricData& geodata) const;
     virtual Vec3d computeInelasticImpulse(const GeometricData& geodata, const double& relvel);
     virtual bool IsFixed(const GeometricData& geodata)
     {
@@ -166,6 +187,9 @@ public:
     }
 
     friend std::ostream& operator<<(std::ostream& os, const EdgeEdgeCTCollision& eecol);
+
+private:
+    virtual double computeRelativeVelocity(const GeometricData& geodata) const;
 
 };
 
@@ -196,7 +220,6 @@ public:
     }
 
     virtual bool analyseCollision(const GeometricData& geodata, double time_step);
-    virtual double computeRelativeVelocity(const GeometricData& geodata) const;
     virtual Vec3d computeInelasticImpulse(const GeometricData& geodata, const double& relvel);
     virtual bool IsFixed(const GeometricData& geodata)
     {
@@ -204,6 +227,9 @@ public:
     }
 
     friend std::ostream& operator<<(std::ostream& os, const VertexFaceCTCollision& vfcol);
+
+private:
+    virtual double computeRelativeVelocity(const GeometricData& geodata) const;
 
 };
 
