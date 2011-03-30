@@ -63,8 +63,13 @@ void CollisionDetector::updateBoundingBox(BVHNode& node)
     bbox.Reset();
     if (node.IsLeaf()) // The leaf's bounding box contains the whole trajectory of its object during this time step.
     {
-        bbox.Insert(m_elements[node.LeafBegin()]->GetBBox(m_geodata, 0.0));
-        bbox.Insert(m_elements[node.LeafBegin()]->GetBBox(m_geodata, m_time_step));
+        const uint32_t leaf_begin = node.LeafBegin();
+        const uint32_t leaf_end = node.LeafEnd();
+        for (uint32_t i = leaf_begin; i < leaf_end; ++i)
+        {
+            bbox.Insert(m_elements[i]->GetBBox(m_geodata, 0.0));
+            bbox.Insert(m_elements[i]->GetBBox(m_geodata, m_time_step));
+        }
     }
     else // Update the children, then this node's bounding box
     {
@@ -87,7 +92,16 @@ void CollisionDetector::computeContinuousTimeCollisions(const BVHNode& node_a, c
     if (node_a.IsLeaf() && node_b.IsLeaf())
     {
         if (&node_a != &node_b)
-            appendContinuousTimeIntersection(m_elements[node_a.LeafBegin()], m_elements[node_b.LeafBegin()]);
+        {
+            const uint32_t leaf_a_begin = node_a.LeafBegin();
+            const uint32_t leaf_a_end = node_a.LeafEnd();
+            const uint32_t leaf_b_begin = node_b.LeafBegin();
+            const uint32_t leaf_b_end = node_b.LeafEnd();
+
+            for (uint32_t i = leaf_a_begin; i < leaf_a_end; ++i)
+                for (uint32_t j = leaf_b_begin; j < leaf_b_end; ++j)
+                    appendContinuousTimeIntersection(m_elements[i], m_elements[j]);
+        }
     }
     // Else recurse on either the node that is not a leave, or the largest volume one.
     else if (node_a.IsLeaf())
