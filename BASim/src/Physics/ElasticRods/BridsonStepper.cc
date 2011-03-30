@@ -268,28 +268,28 @@ void BridsonStepper::exertInelasticImpluse(EdgeEdgeCTCollision& eecol)
     // Compute the relative velocity of the edges at the collision point
     //   Vec3d relvel = m_geodata.computeRelativeVelocity(clssn.e0_v0, clssn.e0_v1, clssn.e1_v0, clssn.e1_v1, clssn.s, clssn.t);
     //   double magrelvel = relvel.dot(clssn.n);
-    double magrelvel = eecol.computeRelativeVelocity(m_geodata);
+    //    double magrelvel = eecol.computeRelativeVelocity(m_geodata);
 
-    if (magrelvel >= 0.0)
+    if (eecol.GetRelativeVelocity() >= 0.0)
     {
         std::cerr
                 << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Relative velocity computed \
                   incorrectly before applying edge-edge inelastic impulse (bug in normal \
                   computation?). Magnitude of relative velocity: "
-                << magrelvel << ". Rod: " << getContainingRod(eecol.e0_v0) << std::endl;
+                << eecol.GetRelativeVelocity() << ". Rod: " << getContainingRod(eecol.e0_v0) << std::endl;
     }
-    assert(magrelvel < 0.0);
+    assert(eecol.GetRelativeVelocity() < 0.0);
 
     // Add some extra "kick" to relative velocity to account for FPA errors
-    magrelvel -= 1.0e-6;
-    Vec3d I = eecol.computeInelasticImpulse(m_geodata, magrelvel);
+    eecol.ApplyRelativeVelocityKick();
+    Vec3d I = eecol.computeInelasticImpulse(m_geodata, eecol.GetRelativeVelocity());
     //computeEdgeEdgeInelasticImpulse(m_masses[eecol.e0_v0], m_masses[eecol.e0_v1], m_masses[eecol.e1_v0],
-    //m_masses[eecol.e1_v1], eecol.s, eecol.t, magrelvel, eecol.n);
+    //m_masses[eecol.e1_v1], eecol.s, eecol.t, eecol.GetRelativeVelocity(), eecol.n);
 
     exertEdgeImpulse(-I, m_masses[eecol.e0_v0], m_masses[eecol.e0_v1], eecol.s, eecol.e0_v0, eecol.e0_v1, m_vnphalf);
     exertEdgeImpulse(I, m_masses[eecol.e1_v0], m_masses[eecol.e1_v1], eecol.t, eecol.e1_v0, eecol.e1_v1, m_vnphalf);
 
-    assert(eecol.computeRelativeVelocity(m_geodata) >= 0.0);
+    assert(eecol.GetRelativeVelocity() >= 0);
 }
 
 void BridsonStepper::exertInelasticImpluse(VertexFaceCTCollision& vfcol)
@@ -304,20 +304,20 @@ void BridsonStepper::exertInelasticImpluse(VertexFaceCTCollision& vfcol)
     assert(vfcol.f2 < getNumVerts());
 
     // Compute the relative velocity of the edges at the collision point
-    double magrelvel = vfcol.computeRelativeVelocity(m_geodata);
-    assert(magrelvel < 0.0);
+    //   double magrelvel = vfcol.computeRelativeVelocity(m_geodata);
+    assert(vfcol.GetRelativeVelocity() < 0.0);
 
     // Add some extra "kick" to relative velocity to account for FPA errors
-    magrelvel -= 1.0e-6;
-    Vec3d I = vfcol.computeInelasticImpulse(m_geodata, magrelvel);
+    vfcol.ApplyRelativeVelocityKick();
+    Vec3d I = vfcol.computeInelasticImpulse(m_geodata, vfcol.GetRelativeVelocity());
     // computeVertexFaceInelasticImpulse(m_masses[vfcol.v0], m_masses[vfcol.f0], m_masses[vfcol.f1], m_masses[vfcol.f2],
-    // vfcol.u, vfcol.v, vfcol.w, magrelvel, vfcol.n);
+    // vfcol.u, vfcol.v, vfcol.w, eecol.GetRelativeVelocity(), vfcol.n);
 
     exertFaceImpulse(-I, m_masses[vfcol.f0], m_masses[vfcol.f1], m_masses[vfcol.f2], vfcol.u, vfcol.v, vfcol.w, vfcol.f0,
             vfcol.f1, vfcol.f2, m_vnphalf);
     exertVertexImpulse(I, m_masses[vfcol.v0], vfcol.v0, m_vnphalf);
 
-    assert(vfcol.computeRelativeVelocity(m_geodata) >= 0.0);
+    assert(vfcol.GetRelativeVelocity() >= 0);
 }
 
 void BridsonStepper::executeIterativeInelasticImpulseResponse()
@@ -1119,8 +1119,8 @@ void BridsonStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCT
     assert(v0 < m_rods[rodidx]->nv());
 
     // Compute the relative velocity of the collision
-    double magrelvel = vfcol.computeRelativeVelocity(m_geodata);
-    assert(magrelvel < 0.0);
+    //    double magrelvel = vfcol.computeRelativeVelocity(m_geodata);
+    assert(vfcol.GetRelativeVelocity() < 0.0);
 
     // Get storage for lhs of linear system, get a solver
     LinearSystemSolver* lss = m_solver_collection.getLinearSystemSolver(m_rods[rodidx]->ndof());
@@ -1276,7 +1276,7 @@ void BridsonStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCT
 #ifdef DEBUG
     lgrhs.setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
-    lgrhs(0) = magrelvel; //posnN0.dot(m_vnphalf.segment(m_base_indices[rodidx],posnN0.size()));
+    lgrhs(0) = vfcol.GetRelativeVelocity(); //posnN0.dot(m_vnphalf.segment(m_base_indices[rodidx],posnN0.size()));
     assert(lgrhs(0) < 0.0);
     for (int i = 1; i < numconstraints; ++i)
         lgrhs(i) = posnn[i].dot(m_vnphalf.segment(rodbase, nvdof));
@@ -1369,8 +1369,8 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEd
     // Compute the relative velocity, which must be negative
     //    Vec3d relvel = m_geodata.computeRelativeVelocity(eecol.e0_v0, eecol.e0_v1, eecol.e1_v0, eecol.e1_v1, eecol.s, eecol.t);
     //    double magrelvel = relvel.dot(eecol.n);
-    double magrelvel = eecol.computeRelativeVelocity(m_geodata);
-    assert(magrelvel < 0.0);
+    //   double magrelvel = eecol.computeRelativeVelocity(m_geodata);
+    assert(eecol.GetRelativeVelocity() < 0.0);
 
     // Determine the total number of degrees of freedom in each rod
     int rod0ndof = m_rods[rod0]->ndof();
@@ -1757,7 +1757,7 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEd
     assert(posnn0[0].size() == m_vnphalf.segment(rod0base, rod0nvdof).size());
     assert(posnn1[0].size() == m_vnphalf.segment(rod1base, rod1nvdof).size());
     lgrhs(0) = posnn0[0].dot(m_vnphalf.segment(rod0base, rod0nvdof)) + posnn1[0].dot(m_vnphalf.segment(rod1base, rod1nvdof));
-    assert(approxEq(lgrhs(0), magrelvel, 1.0e-6));
+    assert(approxEq(lgrhs(0), eecol.GetRelativeVelocity(), 1.0e-6));
     assert(lgrhs(0) < 0.0);
 
     // Entries 1...numalpha
@@ -1883,8 +1883,8 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEd
     // Compute the relative velocity, which must be negative for a collision to have happened
     //    Vec3d relvel = m_geodata.computeRelativeVelocity(eecol.e0_v0, eecol.e0_v1, eecol.e1_v0, eecol.e1_v1, eecol.s, eecol.t);
     //    double magrelvel = relvel.dot(eecol.n);
-    double magrelvel = eecol.computeRelativeVelocity(m_geodata);
-    assert(magrelvel < 0.0);
+    //   double magrelvel = eecol.computeRelativeVelocity(m_geodata);
+    assert(eecol.GetRelativeVelocity() < 0.0);
 
     // Extract the rod index, barycentric coordinate of the collision, and indices of the edge involved in the collision
     int rodidx = -1;
@@ -2095,7 +2095,7 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEd
 #ifdef DEBUG
     lgrhs.setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
-    lgrhs(0) = magrelvel; // CRAZY SIGN PROBLEM HERE?
+    lgrhs(0) = eecol.GetRelativeVelocity(); // CRAZY SIGN PROBLEM HERE?
     assert(lgrhs(0) < 0.0);
     for (int i = 1; i < numconstraints; ++i)
         lgrhs(i) = posnn[i].dot(m_vnphalf.segment(rodbase, nvdof));

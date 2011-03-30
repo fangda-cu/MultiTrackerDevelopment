@@ -85,9 +85,13 @@ bool EdgeEdgeCTCollision::analyseCollision(const GeometricData& geodata, double 
             }
             m_normal /= nnorm;
 
-            // Make sure the normal produces a negative relative velocity
-            if (computeRelativeVelocity(geodata) > 0.0)
+            m_relative_velocity = computeRelativeVelocity(geodata);
+            if (m_relative_velocity > 0) // Make sure the normal produces a negative relative velocity
+            {
                 m_normal = -m_normal;
+                m_relative_velocity = -m_relative_velocity;
+            }
+            m_analysed = true;
 
             return true;
         }
@@ -195,8 +199,13 @@ bool VertexFaceCTCollision::analyseCollision(const GeometricData& geodata, doubl
             // Barycentric coords could be outside of [0,1] right now because we've extended the triangles a little bit
             assert(approxEq(u + v + w, 1.0));
 
-            if (computeRelativeVelocity(geodata) > 0.0)
+            m_relative_velocity = computeRelativeVelocity(geodata);
+            if (m_relative_velocity > 0.0)
+            {
                 m_normal = -m_normal;
+                m_relative_velocity = -m_relative_velocity;
+            }
+            m_analysed = true;
 
             return true;
         }
