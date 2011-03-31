@@ -79,7 +79,7 @@ int Problem::LoadOptions(const char* filename)
   string line, option;
   istringstream sIn;
   string tmp;
-  for (getline(input, line); !input.eof(); getline(input, line)) {
+  for (getline(input, line); !input.eof(); getline(input, line)) { // FIXME: this won't read the last line of the option file if it is not ended by a newline.
     sIn.clear();
     option.clear();
     sIn.str(line);
