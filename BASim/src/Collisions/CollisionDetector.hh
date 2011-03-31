@@ -22,15 +22,18 @@ class CollisionDetector
 {
     const GeometricData& m_geodata;
     std::vector<const TopologicalElement*> m_elements;
-    const double m_time_step;
+    const double& m_time_step;
+    bool m_skip_rod_rod;
     BVH m_bvh;
     std::list<CTCollision*>* m_collisions;
     threads::Mutex m_collisions_mutex;
+    int m_num_threads;
 
 public:
     // During construction, the BVH tree is created around the initial geometry.
+    // Parameter num_threads = -1 will cause the number of threads to be set equal to the number of available processors.
     CollisionDetector(const GeometricData& geodata, const std::vector<std::pair<int, int> >& edges,
-            const std::vector<TriangularFace>& faces, const double& timestep);
+            const std::vector<TriangularFace>& faces, const double& timestep, bool skip_rod_rod = true, int num_threads = -1);
 
     virtual ~CollisionDetector();
 
@@ -78,14 +81,13 @@ public:
     {
     }
 
-    bool execute()
+    bool execute() const
     {
         m_coldet.computeContinuousTimeCollisions(m_node_a, m_node_b);
 
         return true;
     }
 };
-
 
 }
 

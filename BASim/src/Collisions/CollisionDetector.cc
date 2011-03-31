@@ -9,14 +9,19 @@
 #include "CollisionUtils.hh"
 #include "../Core/Timer.hh"
 
-#define SKIP_ROD_ROD true
+#define SKIP_ROD_ROD false
 
 namespace BASim
 {
 CollisionDetector::CollisionDetector(const GeometricData& geodata, const std::vector<std::pair<int, int> >& edges,
-        const std::vector<TriangularFace>& faces, const double& timestep) :
-    m_geodata(geodata), m_time_step(timestep), m_collisions(NULL), m_collisions_mutex()
+        const std::vector<TriangularFace>& faces, const double& timestep, bool skip_rod_rod, int num_threads) :
+    m_geodata(geodata), m_time_step(timestep), m_skip_rod_rod(skip_rod_rod), m_collisions(NULL), m_collisions_mutex()
 {
+    if (num_threads > 0)
+        m_num_threads = num_threads;
+    else
+        m_num_threads = sysconf(_SC_NPROCESSORS_ONLN);
+
     m_elements.reserve(edges.size() + faces.size());
     for (uint32_t i = 0; i < edges.size(); i++)
         m_elements.push_back(new YAEdge(edges[i]));
@@ -39,7 +44,6 @@ void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cll
     m_collisions = &cllsns;
     m_collisions->clear();
     std::vector<BVHParallelizer*> steppers;
-    const int num_threads = 8;
     BVHNode& root = m_bvh.GetNode(0);
     updateBoundingBox(root);
 
@@ -59,7 +63,7 @@ void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cll
         steppers.push_back(new BVHParallelizer(*this, h, h));
         steppers.push_back(new BVHParallelizer(*this, h, g));
         steppers.push_back(new BVHParallelizer(*this, g, g));
-        MultithreadedStepper<std::vector<BVHParallelizer*> > (steppers, num_threads).Execute();
+        MultithreadedStepper<std::vector<BVHParallelizer*> > (steppers, m_num_threads).Execute();
         return;
     }
 
@@ -82,7 +86,7 @@ void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cll
         steppers.push_back(new BVHParallelizer(*this, gh, gh));
         steppers.push_back(new BVHParallelizer(*this, gh, gg));
         steppers.push_back(new BVHParallelizer(*this, gg, gg));
-        MultithreadedStepper<std::vector<BVHParallelizer*> > (steppers, num_threads).Execute();
+        MultithreadedStepper<std::vector<BVHParallelizer*> > (steppers, m_num_threads).Execute();
         return;
     }
 
@@ -132,7 +136,7 @@ void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cll
     steppers.push_back(new BVHParallelizer(*this, ggh, ggh));
     steppers.push_back(new BVHParallelizer(*this, ggh, ggg));
     steppers.push_back(new BVHParallelizer(*this, ggg, ggg));
-    MultithreadedStepper<std::vector<BVHParallelizer*> > (steppers, num_threads).Execute();
+    MultithreadedStepper<std::vector<BVHParallelizer*> > (steppers, m_num_threads).Execute();
 
     //    STOP_TIMER("CollisionDetector::getContinuousTimeCollisions");
 }
@@ -240,7 +244,7 @@ void CollisionDetector::appendContinuousTimeIntersection(const YAEdge* edge_a, c
 
     EdgeEdgeCTCollision* edgeXedge = new EdgeEdgeCTCollision(edge_a, edge_b);
 
-    if (SKIP_ROD_ROD && edgeXedge->IsRodRod(m_geodata)) // Detect rod-rod collisions and skip them.
+    if (m_skip_rod_rod && edgeXedge->IsRodRod(m_geodata)) // Detect rod-rod collisions and skip them.
         return;
 
     if (edgeXedge->analyseCollision(m_geodata, m_time_step))

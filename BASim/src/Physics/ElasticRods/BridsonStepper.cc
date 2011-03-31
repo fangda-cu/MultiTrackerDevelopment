@@ -15,7 +15,7 @@ namespace BASim
 
 BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
         std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
-        const double time) :
+        const double time, int num_threads) :
     m_num_dof(0), m_rods(rods), m_triangle_meshes(trimeshes), m_scripting_controllers(scripting_controllers),
             m_steppers(steppers), m_dt(dt), m_base_indices(), m_base_triangle_indices(), m_edges(), m_faces(),
             m_vertex_radii(), m_edge_radii(), m_face_radii(), m_masses(),
@@ -30,6 +30,11 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
     for( int i = 0; i < (int) m_steppers.size(); ++i ) assert( m_steppers[i] != NULL );
 #endif
     assert(m_dt > 0.0);
+
+    if (num_threads > 0)
+        m_num_threads = num_threads;
+    else
+        m_num_threads = sysconf(_SC_NPROCESSORS_ONLN);
 
     // Update internal state, prepare for execution
     prepareForExecution();
@@ -244,7 +249,8 @@ void BridsonStepper::prepareForExecution()
     //std::cout << "Extracted positions" << std::endl;
 
     std::cout << "About to create CollisionDetector" << std::endl;
-    m_collision_detector = new CollisionDetector(m_geodata, m_edges, m_faces, m_dt);
+    bool skip_rod_rod = true;
+    m_collision_detector = new CollisionDetector(m_geodata, m_edges, m_faces, m_dt, skip_rod_rod, m_num_threads);
     std::cout << "Created CollisionDetector" << std::endl;
 
 }
@@ -563,8 +569,7 @@ bool BridsonStepper::step(bool check_explosion)
     }
 
     // Launch num_threads threads which will execute all elements of m_steppers.
-    int num_threads = 8;
-    MultithreadedStepper<std::vector<RodTimeStepper*> > multithreaded_stepper(m_steppers, num_threads);
+    MultithreadedStepper<std::vector<RodTimeStepper*> > multithreaded_stepper(m_steppers, m_num_threads);
     dependable_solve = multithreaded_stepper.Execute();
 
     STOP_TIMER("BridsonStepperDynamics");
