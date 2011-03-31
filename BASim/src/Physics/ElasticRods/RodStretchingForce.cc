@@ -119,7 +119,7 @@ void RodStretchingForce::globalForce(VecXd& force)
   
   int q = 0;
   
-  VecXd force1 = force;
+//  VecXd force1 = force;
   
   for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
     edge_handle& eh = m_stencil.handle();
