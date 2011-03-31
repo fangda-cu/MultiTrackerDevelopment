@@ -15,7 +15,7 @@ namespace BASim
 {
 CollisionDetector::CollisionDetector(const GeometricData& geodata, const std::vector<std::pair<int, int> >& edges,
         const std::vector<TriangularFace>& faces, const double& timestep) :
-    m_geodata(geodata), m_time_step(timestep), m_collisions(NULL)
+    m_geodata(geodata), m_time_step(timestep), m_collisions(NULL), m_collisions_mutex()
 {
     m_elements.reserve(edges.size() + faces.size());
     for (uint32_t i = 0; i < edges.size(); i++)
@@ -38,9 +38,97 @@ void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cll
     //    START_TIMER("CollisionDetector::getContinuousTimeCollisions");
     m_collisions = &cllsns;
     m_collisions->clear();
+    std::vector<BVHParallelizer*> steppers;
+    const int num_threads = 8;
     BVHNode& root = m_bvh.GetNode(0);
     updateBoundingBox(root);
-    computeContinuousTimeCollisions(root, root);
+
+    if (root.IsLeaf())
+    {
+        computeContinuousTimeCollisions(root, root);
+        return;
+    }
+
+    BVHNode& h = m_bvh.GetNode(root.ChildIndex());
+    BVHNode& g = m_bvh.GetNode(root.ChildIndex() + 1);
+
+    if (h.IsLeaf() || g.IsLeaf())
+    {
+        steppers.push_back(new BVHParallelizer(*this, h, h));
+        steppers.push_back(new BVHParallelizer(*this, h, g));
+        steppers.push_back(new BVHParallelizer(*this, g, g));
+        MultithreadedStepper<std::vector<BVHParallelizer*> > (steppers, num_threads).Execute();
+        return;
+    }
+
+    BVHNode& hh = m_bvh.GetNode(h.ChildIndex());
+    BVHNode& hg = m_bvh.GetNode(h.ChildIndex() + 1);
+    BVHNode& gh = m_bvh.GetNode(g.ChildIndex());
+    BVHNode& gg = m_bvh.GetNode(g.ChildIndex() + 1);
+
+    if (hh.IsLeaf() || hg.IsLeaf() || gh.IsLeaf() || gg.IsLeaf())
+    {
+        steppers.push_back(new BVHParallelizer(*this, hh, hh));
+        steppers.push_back(new BVHParallelizer(*this, hh, hg));
+        steppers.push_back(new BVHParallelizer(*this, hh, gh));
+        steppers.push_back(new BVHParallelizer(*this, hh, gg));
+        steppers.push_back(new BVHParallelizer(*this, hg, hg));
+        steppers.push_back(new BVHParallelizer(*this, hg, gh));
+        steppers.push_back(new BVHParallelizer(*this, hg, gg));
+        steppers.push_back(new BVHParallelizer(*this, gh, gh));
+        steppers.push_back(new BVHParallelizer(*this, gh, gg));
+        steppers.push_back(new BVHParallelizer(*this, gg, gg));
+        MultithreadedStepper<std::vector<BVHParallelizer*> > (steppers, num_threads).Execute();
+        return;
+    }
+
+    BVHNode& hhh = m_bvh.GetNode(hh.ChildIndex());
+    BVHNode& hhg = m_bvh.GetNode(hh.ChildIndex() + 1);
+    BVHNode& hgh = m_bvh.GetNode(hg.ChildIndex());
+    BVHNode& hgg = m_bvh.GetNode(hg.ChildIndex() + 1);
+    BVHNode& ghh = m_bvh.GetNode(gh.ChildIndex());
+    BVHNode& ghg = m_bvh.GetNode(gh.ChildIndex() + 1);
+    BVHNode& ggh = m_bvh.GetNode(gg.ChildIndex());
+    BVHNode& ggg = m_bvh.GetNode(gg.ChildIndex() + 1);
+
+    steppers.push_back(new BVHParallelizer(*this, hhh, hhh));
+    steppers.push_back(new BVHParallelizer(*this, hhh, hhg));
+    steppers.push_back(new BVHParallelizer(*this, hhh, hgh));
+    steppers.push_back(new BVHParallelizer(*this, hhh, hgg));
+    steppers.push_back(new BVHParallelizer(*this, hhh, ghh));
+    steppers.push_back(new BVHParallelizer(*this, hhh, ghg));
+    steppers.push_back(new BVHParallelizer(*this, hhh, ggh));
+    steppers.push_back(new BVHParallelizer(*this, hhh, ggg));
+    steppers.push_back(new BVHParallelizer(*this, hhg, hhg));
+    steppers.push_back(new BVHParallelizer(*this, hhg, hgh));
+    steppers.push_back(new BVHParallelizer(*this, hhg, hgg));
+    steppers.push_back(new BVHParallelizer(*this, hhg, ghh));
+    steppers.push_back(new BVHParallelizer(*this, hhg, ghg));
+    steppers.push_back(new BVHParallelizer(*this, hhg, ggh));
+    steppers.push_back(new BVHParallelizer(*this, hhg, ggg));
+    steppers.push_back(new BVHParallelizer(*this, hgh, hgh));
+    steppers.push_back(new BVHParallelizer(*this, hgh, hgg));
+    steppers.push_back(new BVHParallelizer(*this, hgh, ghh));
+    steppers.push_back(new BVHParallelizer(*this, hgh, ghg));
+    steppers.push_back(new BVHParallelizer(*this, hgh, ggh));
+    steppers.push_back(new BVHParallelizer(*this, hgh, ggg));
+    steppers.push_back(new BVHParallelizer(*this, hgg, hgg));
+    steppers.push_back(new BVHParallelizer(*this, hgg, ghh));
+    steppers.push_back(new BVHParallelizer(*this, hgg, ghg));
+    steppers.push_back(new BVHParallelizer(*this, hgg, ggh));
+    steppers.push_back(new BVHParallelizer(*this, hgg, ggg));
+    steppers.push_back(new BVHParallelizer(*this, ghh, ghh));
+    steppers.push_back(new BVHParallelizer(*this, ghh, ghg));
+    steppers.push_back(new BVHParallelizer(*this, ghh, ggh));
+    steppers.push_back(new BVHParallelizer(*this, ghh, ggg));
+    steppers.push_back(new BVHParallelizer(*this, ghg, ghg));
+    steppers.push_back(new BVHParallelizer(*this, ghg, ggh));
+    steppers.push_back(new BVHParallelizer(*this, ghg, ggg));
+    steppers.push_back(new BVHParallelizer(*this, ggh, ggh));
+    steppers.push_back(new BVHParallelizer(*this, ggh, ggg));
+    steppers.push_back(new BVHParallelizer(*this, ggg, ggg));
+    MultithreadedStepper<std::vector<BVHParallelizer*> > (steppers, num_threads).Execute();
+
     //    STOP_TIMER("CollisionDetector::getContinuousTimeCollisions");
 }
 
@@ -84,7 +172,7 @@ void CollisionDetector::updateBoundingBox(BVHNode& node)
 
 void CollisionDetector::computeContinuousTimeCollisions(const BVHNode& node_a, const BVHNode& node_b)
 {
-    if ( //(&node_a > &node_b) ||
+    if (// (&node_a > &node_b) ||
     (!Intersect(node_a.BBox(), node_b.BBox())))
         return;
 
@@ -148,7 +236,11 @@ void CollisionDetector::appendContinuousTimeIntersection(const YAEdge* edge_a, c
         return;
 
     if (edgeXedge->analyseCollision(m_geodata, m_time_step))
+    {
+        m_collisions_mutex.Lock();
         m_collisions->push_back(edgeXedge);
+        m_collisions_mutex.Unlock();
+    }
 
     //    Timer::getTimer("CollisionDetector::appendContinuousTimeIntersection edge edge").stop();
 }
@@ -164,7 +256,11 @@ void CollisionDetector::appendContinuousTimeIntersection(int v_index, const YATr
         return;
 
     if (vertexXface->analyseCollision(m_geodata, m_time_step))
+    {
+        m_collisions_mutex.Lock();
         m_collisions->push_back(vertexXface);
+        m_collisions_mutex.Unlock();
+    }
 
     //    Timer::getTimer("CollisionDetector::appendContinuousTimeIntersection vertex face").stop();
 }

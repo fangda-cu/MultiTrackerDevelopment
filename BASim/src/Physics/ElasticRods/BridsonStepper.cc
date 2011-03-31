@@ -7,7 +7,7 @@
 
 #include <typeinfo>
 #include "BridsonStepper.hh"
-#include "MultithreadedStepper.hh"
+#include "../../Threads/MultithreadedStepper.hh"
 #include "../../Core/Timer.hh"
 
 namespace BASim

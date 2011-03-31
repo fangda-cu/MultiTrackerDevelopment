@@ -234,6 +234,7 @@ IO/rapidxml_print.hpp \
 IO/ObjectSerializer.hh \
 IO/SerializationUtils.hh \
 Threads/Mutex.hh \
+Threads/MultithreadedStepper.hh \
 Math/BandMatrix.hh \
 Math/ConjugateGradient.hh \
 Math/DiagonalPreconditioner.hh \
@@ -255,7 +256,6 @@ Math/TimeSteppingBase.hh \
 Math/Pardiso/PardisoLinearSolver.hh \
 Physics/DegreeOfFreedom.hh \
 Physics/ElasticRods/BridsonStepper.hh \
-Physics/ElasticRods/MultithreadedStepper.hh \
 Physics/ElasticRods/ParallelStepper.hh \
 Physics/ElasticRods/AnisotropicRod.hh \
 Physics/ElasticRods/AnisotropicRodIncludes.hh \

@@ -11,6 +11,7 @@
 #include "BoundingBox.hh"
 #include "Geometry.hh"
 #include "Collision.hh"
+#include "../Threads/MultithreadedStepper.hh"
 #include "BVH.hh"
 #include <list>
 
@@ -24,6 +25,7 @@ class CollisionDetector
     const double m_time_step;
     BVH m_bvh;
     std::list<CTCollision*>* m_collisions;
+    threads::Mutex m_collisions_mutex;
 
 public:
     // During construction, the BVH tree is created around the initial geometry.
@@ -37,6 +39,8 @@ public:
     void getImplicitPenaltyCollisions(std::vector<EdgeEdgeProximityCollision>& edge_edge_collisions,
             std::vector<VertexFaceProximityCollision>& vertex_face_collisions);
     void updateContinuousTimeCollisions();
+
+    friend class BVHParallelizer;
 
 private:
     // Compute the collisions that happen during the time step between elements in the subtrees node_a and node_b
@@ -61,6 +65,28 @@ private:
     Vec3d computeRelativeVelocity(const int& vrtidx, const int& fcidx0, const int& fcidx1, const int& fcidx2, const double& u,
             const double& v, const double& w);
 };
+
+class BVHParallelizer
+{
+    const BVHNode& m_node_a;
+    const BVHNode& m_node_b;
+    CollisionDetector& m_coldet;
+
+public:
+    BVHParallelizer(CollisionDetector& coldet, const BVHNode& node_a, const BVHNode& node_b) :
+        m_coldet(coldet), m_node_a(node_a), m_node_b(node_b)
+    {
+    }
+
+    bool execute()
+    {
+        m_coldet.computeContinuousTimeCollisions(m_node_a, m_node_b);
+
+        return true;
+    }
+};
+
+
 }
 
 #endif /* COLLISIONDETECTOR_HH_ */

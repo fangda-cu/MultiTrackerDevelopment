@@ -8,7 +8,7 @@
 #ifndef MULTITHREADEDSTEPPER_HH_
 #define MULTITHREADEDSTEPPER_HH_
 
-#include "../../Threads/Mutex.hh"
+#include "Mutex.hh"
 
 /**
  * Class to handle parallel execution of a container's element. StepperContainerT must be an stl-style container
