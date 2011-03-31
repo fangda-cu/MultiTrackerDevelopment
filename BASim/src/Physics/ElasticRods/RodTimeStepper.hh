@@ -67,8 +67,11 @@ public:
   bool execute()
   {
     assert( getTimeStep() == m_rod.getTimeStep() );
-    return m_diffEqSolver->execute();
+    m_has_solved = m_diffEqSolver->execute();
+    return m_has_solved;
   }
+
+  bool HasSolved() { return m_has_solved; }
 
   void setTime(Scalar time)
   {
@@ -480,6 +483,8 @@ protected:
   //RodBoundaryCondition* m_boundaryCondition;
   
   MinimalRodStateBackup m_backupstate;
+
+  bool m_has_solved;
 };
 
 } // namespace BASim

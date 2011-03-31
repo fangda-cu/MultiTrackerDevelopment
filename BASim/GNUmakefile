@@ -12,7 +12,7 @@ IPATHS 	+= -I../../../
 LIB1       := Wfigaro
 #LIB1_CF += -DBUILD=${BUILD} -fPIC -DWETA
 #LIB1_CF    += -DBUILD=${BUILD} -pthread -fPIC -DHAVE_LAPACK -DWETA
-LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA -DTIMING_ON
+LIB1_CF    += -DBUILD=${BUILD} -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA # -openmp -DTIMING_ON
 #LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -fPIC -DHAVE_LAPACK -DWETA
 LIB1_CF += -w
 
@@ -40,32 +40,6 @@ Eigen/QtAlignedMalloc \
 Eigen/SVD \
 Eigen/Sparse \
 Eigen/StdVector \
-Eigen/src/Eigen2Support/Block.h         \
-Eigen/src/Eigen2Support/CwiseOperators.h  \
-Eigen/src/Eigen2Support/LeastSquares.h  \
-Eigen/src/Eigen2Support/MathFunctions.h  \
-Eigen/src/Eigen2Support/Minor.h  \
-Eigen/src/Eigen2Support/TriangularSolver.h \
-Eigen/src/Eigen2Support/Geometry/AlignedBox.h  \
-Eigen/src/Eigen2Support/Geometry/AngleAxis.h     \
-Eigen/src/Eigen2Support/Geometry/Hyperplane.h        \
-Eigen/src/Eigen2Support/Geometry/Quaternion.h  \
-Eigen/src/Eigen2Support/Geometry/RotationBase.h  \
-Eigen/src/Eigen2Support/Geometry/Transform.h \
-Eigen/src/Eigen2Support/Geometry/All.h         \
-Eigen/src/Eigen2Support/Geometry/ParametrizedLine.h  \
-Eigen/src/Eigen2Support/Geometry/Rotation2D.h  \
-Eigen/src/Eigen2Support/Geometry/Scaling.h       \
-Eigen/src/Eigen2Support/Geometry/Translation.h \
-Eigen/src/Eigen2Support/LU.h            \
-Eigen/src/Eigen2Support/Memory.h         \
-Eigen/src/Eigen2Support/QR.h     \
-Eigen/src/Eigen2Support/VectorBlock.h \
-Eigen/src/Eigen2Support/Cwise.h         \
-Eigen/src/Eigen2Support/Lazy.h            \
-Eigen/src/Eigen2Support/Macros.h        \
-Eigen/src/Eigen2Support/Meta.h           \
-Eigen/src/Eigen2Support/SVD.h \
 Eigen/src/Eigenvalues/EigenvaluesCommon.h                  \
 Eigen/src/Eigenvalues/RealSchur.h \
 Eigen/src/Eigenvalues/ComplexEigenSolver.h  \
@@ -259,6 +233,8 @@ IO/rapidxml.hpp \
 IO/rapidxml_print.hpp \
 IO/ObjectSerializer.hh \
 IO/SerializationUtils.hh \
+Threads/Mutex.hh \
+Threads/MultithreadedStepper.hh \
 Math/BandMatrix.hh \
 Math/ConjugateGradient.hh \
 Math/DiagonalPreconditioner.hh \
@@ -379,6 +355,7 @@ src/Core/ScriptingController.cc \
 src/IO/ObjParser.cc \
 src/IO/ObjectSerializer.cc \
 src/IO/SerializationUtils.cc \
+src/Threads/Mutex.cc \
 src/Math/MKL/MKLLinearSolver.cc \
 src/Math/SolverUtils.cc \
 src/Math/Pardiso/PardisoLinearSolver.cc \

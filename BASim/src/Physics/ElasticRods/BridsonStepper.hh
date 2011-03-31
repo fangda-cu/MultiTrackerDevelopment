@@ -164,10 +164,10 @@ public:
      * \param[in] mass_dmpng Amount of damping that acts in opposition to vertex velocities (I think? Miklos has been mucking with the damping :)).
      * \param[in] grav Three dimensional vector that specifies gravity.
      */
-    //BridsonStepper( const RodTimeStepper::Method& intgrtr, const int& max_implct_itrtns, const double& dt, const double& mass_dmpng, const Vec3d& grav );
+    // Parameter num_threads = -1 will cause the number of threads to be set equal to the number of available processors.
     BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
             std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
-            const double time = 0.0);
+            const double time = 0.0, int num_threads = -1);
 
     /**
      * Destructor.
@@ -482,6 +482,8 @@ private:
     bool m_implicit_pnlty_enbld;
     double m_implicit_thickness;
     std::vector<RodPenaltyForce*> m_implicit_pnlty_forces;
+
+    int m_num_threads;
 
 };
 

@@ -246,6 +246,8 @@ HairyBall::HairyBall()
   AddOption("curlyhair","curly if true, straight if false",false);
   AddOption("enablecollisions","true if collisions enabled, false otherwise",true);
   AddOption("adaptivestepper","true if adaptive timestepping should be used, failse otherwise",true);
+  AddOption("sphereradius", "radius of the sphere", 4.0);
+  AddOption("hairlength", "length if the hair", 60.96/4.0);
 }
 
 HairyBall::~HairyBall()
@@ -408,10 +410,10 @@ void HairyBall::Setup()
   getRodOptions(opts);
 
   // cm
-  double sphereradius = 8.0;
+  double sphereradius = GetScalarOpt("sphereradius");
 
   // 12 inches == 60.96 cm
-  double L = 60.96/4.0;
+  double L = GetScalarOpt("hairlength");
 
   //  double dx = 0.3;
   //  double dy = 0.3;
