@@ -43,7 +43,7 @@ void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cll
     BVHNode& root = m_bvh.GetNode(0);
     updateBoundingBox(root);
 
-    if (root.IsLeaf())
+    if (root.IsLeaf()) // Can't really call this a tree, can we?
     {
         computeContinuousTimeCollisions(root, root);
         return;
@@ -52,8 +52,10 @@ void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cll
     BVHNode& h = m_bvh.GetNode(root.ChildIndex());
     BVHNode& g = m_bvh.GetNode(root.ChildIndex() + 1);
 
+    // If tree has depth 1, detect collisions at this level.
     if (h.IsLeaf() || g.IsLeaf())
     {
+        steppers.reserve(3);
         steppers.push_back(new BVHParallelizer(*this, h, h));
         steppers.push_back(new BVHParallelizer(*this, h, g));
         steppers.push_back(new BVHParallelizer(*this, g, g));
@@ -66,8 +68,10 @@ void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cll
     BVHNode& gh = m_bvh.GetNode(g.ChildIndex());
     BVHNode& gg = m_bvh.GetNode(g.ChildIndex() + 1);
 
+    // If tree has depth 2, detect collisions at this level.
     if (hh.IsLeaf() || hg.IsLeaf() || gh.IsLeaf() || gg.IsLeaf())
     {
+        steppers.reserve(10);
         steppers.push_back(new BVHParallelizer(*this, hh, hh));
         steppers.push_back(new BVHParallelizer(*this, hh, hg));
         steppers.push_back(new BVHParallelizer(*this, hh, gh));
@@ -82,6 +86,7 @@ void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cll
         return;
     }
 
+    // If the tree is deep enough, launch recursive parallel collision detection from this level.
     BVHNode& hhh = m_bvh.GetNode(hh.ChildIndex());
     BVHNode& hhg = m_bvh.GetNode(hh.ChildIndex() + 1);
     BVHNode& hgh = m_bvh.GetNode(hg.ChildIndex());
@@ -90,7 +95,7 @@ void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cll
     BVHNode& ghg = m_bvh.GetNode(gh.ChildIndex() + 1);
     BVHNode& ggh = m_bvh.GetNode(gg.ChildIndex());
     BVHNode& ggg = m_bvh.GetNode(gg.ChildIndex() + 1);
-
+    steppers.reserve(36);
     steppers.push_back(new BVHParallelizer(*this, hhh, hhh));
     steppers.push_back(new BVHParallelizer(*this, hhh, hhg));
     steppers.push_back(new BVHParallelizer(*this, hhh, hgh));
@@ -191,21 +196,24 @@ void CollisionDetector::computeContinuousTimeCollisions(const BVHNode& node_a, c
                     appendContinuousTimeIntersection(m_elements[i], m_elements[j]);
         }
     }
-    // Else recurse on either the node that is not a leave, or the largest volume one.
+    // Else recurse on either the node that is not a leave, or both.
     else if (node_a.IsLeaf())
     {
         computeContinuousTimeCollisions(node_a, m_bvh.GetNode(node_b.ChildIndex()));
         computeContinuousTimeCollisions(node_a, m_bvh.GetNode(node_b.ChildIndex() + 1));
     }
-    else if (node_b.IsLeaf() || node_a.BBox().Volume() >= node_b.BBox().Volume())
+    else if (node_b.IsLeaf())
     {
         computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex()), node_b);
         computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex() + 1), node_b);
     }
     else
     {
-        computeContinuousTimeCollisions(node_a, m_bvh.GetNode(node_b.ChildIndex()));
-        computeContinuousTimeCollisions(node_a, m_bvh.GetNode(node_b.ChildIndex() + 1));
+        computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex()), m_bvh.GetNode(node_b.ChildIndex()));
+        computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex() + 1), m_bvh.GetNode(node_b.ChildIndex()));
+        if (&node_a != &node_b) // We need only to explore one side of the diagonal
+            computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex()), m_bvh.GetNode(node_b.ChildIndex() + 1));
+        computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex() + 1), m_bvh.GetNode(node_b.ChildIndex() + 1));
     }
 }
 
