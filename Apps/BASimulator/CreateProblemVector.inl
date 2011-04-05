@@ -3,6 +3,7 @@
 #include "Problems/ViscosityTests.hh"
 #include "Problems/RegressionTests.hh"
 #include "Problems/HairyBall.hh"
+#include "Problems/TestCase6.hh"
 //#include "Problems/PlantRootGrowth.hh"
 //#include "Problems/HandTest.hh"
 
@@ -25,14 +26,16 @@ void CreateProblemVector()
   problems.push_back(new ViscosityTests());
   problems.push_back(new RegressionTests());
   problems.push_back(new HairyBall());
+  problems.push_back(new TestCase6());
+
   //problems.push_back(new PlantRootGrowth());
   //problems.push_back(new HandTest());
 
  // problems.push_back(new SerializationTests());
   
-  problems.push_back(new CollisionTestTwo());
-  problems.push_back(new CollisionTestWeta());
-  problems.push_back(new HairyBallWeta());
+//  problems.push_back(new CollisionTestTwo());
+//  problems.push_back(new CollisionTestWeta());
+ // problems.push_back(new HairyBallWeta());
  
   #ifdef HAVE_PARDISO
   //problems.push_back(new MicrotuboliDNA());

@@ -33,6 +33,7 @@ Problems/HairyBall.hh \
 Problems/HairyBallWeta.hh \
 Problems/SHO.hh \
 Problems/ViscosityTests.hh \
+Problems/TestCase6.hh \
 tclap-1.2.0/tclap/include/SwitchArg.h
 
 #PRG1_HDIR	:=./Problems
@@ -50,7 +51,8 @@ PRG1_S		:= \
 		./Problems/HairyBall.cc \
 		./Problems/HairyBallWeta.cc \
 		./Problems/SHO.cc \
-		./Problems/ViscosityTests.cc 
+		./Problems/ViscosityTests.cc  \
+		./Problems/TestCase6.cc
 
 ###}
 ###{ Linker specifications for libraries to use when
