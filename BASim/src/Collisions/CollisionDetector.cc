@@ -36,6 +36,8 @@ CollisionDetector::CollisionDetector(const GeometricData& geodata, const std::ve
 CollisionDetector::~CollisionDetector()
 {
     m_collisions = NULL;
+    for (std::vector<const TopologicalElement*>::iterator i = m_elements.begin(); i !=  m_elements.end(); i++)
+        delete *i;
 }
 
 void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cllsns)
@@ -137,6 +139,9 @@ void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cll
     steppers.push_back(new BVHParallelizer(*this, ggh, ggg));
     steppers.push_back(new BVHParallelizer(*this, ggg, ggg));
     MultithreadedStepper<std::vector<BVHParallelizer*> > (steppers, m_num_threads).Execute();
+
+    for (std::vector<BVHParallelizer*>::iterator i = steppers.begin(); i != steppers.end(); i++)
+        delete *i;
 
     //    STOP_TIMER("CollisionDetector::getContinuousTimeCollisions");
 }
@@ -244,15 +249,19 @@ void CollisionDetector::appendContinuousTimeIntersection(const YAEdge* edge_a, c
 
     EdgeEdgeCTCollision* edgeXedge = new EdgeEdgeCTCollision(edge_a, edge_b);
 
-    if (m_skip_rod_rod && edgeXedge->IsRodRod(m_geodata)) // Detect rod-rod collisions and skip them.
+    if (m_skip_rod_rod && edgeXedge->IsRodRod(m_geodata)) { // Detect rod-rod collisions and skip them.
+        delete edgeXedge;
         return;
+    }
 
     if (edgeXedge->analyseCollision(m_geodata, m_time_step))
     {
         m_collisions_mutex.Lock();
-        m_collisions->push_back(edgeXedge);
+        m_collisions->push_back(edgeXedge); // Will be deleted in BridsonStepper::executeIterativeInelasticImpulseResponse()
         m_collisions_mutex.Unlock();
     }
+    else
+        delete edgeXedge;
 
     //    Timer::getTimer("CollisionDetector::appendContinuousTimeIntersection edge edge").stop();
 }
@@ -265,14 +274,19 @@ void CollisionDetector::appendContinuousTimeIntersection(int v_index, const YATr
 
     // If vertex is fixed, if face is fixed, nothing to do
     if (vertexXface->IsFixed(m_geodata))
+    {
+        delete vertexXface;
         return;
+    }
 
     if (vertexXface->analyseCollision(m_geodata, m_time_step))
     {
         m_collisions_mutex.Lock();
-        m_collisions->push_back(vertexXface);
+        m_collisions->push_back(vertexXface); // Will be deleted in BridsonStepper::executeIterativeInelasticImpulseResponse()
         m_collisions_mutex.Unlock();
     }
+    else
+        delete vertexXface;
 
     //    Timer::getTimer("CollisionDetector::appendContinuousTimeIntersection vertex face").stop();
 }

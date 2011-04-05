@@ -124,8 +124,9 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
 
 BridsonStepper::~BridsonStepper()
 {
+    for (std::vector<RodPenaltyForce*>::iterator i = m_implicit_pnlty_forces.begin(); i != m_implicit_pnlty_forces.end(); i++)
+        delete *i;
     delete m_collision_detector;
-    m_collision_detector = NULL;
 }
 
 // TODO: Check the indices here
@@ -345,12 +346,16 @@ void BridsonStepper::executeIterativeInelasticImpulseResponse()
         {
             CTCollision* collision = collisions.front();
             collisions.pop_front();
-
             exertCompliantInelasticImpulse(collision);
+            delete collision;
             m_collision_detector->updateContinuousTimeCollisions();
         }
         m_collision_detector->getContinuousTimeCollisions(collisions);
     }
+    // Just in case we haven't emptied the collisions but exited when itr == m_num_inlstc_itrns
+    for (std::list<CTCollision*>::iterator i = collisions.begin(); i != collisions.end(); i++)
+        delete *i;
+
     if (itr > 1)
         std::cerr << "\033[33mIterated collision response " << itr << " times\033[0m" << std::endl;
 

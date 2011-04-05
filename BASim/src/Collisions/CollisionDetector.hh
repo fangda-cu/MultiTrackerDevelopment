@@ -81,6 +81,9 @@ public:
     {
     }
 
+    ~BVHParallelizer() {
+    }
+
     bool execute() const
     {
         m_coldet.computeContinuousTimeCollisions(m_node_a, m_node_b);

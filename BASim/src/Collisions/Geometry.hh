@@ -21,7 +21,9 @@ struct TriangularFace
 {
     int idx[3];
 
-    TriangularFace() {}
+    TriangularFace()
+    {
+    }
 
     TriangularFace(int un, int deux, int trois)
     {
@@ -73,29 +75,29 @@ public:
     }
 
     /*
-    Vec3d computeRelativeVelocity(const int& idxa0, const int& idxa1, const int& idxb0, const int& idxb1, const double& s,
-            const double& t) const
-    {
-        const Vec3d& v0 = GetVelocity(idxa0);
-        const Vec3d& v1 = GetVelocity(idxa1);
-        const Vec3d& v2 = GetVelocity(idxb0);
-        const Vec3d& v3 = GetVelocity(idxb1);
+     Vec3d computeRelativeVelocity(const int& idxa0, const int& idxa1, const int& idxb0, const int& idxb1, const double& s,
+     const double& t) const
+     {
+     const Vec3d& v0 = GetVelocity(idxa0);
+     const Vec3d& v1 = GetVelocity(idxa1);
+     const Vec3d& v2 = GetVelocity(idxb0);
+     const Vec3d& v3 = GetVelocity(idxb1);
 
-        return ((1.0 - t) * v2 + t * v3) - ((1.0 - s) * v0 + s * v1);
-    }
-*/
+     return ((1.0 - t) * v2 + t * v3) - ((1.0 - s) * v0 + s * v1);
+     }
+     */
     /*
-    Vec3d computeRelativeVelocity(const int& vrtidx, const int& fcidx0, const int& fcidx1, const int& fcidx2, const double& u,
-            const double& v, const double& w) const
-    {
-        const Vec3d& vp = GetVelocity(vrtidx);
-        const Vec3d& vt0 = GetVelocity(fcidx0);
-        const Vec3d& vt1 = GetVelocity(fcidx1);
-        const Vec3d& vt2 = GetVelocity(fcidx2);
+     Vec3d computeRelativeVelocity(const int& vrtidx, const int& fcidx0, const int& fcidx1, const int& fcidx2, const double& u,
+     const double& v, const double& w) const
+     {
+     const Vec3d& vp = GetVelocity(vrtidx);
+     const Vec3d& vt0 = GetVelocity(fcidx0);
+     const Vec3d& vt1 = GetVelocity(fcidx1);
+     const Vec3d& vt2 = GetVelocity(fcidx2);
 
-        return vp - (u * vt0 + v * vt1 + w * vt2);
-    }
-*/
+     return vp - (u * vt0 + v * vt1 + w * vt2);
+     }
+     */
     bool isVertexFixed(int vert_idx) const
     {
         return GetMass(vert_idx) == std::numeric_limits<double>::infinity();
@@ -114,8 +116,15 @@ static const double MARGIN = 0.0;
 // A virtual class to abstract handling of edges and faces
 class TopologicalElement
 {
-
 public:
+    TopologicalElement()
+    {
+    }
+
+    virtual ~TopologicalElement()
+    {
+    }
+
     // Return the bounding box of the object after it has moved for time_step
     virtual BoundingBox<Scalar> GetBBox(const GeometricData& geodata, const double time_step = 0) const = 0;
     virtual bool IsFixed(const GeometricData& geodata) = 0;
@@ -134,6 +143,10 @@ public:
 
     YAEdge(int vtx0, int vtx1) :
         m_edge(vtx0, vtx1)
+    {
+    }
+
+    virtual ~YAEdge()
     {
     }
 
@@ -188,6 +201,10 @@ public:
 
     YATriangle(int un, int deux, int trois) :
         m_triangle(un, deux, trois)
+    {
+    }
+
+    virtual ~YATriangle()
     {
     }
 

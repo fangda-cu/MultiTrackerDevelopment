@@ -140,15 +140,17 @@ public:
 
     virtual bool IsFixed(const GeometricData& geodata) = 0;
 
-    friend bool CompareTimes(const CTCollision* cllsnA, const CTCollision* cllsnB)
-    {
-        return cllsnA->m_time < cllsnB->m_time;
-    }
+    friend bool CompareTimes(const CTCollision* cllsnA, const CTCollision* cllsnB);
 
 private:
     virtual double computeRelativeVelocity(const GeometricData& geodata) const = 0;
 
 };
+
+inline bool CompareTimes(const CTCollision* cllsnA, const CTCollision* cllsnB)
+{
+    return cllsnA->m_time < cllsnB->m_time;
+}
 
 /**
  * Struct to store information needed to resolve a continuous collision between two edges.
@@ -171,6 +173,10 @@ public:
         e0_v1 = edge_a->second();
         e1_v0 = edge_b->first();
         e1_v1 = edge_b->second();
+    }
+
+    virtual ~EdgeEdgeCTCollision()
+    {
     }
 
     bool IsRodRod(const GeometricData& geodata)
@@ -217,6 +223,10 @@ public:
         f0 = triangle->first();
         f1 = triangle->second();
         f2 = triangle->third();
+    }
+
+    virtual ~VertexFaceCTCollision()
+    {
     }
 
     virtual bool analyseCollision(const GeometricData& geodata, double time_step);
