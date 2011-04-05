@@ -179,7 +179,7 @@ template<typename _MatrixType> class RealSchur
 
     /** \brief Reports whether previous computation was successful.
       *
-      * \returns \c Success if computation was succesful, \c NoConvergence otherwise.
+      * \returns \c Success_EIGEN if computation was succesful, \c NoConvergence otherwise.
       */
     ComputationInfo info() const
     {
@@ -271,7 +271,7 @@ RealSchur<MatrixType>& RealSchur<MatrixType>::compute(const MatrixType& matrix, 
   } 
 
   if(iter <= m_maxIterations) 
-    m_info = Success;
+    m_info = Success_EIGEN;
   else
     m_info = NoConvergence;
 

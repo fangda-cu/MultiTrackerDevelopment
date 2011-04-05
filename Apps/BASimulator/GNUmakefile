@@ -60,11 +60,22 @@ PRG1_L		:= \
     -lglut -lGLU
 
 # add in the MKL libraries
+
+ifeq ($(LINUX_COMPILER) ,I)
 PRG1_L        += -Wl,--start-group \
                   $(MKLROOT)/lib/em64t/libmkl_intel_lp64.a \
                   $(MKLROOT)/lib/em64t/libmkl_intel_thread.a \
                   $(MKLROOT)/lib/em64t/libmkl_core.a \
                  -Wl,--end-group -openmp -lpthread
+endif
+
+ifeq ($(LINUX_COMPILER) ,GCC)
+PRG1_L        += $(MKLROOT)/lib/em64t/libmkl_solver_ilp64_sequential.a \
+				-Wl,--start-group $(MKLROOT)/lib/em64t/libmkl_intel_ilp64.a \
+				$(MKLROOT)/lib/em64t/libmkl_sequential.a \
+				$(MKLROOT)/lib/em64t/libmkl_core.a \
+				-Wl,--end-group -lpthread
+endif
 
 #
 ##############################################################################

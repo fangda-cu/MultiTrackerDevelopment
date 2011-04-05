@@ -865,7 +865,7 @@ void WmFigaroCmd::createWmFigRodNode( bool useNURBSInput, bool i_previewOnly,
             cvsPerCurve = m_cvsPerRod;
     
         // Check if there are any NURBS curves connected as we can't create rods without curves    
-        for ( uint l = 0; l < m_nurbsCurveList.length(); l++ ) 
+        for ( size_t l = 0; l < m_nurbsCurveList.length(); l++ )
         {
             MDagPath dagPath;
             MObject component;
@@ -1704,7 +1704,7 @@ void WmFigaroCmd::addCollisionMeshes()
     MPlug bunsenInputPlugArr = bunsenNodeFn.findPlug( "collisionMeshes", true, &stat );
     CHECK_MSTATUS( stat );
     
-    for ( uint l=0; l<m_meshList.length(); l++ )
+    for ( size_t l=0; l<m_meshList.length(); l++ )
     {
         MDagPath dagPath;
         MObject component;

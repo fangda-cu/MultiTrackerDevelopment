@@ -166,7 +166,7 @@ template<typename _MatrixType, int _UpLo> class LLT
 
     /** \brief Reports whether previous computation was successful.
       *
-      * \returns \c Success if computation was succesful,
+      * \returns \c Success_EIGEN if computation was succesful,
       *          \c NumericalIssue if the matrix.appears to be negative.
       */
     ComputationInfo info() const
@@ -309,7 +309,7 @@ LLT<MatrixType,_UpLo>& LLT<MatrixType,_UpLo>::compute(const MatrixType& a)
 
   m_isInitialized = true;
   bool ok = Traits::inplace_decomposition(m_matrix);
-  m_info = ok ? Success : NumericalIssue;
+  m_info = ok ? Success_EIGEN : NumericalIssue;
 
   return *this;
 }

@@ -297,7 +297,7 @@ template<typename _MatrixType> class SelfAdjointEigenSolver
 
     /** \brief Reports whether previous computation was successful.
       *
-      * \returns \c Success if computation was succesful, \c NoConvergence otherwise.
+      * \returns \c Success_EIGEN if computation was succesful, \c NoConvergence otherwise.
       */
     ComputationInfo info() const
     {
@@ -388,7 +388,7 @@ SelfAdjointEigenSolver<MatrixType>& SelfAdjointEigenSolver<MatrixType>
     m_eivalues.coeffRef(0,0) = internal::real(matrix.coeff(0,0));
     if(computeEigenvectors)
       m_eivec.setOnes();
-    m_info = Success;
+    m_info = Success_EIGEN;
     m_isInitialized = true;
     m_eigenvectorsOk = computeEigenvectors;
     return *this;
@@ -436,14 +436,14 @@ SelfAdjointEigenSolver<MatrixType>& SelfAdjointEigenSolver<MatrixType>
   }
 
   if (iter <= m_maxIterations)
-    m_info = Success;
+    m_info = Success_EIGEN;
   else
     m_info = NoConvergence;
 
   // Sort eigenvalues and corresponding vectors.
   // TODO make the sort optional ?
   // TODO use a better sort algorithm !!
-  if (m_info == Success)
+  if (m_info == Success_EIGEN)
   {
     for (Index i = 0; i < n-1; ++i)
     {

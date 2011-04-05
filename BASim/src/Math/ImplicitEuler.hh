@@ -122,16 +122,16 @@ public:
   Scalar computeResidual()
   {
     // Sanity checks for NANs
-    assert( (x0.cwise() == x0).all() );
-    assert( (m_deltaV.cwise() == m_deltaV).all() );
-    assert( (m_deltaX.cwise() == m_deltaX).all() );
+//    assert( (x0.cwise() == x0).all() );
+//    assert( (m_deltaV.cwise() == m_deltaV).all() );
+//    assert( (m_deltaX.cwise() == m_deltaX).all() );
     
     // rhs == forces
     m_rhs.setZero();
     m_diffEq.evaluatePDot(m_rhs);
 
     // lhs == M*deltaV/dt
-    m_lhs = m_mass.cwise()*m_deltaV/m_dt;
+    m_lhs.array() = m_mass.array()*m_deltaV.array()/m_dt;
 
     for (size_t i = 0; i < m_fixed.size(); ++i) 
     {
@@ -228,7 +228,7 @@ protected:
       } 
       else
       {
-        m_rhs -= m_mass.cwise()*m_deltaV;
+        m_rhs -= m_mass.array()*m_deltaV.array();
       }
 
       m_diffEq.evaluatePDotDV(1.0, *m_A);
@@ -373,7 +373,7 @@ protected:
         //for (int i = 0; i < m_diffEq.ndof(); ++i) {
         //  m_rhs[i] += -m_dt * m_diffEq.getMass(i) * m_deltaV(i);
         //}
-        m_rhs += -m_dt*(m_mass.cwise()*m_deltaV);
+        m_rhs += -m_dt*(m_mass.array()*m_deltaV.array());
       }
 
       // m_A += -m_dt^2 * dF/dx

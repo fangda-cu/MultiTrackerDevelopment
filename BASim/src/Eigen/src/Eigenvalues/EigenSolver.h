@@ -367,7 +367,7 @@ EigenSolver<MatrixType>& EigenSolver<MatrixType>::compute(const MatrixType& matr
 
   // Reduce to real Schur form.
   m_realSchur.compute(matrix, computeEigenvectors);
-  if (m_realSchur.info() == Success)
+  if (m_realSchur.info() == Success_EIGEN)
   {
     m_matT = m_realSchur.matrixT();
     if (computeEigenvectors)

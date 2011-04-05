@@ -199,7 +199,7 @@ template<typename _MatrixType> class ComplexSchur
 
     /** \brief Reports whether previous computation was successful.
       *
-      * \returns \c Success if computation was succesful, \c NoConvergence otherwise.
+      * \returns \c Success_EIGEN if computation was succesful, \c NoConvergence otherwise.
       */
     ComputationInfo info() const
     {
@@ -331,7 +331,7 @@ ComplexSchur<MatrixType>& ComplexSchur<MatrixType>::compute(const MatrixType& ma
   {
     m_matT = matrix.template cast<ComplexScalar>();
     if(computeU)  m_matU = ComplexMatrixType::Identity(1,1);
-    m_info = Success;
+    m_info = Success_EIGEN;
     m_isInitialized = true;
     m_matUisUptodate = computeU;
     return *this;
@@ -437,7 +437,7 @@ void ComplexSchur<MatrixType>::reduceToTriangularForm(bool computeU)
   }
 
   if(iter <= m_maxIterations) 
-    m_info = Success;
+    m_info = Success_EIGEN;
   else
     m_info = NoConvergence;
 
