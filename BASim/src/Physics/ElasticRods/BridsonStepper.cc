@@ -395,6 +395,8 @@ bool BridsonStepper::execute()
     bool do_adaptive = false;
     bool result;
 
+    std::cerr << *m_rods[0] << std::endl;
+
     if (do_adaptive)
         result = adaptiveExecute(m_dt);
     else

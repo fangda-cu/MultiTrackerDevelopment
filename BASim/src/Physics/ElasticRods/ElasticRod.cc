@@ -571,4 +571,15 @@ void ElasticRod::updateReverseUndeformedStrain(const VecXd& e)
   }  
 }
 
+std::ostream& operator<<(std::ostream& os, const ElasticRod& elrod) {
+
+    os << "Density: " << elrod.density() << '\n';
+    os << "Young's Modulus: " << elrod.getYoungsModulus() << '\n';
+
+    std::vector<RodForce*> forces = elrod.getForces();
+    os << "Forces: " << forces.size() << '\n';
+
+    return os;
+}
+
 } // namespace BASim

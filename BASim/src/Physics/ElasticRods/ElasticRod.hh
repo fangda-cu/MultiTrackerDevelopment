@@ -356,6 +356,8 @@ protected:
 typedef std::vector<ElasticRod *> ElasticRods;
 typedef std::vector<ElasticRod *>::iterator ElasticRodsIterator;
 
+std::ostream& operator<<(std::ostream& os, const ElasticRod& elrod);
+
 #include "ElasticRod.inl"
 
 } // namespace BASim
