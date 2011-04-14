@@ -15,20 +15,20 @@ namespace BASim
  * Class EdgeEdgeCTCollision
  */
 
-bool EdgeEdgeCTCollision::analyseCollision(const GeometricData& geodata, double time_step)
+bool EdgeEdgeCTCollision::analyseCollision(double time_step)
 {
-    const Vec3d& p0 = geodata.GetPoint(e0_v0);
-    const Vec3d& q0 = geodata.GetPoint(e0_v1);
-    const Vec3d& p1 = geodata.GetPoint(e1_v0);
-    const Vec3d& q1 = geodata.GetPoint(e1_v1);
+    const Vec3d& p0 = m_geodata.GetPoint(e0_v0);
+    const Vec3d& q0 = m_geodata.GetPoint(e0_v1);
+    const Vec3d& p1 = m_geodata.GetPoint(e1_v0);
+    const Vec3d& q1 = m_geodata.GetPoint(e1_v1);
 
     if (p0 == p1 || q0 == q1 || q0 == p1 || p0 == q1)
         return false;
 
-    const Vec3d& vp0 = geodata.GetVelocity(e0_v0);
-    const Vec3d& vq0 = geodata.GetVelocity(e0_v1);
-    const Vec3d& vp1 = geodata.GetVelocity(e1_v0);
-    const Vec3d& vq1 = geodata.GetVelocity(e1_v1);
+    const Vec3d& vp0 = m_geodata.GetVelocity(e0_v0);
+    const Vec3d& vq0 = m_geodata.GetVelocity(e0_v1);
+    const Vec3d& vp1 = m_geodata.GetVelocity(e1_v0);
+    const Vec3d& vq1 = m_geodata.GetVelocity(e1_v1);
 
     // If both edges are motionless, no collision. Shouldn't we catch that earlier?
     if ((vp0.norm() == 0) && (vq0.norm() == 0) && (vp1.norm() == 0) && (vq1.norm() == 0))
@@ -85,7 +85,7 @@ bool EdgeEdgeCTCollision::analyseCollision(const GeometricData& geodata, double 
             }
             m_normal /= nnorm;
 
-            m_relative_velocity = computeRelativeVelocity(geodata);
+            m_relative_velocity = computeRelativeVelocity();
             if (m_relative_velocity > 0) // Make sure the normal produces a negative relative velocity
             {
                 m_normal = -m_normal;
@@ -99,25 +99,27 @@ bool EdgeEdgeCTCollision::analyseCollision(const GeometricData& geodata, double 
     return false;
 }
 
-double EdgeEdgeCTCollision::computeRelativeVelocity(const GeometricData& geodata) const
+double EdgeEdgeCTCollision::computeRelativeVelocity() const // Assumes m_normal has been computed
 {
-    const Vec3d& v0 = geodata.GetVelocity(e0_v0);
-    const Vec3d& v1 = geodata.GetVelocity(e0_v1);
-    const Vec3d& v2 = geodata.GetVelocity(e1_v0);
-    const Vec3d& v3 = geodata.GetVelocity(e1_v1);
+    const Vec3d& v0 = m_geodata.GetVelocity(e0_v0);
+    const Vec3d& v1 = m_geodata.GetVelocity(e0_v1);
+    const Vec3d& v2 = m_geodata.GetVelocity(e1_v0);
+    const Vec3d& v3 = m_geodata.GetVelocity(e1_v1);
 
     return (((1.0 - t) * v2 + t * v3) - ((1.0 - s) * v0 + s * v1)).dot(m_normal);
 }
 
-Vec3d EdgeEdgeCTCollision::computeInelasticImpulse(const GeometricData& geodata, const double& relvel)
+Vec3d EdgeEdgeCTCollision::computeInelasticImpulse()
 {
-    double ma0 = geodata.GetMass(e0_v0);
-    double ma1 = geodata.GetMass(e0_v1);
-    double mb0 = geodata.GetMass(e1_v0);
-    double mb1 = geodata.GetMass(e1_v1);
+    assert(m_analysed);
+
+    double ma0 = m_geodata.GetMass(e0_v0);
+    double ma1 = m_geodata.GetMass(e0_v1);
+    double mb0 = m_geodata.GetMass(e1_v0);
+    double mb1 = m_geodata.GetMass(e1_v1);
 
     // Assumes negative relative velocity
-    Vec3d numerator = -relvel * m_normal;
+    Vec3d numerator = -m_relative_velocity * m_normal;
     double denominator = (1 - s) * (1 - s) / ma0 + s * s / ma1 + (1 - t) * (1 - t) / mb0 + t * t / mb1;
 
     return numerator / denominator;
@@ -125,10 +127,14 @@ Vec3d EdgeEdgeCTCollision::computeInelasticImpulse(const GeometricData& geodata,
 
 std::ostream& operator<<(std::ostream& os, const EdgeEdgeCTCollision& eecol)
 {
-    os << "Edge 0: " << eecol.e0_v0 << ' ' << eecol.e0_v1 << '\n';
-    os << "Edge 1: " << eecol.e1_v0 << ' ' << eecol.e1_v1 << '\n';
+    os << "Edge edge collision!\n";
     os << "Time: " << eecol.m_time << '\n';
     os << "Normal: " << eecol.m_normal << '\n';
+    os << "Relative velocity: " << eecol.m_relative_velocity << '\n';
+    os << "Edge 0: " << eecol.e0_v0 << eecol.m_geodata.GetPoint(eecol.e0_v0) << ' ' << eecol.e0_v1 << eecol.m_geodata.GetPoint(
+            eecol.e0_v1) << '\n';
+    os << "Edge 1: " << eecol.e1_v0 << eecol.m_geodata.GetPoint(eecol.e1_v0) << ' ' << eecol.e1_v1 << eecol.m_geodata.GetPoint(
+            eecol.e1_v1) << '\n';
     os << "Barycentric coordinates: " << eecol.s << ' ' << eecol.t;
 
     return os;
@@ -138,17 +144,17 @@ std::ostream& operator<<(std::ostream& os, const EdgeEdgeCTCollision& eecol)
  * Class VertexFaceCTCollision
  */
 
-bool VertexFaceCTCollision::analyseCollision(const GeometricData& geodata, double time_step)
+bool VertexFaceCTCollision::analyseCollision(double time_step)
 {
-    const Vec3d& p = geodata.GetPoint(v0);
-    const Vec3d& pf0 = geodata.GetPoint(f0);
-    const Vec3d& pf1 = geodata.GetPoint(f1);
-    const Vec3d& pf2 = geodata.GetPoint(f2);
+    const Vec3d& p = m_geodata.GetPoint(v0);
+    const Vec3d& pf0 = m_geodata.GetPoint(f0);
+    const Vec3d& pf1 = m_geodata.GetPoint(f1);
+    const Vec3d& pf2 = m_geodata.GetPoint(f2);
 
-    const Vec3d& vp = geodata.GetVelocity(v0);
-    const Vec3d& vf0 = geodata.GetVelocity(f0);
-    const Vec3d& vf1 = geodata.GetVelocity(f1);
-    const Vec3d& vf2 = geodata.GetVelocity(f2);
+    const Vec3d& vp = m_geodata.GetVelocity(v0);
+    const Vec3d& vf0 = m_geodata.GetVelocity(f0);
+    const Vec3d& vf1 = m_geodata.GetVelocity(f1);
+    const Vec3d& vf2 = m_geodata.GetVelocity(f2);
 
     std::vector<double> times;
     std::vector<double> errors;
@@ -199,7 +205,7 @@ bool VertexFaceCTCollision::analyseCollision(const GeometricData& geodata, doubl
             // Barycentric coords could be outside of [0,1] right now because we've extended the triangles a little bit
             assert(approxEq(u + v + w, 1.0));
 
-            m_relative_velocity = computeRelativeVelocity(geodata);
+            m_relative_velocity = computeRelativeVelocity();
             if (m_relative_velocity > 0.0)
             {
                 m_normal = -m_normal;
@@ -213,24 +219,26 @@ bool VertexFaceCTCollision::analyseCollision(const GeometricData& geodata, doubl
     return false;
 }
 
-double VertexFaceCTCollision::computeRelativeVelocity(const GeometricData& geodata) const
+double VertexFaceCTCollision::computeRelativeVelocity() const // Assumes m_normal has been computed
 {
-    const Vec3d& vp = geodata.GetVelocity(v0);
-    const Vec3d& vt0 = geodata.GetVelocity(f0);
-    const Vec3d& vt1 = geodata.GetVelocity(f1);
-    const Vec3d& vt2 = geodata.GetVelocity(f2);
+    const Vec3d& vp = m_geodata.GetVelocity(v0);
+    const Vec3d& vt0 = m_geodata.GetVelocity(f0);
+    const Vec3d& vt1 = m_geodata.GetVelocity(f1);
+    const Vec3d& vt2 = m_geodata.GetVelocity(f2);
 
     return (vp - (u * vt0 + v * vt1 + w * vt2)).dot(m_normal);
 }
 
-Vec3d VertexFaceCTCollision::computeInelasticImpulse(const GeometricData& geodata, const double& relvel)
+Vec3d VertexFaceCTCollision::computeInelasticImpulse()
 {
-    double mvrt = geodata.GetMass(v0);
-    double mfc0 = geodata.GetMass(f0);
-    double mfc1 = geodata.GetMass(f1);
-    double mfc2 = geodata.GetMass(f2);
+    assert(m_analysed);
 
-    Vec3d numerator = -relvel * m_normal;
+    double mvrt = m_geodata.GetMass(v0);
+    double mfc0 = m_geodata.GetMass(f0);
+    double mfc1 = m_geodata.GetMass(f1);
+    double mfc2 = m_geodata.GetMass(f2);
+
+    Vec3d numerator = -m_relative_velocity * m_normal;
     double denominator = 1 / mvrt + u * u / mfc0 + v * v / mfc1 + w * w / mfc2;
 
     return numerator / denominator;
@@ -238,10 +246,13 @@ Vec3d VertexFaceCTCollision::computeInelasticImpulse(const GeometricData& geodat
 
 std::ostream& operator<<(std::ostream& os, const VertexFaceCTCollision& vfcol)
 {
-    os << "Vertex: " << vfcol.f0 << '\n';
-    os << "Face: " << vfcol.f0 << ' ' << vfcol.f1 << ' ' << vfcol.f2 << '\n';
+    os << "Vertex face collision!\n";
     os << "Time: " << vfcol.m_time << '\n';
     os << "Normal: " << vfcol.m_normal << '\n';
+    os << "Relative velocity: " << vfcol.m_relative_velocity << '\n';
+    os << "Vertex: " << vfcol.v0 << vfcol.m_geodata.GetPoint(vfcol.v0) << '\n';
+    os << "Face: " << vfcol.f0 << vfcol.m_geodata.GetPoint(vfcol.f0) << ' ' << vfcol.f1 << vfcol.m_geodata.GetPoint(vfcol.f1)
+            << ' ' << vfcol.f2 << vfcol.m_geodata.GetPoint(vfcol.f2) << '\n';
     os << "Barycentric coordinates: " << vfcol.u << ' ' << vfcol.v << ' ' << vfcol.w;
 
     return os;

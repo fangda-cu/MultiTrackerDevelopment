@@ -290,7 +290,7 @@ void BridsonStepper::exertInelasticImpluse(EdgeEdgeCTCollision& eecol)
 
     // Add some extra "kick" to relative velocity to account for FPA errors
     eecol.ApplyRelativeVelocityKick();
-    Vec3d I = eecol.computeInelasticImpulse(m_geodata, eecol.GetRelativeVelocity());
+    Vec3d I = eecol.computeInelasticImpulse();
     //computeEdgeEdgeInelasticImpulse(m_masses[eecol.e0_v0], m_masses[eecol.e0_v1], m_masses[eecol.e1_v0],
     //m_masses[eecol.e1_v1], eecol.s, eecol.t, eecol.GetRelativeVelocity(), eecol.n);
 
@@ -317,7 +317,7 @@ void BridsonStepper::exertInelasticImpluse(VertexFaceCTCollision& vfcol)
 
     // Add some extra "kick" to relative velocity to account for FPA errors
     vfcol.ApplyRelativeVelocityKick();
-    Vec3d I = vfcol.computeInelasticImpulse(m_geodata, vfcol.GetRelativeVelocity());
+    Vec3d I = vfcol.computeInelasticImpulse();
     // computeVertexFaceInelasticImpulse(m_masses[vfcol.v0], m_masses[vfcol.f0], m_masses[vfcol.f1], m_masses[vfcol.f2],
     // vfcol.u, vfcol.v, vfcol.w, eecol.GetRelativeVelocity(), vfcol.n);
 
@@ -345,6 +345,7 @@ void BridsonStepper::executeIterativeInelasticImpulseResponse()
         while (!collisions.empty())
         {
             CTCollision* collision = collisions.front();
+            // collision->Print(std::cerr);
             collisions.pop_front();
             exertCompliantInelasticImpulse(collision);
             delete collision;

@@ -89,6 +89,8 @@ struct VertexFaceImplicitPenaltyCollision
 class CTCollision
 {
 protected:
+    // Link to the actual geometric data (point coordinates, velocities etc.)
+    const GeometricData& m_geodata;
     // Time of the collision (scaled to be between 0 and 1)
     double m_time;
     // Collision normal
@@ -99,6 +101,10 @@ protected:
     bool m_analysed;
 
 public:
+    CTCollision(const GeometricData& geodata) :
+        m_geodata(geodata)
+    {
+    }
 
     virtual ~CTCollision()
     {
@@ -134,16 +140,15 @@ public:
     }
 
     // From the initial collision data (vertices, velocities and time step) determine whether the collision happened, where and when.
-    virtual bool analyseCollision(const GeometricData& geodata, double time_step) = 0;
-
-    virtual Vec3d computeInelasticImpulse(const GeometricData& geodata, const double& relvel) = 0;
-
-    virtual bool IsFixed(const GeometricData& geodata) = 0;
+    virtual bool analyseCollision(double time_step) = 0;
+    virtual Vec3d computeInelasticImpulse() = 0;
+    virtual bool IsFixed() = 0;
+    virtual void Print(std::ostream& os) = 0;
 
     friend bool CompareTimes(const CTCollision* cllsnA, const CTCollision* cllsnB);
 
 private:
-    virtual double computeRelativeVelocity(const GeometricData& geodata) const = 0;
+    virtual double computeRelativeVelocity() const = 0;
 
 };
 
@@ -167,7 +172,8 @@ public:
     double s;
     double t;
 
-    EdgeEdgeCTCollision(const YAEdge* edge_a, const YAEdge* edge_b)
+    EdgeEdgeCTCollision(const GeometricData& geodata, const YAEdge* edge_a, const YAEdge* edge_b) :
+        CTCollision(geodata)
     {
         e0_v0 = edge_a->first();
         e0_v1 = edge_a->second();
@@ -179,23 +185,28 @@ public:
     {
     }
 
-    bool IsRodRod(const GeometricData& geodata)
+    bool IsRodRod()
     {
-        return geodata.isRodVertex(e0_v0) && geodata.isRodVertex(e1_v0);
+        return m_geodata.isRodVertex(e0_v0) && m_geodata.isRodVertex(e1_v0);
     }
 
-    virtual bool analyseCollision(const GeometricData& geodata, double time_step);
-    virtual Vec3d computeInelasticImpulse(const GeometricData& geodata, const double& relvel);
-    virtual bool IsFixed(const GeometricData& geodata)
+    virtual bool analyseCollision(double time_step);
+    virtual Vec3d computeInelasticImpulse();
+    virtual bool IsFixed()
     {
-        return geodata.isVertexFixed(e0_v0) && geodata.isVertexFixed(e0_v1) && geodata.isVertexFixed(e1_v0)
-                && geodata.isVertexFixed(e1_v1);
+        return m_geodata.isVertexFixed(e0_v0) && m_geodata.isVertexFixed(e0_v1) && m_geodata.isVertexFixed(e1_v0)
+                && m_geodata.isVertexFixed(e1_v1);
+    }
+    virtual void Print(std::ostream& os)
+    {
+        os << *this << std::endl;
     }
 
     friend std::ostream& operator<<(std::ostream& os, const EdgeEdgeCTCollision& eecol);
+    //   virtual void Print(std::ostream& os); { os << *this << std::endl; };
 
 private:
-    virtual double computeRelativeVelocity(const GeometricData& geodata) const;
+    virtual double computeRelativeVelocity() const;
 
 };
 
@@ -217,7 +228,8 @@ public:
     double v;
     double w;
 
-    VertexFaceCTCollision(int v_index, const YATriangle* triangle)
+    VertexFaceCTCollision(const GeometricData& geodata, int v_index, const YATriangle* triangle) :
+        CTCollision(geodata)
     {
         v0 = v_index;
         f0 = triangle->first();
@@ -229,17 +241,23 @@ public:
     {
     }
 
-    virtual bool analyseCollision(const GeometricData& geodata, double time_step);
-    virtual Vec3d computeInelasticImpulse(const GeometricData& geodata, const double& relvel);
-    virtual bool IsFixed(const GeometricData& geodata)
+    virtual bool analyseCollision(double time_step);
+    virtual Vec3d computeInelasticImpulse();
+    virtual bool IsFixed()
     {
-        return geodata.isVertexFixed(v0) && geodata.isVertexFixed(f0) && geodata.isVertexFixed(f1) && geodata.isVertexFixed(f2);
+        return m_geodata.isVertexFixed(v0) && m_geodata.isVertexFixed(f0) && m_geodata.isVertexFixed(f1)
+                && m_geodata.isVertexFixed(f2);
+    }
+    virtual void Print(std::ostream& os)
+    {
+        os << *this << std::endl;
     }
 
     friend std::ostream& operator<<(std::ostream& os, const VertexFaceCTCollision& vfcol);
+    //   virtual void Print(std::ostream& os) { os << *this << std::endl; };
 
 private:
-    virtual double computeRelativeVelocity(const GeometricData& geodata) const;
+    virtual double computeRelativeVelocity() const;
 
 };
 

@@ -36,7 +36,7 @@ CollisionDetector::CollisionDetector(const GeometricData& geodata, const std::ve
 CollisionDetector::~CollisionDetector()
 {
     m_collisions = NULL;
-    for (std::vector<const TopologicalElement*>::iterator i = m_elements.begin(); i !=  m_elements.end(); i++)
+    for (std::vector<const TopologicalElement*>::iterator i = m_elements.begin(); i != m_elements.end(); i++)
         delete *i;
 }
 
@@ -149,7 +149,7 @@ void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cll
 void CollisionDetector::updateContinuousTimeCollisions()
 {
     for (std::list<CTCollision*>::iterator i = m_collisions->begin(); i != m_collisions->end(); i++)
-        if (!(*i)->analyseCollision(m_geodata, m_time_step))
+        if (!(*i)->analyseCollision(m_time_step))
             m_collisions->erase(i--);
 }
 
@@ -247,14 +247,15 @@ void CollisionDetector::appendContinuousTimeIntersection(const YAEdge* edge_a, c
 {
     //    Timer::getTimer("CollisionDetector::appendContinuousTimeIntersection edge edge").start();
 
-    EdgeEdgeCTCollision* edgeXedge = new EdgeEdgeCTCollision(edge_a, edge_b);
+    EdgeEdgeCTCollision* edgeXedge = new EdgeEdgeCTCollision(m_geodata, edge_a, edge_b);
 
-    if (m_skip_rod_rod && edgeXedge->IsRodRod(m_geodata)) { // Detect rod-rod collisions and skip them.
+    if (m_skip_rod_rod && edgeXedge->IsRodRod())
+    { // Detect rod-rod collisions and skip them.
         delete edgeXedge;
         return;
     }
 
-    if (edgeXedge->analyseCollision(m_geodata, m_time_step))
+    if (edgeXedge->analyseCollision(m_time_step))
     {
         m_collisions_mutex.Lock();
         m_collisions->push_back(edgeXedge); // Will be deleted in BridsonStepper::executeIterativeInelasticImpulseResponse()
@@ -270,16 +271,16 @@ void CollisionDetector::appendContinuousTimeIntersection(int v_index, const YATr
 {
     //    Timer::getTimer("CollisionDetector::appendContinuousTimeIntersection vertex face").start();
 
-    VertexFaceCTCollision* vertexXface = new VertexFaceCTCollision(v_index, triangle);
+    VertexFaceCTCollision* vertexXface = new VertexFaceCTCollision(m_geodata, v_index, triangle);
 
     // If vertex is fixed, if face is fixed, nothing to do
-    if (vertexXface->IsFixed(m_geodata))
+    if (vertexXface->IsFixed())
     {
         delete vertexXface;
         return;
     }
 
-    if (vertexXface->analyseCollision(m_geodata, m_time_step))
+    if (vertexXface->analyseCollision(m_time_step))
     {
         m_collisions_mutex.Lock();
         m_collisions->push_back(vertexXface); // Will be deleted in BridsonStepper::executeIterativeInelasticImpulseResponse()
