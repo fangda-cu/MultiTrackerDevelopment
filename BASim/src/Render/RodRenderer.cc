@@ -29,6 +29,9 @@ RodRenderer::RodRenderer(ElasticRod& rod)
 
   // curvature binormal color
   m_palette.push_back(Color(102, 204, 51));
+  //root and tip color for simple mode
+  m_simpleRod.push_back( Color(0,0,0));
+  m_simpleRod.push_back(Color(155, 200, 100));
 }
 
 void RodRenderer::render()
@@ -96,23 +99,43 @@ void RodRenderer::drawSimpleRod()
     glEnable(GL_COLOR_MATERIAL);
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
     
-    OpenGL::color(m_paletteq[(m_rod.draw_cl % (int)m_paletteq.size())]);
-    glLineWidth(2);
-    glBegin(GL_LINES);
-  
+    //OpenGL::color(m_paletteq[(m_rod.draw_cl % (int)m_paletteq.size())]);
+    const float lineWidth = m_rod.getRadiusScale() ;
+    glLineWidth( lineWidth );
+
+    glBegin( GL_LINE_STRIP );
     //const Color& edgeColor = m_palette[1];
     //const Color& fixedColor = m_palette[0];
-  
+   
+    int numEdges = m_rod.ne();
+    int i = 0;
+
     ElasticRod::edge_iter eit;
     for (eit = m_rod.edges_begin(); eit != m_rod.edges_end(); ++eit) {
       ElasticRod::EdgeVertexIter evit = m_rod.ev_iter(*eit);
-      for (evit = m_rod.ev_iter(*eit); evit; ++evit) {
+
+      // It turns out the old iteration code had redudent display for
+      // each rod vertex. It might slow down the display when
+      // thousands of rods are involved. 
+      do {
         Vec3d x = m_rod.getVertex(*evit);
+        float t = float( i ) / float( numEdges -1 );
+
+        Color blended( (1-t)*m_simpleRod[0].data()[0] + t*m_simpleRod[1].data()[0],
+                (1-t)*m_simpleRod[0].data()[1] +  t*m_simpleRod[1].data()[1],
+                (1-t)*m_simpleRod[0].data()[2] + t*m_simpleRod[1].data()[2] );
+
+        OpenGL::color( blended );
         OpenGL::vertex(x);
-      }
+        i++;
+        ++evit;
+        
+      }while( i == numEdges && evit ); //only the last edge need to iterate the scond vertex
     }
   
     glEnd();
+
+    /*
     glPointSize(5);
     glBegin(GL_POINTS);
 
@@ -123,7 +146,7 @@ void RodRenderer::drawSimpleRod()
     }
 
     glEnd();
-    
+    */
     glDisable(GL_COLOR_MATERIAL);
 //    glDisable(GL_LIGHTING);
     

@@ -286,6 +286,15 @@ public:
         }
     }
 
+    void setColorForSimpleRender( const Color &i_root,
+        Color &i_tip )
+    {
+        for ( int r=0; r<m_rodData.size(); ++r )
+        {
+            m_rodData[ r ]->rodRenderer()->setColorInSimpleMode( i_root, i_tip);
+        }
+    }
+    
     RodRenderer* rodRenderer( const int i_index )
     {
         return m_rodData[ i_index ]->rodRenderer();
