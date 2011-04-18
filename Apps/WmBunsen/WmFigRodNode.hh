@@ -104,6 +104,8 @@ public:
     static MObject ia_userDefinedColors;
     static MObject ia_draw3DRod;
     static MObject ia_drawScale;
+    static MObject ia_rodRootColor;
+    static MObject ia_rodTipColor;
     static MObject ca_drawDataChanged;
     
     // Caching
@@ -198,6 +200,9 @@ private:
     void disableSim();
 
     void updateKinematicEdgesFromInput();
+
+    void updateRodColorForSimpleMode( MDataBlock& i_dataBlock);
+    
 
     double m_currentTime;
     double m_previousTime;

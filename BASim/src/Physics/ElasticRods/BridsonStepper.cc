@@ -395,7 +395,7 @@ bool BridsonStepper::execute()
     bool do_adaptive = false;
     bool result;
 
-    std::cerr << *m_rods[0] << std::endl;
+    // std::cerr << *m_rods[0] << std::endl;
 
     if (do_adaptive)
         result = adaptiveExecute(m_dt);
@@ -587,6 +587,16 @@ bool BridsonStepper::step(bool check_explosion)
 
     // Average velocity over the timestep just completed
     m_vnphalf = (m_xnp1 - m_xn) / m_dt;
+
+    if (false && m_t >= 0.146)
+    {
+        int v0 = 14;
+        int v1 = 15;
+        m_masses[v0] = std::numeric_limits<double>::infinity();
+        m_masses[v1] = std::numeric_limits<double>::infinity();
+        m_vnphalf[3 * v0] = m_vnphalf[3 * v0 + 1] = m_vnphalf[3 * v0 + 2] = 0;
+        m_vnphalf[3 * v1] = m_vnphalf[3 * v1 + 1] = m_vnphalf[3 * v1 + 2] = 0;
+    }
 
     //if( m_pnlty_enbld ) executePenaltyResponse();
     START_TIMER("BridsonStepperResponse");

@@ -26,6 +26,8 @@ using namespace BASim;
 /* static */ MObject WmFigRodNode::ia_userDefinedColors;
 /* static */ MObject WmFigRodNode::ia_draw3DRod;
 /* static */ MObject WmFigRodNode::ia_drawScale;
+             MObject WmFigRodNode::ia_rodRootColor;
+             MObject WmFigRodNode::ia_rodTipColor;
 /* static */ MObject WmFigRodNode::ca_drawDataChanged;
 
 // Disk caching
@@ -661,6 +663,8 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
         
     updateOrInitialiseRodDataFromInputs( i_dataBlock );
 
+    updateRodColorForSimpleMode( i_dataBlock );
+    
     stat = i_dataBlock.setClean( i_plug );
     if ( !stat )
     {
@@ -1352,6 +1356,9 @@ void WmFigRodNode::compute_ca_drawDataChanged( const MPlug& i_plug, MDataBlock& 
         if ( colour[ 0 ] != -1 )
             m_rodColourMap[ elementIndex ] = BASim::Vec3d( colour[0], colour[1], colour[2] );
     }
+
+	updateRodColorForSimpleMode( i_dataBlock );
+
     inArrayH.setClean();
     i_dataBlock.setClean( i_plug );
 
@@ -2032,9 +2039,44 @@ void* WmFigRodNode::creator()
     stat = attributeAffects( ia_draw3DRod, ca_drawDataChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_draw3DRod->ca_drawDataChanged" ); return stat; }
 
-    addNumericAttribute( ia_drawScale, "drawScale", "dsc", MFnNumericData::kDouble, 10.0, true );
+    addNumericAttribute( ia_drawScale, "drawScale", "dsc", MFnNumericData::kDouble, 2.0, true );
     stat = attributeAffects( ia_drawScale, ca_drawDataChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_drawScale->ca_drawDataChanged" ); return stat; }
+    {
+        MFnNumericAttribute numericAttrFn;
+        ia_rodRootColor = numericAttrFn.createColor( "rodRootColor", "rrc", & stat );
+        CHECK_MSTATUS( stat );
+        numericAttrFn.setDefault( 0.0f, 0.0f, 0.0f );
+        numericAttrFn.setWritable( true );
+        numericAttrFn.setReadable( false );
+        numericAttrFn.setConnectable( true );
+        numericAttrFn.setKeyable( true );
+        stat = addAttribute( ia_rodRootColor );
+        CHECK_MSTATUS( stat );
+        stat = attributeAffects( ia_rodRootColor, ca_drawDataChanged );
+        CHECK_MSTATUS( stat );
+
+	stat = attributeAffects( ia_rodRootColor, oa_rodsChanged);
+	
+    }
+
+
+    {
+        MFnNumericAttribute numericAttrFn;
+        ia_rodTipColor = numericAttrFn.createColor( "rodTipColor", "rtc", & stat );
+        CHECK_MSTATUS( stat );
+        numericAttrFn.setDefault( 155.f/255.f, 200.f/255.f, 100.f/255.f );
+        numericAttrFn.setWritable( true );
+        numericAttrFn.setReadable( false );
+        numericAttrFn.setConnectable( true );
+        numericAttrFn.setKeyable( true );
+        stat = addAttribute( ia_rodTipColor );
+        CHECK_MSTATUS( stat );
+        stat = attributeAffects( ia_rodTipColor, ca_drawDataChanged );
+        CHECK_MSTATUS( stat );
+
+	stat = attributeAffects( ia_rodTipColor, oa_rodsChanged);
+    }
 
     {
         MFnEnumAttribute enumAttrFn;
@@ -2054,5 +2096,25 @@ void* WmFigRodNode::creator()
     if ( !stat ) { stat.perror( "attributeAffects ia_solverType->oa_rodsChanged" ); return stat; }
 
     return MS::kSuccess;
+
+}
+// add interfaces for rodGroup to set the root&tip colors for each
+// rod. 
+void WmFigRodNode::updateRodColorForSimpleMode( MDataBlock& i_dataBlock)
+{
+    MStatus stat;
+    
+    Color rootColor, tipColor;
+    const MPlug rootColourPlug( thisMObject(), ia_rodRootColor );
+    rootColor.data()[0] = i_dataBlock.inputValue( rootColourPlug.child( 0, & stat ) ).asFloat();
+    rootColor.data()[1] = i_dataBlock.inputValue( rootColourPlug.child( 1, & stat ) ).asFloat();
+    rootColor.data()[2] = i_dataBlock.inputValue( rootColourPlug.child( 2, & stat ) ).asFloat();
+
+    const MPlug tipColourPlug( thisMObject(), ia_rodTipColor );
+    tipColor.data()[0] = i_dataBlock.inputValue( tipColourPlug.child( 0, & stat ) ).asFloat();
+    tipColor.data()[1] = i_dataBlock.inputValue( tipColourPlug.child( 1, & stat ) ).asFloat();
+    tipColor.data()[2] = i_dataBlock.inputValue( tipColourPlug.child( 2, & stat ) ).asFloat();
+
+    m_rodGroup.setColorForSimpleRender( rootColor, tipColor );
 
 }

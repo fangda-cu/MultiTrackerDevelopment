@@ -41,6 +41,13 @@ public:
 
   void drawSmoothPartialRod( const int i_startVertex, const int i_endVertex, const Vec3d i_color );
 
+  void setColorInSimpleMode( const Color &i_root, const Color &i_tip)
+  {
+      m_simpleRod.clear();
+      m_simpleRod.push_back( i_root );
+      m_simpleRod.push_back( i_tip );
+  }
+
 protected:
 
   void drawSimpleRod();
@@ -60,6 +67,7 @@ protected:
   bool m_drawArrows;
 
   std::vector<Color> m_palette;
+  std::vector<Color> m_simpleRod;
 };
 
 } // namespace BASim

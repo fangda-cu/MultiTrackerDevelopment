@@ -286,6 +286,19 @@ public:
         }
     }
 
+    void setColorForSimpleRender( const Color &i_root,
+        Color &i_tip )
+    {
+        for ( int r=0; r<m_rodData.size(); ++r )
+        {
+            // No rod renderer for fake rods so don't try and change them
+            if ( !isPlaceHolderRod( r ) )
+            {
+                m_rodData[ r ]->rodRenderer()->setColorInSimpleMode( i_root, i_tip);
+            }
+        }
+    }
+    
     RodRenderer* rodRenderer( const int i_index )
     {
         return m_rodData[ i_index ]->rodRenderer();

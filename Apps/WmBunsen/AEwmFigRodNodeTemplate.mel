@@ -29,7 +29,8 @@ global proc AEwmFigRodNodeTemplate(string $nodeName)
     editorTemplate -endLayout;
 
     editorTemplate -beginLayout "Drawing" -collapse 0;
-        //editorTemplate -addControl "drawMaterialFrames";
+        editorTemplate -addControl "rodRootColor";
+        editorTemplate -addControl "rodTipColor";
         editorTemplate -addControl "draw3DRod";
         editorTemplate -addControl "drawScale";
     editorTemplate -endLayout;
