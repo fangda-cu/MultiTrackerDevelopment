@@ -291,7 +291,11 @@ public:
     {
         for ( int r=0; r<m_rodData.size(); ++r )
         {
-            m_rodData[ r ]->rodRenderer()->setColorInSimpleMode( i_root, i_tip);
+            // No rod renderer for fake rods so don't try and change them
+            if ( !isPlaceHolderRod( r ) )
+            {
+                m_rodData[ r ]->rodRenderer()->setColorInSimpleMode( i_root, i_tip);
+            }
         }
     }
     
