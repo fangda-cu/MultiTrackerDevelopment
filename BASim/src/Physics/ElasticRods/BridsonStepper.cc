@@ -21,8 +21,8 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
             m_vertex_radii(), m_edge_radii(), m_face_radii(), m_masses(),
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_obj_start), m_respns_enbld(true), m_pnlty_enbld(true),
             m_itrv_inlstc_enbld(true), m_num_inlstc_itrns(10), m_vrt_fc_pnlty(200.0), m_nan_enc(false), m_inf_enc(false),
-            m_lt0_enc(false), m_gt0_enc(false), m_collision_detector(NULL), // m_bvh(NULL),
-            m_obj_start(-1), m_t(time), m_rod_labels(), m_implicit_pnlty_enbld(false), m_implicit_thickness(1.0)
+            m_lt0_enc(false), m_gt0_enc(false), m_collision_detector(NULL), m_obj_start(-1), m_t(time), m_rod_labels(),
+            m_implicit_pnlty_enbld(false), m_implicit_thickness(1.0)
 {
 #ifdef DEBUG
     for( int i = 0; i < (int) m_rods.size(); ++i ) assert( m_rods[i] != NULL );
@@ -577,7 +577,7 @@ bool BridsonStepper::step(bool check_explosion)
     }
 
     // Launch num_threads threads which will execute all elements of m_steppers.
-    MultithreadedStepper<std::vector<RodTimeStepper*> > multithreaded_stepper(m_steppers, m_num_threads);
+    MultithreadedStepper<std::vector<RodTimeStepper*> > multithreaded_stepper(m_steppers, 4);//m_num_threads);
     dependable_solve = multithreaded_stepper.Execute();
 
     STOP_TIMER("BridsonStepperDynamics");

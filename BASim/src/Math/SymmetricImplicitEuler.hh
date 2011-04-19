@@ -525,7 +525,7 @@ protected:
             STOP_TIMER("setup");
         }
 
-        std::cout << "Iterations: " << m_curit << std::endl;
+        //std::cout << "Iterations: " << m_curit << std::endl;
         if (m_curit == m_maxit - 1)
         {
             successfull_solve = false;

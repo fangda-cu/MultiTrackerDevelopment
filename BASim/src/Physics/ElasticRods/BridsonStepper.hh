@@ -416,11 +416,11 @@ private:
     // Vector of rods this BridsonStepper evolves in time
     std::vector<ElasticRod*>& m_rods;
     // Vector of ScriptedTriangleObjects in the system
-    std::vector<TriangleMesh*>& m_triangle_meshes;
+    const std::vector<TriangleMesh*>& m_triangle_meshes;
     // Controllers to move scripted geometry/rods forward in time and to set boundary conditions
-    std::vector<ScriptingController*>& m_scripting_controllers;
+    const std::vector<ScriptingController*>& m_scripting_controllers;
     // Time steppers to evolve rods forward (ignoring collisions)
-    std::vector<RodTimeStepper*>& m_steppers;
+    const std::vector<RodTimeStepper*>& m_steppers;
     // Integrator selected by user
     RodTimeStepper::Method m_method;
     // Timestep selected by user
