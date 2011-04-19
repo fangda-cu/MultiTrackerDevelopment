@@ -250,7 +250,11 @@ void BridsonStepper::prepareForExecution()
     //std::cout << "Extracted positions" << std::endl;
 
     std::cout << "About to create CollisionDetector" << std::endl;
+#ifdef SKIP_ROD_ROD
+    bool skip_rod_rod = SKIP_ROD_ROD;
+#else
     bool skip_rod_rod = true;
+#endif
     m_collision_detector = new CollisionDetector(m_geodata, m_edges, m_faces, m_dt, skip_rod_rod, m_num_threads);
     std::cout << "Created CollisionDetector" << std::endl;
 

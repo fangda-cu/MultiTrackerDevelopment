@@ -9,6 +9,7 @@
 #define MULTITHREADEDSTEPPER_HH_
 
 #include "Mutex.hh"
+#include <pthread.h>
 #include <mkl_service.h>
 
 /**

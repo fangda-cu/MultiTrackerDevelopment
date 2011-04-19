@@ -17,7 +17,7 @@
 					<folderInfo id="intel.toolchain.linux.ipf.exe.dbg.2049012133.24790594._11.1.0" name="/" resourcePath="">
 						<toolChain id="intel.toolchain.linux.ipf.exe.dbg.1521862831_11.1.0" name="intel.toolchain.linux.ipf.exe.dbg_11.1.0" superClass="intel.toolchain.linux.ipf.exe.dbg_11.1.0">
 							<targetPlatform archList="ia64" binaryParser="org.eclipse.cdt.core.ELF" id="intel.platform.linux.ipf.exe.dbg.363153158_11.1.0" name="Platform.Executable.Debug" osList="linux" superClass="intel.platform.linux.ipf.exe.dbg_11.1.0"/>
-							<builder arguments="" buildPath="${workspace_loc:/Figaro}" command="make" id="intel.builder.linux.ipf.exe.dbg.804819920_11.1.0" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Intel Builder" superClass="intel.builder.linux.ipf.exe.dbg_11.1.0"/>
+							<builder arguments="-j8" buildPath="${workspace_loc:/Figaro}" command="make" id="intel.builder.linux.ipf.exe.dbg.804819920_11.1.0" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Intel Builder" superClass="intel.builder.linux.ipf.exe.dbg_11.1.0"/>
 							<tool id="intel.cpp.compilestep.linux.ipf.exe.dbg.934316969_11.1.0" name="Intel IA-64 C++ Compiler" superClass="intel.cpp.compilestep.linux.ipf.exe.dbg_11.1.0">
 								<inputType id="intel.cpp.compilestep.input.1744988095" superClass="intel.cpp.compilestep.input"/>
 							</tool>
