@@ -79,9 +79,9 @@ public:
     static MObject ia_isClumpingEnabled;
     static MObject ia_clumpingCoefficient;
     static MObject ia_selfCollisionPenaltyForces;
-    static MObject ia_fullSelfCollisions;
-    static MObject ia_fullSelfCollisionIterations;
-    static MObject ia_fullSelfCollisionCOR;
+    static MObject ia_selfCollisions;
+    static MObject ia_selfCollisionIterations;
+    static MObject ia_selfCollisionCOR;
     
     // Volumetric Collisions
     static MObject ia_volumetricCollisions;

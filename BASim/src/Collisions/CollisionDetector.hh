@@ -42,6 +42,11 @@ public:
     void getImplicitPenaltyCollisions(std::vector<EdgeEdgeProximityCollision>& edge_edge_collisions,
             std::vector<VertexFaceProximityCollision>& vertex_face_collisions);
     void updateContinuousTimeCollisions();
+    
+    void skipRodRodCollisions( bool skipRodRodCollisions )
+    {
+        m_skip_rod_rod = skipRodRodCollisions;
+    }
 
     friend class BVHParallelizer;
 

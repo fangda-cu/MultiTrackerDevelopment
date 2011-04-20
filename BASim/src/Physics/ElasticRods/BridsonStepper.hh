@@ -251,6 +251,17 @@ public:
     void disableIterativeInelasticImpulses();
 
     /**
+     *  Enable or disable self collisions between all rods
+     */
+    void skipRodRodCollisions( bool skipRodRodCollisions )
+    {
+        m_skipRodRodCollisions = true;
+        
+        if ( m_collision_detector )
+            m_collision_detector->skipRodRodCollisions( skipRodRodCollisions );
+    }
+        
+    /**
      * Sets the maximum number of inelastic impulses to apply iterativly.
      */
     void setNumInelasticIterations(const int& num_itr);
@@ -262,8 +273,7 @@ public:
     {
         return (int) (m_rods.size());
     }
-    ;
-
+    
     /**
      * Number of triangle meshes this controller is responsible for.
      */
@@ -484,6 +494,9 @@ private:
     std::vector<RodPenaltyForce*> m_implicit_pnlty_forces;
 
     int m_num_threads;
+    
+    // Toggle self collisions on or off
+    bool m_skipRodRodCollisions;
 
 };
 

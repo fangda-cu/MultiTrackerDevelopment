@@ -37,9 +37,9 @@ MObject WmBunsenNode::ia_inftol;
 /* static */ MObject WmBunsenNode::ia_clumpingCoefficient;
 
 MObject WmBunsenNode::ia_selfCollisionPenaltyForces;
-MObject WmBunsenNode::ia_fullSelfCollisions;
-MObject WmBunsenNode::ia_fullSelfCollisionCOR;
-MObject WmBunsenNode::ia_fullSelfCollisionIterations;
+MObject WmBunsenNode::ia_selfCollisions;
+MObject WmBunsenNode::ia_selfCollisionCOR;
+MObject WmBunsenNode::ia_selfCollisionIterations;
 MObject WmBunsenNode::ia_timingsFile;
 MObject WmBunsenNode::ia_timingEnabled;
 MObject WmBunsenNode::oa_simStepTaken;
@@ -440,11 +440,11 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         CHECK_MSTATUS( stat );
         bool selfCollisionPenaltyForces = i_dataBlock.inputValue( ia_selfCollisionPenaltyForces, &stat ).asBool();
         CHECK_MSTATUS( stat );
-        bool fullSelfCollisions = i_dataBlock.inputValue( ia_fullSelfCollisions, &stat ).asBool();
+        bool doSelfCollisions = i_dataBlock.inputValue( ia_selfCollisions, &stat ).asBool();
         CHECK_MSTATUS( stat );
-        int selfCollisionsIters = i_dataBlock.inputValue( ia_fullSelfCollisionIterations, &stat ).asInt();
+        int selfCollisionsIters = i_dataBlock.inputValue( ia_selfCollisionIterations, &stat ).asInt();
         CHECK_MSTATUS( stat );
-        double selfCollisionsCOR = i_dataBlock.inputValue( ia_fullSelfCollisionCOR, &stat ).asDouble();
+        double selfCollisionsCOR = i_dataBlock.inputValue( ia_selfCollisionCOR, &stat ).asDouble();
         CHECK_MSTATUS( stat );
         
         // Clumping
@@ -525,7 +525,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         if ( m_enabled && ( ( m_solverType == RodTimeStepper::STATICS ) || ( m_currentTime > m_previousTime && m_currentTime > m_startTime ) ) ) 
         {
             m_beaker->takeTimeStep( numberOfThreads, m_framedt, substeps, subDistanceMax, collisionsEnabled,
-                                    selfCollisionPenaltyForces, fullSelfCollisions,
+                                    selfCollisionPenaltyForces, doSelfCollisions,
                                     selfCollisionsIters, selfCollisionsCOR ); 
         }
         
@@ -1124,44 +1124,44 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnNumericAttribute nAttr;
-        ia_fullSelfCollisions = nAttr.create( "fullSelfCollisions", "fsc", MFnNumericData::kBoolean, false, &stat);
+        ia_selfCollisions = nAttr.create( "selfCollisions", "fsc", MFnNumericData::kBoolean, false, &stat);
         if (!stat) {
-            stat.perror("create ia_fullSelfCollisions attribute");
+            stat.perror("create ia_selfCollisions attribute");
             return stat;
         }
         nAttr.setWritable( true );
         nAttr.setReadable( false );
         nAttr.setConnectable( true );
-        stat = addAttribute( ia_fullSelfCollisions );
-        if (!stat) { stat.perror( "addAttribute ia_fullSelfCollisions" ); return stat; }
+        stat = addAttribute( ia_selfCollisions );
+        if (!stat) { stat.perror( "addAttribute ia_selfCollisions" ); return stat; }
     }
 
     {
         MFnNumericAttribute nAttr;
-        ia_fullSelfCollisionIterations = nAttr.create( "fullSelfCollisionIterations", "fsci", MFnNumericData::kInt, 10, &stat);
+        ia_selfCollisionIterations = nAttr.create( "selfCollisionIterations", "fsci", MFnNumericData::kInt, 10, &stat);
         if (!stat) {
-            stat.perror("create ia_fullSelfCollisionIterations attribute");
+            stat.perror("create ia_selfCollisionIterations attribute");
             return stat;
         }
         nAttr.setWritable( true );
         nAttr.setReadable( false );
         nAttr.setConnectable( true );
-        stat = addAttribute( ia_fullSelfCollisionIterations );
-        if (!stat) { stat.perror( "addAttribute ia_fullSelfCollisionIterations" ); return stat; }
+        stat = addAttribute( ia_selfCollisionIterations );
+        if (!stat) { stat.perror( "addAttribute ia_selfCollisionIterations" ); return stat; }
     }
     
     {
         MFnNumericAttribute nAttr;
-        ia_fullSelfCollisionCOR = nAttr.create( "fullSelfCollisionCOR", "fscc", MFnNumericData::kDouble, 0.1, &stat);
+        ia_selfCollisionCOR = nAttr.create( "selfCollisionCOR", "fscc", MFnNumericData::kDouble, 0.1, &stat);
         if (!stat) {
-            stat.perror("create ia_fullSelfCollisions attribute");
+            stat.perror("create ia_selfCollisions attribute");
             return stat;
         }
         nAttr.setWritable( true );
         nAttr.setReadable( false );
         nAttr.setConnectable( true );
-        stat = addAttribute( ia_fullSelfCollisionCOR );
-        if (!stat) { stat.perror( "addAttribute ia_fullSelfCollisionCOR" ); return stat; }
+        stat = addAttribute( ia_selfCollisionCOR );
+        if (!stat) { stat.perror( "addAttribute ia_selfCollisionCOR" ); return stat; }
     }
     
     {
@@ -1256,12 +1256,12 @@ MStatus WmBunsenNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_plasticDeformations->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_selfCollisionPenaltyForces, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_selfCollisionPenaltyForces->ca_syncAttrs" ); return stat; }
-    stat = attributeAffects( ia_fullSelfCollisions, ca_syncAttrs );
-    if (!stat) { stat.perror( "attributeAffects ia_fullSelfCollisions->ca_syncAttrs" ); return stat; }
-    stat = attributeAffects( ia_fullSelfCollisionIterations, ca_syncAttrs );
-    if (!stat) { stat.perror( "attributeAffects ia_fullCollisionIterations->ca_syncAttrs" ); return stat; }
-    stat = attributeAffects( ia_fullSelfCollisionCOR, ca_syncAttrs );
-    if (!stat) { stat.perror( "attributeAffects ia_fullSelfCollisionCOR->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_selfCollisions, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_selfCollisions->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_selfCollisionIterations, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_selcCollisionIterations->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_selfCollisionCOR, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_selfCollisionCOR->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_timingsFile, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_timingsFile->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_timingEnabled, ca_syncAttrs );

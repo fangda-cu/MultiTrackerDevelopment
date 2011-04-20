@@ -32,10 +32,10 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
 
     editorTemplate -beginLayout "Collisions" -collapse 0;
         editorTemplate -beginNoOptimize -addControl "objectCollisionsEnabled";
-        editorTemplate -addControl "selfCollisionPenaltyForces";
-        editorTemplate -addControl "fullSelfCollisions";
-        editorTemplate -endNoOptimize -addControl "fullSelfCollisionIterations";
-        editorTemplate -addControl "fullSelfCollisionCOR";
+     //   editorTemplate -addControl "selfCollisionPenaltyForces";
+        editorTemplate -addControl "selfCollisions";
+        editorTemplate -endNoOptimize -addControl "selfCollisionIterations";
+        editorTemplate -addControl "selfCollisionCOR";
     editorTemplate -endLayout;
 
     editorTemplate -beginLayout "Volumetric Collisions" -collapse 0;

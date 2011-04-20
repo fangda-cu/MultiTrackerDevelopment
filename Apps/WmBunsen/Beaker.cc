@@ -330,7 +330,8 @@ void Beaker::addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
     
     cerr << "adding rods to world, dt = " << getDt() << endl;
 
-    m_bridsonStepper = new BridsonStepper( m_rods, m_triangleMeshes, m_scriptingControllers, m_rodTimeSteppers, getDt(), getTime() );
+    m_bridsonStepper = new BridsonStepper( m_rods, m_triangleMeshes, m_scriptingControllers, 
+                                           m_rodTimeSteppers, getDt(), getTime() );
     m_world->addController( m_bridsonStepper );
 
    /* delete m_volumetricCollisions;
@@ -503,10 +504,16 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     double frameIntegrationStepTime = 0.0;
 
     double frameTime = 0.0;
+    
+    
+    m_bridsonStepper->skipRodRodCollisions( !i_fullSelfCollisionsEnabled );
 
     // Create space to track the target vertex positions of each rod as they substep towards 
     // their goal
     m_subSteppedVertexPositions.resize( i_subSteps );
+
+    // We should alter if self collisions are on or off here but they can only be changed
+    // when we create bridsonStepper at time == startTime.
 
     for ( int s=0; s<i_subSteps; s++ )
     {
