@@ -62,8 +62,6 @@
 #include <queue>
 #include <typeinfo>
 
-#define SKIP_ROD_ROD false
-
 namespace BASim
 {
 
