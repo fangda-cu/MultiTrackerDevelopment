@@ -12,7 +12,7 @@ IPATHS 	+= -I$(MKLROOT)/include
 
 ###{ Name of executable to be built.
 ###}
-PRG1_CF		:= -DWETA # -DTIMING_ON
+PRG1_CF		:= -DWETA -DHAVE_PNG # -DTIMING_ON
 
 #Nasty but we need it to build BASimulator which uses a file in the BASim library which references a file back in BASim...
 PRG1_CF += -I../../../ -I. #-I/vol/bob/src/code/Figaro/work/acoull-breannanCollisions/
@@ -59,7 +59,8 @@ PRG1_S		:= \
 ###  linking this executable.
 PRG1_L		:= \
 	-lWfigaro_dbg \
-    -lglut -lGLU
+    -lglut -lGLU \
+    -lpng
 
 # add in the MKL libraries
 

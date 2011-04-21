@@ -70,6 +70,11 @@ inline const Vec3d& ElasticRod::getVelocity(int i) const
   return property(m_vertexVelocities)[i];
 }
 
+inline const Vec3d& ElasticRod::getVelocity(const vertex_handle& vh) const
+{
+  return property(m_vertexVelocities)[vh];
+}
+
 inline void ElasticRod::setVelocity(int i, const Vec3d& v)
 {
   property(m_vertexVelocities)[i] = v;

@@ -115,6 +115,7 @@ public:
   void setTheta(int j, const Scalar& t);
 
   const Vec3d& getVelocity(int i) const;
+  const Vec3d& getVelocity(const vertex_handle& vh) const;
   void setVelocity(int i, const Vec3d& v);
 
   const Scalar& getThetaDot(int j) const;
