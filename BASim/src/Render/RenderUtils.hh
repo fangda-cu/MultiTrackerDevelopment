@@ -10,44 +10,48 @@
 
 #include "../Math/Math.hh"
 
-namespace BASim {
-
-inline void drawArrow(const Vec3d& start, Vec3d dir, Scalar scale = 1.0)
+namespace BASim
 {
-  dir.normalize();
-  Vec3d end = start + scale * dir;
-  Scalar len = (end - start).norm();
-  Scalar rad = 0.03 * len;
 
-  Vec3d x(0,0,0);
-  if (len > 0) findOrthogonal(x, end - start);
-  Vec3d y = (end - start).cross(x).normalized();
+inline void drawArrow(const Vec3d& start, Vec3d dir, Scalar scale = 1.0, bool normalize = true)
+{
+    if (normalize)
+        dir.normalize();
+    Vec3d end = start + scale * dir;
+    Scalar len = (end - start).norm();
+    Scalar rad = 0.03;// * len;
 
-  glBegin(GL_QUAD_STRIP);
-  for (unsigned int i = 0; i < 33; ++i) {
-    Scalar angle = 2.0 * M_PI * i / 32.0;
-    Vec3d norm = cos(angle) * x - sin(angle) * y;
-    Vec3d point = rad * norm;
+    Vec3d x(0, 0, 0);
+    if (len > 0)
+        findOrthogonal(x, end - start);
+    Vec3d y = (end - start).cross(x).normalized();
 
-    OpenGL::normal(norm);
-    OpenGL::vertex((start + point).eval());
+    glBegin( GL_QUAD_STRIP);
+    for (unsigned int i = 0; i < 33; ++i)
+    {
+        Scalar angle = 2.0 * M_PI * i / 32.0;
+        Vec3d norm = cos(angle) * x - sin(angle) * y;
+        Vec3d point = rad * norm;
 
-    point = start + 0.8 * (end - start) + point;
-    OpenGL::normal(norm);
-    OpenGL::vertex(point);
-  }
-  glEnd();
+        OpenGL::normal(norm);
+        OpenGL::vertex((start + point).eval());
 
-  //Vec3d center = start + 0.8 * (end - start);
-  //Vec3d orientation = (end - start).normalized();
-  //Vec3d axis = Vec3d(0,0,1).cross(orientation);
-  //Scalar angle = 180.0/M_PI*atan2(axis.norm(), Vec3d(0,0,1).dot(orientation));
-  //if (angle != 0) axis.normalize();
-  //  glPushMatrix();
-  // glTranslated(center(0), center(1), center(2));
-  //glRotated(angle, axis(0), axis(1), axis(2));
-  //glutSolidCone(2.2 * rad, 0.2 * len, 32, 2);
-  //glPopMatrix();
+        point = start + 0.8 * (end - start) + point;
+        OpenGL::normal(norm);
+        OpenGL::vertex(point);
+    }
+    glEnd();
+
+    //Vec3d center = start + 0.8 * (end - start);
+    //Vec3d orientation = (end - start).normalized();
+    //Vec3d axis = Vec3d(0,0,1).cross(orientation);
+    //Scalar angle = 180.0/M_PI*atan2(axis.norm(), Vec3d(0,0,1).dot(orientation));
+    //if (angle != 0) axis.normalize();
+    //  glPushMatrix();
+    // glTranslated(center(0), center(1), center(2));
+    //glRotated(angle, axis(0), axis(1), axis(2));
+    //glutSolidCone(2.2 * rad, 0.2 * len, 32, 2);
+    //glPopMatrix();
 }
 
 } // namespace BASim

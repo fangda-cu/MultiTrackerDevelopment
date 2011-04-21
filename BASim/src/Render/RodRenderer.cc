@@ -388,7 +388,7 @@ void RodRenderer::drawVelocityVector()
         ElasticRod::edge_handle& eh = *eit;
         ElasticRod::vertex_handle vh0 = m_rod.fromVertex(eh);
 
-        drawArrow(m_rod.getVertex(vh0), m_rod.getVelocity(vh0));
+        drawArrow(m_rod.getVertex(vh0), m_rod.getVelocity(vh0), 0.1, false);
     }
 
     glEnd();
