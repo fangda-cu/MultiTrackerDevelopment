@@ -603,6 +603,9 @@ bool BridsonStepper::step(bool check_explosion)
         executeIterativeInelasticImpulseResponse();
     STOP_TIMER("BridsonStepperResponse");
 
+    // Store the response part for visualization
+    m_vnresp = m_vnphalf - (m_xnp1 - m_xn) / m_dt;
+
     // Compute final positions from corrected velocities
     m_xnp1 = m_xn + m_dt * m_vnphalf;
 
@@ -631,6 +634,8 @@ bool BridsonStepper::step(bool check_explosion)
     // Copy new positions and velocities back to rods
     restorePositions(m_rods, m_xnp1);
     restoreVelocities(m_rods, m_vnphalf);
+    // Also copy response velocity to rods
+    restoreResponses(m_rods, m_vnresp);
 
     // Update frames and such in the rod (Is this correct? Will this do some extra stuff?)
 #ifdef HAVE_OPENMP
@@ -884,6 +889,18 @@ void BridsonStepper::restoreVelocities(std::vector<ElasticRod*>& rods, const Vec
             if (!m_rods[i]->getBoundaryCondition()->isVertexScripted(j))
                 rods[i]->setVelocity(j, velocities.segment<3> (m_base_indices[i] + 3 * j));
 }
+
+void BridsonStepper::restoreResponses(std::vector<ElasticRod*>& rods, const VecXd& responses)
+{
+    assert(rods.size() == m_base_indices.size());
+
+    for (int i = 0; i < (int) m_base_indices.size(); ++i)
+        for (int j = 0; j < rods[i]->nv(); ++j)
+            if (!m_rods[i]->getBoundaryCondition()->isVertexScripted(j))
+                rods[i]->setResponse(j, responses.segment<3> (m_base_indices[i] + 3 * j));
+}
+
+
 
 bool BridsonStepper::isRodVertex(int vert) const
 {

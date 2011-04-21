@@ -76,7 +76,7 @@ int window_height = 512;
 int max_frames = -1;
 Scalar max_time = -1;
 bool progress_indicator = false;
-bool generate_movie = true;
+bool generate_movie = false;
 
 // Display the simulation time or not
 bool g_dsp_sim_tm = true;
@@ -603,8 +603,18 @@ void menu(int id)
     {
         for (int i = 0; i < (int) rod_renderers.size(); ++i)
         {
-            bool& b = rod_renderers[i]->drawVelocity();
-            b = !b;
+            bool& bv = rod_renderers[i]->drawVelocity();
+            bool& br = rod_renderers[i]->drawResponse();
+
+            if (bv)
+            {
+                bv = false;
+                br = true;
+            }
+            else if (br)
+                br = false;
+            else
+                bv = true;
         }
         glutPostRedisplay();
         break;

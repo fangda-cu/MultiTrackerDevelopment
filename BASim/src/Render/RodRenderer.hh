@@ -36,6 +36,7 @@ public:
   bool& scaleToRadius() { return m_scaleToRadius; }
   bool& drawArrows() { return m_drawArrows; }
   bool& drawVelocity() { return m_drawVelocity; }
+  bool& drawResponse() { return m_drawResponse; }
 
   virtual Vec3d calculateObjectCenter();
   virtual Scalar calculateObjectBoundingRadius(const Vec3d& center);
@@ -58,6 +59,7 @@ protected:
   void drawReferenceFrame();
 
   void drawVelocityVector();
+  void drawResponseVector();
 
   ElasticRod& m_rod;
   RodTube m_tube;
@@ -69,6 +71,7 @@ protected:
   bool m_scaleToRadius;
   bool m_drawArrows;
   bool m_drawVelocity;
+  bool m_drawResponse;
 
   std::vector<Color> m_palette;
   std::vector<Color> m_simpleRod;

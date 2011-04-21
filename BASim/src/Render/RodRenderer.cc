@@ -14,7 +14,7 @@ namespace BASim
 
 RodRenderer::RodRenderer(ElasticRod& rod) :
     m_rod(rod), m_tube(m_rod), m_mode(SMOOTH), m_drawMaterial(false), m_drawReference(false), m_scaleToRadius(true),
-            m_drawArrows(false)
+            m_drawArrows(false), m_drawVelocity(false), m_drawResponse(false)
 {
     // material colors
     m_palette.push_back(Color(255, 125, 75));
@@ -49,6 +49,9 @@ void RodRenderer::render()
 
     if (m_drawVelocity)
         drawVelocityVector();
+    if (m_drawResponse)
+        drawResponseVector();
+
 }
 
 void RodRenderer::drawSimpleRod()
@@ -388,7 +391,27 @@ void RodRenderer::drawVelocityVector()
         ElasticRod::edge_handle& eh = *eit;
         ElasticRod::vertex_handle vh0 = m_rod.fromVertex(eh);
 
-        drawArrow(m_rod.getVertex(vh0), m_rod.getVelocity(vh0), 0.1, false);
+        drawArrow(m_rod.getVertex(vh0), m_rod.getVelocity(vh0), 0.15, false);
+    }
+
+    glEnd();
+    glEnable( GL_LIGHTING);
+}
+
+void RodRenderer::drawResponseVector()
+{
+    glLineWidth(2);
+    glBegin( GL_LINES);
+
+    const Color& color = m_palette[5];
+
+    ElasticRod::edge_iter eit, end = m_rod.edges_end();
+    for (eit = m_rod.edges_begin(); eit != end; ++eit)
+    {
+        ElasticRod::edge_handle& eh = *eit;
+        ElasticRod::vertex_handle vh0 = m_rod.fromVertex(eh);
+
+        drawArrow(m_rod.getVertex(vh0), m_rod.getResponse(vh0), 0.15, false);
     }
 
     glEnd();

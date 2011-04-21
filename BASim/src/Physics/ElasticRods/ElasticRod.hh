@@ -118,6 +118,9 @@ public:
   const Vec3d& getVelocity(const vertex_handle& vh) const;
   void setVelocity(int i, const Vec3d& v);
 
+  const Vec3d& getResponse(const vertex_handle& vh) const;
+  void setResponse(int i, const Vec3d& v);
+
   const Scalar& getThetaDot(int j) const;
   void setThetaDot(int j, const Scalar& td);
 
@@ -334,6 +337,7 @@ protected:
 
   VPropHandle<Vec3d> m_vertexPositions;
   VPropHandle<Vec3d> m_vertexVelocities;
+  VPropHandle<Vec3d> m_vertexResponses;
   VPropHandle<Scalar> m_voronoiLengths;
   VPropHandle<Scalar> m_vertexMasses;
   VPropHandle<Scalar> m_referenceTwist; ///< twist of the reference frame

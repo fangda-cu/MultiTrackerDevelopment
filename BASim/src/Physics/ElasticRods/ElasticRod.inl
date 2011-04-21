@@ -80,6 +80,16 @@ inline void ElasticRod::setVelocity(int i, const Vec3d& v)
   property(m_vertexVelocities)[i] = v;
 }
 
+inline const Vec3d& ElasticRod::getResponse(const vertex_handle& vh) const
+{
+  return property(m_vertexResponses)[vh];
+}
+
+inline void ElasticRod::setResponse(int i, const Vec3d& v)
+{
+  property(m_vertexResponses)[i] = v;
+}
+
 inline const Scalar& ElasticRod::getThetaDot(int j) const
 {
   return property(m_thetaDot)[j];

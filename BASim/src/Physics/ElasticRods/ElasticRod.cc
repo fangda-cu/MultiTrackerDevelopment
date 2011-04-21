@@ -44,6 +44,7 @@ ElasticRod::ElasticRod(int numVertices, bool closed)
 
   add_property(m_vertexPositions, "vertex_positions", Vec3d(0,0,0));
   add_property(m_vertexVelocities, "vertex velocities", Vec3d(0,0,0));
+  add_property(m_vertexResponses, "vertex collision responses", Vec3d(0,0,0));
   add_property(m_voronoiLengths, "voronoi legths", 0.0);
   add_property(m_vertexMasses, "vertex masses", 0.0);
   add_property(m_referenceTwist, "reference twist", 0.0);

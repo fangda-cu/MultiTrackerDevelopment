@@ -324,6 +324,7 @@ private:
 
     void restorePositions(std::vector<ElasticRod*>& rods, const VecXd& positions);
     void restoreVelocities(std::vector<ElasticRod*>& rods, const VecXd& velocities);
+    void restoreResponses(std::vector<ElasticRod*>& rods, const VecXd& responses);
 
     bool isRodVertex(int vert) const;
     bool isRodRodCollision(const EdgeEdgeCTCollision& collision) const;
@@ -458,6 +459,7 @@ private:
     VecXd m_xn;
     VecXd m_xnp1;
     VecXd m_vnphalf;
+    VecXd m_vnresp;
 
     // Enable/Disable portions of the collision response
     bool m_respns_enbld;
