@@ -1067,6 +1067,7 @@ void BridsonStepper::computeCompliantLHS(MatrixBase* lhs, int rodidx)
     assert(rodidx < (int) m_rods.size());
 
     // lhs = -h^2*dF/dx
+    lhs->setZero();
     m_rods[rodidx]->computeJacobian(0, -m_dt * m_dt, *lhs);
     lhs->finalize();
 
