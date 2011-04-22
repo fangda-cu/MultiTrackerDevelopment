@@ -111,7 +111,7 @@ public:
 
 };
 
-static const double MARGIN = 0.0;
+static const double MARGIN = 1.0e-6;
 
 // A virtual class to abstract handling of edges and faces
 class TopologicalElement
