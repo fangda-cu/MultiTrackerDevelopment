@@ -39,6 +39,7 @@
 #include <maya/MRampAttribute.h>
 #include <maya/MFnEnumAttribute.h>
 #include <maya/MFileIO.h>
+#include <maya/MFnCompoundAttribute.h>
 
 #include <set>
 
@@ -141,6 +142,15 @@ public:
     static MObject oa_edgeTransforms;
     
     static MObject oa_numberOfRods;
+    
+    // Data for Maya fields
+    static MObject ia_fieldForces;
+    static MObject oa_positions;
+    static MObject oa_velocities;
+    static MObject oa_masses;
+    static MObject oa_deltaTime;
+    static MObject oa_fieldData;
+    
     
 
     // Returns the number of rods this node has input data for

@@ -311,6 +311,20 @@ public:
             m_rodData[ r ]->disableRod();
         }
     }
+    
+    void addExternalForceToRod( const size_t i_rodIndex, const size_t i_rodVertexIndex, 
+                                const BASim::Vec3d i_force )
+    {
+        m_rodData[ i_rodIndex ]->addExternalForceToVertex( i_rodVertexIndex, i_force );
+    }
+    
+    void resetAllExternalForcesOnRods()
+    {
+        for ( size_t r = 0; r < m_rodData.size(); ++r )
+        {
+            m_rodData[ r ]->resetExternalForcesOnVertices();
+        }
+    }
 
 private:
     std::vector< RodData* > m_rodData;

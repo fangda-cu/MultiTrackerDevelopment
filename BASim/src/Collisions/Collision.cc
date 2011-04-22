@@ -33,6 +33,8 @@ bool EdgeEdgeCTCollision::analyseCollision(double time_step)
     // If both edges are motionless, no collision. Shouldn't we catch that earlier?
     if ((vp0.norm() == 0) && (vq0.norm() == 0) && (vp1.norm() == 0) && (vq1.norm() == 0))
         return false;
+        
+    if (IsFixed()) return false;
 
     std::vector<double> times;
     std::vector<double> errors;

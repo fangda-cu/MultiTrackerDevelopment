@@ -86,6 +86,8 @@ protected:
     void attachParticles();
 
     void addVertexConstraint( int i_rodInd = 0, double i_dis = 0.0, int i_vertId = -1, MPoint i_pos = MPoint(0,0,0) );
+    
+    void connectMayaField();
 
 public:     // Data
 protected:  // Data
@@ -131,6 +133,7 @@ protected:  // Data
     MSelectionList m_meshList;      // list of meshes
     MSelectionList m_fozzieNodeList;
     MSelectionList m_figRodNodeList;
+    MSelectionList m_fieldNodeList;
     MSelectionList m_allOtherTransformNodesList;
     MObject  m_selectedwmBunsenNode;
     MString m_cacheFile;

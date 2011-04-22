@@ -44,11 +44,27 @@ global proc wmFigaroAddMainMenu()
         menuItem -label "Add controllers Tool" -annotation "Attach a controller to a rod" -command "setToolTo $gWmFigControllerContextName";
         menuItem -label "Comb Tool" -annotation "Comb rods" -command "setToolTo $gWmFigCombContextName";
         menuItem -label "Create rod shape from NURBS" -annotation "Turn the selected nurbs curve into an elastic rod" -command "wmFigaro -crs";
+        //menuItem -label "Connect field to rod node" -annotation "Connect the selected Maya field to the select rod node" -command "wmFigaroConnectMayaField";
+        menuItem -label "Create an air field node" -annotation "Create and connect a Maya air field node and connect to the selected select rod node" -command "wmFigaroConnectAirField";
 
         menuItem -divider true;
         menuItem -label "Select Rod Vertices Tool" -annotation "Select rod vertices" -command "optionVar -intValue \"figSelectionMode\" 1; setToolTo $gWmFigSelectionContextName";
         menuItem -label "Select Rods Tool" -annotation "Select rods" -command "optionVar -intValue \"figSelectionMode\" 0; setToolTo $gWmFigSelectionContextName";
     }
+}
+
+global proc wmFigaroConnectAirField()
+{
+    string $nodes[] = `ls -sl`;
+    
+    string $fieldNodes[] = `air -pos 0 0 0 -m 4 -att 1 -dx 0 -dy 1 -dz 0 -s 5 -iv 1 -iro 1 -vco 0 -es 0  -mxd 20  -vsh none -vex 0 -vof 0 0 0 -vsw 360 -tsr 0.5`;
+    string $fieldNode = $fieldNodes[ 0 ];
+
+    // Should extend to shape here so user doesn't have to select shape
+    string $rodNode = $nodes[ 0 ];
+    
+    connectAttr ( $rodNode + ".fieldData" ) ( $fieldNode + ".inputData[ 0 ]" );
+    connectAttr ( $fieldNode + ".outputForce[ 0 ]" ) ( $rodNode + ".fieldForces[ 0 ]" );
 }
 
 global proc wmFigaroRemoveMainMenu() 

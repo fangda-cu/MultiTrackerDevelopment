@@ -344,6 +344,26 @@ public:
         return m_massDamping;
     }
 
+    void addExternalForceToVertex( const size_t i_vertexIndex, const BASim::Vec3d i_force )
+    {
+        if ( m_externalForceOnVertex.size() > i_vertexIndex )
+        {
+            m_externalForceOnVertex[ i_vertexIndex ] += i_force;
+        }
+    }
+    
+    void resetExternalForcesOnVertices()
+    {
+        if ( m_rod )
+        {
+            m_externalForceOnVertex.resize( m_rod->nv() );
+            for ( size_t v = 0; v < m_rod->nv(); ++v )
+            {
+                m_externalForceOnVertex[ v ] = BASim::Vec3d( 0.0, 0.0, 0.0 );
+            }
+        }
+    }
+
 //private:
     
     // Should we keep the ObjectHandle returned by World rather than the actual rod?
@@ -399,6 +419,11 @@ public:
     BASim::Vec3d m_gravity;
     
     std::vector< float > m_targetDensityPerEdge;
+    
+    // This is a list of external forces on the rod, there is one entry per
+    // vertex on the rod. External forces such as wind are all summed into
+    // this vector.
+    std::vector< BASim::Vec3d > m_externalForceOnVertex;
 
     bool m_enabled;
 };
