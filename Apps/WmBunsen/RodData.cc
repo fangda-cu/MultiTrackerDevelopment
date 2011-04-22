@@ -20,6 +20,8 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
                       i_rodVertexPositions );
 
     m_rodRenderer = new RodRenderer( *m_rod );
+    
+    m_externalForceOnVertex.resize( m_rod->nv() );
 
     // If the rod is coming from the cache file then we don't need the stepper or forces.
     // FIXME: The above setup rod code does not need to be called either really. We need

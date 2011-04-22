@@ -80,6 +80,14 @@ using namespace BASim;
 /* static */ MObject WmFigRodNode::ia_particlePositions;
 /* static */ MObject WmFigRodNode::ia_perRodParticleCounts;
 
+// Maya field inputs
+/* static */ MObject WmFigRodNode::ia_fieldForces;
+/* static */ MObject WmFigRodNode::oa_positions;
+/* static */ MObject WmFigRodNode::oa_velocities;
+/* static */ MObject WmFigRodNode::oa_masses;
+/* static */ MObject WmFigRodNode::oa_deltaTime;
+/* static */ MObject WmFigRodNode::oa_fieldData;
+
 WmFigRodNode::WmFigRodNode() : m_massDamping( 10 ), m_initialised( false ),
     /*mx_rodData( NULL ),*/ mx_world( NULL ), m_numberOfInputCurves( 0 ), 
     m_percentageOfBarberShopStrands( 100 ), m_verticesPerRod( -1 ), m_cacheFilename( "" ),
@@ -1612,6 +1620,27 @@ void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
 	i_view.endGL();
 }
 
+// add interfaces for rodGroup to set the root&tip colors for each
+// rod. 
+void WmFigRodNode::updateRodColorForSimpleMode( MDataBlock& i_dataBlock)
+{
+    MStatus stat;
+    
+    Color rootColor, tipColor;
+    const MPlug rootColourPlug( thisMObject(), ia_rodRootColor );
+    rootColor.data()[0] = i_dataBlock.inputValue( rootColourPlug.child( 0, & stat ) ).asFloat();
+    rootColor.data()[1] = i_dataBlock.inputValue( rootColourPlug.child( 1, & stat ) ).asFloat();
+    rootColor.data()[2] = i_dataBlock.inputValue( rootColourPlug.child( 2, & stat ) ).asFloat();
+
+    const MPlug tipColourPlug( thisMObject(), ia_rodTipColor );
+    tipColor.data()[0] = i_dataBlock.inputValue( tipColourPlug.child( 0, & stat ) ).asFloat();
+    tipColor.data()[1] = i_dataBlock.inputValue( tipColourPlug.child( 1, & stat ) ).asFloat();
+    tipColor.data()[2] = i_dataBlock.inputValue( tipColourPlug.child( 2, & stat ) ).asFloat();
+
+    m_rodGroup.setColorForSimpleRender( rootColor, tipColor );
+
+}
+
 MStatus WmFigRodNode::connectionMade( const  MPlug & plug, const  MPlug & otherPlug, bool asSrc )
 {
     MStatus stat;
@@ -2060,7 +2089,6 @@ void* WmFigRodNode::creator()
 	
     }
 
-
     {
         MFnNumericAttribute numericAttrFn;
         ia_rodTipColor = numericAttrFn.createColor( "rodTipColor", "rtc", & stat );
@@ -2095,26 +2123,83 @@ void* WmFigRodNode::creator()
     stat = attributeAffects( ia_solverType, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_solverType->oa_rodsChanged" ); return stat; }
 
+    // Input and output attributes for Maya field connections    
+    {
+        // Outputs
+        MFnTypedAttribute typedAttr;
+        oa_positions = typedAttr.create( "positions", "pos", 
+                                         MFnData::kVectorArray, &stat ); 
+        CHECK_MSTATUS(stat);
+        
+        oa_velocities = typedAttr.create( "velocities", "vel", 
+                                          MFnData::kVectorArray, &stat); 
+        CHECK_MSTATUS(stat);
+    
+        oa_masses = typedAttr.create( "masses", "mass", MFnData::kDoubleArray, 
+                                      &stat); 
+        CHECK_MSTATUS(stat);
+        
+        MFnUnitAttribute unitFn;
+        oa_deltaTime = unitFn.create( "deltaTime", "del", 
+                                      MFnUnitAttribute::kTime, 0.01, &stat);  
+        CHECK_MSTATUS(stat);
+        
+        MFnCompoundAttribute compoundAttr;
+        oa_fieldData = compoundAttr.create( "fieldData", "fda", &stat );
+        CHECK_MSTATUS(stat);
+
+        CHECK_MSTATUS(compoundAttr.addChild( oa_positions ) );
+        CHECK_MSTATUS(compoundAttr.addChild( oa_velocities ) );
+        CHECK_MSTATUS(compoundAttr.addChild( oa_masses ) );
+        CHECK_MSTATUS(compoundAttr.addChild( oa_deltaTime ) );
+        CHECK_MSTATUS( addAttribute( oa_fieldData ) );
+        
+        // Inputs
+        ia_fieldForces = typedAttr.create( "fieldForces", "ffo", MFnData::kVectorArray, 
+                                           &stat); 
+        CHECK_MSTATUS(stat);
+        
+        CHECK_MSTATUS( typedAttr.setArray( true ) );
+        CHECK_MSTATUS( typedAttr.setReadable( false ) );
+        CHECK_MSTATUS( typedAttr.setWritable( true ) );
+        CHECK_MSTATUS( typedAttr.setIndexMatters( false ) );
+        CHECK_MSTATUS( typedAttr.setUsesArrayDataBuilder( true ) );
+        CHECK_MSTATUS( addAttribute( ia_fieldForces ) );   
+    }
+    
+    stat = attributeAffects( ia_fieldForces, oa_rodsChanged );
+    if ( !stat ) { stat.perror( "attributeAffects ia_fieldForces->ia_rodsChanged" ); return stat; }
+
+    stat = attributeAffects( ia_time, oa_positions );
+	if ( !stat ) { stat.perror( "attributeAffects ia_time->oa_positions" ); return stat; }
+    stat = attributeAffects( ia_time, oa_velocities );
+	if ( !stat ) { stat.perror( "attributeAffects ia_time->oa_velocities" ); return stat; }
+    stat = attributeAffects( ia_time, oa_deltaTime );
+	if ( !stat ) { stat.perror( "attributeAffects ia_time->oa_deltaTime" ); return stat; }
+    stat = attributeAffects( ia_time, oa_fieldData );
+	if ( !stat ) { stat.perror( "attributeAffects ia_time->oa_fieldData" ); return stat; }
+
+    
     return MS::kSuccess;
 
 }
-// add interfaces for rodGroup to set the root&tip colors for each
-// rod. 
-void WmFigRodNode::updateRodColorForSimpleMode( MDataBlock& i_dataBlock)
-{
-    MStatus stat;
-    
-    Color rootColor, tipColor;
-    const MPlug rootColourPlug( thisMObject(), ia_rodRootColor );
-    rootColor.data()[0] = i_dataBlock.inputValue( rootColourPlug.child( 0, & stat ) ).asFloat();
-    rootColor.data()[1] = i_dataBlock.inputValue( rootColourPlug.child( 1, & stat ) ).asFloat();
-    rootColor.data()[2] = i_dataBlock.inputValue( rootColourPlug.child( 2, & stat ) ).asFloat();
 
-    const MPlug tipColourPlug( thisMObject(), ia_rodTipColor );
-    tipColor.data()[0] = i_dataBlock.inputValue( tipColourPlug.child( 0, & stat ) ).asFloat();
-    tipColor.data()[1] = i_dataBlock.inputValue( tipColourPlug.child( 1, & stat ) ).asFloat();
-    tipColor.data()[2] = i_dataBlock.inputValue( tipColourPlug.child( 2, & stat ) ).asFloat();
 
-    m_rodGroup.setColorForSimpleRender( rootColor, tipColor );
 
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
