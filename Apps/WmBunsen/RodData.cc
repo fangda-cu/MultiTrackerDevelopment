@@ -11,7 +11,8 @@ RodData::RodData() : m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_g
 RodData::RodData( RodOptions& i_rodOptions, std::vector<BASim::Vec3d>& i_rodVertexPositions,
                   double i_massDamping, BASim::Vec3d& i_gravity, RodTimeStepper::Method i_solverType, 
                   bool i_isReadingFromCache, bool i_doReverseHairdo ) : 
-m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDamping )
+m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDamping ),
+m_rodMayaForces( NULL )
 {
     m_enabled = true;
 
@@ -21,8 +22,6 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
 
     m_rodRenderer = new RodRenderer( *m_rod );
     
-    m_externalForceOnVertex.resize( m_rod->nv() );
-
     // If the rod is coming from the cache file then we don't need the stepper or forces.
     // FIXME: The above setup rod code does not need to be called either really. We need
     // a fake setupRod function that just gives space for the vertices.
@@ -42,6 +41,10 @@ m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDam
                 stepper->addExternalForce( new RodGravity( i_gravity ) );
                 m_gravity = i_gravity;
 		    }    
+            
+            // Add force class that we will use to pass in forces from Maya fields
+            m_rodMayaForces = new RodMayaForces( m_rod );
+            stepper->addExternalForce( m_rodMayaForces );
 
 		    AdaptiveBinaryStepper* adpstep = new AdaptiveBinaryStepper( m_rod, stepper );
 		    //m_steppers.push_back(adpstep);

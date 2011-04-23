@@ -130,7 +130,114 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus stat;
 
-    if ( i_plug == oa_numberOfRods )
+    if ( i_plug == oa_positions ||
+         i_plug == oa_velocities ||
+         i_plug == oa_masses ||
+         i_plug == oa_deltaTime ||
+         i_plug == oa_fieldData )
+    {
+        // Get time so Maya knows we care...
+        i_dataBlock.inputValue( ia_time, &stat ).asTime().value();
+        CHECK_MSTATUS( stat );
+
+        // Output all the rod data for the field nodes to use
+        if ( m_rodGroup.numberOfRealRods() > 0 )
+        {
+            // This next 30 lines of creation of vector array attributes is crying out for a 
+            // helper function to do it            
+            MDataHandle positionsHandle = i_dataBlock.outputValue( oa_positions, &stat );
+            CHECK_MSTATUS( stat );
+            MDataHandle velocitiesHandle = i_dataBlock.outputValue( oa_velocities, &stat );
+            CHECK_MSTATUS( stat );
+            MDataHandle massesHandle = i_dataBlock.outputValue( oa_masses, &stat );
+            CHECK_MSTATUS( stat );
+            
+            MFnVectorArrayData positionsArrayData;
+            MFnVectorArrayData velocitiesArrayData;
+            MFnDoubleArrayData massesArrayData;
+            
+            // Is this right, always doing the create?
+            positionsHandle.set( positionsArrayData.create( &stat ) );
+            CHECK_MSTATUS( stat );
+            velocitiesHandle.set( velocitiesArrayData.create( &stat ) );
+            CHECK_MSTATUS( stat );
+            massesHandle.set( massesArrayData.create( &stat ) );
+            CHECK_MSTATUS( stat );
+            
+            MVectorArray positions = positionsArrayData.array( &stat );
+            CHECK_MSTATUS( stat );
+            MVectorArray velocities = velocitiesArrayData.array( &stat );
+            CHECK_MSTATUS( stat );
+            MDoubleArray masses = massesArrayData.array( &stat );
+            CHECK_MSTATUS( stat );
+
+            double deltaTime = -1.0;
+                    
+            // We have some rods that are being simulated so let's
+            // send the data to the field node.
+            for ( int r = 0; r < m_rodGroup.numberOfRods(); ++r )
+            {
+                ElasticRod* elasticRod = m_rodGroup.elasticRod( r );
+                if ( elasticRod != NULL )
+                {
+                    unsigned int startIndex = positions.length();
+                    positions.setLength( startIndex + elasticRod->nv() );
+                    velocities.setLength( startIndex + elasticRod->nv() );
+                    masses.setLength( startIndex + elasticRod->nv() );                    
+                    
+                    for ( int v = 0; v < elasticRod->nv(); ++v )
+                    {
+                        BASim::Vec3d position = elasticRod->getVertex( v );
+                        positions[ startIndex + v ] = MVector( position[ 0 ], position[ 1 ], position[ 2 ] );
+                        
+                        BASim::Vec3d velocity = elasticRod->getVelocity( v );
+                        velocities[ startIndex + v ] = MVector( velocity[ 0 ], velocity[ 1 ], velocity[ 2 ] );
+                        
+                        double mass = elasticRod->getVertexMass( v );
+                        masses[ startIndex + v ] = mass;
+                    }
+                    
+                    // All rods step at the same speed (ignoring adaptive stepping).
+                    // So take the timestep from the first real rod.
+                    // FIXME: Work out how this sits when adaptive stepping, which fields
+                    // actually use this?
+                    if ( deltaTime == -1.0 )
+                    {
+                        // Is this right even when doing adaptive stepping?
+                        RodTimeStepper* rodTimeStepper = m_rodGroup.stepper( r );
+                        deltaTime = rodTimeStepper->getTimeStep();
+                    }
+                }
+                else
+                {
+                    // Is this OK, could it just be a placeholder rod?
+                    cerr << "got null rod when trying to send data to field.\n";
+                }
+            }
+            
+            positionsHandle.setClean();
+            velocitiesHandle.setClean();
+            massesHandle.setClean();
+            
+            MDataHandle deltaTimeHandle = i_dataBlock.outputValue( oa_deltaTime, &stat );
+            CHECK_MSTATUS( stat );
+            
+            deltaTimeHandle.set( deltaTime );
+            deltaTimeHandle.setClean();
+            
+            // Finally set the parent handle clean
+            MDataHandle fieldDataHandle = i_dataBlock.outputValue( oa_fieldData, &stat );
+            CHECK_MSTATUS( stat );
+            fieldDataHandle.setClean();
+/*            
+            cerr << "Positions:\n" << positions << endl;
+            cerr << "Velocities:\n" << velocities << endl;
+            cerr << "Masses:\n" << masses << endl;
+            cerr << "DelataTime:\n" << deltaTime << endl;             
+*/       
+        }
+    }
+    else if ( i_plug == oa_numberOfRods )
     {
         // oa_numberOfRods only depends on time. This is because it is displayed in the AE
         // and so even if the node is hidden then it will evaluate everytime the AE is refreshed.
@@ -562,6 +669,69 @@ void WmFigRodNode::updateHairsprayScales( MDataBlock& i_dataBlock )
     }*/
 }
 
+void WmFigRodNode::updateRodWithMayaFieldForces( MDataBlock& i_dataBlock )
+{
+    MStatus status;
+    
+    MArrayDataHandle forceArrayHandle = i_dataBlock.inputArrayValue( ia_fieldForces, &status );
+    CHECK_MSTATUS( status );
+    
+    unsigned int numberOfFields = forceArrayHandle.elementCount( &status );
+    CHECK_MSTATUS( status );
+    
+    m_rodGroup.resetAllExternalForcesOnRods();
+    
+    if ( numberOfFields == 0)
+    {
+        return;
+    }
+        
+    MVectorArray forceArray;        
+    do {        
+        // Get the force data for this field
+        MDataHandle forceHandle = forceArrayHandle.inputValue( &status );
+        CHECK_MSTATUS( status );
+        
+        MObject forceObj = forceHandle.data();
+        MFnVectorArrayData forceArrayFnData( forceObj,&status );
+        CHECK_MSTATUS( status );
+        
+        MVectorArray forceArray = forceArrayFnData.array( &status );
+        CHECK_MSTATUS( status );
+
+        unsigned int numberOfForces = forceArray.length();
+        unsigned int currentForceIndex = 0;
+        
+        // We need to run through the rods and vertices of each rod so we know which rod/vertex
+        // each force in the input array should be applied to as all the rods were packed into
+        // a single force array.
+        for ( int r = 0; r < m_rodGroup.numberOfRods(); ++r )
+        {
+            ElasticRod* elasticRod = m_rodGroup.elasticRod( r );
+            if ( elasticRod != NULL )
+            {                
+                for ( int v = 0; v < elasticRod->nv(); ++v )
+                {
+                    if ( currentForceIndex >= numberOfForces )
+                    {
+                        MGlobal::displayError( "Not enough forces recieved from field for all rods." );
+                        return;
+                    }
+                    BASim::Vec3d force( forceArray[ currentForceIndex ].x, 
+                                        forceArray[ currentForceIndex ].y,
+                                        forceArray[ currentForceIndex ].z );
+                    cerr << "rod " << r << ", vertex " << v << ", force = " << force << endl;
+                                        
+                    m_rodGroup.addExternalForceToRod( r, v, force );
+                    
+                    currentForceIndex++;
+                }
+            }
+        }
+
+    } while ( forceArrayHandle.next() );
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Computing oa_rodsChanged
@@ -672,6 +842,8 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
     updateOrInitialiseRodDataFromInputs( i_dataBlock );
 
     updateRodColorForSimpleMode( i_dataBlock );
+    
+    updateRodWithMayaFieldForces( i_dataBlock );
     
     stat = i_dataBlock.setClean( i_plug );
     if ( !stat )
