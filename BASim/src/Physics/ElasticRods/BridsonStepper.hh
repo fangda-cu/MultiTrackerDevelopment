@@ -381,7 +381,7 @@ private:
     // Collision response routines
 
     void executePenaltyResponse();
-    void executeIterativeInelasticImpulseResponse();
+    bool executeIterativeInelasticImpulseResponse();
     //	void filterCollisions(std::list<ContinuousTimeCollision>& cllsns);
 
     void exertPenaltyImpulses(std::vector<EdgeEdgeProximityCollision>& edg_edg_cllsns,

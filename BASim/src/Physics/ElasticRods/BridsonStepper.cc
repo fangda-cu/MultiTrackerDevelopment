@@ -327,8 +327,10 @@ void BridsonStepper::exertInelasticImpluse(VertexFaceCTCollision& vfcol)
     assert(vfcol.GetRelativeVelocity() >= 0);
 }
 
-void BridsonStepper::executeIterativeInelasticImpulseResponse()
+bool BridsonStepper::executeIterativeInelasticImpulseResponse()
 {
+    bool dependable_solve = true;
+
     // Detect possible continuous time collisions
     std::list<CTCollision*> collisions;
     m_collision_detector->getContinuousTimeCollisions(collisions);
@@ -359,13 +361,19 @@ void BridsonStepper::executeIterativeInelasticImpulseResponse()
     if (itr > 1)
         std::cerr << "\033[33mIterated collision response " << itr << " times\033[0m" << std::endl;
 
-    if (itr == m_num_inlstc_itrns)
+    if (itr == m_num_inlstc_itrns) {
         std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Exceeded maximum " << "number of inelastic iterations "
                 << m_num_inlstc_itrns << ". Time of warning " << m_t << "." << std::endl;
+	dependable_solve = false;
+    }
 
 #ifdef TIMING_ON
     if( itr >= 2 ) IntStatTracker::getIntTracker("STEPS_WITH_MULTIPLE_IMPULSE_ITERATIONS") += 1;
 #endif
+
+    std::cout << "The inelastic collision response is " << (dependable_solve ? "" : "NOT") << " dependable." << std::endl;
+
+    return dependable_solve;
 }
 
 int BridsonStepper::getContainingRod(int vert_idx) const
@@ -391,7 +399,7 @@ bool BridsonStepper::execute()
 {
     std::cerr << "Executing time step " << m_t << std::endl;
     Timer::getTimer("BridsonStepper::execute").start();
-    bool do_adaptive = false;
+    bool do_adaptive = true;
     bool result;
 
     // std::cerr << *m_rods[0] << std::endl;
@@ -520,6 +528,13 @@ bool BridsonStepper::adaptiveExecute(double dt)
 
 bool BridsonStepper::step(bool check_explosion)
 {
+
+
+
+  check_explosion = false;
+
+
+
     // BEGIN TEMP
     //for( size_t i = 0; i < m_rods.size(); ++i ) if( m_t >= 3.79 ) std::cout << i << ": " << computeMaxEdgeAngle( *m_rods[i] ) << std::endl;
     // END TEMP
@@ -577,7 +592,10 @@ bool BridsonStepper::step(bool check_explosion)
 
     // Launch num_threads threads which will execute all elements of m_steppers.
     MultithreadedStepper<std::vector<RodTimeStepper*> > multithreaded_stepper(m_steppers, 4);//m_num_threads);
-    dependable_solve = multithreaded_stepper.Execute();
+    if (!multithreaded_stepper.Execute()) {
+      dependable_solve = false;
+      std::cout << "Dynamic step is not dependable!" << std::endl;
+    }
 
     STOP_TIMER("BridsonStepperDynamics");
 
@@ -587,20 +605,25 @@ bool BridsonStepper::step(bool check_explosion)
     // Average velocity over the timestep just completed
     m_vnphalf = (m_xnp1 - m_xn) / m_dt;
 
-    if (false && m_t >= 0.146)
-    {
-        int v0 = 14;
-        int v1 = 15;
-        m_masses[v0] = std::numeric_limits<double>::infinity();
-        m_masses[v1] = std::numeric_limits<double>::infinity();
-        m_vnphalf[3 * v0] = m_vnphalf[3 * v0 + 1] = m_vnphalf[3 * v0 + 2] = 0;
-        m_vnphalf[3 * v1] = m_vnphalf[3 * v1 + 1] = m_vnphalf[3 * v1 + 2] = 0;
-    }
+    // // J-M Rod fixing Hack
+    // if (false && m_t >= 0.146)
+    // {
+    //     int v0 = 14;
+    //     int v1 = 15;
+    //     m_masses[v0] = std::numeric_limits<double>::infinity();
+    //     m_masses[v1] = std::numeric_limits<double>::infinity();
+    //     m_vnphalf[3 * v0] = m_vnphalf[3 * v0 + 1] = m_vnphalf[3 * v0 + 2] = 0;
+    //     m_vnphalf[3 * v1] = m_vnphalf[3 * v1 + 1] = m_vnphalf[3 * v1 + 2] = 0;
+    // }
 
     //if( m_pnlty_enbld ) executePenaltyResponse();
     START_TIMER("BridsonStepperResponse");
-    if (m_itrv_inlstc_enbld && m_num_inlstc_itrns > 0)
-        executeIterativeInelasticImpulseResponse();
+    if (m_itrv_inlstc_enbld && m_num_inlstc_itrns > 0) {
+      if (!executeIterativeInelasticImpulseResponse()) {
+	dependable_solve = false;
+	std::cout << "Inelastic impulses are not dependable!" << std::endl;
+      }
+    }
     STOP_TIMER("BridsonStepperResponse");
 
     // Store the response part for visualization
@@ -654,6 +677,8 @@ bool BridsonStepper::step(bool check_explosion)
         // Compute the total end of timestep force
         double endforce = computeTotalForceNorm();
 
+	std::cout << "Checking for explosions..." << std::endl;
+
         assert(startforce >= 0.0);
         assert(endforce >= 0.0);
         if (endforce > startforce)
@@ -704,6 +729,8 @@ bool BridsonStepper::step(bool check_explosion)
     //    Timer::getTimer("BridsonStepperResponse").report();
     //    Timer::getTimer("Collision detector").report();
 
+    std::cout << "This step is " << (dependable_solve ? "" : "NOT") << " dependable." << std::endl;
+	 
     return dependable_solve;
 }
 
