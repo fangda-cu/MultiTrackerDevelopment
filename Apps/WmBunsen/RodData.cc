@@ -2,7 +2,7 @@
 
 using namespace std;
 
-RodData::RodData() : m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_gravity( 0.0, 0.0, 0.0 )
+RodData::RodData() : m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_gravity( 0.0, 0.0, 0.0 ), m_rodMayaForces( NULL )
 {
     m_isPlaceHolderRod = true;
     m_enabled = true;
