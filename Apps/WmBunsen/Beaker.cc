@@ -316,6 +316,12 @@ void Beaker::addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
         cerr << "Adding rod time stepper " << r << " to world\n";
         m_rodTimeSteppers.push_back( m_rodDataMap[ i_rodGroupIndex ]->stepper( r ) );              
     }
+    
+    if ( !areSimulatingAnyRods )
+    {
+        cerr << "No rods being simulated so not setting up the simulation world.\n";
+        return;
+    }
 
     // Now add all the collision meshes and scripting controllers to the world
     for ( CollisionMeshDataHashMap::iterator cmItr = m_collisionMeshDataHashMap.begin();
@@ -504,7 +510,6 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     double frameIntegrationStepTime = 0.0;
 
     double frameTime = 0.0;
-    
     
     m_bridsonStepper->skipRodRodCollisions( !i_fullSelfCollisionsEnabled );
 
