@@ -151,7 +151,6 @@ public:
     static MObject oa_deltaTime;
     static MObject oa_fieldData;
     
-    
 
     // Returns the number of rods this node has input data for
     //int numberOfRods();
@@ -203,6 +202,7 @@ private:
     void updateHairsprayScales( MDataBlock& i_dataBlock );
     void initialiseRodData( MDataBlock& i_dataBlock );
     void updateSimulationSet( MString i_simulationSetString );
+    void updateRodWithMayaFieldForces( MDataBlock& i_dataBlock );
 
     MString getCacheFilename( MDataBlock& i_dataBlock );
     

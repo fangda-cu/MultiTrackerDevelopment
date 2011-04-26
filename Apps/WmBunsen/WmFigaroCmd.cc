@@ -119,9 +119,6 @@ const char *const kRodVertexPositionLongFlag("-rodVertexPosition");
 const char *const kWorldSpaceFlag("-ws");
 const char *const kWorldSpaceLongFlag("-worldSpace");
 
-// Connect Maya Fields
-const char *const kConnectMayaField( "-cmf" );
-
 const char *const kHelp( "-h" );
 
 MSyntax WmFigaroCmd::syntaxCreator()
@@ -218,9 +215,6 @@ MSyntax WmFigaroCmd::syntaxCreator()
     			kWorldSpaceFlag,
     			kWorldSpaceLongFlag,
     			"get position in world space");
-
-    p_AddFlag( mSyntax, kConnectMayaField, "-connectMayaField",
-               "Connects the selected Maya field to the selected rod node." );
 
     mSyntax.setObjectType( MSyntax::kSelectionList );
     mSyntax.useSelectionAsDefault( true );
@@ -371,12 +365,7 @@ MStatus WmFigaroCmd::redoIt()
         {
             attachParticles();
         }
-
-        if ( m_mArgDatabase->isFlagSet( kConnectMayaField ) )
-        {
-            connectMayaField();
-        }
-
+        
         if( m_mArgDatabase->isFlagSet( kAddVertexConstraintFlag ))
         {
 /*
@@ -1801,42 +1790,6 @@ void WmFigaroCmd::addCollisionMeshes()
             CHECK_MSTATUS( stat );
         }
     }
-}
-
-void WmFigaroCmd::connectMayaField()
-{
-    MStatus status;
-    
-    cerr << "rod nodes = " << m_figRodNodeList.length() << endl;
-    cerr << "field nodes = " << m_fieldNodeList.length() << endl;
-    
-    if ( m_figRodNodeList.isEmpty() || m_fieldNodeList.isEmpty() )
-    {
-        MGlobal::displayError( "Please select a wmFigRodNode and a Maya field node.\n" );
-        return;
-    }
-    
-    // For now assume one field and one rod node
-    MObject figRodNodeObj;
-    status = m_figRodNodeList.getDependNode( 0, figRodNodeObj );
-    CHECK_MSTATUS( status );    
-    MFnDependencyNode figRodNodeDepFn( figRodNodeObj, &status );
-    CHECK_MSTATUS( status );
-    
-    MObject fieldNodeObj;
-    status = m_fieldNodeList.getDependNode( 0, fieldNodeObj );
-    CHECK_MSTATUS( status );
-    MFnDependencyNode fieldNodeDepFn( fieldNodeObj, &status );
-    CHECK_MSTATUS( status );
-    
-    
-    MPlug rodDataPlug = figRodNodeDepFn.findPlug( "fieldData", true, &status );
-    CHECK_MSTATUS( status );
-    
-    MPlug fieldDataPlug = fieldNodeDepFn.findPlug( "inputData", true, &status );
-    CHECK_MSTATUS( status );
-    
-    
 }
 
 void WmFigaroCmd::createPreviewNodes()

@@ -318,6 +318,11 @@ public:
         m_rodData[ i_rodIndex ]->addExternalForceToVertex( i_rodVertexIndex, i_force );
     }
     
+    void resetAllExternalForcesOnRod( const size_t i_rodIndex )
+    {
+        m_rodData[ i_rodIndex ]->resetExternalForcesOnVertices();        
+    }
+    
     void resetAllExternalForcesOnRods()
     {
         for ( size_t r = 0; r < m_rodData.size(); ++r )

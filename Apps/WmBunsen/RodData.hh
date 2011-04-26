@@ -10,6 +10,7 @@
 #include <weta/Wfigaro/Physics/ElasticRods/RodGravity.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodUtils.hh>
 #include <weta/Wfigaro/Render/RodRenderer.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/RodMayaForces.hh>
 #else
 #include <BASim/src/Physics/ElasticRods/ElasticRod.hh>
 #include <BASim/src/Physics/ElasticRods/AnisotropicRod.hh>
@@ -346,21 +347,17 @@ public:
 
     void addExternalForceToVertex( const size_t i_vertexIndex, const BASim::Vec3d i_force )
     {
-        if ( m_externalForceOnVertex.size() > i_vertexIndex )
+        if ( m_rodMayaForces )
         {
-            m_externalForceOnVertex[ i_vertexIndex ] += i_force;
+            m_rodMayaForces->addExternalForceToVertex( i_vertexIndex, i_force );            
         }
     }
     
     void resetExternalForcesOnVertices()
     {
-        if ( m_rod )
+        if ( m_rodMayaForces )
         {
-            m_externalForceOnVertex.resize( m_rod->nv() );
-            for ( size_t v = 0; v < m_rod->nv(); ++v )
-            {
-                m_externalForceOnVertex[ v ] = BASim::Vec3d( 0.0, 0.0, 0.0 );
-            }
+            m_rodMayaForces->resetExternalMayaForces();
         }
     }
 
@@ -420,12 +417,9 @@ public:
     
     std::vector< float > m_targetDensityPerEdge;
     
-    // This is a list of external forces on the rod, there is one entry per
-    // vertex on the rod. External forces such as wind are all summed into
-    // this vector.
-    std::vector< BASim::Vec3d > m_externalForceOnVertex;
-
     bool m_enabled;
+    
+    RodMayaForces* m_rodMayaForces;
 };
 
 #endif

@@ -272,6 +272,7 @@ Physics/ElasticRods/RodBoundaryCondition.hh \
 Physics/ElasticRods/RodExternalForce.hh \
 Physics/ElasticRods/RodForce.hh \
 Physics/ElasticRods/RodGravity.hh \
+Physics/ElasticRods/RodMayaForces.hh \
 Physics/ElasticRods/RodMassDamping.hh \
 Physics/ElasticRods/RodPenaltyForce.hh \
 Physics/ElasticRods/RodStretchingForce.hh \

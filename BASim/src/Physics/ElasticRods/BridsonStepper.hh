@@ -217,6 +217,16 @@ public:
      * Modifies the timestep.
      */
     void setDt(double dt);
+    
+    /**
+     * Returns the timestep.
+     **/
+    double getDt();
+    
+    /**
+     * Returns the simulation time
+     **/ 
+    double getTime();
 
     /**
      * Disables all response.
