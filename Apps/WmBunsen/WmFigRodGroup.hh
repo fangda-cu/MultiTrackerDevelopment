@@ -347,6 +347,14 @@ public:
             m_rodData[ r ]->resetExternalForcesOnVertices();
         }
     }
+    
+    void setBridsonStepperOnAllRodData( BridsonStepper* i_bridsonStepper )
+    {
+        for ( size_t r = 0; r < m_rodData.size(); ++r )
+        {
+            m_rodData[ r ]->setBridsonStepper( i_bridsonStepper );
+        }
+    }
 
 private:
     std::vector< RodData* > m_rodData;

@@ -2,7 +2,8 @@
 
 using namespace std;
 
-RodData::RodData() : m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_gravity( 0.0, 0.0, 0.0 ), m_rodMayaForces( NULL )
+RodData::RodData() : m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_gravity( 0.0, 0.0, 0.0 ), m_rodMayaForces( NULL ),
+m_bridsonStepper( NULL )
 {
     m_isPlaceHolderRod = true;
     m_enabled = true;
@@ -12,7 +13,7 @@ RodData::RodData( RodOptions& i_rodOptions, std::vector<BASim::Vec3d>& i_rodVert
                   double i_massDamping, BASim::Vec3d& i_gravity, RodTimeStepper::Method i_solverType, 
                   bool i_isReadingFromCache, bool i_doReverseHairdo ) : 
 m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDamping ),
-m_rodMayaForces( NULL )
+m_rodMayaForces( NULL ), m_bridsonStepper( NULL )
 {
     m_enabled = true;
 
@@ -189,7 +190,7 @@ void RodData::updateBoundaryConditions()
 
     for ( KinematicEdgeDataMap::iterator it = kinematicEdgeDataMap.begin();
             it != kinematicEdgeDataMap.end();
-            it++ )                            
+            it++ )              
     {
         // First make sure these vertices are marked as fixed on the rod
         // or they'll get taken into account on collision calculations.
@@ -199,7 +200,9 @@ void RodData::updateBoundaryConditions()
         //m_rod->fixVert( edgeNum );
         //m_rod->fixVert( edgeNum + 1 );
 
-        m_stepper->getTimeStep();
+        m_stepper->getTime();
+        
+        cerr << "bridson time = " << m_bridsonStepper->getTime() << endl;
 
         boundary->setDesiredVertexPosition( edgeNum, currVertexPositions[ edgeNum ] );
         boundary->setDesiredVertexPosition( edgeNum + 1, currVertexPositions[ edgeNum + 1 ]);
