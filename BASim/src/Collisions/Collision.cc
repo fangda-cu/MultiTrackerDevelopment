@@ -55,9 +55,8 @@ bool VertexFaceIntersection::analyseCollision(double)
             // Barycentric coords could be outside of [0,1] right now because we've extended the triangles a little bit
             assert(approxEq(u + v + w, 1.0));
 
-            m_analysed = true;
-
-            return true;
+            if (u > 0 && v > 0 && w > 0)
+                return m_analysed = true;
         }
     }
     return false;
