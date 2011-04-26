@@ -95,10 +95,10 @@ void WmFigRodBarbInput::initialiseRodDataFromInput( MDataBlock& i_dataBlock )
             {
                 int numVerticesRequired = length / m_vertexSpacing;
     
-                if ( numVerticesRequired < 2 )
+                if ( numVerticesRequired < 3 )
                 {
-                    numVerticesRequired = 2;
-                    MGlobal::displayWarning( MString( "Input strand " ) + i + " was going to have less than 2 vertices in the rod, setting it to 2." );
+                    numVerticesRequired = 3;
+                    MGlobal::displayWarning( MString( "Input strand " ) + i + " was going to have less than 3 vertices in the rod, setting it to 3." );
                 }
     
                 vector< MVector > resampledCurve;
