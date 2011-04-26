@@ -206,7 +206,7 @@ void RodData::updateBoundaryConditions()
 
         boundary->setDesiredVertexPosition( edgeNum, m_bridsonStepper->getTime(), prevVertexPositions[ edgeNum ], 
 					    (nextVertexPositions[ edgeNum ] - prevVertexPositions[ edgeNum ])/dt);
- );
+ 
     boundary->setDesiredVertexPosition( edgeNum + 1, m_bridsonStepper->getTime(),
 					prevVertexPositions[ edgeNum + 1 ],
 					(nextVertexPositions[ edgeNum + 1 ] - prevVertexPositions[ edgeNum + 1 ])/dt);
