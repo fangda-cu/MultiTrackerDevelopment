@@ -251,14 +251,14 @@ public:
     /**
      *  Enable or disable self collisions between all rods
      */
-    void skipRodRodCollisions( bool skipRodRodCollisions )
+    void skipRodRodCollisions(bool skipRodRodCollisions)
     {
-        m_skipRodRodCollisions = true;
-        
-        if ( m_collision_detector )
-            m_collision_detector->skipRodRodCollisions( skipRodRodCollisions );
+        m_skipRodRodCollisions = skipRodRodCollisions; // was: = true -> Alasdair?
+
+        if (m_collision_detector)
+            m_collision_detector->skipRodRodCollisions(skipRodRodCollisions);
     }
-        
+
     /**
      * Sets the maximum number of inelastic impulses to apply iterativly.
      */
@@ -271,7 +271,7 @@ public:
     {
         return (int) (m_rods.size());
     }
-    
+
     /**
      * Number of triangle meshes this controller is responsible for.
      */
@@ -335,16 +335,16 @@ private:
     // Collision detection routines
 
     /*
-    bool isVertexFixed(int vert_idx) const;
-    bool isEntireFaceFixed(int v0, int v1, int v2) const;
-    bool isEntireEdgeFree(int v0, int v1) const;
-    bool isEntireEdgeFixed(int v0, int v1) const;
-    bool isOneVertexFixed(int v0, int v1) const;
+     bool isVertexFixed(int vert_idx) const;
+     bool isEntireFaceFixed(int v0, int v1, int v2) const;
+     bool isEntireEdgeFree(int v0, int v1) const;
+     bool isEntireEdgeFixed(int v0, int v1) const;
+     bool isOneVertexFixed(int v0, int v1) const;
 
-    // Determines if two edges share a vertex
-    bool edgesShareVertex(const std::pair<int, int>& edgei, const std::pair<int, int>& edgej) const;
-    bool edgesSharevertex(const int& e0v0, const int& e0v1, const int& e1v0, const int& e1v1) const;
-*/
+     // Determines if two edges share a vertex
+     bool edgesShareVertex(const std::pair<int, int>& edgei, const std::pair<int, int>& edgej) const;
+     bool edgesSharevertex(const int& e0v0, const int& e0v1, const int& e1v0, const int& e1v1) const;
+     */
 
     // Determines if a vertex and a face share a vertex
     bool vertexAndFaceShareVertex(const int& vertex, const int& face) const;
@@ -453,8 +453,9 @@ private:
     std::vector<double> m_face_radii;
 
     std::vector<double> m_masses;
+    std::vector<bool> m_collision_immune;
 
-    const GeometricData m_geodata;
+    GeometricData m_geodata;
 
     VecXd m_xn;
     VecXd m_xnp1;
@@ -494,7 +495,7 @@ private:
     std::vector<RodPenaltyForce*> m_implicit_pnlty_forces;
 
     int m_num_threads;
-    
+
     // Toggle self collisions on or off
     bool m_skipRodRodCollisions;
 

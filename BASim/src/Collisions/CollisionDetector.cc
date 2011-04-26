@@ -40,9 +40,10 @@ CollisionDetector::~CollisionDetector()
         delete *i;
 }
 
-void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cllsns)
+void CollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionType ctype)
 {
-    //    START_TIMER("CollisionDetector::getContinuousTimeCollisions");
+
+    m_ctype = ctype;
     m_collisions = &cllsns;
     m_collisions->clear();
     std::vector<BVHParallelizer*> steppers;
@@ -51,7 +52,7 @@ void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cll
 
     if (root.IsLeaf()) // Can't really call this a tree, can we?
     {
-        computeContinuousTimeCollisions(root, root);
+        computeCollisions(root, root);
         return;
     }
 
@@ -148,15 +149,109 @@ void CollisionDetector::getContinuousTimeCollisions(std::list<CTCollision*>& cll
 
 void CollisionDetector::updateContinuousTimeCollisions()
 {
-    for (std::list<CTCollision*>::iterator i = m_collisions->begin(); i != m_collisions->end(); i++)
+    for (std::list<Collision*>::iterator i = m_collisions->begin(); i != m_collisions->end(); i++)
         if (!(*i)->analyseCollision(m_time_step))
             m_collisions->erase(i--);
 }
 
-void CollisionDetector::getImplicitPenaltyCollisions(std::vector<EdgeEdgeProximityCollision>& edge_edge_collisions,
-        std::vector<VertexFaceProximityCollision>& vertex_face_collisions)
+/*
+ // Only vertex - face collisions are available.
+ void CollisionDetector::getImplicitPenaltyCollisions(std::list<Collision*>& cllsns)
+ {
+ m_collisions = &cllsns;
+ m_collisions->clear();
+
+ BVHNode& root = m_bvh.GetNode(0);
+ updateBoundingBox(root);
+
+ computeProximityCollisions(root, root);
+ }
+ */
+
+void CollisionDetector::computeCollisions(const BVHNode& node_a, const BVHNode& node_b)
 {
-    std::cerr << "\033[31mIMPLICIT PENALTY COLLISION DETECTION NOT IMPLEMENTED YET\033[0m"; // FIXME
+    // If the bounding volumes do not overlap, there are no possible collisions between their objects
+    if (!Intersect(node_a.BBox(), node_b.BBox()))
+        return;
+
+    // If both bounding volumes are leaves, add their contents to list potential collisions
+    if (node_a.IsLeaf() && node_b.IsLeaf())
+    {
+        if (&node_a != &node_b)
+        {
+            const uint32_t leaf_a_begin = node_a.LeafBegin();
+            const uint32_t leaf_a_end = node_a.LeafEnd();
+            const uint32_t leaf_b_begin = node_b.LeafBegin();
+            const uint32_t leaf_b_end = node_b.LeafEnd();
+
+            for (uint32_t i = leaf_a_begin; i < leaf_a_end; ++i)
+                for (uint32_t j = leaf_b_begin; j < leaf_b_end; ++j)
+                    appendIntersection(m_elements[i], m_elements[j]);
+        }
+
+    }
+
+    // If one bounding volume is a leaf, we must recurse on the other volume
+    else if (node_a.IsLeaf())
+    {
+        computeCollisions(node_a, m_bvh.GetNode(node_b.ChildIndex()));
+        computeCollisions(node_a, m_bvh.GetNode(node_b.ChildIndex() + 1));
+    }
+    else if (node_b.IsLeaf())
+    {
+        computeCollisions(m_bvh.GetNode(node_a.ChildIndex()), node_b);
+        computeCollisions(m_bvh.GetNode(node_a.ChildIndex() + 1), node_b);
+    }
+    else
+    {
+        computeCollisions(m_bvh.GetNode(node_a.ChildIndex()), m_bvh.GetNode(node_b.ChildIndex()));
+        computeCollisions(m_bvh.GetNode(node_a.ChildIndex() + 1), m_bvh.GetNode(node_b.ChildIndex()));
+        if (&node_a != &node_b) // We need only to explore one side of the diagonal
+            computeCollisions(m_bvh.GetNode(node_a.ChildIndex()), m_bvh.GetNode(node_b.ChildIndex() + 1));
+        computeCollisions(m_bvh.GetNode(node_a.ChildIndex() + 1), m_bvh.GetNode(node_b.ChildIndex() + 1));
+    }
+}
+
+void CollisionDetector::appendIntersection(const TopologicalElement* elem_a, const TopologicalElement* elem_b)
+{
+    const YAEdge* edge_a = dynamic_cast<const YAEdge*> (elem_a);
+    const YATriangle* triangle_a = dynamic_cast<const YATriangle*> (elem_a);
+    const YAEdge* edge_b = dynamic_cast<const YAEdge*> (elem_b);
+    const YATriangle* triangle_b = dynamic_cast<const YATriangle*> (elem_b);
+
+    switch (m_ctype)
+    {
+    case ContinuousTime:
+        if (edge_a && edge_b)
+            appendContinuousTimeIntersection(edge_a, edge_b);
+        else if (edge_a && triangle_b)
+            appendContinuousTimeIntersection(edge_a, triangle_b);
+        else if (triangle_a && edge_b)
+            appendContinuousTimeIntersection(triangle_a, edge_b);
+        else if (triangle_a && triangle_b)
+            appendContinuousTimeIntersection(triangle_a, triangle_b);
+        break;
+
+    case Proximity:
+        /*
+         if (edge_a && edge_b)
+         appendProximityIntersection(edge_a, edge_b);
+         else if (edge_a && triangle_b)
+         appendProximityIntersection(edge_a, triangle_b);
+         else if (triangle_a && edge_b)
+         appendProximityIntersection(triangle_a, edge_b);
+         else if (triangle_a && triangle_b)
+         appendProximityIntersection(triangle_a, triangle_b);
+         */
+        break;
+
+    case VertexFace:
+        if (edge_a && triangle_b)
+            appendVertexFaceIntersection(edge_a, triangle_b);
+        if (edge_b && triangle_a)
+            appendVertexFaceIntersection(edge_b, triangle_a);
+        break;
+    }
 }
 
 void CollisionDetector::updateBoundingBox(BVHNode& node)
@@ -184,64 +279,67 @@ void CollisionDetector::updateBoundingBox(BVHNode& node)
     }
 }
 
-void CollisionDetector::computeContinuousTimeCollisions(const BVHNode& node_a, const BVHNode& node_b)
-{
-    if (// (&node_a > &node_b) ||
-    (!Intersect(node_a.BBox(), node_b.BBox())))
-        return;
+/*
+ void CollisionDetector::computeContinuousTimeCollisions(const BVHNode& node_a, const BVHNode& node_b)
+ {
+ if (!Intersect(node_a.BBox(), node_b.BBox()))
+ return;
 
-    // If both nodes are leaves, intersect their contents
-    if (node_a.IsLeaf() && node_b.IsLeaf())
-    {
-        if (&node_a != &node_b)
-        {
-            const uint32_t leaf_a_begin = node_a.LeafBegin();
-            const uint32_t leaf_a_end = node_a.LeafEnd();
-            const uint32_t leaf_b_begin = node_b.LeafBegin();
-            const uint32_t leaf_b_end = node_b.LeafEnd();
+ // If both nodes are leaves, intersect their contents
+ if (node_a.IsLeaf() && node_b.IsLeaf())
+ {
+ if (&node_a != &node_b)
+ {
+ const uint32_t leaf_a_begin = node_a.LeafBegin();
+ const uint32_t leaf_a_end = node_a.LeafEnd();
+ const uint32_t leaf_b_begin = node_b.LeafBegin();
+ const uint32_t leaf_b_end = node_b.LeafEnd();
 
-            for (uint32_t i = leaf_a_begin; i < leaf_a_end; ++i)
-                for (uint32_t j = leaf_b_begin; j < leaf_b_end; ++j)
-                    appendContinuousTimeIntersection(m_elements[i], m_elements[j]);
-        }
-    }
-    // Else recurse on either the node that is not a leave, or both.
-    else if (node_a.IsLeaf())
-    {
-        computeContinuousTimeCollisions(node_a, m_bvh.GetNode(node_b.ChildIndex()));
-        computeContinuousTimeCollisions(node_a, m_bvh.GetNode(node_b.ChildIndex() + 1));
-    }
-    else if (node_b.IsLeaf())
-    {
-        computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex()), node_b);
-        computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex() + 1), node_b);
-    }
-    else
-    {
-        computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex()), m_bvh.GetNode(node_b.ChildIndex()));
-        computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex() + 1), m_bvh.GetNode(node_b.ChildIndex()));
-        if (&node_a != &node_b) // We need only to explore one side of the diagonal
-            computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex()), m_bvh.GetNode(node_b.ChildIndex() + 1));
-        computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex() + 1), m_bvh.GetNode(node_b.ChildIndex() + 1));
-    }
-}
+ for (uint32_t i = leaf_a_begin; i < leaf_a_end; ++i)
+ for (uint32_t j = leaf_b_begin; j < leaf_b_end; ++j)
+ appendContinuousTimeIntersection(m_elements[i], m_elements[j]);
+ }
+ }
+ // Else recurse on either the node that is not a leave, or both.
+ else if (node_a.IsLeaf())
+ {
+ computeContinuousTimeCollisions(node_a, m_bvh.GetNode(node_b.ChildIndex()));
+ computeContinuousTimeCollisions(node_a, m_bvh.GetNode(node_b.ChildIndex() + 1));
+ }
+ else if (node_b.IsLeaf())
+ {
+ computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex()), node_b);
+ computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex() + 1), node_b);
+ }
+ else
+ {
+ computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex()), m_bvh.GetNode(node_b.ChildIndex()));
+ computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex() + 1), m_bvh.GetNode(node_b.ChildIndex()));
+ if (&node_a != &node_b) // We need only to explore one side of the diagonal
+ computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex()), m_bvh.GetNode(node_b.ChildIndex() + 1));
+ computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex() + 1), m_bvh.GetNode(node_b.ChildIndex() + 1));
+ }
+ }
+ */
 
-void CollisionDetector::appendContinuousTimeIntersection(const TopologicalElement* elem_a, const TopologicalElement* elem_b)
-{
-    const YAEdge* edge_a = dynamic_cast<const YAEdge*> (elem_a);
-    const YATriangle* triangle_a = dynamic_cast<const YATriangle*> (elem_a);
-    const YAEdge* edge_b = dynamic_cast<const YAEdge*> (elem_b);
-    const YATriangle* triangle_b = dynamic_cast<const YATriangle*> (elem_b);
+/*
+ void CollisionDetector::appendContinuousTimeIntersection(const TopologicalElement* elem_a, const TopologicalElement* elem_b)
+ {
+ const YAEdge* edge_a = dynamic_cast<const YAEdge*> (elem_a);
+ const YATriangle* triangle_a = dynamic_cast<const YATriangle*> (elem_a);
+ const YAEdge* edge_b = dynamic_cast<const YAEdge*> (elem_b);
+ const YATriangle* triangle_b = dynamic_cast<const YATriangle*> (elem_b);
 
-    if (edge_a && edge_b)
-        appendContinuousTimeIntersection(edge_a, edge_b);
-    else if (edge_a && triangle_b)
-        appendContinuousTimeIntersection(edge_a, triangle_b);
-    else if (triangle_a && edge_b)
-        appendContinuousTimeIntersection(triangle_a, edge_b);
-    else if (triangle_a && triangle_b)
-        appendContinuousTimeIntersection(triangle_a, triangle_b);
-}
+ if (edge_a && edge_b)
+ appendContinuousTimeIntersection(edge_a, edge_b);
+ else if (edge_a && triangle_b)
+ appendContinuousTimeIntersection(edge_a, triangle_b);
+ else if (triangle_a && edge_b)
+ appendContinuousTimeIntersection(triangle_a, edge_b);
+ else if (triangle_a && triangle_b)
+ appendContinuousTimeIntersection(triangle_a, triangle_b);
+ }
+ */
 
 void CollisionDetector::appendContinuousTimeIntersection(const YAEdge* edge_a, const YAEdge* edge_b)
 {
@@ -249,7 +347,7 @@ void CollisionDetector::appendContinuousTimeIntersection(const YAEdge* edge_a, c
 
     EdgeEdgeCTCollision* edgeXedge = new EdgeEdgeCTCollision(m_geodata, edge_a, edge_b);
 
-    if (m_skip_rod_rod && edgeXedge->IsRodRod())
+    if ( (m_skip_rod_rod && edgeXedge->IsRodRod()) || edgeXedge->IsCollisionImmune())
     { // Detect rod-rod collisions and skip them.
         delete edgeXedge;
         return;
@@ -274,7 +372,7 @@ void CollisionDetector::appendContinuousTimeIntersection(int v_index, const YATr
     VertexFaceCTCollision* vertexXface = new VertexFaceCTCollision(m_geodata, v_index, triangle);
 
     // If vertex is fixed, if face is fixed, nothing to do
-    if (vertexXface->IsFixed())
+    if (vertexXface->IsFixed() || m_geodata.IsCollisionImmune(v_index))
     {
         delete vertexXface;
         return;
@@ -317,4 +415,19 @@ void CollisionDetector::appendContinuousTimeIntersection(const YATriangle* trian
     return;
 }
 
+void CollisionDetector::appendVertexFaceIntersection(const YAEdge* edge_a, const YATriangle* triangle)
+{
+    VertexFaceIntersection* vertexXface = new VertexFaceIntersection(m_geodata, edge_a, triangle);
+
+    if (vertexXface->analyseCollision())
+    {
+        m_collisions_mutex.Lock();
+        m_collisions->push_back(vertexXface);
+        m_collisions_mutex.Unlock();
+    }
+    else
+        delete vertexXface;
+
 }
+
+} // namespace BASim

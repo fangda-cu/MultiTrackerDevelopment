@@ -87,7 +87,7 @@ time_t g_rawtime;
 struct tm* g_timeinfo;
 
 // For dumping movies, etc
-Scalar fps = 100;
+Scalar fps = 200;
 double frame_period;
 int current_frame = 0;
 int steps_per_frame;

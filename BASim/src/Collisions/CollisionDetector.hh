@@ -14,9 +14,66 @@
 #include "../Threads/MultithreadedStepper.hh"
 #include "BVH.hh"
 #include <list>
+#include <set>
 
 namespace BASim
 {
+
+class IntPair
+{
+public:
+
+    IntPair(const int& i, const int& j)
+    {
+        m_i = std::min(i, j);
+        m_j = std::max(i, j);
+    }
+
+    bool operator==(const IntPair& rhs) const
+    {
+        assert(m_i <= m_j);
+        assert(rhs.m_i <= rhs.m_j);
+
+        return (m_i == rhs.m_i && m_j == rhs.m_j);
+    }
+
+    bool operator!=(const IntPair& rhs) const
+    {
+        assert(m_i <= m_j);
+        assert(rhs.m_i <= rhs.m_j);
+
+        return !(*this == rhs);
+    }
+
+    bool operator<(const IntPair& rhs) const
+    {
+        assert(m_i <= m_j);
+        assert(rhs.m_i <= rhs.m_j);
+
+        if (m_i != rhs.m_i)
+            return m_i < rhs.m_i;
+        else
+            return m_j < rhs.m_j;
+    }
+
+    int first() const
+    {
+        return m_i;
+    }
+    int second() const
+    {
+        return m_j;
+    }
+
+private:
+    int m_i;
+    int m_j;
+};
+
+enum CollisionType
+{
+    ContinuousTime = 0, Proximity, VertexFace
+};
 
 class CollisionDetector
 {
@@ -25,7 +82,9 @@ class CollisionDetector
     const double& m_time_step;
     bool m_skip_rod_rod;
     BVH m_bvh;
-    std::list<CTCollision*>* m_collisions;
+    std::list<Collision*>* m_collisions;
+    CollisionType m_ctype;
+    //    std::list<ProximityCollision*>* m_prox_collisions;
     threads::Mutex m_collisions_mutex;
     int m_num_threads;
 
@@ -37,13 +96,17 @@ public:
 
     virtual ~CollisionDetector();
 
-    void getContinuousTimeCollisions(std::list<CTCollision*>& cllsns);
+    void getContinuousTimeCollisions(std::list<Collision*>& cllsns);
 
-    void getImplicitPenaltyCollisions(std::vector<EdgeEdgeProximityCollision>& edge_edge_collisions,
-            std::vector<VertexFaceProximityCollision>& vertex_face_collisions);
+    void getImplicitPenaltyCollisions(std::list<Collision*>& cllsns);
+
+    void getVertexFaceIntersections(std::list<Collision*>& cllsns);
+
+    void getCollisions(std::list<Collision*>& cllsns, CollisionType ctype);
+
     void updateContinuousTimeCollisions();
-    
-    void skipRodRodCollisions( bool skipRodRodCollisions )
+
+    void skipRodRodCollisions(bool skipRodRodCollisions)
     {
         m_skip_rod_rod = skipRodRodCollisions;
     }
@@ -51,12 +114,19 @@ public:
     friend class BVHParallelizer;
 
 private:
-    // Compute the collisions that happen during the time step between elements in the subtrees node_a and node_b
-    void computeContinuousTimeCollisions(const BVHNode& node_a, const BVHNode& node_b);
-
     // Update the BVH tree starting from node, taking into account the evolution during the time step,
     // i.e. insert m_geodata.m_points+m_time_step*m_geodata.m_velocities.
     void updateBoundingBox(BVHNode& node);
+
+    // Proximity collision detection
+    void computeCollisions(const BVHNode& node_a, const BVHNode& node_b) ;
+
+    void appendVertexFaceIntersection(const YAEdge* edge, const YATriangle* triangle);
+
+    void appendIntersection(const TopologicalElement* obj_a, const TopologicalElement* obj_b) ;
+
+    // Compute the collisions that happen during the time step between elements in the subtrees node_a and node_b
+//    void computeContinuousTimeCollisions(const BVHNode& node_a, const BVHNode& node_b);
 
     // Determine if the collision happens; if so append the CTC to m_collisions.
     void appendContinuousTimeIntersection(const TopologicalElement* obj_a, const TopologicalElement* obj_b);
@@ -86,12 +156,13 @@ public:
     {
     }
 
-    ~BVHParallelizer() {
+    ~BVHParallelizer()
+    {
     }
 
     bool execute() const
     {
-        m_coldet.computeContinuousTimeCollisions(m_node_a, m_node_b);
+        m_coldet.computeCollisions(m_node_a, m_node_b);
 
         return true;
     }

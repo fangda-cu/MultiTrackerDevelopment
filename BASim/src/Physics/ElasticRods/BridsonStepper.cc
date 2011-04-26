@@ -9,6 +9,7 @@
 #include "BridsonStepper.hh"
 #include "../../Threads/MultithreadedStepper.hh"
 #include "../../Core/Timer.hh"
+#include "../../Collisions/Collision.hh"
 
 namespace BASim
 {
@@ -18,11 +19,11 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
         const double time, int num_threads) :
     m_num_dof(0), m_rods(rods), m_triangle_meshes(trimeshes), m_scripting_controllers(scripting_controllers),
             m_steppers(steppers), m_dt(dt), m_base_indices(), m_base_triangle_indices(), m_edges(), m_faces(),
-            m_vertex_radii(), m_edge_radii(), m_face_radii(), m_masses(),
-            m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_obj_start), m_respns_enbld(true), m_pnlty_enbld(true),
-            m_itrv_inlstc_enbld(true), m_num_inlstc_itrns(10), m_vrt_fc_pnlty(200.0), m_nan_enc(false), m_inf_enc(false),
-            m_lt0_enc(false), m_gt0_enc(false), m_collision_detector(NULL), m_obj_start(-1), m_t(time), m_rod_labels(),
-            m_implicit_pnlty_enbld(false), m_implicit_thickness(1.0), m_skipRodRodCollisions(true)
+            m_vertex_radii(), m_edge_radii(), m_face_radii(), m_masses(), m_collision_immune(),
+            m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start), m_respns_enbld(true),
+            m_pnlty_enbld(true), m_itrv_inlstc_enbld(true), m_num_inlstc_itrns(10), m_vrt_fc_pnlty(200.0), m_nan_enc(false),
+            m_inf_enc(false), m_lt0_enc(false), m_gt0_enc(false), m_collision_detector(NULL), m_obj_start(-1), m_t(time),
+            m_rod_labels(), m_implicit_pnlty_enbld(false), m_implicit_thickness(1.0), m_skipRodRodCollisions(true)
 {
 #ifdef DEBUG
     for( int i = 0; i < (int) m_rods.size(); ++i ) assert( m_rods[i] != NULL );
@@ -253,6 +254,10 @@ void BridsonStepper::prepareForExecution()
     m_collision_detector = new CollisionDetector(m_geodata, m_edges, m_faces, m_dt, m_skipRodRodCollisions, m_num_threads);
     std::cout << "Created CollisionDetector" << std::endl;
 
+    // for (std::vector<double>::const_iterator i = m_masses.begin(); i != m_masses.end(); i++)
+    //       m_collision_immune.push_back(*i == std::numeric_limits<double>::infinity());
+    m_collision_immune.resize(getNumVerts());
+
 }
 
 void BridsonStepper::setRodLabels(const std::vector<std::string>& rod_labels)
@@ -332,8 +337,8 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse()
     bool dependable_solve = true;
 
     // Detect possible continuous time collisions
-    std::list<CTCollision*> collisions;
-    m_collision_detector->getContinuousTimeCollisions(collisions);
+    std::list<Collision*> collisions;
+    m_collision_detector->getCollisions(collisions, ContinuousTime);
 
     // Iterativly apply inelastic impulses
     int itr;
@@ -345,26 +350,28 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse()
         collisions.sort(CompareTimes);
         while (!collisions.empty())
         {
-            CTCollision* collision = collisions.front();
+            CTCollision* collision = dynamic_cast<CTCollision*> (collisions.front());
             // collision->Print(std::cerr);
             collisions.pop_front();
-            exertCompliantInelasticImpulse(collision);
+            if (collision)
+                exertCompliantInelasticImpulse(collision);
             delete collision;
             m_collision_detector->updateContinuousTimeCollisions();
         }
-        m_collision_detector->getContinuousTimeCollisions(collisions);
+        m_collision_detector->getCollisions(collisions, ContinuousTime);
     }
     // Just in case we haven't emptied the collisions but exited when itr == m_num_inlstc_itrns
-    for (std::list<CTCollision*>::iterator i = collisions.begin(); i != collisions.end(); i++)
+    for (std::list<Collision*>::iterator i = collisions.begin(); i != collisions.end(); i++)
         delete *i;
 
     if (itr > 1)
         std::cerr << "\033[33mIterated collision response " << itr << " times\033[0m" << std::endl;
 
-    if (itr == m_num_inlstc_itrns) {
+    if (itr == m_num_inlstc_itrns)
+    {
         std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Exceeded maximum " << "number of inelastic iterations "
                 << m_num_inlstc_itrns << ". Time of warning " << m_t << "." << std::endl;
-	dependable_solve = false;
+        dependable_solve = false;
     }
 
 #ifdef TIMING_ON
@@ -529,11 +536,7 @@ bool BridsonStepper::adaptiveExecute(double dt)
 bool BridsonStepper::step(bool check_explosion)
 {
 
-
-
-  check_explosion = false;
-
-
+    check_explosion = false;
 
     // BEGIN TEMP
     //for( size_t i = 0; i < m_rods.size(); ++i ) if( m_t >= 3.79 ) std::cout << i << ": " << computeMaxEdgeAngle( *m_rods[i] ) << std::endl;
@@ -570,6 +573,24 @@ bool BridsonStepper::step(bool check_explosion)
     // Track whether or not this solve succeeds
     bool dependable_solve = true;
 
+    // Find the initial vertex-face intersections and mark them collision-immune
+    std::list<Collision*> collisions;
+    m_collision_detector->getCollisions(collisions, VertexFace);
+    for (std::vector<bool>::iterator i = m_collision_immune.begin(); i != m_collision_immune.end(); i++)
+        *i = false;
+    while (!collisions.empty())
+    {
+        VertexFaceIntersection* intersection = dynamic_cast<VertexFaceIntersection*> (collisions.front());
+        collisions.pop_front();
+
+        if (intersection)
+        {
+            m_collision_immune[intersection->v0] = true;
+            m_collision_immune[intersection->v1] = true;
+            std::cerr << "Vertices " << intersection->v0 << " and " << intersection->v1 << " have been marked collision-free\n";
+        }
+    }
+
     // Step rods forward ignoring collisions
     START_TIMER("BridsonStepperDynamics");
 
@@ -592,9 +613,10 @@ bool BridsonStepper::step(bool check_explosion)
 
     // Launch num_threads threads which will execute all elements of m_steppers.
     MultithreadedStepper<std::vector<RodTimeStepper*> > multithreaded_stepper(m_steppers, 4);//m_num_threads);
-    if (!multithreaded_stepper.Execute()) {
-      dependable_solve = false;
-      std::cout << "Dynamic step is not dependable!" << std::endl;
+    if (!multithreaded_stepper.Execute())
+    {
+        dependable_solve = false;
+        std::cout << "Dynamic step is not dependable!" << std::endl;
     }
 
     STOP_TIMER("BridsonStepperDynamics");
@@ -618,11 +640,13 @@ bool BridsonStepper::step(bool check_explosion)
 
     //if( m_pnlty_enbld ) executePenaltyResponse();
     START_TIMER("BridsonStepperResponse");
-    if (m_itrv_inlstc_enbld && m_num_inlstc_itrns > 0) {
-      if (!executeIterativeInelasticImpulseResponse()) {
-	dependable_solve = false;
-	std::cout << "Inelastic impulses are not dependable!" << std::endl;
-      }
+    if (m_itrv_inlstc_enbld && m_num_inlstc_itrns > 0)
+    {
+        if (!executeIterativeInelasticImpulseResponse())
+        {
+            dependable_solve = false;
+            std::cout << "Inelastic impulses are not dependable!" << std::endl;
+        }
     }
     STOP_TIMER("BridsonStepperResponse");
 
@@ -677,7 +701,7 @@ bool BridsonStepper::step(bool check_explosion)
         // Compute the total end of timestep force
         double endforce = computeTotalForceNorm();
 
-	std::cout << "Checking for explosions..." << std::endl;
+        std::cout << "Checking for explosions..." << std::endl;
 
         assert(startforce >= 0.0);
         assert(endforce >= 0.0);
@@ -730,7 +754,7 @@ bool BridsonStepper::step(bool check_explosion)
     //    Timer::getTimer("Collision detector").report();
 
     std::cout << "This step is " << (dependable_solve ? "" : "NOT") << " dependable." << std::endl;
-	 
+
     return dependable_solve;
 }
 
@@ -926,8 +950,6 @@ void BridsonStepper::restoreResponses(std::vector<ElasticRod*>& rods, const VecX
             if (!m_rods[i]->getBoundaryCondition()->isVertexScripted(j))
                 rods[i]->setResponse(j, responses.segment<3> (m_base_indices[i] + 3 * j));
 }
-
-
 
 bool BridsonStepper::isRodVertex(int vert) const
 {
@@ -2142,7 +2164,7 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEd
     for (int i = 0; i < numconstraints; ++i)
         for (int j = 0; j < numconstraints; ++j)
             lglhs(i, j) = posnn[i].dot(posnntilde[j]);
-    //  assert(approxSymmetric(lglhs, 1.0e-6)); // FIXME: why is this failing?
+    assert(approxSymmetric(lglhs, 1.0e-6)); // FIXME: why is this failing?
 
     Eigen::VectorXd lgrhs(numconstraints);
 #ifdef DEBUG
@@ -2316,27 +2338,39 @@ void BridsonStepper::detectVertexFaceImplicitPenaltyCollisions(const VecXd& x,
 
 void BridsonStepper::executeImplicitPenaltyResponse()
 {
-    // Detect possible "proximity" collisions based on pre-step positions
-    std::vector<EdgeEdgeProximityCollision> edge_edge_collisions;
-    std::vector<VertexFaceProximityCollision> vertex_face_collisions;
-    m_collision_detector->getImplicitPenaltyCollisions(edge_edge_collisions, vertex_face_collisions);
+    // Detect proximity collisions
+    std::list<Collision*> collisions;
+    m_collision_detector->getCollisions(collisions, Proximity);
 
-    std::vector<VertexFaceImplicitPenaltyCollision> vertex_face_for_real;
-    detectVertexFaceImplicitPenaltyCollisions(m_xn, vertex_face_collisions, vertex_face_for_real);
+    // Do something with them.
+    abort();
 
-    // Add penalty forces
-    //  exertImplicitPenalty( vertex_face_for_real, m_vnphalf );
-    for (int i = 0; i < (int) vertex_face_for_real.size(); i++)
-    {
-        int rod_id = getContainingRod(vertex_face_for_real[i].v0);
+    /*
+     // Detect possible "proximity" collisions based on pre-step positions
+     std::vector<EdgeEdgeProximityCollision> edge_edge_collisions;
+     std::vector<VertexFaceProximityCollision> vertex_face_collisions;
+     m_collision_detector->getImplicitPenaltyCollisions(edge_edge_collisions, vertex_face_collisions);
 
-        if (rod_id >= 0)
-        {
-            int v_id = vertex_face_for_real[i].v0 - m_base_indices[rod_id] / 3;
 
-            m_implicit_pnlty_forces[rod_id]->addRodPenaltyForce(v_id, vertex_face_for_real[i]);
-        }
-    }
+     std::vector<VertexFaceImplicitPenaltyCollision> vertex_face_for_real;
+     detectVertexFaceImplicitPenaltyCollisions(m_xn, vertex_face_collisions, vertex_face_for_real);
+     */
+
+    /*
+     // Add penalty forces
+     //  exertImplicitPenalty( vertex_face_for_real, m_vnphalf );
+     for (int i = 0; i < (int) vertex_face_for_real.size(); i++)
+     {
+     int rod_id = getContainingRod(vertex_face_for_real[i].v0);
+
+     if (rod_id >= 0)
+     {
+     int v_id = vertex_face_for_real[i].v0 - m_base_indices[rod_id] / 3;
+
+     m_implicit_pnlty_forces[rod_id]->addRodPenaltyForce(v_id, vertex_face_for_real[i]);
+     }
+     }
+     */
 }
 
 void BridsonStepper::enableImplicitPenaltyImpulses()

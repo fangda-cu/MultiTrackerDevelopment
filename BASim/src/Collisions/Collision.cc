@@ -12,9 +12,60 @@ namespace BASim
 {
 
 /**
+ * Class VertexFaceIntersection
+ */
+bool VertexFaceIntersection::analyseCollision(double)
+{
+    const Vec3d& p = m_geodata.GetPoint(v0);
+    const Vec3d& pf0 = m_geodata.GetPoint(f0);
+    const Vec3d& pf1 = m_geodata.GetPoint(f1);
+    const Vec3d& pf2 = m_geodata.GetPoint(f2);
+
+    const Vec3d vp = m_geodata.GetPoint(v1) - p;
+    const Vec3d vf0;
+    const Vec3d vf1;
+    const Vec3d vf2;
+
+    std::vector<double> times;
+    std::vector<double> errors;
+    getCoplanarityTimes(p, pf0, pf1, pf2, p + 1.0 * vp, pf0 + 1.0 * vf0, pf1 + 1.0 * vf1, pf2 + 1.0 * vf2, times, errors);
+    assert(times.size() == errors.size());
+
+    for (size_t j = 0; j < times.size(); ++j)
+    {
+        //   if (!isProperCollisionTime(times[j]))
+
+        double dtime = times[j] * 1.0;
+
+        // TODO: Use barycentric coordinates or point-triangle closest point < epsilon here? closest point < epsilon really just extends the triangle a little bit.
+        // Determine if the collision actually happens
+        const Vec3d& pcol = p + dtime * vp;
+        const Vec3d& f0col = pf0 + dtime * vf0;
+        const Vec3d& f1col = pf1 + dtime * vf1;
+        const Vec3d& f2col = pf2 + dtime * vf2;
+
+        Vec3d cp = ClosestPtPointTriangle(pcol, f0col, f1col, f2col);
+
+        // If, when they are coplanar, the objects are sufficiently close, register a collision
+        if ((pcol - cp).squaredNorm() < 1.0e-12)
+        {
+            s = times[j];
+
+            Barycentric(f0col, f1col, f2col, pcol, u, v, w);
+            // Barycentric coords could be outside of [0,1] right now because we've extended the triangles a little bit
+            assert(approxEq(u + v + w, 1.0));
+
+            m_analysed = true;
+
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * Class EdgeEdgeCTCollision
  */
-
 bool EdgeEdgeCTCollision::analyseCollision(double time_step)
 {
     const Vec3d& p0 = m_geodata.GetPoint(e0_v0);
@@ -33,8 +84,9 @@ bool EdgeEdgeCTCollision::analyseCollision(double time_step)
     // If both edges are motionless, no collision. Shouldn't we catch that earlier?
     if ((vp0.norm() == 0) && (vq0.norm() == 0) && (vp1.norm() == 0) && (vq1.norm() == 0))
         return false;
-        
-    if (IsFixed()) return false;
+
+    if (IsFixed())
+        return false;
 
     std::vector<double> times;
     std::vector<double> errors;
@@ -145,7 +197,6 @@ std::ostream& operator<<(std::ostream& os, const EdgeEdgeCTCollision& eecol)
 /**
  * Class VertexFaceCTCollision
  */
-
 bool VertexFaceCTCollision::analyseCollision(double time_step)
 {
     const Vec3d& p = m_geodata.GetPoint(v0);
