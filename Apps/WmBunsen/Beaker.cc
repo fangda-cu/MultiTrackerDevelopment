@@ -313,7 +313,7 @@ void Beaker::addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
         m_world->addObject( m_rodDataMap[ i_rodGroupIndex ]->elasticRod( r ) );
         
         cerr << "Adding rod time stepper " << r << " to world\n";
-        m_rodTimeSteppers.push_back( m_rodDataMap[ i_rodGroupIndex ]->stepper( r ) );              
+        m_rodTimeSteppers.push_back( m_rodDataMap[ i_rodGroupIndex ]->stepper( r ) );
     }
     
     if ( !areSimulatingAnyRods )
@@ -341,6 +341,17 @@ void Beaker::addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
     m_bridsonStepper = new BridsonStepper( m_rods, m_triangleMeshes, m_scriptingControllers, 
                                            m_rodTimeSteppers, (1.0/24.0/10.0), 0.0 );
     m_world->addController( m_bridsonStepper );
+
+
+    // For convenience, give the RodData a pointer to bridsonStepper
+    for ( int r=0; r<numRods; r++ )
+    {
+        if ( !m_rodDataMap[ i_rodGroupIndex ]->shouldSimulateRod( r ) )
+            continue;
+            
+        m_rodDataMap[ i_rodGroupIndex ]->setBridsonStepperOnAllRodData( m_bridsonStepper );
+    }
+    
 
    /* delete m_volumetricCollisions;
     
