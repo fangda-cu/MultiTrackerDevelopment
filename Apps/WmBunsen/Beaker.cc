@@ -429,13 +429,16 @@ void Beaker::setupRodTimeStepperForSubStep( WmFigRodGroup* i_pRodGroup, const in
             continue;
         }
         
+        // We don't need to do this any more as BridsonStepper takes care
+        // of the setting the timestep in rodTimeStepper's as it basically
+        // owns them
+        /*
         RodTimeStepper* rodTimeStepper = i_pRodGroup->stepper( r );
 
-        // Setup Rod collision time stepper before we do any work
-        //rodTimeStepper->shouldDoCollisions( i_collisionsEnabled );
         rodTimeStepper->setTimeStep( getDt() );
         //rodTimeStepper->setCollisionMeshesMap( &m_collisionMeshMap );
         //rodTimeStepper->setClumping( m_isClumpingEnabled, m_clumpingCoefficient );
+         * */
 
         BASim::ElasticRod* rod = i_pRodGroup->elasticRod( r );
 
@@ -498,8 +501,8 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     Scalar dt_save = getDt();
     //Scalar startTime = getTime();
     //Scalar currentTime = getTime();
-    //Scalar targetTime = currentTime + i_stepSize;
-    //setDt( i_stepSize/i_subSteps );
+    Scalar targetTime = getTime() + i_stepSize;
+    setDt( i_stepSize / i_subSteps );
     
     // Initialise all the timers to 0
     
@@ -528,8 +531,10 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         // Make sure we don't step past the end of this frame, depending on
         // the size of dt, we may need to take a smaller step so we land exactly
         // on the frame boundary.
-//        if ( (targetTime - currentTime) < getDt() + SMALL_NUMBER )
-  //          setDt( targetTime - currentTime );
+        if ( ( targetTime - getTime() ) < getDt() + SMALL_NUMBER )
+        {
+            setDt( targetTime - getTime() );        
+        }
 
         float timeTaken;
         Scalar interpolateFactor = ( (double)( s + 1 ) / i_subSteps );

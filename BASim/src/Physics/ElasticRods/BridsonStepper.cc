@@ -449,6 +449,16 @@ void BridsonStepper::setDt(double dt)
         m_scripting_controllers[i]->setDt(dt);
 }
 
+double BridsonStepper::getDt()
+{
+    return m_dt;
+}
+
+double BridsonStepper::getTime()
+{
+    return m_t;
+}
+
 bool BridsonStepper::nonAdaptiveExecute(double dt)
 {
     setDt(dt);
