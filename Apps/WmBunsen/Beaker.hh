@@ -95,27 +95,30 @@ public:
     
     // Accessor functions
     
+    // TODO - remove world as it's not needed any more I don't think!
+    
     const World& getWorld() const { return *m_world; }
     World& getWorld() { return *m_world; }
     
-    const Scalar& getTime() const
+    Scalar getTime() const
     {
-        return m_world->property( m_timeHandle );
+        //return m_world->property( m_timeHandle );
+        // 
+        return m_bridsonStepper->getTime();
+    }
+    
+    Scalar getDt() const
+    {
+        //return m_world->property( m_dtHandle );
+        return m_bridsonStepper->getDt();
     }
 
-    void setTime( const Scalar& time )
+    void setDt( const Scalar& i_dt )
     {
-        m_world->property( m_timeHandle ) = time;
-    }
-
-    const Scalar& getDt() const
-    {
-        return m_world->property( m_dtHandle );
-    }
-
-    void setDt( const Scalar& dt )
-    {
-        m_world->property( m_dtHandle ) = dt;
+        // Does setting this property on the world mean anything?
+        m_world->property( m_dtHandle ) = i_dt;
+        
+        m_bridsonStepper->setDt( i_dt );
     }
 
     const BASim::Vec3d& getGravity() const

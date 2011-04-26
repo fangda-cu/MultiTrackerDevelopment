@@ -61,7 +61,6 @@ bool WmFigMeshController::execute()
           //  m_nextMesh->getVertex( *nextMeshItr ) * interpolation; 
         
         //m_currentMesh->getVertex( *currentMeshItr ) = m_nextMesh->getVertex( *nextMeshItr );
-        
     }
 
     return true;

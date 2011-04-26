@@ -184,13 +184,12 @@ void RodData::updateBoundaryConditions()
         // ??? Benchmark this and check what is going on.
         boundary->releaseVertex( v );
     }
-    
 
     int b = 0;
 
     for ( KinematicEdgeDataMap::iterator it = kinematicEdgeDataMap.begin();
             it != kinematicEdgeDataMap.end();
-            it++ )
+            it++ )                            
     {
         // First make sure these vertices are marked as fixed on the rod
         // or they'll get taken into account on collision calculations.
@@ -199,6 +198,8 @@ void RodData::updateBoundaryConditions()
         //m_rod->fixEdge( edgeNum );
         //m_rod->fixVert( edgeNum );
         //m_rod->fixVert( edgeNum + 1 );
+
+        m_stepper->getTimeStep();
 
         boundary->setDesiredVertexPosition( edgeNum, currVertexPositions[ edgeNum ] );
         boundary->setDesiredVertexPosition( edgeNum + 1, currVertexPositions[ edgeNum + 1 ]);
