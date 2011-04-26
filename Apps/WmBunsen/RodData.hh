@@ -11,6 +11,7 @@
 #include <weta/Wfigaro/Physics/ElasticRods/RodUtils.hh>
 #include <weta/Wfigaro/Render/RodRenderer.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodMayaForces.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/BridsonStepper.hh>
 #else
 #include <BASim/src/Physics/ElasticRods/ElasticRod.hh>
 #include <BASim/src/Physics/ElasticRods/AnisotropicRod.hh>
@@ -360,6 +361,11 @@ public:
             m_rodMayaForces->resetExternalMayaForces();
         }
     }
+    
+    void setBridsonStepper( BridsonStepper* i_bridsonStepper )
+    {
+        m_bridsonStepper = i_bridsonStepper;
+    }
 
 //private:
     
@@ -420,6 +426,8 @@ public:
     bool m_enabled;
     
     RodMayaForces* m_rodMayaForces;
+    
+    BridsonStepper* m_bridsonStepper;
 };
 
 #endif

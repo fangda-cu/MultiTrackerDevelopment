@@ -58,7 +58,11 @@ void RodBoundaryCondition::setDesiredVertexPosition(int vertIdx, double t, const
   Vec3d x0 = m_rod.property(m_desiredPositions)[vertIdx];
   Vec3d v0 = m_rod.property(m_desiredVelocities)[vertIdx];
 
-  return x0 + (t-t0)*v0;
+  Vec3d result = x0 + (t-t0)*v0;
+
+  std::cout << "RodBoundaryCondition::getDesiredVertexPosition: vertIdx = " << vertIdx << " t = " << t << " t0 = " << t0 << " x0 = " << x0 << " v0 = " << v0 << " result = " << result;
+
+  return result;
 }
 
 void RodBoundaryCondition::releaseVertex(int vertIdx)

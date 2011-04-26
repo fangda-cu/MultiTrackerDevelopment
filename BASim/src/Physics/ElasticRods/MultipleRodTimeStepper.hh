@@ -666,6 +666,7 @@ public:
         for (int k = 0; k < 3; ++k) 
         {
           indices[base_nb] = base_idx + m_rods[i]->vertIdx(verts[j], k);
+	  std::cout << "MultipleRodTimeStepper is calling RodBoundaryCondition" << std::endl;
           desired[base_nb] = m_rods[i]->getBoundaryCondition()->getDesiredVertexPosition(verts[j], getTime())[k];
           ++base_nb;
         }

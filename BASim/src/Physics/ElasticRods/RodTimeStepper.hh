@@ -437,6 +437,7 @@ public:
     for (size_t i = 0; i < verts.size(); ++i) {
       for (int k = 0; k < 3; ++k) {
         indices[3 * i + k] = m_rod.vertIdx(verts[i], k);
+	std::cout << "RodTimeStepper is calling RodBoundaryCondition at getTime() = " << getTime() << std::endl;
         desired[3 * i + k]
           = m_rod.getBoundaryCondition()->getDesiredVertexPosition(verts[i], getTime())[k];
           //= m_boundaryCondition->getDesiredVertexPosition(verts[i])[k];

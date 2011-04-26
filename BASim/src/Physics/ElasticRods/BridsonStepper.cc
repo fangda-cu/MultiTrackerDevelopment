@@ -472,6 +472,8 @@ bool BridsonStepper::nonAdaptiveExecute(double dt)
 
 bool BridsonStepper::adaptiveExecute(double dt)
 {
+  std::cout << "BridsonStepper::adaptiveExecute starting with m_t = " << m_t << " dt = " << dt << std::endl;
+
     // Backup all rods
     std::vector<MinimalRodStateBackup> rodbackups(m_rods.size());
     for (int i = 0; i < (int) m_rods.size(); ++i)
@@ -669,6 +671,7 @@ bool BridsonStepper::step(bool check_explosion)
             // If that vertex has a prescribed position
             if( boundary->isVertexScripted(j) )
             {
+	      std::cout << "BridsonTimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
                 Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
                 Vec3d actualvalue = m_xnp1.segment<3>(rodbase+3*j);
                 assert( approxEq(desiredposition, actualvalue, 1.0e-6) );
@@ -892,6 +895,7 @@ void BridsonStepper::extractPositions(const std::vector<ElasticRod*>& rods, cons
         // For each vertex of the current rod, if that vertex has a prescribed position
         for( int j = 0; j < m_rods[i]->nv(); ++j ) if( boundary->isVertexScripted(j) )
         {
+	  std::cout << "BridsonTimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
             Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
             Vec3d actualvalue = positions.segment<3>(rodbase+3*j);
             assert( approxEq(desiredposition, actualvalue, 1.0e-6) );
