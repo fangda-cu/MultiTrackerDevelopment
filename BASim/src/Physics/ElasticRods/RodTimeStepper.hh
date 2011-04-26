@@ -75,6 +75,7 @@ public:
 
   void setTime(Scalar time)
   {
+    std::cout << "Setting time in RodTimeStepper to be " << time  << std::endl;
     m_diffEqSolver->setTime(time);
   }
 

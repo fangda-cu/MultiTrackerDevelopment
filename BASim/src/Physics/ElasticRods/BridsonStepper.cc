@@ -453,7 +453,8 @@ void BridsonStepper::setDt(double dt)
 void BridsonStepper::setTime(double time)
 {
     m_t = time;
-    
+    std::cout << "settingTime in BridsonStepper to be " << m_t << std::endl;
+
     // Set the time for the rod controllers
     for (int i = 0; i < (int) m_steppers.size(); ++i)
         m_steppers[i]->setTime(m_t);

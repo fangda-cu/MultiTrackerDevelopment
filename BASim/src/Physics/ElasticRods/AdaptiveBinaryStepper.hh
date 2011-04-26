@@ -69,6 +69,13 @@ public:
     std::cout << "AdaptiveBinaryStepper::getTime() = " << t << std::endl;
     return t;
   }
+
+  virtual void setTime(const double time)
+  {
+    std::cout << "Setting time in AdaptiveBinaryStepper to be " << time << std::endl;
+    m_stepper->setTime(time);
+    RodTimeStepper::setTime(time);
+  }
   
   bool execute()
   {

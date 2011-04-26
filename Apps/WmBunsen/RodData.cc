@@ -31,28 +31,27 @@ m_rodMayaForces( NULL ), m_bridsonStepper( NULL )
       // If Adaptive Time Stepping is used,
 	    if ( 1 )
         {
-		    RodTimeStepper* stepper = new RodTimeStepper( *m_rod );
-		    stepper->setDiffEqSolver( i_solverType );
+	    RodTimeStepper* stepper = new RodTimeStepper( *m_rod );
+	    stepper->setDiffEqSolver( i_solverType );
 	    
-		    // These get deleted by RodTimeStepper
-		    stepper->addExternalForce( new RodMassDamping( m_massDamping ) );
+	    // These get deleted by RodTimeStepper
+            stepper->addExternalForce( new RodMassDamping( m_massDamping ) );
 		    
-		    if ( i_gravity.norm() > 0)
-		    {
+	    if ( i_gravity.norm() > 0)
+	    {
                 stepper->addExternalForce( new RodGravity( i_gravity ) );
                 m_gravity = i_gravity;
-		    }    
+	    }    
             
             // Add force class that we will use to pass in forces from Maya fields
             m_rodMayaForces = new RodMayaForces( m_rod );
             stepper->addExternalForce( m_rodMayaForces );
 
-		    AdaptiveBinaryStepper* adpstep = new AdaptiveBinaryStepper( m_rod, stepper );
-		    //m_steppers.push_back(adpstep);
-	    
-            m_stepper = adpstep;
-		   // m_stepper = new RodCollisionTimeStepper( adpstep, m_rod );        
-        
+	    m_stepper = stepper;
+
+	    // AdaptiveBinaryStepper* adpstep = new AdaptiveBinaryStepper( m_rod, stepper );
+            //m_stepper = adpstep;
+
             // REVERSE HAIRDO
             if ( i_doReverseHairdo )
             {
@@ -62,20 +61,20 @@ m_rodMayaForces( NULL ), m_bridsonStepper( NULL )
         }
         else
 	    {
-		    RodTimeStepper* stepper = new RodTimeStepper( *m_rod );
-		    stepper->setDiffEqSolver( i_solverType );
+	        RodTimeStepper* stepper = new RodTimeStepper( *m_rod );
+		stepper->setDiffEqSolver( i_solverType );
 	    
-		    // These get deleted by RodTimeStepper
-		    stepper->addExternalForce( new RodMassDamping( m_massDamping ) );
+		// These get deleted by RodTimeStepper
+		stepper->addExternalForce( new RodMassDamping( m_massDamping ) );
 		    
-		    if ( i_gravity.norm() > 0)
-		    {
-                stepper->addExternalForce( new RodGravity( i_gravity ) );
-                m_gravity = i_gravity;
-		    }
-	    
-		    //m_stepper = new RodCollisionTimeStepper( stepper, m_rod );        
-            m_stepper = stepper;
+		if ( i_gravity.norm() > 0)
+		{
+		    stepper->addExternalForce( new RodGravity( i_gravity ) );
+		    m_gravity = i_gravity;
+		}
+	        
+                //m_stepper = new RodCollisionTimeStepper( stepper, m_rod );        
+	        m_stepper = stepper;
 	    }
     }
     
