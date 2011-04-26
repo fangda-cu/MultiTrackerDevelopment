@@ -524,7 +524,24 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
     // We should alter if self collisions are on or off here but they can only be changed
     // when we create bridsonStepper at time == startTime.
-
+    
+    // Interpolate fixed vertex positions and set timestep
+    //
+    //timeval timer;
+    //startTimer(timer);
+    for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
+      {
+	WmFigRodGroup* pRodGroup = rdmItr->second;
+	int numRods = pRodGroup->numberOfRods();
+	m_numRods += numRods;
+	
+	//pRodGroup->updateCurrentVertexPositions( interpolateFactor ); 
+	pRodGroup->updateAllBoundaryConditions();                                   
+      }
+    //timeTaken = stopTimer( timer );
+    //frameTime += timeTaken;
+    //m_vertexInterpolationTime += timeTaken;
+    
     for ( int s=0; s<i_subSteps; s++ )
     {
         //cout << "\nframe "<<24*currentTime<<", substep " << s << " / " << i_subSteps << endl;
@@ -541,23 +558,6 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
         float timeTaken;
         Scalar interpolateFactor = ( (double)( s + 1 ) / i_subSteps );
         
-        // Interpolate fixed vertex positions and set timestep
-        //
-        timeval timer;
-        startTimer(timer);
-        for ( RodDataMapIterator rdmItr  = m_rodDataMap.begin(); rdmItr != m_rodDataMap.end(); ++rdmItr )
-        {
-            WmFigRodGroup* pRodGroup = rdmItr->second;
-            int numRods = pRodGroup->numberOfRods();
-            m_numRods += numRods;
-
-            pRodGroup->updateCurrentVertexPositions( interpolateFactor );
-            pRodGroup->updateAllBoundaryConditions();                                   
-        }
-        timeTaken = stopTimer( timer );
-        frameTime += timeTaken;
-        m_vertexInterpolationTime += timeTaken;
-
         m_world->execute();
     }
     // restore dt

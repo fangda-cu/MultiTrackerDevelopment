@@ -33,8 +33,7 @@ public:
   #ifdef TIMING_ON
     IntStatTracker::getIntTracker("ADAPTIVE_STEPS_NEEDED",0);
     DoubleStatTracker::getDoubleTracker("MIN_TIME_STEP_ENCOUNTERED",std::numeric_limits<double>::infinity());
-  #endif
-    
+  #endif    
   }
 
   virtual ~AdaptiveBinaryStepper()
@@ -63,6 +62,13 @@ public:
     return m_stepper->getTimeStep();
   }
 
+
+  Scalar getTime() const
+  {
+    double t = m_stepper->getTime();
+    std::cout << "AdaptiveBinaryStepper::getTime() = " << t << std::endl;
+    return t;
+  }
   
   bool execute()
   {

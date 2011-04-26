@@ -80,6 +80,8 @@ public:
 
   Scalar getTime() const
   {
+    double t = m_diffEqSolver->getTime();
+    std::cout << "RotTimeStepper::getTime() = " << t << std::endl;
     return m_diffEqSolver->getTime();
   }
 

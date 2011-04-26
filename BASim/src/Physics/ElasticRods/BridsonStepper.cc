@@ -457,7 +457,8 @@ double BridsonStepper::getDt()
 
 double BridsonStepper::getTime()
 {
-    return m_t;
+  std::cout << "BridsonStepper::getTime() = " << m_t << std::endl;
+  return m_t;
 }
 
 bool BridsonStepper::nonAdaptiveExecute(double dt)

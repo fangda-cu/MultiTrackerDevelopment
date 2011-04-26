@@ -199,10 +199,27 @@ void RodData::updateBoundaryConditions()
         //m_rod->fixVert( edgeNum );
         //m_rod->fixVert( edgeNum + 1 );
 
-        m_stepper->getTimeStep();
+	double dt = 1./24.;
 
-        boundary->setDesiredVertexPosition( edgeNum, currVertexPositions[ edgeNum ] );
-        boundary->setDesiredVertexPosition( edgeNum + 1, currVertexPositions[ edgeNum + 1 ]);
+	std::cout << "updateBoundaryConditions: " << " dt = " << dt << " m_stepper->getTime() = " 
+		  << m_stepper->getTime() << " prevPos["<<edgeNum<<"] = " << prevVertexPositions[edgeNum] 
+		  << " nextPos["<<edgeNum<<"] = " << nextVertexPositions[edgeNum] << std::endl;
+
+	std::cout << "updateBoundaryConditions: " << " dt = " << dt << " m_stepper->getTime() = " 
+		  << m_stepper->getTime() << " prevPos["<<edgeNum+1<<"] = " << prevVertexPositions[edgeNum+1] 
+		  << " nextPos["<<edgeNum+1<<"] = " << nextVertexPositions[edgeNum+1] << std::endl;
+
+        boundary->setDesiredVertexPosition( edgeNum, m_stepper->getTime(), prevVertexPositions[edgeNum], 
+					    (nextVertexPositions[edgeNum]-prevVertexPositions[edgeNum])/dt );
+
+        boundary->setDesiredVertexPosition( edgeNum + 1, m_stepper->getTime(), 
+					    prevVertexPositions[edgeNum+1],
+					    (nextVertexPositions[edgeNum+1]-prevVertexPositions[edgeNum+1])/dt );
+
+        // m_stepper->getTimeStep();
+
+        // boundary->setDesiredVertexPosition( edgeNum, currVertexPositions[ edgeNum ] );
+        // boundary->setDesiredVertexPosition( edgeNum + 1, currVertexPositions[ edgeNum + 1 ]);
         
         // js - TO BE DELETED
         // i don't want to simulate when exporting positions 
