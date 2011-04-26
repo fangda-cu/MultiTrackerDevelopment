@@ -290,6 +290,8 @@ public:
         return (int) (m_triangle_meshes.size());
     }
     ;
+    
+    void setTime(double time);
 
     // TODO: Move these to some kind of automated test suite
     //void testCoplanarityTime();

@@ -442,6 +442,19 @@ void BridsonStepper::setDt(double dt)
         m_scripting_controllers[i]->setDt(dt);
 }
 
+void BridsonStepper::setTime(double time)
+{
+    m_t = time;
+    
+    // Set the time for the rod controllers
+    for (int i = 0; i < (int) m_steppers.size(); ++i)
+        m_steppers[i]->setTime(m_t);
+
+    // Set the time for the scripted object controllers
+    for (int i = 0; i < (int) m_scripting_controllers.size(); ++i)
+        m_scripting_controllers[i]->setTime(m_t);
+}
+
 double BridsonStepper::getDt()
 {
     return m_dt;
@@ -455,9 +468,9 @@ double BridsonStepper::getTime()
 bool BridsonStepper::nonAdaptiveExecute(double dt)
 {
     setDt(dt);
-    m_t += dt;
-    for (int i = 0; i < m_scripting_controllers.size(); ++i)
-        m_scripting_controllers[i]->setTime(m_t);
+    setTime(m_t + dt);
+    //for (int i = 0; i < m_scripting_controllers.size(); ++i)
+      //  m_scripting_controllers[i]->setTime(m_t);
     return step(false);
 }
 
@@ -484,9 +497,9 @@ bool BridsonStepper::adaptiveExecute(double dt)
     std::cout << "Setting dt to: " << dt << std::endl;
     setDt(dt);
     // Advance the current time
-    m_t += dt;
-    for (int i = 0; i < (int) m_scripting_controllers.size(); ++i)
-        m_scripting_controllers[i]->setTime(m_t);
+    setTime( m_t + dt);
+    //for (int i = 0; i < (int) m_scripting_controllers.size(); ++i)
+      //  m_scripting_controllers[i]->setTime(m_t);
 
     // Attempt a full time step
     if (step(true))
@@ -510,9 +523,9 @@ bool BridsonStepper::adaptiveExecute(double dt)
         objbackups[i].clear();
     }
     // Restore the time
-    m_t = time;
-    for (int i = 0; i < (int) m_scripting_controllers.size(); ++i)
-        m_scripting_controllers[i]->setTime(m_t);
+    setTime( time );
+    //for (int i = 0; i < (int) m_scripting_controllers.size(); ++i)
+      //  m_scripting_controllers[i]->setTime(m_t);
 
     // Otherwise attempt two steps of half length
     //setDt(0.5*dt);
