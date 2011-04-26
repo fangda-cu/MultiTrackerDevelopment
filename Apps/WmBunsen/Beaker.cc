@@ -298,8 +298,7 @@ void Beaker::addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
     m_triangleMeshes.clear();
     m_scriptingControllers.clear();  
 
-    cerr << "about to add rods to world, dt = " << getDt() << endl;
-
+  //  cerr << "about to add rods to world, dt = " << getDt() << endl;
 
     bool areSimulatingAnyRods = false;
     for ( int r=0; r<numRods; r++ )
@@ -334,10 +333,13 @@ void Beaker::addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
         cerr << "Added triangle mesh\n";
     }
     
-    cerr << "adding rods to world, dt = " << getDt() << endl;
+    //cerr << "adding rods to world, dt = " << getDt() << endl;
 
+    // FIXME: pass in timestep from Maya, it's ok to do this for test as the real timestep
+    // is set at the beginning of takeTimeStep() but it's really sloppy to not bother setting it 
+    // right to start with!
     m_bridsonStepper = new BridsonStepper( m_rods, m_triangleMeshes, m_scriptingControllers, 
-                                           m_rodTimeSteppers, getDt(), getTime() );
+                                           m_rodTimeSteppers, (1.0/24.0/10.0), 0.0 );
     m_world->addController( m_bridsonStepper );
 
    /* delete m_volumetricCollisions;
