@@ -251,15 +251,17 @@ void CollisionDetector::appendContinuousTimeIntersection(const YAEdge* edge_a, c
 
     if (m_skip_rod_rod && edgeXedge->IsRodRod())
     { // Detect rod-rod collisions and skip them.
+      //std::cout << "CollisionDetector: Skipping rod-rod collision" << std::endl;
         delete edgeXedge;
         return;
-    }
+    } 
 
     if (edgeXedge->analyseCollision(m_time_step))
     {
         m_collisions_mutex.Lock();
         m_collisions->push_back(edgeXedge); // Will be deleted in BridsonStepper::executeIterativeInelasticImpulseResponse()
         m_collisions_mutex.Unlock();
+	std::cout << "CollisionDetector: Found edge-edge collision" << std::endl;
     }
     else
         delete edgeXedge;
@@ -277,6 +279,7 @@ void CollisionDetector::appendContinuousTimeIntersection(int v_index, const YATr
     if (vertexXface->IsFixed())
     {
         delete vertexXface;
+	//std::cout << "CollisionDetector: Skipping vertex-face collision with fixed vertex and/or face" << std::endl;
         return;
     }
 
@@ -285,6 +288,7 @@ void CollisionDetector::appendContinuousTimeIntersection(int v_index, const YATr
         m_collisions_mutex.Lock();
         m_collisions->push_back(vertexXface); // Will be deleted in BridsonStepper::executeIterativeInelasticImpulseResponse()
         m_collisions_mutex.Unlock();
+	std::cout << "CollisionDetector: Found vertex-face collision" << std::endl;
     }
     else
         delete vertexXface;

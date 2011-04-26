@@ -140,7 +140,7 @@ void BridsonStepper::prepareForExecution()
     {
         assert(m_rods[i] != NULL);
 #ifdef DEBUG
-        // Sanity checks for collision detection purpouses
+        // Sanity checks for collision detection purposes
         ensureCircularCrossSection( *m_rods[i] );
         ensureNoCollisionsByDefault( *m_rods[i] );
 #endif
@@ -240,6 +240,8 @@ void BridsonStepper::prepareForExecution()
     m_xn.setConstant(std::numeric_limits<double>::signaling_NaN());
     m_xnp1.resize(getNumDof());
     m_xnp1.setConstant(std::numeric_limits<double>::signaling_NaN());
+    m_xdebug.resize(getNumDof());
+    m_xdebug.setConstant(std::numeric_limits<double>::signaling_NaN());
     m_vnphalf.resize(getNumDof());
     m_vnphalf.setConstant(std::numeric_limits<double>::signaling_NaN());
 
@@ -331,9 +333,15 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse()
 {
     bool dependable_solve = true;
 
+    //std::cerr << "NO COLLISION RESPONSE!" << std::endl;
+    //return true;
+
     // Detect possible continuous time collisions
     std::list<CTCollision*> collisions;
-    m_collision_detector->getContinuousTimeCollisions(collisions);
+    
+
+    std::cerr << "Skipping all collisions!!!!!" << std::endl;
+    //m_collision_detector->getContinuousTimeCollisions(collisions);
 
     // Iterativly apply inelastic impulses
     int itr;
@@ -371,7 +379,7 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse()
     if( itr >= 2 ) IntStatTracker::getIntTracker("STEPS_WITH_MULTIPLE_IMPULSE_ITERATIONS") += 1;
 #endif
 
-    std::cout << "The inelastic collision response is " << (dependable_solve ? "" : "NOT") << " dependable." << std::endl;
+    std::cout << "The inelastic collision response is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ") << "dependable." << std::endl;
 
     return dependable_solve;
 }
@@ -528,12 +536,9 @@ bool BridsonStepper::adaptiveExecute(double dt)
 
 bool BridsonStepper::step(bool check_explosion)
 {
-
-
-
-  check_explosion = false;
-
-
+    std::cout << std::endl << std::endl;
+   
+    check_explosion = true;
 
     // BEGIN TEMP
     //for( size_t i = 0; i < m_rods.size(); ++i ) if( m_t >= 3.79 ) std::cout << i << ": " << computeMaxEdgeAngle( *m_rods[i] ) << std::endl;
@@ -557,13 +562,18 @@ bool BridsonStepper::step(bool check_explosion)
     for( int i = 0; i < (int) m_rods.size(); ++i ) assert( m_rods[i]->getTimeStep() == m_dt );
 #endif
 
-    // Compute the total start of timestep force
-    double startforce = std::numeric_limits<double>::signaling_NaN();
-    if (check_explosion)
-        startforce = computeTotalForceNorm();
+    VecXd *startForces[m_rods.size()];
+    for (int i = 0; i < (int) m_rods.size(); ++i)
+    {
+        startForces[i] = new VecXd(m_rods[i]->ndof());
+        startForces[i]->setZero();
+        m_rods[i]->computeForces(*startForces[i]);
+    }
 
     // Save the pre-timestep positions
     extractPositions(m_rods, m_base_indices, m_xn);
+
+    std::cout << "Pre-timestep positions: " << m_xn << std::endl;
 
     //std::cout << "m_xn: " << m_xn << std::endl;
 
@@ -601,6 +611,8 @@ bool BridsonStepper::step(bool check_explosion)
 
     // Post time step position
     extractPositions(m_rods, m_base_indices, m_xnp1);
+
+    std::cout << "Post-timestep positions: " << m_xnp1 << std::endl;
 
     // Average velocity over the timestep just completed
     m_vnphalf = (m_xnp1 - m_xn) / m_dt;
@@ -646,7 +658,7 @@ bool BridsonStepper::step(bool check_explosion)
             // If that vertex has a prescribed position
             if( boundary->isVertexScripted(j) )
             {
-                Vec3d desiredposition = boundary->getDesiredVertexPosition(j);
+                Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
                 Vec3d actualvalue = m_xnp1.segment<3>(rodbase+3*j);
                 assert( approxEq(desiredposition, actualvalue, 1.0e-6) );
             }
@@ -672,33 +684,48 @@ bool BridsonStepper::step(bool check_explosion)
     for( int i = 0; i < (int) m_rods.size(); ++i ) m_rods[i]->verifyProperties();
 #endif
 
+    // Post time step position
+    extractPositions(m_rods, m_base_indices, m_xdebug);
+
+    std::cout << "Post-timestep positions, again: " << m_xdebug << std::endl;
+
+    VecXd *endForces[m_rods.size()];
+    for (int i = 0; i < (int) m_rods.size(); ++i)
+    {
+        endForces[i] = new VecXd(m_rods[i]->ndof());
+        endForces[i]->setZero();
+        m_rods[i]->computeForces(*endForces[i]);
+    }
+
     if (check_explosion)
     {
-        // Compute the total end of timestep force
-        double endforce = computeTotalForceNorm();
-
+	double maxRate = 0;
+	int worstViolator = 0;
 	std::cout << "Checking for explosions..." << std::endl;
 
-        assert(startforce >= 0.0);
-        assert(endforce >= 0.0);
-        if (endforce > startforce)
-        {
-            std::cout << endforce << " " << startforce << "    -    " << (endforce - startforce) / startforce << std::endl;
-            // 2.0 and above still get instabilities
-            double perrcent_change = 1.5;
-            double big_force = 10.0;
+	for (int i = 0; i < (int) m_rods.size(); ++i) 
+	{
+	    for (int j = 0; j < m_rods[i]->ndof(); ++j)
+	    {
+		double s = (*(startForces[i]))[j];
+		double e = (*(endForces[i]))[j];
+		double rate = fabs(s-e) / (fabs(e)+1.);
+		maxRate = max(maxRate, rate);
+		if (maxRate==rate) worstViolator = j;
+		if ( isnan(rate) || rate > .1 ) 
+		{
+		    dependable_solve = false;
+		    std::cout << "Check Explosion (" << i << ", " << j << "): s = " << s << " e = " << e << std::endl;
+		}
+	    }
+	}
+	std::cout << "Check Explosion: worst violator = " << worstViolator << " with maxRate = " << maxRate << std::endl;
+    }
 
-            if (!approxEq(startforce, 0.0, 1.0e-6))
-            {
-                if (endforce - startforce >= perrcent_change * startforce)
-                    dependable_solve = false;
-            }
-            else
-            {
-                if (endforce > big_force)
-                    dependable_solve = false;
-            }
-        }
+    for (int i = 0; i < (int) m_rods.size(); ++i)
+    {
+        delete startForces[i];
+        delete endForces[i];
     }
 
     // BEGIN TEMP
@@ -729,7 +756,7 @@ bool BridsonStepper::step(bool check_explosion)
     //    Timer::getTimer("BridsonStepperResponse").report();
     //    Timer::getTimer("Collision detector").report();
 
-    std::cout << "This step is " << (dependable_solve ? "" : "NOT") << " dependable." << std::endl;
+    std::cout << "This step is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ") << "dependable." << std::endl;
 	 
     return dependable_solve;
 }
@@ -854,7 +881,7 @@ void BridsonStepper::extractPositions(const std::vector<ElasticRod*>& rods, cons
         // For each vertex of the current rod, if that vertex has a prescribed position
         for( int j = 0; j < m_rods[i]->nv(); ++j ) if( boundary->isVertexScripted(j) )
         {
-            Vec3d desiredposition = boundary->getDesiredVertexPosition(j);
+            Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
             Vec3d actualvalue = positions.segment<3>(rodbase+3*j);
             assert( approxEq(desiredposition, actualvalue, 1.0e-6) );
         }

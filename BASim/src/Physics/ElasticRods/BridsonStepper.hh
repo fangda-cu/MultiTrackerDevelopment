@@ -253,7 +253,7 @@ public:
      */
     void skipRodRodCollisions( bool skipRodRodCollisions )
     {
-        m_skipRodRodCollisions = true;
+      m_skipRodRodCollisions = skipRodRodCollisions;
         
         if ( m_collision_detector )
             m_collision_detector->skipRodRodCollisions( skipRodRodCollisions );
@@ -460,6 +460,8 @@ private:
     VecXd m_xnp1;
     VecXd m_vnphalf;
     VecXd m_vnresp;
+
+    VecXd m_xdebug;
 
     // Enable/Disable portions of the collision response
     bool m_respns_enbld;

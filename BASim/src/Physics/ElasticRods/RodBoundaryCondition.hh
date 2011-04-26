@@ -28,14 +28,16 @@ public:
 
   const BCList& scriptedVertices() const;
   bool isVertexScripted(int vertIdx) const;
-  void setDesiredVertexPosition(int vertIdx, const Vec3d& position);
-  const Vec3d& getDesiredVertexPosition(int vertIdx);
+  void setDesiredVertexPosition(int vertIdx, double t, const Vec3d& x, const Vec3d& v);
+  void setDesiredVertexPosition(int vertIdx, const Vec3d& x);
+  const Vec3d& getDesiredVertexPosition(int vertIdx, double t);
   void releaseVertex(int vertIdx);
 
   const BCList& scriptedEdges() const;
   bool isEdgeScripted(int edgeIdx) const;
+  void setDesiredEdgeAngle(int edgeIdx, double t, const Scalar& theta, const Scalar& thetaDot);
   void setDesiredEdgeAngle(int edgeIdx, const Scalar& theta);
-  const Scalar& getDesiredEdgeAngle(int edgeIdx);
+  const Scalar& getDesiredEdgeAngle(int edgeIdx, double t);
   void releaseEdge(int edgeIdx);
 
 protected:
@@ -43,11 +45,15 @@ protected:
   ElasticRod& m_rod;
 
   ObjPropHandle<BCList> m_scriptedVerts;
+  VPropHandle<double> m_positionTimeAnchor;
   VPropHandle<Vec3d> m_desiredPositions;
+  VPropHandle<Vec3d> m_desiredVelocities;
   VPropHandle<bool> m_isVertexScripted;
 
   ObjPropHandle<BCList> m_scriptedEdges;
+  VPropHandle<double> m_thetaTimeAnchor;
   EPropHandle<Scalar> m_desiredTheta;
+  EPropHandle<Scalar> m_desiredThetaDot;
   EPropHandle<bool> m_isMaterialScripted;
 };
 

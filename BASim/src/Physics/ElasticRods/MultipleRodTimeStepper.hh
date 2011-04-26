@@ -666,7 +666,7 @@ public:
         for (int k = 0; k < 3; ++k) 
         {
           indices[base_nb] = base_idx + m_rods[i]->vertIdx(verts[j], k);
-          desired[base_nb] = m_rods[i]->getBoundaryCondition()->getDesiredVertexPosition(verts[j])[k];
+          desired[base_nb] = m_rods[i]->getBoundaryCondition()->getDesiredVertexPosition(verts[j], getTime())[k];
           ++base_nb;
         }
       }
@@ -674,7 +674,7 @@ public:
       for (int j = 0; j < (int) edges.size(); ++j) 
       {
         indices[base_nb] = base_idx + m_rods[i]->edgeIdx(edges[j]);
-        desired[base_nb] = m_rods[i]->getBoundaryCondition()->getDesiredEdgeAngle(edges[j]);
+        desired[base_nb] = m_rods[i]->getBoundaryCondition()->getDesiredEdgeAngle(edges[j], getTime());
         ++base_nb;
       }
       
