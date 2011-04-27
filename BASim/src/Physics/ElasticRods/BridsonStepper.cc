@@ -486,6 +486,8 @@ bool BridsonStepper::nonAdaptiveExecute(double dt)
 
 bool BridsonStepper::adaptiveExecute(double dt)
 {
+  if (dt < 0.0001) exit(1);
+
   std::cout << "BridsonStepper::adaptiveExecute starting with m_t = " << m_t << " dt = " << dt << std::endl;
 
     // Backup all rods
