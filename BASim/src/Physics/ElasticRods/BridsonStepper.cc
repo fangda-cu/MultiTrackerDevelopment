@@ -486,7 +486,7 @@ bool BridsonStepper::nonAdaptiveExecute(double dt)
 
 bool BridsonStepper::adaptiveExecute(double dt)
 {
-  if (dt < 0.0001) exit(1);
+  if (dt < 1e-9) exit(1);
 
   std::cout << "BridsonStepper::adaptiveExecute starting with m_t = " << m_t << " dt = " << dt << std::endl;
 
@@ -567,7 +567,7 @@ bool BridsonStepper::step(bool check_explosion)
 {
     std::cout << std::endl << std::endl;
    
-    check_explosion = true;
+    check_explosion = false;
 
     // BEGIN TEMP
     //for( size_t i = 0; i < m_rods.size(); ++i ) if( m_t >= 3.79 ) std::cout << i << ": " << computeMaxEdgeAngle( *m_rods[i] ) << std::endl;
@@ -715,9 +715,9 @@ bool BridsonStepper::step(bool check_explosion)
 #endif
 
     // Post time step position
-    extractPositions(m_rods, m_base_indices, m_xdebug);
+    //extractPositions(m_rods, m_base_indices, m_xdebug);
 
-    std::cout << "Post-timestep positions, again: " << m_xdebug << std::endl;
+    //std::cout << "Post-timestep positions, again: " << m_xdebug << std::endl;
 
     VecXd *endForces[m_rods.size()];
     for (int i = 0; i < (int) m_rods.size(); ++i)
@@ -746,7 +746,7 @@ bool BridsonStepper::step(bool check_explosion)
 		minStart = min(fabs(s),minStart);
 		maxStart = max(fabs(s),maxStart);
 		if (maxRate==rate) worstViolator = j;
-		if ( isnan(rate) || rate > 1.0 ) 
+		if ( isnan(rate) || rate > 10.0 ) 
 		{
 		    dependable_solve = false;
 		    std::cout << "Check Explosion (" << i << ", " << j << "): s = " << s << " e = " << e << std::endl;
