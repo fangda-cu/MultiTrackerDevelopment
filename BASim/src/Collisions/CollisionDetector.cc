@@ -23,10 +23,10 @@ CollisionDetector::CollisionDetector(const GeometricData& geodata, const std::ve
         m_num_threads = sysconf(_SC_NPROCESSORS_ONLN);
 
     m_elements.reserve(edges.size() + faces.size());
-    for (uint32_t i = 0; i < edges.size(); i++)
-        m_elements.push_back(new YAEdge(edges[i]));
-    for (uint32_t i = 0; i < faces.size(); i++)
-        m_elements.push_back(new YATriangle(faces[i]));
+    for (std::vector<std::pair<int, int> >::const_iterator i = edges.begin(); i != edges.end(); i++)
+        m_elements.push_back(new YAEdge(*i));
+    for (std::vector<TriangularFace>::const_iterator i = faces.begin(); i != faces.end(); i++)
+        m_elements.push_back(new YATriangle(*i));
 
     GeometryBBoxFunctor bboxfunctor(m_elements, m_geodata);
     MiddleBVHBuilder bvh_builder;
@@ -40,10 +40,10 @@ CollisionDetector::~CollisionDetector()
         delete *i;
 }
 
-void CollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionType ctype)
+void CollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFilter collision_filter)
 {
 
-    m_ctype = ctype;
+    m_collision_filter = collision_filter;
     m_collisions = &cllsns;
     m_collisions->clear();
     std::vector<BVHParallelizer*> steppers;
@@ -154,20 +154,6 @@ void CollisionDetector::updateContinuousTimeCollisions()
             m_collisions->erase(i--);
 }
 
-/*
- // Only vertex - face collisions are available.
- void CollisionDetector::getImplicitPenaltyCollisions(std::list<Collision*>& cllsns)
- {
- m_collisions = &cllsns;
- m_collisions->clear();
-
- BVHNode& root = m_bvh.GetNode(0);
- updateBoundingBox(root);
-
- computeProximityCollisions(root, root);
- }
- */
-
 void CollisionDetector::computeCollisions(const BVHNode& node_a, const BVHNode& node_b)
 {
     // If the bounding volumes do not overlap, there are no possible collisions between their objects
@@ -186,7 +172,7 @@ void CollisionDetector::computeCollisions(const BVHNode& node_a, const BVHNode& 
 
             for (uint32_t i = leaf_a_begin; i < leaf_a_end; ++i)
                 for (uint32_t j = leaf_b_begin; j < leaf_b_end; ++j)
-                    appendIntersection(m_elements[i], m_elements[j]);
+                    appendCollision(m_elements[i], m_elements[j]);
         }
 
     }
@@ -212,28 +198,28 @@ void CollisionDetector::computeCollisions(const BVHNode& node_a, const BVHNode& 
     }
 }
 
-void CollisionDetector::appendIntersection(const TopologicalElement* elem_a, const TopologicalElement* elem_b)
+void CollisionDetector::appendCollision(const TopologicalElement* elem_a, const TopologicalElement* elem_b)
 {
     const YAEdge* edge_a = dynamic_cast<const YAEdge*> (elem_a);
     const YATriangle* triangle_a = dynamic_cast<const YATriangle*> (elem_a);
     const YAEdge* edge_b = dynamic_cast<const YAEdge*> (elem_b);
     const YATriangle* triangle_b = dynamic_cast<const YATriangle*> (elem_b);
 
-    switch (m_ctype)
+    switch (m_collision_filter)
     {
     case ContinuousTime:
         if (edge_a && edge_b)
-            appendContinuousTimeIntersection(edge_a, edge_b);
+            appendContinuousTimeCollision(edge_a, edge_b);
         else if (edge_a && triangle_b)
-            appendContinuousTimeIntersection(edge_a, triangle_b);
+            appendContinuousTimeCollision(edge_a, triangle_b);
         else if (triangle_a && edge_b)
-            appendContinuousTimeIntersection(triangle_a, edge_b);
+            appendContinuousTimeCollision(edge_b, triangle_a);
         else if (triangle_a && triangle_b)
-            appendContinuousTimeIntersection(triangle_a, triangle_b);
+            appendContinuousTimeCollision(triangle_a, triangle_b);
         break;
 
     case Proximity:
-        /*
+        /* TODO: implement this.
          if (edge_a && edge_b)
          appendProximityIntersection(edge_a, edge_b);
          else if (edge_a && triangle_b)
@@ -279,71 +265,9 @@ void CollisionDetector::updateBoundingBox(BVHNode& node)
     }
 }
 
-/*
- void CollisionDetector::computeContinuousTimeCollisions(const BVHNode& node_a, const BVHNode& node_b)
- {
- if (!Intersect(node_a.BBox(), node_b.BBox()))
- return;
-
- // If both nodes are leaves, intersect their contents
- if (node_a.IsLeaf() && node_b.IsLeaf())
- {
- if (&node_a != &node_b)
- {
- const uint32_t leaf_a_begin = node_a.LeafBegin();
- const uint32_t leaf_a_end = node_a.LeafEnd();
- const uint32_t leaf_b_begin = node_b.LeafBegin();
- const uint32_t leaf_b_end = node_b.LeafEnd();
-
- for (uint32_t i = leaf_a_begin; i < leaf_a_end; ++i)
- for (uint32_t j = leaf_b_begin; j < leaf_b_end; ++j)
- appendContinuousTimeIntersection(m_elements[i], m_elements[j]);
- }
- }
- // Else recurse on either the node that is not a leave, or both.
- else if (node_a.IsLeaf())
- {
- computeContinuousTimeCollisions(node_a, m_bvh.GetNode(node_b.ChildIndex()));
- computeContinuousTimeCollisions(node_a, m_bvh.GetNode(node_b.ChildIndex() + 1));
- }
- else if (node_b.IsLeaf())
- {
- computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex()), node_b);
- computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex() + 1), node_b);
- }
- else
- {
- computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex()), m_bvh.GetNode(node_b.ChildIndex()));
- computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex() + 1), m_bvh.GetNode(node_b.ChildIndex()));
- if (&node_a != &node_b) // We need only to explore one side of the diagonal
- computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex()), m_bvh.GetNode(node_b.ChildIndex() + 1));
- computeContinuousTimeCollisions(m_bvh.GetNode(node_a.ChildIndex() + 1), m_bvh.GetNode(node_b.ChildIndex() + 1));
- }
- }
- */
-
-/*
- void CollisionDetector::appendContinuousTimeIntersection(const TopologicalElement* elem_a, const TopologicalElement* elem_b)
- {
- const YAEdge* edge_a = dynamic_cast<const YAEdge*> (elem_a);
- const YATriangle* triangle_a = dynamic_cast<const YATriangle*> (elem_a);
- const YAEdge* edge_b = dynamic_cast<const YAEdge*> (elem_b);
- const YATriangle* triangle_b = dynamic_cast<const YATriangle*> (elem_b);
-
- if (edge_a && edge_b)
- appendContinuousTimeIntersection(edge_a, edge_b);
- else if (edge_a && triangle_b)
- appendContinuousTimeIntersection(edge_a, triangle_b);
- else if (triangle_a && edge_b)
- appendContinuousTimeIntersection(triangle_a, edge_b);
- else if (triangle_a && triangle_b)
- appendContinuousTimeIntersection(triangle_a, triangle_b);
- }
- */
-
-void CollisionDetector::appendContinuousTimeIntersection(const YAEdge* edge_a, const YAEdge* edge_b)
+void CollisionDetector::appendContinuousTimeCollision(const YAEdge* edge_a, const YAEdge* edge_b)
 {
-    //    Timer::getTimer("CollisionDetector::appendContinuousTimeIntersection edge edge").start();
+    //    Timer::getTimer("CollisionDetector::appendContinuousTimeCollision edge edge").start();
 
     EdgeEdgeCTCollision* edgeXedge = new EdgeEdgeCTCollision(m_geodata, edge_a, edge_b);
 
@@ -362,12 +286,12 @@ void CollisionDetector::appendContinuousTimeIntersection(const YAEdge* edge_a, c
     else
         delete edgeXedge;
 
-    //    Timer::getTimer("CollisionDetector::appendContinuousTimeIntersection edge edge").stop();
+    //    Timer::getTimer("CollisionDetector::appendContinuousTimeCollision edge edge").stop();
 }
 
-void CollisionDetector::appendContinuousTimeIntersection(int v_index, const YATriangle* triangle)
+void CollisionDetector::appendContinuousTimeCollision(int v_index, const YATriangle* triangle)
 {
-    //    Timer::getTimer("CollisionDetector::appendContinuousTimeIntersection vertex face").start();
+    //    Timer::getTimer("CollisionDetector::appendContinuousTimeCollision vertex face").start();
 
     VertexFaceCTCollision* vertexXface = new VertexFaceCTCollision(m_geodata, v_index, triangle);
 
@@ -387,29 +311,24 @@ void CollisionDetector::appendContinuousTimeIntersection(int v_index, const YATr
     else
         delete vertexXface;
 
-    //    Timer::getTimer("CollisionDetector::appendContinuousTimeIntersection vertex face").stop();
+    //    Timer::getTimer("CollisionDetector::appendContinuousTimeCollision vertex face").stop();
 }
 
-void CollisionDetector::appendContinuousTimeIntersection(const YAEdge* edge, const YATriangle* triangle)
+void CollisionDetector::appendContinuousTimeCollision(const YAEdge* edge, const YATriangle* triangle)
 {
 
     YAEdge edge_2(triangle->first(), triangle->second());
     YAEdge edge_1(triangle->third(), triangle->first());
     YAEdge edge_0(triangle->second(), triangle->third());
-    appendContinuousTimeIntersection(edge, &edge_0);
-    appendContinuousTimeIntersection(edge, &edge_1);
-    appendContinuousTimeIntersection(edge, &edge_2);
+    appendContinuousTimeCollision(edge, &edge_0);
+    appendContinuousTimeCollision(edge, &edge_1);
+    appendContinuousTimeCollision(edge, &edge_2);
 
-    appendContinuousTimeIntersection(edge->first(), triangle);
-    appendContinuousTimeIntersection(edge->second(), triangle);
+    appendContinuousTimeCollision(edge->first(), triangle);
+    appendContinuousTimeCollision(edge->second(), triangle);
 }
 
-void CollisionDetector::appendContinuousTimeIntersection(const YATriangle* triangle, const YAEdge* edge)
-{
-    appendContinuousTimeIntersection(edge, triangle);
-}
-
-void CollisionDetector::appendContinuousTimeIntersection(const YATriangle* triangle_a, const YATriangle* triangle_b)
+void CollisionDetector::appendContinuousTimeCollision(const YATriangle* triangle_a, const YATriangle* triangle_b)
 {
     // Do nothing.
     return;

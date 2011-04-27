@@ -19,58 +19,7 @@
 namespace BASim
 {
 
-class IntPair
-{
-public:
-
-    IntPair(const int& i, const int& j)
-    {
-        m_i = std::min(i, j);
-        m_j = std::max(i, j);
-    }
-
-    bool operator==(const IntPair& rhs) const
-    {
-        assert(m_i <= m_j);
-        assert(rhs.m_i <= rhs.m_j);
-
-        return (m_i == rhs.m_i && m_j == rhs.m_j);
-    }
-
-    bool operator!=(const IntPair& rhs) const
-    {
-        assert(m_i <= m_j);
-        assert(rhs.m_i <= rhs.m_j);
-
-        return !(*this == rhs);
-    }
-
-    bool operator<(const IntPair& rhs) const
-    {
-        assert(m_i <= m_j);
-        assert(rhs.m_i <= rhs.m_j);
-
-        if (m_i != rhs.m_i)
-            return m_i < rhs.m_i;
-        else
-            return m_j < rhs.m_j;
-    }
-
-    int first() const
-    {
-        return m_i;
-    }
-    int second() const
-    {
-        return m_j;
-    }
-
-private:
-    int m_i;
-    int m_j;
-};
-
-enum CollisionType
+enum CollisionFilter
 {
     ContinuousTime = 0, Proximity, VertexFace
 };
@@ -83,8 +32,7 @@ class CollisionDetector
     bool m_skip_rod_rod;
     BVH m_bvh;
     std::list<Collision*>* m_collisions;
-    CollisionType m_ctype;
-    //    std::list<ProximityCollision*>* m_prox_collisions;
+    CollisionFilter m_collision_filter;
     threads::Mutex m_collisions_mutex;
     int m_num_threads;
 
@@ -96,13 +44,7 @@ public:
 
     virtual ~CollisionDetector();
 
-    void getContinuousTimeCollisions(std::list<Collision*>& cllsns);
-
-    void getImplicitPenaltyCollisions(std::list<Collision*>& cllsns);
-
-    void getVertexFaceIntersections(std::list<Collision*>& cllsns);
-
-    void getCollisions(std::list<Collision*>& cllsns, CollisionType ctype);
+    void getCollisions(std::list<Collision*>& cllsns, CollisionFilter collision_filter);
 
     void updateContinuousTimeCollisions();
 
@@ -121,20 +63,18 @@ private:
     // Proximity collision detection
     void computeCollisions(const BVHNode& node_a, const BVHNode& node_b) ;
 
+    // Depending on m_collision_filter, determine and appends the relevant collision type between topological elements to m_collisions
+    void appendCollision(const TopologicalElement* obj_a, const TopologicalElement* obj_b);
+
+    // Determine if the collision happens during the current time step; if so append the CTC to m_collisions.
+    void appendContinuousTimeCollision(const TopologicalElement* obj_a, const TopologicalElement* obj_b);
+    void appendContinuousTimeCollision(const YAEdge* edge_a, const YAEdge* edge_b);
+    void appendContinuousTimeCollision(const YAEdge* edge, const YATriangle* triangle);
+    void appendContinuousTimeCollision(const YATriangle* triangle_a, const YATriangle* triangle_b);
+    void appendContinuousTimeCollision(int v_index, const YATriangle* triangle);
+
+    // Determine whether the edge intersects the triangle; if so append the VFI to m_collisions
     void appendVertexFaceIntersection(const YAEdge* edge, const YATriangle* triangle);
-
-    void appendIntersection(const TopologicalElement* obj_a, const TopologicalElement* obj_b) ;
-
-    // Compute the collisions that happen during the time step between elements in the subtrees node_a and node_b
-//    void computeContinuousTimeCollisions(const BVHNode& node_a, const BVHNode& node_b);
-
-    // Determine if the collision happens; if so append the CTC to m_collisions.
-    void appendContinuousTimeIntersection(const TopologicalElement* obj_a, const TopologicalElement* obj_b);
-    void appendContinuousTimeIntersection(const YAEdge* edge_a, const YAEdge* edge_b);
-    void appendContinuousTimeIntersection(const YAEdge* edge, const YATriangle* triangle);
-    void appendContinuousTimeIntersection(const YATriangle* triangle, const YAEdge* edge);
-    void appendContinuousTimeIntersection(const YATriangle* triangle_a, const YATriangle* triangle_b);
-    void appendContinuousTimeIntersection(int v_index, const YATriangle* triangle);
 
     bool isVertexFixed(int vert_idx) const;
     bool isRodVertex(int vert) const;
