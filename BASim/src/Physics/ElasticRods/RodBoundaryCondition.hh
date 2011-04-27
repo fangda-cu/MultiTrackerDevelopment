@@ -30,14 +30,14 @@ public:
   bool isVertexScripted(int vertIdx) const;
   void setDesiredVertexPosition(int vertIdx, double t, const Vec3d& x, const Vec3d& v);
   void setDesiredVertexPosition(int vertIdx, const Vec3d& x);
-  const Vec3d& getDesiredVertexPosition(int vertIdx, double t);
+  Vec3d getDesiredVertexPosition(int vertIdx, double t);
   void releaseVertex(int vertIdx);
 
   const BCList& scriptedEdges() const;
   bool isEdgeScripted(int edgeIdx) const;
   void setDesiredEdgeAngle(int edgeIdx, double t, const Scalar& theta, const Scalar& thetaDot);
   void setDesiredEdgeAngle(int edgeIdx, const Scalar& theta);
-  const Scalar& getDesiredEdgeAngle(int edgeIdx, double t);
+  Scalar getDesiredEdgeAngle(int edgeIdx, double t);
   void releaseEdge(int edgeIdx);
 
 protected:

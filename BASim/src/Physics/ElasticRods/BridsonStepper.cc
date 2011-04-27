@@ -333,8 +333,8 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse()
 {
     bool dependable_solve = true;
 
-    //std::cerr << "NO COLLISION RESPONSE!" << std::endl;
-    //return true;
+    std::cerr << "NO COLLISION RESPONSE!" << std::endl;
+    return true;
 
     // Detect possible continuous time collisions
     std::list<CTCollision*> collisions;
@@ -471,7 +471,7 @@ double BridsonStepper::getDt()
 
 double BridsonStepper::getTime()
 {
-  std::cout << "BridsonStepper::getTime() = " << m_t << std::endl;
+  //std::cout << "BridsonStepper::getTime() = " << m_t << std::endl;
   return m_t;
 }
 
@@ -728,6 +728,8 @@ bool BridsonStepper::step(bool check_explosion)
     if (check_explosion)
     {
 	double maxRate = 0;
+	double maxStart = 0;
+	double minStart = 1e99;
 	int worstViolator = 0;
 	std::cout << "Checking for explosions..." << std::endl;
 
@@ -737,10 +739,12 @@ bool BridsonStepper::step(bool check_explosion)
 	    {
 		double s = (*(startForces[i]))[j];
 		double e = (*(endForces[i]))[j];
-		double rate = fabs(s-e) / (fabs(e)+1.);
+		double rate = fabs(s-e) / (fabs(s)+100.);
 		maxRate = max(maxRate, rate);
+		minStart = min(fabs(s),minStart);
+		maxStart = max(fabs(s),maxStart);
 		if (maxRate==rate) worstViolator = j;
-		if ( isnan(rate) || rate > .1 ) 
+		if ( isnan(rate) || rate > 1.0 ) 
 		{
 		    dependable_solve = false;
 		    std::cout << "Check Explosion (" << i << ", " << j << "): s = " << s << " e = " << e << std::endl;
@@ -748,6 +752,7 @@ bool BridsonStepper::step(bool check_explosion)
 	    }
 	}
 	std::cout << "Check Explosion: worst violator = " << worstViolator << " with maxRate = " << maxRate << std::endl;
+	std::cout << "Check Explosion: minStart = " << minStart << " maxStart = " << maxStart << std::endl;
     }
 
     for (int i = 0; i < (int) m_rods.size(); ++i)

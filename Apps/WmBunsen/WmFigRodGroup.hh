@@ -188,7 +188,7 @@ public:
                                 ( 1.0 - i_interpolationFactor ) * m_rodData[ r ]->prevVertexPositions[ v ] );
                 }
                 
-                std::cerr << "rod " << r << "\n";
+		/*   std::cerr << "rod " << r << "\n";
                 
                 for ( size_t s=0; s<m_rodData[ r ]->currVertexPositions.size(); ++s )
                 {
@@ -203,7 +203,9 @@ public:
                 for ( size_t s=0; s<m_rodData[ r ]->nextVertexPositions.size(); ++s )
                 {
                     std::cerr << "NEXT: " << m_rodData[ r ]->nextVertexPositions[ s ] << std::endl;                    
-                }                
+                } 
+
+		*/               
             }
         }
     }

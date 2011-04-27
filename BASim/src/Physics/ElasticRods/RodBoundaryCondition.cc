@@ -50,9 +50,11 @@ void RodBoundaryCondition::setDesiredVertexPosition(int vertIdx, double t, const
   m_rod.property(m_positionTimeAnchor)[vertIdx] = t;
   m_rod.property(m_desiredPositions)[vertIdx] = x;
   m_rod.property(m_desiredVelocities)[vertIdx] = v;
+
+  std::cout << "RodBoundaryCondition::setDesiredVertexPosition: Setting new linear function for vertexIdx = " << vertIdx << " t0 = " << t << " x = " << x << " v = " << v << " x("<<(t+0.004167)<<") = " << getDesiredVertexPosition( vertIdx, t + 0.004167 ) << std::endl;
 }
 
-  const Vec3d& RodBoundaryCondition::getDesiredVertexPosition(int vertIdx, double t)
+Vec3d RodBoundaryCondition::getDesiredVertexPosition(int vertIdx, double t)
 {
   double t0 = m_rod.property(m_positionTimeAnchor)[vertIdx];
   Vec3d x0 = m_rod.property(m_desiredPositions)[vertIdx];
@@ -116,7 +118,7 @@ void RodBoundaryCondition::setDesiredEdgeAngle(int edgeIdx, double t, const Scal
   m_rod.property(m_desiredThetaDot)[edgeIdx] = thetaDot;
 }
 
-const Scalar& RodBoundaryCondition::getDesiredEdgeAngle(int edgeIdx, double t)
+Scalar RodBoundaryCondition::getDesiredEdgeAngle(int edgeIdx, double t)
 {
   double t0        = m_rod.property(m_thetaTimeAnchor)[edgeIdx];
   Scalar theta0    = m_rod.property(m_desiredTheta)[edgeIdx];

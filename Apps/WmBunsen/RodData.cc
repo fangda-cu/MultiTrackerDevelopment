@@ -158,15 +158,12 @@ void RodData::resetVertexPositions( vector< BASim::Vec3d >& i_vertexPositions )
 }
 
 void RodData::updateNextRodVertexPositions( vector< BASim::Vec3d >& i_vertexPositions )
-{
-    prevVertexPositions = currVertexPositions;
-
-    //FIXME: Doesn't currVertexPositions already equal nextVertexPositions at the end of a time
-    // step?
-    currVertexPositions = nextVertexPositions;
-
+{               
+  // CURR IS NO LONGER USED as the interpolation happens in boundary condition class
+    prevVertexPositions = nextVertexPositions;
     nextVertexPositions = i_vertexPositions;
 }
+
 
 void RodData::updateBoundaryConditions()
 {
@@ -199,14 +196,14 @@ void RodData::updateBoundaryConditions()
         //m_rod->fixVert( edgeNum );
         //m_rod->fixVert( edgeNum + 1 );
 
-        cerr << "bridson time = " << m_bridsonStepper->getTime() << endl;
-
 	double dt = 1./24.;
+
+	std::cerr << "RodData::updateBoundaryConditions: vertIdx = " << edgeNum << " t0 = " << m_bridsonStepper->getTime() << " prevPos = " << prevVertexPositions[edgeNum] << " nextPos = " << nextVertexPositions[edgeNum] << " vel = " << (nextVertexPositions[ edgeNum ] - prevVertexPositions[ edgeNum ])/dt << endl;
 
         boundary->setDesiredVertexPosition( edgeNum, m_bridsonStepper->getTime(), prevVertexPositions[ edgeNum ], 
 					    (nextVertexPositions[ edgeNum ] - prevVertexPositions[ edgeNum ])/dt);
  
-    boundary->setDesiredVertexPosition( edgeNum + 1, m_bridsonStepper->getTime(),
+        boundary->setDesiredVertexPosition( edgeNum + 1, m_bridsonStepper->getTime(),
 					prevVertexPositions[ edgeNum + 1 ],
 					(nextVertexPositions[ edgeNum + 1 ] - prevVertexPositions[ edgeNum + 1 ])/dt);
         
