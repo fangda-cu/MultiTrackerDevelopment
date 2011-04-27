@@ -333,15 +333,15 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse()
 {
     bool dependable_solve = true;
 
-    std::cerr << "NO COLLISION RESPONSE!" << std::endl;
-    return true;
+    //std::cerr << "NO COLLISION RESPONSE!" << std::endl;
+    // return true;
 
     // Detect possible continuous time collisions
     std::list<CTCollision*> collisions;
     
 
-    std::cerr << "Skipping all collisions!!!!!" << std::endl;
-    //m_collision_detector->getContinuousTimeCollisions(collisions);
+    //std::cerr << "Skipping all collisions!!!!!" << std::endl;
+    m_collision_detector->getContinuousTimeCollisions(collisions);
 
     // Iterativly apply inelastic impulses
     int itr;
