@@ -116,7 +116,7 @@ private:
     void createRodDataFromRodNodes( MDataBlock& i_dataBlock );
     void updateAllCollisionMeshes( MDataBlock& i_dataBlock );
     void updateAllRodNodes( MDataBlock &i_dataBlock );
-    void addRodsToWorld( MDataBlock& i_dataBlock );
+    void addRodsToWorld( MDataBlock& i_dataBlock, double startTime );
 
     //void addAllConstraints( MDataBlock &i_dataBlock );
     //void updateAllConstraints( MDataBlock &i_dataBlock );

@@ -75,8 +75,8 @@ void WmFigaroRodShape::resetSimulation( MVectorArray* i_controlPoints )
     }
 
     m_rodGroup.setSimulationNeedsReset( false );
-    
-    m_beaker.addRodsToWorld( 0, &m_rodGroup );
+    //should actually pass the proper time
+    m_beaker.addRodsToWorld( 0, &m_rodGroup,0 );
 }
 
 void WmFigaroRodShape::initialiseRod( MVectorArray* i_controlPoints )

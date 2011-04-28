@@ -287,7 +287,7 @@ double Beaker::stopTimer( timeval& i_startTimer )
     }
 }*/
 
-void Beaker::addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
+void Beaker::addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup ,double startTime)
 {
     m_rodDataMap[ i_rodGroupIndex ] = i_rodGroup;
     
@@ -339,7 +339,7 @@ void Beaker::addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup )
     // is set at the beginning of takeTimeStep() but it's really sloppy to not bother setting it 
     // right to start with!
     m_bridsonStepper = new BridsonStepper( m_rods, m_triangleMeshes, m_scriptingControllers, 
-                                           m_rodTimeSteppers, (1.0/24.0/10.0), 1.0 );
+                                           m_rodTimeSteppers, (1.0/24.0/10.0), startTime);
     m_world->addController( m_bridsonStepper );
 
 

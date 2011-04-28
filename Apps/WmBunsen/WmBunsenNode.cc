@@ -99,7 +99,7 @@ void WmBunsenNode::pullOnAllRodNodes( MDataBlock& i_dataBlock )
     }
 }  
 
-void WmBunsenNode::addRodsToWorld( MDataBlock& i_dataBlock )
+void WmBunsenNode::addRodsToWorld( MDataBlock& i_dataBlock, double startTime )
 {
     MStatus stat;
     
@@ -135,7 +135,7 @@ void WmBunsenNode::addRodsToWorld( MDataBlock& i_dataBlock )
                 // it owns. Since we are resetting the sim we need to actually now create the
                 // rods and add them to the world.
                 
-                m_beaker->addRodsToWorld( r, wmFigRodNode->rodGroup() );
+                m_beaker->addRodsToWorld( r, wmFigRodNode->rodGroup(), startTime );
             }
             else
                 CHECK_MSTATUS( stat );
@@ -505,7 +505,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
                 updateAllRodNodes( i_dataBlock );
                 updateAllCollisionMeshes( i_dataBlock );
-                addRodsToWorld( i_dataBlock );
+                addRodsToWorld( i_dataBlock, m_startTime );
 
                 //MGlobal::displayInfo( "COMPUTE AT START TIME" );
                 //addAllConstraints( i_dataBlock );
