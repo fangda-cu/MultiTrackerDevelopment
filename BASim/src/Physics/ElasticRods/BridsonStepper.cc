@@ -625,9 +625,10 @@ bool BridsonStepper::step(bool check_explosion)
 
         if (intersection)
         {
-            m_collision_immune[intersection->v0] = true;
-            m_collision_immune[intersection->v1] = true;
-            std::cerr << "Vertices " << intersection->v0 << " and " << intersection->v1 << " have been marked collision-free\n";
+	    m_collision_immune[intersection->v0] = true;
+            //m_collision_immune[intersection->v1] = true;
+            //std::cerr << "Vertices " << intersection->v0 << " and " << intersection->v1 << " have been marked collision-free\n";
+	    std::cerr << "Vertex " << intersection->v0 << " has been marked collision-free\n";
         }
     }
 
