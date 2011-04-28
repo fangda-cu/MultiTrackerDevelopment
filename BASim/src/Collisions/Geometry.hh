@@ -41,12 +41,14 @@ class GeometricData
     const VecXd& m_velocities;
     const std::vector<double>& m_radii;
     const std::vector<double>& m_masses;
+    const std::vector<bool>& m_collision_immune;
     int& m_obj_start;
 
 public:
     GeometricData(const VecXd& points, const VecXd& velocities, const std::vector<double>& radii,
-            const std::vector<double>& masses, int& obj_start) :
-        m_points(points), m_velocities(velocities), m_radii(radii), m_masses(masses), m_obj_start(obj_start)
+            const std::vector<double>& masses, std::vector<bool>& collision_immune, int& obj_start) :
+        m_points(points), m_velocities(velocities), m_radii(radii), m_masses(masses), m_collision_immune(collision_immune),
+                m_obj_start(obj_start)
     {
     }
 
@@ -98,6 +100,7 @@ public:
      return vp - (u * vt0 + v * vt1 + w * vt2);
      }
      */
+
     bool isVertexFixed(int vert_idx) const
     {
         return GetMass(vert_idx) == std::numeric_limits<double>::infinity();
@@ -107,6 +110,11 @@ public:
     {
         // Is a vertex if index is less than start of object vertices in global array
         return vert < GetObjStart();
+    }
+
+    bool IsCollisionImmune(int vert) const
+    {
+        return m_collision_immune[vert];
     }
 
 };
@@ -128,7 +136,7 @@ public:
     // Return the bounding box of the object after it has moved for time_step
     virtual BoundingBox<Scalar> GetBBox(const GeometricData& geodata, const double time_step = 0) const = 0;
     virtual bool IsFixed(const GeometricData& geodata) = 0;
-
+    //    virtual bool IsCollisionFree(const GeometricData& geodata) = 0;
 };
 
 class YAEdge: public TopologicalElement
