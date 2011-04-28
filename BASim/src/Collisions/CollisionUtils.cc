@@ -371,4 +371,96 @@ void getCoplanarityTimes(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2, cons
     }
 }
 
+void getIntersectionPoint(const Vec3d& x_edge_0, const Vec3d& x_edge_1, const Vec3d& x_face_0, const Vec3d& x_face_1,
+        const Vec3d& x_face_2, std::vector<double>& times, std::vector<double>& errors)
+{
+    const double tol = 1e-8;
+    times.clear();
+    errors.clear();
+
+    Vec3d x03 = x_edge_0 - x_face_2;
+    Vec3d x13 = x_face_0 - x_face_2;
+    Vec3d x23 = x_face_1 - x_face_2;
+    Vec3d v03 = x_edge_1 - x_face_2 - x03;
+
+    double C = triple(v03, x13, x23);
+    double D = triple(x03, x13, x23);
+
+    const double convergence_tol = tol * (std::fabs(0) + std::fabs(0) + std::fabs(C) + std::fabs(D));
+
+    // find intervals to check, or just solve it if it reduces to a quadratic =============================
+    std::vector<double> interval_times;
+    interval_times.push_back(0);
+    interval_times.push_back(1);
+
+    // look for roots in indicated intervals ==============================================================
+    // evaluate coplanarity more accurately at each endpoint of the intervals
+    std::vector<double> interval_values(interval_times.size());
+    for (unsigned int i = 0; i < interval_times.size(); ++i)
+    {
+        double t = interval_times[i];
+        interval_values[i] = signed_volume((1 - t) * x_edge_0 + t * x_edge_1, x_face_0, x_face_1, x_face_2);
+    }
+    // first look for interval endpoints that are close enough to zero, without a sign change
+    for (unsigned int i = 0; i < interval_times.size(); ++i)
+    {
+        if (interval_values[i] == 0)
+        {
+            times.push_back(interval_times[i]);
+        }
+        else if (std::fabs(interval_values[i]) < convergence_tol)
+        {
+            if ((i == 0 || (interval_values[i - 1] >= 0 && interval_values[i] >= 0) || (interval_values[i - 1] <= 0
+                    && interval_values[i] <= 0)) && (i == interval_times.size() - 1 || (interval_values[i + 1] >= 0
+                    && interval_values[i] >= 0) || (interval_values[i + 1] <= 0 && interval_values[i] <= 0)))
+            {
+                times.push_back(interval_times[i]);
+            }
+        }
+    }
+    // and then search in intervals with a sign change
+    for (unsigned int i = 1; i < interval_times.size(); ++i)
+    {
+        double tlo = interval_times[i - 1], thi = interval_times[i], tmid;
+        double vlo = interval_values[i - 1], vhi = interval_values[i], vmid;
+        if ((vlo < 0 && vhi > 0) || (vlo > 0 && vhi < 0))
+        {
+            // start off with secant approximation (in case the cubic is actually linear)
+            double alpha = vhi / (vhi - vlo);
+            tmid = alpha * tlo + (1 - alpha) * thi;
+            for (int iteration = 0; iteration < 50; ++iteration)
+            {
+                vmid = signed_volume((1 - tmid) * x_edge_0 + tmid * x_edge_1, (1 - tmid) * x_face_0 + tmid * x_face_0,
+                        (1 - tmid) * x_face_1 + tmid * x_face_1, (1 - tmid) * x_face_2 + tmid * x_face_2);
+                if (std::fabs(vmid) < 1e-2 * convergence_tol)
+                    break;
+                if ((vlo < 0 && vmid > 0) || (vlo > 0 && vmid < 0))
+                { // if sign change between lo and mid
+                    thi = tmid;
+                    vhi = vmid;
+                }
+                else
+                { // otherwise sign change between hi and mid
+                    tlo = tmid;
+                    vlo = vmid;
+                }
+                if (iteration % 2)
+                    alpha = 0.5; // sometimes go with bisection to guarantee we make progress
+                else
+                    alpha = vhi / (vhi - vlo); // other times go with secant to hopefully get there fast
+                tmid = alpha * tlo + (1 - alpha) * thi;
+            }
+            times.push_back(tmid);
+        }
+    }
+    std::sort(times.begin(), times.end());
+
+    for (int i = 0; i < (int) times.size(); ++i)
+    {
+        double ti = times[i];
+        double val = std::fabs(signed_volume((1 - ti) * x_edge_0 + ti * x_edge_1, x_face_0, x_face_1, x_face_2));
+        errors.push_back(val);
+    }
+}
+
 }
