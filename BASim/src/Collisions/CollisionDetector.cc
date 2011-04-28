@@ -231,11 +231,11 @@ void CollisionDetector::appendCollision(const TopologicalElement* elem_a, const 
          */
         break;
 
-    case VertexFace:
+    case EdgeFace:
         if (edge_a && triangle_b)
-            appendVertexFaceIntersection(edge_a, triangle_b);
+            appendEdgeFaceIntersection(edge_a, triangle_b);
         if (edge_b && triangle_a)
-            appendVertexFaceIntersection(edge_b, triangle_a);
+            appendEdgeFaceIntersection(edge_b, triangle_a);
         break;
     }
 }
@@ -283,7 +283,7 @@ void CollisionDetector::appendContinuousTimeCollision(const YAEdge* edge_a, cons
         m_collisions_mutex.Lock();
         m_collisions->push_back(edgeXedge); // Will be deleted in BridsonStepper::executeIterativeInelasticImpulseResponse()
         m_collisions_mutex.Unlock();
-	std::cout << "CollisionDetector: Found edge-edge collision" << std::endl;
+	// std::cout << "CollisionDetector: Found edge-edge collision" << std::endl;
     }
     else
         delete edgeXedge;
@@ -310,7 +310,7 @@ void CollisionDetector::appendContinuousTimeCollision(int v_index, const YATrian
         m_collisions_mutex.Lock();
         m_collisions->push_back(vertexXface); // Will be deleted in BridsonStepper::executeIterativeInelasticImpulseResponse()
         m_collisions_mutex.Unlock();
-	std::cout << "CollisionDetector: Found vertex-face collision" << std::endl;
+	// std::cout << "CollisionDetector: Found vertex-face collision" << std::endl;
     }
     else
         delete vertexXface;
@@ -338,18 +338,18 @@ void CollisionDetector::appendContinuousTimeCollision(const YATriangle* triangle
     return;
 }
 
-void CollisionDetector::appendVertexFaceIntersection(const YAEdge* edge_a, const YATriangle* triangle)
+void CollisionDetector::appendEdgeFaceIntersection(const YAEdge* edge_a, const YATriangle* triangle)
 {
-    VertexFaceIntersection* vertexXface = new VertexFaceIntersection(m_geodata, edge_a, triangle);
+    EdgeFaceIntersection* edgeXface = new EdgeFaceIntersection(m_geodata, edge_a, triangle);
 
-    if (vertexXface->analyseCollision())
+    if (edgeXface->analyseCollision())
     {
         m_collisions_mutex.Lock();
-        m_collisions->push_back(vertexXface);
+        m_collisions->push_back(edgeXface);
         m_collisions_mutex.Unlock();
     }
     else
-        delete vertexXface;
+        delete edgeXface;
 
 }
 

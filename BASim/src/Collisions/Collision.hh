@@ -33,10 +33,10 @@ protected:
 
 };
 
-class VertexFaceIntersection: public Collision
+class EdgeFaceIntersection: public Collision
 {
 public:
-    VertexFaceIntersection(const GeometricData& geodata, const YAEdge* edge, const YATriangle* triangle) :
+    EdgeFaceIntersection(const GeometricData& geodata, const YAEdge* edge, const YATriangle* triangle) :
         Collision(geodata)
     {
         v0 = edge->first();

@@ -12,9 +12,9 @@ namespace BASim
 {
 
 /**
- * Class VertexFaceIntersection
+ * Class EdgeFaceIntersection
  */
-bool VertexFaceIntersection::analyseCollision(double)
+bool EdgeFaceIntersection::analyseCollision(double)
 {
     const Vec3d& p = m_geodata.GetPoint(v0);
     const Vec3d& pf0 = m_geodata.GetPoint(f0);

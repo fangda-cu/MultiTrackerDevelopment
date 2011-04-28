@@ -51,7 +51,7 @@ void RodBoundaryCondition::setDesiredVertexPosition(int vertIdx, double t, const
   m_rod.property(m_desiredPositions)[vertIdx] = x;
   m_rod.property(m_desiredVelocities)[vertIdx] = v;
 
-  std::cout << "RodBoundaryCondition::setDesiredVertexPosition: Setting new linear function for vertexIdx = " << vertIdx << " t0 = " << t << " x = " << x << " v = " << v << " x("<<(t+0.004167)<<") = " << getDesiredVertexPosition( vertIdx, t + 0.004167 ) << std::endl;
+ // std::cout << "RodBoundaryCondition::setDesiredVertexPosition: Setting new linear function for vertexIdx = " << vertIdx << " t0 = " << t << " x = " << x << " v = " << v << " x("<<(t+0.004167)<<") = " << getDesiredVertexPosition( vertIdx, t + 0.004167 ) << std::endl;
 }
 
 Vec3d RodBoundaryCondition::getDesiredVertexPosition(int vertIdx, double t)
@@ -62,7 +62,7 @@ Vec3d RodBoundaryCondition::getDesiredVertexPosition(int vertIdx, double t)
 
   Vec3d result = x0 + (t-t0)*v0;
 
-  std::cout << "RodBoundaryCondition::getDesiredVertexPosition: vertIdx = " << vertIdx << " t = " << t << " t0 = " << t0 << " x0 = " << x0 << " v0 = " << v0 << " result = " << result << std::endl;
+ // std::cout << "RodBoundaryCondition::getDesiredVertexPosition: vertIdx = " << vertIdx << " t = " << t << " t0 = " << t0 << " x0 = " << x0 << " v0 = " << v0 << " result = " << result << std::endl;
 
   return result;
 }

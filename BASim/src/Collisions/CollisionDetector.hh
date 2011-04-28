@@ -21,7 +21,7 @@ namespace BASim
 
 enum CollisionFilter
 {
-    ContinuousTime = 0, Proximity, VertexFace
+    ContinuousTime = 0, Proximity, EdgeFace
 };
 
 class CollisionDetector
@@ -74,7 +74,7 @@ private:
     void appendContinuousTimeCollision(int v_index, const YATriangle* triangle);
 
     // Determine whether the edge intersects the triangle; if so append the VFI to m_collisions
-    void appendVertexFaceIntersection(const YAEdge* edge, const YATriangle* triangle);
+    void appendEdgeFaceIntersection(const YAEdge* edge, const YATriangle* triangle);
 
     bool isVertexFixed(int vert_idx) const;
     bool isRodVertex(int vert) const;

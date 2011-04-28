@@ -33,7 +33,7 @@ bool WmFigMeshController::execute()
 
     // TODO: Fix this hacked in time
     //double interpolatedTime = ( ( getTime() / getDt() ) / 10.0;
-
+    /*
     std::cerr << "dt = " << getDt() << std::endl;
     std::cerr << "executing controller at time " << getTime() << "\n ";
     std::cerr << "executing controller at Maya time " << ( getTime() - m_startTime ) * 24.0 + m_startTime << "\n ";
@@ -41,9 +41,9 @@ bool WmFigMeshController::execute()
    
     std::cerr << "m_previousMayaTime = " << m_previousMayaTime << std::endl;
     std::cerr << "m_nextMayaTime = " << m_nextMayaTime << std::endl;
-
+*/
     double interpolation = ( getTime() - m_startTime ) * 24.0 + m_startTime - m_previousMayaTime;
-    std::cerr << "interpolated mesh factor = " << interpolation << std::endl;
+  //  std::cerr << "interpolated mesh factor = " << interpolation << std::endl;
  
     for( TriangleMesh::vertex_iter previousMeshItr = m_previousMesh->vertices_begin(),
          nextMeshItr = m_nextMesh->vertices_begin(),

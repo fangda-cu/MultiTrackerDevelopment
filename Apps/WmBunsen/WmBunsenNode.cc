@@ -587,7 +587,7 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 	return MS::kUnknownParameter;
     }
 
-    Timer::report();
+   // Timer::report();
     return MS::kSuccess;
 }
 

@@ -72,7 +72,7 @@ public:
 
   virtual void setTime(const double time)
   {
-    std::cout << "Setting time in AdaptiveBinaryStepper to be " << time << std::endl;
+  //  std::cout << "Setting time in AdaptiveBinaryStepper to be " << time << std::endl;
     m_stepper->setTime(time);
     RodTimeStepper::setTime(time);
   }

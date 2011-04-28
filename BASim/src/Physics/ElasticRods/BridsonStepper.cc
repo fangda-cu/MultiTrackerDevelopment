@@ -252,9 +252,9 @@ void BridsonStepper::prepareForExecution()
     extractVelocities(m_rods, m_base_indices, m_vnphalf);
     //std::cout << "Extracted positions" << std::endl;
 
-    std::cout << "About to create CollisionDetector" << std::endl;
+    //  std::cout << "About to create CollisionDetector" << std::endl;
     m_collision_detector = new CollisionDetector(m_geodata, m_edges, m_faces, m_dt, m_skipRodRodCollisions, m_num_threads);
-    std::cout << "Created CollisionDetector" << std::endl;
+    // std::cout << "Created CollisionDetector" << std::endl;
 
     // for (std::vector<double>::const_iterator i = m_masses.begin(); i != m_masses.end(); i++)
     //       m_collision_immune.push_back(*i == std::numeric_limits<double>::infinity());
@@ -383,7 +383,7 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse()
     if( itr >= 2 ) IntStatTracker::getIntTracker("STEPS_WITH_MULTIPLE_IMPULSE_ITERATIONS") += 1;
 #endif
 
-    std::cout << "The inelastic collision response is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ") << "dependable." << std::endl;
+    //  std::cout << "The inelastic collision response is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ") << "dependable." << std::endl;
 
     return dependable_solve;
 }
@@ -457,7 +457,7 @@ void BridsonStepper::setDt(double dt)
 void BridsonStepper::setTime(double time)
 {
     m_t = time;
-    std::cout << "settingTime in BridsonStepper to be " << m_t << std::endl;
+    // std::cout << "settingTime in BridsonStepper to be " << m_t << std::endl;
 
     // Set the time for the rod controllers
     for (int i = 0; i < (int) m_steppers.size(); ++i)
@@ -475,8 +475,8 @@ double BridsonStepper::getDt()
 
 double BridsonStepper::getTime()
 {
-  //std::cout << "BridsonStepper::getTime() = " << m_t << std::endl;
-  return m_t;
+    //std::cout << "BridsonStepper::getTime() = " << m_t << std::endl;
+    return m_t;
 }
 
 bool BridsonStepper::nonAdaptiveExecute(double dt)
@@ -484,15 +484,16 @@ bool BridsonStepper::nonAdaptiveExecute(double dt)
     setDt(dt);
     setTime(m_t + dt);
     //for (int i = 0; i < m_scripting_controllers.size(); ++i)
-      //  m_scripting_controllers[i]->setTime(m_t);
+    //  m_scripting_controllers[i]->setTime(m_t);
     return step(false);
 }
 
 bool BridsonStepper::adaptiveExecute(double dt)
 {
-  if (dt < 1e-9) exit(1);
+    if (dt < 1e-9)
+        exit(1);
 
-  std::cout << "BridsonStepper::adaptiveExecute starting with m_t = " << m_t << " dt = " << dt << std::endl;
+    // std::cout << "BridsonStepper::adaptiveExecute starting with m_t = " << m_t << " dt = " << dt << std::endl;
 
     // Backup all rods
     std::vector<MinimalRodStateBackup> rodbackups(m_rods.size());
@@ -512,12 +513,12 @@ bool BridsonStepper::adaptiveExecute(double dt)
     double time = m_t;
 
     // Set the desired timestep
-    std::cout << "Setting dt to: " << dt << std::endl;
+    //  std::cout << "Setting dt to: " << dt << std::endl;
     setDt(dt);
     // Advance the current time
-    setTime( m_t + dt);
+    setTime(m_t + dt);
     //for (int i = 0; i < (int) m_scripting_controllers.size(); ++i)
-      //  m_scripting_controllers[i]->setTime(m_t);
+    //  m_scripting_controllers[i]->setTime(m_t);
 
     // Attempt a full time step
     if (step(true))
@@ -526,7 +527,7 @@ bool BridsonStepper::adaptiveExecute(double dt)
         return true;
     }
 
-    std::cout << "Adaptive stepping in Bridson stepper" << std::endl;
+    // std::cout << "Adaptive stepping in Bridson stepper" << std::endl;
 
     // Restore all rods
     for (int i = 0; i < (int) m_rods.size(); ++i)
@@ -541,9 +542,9 @@ bool BridsonStepper::adaptiveExecute(double dt)
         objbackups[i].clear();
     }
     // Restore the time
-    setTime( time );
+    setTime(time);
     //for (int i = 0; i < (int) m_scripting_controllers.size(); ++i)
-      //  m_scripting_controllers[i]->setTime(m_t);
+    //  m_scripting_controllers[i]->setTime(m_t);
 
     // Otherwise attempt two steps of half length
     //setDt(0.5*dt);
@@ -560,8 +561,8 @@ bool BridsonStepper::adaptiveExecute(double dt)
         return false;
     }
 
-    std::cout << "Finished two adaptive steps" << std::endl;
-    std::cout << "Restoring dt to: " << dt << std::endl;
+    //  std::cout << "Finished two adaptive steps" << std::endl;
+    //  std::cout << "Restoring dt to: " << dt << std::endl;
     setDt(dt);
 
     return first_success && second_success;
@@ -569,8 +570,8 @@ bool BridsonStepper::adaptiveExecute(double dt)
 
 bool BridsonStepper::step(bool check_explosion)
 {
-    std::cout << std::endl << std::endl;
-   
+    // std::cout << std::endl << std::endl;
+
     check_explosion = false;
 
     // BEGIN TEMP
@@ -581,6 +582,7 @@ bool BridsonStepper::step(bool check_explosion)
     assert((int) m_masses.size() == m_xn.size() / 3);
     assert(m_xn.size() == m_xnp1.size());
     assert(m_xn.size() == m_vnphalf.size());
+
     if (m_rod_labels.size() != 0)
         assert(m_rod_labels.size() == m_rods.size());
     // Sanity check to ensure rods are not "internally colliding" because radius is bigger than edge length
@@ -606,7 +608,7 @@ bool BridsonStepper::step(bool check_explosion)
     // Save the pre-timestep positions
     extractPositions(m_rods, m_base_indices, m_xn);
 
-    std::cout << "Pre-timestep positions: " << m_xn << std::endl;
+    //  std::cout << "Pre-timestep positions: " << m_xn << std::endl;
 
     //std::cout << "m_xn: " << m_xn << std::endl;
 
@@ -615,20 +617,18 @@ bool BridsonStepper::step(bool check_explosion)
 
     // Find the initial vertex-face intersections and mark them collision-immune
     std::list<Collision*> collisions;
-    m_collision_detector->getCollisions(collisions, VertexFace);
+    m_collision_detector->getCollisions(collisions, EdgeFace);
     for (std::vector<bool>::iterator i = m_collision_immune.begin(); i != m_collision_immune.end(); i++)
         *i = false;
     while (!collisions.empty())
     {
-        VertexFaceIntersection* intersection = dynamic_cast<VertexFaceIntersection*> (collisions.front());
+        EdgeFaceIntersection* intersection = dynamic_cast<EdgeFaceIntersection*> (collisions.front());
         collisions.pop_front();
 
         if (intersection)
         {
-	    m_collision_immune[intersection->v0] = true;
-            //m_collision_immune[intersection->v1] = true;
-            //std::cerr << "Vertices " << intersection->v0 << " and " << intersection->v1 << " have been marked collision-free\n";
-	    std::cerr << "Vertex " << intersection->v0 << " has been marked collision-free\n";
+            m_collision_immune[intersection->v0] = true;
+            // std::cerr << "Vertex " << intersection->v0 << " has been marked collision-immune\n";
         }
     }
 
@@ -657,7 +657,7 @@ bool BridsonStepper::step(bool check_explosion)
     if (!multithreaded_stepper.Execute())
     {
         dependable_solve = false;
-        std::cout << "Dynamic step is not dependable!" << std::endl;
+        //  std::cout << "Dynamic step is not dependable!" << std::endl;
     }
 
     STOP_TIMER("BridsonStepperDynamics");
@@ -665,7 +665,7 @@ bool BridsonStepper::step(bool check_explosion)
     // Post time step position
     extractPositions(m_rods, m_base_indices, m_xnp1);
 
-    std::cout << "Post-timestep positions: " << m_xnp1 << std::endl;
+    // std::cout << "Post-timestep positions: " << m_xnp1 << std::endl;
 
     // Average velocity over the timestep just completed
     m_vnphalf = (m_xnp1 - m_xn) / m_dt;
@@ -688,7 +688,7 @@ bool BridsonStepper::step(bool check_explosion)
         if (!executeIterativeInelasticImpulseResponse())
         {
             dependable_solve = false;
-            std::cout << "Inelastic impulses are not dependable!" << std::endl;
+            //   std::cout << "Inelastic impulses are not dependable!" << std::endl;
         }
     }
     STOP_TIMER("BridsonStepperResponse");
@@ -713,7 +713,7 @@ bool BridsonStepper::step(bool check_explosion)
             // If that vertex has a prescribed position
             if( boundary->isVertexScripted(j) )
             {
-	      std::cout << "BridsonTimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
+                std::cout << "BridsonTimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
                 Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
                 Vec3d actualvalue = m_xnp1.segment<3>(rodbase+3*j);
                 assert( approxEq(desiredposition, actualvalue, 1.0e-6) );
@@ -755,32 +755,33 @@ bool BridsonStepper::step(bool check_explosion)
 
     if (check_explosion)
     {
-	double maxRate = 0;
-	double maxStart = 0;
-	double minStart = 1e99;
-	int worstViolator = 0;
-	std::cout << "Checking for explosions..." << std::endl;
+        double maxRate = 0;
+        double maxStart = 0;
+        double minStart = 1e99;
+        int worstViolator = 0;
+        //   std::cout << "Checking for explosions..." << std::endl;
 
-	for (int i = 0; i < (int) m_rods.size(); ++i) 
-	{
-	    for (int j = 0; j < m_rods[i]->ndof(); ++j)
-	    {
-		double s = (*(startForces[i]))[j];
-		double e = (*(endForces[i]))[j];
-		double rate = fabs(s-e) / (fabs(s)+100.);
-		maxRate = max(maxRate, rate);
-		minStart = min(fabs(s),minStart);
-		maxStart = max(fabs(s),maxStart);
-		if (maxRate==rate) worstViolator = j;
-		if ( isnan(rate) || rate > 10.0 ) 
-		{
-		    dependable_solve = false;
-		    std::cout << "Check Explosion (" << i << ", " << j << "): s = " << s << " e = " << e << std::endl;
-		}
-	    }
-	}
-	std::cout << "Check Explosion: worst violator = " << worstViolator << " with maxRate = " << maxRate << std::endl;
-	std::cout << "Check Explosion: minStart = " << minStart << " maxStart = " << maxStart << std::endl;
+        for (int i = 0; i < (int) m_rods.size(); ++i)
+        {
+            for (int j = 0; j < m_rods[i]->ndof(); ++j)
+            {
+                double s = (*(startForces[i]))[j];
+                double e = (*(endForces[i]))[j];
+                double rate = fabs(s - e) / (fabs(s) + 100.);
+                maxRate = max(maxRate, rate);
+                minStart = min(fabs(s), minStart);
+                maxStart = max(fabs(s), maxStart);
+                if (maxRate == rate)
+                    worstViolator = j;
+                if (isnan(rate) || rate > 10.0)
+                {
+                    dependable_solve = false;
+                    //   std::cout << "Check Explosion (" << i << ", " << j << "): s = " << s << " e = " << e << std::endl;
+                }
+            }
+        }
+        //   std::cout << "Check Explosion: worst violator = " << worstViolator << " with maxRate = " << maxRate << std::endl;
+        //   std::cout << "Check Explosion: minStart = " << minStart << " maxStart = " << maxStart << std::endl;
     }
 
     for (int i = 0; i < (int) m_rods.size(); ++i)
@@ -817,8 +818,8 @@ bool BridsonStepper::step(bool check_explosion)
     //    Timer::getTimer("BridsonStepperResponse").report();
     //    Timer::getTimer("Collision detector").report();
 
-    std::cout << "This step is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ") << "dependable." << std::endl;
-	 
+    //  std::cout << "This step is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ") << "dependable." << std::endl;
+
     return dependable_solve;
 }
 
@@ -942,7 +943,7 @@ void BridsonStepper::extractPositions(const std::vector<ElasticRod*>& rods, cons
         // For each vertex of the current rod, if that vertex has a prescribed position
         for( int j = 0; j < m_rods[i]->nv(); ++j ) if( boundary->isVertexScripted(j) )
         {
-	  std::cout << "BridsonTimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
+            std::cout << "BridsonTimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
             Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
             Vec3d actualvalue = positions.segment<3>(rodbase+3*j);
             assert( approxEq(desiredposition, actualvalue, 1.0e-6) );

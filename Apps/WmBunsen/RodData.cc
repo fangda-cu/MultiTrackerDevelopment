@@ -198,7 +198,7 @@ void RodData::updateBoundaryConditions()
 
 	double dt = 1./24.;
 
-	std::cerr << "RodData::updateBoundaryConditions: vertIdx = " << edgeNum << " t0 = " << m_bridsonStepper->getTime() << " prevPos = " << prevVertexPositions[edgeNum] << " nextPos = " << nextVertexPositions[edgeNum] << " vel = " << (nextVertexPositions[ edgeNum ] - prevVertexPositions[ edgeNum ])/dt << endl;
+//	std::cerr << "RodData::updateBoundaryConditions: vertIdx = " << edgeNum << " t0 = " << m_bridsonStepper->getTime() << " prevPos = " << prevVertexPositions[edgeNum] << " nextPos = " << nextVertexPositions[edgeNum] << " vel = " << (nextVertexPositions[ edgeNum ] - prevVertexPositions[ edgeNum ])/dt << endl;
 
         boundary->setDesiredVertexPosition( edgeNum, m_bridsonStepper->getTime(), prevVertexPositions[ edgeNum ], 
 					    (nextVertexPositions[ edgeNum ] - prevVertexPositions[ edgeNum ])/dt);
