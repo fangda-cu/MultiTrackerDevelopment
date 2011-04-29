@@ -52,9 +52,9 @@ class VertexTest( TestCase ):
 		
 			#make sure files contain same data
 			for i in range(0,count_lines):
-				self.assertTrue(abs(data[i][0]-datatest[i][0])< 0.02)
-		        	self.assertTrue(abs(data[i][1]-datatest[i][1])< 0.02)
-				self.assertTrue(abs(data[i][2]-datatest[i][2])< 0.02)
+				self.assertTrue(abs(data[i][0]-datatest[i][0])< 0.0001)
+		        	self.assertTrue(abs(data[i][1]-datatest[i][1])< 0.0001)
+				self.assertTrue(abs(data[i][2]-datatest[i][2])< 0.0001)
 		   
 			f.close()
 			ftest.close()

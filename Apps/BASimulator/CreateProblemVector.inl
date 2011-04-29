@@ -34,8 +34,8 @@ void CreateProblemVector()
  // problems.push_back(new SerializationTests());
   
 //  problems.push_back(new CollisionTestTwo());
-//  problems.push_back(new CollisionTestWeta());
- // problems.push_back(new HairyBallWeta());
+  problems.push_back(new CollisionTestWeta());
+  problems.push_back(new HairyBallWeta());
  
   #ifdef HAVE_PARDISO
   //problems.push_back(new MicrotuboliDNA());
