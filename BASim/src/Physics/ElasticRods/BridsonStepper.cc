@@ -11,6 +11,8 @@
 #include "../../Core/Timer.hh"
 #include "../../Collisions/Collision.hh"
 
+#include <iostream.h>
+
 namespace BASim
 {
 
@@ -383,7 +385,7 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse()
     if( itr >= 2 ) IntStatTracker::getIntTracker("STEPS_WITH_MULTIPLE_IMPULSE_ITERATIONS") += 1;
 #endif
 
-    //  std::cout << "The inelastic collision response is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ") << "dependable." << std::endl;
+    std::cout << "The inelastic collision response is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ") << "dependable." << std::endl;
 
     return dependable_solve;
 }
@@ -457,7 +459,7 @@ void BridsonStepper::setDt(double dt)
 void BridsonStepper::setTime(double time)
 {
     m_t = time;
-    // std::cout << "settingTime in BridsonStepper to be " << m_t << std::endl;
+    std::cout << "settingTime in BridsonStepper to be " << m_t << std::endl;
 
     // Set the time for the rod controllers
     for (int i = 0; i < (int) m_steppers.size(); ++i)
@@ -475,7 +477,7 @@ double BridsonStepper::getDt()
 
 double BridsonStepper::getTime()
 {
-    //std::cout << "BridsonStepper::getTime() = " << m_t << std::endl;
+  //std::cout << "BridsonStepper::getTime() = " << m_t << std::endl;
     return m_t;
 }
 
@@ -493,7 +495,7 @@ bool BridsonStepper::adaptiveExecute(double dt)
     if (dt < 1e-9)
         exit(1);
 
-    // std::cout << "BridsonStepper::adaptiveExecute starting with m_t = " << m_t << " dt = " << dt << std::endl;
+    std::cout << "BridsonStepper::adaptiveExecute starting with m_t = " << m_t << " dt = " << dt << std::endl;
 
     // Backup all rods
     std::vector<MinimalRodStateBackup> rodbackups(m_rods.size());
@@ -513,7 +515,7 @@ bool BridsonStepper::adaptiveExecute(double dt)
     double time = m_t;
 
     // Set the desired timestep
-    //  std::cout << "Setting dt to: " << dt << std::endl;
+    // std::cout << "Setting dt to: " << dt << std::endl;
     setDt(dt);
     // Advance the current time
     setTime(m_t + dt);
@@ -527,7 +529,7 @@ bool BridsonStepper::adaptiveExecute(double dt)
         return true;
     }
 
-    // std::cout << "Adaptive stepping in Bridson stepper" << std::endl;
+    std::cout << "Adaptive stepping in Bridson stepper" << std::endl;
 
     // Restore all rods
     for (int i = 0; i < (int) m_rods.size(); ++i)
@@ -561,7 +563,7 @@ bool BridsonStepper::adaptiveExecute(double dt)
         return false;
     }
 
-    //  std::cout << "Finished two adaptive steps" << std::endl;
+    std::cout << "Finished two adaptive steps" << std::endl;
     //  std::cout << "Restoring dt to: " << dt << std::endl;
     setDt(dt);
 
@@ -570,7 +572,7 @@ bool BridsonStepper::adaptiveExecute(double dt)
 
 bool BridsonStepper::step(bool check_explosion)
 {
-    // std::cout << std::endl << std::endl;
+    std::cout << std::endl << std::endl;
 
     check_explosion = false;
 
@@ -657,7 +659,7 @@ bool BridsonStepper::step(bool check_explosion)
     if (!multithreaded_stepper.Execute())
     {
         dependable_solve = false;
-        //  std::cout << "Dynamic step is not dependable!" << std::endl;
+        std::cout << "Dynamic step is not dependable!" << std::endl;
     }
 
     STOP_TIMER("BridsonStepperDynamics");
@@ -683,12 +685,12 @@ bool BridsonStepper::step(bool check_explosion)
 
     //if( m_pnlty_enbld ) executePenaltyResponse();
     START_TIMER("BridsonStepperResponse");
-    if (m_itrv_inlstc_enbld && m_num_inlstc_itrns > 0)
+    if (m_itrv_inlstc_enbld && m_num_inlstc_itrns > 0 && dependable_solve)
     {
         if (!executeIterativeInelasticImpulseResponse())
         {
             dependable_solve = false;
-            //   std::cout << "Inelastic impulses are not dependable!" << std::endl;
+            std::cout << "Inelastic impulses are not dependable!" << std::endl;
         }
     }
     STOP_TIMER("BridsonStepperResponse");
@@ -753,13 +755,13 @@ bool BridsonStepper::step(bool check_explosion)
         m_rods[i]->computeForces(*endForces[i]);
     }
 
-    if (check_explosion)
+    if (check_explosion && dependable_solve)
     {
         double maxRate = 0;
         double maxStart = 0;
         double minStart = 1e99;
         int worstViolator = 0;
-        //   std::cout << "Checking for explosions..." << std::endl;
+        std::cout << "Checking for explosions..." << std::endl;
 
         for (int i = 0; i < (int) m_rods.size(); ++i)
         {
@@ -776,12 +778,12 @@ bool BridsonStepper::step(bool check_explosion)
                 if (isnan(rate) || rate > 10.0)
                 {
                     dependable_solve = false;
-                    //   std::cout << "Check Explosion (" << i << ", " << j << "): s = " << s << " e = " << e << std::endl;
+                    std::cout << "Check Explosion (" << i << ", " << j << "): s = " << s << " e = " << e << std::endl;
                 }
             }
         }
-        //   std::cout << "Check Explosion: worst violator = " << worstViolator << " with maxRate = " << maxRate << std::endl;
-        //   std::cout << "Check Explosion: minStart = " << minStart << " maxStart = " << maxStart << std::endl;
+        std::cout << "Check Explosion: worst violator = " << worstViolator << " with maxRate = " << maxRate << std::endl;
+        std::cout << "Check Explosion: minStart = " << minStart << " maxStart = " << maxStart << std::endl;
     }
 
     for (int i = 0; i < (int) m_rods.size(); ++i)
@@ -818,7 +820,7 @@ bool BridsonStepper::step(bool check_explosion)
     //    Timer::getTimer("BridsonStepperResponse").report();
     //    Timer::getTimer("Collision detector").report();
 
-    //  std::cout << "This step is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ") << "dependable." << std::endl;
+    std::cout << "This step is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ") << "dependable." << std::endl;
 
     return dependable_solve;
 }
