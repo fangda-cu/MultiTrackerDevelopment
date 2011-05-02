@@ -40,7 +40,7 @@ bool EdgeFaceIntersection::analyseCollision(double)
         Vec3d cp = ClosestPtPointTriangle(pcol, f0col, f1col, f2col);
 
         // If, when they are coplanar, the objects are sufficiently close, register a collision
-        if ((pcol - cp).squaredNorm() <= std::numeric_limits<double>::epsilon())
+        if ((pcol - cp).squaredNorm() <= 1e-6)
         {
             s = times[j];
 
