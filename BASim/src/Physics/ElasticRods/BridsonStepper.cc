@@ -574,7 +574,7 @@ bool BridsonStepper::step(bool check_explosion)
 {
     std::cout << std::endl << std::endl;
 
-    check_explosion = false;
+    check_explosion = true;
 
     // BEGIN TEMP
     //for( size_t i = 0; i < m_rods.size(); ++i ) if( m_t >= 3.79 ) std::cout << i << ": " << computeMaxEdgeAngle( *m_rods[i] ) << std::endl;
