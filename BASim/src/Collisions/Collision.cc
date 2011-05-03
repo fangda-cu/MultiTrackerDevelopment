@@ -39,6 +39,9 @@ bool EdgeFaceIntersection::analyseCollision(double)
 
         Vec3d cp = ClosestPtPointTriangle(pcol, f0col, f1col, f2col);
 
+	std::cerr << "EdgeFaceIntersection::analyseCollision: " << "Edge: " << p << "---" << q
+		  << " Face: " << pf0 << "---" << pf1 << "---" << pf2 << " pcol = " << pcol << " cp = " << cp << " dist2 = " << (pcol - cp).squaredNorm() << std::endl;
+
         // If, when they are coplanar, the objects are sufficiently close, register a collision
         if ((pcol - cp).squaredNorm() <= std::numeric_limits<double>::epsilon())
         {
@@ -47,15 +50,13 @@ bool EdgeFaceIntersection::analyseCollision(double)
             Barycentric(f0col, f1col, f2col, pcol, u, v, w);
             // Barycentric coords could be outside of [0,1] right now because we've extended the triangles a little bit
             assert(approxEq(u + v + w, 1.0));
-/*
-            std::cerr << "Edge: " << p << "---" << q << std::endl;
-            std::cerr << "Face: " << pf0 << "---" << pf1 << "---" << pf2 << std::endl;
+
             std::cerr << "Barycentric coordinate on the edge: " << s << std::endl;
             std::cerr << "Barycentric coordinates on the face: " << u << ' ' << v << ' ' << w << std::endl;
-*/
-            if ((u > 0 && v > 0 && w > 0) || (1 - u) <= 0 || (1 - v)
-                    <= 0 || (1 - w) <= 0)
-                return m_analysed = true;
+
+            //if ((u > 0 && v > 0 && w > 0) || (1 - u) <= 0 || (1 - v)
+            //        <= 0 || (1 - w) <= 0)
+	    return m_analysed = true;
         }
     }
     return false;
@@ -153,10 +154,10 @@ bool EdgeEdgeCTCollision::analyseCollision(double time_step)
 
 double EdgeEdgeCTCollision::computeRelativeVelocity() const // Assumes m_normal has been computed
 {
-    const Vec3d& v0 = m_geodata.GetVelocity(e0_v0);
-    const Vec3d& v1 = m_geodata.GetVelocity(e0_v1);
-    const Vec3d& v2 = m_geodata.GetVelocity(e1_v0);
-    const Vec3d& v3 = m_geodata.GetVelocity(e1_v1);
+    const Vec3d v0 = m_geodata.GetVelocity(e0_v0);
+    const Vec3d v1 = m_geodata.GetVelocity(e0_v1);
+    const Vec3d v2 = m_geodata.GetVelocity(e1_v0);
+    const Vec3d v3 = m_geodata.GetVelocity(e1_v1);
 
     return (((1.0 - t) * v2 + t * v3) - ((1.0 - s) * v0 + s * v1)).dot(m_normal);
 }
@@ -272,12 +273,13 @@ bool VertexFaceCTCollision::analyseCollision(double time_step)
 
 double VertexFaceCTCollision::computeRelativeVelocity() const // Assumes m_normal has been computed
 {
-    const Vec3d& vp = m_geodata.GetVelocity(v0);
-    const Vec3d& vt0 = m_geodata.GetVelocity(f0);
-    const Vec3d& vt1 = m_geodata.GetVelocity(f1);
-    const Vec3d& vt2 = m_geodata.GetVelocity(f2);
+    const Vec3d vp = m_geodata.GetVelocity(v0);
+    const Vec3d vt0 = m_geodata.GetVelocity(f0);
+    const Vec3d vt1 = m_geodata.GetVelocity(f1);
+    const Vec3d vt2 = m_geodata.GetVelocity(f2);
 
     return (vp - (u * vt0 + v * vt1 + w * vt2)).dot(m_normal);
+    //std::cout << "VertexFaceCTCollision::computeRelativeVelocity: vp = " << vp << " result = " << result << std::endl; 
 }
 
 Vec3d VertexFaceCTCollision::computeInelasticImpulse()
@@ -300,10 +302,15 @@ std::ostream& operator<<(std::ostream& os, const VertexFaceCTCollision& vfcol)
     os << "Vertex face collision!\n";
     os << "Time: " << vfcol.m_time << '\n';
     os << "Normal: " << vfcol.m_normal << '\n';
-    os << "Relative velocity: " << vfcol.m_relative_velocity << '\n';
-    os << "Vertex: " << vfcol.v0 << vfcol.m_geodata.GetPoint(vfcol.v0) << '\n';
+    os << "Relative velocity: " << vfcol.computeRelativeVelocity() << '\n';
+    os << "Vertex[" << vfcol.v0 << "] position " << vfcol.m_geodata.GetPoint(vfcol.v0) << " velocity " << vfcol.m_geodata.GetVelocity(vfcol.v0) << 
+      " isFixed = " << vfcol.m_geodata.isVertexFixed(vfcol.v0) << std::endl;
     os << "Face: " << vfcol.f0 << vfcol.m_geodata.GetPoint(vfcol.f0) << ' ' << vfcol.f1 << vfcol.m_geodata.GetPoint(vfcol.f1)
-            << ' ' << vfcol.f2 << vfcol.m_geodata.GetPoint(vfcol.f2) << '\n';
+       << ' ' << vfcol.f2 << vfcol.m_geodata.GetPoint(vfcol.f2) << " isFixed = " 
+       << vfcol.m_geodata.isVertexFixed(vfcol.f0) << "/"
+       << vfcol.m_geodata.isVertexFixed(vfcol.f1) << "/"
+       << vfcol.m_geodata.isVertexFixed(vfcol.f2) << "/"
+       << '\n';
     os << "Barycentric coordinates: " << vfcol.u << ' ' << vfcol.v << ' ' << vfcol.w;
 
     return os;

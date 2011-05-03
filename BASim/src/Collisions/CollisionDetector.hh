@@ -78,10 +78,10 @@ private:
 
     bool isVertexFixed(int vert_idx) const;
     bool isRodVertex(int vert) const;
-    Vec3d computeRelativeVelocity(const int& idxa0, const int& idxa1, const int& idxb0, const int& idxb1, const double& s,
-            const double& t);
-    Vec3d computeRelativeVelocity(const int& vrtidx, const int& fcidx0, const int& fcidx1, const int& fcidx2, const double& u,
-            const double& v, const double& w);
+  //Vec3d computeRelativeVelocity(const int& idxa0, const int& idxa1, const int& idxb0, const int& idxb1, const double& s,
+  //          const double& t);
+  //  Vec3d computeRelativeVelocity(const int& vrtidx, const int& fcidx0, const int& fcidx1, const int& fcidx2, const double& u,
+  //          const double& v, const double& w);
 };
 
 class BVHParallelizer

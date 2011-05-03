@@ -301,7 +301,7 @@ void CollisionDetector::appendContinuousTimeCollision(int v_index, const YATrian
     if (vertexXface->IsFixed() || m_geodata.IsCollisionImmune(v_index))
     {
         delete vertexXface;
-	//std::cout << "CollisionDetector: Skipping vertex-face collision with fixed vertex and/or face" << std::endl;
+	std::cout << "CollisionDetector: Skipping vertex " << v_index << " - face " << triangle->first() << "/" << triangle->second() << "/" << triangle->third() << " collision with fixed vertex and/or face" << std::endl;
         return;
     }
 

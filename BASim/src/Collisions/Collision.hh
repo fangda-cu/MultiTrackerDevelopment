@@ -204,16 +204,24 @@ public:
         return m_normal;
     }
 
-    double GetRelativeVelocity() const
+    double GetCachedRelativeVelocity() const 
     {
         assert(m_analysed);
         return m_relative_velocity;
     }
 
+    // double GetRelativeVelocity()
+    // {
+    //     assert(m_analysed);
+    // 	computeRelativeVelocity();
+    //     return m_relative_velocity;
+    // }
+
     void ApplyRelativeVelocityKick()
     {
-        assert(m_analysed);
-        m_relative_velocity -= 1.0e6;
+      assert(0); // BAD BAD BAD BAD BAD
+      //        assert(m_analysed);
+      //  m_relative_velocity -= 1.0e6;
     }
 
     // From the initial collision data (vertices, velocities and time step) determine whether the collision happened, where and when.
@@ -224,9 +232,7 @@ public:
 
     friend bool CompareTimes(const Collision* cllsnA, const Collision* cllsnB);
 
-private:
     virtual double computeRelativeVelocity() const = 0;
-
 };
 
 inline bool CompareTimes(const Collision* cllsnA, const Collision* cllsnB)
@@ -297,9 +303,7 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const EdgeEdgeCTCollision& eecol);
     //   virtual void Print(std::ostream& os); { os << *this << std::endl; };
 
-private:
     virtual double computeRelativeVelocity() const;
-
 };
 
 /**
@@ -348,7 +352,6 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const VertexFaceCTCollision& vfcol);
     //   virtual void Print(std::ostream& os) { os << *this << std::endl; };
 
-private:
     virtual double computeRelativeVelocity() const;
 
 };
