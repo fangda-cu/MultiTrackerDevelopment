@@ -24,7 +24,7 @@ bool EdgeFaceIntersection::analyseCollision(double)
 
     std::vector<double> times;
     std::vector<double> errors;
-    getIntersectionPoint(p,  q, pf0, pf1, pf2, times, errors);
+    getIntersectionPoint(p, q, pf0, pf1, pf2, times, errors);
     assert(times.size() == errors.size());
 
     for (size_t j = 0; j < times.size(); ++j)
@@ -39,11 +39,12 @@ bool EdgeFaceIntersection::analyseCollision(double)
 
         Vec3d cp = ClosestPtPointTriangle(pcol, f0col, f1col, f2col);
 
-	std::cerr << "EdgeFaceIntersection::analyseCollision: " << "Edge: " << p << "---" << q
-		  << " Face: " << pf0 << "---" << pf1 << "---" << pf2 << " pcol = " << pcol << " cp = " << cp << " dist2 = " << (pcol - cp).squaredNorm() << std::endl;
+        std::cerr << "EdgeFaceIntersection::analyseCollision: " << "Edge: " << p << "---" << q << " Face: " << pf0 << "---"
+                << pf1 << "---" << pf2 << " pcol = " << pcol << " cp = " << cp << " dist2 = " << (pcol - cp).squaredNorm()
+                << std::endl;
 
         // If, when they are coplanar, the objects are sufficiently close, register a collision
-        if ((pcol - cp).squaredNorm() <= 1e-6)
+        if ((pcol - cp).squaredNorm() <= 1e-12)
         {
             s = times[j];
 
@@ -54,9 +55,8 @@ bool EdgeFaceIntersection::analyseCollision(double)
             std::cerr << "Barycentric coordinate on the edge: " << s << std::endl;
             std::cerr << "Barycentric coordinates on the face: " << u << ' ' << v << ' ' << w << std::endl;
 
-            //if ((u > 0 && v > 0 && w > 0) || (1 - u) <= 0 || (1 - v)
-            //        <= 0 || (1 - w) <= 0)
-	    return m_analysed = true;
+            if ((u > 0 && v > 0 && w > 0) || (1 - u) <= 0 || (1 - v) <= 0 || (1 - w) <= 0)
+                return m_analysed = true;
         }
     }
     return false;
@@ -303,14 +303,12 @@ std::ostream& operator<<(std::ostream& os, const VertexFaceCTCollision& vfcol)
     os << "Time: " << vfcol.m_time << '\n';
     os << "Normal: " << vfcol.m_normal << '\n';
     os << "Relative velocity: " << vfcol.computeRelativeVelocity() << '\n';
-    os << "Vertex[" << vfcol.v0 << "] position " << vfcol.m_geodata.GetPoint(vfcol.v0) << " velocity " << vfcol.m_geodata.GetVelocity(vfcol.v0) << 
-      " isFixed = " << vfcol.m_geodata.isVertexFixed(vfcol.v0) << std::endl;
+    os << "Vertex[" << vfcol.v0 << "] position " << vfcol.m_geodata.GetPoint(vfcol.v0) << " velocity "
+            << vfcol.m_geodata.GetVelocity(vfcol.v0) << " isFixed = " << vfcol.m_geodata.isVertexFixed(vfcol.v0) << std::endl;
     os << "Face: " << vfcol.f0 << vfcol.m_geodata.GetPoint(vfcol.f0) << ' ' << vfcol.f1 << vfcol.m_geodata.GetPoint(vfcol.f1)
-       << ' ' << vfcol.f2 << vfcol.m_geodata.GetPoint(vfcol.f2) << " isFixed = " 
-       << vfcol.m_geodata.isVertexFixed(vfcol.f0) << "/"
-       << vfcol.m_geodata.isVertexFixed(vfcol.f1) << "/"
-       << vfcol.m_geodata.isVertexFixed(vfcol.f2) << "/"
-       << '\n';
+            << ' ' << vfcol.f2 << vfcol.m_geodata.GetPoint(vfcol.f2) << " isFixed = "
+            << vfcol.m_geodata.isVertexFixed(vfcol.f0) << "/" << vfcol.m_geodata.isVertexFixed(vfcol.f1) << "/"
+            << vfcol.m_geodata.isVertexFixed(vfcol.f2) << "/" << '\n';
     os << "Barycentric coordinates: " << vfcol.u << ' ' << vfcol.v << ' ' << vfcol.w;
 
     return os;

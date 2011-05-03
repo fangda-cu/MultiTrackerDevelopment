@@ -374,7 +374,7 @@ void getCoplanarityTimes(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2, cons
 void getIntersectionPoint(const Vec3d& x_edge_0, const Vec3d& x_edge_1, const Vec3d& x_face_0, const Vec3d& x_face_1,
         const Vec3d& x_face_2, std::vector<double>& times, std::vector<double>& errors)
 {
-    const double tol = 1e-3;
+    const double tol = 1e-12;
     times.clear();
     errors.clear();
 
