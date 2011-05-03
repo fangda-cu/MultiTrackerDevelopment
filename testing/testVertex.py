@@ -7,8 +7,7 @@ class VertexTest( TestCase ):
 
 	def testVertex( self ):
 		
-		# Uses python-2.6.4_64
-		self.shell.need( 'python-3.1.1_64' )
+		self.shell.call( 'bob_check_opt' )
 		
 		files = open('./testing/lists.txt', 'r')
 		
@@ -17,7 +16,7 @@ class VertexTest( TestCase ):
 
       			fname='./testing/run'+tests[0]+'_t'+tests[1]+'_orig.txt'
 			fnametest='./testing/run'+tests[0]+'_t'+tests[1]+'_test.txt'
-			testtorun='/vol/bob/check/showard/linux64/opt/bin/basimulator -r '+tests[0]+' -f ./testing/run'+tests[0]+'options_t'+tests[1]+'.txt'
+			testtorun='basimulator -r '+tests[0]+' -f ./testing/run'+tests[0]+'options_t'+tests[1]+'.txt'
         		print fname
 		        print fnametest
 			print testtorun
@@ -52,9 +51,9 @@ class VertexTest( TestCase ):
 		
 			#make sure files contain same data
 			for i in range(0,count_lines):
-				self.assertTrue(abs(data[i][0]-datatest[i][0])< 0.0001)
-		        	self.assertTrue(abs(data[i][1]-datatest[i][1])< 0.0001)
-				self.assertTrue(abs(data[i][2]-datatest[i][2])< 0.0001)
+				self.assertTrue(abs(data[i][0]-datatest[i][0])< 0.01)
+		        	self.assertTrue(abs(data[i][1]-datatest[i][1])< 0.01)
+				self.assertTrue(abs(data[i][2]-datatest[i][2])< 0.01)
 		   
 			f.close()
 			ftest.close()

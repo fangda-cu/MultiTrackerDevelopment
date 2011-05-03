@@ -43,7 +43,7 @@ bool EdgeFaceIntersection::analyseCollision(double)
 		  << " Face: " << pf0 << "---" << pf1 << "---" << pf2 << " pcol = " << pcol << " cp = " << cp << " dist2 = " << (pcol - cp).squaredNorm() << std::endl;
 
         // If, when they are coplanar, the objects are sufficiently close, register a collision
-        if ((pcol - cp).squaredNorm() <= std::numeric_limits<double>::epsilon())
+        if ((pcol - cp).squaredNorm() <= 1e-6)
         {
             s = times[j];
 
