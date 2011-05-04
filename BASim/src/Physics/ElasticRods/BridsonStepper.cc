@@ -182,7 +182,7 @@ void BridsonStepper::prepareForExecution()
         assert((int) m_vertex_radii.size() == getNumVerts());
     }
     assert(m_rods.size() == m_base_indices.size());
-    //std::cout << "Extracted rod information" << std::endl;
+    std::cout << "Extracted rod information: " << m_num_dof / 3 << " vertices" << std::endl;
 
     m_obj_start = m_base_indices.back() / 3 + m_rods.back()->nv();
 
@@ -677,7 +677,7 @@ bool BridsonStepper::step(bool check_explosion)
     }
 
     // Launch num_threads threads which will execute all elements of m_steppers.
-    MultithreadedStepper<std::vector<RodTimeStepper*> > multithreaded_stepper(m_steppers, 4);//m_num_threads);
+    MultithreadedStepper<std::vector<RodTimeStepper*> > multithreaded_stepper(m_steppers, 4);//m_num_threads); // FIXME
     if (!multithreaded_stepper.Execute())
     {
         dependable_solve = false;
@@ -701,17 +701,6 @@ bool BridsonStepper::step(bool check_explosion)
 
     // Average velocity over the timestep just completed
     m_vnphalf = (m_xnp1 - m_xn) / m_dt;
-
-    // // J-M Rod fixing Hack
-    // if (false && m_t >= 0.146)
-    // {
-    //     int v0 = 14;
-    //     int v1 = 15;
-    //     m_masses[v0] = std::numeric_limits<double>::infinity();
-    //     m_masses[v1] = std::numeric_limits<double>::infinity();
-    //     m_vnphalf[3 * v0] = m_vnphalf[3 * v0 + 1] = m_vnphalf[3 * v0 + 2] = 0;
-    //     m_vnphalf[3 * v1] = m_vnphalf[3 * v1 + 1] = m_vnphalf[3 * v1 + 2] = 0;
-    // }
 
     //if( m_pnlty_enbld ) executePenaltyResponse();
     START_TIMER("BridsonStepperResponse");

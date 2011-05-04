@@ -68,7 +68,7 @@ Vec3d ClosestPtPointTriangle(const Vec3d& p, const Vec3d& a, const Vec3d& b, con
 double ClosestPtSegmentSegment(const Vec3d& p1, const Vec3d& q1, const Vec3d& p2, const Vec3d& q2, double& s, double& t,
         Vec3d& c1, Vec3d& c2)
 {
-    double EPSILON = 1.0e-9;
+    double EPSILON = 1.0e-12;
 
     Vec3d d1 = q1 - p1; // Direction vector of segment S1
     Vec3d d2 = q2 - p2; // Direction vector of segment S2
@@ -199,7 +199,7 @@ double signed_volume(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2, const Ve
 void getCoplanarityTimes(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2, const Vec3d& x3, const Vec3d& xnew0,
         const Vec3d& xnew1, const Vec3d& xnew2, const Vec3d& xnew3, std::vector<double>& times, std::vector<double>& errors)
 {
-    const double tol = 1e-8;
+    const double tol = 1e-12;
     times.clear();
     errors.clear();
 

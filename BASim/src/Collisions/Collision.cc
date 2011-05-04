@@ -14,17 +14,22 @@ namespace BASim
 /**
  * Class EdgeFaceIntersection
  */
+
+static const double SQ_TOLERANCE = 1e-12;
+
 bool EdgeFaceIntersection::analyseCollision(double)
 {
-    const Vec3d& p = m_geodata.GetPoint(v0);
-    const Vec3d& pf0 = m_geodata.GetPoint(f0);
-    const Vec3d& pf1 = m_geodata.GetPoint(f1);
-    const Vec3d& pf2 = m_geodata.GetPoint(f2);
-    const Vec3d& q = m_geodata.GetPoint(v1);
+    const Vec3d offset = m_geodata.GetPoint(v0);
+
+    const Vec3d p0 = m_geodata.GetPoint(v0) - offset;
+    const Vec3d p1 = m_geodata.GetPoint(v1) - offset;
+    const Vec3d q0 = m_geodata.GetPoint(f0) - offset;
+    const Vec3d q1 = m_geodata.GetPoint(f1) - offset;
+    const Vec3d q2 = m_geodata.GetPoint(f2) - offset;
 
     std::vector<double> times;
     std::vector<double> errors;
-    getIntersectionPoint(p, q, pf0, pf1, pf2, times, errors);
+    getIntersectionPoint(p0, p1, q0, q1, q2, times, errors);
     assert(times.size() == errors.size());
 
     for (size_t j = 0; j < times.size(); ++j)
@@ -32,19 +37,17 @@ bool EdgeFaceIntersection::analyseCollision(double)
         double dtime = times[j] * 1.0;
 
         // Determine if the collision actually happens
-        const Vec3d& pcol = p + dtime * (q - p);
-        const Vec3d& f0col = pf0;
-        const Vec3d& f1col = pf1;
-        const Vec3d& f2col = pf2;
+        const Vec3d& pcol = p0 + dtime * (p1 - p0);
+        const Vec3d& f0col = q0;
+        const Vec3d& f1col = q1;
+        const Vec3d& f2col = q2;
 
         Vec3d cp = ClosestPtPointTriangle(pcol, f0col, f1col, f2col);
 
-        std::cerr << "EdgeFaceIntersection::analyseCollision: " << "Edge: " << p << "---" << q << " Face: " << pf0 << "---"
-                << pf1 << "---" << pf2 << " pcol = " << pcol << " cp = " << cp << " dist2 = " << (pcol - cp).squaredNorm()
-                << std::endl;
+       // std::cerr << "EdgeFaceIntersection::analyseCollision: " << " dist^2 = " << (pcol - cp).squaredNorm() << std::endl;
 
         // If, when they are coplanar, the objects are sufficiently close, register a collision
-        if ((pcol - cp).squaredNorm() <= 1e-12)
+        if ((pcol - cp).squaredNorm() <= SQ_TOLERANCE)
         {
             s = times[j];
 
@@ -67,18 +70,20 @@ bool EdgeFaceIntersection::analyseCollision(double)
  */
 bool EdgeEdgeCTCollision::analyseCollision(double time_step)
 {
-    const Vec3d& p0 = m_geodata.GetPoint(e0_v0);
-    const Vec3d& q0 = m_geodata.GetPoint(e0_v1);
-    const Vec3d& p1 = m_geodata.GetPoint(e1_v0);
-    const Vec3d& q1 = m_geodata.GetPoint(e1_v1);
+    const Vec3d offset = m_geodata.GetPoint(e0_v0);
+
+    const Vec3d p0 = m_geodata.GetPoint(e0_v0) - offset;
+    const Vec3d q0 = m_geodata.GetPoint(e0_v1) - offset;
+    const Vec3d p1 = m_geodata.GetPoint(e1_v0) - offset;
+    const Vec3d q1 = m_geodata.GetPoint(e1_v1) - offset;
 
     if (p0 == p1 || q0 == q1 || q0 == p1 || p0 == q1)
         return false;
 
-    const Vec3d& vp0 = m_geodata.GetVelocity(e0_v0);
-    const Vec3d& vq0 = m_geodata.GetVelocity(e0_v1);
-    const Vec3d& vp1 = m_geodata.GetVelocity(e1_v0);
-    const Vec3d& vq1 = m_geodata.GetVelocity(e1_v1);
+    const Vec3d vp0 = m_geodata.GetVelocity(e0_v0);
+    const Vec3d vq0 = m_geodata.GetVelocity(e0_v1);
+    const Vec3d vp1 = m_geodata.GetVelocity(e1_v0);
+    const Vec3d vq1 = m_geodata.GetVelocity(e1_v1);
 
     // If both edges are motionless, no collision. Shouldn't we catch that earlier?
     if ((vp0.norm() == 0) && (vq0.norm() == 0) && (vp1.norm() == 0) && (vq1.norm() == 0))
@@ -108,9 +113,10 @@ bool EdgeEdgeCTCollision::analyseCollision(double time_step)
         Vec3d c0;
         Vec3d c1;
         double sqrdist = ClosestPtSegmentSegment(p1col, q1col, p2col, q2col, s, t, c0, c1);
+      //  std::cerr << "EdgeEdgeCTIntersection::analyseCollision: " << " dist^2 = " << sqrdist << std::endl;
 
         // If, when they are coplanar, the objects are sufficiently close, register a collision
-        if (sqrdist < 1.0e-12)
+        if (sqrdist < SQ_TOLERANCE)
         {
             m_time = times[j];
 
@@ -198,15 +204,17 @@ std::ostream& operator<<(std::ostream& os, const EdgeEdgeCTCollision& eecol)
  */
 bool VertexFaceCTCollision::analyseCollision(double time_step)
 {
-    const Vec3d& p = m_geodata.GetPoint(v0);
-    const Vec3d& pf0 = m_geodata.GetPoint(f0);
-    const Vec3d& pf1 = m_geodata.GetPoint(f1);
-    const Vec3d& pf2 = m_geodata.GetPoint(f2);
+    const Vec3d offset = m_geodata.GetPoint(v0);
 
-    const Vec3d& vp = m_geodata.GetVelocity(v0);
-    const Vec3d& vf0 = m_geodata.GetVelocity(f0);
-    const Vec3d& vf1 = m_geodata.GetVelocity(f1);
-    const Vec3d& vf2 = m_geodata.GetVelocity(f2);
+    const Vec3d p = m_geodata.GetPoint(v0) - offset;
+    const Vec3d pf0 = m_geodata.GetPoint(f0) - offset;
+    const Vec3d pf1 = m_geodata.GetPoint(f1) - offset;
+    const Vec3d pf2 = m_geodata.GetPoint(f2) - offset;
+
+    const Vec3d vp = m_geodata.GetVelocity(v0);
+    const Vec3d vf0 = m_geodata.GetVelocity(f0);
+    const Vec3d vf1 = m_geodata.GetVelocity(f1);
+    const Vec3d vf2 = m_geodata.GetVelocity(f2);
 
     std::vector<double> times;
     std::vector<double> errors;
@@ -222,15 +230,19 @@ bool VertexFaceCTCollision::analyseCollision(double time_step)
 
         // TODO: Use barycentric coordinates or point-triangle closest point < epsilon here? closest point < epsilon really just extends the triangle a little bit.
         // Determine if the collision actually happens
-        const Vec3d& pcol = p + dtime * vp;
-        const Vec3d& f0col = pf0 + dtime * vf0;
-        const Vec3d& f1col = pf1 + dtime * vf1;
-        const Vec3d& f2col = pf2 + dtime * vf2;
+        const Vec3d pcol = p + dtime * vp;
+        const Vec3d f0col = pf0 + dtime * vf0;
+        const Vec3d f1col = pf1 + dtime * vf1;
+        const Vec3d f2col = pf2 + dtime * vf2;
 
         Vec3d cp = ClosestPtPointTriangle(pcol, f0col, f1col, f2col);
 
+      //  std::cerr << "Vertex at intersection time (" << times[j] << "): " << pcol << std::endl;
+      //  std::cerr << "Closest point on triangle = " << cp << std::endl;
+      //  std::cerr << "VertexFaceCTIntersection::analyseCollision: " << " dist^2 = " << (pcol - cp).squaredNorm() << std::endl;
+
         // If, when they are coplanar, the objects are sufficiently close, register a collision
-        if ((pcol - cp).squaredNorm() < 1.0e-12)
+        if ((pcol - cp).squaredNorm() < SQ_TOLERANCE)
         {
             m_time = times[j];
 
