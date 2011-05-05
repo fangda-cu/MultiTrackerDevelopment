@@ -199,7 +199,7 @@ double signed_volume(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2, const Ve
 void getCoplanarityTimes(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2, const Vec3d& x3, const Vec3d& xnew0,
         const Vec3d& xnew1, const Vec3d& xnew2, const Vec3d& xnew3, std::vector<double>& times, std::vector<double>& errors)
 {
-    const double tol = 1e-12;
+    const double tol = 1e-8;
     times.clear();
     errors.clear();
 
