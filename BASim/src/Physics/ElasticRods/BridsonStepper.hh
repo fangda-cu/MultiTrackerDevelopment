@@ -217,15 +217,15 @@ public:
      * Modifies the timestep.
      */
     void setDt(double dt);
-    
+
     /**
      * Returns the timestep.
      **/
     double getDt();
-    
+
     /**
      * Returns the simulation time
-     **/ 
+     **/
     double getTime();
 
     /**
@@ -263,6 +263,7 @@ public:
      */
     void skipRodRodCollisions(bool skipRodRodCollisions)
     {
+        std::cerr << "Switching rod-rod collisions " << (skipRodRodCollisions ? "OFF" : "ON") << std::endl;
         m_skipRodRodCollisions = skipRodRodCollisions;
 
         if (m_collision_detector)
@@ -290,7 +291,7 @@ public:
         return (int) (m_triangle_meshes.size());
     }
     ;
-    
+
     void setTime(double time);
 
     // TODO: Move these to some kind of automated test suite
