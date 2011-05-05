@@ -219,9 +219,9 @@ void CollisionDetector::appendCollision(const TopologicalElement* elem_a, const 
         break;
 
     case Proximity:
+        if (edge_a && edge_b)
+            appendProximityCollision(edge_a, edge_b);
         /* TODO: implement this.
-         if (edge_a && edge_b)
-         appendProximityIntersection(edge_a, edge_b);
          else if (edge_a && triangle_b)
          appendProximityIntersection(edge_a, triangle_b);
          else if (triangle_a && edge_b)
@@ -320,7 +320,6 @@ void CollisionDetector::appendContinuousTimeCollision(int v_index, const YATrian
 
 void CollisionDetector::appendContinuousTimeCollision(const YAEdge* edge, const YATriangle* triangle)
 {
-
     YAEdge edge_2(triangle->first(), triangle->second());
     YAEdge edge_1(triangle->third(), triangle->first());
     YAEdge edge_0(triangle->second(), triangle->third());
@@ -350,6 +349,29 @@ void CollisionDetector::appendEdgeFaceIntersection(const YAEdge* edge_a, const Y
     }
     else
         delete edgeXface;
+}
+
+void CollisionDetector::appendProximityCollision(const YAEdge* edge_a, const YAEdge* edge_b)
+{
+
+    EdgeEdgeProximityCollision* edgeXedge = new EdgeEdgeProximityCollision(m_geodata, edge_a, edge_b);
+
+    if ((m_skip_rod_rod && edgeXedge->IsRodRod()) || edgeXedge->IsCollisionImmune())
+    { // Detect rod-rod collisions and skip them.
+        //std::cout << "CollisionDetector: Skipping rod-rod collision" << std::endl;
+        delete edgeXedge;
+        return;
+    }
+
+    if (edgeXedge->analyseCollision(m_time_step)) // time_step needed???
+    {
+        m_collisions_mutex.Lock();
+        m_collisions->push_back(edgeXedge); // Will be deleted in BridsonStepper::executeIterativeInelasticImpulseResponse()
+        m_collisions_mutex.Unlock();
+        // std::cout << "CollisionDetector: Found edge-edge collision" << std::endl;
+    }
+    else
+        delete edgeXedge;
 
 }
 

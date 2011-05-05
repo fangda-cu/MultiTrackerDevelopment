@@ -67,7 +67,6 @@ private:
     void appendCollision(const TopologicalElement* obj_a, const TopologicalElement* obj_b);
 
     // Determine if the collision happens during the current time step; if so append the CTC to m_collisions.
-    void appendContinuousTimeCollision(const TopologicalElement* obj_a, const TopologicalElement* obj_b);
     void appendContinuousTimeCollision(const YAEdge* edge_a, const YAEdge* edge_b);
     void appendContinuousTimeCollision(const YAEdge* edge, const YATriangle* triangle);
     void appendContinuousTimeCollision(const YATriangle* triangle_a, const YATriangle* triangle_b);
@@ -75,6 +74,11 @@ private:
 
     // Determine whether the edge intersects the triangle; if so append the VFI to m_collisions
     void appendEdgeFaceIntersection(const YAEdge* edge, const YATriangle* triangle);
+
+    // Determine if a close encounter has happened
+    void appendProximityCollision(const YAEdge* edge_a, const YAEdge* edge_b);
+
+
 
     bool isVertexFixed(int vert_idx) const;
     bool isRodVertex(int vert) const;

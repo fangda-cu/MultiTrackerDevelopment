@@ -68,6 +68,11 @@ public:
 class ProximityCollision: public Collision
 {
 public:
+    // Collision normal
+    Vec3d m_normal;
+    // Relative velocity along the oriented normal
+    double m_relative_velocity;
+
     ProximityCollision(const GeometricData& geodata) :
         Collision(geodata)
     {
@@ -86,15 +91,6 @@ public:
 class EdgeEdgeProximityCollision: public ProximityCollision
 {
 public:
-    EdgeEdgeProximityCollision(const GeometricData& geodata) :
-        ProximityCollision(geodata)
-    {
-    }
-    virtual bool analyseCollision(double time_step)
-    {
-        return false;
-    }
-
     // Vertices involved in collision
     int e0_v0;
     int e0_v1;
@@ -106,6 +102,50 @@ public:
     // Barycentric coordinates of closest points between edges
     double s;
     double t;
+
+    EdgeEdgeProximityCollision(const GeometricData& geodata, const YAEdge* edge_a, const YAEdge* edge_b) :
+     ProximityCollision(geodata)
+    {
+        e0_v0 = edge_a->first();
+        e0_v1 = edge_a->second();
+        e1_v0 = edge_b->first();
+        e1_v1 = edge_b->second();
+    }
+
+    virtual ~EdgeEdgeProximityCollision() {}
+
+    bool IsRodRod()
+    {
+        return m_geodata.isRodVertex(e0_v0) && m_geodata.isRodVertex(e1_v0);
+    }
+
+    virtual bool analyseCollision(double time_step = 0);
+
+    virtual Vec3d computeInelasticImpulse();
+
+    virtual bool IsFixed()
+    {
+        return m_geodata.isVertexFixed(e0_v0) && m_geodata.isVertexFixed(e0_v1) && m_geodata.isVertexFixed(e1_v0)
+                && m_geodata.isVertexFixed(e1_v1);
+    }
+
+    virtual bool IsCollisionImmune()
+    {
+        return m_geodata.IsCollisionImmune(e0_v0) || m_geodata.IsCollisionImmune(e0_v1) || m_geodata.IsCollisionImmune(e1_v0)
+                || m_geodata.IsCollisionImmune(e1_v1);
+    }
+
+    virtual void Print(std::ostream& os)
+    {
+        os << *this << std::endl;
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const EdgeEdgeProximityCollision& eecol);
+    //   virtual void Print(std::ostream& os); { os << *this << std::endl; };
+
+private:
+    virtual double computeRelativeVelocity() const;
+
 };
 
 /**

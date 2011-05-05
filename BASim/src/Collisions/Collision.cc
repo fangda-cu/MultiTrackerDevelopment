@@ -326,4 +326,50 @@ std::ostream& operator<<(std::ostream& os, const VertexFaceCTCollision& vfcol)
     return os;
 }
 
+bool EdgeEdgeProximityCollision::analyseCollision(double time_step)
+{
+    return false;
+}
+
+double EdgeEdgeProximityCollision::computeRelativeVelocity() const // Assumes m_normal has been computed
+{
+    const Vec3d& v0 = m_geodata.GetVelocity(e0_v0);
+    const Vec3d& v1 = m_geodata.GetVelocity(e0_v1);
+    const Vec3d& v2 = m_geodata.GetVelocity(e1_v0);
+    const Vec3d& v3 = m_geodata.GetVelocity(e1_v1);
+
+    return (((1.0 - t) * v2 + t * v3) - ((1.0 - s) * v0 + s * v1)).dot(m_normal);
+}
+
+Vec3d EdgeEdgeProximityCollision::computeInelasticImpulse()
+{
+    assert(m_analysed);
+
+    double ma0 = m_geodata.GetMass(e0_v0);
+    double ma1 = m_geodata.GetMass(e0_v1);
+    double mb0 = m_geodata.GetMass(e1_v0);
+    double mb1 = m_geodata.GetMass(e1_v1);
+
+    // Assumes negative relative velocity
+    Vec3d numerator = -m_relative_velocity * m_normal;
+    double denominator = (1 - s) * (1 - s) / ma0 + s * s / ma1 + (1 - t) * (1 - t) / mb0 + t * t / mb1;
+
+    return numerator / denominator;
+}
+
+std::ostream& operator<<(std::ostream& os, const EdgeEdgeProximityCollision& eecol)
+{
+    os << "Edge edge collision!\n";
+    os << "Normal: " << eecol.m_normal << '\n';
+    os << "Relative velocity: " << eecol.m_relative_velocity << '\n';
+    os << "Edge 0: " << eecol.e0_v0 << eecol.m_geodata.GetPoint(eecol.e0_v0) << ' ' << eecol.e0_v1 << eecol.m_geodata.GetPoint(
+            eecol.e0_v1) << '\n';
+    os << "Edge 1: " << eecol.e1_v0 << eecol.m_geodata.GetPoint(eecol.e1_v0) << ' ' << eecol.e1_v1 << eecol.m_geodata.GetPoint(
+            eecol.e1_v1) << '\n';
+    os << "Barycentric coordinates: " << eecol.s << ' ' << eecol.t;
+
+    return os;
+}
+
+
 }
