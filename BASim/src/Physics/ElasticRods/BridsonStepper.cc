@@ -627,22 +627,31 @@ bool BridsonStepper::step(bool check_explosion)
     for( int i = 0; i < (int) m_rods.size(); ++i ) assert( m_rods[i]->getTimeStep() == m_dt );
 #endif
 
-    VecXd *startForces[m_rods.size()];
-    for (int i = 0; i < (int) m_rods.size(); ++i)
+
+    std::cerr << "This step will treat " << m_selected_rods.size() << " remaining rods" << std::endl;
+
+
+    // Prepare start forces and list of steppers to be executed.
+    VecXd *startForces[m_selected_rods.size()];
+    int stf_it = 0;
+    std::list<RodTimeStepper*> selected_steppers;
+    for (std::list<int>::const_iterator selected_rod = m_selected_rods.begin(); selected_rod != m_selected_rods.end(); selected_rod++)
     {
-        startForces[i] = new VecXd(m_rods[i]->ndof());
-        startForces[i]->setZero();
-        m_rods[i]->computeForces(*startForces[i]);
+        selected_steppers.push_back(m_steppers[*selected_rod]);
+        startForces[stf_it] = new VecXd(m_rods[*selected_rod]->ndof());
+        startForces[stf_it]->setZero();
+        m_rods[*selected_rod]->computeForces(*startForces[stf_it]);
+        stf_it++;
     }
 
     // Save the pre-timestep positions
-    extractPositions(m_rods, m_base_indices, m_xn);
+    extractPositions(m_rods, m_base_indices, m_xn); // TODO: save only the positions of selected rods
 
     //  std::cout << "Pre-timestep positions: " << m_xn << std::endl;
 
     //std::cout << "m_xn: " << m_xn << std::endl;
 
-    // Track whether or not this solve succeeds
+    // Track whether or not this solve succeeds entirely
     bool dependable_solve = true;
 
     // Find the initial vertex-face intersections and mark them collision-immune
@@ -679,12 +688,13 @@ bool BridsonStepper::step(bool check_explosion)
         {
             m_implicit_pnlty_forces[i]->clearPenaltyForces();
         }
-        executeImplicitPenaltyResponse();
+        executeImplicitPenaltyResponse(); // TODO: convert this to "selected rods only"
     }
 
+
     // Launch num_threads threads which will execute all elements of m_steppers.
-    MultithreadedStepper<std::vector<RodTimeStepper*> > multithreaded_stepper(m_steppers, 4);//m_num_threads); // FIXME
-    if (!multithreaded_stepper.Execute())
+    MultithreadedStepper<std::list<RodTimeStepper*> > multithreaded_stepper(selected_steppers, 4);//m_num_threads); // FIXME
+    if (!multithreaded_stepper.Execute()) // if at least one of the steppers has not solved
     {
         dependable_solve = false;
         std::cout << "Dynamic step is not dependable!" << std::endl;
@@ -693,14 +703,16 @@ bool BridsonStepper::step(bool check_explosion)
     STOP_TIMER("BridsonStepperDynamics");
 
     // Post time step position
-    extractPositions(m_rods, m_base_indices, m_xnp1);
+    extractPositions(m_rods, m_base_indices, m_xnp1); // TODO: idem, only positions of selected rods should be saved
 
-    VecXd *preCollisionForces[m_rods.size()];
-    for (int i = 0; i < (int) m_rods.size(); ++i)
+    VecXd *preCollisionForces[m_selected_rods.size()];
+    int pcf_it = 0;
+    for (std::list<int>::const_iterator selected_rod = m_selected_rods.begin(); selected_rod != m_selected_rods.end(); selected_rod++)
     {
-        preCollisionForces[i] = new VecXd(m_rods[i]->ndof());
-        preCollisionForces[i]->setZero();
-        m_rods[i]->computeForces(*preCollisionForces[i]);
+        preCollisionForces[pcf_it] = new VecXd(m_rods[*selected_rod]->ndof());
+        preCollisionForces[pcf_it]->setZero();
+        m_rods[*selected_rod]->computeForces(*preCollisionForces[pcf_it]);
+        pcf_it++;
     }
 
     // std::cout << "Post-timestep positions: " << m_xnp1 << std::endl;
@@ -730,14 +742,14 @@ bool BridsonStepper::step(bool check_explosion)
 
 
     //#ifdef DEBUG
-    // For each rod
-    for (int i = 0; i < (int) m_rods.size(); ++i)
+    // For each selected rod
+    for (std::list<int>::const_iterator selected_rod = m_selected_rods.begin(); selected_rod != m_selected_rods.end(); selected_rod++)
     {
-        RodBoundaryCondition* boundary = m_rods[i]->getBoundaryCondition();
-        int rodbase = m_base_indices[i];
+        RodBoundaryCondition* boundary = m_rods[*selected_rod]->getBoundaryCondition();
+        int rodbase = m_base_indices[*selected_rod];
 
         // For each vertex of the current rod
-        for (int j = 0; j < m_rods[i]->nv(); ++j)
+        for (int j = 0; j < m_rods[*selected_rod]->nv(); ++j)
         {
             // If that vertex has a prescribed position
             if (boundary->isVertexScripted(j))
@@ -754,15 +766,15 @@ bool BridsonStepper::step(bool check_explosion)
     // Copy new positions and velocities back to rods
     restorePositions(m_rods, m_xnp1);
     restoreVelocities(m_rods, m_vnphalf);
-    // Also copy response velocity to rods
+    // Also copy response velocity to rods (for visualisation purposes only)
     restoreResponses(m_rods, m_vnresp);
 
     // Update frames and such in the rod (Is this correct? Will this do some extra stuff?)
 #ifdef HAVE_OPENMP
 #pragma omp parallel for
 #endif
-    for (int i = 0; i < (int) m_rods.size(); ++i)
-        m_rods[i]->updateProperties();
+    for (std::list<int>::const_iterator selected_rod = m_selected_rods.begin(); selected_rod != m_selected_rods.end(); selected_rod++)
+        m_rods[*selected_rod]->updateProperties();
 
     // Sanity check to ensure rod's internal state is consistent
 #ifdef DEBUG

@@ -514,6 +514,9 @@ private:
     // Toggle self collisions on or off
     bool m_skipRodRodCollisions;
 
+    // List of rods that have not been dependably solved
+    std::list<int> m_selected_rods;
+
 };
 
 } // namespace BASim
