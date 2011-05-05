@@ -55,8 +55,8 @@ bool EdgeFaceIntersection::analyseCollision(double)
             // Barycentric coords could be outside of [0,1] right now because we've extended the triangles a little bit
             assert(approxEq(u + v + w, 1.0));
 
-            std::cerr << "Barycentric coordinate on the edge: " << s << std::endl;
-            std::cerr << "Barycentric coordinates on the face: " << u << ' ' << v << ' ' << w << std::endl;
+           // std::cerr << "Barycentric coordinate on the edge: " << s << std::endl;
+           // std::cerr << "Barycentric coordinates on the face: " << u << ' ' << v << ' ' << w << std::endl;
 
             if ((u > 0 && v > 0 && w > 0) || (1 - u) <= 0 || (1 - v) <= 0 || (1 - w) <= 0)
                 return m_analysed = true;
