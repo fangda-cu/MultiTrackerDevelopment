@@ -26,7 +26,7 @@ public:
 
   virtual void computeForce(const ElasticRod& rod, VecXd& F);
 
-  void addRodPenaltyForce(int vertex, VertexFaceImplicitPenaltyCollision cllsn);
+  void addRodPenaltyForce(int vertex, VertexFaceProximityCollision* vfpcol);
 
   void clearPenaltyForces();
 
@@ -42,7 +42,7 @@ protected:
   void localJacobian(MatXd& J, const Scalar stiffness, const Vec3d& normal);
 
 	std::vector <int> vidx;
-	std::vector <VertexFaceImplicitPenaltyCollision> vertex_face_collisions;
+	std::vector <VertexFaceProximityCollision*> vertex_face_collisions;
 
 };
 

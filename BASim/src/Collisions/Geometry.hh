@@ -43,12 +43,15 @@ class GeometricData
     const std::vector<double>& m_masses;
     const std::vector<bool>& m_collision_immune;
     int& m_obj_start;
+    double& m_implicit_thickness;
+    double& m_vrt_fc_pnlty;
 
 public:
     GeometricData(const VecXd& points, const VecXd& velocities, const std::vector<double>& radii,
-            const std::vector<double>& masses, std::vector<bool>& collision_immune, int& obj_start) :
+            const std::vector<double>& masses, std::vector<bool>& collision_immune, int& obj_start, double& implicit_thickness,
+            double vrt_fc_pnlty) :
         m_points(points), m_velocities(velocities), m_radii(radii), m_masses(masses), m_collision_immune(collision_immune),
-                m_obj_start(obj_start)
+                m_obj_start(obj_start), m_implicit_thickness(implicit_thickness), m_vrt_fc_pnlty(vrt_fc_pnlty)
     {
     }
 
@@ -71,9 +74,20 @@ public:
     {
         return m_masses[i];
     }
+
     int GetObjStart() const
     {
         return m_obj_start;
+    }
+
+    double GetImplicitThickness() const
+    {
+        return m_implicit_thickness;
+    }
+
+    double GetVertexFacePenalty() const
+    {
+        return m_vrt_fc_pnlty;
     }
 
     /*
@@ -119,7 +133,7 @@ public:
 
 };
 
-  static const double MARGIN = 1e-6;
+static const double MARGIN = 1e-6;
 
 // A virtual class to abstract handling of edges and faces
 class TopologicalElement

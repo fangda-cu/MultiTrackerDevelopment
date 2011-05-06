@@ -61,7 +61,7 @@ private:
     void updateBoundingBox(BVHNode& node);
 
     // Proximity collision detection
-    void computeCollisions(const BVHNode& node_a, const BVHNode& node_b) ;
+    void computeCollisions(const BVHNode& node_a, const BVHNode& node_b);
 
     // Depending on m_collision_filter, determine and appends the relevant collision type between topological elements to m_collisions
     void appendCollision(const TopologicalElement* obj_a, const TopologicalElement* obj_b);
@@ -69,7 +69,6 @@ private:
     // Determine if the collision happens during the current time step; if so append the CTC to m_collisions.
     void appendContinuousTimeCollision(const YAEdge* edge_a, const YAEdge* edge_b);
     void appendContinuousTimeCollision(const YAEdge* edge, const YATriangle* triangle);
-    void appendContinuousTimeCollision(const YATriangle* triangle_a, const YATriangle* triangle_b);
     void appendContinuousTimeCollision(int v_index, const YATriangle* triangle);
 
     // Determine whether the edge intersects the triangle; if so append the VFI to m_collisions
@@ -77,15 +76,15 @@ private:
 
     // Determine if a close encounter has happened
     void appendProximityCollision(const YAEdge* edge_a, const YAEdge* edge_b);
-
-
+    void appendProximityCollision(const YAEdge* edge, const YATriangle* triangle);
+    void appendProximityCollision(int v_index, const YATriangle* triangle);
 
     bool isVertexFixed(int vert_idx) const;
     bool isRodVertex(int vert) const;
-  //Vec3d computeRelativeVelocity(const int& idxa0, const int& idxa1, const int& idxb0, const int& idxb1, const double& s,
-  //          const double& t);
-  //  Vec3d computeRelativeVelocity(const int& vrtidx, const int& fcidx0, const int& fcidx1, const int& fcidx2, const double& u,
-  //          const double& v, const double& w);
+    //Vec3d computeRelativeVelocity(const int& idxa0, const int& idxa1, const int& idxb0, const int& idxb1, const double& s,
+    //          const double& t);
+    //  Vec3d computeRelativeVelocity(const int& vrtidx, const int& fcidx0, const int& fcidx1, const int& fcidx2, const double& u,
+    //          const double& v, const double& w);
 };
 
 class BVHParallelizer

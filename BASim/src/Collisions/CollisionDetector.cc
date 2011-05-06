@@ -214,21 +214,15 @@ void CollisionDetector::appendCollision(const TopologicalElement* elem_a, const 
             appendContinuousTimeCollision(edge_a, triangle_b);
         else if (triangle_a && edge_b)
             appendContinuousTimeCollision(edge_b, triangle_a);
-        else if (triangle_a && triangle_b)
-            appendContinuousTimeCollision(triangle_a, triangle_b);
         break;
 
     case Proximity:
         if (edge_a && edge_b)
-            appendProximityCollision(edge_a, edge_b);
-        /* TODO: implement this.
-         else if (edge_a && triangle_b)
-         appendProximityIntersection(edge_a, triangle_b);
-         else if (triangle_a && edge_b)
-         appendProximityIntersection(triangle_a, edge_b);
-         else if (triangle_a && triangle_b)
-         appendProximityIntersection(triangle_a, triangle_b);
-         */
+        appendProximityCollision(edge_a, edge_b);
+        else if (edge_a && triangle_b)
+        appendProximityCollision(edge_a, triangle_b);
+        else if (triangle_a && edge_b)
+        appendProximityCollision(edge_b, triangle_a);
         break;
 
     case EdgeFace:
@@ -331,12 +325,6 @@ void CollisionDetector::appendContinuousTimeCollision(const YAEdge* edge, const 
     appendContinuousTimeCollision(edge->second(), triangle);
 }
 
-void CollisionDetector::appendContinuousTimeCollision(const YATriangle* triangle_a, const YATriangle* triangle_b)
-{
-    // Do nothing.
-    return;
-}
-
 void CollisionDetector::appendEdgeFaceIntersection(const YAEdge* edge_a, const YATriangle* triangle)
 {
     EdgeFaceIntersection* edgeXface = new EdgeFaceIntersection(m_geodata, edge_a, triangle);
@@ -363,10 +351,10 @@ void CollisionDetector::appendProximityCollision(const YAEdge* edge_a, const YAE
         return;
     }
 
-    if (edgeXedge->analyseCollision(m_time_step)) // time_step needed???
+    if (edgeXedge->analyseCollision())
     {
         m_collisions_mutex.Lock();
-        m_collisions->push_back(edgeXedge); // Will be deleted in BridsonStepper::executeIterativeInelasticImpulseResponse()
+        m_collisions->push_back(edgeXedge); // Will be deleted in BridsonStepper::executeImplicitPenaltyResponse()
         m_collisions_mutex.Unlock();
         // std::cout << "CollisionDetector: Found edge-edge collision" << std::endl;
     }
@@ -374,5 +362,46 @@ void CollisionDetector::appendProximityCollision(const YAEdge* edge_a, const YAE
         delete edgeXedge;
 
 }
+
+void CollisionDetector::appendProximityCollision(const YAEdge* edge, const YATriangle* triangle)
+{
+    YAEdge edge_2(triangle->first(), triangle->second());
+    YAEdge edge_1(triangle->third(), triangle->first());
+    YAEdge edge_0(triangle->second(), triangle->third());
+    appendProximityCollision(edge, &edge_0);
+    appendProximityCollision(edge, &edge_1);
+    appendProximityCollision(edge, &edge_2);
+
+    appendProximityCollision(edge->first(), triangle);
+    appendProximityCollision(edge->second(), triangle);
+}
+
+void CollisionDetector::appendProximityCollision(int v_index, const YATriangle* triangle) {
+
+    VertexFaceProximityCollision* vertexXface = new VertexFaceProximityCollision(m_geodata, v_index, triangle);
+
+    // If vertex is fixed, if face is fixed, nothing to do
+    if (vertexXface->IsFixed() || m_geodata.IsCollisionImmune(v_index))
+    {
+        delete vertexXface;
+        // std::cout << "CollisionDetector: Skipping vertex " << v_index << " - face " << triangle->first() << "/" << triangle->second() << "/" << triangle->third() << " collision with fixed vertex and/or face" << std::endl;
+        return;
+    }
+
+    if (vertexXface->analyseCollision())
+    {
+        m_collisions_mutex.Lock();
+        m_collisions->push_back(vertexXface); // Will be deleted in BridsonStepper::executeImplicitPenaltyResponse()
+        m_collisions_mutex.Unlock();
+        // std::cout << "CollisionDetector: Found vertex-face collision" << std::endl;
+    }
+    else
+        delete vertexXface;
+
+    //    Timer::getTimer("CollisionDetector::appendContinuousTimeCollision vertex face").stop();
+}
+
+
+
 
 } // namespace BASim
