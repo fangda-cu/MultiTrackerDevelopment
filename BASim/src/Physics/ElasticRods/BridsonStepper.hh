@@ -420,9 +420,9 @@ private:
 
     //////////////////////////////////
     // Jungseock's penalty response
-    void detectVertexFaceImplicitPenaltyCollisions(const VecXd& x, std::vector<VertexFaceProximityCollision>& pssbl_cllsns,
-            std::vector<VertexFaceImplicitPenaltyCollision>& vetex_face_collisions) const;
-    void executeImplicitPenaltyResponse();
+  //  void detectVertexFaceImplicitPenaltyCollisions(const VecXd& x, std::vector<VertexFaceProximityCollision>& pssbl_cllsns,
+  //          std::vector<VertexFaceImplicitPenaltyCollision>& vetex_face_collisions) const;
+    void executeImplicitPenaltyResponse(std::list<Collision*>& collisions);
 
 public:
     void enableImplicitPenaltyImpulses();
