@@ -5,7 +5,7 @@ from WtTestSuite.shell import ReturnCodeError
 
 class VertexTest( TestCase ):
 
-	def testVertex( self ):
+	def testBASimVertex( self ):
 		
 		self.shell.call( 'bob_check_opt' )
 		
