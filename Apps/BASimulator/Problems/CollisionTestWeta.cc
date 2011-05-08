@@ -279,7 +279,7 @@ void CollisionTestWeta::RodObjectSnaggingSetup()
   m_tri_objs.push_back(tri_mesh);
   FILE * pFile;
 
-  pFile=fopen("./testing/run7_t0_test.txt","w");
+  pFile=fopen("./testing/testBASimulator/run7_t0_test.txt","w");
    if ( pFile == NULL )
   {
        std::cerr << "Couldn't open the file!" << std::endl;
@@ -514,7 +514,7 @@ void CollisionTestWeta::MovingSphereSetup()
   m_tri_objs.push_back(tri_mesh);
   FILE * pFile;
 
-  pFile=fopen("./testing/run7_t10_test.txt","w");
+  pFile=fopen("./testing/testBASimulator/run7_t10_test.txt","w");
   if ( pFile == NULL )
   {
        std::cerr << "Couldn't open the file!" << std::endl;
@@ -611,7 +611,7 @@ void CollisionTestWeta::RodObjectSnaggingVertFaceTwoSetup()
   int numy = 1;
   FILE * pFile;
 
-  pFile=fopen("./testing/run7_t3_test.txt","w");
+  pFile=fopen("./testing/testBASimulator/run7_t3_test.txt","w");
    if ( pFile == NULL )
   {
        std::cerr << "Couldn't open the file!" << std::endl;
