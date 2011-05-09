@@ -218,11 +218,11 @@ void CollisionDetector::appendCollision(const TopologicalElement* elem_a, const 
 
     case Proximity:
         if (edge_a && edge_b)
-        appendProximityCollision(edge_a, edge_b);
+            appendProximityCollision(edge_a, edge_b);
         else if (edge_a && triangle_b)
-        appendProximityCollision(edge_a, triangle_b);
+            appendProximityCollision(edge_a, triangle_b);
         else if (triangle_a && edge_b)
-        appendProximityCollision(edge_b, triangle_a);
+            appendProximityCollision(edge_b, triangle_a);
         break;
 
     case EdgeFace:
@@ -265,19 +265,19 @@ void CollisionDetector::appendContinuousTimeCollision(const YAEdge* edge_a, cons
 
     EdgeEdgeCTCollision* edgeXedge = new EdgeEdgeCTCollision(m_geodata, edge_a, edge_b);
 
-    if ( (m_skip_rod_rod && edgeXedge->IsRodRod()) || edgeXedge->IsCollisionImmune())
+    if ((m_skip_rod_rod && edgeXedge->IsRodRod()) || edgeXedge->IsCollisionImmune())
     { // Detect rod-rod collisions and skip them.
-      //std::cout << "CollisionDetector: Skipping rod-rod collision" << std::endl;
+        //std::cout << "CollisionDetector: Skipping rod-rod collision" << std::endl;
         delete edgeXedge;
         return;
-    } 
+    }
 
     if (edgeXedge->analyseCollision(m_time_step))
     {
         m_collisions_mutex.Lock();
         m_collisions->push_back(edgeXedge); // Will be deleted in BridsonStepper::executeIterativeInelasticImpulseResponse()
         m_collisions_mutex.Unlock();
-	// std::cout << "CollisionDetector: Found edge-edge collision" << std::endl;
+        // std::cout << "CollisionDetector: Found edge-edge collision" << std::endl;
     }
     else
         delete edgeXedge;
@@ -295,7 +295,7 @@ void CollisionDetector::appendContinuousTimeCollision(int v_index, const YATrian
     if (vertexXface->IsFixed() || m_geodata.IsCollisionImmune(v_index))
     {
         delete vertexXface;
-	std::cout << "CollisionDetector: Skipping vertex " << v_index << " - face " << triangle->first() << "/" << triangle->second() << "/" << triangle->third() << " collision with fixed vertex and/or face" << std::endl;
+        // std::cout << "CollisionDetector: Skipping vertex " << v_index << " - face " << triangle->first() << "/" << triangle->second() << "/" << triangle->third() << " collision with fixed vertex and/or face" << std::endl;
         return;
     }
 
@@ -304,7 +304,7 @@ void CollisionDetector::appendContinuousTimeCollision(int v_index, const YATrian
         m_collisions_mutex.Lock();
         m_collisions->push_back(vertexXface); // Will be deleted in BridsonStepper::executeIterativeInelasticImpulseResponse()
         m_collisions_mutex.Unlock();
-	// std::cout << "CollisionDetector: Found vertex-face collision" << std::endl;
+        // std::cout << "CollisionDetector: Found vertex-face collision" << std::endl;
     }
     else
         delete vertexXface;
@@ -376,7 +376,8 @@ void CollisionDetector::appendProximityCollision(const YAEdge* edge, const YATri
     appendProximityCollision(edge->second(), triangle);
 }
 
-void CollisionDetector::appendProximityCollision(int v_index, const YATriangle* triangle) {
+void CollisionDetector::appendProximityCollision(int v_index, const YATriangle* triangle)
+{
 
     VertexFaceProximityCollision* vertexXface = new VertexFaceProximityCollision(m_geodata, v_index, triangle);
 
@@ -400,8 +401,5 @@ void CollisionDetector::appendProximityCollision(int v_index, const YATriangle* 
 
     //    Timer::getTimer("CollisionDetector::appendContinuousTimeCollision vertex face").stop();
 }
-
-
-
 
 } // namespace BASim

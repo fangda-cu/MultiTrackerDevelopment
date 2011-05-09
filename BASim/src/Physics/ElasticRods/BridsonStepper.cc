@@ -446,7 +446,7 @@ bool BridsonStepper::execute()
 	{
 	  if (m_rods[i]->getBoundaryCondition()->isVertexScripted((*itr).idx()))
 	    {
-	      std::cout << "BridsonStepper::prepareforExecution: rod " << i << " vertex " << (*itr).idx() << " prescribed." << std::endl;
+	    //  std::cout << "BridsonStepper::execute: rod " << i << " vertex " << (*itr).idx() << " prescribed." << std::endl;
 	      m_masses[k++] = std::numeric_limits<double>::infinity();
 	    }
 	  else
@@ -672,7 +672,7 @@ bool BridsonStepper::step(bool check_explosion)
         if (intersection)
         {
             m_collision_immune[intersection->v0] = true;
-            std::cerr << "BridsonStepper::step: Vertex " << intersection->v0 << " has been marked collision-immune\n";
+          //  std::cerr << "BridsonStepper::step: Vertex " << intersection->v0 << " has been marked collision-immune\n";
         }
     }
 
