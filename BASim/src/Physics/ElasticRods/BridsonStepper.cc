@@ -269,7 +269,7 @@ void BridsonStepper::prepareForExecution()
     //       m_collision_immune.push_back(*i == std::numeric_limits<double>::infinity());
     m_collision_immune.resize(getNumVerts());
 
-    enableImplicitPenaltyImpulses();
+    // enableImplicitPenaltyImpulses();
 
 }
 
