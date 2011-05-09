@@ -12,7 +12,7 @@ SphereRotatorW::SphereRotatorW( TriangleMesh& mesh, std::vector<ElasticRod*>& ro
 , m_mesh(mesh)
 , m_rods(rods)
 {
-  m_pFile=fopen("./testing/run8_t0_test.txt","w");
+  m_pFile=fopen("./testing/testBASimulator/run8_t0_test.txt","w");
   if ( m_pFile == NULL )
   {
      std::cerr << "Couldn't open the file!" << std::endl;
