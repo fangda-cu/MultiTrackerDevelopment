@@ -221,7 +221,7 @@ class MayaTest( TestCase ):
 			print maya.cmds.getAttr( 'wmFigaroNode1.syncAttrs' )
 			print "Test Case 9b: worked."
 			
-			
+"""			
 	def testcase9c( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
@@ -237,6 +237,7 @@ class MayaTest( TestCase ):
 			maya.cmds.currentTime( 1, edit=True )
 			print maya.cmds.getAttr( 'wmFigaroNode1.syncAttrs' )
 			print "Test Case 9c: worked."
+"""
 			
 	def testcase10( self ):
                
