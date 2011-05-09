@@ -303,9 +303,9 @@ public:
     void setRodLabels(const std::vector<std::string>& rod_labels);
 
     double computeTotalForceNorm();
-    bool step(bool check_explosion);
-    bool nonAdaptiveExecute(double dt);
-    bool adaptiveExecute(double dt);
+    bool step(bool check_explosion, std::list<int>& selected_rods);
+    bool nonAdaptiveExecute(double dt, std::list<int> selected_rods);
+    bool adaptiveExecute(double dt, std::list<int> selected_rods);
 
 private:
     /////////////////////////////////////////////////////
@@ -329,15 +329,15 @@ private:
     // Returns the total number of vertices in the system
     int getNumVerts() const;
 
-    void extractPositions(const std::vector<ElasticRod*>& rods, const std::vector<int>& base_indices, VecXd& positions);
-    void extractVelocities(const std::vector<ElasticRod*>& rods, const std::vector<int>& base_indices, VecXd& velocities);
+    void extractPositions(VecXd& positions, const std::list<int>& selected_rods) const;
+    void extractVelocities(VecXd& velocities, const std::list<int>& selected_rods) const;
     //void extractMasses( const std::vector<ElasticRod*>& rods, std::vector<double>& masses ) const;
     //void extractFixedVertices( const std::vector<ElasticRod*>& rods, std::vector<bool>& fixed ) const;
     //void extractEdges( const std::vector<ElasticRod*>& rods, const std::vector<int>& base_indices, std::vector<std::pair<int,int> >& edges, std::vector<double>& radii );
 
-    void restorePositions(std::vector<ElasticRod*>& rods, const VecXd& positions);
-    void restoreVelocities(std::vector<ElasticRod*>& rods, const VecXd& velocities);
-    void restoreResponses(std::vector<ElasticRod*>& rods, const VecXd& responses);
+    void restorePositions(const VecXd& positions, const std::list<int>& selected_rods);
+    void restoreVelocities(const VecXd& velocities, const std::list<int>& selected_rods);
+    void restoreResponses(const VecXd& responses, const std::list<int>& selected_rods);
 
     bool isRodVertex(int vert) const;
     bool isRodRodCollision(const EdgeEdgeCTCollision& collision) const;
@@ -421,8 +421,8 @@ private:
 
     //////////////////////////////////
     // Jungseock's penalty response
-  //  void detectVertexFaceImplicitPenaltyCollisions(const VecXd& x, std::vector<VertexFaceProximityCollision>& pssbl_cllsns,
-  //          std::vector<VertexFaceImplicitPenaltyCollision>& vetex_face_collisions) const;
+    //  void detectVertexFaceImplicitPenaltyCollisions(const VecXd& x, std::vector<VertexFaceProximityCollision>& pssbl_cllsns,
+    //          std::vector<VertexFaceImplicitPenaltyCollision>& vetex_face_collisions) const;
     void executeImplicitPenaltyResponse(std::list<Collision*>& collisions);
 
 public:
@@ -513,9 +513,6 @@ private:
 
     // Toggle self collisions on or off
     bool m_skipRodRodCollisions;
-
-    // List of rods that have not been dependably solved
-    std::list<int> m_selected_rods;
 
 };
 
