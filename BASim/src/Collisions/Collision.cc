@@ -391,22 +391,13 @@ bool VertexFaceProximityCollision::analyseCollision(double)
         k = m_geodata.GetVertexFacePenalty();
         h = m_geodata.GetImplicitThickness();
 
-        //      Barycentric( t0, t1, t2, p1, pssbl_cllsns[i].u, pssbl_cllsns[i].v, pssbl_cllsns[i].w );
-
-        // u,v,w CAN be outside of 0,1. We're really looking at minkowski sum of triangle with sphere here.
-        //      assert( approxEq(pssbl_cllsns[i].u+pssbl_cllsns[i].v+pssbl_cllsns[i].w,1.0) );
-
-        //      pssbl_cllsns[i].pen = pssbl_cllsns[i].r0+pssbl_cllsns[i].r1-sqrt(sqrdist);
-        //      assert( pssbl_cllsns[i].pen > 0.0 );
-
-        //      pssbl_cllsns[i].n = p1-cp;
         m_normal = (t1 - t0).cross(t2 - t0);
         assert(m_normal.norm() > 0.0);
 
         m_normal.normalize();
         assert(fabs(m_normal.norm() - 1.0) < 1.0e-6);
 
-        return true;
+        return m_analysed = true;
     }
 
     return false;
