@@ -373,8 +373,8 @@ std::ostream& operator<<(std::ostream& os, const EdgeEdgeProximityCollision& eec
 
 bool VertexFaceProximityCollision::analyseCollision(double)
 {
-//    if (vertexAndFaceShareVertex(v0, f0, f1, f2))
-//        return false;
+    //    if (vertexAndFaceShareVertex(v0, f0, f1, f2))
+    //        return false;
 
     // TODO: Add check for both having fixed vertices
 
@@ -388,10 +388,8 @@ bool VertexFaceProximityCollision::analyseCollision(double)
 
     if (sqrdist < (m_geodata.GetImplicitThickness() + r0 + r1) * (m_geodata.GetImplicitThickness() + r0 + r1))
     {
-      //  h = m_implicit_thickness;
-
-       k = 200.0;//m_geodata.GetVertexFacePenalty();
-       h = 1.0;
+        k = m_geodata.GetVertexFacePenalty();
+        h = m_geodata.GetImplicitThickness();
 
         //      Barycentric( t0, t1, t2, p1, pssbl_cllsns[i].u, pssbl_cllsns[i].v, pssbl_cllsns[i].w );
 
