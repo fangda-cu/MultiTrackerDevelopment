@@ -2610,7 +2610,7 @@ void BridsonStepper::enableImplicitPenaltyImpulses()
         m_steppers[i]->addExternalForce(pnlty);
     }
 
-    std::cerr << "Implicit penalty response are now enabled" << std::endl;
+    std::cerr << "Implicit penalty response is now enabled" << std::endl;
 
 }
 
