@@ -373,8 +373,8 @@ std::ostream& operator<<(std::ostream& os, const EdgeEdgeProximityCollision& eec
 
 bool VertexFaceProximityCollision::analyseCollision(double)
 {
-//    if (vertexAndFaceShareVertex(v0, f0, f1, f2))
-//        return false;
+    //    if (vertexAndFaceShareVertex(v0, f0, f1, f2))
+    //        return false;
 
     // TODO: Add check for both having fixed vertices
 
@@ -388,27 +388,16 @@ bool VertexFaceProximityCollision::analyseCollision(double)
 
     if (sqrdist < (m_geodata.GetImplicitThickness() + r0 + r1) * (m_geodata.GetImplicitThickness() + r0 + r1))
     {
-      //  h = m_implicit_thickness;
+        k = m_geodata.GetVertexFacePenalty();
+        h = m_geodata.GetImplicitThickness();
 
-       k = 200.0;//m_geodata.GetVertexFacePenalty();
-       h = 1.0;
-
-        //      Barycentric( t0, t1, t2, p1, pssbl_cllsns[i].u, pssbl_cllsns[i].v, pssbl_cllsns[i].w );
-
-        // u,v,w CAN be outside of 0,1. We're really looking at minkowski sum of triangle with sphere here.
-        //      assert( approxEq(pssbl_cllsns[i].u+pssbl_cllsns[i].v+pssbl_cllsns[i].w,1.0) );
-
-        //      pssbl_cllsns[i].pen = pssbl_cllsns[i].r0+pssbl_cllsns[i].r1-sqrt(sqrdist);
-        //      assert( pssbl_cllsns[i].pen > 0.0 );
-
-        //      pssbl_cllsns[i].n = p1-cp;
         m_normal = (t1 - t0).cross(t2 - t0);
         assert(m_normal.norm() > 0.0);
 
         m_normal.normalize();
         assert(fabs(m_normal.norm() - 1.0) < 1.0e-6);
 
-        return true;
+        return m_analysed = true;
     }
 
     return false;
