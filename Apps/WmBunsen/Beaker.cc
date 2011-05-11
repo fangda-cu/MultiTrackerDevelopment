@@ -348,9 +348,9 @@ void Beaker::addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup ,dou
     {
         if ( !m_rodDataMap[ i_rodGroupIndex ]->shouldSimulateRod( r ) )
             continue;
-            
-        m_rodDataMap[ i_rodGroupIndex ]->setBridsonStepperOnAllRodData( m_bridsonStepper );
     }
+    m_rodDataMap[ i_rodGroupIndex ]->setBridsonStepperOnAllRodData( m_bridsonStepper );
+
     
 
    /* delete m_volumetricCollisions;
