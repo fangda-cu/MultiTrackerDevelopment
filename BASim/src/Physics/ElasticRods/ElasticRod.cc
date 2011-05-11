@@ -106,6 +106,7 @@ void ElasticRod::addForce(RodForce* force)
 
 void ElasticRod::computeForces(VecXd& force)
 {
+  std::cout << "Rod forces..." << std::endl;
   RodForces& forces = getForces();
   RodForces::iterator fIt;
   VecXd curr_force(force.size());
@@ -113,7 +114,7 @@ void ElasticRod::computeForces(VecXd& force)
     curr_force.setZero();
     (*fIt)->globalForce(curr_force);
     force += curr_force;
-    //cout << (*fIt)->getName() << " = " << curr_force.norm() << endl;
+    std::cout << (*fIt)->getName() << "[41] = " << curr_force[41] << std::endl;
   }
 }
 

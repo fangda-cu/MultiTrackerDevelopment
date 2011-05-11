@@ -13,6 +13,8 @@
 
 #include <iostream.h>
 
+static bool explosionTriggered = false;
+
 namespace BASim
 {
 
@@ -269,7 +271,7 @@ void BridsonStepper::prepareForExecution()
     //       m_collision_immune.push_back(*i == std::numeric_limits<double>::infinity());
     m_collision_immune.resize(getNumVerts());
 
-    enableImplicitPenaltyImpulses();
+    //enableImplicitPenaltyImpulses();
 
 }
 
@@ -314,6 +316,9 @@ void BridsonStepper::exertInelasticImpluse(EdgeEdgeCTCollision& eecol)
     //computeEdgeEdgeInelasticImpulse(m_masses[eecol.e0_v0], m_masses[eecol.e0_v1], m_masses[eecol.e1_v0],
     //m_masses[eecol.e1_v1], eecol.s, eecol.t, eecol.GetRelativeVelocity(), eecol.n);
 
+    std::cout << "BridsonStepper::exertInelasticEdgeEdgeImpulse: (" << eecol.e0_v0 << "-" << eecol.e0_v1 << ", " 
+	      << eecol.e1_v0 << "-" << eecol.e1_v1 << ") s=" << eecol.s << " t=" << eecol.t << " I=" << I << std::endl;
+
     exertEdgeImpulse(-I, m_masses[eecol.e0_v0], m_masses[eecol.e0_v1], eecol.s, eecol.e0_v0, eecol.e0_v1, m_vnphalf);
     exertEdgeImpulse(I, m_masses[eecol.e1_v0], m_masses[eecol.e1_v1], eecol.t, eecol.e1_v0, eecol.e1_v1, m_vnphalf);
 
@@ -347,6 +352,9 @@ void BridsonStepper::exertInelasticImpluse(VertexFaceCTCollision& vfcol)
     // computeVertexFaceInelasticImpulse(m_masses[vfcol.v0], m_masses[vfcol.f0], m_masses[vfcol.f1], m_masses[vfcol.f2],
     // vfcol.u, vfcol.v, vfcol.w, eecol.GetRelativeVelocity(), vfcol.n);
 
+    std::cout << "BridsonStepper::exertInelasticImpulse: (" << vfcol.v0 << ", " << vfcol.f0 << "-" 
+	      << vfcol.f1 << "-" << vfcol.f2 << ") (u,v,w)=(" << vfcol.u << "," << vfcol.v << "," << vfcol.w << ") I=" << I << std::endl;
+
     exertFaceImpulse(-I, m_masses[vfcol.f0], m_masses[vfcol.f1], m_masses[vfcol.f2], vfcol.u, vfcol.v, vfcol.w, vfcol.f0,
             vfcol.f1, vfcol.f2, m_vnphalf);
     exertVertexImpulse(I, m_masses[vfcol.v0], vfcol.v0, m_vnphalf);
@@ -376,8 +384,11 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse()
 
         // Just sort the collision times to maintain some rough sense of causality
         collisions.sort(CompareTimes);
+	int collisionCounter = 0;
         while (!collisions.empty())
         {
+  	    ++collisionCounter;
+  	    std::cout << "\nBridsonStepper:executeIterativeInelasticImpulseResponse: treating collision #" << collisionCounter << std::endl;
             CTCollision* collision = dynamic_cast<CTCollision*> (collisions.front());
             // collision->Print(std::cerr);
             collisions.pop_front();
@@ -386,13 +397,16 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse()
             delete collision;
             m_collision_detector->updateContinuousTimeCollisions();
         }
+        
+        std::cerr << "Processed " << collisionCounter << " collisions" << std::endl;
+
         m_collision_detector->getCollisions(collisions, ContinuousTime);
     }
     // Just in case we haven't emptied the collisions but exited when itr == m_num_inlstc_itrns
     for (std::list<Collision*>::iterator i = collisions.begin(); i != collisions.end(); i++)
         delete *i;
 
-    if (itr > 1)
+    if (itr > 0)
         std::cerr << "\033[33mIterated collision response " << itr << " times\033[0m" << std::endl;
 
     if (itr == m_num_inlstc_itrns)
@@ -400,6 +414,7 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse()
         std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Exceeded maximum " << "number of inelastic iterations "
                 << m_num_inlstc_itrns << ". Time of warning " << m_t << "." << std::endl;
         dependable_solve = false;
+	explosionTriggered = true;
     }
 
 #ifdef TIMING_ON
@@ -534,6 +549,11 @@ bool BridsonStepper::nonAdaptiveExecute(double dt)
 
 bool BridsonStepper::adaptiveExecute(double dt)
 {
+    // if (explosionTriggered) {
+    //   std::cout << "BridsonStepper::adaptiveExecute: explosion triggered, so exiting." << std::endl;
+    //   return true; // get out of here if explosion was triggered
+    // }
+
     if (dt < 1e-9)
         exit(1);
 
@@ -598,6 +618,7 @@ bool BridsonStepper::adaptiveExecute(double dt)
         setDt(dt);
         return false;
     }
+
     bool second_success = adaptiveExecute(0.5 * dt);
     if (!second_success)
     {
@@ -646,6 +667,7 @@ bool BridsonStepper::step(bool check_explosion)
     {
         startForces[i] = new VecXd(m_rods[i]->ndof());
         startForces[i]->setZero();
+	std::cout << "BridsonStepper: calling computeForces" << std::endl;
         m_rods[i]->computeForces(*startForces[i]);
     }
 
@@ -788,11 +810,6 @@ bool BridsonStepper::step(bool check_explosion)
     for( int i = 0; i < (int) m_rods.size(); ++i ) m_rods[i]->verifyProperties();
 #endif
 
-    // Post time step position
-    //extractPositions(m_rods, m_base_indices, m_xdebug);
-
-    //std::cout << "Post-timestep positions, again: " << m_xdebug << std::endl;
-
     VecXd *endForces[m_rods.size()];
     for (int i = 0; i < (int) m_rods.size(); ++i)
     {
@@ -800,6 +817,11 @@ bool BridsonStepper::step(bool check_explosion)
         endForces[i]->setZero();
         m_rods[i]->computeForces(*endForces[i]);
     }
+
+    // Post time step position
+    //extractPositions(m_rods, m_base_indices, m_xdebug);
+
+    //std::cout << "Post-timestep positions, again: " << m_xdebug << std::endl;
 
     if (check_explosion && dependable_solve)
     {
@@ -826,6 +848,7 @@ bool BridsonStepper::step(bool check_explosion)
                 {
                     dependable_solve = false;
                     std::cout << "Check Explosion (" << i << ", " << j << "): s = " << s << " p = " << p << " e = " << e << std::endl;
+		    explosionTriggered = true;
                 }
             }
         }
@@ -1043,8 +1066,12 @@ void BridsonStepper::restorePositions(std::vector<ElasticRod*>& rods, const VecX
 
     for (int i = 0; i < (int) m_base_indices.size(); ++i)
         for (int j = 0; j < rods[i]->nv(); ++j)
-            if (!m_rods[i]->getBoundaryCondition()->isVertexScripted(j))
+	  if (!m_rods[i]->getBoundaryCondition()->isVertexScripted(j)) {
                 rods[i]->setVertex(j, positions.segment<3> (m_base_indices[i] + 3 * j));
+		std::cout << "BridsonStepper::restorePositions: storing rod " << i << " vertex " << j << " position " << positions.segment<3> (m_base_indices[i] + 3 * j) << std::endl;
+	  } else {
+	    std::cout << "BridsonStepper::restorePositions: SKIPPING rod " << i << " vertex " << j << " position " << positions.segment<3> (m_base_indices[i] + 3 * j) << std::endl;
+	  }
 }
 
 void BridsonStepper::restoreVelocities(std::vector<ElasticRod*>& rods, const VecXd& velocities)
@@ -1276,6 +1303,7 @@ void BridsonStepper::exertCompliantInelasticImpulse(const CTCollision* cllsn)
     const EdgeEdgeCTCollision* eecol = dynamic_cast<const EdgeEdgeCTCollision*> (cllsn);
     const VertexFaceCTCollision* vfcol = dynamic_cast<const VertexFaceCTCollision*> (cllsn);
     //std::cout << "BridsonStepper:exertCompliantInelasticImpulse: pre-impulse e-e relative velocity = " << cllsn->GetRelativeVelocity() << std::endl;
+
     if (eecol)
     {
         exertCompliantInelasticEdgeEdgeImpulse(*eecol);
@@ -1294,6 +1322,9 @@ void BridsonStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCT
 {
     //   std::cerr << "Vertex-face compliant inelastic impulse" << std::endl;
     //   std::cerr << vfcol << std::endl;
+
+    std::cout << "BridsonStepper::exertCompliantInelasticImpulse: (" << vfcol.v0 << ", " << vfcol.f0 << "-" 
+	      << vfcol.f1 << "-" << vfcol.f2 << ") (u,v,w)=(" << vfcol.u << "," << vfcol.v << "," << vfcol.w << ")" << std::endl;
 
     // For now, assume vertex is free and entire face is fixed
     assert(!m_geodata.isVertexFixed(vfcol.v0));
@@ -1504,14 +1535,16 @@ void BridsonStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCT
     // Ensure that the impulse eliminated the realtive velocity
     //#ifdef DEBUG
     double postmagrelvel = vfcol.computeRelativeVelocity();
-    // std::cout << "BridsonStepper::exertCompliantInelasticVertexFaceImpulse: relative velocity pre-impulse = " << magrelvel
-    //         << " post-impulse = " << postmagrelvel << std::endl;
+    std::cout << "BridsonStepper::exertCompliantInelasticVertexFaceImpulse: relative velocity pre-impulse = " << magrelvel
+             << " post-impulse = " << postmagrelvel << std::endl;
     // Ensure the inelastic impulse decreased the realtive velocity
     assert( fabs(postmagrelvel) <= fabs(magrelvel) );
     // Should add some 'extra kick' to ensure collision gets killed, but for now just be content with small velocity
     assert( fabs(postmagrelvel) < 1.0e-9 );
     //assert( postmagrelvel < 0.0 );
     //#endif
+
+    applyInextensibilityVelocityFilter(rodidx);
 
     // Ensure the 'scripted vertices' achieved the desired velocity
 #ifdef DEBUG
@@ -1560,6 +1593,13 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEd
     //assert( isEntireEdgeFree(eecol.e1_v0,eecol.e1_v1) );
 
     assert(!YAEdge(eecol.e0_v0, eecol.e0_v1).IsFixed(m_geodata) && !YAEdge(eecol.e1_v0, eecol.e1_v1).IsFixed(m_geodata));
+
+    std::cout << "BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree: (x[" 
+	      << eecol.e0_v0 << "]=" << m_geodata.GetPoint(eecol.e0_v0) << " - x[" 
+	      << eecol.e0_v1 << "]=" << m_geodata.GetPoint(eecol.e0_v1) << ",   x["
+	      << eecol.e1_v0 << "]=" << m_geodata.GetPoint(eecol.e1_v0) << " - x[" 
+	      << eecol.e1_v1 << "]=" << m_geodata.GetPoint(eecol.e1_v1) << ")"
+	      << " s=" << eecol.s << " t=" << eecol.t << std::endl;
 
     // Determine which rod each edge belongs to
     int rod0 = getContainingRod(eecol.e0_v0);
@@ -2071,6 +2111,61 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEd
 #endif
 }
 
+void BridsonStepper::applyInextensibilityVelocityFilter( int rodidx ) 
+{  
+  int rodbase = m_base_indices[rodidx];
+
+  Vec3d v0  = m_vnphalf.segment<3> (rodbase+3); // velocity of vertex 1
+  Vec3d x0  = m_xn.segment<3>      (rodbase+3); // start-of-step position of vertex 1
+  Vec3d x0N = x0 + m_dt * v0;                   // end-of-step position of vertex 1
+  for (int i=2; i<m_rods[rodidx]->nv(); ++i)
+    {
+      Vec3d x1 = m_xn.segment<3>      (rodbase + 3*i);
+      Vec3d v1 = m_vnphalf.segment<3> (rodbase + 3*i);
+      
+      // filter the velocity of vertex i
+      
+      Vec3d x1N = x1 + m_dt * v1;
+      
+      double l  = (x1 -x0 ).norm();
+      double lN = (x1N-x0N).norm();
+      
+      Vec3d x1Nrevised = x0N + (x1N-x0N)*l/lN;
+      
+      double lNrevised = (x1Nrevised-x0N).norm();
+      
+      Vec3d v1revised = (x1Nrevised - x1) / m_dt;
+      
+      m_vnphalf.segment<3> (rodbase + 3*i) = v1revised;
+
+      std::cout << "inextensibility: x0N = " << x0N << " x1Nrevised = " << x1Nrevised << " l = " << l << " lNrevised-l = " << (lNrevised-l) << " lNrevised/l = " << (lNrevised/l) << std::endl;//x1Nrevised = " << x1Nrevised << " strain = " << (lN/l) << " revised: " << (lNrevised/l) << " l = " << l << " lN = " << lN << " lNrevised = " << lNrevised << " x0N = " << x0N << " x1Nrevised = " << x1Nrevised << " m_vnphalf revised = " << m_vnphalf.segment<3> (rodbase + 3*i) << std::endl;
+
+      // Vec3d t = (x1-x0).normalized(); // unit tangent
+
+      // double relvel = t.dot(v1-v0);
+
+      // Vec3d impulse = -relvel*t;
+
+      // double relvelAfter = t.dot(v1 + impulse - v0);
+
+      // m_vnphalf.segment<3> (rodbase + 3*i) = v1 + impulse;
+
+      // std::cout << "inextensibility: i=" << i 
+      // 	    << " x0 = " << x0
+      // 	    << " x1 = " << x1 
+      // 	    << " v0 = " << v0
+      // 	    << " v1 = " << v1 
+      //           << " t = " << t
+      //           << " relvel before = " << relvel
+      //           << " after = " << relvelAfter << std::endl;
+      
+      x0N = x1Nrevised;
+      x0  = x1;
+      v0  = v1;
+    }
+}
+
+
 void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdgeCTCollision& eecol)
 {
     // Must have one totally fixed and one totally free edge
@@ -2079,10 +2174,19 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEd
                     || (YAEdge(eecol.e1_v0, eecol.e1_v1).IsFree(m_geodata) && YAEdge(eecol.e0_v0, eecol.e0_v1).IsFixed(
                             m_geodata)));
 
+    std::cout << "BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed: (x[" 
+	      << eecol.e0_v0 << "]=" << m_geodata.GetPoint(eecol.e0_v0) << " - x[" 
+	      << eecol.e0_v1 << "]=" << m_geodata.GetPoint(eecol.e0_v1) << ",   x["
+	      << eecol.e1_v0 << "]=" << m_geodata.GetPoint(eecol.e1_v0) << " - x[" 
+	      << eecol.e1_v1 << "]=" << m_geodata.GetPoint(eecol.e1_v1) << ")"
+	      << " s=" << eecol.s << " t=" << eecol.t << std::endl;
+
     // Determine if either edge is fixed
     bool rod0fixed = YAEdge(eecol.e0_v0, eecol.e0_v1).IsFixed(m_geodata);
     bool rod1fixed = YAEdge(eecol.e1_v0, eecol.e1_v1).IsFixed(m_geodata);
     assert(rod0fixed != rod1fixed);
+
+    double preRelativeVelocity = eecol.computeRelativeVelocity();
 
     // Compute the relative velocity, which must be negative for a collision to have happened
     //    Vec3d relvel = m_geodata.computeRelativeVelocity(eecol.e0_v0, eecol.e0_v1, eecol.e1_v0, eecol.e1_v1, eecol.s, eecol.t);
@@ -2332,8 +2436,107 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEd
     //  }
     // END TEMP DEBUG STUFF
 
-    for (int i = 0; i < numconstraints; ++i)
+    std::cout << "Pre-impulse velocity = " << m_vnphalf.segment(rodbase, nvdof) << std::endl << std::endl;
+
+    for (int i = 0; i < nvdof; i+=3) {
+
+      double vx = m_vnphalf.segment(rodbase, nvdof)[i];
+      double vy = m_vnphalf.segment(rodbase, nvdof)[i+1];
+      double vz = m_vnphalf.segment(rodbase, nvdof)[i+2];
+
+      double px = m_xn.segment(rodbase, nvdof)[i];
+      double py = m_xn.segment(rodbase, nvdof)[i+1];
+      double pz = m_xn.segment(rodbase, nvdof)[i+2];
+
+      std::cout << "curve -p " << px << " " << py << " " << pz << " -p " << px + vx << " " << py + vy << " " << pz + vz << ";" << std::endl;    
+    }
+    std::cout << std::endl;
+
+    for (int i = 0; i < numconstraints; ++i) {
+
+      std::cout << "alpha[" << i << "]=" << alpha(i) << " and " << " posnntilde[" << i << "] = " << posnntilde[i] << std::endl << std::endl;
+
         m_vnphalf.segment(rodbase, nvdof) += alpha(i) * posnntilde[i];
+    }
+
+    std::cout << "Post-impulse velocity = " << m_vnphalf.segment(rodbase, nvdof) << std::endl << std::endl;
+
+    for (int i = 0; i < nvdof; i+=3) {
+
+      double vx = m_vnphalf.segment(rodbase, nvdof)[i];
+      double vy = m_vnphalf.segment(rodbase, nvdof)[i+1];
+      double vz = m_vnphalf.segment(rodbase, nvdof)[i+2];
+
+      double px = m_xn.segment(rodbase, nvdof)[i];
+      double py = m_xn.segment(rodbase, nvdof)[i+1];
+      double pz = m_xn.segment(rodbase, nvdof)[i+2];
+
+      std::cout << "curve -p " << px << " " << py << " " << pz << " -p " << px + vx << " " << py + vy << " " << pz + vz << ";" << std::endl;    
+    }
+    std::cout << std::endl;
+
+
+    applyInextensibilityVelocityFilter(rodidx);
+
+    // ////////////////////////////////////////////////////////
+    // // Inextensibility Filter
+    // // for my reference: m_xnp1 = m_xn + m_dt * m_vnphalf;
+    // //
+    
+    // {
+    //   Vec3d v0  = m_vnphalf.segment<3> (rodbase+3); // velocity of vertex 1
+    //   Vec3d x0  = m_xn.segment<3>      (rodbase+3); // start-of-step position of vertex 1
+    //   Vec3d x0N = x0 + m_dt * v0;                   // end-of-step position of vertex 1
+    //   for (int i=2; i<m_rods[rodidx]->nv(); ++i)
+    // 	{
+    // 	  Vec3d x1 = m_xn.segment<3>      (rodbase + 3*i);
+    // 	  Vec3d v1 = m_vnphalf.segment<3> (rodbase + 3*i);
+
+    // 	  // filter the velocity of vertex i
+
+    // 	  Vec3d x1N = x1 + m_dt * v1;
+
+    // 	  double l  = (x1 -x0 ).norm();
+    // 	  double lN = (x1N-x0N).norm();
+
+    // 	  Vec3d x1Nrevised = x0N + (x1N-x0N)*l/lN;
+
+    // 	  double lNrevised = (x1Nrevised-x0N).norm();
+
+    // 	  Vec3d v1revised = (x1Nrevised - x1) / m_dt;
+
+    // 	  m_vnphalf.segment<3> (rodbase + 3*i) = v1revised;
+
+    // 	  std::cout << "inextensibility: x0N = " << x0N << " x1Nrevised = " << x1Nrevised << " l = " << l << " lNrevised-l = " << (lNrevised-l) << " lNrevised/l = " << (lNrevised/l) << std::endl;//x1Nrevised = " << x1Nrevised << " strain = " << (lN/l) << " revised: " << (lNrevised/l) << " l = " << l << " lN = " << lN << " lNrevised = " << lNrevised << " x0N = " << x0N << " x1Nrevised = " << x1Nrevised << " m_vnphalf revised = " << m_vnphalf.segment<3> (rodbase + 3*i) << std::endl;
+
+    // 	  // Vec3d t = (x1-x0).normalized(); // unit tangent
+
+    // 	  // double relvel = t.dot(v1-v0);
+
+    // 	  // Vec3d impulse = -relvel*t;
+
+    // 	  // double relvelAfter = t.dot(v1 + impulse - v0);
+
+    // 	  // m_vnphalf.segment<3> (rodbase + 3*i) = v1 + impulse;
+
+    // 	  // std::cout << "inextensibility: i=" << i 
+    // 	  // 	    << " x0 = " << x0
+    // 	  // 	    << " x1 = " << x1 
+    // 	  // 	    << " v0 = " << v0
+    // 	  // 	    << " v1 = " << v1 
+    // 	  //           << " t = " << t
+    // 	  //           << " relvel before = " << relvel
+    // 	  //           << " after = " << relvelAfter << std::endl;
+
+    // 	  x0N = x1Nrevised;
+    // 	  x0  = x1;
+    // 	  v0  = v1;
+    // 	}
+    // }
+    
+
+    ////////////////////////////////////////////////////////
+
 
     // TEMP DEBUG STUFF
     //  Vec3d postrelvel = computeRelativeVelocity( m_vnphalf, eecol.e0_v0, eecol.e0_v1, eecol.e1_v0, eecol.e1_v1, eecol.s, eecol.t );
@@ -2385,6 +2588,10 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEd
         ++curdof;
     }
 #endif
+
+    double postRelativeVelocity = eecol.computeRelativeVelocity();
+
+    std::cout << "BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed: Relative velocity before = " << preRelativeVelocity << " after = " << postRelativeVelocity << std::endl;
 }
 
 /*
