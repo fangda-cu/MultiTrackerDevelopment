@@ -89,7 +89,7 @@ using namespace BASim;
 /* static */ MObject WmFigRodNode::oa_fieldData;
 
 WmFigRodNode::WmFigRodNode() : m_massDamping( 10 ), m_initialised( false ),
-    /*mx_rodData( NULL ),*/ mx_world( NULL ), m_numberOfInputCurves( 0 ), 
+    /*mx_rodData( NULL ),*/ mx_world( NULL ), m_numberOfInputCurves( 0 ),
     m_percentageOfBarberShopStrands( 100 ), m_verticesPerRod( -1 ), m_cacheFilename( "" ),
     m_pRodInput( NULL ), m_vertexSpacing( 0.0 ), m_minimumRodLength( 2.0 ),
     m_readFromCache( false ), m_writeToCache( false ), m_cachePath ( "" ),
@@ -151,11 +151,11 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             CHECK_MSTATUS( stat );
             MDataHandle massesHandle = i_dataBlock.outputValue( oa_masses, &stat );
             CHECK_MSTATUS( stat );
-            
+
             MFnVectorArrayData positionsArrayData;
             MFnVectorArrayData velocitiesArrayData;
             MFnDoubleArrayData massesArrayData;
-            
+
             // Is this right, always doing the create?
             positionsHandle.set( positionsArrayData.create( &stat ) );
             CHECK_MSTATUS( stat );
@@ -163,7 +163,7 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             CHECK_MSTATUS( stat );
             massesHandle.set( massesArrayData.create( &stat ) );
             CHECK_MSTATUS( stat );
-            
+
             MVectorArray positions = positionsArrayData.array( &stat );
             CHECK_MSTATUS( stat );
             MVectorArray velocities = velocitiesArrayData.array( &stat );
@@ -172,7 +172,7 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             CHECK_MSTATUS( stat );
 
             double deltaTime = -1.0;
-                    
+
             // We have some rods that are being simulated so let's
             // send the data to the field node.
             for ( int r = 0; r < m_rodGroup.numberOfRods(); ++r )
@@ -183,20 +183,20 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                     unsigned int startIndex = positions.length();
                     positions.setLength( startIndex + elasticRod->nv() );
                     velocities.setLength( startIndex + elasticRod->nv() );
-                    masses.setLength( startIndex + elasticRod->nv() );                    
-                    
+                    masses.setLength( startIndex + elasticRod->nv() );
+
                     for ( int v = 0; v < elasticRod->nv(); ++v )
                     {
                         BASim::Vec3d position = elasticRod->getVertex( v );
                         positions[ startIndex + v ] = MVector( position[ 0 ], position[ 1 ], position[ 2 ] );
-                        
+
                         BASim::Vec3d velocity = elasticRod->getVelocity( v );
                         velocities[ startIndex + v ] = MVector( velocity[ 0 ], velocity[ 1 ], velocity[ 2 ] );
-                        
+
                         double mass = elasticRod->getVertexMass( v );
                         masses[ startIndex + v ] = mass;
                     }
-                    
+
                     // All rods step at the same speed (ignoring adaptive stepping).
                     // So take the timestep from the first real rod.
                     // FIXME: Work out how this sits when adaptive stepping, which fields
@@ -214,27 +214,27 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                     cerr << "got null rod when trying to send data to field.\n";
                 }
             }
-            
+
             positionsHandle.setClean();
             velocitiesHandle.setClean();
             massesHandle.setClean();
-            
+
             MDataHandle deltaTimeHandle = i_dataBlock.outputValue( oa_deltaTime, &stat );
             CHECK_MSTATUS( stat );
-            
+
             deltaTimeHandle.set( deltaTime );
             deltaTimeHandle.setClean();
-            
+
             // Finally set the parent handle clean
             MDataHandle fieldDataHandle = i_dataBlock.outputValue( oa_fieldData, &stat );
             CHECK_MSTATUS( stat );
             fieldDataHandle.setClean();
-/*            
+/*
             cerr << "Positions:\n" << positions << endl;
             cerr << "Velocities:\n" << velocities << endl;
             cerr << "Masses:\n" << masses << endl;
-            cerr << "DelataTime:\n" << deltaTime << endl;             
-*/       
+            cerr << "DelataTime:\n" << deltaTime << endl;
+*/
         }
     }
     else if ( i_plug == oa_numberOfRods )
@@ -249,9 +249,9 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
         MDataHandle numRodsH = i_dataBlock.outputValue( oa_numberOfRods, &stat);
         CHECK_MSTATUS( stat );
-    
+
         numRodsH.set( (int)m_rodGroup.numberOfRods() );
-        
+
         stat = i_dataBlock.setClean( i_plug );
         if ( !stat )
         {
@@ -275,13 +275,13 @@ MStatus WmFigRodNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     {
         // The Barbershop dynamic wire deformer is asking for the simulated rod vertices so it can
         // deform the hair appropriately.
-        compute_oa_simulatedVertices( i_plug, i_dataBlock );   
+        compute_oa_simulatedVertices( i_plug, i_dataBlock );
     }
     else if ( i_plug == oa_simulatedNurbs )
     {
         // The Barbershop dynamic wire deformer is asking for the simulated rod vertices so it can
         // deform the hair appropriately.
-        compute_oa_simulatedNurbs( i_plug, i_dataBlock );   
+        compute_oa_simulatedNurbs( i_plug, i_dataBlock );
     }
     else if ( i_plug == oa_nonSimulatedVertices )
     {
@@ -388,10 +388,10 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
     // an ordering to what takes precidence. Only one input is currently used at a time,
     // although it may not be too hard to handle multiple inputs.
     //
-   
+
     MPlug barberShopPlug( thisMObject(), ia_barberShopVertices );
     MPlug particlesPlug( thisMObject(), ia_particlePositions );
-   
+
     if ( m_readFromCache)
     {
         getCacheFilename( i_dataBlock );
@@ -407,7 +407,7 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
                                              m_solverType, m_simulationSet );
     }
     else if ( particlesPlug.isConnected() )
-    {        
+    {
         m_pRodInput = new WmFigRodParticleInput( ia_particlePositions, ia_perRodParticleCounts,
                                              m_rodOptions, m_massDamping, m_gravity, m_rodGroup,
                                              m_solverType, m_simulationSet );
@@ -418,14 +418,14 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
                            m_vertexSpacing, m_minimumRodLength, m_rodOptions, m_massDamping,
                            m_gravity, m_solverType, m_simulationSet, m_doReverseHairdo );
     }
-    
+
     // FIXME:
     // This should be passed into the constructors above in case they have some special 
     // work to do there depending on whether simulating or not.
     m_pRodInput->setSimulating( m_isSimulationEnabled );
-    
+
     m_pRodInput->initialiseRodDataFromInput( i_dataBlock );
-    
+
     if ( m_isSimulationEnabled )
     {
         cerr << "enabling sim\n";
@@ -435,7 +435,7 @@ void WmFigRodNode::initialiseRodData( MDataBlock& i_dataBlock )
     {
         disableSim();
     }
-    
+
     // The sim has been re-initialised so it no longer needs reset.
     m_rodGroup.setSimulationNeedsReset( false );
 
@@ -467,7 +467,7 @@ void WmFigRodNode::updateKinematicEdgesFromInput()
                 {
                     m_rodGroup.updateKinematicEdge( r, edgeIt->first, edgeIt->second.materialFrame );
                 }
-                
+
                 // Set the next positions of these vertices to be wherever the input controller
                 // says they should be.
                 BASim::Vec3d position =  edgeIt->second.position;
@@ -486,7 +486,7 @@ void WmFigRodNode::updateKinematicEdgesFromInput()
 void WmFigRodNode::updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock )
 {
     readCacheRelatedInputs( i_dataBlock );
-    
+
     if ( m_currentTime == m_startTime || /*m_pRodInput == NULL || */
          ( m_rodGroup.simulationNeedsReset() && m_readFromCache ) )
     {
@@ -498,7 +498,7 @@ void WmFigRodNode::updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock 
         {
             return;
         }
-        
+
         if ( !m_rodGroup.simulationNeedsReset() )
         {
             if ( !m_readFromCache )
@@ -523,7 +523,7 @@ void WmFigRodNode::updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock 
                                  m_rodOptions.ShearModulus,
                                  m_rodOptions.viscosity,
                                  m_rodOptions.density );
-    
+
     //cerr << "*** Number of Rods is " << m_rodGroup.numberOfRods();
 }
 
@@ -531,7 +531,7 @@ void WmFigRodNode::updateOrInitialiseRodDataFromInputs( MDataBlock& i_dataBlock 
 /** @detail Returns the material frame matrix for a specific rod's edge.
     @param i_rod The index of the rod you wish the edge of (0 based indices).
     @param i_edge The index of the edge you are interested in (0 based indices).
-    @return An MMatrix containing the matrial frame and the position of the edge. 
+    @return An MMatrix containing the matrial frame and the position of the edge.
             | m1x, m1y, m1z, 0 |
             | m2x, m2y, m2z, 0 |
             | m3x, m3y, m3z, 0 |
@@ -546,16 +546,16 @@ MMatrix WmFigRodNode::getRodEdgeMatrix( int i_rod, int i_edge )
 {
     MMatrix identMatrix;
     identMatrix.setToIdentity();
-    
+
     // Check if the input parameters index a valid rod and edge, if not
     // return the identity matrix.
 
     if ( i_rod > m_rodGroup.numberOfRods() )
         return identMatrix;
-    
+
     if ( m_rodGroup.elasticRod( i_rod ) == NULL )
         return identMatrix;
-    
+
     if ( i_edge >= m_rodGroup.numberOfEdgesInRod( i_rod ) )
         return identMatrix;
 
@@ -564,24 +564,24 @@ MMatrix WmFigRodNode::getRodEdgeMatrix( int i_rod, int i_edge )
     ElasticRod* rod = m_rodGroup.elasticRod( i_rod );
 
     // The position of the edge is defined as the mid point of the ege.   
-    BASim::Vec3d edgePos = ( rod->getVertex( i_edge ) + 
+    BASim::Vec3d edgePos = ( rod->getVertex( i_edge ) +
                       rod->getVertex( i_edge + 1 ) ) / 2.0;
-    
+
 
     // The material frame is taken directly from the rod and packaged up into a Maya MMatrix format.
 
     MMatrix edgeMatrix;
     edgeMatrix( 3, 0 ) = edgePos[ 0 ]; edgeMatrix( 3, 1 ) = edgePos[ 1 ]; edgeMatrix( 3, 2 ) = edgePos[ 2 ];
-    
+
     BASim::Vec3d edge = rod->getEdge( i_edge );
     edgeMatrix( 0, 0 ) = edge[ 0 ]; edgeMatrix( 0, 1 ) = edge[ 1 ]; edgeMatrix( 0, 2 ) = edge[ 2 ];
-    
+
     BASim::Vec3d material1 = rod->getMaterial1( i_edge );
     edgeMatrix( 1, 0 ) = material1[ 0 ]; edgeMatrix( 1, 1 ) = material1[ 1 ]; edgeMatrix( 1, 2 ) = material1[ 2 ];
-    
+
     BASim::Vec3d material2 = rod->getMaterial2( i_edge );
     edgeMatrix( 2, 0 ) = material2[ 0 ]; edgeMatrix( 2, 1 ) = material2[ 1 ]; edgeMatrix( 2, 2 ) = material2[ 2 ];
-    
+
     return edgeMatrix;
 }
 
@@ -606,7 +606,7 @@ MString WmFigRodNode::getCacheFilename( MDataBlock& i_dataBlock )
     {
         ifstream cacheFile( m_cacheFilename.asChar() );
         if ( !cacheFile )
-        {            
+        {
             m_cacheFilename = ( m_cachePath + "." + m_startTime + ".fig" );
         }
     }
@@ -672,36 +672,36 @@ void WmFigRodNode::updateHairsprayScales( MDataBlock& i_dataBlock )
 void WmFigRodNode::updateRodWithMayaFieldForces( MDataBlock& i_dataBlock )
 {
     MStatus status;
-    
+
     MArrayDataHandle forceArrayHandle = i_dataBlock.inputArrayValue( ia_fieldForces, &status );
     CHECK_MSTATUS( status );
-    
+
     unsigned int numberOfFields = forceArrayHandle.elementCount( &status );
     CHECK_MSTATUS( status );
-    
+
     m_rodGroup.resetAllExternalForcesOnRods();
-    
+
     if ( numberOfFields == 0)
     {
         return;
     }
-        
-    MVectorArray forceArray;        
-    do {        
+
+    MVectorArray forceArray;
+    do {
         // Get the force data for this field
         MDataHandle forceHandle = forceArrayHandle.inputValue( &status );
         CHECK_MSTATUS( status );
-        
+
         MObject forceObj = forceHandle.data();
         MFnVectorArrayData forceArrayFnData( forceObj,&status );
         CHECK_MSTATUS( status );
-        
+
         MVectorArray forceArray = forceArrayFnData.array( &status );
         CHECK_MSTATUS( status );
 
         unsigned int numberOfForces = forceArray.length();
         unsigned int currentForceIndex = 0;
-        
+
         // We need to run through the rods and vertices of each rod so we know which rod/vertex
         // each force in the input array should be applied to as all the rods were packed into
         // a single force array.
@@ -709,7 +709,7 @@ void WmFigRodNode::updateRodWithMayaFieldForces( MDataBlock& i_dataBlock )
         {
             ElasticRod* elasticRod = m_rodGroup.elasticRod( r );
             if ( elasticRod != NULL )
-            {                
+            {
                 for ( int v = 0; v < elasticRod->nv(); ++v )
                 {
                     if ( currentForceIndex >= numberOfForces )
@@ -717,13 +717,13 @@ void WmFigRodNode::updateRodWithMayaFieldForces( MDataBlock& i_dataBlock )
                         MGlobal::displayError( "Not enough forces recieved from field for all rods." );
                         return;
                     }
-                    BASim::Vec3d force( forceArray[ currentForceIndex ].x, 
+                    BASim::Vec3d force( forceArray[ currentForceIndex ].x,
                                         forceArray[ currentForceIndex ].y,
                                         forceArray[ currentForceIndex ].z );
                     cerr << "rod " << r << ", vertex " << v << ", force = " << force << endl;
-                                        
+
                     m_rodGroup.addExternalForceToRod( r, v, force );
-                    
+
                     currentForceIndex++;
                 }
             }
@@ -788,25 +788,25 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
 
     m_percentageOfBarberShopStrands = i_dataBlock.inputValue( ia_percentageOfBarberShopStrands, &stat ).asDouble();
     CHECK_MSTATUS( stat );
-    
+
     m_solverType = ( RodTimeStepper::Method)  ( i_dataBlock.inputValue( ia_solverType, &stat ).asInt() );
     CHECK_MSTATUS( stat );
-    
+
     MString simulationSet = i_dataBlock.inputValue( ia_simulationSet, &stat ).asString();
     CHECK_MSTATUS( stat );
 
     m_doReverseHairdo = i_dataBlock.inputValue( ia_doReverseHairdo, &stat ).asBool();
     CHECK_MSTATUS( stat );
-    
+
     updateSimulationSet( simulationSet );
 
     updateControlledEdgeArrayFromInputs( i_dataBlock );
 
     MDataHandle verticesH = i_dataBlock.inputValue( ia_barberShopVertices, &stat );
-    CHECK_MSTATUS( stat );    
+    CHECK_MSTATUS( stat );
 
     //////////////////////////////////////////////////////////////////////////////////////////
-    
+
     // FIXME:
     // We should really just disable all rods at when this is toggled and make the user
     // go back to start time before they can see the cached rods?
@@ -818,33 +818,33 @@ void WmFigRodNode::compute_oa_rodsChanged( const MPlug& i_plug, MDataBlock& i_da
         // We changed reading from cache status not at startTime so stop doing anything until
         // the user resets the sim to be sure all is safe.
         // Make sure that every rod is disabled before we read from the cache file
-        
+
     //    cerr << "read status changed disabling all rods\n";
         m_rodGroup.setSimulationNeedsReset( true );
-        
+
         m_readFromCache = readFromCache;
     }
-    
+
     // If the user has toggled simEnabled then we need to reset the sim because the data
     // structures are slightly different. 
     bool simulationEnabled = i_dataBlock.inputValue( ia_simEnabled, &stat ).asBool();
     if ( m_isSimulationEnabled != simulationEnabled )
     {
         m_rodGroup.setSimulationNeedsReset( true );
-        
+
         // Disable the sim till it resets
         disableSim();
     }
     m_isSimulationEnabled = simulationEnabled;
 
     m_rodGroup.setIsReadingFromCache( m_readFromCache );
-        
+
     updateOrInitialiseRodDataFromInputs( i_dataBlock );
 
     updateRodColorForSimpleMode( i_dataBlock );
-    
+
     updateRodWithMayaFieldForces( i_dataBlock );
-    
+
     stat = i_dataBlock.setClean( i_plug );
     if ( !stat )
     {
@@ -858,7 +858,7 @@ void WmFigRodNode::updateSimulationSet( MString i_simulationSetString )
     m_simulationSet.clear();
 
     MStringArray subStrings;
-    
+
     i_simulationSetString.split( ',', subStrings );
 
     for ( int c=0; c< subStrings.length(); ++c )
@@ -872,10 +872,10 @@ void WmFigRodNode::updateControlledEdgeArrayFromInputs( MDataBlock& i_dataBlock 
     MStatus stat;
 
     MDataHandle inputCurveH;
-    MObject inputCurveObj;    
+    MObject inputCurveObj;
     MArrayDataHandle inEdgeArrayH = i_dataBlock.inputArrayValue( ia_edgeTransforms, &stat );
     CHECK_MSTATUS(stat);
-    
+
     if ( m_rodGroup.numberOfRods() == 0 )
     {
         return;
@@ -890,14 +890,14 @@ void WmFigRodNode::updateControlledEdgeArrayFromInputs( MDataBlock& i_dataBlock 
         inEdgeArrayH.inputValue( &stat );
         CHECK_MSTATUS( stat );
     }
-    
+
     // First get rid of all the constraints as some of them may have been removed.
     // We could do this in connectionBroken but there is always weirdness when loading
     // and tracking stuff in connection made/broken.
-    
+
     // FIXME: This is pretty darn innefficient, deleting then recreating
     // Although it does let us create and delete them at any frame in the simulation
-    
+
     for ( EdgeTransformRodMap::iterator rodIt = m_controlledEdgeTransforms.begin();
         rodIt != m_controlledEdgeTransforms.end(); rodIt++ )
     {
@@ -910,7 +910,7 @@ void WmFigRodNode::updateControlledEdgeArrayFromInputs( MDataBlock& i_dataBlock 
         m_controlledEdgeTransforms[ rodIt->first ].clear();
     }
     m_controlledEdgeTransforms.clear();
-    
+
     MPlug myEdgePlugs( thisMObject(), ia_edgeTransforms );
     if ( myEdgePlugs.isArray() )
     {
@@ -918,25 +918,25 @@ void WmFigRodNode::updateControlledEdgeArrayFromInputs( MDataBlock& i_dataBlock 
         {
             MPlug edgePlug = myEdgePlugs.elementByPhysicalIndex( p, &stat );
             CHECK_MSTATUS( stat );
-            
+
             MPlugArray connectionNodePlugs;
             if ( edgePlug.connectedTo( connectionNodePlugs, true, false, &stat ) )
             {
                 MPlug connectionNodePlug = connectionNodePlugs[0];
                 MObject connectionNodeObj = connectionNodePlug.node( &stat );
                 CHECK_MSTATUS( stat );
-                
+
                 MFnDependencyNode connectionNodeDepFn( connectionNodeObj );
                 WmFigConnectionNode* connectionNode = static_cast<WmFigConnectionNode*>( connectionNodeDepFn.userNode() );
-                
+
                 if ( connectionNode != NULL )
                 {
                     unsigned int rodIndex, edgeIndex;
                     EdgeTransform edgeTransform;
                     connectionNode->getControlledRodInfo( rodIndex, edgeIndex, edgeTransform );
-                    
+
                     m_controlledEdgeTransforms[ rodIndex ][ edgeIndex ] = edgeTransform;
-                    
+
                     m_rodGroup.addKinematicEdge( rodIndex, edgeIndex, &edgeTransform.materialFrame );
                 }
             }
@@ -960,16 +960,16 @@ void WmFigRodNode::compute_ca_simulationSync( const MPlug& i_plug, MDataBlock i_
 
     i_dataBlock.inputValue( ia_simStepTaken, &stat ).asBool();
     CHECK_MSTATUS( stat );
-    
+
     readCacheRelatedInputs( i_dataBlock );
 
     writeCacheIfNeeded( i_dataBlock );
-    
+
     MDataHandle numRodsH = i_dataBlock.outputValue( oa_numberOfRods, &stat );
     CHECK_MSTATUS( stat );
 
     numRodsH.set( (int)m_rodGroup.numberOfRods() );
-    
+
     m_rodGeoChanged = true;
 
     stat = i_dataBlock.setClean( i_plug );
@@ -1085,7 +1085,7 @@ void WmFigRodNode::compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i
         MPointArray nurbsEditPoints;
         for ( unsigned int v = 0; v < verticesInEachRod[ n ]; v++ )
         {
-            MPoint nurbsEditPoint( simulatedVertices[ p ].x, simulatedVertices[ p ].y, simulatedVertices[ p ].z ); 
+            MPoint nurbsEditPoint( simulatedVertices[ p ].x, simulatedVertices[ p ].y, simulatedVertices[ p ].z );
             nurbsEditPoints.append( nurbsEditPoint );
             ++p;
         }
@@ -1094,7 +1094,7 @@ void WmFigRodNode::compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i
         MFnNurbsCurveData nurbsDataFn;
         MObject nurbsDataObj = nurbsDataFn.create();
         MFnNurbsCurve nurbsFn;
-        MObject nurbsObj = nurbsFn.createWithEditPoints( nurbsEditPoints, 1, MFnNurbsCurve::kOpen, 
+        MObject nurbsObj = nurbsFn.createWithEditPoints( nurbsEditPoints, 1, MFnNurbsCurve::kOpen,
             false /*not 2d*/, false /*not rational*/, true /*uniform params*/, nurbsDataObj, & stat );
         CHECK_MSTATUS( stat );
 
@@ -1159,7 +1159,7 @@ void WmFigRodNode::compute_oa_nonSimulatedVertices( const MPlug& i_plug, MDataBl
             nonSimulatedVerticesArray[ idx ] = MVector( pos[0], pos[1], pos[2] );
             idx++;
         }
-    }        
+    }
 
     nonSimulatedVerticesH.setClean();
     i_dataBlock.setClean( i_plug );
@@ -1464,13 +1464,13 @@ void WmFigRodNode::compute_oa_EdgeTransforms( const MPlug& i_plug, MDataBlock& i
     CHECK_MSTATUS( stat );
     i_dataBlock.inputValue( ia_simStepTaken, &stat );
     CHECK_MSTATUS( stat );
-    
+
     // Due to the complexities of the number of vertices changing on a rod we
     // dont actually pass any info here, we merely signal that the output has changed.
     // Then it is up to the connection node to grab the correct data from mx_rodData.
     MDataHandle edgeTransforms = i_dataBlock.outputValue( oa_edgeTransforms, &stat );
     CHECK_MSTATUS( stat );
-    
+
     edgeTransforms.setClean();
     i_dataBlock.setClean( i_plug );
 }
@@ -1497,17 +1497,10 @@ void WmFigRodNode::compute_ca_drawDataChanged( const MPlug& i_plug, MDataBlock& 
     RodRenderer::DrawMode drawMode = RodRenderer::SIMPLE;
 
     if ( draw3DRod )
-    {
         drawMode = RodRenderer::SMOOTH;
-    }
-
-    int numRods = m_rodGroup.numberOfRods();
-    for ( int r = 0; r < numRods; r++ )
-    {
-        m_rodGroup.setDrawScale( drawScale );
-        m_rodGroup.setDrawMode( drawMode );
-    }
     
+    m_rodGroup.setDrawScale( drawScale );
+    m_rodGroup.setDrawMode( drawMode );
     MDataHandle inputColourHandle;
     MObject inputColourObj;
     MArrayDataHandle inArrayH = i_dataBlock.inputArrayValue( ia_userDefinedColors, &stat );
@@ -1517,16 +1510,16 @@ void WmFigRodNode::compute_ca_drawDataChanged( const MPlug& i_plug, MDataBlock& 
 
     // Get rid of all previously stored colours as the user may have removed some
     m_rodColourMap.clear();
-    
+
     for ( unsigned int i = 0; i < numColoursSet; i++ )
     {
         inArrayH.jumpToArrayElement( i );
-        
+
         // We're iterating over the actual indices 'i', as the array
         // is sparse we need to find out the logical index as seen
         // by the user in MEL.
         unsigned int elementIndex = inArrayH.elementIndex();
-        
+
         const double3& colour = inArrayH.inputValue( &stat ).asDouble3();
         CHECK_MSTATUS( stat );
 
@@ -1552,10 +1545,10 @@ void WmFigRodNode::getStrandRootFrames( MDataBlock& i_dataBlock, vector<Material
     MDataHandle strandRootFramesH = i_dataBlock.inputValue( ia_strandRootFrames, &stat );
     CHECK_MSTATUS( stat );
     MFnVectorArrayData strandRootFrameVecData( strandRootFramesH.data(), &stat );
-    
+
     if ( !stat )    // Strand root frames are not connected so just leave
         return;
-        
+
     CHECK_MSTATUS( stat );
 
     MVectorArray strandRootFrameVec;
@@ -1580,7 +1573,7 @@ void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
                             M3dView::DisplayStyle i_style,
                             M3dView::DisplayStatus i_status )
 {
-    
+
     MStatus stat;
     MObject thisNode = thisMObject();
 
@@ -1596,7 +1589,7 @@ void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
         stat.perror( "WmFigRodNode::draw getting ca_simulationSync" );
         return;
     }
-    
+
     // Pull on the draw data changed as this is the only function that ever will
     // as no one else cares.
     MPlug drawPlug( thisNode, ca_drawDataChanged );
@@ -1630,7 +1623,7 @@ void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
 
         size_t numRods = m_rodGroup.numberOfRods();
         m_rodGroup.setDrawScale( drawScale );
-        m_rodGroup.setDrawMode( drawMode );        
+        m_rodGroup.setDrawMode( drawMode );
     }
 
 
@@ -1641,7 +1634,7 @@ void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
 /*    if ( mx_rodData != NULL )
     {
         GLfloat currentColour[4];
-        
+
         for ( size_t r=0; r<mx_rodData->size(); r++ )
         {
             bool colourOverride = false;
@@ -1649,17 +1642,17 @@ void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
             {
                 colourOverride = true;
                 glGetFloatv( GL_CURRENT_COLOR, currentColour );
-                
+
                 BASim::Vec3d colour = m_rodColourMap[ r ];
                 glColor3ub( colour[0], colour[1], colour[2] );
             }
-            
+
             (*mx_rodData)[ r ]->rodRenderer->render();
-            
+
             if ( colourOverride )
                 glColor4fv( currentColour );
         }
-        
+
     }*/
 
     if(m_rodDisplayList == 0)
@@ -1684,12 +1677,12 @@ void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
     }
 
     glCallList(m_rodDisplayList);
-    
+
     MPlug drawMaterialFramesPlug( thisNode, ia_drawMaterialFrames );
     bool draw;
     drawMaterialFramesPlug.getValue( draw );
 
-    
+
     /*if ( draw && mx_rodData != NULL )
     {
         size_t numRods = mx_rodData->size();
@@ -1797,7 +1790,7 @@ void WmFigRodNode::draw( M3dView& i_view, const MDagPath& i_path,
 void WmFigRodNode::updateRodColorForSimpleMode( MDataBlock& i_dataBlock)
 {
     MStatus stat;
-    
+
     Color rootColor, tipColor;
     const MPlug rootColourPlug( thisMObject(), ia_rodRootColor );
     rootColor.data()[0] = i_dataBlock.inputValue( rootColourPlug.child( 0, & stat ) ).asFloat();
@@ -1821,7 +1814,7 @@ MStatus WmFigRodNode::connectionMade( const  MPlug & plug, const  MPlug & otherP
     if( plug == ia_nurbsCurves )
     {
         m_numberOfInputCurves++;
-        
+
 //        cerr << "Increasing number of curves (" << m_numberOfInputCurves << ")\n";
     }
 
@@ -1853,7 +1846,7 @@ void* WmFigRodNode::creator()
 	return new WmFigRodNode();
 }
 
-/*static */ MStatus WmFigRodNode::addNumericAttribute( MObject& i_attribute, MString i_longName, 
+/*static */ MStatus WmFigRodNode::addNumericAttribute( MObject& i_attribute, MString i_longName,
     MString i_shortName, MFnNumericData::Type i_type, double i_defaultValue, bool i_isInput,
     bool i_isArray )
 {
@@ -1871,7 +1864,7 @@ void* WmFigRodNode::creator()
         nAttr.setWritable( true );
     else
         nAttr.setWritable( false );
-    
+
     if ( i_isArray )
         nAttr.setArray( true );
 
@@ -1969,7 +1962,7 @@ void* WmFigRodNode::creator()
     if ( !stat ) { stat.perror( "attributeAffects ia_cacheFrame->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_readFromCache, ca_cachingHasBeenToggled );
     if ( !stat ) { stat.perror( "attributeAffects ia_cacheFrame->ca_cachingHasBeenToggled" ); return stat; }
-    
+
     addNumericAttribute( ia_hairSprayScaleFactor, "hairSprayScaleFactor", "hsf", MFnNumericData::kDouble, 1.0, true );
     stat = attributeAffects( ia_hairSprayScaleFactor, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_hairSprayScaleFactor->oa_rodsChanged" ); return stat; }
@@ -2034,7 +2027,7 @@ void* WmFigRodNode::creator()
     stat = attributeAffects( ia_simulationSet, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_simulationSet->oa_rodsChanged" ); return stat; }
 
-    
+
     {
         MFnTypedAttribute   tAttr;
         ia_nurbsCurves = tAttr.create( "nurbsCurves", "nc",
@@ -2063,7 +2056,7 @@ void* WmFigRodNode::creator()
     }
     stat = attributeAffects( ia_barberShopVertices, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_barberShopVertices->oa_rodsChanged" ); return stat; }
-    
+
     {
         MFnTypedAttribute tAttr;
         ia_particlePositions = tAttr.create( "particlePositions", "ppo",
@@ -2114,7 +2107,7 @@ void* WmFigRodNode::creator()
     // This is the same data as simulatedCurveCVs, but as nurbs curves
     //
     {
-        MFnTypedAttribute tAttr;  
+        MFnTypedAttribute tAttr;
         oa_simulatedNurbs = tAttr.create( "simulatedNurbs", "sns",
             MFnData::kNurbsCurve, & stat );
         CHECK_MSTATUS( stat );
@@ -2193,16 +2186,16 @@ void* WmFigRodNode::creator()
     stat = attributeAffects( ca_simulationSync, oa_simulatedNurbs );
     stat = attributeAffects( oa_rodsChanged, oa_simulatedNurbs );
     stat = attributeAffects( ia_time, oa_simulatedNurbs );
- 
+
     addNumericAttribute( oa_numberOfRods, "curveCount", "nor", MFnNumericData::kInt, 0, false );
     stat = attributeAffects( ia_time, oa_numberOfRods );
 	if ( !stat ) { stat.perror( "attributeAffects ia_time->oa_numberOfRods" ); return stat; }
- 
+
     // Controlling and being controlled by external objects
     /*{
         MFnMatrixAttribute mAttr;
         ia_edgeTransforms = mAttr.create( "inEdgeTransforms", "iet", MFnMatrixAttribute::kDouble, &stat );
-        if ( !stat ) 
+        if ( !stat )
         {
             stat.perror("create ia_edgeTransforms attribute");
             return stat;
@@ -2217,17 +2210,17 @@ void* WmFigRodNode::creator()
     addNumericAttribute( ia_gravity, "gravity", "gra", MFnNumericData::k3Double, 0, true, false );
     stat = attributeAffects( ia_gravity, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_gravity->oa_rodsChanged" ); return stat; }
-    
+
     addNumericAttribute( ia_edgeTransforms, "edgeTransforms", "iet", MFnNumericData::kBoolean, false, true, true );
     stat = attributeAffects( ia_edgeTransforms, oa_rodsChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_edgeTransforms->oa_rodsChanged" ); return stat; }
-    
+
     addNumericAttribute( oa_edgeTransforms, "outEdgeTransforms", "oet", MFnNumericData::kBoolean, false, false );
     stat = attributeAffects( ia_edgeTransforms, oa_edgeTransforms );
 	if ( !stat ) { stat.perror( "attributeAffects ia_edgeTransforms->oa_edgeTransforms" ); return stat; }
     stat = attributeAffects( ia_simStepTaken, oa_edgeTransforms );
 	if ( !stat ) { stat.perror( "attributeAffects ia_simStepTaken->oa_edgeTransforms" ); return stat; }
- 
+
     // This array holds the colours of any rods the user has decided to colour differently.
     addNumericAttribute( ia_userDefinedColors, "userDefinedColors", "udc", MFnNumericData::k3Double, 0, true, true );
     // This output attribute is purely so that we can get notified when the colour changes on the input
@@ -2235,7 +2228,7 @@ void* WmFigRodNode::creator()
     addNumericAttribute( ca_drawDataChanged, "drawDataChanged", "ddc", MFnNumericData::kBoolean, true, false, false );
     stat = attributeAffects( ia_userDefinedColors, ca_drawDataChanged );
 	if ( !stat ) { stat.perror( "attributeAffects ia_userDefinedColors->ca_drawDataChanged" ); return stat; }
-    
+
     addNumericAttribute( ia_draw3DRod, "draw3DRod", "d3d", MFnNumericData::kBoolean, false, true );
     stat = attributeAffects( ia_draw3DRod, ca_drawDataChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_draw3DRod->ca_drawDataChanged" ); return stat; }
@@ -2258,7 +2251,7 @@ void* WmFigRodNode::creator()
         CHECK_MSTATUS( stat );
 
 	stat = attributeAffects( ia_rodRootColor, oa_rodsChanged);
-	
+
     }
 
     {
@@ -2299,23 +2292,23 @@ void* WmFigRodNode::creator()
     {
         // Outputs
         MFnTypedAttribute typedAttr;
-        oa_positions = typedAttr.create( "positions", "pos", 
-                                         MFnData::kVectorArray, &stat ); 
+        oa_positions = typedAttr.create( "positions", "pos",
+                                         MFnData::kVectorArray, &stat );
         CHECK_MSTATUS(stat);
-        
-        oa_velocities = typedAttr.create( "velocities", "vel", 
-                                          MFnData::kVectorArray, &stat); 
+
+        oa_velocities = typedAttr.create( "velocities", "vel",
+                                          MFnData::kVectorArray, &stat);
         CHECK_MSTATUS(stat);
-    
-        oa_masses = typedAttr.create( "masses", "mass", MFnData::kDoubleArray, 
-                                      &stat); 
+
+        oa_masses = typedAttr.create( "masses", "mass", MFnData::kDoubleArray,
+                                      &stat);
         CHECK_MSTATUS(stat);
-        
+
         MFnUnitAttribute unitFn;
-        oa_deltaTime = unitFn.create( "deltaTime", "del", 
-                                      MFnUnitAttribute::kTime, 0.01, &stat);  
+        oa_deltaTime = unitFn.create( "deltaTime", "del",
+                                      MFnUnitAttribute::kTime, 0.01, &stat);
         CHECK_MSTATUS(stat);
-        
+
         MFnCompoundAttribute compoundAttr;
         oa_fieldData = compoundAttr.create( "fieldData", "fda", &stat );
         CHECK_MSTATUS(stat);
@@ -2325,20 +2318,20 @@ void* WmFigRodNode::creator()
         CHECK_MSTATUS(compoundAttr.addChild( oa_masses ) );
         CHECK_MSTATUS(compoundAttr.addChild( oa_deltaTime ) );
         CHECK_MSTATUS( addAttribute( oa_fieldData ) );
-        
+
         // Inputs
-        ia_fieldForces = typedAttr.create( "fieldForces", "ffo", MFnData::kVectorArray, 
-                                           &stat); 
+        ia_fieldForces = typedAttr.create( "fieldForces", "ffo", MFnData::kVectorArray,
+                                           &stat);
         CHECK_MSTATUS(stat);
-        
+
         CHECK_MSTATUS( typedAttr.setArray( true ) );
         CHECK_MSTATUS( typedAttr.setReadable( false ) );
         CHECK_MSTATUS( typedAttr.setWritable( true ) );
         CHECK_MSTATUS( typedAttr.setIndexMatters( false ) );
         CHECK_MSTATUS( typedAttr.setUsesArrayDataBuilder( true ) );
-        CHECK_MSTATUS( addAttribute( ia_fieldForces ) );   
+        CHECK_MSTATUS( addAttribute( ia_fieldForces ) );
     }
-    
+
     stat = attributeAffects( ia_fieldForces, oa_rodsChanged );
     if ( !stat ) { stat.perror( "attributeAffects ia_fieldForces->ia_rodsChanged" ); return stat; }
 
@@ -2351,7 +2344,7 @@ void* WmFigRodNode::creator()
     stat = attributeAffects( ia_time, oa_fieldData );
 	if ( !stat ) { stat.perror( "attributeAffects ia_time->oa_fieldData" ); return stat; }
 
-    
+
     return MS::kSuccess;
 
 }
