@@ -79,7 +79,7 @@ void RodStretchingForce::gatherDofs(SpringDofStruct& dofs,
   dofs.restLength = getRefLength(eh);
   dofs.stiffness = getKs(eh);
 
-  std::cout << "RodStretchingForce: strain = " << dofs.currLength/dofs.restLength << " l = " << dofs.currLength << " lrest = " << dofs.restLength << " x0 = " << dofs.x[0] << " x1 = " << dofs.x[1] << std::endl;
+  // std::cout << "RodStretchingForce: strain = " << dofs.currLength/dofs.restLength << " l = " << dofs.currLength << " lrest = " << dofs.restLength << " x0 = " << dofs.x[0] << " x1 = " << dofs.x[1] << std::endl;
 }
 
 Scalar RodStretchingForce::globalEnergy()

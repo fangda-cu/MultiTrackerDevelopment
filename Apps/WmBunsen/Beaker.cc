@@ -308,11 +308,11 @@ void Beaker::addRodsToWorld( int i_rodGroupIndex, WmFigRodGroup* i_rodGroup ,dou
             
         areSimulatingAnyRods = true;
       
-        cerr << "Adding rod " << r << " to world\n";
+       // cerr << "Adding rod " << r << " to world\n";
         m_rods.push_back( m_rodDataMap[ i_rodGroupIndex ]->elasticRod( r ) );
         m_world->addObject( m_rodDataMap[ i_rodGroupIndex ]->elasticRod( r ) );
         
-        cerr << "Adding rod time stepper " << r << " to world\n";
+       // cerr << "Adding rod time stepper " << r << " to world\n";
         m_rodTimeSteppers.push_back( m_rodDataMap[ i_rodGroupIndex ]->stepper( r ) );
     }
     
