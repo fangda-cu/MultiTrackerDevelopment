@@ -383,6 +383,8 @@ private:
 
     bool isProperCollisionTime(double time);
 
+    void applyInextensibilityVelocityFilter( int rodidx );
+
     // Computes the impulse necessary to eliminate all relative velocity at given points on two edges
     Vec3d computeEdgeEdgeInelasticImpulse(const double& ma0, const double& ma1, const double& mb0, const double& mb1,
             const double& s, const double& t, const double& relvel, const Vec3d& n);
