@@ -464,14 +464,14 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>&
 
     for (int rodcol = 0; rodcol < rods_failed_because_of_iterated_collisions.size(); rodcol++)
         if (rods_failed_because_of_iterated_collisions[rodcol])
-            // std::cerr << "Rod number " << rodcol << " had too many collisions. He should stop drinking." << std::endl;
+            std::cerr << "Rod number " << rodcol << " had too many collisions. He should stop drinking." << std::endl;
 
 #ifdef TIMING_ON
-            if( itr >= 2 ) IntStatTracker::getIntTracker("STEPS_WITH_MULTIPLE_IMPULSE_ITERATIONS") += 1;
+    if( itr >= 2 ) IntStatTracker::getIntTracker("STEPS_WITH_MULTIPLE_IMPULSE_ITERATIONS") += 1;
 #endif
 
-            std::cout << "The inelastic collision response is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ")
-                    << "dependable." << std::endl;
+    std::cout << "The inelastic collision response is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ") << "dependable."
+            << std::endl;
 
     return dependable_solve;
 }
