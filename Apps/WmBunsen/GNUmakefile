@@ -89,7 +89,11 @@ WmFigSelectionDisplayNode.hh \
 WmFigUtils.hh \
 WmFigRodComponentList.hh  \
 WmFigRodParticleInput.hh \
-WmFigMeshController.hh
+WmFigMeshController.hh \
+Sweeney/WmSweeneyShape.hh \
+Sweeney/WmSweeneyShapeUI.hh \
+Sweeney/WmSweeneyShapeIterator.hh \
+Sweeney/WmSweeneyRodManager.hh \
 #VolumetricCollisions/VolumetricCollisions.hh \
 #VolumetricCollisions/VolumetricCollisionsCPU.hh \
 #WmBunsenCollisionMeshNode.hh \
@@ -127,7 +131,11 @@ WmFigSelectionDisplayNode.cc \
 utils/WmFigUtils.cc \
 WmFigRodComponentList.cc \
 WmFigRodParticleInput.cc \
-WmFigMeshController.cc
+WmFigMeshController.cc \
+Sweeney/WmSweeneyShape.cc \
+Sweeney/WmSweeneyShapeUI.cc \
+Sweeney/WmSweeneyShapeIterator.cc \
+Sweeney/WmSweeneyRodManager.cc \
 #WmBunsenCollisionMeshNode.cc \
 #VolumetricCollisions/VolumetricCollisionsCPU.cc \
 #constraints/WmFigConstraintNode.cc \

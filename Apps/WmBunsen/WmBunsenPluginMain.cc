@@ -20,6 +20,9 @@
 #include "WmFigaroRodShape/WmFigaroRodShapeIterator.hh"
 //#include "constraints/WmFigConstraintNode.hh"
 #include "WmFigSelectionDisplayNode.hh"
+#include "Sweeney/WmSweeneyShape.hh"
+#include "Sweeney/WmSweeneyShapeUI.hh"
+#include "Sweeney/WmSweeneyShapeIterator.hh"
 
 MStatus initializePlugin( MObject obj )
 {
@@ -138,6 +141,15 @@ MStatus initializePlugin( MObject obj )
         return stat;     
     }
 
+    stat = plugin.registerShape( WmSweeneyShape::typeName, WmSweeneyShape::id,
+                                &WmSweeneyShape::creator,
+                                &WmSweeneyShape::initialize,
+                                &WmSweeneyShapeUI::creator );
+    if ( !stat ) {
+        stat.perror( "registerShape WmFigaroRodShape failed" );
+        return stat;     
+    }
+
     MGlobal::executeCommand( "source WmFigaro.mel", false );
     CHECK_MSTATUS( plugin.registerUI( "wmFigaroAddMainMenu", "wmFigaroRemoveMainMenu" ) );
     return stat;
@@ -215,6 +227,11 @@ MStatus uninitializePlugin( MObject obj)
     if ( plugin.deregisterNode( WmFigaroRodShape::id ) != MS::kSuccess )
     {
         stat.perror( "deregisterNode WmFigaroRodShape failed" );
+    }
+    
+    if ( plugin.deregisterNode( WmSweeneyShape::id ) != MS::kSuccess )
+    {
+        stat.perror( "deregisterNode WmSweeneyShape failed" );
     }
 
     MGlobal::stopErrorLogging();
