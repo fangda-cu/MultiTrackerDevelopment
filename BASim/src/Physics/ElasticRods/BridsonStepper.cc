@@ -834,7 +834,6 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
         {
             dependable_solve = false;
             std::cout << "Some inelastic impulses are not dependable!" << std::endl;
-            std::cout << "FOR NOW this causes the whole step to fail (for all rods)\nThis will be improved soon\n";
 
             all_collisions_succeeded = false;
         }
@@ -959,10 +958,10 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
     }
 
     // Update the list of rods that remain to solve. But (FOR NOW) only if the collision step was entirely successful
-    if (m_selective_adaptivity && m_skipRodRodCollisions && all_collisions_succeeded)
+    if (m_selective_adaptivity && m_skipRodRodCollisions)
     {
         for (SelectionType::iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-            if (m_steppers[*rod]->HasSolved() && !exploding_rods[*rod])
+            if (m_steppers[*rod]->HasSolved() && !exploding_rods[*rod] && !rods_failed_because_of_iterated_collisions[*rod])
             {
                 selected_rods.erase(rod--);
             }
