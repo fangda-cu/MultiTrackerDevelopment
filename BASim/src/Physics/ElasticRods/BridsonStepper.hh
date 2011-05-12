@@ -146,6 +146,7 @@ private:
  */
 class BridsonStepper: public ObjectControllerBase
 {
+typedef std::list<int> SelectionType;
 
 public:
     /**
@@ -217,15 +218,15 @@ public:
      * Modifies the timestep.
      */
     void setDt(double dt);
-    
+
     /**
      * Returns the timestep.
      **/
     double getDt();
-    
+
     /**
      * Returns the simulation time
-     **/ 
+     **/
     double getTime();
 
     /**
@@ -263,6 +264,7 @@ public:
      */
     void skipRodRodCollisions(bool skipRodRodCollisions)
     {
+        std::cerr << "Switching rod-rod collisions " << (skipRodRodCollisions ? "OFF" : "ON") << std::endl;
         m_skipRodRodCollisions = skipRodRodCollisions;
 
         if (m_collision_detector)
@@ -290,7 +292,7 @@ public:
         return (int) (m_triangle_meshes.size());
     }
     ;
-    
+
     void setTime(double time);
 
     // TODO: Move these to some kind of automated test suite
@@ -302,9 +304,9 @@ public:
     void setRodLabels(const std::vector<std::string>& rod_labels);
 
     double computeTotalForceNorm();
-    bool step(bool check_explosion);
-    bool nonAdaptiveExecute(double dt);
-    bool adaptiveExecute(double dt);
+    bool step(bool check_explosion, SelectionType& selected_rods);
+    bool nonAdaptiveExecute(double dt, SelectionType selected_rods);
+    bool adaptiveExecute(double dt, SelectionType selected_rods);
 
 private:
     /////////////////////////////////////////////////////
@@ -328,15 +330,15 @@ private:
     // Returns the total number of vertices in the system
     int getNumVerts() const;
 
-    void extractPositions(const std::vector<ElasticRod*>& rods, const std::vector<int>& base_indices, VecXd& positions);
-    void extractVelocities(const std::vector<ElasticRod*>& rods, const std::vector<int>& base_indices, VecXd& velocities);
+    void extractPositions(VecXd& positions, const SelectionType& selected_rods) const;
+    void extractVelocities(VecXd& velocities, const SelectionType& selected_rods) const;
     //void extractMasses( const std::vector<ElasticRod*>& rods, std::vector<double>& masses ) const;
     //void extractFixedVertices( const std::vector<ElasticRod*>& rods, std::vector<bool>& fixed ) const;
     //void extractEdges( const std::vector<ElasticRod*>& rods, const std::vector<int>& base_indices, std::vector<std::pair<int,int> >& edges, std::vector<double>& radii );
 
-    void restorePositions(std::vector<ElasticRod*>& rods, const VecXd& positions);
-    void restoreVelocities(std::vector<ElasticRod*>& rods, const VecXd& velocities);
-    void restoreResponses(std::vector<ElasticRod*>& rods, const VecXd& responses);
+    void restorePositions(const VecXd& positions, const SelectionType& selected_rods);
+    void restoreVelocities(const VecXd& velocities, const SelectionType& selected_rods);
+    void restoreResponses(const VecXd& responses, const SelectionType& selected_rods);
 
     bool isRodVertex(int vert) const;
     bool isRodRodCollision(const EdgeEdgeCTCollision& collision) const;
@@ -381,6 +383,8 @@ private:
 
     bool isProperCollisionTime(double time);
 
+    void applyInextensibilityVelocityFilter( int rodidx );
+
     // Computes the impulse necessary to eliminate all relative velocity at given points on two edges
     Vec3d computeEdgeEdgeInelasticImpulse(const double& ma0, const double& ma1, const double& mb0, const double& mb1,
             const double& s, const double& t, const double& relvel, const Vec3d& n);
@@ -420,9 +424,9 @@ private:
 
     //////////////////////////////////
     // Jungseock's penalty response
-    void detectVertexFaceImplicitPenaltyCollisions(const VecXd& x, std::vector<VertexFaceProximityCollision>& pssbl_cllsns,
-            std::vector<VertexFaceImplicitPenaltyCollision>& vetex_face_collisions) const;
-    void executeImplicitPenaltyResponse();
+    //  void detectVertexFaceImplicitPenaltyCollisions(const VecXd& x, std::vector<VertexFaceProximityCollision>& pssbl_cllsns,
+    //          std::vector<VertexFaceImplicitPenaltyCollision>& vetex_face_collisions) const;
+    void executeImplicitPenaltyResponse(std::list<Collision*>& collisions, const SelectionType& selected_rods);
 
 public:
     void enableImplicitPenaltyImpulses();
@@ -481,7 +485,7 @@ private:
     bool m_pnlty_enbld;
     bool m_itrv_inlstc_enbld;
     int m_num_inlstc_itrns;
-    double m_vrt_fc_pnlty;
+    double m_vertex_face_penalty;
 
     // Some debug stuff in for now.
     bool m_nan_enc;
@@ -512,6 +516,8 @@ private:
 
     // Toggle self collisions on or off
     bool m_skipRodRodCollisions;
+    // Toggle selective adaptivity
+    bool m_selective_adaptivity;
 
 };
 

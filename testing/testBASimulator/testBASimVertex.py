@@ -5,18 +5,18 @@ from WtTestSuite.shell import ReturnCodeError
 
 class VertexTest( TestCase ):
 
-	def testVertex( self ):
+	def testBASimVertex( self ):
 		
 		self.shell.call( 'bob_check_opt' )
 		
-		files = open('./testing/lists.txt', 'r')
+		files = open('./testing/testBASimulator/lists.txt', 'r')
 		
 		for line in files.readlines():
 			tests= line.split()
 
-      			fname='./testing/run'+tests[0]+'_t'+tests[1]+'_orig.txt'
-			fnametest='./testing/run'+tests[0]+'_t'+tests[1]+'_test.txt'
-			testtorun='basimulator -r '+tests[0]+' -f ./testing/run'+tests[0]+'options_t'+tests[1]+'.txt'
+      			fname='./testing/testBASimulator/run'+tests[0]+'_t'+tests[1]+'_orig.txt'
+			fnametest='./testing/testBASimulator/run'+tests[0]+'_t'+tests[1]+'_test.txt'
+			testtorun='basimulator -r '+tests[0]+' -f ./testing/testBASimulator/run'+tests[0]+'options_t'+tests[1]+'.txt'
         		print fname
 		        print fnametest
 			print testtorun
