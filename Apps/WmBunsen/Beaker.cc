@@ -52,7 +52,7 @@ Beaker::Beaker() : m_plasticDeformations( false ), m_gravity( 0, -981.0, 0 ),
     m_gridDX( 1.0 ), m_displayGrid( false ), m_displayGridVelocitiesMultiplier( 0.0 ), m_maxDisplayDensity(),
     m_displayCollisionBoundary( false ), m_displayAirBoundary( false ), m_stol( 1.0e-6f * 0.01 ),
     m_atol( 1.0e-6f * 0.01 ), m_rtol( 1.0e-6f * 0.01 ),  m_inftol( 1.0e-6f * 0.01 ),
-    m_bridsonStepper( NULL )
+    m_bridsonStepper( NULL ),m_stopOnRodError( false )
 {
     m_separationCondition[ 0 ] = m_separationCondition[ 1 ] = m_separationCondition[ 2 ] = -1.0;
 
@@ -149,6 +149,13 @@ void Beaker::setTimingEnabled( bool i_timingsEnabled )
     }
 
     m_timingEnabled = i_timingsEnabled;
+}
+
+void Beaker::setStopOnRodError( bool i_stopOnRodError )
+{
+
+    m_stopOnRodError = i_stopOnRodError;
+
 }
 
 void Beaker::resetTimers()
@@ -510,7 +517,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     }
 
     //i_subSteps = calculateNumSubSteps( i_subSteps, i_stepSize, i_subDistanceMax);
-
+    std::cout<<m_stopOnRodError<<std::endl;
     Scalar dt_save = getDt();
     //Scalar startTime = getTime();
     //Scalar currentTime = getTime();

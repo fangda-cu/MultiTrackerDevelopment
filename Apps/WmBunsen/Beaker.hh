@@ -292,6 +292,7 @@ public:
     void printTimingInfo();
     void setTimingsFile( std::string i_fileName );
     void setTimingEnabled( bool i_timingsEnabled );
+    void setStopOnRodError( bool i_stopOnRodError );
 
     void startXMLLogging( std::string& i_xmlFilePath, std::string& i_mayaSceneFilename );
     void writeXMLFileToDisk();
@@ -348,7 +349,9 @@ private:
     // is here simply because the self collision code needed it and I have
     // to get some numbers out of this before I leave Columbia.
     vector<ElasticRod*> m_rods;
-    
+
+    bool m_stopOnRodError;
+
     bool m_timingEnabled;
     std::string m_timingsFile;
     timeval m_timerStart;
