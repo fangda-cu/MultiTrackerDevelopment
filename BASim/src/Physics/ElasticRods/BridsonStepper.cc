@@ -385,7 +385,7 @@ void BridsonStepper::exertInelasticImpluse(VertexFaceCTCollision& vfcol)
     assert(vfcol.computeRelativeVelocity() >= 0);
 }
 
-bool BridsonStepper::executeIterativeInelasticImpulseResponse()
+bool BridsonStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& rods_failed_because_of_iterated_collisions)
 {
     bool dependable_solve = true;
 
@@ -426,12 +426,35 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse()
     }
     // Just in case we haven't emptied the collisions but exited when itr == m_num_inlstc_itrns
     for (std::list<Collision*>::iterator i = collisions.begin(); i != collisions.end(); i++)
+    {
+        // Let's see which collisions are remaining.
+        EdgeEdgeCTCollision* eecol = dynamic_cast<EdgeEdgeCTCollision*> (*i);
+        VertexFaceCTCollision* vfcol = dynamic_cast<VertexFaceCTCollision*> (*i);
+        if (vfcol)
+        {
+            assert(isRodVertex(vfcol->v0));
+            rods_failed_because_of_iterated_collisions[getContainingRod(vfcol->v0)] = true;
+        }
+        if (eecol)
+        {
+            if (isRodVertex(eecol->e0_v0) && isRodVertex(eecol->e0_v1))
+            {
+                assert(getContainingRod(eecol->e0_v0) == getContainingRod(eecol->e0_v1));
+                rods_failed_because_of_iterated_collisions[getContainingRod(eecol->e0_v0)] = true;
+            }
+            if (isRodVertex(eecol->e1_v0) && isRodVertex(eecol->e1_v1))
+            {
+                assert(getContainingRod(eecol->e1_v0) == getContainingRod(eecol->e1_v1));
+                rods_failed_because_of_iterated_collisions[getContainingRod(eecol->e1_v0)] = true;
+            }
+        }
         delete *i;
+    }
 
     if (itr > 0)
         std::cerr << "\033[33mIterated collision response " << itr << " time" << (itr > 1 ? "s" : "") << "\033[0m" << std::endl;
 
-    if (itr == m_num_inlstc_itrns) // TODO: check which rod caused the collision response to fail and keep the others...
+    if (itr == m_num_inlstc_itrns)
     {
         std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Exceeded maximum " << "number of inelastic iterations "
                 << m_num_inlstc_itrns << ". Time of warning " << m_t << "." << std::endl;
@@ -439,12 +462,16 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse()
         explosionTriggered = true;
     }
 
+    for (int rodcol = 0; rodcol < rods_failed_because_of_iterated_collisions.size(); rodcol++)
+        if (rods_failed_because_of_iterated_collisions[rodcol])
+            // std::cerr << "Rod number " << rodcol << " had too many collisions. He should stop drinking." << std::endl;
+
 #ifdef TIMING_ON
-    if( itr >= 2 ) IntStatTracker::getIntTracker("STEPS_WITH_MULTIPLE_IMPULSE_ITERATIONS") += 1;
+            if( itr >= 2 ) IntStatTracker::getIntTracker("STEPS_WITH_MULTIPLE_IMPULSE_ITERATIONS") += 1;
 #endif
 
-    std::cout << "The inelastic collision response is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ") << "dependable."
-            << std::endl;
+            std::cout << "The inelastic collision response is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ")
+                    << "dependable." << std::endl;
 
     return dependable_solve;
 }
@@ -800,9 +827,10 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
     //if( m_pnlty_enbld ) executePenaltyResponse();
     START_TIMER("BridsonStepperResponse");
     bool all_collisions_succeeded = true;
+    std::vector<bool> rods_failed_because_of_iterated_collisions(m_rods.size());
     if (m_itrv_inlstc_enbld && m_num_inlstc_itrns > 0) // && dependable_solve)
     {
-        if (!executeIterativeInelasticImpulseResponse())
+        if (!executeIterativeInelasticImpulseResponse(rods_failed_because_of_iterated_collisions))
         {
             dependable_solve = false;
             std::cout << "Some inelastic impulses are not dependable!" << std::endl;
