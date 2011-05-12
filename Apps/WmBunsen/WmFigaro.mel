@@ -19,20 +19,22 @@ global proc wmFigaroAddMainMenu()
     
 	optionVar -intValue "figSelectionMode" 0;
 
-  	/*// Create all the contexts we need so they can be called later by the menu	
+  	// Create all the contexts we need so they can be called later by the menu	
 	if ( !`eval("wmFigSelectionContext -query -exists \"" + $gWmFigSelectionContextName + "\"" ) `) 
     {        
 		$gWmFigSelectionContextName = `eval wmFigSelectionContext`;
 	}
+
     if ( !`eval("wmFigControllerContext -query -exists \"" + $gWmFigControllerContextName + "\"" ) `) 
     {        
         $gWmFigControllerContextName = `eval wmFigControllerContext`;
     }
+/*
     if ( !`eval("wmFigCombContext -query -exists \"" + $gWmFigCombContextName + "\"" ) `) 
     {        
         $gWmFigCombContextName = `eval wmFigCombContext`;
-    }*/
-
+    }
+*/
     if( !`menu -exists $gWmFigaroMainMenu` )
     {
         $gWmFigaroMainMenu = `menu -p $gMainWindow -l "Figaro" -tearOff true -allowOptionBoxes true WmFigaroMainMenu`;
