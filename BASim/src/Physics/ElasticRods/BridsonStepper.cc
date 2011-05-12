@@ -682,8 +682,8 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
     for( int i = 0; i < (int) m_rods.size(); ++i ) assert( m_rods[i]->getTimeStep() == m_dt );
 #endif
 
-    // std::cerr << "This step will treat " << selected_rods.size() << " remaining rod" << (selected_rods.size() > 1 ? "s" : "")
-    //        << std::endl;
+    std::cerr << "This step will treat " << selected_rods.size() << " remaining rod" << (selected_rods.size() > 1 ? "s" : "")
+            << std::endl;
 
     // Prepare start forces and list of steppers to be executed.
     VecXd *startForces[m_rods.size()];
@@ -759,7 +759,7 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
     if (!multithreaded_stepper.Execute()) // if at least one of the steppers has not solved
     {
         dependable_solve = false;
-        // std::cout << "Dynamic step is not entirely dependable!" << std::endl;
+        std::cout << "Dynamic step is not entirely dependable!" << std::endl;
     }
 
     // Clean up penalty collisions list
@@ -792,7 +792,7 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
     for (SelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
         if (!m_steppers[*rod]->HasSolved())
         {
-            //  std::cerr << "Rod number " << *rod << " failed to solve" << std::endl;
+            std::cerr << "Rod number " << *rod << " failed to solve" << std::endl;
             for (int j = 0; j < m_rods[*rod]->nv(); ++j)
                 m_collision_immune[m_base_indices[*rod] / 3 + j] = true;
         }
@@ -805,8 +805,8 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
         if (!executeIterativeInelasticImpulseResponse())
         {
             dependable_solve = false;
-            //  std::cout << "Some inelastic impulses are not dependable!" << std::endl;
-            //  std::cout << "FOR NOW this causes the whole step to fail (for all rods)\nThis will be improved soon\n";
+            std::cout << "Some inelastic impulses are not dependable!" << std::endl;
+            std::cout << "FOR NOW this causes the whole step to fail (for all rods)\nThis will be improved soon\n";
 
             all_collisions_succeeded = false;
         }
@@ -897,9 +897,6 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
             {
                 for (int j = 0; j < m_rods[*rod]->ndof(); ++j)
                 {
-                    // <<<<<<< HEAD
-                    //                     dependable_solve = false;
-                    //                     std::cout << "Check Explosion (" << i << ", " << j << "): s = " << s << " p = " << p << " e = " << e << std::endl;
                     // 		    explosionTriggered = true;
                     double s = (*(startForces[*rod]))[j];
                     double p = (*(preCollisionForces[*rod]))[j];
@@ -914,6 +911,8 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
                     {
                         dependable_solve = false;
                         exploding_rods[*rod] = true;
+                        std::cerr << "Rod number " << *rod << " had an explosion" << std::endl;
+                        break;
                         //  std::cout << "Check Explosion (" << *rod << ", " << j << "): s = " << s << " p = " << p << " e = " << e
                         //          << std::endl;
                     }
@@ -934,23 +933,11 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
     // Update the list of rods that remain to solve. But (FOR NOW) only if the collision step was entirely successful
     if (m_selective_adaptivity && m_skipRodRodCollisions && all_collisions_succeeded)
     {
-        // int num_selected_erased = 0; // For debugging
-        // int num_selected_before = selected_rods.size();
-
-        //  int num_selected_to_erase = 0;
-        //  for (SelectionType::iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-        //      if (m_steppers[*rod]->HasSolved() && !exploding_rods[*rod])
-        //         num_selected_to_erase++;
-        // std::cerr << "Selective adaptivity: to erase  " << num_selected_to_erase << std::endl;
-
         for (SelectionType::iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
             if (m_steppers[*rod]->HasSolved() && !exploding_rods[*rod])
             {
                 selected_rods.erase(rod--);
-                //   num_selected_erased++;
             }
-        //   std::cerr << "Selective adaptivity: erased " << num_selected_erased << " from the selection\nBefore: "
-        //          << num_selected_before << " after: " << selected_rods.size() << std::endl;
     }
 
     std::cout << "This step is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ") << "dependable." << std::endl;
