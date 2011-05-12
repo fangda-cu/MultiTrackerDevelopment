@@ -5,15 +5,6 @@
  * \date 02/16/2010
  */
 
-// This class is currently a little hacked together, and
-// does some really inefficient stuff (copies all DOFs 
-// into flat arrays and such) just because it was
-// easier than using BASim iterators, for now :).
-
-// Note also that the detection acceleartion is as basic
-// as possible (AABB Hierarchy built with no knowledge of
-// connectivity). Lots of low hanging fruit for acceleration.
-
 #ifndef BRIDSONSTEPPER_HH
 #define BRIDSONSTEPPER_HH
 
@@ -42,7 +33,6 @@
 
 #include "BASim/src/Core/TriangleMesh.hh"
 
-//#include "BASim/src/Collisions/BVHAABB.hh"
 #include "BASim/src/Collisions/CollisionUtils.hh"
 #include "BASim/src/Collisions/CollisionDetector.hh"
 
@@ -150,11 +140,6 @@ typedef std::list<int> SelectionType;
 
 public:
     /**
-     * Default constructor.
-     */
-    //BridsonStepper();
-
-    /**
      * Creates a BridsonStepper with user-supplied options.
      *
      * \param[in] intgrtr Integrator (class RodTimeStepper) to use. Assumes implicit euler, for now.
@@ -237,7 +222,7 @@ public:
     /**
      * Enables response, subject to state of enableIterativeInelasticImpulses().
      */
-    void enableReseponse();
+    void enableResponse();
 
     /**
      * Enables penalty response.
@@ -345,42 +330,9 @@ private:
 
     int getContainingRod(int vert_idx) const;
 
-    /////////////////////////////////////////////////////
-    // Collision detection routines
-
-    /*
-     bool isVertexFixed(int vert_idx) const;
-     bool isEntireFaceFixed(int v0, int v1, int v2) const;
-     bool isEntireEdgeFree(int v0, int v1) const;
-     bool isEntireEdgeFixed(int v0, int v1) const;
-     bool isOneVertexFixed(int v0, int v1) const;
-
-     // Determines if two edges share a vertex
-     bool edgesShareVertex(const std::pair<int, int>& edgei, const std::pair<int, int>& edgej) const;
-     bool edgesSharevertex(const int& e0v0, const int& e0v1, const int& e1v0, const int& e1v1) const;
-     */
-
-    // Determines if a vertex and a face share a vertex
+   // Determines if a vertex and a face share a vertex
     bool vertexAndFaceShareVertex(const int& vertex, const int& face) const;
     bool vertexAndFaceShareVertex(const int& v, const int& f0, const int& f1, const int& f2) const;
-    // Generates a list of ALL possible edge-edge collisions
-    void generateAllEdgeEdgeProximityCollisionPairs(std::vector<EdgeEdgeProximityCollision>& edge_edge_collisions) const;
-    void
-    generateAllEdgeEdgeContinuousTimeCollisionPairs(std::vector<EdgeEdgeCTCollision>& edge_edge_collisions) const;
-
-    // Generates a list of ALL possible vertex-face collisions
-    void generateAllVertexFaceProximityCollisionPairs(std::vector<VertexFaceProximityCollision>& vertex_face_collisions) const;
-    void generateAllVertexFaceContinuousTimeCollisionPairs(std::vector<VertexFaceCTCollision>& vertex_face_collisions) const;
-
-    // Returns a list of all edges that are in "proximity" for the positions specified in the vector x.
-    //void detectEdgeEdgeProximityCollisions( const VecXd& x, std::vector<EdgeEdgeProximityCollision>& edge_edge_collisions ) const;
-    void detectEdgeEdgeProximityCollisions(const VecXd& x, std::vector<EdgeEdgeProximityCollision>& pssbl_cllsns,
-            std::vector<EdgeEdgeProximityCollision>& cllsns) const;
-
-    // Returns a list of all vertex-face pairs that are in "proximity" for the positions specified in the vector x.
-    void detectVertexFaceProximityCollisions(const VecXd& x, std::vector<VertexFaceProximityCollision>& pssbl_cllsns,
-            std::vector<VertexFaceProximityCollision>& vetex_face_collisions) const;
-
     bool isProperCollisionTime(double time);
 
     void applyInextensibilityVelocityFilter( int rodidx );
@@ -493,7 +445,6 @@ private:
     bool m_lt0_enc;
     bool m_gt0_enc;
 
-    //	BVHAABB* m_bvh;
     CollisionDetector* m_collision_detector;
 
     // Assuming rods are stored first (which they now are), the index that points one past the last rods data

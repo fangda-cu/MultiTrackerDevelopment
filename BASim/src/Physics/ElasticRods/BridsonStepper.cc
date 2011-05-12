@@ -682,7 +682,7 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
     for( int i = 0; i < (int) m_rods.size(); ++i ) assert( m_rods[i]->getTimeStep() == m_dt );
 #endif
 
-    //std::cerr << "This step will treat " << selected_rods.size() << " remaining rod" << (selected_rods.size() > 1 ? "s" : "")
+    // std::cerr << "This step will treat " << selected_rods.size() << " remaining rod" << (selected_rods.size() > 1 ? "s" : "")
     //        << std::endl;
 
     // Prepare start forces and list of steppers to be executed.
@@ -952,35 +952,13 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
         //   std::cerr << "Selective adaptivity: erased " << num_selected_erased << " from the selection\nBefore: "
         //          << num_selected_before << " after: " << selected_rods.size() << std::endl;
     }
-    //  #ifdef TIMING_ON
-    //    for( int i = 0; i < (int) m_base_indices.size(); ++i )
-    //    {
-    //      VecXd totalforce(m_rods[i]->ndof());
-    //      totalforce.setZero();
-    //      m_rods[i]->computeForces(totalforce);
-    //      collision_induced_force_change[i].second = totalforce.norm();
-    //    }
-    //
-    //    for( int i = 0; i < (int) m_base_indices.size(); ++i )
-    //    {
-    //      double fchng = fabs(collision_induced_force_change[i].first-collision_induced_force_change[i].second);
-    //      ObjPropHandle<std::pair<double,int> > ophndl;
-    //      m_rods[i]->add_property(ophndl,"collision_induced_force_change");
-    //      m_rods[i]->property(ophndl).first = fchng;
-    //      m_rods[i]->property(ophndl).second = 0;
-    //    }
-    //  #endif
-
-    //    Timer::getTimer("BridsonStepperDynamics").report();
-    //    Timer::getTimer("BridsonStepperResponse").report();
-    //    Timer::getTimer("Collision detector").report();
 
     std::cout << "This step is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ") << "dependable." << std::endl;
 
     return dependable_solve;
 }
 
-void BridsonStepper::enableReseponse()
+void BridsonStepper::enableResponse()
 {
     m_respns_enbld = true;
 }
@@ -1146,16 +1124,6 @@ void BridsonStepper::restorePositions(const VecXd& positions, const SelectionTyp
 {
     assert(m_rods.size() == m_base_indices.size());
 
-    // <<<<<<< HEAD
-    //     for (int i = 0; i < (int) m_base_indices.size(); ++i)
-    //         for (int j = 0; j < rods[i]->nv(); ++j)
-    // 	  if (!m_rods[i]->getBoundaryCondition()->isVertexScripted(j)) {
-    //                 rods[i]->setVertex(j, positions.segment<3> (m_base_indices[i] + 3 * j));
-    // 		std::cout << "BridsonStepper::restorePositions: storing rod " << i << " vertex " << j << " position " << positions.segment<3> (m_base_indices[i] + 3 * j) << std::endl;
-    // 	  } else {
-    // 	    std::cout << "BridsonStepper::restorePositions: SKIPPING rod " << i << " vertex " << j << " position " << positions.segment<3> (m_base_indices[i] + 3 * j) << std::endl;
-    // 	  }
-    // =======
     for (SelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
         for (int j = 0; j < m_rods[*rod]->nv(); ++j)
             if (!m_rods[*rod]->getBoundaryCondition()->isVertexScripted(j))
@@ -1249,46 +1217,6 @@ bool BridsonStepper::isProperCollisionTime(double time)
     }
     return true;
 }
-
-/*
- Vec3d BridsonStepper::computeEdgeEdgeInelasticImpulse(const double& ma0, const double& ma1, const double& mb0,
- const double& mb1, const double& s, const double& t, const double& relvel, const Vec3d& n)
- {
- assert(ma0 > 0.0);
- assert(ma1 > 0.0);
- assert(mb0 > 0.0);
- assert(mb1 > 0.0);
- assert(s >= 0.0);
- assert(s <= 1.0);
- assert(t >= 0.0);
- assert(t <= 1.0);
- assert(relvel <= 0.0);
-
- // Assumes negative relative velocity
- Vec3d numerator = -relvel * n;
- double denominator = (1 - s) * (1 - s) / ma0 + s * s / ma1 + (1 - t) * (1 - t) / mb0 + t * t / mb1;
- assert(denominator != 0.0);
- return numerator / denominator;
- }
- */
-/*
- Vec3d BridsonStepper::computeVertexFaceInelasticImpulse(const double& mvrt, const double& mfc0, const double& mfc1,
- const double& mfc2, const double& u, const double& v, const double& w, const double& relvel, const Vec3d& n)
- {
- assert(mvrt >= 0.0);
- assert(mfc0 >= 0.0);
- assert(mfc1 >= 0.0);
- assert(mfc2 >= 0.0);
- assert(approxEq(u + v + w, 1.0));
- //assert( u >= 0.0 ); assert( u <= 1.0 ); assert( v >= 0.0 ); assert( v <= 1.0 ); assert( w >= 0.0 ); assert( w <= 1.0 );
- assert(relvel <= 0.0);
-
- Vec3d numerator = -relvel * n;
- double denominator = 1 / mvrt + u * u / mfc0 + v * v / mfc1 + w * w / mfc2;
- assert(denominator != 0.0);
- return numerator / denominator;
- }
- */
 
 void BridsonStepper::exertVertexImpulse(const Vec3d& I, const double& m, const int& idx, VecXd& v)
 {
@@ -2696,86 +2624,6 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEd
     //         << preRelativeVelocity << " after = " << postRelativeVelocity << std::endl;
 }
 
-/*
- void BridsonStepper::detectVertexFaceImplicitPenaltyCollisions(const VecXd& x,
- std::vector<VertexFaceProximityCollision>& pssbl_cllsns,
- std::vector<VertexFaceImplicitPenaltyCollision>& vetex_face_collisions) const
- {
- assert((int) m_masses.size() == getNumVerts());
- assert(x.size() == getNumDof());
- assert(m_faces.size() == m_face_radii.size());
-
- //std::vector<VertexFaceProximityCollision> pssbl_cllsns;
- //generateAllVertexFaceProximityCollisionPairs( pssbl_cllsns );
-
- for (int i = 0; i < (int) pssbl_cllsns.size(); ++i)
- {
- assert(pssbl_cllsns[i].v0 < getNumVerts());
- assert(pssbl_cllsns[i].f0 < getNumVerts());
- assert(pssbl_cllsns[i].f1 < getNumVerts());
- assert(pssbl_cllsns[i].f2 < getNumVerts());
- assert(pssbl_cllsns[i].r0 >= 0.0);
- assert(pssbl_cllsns[i].r1 >= 0.0);
-
- int vrtidx = pssbl_cllsns[i].v0;
- int fcidx0 = pssbl_cllsns[i].f0;
- int fcidx1 = pssbl_cllsns[i].f1;
- int fcidx2 = pssbl_cllsns[i].f2;
-
- if (vertexAndFaceShareVertex(vrtidx, fcidx0, fcidx1, fcidx2))
- continue;
-
- // TODO: Add check for both having fixed vertices
-
- const Vec3d p1 = x.segment<3> (3 * vrtidx);
- const Vec3d t0 = x.segment<3> (3 * fcidx0);
- const Vec3d t1 = x.segment<3> (3 * fcidx1);
- const Vec3d t2 = x.segment<3> (3 * fcidx2);
-
- Vec3d cp = ClosestPtPointTriangle(p1, t0, t1, t2);
- double sqrdist = (p1 - cp).norm();
-
- if (sqrdist < (m_implicit_thickness + pssbl_cllsns[i].r0 + pssbl_cllsns[i].r1) * (m_implicit_thickness
- + pssbl_cllsns[i].r0 + pssbl_cllsns[i].r1))
- {
- VertexFaceImplicitPenaltyCollision real_cllsn;
-
- real_cllsn.v0 = vrtidx;
- real_cllsn.f0 = pssbl_cllsns[i].f0;
- real_cllsn.f1 = pssbl_cllsns[i].f1;
- real_cllsn.f2 = pssbl_cllsns[i].f2;
-
- real_cllsn.r0 = pssbl_cllsns[i].r0;
- real_cllsn.r1 = pssbl_cllsns[i].r1;
- real_cllsn.h = m_implicit_thickness;
-
- real_cllsn.k = m_vertex_face_penalty_stiffness;
-
- //      Barycentric( t0, t1, t2, p1, pssbl_cllsns[i].u, pssbl_cllsns[i].v, pssbl_cllsns[i].w );
-
- // u,v,w CAN be outside of 0,1. We're really looking at minkowski sum of triangle with sphere here.
- //      assert( approxEq(pssbl_cllsns[i].u+pssbl_cllsns[i].v+pssbl_cllsns[i].w,1.0) );
-
- //      pssbl_cllsns[i].pen = pssbl_cllsns[i].r0+pssbl_cllsns[i].r1-sqrt(sqrdist);
- //      assert( pssbl_cllsns[i].pen > 0.0 );
-
- //      pssbl_cllsns[i].n = p1-cp;
- real_cllsn.n = (t1 - t0).cross(t2 - t0);
- assert(real_cllsn.n.norm() > 0.0);
-
- real_cllsn.n.normalize();
- assert(fabs(real_cllsn.n.norm() - 1.0) < 1.0e-6);
-
- real_cllsn.cp = cp;
-
- // TODO: Add some checks that if the closest point is inside the triangle, normal is normal to each edge
-
- vetex_face_collisions.push_back(real_cllsn);
- }
- }
- }
- */
-
 void BridsonStepper::executeImplicitPenaltyResponse(std::list<Collision*>& collisions, const SelectionType& selected_rods)
 {
     // Detect proximity collisions
@@ -2794,39 +2642,7 @@ void BridsonStepper::executeImplicitPenaltyResponse(std::list<Collision*>& colli
                 m_implicit_pnlty_forces[rod_id]->addRodPenaltyForce(v_id, vfpcol);
             }
         }
-
-        // Same with EdgeEdgeProximityCollisions perhaps?
     }
-
-    // Exert penalty response
-
-
-    /*
-     // Detect possible "proximity" collisions based on pre-step positions
-     std::vector<EdgeEdgeProximityCollision> edge_edge_collisions;
-     std::vector<VertexFaceProximityCollision> vertex_face_collisions;
-     m_collision_detector->getImplicitPenaltyCollisions(edge_edge_collisions, vertex_face_collisions);
-
-
-     std::vector<VertexFaceImplicitPenaltyCollision> vertex_face_for_real;
-     detectVertexFaceImplicitPenaltyCollisions(m_xn, vertex_face_collisions, vertex_face_for_real);
-     */
-
-    /*
-     // Add penalty forces
-     //  exertImplicitPenalty( vertex_face_for_real, m_vnphalf );
-     for (int i = 0; i < (int) vertex_face_for_real.size(); i++)
-     {
-     int rod_id = getContainingRod(vertex_face_for_real[i].v0);
-
-     if (rod_id >= 0)
-     {
-     int v_id = vertex_face_for_real[i].v0 - m_base_indices[rod_id] / 3;
-
-     m_implicit_pnlty_forces[rod_id]->addRodPenaltyForce(v_id, vertex_face_for_real[i]);
-     }
-     }
-     */
 }
 
 void BridsonStepper::enableImplicitPenaltyImpulses()
