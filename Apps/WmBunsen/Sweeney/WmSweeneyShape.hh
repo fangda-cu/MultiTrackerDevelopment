@@ -60,14 +60,17 @@ public:
 
 	static  void *          creator();
 	static  MStatus         initialize();
-
 	static MTypeId id;
     static MString typeName;
+    
+    /** Draws all the rods. This is called from WmSweeneyShapeUI.
+     **/
+    void draw();
     
 private:
     void initialiseRodFromBarberShopInput();
 
-    WmSweeneyRodManager rodManager;
+    WmSweeneyRodManager m_rodManager;
 };
 
 #endif /* _WmSweeneyShape */

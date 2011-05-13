@@ -42,15 +42,35 @@ MStatus WmSweeneyShape::initialize()
 //    See api_macros.h.
 //
 {
+    
+    
     return MS::kSuccess;
 }
 
 void WmSweeneyShape::initialiseRodFromBarberShopInput()
 {
     // TODO: Grab the root strand distribution from a Barbershop node that gets plugged in
-
+    // 
+    
+    vector< BASim::Vec3d > vertices;
+    vertices.resize( 10 );
+    
+    for ( unsigned int x = 0; x < 5; ++x )
+    {
+        for ( size_t v = 0; v < 10; ++v )
+        {
+            vertices[ v ] = BASim::Vec3d( x, 0.0, ( double )v );
+        }
+        m_rodManager.addRod( vertices );
+    }
+    
+    m_rodManager.initialiseSimulation( 1 / 24.0, 1.0 );
 }
 
+void WmSweeneyShape::draw()
+{
+    m_rodManager.drawAllRods();
+}
 
 MPxGeometryIterator* WmSweeneyShape::geometryIteratorSetup(MObjectArray& componentList,
 													MObject& components,

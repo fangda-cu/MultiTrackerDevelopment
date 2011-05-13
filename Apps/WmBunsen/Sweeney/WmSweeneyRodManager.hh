@@ -9,6 +9,9 @@
 #include <weta/Wfigaro/Core/TriangleMesh.hh>
 #include <weta/Wfigaro/Core/ScriptingController.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/BridsonStepper.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/ElasticRod.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/RodUtils.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/RodMayaForces.hh>
 #else
 #include <BASim/src/Core/EigenIncludes.hh>
 #include <BASim/src/Core/ObjectControllerBase.hh>
@@ -28,8 +31,30 @@ class WmSweeneyRodManager
 public:
     WmSweeneyRodManager();
     ~WmSweeneyRodManager();
-private:
     
+    bool addRod( const std::vector< BASim::Vec3d >& i_vertices, const double i_youngsModulus = 1000.0,
+                 const double i_shearModulus = 340.0, const double i_viscosity = 10.0, 
+                 const double i_density = 1.3, const double i_radiusA = 0.05, 
+                 const double i_radiusB = 0.05, 
+                 const BASim::ElasticRod::RefFrameType i_referenceFrame = BASim::ElasticRod::TimeParallel,
+                 const double i_massDamping = 10.0, 
+                 const BASim::Vec3d i_gravity = BASim::Vec3d( 0.0, -980.0, 0.0),
+                 const BASim::RodTimeStepper::Method i_solverType = BASim::RodTimeStepper::IMPL_EULER );
+
+    void initialiseSimulation( const double i_timeStep, const double i_startTime );
+
+    void takeStep();
+    
+    void drawAllRods();
+    
+private:
+    BASim::BridsonStepper* m_bridsonStepper;
+    
+    std::vector< BASim::ElasticRod* > m_rods;
+    std::vector< BASim::RodTimeStepper* > m_rodTimeSteppers;
+    std::vector< BASim::RodRenderer* > m_rodRenderers;
+    std::vector< BASim::TriangleMesh* > m_triangleMeshes;
+    std::vector< BASim::ScriptingController* > m_scriptingControllers;
 };
 
 #endif

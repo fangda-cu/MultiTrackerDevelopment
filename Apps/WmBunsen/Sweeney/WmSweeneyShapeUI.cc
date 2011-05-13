@@ -257,6 +257,12 @@ void WmSweeneyShapeUI::draw( const MDrawRequest & request, M3dView & view ) cons
 //     view    - view to draw into
 //
 { 
+    // For now just draw the rod
+	WmSweeneyShape* sweeneyShape = (WmSweeneyShape*) surfaceShape();
+    sweeneyShape->draw();
+
+    
+    
 	// Get the token from the draw request.
 	// The token specifies what needs to be drawn.
 	//

@@ -1,79 +1,109 @@
 #include "WmSweeneyRodManager.hh"
 
+using namespace std;
+using namespace BASim;
+
 WmSweeneyRodManager::WmSweeneyRodManager()
 {
-    
+    m_bridsonStepper = NULL;
+    m_rods.clear();
+    m_rodTimeSteppers.clear();
+    m_triangleMeshes.clear();
+    m_scriptingControllers.clear();
+    m_rodRenderers.clear();
 }
 
 WmSweeneyRodManager::~WmSweeneyRodManager()
 {
-    
+    delete m_bridsonStepper;
 }
 
-bool wmSweeneyRodManager::addRod( const double i_youngsModulus,
-                                  const double i_shearModulus,
-                                  const double i_viscosity,
-                                  const double i_density,
-                                  const double i_radiusA,
-                                  const double i_radiusB,
-                                  const  i_referenceFrame,
-                                  const double i_massDamping,
-                                  const double i_gravity,
-                                  const RodTimeStepper::Method i_solverType,
-                                  const vector< BASim::Vec3d >& i_vertices )
+bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices, 
+                                  const double i_youngsModulus,
+                                  const double i_shearModulus, const double i_viscosity, 
+                                  const double i_density, const double i_radiusA, 
+                                  const double i_radiusB, 
+                                  const BASim::ElasticRod::RefFrameType i_referenceFrame,
+                                  const double i_massDamping, 
+                                  const BASim::Vec3d i_gravity,
+                                  const BASim::RodTimeStepper::Method i_solverType )
 {
-    
     RodOptions rodOptions;
-    rodOptions.YoungsModulus = 1000.0; /* megapascal */
-    rodOptions.ShearModulus = 340.0;   /* megapascal */
-    rodOptions.viscosity = 10.0;       /* poise */
-    rodOptions.density = 1.3;          /* grams per cubic centimeter */
-    rodOptions.radiusA = 0.05;         /* millimeter */
-    rodOptions.radiusB = 0.05;         /* millimeter */
-    rodOptions.refFrame = BASim::ElasticRod::TimeParallel;
-    rodOptions.numVertices = 10;
-
-    double massDamping = 10.0;
-    BASim::Vec3d gravity( 0,0 -980.0, 0.0 );
-    RodTimeStepper::Method solverType( RodTimeStepper::IMPL_EULER );
-    
-    bool doReverseHairdo = false;
-
-    vector< BASim::Vec3d > vertices;
-    vertices.resize( 10 );
-
-    for ( unsigned int r = 0; r < 5; ++r )
-    {
-        for ( size_t v = 0; v < 10; ++v )
-        {
-            vertices[ v ] = BASim::Vec3d( r, 0.0, v );        
-            int rodIndex = m_rodGroup.addRod( vertices, rodOptions, massDamping, 
-                                              gravity, solverType, false, false );
-                                
-            // Lock the first edge in place
-            m_rodGroup.addKinematicEdge( rodIndex, 0 );
-        }
-    }
-    
-    m_rods.clear();
-    m_rodTimeSteppers.clear();
-    m_triangleMeshes.clear();
-    m_scriptingControllers.clear();  
-    
-    int numRods = m_rodGroup.numberOfRods();
-    for ( int r=0; r<numRods; r++ )
-    {        
-        cerr << "Adding rod " << r << " to world\n";
-        m_rods.push_back( m_rodGroup.elasticRod( r ) );
-        m_world->addObject( m_rodGroup.elasticRod( r ) );
+    rodOptions.YoungsModulus = i_youngsModulus; /* megapascal */
+    rodOptions.ShearModulus = i_shearModulus;   /* megapascal */
+    rodOptions.viscosity = i_viscosity;         /* poise */
+    rodOptions.density = i_density;             /* grams per cubic centimeter */
+    rodOptions.radiusA = i_radiusA;             /* millimeter */
+    rodOptions.radiusB = i_radiusB;             /* millimeter */
+    rodOptions.refFrame = i_referenceFrame;
+    rodOptions.numVertices = ( int )( i_vertices.size() );
         
-        cerr << "Adding rod time stepper " << r << " to world\n";
-        m_rodTimeSteppers.push_back( m_rodGroup.stepper( r ) );
+    // Use the rod helper function to build the rod
+    ElasticRod* rod = setupRod( rodOptions,
+                                i_vertices,
+                                i_vertices );
+
+    // We need a rod renderer to draw the rod in OpenGL
+    RodRenderer* rodRenderer = new RodRenderer( *rod );
+    
+    // Create a timeStepper to simulate the rod forward in time
+    RodTimeStepper* stepper = new RodTimeStepper( *rod );
+	stepper->setDiffEqSolver( i_solverType );
+	    
+    // Add a damping force to the rod
+    stepper->addExternalForce( new RodMassDamping( i_massDamping ) );
+        
+    // If the magnitude of gravity is 0 then don't bother adding the force
+    if ( i_gravity.norm() > 0 )
+    {
+        stepper->addExternalForce( new RodGravity( i_gravity ) );        
+    }
+            
+    // Add a force class that we will use to pass in forces from Maya
+    RodMayaForces* rodMayaForces = new RodMayaForces( rod );
+    stepper->addExternalForce( rodMayaForces );
+
+    // Reverse hairdo is still experimental and optional...
+    if ( 0 )
+    {
+        cerr << "Doing reverse hairdo!\n";
+        rod->doReverseHairdo(stepper);
     }
     
+    // Store all the things we need to control the rod or add it to a BridsonStepper
+    m_rods.push_back( rod );
+    m_rodTimeSteppers.push_back( stepper );
+    m_rodRenderers.push_back( rodRenderer) ;
+    
+    return true;
+}
+
+void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const double i_startTime )
+{
     // FIXME: pass in timestep from Maya
     m_bridsonStepper = new BridsonStepper( m_rods, m_triangleMeshes, m_scriptingControllers, 
-                                           m_rodTimeSteppers, (1.0/24.0/10.0), startTime);
-                                           
-    */
+                                           m_rodTimeSteppers, i_timeStep, i_startTime );
+}
+
+void WmSweeneyRodManager::takeStep()
+{
+    // Check if anything has actually been initialised yet. We may still be being loaded by Maya.
+    if ( m_bridsonStepper == NULL )
+        return;
+    
+    // Force self collisions to be off whilst testing
+    m_bridsonStepper->skipRodRodCollisions( true );
+
+    // Ensure the rod stays stuck on the head
+	//updateAllBoundaryConditions();                                   
+    
+    m_bridsonStepper->execute();
+}
+
+void WmSweeneyRodManager::drawAllRods()
+{
+    for ( size_t r = 0; r < m_rodRenderers.size(); ++r )
+    {
+        m_rodRenderers[ r ]->render();
+    }
 }
