@@ -24,7 +24,7 @@ void MinimalRodStateBackup::resize( const ElasticRod& rod )
   m_referenceDirectors1.resize(ne);
 }
 
-void MinimalRodStateBackup::backupRod( ElasticRod& rod )
+void MinimalRodStateBackup::backupRod(const ElasticRod& rod )
 {
   assert( (int) m_vertexPositions.size() == rod.nv() );
   assert( (int) m_vertexVelocities.size() == rod.nv() );
@@ -55,7 +55,7 @@ void MinimalRodStateBackup::backupRod( ElasticRod& rod )
     m_referenceDirectors1[(*itr).idx()] = rod.getReferenceDirector1(*itr);
 }
 
-void MinimalRodStateBackup::restoreRod( ElasticRod& rod )
+void MinimalRodStateBackup::restoreRod( ElasticRod& rod ) const
 {
   assert( (int) m_vertexPositions.size() == rod.nv() );
   assert( (int) m_vertexVelocities.size() == rod.nv() );

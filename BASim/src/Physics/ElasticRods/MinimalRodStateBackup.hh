@@ -23,9 +23,9 @@ public:
 
   void resize( const ElasticRod& rod );
 
-  void backupRod( ElasticRod& rod );
+  void backupRod(const ElasticRod& rod );
 
-  void restoreRod( ElasticRod& rod );
+  void restoreRod( ElasticRod& rod ) const;
 
   void clear();
 
