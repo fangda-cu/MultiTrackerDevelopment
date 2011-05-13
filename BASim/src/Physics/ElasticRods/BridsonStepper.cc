@@ -387,16 +387,14 @@ void BridsonStepper::exertInelasticImpluse(VertexFaceCTCollision& vfcol)
 
 bool BridsonStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& failed_collisions_rods)
 {
-    bool dependable_solve = true;
+    bool all_rods_collisions_ok = true;
 
-    // Detect possible continuous time collisions
+    // Detect continuous time collisions
     std::list<Collision*> collisions;
     m_collision_detector->getCollisions(collisions, ContinuousTime);
-    //std::cerr << "Number of CT collisions detected: " << collisions.size() << std::endl;
 
     // Iterativly apply inelastic impulses
-    int itr;
-    for (itr = 0; !collisions.empty() && itr < m_num_inlstc_itrns; ++itr)
+    for (int itr = 0; !collisions.empty() && itr < m_num_inlstc_itrns; ++itr)
     {
         // TODO: Add debug checks for repeat collisions.
 
@@ -422,7 +420,7 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>&
         m_collision_detector->getCollisions(collisions, ContinuousTime);
     }
 
-    std::cerr << "Remains " << collisions.size() << " unresolved collisions" << std::endl;
+    // std::cerr << "Remains " << collisions.size() << " unresolved collisions" << std::endl;
 
     // Just in case we haven't emptied the collisions but exited when itr == m_num_inlstc_itrns
     for (std::list<Collision*>::iterator col = collisions.begin(); col != collisions.end(); col++)
@@ -451,29 +449,29 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>&
         delete *col;
     }
 
-    if (itr > 0)
-        std::cerr << "\033[33mIterated collision response " << itr << " time" << (itr > 1 ? "s" : "") << "\033[0m" << std::endl;
+//    if (itr > 0)
+//        std::cerr << "\033[33mIterated collision response " << itr << " time" << (itr > 1 ? "s" : "") << "\033[0m" << std::endl;
 
-    if (itr == m_num_inlstc_itrns)
+    if (!collisions.empty())
     {
-        std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Exceeded maximum " << "number of inelastic iterations "
-                << m_num_inlstc_itrns << ". Time of warning " << m_t << "." << std::endl;
-        dependable_solve = false;
+      //  std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Exceeded maximum " << "number of inelastic iterations "
+      //          << m_num_inlstc_itrns << ". Time of warning " << m_t << "." << std::endl;
+        all_rods_collisions_ok = false;
         explosionTriggered = true;
     }
 
-    for (int rodcol = 0; rodcol < failed_collisions_rods.size(); rodcol++)
-        if (failed_collisions_rods[rodcol])
-            std::cerr << "Rod number " << rodcol << " had too many collisions." << std::endl;
+    //  for (int rodcol = 0; rodcol < failed_collisions_rods.size(); rodcol++)
+    //      if (failed_collisions_rods[rodcol])
+    // std::cerr << "Rod number " << rodcol << " had too many collisions." << std::endl;
 
 #ifdef TIMING_ON
     if( itr >= 2 ) IntStatTracker::getIntTracker("STEPS_WITH_MULTIPLE_IMPULSE_ITERATIONS") += 1;
 #endif
 
-    std::cout << "The inelastic collision response is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ") << "dependable."
-            << std::endl;
+    //        std::cout << "The inelastic collision response is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ")
+    //                << "dependable." << std::endl;
 
-    return dependable_solve;
+    return all_rods_collisions_ok;
 }
 
 int BridsonStepper::getContainingRod(int vert_idx) const
@@ -502,7 +500,7 @@ bool BridsonStepper::execute()
     bool do_adaptive = true;
     bool result;
 
-    std::cout << "BridsonStepper::execute: listing scripted vertices... " << std::endl;
+    // std::cout << "BridsonStepper::execute: listing scripted vertices... " << std::endl;
     int k = 0;
     for (int i = 0; i < m_rods.size(); ++i)
     {
@@ -572,7 +570,7 @@ void BridsonStepper::setDt(double dt)
 void BridsonStepper::setTime(double time)
 {
     m_t = time;
-    std::cout << "settingTime in BridsonStepper to be " << m_t << std::endl;
+    // std::cout << "settingTime in BridsonStepper to be " << m_t << std::endl;
 
     // Set the time for the rod controllers
     for (int i = 0; i < (int) m_steppers.size(); ++i)
@@ -655,7 +653,7 @@ bool BridsonStepper::adaptiveExecute(double dt, SelectionType selected_rods)
     // Restore all rods that remained selected after the step
     for (SelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
     {
-        std::cerr << "Restoring rod " << *rod << std::endl;
+        // std::cerr << "Restoring rod " << *rod << std::endl;
         rodbackups[*rod].restoreRod(*m_rods[*rod]);
         rodbackups[*rod].clear();
     }
@@ -711,7 +709,7 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
 #endif
 
     std::cerr << "This step will treat " << selected_rods.size() << " remaining rod" << (selected_rods.size() > 1 ? "s" : "")
-            << std::endl;
+           << std::endl;
 
     // Prepare start forces and list of steppers to be executed.
     VecXd *startForces[m_rods.size()];
@@ -780,7 +778,7 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
     if (!multithreaded_stepper.Execute()) // if at least one of the steppers has not solved
     {
         dependable_solve = false;
-        // std::cout << "Dynamic step is not entirely dependable!" << std::endl;
+        std::cout << "Dynamic step is not entirely dependable!" << std::endl;
     }
 
     // Clean up penalty collisions list
@@ -814,7 +812,7 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
     for (SelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
         if (!m_steppers[*rod]->HasSolved())
         {
-            std::cerr << "Rod number " << *rod << " failed to solve" << std::endl;
+            // std::cerr << "Rod number " << *rod << " failed to solve" << std::endl;
             for (int j = 0; j < m_rods[*rod]->nv(); ++j)
                 m_collision_immune[m_base_indices[*rod] / 3 + j] = true;
         }
@@ -823,12 +821,11 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
     START_TIMER("BridsonStepperResponse");
     bool all_collisions_succeeded = true;
     std::vector<bool> failed_collisions_rods(m_rods.size());
-    if (false && m_itrv_inlstc_enbld && m_num_inlstc_itrns > 0) // && dependable_solve)
+    if (m_itrv_inlstc_enbld && m_num_inlstc_itrns > 0) // && dependable_solve)
     {
         if (!executeIterativeInelasticImpulseResponse(failed_collisions_rods))
         {
-            dependable_solve = false;
-            // std::cout << "Some collision responses are not dependable!" << std::endl;
+            std::cout << "Some collision responses are not dependable!" << std::endl;
 
             all_collisions_succeeded = false;
         }
@@ -904,6 +901,7 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
 
     //    if (check_explosion && dependable_solve)
 
+    bool explosions_detected = false;
     std::vector<bool> exploding_rods(m_rods.size());
     if (check_explosion)
     {
@@ -931,9 +929,9 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
                         worstViolator = j;
                     if (isnan(rate) || rate > 10.0)
                     {
-                        dependable_solve = false;
+                        explosions_detected = true;
                         exploding_rods[*rod] = true;
-                        std::cerr << "Rod number " << *rod << " had an explosion" << std::endl;
+                        // std::cerr << "Rod number " << *rod << " had an explosion" << std::endl;
                         break;
                         //  std::cout << "Check Explosion (" << *rod << ", " << j << "): s = " << s << " p = " << p << " e = " << e
                         //          << std::endl;
@@ -941,9 +939,11 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
                 }
             }
         }
-        std::cout << "Check Explosion: worst violator = " << worstViolator << " with maxRate = " << maxRate << std::endl;
-        std::cout << "Check Explosion: minStart = " << minStart << " maxStart = " << maxStart << std::endl;
+        // std::cout << "Check Explosion: worst violator = " << worstViolator << " with maxRate = " << maxRate << std::endl;
+        // std::cout << "Check Explosion: minStart = " << minStart << " maxStart = " << maxStart << std::endl;
     }
+    if (explosions_detected)
+        std::cerr << "Some rods had explosions" << std::endl;
 
     for (SelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
     {
@@ -962,9 +962,11 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
             }
     }
 
-    std::cout << "This step is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ") << "dependable." << std::endl;
+    bool all_rods_are_ok = dependable_solve && all_collisions_succeeded && !explosions_detected;
 
-    return dependable_solve;
+    std::cout << "This step is " << (all_rods_are_ok ? "" : "\033[31;1mNOT\033[m ") << "dependable." << std::endl;
+
+    return all_rods_are_ok;
 }
 
 void BridsonStepper::enableResponse()
