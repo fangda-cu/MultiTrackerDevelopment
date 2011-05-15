@@ -66,6 +66,9 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
         editorTemplate -addControl "XMLFilePath";
     editorTemplate -endLayout;
 
+   editorTemplate -beginLayout "Error Checking" -collapse 0;
+        editorTemplate -addControl "stopOnRodError";
+    editorTemplate -endLayout;
     
     editorTemplate -addExtraControls;
     editorTemplate -endScrollLayout;

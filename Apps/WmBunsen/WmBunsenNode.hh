@@ -108,6 +108,9 @@ public:
     static MObject ia_writeToXMLFile;
     static MObject ia_XMLFilePath;
     
+    // Rod Error checking
+    static MObject ia_stopOnRodError;
+
     // Drawing
     static MObject ia_drawSubSteppedVertices;
     

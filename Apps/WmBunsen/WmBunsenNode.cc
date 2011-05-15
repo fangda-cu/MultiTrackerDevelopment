@@ -44,6 +44,9 @@ MObject WmBunsenNode::ia_timingsFile;
 MObject WmBunsenNode::ia_timingEnabled;
 MObject WmBunsenNode::oa_simStepTaken;
 
+//Error Checking
+MObject WmBunsenNode::ia_stopOnRodError;
+
 // Volumetric Collisions
 /* static */ MObject WmBunsenNode::ia_volumetricCollisions;
 /* static */ MObject WmBunsenNode::ia_gridDX;
@@ -536,6 +539,14 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_beaker->setTimingsFile( timingsFile.asChar() );
         m_beaker->setTimingEnabled( timingEnabled );
     
+        bool stopOnRodError = i_dataBlock.inputValue( ia_stopOnRodError, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+
+        m_beaker->setStopOnRodError( stopOnRodError );
+
+
+
+
         MDataHandle outputData = i_dataBlock.outputValue ( ca_syncAttrs, &stat );
         if ( !stat )
         {
@@ -1193,7 +1204,21 @@ MStatus WmBunsenNode::initialize()
         stat = addAttribute( ia_timingEnabled );
         if (!stat) { stat.perror( "addAttribute ia_timingEnabled" ); return stat; }
     }
-    
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_stopOnRodError = nAttr.create( "stopOnRodError", "soe", MFnNumericData::kBoolean, false, &stat );
+        if (!stat) {
+            stat.perror("create ia_stopOnRodError attribute");
+            return stat;
+        }
+         nAttr.setWritable( true );
+         nAttr.setReadable( false );
+         nAttr.setConnectable( true );
+         stat = addAttribute( ia_stopOnRodError );
+         if (!stat) { stat.perror( "addAttribute ia_stopOnRodError" ); return stat; }
+    }
+
     {
         MFnNumericAttribute nAttr;
         ia_enabled = nAttr.create( "enabled", "en", MFnNumericData::kBoolean, true, &stat );
@@ -1266,6 +1291,10 @@ MStatus WmBunsenNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_timingsFile->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_timingEnabled, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_timingEnabled->ca_syncAttrs" ); return stat; }
+    // Error checking
+    stat = attributeAffects( ia_timingEnabled, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_stopOnRodError->ca_syncAttrs" ); return stat; }
+
 
     //Tolerances
     if (!stat) { stat.perror( "attributeAffects ia_stol->ca_syncAttrs" ); return stat; }
