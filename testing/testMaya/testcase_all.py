@@ -2,6 +2,22 @@ from WtTestSuite.case import TestCase
 
 class MayaTest( TestCase ):
 	
+	def testcase001( self ):
+               
+		self.shell.need( 'maya' , '2010_64' )
+		self.shell.call('bob_check_opt' )
+		print 'set needs'
+		
+		with self.shell.mayaSession() as maya:
+			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case1.mb', open=True, force=True )
+			for i in range(1,23):
+				maya.cmds.currentTime( i, edit=True )
+				print( 'time %d'%i )
+				print maya.cmds.getAttr( 'wmFigaroNode1.syncAttrs' )
+			maya.cmds.currentTime( 1, edit=True )
+			print maya.cmds.getAttr( 'wmFigaroNode1.syncAttrs' )
+			print "Test Case 1: worked."
+	
 	def testcase001a( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
@@ -221,6 +237,21 @@ class MayaTest( TestCase ):
 			print maya.cmds.getAttr( 'wmFigaroNode1.syncAttrs' )
 			print "Test Case 9b: worked."
 			
+	def testcase009c( self ):
+               
+		self.shell.need( 'maya' , '2010_64' )
+		self.shell.call('bob_check_opt' )
+		print 'set needs'
+		
+		with self.shell.mayaSession() as maya:
+			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case9c.mb', open=True, force=True )
+			for i in range(1,23):
+				maya.cmds.currentTime( i, edit=True )
+				print( 'time %d'%i )
+				print maya.cmds.getAttr( 'wmFigaroNode1.syncAttrs' )
+			maya.cmds.currentTime( 1, edit=True )
+			print maya.cmds.getAttr( 'wmFigaroNode1.syncAttrs' )
+			print "Test Case 9c: worked."
 			
 	def testcase010( self ):
                
