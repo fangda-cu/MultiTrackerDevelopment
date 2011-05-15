@@ -13,16 +13,15 @@
 
 #include <iostream.h>
 
-static bool explosionTriggered = false;
-
 namespace BASim
 {
+
+static const float minimum_time_step = 1e-6;
 
 BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
         std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
         const double time, int num_threads) :
-    m_num_dof(0),
-            m_rods(rods),
+    m_num_dof(0), m_rods(rods),
             m_triangle_meshes(trimeshes),
             m_scripting_controllers(scripting_controllers),
             m_steppers(steppers),
@@ -53,6 +52,7 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
             m_implicit_thickness(1.0),
             m_skipRodRodCollisions(true),
             m_selective_adaptivity(true), // Selective adaptivity also requires m_skipRodRodCollisions == true
+            m_abortSimulation(false),
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start, m_implicit_thickness,
                     m_vertex_face_penalty)
 {
@@ -449,15 +449,15 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>&
         delete *col;
     }
 
-//    if (itr > 0)
-//        std::cerr << "\033[33mIterated collision response " << itr << " time" << (itr > 1 ? "s" : "") << "\033[0m" << std::endl;
+    //    if (itr > 0)
+    //        std::cerr << "\033[33mIterated collision response " << itr << " time" << (itr > 1 ? "s" : "") << "\033[0m" << std::endl;
 
     if (!collisions.empty())
     {
-      //  std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Exceeded maximum " << "number of inelastic iterations "
-      //          << m_num_inlstc_itrns << ". Time of warning " << m_t << "." << std::endl;
+        //  std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Exceeded maximum " << "number of inelastic iterations "
+        //          << m_num_inlstc_itrns << ". Time of warning " << m_t << "." << std::endl;
         all_rods_collisions_ok = false;
-        explosionTriggered = true;
+        m_abortSimulation = true;
     }
 
     //  for (int rodcol = 0; rodcol < failed_collisions_rods.size(); rodcol++)
@@ -609,12 +609,6 @@ bool BridsonStepper::adaptiveExecute(double dt, SelectionType selected_rods)
     //     return true; // get out of here if explosion was triggered
     // }
 
-    if (dt < 1e-9)
-    {
-        std::cerr << "Time step has fallen below 1e-9: exiting" << std::endl;
-        exit(1);
-    }
-
     std::cout << "BridsonStepper::adaptiveExecute starting with m_t = " << m_t << " and dt = " << dt << std::endl;
 
     // Backup all selected rods
@@ -645,6 +639,14 @@ bool BridsonStepper::adaptiveExecute(double dt, SelectionType selected_rods)
     // Attempt a full time step
     if (step(true, selected_rods)) // Success!
         return true;
+
+    if (dt < minimum_time_step)
+    {
+        std::cout << "WARNING: in BridsonStepper::adaptiveExecute step still not dependable with time step below "
+                << minimum_time_step << std::endl;
+        std::cout << "No more substepping, hope we'll be ok" << std::endl;
+        return true;
+    }
 
     // Otherwise do two half time steps
     // std::cout << "Adaptive stepping in Bridson stepper" << std::endl;
@@ -709,7 +711,7 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
 #endif
 
     std::cerr << "This step will treat " << selected_rods.size() << " remaining rod" << (selected_rods.size() > 1 ? "s" : "")
-           << std::endl;
+            << std::endl;
 
     // Prepare start forces and list of steppers to be executed.
     VecXd *startForces[m_rods.size()];
@@ -778,6 +780,7 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
     if (!multithreaded_stepper.Execute()) // if at least one of the steppers has not solved
     {
         dependable_solve = false;
+        m_abortSimulation = true;
         std::cout << "Dynamic step is not entirely dependable!" << std::endl;
     }
 
@@ -929,6 +932,7 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
                         worstViolator = j;
                     if (isnan(rate) || rate > 10.0)
                     {
+                        m_abortSimulation = true;
                         explosions_detected = true;
                         exploding_rods[*rod] = true;
                         // std::cerr << "Rod number " << *rod << " had an explosion" << std::endl;

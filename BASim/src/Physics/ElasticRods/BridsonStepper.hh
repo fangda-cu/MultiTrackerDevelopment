@@ -470,6 +470,7 @@ private:
     // Toggle selective adaptivity
     bool m_selective_adaptivity;
 
+    bool m_abortSimulation;
 };
 
 } // namespace BASim
