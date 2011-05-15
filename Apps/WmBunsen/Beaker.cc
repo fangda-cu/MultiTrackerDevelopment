@@ -435,69 +435,71 @@ void Beaker::interpolateCollisionMeshesForSubstep( const float i_interpolateFact
 }
 */
 
-void Beaker::setupRodTimeStepperForSubStep( WmFigRodGroup* i_pRodGroup, const int i_subStep,
-    const bool i_collisionsEnabled )
-{
-    int rod_gid = 0;
-    int numRods = i_pRodGroup->numberOfRods();
-    
-    for ( int r=0; r<numRods; r++ )
-    {
-        // Check if this is a rod or just a fake place holder as the input was too short
-        if ( !i_pRodGroup->shouldSimulateRod( r ) )
-        {
-            continue;
-        }
-        
-        // We don't need to do this any more as BridsonStepper takes care
-        // of the setting the timestep in rodTimeStepper's as it basically
-        // owns them
-        /*
-        RodTimeStepper* rodTimeStepper = i_pRodGroup->stepper( r );
+//void Beaker::setupRodTimeStepperForSubStep( WmFigRodGroup* i_pRodGroup, const int i_subStep,
+//    const bool i_collisionsEnabled )
+//{
+//    int rod_gid = 0;
+//    int numRods = i_pRodGroup->numberOfRods();
+//
+//    for ( int r=0; r<numRods; r++ )
+//    {
+//        // Check if this is a rod or just a fake place holder as the input was too short
+//        if ( !i_pRodGroup->shouldSimulateRod( r ) )
+//        {
+//            continue;
+//        }
+//
+//        // We don't need to do this any more as BridsonStepper takes care
+//        // of the setting the timestep in rodTimeStepper's as it basically
+//        // owns them
+//        /*
+//        RodTimeStepper* rodTimeStepper = i_pRodGroup->stepper( r );
+//
+//        rodTimeStepper->setTimeStep( getDt() );
+//        //rodTimeStepper->setCollisionMeshesMap( &m_collisionMeshMap );
+//        //rodTimeStepper->setClumping( m_isClumpingEnabled, m_clumpingCoefficient );
+//         * */
+//
+//        BASim::ElasticRod* rod = i_pRodGroup->elasticRod( r );
+//
+//        rod->global_rodID = rod_gid;
+//        rod_gid++;
+//
+//      //  m_subSteppedVertexPositions[ i_subStep ][ r ].resize( rod->nv() );
+//    }
+//}
 
-        rodTimeStepper->setTimeStep( getDt() );
-        //rodTimeStepper->setCollisionMeshesMap( &m_collisionMeshMap );
-        //rodTimeStepper->setClumping( m_isClumpingEnabled, m_clumpingCoefficient );
-         * */
-
-        BASim::ElasticRod* rod = i_pRodGroup->elasticRod( r );
-
-        rod->global_rodID = rod_gid;
-        rod_gid++;
-
-        m_subSteppedVertexPositions[ i_subStep ][ r ].resize( rod->nv() );
-    }
-}
-
-int Beaker::calculateNumSubSteps(int numSubSteps, Scalar deltaT, double subDistMax)
-{
-     // Set an adaptive substep if velocity change is too great.  The subDistanceMax is a tunable parameter.
-     int steps=numSubSteps;
-
-     /*float biggestMax = 0.0f;
-     for ( CollisionMeshDataHashMapIterator cmItr = m_collisionMeshMap.begin();
-                                            cmItr != m_collisionMeshMap.end(); ++cmItr )
-     {
-         float maxVelMag = cmItr->second->m_maxVelocityMag;
-         if ( maxVelMag > biggestMax )
-             biggestMax = maxVelMag;
-     }
-
-     if ( ((biggestMax *deltaT)/numSubSteps) > subDistMax)
-     {
-         steps= (biggestMax * deltaT)/subDistMax;
-         if (steps < numSubSteps)
-         {
-             steps= numSubSteps;
-         }
-     }
-     std::cout<< "Max velocity = " << biggestMax <<" Substeps = " << steps << std::endl;
-*/
-     return steps;
-}
+//int Beaker::calculateNumSubSteps(int numSubSteps, Scalar deltaT, double subDistMax)
+//{
+//     // Set an adaptive substep if velocity change is too great.  The subDistanceMax is a tunable parameter.
+//     int steps=numSubSteps;
+//
+//     /*float biggestMax = 0.0f;
+//     for ( CollisionMeshDataHashMapIterator cmItr = m_collisionMeshMap.begin();
+//                                            cmItr != m_collisionMeshMap.end(); ++cmItr )
+//     {
+//         float maxVelMag = cmItr->second->m_maxVelocityMag;
+//         if ( maxVelMag > biggestMax )
+//             biggestMax = maxVelMag;
+//     }
+//
+//     if ( ((biggestMax *deltaT)/numSubSteps) > subDistMax)
+//     {
+//         steps= (biggestMax * deltaT)/subDistMax;
+//         if (steps < numSubSteps)
+//         {
+//             steps= numSubSteps;
+//         }
+//     }
+//     std::cout<< "Max velocity = " << biggestMax <<" Substeps = " << steps << std::endl;
+//*/
+//     return steps;
+//}
 
 void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
-  int i_subSteps, double i_subDistanceMax, bool i_collisionsEnabled,  bool i_selfCollisionPenaltyForcesEnabled,
+  // int i_subSteps,
+ // double i_subDistanceMax,
+  bool i_collisionsEnabled,  bool i_selfCollisionPenaltyForcesEnabled,
   bool i_fullSelfCollisionsEnabled, int i_fullSelfCollisionIters,
   double i_selfCollisionCOR, FixedRodVertexMap* i_fixedVertices, bool i_zeroAllTwist,
   double i_constraintSrength,  LockedRodVertexMap* i_lockedRodVertexMap )
@@ -522,7 +524,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     //Scalar startTime = getTime();
     //Scalar currentTime = getTime();
     Scalar targetTime = getTime() + i_stepSize;
-    setDt( i_stepSize / i_subSteps );
+   // setDt( i_stepSize / i_subSteps );
     
     // Initialise all the timers to 0
     
@@ -538,7 +540,7 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
 
     // Create space to track the target vertex positions of each rod as they substep towards 
     // their goal
-    m_subSteppedVertexPositions.resize( i_subSteps );
+  // m_subSteppedVertexPositions.resize( i_subSteps );
 
     // We should alter if self collisions are on or off here but they can only be changed
     // when we create bridsonStepper at time == startTime.
@@ -560,26 +562,26 @@ void Beaker::takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize,
     //frameTime += timeTaken;
     //m_vertexInterpolationTime += timeTaken;
     
-    for ( int s=0; s<i_subSteps; s++ )
-    {
+//  for ( int s=0; s<i_subSteps; s++ )
+    {const int s = 0;
         //cout << "\nframe "<<24*currentTime<<", substep " << s << " / " << i_subSteps << endl;
         m_numRods = 0;
 
         // Make sure we don't step past the end of this frame, depending on
         // the size of dt, we may need to take a smaller step so we land exactly
         // on the frame boundary.
-        if ( ( targetTime - getTime() ) < getDt() + SMALL_NUMBER )
-        {
-            setDt( targetTime - getTime() );        
-        }
+     //   if ( ( targetTime - getTime() ) < getDt() + SMALL_NUMBER )
+    //    {
+     //       setDt( targetTime - getTime() );
+     //   }
 
-        float timeTaken;
-        Scalar interpolateFactor = ( (double)( s + 1 ) / i_subSteps );
+    //    float timeTaken;
+     //   Scalar interpolateFactor = ( (double)( s + 1 ) / i_subSteps );
         
         m_world->execute();
     }
     // restore dt
-    setDt( dt_save );
+  //  setDt( dt_save );
 
         /*// Now we have two code paths depending on if we're doing self collisions. If
         // we're not then we are safe to parallelise the entire thing. If we are then

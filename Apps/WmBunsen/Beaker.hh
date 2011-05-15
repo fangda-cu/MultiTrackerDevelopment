@@ -112,7 +112,7 @@ public:
         //return m_world->property( m_dtHandle );
         return m_bridsonStepper->getDt();
     }
-
+/*
     void setDt( const Scalar& i_dt )
     {
         // Does setting this property on the world mean anything?
@@ -120,7 +120,7 @@ public:
         
         m_bridsonStepper->setDt( i_dt );
     }
-
+*/
     const BASim::Vec3d& getGravity() const
     {
       return m_world->property( m_gravityHandle );
@@ -262,7 +262,9 @@ public:
     int calculateNumSubSteps(int i_subSteps,Scalar i_stepSize, double i_subDistanceMax);
 
     void takeTimeStep( int i_numberOfThreadsToUse, Scalar i_stepSize, 
-                       int i_subSteps, double i_subDistanceMax, bool i_collisionsEnabled,
+                       // int i_subSteps,
+                       // double i_subDistanceMax,
+                       bool i_collisionsEnabled,
                        bool i_selfCollisionPenaltyForcesEnabled,
                        bool i_fullSelfCollisionsEnabled,
                        int i_fullSelfCollisionIters,
@@ -326,8 +328,8 @@ private:
       @param i_subStep The currently being evalued sumStep
       @param i_collisionsEnabled Whether collisions are turned on or not
     */    
-    void setupRodTimeStepperForSubStep( WmFigRodGroup* i_pRodGroup, const int i_subStep,
-                                        const bool i_collisionsEnabled );
+  //  void setupRodTimeStepperForSubStep( WmFigRodGroup* i_pRodGroup, const int i_subStep,
+  //                                      const bool i_collisionsEnabled );
 
     
     //void storeMaterialFrames();

@@ -164,11 +164,6 @@ public:
     bool execute();
 
     /**
-     * Modifies the timestep.
-     */
-    void setDt(double dt);
-
-    /**
      * Returns the timestep.
      **/
     double getDt() const;
@@ -191,6 +186,11 @@ public:
     }
 
 private:
+    /**
+     * Modifies the timestep.
+     */
+    void setDt(double dt);
+
     /**
      * After adding new rods or objects, this method must be called.
      */
