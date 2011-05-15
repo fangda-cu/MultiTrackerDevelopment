@@ -826,7 +826,7 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnNumericAttribute nAttr;
-    	ia_substeps = nAttr.create( "subSteps", "sub", MFnNumericData::kInt, 10, &stat );
+        ia_substeps = nAttr.create( "subSteps", "sub", MFnNumericData::kInt, 1, &stat );
         if ( !stat ) 
         {
             stat.perror( "create substeps attribute");
