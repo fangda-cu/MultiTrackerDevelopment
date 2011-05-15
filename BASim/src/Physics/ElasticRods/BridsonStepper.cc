@@ -637,8 +637,15 @@ bool BridsonStepper::adaptiveExecute(double dt, SelectionType selected_rods)
     //  m_scripting_controllers[i]->setTime(m_t);
 
     // Attempt a full time step
-    if (step(true, selected_rods)) // Success!
+    if (step(true, selected_rods))
+    {
+        std::cout << "t = " << m_t << " selected_rods: adaptiveExecute has simulated all rods" << std::endl;
+        // Success!
         return true;
+    }
+
+    std::cout << "t = " << m_t << " selected_rods: adaptiveExecute step failed for " << selected_rods.size() << " rods"
+            << std::endl;
 
     if (dt < minimum_time_step)
     {
@@ -668,6 +675,9 @@ bool BridsonStepper::adaptiveExecute(double dt, SelectionType selected_rods)
     // Restore the time
     setTime(time);
 
+    std::cout << "t = " << m_t << " selected_rods: adaptiveExecute substepping (part 1) " << selected_rods.size() << " rods"
+            << std::endl;
+
     // Otherwise attempt two steps of half length
     bool first_success = adaptiveExecute(0.5 * dt, selected_rods);
     if (!first_success)
@@ -675,6 +685,9 @@ bool BridsonStepper::adaptiveExecute(double dt, SelectionType selected_rods)
         setDt(dt);
         return false;
     }
+
+    std::cout << "t = " << m_t << " selected_rods: adaptiveExecute substepping (part 2) " << selected_rods.size() << " rods"
+            << std::endl;
 
     bool second_success = adaptiveExecute(0.5 * dt, selected_rods);
 
@@ -692,6 +705,9 @@ bool BridsonStepper::adaptiveExecute(double dt, SelectionType selected_rods)
 
 bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
 {
+
+    std::cout << "t = " << m_t << " selected_rods: step() begins with " << selected_rods.size() << " rods" << std::endl;
+
     assert(m_edges.size() == m_edge_radii.size());
     assert((int) m_masses.size() == m_xn.size() / 3);
     assert(m_xn.size() == m_xnp1.size());
@@ -792,7 +808,11 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
 
     // If we do rod-rod collisions (meaning no selective adaptivity) and global dependability failed, we might as well stop here.
     if (!m_skipRodRodCollisions && !dependable_solve)
+    {
+        std::cout << "t = " << m_t << " selected_rods: step() failed (due to rod-rod) for " << selected_rods.size() << " rods"
+                << std::endl;
         return false;
+    }
 
     // Post time step position
     extractPositions(m_xnp1, selected_rods);
@@ -962,6 +982,7 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
         for (SelectionType::iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
             if (m_steppers[*rod]->HasSolved() && !exploding_rods[*rod] && !failed_collisions_rods[*rod])
             {
+                // std::cout << "t = " << m_t << " selected_rods: removing rod " << *rod << std::endl;
                 selected_rods.erase(rod--);
             }
     }
