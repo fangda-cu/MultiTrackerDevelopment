@@ -136,7 +136,7 @@ private:
  */
 class BridsonStepper: public ObjectControllerBase
 {
-typedef std::list<int> SelectionType;
+    typedef std::list<int> SelectionType;
 
 public:
     /**
@@ -158,15 +158,45 @@ public:
      */
     virtual ~BridsonStepper();
 
+    /**
+     * Evolves all inserted rods forward in time.
+     */
+    bool execute();
+
+    /**
+     * Modifies the timestep.
+     */
+    void setDt(double dt);
+
+    /**
+     * Returns the timestep.
+     **/
+    double getDt() const;
+
+    /**
+     * Returns the simulation time
+     **/
+    double getTime() const;
+
+    /**
+     *  Enable or disable self collisions between all rods
+     */
+    void skipRodRodCollisions(bool skipRodRodCollisions)
+    {
+        std::cerr << "Switching rod-rod collisions " << (skipRodRodCollisions ? "OFF" : "ON") << std::endl;
+        m_skipRodRodCollisions = skipRodRodCollisions;
+
+        if (m_collision_detector)
+            m_collision_detector->skipRodRodCollisions(skipRodRodCollisions);
+    }
+
 private:
     /**
      * After adding new rods or objects, this method must be called.
      */
     void prepareForExecution();
 
-public:
-
-    double computeMaxEdgeAngle(const ElasticRod& rod)
+    double computeMaxEdgeAngle(const ElasticRod& rod) const
     {
         double maxangle = -std::numeric_limits<double>::infinity();
         for (int i = 0; i < rod.ne() - 1; ++i)
@@ -193,26 +223,6 @@ public:
      * Adds a non-simulated triangle mesh for objects to collide with.
      */
     //void addTriangleMesh( TriangleMesh* tri_mesh );
-
-    /**
-     * Evolves all inserted rods forward in time.
-     */
-    bool execute();
-
-    /**
-     * Modifies the timestep.
-     */
-    void setDt(double dt);
-
-    /**
-     * Returns the timestep.
-     **/
-    double getDt();
-
-    /**
-     * Returns the simulation time
-     **/
-    double getTime();
 
     /**
      * Disables all response.
@@ -243,18 +253,6 @@ public:
      * Disables iterative impulse response.
      */
     void disableIterativeInelasticImpulses();
-
-    /**
-     *  Enable or disable self collisions between all rods
-     */
-    void skipRodRodCollisions(bool skipRodRodCollisions)
-    {
-        std::cerr << "Switching rod-rod collisions " << (skipRodRodCollisions ? "OFF" : "ON") << std::endl;
-        m_skipRodRodCollisions = skipRodRodCollisions;
-
-        if (m_collision_detector)
-            m_collision_detector->skipRodRodCollisions(skipRodRodCollisions);
-    }
 
     /**
      * Sets the maximum number of inelastic impulses to apply iterativly.
@@ -288,12 +286,11 @@ public:
      */
     void setRodLabels(const std::vector<std::string>& rod_labels);
 
-    double computeTotalForceNorm();
+    double computeTotalForceNorm() const;
     bool step(bool check_explosion, SelectionType& selected_rods);
     bool nonAdaptiveExecute(double dt, SelectionType selected_rods);
     bool adaptiveExecute(double dt, SelectionType selected_rods);
 
-private:
     /////////////////////////////////////////////////////
     // Methods for checking the sanity of input rods
 
@@ -317,9 +314,6 @@ private:
 
     void extractPositions(VecXd& positions, const SelectionType& selected_rods) const;
     void extractVelocities(VecXd& velocities, const SelectionType& selected_rods) const;
-    //void extractMasses( const std::vector<ElasticRod*>& rods, std::vector<double>& masses ) const;
-    //void extractFixedVertices( const std::vector<ElasticRod*>& rods, std::vector<bool>& fixed ) const;
-    //void extractEdges( const std::vector<ElasticRod*>& rods, const std::vector<int>& base_indices, std::vector<std::pair<int,int> >& edges, std::vector<double>& radii );
 
     void restorePositions(const VecXd& positions, const SelectionType& selected_rods);
     void restoreVelocities(const VecXd& velocities, const SelectionType& selected_rods);
@@ -330,20 +324,12 @@ private:
 
     int getContainingRod(int vert_idx) const;
 
-   // Determines if a vertex and a face share a vertex
+    // Determines if a vertex and a face share a vertex
     bool vertexAndFaceShareVertex(const int& vertex, const int& face) const;
     bool vertexAndFaceShareVertex(const int& v, const int& f0, const int& f1, const int& f2) const;
     bool isProperCollisionTime(double time);
 
-    void applyInextensibilityVelocityFilter( int rodidx );
-
-    // Computes the impulse necessary to eliminate all relative velocity at given points on two edges
-    Vec3d computeEdgeEdgeInelasticImpulse(const double& ma0, const double& ma1, const double& mb0, const double& mb1,
-            const double& s, const double& t, const double& relvel, const Vec3d& n);
-
-    // Computes the impulse necessary to eliminate all relative velocity at a given point on a face and a vertex
-    Vec3d computeVertexFaceInelasticImpulse(const double& mvrt, const double& mfc0, const double& mfc1, const double& mfc2,
-            const double& u, const double& v, const double& w, const double& relvel, const Vec3d& n);
+    void applyInextensibilityVelocityFilter(int rodidx);
 
     /////////////////////////////////////////////////////
     // Collision response routines
@@ -380,13 +366,14 @@ private:
     //          std::vector<VertexFaceImplicitPenaltyCollision>& vetex_face_collisions) const;
     void executeImplicitPenaltyResponse(std::list<Collision*>& collisions, const SelectionType& selected_rods);
 
-public:
     void enableImplicitPenaltyImpulses();
     void disableImplicitPenaltyImpulses();
     void setImplicitPenaltyExtraThickness(const double& h);
     void setVertexFacePenalty(const double& k);
 
-private:
+    /*
+     * Member variables
+     */
 
     // Total number of degrees of freedom in the system
     int m_num_dof;
@@ -419,17 +406,18 @@ private:
     // TODO: Possibly get rid of these, just pull radii from m_vertex_radii.
     std::vector<double> m_edge_radii;
     std::vector<double> m_face_radii;
-
+    // Vector of masses per vertex
     std::vector<double> m_masses;
+    // Vector of booleans indicating whether a vertex should be considered for collisions
     std::vector<bool> m_collision_immune;
-
+    // Structure of references to the geometry
     GeometricData m_geodata;
 
+    // Buffers to hold temporary saves of positions and velocities
     VecXd m_xn;
     VecXd m_xnp1;
     VecXd m_vnphalf;
     VecXd m_vnresp;
-
     VecXd m_xdebug;
 
     // Enable/Disable portions of the collision response
@@ -445,12 +433,13 @@ private:
     bool m_lt0_enc;
     bool m_gt0_enc;
 
+    // Collision detector
     CollisionDetector* m_collision_detector;
 
     // Assuming rods are stored first (which they now are), the index that points one past the last rods data
     int m_obj_start;
 
-    //Problem* m_problem;
+    // Current time
     double m_t;
 
     std::vector<std::string> m_rod_labels;
@@ -463,13 +452,14 @@ private:
     double m_implicit_thickness;
     std::vector<RodPenaltyForce*> m_implicit_pnlty_forces;
 
+    // Number of threads to be used for dynamics and collisions
     int m_num_threads;
 
     // Toggle self collisions on or off
     bool m_skipRodRodCollisions;
     // Toggle selective adaptivity
     bool m_selective_adaptivity;
-
+    // A flag indicating that we stopped simulating (but the clock keeps turning for Maya)
     bool m_abortSimulation;
 };
 
