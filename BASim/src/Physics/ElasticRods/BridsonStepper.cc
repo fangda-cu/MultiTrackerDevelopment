@@ -12,6 +12,9 @@
 #include "../../Collisions/Collision.hh"
 
 #include <iostream.h>
+#ifdef HAVE_OPENMP
+#include <omp.h>
+#endif
 
 namespace BASim
 {
@@ -21,7 +24,8 @@ static const float minimum_time_step = 1e-6;
 BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
         std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
         const double time, int num_threads) :
-    m_num_dof(0), m_rods(rods),
+    m_num_dof(0),
+            m_rods(rods),
             m_triangle_meshes(trimeshes),
             m_scripting_controllers(scripting_controllers),
             m_steppers(steppers),
@@ -74,6 +78,9 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
         m_num_threads = sysconf(_SC_NPROCESSORS_ONLN);
         std::cerr << "Default-set number of threads = " << m_num_threads << std::endl;
     }
+#ifdef HAVE_OPENMP
+    omp_set_num_threads(m_num_threads);
+#endif
     // Update internal state, prepare for execution
     prepareForExecution();
 
@@ -486,7 +493,7 @@ bool BridsonStepper::step(SelectionType& selected_rods)
 
     // Prepare start forces and list of steppers to be executed.
     VecXd *startForces[m_rods.size()];
-    std::list<RodTimeStepper*> selected_steppers;
+    std::vector<RodTimeStepper*> selected_steppers;
     for (SelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
     {
         selected_steppers.push_back(m_steppers[*rod]);
@@ -546,14 +553,27 @@ bool BridsonStepper::step(SelectionType& selected_rods)
         executeImplicitPenaltyResponse(penalty_collisions, selected_rods);
     }
 
-    // Launch num_threads threads which will execute all elements of m_steppers.
-    MultithreadedStepper<std::list<RodTimeStepper*> > multithreaded_stepper(selected_steppers, 4);//m_num_threads); // FIXME
-    if (!multithreaded_stepper.Execute()) // if at least one of the steppers has not solved
+#ifdef HAVE_OPENMP
+#pragma omp parallel for
+#endif
+    for (int i = 0; i < selected_steppers.size(); i++)
     {
-        dependable_solve = false;
-        m_abortSimulation = true;
-        std::cout << "Dynamic step is not entirely dependable!" << std::endl;
+        if (!selected_steppers[i]->execute())
+        {
+            dependable_solve = false;
+            m_abortSimulation = true;
+        }
     }
+    /*
+     // Launch num_threads threads which will execute all elements of m_steppers.
+     MultithreadedStepper<std::list<RodTimeStepper*> > multithreaded_stepper(selected_steppers, 4);//m_num_threads); // FIXME
+     if (!multithreaded_stepper.Execute()) // if at least one of the steppers has not solved
+     {
+     dependable_solve = false;
+     m_abortSimulation = true;
+     std::cout << "Dynamic step is not entirely dependable!" << std::endl;
+     }
+     */
 
     // Clean up penalty collisions list
     for (std::list<Collision*>::iterator i = penalty_collisions.begin(); i != penalty_collisions.end(); i++)
@@ -651,7 +671,7 @@ bool BridsonStepper::step(SelectionType& selected_rods)
 #ifdef HAVE_OPENMP
 #pragma omp parallel for
 #endif
-    for (SelectionType::const_iterator selected_rod = selected_rods.begin(); selected_rod != selected_rods.end(); selected_rod++)
+    for (SelectionType::iterator selected_rod = selected_rods.begin(); selected_rod != selected_rods.end(); selected_rod++)
         m_rods[*selected_rod]->updateProperties();
 
     // Sanity check to ensure rod's internal state is consistent
