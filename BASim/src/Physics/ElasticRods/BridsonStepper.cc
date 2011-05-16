@@ -2031,6 +2031,9 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEd
 
 void BridsonStepper::applyInextensibilityVelocityFilter(int rodidx)
 {
+    if (m_dt > 1.0 / 24.0 / 10.0)
+        return;
+
     int rodbase = m_base_indices[rodidx];
 
     Vec3d v0 = m_vnphalf.segment<3> (rodbase + 3); // velocity of vertex 1
@@ -2744,11 +2747,6 @@ void BridsonStepper::ensureNoCollisionsByDefault(const ElasticRod& rod) const
         }
     }
 }
-
-
-
-
-
 
 }
 
