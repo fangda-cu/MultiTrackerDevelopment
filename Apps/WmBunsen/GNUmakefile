@@ -90,9 +90,7 @@ WmFigUtils.hh \
 WmFigRodComponentList.hh  \
 WmFigRodParticleInput.hh \
 WmFigMeshController.hh \
-Sweeney/WmSweeneyShape.hh \
-Sweeney/WmSweeneyShapeUI.hh \
-Sweeney/WmSweeneyShapeIterator.hh \
+Sweeney/WmSweeneyNode.hh \
 Sweeney/WmSweeneyRodManager.hh \
 #VolumetricCollisions/VolumetricCollisions.hh \
 #VolumetricCollisions/VolumetricCollisionsCPU.hh \
@@ -132,9 +130,7 @@ utils/WmFigUtils.cc \
 WmFigRodComponentList.cc \
 WmFigRodParticleInput.cc \
 WmFigMeshController.cc \
-Sweeney/WmSweeneyShape.cc \
-Sweeney/WmSweeneyShapeUI.cc \
-Sweeney/WmSweeneyShapeIterator.cc \
+Sweeney/WmSweeneyNode.cc \
 Sweeney/WmSweeneyRodManager.cc \
 #WmBunsenCollisionMeshNode.cc \
 #VolumetricCollisions/VolumetricCollisionsCPU.cc \
@@ -210,6 +206,10 @@ SCR10_INSD       := $(SCR_INSD)
 SCR11            := constraints/AEwmFigConstraintNodeTemplate.mel
 SCR11_MAYA       := 1
 SCR11_INSD       := $(SCR_INSD)
+
+SCR12            := Sweeney/wmSweeney.mel
+SCR12_MAYA       := 1
+SCR12_INSD       := $(SCR_INSD)
 
 
 ##############################################################################

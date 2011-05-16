@@ -20,9 +20,7 @@
 #include "WmFigaroRodShape/WmFigaroRodShapeIterator.hh"
 //#include "constraints/WmFigConstraintNode.hh"
 #include "WmFigSelectionDisplayNode.hh"
-#include "Sweeney/WmSweeneyShape.hh"
-#include "Sweeney/WmSweeneyShapeUI.hh"
-#include "Sweeney/WmSweeneyShapeIterator.hh"
+#include "Sweeney/WmSweeneyNode.hh"
 
 MStatus initializePlugin( MObject obj )
 {
@@ -132,6 +130,16 @@ MStatus initializePlugin( MObject obj )
         return stat;     
     }*/
 
+    stat = plugin.registerNode( WmSweeneyNode::typeName, WmSweeneyNode::typeID,
+                                WmSweeneyNode::creator,
+                                WmSweeneyNode::initialize,
+                                WmSweeneyNode::kLocatorNode );
+    if ( !stat )
+    {
+        stat.perror( "RegisterNode WmSweeneyNode failed" );
+        return stat;
+    }
+    
     stat = plugin.registerShape( WmFigaroRodShape::typeName, WmFigaroRodShape::id,
                                    &WmFigaroRodShape::creator,
                                    &WmFigaroRodShape::initialize,
@@ -141,16 +149,8 @@ MStatus initializePlugin( MObject obj )
         return stat;     
     }
 
-    stat = plugin.registerShape( WmSweeneyShape::typeName, WmSweeneyShape::id,
-                                &WmSweeneyShape::creator,
-                                &WmSweeneyShape::initialize,
-                                &WmSweeneyShapeUI::creator );
-    if ( !stat ) {
-        stat.perror( "registerShape WmFigaroRodShape failed" );
-        return stat;     
-    }
-
     MGlobal::executeCommand( "source WmFigaro.mel", false );
+    MGlobal::executeCommand( "source Sweeney/wmSweeney.mel", false );
     CHECK_MSTATUS( plugin.registerUI( "wmFigaroAddMainMenu", "wmFigaroRemoveMainMenu" ) );
     return stat;
 
@@ -229,9 +229,9 @@ MStatus uninitializePlugin( MObject obj)
         stat.perror( "deregisterNode WmFigaroRodShape failed" );
     }
     
-    if ( plugin.deregisterNode( WmSweeneyShape::id ) != MS::kSuccess )
+    if ( plugin.deregisterNode( WmSweeneyNode::typeID ) != MS::kSuccess )
     {
-        stat.perror( "deregisterNode WmSweeneyShape failed" );
+        stat.perror( "deregisterNode WmSweeneyNode failed" );
     }
 
     MGlobal::stopErrorLogging();

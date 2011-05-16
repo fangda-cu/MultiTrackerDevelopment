@@ -19,6 +19,7 @@ WmSweeneyRodManager::~WmSweeneyRodManager()
 }
 
 bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices, 
+                                  const double i_time,
                                   const double i_youngsModulus,
                                   const double i_shearModulus, const double i_viscosity, 
                                   const double i_density, const double i_radiusA, 
@@ -52,7 +53,14 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
 	    
     // Add a damping force to the rod
     stepper->addExternalForce( new RodMassDamping( i_massDamping ) );
-        
+    
+    // Lock the first two vertices of the rod
+    RodBoundaryCondition* boundary = stepper->getBoundaryCondition();
+                
+    // Set the velocity to be zero as we're grooming static hair
+    boundary->setDesiredVertexPosition( 0, i_time, rod->getVertex( 0 ), BASim::Vec3d( 0.0, 0.0, 0.0 ) );
+    boundary->setDesiredVertexPosition( 1, i_time, rod->getVertex( 1 ), BASim::Vec3d( 0.0, 0.0, 0.0 ) );
+ 
     // If the magnitude of gravity is 0 then don't bother adding the force
     if ( i_gravity.norm() > 0 )
     {

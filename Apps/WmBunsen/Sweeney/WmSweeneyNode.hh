@@ -79,7 +79,7 @@ private:
     double m_previousTime;
     double m_startTime;
     
-    WmSweeneyRodManager m_rodManager;
+    WmSweeneyRodManager* m_rodManager;
     MVectorArray m_strandVertices;
     unsigned int m_numberOfVerticesPerStrand;
 };

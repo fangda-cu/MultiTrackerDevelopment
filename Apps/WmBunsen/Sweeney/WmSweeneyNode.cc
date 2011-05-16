@@ -24,7 +24,7 @@ using namespace BASim;
 // Sync attributes
 /* static */ MObject WmSweeneyNode::ca_sync;
 
-WmSweeneyNode::WmSweeneyNode()
+WmSweeneyNode::WmSweeneyNode() : m_rodManager( NULL )
 {    
 }
 
@@ -57,7 +57,12 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         }
         else
         {
-            m_rodManager.takeStep();
+            if ( m_rodManager == NULL )
+            {
+                MGlobal::displayError( "Please rewind to start time to initialise simulation." );
+            }
+            
+            m_rodManager->takeStep();
         }
         
         i_dataBlock.setClean( i_plug );
@@ -73,24 +78,43 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
 void WmSweeneyNode::initialiseRodFromBarberShopInput()
 {
-    // TODO: Grab the root strand distribution from a Barbershop node that gets plugged in
-    // 
-    
     //TODO: Reset the manager and remove all rods before adding more
+    delete m_rodManager;
     
-    vector< BASim::Vec3d > vertices;
-    vertices.resize( 10 );
+    m_rodManager = new WmSweeneyRodManager();
+
+    // Create one rod for each barbershop strand. Ignore the strand shape or length but do
+    // take its initial direction as a follicle angle
+    size_t currentVertexIndex = 0;
     
-    for ( unsigned int x = 0; x < 5; ++x )
+    // This should be a user parameter or the spacing should be?
+    size_t verticesPerRod = 10;
+    
+    while ( currentVertexIndex < ( m_strandVertices.length() - 2 ) )
     {
-        for ( size_t v = 0; v < 10; ++v )
+        MVector direction = m_strandVertices[ currentVertexIndex + 1 ] 
+                            - m_strandVertices[ currentVertexIndex ];
+        direction.normalize();
+        
+        MVector currentVertex( m_strandVertices[ currentVertexIndex ] );
+        
+        vector< BASim::Vec3d > vertices;
+        vertices.resize( verticesPerRod );
+    
+        for ( size_t v = 0; v < verticesPerRod; ++v )
         {
-            vertices[ v ] = BASim::Vec3d( x, 0.0, ( double )v );
+            vertices[ v ] = BASim::Vec3d( currentVertex.x, currentVertex.y, currentVertex.z );
+            
+            // this should be scaled so the rod ends up being the length the user asks for
+            currentVertex += direction;
         }
-        m_rodManager.addRod( vertices );
+        
+        m_rodManager->addRod( vertices, m_currentTime );
+        
+        currentVertexIndex += m_numberOfVerticesPerStrand;
     }
     
-    m_rodManager.initialiseSimulation( 1 / 24.0, 1.0 );
+    m_rodManager->initialiseSimulation( 1 / 24.0, 1.0 );
 }
 
 
@@ -116,7 +140,7 @@ void WmSweeneyNode::draw( M3dView& i_view, const MDagPath& i_path,
 	glPushAttrib( GL_ALL_ATTRIB_BITS );
 
 	// draw dynamic Hair
-    m_rodManager.drawAllRods();
+    m_rodManager->drawAllRods();
 
 	glPopAttrib();
 	i_view.endGL();

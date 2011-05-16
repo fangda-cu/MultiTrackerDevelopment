@@ -57,11 +57,16 @@ public:
 	virtual MPxGeometryIterator*	geometryIteratorSetup( MObjectArray&, MObject&, bool forReadOnly = false );
 	virtual bool                    acceptsGeometryIterator( bool  writeable=true );
 	virtual bool                    acceptsGeometryIterator( MObject&, bool writeable=true, bool forReadOnly = false);
+    virtual MStatus compute( const MPlug& i_plug, MDataBlock& i_dataBlock );
 
-	static  void *          creator();
-	static  MStatus         initialize();
+	static void *          creator();
+	static MStatus         initialize();
 	static MTypeId id;
     static MString typeName;
+    static MObject ia_strandVertices;
+    static MObject ia_verticesPerStrand;
+    static MObject ia_time;
+    static MObject ca_sync;
     
     /** Draws all the rods. This is called from WmSweeneyShapeUI.
      **/
@@ -71,6 +76,10 @@ private:
     void initialiseRodFromBarberShopInput();
 
     WmSweeneyRodManager m_rodManager;
+    
+    double m_currentTime;
+    MVectorArray m_strandVertices;
+    unsigned int m_numberOfVerticesPerStrand;
 };
 
 #endif /* _WmSweeneyShape */
