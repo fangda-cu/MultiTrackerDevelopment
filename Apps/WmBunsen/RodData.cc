@@ -196,7 +196,7 @@ void RodData::updateBoundaryConditions()
         //m_rod->fixVert( edgeNum );
         //m_rod->fixVert( edgeNum + 1 );
 
-	double dt = 1./24.;
+	double dt = 1.0/24.0;
 
 //	std::cerr << "RodData::updateBoundaryConditions: vertIdx = " << edgeNum << " t0 = " << m_bridsonStepper->getTime() << " prevPos = " << prevVertexPositions[edgeNum] << " nextPos = " << nextVertexPositions[edgeNum] << " vel = " << (nextVertexPositions[ edgeNum ] - prevVertexPositions[ edgeNum ])/dt << endl;
 

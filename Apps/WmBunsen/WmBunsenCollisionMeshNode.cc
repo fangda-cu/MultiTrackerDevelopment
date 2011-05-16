@@ -70,7 +70,7 @@ void WmBunsenCollisionMeshNode::initialise( Beaker* i_beaker, const unsigned int
     // NOTE: We're passing in bogus dt values but they are never used, the BridsonStepper overrides
     // them.... Yes it's not clear but I'm working the Maya code into Breannan's BASimulator structure.
     m_meshController = new WmFigMeshController( m_currentMesh, m_previousMesh, m_nextMesh, 
-                                                m_startTime, ( 1.0 / 24.0 ) / 10.0 );
+                                                m_startTime, 1.0/24.0);
 
     // Now we need to ensure that the mesh variables have the mesh data from the input mesh.
     // ::compute() has already been called and we could initialise the meshes there but then we

@@ -61,7 +61,7 @@ WmFigaroRodShape::~WmFigaroRodShape() {}
 
 void WmFigaroRodShape::resetSimulation( MVectorArray* i_controlPoints )
 {
-    m_beaker.resetEverything( 0.0, ( 1.0 / 24.0 ) / 10.0 );
+    m_beaker.resetEverything(0.0, 1.0/24.0);
 
     MVectorArray* controlPoints = getControlPoints();
 
@@ -75,8 +75,8 @@ void WmFigaroRodShape::resetSimulation( MVectorArray* i_controlPoints )
     }
 
     m_rodGroup.setSimulationNeedsReset( false );
-    //should actually pass the proper time
-    m_beaker.addRodsToWorld( 0, &m_rodGroup,0 );
+    //should actually pass the proper time and the proper number of threads
+    m_beaker.addRodsToWorld( 0, &m_rodGroup,0 ,8);
 }
 
 void WmFigaroRodShape::initialiseRod( MVectorArray* i_controlPoints )
@@ -138,7 +138,10 @@ void WmFigaroRodShape::solve( FixedRodVertexMap& i_fixedRodVertexMap )
 {
     LockedRodVertexMap lockedRodVertexMap;
     lockedRodVertexMap[ 0 ] = m_lockedVertexMap;
-    m_beaker.takeTimeStep( 8, 1.0/24.0, 10, 0.5, false, false, false, 10, 1.0, &i_fixedRodVertexMap, false, m_constraintStrength, &lockedRodVertexMap );
+    m_beaker.takeTimeStep(// 8,
+            1.0/24.0, // 10,
+            // 0.5,
+            false, false, false, 10, 1.0, &i_fixedRodVertexMap, false, m_constraintStrength, &lockedRodVertexMap );
 }
 
 void WmFigaroRodShape::postConstructor()

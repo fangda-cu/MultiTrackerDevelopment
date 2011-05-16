@@ -23,7 +23,7 @@ TestCase6::TestCase6() :
     // Gravity in CGS
     GetVecOpt("gravity") = Vec3d(0, -981, 0);
     // Timestep
-    GetScalarOpt("dt") = 0.1 / 24;
+    GetScalarOpt("dt") = 1.0/24.0;
     // Maximum number of implicit solver itations
     GetIntOpt("iterations") = 100;
     // Number of vertices in each rod

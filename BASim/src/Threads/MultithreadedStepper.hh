@@ -10,7 +10,6 @@
 
 #include "Mutex.hh"
 #include <pthread.h>
-#include <mkl_service.h>
 
 /**
  * Class to handle parallel execution of a container's element. StepperContainerT must be an stl-style container
@@ -54,7 +53,6 @@ public:
         m_it(stepper_container.begin()), m_end(stepper_container.end()), m_it_mutex(),
                 m_num_threads(std::min(num_threads, stepper_container.size())), m_thread_args(m_num_threads), m_success(true)
     {
-        mkl_set_num_threads(1);
         //        std::cerr << "Number of threads = " << m_num_threads << std::endl;
         for (int i = 0; i < m_num_threads; i++)
             m_thread_args[i] = new ThreadArgs(m_it, m_end, m_it_mutex);
@@ -73,9 +71,6 @@ public:
             m_success = m_success && m_thread_args[t]->m_success;
             delete m_thread_args[t];
         }
-
-        mkl_free_buffers();
-
         return m_success;
     }
 

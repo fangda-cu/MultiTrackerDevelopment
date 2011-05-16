@@ -10,10 +10,10 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
         editorTemplate -addControl "numberOfThreads";
         editorTemplate -addControl "startTime";
         editorTemplate -addControl "framesPerSecond";
-        editorTemplate -addControl "subSteps";
+        //editorTemplate -addControl "subSteps";
         //editorTemplate -addControl "maxDt";
         //editorTemplate -addControl "maxIter";
-        editorTemplate -addControl "subDistanceMax";
+        //editorTemplate -addControl "subDistanceMax";
         editorTemplate -addControl "gravity";        
         editorTemplate -addControl "plasticDeformations";
     editorTemplate -endLayout;
@@ -66,6 +66,9 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
         editorTemplate -addControl "XMLFilePath";
     editorTemplate -endLayout;
 
+   editorTemplate -beginLayout "Error Checking" -collapse 0;
+        editorTemplate -addControl "stopOnRodError";
+    editorTemplate -endLayout;
     
     editorTemplate -addExtraControls;
     editorTemplate -endScrollLayout;
