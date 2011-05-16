@@ -64,10 +64,15 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
     assert(m_dt > 0.0);
 
     if (num_threads > 0)
+    {
         m_num_threads = num_threads;
+        std::cerr << "User-set number of threads = " << m_num_threads << std::endl;
+    }
     else
+    {
         m_num_threads = sysconf(_SC_NPROCESSORS_ONLN);
-
+        std::cerr << "Default-set number of threads = " << m_num_threads << std::endl;
+    }
     // Update internal state, prepare for execution
     prepareForExecution();
 

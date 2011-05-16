@@ -137,8 +137,9 @@ void WmBunsenNode::addRodsToWorld( MDataBlock& i_dataBlock, double startTime )
                 // Now the rod node has been initialised the undeformed positions for the rods
                 // it owns. Since we are resetting the sim we need to actually now create the
                 // rods and add them to the world.
-                
-                m_beaker->addRodsToWorld( r, wmFigRodNode->rodGroup(), startTime );
+                int numberOfThreads = i_dataBlock.inputValue( ia_numberOfThreads, &stat ).asInt();
+                CHECK_MSTATUS( stat );
+                m_beaker->addRodsToWorld( r, wmFigRodNode->rodGroup(), startTime, numberOfThreads );
             }
             else
                 CHECK_MSTATUS( stat );
@@ -436,9 +437,6 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     	//m_beaker->setMaxIter(i_dataBlock.inputValue(ia_maxIter, &stat).asInt());
         //CHECK_MSTATUS( stat );
     
-        int numberOfThreads = i_dataBlock.inputValue( ia_numberOfThreads, &stat ).asInt();
-        CHECK_MSTATUS( stat );
-
         bool collisionsEnabled = i_dataBlock.inputValue( ia_collisionsEnabled, &stat ).asBool();
         CHECK_MSTATUS( stat );
         bool selfCollisionPenaltyForces = i_dataBlock.inputValue( ia_selfCollisionPenaltyForces, &stat ).asBool();
@@ -527,7 +525,8 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         
         if ( m_enabled && ( ( m_solverType == RodTimeStepper::STATICS ) || ( m_currentTime > m_previousTime && m_currentTime > m_startTime ) ) ) 
         {
-            m_beaker->takeTimeStep( numberOfThreads, m_framedt,
+            m_beaker->takeTimeStep(// numberOfThreads,
+                    m_framedt,
                     // substeps,
                    // subDistanceMax,
                     collisionsEnabled,
