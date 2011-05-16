@@ -50,6 +50,7 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
             m_implicit_pnlty_enbld(false), // To enable implicit penalty, call enableImplicitPenaltyImpulses()
             m_vertex_face_penalty(200),
             m_implicit_thickness(1.0),
+            m_check_explosions(true),
             m_skipRodRodCollisions(true),
             m_selective_adaptivity(true), // Selective adaptivity also requires m_skipRodRodCollisions == true
             m_abortSimulation(false),
@@ -353,7 +354,7 @@ bool BridsonStepper::nonAdaptiveExecute(double dt, SelectionType selected_rods)
     setTime(m_t + dt);
     //for (int i = 0; i < m_scripting_controllers.size(); ++i)
     //  m_scripting_controllers[i]->setTime(m_t);
-    return step(false, selected_rods);
+    return step(selected_rods);
 }
 
 bool BridsonStepper::adaptiveExecute(double dt, SelectionType selected_rods)
@@ -392,7 +393,7 @@ bool BridsonStepper::adaptiveExecute(double dt, SelectionType selected_rods)
     //  m_scripting_controllers[i]->setTime(m_t);
 
     // Attempt a full time step
-    if (step(true, selected_rods))
+    if (step(selected_rods))
     {
         std::cout << "t = " << m_t << " selected_rods: adaptiveExecute has simulated all rods" << std::endl;
         // Success!
@@ -458,10 +459,9 @@ bool BridsonStepper::adaptiveExecute(double dt, SelectionType selected_rods)
     return first_success && second_success;
 }
 
-bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
+bool BridsonStepper::step(SelectionType& selected_rods)
 {
-
-    std::cout << "t = " << m_t << " selected_rods: step() begins with " << selected_rods.size() << " rods" << std::endl;
+    std::cout << "t = " << m_t << ": BridsonStepper::step() begins with " << selected_rods.size() << " rods" << std::endl;
 
     assert(m_edges.size() == m_edge_radii.size());
     assert((int) m_masses.size() == m_xn.size() / 3);
@@ -677,11 +677,11 @@ bool BridsonStepper::step(bool check_explosion, SelectionType& selected_rods)
 
     //std::cout << "Post-timestep positions, again: " << m_xdebug << std::endl;
 
-    //    if (check_explosion && dependable_solve)
+    //    if (m_check_explosions && dependable_solve)
 
     bool explosions_detected = false;
     std::vector<bool> exploding_rods(m_rods.size());
-    if (check_explosion)
+    if (m_check_explosions)
     {
         double maxRate = 0;
         double maxStart = 0;

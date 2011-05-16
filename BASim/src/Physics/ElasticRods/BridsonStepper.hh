@@ -287,7 +287,7 @@ private:
     void setRodLabels(const std::vector<std::string>& rod_labels);
 
     double computeTotalForceNorm() const;
-    bool step(bool check_explosion, SelectionType& selected_rods);
+    bool step(SelectionType& selected_rods);
     bool nonAdaptiveExecute(double dt, SelectionType selected_rods);
     bool adaptiveExecute(double dt, SelectionType selected_rods);
 
@@ -455,6 +455,8 @@ private:
     // Number of threads to be used for dynamics and collisions
     int m_num_threads;
 
+    // Whether we should check for large forces in the collision response (and substep consequently).
+    bool m_check_explosions;
     // Toggle self collisions on or off
     bool m_skipRodRodCollisions;
     // Toggle selective adaptivity
