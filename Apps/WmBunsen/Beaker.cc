@@ -513,7 +513,8 @@ void Beaker::takeTimeStep(
     }
 
     //i_subSteps = calculateNumSubSteps( i_subSteps, i_stepSize, i_subDistanceMax);
-    std::cout << m_stopOnRodError << std::endl;
+   // std::cout << m_stopOnRodError << std::endl;
+    m_bridsonStepper->StopOnRodError(m_stopOnRodError);
     Scalar dt_save = getDt();
     //Scalar startTime = getTime();
     //Scalar currentTime = getTime();

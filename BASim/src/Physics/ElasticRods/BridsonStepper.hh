@@ -185,6 +185,10 @@ public:
             m_collision_detector->skipRodRodCollisions(skipRodRodCollisions);
     }
 
+    void StopOnRodError(bool stopOnRodError) {
+        m_stopOnRodError = stopOnRodError;
+        std::cerr << "BridsonStepper::m_stopOnError set to " << (m_stopOnRodError ? "true" : "false") << std::endl;
+    }
 private:
     /**
      * Modifies the timestep.
