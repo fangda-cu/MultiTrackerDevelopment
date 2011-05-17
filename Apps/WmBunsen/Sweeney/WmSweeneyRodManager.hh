@@ -12,6 +12,7 @@
 #include <weta/Wfigaro/Physics/ElasticRods/ElasticRod.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodUtils.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodMayaForces.hh>
+#include <weta/Wfigaro/Physics/World.hh>
 #else
 #include <BASim/src/Core/EigenIncludes.hh>
 #include <BASim/src/Core/ObjectControllerBase.hh>
@@ -56,6 +57,13 @@ private:
     std::vector< BASim::RodRenderer* > m_rodRenderers;
     std::vector< BASim::TriangleMesh* > m_triangleMeshes;
     std::vector< BASim::ScriptingController* > m_scriptingControllers;
+    
+    
+    BASim::ObjPropHandle<BASim::Scalar> m_timeHandle;
+    BASim::ObjPropHandle<BASim::Scalar> m_dtHandle;
+    BASim::ObjPropHandle<BASim::Vec3d> m_gravityHandle;
+    BASim::ObjPropHandle<int> m_maxIterHandle;
+    BASim::World* m_world;
 };
 
 #endif

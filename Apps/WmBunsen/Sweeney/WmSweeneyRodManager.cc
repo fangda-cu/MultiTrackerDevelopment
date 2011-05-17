@@ -29,6 +29,7 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
                                   const BASim::Vec3d i_gravity,
                                   const BASim::RodTimeStepper::Method i_solverType )
 {
+    cerr << "WmSweeneyRodManager::addRod: About to create rod\n";
     RodOptions rodOptions;
     rodOptions.YoungsModulus = i_youngsModulus; /* megapascal */
     rodOptions.ShearModulus = i_shearModulus;   /* megapascal */
@@ -43,6 +44,8 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
     ElasticRod* rod = setupRod( rodOptions,
                                 i_vertices,
                                 i_vertices );
+
+    cerr << "WmSweeneyRodManager::addRod: setupRod returned\n";
 
     // We need a rod renderer to draw the rod in OpenGL
     RodRenderer* rodRenderer = new RodRenderer( *rod );
@@ -78,10 +81,15 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
         rod->doReverseHairdo(stepper);
     }
     
+    // Arbitrarily scale the rod up so it can be seen
+    rod->setRadiusScale( 10.0 );
+    
     // Store all the things we need to control the rod or add it to a BridsonStepper
     m_rods.push_back( rod );
     m_rodTimeSteppers.push_back( stepper );
     m_rodRenderers.push_back( rodRenderer) ;
+    
+    cerr << "WmSweeneyRodManager::addRod: Created rod\n";
     
     return true;
 }
@@ -91,6 +99,7 @@ void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const d
     // FIXME: pass in timestep from Maya
     m_bridsonStepper = new BridsonStepper( m_rods, m_triangleMeshes, m_scriptingControllers, 
                                            m_rodTimeSteppers, i_timeStep, i_startTime );
+                                           
 }
 
 void WmSweeneyRodManager::takeStep()
@@ -101,6 +110,27 @@ void WmSweeneyRodManager::takeStep()
     
     // Force self collisions to be off whilst testing
     m_bridsonStepper->skipRodRodCollisions( true );
+
+    // TEST: DO WE NEED TO DO THIS EVERY FRAME
+   
+  /*  for ( size_t r =0; r< m_rods.size(); ++r )
+    {
+        ElasticRod* rod = m_rods[ r ];
+        
+        // Lock the first two vertices of the rod
+        RodBoundaryCondition* boundary = m_rodTimeSteppers[ r ]->getBoundaryCondition();
+                    
+        for ( int v=0; v<rod->nv(); ++v )
+        {
+            // Probably most of these were not fixed, this may be slow to do.
+            // ??? Benchmark this and check what is going on.
+            boundary->releaseVertex( v );
+        }
+        
+        // Set the velocity to be zero as we're grooming static hair
+        boundary->setDesiredVertexPosition( 0, m_rodTimeSteppers[ r ]->getTime(), rod->getVertex( 0 ), BASim::Vec3d( 0.0, 0.0, 0.0 ) );
+        boundary->setDesiredVertexPosition( 1, m_rodTimeSteppers[ r ]->getTime(), rod->getVertex( 1 ), BASim::Vec3d( 0.0, 0.0, 0.0 ) );
+    }*/
 
     // Ensure the rod stays stuck on the head
 	//updateAllBoundaryConditions();                                   

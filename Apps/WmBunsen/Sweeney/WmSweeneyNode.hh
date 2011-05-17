@@ -62,6 +62,12 @@ public:
     static MString typeName;
     static MObject ia_time;
     static MObject ia_startTime;
+    
+    // Rod properties
+    static MObject ia_length;
+    static MObject ia_edgeLength;
+    
+    // 
     static MObject ca_sync;
     
     static MObject ia_strandVertices;
@@ -71,6 +77,9 @@ public:
                                         MString i_shortName,
                                         MFnNumericData::Type i_type, double i_defaultValue,
                                         bool i_isInput = true, bool i_isArray = false );
+                                        
+    void constructRodVertices( std::vector< BASim::Vec3d >& o_rodVertices, const MVector& i_direction,
+                       const MVector& i_rootPosition );
         
 private:
     void initialiseRodFromBarberShopInput();
@@ -78,6 +87,10 @@ private:
     double m_currentTime;
     double m_previousTime;
     double m_startTime;
+
+    // Hair properties
+    double m_edgeLength;
+    double m_length;
     
     WmSweeneyRodManager* m_rodManager;
     MVectorArray m_strandVertices;

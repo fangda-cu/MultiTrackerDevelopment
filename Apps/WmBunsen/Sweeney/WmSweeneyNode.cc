@@ -17,6 +17,10 @@ using namespace BASim;
 /* static */ MObject WmSweeneyNode::ia_time;
 /* static */ MObject WmSweeneyNode::ia_startTime;
 
+// Hair Property Attributes
+/* static */ MObject WmSweeneyNode::ia_length;
+/* static */ MObject WmSweeneyNode::ia_edgeLength;
+
 // Barbershop specific inputs
 /*static*/ MObject WmSweeneyNode::ia_strandVertices;
 /*static*/ MObject WmSweeneyNode::ia_verticesPerStrand;
@@ -40,6 +44,10 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     {
         m_currentTime = i_dataBlock.inputValue( ia_time ).asTime().value();
         m_startTime = i_dataBlock.inputValue( ia_startTime ).asDouble();
+
+        // Hair properties
+        m_length = i_dataBlock.inputValue( ia_length ).asDouble();
+        m_edgeLength = i_dataBlock.inputValue( ia_edgeLength ).asDouble();
         
         MObject strandVerticesObj = i_dataBlock.inputValue( ia_strandVertices ).data();
         MFnVectorArrayData strandVerticesArrayData( strandVerticesObj, &status );
@@ -61,8 +69,10 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             {
                 MGlobal::displayError( "Please rewind to start time to initialise simulation." );
             }
-            
-            m_rodManager->takeStep();
+            else
+            {
+                m_rodManager->takeStep();
+            }
         }
         
         i_dataBlock.setClean( i_plug );
@@ -78,45 +88,77 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
 void WmSweeneyNode::initialiseRodFromBarberShopInput()
 {
+    cerr << "initialiseRodFromBarberShopInput() - About to create rods from Barbershop input\n";
+    
     //TODO: Reset the manager and remove all rods before adding more
     delete m_rodManager;
     
     m_rodManager = new WmSweeneyRodManager();
+    
+    cerr << "initialiseRodFromBarberShopInput() - Deleted and created a new WmSweeneyRodManager\n";
+
+    if ( m_strandVertices.length() == 0 )
+    {
+        cerr << "initialiseRodFromBarberShopInput() - no input strands so can't create any rods";
+        return;
+    }
 
     // Create one rod for each barbershop strand. Ignore the strand shape or length but do
     // take its initial direction as a follicle angle
-    size_t currentVertexIndex = 0;
+    unsigned int currentVertexIndex = 0;
+    unsigned int numberOfStrands = m_strandVertices.length() / m_numberOfVerticesPerStrand;
     
-    // This should be a user parameter or the spacing should be?
-    size_t verticesPerRod = 10;
-    
-    while ( currentVertexIndex < ( m_strandVertices.length() - 2 ) )
+    vector< BASim::Vec3d > vertices;
+        
+    unsigned int inputStrandNumber = 0;
+    while ( inputStrandNumber < numberOfStrands )
     {
         MVector direction = m_strandVertices[ currentVertexIndex + 1 ] 
                             - m_strandVertices[ currentVertexIndex ];
         direction.normalize();
-        
-        MVector currentVertex( m_strandVertices[ currentVertexIndex ] );
-        
-        vector< BASim::Vec3d > vertices;
-        vertices.resize( verticesPerRod );
-    
-        for ( size_t v = 0; v < verticesPerRod; ++v )
-        {
-            vertices[ v ] = BASim::Vec3d( currentVertex.x, currentVertex.y, currentVertex.z );
+                
+        constructRodVertices( vertices, direction, m_strandVertices[ currentVertexIndex ] );
             
-            // this should be scaled so the rod ends up being the length the user asks for
-            currentVertex += direction;
-        }
-        
         m_rodManager->addRod( vertices, m_currentTime );
         
         currentVertexIndex += m_numberOfVerticesPerStrand;
+        inputStrandNumber++;
     }
     
-    m_rodManager->initialiseSimulation( 1 / 24.0, 1.0 );
+    cerr << "initialiseRodFromBarberShopInput() - About to initialise simulation\n";
+    m_rodManager->initialiseSimulation( 1 / 24.0, m_startTime );
+    cerr << "initialiseRodFromBarberShopInput() - Simulation initialised\n";
 }
 
+void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices, const MVector& i_direction,
+                                  const MVector& i_rootPosition )
+{
+    cerr << "constructRodVertices(): About to construct rod vertices\n";
+    // Construct a list of vertices for a rod with its root at i_rootPosition and going in direction
+    // i_direction
+    
+    o_rodVertices.clear();
+    
+    MVector edge = i_direction;
+    edge.normalize();
+    
+    MVector currentVertex( i_rootPosition );
+    
+    double accumulatedLength = 0.0;
+    // For now we only do straight hair...
+    // 
+    // This won't make the rod exactly the requested length but it's close enough for testing
+    while ( accumulatedLength < m_length )
+    {
+        o_rodVertices.push_back( BASim::Vec3d( currentVertex.x, currentVertex.y, currentVertex.z ) );
+        
+        currentVertex += edge;
+        
+        accumulatedLength += m_edgeLength;
+    }
+    
+    cerr << "constructRodVertices(): Finished constructing rod vertices\n";    
+}
 
 void WmSweeneyNode::draw( M3dView& i_view, const MDagPath& i_path,
                             M3dView::DisplayStyle i_style,
@@ -140,7 +182,10 @@ void WmSweeneyNode::draw( M3dView& i_view, const MDagPath& i_path,
 	glPushAttrib( GL_ALL_ATTRIB_BITS );
 
 	// draw dynamic Hair
-    m_rodManager->drawAllRods();
+    if ( m_rodManager != NULL )
+    {
+        m_rodManager->drawAllRods();
+    }
 
 	glPopAttrib();
 	i_view.endGL();
@@ -226,6 +271,14 @@ void* WmSweeneyNode::creator()
 	addNumericAttribute( ia_startTime, "startTime", "stt", MFnNumericData::kDouble, 1.0, true );
 	status = attributeAffects( ia_startTime, ca_sync );
 	if ( !status ) { status.perror( "attributeAffects ia_startTime->ca_sync" ); return status; }
+
+	addNumericAttribute( ia_length, "length", "len", MFnNumericData::kDouble, 10.0, true );
+	status = attributeAffects( ia_length, ca_sync );
+	if ( !status ) { status.perror( "attributeAffects ia_length->ca_sync" ); return status; }
+
+	addNumericAttribute( ia_edgeLength, "edgeLength", "ele", MFnNumericData::kDouble, 1.0, true );
+	status = attributeAffects( ia_edgeLength, ca_sync );
+	if ( !status ) { status.perror( "attributeAffects ia_edgeLength->ca_sync" ); return status; }
     
     {
         MFnTypedAttribute tAttr;  
