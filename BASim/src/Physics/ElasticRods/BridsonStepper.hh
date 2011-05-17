@@ -187,6 +187,10 @@ public:
 
     void StopOnRodError(bool stopOnRodError)
     {
+        // If we change from non-stopping to stopping, reset m_simulationFailed so we take into account only the future errors.
+        if (!m_stopOnRodError && stopOnRodError)
+            m_simulationFailed = false;
+
         m_stopOnRodError = stopOnRodError;
         std::cerr << "BridsonStepper::m_stopOnError set to " << (m_stopOnRodError ? "\033[33mtrue\033[0m"
                 : "\033[33mfalse\033[0m") << std::endl;
