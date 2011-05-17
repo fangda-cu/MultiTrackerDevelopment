@@ -185,6 +185,20 @@ public:
             m_collision_detector->skipRodRodCollisions(skipRodRodCollisions);
     }
 
+    void setStopOnRodError(bool stopOnRodError)
+    {
+        if (!m_stopOnRodError && stopOnRodError)
+        {
+            std::cerr << "BridsonStepper::m_stopOnError changed to \033[33mtrue\033[0m" << std::endl;
+            // If we change from non-stopping to stopping, reset m_simulationFailed so we take into account only the future errors.
+            m_simulationFailed = false;
+        }
+        if (m_stopOnRodError && !stopOnRodError)
+            std::cerr << "BridsonStepper::m_stopOnError changed to \033[33mfalse\033[0m" << std::endl;
+
+        m_stopOnRodError = stopOnRodError;
+    }
+
 private:
     /**
      * Modifies the timestep.
@@ -466,8 +480,10 @@ private:
     bool m_skipRodRodCollisions;
     // Toggle selective adaptivity
     bool m_selective_adaptivity;
-    // A flag indicating that we stopped simulating (but the clock keeps turning for Maya)
-    bool m_abortSimulation;
+    // A flag indicating that the simulation has failed
+    bool m_simulationFailed;
+    // Flag indicating whether we should freeze the simulation on first failure.
+    bool m_stopOnRodError;
 
     VecXd** m_startForces;
     VecXd** m_preCollisionForces;
