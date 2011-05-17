@@ -29,9 +29,8 @@ static const float explosion_threshold = 100.0;
 
 BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
         std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
-        const double time, int num_threads, bool stopOnRodError) :
-            m_num_dof(0),
-            m_rods(rods),
+        const double time, int num_threads) :
+    m_num_dof(0), m_rods(rods),
             m_number_of_rods(m_rods.size()),
             m_triangle_meshes(trimeshes),
             m_scripting_controllers(scripting_controllers),
@@ -65,7 +64,6 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
             m_skipRodRodCollisions(true),
             m_selective_adaptivity(true), // Selective adaptivity also requires m_skipRodRodCollisions == true
             m_simulationFailed(false),
-            m_stopOnRodError(stopOnRodError),
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start, m_implicit_thickness,
                     m_vertex_face_penalty)
 {
@@ -185,9 +183,6 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
     m_endForces = new VecXd*[m_number_of_rods];
     for (int i = 0; i < m_number_of_rods; i++)
         m_endForces[i] = new VecXd(m_rods[i]->ndof());
-
-    if (m_stopOnRodError)
-        std::cout << "\033[33mNOTICE:\033[0m the simulation will freeze on first error" << std::endl;
 }
 
 BridsonStepper::~BridsonStepper()
@@ -337,7 +332,7 @@ void BridsonStepper::prepareForExecution()
 
 bool BridsonStepper::execute()
 {
-    std::cerr << "\nExecuting time step " << m_t << std::endl;
+    std::cerr << "Executing time step " << m_t << std::endl;
     Timer::getTimer("BridsonStepper::execute").start();
     bool do_adaptive = true;
     bool result;
@@ -378,6 +373,8 @@ bool BridsonStepper::execute()
 
     Timer::getTimer("BridsonStepper::execute").stop();
     // Timer::report();
+
+    std::cerr << std::endl;
 
     return result;
 }

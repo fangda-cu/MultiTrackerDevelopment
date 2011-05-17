@@ -467,6 +467,11 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_beaker->set_inftol(1.0e-6f * i_dataBlock.inputValue( ia_inftol, &stat ).asDouble() );
         CHECK_MSTATUS( stat );
 
+        // Stopping on error
+        bool stopOnRodError = i_dataBlock.inputValue( ia_stopOnRodError, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+        m_beaker->setStopOnRodError( stopOnRodError );
+
         ////////////////////////////////////////////////////////////////////////////////////////////////
         //
         // Volumetric Collision attributes
@@ -541,11 +546,6 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_beaker->setTimingsFile( timingsFile.asChar() );
         m_beaker->setTimingEnabled( timingEnabled );
     
-        bool stopOnRodError = i_dataBlock.inputValue( ia_stopOnRodError, &stat ).asBool();
-        CHECK_MSTATUS( stat );
-
-        m_beaker->setStopOnRodError( stopOnRodError );
-
 
 
 

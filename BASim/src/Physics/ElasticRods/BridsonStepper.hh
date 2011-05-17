@@ -151,7 +151,7 @@ public:
     // Parameter num_threads = -1 will cause the number of threads to be set equal to the number of available processors.
     BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
             std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
-            const double time = 0.0, int num_threads = -1, bool stopOnRodError = false);
+            const double time = 0.0, int num_threads = -1);
 
     /**
      * Destructor.
@@ -185,10 +185,13 @@ public:
             m_collision_detector->skipRodRodCollisions(skipRodRodCollisions);
     }
 
-    void StopOnRodError(bool stopOnRodError) {
+    void StopOnRodError(bool stopOnRodError)
+    {
         m_stopOnRodError = stopOnRodError;
-        std::cerr << "BridsonStepper::m_stopOnError set to " << (m_stopOnRodError ? "true" : "false") << std::endl;
+        std::cerr << "BridsonStepper::m_stopOnError set to " << (m_stopOnRodError ? "\033[33mtrue\033[0m"
+                : "\033[33mfalse\033[0m") << std::endl;
     }
+
 private:
     /**
      * Modifies the timestep.
