@@ -136,7 +136,7 @@ private:
  */
 class BridsonStepper: public ObjectControllerBase
 {
-    typedef std::list<int> SelectionType;
+    typedef std::list<int> RodSelectionType;
 
 public:
     /**
@@ -254,6 +254,8 @@ private:
      */
     void disableIterativeInelasticImpulses();
 
+    void computeImmunity(const RodSelectionType& selected_rods);
+
     /**
      * Sets the maximum number of inelastic impulses to apply iterativly.
      */
@@ -287,9 +289,9 @@ private:
     void setRodLabels(const std::vector<std::string>& rod_labels);
 
     double computeTotalForceNorm() const;
-    bool step(SelectionType& selected_rods);
-    bool nonAdaptiveExecute(double dt, SelectionType selected_rods);
-    bool adaptiveExecute(double dt, SelectionType selected_rods);
+    bool step(RodSelectionType& selected_rods);
+    bool nonAdaptiveExecute(double dt, RodSelectionType& selected_rods);
+    bool adaptiveExecute(double dt, RodSelectionType& selected_rods);
 
     /////////////////////////////////////////////////////
     // Methods for checking the sanity of input rods
@@ -312,12 +314,12 @@ private:
     // Returns the total number of vertices in the system
     int getNumVerts() const;
 
-    void extractPositions(VecXd& positions, const SelectionType& selected_rods) const;
-    void extractVelocities(VecXd& velocities, const SelectionType& selected_rods) const;
+    void extractPositions(VecXd& positions, const RodSelectionType& selected_rods) const;
+    void extractVelocities(VecXd& velocities, const RodSelectionType& selected_rods) const;
 
-    void restorePositions(const VecXd& positions, const SelectionType& selected_rods);
-    void restoreVelocities(const VecXd& velocities, const SelectionType& selected_rods);
-    void restoreResponses(const VecXd& responses, const SelectionType& selected_rods);
+    void restorePositions(const VecXd& positions, const RodSelectionType& selected_rods);
+    void restoreVelocities(const VecXd& velocities, const RodSelectionType& selected_rods);
+    void restoreResponses(const VecXd& responses, const RodSelectionType& selected_rods);
 
     bool isRodVertex(int vert) const;
     bool isRodRodCollision(const EdgeEdgeCTCollision& collision) const;
@@ -359,12 +361,14 @@ private:
     void exertCompliantInelasticEdgeEdgeImpulse(const EdgeEdgeCTCollision& eecol);
     void exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdgeCTCollision& eecol);
     void exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdgeCTCollision& eecol);
+    bool checkExplosions(std::vector<bool>& exploding_rods, const std::vector<bool>& failed_collisions_rods,
+            const RodSelectionType& selected_rods);
 
     //////////////////////////////////
     // Jungseock's penalty response
     //  void detectVertexFaceImplicitPenaltyCollisions(const VecXd& x, std::vector<VertexFaceProximityCollision>& pssbl_cllsns,
     //          std::vector<VertexFaceImplicitPenaltyCollision>& vetex_face_collisions) const;
-    void executeImplicitPenaltyResponse(std::list<Collision*>& collisions, const SelectionType& selected_rods);
+    void executeImplicitPenaltyResponse(std::list<Collision*>& collisions, const RodSelectionType& selected_rods);
 
     void enableImplicitPenaltyImpulses();
     void disableImplicitPenaltyImpulses();
@@ -379,6 +383,7 @@ private:
     int m_num_dof;
     // Vector of rods this BridsonStepper evolves in time
     std::vector<ElasticRod*>& m_rods;
+    const size_t m_number_of_rods; // set to m_rods.size()
     // Vector of ScriptedTriangleObjects in the system
     const std::vector<TriangleMesh*>& m_triangle_meshes;
     // Controllers to move scripted geometry/rods forward in time and to set boundary conditions
@@ -463,6 +468,11 @@ private:
     bool m_selective_adaptivity;
     // A flag indicating that we stopped simulating (but the clock keeps turning for Maya)
     bool m_abortSimulation;
+
+    VecXd** m_startForces;
+    VecXd** m_preCollisionForces;
+    VecXd** m_endForces;
+
 };
 
 } // namespace BASim
