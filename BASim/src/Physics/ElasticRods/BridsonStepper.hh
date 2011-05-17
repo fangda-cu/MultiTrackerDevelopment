@@ -151,7 +151,7 @@ public:
     // Parameter num_threads = -1 will cause the number of threads to be set equal to the number of available processors.
     BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
             std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
-            const double time = 0.0, int num_threads = -1);
+            const double time = 0.0, int num_threads = -1, bool stopOnRodError = false);
 
     /**
      * Destructor.
@@ -466,8 +466,10 @@ private:
     bool m_skipRodRodCollisions;
     // Toggle selective adaptivity
     bool m_selective_adaptivity;
-    // A flag indicating that we stopped simulating (but the clock keeps turning for Maya)
-    bool m_abortSimulation;
+    // A flag indicating that the simulation has failed
+    bool m_simulationFailed;
+    // Flag indicating whether we should freeze the simulation on first failure.
+    bool m_stopOnRodError;
 
     VecXd** m_startForces;
     VecXd** m_preCollisionForces;
