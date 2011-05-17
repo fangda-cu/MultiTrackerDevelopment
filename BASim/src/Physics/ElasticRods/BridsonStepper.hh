@@ -185,15 +185,18 @@ public:
             m_collision_detector->skipRodRodCollisions(skipRodRodCollisions);
     }
 
-    void StopOnRodError(bool stopOnRodError)
+    void setStopOnRodError(bool stopOnRodError)
     {
-        // If we change from non-stopping to stopping, reset m_simulationFailed so we take into account only the future errors.
         if (!m_stopOnRodError && stopOnRodError)
+        {
+            std::cerr << "BridsonStepper::m_stopOnError changed to \033[33mtrue\033[0m" << std::endl;
+            // If we change from non-stopping to stopping, reset m_simulationFailed so we take into account only the future errors.
             m_simulationFailed = false;
+        }
+        if (m_stopOnRodError && !stopOnRodError)
+            std::cerr << "BridsonStepper::m_stopOnError changed to \033[33mfalse\033[0m" << std::endl;
 
         m_stopOnRodError = stopOnRodError;
-        std::cerr << "BridsonStepper::m_stopOnError set to " << (m_stopOnRodError ? "\033[33mtrue\033[0m"
-                : "\033[33mfalse\033[0m") << std::endl;
     }
 
 private:

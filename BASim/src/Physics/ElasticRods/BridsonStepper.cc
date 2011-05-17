@@ -64,6 +64,7 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
             m_skipRodRodCollisions(true),
             m_selective_adaptivity(true), // Selective adaptivity also requires m_skipRodRodCollisions == true
             m_simulationFailed(false),
+            m_stopOnRodError(false),
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start, m_implicit_thickness,
                     m_vertex_face_penalty)
 {
