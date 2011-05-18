@@ -6,6 +6,8 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
     editorTemplate -beginLayout "Vertex Settings" -collapse 0;
         editorTemplate -addControl "length";
         editorTemplate -addControl "verticesPerRod";
+        editorTemplate -addControl "rodRadius";
+        editorTemplate -addControl "rodPitch";
     editorTemplate -endLayout;
     
     editorTemplate -addExtraControls;

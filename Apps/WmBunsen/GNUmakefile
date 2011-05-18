@@ -92,6 +92,7 @@ WmFigRodParticleInput.hh \
 WmFigMeshController.hh \
 Sweeney/WmSweeneyNode.hh \
 Sweeney/WmSweeneyRodManager.hh \
+Sweeney/WmSweeneyCmd.hh \
 #VolumetricCollisions/VolumetricCollisions.hh \
 #VolumetricCollisions/VolumetricCollisionsCPU.hh \
 #WmBunsenCollisionMeshNode.hh \
@@ -132,6 +133,7 @@ WmFigRodParticleInput.cc \
 WmFigMeshController.cc \
 Sweeney/WmSweeneyNode.cc \
 Sweeney/WmSweeneyRodManager.cc \
+Sweeney/WmSweeneyCmd.cc \
 #WmBunsenCollisionMeshNode.cc \
 #VolumetricCollisions/VolumetricCollisionsCPU.cc \
 #constraints/WmFigConstraintNode.cc \
@@ -210,6 +212,10 @@ SCR11_INSD       := $(SCR_INSD)
 SCR12            := Sweeney/wmSweeney.mel
 SCR12_MAYA       := 1
 SCR12_INSD       := $(SCR_INSD)
+
+SCR13            := Sweeney/AEwmSweeneyNodeTemplate.mel
+SCR13_MAYA       := 1
+SCR13_INSD       := $(SCR_INSD)
 
 
 ##############################################################################

@@ -139,10 +139,11 @@ void WmSweeneyRodManager::takeStep()
             boundary->releaseVertex( v );
         }
         
-        // Set the velocity to be zero as we're grooming static hair
+        // Set the position of the vertices we want to be fixed
         boundary->setDesiredVertexPosition( 0, rod->getVertex( 0 ) );
         boundary->setDesiredVertexPosition( 1, rod->getVertex( 1 ) );
         
+        // and very importantly, set the desired angle too
         boundary->setDesiredEdgeAngle( 0, rod->getTheta( 0 ) );        
     }
     

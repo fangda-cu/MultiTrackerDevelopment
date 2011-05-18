@@ -4,6 +4,7 @@
 
 #include <maya/MFnMatrixAttribute.h>
 #include <maya/MPlugArray.h>
+#include <maya/MQuaternion.h>
 
 #include <sys/stat.h>
 
@@ -22,6 +23,8 @@ using namespace BASim;
 /* static */ MObject WmSweeneyNode::ia_length;
 /* static */ MObject WmSweeneyNode::ia_edgeLength;
 /* static */ MObject WmSweeneyNode::ia_verticesPerRod;
+/* static */ MObject WmSweeneyNode::ia_rodRadius;
+/* static */ MObject WmSweeneyNode::ia_rodPitch;
 
 // Barbershop specific inputs
 /*static*/ MObject WmSweeneyNode::ia_strandVertices;
@@ -54,18 +57,9 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_length = i_dataBlock.inputValue( ia_length ).asDouble();
         m_edgeLength = i_dataBlock.inputValue( ia_edgeLength ).asDouble();
         m_verticesPerRod = i_dataBlock.inputValue( ia_verticesPerRod ).asInt();
-        
-        cerr << "m_verticesPerRod = " << m_verticesPerRod << endl;
-        
-        MObject strandVerticesObj = i_dataBlock.inputValue( ia_strandVertices ).data();
-        MFnVectorArrayData strandVerticesArrayData( strandVerticesObj, &status );
-        CHECK_MSTATUS( status );
-        
-        m_strandVertices = strandVerticesArrayData.array( &status );
-        CHECK_MSTATUS( status );
-        
-        m_numberOfVerticesPerStrand = i_dataBlock.inputValue( ia_verticesPerStrand ).asInt();        
-        
+        m_rodRadius = i_dataBlock.inputValue( ia_rodRadius ).asDouble();
+        m_rodPitch = i_dataBlock.inputValue( ia_rodPitch ).asDouble();
+                
         // If we've not yet created all the rods then create them
         if ( m_rodManager == NULL )
         {
@@ -87,16 +81,33 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     {
         m_currentTime = i_dataBlock.inputValue( ia_time ).asTime().value();
         m_startTime = i_dataBlock.inputValue( ia_startTime ).asDouble();
+        
+        // These things may seem like rod properties but we're saying that they can only
+        // change at start time. If we let them change at other times then we need to rest
+        // the sim every frame because as far as Maya is concerned they change every frame.
+        // 
+        // Even though we only use the data at start time we have to pull it every frame
+        // or Maya tries to get clever and won't tell us about it when we want it.
+        MObject strandVerticesObj = i_dataBlock.inputValue( ia_strandVertices ).data();
+        MFnVectorArrayData strandVerticesArrayData( strandVerticesObj, &status );
+        CHECK_MSTATUS( status );
+        
+        MVectorArray strandVertices = strandVerticesArrayData.array( &status );
+        CHECK_MSTATUS( status );
+        
+        int numberOfVerticesPerStrand = i_dataBlock.inputValue( ia_verticesPerStrand ).asInt();        
 
-        if ( m_rodManager == NULL )
-        {
-        //    MGlobal::displayError( "Please rewind to start time to initialise simulation." );            
-        }
-        else if ( m_currentTime == m_startTime )
+        if ( m_currentTime == m_startTime )
         {            
-            initialiseRodFromBarberShopInput( i_dataBlock );
+            // We can't use the assignment operator because strandVertices is actually
+            // a reference to the MVectorArrayData array and it will go out of scope
+            // and we'll be left with a reference to nothing and obviously a crash.
+            status = m_strandVertices.copy( strandVertices );
+            CHECK_MSTATUS( status );
+            
+            m_numberOfVerticesPerStrand = numberOfVerticesPerStrand;
         }
-        else
+        else if ( m_rodManager != NULL )
         {
             updateCollisionMeshes( i_dataBlock );
             m_rodManager->takeStep();
@@ -206,6 +217,11 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
     unsigned int currentVertexIndex = 0;
     unsigned int numberOfStrands = m_strandVertices.length() / m_numberOfVerticesPerStrand;
     
+    
+    cerr << "initialiseRodFromBarberShopInput() - m_strandVertices.length() = " << m_strandVertices.length() << endl;
+    cerr << "initialiseRodFromBarberShopInput() - number of barberShop strands = " << numberOfStrands << endl;
+    cerr << "initialiseRodFromBarberShopInput() - number of vertices per barberShop strand = " << m_numberOfVerticesPerStrand<< endl;
+    
     vector< BASim::Vec3d > vertices;
        
     for ( unsigned int inputStrandNumber = 0; inputStrandNumber < numberOfStrands; ++inputStrandNumber )
@@ -223,45 +239,6 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
         currentVertexIndex += m_numberOfVerticesPerStrand;        
     }
   
-/*
-    // For debugging add rods with specific vertices to see problems in Beaker vs Sweeney
-    vertices.resize( 15 );
-    vertices[ 0 ] = BASim::Vec3d( 1.1468563, 4.7516446, 5.1037321 );
-    vertices[ 1 ] = BASim::Vec3d( 1.3113695, 5.4118051, 5.836619 );
-    vertices[ 2 ] = BASim::Vec3d( 1.4758841, 6.0719659, 6.5695057);
-    vertices[ 3 ] = BASim::Vec3d( 1.6404004, 6.7321264, 7.3023923);
-    vertices[ 4 ] = BASim::Vec3d( 1.8049186, 7.3922864, 8.0352787);
-    vertices[ 5 ] = BASim::Vec3d( 1.9694386, 8.0524464, 8.768165);
-    vertices[ 6 ] = BASim::Vec3d( 2.1339601, 8.7126063, 9.5010505);
-    vertices[ 7 ] = BASim::Vec3d( 2.2984837, 9.372766, 10.233936);
-    vertices[ 8 ] = BASim::Vec3d( 2.4630091, 10.032925, 10.966822);
-    vertices[ 9 ] = BASim::Vec3d( 2.6275362, 10.693084, 11.699707);
-    vertices[ 10 ] = BASim::Vec3d( 2.7920654, 11.353243, 12.432592);
-    vertices[ 11 ] = BASim::Vec3d( 2.9565963, 12.013402, 13.165476);
-    vertices[ 12 ] = BASim::Vec3d( 3.1211287, 12.67356, 13.898361);
-    vertices[ 13 ] = BASim::Vec3d( 3.2856628, 13.333719, 14.631245);
-    vertices[ 14 ] = BASim::Vec3d( 3.4501989, 13.993877, 15.364129);
-    
-    m_rodManager->addRod( vertices, m_startTime );
-    
-    vertices[ 0 ] = BASim::Vec3d( 5.2480741, -0.48017403, 4.6308284 );
-    vertices[ 1 ] = BASim::Vec3d( 5.9961056, -0.54642217, 5.2911769 );
-    vertices[ 2 ] = BASim::Vec3d( 6.7441311, -0.61267031, 5.951532 );
-    vertices[ 3 ] = BASim::Vec3d( 7.4921505, -0.67891851, 6.6118941 );
-    vertices[ 4 ] = BASim::Vec3d( 8.240163, -0.74516679, 7.2722641 );
-    vertices[ 5 ] = BASim::Vec3d( 8.9881685, -0.8114151, 7.9326418 );
-    vertices[ 6 ] = BASim::Vec3d( 9.7361675, -0.87766339, 8.5930272 );
-    vertices[ 7 ] = BASim::Vec3d( 10.484159, -0.9439117, 9.2534205 );
-    vertices[ 8 ] = BASim::Vec3d( 11.232145, -1.0101601, 9.9138215 );
-    vertices[ 9 ] = BASim::Vec3d( 11.980123, -1.0764085, 10.57423 );
-    vertices[ 10 ] = BASim::Vec3d( 12.728095, -1.1426569, 11.234647 );
-    vertices[ 11 ] = BASim::Vec3d( 13.476059, -1.2089054, 11.895071 );
-    vertices[ 12 ] = BASim::Vec3d( 14.224018, -1.2751539, 12.555502 );
-    vertices[ 13 ] = BASim::Vec3d( 14.971969, -1.3414024, 13.215941 );
-    vertices[ 14 ] = BASim::Vec3d( 15.719913, -1.4076509, 13.876389 );
-    
-    m_rodManager->addRod( vertices, m_startTime );*/
-  
     cerr << "initialiseRodFromBarberShopInput() - About to initialise simulation\n";
     m_rodManager->initialiseSimulation( 1 / 24.0, m_startTime );
     cerr << "initialiseRodFromBarberShopInput() - Simulation initialised at time " << m_startTime << endl;
@@ -271,7 +248,6 @@ void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices,
                                   const MVector& i_rootPosition )
 {
     cerr << "constructRodVertices(): About to construct rod vertices\n";
-    cerr << "constructRodVertices(): m_verticesPerRod = " << m_verticesPerRod << "\n";
     
     // Construct a list of vertices for a rod with its root at i_rootPosition and going in direction
     // i_direction
@@ -287,13 +263,20 @@ void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices,
     
     MVector currentVertex( i_rootPosition );
     
-    // For now we only do straight hair...
-    // 
     for ( int v = 0; v < m_verticesPerRod; ++v )
     {
-        o_rodVertices.push_back( BASim::Vec3d( currentVertex.x, currentVertex.y, currentVertex.z ) );
-        
-        currentVertex += edge;
+		MVector newPoint( m_rodRadius * cos( (double)v ),
+			m_rodPitch * (double)v, m_rodRadius * sin( (double)v ) );
+            
+        // The helix is created with the y-axis as the centre, rotate it
+        // so that it has i_direction as the centre
+        MQuaternion rotationQ( MVector( 0.0, 1.0, 0.0 ), i_direction );
+        newPoint = newPoint.rotateBy( rotationQ );
+            
+        // Now move the point to sit where the Barbershop input strand comes from
+        newPoint += i_rootPosition;
+            
+        o_rodVertices.push_back( BASim::Vec3d( newPoint.x, newPoint.y, newPoint.z ) );
     }
     
     cerr << "constructRodVertices(): Finished constructing rod vertices\n";    
@@ -308,15 +291,6 @@ void WmSweeneyNode::draw( M3dView& i_view, const MDagPath& i_path,
     // Pull on the sync plugs to cause compute() to be called if any 
     // of the rod properties or time has changed.
     double d;
-    
-   /* if ( m_rodManager == NULL )
-    {    
-        // If this is the case we probably just loaded, so make sure the 
-        // rod properties are loaded and stored before we call timeSync to
-        // initialised everything
-        MPlug propertiesSyncPlug( thisMObject(), ca_rodPropertiesSync );
-        propertiesSyncPlug.getValue( d );
-    }*/
     
     MPlug timeSyncPlug( thisMObject(), ca_timeSync );
     timeSyncPlug.getValue( d );
@@ -430,6 +404,14 @@ void* WmSweeneyNode::creator()
     addNumericAttribute( ia_verticesPerRod, "verticesPerRod", "cpr", MFnNumericData::kInt, 10, true );
 	status = attributeAffects( ia_verticesPerRod, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_verticesPerRod->ca_rodPropertiesSync" ); return status; }
+
+    addNumericAttribute( ia_rodRadius, "rodRadius", "ror", MFnNumericData::kDouble, 0.0, true );
+	status = attributeAffects( ia_rodRadius, ca_rodPropertiesSync );
+	if ( !status ) { status.perror( "attributeAffects ia_rodRadius->ca_rodPropertiesSync" ); return status; }
+    
+    addNumericAttribute( ia_rodPitch, "rodPitch", "rop", MFnNumericData::kDouble, 0.5, true );
+	status = attributeAffects( ia_rodPitch, ca_rodPropertiesSync );
+	if ( !status ) { status.perror( "attributeAffects ia_rodPitch->ca_rodPropertiesSync" ); return status; }
     
     {
         MFnTypedAttribute tAttr;  
@@ -442,7 +424,9 @@ void* WmSweeneyNode::creator()
         status = addAttribute( ia_strandVertices );
         CHECK_MSTATUS( status );
     }
-    
+    status = attributeAffects( ia_strandVertices, ca_timeSync );
+	if ( !status ) { status.perror( "attributeAffects ia_strandVertices->ca_timeSync" ); return status; }
+        
     {
         MFnNumericAttribute nAttr;
         ia_collisionMeshes = nAttr.create( "collisionMeshes", "com", MFnNumericData::kBoolean, false, &status );
@@ -464,7 +448,7 @@ void* WmSweeneyNode::creator()
     
         
     addNumericAttribute( ia_verticesPerStrand, "verticesPerStrand", "vps", MFnNumericData::kInt, 12, true );
-	status = attributeAffects( ia_verticesPerStrand, ca_rodPropertiesSync );
+	status = attributeAffects( ia_verticesPerStrand, ca_timeSync );
 	if ( !status ) { status.perror( "attributeAffects verticesPerStrand->ca_rodPropertiesSync" ); return status; }
 
     return MS::kSuccess;
