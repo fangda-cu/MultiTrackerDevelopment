@@ -190,7 +190,7 @@ public:
         if (!m_stopOnRodError && stopOnRodError)
         {
             std::cerr << "BridsonStepper::m_stopOnError changed to \033[33mtrue\033[0m" << std::endl;
-            // If we change from non-stopping to stopping, reset m_simulationFailed so we take into account only the future errors.
+            // If we change from non-stopping to stopping, reset m_simulationFailed so we take only future errors into account.
             m_simulationFailed = false;
         }
         if (m_stopOnRodError && !stopOnRodError)
@@ -396,7 +396,7 @@ private:
     // Total number of degrees of freedom in the system
     int m_num_dof;
     // Vector of rods this BridsonStepper evolves in time
-    std::vector<ElasticRod*>& m_rods;
+    const std::vector<ElasticRod*>& m_rods;
     const size_t m_number_of_rods; // set to m_rods.size()
     // Vector of ScriptedTriangleObjects in the system
     const std::vector<TriangleMesh*>& m_triangle_meshes;
@@ -405,7 +405,7 @@ private:
     // Time steppers to evolve rods forward (ignoring collisions)
     const std::vector<RodTimeStepper*>& m_steppers;
     // Integrator selected by user
-    RodTimeStepper::Method m_method;
+    // RodTimeStepper::Method m_method;
     // Timestep selected by user
     double m_dt;
 
@@ -430,7 +430,7 @@ private:
     // Vector of booleans indicating whether a vertex should be considered for collisions
     std::vector<bool> m_collision_immune;
     // Structure of references to the geometry
-    GeometricData m_geodata;
+    const GeometricData m_geodata;
 
     // Buffers to hold temporary saves of positions and velocities
     VecXd m_xn;
@@ -484,6 +484,8 @@ private:
     bool m_simulationFailed;
     // Flag indicating whether we should freeze the simulation on first failure.
     bool m_stopOnRodError;
+    // Set of rods that will no longer be collided
+    std::set<int> m_disabled_rods;
 
     VecXd** m_startForces;
     VecXd** m_preCollisionForces;
