@@ -182,7 +182,7 @@ public:
         m_skipRodRodCollisions = skipRodRodCollisions;
 
         if (m_collision_detector)
-            m_collision_detector->skipRodRodCollisions(skipRodRodCollisions);
+            m_collision_detector->setSkipRodRodCollisions(skipRodRodCollisions);
     }
 
     void setStopOnRodError(bool stopOnRodError)
@@ -496,9 +496,12 @@ private:
     std::set<int> m_disabled_rods;
     bool m_disable_rods_on_first_collision_failure;
 
+    // Backup structures
     VecXd** m_startForces;
     VecXd** m_preCollisionForces;
     VecXd** m_endForces;
+    std::vector<MinimalRodStateBackup> m_rodbackups;
+    std::vector<MinimalTriangleMeshBackup> m_objbackups;
 
 };
 
