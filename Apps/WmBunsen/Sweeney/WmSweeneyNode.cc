@@ -120,48 +120,6 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         
         i_dataBlock.setClean( i_plug );
     }
-    else if ( i_plug == ca_timeSync )
-    {
-       /* m_currentTime = i_dataBlock.inputValue( ia_time ).asTime().value();
-        m_startTime = i_dataBlock.inputValue( ia_startTime ).asDouble();
-        
-        // These things may seem like rod properties but we're saying that they can only
-        // change at start time. If we let them change at other times then we need to rest
-        // the sim every frame because as far as Maya is concerned they change every frame.
-        // 
-        // Even though we only use the data at start time we have to pull it every frame
-        // or Maya tries to get clever and won't tell us about it when we want it.
-        MObject strandVerticesObj = i_dataBlock.inputValue( ia_strandVertices ).data();
-        MFnVectorArrayData strandVerticesArrayData( strandVerticesObj, &status );
-        CHECK_MSTATUS( status );
-        
-        MVectorArray strandVertices = strandVerticesArrayData.array( &status );
-        CHECK_MSTATUS( status );
-     
-        int verticesPerRod = i_dataBlock.inputValue( ia_verticesPerRod ).asInt();
-        
-        int numberOfVerticesPerStrand = i_dataBlock.inputValue( ia_verticesPerStrand ).asInt();        
-
-        if ( m_currentTime == m_startTime )
-        {            
-            // We can't use the assignment operator because strandVertices is actually
-            // a reference to the MVectorArrayData array and it will go out of scope
-            // and we'll be left with a reference to nothing and obviously a crash.
-            status = m_strandVertices.copy( strandVertices );
-            CHECK_MSTATUS( status );
-            
-            m_numberOfVerticesPerStrand = numberOfVerticesPerStrand;
-            
-            m_verticesPerRod = verticesPerRod;
-        }
-        else if ( m_rodManager != NULL )
-        {
-            updateCollisionMeshes( i_dataBlock );
-            m_rodManager->takeStep();
-        }*/
-        
-        i_dataBlock.setClean( i_plug );
-    }
     else
     {
         return MS::kUnknownParameter;
@@ -434,7 +392,7 @@ void* WmSweeneyNode::creator()
 	if ( !status ) { status.perror( "attributeAffects ia_time->ca_rodPropertiesSync" ); return status; }    
     
 	addNumericAttribute( ia_startTime, "startTime", "stt", MFnNumericData::kDouble, 1.0, true );
-	status = attributeAffects( ia_startTime, ca_timeSync );
+	status = attributeAffects( ia_startTime, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_startTime->ca_rodPropertiesSync" ); return status; }    
 
 	addNumericAttribute( ia_length, "length", "len", MFnNumericData::kDouble, 10.0, true );
