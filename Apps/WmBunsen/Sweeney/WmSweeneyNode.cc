@@ -53,27 +53,48 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
     if ( i_plug == ca_rodPropertiesSync )
     {
+        m_currentTime = i_dataBlock.inputValue( ia_time ).asTime().value();
+        m_startTime = i_dataBlock.inputValue( ia_startTime ).asDouble();
+
         // Hair properties
-        m_length = i_dataBlock.inputValue( ia_length ).asDouble();
-        m_edgeLength = i_dataBlock.inputValue( ia_edgeLength ).asDouble();
-        m_verticesPerRod = i_dataBlock.inputValue( ia_verticesPerRod ).asInt();
-        m_rodRadius = i_dataBlock.inputValue( ia_rodRadius ).asDouble();
-        m_rodPitch = i_dataBlock.inputValue( ia_rodPitch ).asDouble();
-                
+        double length = i_dataBlock.inputValue( ia_length ).asDouble();
+        double edgeLength = i_dataBlock.inputValue( ia_edgeLength ).asDouble();
+        double rodRadius = i_dataBlock.inputValue( ia_rodRadius ).asDouble();
+        double rodPitch = i_dataBlock.inputValue( ia_rodPitch ).asDouble();
+        
         // If we've not yet created all the rods then create them
-        if ( m_rodManager == NULL )
-        {
+        if ( m_currentTime == m_startTime )
+        {            
+            m_length = length;
+            m_edgeLength = edgeLength;
+            m_rodRadius = rodRadius;
+            m_rodPitch = rodPitch;        
+                
             initialiseRodFromBarberShopInput( i_dataBlock );
         }
         else
-        {
-            // If the rods exist then just update their undeformed configuration but keep running
-            // the simulation.
-            
-            // TODO: Add code to update undeformed configuration 
-            // for just now, recreate the rod
-            initialiseRodFromBarberShopInput( i_dataBlock );
-        }
+        {            
+            if ( m_rodManager != NULL )
+            {
+                // If the rods exist then just update their undeformed configuration but keep running
+                // the simulation.
+                // 
+                
+                // Check if anything has changed, if not then don't bother updating the rods
+                if ( length != m_length || edgeLength != m_edgeLength || rodRadius != m_rodRadius
+                     || rodPitch != m_rodPitch )
+                {
+                    m_length = length;
+                    m_edgeLength = edgeLength;
+                    m_rodRadius = rodRadius;
+                    m_rodPitch = rodPitch;        
+                
+                    // TODO: Add code to update undeformed configuration 
+                    // for just now, recreate the rod
+                    initialiseRodFromBarberShopInput( i_dataBlock );
+                }
+            }
+        }        
         
         i_dataBlock.setClean( i_plug );
     }
@@ -94,6 +115,8 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         
         MVectorArray strandVertices = strandVerticesArrayData.array( &status );
         CHECK_MSTATUS( status );
+     
+        int verticesPerRod = i_dataBlock.inputValue( ia_verticesPerRod ).asInt();
         
         int numberOfVerticesPerStrand = i_dataBlock.inputValue( ia_verticesPerStrand ).asInt();        
 
@@ -106,6 +129,8 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             CHECK_MSTATUS( status );
             
             m_numberOfVerticesPerStrand = numberOfVerticesPerStrand;
+            
+            m_verticesPerRod = verticesPerRod;
         }
         else if ( m_rodManager != NULL )
         {
@@ -388,10 +413,14 @@ void* WmSweeneyNode::creator()
     }
     status = attributeAffects( ia_time, ca_timeSync );
 	if ( !status ) { status.perror( "attributeAffects ia_time->ca_timeSync" ); return status; }    
+    status = attributeAffects( ia_time, ca_rodPropertiesSync );
+	if ( !status ) { status.perror( "attributeAffects ia_time->ca_rodPropertiesSync" ); return status; }    
     
 	addNumericAttribute( ia_startTime, "startTime", "stt", MFnNumericData::kDouble, 1.0, true );
 	status = attributeAffects( ia_startTime, ca_timeSync );
 	if ( !status ) { status.perror( "attributeAffects ia_startTime->ca_timeSync" ); return status; }
+    status = attributeAffects( ia_startTime, ca_rodPropertiesSync );
+	if ( !status ) { status.perror( "attributeAffects ia_startTime->ca_rodPropertiesSync" ); return status; }    
 
 	addNumericAttribute( ia_length, "length", "len", MFnNumericData::kDouble, 10.0, true );
 	status = attributeAffects( ia_length, ca_rodPropertiesSync );
@@ -400,10 +429,6 @@ void* WmSweeneyNode::creator()
 	addNumericAttribute( ia_edgeLength, "edgeLength", "ele", MFnNumericData::kDouble, 1.0, true );
 	status = attributeAffects( ia_edgeLength, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_edgeLength->ca_rodPropertiesSync" ); return status; }
-
-    addNumericAttribute( ia_verticesPerRod, "verticesPerRod", "cpr", MFnNumericData::kInt, 10, true );
-	status = attributeAffects( ia_verticesPerRod, ca_rodPropertiesSync );
-	if ( !status ) { status.perror( "attributeAffects ia_verticesPerRod->ca_rodPropertiesSync" ); return status; }
 
     addNumericAttribute( ia_rodRadius, "rodRadius", "ror", MFnNumericData::kDouble, 0.0, true );
 	status = attributeAffects( ia_rodRadius, ca_rodPropertiesSync );
@@ -445,11 +470,14 @@ void* WmSweeneyNode::creator()
     }
     status = attributeAffects( ia_collisionMeshes, ca_timeSync );
 	if ( !status ) { status.perror( "attributeAffects ia_collisionMeshes->ca_timeSync" ); return status; }
-    
-        
+            
     addNumericAttribute( ia_verticesPerStrand, "verticesPerStrand", "vps", MFnNumericData::kInt, 12, true );
 	status = attributeAffects( ia_verticesPerStrand, ca_timeSync );
 	if ( !status ) { status.perror( "attributeAffects verticesPerStrand->ca_rodPropertiesSync" ); return status; }
+
+    addNumericAttribute( ia_verticesPerRod, "verticesPerRod", "cpr", MFnNumericData::kInt, 10, true );
+	status = attributeAffects( ia_verticesPerRod, ca_timeSync );
+	if ( !status ) { status.perror( "attributeAffects ia_verticesPerRod->ca_timeSync" ); return status; }
 
     return MS::kSuccess;
 }
