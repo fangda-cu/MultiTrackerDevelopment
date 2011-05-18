@@ -31,7 +31,7 @@ static const float explosion_threshold = 100.0;
 
 BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
         std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
-        const double time, int num_threads) :
+        const double time, const int num_threads, const PerformanceTuningParameters perf_param) :
     m_num_dof(0),
             m_rods(rods),
             m_number_of_rods(m_rods.size()),
@@ -233,6 +233,10 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
         m_objbackups[i++].resize(**mesh);
     }
 
+    // Initially all rods passed from Maya will be simulated
+    for (int i = 0; i < m_number_of_rods; i++)
+        m_simulated_rods.push_back(i);
+
 }
 
 BridsonStepper::~BridsonStepper()
@@ -387,14 +391,14 @@ bool BridsonStepper::execute()
     m_collision_detector->buildBVH();
     std::cerr << "BVH has been (re)built" << std::endl;
 
-    if (!m_disabled_rods.empty())
+    if (!m_collision_disabled_rods.empty())
     {
         std::cerr << "The following rods were collision-disabled in the previous time step: ";
-        for (std::set<int>::const_iterator rod = m_disabled_rods.begin(); rod != m_disabled_rods.end(); rod++)
+        for (std::set<int>::const_iterator rod = m_collision_disabled_rods.begin(); rod != m_collision_disabled_rods.end(); rod++)
             std::cerr << *rod << " ";
         std::cerr << std::endl;
     }
-    m_disabled_rods.clear();
+    m_collision_disabled_rods.clear();
 
     Timer::getTimer("BridsonStepper::execute").start();
     bool do_adaptive = true;
@@ -423,16 +427,14 @@ bool BridsonStepper::execute()
     assert(k = m_masses.size());
 
     // Prepare the list initially containing all rods.
-    RodSelectionType all_rods;
-    for (int i = 0; i < m_number_of_rods; i++)
-        all_rods.push_back(i);
+    RodSelectionType selected_rods = m_simulated_rods;
 
     if (do_adaptive)
     {
-        result = adaptiveExecute(m_dt, all_rods);
+        result = adaptiveExecute(m_dt, selected_rods);
     }
     else
-        result = nonAdaptiveExecute(m_dt, all_rods);
+        result = nonAdaptiveExecute(m_dt, selected_rods);
 
     Timer::getTimer("BridsonStepper::execute").stop();
     // Timer::report();
@@ -488,13 +490,12 @@ bool BridsonStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
         std::cout
                 << "\033[31;1mWARNING\033[m: in BridsonStepper::adaptiveExecute step still not dependable with time step below "
                 << minimum_time_step << std::endl;
-        std::cout << "No more substepping, hope we'll be ok" << std::endl;
 
-        std::cerr << "Misbehaving rod" << (selected_rods.size() > 1 ? "s" : "") << ": ";
+        std::cerr << "Misbehaving rod" << (selected_rods.size() > 1 ? "s" : "") << " removed from simulation: ";
         for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
         {
-            m_disabled_rods.insert(*rod);
             std::cerr << *rod << " ";
+            m_simulated_rods.erase(find(m_simulated_rods.begin(), m_simulated_rods.end(), *rod));
         }
         std::cerr << std::endl;
 
@@ -511,13 +512,13 @@ bool BridsonStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
     {
         // std::cerr << "Restoring rod " << *rod << std::endl;
         m_rodbackups[*rod].restoreRod(*m_rods[*rod]);
- //       m_rodbackups[*rod].clear();
+        //       m_rodbackups[*rod].clear();
     }
     // Restore all objects
     for (int i = 0; i < (int) m_triangle_meshes.size(); ++i)
     {
         m_objbackups[i].restoreMesh(*m_triangle_meshes[i]);
-//        m_objbackups[i].clear();
+        //        m_objbackups[i].clear();
     }
     // Restore the time
     setTime(time);
@@ -538,6 +539,14 @@ bool BridsonStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
 
     std::cout << "t = " << m_t << " selected_rods: adaptiveExecute substepping (part 2) " << selected_rods_2.size() << " rods"
             << std::endl;
+
+    // Remove from the rod selection any one that might have been removed from the simulation list on the first time step
+    for (RodSelectionType::iterator rod = selected_rods_2.begin(); rod != selected_rods_2.end(); rod++)
+        if (find(m_simulated_rods.begin(), m_simulated_rods.end(), *rod) == m_simulated_rods.end())
+        {
+            std::cerr << "Erasing from second time step rod number " << *rod << std::endl;
+            selected_rods_2.erase(rod--);
+        }
 
     bool second_success = adaptiveExecute(0.5 * dt, selected_rods_2);
 
@@ -978,7 +987,7 @@ void BridsonStepper::computeImmunity(const RodSelectionType& selected_rods)
     for (std::vector<bool>::iterator i = m_collision_immune.begin(); i != m_collision_immune.begin() + m_obj_start; i++)
         *i = true;
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-        if (m_disabled_rods.find(*rod) == m_disabled_rods.end()) // If the rod is not in the disabled set
+        if (m_collision_disabled_rods.find(*rod) == m_collision_disabled_rods.end()) // If the rod is not in the disabled set
             for (int j = 0; j < m_rods[*rod]->nv(); ++j)
                 m_collision_immune[m_base_indices[*rod] / 3 + j] = false;
 
@@ -1214,7 +1223,7 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>&
                 {
                     std::cerr << "Rod number " << i << " will be disabled for this time step because of repeated collisions"
                             << std::endl;
-                    m_disabled_rods.insert(i);
+                    m_collision_disabled_rods.insert(i);
                 }
         }
         else // try substepping
