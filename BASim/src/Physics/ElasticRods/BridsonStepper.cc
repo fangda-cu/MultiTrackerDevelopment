@@ -5,6 +5,8 @@
  * \date 02/16/2010
  */
 
+//#define KEEP_ONLY_SOME_RODS
+
 #include <typeinfo>
 #include "BridsonStepper.hh"
 #include "../../Threads/MultithreadedStepper.hh"
@@ -30,7 +32,8 @@ static const float explosion_threshold = 100.0;
 BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
         std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
         const double time, int num_threads) :
-    m_num_dof(0), m_rods(rods),
+            m_num_dof(0),
+            m_rods(rods),
             m_number_of_rods(m_rods.size()),
             m_triangle_meshes(trimeshes),
             m_scripting_controllers(scripting_controllers),
@@ -65,9 +68,37 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
             m_selective_adaptivity(true), // Selective adaptivity also requires m_skipRodRodCollisions == true
             m_simulationFailed(false),
             m_stopOnRodError(false),
+            m_disable_rods_on_first_collision_failure(true),
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start, m_implicit_thickness,
                     m_vertex_face_penalty)
 {
+
+    // For debugging purposes
+#ifdef KEEP_ONLY_SOME_RODS
+    std::set<int> keep_only;
+    keep_only.insert(9);
+
+    std::vector<ElasticRod*>::iterator rod = m_rods.begin();
+    std::vector<RodTimeStepper*>::iterator stepper = m_steppers.begin();
+    for (int i = 0; i < m_number_of_rods; i++)
+    {
+        if (keep_only.find(i) == keep_only.end())
+        {
+            for (int j = 0; j < (*rod)->nv(); j++)
+            (*rod)->setVertex(j, 0 * ((*rod)->getVertex(j)));
+            m_rods.erase(rod);
+            m_steppers.erase(stepper);
+        }
+        else
+        {
+            rod++;
+            stepper++;
+        }
+    }
+    m_number_of_rods = m_rods.size();
+    std::cerr << "Number of rods remaining: " << m_number_of_rods << std::endl;
+#endif
+
 #ifdef DEBUG
     for( int i = 0; i < (int) m_number_of_rods; ++i ) assert( m_rods[i] != NULL );
     for( int i = 0; i < (int) m_triangle_meshes.size(); ++i ) assert( m_triangle_meshes[i] != NULL );
@@ -184,6 +215,7 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
     m_endForces = new VecXd*[m_number_of_rods];
     for (int i = 0; i < m_number_of_rods; i++)
         m_endForces[i] = new VecXd(m_rods[i]->ndof());
+
 }
 
 BridsonStepper::~BridsonStepper()
@@ -334,6 +366,16 @@ void BridsonStepper::prepareForExecution()
 bool BridsonStepper::execute()
 {
     std::cerr << "Executing time step " << m_t << std::endl;
+
+    if (!m_disabled_rods.empty())
+    {
+        std::cerr << "Current set of disabled rods: ";
+        for (std::set<int>::const_iterator rod = m_disabled_rods.begin(); rod != m_disabled_rods.end(); rod++)
+            std::cerr << *rod << " ";
+        std::cerr << std::endl;
+        std::cerr << "Baldness factor = " << m_disabled_rods.size() * 1.0 / m_number_of_rods << std::endl;
+    }
+
     Timer::getTimer("BridsonStepper::execute").start();
     bool do_adaptive = true;
     bool result;
@@ -391,12 +433,6 @@ bool BridsonStepper::nonAdaptiveExecute(double dt, RodSelectionType& selected_ro
 
 bool BridsonStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
 {
-    // if (explosionTriggered)
-    // {
-    //     std::cout << "BridsonStepper::adaptiveExecute: explosion triggered, so exiting." << std::endl;
-    //     return true; // get out of here if explosion was triggered
-    // }
-
     std::cout << "BridsonStepper::adaptiveExecute starting with m_t = " << m_t << " and dt = " << dt << std::endl;
 
     // Backup all selected rods
@@ -439,6 +475,16 @@ bool BridsonStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
                 << "\033[31;1mWARNING\033[m: in BridsonStepper::adaptiveExecute step still not dependable with time step below "
                 << minimum_time_step << std::endl;
         std::cout << "No more substepping, hope we'll be ok" << std::endl;
+
+        std::cerr << "Misbehaving rod" << (selected_rods.size() > 1 ? "s" : "") << ": ";
+        for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+        {
+            m_disabled_rods.insert(*rod);
+            std::cerr << *rod << " ";
+        }
+        std::cerr << std::endl;
+
+        m_simulationFailed = true;
         return true;
     }
 
@@ -917,8 +963,9 @@ void BridsonStepper::computeImmunity(const RodSelectionType& selected_rods)
     for (std::vector<bool>::iterator i = m_collision_immune.begin(); i != m_collision_immune.begin() + m_obj_start; i++)
         *i = true;
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-        for (int j = 0; j < m_rods[*rod]->nv(); ++j)
-            m_collision_immune[m_base_indices[*rod] / 3 + j] = false;
+        if (m_disabled_rods.find(*rod) == m_disabled_rods.end()) // If the rod is not in the disabled set
+            for (int j = 0; j < m_rods[*rod]->nv(); ++j)
+                m_collision_immune[m_base_indices[*rod] / 3 + j] = false;
 
     // Find the initial vertex-face intersections and mark them collision-immune
     std::list<Collision*> collisions;
@@ -1145,10 +1192,20 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>&
 
     if (!collisions.empty())
     {
-        //  std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Exceeded maximum " << "number of inelastic iterations "
-        //          << m_num_inlstc_itrns << ". Time of warning " << m_t << "." << std::endl;
-        all_rods_collisions_ok = false;
-        m_simulationFailed = true;
+        if (m_disable_rods_on_first_collision_failure) // disable the bad rods and go on with the simulation
+        {
+            for (int i = 0; i < m_number_of_rods; i++)
+                if (failed_collisions_rods[i])
+                {
+                    std::cerr << "Rod number " << i << " will be disabled because of repeated collisions" << std::endl;
+                    m_disabled_rods.insert(i);
+                }
+        }
+        else // try substepping
+        {
+            all_rods_collisions_ok = false;
+            m_simulationFailed = true;
+        }
     }
 
     //  for (int rodcol = 0; rodcol < failed_collisions_rods.size(); rodcol++)
