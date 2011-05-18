@@ -58,11 +58,11 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
     stepper->addExternalForce( new RodMassDamping( i_massDamping ) );
     
     // Lock the first two vertices of the rod
-    RodBoundaryCondition* boundary = stepper->getBoundaryCondition();
+ //   RodBoundaryCondition* boundary = stepper->getBoundaryCondition();
                 
     // Set the velocity to be zero as we're grooming static hair
-    boundary->setDesiredVertexPosition( 0, i_time, rod->getVertex( 0 ), BASim::Vec3d( 0.0, 0.0, 0.0 ) );
-    boundary->setDesiredVertexPosition( 1, i_time, rod->getVertex( 1 ), BASim::Vec3d( 0.0, 0.0, 0.0 ) );
+  //  boundary->setDesiredVertexPosition( 0, i_time, rod->getVertex( 0 ), BASim::Vec3d( 0.0, 0.0, 0.0 ) );
+  //  boundary->setDesiredVertexPosition( 1, i_time, rod->getVertex( 1 ), BASim::Vec3d( 0.0, 0.0, 0.0 ) );
  
     // If the magnitude of gravity is 0 then don't bother adding the force
     if ( i_gravity.norm() > 0 )
@@ -80,6 +80,13 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
         cerr << "Doing reverse hairdo!\n";
         rod->doReverseHairdo(stepper);
     }
+    
+    cerr << "Adding rod with vertices:\n";
+    for ( size_t v=0; v< i_vertices.size(); ++v )
+    {
+        cerr << i_vertices[ v ] << endl;
+    }
+    
     
     // Arbitrarily scale the rod up so it can be seen
     rod->setRadiusScale( 10.0 );
@@ -103,10 +110,8 @@ void WmSweeneyRodManager::addCollisionMesh( BASim::TriangleMesh* i_triangleMesh,
 
 void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const double i_startTime )
 {
-    // FIXME: pass in timestep from Maya
     m_bridsonStepper = new BridsonStepper( m_rods, m_triangleMeshes, m_scriptingControllers, 
-                                           m_rodTimeSteppers, i_timeStep, i_startTime );
-                                           
+                                           m_rodTimeSteppers, i_timeStep, i_startTime, 1 );                                           
 }
 
 void WmSweeneyRodManager::takeStep()
@@ -118,9 +123,11 @@ void WmSweeneyRodManager::takeStep()
     // Force self collisions to be off whilst testing
     m_bridsonStepper->skipRodRodCollisions( true );
 
-    // TEST: DO WE NEED TO DO THIS EVERY FRAME
-   
-  /*  for ( size_t r =0; r< m_rods.size(); ++r )
+    // Ensure the rod stays stuck on the head
+    // Set boundary conditions, they don't need set every frame as the rods don't move but
+    // in theory we can use this same plugin for moving rods so leave this here as it's a 
+    // small overhead for ease of future development.
+    for ( size_t r =0; r< m_rods.size(); ++r )
     {
         ElasticRod* rod = m_rods[ r ];
         
@@ -129,18 +136,16 @@ void WmSweeneyRodManager::takeStep()
                     
         for ( int v=0; v<rod->nv(); ++v )
         {
-            // Probably most of these were not fixed, this may be slow to do.
-            // ??? Benchmark this and check what is going on.
             boundary->releaseVertex( v );
         }
         
-        // Set the velocity to be zero as we're grooming static hair
-        boundary->setDesiredVertexPosition( 0, m_rodTimeSteppers[ r ]->getTime(), rod->getVertex( 0 ), BASim::Vec3d( 0.0, 0.0, 0.0 ) );
-        boundary->setDesiredVertexPosition( 1, m_rodTimeSteppers[ r ]->getTime(), rod->getVertex( 1 ), BASim::Vec3d( 0.0, 0.0, 0.0 ) );
-    }*/
-
-    // Ensure the rod stays stuck on the head
-	//updateAllBoundaryConditions();                                   
+        // Set the position of the vertices we want to be fixed
+        boundary->setDesiredVertexPosition( 0, rod->getVertex( 0 ) );
+        boundary->setDesiredVertexPosition( 1, rod->getVertex( 1 ) );
+        
+        // and very importantly, set the desired angle too
+        boundary->setDesiredEdgeAngle( 0, rod->getTheta( 0 ) );        
+    }
     
     m_bridsonStepper->execute();
 }

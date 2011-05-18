@@ -1,0 +1,18 @@
+global proc AEwmSweeneyNodeTemplate( string $nodeName )
+{
+    //AEswatchDisplay $nodeName;
+    editorTemplate -beginScrollLayout;
+
+    editorTemplate -beginLayout "Sim Reset Settings" -collapse 0;
+        editorTemplate -addControl "verticesPerRod";
+    editorTemplate -endLayout;
+    
+    editorTemplate -beginLayout "Rod Properties" -collapse 0;
+        editorTemplate -addControl "length";        
+        editorTemplate -addControl "rodRadius";
+        editorTemplate -addControl "rodPitch";
+    editorTemplate -endLayout;
+    
+    editorTemplate -addExtraControls;
+    editorTemplate -endScrollLayout;
+}

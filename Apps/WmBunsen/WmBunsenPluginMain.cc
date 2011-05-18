@@ -20,7 +20,9 @@
 #include "WmFigaroRodShape/WmFigaroRodShapeIterator.hh"
 //#include "constraints/WmFigConstraintNode.hh"
 #include "WmFigSelectionDisplayNode.hh"
+
 #include "Sweeney/WmSweeneyNode.hh"
+#include "Sweeney/WmSweeneyCmd.hh"
 
 MStatus initializePlugin( MObject obj )
 {
@@ -100,6 +102,13 @@ MStatus initializePlugin( MObject obj )
                                    WmFigaroCmd::syntaxCreator );
     if ( !stat ) {
         stat.perror( "registerCommand wmFigaro failed" );
+        return stat;     
+    }
+    
+    stat = plugin.registerCommand( WmSweeneyCmd::typeName, WmSweeneyCmd::creator, 
+                                   WmSweeneyCmd::syntaxCreator );
+    if ( !stat ) {
+        stat.perror( "registerCommand wmSweeney failed" );
         return stat;     
     }
     
@@ -207,6 +216,12 @@ MStatus uninitializePlugin( MObject obj)
     if (!stat) 
     {
         stat.perror( "deregister command wmFigaro failed" );
+    }
+
+    stat = plugin.deregisterCommand( WmSweeneyCmd::typeName );
+    if (!stat) 
+    {
+        stat.perror( "deregister command WmSweeneyCmd failed" );
     }
 
     if ( plugin.deregisterContextCommand( WmFigSelectionContext::typeName, WmFigSelectionToolCommand::typeName ) != MS::kSuccess )

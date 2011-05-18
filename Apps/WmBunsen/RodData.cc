@@ -20,7 +20,7 @@ m_rodMayaForces( NULL ), m_bridsonStepper( NULL )
     m_rod = setupRod( i_rodOptions,
                       i_rodVertexPositions,
                       i_rodVertexPositions );
-
+                      
     m_rodRenderer = new RodRenderer( *m_rod );
     
     // If the rod is coming from the cache file then we don't need the stepper or forces.
