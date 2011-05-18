@@ -1,5 +1,6 @@
 #include "WmSweeneyNode.hh"
 #include "WmFigConnectionNode.hh"
+#include "../WmBunsenCollisionMeshNode.hh"
 
 #include <maya/MFnMatrixAttribute.h>
 #include <maya/MPlugArray.h>
@@ -26,8 +27,12 @@ using namespace BASim;
 /*static*/ MObject WmSweeneyNode::ia_verticesPerStrand;
 
 // Sync attributes
-/* static */ MObject WmSweeneyNode::ca_sync;
+/* static */ MObject WmSweeneyNode::ca_timeSync;
+/* static */ MObject WmSweeneyNode::ca_rodPropertiesSync;
 
+// Collision meshes
+/* static */ MObject WmSweeneyNode::ia_collisionMeshes;
+ 
 WmSweeneyNode::WmSweeneyNode() : m_rodManager( NULL )
 {    
 }
@@ -40,11 +45,8 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus status;
 
-    if ( i_plug == ca_sync )
+    if ( i_plug == ca_rodPropertiesSync )
     {
-        m_currentTime = i_dataBlock.inputValue( ia_time ).asTime().value();
-        m_startTime = i_dataBlock.inputValue( ia_startTime ).asDouble();
-
         // Hair properties
         m_length = i_dataBlock.inputValue( ia_length ).asDouble();
         m_edgeLength = i_dataBlock.inputValue( ia_edgeLength ).asDouble();
@@ -58,21 +60,41 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         
         m_numberOfVerticesPerStrand = i_dataBlock.inputValue( ia_verticesPerStrand ).asInt();        
         
-        // Input has changed so rebuild rods.
-        if ( m_currentTime == m_startTime )
+        // If we've not yet created all the rods then create them
+        if ( m_rodManager == NULL )
         {
-            initialiseRodFromBarberShopInput();            
+            initialiseRodFromBarberShopInput( i_dataBlock );
         }
         else
         {
-            if ( m_rodManager == NULL )
-            {
-                MGlobal::displayError( "Please rewind to start time to initialise simulation." );
-            }
-            else
-            {
-                m_rodManager->takeStep();
-            }
+            // If the rods exist then just update their undeformed configuration but keep running
+            // the simulation.
+            
+            // TODO: Add code to update undeformed configuration 
+            // for just now, recreate the rod
+            initialiseRodFromBarberShopInput( i_dataBlock );
+        }
+        
+        i_dataBlock.setClean( i_plug );
+    }
+    else if ( i_plug == ca_timeSync )
+    {
+        m_currentTime = i_dataBlock.inputValue( ia_time ).asTime().value();
+        m_startTime = i_dataBlock.inputValue( ia_startTime ).asDouble();
+
+
+        if ( m_rodManager == NULL )
+        {
+        //    MGlobal::displayError( "Please rewind to start time to initialise simulation." );            
+        }
+        else if ( m_currentTime == m_startTime )
+        {            
+            initialiseRodFromBarberShopInput( i_dataBlock );
+        }
+        else
+        {
+            updateCollisionMeshes( i_dataBlock );
+            m_rodManager->takeStep();
         }
         
         i_dataBlock.setClean( i_plug );
@@ -85,12 +107,80 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     return MS::kSuccess;
 }
 
+void WmSweeneyNode::initialiseCollisionMeshes( MDataBlock &i_data )
+{
+    MStatus status;
+    
+    MArrayDataHandle inArrayH = i_data.inputArrayValue( ia_collisionMeshes, &status );
+    CHECK_MSTATUS( status );
+    size_t numMeshesConnected = inArrayH.elementCount();
+  
+    for ( unsigned int i=0; i < numMeshesConnected; i++ ) 
+    {
+        // Even if we don't use it, grab the data so Maya knows to evaluate the node    
+        inArrayH.jumpToElement(i);
+        MDataHandle collisionMeshH = inArrayH.inputValue( &status );
+        CHECK_MSTATUS( status );
+        
+        MPlug plug( thisMObject(), ia_collisionMeshes );
+        CHECK_MSTATUS( status );
+        if ( plug.isArray( &status ) )
+        {
+            MPlug indxPlug = plug.elementByLogicalIndex( i, &status );
+            CHECK_MSTATUS( status );
+            if ( indxPlug.isConnected( &status ) ) 
+            {
+                MPlugArray inPlugArr;
+                indxPlug.connectedTo( inPlugArr, true, false, &status );
+                CHECK_MSTATUS( status );
+                
+                // Since we asked for the destination there can only be one plug in the array
+                MPlug meshPlug = inPlugArr[0];
+                MObject collisionMeshNodeObj = meshPlug.node( &status );
+                CHECK_MSTATUS( status );
+                MFnDependencyNode collisionMeshNodeFn( collisionMeshNodeObj );
+                WmBunsenCollisionMeshNode* collisionMeshNode = (WmBunsenCollisionMeshNode*)collisionMeshNodeFn.userNode();
+         
+                TriangleMesh* triangleMesh = NULL;
+                WmFigMeshController* figMeshController = NULL;
+                
+                collisionMeshNode->initialise( NULL, i, &triangleMesh, &figMeshController );
+             
+                // Now add the mesh to the rod manager
+                m_rodManager->addCollisionMesh( triangleMesh, figMeshController );
+            }
+            else
+            {
+                CHECK_MSTATUS( status );                
+            }
+        }
+    }
+}
 
-void WmSweeneyNode::initialiseRodFromBarberShopInput()
+void WmSweeneyNode::updateCollisionMeshes( MDataBlock& i_dataBlock )
+{
+    MStatus status;
+    
+    MArrayDataHandle inArrayH = i_dataBlock.inputArrayValue( ia_collisionMeshes, &status );
+    CHECK_MSTATUS( status );
+    size_t numMeshesConnected = inArrayH.elementCount();
+  
+    for ( unsigned int i=0; i < numMeshesConnected; i++ ) 
+    {
+        // All we need to do is ask Maya for the data and it will pull the attr,
+        // causing a compute in the collision mesh node which will directly
+        // update the collision mesh data in the RodManager.
+        inArrayH.jumpToElement(i);
+        MDataHandle collisionMeshH = inArrayH.inputValue( &status );
+        CHECK_MSTATUS( status );
+    }
+}
+
+void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
 {
     cerr << "initialiseRodFromBarberShopInput() - About to create rods from Barbershop input\n";
     
-    //TODO: Reset the manager and remove all rods before adding more
+    // Reset the manager and remove all rods before adding more
     delete m_rodManager;
     
     m_rodManager = new WmSweeneyRodManager();
@@ -102,7 +192,10 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput()
         cerr << "initialiseRodFromBarberShopInput() - no input strands so can't create any rods";
         return;
     }
-
+    
+    // First, get all the collision mesh data organised
+    initialiseCollisionMeshes( i_dataBlock );
+    
     // Create one rod for each barbershop strand. Ignore the strand shape or length but do
     // take its initial direction as a follicle angle
     unsigned int currentVertexIndex = 0;
@@ -164,19 +257,16 @@ void WmSweeneyNode::draw( M3dView& i_view, const MDagPath& i_path,
                             M3dView::DisplayStyle i_style,
                             M3dView::DisplayStatus i_status )
 {
-    MStatus stat;
-    MObject thisNode = thisMObject();
-
-    MPlug syncPlug( thisNode, ca_sync );
+    MStatus status;
+    
+    // Pull on the sync plugs to cause compute() to be called if any 
+    // of the rod properties or time has changed.
     double d;
-    stat = syncPlug.getValue( d );
-    if ( !stat )
-    {
-        stat.perror( "WmSweeneyNode::draw getting ca_sync" );
-        return;
-    }
-
-
+    MPlug timeSyncPlug( thisMObject(), ca_timeSync );
+    timeSyncPlug.getValue( d );
+    MPlug propertiesSyncPlug( thisMObject(), ca_rodPropertiesSync );
+    propertiesSyncPlug.getValue( d );
+    
     i_view.beginGL();
     //glPushAttrib( GL_CURRENT_BIT | GL_POINT_BIT | GL_LINE_BIT );
 	glPushAttrib( GL_ALL_ATTRIB_BITS );
@@ -249,7 +339,8 @@ void* WmSweeneyNode::creator()
 {
     MStatus status;
 
-    addNumericAttribute( ca_sync, "sync", "syn", MFnNumericData::kBoolean, false, false );
+    addNumericAttribute( ca_timeSync, "timeSync", "syn", MFnNumericData::kBoolean, false, false );
+    addNumericAttribute( ca_rodPropertiesSync, "rodPropertiesSync", "rps", MFnNumericData::kBoolean, false, false );
 
     {
         MFnUnitAttribute uAttr;
@@ -265,20 +356,20 @@ void* WmSweeneyNode::creator()
         status = addAttribute( ia_time );
         if ( !status ) { status.perror( "addAttribute ia_time" ); return status; }
     }
-    status = attributeAffects( ia_time, ca_sync );
-	if ( !status ) { status.perror( "attributeAffects ia_time->ca_sync" ); return status; }    
+    status = attributeAffects( ia_time, ca_timeSync );
+	if ( !status ) { status.perror( "attributeAffects ia_time->ca_timeSync" ); return status; }    
     
 	addNumericAttribute( ia_startTime, "startTime", "stt", MFnNumericData::kDouble, 1.0, true );
-	status = attributeAffects( ia_startTime, ca_sync );
-	if ( !status ) { status.perror( "attributeAffects ia_startTime->ca_sync" ); return status; }
+	status = attributeAffects( ia_startTime, ca_timeSync );
+	if ( !status ) { status.perror( "attributeAffects ia_startTime->ca_timeSync" ); return status; }
 
 	addNumericAttribute( ia_length, "length", "len", MFnNumericData::kDouble, 10.0, true );
-	status = attributeAffects( ia_length, ca_sync );
-	if ( !status ) { status.perror( "attributeAffects ia_length->ca_sync" ); return status; }
+	status = attributeAffects( ia_length, ca_rodPropertiesSync );
+	if ( !status ) { status.perror( "attributeAffects ia_length->ca_rodPropertiesSync" ); return status; }
 
 	addNumericAttribute( ia_edgeLength, "edgeLength", "ele", MFnNumericData::kDouble, 1.0, true );
-	status = attributeAffects( ia_edgeLength, ca_sync );
-	if ( !status ) { status.perror( "attributeAffects ia_edgeLength->ca_sync" ); return status; }
+	status = attributeAffects( ia_edgeLength, ca_rodPropertiesSync );
+	if ( !status ) { status.perror( "attributeAffects ia_edgeLength->ca_rodPropertiesSync" ); return status; }
     
     {
         MFnTypedAttribute tAttr;  
@@ -292,12 +383,31 @@ void* WmSweeneyNode::creator()
         CHECK_MSTATUS( status );
     }
     
+    {
+        MFnNumericAttribute nAttr;
+        ia_collisionMeshes = nAttr.create( "collisionMeshes", "com", MFnNumericData::kBoolean, false, &status );
+        if (!status) 
+        {
+            status.perror( "create ia_collisionMeshes attribute" );
+            return status;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        nAttr.setDisconnectBehavior( MFnAttribute::kDelete );
+        nAttr.setArray( true );
+        status = addAttribute( ia_collisionMeshes );
+        if ( !status ) { status.perror( "addAttribute ia_collisionMeshes" ); return status; }
+    }
+    status = attributeAffects( ia_collisionMeshes, ca_timeSync );
+	if ( !status ) { status.perror( "attributeAffects ia_collisionMeshes->ca_timeSync" ); return status; }
+    
+        
     addNumericAttribute( ia_verticesPerStrand, "verticesPerStrand", "vps", MFnNumericData::kInt, 12, true );
-	status = attributeAffects( ia_verticesPerStrand, ca_sync );
-	if ( !status ) { status.perror( "attributeAffects verticesPerStrand->ca_sync" ); return status; }
+	status = attributeAffects( ia_verticesPerStrand, ca_rodPropertiesSync );
+	if ( !status ) { status.perror( "attributeAffects verticesPerStrand->ca_rodPropertiesSync" ); return status; }
 
     return MS::kSuccess;
-
 }
 
 

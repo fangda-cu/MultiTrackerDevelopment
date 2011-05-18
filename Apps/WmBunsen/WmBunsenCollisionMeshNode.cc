@@ -35,7 +35,9 @@ WmBunsenCollisionMeshNode::~WmBunsenCollisionMeshNode()
     delete m_triangleMeshRenderer;
 }
 
-void WmBunsenCollisionMeshNode::initialise( Beaker* i_beaker, const unsigned int i_collisionMeshIndex )
+void WmBunsenCollisionMeshNode::initialise( Beaker* i_beaker, const unsigned int i_collisionMeshIndex,
+                                            TriangleMesh** o_currentMesh,  
+                                            WmFigMeshController** o_meshController)
 {
     MStatus status = MStatus::kSuccess;
 
@@ -95,7 +97,18 @@ void WmBunsenCollisionMeshNode::initialise( Beaker* i_beaker, const unsigned int
 
     updateCollisionMeshFromMayaMesh( meshFn );
 
-    m_beaker->initialiseCollisionMesh( m_currentMesh, m_meshController, m_collisionMeshIndex );    
+    if ( m_beaker != NULL )
+    {
+        // If we are being controlled by beaker then initialise it
+        m_beaker->initialiseCollisionMesh( m_currentMesh, m_meshController, m_collisionMeshIndex );            
+    }
+    else
+    {
+        // If this is a Sweeney sim then just pass back the objects it needs to build the
+        // BridsonStepper object.
+        *o_currentMesh = m_currentMesh;
+        *o_meshController = m_meshController;       
+    }
 
     m_triangleMeshRenderer = new TriangleMeshRenderer( *m_currentMesh );
 }

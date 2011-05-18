@@ -21,6 +21,10 @@
 #include <BASim/src/Physics/ElasticRods/BridsonStepper.hh>
 #endif
 
+#include "../WmFigMeshController.hh"
+
+#include <tr1/unordered_map>
+
 /** \class WmSweeneyRodManager
  * \brief A class to create and control a simulation involving one of more rods.
  * 
@@ -45,6 +49,9 @@ public:
 
     void initialiseSimulation( const double i_timeStep, const double i_startTime );
 
+    void addCollisionMesh( BASim::TriangleMesh* i_triangleMesh, 
+                           WmFigMeshController* i_figMeshController );
+
     void takeStep();
     
     void drawAllRods();
@@ -56,14 +63,7 @@ private:
     std::vector< BASim::RodTimeStepper* > m_rodTimeSteppers;
     std::vector< BASim::RodRenderer* > m_rodRenderers;
     std::vector< BASim::TriangleMesh* > m_triangleMeshes;
-    std::vector< BASim::ScriptingController* > m_scriptingControllers;
-    
-    
-    BASim::ObjPropHandle<BASim::Scalar> m_timeHandle;
-    BASim::ObjPropHandle<BASim::Scalar> m_dtHandle;
-    BASim::ObjPropHandle<BASim::Vec3d> m_gravityHandle;
-    BASim::ObjPropHandle<int> m_maxIterHandle;
-    BASim::World* m_world;
+    std::vector< BASim::ScriptingController* > m_scriptingControllers;    
 };
 
 #endif
