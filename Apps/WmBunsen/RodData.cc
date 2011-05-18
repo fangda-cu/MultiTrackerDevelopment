@@ -21,12 +21,6 @@ m_rodMayaForces( NULL ), m_bridsonStepper( NULL )
                       i_rodVertexPositions,
                       i_rodVertexPositions );
                       
-    for ( size_t v=0; v<i_rodVertexPositions.size(); ++v )
-    {
-        cerr << i_rodVertexPositions[ v ] << endl;
-    }
-    cerr << "---\n";
-
     m_rodRenderer = new RodRenderer( *m_rod );
     
     // If the rod is coming from the cache file then we don't need the stepper or forces.

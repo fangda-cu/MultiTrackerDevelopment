@@ -58,7 +58,7 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
     stepper->addExternalForce( new RodMassDamping( i_massDamping ) );
     
     // Lock the first two vertices of the rod
-    RodBoundaryCondition* boundary = stepper->getBoundaryCondition();
+ //   RodBoundaryCondition* boundary = stepper->getBoundaryCondition();
                 
     // Set the velocity to be zero as we're grooming static hair
   //  boundary->setDesiredVertexPosition( 0, i_time, rod->getVertex( 0 ), BASim::Vec3d( 0.0, 0.0, 0.0 ) );
@@ -123,6 +123,10 @@ void WmSweeneyRodManager::takeStep()
     // Force self collisions to be off whilst testing
     m_bridsonStepper->skipRodRodCollisions( true );
 
+    // Ensure the rod stays stuck on the head
+    // Set boundary conditions, they don't need set every frame as the rods don't move but
+    // in theory we can use this same plugin for moving rods so leave this here as it's a 
+    // small overhead for ease of future development.
     for ( size_t r =0; r< m_rods.size(); ++r )
     {
         ElasticRod* rod = m_rods[ r ];
@@ -138,10 +142,9 @@ void WmSweeneyRodManager::takeStep()
         // Set the velocity to be zero as we're grooming static hair
         boundary->setDesiredVertexPosition( 0, rod->getVertex( 0 ) );
         boundary->setDesiredVertexPosition( 1, rod->getVertex( 1 ) );
+        
+        boundary->setDesiredEdgeAngle( 0, rod->getTheta( 0 ) );        
     }
-
-    // Ensure the rod stays stuck on the head
-	//updateAllBoundaryConditions();                                   
     
     m_bridsonStepper->execute();
 }
@@ -151,32 +154,5 @@ void WmSweeneyRodManager::drawAllRods()
     for ( size_t r = 0; r < m_rodRenderers.size(); ++r )
     {
         m_rodRenderers[ r ]->render();
-    }
-    
-    // Debug drawing
-    // 
-    for ( size_t r = 0; r < m_rods.size(); ++r )
-    {
-        for ( int v=0; v< m_rods[ r ]->nv(); ++v )
-        {
-            float scale = 1.0;
-            if ( v % 2 == 0 )
-            {
-                glColor3d( 1, 0, 0 );
-                scale = 2.0;
-                glLineWidth( 1.0 );
-            }
-            else
-            {
-                glColor3d( 0, 1, 0 );
-                glLineWidth( 3.0 );
-            }
-            glBegin( GL_LINES );
-            BASim::Vec3d vertex = m_rods[ r ]->getVertex( v );
-            glVertex3d( vertex[0], vertex[ 1 ], vertex[ 2 ] );
-            vertex +=  BASim::Vec3d( 1, 0, 0) * scale;
-            glVertex3d( vertex[0], vertex[ 1 ], vertex[ 2 ] );
-            glEnd();            
-        }
     }
 }
