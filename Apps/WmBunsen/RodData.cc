@@ -20,6 +20,12 @@ m_rodMayaForces( NULL ), m_bridsonStepper( NULL )
     m_rod = setupRod( i_rodOptions,
                       i_rodVertexPositions,
                       i_rodVertexPositions );
+                      
+    for ( size_t v=0; v<i_rodVertexPositions.size(); ++v )
+    {
+        cerr << i_rodVertexPositions[ v ] << endl;
+    }
+    cerr << "---\n";
 
     m_rodRenderer = new RodRenderer( *m_rod );
     

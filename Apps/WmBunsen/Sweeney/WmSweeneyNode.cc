@@ -21,6 +21,7 @@ using namespace BASim;
 // Hair Property Attributes
 /* static */ MObject WmSweeneyNode::ia_length;
 /* static */ MObject WmSweeneyNode::ia_edgeLength;
+/* static */ MObject WmSweeneyNode::ia_verticesPerRod;
 
 // Barbershop specific inputs
 /*static*/ MObject WmSweeneyNode::ia_strandVertices;
@@ -45,11 +46,16 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus status;
 
+    cerr << "WmSweeneyNode::compute() with i_plug = " << i_plug.name() << endl;
+
     if ( i_plug == ca_rodPropertiesSync )
     {
         // Hair properties
         m_length = i_dataBlock.inputValue( ia_length ).asDouble();
         m_edgeLength = i_dataBlock.inputValue( ia_edgeLength ).asDouble();
+        m_verticesPerRod = i_dataBlock.inputValue( ia_verticesPerRod ).asInt();
+        
+        cerr << "m_verticesPerRod = " << m_verticesPerRod << endl;
         
         MObject strandVerticesObj = i_dataBlock.inputValue( ia_strandVertices ).data();
         MFnVectorArrayData strandVerticesArrayData( strandVerticesObj, &status );
@@ -81,7 +87,6 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
     {
         m_currentTime = i_dataBlock.inputValue( ia_time ).asTime().value();
         m_startTime = i_dataBlock.inputValue( ia_startTime ).asDouble();
-
 
         if ( m_rodManager == NULL )
         {
@@ -202,31 +207,72 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
     unsigned int numberOfStrands = m_strandVertices.length() / m_numberOfVerticesPerStrand;
     
     vector< BASim::Vec3d > vertices;
-        
-    unsigned int inputStrandNumber = 0;
-    while ( inputStrandNumber < numberOfStrands )
+       
+    for ( unsigned int inputStrandNumber = 0; inputStrandNumber < numberOfStrands; ++inputStrandNumber )
     {
         MVector direction = m_strandVertices[ currentVertexIndex + 1 ] 
                             - m_strandVertices[ currentVertexIndex ];
         direction.normalize();
                 
         constructRodVertices( vertices, direction, m_strandVertices[ currentVertexIndex ] );
-            
-        m_rodManager->addRod( vertices, m_currentTime );
+                    
+        m_rodManager->addRod( vertices, m_startTime );
         
-        currentVertexIndex += m_numberOfVerticesPerStrand;
-        inputStrandNumber++;
+        cerr << "Creating rod at time " << m_startTime << endl;
+        
+        currentVertexIndex += m_numberOfVerticesPerStrand;        
     }
+  
+/*
+    // For debugging add rods with specific vertices to see problems in Beaker vs Sweeney
+    vertices.resize( 15 );
+    vertices[ 0 ] = BASim::Vec3d( 1.1468563, 4.7516446, 5.1037321 );
+    vertices[ 1 ] = BASim::Vec3d( 1.3113695, 5.4118051, 5.836619 );
+    vertices[ 2 ] = BASim::Vec3d( 1.4758841, 6.0719659, 6.5695057);
+    vertices[ 3 ] = BASim::Vec3d( 1.6404004, 6.7321264, 7.3023923);
+    vertices[ 4 ] = BASim::Vec3d( 1.8049186, 7.3922864, 8.0352787);
+    vertices[ 5 ] = BASim::Vec3d( 1.9694386, 8.0524464, 8.768165);
+    vertices[ 6 ] = BASim::Vec3d( 2.1339601, 8.7126063, 9.5010505);
+    vertices[ 7 ] = BASim::Vec3d( 2.2984837, 9.372766, 10.233936);
+    vertices[ 8 ] = BASim::Vec3d( 2.4630091, 10.032925, 10.966822);
+    vertices[ 9 ] = BASim::Vec3d( 2.6275362, 10.693084, 11.699707);
+    vertices[ 10 ] = BASim::Vec3d( 2.7920654, 11.353243, 12.432592);
+    vertices[ 11 ] = BASim::Vec3d( 2.9565963, 12.013402, 13.165476);
+    vertices[ 12 ] = BASim::Vec3d( 3.1211287, 12.67356, 13.898361);
+    vertices[ 13 ] = BASim::Vec3d( 3.2856628, 13.333719, 14.631245);
+    vertices[ 14 ] = BASim::Vec3d( 3.4501989, 13.993877, 15.364129);
     
+    m_rodManager->addRod( vertices, m_startTime );
+    
+    vertices[ 0 ] = BASim::Vec3d( 5.2480741, -0.48017403, 4.6308284 );
+    vertices[ 1 ] = BASim::Vec3d( 5.9961056, -0.54642217, 5.2911769 );
+    vertices[ 2 ] = BASim::Vec3d( 6.7441311, -0.61267031, 5.951532 );
+    vertices[ 3 ] = BASim::Vec3d( 7.4921505, -0.67891851, 6.6118941 );
+    vertices[ 4 ] = BASim::Vec3d( 8.240163, -0.74516679, 7.2722641 );
+    vertices[ 5 ] = BASim::Vec3d( 8.9881685, -0.8114151, 7.9326418 );
+    vertices[ 6 ] = BASim::Vec3d( 9.7361675, -0.87766339, 8.5930272 );
+    vertices[ 7 ] = BASim::Vec3d( 10.484159, -0.9439117, 9.2534205 );
+    vertices[ 8 ] = BASim::Vec3d( 11.232145, -1.0101601, 9.9138215 );
+    vertices[ 9 ] = BASim::Vec3d( 11.980123, -1.0764085, 10.57423 );
+    vertices[ 10 ] = BASim::Vec3d( 12.728095, -1.1426569, 11.234647 );
+    vertices[ 11 ] = BASim::Vec3d( 13.476059, -1.2089054, 11.895071 );
+    vertices[ 12 ] = BASim::Vec3d( 14.224018, -1.2751539, 12.555502 );
+    vertices[ 13 ] = BASim::Vec3d( 14.971969, -1.3414024, 13.215941 );
+    vertices[ 14 ] = BASim::Vec3d( 15.719913, -1.4076509, 13.876389 );
+    
+    m_rodManager->addRod( vertices, m_startTime );*/
+  
     cerr << "initialiseRodFromBarberShopInput() - About to initialise simulation\n";
     m_rodManager->initialiseSimulation( 1 / 24.0, m_startTime );
-    cerr << "initialiseRodFromBarberShopInput() - Simulation initialised\n";
+    cerr << "initialiseRodFromBarberShopInput() - Simulation initialised at time " << m_startTime << endl;
 }
 
 void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices, const MVector& i_direction,
                                   const MVector& i_rootPosition )
 {
     cerr << "constructRodVertices(): About to construct rod vertices\n";
+    cerr << "constructRodVertices(): m_verticesPerRod = " << m_verticesPerRod << "\n";
+    
     // Construct a list of vertices for a rod with its root at i_rootPosition and going in direction
     // i_direction
     
@@ -235,19 +281,19 @@ void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices,
     MVector edge = i_direction;
     edge.normalize();
     
+    edge *= m_length / ( m_verticesPerRod - 1 );
+    
+    cerr << "constructRodVertices(): edgeLength = " << edge.length() << "\n";    
+    
     MVector currentVertex( i_rootPosition );
     
-    double accumulatedLength = 0.0;
     // For now we only do straight hair...
     // 
-    // This won't make the rod exactly the requested length but it's close enough for testing
-    while ( accumulatedLength < m_length )
+    for ( int v = 0; v < m_verticesPerRod; ++v )
     {
         o_rodVertices.push_back( BASim::Vec3d( currentVertex.x, currentVertex.y, currentVertex.z ) );
         
         currentVertex += edge;
-        
-        accumulatedLength += m_edgeLength;
     }
     
     cerr << "constructRodVertices(): Finished constructing rod vertices\n";    
@@ -262,6 +308,16 @@ void WmSweeneyNode::draw( M3dView& i_view, const MDagPath& i_path,
     // Pull on the sync plugs to cause compute() to be called if any 
     // of the rod properties or time has changed.
     double d;
+    
+   /* if ( m_rodManager == NULL )
+    {    
+        // If this is the case we probably just loaded, so make sure the 
+        // rod properties are loaded and stored before we call timeSync to
+        // initialised everything
+        MPlug propertiesSyncPlug( thisMObject(), ca_rodPropertiesSync );
+        propertiesSyncPlug.getValue( d );
+    }*/
+    
     MPlug timeSyncPlug( thisMObject(), ca_timeSync );
     timeSyncPlug.getValue( d );
     MPlug propertiesSyncPlug( thisMObject(), ca_rodPropertiesSync );
@@ -370,6 +426,10 @@ void* WmSweeneyNode::creator()
 	addNumericAttribute( ia_edgeLength, "edgeLength", "ele", MFnNumericData::kDouble, 1.0, true );
 	status = attributeAffects( ia_edgeLength, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_edgeLength->ca_rodPropertiesSync" ); return status; }
+
+    addNumericAttribute( ia_verticesPerRod, "verticesPerRod", "cpr", MFnNumericData::kInt, 10, true );
+	status = attributeAffects( ia_verticesPerRod, ca_rodPropertiesSync );
+	if ( !status ) { status.perror( "attributeAffects ia_verticesPerRod->ca_rodPropertiesSync" ); return status; }
     
     {
         MFnTypedAttribute tAttr;  

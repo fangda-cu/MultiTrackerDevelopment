@@ -44,7 +44,7 @@ public:
                  const double i_radiusB = 1e-1 * 0.05, 
                  const BASim::ElasticRod::RefFrameType i_referenceFrame = BASim::ElasticRod::TimeParallel,
                  const double i_massDamping = 10.0, 
-                 const BASim::Vec3d i_gravity = BASim::Vec3d( 0.0, -980.0, 0.0),                 
+                 const BASim::Vec3d i_gravity = BASim::Vec3d( 0.0, -980.0, 0.0 ),                 
                  const BASim::RodTimeStepper::Method i_solverType = BASim::RodTimeStepper::IMPL_EULER );
 
     void initialiseSimulation( const double i_timeStep, const double i_startTime );

@@ -66,6 +66,7 @@ public:
     // Rod properties
     static MObject ia_length;
     static MObject ia_edgeLength;
+    static MObject ia_verticesPerRod;
     
     // Collision meshes
     static MObject ia_collisionMeshes;
@@ -97,6 +98,7 @@ private:
     // Hair properties
     double m_edgeLength;
     double m_length;
+    int m_verticesPerRod;
     
     WmSweeneyRodManager* m_rodManager;
     MVectorArray m_strandVertices;
