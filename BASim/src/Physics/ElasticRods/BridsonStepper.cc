@@ -68,6 +68,7 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
             m_selective_adaptivity(true), // Selective adaptivity also requires m_skipRodRodCollisions == true
             m_simulationFailed(false),
             m_stopOnRodError(false),
+            m_disable_rods_on_first_collision_failure(true),
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start, m_implicit_thickness,
                     m_vertex_face_penalty)
 {
@@ -84,7 +85,7 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
         if (keep_only.find(i) == keep_only.end())
         {
             for (int j = 0; j < (*rod)->nv(); j++)
-                (*rod)->setVertex(j, 0 * ((*rod)->getVertex(j)));
+            (*rod)->setVertex(j, 0 * ((*rod)->getVertex(j)));
             m_rods.erase(rod);
             m_steppers.erase(stepper);
         }
@@ -1191,10 +1192,20 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>&
 
     if (!collisions.empty())
     {
-        //  std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Exceeded maximum " << "number of inelastic iterations "
-        //          << m_num_inlstc_itrns << ". Time of warning " << m_t << "." << std::endl;
-        all_rods_collisions_ok = false;
-        m_simulationFailed = true;
+        if (m_disable_rods_on_first_collision_failure) // disable the bad rods and go on with the simulation
+        {
+            for (int i = 0; i < m_number_of_rods; i++)
+                if (failed_collisions_rods[i])
+                {
+                    std::cerr << "Rod number " << i << " will be disabled because of repeated collisions" << std::endl;
+                    m_disabled_rods.insert(i);
+                }
+        }
+        else // try substepping
+        {
+            all_rods_collisions_ok = false;
+            m_simulationFailed = true;
+        }
     }
 
     //  for (int rodcol = 0; rodcol < failed_collisions_rods.size(); rodcol++)

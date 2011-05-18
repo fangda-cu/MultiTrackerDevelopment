@@ -494,6 +494,7 @@ private:
     bool m_stopOnRodError;
     // Set of rods that will no longer be collided
     std::set<int> m_disabled_rods;
+    bool m_disable_rods_on_first_collision_failure;
 
     VecXd** m_startForces;
     VecXd** m_preCollisionForces;
