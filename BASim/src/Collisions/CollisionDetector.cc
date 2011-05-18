@@ -28,9 +28,7 @@ CollisionDetector::CollisionDetector(const GeometricData& geodata, const std::ve
     for (std::vector<TriangularFace>::const_iterator i = faces.begin(); i != faces.end(); i++)
         m_elements.push_back(new YATriangle(*i));
 
-    GeometryBBoxFunctor bboxfunctor(m_elements, m_geodata);
-    MiddleBVHBuilder bvh_builder;
-    bvh_builder.build(bboxfunctor, &m_bvh);
+    buildBVH();
 }
 
 CollisionDetector::~CollisionDetector()
@@ -152,6 +150,13 @@ void CollisionDetector::updateContinuousTimeCollisions()
     for (std::list<Collision*>::iterator i = m_collisions->begin(); i != m_collisions->end(); i++)
         if (!(*i)->analyseCollision(m_time_step))
             m_collisions->erase(i--);
+}
+
+void CollisionDetector::buildBVH()
+{
+    GeometryBBoxFunctor bboxfunctor(m_elements, m_geodata);
+    MiddleBVHBuilder bvh_builder;
+    bvh_builder.build(bboxfunctor, &m_bvh);
 }
 
 void CollisionDetector::computeCollisions(const BVHNode& node_a, const BVHNode& node_b)

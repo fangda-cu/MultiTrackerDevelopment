@@ -32,7 +32,7 @@ static const float explosion_threshold = 100.0;
 BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
         std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
         const double time, int num_threads) :
-            m_num_dof(0),
+    m_num_dof(0),
             m_rods(rods),
             m_number_of_rods(m_rods.size()),
             m_triangle_meshes(trimeshes),
@@ -204,6 +204,9 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
     IntStatTracker::getIntTracker("CONVERGENCE_FAILURES_PROPAGATED_TO_BRIDSONSTEPPER");
 #endif
 
+    /**
+     *  Prepare backup structures.
+     */
     m_startForces = new VecXd*[m_number_of_rods];
     for (int i = 0; i < m_number_of_rods; i++)
         m_startForces[i] = new VecXd(m_rods[i]->ndof());
@@ -215,6 +218,20 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
     m_endForces = new VecXd*[m_number_of_rods];
     for (int i = 0; i < m_number_of_rods; i++)
         m_endForces[i] = new VecXd(m_rods[i]->ndof());
+
+    m_rodbackups.resize(m_number_of_rods);
+    int i = 0;
+    for (std::vector<ElasticRod*>::const_iterator rod = m_rods.begin(); rod != m_rods.end(); rod++)
+    {
+        m_rodbackups[i++].resize(**rod);
+    }
+
+    m_objbackups.resize(m_triangle_meshes.size());
+    i = 0;
+    for (std::vector<TriangleMesh*>::const_iterator mesh = m_triangle_meshes.begin(); mesh != m_triangle_meshes.end(); mesh++)
+    {
+        m_objbackups[i++].resize(**mesh);
+    }
 
 }
 
@@ -359,7 +376,7 @@ void BridsonStepper::prepareForExecution()
     //       m_collision_immune.push_back(*i == std::numeric_limits<double>::infinity());
     m_collision_immune.resize(getNumVerts());
 
-    //enableImplicitPenaltyImpulses();
+    enableImplicitPenaltyImpulses();
 
 }
 
@@ -367,14 +384,17 @@ bool BridsonStepper::execute()
 {
     std::cerr << "Executing time step " << m_t << std::endl;
 
+    m_collision_detector->buildBVH();
+    std::cerr << "BVH has been (re)built" << std::endl;
+
     if (!m_disabled_rods.empty())
     {
-        std::cerr << "Current set of disabled rods: ";
+        std::cerr << "The following rods were collision-disabled in the previous time step: ";
         for (std::set<int>::const_iterator rod = m_disabled_rods.begin(); rod != m_disabled_rods.end(); rod++)
             std::cerr << *rod << " ";
         std::cerr << std::endl;
-        std::cerr << "Baldness factor = " << m_disabled_rods.size() * 1.0 / m_number_of_rods << std::endl;
     }
+    m_disabled_rods.clear();
 
     Timer::getTimer("BridsonStepper::execute").start();
     bool do_adaptive = true;
@@ -436,19 +456,13 @@ bool BridsonStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
     std::cout << "BridsonStepper::adaptiveExecute starting with m_t = " << m_t << " and dt = " << dt << std::endl;
 
     // Backup all selected rods
-    std::vector<MinimalRodStateBackup> rodbackups(m_number_of_rods);
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-    {
-        rodbackups[*rod].resize(*m_rods[*rod]);
-        rodbackups[*rod].backupRod(*m_rods[*rod]);
-    }
+        m_rodbackups[*rod].backupRod(*m_rods[*rod]);
+
     // Backup all objects
-    std::vector<MinimalTriangleMeshBackup> objbackups(m_triangle_meshes.size());
     for (int i = 0; i < (int) m_triangle_meshes.size(); ++i)
-    {
-        objbackups[i].resize(*m_triangle_meshes[i]);
-        objbackups[i].backupMesh(*m_triangle_meshes[i]);
-    }
+        m_objbackups[i].backupMesh(*m_triangle_meshes[i]);
+
     // Backup the current simulation time
     double time = m_t;
 
@@ -496,14 +510,14 @@ bool BridsonStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
     {
         // std::cerr << "Restoring rod " << *rod << std::endl;
-        rodbackups[*rod].restoreRod(*m_rods[*rod]);
-        rodbackups[*rod].clear();
+        m_rodbackups[*rod].restoreRod(*m_rods[*rod]);
+ //       m_rodbackups[*rod].clear();
     }
     // Restore all objects
     for (int i = 0; i < (int) m_triangle_meshes.size(); ++i)
     {
-        objbackups[i].restoreMesh(*m_triangle_meshes[i]);
-        objbackups[i].clear();
+        m_objbackups[i].restoreMesh(*m_triangle_meshes[i]);
+//        m_objbackups[i].clear();
     }
     // Restore the time
     setTime(time);
@@ -617,8 +631,7 @@ bool BridsonStepper::step(RodSelectionType& selected_rods)
             m_simulationFailed = true;
         }
     }
-    if (!dependable_solve)
-        std::cerr << "Dynamic step is not entirely dependable!" << std::endl;
+    std::cerr << "Dynamic step is " << (dependable_solve ? "" : "not ") << "entirely dependable!" << std::endl;
 
     /*
      // Launch num_threads threads which will execute all elements of m_steppers.
@@ -671,6 +684,7 @@ bool BridsonStepper::step(RodSelectionType& selected_rods)
 
     //if( m_pnlty_enbld ) executePenaltyResponse();
     START_TIMER("BridsonStepperResponse");
+    std::cerr << "Starting collision response" << std::endl;
     bool all_collisions_succeeded = true;
     std::vector<bool> failed_collisions_rods(m_number_of_rods);
     if (m_itrv_inlstc_enbld && m_num_inlstc_itrns > 0) // && dependable_solve)
@@ -682,6 +696,7 @@ bool BridsonStepper::step(RodSelectionType& selected_rods)
             all_collisions_succeeded = false;
         }
     }
+    std::cerr << "Finished collision response" << std::endl;
     STOP_TIMER("BridsonStepperResponse");
 
     // Store the response part for visualization
@@ -1197,7 +1212,8 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>&
             for (int i = 0; i < m_number_of_rods; i++)
                 if (failed_collisions_rods[i])
                 {
-                    std::cerr << "Rod number " << i << " will be disabled because of repeated collisions" << std::endl;
+                    std::cerr << "Rod number " << i << " will be disabled for this time step because of repeated collisions"
+                            << std::endl;
                     m_disabled_rods.insert(i);
                 }
         }

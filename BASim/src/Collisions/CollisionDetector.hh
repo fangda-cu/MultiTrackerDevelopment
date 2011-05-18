@@ -48,10 +48,12 @@ public:
 
     void updateContinuousTimeCollisions();
 
-    void skipRodRodCollisions(bool skipRodRodCollisions)
+    void setSkipRodRodCollisions(bool skipRodRodCollisions)
     {
         m_skip_rod_rod = skipRodRodCollisions;
     }
+
+    void buildBVH();
 
     friend class BVHParallelizer;
 
