@@ -5,6 +5,8 @@
  * \date 02/16/2010
  */
 
+#define KEEP_ONLY_SOME_RODS
+
 #include <typeinfo>
 #include "BridsonStepper.hh"
 #include "../../Threads/MultithreadedStepper.hh"
@@ -69,6 +71,24 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start, m_implicit_thickness,
                     m_vertex_face_penalty)
 {
+
+    // For debugging purposes
+#ifdef KEEP_ONLY_SOME_RODS
+    std::set<int> keep_only;
+    keep_only.insert(9);
+
+    int i = 0;
+    for (std::vector<ElasticRod*>::iterator rod = m_rods.begin(); rod != m_rods.end(); rod++)
+    {
+        if (keep_only.find(i) == keep_only.end())
+            m_rods.erase(rod--);
+        i++;
+    }
+
+    m_number_of_rods = m_rods.size();
+    std::cerr << "Number of rods remaining: " << m_number_of_rods << std::endl;
+#endif
+
 #ifdef DEBUG
     for( int i = 0; i < (int) m_number_of_rods; ++i ) assert( m_rods[i] != NULL );
     for( int i = 0; i < (int) m_triangle_meshes.size(); ++i ) assert( m_triangle_meshes[i] != NULL );
@@ -185,6 +205,7 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
     m_endForces = new VecXd*[m_number_of_rods];
     for (int i = 0; i < m_number_of_rods; i++)
         m_endForces[i] = new VecXd(m_rods[i]->ndof());
+
 }
 
 BridsonStepper::~BridsonStepper()
@@ -342,7 +363,7 @@ bool BridsonStepper::execute()
         for (std::set<int>::const_iterator rod = m_disabled_rods.begin(); rod != m_disabled_rods.end(); rod++)
             std::cerr << *rod << " ";
         std::cerr << std::endl;
-        std::cerr << "Baldness factor = " << m_disabled_rods.size()*1.0/m_number_of_rods <<  std::endl;
+        std::cerr << "Baldness factor = " << m_disabled_rods.size() * 1.0 / m_number_of_rods << std::endl;
     }
 
     Timer::getTimer("BridsonStepper::execute").start();
