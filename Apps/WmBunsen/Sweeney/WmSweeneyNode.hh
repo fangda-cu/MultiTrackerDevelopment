@@ -74,7 +74,6 @@ public:
     static MObject ia_collisionMeshes;
     
     // Sync attributes to force compute() when inputs change
-    static MObject ca_timeSync;
     static MObject ca_rodPropertiesSync;
     
     static MObject ia_strandVertices;
