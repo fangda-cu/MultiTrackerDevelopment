@@ -1,0 +1,13 @@
+global proc AEwmSweeneyNodeTemplate( string $nodeName )
+{
+    //AEswatchDisplay $nodeName;
+    editorTemplate -beginScrollLayout;
+
+    editorTemplate -beginLayout "Vertex Settings" -collapse 0;
+        editorTemplate -addControl "length";
+        editorTemplate -addControl "verticesPerRod";
+    editorTemplate -endLayout;
+    
+    editorTemplate -addExtraControls;
+    editorTemplate -endScrollLayout;
+}
