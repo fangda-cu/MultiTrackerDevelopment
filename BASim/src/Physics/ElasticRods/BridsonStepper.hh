@@ -129,6 +129,82 @@ private:
     std::map<int, LinearSystemSolver*> m_solver_map;
 };
 
+struct PerformanceTuningParameters
+{
+    PerformanceTuningParameters() :
+        m_adaptive_substepping(true), //
+                m_selective_adaptivity(true), //
+                m_max_number_of_substeps(3), //
+                m_inextensibility_threshold(3), //
+                m_enable_penalty_response(true), //
+                m_implicit_thickness(1.0), //
+                m_implicit_rigidity(200.0), //
+                m_maximum_number_of_solver_iterations(50), //
+                m_maximum_number_of_collisions_iterations(10), //
+                m_enable_explosion_detection(true), //
+                m_explosion_damping(100.0), //
+                m_explosion_threshold(100.0), //
+                m_disable_rods_on_first_collision_failure(false), //
+                m_disable_rods_on_unresolved_collision(false), //
+                m_disable_rods_on_unresolved_dynamics(false), //
+                m_disable_rods_on_unresolved_explosion(false) //
+    {
+    }
+
+    /**
+     * Substepping
+     */
+    // If we want adaptive substepping
+    bool m_adaptive_substepping;
+    // Whether the adaptivity should apply only to rods that need it
+    bool m_selective_adaptivity;
+    // Overall maximum number of times the original step will be halved by the adaptive substepping
+    int m_max_number_of_substeps;
+    // Number of times the original step has to be halved before the inextensibility filter is applied
+    int m_inextensibility_threshold;
+
+    /**
+     * Implicit rod/mesh penalty
+     */
+    // Whether we want to apply implicit penalty response for rod/mesh collisions
+    bool m_enable_penalty_response;
+    // Implicit thickness in rod/mesh implicit penalty response
+    double m_implicit_thickness;
+    // Penalty thickness in rod/mesh implicit penalty response
+    double m_implicit_rigidity;
+
+    /**
+     * Iterations
+     */
+    // Maximum number of iterations allowed in the solver
+    int m_maximum_number_of_solver_iterations;
+    // Maximum number of iterations allowed in collision response
+    int m_maximum_number_of_collisions_iterations;
+
+    /**
+     * Explosion detection
+     */
+    // Explosion detection
+    bool m_enable_explosion_detection;
+    // Damping parameter in explosion detection
+    double m_explosion_damping;
+    // Threshold in explosion detection
+    double m_explosion_threshold;
+
+    /**
+     * Rod disabling
+     */
+    // If a rod has a collision failure, it will be forever disabled
+    bool m_disable_rods_on_first_collision_failure;
+    // If a rod still has collision failure after maximum substepping, it will be disabled
+    bool m_disable_rods_on_unresolved_collision;
+    // If a rod still has non-convergent solver after maximum substepping, it will be disabled
+    bool m_disable_rods_on_unresolved_dynamics;
+    // If a rod still has explosions after maximum substepping, it will be disabled
+    bool m_disable_rods_on_unresolved_explosion;
+
+};
+
 /**
  * Class to evolve a collection of rods forward in time, resolving collisions using
  * a "velocity filter" in the spirit of Bridson's 2002 paper "Robust Treatment of
@@ -151,7 +227,8 @@ public:
     // Parameter num_threads = -1 will cause the number of threads to be set equal to the number of available processors.
     BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
             std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
-            const double time = 0.0, int num_threads = -1);
+            const double time = 0.0, const int num_threads = -1,
+            const PerformanceTuningParameters perf_param = PerformanceTuningParameters());
 
     /**
      * Destructor.
@@ -492,8 +569,8 @@ private:
     bool m_simulationFailed;
     // Flag indicating whether we should freeze the simulation on first failure.
     bool m_stopOnRodError;
-    // Set of rods that will no longer be collided
-    std::set<int> m_disabled_rods;
+    // Set of rods that will no longer be collided during a time step
+    std::set<int> m_collision_disabled_rods;
     bool m_disable_rods_on_first_collision_failure;
 
     // Backup structures
@@ -503,6 +580,9 @@ private:
     std::vector<MinimalRodStateBackup> m_rodbackups;
     std::vector<MinimalTriangleMeshBackup> m_objbackups;
 
+    RodSelectionType m_simulated_rods;
+
+    const PerformanceTuningParameters m_perf_param;
 };
 
 } // namespace BASim
