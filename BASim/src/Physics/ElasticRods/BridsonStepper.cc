@@ -77,14 +77,23 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
     std::set<int> keep_only;
     keep_only.insert(9);
 
-    int i = 0;
-    for (std::vector<ElasticRod*>::iterator rod = m_rods.begin(); rod != m_rods.end(); rod++)
+    std::vector<ElasticRod*>::iterator rod = m_rods.begin();
+    std::vector<RodTimeStepper*>::iterator stepper = m_steppers.begin();
+    for (int i = 0; i < m_number_of_rods; i++)
     {
         if (keep_only.find(i) == keep_only.end())
-            m_rods.erase(rod--);
-        i++;
+        {
+            for (int j = 0; j < (*rod)->nv(); j++)
+                (*rod)->setVertex(j, 0 * ((*rod)->getVertex(j)));
+            m_rods.erase(rod);
+            m_steppers.erase(stepper);
+        }
+        else
+        {
+            rod++;
+            stepper++;
+        }
     }
-
     m_number_of_rods = m_rods.size();
     std::cerr << "Number of rods remaining: " << m_number_of_rods << std::endl;
 #endif
