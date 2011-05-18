@@ -83,7 +83,9 @@ public:
     static MObject ia_drawCollisionData;
     
     // Recieve a pointer to Beaker so that we can update beaker with the details for this mesh
-    void initialise( Beaker* i_beaker, const unsigned int i_collisionMeshIndex );
+    void initialise( Beaker* i_beaker, const unsigned int i_collisionMeshIndex,
+                     TriangleMesh** o_currentMesh = NULL,  
+                     WmFigMeshController** o_meshController = NULL );
 
     //CollisionMeshData* collisionMeshData() { return m_collisionMeshData; }
         			

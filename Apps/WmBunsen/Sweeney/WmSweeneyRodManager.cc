@@ -94,6 +94,13 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
     return true;
 }
 
+void WmSweeneyRodManager::addCollisionMesh( BASim::TriangleMesh* i_triangleMesh,
+                                            WmFigMeshController* i_scriptingController )
+{
+    m_triangleMeshes.push_back( i_triangleMesh );
+    m_scriptingControllers.push_back( i_scriptingController );
+}
+
 void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const double i_startTime )
 {
     // FIXME: pass in timestep from Maya

@@ -67,8 +67,12 @@ public:
     static MObject ia_length;
     static MObject ia_edgeLength;
     
-    // 
-    static MObject ca_sync;
+    // Collision meshes
+    static MObject ia_collisionMeshes;
+    
+    // Sync attributes to force compute() when inputs change
+    static MObject ca_timeSync;
+    static MObject ca_rodPropertiesSync;
     
     static MObject ia_strandVertices;
     static MObject ia_verticesPerStrand;
@@ -82,7 +86,9 @@ public:
                        const MVector& i_rootPosition );
         
 private:
-    void initialiseRodFromBarberShopInput();
+    void initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock );
+    void initialiseCollisionMeshes( MDataBlock &i_data );
+    void updateCollisionMeshes( MDataBlock& i_dataBlock );
     
     double m_currentTime;
     double m_previousTime;
