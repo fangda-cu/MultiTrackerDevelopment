@@ -424,9 +424,22 @@ void* WmSweeneyNode::creator()
 	status = attributeAffects( ia_edgeLength, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_edgeLength->ca_rodPropertiesSync" ); return status; }
 
-    addNumericAttribute( ia_rodRadius, "rodRadius", "ror", MFnNumericData::kDouble, 0.0, true );
-	status = attributeAffects( ia_rodRadius, ca_rodPropertiesSync );
-	if ( !status ) { status.perror( "attributeAffects ia_rodRadius->ca_rodPropertiesSync" ); return status; }
+    //addNumericAttribute( ia_rodRadius, "rodRadius", "ror", MFnNumericData::kDouble, 0.0, true );
+    {
+        MFnNumericAttribute numericAttr;
+        ia_rodRadius = numericAttr.create( "rodRadius", "ror", MFnNumericData::kDouble, 0.0, &status );
+        CHECK_MSTATUS( status );
+        CHECK_MSTATUS( numericAttr.setReadable( false ) );
+        CHECK_MSTATUS( numericAttr.setWritable( true ) );
+        CHECK_MSTATUS( numericAttr.setStorable( false ) );
+        CHECK_MSTATUS( numericAttr.setMin( -1.5 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 1.5 ) );
+        status = addAttribute( ia_rodRadius );
+        CHECK_MSTATUS( status );
+        
+        status = attributeAffects( ia_rodRadius, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_rodRadius->ca_rodPropertiesSync" ); return status; }
+    }
     
     addNumericAttribute( ia_rodPitch, "rodPitch", "rop", MFnNumericData::kDouble, 0.5, true );
 	status = attributeAffects( ia_rodPitch, ca_rodPropertiesSync );
