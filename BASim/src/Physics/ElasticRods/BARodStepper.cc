@@ -56,7 +56,6 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start,
                     m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness)
 {
-
     // For debugging purposes
 #ifdef KEEP_ONLY_SOME_RODS
     std::set<int> keep_only;
@@ -206,16 +205,12 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     m_rodbackups.resize(m_number_of_rods);
     int i = 0;
     for (std::vector<ElasticRod*>::const_iterator rod = m_rods.begin(); rod != m_rods.end(); rod++)
-    {
         m_rodbackups[i++].resize(**rod);
-    }
 
     m_objbackups.resize(m_triangle_meshes.size());
     i = 0;
     for (std::vector<TriangleMesh*>::const_iterator mesh = m_triangle_meshes.begin(); mesh != m_triangle_meshes.end(); mesh++)
-    {
         m_objbackups[i++].resize(**mesh);
-    }
 
     // Initially all rods passed from Maya will be simulated
     for (int i = 0; i < m_number_of_rods; i++)
@@ -464,38 +459,20 @@ bool BARodStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
 
     // Attempt a full time step
     step(selected_rods);
+    if (m_simulationFailed && m_stopOnRodError)
+    {
+        std::cout << "t = " << m_t << ": simulation failed and is now stopped" << std::endl;
+        return true;
+    }
     if (selected_rods.empty())
     {
-        std::cout << "t = " << m_t << " selected_rods: adaptiveExecute has simulated (or killed) all rods" << std::endl;
+        std::cout << "t = " << m_t << ": adaptiveExecute has simulated (or killed) all rods" << std::endl;
         // Success!
         return true;
     }
 
-    std::cout << "t = " << m_t << " selected_rods: adaptiveExecute left " << selected_rods.size() << " rods for substepping"
+    std::cout << "t = " << m_t << ": adaptiveExecute left " << selected_rods.size() << " rods for substepping"
             << std::endl;
-
-    /*
-     if (m_level >= m_perf_param.m_max_number_of_substeps)
-     {
-     std::cout << "\033[31;1mWARNING\033[m: in BARodStepper::adaptiveExecute step still not dependable after substepping "
-     << m_perf_param.m_max_number_of_substeps << " times" << std::endl;
-
-
-     std::cerr << "Misbehaving rod" << (selected_rods.size() > 1 ? "s" : "") << " removed from simulation: ";
-     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-     {
-     std::cerr << *rod << " ";
-     for (int j = 0; j < m_rods[*rod]->nv(); j++)
-     m_rods[*rod]->setVertex(j, 0 * m_rods[*rod]->getVertex(j));
-     m_simulated_rods.erase(find(m_simulated_rods.begin(), m_simulated_rods.end(), *rod));
-     }
-     std::cerr << std::endl;
-
-
-     m_simulationFailed = true;
-     return true;
-     }
-     */
 
     // Otherwise do two half time steps
     // std::cout << "Adaptive stepping in Bridson stepper" << std::endl;
@@ -505,17 +482,12 @@ bool BARodStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
 
     // Restore all rods that remained selected after the step
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-    {
-        // std::cerr << "Restoring rod " << *rod << std::endl;
         m_rodbackups[*rod].restoreRod(*m_rods[*rod]);
-        //       m_rodbackups[*rod].clear();
-    }
+
     // Restore all objects
     for (int i = 0; i < (int) m_triangle_meshes.size(); ++i)
-    {
         m_objbackups[i].restoreMesh(*m_triangle_meshes[i]);
-        //        m_objbackups[i].clear();
-    }
+
     // Restore the time
     setTime(time);
 
@@ -630,12 +602,9 @@ bool BARodStepper::step(RodSelectionType& selected_rods)
 #endif
     for (int i = 0; i < selected_steppers.size(); i++)
     {
-        if (!selected_steppers[i]->execute())
-        {
-            dependable_solve = false;
-            m_simulationFailed = true;
-        }
+        dependable_solve = dependable_solve && selected_steppers[i]->execute();
     }
+
     std::cerr << "Dynamic step is " << (dependable_solve ? "" : "not ") << "entirely dependable!" << std::endl;
 
     /*
@@ -749,9 +718,9 @@ bool BARodStepper::step(RodSelectionType& selected_rods)
 
     //std::cout << "Post-timestep positions, again: " << m_xdebug << std::endl;
 
+    // Explosion detection
     if (m_perf_param.m_enable_explosion_detection)
         computeForces(m_endForces, selected_rods);
-
     bool explosions_detected = false;
     std::vector<bool> exploding_rods(m_number_of_rods);
     if (m_perf_param.m_enable_explosion_detection)
@@ -766,6 +735,15 @@ bool BARodStepper::step(RodSelectionType& selected_rods)
                 && (!failed_collisions_rods[*rod] || m_perf_param.m_in_case_of_collision_failure
                         == PerformanceTuningParameters::IgnoreRod))
             selected_rods.erase(rod--);
+        else if ((!m_steppers[*rod]->HasSolved() && m_perf_param.m_in_case_of_solver_failure
+                == PerformanceTuningParameters::HaltSimulation) || (exploding_rods[*rod]
+                && m_perf_param.m_in_case_of_explosion_failure == PerformanceTuningParameters::HaltSimulation)
+                || (failed_collisions_rods[*rod] && m_perf_param.m_in_case_of_collision_failure
+                        == PerformanceTuningParameters::HaltSimulation))
+        {
+            m_simulationFailed = true;
+            selected_rods.erase(rod--);
+        }
         else if ((!m_steppers[*rod]->HasSolved() && m_level >= m_perf_param.m_max_number_of_substeps_for_solver)
                 || (failed_collisions_rods[*rod] && m_level >= m_perf_param.m_max_number_of_substeps_for_collision)
                 || (exploding_rods[*rod] && m_level >= m_perf_param.m_max_number_of_substeps_for_explosion))
@@ -773,6 +751,7 @@ bool BARodStepper::step(RodSelectionType& selected_rods)
             killTheRod(*rod);
             selected_rods.erase(rod--);
         }
+        // Otherwise the rod has not been erased from selected_rods, so it will be substepped.
     }
 
     bool all_rods_are_ok = dependable_solve && all_collisions_succeeded && !explosions_detected;
