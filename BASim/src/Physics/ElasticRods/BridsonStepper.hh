@@ -193,7 +193,7 @@ struct PerformanceTuningParameters
         m_adaptive_substepping(true), //
                 m_selective_adaptivity(true), //
                 m_max_number_of_substeps(3), //
-                m_inextensibility_threshold(3), //
+                m_inextensibility_threshold(0), //
                 m_enable_penalty_response(true), //
                 m_implicit_thickness(1.0), //
                 m_implicit_stiffness(200.0), //

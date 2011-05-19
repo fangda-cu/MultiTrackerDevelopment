@@ -18,23 +18,29 @@ namespace BASim {
 AnisotropicRod::AnisotropicRod(int numVertices)
   : ElasticRod(numVertices)
 {
-  setRefFrameType(TimeParallel);
+  std::cout << "The use of AnisotropicRod is deprecated. use ElasticRod." << std::endl;
+
+  exit(1);
+  //  setRefFrameType(TimeParallel);
 }
 
 void AnisotropicRod::setup()
 {
-  ElasticRod::setup();
+  std::cout << "The use of AnisotropicRod is deprecated. use ElasticRod." << std::endl;
 
-  // Add elastic forces
-  addForce(new RodStretchingForce(*this));
-  addForce(new RodTwistingForceSym(*this));
-  if (refFrameType() == TimeParallel) addForce(new RodBendingForceSym(*this));
-  else addForce(new RodAnisoForce(*this));
+  exit(1);
+  // ElasticRod::setup();
 
-  // Add viscous forces
-  addForce(new RodStretchingForce(*this,true));
-  addForce(new RodBendingForceSym(*this,true));
-  addForce(new RodTwistingForceSym(*this,true));
+  // // Add elastic forces
+  // addForce(new RodStretchingForce(*this));
+  // addForce(new RodTwistingForceSym(*this));
+  // if (refFrameType() == TimeParallel) addForce(new RodBendingForceSym(*this));
+  // else addForce(new RodAnisoForce(*this));
+
+  // // Add viscous forces
+  // addForce(new RodStretchingForce(*this,true));
+  // addForce(new RodBendingForceSym(*this,true));
+  // addForce(new RodTwistingForceSym(*this,true));
 }
 
 } // namespace BASim
