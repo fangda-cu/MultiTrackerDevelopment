@@ -48,6 +48,22 @@ MObject WmBunsenNode::oa_simStepTaken;
 MObject WmBunsenNode::ia_stopOnRodError;
 
 // Performance Tuning
+  //GeneralParameters
+ MObject WmBunsenNode::ia_enablePenaltyResponse;
+ MObject WmBunsenNode::ia_implicitThickness;
+ MObject WmBunsenNode::ia_implicitStiffness;
+ MObject WmBunsenNode::ia_inextensibilityThreshold;
+
+  //Failuredetection
+ MObject WmBunsenNode::ia_maxNumOfSolverIters;
+ MObject WmBunsenNode::ia_maxNumOfCollisionIters;
+ MObject WmBunsenNode::ia_enableExplosionDetection;
+ MObject WmBunsenNode::ia_explosionDampening;
+ MObject WmBunsenNode::ia_explosionThreshold;
+
+
+/*
+// Performance Tuning
   //substepping
  MObject  WmBunsenNode::ia_maxNumOfSubsteps;
  MObject  WmBunsenNode::ia_inextensibilityThreshold;
@@ -59,6 +75,12 @@ MObject WmBunsenNode::ia_stopOnRodError;
  MObject  WmBunsenNode::ia_enableExplosionDetection;
  MObject  WmBunsenNode::ia_explosionDampening;
  MObject  WmBunsenNode::ia_explosionThreshold;
+ //RodDisabling
+ MObject WmBunsenNode::ia_firstCollisionFailure;
+ MObject WmBunsenNode::ia_unresolvedExplosion;
+ MObject WmBunsenNode::ia_unresolvedCollision;
+ MObject WmBunsenNode::ia_unresolvedDynamics;
+*/
 
 // Volumetric Collisions
 /* static */ MObject WmBunsenNode::ia_volumetricCollisions;
@@ -152,7 +174,7 @@ void WmBunsenNode::addRodsToWorld( MDataBlock& i_dataBlock, double startTime )
                 // rods and add them to the world.
                 int numberOfThreads = i_dataBlock.inputValue( ia_numberOfThreads, &stat ).asInt();
                 CHECK_MSTATUS( stat );
-                m_beaker->addRodsToWorld( r, wmFigRodNode->rodGroup(), startTime, numberOfThreads );
+                m_beaker->addRodsToWorld( r, wmFigRodNode->rodGroup(), startTime, numberOfThreads);
             }
             else
                 CHECK_MSTATUS( stat );
@@ -1233,36 +1255,8 @@ MStatus WmBunsenNode::initialize()
          stat = addAttribute( ia_stopOnRodError );
          if (!stat) { stat.perror( "addAttribute ia_stopOnRodError" ); return stat; }
     }
-    //Substepping
-    {
-        MFnNumericAttribute nAttr;
-        ia_maxNumOfSubsteps = nAttr.create( "maxNumOfSubsteps", "mns", MFnNumericData::kInt, 3, &stat );
-        if (!stat) {
-            stat.perror("create ia_maxNumOfSubsteps attribute");
-            return stat;
-        }
-        nAttr.setWritable( true );
-        nAttr.setReadable( false );
-        nAttr.setConnectable( true );
-        stat = addAttribute( ia_maxNumOfSubsteps );
-        if ( !stat ) { stat.perror( "addAttribute ia_maxNumOfSubsteps" ); return stat; }
-    }
 
-    {
-        MFnNumericAttribute nAttr;
-        ia_inextensibilityThreshold = nAttr.create( "inextensibilityThreshold", "ixf", MFnNumericData::kDouble, 1.0/240.0, &stat );
-        if (!stat) {
-            stat.perror("create ia_inextensibilityThreshold attribute");
-            return stat;
-        }
-        nAttr.setWritable( true );
-        nAttr.setReadable( false );
-        nAttr.setConnectable( true );
-        stat = addAttribute( ia_inextensibilityThreshold );
-        if ( !stat ) { stat.perror( "addAttribute ia_inextensibilityThreshold" ); return stat; }
-    }
-
-    //Penalty Collision Response
+    //General parameters
     {
         MFnNumericAttribute nAttr;
         ia_enablePenaltyResponse = nAttr.create( "enablePenaltyResponse", "epr", MFnNumericData::kBoolean, false, &stat );
@@ -1293,18 +1287,59 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnNumericAttribute nAttr;
-        ia_implicitRigidity = nAttr.create( "implicitRigidity", "rig", MFnNumericData::kDouble, 200.0, &stat);
+        ia_implicitStiffness = nAttr.create( "implicitStiffness", "rig", MFnNumericData::kDouble, 200.0, &stat);
         if (!stat) {
-            stat.perror("create ia_implicitRigidity attribute");
+            stat.perror("create ia_implicitStiffness attribute");
             return stat;
         }
         nAttr.setWritable( true );
         nAttr.setReadable( false );
         nAttr.setConnectable( true );
-        stat = addAttribute( ia_implicitRigidity );
-        if (!stat) { stat.perror( "addAttribute ia_implicitRigidity" ); return stat; }
+        stat = addAttribute( ia_implicitStiffness );
+        if (!stat) { stat.perror( "addAttribute ia_implicitStiffness" ); return stat; }
     }
-    //Explosion Detection
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_inextensibilityThreshold = nAttr.create( "inextensibilityThreshold", "ixf", MFnNumericData::kInt, 3, &stat );
+        if (!stat) {
+            stat.perror("create ia_inextensibilityThreshold attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_inextensibilityThreshold );
+        if ( !stat ) { stat.perror( "addAttribute ia_inextensibilityThreshold" ); return stat; }
+    }
+
+    //Failure  Detection
+    {
+        MFnNumericAttribute nAttr;
+        ia_maxNumOfSolverIters= nAttr.create( "maxNumOfSolverIters", "mnsi", MFnNumericData::kInt, 50, &stat );
+        if (!stat) {
+            stat.perror("create ia_maxNumOfSolverIters");
+            return stat;
+        }
+         nAttr.setWritable( true );
+         nAttr.setReadable( false );
+         nAttr.setConnectable( true );
+         stat = addAttribute( ia_maxNumOfSolverIters );
+         if (!stat) { stat.perror( "addAttribute ia_maxNumOfSolverIters" ); return stat; }
+    }
+    {
+        MFnNumericAttribute nAttr;
+        ia_maxNumOfCollisionIters= nAttr.create( "maxNumOfCollisionIters", "mnci", MFnNumericData::kInt, 10, &stat );
+        if (!stat) {
+            stat.perror("create ia_maxNumOfCollisionIters");
+            return stat;
+        }
+         nAttr.setWritable( true );
+         nAttr.setReadable( false );
+         nAttr.setConnectable( true );
+         stat = addAttribute( ia_maxNumOfCollisionIters );
+         if (!stat) { stat.perror( "addAttribute ia_maxNumOfCollisionIters" ); return stat; }
+    }
 
     {
         MFnNumericAttribute nAttr;
@@ -1347,6 +1382,61 @@ MStatus WmBunsenNode::initialize()
         stat = addAttribute( ia_explosionThreshold );
         if (!stat) { stat.perror( "addAttribute ia_explosionThreshold" ); return stat; }
     }
+/*
+    //Rod Disabling
+    {
+        MFnNumericAttribute nAttr;
+        ia_firstCollisionFailure= nAttr.create( "firstCollisionFailure", "dfcf", MFnNumericData::kBoolean, false, &stat );
+        if (!stat) {
+            stat.perror("create ia_firstCollisionFailure");
+            return stat;
+        }
+         nAttr.setWritable( true );
+         nAttr.setReadable( false );
+         nAttr.setConnectable( true );
+         stat = addAttribute( ia_firstCollisionFailure );
+         if (!stat) { stat.perror( "addAttribute ia_firstCollisionFailure" ); return stat; }
+    }
+    {
+        MFnNumericAttribute nAttr;
+        ia_unresolvedExplosion= nAttr.create( "unresolvedExplosion", "dure", MFnNumericData::kBoolean, false, &stat );
+        if (!stat) {
+            stat.perror("create ia_unresolvedExplosion");
+            return stat;
+        }
+         nAttr.setWritable( true );
+         nAttr.setReadable( false );
+         nAttr.setConnectable( true );
+         stat = addAttribute( ia_unresolvedExplosion );
+         if (!stat) { stat.perror( "addAttribute ia_unresolvedExplosion" ); return stat; }
+    }
+    {
+        MFnNumericAttribute nAttr;
+        ia_unresolvedCollision= nAttr.create( "unresolvedCollision", "durc", MFnNumericData::kBoolean, false, &stat );
+        if (!stat) {
+            stat.perror("create ia_unresolvedCollision");
+            return stat;
+        }
+         nAttr.setWritable( true );
+         nAttr.setReadable( false );
+         nAttr.setConnectable( true );
+         stat = addAttribute( ia_unresolvedCollision );
+         if (!stat) { stat.perror( "addAttribute ia_unresolvedCollision" ); return stat; }
+    }
+    {
+        MFnNumericAttribute nAttr;
+        ia_unresolvedDynamics= nAttr.create( "unresolvedDynamics", "durd", MFnNumericData::kBoolean, false, &stat );
+        if (!stat) {
+            stat.perror("create ia_unresolvedDynamics");
+            return stat;
+        }
+         nAttr.setWritable( true );
+         nAttr.setReadable( false );
+         nAttr.setConnectable( true );
+         stat = addAttribute( ia_unresolvedDynamics );
+         if (!stat) { stat.perror( "addAttribute ia_unresolvedDynamics" ); return stat; }
+    }
+*/
 
     {
         MFnNumericAttribute nAttr;
@@ -1424,7 +1514,45 @@ MStatus WmBunsenNode::initialize()
     stat = attributeAffects( ia_timingEnabled, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_stopOnRodError->ca_syncAttrs" ); return stat; }
 
+    // Performance Tuning
 
+      //General
+    stat = attributeAffects( ia_enablePenaltyResponse, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_enablePenaltyResponse->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_implicitThickness, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_implicitThickness->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_implicitStiffness, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_implicitStiffness->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_inextensibilityThreshold, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_inextensibilityThreshold->ca_syncAttrs" ); return stat; }
+
+        //Failure Detection
+    stat = attributeAffects( ia_maxNumOfSolverIters, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_maxNumOfSolverIters->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_maxNumOfCollisionIters, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_maxNumOfCollisionIters->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_enableExplosionDetection, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_enableExplosionDetection->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_explosionDampening, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_explosionDampening->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_explosionThreshold, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_explosionThreshold->ca_syncAttrs" ); return stat; }
+
+    /*
+      //substepping
+    stat = attributeAffects( ia_maxNumOfSubsteps, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_maxNumOfSubsteps->ca_syncAttrs" ); return stat; }
+
+      //Rod Disabling
+    stat = attributeAffects( ia_firstCollisionFailure, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_firstCollisionFailure->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_unresolvedExplosion, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_unresolvedExplosion->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_unresolvedCollision, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_unresolvedCollision->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_unresolvedDynamics, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_unresolvedDynamics->ca_syncAttrs" ); return stat; }
+*/
     //Tolerances
     if (!stat) { stat.perror( "attributeAffects ia_stol->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_stol, ca_syncAttrs );

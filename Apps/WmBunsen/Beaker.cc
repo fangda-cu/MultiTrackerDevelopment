@@ -290,6 +290,7 @@ double Beaker::stopTimer(timeval& i_startTimer)
 
 void Beaker::addRodsToWorld(int i_rodGroupIndex, WmFigRodGroup* i_rodGroup, double startTime, int numberOfThreads)
 {
+    std::cout<<"max numer of time steps"<< std::endl;
     m_rodDataMap[i_rodGroupIndex] = i_rodGroup;
 
     int numRods = m_rodDataMap[i_rodGroupIndex]->numberOfRods();

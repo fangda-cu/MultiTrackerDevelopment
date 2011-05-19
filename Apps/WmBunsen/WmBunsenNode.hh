@@ -112,17 +112,27 @@ public:
     static MObject ia_stopOnRodError;
 
     // Performance Tuning
-      //substepping
-     static MObject ia_maxNumOfSubsteps;
-     static MObject ia_inextensibilityThreshold;
-      //Penalty Collision Response
+      //GeneralParameters
      static MObject ia_enablePenaltyResponse;
      static MObject ia_implicitThickness;
-     static MObject ia_implicitRigidity;
-      //Explosion Detection
+     static MObject ia_implicitStiffness;
+     static MObject ia_inextensibilityThreshold;
+
+      //Failuredetection
+     static MObject ia_maxNumOfSolverIters;
+     static MObject ia_maxNumOfCollisionIters;
      static MObject ia_enableExplosionDetection;
      static MObject ia_explosionDampening;
      static MObject ia_explosionThreshold;
+
+
+
+     //RodDisabling
+    //static MObject ia_firstCollisionFailure;
+    //static MObject ia_unresolvedExplosion;
+    //static MObject ia_unresolvedCollision;
+    //static MObject ia_unresolvedDynamics;
+    //static MObject ia_maxNumOfSubsteps;
 
     // Drawing
     static MObject ia_drawSubSteppedVertices;
