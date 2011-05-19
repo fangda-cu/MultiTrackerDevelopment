@@ -43,13 +43,13 @@ class GeometricData
     const std::vector<double>& m_masses;
     const std::vector<bool>& m_collision_immune;
     int& m_obj_start;
-    double& m_implicit_thickness;
-    double& m_vertex_face_penalty;
+    const double& m_implicit_thickness;
+    const double& m_vertex_face_penalty;
 
 public:
     GeometricData(const VecXd& points, const VecXd& velocities, const std::vector<double>& radii,
-            const std::vector<double>& masses, std::vector<bool>& collision_immune, int& obj_start, double& implicit_thickness,
-            double& vertex_face_penalty) :
+            const std::vector<double>& masses, std::vector<bool>& collision_immune, int& obj_start, const double& implicit_thickness,
+            const double& vertex_face_penalty) :
         m_points(points), m_velocities(velocities), m_radii(radii), m_masses(masses), m_collision_immune(collision_immune),
                 m_obj_start(obj_start), m_implicit_thickness(implicit_thickness), m_vertex_face_penalty(vertex_face_penalty)
     {
