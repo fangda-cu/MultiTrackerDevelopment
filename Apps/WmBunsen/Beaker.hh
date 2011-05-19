@@ -283,7 +283,7 @@ public:
     void initialiseWorld(const double i_time, const double i_dt);
     void resetEverything(const double i_time, const double i_dt);
     //void createSpaceForRods( int i_rodGroup, int i_numRods );
-    void addRodsToWorld(int i_rodGroupIndex, WmFigRodGroup* i_rodGroup, double startTime, int numberOfThreads);
+    void addRodsToWorld(int i_rodGroupIndex, WmFigRodGroup* i_rodGroup, double startTime, int numberOfThreads, const PerformanceTuningParameters perf_param);
     bool collisionMeshInitialised(const int i_collisionMeshIndex);
     void initialiseCollisionMesh(TriangleMesh* i_collisionMesh, ScriptingController* i_scriptingController,
             const int i_collisionMeshIndex);

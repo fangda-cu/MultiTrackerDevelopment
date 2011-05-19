@@ -125,14 +125,14 @@ public:
      static MObject ia_explosionDampening;
      static MObject ia_explosionThreshold;
 
+     //FailureResponse
+     static MObject ia_solverFailure;
+     static MObject ia_collisionFailure;
+     static MObject ia_explosionFailure;
+     static MObject ia_maxNumSolverSubsteps;
+     static MObject ia_maxNumCollisionSubsteps;
+     static MObject ia_maxNumExplosionSubsteps;
 
-
-     //RodDisabling
-    //static MObject ia_firstCollisionFailure;
-    //static MObject ia_unresolvedExplosion;
-    //static MObject ia_unresolvedCollision;
-    //static MObject ia_unresolvedDynamics;
-    //static MObject ia_maxNumOfSubsteps;
 
     // Drawing
     static MObject ia_drawSubSteppedVertices;

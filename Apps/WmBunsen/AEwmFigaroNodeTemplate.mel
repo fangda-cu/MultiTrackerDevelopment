@@ -100,6 +100,23 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
      editorTemplate -endLayout;
   editorTemplate -endLayout;
 
+ editorTemplate -beginLayout "Response to Failure" -collapse 0;
+     editorTemplate -beginLayout "From Solver Failure" -collapse 0;
+         editorTemplate -addControl "solverFailure";
+         editorTemplate -addControl "maxNumSolverSubsteps";
+     editorTemplate -endLayout;
+     editorTemplate -beginLayout "From Collision Failure" -collapse 0;
+         editorTemplate -addControl "collisionFailure";
+         editorTemplate -addControl "maxNumCollisionSubsteps";
+     editorTemplate -endLayout;
+     editorTemplate -beginLayout "From Explosion Failure" -collapse 0;
+         editorTemplate -addControl "explosionFailure";
+         editorTemplate -addControl "maxNumExplosionSubsteps";
+     editorTemplate -endLayout;
+
+
+ editorTemplate -endLayout;
+
     editorTemplate -addExtraControls;
     editorTemplate -endScrollLayout;
 }

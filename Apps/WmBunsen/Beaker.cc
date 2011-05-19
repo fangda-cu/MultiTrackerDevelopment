@@ -288,9 +288,25 @@ double Beaker::stopTimer(timeval& i_startTimer)
  }
  }*/
 
-void Beaker::addRodsToWorld(int i_rodGroupIndex, WmFigRodGroup* i_rodGroup, double startTime, int numberOfThreads)
+void Beaker::addRodsToWorld(int i_rodGroupIndex, WmFigRodGroup* i_rodGroup, double startTime, int numberOfThreads, const PerformanceTuningParameters perf_param)
 {
-    std::cout<<"max numer of time steps"<< std::endl;
+    std::cout<<"Performance Tuning Parameters "<< std::endl;
+     std::cout<<"Penalty Response "<< perf_param.m_enable_penalty_response<<std::endl;
+     std::cout<<"Implicit Thickenss "<< perf_param.m_implicit_thickness<<std::endl;
+     std::cout<<"Implicit Stiffness "<< perf_param.m_implicit_stiffness<<std::endl;
+     std::cout<<"Inextensibility Threshold "<< perf_param.m_inextensibility_threshold<<std::endl;
+     std::cout<<"Max Num Solver Iterations "<< perf_param.m_maximum_number_of_solver_iterations<<std::endl;
+     std::cout<<"Max Num Collision Iterations  "<< perf_param.m_maximum_number_of_collisions_iterations<<std::endl;
+     std::cout<<"Explosion Detection  "<< perf_param.m_enable_explosion_detection<<std::endl;
+     std::cout<<"Explosion Dampening "<< perf_param.m_explosion_damping<<std::endl;
+     std::cout<<"Explosion Threshold "<< perf_param.m_explosion_threshold<<std::endl;
+      std::cout<<"Solver failure "<< perf_param.m_in_case_of_solver_failure<<std::endl;
+      std::cout<<"Max Number of Solver Substeps "<< perf_param.m_max_number_of_substeps_for_solver<<std::endl;
+      std::cout<<"Collison Failure  "<< perf_param.m_in_case_of_collision_failure<<std::endl;
+       std::cout<<"Max Number of Collision Substeps "<< perf_param.m_max_number_of_substeps_for_collision<<std::endl;
+       std::cout<<"Explosion  Failure  "<< perf_param.m_in_case_of_explosion_failure<<std::endl;
+        std::cout<<"Max Number of Explosion Substeps "<< perf_param.m_max_number_of_substeps_for_explosion<<std::endl;
+
     m_rodDataMap[i_rodGroupIndex] = i_rodGroup;
 
     int numRods = m_rodDataMap[i_rodGroupIndex]->numberOfRods();
