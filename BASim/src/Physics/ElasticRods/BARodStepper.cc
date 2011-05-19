@@ -83,6 +83,14 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     std::cerr << "Number of rods remaining: " << m_number_of_rods << std::endl;
 #endif
 
+    for (std::vector<RodTimeStepper*>::iterator stepper = m_steppers.begin();
+    	 stepper != m_steppers.end();
+     	 ++stepper) 
+    {
+       (*stepper)->setMaxIterations(perf_param.m_maximum_number_of_solver_iterations);
+    }
+
+
 #ifdef DEBUG
     for( int i = 0; i < (int) m_number_of_rods; ++i ) assert( m_rods[i] != NULL );
     for( int i = 0; i < (int) m_triangle_meshes.size(); ++i ) assert( m_triangle_meshes[i] != NULL );

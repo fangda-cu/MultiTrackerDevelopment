@@ -120,7 +120,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		        for (ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin(); 
 			     vh != m_rodManager->m_rods[i]->vertices_end(); ++vh)
 		        {
-			    assert(m_rods[i]->m_bendingForce != NULL);
+			    assert(m_rodManager->m_rods[i]->m_bendingForce != NULL);
 			    m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, Vec2d(rodRadius,0) );
 		        }
 		    }

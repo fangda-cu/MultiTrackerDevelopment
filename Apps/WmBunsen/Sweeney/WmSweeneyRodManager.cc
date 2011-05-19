@@ -112,17 +112,26 @@ void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const d
 {
     PerformanceTuningParameters perfParams;
 
-    perfParams.m_max_number_of_substeps_for_solver    = 7;
-    perfParams.m_max_number_of_substeps_for_collision = 1;
-    perfParams.m_max_number_of_substeps_for_explosion = 7;
-
-    perfParams.m_in_case_of_solver_failure    = PerformanceTuningParameters::SubstepRod;
-    perfParams.m_in_case_of_collision_failure = PerformanceTuningParameters::SubstepRod;
+    // substep on explosions
     perfParams.m_in_case_of_explosion_failure = PerformanceTuningParameters::SubstepRod;
+    perfParams.m_max_number_of_substeps_for_explosion = 7;
+    perfParams.m_explosion_threshold = .5;
 
+    // Ignore failed collisions
+    perfParams.m_in_case_of_collision_failure = PerformanceTuningParameters::SubstepRod;
+    perfParams.m_max_number_of_substeps_for_collision = 0;
+
+    // Ignore most solver errors
+    perfParams.m_maximum_number_of_solver_iterations = 5;
+    perfParams.m_in_case_of_solver_failure    = PerformanceTuningParameters::SubstepRod;
+    perfParams.m_max_number_of_substeps_for_solver   = 0;
+
+    // Always run inextensibility
     perfParams.m_inextensibility_threshold = 0;
+
+    // A very weak penalty force
     perfParams.m_implicit_thickness        = 0.1;
-    perfParams.m_implicit_stiffness        = 10.0;
+    perfParams.m_implicit_stiffness        = 1.0;
 
     m_bridsonStepper = new BARodStepper( m_rods, m_triangleMeshes, m_scriptingControllers, 
                                            m_rodTimeSteppers, i_timeStep, i_startTime, 1, perfParams );                                           
