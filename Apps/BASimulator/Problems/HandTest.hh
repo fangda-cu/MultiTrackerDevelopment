@@ -12,7 +12,7 @@
 #include "BASim/src/Core/TriangleMesh.hh"
 #include "BASim/src/IO/ObjParser.hh"
 
-#include "BASim/src/Physics/ElasticRods/BridsonStepper.hh"
+#include "BASim/src/Physics/ElasticRods/BARodStepper.hh"
 #include "BASim/src/Core/ScriptingController.hh"
 
 class HandController : public ScriptingController
@@ -63,7 +63,7 @@ private:
 //  std::vector<RodTimeStepper*> m_steppers;
   std::vector<TriangleMesh*> m_tri_objs;
   std::vector<RodTimeStepper*> m_controllers;
-  BridsonStepper* m_br_stepper;
+  BARodStepper* m_br_stepper;
   std::vector<ScriptingController*> m_scripting_controllers;
 
   TriangleMesh* hand_mesh;

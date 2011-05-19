@@ -91,7 +91,7 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
     // Arbitrarily scale the rod up so it can be seen
     rod->setRadiusScale( 10.0 );
     
-    // Store all the things we need to control the rod or add it to a BridsonStepper
+    // Store all the things we need to control the rod or add it to a BARodStepper
     m_rods.push_back( rod );
     m_rodTimeSteppers.push_back( stepper );
     m_rodRenderers.push_back( rodRenderer) ;
@@ -124,7 +124,7 @@ void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const d
     perfParams.m_implicit_thickness        = 0.1;
     perfParams.m_implicit_stiffness        = 10.0;
 
-    m_bridsonStepper = new BridsonStepper( m_rods, m_triangleMeshes, m_scriptingControllers, 
+    m_bridsonStepper = new BARodStepper( m_rods, m_triangleMeshes, m_scriptingControllers, 
                                            m_rodTimeSteppers, i_timeStep, i_startTime, 1, perfParams );                                           
 }
 

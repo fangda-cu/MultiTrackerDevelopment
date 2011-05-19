@@ -9,7 +9,7 @@
 //#define COLLISIONTEST_HH
 //
 //#include "ProblemBase.hh"
-//#include "BASim/src/Physics/ElasticRods/BridsonStepper.hh"
+//#include "BASim/src/Physics/ElasticRods/BARodStepper.hh"
 //#include "BASim/src/Physics/ElasticRods/RodForce.hh"
 //#include <vector>
 //#include "BASim/src/Physics/ElasticRods/RodStretchingForce.hh"
@@ -39,7 +39,7 @@
 //  /////////////////////////////////////////////////////////////////////////////
 //  // Tests of full collision system
 //  
-//  // Just tests if BridsonStepper can load triangle meshes.
+//  // Just tests if BARodStepper can load triangle meshes.
 //  void genTorusTest();
 //  // Test in which nothing happens, and nothing should happen.
 //  void genNullTest();
@@ -86,7 +86,7 @@
 //  std::vector<ElasticRod*> m_rods;
 //  std::vector<TriangleMesh*> m_tri_objs;
 //  std::vector<RodTimeStepper*> m_controllers;
-//  BridsonStepper* m_br_stepper;
+//  BARodStepper* m_br_stepper;
 //  
 //  std::vector<ScriptingController*> m_scripting_controllers;
 //};

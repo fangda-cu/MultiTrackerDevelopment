@@ -287,7 +287,7 @@ void CollisionTestWeta::RodObjectSnaggingSetup()
 
   m_scripting_controllers.push_back(new RodObjSnaggingController(*m_rods[0],getTime(),GetScalarOpt("dt"), pFile));
 
-  m_br_stepper = new BridsonStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
+  m_br_stepper = new BARodStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
   m_world->addController(m_br_stepper);
 
 
@@ -351,7 +351,7 @@ void CollisionTestWeta::RodObjectSnaggingMovingObjectSetup()
 
   m_scripting_controllers.push_back(new ObjTranslator(*tri_mesh,getTime(),GetScalarOpt("dt")));
   
-  m_br_stepper = new BridsonStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
+  m_br_stepper = new BARodStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
   m_world->addController(m_br_stepper);
   sleep(1);
 }
@@ -522,7 +522,7 @@ void CollisionTestWeta::MovingSphereSetup()
 
   m_scripting_controllers.push_back(new ObjTranslatorWeta(*m_rods[0],*tri_mesh,getTime(),GetScalarOpt("dt"), pFile));
 
-  m_br_stepper = new BridsonStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
+  m_br_stepper = new BARodStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
   m_world->addController(m_br_stepper);
 
 
@@ -588,7 +588,7 @@ void CollisionTestWeta::RodObjectSnaggingVertFaceSetup()
   
   m_scripting_controllers.push_back(new ObjTranslator(*tri_mesh,getTime(),GetScalarOpt("dt")));
   
-  m_br_stepper = new BridsonStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
+  m_br_stepper = new BARodStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
   m_world->addController(m_br_stepper);
 }
 
@@ -654,7 +654,7 @@ void CollisionTestWeta::RodObjectSnaggingVertFaceTwoSetup()
   
   m_scripting_controllers.push_back(new RodObjSnaggingController(*m_rods[0],getTime(),GetScalarOpt("dt"),pFile));
 
-  m_br_stepper = new BridsonStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
+  m_br_stepper = new BARodStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
   m_world->addController(m_br_stepper);
 }
 
@@ -751,7 +751,7 @@ void CollisionTestWeta::RodRodSnaggingSetup()
   
   m_scripting_controllers.push_back(new RodRodSnagController(*m_rods[0],getTime(),GetScalarOpt("dt")));
   
-  m_br_stepper = new BridsonStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
+  m_br_stepper = new BARodStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
   m_world->addController(m_br_stepper);
 }
 
@@ -839,7 +839,7 @@ void CollisionTestWeta::RodRodSnaggingTwoSetup()
 
   m_scripting_controllers.push_back(new RodRodSnagController(*m_rods[0],getTime(),GetScalarOpt("dt")));
 
-  m_br_stepper = new BridsonStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
+  m_br_stepper = new BARodStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
   m_world->addController(m_br_stepper);
 }
 
@@ -927,7 +927,7 @@ void CollisionTestWeta::RodRodSnaggingThreeSetup()
   
   m_scripting_controllers.push_back(new RodRodSnagController(*m_rods[0],getTime(),GetScalarOpt("dt")));
 
-  m_br_stepper = new BridsonStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
+  m_br_stepper = new BARodStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
   m_world->addController(m_br_stepper);
 }
 
@@ -1035,7 +1035,7 @@ void CollisionTestWeta::RodFixedRodSnaggingSetup()
   
   m_scripting_controllers.push_back(new RodFixedRodSnagScriptingController(*m_rods[0],getTime(),GetScalarOpt("dt")));
   
-  m_br_stepper = new BridsonStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
+  m_br_stepper = new BARodStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
   m_world->addController(m_br_stepper);
 }
 
@@ -1142,7 +1142,7 @@ void CollisionTestWeta::RodRodSnaggingSmallSetup()
   
   m_scripting_controllers.push_back(new RodFixedRodSnagScriptingController(*m_rods[0],getTime(),GetScalarOpt("dt")));
   
-  m_br_stepper = new BridsonStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
+  m_br_stepper = new BARodStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
   m_world->addController(m_br_stepper);
 }
 
@@ -1239,7 +1239,7 @@ void CollisionTestWeta::RodRodSnaggingDifferentSizeSetup()
   
   m_scripting_controllers.push_back(new RodFixedRodSnagScriptingController(*m_rods[0],getTime(),GetScalarOpt("dt")));
   
-  m_br_stepper = new BridsonStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
+  m_br_stepper = new BARodStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
   m_world->addController(m_br_stepper);
 }
 

@@ -1,12 +1,12 @@
 /**
- * \file BridsonStepper.hh
+ * \file BARodStepper.hh
  *
  * \author smith@cs.columbia.edu
  * \date 02/16/2010
  */
 
-#ifndef BRIDSONSTEPPER_HH
-#define BRIDSONSTEPPER_HH
+#ifndef BARODSTEPPER_HH
+#define BARODSTEPPER_HH
 
 #ifdef WETA
 #include "../../Core/ScriptingController.hh"
@@ -62,13 +62,13 @@ namespace BASim
  * a "velocity filter" in the spirit of Bridson's 2002 paper "Robust Treatment of
  * Collisions, Contact, and Friction for Cloth Animation."
  */
-class BridsonStepper: public ObjectControllerBase
+class BARodStepper: public ObjectControllerBase
 {
     typedef std::list<int> RodSelectionType;
 
 public:
     /**
-     * Creates a BridsonStepper with user-supplied options.
+     * Creates a BARodStepper with user-supplied options.
      *
      * \param[in] intgrtr Integrator (class RodTimeStepper) to use. Assumes implicit euler, for now.
      * \param[in] max_implct_itrtns If an implicit integrator is selected, the maximum iterations allowed.
@@ -77,7 +77,7 @@ public:
      * \param[in] grav Three dimensional vector that specifies gravity.
      */
     // Parameter num_threads = -1 will cause the number of threads to be set equal to the number of available processors.
-    BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
+    BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
             std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
             const double time = 0.0, const int num_threads = -1,
             const PerformanceTuningParameters perf_param = PerformanceTuningParameters());
@@ -85,7 +85,7 @@ public:
     /**
      * Destructor.
      */
-    virtual ~BridsonStepper();
+    virtual ~BARodStepper();
 
     /**
      * Evolves all inserted rods forward in time.
@@ -118,12 +118,12 @@ public:
     {
         if (!m_stopOnRodError && stopOnRodError)
         {
-            std::cerr << "BridsonStepper::m_stopOnError changed to \033[33mtrue\033[0m" << std::endl;
+            std::cerr << "BARodStepper::m_stopOnError changed to \033[33mtrue\033[0m" << std::endl;
             // If we change from non-stopping to stopping, reset m_simulationFailed so we take only future errors into account.
             m_simulationFailed = false;
         }
         if (m_stopOnRodError && !stopOnRodError)
-            std::cerr << "BridsonStepper::m_stopOnError changed to \033[33mfalse\033[0m" << std::endl;
+            std::cerr << "BARodStepper::m_stopOnError changed to \033[33mfalse\033[0m" << std::endl;
 
         m_stopOnRodError = stopOnRodError;
     }
@@ -158,7 +158,7 @@ private:
     }
 
     /**
-     * Adds a rod that will be evolved in time using this BridsonStepper.
+     * Adds a rod that will be evolved in time using this BARodStepper.
      */
     //void addRod( ElasticRod* rod );
 
@@ -328,13 +328,13 @@ private:
     // Total number of degrees of freedom in the system
     int m_num_dof;
 #ifdef KEEP_ONLY_SOME_RODS
-    // Vector of rods this BridsonStepper evolves in time
+    // Vector of rods this BARodStepper evolves in time
     std::vector<ElasticRod*>& m_rods;
     size_t m_number_of_rods; // set to m_rods.size()
     // Time steppers to evolve rods forward (ignoring collisions)
     std::vector<RodTimeStepper*>& m_steppers;
 #else
-    // Vector of rods this BridsonStepper evolves in time
+    // Vector of rods this BARodStepper evolves in time
     const std::vector<ElasticRod*>& m_rods;
     const size_t m_number_of_rods; // set to m_rods.size()
     // Time steppers to evolve rods forward (ignoring collisions)

@@ -10,7 +10,7 @@
 
 #include "ProblemBase.hh"
 #include "BASim/src/Physics/ElasticRods/RodRodSpringForce.hh"
-//#include "BASim/src/Physics/ElasticRods/BridsonStepper.hh"
+//#include "BASim/src/Physics/ElasticRods/BARodStepper.hh"
 //#include "BASim/src/Physics/ElasticRods/RodForce.hh"
 //#include <vector>
 //#include "BASim/src/Physics/ElasticRods/RodStretchingForce.hh"

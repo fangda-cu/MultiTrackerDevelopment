@@ -339,7 +339,7 @@ void Beaker::addRodsToWorld(int i_rodGroupIndex, WmFigRodGroup* i_rodGroup, doub
     // FIXME: pass in timestep from Maya, it's ok to do this for test as the real timestep
     // is set at the beginning of takeTimeStep() but it's really sloppy to not bother setting it 
     // right to start with!
-    m_bridsonStepper = new BridsonStepper(m_rods, m_triangleMeshes, m_scriptingControllers, m_rodTimeSteppers, 1.0 / 24.0,
+    m_bridsonStepper = new BARodStepper(m_rods, m_triangleMeshes, m_scriptingControllers, m_rodTimeSteppers, 1.0 / 24.0,
             startTime, numberOfThreads);
     m_world->addController(m_bridsonStepper);
 
@@ -440,7 +440,7 @@ bool Beaker::anyRodsActive()
 //            continue;
 //        }
 //
-//        // We don't need to do this any more as BridsonStepper takes care
+//        // We don't need to do this any more as BARodStepper takes care
 //        // of the setting the timestep in rodTimeStepper's as it basically
 //        // owns them
 //        /*

@@ -280,7 +280,7 @@ void CollisionDetector::appendContinuousTimeCollision(const YAEdge* edge_a, cons
     if (edgeXedge->analyseCollision(m_time_step))
     {
         m_collisions_mutex.Lock();
-        m_collisions->push_back(edgeXedge); // Will be deleted in BridsonStepper::executeIterativeInelasticImpulseResponse()
+        m_collisions->push_back(edgeXedge); // Will be deleted in BARodStepper::executeIterativeInelasticImpulseResponse()
         m_collisions_mutex.Unlock();
         // std::cout << "CollisionDetector: Found edge-edge collision" << std::endl;
     }
@@ -307,7 +307,7 @@ void CollisionDetector::appendContinuousTimeCollision(int v_index, const YATrian
     if (vertexXface->analyseCollision(m_time_step))
     {
         m_collisions_mutex.Lock();
-        m_collisions->push_back(vertexXface); // Will be deleted in BridsonStepper::executeIterativeInelasticImpulseResponse()
+        m_collisions->push_back(vertexXface); // Will be deleted in BARodStepper::executeIterativeInelasticImpulseResponse()
         m_collisions_mutex.Unlock();
         // std::cout << "CollisionDetector: Found vertex-face collision" << std::endl;
     }
@@ -359,7 +359,7 @@ void CollisionDetector::appendProximityCollision(const YAEdge* edge_a, const YAE
     if (edgeXedge->analyseCollision())
     {
         m_collisions_mutex.Lock();
-        m_collisions->push_back(edgeXedge); // Will be deleted in BridsonStepper::executeImplicitPenaltyResponse()
+        m_collisions->push_back(edgeXedge); // Will be deleted in BARodStepper::executeImplicitPenaltyResponse()
         m_collisions_mutex.Unlock();
         // std::cout << "CollisionDetector: Found edge-edge collision" << std::endl;
     }
@@ -397,7 +397,7 @@ void CollisionDetector::appendProximityCollision(int v_index, const YATriangle* 
     if (vertexXface->analyseCollision())
     {
         m_collisions_mutex.Lock();
-        m_collisions->push_back(vertexXface); // Will be deleted in BridsonStepper::executeImplicitPenaltyResponse()
+        m_collisions->push_back(vertexXface); // Will be deleted in BARodStepper::executeImplicitPenaltyResponse()
         m_collisions_mutex.Unlock();
         // std::cout << "CollisionDetector: Found vertex-face collision" << std::endl;
     }

@@ -256,7 +256,7 @@ Math/SymplecticEuler.hh \
 Math/TimeSteppingBase.hh \
 Math/Pardiso/PardisoLinearSolver.hh \
 Physics/DegreeOfFreedom.hh \
-Physics/ElasticRods/BridsonStepper.hh \
+Physics/ElasticRods/BARodStepper.hh \
 Physics/ElasticRods/ParallelStepper.hh \
 Physics/ElasticRods/AnisotropicRod.hh \
 Physics/ElasticRods/AnisotropicRodIncludes.hh \
@@ -363,8 +363,8 @@ src/Math/MKL/MKLLinearSolver.cc \
 src/Math/SolverUtils.cc \
 src/Math/Pardiso/PardisoLinearSolver.cc \
 src/Physics/ElasticRods/AnisotropicRod.cc \
-src/Physics/ElasticRods/BridsonStepper.cc \
-src/Physics/ElasticRods/BridsonStepper_Collision.cc \
+src/Physics/ElasticRods/BARodStepper.cc \
+src/Physics/ElasticRods/BARodStepper_Collision.cc \
 src/Physics/ElasticRods/ElasticRod.cc \
 src/Physics/ElasticRods/ParallelStepper.cc \
 src/Physics/ElasticRods/PerformanceTuningParameters.cc \

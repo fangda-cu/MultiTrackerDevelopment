@@ -11,7 +11,7 @@
 #include "ProblemBase.hh"
 
 #ifdef WETA
-#include <weta/Wfigaro/Physics/ElasticRods/BridsonStepper.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/BARodStepper.hh>
 #include <weta/Wfigaro/Math/SolverUtils.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/ParallelStepper.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/AdaptiveBinaryStepper.hh>
@@ -22,7 +22,7 @@
 #include <weta/Wfigaro/IO/ObjParser.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/TopologicalObjectSerializer.hh>
 #else
-#include "BASim/src/Physics/ElasticRods/BridsonStepper.hh"
+#include "BASim/src/Physics/ElasticRods/BARodStepper.hh"
 #include "BASim/src/Physics/ElasticRods/ParallelStepper.hh"
 #include "BASim/src/Physics/ElasticRods/AdaptiveBinaryStepper.hh"
 #include "BASim/src/Physics/ElasticRods/RodForce.hh"
@@ -99,7 +99,7 @@ private:
   std::vector<RodTimeStepper*> m_steppers;
 
   ParallelStepper* m_pr_stepper;
-  BridsonStepper* m_br_stepper;
+  BARodStepper* m_br_stepper;
   
   SphereRotatorW* m_rotator;
 };

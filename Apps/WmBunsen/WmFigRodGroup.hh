@@ -350,7 +350,7 @@ public:
         }
     }
     
-    void setBridsonStepperOnAllRodData( BridsonStepper* i_bridsonStepper )
+    void setBridsonStepperOnAllRodData( BARodStepper* i_bridsonStepper )
     {
         for ( size_t r = 0; r < m_rodData.size(); ++r )
         {

@@ -1,5 +1,5 @@
 /**
- * \file BridsonStepper.cc
+ * \file BARodStepper.cc
  *
  * \author smith@cs.columbia.edu
  * \date 02/16/2010
@@ -8,7 +8,7 @@
 //#define KEEP_ONLY_SOME_RODS
 
 #include <typeinfo>
-#include "BridsonStepper.hh"
+#include "BARodStepper.hh"
 #include "../../Threads/MultithreadedStepper.hh"
 #include "../../Core/Timer.hh"
 #include "../../Collisions/Collision.hh"
@@ -21,7 +21,7 @@
 namespace BASim
 {
 
-BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
+BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
         std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
         const double time, const int num_threads, const PerformanceTuningParameters perf_param) :
             m_num_dof(0),
@@ -185,7 +185,7 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
 #endif
 
 #ifdef TIMING_ON
-    IntStatTracker::getIntTracker("CONVERGENCE_FAILURES_PROPAGATED_TO_BRIDSONSTEPPER");
+    IntStatTracker::getIntTracker("CONVERGENCE_FAILURES_PROPAGATED_TO_BARodStepper");
 #endif
 
     /**
@@ -223,7 +223,7 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
 
 }
 
-BridsonStepper::~BridsonStepper()
+BARodStepper::~BARodStepper()
 {
     delete m_collision_detector;
 
@@ -239,7 +239,7 @@ BridsonStepper::~BridsonStepper()
 }
 
 // TODO: Check the indices here
-void BridsonStepper::prepareForExecution()
+void BARodStepper::prepareForExecution()
 {
     delete m_collision_detector;
     m_collision_detector = NULL;
@@ -370,7 +370,7 @@ void BridsonStepper::prepareForExecution()
 
 }
 
-bool BridsonStepper::execute()
+bool BARodStepper::execute()
 {
     std::cerr << "Executing time step " << m_t << std::endl;
 
@@ -386,11 +386,11 @@ bool BridsonStepper::execute()
     }
     m_collision_disabled_rods.clear();
 
-    Timer::getTimer("BridsonStepper::execute").start();
+    Timer::getTimer("BARodStepper::execute").start();
     bool do_adaptive = true;
     bool result;
 
-    // std::cout << "BridsonStepper::execute: listing scripted vertices... " << std::endl;
+    // std::cout << "BARodStepper::execute: listing scripted vertices... " << std::endl;
     int k = 0;
     for (int i = 0; i < m_number_of_rods; ++i)
     {
@@ -399,7 +399,7 @@ bool BridsonStepper::execute()
         {
             if (m_rods[i]->getBoundaryCondition()->isVertexScripted((*itr).idx()))
             {
-                //       std::cout << "BridsonStepper::execute: rod " << i << " vertex " << (*itr).idx() << " prescribed."
+                //       std::cout << "BARodStepper::execute: rod " << i << " vertex " << (*itr).idx() << " prescribed."
                 //               << std::endl;
                 m_masses[k++] = std::numeric_limits<double>::infinity();
             }
@@ -423,7 +423,7 @@ bool BridsonStepper::execute()
     else
         result = nonAdaptiveExecute(m_dt, selected_rods);
 
-    Timer::getTimer("BridsonStepper::execute").stop();
+    Timer::getTimer("BARodStepper::execute").stop();
     // Timer::report();
 
     std::cerr << std::endl;
@@ -431,7 +431,7 @@ bool BridsonStepper::execute()
     return result;
 }
 
-bool BridsonStepper::nonAdaptiveExecute(double dt, RodSelectionType& selected_rods)
+bool BARodStepper::nonAdaptiveExecute(double dt, RodSelectionType& selected_rods)
 {
     setDt(dt);
     setTime(m_t + dt);
@@ -440,9 +440,9 @@ bool BridsonStepper::nonAdaptiveExecute(double dt, RodSelectionType& selected_ro
     return step(selected_rods);
 }
 
-bool BridsonStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
+bool BARodStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
 {
-    std::cout << "BridsonStepper::adaptiveExecute starting at level " << m_level << " with m_t = " << m_t << " and dt = " << dt
+    std::cout << "BARodStepper::adaptiveExecute starting at level " << m_level << " with m_t = " << m_t << " and dt = " << dt
             << std::endl;
 
     // Backup all selected rods
@@ -477,7 +477,7 @@ bool BridsonStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
     /*
      if (m_level >= m_perf_param.m_max_number_of_substeps)
      {
-     std::cout << "\033[31;1mWARNING\033[m: in BridsonStepper::adaptiveExecute step still not dependable after substepping "
+     std::cout << "\033[31;1mWARNING\033[m: in BARodStepper::adaptiveExecute step still not dependable after substepping "
      << m_perf_param.m_max_number_of_substeps << " times" << std::endl;
 
 
@@ -559,12 +559,12 @@ bool BridsonStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
     return first_success && second_success;
 }
 
-bool BridsonStepper::step(RodSelectionType& selected_rods)
+bool BARodStepper::step(RodSelectionType& selected_rods)
 {
     if (m_simulationFailed && m_stopOnRodError)
         return true;
 
-    std::cout << "t = " << m_t << ": BridsonStepper::step() begins with " << selected_rods.size() << " rods" << std::endl;
+    std::cout << "t = " << m_t << ": BARodStepper::step() begins with " << selected_rods.size() << " rods" << std::endl;
 
     assert(m_edges.size() == m_edge_radii.size());
     assert((int) m_masses.size() == m_xn.size() / 3);
@@ -606,7 +606,7 @@ bool BridsonStepper::step(RodSelectionType& selected_rods)
     computeImmunity(selected_rods);
 
     // Step rods forward ignoring collisions
-    START_TIMER("BridsonStepperDynamics");
+    START_TIMER("BARodStepperDynamics");
 
     // Step scripted objects forward, set boundary conditions
     for (std::vector<ScriptingController*>::const_iterator scripting_controller = m_scripting_controllers.begin(); scripting_controller
@@ -653,7 +653,7 @@ bool BridsonStepper::step(RodSelectionType& selected_rods)
     for (std::list<Collision*>::iterator i = penalty_collisions.begin(); i != penalty_collisions.end(); i++)
         delete *i;
 
-    STOP_TIMER("BridsonStepperDynamics");
+    STOP_TIMER("BARodStepperDynamics");
 
     // If we do rod-rod collisions (meaning no selective adaptivity) and global dependability failed, we might as well stop here.
     if (!m_perf_param.m_skipRodRodCollisions && !dependable_solve)
@@ -683,7 +683,7 @@ bool BridsonStepper::step(RodSelectionType& selected_rods)
         }
 
     //if( m_pnlty_enbld ) executePenaltyResponse();
-    START_TIMER("BridsonStepperResponse");
+    START_TIMER("BARodStepperResponse");
     std::cerr << "Starting collision response" << std::endl;
     bool all_collisions_succeeded = true;
     std::vector<bool> failed_collisions_rods(m_number_of_rods);
@@ -696,7 +696,7 @@ bool BridsonStepper::step(RodSelectionType& selected_rods)
         }
     }
     std::cerr << "Finished collision response" << std::endl;
-    STOP_TIMER("BridsonStepperResponse");
+    STOP_TIMER("BARodStepperResponse");
 
     // Store the response part for visualization
     m_vnresp = m_vnphalf - (m_xnp1 - m_xn) / m_dt;
@@ -784,7 +784,7 @@ bool BridsonStepper::step(RodSelectionType& selected_rods)
 /**
  * Extracting/Restoring
  */
-void BridsonStepper::extractPositions(VecXd& positions, const RodSelectionType& selected_rods) const
+void BARodStepper::extractPositions(VecXd& positions, const RodSelectionType& selected_rods) const
 {
     assert(m_number_of_rods == m_base_indices.size());
     assert(getNumDof() == positions.size());
@@ -841,7 +841,7 @@ void BridsonStepper::extractPositions(VecXd& positions, const RodSelectionType& 
 #endif
 }
 
-void BridsonStepper::extractVelocities(VecXd& velocities, const RodSelectionType& selected_rods) const
+void BARodStepper::extractVelocities(VecXd& velocities, const RodSelectionType& selected_rods) const
 {
     assert(m_number_of_rods == m_base_indices.size());
     assert(getNumDof() == velocities.size());
@@ -875,7 +875,7 @@ void BridsonStepper::extractVelocities(VecXd& velocities, const RodSelectionType
     //    assert((velocities.cwise() == velocities).all());
 }
 
-void BridsonStepper::restorePositions(const VecXd& positions, const RodSelectionType& selected_rods)
+void BARodStepper::restorePositions(const VecXd& positions, const RodSelectionType& selected_rods)
 {
     assert(m_number_of_rods == m_base_indices.size());
 
@@ -885,7 +885,7 @@ void BridsonStepper::restorePositions(const VecXd& positions, const RodSelection
                 m_rods[*rod]->setVertex(j, positions.segment<3> (m_base_indices[*rod] + 3 * j));
 }
 
-void BridsonStepper::restoreVelocities(const VecXd& velocities, const RodSelectionType& selected_rods)
+void BARodStepper::restoreVelocities(const VecXd& velocities, const RodSelectionType& selected_rods)
 {
     assert(m_number_of_rods == m_base_indices.size());
 
@@ -895,7 +895,7 @@ void BridsonStepper::restoreVelocities(const VecXd& velocities, const RodSelecti
                 m_rods[*rod]->setVelocity(j, velocities.segment<3> (m_base_indices[*rod] + 3 * j));
 }
 
-void BridsonStepper::restoreResponses(const VecXd& responses, const RodSelectionType& selected_rods)
+void BARodStepper::restoreResponses(const VecXd& responses, const RodSelectionType& selected_rods)
 {
     assert(m_number_of_rods == m_base_indices.size());
 
@@ -908,7 +908,7 @@ void BridsonStepper::restoreResponses(const VecXd& responses, const RodSelection
 /**
  * Enabling/disabling procedures
  */
-void BridsonStepper::enableImplicitPenaltyImpulses()
+void BARodStepper::enableImplicitPenaltyImpulses()
 {
     m_perf_param.m_enable_penalty_response = true;
     for (int i = 0; i < (int) m_number_of_rods; i++)
@@ -922,7 +922,7 @@ void BridsonStepper::enableImplicitPenaltyImpulses()
 
 }
 
-void BridsonStepper::disableImplicitPenaltyImpulses()
+void BARodStepper::disableImplicitPenaltyImpulses()
 {
     m_perf_param.m_enable_penalty_response = false;
 
@@ -942,35 +942,35 @@ void BridsonStepper::disableImplicitPenaltyImpulses()
     m_implicit_pnlty_forces.clear();
 }
 
-void BridsonStepper::enableResponse()
+void BARodStepper::enableResponse()
 {
     m_respns_enbld = true;
 }
 
-void BridsonStepper::disableResponse()
+void BARodStepper::disableResponse()
 {
     m_respns_enbld = false;
 }
 
 /*
- void BridsonStepper::enableIterativeInelasticImpulses()
+ void BARodStepper::enableIterativeInelasticImpulses()
  {
  m_itrv_inlstc_enbld = true;
  }
 
- void BridsonStepper::disableIterativeInelasticImpulses()
+ void BARodStepper::disableIterativeInelasticImpulses()
  {
  m_itrv_inlstc_enbld = false;
  }
  */
 
-void BridsonStepper::setNumInelasticIterations(const int& num_itr)
+void BARodStepper::setNumInelasticIterations(const int& num_itr)
 {
     assert(num_itr >= 0);
     m_perf_param.m_maximum_number_of_collisions_iterations = num_itr;
 }
 
-void BridsonStepper::computeImmunity(const RodSelectionType& selected_rods)
+void BARodStepper::computeImmunity(const RodSelectionType& selected_rods)
 {
     // Initially, the rods not treated in this step are collision-immune
     for (std::vector<bool>::iterator i = m_collision_immune.begin(); i != m_collision_immune.begin() + m_obj_start; i++)
@@ -991,7 +991,7 @@ void BridsonStepper::computeImmunity(const RodSelectionType& selected_rods)
         if (intersection)
         {
             m_collision_immune[intersection->v0] = true;
-            // std::cerr << "BridsonStepper::step: Vertex " << intersection->v0 << " has been marked collision-immune\n";
+            // std::cerr << "BARodStepper::step: Vertex " << intersection->v0 << " has been marked collision-immune\n";
         }
     }
 }
@@ -999,7 +999,7 @@ void BridsonStepper::computeImmunity(const RodSelectionType& selected_rods)
 /**
  * Utilities
  */
-double BridsonStepper::computeTotalForceNorm() const
+double BARodStepper::computeTotalForceNorm() const
 {
     double totalforcenormsqr = 0.0;
     for (int i = 0; i < (int) m_number_of_rods; ++i)
@@ -1012,7 +1012,7 @@ double BridsonStepper::computeTotalForceNorm() const
     return sqrt(totalforcenormsqr);
 }
 
-void BridsonStepper::setDt(double dt)
+void BARodStepper::setDt(double dt)
 {
     assert(dt > 0.0);
     m_dt = dt;
@@ -1026,10 +1026,10 @@ void BridsonStepper::setDt(double dt)
         m_scripting_controllers[i]->setDt(dt);
 }
 
-void BridsonStepper::setTime(double time)
+void BARodStepper::setTime(double time)
 {
     m_t = time;
-    // std::cout << "settingTime in BridsonStepper to be " << m_t << std::endl;
+    // std::cout << "settingTime in BARodStepper to be " << m_t << std::endl;
 
     // Set the time for the rod controllers
     for (int i = 0; i < (int) m_steppers.size(); ++i)
@@ -1040,24 +1040,24 @@ void BridsonStepper::setTime(double time)
         m_scripting_controllers[i]->setTime(m_t);
 }
 
-double BridsonStepper::getDt() const
+double BARodStepper::getDt() const
 {
     return m_dt;
 }
 
-double BridsonStepper::getTime() const
+double BARodStepper::getTime() const
 {
-    //std::cout << "BridsonStepper::getTime() = " << m_t << std::endl;
+    //std::cout << "BARodStepper::getTime() = " << m_t << std::endl;
     return m_t;
 }
 
-void BridsonStepper::setRodLabels(const std::vector<std::string>& rod_labels)
+void BARodStepper::setRodLabels(const std::vector<std::string>& rod_labels)
 {
     assert(rod_labels.size() == m_number_of_rods);
     m_rod_labels = rod_labels;
 }
 
-int BridsonStepper::getContainingRod(int vert_idx) const
+int BARodStepper::getContainingRod(int vert_idx) const
 {
     assert(vert_idx >= 0);
     assert(vert_idx < getNumVerts());
@@ -1076,7 +1076,7 @@ int BridsonStepper::getContainingRod(int vert_idx) const
     return rod;
 }
 
-bool BridsonStepper::isRodVertex(int vert) const
+bool BARodStepper::isRodVertex(int vert) const
 {
     assert(vert >= 0);
     assert(vert < getNumVerts());
@@ -1085,12 +1085,12 @@ bool BridsonStepper::isRodVertex(int vert) const
     return vert < m_obj_start;
 }
 
-bool BridsonStepper::vertexAndFaceShareVertex(const int& v, const int& f0, const int& f1, const int& f2) const
+bool BARodStepper::vertexAndFaceShareVertex(const int& v, const int& f0, const int& f1, const int& f2) const
 {
     return v == f0 || v == f1 || v == f2;
 }
 
-bool BridsonStepper::vertexAndFaceShareVertex(const int& vertex, const int& face) const
+bool BARodStepper::vertexAndFaceShareVertex(const int& vertex, const int& face) const
 {
     assert(face < (int) m_faces.size());
     assert(vertex >= 0);
@@ -1105,7 +1105,7 @@ bool BridsonStepper::vertexAndFaceShareVertex(const int& vertex, const int& face
     return vertexAndFaceShareVertex(vertex, m_faces[face].idx[0], m_faces[face].idx[1], m_faces[face].idx[2]);
 }
 
-bool BridsonStepper::isProperCollisionTime(double time)
+bool BARodStepper::isProperCollisionTime(double time)
 {
     if (time != time)
     {
@@ -1144,20 +1144,20 @@ bool BridsonStepper::isProperCollisionTime(double time)
     return true;
 }
 
-int BridsonStepper::getNumDof() const
+int BARodStepper::getNumDof() const
 {
     assert(m_num_dof >= 0);
     return m_num_dof;
 }
 
-int BridsonStepper::getNumVerts() const
+int BARodStepper::getNumVerts() const
 {
     assert(m_num_dof % 3 == 0);
     return m_num_dof / 3;
 }
 
 // Ensures each rod edge has circular cross section.
-void BridsonStepper::ensureCircularCrossSection(const ElasticRod& rod) const
+void BARodStepper::ensureCircularCrossSection(const ElasticRod& rod) const
 {
     // Ensure circular cross section
     for (int i = 0; i < (int) rod.ne(); ++i)
@@ -1172,7 +1172,7 @@ void BridsonStepper::ensureCircularCrossSection(const ElasticRod& rod) const
 }
 
 // Ensures each internal rod edge has length less than sum of neighbors' radii.
-void BridsonStepper::ensureNoCollisionsByDefault(const ElasticRod& rod) const
+void BARodStepper::ensureNoCollisionsByDefault(const ElasticRod& rod) const
 {
     // Ensure "non-attached" edges are not colliding by default
     for (int i = 1; i < (int) rod.ne() - 1; ++i)
@@ -1188,7 +1188,7 @@ void BridsonStepper::ensureNoCollisionsByDefault(const ElasticRod& rod) const
     }
 }
 
-void BridsonStepper::killTheRod(int rod) // TODO: remove the rod properly in Maya
+void BARodStepper::killTheRod(int rod) // TODO: remove the rod properly in Maya
 {
     std::cerr << "Rod number " << rod << " will be killed" << std::endl;
 
@@ -1197,7 +1197,7 @@ void BridsonStepper::killTheRod(int rod) // TODO: remove the rod properly in May
     m_simulated_rods.erase(find(m_simulated_rods.begin(), m_simulated_rods.end(), rod));
 }
 
-void BridsonStepper::computeForces(VecXd ** Forces, const RodSelectionType& selected_rods)
+void BARodStepper::computeForces(VecXd ** Forces, const RodSelectionType& selected_rods)
 {
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
     {

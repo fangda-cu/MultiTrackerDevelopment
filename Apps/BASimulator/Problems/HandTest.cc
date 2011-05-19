@@ -200,7 +200,7 @@ void HandTest::Setup()
   
   setupHand();
   
-  m_br_stepper = new BridsonStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
+  m_br_stepper = new BARodStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
   m_world->addController(m_br_stepper);
   
   m_br_stepper->enableIterativeInelasticImpulses();
