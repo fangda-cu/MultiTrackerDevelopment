@@ -108,28 +108,28 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                     m_length = length;
                     m_edgeLength = edgeLength;
                     m_rodRadius = rodRadius;
-                    m_rodPitch = rodPitch;        
+                    m_rodPitch = rodPitch;
                 
                     // TODO: Add code to update undeformed configuration 
                     // for just now, recreate the rod
                     // initialiseRodFromBarberShopInput( i_dataBlock );
 
-		    for (size_t i = 0; i < m_rodManager->m_rods.size(); ++i) 
-		    {
-		        cout << "Setting radius of m_rods[" << i << "] to " << m_rodRadius << endl;
-		        for (ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin(); 
-			     vh != m_rodManager->m_rods[i]->vertices_end(); ++vh)
-		        {
-			    assert(m_rods[i]->m_bendingForce != NULL);
-			    m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, Vec2d(rodRadius,0) );
-		        }
-		    }
+                    for (size_t i = 0; i < m_rodManager->m_rods.size(); ++i)
+                    {
+                        cout << "Setting radius of m_rods[" << i << "] to " << m_rodRadius << endl;
+                        for ( ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin(); 
+                             vh != m_rodManager->m_rods[i]->vertices_end(); ++vh)
+                        {
+                            assert( m_rods[i]->m_bendingForce != NULL );
+                            m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, Vec2d(rodRadius,0) );
+                        }
+                    }
                 }
-                
+                        
                 updateCollisionMeshes( i_dataBlock );
                 m_rodManager->takeStep();
             }
-        }                
+        }
         i_dataBlock.setClean( i_plug );
     }
     else
@@ -279,7 +279,11 @@ void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices,
     MVector edge = i_direction;
     edge.normalize();
     
-    edge *= m_length / ( m_verticesPerRod - 1 );
+    cerr << "constructRodVertices(): m_length = " << m_length << endl;
+    cerr << "constructRodVertices(): m_verticesPerRod = " << m_verticesPerRod << endl;
+    cerr << "constructRodVertices(): i_direction = " << i_direction << endl;
+    
+    edge *= m_length / m_verticesPerRod;
     
     cerr << "constructRodVertices(): edgeLength = " << edge.length() << "\n";    
     
@@ -287,8 +291,14 @@ void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices,
     
     for ( int v = 0; v < m_verticesPerRod; ++v )
     {
-		//MVector newPoint( m_rodRadius * cos( (double)v ),
-		//	m_rodPitch * (double)v, m_rodRadius * sin( (double)v ) );
+        // Straight rods as twist is controlled by the rod properties        
+        
+        o_rodVertices.push_back( BASim::Vec3d( currentVertex.x, currentVertex.y, currentVertex.z ) );
+        
+        currentVertex += edge;
+                
+		/*MVector newPoint( m_rodRadius * cos( (double)v ),
+			m_rodPitch * (double)v, m_rodRadius * sin( (double)v ) );
         //	
         
         // For testing, force a straight rod
@@ -302,7 +312,7 @@ void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices,
         // Now move the point to sit where the Barbershop input strand comes from
         newPoint += i_rootPosition;
             
-        o_rodVertices.push_back( BASim::Vec3d( newPoint.x, newPoint.y, newPoint.z ) );
+        o_rodVertices.push_back( BASim::Vec3d( newPoint.x, newPoint.y, newPoint.z ) );*/
     }
     
     cerr << "constructRodVertices(): Finished constructing rod vertices\n";    
