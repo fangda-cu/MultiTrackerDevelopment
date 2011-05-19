@@ -274,8 +274,12 @@ void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices,
     
     for ( int v = 0; v < m_verticesPerRod; ++v )
     {
-		MVector newPoint( m_rodRadius * cos( (double)v ),
-			m_rodPitch * (double)v, m_rodRadius * sin( (double)v ) );
+		//MVector newPoint( m_rodRadius * cos( (double)v ),
+		//	m_rodPitch * (double)v, m_rodRadius * sin( (double)v ) );
+        //	
+        
+        // For testing, force a straight rod
+        MVector newPoint( 0.0, v, 0.0 );
             
         // The helix is created with the y-axis as the centre, rotate it
         // so that it has i_direction as the centre
