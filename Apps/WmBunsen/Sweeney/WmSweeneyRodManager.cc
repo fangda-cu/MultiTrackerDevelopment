@@ -110,8 +110,15 @@ void WmSweeneyRodManager::addCollisionMesh( BASim::TriangleMesh* i_triangleMesh,
 
 void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const double i_startTime )
 {
+    PerformanceTuningParameters perfParams;
+
+    perfParams.m_max_number_of_substeps    = 7;
+    perfParams.m_inextensibility_threshold = 0;
+    perfParams.m_implicit_thickness        = 0.1;
+    perfParams.m_implicit_stiffness        = 10.0;
+
     m_bridsonStepper = new BridsonStepper( m_rods, m_triangleMeshes, m_scriptingControllers, 
-                                           m_rodTimeSteppers, i_timeStep, i_startTime, 1 );                                           
+                                           m_rodTimeSteppers, i_timeStep, i_startTime, 1, perfParams );                                           
 }
 
 void WmSweeneyRodManager::takeStep()
