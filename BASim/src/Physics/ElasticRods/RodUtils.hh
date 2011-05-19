@@ -51,9 +51,10 @@ inline ElasticRod* setupRod(const RodOptions& opts,
   assert(opts.numVertices == (int) initialPosition.size());
   assert(opts.numVertices == (int) undeformedPosition.size());
 
+  // note that the option opts.anisotropic is no longer used!
+
   ElasticRod* rod = NULL;
-  if (opts.anisotropic) rod = new AnisotropicRod(opts.numVertices);
-  else rod = new AnisotropicRod(opts.numVertices);
+  rod = new ElasticRod(opts.numVertices);
 
   rod->setRadius(opts.radiusA, opts.radiusB);
   rod->setRadiusScale(opts.radiusScale);

@@ -55,11 +55,12 @@ public:
     void takeStep();
     
     void drawAllRods();
+
+    std::vector< BASim::ElasticRod* > m_rods;
     
 private:
     BASim::BridsonStepper* m_bridsonStepper;
     
-    std::vector< BASim::ElasticRod* > m_rods;
     std::vector< BASim::RodTimeStepper* > m_rodTimeSteppers;
     std::vector< BASim::RodRenderer* > m_rodRenderers;
     std::vector< BASim::TriangleMesh* > m_triangleMeshes;

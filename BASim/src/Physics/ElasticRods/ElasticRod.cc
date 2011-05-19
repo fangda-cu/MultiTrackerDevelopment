@@ -11,13 +11,20 @@
 
 #include "RodReverseSolver.hh"
 
+#include "RodStretchingForce.hh"
+#include "RodTwistingForce.hh"
+#include "RodTwistingForceSym.hh"
+#include "RodBendingForce.hh"
+#include "RodBendingForceSym.hh"
+#include "RodAnisoForce.hh"
+
 using namespace std;
 
 namespace BASim {
 
 using namespace Util;
 
-ElasticRod::ElasticRod(int numVertices, bool closed)
+  ElasticRod::ElasticRod(int numVertices, bool closed) : m_bendingForce(NULL)
 {
   draw_cl = 1;
 
@@ -95,6 +102,21 @@ void ElasticRod::setup()
   computeVertexMasses();
   if (!quasistatic()) computeEdgeInertias();
   property(m_ndof) = 3 * nv() + ne();
+
+  // Add elastic forces
+  addForce(new RodStretchingForce(*this));
+  addForce(new RodTwistingForceSym(*this));
+  if (refFrameType() == TimeParallel) addForce(m_bendingForce =  new RodBendingForceSym(*this));
+  else {
+    std::cout << "ElasticRod::setup: Cannot initialize m_bendingForce----must use TimeParallel reference frame." << std::endl;
+    exit(1);
+    //addForce(new RodAnisoForce(*this));
+  }
+
+  // Add viscous forces
+  addForce(new RodStretchingForce(*this,true));
+  addForce(new RodBendingForceSym(*this,true));
+  addForce(new RodTwistingForceSym(*this,true));
 }
 
 void ElasticRod::addForce(RodForce* force)

@@ -19,6 +19,8 @@ class MatrixBase;
 class RodPenaltyForce;
 class RodTimeStepper;
 
+class RodBendingForceSym;
+
 /** Base class for rods. The degrees of freedom for rods are the
     vertex positions (3 dofs per vertex) and the angles between the
     reference frames and the material frames (1 dof per edge). The
@@ -311,6 +313,8 @@ public:
   bool doReverseHairdo(RodTimeStepper *stepper);
   void computeReverseJacobian(MatrixBase& J);
   void updateReverseUndeformedStrain(const VecXd& e);
+
+  RodBendingForceSym* m_bendingForce; // easy access to the bending force
 
 protected:
 
