@@ -116,8 +116,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                 updateCollisionMeshes( i_dataBlock );
                 m_rodManager->takeStep();
             }
-        }        
-        
+        }                
         i_dataBlock.setClean( i_plug );
     }
     else
@@ -199,6 +198,11 @@ void WmSweeneyNode::updateCollisionMeshes( MDataBlock& i_dataBlock )
 
 void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
 {
+    // We need to be able to run a sim from pre-groomed barbershop strands too. That seems
+    // pretty simple as we just take the vertices from the barbershop input and create the
+    // rod from that. Then when taking a time step we set the first edge to match the barbershop
+    // input. It looks like Sweeney code easily work for grooming or for dynamic sims.
+    
     cerr << "initialiseRodFromBarberShopInput() - About to create rods from Barbershop input\n";
     
     // Reset the manager and remove all rods before adding more
