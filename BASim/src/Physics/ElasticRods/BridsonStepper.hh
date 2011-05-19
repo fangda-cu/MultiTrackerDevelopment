@@ -23,6 +23,7 @@
 #include "../../Core/StatTracker.hh"
 #include "MinimalTriangleMeshBackup.hh"
 #include "RodPenaltyForce.hh"
+#include "PerformanceTuningParameters.hh"
 #else
 #include "BASim/src/Core/ScriptingController.hh"
 #include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
@@ -127,110 +128,6 @@ public:
 
 private:
     std::map<int, LinearSystemSolver*> m_solver_map;
-};
-
-struct PerformanceTuningParameters
-{
-    /**
-     * Substepping
-     */
-    // If we want adaptive substepping
-    bool m_adaptive_substepping;
-    // Whether the adaptivity should apply only to rods that need it
-    bool m_selective_adaptivity;
-    // Overall maximum number of times the original step will be halved by the adaptive substepping
-    int m_max_number_of_substeps;
-    // Number of times the original step has to be halved before the inextensibility filter is applied
-    int m_inextensibility_threshold;
-
-    /**
-     * Implicit rod/mesh penalty
-     */
-    // Whether we want to apply implicit penalty response for rod/mesh collisions
-    bool m_enable_penalty_response;
-    // Extra thickness in rod/mesh implicit penalty response
-    double m_implicit_thickness;
-    // Penalty stiffness in rod/mesh implicit penalty response
-    double m_implicit_stiffness;
-
-    /**
-     * Iterations
-     */
-    // Maximum number of iterations allowed in the solver
-    int m_maximum_number_of_solver_iterations;
-    // Maximum number of iterations allowed in collision response. Set to 0 to disable collision response, to 1 to disable iterations.
-    int m_maximum_number_of_collisions_iterations;
-
-    /**
-     * Rod-rod collisions
-     */
-    // Whether we should ignore rod-rod collisions
-    bool m_skipRodRodCollisions;
-
-    /**
-     * Explosion detection
-     */
-    // Explosion detection
-    bool m_enable_explosion_detection;
-    // Damping parameter in explosion detection
-    double m_explosion_damping;
-    // Threshold in explosion detection
-    double m_explosion_threshold;
-
-    /**
-     * Rod disabling
-     */
-    // If a rod has a collision failure, it will be forever disabled
-    bool m_disable_rods_on_first_collision_failure;
-    // If a rod still has collision failure after maximum substepping, it will be disabled
-    bool m_disable_rods_on_unresolved_collision;
-    // If a rod still has non-convergent solver after maximum substepping, it will be disabled
-    bool m_disable_rods_on_unresolved_dynamics;
-    // If a rod still has explosions after maximum substepping, it will be disabled
-    bool m_disable_rods_on_unresolved_explosion;
-
-    PerformanceTuningParameters() :
-        m_adaptive_substepping(true), //
-                m_selective_adaptivity(true), //
-                m_max_number_of_substeps(3), //
-                m_inextensibility_threshold(3), //
-                m_enable_penalty_response(true), //
-                m_implicit_thickness(1.0), //
-                m_implicit_stiffness(200.0), //
-                m_maximum_number_of_solver_iterations(50), //
-                m_maximum_number_of_collisions_iterations(10), //
-                m_skipRodRodCollisions(true), //
-                m_enable_explosion_detection(true), //
-                m_explosion_damping(100.0), //
-                m_explosion_threshold(100.0), //
-                m_disable_rods_on_first_collision_failure(true), //
-                m_disable_rods_on_unresolved_collision(true), //
-                m_disable_rods_on_unresolved_dynamics(true), //
-                m_disable_rods_on_unresolved_explosion(true) //
-    {
-        SanityCheck();
-    }
-
-    // Performs various checks that the parameters are consistent
-    bool SanityCheck()
-    {
-        bool allright = true;
-
-        if (!m_adaptive_substepping && m_selective_adaptivity)
-        {
-            std::cerr << "Warning: selective adaptivity doesn't apply if adaptivity is off.\n";
-            allright = false;
-        }
-
-        if (m_selective_adaptivity && !m_skipRodRodCollisions)
-        {
-            std::cerr << "Warning: selective adaptivity doesn't apply if rod-rod collisions are on.\n";
-            allright = false;
-        }
-
-        return allright;
-    }
-
 };
 
 /**
@@ -493,6 +390,8 @@ private:
     void disableImplicitPenaltyImpulses();
     void setImplicitPenaltyExtraThickness(const double& h);
     void setVertexFacePenalty(const double& k);
+
+    void killTheRod(int rod);
 
     /*
      * Member variables

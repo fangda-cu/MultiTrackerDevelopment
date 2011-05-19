@@ -467,34 +467,39 @@ bool BridsonStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
     setTime(m_t + dt);
 
     // Attempt a full time step
-    if (step(selected_rods))
+    step(selected_rods);
+    if (selected_rods.empty())
     {
-        std::cout << "t = " << m_t << " selected_rods: adaptiveExecute has simulated all rods" << std::endl;
+        std::cout << "t = " << m_t << " selected_rods: adaptiveExecute has simulated (or killed) all rods" << std::endl;
         // Success!
         return true;
     }
 
-    std::cout << "t = " << m_t << " selected_rods: adaptiveExecute step failed for " << selected_rods.size() << " rods"
+    std::cout << "t = " << m_t << " selected_rods: adaptiveExecute left " << selected_rods.size() << " rods for substepping"
             << std::endl;
 
-    if (m_level >= m_perf_param.m_max_number_of_substeps)
-    {
-        std::cout << "\033[31;1mWARNING\033[m: in BridsonStepper::adaptiveExecute step still not dependable after substepping "
-                << m_perf_param.m_max_number_of_substeps << " times" << std::endl;
+    /*
+     if (m_level >= m_perf_param.m_max_number_of_substeps)
+     {
+     std::cout << "\033[31;1mWARNING\033[m: in BridsonStepper::adaptiveExecute step still not dependable after substepping "
+     << m_perf_param.m_max_number_of_substeps << " times" << std::endl;
 
-        std::cerr << "Misbehaving rod" << (selected_rods.size() > 1 ? "s" : "") << " removed from simulation: ";
-        for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-        {
-            std::cerr << *rod << " ";
-            for (int j = 0; j < m_rods[*rod]->nv(); j++)
-                m_rods[*rod]->setVertex(j, 0 * m_rods[*rod]->getVertex(j));
-            m_simulated_rods.erase(find(m_simulated_rods.begin(), m_simulated_rods.end(), *rod));
-        }
-        std::cerr << std::endl;
 
-        m_simulationFailed = true;
-        return true;
-    }
+     std::cerr << "Misbehaving rod" << (selected_rods.size() > 1 ? "s" : "") << " removed from simulation: ";
+     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+     {
+     std::cerr << *rod << " ";
+     for (int j = 0; j < m_rods[*rod]->nv(); j++)
+     m_rods[*rod]->setVertex(j, 0 * m_rods[*rod]->getVertex(j));
+     m_simulated_rods.erase(find(m_simulated_rods.begin(), m_simulated_rods.end(), *rod));
+     }
+     std::cerr << std::endl;
+
+
+     m_simulationFailed = true;
+     return true;
+     }
+     */
 
     // Otherwise do two half time steps
     // std::cout << "Adaptive stepping in Bridson stepper" << std::endl;
@@ -586,14 +591,17 @@ bool BridsonStepper::step(RodSelectionType& selected_rods)
     // std::cerr << "This step will treat " << selected_rods.size() << " remaining rod" << (selected_rods.size() > 1 ? "s" : "")
     //        << std::endl;
 
-    // Prepare start forces and list of steppers to be executed.
+    // Prepare list of steppers to be executed.
     std::vector<RodTimeStepper*> selected_steppers;
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-    {
         selected_steppers.push_back(m_steppers[*rod]);
-        m_startForces[*rod]->setZero();
-        m_rods[*rod]->computeForces(*m_startForces[*rod]);
-    }
+
+    if (m_perf_param.m_enable_explosion_detection)
+        for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+        {
+            m_startForces[*rod]->setZero();
+            m_rods[*rod]->computeForces(*m_startForces[*rod]);
+        }
 
     // Save the pre-timestep positions
     extractPositions(m_xn, selected_rods);
@@ -666,11 +674,12 @@ bool BridsonStepper::step(RodSelectionType& selected_rods)
     // Post time step position
     extractPositions(m_xnp1, selected_rods);
 
-    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-    {
-        m_preCollisionForces[*rod]->setZero();
-        m_rods[*rod]->computeForces(*m_preCollisionForces[*rod]);
-    }
+    if (m_perf_param.m_enable_explosion_detection)
+        for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+        {
+            m_preCollisionForces[*rod]->setZero();
+            m_rods[*rod]->computeForces(*m_preCollisionForces[*rod]);
+        }
 
     // std::cout << "Post-timestep positions: " << m_xnp1 << std::endl;
 
@@ -692,12 +701,11 @@ bool BridsonStepper::step(RodSelectionType& selected_rods)
     std::cerr << "Starting collision response" << std::endl;
     bool all_collisions_succeeded = true;
     std::vector<bool> failed_collisions_rods(m_number_of_rods);
-    if (m_perf_param.m_maximum_number_of_collisions_iterations) // && dependable_solve)
+    if (m_perf_param.m_maximum_number_of_collisions_iterations > 0)
     {
         if (!executeIterativeInelasticImpulseResponse(failed_collisions_rods))
         {
-            std::cout << "Some collision responses are not dependable!" << std::endl;
-
+            std::cout << "Some collision responses failed!" << std::endl;
             all_collisions_succeeded = false;
         }
     }
@@ -713,7 +721,7 @@ bool BridsonStepper::step(RodSelectionType& selected_rods)
     // Ensure boundary conditions respected by corrected positions
 
 
-    //#ifdef DEBUG
+#ifdef DEBUG
     // For each selected rod
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
     {
@@ -733,7 +741,7 @@ bool BridsonStepper::step(RodSelectionType& selected_rods)
             }
         }
     }
-    //#endif
+#endif
 
     // Copy new positions and velocities back to rods
     restorePositions(m_xnp1, selected_rods);
@@ -755,37 +763,34 @@ bool BridsonStepper::step(RodSelectionType& selected_rods)
 
     //std::cout << "Post-timestep positions, again: " << m_xdebug << std::endl;
 
-    for (RodSelectionType::const_iterator selected_rod = selected_rods.begin(); selected_rod != selected_rods.end(); selected_rod++)
-    {
-        m_endForces[*selected_rod]->setZero();
-        m_rods[*selected_rod]->computeForces(*m_endForces[*selected_rod]);
-    }
-
-    // Post time step position
-    //extractPositions(m_rods, m_base_indices, m_xdebug);
-
-    //std::cout << "Post-timestep positions, again: " << m_xdebug << std::endl;
-
-    //    if (m_check_explosions && dependable_solve)
+    if (m_perf_param.m_enable_explosion_detection)
+        for (RodSelectionType::const_iterator selected_rod = selected_rods.begin(); selected_rod != selected_rods.end(); selected_rod++)
+        {
+            m_endForces[*selected_rod]->setZero();
+            m_rods[*selected_rod]->computeForces(*m_endForces[*selected_rod]);
+        }
 
     bool explosions_detected = false;
     std::vector<bool> exploding_rods(m_number_of_rods);
     if (m_perf_param.m_enable_explosion_detection)
         explosions_detected = checkExplosions(exploding_rods, failed_collisions_rods, selected_rods);
-    if (explosions_detected)
-        std::cerr << "Some rods had explosions" << std::endl;
 
-    // Update the list of rods that remain to solve.
-    if (m_perf_param.m_selective_adaptivity && m_perf_param.m_skipRodRodCollisions)// && all_collisions_succeeded)
-        for (RodSelectionType::iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-            if (m_steppers[*rod]->HasSolved() && !exploding_rods[*rod] && !failed_collisions_rods[*rod])
-            {
-                // std::cout << "t = " << m_t << " selected_rods: removing rod " << *rod << std::endl;
-                selected_rods.erase(rod--);
-            }
+    // Decide whether to substep or kill some rods
+    for (RodSelectionType::iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+    {
+        if ((!m_steppers[*rod]->HasSolved() && m_level >= m_perf_param.m_max_number_of_substeps_for_solver)
+                || (failed_collisions_rods[*rod] && m_level >= m_perf_param.m_max_number_of_substeps_for_collision)
+                || (exploding_rods[*rod] && m_level >= m_perf_param.m_max_number_of_substeps_for_explosion))
+        {
+            killTheRod(*rod);
+            selected_rods.erase(rod--);
+        }
+        else if (m_steppers[*rod]->HasSolved() && !exploding_rods[*rod] && !failed_collisions_rods[*rod]
+                && m_perf_param.m_skipRodRodCollisions)
+            selected_rods.erase(rod--);
+    }
 
     bool all_rods_are_ok = dependable_solve && all_collisions_succeeded && !explosions_detected;
-
     std::cout << "This step is " << (all_rods_are_ok ? "" : "\033[31;1mNOT\033[m ") << "dependable." << std::endl;
 
     return all_rods_are_ok;
@@ -1181,67 +1186,44 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>&
         m_collision_detector->getCollisions(collisions, ContinuousTime);
     }
 
-    // std::cerr << "Remains " << collisions.size() << " unresolved collisions" << std::endl;
-
-    // Just in case we haven't emptied the collisions but exited when itr == m_num_inlstc_itrns
-    for (std::list<Collision*>::iterator col = collisions.begin(); col != collisions.end(); col++)
-    {
-        // Let's see which collisions are remaining.
-        EdgeEdgeCTCollision* eecol = dynamic_cast<EdgeEdgeCTCollision*> (*col);
-        VertexFaceCTCollision* vfcol = dynamic_cast<VertexFaceCTCollision*> (*col);
-        if (vfcol)
-        {
-            assert(isRodVertex(vfcol->v0));
-            failed_collisions_rods[getContainingRod(vfcol->v0)] = true;
-        }
-        if (eecol)
-        {
-            if (isRodVertex(eecol->e0_v0) && isRodVertex(eecol->e0_v1))
-            {
-                assert(getContainingRod(eecol->e0_v0) == getContainingRod(eecol->e0_v1));
-                failed_collisions_rods[getContainingRod(eecol->e0_v0)] = true;
-            }
-            if (isRodVertex(eecol->e1_v0) && isRodVertex(eecol->e1_v1))
-            {
-                assert(getContainingRod(eecol->e1_v0) == getContainingRod(eecol->e1_v1));
-                failed_collisions_rods[getContainingRod(eecol->e1_v0)] = true;
-            }
-        }
-        delete *col;
-    }
-
-    //    if (itr > 0)
-    //        std::cerr << "\033[33mIterated collision response " << itr << " time" << (itr > 1 ? "s" : "") << "\033[0m" << std::endl;
-
     if (!collisions.empty())
     {
-        if (m_perf_param.m_disable_rods_on_first_collision_failure) // disable the bad rods and go on with the simulation
+        all_rods_collisions_ok = false;
+        m_simulationFailed = true;
+
+        // std::cerr << "Remains " << collisions.size() << " unresolved collision(s)" << std::endl;
+
+        // Just in case we haven't emptied the collisions but exited when itr == m_num_inlstc_itrns
+        for (std::list<Collision*>::iterator col = collisions.begin(); col != collisions.end(); col++)
         {
-            for (int i = 0; i < m_number_of_rods; i++)
-                if (failed_collisions_rods[i])
+            // Let's see which collisions are remaining.
+            EdgeEdgeCTCollision* eecol = dynamic_cast<EdgeEdgeCTCollision*> (*col);
+            VertexFaceCTCollision* vfcol = dynamic_cast<VertexFaceCTCollision*> (*col);
+            if (vfcol)
+            {
+                assert(isRodVertex(vfcol->v0));
+                failed_collisions_rods[getContainingRod(vfcol->v0)] = true;
+            }
+            if (eecol)
+            {
+                if (isRodVertex(eecol->e0_v0) && isRodVertex(eecol->e0_v1))
                 {
-                    std::cerr << "Rod number " << i << " will be disabled for this time step because of repeated collisions"
-                            << std::endl;
-                    m_collision_disabled_rods.insert(i);
+                    assert(getContainingRod(eecol->e0_v0) == getContainingRod(eecol->e0_v1));
+                    failed_collisions_rods[getContainingRod(eecol->e0_v0)] = true;
                 }
-        }
-        else // try substepping
-        {
-            all_rods_collisions_ok = false;
-            m_simulationFailed = true;
+                if (isRodVertex(eecol->e1_v0) && isRodVertex(eecol->e1_v1))
+                {
+                    assert(getContainingRod(eecol->e1_v0) == getContainingRod(eecol->e1_v1));
+                    failed_collisions_rods[getContainingRod(eecol->e1_v0)] = true;
+                }
+            }
+            delete *col;
         }
     }
-
-    //  for (int rodcol = 0; rodcol < failed_collisions_rods.size(); rodcol++)
-    //      if (failed_collisions_rods[rodcol])
-    // std::cerr << "Rod number " << rodcol << " had too many collisions." << std::endl;
 
 #ifdef TIMING_ON
     if( itr >= 2 ) IntStatTracker::getIntTracker("STEPS_WITH_MULTIPLE_IMPULSE_ITERATIONS") += 1;
 #endif
-
-    //        std::cout << "The inelastic collision response is " << (dependable_solve ? "" : "\033[31;1mNOT\033[m ")
-    //                << "dependable." << std::endl;
 
     return all_rods_collisions_ok;
 }
@@ -2646,6 +2628,8 @@ bool BridsonStepper::checkExplosions(std::vector<bool>& exploding_rods, const st
     }
     // std::cout << "Check Explosion: worst violator = " << worstViolator << " with maxRate = " << maxRate << std::endl;
     // std::cout << "Check Explosion: minStart = " << minStart << " maxStart = " << maxStart << std::endl;
+    if (explosions_detected)
+        std::cerr << "Some rods had explosions" << std::endl;
 
     return explosions_detected;
 }
@@ -2872,6 +2856,15 @@ void BridsonStepper::ensureNoCollisionsByDefault(const ElasticRod& rod) const
                     << std::endl;
         }
     }
+}
+
+void BridsonStepper::killTheRod(int rod)
+{
+    std::cerr << "Rod number " << rod << " will be killed" << std::endl;
+
+    for (int j = 0; j < m_rods[rod]->nv(); j++)
+        m_rods[rod]->setVertex(j, 0 * m_rods[rod]->getVertex(j));
+    m_simulated_rods.erase(find(m_simulated_rods.begin(), m_simulated_rods.end(), rod));
 }
 
 }
