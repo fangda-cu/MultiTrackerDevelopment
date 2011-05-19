@@ -24,15 +24,11 @@ namespace BASim
 /**
  * Various "ad hoc" constants used to make things work.
  */
-static const float minimum_time_step = 1e-4;
-static const float inextensibility_time_step = 1.0 / 240.0;
-static const float explosion_damping = 100.0;
-static const float explosion_threshold = 100.0;
 
 BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
         std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
         const double time, const int num_threads, const PerformanceTuningParameters perf_param) :
-    m_num_dof(0),
+            m_num_dof(0),
             m_rods(rods),
             m_number_of_rods(m_rods.size()),
             m_triangle_meshes(trimeshes),
@@ -49,9 +45,6 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
             m_masses(),
             m_collision_immune(),
             m_respns_enbld(true),
-            m_pnlty_enbld(true),
-            m_itrv_inlstc_enbld(true),
-            m_num_inlstc_itrns(10),
             m_nan_enc(false),
             m_inf_enc(false),
             m_lt0_enc(false),
@@ -60,17 +53,12 @@ BridsonStepper::BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<Trian
             m_obj_start(-1),
             m_t(time),
             m_rod_labels(),
-            m_implicit_pnlty_enbld(false), // To enable implicit penalty, call enableImplicitPenaltyImpulses()
-            m_vertex_face_penalty(200),
-            m_implicit_thickness(1.0),
-            m_check_explosions(true),
-            m_skipRodRodCollisions(true),
-            m_selective_adaptivity(true), // Selective adaptivity also requires m_skipRodRodCollisions == true
             m_simulationFailed(false),
             m_stopOnRodError(false),
-            m_disable_rods_on_first_collision_failure(true),
-            m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start, m_implicit_thickness,
-                    m_vertex_face_penalty)
+            m_perf_param(perf_param),
+            m_level(0),
+            m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start,
+                    m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness)
 {
 
     // For debugging purposes
@@ -373,14 +361,16 @@ void BridsonStepper::prepareForExecution()
     //std::cout << "Extracted positions" << std::endl;
 
     //  std::cout << "About to create CollisionDetector" << std::endl;
-    m_collision_detector = new CollisionDetector(m_geodata, m_edges, m_faces, m_dt, m_skipRodRodCollisions, m_num_threads);
+    m_collision_detector = new CollisionDetector(m_geodata, m_edges, m_faces, m_dt, m_perf_param.m_skipRodRodCollisions,
+            m_num_threads);
     // std::cout << "Created CollisionDetector" << std::endl;
 
     // for (std::vector<double>::const_iterator i = m_masses.begin(); i != m_masses.end(); i++)
     //       m_collision_immune.push_back(*i == std::numeric_limits<double>::infinity());
     m_collision_immune.resize(getNumVerts());
 
-    enableImplicitPenaltyImpulses();
+    if (m_perf_param.m_enable_penalty_response)
+        enableImplicitPenaltyImpulses();
 
 }
 
@@ -431,6 +421,7 @@ bool BridsonStepper::execute()
 
     if (do_adaptive)
     {
+        assert(m_level == 0);
         result = adaptiveExecute(m_dt, selected_rods);
     }
     else
@@ -455,7 +446,8 @@ bool BridsonStepper::nonAdaptiveExecute(double dt, RodSelectionType& selected_ro
 
 bool BridsonStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
 {
-    std::cout << "BridsonStepper::adaptiveExecute starting with m_t = " << m_t << " and dt = " << dt << std::endl;
+    std::cout << "BridsonStepper::adaptiveExecute starting at level " << m_level << " with m_t = " << m_t << " and dt = " << dt
+            << std::endl;
 
     // Backup all selected rods
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
@@ -485,16 +477,17 @@ bool BridsonStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
     std::cout << "t = " << m_t << " selected_rods: adaptiveExecute step failed for " << selected_rods.size() << " rods"
             << std::endl;
 
-    if (dt < minimum_time_step)
+    if (m_level >= m_perf_param.m_max_number_of_substeps)
     {
-        std::cout
-                << "\033[31;1mWARNING\033[m: in BridsonStepper::adaptiveExecute step still not dependable with time step below "
-                << minimum_time_step << std::endl;
+        std::cout << "\033[31;1mWARNING\033[m: in BridsonStepper::adaptiveExecute step still not dependable after substepping "
+                << m_perf_param.m_max_number_of_substeps << " times" << std::endl;
 
         std::cerr << "Misbehaving rod" << (selected_rods.size() > 1 ? "s" : "") << " removed from simulation: ";
         for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
         {
             std::cerr << *rod << " ";
+            for (int j = 0; j < m_rods[*rod]->nv(); j++)
+                m_rods[*rod]->setVertex(j, 0 * m_rods[*rod]->getVertex(j));
             m_simulated_rods.erase(find(m_simulated_rods.begin(), m_simulated_rods.end(), *rod));
         }
         std::cerr << std::endl;
@@ -506,6 +499,8 @@ bool BridsonStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
     // Otherwise do two half time steps
     // std::cout << "Adaptive stepping in Bridson stepper" << std::endl;
     // std::cout << "Number of rods remaining: " << selected_rods.size() << std::endl;
+
+    m_level++;
 
     // Restore all rods that remained selected after the step
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
@@ -558,6 +553,7 @@ bool BridsonStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
 
     // std::cout << "Finished two adaptive steps" << std::endl;
     setDt(dt);
+    m_level--;
 
     return first_success && second_success;
 }
@@ -619,7 +615,7 @@ bool BridsonStepper::step(RodSelectionType& selected_rods)
 
     // Jungseock's implicit penalty
     std::list<Collision*> penalty_collisions;
-    if (m_implicit_pnlty_enbld)
+    if (m_perf_param.m_enable_penalty_response)
     {
         // Clear existing penalties
         for (std::vector<RodPenaltyForce*>::const_iterator penalty_force = m_implicit_pnlty_forces.begin(); penalty_force
@@ -660,7 +656,7 @@ bool BridsonStepper::step(RodSelectionType& selected_rods)
     STOP_TIMER("BridsonStepperDynamics");
 
     // If we do rod-rod collisions (meaning no selective adaptivity) and global dependability failed, we might as well stop here.
-    if (!m_skipRodRodCollisions && !dependable_solve)
+    if (!m_perf_param.m_skipRodRodCollisions && !dependable_solve)
     {
         std::cout << "t = " << m_t << " selected_rods: step() failed (due to rod-rod) for " << selected_rods.size() << " rods"
                 << std::endl;
@@ -696,7 +692,7 @@ bool BridsonStepper::step(RodSelectionType& selected_rods)
     std::cerr << "Starting collision response" << std::endl;
     bool all_collisions_succeeded = true;
     std::vector<bool> failed_collisions_rods(m_number_of_rods);
-    if (m_itrv_inlstc_enbld && m_num_inlstc_itrns > 0) // && dependable_solve)
+    if (m_perf_param.m_maximum_number_of_collisions_iterations) // && dependable_solve)
     {
         if (!executeIterativeInelasticImpulseResponse(failed_collisions_rods))
         {
@@ -774,13 +770,13 @@ bool BridsonStepper::step(RodSelectionType& selected_rods)
 
     bool explosions_detected = false;
     std::vector<bool> exploding_rods(m_number_of_rods);
-    if (m_check_explosions)
+    if (m_perf_param.m_enable_explosion_detection)
         explosions_detected = checkExplosions(exploding_rods, failed_collisions_rods, selected_rods);
     if (explosions_detected)
         std::cerr << "Some rods had explosions" << std::endl;
 
     // Update the list of rods that remain to solve.
-    if (m_selective_adaptivity && m_skipRodRodCollisions)// && all_collisions_succeeded)
+    if (m_perf_param.m_selective_adaptivity && m_perf_param.m_skipRodRodCollisions)// && all_collisions_succeeded)
         for (RodSelectionType::iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
             if (m_steppers[*rod]->HasSolved() && !exploding_rods[*rod] && !failed_collisions_rods[*rod])
             {
@@ -924,6 +920,7 @@ void BridsonStepper::restoreResponses(const VecXd& responses, const RodSelection
  */
 void BridsonStepper::enableImplicitPenaltyImpulses()
 {
+    m_perf_param.m_enable_penalty_response = true;
     for (int i = 0; i < (int) m_number_of_rods; i++)
     {
         RodPenaltyForce *pnlty = new RodPenaltyForce();
@@ -937,7 +934,7 @@ void BridsonStepper::enableImplicitPenaltyImpulses()
 
 void BridsonStepper::disableImplicitPenaltyImpulses()
 {
-    m_implicit_pnlty_enbld = false;
+    m_perf_param.m_enable_penalty_response = false;
 
     for (int i = 0; i < (int) m_number_of_rods; i++)
     {
@@ -965,20 +962,22 @@ void BridsonStepper::disableResponse()
     m_respns_enbld = false;
 }
 
-void BridsonStepper::enableIterativeInelasticImpulses()
-{
-    m_itrv_inlstc_enbld = true;
-}
+/*
+ void BridsonStepper::enableIterativeInelasticImpulses()
+ {
+ m_itrv_inlstc_enbld = true;
+ }
 
-void BridsonStepper::disableIterativeInelasticImpulses()
-{
-    m_itrv_inlstc_enbld = false;
-}
+ void BridsonStepper::disableIterativeInelasticImpulses()
+ {
+ m_itrv_inlstc_enbld = false;
+ }
+ */
 
 void BridsonStepper::setNumInelasticIterations(const int& num_itr)
 {
     assert(num_itr >= 0);
-    m_num_inlstc_itrns = num_itr;
+    m_perf_param.m_maximum_number_of_collisions_iterations = num_itr;
 }
 
 void BridsonStepper::computeImmunity(const RodSelectionType& selected_rods)
@@ -1156,7 +1155,7 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>&
     m_collision_detector->getCollisions(collisions, ContinuousTime);
 
     // Iterativly apply inelastic impulses
-    for (int itr = 0; !collisions.empty() && itr < m_num_inlstc_itrns; ++itr)
+    for (int itr = 0; !collisions.empty() && itr < m_perf_param.m_maximum_number_of_collisions_iterations; ++itr)
     {
         // TODO: Add debug checks for repeat collisions.
 
@@ -1216,7 +1215,7 @@ bool BridsonStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>&
 
     if (!collisions.empty())
     {
-        if (m_disable_rods_on_first_collision_failure) // disable the bad rods and go on with the simulation
+        if (m_perf_param.m_disable_rods_on_first_collision_failure) // disable the bad rods and go on with the simulation
         {
             for (int i = 0; i < m_number_of_rods; i++)
                 if (failed_collisions_rods[i])
@@ -2116,7 +2115,7 @@ void BridsonStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEd
 
 void BridsonStepper::applyInextensibilityVelocityFilter(int rodidx)
 {
-    if (m_dt > inextensibility_time_step)
+    if (m_level < m_perf_param.m_inextensibility_threshold)
         return;
 
     int rodbase = m_base_indices[rodidx];
@@ -2626,13 +2625,13 @@ bool BridsonStepper::checkExplosions(std::vector<bool>& exploding_rods, const st
                 double s = (*(m_startForces[*rod]))[j];
                 double p = (*(m_preCollisionForces[*rod]))[j];
                 double e = (*(m_endForces[*rod]))[j];
-                double rate = fabs(s - e) / (fabs(s) + explosion_damping);
+                double rate = fabs(s - e) / (fabs(s) + m_perf_param.m_explosion_damping);
                 maxRate = max(maxRate, rate);
                 minStart = min(fabs(s), minStart);
                 maxStart = max(fabs(s), maxStart);
                 if (maxRate == rate)
                     worstViolator = j;
-                if (isnan(rate) || rate > explosion_threshold)
+                if (isnan(rate) || rate > m_perf_param.m_explosion_threshold)
                 {
                     m_simulationFailed = true;
                     explosions_detected = true;
@@ -2674,13 +2673,13 @@ void BridsonStepper::executeImplicitPenaltyResponse(std::list<Collision*>& colli
 
 void BridsonStepper::setImplicitPenaltyExtraThickness(const double& h)
 {
-    m_implicit_thickness = h;
+    m_perf_param.m_implicit_thickness = h;
 }
 
 void BridsonStepper::setVertexFacePenalty(const double& k)
 {
     assert(k >= 0.0);
-    m_vertex_face_penalty = k;
+    m_perf_param.m_implicit_stiffness = k;
 }
 
 /**
@@ -2853,7 +2852,7 @@ void BridsonStepper::ensureCircularCrossSection(const ElasticRod& rod) const
         {
             std::cerr
                     << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Contact currently not supported for non-circular cross sections. Assuming circular cross section."
-                    << m_num_inlstc_itrns << std::endl;
+                    << std::endl;
         }
     }
 }
@@ -2870,7 +2869,7 @@ void BridsonStepper::ensureNoCollisionsByDefault(const ElasticRod& rod) const
         {
             std::cerr
                     << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Detected edges that collide by default. Instabilities may result."
-                    << m_num_inlstc_itrns << std::endl;
+                    << std::endl;
         }
     }
 }

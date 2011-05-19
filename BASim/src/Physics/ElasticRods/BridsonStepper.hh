@@ -131,26 +131,6 @@ private:
 
 struct PerformanceTuningParameters
 {
-    PerformanceTuningParameters() :
-        m_adaptive_substepping(true), //
-                m_selective_adaptivity(true), //
-                m_max_number_of_substeps(3), //
-                m_inextensibility_threshold(3), //
-                m_enable_penalty_response(true), //
-                m_implicit_thickness(1.0), //
-                m_implicit_rigidity(200.0), //
-                m_maximum_number_of_solver_iterations(50), //
-                m_maximum_number_of_collisions_iterations(10), //
-                m_enable_explosion_detection(true), //
-                m_explosion_damping(100.0), //
-                m_explosion_threshold(100.0), //
-                m_disable_rods_on_first_collision_failure(false), //
-                m_disable_rods_on_unresolved_collision(false), //
-                m_disable_rods_on_unresolved_dynamics(false), //
-                m_disable_rods_on_unresolved_explosion(false) //
-    {
-    }
-
     /**
      * Substepping
      */
@@ -168,18 +148,24 @@ struct PerformanceTuningParameters
      */
     // Whether we want to apply implicit penalty response for rod/mesh collisions
     bool m_enable_penalty_response;
-    // Implicit thickness in rod/mesh implicit penalty response
+    // Extra thickness in rod/mesh implicit penalty response
     double m_implicit_thickness;
-    // Penalty thickness in rod/mesh implicit penalty response
-    double m_implicit_rigidity;
+    // Penalty stiffness in rod/mesh implicit penalty response
+    double m_implicit_stiffness;
 
     /**
      * Iterations
      */
     // Maximum number of iterations allowed in the solver
     int m_maximum_number_of_solver_iterations;
-    // Maximum number of iterations allowed in collision response
+    // Maximum number of iterations allowed in collision response. Set to 0 to disable collision response, to 1 to disable iterations.
     int m_maximum_number_of_collisions_iterations;
+
+    /**
+     * Rod-rod collisions
+     */
+    // Whether we should ignore rod-rod collisions
+    bool m_skipRodRodCollisions;
 
     /**
      * Explosion detection
@@ -202,6 +188,48 @@ struct PerformanceTuningParameters
     bool m_disable_rods_on_unresolved_dynamics;
     // If a rod still has explosions after maximum substepping, it will be disabled
     bool m_disable_rods_on_unresolved_explosion;
+
+    PerformanceTuningParameters() :
+        m_adaptive_substepping(true), //
+                m_selective_adaptivity(true), //
+                m_max_number_of_substeps(3), //
+                m_inextensibility_threshold(3), //
+                m_enable_penalty_response(true), //
+                m_implicit_thickness(1.0), //
+                m_implicit_stiffness(200.0), //
+                m_maximum_number_of_solver_iterations(50), //
+                m_maximum_number_of_collisions_iterations(10), //
+                m_skipRodRodCollisions(true), //
+                m_enable_explosion_detection(true), //
+                m_explosion_damping(100.0), //
+                m_explosion_threshold(100.0), //
+                m_disable_rods_on_first_collision_failure(true), //
+                m_disable_rods_on_unresolved_collision(true), //
+                m_disable_rods_on_unresolved_dynamics(true), //
+                m_disable_rods_on_unresolved_explosion(true) //
+    {
+        SanityCheck();
+    }
+
+    // Performs various checks that the parameters are consistent
+    bool SanityCheck()
+    {
+        bool allright = true;
+
+        if (!m_adaptive_substepping && m_selective_adaptivity)
+        {
+            std::cerr << "Warning: selective adaptivity doesn't apply if adaptivity is off.\n";
+            allright = false;
+        }
+
+        if (m_selective_adaptivity && !m_skipRodRodCollisions)
+        {
+            std::cerr << "Warning: selective adaptivity doesn't apply if rod-rod collisions are on.\n";
+            allright = false;
+        }
+
+        return allright;
+    }
 
 };
 
@@ -256,7 +284,7 @@ public:
     void skipRodRodCollisions(bool skipRodRodCollisions)
     {
         std::cerr << "Switching rod-rod collisions " << (skipRodRodCollisions ? "OFF" : "ON") << std::endl;
-        m_skipRodRodCollisions = skipRodRodCollisions;
+        m_perf_param.m_skipRodRodCollisions = skipRodRodCollisions;
 
         if (m_collision_detector)
             m_collision_detector->setSkipRodRodCollisions(skipRodRodCollisions);
@@ -493,6 +521,8 @@ private:
     // RodTimeStepper::Method m_method;
     // Timestep selected by user
     double m_dt;
+    // Current level of substepping
+    int m_level;
 
     // Entry i is base index of ith rod in global array of position dofs
     std::vector<int> m_base_indices;
@@ -517,19 +547,11 @@ private:
     // Structure of references to the geometry
     const GeometricData m_geodata;
 
-    // Buffers to hold temporary saves of positions and velocities
-    VecXd m_xn;
-    VecXd m_xnp1;
-    VecXd m_vnphalf;
-    VecXd m_vnresp;
-    VecXd m_xdebug;
-
     // Enable/Disable portions of the collision response
     bool m_respns_enbld;
-    bool m_pnlty_enbld;
-    bool m_itrv_inlstc_enbld;
-    int m_num_inlstc_itrns;
-    double m_vertex_face_penalty;
+    //    bool m_pnlty_enbld;
+    //    bool m_itrv_inlstc_enbld;
+    //    int m_num_inlstc_itrns;
 
     // Some debug stuff in for now.
     bool m_nan_enc;
@@ -552,37 +574,39 @@ private:
 
     //////////////////////////////////
     // Jungseock's penalty response
-    bool m_implicit_pnlty_enbld;
-    double m_implicit_thickness;
     std::vector<RodPenaltyForce*> m_implicit_pnlty_forces;
 
     // Number of threads to be used for dynamics and collisions
     int m_num_threads;
 
-    // Whether we should check for large forces in the collision response (and substep consequently).
-    bool m_check_explosions;
-    // Toggle self collisions on or off
-    bool m_skipRodRodCollisions;
     // Toggle selective adaptivity
-    bool m_selective_adaptivity;
-    // A flag indicating that the simulation has failed
     bool m_simulationFailed;
     // Flag indicating whether we should freeze the simulation on first failure.
     bool m_stopOnRodError;
     // Set of rods that will no longer be collided during a time step
     std::set<int> m_collision_disabled_rods;
-    bool m_disable_rods_on_first_collision_failure;
 
-    // Backup structures
+    /**
+     * Backup structures
+     */
+    // Positions
+    VecXd m_xn;
+    VecXd m_xnp1;
+    VecXd m_xdebug;
+    // Velocities
+    VecXd m_vnphalf;
+    VecXd m_vnresp;
+    // Forces
     VecXd** m_startForces;
     VecXd** m_preCollisionForces;
     VecXd** m_endForces;
+    // Global back-ups for adaptive substepping
     std::vector<MinimalRodStateBackup> m_rodbackups;
     std::vector<MinimalTriangleMeshBackup> m_objbackups;
 
     RodSelectionType m_simulated_rods;
 
-    const PerformanceTuningParameters m_perf_param;
+    PerformanceTuningParameters m_perf_param;
 };
 
 } // namespace BASim
