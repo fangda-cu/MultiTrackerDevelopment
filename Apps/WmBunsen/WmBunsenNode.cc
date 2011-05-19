@@ -47,6 +47,19 @@ MObject WmBunsenNode::oa_simStepTaken;
 //Error Checking
 MObject WmBunsenNode::ia_stopOnRodError;
 
+// Performance Tuning
+  //substepping
+ MObject  WmBunsenNode::ia_maxNumOfSubsteps;
+ MObject  WmBunsenNode::ia_inextensibilityThreshold;
+  //Penalty Collision Response
+ MObject  WmBunsenNode::ia_enablePenaltyResponse;
+ MObject  WmBunsenNode::ia_implicitThickness;
+ MObject  WmBunsenNode::ia_implicitRigidity;
+  //Explosion Detection
+ MObject  WmBunsenNode::ia_enableExplosionDetection;
+ MObject  WmBunsenNode::ia_explosionDampening;
+ MObject  WmBunsenNode::ia_explosionThreshold;
+
 // Volumetric Collisions
 /* static */ MObject WmBunsenNode::ia_volumetricCollisions;
 /* static */ MObject WmBunsenNode::ia_gridDX;
@@ -1219,6 +1232,120 @@ MStatus WmBunsenNode::initialize()
          nAttr.setConnectable( true );
          stat = addAttribute( ia_stopOnRodError );
          if (!stat) { stat.perror( "addAttribute ia_stopOnRodError" ); return stat; }
+    }
+    //Substepping
+    {
+        MFnNumericAttribute nAttr;
+        ia_maxNumOfSubsteps = nAttr.create( "maxNumOfSubsteps", "mns", MFnNumericData::kInt, 3, &stat );
+        if (!stat) {
+            stat.perror("create ia_maxNumOfSubsteps attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_maxNumOfSubsteps );
+        if ( !stat ) { stat.perror( "addAttribute ia_maxNumOfSubsteps" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_inextensibilityThreshold = nAttr.create( "inextensibilityThreshold", "ixf", MFnNumericData::kDouble, 1.0/240.0, &stat );
+        if (!stat) {
+            stat.perror("create ia_inextensibilityThreshold attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_inextensibilityThreshold );
+        if ( !stat ) { stat.perror( "addAttribute ia_inextensibilityThreshold" ); return stat; }
+    }
+
+    //Penalty Collision Response
+    {
+        MFnNumericAttribute nAttr;
+        ia_enablePenaltyResponse = nAttr.create( "enablePenaltyResponse", "epr", MFnNumericData::kBoolean, false, &stat );
+        if (!stat) {
+            stat.perror("create ia_enablePenaltyResponse");
+            return stat;
+        }
+         nAttr.setWritable( true );
+         nAttr.setReadable( false );
+         nAttr.setConnectable( true );
+         stat = addAttribute( ia_enablePenaltyResponse );
+         if (!stat) { stat.perror( "addAttribute ia_enablePenaltyResponse" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_implicitThickness = nAttr.create( "implicitThickness", "imt", MFnNumericData::kDouble, 1.0, &stat);
+        if (!stat) {
+            stat.perror("create ia_implicitThickness attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_implicitThickness );
+        if (!stat) { stat.perror( "addAttribute ia_implicitThickness" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_implicitRigidity = nAttr.create( "implicitRigidity", "rig", MFnNumericData::kDouble, 200.0, &stat);
+        if (!stat) {
+            stat.perror("create ia_implicitRigidity attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_implicitRigidity );
+        if (!stat) { stat.perror( "addAttribute ia_implicitRigidity" ); return stat; }
+    }
+    //Explosion Detection
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_enableExplosionDetection= nAttr.create( "enableExplosionDetection", "eex", MFnNumericData::kBoolean, false, &stat );
+        if (!stat) {
+            stat.perror("create ia_enableExplosionDetection");
+            return stat;
+        }
+         nAttr.setWritable( true );
+         nAttr.setReadable( false );
+         nAttr.setConnectable( true );
+         stat = addAttribute( ia_enableExplosionDetection );
+         if (!stat) { stat.perror( "addAttribute ia_enableExplosionDetection" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_explosionDampening = nAttr.create( "explosionDampening", "exd", MFnNumericData::kDouble, 100.0, &stat);
+        if (!stat) {
+            stat.perror("create ia_explosionDampening attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_explosionDampening );
+        if (!stat) { stat.perror( "addAttribute ia_explosionDampening" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_explosionThreshold = nAttr.create( "explosionThreshold", "ext", MFnNumericData::kDouble, 100.0, &stat);
+        if (!stat) {
+            stat.perror("create ia_explosionThreshold attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_explosionThreshold );
+        if (!stat) { stat.perror( "addAttribute ia_explosionThreshold" ); return stat; }
     }
 
     {

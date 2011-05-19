@@ -111,6 +111,19 @@ public:
     // Rod Error checking
     static MObject ia_stopOnRodError;
 
+    // Performance Tuning
+      //substepping
+     static MObject ia_maxNumOfSubsteps;
+     static MObject ia_inextensibilityThreshold;
+      //Penalty Collision Response
+     static MObject ia_enablePenaltyResponse;
+     static MObject ia_implicitThickness;
+     static MObject ia_implicitRigidity;
+      //Explosion Detection
+     static MObject ia_enableExplosionDetection;
+     static MObject ia_explosionDampening;
+     static MObject ia_explosionThreshold;
+
     // Drawing
     static MObject ia_drawSubSteppedVertices;
     

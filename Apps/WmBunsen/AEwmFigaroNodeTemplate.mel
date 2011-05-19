@@ -66,8 +66,25 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
         editorTemplate -addControl "XMLFilePath";
     editorTemplate -endLayout;
 
-   editorTemplate -beginLayout "Error Checking" -collapse 0;
+    editorTemplate -beginLayout "Error Checking" -collapse 0;
         editorTemplate -addControl "stopOnRodError";
+    editorTemplate -endLayout;
+
+    editorTemplate -beginLayout "Substepping" -collapse 0;
+        editorTemplate -addControl "maxNumOfSubsteps";
+        editorTemplate -addControl "inextensibilityThreshold";
+    editorTemplate -endLayout;
+
+    editorTemplate -beginLayout "Penalty Collision Response" -collapse 0;
+        editorTemplate -addControl "enablePenaltyResponse";
+	editorTemplate -addControl "implicitThickness";
+	editorTemplate -addControl "implicitRigidity";
+    editorTemplate -endLayout;
+
+    editorTemplate -beginLayout "Explosion Dectection" -collapse 0;
+        editorTemplate -addControl "enableExplosionDetection";
+        editorTemplate -addControl "explosionDampening";
+        editorTemplate -addControl "explosionThreshold";
     editorTemplate -endLayout;
     
     editorTemplate -addExtraControls;
