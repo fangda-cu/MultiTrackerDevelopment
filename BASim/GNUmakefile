@@ -241,6 +241,7 @@ Math/DiagonalPreconditioner.hh \
 Math/FlensMatrix.hh \
 Math/ImplicitEuler.hh \
 Math/LinearSolverBase.hh \
+Math/LinearSystemSolver.hh \
 Math/MKL/MKLLinearSolver.hh \
 Math/Math.hh \
 Math/MatrixBase.hh \
@@ -363,6 +364,7 @@ src/Math/SolverUtils.cc \
 src/Math/Pardiso/PardisoLinearSolver.cc \
 src/Physics/ElasticRods/AnisotropicRod.cc \
 src/Physics/ElasticRods/BridsonStepper.cc \
+src/Physics/ElasticRods/BridsonStepper_Collision.cc \
 src/Physics/ElasticRods/ElasticRod.cc \
 src/Physics/ElasticRods/ParallelStepper.cc \
 src/Physics/ElasticRods/PerformanceTuningParameters.cc \
