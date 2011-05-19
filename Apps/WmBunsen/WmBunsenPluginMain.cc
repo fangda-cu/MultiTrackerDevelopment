@@ -159,8 +159,9 @@ MStatus initializePlugin( MObject obj )
     }
 
     MGlobal::executeCommand( "source WmFigaro.mel", false );
-    MGlobal::executeCommand( "source Sweeney/wmSweeney.mel", false );
+    MGlobal::executeCommand( "source wmSweeney.mel", false );
     CHECK_MSTATUS( plugin.registerUI( "wmFigaroAddMainMenu", "wmFigaroRemoveMainMenu" ) );
+    CHECK_MSTATUS( plugin.registerUI( "wmSweeneyAddMainMenu", "wmSweeneyRemoveMainMenu" ) );
     return stat;
 
     
