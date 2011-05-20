@@ -70,6 +70,7 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
         editorTemplate -addControl "stopOnRodError";
     editorTemplate -endLayout;
 
+editorTemplate -beginLayout "Performance Tuning" -collapse 0;
   //General parameters
  editorTemplate -beginLayout "General Parameters" -collapse 0;
     editorTemplate -beginLayout "Implicit Rod-Mesh Penalty" -collapse 0;
@@ -100,22 +101,22 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
      editorTemplate -endLayout;
   editorTemplate -endLayout;
 
- editorTemplate -beginLayout "Response to Failure" -collapse 0;
-     editorTemplate -beginLayout "From Solver Failure" -collapse 0;
-         editorTemplate -addControl "solverFailure";
+ editorTemplate -beginLayout "Substepping:" -collapse 0;
+     editorTemplate -beginLayout "Solver" -collapse 0;
          editorTemplate -addControl "maxNumSolverSubsteps";
+         editorTemplate -addControl "ifSolverStillFails";
      editorTemplate -endLayout;
-     editorTemplate -beginLayout "From Collision Failure" -collapse 0;
-         editorTemplate -addControl "collisionFailure";
+     editorTemplate -beginLayout "Collision" -collapse 0;
          editorTemplate -addControl "maxNumCollisionSubsteps";
+         editorTemplate -addControl "ifCollisionStillFails";
      editorTemplate -endLayout;
-     editorTemplate -beginLayout "From Explosion Failure" -collapse 0;
-         editorTemplate -addControl "explosionFailure";
+     editorTemplate -beginLayout "Explosion" -collapse 0;
          editorTemplate -addControl "maxNumExplosionSubsteps";
+         editorTemplate -addControl "ifExplosionStillFails";
      editorTemplate -endLayout;
 
-
- editorTemplate -endLayout;
+editorTemplate -endLayout;
+editorTemplate -endLayout;
 
     editorTemplate -addExtraControls;
     editorTemplate -endScrollLayout;

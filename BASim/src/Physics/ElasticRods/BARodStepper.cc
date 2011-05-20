@@ -729,525 +729,505 @@ bool BARodStepper::step(RodSelectionType& selected_rods)
     for (RodSelectionType::iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
     {
         if (m_steppers[*rod]->HasSolved() && !exploding_rods[*rod] && !failed_collisions_rods[*rod])
+        {
             selected_rods.erase(rod--);
-        else
+            continue;
+        }
+        if (!m_steppers[*rod]->HasSolved())
         {
-            if (!m_steppers[*rod]->HasSolved())
+            if (m_level >= m_perf_param.m_max_number_of_substeps_for_solver)
             {
-                if (m_level >= m_perf_param.m_max_number_of_substeps_for_solver)
+                switch (m_perf_param.m_in_case_of_solver_failure)
                 {
-                    switch (m_perf_param.m_in_case_of_solver_failure)
-                    {
-                    case PerformanceTuningParameters::IgnoreError:
-                        // Nothing
-                        break;
-                    case PerformanceTuningParameters::KillTheRod:
-                        killTheRod(*rod);
-                        break;
-                    case PerformanceTuningParameters::HaltSimulation:
-                        m_simulationFailed = true;
-                        break;
-                    }
-                    selected_rods.erase(rod--);
-                }
-            }
-            else if (exploding_rods[*rod])
-            {
-                if (m_level >= m_perf_param.m_max_number_of_substeps_for_explosion)
-                {
-                    switch (m_perf_param.m_in_case_of_explosion_failure)
-                    {
-                    case PerformanceTuningParameters::IgnoreError:
-                        // Nothing
-                        break;
-                    case PerformanceTuningParameters::KillTheRod:
-                        killTheRod(*rod);
-                        break;
-                    case PerformanceTuningParameters::HaltSimulation:
-                        m_simulationFailed = true;
-                        break;
-                    }
-                    selected_rods.erase(rod--);
-                }
-            }
-            else if (failed_collisions_rods[*rod])
-            {
-                if (m_level >= m_perf_param.m_max_number_of_substeps_for_collision)
-                {
-                    switch (m_perf_param.m_in_case_of_collision_failure)
-                    {
-                    case PerformanceTuningParameters::IgnoreError:
-                        // Nothing
-                        break;
-                    case PerformanceTuningParameters::KillTheRod:
-                        killTheRod(*rod);
-                        break;
-                    case PerformanceTuningParameters::HaltSimulation:
-                        m_simulationFailed = true;
-                        break;
-                    }
-                    selected_rods.erase(rod--);
-                }
-            }
-
-            /*
-             if ((m_steppers[*rod]->HasSolved() || m_perf_param.m_in_case_of_solver_failure
-             == PerformanceTuningParameters::IgnoreError) && (!exploding_rods[*rod]
-             || m_perf_param.m_in_case_of_explosion_failure == PerformanceTuningParameters::IgnoreError)
-             && (!failed_collisions_rods[*rod] || m_perf_param.m_in_case_of_collision_failure
-             == PerformanceTuningParameters::IgnoreError))
-             selected_rods.erase(rod--);
-             else if ((!m_steppers[*rod]->HasSolved() && m_perf_param.m_in_case_of_solver_failure
-             == PerformanceTuningParameters::HaltSimulation) || (exploding_rods[*rod]
-             && m_perf_param.m_in_case_of_explosion_failure == PerformanceTuningParameters::HaltSimulation)
-             || (failed_collisions_rods[*rod] && m_perf_param.m_in_case_of_collision_failure
-             == PerformanceTuningParameters::HaltSimulation))
-             {
-             m_simulationFailed = true;
-             selected_rods.erase(rod--);
-             }
-             else if ((!m_steppers[*rod]->HasSolved() && m_level >= m_perf_param.m_max_number_of_substeps_for_solver)
-             || (failed_collisions_rods[*rod] && m_level >= m_perf_param.m_max_number_of_substeps_for_collision)
-             || (exploding_rods[*rod] && m_level >= m_perf_param.m_max_number_of_substeps_for_explosion))
-             {
-             killTheRod(*rod);
-             selected_rods.erase(rod--);
-             }
-             // Otherwise the rod has not been erased from selected_rods, so it will be substepped.
-             */
-
-        }
-    }
-        bool all_rods_are_ok = dependable_solve && all_collisions_succeeded && !explosions_detected;
-        std::cout << "This step is " << (all_rods_are_ok ? "" : "\033[31;1mNOT\033[m ") << "dependable." << std::endl;
-
-        return all_rods_are_ok;
-}
-
-    /**
-     * Extracting/Restoring
-     */
-    void BARodStepper::extractPositions(VecXd& positions, const RodSelectionType& selected_rods) const
-    {
-        assert(m_number_of_rods == m_base_indices.size());
-        assert(getNumDof() == positions.size());
-
-        if (getNumDof() == 0)
-            return;
-
-#ifdef DEBUG
-        positions.setConstant(std::numeric_limits<double>::signaling_NaN());
-#endif
-
-        for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-            for (int j = 0; j < m_rods[*rod]->nv(); ++j)
-            {
-                assert(m_base_indices[*rod] + 3 * j + 2 < positions.size());
-                positions.segment<3> (m_base_indices[*rod] + 3 * j) = m_rods[*rod]->getVertex(j);
-            }
-
-        assert(m_triangle_meshes.size() == m_base_triangle_indices.size());
-
-        //    std::cerr << "positions.size() = " << positions.size() << std::endl;
-        //    std::cerr << "m_base_triangle_indices.size() = " << m_base_triangle_indices.size() << std::endl;
-
-        for (int i = 0; i < (int) m_triangle_meshes.size(); ++i)
-        {
-            int j = 0;
-            for (TriangleMesh::vertex_iter vit = m_triangle_meshes[i]->vertices_begin(); vit
-                    != m_triangle_meshes[i]->vertices_end(); ++vit, ++j)
-            {
-                assert(m_base_triangle_indices[i] + 3 * j + 2 < positions.size());
-                positions.segment<3> (m_base_triangle_indices[i] + 3 * j) = m_triangle_meshes[i]->getVertex(*vit);
-            }
-        }
-
-        //    assert((positions.cwise() == positions).all());
-
-        // Ensure boundary conditions loaded properly
-#ifdef DEBUG
-        // For each rod
-        for( int i = 0; i < (int) m_number_of_rods; ++i )
-        {
-            RodBoundaryCondition* boundary = m_rods[i]->getBoundaryCondition();
-            int rodbase = m_base_indices[i];
-
-            // For each vertex of the current rod, if that vertex has a prescribed position
-            for( int j = 0; j < m_rods[i]->nv(); ++j ) if( boundary->isVertexScripted(j) )
-            {
-                std::cout << "BridsonTimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
-                Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
-                Vec3d actualvalue = positions.segment<3>(rodbase+3*j);
-                assert( approxEq(desiredposition, actualvalue, 1.0e-6) );
-            }
-        }
-#endif
-    }
-
-    void BARodStepper::extractVelocities(VecXd& velocities, const RodSelectionType& selected_rods) const
-    {
-        assert(m_number_of_rods == m_base_indices.size());
-        assert(getNumDof() == velocities.size());
-
-        if (getNumDof() == 0)
-            return;
-
-#ifdef DEBUG
-        velocities.setConstant(std::numeric_limits<double>::signaling_NaN());
-#endif
-
-        for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-            for (int j = 0; j < m_rods[*rod]->nv(); ++j)
-            {
-                assert(m_base_indices[*rod] + 3 * j + 2 < velocities.size());
-                velocities.segment<3> (m_base_indices[*rod] + 3 * j) = m_rods[*rod]->getVelocity(j);
-            }
-
-        assert(m_triangle_meshes.size() == m_base_triangle_indices.size());
-        for (int i = 0; i < (int) m_triangle_meshes.size(); ++i)
-        {
-            int j = 0;
-            for (TriangleMesh::vertex_iter vit = m_triangle_meshes[i]->vertices_begin(); vit
-                    != m_triangle_meshes[i]->vertices_end(); ++vit, ++j)
-            {
-                assert(m_base_triangle_indices[i] + 3 * j + 2 < velocities.size());
-                velocities.segment<3> (m_base_triangle_indices[i] + 3 * j) = Vec3d::Zero();
-            }
-        }
-
-        //    assert((velocities.cwise() == velocities).all());
-    }
-
-    void BARodStepper::restorePositions(const VecXd& positions, const RodSelectionType& selected_rods)
-    {
-        assert(m_number_of_rods == m_base_indices.size());
-
-        for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-            for (int j = 0; j < m_rods[*rod]->nv(); ++j)
-                if (!m_rods[*rod]->getBoundaryCondition()->isVertexScripted(j))
-                    m_rods[*rod]->setVertex(j, positions.segment<3> (m_base_indices[*rod] + 3 * j));
-    }
-
-    void BARodStepper::restoreVelocities(const VecXd& velocities, const RodSelectionType& selected_rods)
-    {
-        assert(m_number_of_rods == m_base_indices.size());
-
-        for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-            for (int j = 0; j < m_rods[*rod]->nv(); ++j)
-                if (!m_rods[*rod]->getBoundaryCondition()->isVertexScripted(j))
-                    m_rods[*rod]->setVelocity(j, velocities.segment<3> (m_base_indices[*rod] + 3 * j));
-    }
-
-    void BARodStepper::restoreResponses(const VecXd& responses, const RodSelectionType& selected_rods)
-    {
-        assert(m_number_of_rods == m_base_indices.size());
-
-        for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-            for (int j = 0; j < m_rods[*rod]->nv(); ++j)
-                if (!m_rods[*rod]->getBoundaryCondition()->isVertexScripted(j))
-                    m_rods[*rod]->setResponse(j, responses.segment<3> (m_base_indices[*rod] + 3 * j));
-    }
-
-    /**
-     * Enabling/disabling procedures
-     */
-    void BARodStepper::enableImplicitPenaltyImpulses()
-    {
-        m_perf_param.m_enable_penalty_response = true;
-        for (int i = 0; i < (int) m_number_of_rods; i++)
-        {
-            RodPenaltyForce *pnlty = new RodPenaltyForce();
-            m_implicit_pnlty_forces.push_back(pnlty);
-            m_steppers[i]->addExternalForce(pnlty);
-        }
-
-        std::cerr << "Implicit penalty response is now enabled" << std::endl;
-
-    }
-
-    void BARodStepper::disableImplicitPenaltyImpulses()
-    {
-        m_perf_param.m_enable_penalty_response = false;
-
-        for (int i = 0; i < (int) m_number_of_rods; i++)
-        {
-            std::vector<RodExternalForce*>& forces = m_steppers[i]->getExternalForces();
-            for (int j = 0; j < (int) forces.size(); j++)
-            {
-                RodPenaltyForce* rod_penalty_force = dynamic_cast<RodPenaltyForce*> (forces[j]);
-                if (rod_penalty_force)
-                {
-                    forces.erase(forces.begin() + j);
+                case PerformanceTuningParameters::IgnoreError:
+                    // Nothing
+                    break;
+                case PerformanceTuningParameters::KillTheRod:
+                    std::cerr << "Solver Failure: ";
+                    killTheRod(*rod);
+                    break;
+                case PerformanceTuningParameters::HaltSimulation:
+                    m_simulationFailed = true;
                     break;
                 }
+                selected_rods.erase(rod--);
+                continue;
             }
         }
-        m_implicit_pnlty_forces.clear();
-    }
-
-    void BARodStepper::enableResponse()
-    {
-        m_respns_enbld = true;
-    }
-
-    void BARodStepper::disableResponse()
-    {
-        m_respns_enbld = false;
-    }
-
-    /*
-     void BARodStepper::enableIterativeInelasticImpulses()
-     {
-     m_itrv_inlstc_enbld = true;
-     }
-
-     void BARodStepper::disableIterativeInelasticImpulses()
-     {
-     m_itrv_inlstc_enbld = false;
-     }
-     */
-
-    void BARodStepper::setNumInelasticIterations(const int& num_itr)
-    {
-        assert(num_itr >= 0);
-        m_perf_param.m_maximum_number_of_collisions_iterations = num_itr;
-    }
-
-    void BARodStepper::computeImmunity(const RodSelectionType& selected_rods)
-    {
-        // Initially, the rods not treated in this step are collision-immune
-        for (std::vector<bool>::iterator i = m_collision_immune.begin(); i != m_collision_immune.begin() + m_obj_start; i++)
-            *i = true;
-        for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-            if (m_collision_disabled_rods.find(*rod) == m_collision_disabled_rods.end()) // If the rod is not in the disabled set
-                for (int j = 0; j < m_rods[*rod]->nv(); ++j)
-                    m_collision_immune[m_base_indices[*rod] / 3 + j] = false;
-
-        // Find the initial vertex-face intersections and mark them collision-immune
-        std::list<Collision*> collisions;
-        m_collision_detector->getCollisions(collisions, EdgeFace);
-        while (!collisions.empty())
+        if (exploding_rods[*rod])
         {
-            EdgeFaceIntersection* intersection = dynamic_cast<EdgeFaceIntersection*> (collisions.front());
-            collisions.pop_front();
-
-            if (intersection)
+            if (m_level >= m_perf_param.m_max_number_of_substeps_for_explosion)
             {
-                m_collision_immune[intersection->v0] = true;
-                // std::cerr << "BARodStepper::step: Vertex " << intersection->v0 << " has been marked collision-immune\n";
+                switch (m_perf_param.m_in_case_of_explosion_failure)
+                {
+                case PerformanceTuningParameters::IgnoreError:
+                    // Nothing
+                    break;
+                case PerformanceTuningParameters::KillTheRod:
+                    std::cerr << "Explosion Failure: ";
+                    killTheRod(*rod);
+                    break;
+                case PerformanceTuningParameters::HaltSimulation:
+                    m_simulationFailed = true;
+                    break;
+                }
+                selected_rods.erase(rod--);
+                continue;
+            }
+        }
+        if (failed_collisions_rods[*rod])
+        {
+            if (m_level >= m_perf_param.m_max_number_of_substeps_for_collision)
+            {
+                switch (m_perf_param.m_in_case_of_collision_failure)
+                {
+                case PerformanceTuningParameters::IgnoreError:
+                    // Nothing
+                    break;
+                case PerformanceTuningParameters::KillTheRod:
+                    std::cerr << "Collision Failure: ";
+                    killTheRod(*rod);
+                    break;
+                case PerformanceTuningParameters::HaltSimulation:
+                    m_simulationFailed = true;
+                    break;
+                }
+                selected_rods.erase(rod--);
+                continue;
             }
         }
     }
 
-    /**
-     * Utilities
-     */
-    double BARodStepper::computeTotalForceNorm() const
-    {
-        double totalforcenormsqr = 0.0;
-        for (int i = 0; i < (int) m_number_of_rods; ++i)
+    bool all_rods_are_ok = dependable_solve && all_collisions_succeeded && !explosions_detected;
+    std::cout << "This step is " << (all_rods_are_ok ? "" : "\033[31;1mNOT\033[m ") << "dependable." << std::endl;
+
+    return all_rods_are_ok;
+}
+
+/**
+ * Extracting/Restoring
+ */
+void BARodStepper::extractPositions(VecXd& positions, const RodSelectionType& selected_rods) const
+{
+    assert(m_number_of_rods == m_base_indices.size());
+    assert(getNumDof() == positions.size());
+
+    if (getNumDof() == 0)
+        return;
+
+#ifdef DEBUG
+    positions.setConstant(std::numeric_limits<double>::signaling_NaN());
+#endif
+
+    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+        for (int j = 0; j < m_rods[*rod]->nv(); ++j)
         {
-            VecXd force(m_rods[i]->ndof());
-            force.setZero();
-            m_rods[i]->computeForces(force);
-            totalforcenormsqr += force.squaredNorm();
+            assert(m_base_indices[*rod] + 3 * j + 2 < positions.size());
+            positions.segment<3> (m_base_indices[*rod] + 3 * j) = m_rods[*rod]->getVertex(j);
         }
-        return sqrt(totalforcenormsqr);
-    }
 
-    void BARodStepper::setDt(double dt)
+    assert(m_triangle_meshes.size() == m_base_triangle_indices.size());
+
+    //    std::cerr << "positions.size() = " << positions.size() << std::endl;
+    //    std::cerr << "m_base_triangle_indices.size() = " << m_base_triangle_indices.size() << std::endl;
+
+    for (int i = 0; i < (int) m_triangle_meshes.size(); ++i)
     {
-        assert(dt > 0.0);
-        m_dt = dt;
-
-        // Set the timestep for the rod controllers
-        for (int i = 0; i < (int) m_steppers.size(); ++i)
-            m_steppers[i]->setTimeStep(dt);
-
-        // Set the timestep for the scripted object controllers
-        for (int i = 0; i < (int) m_scripting_controllers.size(); ++i)
-            m_scripting_controllers[i]->setDt(dt);
-    }
-
-    void BARodStepper::setTime(double time)
-    {
-        m_t = time;
-        // std::cout << "settingTime in BARodStepper to be " << m_t << std::endl;
-
-        // Set the time for the rod controllers
-        for (int i = 0; i < (int) m_steppers.size(); ++i)
-            m_steppers[i]->setTime(m_t);
-
-        // Set the time for the scripted object controllers
-        for (int i = 0; i < (int) m_scripting_controllers.size(); ++i)
-            m_scripting_controllers[i]->setTime(m_t);
-    }
-
-    double BARodStepper::getDt() const
-    {
-        return m_dt;
-    }
-
-    double BARodStepper::getTime() const
-    {
-        //std::cout << "BARodStepper::getTime() = " << m_t << std::endl;
-        return m_t;
-    }
-
-    void BARodStepper::setRodLabels(const std::vector<std::string>& rod_labels)
-    {
-        assert(rod_labels.size() == m_number_of_rods);
-        m_rod_labels = rod_labels;
-    }
-
-    int BARodStepper::getContainingRod(int vert_idx) const
-    {
-        assert(vert_idx >= 0);
-        assert(vert_idx < getNumVerts());
-        int rod = -1;
-
-        int accm = 0;
-        for (int i = 0; i < (int) m_number_of_rods; ++i)
+        int j = 0;
+        for (TriangleMesh::vertex_iter vit = m_triangle_meshes[i]->vertices_begin(); vit
+                != m_triangle_meshes[i]->vertices_end(); ++vit, ++j)
         {
-            accm += m_rods[i]->nv();
-            if (vert_idx < accm)
+            assert(m_base_triangle_indices[i] + 3 * j + 2 < positions.size());
+            positions.segment<3> (m_base_triangle_indices[i] + 3 * j) = m_triangle_meshes[i]->getVertex(*vit);
+        }
+    }
+
+    //    assert((positions.cwise() == positions).all());
+
+    // Ensure boundary conditions loaded properly
+#ifdef DEBUG
+    // For each rod
+    for( int i = 0; i < (int) m_number_of_rods; ++i )
+    {
+        RodBoundaryCondition* boundary = m_rods[i]->getBoundaryCondition();
+        int rodbase = m_base_indices[i];
+
+        // For each vertex of the current rod, if that vertex has a prescribed position
+        for( int j = 0; j < m_rods[i]->nv(); ++j ) if( boundary->isVertexScripted(j) )
+        {
+            std::cout << "BridsonTimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
+            Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
+            Vec3d actualvalue = positions.segment<3>(rodbase+3*j);
+            assert( approxEq(desiredposition, actualvalue, 1.0e-6) );
+        }
+    }
+#endif
+}
+
+void BARodStepper::extractVelocities(VecXd& velocities, const RodSelectionType& selected_rods) const
+{
+    assert(m_number_of_rods == m_base_indices.size());
+    assert(getNumDof() == velocities.size());
+
+    if (getNumDof() == 0)
+        return;
+
+#ifdef DEBUG
+    velocities.setConstant(std::numeric_limits<double>::signaling_NaN());
+#endif
+
+    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+        for (int j = 0; j < m_rods[*rod]->nv(); ++j)
+        {
+            assert(m_base_indices[*rod] + 3 * j + 2 < velocities.size());
+            velocities.segment<3> (m_base_indices[*rod] + 3 * j) = m_rods[*rod]->getVelocity(j);
+        }
+
+    assert(m_triangle_meshes.size() == m_base_triangle_indices.size());
+    for (int i = 0; i < (int) m_triangle_meshes.size(); ++i)
+    {
+        int j = 0;
+        for (TriangleMesh::vertex_iter vit = m_triangle_meshes[i]->vertices_begin(); vit
+                != m_triangle_meshes[i]->vertices_end(); ++vit, ++j)
+        {
+            assert(m_base_triangle_indices[i] + 3 * j + 2 < velocities.size());
+            velocities.segment<3> (m_base_triangle_indices[i] + 3 * j) = Vec3d::Zero();
+        }
+    }
+
+    //    assert((velocities.cwise() == velocities).all());
+}
+
+void BARodStepper::restorePositions(const VecXd& positions, const RodSelectionType& selected_rods)
+{
+    assert(m_number_of_rods == m_base_indices.size());
+
+    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+        for (int j = 0; j < m_rods[*rod]->nv(); ++j)
+            if (!m_rods[*rod]->getBoundaryCondition()->isVertexScripted(j))
+                m_rods[*rod]->setVertex(j, positions.segment<3> (m_base_indices[*rod] + 3 * j));
+}
+
+void BARodStepper::restoreVelocities(const VecXd& velocities, const RodSelectionType& selected_rods)
+{
+    assert(m_number_of_rods == m_base_indices.size());
+
+    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+        for (int j = 0; j < m_rods[*rod]->nv(); ++j)
+            if (!m_rods[*rod]->getBoundaryCondition()->isVertexScripted(j))
+                m_rods[*rod]->setVelocity(j, velocities.segment<3> (m_base_indices[*rod] + 3 * j));
+}
+
+void BARodStepper::restoreResponses(const VecXd& responses, const RodSelectionType& selected_rods)
+{
+    assert(m_number_of_rods == m_base_indices.size());
+
+    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+        for (int j = 0; j < m_rods[*rod]->nv(); ++j)
+            if (!m_rods[*rod]->getBoundaryCondition()->isVertexScripted(j))
+                m_rods[*rod]->setResponse(j, responses.segment<3> (m_base_indices[*rod] + 3 * j));
+}
+
+/**
+ * Enabling/disabling procedures
+ */
+void BARodStepper::enableImplicitPenaltyImpulses()
+{
+    m_perf_param.m_enable_penalty_response = true;
+    for (int i = 0; i < (int) m_number_of_rods; i++)
+    {
+        RodPenaltyForce *pnlty = new RodPenaltyForce();
+        m_implicit_pnlty_forces.push_back(pnlty);
+        m_steppers[i]->addExternalForce(pnlty);
+    }
+
+    std::cerr << "Implicit penalty response is now enabled" << std::endl;
+
+}
+
+void BARodStepper::disableImplicitPenaltyImpulses()
+{
+    m_perf_param.m_enable_penalty_response = false;
+
+    for (int i = 0; i < (int) m_number_of_rods; i++)
+    {
+        std::vector<RodExternalForce*>& forces = m_steppers[i]->getExternalForces();
+        for (int j = 0; j < (int) forces.size(); j++)
+        {
+            RodPenaltyForce* rod_penalty_force = dynamic_cast<RodPenaltyForce*> (forces[j]);
+            if (rod_penalty_force)
             {
-                rod = i;
+                forces.erase(forces.begin() + j);
                 break;
             }
         }
-        return rod;
     }
+    m_implicit_pnlty_forces.clear();
+}
 
-    bool BARodStepper::isRodVertex(int vert) const
+void BARodStepper::enableResponse()
+{
+    m_respns_enbld = true;
+}
+
+void BARodStepper::disableResponse()
+{
+    m_respns_enbld = false;
+}
+
+/*
+ void BARodStepper::enableIterativeInelasticImpulses()
+ {
+ m_itrv_inlstc_enbld = true;
+ }
+
+ void BARodStepper::disableIterativeInelasticImpulses()
+ {
+ m_itrv_inlstc_enbld = false;
+ }
+ */
+
+void BARodStepper::setNumInelasticIterations(const int& num_itr)
+{
+    assert(num_itr >= 0);
+    m_perf_param.m_maximum_number_of_collisions_iterations = num_itr;
+}
+
+void BARodStepper::computeImmunity(const RodSelectionType& selected_rods)
+{
+    // Initially, the rods not treated in this step are collision-immune
+    for (std::vector<bool>::iterator i = m_collision_immune.begin(); i != m_collision_immune.begin() + m_obj_start; i++)
+        *i = true;
+    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+        if (m_collision_disabled_rods.find(*rod) == m_collision_disabled_rods.end()) // If the rod is not in the disabled set
+            for (int j = 0; j < m_rods[*rod]->nv(); ++j)
+                m_collision_immune[m_base_indices[*rod] / 3 + j] = false;
+
+    // Find the initial vertex-face intersections and mark them collision-immune
+    std::list<Collision*> collisions;
+    m_collision_detector->getCollisions(collisions, EdgeFace);
+    while (!collisions.empty())
     {
-        assert(vert >= 0);
-        assert(vert < getNumVerts());
+        EdgeFaceIntersection* intersection = dynamic_cast<EdgeFaceIntersection*> (collisions.front());
+        collisions.pop_front();
 
-        // Is a vertex if index is less than start of object vertices in global array
-        return vert < m_obj_start;
-    }
-
-    bool BARodStepper::vertexAndFaceShareVertex(const int& v, const int& f0, const int& f1, const int& f2) const
-    {
-        return v == f0 || v == f1 || v == f2;
-    }
-
-    bool BARodStepper::vertexAndFaceShareVertex(const int& vertex, const int& face) const
-    {
-        assert(face < (int) m_faces.size());
-        assert(vertex >= 0);
-        assert(vertex < getNumVerts());
-        assert(m_faces[face].idx[0] >= 0);
-        assert(m_faces[face].idx[0] < getNumVerts());
-        assert(m_faces[face].idx[1] >= 0);
-        assert(m_faces[face].idx[1] < getNumVerts());
-        assert(m_faces[face].idx[2] >= 0);
-        assert(m_faces[face].idx[2] < getNumVerts());
-
-        return vertexAndFaceShareVertex(vertex, m_faces[face].idx[0], m_faces[face].idx[1], m_faces[face].idx[2]);
-    }
-
-    bool BARodStepper::isProperCollisionTime(double time)
-    {
-        if (time != time)
+        if (intersection)
         {
-            if (!m_nan_enc)
-                std::cerr
-                        << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Encountered NaN collision time from root finder. Supressing further messages of this type."
-                        << std::endl;
-            m_nan_enc = true;
-            return false;
-        }
-        if (time == std::numeric_limits<double>::infinity())
-        {
-            if (!m_inf_enc)
-                std::cerr
-                        << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Encountered INF collision time from root finder. Supressing further messages of this type."
-                        << std::endl;
-            m_inf_enc = true;
-            return false;
-        }
-        if (time < 0.0)
-        {
-            if (!m_lt0_enc)
-                std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Encountered scaled collision time " << time
-                        << " less than 0.0. Supressing further messages of this type." << std::endl;
-            m_lt0_enc = true;
-            return false;
-        }
-        if (time > 1.0)
-        {
-            if (!m_gt0_enc)
-                std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Encountered scaled collision time " << time
-                        << " greater than 1.0. Supressing further messages of this type." << std::endl;
-            m_gt0_enc = true;
-            return false;
-        }
-        return true;
-    }
-
-    int BARodStepper::getNumDof() const
-    {
-        assert(m_num_dof >= 0);
-        return m_num_dof;
-    }
-
-    int BARodStepper::getNumVerts() const
-    {
-        assert(m_num_dof % 3 == 0);
-        return m_num_dof / 3;
-    }
-
-    // Ensures each rod edge has circular cross section.
-    void BARodStepper::ensureCircularCrossSection(const ElasticRod& rod) const
-    {
-        // Ensure circular cross section
-        for (int i = 0; i < (int) rod.ne(); ++i)
-        {
-            if (rod.getRadiusScale() * rod.radiusA(i) != rod.getRadiusScale() * rod.radiusB(i))
-            {
-                std::cerr
-                        << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Contact currently not supported for non-circular cross sections. Assuming circular cross section."
-                        << std::endl;
-            }
+            m_collision_immune[intersection->v0] = true;
+            // std::cerr << "BARodStepper::step: Vertex " << intersection->v0 << " has been marked collision-immune\n";
         }
     }
+}
 
-    // Ensures each internal rod edge has length less than sum of neighbors' radii.
-    void BARodStepper::ensureNoCollisionsByDefault(const ElasticRod& rod) const
+/**
+ * Utilities
+ */
+double BARodStepper::computeTotalForceNorm() const
+{
+    double totalforcenormsqr = 0.0;
+    for (int i = 0; i < (int) m_number_of_rods; ++i)
     {
-        // Ensure "non-attached" edges are not colliding by default
-        for (int i = 1; i < (int) rod.ne() - 1; ++i)
+        VecXd force(m_rods[i]->ndof());
+        force.setZero();
+        m_rods[i]->computeForces(force);
+        totalforcenormsqr += force.squaredNorm();
+    }
+    return sqrt(totalforcenormsqr);
+}
+
+void BARodStepper::setDt(double dt)
+{
+    assert(dt > 0.0);
+    m_dt = dt;
+
+    // Set the timestep for the rod controllers
+    for (int i = 0; i < (int) m_steppers.size(); ++i)
+        m_steppers[i]->setTimeStep(dt);
+
+    // Set the timestep for the scripted object controllers
+    for (int i = 0; i < (int) m_scripting_controllers.size(); ++i)
+        m_scripting_controllers[i]->setDt(dt);
+}
+
+void BARodStepper::setTime(double time)
+{
+    m_t = time;
+    // std::cout << "settingTime in BARodStepper to be " << m_t << std::endl;
+
+    // Set the time for the rod controllers
+    for (int i = 0; i < (int) m_steppers.size(); ++i)
+        m_steppers[i]->setTime(m_t);
+
+    // Set the time for the scripted object controllers
+    for (int i = 0; i < (int) m_scripting_controllers.size(); ++i)
+        m_scripting_controllers[i]->setTime(m_t);
+}
+
+double BARodStepper::getDt() const
+{
+    return m_dt;
+}
+
+double BARodStepper::getTime() const
+{
+    //std::cout << "BARodStepper::getTime() = " << m_t << std::endl;
+    return m_t;
+}
+
+void BARodStepper::setRodLabels(const std::vector<std::string>& rod_labels)
+{
+    assert(rod_labels.size() == m_number_of_rods);
+    m_rod_labels = rod_labels;
+}
+
+int BARodStepper::getContainingRod(int vert_idx) const
+{
+    assert(vert_idx >= 0);
+    assert(vert_idx < getNumVerts());
+    int rod = -1;
+
+    int accm = 0;
+    for (int i = 0; i < (int) m_number_of_rods; ++i)
+    {
+        accm += m_rods[i]->nv();
+        if (vert_idx < accm)
         {
-            double edgelen = rod.getEdge(i).norm();
-            double radsum = rod.getRadiusScale() * rod.radiusA(i - 1) + rod.getRadiusScale() * rod.radiusA(i + 1);
-            if (edgelen <= radsum)
-            {
-                std::cerr
-                        << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Detected edges that collide by default. Instabilities may result."
-                        << std::endl;
-            }
+            rod = i;
+            break;
         }
     }
+    return rod;
+}
 
-    void BARodStepper::killTheRod(int rod) // TODO: remove the rod properly in Maya
+bool BARodStepper::isRodVertex(int vert) const
+{
+    assert(vert >= 0);
+    assert(vert < getNumVerts());
+
+    // Is a vertex if index is less than start of object vertices in global array
+    return vert < m_obj_start;
+}
+
+bool BARodStepper::vertexAndFaceShareVertex(const int& v, const int& f0, const int& f1, const int& f2) const
+{
+    return v == f0 || v == f1 || v == f2;
+}
+
+bool BARodStepper::vertexAndFaceShareVertex(const int& vertex, const int& face) const
+{
+    assert(face < (int) m_faces.size());
+    assert(vertex >= 0);
+    assert(vertex < getNumVerts());
+    assert(m_faces[face].idx[0] >= 0);
+    assert(m_faces[face].idx[0] < getNumVerts());
+    assert(m_faces[face].idx[1] >= 0);
+    assert(m_faces[face].idx[1] < getNumVerts());
+    assert(m_faces[face].idx[2] >= 0);
+    assert(m_faces[face].idx[2] < getNumVerts());
+
+    return vertexAndFaceShareVertex(vertex, m_faces[face].idx[0], m_faces[face].idx[1], m_faces[face].idx[2]);
+}
+
+bool BARodStepper::isProperCollisionTime(double time)
+{
+    if (time != time)
     {
-        std::cerr << "Rod number " << rod << " will be killed" << std::endl;
-
-        for (int j = 0; j < m_rods[rod]->nv(); j++)
-            m_rods[rod]->setVertex(j, 0 * m_rods[rod]->getVertex(j));
-        m_simulated_rods.erase(find(m_simulated_rods.begin(), m_simulated_rods.end(), rod));
+        if (!m_nan_enc)
+            std::cerr
+                    << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Encountered NaN collision time from root finder. Supressing further messages of this type."
+                    << std::endl;
+        m_nan_enc = true;
+        return false;
     }
-
-    void BARodStepper::computeForces(VecXd ** Forces, const RodSelectionType& selected_rods)
+    if (time == std::numeric_limits<double>::infinity())
     {
-        for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+        if (!m_inf_enc)
+            std::cerr
+                    << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Encountered INF collision time from root finder. Supressing further messages of this type."
+                    << std::endl;
+        m_inf_enc = true;
+        return false;
+    }
+    if (time < 0.0)
+    {
+        if (!m_lt0_enc)
+            std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Encountered scaled collision time " << time
+                    << " less than 0.0. Supressing further messages of this type." << std::endl;
+        m_lt0_enc = true;
+        return false;
+    }
+    if (time > 1.0)
+    {
+        if (!m_gt0_enc)
+            std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Encountered scaled collision time " << time
+                    << " greater than 1.0. Supressing further messages of this type." << std::endl;
+        m_gt0_enc = true;
+        return false;
+    }
+    return true;
+}
+
+int BARodStepper::getNumDof() const
+{
+    assert(m_num_dof >= 0);
+    return m_num_dof;
+}
+
+int BARodStepper::getNumVerts() const
+{
+    assert(m_num_dof % 3 == 0);
+    return m_num_dof / 3;
+}
+
+// Ensures each rod edge has circular cross section.
+void BARodStepper::ensureCircularCrossSection(const ElasticRod& rod) const
+{
+    // Ensure circular cross section
+    for (int i = 0; i < (int) rod.ne(); ++i)
+    {
+        if (rod.getRadiusScale() * rod.radiusA(i) != rod.getRadiusScale() * rod.radiusB(i))
         {
-            Forces[*rod]->setZero();
-            m_rods[*rod]->computeForces(*Forces[*rod]);
+            std::cerr
+                    << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Contact currently not supported for non-circular cross sections. Assuming circular cross section."
+                    << std::endl;
         }
     }
+}
+
+// Ensures each internal rod edge has length less than sum of neighbors' radii.
+void BARodStepper::ensureNoCollisionsByDefault(const ElasticRod& rod) const
+{
+    // Ensure "non-attached" edges are not colliding by default
+    for (int i = 1; i < (int) rod.ne() - 1; ++i)
+    {
+        double edgelen = rod.getEdge(i).norm();
+        double radsum = rod.getRadiusScale() * rod.radiusA(i - 1) + rod.getRadiusScale() * rod.radiusA(i + 1);
+        if (edgelen <= radsum)
+        {
+            std::cerr
+                    << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Detected edges that collide by default. Instabilities may result."
+                    << std::endl;
+        }
+    }
+}
+
+void BARodStepper::killTheRod(int rod) // TODO: remove the rod properly in Maya
+{
+    std::cerr << "Rod number " << rod << " is killed" << std::endl;
+
+    for (int j = 0; j < m_rods[rod]->nv(); j++)
+        m_rods[rod]->setVertex(j, 0 * m_rods[rod]->getVertex(j));
+    m_simulated_rods.erase(find(m_simulated_rods.begin(), m_simulated_rods.end(), rod));
+}
+
+void BARodStepper::computeForces(VecXd ** Forces, const RodSelectionType& selected_rods)
+{
+    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+    {
+        Forces[*rod]->setZero();
+        m_rods[*rod]->computeForces(*Forces[*rod]);
+    }
+}
 
 }
 
