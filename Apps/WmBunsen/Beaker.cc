@@ -288,7 +288,7 @@ double Beaker::stopTimer(timeval& i_startTimer)
  }
  }*/
 
-void Beaker::addRodsToWorld(int i_rodGroupIndex, WmFigRodGroup* i_rodGroup, double startTime, int numberOfThreads, const PerformanceTuningParameters perf_param)
+void Beaker::addRodsToWorld(int i_rodGroupIndex, WmFigRodGroup* i_rodGroup, double startTime, int numberOfThreads, PerformanceTuningParameters perf_param)
 {
     std::cout<<"Performance Tuning Parameters "<< std::endl;
      std::cout<<"Penalty Response "<< perf_param.m_enable_penalty_response<<std::endl;
@@ -357,7 +357,7 @@ void Beaker::addRodsToWorld(int i_rodGroupIndex, WmFigRodGroup* i_rodGroup, doub
     // is set at the beginning of takeTimeStep() but it's really sloppy to not bother setting it 
     // right to start with!
     m_bridsonStepper = new BARodStepper(m_rods, m_triangleMeshes, m_scriptingControllers, m_rodTimeSteppers, 1.0 / 24.0,
-            startTime, numberOfThreads);
+            startTime, numberOfThreads, perf_param );
     m_world->addController(m_bridsonStepper);
 
     // For convenience, give the RodData a pointer to bridsonStepper
