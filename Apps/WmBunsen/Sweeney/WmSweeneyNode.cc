@@ -32,6 +32,9 @@ using namespace BASim;
 /*static*/ MObject WmSweeneyNode::ia_strandVertices;
 /*static*/ MObject WmSweeneyNode::ia_verticesPerStrand;
 
+// Output to the Barbershop guide curve deformer
+/*static*/ MObject WmSweeneyNode::oa_simulatedNurbs;
+
 // Sync attributes
 /* static */ MObject WmSweeneyNode::ca_rodPropertiesSync;
 
@@ -50,7 +53,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus status;
 
-    cerr << "WmSweeneyNode::compute() with i_plug = " << i_plug.name() << endl;
+    cerr << "----------------------------------->WmSweeneyNode::compute() with i_plug = " << i_plug.name() << endl;
 
     if ( i_plug == ca_rodPropertiesSync )
     {
@@ -131,6 +134,10 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             }
         }
         i_dataBlock.setClean( i_plug );
+    }
+    else if ( i_plug == oa_simulatedNurbs )
+    {        
+        compute_oa_simulatedNurbs( i_plug, i_dataBlock );
     }
     else
     {
@@ -318,6 +325,61 @@ void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices,
     cerr << "constructRodVertices(): Finished constructing rod vertices\n";    
 }
 
+void WmSweeneyNode::compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i_dataBlock )
+{
+    MStatus status;
+
+    cerr << "compute_oa_simulatedNurbs()\n";
+
+    // First pull all the inputs to make sure we're up to date.
+    i_dataBlock.inputValue( ca_rodPropertiesSync, &status ).asBool();
+    CHECK_MSTATUS( status );
+    
+    // The above may have been clean so just make sure we actually read time
+    i_dataBlock.inputValue( ia_time, &status ).asTime().value();
+    CHECK_MSTATUS( status );
+    
+    MArrayDataHandle simulatedNurbsArrayHandle = i_dataBlock.outputArrayValue( oa_simulatedNurbs, &status );
+    CHECK_MSTATUS( status );
+
+    MArrayDataBuilder simulatedNurbsArrayDataBuilder( & i_dataBlock, oa_simulatedNurbs, 
+                                                      (unsigned int)m_rodManager->numberOfRods(), & status);
+    CHECK_MSTATUS( status );
+    
+    for ( size_t r = 0; r < m_rodManager->numberOfRods(); ++r )
+    {
+        MPointArray nurbsEditPoints;
+        
+        ElasticRod* rod = m_rodManager->rod( r );
+        
+        for ( unsigned int v = 0; v < rod->nv(); v++ )
+        {
+            BASim::Vec3d vertex = rod->getVertex( v );
+            MPoint nurbsEditPoint( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ] );
+            nurbsEditPoints.append( nurbsEditPoint );
+        }
+
+        MFnNurbsCurveData nurbsDataFn;
+        MObject nurbsDataObj = nurbsDataFn.create();
+        MFnNurbsCurve nurbsFn;
+        MObject nurbsObj = nurbsFn.createWithEditPoints( nurbsEditPoints, 1, MFnNurbsCurve::kOpen,
+            false /*not 2d*/, false /*not rational*/, true /*uniform params*/, nurbsDataObj, & status );
+        CHECK_MSTATUS( status );
+
+        MDataHandle simulatedNurbsHandle = simulatedNurbsArrayDataBuilder.addElement( (unsigned int) r, & status );
+        CHECK_MSTATUS( status );
+
+        status = simulatedNurbsHandle.set( nurbsDataObj );
+        CHECK_MSTATUS( status );
+    }
+
+    simulatedNurbsArrayHandle.set( simulatedNurbsArrayDataBuilder );
+    simulatedNurbsArrayHandle.setAllClean();
+    
+    i_dataBlock.setClean( i_plug );
+}
+
+
 void WmSweeneyNode::draw( M3dView& i_view, const MDagPath& i_path,
                             M3dView::DisplayStyle i_style,
                             M3dView::DisplayStatus i_status )
@@ -342,6 +404,7 @@ void WmSweeneyNode::draw( M3dView& i_view, const MDagPath& i_path,
     }
 
 	glPopAttrib();
+    
 	i_view.endGL();
 }
 
@@ -442,8 +505,8 @@ void* WmSweeneyNode::creator()
         CHECK_MSTATUS( numericAttr.setReadable( false ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
         CHECK_MSTATUS( numericAttr.setStorable( false ) );
-        CHECK_MSTATUS( numericAttr.setMin( -1.5 ) );
-        CHECK_MSTATUS( numericAttr.setMax( 1.5 ) );
+        CHECK_MSTATUS( numericAttr.setMin( -3.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 3.0 ) );
         status = addAttribute( ia_rodRadius );
         CHECK_MSTATUS( status );
         
@@ -468,7 +531,25 @@ void* WmSweeneyNode::creator()
     }
     status = attributeAffects( ia_strandVertices, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_strandVertices->ca_rodPropertiesSync" ); return status; }
-        
+
+    {
+        MFnTypedAttribute tAttr;
+        oa_simulatedNurbs = tAttr.create( "simulatedNurbs", "sns",
+            MFnData::kNurbsCurve, & status );
+        CHECK_MSTATUS( status );
+        CHECK_MSTATUS( tAttr.setArray( true ) );
+        CHECK_MSTATUS( tAttr.setReadable( true ) );
+        CHECK_MSTATUS( tAttr.setWritable( false ) );
+        CHECK_MSTATUS( tAttr.setConnectable( true ) );
+        CHECK_MSTATUS( tAttr.setUsesArrayDataBuilder( true ) );
+        status = addAttribute( oa_simulatedNurbs );
+        CHECK_MSTATUS( status );
+    }
+    status = attributeAffects( ia_time, oa_simulatedNurbs );
+	if ( !status ) { status.perror( "attributeAffects ia_time->oa_simulatedNurbs" ); return status; }
+    status = attributeAffects( ca_rodPropertiesSync, oa_simulatedNurbs );
+	if ( !status ) { status.perror( "attributeAffects ca_rodPropertiesSync->oa_simulatedNurbs" ); return status; }
+
     {
         MFnNumericAttribute nAttr;
         ia_collisionMeshes = nAttr.create( "collisionMeshes", "com", MFnNumericData::kBoolean, false, &status );

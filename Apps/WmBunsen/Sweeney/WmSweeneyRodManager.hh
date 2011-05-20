@@ -55,6 +55,16 @@ public:
     void takeStep();
     
     void drawAllRods();
+    
+    size_t numberOfRods()
+    {
+        return m_rods.size();
+    }
+    
+    BASim::ElasticRod* rod( const size_t i_rodIndex )
+    {
+        return m_rods[ i_rodIndex ];
+    }
 
     std::vector< BASim::ElasticRod* > m_rods;
     
