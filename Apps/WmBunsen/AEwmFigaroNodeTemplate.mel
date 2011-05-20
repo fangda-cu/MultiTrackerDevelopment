@@ -66,10 +66,57 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
         editorTemplate -addControl "XMLFilePath";
     editorTemplate -endLayout;
 
-   editorTemplate -beginLayout "Error Checking" -collapse 0;
+    editorTemplate -beginLayout "Error Checking" -collapse 0;
         editorTemplate -addControl "stopOnRodError";
     editorTemplate -endLayout;
-    
+
+  //General parameters
+ editorTemplate -beginLayout "General Parameters" -collapse 0;
+    editorTemplate -beginLayout "Implicit Rod-Mesh Penalty" -collapse 0;
+        editorTemplate -addControl "enablePenaltyResponse";
+        editorTemplate -addControl "implicitThickness";
+	editorTemplate -addControl "implicitStiffness";
+    editorTemplate -endLayout;
+
+    editorTemplate -beginLayout "Inextensibility Filter" -collapse 0;
+        editorTemplate -addControl "inextensibilityThreshold";
+    editorTemplate -endLayout;
+ editorTemplate -endLayout;
+
+   //Failure Detection
+ editorTemplate -beginLayout "Failure Detection" -collapse 0;
+     editorTemplate -beginLayout "Solver" -collapse 0;
+        editorTemplate -addControl "maxNumOfSolverIters";
+     editorTemplate -endLayout;
+
+     editorTemplate -beginLayout "Collision" -collapse 0;
+        editorTemplate -addControl "maxNumOfCollisionIters";
+     editorTemplate -endLayout;
+
+     editorTemplate -beginLayout "Explosion" -collapse 0;
+        editorTemplate -addControl "enableExplosionDetection";
+        editorTemplate -addControl "explosionDampening";
+        editorTemplate -addControl "explosionThreshold";
+     editorTemplate -endLayout;
+  editorTemplate -endLayout;
+
+ editorTemplate -beginLayout "Response to Failure" -collapse 0;
+     editorTemplate -beginLayout "From Solver Failure" -collapse 0;
+         editorTemplate -addControl "solverFailure";
+         editorTemplate -addControl "maxNumSolverSubsteps";
+     editorTemplate -endLayout;
+     editorTemplate -beginLayout "From Collision Failure" -collapse 0;
+         editorTemplate -addControl "collisionFailure";
+         editorTemplate -addControl "maxNumCollisionSubsteps";
+     editorTemplate -endLayout;
+     editorTemplate -beginLayout "From Explosion Failure" -collapse 0;
+         editorTemplate -addControl "explosionFailure";
+         editorTemplate -addControl "maxNumExplosionSubsteps";
+     editorTemplate -endLayout;
+
+
+ editorTemplate -endLayout;
+
     editorTemplate -addExtraControls;
     editorTemplate -endScrollLayout;
 }
