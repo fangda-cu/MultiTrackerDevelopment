@@ -116,9 +116,9 @@ void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const d
     perfParams.m_max_number_of_substeps_for_collision = 1;
     perfParams.m_max_number_of_substeps_for_explosion = 7;
 
-    perfParams.m_in_case_of_solver_failure    = PerformanceTuningParameters::SubstepRod;
-    perfParams.m_in_case_of_collision_failure = PerformanceTuningParameters::SubstepRod;
-    perfParams.m_in_case_of_explosion_failure = PerformanceTuningParameters::SubstepRod;
+    perfParams.m_in_case_of_solver_failure    = PerformanceTuningParameters::KillTheRod;
+    perfParams.m_in_case_of_collision_failure = PerformanceTuningParameters::KillTheRod;
+    perfParams.m_in_case_of_explosion_failure = PerformanceTuningParameters::KillTheRod;
 
     perfParams.m_inextensibility_threshold = 0;
     perfParams.m_implicit_thickness        = 0.1;

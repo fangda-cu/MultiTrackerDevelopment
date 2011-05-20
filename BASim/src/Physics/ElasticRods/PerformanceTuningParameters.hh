@@ -70,7 +70,7 @@ struct PerformanceTuningParameters
      */
     enum ResponseSeverity
     {
-        IgnoreRod, SubstepRod, HaltSimulation
+        IgnoreError, KillTheRod, HaltSimulation
     };
 
     ResponseSeverity m_in_case_of_solver_failure;
@@ -78,7 +78,7 @@ struct PerformanceTuningParameters
     ResponseSeverity m_in_case_of_explosion_failure;
 
     /**
-     * Substepping: if in SubstepRod mode, how deep are we going before shedding.
+     * Substepping: if in KillTheRod mode, how deep are we going before shedding.
      */
     // Maximum number of times the original step will be halved by the adaptive substepping for solver-failing rods
     int m_max_number_of_substeps_for_solver;

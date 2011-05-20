@@ -1411,11 +1411,11 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnEnumAttribute enumAttrFn;
-        ia_solverFailure = enumAttrFn.create( "solverFailure", "svf", (short) PerformanceTuningParameters::SubstepRod, & stat );
+        ia_solverFailure = enumAttrFn.create( "solverFailure", "svf", (short) PerformanceTuningParameters::KillTheRod, & stat );
         CHECK_MSTATUS( stat );
-        enumAttrFn.addField( "Ignore Rod",   (short) PerformanceTuningParameters::IgnoreRod );
-        enumAttrFn.addField( "Substep Rod",  (short) PerformanceTuningParameters::SubstepRod );
-        enumAttrFn.addField( "HaltSimulation",  (short) PerformanceTuningParameters::HaltSimulation );
+        enumAttrFn.addField( "Ignore error",   (short) PerformanceTuningParameters::IgnoreError );
+        enumAttrFn.addField( "Kill the rod",  (short) PerformanceTuningParameters::KillTheRod );
+        enumAttrFn.addField( "Halt simulation",  (short) PerformanceTuningParameters::HaltSimulation );
         enumAttrFn.setKeyable( false );
         enumAttrFn.setStorable( true );
         enumAttrFn.setWritable( true );
@@ -1439,11 +1439,11 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnEnumAttribute enumAttrFn;
-        ia_collisionFailure = enumAttrFn.create( "collisionFailure", "clf", (short) PerformanceTuningParameters::SubstepRod, & stat );
+        ia_collisionFailure = enumAttrFn.create( "collisionFailure", "clf", (short) PerformanceTuningParameters::KillTheRod, & stat );
         CHECK_MSTATUS( stat );
-        enumAttrFn.addField( "Ignore Rod",   (short) PerformanceTuningParameters::IgnoreRod );
-        enumAttrFn.addField( "Substep Rod",  (short) PerformanceTuningParameters::SubstepRod );
-        enumAttrFn.addField( "HaltSimulation",  (short) PerformanceTuningParameters::HaltSimulation );
+        enumAttrFn.addField( "Ignore error",   (short) PerformanceTuningParameters::IgnoreError );
+        enumAttrFn.addField( "Kill the rod",  (short) PerformanceTuningParameters::KillTheRod );
+        enumAttrFn.addField( "Halt simulation",  (short) PerformanceTuningParameters::HaltSimulation );
         enumAttrFn.setKeyable( false );
         enumAttrFn.setStorable( true );
         enumAttrFn.setWritable( true );
@@ -1467,11 +1467,11 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnEnumAttribute enumAttrFn;
-        ia_explosionFailure = enumAttrFn.create( "explosionFailure", "exf", (short) PerformanceTuningParameters::SubstepRod, & stat );
+        ia_explosionFailure = enumAttrFn.create( "explosionFailure", "exf", (short) PerformanceTuningParameters::KillTheRod, & stat );
         CHECK_MSTATUS( stat );
-        enumAttrFn.addField( "Ignore Rod",   (short) PerformanceTuningParameters::IgnoreRod );
-        enumAttrFn.addField( "Substep Rod",  (short) PerformanceTuningParameters::SubstepRod );
-        enumAttrFn.addField( "HaltSimulation",  (short) PerformanceTuningParameters::HaltSimulation );
+        enumAttrFn.addField( "Ignore error",   (short) PerformanceTuningParameters::IgnoreError );
+        enumAttrFn.addField( "Kill the rod",  (short) PerformanceTuningParameters::KillTheRod );
+        enumAttrFn.addField( "Halt simulation",  (short) PerformanceTuningParameters::HaltSimulation );
         enumAttrFn.setKeyable( false );
         enumAttrFn.setStorable( true );
         enumAttrFn.setWritable( true );
