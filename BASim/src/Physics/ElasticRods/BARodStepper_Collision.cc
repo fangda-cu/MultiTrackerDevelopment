@@ -198,7 +198,6 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
     if (!collisions.empty())
     {
         all_rods_collisions_ok = false;
-        m_simulationFailed = true;
 
         // std::cerr << "Remains " << collisions.size() << " unresolved collision(s)" << std::endl;
 
@@ -1626,7 +1625,6 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
                     worstViolator = j;
                 if (isnan(rate) || rate > m_perf_param.m_explosion_threshold)
                 {
-                    m_simulationFailed = true;
                     explosions_detected = true;
                     exploding_rods[*rod] = true;
                     // std::cerr << "Rod number " << *rod << " had an explosion" << std::endl;

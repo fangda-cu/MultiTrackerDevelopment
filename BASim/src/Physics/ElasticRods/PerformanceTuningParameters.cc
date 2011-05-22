@@ -21,9 +21,9 @@ PerformanceTuningParameters::PerformanceTuningParameters() :
             m_enable_explosion_detection(true), //
             m_explosion_damping(100.0), //
             m_explosion_threshold(100.0), //
-            m_in_case_of_solver_failure(SubstepRod), //
-            m_in_case_of_collision_failure(SubstepRod), //
-            m_in_case_of_explosion_failure(SubstepRod), //
+            m_in_case_of_solver_failure(KillTheRod), //
+            m_in_case_of_collision_failure(KillTheRod), //
+            m_in_case_of_explosion_failure(KillTheRod), //
             m_max_number_of_substeps_for_solver(0), //
             m_max_number_of_substeps_for_collision(0), //
             m_max_number_of_substeps_for_explosion(0)

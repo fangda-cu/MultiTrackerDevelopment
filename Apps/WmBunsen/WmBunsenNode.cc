@@ -47,6 +47,30 @@ MObject WmBunsenNode::oa_simStepTaken;
 //Error Checking
 MObject WmBunsenNode::ia_stopOnRodError;
 
+// Performance Tuning
+  //GeneralParameters
+ MObject WmBunsenNode::ia_enablePenaltyResponse;
+ MObject WmBunsenNode::ia_implicitThickness;
+ MObject WmBunsenNode::ia_implicitStiffness;
+ MObject WmBunsenNode::ia_inextensibilityThreshold;
+
+  //Failuredetection
+ MObject WmBunsenNode::ia_maxNumOfSolverIters;
+ MObject WmBunsenNode::ia_maxNumOfCollisionIters;
+ MObject WmBunsenNode::ia_enableExplosionDetection;
+ MObject WmBunsenNode::ia_explosionDampening;
+ MObject WmBunsenNode::ia_explosionThreshold;
+
+ //FailureResponse
+ MObject WmBunsenNode::ia_solverFailure;
+ MObject WmBunsenNode::ia_collisionFailure;
+ MObject WmBunsenNode::ia_explosionFailure;
+ MObject WmBunsenNode::ia_maxNumSolverSubsteps;
+ MObject WmBunsenNode::ia_maxNumCollisionSubsteps;
+ MObject WmBunsenNode::ia_maxNumExplosionSubsteps;
+
+
+
 // Volumetric Collisions
 /* static */ MObject WmBunsenNode::ia_volumetricCollisions;
 /* static */ MObject WmBunsenNode::ia_gridDX;
@@ -102,10 +126,10 @@ void WmBunsenNode::pullOnAllRodNodes( MDataBlock& i_dataBlock )
     }
 }  
 
-void WmBunsenNode::addRodsToWorld( MDataBlock& i_dataBlock, double startTime )
+void WmBunsenNode::addRodsToWorld( MDataBlock& i_dataBlock, double startTime)
 {
     MStatus stat;
-    
+
     // Run through each attached rod node and create the associated rod data structure inside 
     // Beaker. This will get called after all the rods have been deleted as Maya has
     // just been moved to start time.
@@ -139,7 +163,43 @@ void WmBunsenNode::addRodsToWorld( MDataBlock& i_dataBlock, double startTime )
                 // rods and add them to the world.
                 int numberOfThreads = i_dataBlock.inputValue( ia_numberOfThreads, &stat ).asInt();
                 CHECK_MSTATUS( stat );
-                m_beaker->addRodsToWorld( r, wmFigRodNode->rodGroup(), startTime, numberOfThreads );
+
+                PerformanceTuningParameters perf_param;
+                perf_param.m_enable_penalty_response=i_dataBlock.inputValue( ia_enablePenaltyResponse, &stat ).asBool();
+                CHECK_MSTATUS( stat );
+                perf_param.m_implicit_thickness=i_dataBlock.inputValue( ia_implicitThickness, &stat ).asDouble();
+                CHECK_MSTATUS( stat );
+                perf_param.m_implicit_stiffness=i_dataBlock.inputValue( ia_implicitStiffness, &stat ).asDouble();
+                CHECK_MSTATUS( stat );
+                perf_param.m_inextensibility_threshold=i_dataBlock.inputValue( ia_inextensibilityThreshold, &stat ).asInt();
+                CHECK_MSTATUS( stat );
+
+                perf_param.m_maximum_number_of_solver_iterations=i_dataBlock.inputValue( ia_maxNumOfSolverIters, &stat ).asInt();
+                CHECK_MSTATUS( stat );
+                perf_param.m_maximum_number_of_collisions_iterations=i_dataBlock.inputValue( ia_maxNumOfCollisionIters, &stat ).asInt();
+                CHECK_MSTATUS( stat );
+
+                perf_param.m_enable_explosion_detection=i_dataBlock.inputValue( ia_enableExplosionDetection, &stat ).asBool();
+                CHECK_MSTATUS( stat );
+                perf_param.m_explosion_damping=i_dataBlock.inputValue( ia_explosionDampening, &stat ).asDouble();
+                CHECK_MSTATUS( stat );
+                perf_param.m_explosion_threshold=i_dataBlock.inputValue( ia_explosionThreshold, &stat ).asDouble();
+                CHECK_MSTATUS( stat );
+
+                perf_param.m_in_case_of_solver_failure= (BASim::PerformanceTuningParameters::ResponseSeverity) i_dataBlock.inputValue( ia_solverFailure, &stat ).asInt();
+                CHECK_MSTATUS( stat );
+                perf_param.m_in_case_of_collision_failure=(BASim::PerformanceTuningParameters::ResponseSeverity) i_dataBlock.inputValue( ia_collisionFailure, &stat ).asInt();
+                CHECK_MSTATUS( stat );
+                perf_param.m_in_case_of_explosion_failure=(BASim::PerformanceTuningParameters::ResponseSeverity) i_dataBlock.inputValue( ia_explosionFailure, &stat ).asInt();
+                CHECK_MSTATUS( stat );
+                perf_param.m_max_number_of_substeps_for_solver=i_dataBlock.inputValue( ia_maxNumSolverSubsteps, &stat ).asInt();
+                CHECK_MSTATUS( stat );
+                perf_param.m_max_number_of_substeps_for_collision=i_dataBlock.inputValue( ia_maxNumCollisionSubsteps, &stat ).asInt();
+                CHECK_MSTATUS( stat );
+                perf_param.m_max_number_of_substeps_for_explosion=i_dataBlock.inputValue( ia_maxNumExplosionSubsteps, &stat ).asInt();
+                CHECK_MSTATUS( stat );
+
+                m_beaker->addRodsToWorld( r, wmFigRodNode->rodGroup(), startTime, numberOfThreads, perf_param);
             }
             else
                 CHECK_MSTATUS( stat );
@@ -1221,6 +1281,220 @@ MStatus WmBunsenNode::initialize()
          if (!stat) { stat.perror( "addAttribute ia_stopOnRodError" ); return stat; }
     }
 
+    //General parameters
+    {
+        MFnNumericAttribute nAttr;
+        ia_enablePenaltyResponse = nAttr.create( "enablePenaltyResponse", "epr", MFnNumericData::kBoolean, false, &stat );
+        if (!stat) {
+            stat.perror("create ia_enablePenaltyResponse");
+            return stat;
+        }
+         nAttr.setWritable( true );
+         nAttr.setReadable( false );
+         nAttr.setConnectable( true );
+         stat = addAttribute( ia_enablePenaltyResponse );
+         if (!stat) { stat.perror( "addAttribute ia_enablePenaltyResponse" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_implicitThickness = nAttr.create( "implicitThickness", "imt", MFnNumericData::kDouble, 1.0, &stat);
+        if (!stat) {
+            stat.perror("create ia_implicitThickness attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_implicitThickness );
+        if (!stat) { stat.perror( "addAttribute ia_implicitThickness" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_implicitStiffness = nAttr.create( "implicitStiffness", "rig", MFnNumericData::kDouble, 200.0, &stat);
+        if (!stat) {
+            stat.perror("create ia_implicitStiffness attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_implicitStiffness );
+        if (!stat) { stat.perror( "addAttribute ia_implicitStiffness" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_inextensibilityThreshold = nAttr.create( "inextensibilityThreshold", "ixf", MFnNumericData::kInt, 3, &stat );
+        if (!stat) {
+            stat.perror("create ia_inextensibilityThreshold attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_inextensibilityThreshold );
+        if ( !stat ) { stat.perror( "addAttribute ia_inextensibilityThreshold" ); return stat; }
+    }
+
+    //Failure  Detection
+    {
+        MFnNumericAttribute nAttr;
+        ia_maxNumOfSolverIters= nAttr.create( "maxNumOfSolverIters", "mnsi", MFnNumericData::kInt, 50, &stat );
+        if (!stat) {
+            stat.perror("create ia_maxNumOfSolverIters");
+            return stat;
+        }
+         nAttr.setWritable( true );
+         nAttr.setReadable( false );
+         nAttr.setConnectable( true );
+         stat = addAttribute( ia_maxNumOfSolverIters );
+         if (!stat) { stat.perror( "addAttribute ia_maxNumOfSolverIters" ); return stat; }
+    }
+    {
+        MFnNumericAttribute nAttr;
+        ia_maxNumOfCollisionIters= nAttr.create( "maxNumOfCollisionIters", "mnci", MFnNumericData::kInt, 10, &stat );
+        if (!stat) {
+            stat.perror("create ia_maxNumOfCollisionIters");
+            return stat;
+        }
+         nAttr.setWritable( true );
+         nAttr.setReadable( false );
+         nAttr.setConnectable( true );
+         stat = addAttribute( ia_maxNumOfCollisionIters );
+         if (!stat) { stat.perror( "addAttribute ia_maxNumOfCollisionIters" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_enableExplosionDetection= nAttr.create( "enableExplosionDetection", "eex", MFnNumericData::kBoolean, false, &stat );
+        if (!stat) {
+            stat.perror("create ia_enableExplosionDetection");
+            return stat;
+        }
+         nAttr.setWritable( true );
+         nAttr.setReadable( false );
+         nAttr.setConnectable( true );
+         stat = addAttribute( ia_enableExplosionDetection );
+         if (!stat) { stat.perror( "addAttribute ia_enableExplosionDetection" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_explosionDampening = nAttr.create( "explosionDampening", "exd", MFnNumericData::kDouble, 100.0, &stat);
+        if (!stat) {
+            stat.perror("create ia_explosionDampening attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_explosionDampening );
+        if (!stat) { stat.perror( "addAttribute ia_explosionDampening" ); return stat; }
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_explosionThreshold = nAttr.create( "explosionThreshold", "ext", MFnNumericData::kDouble, 100.0, &stat);
+        if (!stat) {
+            stat.perror("create ia_explosionThreshold attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_explosionThreshold );
+        if (!stat) { stat.perror( "addAttribute ia_explosionThreshold" ); return stat; }
+    }
+
+
+    {
+        MFnEnumAttribute enumAttrFn;
+        ia_solverFailure = enumAttrFn.create( "ifSolverStillFails", "svf", (short) PerformanceTuningParameters::KillTheRod, & stat );
+        CHECK_MSTATUS( stat );
+        enumAttrFn.addField( "Ignore error",   (short) PerformanceTuningParameters::IgnoreError );
+        enumAttrFn.addField( "Kill the rod",  (short) PerformanceTuningParameters::KillTheRod );
+        enumAttrFn.addField( "Halt simulation",  (short) PerformanceTuningParameters::HaltSimulation );
+        enumAttrFn.setKeyable( false );
+        enumAttrFn.setStorable( true );
+        enumAttrFn.setWritable( true );
+        enumAttrFn.setReadable( true );
+        stat = addAttribute( ia_solverFailure );
+        CHECK_MSTATUS( stat );
+    }
+    {
+        MFnNumericAttribute nAttr;
+        ia_maxNumSolverSubsteps = nAttr.create( "maxNumSolverSubsteps", "mnss", MFnNumericData::kInt, 10, &stat);
+        if (!stat) {
+            stat.perror("create ia_maxNumSolverSubsteps attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_maxNumSolverSubsteps );
+        if (!stat) { stat.perror( "addAttribute ia_maxNumSolverSubsteps" ); return stat; }
+    }
+
+    {
+        MFnEnumAttribute enumAttrFn;
+        ia_collisionFailure = enumAttrFn.create( "ifCollisionStillFails", "clf", (short) PerformanceTuningParameters::KillTheRod, & stat );
+        CHECK_MSTATUS( stat );
+        enumAttrFn.addField( "Ignore error",   (short) PerformanceTuningParameters::IgnoreError );
+        enumAttrFn.addField( "Kill the rod",  (short) PerformanceTuningParameters::KillTheRod );
+        enumAttrFn.addField( "Halt simulation",  (short) PerformanceTuningParameters::HaltSimulation );
+        enumAttrFn.setKeyable( false );
+        enumAttrFn.setStorable( true );
+        enumAttrFn.setWritable( true );
+        enumAttrFn.setReadable( true );
+        stat = addAttribute( ia_collisionFailure );
+        CHECK_MSTATUS( stat );
+    }
+    {
+        MFnNumericAttribute nAttr;
+        ia_maxNumCollisionSubsteps = nAttr.create( "maxNumCollisionSubsteps", "mncs", MFnNumericData::kInt, 10, &stat);
+        if (!stat) {
+            stat.perror("create ia_maxNumCollisionSubsteps attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_maxNumCollisionSubsteps );
+        if (!stat) { stat.perror( "addAttribute ia_maxNumCollisionSubsteps" ); return stat; }
+    }
+
+    {
+        MFnEnumAttribute enumAttrFn;
+        ia_explosionFailure = enumAttrFn.create( "ifExplosionStillFails", "exf", (short) PerformanceTuningParameters::KillTheRod, & stat );
+        CHECK_MSTATUS( stat );
+        enumAttrFn.addField( "Ignore error",   (short) PerformanceTuningParameters::IgnoreError );
+        enumAttrFn.addField( "Kill the rod",  (short) PerformanceTuningParameters::KillTheRod );
+        enumAttrFn.addField( "Halt simulation",  (short) PerformanceTuningParameters::HaltSimulation );
+        enumAttrFn.setKeyable( false );
+        enumAttrFn.setStorable( true );
+        enumAttrFn.setWritable( true );
+        enumAttrFn.setReadable( true );
+        stat = addAttribute( ia_explosionFailure );
+        CHECK_MSTATUS( stat );
+    }
+    {
+        MFnNumericAttribute nAttr;
+        ia_maxNumExplosionSubsteps = nAttr.create( "maxNumExplosionSubsteps", "mnes", MFnNumericData::kInt, 10, &stat);
+        if (!stat) {
+            stat.perror("create ia_maxNumExplosionSubsteps attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_maxNumExplosionSubsteps );
+        if (!stat) { stat.perror( "addAttribute ia_maxNumExplosionSubsteps" ); return stat; }
+    }
+
+
+
     {
         MFnNumericAttribute nAttr;
         ia_enabled = nAttr.create( "enabled", "en", MFnNumericData::kBoolean, true, &stat );
@@ -1297,7 +1571,59 @@ MStatus WmBunsenNode::initialize()
     stat = attributeAffects( ia_timingEnabled, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_stopOnRodError->ca_syncAttrs" ); return stat; }
 
+    // Performance Tuning
 
+      //General
+    stat = attributeAffects( ia_enablePenaltyResponse, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_enablePenaltyResponse->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_implicitThickness, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_implicitThickness->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_implicitStiffness, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_implicitStiffness->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_inextensibilityThreshold, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_inextensibilityThreshold->ca_syncAttrs" ); return stat; }
+
+        //Failure Detection
+    stat = attributeAffects( ia_maxNumOfSolverIters, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_maxNumOfSolverIters->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_maxNumOfCollisionIters, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_maxNumOfCollisionIters->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_enableExplosionDetection, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_enableExplosionDetection->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_explosionDampening, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_explosionDampening->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_explosionThreshold, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_explosionThreshold->ca_syncAttrs" ); return stat; }
+
+    //Failure Detection
+    stat = attributeAffects( ia_solverFailure, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_solverFailure->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_maxNumSolverSubsteps, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_maxNumSolverSubsteps->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_collisionFailure, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_collisionFailure->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_maxNumCollisionSubsteps, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_maxNumCollisionSubsteps->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_explosionFailure, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_explosionFailure->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_maxNumExplosionSubsteps, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_maxNumExplosionSubsteps->ca_syncAttrs" ); return stat; }
+    /*
+    /*
+      //substepping
+    stat = attributeAffects( ia_maxNumOfSubsteps, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_maxNumOfSubsteps->ca_syncAttrs" ); return stat; }
+
+      //Rod Disabling
+    stat = attributeAffects( ia_firstCollisionFailure, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_firstCollisionFailure->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_unresolvedExplosion, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_unresolvedExplosion->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_unresolvedCollision, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_unresolvedCollision->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_unresolvedDynamics, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_unresolvedDynamics->ca_syncAttrs" ); return stat; }
+*/
     //Tolerances
     if (!stat) { stat.perror( "attributeAffects ia_stol->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_stol, ca_syncAttrs );
