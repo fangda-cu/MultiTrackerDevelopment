@@ -101,7 +101,7 @@ void TestCase6::Setup()
 
 
 
-    m_br_stepper = new BridsonStepper(m_rods, m_tri_meshes, m_scripting_controllers, m_steppers, GetScalarOpt("dt"));
+    m_br_stepper = new BARodStepper(m_rods, m_tri_meshes, m_scripting_controllers, m_steppers, GetScalarOpt("dt"));
     //m_br_stepper->setRodLabels(rod_labels);
 
     m_world->addController(m_br_stepper);

@@ -241,6 +241,7 @@ Math/DiagonalPreconditioner.hh \
 Math/FlensMatrix.hh \
 Math/ImplicitEuler.hh \
 Math/LinearSolverBase.hh \
+Math/LinearSystemSolver.hh \
 Math/MKL/MKLLinearSolver.hh \
 Math/Math.hh \
 Math/MatrixBase.hh \
@@ -255,7 +256,7 @@ Math/SymplecticEuler.hh \
 Math/TimeSteppingBase.hh \
 Math/Pardiso/PardisoLinearSolver.hh \
 Physics/DegreeOfFreedom.hh \
-Physics/ElasticRods/BridsonStepper.hh \
+Physics/ElasticRods/BARodStepper.hh \
 Physics/ElasticRods/ParallelStepper.hh \
 Physics/ElasticRods/AnisotropicRod.hh \
 Physics/ElasticRods/AnisotropicRodIncludes.hh \
@@ -263,6 +264,7 @@ Physics/ElasticRods/EdgeStencil.hh \
 Physics/ElasticRods/ElasticRod.hh \
 Physics/ElasticRods/Force.hh \
 Physics/ElasticRods/MultipleRodTimeStepper.hh \
+Physics/ElasticRods/PerformanceTuningParameters.hh \
 Physics/ElasticRods/RodAnisoBending.hh \
 Physics/ElasticRods/RodAnisoForce.hh \
 Physics/ElasticRods/RodBendingForce.hh \
@@ -361,9 +363,11 @@ src/Math/MKL/MKLLinearSolver.cc \
 src/Math/SolverUtils.cc \
 src/Math/Pardiso/PardisoLinearSolver.cc \
 src/Physics/ElasticRods/AnisotropicRod.cc \
-src/Physics/ElasticRods/BridsonStepper.cc \
+src/Physics/ElasticRods/BARodStepper.cc \
+src/Physics/ElasticRods/BARodStepper_Collision.cc \
 src/Physics/ElasticRods/ElasticRod.cc \
 src/Physics/ElasticRods/ParallelStepper.cc \
+src/Physics/ElasticRods/PerformanceTuningParameters.cc \
 src/Physics/ElasticRods/RodAnisoBending.cc \
 src/Physics/ElasticRods/RodAnisoForce.cc \
 src/Physics/ElasticRods/RodBendingForce.cc \

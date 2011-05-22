@@ -13,9 +13,9 @@ WmFigMeshController::WmFigMeshController( BASim::TriangleMesh* i_currentMesh,
                                            m_startMeshTime( 0.0 ), m_endMeshTime( 0.0 )
 
 // NOTE: We pass i_time and i_dt to BASim::ScriptingController but they are actually *ignored*
-//       as BridsonStepper calls setDt() on the controller when it executes anyway.
+//       as BARodStepper calls setDt() on the controller when it executes anyway.
 //       We could probably just not bother getting them passed in here but we keep it this way
-//       in case Breannan changes the way BridsonStepper works so we'll just copy his examples.
+//       in case Breannan changes the way BARodStepper works so we'll just copy his examples.
 
 {   
     m_startTime = i_time;

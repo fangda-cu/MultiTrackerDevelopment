@@ -179,7 +179,7 @@
 //  m_world->addObject(tri_mesh);
 //  m_tri_objs.push_back(tri_mesh);
 //
-//  m_br_stepper = new BridsonStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
+//  m_br_stepper = new BARodStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
 //  m_world->addController(m_br_stepper);
 //}
 //
@@ -235,7 +235,7 @@
 //  for( int i = 0; i < (int) m_tri_objs.size(); ++i ) assert( m_tri_objs[i] != NULL );
 //  for( int i = 0; i < (int) m_controllers.size(); ++i ) assert( m_controllers[i] != NULL );
 //  
-//  m_br_stepper = new BridsonStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
+//  m_br_stepper = new BARodStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
 //  m_world->addController(m_br_stepper);
 //}
 //
@@ -294,7 +294,7 @@
 //  for( int i = 0; i < (int) m_tri_objs.size(); ++i ) assert( m_tri_objs[i] != NULL );
 //  for( int i = 0; i < (int) m_controllers.size(); ++i ) assert( m_controllers[i] != NULL );
 //  
-//  m_br_stepper = new BridsonStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
+//  m_br_stepper = new BARodStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
 //  m_world->addController(m_br_stepper);
 //
 //  m_br_stepper->enablePenaltyImpulses();
@@ -376,7 +376,7 @@
 //  for( int i = 0; i < (int) m_tri_objs.size(); ++i ) assert( m_tri_objs[i] != NULL );
 //  for( int i = 0; i < (int) m_controllers.size(); ++i ) assert( m_controllers[i] != NULL );
 //  
-//  m_br_stepper = new BridsonStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
+//  m_br_stepper = new BARodStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
 //  m_world->addController(m_br_stepper);  
 //
 //  m_br_stepper->enablePenaltyImpulses();

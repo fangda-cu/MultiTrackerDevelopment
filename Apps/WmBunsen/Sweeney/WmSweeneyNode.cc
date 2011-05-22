@@ -117,16 +117,16 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                     // for just now, recreate the rod
                     // initialiseRodFromBarberShopInput( i_dataBlock );
 
-                    for (size_t i = 0; i < m_rodManager->m_rods.size(); ++i)
-                    {
-                        cout << "Setting radius of m_rods[" << i << "] to " << m_rodRadius << endl;
-                        for ( ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin(); 
-                             vh != m_rodManager->m_rods[i]->vertices_end(); ++vh)
-                        {
-                            assert( m_rods[i]->m_bendingForce != NULL );
-                            m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, Vec2d(rodRadius,0) );
-                        }
-                    }
+		    for (size_t i = 0; i < m_rodManager->m_rods.size(); ++i) 
+		    {
+		        cout << "Setting radius of m_rods[" << i << "] to " << m_rodRadius << endl;
+		        for (ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin(); 
+			     vh != m_rodManager->m_rods[i]->vertices_end(); ++vh)
+		        {
+                            assert(m_rodManager ->m_rods[i]->m_bendingForce != NULL);
+			    m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, Vec2d(rodRadius,0) );
+		        }
+		    }
                 }
                         
                 updateCollisionMeshes( i_dataBlock );

@@ -12,7 +12,7 @@
 #include <stdio.h>
 
 #ifdef WETA
-#include <weta/Wfigaro/Physics/ElasticRods/BridsonStepper.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/BARodStepper.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodForce.hh>
 #include <vector>
 #include <weta/Wfigaro/Physics/ElasticRods/RodStretchingForce.hh>
@@ -20,7 +20,7 @@
 #include <weta/Wfigaro/IO/ObjParser.hh>
 #include <weta/Wfigaro/Core/ScriptingController.hh>
 #else
-#include "BASim/src/Physics/ElasticRods/BridsonStepper.hh"
+#include "BASim/src/Physics/ElasticRods/BARodStepper.hh"
 #include "BASim/src/Physics/ElasticRods/RodForce.hh"
 #include <vector>
 #include "BASim/src/Physics/ElasticRods/RodStretchingForce.hh"
@@ -79,7 +79,7 @@ private:
   std::vector<ElasticRod*> m_rods;
   std::vector<TriangleMesh*> m_tri_objs;
   std::vector<RodTimeStepper*> m_controllers;
-  BridsonStepper* m_br_stepper;
+  BARodStepper* m_br_stepper;
   
   std::vector<ScriptingController*> m_scripting_controllers;
 };

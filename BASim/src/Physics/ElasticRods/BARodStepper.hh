@@ -1,12 +1,12 @@
 /**
- * \file BridsonStepper.hh
+ * \file BARodStepper.hh
  *
  * \author smith@cs.columbia.edu
  * \date 02/16/2010
  */
 
-#ifndef BRIDSONSTEPPER_HH
-#define BRIDSONSTEPPER_HH
+#ifndef BARODSTEPPER_HH
+#define BARODSTEPPER_HH
 
 #ifdef WETA
 #include "../../Core/ScriptingController.hh"
@@ -15,6 +15,7 @@
 #include "RodMassDamping.hh"
 #include "RodGravity.hh"
 #include "../../Math/Math.hh"
+#include "../../Math/LinearSystemSolver.hh"
 #include "../../Core/TriangleMesh.hh"
 //#include "../../Collisions/BVHAABB.hh"
 #include "../../Collisions/CollisionDetector.hh"
@@ -23,6 +24,7 @@
 #include "../../Core/StatTracker.hh"
 #include "MinimalTriangleMeshBackup.hh"
 #include "RodPenaltyForce.hh"
+#include "PerformanceTuningParameters.hh"
 #else
 #include "BASim/src/Core/ScriptingController.hh"
 #include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
@@ -55,196 +57,18 @@
 namespace BASim
 {
 
-// Linear solver and matrix that will work together
-class LinearSystemSolver
-{
-public:
-
-    LinearSystemSolver(MatrixBase* lhs, LinearSolverBase* solver) :
-        m_sys_size(lhs->rows()), m_lhs(lhs), m_solver(solver)
-    {
-        assert(lhs->rows() == lhs->cols());
-        assert(lhs->rows() == m_sys_size);
-    }
-
-    ~LinearSystemSolver()
-    {
-        if (m_lhs != NULL)
-        {
-            delete m_lhs;
-            m_lhs = NULL;
-        }
-        if (m_solver != NULL)
-        {
-            delete m_solver;
-            m_solver = NULL;
-        }
-    }
-
-    int m_sys_size;
-    MatrixBase* m_lhs;
-    LinearSolverBase* m_solver;
-};
-
-// Collection of linear system solvers of different sizes
-//  NOT THREAD SAFE
-//  ASSUMES YOU WANT A BAND MATRIX OF SIZE 10 :)
-class LinearSystemSolverCollection
-{
-public:
-
-    ~LinearSystemSolverCollection()
-    {
-        std::map<int, LinearSystemSolver*>::iterator it = m_solver_map.begin();
-        for (; it != m_solver_map.end(); ++it)
-        {
-            assert(it->second != NULL);
-            delete it->second;
-            it->second = NULL;
-        }
-    }
-
-    LinearSystemSolver* getLinearSystemSolver(int size)
-    {
-        assert(size > 0);
-
-        // Attempt to locate a solver of the requested size
-        std::map<int, LinearSystemSolver*>::iterator it = m_solver_map.find(size);
-        // If a solver of the size exists, return it
-        if (it != m_solver_map.end())
-        {
-            return it->second;
-        }
-        // Otherwise create a new solver
-        int band = 10;
-        MatrixBase* lhs = SolverUtils::instance()->createBandMatrix(size, size, band, band);
-        LinearSolverBase* solver = SolverUtils::instance()->createLinearSolver(lhs);
-        m_solver_map.insert(std::pair<int, LinearSystemSolver*>(size, new LinearSystemSolver(lhs, solver)));
-
-        it = m_solver_map.find(size);
-        return it->second;
-    }
-
-private:
-    std::map<int, LinearSystemSolver*> m_solver_map;
-};
-
-struct PerformanceTuningParameters
-{
-    /**
-     * Substepping
-     */
-    // If we want adaptive substepping
-    bool m_adaptive_substepping;
-    // Whether the adaptivity should apply only to rods that need it
-    bool m_selective_adaptivity;
-    // Overall maximum number of times the original step will be halved by the adaptive substepping
-    int m_max_number_of_substeps;
-    // Number of times the original step has to be halved before the inextensibility filter is applied
-    int m_inextensibility_threshold;
-
-    /**
-     * Implicit rod/mesh penalty
-     */
-    // Whether we want to apply implicit penalty response for rod/mesh collisions
-    bool m_enable_penalty_response;
-    // Extra thickness in rod/mesh implicit penalty response
-    double m_implicit_thickness;
-    // Penalty stiffness in rod/mesh implicit penalty response
-    double m_implicit_stiffness;
-
-    /**
-     * Iterations
-     */
-    // Maximum number of iterations allowed in the solver
-    int m_maximum_number_of_solver_iterations;
-    // Maximum number of iterations allowed in collision response. Set to 0 to disable collision response, to 1 to disable iterations.
-    int m_maximum_number_of_collisions_iterations;
-
-    /**
-     * Rod-rod collisions
-     */
-    // Whether we should ignore rod-rod collisions
-    bool m_skipRodRodCollisions;
-
-    /**
-     * Explosion detection
-     */
-    // Explosion detection
-    bool m_enable_explosion_detection;
-    // Damping parameter in explosion detection
-    double m_explosion_damping;
-    // Threshold in explosion detection
-    double m_explosion_threshold;
-
-    /**
-     * Rod disabling
-     */
-    // If a rod has a collision failure, it will be forever disabled
-    bool m_disable_rods_on_first_collision_failure;
-    // If a rod still has collision failure after maximum substepping, it will be disabled
-    bool m_disable_rods_on_unresolved_collision;
-    // If a rod still has non-convergent solver after maximum substepping, it will be disabled
-    bool m_disable_rods_on_unresolved_dynamics;
-    // If a rod still has explosions after maximum substepping, it will be disabled
-    bool m_disable_rods_on_unresolved_explosion;
-
-    PerformanceTuningParameters() :
-        m_adaptive_substepping(true), //
-                m_selective_adaptivity(true), //
-                m_max_number_of_substeps(3), //
-                m_inextensibility_threshold(0), //
-                m_enable_penalty_response(true), //
-                m_implicit_thickness(1.0), //
-                m_implicit_stiffness(200.0), //
-                m_maximum_number_of_solver_iterations(50), //
-                m_maximum_number_of_collisions_iterations(10), //
-                m_skipRodRodCollisions(true), //
-                m_enable_explosion_detection(true), //
-                m_explosion_damping(100.0), //
-                m_explosion_threshold(100.0), //
-                m_disable_rods_on_first_collision_failure(true), //
-                m_disable_rods_on_unresolved_collision(true), //
-                m_disable_rods_on_unresolved_dynamics(true), //
-                m_disable_rods_on_unresolved_explosion(true) //
-    {
-        SanityCheck();
-    }
-
-    // Performs various checks that the parameters are consistent
-    bool SanityCheck()
-    {
-        bool allright = true;
-
-        if (!m_adaptive_substepping && m_selective_adaptivity)
-        {
-            std::cerr << "Warning: selective adaptivity doesn't apply if adaptivity is off.\n";
-            allright = false;
-        }
-
-        if (m_selective_adaptivity && !m_skipRodRodCollisions)
-        {
-            std::cerr << "Warning: selective adaptivity doesn't apply if rod-rod collisions are on.\n";
-            allright = false;
-        }
-
-        return allright;
-    }
-
-};
-
 /**
  * Class to evolve a collection of rods forward in time, resolving collisions using
  * a "velocity filter" in the spirit of Bridson's 2002 paper "Robust Treatment of
  * Collisions, Contact, and Friction for Cloth Animation."
  */
-class BridsonStepper: public ObjectControllerBase
+class BARodStepper: public ObjectControllerBase
 {
     typedef std::list<int> RodSelectionType;
 
 public:
     /**
-     * Creates a BridsonStepper with user-supplied options.
+     * Creates a BARodStepper with user-supplied options.
      *
      * \param[in] intgrtr Integrator (class RodTimeStepper) to use. Assumes implicit euler, for now.
      * \param[in] max_implct_itrtns If an implicit integrator is selected, the maximum iterations allowed.
@@ -253,7 +77,7 @@ public:
      * \param[in] grav Three dimensional vector that specifies gravity.
      */
     // Parameter num_threads = -1 will cause the number of threads to be set equal to the number of available processors.
-    BridsonStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
+    BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
             std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
             const double time = 0.0, const int num_threads = -1,
             const PerformanceTuningParameters perf_param = PerformanceTuningParameters());
@@ -261,7 +85,7 @@ public:
     /**
      * Destructor.
      */
-    virtual ~BridsonStepper();
+    virtual ~BARodStepper();
 
     /**
      * Evolves all inserted rods forward in time.
@@ -294,12 +118,12 @@ public:
     {
         if (!m_stopOnRodError && stopOnRodError)
         {
-            std::cerr << "BridsonStepper::m_stopOnError changed to \033[33mtrue\033[0m" << std::endl;
+            std::cerr << "BARodStepper::m_stopOnError changed to \033[33mtrue\033[0m" << std::endl;
             // If we change from non-stopping to stopping, reset m_simulationFailed so we take only future errors into account.
             m_simulationFailed = false;
         }
         if (m_stopOnRodError && !stopOnRodError)
-            std::cerr << "BridsonStepper::m_stopOnError changed to \033[33mfalse\033[0m" << std::endl;
+            std::cerr << "BARodStepper::m_stopOnError changed to \033[33mfalse\033[0m" << std::endl;
 
         m_stopOnRodError = stopOnRodError;
     }
@@ -334,7 +158,7 @@ private:
     }
 
     /**
-     * Adds a rod that will be evolved in time using this BridsonStepper.
+     * Adds a rod that will be evolved in time using this BARodStepper.
      */
     //void addRod( ElasticRod* rod );
 
@@ -494,24 +318,25 @@ private:
     void setImplicitPenaltyExtraThickness(const double& h);
     void setVertexFacePenalty(const double& k);
 
+    void killTheRod(int rod);
+    void computeForces(VecXd ** Forces, const RodSelectionType& selected_rods);
+
     /*
      * Member variables
      */
 
     // Total number of degrees of freedom in the system
     int m_num_dof;
-#ifdef KEEP_ONLY_SOME_RODS
-    // Vector of rods this BridsonStepper evolves in time
-    std::vector<ElasticRod*>& m_rods;
-    size_t m_number_of_rods; // set to m_rods.size()
     // Time steppers to evolve rods forward (ignoring collisions)
     std::vector<RodTimeStepper*>& m_steppers;
+#ifdef KEEP_ONLY_SOME_RODS
+    // Vector of rods this BARodStepper evolves in time
+    std::vector<ElasticRod*>& m_rods;
+    size_t m_number_of_rods; // set to m_rods.size()
 #else
-    // Vector of rods this BridsonStepper evolves in time
+    // Vector of rods this BARodStepper evolves in time
     const std::vector<ElasticRod*>& m_rods;
     const size_t m_number_of_rods; // set to m_rods.size()
-    // Time steppers to evolve rods forward (ignoring collisions)
-    const std::vector<RodTimeStepper*>& m_steppers;
 #endif
     // Vector of ScriptedTriangleObjects in the system
     const std::vector<TriangleMesh*>& m_triangle_meshes;

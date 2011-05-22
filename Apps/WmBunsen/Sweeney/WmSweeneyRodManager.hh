@@ -8,7 +8,7 @@
 #include <weta/Wfigaro/Render/RodRenderer.hh>
 #include <weta/Wfigaro/Core/TriangleMesh.hh>
 #include <weta/Wfigaro/Core/ScriptingController.hh>
-#include <weta/Wfigaro/Physics/ElasticRods/BridsonStepper.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/BARodStepper.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/ElasticRod.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodUtils.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodMayaForces.hh>
@@ -18,7 +18,7 @@
 #include <BASim/src/Core/ObjectControllerBase.hh>
 #include <BASim/src/Physics/World.hh>
 #include <BASim/src/Render/RodRenderer.hh>
-#include <BASim/src/Physics/ElasticRods/BridsonStepper.hh>
+#include <BASim/src/Physics/ElasticRods/BARodStepper.hh>
 #endif
 
 #include "../WmFigMeshController.hh"
@@ -69,7 +69,7 @@ public:
     std::vector< BASim::ElasticRod* > m_rods;
     
 private:
-    BASim::BridsonStepper* m_bridsonStepper;
+    BASim::BARodStepper* m_bridsonStepper;
     
     std::vector< BASim::RodTimeStepper* > m_rodTimeSteppers;
     std::vector< BASim::RodRenderer* > m_rodRenderers;

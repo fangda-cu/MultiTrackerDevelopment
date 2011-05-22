@@ -510,7 +510,7 @@ void HairyBall::Setup()
   else
   {
     std::cout << "\033[35;1mHAIRYBALL MESSAGE:\033[m Collisions in use." << std::endl;
-    m_br_stepper = new BridsonStepper( m_rods, m_tri_meshes, m_scripting_controllers, m_steppers, GetScalarOpt("dt") );
+    m_br_stepper = new BARodStepper( m_rods, m_tri_meshes, m_scripting_controllers, m_steppers, GetScalarOpt("dt") );
     //m_br_stepper->setRodLabels(rod_labels);
     m_world->addController(m_br_stepper);
   }
@@ -644,7 +644,7 @@ void HairyBall::resumeFromfile( std::ifstream& ifs )
   else
   {
     //std::cout << "\033[35;1mHAIRYBALL MESSAGE:\033[m Collisions in use." << std::endl;
-    m_br_stepper = new BridsonStepper( m_rods, m_tri_meshes, m_scripting_controllers, m_steppers, GetScalarOpt("dt") );
+    m_br_stepper = new BARodStepper( m_rods, m_tri_meshes, m_scripting_controllers, m_steppers, GetScalarOpt("dt") );
     m_world->addController(m_br_stepper);
   }
   

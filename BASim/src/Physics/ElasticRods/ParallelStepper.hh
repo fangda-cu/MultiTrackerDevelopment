@@ -52,7 +52,7 @@ namespace BASim {
     virtual ~ParallelStepper();
 
     /**
-     * Adds a rod that will be evolved in time using this BridsonStepper.
+     * Adds a rod that will be evolved in time using this BARodStepper.
      */
     void addController( ObjectControllerBase* controller );
 

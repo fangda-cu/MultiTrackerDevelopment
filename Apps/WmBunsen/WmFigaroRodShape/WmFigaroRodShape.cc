@@ -76,7 +76,7 @@ void WmFigaroRodShape::resetSimulation( MVectorArray* i_controlPoints )
 
     m_rodGroup.setSimulationNeedsReset( false );
     //should actually pass the proper time and the proper number of threads
-    m_beaker.addRodsToWorld( 0, &m_rodGroup,0 ,8);
+    m_beaker.addRodsToWorld( 0, &m_rodGroup,0 ,8,PerformanceTuningParameters() );
 }
 
 void WmFigaroRodShape::initialiseRod( MVectorArray* i_controlPoints )

@@ -24,7 +24,7 @@ namespace BASim {
 
 using namespace Util;
 
-  ElasticRod::ElasticRod(int numVertices, bool closed) : m_bendingForce(NULL)
+ElasticRod::ElasticRod(int numVertices, bool closed) : m_bendingForce(NULL), m_stretchingForce(NULL)
 {
   draw_cl = 1;
 
@@ -104,7 +104,7 @@ void ElasticRod::setup()
   property(m_ndof) = 3 * nv() + ne();
 
   // Add elastic forces
-  addForce(new RodStretchingForce(*this));
+  addForce(m_stretchingForce = new RodStretchingForce(*this));
   addForce(new RodTwistingForceSym(*this));
   if (refFrameType() == TimeParallel) addForce(m_bendingForce =  new RodBendingForceSym(*this));
   else {
