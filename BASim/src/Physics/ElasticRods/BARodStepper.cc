@@ -247,6 +247,12 @@ void BARodStepper::prepareForExecution()
     delete m_collision_detector;
     m_collision_detector = NULL;
 
+    for (int i = 0; i < m_number_of_rods; ++i)
+    {
+        assert(m_rods[i] != NULL);
+	m_rods[i]->globalRodIndex = i;
+    }
+
     //std::cout << "About to extract rod information" << std::endl;
     for (int i = 0; i < m_number_of_rods; ++i)
     {
@@ -614,6 +620,7 @@ bool BARodStepper::step(RodSelectionType& selected_rods)
 
     std::cerr << "Dynamic step is " << (dependable_solve ? "" : "not ") << "entirely dependable!" << std::endl;
 
+
     /*
      // Launch num_threads threads which will execute all elements of m_steppers.
      MultithreadedStepper<std::list<RodTimeStepper*> > multithreaded_stepper(selected_steppers, 4);//m_num_threads); // FIXME
@@ -642,11 +649,37 @@ bool BARodStepper::step(RodSelectionType& selected_rods)
     // Post time step position
     extractPositions(m_xnp1, selected_rods);
 
+
     if (m_perf_param.m_enable_explosion_detection)
         computeForces(m_preCollisionForces, selected_rods);
 
     // Average velocity over the timestep just completed
     m_vnphalf = (m_xnp1 - m_xn) / m_dt;
+
+
+    for (int i = 0; i < selected_steppers.size(); i++)
+    {
+	applyInextensibilityVelocityFilter(selected_steppers[i]->getRod()->globalRodIndex);
+    }
+
+    for (int rodidx = 0; rodidx < m_rods.size(); ++rodidx)
+    {
+        std::cout << "Edge lengths after step() calls inextensibility(): ";
+        int rodbase = m_base_indices[rodidx];
+ 
+        for (int i = 0; i < m_rods[rodidx]->nv() - 1; ++i)
+        {
+	    Vec3d x0 = m_xn.segment<3> (rodbase + 3 * i);
+	    Vec3d v0 = m_vnphalf.segment<3> (rodbase + 3 * i);
+	    Vec3d x1 = m_xn.segment<3> (rodbase + 3 * i + 3);
+	    Vec3d v1 = m_vnphalf.segment<3> (rodbase + 3 * i + 3);
+	    Vec3d x0N = x0 + m_dt * v0;
+	    Vec3d x1N = x1 + m_dt * v1;
+	    Vec3d eN = (x1N - x0N);
+	    std::cout << " " << eN.norm();
+	}  
+	std::cout << std::endl;
+    }
 
     // Mark invalid rods as entirely collision-immune, so we don't waste time on colliding them.
 
@@ -804,6 +837,25 @@ bool BARodStepper::step(RodSelectionType& selected_rods)
                 continue;
             }
         }
+    }
+
+    for (int rodidx = 0; rodidx < m_rods.size(); ++rodidx)
+    {
+        std::cout << "Edge lengths after step(): ";
+        int rodbase = m_base_indices[rodidx];
+ 
+        for (int i = 0; i < m_rods[rodidx]->nv() - 1; ++i)
+        {
+	    Vec3d x0 = m_xn.segment<3> (rodbase + 3 * i);
+	    Vec3d v0 = m_vnphalf.segment<3> (rodbase + 3 * i);
+	    Vec3d x1 = m_xn.segment<3> (rodbase + 3 * i + 3);
+	    Vec3d v1 = m_vnphalf.segment<3> (rodbase + 3 * i + 3);
+	    Vec3d x0N = x0 + m_dt * v0;
+	    Vec3d x1N = x1 + m_dt * v1;
+	    Vec3d eN = (x1N - x0N);
+	    std::cout << " " << eN.norm();
+	}  
+	std::cout << std::endl;
     }
 
     bool all_rods_are_ok = dependable_solve && all_collisions_succeeded && !explosions_detected;

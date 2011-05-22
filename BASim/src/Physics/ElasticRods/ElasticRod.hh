@@ -20,6 +20,7 @@ class RodPenaltyForce;
 class RodTimeStepper;
 
 class RodBendingForceSym;
+class RodStretchingForce;
 
 /** Base class for rods. The degrees of freedom for rods are the
     vertex positions (3 dofs per vertex) and the angles between the
@@ -307,7 +308,7 @@ public:
 
   void updateForceProperties();
 
-  int global_rodID;
+  int globalRodIndex;
   int draw_cl;
 
   bool doReverseHairdo(RodTimeStepper *stepper);
@@ -315,6 +316,7 @@ public:
   void updateReverseUndeformedStrain(const VecXd& e);
 
   RodBendingForceSym* m_bendingForce; // easy access to the bending force
+  RodStretchingForce* m_stretchingForce; // easy access to the stretching force
 
 protected:
 

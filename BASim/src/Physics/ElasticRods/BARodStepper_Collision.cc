@@ -1110,57 +1110,88 @@ void BARodStepper::applyInextensibilityVelocityFilter(int rodidx)
     if (m_level < m_perf_param.m_inextensibility_threshold)
         return;
 
+    std::cout << "Applying inextensibility filter to rod " << rodidx << std::endl;
+
     int rodbase = m_base_indices[rodidx];
 
-    Vec3d v0 = m_vnphalf.segment<3> (rodbase + 3); // velocity of vertex 1
-    Vec3d x0 = m_xn.segment<3> (rodbase + 3); // start-of-step position of vertex 1
-    Vec3d x0N = x0 + m_dt * v0; // end-of-step position of vertex 1
-    for (int i = 2; i < m_rods[rodidx]->nv(); ++i)
+    // if (boundary->isVertexScripted(j))
+    //   {
+    // 	//std::cout << "BridsonTimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
+    // 	Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
+    // 	Vec3d actualvalue = m_xnp1.segment<3> (rodbase + 3 * j);
+    // 	assert(approxEq(desiredposition, actualvalue, 1.0e-6));
+    //   }
+
+    m_vnphalf.segment<3> (rodbase+0) = Vec3d(0,0,0); 
+    m_vnphalf.segment<3> (rodbase+3) = Vec3d(0,0,0);
+
     {
-        Vec3d x1 = m_xn.segment<3> (rodbase + 3 * i);
-        Vec3d v1 = m_vnphalf.segment<3> (rodbase + 3 * i);
+        Vec3d v0 = m_vnphalf.segment<3> (rodbase + 3); // velocity of vertex 1
+        Vec3d x0 = m_xn.segment<3> (rodbase + 3); // start-of-step position of vertex 1
+	Vec3d x0N = x0 + m_dt * v0; // end-of-step position of vertex 1
+	for (int i = 2; i < m_rods[rodidx]->nv(); ++i)
+	{
+            Vec3d x1 = m_xn.segment<3> (rodbase + 3 * i);
+	    Vec3d v1 = m_vnphalf.segment<3> (rodbase + 3 * i);
 
-        // filter the velocity of vertex i
+	    // filter the velocity of vertex i
 
-        Vec3d x1N = x1 + m_dt * v1;
+	    Vec3d x1N = x1 + m_dt * v1;
 
-        double l = (x1 - x0).norm();
-        double lN = (x1N - x0N).norm();
+	    double l  = 1.0; //(x1  - x0).norm();
+	    double lN = (x1N - x0N).norm();
+	    
+	    Vec3d x1Nrevised = x0N + (x1N - x0N) * l / lN;
+	    
+	    double lNrevised = (x1Nrevised - x0N).norm();
+	    
+	    Vec3d v1revised = (x1Nrevised - x1) / m_dt;
+	    
+	    m_vnphalf.segment<3> (rodbase + 3 * i) = v1revised;
+	    
+	    std::cout << "inextensibility: x0N = " << x0N << " x1N = " << x1N << " x1Nrevised = " << x1Nrevised << " l = " << l << " lNrevised = "
+		      << lNrevised << " l = " << l << std::endl;
 
-        Vec3d x1Nrevised = x0N + (x1N - x0N) * l / lN;
-
-        double lNrevised = (x1Nrevised - x0N).norm();
-
-        Vec3d v1revised = (x1Nrevised - x1) / m_dt;
-
-        m_vnphalf.segment<3> (rodbase + 3 * i) = v1revised;
-
-        // std::cout << "inextensibility: x0N = " << x0N << " x1Nrevised = " << x1Nrevised << " l = " << l << " lNrevised-l = "
-        //         << (lNrevised - l) << " lNrevised/l = " << (lNrevised / l) << std::endl;//x1Nrevised = " << x1Nrevised << " strain = " << (lN/l) << " revised: " << (lNrevised/l) << " l = " << l << " lN = " << lN << " lNrevised = " << lNrevised << " x0N = " << x0N << " x1Nrevised = " << x1Nrevised << " m_vnphalf revised = " << m_vnphalf.segment<3> (rodbase + 3*i) << std::endl;
-
-        // Vec3d t = (x1-x0).normalized(); // unit tangent
-
-        // double relvel = t.dot(v1-v0);
-
-        // Vec3d impulse = -relvel*t;
-
-        // double relvelAfter = t.dot(v1 + impulse - v0);
-
-        // m_vnphalf.segment<3> (rodbase + 3*i) = v1 + impulse;
-
-        // std::cout << "inextensibility: i=" << i
-        //      << " x0 = " << x0
-        //      << " x1 = " << x1
-        //      << " v0 = " << v0
-        //      << " v1 = " << v1
-        //           << " t = " << t
-        //           << " relvel before = " << relvel
-        //           << " after = " << relvelAfter << std::endl;
-
-        x0N = x1Nrevised;
-        x0 = x1;
-        v0 = v1;
+//x1Nrevised = " << x1Nrevised << " strain = " << (lN/l) << " revised: " << (lNrevised/l) << " l = " << l << " lN = " << lN << " lNrevised = " << lNrevised << " x0N = " << x0N << " x1Nrevised = " << x1Nrevised << " m_vnphalf revised = " << m_vnphalf.segment<3> (rodbase + 3*i) << std::endl;
+	    
+	    // Vec3d t = (x1-x0).normalized(); // unit tangent
+	    
+	    // double relvel = t.dot(v1-v0);
+	    
+	    // Vec3d impulse = -relvel*t;
+	    
+	    // double relvelAfter = t.dot(v1 + impulse - v0);
+	    
+	    // m_vnphalf.segment<3> (rodbase + 3*i) = v1 + impulse;
+	    
+	    // std::cout << "inextensibility: i=" << i
+	    //      << " x0 = " << x0
+	    //      << " x1 = " << x1
+	    //      << " v0 = " << v0
+	    //      << " v1 = " << v1
+	    //           << " t = " << t
+	    //           << " relvel before = " << relvel
+	    //           << " after = " << relvelAfter << std::endl;
+	    
+	    x0N = x1Nrevised;
+	    x0 = x1;
+	    v0 = v1;
+	}
     }
+
+    std::cout << "Edge lengths after inextensibility: ";
+    for (int i = 0; i < m_rods[rodidx]->nv() - 1; ++i)
+    {
+        Vec3d x0 = m_xn.segment<3> (rodbase + 3 * i);
+        Vec3d v0 = m_vnphalf.segment<3> (rodbase + 3 * i);
+        Vec3d x1 = m_xn.segment<3> (rodbase + 3 * i + 3);
+        Vec3d v1 = m_vnphalf.segment<3> (rodbase + 3 * i + 3);
+	Vec3d x0N = x0 + m_dt * v0;
+	Vec3d x1N = x1 + m_dt * v1;
+	Vec3d eN = (x1N - x0N);
+	std::cout << " " << eN.norm();
+    }  
+    std::cout << std::endl;
 }
 
 void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdgeCTCollision& eecol)
@@ -1605,7 +1636,7 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
     double maxStart = 0;
     double minStart = 1e99;
     int worstViolator = 0;
-    // std::cout << "Checking for explosions..." << std::endl;
+    std::cout << "Checking for explosions..." << std::endl;
 
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
     {
@@ -1627,7 +1658,7 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
                 {
                     explosions_detected = true;
                     exploding_rods[*rod] = true;
-                    // std::cerr << "Rod number " << *rod << " had an explosion" << std::endl;
+                    std::cerr << "Rod number " << *rod << " had an explosion" << std::endl;
                     break;
                     //  std::cout << "Check Explosion (" << *rod << ", " << j << "): s = " << s << " p = " << p << " e = " << e
                     //          << std::endl;
