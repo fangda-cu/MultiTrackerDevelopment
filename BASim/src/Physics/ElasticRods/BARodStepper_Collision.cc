@@ -1138,7 +1138,7 @@ void BARodStepper::applyInextensibilityVelocityFilter(int rodidx)
 
 	    Vec3d x1N = x1 + m_dt * v1;
 
-	    double l  = 1.0; //(x1  - x0).norm();
+	    double l  = (x1  - x0).norm();
 	    double lN = (x1N - x0N).norm();
 	    
 	    Vec3d x1Nrevised = x0N + (x1N - x0N) * l / lN;
