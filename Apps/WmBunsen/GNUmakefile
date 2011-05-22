@@ -39,7 +39,7 @@ PHYSBAM_LIBS 	 := -lPhysBAM_Advection_Equations -lPhysBAM_Arrays -lPhysBAM_Artic
 		    -lPhysBAM_Level_Sets -lPhysBAM_Utilities -lPhysBAM_Matrices_And_Vectors -lPhysBAM_Meshing -lPhysBAM_Motion \
 		    -lboost_iostreams -lboost_filesystem -lpng -ljpeg -lglut
 PHYSBAM_RPATH := -Wl,-rpath,$(PHYSBAM_LOCATION)/build/release/Public_Library -Wl,-rpath,$(PHYSBAM_LOCATION)/External_Libraries/boost/lib 
-PHYSBAM_LIB_PATH := -L$(PHYSBAM_LOCATION)/build/release/Public_Library -L/vol/bob/built/linux64/L40/bless/hugekits/boost/lib
+PHYSBAM_LIB_PATH := -L$(PHYSBAM_LOCATION)/build/release/Public_Library #-L/vol/bob/built/linux64/L40/bless/hugekits/boost/lib
 PHYSBAM_INCLUDE  := -I$(PHYSBAM_LOCATION)/Public_Library
 
 PLG1_CF += $(PHYSBAM_INCLUDE) -Wno-overloaded-virtual -Wno-unused -pipe -fPIC -g -funroll-loops 

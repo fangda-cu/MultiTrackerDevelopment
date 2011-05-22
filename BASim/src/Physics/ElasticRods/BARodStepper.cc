@@ -12,14 +12,19 @@
 #include "../../Threads/MultithreadedStepper.hh"
 #include "../../Core/Timer.hh"
 #include "../../Collisions/Collision.hh"
+#include "../../Util/TextLog.hh"
 
-#include <iostream.h>
+#include <iostream>
+#include <fstream>
+
 #ifdef HAVE_OPENMP
 #include <omp.h>
 #endif
 
 namespace BASim
 {
+
+using namespace weta::logging;
 
 BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
         std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
@@ -56,6 +61,11 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start,
                     m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness)
 {
+    // Open the log file
+   // std::ofstream log_stream("BARodStepper.log");
+   // TextLog log(log_stream);
+   // ErrorStream(&log, "E001") << "BARodStepper constructor\n";
+
     // For debugging purposes
 #ifdef KEEP_ONLY_SOME_RODS
     std::set<int> keep_only;
