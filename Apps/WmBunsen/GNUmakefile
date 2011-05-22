@@ -6,6 +6,8 @@ BUILD := "$(shell perl -e '$$pwd = $$ENV{PWD}; $$time=localtime(); print "\\\"$$
 include /vol/bob/make/head.mk
 ##############################################################################
 
+WITHKITS += ext/boost/tags/boost-1_41_0-1
+
 VERSION         := $(KVERMAJ)
 PLG_INSD        :=#
 SCR_INSD        :=#
@@ -26,23 +28,25 @@ PLG1            := wmFigaro.so
 PLG1_CF	        += -DBUILD=${BUILD} -pthread -DHAVE_LAPACK -DWETA # -openmp -DHAVE_OPENMP
 PLG1_CF	        += -no-ipo
 
-# PhysBAM libraries
-PHYSBAM_LOCATION := /vol/weta/src/amcadams/PhysBAM-svn
+#PhysBAM libraries
+#PHYSBAM_LOCATION := /vol/weta/src/amcadams/PhysBAM-svn
 #PHYSBAM_LOCATION := /vol/bob/src/code/PhysBAM/work/girving-trunk
-PHYSBAM_LIBS 	 := -lPhysBAM_Advection_Equations -lPhysBAM_Arrays -lPhysBAM_Articulated_Rigid_Bodies -lPhysBAM_Boundaries -lPhysBAM_Collisions_And_Interactions \
-		    -lPhysBAM_Conservation_Law_Solvers -lPhysBAM_Constitutive_Models -lPhysBAM_OpenGL -lPhysBAM_Data_Structures -lPhysBAM_Optimization \
-		    -lPhysBAM_Deformable_Objects -lPhysBAM_Ordinary_Differential_Equations -lPhysBAM_Euler_Equations -lPhysBAM_Parallel_Computation \
-		    -lPhysBAM_Forces_And_Torques -lPhysBAM_Particles -lPhysBAM_Fourier_Transforms -lPhysBAM_Poisson_Equations \
-		    -lPhysBAM_Fracture -lPhysBAM_Random_Numbers -lPhysBAM_Geometry -lPhysBAM_Read_Write -lPhysBAM_Grid_Based_Fields \
-		    -lPhysBAM_Grids -lPhysBAM_Rigid_Bodies -lPhysBAM_Heat_Flows -lPhysBAM_Solids_And_Fluids -lPhysBAM_Incompressible_Flows -lPhysBAM_Solids_Evolution \
-		    -lPhysBAM_Arrays -lPhysBAM_Interpolation -lPhysBAM_Standard_Tests -lPhysBAM_Lagrange_Equations -lPhysBAM_Turbulence \
-		    -lPhysBAM_Level_Sets -lPhysBAM_Utilities -lPhysBAM_Matrices_And_Vectors -lPhysBAM_Meshing -lPhysBAM_Motion \
-		    -lboost_iostreams -lboost_filesystem -lpng -ljpeg -lglut
-PHYSBAM_RPATH := -Wl,-rpath,$(PHYSBAM_LOCATION)/build/release/Public_Library -Wl,-rpath,$(PHYSBAM_LOCATION)/External_Libraries/boost/lib 
-PHYSBAM_LIB_PATH := -L$(PHYSBAM_LOCATION)/build/release/Public_Library #-L/vol/bob/built/linux64/L40/bless/hugekits/boost/lib
-PHYSBAM_INCLUDE  := -I$(PHYSBAM_LOCATION)/Public_Library
+#PHYSBAM_LIBS 	 := -lPhysBAM_Advection_Equations -lPhysBAM_Arrays -lPhysBAM_Articulated_Rigid_Bodies -lPhysBAM_Boundaries -lPhysBAM_Collisions_And_Interactions \
+#		    -lPhysBAM_Conservation_Law_Solvers -lPhysBAM_Constitutive_Models -lPhysBAM_OpenGL -lPhysBAM_Data_Structures -lPhysBAM_Optimization \
+#		    -lPhysBAM_Deformable_Objects -lPhysBAM_Ordinary_Differential_Equations -lPhysBAM_Euler_Equations -lPhysBAM_Parallel_Computation \
+#		    -lPhysBAM_Forces_And_Torques -lPhysBAM_Particles -lPhysBAM_Fourier_Transforms -lPhysBAM_Poisson_Equations \
+#		    -lPhysBAM_Fracture -lPhysBAM_Random_Numbers -lPhysBAM_Geometry -lPhysBAM_Read_Write -lPhysBAM_Grid_Based_Fields \
+#		    -lPhysBAM_Grids -lPhysBAM_Rigid_Bodies -lPhysBAM_Heat_Flows -lPhysBAM_Solids_And_Fluids -lPhysBAM_Incompressible_Flows -lPhysBAM_Solids_Evolution \
+#		    -lPhysBAM_Arrays -lPhysBAM_Interpolation -lPhysBAM_Standard_Tests -lPhysBAM_Lagrange_Equations -lPhysBAM_Turbulence \
+#		    -lPhysBAM_Level_Sets -lPhysBAM_Utilities -lPhysBAM_Matrices_And_Vectors -lPhysBAM_Meshing -lPhysBAM_Motion \
+#		    -lboost_iostreams -lboost_filesystem -lpng -ljpeg -lglut
+#PHYSBAM_RPATH := -Wl,-rpath,$(PHYSBAM_LOCATION)/build/release/Public_Library -Wl,-rpath,$(PHYSBAM_LOCATION)/External_Libraries/boost/lib 
+#PHYSBAM_LIB_PATH := -L$(PHYSBAM_LOCATION)/build/release/Public_Library \
+ #                   -L/vol/bob/built/linux64/L40/ext/boost/tags/boost-1_41_0-1/lib
 
-PLG1_CF += $(PHYSBAM_INCLUDE) -Wno-overloaded-virtual -Wno-unused -pipe -fPIC -g -funroll-loops 
+#PHYSBAM_INCLUDE  := -I$(PHYSBAM_LOCATION)/Public_Library
+
+PLG1_CF += -Wno-overloaded-virtual -Wno-unused -pipe -fPIC -g -funroll-loops # $(PHYSBAM_INCLUDE)
 
 
 #ifeq "$(ABI)" "LI40"
@@ -158,7 +162,7 @@ PLG1_L        += -Wl,--start-group \
                  -Wl,--end-group -openmp -lpthread
 
 # PhysBAM libraries
-PLG1_L += $(PHYSBAM_RPATH) $(PHYSBAM_LIB_PATH) $(PHYSBAM_LIBS)
+#PLG1_L += $(PHYSBAM_RPATH) $(PHYSBAM_LIB_PATH) $(PHYSBAM_LIBS)
 
 
 SCR1            := AEwmFigaroNodeTemplate.mel
