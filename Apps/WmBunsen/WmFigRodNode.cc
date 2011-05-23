@@ -1028,7 +1028,6 @@ void WmFigRodNode::compute_oa_simulatedVertices( const MPlug& i_plug, MDataBlock
         }
     }
 
-
     simulatedVerticesH.setClean();
     i_dataBlock.setClean( i_plug );
 }

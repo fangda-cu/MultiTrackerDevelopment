@@ -331,18 +331,16 @@ private:
 
     // Total number of degrees of freedom in the system
     int m_num_dof;
+    // Time steppers to evolve rods forward (ignoring collisions)
+    std::vector<RodTimeStepper*>& m_steppers;
 #ifdef KEEP_ONLY_SOME_RODS
     // Vector of rods this BARodStepper evolves in time
     std::vector<ElasticRod*>& m_rods;
     size_t m_number_of_rods; // set to m_rods.size()
-    // Time steppers to evolve rods forward (ignoring collisions)
-    std::vector<RodTimeStepper*>& m_steppers;
 #else
     // Vector of rods this BARodStepper evolves in time
     const std::vector<ElasticRod*>& m_rods;
     const size_t m_number_of_rods; // set to m_rods.size()
-    // Time steppers to evolve rods forward (ignoring collisions)
-    const std::vector<RodTimeStepper*>& m_steppers;
 #endif
     // Vector of ScriptedTriangleObjects in the system
     const std::vector<TriangleMesh*>& m_triangle_meshes;

@@ -73,8 +73,33 @@ public:
     // Collision meshes
     static MObject ia_collisionMeshes;
     
+    // Performance Tuning
+      //GeneralParameters
+    static MObject ia_enablePenaltyResponse;
+    static MObject ia_implicitThickness;
+    static MObject ia_implicitStiffness;
+    static MObject ia_inextensibilityThreshold;
+
+      //Failuredetection
+    static MObject ia_maxNumOfSolverIters;
+    static MObject ia_maxNumOfCollisionIters;
+    static MObject ia_enableExplosionDetection;
+    static MObject ia_explosionDampening;
+    static MObject ia_explosionThreshold;
+
+     //FailureResponse
+    static MObject ia_solverFailure;
+    static MObject ia_collisionFailure;
+    static MObject ia_explosionFailure;
+    static MObject ia_maxNumSolverSubsteps;
+    static MObject ia_maxNumCollisionSubsteps;
+    static MObject ia_maxNumExplosionSubsteps;
+
     // Sync attributes to force compute() when inputs change
     static MObject ca_rodPropertiesSync;
+    
+    // Output to the guide curve deformer
+    static MObject oa_simulatedNurbs;
     
     static MObject ia_strandVertices;
     static MObject ia_verticesPerStrand;
@@ -91,6 +116,7 @@ private:
     void initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock );
     void initialiseCollisionMeshes( MDataBlock &i_data );
     void updateCollisionMeshes( MDataBlock& i_dataBlock );
+    void compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i_dataBlock );
     
     double m_currentTime;
     double m_previousTime;

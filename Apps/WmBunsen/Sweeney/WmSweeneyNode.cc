@@ -32,11 +32,37 @@ using namespace BASim;
 /*static*/ MObject WmSweeneyNode::ia_strandVertices;
 /*static*/ MObject WmSweeneyNode::ia_verticesPerStrand;
 
+// Output to the Barbershop guide curve deformer
+/*static*/ MObject WmSweeneyNode::oa_simulatedNurbs;
+
 // Sync attributes
 /* static */ MObject WmSweeneyNode::ca_rodPropertiesSync;
 
 // Collision meshes
 /* static */ MObject WmSweeneyNode::ia_collisionMeshes;
+
+// Performance Tuning
+//GeneralParameters
+/* static */ MObject WmSweeneyNode::ia_enablePenaltyResponse;
+/* static */ MObject WmSweeneyNode::ia_implicitThickness;
+/* static */ MObject WmSweeneyNode::ia_implicitStiffness;
+/* static */ MObject WmSweeneyNode::ia_inextensibilityThreshold;
+
+//Failuredetection
+/* static */ MObject WmSweeneyNode::ia_maxNumOfSolverIters;
+/* static */ MObject WmSweeneyNode::ia_maxNumOfCollisionIters;
+/* static */ MObject WmSweeneyNode::ia_enableExplosionDetection;
+/* static */ MObject WmSweeneyNode::ia_explosionDampening;
+/* static */ MObject WmSweeneyNode::ia_explosionThreshold;
+
+//FailureResponse
+/* static */ MObject WmSweeneyNode::ia_solverFailure;
+/* static */ MObject WmSweeneyNode::ia_collisionFailure;
+/* static */ MObject WmSweeneyNode::ia_explosionFailure;
+/* static */ MObject WmSweeneyNode::ia_maxNumSolverSubsteps;
+/* static */ MObject WmSweeneyNode::ia_maxNumCollisionSubsteps;
+/* static */ MObject WmSweeneyNode::ia_maxNumExplosionSubsteps;
+
  
 WmSweeneyNode::WmSweeneyNode() : m_rodManager( NULL )
 {    
@@ -50,7 +76,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus status;
 
-    cerr << "WmSweeneyNode::compute() with i_plug = " << i_plug.name() << endl;
+    cerr << "----------------------------------->WmSweeneyNode::compute() with i_plug = " << i_plug.name() << endl;
 
     if ( i_plug == ca_rodPropertiesSync )
     {
@@ -108,7 +134,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                     m_length = length;
                     m_edgeLength = edgeLength;
                     m_rodRadius = rodRadius;
-                    m_rodPitch = rodPitch;        
+                    m_rodPitch = rodPitch;
                 
                     // TODO: Add code to update undeformed configuration 
                     // for just now, recreate the rod
@@ -125,12 +151,16 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		        }
 		    }
                 }
-                
+                        
                 updateCollisionMeshes( i_dataBlock );
                 m_rodManager->takeStep();
             }
-        }                
+        }
         i_dataBlock.setClean( i_plug );
+    }
+    else if ( i_plug == oa_simulatedNurbs )
+    {        
+        compute_oa_simulatedNurbs( i_plug, i_dataBlock );
     }
     else
     {
@@ -260,9 +290,27 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
         
         currentVertexIndex += m_numberOfVerticesPerStrand;        
     }
-  
+
+    //Set performancetuningparameters to pass through
+    PerformanceTuningParameters perfParams;
+    perfParams.m_enable_penalty_response=i_dataBlock.inputValue( ia_enablePenaltyResponse).asBool();
+    perfParams.m_implicit_thickness=i_dataBlock.inputValue( ia_implicitThickness).asDouble();
+    perfParams.m_implicit_stiffness=i_dataBlock.inputValue( ia_implicitStiffness).asDouble();
+    perfParams.m_inextensibility_threshold=i_dataBlock.inputValue( ia_inextensibilityThreshold).asInt();
+    perfParams.m_maximum_number_of_solver_iterations=i_dataBlock.inputValue( ia_maxNumOfSolverIters).asInt();
+    perfParams.m_maximum_number_of_collisions_iterations=i_dataBlock.inputValue( ia_maxNumOfCollisionIters).asInt();
+    perfParams.m_enable_explosion_detection=i_dataBlock.inputValue( ia_enableExplosionDetection).asBool();
+    perfParams.m_explosion_damping=i_dataBlock.inputValue( ia_explosionDampening).asDouble();
+    perfParams.m_explosion_threshold=i_dataBlock.inputValue( ia_explosionThreshold).asDouble();
+    perfParams.m_in_case_of_solver_failure= (BASim::PerformanceTuningParameters::ResponseSeverity) i_dataBlock.inputValue( ia_solverFailure).asInt();
+    perfParams.m_in_case_of_collision_failure=(BASim::PerformanceTuningParameters::ResponseSeverity) i_dataBlock.inputValue( ia_collisionFailure).asInt();
+    perfParams.m_in_case_of_explosion_failure=(BASim::PerformanceTuningParameters::ResponseSeverity) i_dataBlock.inputValue( ia_explosionFailure).asInt();
+    perfParams.m_max_number_of_substeps_for_solver=i_dataBlock.inputValue( ia_maxNumSolverSubsteps).asInt();
+    perfParams.m_max_number_of_substeps_for_collision=i_dataBlock.inputValue( ia_maxNumCollisionSubsteps).asInt();
+    perfParams.m_max_number_of_substeps_for_explosion=i_dataBlock.inputValue( ia_maxNumExplosionSubsteps).asInt();
+
     cerr << "initialiseRodFromBarberShopInput() - About to initialise simulation\n";
-    m_rodManager->initialiseSimulation( 1 / 24.0, m_startTime );
+    m_rodManager->initialiseSimulation( 1 / 24.0, m_startTime, perfParams );
     cerr << "initialiseRodFromBarberShopInput() - Simulation initialised at time " << m_startTime << endl;
 }
 
@@ -279,7 +327,11 @@ void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices,
     MVector edge = i_direction;
     edge.normalize();
     
-    edge *= m_length / ( m_verticesPerRod - 1 );
+    cerr << "constructRodVertices(): m_length = " << m_length << endl;
+    cerr << "constructRodVertices(): m_verticesPerRod = " << m_verticesPerRod << endl;
+    cerr << "constructRodVertices(): i_direction = " << i_direction << endl;
+    
+    edge *= m_length / m_verticesPerRod;
     
     cerr << "constructRodVertices(): edgeLength = " << edge.length() << "\n";    
     
@@ -287,8 +339,14 @@ void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices,
     
     for ( int v = 0; v < m_verticesPerRod; ++v )
     {
-		//MVector newPoint( m_rodRadius * cos( (double)v ),
-		//	m_rodPitch * (double)v, m_rodRadius * sin( (double)v ) );
+        // Straight rods as twist is controlled by the rod properties        
+        
+        o_rodVertices.push_back( BASim::Vec3d( currentVertex.x, currentVertex.y, currentVertex.z ) );
+        
+        currentVertex += edge;
+                
+		/*MVector newPoint( m_rodRadius * cos( (double)v ),
+			m_rodPitch * (double)v, m_rodRadius * sin( (double)v ) );
         //	
         
         // For testing, force a straight rod
@@ -302,11 +360,66 @@ void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices,
         // Now move the point to sit where the Barbershop input strand comes from
         newPoint += i_rootPosition;
             
-        o_rodVertices.push_back( BASim::Vec3d( newPoint.x, newPoint.y, newPoint.z ) );
+        o_rodVertices.push_back( BASim::Vec3d( newPoint.x, newPoint.y, newPoint.z ) );*/
     }
     
     cerr << "constructRodVertices(): Finished constructing rod vertices\n";    
 }
+
+void WmSweeneyNode::compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i_dataBlock )
+{
+    MStatus status;
+
+    cerr << "compute_oa_simulatedNurbs()\n";
+
+    // First pull all the inputs to make sure we're up to date.
+    i_dataBlock.inputValue( ca_rodPropertiesSync, &status ).asBool();
+    CHECK_MSTATUS( status );
+    
+    // The above may have been clean so just make sure we actually read time
+    i_dataBlock.inputValue( ia_time, &status ).asTime().value();
+    CHECK_MSTATUS( status );
+    
+    MArrayDataHandle simulatedNurbsArrayHandle = i_dataBlock.outputArrayValue( oa_simulatedNurbs, &status );
+    CHECK_MSTATUS( status );
+
+    MArrayDataBuilder simulatedNurbsArrayDataBuilder( & i_dataBlock, oa_simulatedNurbs, 
+                                                      (unsigned int)m_rodManager->numberOfRods(), & status);
+    CHECK_MSTATUS( status );
+    
+    for ( size_t r = 0; r < m_rodManager->numberOfRods(); ++r )
+    {
+        MPointArray nurbsEditPoints;
+        
+        ElasticRod* rod = m_rodManager->rod( r );
+        
+        for ( unsigned int v = 0; v < rod->nv(); v++ )
+        {
+            BASim::Vec3d vertex = rod->getVertex( v );
+            MPoint nurbsEditPoint( vertex[ 0 ], vertex[ 1 ], vertex[ 2 ] );
+            nurbsEditPoints.append( nurbsEditPoint );
+        }
+
+        MFnNurbsCurveData nurbsDataFn;
+        MObject nurbsDataObj = nurbsDataFn.create();
+        MFnNurbsCurve nurbsFn;
+        MObject nurbsObj = nurbsFn.createWithEditPoints( nurbsEditPoints, 1, MFnNurbsCurve::kOpen,
+            false /*not 2d*/, false /*not rational*/, true /*uniform params*/, nurbsDataObj, & status );
+        CHECK_MSTATUS( status );
+
+        MDataHandle simulatedNurbsHandle = simulatedNurbsArrayDataBuilder.addElement( (unsigned int) r, & status );
+        CHECK_MSTATUS( status );
+
+        status = simulatedNurbsHandle.set( nurbsDataObj );
+        CHECK_MSTATUS( status );
+    }
+
+    simulatedNurbsArrayHandle.set( simulatedNurbsArrayDataBuilder );
+    simulatedNurbsArrayHandle.setAllClean();
+    
+    i_dataBlock.setClean( i_plug );
+}
+
 
 void WmSweeneyNode::draw( M3dView& i_view, const MDagPath& i_path,
                             M3dView::DisplayStyle i_style,
@@ -332,6 +445,7 @@ void WmSweeneyNode::draw( M3dView& i_view, const MDagPath& i_path,
     }
 
 	glPopAttrib();
+    
 	i_view.endGL();
 }
 
@@ -369,7 +483,7 @@ void* WmSweeneyNode::creator()
     MStatus stat = MS::kSuccess;
 
     MFnNumericAttribute nAttr;
-    i_attribute = nAttr.create( i_longName, i_shortName, i_type, i_defaultValue, &stat );
+    i_attribute = nAttr.create( i_longName, i_shortName, i_type, i_defaultValue, &stat);
     if ( !stat )
     {
         cerr << "Failed to create attribute " << i_longName << endl;
@@ -424,9 +538,22 @@ void* WmSweeneyNode::creator()
 	status = attributeAffects( ia_edgeLength, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_edgeLength->ca_rodPropertiesSync" ); return status; }
 
-    addNumericAttribute( ia_rodRadius, "rodRadius", "ror", MFnNumericData::kDouble, 0.0, true );
-	status = attributeAffects( ia_rodRadius, ca_rodPropertiesSync );
-	if ( !status ) { status.perror( "attributeAffects ia_rodRadius->ca_rodPropertiesSync" ); return status; }
+    //addNumericAttribute( ia_rodRadius, "rodRadius", "ror", MFnNumericData::kDouble, 0.0, true );
+    {
+        MFnNumericAttribute numericAttr;
+        ia_rodRadius = numericAttr.create( "rodRadius", "ror", MFnNumericData::kDouble, 0.0, &status );
+        CHECK_MSTATUS( status );
+        CHECK_MSTATUS( numericAttr.setReadable( false ) );
+        CHECK_MSTATUS( numericAttr.setWritable( true ) );
+        CHECK_MSTATUS( numericAttr.setStorable( false ) );
+        CHECK_MSTATUS( numericAttr.setMin( -3.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 3.0 ) );
+        status = addAttribute( ia_rodRadius );
+        CHECK_MSTATUS( status );
+        
+        status = attributeAffects( ia_rodRadius, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_rodRadius->ca_rodPropertiesSync" ); return status; }
+    }
     
     addNumericAttribute( ia_rodPitch, "rodPitch", "rop", MFnNumericData::kDouble, 0.5, true );
 	status = attributeAffects( ia_rodPitch, ca_rodPropertiesSync );
@@ -445,7 +572,25 @@ void* WmSweeneyNode::creator()
     }
     status = attributeAffects( ia_strandVertices, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_strandVertices->ca_rodPropertiesSync" ); return status; }
-        
+
+    {
+        MFnTypedAttribute tAttr;
+        oa_simulatedNurbs = tAttr.create( "simulatedNurbs", "sns",
+            MFnData::kNurbsCurve, & status );
+        CHECK_MSTATUS( status );
+        CHECK_MSTATUS( tAttr.setArray( true ) );
+        CHECK_MSTATUS( tAttr.setReadable( true ) );
+        CHECK_MSTATUS( tAttr.setWritable( false ) );
+        CHECK_MSTATUS( tAttr.setConnectable( true ) );
+        CHECK_MSTATUS( tAttr.setUsesArrayDataBuilder( true ) );
+        status = addAttribute( oa_simulatedNurbs );
+        CHECK_MSTATUS( status );
+    }
+    status = attributeAffects( ia_time, oa_simulatedNurbs );
+	if ( !status ) { status.perror( "attributeAffects ia_time->oa_simulatedNurbs" ); return status; }
+    status = attributeAffects( ca_rodPropertiesSync, oa_simulatedNurbs );
+	if ( !status ) { status.perror( "attributeAffects ca_rodPropertiesSync->oa_simulatedNurbs" ); return status; }
+
     {
         MFnNumericAttribute nAttr;
         ia_collisionMeshes = nAttr.create( "collisionMeshes", "com", MFnNumericData::kBoolean, false, &status );
@@ -464,7 +609,256 @@ void* WmSweeneyNode::creator()
     }
     status = attributeAffects( ia_collisionMeshes, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_collisionMeshes->ca_rodPropertiesSync" ); return status; }
-            
+
+    //General parameters
+    {
+        MFnNumericAttribute nAttr;
+        ia_enablePenaltyResponse = nAttr.create( "enablePenaltyResponse", "epr", MFnNumericData::kBoolean, true, &status);
+        if (!status) {
+            status.perror("create ia_enablePenaltyResponse");
+            return status;
+        }
+         nAttr.setWritable( true );
+         nAttr.setReadable( false );
+         nAttr.setConnectable( true );
+         status = addAttribute( ia_enablePenaltyResponse );
+         if (!status) { status.perror( "addAttribute ia_enablePenaltyResponse" ); return status; }
+    }
+
+    status = attributeAffects( ia_enablePenaltyResponse, ca_rodPropertiesSync );
+        if (!status) { status.perror( "attributeAffects ia_enablePenaltyResponse->ca_rodPropertiesSync" ); return status; }
+
+   {
+        MFnNumericAttribute nAttr;
+        ia_implicitThickness = nAttr.create( "implicitThickness", "imt", MFnNumericData::kDouble, 0.10, &status);
+        if (!status) {
+            status.perror("create ia_implicitThickness attribute");
+            return status;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        status = addAttribute( ia_implicitThickness );
+        if (!status) { status.perror( "addAttribute ia_implicitThickness" ); return status; }
+    }
+    status = attributeAffects( ia_implicitThickness, ca_rodPropertiesSync );
+        if (!status) { status.perror( "attributeAffects ia_implicitThickness->ca_rodPropertiesSync" ); return status; }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_implicitStiffness = nAttr.create( "implicitStiffness", "rig", MFnNumericData::kDouble, 1.0, &status);
+        if (!status) {
+            status.perror("create ia_implicitStiffness attribute");
+            return status;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        status = addAttribute( ia_implicitStiffness );
+        if (!status) { status.perror( "addAttribute ia_implicitStiffness" ); return status; }
+    }
+    status = attributeAffects( ia_implicitStiffness, ca_rodPropertiesSync );
+        if (!status) { status.perror( "attributeAffects ia_implicitStiffness->ca_rodPropertiesSync" ); return status; }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_inextensibilityThreshold = nAttr.create( "inextensibilityThreshold", "ixf", MFnNumericData::kInt, 0, &status);
+        if (!status) {
+            status.perror("create ia_inextensibilityThreshold attribute");
+            return status;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        status = addAttribute( ia_inextensibilityThreshold );
+        if ( !status ) { status.perror( "addAttribute ia_inextensibilityThreshold" ); return status; }
+    }
+    status = attributeAffects( ia_inextensibilityThreshold, ca_rodPropertiesSync );
+        if (!status) { status.perror( "attributeAffects ia_inextensibilityThreshold->ca_rodPropertiesSync" ); return status; }
+
+    //Failure  Detection
+    {
+        MFnNumericAttribute nAttr;
+        ia_maxNumOfSolverIters= nAttr.create( "maxNumOfSolverIters", "mnsi", MFnNumericData::kInt, 5, &status);
+        if (!status) {
+            status.perror("create ia_maxNumOfSolverIters");
+            return status;
+        }
+         nAttr.setWritable( true );
+         nAttr.setReadable( false );
+         nAttr.setConnectable( true );
+         status = addAttribute( ia_maxNumOfSolverIters );
+         if (!status) { status.perror( "addAttribute ia_maxNumOfSolverIters" ); return status; }
+    }
+    status = attributeAffects( ia_maxNumOfSolverIters, ca_rodPropertiesSync );
+        if (!status) { status.perror( "attributeAffects ia_maxNumOfSolverIters->ca_rodPropertiesSync" ); return status; }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_maxNumOfCollisionIters= nAttr.create( "maxNumOfCollisionIters", "mnci", MFnNumericData::kInt, 0, &status);
+        if (!status) {
+            status.perror("create ia_maxNumOfCollisionIters");
+            return status;
+        }
+         nAttr.setWritable( true );
+         nAttr.setReadable( false );
+         nAttr.setConnectable( true );
+         status = addAttribute( ia_maxNumOfCollisionIters );
+         if (!status) { status.perror( "addAttribute ia_maxNumOfCollisionIters" ); return status; }
+    }
+    status = attributeAffects( ia_maxNumOfCollisionIters, ca_rodPropertiesSync );
+        if (!status) { status.perror( "attributeAffects ia_maxNumOfCollisionIters->ca_rodPropertiesSync" ); return status; }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_enableExplosionDetection= nAttr.create( "enableExplosionDetection", "eex", MFnNumericData::kBoolean, true, &status);
+        if (!status) {
+            status.perror("create ia_enableExplosionDetection");
+            return status;
+        }
+         nAttr.setWritable( true );
+         nAttr.setReadable( false );
+         nAttr.setConnectable( true );
+         status = addAttribute( ia_enableExplosionDetection );
+         if (!status) { status.perror( "addAttribute ia_enableExplosionDetection" ); return status; }
+    }
+    status = attributeAffects( ia_enableExplosionDetection, ca_rodPropertiesSync );
+        if (!status) { status.perror( "attributeAffects ia_enableExplosionDetection->ca_rodPropertiesSync" ); return status; }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_explosionDampening = nAttr.create( "explosionDampening", "exd", MFnNumericData::kDouble, 100.0, &status);
+        if (!status) {
+            status.perror("create ia_explosionDampening attribute");
+            return status;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        status = addAttribute( ia_explosionDampening );
+        if (!status) { status.perror( "addAttribute ia_explosionDampening" ); return status; }
+    }
+    status = attributeAffects( ia_explosionDampening, ca_rodPropertiesSync );
+        if (!status) { status.perror( "attributeAffects ia_explosionDampening->ca_rodPropertiesSync" ); return status; }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_explosionThreshold = nAttr.create( "explosionThreshold", "ext", MFnNumericData::kDouble, .5, &status);
+        if (!status) {
+            status.perror("create ia_explosionThreshold attribute");
+            return status;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        status = addAttribute( ia_explosionThreshold );
+        if (!status) { status.perror( "addAttribute ia_explosionThreshold" ); return status; }
+    }
+    status = attributeAffects( ia_explosionThreshold, ca_rodPropertiesSync );
+        if (!status) { status.perror( "attributeAffects ia_explosionThreshold->ca_rodPropertiesSync" ); return status; }
+
+
+    {
+        MFnEnumAttribute enumAttrFn;
+        ia_solverFailure = enumAttrFn.create( "ifSolverStillFails", "svf", (short) PerformanceTuningParameters::IgnoreError, & status );
+        CHECK_MSTATUS( status );
+        enumAttrFn.addField( "Ignore error",   (short) PerformanceTuningParameters::IgnoreError );
+        enumAttrFn.addField( "Kill the rod",  (short) PerformanceTuningParameters::KillTheRod );
+        enumAttrFn.addField( "Halt simulation",  (short) PerformanceTuningParameters::HaltSimulation );
+        enumAttrFn.setKeyable( false );
+        enumAttrFn.setStorable( true );
+        enumAttrFn.setWritable( true );
+        enumAttrFn.setReadable( true );
+        status = addAttribute( ia_solverFailure );
+        CHECK_MSTATUS( status );
+    }
+    status = attributeAffects( ia_solverFailure, ca_rodPropertiesSync );
+        if (!status) { status.perror( "attributeAffects ia_solverFailure->ca_rodPropertiesSync" ); return status; }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_maxNumSolverSubsteps = nAttr.create( "maxNumSolverSubsteps", "mnss", MFnNumericData::kInt, 0, &status);
+        if (!status) {
+            status.perror("create ia_maxNumSolverSubsteps attribute");
+            return status;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        status = addAttribute( ia_maxNumSolverSubsteps );
+        if (!status) { status.perror( "addAttribute ia_maxNumSolverSubsteps" ); return status; }
+    }
+    status = attributeAffects( ia_maxNumSolverSubsteps, ca_rodPropertiesSync );
+        if (!status) { status.perror( "attributeAffects ia_maxNumSolverSubsteps->ca_rodPropertiesSync" ); return status; }
+
+    {
+        MFnEnumAttribute enumAttrFn;
+        ia_collisionFailure = enumAttrFn.create( "ifCollisionStillFails", "clf", (short) PerformanceTuningParameters::IgnoreError, & status );
+        CHECK_MSTATUS( status );
+        enumAttrFn.addField( "Ignore error",   (short) PerformanceTuningParameters::IgnoreError );
+        enumAttrFn.addField( "Kill the rod",  (short) PerformanceTuningParameters::KillTheRod );
+        enumAttrFn.addField( "Halt simulation",  (short) PerformanceTuningParameters::HaltSimulation );
+        enumAttrFn.setKeyable( false );
+        enumAttrFn.setStorable( true );
+        enumAttrFn.setWritable( true );
+        enumAttrFn.setReadable( true );
+        status = addAttribute( ia_collisionFailure );
+        CHECK_MSTATUS( status );
+    }
+    status = attributeAffects( ia_collisionFailure, ca_rodPropertiesSync );
+        if (!status) { status.perror( "attributeAffects ia_collisionFailure->ca_rodPropertiesSync" ); return status; }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_maxNumCollisionSubsteps = nAttr.create( "maxNumCollisionSubsteps", "mncs", MFnNumericData::kInt, 0, &status);
+        if (!status) {
+            status.perror("create ia_maxNumCollisionSubsteps attribute");
+            return status;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        status = addAttribute( ia_maxNumCollisionSubsteps );
+        if (!status) { status.perror( "addAttribute ia_maxNumCollisionSubsteps" ); return status; }
+    }
+    status = attributeAffects( ia_maxNumCollisionSubsteps, ca_rodPropertiesSync );
+        if (!status) { status.perror( "attributeAffects ia_maxNumCollisionSubsteps->ca_rodPropertiesSync" ); return status; }
+
+    {
+        MFnEnumAttribute enumAttrFn;
+        ia_explosionFailure = enumAttrFn.create( "ifExplosionStillFails", "exf", (short) PerformanceTuningParameters::IgnoreError, & status );
+        CHECK_MSTATUS( status );
+        enumAttrFn.addField( "Ignore error",   (short) PerformanceTuningParameters::IgnoreError );
+        enumAttrFn.addField( "Kill the rod",  (short) PerformanceTuningParameters::KillTheRod );
+        enumAttrFn.addField( "Halt simulation",  (short) PerformanceTuningParameters::HaltSimulation );
+        enumAttrFn.setKeyable( false );
+        enumAttrFn.setStorable( true );
+        enumAttrFn.setWritable( true );
+        enumAttrFn.setReadable( true );
+        status = addAttribute( ia_explosionFailure );
+        CHECK_MSTATUS( status );
+    }
+    status = attributeAffects( ia_explosionFailure, ca_rodPropertiesSync );
+        if (!status) { status.perror( "attributeAffects ia_explosionFailure->ca_rodPropertiesSync" ); return status; }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_maxNumExplosionSubsteps = nAttr.create( "maxNumExplosionSubsteps", "mnes", MFnNumericData::kInt, 7, &status);
+        if (!status) {
+            status.perror("create ia_maxNumExplosionSubsteps attribute");
+            return status;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        status = addAttribute( ia_maxNumExplosionSubsteps );
+        if (!status) { status.perror( "addAttribute ia_maxNumExplosionSubsteps" ); return status; }
+    }
+    status = attributeAffects( ia_maxNumExplosionSubsteps, ca_rodPropertiesSync );
+        if (!status) { status.perror( "attributeAffects ia_maxNumExplosionSubsteps->ca_rodPropertiesSync" ); return status; }
+
+
+
     addNumericAttribute( ia_verticesPerStrand, "verticesPerStrand", "vps", MFnNumericData::kInt, 12, true );
 	status = attributeAffects( ia_verticesPerStrand, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects verticesPerStrand->ca_rodPropertiesSync" ); return status; }
