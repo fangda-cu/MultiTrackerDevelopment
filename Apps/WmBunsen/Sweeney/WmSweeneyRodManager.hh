@@ -13,6 +13,7 @@
 #include <weta/Wfigaro/Physics/ElasticRods/RodUtils.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodMayaForces.hh>
 #include <weta/Wfigaro/Physics/World.hh>
+#include <weta/Wfigaro/Physics/ElasticRods/PerformanceTuningParameters.hh>
 #else
 #include <BASim/src/Core/EigenIncludes.hh>
 #include <BASim/src/Core/ObjectControllerBase.hh>
@@ -47,7 +48,7 @@ public:
                  const BASim::Vec3d i_gravity = BASim::Vec3d( 0.0, -980.0, 0.0 ),                 
                  const BASim::RodTimeStepper::Method i_solverType = BASim::RodTimeStepper::IMPL_EULER );
 
-    void initialiseSimulation( const double i_timeStep, const double i_startTime );
+    void initialiseSimulation( const double i_timeStep, const double i_startTime, BASim::PerformanceTuningParameters perfParams );
 
     void addCollisionMesh( BASim::TriangleMesh* i_triangleMesh, 
                            WmFigMeshController* i_figMeshController );
