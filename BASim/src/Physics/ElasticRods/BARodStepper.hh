@@ -236,7 +236,7 @@ private:
     void setRodLabels(const std::vector<std::string>& rod_labels);
 
     double computeTotalForceNorm() const;
-    bool step(RodSelectionType& selected_rods);
+    void step(RodSelectionType& selected_rods);
     bool nonAdaptiveExecute(double dt, RodSelectionType& selected_rods);
     bool adaptiveExecute(double dt, RodSelectionType& selected_rods);
 
@@ -439,6 +439,7 @@ private:
 
     PerformanceTuningParameters m_perf_param;
     TextLog* m_log;
+    std::ofstream m_log_stream;
 };
 
 } // namespace BASim

@@ -203,7 +203,6 @@ Collisions/CollisionUtils.hh \
 Collisions/Collision.hh \
 Collisions/BoundingBox.hh \
 Collisions/BVH.hh \
-Collisions/BVH_inline.hh \
 Collisions/BVHNode.hh \
 Collisions/CollisionDetector.hh \
 Collisions/Geometry.hh \
