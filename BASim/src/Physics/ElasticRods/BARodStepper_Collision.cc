@@ -1649,9 +1649,9 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
                 double p = (*(m_preCollisionForces[*rod]))[j];
                 double e = (*(m_endForces[*rod]))[j];
                 double rate = fabs(s - e) / (fabs(s) + m_perf_param.m_explosion_damping);
-                maxRate = max(maxRate, rate);
-                minStart = min(fabs(s), minStart);
-                maxStart = max(fabs(s), maxStart);
+                maxRate = std::max(maxRate, rate);
+                minStart = std::min(fabs(s), minStart);
+                maxStart = std::max(fabs(s), maxStart);
                 if (maxRate == rate)
                     worstViolator = j;
                 if (isnan(rate) || rate > m_perf_param.m_explosion_threshold)

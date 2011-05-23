@@ -155,7 +155,7 @@ void CollisionDetector::updateContinuousTimeCollisions()
 void CollisionDetector::buildBVH()
 {
     GeometryBBoxFunctor bboxfunctor(m_elements, m_geodata);
-    MiddleBVHBuilder bvh_builder;
+    BVHBuilder bvh_builder;
     bvh_builder.build(bboxfunctor, &m_bvh);
 }
 

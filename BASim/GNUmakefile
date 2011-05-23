@@ -349,6 +349,7 @@ Core/ObjectControllerBase.inl
 
 
 LIB1_S     := \
+src/Collisions/BVH.cc \
 src/Collisions/Geometry.cc \
 src/Collisions/Collision.cc \
 src/Collisions/CollisionUtils.cc \
