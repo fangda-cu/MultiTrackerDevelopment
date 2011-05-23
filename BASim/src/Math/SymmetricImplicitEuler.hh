@@ -140,8 +140,8 @@ public:
             return true;
         }
 
-        std::cerr << "\033[31;1mWARNING IN SYM IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: "
-                << m_maxit << "." << std::endl;
+      //  std::cerr << "\033[31;1mWARNING IN SYM IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: "
+      //          << m_maxit << "." << std::endl;
         START_TIMER("backup");
         m_diffEq.backupClear();
         STOP_TIMER("backup");

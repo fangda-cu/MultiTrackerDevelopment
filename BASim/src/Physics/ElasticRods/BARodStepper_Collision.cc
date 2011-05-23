@@ -16,7 +16,6 @@
 #include <omp.h>
 #endif
 
-
 namespace BASim
 {
 
@@ -167,6 +166,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
     // Detect continuous time collisions
     std::list<Collision*> collisions;
     m_collision_detector->getCollisions(collisions, ContinuousTime);
+    TraceStream(m_log, "") << "Detected " << collisions.size() << " continuous time collisions\n";
 
     // Iterativly apply inelastic impulses
     for (int itr = 0; !collisions.empty() && itr < m_perf_param.m_maximum_number_of_collisions_iterations; ++itr)
@@ -199,7 +199,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
     {
         all_rods_collisions_ok = false;
 
-        // std::cerr << "Remains " << collisions.size() << " unresolved collision(s)" << std::endl;
+        TraceStream(m_log, "") << "Remains " << collisions.size() << " unresolved collision(s)\n";
 
         // Just in case we haven't emptied the collisions but exited when itr == m_num_inlstc_itrns
         for (std::list<Collision*>::iterator col = collisions.begin(); col != collisions.end(); col++)
@@ -1122,61 +1122,61 @@ void BARodStepper::applyInextensibilityVelocityFilter(int rodidx)
     // 	assert(approxEq(desiredposition, actualvalue, 1.0e-6));
     //   }
 
-    m_vnphalf.segment<3> (rodbase+0) = Vec3d(0,0,0); 
-    m_vnphalf.segment<3> (rodbase+3) = Vec3d(0,0,0);
+    m_vnphalf.segment<3> (rodbase + 0) = Vec3d(0, 0, 0);
+    m_vnphalf.segment<3> (rodbase + 3) = Vec3d(0, 0, 0);
 
     {
         Vec3d v0 = m_vnphalf.segment<3> (rodbase + 3); // velocity of vertex 1
         Vec3d x0 = m_xn.segment<3> (rodbase + 3); // start-of-step position of vertex 1
-	Vec3d x0N = x0 + m_dt * v0; // end-of-step position of vertex 1
-	for (int i = 2; i < m_rods[rodidx]->nv(); ++i)
-	{
+        Vec3d x0N = x0 + m_dt * v0; // end-of-step position of vertex 1
+        for (int i = 2; i < m_rods[rodidx]->nv(); ++i)
+        {
             Vec3d x1 = m_xn.segment<3> (rodbase + 3 * i);
-	    Vec3d v1 = m_vnphalf.segment<3> (rodbase + 3 * i);
+            Vec3d v1 = m_vnphalf.segment<3> (rodbase + 3 * i);
 
-	    // filter the velocity of vertex i
+            // filter the velocity of vertex i
 
-	    Vec3d x1N = x1 + m_dt * v1;
+            Vec3d x1N = x1 + m_dt * v1;
 
-	    double l  = (x1  - x0).norm();
-	    double lN = (x1N - x0N).norm();
-	    
-	    Vec3d x1Nrevised = x0N + (x1N - x0N) * l / lN;
-	    
-	    double lNrevised = (x1Nrevised - x0N).norm();
-	    
-	    Vec3d v1revised = (x1Nrevised - x1) / m_dt;
-	    
-	    m_vnphalf.segment<3> (rodbase + 3 * i) = v1revised;
-	    
-	    //std::cout << "inextensibility: x0N = " << x0N << " x1N = " << x1N << " x1Nrevised = " << x1Nrevised << " l = " << l << " lNrevised = "
-	    //		      << lNrevised << " l = " << l << std::endl;
+            double l = (x1 - x0).norm();
+            double lN = (x1N - x0N).norm();
 
-//x1Nrevised = " << x1Nrevised << " strain = " << (lN/l) << " revised: " << (lNrevised/l) << " l = " << l << " lN = " << lN << " lNrevised = " << lNrevised << " x0N = " << x0N << " x1Nrevised = " << x1Nrevised << " m_vnphalf revised = " << m_vnphalf.segment<3> (rodbase + 3*i) << std::endl;
-	    
-	    // Vec3d t = (x1-x0).normalized(); // unit tangent
-	    
-	    // double relvel = t.dot(v1-v0);
-	    
-	    // Vec3d impulse = -relvel*t;
-	    
-	    // double relvelAfter = t.dot(v1 + impulse - v0);
-	    
-	    // m_vnphalf.segment<3> (rodbase + 3*i) = v1 + impulse;
-	    
-	    // std::cout << "inextensibility: i=" << i
-	    //      << " x0 = " << x0
-	    //      << " x1 = " << x1
-	    //      << " v0 = " << v0
-	    //      << " v1 = " << v1
-	    //           << " t = " << t
-	    //           << " relvel before = " << relvel
-	    //           << " after = " << relvelAfter << std::endl;
-	    
-	    x0N = x1Nrevised;
-	    x0 = x1;
-	    v0 = v1;
-	}
+            Vec3d x1Nrevised = x0N + (x1N - x0N) * l / lN;
+
+            double lNrevised = (x1Nrevised - x0N).norm();
+
+            Vec3d v1revised = (x1Nrevised - x1) / m_dt;
+
+            m_vnphalf.segment<3> (rodbase + 3 * i) = v1revised;
+
+            //std::cout << "inextensibility: x0N = " << x0N << " x1N = " << x1N << " x1Nrevised = " << x1Nrevised << " l = " << l << " lNrevised = "
+            //		      << lNrevised << " l = " << l << std::endl;
+
+            //x1Nrevised = " << x1Nrevised << " strain = " << (lN/l) << " revised: " << (lNrevised/l) << " l = " << l << " lN = " << lN << " lNrevised = " << lNrevised << " x0N = " << x0N << " x1Nrevised = " << x1Nrevised << " m_vnphalf revised = " << m_vnphalf.segment<3> (rodbase + 3*i) << std::endl;
+
+            // Vec3d t = (x1-x0).normalized(); // unit tangent
+
+            // double relvel = t.dot(v1-v0);
+
+            // Vec3d impulse = -relvel*t;
+
+            // double relvelAfter = t.dot(v1 + impulse - v0);
+
+            // m_vnphalf.segment<3> (rodbase + 3*i) = v1 + impulse;
+
+            // std::cout << "inextensibility: i=" << i
+            //      << " x0 = " << x0
+            //      << " x1 = " << x1
+            //      << " v0 = " << v0
+            //      << " v1 = " << v1
+            //           << " t = " << t
+            //           << " relvel before = " << relvel
+            //           << " after = " << relvelAfter << std::endl;
+
+            x0N = x1Nrevised;
+            x0 = x1;
+            v0 = v1;
+        }
     }
 
     // std::cout << "Edge lengths after inextensibility: ";
@@ -1634,9 +1634,9 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
     bool explosions_detected = false;
     double maxRate = 0;
     double maxStart = 0;
-    double minStart = 1e99;
-    int worstViolator = 0;
-    std::cout << "Checking for explosions..." << std::endl;
+    double minStart = std::numeric_limits<double>::max();
+    int worstViolator = std::numeric_limits<int>::signaling_NaN();
+    TraceStream(m_log, "") << "Checking for explosions\n";
 
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
     {
@@ -1644,11 +1644,10 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
         {
             for (int j = 0; j < m_rods[*rod]->ndof(); ++j)
             {
-                //          explosionTriggered = true;
-                double s = (*(m_startForces[*rod]))[j];
-                double p = (*(m_preCollisionForces[*rod]))[j];
-                double e = (*(m_endForces[*rod]))[j];
-                double rate = fabs(s - e) / (fabs(s) + m_perf_param.m_explosion_damping);
+                const double s = (*(m_startForces[*rod]))[j];
+                const double p = (*(m_preCollisionForces[*rod]))[j];
+                const double e = (*(m_endForces[*rod]))[j];
+                const double rate = fabs(s - e) / (fabs(s) + m_perf_param.m_explosion_damping);
                 maxRate = std::max(maxRate, rate);
                 minStart = std::min(fabs(s), minStart);
                 maxStart = std::max(fabs(s), maxStart);
@@ -1658,18 +1657,14 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
                 {
                     explosions_detected = true;
                     exploding_rods[*rod] = true;
-                    std::cerr << "Rod number " << *rod << " had an explosion" << std::endl;
+                    TraceStream(m_log, "") << "Rod number " << *rod << " had an explosion\n";
                     break;
-                    //  std::cout << "Check Explosion (" << *rod << ", " << j << "): s = " << s << " p = " << p << " e = " << e
-                    //          << std::endl;
                 }
             }
         }
     }
-    // std::cout << "Check Explosion: worst violator = " << worstViolator << " with maxRate = " << maxRate << std::endl;
-    // std::cout << "Check Explosion: minStart = " << minStart << " maxStart = " << maxStart << std::endl;
     if (explosions_detected)
-        std::cerr << "Some rods had explosions" << std::endl;
+        DebugStream(m_log, "") << "Some rods had explosions\n";
 
     return explosions_detected;
 }

@@ -109,14 +109,7 @@ public:
     /**
      *  Enable or disable self collisions between all rods
      */
-    void skipRodRodCollisions(bool skipRodRodCollisions)
-    {
-        std::cerr << "Switching rod-rod collisions " << (skipRodRodCollisions ? "OFF" : "ON") << std::endl;
-        m_perf_param.m_skipRodRodCollisions = skipRodRodCollisions;
-
-        if (m_collision_detector)
-            m_collision_detector->setSkipRodRodCollisions(skipRodRodCollisions);
-    }
+    void skipRodRodCollisions(bool skipRodRodCollisions);
 
     void setStopOnRodError(bool stopOnRodError)
     {
