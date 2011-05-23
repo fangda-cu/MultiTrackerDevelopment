@@ -451,8 +451,7 @@ bool BARodStepper::nonAdaptiveExecute(double dt, RodSelectionType& selected_rods
 
 bool BARodStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
 {
-    std::cout << "BARodStepper::adaptiveExecute starting at level " << m_level << " with m_t = " << m_t << " and dt = " << dt
-            << std::endl;
+  std::cout << "BARodStepper::adaptiveExecute starting at level " << m_level << " with " << selected_rods.size() << " rod(s), m_t = " << m_t << ", dt = " << dt << std::endl;
 
     // Backup all selected rods
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
@@ -544,7 +543,7 @@ bool BARodStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
     return first_success && second_success;
 }
 
-bool BARodStepper::step(RodSelectionType& selected_rods)
+void BARodStepper::step(RodSelectionType& selected_rods)
 {
     if (m_simulationFailed)
         return true;
@@ -660,25 +659,6 @@ bool BARodStepper::step(RodSelectionType& selected_rods)
     for (int i = 0; i < selected_steppers.size(); i++)
     {
 	applyInextensibilityVelocityFilter(selected_steppers[i]->getRod()->globalRodIndex);
-    }
-
-    for (int rodidx = 0; rodidx < m_rods.size(); ++rodidx)
-    {
-        std::cout << "Edge lengths after step() calls inextensibility(): ";
-        int rodbase = m_base_indices[rodidx];
- 
-        for (int i = 0; i < m_rods[rodidx]->nv() - 1; ++i)
-        {
-	    Vec3d x0 = m_xn.segment<3> (rodbase + 3 * i);
-	    Vec3d v0 = m_vnphalf.segment<3> (rodbase + 3 * i);
-	    Vec3d x1 = m_xn.segment<3> (rodbase + 3 * i + 3);
-	    Vec3d v1 = m_vnphalf.segment<3> (rodbase + 3 * i + 3);
-	    Vec3d x0N = x0 + m_dt * v0;
-	    Vec3d x1N = x1 + m_dt * v1;
-	    Vec3d eN = (x1N - x0N);
-	    std::cout << " " << eN.norm();
-	}  
-	std::cout << std::endl;
     }
 
     // Mark invalid rods as entirely collision-immune, so we don't waste time on colliding them.
@@ -839,29 +819,16 @@ bool BARodStepper::step(RodSelectionType& selected_rods)
         }
     }
 
-    for (int rodidx = 0; rodidx < m_rods.size(); ++rodidx)
-    {
-        std::cout << "Edge lengths after step(): ";
-        int rodbase = m_base_indices[rodidx];
- 
-        for (int i = 0; i < m_rods[rodidx]->nv() - 1; ++i)
-        {
-	    Vec3d x0 = m_xn.segment<3> (rodbase + 3 * i);
-	    Vec3d v0 = m_vnphalf.segment<3> (rodbase + 3 * i);
-	    Vec3d x1 = m_xn.segment<3> (rodbase + 3 * i + 3);
-	    Vec3d v1 = m_vnphalf.segment<3> (rodbase + 3 * i + 3);
-	    Vec3d x0N = x0 + m_dt * v0;
-	    Vec3d x1N = x1 + m_dt * v1;
-	    Vec3d eN = (x1N - x0N);
-	    std::cout << " " << eN.norm();
-	}  
-	std::cout << std::endl;
-    }
-
     bool all_rods_are_ok = dependable_solve && all_collisions_succeeded && !explosions_detected;
-    std::cout << "This step is " << (all_rods_are_ok ? "" : "\033[31;1mNOT\033[m ") << "dependable." << std::endl;
-
-    return all_rods_are_ok;
+    std::cout << "BARodStepper::step() ends. ";
+    if (selected_rods.size() > 0 || !all_rods_are_ok)
+    {
+        std::cout << "\033[31;1mNOT dependable:\033[m " << selected_rods.size() << " rods unsuccessful." << std::endl;
+    }
+    else 
+    {
+        std::cout << " All rods simulated successfully." << std::endl;
+    }
 }
 
 /**

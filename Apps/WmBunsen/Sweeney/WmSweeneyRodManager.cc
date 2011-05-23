@@ -112,12 +112,12 @@ void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const d
 {
     PerformanceTuningParameters perfParams;
 
-    // Definition of explosion
-    perfParams.m_explosion_threshold = .5;
+    // Definition of solver error
+    perfParams.m_maximum_number_of_solver_iterations = 5;
 
-    // Action on explosion: substep up to level 7
-    perfParams.m_in_case_of_explosion_failure = PerformanceTuningParameters::IgnoreError;
-    perfParams.m_max_number_of_substeps_for_explosion = 7;
+    // Action on solver error
+    perfParams.m_in_case_of_solver_failure = PerformanceTuningParameters::IgnoreError;
+    perfParams.m_max_number_of_substeps_for_solver = 0;
 
     // Definition of collision response: no collision response
     perfParams.m_maximum_number_of_collisions_iterations = 0;
@@ -126,12 +126,12 @@ void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const d
     perfParams.m_in_case_of_collision_failure = PerformanceTuningParameters::IgnoreError;
     perfParams.m_max_number_of_substeps_for_collision = 0;
 
-    // Definition of solver error
-    perfParams.m_maximum_number_of_solver_iterations = 5;
+    // Definition of explosion
+    perfParams.m_explosion_threshold = .5;
 
-    // Action on solver error
-    perfParams.m_in_case_of_solver_failure = PerformanceTuningParameters::IgnoreError;
-    perfParams.m_max_number_of_substeps_for_solver = 0;
+    // Action on explosion: substep up to level 7
+    perfParams.m_in_case_of_explosion_failure = PerformanceTuningParameters::IgnoreError;
+    perfParams.m_max_number_of_substeps_for_explosion = 7;
 
     // Always run inextensibility
     perfParams.m_inextensibility_threshold = 0;
