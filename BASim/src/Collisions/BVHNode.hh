@@ -1,4 +1,3 @@
-// Based on PantaRay's BVHNode.hh
 
 #ifndef TREES_BVHNODE_HH
 #define TREES_BVHNODE_HH 1
