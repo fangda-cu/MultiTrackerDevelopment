@@ -108,9 +108,27 @@ void WmSweeneyRodManager::addCollisionMesh( BASim::TriangleMesh* i_triangleMesh,
     m_scriptingControllers.push_back( i_scriptingController );
 }
 
-void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const double i_startTime )
+void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const double i_startTime, PerformanceTuningParameters perfParams)
 {
-    PerformanceTuningParameters perfParams;
+
+    std::cout<<"Performance Tuning Parameters "<< std::endl;
+    std::cout<<"Penalty Response "<< perfParams.m_enable_penalty_response<<std::endl;
+    std::cout<<"Implicit Thickness "<< perfParams.m_implicit_thickness<<std::endl;
+    std::cout<<"Implicit Stiffness "<< perfParams.m_implicit_stiffness<<std::endl;
+    std::cout<<"Inextensibility Threshold "<< perfParams.m_inextensibility_threshold<<std::endl;
+    std::cout<<"Max Num Solver Iterations "<< perfParams.m_maximum_number_of_solver_iterations<<std::endl;
+    std::cout<<"Max Num Collision Iterations  "<< perfParams.m_maximum_number_of_collisions_iterations<<std::endl;
+    std::cout<<"Explosion Detection  "<< perfParams.m_enable_explosion_detection<<std::endl;
+    std::cout<<"Explosion Dampening "<< perfParams.m_explosion_damping<<std::endl;
+    std::cout<<"Explosion Threshold "<< perfParams.m_explosion_threshold<<std::endl;
+    std::cout<<"Solver failure "<< perfParams.m_in_case_of_solver_failure<<std::endl;
+    std::cout<<"Max Number of Solver Substeps "<< perfParams.m_max_number_of_substeps_for_solver<<std::endl;
+    std::cout<<"Collison Failure  "<< perfParams.m_in_case_of_collision_failure<<std::endl;
+    std::cout<<"Max Number of Collision Substeps "<< perfParams.m_max_number_of_substeps_for_collision<<std::endl;
+    std::cout<<"Explosion  Failure  "<< perfParams.m_in_case_of_explosion_failure<<std::endl;
+    std::cout<<"Max Number of Explosion Substeps "<< perfParams.m_max_number_of_substeps_for_explosion<<std::endl;
+
+    /*  PerformanceTuningParameters perfParams;
 
     // Definition of explosion
     perfParams.m_explosion_threshold = .5;
@@ -139,6 +157,7 @@ void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const d
     // A very weak penalty force
     perfParams.m_implicit_thickness        = 0.1;
     perfParams.m_implicit_stiffness        = 1.0;
+  */
 
     m_bridsonStepper = new BARodStepper( m_rods, m_triangleMeshes, m_scriptingControllers, 
                                            m_rodTimeSteppers, i_timeStep, i_startTime, 1, perfParams );                                           
