@@ -25,6 +25,8 @@
 #include "MinimalTriangleMeshBackup.hh"
 #include "RodPenaltyForce.hh"
 #include "PerformanceTuningParameters.hh"
+#include "../../Util/TextLog.hh"
+
 #else
 #include "BASim/src/Core/ScriptingController.hh"
 #include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
@@ -56,6 +58,8 @@
 
 namespace BASim
 {
+
+using namespace weta::logging;
 
 /**
  * Class to evolve a collection of rods forward in time, resolving collisions using
@@ -232,7 +236,7 @@ private:
     void setRodLabels(const std::vector<std::string>& rod_labels);
 
     double computeTotalForceNorm() const;
-    bool step(RodSelectionType& selected_rods);
+    void step(RodSelectionType& selected_rods);
     bool nonAdaptiveExecute(double dt, RodSelectionType& selected_rods);
     bool adaptiveExecute(double dt, RodSelectionType& selected_rods);
 
@@ -432,6 +436,8 @@ private:
     RodSelectionType m_simulated_rods;
 
     PerformanceTuningParameters m_perf_param;
+    TextLog* m_log;
+    std::ofstream m_log_stream;
 };
 
 } // namespace BASim

@@ -5,6 +5,8 @@ BUILD := "$(shell perl -e '$$pwd=$$ENV{PWD}; $$time=localtime(); print "\\\"$$pw
 include /vol/bob/make/head.mk
 ##############################################################################
 
+WITHKITS +=  ext/boost/tags/boost-1_41_0-1
+
 IPATHS 	+= -I$(MKLROOT)/include 
 # This is so that the library can access a header in BASimulator app. Nasty, but that's how the code it came
 IPATHS 	+= -I../../../
@@ -305,8 +307,10 @@ Render/ViewController.hh \
 Render/YImage/YImage.hh \
 Render/Zoomer.hh \
 Render/TriangleMeshRenderer.hh \
+Util/MsgInfo.hh \
 Util/KeyedValue.hh \
 Util/StringToolbox.hh \
+Util/TextLog.hh \
 Util/Utils.hh \
 Math/Petsc/PetscMatrix.inl \
 Physics/ElasticRods/ElasticRod.inl \
@@ -395,7 +399,8 @@ src/Render/YImage/YImage.cc \
 src/Render/Zoomer.cc \
 src/Physics/ElasticRods/MinimalRodStateBackup.cc \
 src/Physics/ElasticRods/RodReverseSolver.cc \
-src/Physics/World.cc
+src/Physics/World.cc \
+src/Util/TextLog.cc
 #src/Collisions/CollisionMeshData.cc \
 #src/Collisions/UniformGrid.cc \
 #src/Collisions/LevelSet.cc \
