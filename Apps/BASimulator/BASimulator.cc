@@ -926,320 +926,305 @@ void getOptions()
 
 void RunProblem(int argc, char** argv)
 {
-    // TODO: This rendering is a mess! dynamic_cast of pointers, tyepid, the horror!
     if (render)
     {
         initializeOpenGL(argc, argv);
         World& world = current_problem->getWorld();
         World::Objects& objects = world.getObjects();
 
-        World::Objects::iterator it;
-        for (it = objects.begin(); it != objects.end(); ++it)
+        for (World::Objects::const_iterator it = objects.begin(); it != objects.end(); ++it)
         {
             assert((*it) != NULL);
 
-            ObjectBase* objptr = *it;
+            ElasticRod* rod = dynamic_cast<ElasticRod*> (*it);
+            TriangleMesh* tripobj = dynamic_cast<TriangleMesh*> (*it);
 
-            if (typeid(*objptr) == typeid(AnisotropicRod))
-                    {
-                        ElasticRod* rod = dynamic_cast<ElasticRod*> (objptr);
-                        if (rod == NULL)
-                            continue;
-                        rod_renderers.push_back(new RodRenderer(*rod));
-                        renderable_objects.push_back(rod_renderers.back());
-                    }
-                    else if (typeid(*objptr) == typeid(TriangleMesh))
-                            {
-                                TriangleMesh* tripobj = dynamic_cast<TriangleMesh*> (objptr);
-                                if (tripobj == NULL)
-                                    continue;
-                                triangle_mesh_renderers.push_back(new TriangleMeshRenderer(*tripobj));
-                                renderable_objects.push_back(triangle_mesh_renderers.back());
-                            }
-                            else
-                            {
-                                std::cout << "Unknown object encountered" << std::endl;
-                            }
-                        }
+            if (rod)
+            {
+                rod_renderers.push_back(new RodRenderer(*rod));
+                renderable_objects.push_back(rod_renderers.back());
+            }
+            else if (tripobj)
+            {
+                triangle_mesh_renderers.push_back(new TriangleMeshRenderer(*tripobj));
+                renderable_objects.push_back(triangle_mesh_renderers.back());
+            }
+            else
+            {
+                std::cout << "Unknown object encountered" << std::endl;
+            }
+        }
 
-                        World::Renderers& rndrs = world.getRenderers();
-                        World::Renderers::iterator renderitr;
-                        for (renderitr = rndrs.begin(); renderitr != rndrs.end(); ++renderitr)
-                        {
-                            renderable_objects.push_back(*renderitr);
-                        }
+        World::Renderers& rndrs = world.getRenderers();
+        for (World::Renderers::const_iterator renderitr = rndrs.begin(); renderitr != rndrs.end(); ++renderitr)
+        {
+            renderable_objects.push_back(*renderitr);
+        }
 
-                        centerObject();
+        centerObject();
 
-                        // Extract simulation time breakpoints from the problem
-                        g_sim_breakpoints = &current_problem->getBreakpoints();
-                        if (g_sim_breakpoints->size() == 0 || g_sim_breakpoints->back()
-                                != std::numeric_limits<double>::infinity())
-                            g_sim_breakpoints->push(std::numeric_limits<double>::infinity());
+        // Extract simulation time breakpoints from the problem
+        g_sim_breakpoints = &current_problem->getBreakpoints();
+        if (g_sim_breakpoints->size() == 0 || g_sim_breakpoints->back() != std::numeric_limits<double>::infinity())
+            g_sim_breakpoints->push(std::numeric_limits<double>::infinity());
 
-                        glutMainLoop();
+        glutMainLoop();
+    }
+    else
+    {
+        paused = false;
+        continuous = true;
+        for (;;)
+            idle();
+    }
+}
 
-                    }
-                    else
-                    {
-                        paused = false;
-                        continuous = true;
-                        while (1)
-                            idle();
-                    }
-                }
+void PrintProblemTypes()
+{
+    for (size_t i = 1; i < problems.size(); ++i)
+    {
+        Problem& prob = *problems[i];
+        std::cout << i << ": " << prob.ProblemName() << std::endl << "Description: " << prob.ProblemDescription() << std::endl
+                << std::endl;
+    }
+}
 
-                void PrintProblemTypes()
-                {
-                    for (size_t i = 1; i < problems.size(); ++i)
-                    {
-                        Problem& prob = *problems[i];
-                        std::cout << i << ": " << prob.ProblemName() << std::endl << "Description: "
-                                << prob.ProblemDescription() << std::endl << std::endl;
-                    }
-                }
+void CreateOptionsFile(int idx, const std::string& filename)
+{
+    std::ofstream file;
 
-                void CreateOptionsFile(int idx, const std::string& filename)
-                {
-                    std::ofstream file;
+    file.open(filename.c_str());
+    if (!file.is_open())
+    {
+        std::cerr << "Failed to open file " << filename << std::endl;
+        return;
+    }
 
-                    file.open(filename.c_str());
-                    if (!file.is_open())
-                    {
-                        std::cerr << "Failed to open file " << filename << std::endl;
-                        return;
-                    }
+    problems[idx]->PrintOptions(file);
 
-                    problems[idx]->PrintOptions(file);
+    file.close();
 
-                    file.close();
+    std::cout << "Generated options file for " << problems[idx]->ProblemName() << ": " << filename << std::endl;
+}
 
-                    std::cout << "Generated options file for " << problems[idx]->ProblemName() << ": " << filename << std::endl;
-                }
+template<typename T>
+class ProblemConstraint: public TCLAP::Constraint<T>
+{
+public:
 
-                template<typename T>
-                class ProblemConstraint: public TCLAP::Constraint<T>
-                {
-                public:
+    ProblemConstraint(const T& lower, const T& upper) :
+        m_lower(lower), m_upper(upper)
+    {
+        m_typeDesc = toString(lower) + "-" + toString(upper);
+    }
 
-                    ProblemConstraint(const T& lower, const T& upper) :
-                        m_lower(lower), m_upper(upper)
-                    {
-                        m_typeDesc = toString(lower) + "-" + toString(upper);
-                    }
+    virtual std::string description() const
+    {
+        return m_typeDesc;
+    }
+    virtual std::string shortID() const
+    {
+        return m_typeDesc;
+    }
 
-                    virtual std::string description() const
-                    {
-                        return m_typeDesc;
-                    }
-                    virtual std::string shortID() const
-                    {
-                        return m_typeDesc;
-                    }
+    virtual bool check(const T& value) const
+    {
+        return ((value >= m_lower) && (value <= m_upper));
+    }
 
-                    virtual bool check(const T& value) const
-                    {
-                        return ((value >= m_lower) && (value <= m_upper));
-                    }
+protected:
 
-                protected:
+    T m_lower;
+    T m_upper;
+    std::string m_typeDesc;
+};
 
-                    T m_lower;
-                    T m_upper;
-                    std::string m_typeDesc;
-                };
+int parseCommandLine(int argc, char** argv)
+{
+    ProblemConstraint<int> allowedProblems(1, (int) (problems.size() - 1));
 
-                int parseCommandLine(int argc, char** argv)
-                {
-                    ProblemConstraint<int> allowedProblems(1, (int) (problems.size() - 1));
+    try
+    {
+        std::string version(BASIM_VERSION);
+        TCLAP::CmdLine cmd("Send inquiries to basim.support@gmail.com", ' ', version);
 
-                    try
-                    {
-                        std::string version(BASIM_VERSION);
-                        TCLAP::CmdLine cmd("Send inquiries to basim.support@gmail.com", ' ', version);
+        // One and only one of the following arguments is required
 
-                        // One and only one of the following arguments is required
+        const std::string p1("p");
+        const std::string p2("print");
+        const std::string p3("print stuff");
 
-                        const std::string p1("p");
-                        const std::string p2("print");
-                        const std::string p3("print stuff");
+        TCLAP::SwitchArg print(p1, p2, p3);
+        // TCLAP::SwitchArg print("p", "print", "Print available problems");
+        TCLAP::ValueArg<int> run("r", "run", "Run a problem", false, 1, &allowedProblems);
+        TCLAP::ValueArg<int> opts("o", "options", "Print a problem's options", false, 1, &allowedProblems);
+        TCLAP::ValueArg<int> gen("g", "generate", "Generate a default options file for a problem", false, 1, &allowedProblems);
+        TCLAP::ValueArg<std::string> cntu("c", "continue", "Continue a simulation from a saved binary", false, "", "string");
 
-                        TCLAP::SwitchArg print(p1, p2, p3);
-                        // TCLAP::SwitchArg print("p", "print", "Print available problems");
-                        TCLAP::ValueArg<int> run("r", "run", "Run a problem", false, 1, &allowedProblems);
-                        TCLAP::ValueArg<int> opts("o", "options", "Print a problem's options", false, 1, &allowedProblems);
-                        TCLAP::ValueArg<int> gen("g", "generate", "Generate a default options file for a problem", false, 1,
-                                &allowedProblems);
-                        TCLAP::ValueArg<std::string> cntu("c", "continue", "Continue a simulation from a saved binary", false,
-                                "", "string");
+        // Arguments that modify the behavior of r
+        TCLAP::ValueArg<std::string> file("f", "file", "Options file for a problem", false, "", "string", cmd);
+        TCLAP::ValueArg<std::string> solver("s", "solver", "File describing options for solver", false, "", "string", cmd);
 
-                        // Arguments that modify the behavior of r
-                        TCLAP::ValueArg<std::string> file("f", "file", "Options file for a problem", false, "", "string", cmd);
-                        TCLAP::ValueArg<std::string> solver("s", "solver", "File describing options for solver", false, "",
-                                "string", cmd);
+        // Require one and only one of print, run, options, or generate modes
+        std::vector<TCLAP::Arg*> xorlist;
+        xorlist.push_back(&print);
+        xorlist.push_back(&run);
+        xorlist.push_back(&opts);
+        xorlist.push_back(&gen);
+        xorlist.push_back(&cntu);
+        cmd.xorAdd(xorlist);
 
-                        // Require one and only one of print, run, options, or generate modes
-                        std::vector<TCLAP::Arg*> xorlist;
-                        xorlist.push_back(&print);
-                        xorlist.push_back(&run);
-                        xorlist.push_back(&opts);
-                        xorlist.push_back(&gen);
-                        xorlist.push_back(&cntu);
-                        cmd.xorAdd(xorlist);
+        cmd.parse(argc, argv);
 
-                        cmd.parse(argc, argv);
+        if (solver.isSet())
+        {
+            if (readSolverFile(solver.getValue()) != 0)
+                return -1;
+        }
 
-                        if (solver.isSet())
-                        {
-                            if (readSolverFile(solver.getValue()) != 0)
-                                return -1;
-                        }
+        if (print.getValue())
+        {
+            PrintProblemTypes();
+            return -1;
+        }
 
-                        if (print.getValue())
-                        {
-                            PrintProblemTypes();
-                            return -1;
-                        }
+        if (opts.isSet())
+        {
+            int idx = opts.getValue();
+            std::cout << "# Options for " << problems[idx]->ProblemName() << std::endl;
+            problems[idx]->PrintOptions(std::cout);
+            return -1;
+        }
 
-                        if (opts.isSet())
-                        {
-                            int idx = opts.getValue();
-                            std::cout << "# Options for " << problems[idx]->ProblemName() << std::endl;
-                            problems[idx]->PrintOptions(std::cout);
-                            return -1;
-                        }
+        if (gen.isSet())
+        {
+            if (!file.isSet())
+            {
+                TCLAP::ArgException e("Must also specify -" + file.getFlag(), "-" + gen.getFlag());
+                throw(e);
+            }
 
-                        if (gen.isSet())
-                        {
-                            if (!file.isSet())
-                            {
-                                TCLAP::ArgException e("Must also specify -" + file.getFlag(), "-" + gen.getFlag());
-                                throw(e);
-                            }
+            CreateOptionsFile(gen.getValue(), file.getValue());
+            return -1;
+        }
 
-                            CreateOptionsFile(gen.getValue(), file.getValue());
-                            return -1;
-                        }
+        if (run.isSet())
+        {
+            int idx = run.getValue();
+            current_problem = problems[idx];
+            g_problem_idx = idx;
+            setOptions();
 
-                        if (run.isSet())
-                        {
-                            int idx = run.getValue();
-                            current_problem = problems[idx];
-                            g_problem_idx = idx;
-                            setOptions();
-
-                            if (file.isSet())
-                            {
-                                if (current_problem->LoadOptions(file.getValue()) == -1)
-                                    return -1;
-                            }
-                            else
-                            {
-                                std::cout << "No options file specified. Using default options." << std::endl;
-                            }
-                            if (current_problem->LoadOptions(argc, argv) == -1)
-                                return -1;
-                            getOptions();
-                            return idx;
-                        }
-
-                        if (cntu.isSet())
-                        {
-                            g_resume_file = cntu.getValue();
-                            return 0;
-                        }
-
-                        std::cerr << cmd.getProgramName() << ": missing operand" << std::endl << "Try `"
-                                << cmd.getProgramName() << " --help'" << " for more information" << std::endl;
-
-                    } catch (TCLAP::ArgException& e)
-                    {
-                        std::cerr << "ERROR: " << e.argId() << std::endl << "       " << e.error() << std::endl;
-                    }
-
+            if (file.isSet())
+            {
+                if (current_problem->LoadOptions(file.getValue()) == -1)
                     return -1;
-                }
+            }
+            else
+            {
+                std::cout << "No options file specified. Using default options." << std::endl;
+            }
+            if (current_problem->LoadOptions(argc, argv) == -1)
+                return -1;
+            getOptions();
+            return idx;
+        }
 
-                void printCommandLineSplashScreen()
-                {
-                    assert(g_problem_idx >= 0);
-                    assert(g_problem_idx < (int) problems.size());
+        if (cntu.isSet())
+        {
+            g_resume_file = cntu.getValue();
+            return 0;
+        }
 
-                    std::cout << "\033[32;1m";
-                    std::cout << "----------------------------------" << std::endl;
-                    std::cout << "  ____    _    ____  _" << std::endl;
-                    std::cout << " | __ )  / \\  / ___|(_)_ __ ___" << std::endl;
-                    std::cout << " |  _ \\ / _ \\ \\___ \\| | '_ ` _ \\" << std::endl;
-                    std::cout << " | |_) / ___ \\ ___) | | | | | | |" << std::endl;
-                    std::cout << " |____/_/   \\_\\____/|_|_| |_| |_|" << std::endl;
-                    std::cout << "----------------------------------" << std::endl;
-                    std::cout << "\033[m";
-                    std::cout << std::endl;
+        std::cerr << cmd.getProgramName() << ": missing operand" << std::endl << "Try `" << cmd.getProgramName() << " --help'"
+                << " for more information" << std::endl;
+
+    } catch (TCLAP::ArgException& e)
+    {
+        std::cerr << "ERROR: " << e.argId() << std::endl << "       " << e.error() << std::endl;
+    }
+
+    return -1;
+}
+
+void printCommandLineSplashScreen()
+{
+    assert(g_problem_idx >= 0);
+    assert(g_problem_idx < (int) problems.size());
+
+    std::cout << "\033[32;1m";
+    std::cout << "----------------------------------" << std::endl;
+    std::cout << "  ____    _    ____  _" << std::endl;
+    std::cout << " | __ )  / \\  / ___|(_)_ __ ___" << std::endl;
+    std::cout << " |  _ \\ / _ \\ \\___ \\| | '_ ` _ \\" << std::endl;
+    std::cout << " | |_) / ___ \\ ___) | | | | | | |" << std::endl;
+    std::cout << " |____/_/   \\_\\____/|_|_| |_| |_|" << std::endl;
+    std::cout << "----------------------------------" << std::endl;
+    std::cout << "\033[m";
+    std::cout << std::endl;
 
 #ifdef DEBUG
-                    std::cout << " Build mode: DEBUG" << std::endl;
+    std::cout << " Build mode: DEBUG" << std::endl;
 #else
-                    std::cout << " Build mode: RELEASE" << std::endl;
+    std::cout << " Build mode: RELEASE" << std::endl;
 #endif
-                    std::cout << std::setfill('0');
-                    std::cout << " Timestamp: " << (1900 + g_timeinfo->tm_year) << "/" << std::setw(2) << (1
-                            + g_timeinfo->tm_mon) << "/";
-                    std::cout << (g_timeinfo->tm_mday) << "  " << std::setw(2) << (g_timeinfo->tm_hour) << ":" << std::setw(2)
-                            << (g_timeinfo->tm_min);
-                    std::cout << ":" << std::setw(2) << (g_timeinfo->tm_sec) << std::endl;
+    std::cout << std::setfill('0');
+    std::cout << " Timestamp: " << (1900 + g_timeinfo->tm_year) << "/" << std::setw(2) << (1 + g_timeinfo->tm_mon) << "/";
+    std::cout << (g_timeinfo->tm_mday) << "  " << std::setw(2) << (g_timeinfo->tm_hour) << ":" << std::setw(2)
+            << (g_timeinfo->tm_min);
+    std::cout << ":" << std::setw(2) << (g_timeinfo->tm_sec) << std::endl;
 
-                    std::cout << " Simulation: " << current_problem->ProblemName() << std::endl;
+    std::cout << " Simulation: " << current_problem->ProblemName() << std::endl;
 
-                    std::cout << " Linear Solver: " << SolverUtils::instance()->getSolverName() << std::endl;
+    std::cout << " Linear Solver: " << SolverUtils::instance()->getSolverName() << std::endl;
 
 #ifdef HAVE_OPENMP
-                    std::cout << " OpenMP: Enabled" << std::endl;
-                    std::cout << " OpenMP Max Threads: " << omp_get_max_threads() << std::endl;
+    std::cout << " OpenMP: Enabled" << std::endl;
+    std::cout << " OpenMP Max Threads: " << omp_get_max_threads() << std::endl;
 #else
-                    std::cout << " OpenMP: Disabled" << std::endl;
+    std::cout << " OpenMP: Disabled" << std::endl;
 #endif
 
-                    std::cout << std::endl;
-                }
+    std::cout << std::endl;
+}
 
-                std::string generateOutputDirName()
-                {
-                    assert(g_timeinfo != NULL);
+std::string generateOutputDirName()
+{
+    assert(g_timeinfo != NULL);
 
-                    std::stringstream datestream;
-                    datestream.fill('0');
-                    datestream << std::setw(4) << (1900 + g_timeinfo->tm_year) << "_" << std::setw(2) << (1
-                            + g_timeinfo->tm_mon) << "_";
-                    datestream << std::setw(2) << (g_timeinfo->tm_mday) << "_" << std::setw(2) << (g_timeinfo->tm_hour) << "_"
-                            << std::setw(2) << (g_timeinfo->tm_min) << "_";
-                    datestream << std::setw(2) << (g_timeinfo->tm_sec) << "_" << "simulation_capture";
+    std::stringstream datestream;
+    datestream.fill('0');
+    datestream << std::setw(4) << (1900 + g_timeinfo->tm_year) << "_" << std::setw(2) << (1 + g_timeinfo->tm_mon) << "_";
+    datestream << std::setw(2) << (g_timeinfo->tm_mday) << "_" << std::setw(2) << (g_timeinfo->tm_hour) << "_" << std::setw(2)
+            << (g_timeinfo->tm_min) << "_";
+    datestream << std::setw(2) << (g_timeinfo->tm_sec) << "_" << "simulation_capture";
 
-                    return datestream.str();
-                }
+    return datestream.str();
+}
 
-                int main(int argc, char** argv)
-                {
+int main(int argc, char** argv)
+{
 #ifdef HAVE_PETSC
-                    PetscUtils::initializePetsc(&argc, &argv);
+    PetscUtils::initializePetsc(&argc, &argv);
 #endif // HAVE_PETSC
-                    // Generate a directory name with the date and time
-                    time(&g_rawtime);
-                    g_timeinfo = localtime(&g_rawtime);
-                    outputdirectory = generateOutputDirName();
+    // Generate a directory name with the date and time
+    time(&g_rawtime);
+    g_timeinfo = localtime(&g_rawtime);
+    outputdirectory = generateOutputDirName();
 
-                    CreateProblemVector();
-                    atexit(cleanup);
-                    if (parseCommandLine(argc, argv) < 0)
-                        return -1;
+    CreateProblemVector();
+    atexit(cleanup);
+    if (parseCommandLine(argc, argv) < 0)
+        return -1;
 
-                    // TODO: Load from serialized output goes here
-                    if (g_resume_file == std::string(""))
-                        current_problem->BaseSetup(argc, argv);
-                    else
-                        resumeSerializedScene(g_resume_file);
+    // TODO: Load from serialized output goes here
+    if (g_resume_file == std::string(""))
+        current_problem->BaseSetup(argc, argv);
+    else
+        resumeSerializedScene(g_resume_file);
 
-                    printCommandLineSplashScreen();
+    printCommandLineSplashScreen();
 
-                    RunProblem(argc, argv);
-                    return 0;
-                }
+    RunProblem(argc, argv);
+    return 0;
+}
