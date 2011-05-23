@@ -597,7 +597,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     //  std::cout << "Pre-timestep positions: " << m_xn << std::endl;
 
     // Track whether or not this solve succeeds entirely
-    bool dependable_solve = true;
+    //bool dependable_solve = true;
     // Determine which vertex are to be considered collision-immune for this step
     computeImmunity(selected_rods);
 
@@ -621,12 +621,14 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         executeImplicitPenaltyResponse(penalty_collisions, selected_rods);
     }
 
+    bool dependable_solve;
 #ifdef HAVE_OPENMP
 #pragma omp parallel for
 #endif
     for (int i = 0; i < selected_steppers.size(); i++)
     {
-        dependable_solve = dependable_solve && selected_steppers[i]->execute();
+        bool result = selected_steppers[i]->execute();
+	dependable_solve = dependable_solve && result;
     }
 
     std::cerr << "Dynamic step is " << (dependable_solve ? "" : "not ") << "entirely dependable!\n";
@@ -686,14 +688,14 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     //if( m_pnlty_enbld ) executePenaltyResponse();
     START_TIMER("BARodStepperResponse");
     std::cerr << "Starting collision response\n";
-    bool all_collisions_succeeded = true;
+    //bool all_collisions_succeeded = true;
     std::vector<bool> failed_collisions_rods(m_number_of_rods);
     if (m_perf_param.m_maximum_number_of_collisions_iterations > 0)
     {
         if (!executeIterativeInelasticImpulseResponse(failed_collisions_rods))
         {
             std::cout << "Some collision responses failed!\n";
-            all_collisions_succeeded = false;
+            //all_collisions_succeeded = false;
         }
     }
     std::cerr << "Finished collision response\n";
@@ -753,10 +755,10 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     // Explosion detection
     if (m_perf_param.m_enable_explosion_detection)
         computeForces(m_endForces, selected_rods);
-    bool explosions_detected = false;
+    //bool explosions_detected = false;
     std::vector<bool> exploding_rods(m_number_of_rods);
     if (m_perf_param.m_enable_explosion_detection)
-        explosions_detected = checkExplosions(exploding_rods, failed_collisions_rods, selected_rods);
+        checkExplosions(exploding_rods, failed_collisions_rods, selected_rods);
 
     // Decide whether to substep or kill some rods
     for (RodSelectionType::iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
@@ -764,6 +766,10 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         bool solveFailure     = !m_steppers[*rod]->HasSolved();
         bool explosion        = exploding_rods[*rod];
         bool collisionFailure = failed_collisions_rods[*rod];
+
+	std::cout << "rod " << *rod << ": solve " << (solveFailure ? "ok " : "FAILED ")
+		  << "collisions " << (collisionFailure ? "ok " : "FAILED ")
+		  << "explosion " << (explosion ? "YES " : "no "); 
 
 	bool substep = 
 	     (solveFailure     && m_level < m_perf_param.m_max_number_of_substeps_for_solver)
@@ -780,34 +786,41 @@ void BARodStepper::step(RodSelectionType& selected_rods)
 	  || (explosion        && m_perf_param.m_in_case_of_explosion_failure == PerformanceTuningParameters::HaltSimulation)
 	  || (collisionFailure && m_perf_param.m_in_case_of_collision_failure == PerformanceTuningParameters::HaltSimulation);
 
-        if (substep) continue;
-        
+        if (substep) 
+	{
+	    std::cout << "treatment: substepping" << std::endl;
+            continue;
+        }       
+ 
         else if (killRod) 
         {
+	    std::cout << "treatment: KILLING rod" << std::endl;
             killTheRod(*rod);
         } 
         else if (haltSim)
         {
+	    std::cout << "treatment: HALTING simulation" << std::endl;
             m_simulationFailed = true;
         }
         else 
         {
+            std::cout << "treatment: ignoring" << std::endl;
             // at this point, the step is either successful, or includes only ignorable errors
         }
 
 	selected_rods.erase(rod--);
     }
 
-    bool all_rods_are_ok = dependable_solve && all_collisions_succeeded && !explosions_detected;
+    //bool all_rods_are_ok = dependable_solve && all_collisions_succeeded && !explosions_detected;
 
     std::cout << "BARodStepper::step() ends. ";
-    if (selected_rods.size() > 0 || !all_rods_are_ok)
+    if (selected_rods.size() > 0)
     {
-        std::cout << "\033[31;1mNOT dependable:\033[m " << selected_rods.size() << " rods unsuccessful." << std::endl;
+        std::cout << "\033[31;1mNOT dependable:\033[m " << selected_rods.size() << " rods must be substepped." << std::endl;
     }
     else 
     {
-        std::cout << " All rods simulated successfully." << std::endl;
+        std::cout << " All rods treated (either successful step, removed, or errors ignored)." << std::endl;
     }
 }
 
