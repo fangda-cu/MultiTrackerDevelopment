@@ -58,11 +58,11 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
             m_perf_param(perf_param),
             m_level(0),
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start,
-                    m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness)
+		      m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness),
+	    m_log_stream("BARodStepper.log")
 {
     // Open the log file
-    std::ofstream log_stream("BARodStepper.log");
-    m_log = new TextLog(log_stream, MsgInfo::kTrace, true);
+    m_log = new TextLog(m_log_stream, MsgInfo::kTrace, true);
 
     InfoStream(m_log, "") << "Started logging BARodStepper\n";
 
@@ -458,7 +458,8 @@ bool BARodStepper::nonAdaptiveExecute(double dt, RodSelectionType& selected_rods
     setTime(m_t + dt);
     //for (int i = 0; i < m_scripting_controllers.size(); ++i)
     //  m_scripting_controllers[i]->setTime(m_t);
-    return step(selected_rods);
+    step(selected_rods);
+    return (selected_rods.size() == 0);
 }
 
 bool BARodStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
@@ -557,8 +558,7 @@ bool BARodStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
 
 void BARodStepper::step(RodSelectionType& selected_rods)
 {
-    if (m_simulationFailed)
-        return true;
+    if (m_simulationFailed) return;
 
     std::cout << "t = " << m_t << ": BARodStepper::step() begins with " << selected_rods.size() << " rods\n";
 
@@ -654,7 +654,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     {
         std::cout << "t = " << m_t << " selected_rods: step() failed (due to rod-rod) for " << selected_rods.size() << " rods"
                 << std::endl;
-        return false;
+        return;
     }
 
     // Post time step position
@@ -761,78 +761,45 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     // Decide whether to substep or kill some rods
     for (RodSelectionType::iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
     {
-        if (m_steppers[*rod]->HasSolved() && !exploding_rods[*rod] && !failed_collisions_rods[*rod])
+        bool solveFailure     = !m_steppers[*rod]->HasSolved();
+        bool explosion        = exploding_rods[*rod];
+        bool collisionFailure = failed_collisions_rods[*rod];
+
+	bool substep = 
+	     (solveFailure     && m_level < m_perf_param.m_max_number_of_substeps_for_solver)
+          || (explosion        && m_level < m_perf_param.m_max_number_of_substeps_for_explosion)
+          || (collisionFailure && m_level < m_perf_param.m_max_number_of_substeps_for_collision);
+
+	bool killRod = 
+	     (solveFailure     && m_perf_param.m_in_case_of_solver_failure    == PerformanceTuningParameters::KillTheRod)
+	  || (explosion        && m_perf_param.m_in_case_of_explosion_failure == PerformanceTuningParameters::KillTheRod)
+	  || (collisionFailure && m_perf_param.m_in_case_of_collision_failure == PerformanceTuningParameters::KillTheRod);
+
+	bool haltSim = 
+	     (solveFailure     && m_perf_param.m_in_case_of_solver_failure    == PerformanceTuningParameters::HaltSimulation)
+	  || (explosion        && m_perf_param.m_in_case_of_explosion_failure == PerformanceTuningParameters::HaltSimulation)
+	  || (collisionFailure && m_perf_param.m_in_case_of_collision_failure == PerformanceTuningParameters::HaltSimulation);
+
+        if (substep) continue;
+        
+        else if (killRod) 
         {
-            selected_rods.erase(rod--);
-            continue;
-        }
-        if (!m_steppers[*rod]->HasSolved())
+            killTheRod(*rod);
+        } 
+        else if (haltSim)
         {
-            if (m_level >= m_perf_param.m_max_number_of_substeps_for_solver)
-            {
-                switch (m_perf_param.m_in_case_of_solver_failure)
-                {
-                case PerformanceTuningParameters::IgnoreError:
-                    // Nothing
-                    break;
-                case PerformanceTuningParameters::KillTheRod:
-                    std::cerr << "Solver Failure: ";
-                    killTheRod(*rod);
-                    break;
-                case PerformanceTuningParameters::HaltSimulation:
-                    m_simulationFailed = true;
-                    break;
-                }
-                selected_rods.erase(rod--);
-                continue;
-            }
+            m_simulationFailed = true;
         }
-        if (exploding_rods[*rod])
+        else 
         {
-            if (m_level >= m_perf_param.m_max_number_of_substeps_for_explosion)
-            {
-                switch (m_perf_param.m_in_case_of_explosion_failure)
-                {
-                case PerformanceTuningParameters::IgnoreError:
-                    // Nothing
-                    break;
-                case PerformanceTuningParameters::KillTheRod:
-                    std::cerr << "Explosion Failure: ";
-                    killTheRod(*rod);
-                    break;
-                case PerformanceTuningParameters::HaltSimulation:
-                    m_simulationFailed = true;
-                    break;
-                }
-                selected_rods.erase(rod--);
-                continue;
-            }
+            // at this point, the step is either successful, or includes only ignorable errors
         }
-        if (failed_collisions_rods[*rod])
-        {
-            if (m_level >= m_perf_param.m_max_number_of_substeps_for_collision)
-            {
-                switch (m_perf_param.m_in_case_of_collision_failure)
-                {
-                case PerformanceTuningParameters::IgnoreError:
-                    // Nothing
-                    break;
-                case PerformanceTuningParameters::KillTheRod:
-                    std::cerr << "Collision Failure: ";
-                    killTheRod(*rod);
-                    break;
-                case PerformanceTuningParameters::HaltSimulation:
-                    m_simulationFailed = true;
-                    break;
-                }
-                selected_rods.erase(rod--);
-                continue;
-            }
-        }
+
+	selected_rods.erase(rod--);
     }
 
     bool all_rods_are_ok = dependable_solve && all_collisions_succeeded && !explosions_detected;
-<<<<<<< HEAD
+
     std::cout << "BARodStepper::step() ends. ";
     if (selected_rods.size() > 0 || !all_rods_are_ok)
     {
@@ -842,11 +809,6 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     {
         std::cout << " All rods simulated successfully." << std::endl;
     }
-=======
-    std::cout << "This step is " << (all_rods_are_ok ? "" : "\033[31;1mNOT\033[m ") << "dependable.\n";
-
-    return all_rods_are_ok;
->>>>>>> master
 }
 
 /**
@@ -913,7 +875,7 @@ void BARodStepper::extractVelocities(VecXd& velocities, const RodSelectionType& 
 {
     assert(m_number_of_rods == m_base_indices.size());
     assert(getNumDof() == velocities.size());
-
+  
     if (getNumDof() == 0)
         return;
 

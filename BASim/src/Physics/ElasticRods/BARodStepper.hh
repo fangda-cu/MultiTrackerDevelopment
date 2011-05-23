@@ -437,6 +437,7 @@ private:
 
     PerformanceTuningParameters m_perf_param;
     TextLog* m_log;
+    std::ofstream m_log_stream;
 };
 
 } // namespace BASim
