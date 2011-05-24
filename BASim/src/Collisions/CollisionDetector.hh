@@ -31,7 +31,7 @@ class CollisionDetector
     const double& m_time_step;
     bool m_skip_rod_rod;
     BVH m_bvh;
-    std::list<Collision*>* m_collisions;
+    std::list<Collision*>* m_collisions_list;
     CollisionFilter m_collision_filter;
     threads::Mutex m_collisions_mutex;
     int m_num_threads;
@@ -65,15 +65,15 @@ private:
     // Proximity collision detection
     void computeCollisions(const BVHNode& node_a, const BVHNode& node_b);
 
-    // Depending on m_collision_filter, determine and appends the relevant collision type between topological elements to m_collisions
+    // Depending on m_collision_filter, determine and appends the relevant collision type between topological elements to m_collisions_list
     void appendCollision(const TopologicalElement* obj_a, const TopologicalElement* obj_b);
 
-    // Determine if the collision happens during the current time step; if so append the CTC to m_collisions.
+    // Determine if the collision happens during the current time step; if so append the CTC to m_collisions_list.
     void appendContinuousTimeCollision(const YAEdge* edge_a, const YAEdge* edge_b);
     void appendContinuousTimeCollision(const YAEdge* edge, const YATriangle* triangle);
     void appendContinuousTimeCollision(int v_index, const YATriangle* triangle);
 
-    // Determine whether the edge intersects the triangle; if so append the VFI to m_collisions
+    // Determine whether the edge intersects the triangle; if so append the VFI to m_collisions_list
     void appendEdgeFaceIntersection(const YAEdge* edge, const YATriangle* triangle);
 
     // Determine if a close encounter has happened

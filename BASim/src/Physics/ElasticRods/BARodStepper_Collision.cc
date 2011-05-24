@@ -164,45 +164,61 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
     bool all_rods_collisions_ok = true;
 
     // Detect continuous time collisions
-    std::list<Collision*> collisions;
-    m_collision_detector->getCollisions(collisions, ContinuousTime);
-    TraceStream(m_log, "") << "Detected " << collisions.size() << " continuous time collisions\n";
+    std::list<Collision*> collisions_list;
+    m_collision_detector->getCollisions(collisions_list, ContinuousTime);
+    TraceStream(m_log, "") << "Detected " << collisions_list.size() << " continuous time collisions\n";
 
     // Iterativly apply inelastic impulses
-    for (int itr = 0; !collisions.empty() && itr < m_perf_param.m_maximum_number_of_collisions_iterations; ++itr)
+    for (int itr = 0; !collisions_list.empty() && itr < m_perf_param.m_maximum_number_of_collisions_iterations; ++itr)
     {
-        // TODO: Add debug checks for repeat collisions.
+        TraceStream(m_log, "") << "CT collision response iteration " << itr << '\n';
 
         // Just sort the collision times to maintain some rough sense of causality
-        collisions.sort(CompareTimes);
-        // int collisionCounter = 0;
-        while (!collisions.empty())
+        collisions_list.sort(CompareTimes);
+
+        if (m_perf_param.m_skipRodRodCollisions)
         {
-            // ++collisionCounter;
-            // std::cout << "\nBARodStepper:executeIterativeInelasticImpulseResponse: treating collision #" << collisionCounter
-            //        << std::endl;
-            CTCollision* collision = dynamic_cast<CTCollision*> (collisions.front());
-            // collision->Print(std::cerr);
-            collisions.pop_front();
-            if (collision)
-                exertCompliantInelasticImpulse(collision);
-            delete collision;
-            m_collision_detector->updateContinuousTimeCollisions();
+            std::set<int> already_collided_rods;
+
+            for (std::list<Collision*>::iterator col_it = collisions_list.begin(); col_it != collisions_list.end(); col_it++)
+            {
+                CTCollision* collision = dynamic_cast<CTCollision*> (*col_it);
+                if (collision)
+                {
+                    // Only treat collisions involving a rod we see for the first time
+                    int colliding_rod = getContainingRod(collision->GetRodVertex());
+                    if (already_collided_rods.find(colliding_rod) == already_collided_rods.end())
+                    {
+                        already_collided_rods.insert(colliding_rod);
+                        exertCompliantInelasticImpulse(collision);
+                    }
+                }
+                delete collision;
+                collisions_list.erase(col_it--);
+            }
         }
-
-        // std::cerr << "Processed " << collisionCounter << " collisions" << std::endl;
-
-        m_collision_detector->getCollisions(collisions, ContinuousTime);
+        else
+            while (!collisions_list.empty())
+            {
+                CTCollision* collision = dynamic_cast<CTCollision*> (collisions_list.front());
+                collisions_list.pop_front();
+                if (collision)
+                    exertCompliantInelasticImpulse(collision);
+                delete collision;
+                m_collision_detector->updateContinuousTimeCollisions();
+            }
+        m_collision_detector->getCollisions(collisions_list, ContinuousTime);
+        TraceStream(m_log, "") << "Detected " << collisions_list.size() << " continuous time collisions\n";
     }
 
-    if (!collisions.empty())
+    if (!collisions_list.empty())
     {
         all_rods_collisions_ok = false;
 
-        TraceStream(m_log, "") << "Remains " << collisions.size() << " unresolved collision(s)\n";
+        TraceStream(m_log, "") << "Remains " << collisions_list.size() << " unresolved collision(s)\n";
 
         // Just in case we haven't emptied the collisions but exited when itr == m_num_inlstc_itrns
-        for (std::list<Collision*>::iterator col = collisions.begin(); col != collisions.end(); col++)
+        for (std::list<Collision*>::iterator col = collisions_list.begin(); col != collisions_list.end(); col++)
         {
             // Let's see which collisions are remaining.
             EdgeEdgeCTCollision* eecol = dynamic_cast<EdgeEdgeCTCollision*> (*col);
@@ -323,13 +339,18 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
 
     // If the rod has not solved properly, no need to compute its collision response
     if (!m_steppers[rodidx]->HasSolved())
+    {// NB: this is redundant because we declared the rod collision-immune already.
+        std::cerr << "WARNING: attempt to do vertex-face collision with non-dependable rod";
         return;
+    }
 
     // Determine which vertex of the rod the free vertex is
     assert(m_base_indices[rodidx] % 3 == 0);
     int v0 = vfcol.v0 - m_base_indices[rodidx] / 3;
     assert(v0 >= 0);
     assert(v0 < m_rods[rodidx]->nv());
+
+    TraceStream(m_log, "") << "CTcollision: vertex " << v0 << " of rod " << rodidx << '\n';
 
     // Compute the relative velocity of the collision
     //double magrelvel = vfcol.computeRelativeVelocity(m_geodata);
@@ -603,6 +624,8 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
         std::cerr << "WARNING: attempt to do rod-rod collision on non-dependable rods";
         return;
     }
+
+    TraceStream(m_log, "") << "CTcollision: rod " << rod0 << " vs. rod " << rod1 << '\n';
 
     // Compute the relative velocity, which must be negative
     //    Vec3d relvel = m_geodata.computeRelativeVelocity(eecol.e0_v0, eecol.e0_v1, eecol.e1_v0, eecol.e1_v1, eecol.s, eecol.t);
@@ -1105,95 +1128,6 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
 #endif
 }
 
-void BARodStepper::applyInextensibilityVelocityFilter(int rodidx)
-{
-    if (m_level < m_perf_param.m_inextensibility_threshold)
-        return;
-
-    //std::cout << "Applying inextensibility filter to rod " << rodidx << std::endl;
-
-    int rodbase = m_base_indices[rodidx];
-
-    // if (boundary->isVertexScripted(j))
-    //   {
-    // 	//std::cout << "BridsonTimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
-    // 	Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
-    // 	Vec3d actualvalue = m_xnp1.segment<3> (rodbase + 3 * j);
-    // 	assert(approxEq(desiredposition, actualvalue, 1.0e-6));
-    //   }
-
-    m_vnphalf.segment<3> (rodbase + 0) = Vec3d(0, 0, 0);
-    m_vnphalf.segment<3> (rodbase + 3) = Vec3d(0, 0, 0);
-
-    {
-        Vec3d v0 = m_vnphalf.segment<3> (rodbase + 3); // velocity of vertex 1
-        Vec3d x0 = m_xn.segment<3> (rodbase + 3); // start-of-step position of vertex 1
-        Vec3d x0N = x0 + m_dt * v0; // end-of-step position of vertex 1
-        for (int i = 2; i < m_rods[rodidx]->nv(); ++i)
-        {
-            Vec3d x1 = m_xn.segment<3> (rodbase + 3 * i);
-            Vec3d v1 = m_vnphalf.segment<3> (rodbase + 3 * i);
-
-            // filter the velocity of vertex i
-
-            Vec3d x1N = x1 + m_dt * v1;
-
-            double l = (x1 - x0).norm();
-            double lN = (x1N - x0N).norm();
-
-            Vec3d x1Nrevised = x0N + (x1N - x0N) * l / lN;
-
-            double lNrevised = (x1Nrevised - x0N).norm();
-
-            Vec3d v1revised = (x1Nrevised - x1) / m_dt;
-
-            m_vnphalf.segment<3> (rodbase + 3 * i) = v1revised;
-
-            //std::cout << "inextensibility: x0N = " << x0N << " x1N = " << x1N << " x1Nrevised = " << x1Nrevised << " l = " << l << " lNrevised = "
-            //		      << lNrevised << " l = " << l << std::endl;
-
-            //x1Nrevised = " << x1Nrevised << " strain = " << (lN/l) << " revised: " << (lNrevised/l) << " l = " << l << " lN = " << lN << " lNrevised = " << lNrevised << " x0N = " << x0N << " x1Nrevised = " << x1Nrevised << " m_vnphalf revised = " << m_vnphalf.segment<3> (rodbase + 3*i) << std::endl;
-
-            // Vec3d t = (x1-x0).normalized(); // unit tangent
-
-            // double relvel = t.dot(v1-v0);
-
-            // Vec3d impulse = -relvel*t;
-
-            // double relvelAfter = t.dot(v1 + impulse - v0);
-
-            // m_vnphalf.segment<3> (rodbase + 3*i) = v1 + impulse;
-
-            // std::cout << "inextensibility: i=" << i
-            //      << " x0 = " << x0
-            //      << " x1 = " << x1
-            //      << " v0 = " << v0
-            //      << " v1 = " << v1
-            //           << " t = " << t
-            //           << " relvel before = " << relvel
-            //           << " after = " << relvelAfter << std::endl;
-
-            x0N = x1Nrevised;
-            x0 = x1;
-            v0 = v1;
-        }
-    }
-
-    // std::cout << "Edge lengths after inextensibility: ";
-    // for (int i = 0; i < m_rods[rodidx]->nv() - 1; ++i)
-    // {
-    //     Vec3d x0 = m_xn.segment<3> (rodbase + 3 * i);
-    //     Vec3d v0 = m_vnphalf.segment<3> (rodbase + 3 * i);
-    //     Vec3d x1 = m_xn.segment<3> (rodbase + 3 * i + 3);
-    //     Vec3d v1 = m_vnphalf.segment<3> (rodbase + 3 * i + 3);
-    // 	Vec3d x0N = x0 + m_dt * v0;
-    // 	Vec3d x1N = x1 + m_dt * v1;
-    // 	Vec3d eN = (x1N - x0N);
-    // 	std::cout << " " << eN.norm();
-    // }  
-    // std::cout << std::endl;
-}
-
 void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdgeCTCollision& eecol)
 {
     // Must have one totally fixed and one totally free edge
@@ -1246,7 +1180,12 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
 
     // If the rod has not solved properly, no need to compute its collision response
     if (!m_steppers[rodidx]->HasSolved())
+    {
+        std::cerr << "WARNING: attempt to do edge-edge collision with non-dependable rod";
         return;
+    }
+
+    TraceStream(m_log, "") << "CTcollision: rod " << rodidx << " vs. mesh\n";
 
     // Convert the vertices' global indices to rod indices
     assert(m_base_indices[rodidx] % 3 == 0);
@@ -1640,7 +1579,7 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
 
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
     {
-        if (m_steppers[*rod]->HasSolved() && !failed_collisions_rods[*rod])
+        if (true || m_steppers[*rod]->HasSolved() && !failed_collisions_rods[*rod])
         {
             for (int j = 0; j < m_rods[*rod]->ndof(); ++j)
             {
@@ -1667,6 +1606,95 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
         DebugStream(m_log, "") << "Some rods had explosions\n";
 
     return explosions_detected;
+}
+
+void BARodStepper::applyInextensibilityVelocityFilter(int rodidx)
+{
+    if (m_level < m_perf_param.m_inextensibility_threshold)
+        return;
+
+    //std::cout << "Applying inextensibility filter to rod " << rodidx << std::endl;
+
+    int rodbase = m_base_indices[rodidx];
+
+    // if (boundary->isVertexScripted(j))
+    //   {
+    //  //std::cout << "BridsonTimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
+    //  Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
+    //  Vec3d actualvalue = m_xnp1.segment<3> (rodbase + 3 * j);
+    //  assert(approxEq(desiredposition, actualvalue, 1.0e-6));
+    //   }
+
+    m_vnphalf.segment<3> (rodbase + 0) = Vec3d(0, 0, 0);
+    m_vnphalf.segment<3> (rodbase + 3) = Vec3d(0, 0, 0);
+
+    {
+        Vec3d v0 = m_vnphalf.segment<3> (rodbase + 3); // velocity of vertex 1
+        Vec3d x0 = m_xn.segment<3> (rodbase + 3); // start-of-step position of vertex 1
+        Vec3d x0N = x0 + m_dt * v0; // end-of-step position of vertex 1
+        for (int i = 2; i < m_rods[rodidx]->nv(); ++i)
+        {
+            Vec3d x1 = m_xn.segment<3> (rodbase + 3 * i);
+            Vec3d v1 = m_vnphalf.segment<3> (rodbase + 3 * i);
+
+            // filter the velocity of vertex i
+
+            Vec3d x1N = x1 + m_dt * v1;
+
+            double l = (x1 - x0).norm();
+            double lN = (x1N - x0N).norm();
+
+            Vec3d x1Nrevised = x0N + (x1N - x0N) * l / lN;
+
+            double lNrevised = (x1Nrevised - x0N).norm();
+
+            Vec3d v1revised = (x1Nrevised - x1) / m_dt;
+
+            m_vnphalf.segment<3> (rodbase + 3 * i) = v1revised;
+
+            //std::cout << "inextensibility: x0N = " << x0N << " x1N = " << x1N << " x1Nrevised = " << x1Nrevised << " l = " << l << " lNrevised = "
+            //            << lNrevised << " l = " << l << std::endl;
+
+            //x1Nrevised = " << x1Nrevised << " strain = " << (lN/l) << " revised: " << (lNrevised/l) << " l = " << l << " lN = " << lN << " lNrevised = " << lNrevised << " x0N = " << x0N << " x1Nrevised = " << x1Nrevised << " m_vnphalf revised = " << m_vnphalf.segment<3> (rodbase + 3*i) << std::endl;
+
+            // Vec3d t = (x1-x0).normalized(); // unit tangent
+
+            // double relvel = t.dot(v1-v0);
+
+            // Vec3d impulse = -relvel*t;
+
+            // double relvelAfter = t.dot(v1 + impulse - v0);
+
+            // m_vnphalf.segment<3> (rodbase + 3*i) = v1 + impulse;
+
+            // std::cout << "inextensibility: i=" << i
+            //      << " x0 = " << x0
+            //      << " x1 = " << x1
+            //      << " v0 = " << v0
+            //      << " v1 = " << v1
+            //           << " t = " << t
+            //           << " relvel before = " << relvel
+            //           << " after = " << relvelAfter << std::endl;
+
+            x0N = x1Nrevised;
+            x0 = x1;
+            v0 = v1;
+        }
+    }
+
+    // std::cout << "Edge lengths after inextensibility: ";
+    // for (int i = 0; i < m_rods[rodidx]->nv() - 1; ++i)
+    // {
+    //     Vec3d x0 = m_xn.segment<3> (rodbase + 3 * i);
+    //     Vec3d v0 = m_vnphalf.segment<3> (rodbase + 3 * i);
+    //     Vec3d x1 = m_xn.segment<3> (rodbase + 3 * i + 3);
+    //     Vec3d v1 = m_vnphalf.segment<3> (rodbase + 3 * i + 3);
+    //  Vec3d x0N = x0 + m_dt * v0;
+    //  Vec3d x1N = x1 + m_dt * v1;
+    //  Vec3d eN = (x1N - x0N);
+    //  std::cout << " " << eN.norm();
+    // }
+    // std::cout << std::endl;
 }
 
 /**

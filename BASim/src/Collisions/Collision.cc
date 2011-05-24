@@ -68,6 +68,16 @@ bool EdgeFaceIntersection::analyseCollision(double)
 /**
  * Class EdgeEdgeCTCollision
  */
+
+int EdgeEdgeCTCollision::GetRodVertex()
+{
+    if (e0_v0 < m_geodata.GetObjStart())
+        return e0_v0;
+    if (e1_v0 < m_geodata.GetObjStart())
+        return e1_v0;
+    assert(0);
+}
+
 bool EdgeEdgeCTCollision::analyseCollision(double time_step)
 {
     const Vec3d offset = m_geodata.GetPoint(e0_v0);
@@ -202,6 +212,13 @@ std::ostream& operator<<(std::ostream& os, const EdgeEdgeCTCollision& eecol)
 /**
  * Class VertexFaceCTCollision
  */
+
+int VertexFaceCTCollision::GetRodVertex()
+{
+    assert(v0 < m_geodata.GetObjStart());
+    return v0;
+}
+
 bool VertexFaceCTCollision::analyseCollision(double time_step)
 {
     const Vec3d offset = m_geodata.GetPoint(v0);
@@ -326,6 +343,9 @@ std::ostream& operator<<(std::ostream& os, const VertexFaceCTCollision& vfcol)
     return os;
 }
 
+/**
+ * Class EdgeEdgeProximityCollision
+ */
 bool EdgeEdgeProximityCollision::analyseCollision(double)
 {
     return false;
@@ -371,6 +391,9 @@ std::ostream& operator<<(std::ostream& os, const EdgeEdgeProximityCollision& eec
     return os;
 }
 
+/**
+ * Clas VertexFaceProximityCollision
+ */
 bool VertexFaceProximityCollision::analyseCollision(double)
 {
     //    if (vertexAndFaceShareVertex(v0, f0, f1, f2))

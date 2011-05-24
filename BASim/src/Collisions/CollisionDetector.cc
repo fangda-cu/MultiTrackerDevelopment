@@ -15,7 +15,7 @@ namespace BASim
 {
 CollisionDetector::CollisionDetector(const GeometricData& geodata, const std::vector<std::pair<int, int> >& edges,
         const std::vector<TriangularFace>& faces, const double& timestep, bool skip_rod_rod, int num_threads) :
-    m_geodata(geodata), m_time_step(timestep), m_skip_rod_rod(skip_rod_rod), m_collisions(NULL), m_collisions_mutex()
+    m_geodata(geodata), m_time_step(timestep), m_skip_rod_rod(skip_rod_rod), m_collisions_list(NULL), m_collisions_mutex()
 {
     if (num_threads > 0)
         m_num_threads = num_threads;
@@ -33,7 +33,7 @@ CollisionDetector::CollisionDetector(const GeometricData& geodata, const std::ve
 
 CollisionDetector::~CollisionDetector()
 {
-    m_collisions = NULL;
+    m_collisions_list = NULL;
     for (std::vector<const TopologicalElement*>::iterator i = m_elements.begin(); i != m_elements.end(); i++)
         delete *i;
 }
@@ -42,8 +42,8 @@ void CollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFi
 {
 
     m_collision_filter = collision_filter;
-    m_collisions = &cllsns;
-    m_collisions->clear();
+    m_collisions_list = &cllsns;
+    m_collisions_list->clear();
     std::vector<BVHParallelizer*> steppers;
     BVHNode& root = m_bvh.GetNode(0);
     updateBoundingBox(root);
@@ -147,9 +147,12 @@ void CollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFi
 
 void CollisionDetector::updateContinuousTimeCollisions()
 {
-    for (std::list<Collision*>::iterator i = m_collisions->begin(); i != m_collisions->end(); i++)
-        if (!(*i)->analyseCollision(m_time_step))
-            m_collisions->erase(i--);
+    for (std::list<Collision*>::iterator collision = m_collisions_list->begin(); collision != m_collisions_list->end(); collision++)
+        if (!(*collision)->analyseCollision(m_time_step))
+        {
+            delete *collision;
+            m_collisions_list->erase(collision--);
+        }
 }
 
 void CollisionDetector::buildBVH()
@@ -280,7 +283,7 @@ void CollisionDetector::appendContinuousTimeCollision(const YAEdge* edge_a, cons
     if (edgeXedge->analyseCollision(m_time_step))
     {
         m_collisions_mutex.Lock();
-        m_collisions->push_back(edgeXedge); // Will be deleted in BARodStepper::executeIterativeInelasticImpulseResponse()
+        m_collisions_list->push_back(edgeXedge); // Will be deleted in BARodStepper::executeIterativeInelasticImpulseResponse()
         m_collisions_mutex.Unlock();
         // std::cout << "CollisionDetector: Found edge-edge collision" << std::endl;
     }
@@ -307,7 +310,7 @@ void CollisionDetector::appendContinuousTimeCollision(int v_index, const YATrian
     if (vertexXface->analyseCollision(m_time_step))
     {
         m_collisions_mutex.Lock();
-        m_collisions->push_back(vertexXface); // Will be deleted in BARodStepper::executeIterativeInelasticImpulseResponse()
+        m_collisions_list->push_back(vertexXface); // Will be deleted in BARodStepper::executeIterativeInelasticImpulseResponse()
         m_collisions_mutex.Unlock();
         // std::cout << "CollisionDetector: Found vertex-face collision" << std::endl;
     }
@@ -337,7 +340,7 @@ void CollisionDetector::appendEdgeFaceIntersection(const YAEdge* edge_a, const Y
     if (edgeXface->analyseCollision())
     {
         m_collisions_mutex.Lock();
-        m_collisions->push_back(edgeXface);
+        m_collisions_list->push_back(edgeXface);
         m_collisions_mutex.Unlock();
     }
     else
@@ -359,7 +362,7 @@ void CollisionDetector::appendProximityCollision(const YAEdge* edge_a, const YAE
     if (edgeXedge->analyseCollision())
     {
         m_collisions_mutex.Lock();
-        m_collisions->push_back(edgeXedge); // Will be deleted in BARodStepper::executeImplicitPenaltyResponse()
+        m_collisions_list->push_back(edgeXedge); // Will be deleted in BARodStepper::executeImplicitPenaltyResponse()
         m_collisions_mutex.Unlock();
         // std::cout << "CollisionDetector: Found edge-edge collision" << std::endl;
     }
@@ -397,7 +400,7 @@ void CollisionDetector::appendProximityCollision(int v_index, const YATriangle* 
     if (vertexXface->analyseCollision())
     {
         m_collisions_mutex.Lock();
-        m_collisions->push_back(vertexXface); // Will be deleted in BARodStepper::executeImplicitPenaltyResponse()
+        m_collisions_list->push_back(vertexXface); // Will be deleted in BARodStepper::executeImplicitPenaltyResponse()
         m_collisions_mutex.Unlock();
         // std::cout << "CollisionDetector: Found vertex-face collision" << std::endl;
     }
