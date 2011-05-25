@@ -761,15 +761,17 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         checkExplosions(exploding_rods, failed_collisions_rods, selected_rods);
 
     // Decide whether to substep or kill some rods
-    for (RodSelectionType::iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+    for (RodSelectionType::iterator rodit = selected_rods.begin(); rodit != selected_rods.end(); rodit++)
     {
-        bool solveFailure     = !m_steppers[*rod]->HasSolved();
-        bool explosion        = exploding_rods[*rod];
-        bool collisionFailure = failed_collisions_rods[*rod];
+        int  rodidx = *rodit;
 
-	std::cout << "rod " << *rod << ": solve " << (solveFailure ? "ok " : "FAILED ")
-		  << "collisions " << (collisionFailure ? "ok " : "FAILED ")
-		  << "explosion " << (explosion ? "YES " : "no "); 
+        bool solveFailure     = !m_steppers[rodidx]->HasSolved();
+        bool explosion        = exploding_rods[rodidx];
+        bool collisionFailure = failed_collisions_rods[rodidx];
+
+	std::cout << "rod " << rodidx << ": solve " << (solveFailure ? "FAILED " : "ok ")
+		  << "collisions " << (collisionFailure ? "FAILED " : "ok ")
+		  << "explosion-check " << (explosion ? "FAILED " : "ok "); 
 
 	bool substep = 
 	     (solveFailure     && m_level < m_perf_param.m_max_number_of_substeps_for_solver)
@@ -795,7 +797,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         else if (killRod) 
         {
 	    std::cout << "treatment: KILLING rod" << std::endl;
-            killTheRod(*rod);
+            killTheRod(rodidx);
         } 
         else if (haltSim)
         {
@@ -804,11 +806,29 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         }
         else 
         {
-            std::cout << "treatment: ignoring" << std::endl;
+            std::cout << "treatment: accept this step as-is" << std::endl;
             // at this point, the step is either successful, or includes only ignorable errors
+
+	    // Accept this step
+
+            ElasticRod* rod = m_rods[rodidx];
+
+            std::cout << "KE[" << rodidx << "] = " << rod->computeKineticEnergy() << std::endl;
+
+	    // Apply kinetic damping
+	    rod->recordKineticEnergy();
+	    if (rod->isKineticEnergyPeaked()) 
+	    {
+                std::cout << "Zeroing energy for rod " << rodidx << std::endl;
+	        for (int i = 0; i < rod->nv(); ++i)
+                {
+                    rod->setVelocity(i, Vec3d(0,0,0));
+                }
+	    }
         }
 
-	selected_rods.erase(rod--);
+	selected_rods.erase(rodit--);
+        // the -- compensates for the erased rod; this is dangerous since it assumes array (rather than linked-list) semantics for selected_rods
     }
 
     //bool all_rods_are_ok = dependable_solve && all_collisions_succeeded && !explosions_detected;
@@ -824,7 +844,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     }
 }
 
-/**
+/*
  * Extracting/Restoring
  */
 void BARodStepper::extractPositions(VecXd& positions, const RodSelectionType& selected_rods) const
