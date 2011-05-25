@@ -31,7 +31,6 @@ private:
     void calculateLevelSetSize( bridson::Vec3f &origin, Vec3ui &dims, Real &dx, Real length[3] );
   //  Vec3<Real>& triangleVertex(uint faceID, uint i);
     void buildLevelSet();
-
     
     // We have two meshes because Maya is only providing meshes on frame steps and the sim is 
     // stepping with smaller steps so we need to interpolate the mesh positions and 
@@ -59,8 +58,8 @@ private:
     Indices m_edgeIndices;
     
     Vec3Indices m_tri;
-    Vec3Indices m_triangleEdgeIndices;
     
+    float m_levelSetDX;
 };
 
 

@@ -1,5 +1,7 @@
 #include "WmFigMeshController.hh"
 
+#include <GL/gl.h>
+
 using namespace BASim;
 using namespace std;
 
@@ -11,7 +13,8 @@ WmFigMeshController::WmFigMeshController( BASim::TriangleMesh* i_currentMesh,
                                            m_previousMesh( i_previousMesh ),
                                            m_nextMesh( i_nextMesh ),
                                            BASim::ScriptingController( i_time, i_dt ),
-                                           m_startMeshTime( 0.0 ), m_endMeshTime( 0.0 )
+                                           m_startMeshTime( 0.0 ), m_endMeshTime( 0.0 ),
+                                           m_levelSetDX( 1.0 )
 
 // NOTE: We pass i_time and i_dt to BASim::ScriptingController but they are actually *ignored*
 //       as BARodStepper calls setDt() on the controller when it executes anyway.
@@ -156,7 +159,7 @@ void WmFigMeshController::calculateLevelSetSize( bridson::Vec3f &origin, Vec3ui 
     }
     
     // Hard code the cell size for now...
-    dx = 1.0;
+    dx = m_levelSetDX;
     
     // For now just pad it out a bit
     for ( unsigned int i = 0; i < 3; ++i )
@@ -180,8 +183,67 @@ void WmFigMeshController::calculateLevelSetSize( bridson::Vec3f &origin, Vec3ui 
 
 void WmFigMeshController::draw()
 {
-    if( m_phiCurrent->isInitialized() )
+    /*if( m_phiCurrent->isInitialized() )
     {
         m_phiCurrent->draw();
+    }*/
+    
+    // Do some drawing to see if the level set code is working
+
+    if( m_phiCurrent->isInitialized() )
+    {
+        Vec3d xMin, xMax, dX;
+        
+        for( TriangleMesh::vertex_iter meshItr = m_currentMesh->vertices_begin();
+             meshItr != m_currentMesh->vertices_end(); ++meshItr )
+        {
+            BASim::Vec3d vertex = m_currentMesh->getVertex( *meshItr );
+            
+            for ( unsigned int i = 0; i < 3; ++i )
+            {
+                if ( vertex[ i ] < xMin[ i ] )
+                {
+                    xMin[ i ] = vertex[ i ];
+                }
+                if ( vertex[ i ] > xMax[ i ] )
+                {
+                    xMax[ i ] = vertex[ i ];
+                }
+            }
+        }
+        
+       // bridson::Vec3f origin = m_phiCurrent->getOrigin();
+        // origin is xMin for some reason?
+        
+       // cerr << "origin = " << origin << endl;
+        
+        glPointSize( 1.0 );
+        glEnable( GL_POINT_SMOOTH );
+        glBegin( GL_POINTS );
+        for ( int x = xMin[ 0 ] - m_levelSetDX; x < ( xMax[ 0 ] + m_levelSetDX * 2 ); x += m_levelSetDX )
+        {
+            for ( int y = xMin[ 1 ] - m_levelSetDX; y < ( xMax[ 1 ] + m_levelSetDX * 2 ); y += m_levelSetDX )
+            {
+                for ( int z = xMin[ 2 ] - m_levelSetDX; z < ( xMax[ 2 ] + m_levelSetDX * 2 ); z += m_levelSetDX )
+                {
+                    Vec3<Real> samplePoint( x, y, z);
+                    
+                    Real phi = m_phiCurrent->getLevelSetValue( samplePoint );
+                    
+                    if ( phi < 0 )
+                    {
+                        glColor3f( 0.0, phi / 10.0, 1.0 );
+                    }
+                    else
+                    {
+                        glColor3f( 1.0, phi / 10.0, 0.0 );
+                    }
+                    glVertex3f ( samplePoint[ 0 ], samplePoint[ 1 ], samplePoint[ 2 ] );
+                }
+            }  
+        }
+        glEnd();
+        glPointSize( 1.0 );
     }
 }
+
