@@ -165,34 +165,69 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
 
     // Detect continuous time collisions
     std::list<Collision*> collisions_list;
+    TraceStream(m_log, "") << "Detecting collisions...\n";
     m_collision_detector->getCollisions(collisions_list, ContinuousTime);
-    TraceStream(m_log, "") << "Detected " << collisions_list.size() << " continuous time collisions\n";
 
     // Iterativly apply inelastic impulses
     for (int itr = 0; !collisions_list.empty() && itr < m_perf_param.m_maximum_number_of_collisions_iterations; ++itr)
     {
-        TraceStream(m_log, "") << "CT collision response iteration " << itr << '\n';
+        TraceStream(m_log, "") << "CTcollision response iteration " << itr << '\n';
+        TraceStream(m_log, "") << "Detected " << collisions_list.size() << " continuous time collisions\n";
 
         // Just sort the collision times to maintain some rough sense of causality
         collisions_list.sort(CompareTimes);
 
         if (m_perf_param.m_skipRodRodCollisions)
         {
+            // Keep only one collision per rod
             std::set<int> already_collided_rods;
-
             for (std::list<Collision*>::iterator col_it = collisions_list.begin(); col_it != collisions_list.end(); col_it++)
             {
                 CTCollision* collision = dynamic_cast<CTCollision*> (*col_it);
                 if (collision)
                 {
-                    // Only treat collisions involving a rod we see for the first time
+                    // Only keep collisions involving a rod we see for the first time
                     int colliding_rod = getContainingRod(collision->GetRodVertex());
                     if (already_collided_rods.find(colliding_rod) == already_collided_rods.end())
-                    {
                         already_collided_rods.insert(colliding_rod);
-                        exertCompliantInelasticImpulse(collision);
+                    else
+                    {
+                        delete collision;
+                        collisions_list.erase(col_it--);
                     }
                 }
+            }
+            TraceStream(m_log, "") << "of which " << collisions_list.size() << " are on different rods\n";
+            // Now apply response to the remaining collisions
+            for (std::list<Collision*>::iterator col_it = collisions_list.begin(); col_it != collisions_list.end(); col_it++)
+            {
+                CTCollision* collision = dynamic_cast<CTCollision*> (*col_it);
+                if (collision)
+                    exertCompliantInelasticImpulse(collision);
+
+                // Check for explosion here
+                int colliding_rod = getContainingRod(collision->GetRodVertex());
+                m_rods[colliding_rod]->computeForces(*m_endForces[colliding_rod]);
+                for (int j = 0; j < m_rods[colliding_rod]->ndof(); ++j)
+                {
+                    const double s = (*(m_startForces[colliding_rod]))[j];
+                    const double p = (*(m_preCollisionForces[colliding_rod]))[j];
+                    const double e = (*(m_endForces[colliding_rod]))[j];
+                    const double rate = fabs(s - e) / (fabs(s) + m_perf_param.m_explosion_damping);
+                    if (isnan(rate) || rate > m_perf_param.m_explosion_threshold)
+                    {
+                        //                        explosions_detected = true;
+                        //                        exploding_rods[colliding_rod] = true;
+                        TraceStream(m_log, "") << "Rod number " << colliding_rod
+                                << " had an explosion during collision response\n";
+                        // If the rod just had an explosion, give up trying resolving its collisions
+                        failed_collisions_rods[colliding_rod] = true;
+                        for (int v = 0; v < m_rods[colliding_rod]->nv(); ++v)
+                            m_collision_immune[m_base_indices[colliding_rod] / 3 + v] = true;
+                        break;
+                    }
+                }
+
                 delete collision;
                 collisions_list.erase(col_it--);
             }
@@ -207,8 +242,8 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                 delete collision;
                 m_collision_detector->updateContinuousTimeCollisions();
             }
+        TraceStream(m_log, "") << "Detecting collisions...\n";
         m_collision_detector->getCollisions(collisions_list, ContinuousTime);
-        TraceStream(m_log, "") << "Detected " << collisions_list.size() << " continuous time collisions\n";
     }
 
     if (!collisions_list.empty())

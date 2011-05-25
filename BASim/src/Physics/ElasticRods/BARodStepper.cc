@@ -64,7 +64,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     if (!m_log_stream.is_open())
         std::cerr << "Warning: log stream could not be open" << std::endl;
 
-    m_log = new TextLog(std::cerr, MsgInfo::kDebug, true); // For mysterious reasons, ofstreams don't work here.
+    m_log = new TextLog(std::cerr, MsgInfo::kTrace, true); // For mysterious reasons, ofstreams don't work here.
     InfoStream(m_log, "") << "Started logging BARodStepper\n";
 
     // For debugging purposes
@@ -472,7 +472,7 @@ bool BARodStepper::nonAdaptiveExecute(double dt, RodSelectionType& selected_rods
 
 bool BARodStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
 {
-    TraceStream(m_log, "") << "adaptiveExecute at level " << m_level << " with " << selected_rods.size() << " rod(s), m_t = "
+    DebugStream(m_log, "") << "adaptiveExecute at level " << m_level << " with " << selected_rods.size() << " rod(s), m_t = "
             << m_t << ", dt = " << dt << '\n';
 
     // Backup all selected rods
@@ -647,9 +647,6 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     // Post time step position
     extractPositions(m_xnp1, selected_rods);
 
-    if (m_perf_param.m_enable_explosion_detection)
-        computeForces(m_preCollisionForces, selected_rods);
-
     // Average velocity over the timestep just completed
     m_vnphalf = (m_xnp1 - m_xn) / m_dt;
 
@@ -667,6 +664,9 @@ void BARodStepper::step(RodSelectionType& selected_rods)
 
     START_TIMER("BARodStepperResponse");
     TraceStream(m_log, "") << "Starting collision response\n";
+
+    if (m_perf_param.m_enable_explosion_detection)
+        computeForces(m_preCollisionForces, selected_rods);
 
     std::vector<bool> failed_collisions_rods(m_number_of_rods);
     if (m_perf_param.m_maximum_number_of_collisions_iterations > 0)
