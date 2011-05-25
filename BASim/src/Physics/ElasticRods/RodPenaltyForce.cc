@@ -14,7 +14,7 @@ namespace BASim
 
 #define COLLISION_EPSILON 1e-6
 
-RodPenaltyForce::RodPenaltyForce()
+RodPenaltyForce::RodPenaltyForce( double penaltyThicknessFraction ) : m_penaltyThicknessFraction(penaltyThicknessFraction)
 {
 }
 
@@ -32,6 +32,14 @@ void RodPenaltyForce::computeForceDX(int baseindex, const ElasticRod& rod, Scala
     for (int i = 0; i < (int) vertex_face_collisions.size(); i++)
     {
         int vertex = vidx[i];
+        Vec3d v0 = rod.getVertex(vertex);
+
+	double penaltyThickness =  vertex_face_collisions[i]->h / 10.0;
+
+        Scalar distance = (v0 - vertex_face_collisions[i]->cp).dot(vertex_face_collisions[i]->m_normal)
+                - (vertex_face_collisions[i]->r0 + vertex_face_collisions[i]->r1 + penaltyThickness);
+
+	if (distance > 0) continue;
 
         localJ.setZero();
         localJacobian(localJ, vertex_face_collisions[i]->k, vertex_face_collisions[i]->m_normal);
@@ -78,8 +86,12 @@ void RodPenaltyForce::computeForce(const ElasticRod& rod, VecXd& F)
         int vertex = vidx[i];
         Vec3d v0 = rod.getVertex(vertex);
 
+	double penaltyThickness =  vertex_face_collisions[i]->h / 10.0;
+
         Scalar distance = (v0 - vertex_face_collisions[i]->cp).dot(vertex_face_collisions[i]->m_normal)
-                - (vertex_face_collisions[i]->r0 + vertex_face_collisions[i]->r1 + vertex_face_collisions[i]->h);
+                - (vertex_face_collisions[i]->r0 + vertex_face_collisions[i]->r1 + penaltyThickness);
+
+	if (distance > 0) continue;
 
         Vec3d force = -vertex_face_collisions[i]->k * distance * vertex_face_collisions[i]->m_normal;
 

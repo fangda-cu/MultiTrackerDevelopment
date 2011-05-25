@@ -17,7 +17,7 @@ namespace BASim {
 class RodPenaltyForce : public RodExternalForce
 {
 public:
-  RodPenaltyForce();
+  RodPenaltyForce( double penaltyThicknessFraction = 0.1 );
   ~RodPenaltyForce();
 
 	void clearCollisions();
@@ -34,6 +34,8 @@ public:
   virtual void computeForceDV(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
 
 protected:
+
+  double m_penaltyThicknessFraction; // fraction of proximity threshold to use for penalty thickness
 
 //  double getClosestPointsVertexTriangle(const Vec3d& v0, const Vec3d& v1,
 //                                      const Vec3d& v2, const Vec3d& v3,

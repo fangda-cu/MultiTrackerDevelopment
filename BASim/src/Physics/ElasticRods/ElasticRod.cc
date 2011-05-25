@@ -24,7 +24,7 @@ namespace BASim {
 
 using namespace Util;
 
-ElasticRod::ElasticRod(int numVertices, bool closed) : m_bendingForce(NULL), m_stretchingForce(NULL)
+  ElasticRod::ElasticRod(int numVertices, bool closed) : m_bendingForce(NULL), m_stretchingForce(NULL), m_KE0(0), m_KE1(0), m_KE2(0)
 {
   draw_cl = 1;
 
@@ -594,6 +594,34 @@ void ElasticRod::updateReverseUndeformedStrain(const VecXd& e)
       (*fIt)->updateReverseUndeformedStrain(e);
   }  
 }
+
+
+double ElasticRod::computeKineticEnergy()
+{
+    double result = 0;
+    for (int i = 1; i < nv() - 1; ++i) 
+    {
+        Vec3d&  v = property(m_vertexVelocities)[i];
+        Scalar& m = property(m_vertexMasses)[i];
+        result += .5 * m * v.dot(v);
+    }
+    return result;
+}
+
+
+void ElasticRod::recordKineticEnergy() 
+{
+    m_KE0 = m_KE1;
+    m_KE1 = m_KE2;
+    m_KE2 = computeKineticEnergy();
+}
+
+
+bool ElasticRod::isKineticEnergyPeaked()
+{
+    return m_KE0 < m_KE1 && m_KE1 > m_KE2;
+}
+
 
 std::ostream& operator<<(std::ostream& os, const ElasticRod& elrod) {
 

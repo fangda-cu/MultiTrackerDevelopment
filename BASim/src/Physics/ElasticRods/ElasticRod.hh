@@ -318,7 +318,15 @@ public:
   RodBendingForceSym* m_bendingForce; // easy access to the bending force
   RodStretchingForce* m_stretchingForce; // easy access to the stretching force
 
+  double computeKineticEnergy();
+
+  void recordKineticEnergy();
+
+  bool isKineticEnergyPeaked();
+
 protected:
+
+  double m_KE0, m_KE1, m_KE2; // Kinetic energy history, for kinetic damping
 
   /** Computes the mass of an elliptical cylinder, which is the
       generic representation of each edge of the rod.
