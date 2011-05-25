@@ -16,6 +16,8 @@
 #include <omp.h>
 #endif
 
+using namespace weta::logging;
+
 namespace BASim
 {
 
@@ -258,9 +260,13 @@ void BARodStepper::computeCompliantLHS(MatrixBase* lhs, int rodidx)
     assert(rodidx >= 0);
     assert(rodidx < m_number_of_rods);
 
+    //double emphasizeStaticEquilibium = 0;
+    //InfoStream(m_log,"") << "BARodStepper::computeCompliantLHS: emphasizing static equilibrium = " << emphasizeStaticEquilibium;
+
     // lhs = -h^2*dF/dx
     lhs->setZero();
     //std::cout << "WARNING: COMPLIANCE is disabled!" << std::endl;
+    //m_rods[rodidx]->computeJacobian(0, -m_dt * m_dt - emphasizeStaticEquilibium, *lhs);
     m_rods[rodidx]->computeJacobian(0, -m_dt * m_dt, *lhs);
     lhs->finalize();
 
