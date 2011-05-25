@@ -9,6 +9,8 @@
 #include <OpenGL/OPENGL_COLOR_RAMP.h>
 #include <OpenGL/OPENGL_COLOR.h>
 
+using namespace std;
+
 namespace BASim {
 
 LevelSet::LevelSet()
@@ -183,12 +185,12 @@ void LevelSet::getGradient(Vec3<Real> &x, Vec3<Real> &grad)
 
 void LevelSet::draw()
 {
-    PhysBAM::OPENGL_COLOR_RAMP<float> colorramp  = *(PhysBAM::OPENGL_COLOR_RAMP<float>::Levelset_Color_Linear_Ramp(PhysBAM::OPENGL_COLOR::Red(), PhysBAM::OPENGL_COLOR::Blue(),(float)(_phi.ni+_phi.nj+_phi.nk)));
+//    PhysBAM::OPENGL_COLOR_RAMP<float> colorramp  = *(PhysBAM::OPENGL_COLOR_RAMP<float>::Levelset_Color_Linear_Ramp(PhysBAM::OPENGL_COLOR::Red(), PhysBAM::OPENGL_COLOR::Blue(),(float)(_phi.ni+_phi.nj+_phi.nk)));
 
     glPushAttrib(GL_ENABLE_BIT | GL_POINT_BIT);
 
     glDisable(GL_LIGHTING);
-    for (uint i=0; i<_phi.ni; i++)
+  /*  for (uint i=0; i<_phi.ni; i++)
 	for (uint j=0; j<_phi.nj; j++)
 	    for (uint k=0; k<_phi.nk; k++)
 	    {
@@ -203,9 +205,10 @@ void LevelSet::draw()
 		glVertex3fv(lbb);
 		glEnd();
 	    }
-    glPopAttrib();
+    glPopAttrib();*/
 		
-/*
+    //std::cerr<< "level set draw..." << std::endl;
+
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     glBegin(GL_QUADS);
@@ -213,7 +216,18 @@ void LevelSet::draw()
         for (uint j=0; j<(_phi.nj-1); ++j)
             for (uint k=0; k<(_phi.nk-1); ++k)
             {
-		colorramp.Lookup(_phi(i,j,k)).Send_To_GL_Pipeline();
+                
+      //          std::cerr << "_phi( " << i << ", " << j << ", " << k << ") = " << _phi(i,j,k) << std::endl;
+                
+                if ( _phi( i, j, k ) < 0 )
+                {
+                    glColor3d( 1.0, 0.0, 0.0 );
+                }
+                else
+                {
+                    glColor3d( 1.0, _phi(i,j,k) / 10.0, 1.0 );
+                }
+//		colorramp.Lookup(_phi(i,j,k)).Send_To_GL_Pipeline();
 
                 float lbb[3] = { _origin[0] + (i    ) * _dx,
                                  _origin[1] + (j    ) * _dx,
@@ -274,7 +288,8 @@ void LevelSet::draw()
     glEnd();
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-*/
+
+    glPopAttrib();
 }
 
 void LevelSet::writeFile(std::fstream &levelSetFile)
@@ -321,7 +336,7 @@ void LevelSet::buildLevelSet(const Vec3Indices &triangles,
                                      int ni, int nj, int nk,
                                      bridson::Array3f &phi,
 			     bridson::Array3<bridson::Vec3f, bridson::Array1<bridson::Vec3f> > &phiVel)
-{
+{    
     int exact_band = 1;
     phi.resize(ni, nj, nk);
     phiVel.resize(ni, nj, nk);

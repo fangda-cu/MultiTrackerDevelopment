@@ -108,6 +108,7 @@ void WmFigMeshController::buildLevelSet()
             // For now, assume a static mesh
             m_v[ vertexIndex ][ c ] = 0;
         }
+        ++vertexIndex;
     }
 
     bridson::Vec3f origin;
@@ -154,14 +155,22 @@ void WmFigMeshController::calculateLevelSetSize( bridson::Vec3f &origin, Vec3ui 
         }
     }
     
+    // Hard code the cell size for now...
+    dx = 1.0;
+    
+    // For now just pad it out a bit
+    for ( unsigned int i = 0; i < 3; ++i )
+    {
+        xMin[ i ] -= 2 * dx;
+        xMax[ i ] += 2 * dx;
+    }
+    
     for( uint i = 0; i < 3; ++i )
     {
         origin[ i ] = xMin[ i ];
         length[ i ] = xMax[ i ] - xMin[ i ];
     }
     
-    // Hard code the cell size for now...
-    dx = 0.1;
     
     for( uint i = 0; i < 3; i++ )
     {
