@@ -377,19 +377,23 @@ struct BoundingBox
     // Expand the box to contain the given point
     inline void Insert(const PointType& p)
     {
-        min = Min(min, p);
-        max = Max(max, p);
+        min[0] = std::min(min[0], p[0]);
+        min[1] = std::min(min[1], p[1]);
+        min[2] = std::min(min[2], p[2]);
+        max[0] = std::max(max[0], p[0]);
+        max[1] = std::max(max[1], p[1]);
+        max[2] = std::max(max[2], p[2]);
     }
 
     // Expand the box to contain the given sphere
     inline void Insert(const PointType& p, const T& radius)
     {
-        min
-                = Point<T> (std::min(min.x(), p.x() - radius), std::min(min.y(), p.y() - radius),
-                        std::min(min.z(), p.z() - radius));
-        max
-                = Point<T> (std::max(max.x(), p.x() + radius), std::max(max.y(), p.y() + radius),
-                        std::max(max.z(), p.z() + radius));
+        min[0] = std::min(min[0], p[0] - radius);
+        min[1] = std::min(min[1], p[1] - radius);
+        min[2] = std::min(min[2], p[2] - radius);
+        max[0] = std::max(max[0], p[0] + radius);
+        max[1] = std::max(max[1], p[1] + radius);
+        max[2] = std::max(max[2], p[2] + radius);
     }
 
     // Expand the box to contain the given box

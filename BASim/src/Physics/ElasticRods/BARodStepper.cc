@@ -377,7 +377,7 @@ void BARodStepper::prepareForExecution()
     CopiousStream(m_log, "") << "Extracted positions\n";
 
     CopiousStream(m_log, "") << "About to create collision detector\n";
-    m_collision_detector = new RodMeshCollisionDetector(m_geodata, m_edges, m_faces, m_dt, m_perf_param.m_skipRodRodCollisions,
+    m_collision_detector = new CollisionDetectorType(m_geodata, m_edges, m_faces, m_dt, m_perf_param.m_skipRodRodCollisions,
             m_num_threads);
     CopiousStream(m_log, "") << "Created collision detector\n";
 

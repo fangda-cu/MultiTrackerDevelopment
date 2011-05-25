@@ -80,10 +80,10 @@ void RodMeshCollisionDetector::getCollisions(std::list<Collision*>& cllsns, Coll
 
     if (mesh_h.IsLeaf() || mesh_g.IsLeaf() || rod_h.IsLeaf() || rod_g.IsLeaf()) // Lazy!
     {
-        steppers.push_back(new BVHParallelizer(*this, mesh_h, rod_h));
-        steppers.push_back(new BVHParallelizer(*this, mesh_h, rod_g));
-        steppers.push_back(new BVHParallelizer(*this, mesh_g, rod_h));
-        steppers.push_back(new BVHParallelizer(*this, mesh_g, rod_g));
+        steppers.push_back(new BVHParallelizer(this, mesh_h, rod_h));
+        steppers.push_back(new BVHParallelizer(this, mesh_h, rod_g));
+        steppers.push_back(new BVHParallelizer(this, mesh_g, rod_h));
+        steppers.push_back(new BVHParallelizer(this, mesh_g, rod_g));
         MultithreadedStepper<std::vector<BVHParallelizer*> > (steppers, m_num_threads).Execute();
         return;
     }
@@ -98,22 +98,22 @@ void RodMeshCollisionDetector::getCollisions(std::list<Collision*>& cllsns, Coll
     BVHNode& rod_gh = m_rod_bvh.GetNode(rod_g.ChildIndex());
     BVHNode& rod_gg = m_rod_bvh.GetNode(rod_g.ChildIndex() + 1);
 
-    steppers.push_back(new BVHParallelizer(*this, mesh_hh, rod_hh));
-    steppers.push_back(new BVHParallelizer(*this, mesh_hg, rod_hh));
-    steppers.push_back(new BVHParallelizer(*this, mesh_gh, rod_hh));
-    steppers.push_back(new BVHParallelizer(*this, mesh_gg, rod_hh));
-    steppers.push_back(new BVHParallelizer(*this, mesh_hh, rod_hg));
-    steppers.push_back(new BVHParallelizer(*this, mesh_hg, rod_hg));
-    steppers.push_back(new BVHParallelizer(*this, mesh_gh, rod_hg));
-    steppers.push_back(new BVHParallelizer(*this, mesh_gg, rod_hg));
-    steppers.push_back(new BVHParallelizer(*this, mesh_hh, rod_gh));
-    steppers.push_back(new BVHParallelizer(*this, mesh_hg, rod_gh));
-    steppers.push_back(new BVHParallelizer(*this, mesh_gh, rod_gh));
-    steppers.push_back(new BVHParallelizer(*this, mesh_gg, rod_gh));
-    steppers.push_back(new BVHParallelizer(*this, mesh_hh, rod_gg));
-    steppers.push_back(new BVHParallelizer(*this, mesh_hg, rod_gg));
-    steppers.push_back(new BVHParallelizer(*this, mesh_gh, rod_gg));
-    steppers.push_back(new BVHParallelizer(*this, mesh_gg, rod_gg));
+    steppers.push_back(new BVHParallelizer(this, mesh_hh, rod_hh));
+    steppers.push_back(new BVHParallelizer(this, mesh_hg, rod_hh));
+    steppers.push_back(new BVHParallelizer(this, mesh_gh, rod_hh));
+    steppers.push_back(new BVHParallelizer(this, mesh_gg, rod_hh));
+    steppers.push_back(new BVHParallelizer(this, mesh_hh, rod_hg));
+    steppers.push_back(new BVHParallelizer(this, mesh_hg, rod_hg));
+    steppers.push_back(new BVHParallelizer(this, mesh_gh, rod_hg));
+    steppers.push_back(new BVHParallelizer(this, mesh_gg, rod_hg));
+    steppers.push_back(new BVHParallelizer(this, mesh_hh, rod_gh));
+    steppers.push_back(new BVHParallelizer(this, mesh_hg, rod_gh));
+    steppers.push_back(new BVHParallelizer(this, mesh_gh, rod_gh));
+    steppers.push_back(new BVHParallelizer(this, mesh_gg, rod_gh));
+    steppers.push_back(new BVHParallelizer(this, mesh_hh, rod_gg));
+    steppers.push_back(new BVHParallelizer(this, mesh_hg, rod_gg));
+    steppers.push_back(new BVHParallelizer(this, mesh_gh, rod_gg));
+    steppers.push_back(new BVHParallelizer(this, mesh_gg, rod_gg));
     MultithreadedStepper<std::vector<BVHParallelizer*> > (steppers, m_num_threads).Execute();
 
     for (std::vector<BVHParallelizer*>::iterator i = steppers.begin(); i != steppers.end(); i++)

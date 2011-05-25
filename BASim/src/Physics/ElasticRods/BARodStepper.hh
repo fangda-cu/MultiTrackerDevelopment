@@ -59,6 +59,9 @@
 namespace BASim
 {
 
+typedef RodMeshCollisionDetector CollisionDetectorType;
+// typedef CollisionDetector CollisionDetectorType;
+
 using namespace weta::logging;
 
 /**
@@ -382,7 +385,7 @@ private:
     bool m_gt0_enc;
 
     // Collision detector
-    RodMeshCollisionDetector* m_collision_detector;
+    CollisionDetectorType* m_collision_detector;
 
     // Assuming rods are stored first (which they now are), the index that points one past the last rods data
     int m_obj_start;

@@ -43,6 +43,8 @@ public:
 
     virtual void getCollisions(std::list<Collision*>& cllsns, CollisionFilter collision_filter) = 0;
 
+    virtual void buildBVH() = 0;
+
     void updateContinuousTimeCollisions();
 
     void setSkipRodRodCollisions(bool skipRodRodCollisions)
@@ -53,7 +55,7 @@ public:
 protected:
     // Update the BVH tree starting from node, taking into account the evolution during the time step,
     // i.e. insert m_geodata.m_points+m_time_step*m_geodata.m_velocities.
-    void updateBoundingBox(BVH& bvh, std::vector<const TopologicalElement*> elements, BVHNode& node);
+    void updateBoundingBox(BVH& bvh, const std::vector<const TopologicalElement*>& elements, BVHNode& node);
 
     // Collision detection
     virtual void computeCollisions(const BVHNode& node_a, const BVHNode& node_b) = 0;
@@ -77,32 +79,30 @@ protected:
     bool isVertexFixed(int vert_idx) const;
     bool isRodVertex(int vert) const;
 
-    friend class BVHParallelizer;
-
-};
-
-class BVHParallelizer
-{
-    const BVHNode& m_node_a;
-    const BVHNode& m_node_b;
-    CollisionDetectorBase& m_coldet;
-
-public:
-    BVHParallelizer(CollisionDetectorBase& coldet, const BVHNode& node_a, const BVHNode& node_b) :
-        m_coldet(coldet), m_node_a(node_a), m_node_b(node_b)
+    class BVHParallelizer
     {
-    }
+        const BVHNode& m_node_a;
+        const BVHNode& m_node_b;
+        CollisionDetectorBase* m_coldet;
 
-    ~BVHParallelizer()
-    {
-    }
+    public:
+        BVHParallelizer(CollisionDetectorBase* coldet, const BVHNode& node_a, const BVHNode& node_b) :
+            m_coldet(coldet), m_node_a(node_a), m_node_b(node_b)
+        {
+            // std::cerr << "Constructing BVHParallelizer" << std::endl;
+        }
 
-    bool execute() const
-    {
-        m_coldet.computeCollisions(m_node_a, m_node_b);
+        ~BVHParallelizer()
+        {
+        }
 
-        return true;
-    }
+        bool execute() const
+        {
+            m_coldet->computeCollisions(m_node_a, m_node_b);
+
+            return true;
+        }
+    };
 };
 
 }

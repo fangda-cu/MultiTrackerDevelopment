@@ -39,11 +39,8 @@ public:
 
     void build_mesh_BVH();
 
-    friend class BVHParallelizer;
-
 private:
     void computeCollisions(const BVHNode& node_a, const BVHNode& node_b);
-
 };
 
 }

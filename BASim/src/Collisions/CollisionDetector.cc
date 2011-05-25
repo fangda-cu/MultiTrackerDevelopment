@@ -13,6 +13,7 @@ CollisionDetector::CollisionDetector(const GeometricData& geodata, const std::ve
         const std::vector<TriangularFace>& faces, const double& timestep, bool skip_rod_rod, int num_threads) :
         CollisionDetectorBase(geodata, edges, faces, timestep, skip_rod_rod, num_threads)
 {
+    // std::cerr << "Constructing CollisionDetector" << std::endl;
     m_elements.reserve(edges.size() + faces.size());
     for (std::vector<std::pair<int, int> >::const_iterator i = edges.begin(); i != edges.end(); i++)
         m_elements.push_back(new YAEdge(*i));
@@ -39,6 +40,7 @@ void CollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFi
 
     if (root.IsLeaf()) // Can't really call this a tree, can we?
     {
+        std::cerr << "Root is a leaf!" << std::endl;
         computeCollisions(root, root);
         return;
     }
@@ -50,9 +52,9 @@ void CollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFi
     if (h.IsLeaf() || g.IsLeaf())
     {
         steppers.reserve(3);
-        steppers.push_back(new BVHParallelizer(*this, h, h));
-        steppers.push_back(new BVHParallelizer(*this, h, g));
-        steppers.push_back(new BVHParallelizer(*this, g, g));
+        steppers.push_back(new BVHParallelizer(this, h, h));
+        steppers.push_back(new BVHParallelizer(this, h, g));
+        steppers.push_back(new BVHParallelizer(this, g, g));
         MultithreadedStepper<std::vector<BVHParallelizer*> > (steppers, m_num_threads).Execute();
         return;
     }
@@ -66,16 +68,16 @@ void CollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFi
     if (hh.IsLeaf() || hg.IsLeaf() || gh.IsLeaf() || gg.IsLeaf())
     {
         steppers.reserve(10);
-        steppers.push_back(new BVHParallelizer(*this, hh, hh));
-        steppers.push_back(new BVHParallelizer(*this, hh, hg));
-        steppers.push_back(new BVHParallelizer(*this, hh, gh));
-        steppers.push_back(new BVHParallelizer(*this, hh, gg));
-        steppers.push_back(new BVHParallelizer(*this, hg, hg));
-        steppers.push_back(new BVHParallelizer(*this, hg, gh));
-        steppers.push_back(new BVHParallelizer(*this, hg, gg));
-        steppers.push_back(new BVHParallelizer(*this, gh, gh));
-        steppers.push_back(new BVHParallelizer(*this, gh, gg));
-        steppers.push_back(new BVHParallelizer(*this, gg, gg));
+        steppers.push_back(new BVHParallelizer(this, hh, hh));
+        steppers.push_back(new BVHParallelizer(this, hh, hg));
+        steppers.push_back(new BVHParallelizer(this, hh, gh));
+        steppers.push_back(new BVHParallelizer(this, hh, gg));
+        steppers.push_back(new BVHParallelizer(this, hg, hg));
+        steppers.push_back(new BVHParallelizer(this, hg, gh));
+        steppers.push_back(new BVHParallelizer(this, hg, gg));
+        steppers.push_back(new BVHParallelizer(this, gh, gh));
+        steppers.push_back(new BVHParallelizer(this, gh, gg));
+        steppers.push_back(new BVHParallelizer(this, gg, gg));
         MultithreadedStepper<std::vector<BVHParallelizer*> > (steppers, m_num_threads).Execute();
         return;
     }
@@ -90,42 +92,42 @@ void CollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFi
     BVHNode& ggh = m_bvh.GetNode(gg.ChildIndex());
     BVHNode& ggg = m_bvh.GetNode(gg.ChildIndex() + 1);
     steppers.reserve(36);
-    steppers.push_back(new BVHParallelizer(*this, hhh, hhh));
-    steppers.push_back(new BVHParallelizer(*this, hhh, hhg));
-    steppers.push_back(new BVHParallelizer(*this, hhh, hgh));
-    steppers.push_back(new BVHParallelizer(*this, hhh, hgg));
-    steppers.push_back(new BVHParallelizer(*this, hhh, ghh));
-    steppers.push_back(new BVHParallelizer(*this, hhh, ghg));
-    steppers.push_back(new BVHParallelizer(*this, hhh, ggh));
-    steppers.push_back(new BVHParallelizer(*this, hhh, ggg));
-    steppers.push_back(new BVHParallelizer(*this, hhg, hhg));
-    steppers.push_back(new BVHParallelizer(*this, hhg, hgh));
-    steppers.push_back(new BVHParallelizer(*this, hhg, hgg));
-    steppers.push_back(new BVHParallelizer(*this, hhg, ghh));
-    steppers.push_back(new BVHParallelizer(*this, hhg, ghg));
-    steppers.push_back(new BVHParallelizer(*this, hhg, ggh));
-    steppers.push_back(new BVHParallelizer(*this, hhg, ggg));
-    steppers.push_back(new BVHParallelizer(*this, hgh, hgh));
-    steppers.push_back(new BVHParallelizer(*this, hgh, hgg));
-    steppers.push_back(new BVHParallelizer(*this, hgh, ghh));
-    steppers.push_back(new BVHParallelizer(*this, hgh, ghg));
-    steppers.push_back(new BVHParallelizer(*this, hgh, ggh));
-    steppers.push_back(new BVHParallelizer(*this, hgh, ggg));
-    steppers.push_back(new BVHParallelizer(*this, hgg, hgg));
-    steppers.push_back(new BVHParallelizer(*this, hgg, ghh));
-    steppers.push_back(new BVHParallelizer(*this, hgg, ghg));
-    steppers.push_back(new BVHParallelizer(*this, hgg, ggh));
-    steppers.push_back(new BVHParallelizer(*this, hgg, ggg));
-    steppers.push_back(new BVHParallelizer(*this, ghh, ghh));
-    steppers.push_back(new BVHParallelizer(*this, ghh, ghg));
-    steppers.push_back(new BVHParallelizer(*this, ghh, ggh));
-    steppers.push_back(new BVHParallelizer(*this, ghh, ggg));
-    steppers.push_back(new BVHParallelizer(*this, ghg, ghg));
-    steppers.push_back(new BVHParallelizer(*this, ghg, ggh));
-    steppers.push_back(new BVHParallelizer(*this, ghg, ggg));
-    steppers.push_back(new BVHParallelizer(*this, ggh, ggh));
-    steppers.push_back(new BVHParallelizer(*this, ggh, ggg));
-    steppers.push_back(new BVHParallelizer(*this, ggg, ggg));
+    steppers.push_back(new BVHParallelizer(this, hhh, hhh));
+    steppers.push_back(new BVHParallelizer(this, hhh, hhg));
+    steppers.push_back(new BVHParallelizer(this, hhh, hgh));
+    steppers.push_back(new BVHParallelizer(this, hhh, hgg));
+    steppers.push_back(new BVHParallelizer(this, hhh, ghh));
+    steppers.push_back(new BVHParallelizer(this, hhh, ghg));
+    steppers.push_back(new BVHParallelizer(this, hhh, ggh));
+    steppers.push_back(new BVHParallelizer(this, hhh, ggg));
+    steppers.push_back(new BVHParallelizer(this, hhg, hhg));
+    steppers.push_back(new BVHParallelizer(this, hhg, hgh));
+    steppers.push_back(new BVHParallelizer(this, hhg, hgg));
+    steppers.push_back(new BVHParallelizer(this, hhg, ghh));
+    steppers.push_back(new BVHParallelizer(this, hhg, ghg));
+    steppers.push_back(new BVHParallelizer(this, hhg, ggh));
+    steppers.push_back(new BVHParallelizer(this, hhg, ggg));
+    steppers.push_back(new BVHParallelizer(this, hgh, hgh));
+    steppers.push_back(new BVHParallelizer(this, hgh, hgg));
+    steppers.push_back(new BVHParallelizer(this, hgh, ghh));
+    steppers.push_back(new BVHParallelizer(this, hgh, ghg));
+    steppers.push_back(new BVHParallelizer(this, hgh, ggh));
+    steppers.push_back(new BVHParallelizer(this, hgh, ggg));
+    steppers.push_back(new BVHParallelizer(this, hgg, hgg));
+    steppers.push_back(new BVHParallelizer(this, hgg, ghh));
+    steppers.push_back(new BVHParallelizer(this, hgg, ghg));
+    steppers.push_back(new BVHParallelizer(this, hgg, ggh));
+    steppers.push_back(new BVHParallelizer(this, hgg, ggg));
+    steppers.push_back(new BVHParallelizer(this, ghh, ghh));
+    steppers.push_back(new BVHParallelizer(this, ghh, ghg));
+    steppers.push_back(new BVHParallelizer(this, ghh, ggh));
+    steppers.push_back(new BVHParallelizer(this, ghh, ggg));
+    steppers.push_back(new BVHParallelizer(this, ghg, ghg));
+    steppers.push_back(new BVHParallelizer(this, ghg, ggh));
+    steppers.push_back(new BVHParallelizer(this, ghg, ggg));
+    steppers.push_back(new BVHParallelizer(this, ggh, ggh));
+    steppers.push_back(new BVHParallelizer(this, ggh, ggg));
+    steppers.push_back(new BVHParallelizer(this, ggg, ggg));
     MultithreadedStepper<std::vector<BVHParallelizer*> > (steppers, m_num_threads).Execute();
 
     for (std::vector<BVHParallelizer*>::iterator i = steppers.begin(); i != steppers.end(); i++)
@@ -184,6 +186,5 @@ void CollisionDetector::computeCollisions(const BVHNode& node_a, const BVHNode& 
         computeCollisions(m_bvh.GetNode(node_a.ChildIndex() + 1), m_bvh.GetNode(node_b.ChildIndex() + 1));
     }
 }
-
 
 } // namespace BASim

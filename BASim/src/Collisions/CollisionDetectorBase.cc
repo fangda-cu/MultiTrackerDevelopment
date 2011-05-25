@@ -16,6 +16,7 @@ CollisionDetectorBase::CollisionDetectorBase(const GeometricData& geodata, const
         const std::vector<TriangularFace>& faces, const double& timestep, bool skip_rod_rod, int num_threads) :
     m_geodata(geodata), m_time_step(timestep), m_skip_rod_rod(skip_rod_rod), m_collisions_list(NULL), m_collisions_mutex()
 {
+    // std::cerr << "Constructing CollisionDetectorBase" << std::endl;
     if (num_threads > 0)
         m_num_threads = num_threads;
     else
@@ -74,7 +75,7 @@ void CollisionDetectorBase::appendCollision(const TopologicalElement* elem_a, co
     }
 }
 
-void CollisionDetectorBase::updateBoundingBox(BVH& bvh, std::vector<const TopologicalElement*> elements, BVHNode& node)
+void CollisionDetectorBase::updateBoundingBox(BVH& bvh, const std::vector<const TopologicalElement*>& elements, BVHNode& node)
 {
     BVHNode::BBoxType& bbox = node.BBox();
     bbox.Reset();
