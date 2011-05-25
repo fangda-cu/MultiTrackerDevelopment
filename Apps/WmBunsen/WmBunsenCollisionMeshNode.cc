@@ -208,9 +208,15 @@ MStatus WmBunsenCollisionMeshNode::compute( const MPlug& i_plug, MDataBlock& i_d
 void WmBunsenCollisionMeshNode::draw( M3dView & view, const MDagPath & path,
         M3dView::DisplayStyle style, M3dView::DisplayStatus status )
 {     
+    view.beginGL(); 
+    
+    if ( m_meshController )
+    {
+        m_meshController->draw();
+    }
+    
     if ( m_drawCollisionData )
     {
-        view.beginGL(); 
         
         // TODO: I think we could use one of the BASim render classes to do this
         
@@ -224,11 +230,11 @@ void WmBunsenCollisionMeshNode::draw( M3dView & view, const MDagPath & path,
             glVertex3d( p[ 0 ], p[ 1 ], p[ 2 ] );
         }
         glEnd();
-
-        view.endGL();
-
+    
         glPointSize( 1.0 );
     }
+    
+    view.endGL();
 }
 
 MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_meshFn, 
@@ -295,6 +301,19 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
             m_previousMesh->addFace( vhx, vhy, vhz );
             m_nextMesh->addFace( vhx, vhy, vhz );
         }
+        
+        // Send the controller a list of indices for the level set code
+        // This is a bit messy, all the level set code needs streamlined 
+        // - Alasdair
+        std::vector< unsigned int > indices;
+        indices.resize( triangleVertexIndices.length() );
+        
+        for ( size_t t = 0; t < indices.size(); ++ t )
+        {
+            indices[ t ] = triangleVertexIndices[ (unsigned int)t ];
+        }
+        
+        m_meshController->setTriangleIndices( indices );
     }
     else
     {

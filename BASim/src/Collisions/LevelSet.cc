@@ -28,11 +28,11 @@ void LevelSet::buildLevelSet(const std::vector<bridson::Vec3ui> &triangles,
                              Real dx, int nx, int ny, int nz, int nbrTriangles)
 */
 void LevelSet::buildLevelSet(const Vec3Indices &triangles,
-                               const Indices &triIndices,
-                               const std::vector<Vec3d>  &x,
-                               const std::vector<Vec3d>  &v,
-                               const Vec3d &origin, Real length[3],
-                               Real dx, int nx, int ny, int nz, int nbrTriangles)
+                             const Indices &triIndices,
+                             const std::vector<bridson::Vec3f>  &x,
+                             const std::vector<bridson::Vec3f>  &v,
+                             const bridson::Vec3f &origin, Real length[3],
+                             Real dx, int nx, int ny, int nz, int nbrTriangles)
 {
     for (uint i=0; i<3; ++i)
         _origin[i] = origin[i];
@@ -44,7 +44,7 @@ void LevelSet::buildLevelSet(const Vec3Indices &triangles,
     _initialized = true;
 }
 
-Real LevelSet::getLevelSetValue(Vec3d x)
+Real LevelSet::getLevelSetValue(Vec3<Real> x)
 {
     Real fi = ((double)x[0] - _origin[0]) / _dx;
     Real fj = ((double)x[1] - _origin[1]) / _dx;
@@ -68,7 +68,7 @@ Real LevelSet::getLevelSetValue(Vec3d x)
     return dist;
 }
 
-Real LevelSet::getLevelSetValueVelocity(Vec3d &x, Vec3d &v)
+Real LevelSet::getLevelSetValueVelocity(Vec3<Real> &x, Vec3<Real> &v)
 {
     Real fi = ((double)x[0] - _origin[0]) / _dx;
     Real fj = ((double)x[1] - _origin[1]) / _dx;
@@ -89,7 +89,7 @@ Real LevelSet::getLevelSetValueVelocity(Vec3d &x, Vec3d &v)
                                  _phi(i + 1, j + 1, k + 1),
                                  fi, fj, fk);
 
-    Vec3d vel = bridson::trilerp(_phiVel(i    , j    , k    ),
+    bridson::Vec3f vel = bridson::trilerp(_phiVel(i    , j    , k    ),
                                           _phiVel(i + 1, j    , k    ),
                                           _phiVel(i    , j + 1, k    ),
                                           _phiVel(i + 1, j + 1, k    ),
@@ -313,14 +313,14 @@ void LevelSet::loadFile(std::fstream &levelSetFile)
 }
 
 void LevelSet::buildLevelSet(const Vec3Indices &triangles,
-                       const Indices &triIndices,
-                       const std::vector<Vec3d> &x,
-                       const std::vector<Vec3d> &v,
-                       const Vec3d &origin,
-                       float dx,
-                       int ni, int nj, int nk,
-                       bridson::Array3f &phi,
-                       bridson::Array3<Vec3d, bridson::Array1<Vec3d> > &phiVel)
+                             const std::vector<uint> &triIndices,
+                                     const std::vector<bridson::Vec3f>  &x,
+                                     const std::vector<bridson::Vec3f>  &v,
+                                     const bridson::Vec3f &origin,
+                                     float dx,
+                                     int ni, int nj, int nk,
+                                     bridson::Array3f &phi,
+			     bridson::Array3<bridson::Vec3f, bridson::Array1<bridson::Vec3f> > &phiVel)
 {
     int exact_band = 1;
     phi.resize(ni, nj, nk);
@@ -347,14 +347,12 @@ void LevelSet::buildLevelSet(const Vec3Indices &triangles,
         int k0=bridson::clamp(int(bridson::min3(fkp,fkq,fkr))-exact_band, 0, nk-1), k1=bridson::clamp(int(bridson::max3(fkp,fkq,fkr))+exact_band+1, 0, nk-1);
 //        for (int k=0; k<=(nk-1); ++k) for (int j=0; j<=(nj-1); ++j) for (int i=0; i<=(ni-1); ++i){
         for(int k=k0; k<=k1; ++k) for(int j=j0; j<=j1; ++j) for(int i=i0; i<=i1; ++i){
-            Vec3d gx(i*dx+origin[0], j*dx+origin[1], k*dx+origin[2]);
+            bridson::Vec3f gx(i*dx+origin[0], j*dx+origin[1], k*dx+origin[2]);
             float t1, t2, t3;
-            Vec3d xr = x[r];
-            float d = point_triangle_distance(gx, x[p], x[q], xr, t1, t2, t3);
+            float d=point_triangle_distance(gx, x[p], x[q], x[r], t1, t2, t3);
             if(d<phi(i,j,k)){
                 phi(i,j,k)=d;
-                Vec3d tmp = (v[p] * t1 + v[q] * t2 + v[r] * t3);
-                phiVel(i,j,k) = Vec3d( tmp[0], tmp[1], tmp[2] );
+                phiVel(i,j,k) = (v[p] * t1 + v[q] * t2 + v[r] * t3);
                 closest_tri(i,j,k)=t;
             }
         }
@@ -429,10 +427,10 @@ void LevelSet::buildLevelSet(const Vec3Indices &triangles,
     }
 }
 
-float LevelSet::point_triangle_distance(const BASim::Vec3d &p,
-                                                const BASim::Vec3d &a,
-                                                const BASim::Vec3d &b,
-                                                const BASim::Vec3d &c,
+float LevelSet::point_triangle_distance(const bridson::Vec3f &p,
+                                                const bridson::Vec3f &a,
+                                                const bridson::Vec3f &b,
+                                                const bridson::Vec3f &c,
                                                 float &t1, float &t2, float &t3)
 {
     float ab[3], ac[3], ap[3], bp[3];
@@ -566,12 +564,12 @@ float LevelSet::point_triangle_distance(const BASim::Vec3d &p,
 }
 
 void LevelSet::check_neighbour(const Vec3Indices &tri,
-                                       const std::vector<BASim::Vec3d> &x,
-                                       const std::vector<BASim::Vec3d> &v,
+                                       const std::vector<bridson::Vec3f> &x,
+                                       const std::vector<bridson::Vec3f> &v,
                                        bridson::Array3f &phi,
-                                     bridson::Array3<BASim::Vec3d,bridson::Array1<BASim::Vec3d> > &phi_vel,
+                                     bridson::Array3<bridson::Vec3f,bridson::Array1<bridson::Vec3f> > &phi_vel,
                                        bridson::Array3i &closest_tri,
-                                       const BASim::Vec3d &gx,
+                                       const bridson::Vec3f &gx,
                                        int i0, int j0, int k0, int i1, int j1, int k1)
 {
     if(closest_tri(i1,j1,k1)>=0){
@@ -591,12 +589,12 @@ void LevelSet::check_neighbour(const Vec3Indices &tri,
 }
 
 void LevelSet::sweep(const Vec3Indices &tri,
-                             const std::vector<Vec3d> &x,
-                             const std::vector<Vec3d> &v,
+                             const std::vector<bridson::Vec3f> &x,
+                             const std::vector<bridson::Vec3f> &v,
                              bridson::Array3f &phi,
-                             bridson::Array3<Vec3d, bridson::Array1<Vec3d> > &phi_vel,
+                             bridson::Array3<bridson::Vec3f, bridson::Array1<bridson::Vec3f> > &phi_vel,
                              bridson::Array3i &closest_tri,
-                             const Vec3d &origin,
+                             const bridson::Vec3f &origin,
                              float dx,
                              int di, int dj, int dk)
 {
@@ -610,7 +608,7 @@ void LevelSet::sweep(const Vec3Indices &tri,
     if(dk>0){ k0=1; k1=phi.nk; }
     else{ k0=phi.nk-2; k1=-1; }
     for(int k=k0; k!=k1; k+=dk) for(int j=j0; j!=j1; j+=dj) for(int i=i0; i!=i1; i+=di){
-        BASim::Vec3d gx(i*dx+origin[0], j*dx+origin[1], k*dx+origin[2]);
+        bridson::Vec3f gx(i*dx+origin[0], j*dx+origin[1], k*dx+origin[2]);
         check_neighbour(tri, x, v, phi, phi_vel, closest_tri, gx, i, j, k, i-di, j,    k);
         check_neighbour(tri, x, v, phi, phi_vel, closest_tri, gx, i, j, k, i-di, j-dj, k);
         check_neighbour(tri, x, v, phi, phi_vel, closest_tri, gx, i, j, k, i,    j,    k-dk);
@@ -653,4 +651,3 @@ bool LevelSet::point_in_triangle_2d(double x0, double y0,
 }
 
 }
-

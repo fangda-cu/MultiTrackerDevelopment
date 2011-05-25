@@ -206,6 +206,14 @@ Collisions/BVH.hh \
 Collisions/BVHNode.hh \
 Collisions/CollisionDetector.hh \
 Collisions/Geometry.hh \
+Collisions/LevelSet.hh \
+Collisions/Bridson/array.hh \
+Collisions/Bridson/array1.hh \
+Collisions/Bridson/array2.hh \
+Collisions/Bridson/array3.hh \
+Collisions/Bridson/vec.hh \
+Collisions/Bridson/util.hh \
+Collisions/Bridson/Vector.hh \
 Core/Definitions.hh \
 Core/EigenIncludes.hh \
 Core/Handle.hh \
@@ -333,7 +341,6 @@ Core/TopologicalObject/TopologicalObject.inl \
 Core/ObjectControllerBase.inl
 #Collisions/UniformGrid.hh \
 #Collisions/CollisionMeshData.hh \
-#Collisions/LevelSet.hh \
 #Collisions/RodneyVector.hh \
 #Collisions/BridsonArray.hh \
 #Collisions/BridsonArray1.hh \
@@ -354,6 +361,7 @@ src/Collisions/Geometry.cc \
 src/Collisions/Collision.cc \
 src/Collisions/CollisionUtils.cc \
 src/Collisions/CollisionDetector.cc \
+src/Collisions/LevelSet.cc \
 src/Core/Util.cc \
 src/Core/Timer.cc \
 src/Core/TriangleMesh.hh \
