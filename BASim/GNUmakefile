@@ -205,6 +205,8 @@ Collisions/BoundingBox.hh \
 Collisions/BVH.hh \
 Collisions/BVHNode.hh \
 Collisions/CollisionDetector.hh \
+Collisions/CollisionDetectorBase.hh \
+Collisions/RodMeshCollisionDetector.hh \
 Collisions/Geometry.hh \
 Core/Definitions.hh \
 Core/EigenIncludes.hh \
@@ -354,6 +356,8 @@ src/Collisions/Geometry.cc \
 src/Collisions/Collision.cc \
 src/Collisions/CollisionUtils.cc \
 src/Collisions/CollisionDetector.cc \
+src/Collisions/CollisionDetectorBase.cc \
+src/Collisions/RodMeshCollisionDetector.cc \
 src/Core/Util.cc \
 src/Core/Timer.cc \
 src/Core/TriangleMesh.hh \

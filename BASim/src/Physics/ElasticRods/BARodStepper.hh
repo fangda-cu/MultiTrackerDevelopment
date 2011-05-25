@@ -18,7 +18,7 @@
 #include "../../Math/LinearSystemSolver.hh"
 #include "../../Core/TriangleMesh.hh"
 //#include "../../Collisions/BVHAABB.hh"
-#include "../../Collisions/CollisionDetector.hh"
+#include "../../Collisions/RodMeshCollisionDetector.hh"
 #include "../../Collisions/CollisionUtils.hh"
 //#include "../../../../Apps/BASimulator/Problems/ProblemBase.hh"
 #include "../../Core/StatTracker.hh"
@@ -38,7 +38,7 @@
 #include "BASim/src/Core/TriangleMesh.hh"
 
 #include "BASim/src/Collisions/CollisionUtils.hh"
-#include "BASim/src/Collisions/CollisionDetector.hh"
+#include "BASim/src/Collisions/RodMeshCollisionDetector.hh"
 
 #include "Apps/BASimulator/Problems/ProblemBase.hh"
 
@@ -382,7 +382,7 @@ private:
     bool m_gt0_enc;
 
     // Collision detector
-    CollisionDetector* m_collision_detector;
+    RodMeshCollisionDetector* m_collision_detector;
 
     // Assuming rods are stored first (which they now are), the index that points one past the last rods data
     int m_obj_start;

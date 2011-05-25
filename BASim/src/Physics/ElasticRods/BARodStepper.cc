@@ -376,10 +376,10 @@ void BARodStepper::prepareForExecution()
     extractVelocities(m_vnphalf, selected_rods);
     CopiousStream(m_log, "") << "Extracted positions\n";
 
-    CopiousStream(m_log, "") << "About to create CollisionDetector\n";
-    m_collision_detector = new CollisionDetector(m_geodata, m_edges, m_faces, m_dt, m_perf_param.m_skipRodRodCollisions,
+    CopiousStream(m_log, "") << "About to create collision detector\n";
+    m_collision_detector = new RodMeshCollisionDetector(m_geodata, m_edges, m_faces, m_dt, m_perf_param.m_skipRodRodCollisions,
             m_num_threads);
-    CopiousStream(m_log, "") << "Created CollisionDetector\n";
+    CopiousStream(m_log, "") << "Created collision detector\n";
 
     m_collision_immune.resize(getNumVerts());
 
