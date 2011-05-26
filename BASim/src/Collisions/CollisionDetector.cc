@@ -29,7 +29,7 @@ CollisionDetector::~CollisionDetector()
         delete *i;
 }
 
-void CollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFilter collision_filter)
+void CollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFilter collision_filter, bool)
 {
     m_collision_filter = collision_filter;
     m_collisions_list = &cllsns;

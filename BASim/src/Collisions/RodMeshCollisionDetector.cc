@@ -54,7 +54,8 @@ void RodMeshCollisionDetector::build_mesh_BVH()
     bvh_builder.build(bboxfunctor, &m_mesh_bvh);
 }
 
-void RodMeshCollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFilter collision_filter)
+void RodMeshCollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFilter collision_filter,
+        bool update_mesh_bbox)
 {
     m_collision_filter = collision_filter;
     m_collisions_list = &cllsns;
@@ -65,7 +66,8 @@ void RodMeshCollisionDetector::getCollisions(std::list<Collision*>& cllsns, Coll
     updateBoundingBox(m_rod_bvh, m_rod_elements, rod_root);
 
     BVHNode& mesh_root = m_mesh_bvh.GetNode(0);
-    updateBoundingBox(m_mesh_bvh, m_mesh_elements, mesh_root);
+    if (update_mesh_bbox)
+        updateBoundingBox(m_mesh_bvh, m_mesh_elements, mesh_root);
 
     if (mesh_root.IsLeaf() || rod_root.IsLeaf()) // Lazy!
     {

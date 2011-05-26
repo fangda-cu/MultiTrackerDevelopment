@@ -26,7 +26,7 @@ public:
 
     virtual ~CollisionDetector();
 
-    void getCollisions(std::list<Collision*>& cllsns, CollisionFilter collision_filter);
+    void getCollisions(std::list<Collision*>& cllsns, CollisionFilter collision_filter, bool);
 
     void buildBVH();
 

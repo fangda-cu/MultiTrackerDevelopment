@@ -41,7 +41,7 @@ public:
 
     virtual ~CollisionDetectorBase();
 
-    virtual void getCollisions(std::list<Collision*>& cllsns, CollisionFilter collision_filter) = 0;
+    virtual void getCollisions(std::list<Collision*>& cllsns, CollisionFilter collision_filter, bool) = 0;
 
     virtual void buildBVH() = 0;
 

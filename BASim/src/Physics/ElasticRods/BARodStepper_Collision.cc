@@ -244,8 +244,9 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                 delete collision;
                 m_collision_detector->updateContinuousTimeCollisions();
             }
+        // Detect remaining collisions (including at the end of the last iteration, so we know what failed)
         TraceStream(m_log, "") << "Detecting collisions...\n";
-        m_collision_detector->getCollisions(collisions_list, ContinuousTime);
+        m_collision_detector->getCollisions(collisions_list, ContinuousTime, false); // No need to update the mesh bvh bounding boxes.
     }
 
     if (!collisions_list.empty())

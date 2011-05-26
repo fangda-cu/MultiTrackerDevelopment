@@ -27,7 +27,7 @@ public:
 
     virtual ~RodMeshCollisionDetector();
 
-    void getCollisions(std::list<Collision*>& cllsns, CollisionFilter collision_filter);
+    void getCollisions(std::list<Collision*>& cllsns, CollisionFilter collision_filter, bool update_mesh_bbox = true);
 
     void buildBVH()
     {
