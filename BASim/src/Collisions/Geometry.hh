@@ -184,16 +184,16 @@ public:
     {
         // std::cerr << "Computing bounding box for edge " << first() << " " << second() << std::endl;
 
-        const Point<Scalar>& v0 = (Point<Scalar> ) (Vec3d) geodata.GetVelocity(first());
-        const Point<Scalar>& v1 = (Point<Scalar> ) (Vec3d) geodata.GetVelocity(second());
+        const Vec3d& v0 = geodata.GetVelocity(first());
+        const Vec3d& v1 = geodata.GetVelocity(second());
 
-        const Point<Scalar>& p0 = (Point<Scalar> ) (Vec3d) geodata.GetPoint(m_edge.first) + v0 * time_step;
-        const Point<Scalar>& p1 = (Point<Scalar> ) (Vec3d) geodata.GetPoint(m_edge.second) + v1 * time_step;
+        const Vec3d& p0 = geodata.GetPoint(m_edge.first) + v0 * time_step; // Why is reference okay here?
+        const Vec3d& p1 = geodata.GetPoint(m_edge.second) + v1 * time_step;
 
         const double r0 = geodata.GetRadius(m_edge.first);
         const double r1 = geodata.GetRadius(m_edge.second);
 
-        BoundingBox<Scalar> bbox(p0.x() - r0, p0.y() - r0, p0.z() - r0, p0.x() + r0, p0.y() + r0, p0.z() + r0);
+        BoundingBox<Scalar> bbox(p0[0] - r0, p0[1] - r0, p0[2] - r0, p0[0] + r0, p0[1] + r0, p0[2] + r0);
         bbox.Insert(p1, r1);
 
         return bbox;
@@ -247,19 +247,19 @@ public:
 
     BoundingBox<Scalar> GetBBox(const GeometricData& geodata, const double time_step = 0) const
     {
-        const Point<Scalar>& v0 = (Point<Scalar> ) (Vec3d) geodata.GetVelocity(m_triangle.idx[0]);
-        const Point<Scalar>& v1 = (Point<Scalar> ) (Vec3d) geodata.GetVelocity(m_triangle.idx[1]);
-        const Point<Scalar>& v2 = (Point<Scalar> ) (Vec3d) geodata.GetVelocity(m_triangle.idx[2]);
+        const Vec3d& v0 = geodata.GetVelocity(m_triangle.idx[0]);
+        const Vec3d& v1 = geodata.GetVelocity(m_triangle.idx[1]);
+        const Vec3d& v2 = geodata.GetVelocity(m_triangle.idx[2]);
 
-        const Point<Scalar>& p0 = (Point<Scalar> ) (Vec3d) geodata.GetPoint(m_triangle.idx[0]) + v0 * time_step;
-        const Point<Scalar>& p1 = (Point<Scalar> ) (Vec3d) geodata.GetPoint(m_triangle.idx[1]) + v1 * time_step;
-        const Point<Scalar>& p2 = (Point<Scalar> ) (Vec3d) geodata.GetPoint(m_triangle.idx[2]) + v2 * time_step;
+        const Vec3d& p0 = geodata.GetPoint(m_triangle.idx[0]) + v0 * time_step; // Why is reference okay here?
+        const Vec3d& p1 = geodata.GetPoint(m_triangle.idx[1]) + v1 * time_step;
+        const Vec3d& p2 = geodata.GetPoint(m_triangle.idx[2]) + v2 * time_step;
 
         const double r0 = geodata.GetRadius(m_triangle.idx[0]);
         const double r1 = geodata.GetRadius(m_triangle.idx[1]);
         const double r2 = geodata.GetRadius(m_triangle.idx[2]);
 
-        BoundingBox<Scalar> bbox(p0.x() - r0, p0.y() - r0, p0.z() - r0, p0.x() + r0, p0.y() + r0, p0.z() + r0);
+        BoundingBox<Scalar> bbox(p0[0] - r0, p0[1] - r0, p0[2] - r0, p0[0] + r0, p0[1] + r0, p0[2] + r0);
         bbox.Insert(p1, r1);
         bbox.Insert(p2, r2);
 

@@ -24,9 +24,6 @@ typedef BoundingBox<Scalar> BBoxType;
 class BVH
 {
 public:
-    typedef BVHNode Node_Type;
-    typedef std::vector<Node_Type> NodeVector_Type;
-
     /// empty constructor
     BVH()
     {
@@ -35,47 +32,47 @@ public:
     /// returns the size of this object in bytes
     size_t ByteSize() const
     {
-        return sizeof(Node_Type) * m_nodes.size() + sizeof(BVH);
+        return sizeof(BVHNode) * m_nodes.size() + sizeof(BVH);
     }
 
     /// get node vector
-    const std::vector<Node_Type>& GetNodeVector() const
+    const std::vector<BVHNode>& GetNodeVector() const
     {
         return m_nodes;
     }
 
     /// get node vector
-    std::vector<Node_Type>& GetNodeVector()
+    std::vector<BVHNode>& GetNodeVector()
     {
         return m_nodes;
     }
 
     /// get nodes pointer
-    const Node_Type* GetNodes() const
+    const BVHNode* GetNodes() const
     {
         return &m_nodes[0];
     }
 
     /// get nodes pointer
-    Node_Type* GetNodes()
+    BVHNode* GetNodes()
     {
         return &m_nodes[0];
     }
 
     /// get the i-th node
-    const Node_Type& GetNode(const uint32_t i) const
+    const BVHNode& GetNode(const uint32_t i) const
     {
         return m_nodes[i];
     }
 
     /// get the i-th node
-    Node_Type& GetNode(const uint32_t i)
+    BVHNode& GetNode(const uint32_t i)
     {
         return m_nodes[i];
     }
 
 private:
-    std::vector<Node_Type> m_nodes; ///< bvh nodes
+    std::vector<BVHNode> m_nodes; ///< bvh nodes
 };
 
 void swap(BVH& a, BVH& b);
@@ -83,9 +80,8 @@ void swap(BVH& a, BVH& b);
 class BVHBuilder
 {
 public:
-    typedef Point<Scalar> Vector_Type;
     typedef BVH BVH_Type;
-    typedef BVHNode BVHNode_Type;
+    typedef BVHNode::PointType Vector_Type;
 
     /// empty constructor
     BVHBuilder() :
