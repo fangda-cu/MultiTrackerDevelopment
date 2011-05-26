@@ -225,7 +225,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                         // If the rod just had an explosion, give up trying resolving its collisions
                         failed_collisions_rods[colliding_rod] = true;
                         for (int v = 0; v < m_rods[colliding_rod]->nv(); ++v)
-                            m_collision_immune[m_base_indices[colliding_rod] / 3 + v] = true;
+                            m_collision_immune[m_base_dof_indices[colliding_rod] / 3 + v] = true;
                         break;
                     }
                 }
@@ -386,8 +386,8 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
     }
 
     // Determine which vertex of the rod the free vertex is
-    assert(m_base_indices[rodidx] % 3 == 0);
-    int v0 = vfcol.v0 - m_base_indices[rodidx] / 3;
+    assert(m_base_dof_indices[rodidx] % 3 == 0);
+    int v0 = vfcol.v0 - m_base_dof_indices[rodidx] / 3;
     assert(v0 >= 0);
     assert(v0 < m_rods[rodidx]->nv());
 
@@ -413,7 +413,7 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
 
     int ndof = m_rods[rodidx]->ndof();
 
-    int rodbase = m_base_indices[rodidx];
+    int rodbase = m_base_dof_indices[rodidx];
 
     // Compute the 'global' normal
     std::vector<VecXd> normal;
@@ -551,7 +551,7 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
 #ifdef DEBUG
     lgrhs.setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
-    lgrhs(0) = vfcol.computeRelativeVelocity(); //posnN0.dot(m_vnphalf.segment(m_base_indices[rodidx],posnN0.size()));
+    lgrhs(0) = vfcol.computeRelativeVelocity(); //posnN0.dot(m_vnphalf.segment(m_base_dof_indices[rodidx],posnN0.size()));
     assert(lgrhs(0) < 0.0);
     for (int i = 1; i < numconstraints; ++i)
         lgrhs(i) = posnn[i].dot(m_vnphalf.segment(rodbase, nvdof));
@@ -694,9 +694,9 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     //std::cout << "NVdof 1: " << rod1nvdof << std::endl;
 
     // Determine where in the 'global' vertex dof pool each rod begins
-    int rod0base = m_base_indices[rod0];
+    int rod0base = m_base_dof_indices[rod0];
     assert(rod0base % 3 == 0);
-    int rod1base = m_base_indices[rod1];
+    int rod1base = m_base_dof_indices[rod1];
     assert(rod1base % 3 == 0);
 
     //std::cout << "rod0base: " << rod0base << std::endl;
@@ -1229,9 +1229,9 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
     TraceStream(m_log, "") << "CTcollision: rod " << rodidx << " vs. mesh\n";
 
     // Convert the vertices' global indices to rod indices
-    assert(m_base_indices[rodidx] % 3 == 0);
-    v0 = v0 - m_base_indices[rodidx] / 3;
-    v1 = v1 - m_base_indices[rodidx] / 3;
+    assert(m_base_dof_indices[rodidx] % 3 == 0);
+    v0 = v0 - m_base_dof_indices[rodidx] / 3;
+    v1 = v1 - m_base_dof_indices[rodidx] / 3;
     assert(v0 >= 0);
     assert(v0 < m_rods[rodidx]->nv());
     assert(v1 >= 0);
@@ -1247,7 +1247,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
     // Compute M - h^2*dF/dx
     computeCompliantLHS(lhs, rodidx);
 
-    int rodbase = m_base_indices[rodidx];
+    int rodbase = m_base_dof_indices[rodidx];
 
     // Compute the 'base' index of each vertex
     int base0 = m_rods[rodidx]->vertIdx(v0, 0);
@@ -1656,7 +1656,7 @@ void BARodStepper::applyInextensibilityVelocityFilter(int rodidx)
 
     //std::cout << "Applying inextensibility filter to rod " << rodidx << std::endl;
 
-    int rodbase = m_base_indices[rodidx];
+    int rodbase = m_base_dof_indices[rodidx];
 
     // if (boundary->isVertexScripted(j))
     //   {
@@ -1753,7 +1753,7 @@ void BARodStepper::executeImplicitPenaltyResponse(std::list<Collision*>& collisi
         if (vfpcol)
         {
             int rod_id = getContainingRod(vfpcol->v0);
-            int v_id = vfpcol->v0 - m_base_indices[rod_id] / 3;
+            int v_id = vfpcol->v0 - m_base_dof_indices[rod_id] / 3;
             m_implicit_pnlty_forces[rod_id]->addRodPenaltyForce(v_id, vfpcol);
         }
     }

@@ -350,7 +350,10 @@ private:
     int m_level;
 
     // Entry i is base index of ith rod in global array of position dofs
-    std::vector<int> m_base_indices;
+    std::vector<int> m_base_dof_indices;
+
+    // Entry i is base index of ith rod in global array of vertices
+    std::vector<int> m_base_vtx_indices;
 
     // Entry i is base index of ith ScriptedTriangleMesh in global array of position dofs
     std::vector<int> m_base_triangle_indices;
