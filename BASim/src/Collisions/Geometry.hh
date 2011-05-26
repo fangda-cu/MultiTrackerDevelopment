@@ -133,8 +133,6 @@ public:
 
 };
 
-static const double MARGIN = 1e-6;
-
 // A virtual class to abstract handling of edges and faces
 class TopologicalElement
 {
@@ -149,8 +147,8 @@ public:
 
     // Return the bounding box of the object after it has moved for time_step
     virtual BoundingBox<Scalar> GetBBox(const GeometricData& geodata, const double time_step = 0) const = 0;
+
     virtual bool IsFixed(const GeometricData& geodata) = 0;
-    //    virtual bool IsCollisionFree(const GeometricData& geodata) = 0;
 };
 
 class YAEdge: public TopologicalElement
@@ -176,6 +174,7 @@ public:
     {
         return m_edge.first;
     }
+
     int second() const
     {
         return m_edge.second;
@@ -191,8 +190,8 @@ public:
         const Point<Scalar>& p0 = (Point<Scalar> ) (Vec3d) geodata.GetPoint(m_edge.first) + v0 * time_step;
         const Point<Scalar>& p1 = (Point<Scalar> ) (Vec3d) geodata.GetPoint(m_edge.second) + v1 * time_step;
 
-        const double r0 = geodata.GetRadius(m_edge.first) + MARGIN;
-        const double r1 = geodata.GetRadius(m_edge.second) + MARGIN;
+        const double r0 = geodata.GetRadius(m_edge.first);
+        const double r1 = geodata.GetRadius(m_edge.second);
 
         BoundingBox<Scalar> bbox(p0.x() - r0, p0.y() - r0, p0.z() - r0, p0.x() + r0, p0.y() + r0, p0.z() + r0);
         bbox.Insert(p1, r1);
@@ -204,6 +203,7 @@ public:
     {
         return geodata.isVertexFixed(m_edge.first) && geodata.isVertexFixed(m_edge.second);
     }
+
     bool IsFree(const GeometricData& geodata)
     {
         return !geodata.isVertexFixed(m_edge.first) && !geodata.isVertexFixed(m_edge.second);
@@ -234,10 +234,12 @@ public:
     {
         return m_triangle.idx[0];
     }
+
     int second() const
     {
         return m_triangle.idx[1];
     }
+
     int third() const
     {
         return m_triangle.idx[2];
@@ -253,9 +255,9 @@ public:
         const Point<Scalar>& p1 = (Point<Scalar> ) (Vec3d) geodata.GetPoint(m_triangle.idx[1]) + v1 * time_step;
         const Point<Scalar>& p2 = (Point<Scalar> ) (Vec3d) geodata.GetPoint(m_triangle.idx[2]) + v2 * time_step;
 
-        const double r0 = geodata.GetRadius(m_triangle.idx[0]) + MARGIN;
-        const double r1 = geodata.GetRadius(m_triangle.idx[1]) + MARGIN;
-        const double r2 = geodata.GetRadius(m_triangle.idx[2]) + MARGIN;
+        const double r0 = geodata.GetRadius(m_triangle.idx[0]);
+        const double r1 = geodata.GetRadius(m_triangle.idx[1]);
+        const double r2 = geodata.GetRadius(m_triangle.idx[2]);
 
         BoundingBox<Scalar> bbox(p0.x() - r0, p0.y() - r0, p0.z() - r0, p0.x() + r0, p0.y() + r0, p0.z() + r0);
         bbox.Insert(p1, r1);
@@ -297,8 +299,8 @@ public:
     {
         std::swap(m_objects[i], m_objects[j]);
     }
-
 };
+
 }
 
 #endif /* GEOMETRY_HH_ */
