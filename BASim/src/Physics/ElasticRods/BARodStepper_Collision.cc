@@ -169,12 +169,14 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
     std::list<Collision*> collisions_list;
     TraceStream(m_log, "") << "Detecting collisions...\n";
     m_collision_detector->getCollisions(collisions_list, ContinuousTime);
+    TraceStream(m_log, "") << "Initial potential collisions: " << m_collision_detector->m_potential_collisions << "\n";
 
     // Iterativly apply inelastic impulses
     for (int itr = 0; !collisions_list.empty() && itr < m_perf_param.m_maximum_number_of_collisions_iterations; ++itr)
     {
         TraceStream(m_log, "") << "CTcollision response iteration " << itr << '\n';
-        TraceStream(m_log, "") << "Detected " << collisions_list.size() << " continuous time collisions\n";
+        TraceStream(m_log, "") << "Detected " << collisions_list.size() << " continuous time collisions (potential: "
+                << m_collision_detector->m_potential_collisions << ")\n";
 
         // Just sort the collision times to maintain some rough sense of causality
         collisions_list.sort(CompareTimes);
@@ -244,6 +246,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                 delete collision;
                 m_collision_detector->updateContinuousTimeCollisions();
             }
+
         // Detect remaining collisions (including at the end of the last iteration, so we know what failed)
         TraceStream(m_log, "") << "Detecting collisions...\n";
         m_collision_detector->getCollisions(collisions_list, ContinuousTime, false); // No need to update the mesh bvh bounding boxes.
@@ -253,7 +256,8 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
     {
         all_rods_collisions_ok = false;
 
-        TraceStream(m_log, "") << "Remains " << collisions_list.size() << " unresolved collision(s)\n";
+        TraceStream(m_log, "") << "Remains " << collisions_list.size() << " unresolved collisions (potential: "
+                << m_collision_detector->m_potential_collisions << ")\n";
 
         // Just in case we haven't emptied the collisions but exited when itr == m_num_inlstc_itrns
         for (std::list<Collision*>::iterator col = collisions_list.begin(); col != collisions_list.end(); col++)

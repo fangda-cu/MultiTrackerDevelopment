@@ -36,6 +36,8 @@ protected:
     int m_num_threads;
 
 public:
+    int m_potential_collisions;
+
     CollisionDetectorBase(const GeometricData& geodata, const std::vector<std::pair<int, int> >& edges,
             const std::vector<TriangularFace>& faces, const double& timestep, bool skip_rod_rod = true, int num_threads = -1);
 
@@ -61,20 +63,20 @@ protected:
     virtual void computeCollisions(const BVHNode& node_a, const BVHNode& node_b) = 0;
 
     // Depending on m_collision_filter, determine and appends the relevant collision type between topological elements to m_collisions_list
-    void appendCollision(const TopologicalElement* obj_a, const TopologicalElement* obj_b);
+    bool appendCollision(const TopologicalElement* obj_a, const TopologicalElement* obj_b);
 
     // Determine if the collision happens during the current time step; if so append the CTC to m_collisions_list.
-    void appendContinuousTimeCollision(const YAEdge* edge_a, const YAEdge* edge_b);
-    void appendContinuousTimeCollision(const YAEdge* edge, const YATriangle* triangle);
-    void appendContinuousTimeCollision(int v_index, const YATriangle* triangle);
+    bool appendContinuousTimeCollision(const YAEdge* edge_a, const YAEdge* edge_b);
+    bool appendContinuousTimeCollision(const YAEdge* edge, const YATriangle* triangle);
+    bool appendContinuousTimeCollision(int v_index, const YATriangle* triangle);
 
     // Determine whether the edge intersects the triangle; if so append the VFI to m_collisions_list
-    void appendEdgeFaceIntersection(const YAEdge* edge, const YATriangle* triangle);
+    bool appendEdgeFaceIntersection(const YAEdge* edge, const YATriangle* triangle);
 
     // Determine if a close encounter has happened
-    void appendProximityCollision(const YAEdge* edge_a, const YAEdge* edge_b);
-    void appendProximityCollision(const YAEdge* edge, const YATriangle* triangle);
-    void appendProximityCollision(int v_index, const YATriangle* triangle);
+    bool appendProximityCollision(const YAEdge* edge_a, const YAEdge* edge_b);
+    bool appendProximityCollision(const YAEdge* edge, const YATriangle* triangle);
+    bool appendProximityCollision(int v_index, const YATriangle* triangle);
 
     bool isVertexFixed(int vert_idx) const;
     bool isRodVertex(int vert) const;
