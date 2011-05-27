@@ -3,10 +3,15 @@
 
 #include "Definitions.hh"
 
+// Include a high-res timer library
+#include "Cycle.hh"
+
 namespace BASim {
 
 // macros to compile timing in/out
 #define TIMING_ON
+
+#ifdef TIMING_ON
 
 #define START_TIMER(name)                               \
   Timer::getTimer(name).beginBlock();			
@@ -24,6 +29,18 @@ namespace BASim {
   {                                             \
     Timer::getTimer(name).clear();              \
   }                                             \
+
+#else
+
+#define START_TIMER(name)                               
+ 
+#define STOP_TIMER(name)                               
+
+#define PRINT_TIMER(name)                                         
+
+#define CLEAR_TIMER(name) 
+
+#endif
 
 // #else // timing off
 // #define PRINT_TIMER(name) {}
@@ -108,13 +125,13 @@ private:
 
   std::vector<double> times;
 
-  double startTime;  ///< last time the timer's start function was called
-  double elapsed;    ///< time measured since last report
-  int count;         ///< the number of outer blocks encountered since last report
+  ticks  startTicks;  ///< last time the timer's start function was called
+  double elapsedT;    ///< time measured since last report
+  int count;          ///< the number of outer blocks encountered since last report
 
   int nestingLevel;  ///< if nestingLevel is greater than zero, the timer is on
 
-  double cumulativeElapsed;  ///< total time over all reports
+  double cumulativeElapsedT; ///< total time over all reports
   double cumulativeCount;    ///< total count over all reports
   int deepestNestingLevel;   ///< deepest nesting level encountered (helps spot unbalanced begin/end-block)
 };

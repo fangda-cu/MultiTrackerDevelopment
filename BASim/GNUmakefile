@@ -226,6 +226,7 @@ Core/ObjectHandles.hh \
 Core/Property.hh \
 Core/STLIncludes.hh \
 Core/Timer.hh \
+Core/Cycle.hh \
 Core/TopologicalObject/TopObjHandles.hh \
 Core/TopologicalObject/TopObjIterators.hh \
 Core/TopologicalObject/TopologicalObject.hh \
