@@ -143,7 +143,6 @@ void Timer::endBlock()
     elapsed = now() - startTime;
     times.push_back(elapsed);
     startTime = 0.;
-    count++;
   }
   //std::cout << " exiting to level " << nestingLevel << std::endl;
 }

@@ -283,9 +283,9 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
         }
     }
 
-#ifdef TIMING_ON
-    if( itr >= 2 ) IntStatTracker::getIntTracker("STEPS_WITH_MULTIPLE_IMPULSE_ITERATIONS") += 1;
-#endif
+    //#ifdef TIMING_ON
+    //if( itr >= 2 ) IntStatTracker::getIntTracker("STEPS_WITH_MULTIPLE_IMPULSE_ITERATIONS") += 1;
+    //#endif
 
     return all_rods_collisions_ok;
 }

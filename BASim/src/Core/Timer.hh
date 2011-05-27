@@ -6,7 +6,7 @@
 namespace BASim {
 
 // macros to compile timing in/out
-//#ifdef TIMING_ON
+#define TIMING_ON
 
 #define START_TIMER(name)                               \
   Timer::getTimer(name).beginBlock();			
