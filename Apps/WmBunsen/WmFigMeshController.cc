@@ -14,7 +14,8 @@ WmFigMeshController::WmFigMeshController( BASim::TriangleMesh* i_currentMesh,
                                            m_nextMesh( i_nextMesh ),
                                            BASim::ScriptingController( i_time, i_dt ),
                                            m_startMeshTime( 0.0 ), m_endMeshTime( 0.0 ),
-                                           m_levelSetDX( 1.0 )
+                                           m_levelSetDX( 1.0 ), m_createLevelSet( false ),
+                                           m_drawLevelSet( false )
 
 // NOTE: We pass i_time and i_dt to BASim::ScriptingController but they are actually *ignored*
 //       as BARodStepper calls setDt() on the controller when it executes anyway.
@@ -28,12 +29,30 @@ WmFigMeshController::WmFigMeshController( BASim::TriangleMesh* i_currentMesh,
     m_phiPrevious = new LevelSet;
     m_phiCurrent = new LevelSet;
 }
+
+void WmFigMeshController::setLevelSetCellSize( const float i_cellSize )
+{
+    m_levelSetDX = i_cellSize;
+}
+    
+void WmFigMeshController::createLevelSet( const bool i_createLevelSet )
+{
+    m_createLevelSet = i_createLevelSet;
+}
+
+void WmFigMeshController::drawLevelSet( const bool i_drawLevelSet )
+{
+    m_drawLevelSet = i_drawLevelSet;
+}
  
 bool WmFigMeshController::execute()
 {
     // TODO: Assumes 24fps for Maya scenes, fix that
  
-    buildLevelSet();
+    if ( m_createLevelSet )
+    {
+        buildLevelSet();
+    }
  
     double interpolation = ( getTime() - m_startTime ) * 24.0 + m_startTime - m_previousMayaTime;
     //  std::cerr << "interpolated mesh factor = " << interpolation << std::endl;
@@ -182,15 +201,10 @@ void WmFigMeshController::calculateLevelSetSize( bridson::Vec3f &origin, Vec3ui 
 }
 
 void WmFigMeshController::draw()
-{
-    /*if( m_phiCurrent->isInitialized() )
-    {
-        m_phiCurrent->draw();
-    }*/
-    
+{    
     // Do some drawing to see if the level set code is working
-
-    if( m_phiCurrent->isInitialized() )
+    // 
+    if( m_drawLevelSet && m_phiCurrent->isInitialized() )
     {
         Vec3d xMin, xMax, dX;
         
@@ -212,11 +226,6 @@ void WmFigMeshController::draw()
             }
         }
         
-       // bridson::Vec3f origin = m_phiCurrent->getOrigin();
-        // origin is xMin for some reason?
-        
-       // cerr << "origin = " << origin << endl;
-        
         glPointSize( 1.0 );
         glEnable( GL_POINT_SMOOTH );
         glBegin( GL_POINTS );
@@ -232,7 +241,7 @@ void WmFigMeshController::draw()
                     
                     if ( phi < 0 )
                     {
-                        glColor3f( 0.0, phi / 10.0, 1.0 );
+                        glColor3f( 0.0, fabs( phi / 10.0 ), 1.0 );
                     }
                     else
                     {

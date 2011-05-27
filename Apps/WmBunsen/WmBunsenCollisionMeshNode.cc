@@ -10,7 +10,6 @@ MObject WmBunsenCollisionMeshNode::ia_time;
 MObject WmBunsenCollisionMeshNode::ia_startTime;
 MObject WmBunsenCollisionMeshNode::ia_inMesh;
 MObject WmBunsenCollisionMeshNode::oa_meshData;
-MObject WmBunsenCollisionMeshNode::ia_levelsetDx;
 MObject WmBunsenCollisionMeshNode::ia_friction;
 MObject WmBunsenCollisionMeshNode::ia_thickness;
 MObject WmBunsenCollisionMeshNode::ia_separationStrength;
@@ -18,9 +17,12 @@ MObject WmBunsenCollisionMeshNode::ia_damping;
 MObject WmBunsenCollisionMeshNode::ia_coefficientOfRestitution;
 MObject WmBunsenCollisionMeshNode::ia_fullCollisions;
 MObject WmBunsenCollisionMeshNode::ia_drawCollisionData;
-
+MObject WmBunsenCollisionMeshNode::ia_createLevelSet;
+MObject WmBunsenCollisionMeshNode::ia_levelSetCellSize;
+MObject WmBunsenCollisionMeshNode::ia_drawLevelSet;
+    
 WmBunsenCollisionMeshNode::WmBunsenCollisionMeshNode()
-    : m_levelsetDx( 0.0 ), m_friction( 0.0 ), m_thickness( 1.0 ), m_fullCollisions( false ),
+    : m_friction( 0.0 ), m_thickness( 1.0 ), m_fullCollisions( false ),
     m_beaker( NULL ), m_meshController( NULL ), m_triangleMeshRenderer( NULL ),
     m_currentMesh( NULL ), m_previousMesh( NULL ), m_nextMesh( NULL )
 {
@@ -127,6 +129,21 @@ MStatus WmBunsenCollisionMeshNode::compute( const MPlug& i_plug, MDataBlock& i_d
             
         m_startTime = i_data.inputValue( ia_startTime, &stat ).asDouble();
         CHECK_MSTATUS( stat );
+        
+        // Level Set details
+        float levelsetCellSize = i_data.inputValue( ia_levelSetCellSize, &stat ).asDouble();
+        CHECK_MSTATUS( stat );
+        bool createLevelSet = i_data.inputValue( ia_createLevelSet, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+        bool drawLevelSet = i_data.inputValue( ia_drawLevelSet, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+        
+        if ( m_meshController != NULL )
+        {
+            m_meshController->createLevelSet( createLevelSet );
+            m_meshController->setLevelSetCellSize( levelsetCellSize );
+            m_meshController->drawLevelSet( drawLevelSet );
+        }
 
         if ( m_currentTime != m_previousTime || m_currentTime == m_startTime ) 
         {
@@ -148,9 +165,6 @@ MStatus WmBunsenCollisionMeshNode::compute( const MPlug& i_plug, MDataBlock& i_d
                 updateCollisionMeshFromMayaMesh( meshFn );
             }
         }
-
-        m_levelsetDx = i_data.inputValue( ia_levelsetDx, &stat ).asDouble();
-        CHECK_MSTATUS( stat );
 
         m_drawCollisionData = i_data.inputValue( ia_drawCollisionData, &stat ).asBool();
         CHECK_MSTATUS( stat );
@@ -313,7 +327,7 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
             indices[ t ] = triangleVertexIndices[ (unsigned int)t ];
         }
         
-        m_meshController->setTriangleIndices( indices );
+        m_meshController->setTriangleIndices( indices );        
     }
     else
     {
@@ -427,7 +441,7 @@ MStatus WmBunsenCollisionMeshNode::initialize()
     
     {
         MFnNumericAttribute nAttr;
-        ia_startTime = nAttr.create("startTime", "stt", MFnNumericData::kDouble, 1.0, &stat);
+        ia_startTime = nAttr.create( "startTime", "stt", MFnNumericData::kDouble, 1.0, &stat );
         if (!stat) {
             stat.perror( "create ia_startTime attribute" );
             return stat;
@@ -463,17 +477,46 @@ MStatus WmBunsenCollisionMeshNode::initialize()
     }
 
     {
-    MFnNumericAttribute nAttr;
-    ia_levelsetDx = nAttr.create("levelsetDx", "ldx", MFnNumericData::kDouble, 0.0, &stat);
-    if (!stat) {
-        stat.perror( "create ia_levelsetDx attribute" );
-        return stat;
+        MFnNumericAttribute nAttr;
+        ia_levelSetCellSize = nAttr.create( "levelSetCellSize", "lsc", MFnNumericData::kDouble, 1.0, &stat );
+        if (!stat) 
+        {
+            stat.perror( "create ia_levelSetCellSize attribute" );
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setKeyable( true );
+        stat = addAttribute( ia_levelSetCellSize );
+        if(!stat){ stat.perror("addAttribute ia_levelSetCellSize"); return stat;}
     }
-    nAttr.setWritable( true );
-    nAttr.setReadable( false );
-    nAttr.setKeyable( true );
-    stat = addAttribute(ia_levelsetDx);
-    if(!stat){ stat.perror("addAttribute levelsetDx"); return stat;}
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_createLevelSet = nAttr.create( "createLevelSet", "cls", MFnNumericData::kBoolean, false, &stat);
+        if (!stat) {
+            stat.perror( "create ia_createLevelSet attribute" );
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setKeyable( true );
+        stat = addAttribute( ia_createLevelSet );
+        if(!stat){ stat.perror("addAttribute ia_createLevelSet"); return stat;}
+    }
+
+    {
+        MFnNumericAttribute nAttr;
+        ia_drawLevelSet = nAttr.create( "drawLevelSet", "dls", MFnNumericData::kBoolean, false, &stat );
+        if (!stat) {
+            stat.perror( "create ia_drawLevelSet attribute" );
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setKeyable( true );
+        stat = addAttribute( ia_drawLevelSet );
+        if(!stat){ stat.perror("addAttribute ia_drawLevelSet"); return stat;}
     }
 
     {
@@ -594,8 +637,6 @@ MStatus WmBunsenCollisionMeshNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_startTime->oa_meshData" ); return stat;}
     stat = attributeAffects( ia_inMesh, oa_meshData );
     if (!stat) { stat.perror( "attributeAffects ia_time->oa_meshData" ); return stat;}
-    stat = attributeAffects( ia_levelsetDx, oa_meshData );
-    if (!stat) { stat.perror( "attributeAffects ia_levelsetDx->oa_meshData"); return stat;}
     stat = attributeAffects( ia_friction, oa_meshData );
     if (!stat) { stat.perror( "attributeAffects ia_friction->oa_meshData" ); return stat;}
     stat = attributeAffects( ia_separationStrength, oa_meshData );
@@ -608,6 +649,12 @@ MStatus WmBunsenCollisionMeshNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_fullCollisions->oa_meshData" ); return stat;}
     stat = attributeAffects( ia_drawCollisionData, oa_meshData );
     if (!stat) { stat.perror( "attributeAffects ia_drawCollisionData->oa_meshData" ); return stat;}
+    stat = attributeAffects( ia_levelSetCellSize, oa_meshData );
+    if (!stat) { stat.perror( "attributeAffects ia_levelSetCellSize->oa_meshData" ); return stat;}
+    stat = attributeAffects( ia_createLevelSet, oa_meshData );
+    if (!stat) { stat.perror( "attributeAffects ia_createLevelSet->oa_meshData" ); return stat;}
+    stat = attributeAffects( ia_drawLevelSet, oa_meshData );
+    if (!stat) { stat.perror( "attributeAffects ia_drawLevelSet->oa_meshData" ); return stat;}
     
     return MS::kSuccess;
 }

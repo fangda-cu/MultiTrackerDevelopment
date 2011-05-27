@@ -17,6 +17,10 @@ public:
     
     bool execute();
 
+    void setLevelSetCellSize( const float i_cellSize );
+    void createLevelSet( const bool i_createLevelSet );    
+    void drawLevelSet( const bool i_drawLevelSet );    
+
     void updateNextMayaTime( const double i_mayaTime )
     {
         m_previousMayaTime = m_nextMayaTime;
@@ -60,6 +64,8 @@ private:
     Vec3Indices m_tri;
     
     float m_levelSetDX;
+    bool m_createLevelSet;
+    bool m_drawLevelSet;
 };
 
 
