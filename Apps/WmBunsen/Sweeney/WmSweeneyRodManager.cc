@@ -89,7 +89,7 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
     
     
     // Arbitrarily scale the rod up so it can be seen
-    rod->setRadiusScale( 10.0 );
+    //rod->setRadiusScale( 10.0 );
     
     // Store all the things we need to control the rod or add it to a BARodStepper
     m_rods.push_back( rod );
