@@ -74,7 +74,7 @@ void BARodStepper::exertFaceImpulse(const Vec3d& I, const double& m0, const doub
     vel.segment<3> (3 * idx2) += w * I / m2;
 }
 
-void BARodStepper::exertInelasticImpluse(EdgeEdgeCTCollision& eecol)
+void BARodStepper::exertInelasticImpulse(EdgeEdgeCTCollision& eecol)
 {
     assert(eecol.e0_v0 >= 0);
     assert(eecol.e0_v0 < getNumVerts());
@@ -90,7 +90,7 @@ void BARodStepper::exertInelasticImpluse(EdgeEdgeCTCollision& eecol)
     //   double magrelvel = relvel.dot(clssn.n);
     //    double magrelvel = eecol.computeRelativeVelocity(m_geodata);
 
-    // std::cout << "BARodStepper:exertInelasticImpluse<sic>: pre-impulse e-e relative velocity = "
+    // std::cout << "BARodStepper:exertInelasticImpulse: pre-impulse e-e relative velocity = "
     //         << eecol.computeRelativeVelocity() << std::endl;
 
     if (eecol.GetCachedRelativeVelocity() >= 0.0)
@@ -115,13 +115,13 @@ void BARodStepper::exertInelasticImpluse(EdgeEdgeCTCollision& eecol)
     exertEdgeImpulse(-I, m_masses[eecol.e0_v0], m_masses[eecol.e0_v1], eecol.s, eecol.e0_v0, eecol.e0_v1, m_vnphalf);
     exertEdgeImpulse(I, m_masses[eecol.e1_v0], m_masses[eecol.e1_v1], eecol.t, eecol.e1_v0, eecol.e1_v1, m_vnphalf);
 
-    // std::cout << "BARodStepper:exertInelasticImpluse<sic>: post-impulse e-e relative velocity = "
+    // std::cout << "BARodStepper:exertInelasticImpulse: post-impulse e-e relative velocity = "
     //         << eecol.computeRelativeVelocity() << std::endl;
 
     assert(eecol.computeRelativeVelocity() >= 0);
 }
 
-void BARodStepper::exertInelasticImpluse(VertexFaceCTCollision& vfcol)
+void BARodStepper::exertInelasticImpulse(VertexFaceCTCollision& vfcol)
 {
     assert(vfcol.v0 >= 0);
     assert(vfcol.v0 < getNumVerts());
@@ -136,7 +136,7 @@ void BARodStepper::exertInelasticImpluse(VertexFaceCTCollision& vfcol)
     //   double magrelvel = vfcol.computeRelativeVelocity(m_geodata);
     assert(vfcol.GetCachedRelativeVelocity() < 0.0);
 
-    // std::cout << "BARodStepper:exertInelasticImpluse<sic>: pre-impulse v-f relative velocity = "
+    // std::cout << "BARodStepper:exertInelasticImpulse: pre-impulse v-f relative velocity = "
     //         << vfcol.GetCachedRelativeVelocity() << std::endl;
 
     // Add some extra "kick" to relative velocity to account for FPA errors
@@ -152,7 +152,7 @@ void BARodStepper::exertInelasticImpluse(VertexFaceCTCollision& vfcol)
             vfcol.f1, vfcol.f2, m_vnphalf);
     exertVertexImpulse(I, m_masses[vfcol.v0], vfcol.v0, m_vnphalf);
 
-    // std::cout << "BARodStepper:exertInelasticImpluse<sic>: post-impulse v-f relative velocity = "
+    // std::cout << "BARodStepper:exertInelasticImpulse: post-impulse v-f relative velocity = "
     //         << vfcol.computeRelativeVelocity() << std::endl;
 
     assert(vfcol.computeRelativeVelocity() >= 0);
@@ -353,13 +353,13 @@ void BARodStepper::exertCompliantInelasticImpulse(const CTCollision* cllsn)
     if (eecol)
     {
         exertCompliantInelasticEdgeEdgeImpulse(*eecol);
-        //exertInelasticImpluse(cllsn.getEdgeEdge());
+        //exertInelasticImpulse(cllsn.getEdgeEdge());
     }
     else if (vfcol)
     {
         exertCompliantInelasticVertexFaceImpulse(*vfcol);
         //exertCompliantInelasticVertexFaceImpulse(cllsn.getVertexFace());
-        //exertInelasticImpluse(cllsn.getVertexFace());
+        //exertInelasticImpulse(cllsn.getVertexFace());
     }
     //std::cout << "BARodStepper:exertCompliantInelasticImpulse: post-impulse e-e relative velocity = " << cllsn->GetRelativeVelocity() << std::endl;
 }
@@ -550,7 +550,7 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
     for (int i = 0; i < numconstraints; ++i)
         for (int j = 0; j < numconstraints; ++j)
             lglhs(i, j) = posnn[i].dot(posnntilde[j]);
-    // assert(approxSymmetric(lglhs, 1.0e-6)); // FIXME!!!
+    assert(approxSymmetric(lglhs, 1.0e-6));
 
     Eigen::VectorXd lgrhs(numconstraints);
 #ifdef DEBUG
@@ -1412,7 +1412,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
     for (int i = 0; i < numconstraints; ++i)
         for (int j = 0; j < numconstraints; ++j)
             lglhs(i, j) = posnn[i].dot(posnntilde[j]);
-    // assert(approxSymmetric(lglhs, 1.0e-6)); // FIXME!!!
+    assert(approxSymmetric(lglhs, 1.0e-6));
 
     Eigen::VectorXd lgrhs(numconstraints);
 #ifdef DEBUG
