@@ -442,6 +442,9 @@ private:
     // DEBUG
     int m_num_solver_killed, m_num_collision_killed, m_num_explosion_killed;
     int m_total_solver_killed, m_total_collision_killed, m_total_explosion_killed;
+
+    class MyTimers;
+    MyTimers *m_timers;
 };
 
 } // namespace BASim
