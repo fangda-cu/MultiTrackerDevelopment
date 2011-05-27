@@ -30,6 +30,13 @@ WmFigMeshController::WmFigMeshController( BASim::TriangleMesh* i_currentMesh,
     m_phiCurrent = new LevelSet;
 }
 
+void WmFigMeshController::updateNextMayaTime( const double i_mayaTime )
+{
+    m_previousMayaTime = m_nextMayaTime;
+    m_nextMayaTime = i_mayaTime;
+}
+
+
 void WmFigMeshController::setLevelSetCellSize( const float i_cellSize )
 {
     m_levelSetDX = i_cellSize;
@@ -96,11 +103,6 @@ void WmFigMeshController::setTriangleIndices( std::vector< unsigned int >& i_ind
         m_tri[ i ][ 2 ] = i_indices[ 3 * i + 2 ];
     }	
 }
-/*
-Vec3<Real>& WmFigMeshController::triangleVertex( uint faceID, uint i )
-{
-    return vertex( triangleIndices[ 3 * faceID + i ] );
-}*/
 
 void WmFigMeshController::buildLevelSet()
 {   

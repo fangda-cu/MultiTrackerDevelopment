@@ -21,19 +21,14 @@ public:
     void createLevelSet( const bool i_createLevelSet );    
     void drawLevelSet( const bool i_drawLevelSet );    
 
-    void updateNextMayaTime( const double i_mayaTime )
-    {
-        m_previousMayaTime = m_nextMayaTime;
-        m_nextMayaTime = i_mayaTime;
-    }
-
+    void updateNextMayaTime( const double i_mayaTime );
+    
     void setTriangleIndices( std::vector< unsigned int >& i_indices );
     
     void draw();
     
 private:
     void calculateLevelSetSize( bridson::Vec3f &origin, Vec3ui &dims, Real &dx, Real length[3] );
-  //  Vec3<Real>& triangleVertex(uint faceID, uint i);
     void buildLevelSet();
     
     // We have two meshes because Maya is only providing meshes on frame steps and the sim is 
