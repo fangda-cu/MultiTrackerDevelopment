@@ -1,3 +1,5 @@
+string $gWmSweeneyMainMenu;  
+    
 global proc wmSweeneyAddMainMenu() 
 {
 	global string $gMainWindow;

@@ -72,6 +72,12 @@ WmSweeneyNode::~WmSweeneyNode()
 { 
 }
 
+WmSweeneyRodManager* WmSweeneyNode::rodManager()
+{
+    return m_rodManager;
+}
+
+
 MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus status;
