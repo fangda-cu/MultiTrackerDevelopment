@@ -80,7 +80,6 @@ void swap(BVH& a, BVH& b);
 class BVHBuilder
 {
 public:
-    typedef BVH BVH_Type;
     typedef BVHNode::PointType Vector_Type;
 
     /// empty constructor
@@ -89,7 +88,7 @@ public:
     {
     }
 
-    void build(GeometryBBoxFunctor& bboxes, BVH_Type* bvh);
+    void build(GeometryBBoxFunctor& bboxes, BVH* bvh);
 
 private:
     BBoxType presplit(const BBoxType& node_bbox, const BBoxType& kd_bbox);
@@ -111,7 +110,7 @@ private:
         BBoxType m_kd_bbox;
     };
 
-    BVH_Type* m_bvh; ///< output bvh
+    BVH* m_bvh; ///< output bvh
     std::stack<StackNode> m_stack; ///< internal stack
     const uint32_t m_max_leaf_size;///< maximum leaf size
 };
@@ -124,14 +123,14 @@ BBoxType intersection(const BBoxType& bbox1, const BBoxType& bbox2);
 
 typedef BBoxType BBoxType;
 
-bool is_left(const BBoxType& bbox, const uint32_t axis, const float pivot);
+bool is_left(const BBoxType& bbox, const uint32_t axis, const Scalar pivot);
 
 void insert(BBoxType& bbox, const BBoxType& bbox2);
 
 BBoxType merge(const BBoxType& bbox1, const BBoxType& bbox2);
 
 uint32_t partition(GeometryBBoxFunctor& bboxes, const uint32_t begin, const uint32_t end, const uint32_t axis,
-        const float pivot);
+        const Scalar pivot);
 
 BBoxType compute_bbox(GeometryBBoxFunctor& bboxes, const uint32_t begin, const uint32_t end);
 
