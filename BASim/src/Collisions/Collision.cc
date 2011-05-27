@@ -7,7 +7,7 @@
 
 #include "Collision.hh"
 #include "CollisionUtils.hh"
-#include "TetrahedronOverlap.hh"
+#include "TetrahedronPair.hh"
 
 namespace BASim
 {
@@ -100,7 +100,7 @@ bool EdgeEdgeCTCollision::analyseCollision(double time_step)
     if (IsFixed() || ((vp0.norm() == 0) && (vq0.norm() == 0) && (vp1.norm() == 0) && (vq1.norm() == 0)))
         return false;
 
-    // Reject if tetrahedrons don't overlap.
+    // Reject if tetrahedrons don't overlap. TODO: work directly with Vec3d instead of copying everything.
     double V_0[4][3];
     V_0[0][0] = p0[0];
     V_0[0][1] = p0[1];
@@ -127,7 +127,7 @@ bool EdgeEdgeCTCollision::analyseCollision(double time_step)
     V_1[3][0] = (q1 + time_step * vq1)[0];
     V_1[3][1] = (q1 + time_step * vq1)[1];
     V_1[3][2] = (q1 + time_step * vq1)[2];
-    if (!tet_a_tet(V_0, V_1))
+    if (!TetrahedronPair(V_0, V_1).DoOverlap())
         return false;
 
     std::vector<double> times;
