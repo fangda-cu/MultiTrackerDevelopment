@@ -2,7 +2,7 @@
  * RodMeshCollisionDetector.cc
  *
  *  Created on: 25/05/2011
- *      Author: jaubry
+ *      Author: Jean-Marie Aubry <jaubry@wetafx.co.nz>
  */
 
 #include "RodMeshCollisionDetector.hh"
@@ -57,6 +57,7 @@ void RodMeshCollisionDetector::build_mesh_BVH()
 void RodMeshCollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFilter collision_filter,
         bool update_mesh_bbox)
 {
+    m_potential_collisions = 0;
     m_collision_filter = collision_filter;
     m_collisions_list = &cllsns;
     m_collisions_list->clear();
@@ -120,7 +121,6 @@ void RodMeshCollisionDetector::getCollisions(std::list<Collision*>& cllsns, Coll
 
     for (std::vector<BVHParallelizer*>::iterator i = steppers.begin(); i != steppers.end(); i++)
         delete *i;
-
 }
 
 void RodMeshCollisionDetector::computeCollisions(const BVHNode& mesh_node, const BVHNode& rod_node)
@@ -132,20 +132,14 @@ void RodMeshCollisionDetector::computeCollisions(const BVHNode& mesh_node, const
     // If both bounding volumes are leaves, add their contents to list potential collisions
     if (mesh_node.IsLeaf() && rod_node.IsLeaf())
     {
-        if (&mesh_node != &rod_node)
-        {
-            const uint32_t mesh_leaf_begin = mesh_node.LeafBegin();
-            const uint32_t mesh_leaf_end = mesh_node.LeafEnd();
-            const uint32_t rod_leaf_begin = rod_node.LeafBegin();
-            const uint32_t rod_leaf_end = rod_node.LeafEnd();
-
-            for (uint32_t i = mesh_leaf_begin; i < mesh_leaf_end; ++i)
-                for (uint32_t j = rod_leaf_begin; j < rod_leaf_end; ++j)
-                    appendCollision(m_mesh_elements[i], m_rod_elements[j]);
-        }
-
+        const uint32_t mesh_leaf_begin = mesh_node.LeafBegin();
+        const uint32_t mesh_leaf_end = mesh_node.LeafEnd();
+        const uint32_t rod_leaf_begin = rod_node.LeafBegin();
+        const uint32_t rod_leaf_end = rod_node.LeafEnd();
+        for (uint32_t i = mesh_leaf_begin; i < mesh_leaf_end; ++i)
+            for (uint32_t j = rod_leaf_begin; j < rod_leaf_end; ++j)
+                appendCollision(m_mesh_elements[i], m_rod_elements[j]);
     }
-
     // If one bounding volume is a leaf, we must recurse on the other volume
     else if (mesh_node.IsLeaf())
     {

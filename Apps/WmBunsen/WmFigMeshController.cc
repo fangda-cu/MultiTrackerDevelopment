@@ -28,6 +28,9 @@ WmFigMeshController::WmFigMeshController( BASim::TriangleMesh* i_currentMesh,
 
     m_phiPrevious = new LevelSet;
     m_phiCurrent = new LevelSet;
+
+    // We can't build the level set yet as the meshes we got passed in most likely don't have
+    // data in them yet.
 }
 
 void WmFigMeshController::updateNextMayaTime( const double i_mayaTime )
@@ -50,6 +53,11 @@ void WmFigMeshController::createLevelSet( const bool i_createLevelSet )
 void WmFigMeshController::drawLevelSet( const bool i_drawLevelSet )
 {
     m_drawLevelSet = i_drawLevelSet;
+}
+
+LevelSet* WmFigMeshController::currentLevelSet()
+{
+    return m_phiCurrent;
 }
  
 bool WmFigMeshController::execute()
