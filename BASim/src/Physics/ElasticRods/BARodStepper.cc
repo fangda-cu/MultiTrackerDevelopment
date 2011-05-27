@@ -26,8 +26,10 @@ namespace BASim
 using namespace weta::logging;
 
 BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
-        std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
-        const double time, const int num_threads, const PerformanceTuningParameters perf_param) :
+        std::vector<ScriptingController*>& scripting_controllers, 
+        std::vector<RodTimeStepper*>& steppers, const double& dt, const double time, 
+        const int num_threads, const PerformanceTuningParameters perf_param,
+        std::vector<LevelSet*>* levelSets) :
             m_num_dof(0),
             m_rods(rods),
             m_number_of_rods(m_rods.size()),
@@ -59,8 +61,22 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
             m_perf_param(perf_param),
             m_level(0),
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start,
-                    m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness), m_log_stream("BARodStepper.log")
+                      m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness), m_log_stream("BARodStepper.log")            
 {
+    if ( levelSets != NULL )
+    {
+        m_level_sets = *levelSets;
+    }
+    else
+    {
+        // Wierdly we're going to build a vector of null pointers. This is because
+        // the vector of level sets can contain a pointer to a level set or a null pointer
+        // depending on whether the corresponding m_triangle_mesh has a level set created for it.
+        // To simplify the usage code we'll make this vector and pass it around.
+        // If level sets become useful we should rethink the entire way data is passed into
+        // BARodStepper.
+        m_level_sets.resize( m_triangle_meshes.size(), NULL );
+    }
 
     if (!m_log_stream.is_open())
         std::cerr << "Warning: log stream could not be open" << std::endl;
@@ -102,6 +118,15 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
 #ifdef DEBUG
     for( int i = 0; i < (int) m_number_of_rods; ++i ) assert( m_rods[i] != NULL );
     for( int i = 0; i < (int) m_triangle_meshes.size(); ++i ) assert( m_triangle_meshes[i] != NULL );
+    
+    // Do not check if any level sets are null as that may be valid as not all triangle meshes
+    // may have a level set.
+    //for( int i = 0; i < (int) m_level_sets.size(); ++i ) assert( m_level_sets[i] != NULL );
+    if ( m_level_sets.size() > 0 )
+    {
+        // If there are any level sets then there has to be as one level set for every triangle mesh
+        assert( m_level_sets.size() == m_triangle_meshes.size() );
+    }
     for( int i = 0; i < (int) m_steppers.size(); ++i ) assert( m_steppers[i] != NULL );
 #endif
     assert(m_dt > 0.0);

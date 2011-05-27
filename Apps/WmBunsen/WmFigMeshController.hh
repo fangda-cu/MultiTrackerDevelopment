@@ -27,6 +27,8 @@ public:
     
     void draw();
     
+    BASim::LevelSet* currentLevelSet();
+    
 private:
     void calculateLevelSetSize( bridson::Vec3f &origin, Vec3ui &dims, Real &dx, Real length[3] );
     void buildLevelSet();

@@ -12,6 +12,7 @@
 #include <weta/Wfigaro/Core/EigenIncludes.hh>
 #include <weta/Wfigaro/Physics/World.hh>
 //#include <weta/Wfigaro/Collisions/CollisionMeshData.hh>
+#include <weta/Wfigaro/Collisions/LevelSet.hh>
 #include <weta/Wfigaro/Core/ObjectControllerBase.hh>
 //#include <weta/Wfigaro/Physics/ElasticRods/RodCollisionTimeStepper.hh>
 #include <weta/Wfigaro/Render/RodRenderer.hh>
@@ -21,6 +22,7 @@
 #else
 #include <BASim/src/Core/EigenIncludes.hh>
 //#include <BASim/src/Collisions/CollisionMeshData.hh>
+#include <BASim/src/Collisions/LevelSet.hh>
 #include <BASim/src/Core/ObjectControllerBase.hh>
 #include <BASim/src/Physics/World.hh>
 //#include <BASim/src/Physics/ElasticRods/RodCollisionTimeStepper.hh>
@@ -60,15 +62,22 @@ typedef std::tr1::unordered_map<int, LockedVertexMap> LockedRodVertexMap;
 class CollisionMeshData
 {
 public:
-    CollisionMeshData(TriangleMesh* i_triangleMesh, ScriptingController* i_scriptingController)
+    CollisionMeshData( TriangleMesh* i_triangleMesh, LevelSet* i_levelSet,
+                       ScriptingController* i_scriptingController)
     {
         m_triangleMesh = i_triangleMesh;
         m_scriptingController = i_scriptingController;
+        m_levelSet = i_levelSet;
     }
 
     TriangleMesh* triangleMesh()
     {
         return m_triangleMesh;
+    }
+    
+    LevelSet* levelSet()
+    {
+        return m_levelSet;
     }
 
     ScriptingController* scriptingController()
@@ -79,6 +88,7 @@ public:
 private:
     TriangleMesh* m_triangleMesh;
     ScriptingController* m_scriptingController;
+    LevelSet* m_levelSet;
 };
 
 typedef std::tr1::unordered_map<int, CollisionMeshData*> CollisionMeshDataHashMap;
@@ -109,13 +119,13 @@ public:
     {
         //return m_world->property( m_timeHandle );
         // 
-        return m_bridsonStepper->getTime();
+        return m_BARodStepper->getTime();
     }
 
     Scalar getDt() const
     {
         //return m_world->property( m_dtHandle );
-        return m_bridsonStepper->getDt();
+        return m_BARodStepper->getDt();
     }
     /*
      void setDt( const Scalar& i_dt )
@@ -123,7 +133,7 @@ public:
      // Does setting this property on the world mean anything?
      m_world->property( m_dtHandle ) = i_dt;
 
-     m_bridsonStepper->setDt( i_dt );
+     m_BARodStepper->setDt( i_dt );
      }
      */
     const BASim::Vec3d& getGravity() const
@@ -285,7 +295,8 @@ public:
     //void createSpaceForRods( int i_rodGroup, int i_numRods );
     void addRodsToWorld(int i_rodGroupIndex, WmFigRodGroup* i_rodGroup, double startTime, int numberOfThreads, PerformanceTuningParameters perf_param);
     bool collisionMeshInitialised(const int i_collisionMeshIndex);
-    void initialiseCollisionMesh(TriangleMesh* i_collisionMesh, ScriptingController* i_scriptingController,
+    void initialiseCollisionMesh( TriangleMesh* i_collisionMesh, LevelSet* i_levelSet,
+                                  ScriptingController* i_scriptingController,
             const int i_collisionMeshIndex);
     void removeCollisionMesh(const int i_collisionMeshIndex);
 
@@ -422,11 +433,16 @@ private:
     bool m_displayAirBoundary;
     BASim::Vec3d m_separationCondition;
 
-    BARodStepper* m_bridsonStepper;
+    BARodStepper* m_BARodStepper;
 
     // TODO: This is dumb, the meshes and controllers are stored in a hash map of collisionmeshdata
     // now we have this representation just to send to bridsonStepper. Fix one or the other
     vector<TriangleMesh*> m_triangleMeshes;
+    // These are the level sets corresponding to the above triangle meshes. There may not be 
+    // a level set for every mesh in which case the pointer will be null. However the size
+    // of the two vectors will match so elements in each point to the same mesh, just different
+    // representations.
+    vector<LevelSet*> m_levelSets;
     vector<ScriptingController*> m_scriptingControllers;
     vector<RodTimeStepper*> m_rodTimeSteppers;
 };

@@ -20,13 +20,13 @@
 //#include "../../Collisions/BVHAABB.hh"
 #include "../../Collisions/RodMeshCollisionDetector.hh"
 #include "../../Collisions/CollisionUtils.hh"
+#include "../../Collisions/LevelSet.hh"
 //#include "../../../../Apps/BASimulator/Problems/ProblemBase.hh"
 #include "../../Core/StatTracker.hh"
 #include "MinimalTriangleMeshBackup.hh"
 #include "RodPenaltyForce.hh"
 #include "PerformanceTuningParameters.hh"
 #include "../../Util/TextLog.hh"
-
 #else
 #include "BASim/src/Core/ScriptingController.hh"
 #include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
@@ -34,16 +34,12 @@
 #include "BASim/src/Physics/ElasticRods/RodMassDamping.hh"
 #include "BASim/src/Physics/ElasticRods/RodGravity.hh"
 #include "BASim/src/Math/Math.hh"
-
 #include "BASim/src/Core/TriangleMesh.hh"
-
 #include "BASim/src/Collisions/CollisionUtils.hh"
 #include "BASim/src/Collisions/RodMeshCollisionDetector.hh"
-
+#include "BASim/src/Collisions/LevelSet.hh"
 #include "Apps/BASimulator/Problems/ProblemBase.hh"
-
 #include "BASim/src/Core/StatTracker.hh"
-
 #include "BASim/src/Physics/ElasticRods/MinimalTriangleMeshBackup.hh"
 #endif
 
@@ -87,7 +83,8 @@ public:
     BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
             std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
             const double time = 0.0, const int num_threads = -1,
-            const PerformanceTuningParameters perf_param = PerformanceTuningParameters());
+            const PerformanceTuningParameters perf_param = PerformanceTuningParameters(),
+            std::vector<LevelSet*>* levelSets = NULL);
 
     /**
      * Destructor.
@@ -340,6 +337,16 @@ private:
 #endif
     // Vector of ScriptedTriangleObjects in the system
     const std::vector<TriangleMesh*>& m_triangle_meshes;
+    
+    // Vector of level sets that correspond to the above triangle meshes
+    // Note: This vector may have null pointers in it, this signifies there is no level set
+    // for that mesh.
+    // NOTE: It is not a reference to a vector like m_triangle_meshs and m_rods. I don't think
+    // that is a problem since the contents of the vector are pointers and we're assuming
+    // the owner of this class also has a vector we're storing max 8 bytes * m_level_sets.size()
+    // duplicated data.
+    std::vector<LevelSet*> m_level_sets;
+    
     // Controllers to move scripted geometry/rods forward in time and to set boundary conditions
     const std::vector<ScriptingController*>& m_scripting_controllers;
     // Integrator selected by user

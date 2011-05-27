@@ -102,7 +102,8 @@ void WmBunsenCollisionMeshNode::initialise( Beaker* i_beaker, const unsigned int
     if ( m_beaker != NULL )
     {
         // If we are being controlled by beaker then initialise it
-        m_beaker->initialiseCollisionMesh( m_currentMesh, m_meshController, m_collisionMeshIndex );            
+        m_beaker->initialiseCollisionMesh( m_currentMesh, m_meshController->currentLevelSet(), 
+                                           m_meshController, m_collisionMeshIndex );         
     }
     else
     {
@@ -327,7 +328,7 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
             indices[ t ] = triangleVertexIndices[ (unsigned int)t ];
         }
         
-        m_meshController->setTriangleIndices( indices );        
+        m_meshController->setTriangleIndices( indices );
     }
     else
     {
