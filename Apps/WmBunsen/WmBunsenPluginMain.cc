@@ -186,9 +186,10 @@ MStatus initializePlugin( MObject obj )
     
     MGlobal::executeCommand( "source wmSweeney.mel", false );
     
-    // This will trash the Figaro UI registration, they need to be done together or done
-    // differently...
-    CHECK_MSTATUS( plugin.registerUI( "wmSweeneyAddMainMenu", "wmSweeneyRemoveMainMenu" ) );
+    // This will trash the Figaro UI registration, so we just call the add and remove menu functions
+    // directly.
+    //CHECK_MSTATUS( plugin.registerUI( "wmSweeneyAddMainMenu", "wmSweeneyRemoveMainMenu" ) );
+    MGlobal::executeCommand( "wmSweeneyAddMainMenu", false );
 
     return MS::kSuccess;
 }
@@ -287,6 +288,10 @@ MStatus uninitializePlugin( MObject obj)
     {
         status.perror( "Deregister context command WmSwAddRodContext failed" );
     }
+    
+    // Again, explicitly remove the menu as we can't use the add/removeUI functionality due to
+    // it being in the figaro code and I don't want to mix the two.
+    MGlobal::executeCommand( "wmSweeneyRemoveMainMenu", false );
     
     MGlobal::stopErrorLogging();
 
