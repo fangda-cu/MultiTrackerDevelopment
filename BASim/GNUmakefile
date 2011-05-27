@@ -216,6 +216,7 @@ Collisions/Bridson/array3.hh \
 Collisions/Bridson/vec.hh \
 Collisions/Bridson/util.hh \
 Collisions/Bridson/Vector.hh \
+Collisions/TetrahedronPair.hh \
 Core/Definitions.hh \
 Core/EigenIncludes.hh \
 Core/Handle.hh \
