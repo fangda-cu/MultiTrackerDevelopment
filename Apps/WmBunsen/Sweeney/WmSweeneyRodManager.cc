@@ -87,9 +87,8 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
         cerr << i_vertices[ v ] << endl;
     }
     
-    
     // Arbitrarily scale the rod up so it can be seen
-    //rod->setRadiusScale( 10.0 );
+    rod->setRadiusScale( 10.0 );
     
     // Store all the things we need to control the rod or add it to a BARodStepper
     m_rods.push_back( rod );
@@ -102,9 +101,11 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
 }
 
 void WmSweeneyRodManager::addCollisionMesh( BASim::TriangleMesh* i_triangleMesh,
+                                            BASim::LevelSet* i_levelSet,
                                             WmFigMeshController* i_scriptingController )
 {
     m_triangleMeshes.push_back( i_triangleMesh );
+    m_levelSets.push_back( i_levelSet );
     m_scriptingControllers.push_back( i_scriptingController );
 }
 

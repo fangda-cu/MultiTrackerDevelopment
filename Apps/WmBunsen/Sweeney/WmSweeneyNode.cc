@@ -192,7 +192,8 @@ void WmSweeneyNode::initialiseCollisionMeshes( MDataBlock &i_data )
                 collisionMeshNode->initialise( NULL, i, &triangleMesh, &figMeshController );
              
                 // Now add the mesh to the rod manager
-                m_rodManager->addCollisionMesh( triangleMesh, figMeshController );
+                m_rodManager->addCollisionMesh( triangleMesh, figMeshController->currentLevelSet(), 
+                                                figMeshController );
             }
             else
             {
