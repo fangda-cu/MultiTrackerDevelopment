@@ -71,9 +71,7 @@ public:
     static MObject ia_startTime;
     static MObject ia_time;
     static MObject oa_meshData;
-
-    static MObject ia_levelsetDx;
-
+    
     static MObject ia_friction;
     static MObject ia_thickness;
     static MObject ia_separationStrength;
@@ -81,6 +79,11 @@ public:
     static MObject ia_coefficientOfRestitution;
     static MObject ia_fullCollisions;
     static MObject ia_drawCollisionData;
+    
+    // Level Set attributes
+    static MObject ia_createLevelSet;
+    static MObject ia_levelSetCellSize;
+    static MObject ia_drawLevelSet;
     
     // Recieve a pointer to Beaker so that we can update beaker with the details for this mesh
     void initialise( Beaker* i_beaker, const unsigned int i_collisionMeshIndex,
@@ -96,8 +99,7 @@ private:
     double m_currentTime;
     double m_previousTime;
     double m_startTime;
-
-    double m_levelsetDx;
+    
     double m_friction;
     double m_thickness;
     bool m_fullCollisions;
