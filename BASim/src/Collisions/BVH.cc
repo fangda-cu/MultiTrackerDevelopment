@@ -10,7 +10,7 @@
 namespace BASim
 {
 
-void BVHBuilder::build(GeometryBBoxFunctor& bboxes, BVH_Type* bvh)
+void BVHBuilder::build(GeometryBBoxFunctor& bboxes, BVH* bvh)
 {
     const uint32_t n = bboxes.size();
 
@@ -47,7 +47,7 @@ void BVHBuilder::build(GeometryBBoxFunctor& bboxes, BVH_Type* bvh)
 
             uint32_t split_dim = uint32_t(std::max_element(&edge[0], &edge[0] + 3) - &edge[0]);
 
-            float split_plane = (kd_bbox.max[split_dim] + kd_bbox.min[split_dim]) * 0.5f;
+            Scalar split_plane = (kd_bbox.max[split_dim] + kd_bbox.min[split_dim]) * 0.5;
 
             uint32_t split_index = partition(bboxes, node.m_begin, node.m_end, split_dim, split_plane);
 
@@ -55,7 +55,7 @@ void BVHBuilder::build(GeometryBBoxFunctor& bboxes, BVH_Type* bvh)
             {
                 edge = node_bbox.max - node_bbox.min;
                 split_dim = uint32_t(std::max_element(&edge[0], &edge[0] + 3) - &edge[0]);
-                split_plane = (node_bbox.max[split_dim] + node_bbox.min[split_dim]) * 0.5f;
+                split_plane = (node_bbox.max[split_dim] + node_bbox.min[split_dim]) * 0.5;
                 split_index = partition(bboxes, node.m_begin, node.m_end, split_dim, split_plane);
             }
 
@@ -64,11 +64,11 @@ void BVHBuilder::build(GeometryBBoxFunctor& bboxes, BVH_Type* bvh)
                 edge = node_bbox.max - node_bbox.min;
                 split_dim = uint32_t(std::max_element(&edge[0], &edge[0] + 3) - &edge[0]);
 
-                float mean = 0.0f;
+                Scalar mean = 0.0;
                 for (uint32_t i = node.m_begin; i < node.m_end; i++)
-                    mean += (bboxes[i].min[split_dim] + bboxes[i].max[split_dim]) * 0.5f;
+                    mean += (bboxes[i].min[split_dim] + bboxes[i].max[split_dim]) * 0.5;
 
-                split_plane = mean / float(node.m_begin - node.m_end);
+                split_plane = mean / Scalar(node.m_begin - node.m_end);
                 split_index = partition(bboxes, node.m_begin, node.m_end, split_dim, split_plane);
             }
 
@@ -107,7 +107,7 @@ BBoxType BVHBuilder::presplit(const BBoxType& node_bbox, const BBoxType& kd_bbox
     {
         const Vector_Type edge = out_bbox.max - out_bbox.min;
         const uint32_t split_dim = uint32_t(std::max_element(&edge[0], &edge[0] + 3) - &edge[0]);
-        const float split_plane = (out_bbox.min[split_dim] + out_bbox.max[split_dim]) * 0.5f;
+        const Scalar split_plane = (out_bbox.min[split_dim] + out_bbox.max[split_dim]) * 0.5;
 
         tests[split_dim]--;
         if (split_plane < node_bbox.min[split_dim])
@@ -159,16 +159,16 @@ BBoxType intersection(const BBoxType& bbox1, const BBoxType& bbox2)
     return bb;
 }
 
-bool is_left(const BBoxType& bbox, const uint32_t axis, const float pivot)
+bool is_left(const BBoxType& bbox, const uint32_t axis, const Scalar pivot)
 {
     switch (axis)
     {
     case 0:
-        return bbox.min.x() + bbox.max.x() < pivot * 2.0f;
+        return bbox.min.x() + bbox.max.x() < pivot * 2.0;
     case 1:
-        return bbox.min.y() + bbox.max.y() < pivot * 2.0f;
+        return bbox.min.y() + bbox.max.y() < pivot * 2.0;
     case 2:
-        return bbox.min.z() + bbox.max.z() < pivot * 2.0f;
+        return bbox.min.z() + bbox.max.z() < pivot * 2.0;
     }
     return false; // Never reached, this is just to suppress a warning.
 }
@@ -189,7 +189,7 @@ BBoxType merge(const BBoxType& bbox1, const BBoxType& bbox2)
 }
 
 uint32_t partition(GeometryBBoxFunctor& bboxes, const uint32_t begin, const uint32_t end, const uint32_t axis,
-        const float pivot)
+        const Scalar pivot)
 {
     uint32_t i = begin;
     uint32_t j = end - 1;
