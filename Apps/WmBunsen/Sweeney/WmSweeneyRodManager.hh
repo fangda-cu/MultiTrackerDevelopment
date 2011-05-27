@@ -8,6 +8,7 @@
 #include <weta/Wfigaro/Render/RodRenderer.hh>
 #include <weta/Wfigaro/Core/TriangleMesh.hh>
 #include <weta/Wfigaro/Core/ScriptingController.hh>
+#include <weta/Wfigaro/Collisions/LevelSet.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/BARodStepper.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/ElasticRod.hh>
 #include <weta/Wfigaro/Physics/ElasticRods/RodUtils.hh>
@@ -51,6 +52,7 @@ public:
     void initialiseSimulation( const double i_timeStep, const double i_startTime, BASim::PerformanceTuningParameters perfParams );
 
     void addCollisionMesh( BASim::TriangleMesh* i_triangleMesh, 
+                           BASim::LevelSet* i_levelSet,
                            WmFigMeshController* i_figMeshController );
 
     void takeStep();
@@ -75,6 +77,7 @@ private:
     std::vector< BASim::RodTimeStepper* > m_rodTimeSteppers;
     std::vector< BASim::RodRenderer* > m_rodRenderers;
     std::vector< BASim::TriangleMesh* > m_triangleMeshes;
+    std::vector< BASim::LevelSet* > m_levelSets;
     std::vector< BASim::ScriptingController* > m_scriptingControllers;    
 };
 

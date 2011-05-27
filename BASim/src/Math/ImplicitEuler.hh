@@ -214,7 +214,7 @@ protected:
 
     for (; m_curit < m_maxit; ++m_curit) 
     {
-      START_TIMER("setup");
+      START_TIMER("ImplicitEuler::velocity_solve/setup");
       m_rhs *= m_dt;
       m_diffEq.startIteration();
       m_diffEq.evaluatePDotDX(1.0, *m_A);
@@ -250,18 +250,18 @@ protected:
       
       // Finalize the nonzero structure before the linear solve (for sparse matrices only)
       m_A->finalizeNonzeros();
-      STOP_TIMER("setup");
+      STOP_TIMER("ImplicitEuler::velocity_solve/setup");
 
-      START_TIMER("solver");
+      START_TIMER("ImplicitEuler::velocity_solve/solver");
       int status = m_solver->solve(m_increment, m_rhs);
       if( status < 0 )
       {
         successfull_solve = false;
         std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Problem during linear solve detected. " << std::endl;
       }
-      STOP_TIMER("solver");
+      STOP_TIMER("ImplicitEuler::velocity_solve/solver");
 
-      START_TIMER("setup");
+      START_TIMER("ImplicitEuler::velocity_solve/setup");
       m_deltaV += m_increment;
 
       m_diffEq.setV(v0+m_deltaV);
@@ -269,16 +269,24 @@ protected:
 
       m_diffEq.endIteration();
 
-      if (m_curit == m_maxit - 1) break;
+      if (m_curit == m_maxit - 1)
+      {
+        STOP_TIMER("ImplicitEuler::velocity_solve/setup");
+	break;
+      }
 
       // check for convergence
-      if ( isConverged() ) break;
+      if ( isConverged() )
+      {
+        STOP_TIMER("ImplicitEuler::velocity_solve/setup"); 
+        break;
+      }
 
       m_increment.setZero();
       m_A->setZero();
       // Allow the nonzero structure to be modified again (for sparse matrices only)
       m_A->resetNonzeros();
-      STOP_TIMER("setup");
+      STOP_TIMER("ImplicitEuler::velocity_solve/setup");
     }
 
     //std::cout << "Iterations: " << m_curit << std::endl;
@@ -343,7 +351,7 @@ protected:
 
     for (; m_curit < m_maxit; ++m_curit) 
     {
-      START_TIMER("setup");
+      START_TIMER("ImplicitEuler::position_solve/setup");
       // m_rhs = m_dt^2 * F
       m_rhs *= m_dt * m_dt;
       m_diffEq.startIteration();
@@ -391,18 +399,18 @@ protected:
 
       // Finalize the nonzero structure before the linear solve (for sparse matrices only)
       m_A->finalizeNonzeros();
-      STOP_TIMER("setup");
+      STOP_TIMER("ImplicitEuler::position_solve/setup");
 
-      START_TIMER("solver");
+      START_TIMER("ImplicitEuler::position_solve/solver");
       int status = m_solver->solve(m_increment, m_rhs);
       if( status < 0 )
       {
         successfull_solve = false;
         std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Problem during linear solve detected. " << std::endl;
       }
-      STOP_TIMER("solver");
+      STOP_TIMER("ImplicitEuler::position_solve/solver");
 
-      START_TIMER("setup");
+      START_TIMER("ImplicitEuler::position_solve/setup");
       m_diffEq.increment_q(m_increment);
       m_deltaX += m_increment;
       m_diffEq.increment_qdot(m_deltaX / m_dt - v0 - m_deltaV);
@@ -417,17 +425,25 @@ protected:
 
       m_diffEq.endIteration();
 
-      if (m_curit == m_maxit - 1) break;
+      if (m_curit == m_maxit - 1)
+      {
+        STOP_TIMER("ImplicitEuler::position_solve/solver");
+        break;
+      }
 
       // check for convergence
-      if ( isConverged() ) break;
+      if ( isConverged() ) 
+      {
+        STOP_TIMER("ImplicitEuler::position_solve/solver");
+        break;
+      }
 
       m_increment.setZero();
       m_A->setZero();
       
       // Allow the nonzero structure to be modified again (for sparse matrices only)
       m_A->resetNonzeros();
-      STOP_TIMER("setup");
+      STOP_TIMER("ImplicitEuler::position_solve/solver");
     }
 
     //std::cout << "Iterations: " << m_curit << std::endl;
