@@ -46,13 +46,11 @@ public:
   Timer &t_BARodStepper_execute;
   Timer &t_BARodStepper_adaptiveExecute;
   Timer &t_BARodStepper_step;
-  Timer &t_BARodStepper_stepCallsStepperExecute;
 
   MyTimers() :
     t_BARodStepper_execute( Timer::getTimer("BARodStepper::execute")),
     t_BARodStepper_adaptiveExecute( Timer::getTimer("BARodStepper::adaptiveStep")),
-    t_BARodStepper_step( Timer::getTimer("BARodStepper::step")),
-    t_BARodStepper_stepCallsStepperExecute( Timer::getTimer("BARodStepper::step calling stepper->Execute"))
+    t_BARodStepper_step( Timer::getTimer("BARodStepper::step"))
   {
   }
 };
@@ -630,27 +628,45 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     for( int i = 0; i < (int) m_number_of_rods; ++i ) assert( m_rods[i]->getTimeStep() == m_dt );
 #endif
 
+    START_TIMER("BARodStepper::step/setup");
+
     // Prepare list of steppers to be executed.
     std::vector<RodTimeStepper*> selected_steppers;
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
         selected_steppers.push_back(m_steppers[*rod]);
 
+    STOP_TIMER("BARodStepper::step/setup");
+
+    START_TIMER("BARodStepper::step/explo");
+
     if (m_perf_param.m_enable_explosion_detection)
         computeForces(m_startForces, selected_rods);
+
+    STOP_TIMER("BARodStepper::step/explo");
+
+    START_TIMER("BARodStepper::step/setup");
 
     // Save the pre-timestep positions
     extractPositions(m_xn, selected_rods);
 
+    STOP_TIMER("BARodStepper::step/setup");
+
+    START_TIMER("BARodStepper::step/immune");
     // Determine which vertex are to be considered collision-immune for this step
     computeImmunity(selected_rods);
+    STOP_TIMER("BARodStepper::step/immune");
 
     // Step rods forward ignoring collisions
-    START_TIMER("BARodStepperDynamics");
+    START_TIMER("BARodStepper::step/scripting");
 
     // Step scripted objects forward, set boundary conditions
     for (std::vector<ScriptingController*>::const_iterator scripting_controller = m_scripting_controllers.begin(); scripting_controller
             != m_scripting_controllers.end(); scripting_controller++)
         (*scripting_controller)->execute();
+
+    STOP_TIMER("BARodStepper::step/scripting");
+
+    START_TIMER("BARodStepper::step/penalty");
 
     // Jungseock's implicit penalty
     std::list<Collision*> penalty_collisions;
@@ -664,8 +680,11 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         executeImplicitPenaltyResponse(penalty_collisions, selected_rods);
     }
 
+    STOP_TIMER("BARodStepper::step/penalty");
+
+    START_TIMER("BARodStepper::step/steppers");
+
     bool dependable_solve = true;
-    BEGIN_TIMER(BARodStepper_stepCallsStepperExecute)
 #ifdef HAVE_OPENMP
 #pragma omp parallel for
 #endif
@@ -679,15 +698,18 @@ void BARodStepper::step(RodSelectionType& selected_rods)
                     << " iterations\n";
         dependable_solve = dependable_solve && result;
     }
-    END_TIMER(BARodStepper_stepCallsStepperExecute)
+    STOP_TIMER("BARodStepper::step/steppers");
 
     TraceStream(m_log, "") << "Dynamic step is " << (dependable_solve ? "" : "not ") << "entirely dependable!\n";
+
+    START_TIMER("BARodStepper::step/penalty");
 
     // Clean up penalty collisions list
     for (std::list<Collision*>::iterator i = penalty_collisions.begin(); i != penalty_collisions.end(); i++)
         delete *i;
 
-    STOP_TIMER("BARodStepperDynamics");
+    STOP_TIMER("BARodStepper::step/penalty");
+
 
     // If we do rod-rod collisions (meaning no selective adaptivity) and global dependability failed, we might as well stop here.
     if (!m_perf_param.m_skipRodRodCollisions && !dependable_solve)
@@ -698,14 +720,24 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         return;
     }
 
+    START_TIMER("BARodStepper::step/setup");
+
     // Post time step position
     extractPositions(m_xnp1, selected_rods);
 
     // Average velocity over the timestep just completed
     m_vnphalf = (m_xnp1 - m_xn) / m_dt;
 
+    STOP_TIMER("BARodStepper::step/setup");
+
+    START_TIMER("BARodStepper::step/inexten");
+
     for (int i = 0; i < selected_steppers.size(); i++)
         applyInextensibilityVelocityFilter(selected_steppers[i]->getRod()->globalRodIndex);
+
+    STOP_TIMER("BARodStepper::step/inexten");
+
+    START_TIMER("BARodStepper::step/immune");
 
     // Mark invalid rods as entirely collision-immune, so we don't waste time on colliding them.
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
@@ -716,7 +748,9 @@ void BARodStepper::step(RodSelectionType& selected_rods)
                 m_collision_immune[m_base_vtx_indices[*rod] + j] = true;
         }
 
-    START_TIMER("BARodStepperResponse");
+    STOP_TIMER("BARodStepper::step/immune");
+
+    START_TIMER("BARodStepper::step/response");
     TraceStream(m_log, "") << "Starting collision response\n";
 
     if (m_perf_param.m_enable_explosion_detection)
@@ -732,7 +766,10 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         }
     }
     TraceStream(m_log, "") << "Finished collision response\n";
-    STOP_TIMER("BARodStepperResponse");
+
+    STOP_TIMER("BARodStepper::step/response");
+
+    START_TIMER("BARodStepper::step/setup");
 
     // Store the response part for visualization
     m_vnresp = m_vnphalf - (m_xnp1 - m_xn) / m_dt;
@@ -778,6 +815,10 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     for( int i = 0; i < (int) m_number_of_rods; ++i ) m_rods[i]->verifyProperties();
 #endif
 
+    STOP_TIMER("BARodStepper::step/setup");
+
+    START_TIMER("BARodStepper::step/explo");
+
     // Explosion detection
     std::vector<bool> exploding_rods(m_number_of_rods);
     if (m_perf_param.m_enable_explosion_detection)
@@ -786,6 +827,10 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         checkExplosions(exploding_rods, failed_collisions_rods, selected_rods);
     }
     // Decide whether to substep or kill some rods
+
+    STOP_TIMER("BARodStepper::step/explo");
+
+    START_TIMER("BARodStepper::step/exception");
 
     int rod_kill = 0;
     for (RodSelectionType::iterator rodit = selected_rods.begin(); rodit != selected_rods.end(); rodit++)
@@ -857,6 +902,8 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         // the -- compensates for the erased rod; this is dangerous since it assumes array (rather than linked-list) semantics for selected_rods
         // Yes I know, I'm suprised this even works.
     }
+
+    STOP_TIMER("BARodStepper::step/exception");
 
     if (rod_kill)
         NoticeStream(m_log, "") << "This step killed " << rod_kill << " rods\n";

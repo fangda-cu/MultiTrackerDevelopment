@@ -65,6 +65,7 @@ public:
 
     bool execute()
     {
+        START_TIMER("SymmetricImplicitEuler::execute");
         START_TIMER("SymmetricImplicitEuler::execute/backup");
         m_diffEq.backupResize();
         m_diffEq.backup();
@@ -77,6 +78,7 @@ public:
             START_TIMER("SymmetricImplicitEuler::execute/backup");
             m_diffEq.backupClear();
             STOP_TIMER("SymmetricImplicitEuler::execute/backup");
+            STOP_TIMER("SymmetricImplicitEuler::execute");
             return true;
         }
 
@@ -92,6 +94,7 @@ public:
             START_TIMER("SymmetricImplicitEuler::execute/backup");
             m_diffEq.backupClear();
             STOP_TIMER("SymmetricImplicitEuler::execute/backup");
+            STOP_TIMER("SymmetricImplicitEuler::execute");
             return true;
         }
 
@@ -107,6 +110,7 @@ public:
             START_TIMER("SymmetricImplicitEuler::execute/backup");
             m_diffEq.backupClear();
             STOP_TIMER("SymmetricImplicitEuler::execute/backup");
+            STOP_TIMER("SymmetricImplicitEuler::execute");
             return true;
         }
 
@@ -122,6 +126,7 @@ public:
             START_TIMER("SymmetricImplicitEuler::execute/backup");
             m_diffEq.backupClear();
             STOP_TIMER("SymmetricImplicitEuler::execute/backup");
+	    STOP_TIMER("SymmetricImplicitEuler::execute");
             return true;
         }
 
@@ -137,6 +142,7 @@ public:
             START_TIMER("SymmetricImplicitEuler::execute/backup");
             m_diffEq.backupClear();
             STOP_TIMER("SymmetricImplicitEuler::execute/backup");
+	    STOP_TIMER("SymmetricImplicitEuler::execute");
             return true;
         }
 
@@ -145,6 +151,8 @@ public:
         START_TIMER("SymmetricImplicitEuler::execute/backup");
         m_diffEq.backupClear();
         STOP_TIMER("SymmetricImplicitEuler::execute/backup");
+
+        STOP_TIMER("SymmetricImplicitEuler::execute");
         return false;
     }
 
