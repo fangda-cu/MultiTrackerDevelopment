@@ -67,7 +67,7 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
     // If the magnitude of gravity is 0 then don't bother adding the force
     if ( i_gravity.norm() > 0 )
     {
-        stepper->addExternalForce( new RodGravity( i_gravity ) );        
+      stepper->addExternalForce( new RodGravity( i_gravity ) );        
     }
             
     // Add a force class that we will use to pass in forces from Maya

@@ -65,86 +65,94 @@ public:
 
     bool execute()
     {
-        START_TIMER("backup");
+        START_TIMER("SymmetricImplicitEuler::execute");
+        START_TIMER("SymmetricImplicitEuler::execute/backup");
         m_diffEq.backupResize();
         m_diffEq.backup();
-        STOP_TIMER("backup");
+        STOP_TIMER("SymmetricImplicitEuler::execute/backup");
         if (position_solve(0))
         {
 #ifdef TIMING_ON
             IntStatTracker::getIntTracker("INITIAL_ITERATE_1_SUCCESSES") += 1;
 #endif
-            START_TIMER("backup");
+            START_TIMER("SymmetricImplicitEuler::execute/backup");
             m_diffEq.backupClear();
-            STOP_TIMER("backup");
+            STOP_TIMER("SymmetricImplicitEuler::execute/backup");
+            STOP_TIMER("SymmetricImplicitEuler::execute");
             return true;
         }
 
         //std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: " << m_maxit << ". Attempting alternate initial iterate 2." << std::endl;
-        START_TIMER("backup");
+        START_TIMER("SymmetricImplicitEuler::execute/backup");
         m_diffEq.backupRestore();
-        STOP_TIMER("backup");
+        STOP_TIMER("SymmetricImplicitEuler::execute/backup");
         if (position_solve(1))
         {
 #ifdef TIMING_ON
             IntStatTracker::getIntTracker("INITIAL_ITERATE_2_SUCCESSES") += 1;
 #endif
-            START_TIMER("backup");
+            START_TIMER("SymmetricImplicitEuler::execute/backup");
             m_diffEq.backupClear();
-            STOP_TIMER("backup");
+            STOP_TIMER("SymmetricImplicitEuler::execute/backup");
+            STOP_TIMER("SymmetricImplicitEuler::execute");
             return true;
         }
 
         //std::cerr << "                          Newton solver failed to converge in max iterations: " << m_maxit << ". Attempting alternate initial iterate 3." << std::endl;
-        START_TIMER("backup");
+        START_TIMER("SymmetricImplicitEuler::execute/backup");
         m_diffEq.backupRestore();
-        STOP_TIMER("backup");
+        STOP_TIMER("SymmetricImplicitEuler::execute/backup");
         if (position_solve(2))
         {
 #ifdef TIMING_ON
             IntStatTracker::getIntTracker("INITIAL_ITERATE_3_SUCCESSES") += 1;
 #endif
-            START_TIMER("backup");
+            START_TIMER("SymmetricImplicitEuler::execute/backup");
             m_diffEq.backupClear();
-            STOP_TIMER("backup");
+            STOP_TIMER("SymmetricImplicitEuler::execute/backup");
+            STOP_TIMER("SymmetricImplicitEuler::execute");
             return true;
         }
 
         //std::cerr << "                          Newton solver failed to converge in max iterations: " << m_maxit << ". Attempting alternate initial iterate 4." << std::endl;
-        START_TIMER("backup");
+        START_TIMER("SymmetricImplicitEuler::execute/backup");
         m_diffEq.backupRestore();
-        STOP_TIMER("backup");
+        STOP_TIMER("SymmetricImplicitEuler::execute/backup");
         if (position_solve(3))
         {
 #ifdef TIMING_ON
             IntStatTracker::getIntTracker("INITIAL_ITERATE_4_SUCCESSES") += 1;
 #endif
-            START_TIMER("backup");
+            START_TIMER("SymmetricImplicitEuler::execute/backup");
             m_diffEq.backupClear();
-            STOP_TIMER("backup");
+            STOP_TIMER("SymmetricImplicitEuler::execute/backup");
+	    STOP_TIMER("SymmetricImplicitEuler::execute");
             return true;
         }
 
         //std::cerr << "                          Newton solver failed to converge in max iterations: " << m_maxit << ". Attempting alternate initial iterate 4." << std::endl;
-        START_TIMER("backup");
+        START_TIMER("SymmetricImplicitEuler::execute/backup");
         m_diffEq.backupRestore();
-        STOP_TIMER("backup");
+        STOP_TIMER("SymmetricImplicitEuler::execute/backup");
         if (position_solve(4))
         {
 #ifdef TIMING_ON
             IntStatTracker::getIntTracker("INITIAL_ITERATE_5_SUCCESSES") += 1;
 #endif
-            START_TIMER("backup");
+            START_TIMER("SymmetricImplicitEuler::execute/backup");
             m_diffEq.backupClear();
-            STOP_TIMER("backup");
+            STOP_TIMER("SymmetricImplicitEuler::execute/backup");
+	    STOP_TIMER("SymmetricImplicitEuler::execute");
             return true;
         }
 
       //  std::cerr << "\033[31;1mWARNING IN SYM IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: "
       //          << m_maxit << "." << std::endl;
-        START_TIMER("backup");
+        START_TIMER("SymmetricImplicitEuler::execute/backup");
         m_diffEq.backupClear();
-        STOP_TIMER("backup");
+        STOP_TIMER("SymmetricImplicitEuler::execute/backup");
+
+        STOP_TIMER("SymmetricImplicitEuler::execute");
         return false;
     }
 
@@ -276,7 +284,7 @@ protected:
 
     bool position_solve(int guess_to_use)
     {
-        START_TIMER("setup");
+        START_TIMER("SymmetricImplicitEuler::position_solve/setup");
 
         bool successfull_solve = true;
 
@@ -350,6 +358,7 @@ protected:
         default:
         {
             std::cerr << "\033[31;1mERROR IN IMPLICITEULER:\033[m Invalid initial iterate requested, exiting." << std::endl;
+	    STOP_TIMER("SymmetricImplicitEuler::position_solve/setup");
             exit(1);
             break;
         }
@@ -390,13 +399,13 @@ protected:
         }
 #endif
 
-        STOP_TIMER("setup");
+        STOP_TIMER("SymmetricImplicitEuler::position_solve/setup");
 
         int m_curit = 0;
         for (; m_curit < m_maxit; ++m_curit)
         {
             // TODO: Assert m_A, increment are zero
-            START_TIMER("setup");
+            START_TIMER("SymmetricImplicitEuler::position_solve/setup");
 
             for (int i = 0; i < (int) m_fixed.size(); ++i)
                 m_rhs(m_fixed[i]) = m_dt * v0(m_fixed[i]) - m_deltaX(m_fixed[i]);
@@ -440,19 +449,19 @@ protected:
 
             // Finalize the nonzero structure before the linear solve (for sparse matrices only)
             m_A->finalizeNonzeros();
-            STOP_TIMER("setup");
+            STOP_TIMER("SymmetricImplicitEuler::position_solve/setup");
 
             assert(m_A->isApproxSymmetric(1.0e-6));
 
-            START_TIMER("solver");
+            START_TIMER("SymmetricImplicitEuler::position_solve/solver");
             int status = m_solver->solve(m_increment, m_rhs);
+            STOP_TIMER("SymmetricImplicitEuler::position_solve/solver");
             if (status < 0)
             {
                 successfull_solve = false;
                 std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Problem during linear solve detected. " << std::endl;
                 return successfull_solve;
             }
-            STOP_TIMER("solver");
 
             // Save m_deltaX for line search purposes
             m_deltaX_save = m_deltaX;
@@ -480,7 +489,7 @@ protected:
                 }
             }
 
-            START_TIMER("line search");
+	    START_TIMER("SymmetricImplicitEuler::position_solve/ls");
             double alpha = 1;
             double previous_residual = m_residual;
             m_deltaX += m_increment;
@@ -503,12 +512,11 @@ protected:
                 alpha *= .5;
                 m_deltaX = m_deltaX_save + alpha * m_increment;
             }
+	    STOP_TIMER("SymmetricImplicitEuler::position_solve/ls");
+
             if (!successfull_solve)
                 break;
-            STOP_TIMER("line search");
-
-            START_TIMER("setup");
-
+            
             if (m_curit == m_maxit - 1)
                 break;
 
@@ -516,13 +524,15 @@ protected:
             if (isConverged())
                 break;
 
+	    START_TIMER("SymmetricImplicitEuler::position_solve/setup");
+
             m_increment.setZero();
             m_A->setZero();
 
             // Allow the nonzero structure to be modified again (for sparse matrices only)
             m_A->resetNonzeros();
 
-            STOP_TIMER("setup");
+	    STOP_TIMER("SymmetricImplicitEuler::position_solve/setup");
         }
 
         //std::cout << "Iterations: " << m_curit << std::endl;
