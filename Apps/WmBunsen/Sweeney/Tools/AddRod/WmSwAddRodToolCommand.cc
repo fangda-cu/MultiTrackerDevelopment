@@ -1,4 +1,5 @@
 #include "WmSwAddRodToolCommand.hh"
+#include "../../WmSweeneyUtils.hh"
 
 #include <maya/MFnIntArrayData.h>
 #include <maya/MFnNurbsCurve.h>
@@ -15,7 +16,9 @@ MString WmSwAddRodToolCommand::typeName( "wmSwAddRodToolCommand" );
 WmSwAddRodToolCommand::WmSwAddRodToolCommand() : m_sweeneyNode( NULL ), 
     m_rodManager( NULL )
 {
-    setCommandString( typeName );    
+    setCommandString( typeName );
+    
+    utils::findSelectedSweeneyNodeAndRodManager( m_sweeneyNode, m_rodManager );    
 }
 
 WmSwAddRodToolCommand::~WmSwAddRodToolCommand() 

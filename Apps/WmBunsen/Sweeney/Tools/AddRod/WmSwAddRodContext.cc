@@ -73,7 +73,7 @@ MStatus WmSwAddRodContext::doRelease( MEvent& i_event )
  
     M3dView view = M3dView::active3dView();
     view.refresh( true, true );
-	
+   
     m_toolCommand->finalize();
 
     return MS::kSuccess;

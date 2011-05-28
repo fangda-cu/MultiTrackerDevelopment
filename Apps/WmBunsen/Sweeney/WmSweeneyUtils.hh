@@ -10,6 +10,7 @@ namespace sweeney {
 namespace utils {
 
 MStatus findSelectedSweeneyNodeAndRodManager( WmSweeneyNode* o_wmSweeneyNode, WmSweeneyRodManager* o_wmSweenyRodManager );
+MStatus findASelectedNodeByTypeName( MString& i_typeName, MObject* o_selectedNodeObject );
 
 }
 }

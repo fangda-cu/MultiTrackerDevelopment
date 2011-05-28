@@ -5,59 +5,71 @@
 namespace sweeney {
 namespace utils {
 
-
-// This is inlined a as it's in the .hh and to avoid multiple definition issues. It should really 
-// go live in a .cc
-MStatus findSelectedSweeneyNodeAndRodManager( WmSweeneyNode* o_wmSweeneyNode, 
-    WmSweeneyRodManager* o_wmSweenyRodManager )
+MStatus findASelectedNodeByTypeName( MString& i_typeName, MObject* o_selectedNodeObject )
 {
+    // Only returns the first selected node of the type it finds.
+    
     MStatus status;
     
     MSelectionList selectionList;
     MGlobal::getActiveSelectionList( selectionList );
 
-    MObject sweeneyNodeObj = MObject::kNullObj;
+    *o_selectedNodeObject = MObject::kNullObj;
     
-    if ( selectionList.length() != 1 )
-    {
-        MGlobal::displayError( "Please select a single wmSweeney node" );
-        return MStatus::kFailure;
-    }
-
     MDagPath nodeDagPath;
     MObject nodeObject;
-    selectionList.getDagPath( 0, nodeDagPath, nodeObject );
     
-    // Look for a child as the user probably selected the transform
-    MFnDagNode dagNodeFn( nodeDagPath.child( 0, &status ), &status );
-    if ( status )
+    for ( unsigned int s = 0; s < selectionList.length(); ++s )
     {
-        MDagPath childPath;
+        selectionList.getDagPath( s, nodeDagPath, nodeObject );
         
-        status = dagNodeFn.getPath( childPath );
-        CHECK_MSTATUS( status );
-        childPath.extendToShape();
-
-        MFnDependencyNode dependencyNodeFn( childPath.node( &status ) );
-        CHECK_MSTATUS( status );
-
-        if ( dependencyNodeFn.typeName() == WmSweeneyNode::typeName )
+        // Look for a child as the user probably selected the transform
+        MFnDagNode dagNodeFn( nodeDagPath.child( 0, &status ), &status );
+        if ( status )
         {
-            sweeneyNodeObj = childPath.node( &status );
+            MDagPath childPath;
+            
+            status = dagNodeFn.getPath( childPath );
             CHECK_MSTATUS( status );
-        }       
-    }
-    else // Perhaps no child as the user selected the shape node directly
-    {
-        MFnDependencyNode dependencyNodeFn( nodeDagPath.node( &status ) );
-        CHECK_MSTATUS( status );
+            childPath.extendToShape();
 
-        if ( dependencyNodeFn.typeName() == WmSweeneyNode::typeName )
-        {
-            sweeneyNodeObj = nodeDagPath.node( &status );
+            MFnDependencyNode dependencyNodeFn( childPath.node( &status ) );
             CHECK_MSTATUS( status );
-        }        
+
+            if ( dependencyNodeFn.typeName() == i_typeName )
+            {
+                *o_selectedNodeObject = childPath.node( &status );
+                CHECK_MSTATUS( status );
+                
+                return MStatus::kSuccess;
+            }       
+        }
+        else // Perhaps no child as the user selected the shape node directly
+        {
+            MFnDependencyNode dependencyNodeFn( nodeDagPath.node( &status ) );
+            CHECK_MSTATUS( status );
+
+            if ( dependencyNodeFn.typeName() == i_typeName )
+            {
+                *o_selectedNodeObject = nodeDagPath.node( &status );
+                CHECK_MSTATUS( status );
+                
+                return MStatus::kSuccess;
+            }        
+        }
     }
+    
+    return MStatus::kFailure;
+}
+    
+MStatus findSelectedSweeneyNodeAndRodManager( WmSweeneyNode* o_wmSweeneyNode, 
+    WmSweeneyRodManager* o_wmSweenyRodManager )
+{
+    MStatus status;
+    
+    MObject sweeneyNodeObj = MObject::kNullObj;
+
+    findASelectedNodeByTypeName( WmSweeneyNode::typeName, &sweeneyNodeObj );
     
     if ( sweeneyNodeObj != MObject::kNullObj )
     {        
@@ -69,6 +81,8 @@ MStatus findSelectedSweeneyNodeAndRodManager( WmSweeneyNode* o_wmSweeneyNode,
     
         return MStatus::kSuccess;
     }
+    
+    MGlobal::displayError( "Please select a wmSweeneyNode." );
     
     return MStatus::kFailure;
 }
