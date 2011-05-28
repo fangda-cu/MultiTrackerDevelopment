@@ -142,6 +142,7 @@ WmFigMeshController.cc \
 Sweeney/WmSweeneyNode.cc \
 Sweeney/WmSweeneyRodManager.cc \
 Sweeney/WmSweeneyCmd.cc \
+Sweeney/WmSweeneyUtils.cc \
 Sweeney/Tools/AddRod/WmSwAddRodContext.cc \
 Sweeney/Tools/AddRod/WmSwAddRodContextCommand.cc \
 Sweeney/Tools/AddRod/WmSwAddRodToolCommand.cc \
