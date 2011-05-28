@@ -673,7 +673,7 @@ void* WmSweeneyNode::creator()
     //Failure  Detection
     {
         MFnNumericAttribute nAttr;
-        ia_maxNumOfSolverIters= nAttr.create( "maxNumOfSolverIters", "mnsi", MFnNumericData::kInt, 5, &status);
+        ia_maxNumOfSolverIters= nAttr.create( "maxNumOfSolverIters", "mnsi", MFnNumericData::kInt, 250, &status);
         if (!status) {
             status.perror("create ia_maxNumOfSolverIters");
             return status;
