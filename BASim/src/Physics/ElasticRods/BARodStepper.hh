@@ -283,8 +283,8 @@ private:
     void exertPenaltyImpulses(std::vector<EdgeEdgeProximityCollision>& edg_edg_cllsns,
             std::vector<VertexFaceProximityCollision>& vrtx_fce_cllsns, VecXd& v);
 
-    void exertInelasticImpluse(EdgeEdgeCTCollision& clssn);
-    void exertInelasticImpluse(VertexFaceCTCollision& clssn);
+    void exertInelasticImpulse(EdgeEdgeCTCollision& clssn);
+    void exertInelasticImpulse(VertexFaceCTCollision& clssn);
     void exertInelasticImpulses(std::vector<EdgeEdgeCTCollision>& edg_edg_cllsns,
             std::vector<VertexFaceCTCollision>& vrtx_fce_cllsns, VecXd& v);
 

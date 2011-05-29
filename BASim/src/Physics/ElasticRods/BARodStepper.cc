@@ -715,8 +715,11 @@ void BARodStepper::step(RodSelectionType& selected_rods)
 #pragma omp parallel for
 #endif
     for (int i = 0; i < selected_steppers.size(); i++)
-    {
+      {
         RodTimeStepper* const stepper = selected_steppers[i];
+	//std::cout << "BARodStepper::step/steppers: calling " << stepper->getDiffEqSolver().getName() << " solver for rod "
+	//	      << stepper->getRod()->globalRodIndex << std::endl;
+  
         bool result = stepper->execute();
         if (!result)
             TraceStream(m_log, "") << stepper->getDiffEqSolver().getName() << " solver for rod "

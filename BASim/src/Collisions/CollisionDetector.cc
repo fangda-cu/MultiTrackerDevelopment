@@ -31,6 +31,7 @@ CollisionDetector::~CollisionDetector()
 
 void CollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFilter collision_filter, bool)
 {
+    m_potential_collisions = 0;
     m_collision_filter = collision_filter;
     m_collisions_list = &cllsns;
     m_collisions_list->clear();

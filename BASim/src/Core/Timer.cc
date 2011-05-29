@@ -6,35 +6,37 @@
 #include <sys/resource.h>
 #include "Timer.hh"
 
+#include "Cycle.hh"
+
 namespace BASim {
 
 Timer::TimerMap Timer::timerMap;
 
-inline double timeofday()
-{
-  timeval tp;
-  gettimeofday(&tp, NULL);
-  double result = (double) tp.tv_sec + 1e-6 * (double) tp.tv_usec;
-  return result;
-}
+// inline double timeofday()
+// {
+//   timeval tp;
+//   gettimeofday(&tp, NULL);
+//   double result = (double) tp.tv_sec + 1e-6 * (double) tp.tv_usec;
+//   return result;
+// }
 
-inline double cpuusage()
-{
-  struct rusage rus;
-  getrusage(RUSAGE_SELF, &rus);
-  double user = (double) rus.ru_utime.tv_sec + 1e-6
-    * (double) rus.ru_utime.tv_usec;
-  double sys = (double) rus.ru_stime.tv_sec + 1e-6
-    * (double) rus.ru_stime.tv_usec;
+// inline double cpuusage()
+// {
+//   struct rusage rus;
+//   getrusage(RUSAGE_SELF, &rus);
+//   double user = (double) rus.ru_utime.tv_sec + 1e-6
+//     * (double) rus.ru_utime.tv_usec;
+//   double sys = (double) rus.ru_stime.tv_sec + 1e-6
+//     * (double) rus.ru_stime.tv_usec;
 
-  return user + sys;
-}
+//   return user + sys;
+// }
 
-inline double now()
-{
-  //return timeofday();
-  return cpuusage();
-}
+// inline double now()
+// {
+//   return timeofday();
+//   //return cpuusage();
+// }
 
 Timer& Timer::getTimer(std::string name)
 {
@@ -62,15 +64,15 @@ void Timer::lap()
 {
   if (nestingLevel) 
   {
-    elapsed   = now() - startTime;
-    startTime = now();
+    elapsedT    = elapsed( getticks(), startTicks);
+    startTicks  = getticks();
   }
 
-  cumulativeElapsed += elapsed;
-  cumulativeCount   += count;
+  cumulativeElapsedT += elapsedT;
+  cumulativeCount    += count;
 
-  elapsed = 0;
-  count   = 0;
+  elapsedT = 0;
+  count    = 0;
 }
 
 
@@ -97,21 +99,19 @@ std::ostream& operator<<(std::ostream& os, Timer& timer)
 }
 
 
-Timer::Timer()
-  : startTime(0)
-  , elapsed(0)
-  , cumulativeElapsed(0)
-  , count(0)
-  , cumulativeCount(0)
-  , nestingLevel(0)
-  , deepestNestingLevel(0)
+  Timer::Timer() :
+    elapsedT(0),
+    cumulativeElapsedT(0),
+    count(0),
+    cumulativeCount(0),
+    nestingLevel(0),
+    deepestNestingLevel(0)
 {}
 
 void Timer::clear()
 {
-  startTime           = 0.;
-  elapsed             = 0.;
-  cumulativeElapsed   = 0.;
+  elapsedT            = 0.;
+  cumulativeElapsedT  = 0.;
   nestingLevel        = 0;
   count               = 0;
   cumulativeCount     = 0;
@@ -125,7 +125,7 @@ void Timer::beginBlock()
   if (!nestingLevel)
   {
     //std::cout << " STARTING ";
-    startTime = now();
+    startTicks = getticks();
     ++count;
   }
   ++nestingLevel;
@@ -140,19 +140,19 @@ void Timer::endBlock()
   assert(nestingLevel >= 0);
   if (!nestingLevel) {
     //std::cout << " STOPPING ";
-    elapsed = now() - startTime;
-    times.push_back(elapsed);
-    startTime = 0.;
+    double duration = elapsed( getticks(), startTicks);
+    times.push_back(duration);
+    elapsedT += duration;
   }
   //std::cout << " exiting to level " << nestingLevel << std::endl;
 }
 
 double Timer::getElapsed()
 {
-  double e = elapsed;
+  double e = elapsedT;
 
   if (nestingLevel) {
-    e = now() - startTime;
+    e = elapsed( getticks(), startTicks);
   }
 
   return e;
@@ -160,7 +160,7 @@ double Timer::getElapsed()
 
 double Timer::getCumulativeElapsed()
 {
-  double e = cumulativeElapsed;
+  double e = cumulativeElapsedT;
 
   if (nestingLevel) {
     e += getElapsed();

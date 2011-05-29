@@ -28,7 +28,6 @@ CollisionDetectorBase::~CollisionDetectorBase()
     m_collisions_list = NULL;
 }
 
-
 void CollisionDetectorBase::updateContinuousTimeCollisions()
 {
     for (std::list<Collision*>::iterator collision = m_collisions_list->begin(); collision != m_collisions_list->end(); collision++)
@@ -39,8 +38,10 @@ void CollisionDetectorBase::updateContinuousTimeCollisions()
         }
 }
 
-void CollisionDetectorBase::appendCollision(const TopologicalElement* elem_a, const TopologicalElement* elem_b)
+bool CollisionDetectorBase::appendCollision(const TopologicalElement* elem_a, const TopologicalElement* elem_b)
 {
+    m_potential_collisions++;
+
     const YAEdge* edge_a = dynamic_cast<const YAEdge*> (elem_a);
     const YATriangle* triangle_a = dynamic_cast<const YATriangle*> (elem_a);
     const YAEdge* edge_b = dynamic_cast<const YAEdge*> (elem_b);
@@ -50,28 +51,31 @@ void CollisionDetectorBase::appendCollision(const TopologicalElement* elem_a, co
     {
     case ContinuousTime:
         if (edge_a && edge_b)
-            appendContinuousTimeCollision(edge_a, edge_b);
+            return appendContinuousTimeCollision(edge_a, edge_b);
         else if (edge_a && triangle_b)
-            appendContinuousTimeCollision(edge_a, triangle_b);
+            return appendContinuousTimeCollision(edge_a, triangle_b);
         else if (triangle_a && edge_b)
-            appendContinuousTimeCollision(edge_b, triangle_a);
+            return appendContinuousTimeCollision(edge_b, triangle_a);
         break;
 
     case Proximity:
         if (edge_a && edge_b)
-            appendProximityCollision(edge_a, edge_b);
+            return appendProximityCollision(edge_a, edge_b);
         else if (edge_a && triangle_b)
-            appendProximityCollision(edge_a, triangle_b);
+            return appendProximityCollision(edge_a, triangle_b);
         else if (triangle_a && edge_b)
-            appendProximityCollision(edge_b, triangle_a);
+            return appendProximityCollision(edge_b, triangle_a);
         break;
 
     case EdgeFace:
         if (edge_a && triangle_b)
-            appendEdgeFaceIntersection(edge_a, triangle_b);
+            return appendEdgeFaceIntersection(edge_a, triangle_b);
         if (edge_b && triangle_a)
-            appendEdgeFaceIntersection(edge_b, triangle_a);
+            return appendEdgeFaceIntersection(edge_b, triangle_a);
         break;
+
+    default:
+        return false;
     }
 }
 
@@ -100,73 +104,67 @@ void CollisionDetectorBase::updateBoundingBox(BVH& bvh, const std::vector<const 
     }
 }
 
-void CollisionDetectorBase::appendContinuousTimeCollision(const YAEdge* edge_a, const YAEdge* edge_b)
+bool CollisionDetectorBase::appendContinuousTimeCollision(const YAEdge* edge_a, const YAEdge* edge_b)
 {
     //    Timer::getTimer("CollisionDetectorBase::appendContinuousTimeCollision edge edge").start();
 
     EdgeEdgeCTCollision* edgeXedge = new EdgeEdgeCTCollision(m_geodata, edge_a, edge_b);
 
-    if ((m_skip_rod_rod && edgeXedge->IsRodRod()) || edgeXedge->IsCollisionImmune())
-    { // Detect rod-rod collisions and skip them.
-        //std::cout << "CollisionDetectorBase: Skipping rod-rod collision" << std::endl;
+    if ((m_skip_rod_rod && edgeXedge->IsRodRod()) || edgeXedge->IsCollisionImmune()
+            || !edgeXedge->analyseCollision(m_time_step))
+    {
         delete edgeXedge;
-        return;
+        return false;
     }
-
-    if (edgeXedge->analyseCollision(m_time_step))
+    else
     {
         m_collisions_mutex.Lock();
         m_collisions_list->push_back(edgeXedge); // Will be deleted in BARodStepper::executeIterativeInelasticImpulseResponse()
         m_collisions_mutex.Unlock();
-        // std::cout << "CollisionDetectorBase: Found edge-edge collision" << std::endl;
+        return true;
     }
-    else
-        delete edgeXedge;
-
     //    Timer::getTimer("CollisionDetectorBase::appendContinuousTimeCollision edge edge").stop();
 }
 
-void CollisionDetectorBase::appendContinuousTimeCollision(int v_index, const YATriangle* triangle)
+bool CollisionDetectorBase::appendContinuousTimeCollision(int v_index, const YATriangle* triangle)
 {
     //    Timer::getTimer("CollisionDetectorBase::appendContinuousTimeCollision vertex face").start();
 
     VertexFaceCTCollision* vertexXface = new VertexFaceCTCollision(m_geodata, v_index, triangle);
 
     // If vertex is fixed, if face is fixed, nothing to do
-    if (vertexXface->IsFixed() || m_geodata.IsCollisionImmune(v_index))
+    if (vertexXface->IsFixed() || m_geodata.IsCollisionImmune(v_index) || !vertexXface->analyseCollision(m_time_step))
     {
         delete vertexXface;
-        // std::cout << "CollisionDetectorBase: Skipping vertex " << v_index << " - face " << triangle->first() << "/" << triangle->second() << "/" << triangle->third() << " collision with fixed vertex and/or face" << std::endl;
-        return;
+        return false;
     }
-
-    if (vertexXface->analyseCollision(m_time_step))
+    else
     {
         m_collisions_mutex.Lock();
         m_collisions_list->push_back(vertexXface); // Will be deleted in BARodStepper::executeIterativeInelasticImpulseResponse()
         m_collisions_mutex.Unlock();
-        // std::cout << "CollisionDetectorBase: Found vertex-face collision" << std::endl;
+        return true;
     }
-    else
-        delete vertexXface;
-
     //    Timer::getTimer("CollisionDetectorBase::appendContinuousTimeCollision vertex face").stop();
 }
 
-void CollisionDetectorBase::appendContinuousTimeCollision(const YAEdge* edge, const YATriangle* triangle)
+bool CollisionDetectorBase::appendContinuousTimeCollision(const YAEdge* edge, const YATriangle* triangle)
 {
     YAEdge edge_2(triangle->first(), triangle->second());
     YAEdge edge_1(triangle->third(), triangle->first());
     YAEdge edge_0(triangle->second(), triangle->third());
-    appendContinuousTimeCollision(edge, &edge_0);
-    appendContinuousTimeCollision(edge, &edge_1);
-    appendContinuousTimeCollision(edge, &edge_2);
 
-    appendContinuousTimeCollision(edge->first(), triangle);
-    appendContinuousTimeCollision(edge->second(), triangle);
+    bool ee0 = appendContinuousTimeCollision(edge, &edge_0);
+    bool ee1 = appendContinuousTimeCollision(edge, &edge_1);
+    bool ee2 = appendContinuousTimeCollision(edge, &edge_2);
+
+    bool vf0 = appendContinuousTimeCollision(edge->first(), triangle);
+    bool vf1 = appendContinuousTimeCollision(edge->second(), triangle);
+
+    return ee0 || ee1 || ee2 || vf0 || vf1;
 }
 
-void CollisionDetectorBase::appendEdgeFaceIntersection(const YAEdge* edge_a, const YATriangle* triangle)
+bool CollisionDetectorBase::appendEdgeFaceIntersection(const YAEdge* edge_a, const YATriangle* triangle)
 {
     EdgeFaceIntersection* edgeXface = new EdgeFaceIntersection(m_geodata, edge_a, triangle);
 
@@ -175,74 +173,68 @@ void CollisionDetectorBase::appendEdgeFaceIntersection(const YAEdge* edge_a, con
         m_collisions_mutex.Lock();
         m_collisions_list->push_back(edgeXface);
         m_collisions_mutex.Unlock();
+        return true;
     }
     else
+    {
         delete edgeXface;
+        return false;
+    }
 }
 
-void CollisionDetectorBase::appendProximityCollision(const YAEdge* edge_a, const YAEdge* edge_b)
+bool CollisionDetectorBase::appendProximityCollision(const YAEdge* edge_a, const YAEdge* edge_b)
 {
 
     EdgeEdgeProximityCollision* edgeXedge = new EdgeEdgeProximityCollision(m_geodata, edge_a, edge_b);
 
-    if ((m_skip_rod_rod && edgeXedge->IsRodRod()) || edgeXedge->IsCollisionImmune())
-    { // Detect rod-rod collisions and skip them.
-        //std::cout << "CollisionDetectorBase: Skipping rod-rod collision" << std::endl;
+    if ((m_skip_rod_rod && edgeXedge->IsRodRod()) || edgeXedge->IsCollisionImmune() || !edgeXedge->analyseCollision())
+    {
         delete edgeXedge;
-        return;
+        return false;
     }
-
-    if (edgeXedge->analyseCollision())
+    else
     {
         m_collisions_mutex.Lock();
         m_collisions_list->push_back(edgeXedge); // Will be deleted in BARodStepper::executeImplicitPenaltyResponse()
         m_collisions_mutex.Unlock();
-        // std::cout << "CollisionDetectorBase: Found edge-edge collision" << std::endl;
+        return true;
     }
-    else
-        delete edgeXedge;
-
 }
 
-void CollisionDetectorBase::appendProximityCollision(const YAEdge* edge, const YATriangle* triangle)
+bool CollisionDetectorBase::appendProximityCollision(const YAEdge* edge, const YATriangle* triangle)
 {
     YAEdge edge_2(triangle->first(), triangle->second());
     YAEdge edge_1(triangle->third(), triangle->first());
     YAEdge edge_0(triangle->second(), triangle->third());
-    appendProximityCollision(edge, &edge_0);
-    appendProximityCollision(edge, &edge_1);
-    appendProximityCollision(edge, &edge_2);
+    bool ee0 = appendProximityCollision(edge, &edge_0);
+    bool ee1 = appendProximityCollision(edge, &edge_1);
+    bool ee2 = appendProximityCollision(edge, &edge_2);
 
-    appendProximityCollision(edge->first(), triangle);
-    appendProximityCollision(edge->second(), triangle);
+    bool vf0 = appendProximityCollision(edge->first(), triangle);
+    bool vf1 = appendProximityCollision(edge->second(), triangle);
+
+    return ee0 || ee1 || ee2 || vf0 || vf1;
 }
 
-void CollisionDetectorBase::appendProximityCollision(int v_index, const YATriangle* triangle)
+bool CollisionDetectorBase::appendProximityCollision(int v_index, const YATriangle* triangle)
 {
 
     VertexFaceProximityCollision* vertexXface = new VertexFaceProximityCollision(m_geodata, v_index, triangle);
 
     // If vertex is fixed, if face is fixed, nothing to do
-    if (vertexXface->IsFixed() || m_geodata.IsCollisionImmune(v_index))
+    if (vertexXface->IsFixed() || m_geodata.IsCollisionImmune(v_index) || !vertexXface->analyseCollision())
     {
         delete vertexXface;
-        // std::cout << "CollisionDetectorBase: Skipping vertex " << v_index << " - face " << triangle->first() << "/" << triangle->second() << "/" << triangle->third() << " collision with fixed vertex and/or face" << std::endl;
-        return;
+        return false;
     }
-
-    if (vertexXface->analyseCollision())
+    else
     {
         m_collisions_mutex.Lock();
         m_collisions_list->push_back(vertexXface); // Will be deleted in BARodStepper::executeImplicitPenaltyResponse()
         m_collisions_mutex.Unlock();
-        // std::cout << "CollisionDetectorBase: Found vertex-face collision" << std::endl;
+        return true;
     }
-    else
-        delete vertexXface;
-
     //    Timer::getTimer("CollisionDetectorBase::appendContinuousTimeCollision vertex face").stop();
 }
-
-
 
 }

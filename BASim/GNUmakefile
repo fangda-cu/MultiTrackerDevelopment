@@ -216,6 +216,7 @@ Collisions/Bridson/array3.hh \
 Collisions/Bridson/vec.hh \
 Collisions/Bridson/util.hh \
 Collisions/Bridson/Vector.hh \
+Collisions/TetrahedronPair.hh \
 Core/Definitions.hh \
 Core/EigenIncludes.hh \
 Core/Handle.hh \
@@ -226,6 +227,7 @@ Core/ObjectHandles.hh \
 Core/Property.hh \
 Core/STLIncludes.hh \
 Core/Timer.hh \
+Core/Cycle.hh \
 Core/TopologicalObject/TopObjHandles.hh \
 Core/TopologicalObject/TopObjIterators.hh \
 Core/TopologicalObject/TopologicalObject.hh \
