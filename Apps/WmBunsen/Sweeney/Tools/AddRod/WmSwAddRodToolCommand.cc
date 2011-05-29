@@ -18,7 +18,16 @@ WmSwAddRodToolCommand::WmSwAddRodToolCommand() : m_sweeneyNode( NULL ),
 {
     setCommandString( typeName );
     
-    utils::findSelectedSweeneyNodeAndRodManager( m_sweeneyNode, m_rodManager );    
+    utils::findSelectedSweeneyNodeAndRodManager( m_sweeneyNode, m_rodManager );
+    
+    MString meshNodeTypename( "mesh" );
+    MObject meshNodeObject;
+    utils::findASelectedNodeByTypeName( meshNodeTypename, &meshNodeObject, &m_meshNodeDagPath );
+    
+    if ( meshNodeObject == MObject::kNullObj )
+    {
+        MGlobal::displayError( "Please select a wmSweeneyNode and a poly mesh node to create a rod." );
+    }
 }
 
 WmSwAddRodToolCommand::~WmSwAddRodToolCommand() 
@@ -126,19 +135,34 @@ MStatus WmSwAddRodToolCommand::updateContextOptions()
     return stat;
 }
 
+void WmSwAddRodToolCommand::createRod()
+{
+    MStatus status;
+    MFnMesh growthMesh( m_meshNodeDagPath, &status );
+    CHECK_MSTATUS( status );
+    
+    // Use acceleration structures to work out where on the mesh was hit
+     
+    // Add the rod to the rod manager and store a reference to the rod so we can 
+    // tell the rod manager to delete the rod later if we are asked to undo this
+    // addition.
+}
 
 MStatus WmSwAddRodToolCommand::finalize()
 {
     MStatus status;
 
+    // Finally, create the rod!
+    createRod();
+
     //////////////////////////////////////////////////////
     // 
-    // set this, so in redoIt(), we know to restore the
-    // cvs of all the nurbs to nurbsVerticesNew.
+    // set this, so in redoIt(), we know to do the undo
     // 
     //////////////////////////////////////////////////////
 
     editRunState() = kEditRunIsComplete;
+    
 
     //////////////////////////////////////////////////////
     //

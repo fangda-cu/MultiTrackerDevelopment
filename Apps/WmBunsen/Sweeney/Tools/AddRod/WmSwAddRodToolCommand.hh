@@ -78,6 +78,8 @@ public:
     }
     
 private:
+    void createRod();
+
     EditRunState m_editRunState;
 
     //////////////////////////////////////////////////////
@@ -93,6 +95,7 @@ private:
 
     WmSweeneyNode* m_sweeneyNode;
     WmSweeneyRodManager* m_rodManager;
+    MDagPath m_meshNodeDagPath;
 };
 
 }
