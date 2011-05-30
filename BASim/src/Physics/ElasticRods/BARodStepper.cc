@@ -5,7 +5,7 @@
  * \date 02/16/2010
  */
 
-//#define KEEP_ONLY_SOME_RODS
+#define KEEP_ONLY_SOME_RODS
 
 #include <typeinfo>
 #include "BARodStepper.hh"
@@ -20,19 +20,17 @@
 #include <omp.h>
 #endif
 
-
 #define BEGIN_TIMER(name)                               \
   {                                                     \
     assert(m_timers);                                   \
     m_timers->t_##name##.beginBlock();                  \
   }
- 
+
 #define END_TIMER(name)                                 \
   {                                                     \
     assert(m_timers);                                   \
     m_timers->t_##name##.endBlock();                    \
   }
- 
 
 namespace BASim
 {
@@ -43,22 +41,21 @@ class BARodStepper::MyTimers
 {
 public:
 
-  Timer &t_BARodStepper_execute;
-  Timer &t_BARodStepper_adaptiveExecute;
-  Timer &t_BARodStepper_step;
+    Timer &t_BARodStepper_execute;
+    Timer &t_BARodStepper_adaptiveExecute;
+    Timer &t_BARodStepper_step;
 
-  MyTimers() :
-    t_BARodStepper_execute( Timer::getTimer("BARodStepper::execute")),
-    t_BARodStepper_adaptiveExecute( Timer::getTimer("BARodStepper::adaptiveStep")),
-    t_BARodStepper_step( Timer::getTimer("BARodStepper::step"))
-  {
-  }
+    MyTimers() :
+        t_BARodStepper_execute(Timer::getTimer("BARodStepper::execute")),
+                t_BARodStepper_adaptiveExecute(Timer::getTimer("BARodStepper::adaptiveStep")),
+                t_BARodStepper_step(Timer::getTimer("BARodStepper::step"))
+    {
+    }
 };
 
 BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
-        std::vector<ScriptingController*>& scripting_controllers, 
-        std::vector<RodTimeStepper*>& steppers, const double& dt, const double time, 
-        const int num_threads, const PerformanceTuningParameters perf_param,
+        std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
+        const double time, const int num_threads, const PerformanceTuningParameters perf_param,
         std::vector<LevelSet*>* levelSets) :
             m_num_dof(0),
             m_rods(rods),
@@ -91,10 +88,10 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
             m_perf_param(perf_param),
             m_level(0),
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start,
-                      m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness), m_log_stream("BARodStepper.log"),
-            m_timers(NULL) 
+                    m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness), m_log_stream("BARodStepper.log"),
+            m_timers(NULL)
 {
-    if ( levelSets != NULL )
+    if (levelSets != NULL)
     {
         m_level_sets = *levelSets;
     }
@@ -106,7 +103,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
         // To simplify the usage code we'll make this vector and pass it around.
         // If level sets become useful we should rethink the entire way data is passed into
         // BARodStepper.
-        m_level_sets.resize( m_triangle_meshes.size(), NULL );
+        m_level_sets.resize(m_triangle_meshes.size(), NULL);
     }
 
     m_timers = new MyTimers;
@@ -117,32 +114,6 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     m_log = new TextLog(std::cerr, MsgInfo::kTrace, true); // For mysterious reasons, ofstreams don't work here.
     InfoStream(m_log, "") << "Started logging BARodStepper\n";
 
-    // For debugging purposes
-#ifdef KEEP_ONLY_SOME_RODS
-    std::set<int> keep_only;
-    keep_only.insert(87);
-
-    std::vector<ElasticRod*>::iterator rod = m_rods.begin();
-    std::vector<RodTimeStepper*>::iterator stepper = m_steppers.begin();
-    for (int i = 0; i < m_number_of_rods; i++)
-    {
-        if (keep_only.find(i) == keep_only.end())
-        {
-            for (int j = 0; j < (*rod)->nv(); j++)
-            (*rod)->setVertex(j, 0 * ((*rod)->getVertex(j)));
-            m_rods.erase(rod);
-            m_steppers.erase(stepper);
-        }
-        else
-        {
-            rod++;
-            stepper++;
-        }
-    }
-    m_number_of_rods = m_rods.size();
-    std::cerr << "Number of rods remaining: " << m_number_of_rods << std::endl;
-#endif
-
     for (std::vector<RodTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
     {
         (*stepper)->setMaxIterations(perf_param.m_maximum_number_of_solver_iterations);
@@ -151,7 +122,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
 #ifdef DEBUG
     for( int i = 0; i < (int) m_number_of_rods; ++i ) assert( m_rods[i] != NULL );
     for( int i = 0; i < (int) m_triangle_meshes.size(); ++i ) assert( m_triangle_meshes[i] != NULL );
-    
+
     // Do not check if any level sets are null as that may be valid as not all triangle meshes
     // may have a level set.
     //for( int i = 0; i < (int) m_level_sets.size(); ++i ) assert( m_level_sets[i] != NULL );
@@ -291,9 +262,23 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     for (std::vector<TriangleMesh*>::const_iterator mesh = m_triangle_meshes.begin(); mesh != m_triangle_meshes.end(); mesh++)
         m_objbackups[i++].resize(**mesh);
 
+    // For debugging purposes
+#ifdef KEEP_ONLY_SOME_RODS
+    std::set<int> keep_only;
+    keep_only.insert(87);
+
+    // Only the rods in the keep_only set are kept, the others are killed.
+    for (int i = 0; i < m_number_of_rods; i++)
+        if (keep_only.find(i) == keep_only.end())
+            for (int j = 0; j < m_rods[i]->nv(); j++)
+                m_rods[i]->setVertex(j, 0 * m_rods[i]->getVertex(j));
+        else
+            m_simulated_rods.push_back(i);
+#else
     // Initially all rods passed from Maya will be simulated
     for (int i = 0; i < m_number_of_rods; i++)
-        m_simulated_rods.push_back(i);
+    m_simulated_rods.push_back(i);
+#endif
 
 }
 
@@ -304,7 +289,7 @@ BARodStepper::~BARodStepper()
     for (int i = 0; i < m_number_of_rods; i++)
     {
         delete m_startForces[i];
-	delete m_preDynamicForces[i];
+        delete m_preDynamicForces[i];
         delete m_preCollisionForces[i];
         delete m_endForces[i];
     }
@@ -568,13 +553,13 @@ bool BARodStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
     if (m_simulationFailed)
     {
         WarningStream(m_log, "", MsgInfo::kOncePerMessage) << "t = " << m_t << ": simulation failed and is now stopped\n";
-	END_TIMER(BARodStepper_adaptiveExecute)
+        END_TIMER(BARodStepper_adaptiveExecute)
         return true;
     }
     if (selected_rods.empty()) // Success!
     {
         TraceStream(m_log, "") << "t = " << m_t << ": adaptiveExecute has simulated (or killed) all rods\n";
-	END_TIMER(BARodStepper_adaptiveExecute)
+        END_TIMER(BARodStepper_adaptiveExecute)
         return true;
     }
     // Otherwise do two half time steps
@@ -726,21 +711,21 @@ void BARodStepper::step(RodSelectionType& selected_rods)
 #pragma omp parallel for
 #endif
     for (int i = 0; i < selected_steppers.size(); i++)
-      {
+    {
         RodTimeStepper* const stepper = selected_steppers[i];
-	//std::cout << "BARodStepper::step/steppers: calling " << stepper->getDiffEqSolver().getName() << " solver for rod "
-	//	      << stepper->getRod()->globalRodIndex << std::endl;
-  
+        //std::cout << "BARodStepper::step/steppers: calling " << stepper->getDiffEqSolver().getName() << " solver for rod "
+        //	      << stepper->getRod()->globalRodIndex << std::endl;
+
         bool result = stepper->execute();
         if (!result)
             TraceStream(m_log, "") << stepper->getDiffEqSolver().getName() << " solver for rod "
                     << stepper->getRod()->globalRodIndex << " failed to converge after " << stepper->getMaxIterations()
                     << " iterations\n";
         dependable_solve = dependable_solve && result;
-    }
-    STOP_TIMER("BARodStepper::step/steppers");
+    }STOP_TIMER("BARodStepper::step/steppers");
 
-    TraceStream(m_log, "") << "Dynamic step is " << (dependable_solve ? "" : "not ") << "entirely dependable" << (dependable_solve ? " :-)\n" : "!\n");
+    TraceStream(m_log, "") << "Dynamic step is " << (dependable_solve ? "" : "not ") << "entirely dependable"
+            << (dependable_solve ? " :-)\n" : "!\n");
 
     START_TIMER("BARodStepper::step/penalty");
 
@@ -749,7 +734,6 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         delete *i;
 
     STOP_TIMER("BARodStepper::step/penalty");
-
 
     // If we do rod-rod collisions (meaning no selective adaptivity) and global dependability failed, we might as well stop here.
     if (!m_perf_param.m_skipRodRodCollisions && !dependable_solve)
