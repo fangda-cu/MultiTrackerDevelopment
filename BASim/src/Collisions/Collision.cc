@@ -453,7 +453,7 @@ bool VertexFaceProximityCollision::analyseCollision(double)
         if (nnorm == 0.0 || fabs(m_normal.norm() - 1.0) > 1.0e-6)
         {
             std::cerr << "WARNING, IGNORING COLLISION DUE TO DEGENERATE NORMAL" << std::endl;
-	    return false;
+            return false;
         }
 
         return m_analysed = true;

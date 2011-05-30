@@ -9,7 +9,7 @@
 namespace BASim {
 
 // macros to compile timing in/out
-#define TIMING_ON
+// #define TIMING_ON
 
 #ifdef TIMING_ON
 
