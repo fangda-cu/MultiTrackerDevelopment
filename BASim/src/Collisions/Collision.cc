@@ -445,8 +445,16 @@ bool VertexFaceProximityCollision::analyseCollision(double)
         m_normal = (t1 - t0).cross(t2 - t0);
         assert(m_normal.norm() > 0.0);
 
-        m_normal.normalize();
+        double nnorm = m_normal.norm();
+        m_normal /= nnorm;
+
         assert(fabs(m_normal.norm() - 1.0) < 1.0e-6);
+
+        if (nnorm == 0.0 || fabs(m_normal.norm() - 1.0) > 1.0e-6)
+        {
+            std::cerr << "WARNING, IGNORING COLLISION DUE TO DEGENERATE NORMAL" << std::endl;
+	    return false;
+        }
 
         return m_analysed = true;
     }
