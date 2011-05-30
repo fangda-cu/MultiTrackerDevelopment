@@ -21,7 +21,9 @@ public:
   */
   explicit RodMassDamping(const Scalar& damping)
     : m_damping(damping)
-  {}
+  {
+    m_name = "mass damping";
+  }
 
   /** Computes the mass damping force for the given rod and adds it to
       the given vector.

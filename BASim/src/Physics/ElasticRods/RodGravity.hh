@@ -23,7 +23,9 @@ public:
 
   explicit RodGravity(const Vec3d& gravity)
     : m_gravity(gravity)
-  {}
+  {
+    m_name = "gravity";
+  }
 
   /**
    * Computes the force due to gravity for the given rod and adds it

@@ -14,8 +14,9 @@ namespace BASim
 
 #define COLLISION_EPSILON 1e-6
 
-RodPenaltyForce::RodPenaltyForce( double penaltyThicknessFraction ) : m_penaltyThicknessFraction(penaltyThicknessFraction)
+  RodPenaltyForce::RodPenaltyForce( double penaltyThicknessFraction ) : m_penaltyThicknessFraction(penaltyThicknessFraction)
 {
+  m_name = "penalty";
 }
 
 RodPenaltyForce::~RodPenaltyForce()
@@ -76,7 +77,7 @@ void RodPenaltyForce::clearPenaltyForces()
 
 void RodPenaltyForce::computeForce(const ElasticRod& rod, VecXd& F)
 {
-  //  VecXd beforeF = F;
+  //VecXd beforeF = F;
   //  std::cout << "Forces (BEFORE) = \n " << F << std::endl;
 
     //  ElasticRod& rod = const_cast<ElasticRod&>(const_rod);
@@ -100,14 +101,18 @@ void RodPenaltyForce::computeForce(const ElasticRod& rod, VecXd& F)
             F[rod.vertIdx(vertex, i)] += force[i];
         }
 
-     //   std::cout << "Collision, applying force to vertex " << vertex << std::endl;
-     //   std::cout << "Distance = " << distance << std::endl;
-      //  std::cout << "Normal = " << vertex_face_collisions[i]->m_normal << std::endl;
-     //   std::cout << "Force = " << force << std::endl;
-     //   std::cout << "Stiffness = " << vertex_face_collisions[i]->k << std::endl;
+	if (isinf(force[0]) || force.norm() > 1e20)
+	{
+	  std::cerr << "WARNING! RodPenaltyForce::computeForce: norm = " << (F - beforeF).norm() << " force = " << (F-beforeF) << std::endl;
+	  std::cout << "Collision, applying force to vertex " << vertex << std::endl;
+	  std::cout << "Distance = " << distance << std::endl;
+	  std::cout << "Normal = " << vertex_face_collisions[i]->m_normal << std::endl;
+	  std::cout << "Force = " << force << std::endl;
+	  std::cout << "Stiffness = " << vertex_face_collisions[i]->k << std::endl;
+	}
 
     }
-  //  std::cerr << "Penalty forces added = \n " << F - beforeF << std::endl;
+    //std::cerr << "RodPenaltyForce::computeForce: norm = " << (F - beforeF).norm() << " force = " << (F-beforeF) << std::endl;
 }
 
 void RodPenaltyForce::addRodPenaltyForce(int vertex, VertexFaceProximityCollision* vfpcol)

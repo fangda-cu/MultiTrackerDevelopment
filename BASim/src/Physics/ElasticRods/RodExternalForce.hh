@@ -18,7 +18,7 @@ class RodExternalForce
 {
 public:
 
-  explicit RodExternalForce(bool implicit = true) : m_implicit(implicit) {}
+  explicit RodExternalForce(bool implicit = true) : m_implicit(implicit), m_name("name not given!") {}
 
   virtual ~RodExternalForce() {}
 
@@ -29,9 +29,12 @@ public:
   bool isImplicit() const { return m_implicit; }
   void setImplicit(bool implicit) { m_implicit = implicit; }
 
+  std::string getName() const {return m_name;}
+
 protected:
 
   bool m_implicit;
+  std::string m_name;
 };
 
 } // namespace BASim
