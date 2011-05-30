@@ -212,6 +212,9 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                 // Check for explosion here
                 int colliding_rod = getContainingRod(collision->GetRodVertex());
                 m_rods[colliding_rod]->computeForces(*m_endForces[colliding_rod]);
+		TraceStream(m_log, "") << "Rod " << colliding_rod << " Force norms: initial: " << (*(m_startForces[colliding_rod])).norm()
+				       << " pre-collisions: " << (*(m_preCollisionForces[colliding_rod])).norm()
+				       << " post-collisions: " << (*(m_endForces[colliding_rod])).norm() << "\n";
                 for (int j = 0; j < m_rods[colliding_rod]->ndof(); ++j)
                 {
                     const double s = (*(m_startForces[colliding_rod]))[j];
@@ -223,7 +226,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                         //                        explosions_detected = true;
                         //                        exploding_rods[colliding_rod] = true;
                         TraceStream(m_log, "") << "Rod number " << colliding_rod
-                                << " had an explosion during collision response\n";
+					       << " had an explosion during collision response: s = " << s << " p = " << p << " e = " << e << " rate = " << rate << " \n";
                         // If the rod just had an explosion, give up trying resolving its collisions
                         failed_collisions_rods[colliding_rod] = true;
                         for (int v = 0; v < m_rods[colliding_rod]->nv(); ++v)
@@ -1627,6 +1630,10 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
     {
         if (true || m_steppers[*rod]->HasSolved() && !failed_collisions_rods[*rod])
         {
+	  TraceStream(m_log, "") << "Rod " << *rod << " Force norms: initial: " << (*(m_startForces[*rod])).norm()
+				 << " pre-dynamic: " << (*(m_preDynamicForces[*rod])).norm()
+				 << " pre-collisions: " << (*(m_preCollisionForces[*rod])).norm()
+				 << " post-collisions: " << (*(m_endForces[*rod])).norm() << "\n";
             for (int j = 0; j < m_rods[*rod]->ndof(); ++j)
             {
                 const double s = (*(m_startForces[*rod]))[j];
@@ -1642,8 +1649,7 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
                 {
                     explosions_detected = true;
                     exploding_rods[*rod] = true;
-                    TraceStream(m_log, "") << "Rod number " << *rod << " had an explosion\n";
-                    break;
+                    TraceStream(m_log, "") << "Rod number " << *rod << " had an explosion during collision response: s = " << s << " p = " << p << " e = " << e << " rate = " << rate << " \n";
                 }
             }
         }

@@ -212,6 +212,8 @@ void RodBendingForceSym::globalForce(VecXd& force)
 {
   if (viscous() && m_rod.getViscosity() == 0.0) return;
 
+  //VecXd force1 = force;
+
   computeGradKappa();
 
   VecXd f(11);
@@ -228,7 +230,11 @@ void RodBendingForceSym::globalForce(VecXd& force)
       force(indices[j]) += f(j);
     }
   }
+
+  //std::cout << (viscous() ? "VISCOUS " : "") << "BENDING FORCE\n";
+  //std::cout << "norm = " << (force - force1).norm() << " force = " << force-force1 << "\n\n";
 }
+
 void RodBendingForceSym::localForce(VecXd& force, const vertex_handle& vh)
 {
   // Unused? int i = vh.idx();

@@ -92,8 +92,8 @@ void Timer::report()
 
 std::ostream& operator<<(std::ostream& os, Timer& timer)
 {
-  os << "\t" << std::setw(10) << timer.getElapsed() << " (" << std::setw(5) << timer.getCount() << ") "
-     << "\tcumul: " << std::setw(10) << timer.getCumulativeElapsed() << " (" << std::setw(5) << timer.getCumulativeCount() << ") "
+  os << "\t" << std::setw(14) << timer.getElapsed() << " (" << std::setw(6) << timer.getCount() << ") "
+     << "\tcumul: " << std::setw(14) << timer.getCumulativeElapsed() << " (" << std::setw(6) << timer.getCumulativeCount() << ") "
      << "\tlevel: " << timer.getNestingLevel() << "/" << timer.getDeepestNestingLevel() ;
   return os;
 }

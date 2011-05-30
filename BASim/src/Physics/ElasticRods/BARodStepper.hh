@@ -433,6 +433,7 @@ private:
     VecXd m_vnresp;
     // Forces
     VecXd** m_startForces;
+    VecXd** m_preDynamicForces;
     VecXd** m_preCollisionForces;
     VecXd** m_endForces;
     // Global back-ups for adaptive substepping

@@ -206,9 +206,14 @@ public:
 
     //if (m_rod.viscous()) f /= m_diffEqSolver->getTimeStep();
 
+    VecXd curr_force(f.size());
+
     // add external forces
     for (size_t i = 0; i < m_externalForces.size(); ++i) {
-      m_externalForces[i]->computeForce(m_rod, f);
+      curr_force.setZero();
+      m_externalForces[i]->computeForce(m_rod, curr_force);
+      f += curr_force;
+      std::cout << m_externalForces[i]->getName() << " norm = " << curr_force.norm() << std::endl;
     }
   
    // m_forces = f - m_forces;

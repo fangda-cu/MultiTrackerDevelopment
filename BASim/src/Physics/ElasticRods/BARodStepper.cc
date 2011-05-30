@@ -120,7 +120,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     // For debugging purposes
 #ifdef KEEP_ONLY_SOME_RODS
     std::set<int> keep_only;
-    keep_only.insert(9);
+    keep_only.insert(87);
 
     std::vector<ElasticRod*>::iterator rod = m_rods.begin();
     std::vector<RodTimeStepper*>::iterator stepper = m_steppers.begin();
@@ -269,6 +269,10 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     for (int i = 0; i < m_number_of_rods; i++)
         m_startForces[i] = new VecXd(m_rods[i]->ndof());
 
+    m_preDynamicForces = new VecXd*[m_number_of_rods];
+    for (int i = 0; i < m_number_of_rods; i++)
+        m_preDynamicForces[i] = new VecXd(m_rods[i]->ndof());
+
     m_preCollisionForces = new VecXd*[m_number_of_rods];
     for (int i = 0; i < m_number_of_rods; i++)
         m_preCollisionForces[i] = new VecXd(m_rods[i]->ndof());
@@ -300,10 +304,12 @@ BARodStepper::~BARodStepper()
     for (int i = 0; i < m_number_of_rods; i++)
     {
         delete m_startForces[i];
+	delete m_preDynamicForces[i];
         delete m_preCollisionForces[i];
         delete m_endForces[i];
     }
     delete[] m_startForces;
+    delete[] m_preDynamicForces;
     delete[] m_preCollisionForces;
     delete[] m_endForces;
 
@@ -506,7 +512,7 @@ bool BARodStepper::execute()
     m_total_collision_killed += m_num_collision_killed;
     m_total_explosion_killed += m_num_explosion_killed;
 
-    DebugStream(m_log, "") << "Time step finished, " << m_simulated_rods.size() << " rods remaining out of " << m_rods.size()
+    DebugStream(m_log, "") << "Time step finished, " << selected_rods.size() << " rods remaining out of " << m_rods.size()
             << '\n';
     DebugStream(m_log, "") << "Rods killed because of solver failure: " << m_num_solver_killed << " (this step), "
             << m_total_solver_killed << " (total)\n";
@@ -708,6 +714,11 @@ void BARodStepper::step(RodSelectionType& selected_rods)
 
     STOP_TIMER("BARodStepper::step/penalty");
 
+    std::cout << "BARodStepper::step: computing pre-dynamic forces" << std::endl;
+
+    if (m_perf_param.m_enable_explosion_detection)
+        computeForces(m_preDynamicForces, selected_rods);
+
     START_TIMER("BARodStepper::step/steppers");
 
     bool dependable_solve = true;
@@ -729,7 +740,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     }
     STOP_TIMER("BARodStepper::step/steppers");
 
-    TraceStream(m_log, "") << "Dynamic step is " << (dependable_solve ? "" : "not ") << "entirely dependable!\n";
+    TraceStream(m_log, "") << "Dynamic step is " << (dependable_solve ? "" : "not ") << "entirely dependable" << (dependable_solve ? " :-)\n" : "!\n");
 
     START_TIMER("BARodStepper::step/penalty");
 
@@ -835,6 +846,8 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     // Also copy response velocity to rods (for visualisation purposes only)
     restoreResponses(m_vnresp, selected_rods);
 
+    std::cout << "About to update properties" << std::endl;
+
     // Update frames and such in the rod (Is this correct? Will this do some extra stuff?)
     for (RodSelectionType::const_iterator selected_rod = selected_rods.begin(); selected_rod != selected_rods.end(); selected_rod++)
         m_rods[*selected_rod]->updateProperties();
@@ -852,6 +865,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     std::vector<bool> exploding_rods(m_number_of_rods);
     if (m_perf_param.m_enable_explosion_detection)
     {
+        std::cout << "About to detect explosions" << std::endl;
         computeForces(m_endForces, selected_rods);
         checkExplosions(exploding_rods, failed_collisions_rods, selected_rods);
     }
@@ -1362,7 +1376,8 @@ void BARodStepper::computeForces(VecXd ** Forces, const RodSelectionType& select
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
     {
         Forces[*rod]->setZero();
-        m_rods[*rod]->computeForces(*Forces[*rod]);
+        //m_rods[*rod]->computeForces(*Forces[*rod]);
+        m_steppers[*rod]->evaluatePDot(*Forces[*rod]);
     }
 }
 
