@@ -176,6 +176,8 @@ public:
                 && m_geodata.isVertexFixed(f2);
     }
 
+    Vec3d GetVertex() { return m_geodata.GetPoint(v0); }
+
     // Index of vertex
     int v0;
     // Index of face vertices
@@ -203,6 +205,9 @@ public:
     double h;
 
     // Collision normal points TOWARDS the vertex
+
+    friend std::ostream& operator<<(std::ostream& os, const VertexFaceProximityCollision& vfcol);
+
 };
 
 /**
