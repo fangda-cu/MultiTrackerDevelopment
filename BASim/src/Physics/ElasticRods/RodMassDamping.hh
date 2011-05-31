@@ -8,50 +8,55 @@
 #ifndef RODMASSDAMPING_HH
 #define RODMASSDAMPING_HH
 
-namespace BASim {
+namespace BASim
+{
 
 /** This class implements a mass damping force for a rod. */
-class RodMassDamping : public RodExternalForce
+class RodMassDamping: public RodExternalForce
 {
 public:
 
-  /** Constructor for creating the mass damping force
+    /** Constructor for creating the mass damping force
 
-      \param[in] damping The damping coefficient.
-  */
-  explicit RodMassDamping(const Scalar& damping)
-    : m_damping(damping)
-  {
-    m_name = "mass damping";
-  }
-
-  /** Computes the mass damping force for the given rod and adds it to
-      the given vector.
-
-      \param[in] rod The rod to compute the force for.
-      \param[out] force Vector storing the forces on the rod.
-  */
-  void computeForce(const ElasticRod& rod, VecXd& force)
-  {
-    for (int i = 0; i < rod.ndof(); ++i) {
-      force(i) -= m_damping * rod.getMass(i) * rod.getVel(i);
+     \param[in] damping The damping coefficient.
+     */
+    explicit RodMassDamping(const Scalar& damping) :
+        m_damping(damping)
+    {
+        m_name = "mass damping";
     }
-  }
 
-  void computeForceDX(int baseidx, const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
+    /** Computes the mass damping force for the given rod and adds it to
+     the given vector.
 
-  /** Computes the derivative of the mass damping force with respect
-      to the velocities of the rod. */
-  void computeForceDV(int baseidx, const ElasticRod& rod, Scalar scale, MatrixBase& J)
-  {
-    for (int i = 0; i < rod.ndof(); ++i) {
-      J.add(baseidx+i, baseidx+i, -m_damping * rod.getMass(i) * scale);
+     \param[in] rod The rod to compute the force for.
+     \param[out] force Vector storing the forces on the rod.
+     */
+    void computeForce(const ElasticRod& rod, VecXd& force) const
+    {
+        for (int i = 0; i < rod.ndof(); ++i)
+        {
+            force(i) -= m_damping * rod.getMass(i) * rod.getVel(i);
+        }
     }
-  }
+
+    void computeForceDX(int baseidx, const ElasticRod& rod, Scalar scale, MatrixBase& J) const
+    {
+    }
+
+    /** Computes the derivative of the mass damping force with respect
+     to the velocities of the rod. */
+    void computeForceDV(int baseidx, const ElasticRod& rod, Scalar scale, MatrixBase& J) const
+    {
+        for (int i = 0; i < rod.ndof(); ++i)
+        {
+            J.add(baseidx + i, baseidx + i, -m_damping * rod.getMass(i) * scale);
+        }
+    }
 
 protected:
 
-  Scalar m_damping;
+    Scalar m_damping;
 };
 
 } // namespace BASim

@@ -25,7 +25,7 @@ public:
 
     virtual bool analyseCollision(double time_step = 0) = 0;
 
-    bool isAnalysed() { return m_analysed; }
+    bool isAnalysed() const { return m_analysed; }
 
 protected:
     // Link to the actual geometric data (point coordinates, velocities etc.)
