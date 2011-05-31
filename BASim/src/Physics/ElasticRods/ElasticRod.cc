@@ -375,7 +375,7 @@ void ElasticRod::updateProperties()
   updateForceProperties();
 
   // This messes up the adaptive stepping...
-  #ifdef DEBUG
+  #ifndef NDEBUG
   //  verifyProperties();
   #endif // DEBUG
 }

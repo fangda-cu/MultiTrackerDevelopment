@@ -5,7 +5,7 @@
  * \date 02/16/2010
  */
 
-#define KEEP_ONLY_SOME_RODS
+//#define KEEP_ONLY_SOME_RODS
 
 #include <typeinfo>
 #include "BARodStepper.hh"
@@ -106,7 +106,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
         (*stepper)->setMaxIterations(perf_param.m_maximum_number_of_solver_iterations);
     }
 
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 0; i < (int) m_number_of_rods; ++i ) assert( m_rods[i] != NULL );
     for( int i = 0; i < (int) m_triangle_meshes.size(); ++i ) assert( m_triangle_meshes[i] != NULL );
 
@@ -138,7 +138,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     // Update internal state, prepare for execution
     prepareForExecution();
 
-#ifdef DEBUG
+#ifndef NDEBUG
     // Number of degrees of freedom is non-negative multiple of 3 (3 coords per vertex)
     assert( m_num_dof >= 0 );
     assert( m_num_dof%3 == 0 );
@@ -251,9 +251,14 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
 
     // For debugging purposes
 #ifdef KEEP_ONLY_SOME_RODS
+    WarningStream(m_log, "", MsgInfo::kOncePerMessage) << "WARNING: KEEP_ONLY_SOME_RODS: Simulating only a specified subset of rods!\n***********************************************************\n"; 
     std::set<int> keep_only;
     //    keep_only.insert(13);
-    keep_only.insert(46);
+
+    //    keep_only.insert(46);
+
+    keep_only.insert(0);
+
     // keep_only.insert(53);
     // keep_only.insert(59);
     // keep_only.insert(77);
@@ -311,7 +316,7 @@ void BARodStepper::prepareForExecution()
     for (int i = 0; i < m_number_of_rods; ++i)
     {
         assert(m_rods[i] != NULL);
-#ifdef DEBUG
+#ifndef NDEBUG
         // Sanity checks for collision detection purposes
         ensureCircularCrossSection( *m_rods[i] );
         ensureNoCollisionsByDefault( *m_rods[i] );
@@ -627,11 +632,11 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     assert(m_rod_labels.size() == 0 || m_rod_labels.size() == m_number_of_rods);
 
     // Sanity check to ensure rods are not "internally colliding" because radius is bigger than edge length
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 0; i < (int) m_number_of_rods; ++i ) ensureNoCollisionsByDefault( *m_rods[i] );
 #endif
     // Sanity check to ensure different parts of sim have same time/timetep
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 0; i < (int) m_scripting_controllers.size(); ++i ) assert( m_scripting_controllers[i]->getTime() == m_t );
     for( int i = 0; i < (int) m_scripting_controllers.size(); ++i ) assert( m_scripting_controllers[i]->getDt() == m_dt );
     for( int i = 0; i < (int) m_steppers.size(); ++i ) assert( m_steppers[i]->getTimeStep() == m_dt );
@@ -794,7 +799,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     // Compute final positions from corrected velocities
     m_xnp1 = m_xn + m_dt * m_vnphalf;
 
-#ifdef DEBUG
+#ifndef NDEBUG
     // Ensure boundary conditions respected by corrected positions
     // For each selected rod
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
@@ -830,7 +835,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         m_rods[*selected_rod]->updateProperties();
 
     // Sanity check to ensure rod's internal state is consistent
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 0; i < (int) m_number_of_rods; ++i ) m_rods[i]->verifyProperties();
 #endif
 
@@ -947,7 +952,7 @@ void BARodStepper::extractPositions(VecXd& positions, const RodSelectionType& se
     if (getNumDof() == 0)
         return;
 
-#ifdef DEBUG
+#ifndef NDEBUG
     positions.setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
 
@@ -977,7 +982,7 @@ void BARodStepper::extractPositions(VecXd& positions, const RodSelectionType& se
     //    assert((positions.cwise() == positions).all());
 
     // Ensure boundary conditions loaded properly
-#ifdef DEBUG
+#ifndef NDEBUG
     // For each rod
     for( int i = 0; i < (int) m_number_of_rods; ++i )
     {
@@ -1004,7 +1009,7 @@ void BARodStepper::extractVelocities(VecXd& velocities, const RodSelectionType& 
     if (getNumDof() == 0)
         return;
 
-#ifdef DEBUG
+#ifndef NDEBUG
     velocities.setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
 
