@@ -75,7 +75,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
             m_perf_param(perf_param),
             m_level(0),
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start,
-                    m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness), m_log_stream("BARodStepper.log"),
+                    m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness), m_log_stream("BARodStepper.log")
             //m_timers(NULL)
 {
     if (levelSets != NULL)
@@ -252,7 +252,12 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     // For debugging purposes
 #ifdef KEEP_ONLY_SOME_RODS
     std::set<int> keep_only;
-    keep_only.insert(87);
+    //    keep_only.insert(13);
+    keep_only.insert(46);
+    // keep_only.insert(53);
+    // keep_only.insert(59);
+    // keep_only.insert(77);
+    // keep_only.insert(85);
 
     // Only the rods in the keep_only set are kept, the others are killed.
     for (int i = 0; i < m_number_of_rods; i++)
