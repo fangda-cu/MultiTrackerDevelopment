@@ -39,22 +39,6 @@ namespace BASim
 //   }
 // };
 
-class BARodStepper::MyTimers
-{
-public:
-
-    Timer &t_BARodStepper_execute;
-    Timer &t_BARodStepper_adaptiveExecute;
-    Timer &t_BARodStepper_step;
-
-    MyTimers() :
-        t_BARodStepper_execute(Timer::getTimer("BARodStepper::execute")),
-                t_BARodStepper_adaptiveExecute(Timer::getTimer("BARodStepper::adaptiveStep")),
-                t_BARodStepper_step(Timer::getTimer("BARodStepper::step"))
-    {
-    }
-};
->>>>>>> f73633ff05550ba666892cd93648bd264ed08425
 
 BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
         std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
