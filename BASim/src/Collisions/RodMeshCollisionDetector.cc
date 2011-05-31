@@ -27,8 +27,8 @@ RodMeshCollisionDetector::RodMeshCollisionDetector(const GeometricData& geodata,
     for (std::vector<TriangularFace>::const_iterator i = faces.begin(); i != faces.end(); i++)
         m_mesh_elements.push_back(new YATriangle(*i));
 
-    build_mesh_BVH();
-    build_rod_BVH();
+  //  build_mesh_BVH();
+   // build_rod_BVH();
 }
 
 RodMeshCollisionDetector::~RodMeshCollisionDetector()
@@ -158,6 +158,14 @@ void RodMeshCollisionDetector::computeCollisions(const BVHNode& mesh_node, const
         computeCollisions(m_mesh_bvh.GetNode(mesh_node.ChildIndex()), m_rod_bvh.GetNode(rod_node.ChildIndex() + 1));
         computeCollisions(m_mesh_bvh.GetNode(mesh_node.ChildIndex() + 1), m_rod_bvh.GetNode(rod_node.ChildIndex() + 1));
     }
+}
+
+void RodMeshCollisionDetector::rebuildRodElements(const std::vector<std::pair<int, int> >& edges) { // TODO: something smarter
+    m_rod_elements.clear();
+
+    for (std::vector<std::pair<int, int> >::const_iterator i = edges.begin(); i != edges.end(); i++)
+        m_rod_elements.push_back(new YAEdge(*i));
+
 }
 
 }
