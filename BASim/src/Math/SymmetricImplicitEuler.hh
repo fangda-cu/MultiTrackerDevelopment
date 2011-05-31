@@ -404,6 +404,8 @@ protected:
         int m_curit = 0;
         for (; m_curit < m_maxit; ++m_curit)
         {
+	  std::cout << "\nSymmetricImplicitEuler::position_solve: iteration = " << m_curit << "\n\n" << std::endl; 
+
             // TODO: Assert m_A, increment are zero
             START_TIMER("SymmetricImplicitEuler::position_solve/setup");
 
@@ -500,8 +502,8 @@ protected:
                 m_diffEq.endIteration();
                 // Calling computeResidual also sets m_rhs = M(m_dt*v_n-m_deltaX) + h^2*F.
                 m_residual = computeResidual();
-                //std::cout << "line search: i "<<i<<", alpha "<<alpha<<", previous "<<previous_residual<<", residual "<<m_residual<<std::endl;
-                if (m_residual < 10 * previous_residual)
+                std::cout << "\nSymmetricImplicitEuler::position_solve: line search: i "<<i<<", alpha "<<alpha<<", previous "<<previous_residual<<", residual "<<m_residual<<std::endl;
+                if (m_residual < previous_residual)
                     break;
                 else if (i >= 20)
                 {
