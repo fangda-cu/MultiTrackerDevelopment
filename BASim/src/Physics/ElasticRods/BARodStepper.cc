@@ -684,7 +684,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     std::list<Collision*> penalty_collisions;
     // The penalty collisions list is used to create penalty forces. All that is deleted and cleared at the end of this step.
     if (m_perf_param.m_enable_penalty_response)
-        executeImplicitPenaltyResponse(penalty_collisions, selected_rods);
+        setupPenaltyForces(penalty_collisions, selected_rods);
 
     STOP_TIMER("BARodStepper::step/penalty");
 
