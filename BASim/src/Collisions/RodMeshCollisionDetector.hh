@@ -39,6 +39,8 @@ public:
 
     void build_mesh_BVH();
 
+    void rebuildRodElements(const std::vector<std::pair<int, int> >& edges);
+
 private:
     void computeCollisions(const BVHNode& node_a, const BVHNode& node_b);
 };

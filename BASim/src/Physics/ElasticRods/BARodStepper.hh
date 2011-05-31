@@ -123,6 +123,10 @@ public:
         m_stopOnRodError = stopOnRodError;
     }
 
+    void addRod(ElasticRod* rod, RodTimeStepper* stepper);
+
+    void removeRod(int rodIdx);
+
 private:
     /**
      * Modifies the timestep.
@@ -312,7 +316,7 @@ private:
     void setVertexFacePenalty(const double& k);
 
     void killTheRod(int rod);
-    void computeForces(VecXd ** Forces, const RodSelectionType& selected_rods);
+    void computeForces(std::vector<VecXd*> Forces, const RodSelectionType& selected_rods);
 
     /*
      * Member variables
@@ -320,20 +324,17 @@ private:
 
     // Total number of degrees of freedom in the system
     int m_num_dof;
+
     // Time steppers to evolve rods forward (ignoring collisions)
     std::vector<RodTimeStepper*>& m_steppers;
-#ifdef KEEP_ONLY_SOME_RODS
+
     // Vector of rods this BARodStepper evolves in time
     std::vector<ElasticRod*>& m_rods;
     size_t m_number_of_rods; // set to m_rods.size()
-#else
-    // Vector of rods this BARodStepper evolves in time
-    const std::vector<ElasticRod*>& m_rods;
-    const size_t m_number_of_rods; // set to m_rods.size()
-#endif
+
     // Vector of ScriptedTriangleObjects in the system
     const std::vector<TriangleMesh*>& m_triangle_meshes;
-    
+
     // Vector of level sets that correspond to the above triangle meshes
     // Note: This vector may have null pointers in it, this signifies there is no level set
     // for that mesh.
@@ -342,7 +343,7 @@ private:
     // the owner of this class also has a vector we're storing max 8 bytes * m_level_sets.size()
     // duplicated data.
     std::vector<LevelSet*> m_level_sets;
-    
+
     // Controllers to move scripted geometry/rods forward in time and to set boundary conditions
     const std::vector<ScriptingController*>& m_scripting_controllers;
     // Integrator selected by user
@@ -424,14 +425,17 @@ private:
     VecXd m_xn;
     VecXd m_xnp1;
     VecXd m_xdebug;
+
     // Velocities
     VecXd m_vnphalf;
     VecXd m_vnresp;
+
     // Forces
-    VecXd** m_startForces;
-    VecXd** m_preDynamicForces;
-    VecXd** m_preCollisionForces;
-    VecXd** m_endForces;
+    std::vector<VecXd*> m_startForces;
+    std::vector<VecXd*> m_preDynamicForces;
+    std::vector<VecXd*> m_preCollisionForces;
+    std::vector<VecXd*> m_endForces;
+
     // Global back-ups for adaptive substepping
     std::vector<MinimalRodStateBackup> m_rodbackups;
     std::vector<MinimalTriangleMeshBackup> m_objbackups;
