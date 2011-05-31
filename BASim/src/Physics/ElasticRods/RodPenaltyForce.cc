@@ -75,7 +75,7 @@ bool RodPenaltyForce::cleared() const
     return vidx.empty() && vertex_face_collisions.empty();
 }
 
-void RodPenaltyForce::clearPenaltyForces()
+void RodPenaltyForce::clearProximityCollisions()
 {
     // std::cerr << "Clearing penalty forces" << std::endl;
     vidx.clear();
@@ -127,7 +127,7 @@ void RodPenaltyForce::computeForce(const ElasticRod& rod, VecXd& F) const
     std::cerr << "RodPenaltyForce::computeForce: norm = " << (F - beforeF).norm() << " force = " << (F - beforeF) << std::endl;
 }
 
-void RodPenaltyForce::addRodPenaltyForce(int vertex, VertexFaceProximityCollision* vfpcol)
+void RodPenaltyForce::registerProximityCollision(int vertex, VertexFaceProximityCollision* vfpcol)
 {
     //	std::cout << "pntl added " << vertex << " " << cllsn.n << " " << cllsn.cp << "\n";
     vidx.push_back(vertex);

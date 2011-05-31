@@ -27,11 +27,11 @@ public:
 
     virtual void computeForce(const ElasticRod& rod, VecXd& F) const;
 
-    void addRodPenaltyForce(int vertex, VertexFaceProximityCollision* vfpcol);
+    void registerProximityCollision(int vertex, VertexFaceProximityCollision* vfpcol);
 
     bool cleared() const;
 
-    void clearPenaltyForces();
+    void clearProximityCollisions();
 
     virtual void computeForceDX(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) const;
 
