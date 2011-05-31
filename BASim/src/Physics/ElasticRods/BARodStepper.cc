@@ -26,23 +26,25 @@ namespace BASim
 
 void BARodStepper::addRod(ElasticRod* rod, RodTimeStepper* stepper)
 {
+    // Add the rod
     m_rods.push_back(rod);
-    m_rods.back()->globalRodIndex = m_number_of_rods;
+    m_simulated_rods.push_back(m_number_of_rods);
+    m_rods.back()->globalRodIndex = m_number_of_rods++;
+    // Add the stepper
     m_steppers.push_back(stepper);
     m_steppers.back()->setMaxIterations(m_perf_param.m_maximum_number_of_solver_iterations);
-    m_number_of_rods++;
 
     assert(m_rods.size() == m_steppers.size());
     assert(m_number_of_rods == m_rods.size());
 
+    // Extend the force vectors used to detect explosions
     m_startForces.push_back(new VecXd(m_rods.back()->ndof()));
+    m_preDynamicForces.push_back(new VecXd(m_rods.back()->ndof()));
     m_preCollisionForces.push_back(new VecXd(m_rods.back()->ndof()));
     m_endForces.push_back(new VecXd(m_rods.back()->ndof()));
 
     m_rodbackups.resize(m_number_of_rods); // growing by 1
     m_rodbackups.back().resize(*m_rods.back());
-
-    m_simulated_rods.push_back(m_number_of_rods - 1);
 
     // Extract edges from the new rod
     for (int j = 0; j < m_rods.back()->nv() - 1; ++j)
@@ -307,6 +309,10 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     m_startForces.resize(m_number_of_rods);
     for (int i = 0; i < m_number_of_rods; i++)
         m_startForces[i] = new VecXd(m_rods[i]->ndof());
+
+    m_preDynamicForces.resize(m_number_of_rods);
+    for (int i = 0; i < m_number_of_rods; i++)
+        m_preDynamicForces[i] = new VecXd(m_rods[i]->ndof());
 
     m_preCollisionForces.resize(m_number_of_rods);
     for (int i = 0; i < m_number_of_rods; i++)
@@ -627,6 +633,7 @@ bool BARodStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
         return true;
     }
     if (selected_rods.empty()) // Success!
+
     {
         TraceStream(g_log, "") << "t = " << m_t << ": adaptiveExecute has simulated (or killed) all rods\n";
         STOP_TIMER("BARodStepper::adaptiveExecute")
@@ -690,6 +697,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     START_TIMER("BARodStepper::step")
 
     if (m_simulationFailed) // We stopped simulating already
+
     {
         STOP_TIMER("BARodStepper::step")
         return;

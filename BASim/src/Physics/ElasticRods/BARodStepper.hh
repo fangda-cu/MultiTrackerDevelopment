@@ -443,16 +443,16 @@ private:
     RodSelectionType m_simulated_rods;
 
     PerformanceTuningParameters m_perf_param;
-   // TextLog* g_log;
+    // TextLog* g_log;
 
-  //  std::ofstream m_log_stream;
+    //  std::ofstream m_log_stream;
 
     // DEBUG
     int m_num_solver_killed, m_num_collision_killed, m_num_explosion_killed;
     int m_total_solver_killed, m_total_collision_killed, m_total_explosion_killed;
 
-  //class MyTimers;
-  //MyTimers *m_timers;
+    //class MyTimers;
+    //MyTimers *m_timers;
 };
 
 } // namespace BASim
