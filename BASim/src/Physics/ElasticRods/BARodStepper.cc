@@ -715,18 +715,12 @@ void BARodStepper::step(RodSelectionType& selected_rods)
                     << stepper->getRod()->globalRodIndex << " failed to converge after " << stepper->getMaxIterations()
                     << " iterations\n";
         dependable_solve = dependable_solve && result;
-    }STOP_TIMER("BARodStepper::step/steppers");
+    }
+
+    STOP_TIMER("BARodStepper::step/steppers");
 
     TraceStream(m_log, "") << "Dynamic step is " << (dependable_solve ? "" : "not ") << "entirely dependable"
             << (dependable_solve ? " :-)\n" : "!\n");
-
-    START_TIMER("BARodStepper::step/penalty");
-
-    // Clean up penalty collisions list
-    for (std::list<Collision*>::iterator i = penalty_collisions.begin(); i != penalty_collisions.end(); i++)
-        delete *i;
-
-    STOP_TIMER("BARodStepper::step/penalty");
 
     // If we do rod-rod collisions (meaning no selective adaptivity) and global dependability failed, we might as well stop here.
     if (!m_perf_param.m_skipRodRodCollisions && !dependable_solve)
@@ -920,7 +914,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
 
         selected_rods.erase(rodit--);
         // the -- compensates for the erased rod; this is dangerous since it assumes array (rather than linked-list) semantics for selected_rods
-        // Yes I know, I'm suprised this even works.
+        // Yes I know, I'm surprised this even works.
     }
 
     STOP_TIMER("BARodStepper::step/exception");
@@ -932,6 +926,17 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         TraceStream(m_log, "") << "Step finished, " << selected_rods.size() << " rods must be substepped\n";
     else
         TraceStream(m_log, "") << "Step finished, all rods treated (either successful step, removed, or errors ignored)\n";
+
+
+    START_TIMER("BARodStepper::step/penalty");
+
+    // Clean up penalty collisions list
+    for (std::list<Collision*>::iterator i = penalty_collisions.begin(); i != penalty_collisions.end(); i++)
+        delete *i;
+    penalty_collisions.clear();
+
+    STOP_TIMER("BARodStepper::step/penalty");
+
 
     STOP_TIMER("BARodStepper::step")
 }
