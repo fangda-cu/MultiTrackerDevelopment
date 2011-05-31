@@ -202,6 +202,9 @@ public:
   {
    // m_forces = f;
     // add internal forces
+
+    std::cout << "RodTimeStepper::evaluatePDot: &rod = " << &m_rod << "\n";// << " positions = ...\n";
+
     m_rod.computeForces(f);
 
     //if (m_rod.viscous()) f /= m_diffEqSolver->getTimeStep();
@@ -213,7 +216,7 @@ public:
       curr_force.setZero();
       m_externalForces[i]->computeForce(m_rod, curr_force);
       f += curr_force;
-      std::cout << m_externalForces[i]->getName() << " norm = " << curr_force.norm() << std::endl;
+      //std::cout << m_externalForces[i]->getName() << " &rod = " << &m_rod << " norm = " << curr_force.norm() << std::endl;
     }
   
    // m_forces = f - m_forces;

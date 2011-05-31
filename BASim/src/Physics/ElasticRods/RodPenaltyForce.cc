@@ -77,7 +77,7 @@ void RodPenaltyForce::clearPenaltyForces()
 
 void RodPenaltyForce::computeForce(const ElasticRod& rod, VecXd& F)
 {
-  //VecXd beforeF = F;
+  VecXd beforeF = F;
   //  std::cout << "Forces (BEFORE) = \n " << F << std::endl;
 
     //  ElasticRod& rod = const_cast<ElasticRod&>(const_rod);
@@ -100,6 +100,8 @@ void RodPenaltyForce::computeForce(const ElasticRod& rod, VecXd& F)
         {
             F[rod.vertIdx(vertex, i)] += force[i];
         }
+
+	std::cout << "RodPenaltyForce::computeForce: vertex idx = " << vertex << " position = " << v0 << " &rod = " << &rod << " rodidx = " << rod.globalRodIndex << " closest point = " << vertex_face_collisions[i]->cp << std::endl;
 
 	if (isinf(force[0]) || force.norm() > 1e20)
 	{

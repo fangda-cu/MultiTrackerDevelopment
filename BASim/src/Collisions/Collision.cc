@@ -456,6 +456,8 @@ bool VertexFaceProximityCollision::analyseCollision(double)
 	    return false;
         }
 
+	std::cout << "VertexFaceProximityCollision::analyseCollision: vertex index = " << v0 << " position = " << p1 << " closest point = " << cp << std::endl;
+
         return m_analysed = true;
     }
 
