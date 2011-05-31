@@ -20,7 +20,6 @@
 #include <omp.h>
 #endif
 
-
 namespace BASim
 {
 
@@ -76,7 +75,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
             m_level(0),
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start,
                     m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness), m_log_stream("BARodStepper.log")
-            //m_timers(NULL)
+//m_timers(NULL)
 {
     if (levelSets != NULL)
     {
@@ -303,7 +302,7 @@ void BARodStepper::prepareForExecution()
     {
         assert(m_rods[i] != NULL);
         m_rods[i]->globalRodIndex = i;
-	std::cerr << "Address of rod Nr " << i << ": " << m_rods[i] << std::endl;
+        std::cerr << "Address of rod Nr " << i << ": " << m_rods[i] << std::endl;
     }
 
     CopiousStream(m_log, "") << "About to extract rod information\n";
@@ -545,14 +544,15 @@ bool BARodStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
 
     if (m_simulationFailed)
     {
-        WarningStream(m_log, "", MsgInfo::kOncePerMessage) << "t = " << m_t << ": **** SIMULATION FAILED AND IS NOW STOPPED! ****\n***********************************************************\n";
-	STOP_TIMER("BARodStepper::adaptiveExecute")
+        WarningStream(m_log, "", MsgInfo::kOncePerMessage) << "t = " << m_t
+                << ": **** SIMULATION FAILED AND IS NOW STOPPED! ****\n***********************************************************\n";
+        STOP_TIMER("BARodStepper::adaptiveExecute")
         return true;
     }
     if (selected_rods.empty()) // Success!
     {
         TraceStream(m_log, "") << "t = " << m_t << ": adaptiveExecute has simulated (or killed) all rods\n";
-	STOP_TIMER("BARodStepper::adaptiveExecute")
+        STOP_TIMER("BARodStepper::adaptiveExecute")
         return true;
     }
     // Otherwise do two half time steps
@@ -680,15 +680,9 @@ void BARodStepper::step(RodSelectionType& selected_rods)
 
     // Jungseock's implicit penalty
     std::list<Collision*> penalty_collisions;
+    // The penalty collisions list is used to create penalty forces. All that is deleted and cleared at the end of this step.
     if (m_perf_param.m_enable_penalty_response)
-    {
-        // Clear existing penalties
-        for (std::vector<RodPenaltyForce*>::const_iterator penalty_force = m_implicit_pnlty_forces.begin(); penalty_force
-                != m_implicit_pnlty_forces.end(); penalty_force++)
-            (*penalty_force)->clearProximityCollisions();
-
         executeImplicitPenaltyResponse(penalty_collisions, selected_rods);
-    }
 
     STOP_TIMER("BARodStepper::step/penalty");
 
@@ -927,18 +921,20 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     else
         TraceStream(m_log, "") << "Step finished, all rods treated (either successful step, removed, or errors ignored)\n";
 
-
     START_TIMER("BARodStepper::step/penalty");
 
     // Clean up penalty collisions list
     for (std::list<Collision*>::iterator i = penalty_collisions.begin(); i != penalty_collisions.end(); i++)
         delete *i;
     penalty_collisions.clear();
+    // Clear existing penalties
+    for (std::vector<RodPenaltyForce*>::const_iterator penalty_force = m_implicit_pnlty_forces.begin(); penalty_force
+            != m_implicit_pnlty_forces.end(); penalty_force++)
+        (*penalty_force)->clearProximityCollisions();
 
     STOP_TIMER("BARodStepper::step/penalty");
 
-
-    STOP_TIMER("BARodStepper::step")
+    STOP_TIMER("BARodStepper::step");
 }
 
 /*
@@ -1347,6 +1343,7 @@ void BARodStepper::ensureNoCollisionsByDefault(const ElasticRod& rod) const
 }
 
 void BARodStepper::killTheRod(int rod) // TODO: remove the rod properly in Maya
+
 {
     for (int j = 0; j < m_rods[rod]->nv(); j++)
         m_rods[rod]->setVertex(j, 0 * m_rods[rod]->getVertex(j));
