@@ -213,7 +213,7 @@ bool CollisionDetectorBase::appendProximityCollision(const YAEdge* edge_a, const
     else
     {
         m_collisions_mutex.Lock();
-        m_collisions_list->push_back(edgeXedge); // Will be deleted in BARodStepper::executeImplicitPenaltyResponse()
+        m_collisions_list->push_back(edgeXedge); // will be deleted at the end of BARodStepper::step()
         m_collisions_mutex.Unlock();
         return true;
     }
@@ -250,7 +250,7 @@ bool CollisionDetectorBase::appendProximityCollision(int v_index, const YATriang
     else
     {
         m_collisions_mutex.Lock();
-        m_collisions_list->push_back(vertexXface); // Will be deleted in BARodStepper::executeImplicitPenaltyResponse()
+        m_collisions_list->push_back(vertexXface); // will be deleted at the end of BARodStepper::step()
         m_collisions_mutex.Unlock();
         return true;
     }

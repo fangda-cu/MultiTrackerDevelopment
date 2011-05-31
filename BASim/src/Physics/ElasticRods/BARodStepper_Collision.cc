@@ -1754,7 +1754,7 @@ void BARodStepper::applyInextensibilityVelocityFilter(int rodidx)
 /**
  * Implicit penalty response
  */
-void BARodStepper::executeImplicitPenaltyResponse(std::list<Collision*>& collisions, const RodSelectionType& selected_rods)
+void BARodStepper::setupPenaltyForces(std::list<Collision*>& collisions, const RodSelectionType& selected_rods)
 {
     // Detect proximity collisions
     m_collision_detector->getCollisions(collisions, Proximity);
