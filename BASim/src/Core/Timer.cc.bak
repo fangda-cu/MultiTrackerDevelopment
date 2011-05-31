@@ -6,37 +6,35 @@
 #include <sys/resource.h>
 #include "Timer.hh"
 
-#include "Cycle.hh"
-
 namespace BASim {
 
 Timer::TimerMap Timer::timerMap;
 
-// inline double timeofday()
-// {
-//   timeval tp;
-//   gettimeofday(&tp, NULL);
-//   double result = (double) tp.tv_sec + 1e-6 * (double) tp.tv_usec;
-//   return result;
-// }
+inline double timeofday()
+{
+  timeval tp;
+  gettimeofday(&tp, NULL);
+  double result = (double) tp.tv_sec + 1e-6 * (double) tp.tv_usec;
+  return result;
+}
 
-// inline double cpuusage()
-// {
-//   struct rusage rus;
-//   getrusage(RUSAGE_SELF, &rus);
-//   double user = (double) rus.ru_utime.tv_sec + 1e-6
-//     * (double) rus.ru_utime.tv_usec;
-//   double sys = (double) rus.ru_stime.tv_sec + 1e-6
-//     * (double) rus.ru_stime.tv_usec;
+inline double cpuusage()
+{
+  struct rusage rus;
+  getrusage(RUSAGE_SELF, &rus);
+  double user = (double) rus.ru_utime.tv_sec + 1e-6
+    * (double) rus.ru_utime.tv_usec;
+  double sys = (double) rus.ru_stime.tv_sec + 1e-6
+    * (double) rus.ru_stime.tv_usec;
 
-//   return user + sys;
-// }
+  return user + sys;
+}
 
-// inline double now()
-// {
-//   return timeofday();
-//   //return cpuusage();
-// }
+inline double now()
+{
+  return timeofday();
+  //return cpuusage();
+}
 
 Timer& Timer::getTimer(std::string name)
 {
@@ -64,15 +62,15 @@ void Timer::lap()
 {
   if (nestingLevel) 
   {
-    elapsedT    = elapsed( getticks(), startTicks);
-    startTicks  = getticks();
+    elapsed   = now() - startTime;
+    startTime = now();
   }
 
-  cumulativeElapsedT += elapsedT;
-  cumulativeCount    += count;
+  cumulativeElapsed += elapsed;
+  cumulativeCount   += count;
 
-  elapsedT = 0;
-  count    = 0;
+  elapsed = 0;
+  count   = 0;
 }
 
 
@@ -92,26 +90,28 @@ void Timer::report()
 
 std::ostream& operator<<(std::ostream& os, Timer& timer)
 {
-  os << "\t" << std::setw(14) << timer.getElapsed() << " (" << std::setw(6) << timer.getCount() << ") "
-     << "\tcumul: " << std::setw(14) << timer.getCumulativeElapsed() << " (" << std::setw(6) << timer.getCumulativeCount() << ") "
-     << "\tlevel: " << timer.getNestingLevel() << "/" << timer.getDeepestNestingLevel();
+  os << "\t" << std::setw(10) << timer.getElapsed() << " (" << std::setw(5) << timer.getCount() << ") "
+     << "\tcumul: " << std::setw(10) << timer.getCumulativeElapsed() << " (" << std::setw(5) << timer.getCumulativeCount() << ") "
+     << "\tlevel: " << timer.getNestingLevel() << "/" << timer.getDeepestNestingLevel() ;
   return os;
 }
 
 
-Timer::Timer() :
-    elapsedT(0),
-    cumulativeElapsedT(0),
-    count(0),
-    cumulativeCount(0),
-    nestingLevel(0),
-    deepestNestingLevel(0)
+Timer::Timer()
+  : startTime(0)
+  , elapsed(0)
+  , cumulativeElapsed(0)
+  , count(0)
+  , cumulativeCount(0)
+  , nestingLevel(0)
+  , deepestNestingLevel(0)
 {}
 
 void Timer::clear()
 {
-  elapsedT            = 0.;
-  cumulativeElapsedT  = 0.;
+  startTime           = 0.;
+  elapsed             = 0.;
+  cumulativeElapsed   = 0.;
   nestingLevel        = 0;
   count               = 0;
   cumulativeCount     = 0;
@@ -125,7 +125,7 @@ void Timer::beginBlock()
   if (!nestingLevel)
   {
     //std::cout << " STARTING ";
-    startTicks = getticks();
+    startTime = now();
     ++count;
   }
   ++nestingLevel;
@@ -140,19 +140,19 @@ void Timer::endBlock()
   assert(nestingLevel >= 0);
   if (!nestingLevel) {
     //std::cout << " STOPPING ";
-    double duration = elapsed( getticks(), startTicks);
-    times.push_back(duration);
-    elapsedT += duration;
+    elapsed = now() - startTime;
+    times.push_back(elapsed);
+    startTime = 0.;
   }
   //std::cout << " exiting to level " << nestingLevel << std::endl;
 }
 
 double Timer::getElapsed()
 {
-  double e = elapsedT;
+  double e = elapsed;
 
   if (nestingLevel) {
-    e = elapsed( getticks(), startTicks);
+    e = now() - startTime;
   }
 
   return e;
@@ -160,7 +160,7 @@ double Timer::getElapsed()
 
 double Timer::getCumulativeElapsed()
 {
-  double e = cumulativeElapsedT;
+  double e = cumulativeElapsed;
 
   if (nestingLevel) {
     e += getElapsed();
