@@ -84,10 +84,10 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_startTime = i_dataBlock.inputValue( ia_startTime ).asDouble();
 
         // Hair properties
-        double length = i_dataBlock.inputValue( ia_length ).asDouble();
-        double edgeLength = i_dataBlock.inputValue( ia_edgeLength ).asDouble();
-        double rodRadius = i_dataBlock.inputValue( ia_rodRadius ).asDouble();
-        double rodPitch = i_dataBlock.inputValue( ia_rodPitch ).asDouble();
+        m_length = i_dataBlock.inputValue( ia_length ).asDouble();
+        m_edgeLength = i_dataBlock.inputValue( ia_edgeLength ).asDouble();
+        m_rodRadius = i_dataBlock.inputValue( ia_rodRadius ).asDouble();
+        m_rodPitch = i_dataBlock.inputValue( ia_rodPitch ).asDouble();
         
         MObject strandVerticesObj = i_dataBlock.inputValue( ia_strandVertices ).data();
         MFnVectorArrayData strandVerticesArrayData( strandVerticesObj, &status );
@@ -102,11 +102,6 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         
         if ( m_currentTime == m_startTime )
         {
-            m_length = length;
-            m_edgeLength = edgeLength;
-            m_rodRadius = rodRadius;
-            m_rodPitch = rodPitch;        
-                            
             // We can't use the assignment operator because strandVertices is actually
             // a reference to the MVectorArrayData array and it will go out of scope
             // and we'll be left with a reference to nothing and obviously a crash.
@@ -127,29 +122,14 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                 // the simulation.
                 // 
                 
-                // Check if anything has changed, if not then don't bother updating the rods
-                if ( length != m_length || edgeLength != m_edgeLength || rodRadius != m_rodRadius
-                     || rodPitch != m_rodPitch )
+                for (size_t i = 0; i < m_rodManager->m_rods.size(); ++i)
                 {
-                    m_length = length;
-                    m_edgeLength = edgeLength;
-                    m_rodRadius = rodRadius;
-                    m_rodPitch = rodPitch;
-                
-                    // TODO: Add code to update undeformed configuration 
-                    // for just now, recreate the rod
-                    // initialiseRodFromBarberShopInput( i_dataBlock );
-
-		    for (size_t i = 0; i < m_rodManager->m_rods.size(); ++i) 
-		    {
-		        cout << "Setting radius of m_rods[" << i << "] to " << m_rodRadius << endl;
-		        for (ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin(); 
-			     vh != m_rodManager->m_rods[i]->vertices_end(); ++vh)
-		        {
-                            assert(m_rodManager ->m_rods[i]->m_bendingForce != NULL);
-			    m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, Vec2d(rodRadius,0) );
-		        }
-		    }
+                    for ( ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin(); 
+                         vh != m_rodManager->m_rods[i]->vertices_end(); ++vh)
+                    {
+                        assert( m_rodManager->m_rods[i]->m_bendingForce != NULL );
+                        m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, Vec2d( m_rodRadius, 0 ) );
+                    }
                 }
                         
                 updateCollisionMeshes( i_dataBlock );
@@ -490,13 +470,19 @@ void* WmSweeneyNode::creator()
         return stat;
     }
     if ( i_isInput )
+    {
         nAttr.setWritable( true );
+    }
     else
+    {
         nAttr.setWritable( false );
+    }
 
     if ( i_isArray )
+    {
         nAttr.setArray( true );
-
+    }
+        
     stat = addAttribute( i_attribute );
     if ( !stat ) { stat.perror( "addAttribute " + i_longName ); return stat; }
 
@@ -543,9 +529,8 @@ void* WmSweeneyNode::creator()
         MFnNumericAttribute numericAttr;
         ia_rodRadius = numericAttr.create( "rodRadius", "ror", MFnNumericData::kDouble, 0.0, &status );
         CHECK_MSTATUS( status );
-        CHECK_MSTATUS( numericAttr.setReadable( false ) );
+        CHECK_MSTATUS( numericAttr.setReadable( true ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
-        CHECK_MSTATUS( numericAttr.setStorable( false ) );
         CHECK_MSTATUS( numericAttr.setMin( -3.0 ) );
         CHECK_MSTATUS( numericAttr.setMax( 3.0 ) );
         status = addAttribute( ia_rodRadius );
