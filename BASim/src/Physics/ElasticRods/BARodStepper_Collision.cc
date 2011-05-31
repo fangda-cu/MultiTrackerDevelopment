@@ -351,6 +351,7 @@ void BARodStepper::computeCompliantLHS(MatrixBase* lhs, int rodidx)
 
 void BARodStepper::exertCompliantInelasticImpulse(const CTCollision* cllsn)
 {
+    assert(cllsn->isAnalysed());
     const EdgeEdgeCTCollision* eecol = dynamic_cast<const EdgeEdgeCTCollision*> (cllsn);
     const VertexFaceCTCollision* vfcol = dynamic_cast<const VertexFaceCTCollision*> (cllsn);
     //std::cout << "BARodStepper:exertCompliantInelasticImpulse: pre-impulse e-e relative velocity = " << cllsn->GetRelativeVelocity() << std::endl;
@@ -452,7 +453,7 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
 
     // Determine the desired values for each constraint
     VecXd desired_values(numconstraints);
-#ifdef DEBUG
+#ifndef NDEBUG
     desired_values.setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
     // First constraint, the collision constraint, is 0
@@ -473,7 +474,7 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
     //std::cout << "Constraint values: " << desired_values << std::endl;
 
     // Currently, all fixed vertex constraints normalized
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 0; i < numconstraints; ++i ) assert( approxEq(normal[i].norm(),1.0,1.0e-9) );
 #endif
 
@@ -490,7 +491,7 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
     }
 
     // Ensure the edge degrees of freedom experience no impulse
-#ifdef DEBUG
+#ifndef NDEBUG
     for( ElasticRod::edge_iter eit = m_rods[rodidx]->edges_begin(); eit != m_rods[rodidx]->edges_end(); ++eit )
     {
         for( int i = 0; i < numconstraints; ++i ) assert( ntilde[i](m_rods[rodidx]->edgeIdx(*eit)) == 0.0 );
@@ -501,20 +502,17 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
     std::vector<VecXd> posnn;
     for (int i = 0; i < numconstraints; ++i)
         posnn.push_back(VecXd(nvdof));
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 0; i < numconstraints; ++i ) posnn[i].setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
 
     std::vector<VecXd> posnntilde;
     for (int i = 0; i < numconstraints; ++i)
         posnntilde.push_back(VecXd(nvdof));
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 0; i < numconstraints; ++i ) posnntilde[i].setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
 
-#ifdef DEBUG
-    for( int i = 0; i < numconstraints; ++i ) assert( (normal[i].cwise()==normal[i]).all() );
-#endif
     for (int i = 0; i < numconstraints; ++i)
     {
         int theidx = 0;
@@ -525,13 +523,7 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
             ++theidx;
         }
     }
-#ifdef DEBUG
-    for( int i = 0; i < numconstraints; ++i ) assert( (posnn[i].cwise()==posnn[i]).all() );
-#endif
 
-#ifdef DEBUG
-    for( int i = 0; i < numconstraints; ++i ) assert( (ntilde[i].cwise()==ntilde[i]).all() );
-#endif
     for (int i = 0; i < numconstraints; ++i)
     {
         int theidx = 0;
@@ -542,14 +534,11 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
             ++theidx;
         }
     }
-#ifdef DEBUG
-    for( int i = 0; i < numconstraints; ++i ) assert( (posnntilde[i].cwise()==posnntilde[i]).all() );
-#endif
 
     // Compute the Lagrange multipliers
     // TODO: This matrix is symmetric, exploit that fact to avoid computations
     MatXd lglhs(numconstraints, numconstraints);
-#ifdef DEBUG
+#ifndef NDEBUG
     lglhs.setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
     for (int i = 0; i < numconstraints; ++i)
@@ -558,7 +547,7 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
     assert(approxSymmetric(lglhs, 1.0e-6));
 
     Eigen::VectorXd lgrhs(numconstraints);
-#ifdef DEBUG
+#ifndef NDEBUG
     lgrhs.setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
     lgrhs(0) = vfcol.computeRelativeVelocity(); //posnN0.dot(m_vnphalf.segment(m_base_dof_indices[rodidx],posnN0.size()));
@@ -593,7 +582,7 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
     //std::cout << "BARodStepper::exertCompliantInelasticVertexFaceImpulse: post-impulse velocities: " << m_vnphalf.segment(rodbase, nvdof) << std::endl;
 
     // Ensure that the impulse eliminated the realtive velocity
-    //#ifdef DEBUG
+    //#ifndef NDEBUG
     double postmagrelvel = vfcol.computeRelativeVelocity();
     // std::cout << "BARodStepper::exertCompliantInelasticVertexFaceImpulse: relative velocity pre-impulse = " << magrelvel
     //         << " post-impulse = " << postmagrelvel << std::endl;
@@ -607,7 +596,7 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
     applyInextensibilityVelocityFilter(rodidx);
 
     // Ensure the 'scripted vertices' achieved the desired velocity
-#ifdef DEBUG
+#ifndef NDEBUG
     curdof = 1;
     for( size_t i = 0; i < scriptedverts.size(); ++i )
     {
@@ -762,7 +751,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     // Determine the desired value of each constraint
     int nc0 = (int) (n0.size());
     VecXd cval0(nc0);
-#ifdef DEBUG
+#ifndef NDEBUG
     cval0.setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
     // First constraint, the collision constraint, is 0
@@ -780,17 +769,17 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     assert(curdof == nc0);
     assert(cval0.size() == nc0);
     // Ensure collision constraint adds up to actual normal
-#ifdef DEBUG
+#ifndef NDEBUG
     Vec3d testn0 = n0[0].segment<3>(base_i0)+n0[0].segment<3>(base_i1);
-    Vec3d actln0 = -eecol.n;
+    Vec3d actln0 = -eecol.GetNormal();
     assert( approxEq(testn0, actln0, 1.0e-6) );
 #endif
     // Currently, all fixed vertex constraints normalized
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 1; i < nc0; ++i ) assert( approxEq(n0[i].norm(),1.0,1.0e-9) );
 #endif
     // Ensure the edge degrees of freedom experience no impulse
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 0; i < nc0; ++i )
     for( ElasticRod::edge_iter eit = m_rods[rod0]->edges_begin(); eit != m_rods[rod0]->edges_end(); ++eit )
     assert( n0[i](m_rods[rod0]->edgeIdx(*eit)) == 0.0 );
@@ -821,7 +810,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     // Determine the desired value of each constraint
     int nc1 = (int) (n1.size());
     VecXd cval1(nc1);
-#ifdef DEBUG
+#ifndef NDEBUG
     cval1.setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
     // First constraint, the collision constraint, is 0
@@ -839,17 +828,17 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     assert(curdof == nc1);
     assert(cval1.size() == nc1);
     // Ensure collision constraint adds up to actual normal
-#ifdef DEBUG
+#ifndef NDEBUG
     Vec3d testn1 = n1[0].segment<3>(base_j0)+n1[0].segment<3>(base_j1);
-    Vec3d actln1 = eecol.n;
+    Vec3d actln1 = eecol.GetNormal();
     assert( approxEq(testn1, actln1, 1.0e-6) );
 #endif
     // Currently, all fixed vertex constraints normalized
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 1; i < nc1; ++i ) assert( approxEq(n1[i].norm(),1.0,1.0e-9) );
 #endif
     // Ensure the edge degrees of freedom experience no impulse
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 0; i < nc1; ++i )
     for( ElasticRod::edge_iter eit = m_rods[rod1]->edges_begin(); eit != m_rods[rod1]->edges_end(); ++eit )
     assert( n1[i](m_rods[rod1]->edgeIdx(*eit)) == 0.0 );
@@ -877,7 +866,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
             std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Problem during linear solve detected. " << std::endl;
     }
     // Ensure the edge degrees of freedom experience no impulse
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 0; i < nc0; ++i )
     for( ElasticRod::edge_iter eit = m_rods[rod0]->edges_begin(); eit != m_rods[rod0]->edges_end(); ++eit )
     assert( ntilde0[i](m_rods[rod0]->edgeIdx(*eit)) == 0.0 );
@@ -904,7 +893,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
             std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Problem during linear solve detected. " << std::endl;
     }
     // Ensure the edge degrees of freedom experience no impulse
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 0; i < nc1; ++i )
     for( ElasticRod::edge_iter eit = m_rods[rod1]->edges_begin(); eit != m_rods[rod1]->edges_end(); ++eit )
     assert( ntilde1[i](m_rods[rod1]->edgeIdx(*eit)) == 0.0 );
@@ -916,20 +905,17 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     std::vector<VecXd> posnn0;
     for (int i = 0; i < nc0; ++i)
         posnn0.push_back(VecXd(rod0nvdof));
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 0; i < nc0; ++i ) posnn0[i].setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
 
     std::vector<VecXd> posnntilde0;
     for (int i = 0; i < nc0; ++i)
         posnntilde0.push_back(VecXd(rod0nvdof));
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 0; i < nc0; ++i ) posnntilde0[i].setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
 
-#ifdef DEBUG
-    for( int i = 0; i < nc0; ++i ) assert( (n0[i].cwise()==n0[i]).all() );
-#endif
     for (int i = 0; i < nc0; ++i)
     {
         int theidx = 0;
@@ -940,15 +926,9 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
             ++theidx;
         }
     }
-#ifdef DEBUG
-    for( int i = 0; i < nc0; ++i ) assert( (posnn0[i].cwise()==posnn0[i]).all() );
-#endif
 
     //for( int i = 0; i < nc0; ++i ) std::cout << "posnn0: " << posnn0[i] << std::endl;
 
-#ifdef DEBUG
-    for( int i = 0; i < nc0; ++i ) assert( (ntilde0[i].cwise()==ntilde0[i]).all() );
-#endif
     for (int i = 0; i < nc0; ++i)
     {
         int theidx = 0;
@@ -959,9 +939,6 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
             ++theidx;
         }
     }
-#ifdef DEBUG
-    for( int i = 0; i < nc0; ++i ) assert( (posnntilde0[i].cwise()==posnntilde0[i]).all() );
-#endif
 
     //for( int i = 0; i < nc0; ++i ) std::cout << "posnntilde0: " << posnntilde0[i] << std::endl;
 
@@ -970,20 +947,17 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     std::vector<VecXd> posnn1;
     for (int i = 0; i < nc1; ++i)
         posnn1.push_back(VecXd(rod1nvdof));
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 0; i < nc1; ++i ) posnn1[i].setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
 
     std::vector<VecXd> posnntilde1;
     for (int i = 0; i < nc1; ++i)
         posnntilde1.push_back(VecXd(rod1nvdof));
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 0; i < nc1; ++i ) posnntilde1[i].setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
 
-#ifdef DEBUG
-    for( int i = 0; i < nc1; ++i ) assert( (n1[i].cwise()==n1[i]).all() );
-#endif
     for (int i = 0; i < nc1; ++i)
     {
         int theidx = 0;
@@ -994,15 +968,9 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
             ++theidx;
         }
     }
-#ifdef DEBUG
-    for( int i = 0; i < nc1; ++i ) assert( (posnn1[i].cwise()==posnn1[i]).all() );
-#endif
 
     //for( int i = 0; i < nc1; ++i ) std::cout << "posnn1: " << posnn1[i] << std::endl;
 
-#ifdef DEBUG
-    for( int i = 0; i < nc1; ++i ) assert( (ntilde1[i].cwise()==ntilde1[i]).all() );
-#endif
     for (int i = 0; i < nc1; ++i)
     {
         int theidx = 0;
@@ -1013,9 +981,6 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
             ++theidx;
         }
     }
-#ifdef DEBUG
-    for( int i = 0; i < nc1; ++i ) assert( (posnntilde1[i].cwise()==posnntilde1[i]).all() );
-#endif
 
     //for( int i = 0; i < nc1; ++i ) std::cout << "posnntilde1: " << posnntilde1[i] << std::endl;
 
@@ -1024,7 +989,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     // TODO: This matrix is symmetric, exploit that fact to avoid computations
     int numalpha = nc0 + nc1 - 1;
     MatXd lglhs(numalpha, numalpha);
-    //#ifdef DEBUG
+    //#ifndef NDEBUG
     //  lglhs.setConstant(std::numeric_limits<double>::signaling_NaN());
     //#endif
     lglhs.setZero();
@@ -1062,7 +1027,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     assert(approxSymmetric(lglhs, 1.0e-6));
 
     Eigen::VectorXd lgrhs(numalpha);
-#ifdef DEBUG
+#ifndef NDEBUG
     lgrhs.setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
     // Entry 0
@@ -1129,7 +1094,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     }
 
     // Ensure that the impulse eliminated the realtive velocity
-#ifdef DEBUG
+#ifndef NDEBUG
     //Vec3d postrelvel = computeRelativeVelocity( m_vnphalf, eecol.e0_v0, eecol.e0_v1, eecol.e1_v0, eecol.e1_v1, eecol.s, eecol.t );
     //double postmagrelvel = postrelvel.dot(eecol.n);
     // Ensure the inelastic impulse decreased the realtive velocity
@@ -1141,7 +1106,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
 #endif
 
     // Ensure the 'scripted vertices' achieved the desired velocity for rod 0
-#ifdef DEBUG
+#ifndef NDEBUG
     curdof = 1;
     for( size_t i = 0; i < scriptedverts0.size(); ++i )
     {
@@ -1160,7 +1125,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
 #endif
 
     // Ensure the 'scripted vertices' achieved the desired velocity for rod 1
-#ifdef DEBUG
+#ifndef NDEBUG
     curdof = 1;
     for( size_t i = 0; i < scriptedverts1.size(); ++i )
     {
@@ -1302,7 +1267,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
 
     // Determine the desired values for each constraint
     VecXd desired_values(numconstraints);
-#ifdef DEBUG
+#ifndef NDEBUG
     desired_values.setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
     // First constraint, the collision constraint, is 0
@@ -1325,14 +1290,14 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
     //for( size_t i = 0; i < vertexConstraints.size(); ++i ) std::cout << vertexConstraints[i] << std::endl;
 
     // Ensure collision constraint adds up to actual normal
-#ifdef DEBUG
+#ifndef NDEBUG
     Vec3d testn = n[0].segment<3>(base0)+n[0].segment<3>(base1);
     if( !rod0fixed ) testn *= -1.0;
-    assert( approxEq(testn, eecol.n, 1.0e-6) );
+    assert( approxEq(testn, eecol.GetNormal(), 1.0e-6) );
 #endif
 
     // Currently, all fixed vertex constraints normalized
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 1; i < numconstraints; ++i ) assert( approxEq(n[i].norm(),1.0,1.0e-9) );
 #endif
 
@@ -1352,7 +1317,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
 
 
     // Ensure the edge degrees of freedom experience no impulse
-#ifdef DEBUG
+#ifndef NDEBUG
     for( ElasticRod::edge_iter eit = m_rods[rodidx]->edges_begin(); eit != m_rods[rodidx]->edges_end(); ++eit )
     {
         for( int i = 0; i < numconstraints; ++i ) assert( ntilde[i](m_rods[rodidx]->edgeIdx(*eit)) == 0.0 );
@@ -1363,20 +1328,17 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
     std::vector<VecXd> posnn;
     for (int i = 0; i < numconstraints; ++i)
         posnn.push_back(VecXd(nvdof));
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 0; i < numconstraints; ++i ) posnn[i].setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
 
     std::vector<VecXd> posnntilde;
     for (int i = 0; i < numconstraints; ++i)
         posnntilde.push_back(VecXd(nvdof));
-#ifdef DEBUG
+#ifndef NDEBUG
     for( int i = 0; i < numconstraints; ++i ) posnntilde[i].setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
 
-#ifdef DEBUG
-    for( int i = 0; i < numconstraints; ++i ) assert( (n[i].cwise()==n[i]).all() );
-#endif
     for (int i = 0; i < numconstraints; ++i)
     {
         int theidx = 0;
@@ -1387,13 +1349,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
             ++theidx;
         }
     }
-#ifdef DEBUG
-    for( int i = 0; i < numconstraints; ++i ) assert( (posnn[i].cwise()==posnn[i]).all() );
-#endif
 
-#ifdef DEBUG
-    for( int i = 0; i < numconstraints; ++i ) assert( (ntilde[i].cwise()==ntilde[i]).all() );
-#endif
     for (int i = 0; i < numconstraints; ++i)
     {
         int theidx = 0;
@@ -1404,14 +1360,11 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
             ++theidx;
         }
     }
-#ifdef DEBUG
-    for( int i = 0; i < numconstraints; ++i ) assert( (posnntilde[i].cwise()==posnntilde[i]).all() );
-#endif
 
     // Compute the Lagrange multipliers
     // TODO: This matrix is symmetric, exploit that fact to avoid computations
     MatXd lglhs(numconstraints, numconstraints);
-#ifdef DEBUG
+#ifndef NDEBUG
     lglhs.setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
     for (int i = 0; i < numconstraints; ++i)
@@ -1420,7 +1373,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
     assert(approxSymmetric(lglhs, 1.0e-6));
 
     Eigen::VectorXd lgrhs(numconstraints);
-#ifdef DEBUG
+#ifndef NDEBUG
     lgrhs.setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
     lgrhs(0) = eecol.computeRelativeVelocity(); // CRAZY SIGN PROBLEM HERE?
@@ -1577,7 +1530,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
 
 
     // Ensure that the impulse eliminated the realtive velocity
-#ifdef DEBUG
+#ifndef NDEBUG
     //Vec3d postrelvel = computeRelativeVelocity( m_vnphalf, eecol.e0_v0, eecol.e0_v1, eecol.e1_v0, eecol.e1_v1, eecol.s, eecol.t );
     //double postmagrelvel = postrelvel.dot(eecol.n);
     // Ensure the inelastic impulse decreased the realtive velocity
@@ -1594,7 +1547,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
 #endif
 
     // Ensure the 'scripted vertices' achieved the desired velocity
-#ifdef DEBUG
+#ifndef NDEBUG
     curdof = 1;
     for( size_t i = 0; i < scriptedverts.size(); ++i )
     {

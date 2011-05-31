@@ -422,7 +422,7 @@ protected:
             // m_A = -h*dF/dv -h^2*dF/dx
             m_diffEq.evaluatePDotDV(-m_dt, *m_A);
             m_A->finalize();
-            //assert( m_A->isApproxSymmetric(1.0e-6) );
+            assert( m_A->isApproxSymmetric(1.0e-6) );
 
             //std::cout << "m_A = -h*dF/dv -h^2*dF/dx" << std::endl;
             //m_A->print();
@@ -431,7 +431,7 @@ protected:
             for (int i = 0; i < m_ndof; ++i)
                 m_A->add(i, i, m_mass(i));
             m_A->finalize();
-            //assert( m_A->isApproxSymmetric(1.0e-6) );
+            assert( m_A->isApproxSymmetric(1.0e-6) );
 
             //std::cout << "m_A = -h*dF/dv -h^2*dF/dx" << std::endl;
             //m_A->print();

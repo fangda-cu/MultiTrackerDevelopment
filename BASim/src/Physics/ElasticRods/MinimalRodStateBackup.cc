@@ -108,7 +108,7 @@ void MinimalRodStateBackup::restoreRod(ElasticRod& rod) const
     // BIGBIGBIG: If we add in a line search or something, we might have to back these guys up. Right now
     //            the backup/restore only happens outside of a solve.
 
-#ifdef DEBUG
+#ifndef NDEBUG
     ObjPropHandle<bool> vh;
     rod.property_handle(vh,"grad twist valid");
     assert( !rod.property(vh) );

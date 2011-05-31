@@ -31,7 +31,7 @@ void RodState::copyState( ElasticRod& rod )
   const PropertyContainer& oprops = getObjectPropertyContainer(rod);
   for( int i = 0; i < (int) oprops.getProperties().size(); ++i ) m_o_props.push_back(oprops.getProperties()[i]->clone());
   
-  #ifdef DEBUG
+  #ifndef NDEBUG
     ensureNoRepeatProperties();
   #endif
 }
