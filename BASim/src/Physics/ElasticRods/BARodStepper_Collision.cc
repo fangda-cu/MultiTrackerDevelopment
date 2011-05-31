@@ -349,6 +349,7 @@ void BARodStepper::computeCompliantLHS(MatrixBase* lhs, int rodidx)
 
 void BARodStepper::exertCompliantInelasticImpulse(const CTCollision* cllsn)
 {
+    assert(cllsn->isAnalysed());
     const EdgeEdgeCTCollision* eecol = dynamic_cast<const EdgeEdgeCTCollision*> (cllsn);
     const VertexFaceCTCollision* vfcol = dynamic_cast<const VertexFaceCTCollision*> (cllsn);
     //std::cout << "BARodStepper:exertCompliantInelasticImpulse: pre-impulse e-e relative velocity = " << cllsn->GetRelativeVelocity() << std::endl;
