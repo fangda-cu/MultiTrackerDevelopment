@@ -7,6 +7,7 @@
 
 #include "Collision.hh"
 #include "CollisionUtils.hh"
+#include "TetrahedronPair.hh"
 
 namespace BASim
 {
@@ -68,6 +69,16 @@ bool EdgeFaceIntersection::analyseCollision(double)
 /**
  * Class EdgeEdgeCTCollision
  */
+
+int EdgeEdgeCTCollision::GetRodVertex()
+{
+    if (e0_v0 < m_geodata.GetObjStart())
+        return e0_v0;
+    if (e1_v0 < m_geodata.GetObjStart())
+        return e1_v0;
+    assert(0);
+}
+
 bool EdgeEdgeCTCollision::analyseCollision(double time_step)
 {
     const Vec3d offset = m_geodata.GetPoint(e0_v0);
@@ -86,10 +97,37 @@ bool EdgeEdgeCTCollision::analyseCollision(double time_step)
     const Vec3d vq1 = m_geodata.GetVelocity(e1_v1);
 
     // If both edges are motionless, no collision. Shouldn't we catch that earlier?
-    if ((vp0.norm() == 0) && (vq0.norm() == 0) && (vp1.norm() == 0) && (vq1.norm() == 0))
+    if (IsFixed() || ((vp0.norm() == 0) && (vq0.norm() == 0) && (vp1.norm() == 0) && (vq1.norm() == 0)))
         return false;
 
-    if (IsFixed())
+    // Reject if tetrahedrons don't overlap. TODO: work directly with Vec3d instead of copying everything.
+    double V_0[4][3];
+    V_0[0][0] = p0[0];
+    V_0[0][1] = p0[1];
+    V_0[0][2] = p0[2];
+    V_0[1][0] = (p0 + time_step * vp0)[0];
+    V_0[1][1] = (p0 + time_step * vp0)[1];
+    V_0[1][2] = (p0 + time_step * vp0)[2];
+    V_0[2][0] = q0[0];
+    V_0[2][1] = q0[1];
+    V_0[2][2] = q0[2];
+    V_0[3][0] = (q0 + time_step * vq0)[0];
+    V_0[3][1] = (q0 + time_step * vq0)[1];
+    V_0[3][2] = (q0 + time_step * vq0)[2];
+    double V_1[4][3];
+    V_1[0][0] = p1[0];
+    V_1[0][1] = p1[1];
+    V_1[0][2] = p1[2];
+    V_1[1][0] = (p1 + time_step * vp1)[0];
+    V_1[1][1] = (p1 + time_step * vp1)[1];
+    V_1[1][2] = (p1 + time_step * vp1)[2];
+    V_1[2][0] = q1[0];
+    V_1[2][1] = q1[1];
+    V_1[2][2] = q1[2];
+    V_1[3][0] = (q1 + time_step * vq1)[0];
+    V_1[3][1] = (q1 + time_step * vq1)[1];
+    V_1[3][2] = (q1 + time_step * vq1)[2];
+    if (!TetrahedronPair(V_0, V_1).DoOverlap())
         return false;
 
     std::vector<double> times;
@@ -202,6 +240,13 @@ std::ostream& operator<<(std::ostream& os, const EdgeEdgeCTCollision& eecol)
 /**
  * Class VertexFaceCTCollision
  */
+
+int VertexFaceCTCollision::GetRodVertex()
+{
+    assert(v0 < m_geodata.GetObjStart());
+    return v0;
+}
+
 bool VertexFaceCTCollision::analyseCollision(double time_step)
 {
     const Vec3d offset = m_geodata.GetPoint(v0);
@@ -326,6 +371,9 @@ std::ostream& operator<<(std::ostream& os, const VertexFaceCTCollision& vfcol)
     return os;
 }
 
+/**
+ * Class EdgeEdgeProximityCollision
+ */
 bool EdgeEdgeProximityCollision::analyseCollision(double)
 {
     return false;
@@ -371,6 +419,9 @@ std::ostream& operator<<(std::ostream& os, const EdgeEdgeProximityCollision& eec
     return os;
 }
 
+/**
+ * Clas VertexFaceProximityCollision
+ */
 bool VertexFaceProximityCollision::analyseCollision(double)
 {
     //    if (vertexAndFaceShareVertex(v0, f0, f1, f2))
@@ -394,8 +445,16 @@ bool VertexFaceProximityCollision::analyseCollision(double)
         m_normal = (t1 - t0).cross(t2 - t0);
         assert(m_normal.norm() > 0.0);
 
-        m_normal.normalize();
+        double nnorm = m_normal.norm();
+        m_normal /= nnorm;
+
         assert(fabs(m_normal.norm() - 1.0) < 1.0e-6);
+
+        if (nnorm == 0.0 || fabs(m_normal.norm() - 1.0) > 1.0e-6)
+        {
+            std::cerr << "WARNING, IGNORING COLLISION DUE TO DEGENERATE NORMAL" << std::endl;
+            return false;
+        }
 
         return m_analysed = true;
     }

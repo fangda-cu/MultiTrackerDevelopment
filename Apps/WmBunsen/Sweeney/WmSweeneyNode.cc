@@ -72,11 +72,15 @@ WmSweeneyNode::~WmSweeneyNode()
 { 
 }
 
+WmSweeneyRodManager* WmSweeneyNode::rodManager()
+{
+    return m_rodManager;
+}
+
+
 MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 {
     MStatus status;
-
-    cerr << "----------------------------------->WmSweeneyNode::compute() with i_plug = " << i_plug.name() << endl;
 
     if ( i_plug == ca_rodPropertiesSync )
     {
@@ -123,7 +127,11 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                 // 
                 
                 for (size_t i = 0; i < m_rodManager->m_rods.size(); ++i)
-                {
+                {                
+                    // TODO: Add code to update undeformed configuration 
+                    // for just now, recreate the rod
+                    // initialiseRodFromBarberShopInput( i_dataBlock );
+
                     for ( ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin(); 
                          vh != m_rodManager->m_rods[i]->vertices_end(); ++vh)
                     {
@@ -190,7 +198,8 @@ void WmSweeneyNode::initialiseCollisionMeshes( MDataBlock &i_data )
                 collisionMeshNode->initialise( NULL, i, &triangleMesh, &figMeshController );
              
                 // Now add the mesh to the rod manager
-                m_rodManager->addCollisionMesh( triangleMesh, figMeshController );
+                m_rodManager->addCollisionMesh( triangleMesh, figMeshController->currentLevelSet(), 
+                                                figMeshController );
             }
             else
             {
@@ -664,7 +673,7 @@ void* WmSweeneyNode::creator()
     //Failure  Detection
     {
         MFnNumericAttribute nAttr;
-        ia_maxNumOfSolverIters= nAttr.create( "maxNumOfSolverIters", "mnsi", MFnNumericData::kInt, 5, &status);
+        ia_maxNumOfSolverIters= nAttr.create( "maxNumOfSolverIters", "mnsi", MFnNumericData::kInt, 250, &status);
         if (!status) {
             status.perror("create ia_maxNumOfSolverIters");
             return status;

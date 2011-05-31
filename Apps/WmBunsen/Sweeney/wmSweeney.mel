@@ -1,21 +1,32 @@
+global string $gWmSweeneyMainMenu;  
+global string $gWmSwAddRodContextName = "";
+    
 global proc wmSweeneyAddMainMenu() 
 {
-	global string $gMainWindow;
-	global string $gWmSweeneyMainMenu;
-    
     // check in case somehow the menu add function is called and the plugin aint loaded
 	if(!`pluginInfo -q -loaded wmFigaro`) 
     {
 		print "\nloading wmFigaro plugin...";
 		loadPlugin wmFigaro;
 	}
-    	
+    
+    // Add context tools first
+    global string $gWmSwAddRodContextName = "";
+    if ( !`eval( "wmSwAddRodContext -query -exists \"" + $gWmSwAddRodContextName + "\"" ) `) 
+    {        
+		$gWmSwAddRodContextName = `eval wmSwAddRodContext`;
+	}
+    
+	global string $gMainWindow;
+	global string $gWmSweeneyMainMenu;
+    
     if( !`menu -exists $gWmSweeneyMainMenu` )
     {
         $gWmSweeneyMainMenu = `menu -p $gMainWindow -l "Sweeney" -tearOff true -allowOptionBoxes true WmSweeneyMainMenu`;
 
         menuItem -label "Create rods from BarberShop node" -annotation "Create elastic rods from a BarberShop furset" -command "wmSweeney -cs";
         menuItem -label "Add selected meshes as collision objects" -annotation "Add meshes as collision objects to the selected wmSweeney node"-command "wmSweeney -acm";        
+        menuItem -label "Add Guide Rod Tool" -annotation "Add a manipulatable guide rod"-command "setToolTo $gWmSwAddRodContextName";        
     }
 }
 

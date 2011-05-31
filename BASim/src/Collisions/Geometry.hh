@@ -48,8 +48,8 @@ class GeometricData
 
 public:
     GeometricData(const VecXd& points, const VecXd& velocities, const std::vector<double>& radii,
-            const std::vector<double>& masses, std::vector<bool>& collision_immune, int& obj_start, const double& implicit_thickness,
-            const double& vertex_face_penalty) :
+            const std::vector<double>& masses, std::vector<bool>& collision_immune, int& obj_start,
+            const double& implicit_thickness, const double& vertex_face_penalty) :
         m_points(points), m_velocities(velocities), m_radii(radii), m_masses(masses), m_collision_immune(collision_immune),
                 m_obj_start(obj_start), m_implicit_thickness(implicit_thickness), m_vertex_face_penalty(vertex_face_penalty)
     {
@@ -133,8 +133,6 @@ public:
 
 };
 
-static const double MARGIN = 1e-6;
-
 // A virtual class to abstract handling of edges and faces
 class TopologicalElement
 {
@@ -149,8 +147,8 @@ public:
 
     // Return the bounding box of the object after it has moved for time_step
     virtual BoundingBox<Scalar> GetBBox(const GeometricData& geodata, const double time_step = 0) const = 0;
+
     virtual bool IsFixed(const GeometricData& geodata) = 0;
-    //    virtual bool IsCollisionFree(const GeometricData& geodata) = 0;
 };
 
 class YAEdge: public TopologicalElement
@@ -176,6 +174,7 @@ public:
     {
         return m_edge.first;
     }
+
     int second() const
     {
         return m_edge.second;
@@ -185,16 +184,16 @@ public:
     {
         // std::cerr << "Computing bounding box for edge " << first() << " " << second() << std::endl;
 
-        const Point<Scalar>& v0 = (Point<Scalar> ) (Vec3d) geodata.GetVelocity(first());
-        const Point<Scalar>& v1 = (Point<Scalar> ) (Vec3d) geodata.GetVelocity(second());
+        const Vec3d& v0 = geodata.GetVelocity(first());
+        const Vec3d& v1 = geodata.GetVelocity(second());
 
-        const Point<Scalar>& p0 = (Point<Scalar> ) (Vec3d) geodata.GetPoint(m_edge.first) + v0 * time_step;
-        const Point<Scalar>& p1 = (Point<Scalar> ) (Vec3d) geodata.GetPoint(m_edge.second) + v1 * time_step;
+        const Vec3d& p0 = geodata.GetPoint(m_edge.first) + v0 * time_step; // Why is reference okay here?
+        const Vec3d& p1 = geodata.GetPoint(m_edge.second) + v1 * time_step;
 
-        const double r0 = geodata.GetRadius(m_edge.first) + MARGIN;
-        const double r1 = geodata.GetRadius(m_edge.second) + MARGIN;
+        const double r0 = geodata.GetRadius(m_edge.first);
+        const double r1 = geodata.GetRadius(m_edge.second);
 
-        BoundingBox<Scalar> bbox(p0.x() - r0, p0.y() - r0, p0.z() - r0, p0.x() + r0, p0.y() + r0, p0.z() + r0);
+        BoundingBox<Scalar> bbox(p0[0] - r0, p0[1] - r0, p0[2] - r0, p0[0] + r0, p0[1] + r0, p0[2] + r0);
         bbox.Insert(p1, r1);
 
         return bbox;
@@ -204,6 +203,7 @@ public:
     {
         return geodata.isVertexFixed(m_edge.first) && geodata.isVertexFixed(m_edge.second);
     }
+
     bool IsFree(const GeometricData& geodata)
     {
         return !geodata.isVertexFixed(m_edge.first) && !geodata.isVertexFixed(m_edge.second);
@@ -234,10 +234,12 @@ public:
     {
         return m_triangle.idx[0];
     }
+
     int second() const
     {
         return m_triangle.idx[1];
     }
+
     int third() const
     {
         return m_triangle.idx[2];
@@ -245,19 +247,19 @@ public:
 
     BoundingBox<Scalar> GetBBox(const GeometricData& geodata, const double time_step = 0) const
     {
-        const Point<Scalar>& v0 = (Point<Scalar> ) (Vec3d) geodata.GetVelocity(m_triangle.idx[0]);
-        const Point<Scalar>& v1 = (Point<Scalar> ) (Vec3d) geodata.GetVelocity(m_triangle.idx[1]);
-        const Point<Scalar>& v2 = (Point<Scalar> ) (Vec3d) geodata.GetVelocity(m_triangle.idx[2]);
+        const Vec3d& v0 = geodata.GetVelocity(m_triangle.idx[0]);
+        const Vec3d& v1 = geodata.GetVelocity(m_triangle.idx[1]);
+        const Vec3d& v2 = geodata.GetVelocity(m_triangle.idx[2]);
 
-        const Point<Scalar>& p0 = (Point<Scalar> ) (Vec3d) geodata.GetPoint(m_triangle.idx[0]) + v0 * time_step;
-        const Point<Scalar>& p1 = (Point<Scalar> ) (Vec3d) geodata.GetPoint(m_triangle.idx[1]) + v1 * time_step;
-        const Point<Scalar>& p2 = (Point<Scalar> ) (Vec3d) geodata.GetPoint(m_triangle.idx[2]) + v2 * time_step;
+        const Vec3d& p0 = geodata.GetPoint(m_triangle.idx[0]) + v0 * time_step; // Why is reference okay here?
+        const Vec3d& p1 = geodata.GetPoint(m_triangle.idx[1]) + v1 * time_step;
+        const Vec3d& p2 = geodata.GetPoint(m_triangle.idx[2]) + v2 * time_step;
 
-        const double r0 = geodata.GetRadius(m_triangle.idx[0]) + MARGIN;
-        const double r1 = geodata.GetRadius(m_triangle.idx[1]) + MARGIN;
-        const double r2 = geodata.GetRadius(m_triangle.idx[2]) + MARGIN;
+        const double r0 = geodata.GetRadius(m_triangle.idx[0]);
+        const double r1 = geodata.GetRadius(m_triangle.idx[1]);
+        const double r2 = geodata.GetRadius(m_triangle.idx[2]);
 
-        BoundingBox<Scalar> bbox(p0.x() - r0, p0.y() - r0, p0.z() - r0, p0.x() + r0, p0.y() + r0, p0.z() + r0);
+        BoundingBox<Scalar> bbox(p0[0] - r0, p0[1] - r0, p0[2] - r0, p0[0] + r0, p0[1] + r0, p0[2] + r0);
         bbox.Insert(p1, r1);
         bbox.Insert(p2, r2);
 
@@ -297,8 +299,8 @@ public:
     {
         std::swap(m_objects[i], m_objects[j]);
     }
-
 };
+
 }
 
 #endif /* GEOMETRY_HH_ */

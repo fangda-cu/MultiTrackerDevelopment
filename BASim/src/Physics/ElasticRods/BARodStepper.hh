@@ -18,15 +18,15 @@
 #include "../../Math/LinearSystemSolver.hh"
 #include "../../Core/TriangleMesh.hh"
 //#include "../../Collisions/BVHAABB.hh"
-#include "../../Collisions/CollisionDetector.hh"
+#include "../../Collisions/RodMeshCollisionDetector.hh"
 #include "../../Collisions/CollisionUtils.hh"
+#include "../../Collisions/LevelSet.hh"
 //#include "../../../../Apps/BASimulator/Problems/ProblemBase.hh"
 #include "../../Core/StatTracker.hh"
 #include "MinimalTriangleMeshBackup.hh"
 #include "RodPenaltyForce.hh"
 #include "PerformanceTuningParameters.hh"
 #include "../../Util/TextLog.hh"
-
 #else
 #include "BASim/src/Core/ScriptingController.hh"
 #include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
@@ -34,16 +34,12 @@
 #include "BASim/src/Physics/ElasticRods/RodMassDamping.hh"
 #include "BASim/src/Physics/ElasticRods/RodGravity.hh"
 #include "BASim/src/Math/Math.hh"
-
 #include "BASim/src/Core/TriangleMesh.hh"
-
 #include "BASim/src/Collisions/CollisionUtils.hh"
-#include "BASim/src/Collisions/CollisionDetector.hh"
-
+#include "BASim/src/Collisions/RodMeshCollisionDetector.hh"
+#include "BASim/src/Collisions/LevelSet.hh"
 #include "Apps/BASimulator/Problems/ProblemBase.hh"
-
 #include "BASim/src/Core/StatTracker.hh"
-
 #include "BASim/src/Physics/ElasticRods/MinimalTriangleMeshBackup.hh"
 #endif
 
@@ -58,6 +54,9 @@
 
 namespace BASim
 {
+
+typedef RodMeshCollisionDetector CollisionDetectorType;
+// typedef CollisionDetector CollisionDetectorType;
 
 using namespace weta::logging;
 
@@ -84,7 +83,8 @@ public:
     BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
             std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
             const double time = 0.0, const int num_threads = -1,
-            const PerformanceTuningParameters perf_param = PerformanceTuningParameters());
+            const PerformanceTuningParameters perf_param = PerformanceTuningParameters(),
+            std::vector<LevelSet*>* levelSets = NULL);
 
     /**
      * Destructor.
@@ -109,14 +109,7 @@ public:
     /**
      *  Enable or disable self collisions between all rods
      */
-    void skipRodRodCollisions(bool skipRodRodCollisions)
-    {
-        std::cerr << "Switching rod-rod collisions " << (skipRodRodCollisions ? "OFF" : "ON") << std::endl;
-        m_perf_param.m_skipRodRodCollisions = skipRodRodCollisions;
-
-        if (m_collision_detector)
-            m_collision_detector->setSkipRodRodCollisions(skipRodRodCollisions);
-    }
+    void skipRodRodCollisions(bool skipRodRodCollisions);
 
     void setStopOnRodError(bool stopOnRodError)
     {
@@ -290,8 +283,8 @@ private:
     void exertPenaltyImpulses(std::vector<EdgeEdgeProximityCollision>& edg_edg_cllsns,
             std::vector<VertexFaceProximityCollision>& vrtx_fce_cllsns, VecXd& v);
 
-    void exertInelasticImpluse(EdgeEdgeCTCollision& clssn);
-    void exertInelasticImpluse(VertexFaceCTCollision& clssn);
+    void exertInelasticImpulse(EdgeEdgeCTCollision& clssn);
+    void exertInelasticImpulse(VertexFaceCTCollision& clssn);
     void exertInelasticImpulses(std::vector<EdgeEdgeCTCollision>& edg_edg_cllsns,
             std::vector<VertexFaceCTCollision>& vrtx_fce_cllsns, VecXd& v);
 
@@ -344,6 +337,16 @@ private:
 #endif
     // Vector of ScriptedTriangleObjects in the system
     const std::vector<TriangleMesh*>& m_triangle_meshes;
+    
+    // Vector of level sets that correspond to the above triangle meshes
+    // Note: This vector may have null pointers in it, this signifies there is no level set
+    // for that mesh.
+    // NOTE: It is not a reference to a vector like m_triangle_meshs and m_rods. I don't think
+    // that is a problem since the contents of the vector are pointers and we're assuming
+    // the owner of this class also has a vector we're storing max 8 bytes * m_level_sets.size()
+    // duplicated data.
+    std::vector<LevelSet*> m_level_sets;
+    
     // Controllers to move scripted geometry/rods forward in time and to set boundary conditions
     const std::vector<ScriptingController*>& m_scripting_controllers;
     // Integrator selected by user
@@ -354,7 +357,10 @@ private:
     int m_level;
 
     // Entry i is base index of ith rod in global array of position dofs
-    std::vector<int> m_base_indices;
+    std::vector<int> m_base_dof_indices;
+
+    // Entry i is base index of ith rod in global array of vertices
+    std::vector<int> m_base_vtx_indices;
 
     // Entry i is base index of ith ScriptedTriangleMesh in global array of position dofs
     std::vector<int> m_base_triangle_indices;
@@ -389,7 +395,7 @@ private:
     bool m_gt0_enc;
 
     // Collision detector
-    CollisionDetector* m_collision_detector;
+    CollisionDetectorType* m_collision_detector;
 
     // Assuming rods are stored first (which they now are), the index that points one past the last rods data
     int m_obj_start;
@@ -437,7 +443,15 @@ private:
 
     PerformanceTuningParameters m_perf_param;
     TextLog* m_log;
+
     std::ofstream m_log_stream;
+
+    // DEBUG
+    int m_num_solver_killed, m_num_collision_killed, m_num_explosion_killed;
+    int m_total_solver_killed, m_total_collision_killed, m_total_explosion_killed;
+
+    class MyTimers;
+    MyTimers *m_timers;
 };
 
 } // namespace BASim

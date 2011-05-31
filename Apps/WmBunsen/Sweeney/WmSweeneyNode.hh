@@ -111,6 +111,8 @@ public:
                                         
     void constructRodVertices( std::vector< BASim::Vec3d >& o_rodVertices, const MVector& i_direction,
                        const MVector& i_rootPosition );
+                       
+    WmSweeneyRodManager* rodManager();
         
 private:
     void initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock );

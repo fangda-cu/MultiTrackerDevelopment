@@ -3,20 +3,21 @@
 
 #include "Definitions.hh"
 
+// Include a high-res timer library
+#include "Cycle.hh"
+
 namespace BASim {
 
 // macros to compile timing in/out
+// #define TIMING_ON
+
 #ifdef TIMING_ON
 
-#define START_TIMER(name)                         \
-  {                                               \
-    Timer& t = Timer::getTimer(name); t.start();  \
-  }
-
-#define STOP_TIMER(name)                        \
-  {                                             \
-    Timer& t = Timer::getTimer(name); t.stop(); \
-  }                                             \
+#define START_TIMER(name)                               \
+  Timer::getTimer(name).beginBlock();			
+ 
+#define STOP_TIMER(name)                               \
+  Timer::getTimer(name).endBlock();                   
 
 #define PRINT_TIMER(name)                                         \
   {                                                               \
@@ -29,12 +30,22 @@ namespace BASim {
     Timer::getTimer(name).clear();              \
   }                                             \
 
-#else // timing off
-#define START_TIMER(name) {}
-#define STOP_TIMER(name) {}
-#define PRINT_TIMER(name) {}
-#define CLEAR_TIMER(name) {}
+#else
+
+#define START_TIMER(name)                               
+ 
+#define STOP_TIMER(name)                               
+
+#define PRINT_TIMER(name)                                         
+
+#define CLEAR_TIMER(name) 
+
 #endif
+
+// #else // timing off
+// #define PRINT_TIMER(name) {}
+// #define CLEAR_TIMER(name) {}
+// #endif
 
 /** A very simple timer class. */
 class Timer
@@ -55,17 +66,18 @@ public:
   /// reset any previous timings
   void clear();
 
-  /// start the timer
-  void start();
+  /// start the timer by increasing the nesting level
+  void beginBlock();
 
-  /// stops the timer, adding the elapsed time to the total elapsed time
-  void stop();
+  /// decreases the nesting level, and stops the timer if the outermost block is reached
+  /// when timer is stopped, the elapsed time is added the total elapsed time
+  void endBlock();
 
   /// returns the total elapsed time
   double getElapsed();
 
   /// returns the total elapsed time
-  double getTotal();
+  double getCumulativeElapsed();
 
   /// returns the number of timings elapsed time represents
   int getCount()
@@ -73,22 +85,37 @@ public:
     return count;
   }
 
+  /// returns the number of timings elapsed time represents
+  int getCumulativeCount()
+  {
+    return cumulativeCount;
+  }
+
+  int getNestingLevel() 
+  {
+    return nestingLevel;
+  }
+
+  int getDeepestNestingLevel() 
+  {
+    return deepestNestingLevel;
+  }
+
   std::vector<double> getTimes()
   {
     return times;
   }
 
-  Timer& operator-(const Timer& t)
-  {
-    total = total - t.total;
-    return *this;
-  }
+  // Timer& operator-(const Timer& t)
+  // {
+  //   total = total - t.total;
+  //   return *this;
+  // }
 
-  friend std::ostream& operator<<(std::ostream& os, Timer& timer)
-  {
-    os << timer.getTotal() << " (" << timer.getCount() << ")";
-    return os;
-  }
+  friend std::ostream& operator<<(std::ostream& os, Timer& timer);
+
+  void lap(); ///< adds "elapsed" and "count" to their cumulative counterpart, then resets them
+
 
 private:
   static TimerMap timerMap; ///< static map of name->Timer
@@ -98,10 +125,15 @@ private:
 
   std::vector<double> times;
 
-  double startTime;  ///< last time the timer's start function was called
-  double elapsed;    ///< time between last start and stop function calls
-  double total;      ///< total time between start and stop function calls
-  int count;         ///< the number of timings elapsed time represents
+  ticks  startTicks;  ///< last time the timer's start function was called
+  double elapsedT;    ///< time measured since last report
+  int count;          ///< the number of outer blocks encountered since last report
+
+  int nestingLevel;  ///< if nestingLevel is greater than zero, the timer is on
+
+  double cumulativeElapsedT; ///< total time over all reports
+  double cumulativeCount;    ///< total count over all reports
+  int deepestNestingLevel;   ///< deepest nesting level encountered (helps spot unbalanced begin/end-block)
 };
 
 } // namespace BASim

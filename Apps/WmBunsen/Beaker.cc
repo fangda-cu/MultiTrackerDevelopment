@@ -50,7 +50,7 @@ Beaker::Beaker() :
             m_flip(), m_slip(), m_doVolumetricCollisions(false), m_targetEdgeDensity(100.0), m_volumetricRadius(1.0),
             m_gridDX(1.0), m_displayGrid(false), m_displayGridVelocitiesMultiplier(0.0), m_maxDisplayDensity(),
             m_displayCollisionBoundary(false), m_displayAirBoundary(false), m_stol(1.0e-6f * 0.01), m_atol(1.0e-6f * 0.01),
-            m_rtol(1.0e-6f * 0.01), m_inftol(1.0e-6f * 0.01), m_bridsonStepper(NULL), m_stopOnRodError(false)
+            m_rtol(1.0e-6f * 0.01), m_inftol(1.0e-6f * 0.01), m_BARodStepper(NULL), m_stopOnRodError(false)
 {
     m_separationCondition[0] = m_separationCondition[1] = m_separationCondition[2] = -1.0;
 
@@ -69,7 +69,7 @@ Beaker::~Beaker()
         m_timingsFP.close();
 
     delete m_world;
-    delete m_bridsonStepper;
+    delete m_BARodStepper;
 
     // if ( m_sceneXML != NULL )
     // delete m_sceneXML;
@@ -314,6 +314,7 @@ void Beaker::addRodsToWorld(int i_rodGroupIndex, WmFigRodGroup* i_rodGroup, doub
     m_rods.clear();
     m_rodTimeSteppers.clear();
     m_triangleMeshes.clear();
+    m_levelSets.clear();
     m_scriptingControllers.clear();
 
     //  cerr << "about to add rods to world, dt = " << getDt() << endl;
@@ -344,11 +345,20 @@ void Beaker::addRodsToWorld(int i_rodGroupIndex, WmFigRodGroup* i_rodGroup, doub
     for (CollisionMeshDataHashMap::iterator cmItr = m_collisionMeshDataHashMap.begin(); cmItr
             != m_collisionMeshDataHashMap.end(); ++cmItr)
     {
-        m_scriptingControllers.push_back(cmItr->second->scriptingController());
-        m_triangleMeshes.push_back(cmItr->second->triangleMesh());
+        m_scriptingControllers.push_back( cmItr->second->scriptingController() );
+        m_triangleMeshes.push_back( cmItr->second->triangleMesh() );
+        m_levelSets.push_back( cmItr->second->levelSet() );
 
         cerr << "Added scripting controller\n";
         cerr << "Added triangle mesh\n";
+        if ( m_levelSets[ m_levelSets.size() - 1 ] != NULL )
+        {
+            cerr << "Added level set\n";
+        }
+        else
+        {
+            cerr << "Mesh does not have level set data, adding null pointer\n";
+        }
     }
 
     //cerr << "adding rods to world, dt = " << getDt() << endl;
@@ -356,9 +366,10 @@ void Beaker::addRodsToWorld(int i_rodGroupIndex, WmFigRodGroup* i_rodGroup, doub
     // FIXME: pass in timestep from Maya, it's ok to do this for test as the real timestep
     // is set at the beginning of takeTimeStep() but it's really sloppy to not bother setting it 
     // right to start with!
-    m_bridsonStepper = new BARodStepper(m_rods, m_triangleMeshes, m_scriptingControllers, m_rodTimeSteppers, 1.0 / 24.0,
-            startTime, numberOfThreads, perf_param );
-    m_world->addController(m_bridsonStepper);
+    m_BARodStepper = new BARodStepper( m_rods, m_triangleMeshes,
+                                       m_scriptingControllers, m_rodTimeSteppers, 1.0 / 24.0,
+                                       startTime, numberOfThreads, perf_param, &m_levelSets );
+    m_world->addController( m_BARodStepper );
 
     // For convenience, give the RodData a pointer to bridsonStepper
     for (int r = 0; r < numRods; r++)
@@ -366,7 +377,7 @@ void Beaker::addRodsToWorld(int i_rodGroupIndex, WmFigRodGroup* i_rodGroup, doub
         if (!m_rodDataMap[i_rodGroupIndex]->shouldSimulateRod(r))
             continue;
     }
-    m_rodDataMap[i_rodGroupIndex]->setBridsonStepperOnAllRodData(m_bridsonStepper);
+    m_rodDataMap[i_rodGroupIndex]->setBridsonStepperOnAllRodData(m_BARodStepper);
 
     /* delete m_volumetricCollisions;
 
@@ -529,7 +540,7 @@ void Beaker::takeTimeStep(
 
     //i_subSteps = calculateNumSubSteps( i_subSteps, i_stepSize, i_subDistanceMax);
     // std::cout << m_stopOnRodError << std::endl;
-    m_bridsonStepper->setStopOnRodError(m_stopOnRodError);
+    m_BARodStepper->setStopOnRodError(m_stopOnRodError);
     Scalar dt_save = getDt();
     //Scalar startTime = getTime();
     //Scalar currentTime = getTime();
@@ -546,7 +557,7 @@ void Beaker::takeTimeStep(
 
     double frameTime = 0.0;
 
-    m_bridsonStepper->skipRodRodCollisions(!i_fullSelfCollisionsEnabled);
+    m_BARodStepper->skipRodRodCollisions(!i_fullSelfCollisionsEnabled);
 
     // Create space to track the target vertex positions of each rod as they substep towards 
     // their goal
@@ -1133,12 +1144,13 @@ bool Beaker::collisionMeshInitialised(const int i_collisionMeshIndex)
     return false;
 }
 
-void Beaker::initialiseCollisionMesh(TriangleMesh* i_collisionMesh, ScriptingController* i_scriptingController,
-        const int i_collisionMeshIndex)
+void Beaker::initialiseCollisionMesh( TriangleMesh* i_collisionMesh, LevelSet* i_levelSet,
+                                      ScriptingController* i_scriptingController,
+                                      const int i_collisionMeshIndex )
 {
     cout << "Beaker: Initialising collision mesh " << i_collisionMeshIndex << endl;
 
-    CollisionMeshData* collisionMeshData = new CollisionMeshData(i_collisionMesh, i_scriptingController);
+    CollisionMeshData* collisionMeshData = new CollisionMeshData(i_collisionMesh, i_levelSet, i_scriptingController);
     m_collisionMeshDataHashMap[i_collisionMeshIndex] = collisionMeshData;
     //m_collisionMeshHashMap[ i_collisionMeshIndex ]->initialize();
 }

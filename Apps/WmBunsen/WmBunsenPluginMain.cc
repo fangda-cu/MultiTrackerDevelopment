@@ -22,7 +22,12 @@
 #include "WmFigSelectionDisplayNode.hh"
 
 #include "Sweeney/WmSweeneyNode.hh"
+#include "Sweeney/Tools/AddRod/WmSwAddRodContext.hh"
+#include "Sweeney/Tools/AddRod/WmSwAddRodContextCommand.hh"
+#include "Sweeney/Tools/AddRod/WmSwAddRodToolCommand.hh"
 #include "Sweeney/WmSweeneyCmd.hh"
+
+using namespace sweeney;
 
 MStatus initializePlugin( MObject obj )
 {
@@ -104,14 +109,7 @@ MStatus initializePlugin( MObject obj )
         stat.perror( "registerCommand wmFigaro failed" );
         return stat;     
     }
-    
-    stat = plugin.registerCommand( WmSweeneyCmd::typeName, WmSweeneyCmd::creator, 
-                                   WmSweeneyCmd::syntaxCreator );
-    if ( !stat ) {
-        stat.perror( "registerCommand wmSweeney failed" );
-        return stat;     
-    }
-    
+        
     if ( plugin.registerContextCommand( WmFigSelectionContext::typeName,
             WmFigSelectionContextCommand::creator,
             WmFigSelectionToolCommand::typeName,
@@ -138,16 +136,6 @@ MStatus initializePlugin( MObject obj )
         stat.perror( "registerContextCommand WmFigCombContext failed" );
         return stat;     
     }*/
-
-    stat = plugin.registerNode( WmSweeneyNode::typeName, WmSweeneyNode::typeID,
-                                WmSweeneyNode::creator,
-                                WmSweeneyNode::initialize,
-                                WmSweeneyNode::kLocatorNode );
-    if ( !stat )
-    {
-        stat.perror( "RegisterNode WmSweeneyNode failed" );
-        return stat;
-    }
     
     stat = plugin.registerShape( WmFigaroRodShape::typeName, WmFigaroRodShape::id,
                                    &WmFigaroRodShape::creator,
@@ -159,12 +147,50 @@ MStatus initializePlugin( MObject obj )
     }
 
     MGlobal::executeCommand( "source WmFigaro.mel", false );
-    MGlobal::executeCommand( "source wmSweeney.mel", false );
     CHECK_MSTATUS( plugin.registerUI( "wmFigaroAddMainMenu", "wmFigaroRemoveMainMenu" ) );
-    CHECK_MSTATUS( plugin.registerUI( "wmSweeneyAddMainMenu", "wmSweeneyRemoveMainMenu" ) );
-    return stat;
-
     
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // 
+    // Sweeeny initialisation
+    // 
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    MStatus status;
+    
+    status = plugin.registerNode( WmSweeneyNode::typeName, WmSweeneyNode::typeID,
+                                WmSweeneyNode::creator,
+                                WmSweeneyNode::initialize,
+                                WmSweeneyNode::kLocatorNode );
+    if ( !status )
+    {
+        status.perror( "RegisterNode WmSweeneyNode failed" );
+        return status;
+    }
+    
+    status = plugin.registerCommand( WmSweeneyCmd::typeName, WmSweeneyCmd::creator, 
+                                   WmSweeneyCmd::syntaxCreator );
+    if ( !status ) {
+        status.perror( "registerCommand wmSweeney failed" );
+        return status;     
+    }
+    
+    if ( plugin.registerContextCommand( WmSwAddRodContext::typeName,
+            WmSwAddRodContextCommand::creator,
+            WmSwAddRodToolCommand::typeName,
+            WmSwAddRodToolCommand::creator ) != MS::kSuccess )
+    if ( !status ) 
+    {
+        status.perror( "registerContextCommand WmSwAddRodContext failed" );
+        return status;
+    }
+    
+    MGlobal::executeCommand( "source wmSweeney.mel", false );
+    
+    // This will trash the Figaro UI registration, so we just call the add and remove menu functions
+    // directly.
+    //CHECK_MSTATUS( plugin.registerUI( "wmSweeneyAddMainMenu", "wmSweeneyRemoveMainMenu" ) );
+    MGlobal::executeCommand( "wmSweeneyAddMainMenu", false );
+
     return MS::kSuccess;
 }
 
@@ -245,11 +271,28 @@ MStatus uninitializePlugin( MObject obj)
         stat.perror( "deregisterNode WmFigaroRodShape failed" );
     }
     
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // 
+    // Sweeeny uninitialisation
+    // 
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    MStatus status;
+
     if ( plugin.deregisterNode( WmSweeneyNode::typeID ) != MS::kSuccess )
     {
-        stat.perror( "deregisterNode WmSweeneyNode failed" );
+        status.perror( "DeregisterNode WmSweeneyNode failed" );
     }
-
+    
+    if ( plugin.deregisterContextCommand( WmSwAddRodContext::typeName, WmSwAddRodToolCommand::typeName ) != MS::kSuccess )
+    {
+        status.perror( "Deregister context command WmSwAddRodContext failed" );
+    }
+    
+    // Again, explicitly remove the menu as we can't use the add/removeUI functionality due to
+    // it being in the figaro code and I don't want to mix the two.
+    MGlobal::executeCommand( "wmSweeneyRemoveMainMenu", false );
+    
     MGlobal::stopErrorLogging();
 
 	return stat;
