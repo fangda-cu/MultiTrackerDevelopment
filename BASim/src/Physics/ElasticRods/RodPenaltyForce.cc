@@ -109,6 +109,7 @@ void RodPenaltyForce::computeForce(const ElasticRod& rod, VecXd& F)
 	  std::cout << "Normal = " << vertex_face_collisions[i]->m_normal << std::endl;
 	  std::cout << "Force = " << force << std::endl;
 	  std::cout << "Stiffness = " << vertex_face_collisions[i]->k << std::endl;
+	  assert(0);
 	}
 
     }
