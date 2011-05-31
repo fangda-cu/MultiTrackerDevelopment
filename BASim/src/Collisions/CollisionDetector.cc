@@ -20,7 +20,7 @@ CollisionDetector::CollisionDetector(const GeometricData& geodata, const std::ve
     for (std::vector<TriangularFace>::const_iterator i = faces.begin(); i != faces.end(); i++)
         m_elements.push_back(new YATriangle(*i));
 
-    buildBVH();
+ //   buildBVH();
 }
 
 CollisionDetector::~CollisionDetector()
