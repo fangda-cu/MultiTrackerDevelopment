@@ -84,38 +84,41 @@ void RodPenaltyForce::computeForce(const ElasticRod& rod, VecXd& F)
 
     for (int i = 0; i < (int) vertex_face_collisions.size(); i++)
     {
+        VertexFaceProximityCollision* col = vertex_face_collisions[i];
+	assert(col);
+	assert(col->isAnalysed());
         int vertex = vidx[i];
         Vec3d v0 = rod.getVertex(vertex);
 
-	double penaltyThickness =  vertex_face_collisions[i]->h / 10.0;
+	double penaltyThickness =  col->h / 10.0;
 
-        Scalar distance = (v0 - vertex_face_collisions[i]->cp).dot(vertex_face_collisions[i]->m_normal)
-                - (vertex_face_collisions[i]->r0 + vertex_face_collisions[i]->r1 + penaltyThickness);
+        Scalar distance = (v0 - col->cp).dot(col->m_normal)
+                - (col->r0 + col->r1 + penaltyThickness);
 
 	if (distance > 0) continue;
 
-        Vec3d force = -vertex_face_collisions[i]->k * distance * vertex_face_collisions[i]->m_normal;
+        Vec3d force = -col->k * distance * col->m_normal;
 
         for (int i = 0; i < 3; ++i)
         {
             F[rod.vertIdx(vertex, i)] += force[i];
         }
 
-	std::cout << "RodPenaltyForce::computeForce: vertex idx = " << vertex << " position = " << v0 << " &rod = " << &rod << " rodidx = " << rod.globalRodIndex << " closest point = " << vertex_face_collisions[i]->cp << std::endl;
+	std::cout << "RodPenaltyForce::computeForce: vertex idx = " << vertex << " position = " << v0 << " &rod = " << &rod << " rodidx = " << rod.globalRodIndex << " closest point = " << col->cp << std::endl;
 
 	if (isinf(force[0]) || force.norm() > 1e20)
 	{
 	  std::cerr << "WARNING! RodPenaltyForce::computeForce: norm = " << (F - beforeF).norm() << " force = " << (F-beforeF) << std::endl;
 	  std::cout << "Collision, applying force to vertex " << vertex << std::endl;
 	  std::cout << "Distance = " << distance << std::endl;
-	  std::cout << "Normal = " << vertex_face_collisions[i]->m_normal << std::endl;
+	  std::cout << "Normal = " << col->m_normal << std::endl;
 	  std::cout << "Force = " << force << std::endl;
-	  std::cout << "Stiffness = " << vertex_face_collisions[i]->k << std::endl;
+	  std::cout << "Stiffness = " << col->k << std::endl;
 	  assert(0);
 	}
 
     }
-    //std::cerr << "RodPenaltyForce::computeForce: norm = " << (F - beforeF).norm() << " force = " << (F-beforeF) << std::endl;
+    std::cerr << "RodPenaltyForce::computeForce: norm = " << (F - beforeF).norm() << " force = " << (F-beforeF) << std::endl;
 }
 
 void RodPenaltyForce::addRodPenaltyForce(int vertex, VertexFaceProximityCollision* vfpcol)

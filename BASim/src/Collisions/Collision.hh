@@ -19,11 +19,13 @@ class Collision
 {
 public:
     Collision(const GeometricData& geodata) :
-        m_geodata(geodata)
+      m_geodata(geodata), m_analysed(false)
     {
     }
 
     virtual bool analyseCollision(double time_step = 0) = 0;
+
+    bool isAnalysed() { return m_analysed; }
 
 protected:
     // Link to the actual geometric data (point coordinates, velocities etc.)
@@ -31,6 +33,7 @@ protected:
     // Flag indicating whether the collision has been analysed and the previous variables properly set.
     bool m_analysed;
 
+    static int id_counter;
 };
 
 class EdgeFaceIntersection: public Collision

@@ -17,7 +17,7 @@ Vec3d ClosestPtPointTriangle(const Vec3d& p, const Vec3d& a, const Vec3d& b, con
     if (d1 <= 0.0 && d2 <= 0.0)
     {
         result = a; // barycentric coordinates (1,0,0)
-        std::cout << "ClosestPtPointTriangle: p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
+        std::cout << "ClosestPtPointTriangle: CASE 1 p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
         return result;
     }
 
@@ -28,7 +28,7 @@ Vec3d ClosestPtPointTriangle(const Vec3d& p, const Vec3d& a, const Vec3d& b, con
     if (d3 >= 0.0 && d4 <= d3)
     {
         result = b; // barycentric coordinates (0,1,0)
-        std::cout << "ClosestPtPointTriangle: p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
+        std::cout << "ClosestPtPointTriangle: CASE 2 p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
         return result;
     }
 
@@ -38,7 +38,7 @@ Vec3d ClosestPtPointTriangle(const Vec3d& p, const Vec3d& a, const Vec3d& b, con
     {
         double v = d1 / (d1 - d3);
         result = a + v * ab; // barycentric coordinates (1-v,v,0)
-        std::cout << "ClosestPtPointTriangle: p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
+        std::cout << "ClosestPtPointTriangle: CASE 3 p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
         return result;
     }
 
@@ -49,7 +49,7 @@ Vec3d ClosestPtPointTriangle(const Vec3d& p, const Vec3d& a, const Vec3d& b, con
     if (d6 >= 0.0 && d5 <= d6)
     {
         result = c; // barycentric coordinates (0,0,1)
-        std::cout << "ClosestPtPointTriangle: p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
+        std::cout << "ClosestPtPointTriangle: CASE 4 p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
         return result;
     }
 
@@ -59,7 +59,7 @@ Vec3d ClosestPtPointTriangle(const Vec3d& p, const Vec3d& a, const Vec3d& b, con
     {
         double w = d2 / (d2 - d6);
         result = a + w * ac; // barycentric coordinates (1-w,0,w)
-        std::cout << "ClosestPtPointTriangle: p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
+        std::cout << "ClosestPtPointTriangle: CASE 5 p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
 	return result;
     }
 
@@ -69,7 +69,7 @@ Vec3d ClosestPtPointTriangle(const Vec3d& p, const Vec3d& a, const Vec3d& b, con
     {
         double w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
         result = b + w * (c - b); // barycentric coordinates (0,1-w,w)
-        std::cout << "ClosestPtPointTriangle: p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
+        std::cout << "ClosestPtPointTriangle: CASE 6 p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
 	return result;
     }
 
@@ -79,7 +79,7 @@ Vec3d ClosestPtPointTriangle(const Vec3d& p, const Vec3d& a, const Vec3d& b, con
     double w = vc * denom;
     result = a + ab * v + ac * w; // = u*a + v*b + w*c, u = va * denom = 1.0f - v - w
 
-    std::cout << "ClosestPtPointTriangle: p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
+    std::cout << "ClosestPtPointTriangle: CASE 7 p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
 
     return result;
 }
