@@ -21,6 +21,7 @@ public:
    **/
   explicit RodMayaForces( ElasticRod* i_elasticRod ) : m_elasticRod( i_elasticRod )
   {
+    m_name = "maya";    
     resetExternalMayaForces();
   }
 
