@@ -293,7 +293,7 @@ void WmBunsenNode::updateAllCollisionMeshes( MDataBlock &data )
 void WmBunsenNode::updateAllRodNodes( MDataBlock &i_dataBlock )
 {
     MStatus stat;
-    Timer::getTimer("WmBunsenNode::updateAllRodNodes").beginBlock();
+    START_TIMER("WmBunsenNode::updateAllRodNodes")
 
     // Pull all on all input rod nodes, causing them to update the rod data owned by beaker
     // that they each have pointers to.
@@ -312,7 +312,7 @@ void WmBunsenNode::updateAllRodNodes( MDataBlock &i_dataBlock )
         // to here then to beaker. So we cut out the middle man.
     }
 
-    Timer::getTimer("WmBunsenNode::updateAllRodNodes").endBlock();
+    STOP_TIMER("WmBunsenNode::updateAllRodNodes")
 }
 
 /*
