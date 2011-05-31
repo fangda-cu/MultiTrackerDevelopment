@@ -31,11 +31,14 @@ CollisionDetectorBase::~CollisionDetectorBase()
 void CollisionDetectorBase::updateContinuousTimeCollisions()
 {
     for (std::list<Collision*>::iterator collision = m_collisions_list->begin(); collision != m_collisions_list->end(); collision++)
-        if (!(*collision)->analyseCollision(m_time_step))
+    {
+        bool collisionDetected = (*collision)->analyseCollision(m_time_step);
+        if (!collisionDetected)
         {
             delete *collision;
             m_collisions_list->erase(collision--);
         }
+    }
 }
 
 bool CollisionDetectorBase::appendCollision(const TopologicalElement* elem_a, const TopologicalElement* elem_b)
@@ -110,8 +113,10 @@ bool CollisionDetectorBase::appendContinuousTimeCollision(const YAEdge* edge_a, 
 
     EdgeEdgeCTCollision* edgeXedge = new EdgeEdgeCTCollision(m_geodata, edge_a, edge_b);
 
+    bool collisionDetected = edgeXedge->analyseCollision(m_time_step);
+
     if ((m_skip_rod_rod && edgeXedge->IsRodRod()) || edgeXedge->IsCollisionImmune()
-            || !edgeXedge->analyseCollision(m_time_step))
+            || !collisionDetected)
     {
         delete edgeXedge;
         return false;
@@ -132,8 +137,10 @@ bool CollisionDetectorBase::appendContinuousTimeCollision(int v_index, const YAT
 
     VertexFaceCTCollision* vertexXface = new VertexFaceCTCollision(m_geodata, v_index, triangle);
 
+    bool collisionDetected = vertexXface->analyseCollision(m_time_step);
+
     // If vertex is fixed, if face is fixed, nothing to do
-    if (vertexXface->IsFixed() || m_geodata.IsCollisionImmune(v_index) || !vertexXface->analyseCollision(m_time_step))
+    if (vertexXface->IsFixed() || m_geodata.IsCollisionImmune(v_index) || !collisionDetected)
     {
         delete vertexXface;
         return false;
@@ -168,7 +175,9 @@ bool CollisionDetectorBase::appendEdgeFaceIntersection(const YAEdge* edge_a, con
 {
     EdgeFaceIntersection* edgeXface = new EdgeFaceIntersection(m_geodata, edge_a, triangle);
 
-    if (edgeXface->analyseCollision())
+    bool collisionDetected = edgeXface->analyseCollision();
+
+    if (collisionDetected)
     {
         m_collisions_mutex.Lock();
         m_collisions_list->push_back(edgeXface);
@@ -187,7 +196,9 @@ bool CollisionDetectorBase::appendProximityCollision(const YAEdge* edge_a, const
 
     EdgeEdgeProximityCollision* edgeXedge = new EdgeEdgeProximityCollision(m_geodata, edge_a, edge_b);
 
-    if ((m_skip_rod_rod && edgeXedge->IsRodRod()) || edgeXedge->IsCollisionImmune() || !edgeXedge->analyseCollision())
+    bool collisionDetected = edgeXedge->analyseCollision();
+
+    if ((m_skip_rod_rod && edgeXedge->IsRodRod()) || edgeXedge->IsCollisionImmune() || !collisionDetected)
     {
         delete edgeXedge;
         return false;
@@ -221,8 +232,10 @@ bool CollisionDetectorBase::appendProximityCollision(int v_index, const YATriang
 
     VertexFaceProximityCollision* vertexXface = new VertexFaceProximityCollision(m_geodata, v_index, triangle);
 
+    bool collisionDetected = vertexXface->analyseCollision();
+
     // If vertex is fixed, if face is fixed, nothing to do
-    if (vertexXface->IsFixed() || m_geodata.IsCollisionImmune(v_index) || !vertexXface->analyseCollision())
+    if (vertexXface->IsFixed() || m_geodata.IsCollisionImmune(v_index) || !collisionDetected)
     {
         delete vertexXface;
         return false;
