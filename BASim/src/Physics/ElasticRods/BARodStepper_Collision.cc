@@ -1772,7 +1772,7 @@ void BARodStepper::executeImplicitPenaltyResponse(std::list<Collision*>& collisi
             int rod_id = getContainingRod(vfpcol->v0);
             std::cerr << "Creating penalty force for rod " << rod_id << " address " << &m_rods[rod_id] << std::endl;
             int v_id = vfpcol->v0 - m_base_dof_indices[rod_id] / 3;
-            m_implicit_pnlty_forces[rod_id]->addRodPenaltyForce(v_id, vfpcol);
+            m_implicit_pnlty_forces[rod_id]->registerProximityCollision(v_id, vfpcol);
         }
         // TODO: delete vfpcol once used. Not here though, as vfpcol is used each time RodPenaltyForce::computeForce is called
     }

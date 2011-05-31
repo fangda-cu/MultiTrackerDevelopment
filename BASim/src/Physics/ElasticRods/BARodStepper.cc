@@ -685,7 +685,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         // Clear existing penalties
         for (std::vector<RodPenaltyForce*>::const_iterator penalty_force = m_implicit_pnlty_forces.begin(); penalty_force
                 != m_implicit_pnlty_forces.end(); penalty_force++)
-            (*penalty_force)->clearPenaltyForces();
+            (*penalty_force)->clearProximityCollisions();
 
         executeImplicitPenaltyResponse(penalty_collisions, selected_rods);
     }
