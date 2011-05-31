@@ -32,8 +32,8 @@ void CollisionDetectorBase::getReady(std::list<Collision*>& cllsns, CollisionFil
 {
     m_potential_collisions = 0;
     m_collision_filter = collision_filter;
+    assert(cllsns.empty());
     m_collisions_list = &cllsns;
-    m_collisions_list->clear(); // Memory leak?
 }
 
 void CollisionDetectorBase::updateContinuousTimeCollisions()
