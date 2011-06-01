@@ -302,7 +302,7 @@ void BARodStepper::prepareForExecution()
     {
         assert(m_rods[i] != NULL);
         m_rods[i]->globalRodIndex = i;
-        std::cerr << "Address of rod Nr " << i << ": " << m_rods[i] << std::endl;
+        // std::cerr << "Address of rod Nr " << i << ": " << m_rods[i] << std::endl;
     }
 
     CopiousStream(m_log, "") << "About to extract rod information\n";

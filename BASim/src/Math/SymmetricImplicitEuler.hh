@@ -404,7 +404,7 @@ protected:
         int m_curit = 0;
         for (; m_curit < m_maxit; ++m_curit)
         {
-	  std::cout << "\nSymmetricImplicitEuler::position_solve: iteration = " << m_curit << "\n\n" << std::endl; 
+	  // std::cout << "\nSymmetricImplicitEuler::position_solve: iteration = " << m_curit << "\n\n" << std::endl;
 
             // TODO: Assert m_A, increment are zero
             START_TIMER("SymmetricImplicitEuler::position_solve/setup");
@@ -474,8 +474,8 @@ protected:
                 VecXd residual0(m_rhs);
                 Scalar residual0_norm = residual0.norm();
                 Scalar steps[7] = { 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1 };
-                std::cout << "check:\n  x0 " << x0.norm() << ", deltaX " << m_deltaX.norm() << ", increment "
-                        << m_increment.norm() << "\n";
+                // std::cout << "check:\n  x0 " << x0.norm() << ", deltaX " << m_deltaX.norm() << ", increment "
+                  //      << m_increment.norm() << "\n";
                 for (int ss = 0; ss < 7; ss++)
                 {
                     Scalar s = steps[ss];
@@ -486,8 +486,8 @@ protected:
                     computeResidual();
                     VecXd change(m_rhs - residual0), predicted(-s * residual0);
                     Scalar error = (change - predicted).norm() / predicted.norm();
-                    std::cout << "  step " << s << ", change " << change.norm() << ", predicted " << predicted.norm()
-                            << ", error " << error << std::endl;
+                    // std::cout << "  step " << s << ", change " << change.norm() << ", predicted " << predicted.norm()
+                    //        << ", error " << error << std::endl;
                 }
             }
 
@@ -502,7 +502,7 @@ protected:
                 m_diffEq.endIteration();
                 // Calling computeResidual also sets m_rhs = M(m_dt*v_n-m_deltaX) + h^2*F.
                 m_residual = computeResidual();
-                std::cout << "\nSymmetricImplicitEuler::position_solve: line search: i "<<i<<", alpha "<<alpha<<", previous "<<previous_residual<<", residual "<<m_residual<<std::endl;
+                // std::cout << "\nSymmetricImplicitEuler::position_solve: line search: i "<<i<<", alpha "<<alpha<<", previous "<<previous_residual<<", residual "<<m_residual<<std::endl;
                 if (m_residual < previous_residual)
                     break;
                 else if (i >= 20)
