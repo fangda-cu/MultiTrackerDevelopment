@@ -21,10 +21,6 @@ public:
     RodPenaltyForce(double penaltyThicknessFraction = 0.1);
     ~RodPenaltyForce();
 
-    void clearCollisions();
-
-    //void computeEnergy(Real& e)
-
     virtual void computeForce(const ElasticRod& rod, VecXd& F) const;
 
     void registerProximityCollision(int vertex, VertexFaceProximityCollision* vfpcol);
