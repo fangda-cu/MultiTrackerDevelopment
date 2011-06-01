@@ -57,15 +57,12 @@ void RodMeshCollisionDetector::build_mesh_BVH()
 void RodMeshCollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFilter collision_filter,
         bool update_mesh_bbox)
 {
-    m_potential_collisions = 0;
-    m_collision_filter = collision_filter;
-    m_collisions_list = &cllsns;
-    m_collisions_list->clear();
+    getReady(cllsns, collision_filter);
+
     std::vector<BVHParallelizer*> steppers;
 
     BVHNode& rod_root = m_rod_bvh.GetNode(0);
     updateBoundingBox(m_rod_bvh, m_rod_elements, rod_root);
-
     BVHNode& mesh_root = m_mesh_bvh.GetNode(0);
     if (update_mesh_bbox)
         updateBoundingBox(m_mesh_bvh, m_mesh_elements, mesh_root);

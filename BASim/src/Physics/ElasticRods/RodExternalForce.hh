@@ -8,7 +8,8 @@
 #ifndef RODEXTERNALFORCE_HH
 #define RODEXTERNALFORCE_HH
 
-namespace BASim {
+namespace BASim
+{
 
 class ElasticRod;
 class MatrixBase;
@@ -18,23 +19,40 @@ class RodExternalForce
 {
 public:
 
-  explicit RodExternalForce(bool implicit = true) : m_implicit(implicit), m_name("name not given!") {}
+    explicit RodExternalForce(bool implicit = true) :
+        m_implicit(implicit), m_name("name not given!")
+    {
+    }
 
-  virtual ~RodExternalForce() {}
+    virtual ~RodExternalForce()
+    {
+    }
 
-  virtual void computeForce(const ElasticRod& rod, VecXd& force) = 0;
-  virtual void computeForceDX(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) = 0;
-  virtual void computeForceDV(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) = 0;
+    virtual void computeForce(const ElasticRod& rod, VecXd& force) const = 0;
 
-  bool isImplicit() const { return m_implicit; }
-  void setImplicit(bool implicit) { m_implicit = implicit; }
+    virtual void computeForceDX(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) const = 0;
 
-  std::string getName() const {return m_name;}
+    virtual void computeForceDV(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) const = 0;
+
+    bool isImplicit() const
+    {
+        return m_implicit;
+    }
+
+    void setImplicit(bool implicit)
+    {
+        m_implicit = implicit;
+    }
+
+    std::string getName() const
+    {
+        return m_name;
+    }
 
 protected:
+    bool m_implicit;
 
-  bool m_implicit;
-  std::string m_name;
+    std::string m_name;
 };
 
 } // namespace BASim

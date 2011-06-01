@@ -1751,17 +1751,23 @@ void BARodStepper::executeImplicitPenaltyResponse(std::list<Collision*>& collisi
     // Detect proximity collisions
     m_collision_detector->getCollisions(collisions, Proximity);
 
+    for (int rod_id = 0; rod_id < m_number_of_rods; rod_id++)
+        assert(m_implicit_pnlty_forces[rod_id]->cleared());
+
     // Store the proximity collision in the RodPenaltyForce
     for (std::list<Collision*>::const_iterator col = collisions.begin(); col != collisions.end(); col++)
     {
         VertexFaceProximityCollision* vfpcol = dynamic_cast<VertexFaceProximityCollision*> (*col);
         if (vfpcol)
         {
+            assert(vfpcol->isAnalysed());
             int rod_id = getContainingRod(vfpcol->v0);
             int v_id = vfpcol->v0 - m_base_dof_indices[rod_id] / 3;
             m_implicit_pnlty_forces[rod_id]->addRodPenaltyForce(v_id, vfpcol);
         }
+        // TODO: delete vfpcol once used. Not here though, as vfpcol is used each time RodPenaltyForce::computeForce is called
     }
+
 }
 
 void BARodStepper::setImplicitPenaltyExtraThickness(const double& h)

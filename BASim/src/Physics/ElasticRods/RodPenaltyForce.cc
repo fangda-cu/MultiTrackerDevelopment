@@ -24,7 +24,7 @@ RodPenaltyForce::~RodPenaltyForce()
 {
 }
 
-void RodPenaltyForce::computeForceDX(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J)
+void RodPenaltyForce::computeForceDX(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) const
 {
     MatXd localJ(3, 3);
     IntArray indices(3);
@@ -57,7 +57,7 @@ void RodPenaltyForce::computeForceDX(int baseindex, const ElasticRod& rod, Scala
 
 }
 
-void RodPenaltyForce::localJacobian(MatXd& J, const Scalar stiffness, const Vec3d& normal)
+void RodPenaltyForce::localJacobian(MatXd& J, const Scalar stiffness, const Vec3d& normal) const
 {
     Mat3d M = -stiffness * outerProd(normal, normal);
 
@@ -70,6 +70,11 @@ void RodPenaltyForce::localJacobian(MatXd& J, const Scalar stiffness, const Vec3
     }
 }
 
+bool RodPenaltyForce::cleared() const
+{
+    return vidx.empty() && vertex_face_collisions.empty();
+}
+
 void RodPenaltyForce::clearPenaltyForces()
 {
     // std::cerr << "Clearing penalty forces" << std::endl;
@@ -77,7 +82,7 @@ void RodPenaltyForce::clearPenaltyForces()
     vertex_face_collisions.clear();
 }
 
-void RodPenaltyForce::computeForce(const ElasticRod& rod, VecXd& F)
+void RodPenaltyForce::computeForce(const ElasticRod& rod, VecXd& F) const
 {
     VecXd beforeF = F;
     //  std::cout << "Forces (BEFORE) = \n " << F << std::endl;
@@ -86,16 +91,15 @@ void RodPenaltyForce::computeForce(const ElasticRod& rod, VecXd& F)
 
     for (int i = 0; i < (int) vertex_face_collisions.size(); i++)
     {
-        VertexFaceProximityCollision* col = vertex_face_collisions[i];
-	assert(col);
-	assert(col->isAnalysed());
+        const VertexFaceProximityCollision* col = vertex_face_collisions[i];
+        assert(col);
+        assert(col->isAnalysed());
         int vertex = vidx[i];
         Vec3d v0 = rod.getVertex(vertex);
 
-	double penaltyThickness =  col->h / 10.0;
+        double penaltyThickness = col->h / 10.0;
 
-        Scalar distance = (v0 - col->cp).dot(col->m_normal)
-                - (col->r0 + col->r1 + penaltyThickness);
+        Scalar distance = (v0 - col->cp).dot(col->m_normal) - (col->r0 + col->r1 + penaltyThickness);
 
         if (distance > 0)
             continue;
@@ -120,13 +124,14 @@ void RodPenaltyForce::computeForce(const ElasticRod& rod, VecXd& F)
         }
 
     }
-    std::cerr << "RodPenaltyForce::computeForce: norm = " << (F - beforeF).norm() << " force = " << (F-beforeF) << std::endl;
+    std::cerr << "RodPenaltyForce::computeForce: norm = " << (F - beforeF).norm() << " force = " << (F - beforeF) << std::endl;
 }
 
 void RodPenaltyForce::addRodPenaltyForce(int vertex, VertexFaceProximityCollision* vfpcol)
 {
     //	std::cout << "pntl added " << vertex << " " << cllsn.n << " " << cllsn.cp << "\n";
     vidx.push_back(vertex);
+    assert(vfpcol->isAnalysed());
     vertex_face_collisions.push_back(vfpcol);
 }
 

@@ -55,6 +55,8 @@ public:
     }
 
 protected:
+    void getReady(std::list<Collision*>& cllsns, CollisionFilter collision_filter);
+
     // Update the BVH tree starting from node, taking into account the evolution during the time step,
     // i.e. insert m_geodata.m_points+m_time_step*m_geodata.m_velocities.
     void updateBoundingBox(BVH& bvh, const std::vector<const TopologicalElement*>& elements, BVHNode& node);

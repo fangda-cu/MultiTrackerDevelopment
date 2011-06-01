@@ -28,6 +28,14 @@ CollisionDetectorBase::~CollisionDetectorBase()
     m_collisions_list = NULL;
 }
 
+void CollisionDetectorBase::getReady(std::list<Collision*>& cllsns, CollisionFilter collision_filter)
+{
+    m_potential_collisions = 0;
+    m_collision_filter = collision_filter;
+    m_collisions_list = &cllsns;
+    m_collisions_list->clear(); // Memory leak?
+}
+
 void CollisionDetectorBase::updateContinuousTimeCollisions()
 {
     for (std::list<Collision*>::iterator collision = m_collisions_list->begin(); collision != m_collisions_list->end(); collision++)
@@ -115,8 +123,7 @@ bool CollisionDetectorBase::appendContinuousTimeCollision(const YAEdge* edge_a, 
 
     bool collisionDetected = edgeXedge->analyseCollision(m_time_step);
 
-    if ((m_skip_rod_rod && edgeXedge->IsRodRod()) || edgeXedge->IsCollisionImmune()
-            || !collisionDetected)
+    if ((m_skip_rod_rod && edgeXedge->IsRodRod()) || edgeXedge->IsCollisionImmune() || !collisionDetected)
     {
         delete edgeXedge;
         return false;

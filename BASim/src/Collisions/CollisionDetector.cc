@@ -31,11 +31,10 @@ CollisionDetector::~CollisionDetector()
 
 void CollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFilter collision_filter, bool)
 {
-    m_potential_collisions = 0;
-    m_collision_filter = collision_filter;
-    m_collisions_list = &cllsns;
-    m_collisions_list->clear();
+    getReady(cllsns, collision_filter);
+
     std::vector<BVHParallelizer*> steppers;
+
     BVHNode& root = m_bvh.GetNode(0);
     updateBoundingBox(m_bvh, m_elements, root);
 
