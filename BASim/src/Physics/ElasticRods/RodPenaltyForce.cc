@@ -111,11 +111,11 @@ void RodPenaltyForce::computeForce(const ElasticRod& rod, VecXd& F) const
             F[rod.vertIdx(vertex, i)] += force[i];
         }
 
-        if (isinf(force[0]) || force.norm() > 1e20)
+        if (isinf(force[0]) || force.norm() > 1e10)
         {
             std::cerr << "WARNING! RodPenaltyForce::computeForce: norm = " << (F - beforeF).norm() << " force = " << (F
                     - beforeF) << std::endl;
-            std::cout << "Collision, applying force to vertex " << vertex << std::endl;
+            std::cout << "Collision, applying force to vertex " << vertex << ": " << v0 << std::endl;
             std::cout << "Distance = " << distance << std::endl;
             std::cout << "Normal = " << vertex_face_collisions[i]->m_normal << std::endl;
             std::cout << "Force = " << force << std::endl;
