@@ -503,7 +503,7 @@ protected:
                 // Calling computeResidual also sets m_rhs = M(m_dt*v_n-m_deltaX) + h^2*F.
                 m_residual = computeResidual();
                 // std::cout << "\nSymmetricImplicitEuler::position_solve: line search: i "<<i<<", alpha "<<alpha<<", previous "<<previous_residual<<", residual "<<m_residual<<std::endl;
-                if (m_residual < previous_residual)
+                if (true || m_residual < previous_residual) // Temporarily disabled line search
                     break;
                 else if (i >= 20)
                 {
