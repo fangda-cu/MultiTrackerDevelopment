@@ -261,18 +261,19 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
 
     // For debugging purposes
 #ifdef KEEP_ONLY_SOME_RODS
-    WarningStream(g_log, "", MsgInfo::kOncePerMessage) << "WARNING: KEEP_ONLY_SOME_RODS: Simulating only a specified subset of rods!\n***********************************************************\n";
+    WarningStream(g_log, "", MsgInfo::kOncePerMessage)
+            << "WARNING: KEEP_ONLY_SOME_RODS: Simulating only a specified subset of rods!\n***********************************************************\n";
     std::set<int> keep_only;
 
     keep_only.insert(0);
 
     // Only the rods in the keep_only set are kept, the others are killed.
     for (int i = 0; i < m_number_of_rods; i++)
-    if (keep_only.find(i) == keep_only.end())
-    for (int j = 0; j < m_rods[i]->nv(); j++)
-    m_rods[i]->setVertex(j, 0 * m_rods[i]->getVertex(j));
-    else
-    m_simulated_rods.push_back(i);
+        if (keep_only.find(i) == keep_only.end())
+            for (int j = 0; j < m_rods[i]->nv(); j++)
+                m_rods[i]->setVertex(j, 0 * m_rods[i]->getVertex(j));
+        else
+            m_simulated_rods.push_back(i);
 #else
     // Initially all rods passed from Maya will be simulated
     for (int i = 0; i < m_number_of_rods; i++)
@@ -809,9 +810,11 @@ void BARodStepper::step(RodSelectionType& selected_rods)
             // If that vertex has a prescribed position
             if (boundary->isVertexScripted(j))
             {
-                //std::cout << "BATimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
                 Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
                 Vec3d actualvalue = m_xnp1.segment<3> (rodbase + 3 * j);
+                DebugStream(g_log, "") << "Checking position for rod " << *rod << " vertex " << j << ": actual value = "
+                        << actualvalue << "; desired value = " << desiredposition << " distance = " << (desiredposition
+                        - actualvalue).norm() << '\n';
                 assert(approxEq(desiredposition, actualvalue, 1.0e-6));
             }
         }
@@ -1003,7 +1006,7 @@ void BARodStepper::extractPositions(VecXd& positions, const RodSelectionType& se
         for (int j = 0; j < m_rods[*rod]->nv(); ++j)
             if (boundary->isVertexScripted(j))
             {
-              //  std::cout << "BridsonTimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
+                //  std::cout << "BridsonTimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
                 Vec3d desiredposition = boundary->getDesiredVertexPosition(j, time);
                 Vec3d actualvalue = positions.segment<3> (rodbase + 3 * j);
                 assert(approxEq(desiredposition, actualvalue, 1.0e-6));
