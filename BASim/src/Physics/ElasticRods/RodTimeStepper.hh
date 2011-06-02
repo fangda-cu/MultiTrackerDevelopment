@@ -19,6 +19,7 @@
 #include "../../Math/SymmetricImplicitEuler.hh"
 #include "../../Math/StaticsSolver.hh"
 #include "../../Physics/ElasticRods/MinimalRodStateBackup.hh"
+#include "../../Util/TextLog.hh"
 #else
 #include "BASim/src/Core/ObjectControllerBase.hh"
 #include "BASim/src/Physics/ElasticRods/RodBoundaryCondition.hh"
@@ -29,7 +30,7 @@
 #include "BASim/src/Math/ImplicitEuler.hh"
 #include "BASim/src/Math/SymmetricImplicitEuler.hh"
 #include "BASim/src/Math/StaticsSolver.hh"
-
+#include "BASim/src/Util/TextLog.hh"
 #include "BASim/src/Physics/ElasticRods/MinimalRodStateBackup.hh"
 #endif
 
@@ -227,7 +228,7 @@ public:
       curr_force.setZero();
       m_externalForces[i]->computeForce(m_rod, curr_force);
       f += curr_force;
-      std::cout << m_externalForces[i]->getName() << " &rod = " << &m_rod << " norm = " << curr_force.norm() << std::endl;
+      TraceStream(g_log, "") << m_externalForces[i]->getName() << " &rod = " << &m_rod << " norm = " << curr_force.norm() << '\n';
     }
   
    // m_forces = f - m_forces;
