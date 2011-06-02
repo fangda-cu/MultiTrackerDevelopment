@@ -5,7 +5,6 @@
  * \date 02/16/2010
  */
 
-
 //#define KEEP_ONLY_SOME_RODS
 
 #include <typeinfo>
@@ -437,6 +436,11 @@ void BARodStepper::prepareForExecution()
 
     // DEBUG
     m_total_solver_killed = m_total_collision_killed = m_total_explosion_killed = 0;
+
+    m_initialLengths.resize(m_number_of_rods);
+    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+        for (int j = 1; j < m_rods[*rod]->nv(); j++)
+            m_initialLengths[*rod] += (m_rods[*rod]->getVertex(j) - m_rods[*rod]->getVertex(j - 1)).norm();
 
     CopiousStream(g_log, "") << "Finished BARodStepper constructor\n";
 }
@@ -1453,8 +1457,6 @@ void BARodStepper::removeRod(int rodIdx)
 {
     killTheRod(rodIdx);
 }
-
-
 
 }
 

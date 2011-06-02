@@ -306,6 +306,9 @@ private:
     bool checkExplosions(std::vector<bool>& exploding_rods, const std::vector<bool>& failed_collisions_rods,
             const RodSelectionType& selected_rods);
 
+    bool checkLengths(std::vector<bool>& stretching_rods, const RodSelectionType& selected_rods);
+    bool checkLength(int rodIdx);
+
     //////////////////////////////////
     // Jungseock's penalty response
     void setupPenaltyForces(std::list<Collision*>& collisions, const RodSelectionType& selected_rods);
@@ -451,8 +454,8 @@ private:
     int m_num_solver_killed, m_num_collision_killed, m_num_explosion_killed;
     int m_total_solver_killed, m_total_collision_killed, m_total_explosion_killed;
 
-    //class MyTimers;
-    //MyTimers *m_timers;
+    std::vector<double> m_initialLengths;
+
 };
 
 } // namespace BASim
