@@ -52,6 +52,8 @@ public:
     void initialiseSimulation( const double i_timeStep, const double i_startTime, BASim::PerformanceTuningParameters perfParams,
                                double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters );
 
+    void updateSolverSettings( double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters );
+
     void addCollisionMesh( BASim::TriangleMesh* i_triangleMesh, 
                            BASim::LevelSet* i_levelSet,
                            WmFigMeshController* i_figMeshController );

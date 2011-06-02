@@ -6,6 +6,8 @@ namespace BASim
 // Adapted from Christer Ericson, "Real Time Collision Detection"
 Vec3d ClosestPtPointTriangle(const Vec3d& p, const Vec3d& a, const Vec3d& b, const Vec3d& c)
 {
+    Vec3d result;
+
     // Check if P in vertex region outside A
     const Vec3d ab = b - a;
     const Vec3d ac = c - a;
@@ -13,21 +15,31 @@ Vec3d ClosestPtPointTriangle(const Vec3d& p, const Vec3d& a, const Vec3d& b, con
     double d1 = ab.dot(ap);
     double d2 = ac.dot(ap);
     if (d1 <= 0.0 && d2 <= 0.0)
-        return a; // barycentric coordinates (1,0,0)
+    {
+        result = a; // barycentric coordinates (1,0,0)
+        std::cout << "ClosestPtPointTriangle: CASE 1 p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
+        return result;
+    }
 
     // Check if P in vertex region outside B
     const Vec3d bp = p - b;
     double d3 = ab.dot(bp);
     double d4 = ac.dot(bp);
     if (d3 >= 0.0 && d4 <= d3)
-        return b; // barycentric coordinates (0,1,0)
+    {
+        result = b; // barycentric coordinates (0,1,0)
+        std::cout << "ClosestPtPointTriangle: CASE 2 p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
+        return result;
+    }
 
     // Check if P in edge region of AB, if so return projection of P onto AB
     double vc = d1 * d4 - d3 * d2;
     if (vc <= 0.0 && d1 >= 0.0 && d3 <= 0.0)
     {
         double v = d1 / (d1 - d3);
-        return a + v * ab; // barycentric coordinates (1-v,v,0)
+        result = a + v * ab; // barycentric coordinates (1-v,v,0)
+        std::cout << "ClosestPtPointTriangle: CASE 3 p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
+        return result;
     }
 
     // Check if P in vertex region outside C
@@ -35,14 +47,20 @@ Vec3d ClosestPtPointTriangle(const Vec3d& p, const Vec3d& a, const Vec3d& b, con
     double d5 = ab.dot(cp);
     double d6 = ac.dot(cp);
     if (d6 >= 0.0 && d5 <= d6)
-        return c; // barycentric coordinates (0,0,1)
+    {
+        result = c; // barycentric coordinates (0,0,1)
+        std::cout << "ClosestPtPointTriangle: CASE 4 p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
+        return result;
+    }
 
     // Check if P in edge region of AC, if so return projection of P onto AC
     double vb = d5 * d2 - d1 * d6;
     if (vb <= 0.0 && d2 >= 0.0 && d6 <= 0.0)
     {
         double w = d2 / (d2 - d6);
-        return a + w * ac; // barycentric coordinates (1-w,0,w)
+        result = a + w * ac; // barycentric coordinates (1-w,0,w)
+        std::cout << "ClosestPtPointTriangle: CASE 5 p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
+	return result;
     }
 
     // Check if P in edge region of BC, if so return projection of P onto BC
@@ -50,14 +68,20 @@ Vec3d ClosestPtPointTriangle(const Vec3d& p, const Vec3d& a, const Vec3d& b, con
     if (va <= 0.0 && (d4 - d3) >= 0.0 && (d5 - d6) >= 0.0)
     {
         double w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
-        return b + w * (c - b); // barycentric coordinates (0,1-w,w)
+        result = b + w * (c - b); // barycentric coordinates (0,1-w,w)
+        std::cout << "ClosestPtPointTriangle: CASE 6 p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
+	return result;
     }
 
     // P inside face region. Compute Q through its barycentric coordinates (u,v,w)
     double denom = 1.0 / (va + vb + vc);
     double v = vb * denom;
     double w = vc * denom;
-    return a + ab * v + ac * w; // = u*a + v*b + w*c, u = va * denom = 1.0f - v - w
+    result = a + ab * v + ac * w; // = u*a + v*b + w*c, u = va * denom = 1.0f - v - w
+
+    std::cout << "ClosestPtPointTriangle: CASE 7 p = " << p << " a = " << a << " b = " << b << " c = " << c << " result = " << result << std::endl;
+
+    return result;
 }
 
 // Adapted from Christer Ericson, "Real Time Collision Detection"

@@ -97,6 +97,13 @@ public:
     return m_diffEqSolver->getTimeStep();
   }
 
+  DiffEqSolver& getDiffEqSolver()
+  {
+    assert(m_diffEqSolver != NULL);
+
+    return *m_diffEqSolver;
+  }
+
   const DiffEqSolver& getDiffEqSolver() const
   {
     assert(m_diffEqSolver != NULL);
@@ -202,13 +209,25 @@ public:
   {
    // m_forces = f;
     // add internal forces
+
+    // std::cout << "RodTimeStepper::evaluatePDot: rodidx = " << m_rod.globalRodIndex << "\n";
+    // for (int i=0; i < m_rod.nv(); ++i)
+    // {
+    //   std::cout << "x[" << i << "] = " << m_rod.getVertex(i) << std::endl;
+    // }
+
     m_rod.computeForces(f);
 
     //if (m_rod.viscous()) f /= m_diffEqSolver->getTimeStep();
 
+    VecXd curr_force(f.size());
+
     // add external forces
     for (size_t i = 0; i < m_externalForces.size(); ++i) {
-      m_externalForces[i]->computeForce(m_rod, f);
+      curr_force.setZero();
+      m_externalForces[i]->computeForce(m_rod, curr_force);
+      f += curr_force;
+      std::cout << m_externalForces[i]->getName() << " &rod = " << &m_rod << " norm = " << curr_force.norm() << std::endl;
     }
   
    // m_forces = f - m_forces;

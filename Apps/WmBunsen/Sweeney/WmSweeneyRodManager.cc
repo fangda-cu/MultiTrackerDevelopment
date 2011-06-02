@@ -167,8 +167,33 @@ void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const d
   */
 
     m_bridsonStepper = new BARodStepper( m_rods, m_triangleMeshes, m_scriptingControllers, 
-                                           m_rodTimeSteppers, i_timeStep, i_startTime, 1, perfParams );                                           
+                                         m_rodTimeSteppers, i_timeStep, i_startTime, 1, perfParams );                                           
 }
+
+
+void WmSweeneyRodManager::updateSolverSettings(double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters)
+{
+    std::cout << "Updating solver settings:" << std::endl;
+    std::cout << "Atol  "   << i_atol   << std::endl;
+    std::cout << "Stol  "   << i_stol   << std::endl;
+    std::cout << "Rtol  "   << i_rtol   << std::endl;
+    std::cout << "Inftol  " << i_inftol << std::endl;
+    std::cout << "Num of Line Search Iterations " << i_numLineSearchIters << std::endl;
+
+    for ( size_t r = 0; r < m_rods.size(); ++r )
+    {
+        RodTimeStepper* stepper = m_rodTimeSteppers[ r ];
+        assert(stepper);
+	DiffEqSolver& solver = stepper->getDiffEqSolver();
+
+	solver.set_stol(i_stol);
+	solver.set_atol(i_atol);
+	solver.set_rtol(i_rtol);
+	solver.set_inftol(i_inftol);
+	solver.set_maxlsit(i_numLineSearchIters);
+    }
+}
+
 
 void WmSweeneyRodManager::takeStep()
 {

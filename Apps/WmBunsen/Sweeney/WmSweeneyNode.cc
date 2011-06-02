@@ -151,6 +151,18 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                 m_rodManager->takeStep();
             }
         }
+
+	if ( m_rodManager != NULL )
+	{
+  	    double m_atol=i_dataBlock.inputValue( ia_atol).asDouble();
+	    double m_stol=i_dataBlock.inputValue( ia_stol).asDouble();
+	    double m_rtol=i_dataBlock.inputValue( ia_rtol).asDouble();
+	    double m_inftol=i_dataBlock.inputValue( ia_inftol).asDouble();
+	    int  m_numLineSearchIters=i_dataBlock.inputValue( ia_numLineSearchIters).asInt();
+	  
+	    m_rodManager->updateSolverSettings( m_atol, m_stol, m_rtol, m_inftol, m_numLineSearchIters );
+	}
+	  
         i_dataBlock.setClean( i_plug );
     }
     else if ( i_plug == oa_simulatedNurbs )

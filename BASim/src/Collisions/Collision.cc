@@ -462,4 +462,14 @@ bool VertexFaceProximityCollision::analyseCollision(double)
     return false;
 }
 
+std::ostream& operator<<(std::ostream& os, const VertexFaceProximityCollision& vfcol)
+{
+    os << "Vertex face proximity!\n";
+    os << "Vertex: " << vfcol.m_geodata.GetPoint(vfcol.v0) << '\n';
+    os << "Close point: " << vfcol.cp << '\n';
+    os << "Normal: " << vfcol.m_normal << '\n';
+
+    return os;
+}
+
 }

@@ -188,7 +188,7 @@ void RodTwistingForceSym::globalForce(VecXd& force)
   VecXd f(11);
   IndexArray indices(11);
 
-  VecXd force1 = force;
+  //VecXd force1 = force;
   
   iterator end = m_stencil.end();
   for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
@@ -205,10 +205,9 @@ void RodTwistingForceSym::globalForce(VecXd& force)
   //STOP_TIMER("globalForce");
   
   
-  
-  //std::cout << "TWISTING FORCE\n";
-  //std::cout << force - force1 << "\n\n";
-    
+  //std::cout << (viscous() ? "VISCOUS " : "") << "TWISTING FORCE\n";
+  //std::cout << "norm = " << (force - force1).norm() << " force = " << force-force1 << "\n\n";
+  //std::cout << force - force1 << "\n\n";    
 }
 
 void RodTwistingForceSym::localForce(VecXd& force, const vertex_handle& vh)

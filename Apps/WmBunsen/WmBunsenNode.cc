@@ -515,16 +515,16 @@ MStatus WmBunsenNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         CHECK_MSTATUS( stat );
 
         // Tolerances
-        m_beaker->set_stol(1.0e-6f * i_dataBlock.inputValue( ia_stol, &stat ).asDouble() );
+        m_beaker->set_stol(1.0e-10f * i_dataBlock.inputValue( ia_stol, &stat ).asDouble() );
         CHECK_MSTATUS( stat );
 
-        m_beaker->set_atol( 1.0e-6f * i_dataBlock.inputValue( ia_atol, &stat ).asDouble() );
+        m_beaker->set_atol( 1.0e-10f * i_dataBlock.inputValue( ia_atol, &stat ).asDouble() );
         CHECK_MSTATUS( stat );
 
-        m_beaker->set_rtol(1.0e-6f * i_dataBlock.inputValue( ia_rtol, &stat ).asDouble() );
+        m_beaker->set_rtol(1.0e-10f * i_dataBlock.inputValue( ia_rtol, &stat ).asDouble() );
         CHECK_MSTATUS( stat );
 
-        m_beaker->set_inftol(1.0e-6f * i_dataBlock.inputValue( ia_inftol, &stat ).asDouble() );
+        m_beaker->set_inftol(1.0e-10f * i_dataBlock.inputValue( ia_inftol, &stat ).asDouble() );
         CHECK_MSTATUS( stat );
 
         // Stopping on error
@@ -960,7 +960,7 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnNumericAttribute nAttr;
-        ia_stol = nAttr.create( "stol", "stl", MFnNumericData::kDouble, 0.01, &stat );
+        ia_stol = nAttr.create( "stol", "stl", MFnNumericData::kDouble, 0.00, &stat );
         if ( !stat )
         {
             stat.perror( "create stol attribute");
@@ -975,7 +975,7 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnNumericAttribute nAttr;
-        ia_atol = nAttr.create( "atol", "atl", MFnNumericData::kDouble, 0.01, &stat );
+        ia_atol = nAttr.create( "atol", "atl", MFnNumericData::kDouble, 100, &stat );
         if ( !stat )
         {
             stat.perror( "create atol attribute");
@@ -990,7 +990,7 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnNumericAttribute nAttr;
-        ia_rtol = nAttr.create( "rtol", "rtl", MFnNumericData::kDouble, 0.01, &stat );
+        ia_rtol = nAttr.create( "rtol", "rtl", MFnNumericData::kDouble, 100, &stat );
         if ( !stat )
         {
             stat.perror( "create rtol attribute");
@@ -1005,7 +1005,7 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnNumericAttribute nAttr;
-        ia_inftol = nAttr.create( "inftol", "itl", MFnNumericData::kDouble, 0.01, &stat );
+        ia_inftol = nAttr.create( "inftol", "itl", MFnNumericData::kDouble, 100, &stat );
         if ( !stat )
         {
             stat.perror( "create inftol attribute");
