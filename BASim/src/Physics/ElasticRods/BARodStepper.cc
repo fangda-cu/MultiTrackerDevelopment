@@ -5,7 +5,7 @@
  * \date 02/16/2010
  */
 
-#define KEEP_ONLY_SOME_RODS
+//#define KEEP_ONLY_SOME_RODS
 
 #include <typeinfo>
 #include "BARodStepper.hh"
@@ -812,9 +812,6 @@ void BARodStepper::step(RodSelectionType& selected_rods)
             {
                 Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
                 Vec3d actualvalue = m_xnp1.segment<3> (rodbase + 3 * j);
-                DebugStream(g_log, "") << "Checking position for rod " << *rod << " vertex " << j << ": actual value = "
-                        << actualvalue << "; desired value = " << desiredposition << " distance = " << (desiredposition
-                        - actualvalue).norm() << '\n';
                 assert(approxEq(desiredposition, actualvalue, 1.0e-6));
             }
         }
