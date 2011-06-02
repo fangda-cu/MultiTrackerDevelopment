@@ -5,7 +5,7 @@
  * \date 02/16/2010
  */
 
-//#define KEEP_ONLY_SOME_RODS
+#define KEEP_ONLY_SOME_RODS
 
 #include <typeinfo>
 #include "BARodStepper.hh"
@@ -813,7 +813,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
             // If that vertex has a prescribed position
             if (boundary->isVertexScripted(j))
             {
-                //std::cout << "BridsonTimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
+                //std::cout << "BATimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
                 Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
                 Vec3d actualvalue = m_xnp1.segment<3> (rodbase + 3 * j);
                 assert(approxEq(desiredposition, actualvalue, 1.0e-6));
@@ -981,24 +981,31 @@ void BARodStepper::extractPositions(VecXd& positions, const RodSelectionType& se
 
     //    assert((positions.cwise() == positions).all());
 
-    // Ensure boundary conditions loaded properly
-#ifndef NDEBUG
-    // For each rod
-    for( int i = 0; i < (int) m_number_of_rods; ++i )
-    {
-        RodBoundaryCondition* boundary = m_rods[i]->getBoundaryCondition();
-        int rodbase = m_base_dof_indices[i];
+//     // Ensure boundary conditions loaded properly
+// #ifndef NDEBUG
+//     // For each rod
+//     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+//     {
+// 	int i = *rod;
+//         for (int j = 0; j < m_rods[*rod]->nv(); ++j) BUGGY LOOPS
+//         {
+// 	  RodBoundaryCondition* boundary = m_rods[i]->getBoundaryCondition();
+// 	  int rodbase = m_base_dof_indices[i];
 
-        // For each vertex of the current rod, if that vertex has a prescribed position
-        for( int j = 0; j < m_rods[i]->nv(); ++j ) if( boundary->isVertexScripted(j) )
-        {
-            std::cout << "BridsonTimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
-            Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
-            Vec3d actualvalue = positions.segment<3>(rodbase+3*j);
-            assert( approxEq(desiredposition, actualvalue, 1.0e-6) );
-        }
-    }
-#endif
+// 	  // For each vertex of the current rod, if that vertex has a prescribed position
+// 	  for( int j = 0; j < m_rods[i]->nv(); ++j )  BUGGY LOOPS
+// 	    {
+// 	      if( boundary->isVertexScripted(j) )
+// 		{
+// 		  std::cout << "BATimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
+// 		  Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
+// 		  Vec3d actualvalue = positions.segment<3>(rodbase+3*j);
+// 		  assert( approxEq(desiredposition, actualvalue, 1.0e-6) );
+// 		}
+// 	    }
+// 	}
+//     }	
+// #endif
 }
 
 void BARodStepper::extractVelocities(VecXd& velocities, const RodSelectionType& selected_rods) const
