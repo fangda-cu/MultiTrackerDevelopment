@@ -97,6 +97,13 @@ public:
     return m_diffEqSolver->getTimeStep();
   }
 
+  DiffEqSolver& getDiffEqSolver()
+  {
+    assert(m_diffEqSolver != NULL);
+
+    return *m_diffEqSolver;
+  }
+
   const DiffEqSolver& getDiffEqSolver() const
   {
     assert(m_diffEqSolver != NULL);

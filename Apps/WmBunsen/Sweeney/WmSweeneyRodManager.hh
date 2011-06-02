@@ -49,8 +49,9 @@ public:
                  const BASim::Vec3d i_gravity = BASim::Vec3d( 0.0, -980.0, 0.0 ),                 
                  const BASim::RodTimeStepper::Method i_solverType = BASim::RodTimeStepper::IMPL_EULER );
 
-    void initialiseSimulation( const double i_timeStep, const double i_startTime, BASim::PerformanceTuningParameters perfParams,
-                               double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters );
+    void initialiseSimulation( const double i_timeStep, const double i_startTime, BASim::PerformanceTuningParameters perfParams );
+
+    void updateSolverSettings( double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters );
 
     void addCollisionMesh( BASim::TriangleMesh* i_triangleMesh, 
                            BASim::LevelSet* i_levelSet,

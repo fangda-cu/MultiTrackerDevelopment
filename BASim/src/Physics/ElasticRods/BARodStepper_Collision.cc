@@ -1615,6 +1615,21 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
 
 void BARodStepper::applyInextensibilityVelocityFilter(int rodidx)
 {
+
+
+
+
+
+    std::cout << "WARNING! SKIPPING INEXTENSIBILITY FILTER!" << std::endl;
+
+    return;
+
+
+
+
+
+
+
     if (m_level < m_perf_param.m_inextensibility_threshold)
         return;
 

@@ -795,32 +795,32 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     // Compute final positions from corrected velocities
     m_xnp1 = m_xn + m_dt * m_vnphalf;
 
-#ifndef NDEBUG
-    // Ensure boundary conditions respected by corrected positions
-    // For each selected rod
-    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-    {
-        RodBoundaryCondition* boundary = m_rods[*rod]->getBoundaryCondition();
-        int rodbase = m_base_dof_indices[*rod];
+// #ifndef NDEBUG
+//     // Ensure boundary conditions respected by corrected positions
+//     // For each selected rod
+//     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+//     {
+//         RodBoundaryCondition* boundary = m_rods[*rod]->getBoundaryCondition();
+//         int rodbase = m_base_dof_indices[*rod];
 
-        // For each vertex of the current rod
-        for (int j = 0; j < m_rods[*rod]->nv(); ++j)
-        {
-            // If that vertex has a prescribed position
-            if (boundary->isVertexScripted(j))
-            {
-                Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
-                Vec3d actualvalue = m_xnp1.segment<3> (rodbase + 3 * j);
-		if (!approxEq(desiredposition, actualvalue, 1.0e-6)) 
-		{
-		  std::cout << "BARodStepper: m_t = " << m_t
-			    << " rod " << *rod << " vertex " << j << " desired position " << desiredposition << " actual position " << actualvalue << std::endl; 
-		}
-                assert(approxEq(desiredposition, actualvalue, 1.0e-6));
-            }
-        }
-    }
-#endif
+//         // For each vertex of the current rod
+//         for (int j = 0; j < m_rods[*rod]->nv(); ++j)
+//         {
+//             // If that vertex has a prescribed position
+//             if (boundary->isVertexScripted(j))
+//             {
+//                 Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
+//                 Vec3d actualvalue = m_xnp1.segment<3> (rodbase + 3 * j);
+// 		if (!approxEq(desiredposition, actualvalue, 1.0e-6)) 
+// 		{
+// 		  std::cout << "BARodStepper: m_t = " << m_t
+// 			    << " rod " << *rod << " vertex " << j << " desired position " << desiredposition << " actual position " << actualvalue << std::endl; 
+// 		}
+//                 assert(approxEq(desiredposition, actualvalue, 1.0e-6));
+//             }
+//         }
+//     }
+// #endif
 
     // Copy new positions and velocities back to rods
     restorePositions(m_xnp1, selected_rods);

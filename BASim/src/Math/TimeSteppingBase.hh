@@ -48,12 +48,16 @@ public:
   Scalar get_inftol() const { return m_inftol; }
   void set_inftol(Scalar i) { m_inftol = i; }
 
+  int get_maxlsit() { return m_maxlsit; }
+  void set_maxlsit(int i_maxlsit) { m_maxlsit = i_maxlsit; }
+
 protected:
 
   explicit DiffEqSolver(Scalar time = 0, Scalar dt = 0.1)
     : m_time(time)
     , m_dt(dt)
-    , m_maxit(50)
+    , m_maxit(250)
+    , m_maxlsit(3)
     , m_stol(1e-8)
     , m_atol(1e-8)
     , m_rtol(1e-8)
@@ -65,6 +69,7 @@ protected:
   Scalar m_dt; ///< size of the time step
 
   int m_maxit; ///< maximum number of iterations (only for implicit methods)
+  int m_maxlsit; ///< maximum number of line step iterations
 
   Scalar m_stol; ///< minimum change in norm of solution between iterations
   Scalar m_atol; ///< tolerance for absolute norm of solution

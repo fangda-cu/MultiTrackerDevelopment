@@ -151,6 +151,18 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                 m_rodManager->takeStep();
             }
         }
+
+	if ( m_rodManager != NULL )
+	{
+  	    double m_atol=i_dataBlock.inputValue( ia_atol).asDouble();
+	    double m_stol=i_dataBlock.inputValue( ia_stol).asDouble();
+	    double m_rtol=i_dataBlock.inputValue( ia_rtol).asDouble();
+	    double m_inftol=i_dataBlock.inputValue( ia_inftol).asDouble();
+	    int  m_numLineSearchIters=i_dataBlock.inputValue( ia_numLineSearchIters).asInt();
+	  
+	    m_rodManager->updateSolverSettings( m_atol, m_stol, m_rtol, m_inftol, m_numLineSearchIters );
+	}
+	  
         i_dataBlock.setClean( i_plug );
     }
     else if ( i_plug == oa_simulatedNurbs )
@@ -305,15 +317,9 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
     perfParams.m_max_number_of_substeps_for_collision=i_dataBlock.inputValue( ia_maxNumCollisionSubsteps).asInt();
     perfParams.m_max_number_of_substeps_for_explosion=i_dataBlock.inputValue( ia_maxNumExplosionSubsteps).asInt();
 
-    double m_atol=i_dataBlock.inputValue( ia_atol).asDouble();
-    double m_stol=i_dataBlock.inputValue( ia_stol).asDouble();
-    double m_rtol=i_dataBlock.inputValue( ia_rtol).asDouble();
-    double m_inftol=i_dataBlock.inputValue( ia_inftol).asDouble();
-    int  m_numLineSearchIters=i_dataBlock.inputValue( ia_numLineSearchIters).asInt();
-
     cerr << "initialiseRodFromBarberShopInput() - About to initialise simulation\n";
-    m_rodManager->initialiseSimulation( 1 / 24.0, m_startTime, perfParams, m_atol, m_stol, m_rtol, m_inftol,
-                                        m_numLineSearchIters );
+    m_rodManager->initialiseSimulation( 1 / 24.0, m_startTime, perfParams ); 
+
     cerr << "initialiseRodFromBarberShopInput() - Simulation initialised at time " << m_startTime << endl;
 }
 
