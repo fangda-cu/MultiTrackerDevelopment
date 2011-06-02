@@ -26,7 +26,11 @@ using namespace BASim;
 /* static */ MObject WmSweeneyNode::ia_edgeLength;
 /* static */ MObject WmSweeneyNode::ia_verticesPerRod;
 /* static */ MObject WmSweeneyNode::ia_rodRadius;
+/* static */ MObject WmSweeneyNode::ia_waveFrequency;
+/* static */ MObject WmSweeneyNode::ia_waveAmplitude;
+/* static */ MObject WmSweeneyNode::ia_hasUniformCurvature;
 /* static */ MObject WmSweeneyNode::ia_rodPitch;
+
 
 // Barbershop specific inputs
 /*static*/ MObject WmSweeneyNode::ia_strandVertices;
@@ -91,6 +95,9 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_length = i_dataBlock.inputValue( ia_length ).asDouble();
         m_edgeLength = i_dataBlock.inputValue( ia_edgeLength ).asDouble();
         m_rodRadius = i_dataBlock.inputValue( ia_rodRadius ).asDouble();
+        m_waveFrequency = i_dataBlock.inputValue( ia_waveFrequency ).asDouble();
+	m_waveAmplitude = i_dataBlock.inputValue( ia_waveAmplitude ).asDouble();
+	m_hasUniformCurvature = i_dataBlock.inputValue( ia_hasUniformCurvature ).asBool();
         m_rodPitch = i_dataBlock.inputValue( ia_rodPitch ).asDouble();
         
         MObject strandVerticesObj = i_dataBlock.inputValue( ia_strandVertices ).data();
@@ -124,20 +131,58 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             {
                 // If the rods exist then just update their undeformed configuration but keep running
                 // the simulation.
-                // 
-                
-                for (size_t i = 0; i < m_rodManager->m_rods.size(); ++i)
+                //
+	         for (size_t i = 0; i < m_rodManager->m_rods.size(); ++i)
                 {                
                     // TODO: Add code to update undeformed configuration 
                     // for just now, recreate the rod
                     // initialiseRodFromBarberShopInput( i_dataBlock );
-
-                    for ( ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin(); 
-                         vh != m_rodManager->m_rods[i]->vertices_end(); ++vh)
-                    {
+		  
+		    // get total rod length for scaling
+		    Scalar total_len = 0;
+		    // TODO (sainsley) : create method inside ElasticRod that returns a total length
+		    // this can be computed within ElasticRod::computeEdgeLengths and stored locally
+		    // so we do not need to recompute it here
+		    for ( ElasticRod::edge_iter eh = m_rodManager->m_rods[i]->edges_begin(); 
+                         eh != m_rodManager->m_rods[i]->edges_end(); ++eh )
+		    {
+		        total_len += m_rodManager->m_rods[i]->getEdgeLength( *eh );
+		    }
+		    assert( total_len != 0 );
+		    
+		    // parametric variable for walking the rod lengthwise
+		    Scalar t = 0;
+		    Scalar scale = 1;
+		    int j = 0;
+                    
+		    for ( ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin(); 
+                         vh != m_rodManager->m_rods[i]->vertices_end(); ++vh )
+		    {
+		        //cout << "WmSweeneyNode::compute::simulate: parametric var = " << t << " sin " << sin(t*6*M_PI) << " rod radius = " << m_rodRadius << endl;
                         assert( m_rodManager->m_rods[i]->m_bendingForce != NULL );
-                        m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, Vec2d( m_rodRadius, 0 ) );
+			
+			// set default curvature to constant
+			if(!m_hasUniformCurvature) 
+                        {
+			  scale = t;
+			  //m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, Vec2d( m_rodRadius, 0 ) );
+			} //else {
+			   // set default curvature using ramp (slider adjusts radius)
+			   //m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, Vec2d(t*m_rodRadius, 0 ) );
+			//}
+			
+			// set default curvature using sinusoid (sliders adjusts amplitude and frequency)
+			m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, 
+                            Vec2d( scale*m_waveAmplitude*sin( t*m_waveFrequency*M_PI + M_PI/2.0 ) , 0 ) );
+			
+			// grab edge out of current vertex and increment parametic length accordingly 
+			if ( vh != m_rodManager->m_rods[i]->vertices_end() ) 
+			{
+			   t += m_rodManager->m_rods[i]->getEdgeLength( j++ )/total_len;
+			}
                     }
+
+		    
                 }
                         
                 updateCollisionMeshes( i_dataBlock );
@@ -533,7 +578,7 @@ void* WmSweeneyNode::creator()
 	status = attributeAffects( ia_edgeLength, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_edgeLength->ca_rodPropertiesSync" ); return status; }
 
-    //addNumericAttribute( ia_rodRadius, "rodRadius", "ror", MFnNumericData::kDouble, 0.0, true );
+	//addNumericAttribute( ia_rodRadius, "rodRadius", "ror", MFnNumericData::kDouble, 0.0, true );
     {
         MFnNumericAttribute numericAttr;
         ia_rodRadius = numericAttr.create( "rodRadius", "ror", MFnNumericData::kDouble, 0.0, &status );
@@ -548,7 +593,51 @@ void* WmSweeneyNode::creator()
         status = attributeAffects( ia_rodRadius, ca_rodPropertiesSync );
         if ( !status ) { status.perror( "attributeAffects ia_rodRadius->ca_rodPropertiesSync" ); return status; }
     }
-    
+
+    {
+        MFnNumericAttribute numericAttr;
+        ia_waveFrequency = numericAttr.create( "waveFrequency", "wafrq", MFnNumericData::kDouble, 0.0, &status );
+        CHECK_MSTATUS( status );
+        CHECK_MSTATUS( numericAttr.setReadable( true ) );
+        CHECK_MSTATUS( numericAttr.setWritable( true ) );
+        CHECK_MSTATUS( numericAttr.setMin( -10.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 10.0 ) );
+        status = addAttribute( ia_waveFrequency );
+        CHECK_MSTATUS( status );
+        
+        status = attributeAffects( ia_waveFrequency, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_waveFrequency->ca_rodPropertiesSync" ); return status; }
+    }
+
+    {
+        MFnNumericAttribute numericAttr;
+        ia_waveAmplitude = numericAttr.create( "waveAmplitude", "waamp", MFnNumericData::kDouble, 0.0, &status );
+        CHECK_MSTATUS( status );
+        CHECK_MSTATUS( numericAttr.setReadable( true ) );
+        CHECK_MSTATUS( numericAttr.setWritable( true ) );
+        CHECK_MSTATUS( numericAttr.setMin( -3.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 3.0 ) );
+        status = addAttribute( ia_waveAmplitude );
+        CHECK_MSTATUS( status );
+        
+        status = attributeAffects( ia_waveAmplitude, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_waveAmplitude->ca_rodPropertiesSync" ); return status; }
+    }
+
+    {
+        MFnNumericAttribute numericAttr;
+        ia_hasUniformCurvature = numericAttr.create( "hasUniformCurvature", "unicurv", MFnNumericData::kBoolean, true, &status);
+	CHECK_MSTATUS( status );
+        CHECK_MSTATUS( numericAttr.setReadable( true ) );
+        CHECK_MSTATUS( numericAttr.setWritable( true ) );
+	CHECK_MSTATUS( numericAttr.setConnectable( true ) );
+	status = addAttribute( ia_hasUniformCurvature );
+        CHECK_MSTATUS( status );
+	
+	status = attributeAffects( ia_hasUniformCurvature, ca_rodPropertiesSync );
+        if (!status) { status.perror( "addAttribute ia_hasUniformCurvature->ca_rodPropertiesSync" ); return status; }
+    }
+
     addNumericAttribute( ia_rodPitch, "rodPitch", "rop", MFnNumericData::kDouble, 0.5, true );
 	status = attributeAffects( ia_rodPitch, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_rodPitch->ca_rodPropertiesSync" ); return status; }

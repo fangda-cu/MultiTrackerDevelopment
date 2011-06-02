@@ -10,6 +10,9 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
     editorTemplate -beginLayout "Rod Properties" -collapse 0;
         editorTemplate -addControl "length";        
         editorTemplate -addControl "rodRadius";
+	editorTemplate -addControl "hasUniformCurvature";
+	editorTemplate -addControl "waveFrequency";
+	editorTemplate -addControl "waveAmplitude";
         editorTemplate -addControl "rodPitch";
     editorTemplate -endLayout;
     
