@@ -5,7 +5,7 @@
  * \date 02/16/2010
  */
 
-#define KEEP_ONLY_SOME_RODS
+//#define KEEP_ONLY_SOME_RODS
 
 #include <typeinfo>
 #include "BARodStepper.hh"
@@ -801,9 +801,13 @@ void BARodStepper::step(RodSelectionType& selected_rods)
             // If that vertex has a prescribed position
             if (boundary->isVertexScripted(j))
             {
-                //std::cout << "BATimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
                 Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
                 Vec3d actualvalue = m_xnp1.segment<3> (rodbase + 3 * j);
+		if (!approxEq(desiredposition, actualvalue, 1.0e-6)) 
+		{
+		  std::cout << "BARodStepper: m_t = " << m_t
+			    << " rod " << *rod << " vertex " << j << " desired position " << desiredposition << " actual position " << actualvalue << std::endl; 
+		}
                 assert(approxEq(desiredposition, actualvalue, 1.0e-6));
             }
         }
@@ -999,7 +1003,7 @@ void BARodStepper::extractPositions(VecXd& positions, const RodSelectionType& se
 // 	    {
 // 	      if( boundary->isVertexScripted(j) )
 // 		{
-// 		  std::cout << "BATimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
+// 		  std::cout << "BARodStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
 // 		  Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
 // 		  Vec3d actualvalue = positions.segment<3>(rodbase+3*j);
 // 		  assert( approxEq(desiredposition, actualvalue, 1.0e-6) );
