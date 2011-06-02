@@ -125,7 +125,6 @@ void RodPenaltyForce::computeForce(const ElasticRod& rod, VecXd& F) const
             std::cout << "Stiffness = " << col->k << std::endl;
             assert(0);
         }
-
     }
     std::cerr << "RodPenaltyForce::computeForce: norm = " << (F - beforeF).norm() << " force = " << (F - beforeF) << std::endl;
 }
