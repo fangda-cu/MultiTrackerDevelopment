@@ -203,11 +203,11 @@ public:
    // m_forces = f;
     // add internal forces
 
-    std::cout << "RodTimeStepper::evaluatePDot: rodidx = " << m_rod.globalRodIndex << "\n";
-    for (int i=0; i < m_rod.nv(); ++i)
-    {
-      std::cout << "x[" << i << "] = " << m_rod.getVertex(i) << std::endl;
-    }
+    // std::cout << "RodTimeStepper::evaluatePDot: rodidx = " << m_rod.globalRodIndex << "\n";
+    // for (int i=0; i < m_rod.nv(); ++i)
+    // {
+    //   std::cout << "x[" << i << "] = " << m_rod.getVertex(i) << std::endl;
+    // }
 
     m_rod.computeForces(f);
 
