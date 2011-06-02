@@ -254,7 +254,7 @@ private:
     // Returns the total number of vertices in the system
     int getNumVerts() const;
 
-    void extractPositions(VecXd& positions, const RodSelectionType& selected_rods) const;
+    void extractPositions(VecXd& positions, const RodSelectionType& selected_rods, const double time) const;
     void extractVelocities(VecXd& velocities, const RodSelectionType& selected_rods) const;
 
     void restorePositions(const VecXd& positions, const RodSelectionType& selected_rods);
