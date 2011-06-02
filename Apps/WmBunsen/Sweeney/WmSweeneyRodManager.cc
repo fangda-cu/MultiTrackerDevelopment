@@ -109,7 +109,8 @@ void WmSweeneyRodManager::addCollisionMesh( BASim::TriangleMesh* i_triangleMesh,
     m_scriptingControllers.push_back( i_scriptingController );
 }
 
-void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const double i_startTime, PerformanceTuningParameters perfParams)
+void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const double i_startTime, PerformanceTuningParameters perfParams,
+                                                double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters )
 {
 
     std::cout<<"Performance Tuning Parameters "<< std::endl;
@@ -128,6 +129,11 @@ void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const d
     std::cout<<"Max Number of Collision Substeps "<< perfParams.m_max_number_of_substeps_for_collision<<std::endl;
     std::cout<<"Explosion  Failure  "<< perfParams.m_in_case_of_explosion_failure<<std::endl;
     std::cout<<"Max Number of Explosion Substeps "<< perfParams.m_max_number_of_substeps_for_explosion<<std::endl;
+    std::cout<<"Atol  "<< i_atol <<std::endl;
+    std::cout<<"Stol  "<< i_stol <<std::endl;
+    std::cout<<"Rtol  "<< i_rtol <<std::endl;
+    std::cout<<"Inftol  "<< i_inftol <<std::endl;
+    std::cout<<"Num of Line Search Iterations "<< i_numLineSearchIters <<std::endl;
 
     /*  PerformanceTuningParameters perfParams;
 
