@@ -76,7 +76,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
         m_level_sets.resize(m_triangle_meshes.size(), NULL);
     }
 
-    g_log = new TextLog(std::cerr, MsgInfo::kTrace, true);
+    g_log = new TextLog(std::cerr, MsgInfo::kCopious, true);
     InfoStream(g_log, "") << "Started logging BARodStepper\n";
 
     for (std::vector<RodTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
@@ -262,22 +262,22 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     // For debugging purposes
 #ifdef KEEP_ONLY_SOME_RODS
     WarningStream(g_log, "", MsgInfo::kOncePerMessage)
-            << "WARNING: KEEP_ONLY_SOME_RODS: Simulating only a specified subset of rods!\n***********************************************************\n";
+    << "WARNING: KEEP_ONLY_SOME_RODS: Simulating only a specified subset of rods!\n***********************************************************\n";
     std::set<int> keep_only;
 
     keep_only.insert(0);
 
     // Only the rods in the keep_only set are kept, the others are killed.
     for (int i = 0; i < m_number_of_rods; i++)
-        if (keep_only.find(i) == keep_only.end())
-            for (int j = 0; j < m_rods[i]->nv(); j++)
-                m_rods[i]->setVertex(j, 0 * m_rods[i]->getVertex(j));
-        else
-            m_simulated_rods.push_back(i);
+    if (keep_only.find(i) == keep_only.end())
+    for (int j = 0; j < m_rods[i]->nv(); j++)
+    m_rods[i]->setVertex(j, 0 * m_rods[i]->getVertex(j));
+    else
+    m_simulated_rods.push_back(i);
 #else
     // Initially all rods passed from Maya will be simulated
     for (int i = 0; i < m_number_of_rods; i++)
-    m_simulated_rods.push_back(i);
+        m_simulated_rods.push_back(i);
 #endif
 
 }
@@ -311,7 +311,7 @@ void BARodStepper::prepareForExecution()
     {
         assert(m_rods[i] != NULL);
         m_rods[i]->globalRodIndex = i;
-        // std::cerr << "Address of rod Nr " << i << ": " << m_rods[i] << std::endl;
+        // std::cerr << "Address of rod Nr " << i << ": " << m_rods[i] << '\n';
     }
 
     CopiousStream(g_log, "") << "About to extract rod information\n";
@@ -456,10 +456,10 @@ bool BARodStepper::execute()
 
     if (!m_collision_disabled_rods.empty())
     {
-        std::cerr << "The following rods were collision-disabled in the previous time step: ";
+        TraceStream(g_log, "") << "The following rods were collision-disabled in the previous time step: ";
         for (std::set<int>::const_iterator rod = m_collision_disabled_rods.begin(); rod != m_collision_disabled_rods.end(); rod++)
-            std::cerr << *rod << " ";
-        std::cerr << std::endl;
+            TraceStream(g_log, "") << *rod << " ";
+        TraceStream(g_log, "") << '\n';
     }
     m_collision_disabled_rods.clear();
 
@@ -509,9 +509,14 @@ bool BARodStepper::execute()
 
     STOP_TIMER("BARodStepper::execute")
 
-    std::cout << "Cumulative timing results (entire run up to this point)\n========================================\n";
+#ifdef TIMING_ON
+    // This is not using TextLog because std::setw is not supported. TODO: you know.
+    std::cout << "Cumulative timing results (entire run up to this point)\n";
+    std::cout << "========================================\n";
     Timer::report();
     std::cout << "========================================\n";
+#endif
+
     return result;
 }
 
@@ -700,7 +705,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
 
     STOP_TIMER("BARodStepper::step/penalty");
 
-    std::cout << "BARodStepper::step: computing pre-dynamic forces" << std::endl;
+    TraceStream(g_log, "") << "BARodStepper::step: computing pre-dynamic forces" << '\n';
 
     if (m_perf_param.m_enable_explosion_detection)
         computeForces(m_preDynamicForces, selected_rods);
@@ -715,7 +720,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     {
         RodTimeStepper* const stepper = selected_steppers[i];
         //std::cout << "BARodStepper::step/steppers: calling " << stepper->getDiffEqSolver().getName() << " solver for rod "
-        //	      << stepper->getRod()->globalRodIndex << std::endl;
+        //	      << stepper->getRod()->globalRodIndex << '\n';
 
         bool result = stepper->execute();
         if (!result)
@@ -824,7 +829,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     // Also copy response velocity to rods (for visualisation purposes only)
     restoreResponses(m_vnresp, selected_rods);
 
-    std::cout << "About to update properties" << std::endl;
+    TraceStream(g_log, "") << "About to update properties" << '\n';
 
     // Update frames and such in the rod (Is this correct? Will this do some extra stuff?)
     for (RodSelectionType::const_iterator selected_rod = selected_rods.begin(); selected_rod != selected_rods.end(); selected_rod++)
@@ -844,7 +849,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     std::vector<bool> exploding_rods(m_number_of_rods);
     if (m_perf_param.m_enable_explosion_detection)
     {
-        std::cout << "About to detect explosions" << std::endl;
+        TraceStream(g_log, "") << "About to detect explosions" << '\n';
         computeForces(m_endForces, selected_rods);
         checkExplosions(exploding_rods, failed_collisions_rods, selected_rods);
     }
@@ -899,20 +904,20 @@ void BARodStepper::step(RodSelectionType& selected_rods)
             m_simulationFailed = true;
         else
         {
-            //     std::cout << "treatment: accept this step as-is" << std::endl;
+            //     std::cout << "treatment: accept this step as-is" << '\n';
             // at this point, the step is either successful, or includes only ignorable errors
 
             // Accept this step
 
             // ElasticRod* rod = m_rods[rodidx];
 
-            // std::cout << "KE[" << rodidx << "] = " << rod->computeKineticEnergy() << std::endl;
+            // std::cout << "KE[" << rodidx << "] = " << rod->computeKineticEnergy() << '\n';
 
             // // Apply kinetic damping
             // rod->recordKineticEnergy();
             // if (rod->isKineticEnergyPeaked())
             // {
-            //     std::cout << "Zeroing energy for rod " << rodidx << std::endl;
+            //     std::cout << "Zeroing energy for rod " << rodidx << '\n';
             //     for (int i = 0; i < rod->nv(); ++i)
             //     {
             //         rod->setVelocity(i, Vec3d(0,0,0));
@@ -975,8 +980,8 @@ void BARodStepper::extractPositions(VecXd& positions, const RodSelectionType& se
 
     assert(m_triangle_meshes.size() == m_base_triangle_indices.size());
 
-    //    std::cerr << "positions.size() = " << positions.size() << std::endl;
-    //    std::cerr << "m_base_triangle_indices.size() = " << m_base_triangle_indices.size() << std::endl;
+    //    std::cerr << "positions.size() = " << positions.size() << '\n';
+    //    std::cerr << "m_base_triangle_indices.size() = " << m_base_triangle_indices.size() << '\n';
 
     for (int i = 0; i < (int) m_triangle_meshes.size(); ++i)
     {
@@ -1003,7 +1008,7 @@ void BARodStepper::extractPositions(VecXd& positions, const RodSelectionType& se
         for (int j = 0; j < m_rods[*rod]->nv(); ++j)
             if (boundary->isVertexScripted(j))
             {
-                //  std::cout << "BridsonTimeStepper is calling RodBoundaryCondition at m_t = " << m_t << std::endl;
+                //  std::cout << "BridsonTimeStepper is calling RodBoundaryCondition at m_t = " << m_t << '\n';
                 Vec3d desiredposition = boundary->getDesiredVertexPosition(j, time);
                 Vec3d actualvalue = positions.segment<3> (rodbase + 3 * j);
                 assert(approxEq(desiredposition, actualvalue, 1.0e-6));
@@ -1089,7 +1094,7 @@ void BARodStepper::enableImplicitPenaltyImpulses()
         m_steppers[i]->addExternalForce(pnlty);
     }
 
-    std::cerr << "Implicit penalty response is now enabled\n";
+    TraceStream(g_log, "") << "Implicit penalty response is now enabled\n";
 
 }
 
@@ -1200,7 +1205,7 @@ void BARodStepper::setDt(double dt)
 void BARodStepper::setTime(double time)
 {
     m_t = time;
-    // std::cout << "settingTime in BARodStepper to be " << m_t << std::endl;
+    // std::cout << "settingTime in BARodStepper to be " << m_t << '\n';
 
     // Set the time for the rod controllers
     for (int i = 0; i < (int) m_steppers.size(); ++i)
@@ -1218,7 +1223,7 @@ double BARodStepper::getDt() const
 
 double BARodStepper::getTime() const
 {
-    //std::cout << "BARodStepper::getTime() = " << m_t << std::endl;
+    //std::cout << "BARodStepper::getTime() = " << m_t << '\n';
     return m_t;
 }
 
@@ -1279,25 +1284,25 @@ bool BARodStepper::isProperCollisionTime(double time)
     if (time != time)
     {
         if (!m_nan_enc)
-            std::cerr
+            DebugStream(g_log, "")
                     << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Encountered NaN collision time from root finder. Supressing further messages of this type."
-                    << std::endl;
+                    << '\n';
         m_nan_enc = true;
         return false;
     }
     if (time == std::numeric_limits<double>::infinity())
     {
         if (!m_inf_enc)
-            std::cerr
+            DebugStream(g_log, "")
                     << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Encountered INF collision time from root finder. Supressing further messages of this type."
-                    << std::endl;
+                    << '\n';
         m_inf_enc = true;
         return false;
     }
     if (time < 0.0)
     {
         if (!m_lt0_enc)
-            std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Encountered scaled collision time " << time
+            DebugStream(g_log, "") << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Encountered scaled collision time " << time
                     << " less than 0.0. Supressing further messages of this type.\n";
         m_lt0_enc = true;
         return false;
@@ -1305,7 +1310,7 @@ bool BARodStepper::isProperCollisionTime(double time)
     if (time > 1.0)
     {
         if (!m_gt0_enc)
-            std::cerr << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Encountered scaled collision time " << time
+            DebugStream(g_log, "") << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Encountered scaled collision time " << time
                     << " greater than 1.0. Supressing further messages of this type.\n";
         m_gt0_enc = true;
         return false;
@@ -1333,9 +1338,9 @@ void BARodStepper::ensureCircularCrossSection(const ElasticRod& rod) const
     {
         if (rod.getRadiusScale() * rod.radiusA(i) != rod.getRadiusScale() * rod.radiusB(i))
         {
-            std::cerr
+            DebugStream(g_log, "")
                     << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Contact currently not supported for non-circular cross sections. Assuming circular cross section."
-                    << std::endl;
+                    << '\n';
         }
     }
 }
@@ -1350,9 +1355,9 @@ void BARodStepper::ensureNoCollisionsByDefault(const ElasticRod& rod) const
         double radsum = rod.getRadiusScale() * rod.radiusA(i - 1) + rod.getRadiusScale() * rod.radiusA(i + 1);
         if (edgelen <= radsum)
         {
-            std::cerr
+            DebugStream(g_log, "")
                     << "\033[31;1mWARNING IN BRIDSON STEPPER:\033[m Detected edges that collide by default. Instabilities may result."
-                    << std::endl;
+                    << '\n';
         }
     }
 }

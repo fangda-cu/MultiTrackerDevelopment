@@ -15,7 +15,7 @@
 #include "../Core/Timer.hh"
 #include "../Physics/ElasticRods/MinimalRodStateBackup.hh"
 #include "../Core/StatTracker.hh"
-
+#include "../Util/TextLog.hh"
 
 namespace BASim
 {
@@ -83,7 +83,7 @@ public:
             return true;
         }
 
-        //std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: " << m_maxit << ". Attempting alternate initial iterate 2." << std::endl;
+        //DebugStream(g_log, "") << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: " << m_maxit << ". Attempting alternate initial iterate 2." << '\n';
         START_TIMER("SymmetricImplicitEuler::execute/backup");
         m_diffEq.backupRestore();
         STOP_TIMER("SymmetricImplicitEuler::execute/backup");
@@ -99,7 +99,7 @@ public:
             return true;
         }
 
-        //std::cerr << "                          Newton solver failed to converge in max iterations: " << m_maxit << ". Attempting alternate initial iterate 3." << std::endl;
+        //DebugStream(g_log, "") << "                          Newton solver failed to converge in max iterations: " << m_maxit << ". Attempting alternate initial iterate 3." << '\n';
         START_TIMER("SymmetricImplicitEuler::execute/backup");
         m_diffEq.backupRestore();
         STOP_TIMER("SymmetricImplicitEuler::execute/backup");
@@ -115,7 +115,7 @@ public:
             return true;
         }
 
-        //std::cerr << "                          Newton solver failed to converge in max iterations: " << m_maxit << ". Attempting alternate initial iterate 4." << std::endl;
+        //DebugStream(g_log, "") << "                          Newton solver failed to converge in max iterations: " << m_maxit << ". Attempting alternate initial iterate 4." << '\n';
         START_TIMER("SymmetricImplicitEuler::execute/backup");
         m_diffEq.backupRestore();
         STOP_TIMER("SymmetricImplicitEuler::execute/backup");
@@ -131,7 +131,7 @@ public:
             return true;
         }
 
-        //std::cerr << "                          Newton solver failed to converge in max iterations: " << m_maxit << ". Attempting alternate initial iterate 4." << std::endl;
+        //DebugStream(g_log, "") << "                          Newton solver failed to converge in max iterations: " << m_maxit << ". Attempting alternate initial iterate 4." << '\n';
         START_TIMER("SymmetricImplicitEuler::execute/backup");
         m_diffEq.backupRestore();
         STOP_TIMER("SymmetricImplicitEuler::execute/backup");
@@ -147,8 +147,8 @@ public:
             return true;
         }
 
-      //  std::cerr << "\033[31;1mWARNING IN SYM IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: "
-      //          << m_maxit << "." << std::endl;
+      //  DebugStream(g_log, "") << "\033[31;1mWARNING IN SYM IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: "
+      //          << m_maxit << "." << '\n';
         START_TIMER("SymmetricImplicitEuler::execute/backup");
         m_diffEq.backupClear();
         STOP_TIMER("SymmetricImplicitEuler::execute/backup");
@@ -226,39 +226,39 @@ public:
 
     bool isConverged()
     {
-         std::cout << "SymmetricImplicitEuler::isConverged: residual = " << m_residual
+         TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged: residual = " << m_residual
 	   << " infnorm = " << m_infnorm
 	   << " rel residual = " << m_residual / m_initial_residual
 	   << " inc norm = " << m_increment.norm() 
 	   << " atol = " << m_atol
 	   << " inftol = " << m_inftol
 	   << " rtol = " << m_rtol
-	   << " stol = " << m_stol << std::endl;
+	   << " stol = " << m_stol << '\n';
          
         // L2 norm of the residual is less than tolerance
         if (m_residual < m_atol)
         {
-	    std::cout << "SymmetricImplicitEuler::isConverged(): converged atol: residual = " << m_residual << " < " << m_atol << " = atol " << std::endl;
+	    TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged(): converged atol: residual = " << m_residual << " < " << m_atol << " = atol " << '\n';
             return true;
         }
         // Infinity norm of residual is less than tolerance
         if (m_infnorm < m_inftol)
         {
-	    std::cout << "SymmetricImplicitEuler::isConverged(): converged inftol: |residual|_inf = " << m_infnorm << " < " << m_inftol << " = inftol" << std::endl;
+	    TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged(): converged inftol: |residual|_inf = " << m_infnorm << " < " << m_inftol << " = inftol" << '\n';
             return true;
         }
         if (m_residual <= m_rtol * m_initial_residual)
         {
-	    std::cout << "SymmetricImplicitEuler::isConverged(): converged rtol: residual = " << m_residual << " <= " << " (rtol = " << m_rtol << ") * (init. residual = " << m_initial_residual << ") = " << m_rtol * m_initial_residual << std::endl;
+	    TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged(): converged rtol: residual = " << m_residual << " <= " << " (rtol = " << m_rtol << ") * (init. residual = " << m_initial_residual << ") = " << m_rtol * m_initial_residual << '\n';
             return true;
         }
         // L2 norm of change in solution at last step of solve is less than tolerance
         if (m_increment.norm() < m_stol)
         {
- 	    std::cout << "SymmetricImplicitEuler::isConverged(): converged stol: " << " |increment|_L2 < " << m_stol << " = stol "<< std::endl;
+ 	    TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged(): converged stol: " << " |increment|_L2 < " << m_stol << " = stol "<< '\n';
             return true;
         }
-	std::cout << "SymmetricImplicitEuler::isConverged(): convergence test fails" << std::endl;
+	TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged(): convergence test fails" << '\n';
         return false;
     }
 
@@ -359,7 +359,7 @@ protected:
         }
         default:
         {
-            std::cerr << "\033[31;1mERROR IN IMPLICITEULER:\033[m Invalid initial iterate requested, exiting." << std::endl;
+            DebugStream(g_log, "") << "\033[31;1mERROR IN IMPLICITEULER:\033[m Invalid initial iterate requested, exiting." << '\n';
 	    STOP_TIMER("SymmetricImplicitEuler::position_solve/setup");
             exit(1);
             break;
@@ -397,10 +397,10 @@ protected:
         //   3) cache the residual as m_initial_residual, for convergence test later
         m_initial_residual = m_residual = computeResidual();
 
-        std::cout << "SymmetricImplicitEuler::position_solve: starting Newton solver. Initial guess has residual = " << m_residual
+        TraceStream(g_log, "") << "SymmetricImplicitEuler::position_solve: starting Newton solver. Initial guess has residual = " << m_residual
 	     << ", convergence test will use thresholds atol = " << atol << " infnorm = " << m_infnorm
 	     << " rtol = " << m_residual / m_initial_residual
-	     << " stol = " << m_increment.norm() << std::endl;
+	     << " stol = " << m_increment.norm() << '\n';
 
 
         STOP_TIMER("SymmetricImplicitEuler::position_solve/setup");
@@ -413,7 +413,7 @@ protected:
         int curit = 0;
         for (curit = 0; curit < m_maxit; ++curit)
         {
-	  // std::cout << "\nSymmetricImplicitEuler::position_solve: iteration = " << m_curit << "\n\n" << std::endl;
+	  // TraceStream(g_log, "") << "\nSymmetricImplicitEuler::position_solve: iteration = " << m_curit << "\n\n" << '\n';
 
             // TODO: Assert m_A, increment are zero
 
@@ -480,7 +480,7 @@ protected:
             STOP_TIMER("SymmetricImplicitEuler::position_solve/solver");
             if (status < 0)
             {
-                std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Problem during linear solve detected. " << std::endl;
+                DebugStream(g_log, "") << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Problem during linear solve detected. " << '\n';
                 return false;
             }
 
@@ -512,7 +512,7 @@ protected:
                 // Calling computeResidual also sets m_rhs = M(m_dt*v_n-m_deltaX) + h^2*F.
                 m_residual = computeResidual();
 
-                std::cout << "\nSymmetricImplicitEuler::position_solve/line search: i "<<i<<", increment " << m_increment.norm() << " previous "<<previous_residual<<", residual "<<m_residual<<std::endl;
+                TraceStream(g_log, "") << "\nSymmetricImplicitEuler::position_solve/line search: i "<<i<<", increment " << m_increment.norm() << " previous "<<previous_residual<<", residual "<<m_residual<<'\n';
 
 		
 		// Is this residual (hence the increment) acceptable?
@@ -520,18 +520,18 @@ protected:
 
                 if (m_residual < .9 * previous_residual || isConverged())
                 {
-                    std::cerr << "Line search succeeded." << std::endl;
+                    TraceStream(g_log, "") << "Line search succeeded." << '\n';
                     break;
 	        }
                 else if (i >= m_maxlsit)
                 {
-                    std::cerr << "SymmetricImplicitEuler::position_solve/line search: \033[31;1mWARNING IN IMPLICITEULER:\033[m Line search failed. Proceeding anyway." << std::endl;
+                    DebugStream(g_log, "") << "SymmetricImplicitEuler::position_solve/line search: \033[31;1mWARNING IN IMPLICITEULER:\033[m Line search failed. Proceeding anyway." << '\n';
                     //return false;
 		    break;
                 }
 		else 
 		{
-		    std::cerr << "SymmetricImplicitEuler::position_solve/line search: cutting increment and iterating." << std::endl;
+		    TraceStream(g_log, "") << "SymmetricImplicitEuler::position_solve/line search: cutting increment and iterating." << '\n';
 		}
 
 		// Attempt a smaller step
@@ -554,7 +554,7 @@ protected:
 	    // Check for exceeding limit on number of Newton iterations
             if ( curit == m_maxit - 1)
 	    {
-                std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver reached max iterations: " << m_maxit << std::endl;
+                DebugStream(g_log, "") << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver reached max iterations: " << m_maxit << '\n';
 		return false;
             }
 
@@ -572,7 +572,7 @@ protected:
 	    // Now go back and begin next Newton iteration...
         } 
 
-        std::cout << "SymmetricImplicitEuler::position_solve: completed " << curit+1 << " Newton iterations." << std::endl;
+        TraceStream(g_log, "") << "SymmetricImplicitEuler::position_solve: completed " << curit+1 << " Newton iterations." << '\n';
           
         m_diffEq.endStep();
 
