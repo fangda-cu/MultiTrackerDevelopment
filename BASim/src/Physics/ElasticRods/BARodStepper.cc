@@ -76,7 +76,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
         m_level_sets.resize(m_triangle_meshes.size(), NULL);
     }
 
-    g_log = new TextLog(std::cerr, MsgInfo::kCopious, true);
+    g_log = new TextLog(std::cerr, MsgInfo::kDebug, true);
     InfoStream(g_log, "") << "Started logging BARodStepper\n";
 
     for (std::vector<RodTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
