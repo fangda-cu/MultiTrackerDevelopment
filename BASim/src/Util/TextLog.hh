@@ -17,8 +17,7 @@
 #include <tr1/unordered_set>
 #include <tr1/unordered_map>
 
-namespace weta {
-namespace logging {
+namespace BASim {
 
 /**
    TextLog provides message logging with configurable severity levels and duplicate suppression.
@@ -165,8 +164,8 @@ typedef LogStream<MsgInfo::kError> ErrorStream;
 typedef LogStream<MsgInfo::kSevere> SevereStream;
 typedef LogStream<MsgInfo::kForced> ForcedStream;
 
+extern TextLog* g_log;
 
-} // namespace logging
-} // namespace weta
+}
 
 #endif // ndef TEXT_LOG_HH

@@ -58,8 +58,6 @@ namespace BASim
 typedef RodMeshCollisionDetector CollisionDetectorType;
 // typedef CollisionDetector CollisionDetectorType;
 
-using namespace weta::logging;
-
 /**
  * Class to evolve a collection of rods forward in time, resolving collisions using
  * a "velocity filter" in the spirit of Bridson's 2002 paper "Robust Treatment of
@@ -441,9 +439,9 @@ private:
     RodSelectionType m_simulated_rods;
 
     PerformanceTuningParameters m_perf_param;
-    TextLog* m_log;
+   // TextLog* g_log;
 
-    std::ofstream m_log_stream;
+  //  std::ofstream m_log_stream;
 
     // DEBUG
     int m_num_solver_killed, m_num_collision_killed, m_num_explosion_killed;
