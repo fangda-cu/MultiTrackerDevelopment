@@ -824,7 +824,8 @@ void BARodStepper::step(RodSelectionType& selected_rods)
 
     // Sanity check to ensure rod's internal state is consistent
 #ifndef NDEBUG
-    for( int i = 0; i < (int) m_number_of_rods; ++i ) m_rods[i]->verifyProperties();
+    for (RodSelectionType::const_iterator selected_rod = selected_rods.begin(); selected_rod != selected_rods.end(); selected_rod++)
+        m_rods[*selected_rod]->verifyProperties();
 #endif
 
     STOP_TIMER("BARodStepper::step/setup");
