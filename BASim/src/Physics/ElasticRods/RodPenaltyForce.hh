@@ -12,39 +12,37 @@
 //#include <ext/hash_map>
 #include <map>
 
-namespace BASim {
+namespace BASim
+{
 
-class RodPenaltyForce : public RodExternalForce
+class RodPenaltyForce: public RodExternalForce
 {
 public:
-  RodPenaltyForce( double penaltyThicknessFraction = 0.1 );
-  ~RodPenaltyForce();
+    RodPenaltyForce(double penaltyThicknessFraction = 0.1);
+    ~RodPenaltyForce();
 
-	void clearCollisions();
-	
-  //void computeEnergy(Real& e)
+    virtual void computeForce(const ElasticRod& rod, VecXd& F) const;
 
-  virtual void computeForce(const ElasticRod& rod, VecXd& F);
+    void registerProximityCollision(int vertex, VertexFaceProximityCollision* vfpcol);
 
-  void addRodPenaltyForce(int vertex, VertexFaceProximityCollision* vfpcol);
+    bool cleared() const;
 
-  void clearPenaltyForces();
+    void clearProximityCollisions();
 
-  virtual void computeForceDX(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J);
-  virtual void computeForceDV(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) {}
+    virtual void computeForceDX(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) const;
+
+    virtual void computeForceDV(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) const
+    {
+    }
 
 protected:
+    void localJacobian(MatXd& J, const Scalar stiffness, const Vec3d& normal) const;
 
-  double m_penaltyThicknessFraction; // fraction of proximity threshold to use for penalty thickness
+    const double m_penaltyThicknessFraction; // fraction of proximity threshold to use for penalty thickness
 
-//  double getClosestPointsVertexTriangle(const Vec3d& v0, const Vec3d& v1,
-//                                      const Vec3d& v2, const Vec3d& v3,
-//                                      double &t1, double & &t2, double & &t3) const;
-                                
-  void localJacobian(MatXd& J, const Scalar stiffness, const Vec3d& normal);
+    std::vector<int> vidx;
 
-	std::vector <int> vidx;
-	std::vector <VertexFaceProximityCollision*> vertex_face_collisions;
+    std::vector<const VertexFaceProximityCollision*> vertex_face_collisions;
 
 };
 

@@ -212,9 +212,10 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                 // Check for explosion here
                 int colliding_rod = getContainingRod(collision->GetRodVertex());
                 m_rods[colliding_rod]->computeForces(*m_endForces[colliding_rod]);
-		TraceStream(m_log, "") << "Rod " << colliding_rod << " Force norms: initial: " << (*(m_startForces[colliding_rod])).norm()
-				       << " pre-collisions: " << (*(m_preCollisionForces[colliding_rod])).norm()
-				       << " post-collisions: " << (*(m_endForces[colliding_rod])).norm() << "\n";
+                TraceStream(m_log, "") << "Rod " << colliding_rod << " Force norms: initial: "
+                        << (*(m_startForces[colliding_rod])).norm() << " pre-collisions: "
+                        << (*(m_preCollisionForces[colliding_rod])).norm() << " post-collisions: "
+                        << (*(m_endForces[colliding_rod])).norm() << "\n";
                 for (int j = 0; j < m_rods[colliding_rod]->ndof(); ++j)
                 {
                     const double s = (*(m_startForces[colliding_rod]))[j];
@@ -226,7 +227,8 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                         //                        explosions_detected = true;
                         //                        exploding_rods[colliding_rod] = true;
                         TraceStream(m_log, "") << "Rod number " << colliding_rod
-					       << " had an explosion during collision response: s = " << s << " p = " << p << " e = " << e << " rate = " << rate << " \n";
+                                << " had an explosion during collision response: s = " << s << " p = " << p << " e = " << e
+                                << " rate = " << rate << " \n";
                         // If the rod just had an explosion, give up trying resolving its collisions
                         failed_collisions_rods[colliding_rod] = true;
                         for (int v = 0; v < m_rods[colliding_rod]->nv(); ++v)
@@ -1583,10 +1585,9 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
     {
         if (true || m_steppers[*rod]->HasSolved() && !failed_collisions_rods[*rod])
         {
-	  TraceStream(m_log, "") << "Rod " << *rod << " Force norms: initial: " << (*(m_startForces[*rod])).norm()
-				 << " pre-dynamic: " << (*(m_preDynamicForces[*rod])).norm()
-				 << " pre-collisions: " << (*(m_preCollisionForces[*rod])).norm()
-				 << " post-collisions: " << (*(m_endForces[*rod])).norm() << "\n";
+            TraceStream(m_log, "") << "Rod " << *rod << " Force norms: initial: " << (*(m_startForces[*rod])).norm()
+                    << " pre-dynamic: " << (*(m_preDynamicForces[*rod])).norm() << " pre-collisions: "
+                    << (*(m_preCollisionForces[*rod])).norm() << " post-collisions: " << (*(m_endForces[*rod])).norm() << "\n";
             for (int j = 0; j < m_rods[*rod]->ndof(); ++j)
             {
                 const double s = (*(m_startForces[*rod]))[j];
@@ -1602,7 +1603,8 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
                 {
                     explosions_detected = true;
                     exploding_rods[*rod] = true;
-                    TraceStream(m_log, "") << "Rod number " << *rod << " had an explosion during collision response: s = " << s << " p = " << p << " e = " << e << " rate = " << rate << " \n";
+                    TraceStream(m_log, "") << "Rod number " << *rod << " had an explosion during collision response: s = " << s
+                            << " p = " << p << " e = " << e << " rate = " << rate << " \n";
                 }
             }
         }
@@ -1705,10 +1707,13 @@ void BARodStepper::applyInextensibilityVelocityFilter(int rodidx)
 /**
  * Implicit penalty response
  */
-void BARodStepper::executeImplicitPenaltyResponse(std::list<Collision*>& collisions, const RodSelectionType& selected_rods)
+void BARodStepper::setupPenaltyForces(std::list<Collision*>& collisions, const RodSelectionType& selected_rods)
 {
     // Detect proximity collisions
     m_collision_detector->getCollisions(collisions, Proximity);
+
+    for (int rod_id = 0; rod_id < m_number_of_rods; rod_id++)
+        assert(m_implicit_pnlty_forces[rod_id]->cleared());
 
     // Store the proximity collision in the RodPenaltyForce
     for (std::list<Collision*>::const_iterator col = collisions.begin(); col != collisions.end(); col++)
@@ -1716,12 +1721,15 @@ void BARodStepper::executeImplicitPenaltyResponse(std::list<Collision*>& collisi
         VertexFaceProximityCollision* vfpcol = dynamic_cast<VertexFaceProximityCollision*> (*col);
         if (vfpcol)
         {
+            assert(vfpcol->isAnalysed());
             int rod_id = getContainingRod(vfpcol->v0);
-	    std::cerr << "Creating penalty force for rod " << rod_id << " address " << &m_rods[rod_id] << std::endl;
+            std::cerr << "Creating penalty force for rod " << rod_id << " address " << &m_rods[rod_id] << std::endl;
             int v_id = vfpcol->v0 - m_base_dof_indices[rod_id] / 3;
-            m_implicit_pnlty_forces[rod_id]->addRodPenaltyForce(v_id, vfpcol);
+            m_implicit_pnlty_forces[rod_id]->registerProximityCollision(v_id, vfpcol);
         }
+        // TODO: delete vfpcol once used. Not here though, as vfpcol is used each time RodPenaltyForce::computeForce is called
     }
+
 }
 
 void BARodStepper::setImplicitPenaltyExtraThickness(const double& h)

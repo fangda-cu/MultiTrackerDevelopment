@@ -28,6 +28,14 @@ CollisionDetectorBase::~CollisionDetectorBase()
     m_collisions_list = NULL;
 }
 
+void CollisionDetectorBase::getReady(std::list<Collision*>& cllsns, CollisionFilter collision_filter)
+{
+    m_potential_collisions = 0;
+    m_collision_filter = collision_filter;
+    assert(cllsns.empty());
+    m_collisions_list = &cllsns;
+}
+
 void CollisionDetectorBase::updateContinuousTimeCollisions()
 {
     for (std::list<Collision*>::iterator collision = m_collisions_list->begin(); collision != m_collisions_list->end(); collision++)
@@ -115,8 +123,7 @@ bool CollisionDetectorBase::appendContinuousTimeCollision(const YAEdge* edge_a, 
 
     bool collisionDetected = edgeXedge->analyseCollision(m_time_step);
 
-    if ((m_skip_rod_rod && edgeXedge->IsRodRod()) || edgeXedge->IsCollisionImmune()
-            || !collisionDetected)
+    if ((m_skip_rod_rod && edgeXedge->IsRodRod()) || edgeXedge->IsCollisionImmune() || !collisionDetected)
     {
         delete edgeXedge;
         return false;
@@ -206,7 +213,7 @@ bool CollisionDetectorBase::appendProximityCollision(const YAEdge* edge_a, const
     else
     {
         m_collisions_mutex.Lock();
-        m_collisions_list->push_back(edgeXedge); // Will be deleted in BARodStepper::executeImplicitPenaltyResponse()
+        m_collisions_list->push_back(edgeXedge); // will be deleted at the end of BARodStepper::step()
         m_collisions_mutex.Unlock();
         return true;
     }
@@ -243,7 +250,7 @@ bool CollisionDetectorBase::appendProximityCollision(int v_index, const YATriang
     else
     {
         m_collisions_mutex.Lock();
-        m_collisions_list->push_back(vertexXface); // Will be deleted in BARodStepper::executeImplicitPenaltyResponse()
+        m_collisions_list->push_back(vertexXface); // will be deleted at the end of BARodStepper::step()
         m_collisions_mutex.Unlock();
         return true;
     }
