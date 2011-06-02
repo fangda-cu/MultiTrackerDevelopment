@@ -41,6 +41,13 @@ using namespace BASim;
 // Collision meshes
 /* static */ MObject WmSweeneyNode::ia_collisionMeshes;
 
+//Solver Tolerances
+/* static */ MObject WmSweeneyNode::ia_stol;
+/* static */ MObject WmSweeneyNode::ia_atol;
+/* static */ MObject WmSweeneyNode::ia_rtol;
+/* static */ MObject WmSweeneyNode::ia_inftol;
+/* static */ MObject WmSweeneyNode::ia_numLineSearchIters;
+
 // Performance Tuning
 //GeneralParameters
 /* static */ MObject WmSweeneyNode::ia_enablePenaltyResponse;
@@ -298,8 +305,15 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
     perfParams.m_max_number_of_substeps_for_collision=i_dataBlock.inputValue( ia_maxNumCollisionSubsteps).asInt();
     perfParams.m_max_number_of_substeps_for_explosion=i_dataBlock.inputValue( ia_maxNumExplosionSubsteps).asInt();
 
+    double m_atol=i_dataBlock.inputValue( ia_atol).asDouble();
+    double m_stol=i_dataBlock.inputValue( ia_stol).asDouble();
+    double m_rtol=i_dataBlock.inputValue( ia_rtol).asDouble();
+    double m_inftol=i_dataBlock.inputValue( ia_inftol).asDouble();
+    int  m_numLineSearchIters=i_dataBlock.inputValue( ia_numLineSearchIters).asInt();
+
     cerr << "initialiseRodFromBarberShopInput() - About to initialise simulation\n";
-    m_rodManager->initialiseSimulation( 1 / 24.0, m_startTime, perfParams );
+    m_rodManager->initialiseSimulation( 1 / 24.0, m_startTime, perfParams, m_atol, m_stol, m_rtol, m_inftol,
+                                        m_numLineSearchIters );
     cerr << "initialiseRodFromBarberShopInput() - Simulation initialised at time " << m_startTime << endl;
 }
 
@@ -603,6 +617,28 @@ void* WmSweeneyNode::creator()
     }
     status = attributeAffects( ia_collisionMeshes, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_collisionMeshes->ca_rodPropertiesSync" ); return status; }
+
+    //Solver settings
+    addNumericAttribute( ia_stol, "stol", "stl", MFnNumericData::kDouble, 0.01, true );
+        status = attributeAffects( ia_stol, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_stol->ca_rodPropertiesSync" ); return status; }
+
+    addNumericAttribute( ia_atol, "atol", "atl", MFnNumericData::kDouble, 0.01, true );
+        status = attributeAffects( ia_atol, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_atol->ca_rodPropertiesSync" ); return status; }
+
+    addNumericAttribute( ia_rtol, "rtol", "rtl", MFnNumericData::kDouble, 0.01, true );
+        status = attributeAffects( ia_rtol, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_rtol->ca_rodPropertiesSync" ); return status; }
+
+    addNumericAttribute( ia_inftol, "inftol", "itl", MFnNumericData::kDouble, 0.01, true );
+        status = attributeAffects( ia_inftol, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_inftol->ca_rodPropertiesSync" ); return status; }
+
+    addNumericAttribute( ia_numLineSearchIters, "numLineSearchIters", "nlsi", MFnNumericData::kInt, 2, true );
+        status = attributeAffects( ia_numLineSearchIters, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_numLineSearchIters->ca_rodPropertiesSync" ); return status; }
+
 
     //General parameters
     {

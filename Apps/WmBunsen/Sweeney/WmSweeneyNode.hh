@@ -73,6 +73,13 @@ public:
     // Collision meshes
     static MObject ia_collisionMeshes;
     
+    //Solver Tolerances
+    static MObject ia_stol;
+    static MObject ia_atol;
+    static MObject ia_rtol;
+    static MObject ia_inftol;
+    static MObject ia_numLineSearchIters;
+
     // Performance Tuning
       //GeneralParameters
     static MObject ia_enablePenaltyResponse;
