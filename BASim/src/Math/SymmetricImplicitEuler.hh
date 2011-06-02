@@ -527,7 +527,7 @@ protected:
                     std::cerr << "Line search succeeded." << std::endl;
                     break;
 	        }
-                else if (i >= 4)
+                else if (i >= m_maxlsit)
                 {
                     std::cerr << "SymmetricImplicitEuler::position_solve/line search: \033[31;1mWARNING IN IMPLICITEULER:\033[m Line search failed. Proceeding anyway." << std::endl;
                     //return false;

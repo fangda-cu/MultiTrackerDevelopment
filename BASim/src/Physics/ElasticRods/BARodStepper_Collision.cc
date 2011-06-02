@@ -473,7 +473,8 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
 
     // Currently, all fixed vertex constraints normalized
 #ifndef NDEBUG
-    for( int i = 0; i < numconstraints; ++i ) assert( approxEq(normal[i].norm(),1.0,1.0e-9) );
+    for (int i = 0; i < numconstraints; ++i)
+        assert(approxEq(normal[i].norm(), 1.0, 1.0e-9));
 #endif
 
     std::vector<VecXd> ntilde;
@@ -490,9 +491,10 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
 
     // Ensure the edge degrees of freedom experience no impulse
 #ifndef NDEBUG
-    for( ElasticRod::edge_iter eit = m_rods[rodidx]->edges_begin(); eit != m_rods[rodidx]->edges_end(); ++eit )
+    for (ElasticRod::edge_iter eit = m_rods[rodidx]->edges_begin(); eit != m_rods[rodidx]->edges_end(); ++eit)
     {
-        for( int i = 0; i < numconstraints; ++i ) assert( ntilde[i](m_rods[rodidx]->edgeIdx(*eit)) == 0.0 );
+        for (int i = 0; i < numconstraints; ++i)
+            assert(ntilde[i](m_rods[rodidx]->edgeIdx(*eit)) == 0.0);
     }
 #endif
 
@@ -501,14 +503,16 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
     for (int i = 0; i < numconstraints; ++i)
         posnn.push_back(VecXd(nvdof));
 #ifndef NDEBUG
-    for( int i = 0; i < numconstraints; ++i ) posnn[i].setConstant(std::numeric_limits<double>::signaling_NaN());
+    for (int i = 0; i < numconstraints; ++i)
+        posnn[i].setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
 
     std::vector<VecXd> posnntilde;
     for (int i = 0; i < numconstraints; ++i)
         posnntilde.push_back(VecXd(nvdof));
 #ifndef NDEBUG
-    for( int i = 0; i < numconstraints; ++i ) posnntilde[i].setConstant(std::numeric_limits<double>::signaling_NaN());
+    for (int i = 0; i < numconstraints; ++i)
+        posnntilde[i].setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
 
     for (int i = 0; i < numconstraints; ++i)
@@ -596,18 +600,18 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
     // Ensure the 'scripted vertices' achieved the desired velocity
 #ifndef NDEBUG
     curdof = 1;
-    for( size_t i = 0; i < scriptedverts.size(); ++i )
+    for (size_t i = 0; i < scriptedverts.size(); ++i)
     {
-        assert( scriptedverts[i] >= 0 );
-        assert( (int) scriptedverts[i] < m_rods[rodidx]->nv() );
+        assert(scriptedverts[i] >= 0);
+        assert((int) scriptedverts[i] < m_rods[rodidx]->nv());
         //std::cout << m_vnphalf(rodbase+3*scriptedverts[i]+0) << "   " << desired_values(curdof) << std::endl;
-        assert( approxEq(m_vnphalf(rodbase+3*scriptedverts[i]+0),desired_values(curdof),1.0e-6) );
+        assert(approxEq(m_vnphalf(rodbase + 3 * scriptedverts[i] + 0), desired_values(curdof), 1.0e-6));
         ++curdof;
         //std::cout << m_vnphalf(rodbase+3*scriptedverts[i]+1) << "   " << desired_values(curdof) << std::endl;
-        assert( approxEq(m_vnphalf(rodbase+3*scriptedverts[i]+1),desired_values(curdof),1.0e-6) );
+        assert(approxEq(m_vnphalf(rodbase + 3 * scriptedverts[i] + 1), desired_values(curdof), 1.0e-6));
         ++curdof;
         //std::cout << m_vnphalf(rodbase+3*scriptedverts[i]+2) << "   " << desired_values(curdof) << std::endl;
-        assert( approxEq(m_vnphalf(rodbase+3*scriptedverts[i]+2),desired_values(curdof),1.0e-6) );
+        assert(approxEq(m_vnphalf(rodbase + 3 * scriptedverts[i] + 2), desired_values(curdof), 1.0e-6));
         ++curdof;
     }
 #endif
@@ -768,19 +772,20 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     assert(cval0.size() == nc0);
     // Ensure collision constraint adds up to actual normal
 #ifndef NDEBUG
-    Vec3d testn0 = n0[0].segment<3>(base_i0)+n0[0].segment<3>(base_i1);
+    Vec3d testn0 = n0[0].segment<3> (base_i0) + n0[0].segment<3> (base_i1);
     Vec3d actln0 = -eecol.GetNormal();
-    assert( approxEq(testn0, actln0, 1.0e-6) );
+    assert(approxEq(testn0, actln0, 1.0e-6));
 #endif
     // Currently, all fixed vertex constraints normalized
 #ifndef NDEBUG
-    for( int i = 1; i < nc0; ++i ) assert( approxEq(n0[i].norm(),1.0,1.0e-9) );
+    for (int i = 1; i < nc0; ++i)
+        assert(approxEq(n0[i].norm(), 1.0, 1.0e-9));
 #endif
     // Ensure the edge degrees of freedom experience no impulse
 #ifndef NDEBUG
-    for( int i = 0; i < nc0; ++i )
-    for( ElasticRod::edge_iter eit = m_rods[rod0]->edges_begin(); eit != m_rods[rod0]->edges_end(); ++eit )
-    assert( n0[i](m_rods[rod0]->edgeIdx(*eit)) == 0.0 );
+    for (int i = 0; i < nc0; ++i)
+        for (ElasticRod::edge_iter eit = m_rods[rod0]->edges_begin(); eit != m_rods[rod0]->edges_end(); ++eit)
+            assert(n0[i](m_rods[rod0]->edgeIdx(*eit)) == 0.0);
 #endif
 
     //for( int i = 0; i < nc0; ++i ) std::cout << "n0:    " << n0[i] << std::endl;
@@ -827,19 +832,20 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     assert(cval1.size() == nc1);
     // Ensure collision constraint adds up to actual normal
 #ifndef NDEBUG
-    Vec3d testn1 = n1[0].segment<3>(base_j0)+n1[0].segment<3>(base_j1);
+    Vec3d testn1 = n1[0].segment<3> (base_j0) + n1[0].segment<3> (base_j1);
     Vec3d actln1 = eecol.GetNormal();
-    assert( approxEq(testn1, actln1, 1.0e-6) );
+    assert(approxEq(testn1, actln1, 1.0e-6));
 #endif
     // Currently, all fixed vertex constraints normalized
 #ifndef NDEBUG
-    for( int i = 1; i < nc1; ++i ) assert( approxEq(n1[i].norm(),1.0,1.0e-9) );
+    for (int i = 1; i < nc1; ++i)
+        assert(approxEq(n1[i].norm(), 1.0, 1.0e-9));
 #endif
     // Ensure the edge degrees of freedom experience no impulse
 #ifndef NDEBUG
-    for( int i = 0; i < nc1; ++i )
-    for( ElasticRod::edge_iter eit = m_rods[rod1]->edges_begin(); eit != m_rods[rod1]->edges_end(); ++eit )
-    assert( n1[i](m_rods[rod1]->edgeIdx(*eit)) == 0.0 );
+    for (int i = 0; i < nc1; ++i)
+        for (ElasticRod::edge_iter eit = m_rods[rod1]->edges_begin(); eit != m_rods[rod1]->edges_end(); ++eit)
+            assert(n1[i](m_rods[rod1]->edgeIdx(*eit)) == 0.0);
 #endif
 
     //for( int i = 0; i < nc1; ++i ) std::cout << "n1:    " << n1[i] << std::endl;
@@ -865,9 +871,9 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     }
     // Ensure the edge degrees of freedom experience no impulse
 #ifndef NDEBUG
-    for( int i = 0; i < nc0; ++i )
-    for( ElasticRod::edge_iter eit = m_rods[rod0]->edges_begin(); eit != m_rods[rod0]->edges_end(); ++eit )
-    assert( ntilde0[i](m_rods[rod0]->edgeIdx(*eit)) == 0.0 );
+    for (int i = 0; i < nc0; ++i)
+        for (ElasticRod::edge_iter eit = m_rods[rod0]->edges_begin(); eit != m_rods[rod0]->edges_end(); ++eit)
+            assert(ntilde0[i](m_rods[rod0]->edgeIdx(*eit)) == 0.0);
 #endif
 
     //for( int i = 0; i < nc0; ++i ) std::cout << "ntilde0: " << ntilde0[i] << std::endl;
@@ -892,9 +898,9 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     }
     // Ensure the edge degrees of freedom experience no impulse
 #ifndef NDEBUG
-    for( int i = 0; i < nc1; ++i )
-    for( ElasticRod::edge_iter eit = m_rods[rod1]->edges_begin(); eit != m_rods[rod1]->edges_end(); ++eit )
-    assert( ntilde1[i](m_rods[rod1]->edgeIdx(*eit)) == 0.0 );
+    for (int i = 0; i < nc1; ++i)
+        for (ElasticRod::edge_iter eit = m_rods[rod1]->edges_begin(); eit != m_rods[rod1]->edges_end(); ++eit)
+            assert(ntilde1[i](m_rods[rod1]->edgeIdx(*eit)) == 0.0);
 #endif
 
     //for( int i = 0; i < nc1; ++i ) std::cout << "ntilde1: " << ntilde1[i] << std::endl;
@@ -904,14 +910,16 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     for (int i = 0; i < nc0; ++i)
         posnn0.push_back(VecXd(rod0nvdof));
 #ifndef NDEBUG
-    for( int i = 0; i < nc0; ++i ) posnn0[i].setConstant(std::numeric_limits<double>::signaling_NaN());
+    for (int i = 0; i < nc0; ++i)
+        posnn0[i].setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
 
     std::vector<VecXd> posnntilde0;
     for (int i = 0; i < nc0; ++i)
         posnntilde0.push_back(VecXd(rod0nvdof));
 #ifndef NDEBUG
-    for( int i = 0; i < nc0; ++i ) posnntilde0[i].setConstant(std::numeric_limits<double>::signaling_NaN());
+    for (int i = 0; i < nc0; ++i)
+        posnntilde0[i].setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
 
     for (int i = 0; i < nc0; ++i)
@@ -946,14 +954,16 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     for (int i = 0; i < nc1; ++i)
         posnn1.push_back(VecXd(rod1nvdof));
 #ifndef NDEBUG
-    for( int i = 0; i < nc1; ++i ) posnn1[i].setConstant(std::numeric_limits<double>::signaling_NaN());
+    for (int i = 0; i < nc1; ++i)
+        posnn1[i].setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
 
     std::vector<VecXd> posnntilde1;
     for (int i = 0; i < nc1; ++i)
         posnntilde1.push_back(VecXd(rod1nvdof));
 #ifndef NDEBUG
-    for( int i = 0; i < nc1; ++i ) posnntilde1[i].setConstant(std::numeric_limits<double>::signaling_NaN());
+    for (int i = 0; i < nc1; ++i)
+        posnntilde1[i].setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
 
     for (int i = 0; i < nc1; ++i)
@@ -1106,18 +1116,18 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     // Ensure the 'scripted vertices' achieved the desired velocity for rod 0
 #ifndef NDEBUG
     curdof = 1;
-    for( size_t i = 0; i < scriptedverts0.size(); ++i )
+    for (size_t i = 0; i < scriptedverts0.size(); ++i)
     {
-        assert( scriptedverts0[i] >= 0 );
-        assert( (int) scriptedverts0[i] < m_rods[rod0]->nv() );
+        assert(scriptedverts0[i] >= 0);
+        assert((int) scriptedverts0[i] < m_rods[rod0]->nv());
         //std::cout << m_vnphalf(rodbase+3*scriptedverts[i]+0) << "   " << desired_values(curdof) << std::endl;
-        assert( approxEq(m_vnphalf(rod0base+3*scriptedverts0[i]+0),cval0(curdof),1.0e-6) );
+        assert(approxEq(m_vnphalf(rod0base + 3 * scriptedverts0[i] + 0), cval0(curdof), 1.0e-6));
         ++curdof;
         //std::cout << m_vnphalf(rodbase+3*scriptedverts[i]+1) << "   " << desired_values(curdof) << std::endl;
-        assert( approxEq(m_vnphalf(rod0base+3*scriptedverts0[i]+1),cval0(curdof),1.0e-6) );
+        assert(approxEq(m_vnphalf(rod0base + 3 * scriptedverts0[i] + 1), cval0(curdof), 1.0e-6));
         ++curdof;
         //std::cout << m_vnphalf(rodbase+3*scriptedverts[i]+2) << "   " << desired_values(curdof) << std::endl;
-        assert( approxEq(m_vnphalf(rod0base+3*scriptedverts0[i]+2),cval0(curdof),1.0e-6) );
+        assert(approxEq(m_vnphalf(rod0base + 3 * scriptedverts0[i] + 2), cval0(curdof), 1.0e-6));
         ++curdof;
     }
 #endif
@@ -1125,18 +1135,18 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     // Ensure the 'scripted vertices' achieved the desired velocity for rod 1
 #ifndef NDEBUG
     curdof = 1;
-    for( size_t i = 0; i < scriptedverts1.size(); ++i )
+    for (size_t i = 0; i < scriptedverts1.size(); ++i)
     {
-        assert( scriptedverts1[i] >= 0 );
-        assert( (int) scriptedverts1[i] < m_rods[rod1]->nv() );
+        assert(scriptedverts1[i] >= 0);
+        assert((int) scriptedverts1[i] < m_rods[rod1]->nv());
         //std::cout << m_vnphalf(rodbase+3*scriptedverts[i]+0) << "   " << desired_values(curdof) << std::endl;
-        assert( approxEq(m_vnphalf(rod1base+3*scriptedverts1[i]+0),cval1(curdof),1.0e-6) );
+        assert(approxEq(m_vnphalf(rod1base + 3 * scriptedverts1[i] + 0), cval1(curdof), 1.0e-6));
         ++curdof;
         //std::cout << m_vnphalf(rodbase+3*scriptedverts[i]+1) << "   " << desired_values(curdof) << std::endl;
-        assert( approxEq(m_vnphalf(rod1base+3*scriptedverts1[i]+1),cval1(curdof),1.0e-6) );
+        assert(approxEq(m_vnphalf(rod1base + 3 * scriptedverts1[i] + 1), cval1(curdof), 1.0e-6));
         ++curdof;
         //std::cout << m_vnphalf(rodbase+3*scriptedverts[i]+2) << "   " << desired_values(curdof) << std::endl;
-        assert( approxEq(m_vnphalf(rod1base+3*scriptedverts1[i]+2),cval1(curdof),1.0e-6) );
+        assert(approxEq(m_vnphalf(rod1base + 3 * scriptedverts1[i] + 2), cval1(curdof), 1.0e-6));
         ++curdof;
     }
 #endif
@@ -1289,14 +1299,16 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
 
     // Ensure collision constraint adds up to actual normal
 #ifndef NDEBUG
-    Vec3d testn = n[0].segment<3>(base0)+n[0].segment<3>(base1);
-    if( !rod0fixed ) testn *= -1.0;
-    assert( approxEq(testn, eecol.GetNormal(), 1.0e-6) );
+    Vec3d testn = n[0].segment<3> (base0) + n[0].segment<3> (base1);
+    if (!rod0fixed)
+        testn *= -1.0;
+    assert(approxEq(testn, eecol.GetNormal(), 1.0e-6));
 #endif
 
     // Currently, all fixed vertex constraints normalized
 #ifndef NDEBUG
-    for( int i = 1; i < numconstraints; ++i ) assert( approxEq(n[i].norm(),1.0,1.0e-9) );
+    for (int i = 1; i < numconstraints; ++i)
+        assert(approxEq(n[i].norm(), 1.0, 1.0e-9));
 #endif
 
     std::vector<VecXd> ntilde;
@@ -1316,9 +1328,10 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
 
     // Ensure the edge degrees of freedom experience no impulse
 #ifndef NDEBUG
-    for( ElasticRod::edge_iter eit = m_rods[rodidx]->edges_begin(); eit != m_rods[rodidx]->edges_end(); ++eit )
+    for (ElasticRod::edge_iter eit = m_rods[rodidx]->edges_begin(); eit != m_rods[rodidx]->edges_end(); ++eit)
     {
-        for( int i = 0; i < numconstraints; ++i ) assert( ntilde[i](m_rods[rodidx]->edgeIdx(*eit)) == 0.0 );
+        for (int i = 0; i < numconstraints; ++i)
+            assert(ntilde[i](m_rods[rodidx]->edgeIdx(*eit)) == 0.0);
     }
 #endif
 
@@ -1327,14 +1340,16 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
     for (int i = 0; i < numconstraints; ++i)
         posnn.push_back(VecXd(nvdof));
 #ifndef NDEBUG
-    for( int i = 0; i < numconstraints; ++i ) posnn[i].setConstant(std::numeric_limits<double>::signaling_NaN());
+    for (int i = 0; i < numconstraints; ++i)
+        posnn[i].setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
 
     std::vector<VecXd> posnntilde;
     for (int i = 0; i < numconstraints; ++i)
         posnntilde.push_back(VecXd(nvdof));
 #ifndef NDEBUG
-    for( int i = 0; i < numconstraints; ++i ) posnntilde[i].setConstant(std::numeric_limits<double>::signaling_NaN());
+    for (int i = 0; i < numconstraints; ++i)
+        posnntilde[i].setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
 
     for (int i = 0; i < numconstraints; ++i)
@@ -1547,18 +1562,18 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
     // Ensure the 'scripted vertices' achieved the desired velocity
 #ifndef NDEBUG
     curdof = 1;
-    for( size_t i = 0; i < scriptedverts.size(); ++i )
+    for (size_t i = 0; i < scriptedverts.size(); ++i)
     {
-        assert( scriptedverts[i] >= 0 );
-        assert( (int) scriptedverts[i] < m_rods[rodidx]->nv() );
+        assert(scriptedverts[i] >= 0);
+        assert((int) scriptedverts[i] < m_rods[rodidx]->nv());
         //std::cout << m_vnphalf(rodbase+3*scriptedverts[i]+0) << "   " << desired_values(curdof) << std::endl;
-        assert( approxEq(m_vnphalf(rodbase+3*scriptedverts[i]+0),desired_values(curdof),1.0e-6) );
+        assert(approxEq(m_vnphalf(rodbase + 3 * scriptedverts[i] + 0), desired_values(curdof), 1.0e-6));
         ++curdof;
         //std::cout << m_vnphalf(rodbase+3*scriptedverts[i]+1) << "   " << desired_values(curdof) << std::endl;
-        assert( approxEq(m_vnphalf(rodbase+3*scriptedverts[i]+1),desired_values(curdof),1.0e-6) );
+        assert(approxEq(m_vnphalf(rodbase + 3 * scriptedverts[i] + 1), desired_values(curdof), 1.0e-6));
         ++curdof;
         //std::cout << m_vnphalf(rodbase+3*scriptedverts[i]+2) << "   " << desired_values(curdof) << std::endl;
-        assert( approxEq(m_vnphalf(rodbase+3*scriptedverts[i]+2),desired_values(curdof),1.0e-6) );
+        assert(approxEq(m_vnphalf(rodbase + 3 * scriptedverts[i] + 2), desired_values(curdof), 1.0e-6));
         ++curdof;
     }
 #endif
@@ -1620,9 +1635,9 @@ void BARodStepper::applyInextensibilityVelocityFilter(int rodidx)
 
 
 
-    std::cout << "WARNING! SKIPPING INEXTENSIBILITY FILTER!" << std::endl;
+    // std::cout << "WARNING! SKIPPING INEXTENSIBILITY FILTER!" << std::endl;
 
-    return;
+    // return;
 
 
 
@@ -1632,8 +1647,6 @@ void BARodStepper::applyInextensibilityVelocityFilter(int rodidx)
 
     if (m_level < m_perf_param.m_inextensibility_threshold)
         return;
-
-    //std::cout << "Applying inextensibility filter to rod " << rodidx << std::endl;
 
     int rodbase = m_base_dof_indices[rodidx];
 
@@ -1645,8 +1658,10 @@ void BARodStepper::applyInextensibilityVelocityFilter(int rodidx)
     //  assert(approxEq(desiredposition, actualvalue, 1.0e-6));
     //   }
 
-    m_vnphalf.segment<3> (rodbase + 0) = Vec3d(0, 0, 0);
-    m_vnphalf.segment<3> (rodbase + 3) = Vec3d(0, 0, 0);
+    // DebugStream(g_log, "") << "Velocity Filter begin: rod " << rodidx << " vertex 0 = " << m_xn.segment<3>(rodbase) << '\n';
+
+    // m_vnphalf.segment<3> (rodbase + 0) = Vec3d(0, 0, 0);
+    // m_vnphalf.segment<3> (rodbase + 3) = Vec3d(0, 0, 0);
 
     {
         Vec3d v0 = m_vnphalf.segment<3> (rodbase + 3); // velocity of vertex 1
@@ -1715,6 +1730,10 @@ void BARodStepper::applyInextensibilityVelocityFilter(int rodidx)
     //  std::cout << " " << eN.norm();
     // }
     // std::cout << std::endl;
+
+    // DebugStream(g_log, "") << "Velocity Filter end: rod " << rodidx << " vertex 0 = " << m_xn.segment<3>(rodbase) << '\n';
+
+
 }
 
 /**
