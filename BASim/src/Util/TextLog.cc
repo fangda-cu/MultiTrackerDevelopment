@@ -12,7 +12,7 @@
 #include <cstdarg>
 #include <iostream>
 
-using namespace weta::logging;
+namespace BASim {
 
 // Override the severity of the message with the specified id.
 void 
@@ -119,4 +119,10 @@ TextLog::WriteSafely(const MsgInfo& info, const char* msg) const
         writeInfo(info);
         m_stream << msg << std::endl;
     }
+}
+
+
+// Global variable. Must be initialized somewhere before any logging.
+TextLog* g_log;
+
 }

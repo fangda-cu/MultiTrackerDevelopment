@@ -16,8 +16,6 @@
 #include <omp.h>
 #endif
 
-using namespace weta::logging;
-
 namespace BASim
 {
 
@@ -167,15 +165,15 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
 
     // Detect continuous time collisions
     std::list<Collision*> collisions_list;
-    TraceStream(m_log, "") << "Detecting collisions...\n";
+    TraceStream(g_log, "") << "Detecting collisions...\n";
     m_collision_detector->getCollisions(collisions_list, ContinuousTime);
-    TraceStream(m_log, "") << "Initial potential collisions: " << m_collision_detector->m_potential_collisions << "\n";
+    TraceStream(g_log, "") << "Initial potential collisions: " << m_collision_detector->m_potential_collisions << "\n";
 
     // Iterativly apply inelastic impulses
     for (int itr = 0; !collisions_list.empty() && itr < m_perf_param.m_maximum_number_of_collisions_iterations; ++itr)
     {
-        TraceStream(m_log, "") << "CTcollision response iteration " << itr << '\n';
-        TraceStream(m_log, "") << "Detected " << collisions_list.size() << " continuous time collisions (potential: "
+        TraceStream(g_log, "") << "CTcollision response iteration " << itr << '\n';
+        TraceStream(g_log, "") << "Detected " << collisions_list.size() << " continuous time collisions (potential: "
                 << m_collision_detector->m_potential_collisions << ")\n";
 
         // Just sort the collision times to maintain some rough sense of causality
@@ -201,7 +199,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                     }
                 }
             }
-            TraceStream(m_log, "") << "of which " << collisions_list.size() << " are on different rods\n";
+            TraceStream(g_log, "") << "of which " << collisions_list.size() << " are on different rods\n";
             // Now apply response to the remaining collisions
             for (std::list<Collision*>::iterator col_it = collisions_list.begin(); col_it != collisions_list.end(); col_it++)
             {
@@ -222,7 +220,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                     {
                         //                        explosions_detected = true;
                         //                        exploding_rods[colliding_rod] = true;
-                        TraceStream(m_log, "") << "Rod number " << colliding_rod
+                        TraceStream(g_log, "") << "Rod number " << colliding_rod
                                 << " had an explosion during collision response\n";
                         // If the rod just had an explosion, give up trying resolving its collisions
                         failed_collisions_rods[colliding_rod] = true;
@@ -248,7 +246,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
             }
 
         // Detect remaining collisions (including at the end of the last iteration, so we know what failed)
-        TraceStream(m_log, "") << "Detecting collisions...\n";
+        TraceStream(g_log, "") << "Detecting collisions...\n";
         m_collision_detector->getCollisions(collisions_list, ContinuousTime, false); // No need to update the mesh bvh bounding boxes.
     }
 
@@ -256,7 +254,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
     {
         all_rods_collisions_ok = false;
 
-        TraceStream(m_log, "") << "Remains " << collisions_list.size() << " unresolved collisions (potential: "
+        TraceStream(g_log, "") << "Remains " << collisions_list.size() << " unresolved collisions (potential: "
                 << m_collision_detector->m_potential_collisions << ")\n";
 
         // Just in case we haven't emptied the collisions but exited when itr == m_num_inlstc_itrns
@@ -301,7 +299,7 @@ void BARodStepper::computeCompliantLHS(MatrixBase* lhs, int rodidx)
     assert(rodidx < m_number_of_rods);
 
     //double emphasizeStaticEquilibium = 0;
-    //InfoStream(m_log,"") << "BARodStepper::computeCompliantLHS: emphasizing static equilibrium = " << emphasizeStaticEquilibium;
+    //InfoStream(g_log,"") << "BARodStepper::computeCompliantLHS: emphasizing static equilibrium = " << emphasizeStaticEquilibium;
 
     // lhs = -h^2*dF/dx
     lhs->setZero();
@@ -397,7 +395,7 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
     assert(v0 >= 0);
     assert(v0 < m_rods[rodidx]->nv());
 
-    TraceStream(m_log, "") << "CTcollision: vertex " << v0 << " of rod " << rodidx << '\n';
+    TraceStream(g_log, "") << "CTcollision: vertex " << v0 << " of rod " << rodidx << '\n';
 
     // Compute the relative velocity of the collision
     //double magrelvel = vfcol.computeRelativeVelocity(m_geodata);
@@ -660,7 +658,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
         return;
     }
 
-    TraceStream(m_log, "") << "CTcollision: rod " << rod0 << " vs. rod " << rod1 << '\n';
+    TraceStream(g_log, "") << "CTcollision: rod " << rod0 << " vs. rod " << rod1 << '\n';
 
     // Compute the relative velocity, which must be negative
     //    Vec3d relvel = m_geodata.computeRelativeVelocity(eecol.e0_v0, eecol.e0_v1, eecol.e1_v0, eecol.e1_v1, eecol.s, eecol.t);
@@ -1196,7 +1194,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
         return;
     }
 
-    TraceStream(m_log, "") << "CTcollision: rod " << rodidx << " vs. mesh\n";
+    TraceStream(g_log, "") << "CTcollision: rod " << rodidx << " vs. mesh\n";
 
     // Convert the vertices' global indices to rod indices
     assert(m_base_dof_indices[rodidx] % 3 == 0);
@@ -1574,7 +1572,7 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
     double maxStart = 0;
     double minStart = std::numeric_limits<double>::max();
     int worstViolator = std::numeric_limits<int>::signaling_NaN();
-    TraceStream(m_log, "") << "Checking for explosions\n";
+    TraceStream(g_log, "") << "Checking for explosions\n";
 
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
     {
@@ -1595,14 +1593,14 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
                 {
                     explosions_detected = true;
                     exploding_rods[*rod] = true;
-                    TraceStream(m_log, "") << "Rod number " << *rod << " had an explosion\n";
+                    TraceStream(g_log, "") << "Rod number " << *rod << " had an explosion\n";
                     break;
                 }
             }
         }
     }
     if (explosions_detected)
-        DebugStream(m_log, "") << "Some rods had explosions\n";
+        DebugStream(g_log, "") << "Some rods had explosions\n";
 
     return explosions_detected;
 }
