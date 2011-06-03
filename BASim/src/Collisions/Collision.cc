@@ -8,6 +8,7 @@
 #include "Collision.hh"
 #include "CollisionUtils.hh"
 #include "TetrahedronPair.hh"
+#include "../Util/TextLog.hh"
 
 namespace BASim
 {
@@ -128,7 +129,20 @@ bool EdgeEdgeCTCollision::analyseCollision(double time_step)
     V_1[3][1] = (q1 + time_step * vq1)[1];
     V_1[3][2] = (q1 + time_step * vq1)[2];
     if (!TetrahedronPair(V_0, V_1).DoOverlap())
+    {
+        DebugStream(g_log, "") << "Rejected collision because tetrahedra don't overlap\n";
+        DebugStream(g_log, "") << p0 << '\n';
+        DebugStream(g_log, "") << p0 + time_step * vp0 << '\n';
+        DebugStream(g_log, "") << q0 << '\n';
+        DebugStream(g_log, "") << q0 + time_step * vq0 << '\n';
+        DebugStream(g_log, "") << '\n';
+        DebugStream(g_log, "") << p1 << '\n';
+        DebugStream(g_log, "") << p1 + time_step * vp1 << '\n';
+        DebugStream(g_log, "") << q1 << '\n';
+        DebugStream(g_log, "") << q1 + time_step * vq1 << '\n';
+
         return false;
+    }
 
     std::vector<double> times;
     std::vector<double> errors;
