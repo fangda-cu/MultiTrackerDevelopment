@@ -398,9 +398,9 @@ protected:
         m_initial_residual = m_residual = computeResidual();
 
         TraceStream(g_log, "") << "SymmetricImplicitEuler::position_solve: starting Newton solver. Initial guess has residual = " << m_residual
-	     << ", convergence test will use thresholds atol = " << atol << " infnorm = " << m_infnorm
-	     << " rtol = " << m_residual / m_initial_residual
-	     << " stol = " << m_increment.norm() << '\n';
+	     << ", convergence test will use thresholds atol = " << m_atol << " inftol = " << m_inftol
+	     << " rtol = " << m_initial_residual * m_rtol
+	     << " stol = " << m_stop << '\n';
 
 
         STOP_TIMER("SymmetricImplicitEuler::position_solve/setup");
@@ -413,7 +413,7 @@ protected:
         int curit = 0;
         for (curit = 0; curit < m_maxit; ++curit)
         {
-	  // TraceStream(g_log, "") << "\nSymmetricImplicitEuler::position_solve: iteration = " << m_curit << "\n\n" << '\n';
+	    TraceStream(g_log, "") << "\nSymmetricImplicitEuler::position_solve: Newton iteration = " << curit << "\n";
 
             // TODO: Assert m_A, increment are zero
 
