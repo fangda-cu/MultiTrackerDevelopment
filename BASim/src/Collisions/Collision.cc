@@ -8,6 +8,7 @@
 #include "Collision.hh"
 #include "CollisionUtils.hh"
 #include "TetrahedronPair.hh"
+#include "../Util/TextLog.hh"
 
 namespace BASim
 {
@@ -100,35 +101,41 @@ bool EdgeEdgeCTCollision::analyseCollision(double time_step)
     if (IsFixed() || ((vp0.norm() == 0) && (vq0.norm() == 0) && (vp1.norm() == 0) && (vq1.norm() == 0)))
         return false;
 
-    // Reject if tetrahedrons don't overlap. TODO: work directly with Vec3d instead of copying everything.
-    double V_0[4][3];
-    V_0[0][0] = p0[0];
-    V_0[0][1] = p0[1];
-    V_0[0][2] = p0[2];
-    V_0[1][0] = (p0 + time_step * vp0)[0];
-    V_0[1][1] = (p0 + time_step * vp0)[1];
-    V_0[1][2] = (p0 + time_step * vp0)[2];
-    V_0[2][0] = q0[0];
-    V_0[2][1] = q0[1];
-    V_0[2][2] = q0[2];
-    V_0[3][0] = (q0 + time_step * vq0)[0];
-    V_0[3][1] = (q0 + time_step * vq0)[1];
-    V_0[3][2] = (q0 + time_step * vq0)[2];
-    double V_1[4][3];
-    V_1[0][0] = p1[0];
-    V_1[0][1] = p1[1];
-    V_1[0][2] = p1[2];
-    V_1[1][0] = (p1 + time_step * vp1)[0];
-    V_1[1][1] = (p1 + time_step * vp1)[1];
-    V_1[1][2] = (p1 + time_step * vp1)[2];
-    V_1[2][0] = q1[0];
-    V_1[2][1] = q1[1];
-    V_1[2][2] = q1[2];
-    V_1[3][0] = (q1 + time_step * vq1)[0];
-    V_1[3][1] = (q1 + time_step * vq1)[1];
-    V_1[3][2] = (q1 + time_step * vq1)[2];
-    if (!TetrahedronPair(V_0, V_1).DoOverlap())
-        return false;
+    // TODO: If exactly one edge is moving and the other one is still, we should use that fact.
+
+    // If both edges are moving, test the tetrahedrons intersection first.
+    if ((vp0.norm() != 0 || vq0.norm() != 0) && (vp1.norm() != 0 || vq1.norm() != 0))
+    {
+        // Reject if tetrahedrons don't overlap. TODO: work directly with Vec3d instead of copying everything.
+        double V_0[4][3];
+        V_0[0][0] = p0[0];
+        V_0[0][1] = p0[1];
+        V_0[0][2] = p0[2];
+        V_0[1][0] = (p0 + time_step * vp0)[0];
+        V_0[1][1] = (p0 + time_step * vp0)[1];
+        V_0[1][2] = (p0 + time_step * vp0)[2];
+        V_0[2][0] = q0[0];
+        V_0[2][1] = q0[1];
+        V_0[2][2] = q0[2];
+        V_0[3][0] = (q0 + time_step * vq0)[0];
+        V_0[3][1] = (q0 + time_step * vq0)[1];
+        V_0[3][2] = (q0 + time_step * vq0)[2];
+        double V_1[4][3];
+        V_1[0][0] = p1[0];
+        V_1[0][1] = p1[1];
+        V_1[0][2] = p1[2];
+        V_1[1][0] = (p1 + time_step * vp1)[0];
+        V_1[1][1] = (p1 + time_step * vp1)[1];
+        V_1[1][2] = (p1 + time_step * vp1)[2];
+        V_1[2][0] = q1[0];
+        V_1[2][1] = q1[1];
+        V_1[2][2] = q1[2];
+        V_1[3][0] = (q1 + time_step * vq1)[0];
+        V_1[3][1] = (q1 + time_step * vq1)[1];
+        V_1[3][2] = (q1 + time_step * vq1)[2];
+        if (!TetrahedronPair(V_0, V_1).DoOverlap())
+            return false;
+    }
 
     std::vector<double> times;
     std::vector<double> errors;

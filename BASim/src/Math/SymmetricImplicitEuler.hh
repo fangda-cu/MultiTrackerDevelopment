@@ -525,7 +525,7 @@ protected:
 	        }
                 else if (i >= m_maxlsit)
                 {
-                    DebugStream(g_log, "") << "SymmetricImplicitEuler::position_solve/line search: \033[31;1mWARNING IN IMPLICITEULER:\033[m Line search failed. Proceeding anyway." << '\n';
+                    TraceStream(g_log, "") << "SymmetricImplicitEuler::position_solve/line search: \033[31;1mWARNING IN IMPLICITEULER:\033[m Line search failed. Proceeding anyway." << '\n';
                     //return false;
 		    break;
                 }
