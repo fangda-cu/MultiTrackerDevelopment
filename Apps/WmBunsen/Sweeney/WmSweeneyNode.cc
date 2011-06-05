@@ -26,6 +26,8 @@ using namespace BASim;
 /* static */ MObject WmSweeneyNode::ia_edgeLength;
 /* static */ MObject WmSweeneyNode::ia_verticesPerRod;
 /* static */ MObject WmSweeneyNode::ia_rodRadius;
+/* static */ MObject WmSweeneyNode::ia_rodAspectRatio;
+/* static */ MObject WmSweeneyNode::ia_rodRotation;
 /* static */ MObject WmSweeneyNode::ia_waveFrequency;
 /* static */ MObject WmSweeneyNode::ia_waveAmplitude;
 /* static */ MObject WmSweeneyNode::ia_hasUniformCurvature;
@@ -102,6 +104,8 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_length = i_dataBlock.inputValue( ia_length ).asDouble();
         m_edgeLength = i_dataBlock.inputValue( ia_edgeLength ).asDouble();
         m_rodRadius = i_dataBlock.inputValue( ia_rodRadius ).asDouble();
+        m_rodAspectRatio = i_dataBlock.inputValue( ia_rodAspectRatio ).asDouble();
+	m_rodRotation = i_dataBlock.inputValue( ia_rodRotation ).asDouble();
         m_waveFrequency = i_dataBlock.inputValue( ia_waveFrequency ).asDouble();
 	m_waveAmplitude = i_dataBlock.inputValue( ia_waveAmplitude ).asDouble();
 	m_hasUniformCurvature = i_dataBlock.inputValue( ia_hasUniformCurvature ).asBool();
@@ -161,7 +165,11 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		    Scalar t = 0;
 		    Scalar scale = 1;
 		    int j = 0;
-                    
+
+		    // adjust the rod size
+                    m_rodManager->m_rods[i]->setRadius(m_rodRadius, m_rodRadius*m_aspectRatio);
+		    
+		    
 		    for ( ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin(); 
                          vh != m_rodManager->m_rods[i]->vertices_end(); ++vh )
 		    {
@@ -179,6 +187,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 			//}
 			
 			// set default curvature using sinusoid (sliders adjusts amplitude and frequency)
+			// TODO (sainsley): have sliders to adjust curl radius and curl frequency instead
 			m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, 
                             Vec2d( scale*m_waveAmplitude*sin( t*m_waveFrequency*M_PI + M_PI/2.0 ) , 0 ) );
 			
@@ -187,7 +196,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 			{
 			   t += m_rodManager->m_rods[i]->getEdgeLength( j++ )/total_len;
 			}
-                    }
+		    }
 
 		    
                 }
@@ -618,6 +627,36 @@ void* WmSweeneyNode::creator()
         
         status = attributeAffects( ia_rodRadius, ca_rodPropertiesSync );
         if ( !status ) { status.perror( "attributeAffects ia_rodRadius->ca_rodPropertiesSync" ); return status; }
+    }
+
+    {
+        MFnNumericAttribute numericAttr;
+        ia_rodAspectRatio = numericAttr.create( "rodAspectRatio", "roar", MFnNumericData::kDouble, 0.0, &status );
+        CHECK_MSTATUS( status );
+        CHECK_MSTATUS( numericAttr.setReadable( true ) );
+        CHECK_MSTATUS( numericAttr.setWritable( true ) );
+        CHECK_MSTATUS( numericAttr.setMin( -3.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 3.0 ) );
+        status = addAttribute( ia_rodAspectRatio );
+        CHECK_MSTATUS( status );
+        
+        status = attributeAffects( ia_rodAspectRatio, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_rodAspectRatio->ca_rodPropertiesSync" ); return status; }
+    }
+
+    {
+        MFnNumericAttribute numericAttr;
+        ia_rodRotation = numericAttr.create( "rodRotation", "rorot", MFnNumericData::kDouble, 0.0, &status );
+        CHECK_MSTATUS( status );
+        CHECK_MSTATUS( numericAttr.setReadable( true ) );
+        CHECK_MSTATUS( numericAttr.setWritable( true ) );
+        CHECK_MSTATUS( numericAttr.setMin( -3.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 3.0 ) );
+        status = addAttribute( ia_rodRotation );
+        CHECK_MSTATUS( status );
+        
+        status = attributeAffects( ia_rodRotation, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_rodRotation->ca_rodPropertiesSync" ); return status; }
     }
 
     {

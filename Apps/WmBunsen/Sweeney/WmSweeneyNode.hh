@@ -68,6 +68,8 @@ public:
     static MObject ia_edgeLength;
     static MObject ia_verticesPerRod;
     static MObject ia_rodRadius;
+    static MObject ia_rodAspectRatio;
+    static MObject ia_rodRotation;
     static MObject ia_waveFrequency;
     static MObject ia_waveAmplitude;
     static MObject ia_hasUniformCurvature;
@@ -138,6 +140,8 @@ private:
     double m_edgeLength;
     double m_length;
     double m_rodRadius;
+    double m_rodAspectRatio;
+    double m_rodRotation;
     double m_waveFrequency;
     double m_waveAmplitude;
     double m_rodPitch;
