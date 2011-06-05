@@ -23,78 +23,6 @@
 namespace BASim
 {
 
-void BARodStepper::addRod(ElasticRod* rod, RodTimeStepper* stepper)
-{
-    // Add the rod
-    m_rods.push_back(rod);
-    m_simulated_rods.push_back(m_number_of_rods);
-    m_rods.back()->globalRodIndex = m_number_of_rods++;
-    // Add the stepper
-    m_steppers.push_back(stepper);
-    m_steppers.back()->setMaxIterations(m_perf_param.m_maximum_number_of_solver_iterations);
-
-    assert(m_rods.size() == m_steppers.size());
-    assert(m_number_of_rods == m_rods.size());
-
-    // Extend the force vectors used to detect explosions
-    m_startForces.push_back(new VecXd(m_rods.back()->ndof()));
-    m_preDynamicForces.push_back(new VecXd(m_rods.back()->ndof()));
-    m_preCollisionForces.push_back(new VecXd(m_rods.back()->ndof()));
-    m_endForces.push_back(new VecXd(m_rods.back()->ndof()));
-
-    m_rodbackups.resize(m_number_of_rods); // growing by 1
-    m_rodbackups.back().resize(*m_rods.back());
-
-    // Extract edges from the new rod
-    for (int j = 0; j < m_rods.back()->nv() - 1; ++j)
-    {
-        m_edges.push_back(std::pair<int, int>(getNumVerts() + j, getNumVerts() + j + 1));
-        assert(m_rods.back()->getRadiusScale() * m_rods.back()->radiusA(j) > 0.0);
-        m_edge_radii.push_back(m_rods.back()->getRadiusScale() * m_rods.back()->radiusA(j));
-    }
-    assert(m_edges.size() == m_edge_radii.size());
-
-    for (int j = 0; j < m_rods.back()->nv() - 1; ++j)
-    {
-        assert(m_rods.back()->getRadiusScale() * m_rods.back()->radiusA(j) > 0.0);
-        // Radii associated with edges ... what to do if at a vertex with two radii? Average?
-        m_vertex_radii.push_back(m_rods.back()->getRadiusScale() * m_rods.back()->radiusA(j));
-    }
-    m_vertex_radii.push_back(m_vertex_radii.back()); // < TODO: What the $^#! is this call?
-
-    // Update vector that tracks the rod DOF in the system
-    m_base_dof_indices.push_back(getNumDof());
-    m_base_vtx_indices.push_back(getNumDof() / 3);
-
-    // Extract masses from the new rod
-    for (ElasticRod::vertex_iter itr = m_rods.back()->vertices_begin(); itr != m_rods.back()->vertices_end(); ++itr)
-    {
-        assert(m_rods.back()->getVertexMass(*itr, -1) > 0.0);
-        m_masses.push_back(m_rods.back()->getVertexMass(*itr, -1));
-    }
-
-    // Update total number of DOF in the system
-    m_num_dof += 3 * m_rods.back()->nv();
-
-    assert((int) m_masses.size() == getNumVerts());
-    assert((int) m_vertex_radii.size() == getNumVerts());
-
-    // Resize the internal storage
-    m_xn.resize(getNumDof());
-    m_xnp1.resize(getNumDof());
-    m_xdebug.resize(getNumDof());
-    m_vnphalf.resize(getNumDof());
-
-    m_collision_immune.resize(getNumVerts());
-
-    if (m_perf_param.m_enable_penalty_response)
-        enableImplicitPenaltyImpulses(); // TODO: probably a memory leak to fix here.
-
-    // Update the rods in the collision detector
-    m_collision_detector->rebuildRodElements(m_edges);
-
-}
-
 BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
         std::vector<ScriptingController*>& scripting_controllers, std::vector<RodTimeStepper*>& steppers, const double& dt,
         const double time, const int num_threads, const PerformanceTuningParameters perf_param,
@@ -1447,6 +1375,85 @@ void BARodStepper::computeForces(std::vector<VecXd*> Forces, const RodSelectionT
         m_steppers[*rod]->evaluatePDot(*Forces[*rod]);
     }
 }
+
+void BARodStepper::addRod(ElasticRod* rod, RodTimeStepper* stepper)
+{
+    // Add the rod
+    m_rods.push_back(rod);
+    m_simulated_rods.push_back(m_number_of_rods);
+    m_rods.back()->globalRodIndex = m_number_of_rods++;
+    // Add the stepper
+    m_steppers.push_back(stepper);
+    m_steppers.back()->setMaxIterations(m_perf_param.m_maximum_number_of_solver_iterations);
+
+    assert(m_rods.size() == m_steppers.size());
+    assert(m_number_of_rods == m_rods.size());
+
+    // Extend the force vectors used to detect explosions
+    m_startForces.push_back(new VecXd(m_rods.back()->ndof()));
+    m_preDynamicForces.push_back(new VecXd(m_rods.back()->ndof()));
+    m_preCollisionForces.push_back(new VecXd(m_rods.back()->ndof()));
+    m_endForces.push_back(new VecXd(m_rods.back()->ndof()));
+
+    m_rodbackups.resize(m_number_of_rods); // growing by 1
+    m_rodbackups.back().resize(*m_rods.back());
+
+    // Extract edges from the new rod
+    for (int j = 0; j < m_rods.back()->nv() - 1; ++j)
+    {
+        m_edges.push_back(std::pair<int, int>(getNumVerts() + j, getNumVerts() + j + 1));
+        assert(m_rods.back()->getRadiusScale() * m_rods.back()->radiusA(j) > 0.0);
+        m_edge_radii.push_back(m_rods.back()->getRadiusScale() * m_rods.back()->radiusA(j));
+    }
+    assert(m_edges.size() == m_edge_radii.size());
+
+    for (int j = 0; j < m_rods.back()->nv() - 1; ++j)
+    {
+        assert(m_rods.back()->getRadiusScale() * m_rods.back()->radiusA(j) > 0.0);
+        // Radii associated with edges ... what to do if at a vertex with two radii? Average?
+        m_vertex_radii.push_back(m_rods.back()->getRadiusScale() * m_rods.back()->radiusA(j));
+    }
+    m_vertex_radii.push_back(m_vertex_radii.back()); // < TODO: What the $^#! is this call?
+
+    // Update vector that tracks the rod DOF in the system
+    m_base_dof_indices.push_back(getNumDof());
+    m_base_vtx_indices.push_back(getNumDof() / 3);
+
+    // Extract masses from the new rod
+    for (ElasticRod::vertex_iter itr = m_rods.back()->vertices_begin(); itr != m_rods.back()->vertices_end(); ++itr)
+    {
+        assert(m_rods.back()->getVertexMass(*itr, -1) > 0.0);
+        m_masses.push_back(m_rods.back()->getVertexMass(*itr, -1));
+    }
+
+    // Update total number of DOF in the system
+    m_num_dof += 3 * m_rods.back()->nv();
+
+    assert((int) m_masses.size() == getNumVerts());
+    assert((int) m_vertex_radii.size() == getNumVerts());
+
+    // Resize the internal storage
+    m_xn.resize(getNumDof());
+    m_xnp1.resize(getNumDof());
+    m_xdebug.resize(getNumDof());
+    m_vnphalf.resize(getNumDof());
+
+    m_collision_immune.resize(getNumVerts());
+
+    if (m_perf_param.m_enable_penalty_response)
+        enableImplicitPenaltyImpulses(); // TODO: probably a memory leak to fix here.
+
+    // Update the rods in the collision detector
+    m_collision_detector->rebuildRodElements(m_edges);
+
+}
+
+void BARodStepper::removeRod(int rodIdx)
+{
+    killTheRod(rodIdx);
+}
+
+
 
 }
 
