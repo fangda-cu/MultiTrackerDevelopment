@@ -167,7 +167,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		    int j = 0;
 
 		    // adjust the rod size
-                    m_rodManager->m_rods[i]->setRadius(m_rodRadius, m_rodRadius*m_aspectRatio);
+                    m_rodManager->m_rods[i]->setRadius(m_rodRadius, m_rodRadius*m_rodAspectRatio);
 		    
 		    
 		    for ( ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin(); 
@@ -616,12 +616,12 @@ void* WmSweeneyNode::creator()
 	//addNumericAttribute( ia_rodRadius, "rodRadius", "ror", MFnNumericData::kDouble, 0.0, true );
     {
         MFnNumericAttribute numericAttr;
-        ia_rodRadius = numericAttr.create( "rodRadius", "ror", MFnNumericData::kDouble, 0.0, &status );
+        ia_rodRadius = numericAttr.create( "rodRadius", "ror", MFnNumericData::kDouble, 0.005, &status );
         CHECK_MSTATUS( status );
         CHECK_MSTATUS( numericAttr.setReadable( true ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
-        CHECK_MSTATUS( numericAttr.setMin( -3.0 ) );
-        CHECK_MSTATUS( numericAttr.setMax( 3.0 ) );
+        CHECK_MSTATUS( numericAttr.setMin( 0.001 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 0.1 ) );
         status = addAttribute( ia_rodRadius );
         CHECK_MSTATUS( status );
         
@@ -631,12 +631,12 @@ void* WmSweeneyNode::creator()
 
     {
         MFnNumericAttribute numericAttr;
-        ia_rodAspectRatio = numericAttr.create( "rodAspectRatio", "roar", MFnNumericData::kDouble, 0.0, &status );
+        ia_rodAspectRatio = numericAttr.create( "rodAspectRatio", "roar", MFnNumericData::kDouble, 1.0, &status );
         CHECK_MSTATUS( status );
         CHECK_MSTATUS( numericAttr.setReadable( true ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
-        CHECK_MSTATUS( numericAttr.setMin( -3.0 ) );
-        CHECK_MSTATUS( numericAttr.setMax( 3.0 ) );
+        CHECK_MSTATUS( numericAttr.setMin( 0.1 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 10.0 ) );
         status = addAttribute( ia_rodAspectRatio );
         CHECK_MSTATUS( status );
         
@@ -650,8 +650,8 @@ void* WmSweeneyNode::creator()
         CHECK_MSTATUS( status );
         CHECK_MSTATUS( numericAttr.setReadable( true ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
-        CHECK_MSTATUS( numericAttr.setMin( -3.0 ) );
-        CHECK_MSTATUS( numericAttr.setMax( 3.0 ) );
+        CHECK_MSTATUS( numericAttr.setMin( -1.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 1.0 ) );
         status = addAttribute( ia_rodRotation );
         CHECK_MSTATUS( status );
         
