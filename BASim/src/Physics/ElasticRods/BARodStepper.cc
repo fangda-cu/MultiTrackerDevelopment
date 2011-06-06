@@ -6,7 +6,7 @@
  */
 
 
-#define KEEP_ONLY_SOME_RODS
+//#define KEEP_ONLY_SOME_RODS
 
 #include <typeinfo>
 #include "BARodStepper.hh"
