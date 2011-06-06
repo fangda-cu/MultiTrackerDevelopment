@@ -68,7 +68,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     }
     else
     {
-        // Wierdly we're going to build a vector of null pointers. This is because
+        // Weirdly we're going to build a vector of null pointers. This is because
         // the vector of level sets can contain a pointer to a level set or a null pointer
         // depending on whether the corresponding m_triangle_mesh has a level set created for it.
         // To simplify the usage code we'll make this vector and pass it around.
@@ -77,7 +77,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
         m_level_sets.resize(m_triangle_meshes.size(), NULL);
     }
 
-    g_log = new TextLog(std::cerr, MsgInfo::kTrace, true);
+    g_log = new TextLog(std::cerr, MsgInfo::kDebug, true);
     InfoStream(g_log, "") << "Started logging BARodStepper\n";
 
     for (std::vector<RodTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
@@ -234,19 +234,19 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     /**
      *  Prepare backup structures.
      */
-    m_startForces = new VecXd*[m_number_of_rods];
+    m_startForces.resize(m_number_of_rods);
     for (int i = 0; i < m_number_of_rods; i++)
         m_startForces[i] = new VecXd(m_rods[i]->ndof());
 
-    m_preDynamicForces = new VecXd*[m_number_of_rods];
+    m_preDynamicForces.resize(m_number_of_rods);
     for (int i = 0; i < m_number_of_rods; i++)
         m_preDynamicForces[i] = new VecXd(m_rods[i]->ndof());
 
-    m_preCollisionForces = new VecXd*[m_number_of_rods];
+    m_preCollisionForces.resize(m_number_of_rods);
     for (int i = 0; i < m_number_of_rods; i++)
         m_preCollisionForces[i] = new VecXd(m_rods[i]->ndof());
 
-    m_endForces = new VecXd*[m_number_of_rods];
+    m_endForces.resize(m_number_of_rods);
     for (int i = 0; i < m_number_of_rods; i++)
         m_endForces[i] = new VecXd(m_rods[i]->ndof());
 
@@ -266,7 +266,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     << "WARNING: KEEP_ONLY_SOME_RODS: Simulating only a specified subset of rods!\n***********************************************************\n";
     std::set<int> keep_only;
 
-    keep_only.insert(1);
+    keep_only.insert(0);
 
     // Only the rods in the keep_only set are kept, the others are killed.
     for (int i = 0; i < m_number_of_rods; i++)
@@ -294,10 +294,6 @@ BARodStepper::~BARodStepper()
         delete m_preCollisionForces[i];
         delete m_endForces[i];
     }
-    delete[] m_startForces;
-    delete[] m_preDynamicForces;
-    delete[] m_preCollisionForces;
-    delete[] m_endForces;
 
     delete g_log;
 }
@@ -565,6 +561,7 @@ bool BARodStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
         return true;
     }
     if (selected_rods.empty()) // Success!
+
     {
         TraceStream(g_log, "") << "t = " << m_t << ": adaptiveExecute has simulated (or killed) all rods\n";
         STOP_TIMER("BARodStepper::adaptiveExecute")
@@ -628,6 +625,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     START_TIMER("BARodStepper::step")
 
     if (m_simulationFailed) // We stopped simulating already
+
     {
         STOP_TIMER("BARodStepper::step")
         return;
@@ -720,8 +718,6 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     for (int i = 0; i < selected_steppers.size(); i++)
     {
         RodTimeStepper* const stepper = selected_steppers[i];
-        //std::cout << "BARodStepper::step/steppers: calling " << stepper->getDiffEqSolver().getName() << " solver for rod "
-        //	      << stepper->getRod()->globalRodIndex << '\n';
 
         bool result = stepper->execute();
         if (!result)
@@ -1371,7 +1367,7 @@ void BARodStepper::killTheRod(int rod) // TODO: remove the rod properly in Maya
     m_simulated_rods.erase(find(m_simulated_rods.begin(), m_simulated_rods.end(), rod));
 }
 
-void BARodStepper::computeForces(VecXd ** Forces, const RodSelectionType& selected_rods)
+void BARodStepper::computeForces(std::vector<VecXd*> Forces, const RodSelectionType& selected_rods)
 {
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
     {
@@ -1380,6 +1376,85 @@ void BARodStepper::computeForces(VecXd ** Forces, const RodSelectionType& select
         m_steppers[*rod]->evaluatePDot(*Forces[*rod]);
     }
 }
+
+void BARodStepper::addRod(ElasticRod* rod, RodTimeStepper* stepper)
+{
+    // Add the rod
+    m_rods.push_back(rod);
+    m_simulated_rods.push_back(m_number_of_rods);
+    m_rods.back()->globalRodIndex = m_number_of_rods++;
+    // Add the stepper
+    m_steppers.push_back(stepper);
+    m_steppers.back()->setMaxIterations(m_perf_param.m_maximum_number_of_solver_iterations);
+
+    assert(m_rods.size() == m_steppers.size());
+    assert(m_number_of_rods == m_rods.size());
+
+    // Extend the force vectors used to detect explosions
+    m_startForces.push_back(new VecXd(m_rods.back()->ndof()));
+    m_preDynamicForces.push_back(new VecXd(m_rods.back()->ndof()));
+    m_preCollisionForces.push_back(new VecXd(m_rods.back()->ndof()));
+    m_endForces.push_back(new VecXd(m_rods.back()->ndof()));
+
+    m_rodbackups.resize(m_number_of_rods); // growing by 1
+    m_rodbackups.back().resize(*m_rods.back());
+
+    // Extract edges from the new rod
+    for (int j = 0; j < m_rods.back()->nv() - 1; ++j)
+    {
+        m_edges.push_back(std::pair<int, int>(getNumVerts() + j, getNumVerts() + j + 1));
+        assert(m_rods.back()->getRadiusScale() * m_rods.back()->radiusA(j) > 0.0);
+        m_edge_radii.push_back(m_rods.back()->getRadiusScale() * m_rods.back()->radiusA(j));
+    }
+    assert(m_edges.size() == m_edge_radii.size());
+
+    for (int j = 0; j < m_rods.back()->nv() - 1; ++j)
+    {
+        assert(m_rods.back()->getRadiusScale() * m_rods.back()->radiusA(j) > 0.0);
+        // Radii associated with edges ... what to do if at a vertex with two radii? Average?
+        m_vertex_radii.push_back(m_rods.back()->getRadiusScale() * m_rods.back()->radiusA(j));
+    }
+    m_vertex_radii.push_back(m_vertex_radii.back()); // < TODO: What the $^#! is this call?
+
+    // Update vector that tracks the rod DOF in the system
+    m_base_dof_indices.push_back(getNumDof());
+    m_base_vtx_indices.push_back(getNumDof() / 3);
+
+    // Extract masses from the new rod
+    for (ElasticRod::vertex_iter itr = m_rods.back()->vertices_begin(); itr != m_rods.back()->vertices_end(); ++itr)
+    {
+        assert(m_rods.back()->getVertexMass(*itr, -1) > 0.0);
+        m_masses.push_back(m_rods.back()->getVertexMass(*itr, -1));
+    }
+
+    // Update total number of DOF in the system
+    m_num_dof += 3 * m_rods.back()->nv();
+
+    assert((int) m_masses.size() == getNumVerts());
+    assert((int) m_vertex_radii.size() == getNumVerts());
+
+    // Resize the internal storage
+    m_xn.resize(getNumDof());
+    m_xnp1.resize(getNumDof());
+    m_xdebug.resize(getNumDof());
+    m_vnphalf.resize(getNumDof());
+
+    m_collision_immune.resize(getNumVerts());
+
+    if (m_perf_param.m_enable_penalty_response)
+        enableImplicitPenaltyImpulses(); // TODO: probably a memory leak to fix here.
+
+    // Update the rods in the collision detector
+    m_collision_detector->rebuildRodElements(m_edges);
+
+}
+
+void BARodStepper::removeRod(int rodIdx)
+{
+    killTheRod(rodIdx);
+}
+
+
 
 }
 

@@ -379,6 +379,7 @@ src/IO/SerializationUtils.cc \
 src/Threads/Mutex.cc \
 src/Math/MKL/MKLLinearSolver.cc \
 src/Math/SolverUtils.cc \
+src/Math/SymmetricImplicitEuler.cc \
 src/Math/Pardiso/PardisoLinearSolver.cc \
 src/Physics/ElasticRods/AnisotropicRod.cc \
 src/Physics/ElasticRods/BARodStepper.cc \
