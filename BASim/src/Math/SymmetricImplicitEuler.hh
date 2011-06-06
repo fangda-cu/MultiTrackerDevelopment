@@ -505,7 +505,7 @@ protected:
                 // std::cout << "\nSymmetricImplicitEuler::position_solve: line search: i "<<i<<", alpha "<<alpha<<", previous "<<previous_residual<<", residual "<<m_residual<<std::endl;
                 if (m_residual < previous_residual)
                     break;
-                else if (i >= 20)
+                else if (i >= 0)
                 {
                     std::cerr << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Line search failed" << std::endl;
                     successfull_solve = false;
