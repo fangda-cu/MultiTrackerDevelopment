@@ -8,6 +8,7 @@
 #include "CollisionDetectorBase.hh"
 #include "CollisionUtils.hh"
 #include "../Core/Timer.hh"
+#include "../Util/TextLog.hh"
 
 namespace BASim
 {
@@ -107,8 +108,14 @@ void CollisionDetectorBase::updateBoundingBox(BVH& bvh, const std::vector<const 
                 bbox.Insert(elements[i]->GetBBox(m_geodata, m_time_step));
             }
         }
+        if (bbox.Volume() > 100)
+        {
+            WarningStream(g_log, "") << "LARGE BOUNDING BOX RESET TO ZERO\n";
+            bbox = BBoxType();
+        }
     }
     else // Update the children, then this node's bounding box
+
     {
         BVHNode& hansel = bvh.GetNode(node.ChildIndex());
         updateBoundingBox(bvh, elements, hansel);
