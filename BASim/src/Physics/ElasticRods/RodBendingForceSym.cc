@@ -127,6 +127,17 @@ void RodBendingForceSym::updateStiffness()
     Mat2d B(Mat2d::Zero());
     B(0, 0) = E * M_PI * cube(a) * b / 4.0;
     B(1, 1) = E * M_PI * a * cube(b) / 4.0;
+    
+    // rotate cross section
+    Mat2d rot(Mat2d::Zero());
+    rot(0,0) = cos(m_rod.baseRotation());
+    rot(1,0) = sin(m_rod.baseRotation());
+    rot(0,1) = -1*rot(1,0);
+    rot(1,1) = rot(0,0);
+    
+    B = rot*B;
+    B = B*rot.transpose();
+
     setB(vh, B);
   }
 }
