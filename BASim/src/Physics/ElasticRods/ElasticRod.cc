@@ -17,6 +17,7 @@
 #include "RodBendingForce.hh"
 #include "RodBendingForceSym.hh"
 #include "RodAnisoForce.hh"
+#include "../../Util/TextLog.hh"
 
 using namespace std;
 
@@ -136,7 +137,7 @@ void ElasticRod::computeForces(VecXd& force)
     curr_force.setZero();
     (*fIt)->globalForce(curr_force);
     force += curr_force;
-  //  std::cout << (*fIt)->getName() << "[41] = " << curr_force[41] << std::endl;
+    TraceStream(g_log, "") << (*fIt)->getName() << " norm = " << curr_force.norm() << '\n';
   }
 }
 

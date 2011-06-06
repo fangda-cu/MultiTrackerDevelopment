@@ -115,16 +115,14 @@ void RodPenaltyForce::computeForce(const ElasticRod& rod, VecXd& F) const
         {
             std::cerr << "WARNING! RodPenaltyForce::computeForce: norm = " << (F - beforeF).norm() << " force = " << (F
                     - beforeF) << std::endl;
-            std::cout << "Collision, applying force to vertex " << vertex << std::endl;
+            std::cout << "Collision, applying force to vertex " << vertex << ": " << v0 << std::endl;
             std::cout << "Distance = " << distance << std::endl;
-            std::cout << "Normal = " << vertex_face_collisions[i]->m_normal << std::endl;
+            std::cout << "Normal = " << col->m_normal << std::endl;
             std::cout << "Force = " << force << std::endl;
-            std::cout << "Stiffness = " << vertex_face_collisions[i]->k << std::endl;
+            std::cout << "Stiffness = " << col->k << std::endl;
             assert(0);
         }
-
     }
-    // std::cerr << "RodPenaltyForce::computeForce: norm = " << (F - beforeF).norm() << " force = " << (F - beforeF) << std::endl;
 }
 
 void RodPenaltyForce::registerProximityCollision(int vertex, VertexFaceProximityCollision* vfpcol)

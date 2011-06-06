@@ -45,6 +45,13 @@ using namespace BASim;
 // Collision meshes
 /* static */ MObject WmSweeneyNode::ia_collisionMeshes;
 
+//Solver Tolerances
+/* static */ MObject WmSweeneyNode::ia_stol;
+/* static */ MObject WmSweeneyNode::ia_atol;
+/* static */ MObject WmSweeneyNode::ia_rtol;
+/* static */ MObject WmSweeneyNode::ia_inftol;
+/* static */ MObject WmSweeneyNode::ia_numLineSearchIters;
+
 // Performance Tuning
 //GeneralParameters
 /* static */ MObject WmSweeneyNode::ia_enablePenaltyResponse;
@@ -189,6 +196,18 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                 m_rodManager->takeStep();
             }
         }
+
+	if ( m_rodManager != NULL )
+	{
+ 	    double m_atol=powf(10, -i_dataBlock.inputValue( ia_atol).asDouble());
+	    double m_stol=powf(10, -i_dataBlock.inputValue( ia_stol).asDouble());
+	    double m_rtol=powf(10, -i_dataBlock.inputValue( ia_rtol).asDouble());
+	    double m_inftol=powf(10, -i_dataBlock.inputValue( ia_inftol).asDouble());
+	    int  m_numLineSearchIters=i_dataBlock.inputValue( ia_numLineSearchIters).asInt();
+	  
+	    m_rodManager->updateSolverSettings( m_atol, m_stol, m_rtol, m_inftol, m_numLineSearchIters );
+	}
+	  
         i_dataBlock.setClean( i_plug );
     }
     else if ( i_plug == oa_simulatedNurbs )
@@ -343,8 +362,15 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
     perfParams.m_max_number_of_substeps_for_collision=i_dataBlock.inputValue( ia_maxNumCollisionSubsteps).asInt();
     perfParams.m_max_number_of_substeps_for_explosion=i_dataBlock.inputValue( ia_maxNumExplosionSubsteps).asInt();
 
+    double m_atol=powf(10, -i_dataBlock.inputValue( ia_atol).asDouble());
+    double m_stol=powf(10, -i_dataBlock.inputValue( ia_stol).asDouble());
+    double m_rtol=powf(10, -i_dataBlock.inputValue( ia_rtol).asDouble());
+    double m_inftol=powf(10, -i_dataBlock.inputValue( ia_inftol).asDouble());
+    int  m_numLineSearchIters=i_dataBlock.inputValue( ia_numLineSearchIters).asInt();
+
     cerr << "initialiseRodFromBarberShopInput() - About to initialise simulation\n";
-    m_rodManager->initialiseSimulation( 1 / 24.0, m_startTime, perfParams );
+    m_rodManager->initialiseSimulation( 1 / 24.0, m_startTime, perfParams, m_atol, m_stol, m_rtol, m_inftol,
+                                        m_numLineSearchIters );
     cerr << "initialiseRodFromBarberShopInput() - Simulation initialised at time " << m_startTime << endl;
 }
 
@@ -693,153 +719,64 @@ void* WmSweeneyNode::creator()
     status = attributeAffects( ia_collisionMeshes, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_collisionMeshes->ca_rodPropertiesSync" ); return status; }
 
+    //Solver settings
+    addNumericAttribute( ia_stol, "stol", "stl", MFnNumericData::kDouble, 99, true );
+        status = attributeAffects( ia_stol, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_stol->ca_rodPropertiesSync" ); return status; }
+
+    addNumericAttribute( ia_atol, "atol", "atl", MFnNumericData::kDouble, 8, true );
+        status = attributeAffects( ia_atol, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_atol->ca_rodPropertiesSync" ); return status; }
+
+    addNumericAttribute( ia_rtol, "rtol", "rtl", MFnNumericData::kDouble, 99, true );
+        status = attributeAffects( ia_rtol, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_rtol->ca_rodPropertiesSync" ); return status; }
+
+    addNumericAttribute( ia_inftol, "inftol", "itl", MFnNumericData::kDouble, 8, true );
+        status = attributeAffects( ia_inftol, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_inftol->ca_rodPropertiesSync" ); return status; }
+
+    addNumericAttribute( ia_numLineSearchIters, "numLineSearchIters", "nlsi", MFnNumericData::kInt, 2, true );
+        status = attributeAffects( ia_numLineSearchIters, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_numLineSearchIters->ca_rodPropertiesSync" ); return status; }
+
     //General parameters
-    {
-        MFnNumericAttribute nAttr;
-        ia_enablePenaltyResponse = nAttr.create( "enablePenaltyResponse", "epr", MFnNumericData::kBoolean, true, &status);
-        if (!status) {
-            status.perror("create ia_enablePenaltyResponse");
-            return status;
-        }
-         nAttr.setWritable( true );
-         nAttr.setReadable( false );
-         nAttr.setConnectable( true );
-         status = addAttribute( ia_enablePenaltyResponse );
-         if (!status) { status.perror( "addAttribute ia_enablePenaltyResponse" ); return status; }
-    }
+    addNumericAttribute( ia_enablePenaltyResponse, "enablePenaltyResponse", "epr", MFnNumericData::kBoolean, true, true );
+        status = attributeAffects( ia_enablePenaltyResponse, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_enablePenaltyResponse->ca_rodPropertiesSync" ); return status; }
 
-    status = attributeAffects( ia_enablePenaltyResponse, ca_rodPropertiesSync );
-        if (!status) { status.perror( "attributeAffects ia_enablePenaltyResponse->ca_rodPropertiesSync" ); return status; }
+    addNumericAttribute( ia_implicitThickness, "implicitThickness", "imt", MFnNumericData::kDouble, 0.10, true );
+        status = attributeAffects( ia_implicitThickness, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_implicitThickness->ca_rodPropertiesSync" ); return status; }
 
-   {
-        MFnNumericAttribute nAttr;
-        ia_implicitThickness = nAttr.create( "implicitThickness", "imt", MFnNumericData::kDouble, 0.10, &status);
-        if (!status) {
-            status.perror("create ia_implicitThickness attribute");
-            return status;
-        }
-        nAttr.setWritable( true );
-        nAttr.setReadable( false );
-        nAttr.setConnectable( true );
-        status = addAttribute( ia_implicitThickness );
-        if (!status) { status.perror( "addAttribute ia_implicitThickness" ); return status; }
-    }
-    status = attributeAffects( ia_implicitThickness, ca_rodPropertiesSync );
-        if (!status) { status.perror( "attributeAffects ia_implicitThickness->ca_rodPropertiesSync" ); return status; }
+    addNumericAttribute( ia_implicitStiffness, "implicitStiffness", "ims", MFnNumericData::kDouble, 1.0, true );
+        status = attributeAffects( ia_implicitStiffness, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_implicitStiffness->ca_rodPropertiesSync" ); return status; }
 
-    {
-        MFnNumericAttribute nAttr;
-        ia_implicitStiffness = nAttr.create( "implicitStiffness", "rig", MFnNumericData::kDouble, 1.0, &status);
-        if (!status) {
-            status.perror("create ia_implicitStiffness attribute");
-            return status;
-        }
-        nAttr.setWritable( true );
-        nAttr.setReadable( false );
-        nAttr.setConnectable( true );
-        status = addAttribute( ia_implicitStiffness );
-        if (!status) { status.perror( "addAttribute ia_implicitStiffness" ); return status; }
-    }
-    status = attributeAffects( ia_implicitStiffness, ca_rodPropertiesSync );
-        if (!status) { status.perror( "attributeAffects ia_implicitStiffness->ca_rodPropertiesSync" ); return status; }
+    addNumericAttribute( ia_inextensibilityThreshold, "inextensibilityThreshold", "ixf", MFnNumericData::kInt, 0, true );
+        status = attributeAffects( ia_inextensibilityThreshold, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_inextensibilityThreshold->ca_rodPropertiesSync" ); return status; }
 
-    {
-        MFnNumericAttribute nAttr;
-        ia_inextensibilityThreshold = nAttr.create( "inextensibilityThreshold", "ixf", MFnNumericData::kInt, 0, &status);
-        if (!status) {
-            status.perror("create ia_inextensibilityThreshold attribute");
-            return status;
-        }
-        nAttr.setWritable( true );
-        nAttr.setReadable( false );
-        nAttr.setConnectable( true );
-        status = addAttribute( ia_inextensibilityThreshold );
-        if ( !status ) { status.perror( "addAttribute ia_inextensibilityThreshold" ); return status; }
-    }
-    status = attributeAffects( ia_inextensibilityThreshold, ca_rodPropertiesSync );
-        if (!status) { status.perror( "attributeAffects ia_inextensibilityThreshold->ca_rodPropertiesSync" ); return status; }
+    //Failure  Detection     
+    addNumericAttribute( ia_maxNumOfSolverIters, "maxNumOfSolverIters", "mnsi", MFnNumericData::kInt, 250, true );
+        status = attributeAffects( ia_maxNumOfSolverIters, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_maxNumOfSolverIters->ca_rodPropertiesSync" ); return status; }
 
-    //Failure  Detection
-    {
-        MFnNumericAttribute nAttr;
-        ia_maxNumOfSolverIters= nAttr.create( "maxNumOfSolverIters", "mnsi", MFnNumericData::kInt, 250, &status);
-        if (!status) {
-            status.perror("create ia_maxNumOfSolverIters");
-            return status;
-        }
-         nAttr.setWritable( true );
-         nAttr.setReadable( false );
-         nAttr.setConnectable( true );
-         status = addAttribute( ia_maxNumOfSolverIters );
-         if (!status) { status.perror( "addAttribute ia_maxNumOfSolverIters" ); return status; }
-    }
-    status = attributeAffects( ia_maxNumOfSolverIters, ca_rodPropertiesSync );
-        if (!status) { status.perror( "attributeAffects ia_maxNumOfSolverIters->ca_rodPropertiesSync" ); return status; }
+    addNumericAttribute( ia_maxNumOfCollisionIters, "maxNumOfCollisionIters", "mnci", MFnNumericData::kInt, 0, true );
+        status = attributeAffects( ia_maxNumOfCollisionIters, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_maxNumOfCollisionIters->ca_rodPropertiesSync" ); return status; }
 
-    {
-        MFnNumericAttribute nAttr;
-        ia_maxNumOfCollisionIters= nAttr.create( "maxNumOfCollisionIters", "mnci", MFnNumericData::kInt, 0, &status);
-        if (!status) {
-            status.perror("create ia_maxNumOfCollisionIters");
-            return status;
-        }
-         nAttr.setWritable( true );
-         nAttr.setReadable( false );
-         nAttr.setConnectable( true );
-         status = addAttribute( ia_maxNumOfCollisionIters );
-         if (!status) { status.perror( "addAttribute ia_maxNumOfCollisionIters" ); return status; }
-    }
-    status = attributeAffects( ia_maxNumOfCollisionIters, ca_rodPropertiesSync );
-        if (!status) { status.perror( "attributeAffects ia_maxNumOfCollisionIters->ca_rodPropertiesSync" ); return status; }
+    addNumericAttribute( ia_enableExplosionDetection, "enableExplosionDetection", "eex", MFnNumericData::kBoolean, true, true );
+        status = attributeAffects( ia_enableExplosionDetection, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_enableExplosionDetection->ca_rodPropertiesSync" ); return status; }
 
-    {
-        MFnNumericAttribute nAttr;
-        ia_enableExplosionDetection= nAttr.create( "enableExplosionDetection", "eex", MFnNumericData::kBoolean, true, &status);
-        if (!status) {
-            status.perror("create ia_enableExplosionDetection");
-            return status;
-        }
-         nAttr.setWritable( true );
-         nAttr.setReadable( false );
-         nAttr.setConnectable( true );
-         status = addAttribute( ia_enableExplosionDetection );
-         if (!status) { status.perror( "addAttribute ia_enableExplosionDetection" ); return status; }
-    }
-    status = attributeAffects( ia_enableExplosionDetection, ca_rodPropertiesSync );
-        if (!status) { status.perror( "attributeAffects ia_enableExplosionDetection->ca_rodPropertiesSync" ); return status; }
+    addNumericAttribute( ia_explosionDampening, "explosionDampening", "exd", MFnNumericData::kDouble, 100.0, true );
+        status = attributeAffects( ia_explosionDampening, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_iexplosionDampening->ca_rodPropertiesSync" ); return status; }
 
-    {
-        MFnNumericAttribute nAttr;
-        ia_explosionDampening = nAttr.create( "explosionDampening", "exd", MFnNumericData::kDouble, 100.0, &status);
-        if (!status) {
-            status.perror("create ia_explosionDampening attribute");
-            return status;
-        }
-        nAttr.setWritable( true );
-        nAttr.setReadable( false );
-        nAttr.setConnectable( true );
-        status = addAttribute( ia_explosionDampening );
-        if (!status) { status.perror( "addAttribute ia_explosionDampening" ); return status; }
-    }
-    status = attributeAffects( ia_explosionDampening, ca_rodPropertiesSync );
-        if (!status) { status.perror( "attributeAffects ia_explosionDampening->ca_rodPropertiesSync" ); return status; }
-
-    {
-        MFnNumericAttribute nAttr;
-        ia_explosionThreshold = nAttr.create( "explosionThreshold", "ext", MFnNumericData::kDouble, .5, &status);
-        if (!status) {
-            status.perror("create ia_explosionThreshold attribute");
-            return status;
-        }
-        nAttr.setWritable( true );
-        nAttr.setReadable( false );
-        nAttr.setConnectable( true );
-        status = addAttribute( ia_explosionThreshold );
-        if (!status) { status.perror( "addAttribute ia_explosionThreshold" ); return status; }
-    }
-    status = attributeAffects( ia_explosionThreshold, ca_rodPropertiesSync );
-        if (!status) { status.perror( "attributeAffects ia_explosionThreshold->ca_rodPropertiesSync" ); return status; }
-
+    addNumericAttribute( ia_explosionThreshold, "explosionThreshold", "ext", MFnNumericData::kDouble, 0.5, true );
+        status = attributeAffects( ia_explosionThreshold, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_explosionThreshold->ca_rodPropertiesSync" ); return status; }
 
     {
         MFnEnumAttribute enumAttrFn;
@@ -858,21 +795,9 @@ void* WmSweeneyNode::creator()
     status = attributeAffects( ia_solverFailure, ca_rodPropertiesSync );
         if (!status) { status.perror( "attributeAffects ia_solverFailure->ca_rodPropertiesSync" ); return status; }
 
-    {
-        MFnNumericAttribute nAttr;
-        ia_maxNumSolverSubsteps = nAttr.create( "maxNumSolverSubsteps", "mnss", MFnNumericData::kInt, 0, &status);
-        if (!status) {
-            status.perror("create ia_maxNumSolverSubsteps attribute");
-            return status;
-        }
-        nAttr.setWritable( true );
-        nAttr.setReadable( false );
-        nAttr.setConnectable( true );
-        status = addAttribute( ia_maxNumSolverSubsteps );
-        if (!status) { status.perror( "addAttribute ia_maxNumSolverSubsteps" ); return status; }
-    }
-    status = attributeAffects( ia_maxNumSolverSubsteps, ca_rodPropertiesSync );
-        if (!status) { status.perror( "attributeAffects ia_maxNumSolverSubsteps->ca_rodPropertiesSync" ); return status; }
+    addNumericAttribute( ia_maxNumSolverSubsteps, "maxNumSolverSubsteps", "mnss", MFnNumericData::kInt, 0, true );
+        status = attributeAffects( ia_maxNumSolverSubsteps, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_maxNumSolverSubsteps->ca_rodPropertiesSync" ); return status; }
 
     {
         MFnEnumAttribute enumAttrFn;
@@ -891,21 +816,9 @@ void* WmSweeneyNode::creator()
     status = attributeAffects( ia_collisionFailure, ca_rodPropertiesSync );
         if (!status) { status.perror( "attributeAffects ia_collisionFailure->ca_rodPropertiesSync" ); return status; }
 
-    {
-        MFnNumericAttribute nAttr;
-        ia_maxNumCollisionSubsteps = nAttr.create( "maxNumCollisionSubsteps", "mncs", MFnNumericData::kInt, 0, &status);
-        if (!status) {
-            status.perror("create ia_maxNumCollisionSubsteps attribute");
-            return status;
-        }
-        nAttr.setWritable( true );
-        nAttr.setReadable( false );
-        nAttr.setConnectable( true );
-        status = addAttribute( ia_maxNumCollisionSubsteps );
-        if (!status) { status.perror( "addAttribute ia_maxNumCollisionSubsteps" ); return status; }
-    }
-    status = attributeAffects( ia_maxNumCollisionSubsteps, ca_rodPropertiesSync );
-        if (!status) { status.perror( "attributeAffects ia_maxNumCollisionSubsteps->ca_rodPropertiesSync" ); return status; }
+    addNumericAttribute( ia_maxNumCollisionSubsteps, "maxNumCollisionSubsteps", "mncs", MFnNumericData::kInt, 0, true );
+        status = attributeAffects( ia_maxNumCollisionSubsteps, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_maxNumCollisionSubsteps->ca_rodPropertiesSync" ); return status; }
 
     {
         MFnEnumAttribute enumAttrFn;
@@ -924,23 +837,9 @@ void* WmSweeneyNode::creator()
     status = attributeAffects( ia_explosionFailure, ca_rodPropertiesSync );
         if (!status) { status.perror( "attributeAffects ia_explosionFailure->ca_rodPropertiesSync" ); return status; }
 
-    {
-        MFnNumericAttribute nAttr;
-        ia_maxNumExplosionSubsteps = nAttr.create( "maxNumExplosionSubsteps", "mnes", MFnNumericData::kInt, 7, &status);
-        if (!status) {
-            status.perror("create ia_maxNumExplosionSubsteps attribute");
-            return status;
-        }
-        nAttr.setWritable( true );
-        nAttr.setReadable( false );
-        nAttr.setConnectable( true );
-        status = addAttribute( ia_maxNumExplosionSubsteps );
-        if (!status) { status.perror( "addAttribute ia_maxNumExplosionSubsteps" ); return status; }
-    }
-    status = attributeAffects( ia_maxNumExplosionSubsteps, ca_rodPropertiesSync );
-        if (!status) { status.perror( "attributeAffects ia_maxNumExplosionSubsteps->ca_rodPropertiesSync" ); return status; }
-
-
+    addNumericAttribute( ia_maxNumExplosionSubsteps, "maxNumExplosionSubsteps", "mnes", MFnNumericData::kInt, 7, true );
+        status = attributeAffects( ia_maxNumExplosionSubsteps, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_maxNumExplosionSubsteps->ca_rodPropertiesSync" ); return status; }
 
     addNumericAttribute( ia_verticesPerStrand, "verticesPerStrand", "vps", MFnNumericData::kInt, 12, true );
 	status = attributeAffects( ia_verticesPerStrand, ca_rodPropertiesSync );

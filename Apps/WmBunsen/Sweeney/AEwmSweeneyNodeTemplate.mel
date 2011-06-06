@@ -16,6 +16,14 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
         editorTemplate -addControl "rodPitch";
     editorTemplate -endLayout;
     
+    editorTemplate -beginLayout "Solver Tolerances" -collapse 0;
+        editorTemplate -addControl "stol";
+        editorTemplate -addControl "atol";
+        editorTemplate -addControl "rtol";
+        editorTemplate -addControl "inftol";
+        editorTemplate -addControl "numLineSearchIters";
+     editorTemplate -endLayout;
+  
     editorTemplate -beginLayout "Performance Tuning" -collapse 0;
       //General parameters
       editorTemplate -beginLayout "General Parameters" -collapse 0;

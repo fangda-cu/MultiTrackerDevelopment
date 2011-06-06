@@ -14,8 +14,7 @@
 #include <iosfwd>
 #include <string>
 
-namespace weta {
-namespace logging {
+namespace BASim {
 
 class MsgInfo {
 public:
@@ -108,7 +107,6 @@ typedef SeverityInfo<MsgInfo::kError> ErrorMsg;
 typedef SeverityInfo<MsgInfo::kSevere> SevereMsg;
 typedef SeverityInfo<MsgInfo::kForced> ForcedMsg;
 
-} // namespace logging
-} // namespace weta
+}
 
 #endif // ndef MSG_INFO_HH

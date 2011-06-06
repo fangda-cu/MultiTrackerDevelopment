@@ -5,10 +5,11 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include "Timer.hh"
-
+#include "../Util/TextLog.hh"
 #include "Cycle.hh"
 
-namespace BASim {
+namespace BASim
+{
 
 Timer::TimerMap Timer::timerMap;
 
@@ -40,134 +41,134 @@ Timer::TimerMap Timer::timerMap;
 
 Timer& Timer::getTimer(std::string name)
 {
-  TimerMap::iterator iter = timerMap.find(name);
-  if (iter != timerMap.end()) return *(iter->second);
+    TimerMap::iterator iter = timerMap.find(name);
+    if (iter != timerMap.end())
+        return *(iter->second);
 
-  Timer* t = new Timer();
-  timerMap[name] = t;
-  return *t;
+    Timer* t = new Timer();
+    timerMap[name] = t;
+    return *t;
 }
 
 void Timer::deleteAllTimers()
 {
-  TimerMap::iterator iter;
+    TimerMap::iterator iter;
 
-  for (iter = timerMap.begin(); iter != timerMap.end(); ++iter) {
-    delete iter->second;
-  }
+    for (iter = timerMap.begin(); iter != timerMap.end(); ++iter)
+    {
+        delete iter->second;
+    }
 
-  timerMap.clear();
+    timerMap.clear();
 }
 
- 
-void Timer::lap() 
+void Timer::lap()
 {
-  if (nestingLevel) 
-  {
-    elapsedT    = elapsed( getticks(), startTicks);
-    startTicks  = getticks();
-  }
+    if (nestingLevel)
+    {
+        elapsedT = elapsed(getticks(), startTicks);
+        startTicks = getticks();
+    }
 
-  cumulativeElapsedT += elapsedT;
-  cumulativeCount    += count;
+    cumulativeElapsedT += elapsedT;
+    cumulativeCount += count;
 
-  elapsedT = 0;
-  count    = 0;
+    elapsedT = 0;
+    count = 0;
 }
-
 
 void Timer::report()
 {
-  TimerMap::iterator iter;
+    TimerMap::iterator iter;
 
-  for (iter = timerMap.begin(); iter != timerMap.end(); ++iter) {
-    std::string name = iter->first;
-    Timer* t = iter->second;
-    std::cout << std::setw(50) << name << 
-      //" (" << iter->second << ") " <<
-      " = " << *t << std::endl;
-    t->lap();
-  }
+    for (iter = timerMap.begin(); iter != timerMap.end(); ++iter)
+    {
+        std::string name = iter->first;
+        Timer* t = iter->second;
+        // This is not using TextLog because std::setw is not supported. TODO: you know.
+        std::cout << std::setw(50) << name <<
+        //" (" << iter->second << ") " <<
+                " = " << *t << '\n';
+        t->lap();
+    }
 }
 
 std::ostream& operator<<(std::ostream& os, Timer& timer)
 {
-  os << "\t" << std::setw(14) << timer.getElapsed() << " (" << std::setw(6) << timer.getCount() << ") "
-     << "\tcumul: " << std::setw(14) << timer.getCumulativeElapsed() << " (" << std::setw(6) << timer.getCumulativeCount() << ") "
-     << "\tlevel: " << timer.getNestingLevel() << "/" << timer.getDeepestNestingLevel();
-  return os;
+    os << "\t" << std::setw(14) << timer.getElapsed() << " (" << std::setw(6) << timer.getCount() << ") " << "\tcumul: "
+            << std::setw(14) << timer.getCumulativeElapsed() << " (" << std::setw(6) << timer.getCumulativeCount() << ") "
+            << "\tlevel: " << timer.getNestingLevel() << "/" << timer.getDeepestNestingLevel();
+    return os;
 }
 
-
 Timer::Timer() :
-    elapsedT(0),
-    cumulativeElapsedT(0),
-    count(0),
-    cumulativeCount(0),
-    nestingLevel(0),
-    deepestNestingLevel(0)
-{}
+    elapsedT(0), cumulativeElapsedT(0), count(0), cumulativeCount(0), nestingLevel(0), deepestNestingLevel(0)
+{
+}
 
 void Timer::clear()
 {
-  elapsedT            = 0.;
-  cumulativeElapsedT  = 0.;
-  nestingLevel        = 0;
-  count               = 0;
-  cumulativeCount     = 0;
-  deepestNestingLevel = 0;
+    elapsedT = 0.;
+    cumulativeElapsedT = 0.;
+    nestingLevel = 0;
+    count = 0;
+    cumulativeCount = 0;
+    deepestNestingLevel = 0;
 }
 
 void Timer::beginBlock()
 {
-  assert(nestingLevel >= 0);
-  //std::cout << "Beginning timer block " << this << " from nestingLevel = " << nestingLevel; 
-  if (!nestingLevel)
-  {
-    //std::cout << " STARTING ";
-    startTicks = getticks();
-    ++count;
-  }
-  ++nestingLevel;
-  if (nestingLevel > deepestNestingLevel) deepestNestingLevel = nestingLevel;
-  //std::cout << " entering level " << nestingLevel << std::endl;
+    assert(nestingLevel >= 0);
+    //std::cout << "Beginning timer block " << this << " from nestingLevel = " << nestingLevel;
+    if (!nestingLevel)
+    {
+        //std::cout << " STARTING ";
+        startTicks = getticks();
+        ++count;
+    }
+    ++nestingLevel;
+    if (nestingLevel > deepestNestingLevel)
+        deepestNestingLevel = nestingLevel;
+    //std::cout << " entering level " << nestingLevel << std::endl;
 }
 
 void Timer::endBlock()
 {
-  //std::cout << "Ending timer block " << this << " from nestingLevel = " << nestingLevel; 
-  --nestingLevel;
-  assert(nestingLevel >= 0);
-  if (!nestingLevel) {
-    //std::cout << " STOPPING ";
-    double duration = elapsed( getticks(), startTicks);
-    times.push_back(duration);
-    elapsedT += duration;
-  }
-  //std::cout << " exiting to level " << nestingLevel << std::endl;
+    //std::cout << "Ending timer block " << this << " from nestingLevel = " << nestingLevel;
+    --nestingLevel;
+    assert(nestingLevel >= 0);
+    if (!nestingLevel)
+    {
+        //std::cout << " STOPPING ";
+        double duration = elapsed(getticks(), startTicks);
+        times.push_back(duration);
+        elapsedT += duration;
+    }
+    //std::cout << " exiting to level " << nestingLevel << std::endl;
 }
 
 double Timer::getElapsed()
 {
-  double e = elapsedT;
+    double e = elapsedT;
 
-  if (nestingLevel) {
-    e = elapsed( getticks(), startTicks);
-  }
+    if (nestingLevel)
+    {
+        e = elapsed(getticks(), startTicks);
+    }
 
-  return e;
+    return e;
 }
 
 double Timer::getCumulativeElapsed()
 {
-  double e = cumulativeElapsedT;
+    double e = cumulativeElapsedT;
 
-  if (nestingLevel) {
-    e += getElapsed();
-  }
+    if (nestingLevel)
+    {
+        e += getElapsed();
+    }
 
-  return e;
+    return e;
 }
-
 
 } // namespace BASim

@@ -121,7 +121,7 @@ void RodStretchingForce::globalForce(VecXd& force)
   
   int q = 0;
   
-//  VecXd force1 = force;
+  //VecXd force1 = force;
   
   for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
     edge_handle& eh = m_stencil.handle();
@@ -148,9 +148,8 @@ void RodStretchingForce::globalForce(VecXd& force)
 #endif // TEST_ROD_STRETCHING
   
   
-  //std::cout << "STRETCHING FORCE\n";
-  //std::cout << force - force1 << "\n\n";
-    
+  //std::cout << (viscous() ? "VISCOUS " : "") << "STRETCHING FORCE\n";
+  //std::cout << "norm = " << (force - force1).norm() << " force = " << force-force1 << "\n\n";
 }
 
 void RodStretchingForce::elementForce(ElementForce& force,
