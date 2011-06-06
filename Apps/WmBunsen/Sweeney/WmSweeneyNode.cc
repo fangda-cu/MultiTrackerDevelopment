@@ -154,10 +154,10 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
 	if ( m_rodManager != NULL )
 	{
-  	    double m_atol=i_dataBlock.inputValue( ia_atol).asDouble();
-	    double m_stol=i_dataBlock.inputValue( ia_stol).asDouble();
-	    double m_rtol=i_dataBlock.inputValue( ia_rtol).asDouble();
-	    double m_inftol=i_dataBlock.inputValue( ia_inftol).asDouble();
+ 	    double m_atol=powf(10, -i_dataBlock.inputValue( ia_atol).asDouble());
+	    double m_stol=powf(10, -i_dataBlock.inputValue( ia_stol).asDouble());
+	    double m_rtol=powf(10, -i_dataBlock.inputValue( ia_rtol).asDouble());
+	    double m_inftol=powf(10, -i_dataBlock.inputValue( ia_inftol).asDouble());
 	    int  m_numLineSearchIters=i_dataBlock.inputValue( ia_numLineSearchIters).asInt();
 	  
 	    m_rodManager->updateSolverSettings( m_atol, m_stol, m_rtol, m_inftol, m_numLineSearchIters );
@@ -317,10 +317,10 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
     perfParams.m_max_number_of_substeps_for_collision=i_dataBlock.inputValue( ia_maxNumCollisionSubsteps).asInt();
     perfParams.m_max_number_of_substeps_for_explosion=i_dataBlock.inputValue( ia_maxNumExplosionSubsteps).asInt();
 
-    double m_atol=i_dataBlock.inputValue( ia_atol).asDouble();
-    double m_stol=i_dataBlock.inputValue( ia_stol).asDouble();
-    double m_rtol=i_dataBlock.inputValue( ia_rtol).asDouble();
-    double m_inftol=i_dataBlock.inputValue( ia_inftol).asDouble();
+    double m_atol=powf(10, -i_dataBlock.inputValue( ia_atol).asDouble());
+    double m_stol=powf(10, -i_dataBlock.inputValue( ia_stol).asDouble());
+    double m_rtol=powf(10, -i_dataBlock.inputValue( ia_rtol).asDouble());
+    double m_inftol=powf(10, -i_dataBlock.inputValue( ia_inftol).asDouble());
     int  m_numLineSearchIters=i_dataBlock.inputValue( ia_numLineSearchIters).asInt();
 
     cerr << "initialiseRodFromBarberShopInput() - About to initialise simulation\n";
@@ -631,19 +631,19 @@ void* WmSweeneyNode::creator()
 	if ( !status ) { status.perror( "attributeAffects ia_collisionMeshes->ca_rodPropertiesSync" ); return status; }
 
     //Solver settings
-    addNumericAttribute( ia_stol, "stol", "stl", MFnNumericData::kDouble, 0.01, true );
+    addNumericAttribute( ia_stol, "stol", "stl", MFnNumericData::kDouble, 99, true );
         status = attributeAffects( ia_stol, ca_rodPropertiesSync );
         if ( !status ) { status.perror( "attributeAffects ia_stol->ca_rodPropertiesSync" ); return status; }
 
-    addNumericAttribute( ia_atol, "atol", "atl", MFnNumericData::kDouble, 0.01, true );
+    addNumericAttribute( ia_atol, "atol", "atl", MFnNumericData::kDouble, 8, true );
         status = attributeAffects( ia_atol, ca_rodPropertiesSync );
         if ( !status ) { status.perror( "attributeAffects ia_atol->ca_rodPropertiesSync" ); return status; }
 
-    addNumericAttribute( ia_rtol, "rtol", "rtl", MFnNumericData::kDouble, 0.01, true );
+    addNumericAttribute( ia_rtol, "rtol", "rtl", MFnNumericData::kDouble, 99, true );
         status = attributeAffects( ia_rtol, ca_rodPropertiesSync );
         if ( !status ) { status.perror( "attributeAffects ia_rtol->ca_rodPropertiesSync" ); return status; }
 
-    addNumericAttribute( ia_inftol, "inftol", "itl", MFnNumericData::kDouble, 0.01, true );
+    addNumericAttribute( ia_inftol, "inftol", "itl", MFnNumericData::kDouble, 8, true );
         status = attributeAffects( ia_inftol, ca_rodPropertiesSync );
         if ( !status ) { status.perror( "attributeAffects ia_inftol->ca_rodPropertiesSync" ); return status; }
 
