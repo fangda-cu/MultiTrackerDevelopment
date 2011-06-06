@@ -68,7 +68,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     }
     else
     {
-        // Wierdly we're going to build a vector of null pointers. This is because
+        // Weirdly we're going to build a vector of null pointers. This is because
         // the vector of level sets can contain a pointer to a level set or a null pointer
         // depending on whether the corresponding m_triangle_mesh has a level set created for it.
         // To simplify the usage code we'll make this vector and pass it around.
@@ -77,7 +77,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
         m_level_sets.resize(m_triangle_meshes.size(), NULL);
     }
 
-    g_log = new TextLog(std::cerr, MsgInfo::kTrace, true);
+    g_log = new TextLog(std::cerr, MsgInfo::kDebug, true);
     InfoStream(g_log, "") << "Started logging BARodStepper\n";
 
     for (std::vector<RodTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
@@ -266,7 +266,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     << "WARNING: KEEP_ONLY_SOME_RODS: Simulating only a specified subset of rods!\n***********************************************************\n";
     std::set<int> keep_only;
 
-    keep_only.insert(1);
+    keep_only.insert(0);
 
     // Only the rods in the keep_only set are kept, the others are killed.
     for (int i = 0; i < m_number_of_rods; i++)

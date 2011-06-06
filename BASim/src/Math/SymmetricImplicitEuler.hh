@@ -147,7 +147,23 @@ public:
             return true;
         }
 
-      //  DebugStream(g_log, "") << "\033[31;1mWARNING IN SYM IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: "
+        //DebugStream(g_log, "") << "                          Newton solver failed to converge in max iterations: " << m_maxit << ". Attempting alternate initial iterate 5." << '\n';
+        START_TIMER("SymmetricImplicitEuler::execute/backup");
+        m_diffEq.backupRestore();
+        STOP_TIMER("SymmetricImplicitEuler::execute/backup");
+        if (position_solve(5))
+        {
+#ifdef TIMING_ON
+            IntStatTracker::getIntTracker("INITIAL_ITERATE_5_SUCCESSES") += 1;
+#endif
+            START_TIMER("SymmetricImplicitEuler::execute/backup");
+            m_diffEq.backupClear();
+            STOP_TIMER("SymmetricImplicitEuler::execute/backup");
+        STOP_TIMER("SymmetricImplicitEuler::execute");
+            return true;
+        }
+
+     //  DebugStream(g_log, "") << "\033[31;1mWARNING IN SYM IMPLICITEULER:\033[m Newton solver failed to converge in max iterations: "
       //          << m_maxit << "." << '\n';
         START_TIMER("SymmetricImplicitEuler::execute/backup");
         m_diffEq.backupClear();
@@ -265,6 +281,9 @@ public:
 
 protected:
 
+    // Initial guess based on rigid motion of the first two vertices
+    void generateInitialIterate0(VecXd& dx);
+
     void generateInitialIterate1(VecXd& dx)
     {
         dx = m_dt * v0; // explicit inertial step
@@ -335,25 +354,30 @@ protected:
         {
         case 0:
         {
-            generateInitialIterate1(m_deltaX);
+            generateInitialIterate0(m_deltaX);
             break;
         }
         case 1:
         {
-            generateInitialIterate2(m_deltaX);
+            generateInitialIterate1(m_deltaX);
             break;
         }
         case 2:
         {
-            generateInitialIterate3(m_deltaX);
+            generateInitialIterate2(m_deltaX);
             break;
         }
         case 3:
         {
-            generateInitialIterate4(m_deltaX);
+            generateInitialIterate3(m_deltaX);
             break;
         }
         case 4:
+        {
+            generateInitialIterate4(m_deltaX);
+            break;
+        }
+        case 5:
         {
             generateInitialIterate5(m_deltaX);
             break;
@@ -383,7 +407,7 @@ protected:
         #endif
 
         // Update the differential equation with the current guess
-	m_diffEq.set_qdot(m_deltaX / m_dt);  // set velocity
+	    m_diffEq.set_qdot(m_deltaX / m_dt);  // set velocity
         m_diffEq.set_q   (x0 + m_deltaX  );  // set position
 
         // Signal the differential equation that it should get 
@@ -615,6 +639,7 @@ protected:
     LinearSolverBase* m_solver;
 
 };
+
 
 } // namespace BASim
 
