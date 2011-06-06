@@ -134,9 +134,13 @@ void RodBendingForceSym::updateStiffness()
     rot(1,0) = sin(m_rod.baseRotation());
     rot(0,1) = -1*rot(1,0);
     rot(1,1) = rot(0,0);
-    
+
+    cout << "RodBendingForceSym::updateStiffness::rotatebase:: " << m_rod.baseRotation() << " " << B << " "; 
+
     B = rot*B;
     B = B*rot.transpose();
+
+    cout << B << endl;
 
     setB(vh, B);
   }
