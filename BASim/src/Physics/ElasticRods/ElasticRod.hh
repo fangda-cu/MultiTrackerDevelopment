@@ -206,6 +206,17 @@ public:
   const Scalar& radiusB(int j) const;
   const Scalar& radiusB(const edge_handle& eh) const;
 
+  /**
+     Sets the elliptical cross-section major axis rotation
+     TODO(sainsley): allow this to be configured on an individual edge level?
+   */
+  void setBaseRotation(Scalar theta);
+ 
+  /**
+     Gets the elliptical cross-section major axis rotation
+   */
+  Scalar baseRotation() const;
+
   /** Multiplicative factor that scales the radius for rendering and
       collision detection. Defaults to 1.
 
@@ -348,6 +359,7 @@ protected:
   ObjPropHandle<Scalar> m_viscosity;
   ObjPropHandle<Scalar> m_dt;
   ObjPropHandle<Scalar> m_radius_scale;
+  ObjPropHandle<Scalar> m_base_rotation;
 
   VPropHandle<Vec3d> m_vertexPositions;
   VPropHandle<Vec3d> m_vertexVelocities;

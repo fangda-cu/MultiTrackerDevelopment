@@ -167,8 +167,21 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		    int j = 0;
 
 		    // adjust the rod size
-                    m_rodManager->m_rods[i]->setRadius(m_rodRadius, m_rodRadius*m_rodAspectRatio);
-		    
+		    Scalar radius_a = m_rodRadius;
+		    Scalar radius_b = radius_a;
+		    // apply apsect ratio : flip axis if aspect ratio is less than 1 to preserve radius scale
+		    if ( m_rodAspectRatio > 1.0 ) 
+                    {
+		        radius_b *= m_rodAspectRatio;
+                    } 
+                    else 
+                    {
+		        radius_a *= 1.0/m_rodAspectRatio;
+		    }
+
+                    m_rodManager->m_rods[i]->setRadius( radius_a, radius_b );
+
+		    m_rodManager->m_rods[i]->setBaseRotation( m_rodRotation*M_PI );
 		    
 		    for ( ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin(); 
                          vh != m_rodManager->m_rods[i]->vertices_end(); ++vh )

@@ -49,6 +49,7 @@ using namespace Util;
   add_property(m_viscosity, "dynamic viscosity", 0.0);
   add_property(m_dt, "rod's time step size", 0.1);
   add_property(m_radius_scale, "scaling for rendering and collisions", 1.0);
+  add_property(m_base_rotation, "rotation of elliptical cross-section major axis", 0.0);
 
   add_property(m_vertexPositions, "vertex_positions", Vec3d(0,0,0));
   add_property(m_vertexVelocities, "vertex velocities", Vec3d(0,0,0));
@@ -547,6 +548,16 @@ void ElasticRod::setTimeStep(Scalar dt)
   for (fIt = forces.begin(); fIt != forces.end(); ++fIt) {
     if ((*fIt)->viscous()) (*fIt)->updateStiffness();
   }
+}
+
+void ElasticRod::setBaseRotation(Scalar theta) 
+{
+  property(m_base_rotation) = theta;
+}
+
+Scalar ElasticRod::baseRotation() const
+{
+  return property(m_base_rotation);
 }
 
 Scalar ElasticRod::getRadiusScale() const
