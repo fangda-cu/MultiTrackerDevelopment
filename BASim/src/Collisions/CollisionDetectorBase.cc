@@ -113,11 +113,6 @@ void CollisionDetectorBase::updateBoundingBox(BVH& bvh, const std::vector<const 
             WarningStream(g_log, "") << "LARGE BOUNDING BOX RESET TO ZERO\n";
             bbox = BBoxType();
         }
-        if (bbox.Volume() > 100)
-        {
-            TraceStream(g_log, "") << "LARGE BOUNDING BOX RESET TO ZERO\n";
-            bbox = BBoxType();
-        }
     }
     else // Update the children, then this node's bounding box
 
