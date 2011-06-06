@@ -205,6 +205,7 @@ public:
 //        assert((m_deltaX.cwise() == m_deltaX).all());
 
         // rhs == h*h*forces
+        TraceStream(g_log, "") << "SymmetricImplicitEuler::computeResidual: evaluating PDot...\n";
         m_rhs.setZero();
         m_diffEq.evaluatePDot(m_rhs);
         m_rhs *= m_dt * m_dt;
@@ -253,7 +254,7 @@ public:
             return true;
         }
         // L2 norm of change in solution at last step of solve is less than tolerance
-        if (m_increment.norm() < m_stol)
+        if (m_alpha * m_increment.norm() < m_stol)
         {
  	    TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged(): converged stol: " << " |increment|_L2 < " << m_stol << " = stol "<< '\n';
             return true;
@@ -400,7 +401,7 @@ protected:
         TraceStream(g_log, "") << "SymmetricImplicitEuler::position_solve: starting Newton solver. Initial guess has residual = " << m_residual
 	     << ", convergence test will use thresholds atol = " << m_atol << " inftol = " << m_inftol
 	     << " rtol = " << m_initial_residual * m_rtol
-	     << " stol = " << m_stop << '\n';
+	     << " stol = " << m_stol << '\n';
 
 
         STOP_TIMER("SymmetricImplicitEuler::position_solve/setup");
@@ -488,14 +489,14 @@ protected:
 
 	    START_TIMER("SymmetricImplicitEuler::position_solve/ls");
 
-            //double alpha = 1.; // actual step will m_deltaX += alpha * m_increment
+            m_alpha = 1.; // actual step will m_deltaX += alpha * m_increment
 
             // Save m_deltaX and residual for later
             m_deltaX_save = m_deltaX;
             double previous_residual = m_residual;
 
 	    // Attempt a full Newton step (alpha = 1)
-            m_deltaX += m_increment;
+            m_deltaX = m_deltaX_save + m_alpha * m_increment;
 
             for (int i = 0;; i++)
             {
@@ -512,34 +513,34 @@ protected:
                 // Calling computeResidual also sets m_rhs = M(m_dt*v_n-m_deltaX) + h^2*F.
                 m_residual = computeResidual();
 
-                TraceStream(g_log, "") << "\nSymmetricImplicitEuler::position_solve/line search: i "<<i<<", increment " << m_increment.norm() << " previous "<<previous_residual<<", residual "<<m_residual<<'\n';
+		bool converged = isConverged();
+
+                TraceStream(g_log, "") << "SymmetricImplicitEuler::position_solve: summary of line search i " << i <<": increment " << m_increment.norm() << " previous "<<previous_residual<<", residual " << m_residual << " ";
 
 		
 		// Is this residual (hence the increment) acceptable?
 		/////////////////////////////////////////////////////////////
 
-                if (m_residual < .9 * previous_residual || isConverged())
+                if (m_residual < .9 * previous_residual || converged)
                 {
-                    TraceStream(g_log, "") << "Line search succeeded." << '\n';
+                    TraceStream(g_log, "") << "Succeeded (done).\n\n";
                     break;
 	        }
                 else if (i >= m_maxlsit)
                 {
-                    TraceStream(g_log, "") << "SymmetricImplicitEuler::position_solve/line search: \033[31;1mWARNING IN IMPLICITEULER:\033[m Line search failed. Proceeding anyway." << '\n';
-                    //return false;
+                    TraceStream(g_log, "") << "Exceeded max iterations.\nSymmetricImplicitEuler::position_solve/line search: \033[31;1mWARNING IN IMPLICITEULER:\033[m Line search failed. Proceeding anyway.\n\n";
 		    break;
                 }
 		else 
 		{
-		    TraceStream(g_log, "") << "SymmetricImplicitEuler::position_solve/line search: cutting increment and iterating." << '\n';
+		    TraceStream(g_log, "") << "cutting increment and iterating.\n\n";
 		}
 
 		// Attempt a smaller step
 		//////////////////////////////
 
-                //alpha       *= .5;
-		m_increment *= .5;
-                m_deltaX = m_deltaX_save + m_increment;
+                m_alpha     *= .5;
+		m_deltaX = m_deltaX_save + m_alpha * m_increment;
             }
 	    STOP_TIMER("SymmetricImplicitEuler::position_solve/ls");
 
@@ -601,6 +602,8 @@ protected:
     VecXd m_deltaX_save;
     //VecXd m_deltaV;
     VecXd m_increment;
+
+    Scalar m_alpha;
 
     IntArray m_fixed;
     std::vector<Scalar> m_desired;
