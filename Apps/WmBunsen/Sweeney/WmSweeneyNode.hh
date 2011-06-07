@@ -70,8 +70,8 @@ public:
     static MObject ia_rodRadius;
     static MObject ia_rodAspectRatio;
     static MObject ia_rodRotation;
-    static MObject ia_waveFrequency;
-    static MObject ia_waveAmplitude;
+    static MObject ia_curlRadius;
+    static MObject ia_curlPitch;
     static MObject ia_hasUniformCurvature;
     static MObject ia_rodPitch;
     
@@ -142,8 +142,8 @@ private:
     double m_rodRadius;
     double m_rodAspectRatio;
     double m_rodRotation;
-    double m_waveFrequency;
-    double m_waveAmplitude;
+    double m_curlRadius;
+    double m_curlPitch;
     double m_rodPitch;
     bool m_hasUniformCurvature;
     int m_verticesPerRod;

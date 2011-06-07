@@ -28,8 +28,8 @@ using namespace BASim;
 /* static */ MObject WmSweeneyNode::ia_rodRadius;
 /* static */ MObject WmSweeneyNode::ia_rodAspectRatio;
 /* static */ MObject WmSweeneyNode::ia_rodRotation;
-/* static */ MObject WmSweeneyNode::ia_waveFrequency;
-/* static */ MObject WmSweeneyNode::ia_waveAmplitude;
+/* static */ MObject WmSweeneyNode::ia_curlRadius;
+/* static */ MObject WmSweeneyNode::ia_curlPitch;
 /* static */ MObject WmSweeneyNode::ia_hasUniformCurvature;
 /* static */ MObject WmSweeneyNode::ia_rodPitch;
 
@@ -106,8 +106,9 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_rodRadius = i_dataBlock.inputValue( ia_rodRadius ).asDouble();
         m_rodAspectRatio = i_dataBlock.inputValue( ia_rodAspectRatio ).asDouble();
 	m_rodRotation = i_dataBlock.inputValue( ia_rodRotation ).asDouble();
-        m_waveFrequency = i_dataBlock.inputValue( ia_waveFrequency ).asDouble();
-	m_waveAmplitude = i_dataBlock.inputValue( ia_waveAmplitude ).asDouble();
+        m_curlRadius = i_dataBlock.inputValue( ia_curlRadius ).asDouble();
+	m_curlPitch = i_dataBlock.inputValue( ia_curlPitch ).asDouble();
+	// TODO (sainsley) : get rid of this shit
 	m_hasUniformCurvature = i_dataBlock.inputValue( ia_hasUniformCurvature ).asBool();
         m_rodPitch = i_dataBlock.inputValue( ia_rodPitch ).asDouble();
         
@@ -201,12 +202,26 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 			   //m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, Vec2d(t*m_rodRadius, 0 ) );
 			//}
 			
-			// curl pitch
-			// Scalar 
+			// curl curvature and torsion
+			Scalar curvature = m_curlRadius;
+			if ( m_curlRadius > 0 ) 
+			{
+                            curvature /= ( m_curlRadius*m_curlRadius + m_curlPitch*m_curlPitch );
+			}
+
+			Scalar torsion = m_curlPitch;
+			if ( m_curlPitch > 0 )
+			{
+			    torsion /= ( m_curlRadius*m_curlRadius + m_curlPitch*m_curlPitch );
+			}
+
+			m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, Vec2d( curvature, 0 ) );
+
 			// set default curvature using sinusoid (sliders adjusts amplitude and frequency)
-			// TODO (sainsley): have sliders to adjust curl radius and curl frequency instead
-			m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, 
-                            Vec2d( scale*m_waveAmplitude*sin( t*m_waveFrequency*M_PI + M_PI/2.0 ) , scale*m_waveAmplitude*cos( t*m_waveFrequency*M_PI + M_PI/2.0 ) ) );
+			// TODO (sainsley): have sliders to adjust curl radius and curl pitch instead
+			//m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, 
+			//  Vec2d( scale*m_waveAmplitude*sin( t*m_waveFrequency*M_PI + M_PI/2.0 ) , scale*m_waveAmplitude*cos( t*m_waveFrequency*M_PI + M_PI/2.0 ) ) );
+			
 			
 			// grab edge out of current vertex and increment parametic length accordingly 
 			if ( vh != m_rodManager->m_rods[i]->vertices_end() ) 
@@ -427,16 +442,16 @@ void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices,
     {
         // Straight rods as twist is controlled by the rod properties        
         
-        o_rodVertices.push_back( BASim::Vec3d( currentVertex.x, currentVertex.y, currentVertex.z ) );
+        //o_rodVertices.push_back( BASim::Vec3d( currentVertex.x, currentVertex.y, currentVertex.z ) );
         
         currentVertex += edge;
-                
-		/*MVector newPoint( m_rodRadius * cos( (double)v ),
-			m_rodPitch * (double)v, m_rodRadius * sin( (double)v ) );
+        // TODO (sainsley) : Now that this works, factor into the dynamic code
+	MVector newPoint( m_curlRadius * cos( (double)v ),
+			m_curlPitch * (double)v, m_curlRadius * sin( (double)v ) );
         //	
         
         // For testing, force a straight rod
-        MVector newPoint( 0.0, v, 0.0 );
+        // MVector newPoint( 0.0, v, 0.0 );
             
         // The helix is created with the y-axis as the centre, rotate it
         // so that it has i_direction as the centre
@@ -446,7 +461,7 @@ void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices,
         // Now move the point to sit where the Barbershop input strand comes from
         newPoint += i_rootPosition;
             
-        o_rodVertices.push_back( BASim::Vec3d( newPoint.x, newPoint.y, newPoint.z ) );*/
+        o_rodVertices.push_back( BASim::Vec3d( newPoint.x, newPoint.y, newPoint.z ) );
     }
     
     cerr << "constructRodVertices(): Finished constructing rod vertices\n";    
@@ -678,32 +693,32 @@ void* WmSweeneyNode::creator()
 
     {
         MFnNumericAttribute numericAttr;
-        ia_waveFrequency = numericAttr.create( "waveFrequency", "wafrq", MFnNumericData::kDouble, 0.0, &status );
+        ia_curlRadius = numericAttr.create( "curlSize", "crlrad", MFnNumericData::kDouble, 0.0, &status );
         CHECK_MSTATUS( status );
         CHECK_MSTATUS( numericAttr.setReadable( true ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
-        CHECK_MSTATUS( numericAttr.setMin( -2.0 ) );
-        CHECK_MSTATUS( numericAttr.setMax( 2.0 ) );
-        status = addAttribute( ia_waveFrequency );
+        CHECK_MSTATUS( numericAttr.setMin( 0.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 10.0 ) );
+        status = addAttribute( ia_curlRadius );
         CHECK_MSTATUS( status );
         
-        status = attributeAffects( ia_waveFrequency, ca_rodPropertiesSync );
-        if ( !status ) { status.perror( "attributeAffects ia_waveFrequency->ca_rodPropertiesSync" ); return status; }
+        status = attributeAffects( ia_curlRadius, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_curlRadius->ca_rodPropertiesSync" ); return status; }
     }
 
     {
         MFnNumericAttribute numericAttr;
-        ia_waveAmplitude = numericAttr.create( "waveAmplitude", "waamp", MFnNumericData::kDouble, 0.0, &status );
+        ia_curlPitch = numericAttr.create( "curlSpacing", "crlptch", MFnNumericData::kDouble, 1.0, &status );
         CHECK_MSTATUS( status );
         CHECK_MSTATUS( numericAttr.setReadable( true ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
-        CHECK_MSTATUS( numericAttr.setMin( -3.0 ) );
-        CHECK_MSTATUS( numericAttr.setMax( 3.0 ) );
-        status = addAttribute( ia_waveAmplitude );
+        CHECK_MSTATUS( numericAttr.setMin( 1.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 10.0 ) );
+        status = addAttribute( ia_curlPitch );
         CHECK_MSTATUS( status );
         
-        status = attributeAffects( ia_waveAmplitude, ca_rodPropertiesSync );
-        if ( !status ) { status.perror( "attributeAffects ia_waveAmplitude->ca_rodPropertiesSync" ); return status; }
+        status = attributeAffects( ia_curlPitch, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_curlPitch->ca_rodPropertiesSync" ); return status; }
     }
 
     {
