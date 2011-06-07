@@ -877,9 +877,10 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         bool collisionFailure = failed_collisions_rods[rodidx];
         bool stretching = stretching_rods[rodidx];
 
-        //	std::cout << "rod " << rodidx << ": solve " << (solveFailure ? "FAILED " : "ok ")
-        //		  << "collisions " << (collisionFailure ? "FAILED " : "ok ")
-        //		  << "explosion-check " << (explosion ? "FAILED " : "ok ");
+        bool substep = (solveFailure && m_level < m_perf_param.m_solver.m_max_substeps) //
+                || (explosion && m_level < m_perf_param.m_explosion.m_max_substeps)//
+                || (collisionFailure && m_level < m_perf_param.m_collision.m_max_substeps)//
+                || (stretching && m_level < m_perf_param.m_stretching.m_max_substeps);
 
         bool substep = (solveFailure     && m_level < m_perf_param.m_solver.m_max_substeps) 
 	            || (explosion        && m_level < m_perf_param.m_explosion.m_max_substeps) 
@@ -908,7 +909,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
                 m_num_explosion_killed++;
             if (collisionFailure && m_perf_param.m_collision.m_in_case_of == FailureMode::KillTheRod)
                 m_num_collision_killed++;
-            if (stretching && true)
+            if (stretching && m_perf_param.m_stretching.m_in_case_of == FailureMode::KillTheRod)
                 m_num_stretching_killed++;
 
             rod_kill++;
