@@ -1451,6 +1451,11 @@ void BARodStepper::addRod(ElasticRod* rod, RodTimeStepper* stepper)
     // Update the rods in the collision detector
     m_collision_detector->rebuildRodElements(m_edges);
 
+    // Initial length of the recently added rod
+    m_initialLengths.push_back(0);
+    for (int j = 1; j < m_rods.back()->nv(); j++)
+        m_initialLengths.back() += (m_rods.back()->getVertex(j) - m_rods.back()->getVertex(j - 1)).norm();
+
 }
 
 void BARodStepper::removeRod(int rodIdx)

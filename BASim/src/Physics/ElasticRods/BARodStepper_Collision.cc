@@ -1678,7 +1678,10 @@ bool BARodStepper::checkLength(int rodIdx)
         length += (m_rods[rodIdx]->getVertex(j) - m_rods[rodIdx]->getVertex(j - 1)).norm();
 
     if (length > m_initialLengths[rodIdx] * STRETCHING_FACTOR)
+    {
+        TraceStream(g_log, "") << "Rod number " << rodIdx << " was stretched by a factor " << length/m_initialLengths[rodIdx];
         return false;
+    }
 
     return true;
 }
