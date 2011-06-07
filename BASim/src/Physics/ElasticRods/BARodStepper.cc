@@ -435,7 +435,7 @@ void BARodStepper::prepareForExecution()
         enableImplicitPenaltyImpulses();
 
     // DEBUG
-    m_total_solver_killed = m_total_collision_killed = m_total_explosion_killed = 0;
+    m_total_solver_killed = m_total_collision_killed = m_total_explosion_killed = m_total_stretching_killed = 0;
 
     m_initialLengths.resize(m_number_of_rods);
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
@@ -449,7 +449,7 @@ bool BARodStepper::execute()
 {
     START_TIMER("BARodStepper::execute")
 
-    m_num_solver_killed = m_num_explosion_killed = m_num_collision_killed = 0;
+    m_num_solver_killed = m_num_explosion_killed = m_num_collision_killed = m_num_stretching_killed = 0;
     DebugStream(g_log, "") << "Executing time step " << m_t << '\n';
 
     m_collision_detector->buildBVH();
@@ -498,6 +498,7 @@ bool BARodStepper::execute()
     m_total_solver_killed += m_num_solver_killed;
     m_total_collision_killed += m_num_collision_killed;
     m_total_explosion_killed += m_num_explosion_killed;
+    m_total_stretching_killed += m_num_stretching_killed;
 
     DebugStream(g_log, "") << "Time step finished, " << selected_rods.size() << " rods remaining out of " << m_rods.size()
             << '\n';
@@ -507,6 +508,8 @@ bool BARodStepper::execute()
             << m_total_collision_killed << " (total)\n";
     DebugStream(g_log, "") << "Rods killed because of explosion failure: " << m_num_explosion_killed << " (this step), "
             << m_total_explosion_killed << " (total)\n";
+    DebugStream(g_log, "") << "Rods killed because of stretching failure: " << m_num_stretching_killed << " (this step), "
+            << m_total_stretching_killed << " (total)\n";
 
     STOP_TIMER("BARodStepper::execute")
 
@@ -782,9 +785,10 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         computeForces(m_preCollisionForces, selected_rods);
 
     std::vector<bool> failed_collisions_rods(m_number_of_rods);
+    std::vector<bool> stretching_rods(m_number_of_rods);
     if (m_perf_param.m_maximum_number_of_collisions_iterations > 0)
     {
-        if (!executeIterativeInelasticImpulseResponse(failed_collisions_rods))
+        if (!executeIterativeInelasticImpulseResponse(failed_collisions_rods, stretching_rods))
         {
             TraceStream(g_log, "") << "Some collision responses failed!\n";
             //all_collisions_succeeded = false;
@@ -858,6 +862,9 @@ void BARodStepper::step(RodSelectionType& selected_rods)
 
     STOP_TIMER("BARodStepper::step/explo");
 
+    // Check lengths again... Why is this necessary?
+    checkLengths(stretching_rods);
+
     START_TIMER("BARodStepper::step/exception");
 
     int rod_kill = 0;
@@ -868,6 +875,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         bool solveFailure = !m_steppers[rodidx]->HasSolved();
         bool explosion = exploding_rods[rodidx];
         bool collisionFailure = failed_collisions_rods[rodidx];
+        bool stretching = stretching_rods[rodidx];
 
         //	std::cout << "rod " << rodidx << ": solve " << (solveFailure ? "FAILED " : "ok ")
         //		  << "collisions " << (collisionFailure ? "FAILED " : "ok ")
@@ -879,7 +887,8 @@ void BARodStepper::step(RodSelectionType& selected_rods)
 
         bool killRod = (solveFailure && m_perf_param.m_in_case_of_solver_failure == PerformanceTuningParameters::KillTheRod)
                 || (explosion && m_perf_param.m_in_case_of_explosion_failure == PerformanceTuningParameters::KillTheRod)
-                || (collisionFailure && m_perf_param.m_in_case_of_collision_failure == PerformanceTuningParameters::KillTheRod);
+                || (collisionFailure && m_perf_param.m_in_case_of_collision_failure == PerformanceTuningParameters::KillTheRod)
+                || stretching && true; // Shall we pass a parameter for the stretching failure mode?
 
         bool haltSim =
                 (solveFailure && m_perf_param.m_in_case_of_solver_failure == PerformanceTuningParameters::HaltSimulation)
@@ -898,6 +907,9 @@ void BARodStepper::step(RodSelectionType& selected_rods)
                 m_num_explosion_killed++;
             if (collisionFailure && m_perf_param.m_in_case_of_collision_failure == PerformanceTuningParameters::KillTheRod)
                 m_num_collision_killed++;
+            if (stretching && true)
+                m_num_stretching_killed++;
+
             rod_kill++;
             killTheRod(*rodit);
         }
@@ -1364,7 +1376,6 @@ void BARodStepper::ensureNoCollisionsByDefault(const ElasticRod& rod) const
 }
 
 void BARodStepper::killTheRod(int rod) // TODO: remove the rod properly in Maya
-
 {
     for (int j = 0; j < m_rods[rod]->nv(); j++)
         m_rods[rod]->setVertex(j, 0 * m_rods[rod]->getVertex(j));

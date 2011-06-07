@@ -159,13 +159,13 @@ void BARodStepper::exertInelasticImpulse(VertexFaceCTCollision& vfcol)
 /**
  * Compliant inelastic response
  */
-bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& failed_collisions_rods)
+bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& failed_collisions_rods,
+        std::vector<bool>& stretching_rods)
 {
     bool all_rods_collisions_ok = true;
 
     // Check whether the solver left some rods stretched
-    std::vector<bool> stretching_rods(m_number_of_rods);
-    checkLengths(stretching_rods, m_simulated_rods); // TODO: replace m_simulated_rods by selected_rods
+    checkLengths(stretching_rods);
 
     // Detect continuous time collisions
     std::list<Collision*> collisions_list;
@@ -245,9 +245,12 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
 
                 // Test for stretching and if so, mark the rod immune
                 stretching_rods[colliding_rod] = !checkLength(colliding_rod);
-                if (stretching_rods[colliding_rod]) // Declare the rod collision-immune for the rest of the time step
+                if (stretching_rods[colliding_rod])
+                {
+                    // Declare the rod collision-immune for the rest of the time step
                     for (int j = 0; j < m_rods[colliding_rod]->nv(); ++j)
                         m_collision_immune[m_base_vtx_indices[colliding_rod] + j] = false;
+                }
 
                 delete collision;
                 collisions_list.erase(col_it--);
@@ -307,6 +310,8 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
     //#ifdef TIMING_ON
     //if( itr >= 2 ) IntStatTracker::getIntTracker("STEPS_WITH_MULTIPLE_IMPULSE_ITERATIONS") += 1;
     //#endif
+
+    // checkLengths(stretching_rods);
 
     return all_rods_collisions_ok;
 }
@@ -404,7 +409,7 @@ void BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
     // If the rod has not solved properly, no need to compute its collision response
     if (!m_steppers[rodidx]->HasSolved())
     {// NB: this is redundant because we declared the rod collision-immune already.
-        DebugStream(g_log, "") << "WARNING: attempt to do vertex-face collision with non-dependable rod";
+        DebugStream(g_log, "") << "WARNING: attempt to do vertex-face collision with non-dependable rod\n";
         return;
     }
 
@@ -1221,7 +1226,7 @@ void BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdge
     // If the rod has not solved properly, no need to compute its collision response
     if (!m_steppers[rodidx]->HasSolved())
     {
-        DebugStream(g_log, "") << "WARNING: attempt to do edge-edge collision with non-dependable rod";
+        DebugStream(g_log, "") << "WARNING: attempt to do edge-edge collision with non-dependable rod\n";
         return;
     }
 
@@ -1644,22 +1649,23 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
     return explosions_detected;
 }
 
-static const double STRETCHING_FACTOR = 1.2;
+static const double STRETCHING_FACTOR = 2.0;
 
-bool BARodStepper::checkLengths(std::vector<bool>& stretching_rods, const RodSelectionType& selected_rods)
+bool BARodStepper::checkLengths(std::vector<bool>& stretching_rods)
 {
     bool stretching_detected = false;
     TraceStream(g_log, "") << "Checking for lengths\n";
 
-    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+    for (RodSelectionType::iterator rod = m_simulated_rods.begin(); rod != m_simulated_rods.end(); rod++)
     {
         stretching_rods[*rod] = !checkLength(*rod);
 
-        if (stretching_rods[*rod]) // Declare the rod collision-immune for the rest of the time step
+        if (stretching_rods[*rod])
+        {
+            // Declare the rod collision-immune for the rest of the time step.
             for (int j = 0; j < m_rods[*rod]->nv(); ++j)
                 m_collision_immune[m_base_vtx_indices[*rod] + j] = false;
-
-        // Set the do not render flag here
+        }
 
         stretching_detected = stretching_detected || stretching_rods[*rod];
     }
@@ -1679,7 +1685,7 @@ bool BARodStepper::checkLength(int rodIdx)
 
     if (length > m_initialLengths[rodIdx] * STRETCHING_FACTOR)
     {
-        TraceStream(g_log, "") << "Rod number " << rodIdx << " was stretched by a factor " << length/m_initialLengths[rodIdx];
+        TraceStream(g_log, "") << "Rod number " << rodIdx << " was stretched by a factor " << length / m_initialLengths[rodIdx];
         return false;
     }
 
