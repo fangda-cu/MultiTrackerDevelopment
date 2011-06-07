@@ -19,7 +19,7 @@ PerformanceTuningParameters::PerformanceTuningParameters() :
             m_enable_explosion_detection(true), //
             m_explosion_damping(100.0), //
             m_explosion_threshold(100.0), //
-            m_stretching_factor(2.0), //
+            m_stretching_threshold(2.0), //
             m_solver(50, 0, FailureMode::KillTheRod), //
             m_collision(10, 0, FailureMode::KillTheRod), //
             m_explosion(0, 0, FailureMode::KillTheRod), //

@@ -301,12 +301,15 @@ void Beaker::addRodsToWorld(int i_rodGroupIndex, WmFigRodGroup* i_rodGroup, doub
     std::cout << "Explosion Detection  " << perf_param.m_enable_explosion_detection << std::endl;
     std::cout << "Explosion Dampening " << perf_param.m_explosion_damping << std::endl;
     std::cout << "Explosion Threshold " << perf_param.m_explosion_threshold << std::endl;
+    std::cout << "Stretching threshold" << perf_param.m_stretching_threshold << std::endl;
     std::cout << "Solver failure " << perf_param.m_solver.m_in_case_of << std::endl;
     std::cout << "Max Number of Solver Substeps " << perf_param.m_solver.m_max_substeps << std::endl;
     std::cout << "Collison Failure  " << perf_param.m_collision.m_in_case_of << std::endl;
     std::cout << "Max Number of Collision Substeps " << perf_param.m_collision.m_max_substeps << std::endl;
     std::cout << "Explosion  Failure  " << perf_param.m_explosion.m_in_case_of << std::endl;
     std::cout << "Max Number of Explosion Substeps " << perf_param.m_explosion.m_max_substeps << std::endl;
+    std::cout << "Stretching  Failure  " << perf_param.m_stretching.m_in_case_of << std::endl;
+    std::cout << "Max Number of Stretching Substeps " << perf_param.m_stretching.m_max_substeps << std::endl;
 
     m_rodDataMap[i_rodGroupIndex] = i_rodGroup;
 

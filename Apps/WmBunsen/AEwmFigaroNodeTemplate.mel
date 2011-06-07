@@ -99,6 +99,11 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
         		editorTemplate -addControl "explosionDampening";
         		editorTemplate -addControl "explosionThreshold";
      		editorTemplate -endLayout;
+     		
+     		editorTemplate -beginLayout "Stretching" -collapse 0;
+     			editorTemplate -addControl "stretchingThreshold";
+     		editorTemplate -endLayout;
+     		
   	editorTemplate -endLayout;
 
 	 editorTemplate -beginLayout "Substepping:" -collapse 0;
@@ -115,6 +120,11 @@ global proc AEwmFigaroNodeTemplate(string $nodeName)
     		 editorTemplate -beginLayout "Explosion" -collapse 0;
          		editorTemplate -addControl "maxNumExplosionSubsteps";
         		editorTemplate -addControl "ifExplosionStillFails";
+     		editorTemplate -endLayout;
+     		
+    		 editorTemplate -beginLayout "Stretching" -collapse 0;
+         		editorTemplate -addControl "maxNumStretchingSubsteps";
+        		editorTemplate -addControl "ifStretchingStillFails";
      		editorTemplate -endLayout;
 	editorTemplate -endLayout;
 

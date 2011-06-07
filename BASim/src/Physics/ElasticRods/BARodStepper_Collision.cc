@@ -1669,7 +1669,7 @@ bool BARodStepper::checkLengths(std::vector<bool>& stretching_rods)
     }
 
     if (stretching_detected)
-        DebugStream(g_log, "") << "Some rods were stretched by a factor > " << m_perf_param.m_stretching_factor << '\n';
+        DebugStream(g_log, "") << "Some rods were stretched by a factor > " << m_perf_param.m_stretching_threshold << '\n';
 
     return stretching_detected;
 }
@@ -1681,7 +1681,7 @@ bool BARodStepper::checkLength(int rodIdx)
     for (int j = 1; j < m_rods[rodIdx]->nv(); j++)
         length += (m_rods[rodIdx]->getVertex(j) - m_rods[rodIdx]->getVertex(j - 1)).norm();
 
-    if (length > m_initialLengths[rodIdx] * m_perf_param.m_stretching_factor)
+    if (length > m_initialLengths[rodIdx] * m_perf_param.m_stretching_threshold)
     {
         TraceStream(g_log, "") << "Rod number " << rodIdx << " was stretched by a factor " << length / m_initialLengths[rodIdx];
         return false;

@@ -59,50 +59,18 @@ struct PerformanceTuningParameters
     /**
      * Failure detection
      */
-
-    /**
-     * Solver
-     */
-    // Maximum number of iterations allowed in the solver
-  //  int m_maximum_number_of_solver_iterations;
-
-    /**
-     * Collisions
-     */
-    // Maximum number of iterations allowed in collision response. Set to 0 to disable collision response, to 1 to disable iterations.
- //   int m_maximum_number_of_collisions_iterations;
-
-    /**
-     * Explosions
-     */
     // Explosion detection
     bool m_enable_explosion_detection;
     // Damping parameter in explosion detection
     double m_explosion_damping;
     // Threshold in explosion detection
     double m_explosion_threshold;
-
-    double m_stretching_factor;
-
-    /**
-     * Response to failure
-     */
-  //  typedef FailureMode::ResponseSeverity ResponseSeverity;
-
-  //  ResponseSeverity m_in_case_of_solver_failure;
-  //  ResponseSeverity m_in_case_of_collision_failure;
-  //  ResponseSeverity m_in_case_of_explosion_failure;
+    // Stretching detection
+    double m_stretching_threshold;
 
     /**
-     * Substepping: if in KillTheRod mode, how deep are we going before shedding.
+     * Failure modes
      */
-    // Maximum number of times the original step will be halved by the adaptive substepping for solver-failing rods
-//    int m_max_number_of_substeps_for_solver;
-    // Maximum number of times the original step will be halved by the adaptive substepping for collision-failing rods
-//    int m_max_number_of_substeps_for_collision;
-    // Maximum number of times the original step will be halved by the adaptive substepping for explosion-failing rods
-//    int m_max_number_of_substeps_for_explosion;
-
     FailureMode m_solver;
     FailureMode m_collision;
     FailureMode m_explosion;
