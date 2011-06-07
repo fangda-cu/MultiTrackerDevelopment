@@ -279,7 +279,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     for (int i = 0; i < m_number_of_rods; i++)
         m_simulated_rods.push_back(i);
 #endif
-
+    m_killed_rods.clear();
 }
 
 BARodStepper::~BARodStepper()
@@ -877,20 +877,20 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         bool collisionFailure = failed_collisions_rods[rodidx];
         bool stretching = stretching_rods[rodidx];
 
-        bool substep = (solveFailure     && m_level < m_perf_param.m_solver.m_max_substeps) 
-	            || (explosion        && m_level < m_perf_param.m_explosion.m_max_substeps) 
-                    || (collisionFailure && m_level < m_perf_param.m_collision.m_max_substeps)
-                    || (stretching       && m_level < m_perf_param.m_stretching.m_max_substeps);
+        bool substep = (solveFailure && m_level < m_perf_param.m_solver.m_max_substeps) //
+                || (explosion && m_level < m_perf_param.m_explosion.m_max_substeps) //
+                || (collisionFailure && m_level < m_perf_param.m_collision.m_max_substeps) //
+                || (stretching && m_level < m_perf_param.m_stretching.m_max_substeps);
 
-        bool killRod = (solveFailure && m_perf_param.m_solver.m_in_case_of == FailureMode::KillTheRod)
-                || (explosion && m_perf_param.m_explosion.m_in_case_of == FailureMode::KillTheRod)
-                || (collisionFailure && m_perf_param.m_collision.m_in_case_of == FailureMode::KillTheRod)
-                || (stretching && m_perf_param.m_stretching.m_in_case_of == FailureMode::KillTheRod); 
+        bool killRod = (solveFailure && m_perf_param.m_solver.m_in_case_of == FailureMode::KillTheRod) //
+                || (explosion && m_perf_param.m_explosion.m_in_case_of == FailureMode::KillTheRod)//
+                || (collisionFailure && m_perf_param.m_collision.m_in_case_of == FailureMode::KillTheRod) //
+                || (stretching && m_perf_param.m_stretching.m_in_case_of == FailureMode::KillTheRod);
 
-        bool haltSim = (solveFailure && m_perf_param.m_solver.m_in_case_of == FailureMode::HaltSimulation)
-                        || (explosion && m_perf_param.m_explosion.m_in_case_of == FailureMode::HaltSimulation) 
-	                || (collisionFailure && m_perf_param.m_collision.m_in_case_of == FailureMode::HaltSimulation)
-	                || (stretching && m_perf_param.m_stretching.m_in_case_of == FailureMode::HaltSimulation);
+        bool haltSim = (solveFailure && m_perf_param.m_solver.m_in_case_of == FailureMode::HaltSimulation)//
+                || (explosion && m_perf_param.m_explosion.m_in_case_of == FailureMode::HaltSimulation)//
+                || (collisionFailure && m_perf_param.m_collision.m_in_case_of == FailureMode::HaltSimulation) //
+                || (stretching && m_perf_param.m_stretching.m_in_case_of == FailureMode::HaltSimulation);
 
         if (substep) // Only in that case keep the rod in the selected list
             continue;
@@ -948,6 +948,14 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         TraceStream(g_log, "") << "Step finished, " << selected_rods.size() << " rods must be substepped\n";
     else
         TraceStream(g_log, "") << "Step finished, all rods treated (either successful step, removed, or errors ignored)\n";
+
+    if (m_killed_rods.size() > 0)
+    {
+        std::ostringstream ost;
+        for (RodSelectionType::const_iterator rod = m_killed_rods.begin(); rod != m_killed_rods.end(); rod++)
+            ost << *rod << ' ';
+        DebugStream(g_log, "") << "List of rods killed: " << ost.str() << '\n';
+    }
 
     START_TIMER("BARodStepper::step/penalty");
 
@@ -1373,9 +1381,14 @@ void BARodStepper::ensureNoCollisionsByDefault(const ElasticRod& rod) const
 
 void BARodStepper::killTheRod(int rod) // TODO: remove the rod properly in Maya
 {
+    m_killed_rods.push_back(rod);
     for (int j = 0; j < m_rods[rod]->nv(); j++)
         m_rods[rod]->setVertex(j, 0 * m_rods[rod]->getVertex(j));
     m_simulated_rods.erase(find(m_simulated_rods.begin(), m_simulated_rods.end(), rod));
+
+#ifndef KEEP_ONLY_SOME_RODS
+    assert(m_simulated_rods.size() + m_killed_rods.size() == m_number_of_rods);
+#endif
 }
 
 void BARodStepper::computeForces(std::vector<VecXd*> Forces, const RodSelectionType& selected_rods)
