@@ -164,7 +164,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
     bool all_rods_collisions_ok = true;
 
     // Check whether the solver left some rods stretched
-    std::vector<bool> stretching_rods;
+    std::vector<bool> stretching_rods(m_number_of_rods);
     checkLengths(stretching_rods, m_simulated_rods); // TODO: replace m_simulated_rods by selected_rods
 
     // Detect continuous time collisions
