@@ -135,12 +135,12 @@ void RodBendingForceSym::updateStiffness()
     rot(0,1) = -1*rot(1,0);
     rot(1,1) = rot(0,0);
 
-    cout << "RodBendingForceSym::updateStiffness::rotatebase:: " << m_rod.baseRotation() << " " << B << " "; 
+    //cout << "RodBendingForceSym::updateStiffness::rotatebase:: " << m_rod.baseRotation() << " " << B << " "; 
 
     B = rot*B;
     B = B*rot.transpose();
 
-    cout << B << endl;
+    //cout << B << endl;
 
     setB(vh, B);
   }
@@ -259,6 +259,8 @@ void RodBendingForceSym::localForce(VecXd& force, const vertex_handle& vh)
   const Vec2d& kappa = getKappa(vh);
   const Vec2d& kappaBar = getKappaBar(vh);
 
+  //cout << "RodBendingForceSym::localForce::get B Matrix " << (viscous() ? "VISCOUS " : "")  << B << endl;
+ 
   force = -1.0/len * getGradKappa(vh) * B * (kappa - kappaBar);
 }
 

@@ -402,6 +402,14 @@ void ElasticRod::updateReferenceProperties()
   }
 }
 
+void ElasticRod::updateStiffness() {
+  RodForces forces = getForces();
+  RodForces::iterator it;
+  for (it = forces.begin(); it != forces.end(); ++it) {
+    (*it)->updateStiffness();
+  }
+}
+
 void ElasticRod::verifyProperties()
 {
   for (int j = 0; j < ne(); ++j) {

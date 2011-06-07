@@ -182,6 +182,8 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                     m_rodManager->m_rods[i]->setRadius( radius_a, radius_b );
 
 		    m_rodManager->m_rods[i]->setBaseRotation( m_rodRotation*M_PI );
+		   
+		    m_rodManager->m_rods[i]->updateStiffness();
 		    
 		    for ( ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin(); 
                          vh != m_rodManager->m_rods[i]->vertices_end(); ++vh )
@@ -199,10 +201,12 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 			   //m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, Vec2d(t*m_rodRadius, 0 ) );
 			//}
 			
+			// curl pitch
+			// Scalar 
 			// set default curvature using sinusoid (sliders adjusts amplitude and frequency)
 			// TODO (sainsley): have sliders to adjust curl radius and curl frequency instead
 			m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, 
-                            Vec2d( scale*m_waveAmplitude*sin( t*m_waveFrequency*M_PI + M_PI/2.0 ) , 0 ) );
+                            Vec2d( scale*m_waveAmplitude*sin( t*m_waveFrequency*M_PI + M_PI/2.0 ) , scale*m_waveAmplitude*cos( t*m_waveFrequency*M_PI + M_PI/2.0 ) ) );
 			
 			// grab edge out of current vertex and increment parametic length accordingly 
 			if ( vh != m_rodManager->m_rods[i]->vertices_end() ) 
@@ -678,8 +682,8 @@ void* WmSweeneyNode::creator()
         CHECK_MSTATUS( status );
         CHECK_MSTATUS( numericAttr.setReadable( true ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
-        CHECK_MSTATUS( numericAttr.setMin( -10.0 ) );
-        CHECK_MSTATUS( numericAttr.setMax( 10.0 ) );
+        CHECK_MSTATUS( numericAttr.setMin( -2.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 2.0 ) );
         status = addAttribute( ia_waveFrequency );
         CHECK_MSTATUS( status );
         
