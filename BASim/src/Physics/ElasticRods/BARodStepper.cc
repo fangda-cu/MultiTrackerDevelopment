@@ -881,20 +881,21 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         //		  << "collisions " << (collisionFailure ? "FAILED " : "ok ")
         //		  << "explosion-check " << (explosion ? "FAILED " : "ok ");
 
-        bool substep = (solveFailure && m_level < m_perf_param.m_solver.m_max_substeps) || (explosion && m_level
-                < m_perf_param.m_explosion.m_max_substeps) || (collisionFailure && m_level
-                < m_perf_param.m_collision.m_max_substeps);
+        bool substep = (solveFailure     && m_level < m_perf_param.m_solver.m_max_substeps) 
+	            || (explosion        && m_level < m_perf_param.m_explosion.m_max_substeps) 
+                    || (collisionFailure && m_level < m_perf_param.m_collision.m_max_substeps)
+                    || (stretching       && m_level < m_perf_param.m_stretching.m_max_substeps);
+
 
         bool killRod = (solveFailure && m_perf_param.m_solver.m_in_case_of == FailureMode::KillTheRod)
                 || (explosion && m_perf_param.m_explosion.m_in_case_of == FailureMode::KillTheRod)
                 || (collisionFailure && m_perf_param.m_collision.m_in_case_of == FailureMode::KillTheRod)
-                || stretching && true; // Shall we pass a parameter for the stretching failure mode?
+                || (stretching && m_perf_param.m_stretching.m_in_case_of == FailureMode::KillTheRod); 
 
-        bool haltSim =
-                (solveFailure && m_perf_param.m_solver.m_in_case_of == FailureMode::HaltSimulation)
-                        || (explosion && m_perf_param.m_explosion.m_in_case_of
-                                == FailureMode::HaltSimulation) || (collisionFailure
-                        && m_perf_param.m_collision.m_in_case_of == FailureMode::HaltSimulation);
+        bool haltSim = (solveFailure && m_perf_param.m_solver.m_in_case_of == FailureMode::HaltSimulation)
+                        || (explosion && m_perf_param.m_explosion.m_in_case_of == FailureMode::HaltSimulation) 
+	                || (collisionFailure && m_perf_param.m_collision.m_in_case_of == FailureMode::HaltSimulation)
+	                || (stretching && m_perf_param.m_stretching.m_in_case_of == FailureMode::HaltSimulation);
 
         if (substep) // Only in that case keep the rod in the selected list
             continue;
