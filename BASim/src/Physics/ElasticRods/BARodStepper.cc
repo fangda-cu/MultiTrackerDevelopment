@@ -81,7 +81,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
 
     for (std::vector<RodTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
     {
-        (*stepper)->setMaxIterations(perf_param.m_maximum_number_of_solver_iterations);
+        (*stepper)->setMaxIterations(m_perf_param.m_solver.m_max_iterations);
     }
 
 #ifndef NDEBUG
@@ -786,7 +786,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
 
     std::vector<bool> failed_collisions_rods(m_number_of_rods);
     std::vector<bool> stretching_rods(m_number_of_rods);
-    if (m_perf_param.m_maximum_number_of_collisions_iterations > 0)
+    if (m_perf_param.m_collision.m_max_iterations > 0)
     {
         if (!executeIterativeInelasticImpulseResponse(failed_collisions_rods, stretching_rods))
         {
@@ -881,31 +881,31 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         //		  << "collisions " << (collisionFailure ? "FAILED " : "ok ")
         //		  << "explosion-check " << (explosion ? "FAILED " : "ok ");
 
-        bool substep = (solveFailure && m_level < m_perf_param.m_max_number_of_substeps_for_solver) || (explosion && m_level
-                < m_perf_param.m_max_number_of_substeps_for_explosion) || (collisionFailure && m_level
-                < m_perf_param.m_max_number_of_substeps_for_collision);
+        bool substep = (solveFailure && m_level < m_perf_param.m_solver.m_max_substeps) || (explosion && m_level
+                < m_perf_param.m_explosion.m_max_substeps) || (collisionFailure && m_level
+                < m_perf_param.m_collision.m_max_substeps);
 
-        bool killRod = (solveFailure && m_perf_param.m_in_case_of_solver_failure == PerformanceTuningParameters::KillTheRod)
-                || (explosion && m_perf_param.m_in_case_of_explosion_failure == PerformanceTuningParameters::KillTheRod)
-                || (collisionFailure && m_perf_param.m_in_case_of_collision_failure == PerformanceTuningParameters::KillTheRod)
+        bool killRod = (solveFailure && m_perf_param.m_solver.m_in_case_of == FailureMode::KillTheRod)
+                || (explosion && m_perf_param.m_explosion.m_in_case_of == FailureMode::KillTheRod)
+                || (collisionFailure && m_perf_param.m_collision.m_in_case_of == FailureMode::KillTheRod)
                 || stretching && true; // Shall we pass a parameter for the stretching failure mode?
 
         bool haltSim =
-                (solveFailure && m_perf_param.m_in_case_of_solver_failure == PerformanceTuningParameters::HaltSimulation)
-                        || (explosion && m_perf_param.m_in_case_of_explosion_failure
-                                == PerformanceTuningParameters::HaltSimulation) || (collisionFailure
-                        && m_perf_param.m_in_case_of_collision_failure == PerformanceTuningParameters::HaltSimulation);
+                (solveFailure && m_perf_param.m_solver.m_in_case_of == FailureMode::HaltSimulation)
+                        || (explosion && m_perf_param.m_explosion.m_in_case_of
+                                == FailureMode::HaltSimulation) || (collisionFailure
+                        && m_perf_param.m_collision.m_in_case_of == FailureMode::HaltSimulation);
 
         if (substep) // Only in that case keep the rod in the selected list
             continue;
         else if (killRod)
         {
             // DEBUG
-            if (solveFailure && m_perf_param.m_in_case_of_solver_failure == PerformanceTuningParameters::KillTheRod)
+            if (solveFailure && m_perf_param.m_solver.m_in_case_of == FailureMode::KillTheRod)
                 m_num_solver_killed++;
-            if (explosion && m_perf_param.m_in_case_of_explosion_failure == PerformanceTuningParameters::KillTheRod)
+            if (explosion && m_perf_param.m_explosion.m_in_case_of == FailureMode::KillTheRod)
                 m_num_explosion_killed++;
-            if (collisionFailure && m_perf_param.m_in_case_of_collision_failure == PerformanceTuningParameters::KillTheRod)
+            if (collisionFailure && m_perf_param.m_collision.m_in_case_of == FailureMode::KillTheRod)
                 m_num_collision_killed++;
             if (stretching && true)
                 m_num_stretching_killed++;
@@ -1156,7 +1156,7 @@ void BARodStepper::disableResponse()
 void BARodStepper::setNumInelasticIterations(const int& num_itr)
 {
     assert(num_itr >= 0);
-    m_perf_param.m_maximum_number_of_collisions_iterations = num_itr;
+    m_perf_param.m_collision.m_max_iterations = num_itr;
 }
 
 void BARodStepper::computeImmunity(const RodSelectionType& selected_rods)
@@ -1400,7 +1400,7 @@ void BARodStepper::addRod(ElasticRod* rod, RodTimeStepper* stepper)
     m_rods.back()->globalRodIndex = m_number_of_rods++;
     // Add the stepper
     m_steppers.push_back(stepper);
-    m_steppers.back()->setMaxIterations(m_perf_param.m_maximum_number_of_solver_iterations);
+    m_steppers.back()->setMaxIterations(m_perf_param.m_solver.m_max_iterations);
 
     assert(m_rods.size() == m_steppers.size());
     assert(m_number_of_rods == m_rods.size());

@@ -174,9 +174,9 @@ void WmBunsenNode::addRodsToWorld( MDataBlock& i_dataBlock, double startTime)
                 perf_param.m_inextensibility_threshold=i_dataBlock.inputValue( ia_inextensibilityThreshold, &stat ).asInt();
                 CHECK_MSTATUS( stat );
 
-                perf_param.m_maximum_number_of_solver_iterations=i_dataBlock.inputValue( ia_maxNumOfSolverIters, &stat ).asInt();
+                perf_param.m_solver.m_max_iterations=i_dataBlock.inputValue( ia_maxNumOfSolverIters, &stat ).asInt();
                 CHECK_MSTATUS( stat );
-                perf_param.m_maximum_number_of_collisions_iterations=i_dataBlock.inputValue( ia_maxNumOfCollisionIters, &stat ).asInt();
+                perf_param.m_collision.m_max_iterations=i_dataBlock.inputValue( ia_maxNumOfCollisionIters, &stat ).asInt();
                 CHECK_MSTATUS( stat );
 
                 perf_param.m_enable_explosion_detection=i_dataBlock.inputValue( ia_enableExplosionDetection, &stat ).asBool();
@@ -186,17 +186,17 @@ void WmBunsenNode::addRodsToWorld( MDataBlock& i_dataBlock, double startTime)
                 perf_param.m_explosion_threshold=i_dataBlock.inputValue( ia_explosionThreshold, &stat ).asDouble();
                 CHECK_MSTATUS( stat );
 
-                perf_param.m_in_case_of_solver_failure= (BASim::PerformanceTuningParameters::ResponseSeverity) i_dataBlock.inputValue( ia_solverFailure, &stat ).asInt();
+                perf_param.m_solver.m_in_case_of= (BASim::FailureMode::ResponseSeverity) i_dataBlock.inputValue( ia_solverFailure, &stat ).asInt();
                 CHECK_MSTATUS( stat );
-                perf_param.m_in_case_of_collision_failure=(BASim::PerformanceTuningParameters::ResponseSeverity) i_dataBlock.inputValue( ia_collisionFailure, &stat ).asInt();
+                perf_param.m_collision.m_in_case_of=(BASim::FailureMode::ResponseSeverity) i_dataBlock.inputValue( ia_collisionFailure, &stat ).asInt();
                 CHECK_MSTATUS( stat );
-                perf_param.m_in_case_of_explosion_failure=(BASim::PerformanceTuningParameters::ResponseSeverity) i_dataBlock.inputValue( ia_explosionFailure, &stat ).asInt();
+                perf_param.m_explosion.m_in_case_of=(BASim::FailureMode::ResponseSeverity) i_dataBlock.inputValue( ia_explosionFailure, &stat ).asInt();
                 CHECK_MSTATUS( stat );
-                perf_param.m_max_number_of_substeps_for_solver=i_dataBlock.inputValue( ia_maxNumSolverSubsteps, &stat ).asInt();
+                perf_param.m_solver.m_max_substeps=i_dataBlock.inputValue( ia_maxNumSolverSubsteps, &stat ).asInt();
                 CHECK_MSTATUS( stat );
-                perf_param.m_max_number_of_substeps_for_collision=i_dataBlock.inputValue( ia_maxNumCollisionSubsteps, &stat ).asInt();
+                perf_param.m_collision.m_max_substeps=i_dataBlock.inputValue( ia_maxNumCollisionSubsteps, &stat ).asInt();
                 CHECK_MSTATUS( stat );
-                perf_param.m_max_number_of_substeps_for_explosion=i_dataBlock.inputValue( ia_maxNumExplosionSubsteps, &stat ).asInt();
+                perf_param.m_explosion.m_max_substeps=i_dataBlock.inputValue( ia_maxNumExplosionSubsteps, &stat ).asInt();
                 CHECK_MSTATUS( stat );
 
                 m_beaker->addRodsToWorld( r, wmFigRodNode->rodGroup(), startTime, numberOfThreads, perf_param);
@@ -1411,11 +1411,11 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnEnumAttribute enumAttrFn;
-        ia_solverFailure = enumAttrFn.create( "ifSolverStillFails", "svf", (short) PerformanceTuningParameters::KillTheRod, & stat );
+        ia_solverFailure = enumAttrFn.create( "ifSolverStillFails", "svf", (short) FailureMode::KillTheRod, & stat );
         CHECK_MSTATUS( stat );
-        enumAttrFn.addField( "Ignore error",   (short) PerformanceTuningParameters::IgnoreError );
-        enumAttrFn.addField( "Kill the rod",  (short) PerformanceTuningParameters::KillTheRod );
-        enumAttrFn.addField( "Halt simulation",  (short) PerformanceTuningParameters::HaltSimulation );
+        enumAttrFn.addField( "Ignore error",   (short) FailureMode::IgnoreError );
+        enumAttrFn.addField( "Kill the rod",  (short) FailureMode::KillTheRod );
+        enumAttrFn.addField( "Halt simulation",  (short) FailureMode::HaltSimulation );
         enumAttrFn.setKeyable( false );
         enumAttrFn.setStorable( true );
         enumAttrFn.setWritable( true );
@@ -1439,11 +1439,11 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnEnumAttribute enumAttrFn;
-        ia_collisionFailure = enumAttrFn.create( "ifCollisionStillFails", "clf", (short) PerformanceTuningParameters::KillTheRod, & stat );
+        ia_collisionFailure = enumAttrFn.create( "ifCollisionStillFails", "clf", (short) FailureMode::KillTheRod, & stat );
         CHECK_MSTATUS( stat );
-        enumAttrFn.addField( "Ignore error",   (short) PerformanceTuningParameters::IgnoreError );
-        enumAttrFn.addField( "Kill the rod",  (short) PerformanceTuningParameters::KillTheRod );
-        enumAttrFn.addField( "Halt simulation",  (short) PerformanceTuningParameters::HaltSimulation );
+        enumAttrFn.addField( "Ignore error",   (short) FailureMode::IgnoreError );
+        enumAttrFn.addField( "Kill the rod",  (short) FailureMode::KillTheRod );
+        enumAttrFn.addField( "Halt simulation",  (short) FailureMode::HaltSimulation );
         enumAttrFn.setKeyable( false );
         enumAttrFn.setStorable( true );
         enumAttrFn.setWritable( true );
@@ -1467,11 +1467,11 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnEnumAttribute enumAttrFn;
-        ia_explosionFailure = enumAttrFn.create( "ifExplosionStillFails", "exf", (short) PerformanceTuningParameters::KillTheRod, & stat );
+        ia_explosionFailure = enumAttrFn.create( "ifExplosionStillFails", "exf", (short) FailureMode::KillTheRod, & stat );
         CHECK_MSTATUS( stat );
-        enumAttrFn.addField( "Ignore error",   (short) PerformanceTuningParameters::IgnoreError );
-        enumAttrFn.addField( "Kill the rod",  (short) PerformanceTuningParameters::KillTheRod );
-        enumAttrFn.addField( "Halt simulation",  (short) PerformanceTuningParameters::HaltSimulation );
+        enumAttrFn.addField( "Ignore error",   (short) FailureMode::IgnoreError );
+        enumAttrFn.addField( "Kill the rod",  (short) FailureMode::KillTheRod );
+        enumAttrFn.addField( "Halt simulation",  (short) FailureMode::HaltSimulation );
         enumAttrFn.setKeyable( false );
         enumAttrFn.setStorable( true );
         enumAttrFn.setWritable( true );

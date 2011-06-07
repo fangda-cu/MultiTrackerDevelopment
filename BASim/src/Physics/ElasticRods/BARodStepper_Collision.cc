@@ -174,7 +174,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
     TraceStream(g_log, "") << "Initial potential collisions: " << m_collision_detector->m_potential_collisions << "\n";
 
     // Iterativly apply inelastic impulses
-    for (int itr = 0; !collisions_list.empty() && itr < m_perf_param.m_maximum_number_of_collisions_iterations; ++itr)
+    for (int itr = 0; !collisions_list.empty() && itr < m_perf_param.m_collision.m_max_iterations; ++itr)
     {
         TraceStream(g_log, "") << "CTcollision response iteration " << itr << '\n';
         TraceStream(g_log, "") << "Detected " << collisions_list.size() << " continuous time collisions (potential: "
@@ -1649,8 +1649,6 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
     return explosions_detected;
 }
 
-static const double STRETCHING_FACTOR = 2.0;
-
 bool BARodStepper::checkLengths(std::vector<bool>& stretching_rods)
 {
     bool stretching_detected = false;
@@ -1671,7 +1669,7 @@ bool BARodStepper::checkLengths(std::vector<bool>& stretching_rods)
     }
 
     if (stretching_detected)
-        DebugStream(g_log, "") << "Some rods were stretched by a factor > " << STRETCHING_FACTOR << '\n';
+        DebugStream(g_log, "") << "Some rods were stretched by a factor > " << m_perf_param.m_stretching_factor << '\n';
 
     return stretching_detected;
 }
@@ -1683,7 +1681,7 @@ bool BARodStepper::checkLength(int rodIdx)
     for (int j = 1; j < m_rods[rodIdx]->nv(); j++)
         length += (m_rods[rodIdx]->getVertex(j) - m_rods[rodIdx]->getVertex(j - 1)).norm();
 
-    if (length > m_initialLengths[rodIdx] * STRETCHING_FACTOR)
+    if (length > m_initialLengths[rodIdx] * m_perf_param.m_stretching_factor)
     {
         TraceStream(g_log, "") << "Rod number " << rodIdx << " was stretched by a factor " << length / m_initialLengths[rodIdx];
         return false;
