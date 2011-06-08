@@ -13,7 +13,7 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
 	editorTemplate -addControl "rodAspectRatio";
 	editorTemplate -addControl "rodRotation";
 	//editorTemplate -addControl "hasUniformCurvature";
-	editorTemplate -addControl "curlSize";
+	editorTemplate -addControl "curlTightness";
 	editorTemplate -addControl "curlSpacing";
         editorTemplate -addControl "rodPitch";
     editorTemplate -endLayout;

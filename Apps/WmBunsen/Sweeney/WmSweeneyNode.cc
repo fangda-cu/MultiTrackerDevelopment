@@ -214,40 +214,20 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 			// curl curvature and torsion
 			
 			Scalar curvature = m_curlRadius;
-			if ( m_curlRadius > 0 ) 
-			{
-			  curvature /= ( m_curlRadius*m_curlRadius + m_curlPitch*m_curlPitch );
-			}
-
-			//Scalar torsion = m_curlPitch;
-			//if ( m_curlPitch != 0 )
+			//if ( m_curlRadius != 0 ) 
 			//{
-			//torsion /= ( m_curlRadius*m_curlRadius + m_curlPitch*m_curlPitch );
+			//  curvature /= ( m_curlRadius*m_curlRadius + m_curlPitch*m_curlPitch) ;
 			//}
-			//int idx = vh->idx();
-			m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, 
-			    Vec2d( m_curlRadius*cos( m_curlPitch*t ), m_curlRadius*sin( m_curlPitch*t) ) );
-			// compute curvature binomial as: (absin(t), - abcos(t), a*a)
-			//Vec3d kb = Vec3d( m_curlRadius*m_curlPitch*sin( (double)idx ) , m_curlRadius*m_curlRadius, -m_curlRadius*m_curlPitch*cos( (double)idx ));
-			//int idx = vh->idx();
-			//const Vec3d& m1e = m_rodManager->m_rods[i]->getMaterial1( idx - 1 );
-			//const Vec3d& m2e = m_rodManager->m_rods[i]->getMaterial2( idx - 1 );
-			//const Vec3d& m1f = m_rodManager->m_rods[i]->getMaterial1( idx );
-			//const Vec3d& m2f = m_rodManager->m_rods[i]->getMaterial2( idx );
-			//m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, Vec2d( 0.5 * kb.dot( m2e + m2f ), -0.5 * kb.dot( m1e + m1f ) ) );
 			
-			// TODO (sainsley) : Now that this works, factor into the dynamic code
-			//MVector newPoint( m_curlRadius * cos( (double)v ),
-			//		  m_curlPitch * (double)v, m_curlRadius * sin( (double)v ) );
-			//	
-        
-			// For testing, force a straight rod
-			// MVector newPoint( 0.0, v, 0.0 );
-            
-			// The helix is created with the y-axis as the centre, rotate it
-			// so that it has i_direction as the centre
-			//MQuaternion rotationQ( MVector( 0.0, 1.0, 0.0 ), i_direction );
-			//newPoint = newPoint.rotateBy( rotationQ );			
+			Scalar torsion = m_curlPitch;
+			//if ( m_curlPitch != 0 )
+		        //{
+			//  torsion /= ( m_curlRadius*m_curlRadius + m_curlPitch*m_curlPitch) ;
+			//}
+			
+
+			m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, 
+			    Vec2d( curvature*cos( torsion*t ), curvature*sin( torsion*t ) ) );
 			
 			// grab edge out of current vertex and increment parametic length accordingly 
 			if ( vh != m_rodManager->m_rods[i]->vertices_end() ) 
@@ -719,7 +699,7 @@ void* WmSweeneyNode::creator()
 
     {
         MFnNumericAttribute numericAttr;
-        ia_curlRadius = numericAttr.create( "curlSize", "crlrad", MFnNumericData::kDouble, 0.0, &status );
+        ia_curlRadius = numericAttr.create( "curlTightness", "crlrad", MFnNumericData::kDouble, 0.0, &status );
         CHECK_MSTATUS( status );
         CHECK_MSTATUS( numericAttr.setReadable( true ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
