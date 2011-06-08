@@ -279,7 +279,8 @@ private:
     // Collision response routines
 
     void executePenaltyResponse();
-    bool executeIterativeInelasticImpulseResponse(std::vector<bool>& rods_failed_because_of_iterated_collisions);
+    bool executeIterativeInelasticImpulseResponse(std::vector<bool>& rods_failed_because_of_iterated_collisions,
+            std::vector<bool>& stretching_rods);
     //	void filterCollisions(std::list<ContinuousTimeCollision>& cllsns);
 
     void exertPenaltyImpulses(std::vector<EdgeEdgeProximityCollision>& edg_edg_cllsns,
@@ -305,6 +306,9 @@ private:
     void exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdgeCTCollision& eecol);
     bool checkExplosions(std::vector<bool>& exploding_rods, const std::vector<bool>& failed_collisions_rods,
             const RodSelectionType& selected_rods);
+
+    bool checkLengths(std::vector<bool>& stretching_rods);
+    bool checkLength(int rodIdx);
 
     //////////////////////////////////
     // Jungseock's penalty response
@@ -441,6 +445,7 @@ private:
     std::vector<MinimalTriangleMeshBackup> m_objbackups;
 
     RodSelectionType m_simulated_rods;
+    RodSelectionType m_killed_rods; // NB these two lists should always be complementary (unless KEEP_ONLY_SOME_RODS)
 
     PerformanceTuningParameters m_perf_param;
     // TextLog* g_log;
@@ -448,11 +453,11 @@ private:
     //  std::ofstream m_log_stream;
 
     // DEBUG
-    int m_num_solver_killed, m_num_collision_killed, m_num_explosion_killed;
-    int m_total_solver_killed, m_total_collision_killed, m_total_explosion_killed;
+    int m_num_solver_killed, m_num_collision_killed, m_num_explosion_killed, m_num_stretching_killed;
+    int m_total_solver_killed, m_total_collision_killed, m_total_explosion_killed, m_total_stretching_killed;
 
-    //class MyTimers;
-    //MyTimers *m_timers;
+    std::vector<double> m_initialLengths;
+
 };
 
 } // namespace BASim

@@ -100,8 +100,12 @@ void CollisionDetectorBase::updateBoundingBox(BVH& bvh, const std::vector<const 
         const uint32_t leaf_end = node.LeafEnd();
         for (uint32_t i = leaf_begin; i < leaf_end; ++i)
         {
-            bbox.Insert(elements[i]->GetBBox(m_geodata, 0.0));
-            bbox.Insert(elements[i]->GetBBox(m_geodata, m_time_step));
+            const YAEdge* edge = dynamic_cast<const YAEdge*> (elements[i]);
+            if (!edge || !edge->IsCollisionImmune(m_geodata)) // Immune edges shouldn't be taken into account here.
+            {
+                bbox.Insert(elements[i]->GetBBox(m_geodata, 0.0));
+                bbox.Insert(elements[i]->GetBBox(m_geodata, m_time_step));
+            }
         }
     }
     else // Update the children, then this node's bounding box

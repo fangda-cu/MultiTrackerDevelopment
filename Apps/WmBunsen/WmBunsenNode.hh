@@ -124,14 +124,17 @@ public:
      static MObject ia_enableExplosionDetection;
      static MObject ia_explosionDampening;
      static MObject ia_explosionThreshold;
+     static MObject ia_stretchingThreshold;
 
      //FailureResponse
      static MObject ia_solverFailure;
      static MObject ia_collisionFailure;
      static MObject ia_explosionFailure;
+     static MObject ia_stretchingFailure;
      static MObject ia_maxNumSolverSubsteps;
      static MObject ia_maxNumCollisionSubsteps;
      static MObject ia_maxNumExplosionSubsteps;
+     static MObject ia_maxNumStretchingSubsteps;
 
 
     // Drawing

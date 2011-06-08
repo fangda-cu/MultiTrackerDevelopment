@@ -60,14 +60,17 @@ MObject WmBunsenNode::ia_stopOnRodError;
  MObject WmBunsenNode::ia_enableExplosionDetection;
  MObject WmBunsenNode::ia_explosionDampening;
  MObject WmBunsenNode::ia_explosionThreshold;
+ MObject WmBunsenNode::ia_stretchingThreshold;
 
  //FailureResponse
  MObject WmBunsenNode::ia_solverFailure;
  MObject WmBunsenNode::ia_collisionFailure;
  MObject WmBunsenNode::ia_explosionFailure;
+ MObject WmBunsenNode::ia_stretchingFailure;
  MObject WmBunsenNode::ia_maxNumSolverSubsteps;
  MObject WmBunsenNode::ia_maxNumCollisionSubsteps;
  MObject WmBunsenNode::ia_maxNumExplosionSubsteps;
+ MObject WmBunsenNode::ia_maxNumStretchingSubsteps;
 
 
 
@@ -174,9 +177,9 @@ void WmBunsenNode::addRodsToWorld( MDataBlock& i_dataBlock, double startTime)
                 perf_param.m_inextensibility_threshold=i_dataBlock.inputValue( ia_inextensibilityThreshold, &stat ).asInt();
                 CHECK_MSTATUS( stat );
 
-                perf_param.m_maximum_number_of_solver_iterations=i_dataBlock.inputValue( ia_maxNumOfSolverIters, &stat ).asInt();
+                perf_param.m_solver.m_max_iterations=i_dataBlock.inputValue( ia_maxNumOfSolverIters, &stat ).asInt();
                 CHECK_MSTATUS( stat );
-                perf_param.m_maximum_number_of_collisions_iterations=i_dataBlock.inputValue( ia_maxNumOfCollisionIters, &stat ).asInt();
+                perf_param.m_collision.m_max_iterations=i_dataBlock.inputValue( ia_maxNumOfCollisionIters, &stat ).asInt();
                 CHECK_MSTATUS( stat );
 
                 perf_param.m_enable_explosion_detection=i_dataBlock.inputValue( ia_enableExplosionDetection, &stat ).asBool();
@@ -185,18 +188,24 @@ void WmBunsenNode::addRodsToWorld( MDataBlock& i_dataBlock, double startTime)
                 CHECK_MSTATUS( stat );
                 perf_param.m_explosion_threshold=i_dataBlock.inputValue( ia_explosionThreshold, &stat ).asDouble();
                 CHECK_MSTATUS( stat );
+                perf_param.m_stretching_threshold=i_dataBlock.inputValue( ia_stretchingThreshold, &stat ).asDouble();
+                CHECK_MSTATUS( stat );
 
-                perf_param.m_in_case_of_solver_failure= (BASim::PerformanceTuningParameters::ResponseSeverity) i_dataBlock.inputValue( ia_solverFailure, &stat ).asInt();
+                perf_param.m_solver.m_in_case_of= (BASim::FailureMode::ResponseSeverity) i_dataBlock.inputValue( ia_solverFailure, &stat ).asInt();
                 CHECK_MSTATUS( stat );
-                perf_param.m_in_case_of_collision_failure=(BASim::PerformanceTuningParameters::ResponseSeverity) i_dataBlock.inputValue( ia_collisionFailure, &stat ).asInt();
+                perf_param.m_collision.m_in_case_of=(BASim::FailureMode::ResponseSeverity) i_dataBlock.inputValue( ia_collisionFailure, &stat ).asInt();
                 CHECK_MSTATUS( stat );
-                perf_param.m_in_case_of_explosion_failure=(BASim::PerformanceTuningParameters::ResponseSeverity) i_dataBlock.inputValue( ia_explosionFailure, &stat ).asInt();
+                perf_param.m_explosion.m_in_case_of=(BASim::FailureMode::ResponseSeverity) i_dataBlock.inputValue( ia_explosionFailure, &stat ).asInt();
                 CHECK_MSTATUS( stat );
-                perf_param.m_max_number_of_substeps_for_solver=i_dataBlock.inputValue( ia_maxNumSolverSubsteps, &stat ).asInt();
+                perf_param.m_stretching.m_in_case_of=(BASim::FailureMode::ResponseSeverity) i_dataBlock.inputValue( ia_stretchingFailure, &stat ).asInt();
                 CHECK_MSTATUS( stat );
-                perf_param.m_max_number_of_substeps_for_collision=i_dataBlock.inputValue( ia_maxNumCollisionSubsteps, &stat ).asInt();
+                perf_param.m_solver.m_max_substeps=i_dataBlock.inputValue( ia_maxNumSolverSubsteps, &stat ).asInt();
                 CHECK_MSTATUS( stat );
-                perf_param.m_max_number_of_substeps_for_explosion=i_dataBlock.inputValue( ia_maxNumExplosionSubsteps, &stat ).asInt();
+                perf_param.m_collision.m_max_substeps=i_dataBlock.inputValue( ia_maxNumCollisionSubsteps, &stat ).asInt();
+                CHECK_MSTATUS( stat );
+                perf_param.m_explosion.m_max_substeps=i_dataBlock.inputValue( ia_maxNumExplosionSubsteps, &stat ).asInt();
+                CHECK_MSTATUS( stat );
+                perf_param.m_stretching.m_max_substeps=i_dataBlock.inputValue( ia_maxNumStretchingSubsteps, &stat ).asInt();
                 CHECK_MSTATUS( stat );
 
                 m_beaker->addRodsToWorld( r, wmFigRodNode->rodGroup(), startTime, numberOfThreads, perf_param);
@@ -1408,14 +1417,27 @@ MStatus WmBunsenNode::initialize()
         if (!stat) { stat.perror( "addAttribute ia_explosionThreshold" ); return stat; }
     }
 
+    {
+        MFnNumericAttribute nAttr;
+        ia_stretchingThreshold = nAttr.create( "stretchingThreshold", "sxt", MFnNumericData::kDouble, 2.0, &stat);
+        if (!stat) {
+            stat.perror("create ia_stretchingThreshold attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_stretchingThreshold );
+        if (!stat) { stat.perror( "addAttribute ia_stretchingThreshold" ); return stat; }
+    }
 
     {
         MFnEnumAttribute enumAttrFn;
-        ia_solverFailure = enumAttrFn.create( "ifSolverStillFails", "svf", (short) PerformanceTuningParameters::KillTheRod, & stat );
+        ia_solverFailure = enumAttrFn.create( "ifSolverStillFails", "svf", (short) FailureMode::KillTheRod, & stat );
         CHECK_MSTATUS( stat );
-        enumAttrFn.addField( "Ignore error",   (short) PerformanceTuningParameters::IgnoreError );
-        enumAttrFn.addField( "Kill the rod",  (short) PerformanceTuningParameters::KillTheRod );
-        enumAttrFn.addField( "Halt simulation",  (short) PerformanceTuningParameters::HaltSimulation );
+        enumAttrFn.addField( "Ignore error",   (short) FailureMode::IgnoreError );
+        enumAttrFn.addField( "Kill the rod",  (short) FailureMode::KillTheRod );
+        enumAttrFn.addField( "Halt simulation",  (short) FailureMode::HaltSimulation );
         enumAttrFn.setKeyable( false );
         enumAttrFn.setStorable( true );
         enumAttrFn.setWritable( true );
@@ -1425,7 +1447,7 @@ MStatus WmBunsenNode::initialize()
     }
     {
         MFnNumericAttribute nAttr;
-        ia_maxNumSolverSubsteps = nAttr.create( "maxNumSolverSubsteps", "mnss", MFnNumericData::kInt, 10, &stat);
+        ia_maxNumSolverSubsteps = nAttr.create( "maxNumSolverSubsteps", "mnss", MFnNumericData::kInt, 0, &stat);
         if (!stat) {
             stat.perror("create ia_maxNumSolverSubsteps attribute");
             return stat;
@@ -1439,11 +1461,11 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnEnumAttribute enumAttrFn;
-        ia_collisionFailure = enumAttrFn.create( "ifCollisionStillFails", "clf", (short) PerformanceTuningParameters::KillTheRod, & stat );
+        ia_collisionFailure = enumAttrFn.create( "ifCollisionStillFails", "clf", (short) FailureMode::KillTheRod, & stat );
         CHECK_MSTATUS( stat );
-        enumAttrFn.addField( "Ignore error",   (short) PerformanceTuningParameters::IgnoreError );
-        enumAttrFn.addField( "Kill the rod",  (short) PerformanceTuningParameters::KillTheRod );
-        enumAttrFn.addField( "Halt simulation",  (short) PerformanceTuningParameters::HaltSimulation );
+        enumAttrFn.addField( "Ignore error",   (short) FailureMode::IgnoreError );
+        enumAttrFn.addField( "Kill the rod",  (short) FailureMode::KillTheRod );
+        enumAttrFn.addField( "Halt simulation",  (short) FailureMode::HaltSimulation );
         enumAttrFn.setKeyable( false );
         enumAttrFn.setStorable( true );
         enumAttrFn.setWritable( true );
@@ -1453,7 +1475,7 @@ MStatus WmBunsenNode::initialize()
     }
     {
         MFnNumericAttribute nAttr;
-        ia_maxNumCollisionSubsteps = nAttr.create( "maxNumCollisionSubsteps", "mncs", MFnNumericData::kInt, 10, &stat);
+        ia_maxNumCollisionSubsteps = nAttr.create( "maxNumCollisionSubsteps", "mncs", MFnNumericData::kInt, 0, &stat);
         if (!stat) {
             stat.perror("create ia_maxNumCollisionSubsteps attribute");
             return stat;
@@ -1467,11 +1489,11 @@ MStatus WmBunsenNode::initialize()
 
     {
         MFnEnumAttribute enumAttrFn;
-        ia_explosionFailure = enumAttrFn.create( "ifExplosionStillFails", "exf", (short) PerformanceTuningParameters::KillTheRod, & stat );
+        ia_explosionFailure = enumAttrFn.create( "ifExplosionStillFails", "exf", (short) FailureMode::KillTheRod, & stat );
         CHECK_MSTATUS( stat );
-        enumAttrFn.addField( "Ignore error",   (short) PerformanceTuningParameters::IgnoreError );
-        enumAttrFn.addField( "Kill the rod",  (short) PerformanceTuningParameters::KillTheRod );
-        enumAttrFn.addField( "Halt simulation",  (short) PerformanceTuningParameters::HaltSimulation );
+        enumAttrFn.addField( "Ignore error",   (short) FailureMode::IgnoreError );
+        enumAttrFn.addField( "Kill the rod",  (short) FailureMode::KillTheRod );
+        enumAttrFn.addField( "Halt simulation",  (short) FailureMode::HaltSimulation );
         enumAttrFn.setKeyable( false );
         enumAttrFn.setStorable( true );
         enumAttrFn.setWritable( true );
@@ -1479,9 +1501,10 @@ MStatus WmBunsenNode::initialize()
         stat = addAttribute( ia_explosionFailure );
         CHECK_MSTATUS( stat );
     }
+
     {
         MFnNumericAttribute nAttr;
-        ia_maxNumExplosionSubsteps = nAttr.create( "maxNumExplosionSubsteps", "mnes", MFnNumericData::kInt, 10, &stat);
+        ia_maxNumExplosionSubsteps = nAttr.create( "maxNumExplosionSubsteps", "mnes", MFnNumericData::kInt, 0, &stat);
         if (!stat) {
             stat.perror("create ia_maxNumExplosionSubsteps attribute");
             return stat;
@@ -1493,7 +1516,34 @@ MStatus WmBunsenNode::initialize()
         if (!stat) { stat.perror( "addAttribute ia_maxNumExplosionSubsteps" ); return stat; }
     }
 
+    {
+        MFnEnumAttribute enumAttrFn;
+        ia_stretchingFailure = enumAttrFn.create( "ifStretchingStillFails", "sxf", (short) FailureMode::KillTheRod, & stat );
+        CHECK_MSTATUS( stat );
+        enumAttrFn.addField( "Ignore error",   (short) FailureMode::IgnoreError );
+        enumAttrFn.addField( "Kill the rod",  (short) FailureMode::KillTheRod );
+        enumAttrFn.addField( "Halt simulation",  (short) FailureMode::HaltSimulation );
+        enumAttrFn.setKeyable( false );
+        enumAttrFn.setStorable( true );
+        enumAttrFn.setWritable( true );
+        enumAttrFn.setReadable( true );
+        stat = addAttribute( ia_stretchingFailure );
+        CHECK_MSTATUS( stat );
+    }
 
+    {
+        MFnNumericAttribute nAttr;
+        ia_maxNumStretchingSubsteps = nAttr.create( "maxNumStretchingSubsteps", "mnts", MFnNumericData::kInt, 0, &stat);
+        if (!stat) {
+            stat.perror("create ia_maxNumStretchingSubsteps attribute");
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        stat = addAttribute( ia_maxNumStretchingSubsteps );
+        if (!stat) { stat.perror( "addAttribute ia_maxNumStretchingSubsteps" ); return stat; }
+    }
 
     {
         MFnNumericAttribute nAttr;
@@ -1608,7 +1658,11 @@ MStatus WmBunsenNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_explosionFailure->ca_syncAttrs" ); return stat; }
     stat = attributeAffects( ia_maxNumExplosionSubsteps, ca_syncAttrs );
     if (!stat) { stat.perror( "attributeAffects ia_maxNumExplosionSubsteps->ca_syncAttrs" ); return stat; }
-    /*
+    stat = attributeAffects( ia_stretchingFailure, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_explosionFailure->ca_syncAttrs" ); return stat; }
+    stat = attributeAffects( ia_maxNumStretchingSubsteps, ca_syncAttrs );
+    if (!stat) { stat.perror( "attributeAffects ia_maxNumExplosionSubsteps->ca_syncAttrs" ); return stat; }
+   /*
     /*
       //substepping
     stat = attributeAffects( ia_maxNumOfSubsteps, ca_syncAttrs );

@@ -209,6 +209,10 @@ public:
         return !geodata.isVertexFixed(m_edge.first) && !geodata.isVertexFixed(m_edge.second);
     }
 
+    bool IsCollisionImmune(const GeometricData& geodata) const
+    {
+        return geodata.IsCollisionImmune(m_edge.first) && geodata.IsCollisionImmune(m_edge.second);
+    }
 };
 
 class YATriangle: public TopologicalElement
