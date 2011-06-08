@@ -72,6 +72,7 @@ public:
     static MObject ia_rodRotation;
     static MObject ia_curlRadius;
     static MObject ia_curlPitch;
+    static MObject ia_curlStart;
     static MObject ia_hasUniformCurvature;
     static MObject ia_rodPitch;
     
@@ -144,6 +145,7 @@ private:
     double m_rodRotation;
     double m_curlRadius;
     double m_curlPitch;
+    double m_curlStart;
     double m_rodPitch;
     bool m_hasUniformCurvature;
     int m_verticesPerRod;

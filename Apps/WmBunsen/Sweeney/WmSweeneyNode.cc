@@ -30,7 +30,7 @@ using namespace BASim;
 /* static */ MObject WmSweeneyNode::ia_rodRotation;
 /* static */ MObject WmSweeneyNode::ia_curlRadius;
 /* static */ MObject WmSweeneyNode::ia_curlPitch;
-/* static */ //MObject WmSweeneyNode::ia_curlStart;
+/* static */ MObject WmSweeneyNode::ia_curlStart;
 /* static */ MObject WmSweeneyNode::ia_hasUniformCurvature;
 /* static */ MObject WmSweeneyNode::ia_rodPitch;
 
@@ -109,7 +109,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 	m_rodRotation = i_dataBlock.inputValue( ia_rodRotation ).asDouble();
         m_curlRadius = i_dataBlock.inputValue( ia_curlRadius ).asDouble();
 	m_curlPitch = i_dataBlock.inputValue( ia_curlPitch ).asDouble();
-	//m_curlStart = i_dataBlock.inputValue( ia_curlStart ).asInt();
+	m_curlStart = i_dataBlock.inputValue( ia_curlStart ).asDouble();
 	// TODO (sainsley) : get rid of this shit
 	m_hasUniformCurvature = i_dataBlock.inputValue( ia_hasUniformCurvature ).asBool();
         m_rodPitch = i_dataBlock.inputValue( ia_rodPitch ).asDouble();
@@ -153,16 +153,19 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                     // initialiseRodFromBarberShopInput( i_dataBlock );
 		  
 		    // get total rod length for scaling
-		    Scalar total_len = 0;
+		    Scalar curl_len = 0;
 		    // TODO (sainsley) : create method inside ElasticRod that returns a total length
 		    // this can be computed within ElasticRod::computeEdgeLengths and stored locally
 		    // so we do not need to recompute it here
 		    for ( ElasticRod::edge_iter eh = m_rodManager->m_rods[i]->edges_begin(); 
                          eh != m_rodManager->m_rods[i]->edges_end(); ++eh )
 		    {
-		        total_len += m_rodManager->m_rods[i]->getEdgeLength( *eh );
+		      if ( eh->idx() >= m_curlStart*(m_verticesPerRod-1) )
+			{
+		            curl_len += m_rodManager->m_rods[i]->getEdgeLength( *eh );
+			}
 		    }
-		    assert( total_len != 0 );
+		    assert( m_curlStart == 1.0 || curl_len != 0 );
 		    
 		    // parametric variable for walking the rod lengthwise
 		    Scalar t = 0;
@@ -203,7 +206,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		    for ( ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin(); 
                          vh != m_rodManager->m_rods[i]->vertices_end(); ++vh )
 		    {
-		        //cout << "WmSweeneyNode::compute::simulate: parametric var = " << t << " sin " << sin(t*6*M_PI) << " rod radius = " << m_rodRadius << endl;
+		      cout << "WmSweeneyNode::compute::simulate: idx = " << vh->idx() << " parametric var = " << t << " " << curl_len << endl;
                         assert( m_rodManager->m_rods[i]->m_bendingForce != NULL );
 			
 			// set default curvature to constant
@@ -213,7 +216,9 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 			} 			
 			// curl curvature and torsion
 			
-			Scalar curvature = m_curlRadius;
+			Scalar curvature = 0.0;
+			if ( t > 0 ) 
+			  curvature = m_curlRadius;
 			//if ( m_curlRadius != 0 ) 
 			//{
 			//  curvature /= ( m_curlRadius*m_curlRadius + m_curlPitch*m_curlPitch) ;
@@ -225,14 +230,14 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 			//  torsion /= ( m_curlRadius*m_curlRadius + m_curlPitch*m_curlPitch) ;
 			//}
 			
-
 			m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, 
 			    Vec2d( curvature*cos( torsion*t ), curvature*sin( torsion*t ) ) );
 			
+
 			// grab edge out of current vertex and increment parametic length accordingly 
-			if ( vh != m_rodManager->m_rods[i]->vertices_end() ) 
+			if ( vh->idx() >= m_curlStart*(m_verticesPerRod)  && vh != m_rodManager->m_rods[i]->vertices_end() ) 
 			{
-			   t += m_rodManager->m_rods[i]->getEdgeLength( j++ )/total_len;
+			   t += m_rodManager->m_rods[i]->getEdgeLength( j++ )/curl_len;
 			}
 		    }
 
@@ -727,6 +732,22 @@ void* WmSweeneyNode::creator()
         if ( !status ) { status.perror( "attributeAffects ia_curlPitch->ca_rodPropertiesSync" ); return status; }
     }
 
+    {
+        MFnNumericAttribute numericAttr;
+        ia_curlStart = numericAttr.create( "curlStart", "crlstrt", MFnNumericData::kDouble, 0.0, &status );
+        CHECK_MSTATUS( status );
+        CHECK_MSTATUS( numericAttr.setReadable( true ) );
+        CHECK_MSTATUS( numericAttr.setWritable( true ) );
+        CHECK_MSTATUS( numericAttr.setMin( 0.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 1.0 ) );
+        status = addAttribute( ia_curlStart );
+        CHECK_MSTATUS( status );
+        
+        status = attributeAffects( ia_curlStart, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_curlStart->ca_rodPropertiesSync" ); return status; }
+    }
+    
+    // TODO (sainsley) : get rid of this shit
     {
         MFnNumericAttribute numericAttr;
         ia_hasUniformCurvature = numericAttr.create( "hasUniformCurvature", "unicurv", MFnNumericData::kBoolean, true, &status);
