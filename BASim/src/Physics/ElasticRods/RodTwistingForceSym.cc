@@ -261,6 +261,44 @@ inline void RodTwistingForceSym::localJacobian(MatXd& J, const vertex_handle& vh
                    + gradTwist * gradTwist.transpose());
 }
 
+void RodTwistingForceSym::globalForceEnergy(VecXd& force, Scalar& energy)
+{
+
+  assert( !viscous() );
+  computeGradTwist();
+
+  VecXd f(11);
+  IndexArray indices(11);
+  
+  iterator end = m_stencil.end();
+  for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
+
+    vertex_handle& vh = m_stencil.handle();
+    localForceEnergy(f, energy, vh);
+    m_stencil.indices(indices);
+    for (int j = 0; j < f.size(); ++j) {
+      force(indices[j]) += f(j);
+    }
+  }
+
+}
+
+void RodTwistingForceSym::localForceEnergy(VecXd& F, Scalar& energy, const vertex_handle& vh)
+{
+  Scalar kt = getKt(vh);
+  Scalar len = getRefVertexLength(vh);
+  Scalar undefTwist = getUndeformedTwist(vh);
+  Scalar twist = getTwist(vh);
+  
+  // set force and accumulate energy
+
+  Scalar value = kt / len * (twist - undefTwist);
+  
+  force = -value * getGradTwist(vh);
+  
+  energy += kt/(2.0*len) * square(twist - undefTwist);
+}
+
 void RodTwistingForceSym::globalReverseJacobian(MatrixBase& J)
 {
   if (viscous()) return;
@@ -319,6 +357,11 @@ void RodTwistingForceSym::globalReverseJacobian(MatrixBase& J)
       }
     }
   }  
+}
+
+void RodTwistingForceSym::localJacobianForceEnergy(MatXd& J, VecXd& F, Scalar& energy, const vertex_handle& vh)
+{
+
 }
 
 void RodTwistingForceSym::updateReverseUndeformedStrain(const VecXd& e)
