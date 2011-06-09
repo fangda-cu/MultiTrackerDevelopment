@@ -234,6 +234,29 @@ public:
    // m_forces = f - m_forces;
   }
 
+
+  /**
+   * This function computes the force on each degree of freedom
+   * associated to the rod.
+   *
+   * \param[out] f The vector of accelerations on the rod.
+   */
+  void evaluatePotentialForcesEnergy(VecXd& f, Scalar& energy)
+  {
+    m_rod.computePotentialForcesEnergy(f, energy);
+
+    VecXd curr_force(f.size());
+
+    // add external forces
+    for (size_t i = 0; i < m_externalForces.size(); ++i) {
+      curr_force.setZero();
+      m_externalForces[i]->computeForceEnergy(m_rod, curr_force, energy);
+      f += curr_force;
+      TraceStream(g_log, "") << m_externalForces[i]->getName() << " &rod = " << &m_rod << " norm = " << curr_force.norm() << '\n';
+    }
+  }
+
+
   /**
    * Evaluates the Jacobian of the forces on the rod.
    *
