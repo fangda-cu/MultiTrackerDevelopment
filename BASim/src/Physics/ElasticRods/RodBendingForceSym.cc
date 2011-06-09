@@ -318,6 +318,104 @@ inline void RodBendingForceSym::localJacobian(MatXd& localJ,
   localJ += temp(0) * hessKappa.first + temp(1) * hessKappa.second;
 }
 
+void RodBendingForceSym::globalForceEnergy(VecXd& force, Scalar& energy)
+{
+
+  assert( !viscous() );
+
+  computeGradKappa();
+  
+  VecXd f(11);
+  IndexArray indices(11);
+  
+  iterator end = m_stencil.end();
+  for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
+    vertex_handle& vh = m_stencil.handle();
+    f.setZero();
+    localForceEnergy(f, energy, vh);
+    m_stencil.indices(indices);
+    for (int j = 0; j < f.size(); ++j) {
+      force(indices[j]) += f(j);
+    }
+  }
+  
+}
+
+void RodBendingForceSym::localForceEnergy(VecXd& force, Scalar& energy, const vertex_handle& vh)
+{
+
+  assert( !viscous() );
+
+  Mat2d B = getB(vh);
+  Scalar len = getRefVertexLength(vh);
+
+  const Vec2d& kappa = getKappa(vh);
+  const Vec2d& kappaBar = getKappaBar(vh);
+ 
+  // set force and accumulate energy 
+
+  force = -1.0/len * getGradKappa(vh) * B * (kappa - kappaBar);
+
+  energy += 0.5 / len * (kappa - kappaBar).dot(B * (kappa - kappaBar));
+}
+
+void RodBendingForceSym::void globalJacobianForceEnergy(int baseidx, Scalar scale, MatrixBase& J, 
+					 VecXd& force, Scalar& energy) 
+{
+
+  assert( !viscous() );
+
+  computeGradKappa();
+  computeHessKappa();
+
+  MatXd localJ(11, 11);
+  VecXd f(11);
+  IndexArray indices(11);
+  iterator end = m_stencil.end();
+
+  for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
+    vertex_handle& vh = m_stencil.handle();
+    f.setZero();
+    localJacobianForceEnergy(localJ, f, energy, vh); 
+    m_stencil.indices(indices);
+
+    for( int i = 0; i < (int) indices.size(); ++i ) 
+    {
+      force(indices[i]) += f(j);
+      indices[i] += baseidx;
+    }
+
+    localJ *= scale;
+    J.add(indices, indices, localJ);
+  }
+}
+
+void RodBendingForceSym::localJacobianForceEnergy(MatXd& jacob, VecXd& force, Scalar& energy, const vertex_handle& vh)
+{
+
+  assert( !viscous() );
+
+  const Mat2d B = getB(vh);
+  Scalar len = getRefVertexLength(vh);
+
+  const Vec2d& kappa = getKappa(vh);
+  const Vec2d& kappaBar = getKappaBar(vh);
+  const MatXd& gradKappa = getGradKappa(vh);
+
+  // compute jacobian and forces. accumulate energy  
+  jacob = -1.0 / len * gradKappa * B * gradKappa.transpose();
+
+  const pair<MatXd, MatXd>& hessKappa = getHessKappa(vh);
+  Vec2d temp = -1.0 / len * (kappa - kappaBar).transpose() * B;
+
+  jacob += temp(0) * hessKappa.first + temp(1) * hessKappa.second;
+
+  force = -1.0/len * getGradKappa(vh) * B * (kappa - kappaBar);
+
+  energy += 0.5 / len * (kappa - kappaBar).dot(B * (kappa - kappaBar));
+  
+}
+
 void RodBendingForceSym::globalReverseJacobian(MatrixBase& J) 
 {
   if (viscous()) return;
