@@ -54,7 +54,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
             m_t(time),
             m_rod_labels(),
             m_simulationFailed(false),
-	    m_useKineticDamping(false),
+            m_useKineticDamping(false),
             m_stopOnRodError(false),
             m_perf_param(perf_param),
             m_level(0),
@@ -263,7 +263,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     // For debugging purposes
 #ifdef KEEP_ONLY_SOME_RODS
     WarningStream(g_log, "", MsgInfo::kOncePerMessage)
-            << "WARNING: KEEP_ONLY_SOME_RODS: Simulating only a specified subset of rods!\n***********************************************************\n";
+    << "WARNING: KEEP_ONLY_SOME_RODS: Simulating only a specified subset of rods!\n***********************************************************\n";
     std::set<int> keep_only;
 
     keep_only.insert(62);
@@ -271,17 +271,21 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
 
     // Only the rods in the keep_only set are kept, the others are killed.
     for (int i = 0; i < m_number_of_rods; i++)
-        if (keep_only.find(i) == keep_only.end())
-            for (int j = 0; j < m_rods[i]->nv(); j++)
-                m_rods[i]->setVertex(j, 0 * m_rods[i]->getVertex(j));
-        else
-            m_simulated_rods.push_back(i);
+    if (keep_only.find(i) == keep_only.end())
+    for (int j = 0; j < m_rods[i]->nv(); j++)
+    m_rods[i]->setVertex(j, 0 * m_rods[i]->getVertex(j));
+    else
+    m_simulated_rods.push_back(i);
 #else
     // Initially all rods passed from Maya will be simulated
     for (int i = 0; i < m_number_of_rods; i++)
-    m_simulated_rods.push_back(i);
+        m_simulated_rods.push_back(i);
 #endif
     m_killed_rods.clear();
+
+    failed_collisions_rods.resize(m_number_of_rods);
+    stretching_rods.resize(m_number_of_rods);
+
 }
 
 BARodStepper::~BARodStepper()
@@ -639,6 +643,30 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         return;
     }
 
+    step_setup(selected_rods);
+
+    step_dynamic(selected_rods);
+
+    step_collision(selected_rods);
+
+    step_failure(selected_rods);
+
+    START_TIMER("BARodStepper::step/penalty");
+    // Clean up penalty collisions list
+    for (std::list<Collision*>::iterator i = m_penalty_collisions.begin(); i != m_penalty_collisions.end(); i++)
+        delete *i;
+    m_penalty_collisions.clear();
+    // Clear existing penalties
+    for (std::vector<RodPenaltyForce*>::const_iterator penalty_force = m_implicit_pnlty_forces.begin(); penalty_force
+            != m_implicit_pnlty_forces.end(); penalty_force++)
+        (*penalty_force)->clearProximityCollisions();
+    STOP_TIMER("BARodStepper::step/penalty");
+
+    STOP_TIMER("BARodStepper::step");
+}
+
+void BARodStepper::step_setup(const RodSelectionType& selected_rods)
+{
     TraceStream(g_log, "") << "t = " << m_t << ": BARodStepper::step() begins with " << selected_rods.size() << " rods\n";
 
     assert(m_edges.size() == m_edge_radii.size());
@@ -663,15 +691,6 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     for (int i = 0; i < (int) m_number_of_rods; ++i)
         assert(m_rods[i]->getTimeStep() == m_dt);
 #endif
-
-    START_TIMER("BARodStepper::step/setup");
-
-    // Prepare list of steppers to be executed.
-    std::vector<RodTimeStepper*> selected_steppers;
-    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-        selected_steppers.push_back(m_steppers[*rod]);
-
-    STOP_TIMER("BARodStepper::step/setup");
 
     START_TIMER("BARodStepper::step/explo");
 
@@ -705,10 +724,10 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     START_TIMER("BARodStepper::step/penalty");
 
     // Jungseock's implicit penalty
-    std::list<Collision*> penalty_collisions;
+    assert(m_penalty_collisions.empty());
     // The penalty collisions list is used to create penalty forces. All that is deleted and cleared at the end of this step.
     if (m_perf_param.m_enable_penalty_response)
-        setupPenaltyForces(penalty_collisions, selected_rods);
+        setupPenaltyForces(m_penalty_collisions, selected_rods);
 
     STOP_TIMER("BARodStepper::step/penalty");
 
@@ -716,10 +735,23 @@ void BARodStepper::step(RodSelectionType& selected_rods)
 
     if (m_perf_param.m_enable_explosion_detection)
         computeForces(m_preDynamicForces, selected_rods);
+}
 
+void BARodStepper::step_dynamic(const RodSelectionType& selected_rods)
+{
     START_TIMER("BARodStepper::step/steppers");
 
     bool dependable_solve = true;
+
+    START_TIMER("BARodStepper::step/setup");
+
+    // Prepare list of steppers to be executed.
+    std::vector<RodTimeStepper*> selected_steppers;
+    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+        selected_steppers.push_back(m_steppers[*rod]);
+
+    STOP_TIMER("BARodStepper::step/setup");
+
 #ifdef HAVE_OPENMP
 #pragma omp parallel for
 #endif
@@ -765,6 +797,12 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         applyInextensibilityVelocityFilter(selected_steppers[i]->getRod()->globalRodIndex);
 
     STOP_TIMER("BARodStepper::step/inexten");
+}
+
+void BARodStepper::step_collision(const RodSelectionType& selected_rods)
+{
+    for (int i = 0; i < m_number_of_rods; i++)
+        failed_collisions_rods[i] = stretching_rods[i] = false;
 
     START_TIMER("BARodStepper::step/immune");
 
@@ -785,8 +823,6 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     if (m_perf_param.m_enable_explosion_detection)
         computeForces(m_preCollisionForces, selected_rods);
 
-    std::vector<bool> failed_collisions_rods(m_number_of_rods);
-    std::vector<bool> stretching_rods(m_number_of_rods);
     if (m_perf_param.m_collision.m_max_iterations > 0)
     {
         if (!executeIterativeInelasticImpulseResponse(failed_collisions_rods, stretching_rods))
@@ -848,7 +884,10 @@ void BARodStepper::step(RodSelectionType& selected_rods)
 #endif
 
     STOP_TIMER("BARodStepper::step/setup");
+}
 
+void BARodStepper::step_failure(RodSelectionType& selected_rods)
+{
     START_TIMER("BARodStepper::step/explo");
 
     // Explosion detection
@@ -914,7 +953,7 @@ void BARodStepper::step(RodSelectionType& selected_rods)
             m_simulationFailed = true;
         else if (m_useKineticDamping)
         {
-	  // TODO (sainsley) : add flag check here
+            // TODO (sainsley) : add flag check here
             //     std::cout << "treatment: accept this step as-is" << '\n';
             // at this point, the step is either successful, or includes only ignorable errors
 
@@ -928,14 +967,13 @@ void BARodStepper::step(RodSelectionType& selected_rods)
             rod->recordKineticEnergy();
             if (rod->isKineticEnergyPeaked())
             {
-	      // std::cout << "Zeroing energy for rod " << rodidx << '\n';
+                // std::cout << "Zeroing energy for rod " << rodidx << '\n';
                 for (int i = 0; i < rod->nv(); ++i)
-		{
-		    rod->setVelocity(i, Vec3d(0,0,0));
-		}
-	    }
+                {
+                    rod->setVelocity(i, Vec3d(0, 0, 0));
+                }
+            }
         }
-
         selected_rods.erase(rodit--);
         // the -- compensates for the erased rod; this is dangerous since it assumes array (rather than linked-list) semantics for selected_rods
         // Yes I know, I'm surprised this even works.
@@ -958,21 +996,6 @@ void BARodStepper::step(RodSelectionType& selected_rods)
             ost << *rod << ' ';
         DebugStream(g_log, "") << "List of rods killed: " << ost.str() << '\n';
     }
-
-    START_TIMER("BARodStepper::step/penalty");
-
-    // Clean up penalty collisions list
-    for (std::list<Collision*>::iterator i = penalty_collisions.begin(); i != penalty_collisions.end(); i++)
-        delete *i;
-    penalty_collisions.clear();
-    // Clear existing penalties
-    for (std::vector<RodPenaltyForce*>::const_iterator penalty_force = m_implicit_pnlty_forces.begin(); penalty_force
-            != m_implicit_pnlty_forces.end(); penalty_force++)
-        (*penalty_force)->clearProximityCollisions();
-
-    STOP_TIMER("BARodStepper::step/penalty");
-
-    STOP_TIMER("BARodStepper::step");
 }
 
 /*
@@ -1430,6 +1453,9 @@ void BARodStepper::addRod(ElasticRod* rod, RodTimeStepper* stepper)
     m_rodbackups.resize(m_number_of_rods); // growing by 1
     m_rodbackups.back().resize(*m_rods.back());
 
+    failed_collisions_rods.resize(m_number_of_rods);
+    stretching_rods.resize(m_number_of_rods);
+
     // Extract edges from the new rod
     for (int j = 0; j < m_rods.back()->nv() - 1; ++j)
     {
@@ -1482,7 +1508,6 @@ void BARodStepper::addRod(ElasticRod* rod, RodTimeStepper* stepper)
     m_initialLengths.push_back(0);
     for (int j = 1; j < m_rods.back()->nv(); j++)
         m_initialLengths.back() += (m_rods.back()->getVertex(j) - m_rods.back()->getVertex(j - 1)).norm();
-
 }
 
 void BARodStepper::removeRod(int rodIdx)

@@ -109,7 +109,7 @@ public:
      */
     void skipRodRodCollisions(bool skipRodRodCollisions);
 
-    void setUseKineticDamping(bool useKineticDamping) 
+    void setUseKineticDamping(bool useKineticDamping)
     {
         m_useKineticDamping = useKineticDamping;
     }
@@ -236,9 +236,13 @@ private:
     void setRodLabels(const std::vector<std::string>& rod_labels);
 
     double computeTotalForceNorm() const;
-    void step(RodSelectionType& selected_rods);
     bool nonAdaptiveExecute(double dt, RodSelectionType& selected_rods);
     bool adaptiveExecute(double dt, RodSelectionType& selected_rods);
+    void step(RodSelectionType& selected_rods);
+    void step_setup(const RodSelectionType& selected_rods);
+    void step_dynamic(const RodSelectionType& selected_rods);
+    void step_collision(const RodSelectionType& selected_rods);
+    void step_failure(RodSelectionType& selected_rods);
 
     /////////////////////////////////////////////////////
     // Methods for checking the sanity of input rods
@@ -416,6 +420,10 @@ private:
     //////////////////////////////////
     // Jungseock's penalty response
     std::vector<RodPenaltyForce*> m_implicit_pnlty_forces;
+    std::list<Collision*> m_penalty_collisions;
+
+    std::vector<bool> failed_collisions_rods;
+    std::vector<bool> stretching_rods;
 
     // Number of threads to be used for dynamics and collisions
     int m_num_threads;
