@@ -440,9 +440,6 @@ void BARodStepper::prepareForExecution()
     if (m_perf_param.m_enable_penalty_response)
         enableImplicitPenaltyImpulses();
 
-    // DEBUG
-    m_total_solver_killed = m_total_collision_killed = m_total_explosion_killed = m_total_stretching_killed = 0;
-
     m_initialLengths.resize(m_number_of_rods);
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
         for (int j = 1; j < m_rods[*rod]->nv(); j++)
@@ -455,7 +452,11 @@ bool BARodStepper::execute()
 {
     START_TIMER("BARodStepper::execute")
 
-    m_num_solver_killed = m_num_explosion_killed = m_num_collision_killed = m_num_stretching_killed = 0;
+    m_perf_param.m_solver.resetNum();
+    m_perf_param.m_collision.resetNum();
+    m_perf_param.m_explosion.resetNum();
+    m_perf_param.m_stretching.resetNum();
+
     DebugStream(g_log, "") << "Executing time step " << m_t << '\n';
 
     m_collision_detector->buildBVH();
@@ -501,21 +502,12 @@ bool BARodStepper::execute()
     else
         result = nonAdaptiveExecute(m_dt, selected_rods);
 
-    m_total_solver_killed += m_num_solver_killed;
-    m_total_collision_killed += m_num_collision_killed;
-    m_total_explosion_killed += m_num_explosion_killed;
-    m_total_stretching_killed += m_num_stretching_killed;
-
     DebugStream(g_log, "") << "Time step finished, " << selected_rods.size() << " rods remaining out of " << m_rods.size()
             << '\n';
-    DebugStream(g_log, "") << "Rods killed because of solver failure: " << m_num_solver_killed << " (this step), "
-            << m_total_solver_killed << " (total)\n";
-    DebugStream(g_log, "") << "Rods killed because of collision failure: " << m_num_collision_killed << " (this step), "
-            << m_total_collision_killed << " (total)\n";
-    DebugStream(g_log, "") << "Rods killed because of explosion failure: " << m_num_explosion_killed << " (this step), "
-            << m_total_explosion_killed << " (total)\n";
-    DebugStream(g_log, "") << "Rods killed because of stretching failure: " << m_num_stretching_killed << " (this step), "
-            << m_total_stretching_killed << " (total)\n";
+    DebugStream(g_log, "") << m_perf_param.m_solver.sumMessage() << '\n';
+    DebugStream(g_log, "") << m_perf_param.m_collision.sumMessage() << '\n';
+    DebugStream(g_log, "") << m_perf_param.m_explosion.sumMessage() << '\n';
+    DebugStream(g_log, "") << m_perf_param.m_stretching.sumMessage() << '\n';
 
     STOP_TIMER("BARodStepper::execute")
 
@@ -938,13 +930,13 @@ void BARodStepper::step_failure(RodSelectionType& selected_rods)
         {
             // DEBUG
             if (solveFailure && m_perf_param.m_solver.m_in_case_of == FailureMode::KillTheRod)
-                m_num_solver_killed++;
-            if (explosion && m_perf_param.m_explosion.m_in_case_of == FailureMode::KillTheRod)
-                m_num_explosion_killed++;
+                ++m_perf_param.m_solver;
             if (collisionFailure && m_perf_param.m_collision.m_in_case_of == FailureMode::KillTheRod)
-                m_num_collision_killed++;
+                ++m_perf_param.m_collision;
+            if (explosion && m_perf_param.m_explosion.m_in_case_of == FailureMode::KillTheRod)
+                ++m_perf_param.m_explosion;
             if (stretching && m_perf_param.m_stretching.m_in_case_of == FailureMode::KillTheRod)
-                m_num_stretching_killed++;
+                ++m_perf_param.m_stretching;
 
             rod_kill++;
             killTheRod(*rodit);

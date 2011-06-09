@@ -8,6 +8,9 @@
 #ifndef PERFORMANCETUNINGPARAMETERS_HH_
 #define PERFORMANCETUNINGPARAMETERS_HH_
 
+#include <string>
+#include <boost/lexical_cast.hpp>
+
 namespace BASim
 {
 
@@ -18,14 +21,42 @@ struct FailureMode
         IgnoreError, KillTheRod, HaltSimulation
     };
 
-    int m_max_iterations; // For solver and collision only I suppose
+    // Maximum number of iterations when applicable (solver and collision)
+    int m_max_iterations;
+    // Maximum level of binary substepping that this failure mode will trigger
     int m_max_substeps;
+    // What to do in case of failure past the max level of substepping
     ResponseSeverity m_in_case_of;
+    // Counter of rods killed because of this failure mode during the time step
+    int m_num_killed;
+    // Cumulative counter of rods killed because of this failure mode
+    int m_total_killed;
 
     FailureMode(int max_iterations, int max_substeps, ResponseSeverity in_case_of) :
-        m_max_iterations(max_iterations), m_max_substeps(max_substeps), m_in_case_of(in_case_of)
+        m_max_iterations(max_iterations), m_max_substeps(max_substeps), m_in_case_of(in_case_of), m_num_killed(0),
+                m_total_killed(0)
     {
     }
+
+    void resetNum()
+    {
+        m_num_killed = 0;
+    }
+
+    std::string sumMessage()
+    {
+        return "Rods killed because of solver failure: " + boost::lexical_cast<std::string>(m_num_killed) + " (this step), "
+                + boost::lexical_cast<std::string>(m_total_killed) + " (total)";
+    }
+
+    FailureMode& operator++() // Prefix operator
+    {
+        ++m_num_killed;
+        ++m_total_killed;
+
+        return *this;
+    }
+
 };
 
 struct PerformanceTuningParameters

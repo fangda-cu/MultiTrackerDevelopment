@@ -462,13 +462,6 @@ private:
     RodSelectionType m_killed_rods; // NB these two lists should always be complementary (unless KEEP_ONLY_SOME_RODS)
 
     PerformanceTuningParameters m_perf_param;
-    // TextLog* g_log;
-
-    //  std::ofstream m_log_stream;
-
-    // DEBUG
-    int m_num_solver_killed, m_num_collision_killed, m_num_explosion_killed, m_num_stretching_killed;
-    int m_total_solver_killed, m_total_collision_killed, m_total_explosion_killed, m_total_stretching_killed;
 
     std::vector<double> m_initialLengths;
 
