@@ -173,7 +173,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
     m_collision_detector->getCollisions(collisions_list, ContinuousTime);
     TraceStream(g_log, "") << "Initial potential collisions: " << m_collision_detector->m_potential_collisions << "\n";
 
-    // Iterativly apply inelastic impulses
+    // Iteratively apply inelastic impulses
     for (int itr = 0; !collisions_list.empty() && itr < m_perf_param.m_collision.m_max_iterations; ++itr)
     {
         TraceStream(g_log, "") << "CTcollision response iteration " << itr << '\n';
@@ -204,57 +204,61 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                 }
             }
             TraceStream(g_log, "") << "of which " << collisions_list.size() << " are on different rods\n";
+
             // Now apply response to the remaining collisions
             for (std::list<Collision*>::iterator col_it = collisions_list.begin(); col_it != collisions_list.end(); col_it++)
             {
-                CTCollision* collision = dynamic_cast<CTCollision*> (*col_it);
-                if (collision)
-                    exertCompliantInelasticImpulse(collision);
-                // So, which rod was it?
-                int colliding_rod = getContainingRod(collision->GetRodVertex());
+                const CTCollision* collision = dynamic_cast<CTCollision*> (*col_it);
+                assert(collision != NULL);
+                // So, which rod was it? Here we are assuming that this is not a rod-rod collision
+                const int collidingRodIdx = getContainingRod(collision->GetRodVertex());
+                ElasticRod* const collidingRod = m_rods[collidingRodIdx];
 
-                /*
-                 // Check for explosion here
+                // Save pre-impulse velocities
+                VecXd velBackup(3 * collidingRod->nv());
+                for (int i = 0; i < 3 * collidingRod->nv(); i++)
+                    velBackup[i] = m_vnphalf[m_base_dof_indices[collidingRodIdx] + i];
 
-                 m_rods[colliding_rod]->computeForces(*m_endForces[colliding_rod]);
-                 TraceStream(g_log, "") << "Rod " << colliding_rod << " Force norms: initial: "
-                 << (*(m_startForces[colliding_rod])).norm() << " pre-collisions: "
-                 << (*(m_preCollisionForces[colliding_rod])).norm() << " post-collisions: "
-                 << (*(m_endForces[colliding_rod])).norm() << "\n";
-                 for (int j = 0; j < m_rods[colliding_rod]->ndof(); ++j)
-                 {
-                 const double s = (*(m_startForces[colliding_rod]))[j];
-                 const double p = (*(m_preCollisionForces[colliding_rod]))[j];
-                 const double e = (*(m_endForces[colliding_rod]))[j];
-                 const double rate = fabs(s - e) / (fabs(s) + m_perf_param.m_explosion_damping);
-                 if (isnan(rate) || rate > m_perf_param.m_explosion_threshold)
-                 {
-                 //                        explosions_detected = true;
-                 //                        exploding_rods[colliding_rod] = true;
-                 TraceStream(g_log, "") << "Rod number " << colliding_rod
-                 << " had an explosion during collision response: s = " << s << " p = " << p << " e = " << e
-                 << " rate = " << rate << " \n";
-                 // If the rod just had an explosion, give up trying resolving its collisions
-                 failed_collisions_rods[colliding_rod] = true;
-                 for (int v = 0; v < m_rods[colliding_rod]->nv(); ++v)
-                 m_collision_immune[m_base_dof_indices[colliding_rod] / 3 + v] = true;
-                 break;
-                 }
-                 }
-                 */
+                exertCompliantInelasticImpulse(collision);
+
+                if (m_perf_param.m_enable_explosion_detection)
+                {
+                    // Checking for explosion. First update the rod so forces can be computed.
+                    RodSelectionType tmp_list;
+                    tmp_list.push_back(collidingRodIdx);
+                    restorePositions(m_xn + m_dt * m_vnphalf, tmp_list);
+                    collidingRod->updateProperties();
+                    // Compute the forces and detect explosion
+                    collidingRod->computeForces(*m_endForces[collidingRodIdx]);
+                    if (hadExplosion(collidingRodIdx))
+                    {
+                        TraceStream(g_log, "") << "Restoring pre-collision velocities for rod " << collidingRodIdx << '\n';
+                        // Option A: if the rod just had an explosion, just restore the pre-impulse positions (and mark it immune for this step)!
+                        failed_collisions_rods[collidingRodIdx] = true; // FIXME: Should be exploding_rods really
+                        for (int v = 0; v < collidingRod->nv(); ++v)
+                        {
+                            m_vnphalf.segment<3> (m_base_dof_indices[collidingRodIdx] + 3 * v) = velBackup.segment<3> (3 * v);
+                            m_collision_immune[m_base_vtx_indices[collidingRodIdx] + v] = true;
+                        }
+                    }
+                }
 
                 // Test for stretching and if so, mark the rod immune
-                stretching_rods[colliding_rod] = !checkLength(colliding_rod);
-                if (stretching_rods[colliding_rod])
+                stretching_rods[collidingRodIdx] = !checkLength(collidingRodIdx);
+                if (stretching_rods[collidingRodIdx])
                 {
                     // Declare the rod collision-immune for the rest of the time step
-                    for (int j = 0; j < m_rods[colliding_rod]->nv(); ++j)
-                        m_collision_immune[m_base_vtx_indices[colliding_rod] + j] = false;
+                    for (int j = 0; j < collidingRod->nv(); ++j)
+                        m_collision_immune[m_base_vtx_indices[collidingRodIdx] + j] = true;
                 }
 
                 delete collision;
                 collisions_list.erase(col_it--);
             }
+
+            // Detect remaining collisions (including at the end of the last iteration, so we know what failed)
+            TraceStream(g_log, "") << "Detecting collisions...\n";
+            m_collision_detector->getCollisions(collisions_list, ContinuousTime, false); // No need to update the mesh bvh bounding boxes.
         }
         else
             while (!collisions_list.empty())
@@ -266,12 +270,9 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                 delete collision;
                 m_collision_detector->updateContinuousTimeCollisions();
             }
-
-        // Detect remaining collisions (including at the end of the last iteration, so we know what failed)
-        TraceStream(g_log, "") << "Detecting collisions...\n";
-        m_collision_detector->getCollisions(collisions_list, ContinuousTime, false); // No need to update the mesh bvh bounding boxes.
     }
 
+    // If collisions were still detected before exiting the loop
     if (!collisions_list.empty())
     {
         all_rods_collisions_ok = false;
@@ -306,12 +307,6 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
             delete *col;
         }
     }
-
-    //#ifdef TIMING_ON
-    //if( itr >= 2 ) IntStatTracker::getIntTracker("STEPS_WITH_MULTIPLE_IMPULSE_ITERATIONS") += 1;
-    //#endif
-
-    // checkLengths(stretching_rods);
 
     return all_rods_collisions_ok;
 }
@@ -1619,27 +1614,10 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
     {
         if (true || m_steppers[*rod]->HasSolved() && !failed_collisions_rods[*rod])
         {
-            TraceStream(g_log, "") << "Rod " << *rod << " Force norms: initial: " << (*(m_startForces[*rod])).norm()
-                    << " pre-dynamic: " << (*(m_preDynamicForces[*rod])).norm() << " pre-collisions: "
-                    << (*(m_preCollisionForces[*rod])).norm() << " post-collisions: " << (*(m_endForces[*rod])).norm() << "\n";
-            for (int j = 0; j < m_rods[*rod]->ndof(); ++j)
+            if (hadExplosion(*rod))
             {
-                const double s = (*(m_startForces[*rod]))[j];
-                const double p = (*(m_preCollisionForces[*rod]))[j];
-                const double e = (*(m_endForces[*rod]))[j];
-                const double rate = fabs(s - e) / (fabs(s) + m_perf_param.m_explosion_damping);
-                maxRate = std::max(maxRate, rate);
-                minStart = std::min(fabs(s), minStart);
-                maxStart = std::max(fabs(s), maxStart);
-                if (maxRate == rate)
-                    worstViolator = j;
-                if (isnan(rate) || rate > m_perf_param.m_explosion_threshold)
-                {
-                    explosions_detected = true;
-                    exploding_rods[*rod] = true;
-                    TraceStream(g_log, "") << "Rod number " << *rod << " had an explosion during collision response: s = " << s
-                            << " p = " << p << " e = " << e << " rate = " << rate << " \n";
-                }
+                explosions_detected = true;
+                exploding_rods[*rod] = true;
             }
         }
     }
@@ -1647,6 +1625,28 @@ bool BARodStepper::checkExplosions(std::vector<bool>& exploding_rods, const std:
         DebugStream(g_log, "") << "Some rods had explosions\n";
 
     return explosions_detected;
+}
+
+bool BARodStepper::hadExplosion(int rodIdx) // All forces must have been computed
+{
+    TraceStream(g_log, "") << "Rod " << rodIdx << " Force norms: initial: " << (*(m_startForces[rodIdx])).norm()
+            << " pre-dynamic: " << (*(m_preDynamicForces[rodIdx])).norm() << " pre-collisions: "
+            << (*(m_preCollisionForces[rodIdx])).norm() << " post-collisions: " << (*(m_endForces[rodIdx])).norm() << "\n";
+
+    for (int j = 0; j < m_rods[rodIdx]->ndof(); ++j)
+    {
+        const double s = (*(m_startForces[rodIdx]))[j];
+        const double p = (*(m_preCollisionForces[rodIdx]))[j];
+        const double e = (*(m_endForces[rodIdx]))[j];
+        const double rate = fabs(e - p) / (fabs(p) + m_perf_param.m_explosion_damping);
+        if (isnan(rate) || rate > m_perf_param.m_explosion_threshold)
+        {
+            TraceStream(g_log, "") << "Rod " << rodIdx << " had an explosion on DOF " << j << ": s = " << s << " p = " << p
+                    << " e = " << e << " rate = " << rate << " \n";
+            return true;
+        }
+    }
+    return false;
 }
 
 bool BARodStepper::checkLengths(std::vector<bool>& stretching_rods)
@@ -1683,7 +1683,8 @@ bool BARodStepper::checkLength(int rodIdx)
 
     if (length > m_initialLengths[rodIdx] * m_perf_param.m_stretching_threshold)
     {
-        TraceStream(g_log, "") << "Rod number " << rodIdx << " was stretched by a factor " << length / m_initialLengths[rodIdx];
+        TraceStream(g_log, "") << "Rod number " << rodIdx << " was stretched by a factor " << length / m_initialLengths[rodIdx]
+                << '\n';
         return false;
     }
 

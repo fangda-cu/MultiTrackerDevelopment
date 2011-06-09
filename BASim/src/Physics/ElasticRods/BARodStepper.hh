@@ -311,7 +311,7 @@ private:
     void exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdgeCTCollision& eecol);
     bool checkExplosions(std::vector<bool>& exploding_rods, const std::vector<bool>& failed_collisions_rods,
             const RodSelectionType& selected_rods);
-
+    bool hadExplosion(int rodIdx);
     bool checkLengths(std::vector<bool>& stretching_rods);
     bool checkLength(int rodIdx);
 
