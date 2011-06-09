@@ -24,6 +24,9 @@ public:
   virtual Scalar globalEnergy();
   virtual void globalForce(VecXd& F);
   virtual void globalJacobian(int baseidx, Scalar scale, MatrixBase& J);
+  virtual void globalForceEnergy(VecXd& force, Scalar& energy);
+  virtual void globalJacobianForceEnergy(int baseidx, Scalar scale, MatrixBase& Jacobian, 
+					 VecXd& force, Scalar& energy);
 
   virtual void globalReverseJacobian(MatrixBase& Jacobian);
   virtual void updateReverseUndeformedStrain(const VecXd& e);
@@ -31,6 +34,8 @@ public:
   Scalar localEnergy(const vertex_handle& vh);
   void localForce(VecXd& F, const vertex_handle& vh);
   void localJacobian(MatXd& J, const vertex_handle& vh);
+  void localForceEnergy(VecXd& F, Scalar& energy, const vertex_handle& vh);
+  void localJacobianForceEnergy(MatXd& J, VecXd& F, Scalar& energy, const vertex_handle& vh);
 
   Scalar getKt(const vertex_handle& vh) const;
   void setKt(const vertex_handle& vh, const Scalar& kt);

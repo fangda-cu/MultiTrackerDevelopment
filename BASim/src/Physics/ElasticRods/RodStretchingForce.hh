@@ -39,6 +39,9 @@ public:
   virtual Scalar globalEnergy();
   virtual void globalForce(VecXd& force);
   virtual void globalJacobian(int baseidx, Scalar scale, MatrixBase& Jacobian);
+  virtual void globalForceEnergy(VecXd& force, Scalar& energy);
+  virtual void globalJacobianForceEnergy(int baseidx, Scalar scale, MatrixBase& Jacobian, 
+					 VecXd& force, Scalar& energy);
 
   virtual void globalReverseJacobian(MatrixBase& Jacobian);
   
