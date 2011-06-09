@@ -266,7 +266,7 @@ Math/Petsc/PetscMatrix.hh \
 Math/Petsc/PetscUtils.hh \
 Math/Preconditioner.hh \
 Math/SolverUtils.hh \
-Math/StaticsSolver.hh \
+Math/StaticSolver.hh \
 Math/SymplecticEuler.hh \
 Math/TimeSteppingBase.hh \
 Math/Pardiso/PardisoLinearSolver.hh \
@@ -383,6 +383,7 @@ src/Threads/Mutex.cc \
 src/Math/MKL/MKLLinearSolver.cc \
 src/Math/SolverUtils.cc \
 src/Math/SymmetricImplicitEuler.cc \
+src/Math/StaticSolver.cc \
 src/Math/Pardiso/PardisoLinearSolver.cc \
 src/Physics/ElasticRods/AnisotropicRod.cc \
 src/Physics/ElasticRods/BARodStepper.cc \
