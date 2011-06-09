@@ -210,22 +210,26 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
             {
                 const CTCollision* collision = dynamic_cast<CTCollision*> (*col_it);
                 assert(collision != NULL);
+
                 // So, which rod was it? Here we are assuming that this is not a rod-rod collision
                 const int collidingRodIdx = getContainingRod(collision->GetRodVertex());
                 ElasticRod* const collidingRod = m_rods[collidingRodIdx];
+                RodSelectionType tmp_list;
+                tmp_list.push_back(collidingRodIdx);
 
                 // Save pre-impulse velocities
                 VecXd velBackup(3 * collidingRod->nv());
                 for (int i = 0; i < 3 * collidingRod->nv(); i++)
                     velBackup[i] = m_vnphalf[m_base_dof_indices[collidingRodIdx] + i];
 
+                // Position the rod at collision time so the compliance works on the right configuration
+                restorePositions(m_xn + collision->getTime() * m_dt * m_vnphalf, tmp_list);
+                collidingRod->updateProperties();
                 exertCompliantInelasticImpulse(collision);
 
                 if (m_perf_param.m_enable_explosion_detection)
                 {
                     // Checking for explosion. First update the rod so forces can be computed.
-                    RodSelectionType tmp_list;
-                    tmp_list.push_back(collidingRodIdx);
                     restorePositions(m_xn + m_dt * m_vnphalf, tmp_list);
                     collidingRod->updateProperties();
                     // Compute the forces and detect explosion
