@@ -143,7 +143,7 @@ void ElasticRod::computeForces(VecXd& force)
 }
 
 
-void ElasticRod::computeForcesEnergy(VecXd& force, Scalar& energy)
+void ElasticRod::computeConservativeForcesEnergy(VecXd& force, Scalar& energy)
 {
   // std::cout << "Rod forces..." << std::endl;
   RodForces& forces = getForces();
@@ -151,6 +151,7 @@ void ElasticRod::computeForcesEnergy(VecXd& force, Scalar& energy)
   VecXd  curr_force(force.size());
   Scalar curr_energy;
   for (fIt = forces.begin(); fIt != forces.end(); ++fIt) {
+    if ( (*fIt)->viscous()) continue;
     curr_force.setZero();
     (*fIt)->globalForceEnergy(curr_force, curr_energy);
     force  += curr_force;

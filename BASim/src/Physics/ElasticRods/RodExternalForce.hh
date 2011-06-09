@@ -20,7 +20,7 @@ class RodExternalForce
 public:
 
     explicit RodExternalForce(bool implicit = true) :
-        m_implicit(implicit), m_name("name not given!")
+      m_implicit(implicit), m_conservative(false), m_name("name not given!")
     {
     }
 
@@ -44,6 +44,11 @@ public:
         m_implicit = implicit;
     }
 
+    bool isConservative() const
+    {
+        return m_conservative;
+    }
+
     std::string getName() const
     {
         return m_name;
@@ -53,6 +58,8 @@ protected:
     bool m_implicit;
 
     std::string m_name;
+
+    bool m_conservative;
 };
 
 } // namespace BASim
