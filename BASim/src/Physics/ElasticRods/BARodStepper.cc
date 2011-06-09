@@ -263,22 +263,23 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     // For debugging purposes
 #ifdef KEEP_ONLY_SOME_RODS
     WarningStream(g_log, "", MsgInfo::kOncePerMessage)
-    << "WARNING: KEEP_ONLY_SOME_RODS: Simulating only a specified subset of rods!\n***********************************************************\n";
+            << "WARNING: KEEP_ONLY_SOME_RODS: Simulating only a specified subset of rods!\n***********************************************************\n";
     std::set<int> keep_only;
 
-    keep_only.insert(0);
+    keep_only.insert(62);
+    keep_only.insert(89);
 
     // Only the rods in the keep_only set are kept, the others are killed.
     for (int i = 0; i < m_number_of_rods; i++)
-    if (keep_only.find(i) == keep_only.end())
-    for (int j = 0; j < m_rods[i]->nv(); j++)
-    m_rods[i]->setVertex(j, 0 * m_rods[i]->getVertex(j));
-    else
-    m_simulated_rods.push_back(i);
+        if (keep_only.find(i) == keep_only.end())
+            for (int j = 0; j < m_rods[i]->nv(); j++)
+                m_rods[i]->setVertex(j, 0 * m_rods[i]->getVertex(j));
+        else
+            m_simulated_rods.push_back(i);
 #else
     // Initially all rods passed from Maya will be simulated
     for (int i = 0; i < m_number_of_rods; i++)
-        m_simulated_rods.push_back(i);
+    m_simulated_rods.push_back(i);
 #endif
     m_killed_rods.clear();
 }
@@ -633,7 +634,6 @@ void BARodStepper::step(RodSelectionType& selected_rods)
     START_TIMER("BARodStepper::step")
 
     if (m_simulationFailed) // We stopped simulating already
-
     {
         STOP_TIMER("BARodStepper::step")
         return;
@@ -1175,6 +1175,8 @@ void BARodStepper::computeImmunity(const RodSelectionType& selected_rods)
             for (int j = 0; j < m_rods[*rod]->nv(); ++j)
                 m_collision_immune[m_base_vtx_indices[*rod] + j] = false;
 
+    return; // Disabling intersection-based immunity
+
     // Find the initial vertex-face intersections and mark them collision-immune
     std::list<Collision*> collisions;
     m_collision_detector->getCollisions(collisions, EdgeFace);
@@ -1397,6 +1399,9 @@ void BARodStepper::computeForces(std::vector<VecXd*> Forces, const RodSelectionT
 {
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
     {
+#ifndef NDEBUG
+        m_rods[*rod]->verifyProperties(); // Sanity check to ensure rod's internal state is consistent
+#endif
         Forces[*rod]->setZero();
         //m_rods[*rod]->computeForces(*Forces[*rod]);
         m_steppers[*rod]->evaluatePDot(*Forces[*rod]);
