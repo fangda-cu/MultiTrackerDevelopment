@@ -14,6 +14,7 @@
 #include "../../Math/TimeSteppingBase.hh"
 #include "../../Math/SolverUtils.hh"
 #include "RodExternalForce.hh"
+#include "RodExternalConservativeForce.hh"
 #include "../../Math/SymplecticEuler.hh"
 #include "../../Math/ImplicitEuler.hh"
 #include "../../Math/SymmetricImplicitEuler.hh"
@@ -26,6 +27,7 @@
 #include "BASim/src/Math/TimeSteppingBase.hh"
 #include "BASim/src/Math/SolverUtils.hh"
 #include "BASim/src/Physics/ElasticRods/RodExternalForce.hh"
+#include "BASim/src/Physics/ElasticRods/RodExternalConservativeForce.hh"
 #include "BASim/src/Math/SymplecticEuler.hh"
 #include "BASim/src/Math/ImplicitEuler.hh"
 #include "BASim/src/Math/SymmetricImplicitEuler.hh"
@@ -232,18 +234,24 @@ public:
    *
    * \param[out] f The vector of accelerations on the rod.
    */
-  void evaluatePotentialForcesEnergy(VecXd& f, Scalar& energy)
+  void evaluateConservativeForcesEnergy(VecXd& f, Scalar& energy)
   {
-    m_rod.computePotentialForcesEnergy(f, energy);
+    m_rod.computeConservativeForcesEnergy(f, energy);
 
-    VecXd curr_force(f.size());
+    VecXd  curr_force(f.size());
 
-    // add external forces
+    // add external conservative forces
     for (size_t i = 0; i < m_externalForces.size(); ++i) {
       curr_force.setZero();
-      m_externalForces[i]->computeForceEnergy(m_rod, curr_force, energy);
-      f += curr_force;
-      TraceStream(g_log, "") << m_externalForces[i]->getName() << " &rod = " << &m_rod << " norm = " << curr_force.norm() << '\n';
+      Scalar curr_energy = 0;
+      if (m_externalForces[i]->isConservative())
+      {
+	  RodExternalConservativeForce* potentialForce = dynamic_cast<RodExternalConservativeForce*>(m_externalForces[i]);
+	  potentialForce->computeForceEnergy(m_rod, curr_force, curr_energy);
+	  f      += curr_force;
+	  energy += curr_energy;
+      }
+      TraceStream(g_log, "") << m_externalForces[i]->getName() << " &rod = " << &m_rod << " potential energy = " << energy << " force norm = " << curr_force.norm() << '\n';
     }
   }
 

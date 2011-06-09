@@ -12,7 +12,7 @@ namespace BASim
 {
 
 /** External force that applies gravity to a rod. */
-class RodGravity: public RodExternalForce
+class RodGravity: public RodExternalConservativeForce
 {
 public:
 
@@ -36,6 +36,18 @@ public:
      * \param[out] force Vector storing the forces on the rod.
      */
 
+    Scalar computeEnergy(const ElasticRod& rod) const
+    {
+        Scalar energy = 0;
+
+        for (int i = 0; i < rod.nv(); ++i)
+        {
+            energy += rod.getVertexMass(i) * m_gravity.dot( rod.getVertex(i));
+        }
+
+        return energy;
+    }
+
     void computeForce(const ElasticRod& rod, VecXd& force) const
     {
         VecXd force1 = force;
@@ -52,6 +64,27 @@ public:
         //    std::cout << "gravity\n" << force - force1 <<"\n";
 
     }
+
+
+    void computeForceEnergy(const ElasticRod& rod, VecXd& force, Scalar& energy) const
+    {
+        VecXd force1 = force;
+
+        for (int i = 0; i < rod.nv(); ++i)
+        {
+            energy += rod.getVertexMass(i) * m_gravity.dot( rod.getVertex(i));
+
+            Vec3d f = rod.getVertexMass(i) * m_gravity;
+            for (int coord = 0; coord < 3; ++coord)
+            {
+                force(rod.vertIdx(i, coord)) += f(coord);
+            }
+        }
+
+        //    std::cout << "gravity\n" << force - force1 <<"\n";
+
+    }
+
 
     void computeForceDX(int baseidx, const ElasticRod& rod, Scalar scale, MatrixBase& J) const
     {

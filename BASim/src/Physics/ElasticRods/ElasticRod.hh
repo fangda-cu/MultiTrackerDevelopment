@@ -43,10 +43,10 @@ public:
 
     //@{
 
-    virtual void setup();
-    virtual void computeForces(VecXd& force);
-    virtual void computeForcesEnergy(VecXd& force, Scalar& energy);
-    virtual void computeJacobian(int baseidx, Scalar scale, MatrixBase& J);
+  virtual void setup();
+  virtual void computeForces(VecXd& force);
+  virtual void computeConservativeForcesEnergy(VecXd& force, Scalar& energy);
+  virtual void computeJacobian(int baseidx, Scalar scale, MatrixBase& J);
 
     virtual const Scalar&
     getVertexDof(const vertex_handle& vh, int num) const;
