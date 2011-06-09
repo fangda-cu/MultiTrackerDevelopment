@@ -73,7 +73,6 @@ public:
     static MObject ia_curlRadius;
     static MObject ia_curlPitch;
     static MObject ia_curlStart;
-    static MObject ia_hasUniformCurvature;
     static MObject ia_rodPitch;
     
     // Collision meshes
@@ -147,7 +146,6 @@ private:
     double m_curlPitch;
     double m_curlStart;
     double m_rodPitch;
-    bool m_hasUniformCurvature;
     int m_verticesPerRod;
     
     WmSweeneyRodManager* m_rodManager;

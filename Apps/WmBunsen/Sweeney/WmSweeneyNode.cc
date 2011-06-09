@@ -31,7 +31,6 @@ using namespace BASim;
 /* static */ MObject WmSweeneyNode::ia_curlRadius;
 /* static */ MObject WmSweeneyNode::ia_curlPitch;
 /* static */ MObject WmSweeneyNode::ia_curlStart;
-/* static */ MObject WmSweeneyNode::ia_hasUniformCurvature;
 /* static */ MObject WmSweeneyNode::ia_rodPitch;
 
 
@@ -110,8 +109,6 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
         m_curlRadius = i_dataBlock.inputValue( ia_curlRadius ).asDouble();
 	m_curlPitch = i_dataBlock.inputValue( ia_curlPitch ).asDouble();
 	m_curlStart = i_dataBlock.inputValue( ia_curlStart ).asDouble();
-	// TODO (sainsley) : get rid of this shit
-	m_hasUniformCurvature = i_dataBlock.inputValue( ia_hasUniformCurvature ).asBool();
         m_rodPitch = i_dataBlock.inputValue( ia_rodPitch ).asDouble();
         
         MObject strandVerticesObj = i_dataBlock.inputValue( ia_strandVertices ).data();
@@ -169,7 +166,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		    
 		    // parametric variable for walking the rod lengthwise
 		    Scalar t = 0;
-		    Scalar scale = 1;
+
 		    int j = 0;
 
 		    // adjust the rod size
@@ -209,11 +206,6 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		      cout << "WmSweeneyNode::compute::simulate: idx = " << vh->idx() << " parametric var = " << t << " " << curl_len << endl;
                         assert( m_rodManager->m_rods[i]->m_bendingForce != NULL );
 			
-			// set default curvature to constant
-			if(!m_hasUniformCurvature) 
-                        {
-			  scale = t;
-			} 			
 			// curl curvature and torsion
 			
 			Scalar curvature = 0.0;
@@ -456,7 +448,7 @@ void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices,
         o_rodVertices.push_back( BASim::Vec3d( currentVertex.x, currentVertex.y, currentVertex.z ) );
         
         currentVertex += edge;
-        // TODO (sainsley) : Now that this works, factor into the dynamic code
+        
 	/*MVector newPoint( m_curlRadius * cos( (double)v ),
 			m_curlPitch * (double)v, m_curlRadius * sin( (double)v ) );
         //	
@@ -745,21 +737,6 @@ void* WmSweeneyNode::creator()
         
         status = attributeAffects( ia_curlStart, ca_rodPropertiesSync );
         if ( !status ) { status.perror( "attributeAffects ia_curlStart->ca_rodPropertiesSync" ); return status; }
-    }
-    
-    // TODO (sainsley) : get rid of this shit
-    {
-        MFnNumericAttribute numericAttr;
-        ia_hasUniformCurvature = numericAttr.create( "hasUniformCurvature", "unicurv", MFnNumericData::kBoolean, true, &status);
-	CHECK_MSTATUS( status );
-        CHECK_MSTATUS( numericAttr.setReadable( true ) );
-        CHECK_MSTATUS( numericAttr.setWritable( true ) );
-	CHECK_MSTATUS( numericAttr.setConnectable( true ) );
-	status = addAttribute( ia_hasUniformCurvature );
-        CHECK_MSTATUS( status );
-	
-	status = attributeAffects( ia_hasUniformCurvature, ca_rodPropertiesSync );
-        if (!status) { status.perror( "addAttribute ia_hasUniformCurvature->ca_rodPropertiesSync" ); return status; }
     }
 
     addNumericAttribute( ia_rodPitch, "rodPitch", "rop", MFnNumericData::kDouble, 0.5, true );
