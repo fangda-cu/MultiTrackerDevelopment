@@ -32,7 +32,7 @@ using namespace BASim;
 /* static */ MObject WmSweeneyNode::ia_curlPitch;
 /* static */ MObject WmSweeneyNode::ia_curlStart;
 /* static */ MObject WmSweeneyNode::ia_rodPitch;
-
+/* static */ MObject WmSweeneyNode::ia_rodDamping;
 
 // Barbershop specific inputs
 /*static*/ MObject WmSweeneyNode::ia_strandVertices;
@@ -110,6 +110,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 	m_curlPitch = i_dataBlock.inputValue( ia_curlPitch ).asDouble();
 	m_curlStart = i_dataBlock.inputValue( ia_curlStart ).asDouble();
         m_rodPitch = i_dataBlock.inputValue( ia_rodPitch ).asDouble();
+	m_rodDamping = i_dataBlock.inputValue( ia_rodDamping ).asBool();
         
         MObject strandVerticesObj = i_dataBlock.inputValue( ia_strandVertices ).data();
         MFnVectorArrayData strandVerticesArrayData( strandVerticesObj, &status );
@@ -142,7 +143,10 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
             {
                 // If the rods exist then just update their undeformed configuration but keep running
                 // the simulation.
-                //
+
+                // Apply kinetic damping
+	        m_rodManager->setUseKineticDamping( m_rodDamping );
+
 	         for (size_t i = 0; i < m_rodManager->m_rods.size(); ++i)
                 {                
                     // TODO: Add code to update undeformed configuration 
@@ -188,9 +192,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		   
 		    m_rodManager->m_rods[i]->updateStiffness();
 
-		    // Apply kinetic damping
-
-		    m_rodManager->m_rods[i]->recordKineticEnergy();
+		    /*m_rodManager->m_rods[i]->recordKineticEnergy();
 		    if (m_rodManager->m_rods[i]->isKineticEnergyPeaked())
 		    {
 		      
@@ -198,7 +200,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 			{
 			    m_rodManager->m_rods[i]->setVelocity(ii, Vec3d(0,0,0));
 			}
-		    }
+			}*/
 		    
 		    for ( ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin(); 
                          vh != m_rodManager->m_rods[i]->vertices_end(); ++vh )
@@ -739,6 +741,11 @@ void* WmSweeneyNode::creator()
         if ( !status ) { status.perror( "attributeAffects ia_curlStart->ca_rodPropertiesSync" ); return status; }
     }
 
+    addNumericAttribute( ia_rodDamping, "rodDamping", "roddamp", MFnNumericData::kBoolean, true, true );
+        status = attributeAffects( ia_rodDamping, ca_rodPropertiesSync );
+	if ( !status ) { status.perror( "attributeAffects ia_rodDamping->ca_rodPropertiesSync" ); return status; }
+
+    
     addNumericAttribute( ia_rodPitch, "rodPitch", "rop", MFnNumericData::kDouble, 0.5, true );
 	status = attributeAffects( ia_rodPitch, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_rodPitch->ca_rodPropertiesSync" ); return status; }

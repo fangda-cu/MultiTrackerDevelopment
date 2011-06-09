@@ -49,6 +49,8 @@ public:
                  const BASim::Vec3d i_gravity = BASim::Vec3d( 0.0, -980.0, 0.0 ),                 
                  const BASim::RodTimeStepper::Method i_solverType = BASim::RodTimeStepper::IMPL_EULER );
 
+    void setUseKineticDamping ( bool i_useKinecticDamping );
+
     void initialiseSimulation( const double i_timeStep, const double i_startTime, BASim::PerformanceTuningParameters perfParams,
                                double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters );
 
@@ -73,10 +75,9 @@ public:
     }
 
     std::vector< BASim::ElasticRod* > m_rods;
-    
+  
 private:
     BASim::BARodStepper* m_bridsonStepper;
-    
     std::vector< BASim::RodTimeStepper* > m_rodTimeSteppers;
     std::vector< BASim::RodRenderer* > m_rodRenderers;
     std::vector< BASim::TriangleMesh* > m_triangleMeshes;

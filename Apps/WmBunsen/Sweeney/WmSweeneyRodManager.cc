@@ -109,6 +109,11 @@ void WmSweeneyRodManager::addCollisionMesh( BASim::TriangleMesh* i_triangleMesh,
     m_scriptingControllers.push_back( i_scriptingController );
 }
 
+void WmSweeneyRodManager::setUseKineticDamping ( bool i_useKinecticDamping )
+{
+    m_bridsonStepper->setUseKineticDamping( i_useKinecticDamping );
+}
+ 
 void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const double i_startTime, PerformanceTuningParameters perfParams,
                                                 double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters )
 {
