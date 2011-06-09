@@ -110,7 +110,8 @@ void CollisionDetectorBase::updateBoundingBox(BVH& bvh, const std::vector<const 
         }
         if (bbox.Volume() > 100)
         {
-            TraceStream(g_log, "") << "LARGE BOUNDING BOX RESET TO ZERO\n";
+            WarningStream(g_log, "lbbrtz", MsgInfo::kOncePerId)
+                    << "LARGE BOUNDING BOX RESET TO ZERO (this warning is only displayed once)\n";
             bbox = BBoxType();
         }
     }
