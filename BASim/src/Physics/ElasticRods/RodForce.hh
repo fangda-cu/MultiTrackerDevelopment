@@ -53,8 +53,7 @@ public:
 
   virtual void verifyProperties() {}
 
-	
-	virtual void updatePlasticity(Scalar maxKappa) {}
+  virtual void updatePlasticity(Scalar maxKappa) {}
   
   virtual void updateUndeformedConfiguration(std::vector<Scalar>& vals) {}
   
