@@ -5,7 +5,7 @@ class MayaTest( TestCase ):
 	def testcase001( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
-		self.shell.call('bob_check_opt' )
+		self.shell.call('bob_check_dbg' )
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
@@ -21,7 +21,7 @@ class MayaTest( TestCase ):
 	def testcase001a( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
-		self.shell.call('bob_check_opt' )
+		self.shell.call('bob_check_dbg' )
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
@@ -38,7 +38,7 @@ class MayaTest( TestCase ):
 	def testcase001b( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
-		self.shell.call('bob_check_opt' )
+		self.shell.call('bob_check_dbg' )
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
@@ -55,7 +55,7 @@ class MayaTest( TestCase ):
 	def testcase002( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
-		self.shell.call('bob_check_opt' )
+		self.shell.call('bob_check_dbg' )
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
@@ -72,7 +72,7 @@ class MayaTest( TestCase ):
 	def testcase003( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
-		self.shell.call('bob_check_opt' )
+		self.shell.call('bob_check_dbg' )
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
@@ -89,7 +89,7 @@ class MayaTest( TestCase ):
 	def testcase004( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
-		self.shell.call('bob_check_opt' )
+		self.shell.call('bob_check_dbg' )
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
@@ -106,7 +106,7 @@ class MayaTest( TestCase ):
 	def testcase005( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
-		self.shell.call('bob_check_opt' )
+		self.shell.call('bob_check_dbg' )
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
@@ -123,7 +123,7 @@ class MayaTest( TestCase ):
 	def testcase005a( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
-		self.shell.call('bob_check_opt' )
+		self.shell.call('bob_check_dbg' )
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
@@ -140,7 +140,7 @@ class MayaTest( TestCase ):
 	def testcase006( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
-		self.shell.call('bob_check_opt' )
+		self.shell.call('bob_check_dbg' )
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
@@ -157,7 +157,7 @@ class MayaTest( TestCase ):
 	def testcase007( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
-		self.shell.call('bob_check_opt' )
+		self.shell.call('bob_check_dbg' )
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
@@ -174,7 +174,7 @@ class MayaTest( TestCase ):
 	def testcase008( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
-		self.shell.call('bob_check_opt' )
+		self.shell.call('bob_check_dbg' )
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
@@ -190,7 +190,7 @@ class MayaTest( TestCase ):
 	def testcase009( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
-		self.shell.call('bob_check_opt' )
+		self.shell.call('bob_check_dbg' )
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
@@ -207,7 +207,7 @@ class MayaTest( TestCase ):
 	def testcase009a( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
-		self.shell.call('bob_check_opt' )
+		self.shell.call('bob_check_dbg' )
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
@@ -224,7 +224,7 @@ class MayaTest( TestCase ):
 	def testcase009b( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
-		self.shell.call('bob_check_opt' )
+		self.shell.call('bob_check_dbg' )
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
@@ -240,7 +240,7 @@ class MayaTest( TestCase ):
 	def testcase009c( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
-		self.shell.call('bob_check_opt' )
+		self.shell.call('bob_check_dbg' )
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
@@ -256,7 +256,7 @@ class MayaTest( TestCase ):
 	def testcase010( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
-		self.shell.call('bob_check_opt' )
+		self.shell.call('bob_check_dbg' )
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
@@ -272,7 +272,7 @@ class MayaTest( TestCase ):
 	def testcase010a( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
-		self.shell.call('bob_check_opt' )
+		self.shell.call('bob_check_dbg' )
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
@@ -288,7 +288,7 @@ class MayaTest( TestCase ):
 	def testcase011( self ):
                
 		self.shell.need( 'maya' , '2010_64' )
-		self.shell.call('bob_check_opt' )
+		self.shell.call('bob_check_dbg' )
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
