@@ -303,7 +303,7 @@ public:
     virtual Vec3d computeInelasticImpulse() = 0;
     virtual bool IsFixed() = 0;
     virtual void Print(std::ostream& os) = 0;
-    virtual int GetRodVertex() = 0;
+    virtual int GetRodVertex() const = 0;
 
     friend bool CompareTimes(const Collision* cllsnA, const Collision* cllsnB);
 
@@ -375,7 +375,7 @@ public:
         os << *this << std::endl;
     }
 
-    virtual int GetRodVertex();
+    virtual int GetRodVertex() const;
 
     friend std::ostream& operator<<(std::ostream& os, const EdgeEdgeCTCollision& eecol);
     //   virtual void Print(std::ostream& os); { os << *this << std::endl; };
@@ -425,7 +425,7 @@ public:
     {
         os << *this << std::endl;
     }
-    virtual int GetRodVertex();
+    virtual int GetRodVertex() const;
 
     friend std::ostream& operator<<(std::ostream& os, const VertexFaceCTCollision& vfcol);
     //   virtual void Print(std::ostream& os) { os << *this << std::endl; };

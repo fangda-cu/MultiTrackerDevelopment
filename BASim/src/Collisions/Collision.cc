@@ -16,7 +16,6 @@ namespace BASim
 /**
  * Class EdgeFaceIntersection
  */
-
 static const double SQ_TOLERANCE = 1e-12;
 
 bool EdgeFaceIntersection::analyseCollision(double)
@@ -46,9 +45,7 @@ bool EdgeFaceIntersection::analyseCollision(double)
 
         Vec3d cp = ClosestPtPointTriangle(pcol, f0col, f1col, f2col);
 
-        // std::cerr << "EdgeFaceIntersection::analyseCollision: " << " dist^2 = " << (pcol - cp).squaredNorm() << std::endl;
-
-        // If, when they are coplanar, the objects are sufficiently close, register a collision
+        // If the intersection point and the close point on the triangle are close and that point is interior, register a collision
         if ((pcol - cp).squaredNorm() <= SQ_TOLERANCE)
         {
             s = times[j];
@@ -57,10 +54,7 @@ bool EdgeFaceIntersection::analyseCollision(double)
             // Barycentric coords could be outside of [0,1] right now because we've extended the triangles a little bit
             assert(approxEq(u + v + w, 1.0));
 
-            // std::cerr << "Barycentric coordinate on the edge: " << s << std::endl;
-            // std::cerr << "Barycentric coordinates on the face: " << u << ' ' << v << ' ' << w << std::endl;
-
-            if ((u > 0 && v > 0 && w > 0) || (1 - u) <= 0 || (1 - v) <= 0 || (1 - w) <= 0)
+            if (u > 0 && v > 0 && w > 0)
                 return m_analysed = true;
         }
     }
@@ -70,8 +64,7 @@ bool EdgeFaceIntersection::analyseCollision(double)
 /**
  * Class EdgeEdgeCTCollision
  */
-
-int EdgeEdgeCTCollision::GetRodVertex()
+int EdgeEdgeCTCollision::GetRodVertex() const
 {
     if (e0_v0 < m_geodata.GetObjStart())
         return e0_v0;
@@ -248,7 +241,7 @@ std::ostream& operator<<(std::ostream& os, const EdgeEdgeCTCollision& eecol)
  * Class VertexFaceCTCollision
  */
 
-int VertexFaceCTCollision::GetRodVertex()
+int VertexFaceCTCollision::GetRodVertex() const
 {
     assert(v0 < m_geodata.GetObjStart());
     return v0;
