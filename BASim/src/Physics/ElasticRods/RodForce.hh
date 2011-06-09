@@ -39,12 +39,14 @@ public:
   virtual void globalForce(VecXd& force) = 0;
   virtual void globalJacobian(int baseidx, Scalar scale, MatrixBase& Jacobian) = 0;
   
-  virtual void globalForceEnergy(VecXd& force, Scalar& energy) 
-  {
+  virtual void globalForceEnergy(VecXd& force, Scalar& energy) = 0; 
+  //{
     // more efficient implementations are strongly encouraged!!!
-    globalForce(force);
-    energy = globalEnergy();
-  }
+  //globalForce(force);
+  //energy = globalEnergy();
+  //}
+  virtual void globalJacobianForceEnergy(int baseidx, Scalar scale, MatrixBase& Jacobian, 
+					 VecXd& force, Scalar& energy) = 0;
 
   virtual void updateProperties() {}
   virtual void updateStiffness() {}
