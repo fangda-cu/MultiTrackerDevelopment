@@ -20,10 +20,10 @@ PerformanceTuningParameters::PerformanceTuningParameters() :
             m_explosion_damping(100.0), //
             m_explosion_threshold(100.0), //
             m_stretching_threshold(2.0), //
-            m_solver(50, 0, FailureMode::KillTheRod), //
-            m_collision(10, 0, FailureMode::KillTheRod), //
-            m_explosion(0, 0, FailureMode::KillTheRod), //
-            m_stretching(0, 0, FailureMode::KillTheRod)
+            m_solver("solver", 50, 0, FailureMode::KillTheRod), //
+            m_collision("collision", 10, 0, FailureMode::KillTheRod), //
+            m_explosion("explosion", 0, 0, FailureMode::KillTheRod), //
+            m_stretching("stretching", 0, 0, FailureMode::KillTheRod)
 {
 }
 

@@ -21,6 +21,8 @@ struct FailureMode
         IgnoreError, KillTheRod, HaltSimulation
     };
 
+    // Name of the failure
+    std::string m_name;
     // Maximum number of iterations when applicable (solver and collision)
     int m_max_iterations;
     // Maximum level of binary substepping that this failure mode will trigger
@@ -32,9 +34,9 @@ struct FailureMode
     // Cumulative counter of rods killed because of this failure mode
     int m_total_killed;
 
-    FailureMode(int max_iterations, int max_substeps, ResponseSeverity in_case_of) :
-        m_max_iterations(max_iterations), m_max_substeps(max_substeps), m_in_case_of(in_case_of), m_num_killed(0),
-                m_total_killed(0)
+    FailureMode(std::string name, int max_iterations, int max_substeps, ResponseSeverity in_case_of) :
+        m_name(name), m_max_iterations(max_iterations), m_max_substeps(max_substeps), m_in_case_of(in_case_of),
+                m_num_killed(0), m_total_killed(0)
     {
     }
 
@@ -45,8 +47,8 @@ struct FailureMode
 
     std::string sumMessage()
     {
-        return "Rods killed because of solver failure: " + boost::lexical_cast<std::string>(m_num_killed) + " (this step), "
-                + boost::lexical_cast<std::string>(m_total_killed) + " (total)";
+        return "Rods killed because of " + m_name + " failure: " + boost::lexical_cast<std::string>(m_num_killed)
+                + " (this step), " + boost::lexical_cast<std::string>(m_total_killed) + " (total)";
     }
 
     FailureMode& operator++() // Prefix operator
