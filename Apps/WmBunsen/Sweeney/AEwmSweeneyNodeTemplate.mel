@@ -28,51 +28,61 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
   
     editorTemplate -beginLayout "Performance Tuning" -collapse 0;
       //General parameters
-      editorTemplate -beginLayout "General Parameters" -collapse 0;
-        editorTemplate -beginLayout "Implicit Rod-Mesh Penalty" -collapse 0;
-          editorTemplate -addControl "enablePenaltyResponse";
-          editorTemplate -addControl "implicitThickness";
-	  editorTemplate -addControl "implicitStiffness";
-        editorTemplate -endLayout;
+    	editorTemplate -beginLayout "General Parameters" -collapse 0;
+        	editorTemplate -beginLayout "Implicit Rod-Mesh Penalty" -collapse 0;
+          		editorTemplate -addControl "enablePenaltyResponse";
+          		editorTemplate -addControl "implicitThickness";
+	  		editorTemplate -addControl "implicitStiffness";
+        	editorTemplate -endLayout;
     
-        editorTemplate -beginLayout "Inextensibility Filter" -collapse 0;
-          editorTemplate -addControl "inextensibilityThreshold";
-        editorTemplate -endLayout;
-      editorTemplate -endLayout;
+        	editorTemplate -beginLayout "Inextensibility Filter" -collapse 0;
+         		editorTemplate -addControl "inextensibilityThreshold";
+        	editorTemplate -endLayout;
+     	editorTemplate -endLayout;
     
       //Failure Detection
-      editorTemplate -beginLayout "Failure Detection" -collapse 0;
-        editorTemplate -beginLayout "Solver" -collapse 0;
-          editorTemplate -addControl "maxNumOfSolverIters";
-        editorTemplate -endLayout;
+      	editorTemplate -beginLayout "Failure Detection" -collapse 0;
+        	editorTemplate -beginLayout "Solver" -collapse 0;
+          		editorTemplate -addControl "maxNumOfSolverIters";
+        	editorTemplate -endLayout;
     
-        editorTemplate -beginLayout "Collision" -collapse 0;
-          editorTemplate -addControl "maxNumOfCollisionIters";
-        editorTemplate -endLayout;
+        	editorTemplate -beginLayout "Collision" -collapse 0;
+          		editorTemplate -addControl "maxNumOfCollisionIters";
+        	editorTemplate -endLayout;
     
-        editorTemplate -beginLayout "Explosion" -collapse 0;
-          editorTemplate -addControl "enableExplosionDetection";
-          editorTemplate -addControl "explosionDampening";
-          editorTemplate -addControl "explosionThreshold";
-        editorTemplate -endLayout;
-      editorTemplate -endLayout;
+        	editorTemplate -beginLayout "Explosion" -collapse 0;
+          		editorTemplate -addControl "enableExplosionDetection";
+          		editorTemplate -addControl "explosionDampening";
+          		editorTemplate -addControl "explosionThreshold";
+        	editorTemplate -endLayout;
+
+		editorTemplate -beginLayout "Stretching" -collapse 0;
+     			editorTemplate -addControl "stretchingThreshold";
+     		editorTemplate -endLayout;
+     		
+      	editorTemplate -endLayout;
     
-      editorTemplate -beginLayout "Substepping:" -collapse 0;
-        editorTemplate -beginLayout "Solver" -collapse 0;
-          editorTemplate -addControl "maxNumSolverSubsteps";
-          editorTemplate -addControl "ifSolverStillFails";
-        editorTemplate -endLayout;
+      	editorTemplate -beginLayout "Substepping:" -collapse 0;
+        	editorTemplate -beginLayout "Solver" -collapse 0;
+          		editorTemplate -addControl "maxNumSolverSubsteps";
+          		editorTemplate -addControl "ifSolverStillFails";
+       	 	editorTemplate -endLayout;
     
-        editorTemplate -beginLayout "Collision" -collapse 0;
-          editorTemplate -addControl "maxNumCollisionSubsteps";
-          editorTemplate -addControl "ifCollisionStillFails";
-        editorTemplate -endLayout;
+        	editorTemplate -beginLayout "Collision" -collapse 0;
+          		editorTemplate -addControl "maxNumCollisionSubsteps";
+          		editorTemplate -addControl "ifCollisionStillFails";
+        	editorTemplate -endLayout;
      
-        editorTemplate -beginLayout "Explosion" -collapse 0;
-          editorTemplate -addControl "maxNumExplosionSubsteps";
-          editorTemplate -addControl "ifExplosionStillFails";
-        editorTemplate -endLayout;
-      editorTemplate -endLayout;
+       	 	editorTemplate -beginLayout "Explosion" -collapse 0;
+          		editorTemplate -addControl "maxNumExplosionSubsteps";
+          		editorTemplate -addControl "ifExplosionStillFails";
+        	editorTemplate -endLayout;
+
+  		editorTemplate -beginLayout "Stretching" -collapse 0;
+         		editorTemplate -addControl "maxNumStretchingSubsteps";
+        		editorTemplate -addControl "ifStretchingStillFails";
+     		editorTemplate -endLayout;
+      	editorTemplate -endLayout;
     
     editorTemplate -endLayout;
 

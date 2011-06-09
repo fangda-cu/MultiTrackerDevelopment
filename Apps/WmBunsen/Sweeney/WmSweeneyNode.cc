@@ -67,15 +67,17 @@ using namespace BASim;
 /* static */ MObject WmSweeneyNode::ia_enableExplosionDetection;
 /* static */ MObject WmSweeneyNode::ia_explosionDampening;
 /* static */ MObject WmSweeneyNode::ia_explosionThreshold;
+/* static */ MObject WmSweeneyNode::ia_stretchingThreshold;
 
 //FailureResponse
 /* static */ MObject WmSweeneyNode::ia_solverFailure;
 /* static */ MObject WmSweeneyNode::ia_collisionFailure;
 /* static */ MObject WmSweeneyNode::ia_explosionFailure;
+/* static */ MObject WmSweeneyNode::ia_stretchingFailure;
 /* static */ MObject WmSweeneyNode::ia_maxNumSolverSubsteps;
 /* static */ MObject WmSweeneyNode::ia_maxNumCollisionSubsteps;
 /* static */ MObject WmSweeneyNode::ia_maxNumExplosionSubsteps;
-
+/* static */ MObject WmSweeneyNode::ia_maxNumStretchingSubsteps;
  
 WmSweeneyNode::WmSweeneyNode() : m_rodManager( NULL )
 {    
@@ -401,13 +403,15 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
     perfParams.m_enable_explosion_detection=i_dataBlock.inputValue( ia_enableExplosionDetection).asBool();
     perfParams.m_explosion_damping=i_dataBlock.inputValue( ia_explosionDampening).asDouble();
     perfParams.m_explosion_threshold=i_dataBlock.inputValue( ia_explosionThreshold).asDouble();
+    perfParams.m_stretching_threshold=i_dataBlock.inputValue( ia_stretchingThreshold).asDouble();
     perfParams.m_solver.m_in_case_of= (BASim::FailureMode::ResponseSeverity) i_dataBlock.inputValue( ia_solverFailure).asInt();
     perfParams.m_collision.m_in_case_of=(BASim::FailureMode::ResponseSeverity) i_dataBlock.inputValue( ia_collisionFailure).asInt();
     perfParams.m_explosion.m_in_case_of=(BASim::FailureMode::ResponseSeverity) i_dataBlock.inputValue( ia_explosionFailure).asInt();
+    perfParams.m_stretching.m_in_case_of=(BASim::FailureMode::ResponseSeverity) i_dataBlock.inputValue( ia_stretchingFailure).asInt();
     perfParams.m_solver.m_max_substeps=i_dataBlock.inputValue( ia_maxNumSolverSubsteps).asInt();
     perfParams.m_collision.m_max_substeps=i_dataBlock.inputValue( ia_maxNumCollisionSubsteps).asInt();
     perfParams.m_explosion.m_max_substeps=i_dataBlock.inputValue( ia_maxNumExplosionSubsteps).asInt();
-
+    perfParams.m_stretching.m_max_substeps=i_dataBlock.inputValue( ia_maxNumStretchingSubsteps).asInt();
     double m_atol=powf(10, -i_dataBlock.inputValue( ia_atol).asDouble());
     double m_stol=powf(10, -i_dataBlock.inputValue( ia_stol).asDouble());
     double m_rtol=powf(10, -i_dataBlock.inputValue( ia_rtol).asDouble());
@@ -860,6 +864,10 @@ void* WmSweeneyNode::creator()
         status = attributeAffects( ia_explosionThreshold, ca_rodPropertiesSync );
         if ( !status ) { status.perror( "attributeAffects ia_explosionThreshold->ca_rodPropertiesSync" ); return status; }
 
+    addNumericAttribute( ia_stretchingThreshold, "stretchingThreshold", "sxt", MFnNumericData::kDouble, 2.0, true );
+                status = attributeAffects( ia_stretchingThreshold, ca_rodPropertiesSync );
+                if ( !status ) { status.perror( "attributeAffects ia_stretchingThreshold->ca_rodPropertiesSync" ); return status; }
+
     {
         MFnEnumAttribute enumAttrFn;
         ia_solverFailure = enumAttrFn.create( "ifSolverStillFails", "svf", (short) FailureMode::IgnoreError, & status );
@@ -922,6 +930,28 @@ void* WmSweeneyNode::creator()
     addNumericAttribute( ia_maxNumExplosionSubsteps, "maxNumExplosionSubsteps", "mnes", MFnNumericData::kInt, 7, true );
         status = attributeAffects( ia_maxNumExplosionSubsteps, ca_rodPropertiesSync );
         if ( !status ) { status.perror( "attributeAffects ia_maxNumExplosionSubsteps->ca_rodPropertiesSync" ); return status; }
+
+    {
+        MFnEnumAttribute enumAttrFn;
+        ia_stretchingFailure = enumAttrFn.create( "ifStretchingStillFails", "sxf", (short) FailureMode::KillTheRod, & status );
+        CHECK_MSTATUS( status );
+        enumAttrFn.addField( "Ignore error",   (short) FailureMode::IgnoreError );
+        enumAttrFn.addField( "Kill the rod",  (short) FailureMode::KillTheRod );
+        enumAttrFn.addField( "Halt simulation",  (short) FailureMode::HaltSimulation );
+        enumAttrFn.setKeyable( false );
+        enumAttrFn.setStorable( true );
+        enumAttrFn.setWritable( true );
+        enumAttrFn.setReadable( true );
+        status = addAttribute( ia_stretchingFailure );
+        CHECK_MSTATUS( status );
+    }
+    status = attributeAffects( ia_stretchingFailure, ca_rodPropertiesSync );
+        if (!status) { status.perror( "attributeAffects ia_stretchingFailure->ca_rodPropertiesSync" ); return status; }
+
+
+    addNumericAttribute( ia_maxNumStretchingSubsteps, "maxNumStretchingSubsteps", "mnts", MFnNumericData::kInt, 0, true );
+        status = attributeAffects( ia_maxNumStretchingSubsteps, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_maxNumStretchingSubsteps->ca_rodPropertiesSync" ); return status; }
 
     addNumericAttribute( ia_verticesPerStrand, "verticesPerStrand", "vps", MFnNumericData::kInt, 12, true );
 	status = attributeAffects( ia_verticesPerStrand, ca_rodPropertiesSync );
