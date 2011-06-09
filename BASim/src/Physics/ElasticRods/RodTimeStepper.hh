@@ -17,7 +17,7 @@
 #include "../../Math/SymplecticEuler.hh"
 #include "../../Math/ImplicitEuler.hh"
 #include "../../Math/SymmetricImplicitEuler.hh"
-#include "../../Math/StaticsSolver.hh"
+#include "../../Math/StaticSolver.hh"
 #include "../../Physics/ElasticRods/MinimalRodStateBackup.hh"
 #include "../../Util/TextLog.hh"
 #else
@@ -29,7 +29,7 @@
 #include "BASim/src/Math/SymplecticEuler.hh"
 #include "BASim/src/Math/ImplicitEuler.hh"
 #include "BASim/src/Math/SymmetricImplicitEuler.hh"
-#include "BASim/src/Math/StaticsSolver.hh"
+#include "BASim/src/Math/StaticSolver.hh"
 #include "BASim/src/Util/TextLog.hh"
 #include "BASim/src/Physics/ElasticRods/MinimalRodStateBackup.hh"
 #endif
@@ -132,7 +132,7 @@ public:
     }
     else if (method == STATICS) 
     {
-      m_diffEqSolver = new StaticsSolver<RodTimeStepper>(*this);
+      m_diffEqSolver = new StaticSolver<RodTimeStepper>(*this);
     } 
     else if (method == NONE)
     {

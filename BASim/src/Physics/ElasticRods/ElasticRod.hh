@@ -44,6 +44,7 @@ public:
 
   virtual void setup();
   virtual void computeForces(VecXd& force);
+  virtual void computeForcesEnergy(VecXd& force, Scalar& energy);
   virtual void computeJacobian(int baseidx, Scalar scale, MatrixBase& J);
 
   virtual const Scalar&

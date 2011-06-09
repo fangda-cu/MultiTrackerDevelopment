@@ -142,6 +142,23 @@ void ElasticRod::computeForces(VecXd& force)
   }
 }
 
+
+void ElasticRod::computeForcesEnergy(VecXd& force, Scalar& energy)
+{
+  // std::cout << "Rod forces..." << std::endl;
+  RodForces& forces = getForces();
+  RodForces::iterator fIt;
+  VecXd  curr_force(force.size());
+  Scalar curr_energy;
+  for (fIt = forces.begin(); fIt != forces.end(); ++fIt) {
+    curr_force.setZero();
+    (*fIt)->globalForceEnergy(curr_force, curr_energy);
+    force  += curr_force;
+    energy += curr_energy;
+    TraceStream(g_log, "") << (*fIt)->getName() << " energy = " << curr_energy << " force norm = " << curr_force.norm() << '\n';
+  }
+}
+
 void ElasticRod::computeJacobian(int baseidx, Scalar scale, MatrixBase& J)
 {
   RodForces& forces = getForces();
