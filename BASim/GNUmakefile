@@ -270,6 +270,7 @@ Math/SymplecticEuler.hh \
 Math/TimeSteppingBase.hh \
 Math/Pardiso/PardisoLinearSolver.hh \
 Physics/DegreeOfFreedom.hh \
+Physics/ElasticRods/BAGroomingStepper.hh \
 Physics/ElasticRods/BARodStepper.hh \
 Physics/ElasticRods/ParallelStepper.hh \
 Physics/ElasticRods/AnisotropicRod.hh \
@@ -293,6 +294,7 @@ Physics/ElasticRods/RodMayaForces.hh \
 Physics/ElasticRods/RodMassDamping.hh \
 Physics/ElasticRods/RodPenaltyForce.hh \
 Physics/ElasticRods/RodStretchingForce.hh \
+Physics/ElasticRods/GroomingTimeStepper.hh \
 Physics/ElasticRods/RodTimeStepper.hh \
 Physics/ElasticRods/RodTube.hh \
 Physics/ElasticRods/RodTwistingForce.hh \
