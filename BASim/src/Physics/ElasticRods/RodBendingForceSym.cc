@@ -359,7 +359,7 @@ void RodBendingForceSym::localForceEnergy(VecXd& force, Scalar& energy, const ve
   energy += 0.5 / len * (kappa - kappaBar).dot(B * (kappa - kappaBar));
 }
 
-void RodBendingForceSym::void globalJacobianForceEnergy(int baseidx, Scalar scale, MatrixBase& J, 
+void RodBendingForceSym::globalJacobianForceEnergy(int baseidx, Scalar scale, MatrixBase& J, 
 					 VecXd& force, Scalar& energy) 
 {
 
@@ -381,7 +381,7 @@ void RodBendingForceSym::void globalJacobianForceEnergy(int baseidx, Scalar scal
 
     for( int i = 0; i < (int) indices.size(); ++i ) 
     {
-      force(indices[i]) += f(j);
+      force(indices[i]) += f(i);
       indices[i] += baseidx;
     }
 
