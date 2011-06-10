@@ -223,7 +223,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                     velBackup[i] = m_vnphalf[m_base_dof_indices[collidingRodIdx] + i];
 
                 // Position the rod at collision time so the compliance works on the right configuration
-                restorePositions(m_xn + collision->getTime() * m_dt * m_vnphalf, tmp_list);
+                restorePositions(m_xn + /*collision->getTime() */ m_dt * m_vnphalf, tmp_list);
                 collidingRod->updateProperties();
                 exertCompliantInelasticImpulse(collision);
 
