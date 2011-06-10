@@ -27,7 +27,7 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
                                   const BASim::ElasticRod::RefFrameType i_referenceFrame,
                                   const double i_massDamping, 
                                   const BASim::Vec3d i_gravity,
-                                  const BASim::RodTimeStepper::Method i_solverType )
+                                  const BASim::RodGroomingStepper::Method i_solverType )
 {
     cerr << "WmSweeneyRodManager::addRod: About to create rod\n";
     RodOptions rodOptions;
@@ -51,7 +51,7 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
     RodRenderer* rodRenderer = new RodRenderer( *rod );
     
     // Create a timeStepper to simulate the rod forward in time
-    RodTimeStepper* stepper = new RodTimeStepper( *rod );
+    RodGroomingStepper* stepper = new RodGroomingStepper( *rod );
 	stepper->setDiffEqSolver( i_solverType );
 	    
     // Add a damping force to the rod
@@ -187,7 +187,7 @@ void WmSweeneyRodManager::updateSolverSettings(double i_atol, double i_stol, dou
 
     for ( size_t r = 0; r < m_rods.size(); ++r )
     {
-        RodTimeStepper* stepper = m_rodTimeSteppers[ r ];
+        RodGroomingStepper* stepper = m_rodTimeSteppers[ r ];
         assert(stepper);
 	DiffEqSolver& solver = stepper->getDiffEqSolver();
 
