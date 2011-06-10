@@ -36,6 +36,8 @@ public:
     {
         m_A = m_diffEq.createMatrix();
         m_solver = SolverUtils::instance()->createLinearSolver(m_A);
+
+        m_maxlsit = 5;
     }
 
     ~StaticSolver()
@@ -113,6 +115,7 @@ public:
         m_deltaX.setZero();
         m_increment.setZero();
         m_A->setZero();
+	m_energy = 0;
     }
 
     // update computation of: forces (the RHS), residual, energy
@@ -121,6 +124,7 @@ public:
         // rhs == forces
         TraceStream(g_log, "") << "Staticsolver::computeResidual: evaluating PDot...\n";
         m_rhs.setZero();
+	m_energy = 0;
         m_diffEq.evaluateConservativeForcesEnergy(m_rhs, m_energy);
 
         // For prescribed (fixed) DOFS, overwrite heuristic initial guess
@@ -141,6 +145,13 @@ public:
         TraceStream(g_log, "") << "Staticsolver::isConverged: residual = " << m_l2norm << " infnorm = "
                 << m_infnorm << " rel residual = " << m_l2norm / m_initl2norm << " inc norm = " << m_increment.norm()
                 << " atol = " << m_atol << " inftol = " << m_inftol << " rtol = " << m_rtol << " stol = " << m_stol << '\n';
+
+	// Energy was halved... good enough!
+        if (m_energy < m_initEnergy)
+        {
+            TraceStream(g_log, "") << "Staticsolver::isConverged(): converged: energy halved from " << m_initEnergy << " to " << m_energy << "\n";
+            return true;
+        }
 
         // L2 norm of the residual is less than tolerance
         if (m_l2norm < m_atol)
@@ -232,8 +243,10 @@ protected:
 	// save the initial residual
         m_initl2norm = m_l2norm;
 
+	m_initEnergy = m_energy;
+
         TraceStream(g_log, "")
-                << "StaticSolver::position_solve: starting Newton solver. Initial guess has residual = "
+                << "StaticSolver::position_solve: starting Newton solver. Initial energy = " << m_energy << " and residual = "
                 << m_l2norm << ", convergence test will use thresholds atol = " << m_atol << " inftol = " << m_inftol
                 << " rtol = " << m_initl2norm * m_rtol << " stol = " << m_stol << '\n';
 
@@ -243,13 +256,17 @@ protected:
         // Chapter 2: Iterate using Newton's Method
         ////////////////////////////////////////////////////
 
+	Scalar lambda = 1e-8;
+
         int curit = 0;
         for (curit = 0; curit < m_maxit; ++curit)
         {
-            TraceStream(g_log, "") << "\nStaticSolver::position_solve: Newton iteration = " << curit << "\n";
+	    lambda *= 2.;
+
+            TraceStream(g_log, "") << "\nStaticSolver::position_solve: Newton iteration = " << curit << " lambda = " << lambda << "\n";
 
             // TODO: Assert m_A, increment are zero
-
+ 
             START_TIMER("StaticSolver::position_solve/setup");
 
             // Set up LHS Matrix
@@ -260,6 +277,12 @@ protected:
             // The LHS is the Hessian of the potential energy
             // m_A = -dF/dx
             m_diffEq.evaluatePDotDX(-1, *m_A);
+            m_A->finalize();
+            assert(m_A->isApproxSymmetric(1.0e-6));
+
+	    // Spectral shift
+            for (int i = 0; i < m_ndof; ++i)
+                m_A->add(i, i, lambda);
             m_A->finalize();
             assert(m_A->isApproxSymmetric(1.0e-6));
 
@@ -323,12 +346,12 @@ protected:
 
                 TraceStream(g_log, "") << "Staticsolver::position_solve: summary of line search i " << i
                         << ": increment " << m_increment.norm() << " energy " << m_energy << ", previous "
-                        << prevEnergy << " ";
+                        << prevEnergy << " " << " initial " << m_initEnergy << "\n";
 
                 // Is this step acceptable?
                 /////////////////////////////////////////////////////////////
 
-                if (m_energy < .9 * prevEnergy || converged)
+                if (m_energy < prevEnergy || converged)
                 {
                     TraceStream(g_log, "") << "Succeeded (done).\n\n";
                     break;
@@ -365,7 +388,23 @@ protected:
             {
                 DebugStream(g_log, "") << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver reached max iterations: "
                         << m_maxit << "\n";
-                return false;
+
+		if (m_energy > m_initEnergy)
+		{
+		    // Solver failed -- undo the changes
+		    /////////////////////////////////////////////////
+
+		    // Update the differential equation with the current guess
+		    m_diffEq.set_q(x0);
+
+		    // Signal the differential equation that it should recompute cached quantities
+		    m_diffEq.endIteration();
+
+		    updatePositionBasedQuantities();
+		    return true;
+		}
+
+		return false;
             }
 
             START_TIMER("Staticsolver::position_solve/setup");
@@ -418,6 +457,7 @@ protected:
     LinearSolverBase* m_solver;
 
     Scalar m_energy; // EG: move to DiffEqSolver
+    Scalar m_initEnergy;
     Scalar m_l2norm;
     Scalar m_initl2norm;
 };

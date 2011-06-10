@@ -260,7 +260,7 @@ public:
 	  f      += curr_force;
 	  energy += curr_energy;
       }
-      TraceStream(g_log, "") << m_externalForces[i]->getName() << " &rod = " << &m_rod << " potential energy = " << energy << " force norm = " << curr_force.norm() << '\n';
+      TraceStream(g_log, "GroomingTimeStepper::evaluateConservativeForcesEnergy:") << m_externalForces[i]->getName() << " &rod = " << &m_rod << " potential energy = " << curr_energy << " force norm = " << curr_force.norm() << '\n';
     }
   }
 
