@@ -219,6 +219,104 @@ void RodStretchingForce::elementJacobian(ElementJacobian& Jacobian,
   }
 }
 
+void RodStretchingForce::globalForceEnergy(VecXd& force, Scalar& energy) 
+{
+  IndexArray indices;
+  ElementForce localForce;
+
+  iterator end = m_stencil.end();
+  
+  for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
+    edge_handle& eh = m_stencil.handle();
+    elementForceEnergy(localForce, energy, eh);
+    m_stencil.indices(indices);
+    for (int i = 0; i < indices.size(); ++i)
+      force(indices(i)) += localForce(i);
+  }
+
+}
+
+void RodStretchingForce::elementForceEnergy(ElementForce& force, Scalar& energy, const edge_handle& eh)
+{
+  // NOTE(sainsley): there is no efficiency gain in this method. There is overlap in the 
+  // elementForce(... edge_handle) method and the elementEnergy method, but the former doesn't seem
+  // to be in use.
+
+  SpringDofStruct dofs;
+  gatherDofs(dofs, eh);
+  
+  // set force
+  Vec3d f =
+    dofs.stiffness * (dofs.currLength / dofs.restLength - 1.0) * dofs.tangent;
+  force.segment<3>(0) =  f;
+  force.segment<3>(3) = -f;
+  
+  Scalar ks = getKs(eh);  
+  if (ks == 0.0) return;
+
+  // accumulate energy
+  Scalar refLength = getRefLength(eh);
+  Scalar len = m_rod.getEdgeLength(eh);
+  energy += ks / 2.0 * square(len / refLength - 1.0) * refLength;
+}
+
+void RodStretchingForce::globalJacobianForceEnergy(int baseidx, Scalar scale, MatrixBase& Jacobian, 
+					 VecXd& force, Scalar& energy)
+{
+  IndexArray indices;
+  ElementJacobian localJ;
+  ElementForce localForce;
+  MatXd adder;
+
+  iterator end = m_stencil.end();
+  for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil) {
+    edge_handle& eh = m_stencil.handle();
+    localJ.setZero();
+    elementJacobianForceEnergy(localJ, localForce, energy, eh);
+    adder = localJ;
+    adder *= scale;
+    m_stencil.indices(indices);
+    for( int i = 0; i < (int) indices.size(); ++i ) 
+    { 
+      force(indices(i)) += localForce(i);
+      indices(i) += baseidx;
+    }
+    Jacobian.add(indices, indices, adder);
+  }
+}
+
+void RodStretchingForce::elementJacobianForceEnergy(ElementJacobian& Jacobian, ElementForce& force, Scalar& energy, const edge_handle& eh)
+{
+  SpringDofStruct dofs;
+  gatherDofs(dofs, eh);
+  
+  // set force
+  Vec3d f =
+    dofs.stiffness * (dofs.currLength / dofs.restLength - 1.0) * dofs.tangent;
+  force.segment<3>(0) =  f;
+  force.segment<3>(3) = -f;
+
+  Scalar ks = getKs(eh);
+  if (ks == 0.0) return;
+
+  const Vec3d& e = m_rod.getEdge(eh);
+  Scalar len = m_rod.getEdgeLength(eh);
+  Scalar refLength = getRefLength(eh);
+  Mat3d M = ks * ( (1.0 / refLength - 1.0 / len) * Mat3d::Identity()
+                   + 1.0 / len * outerProd(e,e) / square(len) );
+
+  // set jacobian
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      Jacobian(    i, j) = Jacobian(3 + i, 3 + j) = -M(i, j);
+      Jacobian(3 + i, j) = Jacobian(    i, 3 + j) =  M(i, j);
+    }
+  }
+
+  // accumulate energy
+  energy += ks / 2.0 * square(len / refLength - 1.0) * refLength;
+}
+
 void RodStretchingForce::globalReverseJacobian(MatrixBase& J)
 {
   if (viscous()) return;  // don't need to include viscous force - zero 

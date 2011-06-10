@@ -49,6 +49,8 @@ public:
   void elementForce(ElementForce& force, const SpringDofStruct& dofs);
   void elementForce(ElementForce& force, const edge_handle& eh);
   void elementJacobian(ElementJacobian& Jacobian, const edge_handle& eh);
+  void elementForceEnergy(ElementForce& force, Scalar& energy, const edge_handle& eh);
+  void elementJacobianForceEnergy(ElementJacobian& Jacobian, ElementForce& force, Scalar& energy, const edge_handle& eh);
 
   const Scalar& getKs(const edge_handle& eh) const;
   void setKs(const edge_handle& eh, const Scalar& ks);

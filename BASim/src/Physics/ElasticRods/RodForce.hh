@@ -40,15 +40,20 @@ public:
   virtual void globalJacobian(int baseidx, Scalar scale, MatrixBase& Jacobian) = 0;
   
   // TODO(sainsley) : RENAME THESE METHODS TO INDICATE THEY ARE ACCUMULATORS
-  // TODO(sainsley) : remove default
-  virtual void globalForceEnergy(VecXd& force, Scalar& energy) // = 0; 
+  // TODO(sainsley) : remove default without getting compile errors for non-sym forces
+  virtual void globalForceEnergy(VecXd& force, Scalar& energy)
   {
     // more efficient implementations are strongly encouraged!!!
     globalForce(force);
     energy = globalEnergy();
   }
   virtual void globalJacobianForceEnergy(int baseidx, Scalar scale, MatrixBase& Jacobian, 
-					 VecXd& force, Scalar& energy) = 0;
+					 VecXd& force, Scalar& energy) {
+
+    globalJacobian(baseidx, scale, Jacobian);
+    globalForce(force);
+    energy = globalEnergy();
+  }
 
   virtual void updateProperties() {}
   virtual void updateStiffness() {}
