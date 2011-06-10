@@ -74,7 +74,8 @@ public:
     static MObject ia_curlPitch;
     static MObject ia_curlStart;
     static MObject ia_rodPitch;
-    
+    static MObject ia_rodDamping;
+
     // Collision meshes
     static MObject ia_collisionMeshes;
     
@@ -98,14 +99,17 @@ public:
     static MObject ia_enableExplosionDetection;
     static MObject ia_explosionDampening;
     static MObject ia_explosionThreshold;
+    static MObject ia_stretchingThreshold;
 
      //FailureResponse
     static MObject ia_solverFailure;
     static MObject ia_collisionFailure;
     static MObject ia_explosionFailure;
+    static MObject ia_stretchingFailure;
     static MObject ia_maxNumSolverSubsteps;
     static MObject ia_maxNumCollisionSubsteps;
     static MObject ia_maxNumExplosionSubsteps;
+    static MObject ia_maxNumStretchingSubsteps;
 
     // Sync attributes to force compute() when inputs change
     static MObject ca_rodPropertiesSync;
@@ -147,6 +151,7 @@ private:
     double m_curlStart;
     double m_rodPitch;
     int m_verticesPerRod;
+    bool m_rodDamping;
     
     WmSweeneyRodManager* m_rodManager;
     MVectorArray m_strandVertices;

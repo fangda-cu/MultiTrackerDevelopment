@@ -54,6 +54,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
             m_t(time),
             m_rod_labels(),
             m_simulationFailed(false),
+	    m_useKineticDamping(false),
             m_stopOnRodError(false),
             m_perf_param(perf_param),
             m_level(0),
@@ -911,27 +912,28 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         }
         else if (haltSim)
             m_simulationFailed = true;
-        else
+        else if (m_useKineticDamping)
         {
+	  // TODO (sainsley) : add flag check here
             //     std::cout << "treatment: accept this step as-is" << '\n';
             // at this point, the step is either successful, or includes only ignorable errors
 
             // Accept this step
 
-            // ElasticRod* rod = m_rods[rodidx];
+            ElasticRod* rod = m_rods[rodidx];
 
             // std::cout << "KE[" << rodidx << "] = " << rod->computeKineticEnergy() << '\n';
 
-            // // Apply kinetic damping
-            // rod->recordKineticEnergy();
-            // if (rod->isKineticEnergyPeaked())
-            // {
-            //     std::cout << "Zeroing energy for rod " << rodidx << '\n';
-            //     for (int i = 0; i < rod->nv(); ++i)
-            //     {
-            //         rod->setVelocity(i, Vec3d(0,0,0));
-            //     }
-            // }
+            // Apply kinetic damping
+            rod->recordKineticEnergy();
+            if (rod->isKineticEnergyPeaked())
+            {
+	      // std::cout << "Zeroing energy for rod " << rodidx << '\n';
+                for (int i = 0; i < rod->nv(); ++i)
+		{
+		    rod->setVelocity(i, Vec3d(0,0,0));
+		}
+	    }
         }
 
         selected_rods.erase(rodit--);

@@ -109,6 +109,11 @@ public:
      */
     void skipRodRodCollisions(bool skipRodRodCollisions);
 
+    void setUseKineticDamping(bool useKineticDamping) 
+    {
+        m_useKineticDamping = useKineticDamping;
+    }
+
     void setStopOnRodError(bool stopOnRodError)
     {
         if (!m_stopOnRodError && stopOnRodError)
@@ -414,7 +419,8 @@ private:
 
     // Number of threads to be used for dynamics and collisions
     int m_num_threads;
-
+    // Flag indicating whether we should use kinetic damping
+    bool m_useKineticDamping;
     // Toggle selective adaptivity
     bool m_simulationFailed;
     // Flag indicating whether we should freeze the simulation on first failure.
