@@ -47,7 +47,7 @@ public:
                  const BASim::ElasticRod::RefFrameType i_referenceFrame = BASim::ElasticRod::TimeParallel,
                  const double i_massDamping = 10.0, 
                  const BASim::Vec3d i_gravity = BASim::Vec3d( 0.0, -980.0, 0.0 ),                 
-                 const BASim::RodGroomingStepper::Method i_solverType = BASim::GroomingTimeStepper::IMPL_EULER );
+                 const BASim::GroomingTimeStepper::Method i_solverType = BASim::GroomingTimeStepper::IMPL_EULER );
 
     void setUseKineticDamping ( bool i_useKinecticDamping );
 
@@ -78,7 +78,7 @@ public:
   
 private:
     BASim::BAGroomingStepper* m_bridsonStepper;
-    std::vector< BASim::RodGroomingStepper* > m_rodTimeSteppers;
+    std::vector< BASim::GroomingTimeStepper* > m_rodTimeSteppers;
     std::vector< BASim::RodRenderer* > m_rodRenderers;
     std::vector< BASim::TriangleMesh* > m_triangleMeshes;
     std::vector< BASim::LevelSet* > m_levelSets;

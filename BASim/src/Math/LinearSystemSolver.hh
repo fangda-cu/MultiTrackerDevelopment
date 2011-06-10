@@ -1,5 +1,9 @@
 #include "LinearSolverBase.hh"
 
+#ifndef __LINEAR_SYSTEM_SOLVER_HH
+#define __LINEAR_SYSTEM_SOLVER_HH
+
+
 namespace BASim
 {
 
@@ -78,3 +82,6 @@ private:
 };
 
 }
+
+
+#endif
