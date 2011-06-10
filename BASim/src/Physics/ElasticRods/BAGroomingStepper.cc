@@ -77,7 +77,7 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
         m_level_sets.resize(m_triangle_meshes.size(), NULL);
     }
 
-    g_log = new TextLog(std::cerr, MsgInfo::kDebug, true);
+    g_log = new TextLog(std::cerr, MsgInfo::kTrace, true);
     InfoStream(g_log, "") << "Started logging BAGroomingStepper\n";
 
     for (std::vector<GroomingTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
@@ -465,7 +465,6 @@ bool BAGroomingStepper::execute()
     }
     m_collision_disabled_rods.clear();
 
-    bool do_adaptive = true;
     bool result;
 
     int k = 0;
@@ -488,13 +487,7 @@ bool BAGroomingStepper::execute()
     // Prepare the list initially containing all rods.
     RodSelectionType selected_rods = m_simulated_rods;
 
-    if (do_adaptive)
-    {
-        assert(m_level == 0);
-        result = adaptiveExecute(m_dt, selected_rods);
-    }
-    else
-        result = nonAdaptiveExecute(m_dt, selected_rods);
+    result = nonAdaptiveExecute(m_dt, selected_rods);
 
     m_total_solver_killed += m_num_solver_killed;
     m_total_collision_killed += m_num_collision_killed;
@@ -3304,6 +3297,7 @@ void BAGroomingStepper::setImplicitPenaltyExtraThickness(const double& h)
 void BAGroomingStepper::setVertexFacePenalty(const double& k)
 {
     assert(k >= 0.0);
+
     m_perf_param.m_implicit_stiffness = k;
 }
 
