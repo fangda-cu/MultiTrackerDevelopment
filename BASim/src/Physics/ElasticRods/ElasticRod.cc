@@ -131,6 +131,9 @@ void ElasticRod::addForce(RodForce* force)
 void ElasticRod::computeForces(VecXd& force)
 {
   // std::cout << "Rod forces..." << std::endl;
+
+    force.setZero(); // JMA: is that safe? Then we won't need to call setZero before each call to computeForces
+
   RodForces& forces = getForces();
   RodForces::iterator fIt;
   VecXd curr_force(force.size());

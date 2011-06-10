@@ -1162,18 +1162,6 @@ void BARodStepper::disableResponse()
     m_respns_enbld = false;
 }
 
-/*
- void BARodStepper::enableIterativeInelasticImpulses()
- {
- m_itrv_inlstc_enbld = true;
- }
-
- void BARodStepper::disableIterativeInelasticImpulses()
- {
- m_itrv_inlstc_enbld = false;
- }
- */
-
 void BARodStepper::setNumInelasticIterations(const int& num_itr)
 {
     assert(num_itr >= 0);
@@ -1418,8 +1406,8 @@ void BARodStepper::computeForces(std::vector<VecXd*> Forces, const RodSelectionT
         m_rods[*rod]->verifyProperties(); // Sanity check to ensure rod's internal state is consistent
 #endif
         Forces[*rod]->setZero();
-        //m_rods[*rod]->computeForces(*Forces[*rod]);
-        m_steppers[*rod]->evaluatePDot(*Forces[*rod]);
+        m_rods[*rod]->computeForces(*Forces[*rod]); // If we want the internal forces only
+        //  m_steppers[*rod]->evaluatePDot(*Forces[*rod]); // If we want the external forces too
     }
 }
 

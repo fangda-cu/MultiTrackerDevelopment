@@ -108,12 +108,12 @@ void CollisionDetectorBase::updateBoundingBox(BVH& bvh, const std::vector<const 
                 bbox.Insert(elements[i]->GetBBox(m_geodata, m_time_step));
             }
         }
-        if (bbox.Volume() > 100)
-        {
-            WarningStream(g_log, "lbbrtz", MsgInfo::kOncePerId)
-                    << "LARGE BOUNDING BOX RESET TO ZERO (this warning is only displayed once)\n";
-            bbox = BBoxType();
-        }
+//        if (bbox.Volume() > 100)
+//        {
+//            WarningStream(g_log, "lbbrtz", MsgInfo::kOncePerId)
+//                    << "LARGE BOUNDING BOX RESET TO ZERO (this warning is only displayed once)\n";
+//            bbox = BBoxType();
+//        }
     }
     else // Update the children, then this node's bounding box
 
