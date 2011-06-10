@@ -27,7 +27,7 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
                                   const BASim::ElasticRod::RefFrameType i_referenceFrame,
                                   const double i_massDamping, 
                                   const BASim::Vec3d i_gravity,
-                                  const BASim::RodGroomingStepper::Method i_solverType )
+                                  const BASim::GroomingTimeStepper::Method i_solverType )
 {
     cerr << "WmSweeneyRodManager::addRod: About to create rod\n";
     RodOptions rodOptions;
@@ -51,7 +51,7 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
     RodRenderer* rodRenderer = new RodRenderer( *rod );
     
     // Create a timeStepper to simulate the rod forward in time
-    RodGroomingStepper* stepper = new RodGroomingStepper( *rod );
+    GroomingTimeStepper* stepper = new GroomingTimeStepper( *rod );
 	stepper->setDiffEqSolver( i_solverType );
 	    
     // Add a damping force to the rod
@@ -75,11 +75,11 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
     stepper->addExternalForce( rodMayaForces );
 
     // Reverse hairdo is still experimental and optional...
-    if ( 0 )
-    {
-        cerr << "Doing reverse hairdo!\n";
-        rod->doReverseHairdo(stepper);
-    }
+    // if ( 0 )
+    // {
+    //     cerr << "Doing reverse hairdo!\n";
+    //     rod->doReverseHairdo(stepper);
+    // }
     
     cerr << "Adding rod with vertices:\n";
     for ( size_t v=0; v< i_vertices.size(); ++v )
@@ -187,7 +187,7 @@ void WmSweeneyRodManager::updateSolverSettings(double i_atol, double i_stol, dou
 
     for ( size_t r = 0; r < m_rods.size(); ++r )
     {
-        RodGroomingStepper* stepper = m_rodTimeSteppers[ r ];
+        GroomingTimeStepper* stepper = m_rodTimeSteppers[ r ];
         assert(stepper);
 	DiffEqSolver& solver = stepper->getDiffEqSolver();
 
