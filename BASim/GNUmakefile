@@ -389,6 +389,7 @@ src/Math/SymmetricImplicitEuler.cc \
 src/Math/StaticSolver.cc \
 src/Math/Pardiso/PardisoLinearSolver.cc \
 src/Physics/ElasticRods/AnisotropicRod.cc \
+src/Physics/ElasticRods/BAGroomingStepper.cc \
 src/Physics/ElasticRods/BARodStepper.cc \
 src/Physics/ElasticRods/ElasticRod.cc \
 src/Physics/ElasticRods/ParallelStepper.cc \
