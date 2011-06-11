@@ -42,7 +42,7 @@ public:
 
         for (int i = 0; i < rod.nv(); ++i)
         {
-            energy += rod.getVertexMass(i) * m_gravity.dot( rod.getVertex(i));
+            energy -= rod.getVertexMass(i) * m_gravity.dot( rod.getVertex(i));
         }
 
         return energy;
@@ -72,7 +72,7 @@ public:
 
         for (int i = 0; i < rod.nv(); ++i)
         {
-            energy += rod.getVertexMass(i) * m_gravity.dot( rod.getVertex(i));
+            energy -= rod.getVertexMass(i) * m_gravity.dot( rod.getVertex(i));
 
             Vec3d f = rod.getVertexMass(i) * m_gravity;
             for (int coord = 0; coord < 3; ++coord)

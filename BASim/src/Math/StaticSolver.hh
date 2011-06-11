@@ -31,13 +31,17 @@ class StaticSolver: public DiffEqSolver
 public:
 
     explicit StaticSolver(ODE& ode) :
-        m_diffEq(ode), m_ndof(-1), x0(), m_rhs(), m_deltaX(), m_prevDeltaX(),
-                m_increment(), m_fixed(), m_desired(), m_initl2norm(0), m_l2norm(0), m_energy(0), m_A(NULL), m_solver(NULL)
+        m_diffEq(ode), m_ndof(-1), x0(), m_rhs(), m_deltaX(),
+                m_fixed(), m_desired(), m_initl2norm(0), m_l2norm(0), m_energy(0), m_A(NULL), m_solver(NULL)
     {
         m_A = m_diffEq.createMatrix();
         m_solver = SolverUtils::instance()->createLinearSolver(m_A);
 
         m_maxlsit = 5;
+
+	m_lambda0 = 1e-8;
+	m_lambda  = m_lambda0;
+	m_nu      = 2.0;
     }
 
     ~StaticSolver()
@@ -93,8 +97,6 @@ public:
             x0.resize(m_ndof);
             m_rhs.resize(m_ndof);
             m_deltaX.resize(m_ndof);
-            m_prevDeltaX.resize(m_ndof);
-            m_increment.resize(m_ndof);
         }
         assert(m_A->rows() == m_A->cols());
         if (m_A->rows() != m_ndof)
@@ -113,7 +115,6 @@ public:
         x0.setZero();
         m_rhs.setZero();
         m_deltaX.setZero();
-        m_increment.setZero();
         m_A->setZero();
 	m_energy = 0;
     }
@@ -140,56 +141,42 @@ public:
         m_l2norm  = m_rhs.norm();
     }
 
+
+protected:
+
     bool isConverged()
     {
-        TraceStream(g_log, "") << "Staticsolver::isConverged: residual = " << m_l2norm << " infnorm = "
-                << m_infnorm << " rel residual = " << m_l2norm / m_initl2norm << " inc norm = " << m_increment.norm()
-                << " atol = " << m_atol << " inftol = " << m_inftol << " rtol = " << m_rtol << " stol = " << m_stol << '\n';
-
-	// Energy was halved... good enough!
-        if (m_energy < m_initEnergy)
-        {
-            TraceStream(g_log, "") << "Staticsolver::isConverged(): converged: energy halved from " << m_initEnergy << " to " << m_energy << "\n";
-            return true;
-        }
+        TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged: residual = " << m_l2norm << " infnorm = "
+                << m_infnorm << " atol = " << m_atol << " inftol = " << m_inftol << '\n';
 
         // L2 norm of the residual is less than tolerance
         if (m_l2norm < m_atol)
         {
-            TraceStream(g_log, "") << "Staticsolver::isConverged(): converged atol: residual = " << m_l2norm
+            TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged(): converged atol: residual = " << m_l2norm
                     << " < " << m_atol << " = atol " << '\n';
             return true;
         }
         // Infinity norm of residual is less than tolerance
         if (m_infnorm < m_inftol)
         {
-            TraceStream(g_log, "") << "Staticsolver::isConverged(): converged inftol: |residual|_inf = " << m_infnorm
+            TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged(): converged inftol: |residual|_inf = " << m_infnorm
                     << " < " << m_inftol << " = inftol" << '\n';
             return true;
         }
-        if (m_l2norm <= m_rtol * m_initl2norm)
+        if (m_deltaX.norm() < m_stol)
         {
-            TraceStream(g_log, "") << "Staticsolver::isConverged(): converged rtol: residual = " << m_l2norm
-                    << " <= " << " (rtol = " << m_rtol << ") * (init. residual = " << m_initl2norm << ") = " << m_rtol
-                    * m_initl2norm << '\n';
-            return true;
-        }
-        // L2 norm of change in solution at last step of solve is less than tolerance
-        if (m_alpha * m_increment.norm() < m_stol)
-        {
-            TraceStream(g_log, "") << "Staticsolver::isConverged(): converged stol: " << " |increment|_L2 < "
+            TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged(): converged stol: " << " |increment|_L2 < "
                     << m_stol << " = stol " << '\n';
             return true;
         }
-        TraceStream(g_log, "") << "Staticsolver::isConverged(): convergence test fails" << '\n';
+        TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged(): convergence test fails" << '\n';
         return false;
     }
 
-protected:
 
     bool position_solve()
     {
-        START_TIMER("StaticSolver::position_solve/setup");
+        START_TIMER("StaticSolver::newton_step/setup");
 
         // Chapter 0: Basic housekeeping
         ////////////////////////////////////////////////////
@@ -243,187 +230,119 @@ protected:
 	// save the initial residual
         m_initl2norm = m_l2norm;
 
-	m_initEnergy = m_energy;
-
-        TraceStream(g_log, "")
-                << "StaticSolver::position_solve: starting Newton solver. Initial energy = " << m_energy << " and residual = "
-                << m_l2norm << ", convergence test will use thresholds atol = " << m_atol << " inftol = " << m_inftol
-                << " rtol = " << m_initl2norm * m_rtol << " stol = " << m_stol << '\n';
+	Scalar initEnergy = m_energy;
+	Scalar initLambda = m_lambda;
 
         STOP_TIMER("StaticSolver::position_solve/setup");
+
 
 
         // Chapter 2: Iterate using Newton's Method
         ////////////////////////////////////////////////////
 
-	Scalar lambda = 1e-8;
+	TraceStream(g_log, "StaticSolver::position_solve") << "initial energy = " << initEnergy << " lambda = " << m_lambda << "\n";
 
-        int curit = 0;
-        for (curit = 0; curit < m_maxit; ++curit)
-        {
-	    lambda *= 2.;
-
-            TraceStream(g_log, "") << "\nStaticSolver::position_solve: Newton iteration = " << curit << " lambda = " << lambda << "\n";
-
-            // TODO: Assert m_A, increment are zero
+        // TODO: Assert m_A, increment are zero
  
-            START_TIMER("StaticSolver::position_solve/setup");
+        START_TIMER("StaticSolver::position_solve/setup");
 
-            // Set up LHS Matrix
-            ////////////////////////
+        // Set up LHS Matrix
+        ////////////////////////
 
-            // TODO: make the finalize() not virtual
+        // TODO: make the finalize() not virtual
 
-            // The LHS is the Hessian of the potential energy
-            // m_A = -dF/dx
-            m_diffEq.evaluatePDotDX(-1, *m_A);
-            m_A->finalize();
-            assert(m_A->isApproxSymmetric(1.0e-6));
+        // The LHS is the minus the conservative force Jacobian
+        // m_A = -dF/dx
+        m_diffEq.evaluatePDotDX(-1, *m_A);
+        m_A->finalize();
+        assert(m_A->isApproxSymmetric(1.0e-6));
 
-	    // Spectral shift
-            for (int i = 0; i < m_ndof; ++i)
-                m_A->add(i, i, lambda);
-            m_A->finalize();
-            assert(m_A->isApproxSymmetric(1.0e-6));
+	// Levenberg-Marquardt diagonal shift (Tikhonov regularization)
+        for (int i = 0; i < m_ndof; ++i)
+        {
+            m_A->add(i, i, m_lambda);
+	    //Scalar d = (*m_A)(i,i);
+            //m_A->set(i, i, (1.+m_lambda) * d);
+	}
+        m_A->finalize();
+        assert(m_A->isApproxSymmetric(1.0e-6));
 
-            // Set the rows and columns corresponding to fixed degrees of freedom to 0
-            m_A->zeroRows(m_fixed, 1.0);
-            m_A->finalize();
+        // Boundary conditions: Set the rows and columns corresponding to fixed degrees of freedom to 0
+        m_A->zeroRows(m_fixed, 1.0);
+        m_A->finalize();
 
-            m_A->zeroCols(m_fixed, 1.0);
-            m_A->finalize();
+        m_A->zeroCols(m_fixed, 1.0);
+        m_A->finalize();
 
-            // Finalize the nonzero structure before the linear solve (for sparse matrices only)
-            m_A->finalizeNonzeros();
-            STOP_TIMER("StaticSolver::position_solve/setup");
+        // Finalize the nonzero structure before the linear solve (for sparse matrices only)
+        m_A->finalizeNonzeros();
+        STOP_TIMER("StaticSolver::position_solve/setup");
+	assert(m_A->isApproxSymmetric(1.0e-6));
 
-            assert(m_A->isApproxSymmetric(1.0e-6));
 
-            // Solve the linear system for the "Newton direction" m_increment
-            //
-            // Later, we will take the Newton step m_deltaX += m_increment
-            // (or some scaled multiple of m_increment, as per line search)
-            //////////////////////////////////////////////////////////////////
+        // Solve the linear system for the Newton step m_deltaX
+        //
+        //////////////////////////////////////////////////////////////////
 
-            START_TIMER("StaticSolver::position_solve/solver");
-            int status = m_solver->solve(m_increment, m_rhs);
-            STOP_TIMER("StaticSolver::position_solve/solver");
-            if (status < 0)
-            {
-                DebugStream(g_log, "") << "\033[31;1mWARNING IN StaticSolver:\033[m Problem during linear solve detected. "
-                        << '\n';
-                return false;
-            }
+        START_TIMER("StaticSolver::position_solve/solver");
+        int status = m_solver->solve(m_deltaX, m_rhs);
+        STOP_TIMER("StaticSolver::position_solve/solver");
+        if (status < 0)
+        {
+	    // shrink trust region (increase regularization)
+	    m_lambda *= m_nu;
 
-            START_TIMER("StaticSolver::position_solve/ls");
-
-            m_alpha = 1.; // actual step will m_deltaX += alpha * m_increment
-
-            // Save m_deltaX and residual for later
-            m_prevDeltaX = m_deltaX;
-
-	    Scalar prevEnergy = m_energy;
-
-            // Attempt a full Newton step (alpha = 1)
-            m_deltaX = m_prevDeltaX + m_alpha * m_increment;
-
-	    // line search loop
-            for (int i = 0;; i++)
-            {
-                // Evaluate residual for attempted increment
-                //////////////////////////////////////////////
-
-                // Update the differential equation with the current guess
-                m_diffEq.set_qdot(m_deltaX / m_dt);
-                m_diffEq.set_q(x0 + m_deltaX);
-
-                // Signal the differential equation that it should recompute cached quantities
-                m_diffEq.endIteration();
-
-                updatePositionBasedQuantities();
-
-                bool converged = isConverged();
-
-                TraceStream(g_log, "") << "Staticsolver::position_solve: summary of line search i " << i
-                        << ": increment " << m_increment.norm() << " energy " << m_energy << ", previous "
-                        << prevEnergy << " " << " initial " << m_initEnergy << "\n";
-
-                // Is this step acceptable?
-                /////////////////////////////////////////////////////////////
-
-                if (m_energy < prevEnergy || converged)
-                {
-                    TraceStream(g_log, "") << "Succeeded (done).\n\n";
-                    break;
-                }
-                else if (i >= m_maxlsit)
-                {
-                    TraceStream(g_log, "")
-                            << "Exceeded max iterations.\nStaticsolver::position_solve/line search: \033[31;1mWARNING IN IMPLICITEULER:\033[m Line search failed. Proceeding anyway.\n\n";
-                    break;
-                }
-                else
-                {
-                    TraceStream(g_log, "") << "cutting increment and iterating.\n\n";
-                }
-
-                // Attempt a smaller step
-                //////////////////////////////
-
-                m_alpha *= .5;
-                m_deltaX = m_prevDeltaX + m_alpha * m_increment;
-            }
-
-            STOP_TIMER("Staticsolver::position_solve/ls");
-
-            // After the line search...
-            ///////////////////////////////
-
-            // Check for convergence.
-            if (isConverged())
-                break;
-
-            // Check for exceeding limit on number of Newton iterations
-            if (curit == m_maxit - 1)
-            {
-                DebugStream(g_log, "") << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver reached max iterations: "
-                        << m_maxit << "\n";
-
-		if (m_energy > m_initEnergy)
-		{
-		    // Solver failed -- undo the changes
-		    /////////////////////////////////////////////////
-
-		    // Update the differential equation with the current guess
-		    m_diffEq.set_q(x0);
-
-		    // Signal the differential equation that it should recompute cached quantities
-		    m_diffEq.endIteration();
-
-		    updatePositionBasedQuantities();
-		    return true;
-		}
-
-		return false;
-            }
-
-            START_TIMER("Staticsolver::position_solve/setup");
-
-            m_increment.setZero();
-            m_A->setZero();
-
-            // Allow the nonzero structure to be modified again (for sparse matrices only)
-            m_A->resetNonzeros();
-
-            STOP_TIMER("Staticsolver::position_solve/setup");
-
-            // Now go back and begin next Newton iteration...
+            DebugStream(g_log, "StaticSolver::position_solve") << "\033[31;1mWARNING IN StaticSolver:\033[m Problem during linear solve detected. "
+				   << " new lambda = " << m_lambda << "\n";
+	    
+            return false;
         }
 
-        TraceStream(g_log, "") << "Staticsolver::position_solve: completed " << curit + 1 << " Newton iterations."
-                << '\n';
+
+	// Evaluate residual for attempted increment
+        //////////////////////////////////////////////
+
+        // Update the differential equation with the current guess
+        m_diffEq.set_q(x0 + m_deltaX);
+
+        // Signal the differential equation that it should recompute cached quantities
+        m_diffEq.endIteration();
+
+        updatePositionBasedQuantities();
+
+        // Is this step acceptable?
+        /////////////////////////////////////////////////////////////
+
+        if (m_energy < initEnergy || isConverged())
+        {
+	    // Increase trust region size (decrease regularization)
+	    m_lambda = fmax( m_lambda/m_nu, m_lambda0 );
+            TraceStream(g_log, "StaticSolver::position_solve") << "new energy = " << m_energy << "; retaining step; new lambda = " << m_lambda << "\n";
+        }
+        else
+        {
+	    m_lambda *= m_nu;
+	    TraceStream(g_log, "StaticSolver::position_solve") << "new energy " << m_energy << "; discarding step; new lambda = " << m_lambda << "\n";
+	    
+	    // Solver failed -- undo the changes
+	    /////////////////////////////////////////////////
+	    
+	    // Update the differential equation with the current guess
+	    m_diffEq.set_q(x0);
+	    
+	    // Signal the differential equation that it should recompute cached quantities
+	    m_diffEq.endIteration();	    
+        }
+
+	START_TIMER("Staticsolver::position_solve/setup");
+
+	// Allow the nonzero structure to be modified again (for sparse matrices only)
+	m_A->resetNonzeros();
+
+	STOP_TIMER("Staticsolver::position_solve/setup");
 
         m_diffEq.endStep();
+
 
 #ifndef NDEBUG      // Ensure that fixed DOFs are at their desired values
         if (successful_solve)
@@ -445,10 +364,10 @@ protected:
     VecXd x0;
     VecXd m_rhs;
     VecXd m_deltaX;
-    VecXd m_prevDeltaX;
-    VecXd m_increment;
 
-    Scalar m_alpha;
+    Scalar m_lambda;
+    Scalar m_lambda0;
+    Scalar m_nu;
 
     IntArray m_fixed;
     std::vector<Scalar> m_desired;
@@ -457,7 +376,6 @@ protected:
     LinearSolverBase* m_solver;
 
     Scalar m_energy; // EG: move to DiffEqSolver
-    Scalar m_initEnergy;
     Scalar m_l2norm;
     Scalar m_initl2norm;
 };
@@ -465,3 +383,9 @@ protected:
 } // namespace BASim
 
 #endif // STATICSOLVER_HH
+
+
+
+
+
+
