@@ -238,7 +238,6 @@ private:
     double computeTotalForceNorm() const;
     void step(RodSelectionType& selected_rods);
     bool nonAdaptiveExecute(double dt, RodSelectionType& selected_rods);
-    bool adaptiveExecute(double dt, RodSelectionType& selected_rods);
 
     /////////////////////////////////////////////////////
     // Methods for checking the sanity of input rods

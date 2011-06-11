@@ -77,7 +77,7 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
         m_level_sets.resize(m_triangle_meshes.size(), NULL);
     }
 
-    g_log = new TextLog(std::cerr, MsgInfo::kTrace, true);
+    g_log = new TextLog(std::cerr, MsgInfo::kInfo, true);
     InfoStream(g_log, "") << "Started logging BAGroomingStepper\n";
 
     for (std::vector<GroomingTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
@@ -450,212 +450,28 @@ bool BAGroomingStepper::execute()
 {
     START_TIMER("BAGroomingStepper::execute")
 
-    m_num_solver_killed = m_num_explosion_killed = m_num_collision_killed = m_num_stretching_killed = 0;
-    DebugStream(g_log, "") << "Executing time step " << m_t << '\n';
-
-    m_collision_detector->buildBVH();
-    TraceStream(g_log, "") << "BVH has been rebuilt\n";
-
-    if (!m_collision_disabled_rods.empty())
-    {
-        TraceStream(g_log, "") << "The following rods were collision-disabled in the previous time step: ";
-        for (std::set<int>::const_iterator rod = m_collision_disabled_rods.begin(); rod != m_collision_disabled_rods.end(); rod++)
-            TraceStream(g_log, "") << *rod << " ";
-        TraceStream(g_log, "") << '\n';
-    }
-    m_collision_disabled_rods.clear();
-
-    bool result;
-
-    int k = 0;
-    for (int i = 0; i < m_number_of_rods; ++i)
-    {
-        // Extract masses from the new rod
-        for (ElasticRod::vertex_iter itr = m_rods[i]->vertices_begin(); itr != m_rods[i]->vertices_end(); ++itr)
-        {
-            if (m_rods[i]->getBoundaryCondition()->isVertexScripted((*itr).idx()))
-                m_masses[k++] = std::numeric_limits<double>::infinity();
-            else
-            {
-                assert(m_rods[i]->getVertexMass(*itr, -1) > 0.0);
-                m_masses[k++] = m_rods[i]->getVertexMass(*itr, -1);
-            }
-        }
-    }
-    assert(k = m_masses.size());
-
     // Prepare the list initially containing all rods.
     RodSelectionType selected_rods = m_simulated_rods;
 
-    result = nonAdaptiveExecute(m_dt, selected_rods);
-
-    m_total_solver_killed += m_num_solver_killed;
-    m_total_collision_killed += m_num_collision_killed;
-    m_total_explosion_killed += m_num_explosion_killed;
-    m_total_stretching_killed += m_num_stretching_killed;
-
-    DebugStream(g_log, "") << "Time step finished, " << selected_rods.size() << " rods remaining out of " << m_rods.size()
-            << '\n';
-    DebugStream(g_log, "") << "Rods killed because of solver failure: " << m_num_solver_killed << " (this step), "
-            << m_total_solver_killed << " (total)\n";
-    DebugStream(g_log, "") << "Rods killed because of collision failure: " << m_num_collision_killed << " (this step), "
-            << m_total_collision_killed << " (total)\n";
-    DebugStream(g_log, "") << "Rods killed because of explosion failure: " << m_num_explosion_killed << " (this step), "
-            << m_total_explosion_killed << " (total)\n";
-    DebugStream(g_log, "") << "Rods killed because of stretching failure: " << m_num_stretching_killed << " (this step), "
-            << m_total_stretching_killed << " (total)\n";
+    for (int i=0; i<10; ++i)
+    {
+	nonAdaptiveExecute(m_dt, selected_rods);
+    }
 
     STOP_TIMER("BAGroomingStepper::execute")
 
-#ifdef TIMING_ON
-    // This is not using TextLog because std::setw is not supported. TODO: you know.
-    std::cout << "Cumulative timing results (entire run up to this point)\n";
-    std::cout << "========================================\n";
-    Timer::report();
-    std::cout << "========================================\n";
-#endif
-
-    return result;
+    return true;
 }
 
 bool BAGroomingStepper::nonAdaptiveExecute(double dt, RodSelectionType& selected_rods)
 {
-    setDt(dt);
-    setTime(m_t + dt);
-    //for (int i = 0; i < m_scripting_controllers.size(); ++i)
-    //  m_scripting_controllers[i]->setTime(m_t);
     step(selected_rods);
     return (selected_rods.size() == 0);
-}
-
-bool BAGroomingStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
-{
-    START_TIMER("BAGroomingStepper::adaptiveExecute")
-
-    DebugStream(g_log, "") << "adaptiveExecute at level " << m_level << " with " << selected_rods.size() << " rod(s), m_t = "
-            << m_t << ", dt = " << dt << '\n';
-
-    // Backup all selected rods
-    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-        m_rodbackups[*rod].backupRod(*m_rods[*rod]);
-
-    // Backup all objects
-    for (int i = 0; i < (int) m_triangle_meshes.size(); ++i)
-        m_objbackups[i].backupMesh(*m_triangle_meshes[i]);
-
-    // Backup the current simulation time
-    double time = m_t;
-
-    // Set the desired timestep
-    setDt(dt);
-    // Advance the current time
-    setTime(m_t + dt);
-
-    // Attempt a full time step
-    step(selected_rods);
-
-    if (m_simulationFailed)
-    {
-        WarningStream(g_log, "", MsgInfo::kOncePerMessage) << "t = " << m_t
-                << ": **** SIMULATION FAILED AND IS NOW STOPPED! ****\n***********************************************************\n";
-        STOP_TIMER("BAGroomingStepper::adaptiveExecute")
-        return true;
-    }
-    if (selected_rods.empty()) // Success!
-
-    {
-        TraceStream(g_log, "") << "t = " << m_t << ": adaptiveExecute has simulated (or killed) all rods\n";
-        STOP_TIMER("BAGroomingStepper::adaptiveExecute")
-        return true;
-    }
-    // Otherwise do two half time steps
-    DebugStream(g_log, "") << "t = " << m_t << ": adaptiveExecute left " << selected_rods.size() << " rods for substepping\n";
-    m_level++;
-
-    // Restore all rods that remained selected after the step
-    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-        m_rodbackups[*rod].restoreRod(*m_rods[*rod]);
-
-    // Restore all objects
-    for (int i = 0; i < (int) m_triangle_meshes.size(); ++i)
-        m_objbackups[i].restoreMesh(*m_triangle_meshes[i]);
-
-    // Restore the time
-    setTime(time);
-
-    // Back up rod selection for time step 2
-    RodSelectionType selected_rods_2 = selected_rods;
-
-    DebugStream(g_log, "") << "t = " << m_t << " selected_rods: adaptiveExecute substepping (part 1) " << selected_rods.size()
-            << " rods\n";
-
-    bool first_success = adaptiveExecute(0.5 * dt, selected_rods);
-    if (!first_success)
-    {
-        setDt(dt);
-        STOP_TIMER("BAGroomingStepper::adaptiveExecute")
-        return false;
-    }
-    DebugStream(g_log, "") << "t = " << m_t << " selected_rods: adaptiveExecute substepping (part 2) "
-            << selected_rods_2.size() << " rods\n";
-
-    // Remove from the rod selection any one that might have been killed during the first time step
-    for (RodSelectionType::iterator rod = selected_rods_2.begin(); rod != selected_rods_2.end(); rod++)
-        if (find(m_simulated_rods.begin(), m_simulated_rods.end(), *rod) == m_simulated_rods.end())
-        {
-            DebugStream(g_log, "") << "Erasing from second time step rod number " << *rod << '\n';
-            selected_rods_2.erase(rod--);
-        }
-    bool second_success = adaptiveExecute(0.5 * dt, selected_rods_2);
-    if (!second_success)
-    {
-        setDt(dt);
-        STOP_TIMER("BAGroomingStepper::adaptiveExecute")
-        return false;
-    }
-    TraceStream(g_log, "") << "Finished two adaptive steps\n";
-    setDt(dt);
-    m_level--;
-
-    STOP_TIMER("BAGroomingStepper::adaptiveExecute")
-    return first_success && second_success;
 }
 
 void BAGroomingStepper::step(RodSelectionType& selected_rods)
 {
     START_TIMER("BAGroomingStepper::step")
-
-    if (m_simulationFailed) // We stopped simulating already
-
-    {
-        STOP_TIMER("BAGroomingStepper::step")
-        return;
-    }
-
-    TraceStream(g_log, "") << "t = " << m_t << ": BAGroomingStepper::step() begins with " << selected_rods.size() << " rods\n";
-
-    assert(m_edges.size() == m_edge_radii.size());
-    assert((int) m_masses.size() == m_xn.size() / 3);
-    assert(m_xn.size() == m_xnp1.size());
-    assert(m_xn.size() == m_vnphalf.size());
-    assert(m_rod_labels.size() == 0 || m_rod_labels.size() == m_number_of_rods);
-
-    // Sanity check to ensure rods are not "internally colliding" because radius is bigger than edge length
-#ifndef NDEBUG
-    for (int i = 0; i < (int) m_number_of_rods; ++i)
-        ensureNoCollisionsByDefault(*m_rods[i]);
-#endif
-    // Sanity check to ensure different parts of sim have same time/timetep
-#ifndef NDEBUG
-    for (int i = 0; i < (int) m_scripting_controllers.size(); ++i)
-        assert(m_scripting_controllers[i]->getTime() == m_t);
-    for (int i = 0; i < (int) m_scripting_controllers.size(); ++i)
-        assert(m_scripting_controllers[i]->getDt() == m_dt);
-    for (int i = 0; i < (int) m_steppers.size(); ++i)
-        assert(m_steppers[i]->getTimeStep() == m_dt);
-    for (int i = 0; i < (int) m_number_of_rods; ++i)
-        assert(m_rods[i]->getTimeStep() == m_dt);
-#endif
 
     START_TIMER("BAGroomingStepper::step/setup");
 
@@ -664,36 +480,10 @@ void BAGroomingStepper::step(RodSelectionType& selected_rods)
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
         selected_steppers.push_back(m_steppers[*rod]);
 
-    STOP_TIMER("BAGroomingStepper::step/setup");
-
-    START_TIMER("BAGroomingStepper::step/explo");
-
-    if (m_perf_param.m_enable_explosion_detection)
-        computeForces(m_startForces, selected_rods);
-
-    STOP_TIMER("BAGroomingStepper::step/explo");
-
-    START_TIMER("BAGroomingStepper::step/setup");
-
     // Save the pre-timestep positions
     extractPositions(m_xn, selected_rods, m_t - m_dt);
 
     STOP_TIMER("BAGroomingStepper::step/setup");
-
-    START_TIMER("BAGroomingStepper::step/immune");
-    // Determine which vertex are to be considered collision-immune for this step
-    computeImmunity(selected_rods);
-    STOP_TIMER("BAGroomingStepper::step/immune");
-
-    // Step rods forward ignoring collisions
-    START_TIMER("BAGroomingStepper::step/scripting");
-
-    // Step scripted objects forward, set boundary conditions
-    for (std::vector<ScriptingController*>::const_iterator scripting_controller = m_scripting_controllers.begin(); scripting_controller
-            != m_scripting_controllers.end(); scripting_controller++)
-        (*scripting_controller)->execute();
-
-    STOP_TIMER("BAGroomingStepper::step/scripting");
 
     START_TIMER("BAGroomingStepper::step/penalty");
 
@@ -704,11 +494,6 @@ void BAGroomingStepper::step(RodSelectionType& selected_rods)
         setupPenaltyForces(penalty_collisions, selected_rods);
 
     STOP_TIMER("BAGroomingStepper::step/penalty");
-
-    TraceStream(g_log, "") << "BAGroomingStepper::step: computing pre-dynamic forces" << '\n';
-
-    if (m_perf_param.m_enable_explosion_detection)
-        computeForces(m_preDynamicForces, selected_rods);
 
     START_TIMER("BAGroomingStepper::step/steppers");
 
@@ -723,110 +508,10 @@ void BAGroomingStepper::step(RodSelectionType& selected_rods)
         bool result = stepper->execute();
         if (!result)
             TraceStream(g_log, "") << stepper->getDiffEqSolver().getName() << " solver for rod "
-                    << stepper->getRod()->globalRodIndex << " failed to converge after " << stepper->getMaxIterations()
-                    << " iterations\n";
-        dependable_solve = dependable_solve && result;
+                    << stepper->getRod()->globalRodIndex << " failed to converge\n";
     }
 
     STOP_TIMER("BAGroomingStepper::step/steppers");
-
-    TraceStream(g_log, "") << "Dynamic step is " << (dependable_solve ? "" : "not ") << "entirely dependable"
-            << (dependable_solve ? " :-)\n" : "!\n");
-
-    // If we do rod-rod collisions (meaning no selective adaptivity) and global dependability failed, we might as well stop here.
-    if (!m_perf_param.m_skipRodRodCollisions && !dependable_solve)
-    {
-        WarningStream(g_log, "", MsgInfo::kOncePerMessage) << "t = " << m_t
-                << " selected_rods: step() failed (due to rod-rod) for " << selected_rods.size() << " rods\n";
-        STOP_TIMER("BAGroomingStepper::step")
-        return;
-    }
-
-    START_TIMER("BAGroomingStepper::step/setup");
-
-    // Post time step position
-    extractPositions(m_xnp1, selected_rods, m_t);
-
-    // Average velocity over the timestep just completed
-    m_vnphalf = (m_xnp1 - m_xn) / m_dt;
-
-    STOP_TIMER("BAGroomingStepper::step/setup");
-
-    START_TIMER("BAGroomingStepper::step/inexten");
-
-    for (int i = 0; i < selected_steppers.size(); i++)
-        applyInextensibilityVelocityFilter(selected_steppers[i]->getRod()->globalRodIndex);
-
-    STOP_TIMER("BAGroomingStepper::step/inexten");
-
-    START_TIMER("BAGroomingStepper::step/immune");
-
-    // Mark invalid rods as entirely collision-immune, so we don't waste time on colliding them.
-    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-        if (!m_steppers[*rod]->HasSolved())
-        {
-            // std::cerr << "Rod number " << *rod << " failed to solve\n";
-            for (int j = 0; j < m_rods[*rod]->nv(); ++j)
-                m_collision_immune[m_base_vtx_indices[*rod] + j] = true;
-        }
-
-    STOP_TIMER("BAGroomingStepper::step/immune");
-
-    START_TIMER("BAGroomingStepper::step/response");
-    TraceStream(g_log, "") << "Starting collision response\n";
-
-    if (m_perf_param.m_enable_explosion_detection)
-        computeForces(m_preCollisionForces, selected_rods);
-
-    std::vector<bool> failed_collisions_rods(m_number_of_rods);
-    std::vector<bool> stretching_rods(m_number_of_rods);
-    if (m_perf_param.m_collision.m_max_iterations > 0)
-    {
-        if (!executeIterativeInelasticImpulseResponse(failed_collisions_rods, stretching_rods))
-        {
-            TraceStream(g_log, "") << "Some collision responses failed!\n";
-            //all_collisions_succeeded = false;
-        }
-    }
-    TraceStream(g_log, "") << "Finished collision response\n";
-
-    STOP_TIMER("BAGroomingStepper::step/response");
-
-    START_TIMER("BAGroomingStepper::step/setup");
-
-    // Store the response part for visualization
-    m_vnresp = m_vnphalf - (m_xnp1 - m_xn) / m_dt;
-
-    // Compute final positions from corrected velocities
-    m_xnp1 = m_xn + m_dt * m_vnphalf;
-
-#ifndef NDEBUG
-    // Ensure boundary conditions respected by corrected positions
-    // For each selected rod
-    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-    {
-        RodBoundaryCondition* boundary = m_rods[*rod]->getBoundaryCondition();
-        int rodbase = m_base_dof_indices[*rod];
-
-        // For each vertex of the current rod
-        for (int j = 0; j < m_rods[*rod]->nv(); ++j)
-        {
-            // If that vertex has a prescribed position
-            if (boundary->isVertexScripted(j))
-            {
-                Vec3d desiredposition = boundary->getDesiredVertexPosition(j, m_t);
-                Vec3d actualvalue = m_xnp1.segment<3> (rodbase + 3 * j);
-                assert(approxEq(desiredposition, actualvalue, 1.0e-6));
-            }
-        }
-    }
-#endif
-
-    // Copy new positions and velocities back to rods
-    restorePositions(m_xnp1, selected_rods);
-    restoreVelocities(m_vnphalf, selected_rods);
-    // Also copy response velocity to rods (for visualisation purposes only)
-    restoreResponses(m_vnresp, selected_rods);
 
     TraceStream(g_log, "") << "About to update properties" << '\n';
 
@@ -839,118 +524,6 @@ void BAGroomingStepper::step(RodSelectionType& selected_rods)
     for (RodSelectionType::const_iterator selected_rod = selected_rods.begin(); selected_rod != selected_rods.end(); selected_rod++)
         m_rods[*selected_rod]->verifyProperties();
 #endif
-
-    STOP_TIMER("BAGroomingStepper::step/setup");
-
-    START_TIMER("BAGroomingStepper::step/explo");
-
-    // Explosion detection
-    std::vector<bool> exploding_rods(m_number_of_rods);
-    if (m_perf_param.m_enable_explosion_detection)
-    {
-        TraceStream(g_log, "") << "About to detect explosions" << '\n';
-        computeForces(m_endForces, selected_rods);
-        checkExplosions(exploding_rods, failed_collisions_rods, selected_rods);
-    }
-    // Decide whether to substep or kill some rods
-
-    STOP_TIMER("BAGroomingStepper::step/explo");
-
-    // Check lengths again... Why is this necessary?
-    checkLengths(stretching_rods);
-
-    START_TIMER("BAGroomingStepper::step/exception");
-
-    int rod_kill = 0;
-    for (RodSelectionType::iterator rodit = selected_rods.begin(); rodit != selected_rods.end(); rodit++)
-    {
-        int rodidx = *rodit;
-
-        bool solveFailure = !m_steppers[rodidx]->HasSolved();
-        bool explosion = exploding_rods[rodidx];
-        bool collisionFailure = failed_collisions_rods[rodidx];
-        bool stretching = stretching_rods[rodidx];
-
-        bool substep = (solveFailure && m_level < m_perf_param.m_solver.m_max_substeps) //
-                || (explosion && m_level < m_perf_param.m_explosion.m_max_substeps) //
-                || (collisionFailure && m_level < m_perf_param.m_collision.m_max_substeps) //
-                || (stretching && m_level < m_perf_param.m_stretching.m_max_substeps);
-
-        bool killRod = (solveFailure && m_perf_param.m_solver.m_in_case_of == FailureMode::KillTheRod) //
-                || (explosion && m_perf_param.m_explosion.m_in_case_of == FailureMode::KillTheRod)//
-                || (collisionFailure && m_perf_param.m_collision.m_in_case_of == FailureMode::KillTheRod) //
-                || (stretching && m_perf_param.m_stretching.m_in_case_of == FailureMode::KillTheRod);
-
-        bool haltSim = (solveFailure && m_perf_param.m_solver.m_in_case_of == FailureMode::HaltSimulation)//
-                || (explosion && m_perf_param.m_explosion.m_in_case_of == FailureMode::HaltSimulation)//
-                || (collisionFailure && m_perf_param.m_collision.m_in_case_of == FailureMode::HaltSimulation) //
-                || (stretching && m_perf_param.m_stretching.m_in_case_of == FailureMode::HaltSimulation);
-
-        if (substep) // Only in that case keep the rod in the selected list
-            continue;
-        else if (killRod)
-        {
-            // DEBUG
-            if (solveFailure && m_perf_param.m_solver.m_in_case_of == FailureMode::KillTheRod)
-                m_num_solver_killed++;
-            if (explosion && m_perf_param.m_explosion.m_in_case_of == FailureMode::KillTheRod)
-                m_num_explosion_killed++;
-            if (collisionFailure && m_perf_param.m_collision.m_in_case_of == FailureMode::KillTheRod)
-                m_num_collision_killed++;
-            if (stretching && m_perf_param.m_stretching.m_in_case_of == FailureMode::KillTheRod)
-                m_num_stretching_killed++;
-
-            rod_kill++;
-            killTheRod(*rodit);
-        }
-        else if (haltSim)
-            m_simulationFailed = true;
-	else if (m_useKineticDamping)
-        {
-	  // TODO (sainsley) : add flag check here
-            //     std::cout << "treatment: accept this step as-is" << '\n';
-            // at this point, the step is either successful, or includes only ignorable errors
-
-            // Accept this step
-
-            ElasticRod* rod = m_rods[rodidx];
-
-            // std::cout << "KE[" << rodidx << "] = " << rod->computeKineticEnergy() << '\n';
-
-            // Apply kinetic damping
-            rod->recordKineticEnergy();
-            if (rod->isKineticEnergyPeaked())
-            {
-	      // std::cout << "Zeroing energy for rod " << rodidx << '\n';
-                for (int i = 0; i < rod->nv(); ++i)
-		{
-		    rod->setVelocity(i, Vec3d(0,0,0));
-		}
-	    }
-        }
-
-        selected_rods.erase(rodit--);
-        // the -- compensates for the erased rod; this is dangerous since it assumes array (rather than linked-list) semantics for selected_rods
-        // Yes I know, I'm surprised this even works.
-    }
-
-    STOP_TIMER("BAGroomingStepper::step/exception");
-
-    if (rod_kill)
-        NoticeStream(g_log, "") << "This step killed " << rod_kill << " rods\n";
-
-    if (selected_rods.size() > 0)
-        TraceStream(g_log, "") << "Step finished, " << selected_rods.size() << " rods must be substepped\n";
-    else
-        TraceStream(g_log, "") << "Step finished, all rods treated (either successful step, removed, or errors ignored)\n";
-
-    if (m_killed_rods.size() > 0)
-    {
-        std::ostringstream ost;
-        for (RodSelectionType::const_iterator rod = m_killed_rods.begin(); rod != m_killed_rods.end(); rod++)
-            ost << *rod << ' ';
-        DebugStream(g_log, "") << "List of rods killed: " << ost.str() << '\n';
-    }
 
     START_TIMER("BAGroomingStepper::step/penalty");
 
