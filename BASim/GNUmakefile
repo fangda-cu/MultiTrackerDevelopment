@@ -202,6 +202,7 @@ Eigen/src/StlSupport/StdList.h \
 Eigen/src/StlSupport/StdVector.h \
 Collisions/CollisionUtils.hh \
 Collisions/Collision.hh \
+Collisions/CTCollision.hh \
 Collisions/BoundingBox.hh \
 Collisions/BVH.hh \
 Collisions/BVHNode.hh \
@@ -364,6 +365,7 @@ LIB1_S     := \
 src/Collisions/BVH.cc \
 src/Collisions/Geometry.cc \
 src/Collisions/Collision.cc \
+src/Collisions/CTCollision.cc \
 src/Collisions/CollisionUtils.cc \
 src/Collisions/CollisionDetector.cc \
 src/Collisions/CollisionDetectorBase.cc \
@@ -384,7 +386,6 @@ src/Math/SymmetricImplicitEuler.cc \
 src/Math/Pardiso/PardisoLinearSolver.cc \
 src/Physics/ElasticRods/AnisotropicRod.cc \
 src/Physics/ElasticRods/BARodStepper.cc \
-src/Physics/ElasticRods/BARodStepper_Collision.cc \
 src/Physics/ElasticRods/ElasticRod.cc \
 src/Physics/ElasticRods/ParallelStepper.cc \
 src/Physics/ElasticRods/PerformanceTuningParameters.cc \

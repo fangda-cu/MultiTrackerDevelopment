@@ -97,12 +97,12 @@ public:
     /**
      * Returns the timestep.
      **/
-    double getDt() const;
+    const double getDt() const;
 
     /**
      * Returns the simulation time
      **/
-    double getTime() const;
+    const double getTime() const;
 
     /**
      *  Enable or disable self collisions between all rods
@@ -143,7 +143,7 @@ private:
      */
     void prepareForExecution();
 
-    double computeMaxEdgeAngle(const ElasticRod& rod) const
+    const double computeMaxEdgeAngle(const ElasticRod& rod) const
     {
         double maxangle = -std::numeric_limits<double>::infinity();
         for (int i = 0; i < rod.ne() - 1; ++i)
@@ -211,7 +211,7 @@ private:
     /**
      * Number of rods this controller is responsible for.
      */
-    int getNumRods() const
+    const int getNumRods() const
     {
         return (int) (m_rods.size());
     }
@@ -219,7 +219,7 @@ private:
     /**
      * Number of triangle meshes this controller is responsible for.
      */
-    int getNumTriangleMeshes() const
+    const int getNumTriangleMeshes() const
     {
         return (int) (m_triangle_meshes.size());
     }
@@ -235,7 +235,7 @@ private:
      */
     void setRodLabels(const std::vector<std::string>& rod_labels);
 
-    double computeTotalForceNorm() const;
+    const double computeTotalForceNorm() const;
     bool nonAdaptiveExecute(double dt, RodSelectionType& selected_rods);
     bool adaptiveExecute(double dt, RodSelectionType& selected_rods);
     void step(RodSelectionType& selected_rods);
@@ -260,10 +260,10 @@ private:
     // Helper methods
 
     // Returns the total number of degrees of freedom in the system
-    int getNumDof() const;
+    const int getNumDof() const;
 
     // Returns the total number of vertices in the system
-    int getNumVerts() const;
+    const int getNumVerts() const;
 
     void extractPositions(VecXd& positions, const RodSelectionType& selected_rods, const double time) const;
     void extractVelocities(VecXd& velocities, const RodSelectionType& selected_rods) const;
@@ -275,12 +275,12 @@ private:
     bool isRodVertex(int vert) const;
     bool isRodRodCollision(const EdgeEdgeCTCollision& collision) const;
 
-    int getContainingRod(int vert_idx) const;
+    const int getContainingRod(int vert_idx) const;
 
     // Determines if a vertex and a face share a vertex
-    bool vertexAndFaceShareVertex(const int& vertex, const int& face) const;
-    bool vertexAndFaceShareVertex(const int& v, const int& f0, const int& f1, const int& f2) const;
-    bool isProperCollisionTime(double time);
+   // bool vertexAndFaceShareVertex(const int& vertex, const int& face) const;
+   // bool vertexAndFaceShareVertex(const int& v, const int& f0, const int& f1, const int& f2) const;
+    // bool isProperCollisionTime(double time);
 
     void applyInextensibilityVelocityFilter(int rodidx);
 
@@ -329,7 +329,7 @@ private:
     void setVertexFacePenalty(const double& k);
 
     void killTheRod(int rod);
-    void computeForces(std::vector<VecXd*> Forces, const RodSelectionType& selected_rods);
+    void computeForces(std::vector<VecXd*> Forces, const RodSelectionType& selected_rods) const;
 
     /*
      * Member variables

@@ -10,6 +10,7 @@
 
 #include "Geometry.hh"
 #include "Collision.hh"
+#include "CTCollision.hh"
 #include "BoundingBox.hh"
 #include "BVH.hh"
 #include <list>
