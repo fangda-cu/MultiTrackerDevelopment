@@ -69,6 +69,20 @@ void RodBendingForceSym::updateUndeformedConfiguration(std::vector<Scalar>& vals
   }
 }
 
+void RodBendingForceSym::setReferenceLengths(std::vector<Scalar>& vals)
+{
+  int i = 0;
+  iterator end = m_stencil.end();
+  for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil, ++i) {
+    if (i==0) continue;
+    vertex_handle& vh = m_stencil.handle();
+    //edge_handle eh0 = m_stencil.inEdge();
+    //edge_handle eh1 = m_stencil.outEdge();
+    Scalar len = (vals[i-1] + vals[i]) / 2.0;
+    setRefVertexLength(vh, len);
+  }
+}
+
 void RodBendingForceSym::reattatchProperties()
 {
   m_rod.add_property(m_kappa, "material curvature vector");

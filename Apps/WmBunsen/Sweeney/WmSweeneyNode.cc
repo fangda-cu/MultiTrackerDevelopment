@@ -160,10 +160,16 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		    // TODO (sainsley) : create method inside ElasticRod that returns a total length
 		    // this can be computed within ElasticRod::computeEdgeLengths and stored locally
 		    // so we do not need to recompute it here
+
+		    // Compute new edge length
+		    Scalar updated_edge_length = m_length / m_verticesPerRod;
+		    std::vector<Scalar> rest_lengths;
+		    // Adjust edge lengths and compute the resulting curl length
 		    for ( ElasticRod::edge_iter eh = m_rodManager->m_rods[i]->edges_begin(); 
                          eh != m_rodManager->m_rods[i]->edges_end(); ++eh )
 		    {
-		      if ( eh->idx() >= m_curlStart*(m_verticesPerRod-1) )
+		      rest_lengths.push_back(updated_edge_length);
+		      if ( eh->idx() >= m_curlStart*( m_verticesPerRod - 1 ) )
 			{
 		            curl_len += m_rodManager->m_rods[i]->getEdgeLength( *eh );
 			}
@@ -187,6 +193,8 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                     {
 		        radius_a *= 1.0/m_rodAspectRatio;
 		    }
+
+		    m_rodManager->m_rods[i]->setRestLengths(rest_lengths); 
 
                     m_rodManager->m_rods[i]->setRadius( radius_a, radius_b );
 
@@ -234,8 +242,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 			if ( vh->idx() >= m_curlStart*(m_verticesPerRod)  && vh != m_rodManager->m_rods[i]->vertices_end() ) 
 			{
 			   t += m_rodManager->m_rods[i]->getEdgeLength( j++ )/curl_len;
-			}
-		    }
+			}		    }
 
 		    
                 }

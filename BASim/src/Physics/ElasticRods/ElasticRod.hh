@@ -298,56 +298,55 @@ public:
         return m_boundaryConditions;
     }
 
-    virtual void updateProperties();
-    virtual void updateReferenceProperties();
-    virtual void updateStiffness();
-    virtual void verifyProperties();
+  virtual void updateProperties();
+  virtual void updateReferenceProperties();
+  virtual void updateStiffness();
+  virtual void setRestLengths(std::vector<Scalar>& vals);
+  virtual void verifyProperties();
 
-    /** At the beginning of the time step, the undeformed configuration
-     must be set to the current configuration for the viscous
-     forces */
-    virtual void viscousUpdate();
+  /** At the beginning of the time step, the undeformed configuration
+      must be set to the current configuration for the viscous
+      forces */
+  virtual void viscousUpdate();
 
-    /** The stiffness of the viscous forces (internal damping) depend on
-     the size of the time step being taken, so they must be
-     recomputed whenever the size of the time step is changed. */
-    void setTimeStep(Scalar dt);
-    Scalar getTimeStep() const
-    {
-        return property(m_dt);
-    }
+  /** The stiffness of the viscous forces (internal damping) depend on
+      the size of the time step being taken, so they must be
+      recomputed whenever the size of the time step is changed. */
+  void setTimeStep(Scalar dt);
+  Scalar getTimeStep() const { return property(m_dt); }
 
-    void computeEdges();
-    void computeTangents();
-    void computeEdgeLengths();
-    void computeVoronoiLengths();
-    void computeReferenceDirectors();
-    void computeSpaceParallel();
-    void computeTimeParallel();
-    void computeCurvatureBinormals();
-    void computeReferenceTwist();
-    void computeMaterialDirectors();
-    void computeVertexMasses();
-    void computeEdgeInertias();
-    void setupDofIndices();
 
-    void updateForceProperties();
+  void computeEdges();
+  void computeTangents();
+  void computeEdgeLengths();
+  void computeVoronoiLengths();
+  void computeReferenceDirectors();
+  void computeSpaceParallel();
+  void computeTimeParallel();
+  void computeCurvatureBinormals();
+  void computeReferenceTwist();
+  void computeMaterialDirectors();
+  void computeVertexMasses();
+  void computeEdgeInertias();
+  void setupDofIndices();
 
-    int globalRodIndex;
-    int draw_cl;
+  void updateForceProperties();
 
-    bool doReverseHairdo(RodTimeStepper *stepper);
-    void computeReverseJacobian(MatrixBase& J);
-    void updateReverseUndeformedStrain(const VecXd& e);
+  int globalRodIndex;
+  int draw_cl;
 
-    RodBendingForceSym* m_bendingForce; // easy access to the bending force
-    RodStretchingForce* m_stretchingForce; // easy access to the stretching force
+  bool doReverseHairdo(RodTimeStepper *stepper);
+  void computeReverseJacobian(MatrixBase& J);
+  void updateReverseUndeformedStrain(const VecXd& e);
 
-    double computeKineticEnergy();
+  RodBendingForceSym* m_bendingForce; // easy access to the bending force
+  RodStretchingForce* m_stretchingForce; // easy access to the stretching force
 
-    void recordKineticEnergy();
+  double computeKineticEnergy();
 
-    bool isKineticEnergyPeaked();
+  void recordKineticEnergy();
+
+  bool isKineticEnergyPeaked();
 
 protected:
 
