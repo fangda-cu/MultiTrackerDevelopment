@@ -60,7 +60,9 @@ public:
 
   void updateStiffness();
   void updateUndeformedStrain();
-
+  
+  virtual void setReferenceLengths(std::vector<Scalar>& vals);
+  
   virtual void updateUndeformedConfiguration(std::vector<Scalar>& vals);
   virtual void updateReverseUndeformedStrain(const VecXd& e);
   

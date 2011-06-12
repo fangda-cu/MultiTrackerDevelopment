@@ -56,7 +56,7 @@ public:
   virtual void updateReferenceDomain();
 
   virtual void updateUndeformedConfiguration(std::vector<Scalar>& vals);
-
+  virtual void setReferenceLengths(std::vector<Scalar>& vals);
   virtual void reattatchProperties();
 
 private:

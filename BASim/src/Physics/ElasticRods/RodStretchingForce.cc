@@ -67,6 +67,10 @@ void RodStretchingForce::updateUndeformedConfiguration(std::vector<Scalar>& vals
   }    
 }
 
+void RodStretchingForce::setReferenceLengths(std::vector<Scalar>& vals) 
+{
+  updateUndeformedConfiguration(vals);
+}
 
 void RodStretchingForce::gatherDofs(SpringDofStruct& dofs,
                                     const edge_handle& eh)

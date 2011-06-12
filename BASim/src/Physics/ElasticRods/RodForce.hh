@@ -59,6 +59,8 @@ public:
   virtual void updateStiffness() {}
   virtual void updateUndeformedStrain() {}
   virtual void updateReferenceDomain() {}
+  
+  virtual void setReferenceLengths(std::vector<Scalar>& vals) {}
 
   virtual void verifyProperties() {}
 

@@ -428,6 +428,14 @@ void ElasticRod::updateStiffness() {
   }
 }
 
+void ElasticRod::setRestLengths(std::vector<Scalar>& vals) {
+  RodForces forces = getForces();
+  RodForces::iterator it;
+  for (it = forces.begin(); it != forces.end(); ++it) {
+    (*it)->setReferenceLengths(vals);
+  }
+}
+
 void ElasticRod::verifyProperties()
 {
   for (int j = 0; j < ne(); ++j) {
