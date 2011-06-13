@@ -2,7 +2,7 @@
  * CollisionDetectorBase.cc
  *
  *  Created on: 25/05/2011
- *      Author: jaubry
+ *      Author: Jean-Marie Aubry <jaubry@wetafx.co.nz>
  */
 
 #include "CollisionDetectorBase.hh"
@@ -29,6 +29,22 @@ CollisionDetectorBase::~CollisionDetectorBase()
     m_collisions_list = NULL;
 }
 
+template void CollisionDetectorBase::updateCollisions<std::list<Collision*>>(std::list<Collision*>& collisions);
+
+template<typename CollisionContainerT>
+void CollisionDetectorBase::updateCollisions(CollisionContainerT& collisions)
+{
+    for (typename CollisionContainerT::iterator collision = collisions.begin(); collision != collisions.end(); collision++)
+    {
+        bool collisionDetected = (*collision)->analyseCollision(m_time_step);
+        if (!collisionDetected)
+        {
+            delete *collision;
+            collisions.erase(collision--);
+        }
+    }
+}
+
 void CollisionDetectorBase::getReady(std::list<Collision*>& cllsns, CollisionFilter collision_filter)
 {
     m_potential_collisions = 0;
@@ -47,30 +63,31 @@ bool CollisionDetectorBase::appendCollision(const TopologicalElement* elem_a, co
     const YATriangle* triangle_b = dynamic_cast<const YATriangle*> (elem_b);
 
     switch (m_collision_filter)
+    // Pending full templatization of the class
     {
     case ContinuousTime:
         if (edge_a && edge_b)
-            return appendContinuousTimeCollision(edge_a, edge_b);
+            return appendCollision<ContinuousTime> (edge_a, edge_b);
         else if (edge_a && triangle_b)
-            return appendContinuousTimeCollision(edge_a, triangle_b);
+            return appendCollision<ContinuousTime> (edge_a, triangle_b);
         else if (triangle_a && edge_b)
-            return appendContinuousTimeCollision(edge_b, triangle_a);
+            return appendCollision<ContinuousTime> (edge_b, triangle_a);
         break;
 
     case Proximity:
         if (edge_a && edge_b)
-            return appendProximityCollision(edge_a, edge_b);
+            return appendCollision<Proximity> (edge_a, edge_b);
         else if (edge_a && triangle_b)
-            return appendProximityCollision(edge_a, triangle_b);
+            return appendCollision<Proximity> (edge_a, triangle_b);
         else if (triangle_a && edge_b)
-            return appendProximityCollision(edge_b, triangle_a);
+            return appendCollision<Proximity> (edge_b, triangle_a);
         break;
 
     case EdgeFace:
         if (edge_a && triangle_b)
-            return appendEdgeFaceIntersection(edge_a, triangle_b);
+            return appendCollision<EdgeFace> (edge_a, triangle_b);
         if (edge_b && triangle_a)
-            return appendEdgeFaceIntersection(edge_b, triangle_a);
+            return appendCollision<EdgeFace> (edge_b, triangle_a);
         break;
 
     default:
@@ -114,70 +131,8 @@ void CollisionDetectorBase::updateBoundingBox(BVH& bvh, const std::vector<const 
     }
 }
 
-bool CollisionDetectorBase::appendContinuousTimeCollision(const YAEdge* edge_a, const YAEdge* edge_b)
-{
-    //    Timer::getTimer("CollisionDetectorBase::appendContinuousTimeCollision edge edge").start();
-
-    EdgeEdgeCTCollision* edgeXedge = new EdgeEdgeCTCollision(m_geodata, edge_a, edge_b);
-
-    bool collisionDetected = edgeXedge->analyseCollision(m_time_step);
-
-    if ((m_skip_rod_rod && edgeXedge->IsRodRod()) || edgeXedge->IsCollisionImmune() || !collisionDetected)
-    {
-        delete edgeXedge;
-        return false;
-    }
-    else
-    {
-        m_collisions_mutex.Lock();
-        m_collisions_list->push_back(edgeXedge); // Will be deleted in BARodStepper::executeIterativeInelasticImpulseResponse()
-        m_collisions_mutex.Unlock();
-        return true;
-    }
-    //    Timer::getTimer("CollisionDetectorBase::appendContinuousTimeCollision edge edge").stop();
-}
-
-bool CollisionDetectorBase::appendContinuousTimeCollision(int v_index, const YATriangle* triangle)
-{
-    //    Timer::getTimer("CollisionDetectorBase::appendContinuousTimeCollision vertex face").start();
-
-    VertexFaceCTCollision* vertexXface = new VertexFaceCTCollision(m_geodata, v_index, triangle);
-
-    bool collisionDetected = vertexXface->analyseCollision(m_time_step);
-
-    // If vertex is fixed, if face is fixed, nothing to do
-    if (vertexXface->IsFixed() || m_geodata.IsCollisionImmune(v_index) || !collisionDetected)
-    {
-        delete vertexXface;
-        return false;
-    }
-    else
-    {
-        m_collisions_mutex.Lock();
-        m_collisions_list->push_back(vertexXface); // Will be deleted in BARodStepper::executeIterativeInelasticImpulseResponse()
-        m_collisions_mutex.Unlock();
-        return true;
-    }
-    //    Timer::getTimer("CollisionDetectorBase::appendContinuousTimeCollision vertex face").stop();
-}
-
-bool CollisionDetectorBase::appendContinuousTimeCollision(const YAEdge* edge, const YATriangle* triangle)
-{
-    YAEdge edge_2(triangle->first(), triangle->second());
-    YAEdge edge_1(triangle->third(), triangle->first());
-    YAEdge edge_0(triangle->second(), triangle->third());
-
-    bool ee0 = appendContinuousTimeCollision(edge, &edge_0);
-    bool ee1 = appendContinuousTimeCollision(edge, &edge_1);
-    bool ee2 = appendContinuousTimeCollision(edge, &edge_2);
-
-    bool vf0 = appendContinuousTimeCollision(edge->first(), triangle);
-    bool vf1 = appendContinuousTimeCollision(edge->second(), triangle);
-
-    return ee0 || ee1 || ee2 || vf0 || vf1;
-}
-
-bool CollisionDetectorBase::appendEdgeFaceIntersection(const YAEdge* edge_a, const YATriangle* triangle)
+template<>
+bool CollisionDetectorBase::appendCollision<EdgeFace>(const YAEdge* edge_a, const YATriangle* triangle)
 {
     EdgeFaceIntersection* edgeXface = new EdgeFaceIntersection(m_geodata, edge_a, triangle);
 
@@ -197,12 +152,30 @@ bool CollisionDetectorBase::appendEdgeFaceIntersection(const YAEdge* edge_a, con
     }
 }
 
-bool CollisionDetectorBase::appendProximityCollision(const YAEdge* edge_a, const YAEdge* edge_b)
+template<CollisionFilter CF>
+bool CollisionDetectorBase::appendCollision(const YAEdge* edge, const YATriangle* triangle)
 {
+    YAEdge edge_2(triangle->first(), triangle->second());
+    YAEdge edge_1(triangle->third(), triangle->first());
+    YAEdge edge_0(triangle->second(), triangle->third());
 
-    EdgeEdgeProximityCollision* edgeXedge = new EdgeEdgeProximityCollision(m_geodata, edge_a, edge_b);
+    bool ee0 = appendCollision<CF> (edge, &edge_0);
+    bool ee1 = appendCollision<CF> (edge, &edge_1);
+    bool ee2 = appendCollision<CF> (edge, &edge_2);
 
-    bool collisionDetected = edgeXedge->analyseCollision();
+    bool vf0 = appendCollision<CF> (edge->first(), triangle);
+    bool vf1 = appendCollision<CF> (edge->second(), triangle);
+
+    return ee0 || ee1 || ee2 || vf0 || vf1;
+}
+
+template<CollisionFilter CF>
+bool CollisionDetectorBase::appendCollision(const YAEdge* edge_a, const YAEdge* edge_b)
+{
+    typedef typename CollisionTraits<CF>::EdgeEdgeCollisionType EdgeEdgeCollisionType;
+    EdgeEdgeCollisionType* edgeXedge = new EdgeEdgeCollisionType(m_geodata, edge_a, edge_b);
+
+    bool collisionDetected = edgeXedge->analyseCollision(m_time_step);
 
     if ((m_skip_rod_rod && edgeXedge->IsRodRod()) || edgeXedge->IsCollisionImmune() || !collisionDetected)
     {
@@ -218,27 +191,14 @@ bool CollisionDetectorBase::appendProximityCollision(const YAEdge* edge_a, const
     }
 }
 
-bool CollisionDetectorBase::appendProximityCollision(const YAEdge* edge, const YATriangle* triangle)
+template<CollisionFilter CF>
+bool CollisionDetectorBase::appendCollision(int v_index, const YATriangle* triangle)
 {
-    YAEdge edge_2(triangle->first(), triangle->second());
-    YAEdge edge_1(triangle->third(), triangle->first());
-    YAEdge edge_0(triangle->second(), triangle->third());
-    bool ee0 = appendProximityCollision(edge, &edge_0);
-    bool ee1 = appendProximityCollision(edge, &edge_1);
-    bool ee2 = appendProximityCollision(edge, &edge_2);
+    typedef typename CollisionTraits<CF>::VertexFaceCollisionType VertexFaceCollisionType;
 
-    bool vf0 = appendProximityCollision(edge->first(), triangle);
-    bool vf1 = appendProximityCollision(edge->second(), triangle);
+    VertexFaceCollisionType* vertexXface = new VertexFaceCollisionType(m_geodata, v_index, triangle);
 
-    return ee0 || ee1 || ee2 || vf0 || vf1;
-}
-
-bool CollisionDetectorBase::appendProximityCollision(int v_index, const YATriangle* triangle)
-{
-
-    VertexFaceProximityCollision* vertexXface = new VertexFaceProximityCollision(m_geodata, v_index, triangle);
-
-    bool collisionDetected = vertexXface->analyseCollision();
+    bool collisionDetected = vertexXface->analyseCollision(m_time_step);
 
     // If vertex is fixed, if face is fixed, nothing to do
     if (vertexXface->IsFixed() || m_geodata.IsCollisionImmune(v_index) || !collisionDetected)
@@ -253,7 +213,6 @@ bool CollisionDetectorBase::appendProximityCollision(int v_index, const YATriang
         m_collisions_mutex.Unlock();
         return true;
     }
-    //    Timer::getTimer("CollisionDetectorBase::appendContinuousTimeCollision vertex face").stop();
 }
 
 }

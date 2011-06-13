@@ -2,7 +2,7 @@
  * CollisionDetectorBase.hh
  *
  *  Created on: 25/05/2011
- *      Author: jaubry
+ *      Author: Jean-Marie Aubry <jaubry@wetafx.co.nz>
  */
 
 #ifndef COLLISIONDETECTORBASE_HH_
@@ -19,11 +19,6 @@
 
 namespace BASim
 {
-
-enum CollisionFilter
-{
-    ContinuousTime = 0, Proximity, EdgeFace
-};
 
 class CollisionDetectorBase
 {
@@ -49,18 +44,7 @@ public:
     virtual void buildBVH() = 0;
 
     template<typename CollisionContainerT>
-    void updateCollisions(CollisionContainerT& collisions)
-    {
-        for (typename CollisionContainerT::iterator collision = collisions.begin(); collision != collisions.end(); collision++)
-        {
-            bool collisionDetected = (*collision)->analyseCollision(m_time_step);
-            if (!collisionDetected)
-            {
-                delete *collision;
-                collisions.erase(collision--);
-            }
-        }
-    }
+    void updateCollisions(CollisionContainerT& collisions);
 
     void setSkipRodRodCollisions(bool skipRodRodCollisions)
     {
@@ -79,19 +63,12 @@ protected:
 
     // Depending on m_collision_filter, determine and appends the relevant collision type between topological elements to m_collisions_list
     bool appendCollision(const TopologicalElement* obj_a, const TopologicalElement* obj_b);
-
-    // Determine if the collision happens during the current time step; if so append the CTC to m_collisions_list.
-    bool appendContinuousTimeCollision(const YAEdge* edge_a, const YAEdge* edge_b);
-    bool appendContinuousTimeCollision(const YAEdge* edge, const YATriangle* triangle);
-    bool appendContinuousTimeCollision(int v_index, const YATriangle* triangle);
-
-    // Determine whether the edge intersects the triangle; if so append the VFI to m_collisions_list
-    bool appendEdgeFaceIntersection(const YAEdge* edge, const YATriangle* triangle);
-
-    // Determine if a close encounter has happened
-    bool appendProximityCollision(const YAEdge* edge_a, const YAEdge* edge_b);
-    bool appendProximityCollision(const YAEdge* edge, const YATriangle* triangle);
-    bool appendProximityCollision(int v_index, const YATriangle* triangle);
+    template<CollisionFilter CF>
+    bool appendCollision(const YAEdge* edge, const YATriangle* triangle);
+    template<CollisionFilter CF>
+    bool appendCollision(const YAEdge* edge_a, const YAEdge* edge_b);
+    template<CollisionFilter CF>
+    bool appendCollision(int v_index, const YATriangle* triangle);
 
     bool isVertexFixed(int vert_idx) const;
     bool isRodVertex(int vert) const;

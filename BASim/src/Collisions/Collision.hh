@@ -15,17 +15,25 @@
 namespace BASim
 {
 
+enum CollisionFilter
+{
+    ContinuousTime = 0, Proximity, EdgeFace
+};
+
 class Collision
 {
 public:
     Collision(const GeometricData& geodata) :
-      m_geodata(geodata), m_analysed(false)
+        m_geodata(geodata), m_analysed(false)
     {
     }
 
     virtual bool analyseCollision(double time_step = 0) = 0;
 
-    bool isAnalysed() const { return m_analysed; }
+    bool isAnalysed() const
+    {
+        return m_analysed;
+    }
 
 protected:
     // Link to the actual geometric data (point coordinates, velocities etc.)
@@ -34,6 +42,12 @@ protected:
     bool m_analysed;
 
     static int id_counter;
+};
+
+template<CollisionFilter CF> class CollisionTraits
+{
+    typedef Collision EdgeEdgeCollisionType;
+    typedef Collision VertexFaceCollisionType;
 };
 
 class EdgeFaceIntersection: public Collision
@@ -179,7 +193,10 @@ public:
                 && m_geodata.isVertexFixed(f2);
     }
 
-    Vec3d GetVertex() { return m_geodata.GetPoint(v0); }
+    Vec3d GetVertex()
+    {
+        return m_geodata.GetPoint(v0);
+    }
 
     // Index of vertex
     int v0;
@@ -212,6 +229,14 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const VertexFaceProximityCollision& vfcol);
 
 };
+
+template<> class CollisionTraits<Proximity>
+{
+    typedef EdgeEdgeProximityCollision EdgeEdgeCollisionType;
+    typedef VertexFaceProximityCollision VertexFaceCollisionType;
+};
+
+
 
 }
 

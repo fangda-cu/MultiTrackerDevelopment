@@ -200,6 +200,13 @@ public:
 
 };
 
+template<> class CollisionTraits<ContinuousTime>
+{
+    typedef EdgeEdgeCTCollision EdgeEdgeCollisionType;
+    typedef VertexFaceCTCollision VertexFaceCollisionType;
+};
+
+
 }
 
 #endif /* CTCOLLISION_HH_ */
