@@ -421,6 +421,7 @@ void ElasticRod::updateReferenceProperties()
 }
 
 void ElasticRod::updateStiffness() {
+  computeVertexMasses();
   RodForces forces = getForces();
   RodForces::iterator it;
   for (it = forces.begin(); it != forces.end(); ++it) {
