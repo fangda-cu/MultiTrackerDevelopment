@@ -294,6 +294,7 @@ Physics/ElasticRods/RodGravity.hh \
 Physics/ElasticRods/RodMayaForces.hh \
 Physics/ElasticRods/RodMassDamping.hh \
 Physics/ElasticRods/RodPenaltyForce.hh \
+Physics/ElasticRods/RodLevelSetForce.hh \
 Physics/ElasticRods/RodStretchingForce.hh \
 Physics/ElasticRods/GroomingTimeStepper.hh \
 Physics/ElasticRods/RodTimeStepper.hh \
@@ -401,6 +402,7 @@ src/Physics/ElasticRods/RodBendingForceSym.cc \
 src/Physics/ElasticRods/RodBoundaryCondition.cc \
 src/Physics/ElasticRods/RodForce.cc \
 src/Physics/ElasticRods/RodPenaltyForce.cc \
+src/Physics/ElasticRods/RodLevelSetForce.cc \
 src/Physics/ElasticRods/RodStretchingForce.cc \
 src/Physics/ElasticRods/RodTube.cc \
 src/Physics/ElasticRods/RodTwistingForce.cc \
