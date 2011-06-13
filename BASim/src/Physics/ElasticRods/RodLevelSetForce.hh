@@ -1,8 +1,9 @@
 // RodRodPenaltyForce.hh
 //
 
-#ifndef RODRodPenaltyForce_HH
-#define RODRodPenaltyForce_HH
+
+#ifndef RodPenaltyForce_HH
+#define RodPenaltyForce_HH
 
 #include "ElasticRod.hh"
 #include "RodExternalForce.hh"
