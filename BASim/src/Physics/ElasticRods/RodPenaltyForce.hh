@@ -1,22 +1,33 @@
-// RodLevelSetForce.hh
+// RodRodPenaltyForce.hh
 //
 
-#ifndef RodLevelSetForce_HH
-#define RodLevelSetForce_HH
+#ifndef RODRodPenaltyForce_HH
+#define RODRodPenaltyForce_HH
 
 #include "ElasticRod.hh"
 #include "RodExternalForce.hh"
+//#include "../../Collisions/BVHAABB.hh"
+#include "../../Collisions/Collision.hh"
+
+//#include <ext/hash_map>
+#include <map>
 
 namespace BASim
 {
 
-class RodLevelSetForce: public RodExternalForce
+class RodPenaltyForce: public RodExternalForce
 {
 public:
-    RodLevelSetForce(double penaltyThicknessFraction = 0.1);
-    ~RodLevelSetForce();
+    RodPenaltyForce(double penaltyThicknessFraction = 0.1);
+    ~RodPenaltyForce();
 
     virtual void computeForce(const ElasticRod& rod, VecXd& F) const;
+
+    void registerProximityCollision(int vertex, VertexFaceProximityCollision* vfpcol);
+
+    bool cleared() const;
+
+    void clearProximityCollisions();
 
     virtual void computeForceDX(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) const;
 
@@ -26,6 +37,13 @@ public:
 
 protected:
     void localJacobian(MatXd& J, const Scalar stiffness, const Vec3d& normal) const;
+
+    const double m_penaltyThicknessFraction; // fraction of proximity threshold to use for penalty thickness
+
+    std::vector<int> vidx;
+
+    std::vector<const VertexFaceProximityCollision*> vertex_face_collisions;
+
 };
 
 }
