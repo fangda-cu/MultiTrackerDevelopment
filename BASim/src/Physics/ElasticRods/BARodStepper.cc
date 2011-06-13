@@ -5,7 +5,7 @@
  * \date 02/16/2010
  */
 
-//#define KEEP_ONLY_SOME_RODS
+#define KEEP_ONLY_SOME_RODS
 
 #include <typeinfo>
 #include "BARodStepper.hh"
@@ -267,8 +267,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     << "WARNING: KEEP_ONLY_SOME_RODS: Simulating only a specified subset of rods!\n***********************************************************\n";
     std::set<int> keep_only;
 
-    keep_only.insert(62);
-    keep_only.insert(89);
+    keep_only.insert(1);
 
     // Only the rods in the keep_only set are kept, the others are killed.
     for (int i = 0; i < m_number_of_rods; i++)
