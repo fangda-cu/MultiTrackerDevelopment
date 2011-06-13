@@ -445,7 +445,16 @@ void BARodStepper::prepareForExecution()
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
         for (int j = 1; j < m_rods[*rod]->nv(); j++)
             m_initialLengths[*rod] += (m_rods[*rod]->getVertex(j) - m_rods[*rod]->getVertex(j - 1)).norm();
-
+/*
+    for (int i = 0; i < m_number_of_rods; ++i)
+    {
+        DebugStream(g_log, "") << "The solver tolerances for rod " << i << "are:\n";
+        DebugStream(g_log, "") << "stol = " << m_steppers[i]->get_stol() << '\n';
+        DebugStream(g_log, "") << "atol = " << m_steppers[i]->get_atol() << '\n';
+        DebugStream(g_log, "") << "rtol = " << m_steppers[i]->get_rtol() << '\n';
+        DebugStream(g_log, "") << "inftol = " << m_steppers[i]->get_inftol() << '\n';
+    }
+*/
     CopiousStream(g_log, "") << "Finished BARodStepper constructor\n";
 }
 
@@ -1179,7 +1188,7 @@ void BARodStepper::computeImmunity(const RodSelectionType& selected_rods)
             for (int j = 0; j < m_rods[*rod]->nv(); ++j)
                 m_collision_immune[m_base_vtx_indices[*rod] + j] = false;
 
-    return; // Disabling intersection-based immunity
+    // return; // Disabling intersection-based immunity
 
     // Find the initial vertex-face intersections and mark them collision-immune
     std::list<Collision*> collisions;
@@ -1462,30 +1471,31 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
         // Just sort the collision times to maintain some rough sense of causality
         collisions_list.sort(CompareTimes);
 
-        if (m_perf_param.m_skipRodRodCollisions)
+        for (; !collisions_list.empty();)
         {
-            // Keep only one collision per rod
+            // Find the first collision on a unique rod, put it in first_collisions_list and remove it from collisions_list.
+            // Subsequent collisions on the same rod are kept in collisions_list.
             std::set<int> already_collided_rods;
+            std::list<Collision*> first_collisions_list;
             for (std::list<Collision*>::iterator col_it = collisions_list.begin(); col_it != collisions_list.end(); col_it++)
             {
                 CTCollision* collision = dynamic_cast<CTCollision*> (*col_it);
                 if (collision)
                 {
                     // Only keep collisions involving a rod we see for the first time
-                    int colliding_rod = getContainingRod(collision->GetRodVertex());
-                    if (already_collided_rods.find(colliding_rod) == already_collided_rods.end())
-                        already_collided_rods.insert(colliding_rod);
-                    else
+                    const int collidingRodIdx = getContainingRod(collision->GetRodVertex());
+                    if (already_collided_rods.find(collidingRodIdx) == already_collided_rods.end())
                     {
-                        delete collision;
+                        already_collided_rods.insert(collidingRodIdx);
+                        first_collisions_list.push_back(collision);
                         collisions_list.erase(col_it--);
                     }
                 }
             }
             TraceStream(g_log, "") << "of which " << collisions_list.size() << " are on different rods\n";
 
-            // Now apply response to the remaining collisions
-            for (std::list<Collision*>::iterator col_it = collisions_list.begin(); col_it != collisions_list.end(); col_it++)
+            // Now apply response to the first collisions
+            for (std::list<Collision*>::iterator col_it = first_collisions_list.begin(); col_it != first_collisions_list.end(); col_it++)
             {
                 const CTCollision* collision = dynamic_cast<CTCollision*> (*col_it);
                 assert(collision != NULL);
@@ -1493,7 +1503,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                 // So, which rod was it? Here we are assuming that this is not a rod-rod collision
                 const int collidingRodIdx = getContainingRod(collision->GetRodVertex());
                 ElasticRod* const collidingRod = m_rods[collidingRodIdx];
-                RodSelectionType oneRodList;
+                RodSelectionType oneRodList; // So we can call existing routines that take a rod list. Not very efficient.
                 oneRodList.push_back(collidingRodIdx);
 
                 // Save pre-impulse velocities
@@ -1550,25 +1560,17 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                     for (int j = 0; j < collidingRod->nv(); ++j)
                         m_collision_immune[m_base_vtx_indices[collidingRodIdx] + j] = true;
                 }
-
                 delete collision;
-                collisions_list.erase(col_it--);
             }
-
-            // Detect remaining collisions (including at the end of the last iteration, so we know what failed)
-            TraceStream(g_log, "") << "Detecting collisions...\n";
-            m_collision_detector->getCollisions(collisions_list, ContinuousTime, false); // No need to update the mesh bvh bounding boxes.
+            // All first collisions have been treated, see what remains
+            first_collisions_list.clear();
+            already_collided_rods.clear();
+            m_collision_detector->updateCollisions(collisions_list);
         }
-        else
-            while (!collisions_list.empty())
-            {
-                CTCollision* collision = dynamic_cast<CTCollision*> (collisions_list.front());
-                collisions_list.pop_front();
-                if (collision)
-                    exertCompliantInelasticImpulse(collision);
-                delete collision;
-                m_collision_detector->updateContinuousTimeCollisions();
-            }
+
+        // Detect remaining collisions (including at the end of the last iteration, so we know what failed)
+        TraceStream(g_log, "") << "Detecting collisions...\n";
+        m_collision_detector->getCollisions(collisions_list, ContinuousTime, false); // No need to update the mesh bvh bounding boxes.
     }
 
     // If collisions were still detected before exiting the loop

@@ -37,19 +37,6 @@ void CollisionDetectorBase::getReady(std::list<Collision*>& cllsns, CollisionFil
     m_collisions_list = &cllsns;
 }
 
-void CollisionDetectorBase::updateContinuousTimeCollisions()
-{
-    for (std::list<Collision*>::iterator collision = m_collisions_list->begin(); collision != m_collisions_list->end(); collision++)
-    {
-        bool collisionDetected = (*collision)->analyseCollision(m_time_step);
-        if (!collisionDetected)
-        {
-            delete *collision;
-            m_collisions_list->erase(collision--);
-        }
-    }
-}
-
 bool CollisionDetectorBase::appendCollision(const TopologicalElement* elem_a, const TopologicalElement* elem_b)
 {
     m_potential_collisions++;
@@ -108,12 +95,12 @@ void CollisionDetectorBase::updateBoundingBox(BVH& bvh, const std::vector<const 
                 bbox.Insert(elements[i]->GetBBox(m_geodata, m_time_step));
             }
         }
-//        if (bbox.Volume() > 100)
-//        {
-//            WarningStream(g_log, "lbbrtz", MsgInfo::kOncePerId)
-//                    << "LARGE BOUNDING BOX RESET TO ZERO (this warning is only displayed once)\n";
-//            bbox = BBoxType();
-//        }
+        //        if (bbox.Volume() > 100)
+        //        {
+        //            WarningStream(g_log, "lbbrtz", MsgInfo::kOncePerId)
+        //                    << "LARGE BOUNDING BOX RESET TO ZERO (this warning is only displayed once)\n";
+        //            bbox = BBoxType();
+        //        }
     }
     else // Update the children, then this node's bounding box
 

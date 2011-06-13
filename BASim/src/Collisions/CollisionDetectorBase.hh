@@ -48,7 +48,19 @@ public:
 
     virtual void buildBVH() = 0;
 
-    void updateContinuousTimeCollisions();
+    template<typename CollisionContainerT>
+    void updateCollisions(CollisionContainerT& collisions)
+    {
+        for (typename CollisionContainerT::iterator collision = collisions.begin(); collision != collisions.end(); collision++)
+        {
+            bool collisionDetected = (*collision)->analyseCollision(m_time_step);
+            if (!collisionDetected)
+            {
+                delete *collision;
+                collisions.erase(collision--);
+            }
+        }
+    }
 
     void setSkipRodRodCollisions(bool skipRodRodCollisions)
     {
