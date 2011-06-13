@@ -61,7 +61,6 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
             m_level(0),
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start,
                     m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness)
-//m_timers(NULL)
 {
     if (levelSets != NULL)
     {
@@ -445,16 +444,6 @@ void BARodStepper::prepareForExecution()
         for (int j = 1; j < m_rods[*rod]->nv(); j++)
             m_initialLengths[*rod] += (m_rods[*rod]->getVertex(j) - m_rods[*rod]->getVertex(j - 1)).norm();
 
-    /*
-    for (int i = 0; i < m_number_of_rods; ++i)
-    {
-        DebugStream(g_log, "") << "The solver tolerances for rod " << i << "are:\n";
-        DebugStream(g_log, "") << "stol = " << m_steppers[i]->get_stol() << '\n';
-        DebugStream(g_log, "") << "atol = " << m_steppers[i]->get_atol() << '\n';
-        DebugStream(g_log, "") << "rtol = " << m_steppers[i]->get_rtol() << '\n';
-        DebugStream(g_log, "") << "inftol = " << m_steppers[i]->get_inftol() << '\n';
-    }
-    */
     CopiousStream(g_log, "") << "Finished BARodStepper constructor\n";
 }
 
@@ -576,7 +565,6 @@ bool BARodStepper::adaptiveExecute(double dt, RodSelectionType& selected_rods)
         return true;
     }
     if (selected_rods.empty()) // Success!
-
     {
         TraceStream(g_log, "") << "t = " << m_t << ": adaptiveExecute has simulated (or killed) all rods\n";
         STOP_TIMER("BARodStepper::adaptiveExecute")
@@ -645,6 +633,8 @@ void BARodStepper::step(RodSelectionType& selected_rods)
         return;
     }
 
+    DebugStream(g_log, "") << "t = " << m_t << ": BARodStepper::step() begins with " << selected_rods.size() << " rods\n";
+
     step_setup(selected_rods);
 
     step_dynamic(selected_rods);
@@ -669,8 +659,6 @@ void BARodStepper::step(RodSelectionType& selected_rods)
 
 void BARodStepper::step_setup(const RodSelectionType& selected_rods)
 {
-    TraceStream(g_log, "") << "t = " << m_t << ": BARodStepper::step() begins with " << selected_rods.size() << " rods\n";
-
     assert(m_edges.size() == m_edge_radii.size());
     assert((int) m_masses.size() == m_xn.size() / 3);
     assert(m_xn.size() == m_xnp1.size());
@@ -820,7 +808,7 @@ void BARodStepper::step_collision(const RodSelectionType& selected_rods)
     STOP_TIMER("BARodStepper::step/immune");
 
     START_TIMER("BARodStepper::step/response");
-    TraceStream(g_log, "") << "Starting collision response\n";
+    DebugStream(g_log, "") << "Starting collision response\n";
 
     if (m_perf_param.m_enable_explosion_detection)
         computeForces(m_preCollisionForces, selected_rods);
@@ -882,7 +870,8 @@ void BARodStepper::step_collision(const RodSelectionType& selected_rods)
     // Sanity check to ensure rod's internal state is consistent
 #ifndef NDEBUG
     for (RodSelectionType::const_iterator selected_rod = selected_rods.begin(); selected_rod != selected_rods.end(); selected_rod++)
-        m_rods[*selected_rod]->verifyProperties();
+        if (m_steppers[*selected_rod]->HasSolved())
+            m_rods[*selected_rod]->verifyProperties();
 #endif
 
     STOP_TIMER("BARodStepper::step/setup");
@@ -896,7 +885,7 @@ void BARodStepper::step_failure(RodSelectionType& selected_rods)
     std::vector<bool> exploding_rods(m_number_of_rods);
     if (m_perf_param.m_enable_explosion_detection)
     {
-        TraceStream(g_log, "") << "About to detect explosions" << '\n';
+        DebugStream(g_log, "") << "About to detect explosions" << '\n';
         computeForces(m_endForces, selected_rods);
         checkExplosions(exploding_rods, failed_collisions_rods, selected_rods);
     }
@@ -929,8 +918,8 @@ void BARodStepper::step_failure(RodSelectionType& selected_rods)
                 || (collisionFailure && m_perf_param.m_collision.m_in_case_of == FailureMode::KillTheRod) //
                 || (stretching && m_perf_param.m_stretching.m_in_case_of == FailureMode::KillTheRod);
 
-        bool haltSim = (solveFailure && m_perf_param.m_solver.m_in_case_of == FailureMode::HaltSimulation)//
-                || (explosion && m_perf_param.m_explosion.m_in_case_of == FailureMode::HaltSimulation)//
+        bool haltSim = (solveFailure && m_perf_param.m_solver.m_in_case_of == FailureMode::HaltSimulation) //
+                || (explosion && m_perf_param.m_explosion.m_in_case_of == FailureMode::HaltSimulation) //
                 || (collisionFailure && m_perf_param.m_collision.m_in_case_of == FailureMode::HaltSimulation) //
                 || (stretching && m_perf_param.m_stretching.m_in_case_of == FailureMode::HaltSimulation);
 
@@ -1352,7 +1341,8 @@ void BARodStepper::computeForces(std::vector<VecXd*> Forces, const RodSelectionT
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
     {
 #ifndef NDEBUG
-        m_rods[*rod]->verifyProperties(); // Sanity check to ensure rod's internal state is consistent
+        if (m_steppers[*rod]->HasSolved())
+            m_rods[*rod]->verifyProperties(); // Sanity check to ensure rod's internal state is consistent
 #endif
         Forces[*rod]->setZero();
         m_rods[*rod]->computeForces(*Forces[*rod]); // If we want the internal forces only
@@ -3226,12 +3216,13 @@ void BARodStepper::setupPenaltyForces(std::list<Collision*>& collisions, const R
 
 }
 
-void BARodStepper::setImplicitPenaltyExtraThickness(const double& h)
+void BARodStepper::setImplicitPenaltyThickness(const double& h)
 {
+    assert(h >= 0);
     m_perf_param.m_implicit_thickness = h;
 }
 
-void BARodStepper::setVertexFacePenalty(const double& k)
+void BARodStepper::setImplicitPenaltyStiffness(const double& k)
 {
     assert(k >= 0.0);
     m_perf_param.m_implicit_stiffness = k;

@@ -207,8 +207,8 @@ void HandTest::Setup()
 //  m_br_stepper->setEdgeEdgePenalty(100.0);
 	if (GetBoolOpt("penalty-collision")) {
 	  m_br_stepper->enableImplicitPenaltyImpulses();
-		m_br_stepper->setVertexFacePenalty(GetScalarOpt("penalty-collision-stiff"));  
-		m_br_stepper->setImplicitPenaltyExtraThickness(GetScalarOpt("penalty-collision-extrathick"));
+		m_br_stepper->setImplicitPenaltyStiffness(GetScalarOpt("penalty-collision-stiff"));  
+		m_br_stepper->setImplicitPenaltyThickness(GetScalarOpt("penalty-collision-extrathick"));
 	
 	} else {
 	  m_br_stepper->disableImplicitPenaltyImpulses();

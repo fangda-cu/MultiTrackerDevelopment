@@ -325,8 +325,8 @@ private:
 
     void enableImplicitPenaltyImpulses();
     void disableImplicitPenaltyImpulses();
-    void setImplicitPenaltyExtraThickness(const double& h);
-    void setVertexFacePenalty(const double& k);
+    void setImplicitPenaltyThickness(const double& h);
+    void setImplicitPenaltyStiffness(const double& k);
 
     void killTheRod(int rod);
     void computeForces(std::vector<VecXd*> Forces, const RodSelectionType& selected_rods) const;
@@ -359,10 +359,10 @@ private:
 
     // Controllers to move scripted geometry/rods forward in time and to set boundary conditions
     const std::vector<ScriptingController*>& m_scripting_controllers;
-    // Integrator selected by user
-    // RodTimeStepper::Method m_method;
+
     // Timestep selected by user
     double m_dt;
+
     // Current level of substepping
     int m_level;
 

@@ -300,7 +300,7 @@
 //  m_br_stepper->enablePenaltyImpulses();
 //  m_br_stepper->enableIterativeInelasticImpulses();
 //  m_br_stepper->setEdgeEdgePenalty(1.0);
-//  m_br_stepper->setVertexFacePenalty(1.0);
+//  m_br_stepper->setImplicitPenaltyStiffness(1.0);
 //}
 //
 //void CollisionTest::genTorusPullAtEachTimestep()
@@ -382,7 +382,7 @@
 //  m_br_stepper->enablePenaltyImpulses();
 //  m_br_stepper->disableIterativeInelasticImpulses();
 //  m_br_stepper->setEdgeEdgePenalty(200.0);
-//  m_br_stepper->setVertexFacePenalty(200.0);
+//  m_br_stepper->setImplicitPenaltyStiffness(200.0);
 //}
 
 
@@ -441,7 +441,7 @@
 //  m_br_stepper->enablePenaltyImpulses();
 //  m_br_stepper->disableIterativeInelasticImpulses();
 //  m_br_stepper->setEdgeEdgePenalty(200.0);
-//  m_br_stepper->setVertexFacePenalty(200.0);
+//  m_br_stepper->setImplicitPenaltyStiffness(200.0);
 //  RodOptions opts;
 //  opts.radiusA = opts.radiusB = 0.1;
 //  opts.numVertices = 2;
@@ -525,7 +525,7 @@
 //  m_br_stepper->enablePenaltyImpulses();
 //  m_br_stepper->disableIterativeInelasticImpulses();
 //  m_br_stepper->setEdgeEdgePenalty(200.0);
-//  m_br_stepper->setVertexFacePenalty(200.0);
+//  m_br_stepper->setImplicitPenaltyStiffness(200.0);
 //  RodOptions opts;
 //  opts.radiusA = opts.radiusB = 0.1;
 //  opts.numVertices = 2;
@@ -622,7 +622,7 @@
 //  m_br_stepper->enablePenaltyImpulses();
 //  m_br_stepper->disableIterativeInelasticImpulses();
 //  m_br_stepper->setEdgeEdgePenalty(200.0);
-//  m_br_stepper->setVertexFacePenalty(200.0);
+//  m_br_stepper->setImplicitPenaltyStiffness(200.0);
 //  RodOptions opts;
 //  opts.radiusA = opts.radiusB = 0.1;
 //  opts.numVertices = 2;
@@ -709,7 +709,7 @@
 //  m_br_stepper->enablePenaltyImpulses();
 //  m_br_stepper->disableIterativeInelasticImpulses();
 //  m_br_stepper->setEdgeEdgePenalty(100.0);
-//  m_br_stepper->setVertexFacePenalty(200.0);
+//  m_br_stepper->setImplicitPenaltyStiffness(200.0);
 //
 //  RodOptions opts;
 //  opts.radiusA = opts.radiusB = 0.1;
@@ -777,7 +777,7 @@
 //  m_br_stepper->enablePenaltyImpulses();
 //  m_br_stepper->disableIterativeInelasticImpulses();
 //  m_br_stepper->setEdgeEdgePenalty(200.0);
-//  m_br_stepper->setVertexFacePenalty(200.0);
+//  m_br_stepper->setImplicitPenaltyStiffness(200.0);
 //  RodOptions opts;
 //  opts.radiusA = opts.radiusB = 0.1;
 //  opts.numVertices = 2;
@@ -828,7 +828,7 @@
 //  m_br_stepper->enablePenaltyImpulses();
 //  m_br_stepper->disableIterativeInelasticImpulses();
 //  m_br_stepper->setEdgeEdgePenalty(200.0);
-//  m_br_stepper->setVertexFacePenalty(200.0);
+//  m_br_stepper->setImplicitPenaltyStiffness(200.0);
 //
 //  RodOptions opts;
 //  opts.radiusA = opts.radiusB = 0.1;
@@ -890,7 +890,7 @@
 //  m_br_stepper->enablePenaltyImpulses();
 //  m_br_stepper->disableIterativeInelasticImpulses();
 //  m_br_stepper->setEdgeEdgePenalty(200.0);
-//  m_br_stepper->setVertexFacePenalty(200.0);
+//  m_br_stepper->setImplicitPenaltyStiffness(200.0);
 //  
 //  RodOptions opts;
 //  opts.radiusA = opts.radiusB = 0.1;
@@ -1006,7 +1006,7 @@
 //  m_br_stepper->enablePenaltyImpulses();
 //  m_br_stepper->disableIterativeInelasticImpulses();
 //  m_br_stepper->setEdgeEdgePenalty(200.0);
-//  m_br_stepper->setVertexFacePenalty(200.0);
+//  m_br_stepper->setImplicitPenaltyStiffness(200.0);
 //  
 //  RodOptions opts;
 //  opts.radiusA = opts.radiusB = 0.1;
@@ -1098,7 +1098,7 @@
 //  m_br_stepper->enablePenaltyImpulses();
 //  m_br_stepper->disableIterativeInelasticImpulses();
 //  m_br_stepper->setEdgeEdgePenalty(200.0);
-//  m_br_stepper->setVertexFacePenalty(200.0);
+//  m_br_stepper->setImplicitPenaltyStiffness(200.0);
 //  
 //  RodOptions opts;
 //  opts.radiusA = opts.radiusB = 0.1;
@@ -1142,7 +1142,7 @@
 //  m_br_stepper->enablePenaltyImpulses();
 //  m_br_stepper->disableIterativeInelasticImpulses();
 //  m_br_stepper->setEdgeEdgePenalty(200.0);
-//  m_br_stepper->setVertexFacePenalty(200.0);
+//  m_br_stepper->setImplicitPenaltyStiffness(200.0);
 //  
 //  RodOptions opts;
 //  opts.radiusA = opts.radiusB = 0.1;
