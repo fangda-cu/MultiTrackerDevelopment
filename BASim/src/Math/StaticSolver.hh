@@ -149,8 +149,12 @@ public:
 
 protected:
 
-    inline Scalar clipvalue( Scalar minvalue, Scalar variable, Scalar maxvalue )
+    inline Scalar funnyclipvalue( Scalar minvalue, Scalar variable, Scalar maxvalue )
     {
+	// funny wrap-around behavior ensures we don't get "stuck" at lambda=maxvalue
+	if (variable > maxvalue) variable = minvalue;
+
+	// clip
 	return fmin( fmax( variable, minvalue), maxvalue);
     }
 
@@ -264,12 +268,12 @@ protected:
         for (int i = 0; i < m_ndof; ++i)
         {
 	    // Spectral shift (Tikhonov regularization)
-            //m_A->add(i, i, m_lambda);
+            m_A->add(i, i, m_lambda);
 
 	    // Levenberg-Marquardt diagonal shift
-	    Scalar d = (*m_A)(i,i);
+	    //Scalar d = (*m_A)(i,i);
 	    //TraceStream(g_log, "StaticSolver::position_solve") << "lambda = " << m_lambda << " d[" << i << "] = " << d << " (1.+m_lambda) * d = " << (1.+m_lambda) * d << "\n";	    
-            m_A->set(i, i, (1.+m_lambda) * d);
+            //m_A->set(i, i, (1.+m_lambda) * d);
 	}
         m_A->finalize();
         assert(m_A->isApproxSymmetric(1.0e-6));
@@ -297,7 +301,7 @@ protected:
         if (status < 0)
         {
 	    // shrink trust region (increase regularization)
-	    m_lambda = clipvalue( m_lambdamin, m_lambda * m_gearup, m_lambdamax );
+	    m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup, m_lambdamax );
 
             DebugStream(g_log, "StaticSolver::position_solve") << "\033[31;1mWARNING IN StaticSolver:\033[m Problem during linear solve detected. "
 				   << " new lambda = " << m_lambda << "\n";
@@ -330,13 +334,13 @@ protected:
         else if (m_energy < initEnergy) // || m_l2norm < initl2norm)
         {
 	    // Decrease lambda (= increase trust region size = decrease regularization)
-	    m_lambda = clipvalue( m_lambdamin, m_lambda * m_geardown, m_lambdamax );
+	    m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_geardown, m_lambdamax );
             TraceStream(g_log, "StaticSolver::position_solve") << "new energy = " << m_energy << "; new residual = " << m_l2norm << "; retaining step; new lambda = " << m_lambda << "\n";
         }
         else
         {
 	    // Increase lambda (= decrease trust region size = increase regularization)
-	    m_lambda = clipvalue( m_lambdamin, m_lambda * m_gearup, m_lambdamax );
+	    m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup, m_lambdamax );
 	    TraceStream(g_log, "StaticSolver::position_solve") << "new energy " << m_energy << "; new residual = " << m_l2norm << "; discarding step; new lambda = " << m_lambda << "\n";
 	    
 	    // Solver failed -- undo the changes
