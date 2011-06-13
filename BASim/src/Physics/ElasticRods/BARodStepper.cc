@@ -5,7 +5,7 @@
  * \date 02/16/2010
  */
 
-#define KEEP_ONLY_SOME_RODS
+//#define KEEP_ONLY_SOME_RODS
 
 #include <typeinfo>
 #include "BARodStepper.hh"
