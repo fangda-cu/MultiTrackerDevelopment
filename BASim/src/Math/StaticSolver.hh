@@ -41,10 +41,11 @@ public:
 
         m_maxlsit = 5;
 
-	m_lambda0  = 1e-8;
-	m_lambda   = m_lambda0;
-	m_gearup   = 2.00; // above 1.0
-	m_geardown = 0.90; // below 1.0
+	m_lambdamin = 1e-8;
+	m_lambdamax = 1e+10;
+	m_lambda    = m_lambdamin;
+	m_gearup    = 2.00; // above 1.0
+	m_geardown  = 0.80; // below 1.0
     }
 
     ~StaticSolver()
@@ -148,6 +149,12 @@ public:
 
 protected:
 
+    inline Scalar clipvalue( Scalar minvalue, Scalar variable, Scalar maxvalue )
+    {
+	return fmin( fmax( variable, minvalue), maxvalue);
+    }
+
+
     bool isConverged()
     {
         TraceStream(g_log, "StaticSolver::isConverged") << "residual = " << m_l2norm << " infnorm = "
@@ -232,8 +239,6 @@ protected:
 
         STOP_TIMER("StaticSolver::position_solve/setup");
 
-        if (isConverged()) return true;
-
 
 
         // Chapter 2: Iterate using Newton's Method
@@ -292,7 +297,7 @@ protected:
         if (status < 0)
         {
 	    // shrink trust region (increase regularization)
-	    m_lambda *= m_gearup;
+	    m_lambda = clipvalue( m_lambdamin, m_lambda * m_gearup, m_lambdamax );
 
             DebugStream(g_log, "StaticSolver::position_solve") << "\033[31;1mWARNING IN StaticSolver:\033[m Problem during linear solve detected. "
 				   << " new lambda = " << m_lambda << "\n";
@@ -313,18 +318,25 @@ protected:
 
         updatePositionBasedQuantities();
 
-        // Is this step acceptable?
+        // Update the Levenberg-Marquardt trust region size
         /////////////////////////////////////////////////////////////
 
-        if (m_energy < initEnergy || m_l2norm < initl2norm)
+        if (isConverged())
+	{
+	    // Leave lambda alone
+
+	    TraceStream(g_log, "StaticSolver::position_solve") << "new energy = " << m_energy << "; new residual = " << m_l2norm << "; retaining step; converged! new lambda = " << m_lambda << "\n";
+	}
+        else if (m_energy < initEnergy) // || m_l2norm < initl2norm)
         {
-	    // Increase trust region size (decrease regularization)
-	    m_lambda = fmax( m_lambda * m_geardown, m_lambda0 );
+	    // Decrease lambda (= increase trust region size = decrease regularization)
+	    m_lambda = clipvalue( m_lambdamin, m_lambda * m_geardown, m_lambdamax );
             TraceStream(g_log, "StaticSolver::position_solve") << "new energy = " << m_energy << "; new residual = " << m_l2norm << "; retaining step; new lambda = " << m_lambda << "\n";
         }
         else
         {
-	    m_lambda *= m_gearup;
+	    // Increase lambda (= decrease trust region size = increase regularization)
+	    m_lambda = clipvalue( m_lambdamin, m_lambda * m_gearup, m_lambdamax );
 	    TraceStream(g_log, "StaticSolver::position_solve") << "new energy " << m_energy << "; new residual = " << m_l2norm << "; discarding step; new lambda = " << m_lambda << "\n";
 	    
 	    // Solver failed -- undo the changes
@@ -364,7 +376,7 @@ protected:
     VecXd m_deltaX;
 
     Scalar m_lambda;
-    Scalar m_lambda0;
+    Scalar m_lambdamin, m_lambdamax;
     Scalar m_gearup, m_geardown;
 
     IntArray m_fixed;

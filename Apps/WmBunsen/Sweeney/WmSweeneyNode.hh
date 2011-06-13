@@ -152,6 +152,8 @@ private:
     double m_rodPitch;
     int m_verticesPerRod;
     bool m_rodDamping;
+
+    
     
     WmSweeneyRodManager* m_rodManager;
     MVectorArray m_strandVertices;
