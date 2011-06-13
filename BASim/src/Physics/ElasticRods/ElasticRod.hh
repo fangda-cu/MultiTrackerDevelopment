@@ -291,6 +291,7 @@ public:
   virtual void updateProperties();
   virtual void updateReferenceProperties();
   virtual void updateStiffness();
+  virtual void setRestLengths(std::vector<Scalar>& vals);
   virtual void verifyProperties();
 
   /** At the beginning of the time step, the undeformed configuration

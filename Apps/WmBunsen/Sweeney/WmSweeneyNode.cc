@@ -157,15 +157,24 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		  
 		    // get total rod length for scaling
 		    Scalar curl_len = 0;
+		    int curl_resolution = 1;
 		    // TODO (sainsley) : create method inside ElasticRod that returns a total length
 		    // this can be computed within ElasticRod::computeEdgeLengths and stored locally
 		    // so we do not need to recompute it here
+
+		    // Compute new edge length
+		    Scalar updated_edge_length = m_length / m_verticesPerRod;
+		    std::vector<Scalar> rest_lengths;
+		    // Adjust edge lengths and compute the resulting curl length
 		    for ( ElasticRod::edge_iter eh = m_rodManager->m_rods[i]->edges_begin(); 
                          eh != m_rodManager->m_rods[i]->edges_end(); ++eh )
 		    {
-		      if ( eh->idx() >= m_curlStart*(m_verticesPerRod-1) )
+		      rest_lengths.push_back(updated_edge_length);
+		      //cout << "WmSweeneyNode::compute::edges: idx = " << eh->idx() << " new edge length = " << updated_edge_length << " current edge length " << m_rodManager->m_rods[i]->getEdgeLength( *eh )  << endl;
+		      if ( eh->idx() >= m_curlStart*( m_verticesPerRod - 1 ) )
 			{
 		            curl_len += m_rodManager->m_rods[i]->getEdgeLength( *eh );
+			    curl_resolution++;
 			}
 		    }
 		    assert( m_curlStart == 1.0 || curl_len != 0 );
@@ -188,6 +197,8 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		        radius_a *= 1.0/m_rodAspectRatio;
 		    }
 
+		    m_rodManager->m_rods[i]->setRestLengths(rest_lengths); 
+
                     m_rodManager->m_rods[i]->setRadius( radius_a, radius_b );
 
 		    m_rodManager->m_rods[i]->setBaseRotation( m_rodRotation*M_PI );
@@ -207,20 +218,20 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		    for ( ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin(); 
                          vh != m_rodManager->m_rods[i]->vertices_end(); ++vh )
 		    {
-		        //cout << "WmSweeneyNode::compute::simulate: idx = " << vh->idx() << " parametric var = " << t << " " << curl_len << endl;
                         assert( m_rodManager->m_rods[i]->m_bendingForce != NULL );
 			
 			// curl curvature and torsion
 			
 			Scalar curvature = 0.0;
+			// TODO(sainsley) : verify this works for any curl start
 			if ( t > 0 ) 
-			  curvature = m_curlRadius;
+			  curvature = m_curlRadius*curl_len/curl_resolution;
 			//if ( m_curlRadius != 0 ) 
 			//{
 			//  curvature /= ( m_curlRadius*m_curlRadius + m_curlPitch*m_curlPitch) ;
 			//}
 			
-			Scalar torsion = m_curlPitch;
+			Scalar torsion = m_curlPitch*curl_len/curl_resolution;
 			//if ( m_curlPitch != 0 )
 		        //{
 			//  torsion /= ( m_curlRadius*m_curlRadius + m_curlPitch*m_curlPitch) ;
@@ -228,13 +239,17 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 			
 			m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, 
 			    Vec2d( curvature*cos( torsion*t ), curvature*sin( torsion*t ) ) );
-			
+			//cout << "WmSweeneyNode::compute::simulate: idx = " << vh->idx() << " parametric var = " << t << " curvature " <<  m_rodManager->m_rods[i]->m_bendingForce->getKappaBar(*vh) << " bending stiffness " <<  m_rodManager->m_rods[i]->m_bendingForce->getB(*vh) << " vertex mass " << m_rodManager->m_rods[i]->getVertexMass(vh->idx()) << endl;
 
 			// grab edge out of current vertex and increment parametic length accordingly 
 			if ( vh->idx() >= m_curlStart*(m_verticesPerRod)  && vh != m_rodManager->m_rods[i]->vertices_end() ) 
 			{
-			   t += m_rodManager->m_rods[i]->getEdgeLength( j++ )/curl_len;
-			}
+			  if( j > 0 )
+			    t += m_rodManager->m_rods[i]->getEdgeLength( j++ )/curl_len;
+			  else 
+			    t += m_rodManager->m_rods[i]->getEdgeLength( ++j )/curl_len;
+			}		    
+
 		    }
 
 		    
@@ -707,7 +722,7 @@ void* WmSweeneyNode::creator()
         CHECK_MSTATUS( numericAttr.setReadable( true ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
         CHECK_MSTATUS( numericAttr.setMin( 0.0 ) );
-        CHECK_MSTATUS( numericAttr.setMax( 3.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 5.0 ) );
         status = addAttribute( ia_curlRadius );
         CHECK_MSTATUS( status );
         
@@ -722,7 +737,7 @@ void* WmSweeneyNode::creator()
         CHECK_MSTATUS( numericAttr.setReadable( true ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
         CHECK_MSTATUS( numericAttr.setMin( 0.0 ) );
-        CHECK_MSTATUS( numericAttr.setMax( 3.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 5.0 ) );
         status = addAttribute( ia_curlPitch );
         CHECK_MSTATUS( status );
         
