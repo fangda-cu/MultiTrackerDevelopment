@@ -661,10 +661,26 @@ void* WmSweeneyNode::creator()
 	status = attributeAffects( ia_startTime, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_startTime->ca_rodPropertiesSync" ); return status; }    
 
-	addNumericAttribute( ia_length, "length", "len", MFnNumericData::kDouble, 10.0, true );
-	status = attributeAffects( ia_length, ca_rodPropertiesSync );
-	if ( !status ) { status.perror( "attributeAffects ia_length->ca_rodPropertiesSync" ); return status; }
+	//addNumericAttribute( ia_length, "length", "len", MFnNumericData::kDouble, 10.0, true );
+	//status = attributeAffects( ia_length, ca_rodPropertiesSync );
+	//if ( !status ) { status.perror( "attributeAffects ia_length->ca_rodPropertiesSync" ); return status; }
 
+    {
+        MFnNumericAttribute numericAttr;
+        ia_length = numericAttr.create( "length", "len", MFnNumericData::kDouble, 10.0, &status );
+        CHECK_MSTATUS( status );
+        CHECK_MSTATUS( numericAttr.setReadable( true ) );
+        CHECK_MSTATUS( numericAttr.setWritable( true ) );
+        CHECK_MSTATUS( numericAttr.setMin( 1.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 100.0 ) );
+        status = addAttribute( ia_length );
+        CHECK_MSTATUS( status );
+        
+        status = attributeAffects( ia_length, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_length->ca_rodPropertiesSync" ); return status; }
+    }
+ 
+        // TODO : remove this? i don't think we are using it
 	addNumericAttribute( ia_edgeLength, "edgeLength", "ele", MFnNumericData::kDouble, 1.0, true );
 	status = attributeAffects( ia_edgeLength, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_edgeLength->ca_rodPropertiesSync" ); return status; }
