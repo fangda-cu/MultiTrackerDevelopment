@@ -170,6 +170,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                          eh != m_rodManager->m_rods[i]->edges_end(); ++eh )
 		    {
 		      rest_lengths.push_back(updated_edge_length);
+		      //cout << "WmSweeneyNode::compute::edges: idx = " << eh->idx() << " new edge length = " << updated_edge_length << " current edge length " << m_rodManager->m_rods[i]->getEdgeLength( *eh )  << endl;
 		      if ( eh->idx() >= m_curlStart*( m_verticesPerRod - 1 ) )
 			{
 		            curl_len += m_rodManager->m_rods[i]->getEdgeLength( *eh );
@@ -238,12 +239,15 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 			
 			m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, 
 			    Vec2d( curvature*cos( torsion*t ), curvature*sin( torsion*t ) ) );
-			//cout << "WmSweeneyNode::compute::simulate: idx = " << vh->idx() << " parametric var = " << t << " curvature " <<  m_rodManager->m_rods[i]->m_bendingForce->getKappaBar(*vh) << endl;
+			//cout << "WmSweeneyNode::compute::simulate: idx = " << vh->idx() << " parametric var = " << t << " curvature " <<  m_rodManager->m_rods[i]->m_bendingForce->getKappaBar(*vh) << " bending stiffness " <<  m_rodManager->m_rods[i]->m_bendingForce->getB(*vh) << " vertex mass " << m_rodManager->m_rods[i]->getVertexMass(vh->idx()) << endl;
 
 			// grab edge out of current vertex and increment parametic length accordingly 
 			if ( vh->idx() >= m_curlStart*(m_verticesPerRod)  && vh != m_rodManager->m_rods[i]->vertices_end() ) 
 			{
-			  t += m_rodManager->m_rods[i]->getEdgeLength( j++ )/curl_len;
+			  if( j > 0 )
+			    t += m_rodManager->m_rods[i]->getEdgeLength( j++ )/curl_len;
+			  else 
+			    t += m_rodManager->m_rods[i]->getEdgeLength( ++j )/curl_len;
 			}		    
 
 		    }
