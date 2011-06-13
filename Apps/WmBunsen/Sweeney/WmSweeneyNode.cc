@@ -217,7 +217,6 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		    for ( ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin(); 
                          vh != m_rodManager->m_rods[i]->vertices_end(); ++vh )
 		    {
-		        //cout << "WmSweeneyNode::compute::simulate: idx = " << vh->idx() << " parametric var = " << t << " " << curl_len << endl;
                         assert( m_rodManager->m_rods[i]->m_bendingForce != NULL );
 			
 			// curl curvature and torsion
@@ -239,7 +238,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 			
 			m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, 
 			    Vec2d( curvature*cos( torsion*t ), curvature*sin( torsion*t ) ) );
-			
+			//cout << "WmSweeneyNode::compute::simulate: idx = " << vh->idx() << " parametric var = " << t << " curvature " <<  m_rodManager->m_rods[i]->m_bendingForce->getKappaBar(*vh) << endl;
 
 			// grab edge out of current vertex and increment parametic length accordingly 
 			if ( vh->idx() >= m_curlStart*(m_verticesPerRod)  && vh != m_rodManager->m_rods[i]->vertices_end() ) 
