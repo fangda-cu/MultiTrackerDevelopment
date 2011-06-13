@@ -483,7 +483,7 @@ void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices,
         newPoint = newPoint.rotateBy( rotationQ );
             
         // Now move the point to sit where the Barbershop input strand comes from
-        newPoint += i_rootPosition;
+         newPoint += i_rootPosition;
             
         o_rodVertices.push_back( BASim::Vec3d( newPoint.x, newPoint.y, newPoint.z ) );*/
     }
