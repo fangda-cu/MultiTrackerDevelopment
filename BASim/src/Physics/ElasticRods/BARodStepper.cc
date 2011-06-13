@@ -445,7 +445,8 @@ void BARodStepper::prepareForExecution()
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
         for (int j = 1; j < m_rods[*rod]->nv(); j++)
             m_initialLengths[*rod] += (m_rods[*rod]->getVertex(j) - m_rods[*rod]->getVertex(j - 1)).norm();
-/*
+
+    /*
     for (int i = 0; i < m_number_of_rods; ++i)
     {
         DebugStream(g_log, "") << "The solver tolerances for rod " << i << "are:\n";
@@ -454,7 +455,7 @@ void BARodStepper::prepareForExecution()
         DebugStream(g_log, "") << "rtol = " << m_steppers[i]->get_rtol() << '\n';
         DebugStream(g_log, "") << "inftol = " << m_steppers[i]->get_inftol() << '\n';
     }
-*/
+    */
     CopiousStream(g_log, "") << "Finished BARodStepper constructor\n";
 }
 

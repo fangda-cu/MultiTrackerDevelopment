@@ -337,6 +337,10 @@ void Beaker::addRodsToWorld(int i_rodGroupIndex, WmFigRodGroup* i_rodGroup, doub
 
         // cerr << "Adding rod time stepper " << r << " to world\n";
         m_rodTimeSteppers.push_back(m_rodDataMap[i_rodGroupIndex]->stepper(r));
+        m_rodTimeSteppers.back()->set_stol(m_stol);
+        m_rodTimeSteppers.back()->set_atol(m_atol);
+        m_rodTimeSteppers.back()->set_rtol(m_rtol);
+        m_rodTimeSteppers.back()->set_inftol(m_inftol);
     }
 
     if (!areSimulatingAnyRods)
