@@ -60,7 +60,7 @@ protected:
     , m_maxlsit(3)
     , m_stol(1e-8)
     , m_atol(1e-8)
-    , m_rtol(1e-8)
+    , m_rtol(0.0)
     , m_inftol(1e-8)
     , m_infnorm(0)
   {}
