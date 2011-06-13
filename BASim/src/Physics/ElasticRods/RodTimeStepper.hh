@@ -134,7 +134,9 @@ public:
     }
     else if (method == STATICS) 
     {
-      m_diffEqSolver = new StaticSolver<RodTimeStepper>(*this);
+      //m_diffEqSolver = new StaticSolver<RodTimeStepper>(*this);
+      assert(0);
+      // NOT IMPLEMENTED
     } 
     else if (method == NONE)
     {

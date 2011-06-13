@@ -17,6 +17,8 @@
 #include "../Core/StatTracker.hh"
 #include "../Util/TextLog.hh"
 
+static int static_solve_counter = 0;
+
 namespace BASim
 {
 
@@ -32,16 +34,17 @@ public:
 
     explicit StaticSolver(ODE& ode) :
         m_diffEq(ode), m_ndof(-1), x0(), m_rhs(), m_deltaX(),
-                m_fixed(), m_desired(), m_initl2norm(0), m_l2norm(0), m_energy(0), m_A(NULL), m_solver(NULL)
+                m_fixed(), m_desired(), m_l2norm(0), m_energy(0), m_A(NULL), m_solver(NULL)
     {
         m_A = m_diffEq.createMatrix();
         m_solver = SolverUtils::instance()->createLinearSolver(m_A);
 
         m_maxlsit = 5;
 
-	m_lambda0 = 1e-8;
-	m_lambda  = m_lambda0;
-	m_nu      = 2.0;
+	m_lambda0  = 1e-8;
+	m_lambda   = m_lambda0;
+	m_gearup   = 2.00; // above 1.0
+	m_geardown = 0.90; // below 1.0
     }
 
     ~StaticSolver()
@@ -126,6 +129,7 @@ public:
         TraceStream(g_log, "") << "Staticsolver::computeResidual: evaluating PDot...\n";
         m_rhs.setZero();
 	m_energy = 0;
+	m_diffEq.updateCachedQuantities();
         m_diffEq.evaluateConservativeForcesEnergy(m_rhs, m_energy);
 
         // For prescribed (fixed) DOFS, overwrite heuristic initial guess
@@ -146,29 +150,29 @@ protected:
 
     bool isConverged()
     {
-        TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged: residual = " << m_l2norm << " infnorm = "
+        TraceStream(g_log, "StaticSolver::isConverged") << "residual = " << m_l2norm << " infnorm = "
                 << m_infnorm << " atol = " << m_atol << " inftol = " << m_inftol << '\n';
 
         // L2 norm of the residual is less than tolerance
         if (m_l2norm < m_atol)
         {
-            TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged(): converged atol: residual = " << m_l2norm
+            TraceStream(g_log, "StaticSolver::isConverged") << "converged atol: residual = " << m_l2norm
                     << " < " << m_atol << " = atol " << '\n';
             return true;
         }
         // Infinity norm of residual is less than tolerance
         if (m_infnorm < m_inftol)
         {
-            TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged(): converged inftol: |residual|_inf = " << m_infnorm
+            TraceStream(g_log, "StaticSolver::isConverged") << "converged inftol: |residual|_inf = " << m_infnorm
                     << " < " << m_inftol << " = inftol" << '\n';
             return true;
         }
-        if (m_deltaX.norm() < m_stol)
-        {
-            TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged(): converged stol: " << " |increment|_L2 < "
-                    << m_stol << " = stol " << '\n';
-            return true;
-        }
+        // if (m_deltaX.norm() < m_stol)
+        // {
+        //     TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged(): converged stol: " << " |increment|_L2 < "
+        //             << m_stol << " = stol " << '\n';
+        //     return true;
+        // }
         TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged(): convergence test fails" << '\n';
         return false;
     }
@@ -181,9 +185,7 @@ protected:
         // Chapter 0: Basic housekeeping
         ////////////////////////////////////////////////////
 
-        bool successful_solve = true;
-
-        m_diffEq.startStep();
+        bool successful_solve = true;        
 
         resize();
         setZero();
@@ -216,11 +218,6 @@ protected:
             m_rhs(dof) = m_desired[i] - x0(dof); // set desired position
         }
 
-        // Signal the differential equation that it should get 
-        // ready for the first iteration. In practice this is where the ODE
-        // can precompute some reusable quantities that depend on the state (position & velocity)
-        m_diffEq.endIteration();
-
         // Based on the initial guess, 
         //   1) set up right hand side (RHS = F).
         //   2) compute the potential energy
@@ -228,19 +225,21 @@ protected:
 	updatePositionBasedQuantities();
 
 	// save the initial residual
-        m_initl2norm = m_l2norm;
+        Scalar initl2norm = m_l2norm;
 
 	Scalar initEnergy = m_energy;
 	Scalar initLambda = m_lambda;
 
         STOP_TIMER("StaticSolver::position_solve/setup");
 
+        if (isConverged()) return true;
+
 
 
         // Chapter 2: Iterate using Newton's Method
         ////////////////////////////////////////////////////
 
-	TraceStream(g_log, "StaticSolver::position_solve") << "initial energy = " << initEnergy << " lambda = " << m_lambda << "\n";
+	TraceStream(g_log, "StaticSolver::position_solve") << "call #" << ++static_solve_counter << " initial energy = " << initEnergy << " lambda = " << m_lambda << "\n";
 
         // TODO: Assert m_A, increment are zero
  
@@ -257,12 +256,15 @@ protected:
         m_A->finalize();
         assert(m_A->isApproxSymmetric(1.0e-6));
 
-	// Levenberg-Marquardt diagonal shift (Tikhonov regularization)
         for (int i = 0; i < m_ndof; ++i)
         {
-            m_A->add(i, i, m_lambda);
-	    //Scalar d = (*m_A)(i,i);
-            //m_A->set(i, i, (1.+m_lambda) * d);
+	    // Spectral shift (Tikhonov regularization)
+            //m_A->add(i, i, m_lambda);
+
+	    // Levenberg-Marquardt diagonal shift
+	    Scalar d = (*m_A)(i,i);
+	    //TraceStream(g_log, "StaticSolver::position_solve") << "lambda = " << m_lambda << " d[" << i << "] = " << d << " (1.+m_lambda) * d = " << (1.+m_lambda) * d << "\n";	    
+            m_A->set(i, i, (1.+m_lambda) * d);
 	}
         m_A->finalize();
         assert(m_A->isApproxSymmetric(1.0e-6));
@@ -290,10 +292,13 @@ protected:
         if (status < 0)
         {
 	    // shrink trust region (increase regularization)
-	    m_lambda *= m_nu;
+	    m_lambda *= m_gearup;
 
             DebugStream(g_log, "StaticSolver::position_solve") << "\033[31;1mWARNING IN StaticSolver:\033[m Problem during linear solve detected. "
 				   << " new lambda = " << m_lambda << "\n";
+
+	    m_diffEq.set_q(x0);
+	    m_diffEq.updateCachedQuantities();
 	    
             return false;
         }
@@ -304,34 +309,29 @@ protected:
 
         // Update the differential equation with the current guess
         m_diffEq.set_q(x0 + m_deltaX);
-
-        // Signal the differential equation that it should recompute cached quantities
-        m_diffEq.endIteration();
+        m_diffEq.updateCachedQuantities();
 
         updatePositionBasedQuantities();
 
         // Is this step acceptable?
         /////////////////////////////////////////////////////////////
 
-        if (m_energy < initEnergy || isConverged())
+        if (m_energy < initEnergy || m_l2norm < initl2norm)
         {
 	    // Increase trust region size (decrease regularization)
-	    m_lambda = fmax( m_lambda/m_nu, m_lambda0 );
-            TraceStream(g_log, "StaticSolver::position_solve") << "new energy = " << m_energy << "; retaining step; new lambda = " << m_lambda << "\n";
+	    m_lambda = fmax( m_lambda * m_geardown, m_lambda0 );
+            TraceStream(g_log, "StaticSolver::position_solve") << "new energy = " << m_energy << "; new residual = " << m_l2norm << "; retaining step; new lambda = " << m_lambda << "\n";
         }
         else
         {
-	    m_lambda *= m_nu;
-	    TraceStream(g_log, "StaticSolver::position_solve") << "new energy " << m_energy << "; discarding step; new lambda = " << m_lambda << "\n";
+	    m_lambda *= m_gearup;
+	    TraceStream(g_log, "StaticSolver::position_solve") << "new energy " << m_energy << "; new residual = " << m_l2norm << "; discarding step; new lambda = " << m_lambda << "\n";
 	    
 	    // Solver failed -- undo the changes
 	    /////////////////////////////////////////////////
 	    
-	    // Update the differential equation with the current guess
 	    m_diffEq.set_q(x0);
-	    
-	    // Signal the differential equation that it should recompute cached quantities
-	    m_diffEq.endIteration();	    
+	    m_diffEq.updateCachedQuantities();
         }
 
 	START_TIMER("Staticsolver::position_solve/setup");
@@ -340,8 +340,6 @@ protected:
 	m_A->resetNonzeros();
 
 	STOP_TIMER("Staticsolver::position_solve/setup");
-
-        m_diffEq.endStep();
 
 
 #ifndef NDEBUG      // Ensure that fixed DOFs are at their desired values
@@ -367,7 +365,7 @@ protected:
 
     Scalar m_lambda;
     Scalar m_lambda0;
-    Scalar m_nu;
+    Scalar m_gearup, m_geardown;
 
     IntArray m_fixed;
     std::vector<Scalar> m_desired;
@@ -377,7 +375,6 @@ protected:
 
     Scalar m_energy; // EG: move to DiffEqSolver
     Scalar m_l2norm;
-    Scalar m_initl2norm;
 };
 
 } // namespace BASim

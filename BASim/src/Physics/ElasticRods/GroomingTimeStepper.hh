@@ -259,8 +259,8 @@ public:
 	  potentialForce->computeForceEnergy(m_rod, curr_force, curr_energy);
 	  f      += curr_force;
 	  energy += curr_energy;
+	  TraceStream(g_log, "GroomingTimeStepper::evaluateConservativeForcesEnergy:") << m_externalForces[i]->getName() << " &rod = " << &m_rod << " potential energy = " << curr_energy << " force norm = " << curr_force.norm() << '\n';
       }
-      TraceStream(g_log, "GroomingTimeStepper::evaluateConservativeForcesEnergy:") << m_externalForces[i]->getName() << " &rod = " << &m_rod << " potential energy = " << curr_energy << " force norm = " << curr_force.norm() << '\n';
     }
   }
 
@@ -405,19 +405,7 @@ public:
     return m_externalForces;
   }
 
-  void startStep()
-  {
-    m_rod.viscousUpdate();
-  }
-
-  void endStep()
-  {
-    m_rod.updateProperties();
-  }
-
-  void startIteration() {}
-
-  void endIteration()
+  void updateCachedQuantities()
   {
     m_rod.updateProperties();
   }

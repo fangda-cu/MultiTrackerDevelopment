@@ -77,7 +77,7 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
         m_level_sets.resize(m_triangle_meshes.size(), NULL);
     }
 
-    g_log = new TextLog(std::cerr, MsgInfo::kInfo, true);
+    g_log = new TextLog(std::cerr, MsgInfo::kTrace, true);
     InfoStream(g_log, "") << "Started logging BAGroomingStepper\n";
 
     for (std::vector<GroomingTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
@@ -453,21 +453,13 @@ bool BAGroomingStepper::execute()
     // Prepare the list initially containing all rods.
     RodSelectionType selected_rods = m_simulated_rods;
 
-    for (int i=0; i<10; ++i)
-    {
-	nonAdaptiveExecute(m_dt, selected_rods);
-    }
+    step(selected_rods);
 
     STOP_TIMER("BAGroomingStepper::execute")
 
     return true;
 }
 
-bool BAGroomingStepper::nonAdaptiveExecute(double dt, RodSelectionType& selected_rods)
-{
-    step(selected_rods);
-    return (selected_rods.size() == 0);
-}
 
 void BAGroomingStepper::step(RodSelectionType& selected_rods)
 {
@@ -513,30 +505,19 @@ void BAGroomingStepper::step(RodSelectionType& selected_rods)
 
     STOP_TIMER("BAGroomingStepper::step/steppers");
 
-    TraceStream(g_log, "") << "About to update properties" << '\n';
 
-    // Update frames and such in the rod (Is this correct? Will this do some extra stuff?)
-    for (RodSelectionType::const_iterator selected_rod = selected_rods.begin(); selected_rod != selected_rods.end(); selected_rod++)
-        m_rods[*selected_rod]->updateProperties();
+    // START_TIMER("BAGroomingStepper::step/penalty");
 
-    // Sanity check to ensure rod's internal state is consistent
-#ifndef NDEBUG
-    for (RodSelectionType::const_iterator selected_rod = selected_rods.begin(); selected_rod != selected_rods.end(); selected_rod++)
-        m_rods[*selected_rod]->verifyProperties();
-#endif
+    // // Clean up penalty collisions list
+    // for (std::list<Collision*>::iterator i = penalty_collisions.begin(); i != penalty_collisions.end(); i++)
+    //     delete *i;
+    // penalty_collisions.clear();
+    // // Clear existing penalties
+    // for (std::vector<RodPenaltyForce*>::const_iterator penalty_force = m_implicit_pnlty_forces.begin(); penalty_force
+    //         != m_implicit_pnlty_forces.end(); penalty_force++)
+    //     (*penalty_force)->clearProximityCollisions();
 
-    START_TIMER("BAGroomingStepper::step/penalty");
-
-    // Clean up penalty collisions list
-    for (std::list<Collision*>::iterator i = penalty_collisions.begin(); i != penalty_collisions.end(); i++)
-        delete *i;
-    penalty_collisions.clear();
-    // Clear existing penalties
-    for (std::vector<RodPenaltyForce*>::const_iterator penalty_force = m_implicit_pnlty_forces.begin(); penalty_force
-            != m_implicit_pnlty_forces.end(); penalty_force++)
-        (*penalty_force)->clearProximityCollisions();
-
-    STOP_TIMER("BAGroomingStepper::step/penalty");
+    // STOP_TIMER("BAGroomingStepper::step/penalty");
 
     STOP_TIMER("BAGroomingStepper::step");
 }

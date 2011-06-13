@@ -162,6 +162,7 @@ void ElasticRod::computeConservativeForcesEnergy(VecXd& force, Scalar& energy)
   for (fIt = forces.begin(); fIt != forces.end(); ++fIt) {
     if ( (*fIt)->viscous()) continue;
     curr_force.setZero();
+    curr_energy = 0;
     (*fIt)->globalForceEnergy(curr_force, curr_energy);
     force  += curr_force;
     energy += curr_energy;
