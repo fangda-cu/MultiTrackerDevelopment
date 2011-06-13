@@ -262,13 +262,13 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
 	if ( m_rodManager != NULL )
 	{
- 	    double m_atol=powf(10, -i_dataBlock.inputValue( ia_atol).asDouble());
-	    double m_stol=powf(10, -i_dataBlock.inputValue( ia_stol).asDouble());
-	    double m_rtol=powf(10, -i_dataBlock.inputValue( ia_rtol).asDouble());
-	    double m_inftol=powf(10, -i_dataBlock.inputValue( ia_inftol).asDouble());
-	    int  m_numLineSearchIters=i_dataBlock.inputValue( ia_numLineSearchIters).asInt();
+ 	    double atol               = powf(10, -i_dataBlock.inputValue( ia_atol).asDouble());
+	    double stol               = powf(10, -i_dataBlock.inputValue( ia_stol).asDouble());
+	    double rtol               = powf(10, -i_dataBlock.inputValue( ia_rtol).asDouble());
+	    double inftol             = powf(10, -i_dataBlock.inputValue( ia_inftol).asDouble());
+	    int    numLineSearchIters = i_dataBlock.inputValue( ia_numLineSearchIters).asInt();
 	  
-	    m_rodManager->updateSolverSettings( m_atol, m_stol, m_rtol, m_inftol, m_numLineSearchIters );
+	    m_rodManager->updateSolverSettings( atol, stol, rtol, inftol, numLineSearchIters );
 	}
 	  
         i_dataBlock.setClean( i_plug );
