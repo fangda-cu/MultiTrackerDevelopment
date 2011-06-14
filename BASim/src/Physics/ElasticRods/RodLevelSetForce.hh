@@ -6,7 +6,7 @@
 #define RodLevelSetForce_HH
 
 #include "ElasticRod.hh"
-#include "RodExternalForce.hh"
+#include "RodExternalConservativeForce.hh"
 
 namespace BASim
 {
@@ -14,7 +14,7 @@ namespace BASim
 class LevelSet;
 
 
-class RodLevelSetForce: public RodExternalForce
+class RodLevelSetForce: public RodExternalConservativeForce
 {
 public:
     RodLevelSetForce( LevelSet* levelSet );
@@ -33,11 +33,17 @@ public:
  
     virtual void computeForceEnergy(const ElasticRod& rod, VecXd& force, Scalar& energy) const;
 
+    void setStiffness( Scalar stiffness )
+    {
+	m_stiffness = stiffness;
+    }
+
 protected:
     void localJacobian(MatXd& J, const Scalar stiffness, const Vec3d& normal) const;
 
     LevelSet* m_levelSet;
 
+    Scalar m_stiffness;
 };
 
 }

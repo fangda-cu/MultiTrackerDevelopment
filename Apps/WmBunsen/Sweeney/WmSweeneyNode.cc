@@ -268,7 +268,9 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 	    double inftol             = powf(10, -i_dataBlock.inputValue( ia_inftol).asDouble());
 	    int    numLineSearchIters = i_dataBlock.inputValue( ia_numLineSearchIters).asInt();
 	  
-	    m_rodManager->updateSolverSettings( atol, stol, rtol, inftol, numLineSearchIters );
+	    double stiffness = i_dataBlock.inputValue( ia_implicitStiffness).asDouble();
+
+	    m_rodManager->updateSolverSettings( atol, stol, rtol, inftol, numLineSearchIters, stiffness );
 	}
 	  
         i_dataBlock.setClean( i_plug );
