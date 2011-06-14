@@ -104,6 +104,9 @@ void WmSweeneyRodManager::addCollisionMesh( BASim::TriangleMesh* i_triangleMesh,
                                             BASim::LevelSet* i_levelSet,
                                             WmFigMeshController* i_scriptingController )
 {
+    assert( i_triangleMesh);
+    assert( i_levelSet );
+    assert( i_scriptingController );
     m_triangleMeshes.push_back( i_triangleMesh );
     m_levelSets.push_back( i_levelSet );
     m_scriptingControllers.push_back( i_scriptingController );

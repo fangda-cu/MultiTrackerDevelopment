@@ -13,6 +13,8 @@
 #include "../../Core/Timer.hh"
 #include "../../Collisions/Collision.hh"
 
+#include "RodLevelSetForce.hh"
+
 #include <iostream>
 #include <fstream>
 
@@ -80,10 +82,6 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
     g_log = new TextLog(std::cerr, MsgInfo::kTrace, true);
     InfoStream(g_log, "") << "Started logging BAGroomingStepper\n";
 
-    for (std::vector<GroomingTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
-    {
-        (*stepper)->setMaxIterations(m_perf_param.m_solver.m_max_iterations);
-    }
 
 #ifndef NDEBUG
     for (int i = 0; i < (int) m_number_of_rods; ++i)
@@ -449,6 +447,23 @@ void BAGroomingStepper::prepareForExecution()
 bool BAGroomingStepper::execute()
 {
     START_TIMER("BAGroomingStepper::execute")
+
+    // Step scripted objects forward, set boundary conditions
+    for (std::vector<ScriptingController*>::const_iterator scripting_controller = m_scripting_controllers.begin(); scripting_controller
+            != m_scripting_controllers.end(); scripting_controller++)
+        (*scripting_controller)->execute();
+
+
+    for (size_t i=0; i < m_level_sets.size(); ++i)
+    {
+	for (std::vector<GroomingTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
+	{
+	    (*stepper)->setMaxIterations(m_perf_param.m_solver.m_max_iterations);
+    
+	    RodLevelSetForce *pnlty = new RodLevelSetForce( m_level_sets[i] );
+	    (*stepper)->addExternalForce(pnlty);
+	}
+    }
 
     // Prepare the list initially containing all rods.
     RodSelectionType selected_rods = m_simulated_rods;
