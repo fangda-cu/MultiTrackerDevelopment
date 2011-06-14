@@ -5,6 +5,8 @@
  * \date 06/06/2011
  */
 
+#include "RodExternalForce.hh"
+
 #ifndef RODEXTERNALCONSERVATIVEFORCE_HH
 #define RODEXTERNALCONSERVATIVEFORCE_HH
 

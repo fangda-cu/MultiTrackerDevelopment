@@ -176,11 +176,11 @@ void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const d
   */
 
     m_bridsonStepper = new BAGroomingStepper( m_rods, m_triangleMeshes, m_scriptingControllers, 
-                                         m_rodTimeSteppers, i_timeStep, i_startTime, 1, perfParams );                                           
+                                         m_rodTimeSteppers, i_timeStep, i_startTime, 1, perfParams, m_levelSets );                    
 }
 
 
-void WmSweeneyRodManager::updateSolverSettings(double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters)
+void WmSweeneyRodManager::updateSolverSettings(double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters, double i_penaltyStiffness)
 {
     std::cout << "Updating solver settings:" << std::endl;
     std::cout << "Atol  "   << i_atol   << std::endl;
@@ -201,6 +201,9 @@ void WmSweeneyRodManager::updateSolverSettings(double i_atol, double i_stol, dou
 	solver.set_inftol(i_inftol);
 	solver.set_maxlsit(i_numLineSearchIters);
     }
+
+    assert(m_bridsonStepper);
+    m_bridsonStepper->setPenaltyStiffness( i_penaltyStiffness );
 }
 
 

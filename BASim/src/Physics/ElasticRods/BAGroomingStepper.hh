@@ -55,6 +55,8 @@
 namespace BASim
 {
 
+class RodLevelSetForce;
+
 typedef RodMeshCollisionDetector CollisionDetectorType;
 // typedef CollisionDetector CollisionDetectorType;
 
@@ -79,10 +81,12 @@ public:
      */
     // Parameter num_threads = -1 will cause the number of threads to be set equal to the number of available processors.
     BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
-            std::vector<ScriptingController*>& scripting_controllers, std::vector<GroomingTimeStepper*>& steppers, const double& dt,
-            const double time = 0.0, const int num_threads = -1,
-            const PerformanceTuningParameters perf_param = PerformanceTuningParameters(),
-            std::vector<LevelSet*>* levelSets = NULL);
+            std::vector<ScriptingController*>& scripting_controllers, std::vector<GroomingTimeStepper*>& steppers, 
+	    const double& dt,
+	    const double time,
+            const int num_threads,
+            const PerformanceTuningParameters perf_param,
+            std::vector<LevelSet*>& levelSets );
 
     /**
      * Destructor.
@@ -131,6 +135,11 @@ public:
     void addRod(ElasticRod* rod, GroomingTimeStepper* stepper);
 
     void removeRod(int rodIdx);
+
+    void setPenaltyStiffness( Scalar newStiffness )
+    {
+	m_perf_param.m_implicit_stiffness = newStiffness;
+    }
 
 private:
     /**
@@ -349,7 +358,7 @@ private:
     // that is a problem since the contents of the vector are pointers and we're assuming
     // the owner of this class also has a vector we're storing max 8 bytes * m_level_sets.size()
     // duplicated data.
-    std::vector<LevelSet*> m_level_sets;
+    std::vector<LevelSet*> &m_level_sets;
 
     // Controllers to move scripted geometry/rods forward in time and to set boundary conditions
     const std::vector<ScriptingController*>& m_scripting_controllers;
@@ -411,9 +420,7 @@ private:
 
     LinearSystemSolverCollection m_solver_collection;
 
-    //////////////////////////////////
-    // Jungseock's penalty response
-    std::vector<RodPenaltyForce*> m_implicit_pnlty_forces;
+    std::vector<RodLevelSetForce*> m_levelset_forces;
 
     // Number of threads to be used for dynamics and collisions
     int m_num_threads;
