@@ -138,10 +138,13 @@ private:
      */
     void setDt(double dt);
 
-    /**
-     * After adding new rods or objects, this method must be called.
-     */
+    void checkDataConsistency();
     void prepareForExecution();
+    void allocateBackups();
+    void setNumThreads(int num_threads);
+    void initializeSimulationList();
+    void checkInternalConsistency();
+    void buildCollisionDetector();
 
     const double computeMaxEdgeAngle(const ElasticRod& rod) const
     {
@@ -278,8 +281,8 @@ private:
     const int getContainingRod(int vert_idx) const;
 
     // Determines if a vertex and a face share a vertex
-   // bool vertexAndFaceShareVertex(const int& vertex, const int& face) const;
-   // bool vertexAndFaceShareVertex(const int& v, const int& f0, const int& f1, const int& f2) const;
+    // bool vertexAndFaceShareVertex(const int& vertex, const int& face) const;
+    // bool vertexAndFaceShareVertex(const int& v, const int& f0, const int& f1, const int& f2) const;
     // bool isProperCollisionTime(double time);
 
     void applyInextensibilityVelocityFilter(int rodidx);

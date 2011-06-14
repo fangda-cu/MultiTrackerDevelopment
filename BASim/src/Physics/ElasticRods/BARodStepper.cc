@@ -30,7 +30,7 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
         std::vector<LevelSet*>* levelSets) :
             m_num_dof(0),
             m_rods(rods),
-            m_number_of_rods(m_rods.size()),
+            m_number_of_rods(rods.size()),
             m_triangle_meshes(trimeshes),
             m_scripting_controllers(scripting_controllers),
             m_steppers(steppers),
@@ -59,68 +59,215 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
             m_stopOnRodError(false),
             m_perf_param(perf_param),
             m_level(0),
+            m_level_sets(levelSets ? *levelSets : std::vector<LevelSet*>(trimeshes.size(), NULL)),
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start,
                     m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness)
 {
-    if (levelSets != NULL)
-    {
-        m_level_sets = *levelSets;
-    }
-    else
-    {
-        // Weirdly we're going to build a vector of null pointers. This is because
-        // the vector of level sets can contain a pointer to a level set or a null pointer
-        // depending on whether the corresponding m_triangle_mesh has a level set created for it.
-        // To simplify the usage code we'll make this vector and pass it around.
-        // If level sets become useful we should rethink the entire way data is passed into
-        // BARodStepper.
-        m_level_sets.resize(m_triangle_meshes.size(), NULL);
-    }
-
     g_log = new TextLog(std::cerr, MsgInfo::kDebug, true);
     InfoStream(g_log, "") << "Started logging BARodStepper\n";
 
-    for (std::vector<RodTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
-    {
-        (*stepper)->setMaxIterations(m_perf_param.m_solver.m_max_iterations);
-    }
+#ifndef NDEBUG
+    checkDataConsistency();
+#endif
+
+    setNumThreads(num_threads);
+
+    prepareForExecution();
+
+    allocateBackups();
+
+    buildCollisionDetector();
+
+    initializeSimulationList();
 
 #ifndef NDEBUG
+    checkInternalConsistency();
+#endif
+
+    CopiousStream(g_log, "") << "Finished BARodStepper construction\n";
+}
+
+BARodStepper::~BARodStepper()
+{
+    delete m_collision_detector;
+
+    for (int i = 0; i < m_number_of_rods; i++)
+    {
+        delete m_startForces[i];
+        delete m_preDynamicForces[i];
+        delete m_preCollisionForces[i];
+        delete m_endForces[i];
+    }
+
+    delete g_log;
+}
+
+/**
+ * Preparation
+ */
+void BARodStepper::checkDataConsistency()
+{
+    assert(m_rods.size() == m_number_of_rods);
+    assert(m_steppers.size() == m_number_of_rods);
+
+    for (int i = 0; i < (int) m_steppers.size(); ++i)
+        assert(m_steppers[i] != NULL);
     for (int i = 0; i < (int) m_number_of_rods; ++i)
+    {
         assert(m_rods[i] != NULL);
+        // Sanity checks for collision detection purposes
+        ensureCircularCrossSection(*m_rods[i]);
+        ensureNoCollisionsByDefault(*m_rods[i]);
+    }
     for (int i = 0; i < (int) m_triangle_meshes.size(); ++i)
         assert(m_triangle_meshes[i] != NULL);
 
     // Do not check if any level sets are null as that may be valid as not all triangle meshes
     // may have a level set.
-    //for( int i = 0; i < (int) m_level_sets.size(); ++i ) assert( m_level_sets[i] != NULL );
-    if (m_level_sets.size() > 0)
-    {
-        // If there are any level sets then there has to be as one level set for every triangle mesh
-        assert(m_level_sets.size() == m_triangle_meshes.size());
-    }
-    for (int i = 0; i < (int) m_steppers.size(); ++i)
-        assert(m_steppers[i] != NULL);
-#endif
+    assert(m_level_sets.size() == m_triangle_meshes.size());
+
     assert(m_dt > 0.0);
+}
 
-    if (num_threads > 0)
-    {
-        m_num_threads = num_threads;
-        CopiousStream(g_log, "") << "User-set number of threads = " << m_num_threads << "\n";
-    }
-    else
-    {
-        m_num_threads = sysconf(_SC_NPROCESSORS_ONLN);
-        CopiousStream(g_log, "") << "Default-set number of threads = " << m_num_threads << "\n";
-    }
-#ifdef HAVE_OPENMP
-    omp_set_num_threads(m_num_threads);
-#endif
-    // Update internal state, prepare for execution
-    prepareForExecution();
+void BARodStepper::prepareForExecution()
+{
+    for (int i = 0; i < m_number_of_rods; ++i)
+        m_rods[i]->globalRodIndex = i;
 
-#ifndef NDEBUG
+    CopiousStream(g_log, "") << "About to extract rod information\n";
+
+    for (int i = 0; i < m_number_of_rods; ++i)
+    {
+        // Extract edges from the new rod
+        for (int j = 0; j < m_rods[i]->nv() - 1; ++j)
+        {
+            m_edges.push_back(std::pair<int, int>(getNumVerts() + j, getNumVerts() + j + 1));
+            assert(m_rods[i]->getRadiusScale() * m_rods[i]->radiusA(j) > 0.0);
+            m_edge_radii.push_back(m_rods[i]->getRadiusScale() * m_rods[i]->radiusA(j));
+        }
+
+        for (int j = 0; j < m_rods[i]->nv() - 1; ++j)
+        {
+            assert(m_rods[i]->getRadiusScale() * m_rods[i]->radiusA(j) > 0.0);
+            // Radii associated with edges ... what to do if at a vertex with two radii? Average?
+            m_vertex_radii.push_back(m_rods[i]->getRadiusScale() * m_rods[i]->radiusA(j));
+        }
+        m_vertex_radii.push_back(m_vertex_radii.back()); // < TODO: What the $^#! is this call?
+
+        // Update vector that tracks the rod DOF in the system
+        m_base_dof_indices.push_back(getNumDof());
+        m_base_vtx_indices.push_back(getNumDof() / 3);
+
+        // Extract masses from the new rod
+        for (ElasticRod::vertex_iter itr = m_rods[i]->vertices_begin(); itr != m_rods[i]->vertices_end(); ++itr)
+        {
+            assert(m_rods[i]->getVertexMass(*itr, -1) > 0.0);
+            m_masses.push_back(m_rods[i]->getVertexMass(*itr, -1));
+        }
+
+        // Update total number of DOF in the system
+        m_num_dof += 3 * m_rods[i]->nv();
+
+        assert((int) m_masses.size() == getNumVerts());
+        assert((int) m_vertex_radii.size() == getNumVerts());
+    }
+    assert(m_number_of_rods == m_base_dof_indices.size());
+    CopiousStream(g_log, "") << "Extracted rod information: " << m_num_dof / 3 << " vertices\n";
+
+    m_obj_start = m_base_vtx_indices.back() + m_rods.back()->nv();
+
+    CopiousStream(g_log, "") << "About to extract tri mesh information\n";
+    for (int i = 0; i < (int) m_triangle_meshes.size(); ++i)
+    {
+        assert(m_triangle_meshes[i] != NULL);
+
+        // Extract faces from the tri_mesh
+        for (TriangleMesh::face_iter fit = m_triangle_meshes[i]->faces_begin(); fit != m_triangle_meshes[i]->faces_end(); ++fit)
+        {
+            TriangularFace triface;
+            int j = 0;
+            for (TriangleMesh::FaceVertexIter fvit = m_triangle_meshes[i]->fv_iter(*fit); fvit; ++fvit, ++j)
+            {
+                assert(j >= 0);
+                assert(j < 3);
+                triface.idx[j] = getNumVerts() + (*fvit).idx();
+            }
+            m_faces.push_back(triface);
+            m_face_radii.push_back(0.0);
+        }
+        assert(m_faces.size() == m_face_radii.size());
+        CopiousStream(g_log, "") << "Finished extracting face stuff: " << i + 1 << " mesh" << (i > 0 ? "es\n" : "\n");
+
+        // Extract the vertex radii from the tri_mesh
+        for (int j = 0; j < m_triangle_meshes[i]->nv(); ++j)
+            m_vertex_radii.push_back(0.0);
+
+        // Extract masses from the tri_mesh (just infinity for this object)
+        for (int j = 0; j < m_triangle_meshes[i]->nv(); ++j)
+            m_masses.push_back(std::numeric_limits<double>::infinity());
+
+        // Add the mesh to the system
+        //m_triangle_meshes.push_back(m_triangle_meshes[i]);
+
+        // Update vector that tracks the ScriptedTriangleMesh DOF in the system
+        m_base_triangle_indices.push_back(getNumDof());
+
+        // Update total number of DOF in the system
+        m_num_dof += 3 * m_triangle_meshes[i]->nv();
+
+        assert((int) m_masses.size() == getNumVerts());
+        assert((int) m_vertex_radii.size() == getNumVerts());
+    }
+    assert(m_base_triangle_indices.size() == m_triangle_meshes.size());
+    CopiousStream(g_log, "") << "Extracted tri mesh information\n";
+
+    for (std::vector<RodTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
+    {
+        (*stepper)->setMaxIterations(m_perf_param.m_solver.m_max_iterations);
+    }
+}
+
+void BARodStepper::allocateBackups()
+{
+    // Resize the internal storage
+    m_xn.resize(getNumDof());
+    m_xn.setConstant(std::numeric_limits<double>::signaling_NaN());
+    m_xnp1.resize(getNumDof());
+    m_xnp1.setConstant(std::numeric_limits<double>::signaling_NaN());
+    m_xdebug.resize(getNumDof());
+    m_xdebug.setConstant(std::numeric_limits<double>::signaling_NaN());
+    m_vnphalf.resize(getNumDof());
+    m_vnphalf.setConstant(std::numeric_limits<double>::signaling_NaN());
+
+    m_startForces.resize(m_number_of_rods);
+    for (int i = 0; i < m_number_of_rods; i++)
+        m_startForces[i] = new VecXd(m_rods[i]->ndof());
+
+    m_preDynamicForces.resize(m_number_of_rods);
+    for (int i = 0; i < m_number_of_rods; i++)
+        m_preDynamicForces[i] = new VecXd(m_rods[i]->ndof());
+
+    m_preCollisionForces.resize(m_number_of_rods);
+    for (int i = 0; i < m_number_of_rods; i++)
+        m_preCollisionForces[i] = new VecXd(m_rods[i]->ndof());
+
+    m_endForces.resize(m_number_of_rods);
+    for (int i = 0; i < m_number_of_rods; i++)
+        m_endForces[i] = new VecXd(m_rods[i]->ndof());
+
+    m_rodbackups.resize(m_number_of_rods);
+    int i = 0;
+    for (std::vector<ElasticRod*>::const_iterator rod = m_rods.begin(); rod != m_rods.end(); rod++)
+        m_rodbackups[i++].resize(**rod);
+
+    m_objbackups.resize(m_triangle_meshes.size());
+    i = 0;
+    for (std::vector<TriangleMesh*>::const_iterator mesh = m_triangle_meshes.begin(); mesh != m_triangle_meshes.end(); mesh++)
+        m_objbackups[i++].resize(**mesh);
+}
+
+void BARodStepper::checkInternalConsistency()
+{
     // Number of degrees of freedom is non-negative multiple of 3 (3 coords per vertex)
     assert(m_num_dof >= 0);
     assert(m_num_dof % 3 == 0);
@@ -224,41 +371,55 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     for (int i = 0; i < (int) m_faces.size(); ++i)
         assert(m_faces[i].idx[0] >= m_obj_start && m_faces[i].idx[1] >= m_obj_start && m_faces[i].idx[2] >= m_obj_start);
 
-    // TODO: Furhter, check that they all belong to same rod or triangle obj
+    // TODO: Further, check that they all belong to same rod or triangle obj
+}
+
+void BARodStepper::setNumThreads(int num_threads)
+{
+    if (num_threads > 0)
+    {
+        m_num_threads = num_threads;
+        CopiousStream(g_log, "") << "User-set number of threads = " << m_num_threads << "\n";
+    }
+    else
+    {
+        m_num_threads = sysconf(_SC_NPROCESSORS_ONLN);
+        CopiousStream(g_log, "") << "Default-set number of threads = " << m_num_threads << "\n";
+    }
+#ifdef HAVE_OPENMP
+    omp_set_num_threads(m_num_threads);
 #endif
+}
 
-#ifdef TIMING_ON
-    IntStatTracker::getIntTracker("CONVERGENCE_FAILURES_PROPAGATED_TO_BARodStepper");
-#endif
-
-    /**
-     *  Prepare backup structures.
-     */
-    m_startForces.resize(m_number_of_rods);
+void BARodStepper::buildCollisionDetector()
+{
+    // Load positions for initial construction of the BVH
+    RodSelectionType selected_rods;
     for (int i = 0; i < m_number_of_rods; i++)
-        m_startForces[i] = new VecXd(m_rods[i]->ndof());
+        selected_rods.push_back(i);
 
-    m_preDynamicForces.resize(m_number_of_rods);
-    for (int i = 0; i < m_number_of_rods; i++)
-        m_preDynamicForces[i] = new VecXd(m_rods[i]->ndof());
+    assert(m_xn.size() == m_num_dof);
+    extractPositions(m_xn, selected_rods, 0.0);
+    assert(m_vnphalf.size() == m_num_dof);
+    extractVelocities(m_vnphalf, selected_rods);
 
-    m_preCollisionForces.resize(m_number_of_rods);
-    for (int i = 0; i < m_number_of_rods; i++)
-        m_preCollisionForces[i] = new VecXd(m_rods[i]->ndof());
+    m_collision_detector = new CollisionDetectorType(m_geodata, m_edges, m_faces, m_dt, m_perf_param.m_skipRodRodCollisions,
+            m_num_threads);
 
-    m_endForces.resize(m_number_of_rods);
-    for (int i = 0; i < m_number_of_rods; i++)
-        m_endForces[i] = new VecXd(m_rods[i]->ndof());
+    m_collision_immune.resize(getNumVerts());
 
-    m_rodbackups.resize(m_number_of_rods);
-    int i = 0;
-    for (std::vector<ElasticRod*>::const_iterator rod = m_rods.begin(); rod != m_rods.end(); rod++)
-        m_rodbackups[i++].resize(**rod);
+    if (m_perf_param.m_enable_penalty_response)
+        enableImplicitPenaltyImpulses();
 
-    m_objbackups.resize(m_triangle_meshes.size());
-    i = 0;
-    for (std::vector<TriangleMesh*>::const_iterator mesh = m_triangle_meshes.begin(); mesh != m_triangle_meshes.end(); mesh++)
-        m_objbackups[i++].resize(**mesh);
+    m_initialLengths.resize(m_number_of_rods);
+    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+        for (int j = 1; j < m_rods[*rod]->nv(); j++)
+            m_initialLengths[*rod] += (m_rods[*rod]->getVertex(j) - m_rods[*rod]->getVertex(j - 1)).norm();
+}
+
+void BARodStepper::initializeSimulationList()
+{
+    assert(m_simulated_rods.empty());
 
     // For debugging purposes
 #ifdef KEEP_ONLY_SOME_RODS
@@ -280,173 +441,16 @@ BARodStepper::BARodStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleM
     for (int i = 0; i < m_number_of_rods; i++)
         m_simulated_rods.push_back(i);
 #endif
-    m_killed_rods.clear();
+    DebugStream(g_log, "") << "This BARodStepper (" << this << ") will simulate " << m_simulated_rods.size() << " rods\n";
 
+    m_killed_rods.clear();
     failed_collisions_rods.resize(m_number_of_rods);
     stretching_rods.resize(m_number_of_rods);
-
 }
 
-BARodStepper::~BARodStepper()
-{
-    delete m_collision_detector;
-
-    for (int i = 0; i < m_number_of_rods; i++)
-    {
-        delete m_startForces[i];
-        delete m_preDynamicForces[i];
-        delete m_preCollisionForces[i];
-        delete m_endForces[i];
-    }
-
-    delete g_log;
-}
-
-// TODO: Check the indices here
-void BARodStepper::prepareForExecution()
-{
-    delete m_collision_detector;
-    m_collision_detector = NULL;
-
-    for (int i = 0; i < m_number_of_rods; ++i)
-    {
-        assert(m_rods[i] != NULL);
-        m_rods[i]->globalRodIndex = i;
-        // std::cerr << "Address of rod Nr " << i << ": " << m_rods[i] << '\n';
-    }
-
-    CopiousStream(g_log, "") << "About to extract rod information\n";
-
-    for (int i = 0; i < m_number_of_rods; ++i)
-    {
-        assert(m_rods[i] != NULL);
-#ifndef NDEBUG
-        // Sanity checks for collision detection purposes
-        ensureCircularCrossSection(*m_rods[i]);
-        ensureNoCollisionsByDefault(*m_rods[i]);
-#endif
-
-        // Extract edges from the new rod
-        for (int j = 0; j < m_rods[i]->nv() - 1; ++j)
-        {
-            m_edges.push_back(std::pair<int, int>(getNumVerts() + j, getNumVerts() + j + 1));
-            assert(m_rods[i]->getRadiusScale() * m_rods[i]->radiusA(j) > 0.0);
-            m_edge_radii.push_back(m_rods[i]->getRadiusScale() * m_rods[i]->radiusA(j));
-        }
-        assert(m_edges.size() == m_edge_radii.size());
-
-        for (int j = 0; j < m_rods[i]->nv() - 1; ++j)
-        {
-            assert(m_rods[i]->getRadiusScale() * m_rods[i]->radiusA(j) > 0.0);
-            // Radii associated with edges ... what to do if at a vertex with two radii? Average?
-            m_vertex_radii.push_back(m_rods[i]->getRadiusScale() * m_rods[i]->radiusA(j));
-        }
-        m_vertex_radii.push_back(m_vertex_radii.back()); // < TODO: What the $^#! is this call?
-
-        // Update vector that tracks the rod DOF in the system
-        m_base_dof_indices.push_back(getNumDof());
-        m_base_vtx_indices.push_back(getNumDof() / 3);
-
-        // Extract masses from the new rod
-        for (ElasticRod::vertex_iter itr = m_rods[i]->vertices_begin(); itr != m_rods[i]->vertices_end(); ++itr)
-        {
-            assert(m_rods[i]->getVertexMass(*itr, -1) > 0.0);
-            m_masses.push_back(m_rods[i]->getVertexMass(*itr, -1));
-        }
-
-        // Update total number of DOF in the system
-        m_num_dof += 3 * m_rods[i]->nv();
-
-        assert((int) m_masses.size() == getNumVerts());
-        assert((int) m_vertex_radii.size() == getNumVerts());
-    }
-    assert(m_number_of_rods == m_base_dof_indices.size());
-    CopiousStream(g_log, "") << "Extracted rod information: " << m_num_dof / 3 << " vertices\n";
-
-    m_obj_start = m_base_vtx_indices.back() + m_rods.back()->nv();
-
-    CopiousStream(g_log, "") << "About to extract tri mesh information\n";
-    for (int i = 0; i < (int) m_triangle_meshes.size(); ++i)
-    {
-        assert(m_triangle_meshes[i] != NULL);
-
-        // Extract faces from the tri_mesh
-        for (TriangleMesh::face_iter fit = m_triangle_meshes[i]->faces_begin(); fit != m_triangle_meshes[i]->faces_end(); ++fit)
-        {
-            TriangularFace triface;
-            int j = 0;
-            for (TriangleMesh::FaceVertexIter fvit = m_triangle_meshes[i]->fv_iter(*fit); fvit; ++fvit, ++j)
-            {
-                assert(j >= 0);
-                assert(j < 3);
-                triface.idx[j] = getNumVerts() + (*fvit).idx();
-            }
-            m_faces.push_back(triface);
-            m_face_radii.push_back(0.0);
-        }
-        assert(m_faces.size() == m_face_radii.size());
-        CopiousStream(g_log, "") << "Finished extracting face stuff: " << i << "\n";
-
-        // Extract the vertex radii from the tri_mesh
-        for (int j = 0; j < m_triangle_meshes[i]->nv(); ++j)
-            m_vertex_radii.push_back(0.0);
-
-        // Extract masses from the tri_mesh (just infinity for this object)
-        for (int j = 0; j < m_triangle_meshes[i]->nv(); ++j)
-            m_masses.push_back(std::numeric_limits<double>::infinity());
-
-        // Add the mesh to the system
-        //m_triangle_meshes.push_back(m_triangle_meshes[i]);
-
-        // Update vector that tracks the ScriptedTriangleMesh DOF in the system
-        m_base_triangle_indices.push_back(getNumDof());
-
-        // Update total number of DOF in the system
-        m_num_dof += 3 * m_triangle_meshes[i]->nv();
-
-        assert((int) m_masses.size() == getNumVerts());
-        assert((int) m_vertex_radii.size() == getNumVerts());
-    }
-    assert(m_base_triangle_indices.size() == m_triangle_meshes.size());
-    CopiousStream(g_log, "") << "Extracted tri mesh information\n";
-
-    // Resize the internal storage
-    m_xn.resize(getNumDof());
-    m_xn.setConstant(std::numeric_limits<double>::signaling_NaN());
-    m_xnp1.resize(getNumDof());
-    m_xnp1.setConstant(std::numeric_limits<double>::signaling_NaN());
-    m_xdebug.resize(getNumDof());
-    m_xdebug.setConstant(std::numeric_limits<double>::signaling_NaN());
-    m_vnphalf.resize(getNumDof());
-    m_vnphalf.setConstant(std::numeric_limits<double>::signaling_NaN());
-
-    CopiousStream(g_log, "") << "About to extract positions\n";
-    // Load positions for initial construction of the BVH
-    RodSelectionType selected_rods;
-    for (int i = 0; i < m_number_of_rods; i++)
-        selected_rods.push_back(i);
-    extractPositions(m_xn, selected_rods, 0.0);
-    extractVelocities(m_vnphalf, selected_rods);
-    CopiousStream(g_log, "") << "Extracted positions\n";
-
-    CopiousStream(g_log, "") << "About to create collision detector\n";
-    m_collision_detector = new CollisionDetectorType(m_geodata, m_edges, m_faces, m_dt, m_perf_param.m_skipRodRodCollisions,
-            m_num_threads);
-    CopiousStream(g_log, "") << "Created collision detector\n";
-
-    m_collision_immune.resize(getNumVerts());
-
-    if (m_perf_param.m_enable_penalty_response)
-        enableImplicitPenaltyImpulses();
-
-    m_initialLengths.resize(m_number_of_rods);
-    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-        for (int j = 1; j < m_rods[*rod]->nv(); j++)
-            m_initialLengths[*rod] += (m_rods[*rod]->getVertex(j) - m_rods[*rod]->getVertex(j - 1)).norm();
-
-    CopiousStream(g_log, "") << "Finished BARodStepper constructor\n";
-}
-
+/**
+ * Execution
+ */
 bool BARodStepper::execute()
 {
     START_TIMER("BARodStepper::execute")
@@ -1122,7 +1126,7 @@ void BARodStepper::restoreResponses(const VecXd& responses, const RodSelectionTy
 }
 
 /**
- * Enabling/disabling procedures
+ * Enabling/Disabling
  */
 void BARodStepper::enableImplicitPenaltyImpulses()
 {
@@ -3059,7 +3063,7 @@ bool BARodStepper::hadExplosion(int rodIdx) const // All forces must have been c
 bool BARodStepper::checkLengths(std::vector<bool>& stretching_rods)
 {
     bool stretching_detected = false;
-    TraceStream(g_log, "") << "Checking for lengths\n";
+    DebugStream(g_log, "") << "Checking for lengths: " << m_simulated_rods.size() << " simulated rods\n";
 
     for (RodSelectionType::iterator rod = m_simulated_rods.begin(); rod != m_simulated_rods.end(); rod++)
     {
