@@ -284,6 +284,7 @@ protected:
 
     void generateInitialIterate2(VecXd& dx)
     {
+        TraceStream(g_log, "") << "Initial guess = initial position\n";
         dx.setZero(); // zero motion (not moving)
     }
 

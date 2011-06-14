@@ -685,7 +685,10 @@ void BARodStepper::step_setup(const RodSelectionType& selected_rods)
     START_TIMER("BARodStepper::step/explo");
 
     if (m_perf_param.m_enable_explosion_detection)
+    {
+        TraceStream(g_log, "") << "BARodStepper::step: computing start forces" << '\n';
         computeForces(m_startForces, selected_rods);
+    }
 
     STOP_TIMER("BARodStepper::step/explo");
 
@@ -721,10 +724,11 @@ void BARodStepper::step_setup(const RodSelectionType& selected_rods)
 
     STOP_TIMER("BARodStepper::step/penalty");
 
-    TraceStream(g_log, "") << "BARodStepper::step: computing pre-dynamic forces" << '\n';
-
     if (m_perf_param.m_enable_explosion_detection)
+    {
+        TraceStream(g_log, "") << "BARodStepper::step: computing pre-dynamic forces" << '\n';
         computeForces(m_preDynamicForces, selected_rods);
+    }
 }
 
 void BARodStepper::step_dynamic(const RodSelectionType& selected_rods)
@@ -811,7 +815,10 @@ void BARodStepper::step_collision(const RodSelectionType& selected_rods)
     DebugStream(g_log, "") << "Starting collision response\n";
 
     if (m_perf_param.m_enable_explosion_detection)
+    {
+        TraceStream(g_log, "") << "Computing pre-collision forces\n";
         computeForces(m_preCollisionForces, selected_rods);
+    }
 
     if (m_perf_param.m_collision.m_max_iterations > 0)
     {
@@ -1512,6 +1519,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                     // Prepare the rod for explosion checking
                     restorePositions(m_xn + m_dt * m_vnphalf, oneRodList);
                     collidingRod->updateProperties();
+                    m_endForces[collidingRodIdx]->setZero();
                     collidingRod->computeForces(*m_endForces[collidingRodIdx]);
 
                     // Line search on the impulse size: if full impulse causes explosion, halve it and so on.
@@ -1538,6 +1546,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                         // Prepare the rod again for explosion checking
                         restorePositions(m_xn + m_dt * m_vnphalf, oneRodList);
                         collidingRod->updateProperties();
+                        m_endForces[collidingRodIdx]->setZero();
                         collidingRod->computeForces(*m_endForces[collidingRodIdx]);
                     }
                 }

@@ -139,27 +139,23 @@ void ElasticRod::addForce(RodForce* force)
 
 void ElasticRod::computeForces(VecXd& force)
 {
-    // std::cout << "Rod forces..." << std::endl;
-
-    force.setZero(); // JMA: is that safe? Then we won't need to call setZero before each call to computeForces
-
     RodForces& forces = getForces();
-    RodForces::iterator fIt;
     VecXd curr_force(force.size());
-    for (fIt = forces.begin(); fIt != forces.end(); ++fIt)
+
+    for (RodForces::iterator fIt = forces.begin(); fIt != forces.end(); ++fIt)
     {
         curr_force.setZero();
         (*fIt)->globalForce(curr_force);
         force += curr_force;
-        TraceStream(g_log, "") << (*fIt)->getName() << " norm = " << curr_force.norm() << '\n';
+        TraceStream(g_log, "") << "Computed " << (*fIt)->getName() << " norm = " << curr_force.norm() << '\n';
     }
 }
 
 void ElasticRod::computeJacobian(int baseidx, Scalar scale, MatrixBase& J)
 {
     RodForces& forces = getForces();
-    RodForces::iterator fIt;
-    for (fIt = forces.begin(); fIt != forces.end(); ++fIt)
+
+    for (RodForces::iterator fIt = forces.begin(); fIt != forces.end(); ++fIt)
         (*fIt)->globalJacobian(baseidx, scale, J);
 }
 

@@ -277,7 +277,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
         if (curit == m_maxit - 1)
         {
             DebugStream(g_log, "") << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver reached max iterations: "
-                    << m_maxit << " with inital guess " << guess_to_use << '\n';
+                    << m_maxit << " with initial guess " << guess_to_use << '\n';
             return false;
         }
 
@@ -312,6 +312,12 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
     return true;
 }
 
+inline static Vec3d RigidMotion(const Vec3d& x, const Vec3d& p0, const Eigen::AngleAxis<double>& rotation, const Vec3d& w0,
+        const double dt)
+{
+    return dt * w0 + p0 - x + rotation._transformVector(x - p0);
+}
+
 // Initial guess based on rigid motion of the first two vertices.
 template<>
 bool SymmetricImplicitEuler<RodTimeStepper>::generateInitialIterate0(VecXd& dx)
@@ -334,16 +340,17 @@ bool SymmetricImplicitEuler<RodTimeStepper>::generateInitialIterate0(VecXd& dx)
     else
         normal = normal / normalNorm;
     assert(approxEq(normal.norm(), 1.0));
-    TraceStream(g_log, "") << "Initial guess by rigid motion: normal = " << normal << " angle = " << angle << '\n';
+    TraceStream(g_log, "") << "Initial guess by rigid motion: normal = " << normal << " angle = " << angle << " w0 = " << w0
+            << '\n';
 
     // Set initial vertex coordinates by rigid motion and initial twist angles to zero.
     const Eigen::AngleAxis<double> rotation(angle, normal);
     for (int i = 0; i < m_ndof - 3; i += 4)
     {
-        dx.segment<3> (i) = m_dt * w0 + rotation._transformVector(x0.segment<3> (i) - p0);
+        dx.segment<3> (i) = RigidMotion(x0.segment<3> (i), p0, rotation, w0, m_dt);
         dx(i + 3) = 0;
     }
-    dx.segment<3> (m_ndof - 3) = m_dt * w0 + rotation._transformVector(x0.segment<3> (m_ndof - 3) - p0);
+    dx.segment<3> (m_ndof - 3) = RigidMotion(x0.segment<3> (m_ndof - 3), p0, rotation, w0, m_dt);
 
     return true;
 }
@@ -359,7 +366,6 @@ bool SymmetricImplicitEuler<ODE>::generateInitialIterate0(VecXd& dx)
 
 // Explicit template instantiations
 template class SymmetricImplicitEuler<RodTimeStepper> ;
-template class SymmetricImplicitEuler<MultipleRodTimeStepper> ; // who calls for that btw?
-
+template class SymmetricImplicitEuler<MultipleRodTimeStepper> ;
 
 }
