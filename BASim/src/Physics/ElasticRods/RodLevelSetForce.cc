@@ -65,11 +65,10 @@ void RodLevelSetForce::computeForceDX(int baseindex, const ElasticRod& rod, Scal
 
         for (int i = 0; i < 3; ++i)
         {
-	    for (int j = 0; j <= i; ++j)
+	    for (int j = 0; j < 3; ++j)
 	    {
-		Scalar val = scale * m_stiffness * dgrad[i] * dgrad[j];
+		Scalar val = - scale * m_stiffness * dgrad[i] * dgrad[j];
 		localJ(i,j) = val;
-		localJ(j,i) = val;
 	    }
         }
 
@@ -113,7 +112,7 @@ void RodLevelSetForce::computeForceEnergy(const ElasticRod& rod, VecXd& force, S
 
 	Scalar curr_energy = 0.5 * m_stiffness * d*d;
 
-        Vec3d curr_force = m_stiffness * d * dgrad; 
+        Vec3d curr_force = m_stiffness * fabs(d) * dgrad; 
 
         for (int i = 0; i < 3; ++i)
         {
