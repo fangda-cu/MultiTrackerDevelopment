@@ -104,6 +104,7 @@ void WmSweeneyRodManager::addCollisionMesh( BASim::TriangleMesh* i_triangleMesh,
                                             BASim::LevelSet* i_levelSet,
                                             WmFigMeshController* i_scriptingController )
 {
+    cerr << "WmSweeneyRodManager::addCollisionMesh levelSet = " << i_levelSet << "\n";
     assert( i_triangleMesh);
     assert( i_levelSet );
     assert( i_scriptingController );
