@@ -98,31 +98,31 @@ ElasticRod::~ElasticRod()
 
 void ElasticRod::setup()
 {
-    computeEdges();
-    computeTangents();
-    computeCurvatureBinormals();
-    computeEdgeLengths();
-    computeVoronoiLengths();
-    findOrthogonal(const_cast<Vec3d&> (getReferenceDirector1(0)), getTangent(0));
-    computeSpaceParallel();
-    computeMaterialDirectors();
-    computeVertexMasses();
-    if (!quasistatic())
-        computeEdgeInertias();
-    property(m_ndof) = 3 * nv() + ne();
 
-    // Add elastic forces
-    addForce(m_stretchingForce = new RodStretchingForce(*this));
-    addForce(new RodTwistingForceSym(*this));
-    if (refFrameType() == TimeParallel)
-        addForce(m_bendingForce = new RodBendingForceSym(*this));
-    else
-    {
-        std::cout << "ElasticRod::setup: Cannot initialize m_bendingForce----must use TimeParallel reference frame."
-                << std::endl;
-        exit(1);
-        //addForce(new RodAnisoForce(*this));
-    }
+  computeEdges();
+  computeTangents();
+  computeCurvatureBinormals();
+  computeEdgeLengths();
+  computeVoronoiLengths();
+  // Set the undeformed material frame direction to an arbitrary orthogonal vector
+  // ONLY if it hasn't been set externally
+  if ( !approxEq(getReferenceDirector1(0).dot(getTangent(0)), 0.0, 1e-6) )
+	  findOrthogonal(const_cast<Vec3d&>(getReferenceDirector1(0)), getTangent(0));
+  computeSpaceParallel();
+  computeMaterialDirectors();
+  computeVertexMasses();
+  if (!quasistatic()) computeEdgeInertias();
+  property(m_ndof) = 3 * nv() + ne();
+
+  // Add elastic forces
+  addForce(m_stretchingForce = new RodStretchingForce(*this));
+  addForce(new RodTwistingForceSym(*this));
+  if (refFrameType() == TimeParallel) addForce(m_bendingForce =  new RodBendingForceSym(*this));
+  else {
+    std::cout << "ElasticRod::setup: Cannot initialize m_bendingForce----must use TimeParallel reference frame." << std::endl;
+    exit(1);
+    //addForce(new RodAnisoForce(*this));
+  }
 
     // Add viscous forces
     addForce(new RodStretchingForce(*this, true));
