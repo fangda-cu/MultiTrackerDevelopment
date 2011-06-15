@@ -14,8 +14,8 @@ WmFigMeshController::WmFigMeshController( BASim::TriangleMesh* i_currentMesh,
                                            m_nextMesh( i_nextMesh ),
                                            BASim::ScriptingController( i_time, i_dt ),
                                            m_startMeshTime( 0.0 ), m_endMeshTime( 0.0 ),
-                                           m_levelSetDX( 1.0 ), m_createLevelSet( false ),
-                                           m_drawLevelSet( false )
+                                           m_levelSetDX( 1.0 ), m_shouldCreateLevelSet( false ),
+                                           m_shouldDrawLevelSet( false ), m_isStaticMesh( true)
 
 // NOTE: We pass i_time and i_dt to BASim::ScriptingController but they are actually *ignored*
 //       as BARodStepper calls setDt() on the controller when it executes anyway.
@@ -51,14 +51,19 @@ void WmFigMeshController::setLevelSetCellSize( const float i_cellSize )
     m_levelSetDX = i_cellSize;
 }
     
-void WmFigMeshController::createLevelSet( const bool i_createLevelSet )
+void WmFigMeshController::shouldCreateLevelSet( const bool i_shouldCreateLevelSet )
 {
-    m_createLevelSet = i_createLevelSet;
+    m_shouldCreateLevelSet = i_shouldCreateLevelSet;
 }
 
-void WmFigMeshController::drawLevelSet( const bool i_drawLevelSet )
+void WmFigMeshController::isStaticMesh( const bool i_isStaticMesh )
 {
-    m_drawLevelSet = i_drawLevelSet;
+    m_isStaticMesh = i_isStaticMesh;
+}
+
+void WmFigMeshController::shouldDrawLevelSet( const bool i_shouldDrawLevelSet )
+{
+    m_shouldDrawLevelSet = i_shouldDrawLevelSet;
 }
 
 LevelSet* WmFigMeshController::currentLevelSet()
@@ -70,11 +75,11 @@ bool WmFigMeshController::execute()
 {
     // TODO: Assumes 24fps for Maya scenes, fix that
  
-    if ( m_createLevelSet )
+    if ( !m_isStaticMesh )
     {
         buildLevelSet();
     }
- 
+    
     double interpolation = ( getTime() - m_startTime ) * 24.0 + m_startTime - m_previousMayaTime;
     //  std::cerr << "interpolated mesh factor = " << interpolation << std::endl;
   
@@ -124,6 +129,11 @@ void WmFigMeshController::setTriangleIndices( std::vector< unsigned int >& i_ind
 
 void WmFigMeshController::buildLevelSet()
 {   
+    if ( !m_shouldCreateLevelSet )
+    {        
+        return;
+    }
+    
     if ( m_tri.size() != m_currentMesh->nf() )
     {
         cerr << "WmFigMeshController::buildLevelSet() - triangle indices are not set, failed to build level set\n";
@@ -231,7 +241,7 @@ void WmFigMeshController::draw()
     // Do some drawing to see if the level set code is working
     // 
     
-    if( m_drawLevelSet && m_phiCurrent->isInitialized() )
+    if( m_shouldDrawLevelSet && m_phiCurrent->isInitialized() )
     {
         Vec3d xMin, xMax, dX;
         

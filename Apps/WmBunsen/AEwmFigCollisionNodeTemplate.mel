@@ -14,6 +14,7 @@ global proc AEwmFigCollisionNodeTemplate(string $nodeName)
         editorTemplate -endLayout;
         editorTemplate -beginLayout "Level Set Attributes" -collapse 0;
             editorTemplate -beginNoOptimize -addControl "createLevelSet";
+            editorTemplate -beginNoOptimize -addControl "isLevelSetStatic";
             editorTemplate -addControl "levelSetCellSize";
             editorTemplate -addControl "drawLevelSet";
         editorTemplate -endLayout;
