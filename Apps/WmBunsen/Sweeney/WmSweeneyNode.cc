@@ -400,8 +400,17 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock) {
 
 					m_rodManager->m_rods[i]->setRadius(radius_a, radius_b);
 
-					m_rodManager->m_rods[i]->setBaseRotation(
-							m_rodRotation * M_PI);
+					//m_rodManager->m_rods[i]->setBaseRotation(
+						//	m_rodRotation * M_PI);
+
+					// set initial rotation
+					m_rodManager->m_rods[i]->setTheta(0, m_rodRotation * M_PI);
+					Scalar c = cos(m_rodManager->m_rods[i]->getTheta(0));
+					Scalar s = sin(m_rodManager->m_rods[i]->getTheta(0));
+					const Vec3d& u = m_rodManager->m_rods[i]->getReferenceDirector1(0);
+					const Vec3d& v = m_rodManager->m_rods[i]->getReferenceDirector2(0);
+					m_rodManager->m_rods[i]->setMaterial1(0,  c * u + s * v);
+					m_rodManager->m_rods[i]->setMaterial2(0, -s * u + c * v);
 
 					m_rodManager->m_rods[i]->updateStiffness();
 
