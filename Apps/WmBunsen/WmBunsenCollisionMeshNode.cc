@@ -97,6 +97,20 @@ void WmBunsenCollisionMeshNode::initialise( Beaker* i_beaker, const unsigned int
     MObject inMeshObj = meshH.asMeshTransformed();
     MFnMesh meshFn( inMeshObj );
 
+    // Grab the level set details as we need them for creating the level set as this is
+    // called by the SweeneyNode and we're circumventing the compute() evaluation to speed
+    // things up and to ensure Sweeney can set up the sim in the right order
+    // TODO: Re-evaluate if we really need to call this function from Sweeney or can just
+    // cleverly pull on attributes in the right order so that it all happens in compute()
+    // thus making things a lot simpler.
+    float levelsetCellSize = dataBlock.inputValue( ia_levelSetCellSize, &status ).asDouble();
+    CHECK_MSTATUS( status );
+    bool drawLevelSet = dataBlock.inputValue( ia_drawLevelSet, &status ).asBool();
+    CHECK_MSTATUS( status );
+   
+    m_meshController->setLevelSetCellSize( levelsetCellSize );
+    m_meshController->drawLevelSet( drawLevelSet );
+    
     updateCollisionMeshFromMayaMesh( meshFn );
 
     if ( m_beaker != NULL )
@@ -141,7 +155,7 @@ MStatus WmBunsenCollisionMeshNode::compute( const MPlug& i_plug, MDataBlock& i_d
         
         if ( m_meshController != NULL )
         {
-            m_meshController->createLevelSet( createLevelSet );
+         //   m_meshController->createLevelSet( createLevelSet );
             m_meshController->setLevelSetCellSize( levelsetCellSize );
             m_meshController->drawLevelSet( drawLevelSet );
         }
@@ -231,10 +245,8 @@ void WmBunsenCollisionMeshNode::draw( M3dView & view, const MDagPath & path,
     }
     
     if ( m_drawCollisionData )
-    {
-        
-        // TODO: I think we could use one of the BASim render classes to do this
-        
+    {        
+        // TODO: I think we could use one of the BASim render classes to do this        
         glPointSize( 5.0 );
 
         glBegin( GL_POINTS );
@@ -270,6 +282,7 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
     
     if ( m_previousMesh == NULL )
     {
+        cerr << "WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh() - No mesh to update yet\n";
         return MStatus::kFailure;
     }
 
@@ -328,6 +341,7 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
             indices[ t ] = triangleVertexIndices[ (unsigned int)t ];
         }
         
+        cerr << "Setup meshes with " << triangleVertexIndices.length() << " indices." << endl;
         m_meshController->setTriangleIndices( indices );
     }
     else

@@ -28,9 +28,15 @@ WmFigMeshController::WmFigMeshController( BASim::TriangleMesh* i_currentMesh,
 
     m_phiPrevious = new LevelSet;
     m_phiCurrent = new LevelSet;
-
+        
     // We can't build the level set yet as the meshes we got passed in most likely don't have
     // data in them yet.
+}
+
+WmFigMeshController::~WmFigMeshController()
+{
+    delete m_phiPrevious;
+    delete m_phiCurrent;
 }
 
 void WmFigMeshController::updateNextMayaTime( const double i_mayaTime )
@@ -110,6 +116,10 @@ void WmFigMeshController::setTriangleIndices( std::vector< unsigned int >& i_ind
         m_tri[ i ][ 1 ] = i_indices[ 3 * i + 1 ];
         m_tri[ i ][ 2 ] = i_indices[ 3 * i + 2 ];
     }	
+    
+    // If we're in this function then the level set hasn't been built but we now
+    // have all the info we need to do so. So let's build it:
+    buildLevelSet();    
 }
 
 void WmFigMeshController::buildLevelSet()
@@ -120,7 +130,7 @@ void WmFigMeshController::buildLevelSet()
         return;
     }
     
-    cerr << "WmFigMeshController::buildLevelSet() - building level set ...";
+    cerr << "WmFigMeshController::buildLevelSet() - building level set ...\n";
     
     // Make sure we have space for the per vertex data
     m_x.resize( m_currentMesh->nv() );
@@ -208,12 +218,19 @@ void WmFigMeshController::calculateLevelSetSize( bridson::Vec3f &origin, Vec3ui 
     {
         dims[ i ] = ( int )ceil( length[ i ] / dx );
     }
+    
+    cerr << "WmFigMeshController::calculateLevelSetSize() - size:\n";
+    cerr << "   dx = " << dx << endl;
+    cerr << "   length = " << length[ 0 ] << " X " << length[ 1 ] << " X " << length[ 2 ] << endl;
+    cerr << "   origin = ( " << origin[ 0 ] << ", " << origin[ 1 ] << ", " << origin[ 2 ] << " )" << endl;
+    cerr << "   dims = " << dims[ 0 ] << " X " << dims[ 1 ] << " X " << dims[ 2 ] << endl;
 }
 
 void WmFigMeshController::draw()
 {    
     // Do some drawing to see if the level set code is working
     // 
+    
     if( m_drawLevelSet && m_phiCurrent->isInitialized() )
     {
         Vec3d xMin, xMax, dX;
