@@ -116,7 +116,7 @@ void ElasticRod::setup()
 
   // Add elastic forces
   addForce(m_stretchingForce = new RodStretchingForce(*this));
-  addForce(new RodTwistingForceSym(*this));
+  addForce(m_twistingForce = new RodTwistingForceSym(*this));
   if (refFrameType() == TimeParallel) addForce(m_bendingForce =  new RodBendingForceSym(*this));
   else {
     std::cout << "ElasticRod::setup: Cannot initialize m_bendingForce----must use TimeParallel reference frame." << std::endl;

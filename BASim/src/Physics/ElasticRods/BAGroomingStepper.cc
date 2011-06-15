@@ -1202,7 +1202,7 @@ bool BAGroomingStepper::executeIterativeInelasticImpulseResponse(std::vector<boo
         std::vector<bool>& stretching_rods)
 {
     bool all_rods_collisions_ok = true;
-
+    return all_rods_collisions_ok; /*
     // Check whether the solver left some rods stretched
     checkLengths(stretching_rods);
 
@@ -1281,7 +1281,7 @@ bool BAGroomingStepper::executeIterativeInelasticImpulseResponse(std::vector<boo
                  }
                  }
                  */
-
+    /*
                 // Test for stretching and if so, mark the rod immune
                 stretching_rods[colliding_rod] = !checkLength(colliding_rod);
                 if (stretching_rods[colliding_rod])
@@ -1352,7 +1352,7 @@ bool BAGroomingStepper::executeIterativeInelasticImpulseResponse(std::vector<boo
 
     // checkLengths(stretching_rods);
 
-    return all_rods_collisions_ok;
+    return all_rods_collisions_ok;*/
 }
 
 void BAGroomingStepper::computeCompliantLHS(MatrixBase* lhs, int rodidx)
