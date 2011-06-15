@@ -118,6 +118,7 @@ public:
     static MObject oa_simulatedNurbs;
     
     static MObject ia_strandVertices;
+    static MObject ia_strandRootFrames;
     static MObject ia_verticesPerStrand;
     
     static MStatus addNumericAttribute( MObject& i_attribute, MString i_longName, 
@@ -155,6 +156,7 @@ private:
     
     WmSweeneyRodManager* m_rodManager;
     MVectorArray m_strandVertices;
+    MVectorArray m_strandRootFrames;
     unsigned int m_numberOfVerticesPerStrand;
 };
 

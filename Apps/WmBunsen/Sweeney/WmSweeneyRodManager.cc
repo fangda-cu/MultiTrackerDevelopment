@@ -20,6 +20,7 @@ WmSweeneyRodManager::~WmSweeneyRodManager()
 
 bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices, 
                                   const double i_time,
+                                  const BASim::Vec3d& i_referenceDir1,
                                   const double i_youngsModulus,
                                   const double i_shearModulus, const double i_viscosity, 
                                   const double i_density, const double i_radiusA, 
@@ -43,7 +44,8 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
     // Use the rod helper function to build the rod
     ElasticRod* rod = setupRod( rodOptions,
                                 i_vertices,
-                                i_vertices );
+                                i_vertices,
+                                i_referenceDir1);
 
     cerr << "WmSweeneyRodManager::addRod: setupRod returned\n";
 
