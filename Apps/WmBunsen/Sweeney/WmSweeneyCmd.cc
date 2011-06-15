@@ -262,13 +262,21 @@ void WmSweeneyCmd::createSweeneyNode()
     MFnDependencyNode barberShopNodeFn( nodeObj, &stat );
     
     MPlug barberShopStrandsPlug = barberShopNodeFn.findPlug( "strandVertices", true, &stat );
-    CHECK_MSTATUS( stat );
-    
+    CHECK_MSTATUS( stat );    
     MPlug sweeneyVerticesPlug( sFn.findPlug( "strandVertices", true, &stat ) );
     CHECK_MSTATUS( stat );
     stat = dagModifier.connect( barberShopStrandsPlug, sweeneyVerticesPlug );
     CHECK_MSTATUS( stat );
-    
+
+    // todo(sainsley) : grab root strand frame here "strandRootFrames" ?
+    // Look at WMFigaroCmd
+    MPlug barberShopRootFramesPlug = barberShopNodeFn.findPlug( "strandRootFrames", true, &stat );
+    CHECK_MSTATUS( stat );    
+    MPlug sweeneyRootFramePlug( sFn.findPlug( "strandRootFrames", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    stat = dagModifier.connect( barberShopRootFramesPlug, sweeneyRootFramePlug );
+    CHECK_MSTATUS( stat );
+
     MPlug numBarberShopCVsPlug = barberShopNodeFn.findPlug( "outCvsPerStrand", true, &stat );
     CHECK_MSTATUS( stat );
     MPlug numCVsPlug( sFn.findPlug( "verticesPerStrand", true, &stat ) );

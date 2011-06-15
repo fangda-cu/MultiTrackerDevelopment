@@ -21,6 +21,7 @@ class RodTimeStepper;
 
 class RodBendingForceSym;
 class RodStretchingForce;
+class RodTwistingForceSym;
 
 /** Base class for rods. The degrees of freedom for rods are the
     vertex positions (3 dofs per vertex) and the angles between the
@@ -331,6 +332,7 @@ public:
 
   RodBendingForceSym* m_bendingForce; // easy access to the bending force
   RodStretchingForce* m_stretchingForce; // easy access to the stretching force
+  RodTwistingForceSym* m_twistingForce; // easy access to the twisting force
 
   double computeKineticEnergy();
 

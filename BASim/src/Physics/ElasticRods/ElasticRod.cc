@@ -98,7 +98,10 @@ void ElasticRod::setup()
   computeCurvatureBinormals();
   computeEdgeLengths();
   computeVoronoiLengths();
-  findOrthogonal(const_cast<Vec3d&>(getReferenceDirector1(0)), getTangent(0));
+  // Set the undeformed material frame direction to an arbitrary orthogonal vector
+  // ONLY if it hasn't been set externally
+  if ( !approxEq(getReferenceDirector1(0).dot(getTangent(0)), 0.0, 1e-6) )
+	  findOrthogonal(const_cast<Vec3d&>(getReferenceDirector1(0)), getTangent(0));
   computeSpaceParallel();
   computeMaterialDirectors();
   computeVertexMasses();
@@ -107,7 +110,7 @@ void ElasticRod::setup()
 
   // Add elastic forces
   addForce(m_stretchingForce = new RodStretchingForce(*this));
-  addForce(new RodTwistingForceSym(*this));
+  addForce(m_twistingForce = new RodTwistingForceSym(*this));
   if (refFrameType() == TimeParallel) addForce(m_bendingForce =  new RodBendingForceSym(*this));
   else {
     std::cout << "ElasticRod::setup: Cannot initialize m_bendingForce----must use TimeParallel reference frame." << std::endl;
