@@ -101,16 +101,16 @@ void RodLevelSetForce::computeForceEnergy(const ElasticRod& rod, VecXd& force, S
 
         Vec3<Real> v0_otherMathLibrary(v0[0], v0[1], v0[2]);
 
-	Scalar d = m_levelSet->getLevelSetValue( v0_otherMathLibrary );
+        Scalar d = m_levelSet->getLevelSetValue( v0_otherMathLibrary );
 
         if (d >= 0) continue;
 
         Vec3<Real> dgrad_otherMathLibrary;
-	m_levelSet->getGradient(v0_otherMathLibrary, dgrad_otherMathLibrary);
+        m_levelSet->getGradient(v0_otherMathLibrary, dgrad_otherMathLibrary);
 
-	Vec3d dgrad( dgrad_otherMathLibrary[0], dgrad_otherMathLibrary[1], dgrad_otherMathLibrary[2] );
+        Vec3d dgrad( dgrad_otherMathLibrary[0], dgrad_otherMathLibrary[1], dgrad_otherMathLibrary[2] );
 
-	Scalar curr_energy = 0.5 * m_stiffness * d*d;
+        Scalar curr_energy = 0.5 * m_stiffness * d*d;
 
         Vec3d curr_force = m_stiffness * fabs(d) * dgrad; 
 
@@ -119,7 +119,6 @@ void RodLevelSetForce::computeForceEnergy(const ElasticRod& rod, VecXd& force, S
             force[rod.vertIdx(vidx, i)] += curr_force[i];
         }
 
-        TraceStream(g_log, "RodLevelSetForce::computeForceEnergy") << "vidx = " << vidx << " d = " << d << " grad d = " << dgrad << " energy = " << curr_energy << " force = " << curr_force << "\n";
-
+        TraceStream(g_log, "RodLevelSetForce::computeForceEnergy") << "vidx = " << vidx << " d = " << d << " grad d = " << dgrad << " energy = " << curr_energy << " force = " << curr_force << "\n";        
     }
 }

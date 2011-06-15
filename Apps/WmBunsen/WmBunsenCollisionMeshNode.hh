@@ -85,6 +85,8 @@ public:
     static MObject ia_levelSetCellSize;
     static MObject ia_drawLevelSet;
     static MObject ia_isLevelSetStatic;
+    static MObject ia_meshTransform;
+    
     
     // Recieve a pointer to Beaker so that we can update beaker with the details for this mesh
     void initialise( Beaker* i_beaker, const unsigned int i_collisionMeshIndex,
@@ -96,6 +98,7 @@ public:
 private:
     MStatus updateCollisionMeshFromMayaMesh( MFnMesh &meshFn, bool forceReset = false,
                                              std::string filename = "" );
+    void updateLevelSetFromInputs( MDataBlock& i_dataBlock );
 
     double m_currentTime;
     double m_previousTime;
@@ -117,6 +120,8 @@ private:
     unsigned int m_collisionMeshIndex;
     Beaker* m_beaker;
     WmFigMeshController* m_meshController;
+    
+    Eigen::Matrix4f m_meshTransformMatrix;
 };
 
 
