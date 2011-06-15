@@ -18,6 +18,10 @@ namespace BASim {
 LevelSet::LevelSet()
     : _initialized(false)
 {
+    m_realRequestPositions.clear();
+    m_transformedRequestPositions.clear();
+    m_grad.clear();
+    m_gradPosition.clear();
 }
 
 LevelSet::~LevelSet()
@@ -36,7 +40,8 @@ void LevelSet::buildLevelSet(const Vec3Indices &triangles,
                              const std::vector<bridson::Vec3f>  &x,
                              const std::vector<bridson::Vec3f>  &v,
                              const bridson::Vec3f &origin, Real length[3],
-                             Real dx, int nx, int ny, int nz, int nbrTriangles)
+                             Real dx, int nx, int ny, int nz, int nbrTriangles,
+                             Eigen::Matrix4f& transformMatrix)
 {
     for (uint i=0; i<3; ++i)
         _origin[i] = origin[i];
@@ -46,13 +51,33 @@ void LevelSet::buildLevelSet(const Vec3Indices &triangles,
     //TraceStream(g_log, "LevelSet::buildLevelSet") << "Level set dimensions: (" << nx << "," << ny << "," << nz << ") " << _dx << "\n";
     buildLevelSet(triangles, triIndices, x, v, _origin, _dx, nx, ny, nz, _phi, _phiVel);
     _initialized = true;
+    
+    // Maya matrices are flipped from Eigen matrices
+    // TODO: Transpose these back in Maya land
+    m_transformMatrixAtCreation = transformMatrix.transpose();
+}
+
+void LevelSet::setTransformationMatrix( Eigen::Matrix4f& i_matrix )
+{
+    // Maya matrices are flipped from Eigen matrices
+    // TODO: Transpose these back in Maya land
+    m_currentTransformMatrix = i_matrix.transpose();
 }
 
 Real LevelSet::getLevelSetValue(Vec3<Real> x)
-{
-    Real fi = ((double)x[0] - _origin[0]) / _dx;
-    Real fj = ((double)x[1] - _origin[1]) / _dx;
-    Real fk = ((double)x[2] - _origin[2]) / _dx;
+{    
+    Eigen::Vector4f samplePoint( x[ 0 ], x[ 1 ], x[ 2 ], 1 );        
+    
+    //m_realRequestPositions.push_back( samplePoint );
+    
+    Eigen::Matrix4f concatMatrix = ( m_transformMatrixAtCreation * m_currentTransformMatrix.inverse() );
+    samplePoint = concatMatrix * samplePoint;
+    
+    //m_transformedRequestPositions.push_back( samplePoint );;
+    
+    Real fi = ((double)samplePoint[0] - _origin[0]) / _dx;
+    Real fj = ((double)samplePoint[1] - _origin[1]) / _dx;
+    Real fk = ((double)samplePoint[2] - _origin[2]) / _dx;
 
     //TraceStream(g_log, "LevelSet::getLevelSetValue") << "this = " << this << " Array " << &_phi << " dim " << _phi.ni << ", " << _phi.nj << ", " << _phi.nk << "\n";    
    
@@ -80,9 +105,16 @@ Real LevelSet::getLevelSetValue(Vec3<Real> x)
 
 Real LevelSet::getLevelSetValueVelocity(Vec3<Real> &x, Vec3<Real> &v)
 {
-    Real fi = ((double)x[0] - _origin[0]) / _dx;
-    Real fj = ((double)x[1] - _origin[1]) / _dx;
-    Real fk = ((double)x[2] - _origin[2]) / _dx;
+    Eigen::Vector4f samplePoint( x[ 0 ], x[ 1 ], x[ 2 ], 1 );        
+    
+    //m_realRequestPositions.push_back( samplePoint );
+    
+    Eigen::Matrix4f concatMatrix = ( m_transformMatrixAtCreation * m_currentTransformMatrix.inverse() );
+    samplePoint = concatMatrix * samplePoint;
+    
+    Real fi = ((double)samplePoint[0] - _origin[0]) / _dx;
+    Real fj = ((double)samplePoint[1] - _origin[1]) / _dx;
+    Real fk = ((double)samplePoint[2] - _origin[2]) / _dx;
    
     int i, j, k;
     bridson::get_barycentric(fi, i, fi, 0, _phi.ni);
@@ -117,9 +149,16 @@ Real LevelSet::getLevelSetValueVelocity(Vec3<Real> &x, Vec3<Real> &v)
 
 void LevelSet::getGradient(Vec3<Real> &x, Vec3<Real> &grad)
 {
-    float i = ((double)x[0] - _origin[0]) / _dx;
-    float j = ((double)x[1] - _origin[1]) / _dx;
-    float k = ((double)x[2] - _origin[2]) / _dx;
+    Eigen::Vector4f samplePoint( x[ 0 ], x[ 1 ], x[ 2 ], 1 );        
+    m_gradPosition.push_back( samplePoint );
+
+    Eigen::Matrix4f concatMatrix = ( m_transformMatrixAtCreation * m_currentTransformMatrix.inverse() );
+    samplePoint = concatMatrix * samplePoint;
+    
+    
+    float i = ((double)samplePoint[0] - _origin[0]) / _dx;
+    float j = ((double)samplePoint[1] - _origin[1]) / _dx;
+    float k = ((double)samplePoint[2] - _origin[2]) / _dx;
 
     int p, q, r;
     bridson::get_barycentric(i, p, i, 1, _phi.ni);
@@ -186,9 +225,24 @@ void LevelSet::getGradient(Vec3<Real> &x, Vec3<Real> &grad)
                                   _phi(p + 1, q + 1, r + 1),
                                   i, j, 0.0f);
 
-    grad[0] = phiP1 - phiP0;
-    grad[1] = phiQ1 - phiQ0;
-    grad[2] = phiR1 - phiR0;
+    Eigen::Vector4f eigenGrad;
+    eigenGrad[0] = phiP1 - phiP0;
+    eigenGrad[1] = phiQ1 - phiQ0;
+    eigenGrad[2] = phiR1 - phiR0;
+    eigenGrad[3] = 1.0f;
+    
+    // Remove the transform at level set creation time and transform the gradient vector by 
+    // the current transformation matrix
+    Eigen::Matrix4f M1 = m_currentTransformMatrix * m_transformMatrixAtCreation.inverse();
+    Eigen::Matrix4f M2 = M1.inverse();
+    Eigen::Matrix4f M3 = M1.transpose();
+    eigenGrad = M3 * eigenGrad;
+    
+    grad[0] = eigenGrad[0];
+    grad[1] = eigenGrad[1];
+    grad[2] = eigenGrad[2];
+    
+    //m_grad.push_back( eigenGrad );
 }
 
 void LevelSet::draw()
@@ -296,7 +350,43 @@ void LevelSet::draw()
     glEnd();
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    
+    /*glPointSize( 2.0 );
+    glEnable( GL_POINT_SMOOTH );
+    glBegin( GL_POINTS );
+    glColor3d( 1.0, 0.0, 0.0 );
+    for (size_t p = 0; p < m_transformedRequestPositions.size(); ++p )
+    {
+        glVertex3d( m_transformedRequestPositions[ p ][ 0 ], 
+                    m_transformedRequestPositions[ p ][ 1 ], 
+                    m_transformedRequestPositions[ p ][ 2 ] );
+    }
+    
+    glColor3d( 0.0, 1.0, 0.0 );
+    for (size_t p = 0; p < m_realRequestPositions.size(); ++p )
+    {
+        glVertex3d( m_realRequestPositions[ p ][ 0 ], 
+                    m_realRequestPositions[ p ][ 1 ], 
+                    m_realRequestPositions[ p ][ 2 ] );
+    }
+    glEnd();
+    glDisable( GL_POINT_SMOOTH );    
 
+    glBegin( GL_LINES );
+    glColor3d( 0.0, 0.0, 1.0 );
+    for (size_t p = 0; p < m_grad.size(); ++p )
+    {
+        glVertex3d( m_gradPosition[ p ][ 0 ], 
+                    m_gradPosition[ p ][ 1 ], 
+                    m_gradPosition[ p ][ 2 ] );
+                    
+        Eigen::Vector4f end = m_gradPosition[ p ] + m_grad[ p ];
+        glVertex3d( end[ 0 ], 
+                    end[ 1 ], 
+                    end[ 2 ] );
+    }
+    glEnd();*/
+    
     glPopAttrib();
 }
 

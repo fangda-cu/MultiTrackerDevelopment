@@ -4,6 +4,8 @@
 #ifndef _LEVELSET_H_
 #define _LEVELSET_H_
 
+#include "../Core/EigenIncludes.hh"
+
 #include <vector>
 #include <string>
 #include <fstream>
@@ -45,7 +47,8 @@ public:
                        const std::vector<bridson::Vec3f>  &x,
                        const std::vector<bridson::Vec3f>  &v,
                        const bridson::Vec3f &origin, Real length[3],
-                       Real dx, int nx, int ny, int nz, int nbrTriangles);
+                       Real dx, int nx, int ny, int nz, int nbrTriangles,
+                       Eigen::Matrix4f& transformMatrix);
 
     Real getLevelSetValue(Vec3<Real> x);
     Real getLevelSetValueVelocity(Vec3<Real> &x, Vec3<Real> &v);
@@ -68,6 +71,9 @@ public:
     void loadFile(std::fstream &levelSetFile);
 
     bool isInitialized() { return _initialized; }
+
+    // This stores the transformation matrix for the mesh the level set is created from
+    void setTransformationMatrix( Eigen::Matrix4f& i_matrix );
 
 protected:
     bridson::Array3f _phi;
@@ -119,7 +125,18 @@ protected:
                               double& a, double& b, double& c);
 
 private:
-
+    // The mesh may not be at the origin when it is created. So remember where it was so that
+    // later when we're asked to sample the level set we can remove the initial transform
+    // before working out the true place to ask.
+    Eigen::Matrix4f m_transformMatrixAtCreation;
+    Eigen::Matrix4f m_currentTransformMatrix;
+    
+    // Debug data to check whether the values returned work for meshes that move or
+    // were created with a transform on them
+    std::vector< Eigen::Vector4f > m_realRequestPositions;
+    std::vector< Eigen::Vector4f > m_transformedRequestPositions;
+    std::vector< Eigen::Vector4f > m_grad;
+    std::vector< Eigen::Vector4f > m_gradPosition;
 };
 
 }

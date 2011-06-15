@@ -70,14 +70,26 @@ LevelSet* WmFigMeshController::currentLevelSet()
 {
     return m_phiCurrent;
 }
+
+void WmFigMeshController::setTransformationMatrix( Eigen::Matrix4f& i_matrix )
+{
+    m_transformMatrix = i_matrix;
+    
+    // Pass the xform matrix from the Maya node to the level set so it knows where the mesh
+    // has moved to since it was created
+    if ( m_phiCurrent )
+    {
+        m_phiCurrent->setTransformationMatrix( i_matrix );
+    }
+}
  
 bool WmFigMeshController::execute()
 {
     // TODO: Assumes 24fps for Maya scenes, fix that
- 
+  
     if ( !m_isStaticMesh )
     {
-        buildLevelSet();
+        buildLevelSet( m_transformMatrix );
     }
     
     double interpolation = ( getTime() - m_startTime ) * 24.0 + m_startTime - m_previousMayaTime;
@@ -98,7 +110,8 @@ bool WmFigMeshController::execute()
     return true;
 }
 
-void WmFigMeshController::setTriangleIndices( std::vector< unsigned int >& i_indices )
+void WmFigMeshController::createInitialLevelSet( std::vector< unsigned int >& i_indices,
+                                                 Eigen::Matrix4f& i_matrix )
 {
     // Setup the data we need to build the level set
     m_triIndices.resize( m_currentMesh->nf() );
@@ -124,10 +137,10 @@ void WmFigMeshController::setTriangleIndices( std::vector< unsigned int >& i_ind
     
     // If we're in this function then the level set hasn't been built but we now
     // have all the info we need to do so. So let's build it:
-    buildLevelSet();    
+    buildLevelSet( i_matrix );
 }
 
-void WmFigMeshController::buildLevelSet()
+void WmFigMeshController::buildLevelSet( Eigen::Matrix4f& i_matrix )
 {   
     if ( !m_shouldCreateLevelSet )
     {        
@@ -178,7 +191,7 @@ void WmFigMeshController::buildLevelSet()
     }
 
     m_phiCurrent->buildLevelSet( m_tri, m_triIndices, m_x, m_v, origin, length, dx, dims[0], 
-                                 dims[1], dims[2], m_currentMesh->nf() );
+                                 dims[1], dims[2], m_currentMesh->nf(), i_matrix );
     
     cerr << "WmFigMeshController::buildLevelSet() - Complete!" << endl;
 }
@@ -243,7 +256,9 @@ void WmFigMeshController::draw()
     
     if( m_shouldDrawLevelSet && m_phiCurrent->isInitialized() )
     {
-        Vec3d xMin, xMax, dX;
+        m_phiCurrent->draw();
+        
+        /*Vec3d xMin, xMax, dX;
         
         for( TriangleMesh::vertex_iter meshItr = m_currentMesh->vertices_begin();
              meshItr != m_currentMesh->vertices_end(); ++meshItr )
@@ -289,7 +304,7 @@ void WmFigMeshController::draw()
             }  
         }
         glEnd();
-        glPointSize( 1.0 );
+        glPointSize( 1.0 );*/
     }
 }
 
