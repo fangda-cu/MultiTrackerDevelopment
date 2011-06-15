@@ -199,11 +199,8 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                     }
         
                     m_rodManager->m_rods[i]->setRestLengths(rest_lengths); 
-
                     m_rodManager->m_rods[i]->setRadius( radius_a, radius_b );
-
                     m_rodManager->m_rods[i]->setBaseRotation( m_rodRotation*M_PI );
-               
                     m_rodManager->m_rods[i]->updateStiffness();
 
                     /*m_rodManager->m_rods[i]->recordKineticEnergy();
@@ -227,32 +224,33 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                         if ( t > 0 ) 
                         {
                             curvature = m_curlRadius*curl_len/curl_resolution;
-                            //if ( m_curlRadius != 0 ) 
-                            //{
-                            //  curvature /= ( m_curlRadius*m_curlRadius + m_curlPitch*m_curlPitch) ;
-                            //}
-                
-                            Scalar torsion = m_curlPitch*curl_len/curl_resolution;
-                            //if ( m_curlPitch != 0 )
-                            //{
-                            //  torsion /= ( m_curlRadius*m_curlRadius + m_curlPitch*m_curlPitch) ;
-                            //}
-                
-                            m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, 
-                            Vec2d( curvature*cos( torsion*t ), curvature*sin( torsion*t ) ) );
-                            //cout << "WmSweeneyNode::compute::simulate: idx = " << vh->idx() << " parametric var = " << t << " curvature " <<  m_rodManager->m_rods[i]->m_bendingForce->getKappaBar(*vh) << " bending stiffness " <<  m_rodManager->m_rods[i]->m_bendingForce->getB(*vh) << " vertex mass " << m_rodManager->m_rods[i]->getVertexMass(vh->idx()) << endl;
+                        }
+  
+                        //if ( m_curlRadius != 0 ) 
+                        //{
+                        //  curvature /= ( m_curlRadius*m_curlRadius + m_curlPitch*m_curlPitch) ;
+                        //}
+            
+                        Scalar torsion = m_curlPitch*curl_len/curl_resolution;
+                        //if ( m_curlPitch != 0 )
+                        //{
+                        //  torsion /= ( m_curlRadius*m_curlRadius + m_curlPitch*m_curlPitch) ;
+                        //}
+            
+                        m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, 
+                        Vec2d( curvature*cos( torsion*t ), curvature*sin( torsion*t ) ) );
+                        //cout << "WmSweeneyNode::compute::simulate: idx = " << vh->idx() << " parametric var = " << t << " curvature " <<  m_rodManager->m_rods[i]->m_bendingForce->getKappaBar(*vh) << " bending stiffness " <<  m_rodManager->m_rods[i]->m_bendingForce->getB(*vh) << " vertex mass " << m_rodManager->m_rods[i]->getVertexMass(vh->idx()) << endl;
 
-                            // grab edge out of current vertex and increment parametic length accordingly 
-                            if ( vh->idx() >= m_curlStart*(m_verticesPerRod)  && vh != m_rodManager->m_rods[i]->vertices_end() ) 
+                        // grab edge out of current vertex and increment parametic length accordingly 
+                        if ( vh->idx() >= m_curlStart*(m_verticesPerRod)  && vh != m_rodManager->m_rods[i]->vertices_end() ) 
+                        {
+                            if( j > 0 )
                             {
-                                if( j > 0 )
-                                {
-                                    t += m_rodManager->m_rods[i]->getEdgeLength( j++ )/curl_len;                
-                                }
-                                else 
-                                {
-                                    t += m_rodManager->m_rods[i]->getEdgeLength( ++j )/curl_len;                
-                                }
+                                t += m_rodManager->m_rods[i]->getEdgeLength( j++ )/curl_len;                
+                            }
+                            else 
+                            {
+                                t += m_rodManager->m_rods[i]->getEdgeLength( ++j )/curl_len;                
                             }
                         }	    
                     }

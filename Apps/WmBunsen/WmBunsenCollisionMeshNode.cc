@@ -2,6 +2,8 @@
 
 #include <sstream>
 
+#include <maya/MFnMatrixAttribute.h>
+
 using namespace std;
 
 MTypeId WmBunsenCollisionMeshNode::typeId( 0x001135, 0x1C );
@@ -21,6 +23,7 @@ MObject WmBunsenCollisionMeshNode::ia_createLevelSet;
 MObject WmBunsenCollisionMeshNode::ia_levelSetCellSize;
 MObject WmBunsenCollisionMeshNode::ia_drawLevelSet;
 MObject WmBunsenCollisionMeshNode::ia_isLevelSetStatic;
+MObject WmBunsenCollisionMeshNode::ia_meshTransform;
     
 WmBunsenCollisionMeshNode::WmBunsenCollisionMeshNode()
     : m_friction( 0.0 ), m_thickness( 1.0 ), m_fullCollisions( false ),
@@ -104,19 +107,7 @@ void WmBunsenCollisionMeshNode::initialise( Beaker* i_beaker, const unsigned int
     // TODO: Re-evaluate if we really need to call this function from Sweeney or can just
     // cleverly pull on attributes in the right order so that it all happens in compute()
     // thus making things a lot simpler.
-    float levelsetCellSize = dataBlock.inputValue( ia_levelSetCellSize, &status ).asDouble();
-    CHECK_MSTATUS( status );
-    bool shouldCreateLevelSet = dataBlock.inputValue( ia_createLevelSet, &status ).asBool();
-    CHECK_MSTATUS( status );
-    bool shouldDrawLevelSet = dataBlock.inputValue( ia_drawLevelSet, &status).asBool();
-    CHECK_MSTATUS( status );
-    bool isLevelSetStatic = dataBlock.inputValue( ia_isLevelSetStatic, &status).asBool();
-    CHECK_MSTATUS( status );
-        
-    m_meshController->setLevelSetCellSize( levelsetCellSize );
-    m_meshController->shouldDrawLevelSet( shouldDrawLevelSet );
-    m_meshController->shouldCreateLevelSet( shouldCreateLevelSet );
-    m_meshController->isStaticMesh( isLevelSetStatic );
+    updateLevelSetFromInputs( dataBlock );
     
     updateCollisionMeshFromMayaMesh( meshFn );
 
@@ -137,6 +128,46 @@ void WmBunsenCollisionMeshNode::initialise( Beaker* i_beaker, const unsigned int
     m_triangleMeshRenderer = new TriangleMeshRenderer( *m_currentMesh );
 }
 
+void WmBunsenCollisionMeshNode::updateLevelSetFromInputs( MDataBlock& i_dataBlock )
+{
+    MStatus status;
+    
+    MMatrix transformationMatrix = i_dataBlock.inputValue( ia_meshTransform, &status ).asMatrix();
+    CHECK_MSTATUS( status );
+    
+    Eigen::Matrix4f eMatrix;
+    
+    for ( unsigned int r = 0; r < 4; ++r )
+    {
+        for ( unsigned int c = 0; c < 4; ++c )
+        {
+            eMatrix( r, c ) = transformationMatrix( r, c );
+        }
+    }
+    
+    m_meshTransformMatrix = eMatrix;
+    
+    if ( m_meshController == NULL )
+    {
+        return;
+    }
+    
+    float levelsetCellSize = i_dataBlock.inputValue( ia_levelSetCellSize, &status ).asDouble();
+    CHECK_MSTATUS( status );
+    bool shouldCreateLevelSet = i_dataBlock.inputValue( ia_createLevelSet, &status ).asBool();
+    CHECK_MSTATUS( status );
+    bool shouldDrawLevelSet = i_dataBlock.inputValue( ia_drawLevelSet, &status).asBool();
+    CHECK_MSTATUS( status );
+    bool isLevelSetStatic = i_dataBlock.inputValue( ia_isLevelSetStatic, &status).asBool();
+    CHECK_MSTATUS( status );
+        
+    m_meshController->setLevelSetCellSize( levelsetCellSize );
+    m_meshController->shouldDrawLevelSet( shouldDrawLevelSet );
+    m_meshController->shouldCreateLevelSet( shouldCreateLevelSet );    
+    m_meshController->isStaticMesh( isLevelSetStatic );
+    
+    m_meshController->setTransformationMatrix( eMatrix );
+}
 
 MStatus WmBunsenCollisionMeshNode::compute( const MPlug& i_plug, MDataBlock& i_data ) 
 {
@@ -153,22 +184,7 @@ MStatus WmBunsenCollisionMeshNode::compute( const MPlug& i_plug, MDataBlock& i_d
         CHECK_MSTATUS( stat );
         
         // Level Set details
-        float levelsetCellSize = i_data.inputValue( ia_levelSetCellSize, &stat ).asDouble();
-        CHECK_MSTATUS( stat );
-        bool shouldCreateLevelSet = i_data.inputValue( ia_createLevelSet, &stat ).asBool();
-        CHECK_MSTATUS( stat );
-        bool shouldDrawLevelSet = i_data.inputValue( ia_drawLevelSet, &stat ).asBool();
-        CHECK_MSTATUS( stat );
-        bool isLevelSetStatic = i_data.inputValue( ia_isLevelSetStatic, &stat).asBool();
-        CHECK_MSTATUS( stat );
-        
-        if ( m_meshController != NULL )
-        {
-            m_meshController->setLevelSetCellSize( levelsetCellSize );
-            m_meshController->shouldDrawLevelSet( shouldDrawLevelSet );
-            m_meshController->shouldCreateLevelSet( shouldCreateLevelSet );
-            m_meshController->isStaticMesh( isLevelSetStatic );
-        }
+        updateLevelSetFromInputs( i_data );
 
         if ( m_currentTime != m_previousTime || m_currentTime == m_startTime ) 
         {
@@ -352,7 +368,7 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
         }
         
         cerr << "Setup meshes with " << triangleVertexIndices.length() << " indices." << endl;
-        m_meshController->setTriangleIndices( indices );
+        m_meshController->createInitialLevelSet( indices, m_meshTransformMatrix );
     }
     else
     {
@@ -559,6 +575,21 @@ MStatus WmBunsenCollisionMeshNode::initialize()
     }
 
     {
+        MFnMatrixAttribute nAttr;
+        ia_meshTransform = nAttr.create( "meshTransform", "mtr", MFnMatrixAttribute::kDouble, &stat );
+        if (!stat) 
+        {
+            stat.perror( "create ia_meshTransform attribute" );
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setKeyable( true );
+        stat = addAttribute( ia_meshTransform );
+        if(!stat){ stat.perror("addAttribute ia_meshTransform"); return stat;}
+    }
+
+    {
         MFnNumericAttribute nAttr;
         ia_friction = nAttr.create("friction", "fri", MFnNumericData::kDouble, 0.4, &stat);
         if (!stat) {
@@ -666,6 +697,8 @@ MStatus WmBunsenCollisionMeshNode::initialize()
         nAttr.setWritable(false);
         nAttr.setReadable(true);
         nAttr.setConnectable(true);
+        // Tell Maya that this node is dependant on world space transformations of the node
+        nAttr.setWorldSpace( true );
         stat = addAttribute( oa_meshData );
         if (!stat) { stat.perror("addAttribute oa_meshData"); return stat;}
     }
@@ -696,6 +729,8 @@ MStatus WmBunsenCollisionMeshNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_drawLevelSet->oa_meshData" ); return stat;}
     stat = attributeAffects( ia_isLevelSetStatic, oa_meshData );
     if (!stat) { stat.perror( "attributeAffects ia_isLevelSetStatic->oa_meshData" ); return stat;}
+    stat = attributeAffects( ia_meshTransform, oa_meshData );
+    if (!stat) { stat.perror( "attributeAffects ia_meshTransform->oa_meshData" ); return stat;}
     
     return MS::kSuccess;
 }

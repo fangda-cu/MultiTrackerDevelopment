@@ -26,15 +26,17 @@ public:
 
     void updateNextMayaTime( const double i_mayaTime );
     
-    void setTriangleIndices( std::vector< unsigned int >& i_indices );
+    void createInitialLevelSet( std::vector< unsigned int >& i_indices, Eigen::Matrix4f& i_matrix );
     
     void draw();
     
     BASim::LevelSet* currentLevelSet();
     
+    void setTransformationMatrix( Eigen::Matrix4f& i_matrix );
+    
 private:
     void calculateLevelSetSize( bridson::Vec3f &origin, Vec3ui &dims, Real &dx, Real length[3] );
-    void buildLevelSet();
+    void buildLevelSet( Eigen::Matrix4f& i_matrix );    
     
     // We have two meshes because Maya is only providing meshes on frame steps and the sim is 
     // stepping with smaller steps so we need to interpolate the mesh positions and 
@@ -67,6 +69,8 @@ private:
     bool m_shouldCreateLevelSet;
     bool m_shouldDrawLevelSet;
     bool m_isStaticMesh;
+    
+    Eigen::Matrix4f m_transformMatrix;
 };
 
 

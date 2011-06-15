@@ -437,6 +437,18 @@ void WmSweeneyCmd::addCollisionMeshes()
             stat = dagModifier.doIt();
             CHECK_MSTATUS( stat );    
 
+            // We need to track when the mesh transforms so we can do fast level set look ups
+            // if the mesh is only rigidly moving.
+            MPlug worldMatrixPlug = meshFn.findPlug( "worldMatrix", true, &stat ).elementByLogicalIndex( 0, &stat );
+            CHECK_MSTATUS( stat );
+
+            MPlug collisionMeshNodeMatrixPlug( collisionMeshNodeSObj, WmBunsenCollisionMeshNode::ia_meshTransform );
+            
+            stat = dagModifier.connect( worldMatrixPlug, collisionMeshNodeMatrixPlug );
+            CHECK_MSTATUS( stat );
+            stat = dagModifier.doIt();
+            CHECK_MSTATUS( stat );    
+            
             MPlug collisionMeshNodeOutPlug( collisionMeshNodeSObj, WmBunsenCollisionMeshNode::oa_meshData );
             
             unsigned int numElements = sweeneyInputPlugArr.numElements( &stat );
