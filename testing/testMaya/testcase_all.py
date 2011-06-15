@@ -9,7 +9,7 @@ class MayaTest( TestCase ):
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
-			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case1.mb', open=True, force=True )
+			maya.cmds.file( './testing/testCases/case1.mb', open=True, force=True )
 			for i in range(1,23):
 				maya.cmds.currentTime( i, edit=True )
 				print( 'time %d'%i )
@@ -25,7 +25,7 @@ class MayaTest( TestCase ):
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
-			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case1a.mb', open=True, force=True )
+			maya.cmds.file( './testing/testCases/case1a.mb', open=True, force=True )
 			for i in range(1,23):
 				maya.cmds.currentTime( i, edit=True )
 				print( 'time %d'%i )
@@ -42,7 +42,7 @@ class MayaTest( TestCase ):
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
-			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case1b.mb', open=True, force=True )
+			maya.cmds.file( './testing/testCases/case1b.mb', open=True, force=True )
 			for i in range(1,23):
 				maya.cmds.currentTime( i, edit=True )
 				print( 'time %d'%i )
@@ -59,7 +59,7 @@ class MayaTest( TestCase ):
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
-			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case2.mb', open=True, force=True )
+			maya.cmds.file( './testing/testCases/case2.mb', open=True, force=True )
 			for i in range(1,23):
 				maya.cmds.currentTime( i, edit=True )
 				print( 'time %d'%i )
@@ -76,7 +76,7 @@ class MayaTest( TestCase ):
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
-			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case3.mb', open=True, force=True )
+			maya.cmds.file( './testing/testCases/case3.mb', open=True, force=True )
 			for i in range(1,23):
 				maya.cmds.currentTime( i, edit=True )
 				print( 'time %d'%i )
@@ -93,7 +93,7 @@ class MayaTest( TestCase ):
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
-			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case4.mb', open=True, force=True )
+			maya.cmds.file( './testing/testCases/case4.mb', open=True, force=True )
 			for i in range(1,23):
 				maya.cmds.currentTime( i, edit=True )
 				print( 'time %d'%i )
@@ -110,7 +110,7 @@ class MayaTest( TestCase ):
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
-			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case5.mb', open=True, force=True )
+			maya.cmds.file( './testing/testCases/case5.mb', open=True, force=True )
 			for i in range(1,23):
 				maya.cmds.currentTime( i, edit=True )
 				print( 'time %d'%i )
@@ -127,7 +127,7 @@ class MayaTest( TestCase ):
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
-			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case5a.mb', open=True, force=True )
+			maya.cmds.file( './testing/testCases/case5a.mb', open=True, force=True )
 			for i in range(1,23):
 				maya.cmds.currentTime( i, edit=True )
 				print( 'time %d'%i )
@@ -144,7 +144,7 @@ class MayaTest( TestCase ):
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
-			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case6.mb', open=True, force=True )
+			maya.cmds.file( './testing/testCases/case6.mb', open=True, force=True )
 			for i in range(1,23):
 				maya.cmds.currentTime( i, edit=True )
 				print( 'time %d'%i )
@@ -161,7 +161,7 @@ class MayaTest( TestCase ):
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
-			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case7.mb', open=True, force=True )
+			maya.cmds.file( './testing/testCases/case7.mb', open=True, force=True )
 			for i in range(1,23):
 				maya.cmds.currentTime( i, edit=True )
 				print( 'time %d'%i )
@@ -178,7 +178,7 @@ class MayaTest( TestCase ):
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
-			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case8.mb', open=True, force=True )
+			maya.cmds.file( './testing/testCases/case8.mb', open=True, force=True )
 			for i in range(1,23):
 				maya.cmds.currentTime( i, edit=True )
 				print( 'time %d'%i )
@@ -194,7 +194,7 @@ class MayaTest( TestCase ):
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
-			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case9.mb', open=True, force=True )
+			maya.cmds.file( './testing/testCases/case9.mb', open=True, force=True )
 			for i in range(1,23):
 				maya.cmds.currentTime( i, edit=True )
 				print( 'time %d'%i )
@@ -211,7 +211,7 @@ class MayaTest( TestCase ):
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
-			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case9a.mb', open=True, force=True )
+			maya.cmds.file( './testing/testCases/case9a.mb', open=True, force=True )
 			for i in range(1,23):
 				maya.cmds.currentTime( i, edit=True )
 				print( 'time %d'%i )
@@ -228,7 +228,7 @@ class MayaTest( TestCase ):
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
-			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case9b.mb', open=True, force=True )
+			maya.cmds.file( './testing/testCases/case9b.mb', open=True, force=True )
 			for i in range(1,23):
 				maya.cmds.currentTime( i, edit=True )
 				print( 'time %d'%i )
@@ -244,7 +244,7 @@ class MayaTest( TestCase ):
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
-			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case9c.mb', open=True, force=True )
+			maya.cmds.file( './testing/testCases/case9c.mb', open=True, force=True )
 			for i in range(1,23):
 				maya.cmds.currentTime( i, edit=True )
 				print( 'time %d'%i )
@@ -260,7 +260,7 @@ class MayaTest( TestCase ):
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
-			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case10.mb', open=True, force=True )
+			maya.cmds.file( './testing/testCases/case10.mb', open=True, force=True )
 			for i in range(1,23):
 				maya.cmds.currentTime( i, edit=True )
 				print( 'time %d'%i )
@@ -276,7 +276,7 @@ class MayaTest( TestCase ):
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
-			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case10a.mb', open=True, force=True )
+			maya.cmds.file( './testing/testCases/case10a.mb', open=True, force=True )
 			for i in range(1,23):
 				maya.cmds.currentTime( i, edit=True )
 				print( 'time %d'%i )
@@ -292,7 +292,7 @@ class MayaTest( TestCase ):
 		print 'set needs'
 		
 		with self.shell.mayaSession() as maya:
-			maya.cmds.file( '/weta/dev/user/showard/shots/maya/scenes/fur/TEST_CASES/case11.mb', open=True, force=True )
+			maya.cmds.file( './testing/testCases/case11.mb', open=True, force=True )
 			for i in range(1,23):
 				maya.cmds.currentTime( i, edit=True )
 				print( 'time %d'%i )
