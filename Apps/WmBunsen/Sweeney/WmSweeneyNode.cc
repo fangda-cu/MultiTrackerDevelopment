@@ -91,8 +91,8 @@ WmSweeneyRodManager* WmSweeneyNode::rodManager() {
 	return m_rodManager;
 }
 
-MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
-{
+MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock ) {
+
 	MStatus status;
 
 	if (  i_plug == ca_rodPropertiesSync  ) {
@@ -267,15 +267,13 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
 				double atol = powf(10, -i_dataBlock.inputValue( ia_atol).asDouble());
 				double stol = powf(10, -i_dataBlock.inputValue( ia_stol).asDouble());
-				double rtol = powf(10, -i_dataBlock.inputValue( ia_rtol).asDouble());
-				double inftol = powf(10, -i_dataBlock.inputValue( ia_inftol).asDouble());
+				double rtol  = powf(10, -i_dataBlock.inputValue( ia_rtol).asDouble());
+				double inftol  = powf(10, -i_dataBlock.inputValue( ia_inftol).asDouble());
 				int numLineSearchIters = i_dataBlock.inputValue( ia_numLineSearchIters).asInt();
 
 				double stiffness = i_dataBlock.inputValue( ia_implicitStiffness).asDouble();
-
 				m_rodManager->updateSolverSettings( atol, stol, rtol, inftol, numLineSearchIters, stiffness );
 			}
-
 		}
 
 		i_dataBlock.setClean( i_plug );
@@ -410,15 +408,8 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
 		BASim::Vec3d m1 = Vec3d(  m_strandRootFrames[ 3*inputStrandNumber ].x,
 				m_strandRootFrames[ 3*inputStrandNumber ].y,
 				m_strandRootFrames[ 3*inputStrandNumber ].z  );
-		BASim::Vec3d m2 = Vec3d(  m_strandRootFrames[ 3*inputStrandNumber + 1 ].x,
-						m_strandRootFrames[ 3*inputStrandNumber + 1 ].y,
-						m_strandRootFrames[ 3*inputStrandNumber + 1 ].z  );
-		BASim::Vec3d m3 = Vec3d(  m_strandRootFrames[ 3*inputStrandNumber + 2 ].x,
-								m_strandRootFrames[ 3*inputStrandNumber + 2 ].y,
-								m_strandRootFrames[ 3*inputStrandNumber + 2 ].z  );
+
 		m1.normalize();
-		m2.normalize();
-		m3.normalize();
 
 
 		//cout << "WmSweeneyNode::initialiseRodFromBarbershopInput:: create rod " << inputStrandNumber
