@@ -15,6 +15,8 @@ public:
                          BASim::TriangleMesh* i_nextMesh, 
                          double i_time, double i_dt );
     
+    ~WmFigMeshController();
+    
     bool execute();
 
     void setLevelSetCellSize( const float i_cellSize );

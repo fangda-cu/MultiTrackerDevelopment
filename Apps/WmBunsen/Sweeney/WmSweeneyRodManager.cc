@@ -29,7 +29,6 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
                                   const BASim::Vec3d i_gravity,
                                   const BASim::GroomingTimeStepper::Method i_solverType )
 {
-    cerr << "WmSweeneyRodManager::addRod: About to create rod\n";
     RodOptions rodOptions;
     rodOptions.YoungsModulus = i_youngsModulus; /* megapascal */
     rodOptions.ShearModulus = i_shearModulus;   /* megapascal */
@@ -44,8 +43,6 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
     ElasticRod* rod = setupRod( rodOptions,
                                 i_vertices,
                                 i_vertices );
-
-    cerr << "WmSweeneyRodManager::addRod: setupRod returned\n";
 
     // We need a rod renderer to draw the rod in OpenGL
     RodRenderer* rodRenderer = new RodRenderer( *rod );
@@ -80,13 +77,7 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
     //     cerr << "Doing reverse hairdo!\n";
     //     rod->doReverseHairdo(stepper);
     // }
-    
-    cerr << "Adding rod with vertices:\n";
-    for ( size_t v=0; v< i_vertices.size(); ++v )
-    {
-        cerr << i_vertices[ v ] << endl;
-    }
-    
+        
     // Arbitrarily scale the rod up so it can be seen
     rod->setRadiusScale( 10.0 );
     
@@ -94,8 +85,6 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
     m_rods.push_back( rod );
     m_rodTimeSteppers.push_back( stepper );
     m_rodRenderers.push_back( rodRenderer) ;
-    
-    cerr << "WmSweeneyRodManager::addRod: Created rod\n";
     
     return true;
 }

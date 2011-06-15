@@ -671,7 +671,7 @@ bool LevelSet::point_in_triangle_2d(double x0, double y0,
     int signc=orientation(x1, y1, x2, y2, c);
     if(signc!=signa) return false;
     double sum=a+b+c;
-    assert(sum!=0); // if the SOS signs match and are nonkero, there's no way all of a, b, and c are zero.
+    assert(sum!=0); // if the SOS signs match and are nonzero, there's no way all of a, b, and c are zero.
     a/=sum;
     b/=sum;
     c/=sum;
