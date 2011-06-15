@@ -20,6 +20,7 @@ MObject WmBunsenCollisionMeshNode::ia_drawCollisionData;
 MObject WmBunsenCollisionMeshNode::ia_createLevelSet;
 MObject WmBunsenCollisionMeshNode::ia_levelSetCellSize;
 MObject WmBunsenCollisionMeshNode::ia_drawLevelSet;
+MObject WmBunsenCollisionMeshNode::ia_isLevelSetStatic;
     
 WmBunsenCollisionMeshNode::WmBunsenCollisionMeshNode()
     : m_friction( 0.0 ), m_thickness( 1.0 ), m_fullCollisions( false ),
@@ -97,6 +98,26 @@ void WmBunsenCollisionMeshNode::initialise( Beaker* i_beaker, const unsigned int
     MObject inMeshObj = meshH.asMeshTransformed();
     MFnMesh meshFn( inMeshObj );
 
+    // Grab the level set details as we need them for creating the level set as this is
+    // called by the SweeneyNode and we're circumventing the compute() evaluation to speed
+    // things up and to ensure Sweeney can set up the sim in the right order
+    // TODO: Re-evaluate if we really need to call this function from Sweeney or can just
+    // cleverly pull on attributes in the right order so that it all happens in compute()
+    // thus making things a lot simpler.
+    float levelsetCellSize = dataBlock.inputValue( ia_levelSetCellSize, &status ).asDouble();
+    CHECK_MSTATUS( status );
+    bool shouldCreateLevelSet = dataBlock.inputValue( ia_createLevelSet, &status ).asBool();
+    CHECK_MSTATUS( status );
+    bool shouldDrawLevelSet = dataBlock.inputValue( ia_drawLevelSet, &status).asBool();
+    CHECK_MSTATUS( status );
+    bool isLevelSetStatic = dataBlock.inputValue( ia_isLevelSetStatic, &status).asBool();
+    CHECK_MSTATUS( status );
+        
+    m_meshController->setLevelSetCellSize( levelsetCellSize );
+    m_meshController->shouldDrawLevelSet( shouldDrawLevelSet );
+    m_meshController->shouldCreateLevelSet( shouldCreateLevelSet );
+    m_meshController->isStaticMesh( isLevelSetStatic );
+    
     updateCollisionMeshFromMayaMesh( meshFn );
 
     if ( m_beaker != NULL )
@@ -134,16 +155,19 @@ MStatus WmBunsenCollisionMeshNode::compute( const MPlug& i_plug, MDataBlock& i_d
         // Level Set details
         float levelsetCellSize = i_data.inputValue( ia_levelSetCellSize, &stat ).asDouble();
         CHECK_MSTATUS( stat );
-        bool createLevelSet = i_data.inputValue( ia_createLevelSet, &stat ).asBool();
+        bool shouldCreateLevelSet = i_data.inputValue( ia_createLevelSet, &stat ).asBool();
         CHECK_MSTATUS( stat );
-        bool drawLevelSet = i_data.inputValue( ia_drawLevelSet, &stat ).asBool();
+        bool shouldDrawLevelSet = i_data.inputValue( ia_drawLevelSet, &stat ).asBool();
+        CHECK_MSTATUS( stat );
+        bool isLevelSetStatic = i_data.inputValue( ia_isLevelSetStatic, &stat).asBool();
         CHECK_MSTATUS( stat );
         
         if ( m_meshController != NULL )
         {
-            m_meshController->createLevelSet( createLevelSet );
             m_meshController->setLevelSetCellSize( levelsetCellSize );
-            m_meshController->drawLevelSet( drawLevelSet );
+            m_meshController->shouldDrawLevelSet( shouldDrawLevelSet );
+            m_meshController->shouldCreateLevelSet( shouldCreateLevelSet );
+            m_meshController->isStaticMesh( isLevelSetStatic );
         }
 
         if ( m_currentTime != m_previousTime || m_currentTime == m_startTime ) 
@@ -231,10 +255,8 @@ void WmBunsenCollisionMeshNode::draw( M3dView & view, const MDagPath & path,
     }
     
     if ( m_drawCollisionData )
-    {
-        
-        // TODO: I think we could use one of the BASim render classes to do this
-        
+    {        
+        // TODO: I think we could use one of the BASim render classes to do this        
         glPointSize( 5.0 );
 
         glBegin( GL_POINTS );
@@ -270,6 +292,7 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
     
     if ( m_previousMesh == NULL )
     {
+        cerr << "WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh() - No mesh to update yet\n";
         return MStatus::kFailure;
     }
 
@@ -328,6 +351,7 @@ MStatus WmBunsenCollisionMeshNode::updateCollisionMeshFromMayaMesh( MFnMesh &i_m
             indices[ t ] = triangleVertexIndices[ (unsigned int)t ];
         }
         
+        cerr << "Setup meshes with " << triangleVertexIndices.length() << " indices." << endl;
         m_meshController->setTriangleIndices( indices );
     }
     else
@@ -505,6 +529,20 @@ MStatus WmBunsenCollisionMeshNode::initialize()
         stat = addAttribute( ia_createLevelSet );
         if(!stat){ stat.perror("addAttribute ia_createLevelSet"); return stat;}
     }
+    
+    {
+        MFnNumericAttribute nAttr;
+        ia_isLevelSetStatic = nAttr.create( "isLevelSetStatic", "ils", MFnNumericData::kBoolean, true, &stat);
+        if (!stat) {
+            stat.perror( "create ia_isLevelSetStatic attribute" );
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setKeyable( true );
+        stat = addAttribute( ia_isLevelSetStatic );
+        if(!stat){ stat.perror("addAttribute ia_isLevelSetStatic"); return stat;}
+    }
 
     {
         MFnNumericAttribute nAttr;
@@ -631,7 +669,7 @@ MStatus WmBunsenCollisionMeshNode::initialize()
         stat = addAttribute( oa_meshData );
         if (!stat) { stat.perror("addAttribute oa_meshData"); return stat;}
     }
-
+    
     stat = attributeAffects( ia_time, oa_meshData );
     if (!stat) { stat.perror( "attributeAffects ia_time->oa_meshData" ); return stat;}
     stat = attributeAffects(ia_startTime, oa_meshData );
@@ -656,6 +694,8 @@ MStatus WmBunsenCollisionMeshNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_createLevelSet->oa_meshData" ); return stat;}
     stat = attributeAffects( ia_drawLevelSet, oa_meshData );
     if (!stat) { stat.perror( "attributeAffects ia_drawLevelSet->oa_meshData" ); return stat;}
+    stat = attributeAffects( ia_isLevelSetStatic, oa_meshData );
+    if (!stat) { stat.perror( "attributeAffects ia_isLevelSetStatic->oa_meshData" ); return stat;}
     
     return MS::kSuccess;
 }

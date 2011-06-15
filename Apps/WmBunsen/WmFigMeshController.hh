@@ -15,11 +15,14 @@ public:
                          BASim::TriangleMesh* i_nextMesh, 
                          double i_time, double i_dt );
     
+    ~WmFigMeshController();
+    
     bool execute();
 
     void setLevelSetCellSize( const float i_cellSize );
-    void createLevelSet( const bool i_createLevelSet );    
-    void drawLevelSet( const bool i_drawLevelSet );    
+    void shouldCreateLevelSet( const bool i_createLevelSet );    
+    void isStaticMesh( const bool i_isStaticMesh );
+    void shouldDrawLevelSet( const bool i_drawLevelSet );    
 
     void updateNextMayaTime( const double i_mayaTime );
     
@@ -61,8 +64,9 @@ private:
     Vec3Indices m_tri;
     
     float m_levelSetDX;
-    bool m_createLevelSet;
-    bool m_drawLevelSet;
+    bool m_shouldCreateLevelSet;
+    bool m_shouldDrawLevelSet;
+    bool m_isStaticMesh;
 };
 
 

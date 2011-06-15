@@ -9,6 +9,8 @@
 #include <OpenGL/OPENGL_COLOR_RAMP.h>
 #include <OpenGL/OPENGL_COLOR.h>
 
+#include "../Util/TextLog.hh"
+
 using namespace std;
 
 namespace BASim {
@@ -41,7 +43,7 @@ void LevelSet::buildLevelSet(const Vec3Indices &triangles,
 
     _dx = dx;
 
- //   std::cout << "Level set dimensions: (" << nx << "," << ny << "," << nz << ") " << _dx << std::endl;
+    //TraceStream(g_log, "LevelSet::buildLevelSet") << "Level set dimensions: (" << nx << "," << ny << "," << nz << ") " << _dx << "\n";
     buildLevelSet(triangles, triIndices, x, v, _origin, _dx, nx, ny, nz, _phi, _phiVel);
     _initialized = true;
 }
@@ -51,12 +53,18 @@ Real LevelSet::getLevelSetValue(Vec3<Real> x)
     Real fi = ((double)x[0] - _origin[0]) / _dx;
     Real fj = ((double)x[1] - _origin[1]) / _dx;
     Real fk = ((double)x[2] - _origin[2]) / _dx;
+
+    //TraceStream(g_log, "LevelSet::getLevelSetValue") << "this = " << this << " Array " << &_phi << " dim " << _phi.ni << ", " << _phi.nj << ", " << _phi.nk << "\n";    
    
     int i, j, k;
     bridson::get_barycentric(fi, i, fi, 0, _phi.ni);
     bridson::get_barycentric(fj, j, fj, 0, _phi.nj);
     bridson::get_barycentric(fk, k, fk, 0, _phi.nk);
-   
+
+    //TraceStream(g_log, "LevelSet::getLevelSetValue") << "Array dim " << _phi.ni << ", " << _phi.nj << ", " << _phi.nk  << "  ijk = " << i << ", " << j << ", " << k << "  fijk = " << fi << ", " << fj << ", " << fk << "\n";    
+
+    assert(_initialized);
+
     Real dist = bridson::trilerp(_phi(i    , j    , k    ),
                                  _phi(i + 1, j    , k    ),
                                  _phi(i    , j + 1, k    ),
@@ -341,6 +349,9 @@ void LevelSet::buildLevelSet(const Vec3Indices &triangles,
     phi.resize(ni, nj, nk);
     phiVel.resize(ni, nj, nk);
     phi.assign((ni+nj+nk)*dx); // upper bound on distance
+
+    //TraceStream(g_log, "LevelSet::buildLevelSet") << "this = " << this << " nijk = " << ni << ", " << nj << ", " << nk << ", Array " << &_phi << " dim " << _phi.ni << ", " << _phi.nj << ", " << _phi.nk << "\n";    
+
     bridson::Array3i closest_tri(ni, nj, nk, -1);
     bridson::Array3i intersection_count(ni, nj, nk, 0); // intersection_count(i,j,k) is # of tri intersections in (i-1,i]x{j}x{k}
     // we begin by initializing distances near the mesh, and figuring out intersection counts
@@ -440,6 +451,8 @@ void LevelSet::buildLevelSet(const Vec3Indices &triangles,
             }
         }
     }
+
+    //TraceStream(g_log, "LevelSet::buildLevelSet") << "Completed with array " << &_phi << " dim " << _phi.ni << ", " << _phi.nj << ", " << _phi.nk << "\n";    
 }
 
 float LevelSet::point_triangle_distance(const bridson::Vec3f &p,
@@ -658,7 +671,7 @@ bool LevelSet::point_in_triangle_2d(double x0, double y0,
     int signc=orientation(x1, y1, x2, y2, c);
     if(signc!=signa) return false;
     double sum=a+b+c;
-    assert(sum!=0); // if the SOS signs match and are nonkero, there's no way all of a, b, and c are zero.
+    assert(sum!=0); // if the SOS signs match and are nonzero, there's no way all of a, b, and c are zero.
     a/=sum;
     b/=sum;
     c/=sum;

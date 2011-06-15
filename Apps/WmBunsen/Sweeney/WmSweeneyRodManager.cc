@@ -30,7 +30,6 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
                                   const BASim::Vec3d i_gravity,
                                   const BASim::GroomingTimeStepper::Method i_solverType )
 {
-    cerr << "WmSweeneyRodManager::addRod: About to create rod\n";
     RodOptions rodOptions;
     rodOptions.YoungsModulus = i_youngsModulus; /* megapascal */
     rodOptions.ShearModulus = i_shearModulus;   /* megapascal */
@@ -46,8 +45,6 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
                                 i_vertices,
                                 i_vertices,
                                 i_referenceDir1);
-
-    cerr << "WmSweeneyRodManager::addRod: setupRod returned\n";
 
     // We need a rod renderer to draw the rod in OpenGL
     RodRenderer* rodRenderer = new RodRenderer( *rod );
@@ -82,13 +79,7 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
     //     cerr << "Doing reverse hairdo!\n";
     //     rod->doReverseHairdo(stepper);
     // }
-    
-    cerr << "Adding rod with vertices:\n";
-    for ( size_t v=0; v< i_vertices.size(); ++v )
-    {
-        cerr << i_vertices[ v ] << endl;
-    }
-    
+        
     // Arbitrarily scale the rod up so it can be seen
     rod->setRadiusScale( 10.0 );
     
@@ -97,8 +88,6 @@ bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices,
     m_rodTimeSteppers.push_back( stepper );
     m_rodRenderers.push_back( rodRenderer) ;
     
-    cerr << "WmSweeneyRodManager::addRod: Created rod\n";
-    
     return true;
 }
 
@@ -106,6 +95,10 @@ void WmSweeneyRodManager::addCollisionMesh( BASim::TriangleMesh* i_triangleMesh,
                                             BASim::LevelSet* i_levelSet,
                                             WmFigMeshController* i_scriptingController )
 {
+    cerr << "WmSweeneyRodManager::addCollisionMesh levelSet = " << i_levelSet << "\n";
+    assert( i_triangleMesh);
+    assert( i_levelSet );
+    assert( i_scriptingController );
     m_triangleMeshes.push_back( i_triangleMesh );
     m_levelSets.push_back( i_levelSet );
     m_scriptingControllers.push_back( i_scriptingController );
@@ -174,11 +167,11 @@ void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const d
   */
 
     m_bridsonStepper = new BAGroomingStepper( m_rods, m_triangleMeshes, m_scriptingControllers, 
-                                         m_rodTimeSteppers, i_timeStep, i_startTime, 1, perfParams );                                           
+                                         m_rodTimeSteppers, i_timeStep, i_startTime, 1, perfParams, m_levelSets );                    
 }
 
 
-void WmSweeneyRodManager::updateSolverSettings(double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters)
+void WmSweeneyRodManager::updateSolverSettings(double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters, double i_penaltyStiffness)
 {
     std::cout << "Updating solver settings:" << std::endl;
     std::cout << "Atol  "   << i_atol   << std::endl;
@@ -199,6 +192,9 @@ void WmSweeneyRodManager::updateSolverSettings(double i_atol, double i_stol, dou
 	solver.set_inftol(i_inftol);
 	solver.set_maxlsit(i_numLineSearchIters);
     }
+
+    assert(m_bridsonStepper);
+    m_bridsonStepper->setPenaltyStiffness( i_penaltyStiffness );
 }
 
 

@@ -13,6 +13,8 @@
 #include "../../Core/Timer.hh"
 #include "../../Collisions/Collision.hh"
 
+#include "RodLevelSetForce.hh"
+
 #include <iostream>
 #include <fstream>
 
@@ -26,7 +28,7 @@ namespace BASim
 BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
         std::vector<ScriptingController*>& scripting_controllers, std::vector<GroomingTimeStepper*>& steppers, const double& dt,
         const double time, const int num_threads, const PerformanceTuningParameters perf_param,
-        std::vector<LevelSet*>* levelSets) :
+        std::vector<LevelSet*>& levelSets) :
             m_num_dof(0),
             m_rods(rods),
             m_number_of_rods(m_rods.size()),
@@ -59,31 +61,31 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
             m_perf_param(perf_param),
             m_level(0),
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start,
-                    m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness)
+                    m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness),
+	    m_level_sets(levelSets)
 //m_timers(NULL)
 {
-    if (levelSets != NULL)
+    m_levelset_forces.resize(m_level_sets.size());
+
+    for (size_t i=0; i < m_level_sets.size(); ++i)
     {
-        m_level_sets = *levelSets;
+	m_levelset_forces[i] = new RodLevelSetForce( m_level_sets[i] );
+
+	for (std::vector<GroomingTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
+	{
+	    (*stepper)->addExternalForce(m_levelset_forces[i]);
+	}
     }
-    else
+
+    for (std::vector<GroomingTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
     {
-        // Weirdly we're going to build a vector of null pointers. This is because
-        // the vector of level sets can contain a pointer to a level set or a null pointer
-        // depending on whether the corresponding m_triangle_mesh has a level set created for it.
-        // To simplify the usage code we'll make this vector and pass it around.
-        // If level sets become useful we should rethink the entire way data is passed into
-        // BAGroomingStepper.
-        m_level_sets.resize(m_triangle_meshes.size(), NULL);
+	(*stepper)->setMaxIterations(m_perf_param.m_solver.m_max_iterations);
     }
+
 
     g_log = new TextLog(std::cerr, MsgInfo::kInfo, true);
     InfoStream(g_log, "") << "Started logging BAGroomingStepper\n";
 
-    for (std::vector<GroomingTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
-    {
-        (*stepper)->setMaxIterations(m_perf_param.m_solver.m_max_iterations);
-    }
 
 #ifndef NDEBUG
     for (int i = 0; i < (int) m_number_of_rods; ++i)
@@ -450,24 +452,27 @@ bool BAGroomingStepper::execute()
 {
     START_TIMER("BAGroomingStepper::execute")
 
+    // Step scripted objects forward, set boundary conditions
+    for (std::vector<ScriptingController*>::const_iterator scripting_controller = m_scripting_controllers.begin(); scripting_controller
+		 != m_scripting_controllers.end(); scripting_controller++)
+	    (*scripting_controller)->execute();
+
+    for (size_t i=0; i < m_levelset_forces.size(); ++i)
+    {
+	assert(m_levelset_forces[i]);
+	m_levelset_forces[i]->setStiffness(m_perf_param.m_implicit_stiffness);
+    }
+
     // Prepare the list initially containing all rods.
     RodSelectionType selected_rods = m_simulated_rods;
 
-    for (int i=0; i<10; ++i)
-    {
-	nonAdaptiveExecute(m_dt, selected_rods);
-    }
+    step(selected_rods);
 
     STOP_TIMER("BAGroomingStepper::execute")
 
     return true;
 }
 
-bool BAGroomingStepper::nonAdaptiveExecute(double dt, RodSelectionType& selected_rods)
-{
-    step(selected_rods);
-    return (selected_rods.size() == 0);
-}
 
 void BAGroomingStepper::step(RodSelectionType& selected_rods)
 {
@@ -513,30 +518,19 @@ void BAGroomingStepper::step(RodSelectionType& selected_rods)
 
     STOP_TIMER("BAGroomingStepper::step/steppers");
 
-    TraceStream(g_log, "") << "About to update properties" << '\n';
 
-    // Update frames and such in the rod (Is this correct? Will this do some extra stuff?)
-    for (RodSelectionType::const_iterator selected_rod = selected_rods.begin(); selected_rod != selected_rods.end(); selected_rod++)
-        m_rods[*selected_rod]->updateProperties();
+    // START_TIMER("BAGroomingStepper::step/penalty");
 
-    // Sanity check to ensure rod's internal state is consistent
-#ifndef NDEBUG
-    for (RodSelectionType::const_iterator selected_rod = selected_rods.begin(); selected_rod != selected_rods.end(); selected_rod++)
-        m_rods[*selected_rod]->verifyProperties();
-#endif
+    // // Clean up penalty collisions list
+    // for (std::list<Collision*>::iterator i = penalty_collisions.begin(); i != penalty_collisions.end(); i++)
+    //     delete *i;
+    // penalty_collisions.clear();
+    // // Clear existing penalties
+    // for (std::vector<RodPenaltyForce*>::const_iterator penalty_force = m_implicit_pnlty_forces.begin(); penalty_force
+    //         != m_implicit_pnlty_forces.end(); penalty_force++)
+    //     (*penalty_force)->clearProximityCollisions();
 
-    START_TIMER("BAGroomingStepper::step/penalty");
-
-    // Clean up penalty collisions list
-    for (std::list<Collision*>::iterator i = penalty_collisions.begin(); i != penalty_collisions.end(); i++)
-        delete *i;
-    penalty_collisions.clear();
-    // Clear existing penalties
-    for (std::vector<RodPenaltyForce*>::const_iterator penalty_force = m_implicit_pnlty_forces.begin(); penalty_force
-            != m_implicit_pnlty_forces.end(); penalty_force++)
-        (*penalty_force)->clearProximityCollisions();
-
-    STOP_TIMER("BAGroomingStepper::step/penalty");
+    // STOP_TIMER("BAGroomingStepper::step/penalty");
 
     STOP_TIMER("BAGroomingStepper::step");
 }
@@ -671,36 +665,36 @@ void BAGroomingStepper::restoreResponses(const VecXd& responses, const RodSelect
  */
 void BAGroomingStepper::enableImplicitPenaltyImpulses()
 {
-    m_perf_param.m_enable_penalty_response = true;
-    for (int i = 0; i < (int) m_number_of_rods; i++)
-    {
-        RodPenaltyForce *pnlty = new RodPenaltyForce();
-        m_implicit_pnlty_forces.push_back(pnlty);
-        m_steppers[i]->addExternalForce(pnlty);
-    }
+    // m_perf_param.m_enable_penalty_response = true;
+    // for (int i = 0; i < (int) m_number_of_rods; i++)
+    // {
+    //     RodPenaltyForce *pnlty = new RodPenaltyForce();
+    //     m_implicit_pnlty_forces.push_back(pnlty);
+    //     m_steppers[i]->addExternalForce(pnlty);
+    // }
 
-    TraceStream(g_log, "") << "Implicit penalty response is now enabled\n";
+    // TraceStream(g_log, "") << "Implicit penalty response is now enabled\n";
 
 }
 
 void BAGroomingStepper::disableImplicitPenaltyImpulses()
 {
-    m_perf_param.m_enable_penalty_response = false;
+    // m_perf_param.m_enable_penalty_response = false;
 
-    for (int i = 0; i < (int) m_number_of_rods; i++)
-    {
-        std::vector<RodExternalForce*>& forces = m_steppers[i]->getExternalForces();
-        for (int j = 0; j < (int) forces.size(); j++)
-        {
-            RodPenaltyForce* rod_penalty_force = dynamic_cast<RodPenaltyForce*> (forces[j]);
-            if (rod_penalty_force)
-            {
-                forces.erase(forces.begin() + j);
-                break;
-            }
-        }
-    }
-    m_implicit_pnlty_forces.clear();
+    // for (int i = 0; i < (int) m_number_of_rods; i++)
+    // {
+    //     std::vector<RodExternalForce*>& forces = m_steppers[i]->getExternalForces();
+    //     for (int j = 0; j < (int) forces.size(); j++)
+    //     {
+    //         RodPenaltyForce* rod_penalty_force = dynamic_cast<RodPenaltyForce*> (forces[j]);
+    //         if (rod_penalty_force)
+    //         {
+    //             forces.erase(forces.begin() + j);
+    //             break;
+    //         }
+    //     }
+    // }
+    // m_implicit_pnlty_forces.clear();
 }
 
 void BAGroomingStepper::enableResponse()
@@ -2839,26 +2833,26 @@ void BAGroomingStepper::applyInextensibilityVelocityFilter(int rodidx)
  */
 void BAGroomingStepper::setupPenaltyForces(std::list<Collision*>& collisions, const RodSelectionType& selected_rods)
 {
-    // Detect proximity collisions
-    m_collision_detector->getCollisions(collisions, Proximity);
+    // // Detect proximity collisions
+    // m_collision_detector->getCollisions(collisions, Proximity);
 
-    for (int rod_id = 0; rod_id < m_number_of_rods; rod_id++)
-        assert(m_implicit_pnlty_forces[rod_id]->cleared());
+    // for (int rod_id = 0; rod_id < m_number_of_rods; rod_id++)
+    //     assert(m_implicit_pnlty_forces[rod_id]->cleared());
 
-    // Store the proximity collision in the RodPenaltyForce
-    for (std::list<Collision*>::const_iterator col = collisions.begin(); col != collisions.end(); col++)
-    {
-        VertexFaceProximityCollision* vfpcol = dynamic_cast<VertexFaceProximityCollision*> (*col);
-        if (vfpcol)
-        {
-            assert(vfpcol->isAnalysed());
-            int rod_id = getContainingRod(vfpcol->v0);
-            TraceStream(g_log, "") << "Creating penalty force for rod " << rod_id << " address " << &m_rods[rod_id] << '\n';
-            int v_id = vfpcol->v0 - m_base_dof_indices[rod_id] / 3;
-            m_implicit_pnlty_forces[rod_id]->registerProximityCollision(v_id, vfpcol);
-        }
-        // TODO: delete vfpcol once used. Not here though, as vfpcol is used each time RodPenaltyForce::computeForce is called
-    }
+    // // Store the proximity collision in the RodPenaltyForce
+    // for (std::list<Collision*>::const_iterator col = collisions.begin(); col != collisions.end(); col++)
+    // {
+    //     VertexFaceProximityCollision* vfpcol = dynamic_cast<VertexFaceProximityCollision*> (*col);
+    //     if (vfpcol)
+    //     {
+    //         assert(vfpcol->isAnalysed());
+    //         int rod_id = getContainingRod(vfpcol->v0);
+    //         TraceStream(g_log, "") << "Creating penalty force for rod " << rod_id << " address " << &m_rods[rod_id] << '\n';
+    //         int v_id = vfpcol->v0 - m_base_dof_indices[rod_id] / 3;
+    //         m_implicit_pnlty_forces[rod_id]->registerProximityCollision(v_id, vfpcol);
+    //     }
+    //     // TODO: delete vfpcol once used. Not here though, as vfpcol is used each time RodPenaltyForce::computeForce is called
+    // }
 
 }
 

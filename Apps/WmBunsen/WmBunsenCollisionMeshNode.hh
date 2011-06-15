@@ -84,6 +84,7 @@ public:
     static MObject ia_createLevelSet;
     static MObject ia_levelSetCellSize;
     static MObject ia_drawLevelSet;
+    static MObject ia_isLevelSetStatic;
     
     // Recieve a pointer to Beaker so that we can update beaker with the details for this mesh
     void initialise( Beaker* i_beaker, const unsigned int i_collisionMeshIndex,

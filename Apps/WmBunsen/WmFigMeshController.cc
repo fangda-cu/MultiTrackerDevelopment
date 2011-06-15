@@ -14,8 +14,8 @@ WmFigMeshController::WmFigMeshController( BASim::TriangleMesh* i_currentMesh,
                                            m_nextMesh( i_nextMesh ),
                                            BASim::ScriptingController( i_time, i_dt ),
                                            m_startMeshTime( 0.0 ), m_endMeshTime( 0.0 ),
-                                           m_levelSetDX( 1.0 ), m_createLevelSet( false ),
-                                           m_drawLevelSet( false )
+                                           m_levelSetDX( 1.0 ), m_shouldCreateLevelSet( false ),
+                                           m_shouldDrawLevelSet( false ), m_isStaticMesh( true)
 
 // NOTE: We pass i_time and i_dt to BASim::ScriptingController but they are actually *ignored*
 //       as BARodStepper calls setDt() on the controller when it executes anyway.
@@ -28,9 +28,15 @@ WmFigMeshController::WmFigMeshController( BASim::TriangleMesh* i_currentMesh,
 
     m_phiPrevious = new LevelSet;
     m_phiCurrent = new LevelSet;
-
+        
     // We can't build the level set yet as the meshes we got passed in most likely don't have
     // data in them yet.
+}
+
+WmFigMeshController::~WmFigMeshController()
+{
+    delete m_phiPrevious;
+    delete m_phiCurrent;
 }
 
 void WmFigMeshController::updateNextMayaTime( const double i_mayaTime )
@@ -45,14 +51,19 @@ void WmFigMeshController::setLevelSetCellSize( const float i_cellSize )
     m_levelSetDX = i_cellSize;
 }
     
-void WmFigMeshController::createLevelSet( const bool i_createLevelSet )
+void WmFigMeshController::shouldCreateLevelSet( const bool i_shouldCreateLevelSet )
 {
-    m_createLevelSet = i_createLevelSet;
+    m_shouldCreateLevelSet = i_shouldCreateLevelSet;
 }
 
-void WmFigMeshController::drawLevelSet( const bool i_drawLevelSet )
+void WmFigMeshController::isStaticMesh( const bool i_isStaticMesh )
 {
-    m_drawLevelSet = i_drawLevelSet;
+    m_isStaticMesh = i_isStaticMesh;
+}
+
+void WmFigMeshController::shouldDrawLevelSet( const bool i_shouldDrawLevelSet )
+{
+    m_shouldDrawLevelSet = i_shouldDrawLevelSet;
 }
 
 LevelSet* WmFigMeshController::currentLevelSet()
@@ -64,11 +75,11 @@ bool WmFigMeshController::execute()
 {
     // TODO: Assumes 24fps for Maya scenes, fix that
  
-    if ( m_createLevelSet )
+    if ( !m_isStaticMesh )
     {
         buildLevelSet();
     }
- 
+    
     double interpolation = ( getTime() - m_startTime ) * 24.0 + m_startTime - m_previousMayaTime;
     //  std::cerr << "interpolated mesh factor = " << interpolation << std::endl;
   
@@ -110,17 +121,26 @@ void WmFigMeshController::setTriangleIndices( std::vector< unsigned int >& i_ind
         m_tri[ i ][ 1 ] = i_indices[ 3 * i + 1 ];
         m_tri[ i ][ 2 ] = i_indices[ 3 * i + 2 ];
     }	
+    
+    // If we're in this function then the level set hasn't been built but we now
+    // have all the info we need to do so. So let's build it:
+    buildLevelSet();    
 }
 
 void WmFigMeshController::buildLevelSet()
 {   
+    if ( !m_shouldCreateLevelSet )
+    {        
+        return;
+    }
+    
     if ( m_tri.size() != m_currentMesh->nf() )
     {
         cerr << "WmFigMeshController::buildLevelSet() - triangle indices are not set, failed to build level set\n";
         return;
     }
     
-    cerr << "WmFigMeshController::buildLevelSet() - building level set ...";
+    cerr << "WmFigMeshController::buildLevelSet() - building level set ...\n";
     
     // Make sure we have space for the per vertex data
     m_x.resize( m_currentMesh->nv() );
@@ -208,13 +228,20 @@ void WmFigMeshController::calculateLevelSetSize( bridson::Vec3f &origin, Vec3ui 
     {
         dims[ i ] = ( int )ceil( length[ i ] / dx );
     }
+    
+    cerr << "WmFigMeshController::calculateLevelSetSize() - size:\n";
+    cerr << "   dx = " << dx << endl;
+    cerr << "   length = " << length[ 0 ] << " X " << length[ 1 ] << " X " << length[ 2 ] << endl;
+    cerr << "   origin = ( " << origin[ 0 ] << ", " << origin[ 1 ] << ", " << origin[ 2 ] << " )" << endl;
+    cerr << "   dims = " << dims[ 0 ] << " X " << dims[ 1 ] << " X " << dims[ 2 ] << endl;
 }
 
 void WmFigMeshController::draw()
 {    
     // Do some drawing to see if the level set code is working
     // 
-    if( m_drawLevelSet && m_phiCurrent->isInitialized() )
+    
+    if( m_shouldDrawLevelSet && m_phiCurrent->isInitialized() )
     {
         Vec3d xMin, xMax, dX;
         
