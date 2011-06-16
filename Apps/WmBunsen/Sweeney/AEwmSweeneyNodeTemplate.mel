@@ -62,6 +62,7 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
      		
       	editorTemplate -endLayout;
     
+
       	editorTemplate -beginLayout "Substepping:" -collapse 0;
         	editorTemplate -beginLayout "Solver" -collapse 0;
           		editorTemplate -addControl "maxNumSolverSubsteps";
@@ -86,7 +87,10 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
     
     editorTemplate -endLayout;
 
-
+    editorTemplate -beginLayout "Debug Drawing" -collapse 0;
+      	editorTemplate -addControl "shouldDrawVelocity";        
+    editorTemplate -endLayout;
+    
     editorTemplate -addExtraControls;
     editorTemplate -endScrollLayout;
 }

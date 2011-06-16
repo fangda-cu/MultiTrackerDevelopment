@@ -66,6 +66,8 @@ public:
     
     void drawAllRods();
     
+    void setRodsDrawVelocity( const bool i_shouldDrawVelocity );
+    
     size_t numberOfRods()
     {
         return m_rods.size();

@@ -18,6 +18,14 @@ WmSweeneyRodManager::~WmSweeneyRodManager()
     delete m_bridsonStepper;
 }
 
+void WmSweeneyRodManager::setRodsDrawVelocity( const bool i_shouldDrawVelocity )
+{
+    for ( size_t r = 0; r < m_rodRenderers.size(); ++r )
+    {
+        m_rodRenderers[ r ]->drawVelocity() = i_shouldDrawVelocity;
+    }
+}
+
 bool WmSweeneyRodManager::addRod( const std::vector< BASim::Vec3d >& i_vertices, 
                                   const double i_time,
                                   const BASim::Vec3d& i_referenceDir1,
