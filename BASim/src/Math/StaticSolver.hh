@@ -198,10 +198,13 @@ protected:
 
         bool successful_solve = true;        
 
+
         resize();
         setZero();
         m_diffEq.getScriptedDofs(m_fixed, m_desired); // m_fixed are DOF indices, m_desired are corresponding desired values
         assert(m_fixed.size() == m_desired.size());
+
+	m_diffEq.set_qdot( m_deltaX ); // used to visualize increments (as velocities), initially zero
 
 #ifndef NDEBUG // ensure indices in valid range
         for (int i = 0; i < (int) m_fixed.size(); ++i)
@@ -320,6 +323,8 @@ protected:
         m_diffEq.set_q(x0 + m_deltaX);
         m_diffEq.updateCachedQuantities();
 
+	m_diffEq.set_qdot( m_deltaX ); // used to visualize increments (as velocities)
+
         updatePositionBasedQuantities();
 
         // Update the Levenberg-Marquardt trust region size
@@ -346,7 +351,7 @@ protected:
 	    // Solver failed -- undo the changes
 	    /////////////////////////////////////////////////
 	    
-	    m_diffEq.set_q(x0);
+	    m_diffEq.set_q   ( x0       );
 	    m_diffEq.updateCachedQuantities();
         }
 
