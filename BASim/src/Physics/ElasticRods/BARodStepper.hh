@@ -311,11 +311,18 @@ private:
 
     void computeCompliantLHS(MatrixBase* lhs, int rodidx);
 
-    void exertCompliantInelasticImpulse(const CTCollision* cllsn);
-    void exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCollision& vfcol);
-    void exertCompliantInelasticEdgeEdgeImpulse(const EdgeEdgeCTCollision& eecol);
-    void exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdgeCTCollision& eecol);
-    void exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdgeCTCollision& eecol);
+    bool exertCompliantInelasticImpulse(const CTCollision* cllsn);
+    bool exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCollision& vfcol);
+    bool exertCompliantInelasticEdgeEdgeImpulse(const EdgeEdgeCTCollision& eecol);
+    bool exertCompliantInelasticEdgeEdgeImpulseOneFree(const EdgeEdgeCTCollision& eecol);
+    bool exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdgeCTCollision& eecol);
+    bool changeVelocityOneFree(const std::vector<VecXd>& posnn, const std::vector<VecXd>& posnntilde,
+            const VecXd& desired_values, int numconstraints, int rodbase, int nvdof, const CTCollision& eecol);
+    bool changeVelocityBothFree(const std::vector<VecXd>& posnn0, const std::vector<VecXd>& posnn1,
+            const std::vector<VecXd>& posnntilde0, const std::vector<VecXd>& posnntilde1, const VecXd& cval0,
+            const VecXd& cval1, int nc0, int nc1, int rod0base, int rod1base, int rod0nvdof, int rod1nvdof,
+            const EdgeEdgeCTCollision& eecol);
+
     bool checkExplosions(std::vector<bool>& exploding_rods, const std::vector<bool>& failed_collisions_rods,
             const RodSelectionType& selected_rods);
     bool hadExplosion(int rodIdx) const;

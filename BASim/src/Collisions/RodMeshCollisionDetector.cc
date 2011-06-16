@@ -6,6 +6,7 @@
  */
 
 #include "RodMeshCollisionDetector.hh"
+#include "../Util/TextLog.hh"
 
 namespace BASim
 {
@@ -27,8 +28,8 @@ RodMeshCollisionDetector::RodMeshCollisionDetector(const GeometricData& geodata,
     for (std::vector<TriangularFace>::const_iterator i = faces.begin(); i != faces.end(); i++)
         m_mesh_elements.push_back(new YATriangle(*i));
 
-  //  build_mesh_BVH();
-   // build_rod_BVH();
+    //  build_mesh_BVH();
+    // build_rod_BVH();
 }
 
 RodMeshCollisionDetector::~RodMeshCollisionDetector()
@@ -62,10 +63,14 @@ void RodMeshCollisionDetector::getCollisions(std::list<Collision*>& cllsns, Coll
     std::vector<BVHParallelizer*> steppers;
 
     BVHNode& rod_root = m_rod_bvh.GetNode(0);
+    DebugStream(g_log, "") << "Updating rods bounding box\n";
     updateBoundingBox(m_rod_bvh, m_rod_elements, rod_root);
     BVHNode& mesh_root = m_mesh_bvh.GetNode(0);
     if (update_mesh_bbox)
+    {
+        DebugStream(g_log, "") << "Updating rods bounding box\n";
         updateBoundingBox(m_mesh_bvh, m_mesh_elements, mesh_root);
+    }
 
     if (mesh_root.IsLeaf() || rod_root.IsLeaf()) // Lazy!
     {
@@ -157,7 +162,8 @@ void RodMeshCollisionDetector::computeCollisions(const BVHNode& mesh_node, const
     }
 }
 
-void RodMeshCollisionDetector::rebuildRodElements(const std::vector<std::pair<int, int> >& edges) { // TODO: something smarter
+void RodMeshCollisionDetector::rebuildRodElements(const std::vector<std::pair<int, int> >& edges)
+{ // TODO: something smarter
     m_rod_elements.clear();
 
     for (std::vector<std::pair<int, int> >::const_iterator i = edges.begin(); i != edges.end(); i++)
