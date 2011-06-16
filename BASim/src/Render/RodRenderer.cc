@@ -395,7 +395,7 @@ void RodRenderer::drawVelocityVector()
     }
 
     glEnd();
-    glEnable( GL_LIGHTING);
+    //glEnable( GL_LIGHTING);
 }
 
 void RodRenderer::drawResponseVector()

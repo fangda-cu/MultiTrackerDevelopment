@@ -121,6 +121,9 @@ public:
     static MObject ia_strandRootFrames;
     static MObject ia_verticesPerStrand;
     
+    // Debug drawing
+    static MObject ia_shouldDrawVelocity;
+    
     static MStatus addNumericAttribute( MObject& i_attribute, MString i_longName, 
                                         MString i_shortName,
                                         MFnNumericData::Type i_type, double i_defaultValue,
