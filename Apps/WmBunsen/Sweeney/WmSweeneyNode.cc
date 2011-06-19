@@ -440,6 +440,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 						Scalar torsion = 0.0;
 						if ( t > 0 )
 						{
+							// EG must this be recomputed inside the loop?
 							curvature = m_curlRadius * curl_len/curl_resolution;
 							if ( m_curlRadius != 0 )
 							{
@@ -453,7 +454,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 							}
 						}
 							m_rodManager->m_rods[i]->m_twistingForce->setUndeformedTwist( *vh, torsion );
-							m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, Vec2d( curvature, 0 ) );
+							m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, Vec2d( 0, curvature ) );
 							//m_rodManager->m_rods[i]->m_bendingForce->setKappaBar(
 							//	*vh, Vec2d(  curvature * cos( torsion * t ),
 								//		curvature * sin( torsion * t ) ) );
