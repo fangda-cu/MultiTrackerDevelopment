@@ -83,7 +83,7 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
     }
 
 
-    g_log = new TextLog(std::cerr, MsgInfo::kTrace, true);
+    g_log = new TextLog(std::cerr, MsgInfo::kInfo, true);
     InfoStream(g_log, "") << "Started logging BAGroomingStepper\n";
 
 
@@ -272,11 +272,19 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
 
     // Only the rods in the keep_only set are kept, the others are killed.
     for (int i = 0; i < m_number_of_rods; i++)
-    if (keep_only.find(i) == keep_only.end())
-    for (int j = 0; j < m_rods[i]->nv(); j++)
-    m_rods[i]->setVertex(j, 0 * m_rods[i]->getVertex(j));
-    else
-    m_simulated_rods.push_back(i);
+    {
+	if (keep_only.find(i) == keep_only.end())
+	{
+	    for (int j = 0; j < m_rods[i]->nv(); j++)
+	    {
+		m_rods[i]->setVertex(j, 0 * m_rods[i]->getVertex(j));
+	    }
+	}
+	else
+	{
+	    m_simulated_rods.push_back(i);
+	}
+    }
 #else
     // Initially all rods passed from Maya will be simulated
     for (int i = 0; i < m_number_of_rods; i++)
@@ -490,17 +498,9 @@ void BAGroomingStepper::step(RodSelectionType& selected_rods)
 
     STOP_TIMER("BAGroomingStepper::step/setup");
 
-    START_TIMER("BAGroomingStepper::step/penalty");
-
-    // Jungseock's implicit penalty
-    std::list<Collision*> penalty_collisions;
-    // The penalty collisions list is used to create penalty forces. All that is deleted and cleared at the end of this step.
-    if (m_perf_param.m_enable_penalty_response)
-        setupPenaltyForces(penalty_collisions, selected_rods);
-
-    STOP_TIMER("BAGroomingStepper::step/penalty");
-
     START_TIMER("BAGroomingStepper::step/steppers");
+
+    TraceStream(g_log, "BAGroomingStepper") << "Stepping forward " << selected_steppers.size() << " rod(s).\n";
 
     bool dependable_solve = true;
 #ifdef HAVE_OPENMP
@@ -518,19 +518,6 @@ void BAGroomingStepper::step(RodSelectionType& selected_rods)
 
     STOP_TIMER("BAGroomingStepper::step/steppers");
 
-
-    // START_TIMER("BAGroomingStepper::step/penalty");
-
-    // // Clean up penalty collisions list
-    // for (std::list<Collision*>::iterator i = penalty_collisions.begin(); i != penalty_collisions.end(); i++)
-    //     delete *i;
-    // penalty_collisions.clear();
-    // // Clear existing penalties
-    // for (std::vector<RodPenaltyForce*>::const_iterator penalty_force = m_implicit_pnlty_forces.begin(); penalty_force
-    //         != m_implicit_pnlty_forces.end(); penalty_force++)
-    //     (*penalty_force)->clearProximityCollisions();
-
-    // STOP_TIMER("BAGroomingStepper::step/penalty");
 
     STOP_TIMER("BAGroomingStepper::step");
 }
