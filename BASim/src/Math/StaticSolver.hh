@@ -33,7 +33,7 @@ class StaticSolver: public DiffEqSolver
 public:
 
     explicit StaticSolver(ODE& ode) :
-        m_diffEq(ode), m_ndof(-1), x0(), m_rhs(), m_deltaX(),
+        m_diffEq(ode), m_ndof(-1), m_x0(), m_rhs(), m_deltaX(),
                 m_fixed(), m_desired(), m_l2norm(0), m_energy(0), m_A(NULL), m_solver(NULL)
     {
         m_A = m_diffEq.createMatrix();
@@ -68,24 +68,26 @@ public:
 
     bool execute()
     {
-        START_TIMER("Staticsolver::execute");
-	START_TIMER("Staticsolver::execute/backup");
-        m_diffEq.backupResize();
-        m_diffEq.backup();
-        STOP_TIMER("Staticsolver::execute/backup");
-        if (position_solve())
-        {
-            START_TIMER("Staticsolver::execute/backup");
-            m_diffEq.backupClear();
-            STOP_TIMER("Staticsolver::execute/backup");
-	    STOP_TIMER("Staticsolver::execute");
-            return true;
-        }
-	else 
-	{          
-	  STOP_TIMER("Staticsolver::execute");
-	  return false;
-	}
+	position_solve();
+	return true;
+        // START_TIMER("Staticsolver::execute");
+	// START_TIMER("Staticsolver::execute/backup");
+        // m_diffEq.backupResize();
+        // m_diffEq.backup();
+        // STOP_TIMER("Staticsolver::execute/backup");
+        // if (position_solve())
+        // {
+        //     START_TIMER("Staticsolver::execute/backup");
+        //     m_diffEq.backupClear();
+        //     STOP_TIMER("Staticsolver::execute/backup");
+	//     STOP_TIMER("Staticsolver::execute");
+        //     return true;
+        // }
+	// else 
+	// {          
+	//   STOP_TIMER("Staticsolver::execute");
+	//   return false;
+	// }
     }
 
     std::string getName() const
@@ -96,9 +98,9 @@ public:
     void resize()
     {
         m_ndof = m_diffEq.ndof();
-        if (x0.size() != m_ndof)
+        if (m_x0.size() != m_ndof)
         {
-            x0.resize(m_ndof);
+            m_x0.resize(m_ndof);
             m_rhs.resize(m_ndof);
             m_deltaX.resize(m_ndof);
         }
@@ -116,7 +118,7 @@ public:
 
     void setZero()
     {
-        x0.setZero();
+        m_x0.setZero();
         m_rhs.setZero();
         m_deltaX.setZero();
         m_A->setZero();
@@ -189,9 +191,62 @@ protected:
     }
 
 
+    bool examine_solution()
+    {
+        bool keepSolution = false;
+
+	// Evaluate residual for attempted increment
+        //////////////////////////////////////////////
+
+        // Update the differential equation with the current guess
+        m_diffEq.set_q(m_x0 + m_deltaX);
+
+        updatePositionBasedQuantities();
+
+        // Update the Levenberg-Marquardt trust region size
+        /////////////////////////////////////////////////////////////
+
+        if (isConverged())
+	{
+	    // Leave lambda alone
+
+	    TraceStream(g_log, "StaticSolver::position_solve") << "prev / new energy = " << m_initEnergy << " / " << m_energy << "; new residual = " << m_l2norm << "; retaining step; converged! keeping same lambda = " << m_lambda << "\n";
+	    keepSolution = true;
+	}
+        else if (m_energy < m_initEnergy) 
+        {
+	    // Decrease lambda (= increase trust region size = decrease regularization)
+	    m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_geardown, m_lambdamax );
+            TraceStream(g_log, "StaticSolver::position_solve") << "prev / new energy = " << m_initEnergy << " / " << m_energy << "; new residual = " << m_l2norm << "; retaining step; growing trust region: new lambda = " << m_lambda << "\n";
+	    keepSolution = true;
+        }
+        else
+        {	    
+	    // Solver failed
+	    /////////////////////////////////////////////////	    
+
+	    TraceStream(g_log, "StaticSolver::position_solve") << "prev / new energy = " << m_initEnergy << " / " << m_energy << "; new residual = " << m_l2norm << "; discarding step \n";
+        }
+
+
+#ifndef NDEBUG      // Ensure that fixed DOFs are at their desired values
+	VecXd xf(m_ndof);
+        m_diffEq.getX(xf);
+        for (int i = 0; i < (int) m_fixed.size(); ++i)
+	{
+            assert(approxEq(m_desired[i], xf(m_fixed[i]), 1.0e-6));
+	}
+#endif
+
+	return keepSolution;
+    }
+
+
     bool position_solve()
     {
         START_TIMER("StaticSolver::newton_step/setup");
+
+	TraceStream(g_log, "StaticSolver::position_solve") << "call #" << ++static_solve_counter << "\n";
 
         // Chapter 0: Basic housekeeping
         ////////////////////////////////////////////////////
@@ -220,7 +275,7 @@ protected:
         // m_deltaX is the difference between end of step and start of step positions
 
         // Copy start of step positions
-        m_diffEq.getX(x0);
+        m_diffEq.getX(m_x0);
 	  
 	// Zero the initial guess
         m_deltaX.setZero();
@@ -229,7 +284,7 @@ protected:
         for (int i = 0; i < (int) m_fixed.size(); ++i)
         {
             int dof = m_fixed[i];
-            m_rhs(dof) = m_desired[i] - x0(dof); // set desired position
+            m_rhs(dof) = m_desired[i] - m_x0(dof); // set desired position
         }
 
         // Based on the initial guess, 
@@ -238,11 +293,8 @@ protected:
         //   3) compute the residual
 	updatePositionBasedQuantities();
 
-	// save the initial residual
-        Scalar initl2norm = m_l2norm;
-
-	Scalar initEnergy = m_energy;
-	Scalar initLambda = m_lambda;
+	// save the initial energy
+        m_initEnergy = m_energy;
 
         STOP_TIMER("StaticSolver::position_solve/setup");
 
@@ -251,7 +303,7 @@ protected:
         // Chapter 2: Iterate using Newton's Method
         ////////////////////////////////////////////////////
 
-	TraceStream(g_log, "StaticSolver::position_solve") << "call #" << ++static_solve_counter << " initial energy = " << initEnergy << " lambda = " << m_lambda << "\n";
+	TraceStream(g_log, "StaticSolver::position_solve") << "Initial energy = " << m_initEnergy << " lambda = " << m_lambda << "\n";
 
         // TODO: Assert m_A, increment are zero
  
@@ -301,6 +353,12 @@ protected:
         START_TIMER("StaticSolver::position_solve/solver");
         int status = m_solver->solve(m_deltaX, m_rhs);
         STOP_TIMER("StaticSolver::position_solve/solver");
+
+	START_TIMER("Staticsolver::position_solve/setup");
+	// Allow the nonzero structure to be modified again (for sparse matrices only)
+	m_A->resetNonzeros();
+	STOP_TIMER("Staticsolver::position_solve/setup");
+
         if (status < 0)
         {
 	    // shrink trust region (increase regularization)
@@ -309,78 +367,136 @@ protected:
             DebugStream(g_log, "StaticSolver::position_solve") << "\033[31;1mWARNING IN StaticSolver:\033[m Problem during linear solve detected. "
 				   << " new lambda = " << m_lambda << "\n";
 
-	    m_diffEq.set_q(x0);
+	    m_diffEq.set_q(m_x0);
 	    m_diffEq.updateCachedQuantities();
 	    
             return false;
         }
 
 
-	// Evaluate residual for attempted increment
-        //////////////////////////////////////////////
-
-        // Update the differential equation with the current guess
-        m_diffEq.set_q(x0 + m_deltaX);
-        m_diffEq.updateCachedQuantities();
-
+	// visualize pre-filtering velocities
 	m_diffEq.set_qdot( m_deltaX ); // used to visualize increments (as velocities)
 
-        updatePositionBasedQuantities();
+	bool done = examine_solution();
 
-        // Update the Levenberg-Marquardt trust region size
-        /////////////////////////////////////////////////////////////
-
-        if (isConverged())
+	if (!done)
 	{
-	    // Leave lambda alone
+	    TraceStream(g_log, "StaticSolver::position_solve") << "filtering delta_X and trying again...\n";
 
-	    TraceStream(g_log, "StaticSolver::position_solve") << "new energy = " << m_energy << "; new residual = " << m_l2norm << "; retaining step; converged! new lambda = " << m_lambda << "\n";
+	    filterDeltaX();
+
+	    // visualize post-filtering velocities
+	    m_diffEq.set_qdot( m_deltaX ); // used to visualize increments (as velocities)
+
+	    done = examine_solution();
+
+	    if (!done)
+	    {
+		// Increase lambda (= decrease trust region size = increase regularization)
+		m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup, m_lambdamax );
+		TraceStream(g_log, "StaticSolver::position_solve") << "shrinking trust region: new lambda = " << m_lambda << "\n";
+
+		m_diffEq.set_q   ( m_x0       );
+		m_diffEq.updateCachedQuantities();
+	    }
 	}
-        else if (m_energy < initEnergy) // || m_l2norm < initl2norm)
-        {
-	    // Decrease lambda (= increase trust region size = decrease regularization)
-	    m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_geardown, m_lambdamax );
-            TraceStream(g_log, "StaticSolver::position_solve") << "new energy = " << m_energy << "; new residual = " << m_l2norm << "; retaining step; new lambda = " << m_lambda << "\n";
-        }
-        else
-        {
-	    // Increase lambda (= decrease trust region size = increase regularization)
-	    m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup, m_lambdamax );
-	    TraceStream(g_log, "StaticSolver::position_solve") << "new energy " << m_energy << "; new residual = " << m_l2norm << "; discarding step; new lambda = " << m_lambda << "\n";
-	    
-	    // Solver failed -- undo the changes
-	    /////////////////////////////////////////////////
-	    
-	    m_diffEq.set_q   ( x0       );
-	    m_diffEq.updateCachedQuantities();
-        }
-
-	START_TIMER("Staticsolver::position_solve/setup");
-
-	// Allow the nonzero structure to be modified again (for sparse matrices only)
-	m_A->resetNonzeros();
-
-	STOP_TIMER("Staticsolver::position_solve/setup");
-
-
-#ifndef NDEBUG      // Ensure that fixed DOFs are at their desired values
-        if (successful_solve)
-        {
-            VecXd xf(m_ndof);
-            m_diffEq.getX(xf);
-            for (int i = 0; i < (int) m_fixed.size(); ++i)
-                assert(approxEq(m_desired[i], xf(m_fixed[i]), 1.0e-6));
-        }
-#endif
 
         return true;
     }
+
+
+  void filterDeltaX() // this code assumes HAIR: the first two vertices are prescribed, the rest are free
+  { 
+
+    // ////////////////////// EG: I'm not sure that this code helps, so let's skip the strain rate filter until it's better evaluated ///////////////
+    // WarningStream(g_log, "SymmetricImplicitEuler::filterDeltaX/skipped", MsgInfo::kOncePerId) << "WARNING: Skipping the strain rate limiting in Newton solver line search!\n";
+    // return;
+    // return;
+    // return;
+    // ////////////////////// EG: I'm not sure that this code helps, so let's skip the strain rate filter until it's better evaluated ///////////////
+
+
+    // using l_ to denote local variables, to avoid confusion with similarly-named member variables m_
+
+    TraceStream(g_log, "StaticSolver::filterDeltaX") << "before filtering: " << m_deltaX << "\n";
+
+    assert(m_diffEq.getRod());
+    ElasticRod &r = *m_diffEq.getRod();
+
+    int   ia  = r.vertIdx(1,0);
+    Vec3d xaP = m_x0.segment<3>     (ia);  // start-of-step position of second vertex
+    Vec3d xaD = m_deltaX.segment<3> (ia);
+    Vec3d xaN = xaP + xaD;                 // end-of-step position of second vertex
+
+    Vec3d disp(0,0,0);
+    
+    for (int i = 2; i < r.nv(); ++i)
+    {
+      int   ib  = r.vertIdx(i,0);
+      Vec3d xbP = m_x0.segment<3>     (ib);
+      Vec3d xbD = m_deltaX.segment<3> (ib) + disp;
+      Vec3d xbN = xbP + xbD;                 
+
+      double lP = (xbP - xaP).norm();
+      double lN = (xbN - xaN).norm();
+
+      double lNrev = lN;
+
+      double maxStrainRate = 0.001;
+
+      lNrev = lP;
+
+      // if (lNrev > (1. + maxStrainRate) * lP) 
+      // {
+      // 	lNrev = (1. + maxStrainRate) * lP;
+      // }
+      // else if (lNrev < (1. - maxStrainRate) * lP) 
+      // {
+      // 	lNrev = (1. - maxStrainRate) * lP;
+      // }
+
+      // compute and store revised delta
+      Vec3d xbNrev = xaN + (xbN - xaN) * lNrev / lN;
+      Vec3d xbDrev = xbNrev - xbP;
+      m_deltaX.segment<3> (ib) = xbDrev;
+
+      disp += xbNrev - xbN;
+
+      //double lNrevised = (x1Nrevised - x0N).norm();
+
+      //Vec3d v1revised = (x1Nrevised - x1) / m_dt;
+
+      ia  = ib;
+      xaP = xbP;
+      xaN = xbNrev;
+    }
+
+    TraceStream(g_log, "StaticSolver::filterDeltaX") << "after filtering: " << m_deltaX << "\n";
+
+    // TraceStream(g_log, "") << "Edge lengths after inextensibility: ";
+    // for (int i = 0; i < m_rods[rodidx]->nv() - 1; ++i)
+    // {
+    //     Vec3d x0 = m_xn.segment<3> (rodbase + 3 * i);
+    //     Vec3d v0 = m_vnphalf.segment<3> (rodbase + 3 * i);
+    //     Vec3d x1 = m_xn.segment<3> (rodbase + 3 * i + 3);
+    //     Vec3d v1 = m_vnphalf.segment<3> (rodbase + 3 * i + 3);
+    //  Vec3d x0N = x0 + m_dt * v0;
+    //  Vec3d x1N = x1 + m_dt * v1;
+    //  Vec3d eN = (x1N - x0N);
+    //  TraceStream(g_log, "") << " " << eN.norm();
+    // }
+    // TraceStream(g_log, "") << '\n';
+
+    // DebugStream(g_log, "") << "Velocity Filter end: rod " << rodidx << " vertex 0 = " << m_xn.segment<3>(rodbase) << '\n';
+  }
+
+
 
     ODE& m_diffEq;
 
     int m_ndof;
 
-    VecXd x0;
+    VecXd m_x0;
     VecXd m_rhs;
     VecXd m_deltaX;
 
@@ -396,6 +512,8 @@ protected:
 
     Scalar m_energy; // EG: move to DiffEqSolver
     Scalar m_l2norm;
+
+    Scalar m_initEnergy;
 };
 
 } // namespace BASim
