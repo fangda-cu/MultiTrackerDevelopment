@@ -277,9 +277,10 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 						}
 	                }
 
-					updateCollisionMeshes( i_dataBlock );
-					m_rodManager->takeStep();
 				 }
+				 updateCollisionMeshes( i_dataBlock );
+				 m_rodManager->takeStep();
+
 
 				 double atol = powf(10, -i_dataBlock.inputValue( ia_atol).asDouble());
 			 	 double stol = powf(10, -i_dataBlock.inputValue( ia_stol).asDouble());
