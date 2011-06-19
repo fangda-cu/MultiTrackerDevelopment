@@ -243,34 +243,29 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 					for ( ElasticRod::vertex_iter vh = m_rodManager->m_rods[i]->vertices_begin();
 	                          vh != m_rodManager->m_rods[i]->vertices_end(); ++vh )
 	                {
-	                    assert( m_rodManager->m_rods[i]->m_bendingForce != NULL );
 
 						// curl curvature and torsion
 
-						Scalar curvature = 0.0;
-						Scalar torsion = 0.0;
-						if ( t > 0 )
-						{
-							// EG must this be recomputed inside the loop?
-							curvature = m_curlRadius * curl_len/curl_resolution;
-							if ( m_curlRadius != 0 )
-							{
-								curvature /= ( m_curlRadius*m_curlRadius + m_curlPitch*m_curlPitch ) ;
-							}
+	                    assert( m_rodManager->m_rods[i]->m_bendingForce != NULL );
 
-							torsion = m_curlPitch * curl_len/curl_resolution;
-							if ( m_curlPitch != 0 )
-							{
-								torsion /= ( m_curlRadius*m_curlRadius + m_curlPitch*m_curlPitch ) ;
-							}
-						}
-							m_rodManager->m_rods[i]->m_twistingForce->setUndeformedTwist( *vh, torsion );
-							m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, Vec2d( 0, curvature ) );
-							//m_rodManager->m_rods[i]->m_bendingForce->setKappaBar(
-							//	*vh, Vec2d(  curvature * cos( torsion * t ),
-								//		curvature * sin( torsion * t ) ) );
+	                    // curl curvature and torsion
 
-							//cout << "WmSweeneyNode::compute::simulate: idx = " << vh->idx() << " parametric var = " << t << " curvature " <<  m_rodManager->m_rods[i]->m_bendingForce->getKappaBar( *vh ) << " bending stiffness " <<  m_rodManager->m_rods[i]->m_bendingForce->getB( *vh ) << " vertex mass " << m_rodManager->m_rods[i]->getVertexMass( vh->idx() ) << endl;
+	                    Scalar curvature = 0.0;
+	                    Scalar torsion = 0.0;
+
+	                    if ( t > 0 )
+	                    {
+	                    	curvature = m_curlRadius * curl_len/curl_resolution;
+	                    	torsion = m_curlPitch * M_PI * curl_len/curl_resolution;
+	                    }
+
+	                    m_rodManager->m_rods[i]->m_twistingForce->setUndeformedTwist( *vh, torsion );
+	                    m_rodManager->m_rods[i]->m_bendingForce->setKappaBar( *vh, Vec2d( curvature, 0 ) );
+	                    //m_rodManager->m_rods[i]->m_bendingForce->setKappaBar(
+						//	*vh, Vec2d(  curvature * cos( torsion * t ),
+						//		curvature * sin( torsion * t ) ) );
+
+						//cout << "WmSweeneyNode::compute::simulate: idx = " << vh->idx() << " parametric var = " << t << " curvature " <<  m_rodManager->m_rods[i]->m_bendingForce->getKappaBar( *vh ) << " bending stiffness " <<  m_rodManager->m_rods[i]->m_bendingForce->getB( *vh ) << " vertex mass " << m_rodManager->m_rods[i]->getVertexMass( vh->idx() ) << endl;
 
 						if ( vh->idx() >= m_curlStart*(m_verticesPerRod)  && vh != m_rodManager->m_rods[i]->vertices_end() )
 						{
@@ -419,15 +414,26 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
                                 - m_strandVertices[ currentVertexIndex ];
         direction.normalize();
 
-		BASim::Vec3d m1 = Vec3d(  m_strandRootFrames[ 3*inputStrandNumber ].x,
-				m_strandRootFrames[ 3*inputStrandNumber ].y,
-				m_strandRootFrames[ 3*inputStrandNumber ].z  );
+        constructRodVertices( vertices, direction, m_strandVertices[ currentVertexIndex ] );
 
-		m1.normalize();
+        cout << "initialiseRodFromBarberShopInput() - check for root frames for " << inputStrandNumber << endl;
 
-		constructRodVertices( vertices, direction, m_strandVertices[ currentVertexIndex ] );
+        if ( m_strandRootFrames.length() != 0 )
+        {
 
-		m_rodManager->addRod( vertices, m_startTime, m1 );
+        	BASim::Vec3d m1 = Vec3d(  m_strandRootFrames[ 3*inputStrandNumber ].x,
+       				m_strandRootFrames[ 3*inputStrandNumber ].y,
+       				m_strandRootFrames[ 3*inputStrandNumber ].z  );
+
+        	m1.normalize();
+
+        	m_rodManager->addRod( vertices, m_startTime, m1 );
+
+        }
+        else
+        {
+        	m_rodManager->addRod( vertices, m_startTime );
+        }
 
 		cerr << "Creating rod at time " << m_startTime << endl;
 
@@ -762,8 +768,8 @@ void* WmSweeneyNode::creator()
         CHECK_MSTATUS( status );
         CHECK_MSTATUS( numericAttr.setReadable( true ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
-        CHECK_MSTATUS( numericAttr.setMin( 0.0 ) );
-        CHECK_MSTATUS( numericAttr.setMax( 1.0 ) );
+        CHECK_MSTATUS( numericAttr.setMin( -2.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 2.0 ) );
         status = addAttribute( ia_curlRadius );
         CHECK_MSTATUS( status );
 
@@ -778,7 +784,7 @@ void* WmSweeneyNode::creator()
         CHECK_MSTATUS( numericAttr.setReadable( true ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
         CHECK_MSTATUS( numericAttr.setMin( 0.0 ) );
-        CHECK_MSTATUS( numericAttr.setMax( 1.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 5.0 ) );
         status = addAttribute( ia_curlPitch );
         CHECK_MSTATUS( status );
 
