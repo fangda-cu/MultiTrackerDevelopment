@@ -112,7 +112,7 @@ void CollisionDetectorBase::updateBoundingBox(BVH& bvh, const std::vector<const 
                 bbox.Insert(elements[i]->GetBBox(m_geodata, m_time_step));
             }
         }
-        if (bbox.Volume() > 2000)
+        if (bbox.Volume() > 1e5)
         {
             WarningStream(g_log, "") << "LARGE BOUNDING BOX RESET TO ZERO (volume = " << bbox.Volume() << ")\n";
             DebugStream(g_log, "") << "Bounding box coordinates are: " << bbox.min << " " << bbox.max << '\n';

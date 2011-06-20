@@ -16,6 +16,7 @@
 
 #include <iostream>
 #include <fstream>
+#include "../../Eigen/Eigenvalues"
 
 #ifdef HAVE_OPENMP
 #include <omp.h>
@@ -673,9 +674,8 @@ void BARodStepper::step_setup(const RodSelectionType& selected_rods)
 #ifndef NDEBUG
     for (int i = 0; i < (int) m_number_of_rods; ++i)
         ensureNoCollisionsByDefault(*m_rods[i]);
-#endif
+
     // Sanity check to ensure different parts of sim have same time/timetep
-#ifndef NDEBUG
     for (int i = 0; i < (int) m_scripting_controllers.size(); ++i)
         assert(m_scripting_controllers[i]->getTime() == m_t);
     for (int i = 0; i < (int) m_scripting_controllers.size(); ++i)
@@ -687,20 +687,15 @@ void BARodStepper::step_setup(const RodSelectionType& selected_rods)
 #endif
 
     START_TIMER("BARodStepper::step/explo");
-
     if (m_perf_param.m_enable_explosion_detection)
     {
         TraceStream(g_log, "") << "BARodStepper::step: computing start forces" << '\n';
         computeForces(m_startForces, selected_rods);
-    }
-
-    STOP_TIMER("BARodStepper::step/explo");
+    }STOP_TIMER("BARodStepper::step/explo");
 
     START_TIMER("BARodStepper::step/setup");
-
     // Save the pre-timestep positions
     extractPositions(m_xn, selected_rods, m_t - m_dt);
-
     STOP_TIMER("BARodStepper::step/setup");
 
     START_TIMER("BARodStepper::step/immune");
@@ -710,22 +705,18 @@ void BARodStepper::step_setup(const RodSelectionType& selected_rods)
 
     // Step rods forward ignoring collisions
     START_TIMER("BARodStepper::step/scripting");
-
     // Step scripted objects forward, set boundary conditions
     for (std::vector<ScriptingController*>::const_iterator scripting_controller = m_scripting_controllers.begin(); scripting_controller
             != m_scripting_controllers.end(); scripting_controller++)
         (*scripting_controller)->execute();
-
     STOP_TIMER("BARodStepper::step/scripting");
 
     START_TIMER("BARodStepper::step/penalty");
-
     // Jungseock's implicit penalty
     assert(m_penalty_collisions.empty());
     // The penalty collisions list is used to create penalty forces. All that is deleted and cleared at the end of this step.
     if (m_perf_param.m_enable_penalty_response)
         setupPenaltyForces(m_penalty_collisions, selected_rods);
-
     STOP_TIMER("BARodStepper::step/penalty");
 
     if (m_perf_param.m_enable_explosion_detection)
@@ -742,16 +733,14 @@ void BARodStepper::step_dynamic(const RodSelectionType& selected_rods)
     bool dependable_solve = true;
 
     START_TIMER("BARodStepper::step/setup");
-
     // Prepare list of steppers to be executed.
     std::vector<RodTimeStepper*> selected_steppers;
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
         selected_steppers.push_back(m_steppers[*rod]);
-
     STOP_TIMER("BARodStepper::step/setup");
 
 #ifdef HAVE_OPENMP
-#pragma omp parallel for
+    //#pragma omp parallel for
 #endif
     for (int i = 0; i < selected_steppers.size(); i++)
     {
@@ -779,21 +768,23 @@ void BARodStepper::step_dynamic(const RodSelectionType& selected_rods)
         return;
     }
 
-    START_TIMER("BARodStepper::step/setup");
+    START_TIMER("BARodStepper::step/immune");
+    // Mark invalid rods as entirely collision-immune, so we don't waste time on colliding them.
+    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
+        if (!m_steppers[*rod]->HasSolved())
+            setRodImmunity(*rod, true);
+    STOP_TIMER("BARodStepper::step/immune");
 
+    START_TIMER("BARodStepper::step/setup");
     // Post time step position
     extractPositions(m_xnp1, selected_rods, m_t);
-
     // Average velocity over the timestep just completed
     m_vnphalf = (m_xnp1 - m_xn) / m_dt;
-
     STOP_TIMER("BARodStepper::step/setup");
 
     START_TIMER("BARodStepper::step/inexten");
-
     for (int i = 0; i < selected_steppers.size(); i++)
         applyInextensibilityVelocityFilter(selected_steppers[i]->getRod()->globalRodIndex);
-
     STOP_TIMER("BARodStepper::step/inexten");
 }
 
@@ -801,19 +792,6 @@ void BARodStepper::step_collision(const RodSelectionType& selected_rods)
 {
     for (int i = 0; i < m_number_of_rods; i++)
         failed_collisions_rods[i] = stretching_rods[i] = false;
-
-    START_TIMER("BARodStepper::step/immune");
-
-    // Mark invalid rods as entirely collision-immune, so we don't waste time on colliding them.
-    for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-        if (!m_steppers[*rod]->HasSolved())
-        {
-            // std::cerr << "Rod number " << *rod << " failed to solve\n";
-            for (int j = 0; j < m_rods[*rod]->nv(); ++j)
-                m_collision_immune[m_base_vtx_indices[*rod] + j] = true;
-        }
-
-    STOP_TIMER("BARodStepper::step/immune");
 
     START_TIMER("BARodStepper::step/response");
     DebugStream(g_log, "") << "Starting collision response\n";
@@ -825,15 +803,10 @@ void BARodStepper::step_collision(const RodSelectionType& selected_rods)
     }
 
     if (m_perf_param.m_collision.m_max_iterations > 0)
-    {
         if (!executeIterativeInelasticImpulseResponse(failed_collisions_rods, stretching_rods))
-        {
             TraceStream(g_log, "") << "Some collision responses failed!\n";
-            //all_collisions_succeeded = false;
-        }
-    }
-    TraceStream(g_log, "") << "Finished collision response\n";
 
+    TraceStream(g_log, "") << "Finished collision response\n";
     STOP_TIMER("BARodStepper::step/response");
 
     START_TIMER("BARodStepper::step/setup");
@@ -1180,29 +1153,27 @@ void BARodStepper::setNumInelasticIterations(const int& num_itr)
 
 void BARodStepper::computeImmunity(const RodSelectionType& selected_rods)
 {
-    // Initially, the rods not treated in this step are collision-immune
+    // Initially, the rods are all collision-immune
     for (std::vector<bool>::iterator i = m_collision_immune.begin(); i != m_collision_immune.begin() + m_obj_start; i++)
         *i = true;
+    // Except for the ones in the selected rods list
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
-        if (m_collision_disabled_rods.find(*rod) == m_collision_disabled_rods.end()) // If the rod is not in the disabled set
-            for (int j = 0; j < m_rods[*rod]->nv(); ++j)
-                m_collision_immune[m_base_vtx_indices[*rod] + j] = false;
+        // Unless they are in the collision disabled set
+        if (m_collision_disabled_rods.find(*rod) == m_collision_disabled_rods.end())
+            setRodImmunity(*rod, false);
 
-    // return; // Disabling intersection-based immunity
-
-    // Find the initial vertex-face intersections and mark them collision-immune
+    // On the top of that, find the initial vertex-face intersections and mark them collision-immune
     std::list<Collision*> collisions;
     m_collision_detector->getCollisions(collisions, EdgeFace);
     while (!collisions.empty())
     {
         EdgeFaceIntersection* intersection = dynamic_cast<EdgeFaceIntersection*> (collisions.front());
-        collisions.pop_front();
+        assert(intersection != NULL);
 
-        if (intersection)
-        {
-            m_collision_immune[intersection->v0] = true;
-            // std::cerr << "BARodStepper::step: Vertex " << intersection->v0 << " has been marked collision-immune\n";
-        }
+        m_collision_immune[intersection->v0] = true;
+
+        collisions.pop_front();
+        delete intersection;
     }
 }
 
@@ -1335,6 +1306,12 @@ void BARodStepper::ensureNoCollisionsByDefault(const ElasticRod& rod) const
     }
 }
 
+void BARodStepper::setRodImmunity(const int rodIdx, const bool immune)
+{
+    for (int j = 0; j < m_rods[rodIdx]->nv(); ++j)
+        m_collision_immune[m_base_vtx_indices[rodIdx] + j] = immune;
+}
+
 void BARodStepper::killTheRod(int rod) // TODO: remove the rod properly in Maya
 {
     m_killed_rods.push_back(rod);
@@ -1453,7 +1430,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
 {
     bool all_rods_collisions_ok = true;
 
-    // Check whether the solver left some rods stretched
+    // As a safeguard, check whether the solver left some rods stretched, in which case they will be declared collision-immune
     checkLengths(stretching_rods);
 
     // Detect continuous time collisions
@@ -1729,51 +1706,8 @@ void BARodStepper::exertInelasticImpulse(VertexFaceCTCollision& vfcol)
 /**
  * Compliant inelastic response
  */
-static const double SMALL_DETERMINANT = 1e-6;
-static const double MATRIX_ASYMMETRY = 1e-6;
-static const double NORMAL_SCALING = 1000.0;
-
-void BARodStepper::computeCompliantLHS(MatrixBase* lhs, int rodidx)
-{
-    assert(lhs != NULL);
-    assert(rodidx >= 0);
-    assert(rodidx < m_number_of_rods);
-
-    //double emphasizeStaticEquilibium = 0;
-    //InfoStream(g_log,"") << "BARodStepper::computeCompliantLHS: emphasizing static equilibrium = " << emphasizeStaticEquilibium;
-
-    // lhs = -h^2*dF/dx
-    lhs->setZero();
-    //TraceStream(g_log, "") << "WARNING: COMPLIANCE is disabled!" << '\n';
-    //m_rods[rodidx]->computeJacobian(0, -m_dt * m_dt - emphasizeStaticEquilibium, *lhs);
-    m_rods[rodidx]->computeJacobian(0, -m_dt * m_dt, *lhs);
-    lhs->finalize();
-
-    // lhs = M - h^2*dF/dx
-    for (int i = 0; i < m_rods[rodidx]->ndof(); ++i)
-        lhs->add(i, i, m_rods[rodidx]->getMass(i));
-    lhs->finalize();
-
-    assert(lhs->isApproxSymmetric(MATRIX_ASYMMETRY));
-
-    // Set rows/cols of twist DOFs to identity
-    // TODO: Handle this better
-    EPropHandle<int> edgeIdx;
-    m_rods[rodidx]->property_handle(edgeIdx, "edge index");
-    std::vector<int> dofs_to_clear;
-    for (ElasticRod::edge_iter eit = m_rods[rodidx]->edges_begin(); eit != m_rods[rodidx]->edges_end(); ++eit)
-    {
-        int twist_dof = m_rods[rodidx]->property(edgeIdx)[*eit];
-        dofs_to_clear.push_back(twist_dof);
-    }
-
-    lhs->zeroRows(dofs_to_clear, 1.0);
-    lhs->finalize();
-    lhs->zeroCols(dofs_to_clear, 1.0);
-    lhs->finalize();
-
-    assert(lhs->isApproxSymmetric(1.0e-6));
-}
+static const double NORMAL_SCALING = 1.0;
+static const double MATRIX_ASYMMETRY = 1.0e-8 * NORMAL_SCALING;
 
 bool BARodStepper::exertCompliantInelasticImpulse(const CTCollision* cllsn)
 {
@@ -1796,6 +1730,23 @@ bool BARodStepper::exertCompliantInelasticImpulse(const CTCollision* cllsn)
     //TraceStream(g_log, "") << "BARodStepper:exertCompliantInelasticImpulse: post-impulse e-e relative velocity = " << cllsn->GetRelativeVelocity() << '\n';
 }
 
+bool BARodStepper::exertCompliantInelasticEdgeEdgeImpulse(const EdgeEdgeCTCollision& eecol)
+{
+    //   TraceStream(g_log, "") << "Edge-edge compliant inelastic impulse" << '\n';
+    //   TraceStream(g_log, "") << eecol << '\n';
+
+    // Determine if either edge is totally fixed
+    bool rod0fixed = YAEdge(eecol.e0_v0, eecol.e0_v1).IsFixed(m_geodata);
+    bool rod1fixed = YAEdge(eecol.e1_v0, eecol.e1_v1).IsFixed(m_geodata);
+
+    if (rod0fixed && rod1fixed) // Skip collisions in which both edges are fixed
+        return true;
+    else if (!rod0fixed && !rod1fixed)
+        return exertCompliantInelasticEdgeEdgeImpulseBothFree(eecol);
+    else
+        return exertCompliantInelasticEdgeEdgeImpulseOneFree(eecol);
+}
+
 bool BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCollision& vfcol)
 {
     assert(vfcol.isAnalysed());
@@ -1811,11 +1762,13 @@ bool BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
     assert(rodidx >= 0);
     assert(rodidx < (int) m_number_of_rods);
 
+    ElasticRod* const colliding_rod = m_rods[rodidx];
+
     // If the rod has not solved properly, no need to compute its collision response
     if (!m_steppers[rodidx]->HasSolved())
-    {// NB: this is redundant because we declared the rod collision-immune already.
+    {
         DebugStream(g_log, "") << "WARNING: attempt to do vertex-face collision with non-dependable rod\n";
-        return;
+        return false;
     }
 
     // Determine which vertex of the rod the free vertex is
@@ -1823,28 +1776,28 @@ bool BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
     assert(rodbase % 3 == 0);
     int v0 = vfcol.v0 - rodbase / 3;
     assert(v0 >= 0);
-    assert(v0 < m_rods[rodidx]->nv());
+    assert(v0 < colliding_rod->nv());
 
-    TraceStream(g_log, "") << "CTcollision: vertex " << v0 << " of rod " << rodidx << '\n';
+    DebugStream(g_log, "") << "CTcollision: vertex " << v0 << " of rod " << rodidx << '\n';
 
     // Compute the relative velocity of the collision
     assert(vfcol.computeRelativeVelocity() < 0.0);
 
     // Get storage for lhs of linear system, get a solver
-    LinearSystemSolver* lss = m_solver_collection.getLinearSystemSolver(m_rods[rodidx]->ndof());
+    LinearSystemSolver* lss = m_solver_collection.getLinearSystemSolver(colliding_rod->ndof());
     MatrixBase* lhs = lss->m_lhs;
     assert(lhs != NULL);
     LinearSolverBase* solver = lss->m_solver;
     assert(solver != NULL);
 
     // Compute M - h^2*dF/dx
-    computeCompliantLHS(lhs, rodidx);
+    computeCompliantLHS(lhs, colliding_rod);
 
     // Compute the 'base' index of the vertex
-    int base0 = m_rods[rodidx]->vertIdx(v0, 0);
+    int base0 = colliding_rod->vertIdx(v0, 0);
     assert(base0 % 4 == 0);
 
-    int ndof = m_rods[rodidx]->ndof();
+    int ndof = colliding_rod->ndof();
 
     // Compute the 'global' normal
     std::vector<VecXd> normal;
@@ -1854,19 +1807,19 @@ bool BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
     normal.back().segment<3> (base0) = vfcol.GetNormal() * NORMAL_SCALING;
 
     // Compute three normals per scripted vertex
-    const std::vector<int>& scriptedverts = m_rods[rodidx]->getBoundaryCondition()->scriptedVertices();
-    for (size_t i = 0; i < scriptedverts.size(); ++i)
+    const std::vector<int>& scriptedverts = colliding_rod->getBoundaryCondition()->scriptedVertices();
+    for (std::vector<int>::const_iterator vertex = scriptedverts.begin(); vertex != scriptedverts.end(); ++vertex)
     {
         for (int j = 0; j < 3; ++j)
         {
             normal.push_back(VecXd(ndof));
             normal.back().setZero();
             // Zero the velocity of this particular dof of this particular vertex
-            normal.back()(m_rods[rodidx]->vertIdx(scriptedverts[i], j)) = 1.0;
+            normal.back()(colliding_rod->vertIdx(*vertex, j)) = 1.0;
         }
     }
     int numconstraints = normal.size();
-    int nvdof = 3 * m_rods[rodidx]->nv();
+    int nvdof = 3 * colliding_rod->nv();
 
     // Determine the desired values for each constraint
     VecXd desired_values(numconstraints);
@@ -1880,7 +1833,7 @@ bool BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
     for (size_t i = 0; i < scriptedverts.size(); ++i)
     {
         assert(scriptedverts[i] >= 0);
-        assert((int) scriptedverts[i] < m_rods[rodidx]->nv());
+        assert((int) scriptedverts[i] < colliding_rod->nv());
         desired_values(curdof++) = m_vnphalf(rodbase + 3 * scriptedverts[i] + 0);
         desired_values(curdof++) = m_vnphalf(rodbase + 3 * scriptedverts[i] + 1);
         desired_values(curdof++) = m_vnphalf(rodbase + 3 * scriptedverts[i] + 2);
@@ -1899,115 +1852,263 @@ bool BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
     for (std::vector<VecXd>::iterator constraint = ntilde.begin(); constraint != ntilde.end(); ++constraint)
     {
         if (solver->solve(*constraint, normal[constraint - ntilde.begin()]) < 0)
+        {
+            WarningStream(g_log, "")
+                    << "BARodStepper::exertCompliantInelasticVertexFaceImpulse: linear solve for ntilde failed\n";
+            return false;
+        }
+    }
+
+    // Ensure the edge degrees of freedom experience no impulse
+#ifndef NDEBUG
+    for (ElasticRod::edge_iter edge = colliding_rod->edges_begin(); edge != colliding_rod->edges_end(); ++edge)
+        for (int i = 0; i < numconstraints; ++i)
+            assert(ntilde[i](colliding_rod->edgeIdx(*edge)) == 0.0);
+#endif
+
+    // Vectors restricted to just vertex DoFs. TODO: do all of this in place in the vectors I already have
+    std::vector<VecXd> posnnormal(numconstraints);
+    extractVertexDOF(posnnormal, normal, colliding_rod);
+    std::vector<VecXd> posnntilde(numconstraints);
+    extractVertexDOF(posnntilde, ntilde, colliding_rod);
+
+    bool success = changeVelocityOneFree(posnnormal, posnntilde, scriptedverts, desired_values, numconstraints, rodbase, nvdof,
+            vfcol);
+
+    // applyInextensibilityVelocityFilter(rodidx);
+
+    return success;
+}
+
+bool BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFree(const EdgeEdgeCTCollision& eecol)
+{
+    assert(eecol.isAnalysed());
+
+    // Determine if either edge is fixed. Exactly one of them must be.
+    bool rod0fixed = YAEdge(eecol.e0_v0, eecol.e0_v1).IsFixed(m_geodata);
+    bool rod1fixed = YAEdge(eecol.e1_v0, eecol.e1_v1).IsFixed(m_geodata);
+    assert(rod0fixed != rod1fixed);
+
+    // Compute the relative velocity, which must be negative for a collision to have happened
+    assert(eecol.computeRelativeVelocity() < 0.0);
+
+    // Extract the rod index, barycentric coordinate of the collision, and indices of the edge involved in the collision
+    int rodidx = -1;
+    double u = -1.0;
+    int v0 = -1;
+    int v1 = -1;
+    if (!rod0fixed)
+    {
+        rodidx = getContainingRod(eecol.e0_v0);
+        u = eecol.s;
+        v0 = eecol.e0_v0;
+        v1 = eecol.e0_v1;
+    }
+    if (!rod1fixed)
+    {
+        rodidx = getContainingRod(eecol.e1_v0);
+        u = eecol.t;
+        v0 = eecol.e1_v0;
+        v1 = eecol.e1_v1;
+    }
+    assert(u >= 0.0);
+    assert(u <= 1.0);
+    assert(rodidx >= 0);
+    assert(rodidx < (int) m_number_of_rods);
+
+    ElasticRod* const colliding_rod = m_rods[rodidx];
+
+    // If the rod has not solved properly, no need to compute its collision response
+    if (!m_steppers[rodidx]->HasSolved())
+    {
+        DebugStream(g_log, "") << "WARNING: attempt to do edge-edge collision with non-dependable rod\n";
+        return;
+    }
+
+    DebugStream(g_log, "") << "CTcollision: rod " << rodidx << " vs. mesh\n";
+
+    // Convert the vertices' global indices to rod indices
+    int rodbase = m_base_dof_indices[rodidx];
+
+    assert(rodbase % 3 == 0);
+    v0 -= rodbase / 3;
+    v1 -= rodbase / 3;
+    assert(v0 >= 0);
+    assert(v0 < colliding_rod->nv());
+    assert(v1 >= 0);
+    assert(v1 < colliding_rod->nv());
+
+    // Get storage for lhs of linear system, get a solver
+    LinearSystemSolver* lss = m_solver_collection.getLinearSystemSolver(colliding_rod->ndof());
+    MatrixBase* lhs = lss->m_lhs;
+    assert(lhs != NULL);
+    LinearSolverBase* solver = lss->m_solver;
+    assert(solver != NULL);
+
+    // Compute M - h^2*dF/dx
+    computeCompliantLHS(lhs, colliding_rod);
+
+    // Compute the 'base' index of each vertex
+    int base0 = colliding_rod->vertIdx(v0, 0);
+    assert(base0 % 4 == 0);
+    int base1 = colliding_rod->vertIdx(v1, 0);
+    assert(base1 % 4 == 0);
+
+    int ndof = colliding_rod->ndof();
+    int nvdof = 3 * colliding_rod->nv();
+
+    // Compute the 'global' normal
+    std::vector<VecXd> normal;
+
+    normal.push_back(VecXd(ndof));
+    normal.back().setZero();
+    normal.back().segment<3> (base0) = (1 - u) * eecol.GetNormal() * NORMAL_SCALING;
+    normal.back().segment<3> (base1) = u * eecol.GetNormal() * NORMAL_SCALING;
+
+    // If rod 0 has the free edge, need to invert sign of normal
+    if (!rod0fixed)
+    {
+        normal.back().segment<3> (base0) *= -1.0;
+        normal.back().segment<3> (base1) *= -1.0;
+    }
+
+    // Compute three normals per scripted vertex
+    const std::vector<int>& scriptedverts = colliding_rod->getBoundaryCondition()->scriptedVertices();
+    for (size_t i = 0; i < scriptedverts.size(); ++i)
+    {
+        for (int j = 0; j < 3; ++j)
+        {
+            normal.push_back(VecXd(ndof));
+            normal.back().setZero();
+            // Zero the velocity of this particular dof of this particular vertex
+            normal.back()(colliding_rod->vertIdx(scriptedverts[i], j)) = 1.0;
+        }
+    }
+
+    int numconstraints = (int) (normal.size());
+
+    // Determine the desired values for each constraint
+    VecXd desired_values(numconstraints);
+#ifndef NDEBUG
+    desired_values.setConstant(std::numeric_limits<double>::signaling_NaN());
+#endif
+    // First constraint, the collision constraint, is 0
+    desired_values(0) = 0.0;
+    // The 'scripted vertex' constraints are the respective components of the velocity
+    int curdof = 1;
+    for (size_t i = 0; i < scriptedverts.size(); ++i)
+    {
+        assert(scriptedverts[i] >= 0);
+        assert((int) scriptedverts[i] < colliding_rod->nv());
+        desired_values(curdof++) = m_vnphalf(rodbase + 3 * scriptedverts[i] + 0);
+        desired_values(curdof++) = m_vnphalf(rodbase + 3 * scriptedverts[i] + 1);
+        desired_values(curdof++) = m_vnphalf(rodbase + 3 * scriptedverts[i] + 2);
+    }
+    assert(curdof == numconstraints);
+    assert(desired_values.size() == numconstraints);
+
+    //TraceStream(g_log, "") << desired_values << '\n';
+
+    //for( size_t i = 0; i < vertexConstraints.size(); ++i ) TraceStream(g_log, "") << vertexConstraints[i] << '\n';
+
+    // Ensure collision constraint adds up to actual normal
+#ifndef NDEBUG
+    Vec3d testn = normal[0].segment<3> (base0) + normal[0].segment<3> (base1);
+    if (!rod0fixed)
+        testn *= -1.0;
+    Vec3d actln = NORMAL_SCALING * eecol.GetNormal();
+    assert(approxEq(testn, actln, 1.0e-6));
+#endif
+
+    // Currently, all fixed vertex constraints normalized
+#ifndef NDEBUG
+    for (int i = 1; i < numconstraints; ++i)
+        assert(approxEq(normal[i].norm(), 1.0, 1.0e-9));
+#endif
+
+    std::vector<VecXd> ntilde;
+    for (int i = 0; i < numconstraints; ++i)
+    {
+        ntilde.push_back(VecXd(ndof));
+        ntilde.back().setZero();
+        int status = solver->solve(ntilde.back(), normal[i]);
+        if (status < 0)
             DebugStream(g_log, "")
-                    << "\033[31;1mWARNING:\033[m Problem during linear solve in exertCompliantInelasticVertexFaceImpulse at t = "
+                    << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Problem during linear solve detected. exertCompliantInelasticEdgeEdgeImpulseOneFixedThree. Time: "
                     << m_t << '\n';
     }
 
     // Ensure the edge degrees of freedom experience no impulse
 #ifndef NDEBUG
-    for (ElasticRod::edge_iter eit = m_rods[rodidx]->edges_begin(); eit != m_rods[rodidx]->edges_end(); ++eit)
+    for (ElasticRod::edge_iter eit = colliding_rod->edges_begin(); eit != colliding_rod->edges_end(); ++eit)
+    {
         for (int i = 0; i < numconstraints; ++i)
-            assert(ntilde[i](m_rods[rodidx]->edgeIdx(*eit)) == 0.0);
+            assert(ntilde[i](colliding_rod->edgeIdx(*eit)) == 0.0);
+    }
 #endif
 
-    // Vectors restricted to just vertex DoFs. TODO: do all of this in place in the vectors I already have
+    // Vectors restriced to just verted DoFs. TODO: do all of this in place in the vectors I already have
     std::vector<VecXd> posnnormal(numconstraints);
-    for (std::vector<VecXd>::iterator constraint = posnnormal.begin(); constraint != posnnormal.end(); constraint++)
-    {
-        *constraint = VecXd(nvdof);
-#ifndef NDEBUG
-        constraint->setConstant(std::numeric_limits<double>::signaling_NaN());
-#endif
-        int theidx = 0;
-        for (ElasticRod::vertex_iter vit = m_rods[rodidx]->vertices_begin(); vit != m_rods[rodidx]->vertices_end(); ++vit)
-        {
-            int vert_dof = m_rods[rodidx]->vertIdx(*vit, 0);
-            constraint->segment<3> (3 * theidx) = normal[constraint - posnnormal.begin()].segment<3> (vert_dof);
-            ++theidx;
-        }
-    }
-
+    extractVertexDOF(posnnormal, normal, colliding_rod);
     std::vector<VecXd> posnntilde(numconstraints);
-    for (std::vector<VecXd>::iterator i = posnntilde.begin(); i != posnntilde.end(); i++)
-    {
-        *i = VecXd(nvdof);
-#ifndef NDEBUG
-        i->setConstant(std::numeric_limits<double>::signaling_NaN());
-#endif
-        int theidx = 0;
-        for (ElasticRod::vertex_iter vit = m_rods[rodidx]->vertices_begin(); vit != m_rods[rodidx]->vertices_end(); ++vit)
-        {
-            int vert_dof = m_rods[rodidx]->vertIdx(*vit, 0);
-            i->segment<3> (3 * theidx) = ntilde[i - posnntilde.begin()].segment<3> (vert_dof);
-            ++theidx;
-        }
-    }
+    extractVertexDOF(posnntilde, ntilde, colliding_rod);
 
-#ifndef NDEBUG
-    double magrelvel = vfcol.computeRelativeVelocity();
-#endif
+    bool success = changeVelocityOneFree(posnnormal, posnntilde, scriptedverts, desired_values, numconstraints, rodbase, nvdof,
+            eecol);
 
-    bool success = changeVelocityOneFree(posnnormal, posnntilde, desired_values, numconstraints, rodbase, nvdof, vfcol);
-
-    // Ensure that the impulse eliminated the realtive velocity
-#ifndef NDEBUG
-    double postmagrelvel = vfcol.computeRelativeVelocity();
-    // TraceStream(g_log, "") << "BARodStepper::exertCompliantInelasticVertexFaceImpulse: relative velocity pre-impulse = " << magrelvel
-    //         << " post-impulse = " << postmagrelvel << '\n';
-    // Ensure the inelastic impulse decreased the realtive velocity
-    assert(fabs(postmagrelvel) <= fabs(magrelvel));
-    // Should add some 'extra kick' to ensure collision gets killed, but for now just be content with small velocity
-    // assert(fabs(postmagrelvel) < 1.0e-9);
-    if (postmagrelvel >= 1.0e-9)
-        DebugStream(g_log, "") << "Rod number " << rodidx << " post impulse relative velocity = " << postmagrelvel << '\n';
-    //assert( postmagrelvel < 0.0 );
-#endif
-
-    applyInextensibilityVelocityFilter(rodidx);
-
-    // Ensure the 'scripted vertices' achieved the desired velocity
-#ifndef NDEBUG
-    curdof = 1;
-    for (size_t i = 0; i < scriptedverts.size(); ++i)
-    {
-        assert(scriptedverts[i] >= 0);
-        assert((int) scriptedverts[i] < m_rods[rodidx]->nv());
-        //TraceStream(g_log, "") << m_vnphalf(rodbase+3*scriptedverts[i]+0) << "   " << desired_values(curdof) << '\n';
-        assert(approxEq(m_vnphalf(rodbase + 3 * scriptedverts[i] + 0), desired_values(curdof), 1.0e-6));
-        ++curdof;
-        //TraceStream(g_log, "") << m_vnphalf(rodbase+3*scriptedverts[i]+1) << "   " << desired_values(curdof) << '\n';
-        assert(approxEq(m_vnphalf(rodbase + 3 * scriptedverts[i] + 1), desired_values(curdof), 1.0e-6));
-        ++curdof;
-        //TraceStream(g_log, "") << m_vnphalf(rodbase+3*scriptedverts[i]+2) << "   " << desired_values(curdof) << '\n';
-        assert(approxEq(m_vnphalf(rodbase + 3 * scriptedverts[i] + 2), desired_values(curdof), 1.0e-6));
-        ++curdof;
-    }
-#endif
+    //  applyInextensibilityVelocityFilter(rodidx);
 
     return success;
 }
 
-bool BARodStepper::exertCompliantInelasticEdgeEdgeImpulse(const EdgeEdgeCTCollision& eecol)
+bool BARodStepper::changeVelocityOneFree(const std::vector<VecXd>& posnnormal, const std::vector<VecXd>& posnntilde,
+        const std::vector<int>& scriptedverts, const VecXd& desired_values, int numconstraints, int rodbase, int nvdof,
+        const CTCollision& ctcol)
 {
-    //   TraceStream(g_log, "") << "Edge-edge compliant inelastic impulse" << '\n';
-    //   TraceStream(g_log, "") << eecol << '\n';
+    // Compute the Lagrange multiplier alpha for an asymmetric (e.g. rod vs. mesh) collision.
+    MatXd lglhs(numconstraints, numconstraints);
+#ifndef NDEBUG
+    lglhs.setConstant(std::numeric_limits<double>::signaling_NaN()); // TODO: This matrix is symmetric, exploit that fact to avoid computations
+#endif
+    for (int i = 0; i < numconstraints; ++i)
+        for (int j = 0; j < numconstraints; ++j)
+            lglhs(i, j) = posnnormal[i].dot(posnntilde[j]);
+    assert(approxSymmetric(lglhs, MATRIX_ASYMMETRY));
 
-    // Determine if either edge is totally fixed
-    bool rod0fixed = YAEdge(eecol.e0_v0, eecol.e0_v1).IsFixed(m_geodata);
-    bool rod1fixed = YAEdge(eecol.e1_v0, eecol.e1_v1).IsFixed(m_geodata);
+#ifndef NDEBUG
+    Eigen::EigenSolver<MatXd> es;
+    es.compute(lglhs, false); // compute the eigenvalues, not the eigenvectors
+    DebugStream(g_log, "") << "Compliance matrix eigenvalues: " << es.eigenvalues() << '\n';
 
-    // Skip collisions in which both edges are fixed
-    if (rod0fixed && rod1fixed)
-        return true;
-    // Neither rod is totally fixed
+    // TODO: Test the conditioning number here
+#endif
 
-    else if (!rod0fixed && !rod1fixed)
-        return exertCompliantInelasticEdgeEdgeImpulseBothFree(eecol);
-    // One rod is totally fixed
+    VecXd lgrhs(desired_values);
+    assert(lgrhs(0) == 0.0);
+    assert(ctcol.computeRelativeVelocity() < 0);
+    lgrhs(0) -= ctcol.computeRelativeVelocity() * NORMAL_SCALING;
+    for (int i = 1; i < numconstraints; ++i)
+        lgrhs(i) -= posnnormal[i].dot(m_vnphalf.segment(rodbase, nvdof));
 
-    else
-        return exertCompliantInelasticEdgeEdgeImpulseOneFree(eecol);
+    VecXd alpha(lglhs.lu().solve(lgrhs));
+
+    // Contact constraint should 'push not pull'
+    assert(alpha(0) >= 0.0);
+
+    for (int i = 0; i < numconstraints; ++i)
+        m_vnphalf.segment(rodbase, nvdof) += alpha(i) * posnntilde[i];
+
+#ifndef NDEBUG
+    // Ensure that the impulse eliminated the relative velocity
+    assert(fabs(ctcol.computeRelativeVelocity()) < 1.0e-8);
+
+    // Ensure the 'scripted vertices' achieved the desired velocity
+    int curdof = 1;
+    for (std::vector<int>::const_iterator vertex = scriptedverts.begin(); vertex != scriptedverts.end(); vertex++, curdof += 3)
+        assert((m_vnphalf.segment<3> (rodbase + 3 * (*vertex)) - desired_values.segment<3> (curdof)).norm() < 1.0e-8);
+#endif
+
+    return true;
 }
 
 bool BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdgeCTCollision& eecol)
@@ -2231,7 +2332,7 @@ bool BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     assert(lhs0->cols() == rod0ndof);
     LinearSolverBase* solver0 = lss->m_solver;
     assert(solver0 != NULL);
-    computeCompliantLHS(lhs0, rod0);
+    computeCompliantLHS(lhs0, m_rods[rod0]);
     std::vector<VecXd> ntilde0;
     for (int i = 0; i < nc0; ++i)
     {
@@ -2259,7 +2360,7 @@ bool BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     assert(lhs1 != NULL);
     LinearSolverBase* solver1 = lss->m_solver;
     assert(solver1 != NULL);
-    computeCompliantLHS(lhs1, rod1);
+    computeCompliantLHS(lhs1, m_rods[rod1]);
     std::vector<VecXd> ntilde1;
     for (int i = 0; i < nc1; ++i)
     {
@@ -2279,92 +2380,17 @@ bool BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
 
     //for( int i = 0; i < nc1; ++i ) TraceStream(g_log, "") << "ntilde1: " << ntilde1[i] << '\n';
 
-    // Vectors restriced to just vertex DoFs for rod 0. TODO: do all of this in place in the vectors I already have
-    std::vector<VecXd> posnn0;
-    for (int i = 0; i < nc0; ++i)
-        posnn0.push_back(VecXd(rod0nvdof));
-#ifndef NDEBUG
-    for (int i = 0; i < nc0; ++i)
-        posnn0[i].setConstant(std::numeric_limits<double>::signaling_NaN());
-#endif
+    // Vectors restricted to just vertex DoFs for rod 0. TODO: do all of this in place in the vectors I already have
+    std::vector<VecXd> posnn0(nc0);
+    extractVertexDOF(posnn0, n0, m_rods[rod0]);
+    std::vector<VecXd> posnntilde0(nc0);
+    extractVertexDOF(posnntilde0, ntilde0, m_rods[rod0]);
 
-    std::vector<VecXd> posnntilde0;
-    for (int i = 0; i < nc0; ++i)
-        posnntilde0.push_back(VecXd(rod0nvdof));
-#ifndef NDEBUG
-    for (int i = 0; i < nc0; ++i)
-        posnntilde0[i].setConstant(std::numeric_limits<double>::signaling_NaN());
-#endif
-
-    for (int i = 0; i < nc0; ++i)
-    {
-        int theidx = 0;
-        for (ElasticRod::vertex_iter vit = m_rods[rod0]->vertices_begin(); vit != m_rods[rod0]->vertices_end(); ++vit)
-        {
-            int vert_dof = m_rods[rod0]->vertIdx(*vit, 0);
-            posnn0[i].segment<3> (3 * theidx) = n0[i].segment<3> (vert_dof);
-            ++theidx;
-        }
-    }
-
-    //for( int i = 0; i < nc0; ++i ) TraceStream(g_log, "") << "posnn0: " << posnn0[i] << '\n';
-
-    for (int i = 0; i < nc0; ++i)
-    {
-        int theidx = 0;
-        for (ElasticRod::vertex_iter vit = m_rods[rod0]->vertices_begin(); vit != m_rods[rod0]->vertices_end(); ++vit)
-        {
-            int vert_dof = m_rods[rod0]->vertIdx(*vit, 0);
-            posnntilde0[i].segment<3> (3 * theidx) = ntilde0[i].segment<3> (vert_dof);
-            ++theidx;
-        }
-    }
-
-    //for( int i = 0; i < nc0; ++i ) TraceStream(g_log, "") << "posnntilde0: " << posnntilde0[i] << '\n';
-
-
-    // Vectors restriced to just vertex DoFs for rod 1. TODO: do all of this in place in the vectors I already have
-    std::vector<VecXd> posnn1;
-    for (int i = 0; i < nc1; ++i)
-        posnn1.push_back(VecXd(rod1nvdof));
-#ifndef NDEBUG
-    for (int i = 0; i < nc1; ++i)
-        posnn1[i].setConstant(std::numeric_limits<double>::signaling_NaN());
-#endif
-
-    std::vector<VecXd> posnntilde1;
-    for (int i = 0; i < nc1; ++i)
-        posnntilde1.push_back(VecXd(rod1nvdof));
-#ifndef NDEBUG
-    for (int i = 0; i < nc1; ++i)
-        posnntilde1[i].setConstant(std::numeric_limits<double>::signaling_NaN());
-#endif
-
-    for (int i = 0; i < nc1; ++i)
-    {
-        int theidx = 0;
-        for (ElasticRod::vertex_iter vit = m_rods[rod1]->vertices_begin(); vit != m_rods[rod1]->vertices_end(); ++vit)
-        {
-            int vert_dof = m_rods[rod1]->vertIdx(*vit, 0);
-            posnn1[i].segment<3> (3 * theidx) = n1[i].segment<3> (vert_dof);
-            ++theidx;
-        }
-    }
-
-    //for( int i = 0; i < nc1; ++i ) TraceStream(g_log, "") << "posnn1: " << posnn1[i] << '\n';
-
-    for (int i = 0; i < nc1; ++i)
-    {
-        int theidx = 0;
-        for (ElasticRod::vertex_iter vit = m_rods[rod1]->vertices_begin(); vit != m_rods[rod1]->vertices_end(); ++vit)
-        {
-            int vert_dof = m_rods[rod1]->vertIdx(*vit, 0);
-            posnntilde1[i].segment<3> (3 * theidx) = ntilde1[i].segment<3> (vert_dof);
-            ++theidx;
-        }
-    }
-
-    //for( int i = 0; i < nc1; ++i ) TraceStream(g_log, "") << "posnntilde1: " << posnntilde1[i] << '\n';
+    // Vectors restricted to just vertex DoFs for rod 1. TODO: do all of this in place in the vectors I already have
+    std::vector<VecXd> posnn1(nc1);
+    extractVertexDOF(posnn1, n1, m_rods[rod1]);
+    std::vector<VecXd> posnntilde1(nc1);
+    extractVertexDOF(posnntilde1, ntilde1, m_rods[rod1]);
 
     bool success = changeVelocityBothFree(posnn0, posnn1, posnntilde0, posnntilde1, cval0, cval1, nc0, nc1, rod0base, rod1base,
             rod0nvdof, rod1nvdof, eecol);
@@ -2422,303 +2448,7 @@ bool BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     return success;
 }
 
-bool BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFree(const EdgeEdgeCTCollision& eecol)
-{
-    assert(eecol.isAnalysed());
-
-    // Determine if either edge is fixed. Exactly one of them must be.
-    bool rod0fixed = YAEdge(eecol.e0_v0, eecol.e0_v1).IsFixed(m_geodata);
-    bool rod1fixed = YAEdge(eecol.e1_v0, eecol.e1_v1).IsFixed(m_geodata);
-    assert(rod0fixed != rod1fixed);
-
-    double preRelativeVelocity = eecol.computeRelativeVelocity();
-
-    // Compute the relative velocity, which must be negative for a collision to have happened
-    assert(eecol.computeRelativeVelocity() < 0.0);
-
-    // Extract the rod index, barycentric coordinate of the collision, and indices of the edge involved in the collision
-    int rodidx = -1;
-    double u = -1.0;
-    int v0 = -1;
-    int v1 = -1;
-    if (!rod0fixed)
-    {
-        rodidx = getContainingRod(eecol.e0_v0);
-        u = eecol.s;
-        v0 = eecol.e0_v0;
-        v1 = eecol.e0_v1;
-    }
-    if (!rod1fixed)
-    {
-        rodidx = getContainingRod(eecol.e1_v0);
-        u = eecol.t;
-        v0 = eecol.e1_v0;
-        v1 = eecol.e1_v1;
-    }
-    assert(u >= 0.0);
-    assert(u <= 1.0);
-    assert(rodidx >= 0);
-    assert(rodidx < (int) m_number_of_rods);
-
-    // If the rod has not solved properly, no need to compute its collision response
-    if (!m_steppers[rodidx]->HasSolved())
-    {
-        DebugStream(g_log, "") << "WARNING: attempt to do edge-edge collision with non-dependable rod\n";
-        return;
-    }
-
-    TraceStream(g_log, "") << "CTcollision: rod " << rodidx << " vs. mesh\n";
-
-    // Convert the vertices' global indices to rod indices
-    int rodbase = m_base_dof_indices[rodidx];
-
-    assert(rodbase % 3 == 0);
-    v0 -= rodbase / 3;
-    v1 -= rodbase / 3;
-    assert(v0 >= 0);
-    assert(v0 < m_rods[rodidx]->nv());
-    assert(v1 >= 0);
-    assert(v1 < m_rods[rodidx]->nv());
-
-    // Get storage for lhs of linear system, get a solver
-    LinearSystemSolver* lss = m_solver_collection.getLinearSystemSolver(m_rods[rodidx]->ndof());
-    MatrixBase* lhs = lss->m_lhs;
-    assert(lhs != NULL);
-    LinearSolverBase* solver = lss->m_solver;
-    assert(solver != NULL);
-
-    // Compute M - h^2*dF/dx
-    computeCompliantLHS(lhs, rodidx);
-
-    // Compute the 'base' index of each vertex
-    int base0 = m_rods[rodidx]->vertIdx(v0, 0);
-    assert(base0 % 4 == 0);
-    int base1 = m_rods[rodidx]->vertIdx(v1, 0);
-    assert(base1 % 4 == 0);
-
-    int ndof = m_rods[rodidx]->ndof();
-    int nvdof = 3 * m_rods[rodidx]->nv();
-
-    // Compute the 'global' normal
-    std::vector<VecXd> normal;
-
-    normal.push_back(VecXd(ndof));
-    normal.back().setZero();
-    normal.back().segment<3> (base0) = (1 - u) * eecol.GetNormal() * NORMAL_SCALING;
-    normal.back().segment<3> (base1) = u * eecol.GetNormal() * NORMAL_SCALING;
-
-    // If rod 0 has the free edge, need to invert sign of normal
-    if (!rod0fixed)
-    {
-        normal.back().segment<3> (base0) *= -1.0;
-        normal.back().segment<3> (base1) *= -1.0;
-    }
-
-    // Compute three normals per scripted vertex
-    const std::vector<int>& scriptedverts = m_rods[rodidx]->getBoundaryCondition()->scriptedVertices();
-    for (size_t i = 0; i < scriptedverts.size(); ++i)
-    {
-        for (int j = 0; j < 3; ++j)
-        {
-            normal.push_back(VecXd(ndof));
-            normal.back().setZero();
-            // Zero the velocity of this particular dof of this particular vertex
-            normal.back()(m_rods[rodidx]->vertIdx(scriptedverts[i], j)) = 1.0;
-        }
-    }
-
-    int numconstraints = (int) (normal.size());
-
-    // Determine the desired values for each constraint
-    VecXd desired_values(numconstraints);
-#ifndef NDEBUG
-    desired_values.setConstant(std::numeric_limits<double>::signaling_NaN());
-#endif
-    // First constraint, the collision constraint, is 0
-    desired_values(0) = 0.0;
-    // The 'scripted vertex' constraints are the respective components of the velocity
-    int curdof = 1;
-    for (size_t i = 0; i < scriptedverts.size(); ++i)
-    {
-        assert(scriptedverts[i] >= 0);
-        assert((int) scriptedverts[i] < m_rods[rodidx]->nv());
-        desired_values(curdof++) = m_vnphalf(rodbase + 3 * scriptedverts[i] + 0);
-        desired_values(curdof++) = m_vnphalf(rodbase + 3 * scriptedverts[i] + 1);
-        desired_values(curdof++) = m_vnphalf(rodbase + 3 * scriptedverts[i] + 2);
-    }
-    assert(curdof == numconstraints);
-    assert(desired_values.size() == numconstraints);
-
-    //TraceStream(g_log, "") << desired_values << '\n';
-
-    //for( size_t i = 0; i < vertexConstraints.size(); ++i ) TraceStream(g_log, "") << vertexConstraints[i] << '\n';
-
-    // Ensure collision constraint adds up to actual normal
-#ifndef NDEBUG
-    Vec3d testn = normal[0].segment<3> (base0) + normal[0].segment<3> (base1);
-    if (!rod0fixed)
-        testn *= -1.0;
-    Vec3d actln = NORMAL_SCALING * eecol.GetNormal();
-    assert(approxEq(testn, actln, 1.0e-6));
-#endif
-
-    // Currently, all fixed vertex constraints normalized
-#ifndef NDEBUG
-    for (int i = 1; i < numconstraints; ++i)
-        assert(approxEq(normal[i].norm(), 1.0, 1.0e-9));
-#endif
-
-    std::vector<VecXd> ntilde;
-    for (int i = 0; i < numconstraints; ++i)
-    {
-        ntilde.push_back(VecXd(ndof));
-        ntilde.back().setZero();
-        int status = solver->solve(ntilde.back(), normal[i]);
-        if (status < 0)
-            DebugStream(g_log, "")
-                    << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Problem during linear solve detected. exertCompliantInelasticEdgeEdgeImpulseOneFixedThree. Time: "
-                    << m_t << '\n';
-    }
-
-    // Ensure the edge degrees of freedom experience no impulse
-#ifndef NDEBUG
-    for (ElasticRod::edge_iter eit = m_rods[rodidx]->edges_begin(); eit != m_rods[rodidx]->edges_end(); ++eit)
-    {
-        for (int i = 0; i < numconstraints; ++i)
-            assert(ntilde[i](m_rods[rodidx]->edgeIdx(*eit)) == 0.0);
-    }
-#endif
-
-    // Vectors restriced to just verted DoFs. TODO: do all of this in place in the vectors I already have
-    std::vector<VecXd> posnn;
-    for (int i = 0; i < numconstraints; ++i)
-        posnn.push_back(VecXd(nvdof));
-#ifndef NDEBUG
-    for (int i = 0; i < numconstraints; ++i)
-        posnn[i].setConstant(std::numeric_limits<double>::signaling_NaN());
-#endif
-
-    std::vector<VecXd> posnntilde;
-    for (int i = 0; i < numconstraints; ++i)
-        posnntilde.push_back(VecXd(nvdof));
-#ifndef NDEBUG
-    for (int i = 0; i < numconstraints; ++i)
-        posnntilde[i].setConstant(std::numeric_limits<double>::signaling_NaN());
-#endif
-
-    for (int i = 0; i < numconstraints; ++i)
-    {
-        int theidx = 0;
-        for (ElasticRod::vertex_iter vit = m_rods[rodidx]->vertices_begin(); vit != m_rods[rodidx]->vertices_end(); ++vit)
-        {
-            int vert_dof = m_rods[rodidx]->vertIdx(*vit, 0);
-            posnn[i].segment<3> (3 * theidx) = normal[i].segment<3> (vert_dof);
-            ++theidx;
-        }
-    }
-
-    for (int i = 0; i < numconstraints; ++i)
-    {
-        int theidx = 0;
-        for (ElasticRod::vertex_iter vit = m_rods[rodidx]->vertices_begin(); vit != m_rods[rodidx]->vertices_end(); ++vit)
-        {
-            int vert_dof = m_rods[rodidx]->vertIdx(*vit, 0);
-            posnntilde[i].segment<3> (3 * theidx) = ntilde[i].segment<3> (vert_dof);
-            ++theidx;
-        }
-    }
-
-    bool success = changeVelocityOneFree(posnn, posnntilde, desired_values, numconstraints, rodbase, nvdof, eecol);
-
-    applyInextensibilityVelocityFilter(rodidx);
-
-    // Ensure that the impulse eliminated the realtive velocity
-#ifndef NDEBUG
-    //Vec3d postrelvel = computeRelativeVelocity( m_vnphalf, eecol.e0_v0, eecol.e0_v1, eecol.e1_v0, eecol.e1_v1, eecol.s, eecol.t );
-    //double postmagrelvel = postrelvel.dot(eecol.n);
-    // Ensure the inelastic impulse decreased the realtive velocity
-    // if( fabs(postmagrelvel) > fabs(magrelvel) )
-    // {
-    //     TraceStream(g_log, "") << "Rod: " << rodidx << '\n';
-    //     TraceStream(g_log, "") << "Time is: " << m_t << '\n';
-    //     TraceStream(g_log, "") << "Incoming relative velocity: " << magrelvel << "      Post-impulse relative velocity: " << postmagrelvel << '\n';
-    // }
-    // assert( fabs(postmagrelvel) <= fabs(magrelvel) );
-    // // Should add some 'extra kick' to ensure collision gets killed, but for now just be content with small velocity
-    // assert( fabs(postmagrelvel) < 1.0e-9 );
-    //assert( postmagrelvel < 0.0 );
-#endif
-
-    // Ensure the 'scripted vertices' achieved the desired velocity
-#ifndef NDEBUG
-    curdof = 1;
-    for (size_t i = 0; i < scriptedverts.size(); ++i)
-    {
-        assert(scriptedverts[i] >= 0);
-        assert((int) scriptedverts[i] < m_rods[rodidx]->nv());
-        //TraceStream(g_log, "") << m_vnphalf(rodbase+3*scriptedverts[i]+0) << "   " << desired_values(curdof) << '\n';
-        assert(approxEq(m_vnphalf(rodbase + 3 * scriptedverts[i] + 0), desired_values(curdof), 1.0e-6));
-        ++curdof;
-        //TraceStream(g_log, "") << m_vnphalf(rodbase+3*scriptedverts[i]+1) << "   " << desired_values(curdof) << '\n';
-        assert(approxEq(m_vnphalf(rodbase + 3 * scriptedverts[i] + 1), desired_values(curdof), 1.0e-6));
-        ++curdof;
-        //TraceStream(g_log, "") << m_vnphalf(rodbase+3*scriptedverts[i]+2) << "   " << desired_values(curdof) << '\n';
-        assert(approxEq(m_vnphalf(rodbase + 3 * scriptedverts[i] + 2), desired_values(curdof), 1.0e-6));
-        ++curdof;
-    }
-#endif
-
-    //  double postRelativeVelocity = eecol.computeRelativeVelocity();
-
-    //  TraceStream(g_log, "") << "BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFree: Relative velocity before = "
-    //         << preRelativeVelocity << " after = " << postRelativeVelocity << '\n';
-
-    return success;
-}
-
-bool BARodStepper::changeVelocityOneFree(const std::vector<VecXd>& posnn, const std::vector<VecXd>& posnntilde,
-        const VecXd& desired_values, int numconstraints, int rodbase, int nvdof, const CTCollision& ctcol)
-{
-    // Compute the Lagrange multipliers
-    // TODO: This matrix is symmetric, exploit that fact to avoid computations
-    MatXd lglhs(numconstraints, numconstraints);
-#ifndef NDEBUG
-    lglhs.setConstant(std::numeric_limits<double>::signaling_NaN());
-#endif
-    for (int i = 0; i < numconstraints; ++i)
-        for (int j = 0; j < numconstraints; ++j)
-            lglhs(i, j) = posnn[i].dot(posnntilde[j]);
-    assert(approxSymmetric(lglhs, NORMAL_SCALING * MATRIX_ASYMMETRY));
-
-    if (fabs(lglhs.determinant()) < SMALL_DETERMINANT)
-    {
-        DebugStream(g_log, "") << "computeAlpha: matrix nearly singular\n";
-        return false;
-    }
-
-    Eigen::VectorXd lgrhs(numconstraints);
-#ifndef NDEBUG
-    lgrhs.setConstant(std::numeric_limits<double>::signaling_NaN());
-#endif
-    lgrhs(0) = ctcol.computeRelativeVelocity(); // CRAZY SIGN PROBLEM HERE?
-    assert(lgrhs(0) < 0.0);
-    for (int i = 1; i < numconstraints; ++i)
-        lgrhs(i) = posnn[i].dot(m_vnphalf.segment(rodbase, nvdof));
-    lgrhs *= -1.0;
-    lgrhs += desired_values;
-
-    VecXd alpha(lglhs.lu().solve(lgrhs));
-
-    // Contact constraint should 'push not pull'
-    assert(alpha(0) >= 0.0);
-
-    for (int i = 0; i < numconstraints; ++i)
-        m_vnphalf.segment(rodbase, nvdof) += alpha(i) * posnntilde[i] * NORMAL_SCALING;
-
-    return true;
-}
-
-bool BARodStepper::changeVelocityBothFree(const std::vector<VecXd>& posnn0, const std::vector<VecXd>& posnn1,
+bool BARodStepper::changeVelocityBothFree(const std::vector<VecXd>& posnnormal0, const std::vector<VecXd>& posnnormal1,
         const std::vector<VecXd>& posnntilde0, const std::vector<VecXd>& posnntilde1, const VecXd& cval0, const VecXd& cval1,
         int nc0, int nc1, int rod0base, int rod1base, int rod0nvdof, int rod1nvdof, const EdgeEdgeCTCollision& eecol)
 {
@@ -2735,62 +2465,65 @@ bool BARodStepper::changeVelocityBothFree(const std::vector<VecXd>& posnn0, cons
 
     // TODO: Make sure indexing is correct here
     // Entry (0,0)
-    lglhs(0, 0) = posnn0[0].dot(posnntilde0[0]) + posnn1[0].dot(posnntilde1[0]);
+    lglhs(0, 0) = posnnormal0[0].dot(posnntilde0[0]) + posnnormal1[0].dot(posnntilde1[0]);
     // Entires (0,1::numalpha)
     int curel = 1;
     for (int i = 1; i < nc0; ++i)
-        lglhs(0, curel++) = posnn0[0].dot(posnntilde0[i]);
+        lglhs(0, curel++) = posnnormal0[0].dot(posnntilde0[i]);
     // Entries (0,numalpha::numalpha+numbeta)
     for (int i = 1; i < nc1; ++i)
-        lglhs(0, curel++) = posnn1[0].dot(posnntilde1[i]);
+        lglhs(0, curel++) = posnnormal1[0].dot(posnntilde1[i]);
 
     // Entires (1::numalpha,0)
     curel = 1;
     for (int i = 1; i < nc0; ++i)
-        lglhs(curel++, 0) = posnntilde0[0].dot(posnn0[i]);
+        lglhs(curel++, 0) = posnntilde0[0].dot(posnnormal0[i]);
     // Entries (numalpha::numalpha+numbeta,0)
     for (int i = 1; i < nc1; ++i)
-        lglhs(curel++, 0) = posnntilde1[0].dot(posnn1[i]);
+        lglhs(curel++, 0) = posnntilde1[0].dot(posnnormal1[i]);
 
     // Entries (1::numalpha,1::numalpha)
     for (int i = 1; i < nc0; ++i)
         for (int j = 1; j < nc0; ++j)
-            lglhs(i, j) = posnn0[i].dot(posnntilde0[j]);
+            lglhs(i, j) = posnnormal0[i].dot(posnntilde0[j]);
     // Entries (numalpha::numalpha+numbeta,numalpha::numalpha+numbeta)
     for (int i = 1; i < nc1; ++i)
         for (int j = 1; j < nc1; ++j)
-            lglhs(nc0 + i - 1, nc0 + j - 1) = posnn1[i].dot(posnntilde1[j]);
+            lglhs(nc0 + i - 1, nc0 + j - 1) = posnnormal1[i].dot(posnntilde1[j]);
 
     assert(approxSymmetric(lglhs, MATRIX_ASYMMETRY));
 
-    if (fabs(lglhs.determinant()) < SMALL_DETERMINANT)
-    {
-        DebugStream(g_log, "") << "exertCompliantInelasticEdgeEdgeImpulseBothFree: matrix nearly singular\n";
-        return false;
-    }
+#ifndef NDEBUG
+    Eigen::EigenSolver<MatXd> es;
+    es.compute(lglhs, false); // compute the eigenvalues, not the eigenvectors
+    DebugStream(g_log, "") << "Compliance matrix eigenvalues: " << es.eigenvalues() << '\n';
+
+    // TODO: Test the conditioning number here
+#endif
 
     Eigen::VectorXd lgrhs(numalpha);
 #ifndef NDEBUG
     lgrhs.setConstant(std::numeric_limits<double>::signaling_NaN());
 #endif
     // Entry 0
-    assert(posnn0[0].size() == m_vnphalf.segment(rod0base, rod0nvdof).size());
-    assert(posnn1[0].size() == m_vnphalf.segment(rod1base, rod1nvdof).size());
-    lgrhs(0) = posnn0[0].dot(m_vnphalf.segment(rod0base, rod0nvdof)) + posnn1[0].dot(m_vnphalf.segment(rod1base, rod1nvdof));
-    assert(approxEq(lgrhs(0), eecol.computeRelativeVelocity(), 1.0e-6));
+    assert(posnnormal0[0].size() == m_vnphalf.segment(rod0base, rod0nvdof).size());
+    assert(posnnormal1[0].size() == m_vnphalf.segment(rod1base, rod1nvdof).size());
+    lgrhs(0) = (posnnormal0[0].dot(m_vnphalf.segment(rod0base, rod0nvdof)) + posnnormal1[0].dot(
+            m_vnphalf.segment(rod1base, rod1nvdof)));
+    assert(approxEq(lgrhs(0), eecol.computeRelativeVelocity() * NORMAL_SCALING, 1.0e-6));
     assert(lgrhs(0) < 0.0);
 
     // Entries 1...numalpha
     for (int i = 1; i < nc0; ++i)
     {
-        assert(posnn0[i].size() == m_vnphalf.segment(rod0base, rod0nvdof).size());
-        lgrhs(i) = posnn0[i].dot(m_vnphalf.segment(rod0base, rod0nvdof));
+        assert(posnnormal0[i].size() == m_vnphalf.segment(rod0base, rod0nvdof).size());
+        lgrhs(i) = posnnormal0[i].dot(m_vnphalf.segment(rod0base, rod0nvdof));
     }
     // Entries numalpha...numalpha+numbeta
     for (int i = 1; i < nc1; ++i)
     {
-        assert(posnn1[i].size() == m_vnphalf.segment(rod1base, rod1nvdof).size());
-        lgrhs(nc0 + i - 1) = posnn1[i].dot(m_vnphalf.segment(rod1base, rod1nvdof));
+        assert(posnnormal1[i].size() == m_vnphalf.segment(rod1base, rod1nvdof).size());
+        lgrhs(nc0 + i - 1) = posnnormal1[i].dot(m_vnphalf.segment(rod1base, rod1nvdof));
     }
     //TraceStream(g_log, "") << lgrhs << '\n';
     lgrhs *= -1.0;
@@ -2824,15 +2557,68 @@ bool BARodStepper::changeVelocityBothFree(const std::vector<VecXd>& posnn0, cons
     for (int i = 1; i < nc0; ++i)
     {
         assert(m_vnphalf.segment(rod0base, rod0nvdof).size() == posnntilde0[i].size());
-        m_vnphalf.segment(rod0base, rod0nvdof) += alpha(i) * posnntilde0[i] * NORMAL_SCALING;
+        m_vnphalf.segment(rod0base, rod0nvdof) += alpha(i) * posnntilde0[i];
     }
     // Add the rod 1 specific impulses to rod 1
     for (int i = 1; i < nc1; ++i)
     {
         assert(m_vnphalf.segment(rod1base, rod1nvdof).size() == posnntilde1[i].size());
-        m_vnphalf.segment(rod1base, rod1nvdof) += alpha(nc0 + i - 1) * posnntilde1[i] * NORMAL_SCALING;
+        m_vnphalf.segment(rod1base, rod1nvdof) += alpha(nc0 + i - 1) * posnntilde1[i];
     }
 
+}
+
+void BARodStepper::extractVertexDOF(std::vector<VecXd>& posnnormal, const std::vector<VecXd>& normal,
+        const ElasticRod* const rod)
+{
+    assert(rod != NULL);
+
+    for (std::vector<VecXd>::iterator constraint = posnnormal.begin(); constraint != posnnormal.end(); constraint++)
+    {
+        *constraint = VecXd(3 * rod->nv());
+        int theidx = 0;
+        for (ElasticRod::vertex_iter vertex = rod->vertices_begin(); vertex != rod->vertices_end(); ++vertex, theidx += 3)
+            constraint->segment<3> (theidx) = normal[constraint - posnnormal.begin()].segment<3> (rod->vertIdx(*vertex, 0));
+    }
+}
+
+void BARodStepper::computeCompliantLHS(MatrixBase* lhs, ElasticRod* const rod)
+{
+    assert(lhs != NULL);
+    assert(rod != NULL);
+
+    //double emphasizeStaticEquilibium = 0;
+    //InfoStream(g_log,"") << "BARodStepper::computeCompliantLHS: emphasizing static equilibrium = " << emphasizeStaticEquilibium;
+
+    // lhs = -h^2*dF/dx
+    lhs->setZero();
+    //TraceStream(g_log, "") << "WARNING: COMPLIANCE is disabled!" << '\n';
+    //colliding_rod->computeJacobian(0, -m_dt * m_dt - emphasizeStaticEquilibium, *lhs);
+    rod->computeJacobian(0, -m_dt * m_dt, *lhs);
+    lhs->finalize();
+
+    // lhs = M - h^2*dF/dx
+    for (int i = 0; i < rod->ndof(); ++i)
+        lhs->add(i, i, rod->getMass(i));
+    lhs->finalize();
+
+    // Set rows/cols of twist DOFs to identity
+    // TODO: Handle this better
+    EPropHandle<int> edgeIdx;
+    rod->property_handle(edgeIdx, "edge index");
+    std::vector<int> dofs_to_clear;
+    for (ElasticRod::edge_iter eit = rod->edges_begin(); eit != rod->edges_end(); ++eit)
+    {
+        int twist_dof = rod->property(edgeIdx)[*eit];
+        dofs_to_clear.push_back(twist_dof);
+    }
+
+    lhs->zeroRows(dofs_to_clear, 1.0);
+    lhs->finalize();
+    lhs->zeroCols(dofs_to_clear, 1.0);
+    lhs->finalize();
+
+    assert(isSymmetric(*lhs));
 }
 
 /**
@@ -2894,16 +2680,11 @@ bool BARodStepper::checkLengths(std::vector<bool>& stretching_rods)
 
     for (RodSelectionType::iterator rod = m_simulated_rods.begin(); rod != m_simulated_rods.end(); rod++)
     {
-        stretching_rods[*rod] = !checkLength(*rod);
-
-        if (stretching_rods[*rod])
+        if (stretching_rods[*rod] = !checkLength(*rod)) // Not a mistake
         {
-            // Declare the rod collision-immune for the rest of the time step.
-            for (int j = 0; j < m_rods[*rod]->nv(); ++j)
-                m_collision_immune[m_base_vtx_indices[*rod] + j] = false;
+            stretching_detected = true;
+            setRodImmunity(*rod, true);
         }
-
-        stretching_detected = stretching_detected || stretching_rods[*rod];
     }
 
     if (stretching_detected)
@@ -2912,10 +2693,9 @@ bool BARodStepper::checkLengths(std::vector<bool>& stretching_rods)
     return stretching_detected;
 }
 
-bool BARodStepper::checkLength(int rodIdx) const
+bool BARodStepper::checkLength(const int rodIdx) const
 {
     double length = 0.0;
-
     for (int j = 1; j < m_rods[rodIdx]->nv(); j++)
         length += (m_rods[rodIdx]->getVertex(j) - m_rods[rodIdx]->getVertex(j - 1)).norm();
 

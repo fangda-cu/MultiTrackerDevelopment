@@ -39,7 +39,7 @@ typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> MatXd; ///< arbitr
 //typedef Eigen::eigen2_Quaternion<Scalar> Quaternion; ///< scalar quaternion
 typedef Eigen::Quaternion<Scalar> Quaternion;
 
-#define SMALL_NUMBER 1.0e-10
+//#define SMALL_NUMBER 1.0e-10
 
 } // namespace BASim
 
