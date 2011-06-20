@@ -131,8 +131,8 @@ public:
         // rhs == forces
         TraceStream(g_log, "") << "Staticsolver::computeResidual: evaluating PDot...\n";
         m_rhs.setZero();
-	m_energy = 0;
-	m_diffEq.updateCachedQuantities();
+	    m_energy = 0;
+	    m_diffEq.updateCachedQuantities();
         m_diffEq.evaluateConservativeForcesEnergy(m_rhs, m_energy);
 
         // For prescribed (fixed) DOFS, overwrite heuristic initial guess

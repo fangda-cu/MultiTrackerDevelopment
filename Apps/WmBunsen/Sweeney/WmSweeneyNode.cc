@@ -408,7 +408,7 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
 
     vector< BASim::Vec3d > vertices;
 
-    for ( unsigned int inputStrandNumber = 0; inputStrandNumber < numberOfStrands; ++inputStrandNumber )
+    for ( unsigned int inputStrandNumber = 0; inputStrandNumber < 1; ++inputStrandNumber )
     {
     	MVector direction = m_strandVertices[ currentVertexIndex + 1 ]
                                 - m_strandVertices[ currentVertexIndex ];

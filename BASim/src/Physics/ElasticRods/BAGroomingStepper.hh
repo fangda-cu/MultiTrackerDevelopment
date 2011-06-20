@@ -460,7 +460,7 @@ private:
     RodSelectionType m_killed_rods; // NB these two lists should always be complementary (unless KEEP_ONLY_SOME_RODS)
 
     PerformanceTuningParameters m_perf_param;
-    // TextLog* g_log;
+    //TextLog* g_log;
 
     //  std::ofstream m_log_stream;
 
