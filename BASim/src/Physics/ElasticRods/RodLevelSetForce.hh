@@ -1,7 +1,6 @@
 // RodLevelSetForce.hh
 //
 
-
 #ifndef RodLevelSetForce_HH
 #define RodLevelSetForce_HH
 

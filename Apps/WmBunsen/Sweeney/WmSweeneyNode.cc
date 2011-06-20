@@ -408,7 +408,7 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
 
     vector< BASim::Vec3d > vertices;
 
-    for ( unsigned int inputStrandNumber = 0; inputStrandNumber < 1; ++inputStrandNumber )
+    for ( unsigned int inputStrandNumber = 0; inputStrandNumber < numberOfStrands; ++inputStrandNumber )
     {
     	MVector direction = m_strandVertices[ currentVertexIndex + 1 ]
                                 - m_strandVertices[ currentVertexIndex ];
@@ -425,7 +425,6 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
        				m_strandRootFrames[ 3*inputStrandNumber ].y,
        				m_strandRootFrames[ 3*inputStrandNumber ].z  );
 
-        	constructRodVertices( vertices, direction, m_strandVertices[ currentVertexIndex ] );
         	m1.normalize();
 
         	m_rodManager->addRod( vertices, m_startTime, m1 );

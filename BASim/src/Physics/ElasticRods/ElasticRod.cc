@@ -170,6 +170,7 @@ void ElasticRod::computeConservativeForcesEnergy(VecXd& force, Scalar& energy)
   }
 }
 
+
 void ElasticRod::computeJacobian(int baseidx, Scalar scale, MatrixBase& J)
 {
     RodForces& forces = getForces();
@@ -440,7 +441,6 @@ void ElasticRod::updateReferenceProperties()
         (*it)->updateReferenceDomain();
     }
 }
-
 
 void ElasticRod::updateStiffness() {
   computeVertexMasses();
