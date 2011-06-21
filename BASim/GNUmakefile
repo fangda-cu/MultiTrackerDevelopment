@@ -11,12 +11,10 @@ IPATHS 	+= -I$(MKLROOT)/include
 # This is so that the library can access a header in BASimulator app. Nasty, but that's how the code it came
 IPATHS 	+= -I../../../
 
-LIB1       := Wfigaro
-#LIB1_CF += -DBUILD=${BUILD} -fPIC -DWETA
-#LIB1_CF    += -DBUILD=${BUILD} -pthread -fPIC -DHAVE_LAPACK -DWETA
-LIB1_CF    += -DBUILD=${BUILD} -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA  -openmp -DHAVE_OPENMP -UNDEBUG
-# Please don't commit with -DNDEBUG or -UNDEBUG here as Hudson relies on the flag set by make dbg. 
-#LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -fPIC -DHAVE_LAPACK -DWETA
+LIB1    := Wfigaro
+LIB1_CF += -DBUILD=${BUILD} -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA  -openmp -DHAVE_OPENMP -UNDEBUG
+# Please don't commit with -DNDEBUG here as Hudson relies on the flag being unset by make dbg.
+# For production release, do not forget to remove -UNDEBUG as we don't want make opt to have assertions.
 LIB1_CF += -w
 
 PHYSBAM_LOCATION := /vol/weta/src/amcadams/PhysBAM-svn
@@ -345,21 +343,6 @@ Physics/ElasticRods/MinimalRodStateBackup.hh \
 Physics/ElasticRods/RodReverseSolver.hh \
 Core/TopologicalObject/TopologicalObject.inl \
 Core/ObjectControllerBase.inl
-#Collisions/UniformGrid.hh \
-#Collisions/CollisionMeshData.hh \
-#Collisions/RodneyVector.hh \
-#Collisions/BridsonArray.hh \
-#Collisions/BridsonArray1.hh \
-#Collisions/BridsonArray3.hh \
-#Collisions/BridsonUtil.hh \
-#Collisions/BridsonVec.hh \
-#Collisions/CandidateCollision.hh \
-#Collisions/Collision.hh \
-#Collisions/CollisionObject.hh \
-#SceneXML/tinyxml/tinyxml.h \
-#SceneXML/tinyxml/tinystr.h \
-#SceneXML/SceneXML.hh \
-
 
 LIB1_S     := \
 src/Collisions/BVH.cc \
@@ -418,17 +401,6 @@ src/Physics/ElasticRods/MinimalRodStateBackup.cc \
 src/Physics/ElasticRods/RodReverseSolver.cc \
 src/Physics/World.cc \
 src/Util/TextLog.cc
-#src/Collisions/CollisionMeshData.cc \
-#src/Collisions/UniformGrid.cc \
-#src/Collisions/LevelSet.cc \
-#src/Collisions/CandidateCollision.cc \
-#src/Collisions/Collision.cc \
-#src/SceneXML/tinyxml/tinyxml.cpp \
-#src/SceneXML/tinyxml/tinyxmlerror.cpp \
-#src/SceneXML/tinyxml/tinyxmlparser.cpp \
-#src/SceneXML/tinyxml/tinystr.cpp \
-#src/SceneXML/SceneXML.cc \
-
 
 
 ##############################################################################
