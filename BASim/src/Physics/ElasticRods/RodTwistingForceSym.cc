@@ -479,27 +479,26 @@ void RodTwistingForceSym::computeHessTwist()
         const Vec3d tilde_t = 1.0 / chi * (te + tf);
 
         const Mat3d D2mDe2 = -0.25 / square(norm_e) * (outerProd(kb, te + tilde_t) + outerProd(te + tilde_t, kb));
+        assert(isSymmetric(D2mDe2));
+
         const Mat3d D2mDf2 = -0.25 / square(norm_f) * (outerProd(kb, tf + tilde_t) + outerProd(tf + tilde_t, kb));
+        assert(isSymmetric(D2mDf2));
+
         const Mat3d D2mDeDf = 0.5 / (norm_e * norm_f) * (2.0 / chi * crossMat(te) - outerProd(kb, tilde_t));
         const Mat3d D2mDfDe = D2mDeDf.transpose();
 
         DDtwist.block<3, 3> (0, 0) = D2mDe2;
         DDtwist.block<3, 3> (0, 4) = -D2mDe2 + D2mDeDf;
-        DDtwist.block<3, 3> (0, 8) = -D2mDeDf;
         DDtwist.block<3, 3> (4, 0) = -D2mDe2 + D2mDfDe;
-        DDtwist.block<3, 3> (4, 4) = D2mDe2 - D2mDeDf - D2mDfDe + D2mDf2;
-        DDtwist.block<3, 3> (4, 8) = D2mDeDf - D2mDf2;
+        DDtwist.block<3, 3> (4, 4) = D2mDe2 - (D2mDeDf + D2mDfDe) + D2mDf2;
+        DDtwist.block<3, 3> (0, 8) = -D2mDeDf;
         DDtwist.block<3, 3> (8, 0) = -D2mDfDe;
         DDtwist.block<3, 3> (8, 4) = D2mDfDe - D2mDf2;
+        DDtwist.block<3, 3> (4, 8) = D2mDeDf - D2mDf2;
         DDtwist.block<3, 3> (8, 8) = D2mDf2;
-
-        // DEBUG: let's cheat on symmetry for now
-        assert(approxSymmetric(DDtwist, 1e-6));
-        DDtwist = symmetrize(DDtwist);
 
         assert(isSymmetric(DDtwist));
     }
-
     m_rod.property(m_hessTwistValid) = true;
 }
 
