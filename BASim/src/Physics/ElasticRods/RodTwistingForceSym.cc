@@ -494,7 +494,7 @@ void RodTwistingForceSym::computeHessTwist()
         DDtwist.block<3, 3> (8, 8) = D2mDf2;
 
         // DEBUG: let's cheat on symmetry for now
-        assert(approxSymmetric(DDtwist, 1e-8));
+        assert(approxSymmetric(DDtwist, 1e-6));
         DDtwist = symmetrize(DDtwist);
 
         assert(isSymmetric(DDtwist));

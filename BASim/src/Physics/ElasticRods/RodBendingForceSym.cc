@@ -670,9 +670,9 @@ void RodBendingForceSym::computeHessKappa()
         DDkappa2.block<1, 3> (7, 8) = DDkappa2.block<3, 1> (8, 7).transpose();
 
         // DEBUG: let's cheat on symmetry for now
-        assert(approxSymmetric(DDkappa1, 1.0e-8));
+        assert(approxSymmetric(DDkappa1, 1.0e-6));
         DDkappa1 = symmetrize(DDkappa1);
-        assert(approxSymmetric(DDkappa2, 1.0e-8));
+        assert(approxSymmetric(DDkappa2, 1.0e-6));
         DDkappa2 = symmetrize(DDkappa2);
 
         assert(isSymmetric(DDkappa1));
