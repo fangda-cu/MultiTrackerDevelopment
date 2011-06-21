@@ -14,7 +14,7 @@ IPATHS 	+= -I../../../
 LIB1       := Wfigaro
 #LIB1_CF += -DBUILD=${BUILD} -fPIC -DWETA
 #LIB1_CF    += -DBUILD=${BUILD} -pthread -fPIC -DHAVE_LAPACK -DWETA
-LIB1_CF    += -DBUILD=${BUILD} -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA  -openmp -DHAVE_OPENMP
+LIB1_CF    += -DBUILD=${BUILD} -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA  -openmp -DHAVE_OPENMP -UNDEBUG
 # Please don't commit with -DNDEBUG or -UNDEBUG here as Hudson relies on the flag set by make dbg. 
 #LIB1_CF    += -DBUILD=${BUILD} -openmp -pthread -fPIC -DHAVE_LAPACK -DWETA
 LIB1_CF += -w

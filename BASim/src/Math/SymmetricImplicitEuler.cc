@@ -15,6 +15,53 @@ namespace BASim
 {
 
 template<class ODE>
+bool SymmetricImplicitEuler<ODE>::execute()
+{
+    START_TIMER("SymmetricImplicitEuler::execute");
+
+    START_TIMER("SymmetricImplicitEuler::execute/backup");
+    m_diffEq.backupResize();
+    m_diffEq.backup();
+    STOP_TIMER("SymmetricImplicitEuler::execute/backup");
+
+    for (int guess = 0; guess <= 5; ++guess)
+    {
+        if (position_solve(guess))
+        {
+            START_TIMER("SymmetricImplicitEuler::execute/backup");
+            m_diffEq.backupClear();
+            STOP_TIMER("SymmetricImplicitEuler::execute/backup");
+
+            STOP_TIMER("SymmetricImplicitEuler::execute");
+
+            return true;
+        }
+
+        START_TIMER("SymmetricImplicitEuler::execute/backup");
+        m_diffEq.backupRestore();
+        STOP_TIMER("SymmetricImplicitEuler::execute/backup");
+    }
+
+    // Falling back to rigid motion if solver failed, so at least the rod doesn't mess up collision detection for this time step
+    generateInitialIterate0(m_deltaX);
+    // Force the scripted vertices to their place. NB: if the first two vertices are inextensibly scripted this shouldn't be necessary.
+    for (int i = 0; i < m_fixed.size(); ++i)
+    {
+        const int dof = m_fixed[i];
+        m_deltaX(dof) = m_desired[i] - x0(dof); // set desired position
+    }
+    m_diffEq.set_q(x0 + m_deltaX);
+
+    START_TIMER("SymmetricImplicitEuler::execute/backup");
+    m_diffEq.backupClear();
+    STOP_TIMER("SymmetricImplicitEuler::execute/backup");
+
+    STOP_TIMER("SymmetricImplicitEuler::execute");
+
+    return false;
+}
+
+template<class ODE>
 bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
 {
     START_TIMER("SymmetricImplicitEuler::position_solve/setup");
@@ -276,7 +323,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
         // Check for exceeding limit on number of Newton iterations
         if (curit == m_maxit - 1)
         {
-            DebugStream(g_log, "") << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver reached max iterations: "
+            TraceStream(g_log, "") << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver reached max iterations: "
                     << m_maxit << " with initial guess " << guess_to_use << '\n';
             return false;
         }
@@ -318,7 +365,7 @@ inline static Vec3d RigidMotion(const Vec3d& x, const Vec3d& p0, const Eigen::An
     return dt * w0 + p0 - x + rotation._transformVector(x - p0);
 }
 
-// Initial guess based on rigid motion of the first two vertices.
+// Initial guess based on rigid motion of the first two vertices, assuming their distance remains constant.
 template<>
 bool SymmetricImplicitEuler<RodTimeStepper>::generateInitialIterate0(VecXd& dx)
 {
@@ -340,14 +387,15 @@ bool SymmetricImplicitEuler<RodTimeStepper>::generateInitialIterate0(VecXd& dx)
     else
         normal = normal / normalNorm;
     assert(approxEq(normal.norm(), 1.0));
-    TraceStream(g_log, "") << "Initial guess by rigid motion: normal = " << normal << " angle = " << angle << " w0 = " << w0
-            << '\n';
+    // DebugStream(g_log, "") << "Initial guess by rigid motion: p0 = " << p0 << " q0 = " << q0 << " w0 = " << w0 << " p1 = "
+    //         << p1 << " q1 = " << q1 << " w1 = " << w1 << " normal = " << normal << " angle = " << angle << '\n';
 
-    // Set initial vertex coordinates by rigid motion and initial twist angles to zero.
+    // Set initial vertex coordinates by rigid motion and initial twist angles to zero. TODO: surely there is a better way than explicitly computing the rotation matrix!
     const Eigen::AngleAxis<double> rotation(angle, normal);
     for (int i = 0; i < m_ndof - 3; i += 4)
     {
         dx.segment<3> (i) = RigidMotion(x0.segment<3> (i), p0, rotation, w0, m_dt);
+        // DebugStream(g_log, "") << "Predicted vertex " << i / 4 << " = " << x0.segment<3> (i) + dx.segment<3> (i) << '\n';
         dx(i + 3) = 0;
     }
     dx.segment<3> (m_ndof - 3) = RigidMotion(x0.segment<3> (m_ndof - 3), p0, rotation, w0, m_dt);

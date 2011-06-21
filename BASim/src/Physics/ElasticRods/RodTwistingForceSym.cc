@@ -465,23 +465,23 @@ void RodTwistingForceSym::computeHessTwist()
     iterator end = m_stencil.end();
     for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil)
     {
-        vertex_handle& vh = m_stencil.handle();
+        const vertex_handle& vh = m_stencil.handle();
         MatXd& DDtwist = m_rod.property(m_hessTwist)[vh];
         DDtwist.setZero();
-        int i = vh.idx();
+        const int i = vh.idx();
         const Vec3d& te = m_rod.getTangent(i - 1);
         const Vec3d& tf = m_rod.getTangent(i);
-        Scalar norm_e = m_rod.getEdgeLength(i - 1);
-        Scalar norm_f = m_rod.getEdgeLength(i);
+        const Scalar norm_e = m_rod.getEdgeLength(i - 1);
+        const Scalar norm_f = m_rod.getEdgeLength(i);
         const Vec3d& kb = m_rod.getCurvatureBinormal(vh);
 
-        Scalar chi = 1 + te.dot(tf);
-        Vec3d tilde_t = 1.0 / chi * (te + tf);
+        const Scalar chi = 1 + te.dot(tf);
+        const Vec3d tilde_t = 1.0 / chi * (te + tf);
 
-        Mat3d D2mDe2 = -0.25 / square(norm_e) * (outerProd(kb, te + tilde_t) + outerProd(te + tilde_t, kb));
-        Mat3d D2mDf2 = -0.25 / square(norm_f) * (outerProd(kb, tf + tilde_t) + outerProd(tf + tilde_t, kb));
-        Mat3d D2mDeDf = 0.5 / (norm_e * norm_f) * (2.0 / chi * crossMat(te) - outerProd(kb, tilde_t));
-        Mat3d D2mDfDe = D2mDeDf.transpose();
+        const Mat3d D2mDe2 = -0.25 / square(norm_e) * (outerProd(kb, te + tilde_t) + outerProd(te + tilde_t, kb));
+        const Mat3d D2mDf2 = -0.25 / square(norm_f) * (outerProd(kb, tf + tilde_t) + outerProd(tf + tilde_t, kb));
+        const Mat3d D2mDeDf = 0.5 / (norm_e * norm_f) * (2.0 / chi * crossMat(te) - outerProd(kb, tilde_t));
+        const Mat3d D2mDfDe = D2mDeDf.transpose();
 
         DDtwist.block<3, 3> (0, 0) = D2mDe2;
         DDtwist.block<3, 3> (0, 4) = -D2mDe2 + D2mDeDf;
@@ -494,7 +494,7 @@ void RodTwistingForceSym::computeHessTwist()
         DDtwist.block<3, 3> (8, 8) = D2mDf2;
 
         // DEBUG: let's cheat on symmetry for now
-        assert(approxSymmetric(DDtwist, 1e-9));
+        assert(approxSymmetric(DDtwist, 1e-8));
         DDtwist = symmetrize(DDtwist);
 
         assert(isSymmetric(DDtwist));

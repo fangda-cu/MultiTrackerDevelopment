@@ -428,7 +428,7 @@ void BARodStepper::initializeSimulationList()
     << "WARNING: KEEP_ONLY_SOME_RODS: Simulating only a specified subset of rods!\n***********************************************************\n";
     std::set<int> keep_only;
 
-    keep_only.insert(87);
+    keep_only.insert(11);
 
     // Only the rods in the keep_only set are kept, the others are killed.
     for (int i = 0; i < m_number_of_rods; i++)
@@ -997,9 +997,6 @@ void BARodStepper::extractPositions(VecXd& positions, const RodSelectionType& se
 
     assert(m_triangle_meshes.size() == m_base_triangle_indices.size());
 
-    //    std::cerr << "positions.size() = " << positions.size() << '\n';
-    //    std::cerr << "m_base_triangle_indices.size() = " << m_base_triangle_indices.size() << '\n';
-
     for (int i = 0; i < (int) m_triangle_meshes.size(); ++i)
     {
         int j = 0;
@@ -1010,8 +1007,6 @@ void BARodStepper::extractPositions(VecXd& positions, const RodSelectionType& se
             positions.segment<3> (m_base_triangle_indices[i] + 3 * j) = m_triangle_meshes[i]->getVertex(*vit);
         }
     }
-
-    //    assert((positions.cwise() == positions).all());
 
     // Ensure boundary conditions loaded properly
 #ifndef NDEBUG
@@ -1025,10 +1020,9 @@ void BARodStepper::extractPositions(VecXd& positions, const RodSelectionType& se
         for (int j = 0; j < m_rods[*rod]->nv(); ++j)
             if (boundary->isVertexScripted(j))
             {
-                //  std::cout << "BridsonTimeStepper is calling RodBoundaryCondition at m_t = " << m_t << '\n';
-                Vec3d desiredposition = boundary->getDesiredVertexPosition(j, time);
-                Vec3d actualvalue = positions.segment<3> (rodbase + 3 * j);
-                assert(approxEq(desiredposition, actualvalue, 1.0e-6));
+                const Vec3d desiredposition = boundary->getDesiredVertexPosition(j, time);
+                const Vec3d actualvalue = positions.segment<3> (rodbase + 3 * j);
+                assert(approxEq(desiredposition, actualvalue, 1.0e-12));
             }
     }
 #endif
@@ -1706,8 +1700,8 @@ void BARodStepper::exertInelasticImpulse(VertexFaceCTCollision& vfcol)
 /**
  * Compliant inelastic response
  */
-static const double NORMAL_SCALING = 1.0;
-static const double MATRIX_ASYMMETRY = 1.0e-8 * NORMAL_SCALING;
+static const double NORMAL_SCALING = 10.0;
+static const double MATRIX_ASYMMETRY = 1.0e-6 * NORMAL_SCALING;
 
 bool BARodStepper::exertCompliantInelasticImpulse(const CTCollision* cllsn)
 {
@@ -1778,7 +1772,7 @@ bool BARodStepper::exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCo
     assert(v0 >= 0);
     assert(v0 < colliding_rod->nv());
 
-    DebugStream(g_log, "") << "CTcollision: vertex " << v0 << " of rod " << rodidx << '\n';
+    TraceStream(g_log, "") << "CTcollision: vertex " << v0 << " of rod " << rodidx << '\n';
 
     // Compute the relative velocity of the collision
     assert(vfcol.computeRelativeVelocity() < 0.0);
@@ -1925,7 +1919,7 @@ bool BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFree(const EdgeEdgeC
         return;
     }
 
-    DebugStream(g_log, "") << "CTcollision: rod " << rodidx << " vs. mesh\n";
+    TraceStream(g_log, "") << "CTcollision: rod " << rodidx << " vs. mesh\n";
 
     // Convert the vertices' global indices to rod indices
     int rodbase = m_base_dof_indices[rodidx];
@@ -2078,7 +2072,7 @@ bool BARodStepper::changeVelocityOneFree(const std::vector<VecXd>& posnnormal, c
 #ifndef NDEBUG
     Eigen::EigenSolver<MatXd> es;
     es.compute(lglhs, false); // compute the eigenvalues, not the eigenvectors
-    DebugStream(g_log, "") << "Compliance matrix eigenvalues: " << es.eigenvalues() << '\n';
+    TraceStream(g_log, "") << "Compliance matrix eigenvalues: " << es.eigenvalues() << '\n';
 
     // TODO: Test the conditioning number here
 #endif

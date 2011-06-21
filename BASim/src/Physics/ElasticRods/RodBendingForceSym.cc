@@ -512,10 +512,10 @@ void RodBendingForceSym::computeHessKappa()
     if (m_rod.property(m_hessKappaValid))
         return;
 
-    iterator end = m_stencil.end();
+    const iterator end = m_stencil.end();
     for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil)
     {
-        vertex_handle& vh = m_stencil.handle();
+        const vertex_handle& vh = m_stencil.handle();
         int i = vh.idx();
 
         MatXd& DDkappa1 = m_rod.property(m_hessKappa)[vh].first;
@@ -526,11 +526,11 @@ void RodBendingForceSym::computeHessKappa()
         // Unused? const Vec3d& e = m_rod.getEdge(i-1);
         // Unused? const Vec3d& f = m_rod.getEdge(i);
 
-        Scalar norm_e = m_rod.getEdgeLength(i - 1);
-        Scalar norm_f = m_rod.getEdgeLength(i);
+        const Scalar norm_e = m_rod.getEdgeLength(i - 1);
+        const Scalar norm_f = m_rod.getEdgeLength(i);
 
-        Scalar norm2_e = square(norm_e);
-        Scalar norm2_f = square(norm_f);
+        const Scalar norm2_e = square(norm_e);
+        const Scalar norm2_f = square(norm_f);
 
         const Vec3d& te = m_rod.getTangent(i - 1);
         const Vec3d& tf = m_rod.getTangent(i);
@@ -540,80 +540,80 @@ void RodBendingForceSym::computeHessKappa()
         const Vec3d& d1f = m_rod.getMaterial1(i);
         const Vec3d& d2f = m_rod.getMaterial2(i);
 
-        Scalar chi = 1.0 + te.dot(tf);
-        Vec3d tilde_t = (te + tf) / chi;
-        Vec3d tilde_d1 = (d1e + d1f) / chi;
-        Vec3d tilde_d2 = (d2e + d2f) / chi;
+        const Scalar chi = 1.0 + te.dot(tf);
+        const Vec3d tilde_t = (te + tf) / chi;
+        const Vec3d tilde_d1 = (d1e + d1f) / chi;
+        const Vec3d tilde_d2 = (d2e + d2f) / chi;
 
         const Vec2d& kappa = getKappa(vh);
-        Scalar kappa1 = kappa(0);
-        Scalar kappa2 = kappa(1);
+        const Scalar kappa1 = kappa(0);
+        const Scalar kappa2 = kappa(1);
 
         const Vec3d& kb = m_rod.getCurvatureBinormal(i);
 
-        Mat3d tt_o_tt = outerProd(tilde_t, tilde_t);
-        Mat3d tf_c_d2t_o_tt = outerProd(tf.cross(tilde_d2), tilde_t);
-        Mat3d tt_o_tf_c_d2t = tf_c_d2t_o_tt.transpose();
-        Mat3d kb_o_d2e = outerProd(kb, d2e);
-        Mat3d d2e_o_kb = kb_o_d2e.transpose();
+        const Mat3d tt_o_tt = outerProd(tilde_t, tilde_t);
+        const Mat3d tf_c_d2t_o_tt = outerProd(tf.cross(tilde_d2), tilde_t);
+        const Mat3d tt_o_tf_c_d2t = tf_c_d2t_o_tt.transpose();
+        const Mat3d kb_o_d2e = outerProd(kb, d2e);
+        const Mat3d d2e_o_kb = kb_o_d2e.transpose();
 
-        Mat3d Id = Mat3d::Identity();
+        const Mat3d Id = Mat3d::Identity();
 
-        Mat3d D2kappa1De2 = 1.0 / norm2_e * (2 * kappa1 * tt_o_tt - tf_c_d2t_o_tt - tt_o_tf_c_d2t) - kappa1 / (chi * norm2_e)
+        const Mat3d D2kappa1De2 = 1.0 / norm2_e * (2 * kappa1 * tt_o_tt - tf_c_d2t_o_tt - tt_o_tf_c_d2t) - kappa1 / (chi * norm2_e)
                 * (Id - outerProd(te, te)) + 1.0 / (4.0 * norm2_e) * (kb_o_d2e + d2e_o_kb);
 
-        Mat3d te_c_d2t_o_tt = outerProd(te.cross(tilde_d2), tilde_t);
-        Mat3d tt_o_te_c_d2t = te_c_d2t_o_tt.transpose();
-        Mat3d kb_o_d2f = outerProd(kb, d2f);
-        Mat3d d2f_o_kb = kb_o_d2f.transpose();
+        const Mat3d te_c_d2t_o_tt = outerProd(te.cross(tilde_d2), tilde_t);
+        const Mat3d tt_o_te_c_d2t = te_c_d2t_o_tt.transpose();
+        const Mat3d kb_o_d2f = outerProd(kb, d2f);
+        const Mat3d d2f_o_kb = kb_o_d2f.transpose();
 
-        Mat3d D2kappa1Df2 = 1.0 / norm2_f * (2 * kappa1 * tt_o_tt + te_c_d2t_o_tt + tt_o_te_c_d2t) - kappa1 / (chi * norm2_f)
+        const Mat3d D2kappa1Df2 = 1.0 / norm2_f * (2 * kappa1 * tt_o_tt + te_c_d2t_o_tt + tt_o_te_c_d2t) - kappa1 / (chi * norm2_f)
                 * (Id - outerProd(tf, tf)) + 1.0 / (4.0 * norm2_f) * (kb_o_d2f + d2f_o_kb);
 
-        Mat3d D2kappa1DeDf = -kappa1 / (chi * norm_e * norm_f) * (Id + outerProd(te, tf)) + 1.0 / (norm_e * norm_f) * (2
+        const Mat3d D2kappa1DeDf = -kappa1 / (chi * norm_e * norm_f) * (Id + outerProd(te, tf)) + 1.0 / (norm_e * norm_f) * (2
                 * kappa1 * tt_o_tt - tf_c_d2t_o_tt + tt_o_te_c_d2t - crossMat(tilde_d2));
-        Mat3d D2kappa1DfDe = D2kappa1DeDf.transpose();
+        const Mat3d D2kappa1DfDe = D2kappa1DeDf.transpose();
 
-        Mat3d tf_c_d1t_o_tt = outerProd(tf.cross(tilde_d1), tilde_t);
-        Mat3d tt_o_tf_c_d1t = tf_c_d1t_o_tt.transpose();
-        Mat3d kb_o_d1e = outerProd(kb, d1e);
-        Mat3d d1e_o_kb = kb_o_d1e.transpose();
+        const Mat3d tf_c_d1t_o_tt = outerProd(tf.cross(tilde_d1), tilde_t);
+        const Mat3d tt_o_tf_c_d1t = tf_c_d1t_o_tt.transpose();
+        const Mat3d kb_o_d1e = outerProd(kb, d1e);
+        const Mat3d d1e_o_kb = kb_o_d1e.transpose();
 
-        Mat3d D2kappa2De2 = 1.0 / norm2_e * (2 * kappa2 * tt_o_tt + tf_c_d1t_o_tt + tt_o_tf_c_d1t) - kappa2 / (chi * norm2_e)
+        const Mat3d D2kappa2De2 = 1.0 / norm2_e * (2 * kappa2 * tt_o_tt + tf_c_d1t_o_tt + tt_o_tf_c_d1t) - kappa2 / (chi * norm2_e)
                 * (Id - outerProd(te, te)) - 1.0 / (4.0 * norm2_e) * (kb_o_d1e + d1e_o_kb);
 
-        Mat3d te_c_d1t_o_tt = outerProd(te.cross(tilde_d1), tilde_t);
-        Mat3d tt_o_te_c_d1t = te_c_d1t_o_tt.transpose();
-        Mat3d kb_o_d1f = outerProd(kb, d1f);
-        Mat3d d1f_o_kb = kb_o_d1f.transpose();
+        const Mat3d te_c_d1t_o_tt = outerProd(te.cross(tilde_d1), tilde_t);
+        const Mat3d tt_o_te_c_d1t = te_c_d1t_o_tt.transpose();
+        const Mat3d kb_o_d1f = outerProd(kb, d1f);
+        const Mat3d d1f_o_kb = kb_o_d1f.transpose();
 
-        Mat3d D2kappa2Df2 = 1.0 / norm2_f * (2 * kappa2 * tt_o_tt - te_c_d1t_o_tt - tt_o_te_c_d1t) - kappa2 / (chi * norm2_f)
+        const Mat3d D2kappa2Df2 = 1.0 / norm2_f * (2 * kappa2 * tt_o_tt - te_c_d1t_o_tt - tt_o_te_c_d1t) - kappa2 / (chi * norm2_f)
                 * (Id - outerProd(tf, tf)) - 1.0 / (4.0 * norm2_f) * (kb_o_d1f + d1f_o_kb);
 
-        Mat3d D2kappa2DeDf = -kappa2 / (chi * norm_e * norm_f) * (Id + outerProd(te, tf)) + 1.0 / (norm_e * norm_f) * (2
+        const Mat3d D2kappa2DeDf = -kappa2 / (chi * norm_e * norm_f) * (Id + outerProd(te, tf)) + 1.0 / (norm_e * norm_f) * (2
                 * kappa2 * tt_o_tt + tf_c_d1t_o_tt - tt_o_te_c_d1t + crossMat(tilde_d1));
-        Mat3d D2kappa2DfDe = D2kappa2DeDf.transpose();
+        const Mat3d D2kappa2DfDe = D2kappa2DeDf.transpose();
 
-        Scalar D2kappa1Dthetae2 = -0.5 * kb.dot(d2e);
-        Scalar D2kappa1Dthetaf2 = -0.5 * kb.dot(d2f);
-        Scalar D2kappa2Dthetae2 = 0.5 * kb.dot(d1e);
-        Scalar D2kappa2Dthetaf2 = 0.5 * kb.dot(d1f);
+        const Scalar D2kappa1Dthetae2 = -0.5 * kb.dot(d2e);
+        const Scalar D2kappa1Dthetaf2 = -0.5 * kb.dot(d2f);
+        const Scalar D2kappa2Dthetae2 = 0.5 * kb.dot(d1e);
+        const Scalar D2kappa2Dthetaf2 = 0.5 * kb.dot(d1f);
 
-        Vec3d D2kappa1DeDthetae = 1.0 / norm_e * (0.5 * kb.dot(d1e) * tilde_t - 1.0 / chi * tf.cross(d1e));
+        const Vec3d D2kappa1DeDthetae = 1.0 / norm_e * (0.5 * kb.dot(d1e) * tilde_t - 1.0 / chi * tf.cross(d1e));
 
-        Vec3d D2kappa1DeDthetaf = 1.0 / norm_e * (0.5 * kb.dot(d1f) * tilde_t - 1.0 / chi * tf.cross(d1f));
+        const Vec3d D2kappa1DeDthetaf = 1.0 / norm_e * (0.5 * kb.dot(d1f) * tilde_t - 1.0 / chi * tf.cross(d1f));
 
-        Vec3d D2kappa1DfDthetae = 1.0 / norm_f * (0.5 * kb.dot(d1e) * tilde_t + 1.0 / chi * te.cross(d1e));
+        const Vec3d D2kappa1DfDthetae = 1.0 / norm_f * (0.5 * kb.dot(d1e) * tilde_t + 1.0 / chi * te.cross(d1e));
 
-        Vec3d D2kappa1DfDthetaf = 1.0 / norm_f * (0.5 * kb.dot(d1f) * tilde_t + 1.0 / chi * te.cross(d1f));
+        const Vec3d D2kappa1DfDthetaf = 1.0 / norm_f * (0.5 * kb.dot(d1f) * tilde_t + 1.0 / chi * te.cross(d1f));
 
-        Vec3d D2kappa2DeDthetae = 1.0 / norm_e * (0.5 * kb.dot(d2e) * tilde_t - 1.0 / chi * tf.cross(d2e));
+        const Vec3d D2kappa2DeDthetae = 1.0 / norm_e * (0.5 * kb.dot(d2e) * tilde_t - 1.0 / chi * tf.cross(d2e));
 
-        Vec3d D2kappa2DeDthetaf = 1.0 / norm_e * (0.5 * kb.dot(d2f) * tilde_t - 1.0 / chi * tf.cross(d2f));
+        const Vec3d D2kappa2DeDthetaf = 1.0 / norm_e * (0.5 * kb.dot(d2f) * tilde_t - 1.0 / chi * tf.cross(d2f));
 
-        Vec3d D2kappa2DfDthetae = 1.0 / norm_f * (0.5 * kb.dot(d2e) * tilde_t + 1.0 / chi * te.cross(d2e));
+        const Vec3d D2kappa2DfDthetae = 1.0 / norm_f * (0.5 * kb.dot(d2e) * tilde_t + 1.0 / chi * te.cross(d2e));
 
-        Vec3d D2kappa2DfDthetaf = 1.0 / norm_f * (0.5 * kb.dot(d2f) * tilde_t + 1.0 / chi * te.cross(d2f));
+        const Vec3d D2kappa2DfDthetaf = 1.0 / norm_f * (0.5 * kb.dot(d2f) * tilde_t + 1.0 / chi * te.cross(d2f));
 
         DDkappa1.block<3, 3> (0, 0) = D2kappa1De2;
         DDkappa1.block<3, 3> (0, 4) = -D2kappa1De2 + D2kappa1DeDf;
@@ -670,9 +670,9 @@ void RodBendingForceSym::computeHessKappa()
         DDkappa2.block<1, 3> (7, 8) = DDkappa2.block<3, 1> (8, 7).transpose();
 
         // DEBUG: let's cheat on symmetry for now
-        assert(approxSymmetric(DDkappa1, 1.0e-9));
+        assert(approxSymmetric(DDkappa1, 1.0e-8));
         DDkappa1 = symmetrize(DDkappa1);
-        assert(approxSymmetric(DDkappa2, 1.0e-9));
+        assert(approxSymmetric(DDkappa2, 1.0e-8));
         DDkappa2 = symmetrize(DDkappa2);
 
         assert(isSymmetric(DDkappa1));
