@@ -12,9 +12,9 @@
 #include "RodReverseSolver.hh"
 
 #include "RodStretchingForce.hh"
-#include "RodTwistingForce.hh"
+//#include "RodTwistingForce.hh"
 #include "RodTwistingForceSym.hh"
-#include "RodBendingForce.hh"
+//#include "RodBendingForce.hh"
 #include "RodBendingForceSym.hh"
 #include "RodAnisoForce.hh"
 #include "../../Util/TextLog.hh"
@@ -176,7 +176,11 @@ void ElasticRod::computeJacobian(int baseidx, Scalar scale, MatrixBase& J)
     RodForces& forces = getForces();
 
     for (RodForces::iterator fIt = forces.begin(); fIt != forces.end(); ++fIt)
+    {
+        TraceStream(g_log, "") << "Computing global Jacobian for " << (*fIt)->getName() << '\n';
         (*fIt)->globalJacobian(baseidx, scale, J);
+    }
+    assert(isSymmetric(J));
 }
 
 void ElasticRod::computeEdges()

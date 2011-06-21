@@ -6,6 +6,7 @@
  */
 
 #include "BVH.hh"
+#include "../Util/TextLog.hh"
 
 namespace BASim
 {
@@ -75,6 +76,10 @@ void BVHBuilder::build(GeometryBBoxFunctor& bboxes, BVH* bvh)
             if (split_index == node.m_begin || split_index == node.m_end)
             {
                 nodes[node.m_node_index] = BVHNode(node_bbox, node.m_begin, node.m_end);
+#ifndef NDEBUG
+                if (node.m_end - node.m_begin > 1000)
+                    DebugStream(g_log, "") << "BVH leaf has " << node.m_end - node.m_begin << " elements\n";
+#endif
                 continue;
             }
 

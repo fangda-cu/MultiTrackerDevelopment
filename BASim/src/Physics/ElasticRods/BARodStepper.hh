@@ -309,18 +309,29 @@ private:
     void exertFaceImpulse(const Vec3d& I, const double& m0, const double& m1, const double& m2, const double& u,
             const double& v, const double& w, const int& idx0, const int& idx1, const int& idx2, VecXd& vel);
 
-    void computeCompliantLHS(MatrixBase* lhs, int rodidx);
+    bool exertCompliantInelasticImpulse(const CTCollision* cllsn);
+    bool exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCollision& vfcol);
+    bool exertCompliantInelasticEdgeEdgeImpulse(const EdgeEdgeCTCollision& eecol);
+    bool exertCompliantInelasticEdgeEdgeImpulseOneFree(const EdgeEdgeCTCollision& eecol);
+    bool exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdgeCTCollision& eecol);
+    void setRodImmunity(const int rodIdx, const bool immune);
 
-    void exertCompliantInelasticImpulse(const CTCollision* cllsn);
-    void exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCollision& vfcol);
-    void exertCompliantInelasticEdgeEdgeImpulse(const EdgeEdgeCTCollision& eecol);
-    void exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdgeCTCollision& eecol);
-    void exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdgeCTCollision& eecol);
+    void extractVertexDOF(std::vector<VecXd>& posnnormal, const std::vector<VecXd>& normal, const ElasticRod* const rod);
+    void computeCompliantLHS(MatrixBase* lhs, ElasticRod* const rod);
+
+    bool changeVelocityOneFree(const std::vector<VecXd>& posnnormal, const std::vector<VecXd>& posnntilde,
+            const std::vector<int>& scriptedverts, const VecXd& desired_values, int numconstraints, int rodbase, int nvdof,
+            const CTCollision& eecol);
+    bool changeVelocityBothFree(const std::vector<VecXd>& posnnormal0, const std::vector<VecXd>& posnnormal1,
+            const std::vector<VecXd>& posnntilde0, const std::vector<VecXd>& posnntilde1, const VecXd& cval0,
+            const VecXd& cval1, int nc0, int nc1, int rod0base, int rod1base, int rod0nvdof, int rod1nvdof,
+            const EdgeEdgeCTCollision& eecol);
+
     bool checkExplosions(std::vector<bool>& exploding_rods, const std::vector<bool>& failed_collisions_rods,
             const RodSelectionType& selected_rods);
     bool hadExplosion(int rodIdx) const;
     bool checkLengths(std::vector<bool>& stretching_rods);
-    bool checkLength(int rodIdx) const;
+    bool checkLength(const int rodIdx) const;
 
     //////////////////////////////////
     // Jungseock's penalty response
