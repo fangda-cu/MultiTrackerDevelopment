@@ -195,7 +195,7 @@ protected:
     {
         bool keepSolution = false;
 
-	// Evaluate residual for attempted increment
+        // Evaluate residual for attempted increment
         //////////////////////////////////////////////
 
         // Update the differential equation with the current guess
@@ -207,38 +207,38 @@ protected:
         /////////////////////////////////////////////////////////////
 
         if (isConverged())
-	{
+        {
 	    // Leave lambda alone
 
-	    TraceStream(g_log, "StaticSolver::position_solve") << "prev / new energy = " << m_initEnergy << " / " << m_energy << "; new residual = " << m_l2norm << "; retaining step; converged! keeping same lambda = " << m_lambda << "\n";
-	    keepSolution = true;
-	}
+        	TraceStream(g_log, "StaticSolver::position_solve") << "prev / new energy = " << m_initEnergy << " / " << m_energy << "; new residual = " << m_l2norm << "; retaining step; converged! keeping same lambda = " << m_lambda << "\n";
+        	keepSolution = true;
+        }
         else if (m_energy < m_initEnergy) 
         {
-	    // Decrease lambda (= increase trust region size = decrease regularization)
-	    m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_geardown, m_lambdamax );
+        	// Decrease lambda (= increase trust region size = decrease regularization)
+        	m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_geardown, m_lambdamax );
             TraceStream(g_log, "StaticSolver::position_solve") << "prev / new energy = " << m_initEnergy << " / " << m_energy << "; new residual = " << m_l2norm << "; retaining step; growing trust region: new lambda = " << m_lambda << "\n";
-	    keepSolution = true;
+            keepSolution = true;
         }
         else
         {	    
-	    // Solver failed
-	    /////////////////////////////////////////////////	    
+        	// Solver failed
+        	/////////////////////////////////////////////////
 
-	    TraceStream(g_log, "StaticSolver::position_solve") << "prev / new energy = " << m_initEnergy << " / " << m_energy << "; new residual = " << m_l2norm << "; discarding step \n";
+        	TraceStream(g_log, "StaticSolver::position_solve") << "prev / new energy = " << m_initEnergy << " / " << m_energy << "; new residual = " << m_l2norm << "; discarding step \n";
         }
 
 
-#ifndef NDEBUG      // Ensure that fixed DOFs are at their desired values
-	VecXd xf(m_ndof);
+	#ifndef NDEBUG      // Ensure that fixed DOFs are at their desired values
+        VecXd xf(m_ndof);
         m_diffEq.getX(xf);
         for (int i = 0; i < (int) m_fixed.size(); ++i)
-	{
-            assert(approxEq(m_desired[i], xf(m_fixed[i]), 1.0e-6));
-	}
-#endif
+        {
+        	assert(approxEq(m_desired[i], xf(m_fixed[i]), 1.0e-6));
+        }
+	#endif
 
-	return keepSolution;
+        return keepSolution;
     }
 
 
@@ -246,7 +246,7 @@ protected:
     {
         START_TIMER("StaticSolver::newton_step/setup");
 
-	TraceStream(g_log, "StaticSolver::position_solve") << "call #" << ++static_solve_counter << "\n";
+        TraceStream(g_log, "StaticSolver::position_solve") << "call #" << ++static_solve_counter << "\n";
 
         // Chapter 0: Basic housekeeping
         ////////////////////////////////////////////////////
@@ -259,14 +259,14 @@ protected:
         m_diffEq.getScriptedDofs(m_fixed, m_desired); // m_fixed are DOF indices, m_desired are corresponding desired values
         assert(m_fixed.size() == m_desired.size());
 
-	m_diffEq.set_qdot( m_deltaX ); // used to visualize increments (as velocities), initially zero
+        m_diffEq.set_qdot( m_deltaX ); // used to visualize increments (as velocities), initially zero
 
-#ifndef NDEBUG // ensure indices in valid range
-        for (int i = 0; i < (int) m_fixed.size(); ++i)
-            assert(m_fixed[i] >= 0);
-        for (int i = 0; i < (int) m_fixed.size(); ++i)
-            assert(m_fixed[i] < m_ndof);
-#endif
+		#ifndef NDEBUG // ensure indices in valid range
+        	for (int i = 0; i < (int) m_fixed.size(); ++i)
+        		assert(m_fixed[i] >= 0);
+        	for (int i = 0; i < (int) m_fixed.size(); ++i)
+        		assert(m_fixed[i] < m_ndof);
+		#endif
 
 
         // Chapter 1: Set up initial guess for Newton Solver
@@ -277,10 +277,11 @@ protected:
         // Copy start of step positions
         m_diffEq.getX(m_x0);
 	  
-	// Zero the initial guess
+        // Zero the initial guess
         m_deltaX.setZero();
 
         // Set deltaX for prescribed DOFs
+        // NOTE(sainsley) : we should strip this out (gets overridden later)
         for (int i = 0; i < (int) m_fixed.size(); ++i)
         {
             int dof = m_fixed[i];
@@ -291,19 +292,19 @@ protected:
         //   1) set up right hand side (RHS = F).
         //   2) compute the potential energy
         //   3) compute the residual
-	updatePositionBasedQuantities();
+        updatePositionBasedQuantities();
 
-	// save the initial energy
+        // save the initial energy
         m_initEnergy = m_energy;
 
         STOP_TIMER("StaticSolver::position_solve/setup");
 
 
-
         // Chapter 2: Iterate using Newton's Method
         ////////////////////////////////////////////////////
 
-	TraceStream(g_log, "StaticSolver::position_solve") << "Initial energy = " << m_initEnergy << " lambda = " << m_lambda << "\n";
+        TraceStream(g_log, "StaticSolver::position_solve") <<
+        		"Initial energy = " << m_initEnergy << " lambda = " << m_lambda << "\n";
 
         // TODO: Assert m_A, increment are zero
  
@@ -329,7 +330,7 @@ protected:
 	    //Scalar d = (*m_A)(i,i);
 	    //TraceStream(g_log, "StaticSolver::position_solve") << "lambda = " << m_lambda << " d[" << i << "] = " << d << " (1.+m_lambda) * d = " << (1.+m_lambda) * d << "\n";	    
             //m_A->set(i, i, (1.+m_lambda) * d);
-	}
+        }
         m_A->finalize();
         assert(m_A->isApproxSymmetric(1.0e-6));
 
@@ -343,7 +344,7 @@ protected:
         // Finalize the nonzero structure before the linear solve (for sparse matrices only)
         m_A->finalizeNonzeros();
         STOP_TIMER("StaticSolver::position_solve/setup");
-	assert(m_A->isApproxSymmetric(1.0e-6));
+        assert(m_A->isApproxSymmetric(1.0e-6));
 
 
         // Solve the linear system for the Newton step m_deltaX
@@ -354,52 +355,52 @@ protected:
         int status = m_solver->solve(m_deltaX, m_rhs);
         STOP_TIMER("StaticSolver::position_solve/solver");
 
-	START_TIMER("Staticsolver::position_solve/setup");
-	// Allow the nonzero structure to be modified again (for sparse matrices only)
-	m_A->resetNonzeros();
-	STOP_TIMER("Staticsolver::position_solve/setup");
+        START_TIMER("Staticsolver::position_solve/setup");
+        // Allow the nonzero structure to be modified again (for sparse matrices only)
+        m_A->resetNonzeros();
+        STOP_TIMER("Staticsolver::position_solve/setup");
 
         if (status < 0)
         {
-	    // shrink trust region (increase regularization)
-	    m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup, m_lambdamax );
+        	// shrink trust region (increase regularization)
+        	m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup, m_lambdamax );
 
             DebugStream(g_log, "StaticSolver::position_solve") << "\033[31;1mWARNING IN StaticSolver:\033[m Problem during linear solve detected. "
 				   << " new lambda = " << m_lambda << "\n";
 
-	    m_diffEq.set_q(m_x0);
-	    m_diffEq.updateCachedQuantities();
+            m_diffEq.set_q(m_x0);
+            m_diffEq.updateCachedQuantities();
 	    
             return false;
         }
 
 
-	// visualize pre-filtering velocities
-	m_diffEq.set_qdot( m_deltaX ); // used to visualize increments (as velocities)
+        // visualize pre-filtering velocities
+        m_diffEq.set_qdot( m_deltaX ); // used to visualize increments (as velocities)
 
-	bool done = examine_solution();
+        bool done = examine_solution();
 
-	if (!done)
-	{
-	    TraceStream(g_log, "StaticSolver::position_solve") << "filtering delta_X and trying again...\n";
+        if (!done)
+        {
+        	TraceStream(g_log, "StaticSolver::position_solve") << "filtering delta_X and trying again...\n";
 
-	    filterDeltaX();
+        	filterDeltaX();
 
-	    // visualize post-filtering velocities
-	    m_diffEq.set_qdot( m_deltaX ); // used to visualize increments (as velocities)
+        	// visualize post-filtering velocities
+        	m_diffEq.set_qdot( m_deltaX ); // used to visualize increments (as velocities)
 
-	    done = examine_solution();
+        	done = examine_solution();
 
-	    if (!done)
-	    {
-		// Increase lambda (= decrease trust region size = increase regularization)
-		m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup, m_lambdamax );
-		TraceStream(g_log, "StaticSolver::position_solve") << "shrinking trust region: new lambda = " << m_lambda << "\n";
+        	if (!done)
+        	{
+        		// Increase lambda (= decrease trust region size = increase regularization)
+        		m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup, m_lambdamax );
+        		TraceStream(g_log, "StaticSolver::position_solve") << "shrinking trust region: new lambda = " << m_lambda << "\n";
 
-		m_diffEq.set_q   ( m_x0       );
-		m_diffEq.updateCachedQuantities();
-	    }
-	}
+        		m_diffEq.set_q(m_x0);
+        		m_diffEq.updateCachedQuantities();
+        	}
+        }
 
         return true;
     }
