@@ -41,11 +41,15 @@ public:
 
         m_maxlsit = 5;
 
-	m_lambdamin = 1e-8;
-	m_lambdamax = 1e+10;
-	m_lambda    = m_lambdamin;
-	m_gearup    = 2.00; // above 1.0
-	m_geardown  = 0.80; // below 1.0
+        // NOTE (sainsley) : this may be something we want to configure
+        // on the maya side
+        m_lambdamin = 1e-8;
+        m_lambdamax = 1e+10;
+        m_lambda    = m_lambdamin;
+        m_gearup    = 2.00; // above 1.0
+        m_geardown  = 0.80; // below 1.0
+        m_failurecount = 0;
+        m_successcount = 1;
     }
 
     ~StaticSolver()
@@ -68,26 +72,8 @@ public:
 
     bool execute()
     {
-	position_solve();
-	return true;
-        // START_TIMER("Staticsolver::execute");
-	// START_TIMER("Staticsolver::execute/backup");
-        // m_diffEq.backupResize();
-        // m_diffEq.backup();
-        // STOP_TIMER("Staticsolver::execute/backup");
-        // if (position_solve())
-        // {
-        //     START_TIMER("Staticsolver::execute/backup");
-        //     m_diffEq.backupClear();
-        //     STOP_TIMER("Staticsolver::execute/backup");
-	//     STOP_TIMER("Staticsolver::execute");
-        //     return true;
-        // }
-	// else 
-	// {          
-	//   STOP_TIMER("Staticsolver::execute");
-	//   return false;
-	// }
+    	position_solve();
+    	return true;
     }
 
     std::string getName() const
@@ -122,7 +108,7 @@ public:
         m_rhs.setZero();
         m_deltaX.setZero();
         m_A->setZero();
-	m_energy = 0;
+        m_energy = 0;
     }
 
     // update computation of: forces (the RHS), residual, energy
@@ -153,11 +139,11 @@ protected:
 
     inline Scalar funnyclipvalue( Scalar minvalue, Scalar variable, Scalar maxvalue )
     {
-	// funny wrap-around behavior ensures we don't get "stuck" at lambda=maxvalue
-	if (variable > maxvalue) variable = minvalue;
+    	// funny wrap-around behavior ensures we don't get "stuck" at lambda=maxvalue
+    	if (variable > maxvalue) variable = minvalue;
 
-	// clip
-	return fmin( fmax( variable, minvalue), maxvalue);
+    	// clip
+    	return fmin( fmax( variable, minvalue), maxvalue);
     }
 
 
@@ -208,15 +194,15 @@ protected:
 
         if (isConverged())
         {
-	    // Leave lambda alone
-
+        	// Leave lambda alone
         	TraceStream(g_log, "StaticSolver::position_solve") << "prev / new energy = " << m_initEnergy << " / " << m_energy << "; new residual = " << m_l2norm << "; retaining step; converged! keeping same lambda = " << m_lambda << "\n";
         	keepSolution = true;
         }
+        // we've reached a point of lower energy
         else if (m_energy < m_initEnergy) 
         {
         	// Decrease lambda (= increase trust region size = decrease regularization)
-        	m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_geardown, m_lambdamax );
+        	m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_geardown / m_successcount, m_lambdamax );
             TraceStream(g_log, "StaticSolver::position_solve") << "prev / new energy = " << m_initEnergy << " / " << m_energy << "; new residual = " << m_l2norm << "; retaining step; growing trust region: new lambda = " << m_lambda << "\n";
             keepSolution = true;
         }
@@ -224,7 +210,7 @@ protected:
         {	    
         	// Solver failed
         	/////////////////////////////////////////////////
-
+        	// discard the step
         	TraceStream(g_log, "StaticSolver::position_solve") << "prev / new energy = " << m_initEnergy << " / " << m_energy << "; new residual = " << m_l2norm << "; discarding step \n";
         }
 
@@ -238,6 +224,16 @@ protected:
         }
 	#endif
 
+        if (keepSolution)
+        {
+        	m_failurecount = 0;
+        	m_successcount++;
+        }
+        else
+        {
+        	m_failurecount++;
+        	m_successcount = 1;
+        }
         return keepSolution;
     }
 
@@ -280,14 +276,6 @@ protected:
         // Zero the initial guess
         m_deltaX.setZero();
 
-        // Set deltaX for prescribed DOFs
-        // NOTE(sainsley) : we should strip this out (gets overridden later)
-        for (int i = 0; i < (int) m_fixed.size(); ++i)
-        {
-            int dof = m_fixed[i];
-            m_rhs(dof) = m_desired[i] - m_x0(dof); // set desired position
-        }
-
         // Based on the initial guess, 
         //   1) set up right hand side (RHS = F).
         //   2) compute the potential energy
@@ -298,7 +286,6 @@ protected:
         m_initEnergy = m_energy;
 
         STOP_TIMER("StaticSolver::position_solve/setup");
-
 
         // Chapter 2: Iterate using Newton's Method
         ////////////////////////////////////////////////////
@@ -323,12 +310,12 @@ protected:
 
         for (int i = 0; i < m_ndof; ++i)
         {
-	    // Spectral shift (Tikhonov regularization)
+        	// Spectral shift (Tikhonov regularization)
             m_A->add(i, i, m_lambda);
 
-	    // Levenberg-Marquardt diagonal shift
-	    //Scalar d = (*m_A)(i,i);
-	    //TraceStream(g_log, "StaticSolver::position_solve") << "lambda = " << m_lambda << " d[" << i << "] = " << d << " (1.+m_lambda) * d = " << (1.+m_lambda) * d << "\n";	    
+            // Levenberg-Marquardt diagonal shift
+            //Scalar d = (*m_A)(i,i);
+            //TraceStream(g_log, "StaticSolver::position_solve") << "lambda = " << m_lambda << " d[" << i << "] = " << d << " (1.+m_lambda) * d = " << (1.+m_lambda) * d << "\n";
             //m_A->set(i, i, (1.+m_lambda) * d);
         }
         m_A->finalize();
@@ -362,8 +349,9 @@ protected:
 
         if (status < 0)
         {
+        	m_failurecount++;
         	// shrink trust region (increase regularization)
-        	m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup, m_lambdamax );
+        	m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup * m_failurecount, m_lambdamax );
 
             DebugStream(g_log, "StaticSolver::position_solve") << "\033[31;1mWARNING IN StaticSolver:\033[m Problem during linear solve detected. "
 				   << " new lambda = " << m_lambda << "\n";
@@ -394,8 +382,10 @@ protected:
         	if (!done)
         	{
         		// Increase lambda (= decrease trust region size = increase regularization)
-        		m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup, m_lambdamax );
+        		m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup * m_failurecount, m_lambdamax );
         		TraceStream(g_log, "StaticSolver::position_solve") << "shrinking trust region: new lambda = " << m_lambda << "\n";
+        		InfoStream(g_log, "StaticSolver::position_solve") << "failure count " << m_failurecount
+        				<< " shrinking trust region: new lambda = " << m_lambda << "\n";
 
         		m_diffEq.set_q(m_x0);
         		m_diffEq.updateCachedQuantities();
@@ -504,6 +494,7 @@ protected:
     Scalar m_lambda;
     Scalar m_lambdamin, m_lambdamax;
     Scalar m_gearup, m_geardown;
+    Scalar m_failurecount, m_successcount;
 
     IntArray m_fixed;
     std::vector<Scalar> m_desired;
