@@ -241,7 +241,7 @@ void LevelSet::getGradient(Vec3<Real> &x, Vec3<Real> &grad)
     grad[0] = eigenGrad[0];
     grad[1] = eigenGrad[1];
     grad[2] = eigenGrad[2];
-    
+    //assert(approxEq(grad.norm(), 1.0, 1e-8));
     //m_grad.push_back( eigenGrad );
 }
 

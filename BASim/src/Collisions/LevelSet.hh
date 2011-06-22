@@ -5,6 +5,7 @@
 #define _LEVELSET_H_
 
 #include "../Core/EigenIncludes.hh"
+#include "../Core/Util.hh"
 
 #include <vector>
 #include <string>
@@ -21,6 +22,7 @@
 #include "Bridson/vec.hh"
 #include "Bridson/array3.hh"
 #include "Bridson/util.hh"
+
 
 namespace BASim {
 

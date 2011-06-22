@@ -103,22 +103,39 @@ void RodLevelSetForce::computeForceEnergy(const ElasticRod& rod, VecXd& force, S
 
         Scalar d = m_levelSet->getLevelSetValue( v0_otherMathLibrary );
 
-        if (d >= 0) continue;
+        Scalar tol = 0.1;
+        // TODO: grab this distance tolerance from the implicit settings in maya
+        if (d >= tol) continue;
 
         Vec3<Real> dgrad_otherMathLibrary;
         m_levelSet->getGradient(v0_otherMathLibrary, dgrad_otherMathLibrary);
 
         Vec3d dgrad( dgrad_otherMathLibrary[0], dgrad_otherMathLibrary[1], dgrad_otherMathLibrary[2] );
 
-        Scalar curr_energy = 0.5 * m_stiffness * d*d;
 
-        Vec3d curr_force = m_stiffness * fabs(d) * dgrad; 
+        // todo factor in tolerance here for penalty spring compression
+        Scalar curr_energy;
+        if ( d >= 0 )
+        {
+        	 d = fabs(d);
+        	curr_energy = 0.5 * m_stiffness * (d-tol)*(d-tol);
+        }
+        else
+        {
+        	 d = fabs(d);
+        	 curr_energy = 0.5 * m_stiffness*m_stiffness * (d-tol)*(d-tol);
+        }
+
+        // todo factor in tolerance here for penalty spring compression
+        Vec3d curr_force = m_stiffness * fabs(d-tol) * dgrad;
 
         for (int i = 0; i < 3; ++i)
         {
             force[rod.vertIdx(vidx, i)] += curr_force[i];
         }
 
-        TraceStream(g_log, "RodLevelSetForce::computeForceEnergy") << "vidx = " << vidx << " d = " << d << " grad d = " << dgrad << " energy = " << curr_energy << " force = " << curr_force << "\n";        
+        energy += curr_energy;
+
+        TraceStream(g_log, "RodLevelSetForce::computeForceEnergy") << "vidx = " << vidx << " stiff = " << m_stiffness << " d = " << d << " grad d = " << dgrad << " energy = " << curr_energy << " force = " << curr_force << "\n";
     }
 }
