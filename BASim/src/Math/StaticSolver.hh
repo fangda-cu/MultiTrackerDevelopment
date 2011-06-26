@@ -46,8 +46,8 @@ public:
         m_lambdamin = 1e-8;
         m_lambdamax = 1e+10;
         m_lambda    = m_lambdamin;
-        m_gearup    = 2.00; // above 1.0
-        m_geardown  = 0.80; // below 1.0
+        m_gearup    = 1.10; // above 1.0
+        m_geardown  = 0.90; // below 1.0
         m_failurecount = 0;
         m_successcount = 1;
     }
@@ -192,6 +192,8 @@ protected:
         // Update the Levenberg-Marquardt trust region size
         /////////////////////////////////////////////////////////////
 
+        assert(approxEq(m_energy*m_dt, m_l2norm, 1e-8));
+        TraceStream(g_log, "StaticSolver::position_solve energy-force check") << m_energy << " " << m_l2norm << " " << m_diffEq.getTimeStep() << " " << m_energy<< "\n";
         if (isConverged())
         {
         	// Leave lambda alone
@@ -199,10 +201,10 @@ protected:
         	keepSolution = true;
         }
         // we've reached a point of lower energy
-        else if (m_energy < m_initEnergy) 
+        else if (m_energy < m_initEnergy)
         {
         	// Decrease lambda (= increase trust region size = decrease regularization)
-        	m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_geardown / m_successcount, m_lambdamax );
+        	m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_geardown * m_failurecount, m_lambdamax );
             TraceStream(g_log, "StaticSolver::position_solve") << "prev / new energy = " << m_initEnergy << " / " << m_energy << "; new residual = " << m_l2norm << "; retaining step; growing trust region: new lambda = " << m_lambda << "\n";
             keepSolution = true;
         }
@@ -243,6 +245,11 @@ protected:
         START_TIMER("StaticSolver::newton_step/setup");
 
         TraceStream(g_log, "StaticSolver::position_solve") << "call #" << ++static_solve_counter << "\n";
+
+        //for (int vidx = 0; vidx < (int) m_diffEq.getRod()->nv(); vidx++)
+         //{
+        //	std::cout << m_diffEq.getRod()->getVertex(vidx) << std::endl;
+         //}
 
         // Chapter 0: Basic housekeeping
         ////////////////////////////////////////////////////
@@ -351,7 +358,7 @@ protected:
         {
         	m_failurecount++;
         	// shrink trust region (increase regularization)
-        	m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup * m_failurecount, m_lambdamax );
+        	m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup / m_successcount, m_lambdamax );
 
             DebugStream(g_log, "StaticSolver::position_solve") << "\033[31;1mWARNING IN StaticSolver:\033[m Problem during linear solve detected. "
 				   << " new lambda = " << m_lambda << "\n";
@@ -361,7 +368,6 @@ protected:
 	    
             return false;
         }
-
 
         // visualize pre-filtering velocities
         m_diffEq.set_qdot( m_deltaX ); // used to visualize increments (as velocities)
@@ -381,11 +387,15 @@ protected:
 
         	if (!done)
         	{
+                TraceStream(g_log, "StaticSolver::position solve") << "before step positions : " << m_x0 << "\n";
+                TraceStream(g_log, "StaticSolver::position solve") << "a step positions : " << m_x0+m_deltaX << "\n";
         		// Increase lambda (= decrease trust region size = increase regularization)
-        		m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup * m_failurecount, m_lambdamax );
+        		m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup / m_successcount, m_lambdamax );
         		TraceStream(g_log, "StaticSolver::position_solve") << "shrinking trust region: new lambda = " << m_lambda << "\n";
-        		InfoStream(g_log, "StaticSolver::position_solve") << "failure count " << m_failurecount
-        				<< " shrinking trust region: new lambda = " << m_lambda << "\n";
+        		ElasticRod &r = *m_diffEq.getRod();
+        		int   ia  = r.globalRodIndex;
+        		InfoStream(g_log, "StaticSolver::position_solve") << "rod_idx " << ia << " failure count " << m_failurecount
+        			<< " shrinking trust region: new lambda = " << m_lambda << "\n";
 
         		m_diffEq.set_q(m_x0);
         		m_diffEq.updateCachedQuantities();

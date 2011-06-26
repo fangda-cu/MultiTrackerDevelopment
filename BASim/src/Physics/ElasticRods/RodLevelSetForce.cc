@@ -44,32 +44,34 @@ void RodLevelSetForce::computeForceDX(int baseindex, const ElasticRod& rod, Scal
 
     assert( m_levelSet->isInitialized() );
 
-    for (int vidx = 0; vidx < (int) rod.nv(); vidx++)
+    for (int vidx = 1; vidx < (int) rod.nv(); vidx++)
     {
         Vec3d v0 = rod.getVertex(vidx);
 
         Vec3<Real> v0_otherMathLibrary(v0[0], v0[1], v0[2]);
 
-	Scalar d = m_levelSet->getLevelSetValue( v0_otherMathLibrary );
-
-        if (d >= 0) continue;
+        Scalar d = m_levelSet->getLevelSetValue( v0_otherMathLibrary );
+        Scalar tol = 0.1;
+	    // TODO: grab this distance tolerance from the implicit settings in maya
+        if (d >= tol) continue;
+        //if (d >= 0) continue;
 
         Vec3<Real> dgrad_otherMathLibrary;
-	m_levelSet->getGradient(v0_otherMathLibrary, dgrad_otherMathLibrary);
+        m_levelSet->getGradient(v0_otherMathLibrary, dgrad_otherMathLibrary);
 
-	Vec3d dgrad( dgrad_otherMathLibrary[0], dgrad_otherMathLibrary[1], dgrad_otherMathLibrary[2] );
+        Vec3d dgrad( dgrad_otherMathLibrary[0], dgrad_otherMathLibrary[1], dgrad_otherMathLibrary[2] );
 
-	Scalar curr_energy = 0.5 * m_stiffness * d*d;
+        Scalar curr_energy = 0.5 * m_stiffness * (tol-d)*(tol-d); //0.5 * m_stiffness * d*d;
 
         localJ.setZero();
 
         for (int i = 0; i < 3; ++i)
         {
-	    for (int j = 0; j < 3; ++j)
-	    {
-		Scalar val = - scale * m_stiffness * dgrad[i] * dgrad[j];
-		localJ(i,j) = val;
-	    }
+        	for (int j = 0; j < 3; ++j)
+        	{
+        		Scalar val = - scale * m_stiffness * dgrad[i] * dgrad[j];
+        		localJ(i,j) = val;
+        	}
         }
 
         for (int i = 0; i < 3; ++i)
@@ -95,7 +97,8 @@ void RodLevelSetForce::computeForceEnergy(const ElasticRod& rod, VecXd& force, S
 {
     assert( m_levelSet->isInitialized() );
 
-    for (int vidx = 0; vidx < (int) rod.nv(); vidx++)
+    // NOTE (sainsley) : we shouldn't check the fixed vertex as it may already be in the scalp
+    for (int vidx = 1; vidx < (int) rod.nv(); vidx++)
     {
         Vec3d v0 = rod.getVertex(vidx);
 
@@ -112,22 +115,25 @@ void RodLevelSetForce::computeForceEnergy(const ElasticRod& rod, VecXd& force, S
 
         Vec3d dgrad( dgrad_otherMathLibrary[0], dgrad_otherMathLibrary[1], dgrad_otherMathLibrary[2] );
 
-
+        //Scalar d_orig = d;
         // todo factor in tolerance here for penalty spring compression
         Scalar curr_energy;
-        if ( d >= 0 )
-        {
-        	 d = fabs(d);
-        	curr_energy = 0.5 * m_stiffness * (d-tol)*(d-tol);
-        }
-        else
-        {
-        	 d = fabs(d);
-        	 curr_energy = 0.5 * m_stiffness*m_stiffness * (d-tol)*(d-tol);
-        }
+        Vec3d curr_force;
+        //if ( d >= 0 )
+        //{
+        	//d = fabs(d);
+        curr_energy = 0.5 * m_stiffness * (tol-d)*(tol-d);
+        curr_force = m_stiffness * (tol-d) * dgrad;
+        //}
+        //else
+        //{
+        	 //d = fabs(d);
+        	// curr_energy = 0.5 * m_stiffness*m_stiffness * (tol-d)*(tol-d);
+        	 //curr_force = m_stiffness*m_stiffness * (tol-d) * dgrad;
+        //}
 
         // todo factor in tolerance here for penalty spring compression
-        Vec3d curr_force = m_stiffness * fabs(d-tol) * dgrad;
+        //Vec3d curr_force = m_stiffness * fabs(d-tol) * dgrad;
 
         for (int i = 0; i < 3; ++i)
         {

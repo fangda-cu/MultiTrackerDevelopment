@@ -263,12 +263,18 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
         m_objbackups[i++].resize(**mesh);
 
     // For debugging purposes
-#ifdef KEEP_ONLY_SOME_RODS
+#ifdef KEEP_ONLY_SOME_RODS/
     WarningStream(g_log, "", MsgInfo::kOncePerMessage)
     << "WARNING: KEEP_ONLY_SOME_RODS: Simulating only a specified subset of rods!\n***********************************************************\n";
     std::set<int> keep_only;
 
-    keep_only.insert(0);
+    //keep_only.insert(33);
+    //keep_only.insert(0);
+    //keep_only.insert(6);
+    keep_only.insert(8);
+    //keep_only.insert(10);
+   // keep_only.insert(189);
+    //keep_only.insert(710);
 
     // Only the rods in the keep_only set are kept, the others are killed.
     for (int i = 0; i < m_number_of_rods; i++)
@@ -291,6 +297,7 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
         m_simulated_rods.push_back(i);
 #endif
     m_killed_rods.clear();
+    InfoStream(g_log, "") << "STEPPER DT " << m_dt << "\n";
 }
 
 BAGroomingStepper::~BAGroomingStepper()
@@ -744,6 +751,7 @@ double BAGroomingStepper::computeTotalForceNorm() const
 
 void BAGroomingStepper::setDt(double dt)
 {
+	InfoStream(g_log, "") << "STEPPER DT " << dt << "\n";
     assert(dt > 0.0);
     m_dt = dt;
 

@@ -494,6 +494,11 @@ void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices,
 
 	MVector currentVertex( i_rootPosition );
 
+	//Scalar a = 0.0;
+	//if ( m_curlRadius != 0.0 )
+	//	a = 1.0 / (m_curlRadius * m_length / m_verticesPerRod);
+	//	Scalar b = 0.5 * m_length / m_verticesPerRod;
+
 	for ( int v = 0; v < m_verticesPerRod; ++v )
     {
         // Straight rods as twist is controlled by the rod properties
@@ -502,22 +507,22 @@ void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices,
 
         currentVertex += edge;
 
-        /*MVector newPoint( m_curlRadius * cos( (double)v ),
-        			m_curlPitch * (double)v, m_curlRadius * sin( (double)v ) );
-                //
+        //MVector newPoint( a * cos( (double)v ),
+        	//		b * (double)v, a * sin( (double)v ) );
+        //
 
-                // For testing, force a straight rod
-                // MVector newPoint( 0.0, v, 0.0 );
+        // For testing, force a straight rod
+        // MVector newPoint( 0.0, v, 0.0 );
 
-                // The helix is created with the y-axis as the centre, rotate it
-                // so that it has i_direction as the centre
-                MQuaternion rotationQ( MVector( 0.0, 1.0, 0.0 ), i_direction );
-                newPoint = newPoint.rotateBy( rotationQ );
+        // The helix is created with the y-axis as the centre, rotate it
+        // so that it has i_direction as the centre
+        //MQuaternion rotationQ( MVector( 0.0, 1.0, 0.0 ), i_direction );
+        //newPoint = newPoint.rotateBy( rotationQ );
 
-                // Now move the point to sit where the Barbershop input strand comes from
-                 newPoint += i_rootPosition;
+        // Now move the point to sit where the Barbershop input strand comes from
+        //newPoint += i_rootPosition;
 
-                o_rodVertices.push_back( BASim::Vec3d( newPoint.x, newPoint.y, newPoint.z ) );*/
+        //o_rodVertices.push_back( BASim::Vec3d( newPoint.x, newPoint.y, newPoint.z ) );
 	}
 
 	cerr << "constructRodVertices(): Finished constructing rod vertices\n";
