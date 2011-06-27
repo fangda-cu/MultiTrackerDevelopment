@@ -209,20 +209,17 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
         // m_A = -h^2*dF/dx
         m_diffEq.evaluatePDotDX(-m_dt * m_dt, *m_A); // NB m_A is set to zero at construction time and at the end of this loop.
         m_A->finalize();
-        assert(isSymmetric(*m_A));
 
         // Consider LHS arising from dissipative forces (function of velocity)
         // m_A = -h*dF/dv -h^2*dF/dx
         m_diffEq.evaluatePDotDV(-m_dt, *m_A);
         m_A->finalize();
-        assert(isSymmetric(*m_A));
 
         // Consider inertial contribution from mass matrix
         // m_A = M -h*dF/dv -h^2*dF/dx
         for (int i = 0; i < m_ndof; ++i)
             m_A->add(i, i, m_mass(i));
         m_A->finalize();
-        assert(isSymmetric(*m_A));
 
         // Set the rows and columns corresponding to fixed degrees of freedom to 0
         m_A->zeroRows(m_fixed, 1.0);
@@ -233,9 +230,8 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
 
         // Finalize the nonzero structure before the linear solve (for sparse matrices only)
         m_A->finalizeNonzeros();
-        STOP_TIMER("SymmetricImplicitEuler::position_solve/setup");
-
         assert(isSymmetric(*m_A));
+        STOP_TIMER("SymmetricImplicitEuler::position_solve/setup");
 
         // Solve the linear system for the "Newton direction" m_increment
         //
