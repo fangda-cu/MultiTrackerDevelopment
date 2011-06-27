@@ -1514,8 +1514,8 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                             splitCounter--;
                             TraceStream(g_log, "") << "Downsizing impulse for rod " << collidingRodIdx << " to " << splitFactor
                                     * 100.0 << "%\n";
-                            // Collision is marked as failed if the original impulse was exploding
-                            failed_collisions_rods[collidingRodIdx] = true;
+                            // Collision is marked as failed if the original impulse was exploding NOT
+                            // failed_collisions_rods[collidingRodIdx] = true;
                             // Interpolate velocity between pre-impulse (velBackup) and (resized) post-impulse (m_vnphalf)
                             for (int v = 0; v < collidingRod->nv(); ++v)
                             {
