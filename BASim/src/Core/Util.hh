@@ -19,6 +19,14 @@ void _error(const char* file, const char* function, int line, const char* messag
 
 #define BA_ERROR(message) _error(__FILE__, __FUNCTION__, __LINE__, (message))
 
+inline std::ostream& operator<<(std::ostream& os, const std::vector<VecXd>& normals)
+{
+    for (std::vector<VecXd>::const_iterator normal = normals.begin(); normal != normals.end(); ++normal)
+        os << *normal << '\n';
+
+    return os;
+}
+
 /** Converts from a string to the given type */
 template<class T>
 inline void fromString(T& t, const std::string& str)
