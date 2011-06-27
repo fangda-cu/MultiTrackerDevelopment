@@ -239,30 +239,23 @@ void RodTwistingForceSym::globalJacobian(int baseidx, Scalar scale, MatrixBase& 
 
     assert(isSymmetric(J));
 
-    //START_TIMER("globalJacobian");
     computeGradTwist();
     computeHessTwist();
 
     MatXd localJ(11, 11);
-    IndexArray indices(11);
 
     iterator end = m_stencil.end();
     for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil)
     {
-        //if (stencilFixed(m_rod, i)) continue;
         vertex_handle& vh = m_stencil.handle();
         localJ.setZero();
         localJacobian(localJ, vh);
-        m_stencil.indices(indices);
-        for (int i = 0; i < (int) indices.size(); ++i)
-            indices[i] += baseidx;
         localJ *= scale;
-        J.add(indices, indices, localJ);
+
+        J.vertexStencilAdd(m_stencil.firstIndex() + baseidx, localJ);
     }
 
     assert(isSymmetric(J));
-
-    //STOP_TIMER("globalJacobian");
 }
 
 inline void RodTwistingForceSym::localJacobian(MatXd& J, const vertex_handle& vh)

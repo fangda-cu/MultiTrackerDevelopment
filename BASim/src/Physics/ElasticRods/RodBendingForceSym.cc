@@ -285,14 +285,11 @@ void RodBendingForceSym::globalJacobian(int baseidx, Scalar scale, MatrixBase& J
     computeHessKappa();
 
     MatXd localJ(11, 11);
-    IndexArray indices(11);
     iterator end = m_stencil.end();
 
     for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil)
     {
         vertex_handle& vh = m_stencil.handle();
-        //localJacobian(localJ, i);
-
         {
             const Mat2d& B = getB(vh);
             const Scalar len = getRefVertexLength(vh);
@@ -308,12 +305,8 @@ void RodBendingForceSym::globalJacobian(int baseidx, Scalar scale, MatrixBase& J
             Vec2d temp = -1.0 / len * (kappa - kappaBar).transpose() * B;
             localJ += temp(0) * hessKappa.first + temp(1) * hessKappa.second;
         }
-
-        m_stencil.indices(indices);
-        for (int i = 0; i < (int) indices.size(); ++i)
-            indices[i] += baseidx;
         localJ *= scale;
-        J.add(indices, indices, localJ);
+        J.vertexStencilAdd(m_stencil.firstIndex() + baseidx, localJ);
     }
 
     assert(isSymmetric(J));

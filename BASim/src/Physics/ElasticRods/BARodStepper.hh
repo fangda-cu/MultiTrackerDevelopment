@@ -291,8 +291,7 @@ private:
     // Collision response routines
 
     void executePenaltyResponse();
-    bool executeIterativeInelasticImpulseResponse(std::vector<bool>& rods_failed_because_of_iterated_collisions,
-            std::vector<bool>& stretching_rods);
+    bool executeIterativeInelasticImpulseResponse();
     //	void filterCollisions(std::list<ContinuousTimeCollision>& cllsns);
 
     void exertPenaltyImpulses(std::vector<EdgeEdgeProximityCollision>& edg_edg_cllsns,

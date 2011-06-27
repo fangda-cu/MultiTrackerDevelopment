@@ -803,7 +803,7 @@ void BARodStepper::step_collision(const RodSelectionType& selected_rods)
     }
 
     if (m_perf_param.m_collision.m_max_iterations > 0)
-        if (!executeIterativeInelasticImpulseResponse(failed_collisions_rods, stretching_rods))
+        if (!executeIterativeInelasticImpulseResponse())
             TraceStream(g_log, "") << "Some collision responses failed!\n";
 
     TraceStream(g_log, "") << "Finished collision response\n";
@@ -1419,8 +1419,7 @@ void BARodStepper::removeRod(int rodIdx)
 /**
  * Iterative collision resolution
  */
-bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& failed_collisions_rods,
-        std::vector<bool>& stretching_rods)
+bool BARodStepper::executeIterativeInelasticImpulseResponse()
 {
     bool all_rods_collisions_ok = true;
 
@@ -1437,14 +1436,13 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
     for (int itr = 0; !collisions_list.empty() && itr < m_perf_param.m_collision.m_max_iterations; ++itr)
     {
         TraceStream(g_log, "") << "CTcollision response iteration " << itr << '\n';
-        TraceStream(g_log, "") << "Detected " << collisions_list.size() << " continuous time collisions (potential: "
-                << m_collision_detector->m_potential_collisions << ")\n";
 
         // Just sort the collision times to maintain some rough sense of causality
         collisions_list.sort(CompareTimes);
 
         for (; !collisions_list.empty();)
         {
+            TraceStream(g_log, "") << "In our list we have " << collisions_list.size() << " continuous time collisions\n";
             // Find the first collision on a unique rod, put it in first_collisions_list and remove it from collisions_list.
             // Subsequent collisions on the same rod are kept in collisions_list.
             std::set<int> already_collided_rods;
@@ -1464,7 +1462,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                     }
                 }
             }
-            TraceStream(g_log, "") << "of which " << collisions_list.size() << " are on different rods\n";
+            TraceStream(g_log, "") << "of which " << first_collisions_list.size() << " are on different rods\n";
 
             // Now apply response to the first collisions.
 #ifdef HAVE_OPENMP
@@ -1514,8 +1512,6 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse(std::vector<bool>& f
                             splitCounter--;
                             TraceStream(g_log, "") << "Downsizing impulse for rod " << collidingRodIdx << " to " << splitFactor
                                     * 100.0 << "%\n";
-                            // Collision is marked as failed if the original impulse was exploding NOT
-                            // failed_collisions_rods[collidingRodIdx] = true;
                             // Interpolate velocity between pre-impulse (velBackup) and (resized) post-impulse (m_vnphalf)
                             for (int v = 0; v < collidingRod->nv(); ++v)
                             {
