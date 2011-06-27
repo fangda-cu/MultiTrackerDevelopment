@@ -297,7 +297,8 @@ void RodBendingForceSym::globalJacobian(int baseidx, Scalar scale, MatrixBase& J
             const Vec2d& kappaBar = getKappaBar(vh);
             const MatXd& gradKappa = getGradKappa(vh);
 
-            localJ = -1.0 / len * symBProduct(B, gradKappa);
+            symBProduct(localJ, B, gradKappa);
+            localJ *= -1.0 / len;
 
             const pair<MatXd, MatXd>& hessKappa = getHessKappa(vh);
 

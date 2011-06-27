@@ -105,13 +105,12 @@ inline Scalar BProduct(const Mat2d& B, const Vec2d& u, const Vec2d& v)
 }
 
 // Computes Q B Q^T, assuming B is symmetric. The result is then (exactly) symmetric.
-inline MatXd symBProduct(const Mat2d& B, const MatXd& Q)
+template<int n>
+inline void symBProduct(Eigen::Matrix<Scalar, n, n>& result, const Mat2d& B, const MatXd& Q)
 {
     assert(isSymmetric(B));
+    assert(Q.rows() == n);
     assert(Q.cols() == 2);
-    const int n = Q.rows();
-
-    MatXd result(n, n);
 
     for (int i = 0; i < n; ++i)
     {
@@ -119,13 +118,6 @@ inline MatXd symBProduct(const Mat2d& B, const MatXd& Q)
         for (int j = 0; j < i; ++j)
             result(i, j) = result(j, i) = BProduct(B, Q.row(i), Q.row(j));
     }
-
-    return result;
-}
-
-inline MatXd symmetrize(const MatXd& M) // TODO: we should never have to use this function. It's a cheat for when we cannot mathematically ensure symmetry
-{
-    return (M + M.transpose()) * 0.5;
 }
 
 /** Uses dynamic_cast if debugging is turned on and static_cast for
