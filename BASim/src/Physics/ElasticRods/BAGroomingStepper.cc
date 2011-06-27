@@ -83,7 +83,7 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
     }
 
 
-    g_log = new TextLog(std::cerr, MsgInfo::kInfo, true);
+    g_log = new TextLog(std::cerr, MsgInfo::kTrace, true);
     InfoStream(g_log, "") << "Started logging BAGroomingStepper\n";
 
 
@@ -263,7 +263,7 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
         m_objbackups[i++].resize(**mesh);
 
     // For debugging purposes
-#ifdef KEEP_ONLY_SOME_RODS/
+#ifdef KEEP_ONLY_SOME_RODS
     WarningStream(g_log, "", MsgInfo::kOncePerMessage)
     << "WARNING: KEEP_ONLY_SOME_RODS: Simulating only a specified subset of rods!\n***********************************************************\n";
     std::set<int> keep_only;
@@ -271,7 +271,7 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
     //keep_only.insert(33);
     //keep_only.insert(0);
     //keep_only.insert(6);
-    keep_only.insert(8);
+    keep_only.insert(744);
     //keep_only.insert(10);
    // keep_only.insert(189);
     //keep_only.insert(710);

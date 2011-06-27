@@ -46,8 +46,8 @@ public:
         m_lambdamin = 1e-8;
         m_lambdamax = 1e+10;
         m_lambda    = m_lambdamin;
-        m_gearup    = 1.10; // above 1.0
-        m_geardown  = 0.90; // below 1.0
+        m_gearup    = 3.00; // above 1.0
+        m_geardown  = 0.50; // below 1.0
         m_failurecount = 0;
         m_successcount = 1;
     }
@@ -201,10 +201,10 @@ protected:
         	keepSolution = true;
         }
         // we've reached a point of lower energy
-        else if (m_energy < m_initEnergy)
+        else if (m_energy <= m_initEnergy)
         {
         	// Decrease lambda (= increase trust region size = decrease regularization)
-        	m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_geardown * m_failurecount, m_lambdamax );
+        	m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_geardown / m_successcount, m_lambdamax );
             TraceStream(g_log, "StaticSolver::position_solve") << "prev / new energy = " << m_initEnergy << " / " << m_energy << "; new residual = " << m_l2norm << "; retaining step; growing trust region: new lambda = " << m_lambda << "\n";
             keepSolution = true;
         }
@@ -358,7 +358,7 @@ protected:
         {
         	m_failurecount++;
         	// shrink trust region (increase regularization)
-        	m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup / m_successcount, m_lambdamax );
+        	m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup * m_failurecount, m_lambdamax );
 
             DebugStream(g_log, "StaticSolver::position_solve") << "\033[31;1mWARNING IN StaticSolver:\033[m Problem during linear solve detected. "
 				   << " new lambda = " << m_lambda << "\n";
@@ -390,7 +390,7 @@ protected:
                 TraceStream(g_log, "StaticSolver::position solve") << "before step positions : " << m_x0 << "\n";
                 TraceStream(g_log, "StaticSolver::position solve") << "a step positions : " << m_x0+m_deltaX << "\n";
         		// Increase lambda (= decrease trust region size = increase regularization)
-        		m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup / m_successcount, m_lambdamax );
+        		m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup * m_failurecount, m_lambdamax );
         		TraceStream(g_log, "StaticSolver::position_solve") << "shrinking trust region: new lambda = " << m_lambda << "\n";
         		ElasticRod &r = *m_diffEq.getRod();
         		int   ia  = r.globalRodIndex;
