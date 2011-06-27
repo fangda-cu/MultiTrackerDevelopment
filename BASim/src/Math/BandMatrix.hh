@@ -115,11 +115,9 @@ public:
 
     // Add the local Jacobian to the banded matrix following the edge stencil.
     // A zero row and column are inserted in the middle of localJ before adding it at "start" position on the diagonal.
-    virtual void edgeStencilAdd(int start, const MatXd& localJ)
+    virtual void edgeStencilAdd(int start, const Eigen::Matrix<Scalar, 6, 6>& localJ)
     {
         static const int size = 6;
-        assert(localJ.rows() == size);
-        assert(localJ.cols() == size);
 
         const int n = MatrixBase::m_cols;
         start += n * m_ku;
@@ -162,11 +160,9 @@ public:
 
     // Add the local Jacobian to the banded matrix following the vertex stencil.
     // LocaJ is directly added at "start" position on the diagonal.
-    virtual void vertexStencilAdd(int start, const MatXd& localJ)
+    virtual void vertexStencilAdd(int start, const Eigen::Matrix<Scalar, 11, 11>& localJ)
     {
         static const int size = 11;
-        assert(localJ.rows() == size);
-        assert(localJ.cols() == size);
 
         const int n = MatrixBase::m_cols;
         start += n * m_ku;

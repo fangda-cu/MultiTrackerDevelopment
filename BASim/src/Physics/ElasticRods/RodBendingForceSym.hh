@@ -21,7 +21,10 @@ namespace BASim {
 class RodBendingForceSym : public RodForceT<VertexStencil>
 {
 public:
-  explicit RodBendingForceSym(ElasticRod& rod, bool vscs = false, bool runinit = true);
+    typedef Eigen::Matrix<Scalar, 11, 1> ElementForce;
+    typedef Eigen::Matrix<Scalar, 11, 11> ElementJacobian;
+
+    explicit RodBendingForceSym(ElasticRod& rod, bool vscs = false, bool runinit = true);
 
   virtual Scalar globalEnergy();
   virtual void globalForce(VecXd& force);

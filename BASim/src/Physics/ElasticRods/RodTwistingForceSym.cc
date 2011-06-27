@@ -237,14 +237,11 @@ void RodTwistingForceSym::globalJacobian(int baseidx, Scalar scale, MatrixBase& 
     if (viscous() && m_rod.getViscosity() == 0.0)
         return;
 
-    assert(isSymmetric(J));
-
     computeGradTwist();
     computeHessTwist();
 
-    MatXd localJ(11, 11);
-
-    iterator end = m_stencil.end();
+    ElementJacobian localJ;
+    const iterator end = m_stencil.end();
     for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil)
     {
         vertex_handle& vh = m_stencil.handle();
@@ -258,7 +255,7 @@ void RodTwistingForceSym::globalJacobian(int baseidx, Scalar scale, MatrixBase& 
     assert(isSymmetric(J));
 }
 
-inline void RodTwistingForceSym::localJacobian(MatXd& J, const vertex_handle& vh)
+inline void RodTwistingForceSym::localJacobian(ElementJacobian& J, const vertex_handle& vh)
 {
     Scalar kt = getKt(vh);
     Scalar len = getRefVertexLength(vh);

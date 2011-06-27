@@ -284,9 +284,8 @@ void RodBendingForceSym::globalJacobian(int baseidx, Scalar scale, MatrixBase& J
     computeGradKappa();
     computeHessKappa();
 
-    MatXd localJ(11, 11);
-    iterator end = m_stencil.end();
-
+    ElementJacobian localJ;
+    const iterator end = m_stencil.end();
     for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil)
     {
         vertex_handle& vh = m_stencil.handle();

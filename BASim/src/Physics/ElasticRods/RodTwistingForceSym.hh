@@ -18,6 +18,8 @@ namespace BASim {
 class RodTwistingForceSym : public RodForceT<VertexStencil>
 {
 public:
+    typedef Eigen::Matrix<Scalar, 11, 1> ElementForce;
+    typedef Eigen::Matrix<Scalar, 11, 11> ElementJacobian;
 
   explicit RodTwistingForceSym(ElasticRod& rod, bool vscs = false, bool runinit = true);
 
@@ -30,7 +32,7 @@ public:
   
   Scalar localEnergy(const vertex_handle& vh);
   void localForce(VecXd& F, const vertex_handle& vh);
-  void localJacobian(MatXd& J, const vertex_handle& vh);
+  void localJacobian(ElementJacobian& J, const vertex_handle& vh);
 
   Scalar getKt(const vertex_handle& vh) const;
   void setKt(const vertex_handle& vh, const Scalar& kt);
