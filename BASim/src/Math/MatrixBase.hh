@@ -38,6 +38,8 @@ public:
     virtual int add(int i, int j, Scalar val) = 0;
     virtual int add(const IntArray& rowIdx, const IntArray& colIdx, const MatXd& values) = 0;
     virtual int add(const IndexArray& rowIdx, const IndexArray& colIdx, const MatXd& values) = 0;
+    virtual void edgeStencilAdd(int start, const MatXd& localJ) = 0;
+    virtual void vertexStencilAdd(int start, const MatXd& localJ) = 0;
     virtual int scale(Scalar val) = 0;
     virtual int setZero() = 0;
     virtual int zeroRows(const IntArray& idx, Scalar diag = 1.0) = 0;

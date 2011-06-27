@@ -177,7 +177,6 @@ void RodStretchingForce::elementForce(ElementForce& force, const edge_handle& eh
 
 void RodStretchingForce::globalJacobian(int baseidx, Scalar scale, MatrixBase& Jacobian)
 {
-    IndexArray indices;
     ElementJacobian localJ;
     MatXd adder;
 
@@ -192,10 +191,7 @@ void RodStretchingForce::globalJacobian(int baseidx, Scalar scale, MatrixBase& J
         adder = localJ;
         adder *= scale;
 
-        m_stencil.indices(indices);
-        for (int i = 0; i < (int) indices.size(); ++i)
-            indices(i) += baseidx;
-        Jacobian.add(indices, indices, adder);
+        Jacobian.edgeStencilAdd(m_stencil.firstIndex() + baseidx, adder);
 
         assert(isSymmetric(Jacobian));
 
