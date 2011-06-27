@@ -456,6 +456,7 @@ void ElasticRod::updateStiffness() {
 }
 
 void ElasticRod::setRestLengths(std::vector<Scalar>& vals) {
+  // force-set the rest shape of the fixed edge
   RodForces forces = getForces();
   RodForces::iterator it;
   for (it = forces.begin(); it != forces.end(); ++it) {

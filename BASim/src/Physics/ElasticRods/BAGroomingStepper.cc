@@ -83,7 +83,7 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
     }
 
 
-    g_log = new TextLog(std::cerr, MsgInfo::kTrace, true);
+    g_log = new TextLog(std::cerr, MsgInfo::kInfo, true);
     InfoStream(g_log, "") << "Started logging BAGroomingStepper\n";
 
 

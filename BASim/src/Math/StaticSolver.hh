@@ -45,11 +45,12 @@ public:
         // on the maya side
         m_lambdamin = 1e-8;
         m_lambdamax = 1e+10;
-        m_lambda    = m_lambdamin;
+        m_lambda    = 1e-3;
         m_gearup    = 3.00; // above 1.0
         m_geardown  = 0.50; // below 1.0
         m_failurecount = 0;
         m_successcount = 1;
+        m_keepUpdating = true;
     }
 
     ~StaticSolver()
@@ -72,7 +73,10 @@ public:
 
     bool execute()
     {
-    	position_solve();
+    	if ( m_keepUpdating )
+    	{
+    		position_solve();
+    	}
     	return true;
     }
 
@@ -198,6 +202,7 @@ protected:
         {
         	// Leave lambda alone
         	TraceStream(g_log, "StaticSolver::position_solve") << "prev / new energy = " << m_initEnergy << " / " << m_energy << "; new residual = " << m_l2norm << "; retaining step; converged! keeping same lambda = " << m_lambda << "\n";
+        	m_keepUpdating = false;
         	keepSolution = true;
         }
         // we've reached a point of lower energy
@@ -505,6 +510,7 @@ protected:
     Scalar m_lambdamin, m_lambdamax;
     Scalar m_gearup, m_geardown;
     Scalar m_failurecount, m_successcount;
+    bool m_keepUpdating;
 
     IntArray m_fixed;
     std::vector<Scalar> m_desired;

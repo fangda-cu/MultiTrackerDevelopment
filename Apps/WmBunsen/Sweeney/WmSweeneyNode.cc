@@ -167,6 +167,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		{
 		    if ( m_rodManager != NULL )
 		    {
+		    	bool update_rod = false;
 				// If the rods exist then just update their undeformed configuration but keep running
 				// the simulation.
 
@@ -194,6 +195,11 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 				    for ( ElasticRod::edge_iter eh = m_rodManager->m_rods[i]->edges_begin();
 				          eh != m_rodManager->m_rods[i]->edges_end(); ++eh )
 				    {
+				    	// TODO: remove this check for the fixed edge--it doesn't matter
+				    	if ( updated_edge_length != m_rodManager->m_rods[i]->getEdgeLength( *eh ))
+				    	{
+				    		update_rod = true;
+				    	}
 						rest_lengths.push_back( updated_edge_length );
 						//cout << "WmSweeneyNode::compute::edges: idx = " << eh->idx() << " new edge length = " << updated_edge_length << " current edge length " << m_rodManager->m_rods[i]->getEdgeLength(  *eh  )  << endl;
 						if ( eh->idx() >= m_curlStart*( m_verticesPerRod - 1 ) )
@@ -204,9 +210,11 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 					}
 				    assert( m_curlStart == 1.0 || curl_len != 0 );
 
+				    // pass remaining lengths to the forces
+				    m_rodManager->m_rods[i]->setRestLengths( rest_lengths );
+
 				    // parametric variable for walking the rod lengthwise
 				    Scalar t = 0;
-
 				    int j = 0;
 
 					// adjust the rod size
@@ -222,7 +230,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 						radius_a *= 1.0/m_rodAspectRatio;
 					}
 
-					m_rodManager->m_rods[i]->setRestLengths( rest_lengths );
+
 
 					m_rodManager->m_rods[i]->setRadius( radius_a, radius_b );
 

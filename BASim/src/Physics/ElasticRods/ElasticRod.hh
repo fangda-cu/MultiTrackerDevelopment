@@ -228,6 +228,9 @@ public:
     Scalar getRadiusScale() const;
     void setRadiusScale(Scalar s);
 
+    bool isInRestState() const;
+    void setIsInRestState(bool is_at_rest);
+
     const Vec3d& getReferenceDirector1(const edge_handle& eh) const;
     void setReferenceDirector1(const edge_handle& eh, const Vec3d& u);
     const Vec3d& getReferenceDirector2(const edge_handle& eh) const;
@@ -376,6 +379,8 @@ protected:
     ObjPropHandle<Scalar> m_radius_scale;
     ObjPropHandle<Scalar> m_base_rotation;
 
+    ObjPropHandle<bool> m_in_rest_state;
+
     VPropHandle<Vec3d> m_vertexPositions;
     VPropHandle<Vec3d> m_vertexVelocities;
     VPropHandle<Vec3d> m_vertexResponses;
@@ -397,6 +402,7 @@ protected:
     EPropHandle<int> m_edgeIdx;
 
     RodBoundaryCondition* m_boundaryConditions;
+
 };
 
 typedef std::vector<ElasticRod *> ElasticRods;
