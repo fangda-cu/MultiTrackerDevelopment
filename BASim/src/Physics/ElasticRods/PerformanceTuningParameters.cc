@@ -14,6 +14,7 @@ PerformanceTuningParameters::PerformanceTuningParameters() :
     m_enable_penalty_response(true), //
             m_implicit_thickness(1.0), //
             m_implicit_stiffness(200.0), //
+            m_levelset_subsampling(0), //
             m_skipRodRodCollisions(true), //
             m_inextensibility_threshold(3), //
             m_enable_explosion_detection(true), //

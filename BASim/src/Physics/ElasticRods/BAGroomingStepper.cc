@@ -474,8 +474,10 @@ bool BAGroomingStepper::execute()
 
     for (size_t i=0; i < m_levelset_forces.size(); ++i)
     {
-	assert(m_levelset_forces[i]);
-	m_levelset_forces[i]->setStiffness(m_perf_param.m_implicit_stiffness);
+    	assert(m_levelset_forces[i]);
+    	m_levelset_forces[i]->setStiffness(m_perf_param.m_implicit_stiffness);
+    	m_levelset_forces[i]->setThickness(m_perf_param.m_implicit_thickness);
+    	m_levelset_forces[i]->setSubsampling(m_perf_param.m_levelset_subsampling);
     }
 
     // Prepare the list initially containing all rods.

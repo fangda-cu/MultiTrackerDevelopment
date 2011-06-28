@@ -33,6 +33,7 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
           		editorTemplate -addControl "enablePenaltyResponse";
           		editorTemplate -addControl "implicitThickness";
 	  		editorTemplate -addControl "implicitStiffness";
+	  		editorTemplate -addControl "levelsetSubsampling";
         	editorTemplate -endLayout;
     
         	editorTemplate -beginLayout "Inextensibility Filter" -collapse 0;

@@ -76,6 +76,8 @@ struct PerformanceTuningParameters
     double m_implicit_thickness;
     // Penalty stiffness in rod/mesh implicit penalty response
     double m_implicit_stiffness;
+    // Subsampling rate for level set detection / response in RodLevelSetForce
+    int m_levelset_subsampling;
 
     /**
      * Rod-rod collisions

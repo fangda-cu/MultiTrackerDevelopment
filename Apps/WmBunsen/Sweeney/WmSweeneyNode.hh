@@ -91,6 +91,7 @@ public:
     static MObject ia_enablePenaltyResponse;
     static MObject ia_implicitThickness;
     static MObject ia_implicitStiffness;
+    static MObject ia_levelsetSubsampling;
     static MObject ia_inextensibilityThreshold;
 
       //Failuredetection

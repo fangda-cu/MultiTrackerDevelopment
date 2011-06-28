@@ -61,6 +61,7 @@ using namespace BASim;
 /* static */ MObject WmSweeneyNode::ia_enablePenaltyResponse;
 /* static */ MObject WmSweeneyNode::ia_implicitThickness;
 /* static */ MObject WmSweeneyNode::ia_implicitStiffness;
+/* static */ MObject WmSweeneyNode::ia_levelsetSubsampling;
 /* static */ MObject WmSweeneyNode::ia_inextensibilityThreshold;
 
 //Failuredetection
@@ -498,6 +499,7 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
     perfParams.m_enable_penalty_response=i_dataBlock.inputValue( ia_enablePenaltyResponse).asBool();
     perfParams.m_implicit_thickness=i_dataBlock.inputValue( ia_implicitThickness).asDouble();
     perfParams.m_implicit_stiffness=i_dataBlock.inputValue( ia_implicitStiffness).asDouble();
+    perfParams.m_levelset_subsampling=i_dataBlock.inputValue( ia_levelsetSubsampling).asInt();
     perfParams.m_inextensibility_threshold=i_dataBlock.inputValue( ia_inextensibilityThreshold).asInt();
     perfParams.m_solver.m_max_iterations=i_dataBlock.inputValue( ia_maxNumOfSolverIters).asInt();
     perfParams.m_collision.m_max_iterations=i_dataBlock.inputValue( ia_maxNumOfCollisionIters).asInt();
@@ -972,6 +974,10 @@ void* WmSweeneyNode::creator()
 	addNumericAttribute( ia_implicitStiffness, "implicitStiffness", "ims", MFnNumericData::kDouble, 1.0, true );
 	status = attributeAffects( ia_implicitStiffness, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_implicitStiffness->ca_rodPropertiesSync" ); return status; }
+
+	addNumericAttribute( ia_levelsetSubsampling, "levelsetSubsampling", "lsss", MFnNumericData::kInt, 0, true );
+	status = attributeAffects( ia_levelsetSubsampling, ca_rodPropertiesSync );
+	if ( !status ) { status.perror( "attributeAffects ia_levelsetSubsampling->ca_rodPropertiesSync" ); return status; }
 
 	addNumericAttribute( ia_inextensibilityThreshold, "inextensibilityThreshold", "ixf", MFnNumericData::kInt, 0, true );
 	status = attributeAffects( ia_inextensibilityThreshold, ca_rodPropertiesSync );

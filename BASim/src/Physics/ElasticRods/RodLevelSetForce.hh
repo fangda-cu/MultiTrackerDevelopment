@@ -24,6 +24,8 @@ public:
 
     virtual void computeForceDX(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) const;
 
+    void computeLocalForceDX(int baseindex, const ElasticRod& rod, Vec3d& v0, int vidx, Scalar& alpha, Scalar scale, MatrixBase& J) const;
+
     virtual void computeForceDV(int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J) const
     {
     }
@@ -32,9 +34,21 @@ public:
  
     virtual void computeForceEnergy(const ElasticRod& rod, VecXd& force, Scalar& energy) const;
 
+    void computeLocalForceEnergy(const ElasticRod& rod, Vec3d& v0, int vidx, Scalar& alpha, VecXd& force, Scalar& energy) const;
+
     void setStiffness( Scalar stiffness )
     {
-	m_stiffness = stiffness;
+    	m_stiffness = stiffness;
+    }
+
+    void setThickness( Scalar thickness )
+    {
+    	m_thickness = thickness;
+    }
+
+    void setSubsampling( int subsampling )
+    {
+    	m_subsamples = subsampling;
     }
 
 protected:
@@ -43,6 +57,10 @@ protected:
     LevelSet* m_levelSet;
 
     Scalar m_stiffness;
+
+    Scalar m_thickness;
+
+    int m_subsamples;
 };
 
 }
