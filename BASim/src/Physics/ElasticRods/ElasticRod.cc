@@ -53,6 +53,7 @@ ElasticRod::ElasticRod(int numVertices, bool closed) :
     add_property(m_viscosity, "dynamic viscosity", 0.0);
     add_property(m_dt, "rod's time step size", 0.1);
     add_property(m_radius_scale, "scaling for rendering and collisions", 1.0);
+    add_property(m_in_rest_state, "true if the rod has reached its minimum energy state", false);
     add_property(m_base_rotation, "rotation of elliptical cross-section major axis", 0.0);
 
     add_property(m_vertexPositions, "vertex_positions", Vec3d(0, 0, 0));
@@ -632,6 +633,16 @@ Scalar ElasticRod::getRadiusScale() const
 void ElasticRod::setRadiusScale(Scalar s)
 {
     property(m_radius_scale) = s;
+}
+
+bool ElasticRod::isInRestState() const
+{
+	return property(m_in_rest_state);
+}
+
+void ElasticRod::setIsInRestState(bool is_at_rest)
+{
+	property(m_in_rest_state) = is_at_rest;
 }
 
 bool ElasticRod::doReverseHairdo(RodTimeStepper *stepper)

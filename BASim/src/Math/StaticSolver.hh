@@ -73,6 +73,10 @@ public:
 
     bool execute()
     {
+       	if ( !m_diffEq.getRod()->isInRestState() )
+    	{
+    		m_keepUpdating = true;
+    	}
     	if ( m_keepUpdating )
     	{
     		position_solve();

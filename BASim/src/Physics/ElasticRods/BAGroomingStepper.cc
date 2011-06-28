@@ -271,7 +271,7 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
     //keep_only.insert(33);
     //keep_only.insert(0);
     //keep_only.insert(6);
-    keep_only.insert(744);
+    keep_only.insert(0);
     //keep_only.insert(10);
    // keep_only.insert(189);
     //keep_only.insert(710);
