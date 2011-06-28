@@ -238,29 +238,22 @@ void RodBendingForceSym::globalForce(VecXd& force)
     computeGradKappa();
 
     ElementForce f;
-    iterator end = m_stencil.end();
-
+    const iterator end = m_stencil.end();
     for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil)
     {
-        vertex_handle& vh = m_stencil.handle();
-        f.setZero();
-        localForce(f, vh);
-
+        localForce(f, m_stencil.handle());
+        const int fi = m_stencil.firstIndex();
         for (int j = 0; j < 11; ++j)
-            force(m_stencil.firstIndex()+j) += f(j);
+            force(fi + j) += f(j);
     }
 }
 
 void RodBendingForceSym::localForce(ElementForce& force, const vertex_handle& vh)
 {
-    // Unused? int i = vh.idx();
-    Mat2d B = getB(vh);
-    Scalar len = getRefVertexLength(vh);
-
+    const Mat2d& B = getB(vh);
+    const Scalar len = getRefVertexLength(vh);
     const Vec2d& kappa = getKappa(vh);
     const Vec2d& kappaBar = getKappaBar(vh);
-
-    //cout << "RodBendingForceSym::localForce::get B Matrix " << (viscous() ? "VISCOUS " : "")  << B << endl;
 
     force = -1.0 / len * getGradKappa(vh) * B * (kappa - kappaBar);
 }
@@ -277,23 +270,7 @@ void RodBendingForceSym::globalJacobian(int baseidx, Scalar scale, MatrixBase& J
     const iterator end = m_stencil.end();
     for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil)
     {
-        vertex_handle& vh = m_stencil.handle();
-        {
-            const Mat2d& B = getB(vh);
-            const Scalar len = getRefVertexLength(vh);
-
-            const Vec2d& kappa = getKappa(vh);
-            const Vec2d& kappaBar = getKappaBar(vh);
-            const ElementBiForce& gradKappa = getGradKappa(vh);
-
-            symBProduct(localJ, B, gradKappa);
-            localJ *= -1.0 / len;
-
-            const ElementBiJacobian& hessKappa = getHessKappa(vh);
-
-            Vec2d temp = -1.0 / len * (kappa - kappaBar).transpose() * B;
-            localJ += temp(0) * hessKappa.first + temp(1) * hessKappa.second;
-        }
+        localJacobian(localJ, m_stencil.handle());
         localJ *= scale;
         J.vertexStencilAdd(m_stencil.firstIndex() + baseidx, localJ);
     }
@@ -303,18 +280,16 @@ void RodBendingForceSym::globalJacobian(int baseidx, Scalar scale, MatrixBase& J
 
 inline void RodBendingForceSym::localJacobian(ElementJacobian& localJ, const vertex_handle& vh)
 {
-    Mat2d B = getB(vh);
-    Scalar len = getRefVertexLength(vh);
-
+    const Scalar milen = -1.0 / getRefVertexLength(vh);
+    const Mat2d& B = getB(vh) * milen;
     const Vec2d& kappa = getKappa(vh);
     const Vec2d& kappaBar = getKappaBar(vh);
     const ElementBiForce& gradKappa = getGradKappa(vh);
 
     symBProduct(localJ, B, gradKappa);
-    localJ *= -1.0 / len;
 
     const ElementBiJacobian& hessKappa = getHessKappa(vh);
-    Vec2d temp = -1.0 / len * (kappa - kappaBar).transpose() * B;
+    const Vec2d temp = (kappa - kappaBar).transpose() * B;
     localJ += temp(0) * hessKappa.first + temp(1) * hessKappa.second;
 }
 

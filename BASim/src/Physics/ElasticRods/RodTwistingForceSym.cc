@@ -194,23 +194,19 @@ void RodTwistingForceSym::globalForce(VecXd& force)
     computeGradTwist();
 
     ElementForce f;
-    iterator end = m_stencil.end();
+    const iterator end = m_stencil.end();
     for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil)
     {
-        vertex_handle& vh = m_stencil.handle();
-        localForce(f, vh);
+        localForce(f, m_stencil.handle());
+        const int fi = m_stencil.firstIndex();
         for (int j = 0; j < f.size(); ++j)
-            force(m_stencil.firstIndex() + j) += f(j);
+            force(fi + j) += f(j);
     }
 }
 
 void RodTwistingForceSym::localForce(ElementForce& force, const vertex_handle& vh)
 {
-    Scalar value = getKt(vh) / getRefVertexLength(vh) * (getTwist(vh) - getUndeformedTwist(vh));
-
-    //std::cout << "-value    : " << -value << "\n";
-    //std::cout << "GradTwist : " << getGradTwist(vh) << "\n";
-    //std::cout << "local for : " << -value * getGradTwist(vh) << "\n";
+    const Scalar value = getKt(vh) / getRefVertexLength(vh) * (getTwist(vh) - getUndeformedTwist(vh));
 
     force = -value * getGradTwist(vh);
 }
@@ -227,11 +223,8 @@ void RodTwistingForceSym::globalJacobian(int baseidx, Scalar scale, MatrixBase& 
     const iterator end = m_stencil.end();
     for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil)
     {
-        vertex_handle& vh = m_stencil.handle();
-        localJ.setZero();
-        localJacobian(localJ, vh);
+        localJacobian(localJ, m_stencil.handle());
         localJ *= scale;
-
         J.vertexStencilAdd(m_stencil.firstIndex() + baseidx, localJ);
     }
 
@@ -240,15 +233,15 @@ void RodTwistingForceSym::globalJacobian(int baseidx, Scalar scale, MatrixBase& 
 
 inline void RodTwistingForceSym::localJacobian(ElementJacobian& J, const vertex_handle& vh)
 {
-    Scalar kt = getKt(vh);
-    Scalar len = getRefVertexLength(vh);
-    Scalar twist = getTwist(vh);
-    Scalar undeformedTwist = getUndeformedTwist(vh);
+    const Scalar kt = getKt(vh);
+    const Scalar milen = -1.0 / getRefVertexLength(vh);
+    const Scalar twist = getTwist(vh);
+    const Scalar undeformedTwist = getUndeformedTwist(vh);
 
     const ElementForce& gradTwist = getGradTwist(vh);
     const ElementJacobian& hessTwist = getHessTwist(vh);
 
-    J = -kt / len * ((twist - undeformedTwist) * hessTwist + gradTwist * gradTwist.transpose());
+    J = kt * milen * ((twist - undeformedTwist) * hessTwist + gradTwist * gradTwist.transpose());
 
     assert(isSymmetric(J));
 }
