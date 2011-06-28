@@ -740,18 +740,21 @@ void BARodStepper::step_dynamic(const RodSelectionType& selected_rods)
     STOP_TIMER("BARodStepper::step/setup");
 
 #ifdef HAVE_OPENMP
-    //#pragma omp parallel for
+#pragma omp parallel for
 #endif
     for (int i = 0; i < selected_steppers.size(); i++)
     {
-        RodTimeStepper* const stepper = selected_steppers[i];
+        DebugStream(g_log, "") << "Started dynamic step\n";
 
-        bool result = stepper->execute();
-        if (!result)
+        RodTimeStepper* const stepper = selected_steppers[i];
+        if (!stepper->execute())
+        {
             TraceStream(g_log, "") << stepper->getDiffEqSolver().getName() << " solver for rod "
                     << stepper->getRod()->globalRodIndex << " failed to converge after " << stepper->getMaxIterations()
                     << " iterations\n";
-        dependable_solve = dependable_solve && result;
+            dependable_solve = false;
+        }
+        DebugStream(g_log, "") << "Finished dynamic step\n";
     }
 
     STOP_TIMER("BARodStepper::step/steppers");
@@ -1158,7 +1161,8 @@ void BARodStepper::computeImmunity(const RodSelectionType& selected_rods)
 
     // On the top of that, find the initial vertex-face intersections and mark them collision-immune
     std::list<Collision*> collisions;
-    m_collision_detector->getCollisions(collisions, EdgeFace);
+    DebugStream(g_log, "") << "Detecting collisions for computeImmunity\n";
+    m_collision_detector->getCollisions(collisions, EdgeFace, true);
     while (!collisions.empty())
     {
         EdgeFaceIntersection* intersection = dynamic_cast<EdgeFaceIntersection*> (collisions.front());
@@ -1428,7 +1432,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse()
 
     // Detect continuous time collisions
     std::list<Collision*> collisions_list;
-    TraceStream(g_log, "") << "Detecting collisions...\n";
+    DebugStream(g_log, "") << "Detecting collisions for executeIterativeInelasticImpulseResponse\n";
     m_collision_detector->getCollisions(collisions_list, ContinuousTime);
     TraceStream(g_log, "") << "Initial potential collisions: " << m_collision_detector->m_potential_collisions << "\n";
 
@@ -1545,11 +1549,12 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse()
             // All first collisions have been treated, see what remains
             first_collisions_list.clear();
             already_collided_rods.clear();
+            TraceStream(g_log, "") << "Updating collisions\n";
             m_collision_detector->updateCollisions(collisions_list);
         }
 
         // Detect remaining collisions (including at the end of the last iteration, so we know what failed)
-        TraceStream(g_log, "") << "Detecting collisions...\n";
+        DebugStream(g_log, "") << "Detecting collisions for executeIterativeInelasticImpulseResponse\n";
         m_collision_detector->getCollisions(collisions_list, ContinuousTime, false); // No need to update the mesh bvh bounding boxes.
     }
 
@@ -1588,6 +1593,8 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse()
             delete *col;
         }
     }
+
+    DebugStream(g_log, "") << "Finished executeIterativeInelasticImpulseResponse\n";
 
     return all_rods_collisions_ok;
 }
@@ -2804,6 +2811,7 @@ void BARodStepper::applyInextensibilityVelocityFilter(int rodidx)
 void BARodStepper::setupPenaltyForces(std::list<Collision*>& collisions, const RodSelectionType& selected_rods)
 {
     // Detect proximity collisions
+    DebugStream(g_log, "") << "Detecting collisions for setupPenaltyForces\n";
     m_collision_detector->getCollisions(collisions, Proximity);
 
     for (int rod_id = 0; rod_id < m_number_of_rods; rod_id++)
