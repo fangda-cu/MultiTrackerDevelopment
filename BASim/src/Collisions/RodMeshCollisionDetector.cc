@@ -65,10 +65,11 @@ void RodMeshCollisionDetector::getCollisions(std::list<Collision*>& cllsns, Coll
     BVHNode& rod_root = m_rod_bvh.GetNode(0);
     DebugStream(g_log, "") << "Updating rods bounding box\n";
     updateBoundingBox(m_rod_bvh, m_rod_elements, rod_root);
+
     BVHNode& mesh_root = m_mesh_bvh.GetNode(0);
     if (update_mesh_bbox)
     {
-        DebugStream(g_log, "") << "Updating rods bounding box\n";
+        DebugStream(g_log, "") << "Updating mesh bounding box\n";
         updateBoundingBox(m_mesh_bvh, m_mesh_elements, mesh_root);
     }
 
