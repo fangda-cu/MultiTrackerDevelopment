@@ -96,17 +96,17 @@ inline bool isSymmetric(const MatrixT& A)
     return true;
 }
 
-// Computes u B v^T, assuming B is symmetric.
+// Computes u B v^T, assuming B is symmetric 2x2 and u, v are 2x1 vectors.
 inline Scalar BProduct(const Mat2d& B, const Vec2d& u, const Vec2d& v)
 {
     assert(isSymmetric(B));
 
-    return B(0, 0) * u[0] * v[0] + B(0, 1) * (u[0] * v[1] + u[1] * v[0]) + B(1, 1) * u[1] * v[1];
+    return u[0] * (B(0, 0) * v[0] + B(0, 1) * v[1]) + u[1] * (B(1, 0) * v[0] + B(1, 1) * v[1]);
 }
 
-// Computes Q B Q^T, assuming B is symmetric. The result is then (exactly) symmetric.
+// Computes Q B Q^T, assuming B is symmetric 2x2 and Q is nx2. The result is then (exactly) symmetric nxn.
 template<int n>
-inline void symBProduct(Eigen::Matrix<Scalar, n, n>& result, const Mat2d& B, const MatXd& Q)
+inline void symBProduct(Eigen::Matrix<Scalar, n, n>& result, const Mat2d& B, const Eigen::Matrix<Scalar, n, 2>& Q)
 {
     assert(isSymmetric(B));
     assert(Q.rows() == n);
@@ -126,15 +126,11 @@ template<typename target_ptr, typename source>
 inline target_ptr smart_cast(source* s)
 {
 #ifdef NDEBUG
-
     return static_cast<target_ptr>(s);
-
 #else
-
     target_ptr t = dynamic_cast<target_ptr> (s);
     assert(t != NULL);
     return t;
-
 #endif
 
 }
@@ -146,9 +142,7 @@ inline target_ref smart_cast(source& s)
 {
 
 #ifdef NDEBUG
-
     return static_cast<target_ref>(s);
-
 #else
 
     try
@@ -161,7 +155,6 @@ inline target_ref smart_cast(source& s)
     }
 
     return dynamic_cast<target_ref> (s);
-
 #endif
 
 }

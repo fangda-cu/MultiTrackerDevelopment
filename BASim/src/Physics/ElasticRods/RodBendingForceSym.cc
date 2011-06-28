@@ -27,9 +27,8 @@ RodBendingForceSym::RodBendingForceSym(ElasticRod& rod, bool vscs, bool runinit)
         m_rod.add_property(m_kappa, "material curvature vector");
         m_rod.add_property(m_gradKappaValid, "grad kappa valid", false);
         m_rod.add_property(m_hessKappaValid, "hess kappa valid", false);
-        m_rod.add_property(m_gradKappa, "gradient of material curvature vector", MatXd(11, 2));
-        m_rod.add_property(m_hessKappa, "Hessian of material curvature vector",
-                make_pair<MatXd, MatXd> (MatXd(11, 11), MatXd(11, 11)));
+        m_rod.add_property(m_gradKappa, "gradient of material curvature vector", ElementBiForce());
+        m_rod.add_property(m_hessKappa, "Hessian of material curvature vector", ElementBiJacobian());
 
         if (!vscs)
         {
@@ -77,9 +76,8 @@ void RodBendingForceSym::reattatchProperties()
     m_rod.add_property(m_kappa, "material curvature vector");
     m_rod.add_property(m_gradKappaValid, "grad kappa valid", false);
     m_rod.add_property(m_hessKappaValid, "hess kappa valid", false);
-    m_rod.add_property(m_gradKappa, "gradient of material curvature vector", MatXd(11, 2));
-    m_rod.add_property(m_hessKappa, "Hessian of material curvature vector",
-            make_pair<MatXd, MatXd> (MatXd(11, 11), MatXd(11, 11)));
+    m_rod.add_property(m_gradKappa, "gradient of material curvature vector", ElementBiForce());
+    m_rod.add_property(m_hessKappa, "Hessian of material curvature vector", ElementBiJacobian());
 
     if (!m_viscous)
     {
@@ -237,32 +235,23 @@ void RodBendingForceSym::globalForce(VecXd& force)
     if (viscous() && m_rod.getViscosity() == 0.0)
         return;
 
-    //VecXd force1 = force;
-
     computeGradKappa();
 
-    VecXd f(11);
-    IndexArray indices(11);
-    // Unused? unsigned int nv = m_rod.nv();
-
+    ElementForce f;
     iterator end = m_stencil.end();
+
     for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil)
     {
         vertex_handle& vh = m_stencil.handle();
         f.setZero();
         localForce(f, vh);
-        m_stencil.indices(indices);
-        for (int j = 0; j < f.size(); ++j)
-        {
-            force(indices[j]) += f(j);
-        }
-    }
 
-    //std::cout << (viscous() ? "VISCOUS " : "") << "BENDING FORCE\n";
-    //std::cout << "norm = " << (force - force1).norm() << " force = " << force-force1 << "\n\n";
+        for (int j = 0; j < 11; ++j)
+            force(m_stencil.firstIndex()+j) += f(j);
+    }
 }
 
-void RodBendingForceSym::localForce(VecXd& force, const vertex_handle& vh)
+void RodBendingForceSym::localForce(ElementForce& force, const vertex_handle& vh)
 {
     // Unused? int i = vh.idx();
     Mat2d B = getB(vh);
@@ -295,12 +284,12 @@ void RodBendingForceSym::globalJacobian(int baseidx, Scalar scale, MatrixBase& J
 
             const Vec2d& kappa = getKappa(vh);
             const Vec2d& kappaBar = getKappaBar(vh);
-            const MatXd& gradKappa = getGradKappa(vh);
+            const ElementBiForce& gradKappa = getGradKappa(vh);
 
             symBProduct(localJ, B, gradKappa);
             localJ *= -1.0 / len;
 
-            const pair<MatXd, MatXd>& hessKappa = getHessKappa(vh);
+            const ElementBiJacobian& hessKappa = getHessKappa(vh);
 
             Vec2d temp = -1.0 / len * (kappa - kappaBar).transpose() * B;
             localJ += temp(0) * hessKappa.first + temp(1) * hessKappa.second;
@@ -312,18 +301,19 @@ void RodBendingForceSym::globalJacobian(int baseidx, Scalar scale, MatrixBase& J
     assert(isSymmetric(J));
 }
 
-inline void RodBendingForceSym::localJacobian(MatXd& localJ, const vertex_handle& vh)
+inline void RodBendingForceSym::localJacobian(ElementJacobian& localJ, const vertex_handle& vh)
 {
     Mat2d B = getB(vh);
     Scalar len = getRefVertexLength(vh);
 
     const Vec2d& kappa = getKappa(vh);
     const Vec2d& kappaBar = getKappaBar(vh);
-    const MatXd& gradKappa = getGradKappa(vh);
+    const ElementBiForce& gradKappa = getGradKappa(vh);
 
-    localJ = -1.0 / len * gradKappa * B * gradKappa.transpose();
+    symBProduct(localJ, B, gradKappa);
+    localJ *= -1.0 / len;
 
-    const pair<MatXd, MatXd>& hessKappa = getHessKappa(vh);
+    const ElementBiJacobian& hessKappa = getHessKappa(vh);
     Vec2d temp = -1.0 / len * (kappa - kappaBar).transpose() * B;
     localJ += temp(0) * hessKappa.first + temp(1) * hessKappa.second;
 }
@@ -352,8 +342,8 @@ void RodBendingForceSym::globalReverseJacobian(MatrixBase& J)
         const Vec2d& kappa = getKappa(vh);
         const Vec2d& kappaBar = getKappaBar(vh);
 
-        VecXd fde(11);
-        MatXd fdk(11, 2);
+        ElementForce fde;
+        ElementBiForce fdk;
 
         fde = 0.5 / (refLen * refLen) * getGradKappa(vh) * B * (kappa - kappaBar);
         fdk = 1.0 / refLen * getGradKappa(vh) * B;
@@ -428,12 +418,12 @@ void RodBendingForceSym::updateReverseUndeformedStrain(const VecXd& e)
     }
 }
 
-const MatXd& RodBendingForceSym::getGradKappa(const vertex_handle& vh) const
+const RodBendingForceSym::ElementBiForce& RodBendingForceSym::getGradKappa(const vertex_handle& vh) const
 {
     return m_rod.property(m_gradKappa)[vh];
 }
 
-const pair<MatXd, MatXd>&
+const RodBendingForceSym::ElementBiJacobian&
 RodBendingForceSym::getHessKappa(const vertex_handle& vh) const
 {
     return m_rod.property(m_hessKappa)[vh];
@@ -450,7 +440,7 @@ void RodBendingForceSym::computeGradKappa()
         vertex_handle& vh = m_stencil.handle();
         int i = vh.idx();
 
-        MatXd& gradKappa = m_rod.property(m_gradKappa)[vh];
+        ElementBiForce& gradKappa = m_rod.property(m_gradKappa)[vh];
 
         // Unused? const Vec3d& e = m_rod.getEdge(i-1);
         // Unused? const Vec3d& f = m_rod.getEdge(i);
@@ -508,8 +498,8 @@ void RodBendingForceSym::computeHessKappa()
         const vertex_handle& vh = m_stencil.handle();
         int i = vh.idx();
 
-        MatXd& DDkappa1 = m_rod.property(m_hessKappa)[vh].first;
-        MatXd& DDkappa2 = m_rod.property(m_hessKappa)[vh].second;
+        ElementJacobian& DDkappa1 = m_rod.property(m_hessKappa)[vh].first;
+        ElementJacobian& DDkappa2 = m_rod.property(m_hessKappa)[vh].second;
         DDkappa1.setZero();
         DDkappa2.setZero();
 

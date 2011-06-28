@@ -13,66 +13,66 @@
 #include "VertexStencil.hh"
 #endif
 
-namespace BASim {
+namespace BASim
+{
 
-class RodTwistingForceSym : public RodForceT<VertexStencil>
+class RodTwistingForceSym: public RodForceT<VertexStencil>
 {
 public:
     typedef Eigen::Matrix<Scalar, 11, 1> ElementForce;
     typedef Eigen::Matrix<Scalar, 11, 11> ElementJacobian;
 
-  explicit RodTwistingForceSym(ElasticRod& rod, bool vscs = false, bool runinit = true);
+    explicit RodTwistingForceSym(ElasticRod& rod, bool vscs = false, bool runinit = true);
 
-  virtual Scalar globalEnergy();
-  virtual void globalForce(VecXd& F);
-  virtual void globalJacobian(int baseidx, Scalar scale, MatrixBase& J);
+    virtual Scalar globalEnergy();
+    virtual void globalForce(VecXd& F);
+    virtual void globalJacobian(int baseidx, Scalar scale, MatrixBase& J);
 
-  virtual void globalReverseJacobian(MatrixBase& Jacobian);
-  virtual void updateReverseUndeformedStrain(const VecXd& e);
-  
-  Scalar localEnergy(const vertex_handle& vh);
-  void localForce(VecXd& F, const vertex_handle& vh);
-  void localJacobian(ElementJacobian& J, const vertex_handle& vh);
+    virtual void globalReverseJacobian(MatrixBase& Jacobian);
+    virtual void updateReverseUndeformedStrain(const VecXd& e);
 
-  Scalar getKt(const vertex_handle& vh) const;
-  void setKt(const vertex_handle& vh, const Scalar& kt);
+    Scalar localEnergy(const vertex_handle& vh);
+    void localForce(ElementForce& F, const vertex_handle& vh);
+    void localJacobian(ElementJacobian& J, const vertex_handle& vh);
 
-  Scalar getTwist(const vertex_handle& vh) const;
-  void setTwist(const vertex_handle& vh, const Scalar& twist);
+    Scalar getKt(const vertex_handle& vh) const;
+    void setKt(const vertex_handle& vh, const Scalar& kt);
 
-  Scalar getUndeformedTwist(const vertex_handle& vh) const;
-  void setUndeformedTwist(const vertex_handle& vh,
-                          const Scalar& undeformedTwist);
+    Scalar getTwist(const vertex_handle& vh) const;
+    void setTwist(const vertex_handle& vh, const Scalar& twist);
 
-  Scalar getRefVertexLength(const vertex_handle& vh) const;
-  void setRefVertexLength(const vertex_handle& vh, const Scalar& length);
+    Scalar getUndeformedTwist(const vertex_handle& vh) const;
+    void setUndeformedTwist(const vertex_handle& vh, const Scalar& undeformedTwist);
 
-  virtual void updateProperties();
-  virtual void updateStiffness();
-  virtual void updateUndeformedStrain();
-  virtual void updateReferenceDomain();
+    Scalar getRefVertexLength(const vertex_handle& vh) const;
+    void setRefVertexLength(const vertex_handle& vh, const Scalar& length);
 
-  virtual void updateUndeformedConfiguration(std::vector<Scalar>& vals);
+    virtual void updateProperties();
+    virtual void updateStiffness();
+    virtual void updateUndeformedStrain();
+    virtual void updateReferenceDomain();
 
-  virtual void reattatchProperties();
+    virtual void updateUndeformedConfiguration(std::vector<Scalar>& vals);
+
+    virtual void reattatchProperties();
 
 private:
 
-  const VecXd& getGradTwist(const vertex_handle& vh) const;
-  const MatXd& getHessTwist(const vertex_handle& vh) const;
+    const ElementForce& getGradTwist(const vertex_handle& vh) const;
+    const ElementJacobian& getHessTwist(const vertex_handle& vh) const;
 
-  void computeGradTwist();
-  void computeHessTwist();
+    void computeGradTwist();
+    void computeHessTwist();
 
-  VPropHandle<Scalar> m_kt;              ///< twist stiffness
-  VPropHandle<Scalar> m_twist;           ///< twist at a vertex
-  VPropHandle<Scalar> m_undeformedTwist; ///< undeformed twist
-  VPropHandle<Scalar> m_refVertexLength; ///< length of domain of integration
+    VPropHandle<Scalar> m_kt; ///< twist stiffness
+    VPropHandle<Scalar> m_twist; ///< twist at a vertex
+    VPropHandle<Scalar> m_undeformedTwist; ///< undeformed twist
+    VPropHandle<Scalar> m_refVertexLength; ///< length of domain of integration
 
-  ObjPropHandle<bool> m_gradTwistValid;
-  ObjPropHandle<bool> m_hessTwistValid;
-  VPropHandle<VecXd> m_gradTwist; ///< gradient of twist
-  VPropHandle<MatXd> m_hessTwist; ///< Hessian of twist
+    ObjPropHandle<bool> m_gradTwistValid;
+    ObjPropHandle<bool> m_hessTwistValid;
+    VPropHandle<ElementForce> m_gradTwist; ///< gradient of twist
+    VPropHandle<ElementJacobian> m_hessTwist; ///< Hessian of twist
 };
 
 } // namespace BASim

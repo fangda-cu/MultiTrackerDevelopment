@@ -13,78 +13,107 @@
 #endif
 #include "ElasticRod.hh"
 
-namespace BASim {
+namespace BASim
+{
 
 /** Base class for a force that acts on rods. */
 class RodForce
 {
 public:
 
-  typedef ElasticRod::vertex_handle vertex_handle;
-  typedef ElasticRod::edge_handle   edge_handle;
+    typedef ElasticRod::vertex_handle vertex_handle;
+    typedef ElasticRod::edge_handle edge_handle;
 
-  explicit RodForce(ElasticRod& rod, const std::string& name = "RodForce");
-  virtual ~RodForce() {}
+    explicit RodForce(ElasticRod& rod, const std::string& name = "RodForce");
+    virtual ~RodForce()
+    {
+    }
 
-  std::string getName() const;
+    std::string getName() const;
 
-  void computeKb(Vec3d& kb, const Vec3d& x0, const Vec3d& x1, const Vec3d& x2);
-  Vec3d computeKb(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2);
+    void computeKb(Vec3d& kb, const Vec3d& x0, const Vec3d& x1, const Vec3d& x2);
+    Vec3d computeKb(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2);
 
-  void computeDkb(Mat3dArray& Dkb, const Vec3d& x0, const Vec3d& x1,
-                  const Vec3d& x2);
-  Mat3dArray computeDkb(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2);
+    void computeDkb(Mat3dArray& Dkb, const Vec3d& x0, const Vec3d& x1, const Vec3d& x2);
+    Mat3dArray computeDkb(const Vec3d& x0, const Vec3d& x1, const Vec3d& x2);
 
-  virtual Scalar globalEnergy() = 0;
-  virtual void globalForce(VecXd& force) = 0;
-  virtual void globalJacobian(int baseidx, Scalar scale, MatrixBase& Jacobian) = 0;
+    virtual Scalar globalEnergy() = 0;
+    virtual void globalForce(VecXd& force) = 0;
+    virtual void globalJacobian(int baseidx, Scalar scale, MatrixBase& Jacobian) = 0;
 
-  virtual void updateProperties() {}
-  virtual void updateStiffness() {}
-  virtual void updateUndeformedStrain() {}
-  virtual void updateReferenceDomain() {}
+    virtual void updateProperties()
+    {
+    }
+    virtual void updateStiffness()
+    {
+    }
+    virtual void updateUndeformedStrain()
+    {
+    }
+    virtual void updateReferenceDomain()
+    {
+    }
 
-  virtual void verifyProperties() {}
+    virtual void verifyProperties()
+    {
+    }
 
-	
-	virtual void updatePlasticity(Scalar maxKappa) {}
-  
-  virtual void updateUndeformedConfiguration(std::vector<Scalar>& vals) {}
-  
-  virtual void globalReverseJacobian(MatrixBase& Jacobian) {}
-  virtual void updateReverseUndeformedStrain(const VecXd& e) {}
-  
-  // 'Attaches' any links to properties within children. Used for serialization.
-  virtual void reattatchProperties() {};
+    virtual void updatePlasticity(Scalar maxKappa)
+    {
+    }
 
-  bool viscous() const { return m_viscous; }
-  void setViscous(bool v) { m_viscous = v; updateStiffness(); }
+    virtual void updateUndeformedConfiguration(std::vector<Scalar>& vals)
+    {
+    }
+
+    virtual void globalReverseJacobian(MatrixBase& Jacobian)
+    {
+    }
+    virtual void updateReverseUndeformedStrain(const VecXd& e)
+    {
+    }
+
+    // 'Attaches' any links to properties within children. Used for serialization.
+    virtual void reattatchProperties()
+    {
+    }
+    ;
+
+    bool viscous() const
+    {
+        return m_viscous;
+    }
+    void setViscous(bool v)
+    {
+        m_viscous = v;
+        updateStiffness();
+    }
 
 protected:
 
-  ElasticRod& m_rod;
-  std::string m_name;
-  bool m_viscous;
+    ElasticRod& m_rod;
+    std::string m_name;
+    bool m_viscous;
 
-  static Mat2d J;
-  static Mat2d Jt;
+    static Mat2d J;
+    static Mat2d Jt;
 };
 
-template <class Stencil>
-class RodForceT : public RodForce
+template<class Stencil>
+class RodForceT: public RodForce
 {
 public:
 
-  typedef typename Stencil::iterator iterator;
+    typedef typename Stencil::iterator iterator;
 
-  explicit RodForceT(ElasticRod& rod, const std::string& name = "RodForce")
-    : RodForce(rod,name)
-    , m_stencil(rod)
-  {}
+    explicit RodForceT(ElasticRod& rod, const std::string& name = "RodForce") :
+        RodForce(rod, name), m_stencil(rod)
+    {
+    }
 
 protected:
 
-  Stencil m_stencil;
+    Stencil m_stencil;
 };
 
 } // namespace BASim
