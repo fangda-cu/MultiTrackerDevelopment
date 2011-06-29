@@ -280,16 +280,17 @@ void RodBendingForceSym::globalJacobian(int baseidx, Scalar scale, MatrixBase& J
 
 inline void RodBendingForceSym::localJacobian(ElementJacobian& localJ, const vertex_handle& vh)
 {
+    const Mat2d& B = getB(vh);
     const Scalar milen = -1.0 / getRefVertexLength(vh);
-    const Mat2d& B = getB(vh) * milen;
     const Vec2d& kappa = getKappa(vh);
     const Vec2d& kappaBar = getKappaBar(vh);
     const ElementBiForce& gradKappa = getGradKappa(vh);
 
     symBProduct(localJ, B, gradKappa);
+    localJ *= milen;
 
     const ElementBiJacobian& hessKappa = getHessKappa(vh);
-    const Vec2d temp = (kappa - kappaBar).transpose() * B;
+    const Vec2d temp = milen * (kappa - kappaBar).transpose() * B;
     localJ += temp(0) * hessKappa.first + temp(1) * hessKappa.second;
 }
 

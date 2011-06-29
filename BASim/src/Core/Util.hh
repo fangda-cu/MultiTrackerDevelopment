@@ -101,7 +101,8 @@ inline Scalar BProduct(const Mat2d& B, const Vec2d& u, const Vec2d& v)
 {
     assert(isSymmetric(B));
 
-    return u[0] * (B(0, 0) * v[0] + B(0, 1) * v[1]) + u[1] * (B(1, 0) * v[0] + B(1, 1) * v[1]);
+    // return u[0] * (B(0, 0) * v[0] + B(0, 1) * v[1]) + u[1] * (B(1, 0) * v[0] + B(1, 1) * v[1]); // Bad
+    return B(0, 0) * u[0] * v[0] + B(0, 1) * (u[0] * v[1] + u[1] * v[0]) + B(1, 1) * u[1] * v[1]; // Good
 }
 
 // Computes Q B Q^T, assuming B is symmetric 2x2 and Q is nx2. The result is then (exactly) symmetric nxn.
