@@ -41,6 +41,12 @@
 #include <maya/MFileIO.h>
 #include <maya/MFnCompoundAttribute.h>
 
+#include <maya/MFnMatrixAttribute.h>
+#include <maya/MPlugArray.h>
+#include <maya/MQuaternion.h>
+
+#include <sys/stat.h>
+
 #include "WmSweeneyRodManager.hh"
 
 class WmSweeneyNode : public MPxLocatorNode 
@@ -120,6 +126,7 @@ public:
     
     static MObject ia_strandVertices;
     static MObject ia_strandRootFrames;
+    //static MObject ia_strandLengths;
     static MObject ia_verticesPerStrand;
     
     // Debug drawing
@@ -163,6 +170,7 @@ private:
     WmSweeneyRodManager* m_rodManager;
     MVectorArray m_strandVertices;
     MVectorArray m_strandRootFrames;
+    std::vector<double> m_strandLengths;
     unsigned int m_numberOfVerticesPerStrand;
 };
 

@@ -2,12 +2,6 @@
 #include "WmFigConnectionNode.hh"
 #include "../WmBunsenCollisionMeshNode.hh"
 
-#include <maya/MFnMatrixAttribute.h>
-#include <maya/MPlugArray.h>
-#include <maya/MQuaternion.h>
-
-#include <sys/stat.h>
-
 #include "../../../BASim/src/Physics/ElasticRods/RodBendingForceSym.hh"
 #include "../../../BASim/src/Physics/ElasticRods/RodStretchingForce.hh"
 #include "../../../BASim/src/Physics/ElasticRods/RodTwistingForceSym.hh"
@@ -191,7 +185,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 				    // Compute new edge length
 				    // TODO(sainsley) : make the length slider a scale factor
 				    // and pull then lengths from barbershop
-				    Scalar updated_edge_length = m_length / m_verticesPerRod;
+				    Scalar updated_edge_length = m_length / m_verticesPerRod * m_strandLengths[i];
 				    std::vector<Scalar> rest_lengths;
 
 				    assert( current_rod->m_stretchingForce != NULL );
@@ -461,12 +455,13 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
     cerr << "initialiseRodFromBarberShopInput() - number of vertices per barberShop strand = " << m_numberOfVerticesPerStrand<< endl;
 
     vector< BASim::Vec3d > vertices;
+    m_strandLengths.clear();
 
     for ( unsigned int inputStrandNumber = 0; inputStrandNumber < numberOfStrands; ++inputStrandNumber )
     {
     	MVector direction = m_strandVertices[ currentVertexIndex + 1 ]
                                 - m_strandVertices[ currentVertexIndex ];
-        direction.normalize();
+        //direction.normalize();
 
         constructRodVertices( vertices, direction, m_strandVertices[ currentVertexIndex ] );
 
@@ -531,13 +526,16 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
 void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices, const MVector& i_direction,
                                   const MVector& i_rootPosition )
 {
+
     // Construct a list of vertices for a rod with its root at i_rootPosition and going in direction
     // i_direction
 
     o_rodVertices.clear();
 
     MVector edge = i_direction;
-    edge.normalize();
+
+    m_strandLengths.push_back(edge.length());
+    //edge.normalize();
 
 	cerr << "constructRodVertices(): m_length = " << m_length << endl;
 	cerr << "constructRodVertices(): m_verticesPerRod = " << m_verticesPerRod << endl;

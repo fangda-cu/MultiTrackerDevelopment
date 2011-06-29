@@ -70,7 +70,7 @@ void RodLevelSetForce::computeForceDX(int baseindex, const ElasticRod& rod, Scal
 }
 
 void RodLevelSetForce::computeLocalForceDX(int baseindex, const ElasticRod& rod, Vec3d& v0, int vidx,
-		Scalar& alpha, Scalar scale, MatrixBase& J) const
+		const Scalar alpha, Scalar scale, MatrixBase& J) const
 {
 	IntArray indices(3);
 	MatXd localJ(3, 3);
@@ -179,7 +179,7 @@ void RodLevelSetForce::computeForceEnergy(const ElasticRod& rod, VecXd& force, S
     }
 }
 
-void RodLevelSetForce::computeLocalForceEnergy(const ElasticRod& rod, Vec3d& v0, int vidx, Scalar& alpha, VecXd& force, Scalar& energy) const
+void RodLevelSetForce::computeLocalForceEnergy(const ElasticRod& rod, Vec3d& v0, int vidx, const Scalar alpha, VecXd& force, Scalar& energy) const
 {
 	Vec3<Real> v0_otherMathLibrary(v0[0], v0[1], v0[2]);
 
