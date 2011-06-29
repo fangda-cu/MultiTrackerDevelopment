@@ -13,7 +13,8 @@
 #endif
 #include "ElasticRod.hh"
 
-namespace BASim {
+namespace BASim
+{
 
 /** Base class for a force that acts on rods. */
 class RodForce
@@ -79,29 +80,29 @@ public:
 
 protected:
 
-  ElasticRod& m_rod;
-  std::string m_name;
-  bool m_viscous;
+    ElasticRod& m_rod;
+    std::string m_name;
+    bool m_viscous;
 
-  static Mat2d J;
-  static Mat2d Jt;
+    static Mat2d J;
+    static Mat2d Jt;
 };
 
-template <class Stencil>
-class RodForceT : public RodForce
+template<class Stencil>
+class RodForceT: public RodForce
 {
 public:
 
-  typedef typename Stencil::iterator iterator;
+    typedef typename Stencil::iterator iterator;
 
-  explicit RodForceT(ElasticRod& rod, const std::string& name = "RodForce")
-    : RodForce(rod,name)
-    , m_stencil(rod)
-  {}
+    explicit RodForceT(ElasticRod& rod, const std::string& name = "RodForce") :
+        RodForce(rod, name), m_stencil(rod)
+    {
+    }
 
 protected:
 
-  Stencil m_stencil;
+    Stencil m_stencil;
 };
 
 } // namespace BASim

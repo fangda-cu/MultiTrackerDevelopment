@@ -19,6 +19,14 @@ void _error(const char* file, const char* function, int line, const char* messag
 
 #define BA_ERROR(message) _error(__FILE__, __FUNCTION__, __LINE__, (message))
 
+inline std::ostream& operator<<(std::ostream& os, const std::vector<VecXd>& normals)
+{
+    for (std::vector<VecXd>::const_iterator normal = normals.begin(); normal != normals.end(); ++normal)
+        os << *normal << '\n';
+
+    return os;
+}
+
 /** Converts from a string to the given type */
 template<class T>
 inline void fromString(T& t, const std::string& str)
@@ -88,22 +96,22 @@ inline bool isSymmetric(const MatrixT& A)
     return true;
 }
 
-// Computes u B v^T, assuming B is symmetric.
+// Computes u B v^T, assuming B is symmetric 2x2 and u, v are 2x1 vectors.
 inline Scalar BProduct(const Mat2d& B, const Vec2d& u, const Vec2d& v)
 {
     assert(isSymmetric(B));
 
-    return B(0, 0) * u[0] * v[0] + B(0, 1) * (u[0] * v[1] + u[1] * v[0]) + B(1, 1) * u[1] * v[1];
+    // return u[0] * (B(0, 0) * v[0] + B(0, 1) * v[1]) + u[1] * (B(1, 0) * v[0] + B(1, 1) * v[1]); // Bad
+    return B(0, 0) * u[0] * v[0] + B(0, 1) * (u[0] * v[1] + u[1] * v[0]) + B(1, 1) * u[1] * v[1]; // Good
 }
 
-// Computes Q B Q^T, assuming B is symmetric. The result is then (exactly) symmetric.
-inline MatXd symBProduct(const Mat2d& B, const MatXd& Q)
+// Computes Q B Q^T, assuming B is symmetric 2x2 and Q is nx2. The result is then (exactly) symmetric nxn.
+template<int n>
+inline void symBProduct(Eigen::Matrix<Scalar, n, n>& result, const Mat2d& B, const Eigen::Matrix<Scalar, n, 2>& Q)
 {
     assert(isSymmetric(B));
+    assert(Q.rows() == n);
     assert(Q.cols() == 2);
-    const int n = Q.rows();
-
-    MatXd result(n, n);
 
     for (int i = 0; i < n; ++i)
     {
@@ -111,13 +119,6 @@ inline MatXd symBProduct(const Mat2d& B, const MatXd& Q)
         for (int j = 0; j < i; ++j)
             result(i, j) = result(j, i) = BProduct(B, Q.row(i), Q.row(j));
     }
-
-    return result;
-}
-
-inline MatXd symmetrize(const MatXd& M) // TODO: we should never have to use this function. It's a cheat for when we cannot mathematically ensure symmetry
-{
-    return (M + M.transpose()) * 0.5;
 }
 
 /** Uses dynamic_cast if debugging is turned on and static_cast for
@@ -126,15 +127,11 @@ template<typename target_ptr, typename source>
 inline target_ptr smart_cast(source* s)
 {
 #ifdef NDEBUG
-
     return static_cast<target_ptr>(s);
-
 #else
-
     target_ptr t = dynamic_cast<target_ptr> (s);
     assert(t != NULL);
     return t;
-
 #endif
 
 }
@@ -146,9 +143,7 @@ inline target_ref smart_cast(source& s)
 {
 
 #ifdef NDEBUG
-
     return static_cast<target_ref>(s);
-
 #else
 
     try
@@ -161,7 +156,6 @@ inline target_ref smart_cast(source& s)
     }
 
     return dynamic_cast<target_ref> (s);
-
 #endif
 
 }

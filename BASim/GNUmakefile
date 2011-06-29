@@ -11,11 +11,10 @@ IPATHS 	+= -I$(MKLROOT)/include
 # This is so that the library can access a header in BASimulator app. Nasty, but that's how the code it came
 IPATHS 	+= -I../../../
 
-LIB1    := Wfigaro
-LIB1_CF += -DBUILD=${BUILD} -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA  -openmp -DHAVE_OPENMP -UNDEBUG
-# Please don't commit with -DNDEBUG here as Hudson relies on the flag being unset by make dbg.
-# For production release, do not forget to remove -UNDEBUG as we don't want make opt to have assertions.
-LIB1_CF += -w
+LIB1       := Wfigaro
+LIB1_CF    += -DBUILD=${BUILD} -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA  -openmp -DHAVE_OPENMP
+# Please don't commit with -DNDEBUG or -UNDEBUG here as Hudson relies on the flag set by make dbg or make opt.
+LIB1_CF    += -w
 
 PHYSBAM_LOCATION := /vol/weta/src/amcadams/PhysBAM-svn
 PHYSBAM_INCLUDE  := -I$(PHYSBAM_LOCATION)/Public_Library

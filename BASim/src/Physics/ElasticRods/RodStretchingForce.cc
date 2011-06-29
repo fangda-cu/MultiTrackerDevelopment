@@ -182,32 +182,23 @@ void RodStretchingForce::elementForce(ElementForce& force, const edge_handle& eh
 
 void RodStretchingForce::globalJacobian(int baseidx, Scalar scale, MatrixBase& Jacobian)
 {
-    IndexArray indices;
     ElementJacobian localJ;
-    MatXd adder;
-
-    assert(isSymmetric(Jacobian));
-
-    iterator end = m_stencil.end();
+    const iterator end = m_stencil.end();
     for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil)
     {
         edge_handle& eh = m_stencil.handle();
         localJ.setZero();
         elementJacobian(localJ, eh);
-        adder = localJ;
-        adder *= scale;
-
-        m_stencil.indices(indices);
-        for (int i = 0; i < (int) indices.size(); ++i)
-            indices(i) += baseidx;
-        Jacobian.add(indices, indices, adder);
-
-        assert(isSymmetric(Jacobian));
 
 #ifdef TEST_ROD_STRETCHING
         testJacobian(localJ, eh);
 #endif // TEST_ROD_STRETCHING
+
+        localJ *= scale;
+        Jacobian.edgeStencilAdd(m_stencil.firstIndex() + baseidx, localJ);
     }
+
+    assert(isSymmetric(Jacobian));
 }
 
 void RodStretchingForce::globalForceEnergy(VecXd& force, Scalar& energy)

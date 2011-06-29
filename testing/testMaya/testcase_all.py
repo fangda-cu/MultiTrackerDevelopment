@@ -1,6 +1,6 @@
 from WtTestSuite.case import TestCase
 
-class MayaTest( TestCase ):
+class MayaTestDebug( TestCase ):
 	
 	def testcase001( self ):
                

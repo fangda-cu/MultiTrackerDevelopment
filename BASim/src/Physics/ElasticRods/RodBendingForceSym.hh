@@ -16,12 +16,18 @@
 #include "BASim/src/Physics/ElasticRods/VertexStencil.hh"
 #endif
 
-namespace BASim {
+namespace BASim
+{
 
-class RodBendingForceSym : public RodForceT<VertexStencil>
+class RodBendingForceSym: public RodForceT<VertexStencil>
 {
 public:
-  explicit RodBendingForceSym(ElasticRod& rod, bool vscs = false, bool runinit = true);
+    typedef Eigen::Matrix<Scalar, 11, 1> ElementForce;
+    typedef Eigen::Matrix<Scalar, 11, 2> ElementBiForce;
+    typedef Eigen::Matrix<Scalar, 11, 11> ElementJacobian;
+    typedef std::pair<ElementJacobian, ElementJacobian> ElementBiJacobian;
+
+		 explicit RodBendingForceSym(ElasticRod& rod, bool vscs = false, bool runinit = true);
 
   virtual Scalar globalEnergy();
   virtual void globalForce(VecXd& force);
@@ -31,54 +37,53 @@ public:
 					 VecXd& force, Scalar& energy);
 
   Scalar localEnergy(const vertex_handle& vh);
-  void localForce(VecXd& F, const vertex_handle& vh);
-  void localJacobian(MatXd& J, const vertex_handle& vh);
+  void localForce(ElementForce& force, const vertex_handle& vh);
+  void localJacobian(ElementJacobian& localJ, const vertex_handle& vh);
   void localForceEnergy(VecXd& F, Scalar& energy, const vertex_handle& vh);
   void localJacobianForceEnergy(MatXd& J, VecXd& F, Scalar& energy, const vertex_handle& vh);
 
-  virtual void globalReverseJacobian(MatrixBase& Jacobian);
-  virtual void updateReverseUndeformedStrain(const VecXd& e);
-  
-  const Mat2d& getB(const vertex_handle& vh) const;
-  void setB(const vertex_handle& vh, const Mat2d& B);
+    virtual void globalReverseJacobian(MatrixBase& Jacobian);
+    virtual void updateReverseUndeformedStrain(const VecXd& e);
 
-  const Vec2d& getKappa(const vertex_handle& vh) const;
-  void setKappa(const vertex_handle& vh, const Vec2d& kappa);
+    const Mat2d& getB(const vertex_handle& vh) const;
+    void setB(const vertex_handle& vh, const Mat2d& B);
 
-  const Vec2d& getKappaBar(const vertex_handle& vh) const;
-  void setKappaBar(const vertex_handle& vh, const Vec2d& kappaBar);
+    const Vec2d& getKappa(const vertex_handle& vh) const;
+    void setKappa(const vertex_handle& vh, const Vec2d& kappa);
 
-  Scalar getRefVertexLength(const vertex_handle& vh) const;
-  void setRefVertexLength(const vertex_handle& vh, const Scalar& length);
+    const Vec2d& getKappaBar(const vertex_handle& vh) const;
+    void setKappaBar(const vertex_handle& vh, const Vec2d& kappaBar);
 
-  virtual void updateProperties();
-  virtual void updateStiffness();
-  virtual void updateUndeformedStrain();
-  virtual void updateReferenceDomain();
-	
-  virtual void updateUndeformedConfiguration(std::vector<Scalar>& vals);
 
-  virtual void setReferenceLengths(std::vector<Scalar>& vals);
+    Scalar getRefVertexLength(const vertex_handle& vh) const;
+    void setRefVertexLength(const vertex_handle& vh, const Scalar& length);
 
-  virtual void reattatchProperties();
+    virtual void updateProperties();
+    virtual void updateStiffness();
+    virtual void updateUndeformedStrain();
+    virtual void updateReferenceDomain();
+
+    virtual void updateUndeformedConfiguration(std::vector<Scalar>& vals);
+    virtual void setReferenceLengths(std::vector<Scalar>& vals);
+    virtual void reattatchProperties();
+
 protected:
+    const ElementBiForce& getGradKappa(const vertex_handle& vh) const;
+    const ElementBiJacobian& getHessKappa(const vertex_handle& vh) const;
 
-  const MatXd& getGradKappa(const vertex_handle& vh) const;
-  const std::pair<MatXd, MatXd>& getHessKappa(const vertex_handle& vh) const;
+    void computeGradKappa();
+    void computeHessKappa();
 
-  void computeGradKappa();
-  void computeHessKappa();
+    VPropHandle<Vec2d> m_kappa;
+    VPropHandle<Vec2d> m_kappaBar;
 
-  VPropHandle<Vec2d> m_kappa;
-  VPropHandle<Vec2d> m_kappaBar;
+    ObjPropHandle<bool> m_gradKappaValid;
+    ObjPropHandle<bool> m_hessKappaValid;
+    VPropHandle<ElementBiForce> m_gradKappa; ///< each entry is a 11x2 matrix
+    VPropHandle<ElementBiJacobian> m_hessKappa; ///< each entry is a pair of 11x11 matrix
 
-  ObjPropHandle<bool> m_gradKappaValid;
-  ObjPropHandle<bool> m_hessKappaValid;
-  VPropHandle<MatXd> m_gradKappa; ///< each entry is a 11x2 matrix
-  VPropHandle< std::pair<MatXd, MatXd> > m_hessKappa;
-
-  VPropHandle<Mat2d> m_B;
-  VPropHandle<Scalar> m_refVertexLength;
+    VPropHandle<Mat2d> m_B;
+    VPropHandle<Scalar> m_refVertexLength;
 };
 
 } // namespace BASim

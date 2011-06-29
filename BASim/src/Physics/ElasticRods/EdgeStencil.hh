@@ -10,84 +10,96 @@
 
 #include "Stencil.hh"
 
-namespace BASim {
+namespace BASim
+{
 
 class EdgeStencil;
 
-template <> struct TypeInfo<EdgeStencil>
+template<> struct TypeInfo<EdgeStencil>
 {
-  typedef ElasticRod::edge_handle handle_type;
-  typedef ElasticRod::edge_iter   iterator;
+    typedef ElasticRod::edge_handle handle_type;
+    typedef ElasticRod::edge_iter iterator;
 };
 
 /** Class for iterating over the edges of a rod and getting indices
-    associated to degrees of freedom. */
-class EdgeStencil : public StencilT<EdgeStencil>
+ associated to degrees of freedom. */
+class EdgeStencil: public StencilT<EdgeStencil>
 {
 public:
 
-  explicit EdgeStencil(ElasticRod& obj)
-    : StencilT<EdgeStencil>(obj)
-  {}
-
-  virtual ~EdgeStencil() {}
-
-  virtual EdgeStencil& operator++ ()
-  {
-    ++m_iter;
-    return *this;
-  }
-
-  virtual handle_ref handle()
-  {
-    return *m_iter;
-  }
-
-  virtual const_handle_ref handle() const
-  {
-    return *m_iter;
-  }
-
-  virtual iterator begin() const
-  {
-    return m_obj->edges_begin();
-  }
-
-  virtual iterator end() const
-  {
-    return m_obj->edges_end();
-  }
-
-  virtual EdgeStencil& operator= (const iterator& it)
-  {
-    m_iter = it;
-    return *this;
-  }
-
-  virtual bool operator== (const iterator& it) const
-  {
-    return m_iter == it;
-  }
-
-  virtual bool operator!= (const iterator& it) const
-  {
-    return !(operator==(it));
-  }
-
-  virtual void indices(IndexArray& indices)
-  {
-    indices.resize(6);
-    handle_ref h = handle();
-    ElasticRod& rod = *smart_cast<ElasticRod*>(m_obj);
-    for (int i = 0; i < 3; ++i) {
-      indices(i) = rod.vertIdx(rod.fromVertex(h), i);
-      indices(3 + i) = rod.vertIdx(rod.toVertex(h), i);
+    explicit EdgeStencil(ElasticRod& obj) :
+        StencilT<EdgeStencil> (obj)
+    {
     }
-  }
+
+    virtual ~EdgeStencil()
+    {
+    }
+
+    virtual EdgeStencil& operator++()
+    {
+        ++m_iter;
+        return *this;
+    }
+
+    virtual handle_ref handle()
+    {
+        return *m_iter;
+    }
+
+    virtual const_handle_ref handle() const
+    {
+        return *m_iter;
+    }
+
+    virtual iterator begin() const
+    {
+        return m_obj->edges_begin();
+    }
+
+    virtual iterator end() const
+    {
+        return m_obj->edges_end();
+    }
+
+    virtual EdgeStencil& operator=(const iterator& it)
+    {
+        m_iter = it;
+        return *this;
+    }
+
+    virtual bool operator==(const iterator& it) const
+    {
+        return m_iter == it;
+    }
+
+    virtual bool operator!=(const iterator& it) const
+    {
+        return !(operator==(it));
+    }
+
+    virtual void indices(IndexArray& indices)
+    {
+        indices.resize(6);
+        handle_ref h = handle();
+        ElasticRod& rod = *smart_cast<ElasticRod*> (m_obj);
+        for (int i = 0; i < 3; ++i)
+        {
+            indices(i) = rod.vertIdx(rod.fromVertex(h), i);
+            indices(3 + i) = rod.vertIdx(rod.toVertex(h), i);
+        }
+    }
+
+    virtual int firstIndex()
+    {
+        handle_ref h = handle();
+        ElasticRod& rod = *smart_cast<ElasticRod*> (m_obj);
+        return rod.vertIdx(rod.fromVertex(h), 0);
+    }
 
 protected:
 
-  iterator m_iter;
+    iterator m_iter;
 };
 
 } // namespace BASim

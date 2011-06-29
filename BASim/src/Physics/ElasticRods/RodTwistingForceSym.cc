@@ -27,8 +27,8 @@ RodTwistingForceSym::RodTwistingForceSym(ElasticRod& rod, bool vscs, bool runini
         m_rod.add_property(m_twist, "twist");
         m_rod.add_property(m_gradTwistValid, "grad twist valid", false);
         m_rod.add_property(m_hessTwistValid, "hess twist valid", false);
-        m_rod.add_property(m_gradTwist, "gradient of twist", VecXd(11));
-        m_rod.add_property(m_hessTwist, "Hessian of twist", MatXd(11, 11));
+        m_rod.add_property(m_gradTwist, "gradient of twist", ElementForce());
+        m_rod.add_property(m_hessTwist, "Hessian of twist", ElementJacobian());
 
         if (!vscs)
         {
@@ -90,8 +90,8 @@ void RodTwistingForceSym::reattatchProperties()
     m_rod.add_property(m_twist, "twist");
     m_rod.add_property(m_gradTwistValid, "grad twist valid", false);
     m_rod.add_property(m_hessTwistValid, "hess twist valid", false);
-    m_rod.add_property(m_gradTwist, "gradient of twist", VecXd(11));
-    m_rod.add_property(m_hessTwist, "Hessian of twist", MatXd(11, 11));
+    m_rod.add_property(m_gradTwist, "gradient of twist", ElementForce());
+    m_rod.add_property(m_hessTwist, "Hessian of twist", ElementJacobian());
 
     if (!m_viscous)
     {
@@ -195,43 +195,22 @@ void RodTwistingForceSym::globalForce(VecXd& force)
     if (viscous() && m_rod.getViscosity() == 0.0)
         return;
 
-    //START_TIMER("globalForce");
     computeGradTwist();
 
-    VecXd f(11);
-    IndexArray indices(11);
-
-    //VecXd force1 = force;
-
-    iterator end = m_stencil.end();
+    ElementForce f;
+    const iterator end = m_stencil.end();
     for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil)
     {
-        //if (stencilFixed(m_rod, i)) continue;
-        //std::cout << "TWISTING local FORCE\n";
-
-        vertex_handle& vh = m_stencil.handle();
-        localForce(f, vh);
-        m_stencil.indices(indices);
+        localForce(f, m_stencil.handle());
+        const int fi = m_stencil.firstIndex();
         for (int j = 0; j < f.size(); ++j)
-        {
-            force(indices[j]) += f(j);
-        }
+            force(fi + j) += f(j);
     }
-    //STOP_TIMER("globalForce");
-
-
-    //std::cout << (viscous() ? "VISCOUS " : "") << "TWISTING FORCE\n";
-    //std::cout << "norm = " << (force - force1).norm() << " force = " << force-force1 << "\n\n";
-    //std::cout << force - force1 << "\n\n";
 }
 
-void RodTwistingForceSym::localForce(VecXd& force, const vertex_handle& vh)
+void RodTwistingForceSym::localForce(ElementForce& force, const vertex_handle& vh)
 {
-    Scalar value = getKt(vh) / getRefVertexLength(vh) * (getTwist(vh) - getUndeformedTwist(vh));
-
-    //std::cout << "-value    : " << -value << "\n";
-    //std::cout << "GradTwist : " << getGradTwist(vh) << "\n";
-    //std::cout << "local for : " << -value * getGradTwist(vh) << "\n";
+    const Scalar value = getKt(vh) / getRefVertexLength(vh) * (getTwist(vh) - getUndeformedTwist(vh));
 
     force = -value * getGradTwist(vh);
 }
@@ -241,45 +220,32 @@ void RodTwistingForceSym::globalJacobian(int baseidx, Scalar scale, MatrixBase& 
     if (viscous() && m_rod.getViscosity() == 0.0)
         return;
 
-    assert(isSymmetric(J));
-
-    //START_TIMER("globalJacobian");
     computeGradTwist();
     computeHessTwist();
 
-    MatXd localJ(11, 11);
-    IndexArray indices(11);
-
-    iterator end = m_stencil.end();
+    ElementJacobian localJ;
+    const iterator end = m_stencil.end();
     for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil)
     {
-        //if (stencilFixed(m_rod, i)) continue;
-        vertex_handle& vh = m_stencil.handle();
-        localJ.setZero();
-        localJacobian(localJ, vh);
-        m_stencil.indices(indices);
-        for (int i = 0; i < (int) indices.size(); ++i)
-            indices[i] += baseidx;
+        localJacobian(localJ, m_stencil.handle());
         localJ *= scale;
-        J.add(indices, indices, localJ);
+        J.vertexStencilAdd(m_stencil.firstIndex() + baseidx, localJ);
     }
 
     assert(isSymmetric(J));
-
-    //STOP_TIMER("globalJacobian");
 }
 
-inline void RodTwistingForceSym::localJacobian(MatXd& J, const vertex_handle& vh)
+inline void RodTwistingForceSym::localJacobian(ElementJacobian& J, const vertex_handle& vh)
 {
-    Scalar kt = getKt(vh);
-    Scalar len = getRefVertexLength(vh);
-    Scalar twist = getTwist(vh);
-    Scalar undeformedTwist = getUndeformedTwist(vh);
+    const Scalar kt = getKt(vh);
+    const Scalar milen = -1.0 / getRefVertexLength(vh);
+    const Scalar twist = getTwist(vh);
+    const Scalar undeformedTwist = getUndeformedTwist(vh);
 
-    const VecXd& gradTwist = getGradTwist(vh);
-    const MatXd& hessTwist = getHessTwist(vh);
+    const ElementForce& gradTwist = getGradTwist(vh);
+    const ElementJacobian& hessTwist = getHessTwist(vh);
 
-    J = -kt / len * ((twist - undeformedTwist) * hessTwist + gradTwist * gradTwist.transpose());
+    J = kt * milen * ((twist - undeformedTwist) * hessTwist + gradTwist * gradTwist.transpose());
 
     assert(isSymmetric(J));
 }
@@ -410,8 +376,8 @@ void RodTwistingForceSym::globalReverseJacobian(MatrixBase& J)
         Scalar kt = getKt(vh);
         Scalar refLen = getRefVertexLength(vh);
 
-        VecXd fde(11);
-        VecXd fdm(11);
+        ElementForce fde;
+        ElementForce fdm;
 
         fde = 0.5 * kt / (refLen * refLen) * (m - mbar) * getGradTwist(vh);
         fdm = 1.0 * kt / refLen * getGradTwist(vh);
@@ -531,12 +497,12 @@ void RodTwistingForceSym::setRefVertexLength(const vertex_handle& vh, const Scal
     m_rod.property(m_refVertexLength)[vh] = length;
 }
 
-const VecXd& RodTwistingForceSym::getGradTwist(const vertex_handle& vh) const
+const RodTwistingForceSym::ElementForce& RodTwistingForceSym::getGradTwist(const vertex_handle& vh) const
 {
     return m_rod.property(m_gradTwist)[vh];
 }
 
-const MatXd& RodTwistingForceSym::getHessTwist(const vertex_handle& vh) const
+const RodTwistingForceSym::ElementJacobian& RodTwistingForceSym::getHessTwist(const vertex_handle& vh) const
 {
     return m_rod.property(m_hessTwist)[vh];
 }
@@ -550,7 +516,7 @@ void RodTwistingForceSym::computeGradTwist()
     for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil)
     {
         vertex_handle& vh = m_stencil.handle();
-        VecXd& Dtwist = m_rod.property(m_gradTwist)[vh];
+        ElementForce& Dtwist = m_rod.property(m_gradTwist)[vh];
         const Vec3d& kb = m_rod.getCurvatureBinormal(vh);
         int i = vh.idx();
         Dtwist.segment<3> (0) = -0.5 / (m_rod.getEdgeLength(i - 1)) * kb;
@@ -572,7 +538,7 @@ void RodTwistingForceSym::computeHessTwist()
     for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil)
     {
         const vertex_handle& vh = m_stencil.handle();
-        MatXd& DDtwist = m_rod.property(m_hessTwist)[vh];
+        ElementJacobian& DDtwist = m_rod.property(m_hessTwist)[vh];
         DDtwist.setZero();
         const int i = vh.idx();
         const Vec3d& te = m_rod.getTangent(i - 1);
