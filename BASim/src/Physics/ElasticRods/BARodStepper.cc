@@ -699,7 +699,8 @@ void BARodStepper::step_setup(const RodSelectionType& selected_rods)
     STOP_TIMER("BARodStepper::step/setup");
 
     START_TIMER("BARodStepper::step/immune");
-    // Determine which vertex are to be considered collision-immune for this step
+    // Determine which vertex are to be considered collision-immune for this step.
+    // computeImmunity calls the collision detector with mesh update because the mesh has been reset to the beginning of this step.
     computeImmunity(selected_rods);
     STOP_TIMER("BARodStepper::step/immune");
 
@@ -715,6 +716,8 @@ void BARodStepper::step_setup(const RodSelectionType& selected_rods)
     // Jungseock's implicit penalty
     assert(m_penalty_collisions.empty());
     // The penalty collisions list is used to create penalty forces. All that is deleted and cleared at the end of this step.
+    // setupPenaltyForces calls the collision detector with mesh update because the mesh just has been scripted forward.
+    // NB IMPORTANT the collision phase later relies on the fact that the collision detector has been mesh-updated here. If we switch to another type of penalty computation, involving level sets for instance, then the first call to collision detector in the CT collision phase must update the mesh BVH. Thank you for your attention.
     if (m_perf_param.m_enable_penalty_response)
         setupPenaltyForces(m_penalty_collisions, selected_rods);
     STOP_TIMER("BARodStepper::step/penalty");
@@ -744,8 +747,6 @@ void BARodStepper::step_dynamic(const RodSelectionType& selected_rods)
 #endif
     for (int i = 0; i < selected_steppers.size(); i++)
     {
-        DebugStream(g_log, "") << "Started dynamic step\n";
-
         RodTimeStepper* const stepper = selected_steppers[i];
         if (!stepper->execute())
         {
@@ -754,7 +755,6 @@ void BARodStepper::step_dynamic(const RodSelectionType& selected_rods)
                     << " iterations\n";
             dependable_solve = false;
         }
-        DebugStream(g_log, "") << "Finished dynamic step\n";
     }
 
     STOP_TIMER("BARodStepper::step/steppers");
@@ -1433,7 +1433,7 @@ bool BARodStepper::executeIterativeInelasticImpulseResponse()
     // Detect continuous time collisions
     std::list<Collision*> collisions_list;
     DebugStream(g_log, "") << "Detecting collisions for executeIterativeInelasticImpulseResponse\n";
-    m_collision_detector->getCollisions(collisions_list, ContinuousTime);
+    m_collision_detector->getCollisions(collisions_list, ContinuousTime, false); // The mesh BVH is not updated because it has been done so post-scripting in the penalty detection phase.
     TraceStream(g_log, "") << "Initial potential collisions: " << m_collision_detector->m_potential_collisions << "\n";
 
     // Iteratively apply inelastic impulses
