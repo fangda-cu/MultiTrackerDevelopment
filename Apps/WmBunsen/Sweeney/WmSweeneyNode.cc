@@ -182,10 +182,32 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 				    Scalar curl_len = 0;
 				    int curl_resolution = 1;
 
+				    Scalar curvature = 0.0;
+				    Scalar radius = 0.5;
+				    Scalar torsion = 0;
+
 				    // Compute new edge length
 				    // TODO(sainsley) : make the length slider a scale factor
 				    // and pull then lengths from barbershop
-				    Scalar updated_edge_length = m_length / m_verticesPerRod * m_strandLengths[i];
+				    // here m_pitch is used as number of curls
+
+				    Scalar absolute_length = m_length * m_strandLengths[i];
+
+				    if(  m_curlPitch > 0 ) {
+				        Scalar curlH = m_length * m_strandLengths[i]/m_curlPitch;
+				        Scalar arc_length = sqrt( curlH * curlH + 4 * M_PI*M_PI * radius*radius);
+				        absolute_length = arc_length * m_curlPitch;
+				        Scalar pitch = curlH / ( 2 * M_PI );
+				        //absolute_length /= sqrt( radius * radius + pitch * pitch);
+				        curvature = radius /  ( radius * radius + pitch * pitch );
+				        torsion = pitch  /  ( radius * radius + pitch * pitch );
+				        cout << "Length " << m_length * m_strandLengths[i] << " " << absolute_length << " Curl Spacing "
+				                << pitch*2*M_PI << " Curvature " << curvature <<
+				                " Curl height " << curlH << " Pitch " << pitch << endl;
+				    }
+
+
+				    Scalar updated_edge_length = absolute_length / m_verticesPerRod;
 				    std::vector<Scalar> rest_lengths;
 
 				    assert( current_rod->m_stretchingForce != NULL );
@@ -257,21 +279,25 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 						current_rod->setMaterial1( 0,  c * u + s * v );
 						current_rod->setMaterial2( 0, -s * u + c * v );
 						update_rod = true;
-						cout << "NONEQ THETA " << current_rod->getTheta( 0 ) << " " << m_rodRotation * M_PI << endl;
+						//cout << "NONEQ THETA " << current_rod->getTheta( 0 ) << " " <<
+						// m_rodRotation * M_PI << endl;
 					}
 					current_rod->updateStiffness();
 
 					// parametric variable for walking the rod lengthwise
-					//Scalar t = 0;
-					//int j = 0;
-
+					/*Scalar t = 0;
+					int j = 0;
+					 */
 					 // curl curvature and torsion
 
-					Scalar curvature = 0.0;
-					Scalar torsion = 0.0;
+					//Scalar curvature = radius;
+					//Scalar torsion = 0.0;
 
 					assert( current_rod->m_bendingForce != NULL );
 					assert( current_rod->m_twistingForce != NULL );
+
+					curvature *= curl_len/curl_resolution;
+					torsion *= curl_len/curl_resolution;
 
 					for ( ElasticRod::vertex_iter vh = current_rod->vertices_begin();
 	                          vh != current_rod->vertices_end(); ++vh )
@@ -279,39 +305,45 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
 						// curl curvature and torsion
 
-
+					    //current_rod->m_bendingForce->setKappaBar( *vh, Vec2d( curvature, curvature ) );
 
 	                    //if ( t > 0 )
-	                    if ( vh->idx() >= m_curlStart*(m_verticesPerRod) )
+					    // TODO(sainsley): factor this back in when need be
+	                    /*if ( vh->idx() >= m_curlStart*( m_verticesPerRod ) )
 	                    {
 	                    	curvature = m_curlRadius * curl_len/curl_resolution;
-	                    	torsion = m_curlPitch * M_PI * curl_len/curl_resolution;
-	                    }
+	                    	torsion = m_curlPitch * curl_len/curl_resolution;
+	                    }*/
 
 	                    if ( current_rod->m_twistingForce->getUndeformedTwist( *vh ) != torsion )
 	                    {
 	                    	current_rod->m_twistingForce->setUndeformedTwist( *vh, torsion );
 	                    	update_rod = true;
-	                    	cout << "NONEQ TWIST " << current_rod->m_twistingForce->getUndeformedTwist( *vh )
-	                    			<< " " << torsion << endl;
+	                    	//cout << "NONEQ TWIST " << current_rod->m_twistingForce->getUndeformedTwist( *vh )
+	                    	//		<< " " << torsion << endl;
 	                    }
 
 	                    if ( current_rod->m_bendingForce->getKappaBar( *vh )[0] != curvature )
 	                    {
 	                    	current_rod->m_bendingForce->setKappaBar( *vh, Vec2d( curvature, 0 ) );
+	                        //current_rod->m_bendingForce->setKappaBar(
+	                          //                     *vh, Vec2d(  curvature * cos( torsion * t ),
+	                            //                         curvature * sin( torsion * t ) ) );
 	                    	update_rod = true;
 	                    }
 
-	                    //current_rod->m_bendingForce->setKappaBar(
-						//	*vh, Vec2d(  curvature * cos( torsion * t ),
-						//		curvature * sin( torsion * t ) ) );
+	                    /*current_rod->m_bendingForce->setKappaBar(
+							*vh, Vec2d(  curvature * cos( torsion * t ),
+								curvature * sin( torsion * t ) ) );
 
-						//cout << "WmSweeneyNode::compute::simulate: idx = " << vh->idx() << " parametric var = " << t << " curvature " <<  current_rod->m_bendingForce->getKappaBar( *vh ) << " bending stiffness " <<  current_rod->m_bendingForce->getB( *vh ) << " vertex mass " << current_rod->getVertexMass( vh->idx() ) << endl;
+						//cout << "WmSweeneyNode::compute::simulate: idx = " << vh->idx() << " parametric var = " << t << " curvature " <<  current_rod->m_bendingForce->getKappaBar( *vh )
 
-						//if ( vh->idx() >= m_curlStart*(m_verticesPerRod)  && vh != current_rod->vertices_end() )
-						//{
-							//t += current_rod->getEdgeLength( j++ )/curl_len;
-						//}
+						 << " bending stiffness " <<  current_rod->m_bendingForce->getB( *vh ) << " vertex mass " << current_rod->getVertexMass( vh->idx() ) << endl;
+
+						if ( vh->idx() >= m_curlStart*(m_verticesPerRod)  && vh != current_rod->vertices_end() )
+						{
+							t += 2 * M_PI * current_rod->getEdgeLength( j++ )/curl_len;
+						}*/
 
 	                }
 
@@ -324,17 +356,10 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 				 }
 
 				 updateCollisionMeshes( i_dataBlock );
+				 updateSolverSettings( i_dataBlock );
 				 m_rodManager->takeStep();
 
-				 double atol = powf(10, -i_dataBlock.inputValue( ia_atol).asDouble());
-			 	 double stol = powf(10, -i_dataBlock.inputValue( ia_stol).asDouble());
-				 double rtol  = powf(10, -i_dataBlock.inputValue( ia_rtol).asDouble());
-				 double inftol  = powf(10, -i_dataBlock.inputValue( ia_inftol).asDouble());
-				 int numLineSearchIters = i_dataBlock.inputValue( ia_numLineSearchIters).asInt();
-
-				 double stiffness = i_dataBlock.inputValue( ia_implicitStiffness).asDouble();
-				 m_rodManager->updateSolverSettings( atol, stol, rtol, inftol, numLineSearchIters, stiffness );
-			}
+		    }
 		}
 		i_dataBlock.setClean( i_plug );
 	}
@@ -347,6 +372,38 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		return MS::kUnknownParameter;
 	}
 	return MS::kSuccess;
+}
+
+void WmSweeneyNode::updateStrandLength( int strand_id, bool& update_rod )
+{
+
+}
+
+void WmSweeneyNode::updateStrandCrossSection( int strand_id, bool& update_rod )
+{
+
+}
+
+void WmSweeneyNode::updateStrandRotation( int strand_id, bool& update_rod )
+{
+
+}
+
+void WmSweeneyNode::updateStrandCurl( int strand_id, bool& update_rod )
+{
+
+}
+
+void WmSweeneyNode::updateSolverSettings( MDataBlock &i_dataBlock )
+{
+    double atol = powf( 10, -i_dataBlock.inputValue( ia_atol ).asDouble() );
+    double stol = powf( 10, -i_dataBlock.inputValue( ia_stol ).asDouble() );
+    double rtol  = powf( 10, -i_dataBlock.inputValue( ia_rtol ).asDouble() );
+    double inftol  = powf( 10, -i_dataBlock.inputValue( ia_inftol ).asDouble() );
+    int numLineSearchIters = i_dataBlock.inputValue( ia_numLineSearchIters ).asInt();
+
+    double stiffness = i_dataBlock.inputValue( ia_implicitStiffness ).asDouble();
+    m_rodManager->updateSolverSettings( atol, stol, rtol, inftol, numLineSearchIters, stiffness );
 }
 
 void WmSweeneyNode::initialiseCollisionMeshes( MDataBlock &i_data )
@@ -467,14 +524,25 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
 
         cout << "initialiseRodFromBarberShopInput() - check for root frames for " << inputStrandNumber << endl;
 
-        if ( m_strandRootFrames.length() != 0 )
+       if ( m_strandRootFrames.length() != 0 )
         {
 
         	BASim::Vec3d m1 = Vec3d(  m_strandRootFrames[ 3*inputStrandNumber ].x,
-       				m_strandRootFrames[ 3*inputStrandNumber ].y,
-       				m_strandRootFrames[ 3*inputStrandNumber ].z  );
+       			m_strandRootFrames[ 3*inputStrandNumber ].y,
+       			m_strandRootFrames[ 3*inputStrandNumber ].z  );
 
+        	BASim::Vec3d m2 = Vec3d(  m_strandRootFrames[ 3*inputStrandNumber + 2 ].x,
+        	                m_strandRootFrames[ 3*inputStrandNumber + 2 ].y,
+        	                m_strandRootFrames[ 3*inputStrandNumber + 2 ].z  );
+
+        	BASim::Vec3d tan = Vec3d(  m_strandRootFrames[ 3*inputStrandNumber + 1 ].x,
+        	                            m_strandRootFrames[ 3*inputStrandNumber + 1 ].y,
+        	                            m_strandRootFrames[ 3*inputStrandNumber + 1 ].z  );
         	m1.normalize();
+        	m2.normalize();
+        	tan.normalize();
+
+        	cout << "ROD ROOT FRAMES BARBERSHOP " << m1 << " " << m2 << " " << tan << endl;
 
         	m_rodManager->addRod( vertices, m_startTime, m1 );
 
@@ -761,7 +829,7 @@ void* WmSweeneyNode::creator()
         CHECK_MSTATUS( numericAttr.setReadable( true ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
         CHECK_MSTATUS( numericAttr.setMin( 1.0 ) );
-        CHECK_MSTATUS( numericAttr.setMax( 100.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 500.0 ) );
         status = addAttribute( ia_length );
         CHECK_MSTATUS( status );
 
@@ -842,7 +910,7 @@ void* WmSweeneyNode::creator()
         CHECK_MSTATUS( numericAttr.setReadable( true ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
         CHECK_MSTATUS( numericAttr.setMin( 0.0 ) );
-        CHECK_MSTATUS( numericAttr.setMax( 5.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 10.0 ) );
         status = addAttribute( ia_curlPitch );
         CHECK_MSTATUS( status );
 

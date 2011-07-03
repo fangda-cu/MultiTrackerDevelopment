@@ -147,6 +147,11 @@ private:
     void initialiseCollisionMeshes( MDataBlock &i_data );
     void updateCollisionMeshes( MDataBlock& i_dataBlock );
     void compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i_dataBlock );
+    void updateStrandLength( int strand_id, bool& update_rod );
+    void updateStrandCrossSection( int strand_id, bool& update_rod );
+    void updateStrandRotation( int strand_id, bool& update_rod );
+    void updateStrandCurl( int strand_id,  bool& update_rod );
+    void updateSolverSettings( MDataBlock &i_dataBlock );
     
     double m_currentTime;
     double m_previousTime;
