@@ -23,10 +23,12 @@ using namespace BASim;
 /* static */ MObject WmSweeneyNode::ia_rodRadius;
 /* static */ MObject WmSweeneyNode::ia_rodAspectRatio;
 /* static */ MObject WmSweeneyNode::ia_rodRotation;
+/* static */ MObject WmSweeneyNode::ia_curlTightness;
 /* static */ MObject WmSweeneyNode::ia_curlRadius;
-/* static */ MObject WmSweeneyNode::ia_curlPitch;
+/* static */ MObject WmSweeneyNode::ia_curlCount;
 /* static */ MObject WmSweeneyNode::ia_curlStart;
 /* static */ MObject WmSweeneyNode::ia_rodPitch;
+/* static */ MObject WmSweeneyNode::ia_fixCurlHeight;
 /* static */ MObject WmSweeneyNode::ia_rodDamping;
 
 // Barbershop specific inputs
@@ -107,10 +109,12 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 	    m_rodRadius = i_dataBlock.inputValue( ia_rodRadius ).asDouble();
 		m_rodAspectRatio = i_dataBlock.inputValue( ia_rodAspectRatio ).asDouble();
 		m_rodRotation = i_dataBlock.inputValue( ia_rodRotation ).asDouble();
+		m_curlTightness = i_dataBlock.inputValue( ia_curlTightness ).asDouble();
 	    m_curlRadius = i_dataBlock.inputValue( ia_curlRadius ).asDouble();
-		m_curlPitch = i_dataBlock.inputValue( ia_curlPitch ).asDouble();
+		m_curlCount = i_dataBlock.inputValue( ia_curlCount ).asDouble();
 		m_curlStart = i_dataBlock.inputValue( ia_curlStart ).asDouble();
 		m_rodPitch = i_dataBlock.inputValue( ia_rodPitch ).asDouble();
+		m_fixCurlHeight = i_dataBlock.inputValue( ia_fixCurlHeight ).asBool();
 		m_rodDamping = i_dataBlock.inputValue( ia_rodDamping ).asBool();
 
         bool shouldDrawVelocity = i_dataBlock.inputValue( ia_shouldDrawVelocity ).asBool();
@@ -164,196 +168,69 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		    if ( m_rodManager != NULL )
 		    {
 
-				// If the rods exist then just update their undeformed configuration but keep running
-				// the simulation.
-
 				// Apply kinetic damping
 				m_rodManager->setUseKineticDamping( m_rodDamping );
 
 				ElasticRod *current_rod;
+				bool update_rod = false;
 
+				// for each rod, check if any parameters need to be updated,
+				// perform necessary updates, and flag the rod accordingly
 				for (size_t i = 0; i < m_rodManager->m_rods.size(); ++i)
 				{
 
-					bool update_rod = false;
+					update_rod = false;
 					current_rod = m_rodManager->m_rods[i];
 
-				    // get total rod length for scaling
-				    Scalar curl_len = 0;
-				    int curl_resolution = 1;
+					// get total rod length for scaling
+                    Scalar curl_len = 0;
+                    int curl_resolution = 1;
 
-				    Scalar curvature = 0.0;
-				    Scalar radius = 0.5;
-				    Scalar torsion = 0;
+                    // Compute the rod helix properties
+                    Scalar curvature = 0.0;
+                    Scalar torsion = 0.0;
 
-				    // Compute new edge length
-				    // TODO(sainsley) : make the length slider a scale factor
-				    // and pull then lengths from barbershop
-				    // here m_pitch is used as number of curls
+                    Scalar absolute_length = m_length * m_strandLengths[i];
 
-				    Scalar absolute_length = m_length * m_strandLengths[i];
+                    if(  m_fixCurlHeight && m_curlRadius != 0.0 )
+                    {
+                        // compute total length of the helix
+                        // TODO(sainsley): rename m_curlCount m_curlCount
+                        // rename m_length to m_height
+                        Scalar radius = m_curlRadius * m_verticesPerRod / m_length;
+                        Scalar curl_height = m_length * m_strandLengths[i] / m_curlCount;
+                        Scalar arc_length = sqrt( curl_height * curl_height +
+                                4 * M_PI * M_PI * radius * radius );
+                        absolute_length = arc_length * m_curlCount;
 
-				    if(  m_curlPitch > 0 ) {
-				        Scalar curlH = m_length * m_strandLengths[i]/m_curlPitch;
-				        Scalar arc_length = sqrt( curlH * curlH + 4 * M_PI*M_PI * radius*radius);
-				        absolute_length = arc_length * m_curlPitch;
-				        Scalar pitch = curlH / ( 2 * M_PI );
-				        //absolute_length /= sqrt( radius * radius + pitch * pitch);
-				        curvature = radius /  ( radius * radius + pitch * pitch );
-				        torsion = pitch  /  ( radius * radius + pitch * pitch );
-				        cout << "Length " << m_length * m_strandLengths[i] << " " << absolute_length << " Curl Spacing "
-				                << pitch*2*M_PI << " Curvature " << curvature <<
-				                " Curl height " << curlH << " Pitch " << pitch << endl;
-				    }
+                        // compute helix curvature and torsion
+                        Scalar pitch = curl_height / ( 2 * M_PI );
+                        pitch *= m_verticesPerRod / m_length;
+                        Scalar denom = radius  * radius  + pitch * pitch;
+                        curvature = radius  /  denom;
+                        torsion = pitch  / denom;
+                        /*if ( i == 0 )
+                            cout << "Curl Params: " << curl_height << " " << arc_length << " "
+                            << absolute_length << " " << m_curlRadius << " " << pitch << " "
+                            << curvature << " " << torsion << endl;*/
+                    }
 
+                    if (  !m_fixCurlHeight && m_curlTightness != 0.0 )
+                    {
+                        curvature = m_curlTightness * m_length / m_verticesPerRod;
+                    }
 
-				    Scalar updated_edge_length = absolute_length / m_verticesPerRod;
-				    std::vector<Scalar> rest_lengths;
+					// Update rod configuration
+					updateStrandLength( current_rod, update_rod, absolute_length );
+					updateStrandCurl( current_rod, update_rod, curvature, torsion );
+					updateStrandCrossSection( current_rod, update_rod );
+					updateStrandRotation( current_rod, update_rod );
 
-				    assert( current_rod->m_stretchingForce != NULL );
-
-					// Adjust edge lengths and compute the resulting curl length
-				    for ( ElasticRod::edge_iter eh = current_rod->edges_begin();
-				          eh != current_rod->edges_end(); ++eh )
-				    {
-				    	// check if the edge length needs to be updated
-				    	// (ignoring the first edge as it is fixed)
-				    	if ( eh != current_rod->edges_begin() && updated_edge_length !=
-				    			current_rod->m_stretchingForce->getRefLength( *eh ) )
-				    	{
-				    		update_rod = true;
-				    		cout << "NONEQ EDGES " << eh->idx() << " " << updated_edge_length << " " <<
-				    				current_rod->m_stretchingForce->getRefLength( *eh ) << endl;
-				    		//	current_rod->getEdgeLength( *eh )
-				    		//	<< updated_edge_length - current_rod->getEdgeLength( *eh ) << endl;
-				    	}
-						rest_lengths.push_back( updated_edge_length );
-
-						// compute the total length and number of vertices in the curl
-						if ( eh->idx() >= m_curlStart*( m_verticesPerRod - 1 ) )
-						{
-							curl_len += current_rod->getEdgeLength( *eh );
-						    curl_resolution++;
-						}
-					}
-				    assert( m_curlStart == 1.0 || curl_len != 0 );
-
-				    // pass new rest lengths to the forces
-				    current_rod->setRestLengths( rest_lengths );
-
-					// adjust the rod size
-					Scalar radius_a = m_rodRadius;
-					Scalar radius_b = radius_a;
-					// apply apsect ratio : flip axis if aspect ratio is less than 1
-					// to preserve radius scale
-					if ( m_rodAspectRatio > 1.0 )
-					{
-					    radius_b *= m_rodAspectRatio;
-					}
-					else
-					{
-						radius_a *= 1.0/m_rodAspectRatio;
-					}
-
-					// check for a change in radius
-					if ( radius_a != current_rod->radiusA( 0 )
-							|| radius_b != current_rod->radiusB( 0 ) )
-					{
-						current_rod->setRadius( radius_a, radius_b );
-						update_rod = true;
-						cout << "NONEQ RAD " << current_rod->radiusA( 0 ) << " " << radius_a
-								<< current_rod->radiusB( 0 ) << " " << radius_b << endl;
-					}
-
-					// TODO(sainsley) : strip all of this logic out of ElasticRod
-					// and RodBendingForce
-					// current_rod->setBaseRotation( m_rodRotation*M_PI );
-
-					// set initial rotation
-					if ( current_rod->getTheta( 0 ) != m_rodRotation * M_PI ) {
-						current_rod->setTheta( 0, m_rodRotation * M_PI );
-						Scalar c = cos( current_rod->getTheta( 0 ) );
-						Scalar s = sin( current_rod->getTheta( 0 ) );
-						const Vec3d& u = current_rod->getReferenceDirector1( 0 );
-						const Vec3d& v = current_rod->getReferenceDirector2( 0 );
-						current_rod->setMaterial1( 0,  c * u + s * v );
-						current_rod->setMaterial2( 0, -s * u + c * v );
-						update_rod = true;
-						//cout << "NONEQ THETA " << current_rod->getTheta( 0 ) << " " <<
-						// m_rodRotation * M_PI << endl;
-					}
 					current_rod->updateStiffness();
 
-					// parametric variable for walking the rod lengthwise
-					/*Scalar t = 0;
-					int j = 0;
-					 */
-					 // curl curvature and torsion
-
-					//Scalar curvature = radius;
-					//Scalar torsion = 0.0;
-
-					assert( current_rod->m_bendingForce != NULL );
-					assert( current_rod->m_twistingForce != NULL );
-
-					curvature *= curl_len/curl_resolution;
-					torsion *= curl_len/curl_resolution;
-
-					for ( ElasticRod::vertex_iter vh = current_rod->vertices_begin();
-	                          vh != current_rod->vertices_end(); ++vh )
-	                {
-
-						// curl curvature and torsion
-
-					    //current_rod->m_bendingForce->setKappaBar( *vh, Vec2d( curvature, curvature ) );
-
-	                    //if ( t > 0 )
-					    // TODO(sainsley): factor this back in when need be
-	                    /*if ( vh->idx() >= m_curlStart*( m_verticesPerRod ) )
-	                    {
-	                    	curvature = m_curlRadius * curl_len/curl_resolution;
-	                    	torsion = m_curlPitch * curl_len/curl_resolution;
-	                    }*/
-
-	                    if ( current_rod->m_twistingForce->getUndeformedTwist( *vh ) != torsion )
-	                    {
-	                    	current_rod->m_twistingForce->setUndeformedTwist( *vh, torsion );
-	                    	update_rod = true;
-	                    	//cout << "NONEQ TWIST " << current_rod->m_twistingForce->getUndeformedTwist( *vh )
-	                    	//		<< " " << torsion << endl;
-	                    }
-
-	                    if ( current_rod->m_bendingForce->getKappaBar( *vh )[0] != curvature )
-	                    {
-	                    	current_rod->m_bendingForce->setKappaBar( *vh, Vec2d( curvature, 0 ) );
-	                        //current_rod->m_bendingForce->setKappaBar(
-	                          //                     *vh, Vec2d(  curvature * cos( torsion * t ),
-	                            //                         curvature * sin( torsion * t ) ) );
-	                    	update_rod = true;
-	                    }
-
-	                    /*current_rod->m_bendingForce->setKappaBar(
-							*vh, Vec2d(  curvature * cos( torsion * t ),
-								curvature * sin( torsion * t ) ) );
-
-						//cout << "WmSweeneyNode::compute::simulate: idx = " << vh->idx() << " parametric var = " << t << " curvature " <<  current_rod->m_bendingForce->getKappaBar( *vh )
-
-						 << " bending stiffness " <<  current_rod->m_bendingForce->getB( *vh ) << " vertex mass " << current_rod->getVertexMass( vh->idx() ) << endl;
-
-						if ( vh->idx() >= m_curlStart*(m_verticesPerRod)  && vh != current_rod->vertices_end() )
-						{
-							t += 2 * M_PI * current_rod->getEdgeLength( j++ )/curl_len;
-						}*/
-
-	                }
-
-					if ( update_rod )
-					{
-						cout << "UPDATE ROD!" << endl;
-					}
+					// Check if rod is in rest state
 					current_rod->setIsInRestState( !update_rod );
-
-				 }
+				}
 
 				 updateCollisionMeshes( i_dataBlock );
 				 updateSolverSettings( i_dataBlock );
@@ -374,25 +251,121 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 	return MS::kSuccess;
 }
 
-void WmSweeneyNode::updateStrandLength( int strand_id, bool& update_rod )
+void WmSweeneyNode::updateStrandLength( ElasticRod* current_rod, bool& update_rod, Scalar stand_length )
 {
+
+    assert( current_rod->m_stretchingForce != NULL );
+
+    // Build vector of new edge lengths
+    // NOTE(sainsley) : this is code assumes we may want non-uniform
+    // edge lengths in the future. If this isn't the case, we want
+    // a method to set the rest lengths of all edges to a constant
+    // in order to avoid iterating over the edges twice
+    Scalar updated_edge_length = stand_length / m_verticesPerRod;
+    std::vector<Scalar> rest_lengths;
+
+    // Adjust edge lengths and compute the resulting curl length
+    for ( ElasticRod::edge_iter eh = current_rod->edges_begin();
+          eh != current_rod->edges_end(); ++eh )
+    {
+        // check if the edge length needs to be updated
+        // (ignoring the first edge as it is fixed)
+        if ( eh != current_rod->edges_begin() && updated_edge_length !=
+                current_rod->m_stretchingForce->getRefLength( *eh ) )
+        {
+            update_rod = true;
+        }
+        rest_lengths.push_back( updated_edge_length );
+
+        // TODO(sainsley) : factor this back in
+        // compute the total length and number of vertices in the curl
+        //if ( eh->idx() >= m_curlStart*( m_verticesPerRod - 1 ) )
+        //{
+          //  curl_len += current_rod->getEdgeLength( *eh );
+           // curl_resolution++;
+        //}
+    }
+
+    assert( m_curlStart == 1.0 || curl_len != 0 );
+
+    // return if the rod is unchanged
+    if( !update_rod ) return;
+
+    // pass new rest lengths to the forces
+    current_rod->setRestLengths( rest_lengths );
+}
+
+void WmSweeneyNode::updateStrandCrossSection( ElasticRod* current_rod, bool& update_rod )
+{
+
+    // adjust the rod size
+    Scalar radius_a = m_rodRadius;
+    Scalar radius_b = radius_a;
+    // apply apsect ratio : flip axis if aspect ratio is less than 1
+    // to preserve radius scale
+    if ( m_rodAspectRatio > 1.0 )
+    {
+        radius_b *= m_rodAspectRatio;
+    }
+    else
+    {
+        radius_a *= 1.0/m_rodAspectRatio;
+    }
+
+    // check for a change in radius
+    if ( radius_a == current_rod->radiusA( 0 ) && radius_b == current_rod->radiusB( 0 ) ) return;
+
+    // update radius
+    current_rod->setRadius( radius_a, radius_b );
+    update_rod = true;
 
 }
 
-void WmSweeneyNode::updateStrandCrossSection( int strand_id, bool& update_rod )
+void WmSweeneyNode::updateStrandRotation( ElasticRod* current_rod, bool& update_rod )
 {
+
+    // check for update
+    if ( current_rod->getTheta( 0 ) == m_rodRotation * M_PI ) return;
+
+    // set initial rotation
+    current_rod->setTheta( 0, m_rodRotation * M_PI );
+    Scalar c = cos( current_rod->getTheta( 0 ) );
+    Scalar s = sin( current_rod->getTheta( 0 ) );
+    const Vec3d& u = current_rod->getReferenceDirector1( 0 );
+    const Vec3d& v = current_rod->getReferenceDirector2( 0 );
+    current_rod->setMaterial1( 0,  c * u + s * v );
+    current_rod->setMaterial2( 0, -s * u + c * v );
+    update_rod = true;
 
 }
 
-void WmSweeneyNode::updateStrandRotation( int strand_id, bool& update_rod )
+void WmSweeneyNode::updateStrandCurl( ElasticRod* current_rod, bool& update_rod,
+        Scalar curvature, Scalar torsion)
 {
 
-}
+    assert( current_rod->m_bendingForce != NULL );
+    assert( current_rod->m_twistingForce != NULL );
 
-void WmSweeneyNode::updateStrandCurl( int strand_id, bool& update_rod )
-{
+    //curvature *= curl_len/curl_resolution;
+    //torsion *= curl_len/curl_resolution;
 
-}
+    for ( ElasticRod::vertex_iter vh = current_rod->vertices_begin();
+              vh != current_rod->vertices_end(); ++vh )
+    {
+
+        if ( current_rod->m_twistingForce->getUndeformedTwist( *vh ) != torsion )
+        {
+            current_rod->m_twistingForce->setUndeformedTwist( *vh, torsion );
+            update_rod = true;
+        }
+
+        if ( current_rod->m_bendingForce->getKappaBar( *vh )[0] != curvature )
+        {
+            current_rod->m_bendingForce->setKappaBar( *vh, Vec2d( curvature, 0 ) );
+            update_rod = true;
+        }
+    }
+ }
 
 void WmSweeneyNode::updateSolverSettings( MDataBlock &i_dataBlock )
 {
@@ -829,7 +802,7 @@ void* WmSweeneyNode::creator()
         CHECK_MSTATUS( numericAttr.setReadable( true ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
         CHECK_MSTATUS( numericAttr.setMin( 1.0 ) );
-        CHECK_MSTATUS( numericAttr.setMax( 500.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 100.0 ) );
         status = addAttribute( ia_length );
         CHECK_MSTATUS( status );
 
@@ -889,8 +862,23 @@ void* WmSweeneyNode::creator()
     }
 
     {
+            MFnNumericAttribute numericAttr;
+            ia_curlTightness = numericAttr.create( "globalCurlTightness", "crltight", MFnNumericData::kDouble, 0.0, &status );
+            CHECK_MSTATUS( status );
+            CHECK_MSTATUS( numericAttr.setReadable( true ) );
+            CHECK_MSTATUS( numericAttr.setWritable( true ) );
+            CHECK_MSTATUS( numericAttr.setMin( -2.0 ) );
+            CHECK_MSTATUS( numericAttr.setMax( 2.0 ) );
+            status = addAttribute( ia_curlTightness );
+            CHECK_MSTATUS( status );
+
+            status = attributeAffects( ia_curlTightness, ca_rodPropertiesSync );
+            if ( !status ) { status.perror( "attributeAffects ia_curlTightness->ca_rodPropertiesSync" ); return status; }
+    }
+
+    {
         MFnNumericAttribute numericAttr;
-        ia_curlRadius = numericAttr.create( "curlTightness", "crlrad", MFnNumericData::kDouble, 0.0, &status );
+        ia_curlRadius = numericAttr.create( "curlRadius", "crlrad", MFnNumericData::kDouble, 0.0, &status );
         CHECK_MSTATUS( status );
         CHECK_MSTATUS( numericAttr.setReadable( true ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
@@ -905,17 +893,17 @@ void* WmSweeneyNode::creator()
 
     {
     	MFnNumericAttribute numericAttr;
-        ia_curlPitch = numericAttr.create( "curlSpacing", "crlptch", MFnNumericData::kDouble, 0.0, &status );
+        ia_curlCount = numericAttr.create( "curlCount", "crlcnt", MFnNumericData::kDouble, 0.0, &status );
         CHECK_MSTATUS( status );
         CHECK_MSTATUS( numericAttr.setReadable( true ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
         CHECK_MSTATUS( numericAttr.setMin( 0.0 ) );
         CHECK_MSTATUS( numericAttr.setMax( 10.0 ) );
-        status = addAttribute( ia_curlPitch );
+        status = addAttribute( ia_curlCount );
         CHECK_MSTATUS( status );
 
-        status = attributeAffects( ia_curlPitch, ca_rodPropertiesSync );
-        if ( !status ) { status.perror( "attributeAffects ia_curlPitch->ca_rodPropertiesSync" ); return status; }
+        status = attributeAffects( ia_curlCount, ca_rodPropertiesSync );
+        if ( !status ) { status.perror( "attributeAffects ia_curlCount->ca_rodPropertiesSync" ); return status; }
     }
 
     {
@@ -933,8 +921,12 @@ void* WmSweeneyNode::creator()
         if ( !status ) { status.perror( "attributeAffects ia_curlStart->ca_rodPropertiesSync" ); return status; }
     }
 
+    addNumericAttribute( ia_fixCurlHeight, "fixCurlHeight", "fixcurlh", MFnNumericData::kBoolean, false, true );
+    status = attributeAffects( ia_fixCurlHeight, ca_rodPropertiesSync );
+    if ( !status ) { status.perror( "attributeAffects ia_fixCurlHeight->ca_rodPropertiesSync" ); return status; }
+
     addNumericAttribute( ia_rodDamping, "rodDamping", "roddamp", MFnNumericData::kBoolean, true, true );
-    	status = attributeAffects( ia_rodDamping, ca_rodPropertiesSync );
+    status = attributeAffects( ia_rodDamping, ca_rodPropertiesSync );
     if ( !status ) { status.perror( "attributeAffects ia_rodDamping->ca_rodPropertiesSync" ); return status; }
 
 

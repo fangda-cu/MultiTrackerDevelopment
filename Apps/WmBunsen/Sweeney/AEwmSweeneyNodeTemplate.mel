@@ -8,26 +8,28 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
     editorTemplate -endLayout;
     
     editorTemplate -beginLayout "Rod Properties" -collapse 0;
-        editorTemplate -addControl "length";        
-        editorTemplate -addControl "rodRadius";
-	editorTemplate -addControl "rodAspectRatio";
-	editorTemplate -addControl "rodRotation";
-	editorTemplate -addControl "curlTightness";
-	editorTemplate -addControl "curlSpacing";
-	editorTemplate -addControl "curlStart";
-        editorTemplate -addControl "rodDamping";
+    	editorTemplate -addControl "length";        
+    	editorTemplate -addControl "rodRadius";
+		editorTemplate -addControl "rodAspectRatio";
+		editorTemplate -addControl "rodRotation";
+		editorTemplate -addControl "globalCurlTightness";
+		editorTemplate -addControl "fixCurlHeight";
+		editorTemplate -addControl "curlRadius";
+		editorTemplate -addControl "curlCount";
+		editorTemplate -addControl "curlStart";
+    	editorTemplate -addControl "rodDamping";
     editorTemplate -endLayout;
     
     editorTemplate -beginLayout "Solver Tolerances" -collapse 0;
-        editorTemplate -addControl "stol";
-        editorTemplate -addControl "atol";
-        editorTemplate -addControl "rtol";
-        editorTemplate -addControl "inftol";
-        editorTemplate -addControl "numLineSearchIters";
-     editorTemplate -endLayout;
+    	editorTemplate -addControl "stol";
+    	editorTemplate -addControl "atol";
+    	editorTemplate -addControl "rtol";
+    	editorTemplate -addControl "inftol";
+    	editorTemplate -addControl "numLineSearchIters";
+    editorTemplate -endLayout;
   
     editorTemplate -beginLayout "Performance Tuning" -collapse 0;
-      //General parameters
+    //General parameters
     	editorTemplate -beginLayout "General Parameters" -collapse 0;
         	editorTemplate -beginLayout "Implicit Rod-Mesh Penalty" -collapse 0;
           		editorTemplate -addControl "enablePenaltyResponse";

@@ -76,10 +76,12 @@ public:
     static MObject ia_rodRadius;
     static MObject ia_rodAspectRatio;
     static MObject ia_rodRotation;
+    static MObject ia_curlTightness;
     static MObject ia_curlRadius;
-    static MObject ia_curlPitch;
+    static MObject ia_curlCount;
     static MObject ia_curlStart;
     static MObject ia_rodPitch;
+    static MObject ia_fixCurlHeight;
     static MObject ia_rodDamping;
 
     // Collision meshes
@@ -147,10 +149,11 @@ private:
     void initialiseCollisionMeshes( MDataBlock &i_data );
     void updateCollisionMeshes( MDataBlock& i_dataBlock );
     void compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i_dataBlock );
-    void updateStrandLength( int strand_id, bool& update_rod );
-    void updateStrandCrossSection( int strand_id, bool& update_rod );
-    void updateStrandRotation( int strand_id, bool& update_rod );
-    void updateStrandCurl( int strand_id,  bool& update_rod );
+    void updateStrandLength( BASim::ElasticRod* current_rod, bool& update_rod, BASim::Scalar stand_length );
+    void updateStrandCrossSection( BASim::ElasticRod* current_rod, bool& update_rod );
+    void updateStrandRotation( BASim::ElasticRod* current_rod, bool& update_rod );
+    void updateStrandCurl( BASim::ElasticRod* current_rod,  bool& update_rod,
+            BASim::Scalar curvature, BASim::Scalar torsion );
     void updateSolverSettings( MDataBlock &i_dataBlock );
     
     double m_currentTime;
@@ -163,11 +166,13 @@ private:
     double m_rodRadius;
     double m_rodAspectRatio;
     double m_rodRotation;
+    double m_curlTightness;
     double m_curlRadius;
-    double m_curlPitch;
+    double m_curlCount;
     double m_curlStart;
     double m_rodPitch;
     int m_verticesPerRod;
+    bool m_fixCurlHeight;
     bool m_rodDamping;
 
     
