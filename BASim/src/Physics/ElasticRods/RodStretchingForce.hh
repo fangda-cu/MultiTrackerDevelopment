@@ -11,72 +11,71 @@
 #include "RodForce.hh"
 #include "EdgeStencil.hh"
 
-namespace BASim {
+namespace BASim
+{
 
 class SpringDofStruct
 {
 public:
-  Vec3d x[2];           ///< position of two endpoints
-  Vec3d edge;           ///< vector from x[0] to x[1]
-  Vec3d tangent;        ///< normalized vector from x[0] to x[1]
-  Scalar currLength;    ///< current length
-  Scalar restLength;    ///< rest length
-  Scalar stiffness;     ///< spring stiffness
+    Vec3d x[2]; ///< position of two endpoints
+    Vec3d edge; ///< vector from x[0] to x[1]
+    Vec3d tangent; ///< normalized vector from x[0] to x[1]
+    Scalar currLength; ///< current length
+    Scalar restLength; ///< rest length
+    Scalar stiffness; ///< spring stiffness
 };
 
 /** This class implements the stretching force for an elastic rod. */
-class RodStretchingForce : public RodForceT<EdgeStencil>
+class RodStretchingForce: public RodForceT<EdgeStencil>
 {
 public:
 
-  typedef Eigen::Matrix<Scalar, 6, 1> ElementForce;
-  typedef Eigen::Matrix<Scalar, 6, 6> ElementJacobian;
+    typedef Eigen::Matrix<Scalar, 6, 1> ElementForce;
+    typedef Eigen::Matrix<Scalar, 6, 6> ElementJacobian;
 
-  explicit RodStretchingForce(ElasticRod& rod, bool vscs = false, bool runinit = true);
+    explicit RodStretchingForce(ElasticRod& rod, bool vscs = false, bool runinit = true);
 
-  void gatherDofs(SpringDofStruct& dofs, const edge_handle& eh);
+    void gatherDofs(SpringDofStruct& dofs, const edge_handle& eh);
 
-  virtual Scalar globalEnergy();
-  virtual void globalForce(VecXd& force);
-  virtual void globalJacobian(int baseidx, Scalar scale, MatrixBase& Jacobian);
-  virtual void globalForceEnergy(VecXd& force, Scalar& energy);
-  virtual void globalJacobianForceEnergy(int baseidx, Scalar scale, MatrixBase& Jacobian, 
-					 VecXd& force, Scalar& energy);
+    virtual Scalar globalEnergy();
+    virtual void globalForce(VecXd& force);
+    virtual void globalJacobian(int baseidx, Scalar scale, MatrixBase& Jacobian);
+    virtual void globalForceEnergy(VecXd& force, Scalar& energy);
+    virtual void globalJacobianForceEnergy(int baseidx, Scalar scale, MatrixBase& Jacobian, VecXd& force, Scalar& energy);
 
-  virtual void globalReverseJacobian(MatrixBase& Jacobian);
-  
-  Scalar elementEnergy(const edge_handle& eh);
-  void elementForce(ElementForce& force, const SpringDofStruct& dofs);
-  void elementForce(ElementForce& force, const edge_handle& eh);
-  void elementJacobian(ElementJacobian& Jacobian, const edge_handle& eh);
-  void elementForceEnergy(ElementForce& force, Scalar& energy, const edge_handle& eh);
-  void elementJacobianForceEnergy(ElementJacobian& Jacobian, ElementForce& force, Scalar& energy, const edge_handle& eh);
+    virtual void globalReverseJacobian(MatrixBase& Jacobian);
 
-  const Scalar& getKs(const edge_handle& eh) const;
-  void setKs(const edge_handle& eh, const Scalar& ks);
+    Scalar elementEnergy(const edge_handle& eh);
+    void elementForce(ElementForce& force, const SpringDofStruct& dofs);
+    void elementForce(ElementForce& force, const edge_handle& eh);
+    void elementJacobian(ElementJacobian& Jacobian, const edge_handle& eh);
+    void elementForceEnergy(ElementForce& force, Scalar& energy, const edge_handle& eh);
+    void elementJacobianForceEnergy(ElementJacobian& Jacobian, ElementForce& force, Scalar& energy, const edge_handle& eh);
 
-  const Scalar& getRefLength(const edge_handle& eh) const;
-  void setRefLength(const edge_handle& eh, const Scalar& length);
+    const Scalar& getKs(const edge_handle& eh) const;
+    void setKs(const edge_handle& eh, const Scalar& ks);
 
-  void updateStiffness();
-  void updateUndeformedStrain();
-  
-  virtual void setReferenceLengths(std::vector<Scalar>& vals);
-  
-  virtual void updateUndeformedConfiguration(std::vector<Scalar>& vals);
-  virtual void updateReverseUndeformedStrain(const VecXd& e);
-  
+    const Scalar& getRefLength(const edge_handle& eh) const;
+    void setRefLength(const edge_handle& eh, const Scalar& length);
+
+    void updateStiffness();
+    void updateUndeformedStrain();
+
+    virtual void setReferenceLengths(std::vector<Scalar>& vals);
+
+    virtual void updateUndeformedConfiguration(std::vector<Scalar>& vals);
+    virtual void updateReverseUndeformedStrain(const VecXd& e);
+
 protected:
 
 #ifdef TEST_ROD_STRETCHING
-  void testEnergy(const Scalar& energy, const edge_handle& eh) const;
-  void testForce(const ElementForce& force, const edge_handle& eh) const;
-  void testJacobian(const ElementJacobian& Jacobian,
-                    const edge_handle& eh) const;
+    void testEnergy(const Scalar& energy, const edge_handle& eh) const;
+    void testForce(const ElementForce& force, const edge_handle& eh) const;
+    void testJacobian(const ElementJacobian& Jacobian,
+            const edge_handle& eh) const;
 #endif // TEST_ROD_STRETCHING
-
-  EPropHandle<Scalar> m_ks;
-  EPropHandle<Scalar> m_refLength;
+    EPropHandle<Scalar> m_ks;
+    EPropHandle<Scalar> m_refLength;
 };
 
 } // namespace BASim

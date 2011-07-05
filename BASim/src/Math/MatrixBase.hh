@@ -40,6 +40,7 @@ public:
     virtual int add(const IndexArray& rowIdx, const IndexArray& colIdx, const MatXd& values) = 0;
     virtual void edgeStencilAdd(int start, const Eigen::Matrix<Scalar, 6, 6>& localJ) = 0;
     virtual void vertexStencilAdd(int start, const Eigen::Matrix<Scalar, 11, 11>& localJ) = 0;
+    virtual void pointStencilAdd(int start, const Eigen::Matrix<Scalar, 3, 3>& localJ) = 0;
     virtual int scale(Scalar val) = 0;
     virtual int setZero() = 0;
     virtual int zeroRows(const IntArray& idx, Scalar diag = 1.0) = 0;

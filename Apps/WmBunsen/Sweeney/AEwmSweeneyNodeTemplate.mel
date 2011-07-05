@@ -16,6 +16,8 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
 	editorTemplate -addControl "curlSpacing";
 	editorTemplate -addControl "curlStart";
         editorTemplate -addControl "rodDamping";
+	editorTemplate -addControl "rodCharge";
+        editorTemplate -addControl "rodPower";
     editorTemplate -endLayout;
     
     editorTemplate -beginLayout "Solver Tolerances" -collapse 0;

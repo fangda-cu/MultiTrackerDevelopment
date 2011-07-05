@@ -14,6 +14,7 @@
 #include "../../Collisions/Collision.hh"
 
 #include "RodLevelSetForce.hh"
+#include "RodClumpingForce.hh"
 
 #include <iostream>
 #include <fstream>
@@ -26,8 +27,8 @@ namespace BASim
 {
 
 BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
-        std::vector<ScriptingController*>& scripting_controllers, std::vector<GroomingTimeStepper*>& steppers, const double& dt,
-        const double time, const int num_threads, const PerformanceTuningParameters perf_param,
+        std::vector<ScriptingController*>& scripting_controllers, std::vector<GroomingTimeStepper*>& steppers,
+        const double& dt, const double time, const int num_threads, const PerformanceTuningParameters perf_param,
         std::vector<LevelSet*>& levelSets) :
             m_num_dof(0),
             m_rods(rods),
@@ -56,36 +57,33 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
             m_t(time),
             m_rod_labels(),
             m_simulationFailed(false),
-	    m_useKineticDamping(false),
+            m_useKineticDamping(false),
             m_stopOnRodError(false),
             m_perf_param(perf_param),
             m_level(0),
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start,
-                    m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness),
-	    m_level_sets(levelSets)
+                    m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness), m_level_sets(levelSets)
 //m_timers(NULL)
 {
     m_levelset_forces.resize(m_level_sets.size());
 
-    for (size_t i=0; i < m_level_sets.size(); ++i)
+    for (size_t i = 0; i < m_level_sets.size(); ++i)
     {
-	m_levelset_forces[i] = new RodLevelSetForce( m_level_sets[i] );
+        m_levelset_forces[i] = new RodLevelSetForce(m_level_sets[i]);
 
-	for (std::vector<GroomingTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
-	{
-	    (*stepper)->addExternalForce(m_levelset_forces[i]);
-	}
+        for (std::vector<GroomingTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
+        {
+            (*stepper)->addExternalForce(m_levelset_forces[i]);
+        }
     }
 
     for (std::vector<GroomingTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
     {
-	(*stepper)->setMaxIterations(m_perf_param.m_solver.m_max_iterations);
+        (*stepper)->setMaxIterations(m_perf_param.m_solver.m_max_iterations);
     }
 
-
-    g_log = new TextLog(std::cerr, MsgInfo::kInfo, true);
+    g_log = new TextLog(std::cerr, MsgInfo::kDebug, true);
     InfoStream(g_log, "") << "Started logging BAGroomingStepper\n";
-
 
 #ifndef NDEBUG
     for (int i = 0; i < (int) m_number_of_rods; ++i)
@@ -273,23 +271,23 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
     //keep_only.insert(6);
     keep_only.insert(0);
     //keep_only.insert(10);
-   // keep_only.insert(189);
+    // keep_only.insert(189);
     //keep_only.insert(710);
 
     // Only the rods in the keep_only set are kept, the others are killed.
     for (int i = 0; i < m_number_of_rods; i++)
     {
-	if (keep_only.find(i) == keep_only.end())
-	{
-	    for (int j = 0; j < m_rods[i]->nv(); j++)
-	    {
-		m_rods[i]->setVertex(j, 0 * m_rods[i]->getVertex(j));
-	    }
-	}
-	else
-	{
-	    m_simulated_rods.push_back(i);
-	}
+        if (keep_only.find(i) == keep_only.end())
+        {
+            for (int j = 0; j < m_rods[i]->nv(); j++)
+            {
+                m_rods[i]->setVertex(j, 0 * m_rods[i]->getVertex(j));
+            }
+        }
+        else
+        {
+            m_simulated_rods.push_back(i);
+        }
     }
 #else
     // Initially all rods passed from Maya will be simulated
@@ -298,6 +296,10 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
 #endif
     m_killed_rods.clear();
     InfoStream(g_log, "") << "STEPPER DT " << m_dt << "\n";
+
+    findRootNeighbours(6);
+
+    CopiousStream(g_log, "") << "Finished BAGroomingStepper constructor\n";
 }
 
 BAGroomingStepper::~BAGroomingStepper()
@@ -312,6 +314,7 @@ BAGroomingStepper::~BAGroomingStepper()
         delete m_endForces[i];
     }
 
+    delete m_clumpingForce;
     delete g_log;
 }
 
@@ -459,8 +462,6 @@ void BAGroomingStepper::prepareForExecution()
     for (RodSelectionType::const_iterator rod = selected_rods.begin(); rod != selected_rods.end(); rod++)
         for (int j = 1; j < m_rods[*rod]->nv(); j++)
             m_initialLengths[*rod] += (m_rods[*rod]->getVertex(j) - m_rods[*rod]->getVertex(j - 1)).norm();
-
-    CopiousStream(g_log, "") << "Finished BAGroomingStepper constructor\n";
 }
 
 bool BAGroomingStepper::execute()
@@ -469,15 +470,15 @@ bool BAGroomingStepper::execute()
 
     // Step scripted objects forward, set boundary conditions
     for (std::vector<ScriptingController*>::const_iterator scripting_controller = m_scripting_controllers.begin(); scripting_controller
-		 != m_scripting_controllers.end(); scripting_controller++)
-	    (*scripting_controller)->execute();
+            != m_scripting_controllers.end(); scripting_controller++)
+        (*scripting_controller)->execute();
 
-    for (size_t i=0; i < m_levelset_forces.size(); ++i)
+    for (size_t i = 0; i < m_levelset_forces.size(); ++i)
     {
-    	assert(m_levelset_forces[i]);
-    	m_levelset_forces[i]->setStiffness(m_perf_param.m_implicit_stiffness);
-    	m_levelset_forces[i]->setThickness(m_perf_param.m_implicit_thickness);
-    	m_levelset_forces[i]->setSubsampling(m_perf_param.m_levelset_subsampling);
+        assert(m_levelset_forces[i]);
+        m_levelset_forces[i]->setStiffness(m_perf_param.m_implicit_stiffness);
+        m_levelset_forces[i]->setThickness(m_perf_param.m_implicit_thickness);
+        m_levelset_forces[i]->setSubsampling(m_perf_param.m_levelset_subsampling);
     }
 
     // Prepare the list initially containing all rods.
@@ -489,7 +490,6 @@ bool BAGroomingStepper::execute()
 
     return true;
 }
-
 
 void BAGroomingStepper::step(RodSelectionType& selected_rods)
 {
@@ -526,7 +526,6 @@ void BAGroomingStepper::step(RodSelectionType& selected_rods)
     }
 
     STOP_TIMER("BAGroomingStepper::step/steppers");
-
 
     STOP_TIMER("BAGroomingStepper::step");
 }
@@ -753,7 +752,7 @@ double BAGroomingStepper::computeTotalForceNorm() const
 
 void BAGroomingStepper::setDt(double dt)
 {
-	InfoStream(g_log, "") << "STEPPER DT " << dt << "\n";
+    InfoStream(g_log, "") << "STEPPER DT " << dt << "\n";
     assert(dt > 0.0);
     m_dt = dt;
 
@@ -1032,8 +1031,6 @@ void BAGroomingStepper::removeRod(int rodIdx)
 
 }
 
-
-
 /*
  * BAGroomingStepper_CollisionResponse.cc
  *
@@ -1068,8 +1065,8 @@ void BAGroomingStepper::exertVertexImpulse(const Vec3d& I, const double& m, cons
     v.segment<3> (3 * idx) += I / m;
 }
 
-void BAGroomingStepper::exertEdgeImpulse(const Vec3d& I, const double& m0, const double& m1, const double& alpha, const int& idx0,
-        const int& idx1, VecXd& v)
+void BAGroomingStepper::exertEdgeImpulse(const Vec3d& I, const double& m0, const double& m1, const double& alpha,
+        const int& idx0, const int& idx1, VecXd& v)
 {
     assert(m0 > 0.0);
     assert(m1 > 0.0);
@@ -1200,156 +1197,156 @@ bool BAGroomingStepper::executeIterativeInelasticImpulseResponse(std::vector<boo
 {
     bool all_rods_collisions_ok = true;
     return all_rods_collisions_ok; /*
-    // Check whether the solver left some rods stretched
-    checkLengths(stretching_rods);
+     // Check whether the solver left some rods stretched
+     checkLengths(stretching_rods);
 
-    // Detect continuous time collisions
-    std::list<Collision*> collisions_list;
-    TraceStream(g_log, "") << "Detecting collisions...\n";
-    m_collision_detector->getCollisions(collisions_list, ContinuousTime);
-    TraceStream(g_log, "") << "Initial potential collisions: " << m_collision_detector->m_potential_collisions << "\n";
+     // Detect continuous time collisions
+     std::list<Collision*> collisions_list;
+     TraceStream(g_log, "") << "Detecting collisions...\n";
+     m_collision_detector->getCollisions(collisions_list, ContinuousTime);
+     TraceStream(g_log, "") << "Initial potential collisions: " << m_collision_detector->m_potential_collisions << "\n";
 
-    // Iterativly apply inelastic impulses
-    for (int itr = 0; !collisions_list.empty() && itr < m_perf_param.m_collision.m_max_iterations; ++itr)
-    {
-        TraceStream(g_log, "") << "CTcollision response iteration " << itr << '\n';
-        TraceStream(g_log, "") << "Detected " << collisions_list.size() << " continuous time collisions (potential: "
-                << m_collision_detector->m_potential_collisions << ")\n";
+     // Iterativly apply inelastic impulses
+     for (int itr = 0; !collisions_list.empty() && itr < m_perf_param.m_collision.m_max_iterations; ++itr)
+     {
+     TraceStream(g_log, "") << "CTcollision response iteration " << itr << '\n';
+     TraceStream(g_log, "") << "Detected " << collisions_list.size() << " continuous time collisions (potential: "
+     << m_collision_detector->m_potential_collisions << ")\n";
 
-        // Just sort the collision times to maintain some rough sense of causality
-        collisions_list.sort(CompareTimes);
+     // Just sort the collision times to maintain some rough sense of causality
+     collisions_list.sort(CompareTimes);
 
-        if (m_perf_param.m_skipRodRodCollisions)
-        {
-            // Keep only one collision per rod
-            std::set<int> already_collided_rods;
-            for (std::list<Collision*>::iterator col_it = collisions_list.begin(); col_it != collisions_list.end(); col_it++)
-            {
-                CTCollision* collision = dynamic_cast<CTCollision*> (*col_it);
-                if (collision)
-                {
-                    // Only keep collisions involving a rod we see for the first time
-                    int colliding_rod = getContainingRod(collision->GetRodVertex());
-                    if (already_collided_rods.find(colliding_rod) == already_collided_rods.end())
-                        already_collided_rods.insert(colliding_rod);
-                    else
-                    {
-                        delete collision;
-                        collisions_list.erase(col_it--);
-                    }
-                }
-            }
-            TraceStream(g_log, "") << "of which " << collisions_list.size() << " are on different rods\n";
-            // Now apply response to the remaining collisions
-            for (std::list<Collision*>::iterator col_it = collisions_list.begin(); col_it != collisions_list.end(); col_it++)
-            {
-                CTCollision* collision = dynamic_cast<CTCollision*> (*col_it);
-                if (collision)
-                    exertCompliantInelasticImpulse(collision);
-                // So, which rod was it?
-                int colliding_rod = getContainingRod(collision->GetRodVertex());
+     if (m_perf_param.m_skipRodRodCollisions)
+     {
+     // Keep only one collision per rod
+     std::set<int> already_collided_rods;
+     for (std::list<Collision*>::iterator col_it = collisions_list.begin(); col_it != collisions_list.end(); col_it++)
+     {
+     CTCollision* collision = dynamic_cast<CTCollision*> (*col_it);
+     if (collision)
+     {
+     // Only keep collisions involving a rod we see for the first time
+     int colliding_rod = getContainingRod(collision->GetRodVertex());
+     if (already_collided_rods.find(colliding_rod) == already_collided_rods.end())
+     already_collided_rods.insert(colliding_rod);
+     else
+     {
+     delete collision;
+     collisions_list.erase(col_it--);
+     }
+     }
+     }
+     TraceStream(g_log, "") << "of which " << collisions_list.size() << " are on different rods\n";
+     // Now apply response to the remaining collisions
+     for (std::list<Collision*>::iterator col_it = collisions_list.begin(); col_it != collisions_list.end(); col_it++)
+     {
+     CTCollision* collision = dynamic_cast<CTCollision*> (*col_it);
+     if (collision)
+     exertCompliantInelasticImpulse(collision);
+     // So, which rod was it?
+     int colliding_rod = getContainingRod(collision->GetRodVertex());
 
-                /*
-                 // Check for explosion here
+     /*
+     // Check for explosion here
 
-                 m_rods[colliding_rod]->computeForces(*m_endForces[colliding_rod]);
-                 TraceStream(g_log, "") << "Rod " << colliding_rod << " Force norms: initial: "
-                 << (*(m_startForces[colliding_rod])).norm() << " pre-collisions: "
-                 << (*(m_preCollisionForces[colliding_rod])).norm() << " post-collisions: "
-                 << (*(m_endForces[colliding_rod])).norm() << "\n";
-                 for (int j = 0; j < m_rods[colliding_rod]->ndof(); ++j)
-                 {
-                 const double s = (*(m_startForces[colliding_rod]))[j];
-                 const double p = (*(m_preCollisionForces[colliding_rod]))[j];
-                 const double e = (*(m_endForces[colliding_rod]))[j];
-                 const double rate = fabs(s - e) / (fabs(s) + m_perf_param.m_explosion_damping);
-                 if (isnan(rate) || rate > m_perf_param.m_explosion_threshold)
-                 {
-                 //                        explosions_detected = true;
-                 //                        exploding_rods[colliding_rod] = true;
-                 TraceStream(g_log, "") << "Rod number " << colliding_rod
-                 << " had an explosion during collision response: s = " << s << " p = " << p << " e = " << e
-                 << " rate = " << rate << " \n";
-                 // If the rod just had an explosion, give up trying resolving its collisions
-                 failed_collisions_rods[colliding_rod] = true;
-                 for (int v = 0; v < m_rods[colliding_rod]->nv(); ++v)
-                 m_collision_immune[m_base_dof_indices[colliding_rod] / 3 + v] = true;
-                 break;
-                 }
-                 }
-                 */
+     m_rods[colliding_rod]->computeForces(*m_endForces[colliding_rod]);
+     TraceStream(g_log, "") << "Rod " << colliding_rod << " Force norms: initial: "
+     << (*(m_startForces[colliding_rod])).norm() << " pre-collisions: "
+     << (*(m_preCollisionForces[colliding_rod])).norm() << " post-collisions: "
+     << (*(m_endForces[colliding_rod])).norm() << "\n";
+     for (int j = 0; j < m_rods[colliding_rod]->ndof(); ++j)
+     {
+     const double s = (*(m_startForces[colliding_rod]))[j];
+     const double p = (*(m_preCollisionForces[colliding_rod]))[j];
+     const double e = (*(m_endForces[colliding_rod]))[j];
+     const double rate = fabs(s - e) / (fabs(s) + m_perf_param.m_explosion_damping);
+     if (isnan(rate) || rate > m_perf_param.m_explosion_threshold)
+     {
+     //                        explosions_detected = true;
+     //                        exploding_rods[colliding_rod] = true;
+     TraceStream(g_log, "") << "Rod number " << colliding_rod
+     << " had an explosion during collision response: s = " << s << " p = " << p << " e = " << e
+     << " rate = " << rate << " \n";
+     // If the rod just had an explosion, give up trying resolving its collisions
+     failed_collisions_rods[colliding_rod] = true;
+     for (int v = 0; v < m_rods[colliding_rod]->nv(); ++v)
+     m_collision_immune[m_base_dof_indices[colliding_rod] / 3 + v] = true;
+     break;
+     }
+     }
+     */
     /*
-                // Test for stretching and if so, mark the rod immune
-                stretching_rods[colliding_rod] = !checkLength(colliding_rod);
-                if (stretching_rods[colliding_rod])
-                {
-                    // Declare the rod collision-immune for the rest of the time step
-                    for (int j = 0; j < m_rods[colliding_rod]->nv(); ++j)
-                        m_collision_immune[m_base_vtx_indices[colliding_rod] + j] = false;
-                }
+     // Test for stretching and if so, mark the rod immune
+     stretching_rods[colliding_rod] = !checkLength(colliding_rod);
+     if (stretching_rods[colliding_rod])
+     {
+     // Declare the rod collision-immune for the rest of the time step
+     for (int j = 0; j < m_rods[colliding_rod]->nv(); ++j)
+     m_collision_immune[m_base_vtx_indices[colliding_rod] + j] = false;
+     }
 
-                delete collision;
-                collisions_list.erase(col_it--);
-            }
-        }
-        else
-            while (!collisions_list.empty())
-            {
-                CTCollision* collision = dynamic_cast<CTCollision*> (collisions_list.front());
-                collisions_list.pop_front();
-                if (collision)
-                    exertCompliantInelasticImpulse(collision);
-                delete collision;
-                m_collision_detector->updateContinuousTimeCollisions();
-            }
+     delete collision;
+     collisions_list.erase(col_it--);
+     }
+     }
+     else
+     while (!collisions_list.empty())
+     {
+     CTCollision* collision = dynamic_cast<CTCollision*> (collisions_list.front());
+     collisions_list.pop_front();
+     if (collision)
+     exertCompliantInelasticImpulse(collision);
+     delete collision;
+     m_collision_detector->updateContinuousTimeCollisions();
+     }
 
-        // Detect remaining collisions (including at the end of the last iteration, so we know what failed)
-        TraceStream(g_log, "") << "Detecting collisions...\n";
-        m_collision_detector->getCollisions(collisions_list, ContinuousTime, false); // No need to update the mesh bvh bounding boxes.
-    }
+     // Detect remaining collisions (including at the end of the last iteration, so we know what failed)
+     TraceStream(g_log, "") << "Detecting collisions...\n";
+     m_collision_detector->getCollisions(collisions_list, ContinuousTime, false); // No need to update the mesh bvh bounding boxes.
+     }
 
-    if (!collisions_list.empty())
-    {
-        all_rods_collisions_ok = false;
+     if (!collisions_list.empty())
+     {
+     all_rods_collisions_ok = false;
 
-        TraceStream(g_log, "") << "Remains " << collisions_list.size() << " unresolved collisions (potential: "
-                << m_collision_detector->m_potential_collisions << ")\n";
+     TraceStream(g_log, "") << "Remains " << collisions_list.size() << " unresolved collisions (potential: "
+     << m_collision_detector->m_potential_collisions << ")\n";
 
-        // Just in case we haven't emptied the collisions but exited when itr == m_num_inlstc_itrns
-        for (std::list<Collision*>::iterator col = collisions_list.begin(); col != collisions_list.end(); col++)
-        {
-            // Let's see which collisions are remaining.
-            EdgeEdgeCTCollision* eecol = dynamic_cast<EdgeEdgeCTCollision*> (*col);
-            VertexFaceCTCollision* vfcol = dynamic_cast<VertexFaceCTCollision*> (*col);
-            if (vfcol)
-            {
-                assert(isRodVertex(vfcol->v0));
-                failed_collisions_rods[getContainingRod(vfcol->v0)] = true;
-            }
-            if (eecol)
-            {
-                if (isRodVertex(eecol->e0_v0) && isRodVertex(eecol->e0_v1))
-                {
-                    assert(getContainingRod(eecol->e0_v0) == getContainingRod(eecol->e0_v1));
-                    failed_collisions_rods[getContainingRod(eecol->e0_v0)] = true;
-                }
-                if (isRodVertex(eecol->e1_v0) && isRodVertex(eecol->e1_v1))
-                {
-                    assert(getContainingRod(eecol->e1_v0) == getContainingRod(eecol->e1_v1));
-                    failed_collisions_rods[getContainingRod(eecol->e1_v0)] = true;
-                }
-            }
-            delete *col;
-        }
-    }
+     // Just in case we haven't emptied the collisions but exited when itr == m_num_inlstc_itrns
+     for (std::list<Collision*>::iterator col = collisions_list.begin(); col != collisions_list.end(); col++)
+     {
+     // Let's see which collisions are remaining.
+     EdgeEdgeCTCollision* eecol = dynamic_cast<EdgeEdgeCTCollision*> (*col);
+     VertexFaceCTCollision* vfcol = dynamic_cast<VertexFaceCTCollision*> (*col);
+     if (vfcol)
+     {
+     assert(isRodVertex(vfcol->v0));
+     failed_collisions_rods[getContainingRod(vfcol->v0)] = true;
+     }
+     if (eecol)
+     {
+     if (isRodVertex(eecol->e0_v0) && isRodVertex(eecol->e0_v1))
+     {
+     assert(getContainingRod(eecol->e0_v0) == getContainingRod(eecol->e0_v1));
+     failed_collisions_rods[getContainingRod(eecol->e0_v0)] = true;
+     }
+     if (isRodVertex(eecol->e1_v0) && isRodVertex(eecol->e1_v1))
+     {
+     assert(getContainingRod(eecol->e1_v0) == getContainingRod(eecol->e1_v1));
+     failed_collisions_rods[getContainingRod(eecol->e1_v0)] = true;
+     }
+     }
+     delete *col;
+     }
+     }
 
-    //#ifdef TIMING_ON
-    //if( itr >= 2 ) IntStatTracker::getIntTracker("STEPS_WITH_MULTIPLE_IMPULSE_ITERATIONS") += 1;
-    //#endif
+     //#ifdef TIMING_ON
+     //if( itr >= 2 ) IntStatTracker::getIntTracker("STEPS_WITH_MULTIPLE_IMPULSE_ITERATIONS") += 1;
+     //#endif
 
-    // checkLengths(stretching_rods);
+     // checkLengths(stretching_rods);
 
-    return all_rods_collisions_ok;*/
+     return all_rods_collisions_ok;*/
 }
 
 void BAGroomingStepper::computeCompliantLHS(MatrixBase* lhs, int rodidx)
@@ -2863,6 +2860,55 @@ void BAGroomingStepper::setVertexFacePenalty(const double& k)
     assert(k >= 0.0);
 
     m_perf_param.m_implicit_stiffness = k;
+}
+
+class RootDistanceComparer
+{
+    const ElasticRod* m_rod;
+
+public:
+
+    RootDistanceComparer(const ElasticRod* rod) :
+        m_rod(rod)
+    {
+    }
+
+    int operator()(const ElasticRod* rod1, const ElasticRod* rod2)
+    {
+        return (m_rod->getVertex(0) - rod1->getVertex(0)).norm() < (m_rod->getVertex(0) - rod2->getVertex(0)).norm();
+    }
+};
+
+void BAGroomingStepper::findRootNeighbours(const int numberOfNeighbours) // and add clumping forces
+{
+    static const double max_neighbour_distance = 10.0;
+
+    for (RodSelectionType::iterator rod = m_simulated_rods.begin(); rod != m_simulated_rods.end(); ++rod)
+    {
+        std::vector<ElasticRod*> neighbours(numberOfNeighbours + 1);
+        std::partial_sort_copy(m_rods.begin(), m_rods.end(), neighbours.begin(), neighbours.end(),
+                RootDistanceComparer(m_rods[*rod]));
+        neighbours.erase(neighbours.begin());
+
+        m_rods[*rod]->setNearestRootNeighbours(neighbours);
+    }
+
+    m_clumpingForce = new RodClumpingForce();
+
+    for (std::vector<GroomingTimeStepper*>::iterator stepper = m_steppers.begin(); stepper != m_steppers.end(); ++stepper)
+    {
+        (*stepper)->addExternalForce(m_clumpingForce);
+    }
+}
+
+void BAGroomingStepper::setClumpingParameters(const double charge, const double power)
+{
+    assert(m_clumpingForce != NULL);
+
+    DebugStream(g_log, "") << "Changing clumping parameters\n";
+
+    m_clumpingForce->setCharge(charge);
+    m_clumpingForce->setPower(power);
 }
 
 }

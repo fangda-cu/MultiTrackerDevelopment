@@ -81,6 +81,8 @@ public:
     static MObject ia_curlStart;
     static MObject ia_rodPitch;
     static MObject ia_rodDamping;
+    static MObject ia_rodCharge;
+    static MObject ia_rodPower;
 
     // Collision meshes
     static MObject ia_collisionMeshes;
@@ -164,7 +166,8 @@ private:
     double m_rodPitch;
     int m_verticesPerRod;
     bool m_rodDamping;
-
+    double m_rodCharge;
+    double m_rodPower;
     
     
     WmSweeneyRodManager* m_rodManager;

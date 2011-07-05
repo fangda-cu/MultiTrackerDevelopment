@@ -44,10 +44,10 @@ public:
 
     //@{
 
-  virtual void setup();
-  virtual void computeForces(VecXd& force);
-  virtual void computeConservativeForcesEnergy(VecXd& force, Scalar& energy);
-  virtual void computeJacobian(int baseidx, Scalar scale, MatrixBase& J);
+    virtual void setup();
+    virtual void computeForces(VecXd& force);
+    virtual void computeConservativeForcesEnergy(VecXd& force, Scalar& energy);
+    virtual void computeJacobian(int baseidx, Scalar scale, MatrixBase& J);
 
     virtual const Scalar&
     getVertexDof(const vertex_handle& vh, int num) const;
@@ -302,56 +302,68 @@ public:
         return m_boundaryConditions;
     }
 
-  virtual void updateProperties();
-  virtual void updateReferenceProperties();
-  virtual void updateStiffness();
-  virtual void setRestLengths(std::vector<Scalar>& vals);
-  virtual void verifyProperties();
+    virtual void updateProperties();
+    virtual void updateReferenceProperties();
+    virtual void updateStiffness();
+    virtual void setRestLengths(std::vector<Scalar>& vals);
+    virtual void verifyProperties();
 
-  /** At the beginning of the time step, the undeformed configuration
-      must be set to the current configuration for the viscous
-      forces */
-  virtual void viscousUpdate();
+    /** At the beginning of the time step, the undeformed configuration
+     must be set to the current configuration for the viscous
+     forces */
+    virtual void viscousUpdate();
 
-  /** The stiffness of the viscous forces (internal damping) depend on
-      the size of the time step being taken, so they must be
-      recomputed whenever the size of the time step is changed. */
-  void setTimeStep(Scalar dt);
-  Scalar getTimeStep() const { return property(m_dt); }
+    /** The stiffness of the viscous forces (internal damping) depend on
+     the size of the time step being taken, so they must be
+     recomputed whenever the size of the time step is changed. */
+    void setTimeStep(Scalar dt);
+    Scalar getTimeStep() const
+    {
+        return property(m_dt);
+    }
 
+    void computeEdges();
+    void computeTangents();
+    void computeEdgeLengths();
+    void computeVoronoiLengths();
+    void computeReferenceDirectors();
+    void computeSpaceParallel();
+    void computeTimeParallel();
+    void computeCurvatureBinormals();
+    void computeReferenceTwist();
+    void computeMaterialDirectors();
+    void computeVertexMasses();
+    void computeEdgeInertias();
+    void setupDofIndices();
 
-  void computeEdges();
-  void computeTangents();
-  void computeEdgeLengths();
-  void computeVoronoiLengths();
-  void computeReferenceDirectors();
-  void computeSpaceParallel();
-  void computeTimeParallel();
-  void computeCurvatureBinormals();
-  void computeReferenceTwist();
-  void computeMaterialDirectors();
-  void computeVertexMasses();
-  void computeEdgeInertias();
-  void setupDofIndices();
+    void updateForceProperties();
 
-  void updateForceProperties();
+    int globalRodIndex;
+    int draw_cl;
 
-  int globalRodIndex;
-  int draw_cl;
+    bool doReverseHairdo(RodTimeStepper *stepper);
+    void computeReverseJacobian(MatrixBase& J);
+    void updateReverseUndeformedStrain(const VecXd& e);
 
-  bool doReverseHairdo(RodTimeStepper *stepper);
-  void computeReverseJacobian(MatrixBase& J);
-  void updateReverseUndeformedStrain(const VecXd& e);
+    RodBendingForceSym* m_bendingForce; // easy access to the bending force
+    RodStretchingForce* m_stretchingForce; // easy access to the stretching force
+    RodTwistingForceSym* m_twistingForce; // easy access to the twisting force
 
-  RodBendingForceSym* m_bendingForce; // easy access to the bending force
-  RodStretchingForce* m_stretchingForce; // easy access to the stretching force
-  RodTwistingForceSym* m_twistingForce; // easy access to the twisting force
+    double computeKineticEnergy();
 
-  double computeKineticEnergy();
+    void recordKineticEnergy();
 
-  void recordKineticEnergy();
+    bool isKineticEnergyPeaked();
 
-  bool isKineticEnergyPeaked();
+    void setNearestRootNeighbours(const std::vector<ElasticRod*>& neighbours)
+    {
+        m_nearestRootNeighbours = neighbours;
+    }
+
+    const std::vector<ElasticRod*>& getNearestRootNeighbours() const
+    {
+        return m_nearestRootNeighbours;
+    }
 
 protected:
 
@@ -402,6 +414,7 @@ protected:
     EPropHandle<int> m_edgeIdx;
 
     RodBoundaryCondition* m_boundaryConditions;
+    std::vector<ElasticRod*> m_nearestRootNeighbours;
 
 };
 

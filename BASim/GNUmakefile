@@ -284,6 +284,7 @@ Physics/ElasticRods/RodBendingForce.hh \
 Physics/ElasticRods/RodBendingForceSym.hh \
 Physics/ElasticRods/RodBendingForceIncludes.hh \
 Physics/ElasticRods/RodBoundaryCondition.hh \
+Physics/ElasticRods/RodClumpingForce.hh \
 Physics/ElasticRods/RodExternalForce.hh \
 Physics/ElasticRods/RodExternalConservativeForce.hh \
 Physics/ElasticRods/RodForce.hh \
@@ -382,6 +383,7 @@ src/Physics/ElasticRods/RodAnisoForce.cc \
 src/Physics/ElasticRods/RodBendingForce.cc \
 src/Physics/ElasticRods/RodBendingForceSym.cc \
 src/Physics/ElasticRods/RodBoundaryCondition.cc \
+src/Physics/ElasticRods/RodClumpingForce.cc \
 src/Physics/ElasticRods/RodForce.cc \
 src/Physics/ElasticRods/RodPenaltyForce.cc \
 src/Physics/ElasticRods/RodLevelSetForce.cc \
