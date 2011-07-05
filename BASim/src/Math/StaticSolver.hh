@@ -73,6 +73,9 @@ public:
 
     bool execute()
     {
+        ElasticRod &r = *m_diffEq.getRod();
+        int   ia  = r.globalRodIndex;
+        TraceStream(g_log, "") << "\n Rod Index: " <<  ia << " keep updating: " << m_keepUpdating << "\n";
        	if ( !m_diffEq.getRod()->isInRestState() )
     	{
     		m_keepUpdating = true;
