@@ -187,14 +187,14 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 					current_rod = m_rodManager->m_rods[i];
 
 					// get total rod length for scaling
-                    Scalar curl_len = 0;
-                    int curl_resolution = 1;
+                    Scalar curl_length = ( 1.0 - m_curlStart )*m_length*m_strandLengths[i];
+                    int curl_resolution = ( 1.0 - m_curlStart )*m_verticesPerRod;
 
                     // Compute the rod helix properties
                     Scalar curvature = 0.0;
                     Scalar torsion = 0.0;
 
-                    Scalar absolute_length = m_length * m_strandLengths[i];
+                    //Scalar absolute_length = m_length * m_strandLengths[i];
 
                     if(  m_fixCurlHeight && m_curlRadius != 0.0 )
                     {
@@ -205,15 +205,15 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                         Scalar curl_height = m_length * m_strandLengths[i] / m_curlCount;
                         Scalar arc_length = sqrt( curl_height * curl_height +
                                 4 * M_PI * M_PI * radius * radius );
-                        absolute_length = arc_length * m_curlCount;
+                        curl_length = arc_length * m_curlCount;
 
                         // compute helix curvature and torsion
                         Scalar pitch = curl_height / ( 2 * M_PI );
                         Scalar denom = radius  * radius  + pitch * pitch;
                         curvature = radius  /  denom;
                         torsion = pitch  / denom;
-                        curvature *= m_length / m_verticesPerRod;
-                        torsion *= m_length / m_verticesPerRod;
+                        curvature *= curl_length / curl_resolution;
+                        torsion *= curl_length / curl_resolution;
                         /*if ( i == 0 )
                             cout << "Curl Params: Curl_H " << curl_height << " arc_len " << arc_length
                             << " abs_len " << absolute_length << " curl_radius " << m_curlRadius << " curl_pitch " << pitch << " curvature "
@@ -225,8 +225,10 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                         curvature = m_curlTightness; // * m_length / m_verticesPerRod;
                     }
 
+                    Scalar total_length = m_curlStart*m_length * m_strandLengths[i]
+                                             + curl_length;
 					// Update rod configuration
-					updateStrandLength( current_rod, update_rod, absolute_length );
+					updateStrandLength( current_rod, update_rod, total_length );
 					updateStrandCurl( current_rod, update_rod, curvature, torsion );
 					updateStrandCrossSection( current_rod, update_rod );
 					updateStrandRotation( current_rod, update_rod );
@@ -295,7 +297,7 @@ void WmSweeneyNode::updateStrandLength( ElasticRod* current_rod, bool& update_ro
         //}
     }
 
-    assert( m_curlStart == 1.0 || curl_len != 0 );
+    //assert( m_curlStart == 1.0 || curl_len != 0 );
 
     // return if the rod is unchanged
     if( !update_rod ) return;
@@ -381,16 +383,19 @@ void WmSweeneyNode::updateStrandCurl( ElasticRod* current_rod, bool& update_rod,
               vh != current_rod->vertices_end(); ++vh )
     {
 
-        if ( current_rod->m_twistingForce->getUndeformedTwist( *vh ) != torsion )
+        if ( vh->idx() >= m_curlStart*m_verticesPerRod )
         {
-            current_rod->m_twistingForce->setUndeformedTwist( *vh, torsion );
-            update_rod = true;
-        }
+            if ( current_rod->m_twistingForce->getUndeformedTwist( *vh ) != torsion )
+            {
+                current_rod->m_twistingForce->setUndeformedTwist( *vh, torsion );
+                update_rod = true;
+            }
 
-        if ( current_rod->m_bendingForce->getKappaBar( *vh )[0] != curvature )
-        {
-            current_rod->m_bendingForce->setKappaBar( *vh, Vec2d( curvature, 0 ) );
-            update_rod = true;
+            if ( current_rod->m_bendingForce->getKappaBar( *vh )[0] != curvature )
+            {
+                current_rod->m_bendingForce->setKappaBar( *vh, Vec2d( curvature, 0 ) );
+                update_rod = true;
+            }
         }
     }
  }
