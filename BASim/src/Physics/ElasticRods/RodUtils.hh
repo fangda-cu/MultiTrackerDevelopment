@@ -47,7 +47,8 @@ struct RodOptions {
 inline ElasticRod* setupRod(const RodOptions& opts,
                             const std::vector<Vec3d>& initialPosition,
                             const std::vector<Vec3d>& undeformedPosition,
-                            const BASim::Vec3d& i_referenceDir1 = BASim::Vec3d(1,0,0) )
+                            const BASim::Vec3d& i_referenceDir1 = BASim::Vec3d(1,0,0),
+                            const BASim::Vec3d& i_referenceDir2 = BASim::Vec3d(0,1,0) )
 {
   assert(opts.numVertices == (int) initialPosition.size());
   assert(opts.numVertices == (int) undeformedPosition.size());
@@ -66,19 +67,27 @@ inline ElasticRod* setupRod(const RodOptions& opts,
   rod->setQuasistatic(opts.quasistatic);
   rod->setRefFrameType(opts.refFrame);
   rod->setReferenceDirector1(0, i_referenceDir1);
+  //rod->setReferenceDirector2(0, i_referenceDir2);
 
   // set up using undeformed positions
   for (int i = 0; i < rod->nv(); ++i)
     rod->setVertex(i, undeformedPosition[i]);
   rod->setup();
 
-  // update to initial positions
+
+ // update to initial positions
   for (int i = 0; i < rod->nv(); ++i)
   {
     rod->setVertex(i, initialPosition[i]);
   }
 
   rod->updateProperties();
+
+  //if ( i_referenceDir1.x() > 0 )
+    //  rod->setReferenceDirector2(0, i_referenceDir2);
+  //std::cout << "ROD ROOT FRAME FINAL " << rod->getReferenceDirector1(0) << " " <<
+    //         rod->getReferenceDirector2(0) << " " <<  rod->getTangent(0) << std::endl;
+
 
   return rod;
 }

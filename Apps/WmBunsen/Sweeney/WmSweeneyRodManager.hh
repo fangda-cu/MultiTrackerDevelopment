@@ -41,6 +41,7 @@ public:
     
     bool addRod( const std::vector< BASim::Vec3d >& i_vertices, const double i_time,
     		     const BASim::Vec3d& i_referenceDir1 = BASim::Vec3d(1,0,0),
+    		     const BASim::Vec3d& i_referenceDir2 = BASim::Vec3d(0,1,0),
     			 const double i_youngsModulus =  1e7 * 1000.0,
                  const double i_shearModulus = 1e7 * 340.0, const double i_viscosity = 10.0, 
                  const double i_density = 1.3, const double i_radiusA = 1e-1 * 0.05, 
