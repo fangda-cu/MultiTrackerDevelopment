@@ -197,7 +197,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
                         // compute total length of the helix
                         // TODO(sainsley): rename m_curlCount m_curlCount
                         // rename m_length to m_height
-                        Scalar radius = m_curlRadius * m_verticesPerRod / m_length;
+                        Scalar radius = m_curlRadius;
                         Scalar curl_height = m_length * m_strandLengths[i] / m_curlCount;
                         Scalar arc_length = sqrt( curl_height * curl_height +
                                 4 * M_PI * M_PI * radius * radius );
@@ -205,19 +205,20 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 
                         // compute helix curvature and torsion
                         Scalar pitch = curl_height / ( 2 * M_PI );
-                        pitch *= m_verticesPerRod / m_length;
                         Scalar denom = radius  * radius  + pitch * pitch;
                         curvature = radius  /  denom;
                         torsion = pitch  / denom;
+                        curvature *= m_length / m_verticesPerRod;
+                        torsion *= m_length / m_verticesPerRod;
                         /*if ( i == 0 )
-                            cout << "Curl Params: " << curl_height << " " << arc_length << " "
-                            << absolute_length << " " << m_curlRadius << " " << pitch << " "
-                            << curvature << " " << torsion << endl;*/
+                            cout << "Curl Params: Curl_H " << curl_height << " arc_len " << arc_length
+                            << " abs_len " << absolute_length << " curl_radius " << m_curlRadius << " curl_pitch " << pitch << " curvature "
+                            << curvature << " torsion " << torsion << " resolutoin " << m_verticesPerRod << endl;*/
                     }
 
                     if (  !m_fixCurlHeight && m_curlTightness != 0.0 )
                     {
-                        curvature = m_curlTightness * m_length / m_verticesPerRod;
+                        curvature = m_curlTightness; // * m_length / m_verticesPerRod;
                     }
 
 					// Update rod configuration
@@ -227,6 +228,9 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 					updateStrandRotation( current_rod, update_rod );
 
 					current_rod->updateStiffness();
+					 /*if ( i == 0 )
+					     cout << "VERTEX MASS " << current_rod->getVertexMass(2) << " LEN " <<
+					     current_rod->getEdgeLength(2) << endl;*/
 
 					// Check if rod is in rest state
 					current_rod->setIsInRestState( !update_rod );
@@ -251,6 +255,7 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 	return MS::kSuccess;
 }
 
+// todo CONST
 void WmSweeneyNode::updateStrandLength( ElasticRod* current_rod, bool& update_rod, Scalar stand_length )
 {
 
@@ -348,6 +353,7 @@ void WmSweeneyNode::updateStrandCurl( ElasticRod* current_rod, bool& update_rod,
 
     //curvature *= curl_len/curl_resolution;
     //torsion *= curl_len/curl_resolution;
+    if (current_rod->isLeftStrand()) torsion *= -1;
 
     for ( ElasticRod::vertex_iter vh = current_rod->vertices_begin();
               vh != current_rod->vertices_end(); ++vh )
@@ -518,7 +524,9 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock )
         	cout << "ROD ROOT FRAMES BARBERSHOP " << m1 << " " << m2 << " " << tan << endl;
 
         	m_rodManager->addRod( vertices, m_startTime, m1 );
-
+        	// hack to fix scalp orientation bug
+        	if ( m1.x() < 0 )
+        	    m_rodManager->m_rods[inputStrandNumber]->setIsLeftStrand(true);
         }
         else
         {
@@ -587,11 +595,6 @@ void WmSweeneyNode::constructRodVertices( vector< BASim::Vec3d >& o_rodVertices,
 	cerr << "constructRodVertices(): edgeLength = " << edge.length() << "\n";
 
 	MVector currentVertex( i_rootPosition );
-
-	//Scalar a = 0.0;
-	//if ( m_curlRadius != 0.0 )
-	//	a = 1.0 / (m_curlRadius * m_length / m_verticesPerRod);
-	//	Scalar b = 0.5 * m_length / m_verticesPerRod;
 
 	for ( int v = 0; v < m_verticesPerRod; ++v )
     {

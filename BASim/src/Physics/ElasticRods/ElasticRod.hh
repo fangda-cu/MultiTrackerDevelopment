@@ -228,6 +228,9 @@ public:
     Scalar getRadiusScale() const;
     void setRadiusScale(Scalar s);
 
+    bool isLeftStrand() const;
+    void setIsLeftStrand(bool is_left_strand);
+
     bool isInRestState() const;
     void setIsInRestState(bool is_at_rest);
 
@@ -379,7 +382,9 @@ protected:
     ObjPropHandle<Scalar> m_radius_scale;
     ObjPropHandle<Scalar> m_base_rotation;
 
+    // Flags for Dyanmic Grooming
     ObjPropHandle<bool> m_in_rest_state;
+    ObjPropHandle<bool> m_is_left_strand;
 
     VPropHandle<Vec3d> m_vertexPositions;
     VPropHandle<Vec3d> m_vertexVelocities;
