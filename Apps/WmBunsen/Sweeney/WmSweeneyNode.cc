@@ -29,6 +29,8 @@ using namespace BASim;
 /* static */ MObject WmSweeneyNode::ia_curlStart;
 /* static */ MObject WmSweeneyNode::ia_rodPitch;
 /* static */ MObject WmSweeneyNode::ia_fixCurlHeight;
+/* static */ MObject WmSweeneyNode::ia_mirrorXCurl;
+/* static */ MObject WmSweeneyNode::ia_mirrorXRotation;
 /* static */ MObject WmSweeneyNode::ia_rodDamping;
 
 // Barbershop specific inputs
@@ -115,6 +117,8 @@ MStatus WmSweeneyNode::compute( const MPlug& i_plug, MDataBlock& i_dataBlock )
 		m_curlStart = i_dataBlock.inputValue( ia_curlStart ).asDouble();
 		m_rodPitch = i_dataBlock.inputValue( ia_rodPitch ).asDouble();
 		m_fixCurlHeight = i_dataBlock.inputValue( ia_fixCurlHeight ).asBool();
+		m_mirrorXCurl = i_dataBlock.inputValue( ia_mirrorXCurl ).asBool();
+		m_mirrorXRotation = i_dataBlock.inputValue( ia_mirrorXRotation ).asBool();
 		m_rodDamping = i_dataBlock.inputValue( ia_rodDamping ).asBool();
 
         bool shouldDrawVelocity = i_dataBlock.inputValue( ia_shouldDrawVelocity ).asBool();
@@ -329,11 +333,21 @@ void WmSweeneyNode::updateStrandCrossSection( ElasticRod* current_rod, bool& upd
 void WmSweeneyNode::updateStrandRotation( ElasticRod* current_rod, bool& update_rod )
 {
 
+    Scalar theta = m_rodRotation * M_PI;
+
+    if ( m_mirrorXRotation && m_mirrorXCurl || !m_mirrorXRotation && !m_mirrorXCurl )
+    {
+            if ( !m_fixCurlHeight && current_rod->isLeftStrand() )
+            {
+                theta *= -1;
+            }
+    }
+
     // check for update
-    if ( current_rod->getTheta( 0 ) == m_rodRotation * M_PI ) return;
+    if ( current_rod->getTheta( 0 ) ==  theta ) return;
 
     // set initial rotation
-    current_rod->setTheta( 0, m_rodRotation * M_PI );
+    current_rod->setTheta( 0,  theta );
     Scalar c = cos( current_rod->getTheta( 0 ) );
     Scalar s = sin( current_rod->getTheta( 0 ) );
     const Vec3d& u = current_rod->getReferenceDirector1( 0 );
@@ -351,9 +365,17 @@ void WmSweeneyNode::updateStrandCurl( ElasticRod* current_rod, bool& update_rod,
     assert( current_rod->m_bendingForce != NULL );
     assert( current_rod->m_twistingForce != NULL );
 
-    //curvature *= curl_len/curl_resolution;
-    //torsion *= curl_len/curl_resolution;
-    if (current_rod->isLeftStrand()) torsion *= -1;
+    if ( m_mirrorXCurl )
+    {
+        if ( m_fixCurlHeight && current_rod->isLeftStrand() )
+        {
+            torsion *= -1;
+        }
+    }
+    else if ( !m_fixCurlHeight && current_rod->isLeftStrand() )
+    {
+        curvature *= -1;
+    }
 
     for ( ElasticRod::vertex_iter vh = current_rod->vertices_begin();
               vh != current_rod->vertices_end(); ++vh )
@@ -927,6 +949,14 @@ void* WmSweeneyNode::creator()
     addNumericAttribute( ia_fixCurlHeight, "fixCurlHeight", "fixcurlh", MFnNumericData::kBoolean, false, true );
     status = attributeAffects( ia_fixCurlHeight, ca_rodPropertiesSync );
     if ( !status ) { status.perror( "attributeAffects ia_fixCurlHeight->ca_rodPropertiesSync" ); return status; }
+
+    addNumericAttribute( ia_mirrorXCurl, "mirrorCurlInX", "mirxcur", MFnNumericData::kBoolean, true, true );
+    status = attributeAffects( ia_mirrorXCurl, ca_rodPropertiesSync );
+    if ( !status ) { status.perror( "attributeAffects ia_mirrorXCurl->ca_rodPropertiesSync" ); return status; }
+
+    addNumericAttribute( ia_mirrorXRotation, "mirrorRotationInX", "mirxrot", MFnNumericData::kBoolean, true, true );
+    status = attributeAffects( ia_mirrorXRotation, ca_rodPropertiesSync );
+    if ( !status ) { status.perror( "attributeAffects ia_mirrorXRotation->ca_rodPropertiesSync" ); return status; }
 
     addNumericAttribute( ia_rodDamping, "rodDamping", "roddamp", MFnNumericData::kBoolean, true, true );
     status = attributeAffects( ia_rodDamping, ca_rodPropertiesSync );

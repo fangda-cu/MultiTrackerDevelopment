@@ -82,6 +82,8 @@ public:
     static MObject ia_curlStart;
     static MObject ia_rodPitch;
     static MObject ia_fixCurlHeight;
+    static MObject ia_mirrorXCurl;
+    static MObject ia_mirrorXRotation;
     static MObject ia_rodDamping;
 
     // Collision meshes
@@ -173,6 +175,8 @@ private:
     double m_rodPitch;
     int m_verticesPerRod;
     bool m_fixCurlHeight;
+    bool m_mirrorXCurl;
+    bool m_mirrorXRotation;
     bool m_rodDamping;
 
     
