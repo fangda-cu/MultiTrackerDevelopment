@@ -46,8 +46,8 @@ public:
         m_lambdamin = 1e-8;
         m_lambdamax = 1e+10;
         m_lambda    = 1e-3;
-        m_gearup    = 3.00; // above 1.0
-        m_geardown  = 0.50; // below 1.0
+        m_gearup    = 2.00; // above 1.0
+        m_geardown  = 0.80; // below 1.0
         m_failurecount = 0;
         m_successcount = 1;
         m_keepUpdating = true;
