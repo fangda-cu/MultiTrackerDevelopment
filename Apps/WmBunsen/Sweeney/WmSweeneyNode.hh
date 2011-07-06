@@ -73,6 +73,7 @@ public:
     static MObject ia_length;
     static MObject ia_edgeLength;
     static MObject ia_verticesPerRod;
+    static MObject ia_rodsPerClump;
     static MObject ia_rodRadius;
     static MObject ia_rodAspectRatio;
     static MObject ia_rodRotation;
@@ -87,6 +88,7 @@ public:
     static MObject ia_rodDamping;
     static MObject ia_rodCharge;
     static MObject ia_rodPower;
+    static MObject ia_rodClumpSeparation;
 
     // Collision meshes
     static MObject ia_collisionMeshes;
@@ -176,13 +178,14 @@ private:
     double m_curlStart;
     double m_rodPitch;
     int m_verticesPerRod;
+    int m_rodsPerClump;
     bool m_fixCurlHeight;
     bool m_mirrorXCurl;
     bool m_mirrorXRotation;
     bool m_rodDamping;
     double m_rodCharge;
     double m_rodPower;
-    
+    double m_rodClumpSeparation;
     
     WmSweeneyRodManager* m_rodManager;
     MVectorArray m_strandVertices;

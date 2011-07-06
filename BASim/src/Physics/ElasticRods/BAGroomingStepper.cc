@@ -29,7 +29,7 @@ namespace BASim
 BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
         std::vector<ScriptingController*>& scripting_controllers, std::vector<GroomingTimeStepper*>& steppers,
         const double& dt, const double time, const int num_threads, const PerformanceTuningParameters perf_param,
-        std::vector<LevelSet*>& levelSets) :
+        std::vector<LevelSet*>& levelSets, const int rods_per_clump) :
             m_num_dof(0),
             m_rods(rods),
             m_number_of_rods(m_rods.size()),
@@ -62,7 +62,9 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
             m_perf_param(perf_param),
             m_level(0),
             m_geodata(m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start,
-                    m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness), m_level_sets(levelSets)
+                    m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness), m_level_sets(levelSets),
+            m_root_neighbour_count(rods_per_clump)
+
 //m_timers(NULL)
 {
     m_levelset_forces.resize(m_level_sets.size());
@@ -297,7 +299,7 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
     m_killed_rods.clear();
     InfoStream(g_log, "") << "STEPPER DT " << m_dt << "\n";
 
-    findRootNeighbours(6);
+    findRootNeighbours(m_root_neighbour_count);
 
     CopiousStream(g_log, "") << "Finished BAGroomingStepper constructor\n";
 }
@@ -2901,7 +2903,7 @@ void BAGroomingStepper::findRootNeighbours(const int numberOfNeighbours) // and 
     }
 }
 
-void BAGroomingStepper::setClumpingParameters(const double charge, const double power)
+void BAGroomingStepper::setClumpingParameters(const double charge, const double power, const double dist)
 {
     assert(m_clumpingForce != NULL);
 
@@ -2909,6 +2911,7 @@ void BAGroomingStepper::setClumpingParameters(const double charge, const double 
 
     m_clumpingForce->setCharge(charge);
     m_clumpingForce->setPower(power);
+    m_clumpingForce->setDistance(dist);
 }
 
 }

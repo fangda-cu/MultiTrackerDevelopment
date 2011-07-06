@@ -20,6 +20,7 @@ using namespace BASim;
 /* static */ MObject WmSweeneyNode::ia_length;
 /* static */ MObject WmSweeneyNode::ia_edgeLength;
 /* static */ MObject WmSweeneyNode::ia_verticesPerRod;
+/* static */ MObject WmSweeneyNode::ia_rodsPerClump;
 /* static */ MObject WmSweeneyNode::ia_rodRadius;
 /* static */ MObject WmSweeneyNode::ia_rodAspectRatio;
 /* static */ MObject WmSweeneyNode::ia_rodRotation;
@@ -34,6 +35,7 @@ using namespace BASim;
 /* static */ MObject WmSweeneyNode::ia_rodDamping;
 /* static */MObject WmSweeneyNode::ia_rodCharge;
 /* static */MObject WmSweeneyNode::ia_rodPower;
+/* static */MObject WmSweeneyNode::ia_rodClumpSeparation;
 
 // Barbershop specific inputs
 /*static*/MObject WmSweeneyNode::ia_strandVertices;
@@ -125,6 +127,7 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 		m_rodDamping = i_dataBlock.inputValue( ia_rodDamping ).asBool();
         m_rodCharge = i_dataBlock.inputValue(ia_rodCharge).asDouble();
         m_rodPower = i_dataBlock.inputValue(ia_rodPower).asDouble();
+        m_rodClumpSeparation = i_dataBlock.inputValue(ia_rodClumpSeparation).asDouble();
 
         bool shouldDrawVelocity = i_dataBlock.inputValue( ia_shouldDrawVelocity ).asBool();
         if ( m_rodManager != NULL )
@@ -153,6 +156,8 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 
 		int verticesPerRod = i_dataBlock.inputValue( ia_verticesPerRod ).asInt();
 
+		int rodsPerClump = i_dataBlock.inputValue( ia_rodsPerClump ).asInt();
+
 		int numberOfVerticesPerStrand = i_dataBlock.inputValue( ia_verticesPerStrand ).asInt();
 
 		if ( m_currentTime == m_startTime )
@@ -170,6 +175,8 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 
 			m_verticesPerRod = verticesPerRod;
 
+			m_rodsPerClump = rodsPerClump;
+
 			initialiseRodFromBarberShopInput( i_dataBlock );
 		}
 		else
@@ -178,13 +185,16 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 		    {
                 static double oldCharge = 0.0;
                 static double oldPower = 1.0;
+                static double oldClumpDist = 0.0;
+
                 bool update_all_rods = false;
 
-                if ((i_dataBlock.inputValue(ia_rodCharge).asDouble() != oldCharge)
-                        || i_dataBlock.inputValue(ia_rodPower).asDouble() != oldPower)
+                if ((m_rodCharge != oldCharge)
+                        || m_rodPower != oldPower
+                        || m_rodClumpSeparation != oldClumpDist)
                 {
-                    m_rodManager->setClumpingParameters(oldCharge = i_dataBlock.inputValue(ia_rodCharge).asDouble(),
-                            oldPower = i_dataBlock.inputValue(ia_rodPower).asDouble());
+                    m_rodManager->setClumpingParameters(oldCharge = m_rodCharge,
+                            oldPower = m_rodPower, oldClumpDist = m_rodClumpSeparation);
                     update_all_rods = true;
                 }
 
@@ -612,7 +622,7 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput(MDataBlock& i_dataBlock)
 
     cerr << "initialiseRodFromBarberShopInput() - About to initialise simulation\n";
     m_rodManager->initialiseSimulation(1 / 24.0, m_startTime, perfParams, m_atol, m_stol, m_rtol, m_inftol,
-            m_numLineSearchIters);
+            m_numLineSearchIters, m_rodsPerClump);
     cerr << "initialiseRodFromBarberShopInput() - Simulation initialised at time " << m_startTime << endl;
 }
 
@@ -958,6 +968,14 @@ void* WmSweeneyNode::creator()
         return status;
     }
 
+
+    addNumericAttribute(ia_rodClumpSeparation, "rodClumpSeparation", "rcdst", MFnNumericData::kDouble, 0.001, true);
+    status = attributeAffects(ia_rodClumpSeparation, ca_rodPropertiesSync);
+    if (!status)
+    {
+        status.perror("attributeAffects ia_rodClumpSeparation->ca_rodPropertiesSync");
+        return status;
+    }
 
     {
            MFnNumericAttribute numericAttr;
@@ -1333,6 +1351,14 @@ void* WmSweeneyNode::creator()
     if (!status)
     {
         status.perror("attributeAffects ia_verticesPerRod->ca_rodPropertiesSync");
+        return status;
+    }
+
+    addNumericAttribute(ia_rodsPerClump, "rodsPerClump", "rpc", MFnNumericData::kInt, 5, true);
+    status = attributeAffects(ia_rodsPerClump, ca_rodPropertiesSync);
+    if (!status)
+    {
+        status.perror("attributeAffects ia_rodsPerClump->ca_rodPropertiesSync");
         return status;
     }
 

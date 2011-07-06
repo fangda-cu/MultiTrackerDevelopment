@@ -14,7 +14,7 @@ namespace BASim
 {
 
 RodClumpingForce::RodClumpingForce() :
-    q(0.0), r(1.0), rho2(0.01)
+    q(0.0), r(1.0), rho2(0.000025)
 {
     m_name = "clumping";
 }

@@ -34,9 +34,15 @@ public:
     {
         q = charge;
     }
+
     void setPower(Scalar power)
     {
         r = power;
+    }
+
+    void setDistance(Scalar dist)
+    {
+        rho2 = dist;
     }
 
     const double getCharge() const
@@ -47,6 +53,11 @@ public:
     const double getPower() const
     {
         return r;
+    }
+
+    const double getDistance() const
+    {
+        return rho2;
     }
 
 private:

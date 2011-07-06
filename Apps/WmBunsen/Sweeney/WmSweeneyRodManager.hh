@@ -54,12 +54,12 @@ public:
     void setUseKineticDamping(bool i_useKinecticDamping);
 
     void initialiseSimulation(const double i_timeStep, const double i_startTime, BASim::PerformanceTuningParameters perfParams,
-            double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters);
+            double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters, int i_rodsPerClump);
 
     void updateSolverSettings(double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters,
             double i_penaltyStiffness);
 
-    void setClumpingParameters(const double charge, const double power) const;
+    void setClumpingParameters(const double charge, const double power, const double distance) const;
 
     void addCollisionMesh(BASim::TriangleMesh* i_triangleMesh, BASim::LevelSet* i_levelSet,
             WmFigMeshController* i_figMeshController);

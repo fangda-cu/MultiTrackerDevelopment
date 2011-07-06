@@ -120,7 +120,7 @@ void WmSweeneyRodManager::setUseKineticDamping(bool i_useKinecticDamping)
 
 void WmSweeneyRodManager::initialiseSimulation(const double i_timeStep, const double i_startTime,
         PerformanceTuningParameters perfParams, double i_atol, double i_stol, double i_rtol, double i_inftol,
-        int i_numLineSearchIters)
+        int i_numLineSearchIters, int i_rodsPerClump)
 {
 
     std::cout << "Performance Tuning Parameters " << std::endl;
@@ -177,7 +177,7 @@ void WmSweeneyRodManager::initialiseSimulation(const double i_timeStep, const do
      */
 
     m_bridsonStepper = new BAGroomingStepper(m_rods, m_triangleMeshes, m_scriptingControllers, m_rodTimeSteppers, i_timeStep,
-            i_startTime, 1, perfParams, m_levelSets);
+            i_startTime, 1, perfParams, m_levelSets, i_rodsPerClump);
 }
 
 void WmSweeneyRodManager::updateSolverSettings(double i_atol, double i_stol, double i_rtol, double i_inftol,
@@ -207,9 +207,9 @@ void WmSweeneyRodManager::updateSolverSettings(double i_atol, double i_stol, dou
     m_bridsonStepper->setPenaltyStiffness(i_penaltyStiffness);
 }
 
-void WmSweeneyRodManager::setClumpingParameters(const double charge, const double power) const
+void WmSweeneyRodManager::setClumpingParameters(const double charge, const double power, const double dist) const
 {
-    m_bridsonStepper->setClumpingParameters(charge, power);
+    m_bridsonStepper->setClumpingParameters(charge, power, dist);
 }
 
 void WmSweeneyRodManager::takeStep()

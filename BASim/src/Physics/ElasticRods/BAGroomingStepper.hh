@@ -85,7 +85,7 @@ public:
     BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
             std::vector<ScriptingController*>& scripting_controllers, std::vector<GroomingTimeStepper*>& steppers,
             const double& dt, const double time, const int num_threads, const PerformanceTuningParameters perf_param,
-            std::vector<LevelSet*>& levelSets);
+            std::vector<LevelSet*>& levelSets, const int rods_per_clump);
 
     /**
      * Destructor.
@@ -140,7 +140,7 @@ public:
         m_perf_param.m_implicit_stiffness = newStiffness;
     }
 
-    void setClumpingParameters(const double charge, const double power);
+    void setClumpingParameters(const double charge, const double power, const double dist);
 
 private:
     /**
@@ -473,6 +473,7 @@ private:
     int m_total_solver_killed, m_total_collision_killed, m_total_explosion_killed, m_total_stretching_killed;
 
     std::vector<double> m_initialLengths;
+    int m_root_neighbour_count;
     RodClumpingForce* m_clumpingForce;
 };
 
