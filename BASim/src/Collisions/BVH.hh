@@ -77,6 +77,7 @@ private:
 
 void swap(BVH& a, BVH& b);
 
+template<typename BBoxFunctorT>
 class BVHBuilder
 {
 public:
@@ -88,7 +89,7 @@ public:
     {
     }
 
-    void build(GeometryBBoxFunctor& bboxes, BVH* bvh);
+    void build(BBoxFunctorT& bboxes, BVH* bvh);
 
 private:
     BBoxType presplit(const BBoxType& node_bbox, const BBoxType& kd_bbox);
@@ -129,10 +130,12 @@ void insert(BBoxType& bbox, const BBoxType& bbox2);
 
 BBoxType merge(const BBoxType& bbox1, const BBoxType& bbox2);
 
-uint32_t partition(GeometryBBoxFunctor& bboxes, const uint32_t begin, const uint32_t end, const uint32_t axis,
+template<typename BBoxFunctorT>
+uint32_t partition(BBoxFunctorT& bboxes, const uint32_t begin, const uint32_t end, const uint32_t axis,
         const Scalar pivot);
 
-BBoxType compute_bbox(GeometryBBoxFunctor& bboxes, const uint32_t begin, const uint32_t end);
+template<typename BBoxFunctorT>
+BBoxType compute_bbox(BBoxFunctorT& bboxes, const uint32_t begin, const uint32_t end);
 
 }
 

@@ -139,7 +139,7 @@ void CollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFi
 void CollisionDetector::buildBVH()
 {
     GeometryBBoxFunctor bboxfunctor(m_elements, m_geodata);
-    BVHBuilder bvh_builder;
+    BVHBuilder<GeometryBBoxFunctor> bvh_builder;
     bvh_builder.build(bboxfunctor, &m_bvh);
 }
 

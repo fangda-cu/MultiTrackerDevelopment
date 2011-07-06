@@ -11,7 +11,8 @@
 namespace BASim
 {
 
-void BVHBuilder::build(GeometryBBoxFunctor& bboxes, BVH* bvh)
+template<typename BBoxFunctorT>
+void BVHBuilder<BBoxFunctorT>::build(BBoxFunctorT& bboxes, BVH* bvh)
 {
     const uint32_t n = bboxes.size();
 
@@ -101,7 +102,8 @@ void BVHBuilder::build(GeometryBBoxFunctor& bboxes, BVH* bvh)
     }
 }
 
-BBoxType BVHBuilder::presplit(const BBoxType& node_bbox, const BBoxType& kd_bbox)
+template<typename BBoxFunctorT>
+BBoxType BVHBuilder<BBoxFunctorT>::presplit(const BBoxType& node_bbox, const BBoxType& kd_bbox)
 {
     int tests[3];
     for (uint32_t i = 0; i < 3; i++)
@@ -193,7 +195,8 @@ BBoxType merge(const BBoxType& bbox1, const BBoxType& bbox2)
     return bb;
 }
 
-uint32_t partition(GeometryBBoxFunctor& bboxes, const uint32_t begin, const uint32_t end, const uint32_t axis,
+template<typename BBoxFunctorT>
+uint32_t partition(BBoxFunctorT& bboxes, const uint32_t begin, const uint32_t end, const uint32_t axis,
         const Scalar pivot)
 {
     uint32_t i = begin;
@@ -214,7 +217,8 @@ uint32_t partition(GeometryBBoxFunctor& bboxes, const uint32_t begin, const uint
         return i;
 }
 
-BBoxType compute_bbox(GeometryBBoxFunctor& bboxes, const uint32_t begin, const uint32_t end)
+template<typename BBoxFunctorT>
+BBoxType compute_bbox(BBoxFunctorT& bboxes, const uint32_t begin, const uint32_t end)
 {
     BBoxType node_bbox;
     for (uint32_t i = begin; i < end; i++)
@@ -222,5 +226,8 @@ BBoxType compute_bbox(GeometryBBoxFunctor& bboxes, const uint32_t begin, const u
 
     return node_bbox;
 }
+
+// Explicit template instantiations
+template class BVHBuilder<GeometryBBoxFunctor>;
 
 }

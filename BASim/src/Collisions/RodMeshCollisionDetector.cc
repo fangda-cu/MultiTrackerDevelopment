@@ -44,14 +44,14 @@ RodMeshCollisionDetector::~RodMeshCollisionDetector()
 void RodMeshCollisionDetector::build_rod_BVH()
 {
     GeometryBBoxFunctor bboxfunctor(m_rod_elements, m_geodata);
-    BVHBuilder bvh_builder;
+    BVHBuilder<GeometryBBoxFunctor> bvh_builder;
     bvh_builder.build(bboxfunctor, &m_rod_bvh);
 }
 
 void RodMeshCollisionDetector::build_mesh_BVH()
 {
     GeometryBBoxFunctor bboxfunctor(m_mesh_elements, m_geodata);
-    BVHBuilder bvh_builder;
+    BVHBuilder<GeometryBBoxFunctor> bvh_builder;
     bvh_builder.build(bboxfunctor, &m_mesh_bvh);
 }
 
