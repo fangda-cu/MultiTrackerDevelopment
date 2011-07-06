@@ -178,6 +178,24 @@ public:
         }
     }
 
+    virtual void pointStencilAdd(int start, const Eigen::Matrix<Scalar, 3, 3>& localJ)
+    {
+        static const int size = 3;
+
+        const int n = MatrixBase::m_cols;
+        start += n * m_ku;
+
+        for (int i = 0; i < size; ++i)
+        {
+            for (int j = 0; j < size; ++j)
+            {
+                m_data[start] += localJ(i, j);
+                start += 1 - n;
+            }
+            start += size * n + n - size;
+        }
+    }
+
     virtual int scale(Scalar val)
     {
         for (int i = 0; i < m_size; ++i)

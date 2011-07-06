@@ -203,7 +203,7 @@ void RodTwistingForceSym::globalForce(VecXd& force)
     {
         localForce(f, m_stencil.handle());
         const int fi = m_stencil.firstIndex();
-        for (int j = 0; j < f.size(); ++j)
+        for (int j = 0; j < 11; ++j)
             force(fi + j) += f(j);
     }
 }

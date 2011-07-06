@@ -119,33 +119,19 @@ Scalar RodStretchingForce::elementEnergy(const edge_handle& eh)
 
 void RodStretchingForce::globalForce(VecXd& force)
 {
-    IndexArray indices;
     ElementForce localForce;
-    SpringDofStruct dofs;
 
-    iterator end = m_stencil.end();
-
-    int q = 0;
-
-    //VecXd force1 = force;
-
+    const iterator end = m_stencil.end();
     for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil)
     {
-        edge_handle& eh = m_stencil.handle();
-        //elementForce(localForce, eh);
-        gatherDofs(dofs, eh);
-        elementForce(localForce, dofs);
-        m_stencil.indices(indices);
-        for (int i = 0; i < indices.size(); ++i)
-            force(indices(i)) += localForce(i);
+        elementForce(localForce, m_stencil.handle());
 
-        if (q == 0)
-        {
-            //			std::cout << localForce << " stretch force 0 \n";
-            //			std::cout << dofs.stiffness << " " << dofs.currLength  << " " << dofs.restLength  << " " << dofs.tangent  << "\n";
+        const int fi = m_stencil.firstIndex();
+        for (int i = 0; i < 3; ++i)
+            force(fi + i) += localForce(i);
+        for (int i = 3; i < 6; ++i)
+            force(fi + 1 + i) += localForce(i);
 
-        }
-        q++;
 #ifdef TEST_ROD_STRETCHING
         testForce(localForce, eh);
 #endif // TEST_ROD_STRETCHING
@@ -167,15 +153,15 @@ void RodStretchingForce::elementForce(ElementForce& force, const SpringDofStruct
 
 void RodStretchingForce::elementForce(ElementForce& force, const edge_handle& eh)
 {
-    Scalar ks = getKs(eh);
+    const Scalar ks = getKs(eh);
     if (ks == 0.0)
         return;
 
-    Scalar refLength = getRefLength(eh);
-    Scalar len = m_rod.getEdgeLength(eh);
+    const Scalar refLength = getRefLength(eh);
+    const Scalar len = m_rod.getEdgeLength(eh);
     const Vec3d& tangent = m_rod.getTangent(eh);
 
-    Vec3d f = ks * (len / refLength - 1.0) * tangent;
+    const Vec3d f = ks * (len / refLength - 1.0) * tangent;
     force.segment<3> (0) = f;
     force.segment<3> (3) = -f;
 }
@@ -193,7 +179,6 @@ void RodStretchingForce::globalJacobian(int baseidx, Scalar scale, MatrixBase& J
 #ifdef TEST_ROD_STRETCHING
         testJacobian(localJ, eh);
 #endif // TEST_ROD_STRETCHING
-
         localJ *= scale;
         Jacobian.edgeStencilAdd(m_stencil.firstIndex() + baseidx, localJ);
     }

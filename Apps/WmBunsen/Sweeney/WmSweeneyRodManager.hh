@@ -51,43 +51,44 @@ public:
                  const BASim::Vec3d i_gravity = BASim::Vec3d( 0.0, -980.0, 0.0 ),                 
                  const BASim::GroomingTimeStepper::Method i_solverType = BASim::GroomingTimeStepper::IMPL_EULER );
 
-    void setUseKineticDamping ( bool i_useKinecticDamping );
+    void setUseKineticDamping(bool i_useKinecticDamping);
 
-    void initialiseSimulation( const double i_timeStep, const double i_startTime, BASim::PerformanceTuningParameters perfParams,
-                               double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters );
+    void initialiseSimulation(const double i_timeStep, const double i_startTime, BASim::PerformanceTuningParameters perfParams,
+            double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters);
 
-    void updateSolverSettings( double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters, double i_penaltyStiffness);
+    void updateSolverSettings(double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters,
+            double i_penaltyStiffness);
 
+    void setClumpingParameters(const double charge, const double power) const;
 
-    void addCollisionMesh( BASim::TriangleMesh* i_triangleMesh, 
-                           BASim::LevelSet* i_levelSet,
-                           WmFigMeshController* i_figMeshController );
+    void addCollisionMesh(BASim::TriangleMesh* i_triangleMesh, BASim::LevelSet* i_levelSet,
+            WmFigMeshController* i_figMeshController);
 
     void takeStep();
-    
+
     void drawAllRods();
-    
-    void setRodsDrawVelocity( const bool i_shouldDrawVelocity );
-    
+
+    void setRodsDrawVelocity(const bool i_shouldDrawVelocity);
+
     size_t numberOfRods()
     {
         return m_rods.size();
     }
-    
-    BASim::ElasticRod* rod( const size_t i_rodIndex )
+
+    BASim::ElasticRod* rod(const size_t i_rodIndex)
     {
-        return m_rods[ i_rodIndex ];
+        return m_rods[i_rodIndex];
     }
 
-    std::vector< BASim::ElasticRod* > m_rods;
-  
+    std::vector<BASim::ElasticRod*> m_rods;
+
 private:
     BASim::BAGroomingStepper* m_bridsonStepper;
-    std::vector< BASim::GroomingTimeStepper* > m_rodTimeSteppers;
-    std::vector< BASim::RodRenderer* > m_rodRenderers;
-    std::vector< BASim::TriangleMesh* > m_triangleMeshes;
-    std::vector< BASim::LevelSet* > m_levelSets;
-    std::vector< BASim::ScriptingController* > m_scriptingControllers;    
+    std::vector<BASim::GroomingTimeStepper*> m_rodTimeSteppers;
+    std::vector<BASim::RodRenderer*> m_rodRenderers;
+    std::vector<BASim::TriangleMesh*> m_triangleMeshes;
+    std::vector<BASim::LevelSet*> m_levelSets;
+    std::vector<BASim::ScriptingController*> m_scriptingControllers;
 };
 
 #endif

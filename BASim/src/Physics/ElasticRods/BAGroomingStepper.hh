@@ -27,6 +27,7 @@
 #include "RodPenaltyForce.hh"
 #include "PerformanceTuningParameters.hh"
 #include "../../Util/TextLog.hh"
+#include "RodClumpingForce.hh"
 #else
 #include "BASim/src/Core/ScriptingController.hh"
 #include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
@@ -41,6 +42,7 @@
 #include "Apps/BASimulator/Problems/ProblemBase.hh"
 #include "BASim/src/Core/StatTracker.hh"
 #include "BASim/src/Physics/ElasticRods/MinimalTriangleMeshBackup.hh"
+#include "RodClumpingForce.hh"
 #endif
 
 #ifdef HAVE_OPENMP
@@ -81,12 +83,9 @@ public:
      */
     // Parameter num_threads = -1 will cause the number of threads to be set equal to the number of available processors.
     BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
-            std::vector<ScriptingController*>& scripting_controllers, std::vector<GroomingTimeStepper*>& steppers, 
-	    const double& dt,
-	    const double time,
-            const int num_threads,
-            const PerformanceTuningParameters perf_param,
-            std::vector<LevelSet*>& levelSets );
+            std::vector<ScriptingController*>& scripting_controllers, std::vector<GroomingTimeStepper*>& steppers,
+            const double& dt, const double time, const int num_threads, const PerformanceTuningParameters perf_param,
+            std::vector<LevelSet*>& levelSets);
 
     /**
      * Destructor.
@@ -112,12 +111,12 @@ public:
      *  Enable or disable self collisions between all rods
      */
     void skipRodRodCollisions(bool skipRodRodCollisions);
- 
-    void setUseKineticDamping(bool useKineticDamping) 
+
+    void setUseKineticDamping(bool useKineticDamping)
     {
         m_useKineticDamping = useKineticDamping;
     }
-  
+
     void setStopOnRodError(bool stopOnRodError)
     {
         if (!m_stopOnRodError && stopOnRodError)
@@ -136,10 +135,12 @@ public:
 
     void removeRod(int rodIdx);
 
-    void setPenaltyStiffness( Scalar newStiffness )
+    void setPenaltyStiffness(Scalar newStiffness)
     {
-	m_perf_param.m_implicit_stiffness = newStiffness;
+        m_perf_param.m_implicit_stiffness = newStiffness;
     }
+
+    void setClumpingParameters(const double charge, const double power);
 
 private:
     /**
@@ -334,6 +335,9 @@ private:
     void killTheRod(int rod);
     void computeForces(std::vector<VecXd*> Forces, const RodSelectionType& selected_rods);
 
+    // For each rod, find the (numberOfNeighbours) closest at the root and record that set in the rod
+    void findRootNeighbours(const int numberOfNeighbours);
+
     /*
      * Member variables
      */
@@ -469,7 +473,7 @@ private:
     int m_total_solver_killed, m_total_collision_killed, m_total_explosion_killed, m_total_stretching_killed;
 
     std::vector<double> m_initialLengths;
-
+    RodClumpingForce* m_clumpingForce;
 };
 
 } // namespace BASim

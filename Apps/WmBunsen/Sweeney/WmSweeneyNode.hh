@@ -85,6 +85,8 @@ public:
     static MObject ia_mirrorXCurl;
     static MObject ia_mirrorXRotation;
     static MObject ia_rodDamping;
+    static MObject ia_rodCharge;
+    static MObject ia_rodPower;
 
     // Collision meshes
     static MObject ia_collisionMeshes;
@@ -178,7 +180,8 @@ private:
     bool m_mirrorXCurl;
     bool m_mirrorXRotation;
     bool m_rodDamping;
-
+    double m_rodCharge;
+    double m_rodPower;
     
     
     WmSweeneyRodManager* m_rodManager;
