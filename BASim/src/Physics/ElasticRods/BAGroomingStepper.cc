@@ -2972,7 +2972,7 @@ void BAGroomingStepper::updateRodsNeighbours()
         for (int j = 0; j < m_rods[*rod]->nv(); ++j)
         {
             const RodPointDistance<BVH> distance(m_xn, bvh, *rod, m_rods[*rod]->getVertex(j));
-            const size_t numberFound = knn.Run(distance, -1.0f, 1.0, m_root_neighbour_count);
+            const size_t numberFound = knn.Run(distance, -1.0f, searchDistance, m_root_neighbour_count);
             for (size_t i = 0; i < numberFound; i++)
             {
                 int foundGlobalIdx = knn.TopResult().m_node;
