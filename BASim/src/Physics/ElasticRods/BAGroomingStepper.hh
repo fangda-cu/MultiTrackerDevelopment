@@ -336,7 +336,8 @@ private:
     void computeForces(std::vector<VecXd*> Forces, const RodSelectionType& selected_rods);
 
     // For each rod, find the (numberOfNeighbours) closest at the root and record that set in the rod
-    void findRootNeighbours(const int numberOfNeighbours);
+    void activateClumpingForce();
+    void updateRodsNeighbours();
 
     /*
      * Member variables

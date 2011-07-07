@@ -56,10 +56,10 @@ protected:
 
     // Update the BVH tree starting from node, taking into account the evolution during the time step,
     // i.e. insert m_geodata.m_points+m_time_step*m_geodata.m_velocities.
-    void updateBoundingBox(BVH& bvh, const std::vector<const TopologicalElement*>& elements, BVHNode& node);
+    void updateBoundingBox(BVH& bvh, const std::vector<const TopologicalElement*>& elements, BVHNodeType& node);
 
     // Collision detection
-    virtual void computeCollisions(const BVHNode& node_a, const BVHNode& node_b) = 0;
+    virtual void computeCollisions(const BVHNodeType& node_a, const BVHNodeType& node_b) = 0;
 
     // Depending on m_collision_filter, determine and appends the relevant collision type between topological elements to m_collisions_list
     bool appendCollision(const TopologicalElement* obj_a, const TopologicalElement* obj_b);
@@ -75,12 +75,12 @@ protected:
 
     class BVHParallelizer
     {
-        const BVHNode& m_node_a;
-        const BVHNode& m_node_b;
+        const BVHNodeType& m_node_a;
+        const BVHNodeType& m_node_b;
         CollisionDetectorBase* m_coldet;
 
     public:
-        BVHParallelizer(CollisionDetectorBase* coldet, const BVHNode& node_a, const BVHNode& node_b) :
+        BVHParallelizer(CollisionDetectorBase* coldet, const BVHNodeType& node_a, const BVHNodeType& node_b) :
             m_coldet(coldet), m_node_a(node_a), m_node_b(node_b)
         {
             // std::cerr << "Constructing BVHParallelizer" << std::endl;

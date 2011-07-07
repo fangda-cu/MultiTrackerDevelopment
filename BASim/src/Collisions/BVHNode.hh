@@ -6,12 +6,11 @@
 namespace BASim
 {
 
-typedef double Scalar;
-
+template<typename BBoxT>
 struct BVHNode
 {
-    typedef BoundingBox<Scalar> BBoxType;
-    typedef BBoxType::PointType PointType;
+    typedef BBoxT BBoxType;
+    typedef typename BBoxT::PointType PointType;
 
     BVHNode() :
         m_end(uint32_t(-1))
@@ -66,7 +65,6 @@ struct BVHNode
     BBoxType m_bbox; ///< the node's bbox
     uint32_t m_index; ///< if an INNER node: the node's first child index, if LEAF: the leaf begin index
     uint32_t m_end; ///< if an INNER node: -1, if a LEAF: the leaf end index
-
 };
 
 }

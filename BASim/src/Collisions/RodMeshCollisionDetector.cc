@@ -44,14 +44,14 @@ RodMeshCollisionDetector::~RodMeshCollisionDetector()
 void RodMeshCollisionDetector::build_rod_BVH()
 {
     GeometryBBoxFunctor bboxfunctor(m_rod_elements, m_geodata);
-    BVHBuilder bvh_builder;
+    BVHBuilder<GeometryBBoxFunctor> bvh_builder;
     bvh_builder.build(bboxfunctor, &m_rod_bvh);
 }
 
 void RodMeshCollisionDetector::build_mesh_BVH()
 {
     GeometryBBoxFunctor bboxfunctor(m_mesh_elements, m_geodata);
-    BVHBuilder bvh_builder;
+    BVHBuilder<GeometryBBoxFunctor> bvh_builder;
     bvh_builder.build(bboxfunctor, &m_mesh_bvh);
 }
 
@@ -62,11 +62,11 @@ void RodMeshCollisionDetector::getCollisions(std::list<Collision*>& cllsns, Coll
 
     std::vector<BVHParallelizer*> steppers;
 
-    BVHNode& rod_root = m_rod_bvh.GetNode(0);
+    BVHNodeType& rod_root = m_rod_bvh.GetNode(0);
     DebugStream(g_log, "") << "Updating rods bounding box\n";
     updateBoundingBox(m_rod_bvh, m_rod_elements, rod_root);
 
-    BVHNode& mesh_root = m_mesh_bvh.GetNode(0);
+    BVHNodeType& mesh_root = m_mesh_bvh.GetNode(0);
     if (update_mesh_bbox)
     {
         DebugStream(g_log, "") << "Updating mesh bounding box\n";
@@ -79,10 +79,10 @@ void RodMeshCollisionDetector::getCollisions(std::list<Collision*>& cllsns, Coll
         return;
     }
 
-    BVHNode& mesh_h = m_mesh_bvh.GetNode(mesh_root.ChildIndex());
-    BVHNode& mesh_g = m_mesh_bvh.GetNode(mesh_root.ChildIndex() + 1);
-    BVHNode& rod_h = m_rod_bvh.GetNode(rod_root.ChildIndex());
-    BVHNode& rod_g = m_rod_bvh.GetNode(rod_root.ChildIndex() + 1);
+    BVHNodeType& mesh_h = m_mesh_bvh.GetNode(mesh_root.ChildIndex());
+    BVHNodeType& mesh_g = m_mesh_bvh.GetNode(mesh_root.ChildIndex() + 1);
+    BVHNodeType& rod_h = m_rod_bvh.GetNode(rod_root.ChildIndex());
+    BVHNodeType& rod_g = m_rod_bvh.GetNode(rod_root.ChildIndex() + 1);
 
     if (mesh_h.IsLeaf() || mesh_g.IsLeaf() || rod_h.IsLeaf() || rod_g.IsLeaf()) // Lazy!
     {
@@ -95,14 +95,14 @@ void RodMeshCollisionDetector::getCollisions(std::list<Collision*>& cllsns, Coll
     }
 
     // else
-    BVHNode& mesh_hh = m_mesh_bvh.GetNode(mesh_h.ChildIndex());
-    BVHNode& mesh_hg = m_mesh_bvh.GetNode(mesh_h.ChildIndex() + 1);
-    BVHNode& mesh_gh = m_mesh_bvh.GetNode(mesh_g.ChildIndex());
-    BVHNode& mesh_gg = m_mesh_bvh.GetNode(mesh_g.ChildIndex() + 1);
-    BVHNode& rod_hh = m_rod_bvh.GetNode(rod_h.ChildIndex());
-    BVHNode& rod_hg = m_rod_bvh.GetNode(rod_h.ChildIndex() + 1);
-    BVHNode& rod_gh = m_rod_bvh.GetNode(rod_g.ChildIndex());
-    BVHNode& rod_gg = m_rod_bvh.GetNode(rod_g.ChildIndex() + 1);
+    BVHNodeType& mesh_hh = m_mesh_bvh.GetNode(mesh_h.ChildIndex());
+    BVHNodeType& mesh_hg = m_mesh_bvh.GetNode(mesh_h.ChildIndex() + 1);
+    BVHNodeType& mesh_gh = m_mesh_bvh.GetNode(mesh_g.ChildIndex());
+    BVHNodeType& mesh_gg = m_mesh_bvh.GetNode(mesh_g.ChildIndex() + 1);
+    BVHNodeType& rod_hh = m_rod_bvh.GetNode(rod_h.ChildIndex());
+    BVHNodeType& rod_hg = m_rod_bvh.GetNode(rod_h.ChildIndex() + 1);
+    BVHNodeType& rod_gh = m_rod_bvh.GetNode(rod_g.ChildIndex());
+    BVHNodeType& rod_gg = m_rod_bvh.GetNode(rod_g.ChildIndex() + 1);
 
     steppers.push_back(new BVHParallelizer(this, mesh_hh, rod_hh));
     steppers.push_back(new BVHParallelizer(this, mesh_hg, rod_hh));
@@ -126,7 +126,7 @@ void RodMeshCollisionDetector::getCollisions(std::list<Collision*>& cllsns, Coll
         delete *i;
 }
 
-void RodMeshCollisionDetector::computeCollisions(const BVHNode& mesh_node, const BVHNode& rod_node)
+void RodMeshCollisionDetector::computeCollisions(const BVHNodeType& mesh_node, const BVHNodeType& rod_node)
 {
     // If the bounding volumes do not overlap, there are no possible collisions between their objects
     if (!Intersect(mesh_node.BBox(), rod_node.BBox()))

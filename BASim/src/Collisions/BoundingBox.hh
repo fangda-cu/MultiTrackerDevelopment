@@ -18,32 +18,39 @@ namespace BASim
 
 typedef unsigned int uint;
 
-template<typename T>
-Eigen::Matrix<T, 3, 1> min(const Eigen::Matrix<T, 3, 1>& a, const Eigen::Matrix<T, 3, 1>& b)
+template<typename ScalarT>
+Eigen::Matrix<ScalarT, 3, 1> min(const Eigen::Matrix<ScalarT, 3, 1>& a, const Eigen::Matrix<ScalarT, 3, 1>& b)
 {
-    return Eigen::Matrix<T, 3, 1>(std::min<T>(a[0], b[0]), std::min<T>(a[1], b[1]), std::min<T>(a[2], b[2]));
+    return Eigen::Matrix<ScalarT, 3, 1>(std::min(a[0], b[0]), std::min(a[1], b[1]), std::min(a[2], b[2]));
 }
 
-template<typename T>
-Eigen::Matrix<T, 3, 1> max(const Eigen::Matrix<T, 3, 1>& a, const Eigen::Matrix<T, 3, 1>& b)
+template<typename ScalarT>
+Eigen::Matrix<ScalarT, 3, 1> max(const Eigen::Matrix<ScalarT, 3, 1>& a, const Eigen::Matrix<ScalarT, 3, 1>& b)
 {
-    return Eigen::Matrix<T, 3, 1>(std::max<T>(a[0], b[0]), std::max<T>(a[1], b[1]), std::max<T>(a[2], b[2]));
+    return Eigen::Matrix<ScalarT, 3, 1>(std::max(a[0], b[0]), std::max(a[1], b[1]), std::max(a[2], b[2]));
 }
 
-template<typename T>
+template<typename ScalarT>
 struct BoundingBox
 {
-    typedef Eigen::Matrix<T, 3, 1> PointType;
+    typedef Eigen::Matrix<ScalarT, 3, 1> PointType;
     PointType min;
     PointType max;
 
     BoundingBox() :
-        min(std::numeric_limits<T>::max(), std::numeric_limits<T>::max(), std::numeric_limits<T>::max()),
-                max(-std::numeric_limits<T>::max(), -std::numeric_limits<T>::max(), -std::numeric_limits<T>::max())
+                min(std::numeric_limits<ScalarT>::max(), std::numeric_limits<ScalarT>::max(),
+                        std::numeric_limits<ScalarT>::max()),
+                max(-std::numeric_limits<ScalarT>::max(), -std::numeric_limits<ScalarT>::max(),
+                        -std::numeric_limits<ScalarT>::max())
     {
     }
 
-    BoundingBox(T minx, T miny, T minz, T maxx, T maxy, T maxz) :
+    explicit BoundingBox(PointType point) :
+        min(point), max(point)
+    {
+    }
+
+    BoundingBox(ScalarT minx, ScalarT miny, ScalarT minz, ScalarT maxx, ScalarT maxy, ScalarT maxz) :
         min(minx, miny, minz), max(maxx, maxy, maxz)
     {
     }
@@ -70,7 +77,7 @@ struct BoundingBox
     }
 
     // Expand the box to contain the given sphere
-    inline void Insert(const PointType& p, const T& radius)
+    inline void Insert(const PointType& p, const ScalarT& radius)
     {
         min[0] = std::min(min[0], p[0] - radius);
         min[1] = std::min(min[1], p[1] - radius);
@@ -87,14 +94,14 @@ struct BoundingBox
         Insert(box.max);
     }
 
-    T Volume() const
+    ScalarT Volume() const
     {
         return (max[0] - min[0]) * (max[1] - min[1]) * (max[2] - min[2]);
     }
 };
 
-template<typename T>
-bool Intersect(const BoundingBox<T>& bbox_a, const BoundingBox<T>& bbox_b)
+template<typename ScalarT>
+bool Intersect(const BoundingBox<ScalarT>& bbox_a, const BoundingBox<ScalarT>& bbox_b)
 {
     if ((bbox_a.max[0] < bbox_b.min[0]) || (bbox_b.max[0] < bbox_a.min[0]) || (bbox_a.max[1] < bbox_b.min[1]) || (bbox_b.max[1]
             < bbox_a.min[1]) || (bbox_a.max[2] < bbox_b.min[2]) || (bbox_b.max[2] < bbox_a.min[2]))

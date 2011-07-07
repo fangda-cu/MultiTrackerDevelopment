@@ -42,7 +42,7 @@ public:
 
     void setDistance(Scalar dist)
     {
-        rho2 = dist;
+        rho2 = dist*dist;
     }
 
     const double getCharge() const
@@ -57,7 +57,7 @@ public:
 
     const double getDistance() const
     {
-        return rho2;
+        return sqrt(rho2);
     }
 
 private:

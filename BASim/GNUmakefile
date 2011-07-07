@@ -6,6 +6,7 @@ include /vol/bob/make/head.mk
 ##############################################################################
 
 WITHKITS +=  ext/boost/tags/boost-1_41_0-1
+WITHKITS += code/PantaRay/work/jaubry-trunk
 
 IPATHS 	+= -I$(MKLROOT)/include 
 # This is so that the library can access a header in BASimulator app. Nasty, but that's how the code it came
