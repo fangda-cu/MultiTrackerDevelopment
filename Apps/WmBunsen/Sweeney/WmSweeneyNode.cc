@@ -267,7 +267,7 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 					// Check if rod is in rest state
 					cout << "WmSweeneyNode::check for rod update::Rod Idx: " << i <<
                             " update rod: " << update_rod << endl;
-					current_rod->setIsInRestState( !update_all_rods );
+					current_rod->setIsInRestState( update_rod );
 				}
 
 				 updateCollisionMeshes( i_dataBlock );
@@ -556,7 +556,7 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput(MDataBlock& i_dataBlock)
 
         cout << "initialiseRodFromBarberShopInput() - check for root frames for " << inputStrandNumber << endl;
 
-       if ( m_strandRootFrames.length() != 0 )
+       if ( false) //m_strandRootFrames.length() != 0 )
         {
 
         	BASim::Vec3d m1 = Vec3d(  m_strandRootFrames[ 3*inputStrandNumber ].x,
@@ -1364,3 +1364,86 @@ void* WmSweeneyNode::creator()
 
     return MS::kSuccess;
 }
+
+void WmSweeneyNode::getSurfaceTangent(BASim::Vec3d& surface_tan, const BASim::Vec3d strand_tan)
+{
+    assert(m_scalpMesh != NULL);
+    // find closest point on scalp to vertex along first edge of the strand
+    // MStatus     getClosestPoint (const MPoint &toThisPoint, MPoint &theClosestPoint, MSpace::Space space=MSpace::kObject, int *closestPolygon=NULL) cons
+    // create vector from root closest point and normalize
+    // use cross product of this "tangent" vector with the strand tangent as the new material frame m1 vector
+}
+
+void WmSweeneyNode::locateScalpMesh()
+{
+    MStatus status;
+    MPlugArray connectedPlugs;
+    MPlug currentPlug;
+
+    MFnDagNode sweeneyNode = MFnDagNode(thisMObject());
+    // grab strand array plug from sweeney
+    currentPlug = sweeneyNode.findPlug("strandVertices", true, &status);
+    if (!status)
+    {
+        status.perror("cannot locate plug strandVertices for WmSweeneyNode");
+        return;
+    }
+    // grab connected strand array plug from barber shop
+    bool foundPlugs = currentPlug.connectedTo(connectedPlugs, true, false, &status);
+    if (!status || !foundPlugs)
+    {
+        status.perror("cannot locate wmBarbFurSetNode plug strandVertices->WmSweeneyNode");
+        return;
+    }
+    // grab furset node
+    MFnDagNode fursetNode = MFnDagNode(connectedPlugs[0].node(&status));
+    if (!status)
+    {
+        status.perror("cannot locate wmBarbFurSetNode parent node from wmBarbFurSetNode strandVertices plug");
+        return;
+    }
+    // grab regrow plug from fur set
+    currentPlug = fursetNode.findPlug("regrow", true, &status);
+    if (!status)
+    {
+        status.perror("cannot locate plug regrow from wmBarbFurSetNode");
+        return;
+    }
+    // grab connected regrow plug from subd node
+    foundPlugs = currentPlug.connectedTo(connectedPlugs, true, false, &status);
+    if (!status || !foundPlugs)
+    {
+        status.perror("cannot locate WmBarbSubdNode plug rebuild->WmBarbFurSetNode");
+        return;
+    }
+    // grab subd node node
+    MFnDagNode subdNode = MFnDagNode(connectedPlugs[0].node(&status));
+    if (!status)
+    {
+        status.perror("cannot locate WmBarbSubdNod parent node from WmBarbSubdNod rebuild plug");
+        return;
+    }
+    // grab inputMesh plug from subd node
+    currentPlug = subdNode.findPlug("inputMesh", true, &status);
+    if (!status)
+    {
+        status.perror("cannot locate plug inputMesh from WmBarbSubdNode");
+        return;
+    }
+    // grab connected worldMesh plug from mesh
+    foundPlugs = currentPlug.connectedTo(connectedPlugs, true, false, &status);
+    if (!status || !foundPlugs)
+    {
+        status.perror("cannot locate mesh plug worldMesh->WmBarbSubdNode");
+        return;
+    }
+    // grab mesh node
+    MFnDagNode meshNode = MFnDagNode(connectedPlugs[0].node(&status));
+    if (!status)
+    {
+        status.perror("cannot locate mesh parent node from mesh worldMesh plug");
+        return;
+    }
+    m_scalpMesh = MFnMesh(meshNode.getPath());
+}
+

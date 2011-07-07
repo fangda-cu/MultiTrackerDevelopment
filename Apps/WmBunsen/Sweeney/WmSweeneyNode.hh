@@ -18,6 +18,7 @@
 #include <maya/MDataHandle.h>
 #include <maya/MColor.h>
 #include <maya/M3dView.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MFnTypedAttribute.h>
@@ -25,6 +26,7 @@
 #include <maya/MFnNurbsSurfaceData.h>
 #include <maya/MFnPointArrayData.h>
 #include <maya/MFnMatrixData.h>
+#include <maya/MFnMesh.h>
 #include <maya/MIOStream.h>
 #include <maya/MTime.h>
 #include <maya/MGlobal.h>
@@ -161,7 +163,9 @@ private:
     void updateStrandCurl( BASim::ElasticRod* current_rod,  bool& update_rod,
             BASim::Scalar curvature, BASim::Scalar torsion );
     void updateSolverSettings( MDataBlock &i_dataBlock );
-    
+    void getSurfaceTangent(BASim::Vec3d& surface_tan, const BASim::Vec3d strand_tan);
+    void locateScalpMesh();
+
     double m_currentTime;
     double m_previousTime;
     double m_startTime;
@@ -188,6 +192,7 @@ private:
     double m_rodClumpSeparation;
     
     WmSweeneyRodManager* m_rodManager;
+    MFnMesh m_scalpMesh;
     MVectorArray m_strandVertices;
     MVectorArray m_strandRootFrames;
     std::vector<double> m_strandLengths;
