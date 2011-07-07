@@ -95,9 +95,9 @@ bool CollisionDetectorBase::appendCollision(const TopologicalElement* elem_a, co
     }
 }
 
-void CollisionDetectorBase::updateBoundingBox(BVH& bvh, const std::vector<const TopologicalElement*>& elements, BVHNode& node)
+void CollisionDetectorBase::updateBoundingBox(BVH& bvh, const std::vector<const TopologicalElement*>& elements, BVHNodeType& node)
 {
-    BVHNode::BBoxType& bbox = node.BBox();
+    BVHNodeType::BBoxType& bbox = node.BBox();
     bbox.Reset();
     if (node.IsLeaf()) // The leaf's bounding box contains the whole trajectory of its object during this time step.
     {
@@ -123,10 +123,10 @@ void CollisionDetectorBase::updateBoundingBox(BVH& bvh, const std::vector<const 
     }
     else // Update the children, then this node's bounding box
     {
-        BVHNode& hansel = bvh.GetNode(node.ChildIndex());
+        BVHNodeType& hansel = bvh.GetNode(node.ChildIndex());
         updateBoundingBox(bvh, elements, hansel);
         bbox.Insert(hansel.BBox());
-        BVHNode& gretel = bvh.GetNode(node.ChildIndex() + 1);
+        BVHNodeType& gretel = bvh.GetNode(node.ChildIndex() + 1);
         updateBoundingBox(bvh, elements, gretel);
         bbox.Insert(gretel.BBox());
     }

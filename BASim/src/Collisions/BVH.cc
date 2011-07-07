@@ -26,7 +26,7 @@ void BVHBuilder<BBoxFunctorT>::build(BBoxFunctorT& bboxes, BVH* bvh)
                 node_bbox)); // node bbox
     }
 
-    std::vector<BVHNode>& nodes = bvh->GetNodeVector();
+    std::vector<BVHNodeType>& nodes = bvh->GetNodeVector();
     nodes.resize(1u);
 
     while (m_stack.empty() == false)
@@ -38,14 +38,14 @@ void BVHBuilder<BBoxFunctorT>::build(BBoxFunctorT& bboxes, BVH* bvh)
 
         if (node.m_end - node.m_begin <= m_max_leaf_size)
         {
-            nodes[node.m_node_index] = BVHNode(node_bbox, node.m_begin, node.m_end);
+            nodes[node.m_node_index] = BVHNodeType(node_bbox, node.m_begin, node.m_end);
             continue;
         }
         else
         {
             BBoxType kd_bbox = presplit(node_bbox, node.m_kd_bbox);
 
-            Vector_Type edge = kd_bbox.max - kd_bbox.min;
+            PointType edge = kd_bbox.max - kd_bbox.min;
 
             uint32_t split_dim = uint32_t(std::max_element(&edge[0], &edge[0] + 3) - &edge[0]);
 
@@ -76,7 +76,7 @@ void BVHBuilder<BBoxFunctorT>::build(BBoxFunctorT& bboxes, BVH* bvh)
 
             if (split_index == node.m_begin || split_index == node.m_end)
             {
-                nodes[node.m_node_index] = BVHNode(node_bbox, node.m_begin, node.m_end);
+                nodes[node.m_node_index] = BVHNodeType(node_bbox, node.m_begin, node.m_end);
 #ifndef NDEBUG
                 if (node.m_end - node.m_begin > 1000)
                     DebugStream(g_log, "") << "BVH leaf has " << node.m_end - node.m_begin << " elements\n";
@@ -87,7 +87,7 @@ void BVHBuilder<BBoxFunctorT>::build(BBoxFunctorT& bboxes, BVH* bvh)
             const uint32_t child_index = uint32_t(nodes.size());
             nodes.resize(nodes.size() + 2u);
 
-            nodes[node.m_node_index] = BVHNode(node_bbox, child_index);
+            nodes[node.m_node_index] = BVHNodeType(node_bbox, child_index);
 
             BBoxType right_bbox = node.m_kd_bbox;
             right_bbox.min[split_dim] = split_plane;
@@ -112,7 +112,7 @@ BBoxType BVHBuilder<BBoxFunctorT>::presplit(const BBoxType& node_bbox, const BBo
     BBoxType out_bbox = kd_bbox;
     while (tests[0] && tests[1] && tests[2])
     {
-        const Vector_Type edge = out_bbox.max - out_bbox.min;
+        const PointType edge = out_bbox.max - out_bbox.min;
         const uint32_t split_dim = uint32_t(std::max_element(&edge[0], &edge[0] + 3) - &edge[0]);
         const Scalar split_plane = (out_bbox.min[split_dim] + out_bbox.max[split_dim]) * 0.5;
 
@@ -196,8 +196,7 @@ BBoxType merge(const BBoxType& bbox1, const BBoxType& bbox2)
 }
 
 template<typename BBoxFunctorT>
-uint32_t partition(BBoxFunctorT& bboxes, const uint32_t begin, const uint32_t end, const uint32_t axis,
-        const Scalar pivot)
+uint32_t partition(BBoxFunctorT& bboxes, const uint32_t begin, const uint32_t end, const uint32_t axis, const Scalar pivot)
 {
     uint32_t i = begin;
     uint32_t j = end - 1;
@@ -228,6 +227,7 @@ BBoxType compute_bbox(BBoxFunctorT& bboxes, const uint32_t begin, const uint32_t
 }
 
 // Explicit template instantiations
-template class BVHBuilder<GeometryBBoxFunctor>;
+template class BVHBuilder<GeometryBBoxFunctor> ;
+template class BVHBuilder<SimplePointBBoxFunctor> ;
 
 }

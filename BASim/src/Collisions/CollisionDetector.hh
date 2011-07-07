@@ -31,7 +31,7 @@ public:
     void buildBVH();
 
 private:
-    void computeCollisions(const BVHNode& node_a, const BVHNode& node_b);
+    void computeCollisions(const BVHNodeType& node_a, const BVHNodeType& node_b);
 };
 
 }

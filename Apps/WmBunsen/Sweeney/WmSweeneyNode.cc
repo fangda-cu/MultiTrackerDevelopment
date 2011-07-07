@@ -265,8 +265,8 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 					     current_rod->getEdgeLength(2) << endl;*/
 
 					// Check if rod is in rest state
-					cout << "WmSweeneyNode::check for rod update::Rod Idx: " << i <<
-                            " update rod: " << update_rod << endl;
+//					cout << "WmSweeneyNode::check for rod update::Rod Idx: " << i <<
+//                            " update rod: " << update_rod << endl;
 					current_rod->setIsInRestState( !update_all_rods );
 				}
 

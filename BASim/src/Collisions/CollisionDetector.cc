@@ -35,7 +35,7 @@ void CollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFi
 
     std::vector<BVHParallelizer*> steppers;
 
-    BVHNode& root = m_bvh.GetNode(0);
+    BVHNodeType& root = m_bvh.GetNode(0);
     updateBoundingBox(m_bvh, m_elements, root);
 
     if (root.IsLeaf()) // Can't really call this a tree, can we?
@@ -45,8 +45,8 @@ void CollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFi
         return;
     }
 
-    BVHNode& h = m_bvh.GetNode(root.ChildIndex());
-    BVHNode& g = m_bvh.GetNode(root.ChildIndex() + 1);
+    BVHNodeType& h = m_bvh.GetNode(root.ChildIndex());
+    BVHNodeType& g = m_bvh.GetNode(root.ChildIndex() + 1);
 
     // If tree has depth 1, detect collisions at this level.
     if (h.IsLeaf() || g.IsLeaf())
@@ -59,10 +59,10 @@ void CollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFi
         return;
     }
 
-    BVHNode& hh = m_bvh.GetNode(h.ChildIndex());
-    BVHNode& hg = m_bvh.GetNode(h.ChildIndex() + 1);
-    BVHNode& gh = m_bvh.GetNode(g.ChildIndex());
-    BVHNode& gg = m_bvh.GetNode(g.ChildIndex() + 1);
+    BVHNodeType& hh = m_bvh.GetNode(h.ChildIndex());
+    BVHNodeType& hg = m_bvh.GetNode(h.ChildIndex() + 1);
+    BVHNodeType& gh = m_bvh.GetNode(g.ChildIndex());
+    BVHNodeType& gg = m_bvh.GetNode(g.ChildIndex() + 1);
 
     // If tree has depth 2, detect collisions at this level.
     if (hh.IsLeaf() || hg.IsLeaf() || gh.IsLeaf() || gg.IsLeaf())
@@ -83,14 +83,14 @@ void CollisionDetector::getCollisions(std::list<Collision*>& cllsns, CollisionFi
     }
 
     // If the tree is deep enough, launch recursive parallel collision detection from this level.
-    BVHNode& hhh = m_bvh.GetNode(hh.ChildIndex());
-    BVHNode& hhg = m_bvh.GetNode(hh.ChildIndex() + 1);
-    BVHNode& hgh = m_bvh.GetNode(hg.ChildIndex());
-    BVHNode& hgg = m_bvh.GetNode(hg.ChildIndex() + 1);
-    BVHNode& ghh = m_bvh.GetNode(gh.ChildIndex());
-    BVHNode& ghg = m_bvh.GetNode(gh.ChildIndex() + 1);
-    BVHNode& ggh = m_bvh.GetNode(gg.ChildIndex());
-    BVHNode& ggg = m_bvh.GetNode(gg.ChildIndex() + 1);
+    BVHNodeType& hhh = m_bvh.GetNode(hh.ChildIndex());
+    BVHNodeType& hhg = m_bvh.GetNode(hh.ChildIndex() + 1);
+    BVHNodeType& hgh = m_bvh.GetNode(hg.ChildIndex());
+    BVHNodeType& hgg = m_bvh.GetNode(hg.ChildIndex() + 1);
+    BVHNodeType& ghh = m_bvh.GetNode(gh.ChildIndex());
+    BVHNodeType& ghg = m_bvh.GetNode(gh.ChildIndex() + 1);
+    BVHNodeType& ggh = m_bvh.GetNode(gg.ChildIndex());
+    BVHNodeType& ggg = m_bvh.GetNode(gg.ChildIndex() + 1);
     steppers.reserve(36);
     steppers.push_back(new BVHParallelizer(this, hhh, hhh));
     steppers.push_back(new BVHParallelizer(this, hhh, hhg));
@@ -143,7 +143,7 @@ void CollisionDetector::buildBVH()
     bvh_builder.build(bboxfunctor, &m_bvh);
 }
 
-void CollisionDetector::computeCollisions(const BVHNode& node_a, const BVHNode& node_b)
+void CollisionDetector::computeCollisions(const BVHNodeType& node_a, const BVHNodeType& node_b)
 {
     // If the bounding volumes do not overlap, there are no possible collisions between their objects
     if (!Intersect(node_a.BBox(), node_b.BBox()))

@@ -20,10 +20,13 @@ namespace BASim
 {
 
 typedef BoundingBox<Scalar> BBoxType;
+typedef BVHNode<BBoxType> BVHNodeType;
 
 class BVH
 {
 public:
+    typedef BVHNodeType Node_Type; // for pantaray::kNN<BVH>
+
     /// empty constructor
     BVH()
     {
@@ -32,47 +35,47 @@ public:
     /// returns the size of this object in bytes
     size_t ByteSize() const
     {
-        return sizeof(BVHNode) * m_nodes.size() + sizeof(BVH);
+        return sizeof(BVHNodeType) * m_nodes.size() + sizeof(BVH);
     }
 
     /// get node vector
-    const std::vector<BVHNode>& GetNodeVector() const
+    const std::vector<BVHNodeType>& GetNodeVector() const
     {
         return m_nodes;
     }
 
     /// get node vector
-    std::vector<BVHNode>& GetNodeVector()
+    std::vector<BVHNodeType>& GetNodeVector()
     {
         return m_nodes;
     }
 
     /// get nodes pointer
-    const BVHNode* GetNodes() const
+    const BVHNodeType* GetNodes() const
     {
         return &m_nodes[0];
     }
 
     /// get nodes pointer
-    BVHNode* GetNodes()
+    BVHNodeType* GetNodes()
     {
         return &m_nodes[0];
     }
 
     /// get the i-th node
-    const BVHNode& GetNode(const uint32_t i) const
+    const BVHNodeType& GetNode(const uint32_t i) const
     {
         return m_nodes[i];
     }
 
     /// get the i-th node
-    BVHNode& GetNode(const uint32_t i)
+    BVHNodeType& GetNode(const uint32_t i)
     {
         return m_nodes[i];
     }
 
 private:
-    std::vector<BVHNode> m_nodes; ///< bvh nodes
+    std::vector<BVHNodeType> m_nodes; ///< bvh nodes
 };
 
 void swap(BVH& a, BVH& b);
@@ -81,7 +84,7 @@ template<typename BBoxFunctorT>
 class BVHBuilder
 {
 public:
-    typedef BVHNode::PointType Vector_Type;
+    typedef BBoxType::PointType PointType;
 
     /// empty constructor
     BVHBuilder() :
@@ -131,8 +134,7 @@ void insert(BBoxType& bbox, const BBoxType& bbox2);
 BBoxType merge(const BBoxType& bbox1, const BBoxType& bbox2);
 
 template<typename BBoxFunctorT>
-uint32_t partition(BBoxFunctorT& bboxes, const uint32_t begin, const uint32_t end, const uint32_t axis,
-        const Scalar pivot);
+uint32_t partition(BBoxFunctorT& bboxes, const uint32_t begin, const uint32_t end, const uint32_t axis, const Scalar pivot);
 
 template<typename BBoxFunctorT>
 BBoxType compute_bbox(BBoxFunctorT& bboxes, const uint32_t begin, const uint32_t end);

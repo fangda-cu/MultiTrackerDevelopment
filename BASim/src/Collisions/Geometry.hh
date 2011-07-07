@@ -294,7 +294,7 @@ public:
         return (uint32_t) m_objects.size();
     }
 
-    BoundingBox<Scalar> operator[](const uint32_t i)
+    BoundingBox<Scalar> operator[](const uint32_t i) const
     {
         return m_objects[i]->GetBBox(m_geodata);
     }
@@ -302,6 +302,33 @@ public:
     void swap(uint32_t i, uint32_t j)
     {
         std::swap(m_objects[i], m_objects[j]);
+    }
+};
+
+class SimplePointBBoxFunctor
+{
+    std::vector<int>& m_pointIndices;
+    const VecXd& m_xn;
+
+public:
+    SimplePointBBoxFunctor(std::vector<int>& pointIndices, const VecXd& xn) :
+        m_pointIndices(pointIndices), m_xn(xn)
+    {
+    }
+
+    uint32_t size() const
+    {
+        return (uint32_t) m_pointIndices.size();
+    }
+
+    BoundingBox<Scalar> operator[](const uint32_t i) const
+    {
+        return BoundingBox<Scalar> (m_xn.segment<3>(i));
+    }
+
+    void swap(uint32_t i, uint32_t j)
+    {
+        std::swap(m_pointIndices[i], m_pointIndices[j]);
     }
 };
 
