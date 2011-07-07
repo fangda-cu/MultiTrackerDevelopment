@@ -84,7 +84,7 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
         (*stepper)->setMaxIterations(m_perf_param.m_solver.m_max_iterations);
     }
 
-    g_log = new TextLog(std::cerr, MsgInfo::kDebug, true);
+    g_log = new TextLog(std::cerr, MsgInfo::kInfo, true);
     InfoStream(g_log, "") << "Started logging BAGroomingStepper\n";
 
 #ifndef NDEBUG
@@ -271,7 +271,7 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
     //keep_only.insert(33);
     //keep_only.insert(0);
     //keep_only.insert(6);
-    keep_only.insert(0);
+    keep_only.insert(2);
     //keep_only.insert(10);
     // keep_only.insert(189);
     //keep_only.insert(710);
