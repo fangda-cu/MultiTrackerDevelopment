@@ -7,12 +7,15 @@ WITHKITS += dev/Figaro/work/jaubry-work
 
 lib_h:
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C BASim USEMAYA=1 $@
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C strandSim USEMAYA=1 $@
 
 lib_d lib_o lib: lib_h
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C BASim USEMAYA=1 $@
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C strandSim USEMAYA=1 $@
 		
 lib_fresh lib_zap lib_clean lib_wipe:
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C BASim USEMAYA=1 $@		
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C strandSim USEMAYA=1 $@
 
 all:	lib
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator
