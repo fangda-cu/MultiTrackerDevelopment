@@ -9,6 +9,7 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
     editorTemplate -endLayout;
     
     editorTemplate -beginLayout "Rod Properties" -collapse 0;
+    	editorTemplate -addControl "preserveLengthVariation";
     	editorTemplate -addControl "length";        
     	editorTemplate -addControl "rodRadius";
 		editorTemplate -addControl "rodAspectRatio";

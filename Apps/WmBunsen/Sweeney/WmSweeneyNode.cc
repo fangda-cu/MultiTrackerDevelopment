@@ -31,7 +31,7 @@ using namespace BASim;
 /* static */ MObject WmSweeneyNode::ia_rodPitch;
 /* static */ MObject WmSweeneyNode::ia_fixCurlHeight;
 /* static */ MObject WmSweeneyNode::ia_curlInXFrame;
-/* static */ MObject WmSweeneyNode::ia_mirrorXRotation;
+/* static */ MObject WmSweeneyNode::ia_preserveLengthVariation;
 /* static */ MObject WmSweeneyNode::ia_rodDamping;
 /* static */MObject WmSweeneyNode::ia_rodCharge;
 /* static */MObject WmSweeneyNode::ia_rodPower;
@@ -123,7 +123,7 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 		m_rodPitch = i_dataBlock.inputValue( ia_rodPitch ).asDouble();
 		m_fixCurlHeight = i_dataBlock.inputValue( ia_fixCurlHeight ).asBool();
 		m_curlInXFrame = i_dataBlock.inputValue( ia_curlInXFrame ).asBool();
-		m_mirrorXRotation = i_dataBlock.inputValue( ia_mirrorXRotation ).asBool();
+		m_preserveLengthVariation = i_dataBlock.inputValue( ia_preserveLengthVariation ).asBool();
 		m_rodDamping = i_dataBlock.inputValue( ia_rodDamping ).asBool();
         m_rodCharge = i_dataBlock.inputValue(ia_rodCharge).asDouble();
         m_rodPower = i_dataBlock.inputValue(ia_rodPower).asDouble();
@@ -213,7 +213,7 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 					current_rod = m_rodManager->m_rods[i];
 
 					// get total rod length for scaling
-                    Scalar curl_length = ( 1.0 - m_curlStart )*m_length*m_strandLengths[i];
+                    Scalar curl_length = ( 1.0 - m_curlStart )*m_length;
                     int curl_resolution = ( 1.0 - m_curlStart )*m_verticesPerRod;
 
                     // Compute the rod helix properties
@@ -228,7 +228,7 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
                         // TODO(sainsley): rename m_curlCount m_curlCount
                         // rename m_length to m_height
                         Scalar radius = m_curlRadius;
-                        Scalar curl_height = m_length * m_strandLengths[i] / m_curlCount;
+                        Scalar curl_height = m_length / m_curlCount;
                         Scalar arc_length = sqrt( curl_height * curl_height +
                                 4 * M_PI * M_PI * radius * radius );
                         curl_length = arc_length * m_curlCount;
@@ -251,8 +251,13 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
                         curvature = m_curlTightness; // * m_length / m_verticesPerRod;
                     }
 
-                    Scalar total_length = m_curlStart*m_length * m_strandLengths[i]
-                                             + curl_length;
+                    // length before curl
+                    Scalar total_length = m_curlStart*m_length + curl_length;
+                    if ( m_preserveLengthVariation )
+                    {
+                        total_length *= m_strandLengths[i];
+                    }
+
 					// Update rod configuration
 					updateStrandLength( current_rod, update_rod, total_length );
 					updateStrandCurl( current_rod, update_rod, curvature, torsion );
@@ -260,9 +265,6 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 					updateStrandRotation( current_rod, update_rod );
 
 					current_rod->updateStiffness();
-					 /*if ( i == 0 )
-					     cout << "VERTEX MASS " << current_rod->getVertexMass(2) << " LEN " <<
-					     current_rod->getEdgeLength(2) << endl;*/
 
 					// Check if rod is in rest state
 					// cout << "WmSweeneyNode::check for rod update::Rod Idx: " << i <<
@@ -366,47 +368,18 @@ void WmSweeneyNode::updateStrandRotation( ElasticRod* current_rod, bool& update_
     // default rotation is 180 degrees
     Scalar theta = m_rodRotation * M_PI + M_PI;
 
-    if ( !m_mirrorXRotation  )
-    {
-            if ( current_rod->isLeftStrand() )
-            {
-                current_rod->setTheta( 0,  theta );
-                Scalar c = cos( current_rod->getTheta( 0 ) );
-                Scalar s = sin( current_rod->getTheta( 0 ) );
-                Vec3d u = current_rod->getReferenceDirector1( 0 );
-                Vec3d v = current_rod->getReferenceDirector2( 0 );
-                current_rod->setMaterial2( 0, -s * u + c * v );
-                theta -= M_PI;
-                current_rod->setTheta( 0,  theta );
-                c = cos( current_rod->getTheta( 0 ) );
-                s = sin( current_rod->getTheta( 0 ) );
-                current_rod->setMaterial1( 0,  c * u + s * v );
-            }
-            else {
-                current_rod->setTheta( 0,  theta );
-                Scalar c = cos( current_rod->getTheta( 0 ) );
-                Scalar s = sin( current_rod->getTheta( 0 ) );
-                const Vec3d& u = current_rod->getReferenceDirector1( 0 );
-                const Vec3d& v = current_rod->getReferenceDirector2( 0 );
-                current_rod->setMaterial1( 0,  c * u + s * v );
-                current_rod->setMaterial2( 0, -s * u + c * v );
-            }
-    }
-    else {
+    // check for update
+    if ( current_rod->getTheta( 0 ) ==  theta ) return;
 
-        // check for update
-        if ( current_rod->getTheta( 0 ) ==  theta ) return;
+    // set initial rotation
+    current_rod->setTheta( 0,  theta );
+    Scalar c = cos( current_rod->getTheta( 0 ) );
+    Scalar s = sin( current_rod->getTheta( 0 ) );
+    const Vec3d& u = current_rod->getReferenceDirector1( 0 );
+    const Vec3d& v = current_rod->getReferenceDirector2( 0 );
+    current_rod->setMaterial1( 0,  c * u + s * v );
+    current_rod->setMaterial2( 0, -s * u + c * v );
 
-        // set initial rotation
-        current_rod->setTheta( 0,  theta );
-        Scalar c = cos( current_rod->getTheta( 0 ) );
-        Scalar s = sin( current_rod->getTheta( 0 ) );
-        const Vec3d& u = current_rod->getReferenceDirector1( 0 );
-        const Vec3d& v = current_rod->getReferenceDirector2( 0 );
-        current_rod->setMaterial1( 0,  c * u + s * v );
-        current_rod->setMaterial2( 0, -s * u + c * v );
-
-    }
 }
 
 void WmSweeneyNode::updateStrandCurl( ElasticRod* current_rod, bool& update_rod,
@@ -677,9 +650,7 @@ void WmSweeneyNode::constructRodVertices( std::vector<BASim::Vec3d>& o_rodVertic
 
     MVector edge = i_direction;
 
-    //m_strandLengths.push_back(edge.length());
-    m_strandLengths.push_back(1.0);
-    //edge.normalize();
+    m_strandLengths.push_back(edge.length());
 
     cerr << "constructRodVertices(): m_length = " << m_length << endl;
     cerr << "constructRodVertices(): m_verticesPerRod = " << m_verticesPerRod << endl;
@@ -1082,13 +1053,13 @@ void* WmSweeneyNode::creator()
     status = attributeAffects( ia_fixCurlHeight, ca_rodPropertiesSync );
     if ( !status ) { status.perror( "attributeAffects ia_fixCurlHeight->ca_rodPropertiesSync" ); return status; }
 
-    addNumericAttribute( ia_curlInXFrame, "curlInXFrame", "mirxcur", MFnNumericData::kBoolean, true, true );
+    addNumericAttribute( ia_curlInXFrame, "curlInXFrame", "curinx", MFnNumericData::kBoolean, true, true );
     status = attributeAffects( ia_curlInXFrame, ca_rodPropertiesSync );
     if ( !status ) { status.perror( "attributeAffects ia_curlInXFrame->ca_rodPropertiesSync" ); return status; }
 
-    addNumericAttribute( ia_mirrorXRotation, "mirrorRotationInX", "mirxrot", MFnNumericData::kBoolean, true, true );
-    status = attributeAffects( ia_mirrorXRotation, ca_rodPropertiesSync );
-    if ( !status ) { status.perror( "attributeAffects ia_mirrorXRotation->ca_rodPropertiesSync" ); return status; }
+    addNumericAttribute( ia_preserveLengthVariation, "preserveLengthVariation", "plenvar", MFnNumericData::kBoolean, true, true );
+    status = attributeAffects( ia_preserveLengthVariation, ca_rodPropertiesSync );
+    if ( !status ) { status.perror( "attributeAffects ia_preserveLengthVariation->ca_rodPropertiesSync" ); return status; }
 
     addNumericAttribute( ia_rodDamping, "rodDamping", "roddamp", MFnNumericData::kBoolean, true, true );
     status = attributeAffects( ia_rodDamping, ca_rodPropertiesSync );

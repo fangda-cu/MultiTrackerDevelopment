@@ -87,7 +87,7 @@ public:
     static MObject ia_rodPitch;
     static MObject ia_fixCurlHeight;
     static MObject ia_curlInXFrame;
-    static MObject ia_mirrorXRotation;
+    static MObject ia_preserveLengthVariation;
     static MObject ia_rodDamping;
     static MObject ia_rodCharge;
     static MObject ia_rodPower;
@@ -186,7 +186,7 @@ private:
     int m_rodsPerClump;
     bool m_fixCurlHeight;
     bool m_curlInXFrame;
-    bool m_mirrorXRotation;
+    bool m_preserveLengthVariation;
     bool m_rodDamping;
     double m_rodCharge;
     double m_rodPower;
