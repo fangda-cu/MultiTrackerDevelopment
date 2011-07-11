@@ -337,6 +337,7 @@ private:
 
     // For each rod, find the (numberOfNeighbours) closest at the root and record that set in the rod
     void activateClumpingForce();
+    void selectClumps();
     void updateRodsNeighbours();
 
     /*
@@ -474,7 +475,7 @@ private:
     int m_total_solver_killed, m_total_collision_killed, m_total_explosion_killed, m_total_stretching_killed;
 
     std::vector<double> m_initialLengths;
-    int m_root_neighbour_count;
+    int m_rods_per_clump;
     RodClumpingForce* m_clumpingForce;
 };
 
