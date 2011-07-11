@@ -18,13 +18,33 @@ ElasticStrand::ElasticStrand(VecXd& dofs, ParametersType parameters) :
     // TODO: something with parameters
 
     resizeInternals();
-    storePreviousTangents();
+    storeInitialFrames();
     updateForceCaches();
 }
 
 ElasticStrand::~ElasticStrand()
 {
     // TODO Auto-generated destructor stub
+}
+
+void ElasticStrand::storeInitialFrames() // Called only in constructor
+{
+    // Previous tangents vector initially contains normalised edges
+    for (IndexType vtx = 0; vtx < m_numVertices - 1; ++vtx)
+        setPreviousTangent(vtx, getEdgeVector(vtx).normalized());
+
+    // Initial first reference frame is arbitrary
+    setReferenceFrame1(0, findNormal(getPreviousTangent(0)));
+    setReferenceFrame2(0, getPreviousTangent(0).cross(getReferenceFrame1(0)));
+    assert(fabs(getReferenceFrame2(0).norm() - 1) < std::numeric_limits<Scalar>::epsilon());
+
+    // Next initial reference frames are obtained by space-parallel transportation
+    for (IndexType vtx = 1; vtx < m_numVertices - 1; ++vtx)
+    {
+        setReferenceFrame1(vtx,
+                parallelTransport(getReferenceFrame1(vtx - 1), getPreviousTangent(vtx - 1), getPreviousTangent(vtx)));
+        setReferenceFrame2(vtx, getPreviousTangent(vtx).cross(getReferenceFrame1(vtx)));
+    }
 }
 
 void ElasticStrand::growVertex(const Vec3d& vertex, const Scalar torsion)
@@ -77,15 +97,17 @@ void ElasticStrand::updateFrames()
     if (m_framesUpToDate)
         return;
 
-    // Update reference frames by time-parallel transport
+    // Update reference frames by time-parallel transportation
     for (IndexType vtx = 0; vtx < m_numVertices - 1; ++vtx)
     {
-        const Vec3d& currentTangent = (getVertex(vtx + 1) - getVertex(vtx)).normalized();
+        const Vec3d& currentTangent = getEdgeVector(vtx).normalized();
         Vec3d u = parallelTransport(getReferenceFrame1(vtx), getPreviousTangent(vtx), currentTangent);
-        u -= u.dot(currentTangent)*currentTangent; // superfluous?
+        u -= u.dot(currentTangent) * currentTangent; // superfluous?
         u.normalize();
         setReferenceFrame1(vtx, u);
         setReferenceFrame2(vtx, currentTangent.cross(u));
+
+        setPreviousTangent(vtx, currentTangent); // TODO: make sure that previous tangents are not used elsewhere
     }
 
     m_framesUpToDate = true;
@@ -108,11 +130,11 @@ void ElasticStrand::updateForceCaches()
 
 void ElasticStrand::accumulateInternalForces()
 {
-    updateFrames(); // Necessary to compute internal forces.
+    assert(m_framesUpToDate);
 
-    accumulateStretchingForces();
-    accumulateBendingForces();
-    accumulateTorsionForces();
+    ForceAccumulator<StretchingForce>::accumulate(*this);
+    ForceAccumulator<BendingForce>::accumulate(*this);
+    ForceAccumulator<TwistingForce>::accumulate(*this);
 }
 
 void ElasticStrand::acceptNewPositions()
@@ -120,9 +142,9 @@ void ElasticStrand::acceptNewPositions()
     m_framesUpToDate = false;
     m_forceCachesUpToDate = false;
 
-    storePreviousTangents(); // for time-parallel transport
     m_degreesOfFreedom = m_newDegreesOfFreedom; // copy the new positions
 
+    updateFrames(); // This also updates m_previousTangents
     updateForceCaches();
 }
 

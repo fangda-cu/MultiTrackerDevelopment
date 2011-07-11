@@ -12,9 +12,14 @@
 #include "ElasticStrandUtils.hh"
 #include "Edge.hh"
 #include "BandMatrix.hh"
+#include "ForceAccumulator.hh"
 
 namespace strandsim
 {
+
+class StretchingForce;
+class BendingForce;
+class TwistingForce;
 
 class ElasticStrandParameters
 {
@@ -32,6 +37,8 @@ public:
 
     virtual ~ElasticStrand();
 
+    void storeInitialFrames();
+
     const Vec3d getVertex(const IndexType vtx) const
     {
         assert(vtx < m_numVertices);
@@ -44,6 +51,13 @@ public:
         assert(vtx < m_numVertices - 1);
 
         return m_degreesOfFreedom[4 * vtx + 3];
+    }
+
+    const Vec3d getEdgeVector(const IndexType vtx) const
+    {
+        assert(vtx < m_numVertices - 1);
+
+        return getVertex(vtx + 1) - getVertex(vtx);
     }
 
     const Edge<ElasticStrand> getEdge(const IndexType vtx) const
@@ -109,20 +123,22 @@ public:
         m_materialFrames2.segment<3> (3 * vtx) = vec;
     }
 
-    void storePreviousTangents()
-    {
-        for (IndexType vtx = 0; vtx < m_numVertices - 1; ++vtx)
-            m_previousTangents.segment<3> (vtx) = (getVertex(vtx + 1) - getVertex(vtx)).normalized();
-    }
-
     const Vec3d getPreviousTangent(const IndexType vtx)
     {
         assert(vtx < m_numVertices - 1);
 
-        return m_previousTangents.segment<3> (vtx);
+        return m_previousTangents.segment<3> (3 * vtx);
+    }
+
+    void setPreviousTangent(const IndexType vtx, const Vec3d& vec)
+    {
+        assert(vtx < m_numVertices - 1);
+
+        m_previousTangents.segment<3> (3 * vtx) = vec;
     }
 
     void growVertex(const Vec3d& vertex, const Scalar torsion);
+
     void popVertex();
 
     const VecXd& getDegreesOfFreedom() const
@@ -167,10 +183,6 @@ private:
     void accumulateInternalForces();
     void accumulateExternalForces();
 
-    void accumulateStretchingForces();
-    void accumulateBendingForces();
-    void accumulateTorsionForces();
-
     /**
      * Member variables
      */
@@ -197,8 +209,13 @@ private:
     ForceVectorType m_totalForces;
     JacobianMatrixType m_totalJacobian;
 
-    // Future position storage. Position solve write its result here.
+    // Future position storage. Position solve writes its result here.
     VecXd m_newDegreesOfFreedom;
+
+public:
+    friend class ForceAccumulator<StretchingForce> ;
+    friend class ForceAccumulator<BendingForce> ;
+    friend class ForceAccumulator<TwistingForce> ;
 };
 
 }
