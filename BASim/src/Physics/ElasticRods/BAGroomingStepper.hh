@@ -337,8 +337,9 @@ private:
 
     // For each rod, find the (numberOfNeighbours) closest at the root and record that set in the rod
     void activateClumpingForce();
+    void findCenterLines(RodSelectionType& centerLineRods);
     void selectClumps();
-    void updateRodsNeighbours();
+    // void updateRodsNeighbours();
 
     /*
      * Member variables

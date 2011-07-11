@@ -2931,6 +2931,22 @@ private:
     const Vec3d& m_point;
 };
 
+void BAGroomingStepper::findCenterLines(RodSelectionType& centerLineRods)
+{
+    int decimationTick = m_rods_per_clump;
+    for (RodSelectionType::const_iterator rod = m_simulated_rods.begin(); rod != m_simulated_rods.end(); rod++, decimationTick++)
+        if (decimationTick == m_rods_per_clump)
+        {
+            decimationTick = 0;
+            centerLineRods.push_back(*rod);
+            m_rods[*rod]->setIsClumpCenterLine(true);
+        }
+        else
+        {
+            m_rods[*rod]->setIsClumpCenterLine(false);
+        }
+}
+
 /**
  * Select clumps based on closest rods to a selected few (for now simple decimation of the whole rods set)
  */
@@ -2938,56 +2954,52 @@ void BAGroomingStepper::selectClumps()
 {
     extractPositions(m_xn, m_simulated_rods, m_t - m_dt); // Probably superfluous but since we are going to access positions through m_xn let's make double sure it's up-to-date
 
-    // Those will be the clump "center lines"
+    // Those will be the clump "center lines".
     RodSelectionType centerLineRods;
-    {
-        int decimationTick = m_rods_per_clump;
-        for (RodSelectionType::const_iterator rod = m_simulated_rods.begin(); rod != m_simulated_rods.end(); rod++, decimationTick++)
-            if (decimationTick == m_rods_per_clump)
-            {
-                decimationTick = 0;
-                centerLineRods.push_back(*rod);
-                m_rods[*rod]->setIsClumpCenterLine(true);
-            }
-            else
-            {
-                m_rods[*rod]->setIsClumpCenterLine(false);
-            }
-    }
+    findCenterLines(centerLineRods);
 
-    // Build a vector of (initially sorted) indices (in m_xn) of centerLineRods root points
-    std::vector<int> rootPointIndices;
+    // Build a vector of (initially sorted) indices (in m_xn) of centerLineRods points
+    std::vector<int> centerLinePointIndices;
     for (RodSelectionType::const_iterator rod = centerLineRods.begin(); rod != centerLineRods.end(); rod++)
-        rootPointIndices.push_back(m_base_dof_indices[*rod]);
+        for (int j = 0; j < m_rods[*rod]->nv(); ++j)
+            centerLinePointIndices.push_back(m_base_dof_indices[*rod] + 3 * j);
+
     // Build a bvh (this reorders rootPointIndices) and the kNN finder
     pantaray::kNN<BVH> knn;
     BVH bvh;
-    SimplePointBBoxFunctor bboxes(rootPointIndices, m_xn);
+    SimplePointBBoxFunctor bboxes(centerLinePointIndices, m_xn);
     BVHBuilder<SimplePointBBoxFunctor> bvhbuilder;
     bvhbuilder.build(bboxes, &bvh);
     knn.Setup(bvh);
 
-    // For each rod find the closest clump center line (at the root)
+    // For each rod tip find the closest clump center line
     const Scalar searchDistance = std::numeric_limits<Scalar>::max();
     for (RodSelectionType::const_iterator rod = m_simulated_rods.begin(); rod != m_simulated_rods.end(); rod++)
     {
-        const RodPointDistance<BVH> distance(m_xn, bvh, m_rods[*rod]->getVertex(0));
-        const size_t numberFound = knn.Run(distance, -1.0, searchDistance, 1);
-        assert(numberFound == 1);
-
-        const int foundGlobalIdx = knn.TopResult().m_node;
-        knn.PopResult(); // Superfluous since we are only going to use the top result, just need to check that knn.Run correctly resets the result list.
-        int foundRodIdx = getContainingRod(foundGlobalIdx);
-        if (foundRodIdx != *rod) // This means that the rod is not actually a center line
+        if (find(centerLineRods.begin(), centerLineRods.end(), *rod) == centerLineRods.end()) // skip if the rod is a centerline
         {
+            // const Vec3d& bindingPoint = m_rods[*rod]->getVertex(0); // at the root
+            const Vec3d& bindingPoint = m_rods[*rod]->getVertex(m_rods[*rod]->nv() - 1); // at the tip
+
+            const RodPointDistance<BVH> distance(m_xn, bvh, bindingPoint);
+            const size_t numberFound = knn.Run(distance, -1.0, searchDistance, 1);
+            assert(numberFound == 1);
+
+            const int foundGlobalIdx = knn.TopResult().m_node;
+            knn.PopResult(); // Probably superfluous since we are only going to use the top result, just need to check that knn.Run correctly resets the result list.
+            int foundRodIdx = getContainingRod(foundGlobalIdx);
+            assert(find(centerLineRods.begin(), centerLineRods.end(), foundRodIdx) != centerLineRods.end()); // found rod should be in the center lines list
+
             std::vector<ElasticRod*> neighbours;
             neighbours.push_back(m_rods[foundRodIdx]);
             m_rods[*rod]->setNearestRootNeighbours(neighbours);
+
         }
     }
 
 }
 
+/*
 void BAGroomingStepper::updateRodsNeighbours() // OBSOLETE
 {
     extractPositions(m_xn, m_simulated_rods, m_t - m_dt); // Probably superfluous
@@ -3042,6 +3054,7 @@ void BAGroomingStepper::updateRodsNeighbours() // OBSOLETE
         //       DebugStream(g_log, "") << "Rod " << *rod << " has neighbours " << debugOstr.str() << '\n';
     }
 }
+*/
 
 void BAGroomingStepper::setClumpingParameters(const double charge, const double power, const double dist)
 {
@@ -3053,7 +3066,7 @@ void BAGroomingStepper::setClumpingParameters(const double charge, const double 
     m_clumpingForce->setPower(power);
     m_clumpingForce->setDistance(dist);
 
-    // updateRodsNeighbours();
+    selectClumps();
 }
 
 }
