@@ -31,7 +31,9 @@ public:
   DrawMode getMode() const { return m_mode; }
   void setMode(DrawMode mode) { m_mode = mode; }
 
+  bool& drawRod() { return m_drawRod; }
   bool& drawMaterial() { return m_drawMaterial; }
+  bool& drawRootMaterial() { return m_drawRootMaterial; }
   bool& drawReference() { return m_drawReference; }
   bool& scaleToRadius() { return m_scaleToRadius; }
   bool& drawArrows() { return m_drawArrows; }
@@ -56,6 +58,7 @@ protected:
   void drawSmoothRod();
 
   void drawMaterialFrame();
+  void drawRootMaterialFrame();
   void drawReferenceFrame();
 
   void drawVelocityVector();
@@ -66,7 +69,9 @@ protected:
 
   DrawMode m_mode;
 
+  bool m_drawRod;
   bool m_drawMaterial;
+  bool m_drawRootMaterial;
   bool m_drawReference;
   bool m_scaleToRadius;
   bool m_drawArrows;

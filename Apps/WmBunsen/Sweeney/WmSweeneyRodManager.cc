@@ -18,10 +18,13 @@ WmSweeneyRodManager::~WmSweeneyRodManager()
     delete m_bridsonStepper;
 }
 
-void WmSweeneyRodManager::setRodsDrawVelocity(const bool i_shouldDrawVelocity)
+void WmSweeneyRodManager::setRodsDrawDebugging(const bool i_shouldDrawStrands, const bool i_shouldDrawRootFrames,
+        const bool i_shouldDrawVelocity)
 {
     for (size_t r = 0; r < m_rodRenderers.size(); ++r)
     {
+        m_rodRenderers[r]->drawRod() = i_shouldDrawStrands;
+        m_rodRenderers[r]->drawRootMaterial() = i_shouldDrawRootFrames;
         m_rodRenderers[r]->drawVelocity() = i_shouldDrawVelocity;
     }
 }

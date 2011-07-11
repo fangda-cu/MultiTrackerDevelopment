@@ -13,8 +13,8 @@ namespace BASim
 {
 
 RodRenderer::RodRenderer(ElasticRod& rod) :
-    m_rod(rod), m_tube(m_rod), m_mode(SMOOTH), m_drawMaterial(false), m_drawReference(false), m_scaleToRadius(true),
-            m_drawArrows(false), m_drawVelocity(false), m_drawResponse(false)
+    m_rod(rod), m_tube(m_rod), m_mode(SMOOTH), m_drawRod(true), m_drawMaterial(false), m_drawRootMaterial(true),
+    m_drawReference(false), m_scaleToRadius(true), m_drawArrows(false), m_drawVelocity(false), m_drawResponse(false)
 {
     // material colors
     m_palette.push_back(Color(255, 125, 75));
@@ -25,7 +25,6 @@ RodRenderer::RodRenderer(ElasticRod& rod) :
     m_palette.push_back(Color(50, 50, 50));
 
     // curvature binormal color
-    m_palette.push_back(Color(102, 204, 51));
 
     // velocity color
     m_palette.push_back(Color(255,0,0));
@@ -37,13 +36,27 @@ RodRenderer::RodRenderer(ElasticRod& rod) :
 
 void RodRenderer::render()
 {
-    if (m_mode == SMOOTH)
-        drawSmoothRod();
-    else if (m_mode == SIMPLE)
-        drawSimpleRod();
+    // assigns different color based
+    // on the which side of the head
+    // the rod strand has its root
+    if (m_rod.isLeftStrand())
+    {
+        m_palette[0] = Color(255, 0, 0);
+        m_palette[1] = Color(0, 255, 0);
+    }
+
+    if (m_drawRod)
+    {
+        if (m_mode == SMOOTH)
+            drawSmoothRod();
+        else if (m_mode == SIMPLE)
+            drawSimpleRod();
+    }
 
     if (m_drawMaterial)
         drawMaterialFrame();
+    if (m_drawRootMaterial)
+        drawRootMaterialFrame();
     if (m_drawReference)
         drawReferenceFrame();
 
@@ -298,6 +311,7 @@ void RodRenderer::drawMaterialFrame()
 
     const Color& color1 = m_palette[0];
     const Color& color2 = m_palette[1];
+
     Scalar r = 1.0;
 
     ElasticRod::edge_iter eit, end = m_rod.edges_end();
@@ -331,6 +345,50 @@ void RodRenderer::drawMaterialFrame()
             OpenGL::vertex(x);
             OpenGL::vertex(y);
         }
+    }
+
+    glEnd();
+}
+
+void RodRenderer::drawRootMaterialFrame()
+{
+    glLineWidth(2);
+    glBegin( GL_LINES);
+
+    const Color& color1 = m_palette[0];
+    const Color& color2 = m_palette[1];
+
+    Scalar r = 1.0;
+
+    ElasticRod::edge_iter begin = m_rod.edges_begin();
+
+    ElasticRod::edge_handle& eh = *begin;
+    ElasticRod::vertex_handle vh0 = m_rod.fromVertex(eh);
+    ElasticRod::vertex_handle vh1 = m_rod.toVertex(eh);
+
+    Vec3d x = (m_rod.getVertex(vh0) + m_rod.getVertex(vh1)) / 2.0;
+    //    if (m_scaleToRadius) r = m_rod.radiusA(eh);
+
+    OpenGL::color(color1);
+    if (m_drawArrows)
+        drawArrow(x, m_rod.getMaterial1(eh), r);
+    else
+    {
+        Vec3d y = x + r * m_rod.getMaterial1(eh);
+        OpenGL::vertex(x);
+        OpenGL::vertex(y);
+    }
+
+    //    if (m_scaleToRadius) r = m_rod.radiusB(eh);
+
+    OpenGL::color(color2);
+    if (m_drawArrows)
+        drawArrow(x, m_rod.getMaterial2(eh), r);
+    else
+    {
+        Vec3d y = x + r * m_rod.getMaterial2(eh);
+        OpenGL::vertex(x);
+        OpenGL::vertex(y);
     }
 
     glEnd();

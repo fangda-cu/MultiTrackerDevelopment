@@ -29,7 +29,7 @@ using namespace BASim;
 /* static */ MObject WmSweeneyNode::ia_curlCount;
 /* static */ MObject WmSweeneyNode::ia_curlStart;
 /* static */ MObject WmSweeneyNode::ia_rodPitch;
-/* static */ MObject WmSweeneyNode::ia_fixCurlHeight;
+/* static */ MObject WmSweeneyNode::ia_fixCurlCount;
 /* static */ MObject WmSweeneyNode::ia_curlInXFrame;
 /* static */ MObject WmSweeneyNode::ia_preserveLengthVariation;
 /* static */ MObject WmSweeneyNode::ia_rodDamping;
@@ -85,6 +85,8 @@ using namespace BASim;
 /* static */MObject WmSweeneyNode::ia_maxNumStretchingSubsteps;
 
 // Debug drawing
+/* static */MObject WmSweeneyNode::ia_shouldDrawStrands;
+/* static */MObject WmSweeneyNode::ia_shouldDrawRootFrames;
 /* static */MObject WmSweeneyNode::ia_shouldDrawVelocity;
 
 WmSweeneyNode::WmSweeneyNode() :
@@ -121,7 +123,7 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 		m_curlCount = i_dataBlock.inputValue( ia_curlCount ).asDouble();
 		m_curlStart = i_dataBlock.inputValue( ia_curlStart ).asDouble();
 		m_rodPitch = i_dataBlock.inputValue( ia_rodPitch ).asDouble();
-		m_fixCurlHeight = i_dataBlock.inputValue( ia_fixCurlHeight ).asBool();
+		m_fixCurlCount = i_dataBlock.inputValue( ia_fixCurlCount ).asBool();
 		m_curlInXFrame = i_dataBlock.inputValue( ia_curlInXFrame ).asBool();
 		m_preserveLengthVariation = i_dataBlock.inputValue( ia_preserveLengthVariation ).asBool();
 		m_rodDamping = i_dataBlock.inputValue( ia_rodDamping ).asBool();
@@ -129,10 +131,13 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
         m_rodPower = i_dataBlock.inputValue(ia_rodPower).asDouble();
         m_rodClumpSeparation = i_dataBlock.inputValue(ia_rodClumpSeparation).asDouble();
 
+        bool shouldDrawStrands = i_dataBlock.inputValue( ia_shouldDrawStrands ).asBool();
+        bool shouldDrawRootFrames = i_dataBlock.inputValue( ia_shouldDrawRootFrames ).asBool();
         bool shouldDrawVelocity = i_dataBlock.inputValue( ia_shouldDrawVelocity ).asBool();
         if ( m_rodManager != NULL )
         {
-            m_rodManager->setRodsDrawVelocity( shouldDrawVelocity );
+            m_rodManager->setRodsDrawDebugging( shouldDrawStrands, shouldDrawRootFrames, shouldDrawVelocity );
+            m_rodManager->drawAllRods();
         }     
 
 		MObject strandVerticesObj = i_dataBlock.inputValue( ia_strandVertices ).data();
@@ -222,7 +227,7 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 
                     //Scalar absolute_length = m_length * m_strandLengths[i];
 
-                    if(  m_fixCurlHeight && m_curlRadius != 0.0 )
+                    if(  m_fixCurlCount && m_curlRadius != 0.0 && m_curlCount != 0.0 )
                     {
                         // compute total length of the helix
                         // TODO(sainsley): rename m_curlCount m_curlCount
@@ -246,7 +251,7 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
                             << curvature << " torsion " << torsion << " resolutoin " << m_verticesPerRod << endl;*/
                     }
 
-                    if (  !m_fixCurlHeight && m_curlTightness != 0.0 )
+                    if (  !m_fixCurlCount && m_curlTightness != 0.0 )
                     {
                         curvature = m_curlTightness; // * m_length / m_verticesPerRod;
                     }
@@ -1049,9 +1054,9 @@ void* WmSweeneyNode::creator()
         if ( !status ) { status.perror( "attributeAffects ia_curlStart->ca_rodPropertiesSync" ); return status; }
     }
 
-    addNumericAttribute( ia_fixCurlHeight, "fixCurlHeight", "fixcurlh", MFnNumericData::kBoolean, false, true );
-    status = attributeAffects( ia_fixCurlHeight, ca_rodPropertiesSync );
-    if ( !status ) { status.perror( "attributeAffects ia_fixCurlHeight->ca_rodPropertiesSync" ); return status; }
+    addNumericAttribute( ia_fixCurlCount, "fixCurlCount", "fixcurlc", MFnNumericData::kBoolean, false, true );
+    status = attributeAffects( ia_fixCurlCount, ca_rodPropertiesSync );
+    if ( !status ) { status.perror( "attributeAffects ia_fixCurlCount->ca_rodPropertiesSync" ); return status; }
 
     addNumericAttribute( ia_curlInXFrame, "curlInXFrame", "curinx", MFnNumericData::kBoolean, true, true );
     status = attributeAffects( ia_curlInXFrame, ca_rodPropertiesSync );
@@ -1177,6 +1182,23 @@ void* WmSweeneyNode::creator()
 	status = attributeAffects( ia_inextensibilityThreshold, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_inextensibilityThreshold->ca_rodPropertiesSync" ); return status; }
     // Debug drawing
+	// strands
+    addNumericAttribute(ia_shouldDrawStrands, "shouldDrawStrands", "sdstrds", MFnNumericData::kBoolean, true, true);
+    status = attributeAffects(ia_shouldDrawStrands, ca_rodPropertiesSync);
+    if (!status)
+    {
+        status.perror("attributeAffects ia_shouldDrawStrands->ca_rodPropertiesSync");
+        return status;
+    }
+	// root frames
+    addNumericAttribute(ia_shouldDrawRootFrames, "shouldDrawRootFrames", "sdrf", MFnNumericData::kBoolean, true, true);
+    status = attributeAffects(ia_shouldDrawRootFrames, ca_rodPropertiesSync);
+    if (!status)
+    {
+        status.perror("attributeAffects ia_shouldDrawRootFrames->ca_rodPropertiesSync");
+        return status;
+    }
+	// velocity
     addNumericAttribute(ia_shouldDrawVelocity, "shouldDrawVelocity", "sdv", MFnNumericData::kBoolean, false, true);
     status = attributeAffects(ia_shouldDrawVelocity, ca_rodPropertiesSync);
     if (!status)
@@ -1184,6 +1206,7 @@ void* WmSweeneyNode::creator()
         status.perror("attributeAffects ia_shouldDrawVelocity->ca_rodPropertiesSync");
         return status;
     }
+
 
     //Failure  Detection
     addNumericAttribute(ia_maxNumOfSolverIters, "maxNumOfSolverIters", "mnsi", MFnNumericData::kInt, 250, true);

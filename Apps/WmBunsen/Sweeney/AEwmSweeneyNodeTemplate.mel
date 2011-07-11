@@ -16,7 +16,7 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
 		editorTemplate -addControl "rodRotation";
 		editorTemplate -addControl "curlInXFrame";
 		editorTemplate -addControl "globalCurlTightness";
-		editorTemplate -addControl "fixCurlHeight";
+		editorTemplate -addControl "fixCurlCount";
 		editorTemplate -addControl "curlRadius";
 		editorTemplate -addControl "curlCount";
 		editorTemplate -addControl "curlStart";
@@ -97,6 +97,8 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
     editorTemplate -endLayout;
 
     editorTemplate -beginLayout "Debug Drawing" -collapse 0;
+    	editorTemplate -addControl "shouldDrawStrands";
+    	editorTemplate -addControl "shouldDrawRootFrames";
       	editorTemplate -addControl "shouldDrawVelocity";        
     editorTemplate -endLayout;
     

@@ -68,7 +68,8 @@ public:
 
     void drawAllRods();
 
-    void setRodsDrawVelocity(const bool i_shouldDrawVelocity);
+    void setRodsDrawDebugging(const bool i_shouldDrawStrands, const bool i_shouldDrawRootFrames,
+            const bool i_shouldDrawVelocity);
 
     size_t numberOfRods()
     {

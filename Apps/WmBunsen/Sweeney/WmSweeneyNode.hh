@@ -85,7 +85,7 @@ public:
     static MObject ia_curlCount;
     static MObject ia_curlStart;
     static MObject ia_rodPitch;
-    static MObject ia_fixCurlHeight;
+    static MObject ia_fixCurlCount;
     static MObject ia_curlInXFrame;
     static MObject ia_preserveLengthVariation;
     static MObject ia_rodDamping;
@@ -141,8 +141,10 @@ public:
     static MObject ia_verticesPerStrand;
     
     // Debug drawing
+    static MObject ia_shouldDrawStrands;
+    static MObject ia_shouldDrawRootFrames;
     static MObject ia_shouldDrawVelocity;
-    
+
     static MStatus addNumericAttribute( MObject& i_attribute, MString i_longName, 
                                         MString i_shortName,
                                         MFnNumericData::Type i_type, double i_defaultValue,
@@ -184,7 +186,7 @@ private:
     double m_rodPitch;
     int m_verticesPerRod;
     int m_rodsPerClump;
-    bool m_fixCurlHeight;
+    bool m_fixCurlCount;
     bool m_curlInXFrame;
     bool m_preserveLengthVariation;
     bool m_rodDamping;
