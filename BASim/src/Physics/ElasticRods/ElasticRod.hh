@@ -228,6 +228,10 @@ public:
     Scalar getRadiusScale() const;
     void setRadiusScale(Scalar s);
 
+    // grooming parameters
+    bool isClumpCenterLine() const;
+    void setIsClumpCenterLine(bool is_clump_center_line);
+
     bool isLeftStrand() const;
     void setIsLeftStrand(bool is_left_strand);
 
@@ -394,9 +398,10 @@ protected:
     ObjPropHandle<Scalar> m_radius_scale;
     ObjPropHandle<Scalar> m_base_rotation;
 
-    // Flags for Dyanmic Grooming
+    // Flags for Dynamic Grooming
     ObjPropHandle<bool> m_in_rest_state;
     ObjPropHandle<bool> m_is_left_strand;
+    ObjPropHandle<bool> m_is_clump_center;
 
     VPropHandle<Vec3d> m_vertexPositions;
     VPropHandle<Vec3d> m_vertexVelocities;

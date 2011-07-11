@@ -55,6 +55,7 @@ ElasticRod::ElasticRod(int numVertices, bool closed) :
     add_property(m_radius_scale, "scaling for rendering and collisions", 1.0);
     add_property(m_in_rest_state, "true if the rod has reached its minimum energy state", false);
     add_property(m_is_left_strand, "true if the rod is on the left side of the scalp", false);
+    add_property(m_is_clump_center, "true if the rod is the center line for a clump", false);
     add_property(m_base_rotation, "rotation of elliptical cross-section major axis", 0.0);
 
     add_property(m_vertexPositions, "vertex_positions", Vec3d(0, 0, 0));
@@ -644,6 +645,16 @@ bool ElasticRod::isInRestState() const
 void ElasticRod::setIsInRestState(bool is_at_rest)
 {
 	property(m_in_rest_state) = is_at_rest;
+}
+
+bool ElasticRod::isClumpCenterLine() const
+{
+    return property(m_is_clump_center);
+}
+
+void ElasticRod::setIsClumpCenterLine(bool is_clump_center)
+{
+    property(m_is_clump_center) = is_clump_center;
 }
 
 bool ElasticRod::isLeftStrand() const

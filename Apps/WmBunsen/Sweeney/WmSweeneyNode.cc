@@ -131,14 +131,9 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
         m_rodPower = i_dataBlock.inputValue(ia_rodPower).asDouble();
         m_rodClumpSeparation = i_dataBlock.inputValue(ia_rodClumpSeparation).asDouble();
 
-        bool shouldDrawStrands = i_dataBlock.inputValue( ia_shouldDrawStrands ).asBool();
-        bool shouldDrawRootFrames = i_dataBlock.inputValue( ia_shouldDrawRootFrames ).asBool();
-        bool shouldDrawVelocity = i_dataBlock.inputValue( ia_shouldDrawVelocity ).asBool();
-        if ( m_rodManager != NULL )
-        {
-            m_rodManager->setRodsDrawDebugging( shouldDrawStrands, shouldDrawRootFrames, shouldDrawVelocity );
-            m_rodManager->drawAllRods();
-        }     
+        m_shouldDrawStrands = i_dataBlock.inputValue( ia_shouldDrawStrands ).asBool();
+        m_shouldDrawRootFrames = i_dataBlock.inputValue( ia_shouldDrawRootFrames ).asBool();
+        m_shouldDrawVelocity = i_dataBlock.inputValue( ia_shouldDrawVelocity ).asBool();
 
 		MObject strandVerticesObj = i_dataBlock.inputValue( ia_strandVertices ).data();
 		MFnVectorArrayData strandVerticesArrayData( strandVerticesObj, &status );
@@ -164,6 +159,12 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 		int rodsPerClump = i_dataBlock.inputValue( ia_rodsPerClump ).asInt();
 
 		int numberOfVerticesPerStrand = i_dataBlock.inputValue( ia_verticesPerStrand ).asInt();
+
+		// Set Debug Drawing
+		if ( m_rodManager != NULL )
+		{
+		    m_rodManager->setRodsDrawDebugging( m_shouldDrawStrands, m_shouldDrawRootFrames, m_shouldDrawVelocity );
+		}
 
 		if ( m_currentTime == m_startTime )
 		{

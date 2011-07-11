@@ -2947,6 +2947,11 @@ void BAGroomingStepper::selectClumps()
             {
                 decimationTick = 0;
                 centerLineRods.push_back(*rod);
+                m_rods[*rod]->setIsClumpCenterLine(true);
+            }
+            else
+            {
+                m_rods[*rod]->setIsClumpCenterLine(false);
             }
     }
 

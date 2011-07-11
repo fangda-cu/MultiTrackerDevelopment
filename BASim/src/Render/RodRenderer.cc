@@ -39,7 +39,7 @@ void RodRenderer::render()
     // assigns different color based
     // on the which side of the head
     // the rod strand has its root
-    if (m_rod.isLeftStrand())
+    if (m_rod.isClumpCenterLine())
     {
         m_palette[0] = Color(255, 0, 0);
         m_palette[1] = Color(0, 255, 0);

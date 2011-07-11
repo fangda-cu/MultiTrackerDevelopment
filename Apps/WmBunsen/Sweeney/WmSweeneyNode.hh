@@ -193,6 +193,10 @@ private:
     double m_rodCharge;
     double m_rodPower;
     double m_rodClumpSeparation;
+    // Debug drawing
+    bool m_shouldDrawStrands;
+    bool m_shouldDrawRootFrames;
+    bool m_shouldDrawVelocity;
     
     WmSweeneyRodManager* m_rodManager;
     MVectorArray m_strandVertices;
