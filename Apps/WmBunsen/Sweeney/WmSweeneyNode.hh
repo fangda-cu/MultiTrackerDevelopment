@@ -16,9 +16,10 @@
 #include <maya/MPointArray.h>
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
+#include <maya/MDagPath.h>
 #include <maya/MColor.h>
 #include <maya/M3dView.h>
-#include <maya/MFnDependencyNode.h>
+#include <maya/MFnDagNode.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MFnTypedAttribute.h>
@@ -85,7 +86,7 @@ public:
     static MObject ia_curlStart;
     static MObject ia_rodPitch;
     static MObject ia_fixCurlHeight;
-    static MObject ia_mirrorXCurl;
+    static MObject ia_curlInXFrame;
     static MObject ia_mirrorXRotation;
     static MObject ia_rodDamping;
     static MObject ia_rodCharge;
@@ -163,8 +164,8 @@ private:
     void updateStrandCurl( BASim::ElasticRod* current_rod,  bool& update_rod,
             BASim::Scalar curvature, BASim::Scalar torsion );
     void updateSolverSettings( MDataBlock &i_dataBlock );
-    void getSurfaceTangent(BASim::Vec3d& surface_tan, const BASim::Vec3d strand_tan);
-    void locateScalpMesh();
+    void getSurfaceTangent( MFnMesh& surface, BASim::Vec3d& surface_tan, MPoint root, const BASim::Vec3d strand_tan );
+    bool getScalpTangents( std::vector<BASim::Vec3d>& i_scalpTangents );
 
     double m_currentTime;
     double m_previousTime;
@@ -184,7 +185,7 @@ private:
     int m_verticesPerRod;
     int m_rodsPerClump;
     bool m_fixCurlHeight;
-    bool m_mirrorXCurl;
+    bool m_curlInXFrame;
     bool m_mirrorXRotation;
     bool m_rodDamping;
     double m_rodCharge;
@@ -192,7 +193,6 @@ private:
     double m_rodClumpSeparation;
     
     WmSweeneyRodManager* m_rodManager;
-    MFnMesh m_scalpMesh;
     MVectorArray m_strandVertices;
     MVectorArray m_strandRootFrames;
     std::vector<double> m_strandLengths;

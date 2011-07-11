@@ -30,7 +30,7 @@ using namespace BASim;
 /* static */ MObject WmSweeneyNode::ia_curlStart;
 /* static */ MObject WmSweeneyNode::ia_rodPitch;
 /* static */ MObject WmSweeneyNode::ia_fixCurlHeight;
-/* static */ MObject WmSweeneyNode::ia_mirrorXCurl;
+/* static */ MObject WmSweeneyNode::ia_curlInXFrame;
 /* static */ MObject WmSweeneyNode::ia_mirrorXRotation;
 /* static */ MObject WmSweeneyNode::ia_rodDamping;
 /* static */MObject WmSweeneyNode::ia_rodCharge;
@@ -122,7 +122,7 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 		m_curlStart = i_dataBlock.inputValue( ia_curlStart ).asDouble();
 		m_rodPitch = i_dataBlock.inputValue( ia_rodPitch ).asDouble();
 		m_fixCurlHeight = i_dataBlock.inputValue( ia_fixCurlHeight ).asBool();
-		m_mirrorXCurl = i_dataBlock.inputValue( ia_mirrorXCurl ).asBool();
+		m_curlInXFrame = i_dataBlock.inputValue( ia_curlInXFrame ).asBool();
 		m_mirrorXRotation = i_dataBlock.inputValue( ia_mirrorXRotation ).asBool();
 		m_rodDamping = i_dataBlock.inputValue( ia_rodDamping ).asBool();
         m_rodCharge = i_dataBlock.inputValue(ia_rodCharge).asDouble();
@@ -265,8 +265,8 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 					     current_rod->getEdgeLength(2) << endl;*/
 
 					// Check if rod is in rest state
-					cout << "WmSweeneyNode::check for rod update::Rod Idx: " << i <<
-                            " update rod: " << update_rod << endl;
+					// cout << "WmSweeneyNode::check for rod update::Rod Idx: " << i <<
+                       //     " update rod: " << update_rod << endl;
 					current_rod->setIsInRestState( update_rod );
 				}
 
@@ -363,29 +363,50 @@ void WmSweeneyNode::updateStrandCrossSection( ElasticRod* current_rod, bool& upd
 void WmSweeneyNode::updateStrandRotation( ElasticRod* current_rod, bool& update_rod )
 {
 
-    Scalar theta = m_rodRotation * M_PI;
+    // default rotation is 180 degrees
+    Scalar theta = m_rodRotation * M_PI + M_PI;
 
-    if ( m_mirrorXRotation && m_mirrorXCurl || !m_mirrorXRotation && !m_mirrorXCurl )
+    if ( !m_mirrorXRotation  )
     {
-            if ( !m_fixCurlHeight && current_rod->isLeftStrand() )
+            if ( current_rod->isLeftStrand() )
             {
-                theta *= -1;
+                current_rod->setTheta( 0,  theta );
+                Scalar c = cos( current_rod->getTheta( 0 ) );
+                Scalar s = sin( current_rod->getTheta( 0 ) );
+                Vec3d u = current_rod->getReferenceDirector1( 0 );
+                Vec3d v = current_rod->getReferenceDirector2( 0 );
+                current_rod->setMaterial2( 0, -s * u + c * v );
+                theta -= M_PI;
+                current_rod->setTheta( 0,  theta );
+                c = cos( current_rod->getTheta( 0 ) );
+                s = sin( current_rod->getTheta( 0 ) );
+                current_rod->setMaterial1( 0,  c * u + s * v );
+            }
+            else {
+                current_rod->setTheta( 0,  theta );
+                Scalar c = cos( current_rod->getTheta( 0 ) );
+                Scalar s = sin( current_rod->getTheta( 0 ) );
+                const Vec3d& u = current_rod->getReferenceDirector1( 0 );
+                const Vec3d& v = current_rod->getReferenceDirector2( 0 );
+                current_rod->setMaterial1( 0,  c * u + s * v );
+                current_rod->setMaterial2( 0, -s * u + c * v );
             }
     }
+    else {
 
-    // check for update
-    if ( current_rod->getTheta( 0 ) ==  theta ) return;
+        // check for update
+        if ( current_rod->getTheta( 0 ) ==  theta ) return;
 
-    // set initial rotation
-    current_rod->setTheta( 0,  theta );
-    Scalar c = cos( current_rod->getTheta( 0 ) );
-    Scalar s = sin( current_rod->getTheta( 0 ) );
-    const Vec3d& u = current_rod->getReferenceDirector1( 0 );
-    const Vec3d& v = current_rod->getReferenceDirector2( 0 );
-    current_rod->setMaterial1( 0,  c * u + s * v );
-    current_rod->setMaterial2( 0, -s * u + c * v );
-    update_rod = true;
+        // set initial rotation
+        current_rod->setTheta( 0,  theta );
+        Scalar c = cos( current_rod->getTheta( 0 ) );
+        Scalar s = sin( current_rod->getTheta( 0 ) );
+        const Vec3d& u = current_rod->getReferenceDirector1( 0 );
+        const Vec3d& v = current_rod->getReferenceDirector2( 0 );
+        current_rod->setMaterial1( 0,  c * u + s * v );
+        current_rod->setMaterial2( 0, -s * u + c * v );
 
+    }
 }
 
 void WmSweeneyNode::updateStrandCurl( ElasticRod* current_rod, bool& update_rod,
@@ -394,18 +415,6 @@ void WmSweeneyNode::updateStrandCurl( ElasticRod* current_rod, bool& update_rod,
 
     assert( current_rod->m_bendingForce != NULL );
     assert( current_rod->m_twistingForce != NULL );
-
-    if ( m_mirrorXCurl )
-    {
-        if ( m_fixCurlHeight && current_rod->isLeftStrand() )
-        {
-            torsion *= -1;
-        }
-    }
-    else if ( !m_fixCurlHeight && current_rod->isLeftStrand() )
-    {
-        curvature *= -1;
-    }
 
     for ( ElasticRod::vertex_iter vh = current_rod->vertices_begin();
               vh != current_rod->vertices_end(); ++vh )
@@ -419,10 +428,21 @@ void WmSweeneyNode::updateStrandCurl( ElasticRod* current_rod, bool& update_rod,
                 update_rod = true;
             }
 
-            if ( current_rod->m_bendingForce->getKappaBar( *vh )[0] != curvature )
+            // curl along material frame axis of choice
+            if ( m_curlInXFrame ) {
+                if ( current_rod->m_bendingForce->getKappaBar( *vh )[0] != curvature )
+                {
+                    current_rod->m_bendingForce->setKappaBar( *vh, Vec2d( curvature, 0 ) );
+                    update_rod = true;
+                }
+            }
+            else
             {
-                current_rod->m_bendingForce->setKappaBar( *vh, Vec2d( curvature, 0 ) );
-                update_rod = true;
+                if ( current_rod->m_bendingForce->getKappaBar( *vh )[1] != curvature )
+                {
+                    current_rod->m_bendingForce->setKappaBar( *vh, Vec2d( 0,  curvature ) );
+                    update_rod = true;
+                }
             }
         }
     }
@@ -547,6 +567,13 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput(MDataBlock& i_dataBlock)
     vector<BASim::Vec3d> vertices;
     m_strandLengths.clear();
 
+    bool useRootFrames = ( m_strandRootFrames.length() != 0 );
+    vector<Vec3d> scalpTangents;
+    if ( useRootFrames )
+    {
+        useRootFrames = getScalpTangents( scalpTangents );
+    }
+
     for (unsigned int inputStrandNumber = 0; inputStrandNumber < numberOfStrands; ++inputStrandNumber)
     {
         MVector direction = m_strandVertices[currentVertexIndex + 1] - m_strandVertices[currentVertexIndex];
@@ -555,11 +582,11 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput(MDataBlock& i_dataBlock)
         constructRodVertices(vertices, direction, m_strandVertices[currentVertexIndex]);
 
         cout << "initialiseRodFromBarberShopInput() - check for root frames for " << inputStrandNumber << endl;
-
-       if ( false) //m_strandRootFrames.length() != 0 )
+        cerr << "initialiseRodFromBarberShopInput() - useRootFrames = " << useRootFrames << endl;
+        if ( useRootFrames )
         {
 
-        	BASim::Vec3d m1 = Vec3d(  m_strandRootFrames[ 3*inputStrandNumber ].x,
+        	/*BASim::Vec3d m1 = Vec3d(  m_strandRootFrames[ 3*inputStrandNumber ].x,
        			m_strandRootFrames[ 3*inputStrandNumber ].y,
        			m_strandRootFrames[ 3*inputStrandNumber ].z  );
 
@@ -572,12 +599,25 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput(MDataBlock& i_dataBlock)
         	                            m_strandRootFrames[ 3*inputStrandNumber + 1 ].z  );
         	m1.normalize();
         	m2.normalize();
-        	tan.normalize();
+        	tan.normalize();*/
 
+            BASim::Vec3d tan = Vec3d(  m_strandRootFrames[ 3*inputStrandNumber + 1 ].x,
+                                                    m_strandRootFrames[ 3*inputStrandNumber + 1 ].y,
+                                                    m_strandRootFrames[ 3*inputStrandNumber + 1 ].z  );
+            tan.normalize();
+            // take cross product of scalp tangent and strand tangent
+            // for first material frame vector
+            BASim::Vec3d m1 = tan.cross(scalpTangents[ inputStrandNumber ]);
+            m1.normalize();
+            if ( !approxEq(m1.dot(tan), 0.0, 1e-6) )
+            {
+               cerr << "initialiseRodFromBarberShopInput() : ERROR strand " << inputStrandNumber
+                << " had improper root frame" << endl;
+            }
         	m_rodManager->addRod( vertices, m_startTime, m1 );
         	// hack to fix scalp orientation bug
-        	if ( m1.x() < 0 )
-        	    m_rodManager->m_rods[inputStrandNumber]->setIsLeftStrand(true);
+        	if ( scalpTangents[ inputStrandNumber ].x() < 0 )
+        	  m_rodManager->m_rods[inputStrandNumber]->setIsLeftStrand(true);
         }
         else
         {
@@ -626,7 +666,7 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput(MDataBlock& i_dataBlock)
     cerr << "initialiseRodFromBarberShopInput() - Simulation initialised at time " << m_startTime << endl;
 }
 
-void WmSweeneyNode::constructRodVertices(vector<BASim::Vec3d>& o_rodVertices, const MVector& i_direction,
+void WmSweeneyNode::constructRodVertices( std::vector<BASim::Vec3d>& o_rodVertices, const MVector& i_direction,
         const MVector& i_rootPosition)
 {
 
@@ -637,7 +677,8 @@ void WmSweeneyNode::constructRodVertices(vector<BASim::Vec3d>& o_rodVertices, co
 
     MVector edge = i_direction;
 
-    m_strandLengths.push_back(edge.length());
+    //m_strandLengths.push_back(edge.length());
+    m_strandLengths.push_back(1.0);
     //edge.normalize();
 
     cerr << "constructRodVertices(): m_length = " << m_length << endl;
@@ -1041,9 +1082,9 @@ void* WmSweeneyNode::creator()
     status = attributeAffects( ia_fixCurlHeight, ca_rodPropertiesSync );
     if ( !status ) { status.perror( "attributeAffects ia_fixCurlHeight->ca_rodPropertiesSync" ); return status; }
 
-    addNumericAttribute( ia_mirrorXCurl, "mirrorCurlInX", "mirxcur", MFnNumericData::kBoolean, true, true );
-    status = attributeAffects( ia_mirrorXCurl, ca_rodPropertiesSync );
-    if ( !status ) { status.perror( "attributeAffects ia_mirrorXCurl->ca_rodPropertiesSync" ); return status; }
+    addNumericAttribute( ia_curlInXFrame, "curlInXFrame", "mirxcur", MFnNumericData::kBoolean, true, true );
+    status = attributeAffects( ia_curlInXFrame, ca_rodPropertiesSync );
+    if ( !status ) { status.perror( "attributeAffects ia_curlInXFrame->ca_rodPropertiesSync" ); return status; }
 
     addNumericAttribute( ia_mirrorXRotation, "mirrorRotationInX", "mirxrot", MFnNumericData::kBoolean, true, true );
     status = attributeAffects( ia_mirrorXRotation, ca_rodPropertiesSync );
@@ -1365,16 +1406,20 @@ void* WmSweeneyNode::creator()
     return MS::kSuccess;
 }
 
-void WmSweeneyNode::getSurfaceTangent(BASim::Vec3d& surface_tan, const BASim::Vec3d strand_tan)
+void WmSweeneyNode::getSurfaceTangent(MFnMesh& scalp, BASim::Vec3d& surface_tan, MPoint root, const BASim::Vec3d strand_tan)
 {
-    assert(m_scalpMesh != NULL);
     // find closest point on scalp to vertex along first edge of the strand
+    MPoint closestPoint;
+    MPoint pointOnStrand = root + MPoint( surface_tan.x(), surface_tan.y(), surface_tan.z() );
+    MStatus status = scalp.getClosestPoint( root , closestPoint);
+    surface_tan = Vec3d ( closestPoint.x - root.x,  closestPoint.y - root.y, closestPoint.z - root.z );
+    surface_tan.normalize();
     // MStatus     getClosestPoint (const MPoint &toThisPoint, MPoint &theClosestPoint, MSpace::Space space=MSpace::kObject, int *closestPolygon=NULL) cons
     // create vector from root closest point and normalize
     // use cross product of this "tangent" vector with the strand tangent as the new material frame m1 vector
 }
 
-void WmSweeneyNode::locateScalpMesh()
+bool WmSweeneyNode::getScalpTangents(vector<BASim::Vec3d>& i_scalpTangents)
 {
     MStatus status;
     MPlugArray connectedPlugs;
@@ -1386,64 +1431,85 @@ void WmSweeneyNode::locateScalpMesh()
     if (!status)
     {
         status.perror("cannot locate plug strandVertices for WmSweeneyNode");
-        return;
+        return false;
     }
     // grab connected strand array plug from barber shop
     bool foundPlugs = currentPlug.connectedTo(connectedPlugs, true, false, &status);
     if (!status || !foundPlugs)
     {
         status.perror("cannot locate wmBarbFurSetNode plug strandVertices->WmSweeneyNode");
-        return;
+        return false;
     }
     // grab furset node
     MFnDagNode fursetNode = MFnDagNode(connectedPlugs[0].node(&status));
     if (!status)
     {
         status.perror("cannot locate wmBarbFurSetNode parent node from wmBarbFurSetNode strandVertices plug");
-        return;
+        return false;
     }
     // grab regrow plug from fur set
     currentPlug = fursetNode.findPlug("regrow", true, &status);
     if (!status)
     {
         status.perror("cannot locate plug regrow from wmBarbFurSetNode");
-        return;
+        return false;
     }
     // grab connected regrow plug from subd node
     foundPlugs = currentPlug.connectedTo(connectedPlugs, true, false, &status);
     if (!status || !foundPlugs)
     {
         status.perror("cannot locate WmBarbSubdNode plug rebuild->WmBarbFurSetNode");
-        return;
+        return false;
     }
     // grab subd node node
     MFnDagNode subdNode = MFnDagNode(connectedPlugs[0].node(&status));
     if (!status)
     {
         status.perror("cannot locate WmBarbSubdNod parent node from WmBarbSubdNod rebuild plug");
-        return;
+        return false;
     }
     // grab inputMesh plug from subd node
     currentPlug = subdNode.findPlug("inputMesh", true, &status);
     if (!status)
     {
         status.perror("cannot locate plug inputMesh from WmBarbSubdNode");
-        return;
+        return false;
     }
     // grab connected worldMesh plug from mesh
     foundPlugs = currentPlug.connectedTo(connectedPlugs, true, false, &status);
     if (!status || !foundPlugs)
     {
         status.perror("cannot locate mesh plug worldMesh->WmBarbSubdNode");
-        return;
+        return false;
     }
     // grab mesh node
     MFnDagNode meshNode = MFnDagNode(connectedPlugs[0].node(&status));
     if (!status)
     {
         status.perror("cannot locate mesh parent node from mesh worldMesh plug");
-        return;
+        return false;
     }
-    m_scalpMesh = MFnMesh(meshNode.getPath());
+    // get path for mesh dagnode
+    MDagPath meshPath;
+    status = meshNode.getPath(meshPath);
+    if (!status)
+    {
+        status.perror("cannot recover MDagPath for mesh MFnDagNode");
+        return false;
+    }
+    MFnMesh scalpMesh = MFnMesh(meshPath);
+    Vec3d strandTan;
+    i_scalpTangents.clear();
+    for ( int i = 0; i < m_strandRootFrames.length()/3; i++ )
+    {
+        strandTan = Vec3d(  m_strandRootFrames[ 3*i + 1 ].x, m_strandRootFrames[ 3*i + 1 ].y,
+                m_strandRootFrames[ 3*i + 1 ].z  );
+        strandTan.normalize();
+        Vec3d scalpTan;
+        MPoint root = m_strandVertices[ m_numberOfVerticesPerStrand*i ];
+        getSurfaceTangent( scalpMesh, scalpTan, root, strandTan );
+        i_scalpTangents.push_back( scalpTan );
+    }
+    return true;
 }
 
