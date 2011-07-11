@@ -22,13 +22,7 @@ public:
 
     virtual ~StrandStepManager();
 
-    void execute()
-    {
-        StepperT stepper;
-
-        for (std::vector<ElasticStrand*>::const_iterator s = m_strands.begin(); s != m_strands.end(); ++s)
-            stepper.execute(**s);
-    }
+    void execute();
 
 private:
     const std::vector<ElasticStrand*>& m_strands;

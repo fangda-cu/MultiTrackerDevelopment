@@ -24,11 +24,18 @@ StrandStepManager<StepperT>::~StrandStepManager()
     // TODO Auto-generated destructor stub
 }
 
+template<typename StepperT>
+void StrandStepManager<StepperT>::execute()
+{
+    StepperT stepper;
+
+    for (std::vector<ElasticStrand*>::const_iterator s = m_strands.begin(); s != m_strands.end(); ++s)
+        stepper.execute(**s);
+}
+
 }
 
 // Explicit template instantiations
-
-#include "ElasticStrand.hh"
 #include "ElasticStrandStaticStepper.hh"
 
 namespace strandsim

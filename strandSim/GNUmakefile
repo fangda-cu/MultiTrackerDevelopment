@@ -11,6 +11,7 @@ LIB1       := wStrandSim
 LIB1_CF    += -DBUILD=${BUILD} -openmp -DWETA
 LIB1_CF    += -w1
 
+LIB1_H += ElasticStrandUtils.hh
 LIB1_H += StrandStepManager.hh
 LIB1_H += BandMatrix.hh
 LIB1_H += StepperBase.hh
