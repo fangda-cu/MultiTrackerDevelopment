@@ -17,6 +17,8 @@ namespace strandsim
 class StretchingForce: public Force<ElasticStrand>
 {
 public:
+    static const IndexType s_first = 0;
+
     typedef Eigen::Matrix<Scalar, 6, 1> LocalForceType;
     typedef Eigen::Matrix<Scalar, 6, 6> LocalJacobianType;
     typedef ElasticStrand::ForceVectorType ForceVectorType;
@@ -29,8 +31,8 @@ public:
     static LocalForceType localForce(const ElasticStrand& strand, const IndexType vtx);
     static LocalJacobianType localJacobian(const ElasticStrand& strand, const IndexType vtx);
 
-    static void addInPosition(ForceVectorType& totalForce, const IndexType vtx, const LocalForceType& localForce);
-    static void addInPosition(JacobianMatrixType& totalForce, const IndexType vtx, const LocalJacobianType& localJacobian);
+    static void addInPosition(ForceVectorType& globalForce, const IndexType vtx, const LocalForceType& localForce);
+    static void addInPosition(JacobianMatrixType& globalJacobian, const IndexType vtx, const LocalJacobianType& localJacobian);
 };
 
 }

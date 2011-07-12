@@ -13,6 +13,7 @@
 #include "Edge.hh"
 #include "BandMatrix.hh"
 #include "ForceAccumulator.hh"
+#include "ElasticStrandParameters.hh"
 
 namespace strandsim
 {
@@ -20,11 +21,6 @@ namespace strandsim
 class StretchingForce;
 class BendingForce;
 class TwistingForce;
-
-class ElasticStrandParameters
-{
-
-};
 
 class ElasticStrand: public StrandBase
 {
@@ -176,8 +172,12 @@ public:
 
 private:
     void resizeInternals();
-
+    void freezeRestShape();
     void updateFrames();
+    Mat2d computeBendingMatrix(const IndexType vtx) const;
+    Vec2d computeKappa(const IndexType vtx) const;
+    Eigen::Matrix<Scalar, 11, 2> computeGradKappa(const IndexType vtx) const;
+    std::pair<Eigen::Matrix<Scalar,11,11>, Eigen::Matrix<Scalar,11,11>> computeHessKappa(const IndexType vtx) const;
 
     void updateForceCaches();
     void accumulateInternalForces();
@@ -193,15 +193,26 @@ private:
     // References passed by Maya, who owns the original
     VecXd& m_degreesOfFreedom; // size = m_numVertices * 4 -1
 
+    // Other physical parameters
+    ParametersType m_parameters;
+
+    // Rest shape
+    std::vector<Scalar> m_restLengths;
+    std::vector<Vec2d, Eigen::aligned_allocator<Vec2d> > m_kappaBar; // cf. http://eigen.tuxfamily.org/dox/TopicStlContainers.html
+
     // Previous time storage, for time-parallel stepping
     VecXd m_previousTangents;
 
-    // Reference and material frames
+    // Reference frames, material frames and other geometric properties
     bool m_framesUpToDate;
+    std::vector<Scalar> m_currentLengths; // lengths of edges, cached
     VecXd m_referenceFrames1; // first vectors of reference frame
     VecXd m_referenceFrames2; // second vectors of reference frame
     VecXd m_materialFrames1;// first vectors of material frame
     VecXd m_materialFrames2; // second vectors of material frame
+    std::vector<Mat2d, Eigen::aligned_allocator<Mat2d> > m_bendingMatrices;
+    std::vector<Vec2d, Eigen::aligned_allocator<Vec2d> > m_kappa;
+    std::vector<Eigen::Matrix<Scalar, 11, 2>, Eigen::aligned_allocator<Eigen::Matrix<Scalar, 11, 2> > > m_gradKappa;
 
     // Force caching
     bool m_forceCachesUpToDate;
@@ -213,8 +224,11 @@ private:
     VecXd m_newDegreesOfFreedom;
 
 public:
+    friend class StretchingForce;
     friend class ForceAccumulator<StretchingForce> ;
+    friend class BendingForce;
     friend class ForceAccumulator<BendingForce> ;
+    friend class TwistingForce;
     friend class ForceAccumulator<TwistingForce> ;
 };
 

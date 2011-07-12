@@ -17,6 +17,8 @@ namespace strandsim
 class BendingForce: public Force<ElasticStrand>
 {
 public:
+    static const IndexType s_first = 1; // The first index on which this force can apply
+
     typedef Eigen::Matrix<Scalar, 11, 1> LocalForceType;
     typedef Eigen::Matrix<Scalar, 11, 11> LocalJacobianType;
     typedef ElasticStrand::ForceVectorType ForceVectorType;

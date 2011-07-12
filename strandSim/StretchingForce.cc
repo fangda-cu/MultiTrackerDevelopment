@@ -24,7 +24,57 @@ StretchingForce::~StretchingForce()
 
 Scalar StretchingForce::localEnergy(const ElasticStrand& strand, const IndexType vtx)
 {
-    return 0;
+    assert(vtx < strand.m_numVertices - 1);
+
+    const Scalar ks = strand.m_parameters.m_ks;
+    const Scalar restLength = strand.m_restLengths[vtx];
+    const Scalar length = strand.m_currentLengths[vtx];
+
+    return 0.5 * ks * square(length / restLength - 1.0) * restLength;
+}
+
+StretchingForce::LocalForceType StretchingForce::localForce(const ElasticStrand& strand, const IndexType vtx)
+{
+    LocalForceType force;
+    const Scalar ks = strand.m_parameters.m_ks;
+    const Scalar restLength = strand.m_restLengths[vtx];
+    const Scalar length = strand.m_currentLengths[vtx];
+
+    Vec3d f = ks * (length / restLength - 1.0) * strand.getEdgeVector(vtx).normalized();
+    force.segment<3> (0) = f;
+    force.segment<3> (3) = -f;
+
+    return force;
+}
+
+StretchingForce::LocalJacobianType StretchingForce::localJacobian(const ElasticStrand& strand, const IndexType vtx)
+{
+    LocalJacobianType Jacobian;
+
+    const Scalar ks = strand.m_parameters.m_ks;
+    const Scalar restLength = strand.m_restLengths[vtx];
+    const Scalar length = strand.m_currentLengths[vtx];
+    const Vec3d& edge = strand.getEdgeVector(vtx);
+    const Mat3d M = ks * ((1.0 / restLength - 1.0 / length) * Mat3d::Identity() + 1.0 / length * edge * edge.transpose()
+            / square(length));
+
+    Jacobian.block<3, 3> (0, 0) = Jacobian.block<3, 3> (3, 3) = -M;
+    Jacobian.block<3, 3> (0, 3) = Jacobian.block<3, 3> (3, 0) = M;
+    assert(isSymmetric(Jacobian));
+
+    return Jacobian;
+}
+
+void StretchingForce::addInPosition(ForceVectorType& globalForce, const IndexType vtx, const LocalForceType& localForce)
+{
+    globalForce.segment<3> (4 * vtx) += localForce.segment<3> (0);
+    globalForce.segment<3> (4 * (vtx + 1)) += localForce.segment<3> (3);
+}
+
+void StretchingForce::addInPosition(JacobianMatrixType& globalJacobian, const IndexType vtx,
+        const LocalJacobianType& localJacobian)
+{
+    globalJacobian.edgeStencilAdd<6>(4 * vtx, localJacobian);
 }
 
 }

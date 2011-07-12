@@ -30,7 +30,7 @@ ForceAccumulator<ForceT>::~ForceAccumulator()
 template<typename ForceT>
 void ForceAccumulator<ForceT>::accumulate(ElasticStrand& strand)
 {
-    for (IndexType vtx = 0; vtx < strand.m_numVertices; ++vtx)
+    for (IndexType vtx = ForceT::s_first; vtx < strand.m_numVertices - 1; ++vtx)
     {
         strand.m_totalEnergy += ForceT::localEnergy(strand, vtx);
         ForceT::addInPosition(strand.m_totalForces, vtx, ForceT::localForce(strand, vtx));
@@ -38,10 +38,9 @@ void ForceAccumulator<ForceT>::accumulate(ElasticStrand& strand)
     }
 }
 
-
 // Explicit template instantiations
-template class ForceAccumulator<StretchingForce>;
-template class ForceAccumulator<BendingForce>;
-template class ForceAccumulator<TwistingForce>;
+template class ForceAccumulator<StretchingForce> ;
+template class ForceAccumulator<BendingForce> ;
+template class ForceAccumulator<TwistingForce> ;
 
 }

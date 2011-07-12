@@ -13,11 +13,10 @@ namespace strandsim
 using namespace BASim;
 
 ElasticStrand::ElasticStrand(VecXd& dofs, ParametersType parameters) :
-    m_forceCachesUpToDate(false), m_degreesOfFreedom(dofs)
+    m_parameters(parameters), m_forceCachesUpToDate(false), m_degreesOfFreedom(dofs)
 {
-    // TODO: something with parameters
-
     resizeInternals();
+    freezeRestShape(); // for now the rest shape is the shape in which the strand is created, unless modified later on.
     storeInitialFrames();
     updateForceCaches();
 }
@@ -25,6 +24,44 @@ ElasticStrand::ElasticStrand(VecXd& dofs, ParametersType parameters) :
 ElasticStrand::~ElasticStrand()
 {
     // TODO Auto-generated destructor stub
+}
+
+void ElasticStrand::resizeInternals()
+{
+    assert(m_degreesOfFreedom.size() % 4 == 3); // dofs are 3 per vertex, one per edge
+    assert(m_degreesOfFreedom.size() > 3); // minimum two vertices per rod
+
+    const IndexType numDofs = static_cast<IndexType> (m_degreesOfFreedom.size());
+
+    m_numVertices = (numDofs + 1) / 4;
+
+    m_restLengths.resize(m_numVertices - 1);
+    m_kappaBar.resize(m_numVertices - 1);
+
+    m_currentLengths.resize(m_numVertices - 1);
+    m_kappa.resize(m_numVertices - 1);
+    m_gradKappa.resize(m_numVertices - 1);
+    m_bendingMatrices.resize(m_numVertices - 1); // NB m_bendingMatrices[0] not used
+
+    m_previousTangents.resize(3 * (m_numVertices - 1));
+
+    m_referenceFrames1.resize(3 * (m_numVertices - 1));
+    m_referenceFrames2.resize(3 * (m_numVertices - 1));
+    m_materialFrames1.resize(3 * (m_numVertices - 1));
+    m_materialFrames2.resize(3 * (m_numVertices - 1));
+
+    m_totalForces.resize(numDofs);
+    m_totalJacobian.resize(numDofs, numDofs);
+
+    m_newDegreesOfFreedom.resize(numDofs);
+}
+
+void ElasticStrand::freezeRestShape()
+{
+    for (IndexType vtx = 0; vtx < m_numVertices - 1; ++vtx)
+        m_restLengths[vtx] = getEdgeVector(vtx).norm();
+
+    // TODO: compute m_kappaBar here?
 }
 
 void ElasticStrand::storeInitialFrames() // Called only in constructor
@@ -47,52 +84,7 @@ void ElasticStrand::storeInitialFrames() // Called only in constructor
     }
 }
 
-void ElasticStrand::growVertex(const Vec3d& vertex, const Scalar torsion)
-{
-    assert(m_degreesOfFreedom.size() % 4 == 3);
-
-    const IndexType oldNumDofs = static_cast<IndexType> (m_degreesOfFreedom.size());
-    m_degreesOfFreedom.resize(oldNumDofs + 4); // TODO: check that resize preserves existing data.
-    m_degreesOfFreedom[oldNumDofs] = torsion;
-    m_degreesOfFreedom.segment<3> (oldNumDofs + 1) = vertex;
-
-    resizeInternals();
-}
-
-void ElasticStrand::popVertex()
-{
-    assert(m_degreesOfFreedom.size() % 4 == 3);
-    assert(m_degreesOfFreedom.size() > 7);
-
-    const IndexType oldNumDofs = static_cast<IndexType> (m_degreesOfFreedom.size());
-    m_degreesOfFreedom.resize(oldNumDofs - 4); // TODO: check that resize preserves existing data.
-
-    resizeInternals();
-}
-
-void ElasticStrand::resizeInternals()
-{
-    assert(m_degreesOfFreedom.size() % 4 == 3); // dofs are 3 per vertex, one per edge
-    assert(m_degreesOfFreedom.size() > 3); // minimum two vertices per rod
-
-    const IndexType numDofs = static_cast<IndexType> (m_degreesOfFreedom.size());
-
-    m_numVertices = (numDofs + 1) / 4;
-
-    m_previousTangents.resize(3 * (m_numVertices - 1));
-
-    m_referenceFrames1.resize(3 * (m_numVertices - 1));
-    m_referenceFrames2.resize(3 * (m_numVertices - 1));
-    m_materialFrames1.resize(3 * (m_numVertices - 1));
-    m_materialFrames2.resize(3 * (m_numVertices - 1));
-
-    m_totalForces.resize(numDofs);
-    m_totalJacobian.resize(numDofs, numDofs);
-
-    m_newDegreesOfFreedom.resize(numDofs);
-}
-
-void ElasticStrand::updateFrames()
+void ElasticStrand::updateFrames() // and related stuff
 {
     if (m_framesUpToDate)
         return;
@@ -100,6 +92,9 @@ void ElasticStrand::updateFrames()
     // Update reference frames by time-parallel transportation
     for (IndexType vtx = 0; vtx < m_numVertices - 1; ++vtx)
     {
+        m_currentLengths[vtx] = getEdgeVector(vtx).norm();
+        assert(!isSmall(m_currentLengths[vtx]));
+
         const Vec3d& currentTangent = getEdgeVector(vtx).normalized();
         Vec3d u = parallelTransport(getReferenceFrame1(vtx), getPreviousTangent(vtx), currentTangent);
         u -= u.dot(currentTangent) * currentTangent; // superfluous?
@@ -110,7 +105,36 @@ void ElasticStrand::updateFrames()
         setPreviousTangent(vtx, currentTangent); // TODO: make sure that previous tangents are not used elsewhere
     }
 
+    // Update other cached frame-dependent quantities
+    for (IndexType vtx = 1; vtx < m_numVertices - 1; ++vtx)
+    {
+        m_bendingMatrices[vtx] = computeBendingMatrix(vtx);
+        m_kappa[vtx] = computeKappa(vtx);
+        m_gradKappa[vtx] = computeGradKappa(vtx);
+    }
+
     m_framesUpToDate = true;
+}
+
+Mat2d ElasticStrand::computeBendingMatrix(const IndexType vtx) const
+{
+    // In the case of isotropic strands the bending matrix is a multiple of identity. When we allow non isotropic strands, elliptic section + rotation have to be taken into account.
+    return m_parameters.m_YoungsModulus * 0.25 * M_PI * square(square(m_parameters.m_radius)) * Mat2d::Identity();
+}
+
+Vec2d ElasticStrand::computeKappa(const IndexType vtx) const
+{
+    // TODO: compute here.
+}
+
+Eigen::Matrix<Scalar, 11, 2> ElasticStrand::computeGradKappa(const IndexType vtx) const
+{
+    // TODO: compute here.
+}
+
+std::pair<Eigen::Matrix<Scalar, 11, 11>, Eigen::Matrix<Scalar, 11, 11> > ElasticStrand::computeHessKappa(const IndexType vtx) const
+{
+    // TODO: compute here.
 }
 
 void ElasticStrand::updateForceCaches()
@@ -146,6 +170,29 @@ void ElasticStrand::acceptNewPositions()
 
     updateFrames(); // This also updates m_previousTangents
     updateForceCaches();
+}
+
+void ElasticStrand::growVertex(const Vec3d& vertex, const Scalar torsion)
+{
+    assert(m_degreesOfFreedom.size() % 4 == 3);
+
+    const IndexType oldNumDofs = static_cast<IndexType> (m_degreesOfFreedom.size());
+    m_degreesOfFreedom.resize(oldNumDofs + 4); // TODO: check that resize preserves existing data.
+    m_degreesOfFreedom[oldNumDofs] = torsion;
+    m_degreesOfFreedom.segment<3> (oldNumDofs + 1) = vertex;
+
+    resizeInternals();
+}
+
+void ElasticStrand::popVertex()
+{
+    assert(m_degreesOfFreedom.size() % 4 == 3);
+    assert(m_degreesOfFreedom.size() > 7);
+
+    const IndexType oldNumDofs = static_cast<IndexType> (m_degreesOfFreedom.size());
+    m_degreesOfFreedom.resize(oldNumDofs - 4); // TODO: check that resize preserves existing data.
+
+    resizeInternals();
 }
 
 }

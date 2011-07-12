@@ -27,7 +27,7 @@ public:
         for (IndexType i = 0; i < m_rows; ++i)
         {
             m_lower[i] = std::max(i - kl, 0);
-            m_upper[i] = std::min(i + ku + 1, static_cast<int>(m_cols));
+            m_upper[i] = std::min(i + ku + 1, static_cast<int> (m_cols));
         }
 
         setZero();
@@ -50,7 +50,7 @@ public:
         for (IndexType i = 0; i < m_rows; ++i)
         {
             m_lower[i] = std::max(i - kl, 0);
-            m_upper[i] = std::min(i + ku + 1, static_cast<int>(m_cols));
+            m_upper[i] = std::min(i + ku + 1, static_cast<int> (m_cols));
         }
     }
 
@@ -72,7 +72,7 @@ public:
     template<IndexType localSize>
     void localStencilAdd(int start, const Eigen::Matrix<ScalarT, localSize, localSize>& localJ)
     {
-        start += m_cols * m_ku;
+        start += m_cols * ku;
 
         for (int i = 0; i < localSize; ++i)
         {
@@ -91,7 +91,7 @@ public:
     template<IndexType localSize>
     void edgeStencilAdd(IndexType start, const Eigen::Matrix<ScalarT, localSize, localSize>& localJ)
     {
-        start += m_cols * m_ku;
+        start += m_cols * ku;
 
         for (int i = 0; i < localSize / 2; ++i)
         {
@@ -129,11 +129,12 @@ public:
         }
     }
 
-    int scale(ScalarT val) // TODO: replace with operator*=
+    BandMatrix<ScalarT, kl, ku>& operator*=(const ScalarT multiplier)
     {
-        for (int i = 0; i < m_size; ++i)
-            m_data[i] *= val;
-        return 0;
+        for (std::vector<ScalarT>::iterator i = m_data.begin(); i != m_data.end(); ++i)
+            *i *= multiplier;
+
+        return *this;
     }
 
     int setZero()
