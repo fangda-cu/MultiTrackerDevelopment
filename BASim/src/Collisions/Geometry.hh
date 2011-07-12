@@ -323,7 +323,7 @@ public:
 
     BoundingBox<Scalar> operator[](const uint32_t i) const
     {
-        return BoundingBox<Scalar> (m_xn.segment<3>(i));
+        return BoundingBox<Scalar> (m_xn.segment<3> (3 * i));
     }
 
     void swap(uint32_t i, uint32_t j)

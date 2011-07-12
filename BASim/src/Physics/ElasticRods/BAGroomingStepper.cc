@@ -28,6 +28,18 @@
 
 namespace BASim
 {
+template<class T> std::ostream& operator<<(std::ostream& os, std::vector<T>& v)
+{
+    os << "{";
+    for (size_t i = 0; i < v.size(); ++i)
+    {
+        os << v[i];
+        if (i < v.size() - 1)
+            os << ",";
+    }
+    os << "}";
+    return os;
+}
 
 BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
         std::vector<ScriptingController*>& scripting_controllers, std::vector<GroomingTimeStepper*>& steppers,
@@ -2921,7 +2933,7 @@ public:
 
     float ObjectDistance(const uint32_t obj_index) const
     {
-        const Vec3d v = m_xn.segment<3> (obj_index) - m_point;
+        const Vec3d v = m_xn.segment<3> (3 * obj_index) - m_point;
         return v.dot(v);
     }
 
@@ -2962,7 +2974,7 @@ void BAGroomingStepper::selectClumps()
     std::vector<int> centerLinePointIndices;
     for (RodSelectionType::const_iterator rod = centerLineRods.begin(); rod != centerLineRods.end(); rod++)
         for (int j = 0; j < m_rods[*rod]->nv(); ++j)
-            centerLinePointIndices.push_back(m_base_dof_indices[*rod] + 3 * j);
+            centerLinePointIndices.push_back(m_base_vtx_indices[*rod] + j);
 
     // Build a bvh (this reorders rootPointIndices) and the kNN finder
     pantaray::kNN<BVH> knn;
@@ -2985,7 +2997,9 @@ void BAGroomingStepper::selectClumps()
             const size_t numberFound = knn.Run(distance, -1.0, searchDistance, 1);
             assert(numberFound == 1);
 
-            const int foundGlobalIdx = knn.TopResult().m_node;
+            const int foundGlobalIdx = centerLinePointIndices[knn.TopResult().m_node];
+          //  DebugStream(g_log, "") << "Rod " << *rod << " found close point " << foundGlobalIdx << '\n';
+
             knn.PopResult(); // Probably superfluous since we are only going to use the top result, just need to check that knn.Run correctly resets the result list.
             int foundRodIdx = getContainingRod(foundGlobalIdx);
             assert(find(centerLineRods.begin(), centerLineRods.end(), foundRodIdx) != centerLineRods.end()); // found rod should be in the center lines list
@@ -2994,67 +3008,70 @@ void BAGroomingStepper::selectClumps()
             neighbours.push_back(m_rods[foundRodIdx]);
             m_rods[*rod]->setNearestRootNeighbours(neighbours);
 
+            DebugStream(g_log, "") << "Rod " << *rod << " is attracted to rod " << foundRodIdx << '\n';
         }
+        else
+            DebugStream(g_log, "") << "Rod " << *rod << " is a centerline\n";
     }
 
 }
 
 /*
-void BAGroomingStepper::updateRodsNeighbours() // OBSOLETE
-{
-    extractPositions(m_xn, m_simulated_rods, m_t - m_dt); // Probably superfluous
+ void BAGroomingStepper::updateRodsNeighbours() // OBSOLETE
+ {
+ extractPositions(m_xn, m_simulated_rods, m_t - m_dt); // Probably superfluous
 
-    // Build a vector of (initially sorted) indices of points in m_xn
-    std::vector<int> pointIndices;
-    for (RodSelectionType::const_iterator rod = m_simulated_rods.begin(); rod != m_simulated_rods.end(); rod++)
-        for (int j = 0; j < m_rods[*rod]->nv(); ++j)
-            pointIndices.push_back(m_base_dof_indices[*rod] + 3 * j);
+ // Build a vector of (initially sorted) indices of points in m_xn
+ std::vector<int> pointIndices;
+ for (RodSelectionType::const_iterator rod = m_simulated_rods.begin(); rod != m_simulated_rods.end(); rod++)
+ for (int j = 0; j < m_rods[*rod]->nv(); ++j)
+ pointIndices.push_back(m_base_dof_indices[*rod] + 3 * j);
 
-    // Build a bvh (this reorders pointIndices)
-    BVH bvh;
-    SimplePointBBoxFunctor bboxes(pointIndices, m_xn);
-    BVHBuilder<SimplePointBBoxFunctor> bvhbuilder;
-    bvhbuilder.build(bboxes, &bvh);
-    // Prepare the k nearest neighbours finder
-    pantaray::kNN<BVH> knn;
-    knn.Setup(bvh);
+ // Build a bvh (this reorders pointIndices)
+ BVH bvh;
+ SimplePointBBoxFunctor bboxes(pointIndices, m_xn);
+ BVHBuilder<SimplePointBBoxFunctor> bvhbuilder;
+ bvhbuilder.build(bboxes, &bvh);
+ // Prepare the k nearest neighbours finder
+ pantaray::kNN<BVH> knn;
+ knn.Setup(bvh);
 
-    const Scalar searchDistance = 10 * m_clumpingForce->getDistance();
+ const Scalar searchDistance = 10 * m_clumpingForce->getDistance();
 
-    // For each point on each rod, find nearest neighbours on other rods
-    for (RodSelectionType::const_iterator rod = m_simulated_rods.begin(); rod != m_simulated_rods.end(); rod++)
-    {
-        std::set<int> nearRodIndices;
-        for (int j = 0; j < m_rods[*rod]->nv(); ++j)
-        {
-            const RodPointDistance<BVH> distance(m_xn, bvh, m_rods[*rod]->getVertex(j));
-            const size_t numberFound = knn.Run(distance, -1.0f, searchDistance, m_rods_per_clump);
-            for (size_t i = 0; i < numberFound; i++)
-            {
-                int foundGlobalIdx = knn.TopResult().m_node;
-                knn.PopResult();
+ // For each point on each rod, find nearest neighbours on other rods
+ for (RodSelectionType::const_iterator rod = m_simulated_rods.begin(); rod != m_simulated_rods.end(); rod++)
+ {
+ std::set<int> nearRodIndices;
+ for (int j = 0; j < m_rods[*rod]->nv(); ++j)
+ {
+ const RodPointDistance<BVH> distance(m_xn, bvh, m_rods[*rod]->getVertex(j));
+ const size_t numberFound = knn.Run(distance, -1.0f, searchDistance, m_rods_per_clump);
+ for (size_t i = 0; i < numberFound; i++)
+ {
+ int foundGlobalIdx = knn.TopResult().m_node;
+ knn.PopResult();
 
-                int foundRodIdx = getContainingRod(foundGlobalIdx);
-                if (foundRodIdx != *rod)
-                    nearRodIndices.insert(foundRodIdx);
-            }
-        }
+ int foundRodIdx = getContainingRod(foundGlobalIdx);
+ if (foundRodIdx != *rod)
+ nearRodIndices.insert(foundRodIdx);
+ }
+ }
 
-        //       std::ostringstream debugOstr;
+ //       std::ostringstream debugOstr;
 
-        // Turn the set of nearest rod indices into a vector of ElasticRod*
-        std::vector<ElasticRod*> neighbours;
-        for (std::set<int>::const_iterator idx = nearRodIndices.begin(); idx != nearRodIndices.end(); ++idx)
-        {
-            neighbours.push_back(m_rods[*idx]);
-            //            debugOstr << *idx << ' ';
-        }
-        m_rods[*rod]->setNearestRootNeighbours(neighbours);
+ // Turn the set of nearest rod indices into a vector of ElasticRod*
+ std::vector<ElasticRod*> neighbours;
+ for (std::set<int>::const_iterator idx = nearRodIndices.begin(); idx != nearRodIndices.end(); ++idx)
+ {
+ neighbours.push_back(m_rods[*idx]);
+ //            debugOstr << *idx << ' ';
+ }
+ m_rods[*rod]->setNearestRootNeighbours(neighbours);
 
-        //       DebugStream(g_log, "") << "Rod " << *rod << " has neighbours " << debugOstr.str() << '\n';
-    }
-}
-*/
+ //       DebugStream(g_log, "") << "Rod " << *rod << " has neighbours " << debugOstr.str() << '\n';
+ }
+ }
+ */
 
 void BAGroomingStepper::setClumpingParameters(const double charge, const double power, const double dist)
 {
