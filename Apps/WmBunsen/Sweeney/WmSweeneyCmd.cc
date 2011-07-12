@@ -35,7 +35,10 @@
 
 #include "WmSweeneyCmd.hh"
 #include "WmSweeneyNode.hh"
+#include "WmSweeneyUtils.hh"
 #include "../WmBunsenCollisionMeshNode.hh"
+
+using namespace sweeney::utils;
 
 // Statics
 /* static */ std::map<std::string, WmSweeneyHelp> WmSweeneyCmd::m_help;
@@ -80,6 +83,8 @@ void* WmSweeneyCmd::creator()
 
 const char *const kCreateSweeneyNode( "-cs" );
 const char *const kAddCollisionMeshes( "-acm" );
+const char *const kSetSimulatedSubsection( "-sss" );
+const char *const kSetSimulateAll( "-ssa" );
 
 const char *const kHelp( "-h" );
 
@@ -95,7 +100,11 @@ MSyntax WmSweeneyCmd::syntaxCreator()
                "Creates rods from the selected Barbershop furset node." );
     p_AddFlag( mSyntax, kAddCollisionMeshes, "-addCollisionMesh",
                "Adds a a selected polygon mesh as a collision object for the selected Sweeney node." );
-    
+    p_AddFlag( mSyntax, kSetSimulatedSubsection, "-simulateOnlySelectedRods",
+                   "Applies slider settings only to selected rods when simulation begins." );
+    p_AddFlag( mSyntax, kSetSimulateAll, "-simulateAllRods",
+                   "Applies slider settings only to all rods when simulation begins." );
+
     mSyntax.setObjectType( MSyntax::kSelectionList );
     mSyntax.useSelectionAsDefault( true );
     mSyntax.enableEdit( true );
@@ -168,6 +177,14 @@ MStatus WmSweeneyCmd::redoIt()
         if ( m_mArgDatabase->isFlagSet( kAddCollisionMeshes ) )
         {
             addCollisionMeshes();
+        }
+        if ( m_mArgDatabase->isFlagSet( kSetSimulatedSubsection ) )
+        {
+            setSimulatedSubset();
+        }
+        if ( m_mArgDatabase->isFlagSet( kSetSimulatedSubsection ) )
+        {
+            setSimulateAll();
         }
 
         setResult( m_results );
@@ -484,6 +501,18 @@ void WmSweeneyCmd::addCollisionMeshes()
             CHECK_MSTATUS( stat );
         }
     }
+}
+
+void WmSweeneyCmd::setSimulatedSubset( )
+{
+    MIntArray faces;
+    MString objectName;
+    getSelectedComponents( kFaceComponent, objectName, faces );
+}
+
+void WmSweeneyCmd::setSimulateAll( )
+{
+    // tell rod manager to simulate all
 }
 
 void WmSweeneyCmd::p_AddFlag(

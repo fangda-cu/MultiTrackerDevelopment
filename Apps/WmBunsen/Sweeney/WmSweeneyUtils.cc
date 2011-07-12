@@ -170,7 +170,132 @@ MStatus findClosestRayMeshIntersection( MFnMesh& i_meshFn, const MFloatPoint& i_
 }
 
 
+bool parseSelectionString( const MString& i_selectionString,
+    MString& o_objectName,
+    ComponentType* o_componentType, MIntArray* o_components )
+{
+    o_objectName = "";
 
+    if ( o_componentType )
+    {
+        *o_componentType = kNullComponent;
+    }
+
+    if ( o_components )
+    {
+        o_components->clear();
+    }
+
+    if ( i_selectionString == "" )
+    {
+        return false;
+    }
+
+
+    const int nDot = i_selectionString.indexW( '.' );
+    if ( nDot == -1 )
+    {
+        o_objectName = i_selectionString;
+    }
+    else
+    {
+        o_objectName = i_selectionString.substringW( 0, nDot - 1 );
+
+        if ( o_componentType )
+        {
+            if ( i_selectionString.indexW( ".f" ) != -1 )
+            {
+                *o_componentType = kFaceComponent;
+            }
+            if ( i_selectionString.indexW( ".e" ) != -1 )
+            {
+                *o_componentType = kEdgeComponent;
+            }
+            if ( i_selectionString.indexW( ".vtx" ) != -1 )
+            {
+                *o_componentType = kVertexComponent;
+            }
+            if ( i_selectionString.indexW( ".vtxFace" ) != -1 )
+            {
+                *o_componentType = kVertexFaceComponent;
+            }
+            if ( i_selectionString.indexW( ".map" ) != -1 )
+            {
+                *o_componentType = kMapComponent;
+            }
+        }
+
+        if ( o_components )
+        {
+            const int nOpen = i_selectionString.rindexW( '[' );
+            const int nRange = i_selectionString.rindexW( ':' );
+            const int nClose = i_selectionString.rindexW( ']' );
+
+            if ( nOpen != -1 && nClose != -1 )
+            {
+                MString lowValueString, highValueString;
+                if ( nRange != -1 )
+                {
+                    lowValueString  = i_selectionString.substringW( nOpen  + 1, nRange - 1 );
+                    highValueString = i_selectionString.substringW( nRange + 1, nClose - 1 );
+                }
+                else
+                {
+                    lowValueString  = i_selectionString.substringW( nOpen + 1, nClose - 1 );
+                    highValueString = lowValueString;
+                }
+
+                int lowValue  = atoi( lowValueString.asChar()  );
+                int highValue = atoi( highValueString.asChar() );
+
+                for ( int value = lowValue; value <= highValue; value++ )
+                {
+                    o_components->append( value );
+                }
+            }
+        }
+    }
+
+
+    return true;
+}
+
+
+MStatus getSelectedComponents( const ComponentType i_componentType,
+    MString& o_objectName,
+    MIntArray& o_components,
+    const int i_objectIndex )
+{
+    o_objectName = "";
+    o_components.clear();
+
+    MS status = MStatus::kFailure;
+
+    MSelectionList selectionList;
+    status = MGlobal::getActiveSelectionList( selectionList );
+
+    MStringArray entries;
+    selectionList.getSelectionStrings( i_objectIndex, entries );
+    for ( unsigned int e = 0; e < entries.length(); e++ )
+    {
+        const MString& entry = entries[ e ];
+
+        ComponentType componentType;
+        MIntArray components;
+        parseSelectionString( entry.asChar(), o_objectName,
+            &componentType, &components );
+
+        if ( componentType == i_componentType )
+        {
+            for ( unsigned int c = 0; c < components.length(); ++c )
+            {
+                o_components.append( components[ c ] );
+            }
+        }
+    }
+
+    return status;
+}
 
 }
 }

@@ -77,6 +77,9 @@ protected:
 
     void createSweeneyNode();
     void addCollisionMeshes();    
+    void setSimulatedSubset();
+    void setSimulateAll();
+
 public:     // Data
 protected:  // Data
     static void appendToResultString( MString& i_resultString );

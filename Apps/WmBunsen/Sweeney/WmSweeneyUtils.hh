@@ -27,6 +27,27 @@ MStatus findPointOnMeshFrom2dScreenCoords(  MFnMesh& i_meshFn, short i_x, short 
 MStatus findClosestRayMeshIntersection( MFnMesh& i_meshFn, const MFloatPoint& i_rayStart, 
     const MFloatVector& i_rayVec, MFloatPoint& o_hit, MFloatVector& o_normal ) ;
 
+enum ComponentType
+   {
+       kNullComponent,
+       kVertexComponent,
+       kFaceComponent,
+       kEdgeComponent,
+       kVertexFaceComponent,
+       kMapComponent
+   };
+
+bool parseSelectionString( const MString& i_selectionString,
+   MString& o_objectName,
+   ComponentType* o_componentType = NULL,
+   MIntArray* o_components = NULL );
+
+MStatus getSelectedComponents( const ComponentType i_componentType,
+      MString& o_objectName,
+      MIntArray& o_components,
+      const int i_objectIndex = 0 );
+
+
 }
 }
 

@@ -158,6 +158,7 @@ public:
 private:
     void initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock );
     void initialiseCollisionMeshes( MDataBlock &i_data );
+    void initialiseMeshMapping( );
     void updateCollisionMeshes( MDataBlock& i_dataBlock );
     void compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i_dataBlock );
     void updateStrandLength( BASim::ElasticRod* current_rod, bool& update_rod, BASim::Scalar stand_length );
@@ -166,8 +167,11 @@ private:
     void updateStrandCurl( BASim::ElasticRod* current_rod,  bool& update_rod,
             BASim::Scalar curvature, BASim::Scalar torsion );
     void updateSolverSettings( MDataBlock &i_dataBlock );
-    void getSurfaceTangent( MFnMesh& surface, BASim::Vec3d& surface_tan, MPoint root, const BASim::Vec3d strand_tan );
+
+    // Helper functions for scalp mesh
+    void getSurfaceTangent( MFnMesh& surface, BASim::Vec3d& surface_tan, int rodIdx, const BASim::Vec3d strand_tan );
     bool getScalpTangents( std::vector<BASim::Vec3d>& i_scalpTangents );
+    void getMeshPath( MDagPath& meshPath, MStatus& status );
 
     double m_currentTime;
     double m_previousTime;
@@ -201,7 +205,10 @@ private:
     WmSweeneyRodManager* m_rodManager;
     MVectorArray m_strandVertices;
     MVectorArray m_strandRootFrames;
+    // strand lengths from barbershop
     std::vector<double> m_strandLengths;
+    // scalp face to strand index mapping
+    std::map<int, int> m_faceToStrandIdx;
     unsigned int m_numberOfVerticesPerStrand;
 };
 

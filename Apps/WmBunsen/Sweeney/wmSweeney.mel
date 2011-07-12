@@ -26,7 +26,9 @@ global proc wmSweeneyAddMainMenu()
 
         menuItem -label "Create rods from BarberShop node" -annotation "Create elastic rods from a BarberShop furset" -command "wmSweeney -cs";
         menuItem -label "Add selected meshes as collision objects" -annotation "Add meshes as collision objects to the selected wmSweeney node"-command "wmSweeney -acm";        
-        menuItem -label "Add Guide Rod Tool" -annotation "Add a manipulatable guide rod"-command "setToolTo $gWmSwAddRodContextName";        
+        menuItem -label "Add Guide Rod Tool" -annotation "Add a manipulatable guide rod"-command "setToolTo $gWmSwAddRodContextName";    
+       	menuItem -label "Simulate Only Selected Rods" -annotation "Applies slider settings only to selected rods"-command "wmSweeney -sss";    
+       	menuItem -label "Simulate All Rods" -annotation "Applies slider settings globally"-command "wmSweeney -ssa";   
     }
 }
 
