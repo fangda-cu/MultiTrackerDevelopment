@@ -13,6 +13,8 @@
 namespace BASim
 {
 
+#define FIRST_ATTRACTED_VERTEX rod.nv()-2
+
 RodClumpingForce::RodClumpingForce() :
     q(0.0), r(1.0), rho2(0.000025)
 {
@@ -57,7 +59,7 @@ Scalar RodClumpingForce::computeEnergy(const ElasticRod& rod) const
 Scalar RodClumpingForce::computeEnergy(const ElasticRod& rod, const ElasticRod& other) const
 {
     Scalar energy = 0.0;
-    for (int vidx = 0; vidx < rod.nv(); ++vidx)
+    for (int vidx = FIRST_ATTRACTED_VERTEX; vidx < rod.nv(); ++vidx)
     {
         const Vec3d& x = rod.getVertex(vidx);
 
@@ -79,7 +81,7 @@ void RodClumpingForce::computeForce(const ElasticRod& rod, VecXd& force) const
 
 void RodClumpingForce::computeForce(const ElasticRod& rod, const ElasticRod& other, VecXd& force) const
 {
-    for (int vidx = 0; vidx < rod.nv(); ++vidx)
+    for (int vidx = FIRST_ATTRACTED_VERTEX; vidx < rod.nv(); ++vidx)
     {
         const Vec3d& x = rod.getVertex(vidx);
         Vec3d localForceFromOther;
@@ -121,7 +123,7 @@ void RodClumpingForce::computeForceDX(int baseindex, const ElasticRod& rod, cons
         MatrixBase& J) const
 {
     Mat3d localJ;
-    for (int vidx = 0; vidx < rod.nv(); ++vidx)
+    for (int vidx = FIRST_ATTRACTED_VERTEX; vidx < rod.nv(); ++vidx)
     {
         computeLocalForceDX(rod, vidx, other, localJ);
         //       TraceStream(g_log, "") << "Local clumping force Jacobian for rod " << rod.globalRodIndex << " vertex " << vidx
