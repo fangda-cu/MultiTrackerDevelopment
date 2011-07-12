@@ -2921,8 +2921,8 @@ template<typename TreeT>
 class RodPointDistance
 {
 public:
-    RodPointDistance(const VecXd& xn, const TreeT& bvh, const Vec3d& point) :
-        m_xn(xn), m_bvh(bvh), m_point(point)
+    RodPointDistance(const VecXd& xn, const TreeT& bvh, const Vec3d& point, const std::vector<int>& centerLinePointIndices) :
+        m_xn(xn), m_bvh(bvh), m_point(point), m_pointIndices(centerLinePointIndices)
     {
     }
 
@@ -2933,7 +2933,7 @@ public:
 
     float ObjectDistance(const uint32_t obj_index) const
     {
-        const Vec3d v = m_xn.segment<3> (3 * obj_index) - m_point;
+        const Vec3d v = m_xn.segment<3> (3 * m_pointIndices[obj_index]) - m_point;
         return v.dot(v);
     }
 
@@ -2941,6 +2941,7 @@ private:
     const VecXd& m_xn;
     const TreeT& m_bvh;
     const Vec3d& m_point;
+    const std::vector<int>& m_pointIndices;
 };
 
 void BAGroomingStepper::findCenterLines(RodSelectionType& centerLineRods)
@@ -2993,25 +2994,29 @@ void BAGroomingStepper::selectClumps()
             // const Vec3d& bindingPoint = m_rods[*rod]->getVertex(0); // at the root
             const Vec3d& bindingPoint = m_rods[*rod]->getVertex(m_rods[*rod]->nv() - 1); // at the tip
 
-            const RodPointDistance<BVH> distance(m_xn, bvh, bindingPoint);
+            const RodPointDistance<BVH> distance(m_xn, bvh, bindingPoint, centerLinePointIndices);
             const size_t numberFound = knn.Run(distance, -1.0, searchDistance, 1);
             assert(numberFound == 1);
 
             const int foundGlobalIdx = centerLinePointIndices[knn.TopResult().m_node];
-          //  DebugStream(g_log, "") << "Rod " << *rod << " found close point " << foundGlobalIdx << '\n';
+            //  DebugStream(g_log, "") << "Rod " << *rod << " found close point " << foundGlobalIdx << " at distance " << sqrt(
+            //          knn.TopResult().m_dist) << '\n';
 
-            knn.PopResult(); // Probably superfluous since we are only going to use the top result, just need to check that knn.Run correctly resets the result list.
-            int foundRodIdx = getContainingRod(foundGlobalIdx);
+            //  knn.PopResult(); // Probably superfluous since we are only going to use the top result, just need to check that knn.Run correctly resets the result list.
+            const int foundRodIdx = getContainingRod(foundGlobalIdx);
+            //    int foundLocalIdx = foundGlobalIdx - m_base_vtx_indices[foundRodIdx];
+            //  DebugStream(g_log, "") << "That is vertex " << foundLocalIdx << " on rod " << foundRodIdx << " at distance "
+            //           << (m_rods[foundRodIdx]->getVertex(foundLocalIdx) - bindingPoint).norm() << '\n';
             assert(find(centerLineRods.begin(), centerLineRods.end(), foundRodIdx) != centerLineRods.end()); // found rod should be in the center lines list
 
             std::vector<ElasticRod*> neighbours;
             neighbours.push_back(m_rods[foundRodIdx]);
             m_rods[*rod]->setNearestRootNeighbours(neighbours);
 
-            DebugStream(g_log, "") << "Rod " << *rod << " is attracted to rod " << foundRodIdx << '\n';
+            //  DebugStream(g_log, "") << "Rod " << *rod << " is attracted to rod " << foundRodIdx << '\n';
         }
-        else
-            DebugStream(g_log, "") << "Rod " << *rod << " is a centerline\n";
+        //  else
+        //      DebugStream(g_log, "") << "Rod " << *rod << " is a centerline\n";
     }
 
 }
