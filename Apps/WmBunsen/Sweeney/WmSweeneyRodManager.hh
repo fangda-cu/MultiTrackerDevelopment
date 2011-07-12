@@ -82,6 +82,7 @@ public:
     }
 
     std::vector<BASim::ElasticRod*> m_rods;
+    std::vector<BASim::ElasticRod*> m_selectedRods;
 
 private:
     BASim::BAGroomingStepper* m_bridsonStepper;

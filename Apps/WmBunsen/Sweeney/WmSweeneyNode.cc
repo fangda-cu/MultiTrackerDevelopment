@@ -214,11 +214,11 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 
 				// for each rod, check if any parameters need to be updated,
 				// perform necessary updates, and flag the rod accordingly
-				for (size_t i = 0; i < m_rodManager->m_rods.size(); ++i)
+				for (size_t i = 0; i < m_rodManager->m_selectedRods.size(); ++i)
 				{
 
 					update_rod = false;
-					current_rod = m_rodManager->m_rods[i];
+					current_rod = m_rodManager->m_selectedRods[i];
 
 					// get total rod length for scaling
                     Scalar curl_length = ( 1.0 - m_curlStart )*m_length;
@@ -1560,7 +1560,27 @@ void WmSweeneyNode::initialiseMeshMapping( )
         }
         m_faceToStrandIdx.insert( pair<int,int> ( faceIdx , i ) );
 
-        cout << " FACE " << faceIdx << " to ROD " << i << endl;
+        //cout << " FACE " << faceIdx << " to ROD " << i << endl;
     }
+}
+
+void WmSweeneyNode::setScalpSelection( const MIntArray& faces )
+{
+    std::vector<BASim::ElasticRod*> selectedRods;
+
+    map<int,int>::iterator rodIdxItr;
+
+    for ( int i = 0; i < faces.length( ); i++ )
+    {
+        rodIdxItr =  m_faceToStrandIdx.find( faces[ i ] );
+
+        if ( rodIdxItr != m_faceToStrandIdx.end() )
+        {
+            selectedRods.push_back( m_rodManager->m_rods[ rodIdxItr->second ] );
+            cout << "ROD " << rodIdxItr->second << " selected " << endl;
+        }
+    }
+
+    m_rodManager->m_selectedRods = selectedRods;
 }
 

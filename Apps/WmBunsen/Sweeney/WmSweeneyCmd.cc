@@ -182,7 +182,7 @@ MStatus WmSweeneyCmd::redoIt()
         {
             setSimulatedSubset();
         }
-        if ( m_mArgDatabase->isFlagSet( kSetSimulatedSubsection ) )
+        if ( m_mArgDatabase->isFlagSet( kSetSimulateAll ) )
         {
             setSimulateAll();
         }
@@ -505,9 +505,30 @@ void WmSweeneyCmd::addCollisionMeshes()
 
 void WmSweeneyCmd::setSimulatedSubset( )
 {
+    if ( m_selectedSweeneyNode == MObject::kNullObj )
+    {
+        MGlobal::displayError( "Please select a wmSweeney node associated with these mesh faces." );
+        return;
+    }
+
     MIntArray faces;
     MString objectName;
     getSelectedComponents( kFaceComponent, objectName, faces );
+
+    MFnDagNode dagNodeFn( m_selectedSweeneyNode );
+
+    WmSweeneyNode* sweeneyNode = (WmSweeneyNode*) dagNodeFn.userNode();
+
+    sweeneyNode->setScalpSelection( faces );
+    // now pass this list to the sweeney node
+
+    //cout << " SELECTED FACES: " << endl;
+    //for ( int i = 0; i < faces.length(); i++ )
+    //{
+      //  cout << faces[i] << endl;
+    //}
+
+    //std::map<int,int> scalpRodMap = getScalpRodMap();
 }
 
 void WmSweeneyCmd::setSimulateAll( )
