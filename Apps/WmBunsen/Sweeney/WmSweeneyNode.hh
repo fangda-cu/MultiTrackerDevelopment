@@ -144,6 +144,7 @@ public:
     static MObject ia_shouldDrawStrands;
     static MObject ia_shouldDrawRootFrames;
     static MObject ia_shouldDrawVelocity;
+    static MObject ia_shouldDrawOnlySelected;
 
     static MStatus addNumericAttribute( MObject& i_attribute, MString i_longName, 
                                         MString i_shortName,

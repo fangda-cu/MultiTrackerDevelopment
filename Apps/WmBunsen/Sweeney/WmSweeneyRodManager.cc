@@ -11,6 +11,10 @@ WmSweeneyRodManager::WmSweeneyRodManager()
     m_triangleMeshes.clear();
     m_scriptingControllers.clear();
     m_rodRenderers.clear();
+
+    m_selectedRods.clear();
+    m_activeRenderers.clear();
+    m_renderOnlySelected = false;
 }
 
 WmSweeneyRodManager::~WmSweeneyRodManager()
@@ -19,8 +23,10 @@ WmSweeneyRodManager::~WmSweeneyRodManager()
 }
 
 void WmSweeneyRodManager::setRodsDrawDebugging(const bool i_shouldDrawStrands, const bool i_shouldDrawRootFrames,
-        const bool i_shouldDrawVelocity)
+        const bool i_shouldDrawVelocity, const bool i_renderOnlySelected)
 {
+    m_renderOnlySelected = i_renderOnlySelected;
+
     for (size_t r = 0; r < m_rodRenderers.size(); ++r)
     {
         m_rodRenderers[r]->drawRod() = i_shouldDrawStrands;
@@ -215,6 +221,18 @@ void WmSweeneyRodManager::setClumpingParameters(const double charge, const doubl
     m_bridsonStepper->setClumpingParameters(charge, power, dist);
 }
 
+void WmSweeneyRodManager::resetSelectedRods()
+{
+    m_selectedRods.clear();
+    m_activeRenderers.clear();
+}
+
+void WmSweeneyRodManager::selectRod(int rodIdx)
+{
+    m_selectedRods.push_back( m_rods[ rodIdx ] );
+    m_activeRenderers.push_back( m_rodRenderers[ rodIdx ] );
+}
+
 void WmSweeneyRodManager::takeStep()
 {
     // Check if anything has actually been initialised yet. We may still be being loaded by Maya.
@@ -253,8 +271,19 @@ void WmSweeneyRodManager::takeStep()
 
 void WmSweeneyRodManager::drawAllRods()
 {
-    for (size_t r = 0; r < m_rodRenderers.size(); ++r)
+    if ( m_renderOnlySelected )
     {
-        m_rodRenderers[r]->render();
+        cout << " RENDERING SELECTED RODS " <<  m_activeRenderers.size() << endl;
+        for (size_t r = 0; r < m_activeRenderers.size(); ++r)
+        {
+            m_activeRenderers[r]->render();
+        }
+    }
+    else
+    {
+        for (size_t r = 0; r < m_rodRenderers.size(); ++r)
+        {
+            m_rodRenderers[r]->render();
+        }
     }
 }

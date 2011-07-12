@@ -36,9 +36,7 @@ RodRenderer::RodRenderer(ElasticRod& rod) :
 
 void RodRenderer::render()
 {
-    // assigns different color based
-    // on the which side of the head
-    // the rod strand has its root
+    // assigns different color to clump center
     if (m_rod.isClumpCenterLine())
     {
         m_palette[0] = Color(255, 0, 0);

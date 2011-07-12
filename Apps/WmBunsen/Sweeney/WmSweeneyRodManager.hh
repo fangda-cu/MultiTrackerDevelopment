@@ -69,7 +69,16 @@ public:
     void drawAllRods();
 
     void setRodsDrawDebugging(const bool i_shouldDrawStrands, const bool i_shouldDrawRootFrames,
-            const bool i_shouldDrawVelocity);
+            const bool i_shouldDrawVelocity, const bool i_renderOnlySelected);
+
+    std::vector<BASim::ElasticRod*> getSelectedRods() const
+    {
+        return m_selectedRods;
+    }
+
+    void resetSelectedRods();
+
+    void selectRod( int rodIdx );
 
     size_t numberOfRods()
     {
@@ -80,9 +89,8 @@ public:
     {
         return m_rods[i_rodIndex];
     }
-
     std::vector<BASim::ElasticRod*> m_rods;
-    std::vector<BASim::ElasticRod*> m_selectedRods;
+    bool m_renderOnlySelected;
 
 private:
     BASim::BAGroomingStepper* m_bridsonStepper;
@@ -91,6 +99,9 @@ private:
     std::vector<BASim::TriangleMesh*> m_triangleMeshes;
     std::vector<BASim::LevelSet*> m_levelSets;
     std::vector<BASim::ScriptingController*> m_scriptingControllers;
+    // selected subsection of rods
+    std::vector<BASim::ElasticRod*> m_selectedRods;
+    std::vector<BASim::RodRenderer*> m_activeRenderers;
 };
 
 #endif

@@ -88,6 +88,7 @@ using namespace BASim;
 /* static */MObject WmSweeneyNode::ia_shouldDrawStrands;
 /* static */MObject WmSweeneyNode::ia_shouldDrawRootFrames;
 /* static */MObject WmSweeneyNode::ia_shouldDrawVelocity;
+/* static */MObject WmSweeneyNode::ia_shouldDrawOnlySelected;
 
 WmSweeneyNode::WmSweeneyNode() :
     m_rodManager(NULL)
@@ -163,7 +164,9 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 		// Set Debug Drawing
 		if ( m_rodManager != NULL )
 		{
-		    m_rodManager->setRodsDrawDebugging( m_shouldDrawStrands, m_shouldDrawRootFrames, m_shouldDrawVelocity );
+		    bool shouldDrawOnlySelected = i_dataBlock.inputValue( ia_shouldDrawOnlySelected ).asBool();
+		    m_rodManager->setRodsDrawDebugging( m_shouldDrawStrands, m_shouldDrawRootFrames,
+		            m_shouldDrawVelocity, shouldDrawOnlySelected );
 		}
 
 		if ( m_currentTime == m_startTime )
@@ -214,11 +217,11 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 
 				// for each rod, check if any parameters need to be updated,
 				// perform necessary updates, and flag the rod accordingly
-				for (size_t i = 0; i < m_rodManager->m_selectedRods.size(); ++i)
+				for (size_t i = 0; i < m_rodManager->m_rods.size(); ++i)
 				{
 
 					update_rod = false;
-					current_rod = m_rodManager->m_selectedRods[i];
+					current_rod = m_rodManager->m_rods[i];
 
 					// get total rod length for scaling
                     Scalar curl_length = ( 1.0 - m_curlStart )*m_length;
@@ -1209,6 +1212,14 @@ void* WmSweeneyNode::creator()
         status.perror("attributeAffects ia_shouldDrawVelocity->ca_rodPropertiesSync");
         return status;
     }
+    // selected
+    addNumericAttribute(ia_shouldDrawOnlySelected, "shouldDrawOnlySelected", "sdsel", MFnNumericData::kBoolean, false, true);
+    status = attributeAffects(ia_shouldDrawOnlySelected, ca_rodPropertiesSync);
+    if (!status)
+    {
+        status.perror("attributeAffects ia_shouldDrawOnlySelected->ca_rodPropertiesSync");
+        return status;
+    }
 
 
     //Failure  Detection
@@ -1566,9 +1577,10 @@ void WmSweeneyNode::initialiseMeshMapping( )
 
 void WmSweeneyNode::setScalpSelection( const MIntArray& faces )
 {
-    std::vector<BASim::ElasticRod*> selectedRods;
 
     map<int,int>::iterator rodIdxItr;
+
+    m_rodManager->resetSelectedRods();
 
     for ( int i = 0; i < faces.length( ); i++ )
     {
@@ -1576,11 +1588,9 @@ void WmSweeneyNode::setScalpSelection( const MIntArray& faces )
 
         if ( rodIdxItr != m_faceToStrandIdx.end() )
         {
-            selectedRods.push_back( m_rodManager->m_rods[ rodIdxItr->second ] );
-            cout << "ROD " << rodIdxItr->second << " selected " << endl;
+            m_rodManager->selectRod( rodIdxItr->second );
+            // cout << "ROD " << rodIdxItr->second << " selected " << endl;
         }
     }
-
-    m_rodManager->m_selectedRods = selectedRods;
 }
 
