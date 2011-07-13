@@ -150,7 +150,7 @@ Real LevelSet::getLevelSetValueVelocity(Vec3<Real> &x, Vec3<Real> &v)
 void LevelSet::getGradient(Vec3<Real> &x, Vec3<Real> &grad)
 {
     Eigen::Vector4f samplePoint( x[ 0 ], x[ 1 ], x[ 2 ], 1 );        
-    m_gradPosition.push_back( samplePoint );
+    // m_gradPosition.push_back( samplePoint );
 
     Eigen::Matrix4f concatMatrix = ( m_transformMatrixAtCreation * m_currentTransformMatrix.inverse() );
     samplePoint = concatMatrix * samplePoint;

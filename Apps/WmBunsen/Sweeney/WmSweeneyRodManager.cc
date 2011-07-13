@@ -180,7 +180,7 @@ void WmSweeneyRodManager::initialiseSimulation(const double i_timeStep, const do
      */
 
     m_bridsonStepper = new BAGroomingStepper(m_rods, m_triangleMeshes, m_scriptingControllers, m_rodTimeSteppers, i_timeStep,
-            i_startTime, 1, perfParams, m_levelSets, i_rodsPerClump);
+            i_startTime, -1, perfParams, m_levelSets, i_rodsPerClump);
 }
 
 void WmSweeneyRodManager::updateSolverSettings(double i_atol, double i_stol, double i_rtol, double i_inftol,
