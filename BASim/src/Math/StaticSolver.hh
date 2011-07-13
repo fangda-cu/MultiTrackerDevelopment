@@ -145,6 +145,8 @@ public:
         m_l2norm = m_rhs.norm();
     }
 
+    static int solveCounter;
+
 protected:
 
     inline Scalar funnyclipvalue(Scalar minvalue, Scalar variable, Scalar maxvalue)
@@ -256,6 +258,9 @@ protected:
 
     bool position_solve()
     {
+#pragma omp atomic
+        solveCounter++;
+
         START_TIMER("StaticSolver::newton_step/setup");
 
         TraceStream(g_log, "StaticSolver::position_solve") << "call #" << ++static_solve_counter << " on rod "
