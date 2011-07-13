@@ -25,6 +25,7 @@ LIB1_H += StretchingForce.hh
 LIB1_H += BendingForce.hh
 LIB1_H += TwistingForce.hh
 LIB1_H += ForceAccumulator.hh
+LIB1_H += StrandGeometry.hh
 
 LIB1_S += StrandStepManager.cc
 LIB1_S += StrandBase.cc
@@ -35,6 +36,7 @@ LIB1_S += StretchingForce.cc
 LIB1_S += BendingForce.cc
 LIB1_S += TwistingForce.cc
 LIB1_S += ForceAccumulator.cc
+LIB1_S += StrandGeometry.cc
 
 
 

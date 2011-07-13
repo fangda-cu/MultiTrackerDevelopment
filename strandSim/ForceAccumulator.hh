@@ -12,6 +12,7 @@ namespace strandsim
 {
 
 class ElasticStrand;
+class StrandGeometry;
 
 template<typename ForceT>
 class ForceAccumulator
@@ -20,7 +21,8 @@ public:
     ForceAccumulator();
     virtual ~ForceAccumulator();
 
-    static void accumulate(ElasticStrand& strand);
+    // Compute global energy, force, Jacobian
+    static void accumulate(ElasticStrand& strand, const StrandGeometry& geometry);
 };
 
 }

@@ -27,9 +27,9 @@ public:
     TwistingForce();
     virtual ~TwistingForce();
 
-    static Scalar localEnergy(const ElasticStrand& strand, const IndexType vtx);
-    static LocalForceType localForce(const ElasticStrand& strand, const IndexType vtx);
-    static LocalJacobianType localJacobian(const ElasticStrand& strand, const IndexType vtx);
+    static Scalar localEnergy(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx);
+    static LocalForceType localForce(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx);
+    static LocalJacobianType localJacobian(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx);
 
     static void addInPosition(ForceVectorType& globalForce, const IndexType vtx, const LocalForceType& localForce);
     static void addInPosition(JacobianMatrixType& globalJacobian, const IndexType vtx, const LocalJacobianType& localJacobian);

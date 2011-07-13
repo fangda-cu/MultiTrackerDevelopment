@@ -28,13 +28,13 @@ ForceAccumulator<ForceT>::~ForceAccumulator()
 }
 
 template<typename ForceT>
-void ForceAccumulator<ForceT>::accumulate(ElasticStrand& strand)
+void ForceAccumulator<ForceT>::accumulate(ElasticStrand& strand, const StrandGeometry& geometry)
 {
     for (IndexType vtx = ForceT::s_first; vtx < strand.m_numVertices - 1; ++vtx)
     {
-        strand.m_totalEnergy += ForceT::localEnergy(strand, vtx);
-        ForceT::addInPosition(strand.m_totalForces, vtx, ForceT::localForce(strand, vtx));
-        ForceT::addInPosition(strand.m_totalJacobian, vtx, ForceT::localJacobian(strand, vtx));
+        strand.m_totalEnergy += ForceT::localEnergy(strand, geometry, vtx);
+        ForceT::addInPosition(strand.m_totalForces, vtx, ForceT::localForce(strand, geometry, vtx));
+        ForceT::addInPosition(strand.m_totalJacobian, vtx, ForceT::localJacobian(strand, geometry, vtx));
     }
 }
 

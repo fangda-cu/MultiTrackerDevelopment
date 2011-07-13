@@ -22,39 +22,39 @@ StretchingForce::~StretchingForce()
     // TODO Auto-generated destructor stub
 }
 
-Scalar StretchingForce::localEnergy(const ElasticStrand& strand, const IndexType vtx)
+Scalar StretchingForce::localEnergy(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx)
 {
     assert(vtx < strand.m_numVertices - 1);
 
     const Scalar ks = strand.m_parameters.m_ks;
     const Scalar restLength = strand.m_restLengths[vtx];
-    const Scalar length = strand.m_lengths[vtx];
+    const Scalar length = geometry.m_lengths[vtx];
 
     return 0.5 * ks * square(length / restLength - 1.0) * restLength;
 }
 
-StretchingForce::LocalForceType StretchingForce::localForce(const ElasticStrand& strand, const IndexType vtx)
+StretchingForce::LocalForceType StretchingForce::localForce(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx)
 {
     LocalForceType force;
     const Scalar ks = strand.m_parameters.m_ks;
     const Scalar restLength = strand.m_restLengths[vtx];
-    const Scalar length = strand.m_lengths[vtx];
+    const Scalar length = geometry.m_lengths[vtx];
 
-    Vec3d f = ks * (length / restLength - 1.0) * strand.getEdgeVector(vtx).normalized();
+    Vec3d f = ks * (length / restLength - 1.0) * geometry.getEdgeVector(vtx).normalized();
     force.segment<3> (0) = f;
     force.segment<3> (3) = -f;
 
     return force;
 }
 
-StretchingForce::LocalJacobianType StretchingForce::localJacobian(const ElasticStrand& strand, const IndexType vtx)
+StretchingForce::LocalJacobianType StretchingForce::localJacobian(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx)
 {
     LocalJacobianType Jacobian;
 
     const Scalar ks = strand.m_parameters.m_ks;
     const Scalar restLength = strand.m_restLengths[vtx];
-    const Scalar length = strand.m_lengths[vtx];
-    const Vec3d& edge = strand.getEdgeVector(vtx);
+    const Scalar length = geometry.m_lengths[vtx];
+    const Vec3d& edge = geometry.getEdgeVector(vtx);
     const Mat3d M = ks * ((1.0 / restLength - 1.0 / length) * Mat3d::Identity() + 1.0 / length * edge * edge.transpose()
             / square(length));
 
