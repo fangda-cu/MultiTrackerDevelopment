@@ -10,7 +10,6 @@
 
 #include "StrandBase.hh"
 #include "ElasticStrandUtils.hh"
-#include "Edge.hh"
 #include "BandMatrix.hh"
 #include "ForceAccumulator.hh"
 #include "ElasticStrandParameters.hh"
@@ -42,7 +41,7 @@ public:
         return m_degreesOfFreedom.segment<3> (4 * vtx);
     }
 
-    Scalar getTorsion(const IndexType vtx) const
+    Scalar getTheta(const IndexType vtx) const
     {
         assert(vtx < m_numVertices - 1);
 
@@ -54,13 +53,6 @@ public:
         assert(vtx < m_numVertices - 1);
 
         return getVertex(vtx + 1) - getVertex(vtx);
-    }
-
-    const Edge<ElasticStrand> getEdge(const IndexType vtx) const
-    {
-        assert(vtx < m_numVertices - 1);
-
-        return Edge<ElasticStrand> (*this, vtx);
     }
 
     const Vec3d getReferenceFrame1(const IndexType vtx) const
@@ -171,13 +163,23 @@ public:
     void acceptNewPositions();
 
 private:
+    typedef Eigen::Matrix<Scalar, 11, 1> Vec11d;
+    typedef Eigen::Matrix<Scalar, 11, 11> Mat11d;
+    typedef std::pair<Mat11d, Mat11d> Mat11dPair;
+
     void resizeInternals();
     void freezeRestShape();
     void updateFrames();
+
     Mat2d computeBendingMatrix(const IndexType vtx) const;
     Vec2d computeKappa(const IndexType vtx) const;
     Eigen::Matrix<Scalar, 11, 2> computeGradKappa(const IndexType vtx) const;
-    std::pair<Eigen::Matrix<Scalar,11,11>, Eigen::Matrix<Scalar,11,11>> computeHessKappa(const IndexType vtx) const;
+    Mat11dPair computeHessKappa(const IndexType vtx) const;
+
+    Scalar computeReferenceTwist(const IndexType vtx) const;
+    Scalar computeTwist(const IndexType vtx) const;
+    Vec11d computeGradTwist(const IndexType vtx) const;
+    Mat11d computeHessTwist(const IndexType vtx) const;
 
     void updateForceCaches();
     void accumulateInternalForces();
@@ -198,21 +200,32 @@ private:
 
     // Rest shape
     std::vector<Scalar> m_restLengths;
-    std::vector<Vec2d, Eigen::aligned_allocator<Vec2d> > m_kappaBar; // cf. http://eigen.tuxfamily.org/dox/TopicStlContainers.html
+    std::vector<Vec2d, Eigen::aligned_allocator<Vec2d> > m_kappaBar;
+    std::vector<Scalar> m_restTwists;
 
     // Previous time storage, for time-parallel stepping
     VecXd m_previousTangents;
 
     // Reference frames, material frames and other geometric properties
     bool m_framesUpToDate;
-    std::vector<Scalar> m_currentLengths; // lengths of edges, cached
+    std::vector<Scalar> m_lengths; // lengths of edges, cached
+    std::vector<Vec3d, Eigen::aligned_allocator<Vec3d> > m_tangents;
     VecXd m_referenceFrames1; // first vectors of reference frame
     VecXd m_referenceFrames2; // second vectors of reference frame
     VecXd m_materialFrames1;// first vectors of material frame
     VecXd m_materialFrames2; // second vectors of material frame
+
+    // Caches related to bending
     std::vector<Mat2d, Eigen::aligned_allocator<Mat2d> > m_bendingMatrices;
     std::vector<Vec2d, Eigen::aligned_allocator<Vec2d> > m_kappa;
     std::vector<Eigen::Matrix<Scalar, 11, 2>, Eigen::aligned_allocator<Eigen::Matrix<Scalar, 11, 2> > > m_gradKappa;
+    std::vector<Mat11dPair, Eigen::aligned_allocator<Mat11dPair> > m_HessKappa; // Maybe not
+
+    // Caches related to twisting
+    std::vector<Scalar> m_referenceTwists;
+    std::vector<Scalar> m_twists;
+    std::vector<Vec11d> m_gradTwists;
+    std::vector<Mat11d> m_HessTwists;
 
     // Force caching
     bool m_forceCachesUpToDate;

@@ -8,13 +8,13 @@
 #ifndef STRETCHINGFORCE_HH_
 #define STRETCHINGFORCE_HH_
 
-#include "Force.hh"
+#include "ForceBase.hh"
 #include "ElasticStrand.hh"
 
 namespace strandsim
 {
 
-class StretchingForce: public Force<ElasticStrand>
+class StretchingForce: public ForceBase<ElasticStrand>
 {
 public:
     static const IndexType s_first = 0;

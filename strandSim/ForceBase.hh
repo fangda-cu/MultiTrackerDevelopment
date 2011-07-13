@@ -1,5 +1,5 @@
 /*
- * Force.hh
+ * ForceBase.hh
  *
  *  Created on: 12/07/2011
  *      Author: jaubry
@@ -14,11 +14,11 @@ namespace strandsim
 {
 
 template<typename StrandT>
-class Force
+class ForceBase
 {
 public:
-    Force();
-    virtual ~Force();
+    ForceBase();
+    virtual ~ForceBase();
 };
 
 }

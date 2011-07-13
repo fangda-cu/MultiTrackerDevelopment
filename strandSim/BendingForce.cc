@@ -23,31 +23,37 @@ BendingForce::~BendingForce()
 
 Scalar BendingForce::localEnergy(const ElasticStrand& strand, const IndexType vtx)
 {
+    assert(strand.m_framesUpToDate);
+
     const Mat2d& B = strand.m_bendingMatrices[vtx];
-    const Scalar len = 0.5 * (strand.m_currentLengths[vtx - 1] + strand.m_currentLengths[vtx]);
+    const Scalar ilen = 2.0 / (strand.m_restLengths[vtx - 1] + strand.m_restLengths[vtx]);
     const Vec2d& kappa = strand.m_kappa[vtx];
     const Vec2d& kappaBar = strand.m_kappaBar[vtx];
 
-    return 0.5 / len * (kappa - kappaBar).dot(B * (kappa - kappaBar));
+    return 0.5 * ilen * (kappa - kappaBar).dot(B * (kappa - kappaBar));
 }
 
 BendingForce::LocalForceType BendingForce::localForce(const ElasticStrand& strand, const IndexType vtx)
 {
+    assert(strand.m_framesUpToDate);
+
     const Mat2d& B = strand.m_bendingMatrices[vtx];
-    const Scalar len = 0.5 * (strand.m_currentLengths[vtx - 1] + strand.m_currentLengths[vtx]);
+    const Scalar ilen = 2.0 / (strand.m_restLengths[vtx - 1] + strand.m_restLengths[vtx]);
     const Vec2d& kappa = strand.m_kappa[vtx];
     const Vec2d& kappaBar = strand.m_kappaBar[vtx];
     const Eigen::Matrix<Scalar, 11, 2>& gradKappa = strand.m_gradKappa[vtx];
 
-    return -1.0 / len * gradKappa * B * (kappa - kappaBar);
+    return -ilen * gradKappa * B * (kappa - kappaBar);
 }
 
 BendingForce::LocalJacobianType BendingForce::localJacobian(const ElasticStrand& strand, const IndexType vtx)
 {
+    assert(strand.m_framesUpToDate);
+
     LocalJacobianType localJ;
 
     const Mat2d& B = strand.m_bendingMatrices[vtx];
-    const Scalar milen = -2.0 / (strand.m_currentLengths[vtx - 1] + strand.m_currentLengths[vtx]);
+    const Scalar milen = -2.0 / (strand.m_restLengths[vtx - 1] + strand.m_restLengths[vtx]);
     const Vec2d& kappa = strand.m_kappa[vtx];
     const Vec2d& kappaBar = strand.m_kappaBar[vtx];
     const Eigen::Matrix<Scalar, 11, 2>& gradKappa = strand.m_gradKappa[vtx];
@@ -55,7 +61,7 @@ BendingForce::LocalJacobianType BendingForce::localJacobian(const ElasticStrand&
     symBProduct(localJ, B, gradKappa);
     localJ *= milen;
 
-    const std::pair<LocalJacobianType, LocalJacobianType>& hessKappa = strand.computeHessKappa(vtx);
+    const std::pair<LocalJacobianType, LocalJacobianType>& hessKappa = strand.m_HessKappa[vtx]; // Could we compute HessKappa on the spot instead?
     const Vec2d temp = milen * (kappa - kappaBar).transpose() * B;
     localJ += temp(0) * hessKappa.first + temp(1) * hessKappa.second;
 

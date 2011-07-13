@@ -28,7 +28,7 @@ Scalar StretchingForce::localEnergy(const ElasticStrand& strand, const IndexType
 
     const Scalar ks = strand.m_parameters.m_ks;
     const Scalar restLength = strand.m_restLengths[vtx];
-    const Scalar length = strand.m_currentLengths[vtx];
+    const Scalar length = strand.m_lengths[vtx];
 
     return 0.5 * ks * square(length / restLength - 1.0) * restLength;
 }
@@ -38,7 +38,7 @@ StretchingForce::LocalForceType StretchingForce::localForce(const ElasticStrand&
     LocalForceType force;
     const Scalar ks = strand.m_parameters.m_ks;
     const Scalar restLength = strand.m_restLengths[vtx];
-    const Scalar length = strand.m_currentLengths[vtx];
+    const Scalar length = strand.m_lengths[vtx];
 
     Vec3d f = ks * (length / restLength - 1.0) * strand.getEdgeVector(vtx).normalized();
     force.segment<3> (0) = f;
@@ -53,7 +53,7 @@ StretchingForce::LocalJacobianType StretchingForce::localJacobian(const ElasticS
 
     const Scalar ks = strand.m_parameters.m_ks;
     const Scalar restLength = strand.m_restLengths[vtx];
-    const Scalar length = strand.m_currentLengths[vtx];
+    const Scalar length = strand.m_lengths[vtx];
     const Vec3d& edge = strand.getEdgeVector(vtx);
     const Mat3d M = ks * ((1.0 / restLength - 1.0 / length) * Mat3d::Identity() + 1.0 / length * edge * edge.transpose()
             / square(length));
