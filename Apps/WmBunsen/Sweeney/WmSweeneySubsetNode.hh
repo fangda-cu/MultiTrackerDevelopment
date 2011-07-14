@@ -57,7 +57,9 @@ class WmSweeneySubsetNode : public MPxLocatorNode
 
 
     // Method to set the selected faces array
-    void setScalpFaceIndices ( const MIntArray i_indicies );
+    void setScalpFaceIndices( const MIntArray i_indicies );
+    // debug method for previous method
+    void checkScalpFaceIndices();
 
     //////////////////////////////////////////////////////
     // 

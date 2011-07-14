@@ -70,14 +70,17 @@ WmSweeneySubsetNode::WmSweeneySubsetNode()
 
 void WmSweeneySubsetNode::setScalpFaceIndices( const MIntArray i_indices )
 {
+    cout << "WmSweeneySubsetNode::setScalpFaceIndices::setting indices for " << i_indices.length()
+            << " faces " << endl;
+
     MPlug plug;
     MStatus status;
 
-    MFnDagNode sweeneySubsetNode = MFnDagNode( thisMObject( ) );
+    MFnDagNode dagFn = MFnDagNode( thisMObject( ) );
 
     // grab face indices plug
-    plug = sweeneySubsetNode.findPlug( "scalpFaceIndices", true, &status );
-    if ( !status )
+    plug = dagFn.findPlug( ia_scalpFaceIndices, true, &status );
+    if ( status != MStatus::kSuccess )
     {
         status.perror( "cannot locate scalp face indices from WmSweeneySubsetNode" );
         return;
@@ -95,6 +98,41 @@ void WmSweeneySubsetNode::setScalpFaceIndices( const MIntArray i_indices )
 
     indices = i_indices;
 
+    //checkScalpFaceIndices( );
+
+}
+
+void WmSweeneySubsetNode::checkScalpFaceIndices( )
+{
+    MPlug plug;
+    MStatus status;
+
+    MFnDagNode sweeneySubsetNode = MFnDagNode( thisMObject( ) );
+
+    // grab face indices plug
+    plug = sweeneySubsetNode.findPlug( ia_scalpFaceIndices, true, &status );
+    if ( !status )
+    {
+        status.perror( "cannot locate scalp face indices from WmSweeneySubsetNode for indices check" );
+        return;
+    }
+
+    MObject indicesDataObj = MObject::kNullObj;
+    status = plug.getValue( indicesDataObj );
+    CHECK_MSTATUS( status );
+
+    MFnIntArrayData indicesDataFn( indicesDataObj, & status );
+    CHECK_MSTATUS( status );
+
+    MIntArray indices = indicesDataFn.array( & status );
+    CHECK_MSTATUS( status );
+
+    cout << "WmSweeneySubsetNode::checkScalpFaceIndices::begin face index list " << endl;
+    for ( int i = 0; i < indices.length(); i++ )
+    {
+        cout << "face index: " << indices[ i ] << endl;
+    }
+    cout << "WmSweeneySubsetNode::checkScalpFaceIndices::end face index list " << endl;
 }
 
 /*static*/ void* WmSweeneySubsetNode::creator()
@@ -132,6 +170,7 @@ void WmSweeneySubsetNode::setScalpFaceIndices( const MIntArray i_indices )
         MFnTypedAttribute typedAttrFn;
         ia_scalpFaceIndices = typedAttrFn.create( "scalpFaceIndices", "sfi",
             MFnData::kIntArray, indicesDataObj, & status );
+        status = addAttribute( ia_scalpFaceIndices );
         CHECK_MSTATUS( status );
     }
 
