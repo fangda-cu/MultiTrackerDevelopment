@@ -48,6 +48,9 @@ using namespace BASim;
 // Sync attributes
 /* static */MObject WmSweeneyNode::ca_rodPropertiesSync;
 
+// Subset nodes
+/* static */MObject WmSweeneyNode::ia_fromSweeneySubsetNodes;
+
 // Collision meshes
 /* static */MObject WmSweeneyNode::ia_collisionMeshes;
 
@@ -849,6 +852,22 @@ void* WmSweeneyNode::creator()
 /* static */MStatus WmSweeneyNode::initialize()
 {
     MStatus status;
+
+    // Subsets connection
+    {
+        MFnNumericAttribute numericAttr;
+        ia_fromSweeneySubsetNodes = numericAttr.create( "fromSweeneySubsetNodes", "fssn",
+           MFnNumericData::kBoolean, false, & status );
+        CHECK_MSTATUS( status );
+        numericAttr.setHidden( true );
+        numericAttr.setArray( true );
+        numericAttr.setReadable( true );
+        numericAttr.setWritable( true );
+        numericAttr.setConnectable( true );
+
+        status = addAttribute( ia_fromSweeneySubsetNodes );
+        CHECK_MSTATUS( status );
+    }
 
     addNumericAttribute(ca_rodPropertiesSync, "rodPropertiesSync", "rps", MFnNumericData::kBoolean, false, false);
 

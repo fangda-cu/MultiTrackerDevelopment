@@ -76,8 +76,9 @@ protected:
     void p_PerformConnect();
 
     void createSweeneyNode();
+    void createSweeneySubsetNode();
     void addCollisionMeshes();    
-    void setSimulatedSubset();
+    //void setSimulatedSubset();
     void setSimulateAll();
 
 public:     // Data

@@ -22,6 +22,7 @@
 #include "WmFigSelectionDisplayNode.hh"
 
 #include "Sweeney/WmSweeneyNode.hh"
+#include "Sweeney/WmSweeneySubsetNode.hh"
 #include "Sweeney/Tools/AddRod/WmSwAddRodContext.hh"
 #include "Sweeney/Tools/AddRod/WmSwAddRodContextCommand.hh"
 #include "Sweeney/Tools/AddRod/WmSwAddRodToolCommand.hh"
@@ -167,6 +168,15 @@ MStatus initializePlugin( MObject obj )
         return status;
     }
     
+    status = plugin.registerNode( WmSweeneySubsetNode::typeName, WmSweeneySubsetNode::typeID,
+                                    WmSweeneySubsetNode::creator,
+                                    WmSweeneySubsetNode::initialize,
+                                    WmSweeneySubsetNode::kLocatorNode );
+    if ( !status )
+    {
+        status.perror( "RegisterNode WmSweeneySubsetNode failed" );
+    }
+
     status = plugin.registerCommand( WmSweeneyCmd::typeName, WmSweeneyCmd::creator, 
                                    WmSweeneyCmd::syntaxCreator );
     if ( !status ) {
@@ -284,6 +294,12 @@ MStatus uninitializePlugin( MObject obj)
         status.perror( "DeregisterNode WmSweeneyNode failed" );
     }
     
+    if ( plugin.deregisterNode( WmSweeneySubsetNode::typeID ) != MS::kSuccess )
+    {
+        status.perror( "DeregisterNode WmSweeneySubsetNode failed" );
+    }
+
+
     if ( plugin.deregisterContextCommand( WmSwAddRodContext::typeName, WmSwAddRodToolCommand::typeName ) != MS::kSuccess )
     {
         status.perror( "Deregister context command WmSwAddRodContext failed" );

@@ -96,6 +96,7 @@ WmFigRodParticleInput.hh \
 WmFigMeshController.hh \
 Sweeney/WmSweeneyNode.hh \
 Sweeney/WmSweeneyRodManager.hh \
+Sweeney/WmSweeneySubsetNode.hh \
 Sweeney/WmSweeneyCmd.hh \
 Sweeney/WmSweeneyUtils.hh \
 Sweeney/Tools/AddRod/WmSwAddRodContext.hh \
@@ -140,6 +141,7 @@ WmFigRodComponentList.cc \
 WmFigRodParticleInput.cc \
 WmFigMeshController.cc \
 Sweeney/WmSweeneyNode.cc \
+Sweeney/WmSweeneySubsetNode.cc \
 Sweeney/WmSweeneyRodManager.cc \
 Sweeney/WmSweeneyCmd.cc \
 Sweeney/WmSweeneyUtils.cc \
@@ -229,6 +231,9 @@ SCR13            := Sweeney/AEwmSweeneyNodeTemplate.mel
 SCR13_MAYA       := 1
 SCR13_INSD       := $(SCR_INSD)
 
+SCR14            := Sweeney/AEwmSweeneySubsetNodeTemplate.mel
+SCR14_MAYA       := 1
+SCR14_INSD       := $(SCR_INSD)
 
 ##############################################################################
 include /vol/bob/make/tail.mk

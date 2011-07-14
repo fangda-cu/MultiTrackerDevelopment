@@ -1,0 +1,344 @@
+
+//////////////////////////////////////////////////////////
+// 
+// Headers.
+// 
+//////////////////////////////////////////////////////////
+
+#include "WmSweeneySubsetNode.hh"
+
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MFnTypedAttribute.h>
+#include <maya/MFnEnumAttribute.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MFnIntArrayData.h>
+#include <maya/MGlobal.h>
+#include <maya/MPlug.h>
+#include <maya/MBoundingBox.h>
+
+const MTypeId WmSweeneySubsetNode::typeID( 0x001156, 0xA9 );
+const MString WmSweeneySubsetNode::typeName( "wmSweeneySubsetNode" );
+
+
+// Scalp Face Indices
+
+/* static */ MObject WmSweeneySubsetNode::ia_scalpFaceIndices;
+
+// Hair Property Attributes
+/* static */ MObject WmSweeneySubsetNode::ia_length;
+/* static */ MObject WmSweeneySubsetNode::ia_edgeLength;
+/* static */ MObject WmSweeneySubsetNode::ia_verticesPerRod;
+/* static */ MObject WmSweeneySubsetNode::ia_rodsPerClump;
+/* static */ MObject WmSweeneySubsetNode::ia_rodRadius;
+/* static */ MObject WmSweeneySubsetNode::ia_rodAspectRatio;
+/* static */ MObject WmSweeneySubsetNode::ia_rodRotation;
+/* static */ MObject WmSweeneySubsetNode::ia_curlTightness;
+/* static */ MObject WmSweeneySubsetNode::ia_curlRadius;
+/* static */ MObject WmSweeneySubsetNode::ia_curlCount;
+/* static */ MObject WmSweeneySubsetNode::ia_curlStart;
+/* static */ MObject WmSweeneySubsetNode::ia_rodPitch;
+/* static */ MObject WmSweeneySubsetNode::ia_fixCurlCount;
+/* static */ MObject WmSweeneySubsetNode::ia_curlInXFrame;
+/* static */ MObject WmSweeneySubsetNode::ia_preserveLengthVariation;
+/* static */ MObject WmSweeneySubsetNode::ia_rodDamping;
+/* static */ MObject WmSweeneySubsetNode::ia_rodCharge;
+/* static */ MObject WmSweeneySubsetNode::ia_rodPower;
+/* static */ MObject WmSweeneySubsetNode::ia_rodClumpSeparation;
+
+// Solver Tolerances
+/* static */ MObject WmSweeneySubsetNode::ia_stol;
+/* static */ MObject WmSweeneySubsetNode::ia_atol;
+/* static */ MObject WmSweeneySubsetNode::ia_rtol;
+/* static */ MObject WmSweeneySubsetNode::ia_inftol;
+/* static */ MObject WmSweeneySubsetNode::ia_numLineSearchIters;
+
+/* static */ MObject WmSweeneySubsetNode::oa_toSweeneyParentNode;
+
+WmSweeneySubsetNode::WmSweeneySubsetNode()
+{
+}
+
+/*virtual*/ void WmSweeneySubsetNode::postConstructor()
+{
+}
+
+/*virtual*/ WmSweeneySubsetNode::~WmSweeneySubsetNode()
+{
+}
+
+
+void WmSweeneySubsetNode::setScalpFaceIndices( const MIntArray i_indices )
+{
+    MPlug plug;
+    MStatus status;
+
+    MFnDagNode sweeneySubsetNode = MFnDagNode( thisMObject( ) );
+
+    // grab face indices plug
+    plug = sweeneySubsetNode.findPlug( "scalpFaceIndices", true, &status );
+    if ( !status )
+    {
+        status.perror( "cannot locate scalp face indices from WmSweeneySubsetNode" );
+        return;
+    }
+
+    MObject indicesDataObj = MObject::kNullObj;
+    status = plug.getValue( indicesDataObj );
+    CHECK_MSTATUS( status );
+
+    MFnIntArrayData indicesDataFn( indicesDataObj, & status );
+    CHECK_MSTATUS( status );
+
+    MIntArray indices = indicesDataFn.array( & status );
+    CHECK_MSTATUS( status );
+
+    indices = i_indices;
+
+}
+
+/*static*/ void* WmSweeneySubsetNode::creator()
+{
+    return new WmSweeneySubsetNode();
+}
+
+/*virtual*/ bool WmSweeneySubsetNode::isBounded() const
+{
+    return false;
+}
+
+/*static*/ MStatus WmSweeneySubsetNode::initialize()
+{   
+    MStatus status;
+
+    //
+    // Sweeney node connection.
+    //
+
+    {
+        MFnNumericAttribute numericAttr;
+        oa_toSweeneyParentNode = numericAttr.create( "toSweeneyParentNode", "tsp",
+            MFnNumericData::kBoolean, false, & status );
+        CHECK_MSTATUS( status );
+        numericAttr.setHidden( true );
+        addAttribute( oa_toSweeneyParentNode );
+    }
+
+    {
+        MFnIntArrayData indicesDataFn;
+        MObject indicesDataObj = indicesDataFn.create( & status );
+        CHECK_MSTATUS( status );
+
+        MFnTypedAttribute typedAttrFn;
+        ia_scalpFaceIndices = typedAttrFn.create( "scalpFaceIndices", "sfi",
+            MFnData::kIntArray, indicesDataObj, & status );
+        CHECK_MSTATUS( status );
+    }
+
+    // Rod properties
+    {
+        MFnNumericAttribute numericAttr;
+        ia_length = numericAttr.create("length", "len", MFnNumericData::kDouble, 10.0, &status);
+        CHECK_MSTATUS(status);
+        CHECK_MSTATUS(numericAttr.setReadable(true));
+        CHECK_MSTATUS(numericAttr.setWritable(true));
+        CHECK_MSTATUS(numericAttr.setMin(1.0));
+        CHECK_MSTATUS(numericAttr.setMax(100.0));
+        status = addAttribute(ia_length);
+        CHECK_MSTATUS(status);
+    }
+
+    {
+        MFnNumericAttribute numericAttr;
+        ia_rodRadius = numericAttr.create("rodRadius", "ror", MFnNumericData::kDouble, 0.005, &status);
+        CHECK_MSTATUS(status);
+        CHECK_MSTATUS(numericAttr.setReadable(true));
+        CHECK_MSTATUS(numericAttr.setWritable(true));
+        CHECK_MSTATUS(numericAttr.setMin(0.001));
+        CHECK_MSTATUS(numericAttr.setMax(0.1));
+        status = addAttribute(ia_rodRadius);
+        CHECK_MSTATUS(status);
+    }
+
+    {
+        MFnNumericAttribute numericAttr;
+        ia_rodAspectRatio = numericAttr.create("rodAspectRatio", "roar", MFnNumericData::kDouble, 1.0, &status);
+        CHECK_MSTATUS(status);
+        CHECK_MSTATUS(numericAttr.setReadable(true));
+        CHECK_MSTATUS(numericAttr.setWritable(true));
+        CHECK_MSTATUS(numericAttr.setMin(0.1));
+        CHECK_MSTATUS(numericAttr.setMax(10.0));
+        status = addAttribute(ia_rodAspectRatio);
+        CHECK_MSTATUS(status);
+    }
+
+    {
+        MFnNumericAttribute numericAttr;
+        ia_rodRotation = numericAttr.create("rodRotation", "rorot", MFnNumericData::kDouble, 0.0, &status);
+        CHECK_MSTATUS(status);
+        CHECK_MSTATUS(numericAttr.setReadable(true));
+        CHECK_MSTATUS(numericAttr.setWritable(true));
+        CHECK_MSTATUS(numericAttr.setMin(-1.0));
+        CHECK_MSTATUS(numericAttr.setMax(1.0));
+        status = addAttribute(ia_rodRotation);
+        CHECK_MSTATUS(status);
+    }
+
+    addNumericAttribute(ia_rodCharge, "rodCharge", "rcg", MFnNumericData::kDouble, 0.0, true);
+
+    addNumericAttribute(ia_rodPower, "rodPower", "rpw", MFnNumericData::kDouble, 1.0, true);
+
+    addNumericAttribute(ia_rodClumpSeparation, "rodClumpSeparation", "rcdst", MFnNumericData::kDouble, 0.001, true);
+
+    {
+           MFnNumericAttribute numericAttr;
+            ia_curlTightness = numericAttr.create( "globalCurlTightness", "crltight", MFnNumericData::kDouble, 0.0, &status );
+            CHECK_MSTATUS( status );
+            CHECK_MSTATUS( numericAttr.setReadable( true ) );
+            CHECK_MSTATUS( numericAttr.setWritable( true ) );
+            CHECK_MSTATUS( numericAttr.setMin( -2.0 ) );
+            CHECK_MSTATUS( numericAttr.setMax( 2.0 ) );
+            status = addAttribute( ia_curlTightness );
+            CHECK_MSTATUS( status );
+
+    }
+
+    {
+        MFnNumericAttribute numericAttr;
+        ia_curlRadius = numericAttr.create( "curlRadius", "crlrad", MFnNumericData::kDouble, 0.0, &status );
+        CHECK_MSTATUS( status );
+        CHECK_MSTATUS( numericAttr.setReadable( true ) );
+        CHECK_MSTATUS( numericAttr.setWritable( true ) );
+        CHECK_MSTATUS( numericAttr.setMin( -2.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 2.0 ) );
+        status = addAttribute( ia_curlRadius );
+        CHECK_MSTATUS( status );
+
+    }
+
+    {
+        MFnNumericAttribute numericAttr;
+        ia_curlCount = numericAttr.create( "curlCount", "crlcnt", MFnNumericData::kDouble, 0.0, &status );
+        CHECK_MSTATUS( status );
+        CHECK_MSTATUS( numericAttr.setReadable( true ) );
+        CHECK_MSTATUS( numericAttr.setWritable( true ) );
+        CHECK_MSTATUS( numericAttr.setMin( 0.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 10.0 ) );
+        status = addAttribute( ia_curlCount );
+        CHECK_MSTATUS( status );
+
+    }
+
+    {
+        MFnNumericAttribute numericAttr;
+        ia_curlStart = numericAttr.create( "curlStart", "crlstrt", MFnNumericData::kDouble, 0.0, &status );
+        CHECK_MSTATUS( status );
+        CHECK_MSTATUS( numericAttr.setReadable( true ) );
+        CHECK_MSTATUS( numericAttr.setWritable( true ) );
+        CHECK_MSTATUS( numericAttr.setMin( 0.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 1.0 ) );
+        status = addAttribute( ia_curlStart );
+        CHECK_MSTATUS( status );
+    }
+
+    addNumericAttribute( ia_fixCurlCount, "fixCurlCount", "fixcurlc", MFnNumericData::kBoolean, false, true );
+
+    addNumericAttribute( ia_curlInXFrame, "curlInXFrame", "curinx", MFnNumericData::kBoolean, true, true );
+
+    addNumericAttribute( ia_preserveLengthVariation, "preserveLengthVariation", "plenvar", MFnNumericData::kBoolean, true, true );
+
+    addNumericAttribute( ia_rodDamping, "rodDamping", "roddamp", MFnNumericData::kBoolean, true, true );
+
+    addNumericAttribute( ia_rodPitch, "rodPitch", "rop", MFnNumericData::kDouble, 0.5, true );
+
+    //Solver settings
+    addNumericAttribute( ia_stol, "stol", "stl", MFnNumericData::kDouble, 99, true );
+
+    addNumericAttribute( ia_atol, "atol", "atl", MFnNumericData::kDouble, 8, true );
+
+    addNumericAttribute( ia_rtol, "rtol", "rtl", MFnNumericData::kDouble, 99, true );
+
+    addNumericAttribute( ia_inftol, "inftol", "itl", MFnNumericData::kDouble, 8, true );
+
+    addNumericAttribute( ia_numLineSearchIters, "numLineSearchIters", "nlsi", MFnNumericData::kInt, 2, true );
+
+    // parameters set at the beginning of the simulation
+    addNumericAttribute(ia_verticesPerRod, "verticesPerRod", "cpr", MFnNumericData::kInt, 10, true);
+
+    addNumericAttribute(ia_rodsPerClump, "rodsPerClump", "rpc", MFnNumericData::kInt, 5, true);
+
+    return MS::kSuccess;
+}
+
+/*virtual*/ MStatus WmSweeneySubsetNode::compute(
+    const MPlug& i_plug, 
+    MDataBlock& i_dataBlock )
+{
+    /*MStatus status;
+
+    if ( i_plug ==  oa_someOutput )
+    {
+        MDataHandle someInputDataHandle = i_dataBlock.inputValue( ia_someInput, & status );
+        CHECK_MSTATUS( status );
+        const int i = someInputDataHandle.asInt();
+
+        const int o = i * 12345678;
+        MDataHandle someOutputDataHandle = i_dataBlock.outputValue( oa_someOutput, & status );
+        CHECK_MSTATUS( status );
+        someOutputDataHandle.set( o );
+        CHECK_MSTATUS( status );
+
+        status = i_dataBlock.setClean( i_plug );
+        CHECK_MSTATUS( status );
+    }*/
+
+    // compute logic handled in WmSweeneySubsetNode
+    return MStatus::kSuccess;
+}
+
+/*virtual*/ void WmSweeneySubsetNode::draw(
+    M3dView& i_view, 
+    const MDagPath& i_path, 
+    M3dView::DisplayStyle i_style, 
+    M3dView::DisplayStatus i_status )
+{
+    // Don't draw anything.
+}
+
+
+/*static */MStatus WmSweeneySubsetNode::addNumericAttribute(MObject& i_attribute, MString i_longName, MString i_shortName,
+        MFnNumericData::Type i_type, double i_defaultValue, bool i_isInput, bool i_isArray)
+{
+    // Creates a numeric attribute with default attributes
+    MStatus stat = MS::kSuccess;
+
+    MFnNumericAttribute nAttr;
+    i_attribute = nAttr.create(i_longName, i_shortName, i_type, i_defaultValue, &stat);
+    if (!stat)
+    {
+        cerr << "Failed to create attribute " << i_longName << endl;
+        return stat;
+    }
+    if (i_isInput)
+    {
+        nAttr.setWritable(true);
+    }
+    else
+    {
+        nAttr.setWritable(false);
+    }
+
+    if (i_isArray)
+    {
+        nAttr.setArray(true);
+    }
+
+    stat = addAttribute(i_attribute);
+    if (!stat)
+    {
+        stat.perror("addAttribute " + i_longName);
+        return stat;
+    }
+
+    return stat;
+}

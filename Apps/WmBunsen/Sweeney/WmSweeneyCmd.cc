@@ -180,7 +180,7 @@ MStatus WmSweeneyCmd::redoIt()
         }
         if ( m_mArgDatabase->isFlagSet( kSetSimulatedSubsection ) )
         {
-            setSimulatedSubset();
+            createSweeneySubsetNode();
         }
         if ( m_mArgDatabase->isFlagSet( kSetSimulateAll ) )
         {
@@ -301,6 +301,100 @@ void WmSweeneyCmd::createSweeneyNode()
     stat = dagModifier.connect( numBarberShopCVsPlug, numCVsPlug );
     CHECK_MSTATUS( stat );
     
+    stat = dagModifier.doIt();
+    CHECK_MSTATUS( stat );
+}
+
+void WmSweeneyCmd::createSweeneySubsetNode()
+{
+    MStatus stat;
+
+    // check that a sweeney node and a list of faces are selected
+    if ( m_selectedSweeneyNode == MObject::kNullObj )
+    {
+        MGlobal::displayError( "Please select a wmSweeney node associated with these mesh faces." );
+        return;
+    }
+
+    MIntArray faces;
+    MString objectName;
+    getSelectedComponents( kFaceComponent, objectName, faces );
+
+    // check that at least one scalp face is selected
+    if ( faces.length() < 1 )
+    {
+       MGlobal::displayError( "Please select a subset of faces from the BarberShop mesh." );
+       return;
+    }
+
+    // Create the Sweeney subset node
+    MObject rodSubsetTransformObj;  // Object for transform node
+    MObject rodSubsetShapeObj;  // Object for shape node
+    MDagPath shapeDagPath;
+    MObject pObj;
+    MDagModifier dagModifier;
+    MString rodSubsetShapeName = "";
+
+    createDagNode( WmSweeneySubsetNode::typeName.asChar(), WmSweeneySubsetNode::typeName.asChar(),
+                   pObj, &rodSubsetTransformObj, &rodSubsetShapeObj, &dagModifier, rodSubsetShapeName );
+
+    appendToResultString( rodSubsetShapeName );
+
+    MDagPath rodSubsetDagPath;
+    stat = MDagPath::getAPathTo( rodSubsetShapeObj, rodSubsetDagPath );
+    CHECK_MSTATUS( stat );
+
+    // Turn Off Inherits Transform On Transform Node as the rod node should never move from the origin
+    MFnDependencyNode tFn( rodSubsetTransformObj );
+    MPlug mPlug( tFn.findPlug( "inheritsTransform", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    mPlug.setValue( false );
+
+    // Lock the transform attributes because the object should not be moved
+    // Transform first
+    MPlug translatePlug( tFn.findPlug( "translate", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    stat = translatePlug.setLocked( true );
+    CHECK_MSTATUS( stat );
+    MPlug scalePlug( tFn.findPlug( "scale", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    stat = scalePlug.setLocked( true );
+    CHECK_MSTATUS( stat );
+    MPlug rotatePlug( tFn.findPlug( "rotate", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    stat = rotatePlug.setLocked( true );
+    CHECK_MSTATUS( stat );
+    MPlug shearPlug( tFn.findPlug( "shear", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    stat = shearPlug.setLocked( true );
+    CHECK_MSTATUS( stat );
+
+    // Shape now MFnDependencyNode sFn( rodSObj );
+    MFnDependencyNode sFn( rodSubsetShapeObj );
+
+    MPlug localTransPlug( sFn.findPlug( "localPosition", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    stat = localTransPlug.setLocked( true );
+    CHECK_MSTATUS( stat );
+    MPlug localScalePlug(sFn.findPlug( "localScale", true, &stat ) );
+    CHECK_MSTATUS( stat );
+    stat = localScalePlug.setLocked( true );
+    CHECK_MSTATUS( stat );
+
+    dagModifier.doIt();
+
+    // Connect Sweeney node to subset node
+    stat = dagModifier.connect(
+            rodSubsetShapeObj, WmSweeneySubsetNode::oa_toSweeneyParentNode,
+            m_selectedSweeneyNode, WmSweeneyNode::ia_fromSweeneySubsetNodes );
+    CHECK_MSTATUS( stat );
+
+    // Pass face indicies to subset node
+    MFnDagNode dagNodeFn( rodSubsetShapeObj );
+
+    WmSweeneySubsetNode* sweeneySubsetNode = (WmSweeneySubsetNode*) dagNodeFn.userNode();
+    sweeneySubsetNode->setScalpFaceIndices( faces );
+
     stat = dagModifier.doIt();
     CHECK_MSTATUS( stat );
 }
@@ -503,7 +597,7 @@ void WmSweeneyCmd::addCollisionMeshes()
     }
 }
 
-void WmSweeneyCmd::setSimulatedSubset( )
+/*void WmSweeneyCmd::setSimulatedSubset( )
 {
     if ( m_selectedSweeneyNode == MObject::kNullObj )
     {
@@ -529,7 +623,7 @@ void WmSweeneyCmd::setSimulatedSubset( )
     //}
 
     //std::map<int,int> scalpRodMap = getScalpRodMap();
-}
+}*/
 
 void WmSweeneyCmd::setSimulateAll( )
 {

@@ -51,6 +51,7 @@
 #include <sys/stat.h>
 
 #include "WmSweeneyRodManager.hh"
+#include "WmSweeneySubsetNode.hh"
 
 class WmSweeneyNode : public MPxLocatorNode 
 {
@@ -92,6 +93,9 @@ public:
     static MObject ia_rodCharge;
     static MObject ia_rodPower;
     static MObject ia_rodClumpSeparation;
+
+    // Sweeney Subset connection
+    static MObject ia_fromSweeneySubsetNodes;
 
     // Collision meshes
     static MObject ia_collisionMeshes;

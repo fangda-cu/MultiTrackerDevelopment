@@ -1,0 +1,39 @@
+
+global proc AEwmSweeneySubsetNodeTemplate( string $i_nodeName )
+{
+    editorTemplate -beginScrollLayout "wmSweeneySubsetNode";
+
+    editorTemplate -beginLayout "Sim Reset Settings" -collapse 0;
+        editorTemplate -addControl "verticesPerRod";
+        editorTemplate -addControl "rodsPerClump";
+    editorTemplate -endLayout;
+    
+    editorTemplate -beginLayout "Rod Properties" -collapse 0;
+    	editorTemplate -addControl "preserveLengthVariation";
+    	editorTemplate -addControl "length";        
+    	editorTemplate -addControl "rodRadius";
+		editorTemplate -addControl "rodAspectRatio";
+		editorTemplate -addControl "rodRotation";
+		editorTemplate -addControl "curlInXFrame";
+		editorTemplate -addControl "globalCurlTightness";
+		editorTemplate -addControl "fixCurlCount";
+		editorTemplate -addControl "curlRadius";
+		editorTemplate -addControl "curlCount";
+		editorTemplate -addControl "curlStart";
+    	editorTemplate -addControl "rodDamping";
+    	editorTemplate -addControl "rodCharge";
+        editorTemplate -addControl "rodPower";
+        editorTemplate -addControl "rodClumpSeparation";
+    editorTemplate -endLayout;
+    
+    editorTemplate -beginLayout "Solver Tolerances" -collapse 0;
+    	editorTemplate -addControl "stol";
+    	editorTemplate -addControl "atol";
+    	editorTemplate -addControl "rtol";
+    	editorTemplate -addControl "inftol";
+    	editorTemplate -addControl "numLineSearchIters";
+    editorTemplate -endLayout;
+        
+    editorTemplate -addExtraControls;
+    editorTemplate -endScrollLayout;
+}
