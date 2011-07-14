@@ -17,7 +17,8 @@ namespace strandsim
 class StretchingForce: public ForceBase<ElasticStrand>
 {
 public:
-    static const IndexType s_first = 0;
+    static const IndexType s_first = 0; // The first index on which this force can apply
+    static const IndexType s_last = 1; // The last index (counting from the end)
 
     typedef Eigen::Matrix<Scalar, 6, 1> LocalForceType;
     typedef Eigen::Matrix<Scalar, 6, 6> LocalJacobianType;

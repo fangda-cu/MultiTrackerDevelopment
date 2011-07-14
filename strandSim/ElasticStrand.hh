@@ -91,11 +91,12 @@ private:
     StrandGeometry m_geometry;
     StrandGeometry m_newGeometry;
 
-    // Other physical parameters
+    // Rest shape and other physical parameters
     ParametersType m_parameters;
     std::vector<Mat2d, Eigen::aligned_allocator<Mat2d> > m_bendingMatrices;
-
-    // Rest shape
+    std::vector<Scalar> m_vertexMasses;
+    std::vector<Scalar> m_VoronoiLengths; // rest length around each vertex
+    std::vector<Scalar> m_invVoronoiLengths; // inverse of the previous one
     std::vector<Scalar> m_restLengths;
     std::vector<Vec2d, Eigen::aligned_allocator<Vec2d> > m_kappaBar;
     std::vector<Scalar> m_restTwists;

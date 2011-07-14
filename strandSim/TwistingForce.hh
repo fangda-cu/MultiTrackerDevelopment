@@ -18,6 +18,7 @@ class TwistingForce: public ForceBase<ElasticStrand>
 {
 public:
     static const IndexType s_first = 1; // The first index on which this force can apply
+    static const IndexType s_last = 1; // The last index (counting from the end)
 
     typedef Eigen::Matrix<Scalar, 11, 1> LocalForceType;
     typedef Eigen::Matrix<Scalar, 11, 11> LocalJacobianType;

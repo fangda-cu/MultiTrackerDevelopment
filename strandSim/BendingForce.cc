@@ -24,17 +24,18 @@ BendingForce::~BendingForce()
 Scalar BendingForce::localEnergy(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx)
 {
     const Mat2d& B = strand.m_bendingMatrices[vtx];
-    const Scalar ilen = 2.0 / (strand.m_restLengths[vtx - 1] + strand.m_restLengths[vtx]);
+    const Scalar ilen = strand.m_invVoronoiLengths[vtx];
     const Vec2d& kappa = geometry.m_kappa[vtx];
     const Vec2d& kappaBar = strand.m_kappaBar[vtx];
 
     return 0.5 * ilen * (kappa - kappaBar).dot(B * (kappa - kappaBar));
 }
 
-BendingForce::LocalForceType BendingForce::localForce(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx)
+BendingForce::LocalForceType BendingForce::localForce(const ElasticStrand& strand, const StrandGeometry& geometry,
+        const IndexType vtx)
 {
     const Mat2d& B = strand.m_bendingMatrices[vtx];
-    const Scalar ilen = 2.0 / (strand.m_restLengths[vtx - 1] + strand.m_restLengths[vtx]);
+    const Scalar ilen = strand.m_invVoronoiLengths[vtx];
     const Vec2d& kappa = geometry.m_kappa[vtx];
     const Vec2d& kappaBar = strand.m_kappaBar[vtx];
     const Eigen::Matrix<Scalar, 11, 2>& gradKappa = geometry.m_gradKappa[vtx];
@@ -42,21 +43,22 @@ BendingForce::LocalForceType BendingForce::localForce(const ElasticStrand& stran
     return -ilen * gradKappa * B * (kappa - kappaBar);
 }
 
-BendingForce::LocalJacobianType BendingForce::localJacobian(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx)
+BendingForce::LocalJacobianType BendingForce::localJacobian(const ElasticStrand& strand, const StrandGeometry& geometry,
+        const IndexType vtx)
 {
     LocalJacobianType localJ;
 
     const Mat2d& B = strand.m_bendingMatrices[vtx];
-    const Scalar milen = -2.0 / (strand.m_restLengths[vtx - 1] + strand.m_restLengths[vtx]);
+    const Scalar ilen = strand.m_invVoronoiLengths[vtx];
     const Vec2d& kappa = geometry.m_kappa[vtx];
     const Vec2d& kappaBar = strand.m_kappaBar[vtx];
     const Eigen::Matrix<Scalar, 11, 2>& gradKappa = geometry.m_gradKappa[vtx];
 
     symBProduct(localJ, B, gradKappa);
-    localJ *= milen;
+    localJ *= -ilen;
 
     const std::pair<LocalJacobianType, LocalJacobianType>& hessKappa = geometry.m_HessKappa[vtx]; // Could we compute HessKappa on the spot instead?
-    const Vec2d temp = milen * (kappa - kappaBar).transpose() * B;
+    const Vec2d temp = -ilen * (kappa - kappaBar).transpose() * B;
     localJ += temp(0) * hessKappa.first + temp(1) * hessKappa.second;
 
     return localJ;
@@ -64,7 +66,7 @@ BendingForce::LocalJacobianType BendingForce::localJacobian(const ElasticStrand&
 
 void BendingForce::addInPosition(ForceVectorType& globalForce, const IndexType vtx, const LocalForceType& localForce)
 {
-    globalForce.segment<11> (4 * vtx) += localForce;
+    globalForce.segment<11> (4 * (vtx - 1)) += localForce;
 }
 
 void BendingForce::addInPosition(JacobianMatrixType& globalJacobian, const IndexType vtx,

@@ -31,7 +31,8 @@ Scalar StretchingForce::localEnergy(const ElasticStrand& strand, const StrandGeo
     return 0.5 * ks * square(length / restLength - 1.0) * restLength;
 }
 
-StretchingForce::LocalForceType StretchingForce::localForce(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx)
+StretchingForce::LocalForceType StretchingForce::localForce(const ElasticStrand& strand, const StrandGeometry& geometry,
+        const IndexType vtx)
 {
     LocalForceType force;
     const Scalar ks = strand.m_parameters.m_ks;
@@ -45,7 +46,8 @@ StretchingForce::LocalForceType StretchingForce::localForce(const ElasticStrand&
     return force;
 }
 
-StretchingForce::LocalJacobianType StretchingForce::localJacobian(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx)
+StretchingForce::LocalJacobianType StretchingForce::localJacobian(const ElasticStrand& strand, const StrandGeometry& geometry,
+        const IndexType vtx)
 {
     LocalJacobianType Jacobian;
 
@@ -72,7 +74,7 @@ void StretchingForce::addInPosition(ForceVectorType& globalForce, const IndexTyp
 void StretchingForce::addInPosition(JacobianMatrixType& globalJacobian, const IndexType vtx,
         const LocalJacobianType& localJacobian)
 {
-    globalJacobian.edgeStencilAdd<6>(4 * vtx, localJacobian);
+    globalJacobian.edgeStencilAdd<6> (4 * vtx, localJacobian);
 }
 
 }

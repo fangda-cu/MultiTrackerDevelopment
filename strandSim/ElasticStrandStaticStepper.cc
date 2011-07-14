@@ -35,6 +35,7 @@ void ElasticStrandStaticStepper::execute(ElasticStrand& strand) const
     solve(newDOFs, J, F); // X = J^{-1} F
     newDOFs -= strand.getDegreesOfFreedom(); // X = J^{-1} F -X_0
     newDOFs *= -1;// X = X_0 - J^{-1} F
+    // AND THE MASSES????
 
     // Update the new position's frames and stuff
     strand.prepareForExamining();

@@ -24,27 +24,29 @@ TwistingForce::~TwistingForce()
 Scalar TwistingForce::localEnergy(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx)
 {
     const Scalar kt = strand.m_parameters.m_kt;
-    const Scalar ilen = 2.0 / (strand.m_restLengths[vtx - 1] + strand.m_restLengths[vtx]);
+    const Scalar ilen = strand.m_invVoronoiLengths[vtx];
     const Scalar undefTwist = strand.m_restTwists[vtx];
     const Scalar twist = geometry.m_twists[vtx];
 
     return 0.5 * kt * square(twist - undefTwist) * ilen;
 }
 
-TwistingForce::LocalForceType TwistingForce::localForce(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx)
+TwistingForce::LocalForceType TwistingForce::localForce(const ElasticStrand& strand, const StrandGeometry& geometry,
+        const IndexType vtx)
 {
     const Scalar kt = strand.m_parameters.m_kt;
-    const Scalar ilen = 2.0 / (strand.m_restLengths[vtx - 1] + strand.m_restLengths[vtx]);
+    const Scalar ilen = strand.m_invVoronoiLengths[vtx];
     const Scalar undefTwist = strand.m_restTwists[vtx];
     const Scalar twist = geometry.m_twists[vtx];
 
     return -kt * ilen * (twist - undefTwist) * geometry.m_gradTwists[vtx];
 }
 
-TwistingForce::LocalJacobianType TwistingForce::localJacobian(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx)
+TwistingForce::LocalJacobianType TwistingForce::localJacobian(const ElasticStrand& strand, const StrandGeometry& geometry,
+        const IndexType vtx)
 {
     const Scalar kt = strand.m_parameters.m_kt;
-    const Scalar ilen = 2.0 / (strand.m_restLengths[vtx - 1] + strand.m_restLengths[vtx]);
+    const Scalar ilen = strand.m_invVoronoiLengths[vtx];
     const Scalar twist = geometry.m_twists[vtx];
     const Scalar undeformedTwist = strand.m_restTwists[vtx];
 
@@ -56,7 +58,7 @@ TwistingForce::LocalJacobianType TwistingForce::localJacobian(const ElasticStran
 
 void TwistingForce::addInPosition(ForceVectorType& globalForce, const IndexType vtx, const LocalForceType& localForce)
 {
-    globalForce.segment<11> (4 * vtx) += localForce;
+    globalForce.segment<11> (4 * (vtx - 1)) += localForce;
 }
 
 void TwistingForce::addInPosition(JacobianMatrixType& globalJacobian, const IndexType vtx,

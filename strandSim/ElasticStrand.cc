@@ -46,6 +46,9 @@ void ElasticStrand::resizeInternals()
     m_restTwists.resize(m_numVertices - 1);
 
     m_bendingMatrices.resize(m_numVertices - 1); // NB m_bendingMatrices[0] not used
+    m_vertexMasses.resize(m_numVertices);
+    m_VoronoiLengths.resize(m_numVertices);
+    m_invVoronoiLengths.resize(m_numVertices);
 
     m_totalForces.resize(ndofs);
     m_totalJacobian.resize(ndofs, ndofs);
@@ -57,6 +60,17 @@ void ElasticStrand::freezeRestShape()
 {
     for (IndexType vtx = 0; vtx < m_numVertices - 1; ++vtx)
         m_restLengths[vtx] = m_geometry.getEdgeVector(vtx).norm();
+
+    m_VoronoiLengths[0] = 0.5 * m_restLengths[0];
+    for (IndexType vtx = 1; vtx < m_numVertices - 1; ++vtx)
+        m_VoronoiLengths[vtx] = 0.5 * (m_restLengths[vtx - 1] + m_restLengths[vtx]);
+    m_VoronoiLengths[m_numVertices - 1] = 0.5 * m_restLengths[m_numVertices - 2];
+
+    for (IndexType vtx = 0; vtx < m_numVertices; ++vtx)
+    {
+        m_vertexMasses[vtx] = m_parameters.m_density * m_VoronoiLengths[vtx];
+        m_invVoronoiLengths[vtx] = 1.0 / m_VoronoiLengths[vtx];
+    }
 
     for (IndexType vtx = 1; vtx < m_numVertices - 1; ++vtx)
     {

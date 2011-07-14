@@ -33,7 +33,7 @@ void ForceAccumulator<ForceT>::accumulate(Scalar& globalEnergy, VecXd& globalFor
 {
     assert(geometry.m_framesUpToDate);
 
-    for (IndexType vtx = ForceT::s_first; vtx < strand.m_numVertices - 1; ++vtx)
+    for (IndexType vtx = ForceT::s_first; vtx < strand.m_numVertices - ForceT::s_last; ++vtx)
     {
         globalEnergy += ForceT::localEnergy(strand, geometry, vtx);
         ForceT::addInPosition(globalForce, vtx, ForceT::localForce(strand, geometry, vtx));
@@ -46,7 +46,7 @@ void ForceAccumulator<ForceT>::accumulate(Scalar& globalEnergy, VecXd& globalFor
 {
     assert(geometry.m_framesUpToDate);
 
-    for (IndexType vtx = ForceT::s_first; vtx < strand.m_numVertices - 1; ++vtx)
+    for (IndexType vtx = ForceT::s_first; vtx < strand.m_numVertices - ForceT::s_last; ++vtx)
     {
         globalEnergy += ForceT::localEnergy(strand, geometry, vtx);
         ForceT::addInPosition(globalForce, vtx, ForceT::localForce(strand, geometry, vtx));
@@ -60,7 +60,7 @@ void ForceAccumulator<ForceT>::accumulate(strandsim::BandMatrix<Scalar, 10, 10> 
 {
     assert(geometry.m_framesUpToDate);
 
-    for (IndexType vtx = ForceT::s_first; vtx < strand.m_numVertices - 1; ++vtx)
+    for (IndexType vtx = ForceT::s_first; vtx < strand.m_numVertices - ForceT::s_last; ++vtx)
     {
         ForceT::addInPosition(globalJacobian, vtx, ForceT::localJacobian(strand, geometry, vtx));
     }
