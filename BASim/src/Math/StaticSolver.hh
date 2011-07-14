@@ -17,8 +17,6 @@
 #include "../Core/StatTracker.hh"
 #include "../Util/TextLog.hh"
 
-static int static_solve_counter = 0;
-
 namespace BASim
 {
 
@@ -45,9 +43,9 @@ public:
         // on the maya side
         m_lambdamin = 1e-8;
         m_lambdamax = 1e+10;
-        m_lambda    = 1e-3;
-        m_gearup    = 2.00; // above 1.0
-        m_geardown  = 0.80; // below 1.0
+        m_lambda = 1e-3;
+        m_gearup = 2.00; // above 1.0
+        m_geardown = 0.80; // below 1.0
         m_failurecount = 0;
         m_successcount = 1;
         m_keepUpdating = true;
@@ -73,18 +71,18 @@ public:
 
     bool execute()
     {
-        ElasticRod &r = *m_diffEq.getRod();
-        int   ia  = r.globalRodIndex;
+        //   ElasticRod &r = *m_diffEq.getRod();
+        //   int   ia  = r.globalRodIndex;
         //InfoStream(g_log, "") << "\n Rod Index: " <<  ia << " keep updating: " << m_keepUpdating << "\n";
-       	if ( !m_diffEq.getRod()->isInRestState() )
-    	{
-    		m_keepUpdating = true;
-    	}
-    	if ( m_keepUpdating )
-    	{
-    		position_solve();
-    	}
-    	return true;
+        if (!m_diffEq.getRod()->isInRestState())
+        {
+            m_keepUpdating = true;
+        }
+        if (m_keepUpdating)
+        {
+            position_solve();
+        }
+        return true;
     }
 
     std::string getName() const
@@ -259,17 +257,9 @@ protected:
     bool position_solve()
     {
 #pragma omp atomic
-        solveCounter++;
+        ++solveCounter;
 
         START_TIMER("StaticSolver::newton_step/setup");
-
-        TraceStream(g_log, "StaticSolver::position_solve") << "call #" << ++static_solve_counter << " on rod "
-                << m_diffEq.getRod()->globalRodIndex << '\n';
-
-        //for (int vidx = 0; vidx < (int) m_diffEq.getRod()->nv(); vidx++)
-        //{
-        //	std::cout << m_diffEq.getRod()->getVertex(vidx) << std::endl;
-        //}
 
         // Chapter 0: Basic housekeeping
         ////////////////////////////////////////////////////
@@ -538,4 +528,3 @@ protected:
 } // namespace BASim
 
 #endif // STATICSOLVER_HH
-

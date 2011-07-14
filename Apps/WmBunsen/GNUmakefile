@@ -25,7 +25,7 @@ IPATHS 	+= -I$(MKLROOT)/include -I. -I./utils/
 PLG1            := wmFigaro.so
 #PLG1_CF	        += -Werror -DBUILD=${BUILD}
 #PLG1_CF	        += -DBUILD=${BUILD} -openmp -pthread -DHAVE_MKL -DHAVE_LAPACK -DWETA
-PLG1_CF	        += -DBUILD=${BUILD} -pthread -DHAVE_LAPACK -DWETA # -openmp -DHAVE_OPENMP
+PLG1_CF	        += -DBUILD=${BUILD} -pthread -DHAVE_LAPACK -DWETA -openmp -DHAVE_OPENMP
 PLG1_CF	        += -no-ipo
 
 #PhysBAM libraries
