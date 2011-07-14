@@ -23,7 +23,7 @@ ElasticStrandStaticStepper::~ElasticStrandStaticStepper()
 
 void ElasticStrandStaticStepper::execute(ElasticStrand& strand) const
 {
-    assert(strand.forceCachesUpToDate());
+    assert(strand.readyForSolving());
 
     const Scalar E = strand.getTotalEnergy();
     const ElasticStrand::ForceVectorType& F = strand.getTotalForces();
@@ -36,7 +36,12 @@ void ElasticStrandStaticStepper::execute(ElasticStrand& strand) const
     newDOFs -= strand.getDegreesOfFreedom(); // X = J^{-1} F -X_0
     newDOFs *= -1;// X = X_0 - J^{-1} F
 
-    // Examine here the new position. If acceptable,
+    // Update the new position's frames and stuff
+    strand.prepareForExamining();
+
+    // TODO: Examine here the new position.
+
+    // Accept the new position. This also updates the strand for the next solve.
     strand.acceptNewPositions();
 }
 

@@ -41,12 +41,15 @@ public:
     // Expose the future position storage so it can be changed by the stepper.
     VecXd& getNewDegreesOfFreedom()
     {
+        m_newGeometry.m_framesUpToDate = false;
+        m_readyForExamining = false;
+
         return m_newGeometry.m_degreesOfFreedom;
     }
 
-    bool forceCachesUpToDate() const
+    bool readyForSolving() const
     {
-        return m_forceCachesUpToDate;
+        return m_readyForSolving;
     }
 
     Scalar getTotalEnergy() const
@@ -64,6 +67,8 @@ public:
         return m_totalJacobian;
     }
 
+    void prepareForSolving();
+    void prepareForExamining();
     void acceptNewPositions();
 
 private:
@@ -71,9 +76,6 @@ private:
     void freezeRestShape();
 
     Mat2d computeBendingMatrix(const IndexType vtx) const;
-    void updateForceCaches();
-    void accumulateInternalForces();
-    void accumulateExternalForces();
 
     /**
      * Member variables
@@ -98,11 +100,16 @@ private:
     std::vector<Vec2d, Eigen::aligned_allocator<Vec2d> > m_kappaBar;
     std::vector<Scalar> m_restTwists;
 
-    // Force caching
-    bool m_forceCachesUpToDate;
+    // Force caching, for solving
+    bool m_readyForSolving;
     Scalar m_totalEnergy;
     ForceVectorType m_totalForces;
     JacobianMatrixType m_totalJacobian;
+
+    // Force caching, for examination
+    bool m_readyForExamining;
+    Scalar m_newTotalEnergy;
+    ForceVectorType m_newTotalForces;
 
 public:
     friend class StretchingForce;

@@ -8,6 +8,9 @@
 #ifndef FORCEACCUMULATOR_HH_
 #define FORCEACCUMULATOR_HH_
 
+#include "Definitions.hh"
+#include "BandMatrix.hh"
+
 namespace strandsim
 {
 
@@ -21,8 +24,15 @@ public:
     ForceAccumulator();
     virtual ~ForceAccumulator();
 
-    // Compute global energy, force, Jacobian
-    static void accumulate(ElasticStrand& strand, const StrandGeometry& geometry);
+    static void accumulate(Scalar& globalEnergy, VecXd& globalForce, const ElasticStrand& strand,
+            const StrandGeometry& geometry);
+
+    static void accumulate(Scalar& globalEnergy, VecXd& globalForce, strandsim::BandMatrix<Scalar, 10, 10> globalJacobian,
+            const ElasticStrand& strand, const StrandGeometry& geometry);
+
+    static void accumulate(strandsim::BandMatrix<Scalar, 10, 10> globalJacobian,
+            const ElasticStrand& strand, const StrandGeometry& geometry);
+
 };
 
 }

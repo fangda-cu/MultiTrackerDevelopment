@@ -24,8 +24,6 @@ StretchingForce::~StretchingForce()
 
 Scalar StretchingForce::localEnergy(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx)
 {
-    assert(vtx < strand.m_numVertices - 1);
-
     const Scalar ks = strand.m_parameters.m_ks;
     const Scalar restLength = strand.m_restLengths[vtx];
     const Scalar length = geometry.m_lengths[vtx];

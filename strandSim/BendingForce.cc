@@ -23,8 +23,6 @@ BendingForce::~BendingForce()
 
 Scalar BendingForce::localEnergy(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx)
 {
-    assert(strand.m_framesUpToDate);
-
     const Mat2d& B = strand.m_bendingMatrices[vtx];
     const Scalar ilen = 2.0 / (strand.m_restLengths[vtx - 1] + strand.m_restLengths[vtx]);
     const Vec2d& kappa = geometry.m_kappa[vtx];
@@ -35,8 +33,6 @@ Scalar BendingForce::localEnergy(const ElasticStrand& strand, const StrandGeomet
 
 BendingForce::LocalForceType BendingForce::localForce(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx)
 {
-    assert(strand.m_framesUpToDate);
-
     const Mat2d& B = strand.m_bendingMatrices[vtx];
     const Scalar ilen = 2.0 / (strand.m_restLengths[vtx - 1] + strand.m_restLengths[vtx]);
     const Vec2d& kappa = geometry.m_kappa[vtx];
@@ -48,8 +44,6 @@ BendingForce::LocalForceType BendingForce::localForce(const ElasticStrand& stran
 
 BendingForce::LocalJacobianType BendingForce::localJacobian(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx)
 {
-    assert(strand.m_framesUpToDate);
-
     LocalJacobianType localJ;
 
     const Mat2d& B = strand.m_bendingMatrices[vtx];
