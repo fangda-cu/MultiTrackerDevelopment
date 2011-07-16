@@ -1,33 +1,16 @@
 #ifndef WMSWEENEYSUBSETNODE_HH_
 #define WMSWEENEYSUBSETNODE_HH_
 
-
-//////////////////////////////////////////////////////////
-// 
-// Headers.
-// 
-//////////////////////////////////////////////////////////
-
 #include <maya/MPxLocatorNode.h>
 #include <maya/M3dView.h>
 #include <maya/MDagPath.h>
 
-//////////////////////////////////////////////////////////
-// 
-// Class declaration.
-// 
-//////////////////////////////////////////////////////////
+#include "WmSweeneyRodManager.hh"
+
 
 class WmSweeneySubsetNode : public MPxLocatorNode
 {
   public:
-
-
-    //////////////////////////////////////////////////////
-    // 
-    // Stuff we always need.
-    // 
-    //////////////////////////////////////////////////////
 
     WmSweeneySubsetNode();
     
@@ -60,6 +43,49 @@ class WmSweeneySubsetNode : public MPxLocatorNode
     void setScalpFaceIndices( const MIntArray i_indicies );
     // debug method for previous method
     void checkScalpFaceIndices();
+
+    // the rods associated with this scalp face set
+    // reset by WmSweeneyNode at each simulation restart
+    std::vector< BASim::ElasticRod* > getRods( );
+    void addRod( BASim::ElasticRod* i_rod );
+    void clearRods( );
+
+    //////////////////////////////////////////////////////
+    //
+    // Accessor methods.
+    //
+    //////////////////////////////////////////////////////
+
+    MIntArray getScalpFaceIndices( MDataBlock* i_dataBlock = NULL ) const;
+
+    // Rod property accessors
+
+    double getRodLength( MDataBlock* i_dataBlock = NULL ) const;
+    double getRodRadius( MDataBlock* i_dataBlock = NULL ) const;
+    double getRodAspectRatio( MDataBlock* i_dataBlock = NULL ) const;
+    double getRodRotation( MDataBlock* i_dataBlock = NULL ) const;
+    double getCurlTightness( MDataBlock* i_dataBlock = NULL ) const;
+    double getCurlCount( MDataBlock* i_dataBlock = NULL ) const;
+    double getCurlRadius( MDataBlock* i_dataBlock = NULL ) const;
+    double getCurlStart( MDataBlock* i_dataBlock = NULL ) const;
+    double getRodCharge( MDataBlock* i_dataBlock = NULL ) const;
+    double getRodPower( MDataBlock* i_dataBlock = NULL ) const;
+    double getRodClumpSeparation( MDataBlock* i_dataBlock = NULL ) const;
+
+    int getVerticesPerRod( MDataBlock* i_dataBlock = NULL ) const;
+    int getRodsPerClump( MDataBlock* i_dataBlock = NULL ) const;
+
+    bool getIsFixCurlCount( MDataBlock* i_dataBlock = NULL ) const;
+    bool getIsCurlInXFrame( MDataBlock* i_dataBlock = NULL ) const;
+    bool getIsPreserveLengthVariation( MDataBlock* i_dataBlock = NULL ) const;
+    bool getIsRodDamping( MDataBlock* i_dataBlock = NULL ) const;
+
+    // Solver settings accessor
+
+    void getSolverSettings(
+            double& i_stol, double& i_atol, double& i_rtol,
+            double& i_inftol, int& numLineSearchIters,
+            MDataBlock* i_dataBlock = NULL );
 
     //////////////////////////////////////////////////////
     // 
@@ -108,6 +134,10 @@ class WmSweeneySubsetNode : public MPxLocatorNode
                                                 MString i_shortName,
                                                 MFnNumericData::Type i_type, double i_defaultValue,
                                                 bool i_isInput = true, bool i_isArray = false );
+
+    // current rod set : recomputed whenever the simulation is restarted
+    std::vector< BASim::ElasticRod* > m_subsetCurrentRods;
+
 };
 
 #endif // WMSWEENEYSUBSETNODE_H_

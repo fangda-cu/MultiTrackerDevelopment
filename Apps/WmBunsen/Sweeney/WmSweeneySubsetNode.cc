@@ -67,6 +67,20 @@ WmSweeneySubsetNode::WmSweeneySubsetNode()
 {
 }
 
+std::vector< BASim::ElasticRod* > WmSweeneySubsetNode::getRods( )
+{
+    return m_subsetCurrentRods;
+}
+
+void WmSweeneySubsetNode::addRod( BASim::ElasticRod* i_rod )
+{
+    m_subsetCurrentRods.push_back( i_rod );
+}
+
+void WmSweeneySubsetNode::clearRods( )
+{
+    m_subsetCurrentRods.clear();
+}
 
 void WmSweeneySubsetNode::setScalpFaceIndices( const MIntArray i_indices )
 {
@@ -133,6 +147,402 @@ void WmSweeneySubsetNode::checkScalpFaceIndices( )
         cout << "face index: " << indices[ i ] << endl;
     }
     cout << "WmSweeneySubsetNode::checkScalpFaceIndices::end face index list " << endl;
+}
+
+MIntArray WmSweeneySubsetNode::getScalpFaceIndices( MDataBlock* i_dataBlock ) const
+{
+
+    MStatus status;
+
+    MIntArray indices;
+
+    MObject indicesDataObj;
+
+    if ( i_dataBlock )
+    {
+        indicesDataObj = i_dataBlock->inputValue( ia_scalpFaceIndices, & status ).data();
+        CHECK_MSTATUS( status );
+    }
+    else
+    {
+        MPlug plug( thisMObject(), ia_scalpFaceIndices );
+        indicesDataObj = MObject::kNullObj;
+        status = plug.getValue( indicesDataObj );
+        CHECK_MSTATUS( status );
+    }
+
+
+    MFnIntArrayData indicesDataFn( indicesDataObj, & status );
+    CHECK_MSTATUS( status );
+
+    indices = indicesDataFn.array( & status );
+    CHECK_MSTATUS( status );
+
+    return indices;
+}
+
+// Rod property accessors
+
+double WmSweeneySubsetNode::getRodLength( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    double value;
+    if ( i_dataBlock )
+    {
+        value = i_dataBlock->inputValue( ia_length, & status ).asDouble();
+        CHECK_MSTATUS( status );
+    }
+    else
+    {
+        MPlug plug( thisMObject(), ia_length );
+        value = plug.asDouble();
+    }
+
+    return value;
+}
+
+double WmSweeneySubsetNode::getRodRadius( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    double value;
+    if ( i_dataBlock )
+    {
+        value = i_dataBlock->inputValue( ia_rodRadius, & status ).asDouble();
+        CHECK_MSTATUS( status );
+    }
+    else
+    {
+        MPlug plug( thisMObject(), ia_rodRadius );
+        value = plug.asDouble();
+    }
+
+    return value;
+}
+
+double WmSweeneySubsetNode::getRodAspectRatio( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    double value;
+    if ( i_dataBlock )
+    {
+        value = i_dataBlock->inputValue( ia_rodAspectRatio, & status ).asDouble();
+        CHECK_MSTATUS( status );
+    }
+    else
+    {
+        MPlug plug( thisMObject(), ia_rodAspectRatio );
+        value = plug.asDouble();
+    }
+
+    return value;
+}
+
+double WmSweeneySubsetNode::getRodRotation( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    double value;
+    if ( i_dataBlock )
+    {
+        value = i_dataBlock->inputValue( ia_rodRotation, & status ).asDouble();
+        CHECK_MSTATUS( status );
+    }
+    else
+    {
+        MPlug plug( thisMObject(), ia_rodRotation );
+        value = plug.asDouble();
+    }
+
+    return value;
+}
+
+double WmSweeneySubsetNode::getCurlTightness( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    double value;
+    if ( i_dataBlock )
+    {
+        value = i_dataBlock->inputValue( ia_curlTightness, & status ).asDouble();
+        CHECK_MSTATUS( status );
+    }
+    else
+    {
+        MPlug plug( thisMObject(), ia_curlTightness );
+        value = plug.asDouble();
+    }
+
+    return value;
+}
+
+double WmSweeneySubsetNode::getCurlCount( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    double value;
+    if ( i_dataBlock )
+    {
+        value = i_dataBlock->inputValue( ia_curlCount, & status ).asDouble();
+        CHECK_MSTATUS( status );
+    }
+    else
+    {
+        MPlug plug( thisMObject(), ia_curlCount );
+        value = plug.asDouble();
+    }
+
+    return value;
+}
+
+double WmSweeneySubsetNode::getCurlRadius( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    double value;
+    if ( i_dataBlock )
+    {
+        value = i_dataBlock->inputValue( ia_curlRadius, & status ).asDouble();
+        CHECK_MSTATUS( status );
+    }
+    else
+    {
+        MPlug plug( thisMObject(), ia_curlRadius );
+        value = plug.asDouble();
+    }
+
+    return value;
+}
+
+double WmSweeneySubsetNode::getCurlStart( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    double value;
+    if ( i_dataBlock )
+    {
+        value = i_dataBlock->inputValue( ia_curlStart, & status ).asDouble();
+        CHECK_MSTATUS( status );
+    }
+    else
+    {
+        MPlug plug( thisMObject(), ia_curlStart );
+        value = plug.asDouble();
+    }
+
+    return value;
+}
+
+double WmSweeneySubsetNode::getRodCharge( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    double value;
+    if ( i_dataBlock )
+    {
+        value = i_dataBlock->inputValue( ia_rodCharge, & status ).asDouble();
+        CHECK_MSTATUS( status );
+    }
+    else
+    {
+        MPlug plug( thisMObject(), ia_rodCharge );
+        value = plug.asDouble();
+    }
+
+    return value;
+}
+
+double WmSweeneySubsetNode::getRodPower( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    double value;
+    if ( i_dataBlock )
+    {
+        value = i_dataBlock->inputValue( ia_rodPower, & status ).asDouble();
+        CHECK_MSTATUS( status );
+    }
+    else
+    {
+        MPlug plug( thisMObject(), ia_rodPower );
+        value = plug.asDouble();
+    }
+
+    return value;
+}
+
+double WmSweeneySubsetNode::getRodClumpSeparation( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    double value;
+    if ( i_dataBlock )
+    {
+        value = i_dataBlock->inputValue( ia_rodClumpSeparation, & status ).asDouble();
+        CHECK_MSTATUS( status );
+    }
+    else
+    {
+        MPlug plug( thisMObject(), ia_rodClumpSeparation );
+        value = plug.asDouble();
+    }
+
+    return value;
+}
+
+int WmSweeneySubsetNode::getVerticesPerRod( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    int value;
+    if ( i_dataBlock )
+    {
+        value = i_dataBlock->inputValue( ia_verticesPerRod, & status ).asInt();
+        CHECK_MSTATUS( status );
+    }
+    else
+    {
+        MPlug plug( thisMObject(), ia_verticesPerRod );
+        value = plug.asInt();
+    }
+
+    return value;
+}
+
+int WmSweeneySubsetNode::getRodsPerClump( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    int value;
+    if ( i_dataBlock )
+    {
+        value = i_dataBlock->inputValue( ia_rodsPerClump, & status ).asInt();
+        CHECK_MSTATUS( status );
+    }
+    else
+    {
+        MPlug plug( thisMObject(), ia_rodsPerClump );
+        value = plug.asInt();
+    }
+
+    return value;
+}
+
+bool WmSweeneySubsetNode::getIsFixCurlCount( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    int value;
+    if ( i_dataBlock )
+    {
+        value = i_dataBlock->inputValue( ia_fixCurlCount, & status ).asBool();
+        CHECK_MSTATUS( status );
+    }
+    else
+    {
+        MPlug plug( thisMObject(), ia_fixCurlCount );
+        value = plug.asBool();
+    }
+
+    return value;
+}
+
+bool WmSweeneySubsetNode::getIsCurlInXFrame( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    int value;
+    if ( i_dataBlock )
+    {
+       value = i_dataBlock->inputValue( ia_curlInXFrame, & status ).asBool();
+       CHECK_MSTATUS( status );
+    }
+    else
+    {
+       MPlug plug( thisMObject(), ia_curlInXFrame );
+       value = plug.asBool();
+    }
+
+    return value;
+}
+
+bool WmSweeneySubsetNode::getIsPreserveLengthVariation( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    int value;
+    if ( i_dataBlock )
+    {
+       value = i_dataBlock->inputValue( ia_preserveLengthVariation, & status ).asBool();
+       CHECK_MSTATUS( status );
+    }
+    else
+    {
+       MPlug plug( thisMObject(), ia_preserveLengthVariation );
+       value = plug.asBool();
+    }
+
+    return value;
+}
+
+bool WmSweeneySubsetNode::getIsRodDamping( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    int value;
+    if ( i_dataBlock )
+    {
+       value = i_dataBlock->inputValue( ia_rodDamping, & status ).asBool();
+       CHECK_MSTATUS( status );
+    }
+    else
+    {
+       MPlug plug( thisMObject(), ia_rodDamping );
+       value = plug.asBool();
+    }
+
+    return value;
+}
+    // Solver settings accessor
+
+void WmSweeneySubsetNode::getSolverSettings(
+        double& i_stol, double& i_atol, double& i_rtol,
+        double& i_inftol, int& i_numLineSearchIters,
+        MDataBlock* i_dataBlock )
+{
+
+
+    MStatus status;
+
+    if ( i_dataBlock )
+    {
+        i_stol = i_dataBlock->inputValue( ia_stol, & status ).asDouble();
+        CHECK_MSTATUS( status );
+        i_atol = i_dataBlock->inputValue( ia_atol, & status ).asDouble();
+        CHECK_MSTATUS( status );
+        i_rtol = i_dataBlock->inputValue( ia_rtol, & status ).asDouble();
+        CHECK_MSTATUS( status );
+        i_inftol = i_dataBlock->inputValue( ia_inftol, & status ).asDouble();
+        CHECK_MSTATUS( status );
+        i_numLineSearchIters = i_dataBlock->inputValue( ia_numLineSearchIters, & status ).asInt();
+        CHECK_MSTATUS( status );
+
+    }
+    else
+    {
+        MPlug s_plug( thisMObject(), ia_stol );
+        i_stol = s_plug.asDouble();
+        MPlug a_plug( thisMObject(), ia_atol );
+        i_atol = a_plug.asDouble();
+        MPlug r_plug( thisMObject(), ia_rtol );
+        i_rtol = r_plug.asDouble();
+        MPlug inf_plug( thisMObject(), ia_inftol );
+        i_inftol = inf_plug.asDouble();
+        MPlug nlsi_plug( thisMObject(), ia_numLineSearchIters );
+        i_numLineSearchIters = nlsi_plug.asInt();
+    }
 }
 
 /*static*/ void* WmSweeneySubsetNode::creator()

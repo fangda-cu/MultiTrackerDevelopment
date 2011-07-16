@@ -158,27 +158,38 @@ public:
     void constructRodVertices( std::vector< BASim::Vec3d >& o_rodVertices, const MVector& i_direction,
                        const MVector& i_rootPosition );
 
-    void setScalpSelection ( const MIntArray& faces );
-
+    MStatus subsetNodes( std::vector<WmSweeneySubsetNode*>& o_subsetNodes );
     WmSweeneyRodManager* rodManager();
         
 private:
     void initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock );
     void initialiseCollisionMeshes( MDataBlock &i_data );
-    void initialiseMeshMapping( );
     void updateCollisionMeshes( MDataBlock& i_dataBlock );
+    void computeSubsetRodMapping( MDataBlock& i_dataBlock );
     void compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i_dataBlock );
-    void updateStrandLength( BASim::ElasticRod* current_rod, bool& update_rod, BASim::Scalar stand_length );
-    void updateStrandCrossSection( BASim::ElasticRod* current_rod, bool& update_rod );
-    void updateStrandRotation( BASim::ElasticRod* current_rod, bool& update_rod );
+    void updateAllRods( bool& update_all_rods );
+    void updateSubsetRods(  WmSweeneySubsetNode* subset, const bool update_all_rods,
+            MDataBlock* i_dataBlock = NULL );
+    // reformat all of these to take the updated value as a parameter
+    void updateStrandLength( BASim::ElasticRod* current_rod, bool& update_rod,
+            const BASim::Scalar updated_edge_length );
+    void updateStrandCrossSection( BASim::ElasticRod* current_rod, bool& update_rod,
+            const double i_rodRadius, const double i_rodAspectRatio );
+    void updateStrandRotation( BASim::ElasticRod* current_rod, bool& update_rod,
+            const double i_rodRotation );
     void updateStrandCurl( BASim::ElasticRod* current_rod,  bool& update_rod,
-            BASim::Scalar curvature, BASim::Scalar torsion );
+            BASim::Scalar curvature, BASim::Scalar torsion, const double i_curlStart,
+            const double i_verticesPerRod, const bool i_curlInXFrame );
+    // TODO(sainsley) : right now solver settings are on a global level
+    // we will need to refactor this to a rod-level if we want finer
+    // control of solver settings in subsets
     void updateSolverSettings( MDataBlock &i_dataBlock );
 
     // Helper functions for scalp mesh
     void getSurfaceTangent( MFnMesh& surface, BASim::Vec3d& surface_tan, int rodIdx, const BASim::Vec3d strand_tan );
     bool getScalpTangents( std::vector<BASim::Vec3d>& i_scalpTangents );
     void getMeshPath( MDagPath& meshPath, MStatus& status );
+    void getSubsetRods( WmSweeneySubsetNode* subset, std::vector< BASim::ElasticRod* >& subset_rods );
 
     double m_currentTime;
     double m_previousTime;
@@ -212,10 +223,12 @@ private:
     WmSweeneyRodManager* m_rodManager;
     MVectorArray m_strandVertices;
     MVectorArray m_strandRootFrames;
+
     // strand lengths from barbershop
     std::vector<double> m_strandLengths;
-    // scalp face to strand index mapping
-    std::map<int, int> m_faceToStrandIdx;
+
+    std::vector<WmSweeneySubsetNode*> m_subsetNodes;
+
     unsigned int m_numberOfVerticesPerStrand;
 };
 

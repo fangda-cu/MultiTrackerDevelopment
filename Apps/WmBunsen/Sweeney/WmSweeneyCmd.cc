@@ -83,7 +83,7 @@ void* WmSweeneyCmd::creator()
 
 const char *const kCreateSweeneyNode( "-cs" );
 const char *const kAddCollisionMeshes( "-acm" );
-const char *const kSetSimulatedSubsection( "-sss" );
+const char *const kCreateSweeneySubset( "-css" );
 const char *const kSetSimulateAll( "-ssa" );
 
 const char *const kHelp( "-h" );
@@ -100,8 +100,8 @@ MSyntax WmSweeneyCmd::syntaxCreator()
                "Creates rods from the selected Barbershop furset node." );
     p_AddFlag( mSyntax, kAddCollisionMeshes, "-addCollisionMesh",
                "Adds a a selected polygon mesh as a collision object for the selected Sweeney node." );
-    p_AddFlag( mSyntax, kSetSimulatedSubsection, "-simulateOnlySelectedRods",
-                   "Applies slider settings only to selected rods when simulation begins." );
+    p_AddFlag( mSyntax, kCreateSweeneySubset, "-createSweeneySubset",
+                   "Creates a new node for a subset of the scalp mesh with its own set of rod parameters" );
     p_AddFlag( mSyntax, kSetSimulateAll, "-simulateAllRods",
                    "Applies slider settings only to all rods when simulation begins." );
 
@@ -178,7 +178,7 @@ MStatus WmSweeneyCmd::redoIt()
         {
             addCollisionMeshes();
         }
-        if ( m_mArgDatabase->isFlagSet( kSetSimulatedSubsection ) )
+        if ( m_mArgDatabase->isFlagSet( kCreateSweeneySubset ) )
         {
             createSweeneySubsetNode();
         }

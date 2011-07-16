@@ -191,105 +191,30 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 
 			initialiseRodFromBarberShopInput( i_dataBlock );
 
-			initialiseMeshMapping();
+			computeSubsetRodMapping( i_dataBlock );
 		}
 		else
 		{
 		    if ( m_rodManager != NULL )
 		    {
-                static double oldCharge = 0.0;
-                static double oldPower = 1.0;
-                static double oldClumpDist = 0.0;
+		        bool update_all_rods = false;
 
-                bool update_all_rods = false;
+		        // apply global parameters to all rods
+		        updateAllRods( update_all_rods );
 
-                if ((m_rodCharge != oldCharge)
-                        || m_rodPower != oldPower
-                        || m_rodClumpSeparation != oldClumpDist)
-                {
-                    m_rodManager->setClumpingParameters(oldCharge = m_rodCharge,
-                            oldPower = m_rodPower, oldClumpDist = m_rodClumpSeparation);
-                    update_all_rods = true;
-                }
+		        // handle subsets
+		        cout << " GET SUBSET NODES " << endl;
+		        subsetNodes( m_subsetNodes );
+		        cout << " UPDATE RODS FOR " << m_subsetNodes.size() << " SUBSETS " << endl;
+		        for ( size_t i = 0; i < m_subsetNodes.size(); ++i )
+		        {
+		            updateSubsetRods( m_subsetNodes[ i ], update_all_rods, &i_dataBlock );
+		        }
 
-				// Apply kinetic damping
-				m_rodManager->setUseKineticDamping( m_rodDamping );
-
-				ElasticRod *current_rod;
-				bool update_rod = update_all_rods;
-
-				// for each rod, check if any parameters need to be updated,
-				// perform necessary updates, and flag the rod accordingly
-				for (size_t i = 0; i < m_rodManager->m_rods.size(); ++i)
-				{
-
-					update_rod = false;
-					current_rod = m_rodManager->m_rods[i];
-
-					// get total rod length for scaling
-                    Scalar curl_length = ( 1.0 - m_curlStart )*m_length;
-                    int curl_resolution = ( 1.0 - m_curlStart )*m_verticesPerRod;
-
-                    // Compute the rod helix properties
-                    Scalar curvature = 0.0;
-                    Scalar torsion = 0.0;
-
-                    //Scalar absolute_length = m_length * m_strandLengths[i];
-
-                    if(  m_fixCurlCount && m_curlRadius != 0.0 && m_curlCount != 0.0 )
-                    {
-                        // compute total length of the helix
-                        // TODO(sainsley): rename m_curlCount m_curlCount
-                        // rename m_length to m_height
-                        Scalar radius = m_curlRadius;
-                        Scalar curl_height = m_length / m_curlCount;
-                        Scalar arc_length = sqrt( curl_height * curl_height +
-                                4 * M_PI * M_PI * radius * radius );
-                        curl_length = arc_length * m_curlCount;
-
-                        // compute helix curvature and torsion
-                        Scalar pitch = curl_height / ( 2 * M_PI );
-                        Scalar denom = radius  * radius  + pitch * pitch;
-                        curvature = radius  /  denom;
-                        torsion = pitch  / denom;
-                        curvature *= curl_length / curl_resolution;
-                        torsion *= curl_length / curl_resolution;
-                        /*if ( i == 0 )
-                            cout << "Curl Params: Curl_H " << curl_height << " arc_len " << arc_length
-                            << " abs_len " << absolute_length << " curl_radius " << m_curlRadius << " curl_pitch " << pitch << " curvature "
-                            << curvature << " torsion " << torsion << " resolutoin " << m_verticesPerRod << endl;*/
-                    }
-
-                    if (  !m_fixCurlCount && m_curlTightness != 0.0 )
-                    {
-                        curvature = m_curlTightness; // * m_length / m_verticesPerRod;
-                    }
-
-                    // length before curl
-                    Scalar total_length = m_curlStart*m_length + curl_length;
-                    if ( m_preserveLengthVariation )
-                    {
-                        total_length *= m_strandLengths[i];
-                    }
-
-					// Update rod configuration
-					updateStrandLength( current_rod, update_rod, total_length );
-					updateStrandCurl( current_rod, update_rod, curvature, torsion );
-					updateStrandCrossSection( current_rod, update_rod );
-					updateStrandRotation( current_rod, update_rod );
-
-					current_rod->updateStiffness();
-
-					// Check if rod is in rest state
-					// cout << "WmSweeneyNode::check for rod update::Rod Idx: " << i <<
-                       //     " update rod: " << update_rod << endl;
-					current_rod->setIsInRestState( update_rod );
-				}
-
-				 updateCollisionMeshes( i_dataBlock );
-				 updateSolverSettings( i_dataBlock );
-				 m_rodManager->takeStep();
-
+		        updateCollisionMeshes( i_dataBlock );
+                updateSolverSettings( i_dataBlock );
+                cout << " TAKE STEP " << endl;
+                m_rodManager->takeStep();
 		    }
 		}
 		i_dataBlock.setClean( i_plug );
@@ -305,8 +230,216 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 	return MS::kSuccess;
 }
 
+void  WmSweeneyNode::updateAllRods( bool& update_all_rods )
+{
+    static double oldCharge = 0.0;
+    static double oldPower = 1.0;
+    static double oldClumpDist = 0.0;
+
+    update_all_rods = false;
+
+    if ((m_rodCharge != oldCharge)
+            || m_rodPower != oldPower
+            || m_rodClumpSeparation != oldClumpDist)
+    {
+        m_rodManager->setClumpingParameters(oldCharge = m_rodCharge,
+                oldPower = m_rodPower, oldClumpDist = m_rodClumpSeparation);
+        update_all_rods = true;
+    }
+
+    // Apply kinetic damping
+    m_rodManager->setUseKineticDamping( m_rodDamping );
+
+    ElasticRod *current_rod;
+    bool update_rod = update_all_rods;
+
+    // for each rod, check if any parameters need to be updated,
+    // perform necessary updates, and flag the rod accordingly
+    for (size_t i = 0; i < m_rodManager->m_rods.size(); ++i)
+    {
+
+        update_rod = false;
+        current_rod = m_rodManager->m_rods[i];
+
+        // start update default rods method HERE
+
+        // get total rod length for scaling
+        Scalar curl_length = ( 1.0 - m_curlStart )*m_length;
+        int curl_resolution = ( 1.0 - m_curlStart )*m_verticesPerRod;
+
+        // Compute the rod helix properties
+        Scalar curvature = 0.0;
+        Scalar torsion = 0.0;
+
+        //Scalar absolute_length = m_length * m_strandLengths[i];
+
+        if(  m_fixCurlCount && m_curlRadius != 0.0 && m_curlCount != 0.0 )
+        {
+            // compute total length of the helix
+            // TODO(sainsley): rename m_curlCount m_curlCount
+            // rename m_length to m_height
+            Scalar radius = m_curlRadius;
+            Scalar curl_height = m_length / m_curlCount;
+            Scalar arc_length = sqrt( curl_height * curl_height +
+                    4 * M_PI * M_PI * radius * radius );
+            curl_length = arc_length * m_curlCount;
+
+            // compute helix curvature and torsion
+            Scalar pitch = curl_height / ( 2 * M_PI );
+            Scalar denom = radius  * radius  + pitch * pitch;
+            curvature = radius  /  denom;
+            torsion = pitch  / denom;
+            curvature *= curl_length / curl_resolution;
+            torsion *= curl_length / curl_resolution;
+            /*if ( i == 0 )
+                cout << "Curl Params: Curl_H " << curl_height << " arc_len " << arc_length
+                << " abs_len " << absolute_length << " curl_radius " << m_curlRadius << " curl_pitch " << pitch << " curvature "
+                << curvature << " torsion " << torsion << " resolutoin " << m_verticesPerRod << endl;*/
+        }
+
+        if (  !m_fixCurlCount && m_curlTightness != 0.0 )
+        {
+            curvature = m_curlTightness; // * m_length / m_verticesPerRod;
+        }
+
+        // length before curl
+        Scalar total_length = m_curlStart*m_length + curl_length;
+        if ( m_preserveLengthVariation )
+        {
+            total_length *= m_strandLengths[i];
+        }
+
+        // Update rod configuration
+        updateStrandLength( current_rod, update_rod, total_length / m_verticesPerRod );
+        updateStrandCurl( current_rod, update_rod, curvature, torsion,
+                m_curlStart, m_verticesPerRod, m_curlInXFrame );
+        updateStrandCrossSection( current_rod, update_rod, m_rodRadius,
+                m_rodAspectRatio );
+        updateStrandRotation( current_rod, update_rod, m_rodRotation );
+
+        current_rod->updateStiffness();
+
+        // Check if rod is in rest state
+        // cout << "WmSweeneyNode::check for rod update::Rod Idx: " << i <<
+           //     " update rod: " << update_rod << endl;
+        current_rod->setIsInRestState( update_rod );
+
+        // END update default method here
+    }
+}
+
+void  WmSweeneyNode::updateSubsetRods( WmSweeneySubsetNode* subset,
+        const bool update_all_rods, MDataBlock* i_dataBlock )
+{
+
+    // TODO(sainsley) : update clumping parameters
+    // right now this is only set up on a global level
+
+    // TODO(sainsley) : update rod damping
+    // right now this is only set up on a global level
+
+    // TODO (sainsley) : allow rod resolution to be controlled within subsets
+    // global for now
+    double i_verticesPerRod = m_verticesPerRod;
+
+    double i_length = subset->getRodLength( ); // i_dataBlock );
+    double i_rodRadius = subset->getRodRadius( ); //i_dataBlock );
+    double i_rodAspectRatio = subset->getRodAspectRatio( ); //i_dataBlock );
+    double i_rodRotation = subset->getRodRotation( ); //i_dataBlock );
+    double i_curlStart = subset->getCurlStart( ); // i_dataBlock );
+    double i_curlRadius = subset->getCurlRadius( ); //i_dataBlock );
+    double i_curlCount = subset->getCurlCount( ); //i_dataBlock );
+    double i_curlTightness = subset->getCurlTightness( ); //i_dataBlock );
+
+    bool i_fixCurlCount = subset->getIsFixCurlCount( );// i_dataBlock );
+    bool i_curlInXFrame = subset->getIsCurlInXFrame( ); //i_dataBlock );
+    bool i_preserveLengthVariation = subset->getIsPreserveLengthVariation( ); //i_dataBlock );
+
+
+    cout << " SUBSECTION ROD PROPERTIES "
+            << i_length << " " << i_rodRadius << " " << i_rodAspectRatio << " " << i_rodRotation
+            << " " << i_curlStart << " " << i_curlRadius << " " << i_curlCount << " " << i_curlTightness
+            << " " << i_fixCurlCount << " " << i_curlInXFrame << " " << i_preserveLengthVariation << endl;
+    ElasticRod *current_rod;
+    bool update_rod = update_all_rods;
+
+    // for each rod, check if any parameters need to be updated,
+    // perform necessary updates, and flag the rod accordingly
+    for (size_t i = 0; i < subset->getRods().size(); ++i)
+    {
+
+        update_rod = false;
+        current_rod = subset->getRods()[i];
+
+        // start update default rods method HERE
+
+        // get total rod length for scaling
+        Scalar curl_length = ( 1.0 - i_curlStart )*i_length;
+
+        int curl_resolution = ( 1.0 - i_curlStart )*i_verticesPerRod;
+
+        // Compute the rod helix properties
+        Scalar curvature = 0.0;
+        Scalar torsion = 0.0;
+
+        //Scalar absolute_length = m_length * m_strandLengths[i];
+
+        if(  i_fixCurlCount && i_curlRadius != 0.0 && i_curlCount != 0.0 )
+        {
+            // compute total length of the helix
+            Scalar radius = i_curlRadius;
+            Scalar curl_height = i_length / i_curlCount;
+            Scalar arc_length = sqrt( curl_height * curl_height +
+                    4 * M_PI * M_PI * radius * radius );
+            curl_length = arc_length * i_curlCount;
+
+            // compute helix curvature and torsion
+            Scalar pitch = curl_height / ( 2 * M_PI );
+            Scalar denom = radius  * radius  + pitch * pitch;
+            curvature = radius  /  denom;
+            torsion = pitch  / denom;
+            curvature *= curl_length / curl_resolution;
+            torsion *= curl_length / curl_resolution;
+            /*if ( i == 0 )
+                cout << "Curl Params: Curl_H " << curl_height << " arc_len " << arc_length
+                << " abs_len " << absolute_length << " curl_radius " << m_curlRadius << " curl_pitch " << pitch << " curvature "
+                << curvature << " torsion " << torsion << " resolutoin " << m_verticesPerRod << endl;*/
+        }
+
+        if (  !i_fixCurlCount && i_curlTightness != 0.0 )
+        {
+            curvature = i_curlTightness; // * m_length / m_verticesPerRod;
+        }
+
+        // length before curl
+        Scalar total_length = i_curlStart*i_length + curl_length;
+        if ( i_preserveLengthVariation )
+        {
+            total_length *= m_strandLengths[i];
+        }
+
+        // Update rod configuration
+        updateStrandLength( current_rod, update_rod, total_length / i_verticesPerRod );
+        updateStrandCurl( current_rod, update_rod, curvature, torsion,
+                i_curlStart, i_verticesPerRod, i_curlInXFrame );
+        updateStrandCrossSection( current_rod, update_rod, i_rodRadius,
+                i_rodAspectRatio );
+        updateStrandRotation( current_rod, update_rod, i_rodRotation );
+
+        current_rod->updateStiffness();
+
+        // Check if rod is in rest state
+        // cout << "WmSweeneyNode::check for rod update::Rod Idx: " << i <<
+           //     " update rod: " << update_rod << endl;
+        current_rod->setIsInRestState( update_rod );
+
+        // END update default method here
+    }
+}
+
 // todo CONST
-void WmSweeneyNode::updateStrandLength( ElasticRod* current_rod, bool& update_rod, Scalar stand_length )
+void WmSweeneyNode::updateStrandLength( ElasticRod* current_rod, bool& update_rod,
+        const Scalar updated_edge_length )
 {
 
     assert( current_rod->m_stretchingForce != NULL );
@@ -316,7 +449,7 @@ void WmSweeneyNode::updateStrandLength( ElasticRod* current_rod, bool& update_ro
     // edge lengths in the future. If this isn't the case, we want
     // a method to set the rest lengths of all edges to a constant
     // in order to avoid iterating over the edges twice
-    Scalar updated_edge_length = stand_length / m_verticesPerRod;
+    //Scalar updated_edge_length = stand_length / m_verticesPerRod;
     std::vector<Scalar> rest_lengths;
 
     // Adjust edge lengths and compute the resulting curl length
@@ -331,17 +464,7 @@ void WmSweeneyNode::updateStrandLength( ElasticRod* current_rod, bool& update_ro
             update_rod = true;
         }
         rest_lengths.push_back( updated_edge_length );
-
-        // TODO(sainsley) : factor this back in
-        // compute the total length and number of vertices in the curl
-        //if ( eh->idx() >= m_curlStart*( m_verticesPerRod - 1 ) )
-        //{
-          //  curl_len += current_rod->getEdgeLength( *eh );
-           // curl_resolution++;
-        //}
     }
-
-    //assert( m_curlStart == 1.0 || curl_len != 0 );
 
     // return if the rod is unchanged
     if( !update_rod ) return;
@@ -350,21 +473,22 @@ void WmSweeneyNode::updateStrandLength( ElasticRod* current_rod, bool& update_ro
     current_rod->setRestLengths( rest_lengths );
 }
 
-void WmSweeneyNode::updateStrandCrossSection( ElasticRod* current_rod, bool& update_rod )
+void WmSweeneyNode::updateStrandCrossSection( ElasticRod* current_rod, bool& update_rod,
+        const double i_rodRadius, const double i_rodAspectRatio )
 {
 
     // adjust the rod size
-    Scalar radius_a = m_rodRadius;
+    Scalar radius_a = i_rodRadius;
     Scalar radius_b = radius_a;
     // apply apsect ratio : flip axis if aspect ratio is less than 1
     // to preserve radius scale
-    if ( m_rodAspectRatio > 1.0 )
+    if ( i_rodAspectRatio > 1.0 )
     {
-        radius_b *= m_rodAspectRatio;
+        radius_b *= i_rodAspectRatio;
     }
     else
     {
-        radius_a *= 1.0/m_rodAspectRatio;
+        radius_a *= 1.0/i_rodAspectRatio;
     }
 
     // check for a change in radius
@@ -376,11 +500,12 @@ void WmSweeneyNode::updateStrandCrossSection( ElasticRod* current_rod, bool& upd
 
 }
 
-void WmSweeneyNode::updateStrandRotation( ElasticRod* current_rod, bool& update_rod )
+void WmSweeneyNode::updateStrandRotation( ElasticRod* current_rod, bool& update_rod,
+        const double i_rodRotation )
 {
 
     // default rotation is 180 degrees
-    Scalar theta = m_rodRotation * M_PI;
+    Scalar theta = i_rodRotation * M_PI;
 
     // check for update
     if ( current_rod->getTheta( 0 ) ==  theta ) return;
@@ -397,7 +522,8 @@ void WmSweeneyNode::updateStrandRotation( ElasticRod* current_rod, bool& update_
 }
 
 void WmSweeneyNode::updateStrandCurl( ElasticRod* current_rod, bool& update_rod,
-        Scalar curvature, Scalar torsion)
+        Scalar curvature, Scalar torsion, const double i_curlStart,
+        const double i_verticesPerRod, const bool i_curlInXFrame )
 {
 
     assert( current_rod->m_bendingForce != NULL );
@@ -407,7 +533,7 @@ void WmSweeneyNode::updateStrandCurl( ElasticRod* current_rod, bool& update_rod,
               vh != current_rod->vertices_end(); ++vh )
     {
 
-        if ( vh->idx() >= m_curlStart*m_verticesPerRod )
+        if ( vh->idx() >= i_curlStart*i_verticesPerRod )
         {
             if ( current_rod->m_twistingForce->getUndeformedTwist( *vh ) != torsion )
             {
@@ -416,7 +542,7 @@ void WmSweeneyNode::updateStrandCurl( ElasticRod* current_rod, bool& update_rod,
             }
 
             // curl along material frame axis of choice
-            if ( m_curlInXFrame ) {
+            if ( i_curlInXFrame ) {
                 if ( current_rod->m_bendingForce->getKappaBar( *vh )[0] != curvature )
                 {
                     current_rod->m_bendingForce->setKappaBar( *vh, Vec2d( curvature, 0 ) );
@@ -1562,9 +1688,70 @@ void WmSweeneyNode::getMeshPath( MDagPath& meshPath, MStatus& status )
         }
 }
 
-void WmSweeneyNode::initialiseMeshMapping( )
+/*void WmSweeneyNode::initialiseMeshMapping( )
 {
 
+
+}*/
+
+MStatus WmSweeneyNode::subsetNodes( std::vector<WmSweeneySubsetNode*>& o_subsetNodes )
+{
+    MStatus status;
+
+    o_subsetNodes.clear();
+
+    MFnDagNode dagFn( thisMObject(), & status  );
+    CHECK_MSTATUS( status );
+
+    MPlug fromSubsetNodesPlg = dagFn.findPlug( ia_fromSweeneySubsetNodes, true, & status );
+    CHECK_MSTATUS( status );
+
+    const unsigned int numElements = fromSubsetNodesPlg.numElements( & status );
+    CHECK_MSTATUS( status );
+
+    for ( unsigned int e = 0; e < numElements; e++ )
+    {
+        MPlug fromSubsetNodesChildPlg = fromSubsetNodesPlg[ e ];
+
+        MPlugArray subsetToSweeneyPlgs;
+        const bool isConnected = fromSubsetNodesChildPlg.connectedTo( subsetToSweeneyPlgs,
+            /* fromSubsetNodesChildPlg is the destination */ true,
+            /* fromSubsetNodesChildPlg is not the source */ false,
+            & status );
+        CHECK_MSTATUS( status );
+
+        if ( subsetToSweeneyPlgs.length() != 1 || isConnected == false )
+        {
+            continue;
+        }
+
+        MObject subsetObj = subsetToSweeneyPlgs[ 0 ].node( & status );
+        CHECK_MSTATUS( status );
+
+        MFnDagNode subsetFn( subsetObj, & status );
+        CHECK_MSTATUS( status );
+
+        WmSweeneySubsetNode* subsetNode = (WmSweeneySubsetNode*) subsetFn.userNode( & status );
+        CHECK_MSTATUS( status );
+
+        if ( subsetNode == NULL )
+        {
+            cerr << "WmSweeneyNode::subsetNodes() - SweeneyNode " << name().asChar()
+                << " fromSweeneySubsetNodes plug, child " << e
+                << " is connected to a NULL subset node."
+                << std::endl;
+            continue;
+        }
+
+        o_subsetNodes.push_back( subsetNode );
+    }
+
+    return MStatus::kSuccess;
+}
+
+// pass MDataBlock here
+void WmSweeneyNode::computeSubsetRodMapping( MDataBlock& i_dataBlock )
+{
     MStatus status;
     MDagPath meshPath;
     getMeshPath( meshPath, status );
@@ -1573,43 +1760,50 @@ void WmSweeneyNode::initialiseMeshMapping( )
         status.perror( "cannot locate mesh for mesh face to sweeney rod mapping" );
         return;
     }
+
     MFnMesh scalp = MFnMesh(meshPath);
+    cout << " get rod count" << endl;
     size_t rodCount = m_rodManager->m_rods.size();
     MPoint closestPoint;
-    m_faceToStrandIdx.clear();
 
-    // find closest mesh face to each strand
-    for (int i = 0; i < rodCount; ++i)
+    cout << " check " << m_subsetNodes.size() << " subset nodes " << endl;
+    // first pass : map mesh faces indices back to WmSweeneySubsetNodes
+    std::map<int, int> faceIdxToSubsetIdx;
+    for ( size_t i = 0; i < m_subsetNodes.size(); ++i )
+    {
+        m_subsetNodes[ i ]->clearRods();
+        cout << " get face scalp indices " << endl;
+        MIntArray faceIndices = m_subsetNodes[ i ]->getScalpFaceIndices( );
+        cout << " setting mapping for " << faceIndices.length() << " faces" << endl;
+        for ( int ii = 0; ii < faceIndices.length(); ++ii )
+        {
+            faceIdxToSubsetIdx.insert( pair<int, int> ( faceIndices[ ii ], int( i ) ) );
+        }
+    }
+    cout << " setting mapping for " << rodCount << " rods " << m_strandVertices.length() << endl;
+    // second pass : assign rods to appropriate subset nodes
+    for ( int rodIdx = 0; rodIdx < rodCount; ++rodIdx )
     {
         int faceIdx = 0;
-        MPoint root = m_strandVertices[ m_numberOfVerticesPerStrand*i ];
+        MPoint root = m_strandVertices[ m_numberOfVerticesPerStrand*rodIdx ];
         status = scalp.getClosestPoint( root , closestPoint, MSpace::kWorld, &faceIdx);
         if ( !status )
         {
-            status.perror( "could not find closest face to strand number " + i );
+            status.perror( "could not find closest face to strand number " + rodIdx );
         }
-        m_faceToStrandIdx.insert( pair<int,int> ( faceIdx , i ) );
 
-        //cout << " FACE " << faceIdx << " to ROD " << i << endl;
-    }
-}
+        map<int,int>::iterator it = faceIdxToSubsetIdx.find( faceIdx );
 
-void WmSweeneyNode::setScalpSelection( const MIntArray& faces )
-{
-
-    map<int,int>::iterator rodIdxItr;
-
-    m_rodManager->resetSelectedRods();
-
-    for ( int i = 0; i < faces.length( ); i++ )
-    {
-        rodIdxItr =  m_faceToStrandIdx.find( faces[ i ] );
-
-        if ( rodIdxItr != m_faceToStrandIdx.end() )
+        // face not in subset : continue
+        if ( it == faceIdxToSubsetIdx.end() )
         {
-            m_rodManager->selectRod( rodIdxItr->second );
-            // cout << "ROD " << rodIdxItr->second << " selected " << endl;
+            continue;
         }
+
+        // add rod to subset
+        int subsetIdx = (*it).second;
+        //cout << " setting rod subset for subset " << subsetIdx << endl;
+        WmSweeneySubsetNode* rodSubset = m_subsetNodes[ subsetIdx ];
+        rodSubset->addRod( m_rodManager->m_rods[ rodIdx ] );
     }
 }
-
