@@ -221,6 +221,11 @@ void WmSweeneyRodManager::setClumpingParameters(const double charge, const doubl
     m_bridsonStepper->setClumpingParameters(charge, power, dist);
 }
 
+void WmSweeneyRodManager::getClumpingParameters(double& charge, double& power, double& dist) const
+{
+    m_bridsonStepper->getClumpingParameters(charge, power, dist);
+}
+
 void WmSweeneyRodManager::resetSelectedRods()
 {
     m_selectedRods.clear();

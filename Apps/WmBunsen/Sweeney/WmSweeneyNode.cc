@@ -232,18 +232,17 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 
 void  WmSweeneyNode::updateAllRods( bool& update_all_rods )
 {
-    static double oldCharge = 0.0;
-    static double oldPower = 1.0;
-    static double oldClumpDist = 0.0;
+    double currentCharge, currentPower, currentClumpDist;
+    m_rodManager->getClumpingParameters( currentCharge, currentPower, currentClumpDist );
 
     update_all_rods = false;
 
-    if ((m_rodCharge != oldCharge)
-            || m_rodPower != oldPower
-            || m_rodClumpSeparation != oldClumpDist)
+    if ( m_rodCharge != currentCharge
+            || m_rodPower != currentPower
+            || m_rodClumpSeparation != currentClumpDist )
     {
-        m_rodManager->setClumpingParameters(oldCharge = m_rodCharge,
-                oldPower = m_rodPower, oldClumpDist = m_rodClumpSeparation);
+        m_rodManager->setClumpingParameters( m_rodCharge, m_rodPower,
+                m_rodClumpSeparation );
         update_all_rods = true;
     }
 

@@ -46,7 +46,7 @@ public:
 
     enum Method
     {
-        SYMPL_EULER, IMPL_EULER, STATICS, NONE
+        STATICS, NONE
     };
 
     explicit GroomingTimeStepper(ElasticRod& rod) :
@@ -54,7 +54,7 @@ public:
         //, m_boundaryCondition(NULL)
                 , m_backupstate()
     {
-        setDiffEqSolver(SYMPL_EULER);
+        setDiffEqSolver(STATICS);
     }
 
     ~GroomingTimeStepper()
@@ -126,38 +126,21 @@ public:
             return;
 
         m_method = method;
-        if (m_diffEqSolver != NULL)
-            delete m_diffEqSolver;
-        m_diffEqSolver = NULL;
+        delete m_diffEqSolver;
 
-        if (method == SYMPL_EULER)
+        switch(m_method)
         {
+        case STATICS:
             m_diffEqSolver = new StaticSolver<GroomingTimeStepper> (*this);
-        }
-        else if (method == IMPL_EULER)
-        {
-            //m_diffEqSolver = new ImplicitEuler<RodTimeStepper>(*this);
-            m_diffEqSolver = new StaticSolver<GroomingTimeStepper> (*this);
-            //m_diffEqSolver = new BacktrackingImplicitEuler<RodTimeStepper>(*this);
-        }
-        else if (method == STATICS)
-        {
-            m_diffEqSolver = new StaticSolver<GroomingTimeStepper> (*this);
-        }
-        else if (method == NONE)
-        {
-            m_diffEqSolver = NULL;
-        }
-        else
-        {
-            std::cout << "Unknown method specified" << std::endl;
+            break;
+
+        default:
+            WarningStream(g_log, "") << "Unimplemented differential equation solver " << m_method << '\n';
             m_diffEqSolver = NULL;
         }
 
         if (m_diffEqSolver != NULL)
-        {
             m_rod.setTimeStep(m_diffEqSolver->getTimeStep());
-        }
     }
 
     int ndof() const

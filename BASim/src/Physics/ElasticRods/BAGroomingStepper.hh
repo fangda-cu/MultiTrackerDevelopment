@@ -141,6 +141,7 @@ public:
     }
 
     void setClumpingParameters(const double charge, const double power, const double dist);
+    void getClumpingParameters(double& charge, double& power, double& dist);
 
 private:
     /**

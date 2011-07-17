@@ -99,7 +99,7 @@ BAGroomingStepper::BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector
         (*stepper)->setMaxIterations(m_perf_param.m_solver.m_max_iterations);
     }
 
-    g_log = new TextLog(std::cerr, MsgInfo::kInfo, true);
+    g_log = new TextLog(std::cerr, MsgInfo::kDebug, true);
     InfoStream(g_log, "") << "Started logging BAGroomingStepper\n";
 
 #ifndef NDEBUG
@@ -529,6 +529,7 @@ void BAGroomingStepper::step(RodSelectionType& selected_rods)
     TraceStream(g_log, "BAGroomingStepper") << "Stepping forward " << selected_steppers.size() << " rod(s).\n";
 
     bool dependable_solve = true;
+    StaticSolver<GroomingTimeStepper>::solveCounter = 0;
 #ifdef HAVE_OPENMP
 #pragma omp parallel for
 #endif
@@ -541,6 +542,7 @@ void BAGroomingStepper::step(RodSelectionType& selected_rods)
             TraceStream(g_log, "") << stepper->getDiffEqSolver().getName() << " solver for rod "
                     << stepper->getRod()->globalRodIndex << " failed to converge\n";
     }
+    DebugStream(g_log, "") << "This step solved for " << StaticSolver<GroomingTimeStepper>::solveCounter << " rods\n";
 
     STOP_TIMER("BAGroomingStepper::step/steppers");
 
@@ -3089,6 +3091,17 @@ void BAGroomingStepper::setClumpingParameters(const double charge, const double 
     m_clumpingForce->setDistance(dist);
 
     selectClumps();
+}
+
+void BAGroomingStepper::getClumpingParameters(double& charge, double& power, double& dist)
+{
+    assert(m_clumpingForce != NULL);
+
+    DebugStream(g_log, "") << "Changing clumping parameters\n";
+
+    charge = m_clumpingForce->getCharge( );
+    power = m_clumpingForce->getPower( );
+    dist = m_clumpingForce->getDistance( );
 }
 
 }

@@ -49,7 +49,7 @@ public:
                  const BASim::ElasticRod::RefFrameType i_referenceFrame = BASim::ElasticRod::TimeParallel,
                  const double i_massDamping = 10.0, 
                  const BASim::Vec3d i_gravity = BASim::Vec3d( 0.0, -980.0, 0.0 ),                 
-                 const BASim::GroomingTimeStepper::Method i_solverType = BASim::GroomingTimeStepper::IMPL_EULER );
+                 const BASim::GroomingTimeStepper::Method i_solverType = BASim::GroomingTimeStepper::STATICS);
 
     void setUseKineticDamping(bool i_useKinecticDamping);
 
@@ -60,6 +60,8 @@ public:
             double i_penaltyStiffness);
 
     void setClumpingParameters(const double charge, const double power, const double distance) const;
+
+    void getClumpingParameters(double& charge, double& power, double& distance) const;
 
     void addCollisionMesh(BASim::TriangleMesh* i_triangleMesh, BASim::LevelSet* i_levelSet,
             WmFigMeshController* i_figMeshController);
