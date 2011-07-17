@@ -257,7 +257,7 @@ void  WmSweeneyNode::updateAllRods( bool& update_all_rods )
     for (size_t i = 0; i < m_rodManager->m_rods.size(); ++i)
     {
 
-        update_rod = false;
+        // update_rod = false;
         current_rod = m_rodManager->m_rods[i];
 
         // start update default rods method HERE
@@ -318,12 +318,7 @@ void  WmSweeneyNode::updateAllRods( bool& update_all_rods )
 
         current_rod->updateStiffness();
 
-        // Check if rod is in rest state
-        // cout << "WmSweeneyNode::check for rod update::Rod Idx: " << i <<
-           //     " update rod: " << update_rod << endl;
-        current_rod->setIsInRestState( update_rod );
-
-        // END update default method here
+        current_rod->setIsInRestState( !update_rod );
     }
 }
 
@@ -367,10 +362,7 @@ void  WmSweeneyNode::updateSubsetRods( WmSweeneySubsetNode* subset,
     for (size_t i = 0; i < subset->getRods().size(); ++i)
     {
 
-        update_rod = false;
         current_rod = subset->getRods()[i];
-
-        // start update default rods method HERE
 
         // get total rod length for scaling
         Scalar curl_length = ( 1.0 - i_curlStart )*i_length;
@@ -399,10 +391,6 @@ void  WmSweeneyNode::updateSubsetRods( WmSweeneySubsetNode* subset,
             torsion = pitch  / denom;
             curvature *= curl_length / curl_resolution;
             torsion *= curl_length / curl_resolution;
-            /*if ( i == 0 )
-                cout << "Curl Params: Curl_H " << curl_height << " arc_len " << arc_length
-                << " abs_len " << absolute_length << " curl_radius " << m_curlRadius << " curl_pitch " << pitch << " curvature "
-                << curvature << " torsion " << torsion << " resolutoin " << m_verticesPerRod << endl;*/
         }
 
         if (  !i_fixCurlCount && i_curlTightness != 0.0 )
@@ -427,12 +415,7 @@ void  WmSweeneyNode::updateSubsetRods( WmSweeneySubsetNode* subset,
 
         current_rod->updateStiffness();
 
-        // Check if rod is in rest state
-        // cout << "WmSweeneyNode::check for rod update::Rod Idx: " << i <<
-           //     " update rod: " << update_rod << endl;
-        current_rod->setIsInRestState( update_rod );
-
-        // END update default method here
+        current_rod->setIsInRestState( !update_rod );
     }
 }
 
@@ -1751,6 +1734,11 @@ MStatus WmSweeneyNode::subsetNodes( std::vector<WmSweeneySubsetNode*>& o_subsetN
 // pass MDataBlock here
 void WmSweeneyNode::computeSubsetRodMapping( MDataBlock& i_dataBlock )
 {
+    if ( m_subsetNodes.size() < 1 )
+    {
+        return;
+    }
+
     MStatus status;
     MDagPath meshPath;
     getMeshPath( meshPath, status );
