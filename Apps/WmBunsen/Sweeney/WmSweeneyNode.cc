@@ -167,6 +167,8 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 		// Set Debug Drawing
 		if ( m_rodManager != NULL )
 		{
+		    // TODO (sainsley) : fix this to work with subsets
+		    // when the user hides a subset, we should hide that portion of the rods
 		    bool shouldDrawOnlySelected = i_dataBlock.inputValue( ia_shouldDrawOnlySelected ).asBool();
 		    m_rodManager->setRodsDrawDebugging( m_shouldDrawStrands, m_shouldDrawRootFrames,
 		            m_shouldDrawVelocity, shouldDrawOnlySelected );
@@ -191,24 +193,25 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 
 			initialiseRodFromBarberShopInput( i_dataBlock );
 
+			cout << " COMPUTE SUBSET MAPPING " << endl;
+			// Note : since we only do this at the beginning of the sim
+			/// we need a method to explicitly notify sweeney of the
+			// new subset and append it in case a subset is made mid-sim
+			subsetNodes( m_subsetNodes );
 			computeSubsetRodMapping( i_dataBlock );
+			cout << " SUBSET COUNT " << m_subsetNodes.size() << endl;
 		}
 		else
 		{
 		    if ( m_rodManager != NULL )
 		    {
 		        // handle subsets
-		        cout << " GET SUBSET NODES " << endl;
-		        subsetNodes( m_subsetNodes );
-		        cout << " UPDATE RODS FOR " << m_subsetNodes.size() << " SUBSETS " << endl;
+		        // subsetNodes( m_subsetNodes );
 
 		        // update rod properties
-		        updateRods( );
-
-		        /*for ( size_t i = 0; i < m_subsetNodes.size(); ++i )
-		        {
-		            updateSubsetRods( m_subsetNodes[ i ], update_all_rods, &i_dataBlock );
-		        }*/
+		        // TODO : pass i_dataBlock here if we can pull subset parameters
+		        // from it -- so far i haven't gotten this to work
+		        updateRods();
 
 		        updateCollisionMeshes( i_dataBlock );
                 updateSolverSettings( i_dataBlock );
@@ -249,116 +252,14 @@ void  WmSweeneyNode::updateRods( )
     m_rodManager->setUseKineticDamping( m_rodDamping );
 
     ElasticRod *current_rod;
-    // bool update_rod = update_all_rods;
 
     // for each rod, check if any parameters need to be updated,
     // perform necessary updates, and flag the rod accordingly
     for (size_t i = 0; i < m_rodManager->m_rods.size(); ++i)
     {
-
-        // update_rod = false;
-
-        updateRodParameters( i, update_all_rods ); /* , m_length, m_rodRadius, m_rodAspectRatio,
-                        m_rodRotation, m_curlStart, m_curlRadius, m_curlCount, m_curlTightness,
-                        m_fixCurlCount, m_curlInXFrame, m_preserveLengthVariation, m_verticesPerRod );*/
-
-        /*
-        // get total rod length for scaling
-        Scalar curl_length = ( 1.0 - m_curlStart )*m_length;
-        int curl_resolution = ( 1.0 - m_curlStart )*m_verticesPerRod;
-
-        // Compute the rod helix properties
-        Scalar curvature = 0.0;
-        Scalar torsion = 0.0;
-
-        //Scalar absolute_length = m_length * m_strandLengths[i];
-
-        if(  m_fixCurlCount && m_curlRadius != 0.0 && m_curlCount != 0.0 )
-        {
-            // compute total length of the helix
-            // TODO(sainsley): rename m_curlCount m_curlCount
-            // rename m_length to m_height
-            Scalar radius = m_curlRadius;
-            Scalar curl_height = m_length / m_curlCount;
-            Scalar arc_length = sqrt( curl_height * curl_height +
-                    4 * M_PI * M_PI * radius * radius );
-            curl_length = arc_length * m_curlCount;
-
-            // compute helix curvature and torsion
-            Scalar pitch = curl_height / ( 2 * M_PI );
-            Scalar denom = radius  * radius  + pitch * pitch;
-            curvature = radius  /  denom;
-            torsion = pitch  / denom;
-            curvature *= curl_length / curl_resolution;
-            torsion *= curl_length / curl_resolution;
-        }
-
-        if (  !m_fixCurlCount && m_curlTightness != 0.0 )
-        {
-            curvature = m_curlTightness; // * m_length / m_verticesPerRod;
-        }
-
-        // length before curl
-        Scalar total_length = m_curlStart*m_length + curl_length;
-        if ( m_preserveLengthVariation )
-        {
-            total_length *= m_strandLengths[i];
-        }
-
-        // Update rod configuration
-        updateStrandLength( current_rod, update_rod, total_length / m_verticesPerRod );
-        updateStrandCurl( current_rod, update_rod, curvature, torsion,
-                m_curlStart, m_verticesPerRod, m_curlInXFrame );
-        updateStrandCrossSection( current_rod, update_rod, m_rodRadius,
-                m_rodAspectRatio );
-        updateStrandRotation( current_rod, update_rod, m_rodRotation );
-
-        current_rod->updateStiffness();
-
-        current_rod->setIsInRestState( !update_rod );*/
+        updateRodParameters( int( i ), update_all_rods );
     }
 }
-
-/*void  WmSweeneyNode::updateSubsetRods( WmSweeneySubsetNode* subset,
-        const bool update_all_rods, MDataBlock* i_dataBlock )
-{
-
-    // TODO(sainsley) : update clumping parameters
-    // right now this is only set up on a global level
-
-    // TODO(sainsley) : update rod damping
-    // right now this is only set up on a global level
-
-    // TODO (sainsley) : allow rod resolution to be controlled within subsets
-    // global for now
-    double i_verticesPerRod = m_verticesPerRod;
-
-    double i_length = subset->getRodLength( ); // i_dataBlock );
-    double i_rodRadius = subset->getRodRadius( ); //i_dataBlock );
-    double i_rodAspectRatio = subset->getRodAspectRatio( ); //i_dataBlock );
-    double i_rodRotation = subset->getRodRotation( ); //i_dataBlock );
-    double i_curlStart = subset->getCurlStart( ); // i_dataBlock );
-    double i_curlRadius = subset->getCurlRadius( ); //i_dataBlock );
-    double i_curlCount = subset->getCurlCount( ); //i_dataBlock );
-    double i_curlTightness = subset->getCurlTightness( ); //i_dataBlock );
-
-    bool i_fixCurlCount = subset->getIsFixCurlCount( );// i_dataBlock );
-    bool i_curlInXFrame = subset->getIsCurlInXFrame( ); //i_dataBlock );
-    bool i_preserveLengthVariation = subset->getIsPreserveLengthVariation( ); //i_dataBlock );
-
-    ElasticRod *current_rod;
-
-    // for each rod, check if any parameters need to be updated,
-    // perform necessary updates, and flag the rod accordingly
-    for (size_t i = 0; i < subset->getRodCount(); ++i)
-    {
-
-       int rodIdx = subset->getRodIdx( i );
-        updateRodParameters( rodIdx, update_all_rods, i_length, i_rodRadius, i_rodAspectRatio,
-                i_rodRotation, i_curlStart, i_curlRadius, i_curlCount, i_curlTightness,
-                i_fixCurlCount, i_curlInXFrame, i_preserveLengthVariation, i_verticesPerRod );
-    }
-}*/
 
 void WmSweeneyNode::updateRodParameters( const int& rodIdx, const bool& update_all_rods ) /*,
                 const double& i_length, const double& i_rodRadius, const double& i_rodAspectRatio,
@@ -463,27 +364,14 @@ void WmSweeneyNode::updateRodParameters( const int& rodIdx, const bool& update_a
 
     // Update rod configuration
     updateStrandLength( current_rod, update_rod, total_length / i_verticesPerRod );
-    if ( update_rod )
-    {
-        cout << " update length " << rodIdx << endl;
-    }
+
     updateStrandCurl( current_rod, update_rod, curvature, torsion,
             i_curlStart, i_verticesPerRod, i_curlInXFrame );
-    if ( update_rod )
-    {
-        cout << " update curl " << rodIdx << endl;
-    }
+
     updateStrandCrossSection( current_rod, update_rod, i_rodRadius,
             i_rodAspectRatio );
-    if ( update_rod )
-    {
-        cout << " update cross section " << rodIdx << endl;
-    }
+
     updateStrandRotation( current_rod, update_rod, i_rodRotation );
-    if ( update_rod )
-    {
-        cout << " update rotation " << rodIdx << endl;
-    }
 
     current_rod->updateStiffness();
 
@@ -497,7 +385,6 @@ void WmSweeneyNode::updateStrandLength( ElasticRod* current_rod, bool& update_ro
 
     assert( current_rod->m_stretchingForce != NULL );
 
-    cout << " UPDATE LENGTH " << update_rod << endl;
     // Build vector of new edge lengths
     // NOTE(sainsley) : this is code assumes we may want non-uniform
     // edge lengths in the future. If this isn't the case, we want
@@ -515,8 +402,6 @@ void WmSweeneyNode::updateStrandLength( ElasticRod* current_rod, bool& update_ro
         if ( eh != current_rod->edges_begin() && updated_edge_length !=
                 current_rod->m_stretchingForce->getRefLength( *eh ) )
         {
-            cout << " LENGTH MISMATCH " << updated_edge_length << " "
-                    << current_rod->m_stretchingForce->getRefLength( *eh ) << endl;
             update_rod = true;
         }
         rest_lengths.push_back( updated_edge_length );

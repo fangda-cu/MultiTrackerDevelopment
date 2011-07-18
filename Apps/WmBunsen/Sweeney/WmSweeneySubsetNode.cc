@@ -67,27 +67,6 @@ WmSweeneySubsetNode::WmSweeneySubsetNode()
 {
 }
 
-/*
-size_t WmSweeneySubsetNode::getRodCount( )
-{
-    return m_subsetCurrentRods.size();
-}
-
-int WmSweeneySubsetNode::getRodIdx( size_t i )
-{
-    return m_subsetCurrentRods[ i ];
-}
-
-void WmSweeneySubsetNode::addRodIdx( int rodIdx )
-{
-    m_subsetCurrentRods.push_back( rodIdx );
-}
-
-void WmSweeneySubsetNode::clearRods( )
-{
-    m_subsetCurrentRods.clear();
-}*/
-
 void WmSweeneySubsetNode::setScalpFaceIndices( const MIntArray i_indices )
 {
     cout << "WmSweeneySubsetNode::setScalpFaceIndices::setting indices for " << i_indices.length()

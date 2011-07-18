@@ -44,13 +44,6 @@ class WmSweeneySubsetNode : public MPxLocatorNode
     // debug method for previous method
     void checkScalpFaceIndices();
 
-    // the rods associated with this scalp face set
-    // reset by WmSweeneyNode at each simulation restart
-    /*size_t getRodCount( );
-    int getRodIdx( size_t i );
-    void addRodIdx( int rodIdx );
-    void clearRods( );*/
-
     //////////////////////////////////////////////////////
     //
     // Accessor methods.
@@ -135,9 +128,6 @@ class WmSweeneySubsetNode : public MPxLocatorNode
                                                 MString i_shortName,
                                                 MFnNumericData::Type i_type, double i_defaultValue,
                                                 bool i_isInput = true, bool i_isArray = false );
-
-    // current rod set : recomputed whenever the simulation is restarted
-    //std::vector< int > m_subsetCurrentRods;
 
 };
 

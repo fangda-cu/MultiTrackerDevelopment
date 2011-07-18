@@ -169,14 +169,7 @@ private:
     void compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i_dataBlock );
 
     void updateRods( );
-    //void updateSubsetRods(  WmSweeneySubsetNode* subset, const bool update_all_rods,
-      //      MDataBlock* i_dataBlock = NULL );
-    void updateRodParameters( const int& rodIdx, const bool& update_all_rods ); /*,
-                const double& i_length, const double& i_rodRadius, const double& i_rodAspectRatio,
-                const double& i_rodRotation, const double& i_curlStart, const double& i_curlRadius,
-                const double& i_curlCount, const double& i_curlTightness, const bool& i_fixCurlCount,
-                const bool& i_curlInXFrame, const bool& i_preserveLengthVariation,
-                const int& i_verticesPerRod );*/
+    void updateRodParameters( const int& rodIdx, const bool& update_all_rods );
 
     // reformat all of these to take the updated value as a parameter
     void updateStrandLength( BASim::ElasticRod* current_rod, bool& update_rod,
