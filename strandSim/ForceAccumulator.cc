@@ -10,6 +10,7 @@
 #include "StretchingForce.hh"
 #include "BendingForce.hh"
 #include "TwistingForce.hh"
+#include "GravitationForce.hh"
 
 namespace strandsim
 {
@@ -70,5 +71,6 @@ void ForceAccumulator<ForceT>::accumulate(strandsim::BandMatrix<Scalar, 10, 10> 
 template class ForceAccumulator<StretchingForce> ;
 template class ForceAccumulator<BendingForce> ;
 template class ForceAccumulator<TwistingForce> ;
+template class ForceAccumulator<GravitationForce> ;
 
 }

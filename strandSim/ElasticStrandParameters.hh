@@ -13,9 +13,12 @@ namespace strandsim
 
 class ElasticStrandParameters
 {
+private:
+    ElasticStrandParameters();
+
 public:
-    ElasticStrandParameters() :
-        m_radius(1.0), m_YoungsModulus(1.0), m_shearModulus(1.0), m_density(1.0) // Is it really a good idea to have defaults?
+    ElasticStrandParameters(Scalar radius, Scalar YoungsModulus, Scalar shearModulus, Scalar density) :
+        m_radius(radius), m_YoungsModulus(YoungsModulus), m_shearModulus(shearModulus), m_density(density)
     {
         setup();
     }

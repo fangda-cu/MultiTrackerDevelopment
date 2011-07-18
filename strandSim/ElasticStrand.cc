@@ -68,7 +68,8 @@ void ElasticStrand::freezeRestShape()
 
     for (IndexType vtx = 0; vtx < m_numVertices; ++vtx)
     {
-        m_vertexMasses[vtx] = m_parameters.m_density * m_VoronoiLengths[vtx];
+        m_vertexMasses[vtx] = m_parameters.m_density * m_VoronoiLengths[vtx] * M_PI * m_parameters.m_radius
+                * m_parameters.m_radius;
         m_invVoronoiLengths[vtx] = 1.0 / m_VoronoiLengths[vtx];
     }
 
@@ -102,6 +103,7 @@ void ElasticStrand::prepareForSolving()
     ForceAccumulator<StretchingForce>::accumulate(m_totalEnergy, m_totalForces, m_totalJacobian, *this, m_geometry);
     ForceAccumulator<BendingForce>::accumulate(m_totalEnergy, m_totalForces, m_totalJacobian, *this, m_geometry);
     ForceAccumulator<TwistingForce>::accumulate(m_totalEnergy, m_totalForces, m_totalJacobian, *this, m_geometry);
+    ForceAccumulator<GravitationForce>::accumulate(m_totalEnergy, m_totalForces, m_totalJacobian, *this, m_geometry);
 
     m_readyForSolving = true;
 }
@@ -122,6 +124,7 @@ void ElasticStrand::prepareForExamining()
     ForceAccumulator<StretchingForce>::accumulate(m_newTotalEnergy, m_newTotalForces, *this, m_newGeometry);
     ForceAccumulator<BendingForce>::accumulate(m_newTotalEnergy, m_newTotalForces, *this, m_newGeometry);
     ForceAccumulator<TwistingForce>::accumulate(m_newTotalEnergy, m_newTotalForces, *this, m_newGeometry);
+    ForceAccumulator<GravitationForce>::accumulate(m_newTotalEnergy, m_newTotalForces, *this, m_newGeometry);
 
     m_readyForExamining = true;
 }
@@ -144,8 +147,24 @@ void ElasticStrand::acceptNewPositions()
     ForceAccumulator<StretchingForce>::accumulate(m_totalJacobian, *this, m_geometry);
     ForceAccumulator<BendingForce>::accumulate(m_totalJacobian, *this, m_geometry);
     ForceAccumulator<TwistingForce>::accumulate(m_totalJacobian, *this, m_geometry);
+    ForceAccumulator<TwistingForce>::accumulate(m_totalJacobian, *this, m_geometry);
 
     m_readyForSolving = true;
+}
+
+std::ostream& operator<<(std::ostream& os, const ElasticStrand& strand)
+{
+    for (int i = 0; i < strand.m_numVertices - 1; i++)
+    {
+        os << '{' << strand.m_geometry.m_degreesOfFreedom[4 * i] << ", " << strand.m_geometry.m_degreesOfFreedom[4 * i + 1]
+                << ", " << strand.m_geometry.m_degreesOfFreedom[4 * i + 2] << "} ";
+        os << strand.m_geometry.m_degreesOfFreedom[4 * i + 3] << ' ';
+    }
+    os << '{' << strand.m_geometry.m_degreesOfFreedom[4 * (strand.m_numVertices - 1)] << ", "
+            << strand.m_geometry.m_degreesOfFreedom[4 * (strand.m_numVertices - 1) + 1] << ", "
+            << strand.m_geometry.m_degreesOfFreedom[4 * (strand.m_numVertices - 1) + 2] << '}';
+
+    return os;
 }
 
 }

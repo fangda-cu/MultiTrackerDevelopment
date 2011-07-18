@@ -58,14 +58,14 @@ public:
     {
         assert(indicesValid(i, j));
 
-        return m_data[(m_ku + i - j) * m_cols + j];
+        return m_data[(ku + i - j) * m_cols + j];
     }
 
     ScalarT& operator()(IndexType i, IndexType j)
     {
         assert(indicesValid(i, j));
 
-        return m_data[(m_ku + i - j) * m_cols + j];
+        return m_data[(ku + i - j) * m_cols + j];
     }
 
     // Add the local Jacobian to the banded matrix, top left corner at "start" position on the diagonal.
@@ -137,14 +137,13 @@ public:
         return *this;
     }
 
-    int setZero()
+    void setZero()
     {
         for (int i = 0; i < m_size; ++i)
             m_data[i] = 0;
-        return 0;
     }
 
-    int zeroRows(const IntArray& idx, ScalarT diag = 1.0)
+    void zeroRows(const IntArray& idx, ScalarT diag = 1.0)
     {
         for (int i = 0; i < idx.size(); ++i)
         {
@@ -158,13 +157,13 @@ public:
 
             (*this)(r, r) = diag;
         }
-        return 0;
     }
 
     int computeStartOfCol(int col)
     {
         assert(col >= 0);
         assert(col < m_cols);
+
         return std::max(col - ku, 0);
     }
 
@@ -172,10 +171,11 @@ public:
     {
         assert(col >= 0);
         assert(col < m_cols);
+
         return std::min(col + kl, m_rows - 1);
     }
 
-    int zeroCols(const IntArray& idx, ScalarT diag)
+    void zeroCols(const IntArray& idx, ScalarT diag)
     {
         // For each column the user provided
         for (int i = 0; i < (int) idx.size(); ++i)
@@ -190,11 +190,9 @@ public:
                     (*this)(row, col) = diag;
             }
         }
-
-        return 0;
     }
 
-    int multiply(VecXd& y, ScalarT s, const VecXd& x) const
+    void multiply(VecXd& y, ScalarT s, const VecXd& x) const
     {
         assert(y.size() == m_rows);
         assert(x.size() == m_cols);
@@ -203,7 +201,7 @@ public:
         {
             int lower = m_lower[i];
             int upper = m_upper[i];
-            const ScalarT* val = &m_data[(m_ku + i - lower) * m_cols + lower];
+            const ScalarT* val = &m_data[(ku + i - lower) * m_cols + lower];
             ScalarT sum = 0.0;
             for (int j = lower; j < upper; ++j, val += (1 - m_cols))
             {
@@ -211,7 +209,6 @@ public:
             }
             y[i] += s * sum;
         }
-        return 0;
     }
 
     void print() const
@@ -231,6 +228,16 @@ public:
         std::cout << "]" << std::endl;
     }
 
+    IndexType rows() const
+    {
+        return m_rows;
+    }
+
+    IndexType cols() const
+    {
+        return m_cols;
+    }
+
     // NOTE: Assumes not symmetric if lower band is not same size as upper (could be a bunch of zeros in bigger band)
     bool isApproxSymmetric(ScalarT eps) const
     {
@@ -248,7 +255,7 @@ public:
 private:
     bool indicesValid(IndexType r, IndexType c) const
     {
-        return r >= 0 && r < m_rows && c >= 0 && c < m_cols && r - c <= kl && c - r <= ku;
+        return r < m_rows && c < m_cols && r - c <= kl && c - r <= ku;
     }
 
     IndexType m_rows;

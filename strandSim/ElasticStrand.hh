@@ -21,6 +21,7 @@ namespace strandsim
 class StretchingForce;
 class BendingForce;
 class TwistingForce;
+class GravitationForce;
 
 class ElasticStrand: public StrandBase
 {
@@ -62,10 +63,30 @@ public:
         return m_totalForces;
     }
 
+     ForceVectorType& getTotalForces()
+    {
+        return m_totalForces;
+    }
+
     const JacobianMatrixType& getTotalJacobian() const
     {
         return m_totalJacobian;
     }
+
+     JacobianMatrixType& getTotalJacobian()
+    {
+        return m_totalJacobian;
+    }
+
+     const ForceVectorType& getNewTotalForces() const
+     {
+         return m_totalForces;
+     }
+
+      ForceVectorType& getNewTotalForces()
+     {
+         return m_totalForces;
+     }
 
     void prepareForSolving();
     void prepareForExamining();
@@ -119,7 +140,13 @@ public:
     friend class ForceAccumulator<BendingForce> ;
     friend class TwistingForce;
     friend class ForceAccumulator<TwistingForce> ;
+    friend class GravitationForce;
+    friend class ForceAccumulator<GravitationForce> ;
+
+    friend std::ostream& operator<<(std::ostream& os, const ElasticStrand& strand);
 };
+
+
 
 }
 

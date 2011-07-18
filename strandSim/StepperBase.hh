@@ -14,8 +14,8 @@ namespace strandsim
 class StepperBase
 {
 public:
-    StepperBase();
-    virtual ~StepperBase();
+    StepperBase() {}
+    virtual ~StepperBase() {}
 };
 
 }

@@ -10,6 +10,7 @@
 
 #include "StepperBase.hh"
 #include "ElasticStrand.hh"
+#include "LinearSolver.hh"
 
 namespace strandsim
 {
@@ -21,9 +22,6 @@ public:
     virtual ~ElasticStrandStaticStepper();
 
     void execute(ElasticStrand& strand) const;
-
-    template<typename MatrixT>
-    void solve(VecXd& newDOFs, const MatrixT J, const VecXd& F) const;
 };
 
 }

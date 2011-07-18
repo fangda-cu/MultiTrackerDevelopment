@@ -6,6 +6,7 @@
  */
 
 #include "ForceBase.hh"
+#include "ElasticStrand.hh"
 
 namespace strandsim
 {
@@ -22,5 +23,7 @@ ForceBase<StrandT>::~ForceBase()
 {
     // TODO Auto-generated destructor stub
 }
+
+template class ForceBase<ElasticStrand>;
 
 }
