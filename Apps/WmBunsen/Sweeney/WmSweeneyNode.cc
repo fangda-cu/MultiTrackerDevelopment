@@ -1102,8 +1102,8 @@ void* WmSweeneyNode::creator()
         CHECK_MSTATUS( status );
         CHECK_MSTATUS( numericAttr.setReadable( true ) );
         CHECK_MSTATUS( numericAttr.setWritable( true ) );
-        CHECK_MSTATUS( numericAttr.setMin( -2.0 ) );
-        CHECK_MSTATUS( numericAttr.setMax( 2.0 ) );
+        CHECK_MSTATUS( numericAttr.setMin( -5.0 ) );
+        CHECK_MSTATUS( numericAttr.setMax( 5.0 ) );
         status = addAttribute( ia_curlRadius );
         CHECK_MSTATUS( status );
 
