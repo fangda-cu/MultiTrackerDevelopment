@@ -5,7 +5,7 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
 
     editorTemplate -beginLayout "Sim Reset Settings" -collapse 0;
         editorTemplate -addControl "verticesPerRod";
-        editorTemplate -addControl "rodsPerClump";
+        editorTemplate -addControl "numberOfClumps";
     editorTemplate -endLayout;
     
     editorTemplate -beginLayout "Rod Properties" -collapse 0;

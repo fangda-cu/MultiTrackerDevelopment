@@ -24,9 +24,9 @@ struct WmSweeneyHelp
     std::vector<MSyntax::MArgType> m_argTypes;
 };
 
-class WmSweeneyCmd : public MPxCommand
+class WmSweeneyCmd: public MPxCommand
 {
-public:    
+public:
     /// Constructor
     WmSweeneyCmd();
     /// Destructor
@@ -44,59 +44,65 @@ public:
     /// Entry point if the command is undone
     MStatus undoIt();
     /// Maya queries the command to see if it's undoable or not
-    bool isUndoable() const { return m_undoable; }
+    bool isUndoable() const
+    {
+        return m_undoable;
+    }
     /// Maya queries the command to see if it has a registered Maya syntax or not
-    bool hasSyntax() const { return true; }
+    bool hasSyntax() const
+    {
+        return true;
+    }
 
     void getNodes( MSelectionList opt_nodes );
 
     static MString typeName;
 
-protected: 
-    static void p_AddFlag( MSyntax &i_mSyntax,
-                           const char *const i_shortName,
-                           const char *const i_longName,
-                           const char *const i_help,
-                           const MSyntax::MArgType i_argType1 = MSyntax::kNoArg,
-                           const MSyntax::MArgType i_argType2 = MSyntax::kNoArg,
-                           const MSyntax::MArgType i_argType3 = MSyntax::kNoArg,
-                           const MSyntax::MArgType i_argType4 = MSyntax::kNoArg,
-                           const MSyntax::MArgType i_argType5 = MSyntax::kNoArg,
-                           const MSyntax::MArgType i_argType6 = MSyntax::kNoArg);
+protected:
+    static void p_AddFlag( MSyntax &i_mSyntax, const char * const i_shortName,
+            const char * const i_longName, const char * const i_help,
+            const MSyntax::MArgType i_argType1 = MSyntax::kNoArg,
+            const MSyntax::MArgType i_argType2 = MSyntax::kNoArg,
+            const MSyntax::MArgType i_argType3 = MSyntax::kNoArg,
+            const MSyntax::MArgType i_argType4 = MSyntax::kNoArg,
+            const MSyntax::MArgType i_argType5 = MSyntax::kNoArg,
+            const MSyntax::MArgType i_argType6 = MSyntax::kNoArg );
 
-    MStatus createDagNode( const char *transformName, const char *nodeType, MObject &parentObj, 
-                           MObject *transformObjP, MObject *shapeObjP, MDagModifier *iDagModifier,
-                           MString& o_shapeName );
+    MStatus createDagNode( const char *transformName, const char *nodeType, MObject &parentObj,
+            MObject *transformObjP, MObject *shapeObjP, MDagModifier *iDagModifier,
+            MString& o_shapeName );
 
     static void printHelp();
 
     static void getSelectedCurves( const MSelectionList &i_selectionList,
-                                   MSelectionList &o_meshList );
+            MSelectionList &o_meshList );
 
     void p_PerformConnect();
 
     void createSweeneyNode();
     void createSweeneySubsetNode();
-    void addCollisionMeshes();    
+    MStatus createClumpCenterLinesFromPelt();
+    void addCollisionMeshes();
     //void setSimulatedSubset();
     void setSimulateAll();
 
-public:     // Data
-protected:  // Data
+public:
+    // Data
+protected:
+    // Data
     static void appendToResultString( MString& i_resultString );
-    
+
     /// True if the command is undoable, false otherwise
     bool m_undoable;
 
-    enum Operation {
-        Error = 0,
-        Help,
-        CreateRods,
+    enum Operation
+    {
+        Error = 0, Help, CreateRods,
     };
 
     // The operation we're supposed to be performing
     Operation m_op;
-    
+
     // Context variables that may (or may not) have been provided on the command line
     MString m_node_name;
 
@@ -110,19 +116,22 @@ protected:  // Data
     MDagModifier *m_mDagModifier;
 
     /// Undo For SetAttr
-  //  Wmaya::undo_t *m_undo;
+    //  Wmaya::undo_t *m_undo;
 
     /// Undo Selection List
     MSelectionList m_undoSelectionList;
 
-    MSelectionList m_meshList;      // list of meshes
+    MSelectionList m_meshList; // list of meshes
     MSelectionList m_barberShopNodeList;
     MSelectionList m_sweeneyNodeList;
     MSelectionList m_allOtherTransformNodesList;
     MObject m_selectedSweeneyNode;
-    
+
+    MSelectionList m_peltNodeList;
+    MObject m_selectedPeltNode;
+
     static MStringArray m_results;
-        
+
     static std::map<std::string, WmSweeneyHelp> m_help;
 };
 

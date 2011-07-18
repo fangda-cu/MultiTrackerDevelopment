@@ -20,7 +20,7 @@ using namespace BASim;
 /* static */ MObject WmSweeneyNode::ia_length;
 /* static */ MObject WmSweeneyNode::ia_edgeLength;
 /* static */ MObject WmSweeneyNode::ia_verticesPerRod;
-/* static */ MObject WmSweeneyNode::ia_rodsPerClump;
+/* static */ MObject WmSweeneyNode::ia_numberOfClumps;
 /* static */ MObject WmSweeneyNode::ia_rodRadius;
 /* static */ MObject WmSweeneyNode::ia_rodAspectRatio;
 /* static */ MObject WmSweeneyNode::ia_rodRotation;
@@ -160,7 +160,7 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 
 		int verticesPerRod = i_dataBlock.inputValue( ia_verticesPerRod ).asInt();
 
-		int rodsPerClump = i_dataBlock.inputValue( ia_rodsPerClump ).asInt();
+		int numberOfClumps = i_dataBlock.inputValue( ia_numberOfClumps ).asInt();
 
 		int numberOfVerticesPerStrand = i_dataBlock.inputValue( ia_verticesPerStrand ).asInt();
 
@@ -189,7 +189,7 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 
 			m_verticesPerRod = verticesPerRod;
 
-			m_rodsPerClump = rodsPerClump;
+			m_numberOfClumps = numberOfClumps;
 
 			initialiseRodFromBarberShopInput( i_dataBlock );
 
@@ -630,8 +630,8 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput(MDataBlock& i_dataBlock)
 
         constructRodVertices(vertices, direction, m_strandVertices[currentVertexIndex]);
 
-        cout << "initialiseRodFromBarberShopInput() - check for root frames for " << inputStrandNumber << endl;
-        cerr << "initialiseRodFromBarberShopInput() - useRootFrames = " << useRootFrames << endl;
+      //  cout << "initialiseRodFromBarberShopInput() - check for root frames for " << inputStrandNumber << endl;
+      //  cerr << "initialiseRodFromBarberShopInput() - useRootFrames = " << useRootFrames << endl;
         if ( useRootFrames )
         {
 
@@ -673,7 +673,7 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput(MDataBlock& i_dataBlock)
             m_rodManager->addRod(vertices, m_startTime);
         }
 
-        cerr << "Creating rod at time " << m_startTime << endl;
+       // cerr << "Creating rod at time " << m_startTime << endl;
 
         currentVertexIndex += m_numberOfVerticesPerStrand;
     }
@@ -711,7 +711,7 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput(MDataBlock& i_dataBlock)
 
     cerr << "initialiseRodFromBarberShopInput() - About to initialise simulation\n";
     m_rodManager->initialiseSimulation(1 / 24.0, m_startTime, perfParams, m_atol, m_stol, m_rtol, m_inftol,
-            m_numLineSearchIters, m_rodsPerClump);
+            m_numLineSearchIters, m_numberOfClumps);
     cerr << "initialiseRodFromBarberShopInput() - Simulation initialised at time " << m_startTime << endl;
 }
 
@@ -728,13 +728,13 @@ void WmSweeneyNode::constructRodVertices( std::vector<BASim::Vec3d>& o_rodVertic
 
     m_strandLengths.push_back(edge.length());
 
-    cerr << "constructRodVertices(): m_length = " << m_length << endl;
-    cerr << "constructRodVertices(): m_verticesPerRod = " << m_verticesPerRod << endl;
-    cerr << "constructRodVertices(): i_direction = " << i_direction << endl;
+   // cerr << "constructRodVertices(): m_length = " << m_length << endl;
+   // cerr << "constructRodVertices(): m_verticesPerRod = " << m_verticesPerRod << endl;
+   // cerr << "constructRodVertices(): i_direction = " << i_direction << endl;
 
     edge *= m_length / m_verticesPerRod;
 
-    cerr << "constructRodVertices(): edgeLength = " << edge.length() << "\n";
+  //  cerr << "constructRodVertices(): edgeLength = " << edge.length() << "\n";
 
     MVector currentVertex(i_rootPosition);
 
@@ -764,7 +764,7 @@ void WmSweeneyNode::constructRodVertices( std::vector<BASim::Vec3d>& o_rodVertic
         //o_rodVertices.push_back( BASim::Vec3d( newPoint.x, newPoint.y, newPoint.z ) );
     }
 
-    cerr << "constructRodVertices(): Finished constructing rod vertices\n";
+   // cerr << "constructRodVertices(): Finished constructing rod vertices\n";
 }
 
 void WmSweeneyNode::compute_oa_simulatedNurbs(const MPlug& i_plug, MDataBlock& i_dataBlock)
@@ -1484,11 +1484,11 @@ void* WmSweeneyNode::creator()
         return status;
     }
 
-    addNumericAttribute(ia_rodsPerClump, "rodsPerClump", "rpc", MFnNumericData::kInt, 5, true);
-    status = attributeAffects(ia_rodsPerClump, ca_rodPropertiesSync);
+    addNumericAttribute(ia_numberOfClumps, "numberOfClumps", "rpc", MFnNumericData::kInt, 5, true);
+    status = attributeAffects(ia_numberOfClumps, ca_rodPropertiesSync);
     if (!status)
     {
-        status.perror("attributeAffects ia_rodsPerClump->ca_rodPropertiesSync");
+        status.perror("attributeAffects ia_numberOfClumps->ca_rodPropertiesSync");
         return status;
     }
 

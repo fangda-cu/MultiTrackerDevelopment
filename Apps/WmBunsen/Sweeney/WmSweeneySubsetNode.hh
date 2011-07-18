@@ -67,7 +67,7 @@ class WmSweeneySubsetNode : public MPxLocatorNode
     double getRodClumpSeparation( MDataBlock* i_dataBlock = NULL ) const;
 
     int getVerticesPerRod( MDataBlock* i_dataBlock = NULL ) const;
-    int getRodsPerClump( MDataBlock* i_dataBlock = NULL ) const;
+    int getNumberOfClumps( MDataBlock* i_dataBlock = NULL ) const;
 
     bool getIsFixCurlCount( MDataBlock* i_dataBlock = NULL ) const;
     bool getIsCurlInXFrame( MDataBlock* i_dataBlock = NULL ) const;
@@ -94,7 +94,7 @@ class WmSweeneySubsetNode : public MPxLocatorNode
     static MObject ia_length;
     static MObject ia_edgeLength;
     static MObject ia_verticesPerRod;
-    static MObject ia_rodsPerClump;
+    static MObject ia_numberOfClumps;
     static MObject ia_rodRadius;
     static MObject ia_rodAspectRatio;
     static MObject ia_rodRotation;

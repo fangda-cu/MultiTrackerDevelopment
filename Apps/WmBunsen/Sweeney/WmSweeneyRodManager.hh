@@ -1,6 +1,8 @@
 #ifndef WMSWEENEYRODMANAGER_HH_
 #define WMSWEENEYRODMANAGER_HH_
 
+#include <maya/MPointArray.h>
+
 #ifdef WETA
 #include <weta/Wfigaro/Core/EigenIncludes.hh>
 #include <weta/Wfigaro/Physics/World.hh>
@@ -54,7 +56,7 @@ public:
     void setUseKineticDamping(bool i_useKinecticDamping);
 
     void initialiseSimulation(const double i_timeStep, const double i_startTime, BASim::PerformanceTuningParameters perfParams,
-            double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters, int i_rodsPerClump);
+            double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters, int i_numberOfClumps);
 
     void updateSolverSettings(double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters,
             double i_penaltyStiffness);
@@ -93,6 +95,9 @@ public:
     }
     std::vector<BASim::ElasticRod*> m_rods;
     bool m_renderOnlySelected;
+
+
+    void createClumpCenterLinesFromPelt(const MPointArray& centralArr);
 
 private:
     BASim::BAGroomingStepper* m_bridsonStepper;
