@@ -77,7 +77,7 @@ public:
     static MObject ia_length;
     static MObject ia_edgeLength;
     static MObject ia_verticesPerRod;
-    static MObject ia_rodsPerClump;
+    static MObject ia_numberOfClumps;
     static MObject ia_rodRadius;
     static MObject ia_rodAspectRatio;
     static MObject ia_rodRotation;
@@ -161,6 +161,8 @@ public:
     MStatus subsetNodes( std::vector<WmSweeneySubsetNode*>& o_subsetNodes );
     WmSweeneyRodManager* rodManager();
         
+    void createClumpCenterLinesFromPelt(const MPointArray& centralArr) { m_rodManager->createClumpCenterLinesFromPelt(centralArr); }
+
 private:
     void initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock );
     void initialiseCollisionMeshes( MDataBlock &i_data );
@@ -208,7 +210,7 @@ private:
     double m_curlStart;
     double m_rodPitch;
     int m_verticesPerRod;
-    int m_rodsPerClump;
+    int m_numberOfClumps;
     bool m_fixCurlCount;
     bool m_curlInXFrame;
     bool m_preserveLengthVariation;

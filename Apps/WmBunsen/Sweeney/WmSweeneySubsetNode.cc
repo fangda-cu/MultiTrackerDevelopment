@@ -29,7 +29,7 @@ const MString WmSweeneySubsetNode::typeName( "wmSweeneySubsetNode" );
 /* static */ MObject WmSweeneySubsetNode::ia_length;
 /* static */ MObject WmSweeneySubsetNode::ia_edgeLength;
 /* static */ MObject WmSweeneySubsetNode::ia_verticesPerRod;
-/* static */ MObject WmSweeneySubsetNode::ia_rodsPerClump;
+/* static */ MObject WmSweeneySubsetNode::ia_numberOfClumps;
 /* static */ MObject WmSweeneySubsetNode::ia_rodRadius;
 /* static */ MObject WmSweeneySubsetNode::ia_rodAspectRatio;
 /* static */ MObject WmSweeneySubsetNode::ia_rodRotation;
@@ -396,19 +396,19 @@ int WmSweeneySubsetNode::getVerticesPerRod( MDataBlock* i_dataBlock ) const
     return value;
 }
 
-int WmSweeneySubsetNode::getRodsPerClump( MDataBlock* i_dataBlock ) const
+int WmSweeneySubsetNode::getNumberOfClumps( MDataBlock* i_dataBlock ) const
 {
     MStatus status;
 
     int value;
     if ( i_dataBlock )
     {
-        value = i_dataBlock->inputValue( ia_rodsPerClump, & status ).asInt();
+        value = i_dataBlock->inputValue( ia_numberOfClumps, & status ).asInt();
         CHECK_MSTATUS( status );
     }
     else
     {
-        MPlug plug( thisMObject(), ia_rodsPerClump );
+        MPlug plug( thisMObject(), ia_numberOfClumps );
         value = plug.asInt();
     }
 
@@ -699,7 +699,7 @@ void WmSweeneySubsetNode::getSolverSettings(
     // parameters set at the beginning of the simulation
     addNumericAttribute(ia_verticesPerRod, "verticesPerRod", "cpr", MFnNumericData::kInt, 10, true);
 
-    addNumericAttribute(ia_rodsPerClump, "rodsPerClump", "rpc", MFnNumericData::kInt, 5, true);
+    addNumericAttribute(ia_numberOfClumps, "numberOfClumps", "rpc", MFnNumericData::kInt, 5, true);
 
     return MS::kSuccess;
 }

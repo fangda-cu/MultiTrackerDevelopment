@@ -82,10 +82,11 @@ public:
      * \param[in] grav Three dimensional vector that specifies gravity.
      */
     // Parameter num_threads = -1 will cause the number of threads to be set equal to the number of available processors.
-    BAGroomingStepper(std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
-            std::vector<ScriptingController*>& scripting_controllers, std::vector<GroomingTimeStepper*>& steppers,
-            const double& dt, const double time, const int num_threads, const PerformanceTuningParameters perf_param,
-            std::vector<LevelSet*>& levelSets, const int rods_per_clump);
+    BAGroomingStepper( std::vector<ElasticRod*>& rods, std::vector<TriangleMesh*>& trimeshes,
+            std::vector<ScriptingController*>& scripting_controllers,
+            std::vector<GroomingTimeStepper*>& steppers, const double& dt, const double time,
+            const int num_threads, const PerformanceTuningParameters perf_param,
+            std::vector<LevelSet*>& levelSets, const int rods_per_clump );
 
     /**
      * Destructor.
@@ -110,63 +111,70 @@ public:
     /**
      *  Enable or disable self collisions between all rods
      */
-    void skipRodRodCollisions(bool skipRodRodCollisions);
+    void skipRodRodCollisions( bool skipRodRodCollisions );
 
-    void setUseKineticDamping(bool useKineticDamping)
+    void setUseKineticDamping( bool useKineticDamping )
     {
         m_useKineticDamping = useKineticDamping;
     }
 
-    void setStopOnRodError(bool stopOnRodError)
+    void setStopOnRodError( bool stopOnRodError )
     {
-        if (!m_stopOnRodError && stopOnRodError)
+        if ( !m_stopOnRodError && stopOnRodError )
         {
-            std::cerr << "BAGroomingStepper::m_stopOnError changed to \033[33mtrue\033[0m" << std::endl;
+            std::cerr << "BAGroomingStepper::m_stopOnError changed to \033[33mtrue\033[0m"
+                    << std::endl;
             // If we change from non-stopping to stopping, reset m_simulationFailed so we take only future errors into account.
             m_simulationFailed = false;
         }
-        if (m_stopOnRodError && !stopOnRodError)
-            std::cerr << "BAGroomingStepper::m_stopOnError changed to \033[33mfalse\033[0m" << std::endl;
+        if ( m_stopOnRodError && !stopOnRodError )
+            std::cerr << "BAGroomingStepper::m_stopOnError changed to \033[33mfalse\033[0m"
+                    << std::endl;
 
         m_stopOnRodError = stopOnRodError;
     }
 
-    void addRod(ElasticRod* rod, GroomingTimeStepper* stepper);
+    void addRod( ElasticRod* rod, GroomingTimeStepper* stepper );
 
-    void removeRod(int rodIdx);
+    void removeRod( int rodIdx );
 
-    void setPenaltyStiffness(Scalar newStiffness)
+    void setPenaltyStiffness( Scalar newStiffness )
     {
         m_perf_param.m_implicit_stiffness = newStiffness;
     }
 
-    void setClumpingParameters(const double charge, const double power, const double dist);
-    void getClumpingParameters(double& charge, double& power, double& dist);
+    void setClumpingParameters( const double charge, const double power, const double dist );
+    void getClumpingParameters( double& charge, double& power, double& dist );
+
+    void setWmPeltPoints( const VecXd& centerRoots )
+    {
+        m_wmPeltPoints = centerRoots;
+    }
 
 private:
     /**
      * Modifies the timestep.
      */
-    void setDt(double dt);
+    void setDt( double dt );
 
     /**
      * After adding new rods or objects, this method must be called.
      */
     void prepareForExecution();
 
-    double computeMaxEdgeAngle(const ElasticRod& rod) const
+    double computeMaxEdgeAngle( const ElasticRod& rod ) const
     {
         double maxangle = -std::numeric_limits<double>::infinity();
-        for (int i = 0; i < rod.ne() - 1; ++i)
+        for ( int i = 0; i < rod.ne() - 1; ++i )
         {
-            Vec3d edge0 = rod.getEdge(i);
-            Vec3d edge1 = rod.getEdge(i + 1);
-            double numer = edge0.cross(edge1).norm();
-            double denom = edge0.dot(edge1);
-            double angle = atan2(numer, denom);
-            if (angle < 0.0)
+            Vec3d edge0 = rod.getEdge( i );
+            Vec3d edge1 = rod.getEdge( i + 1 );
+            double numer = edge0.cross( edge1 ).norm();
+            double denom = edge0.dot( edge1 );
+            double angle = atan2( numer, denom );
+            if ( angle < 0.0 )
                 std::cout << "NEGATIVE ANGLE AGHHHHHH" << std::endl;
-            if (angle > maxangle)
+            if ( angle > maxangle )
                 maxangle = angle;
         }
         return maxangle;
@@ -212,19 +220,19 @@ private:
      */
     void disableIterativeInelasticImpulses();
 
-    void computeImmunity(const RodSelectionType& selected_rods);
+    void computeImmunity( const RodSelectionType& selected_rods );
 
     /**
      * Sets the maximum number of inelastic impulses to apply iterativly.
      */
-    void setNumInelasticIterations(const int& num_itr);
+    void setNumInelasticIterations( const int& num_itr );
 
     /**
      * Number of rods this controller is responsible for.
      */
     int getNumRods() const
     {
-        return (int) (m_rods.size());
+        return ( int ) ( m_rods.size() );
     }
 
     /**
@@ -232,11 +240,11 @@ private:
      */
     int getNumTriangleMeshes() const
     {
-        return (int) (m_triangle_meshes.size());
+        return ( int ) ( m_triangle_meshes.size() );
     }
     ;
 
-    void setTime(double time);
+    void setTime( double time );
 
     // TODO: Move these to some kind of automated test suite
     //void testCoplanarityTime();
@@ -244,22 +252,22 @@ private:
     /**
      * Options names for rods used in output.
      */
-    void setRodLabels(const std::vector<std::string>& rod_labels);
+    void setRodLabels( const std::vector<std::string>& rod_labels );
 
     double computeTotalForceNorm() const;
-    void step(RodSelectionType& selected_rods);
+    void step( RodSelectionType& selected_rods );
 
     /////////////////////////////////////////////////////
     // Methods for checking the sanity of input rods
 
     // Currently we do not support collisions for anisotropic cross sections
-    void ensureCircularCrossSection(const ElasticRod& rod) const;
+    void ensureCircularCrossSection( const ElasticRod& rod ) const;
 
     // If the cross-sectional radius is too large and edge lengths too small,
     // non-adjacent portions of the rod will be in contact by default. We can
     // probably add some special case code to handle this later, but just
     // disallow the situation for now.
-    void ensureNoCollisionsByDefault(const ElasticRod& rod) const;
+    void ensureNoCollisionsByDefault( const ElasticRod& rod ) const;
 
     /////////////////////////////////////////////////////
     // Helper methods
@@ -270,75 +278,79 @@ private:
     // Returns the total number of vertices in the system
     int getNumVerts() const;
 
-    void extractPositions(VecXd& positions, const RodSelectionType& selected_rods, const double time) const;
-    void extractVelocities(VecXd& velocities, const RodSelectionType& selected_rods) const;
+    void extractPositions( VecXd& positions, const RodSelectionType& selected_rods,
+            const double time ) const;
+    void extractVelocities( VecXd& velocities, const RodSelectionType& selected_rods ) const;
 
-    void restorePositions(const VecXd& positions, const RodSelectionType& selected_rods);
-    void restoreVelocities(const VecXd& velocities, const RodSelectionType& selected_rods);
-    void restoreResponses(const VecXd& responses, const RodSelectionType& selected_rods);
+    void restorePositions( const VecXd& positions, const RodSelectionType& selected_rods );
+    void restoreVelocities( const VecXd& velocities, const RodSelectionType& selected_rods );
+    void restoreResponses( const VecXd& responses, const RodSelectionType& selected_rods );
 
-    bool isRodVertex(int vert) const;
-    bool isRodRodCollision(const EdgeEdgeCTCollision& collision) const;
+    bool isRodVertex( int vert ) const;
+    bool isRodRodCollision( const EdgeEdgeCTCollision& collision ) const;
 
-    int getContainingRod(int vert_idx) const;
+    int getContainingRod( int vert_idx ) const;
 
     // Determines if a vertex and a face share a vertex
-    bool vertexAndFaceShareVertex(const int& vertex, const int& face) const;
-    bool vertexAndFaceShareVertex(const int& v, const int& f0, const int& f1, const int& f2) const;
-    bool isProperCollisionTime(double time);
+    bool vertexAndFaceShareVertex( const int& vertex, const int& face ) const;
+    bool vertexAndFaceShareVertex( const int& v, const int& f0, const int& f1, const int& f2 ) const;
+    bool isProperCollisionTime( double time );
 
-    void applyInextensibilityVelocityFilter(int rodidx);
+    void applyInextensibilityVelocityFilter( int rodidx );
 
     /////////////////////////////////////////////////////
     // Collision response routines
 
     void executePenaltyResponse();
-    bool executeIterativeInelasticImpulseResponse(std::vector<bool>& rods_failed_because_of_iterated_collisions,
-            std::vector<bool>& stretching_rods);
+    bool executeIterativeInelasticImpulseResponse(
+            std::vector<bool>& rods_failed_because_of_iterated_collisions,
+            std::vector<bool>& stretching_rods );
     //	void filterCollisions(std::list<ContinuousTimeCollision>& cllsns);
 
-    void exertPenaltyImpulses(std::vector<EdgeEdgeProximityCollision>& edg_edg_cllsns,
-            std::vector<VertexFaceProximityCollision>& vrtx_fce_cllsns, VecXd& v);
+    void exertPenaltyImpulses( std::vector<EdgeEdgeProximityCollision>& edg_edg_cllsns,
+            std::vector<VertexFaceProximityCollision>& vrtx_fce_cllsns, VecXd& v );
 
-    void exertInelasticImpulse(EdgeEdgeCTCollision& clssn);
-    void exertInelasticImpulse(VertexFaceCTCollision& clssn);
-    void exertInelasticImpulses(std::vector<EdgeEdgeCTCollision>& edg_edg_cllsns,
-            std::vector<VertexFaceCTCollision>& vrtx_fce_cllsns, VecXd& v);
+    void exertInelasticImpulse( EdgeEdgeCTCollision& clssn );
+    void exertInelasticImpulse( VertexFaceCTCollision& clssn );
+    void exertInelasticImpulses( std::vector<EdgeEdgeCTCollision>& edg_edg_cllsns,
+            std::vector<VertexFaceCTCollision>& vrtx_fce_cllsns, VecXd& v );
 
-    void exertVertexImpulse(const Vec3d& I, const double& m, const int& idx, VecXd& v);
-    void exertEdgeImpulse(const Vec3d& I, const double& m0, const double& m1, const double& alpha, const int& idx0,
-            const int& idx1, VecXd& v);
-    void exertFaceImpulse(const Vec3d& I, const double& m0, const double& m1, const double& m2, const double& u,
-            const double& v, const double& w, const int& idx0, const int& idx1, const int& idx2, VecXd& vel);
+    void exertVertexImpulse( const Vec3d& I, const double& m, const int& idx, VecXd& v );
+    void exertEdgeImpulse( const Vec3d& I, const double& m0, const double& m1, const double& alpha,
+            const int& idx0, const int& idx1, VecXd& v );
+    void exertFaceImpulse( const Vec3d& I, const double& m0, const double& m1, const double& m2,
+            const double& u, const double& v, const double& w, const int& idx0, const int& idx1,
+            const int& idx2, VecXd& vel );
 
-    void computeCompliantLHS(MatrixBase* lhs, int rodidx);
+    void computeCompliantLHS( MatrixBase* lhs, int rodidx );
 
-    void exertCompliantInelasticImpulse(const CTCollision* cllsn);
-    void exertCompliantInelasticVertexFaceImpulse(const VertexFaceCTCollision& vfcol);
-    void exertCompliantInelasticEdgeEdgeImpulse(const EdgeEdgeCTCollision& eecol);
-    void exertCompliantInelasticEdgeEdgeImpulseOneFixed(const EdgeEdgeCTCollision& eecol);
-    void exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdgeCTCollision& eecol);
-    bool checkExplosions(std::vector<bool>& exploding_rods, const std::vector<bool>& failed_collisions_rods,
-            const RodSelectionType& selected_rods);
+    void exertCompliantInelasticImpulse( const CTCollision* cllsn );
+    void exertCompliantInelasticVertexFaceImpulse( const VertexFaceCTCollision& vfcol );
+    void exertCompliantInelasticEdgeEdgeImpulse( const EdgeEdgeCTCollision& eecol );
+    void exertCompliantInelasticEdgeEdgeImpulseOneFixed( const EdgeEdgeCTCollision& eecol );
+    void exertCompliantInelasticEdgeEdgeImpulseBothFree( const EdgeEdgeCTCollision& eecol );
+    bool checkExplosions( std::vector<bool>& exploding_rods,
+            const std::vector<bool>& failed_collisions_rods, const RodSelectionType& selected_rods );
 
-    bool checkLengths(std::vector<bool>& stretching_rods);
-    bool checkLength(int rodIdx);
+    bool checkLengths( std::vector<bool>& stretching_rods );
+    bool checkLength( int rodIdx );
 
     //////////////////////////////////
     // Jungseock's penalty response
-    void setupPenaltyForces(std::list<Collision*>& collisions, const RodSelectionType& selected_rods);
+    void setupPenaltyForces( std::list<Collision*>& collisions,
+            const RodSelectionType& selected_rods );
 
     void enableImplicitPenaltyImpulses();
     void disableImplicitPenaltyImpulses();
-    void setImplicitPenaltyExtraThickness(const double& h);
-    void setVertexFacePenalty(const double& k);
+    void setImplicitPenaltyExtraThickness( const double& h );
+    void setVertexFacePenalty( const double& k );
 
-    void killTheRod(int rod);
-    void computeForces(std::vector<VecXd*> Forces, const RodSelectionType& selected_rods);
+    void killTheRod( int rod );
+    void computeForces( std::vector<VecXd*> Forces, const RodSelectionType& selected_rods );
 
     // For each rod, find the (numberOfNeighbours) closest at the root and record that set in the rod
     void activateClumpingForce();
-    void findCenterLines(RodSelectionType& centerLineRods);
+    void findCenterLines( RodSelectionType& centerLineRods );
     void selectClumps();
     // void updateRodsNeighbours();
 
@@ -473,12 +485,16 @@ private:
     //  std::ofstream m_log_stream;
 
     // DEBUG
-    int m_num_solver_killed, m_num_collision_killed, m_num_explosion_killed, m_num_stretching_killed;
-    int m_total_solver_killed, m_total_collision_killed, m_total_explosion_killed, m_total_stretching_killed;
+    int m_num_solver_killed, m_num_collision_killed, m_num_explosion_killed,
+            m_num_stretching_killed;
+    int m_total_solver_killed, m_total_collision_killed, m_total_explosion_killed,
+            m_total_stretching_killed;
 
     std::vector<double> m_initialLengths;
-    int m_rods_per_clump;
+    int m_numberOfClumps;
     RodClumpingForce* m_clumpingForce;
+    VecXd m_wmPeltPoints;
+
 };
 
 } // namespace BASim
