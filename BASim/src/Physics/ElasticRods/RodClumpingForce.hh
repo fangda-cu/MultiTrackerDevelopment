@@ -40,6 +40,11 @@ public:
         r = power;
     }
 
+    /*void setVertexPowerMap(Scalar power)
+    {
+        r = power;
+    }*/
+
     void setDistance(Scalar dist)
     {
         rho2 = dist*dist;
@@ -72,6 +77,7 @@ private:
     double q;
     double r;
     double rho2;
+    double vertexPowerMap [];
 };
 
 }

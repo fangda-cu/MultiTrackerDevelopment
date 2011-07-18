@@ -93,6 +93,7 @@ public:
     static MObject ia_rodCharge;
     static MObject ia_rodPower;
     static MObject ia_rodClumpSeparation;
+    static MObject ia_rodClumpingRamp;
 
     // Sweeney Subset connection
     static MObject ia_fromSweeneySubsetNodes;
@@ -216,6 +217,7 @@ private:
     double m_rodCharge;
     double m_rodPower;
     double m_rodClumpSeparation;
+    double m_rodClumpingRamp [];
     // Debug drawing
     bool m_shouldDrawStrands;
     bool m_shouldDrawRootFrames;
