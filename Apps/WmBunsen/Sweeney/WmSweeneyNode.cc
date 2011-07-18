@@ -300,18 +300,18 @@ void WmSweeneyNode::updateRodParameters( const int& rodIdx, const bool& update_a
 
         WmSweeneySubsetNode* subset = m_subsetNodes[ current_rod->getSubsetIdx() ];
 
-        i_length = subset->getRodLength( ); // i_dataBlock );
-        i_rodRadius = subset->getRodRadius( ); //i_dataBlock );
-        i_rodAspectRatio = subset->getRodAspectRatio( ); //i_dataBlock );
-        i_rodRotation = subset->getRodRotation( ); //i_dataBlock );
-        i_curlStart = subset->getCurlStart( ); // i_dataBlock );
-        i_curlRadius = subset->getCurlRadius( ); //i_dataBlock );
-        i_curlCount = subset->getCurlCount( ); //i_dataBlock );
-        i_curlTightness = subset->getCurlTightness( ); //i_dataBlock );
+        i_length = subset->getRodLength( );
+        i_rodRadius = subset->getRodRadius( );
+        i_rodAspectRatio = subset->getRodAspectRatio( );
+        i_rodRotation = subset->getRodRotation( );
+        i_curlStart = subset->getCurlStart( );
+        i_curlRadius = subset->getCurlRadius( );
+        i_curlCount = subset->getCurlCount( );
+        i_curlTightness = subset->getCurlTightness( );
 
-        i_fixCurlCount = subset->getIsFixCurlCount( );// i_dataBlock );
-        i_curlInXFrame = subset->getIsCurlInXFrame( ); //i_dataBlock );
-        i_preserveLengthVariation = subset->getIsPreserveLengthVariation( ); //i_dataBlock );
+        i_fixCurlCount = subset->getIsFixCurlCount( );
+        i_curlInXFrame = subset->getIsCurlInXFrame( );
+        i_preserveLengthVariation = subset->getIsPreserveLengthVariation( );
 
     }
 
