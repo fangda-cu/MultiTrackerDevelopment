@@ -193,13 +193,12 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 
 			initialiseRodFromBarberShopInput( i_dataBlock );
 
-			cout << " COMPUTE SUBSET MAPPING " << endl;
 			// Note : since we only do this at the beginning of the sim
 			/// we need a method to explicitly notify sweeney of the
 			// new subset and append it in case a subset is made mid-sim
 			subsetNodes( m_subsetNodes );
 			computeSubsetRodMapping( i_dataBlock );
-			cout << " SUBSET COUNT " << m_subsetNodes.size() << endl;
+
 		}
 		else
 		{
@@ -215,7 +214,7 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 
 		        updateCollisionMeshes( i_dataBlock );
                 updateSolverSettings( i_dataBlock );
-                cout << " TAKE STEP " << endl;
+
                 m_rodManager->takeStep();
 		    }
 		}
@@ -316,10 +315,6 @@ void WmSweeneyNode::updateRodParameters( const int& rodIdx, const bool& update_a
     }
 
     bool update_rod = update_all_rods;
-    if ( update_rod )
-    {
-        cout << " update all rods " << rodIdx << endl;
-    }
 
     // get total rod length for scaling
     Scalar curl_length = ( 1.0 - i_curlStart )*i_length;
@@ -1666,11 +1661,14 @@ MStatus WmSweeneyNode::subsetNodes( std::vector<WmSweeneySubsetNode*>& o_subsetN
             continue;
         }
 
+
         MObject subsetObj = subsetToSweeneyPlgs[ 0 ].node( & status );
         CHECK_MSTATUS( status );
 
         MFnDagNode subsetFn( subsetObj, & status );
         CHECK_MSTATUS( status );
+
+        //cout << " adding  subset " << subsetFn.fullPathName() << endl;
 
         WmSweeneySubsetNode* subsetNode = (WmSweeneySubsetNode*) subsetFn.userNode( & status );
         CHECK_MSTATUS( status );
@@ -1708,25 +1706,22 @@ void WmSweeneyNode::computeSubsetRodMapping( MDataBlock& i_dataBlock )
     }
 
     MFnMesh scalp = MFnMesh(meshPath);
-    cout << " get rod count" << endl;
-    size_t rodCount = m_rodManager->m_rods.size();
     MPoint closestPoint;
 
-    cout << " check " << m_subsetNodes.size() << " subset nodes " << endl;
+    size_t rodCount = m_rodManager->m_rods.size();
+
     // first pass : map mesh faces indices back to WmSweeneySubsetNodes
     std::map<int, int> faceIdxToSubsetIdx;
     for ( size_t i = 0; i < m_subsetNodes.size(); ++i )
     {
-        //m_subsetNodes[ i ]->clearRods();
-        cout << " get face scalp indices " << endl;
         MIntArray faceIndices = m_subsetNodes[ i ]->getScalpFaceIndices( );
-        cout << " setting mapping for " << faceIndices.length() << " faces" << endl;
         for ( int ii = 0; ii < faceIndices.length(); ++ii )
         {
-            faceIdxToSubsetIdx.insert( pair<int, int> ( faceIndices[ ii ], int( i ) ) );
+
+            faceIdxToSubsetIdx[ faceIndices[ ii ] ] = i;
         }
     }
-    cout << " setting mapping for " << rodCount << " rods " << m_strandVertices.length() << endl;
+
     // second pass : assign rods to appropriate subset nodes
     for ( int rodIdx = 0; rodIdx < rodCount; ++rodIdx )
     {
