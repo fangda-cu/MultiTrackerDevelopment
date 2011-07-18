@@ -149,6 +149,7 @@ public:
     void setWmPeltPoints( const VecXd& centerRoots )
     {
         m_wmPeltPoints = centerRoots;
+        selectClumps();
     }
 
 private:

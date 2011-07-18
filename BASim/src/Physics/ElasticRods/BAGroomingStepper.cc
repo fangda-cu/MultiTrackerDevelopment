@@ -3117,6 +3117,7 @@ void BAGroomingStepper::selectClumps()
     // Those will be the clump "center lines".
     RodSelectionType centerLineRods;
     findCenterLines( centerLineRods );
+
     if ( centerLineRods.empty() )
     {
         WarningStream( g_log, "" ) << "No centre lines selected, clumping deactivated\n";
@@ -3140,8 +3141,7 @@ void BAGroomingStepper::selectClumps()
     pantaray::kNN<BVH> knn;
     BVH bvh;
     SimplePointBBoxFunctor bboxes( centerLinePointIndices, m_xn );
-    BVHBuilder<SimplePointBBoxFunctor> bvhbuilder;
-    bvhbuilder.build( bboxes, &bvh );
+    BVHBuilder<SimplePointBBoxFunctor> ().build( bboxes, &bvh );
     knn.Setup( bvh );
 
     // For each rod tip find the closest clump center line
@@ -3177,8 +3177,11 @@ void BAGroomingStepper::selectClumps()
 
             //  DebugStream(g_log, "") << "Rod " << *rod << " is attracted to rod " << foundRodIdx << '\n';
         }
-        //  else
-        //      DebugStream(g_log, "") << "Rod " << *rod << " is a centerline\n";
+        else // if the rod is a centerline, make sure that it's neighbours list is empty.
+        {
+            m_rods[*rod]->setNearestRootNeighbours( std::vector<ElasticRod*>() );
+            //      DebugStream(g_log, "") << "Rod " << *rod << " is a centerline\n";
+        }
     }
 
 }
