@@ -46,9 +46,10 @@ class WmSweeneySubsetNode : public MPxLocatorNode
 
     // the rods associated with this scalp face set
     // reset by WmSweeneyNode at each simulation restart
-    std::vector< BASim::ElasticRod* > getRods( );
-    void addRod( BASim::ElasticRod* i_rod );
-    void clearRods( );
+    /*size_t getRodCount( );
+    int getRodIdx( size_t i );
+    void addRodIdx( int rodIdx );
+    void clearRods( );*/
 
     //////////////////////////////////////////////////////
     //
@@ -136,7 +137,7 @@ class WmSweeneySubsetNode : public MPxLocatorNode
                                                 bool i_isInput = true, bool i_isArray = false );
 
     // current rod set : recomputed whenever the simulation is restarted
-    std::vector< BASim::ElasticRod* > m_subsetCurrentRods;
+    //std::vector< int > m_subsetCurrentRods;
 
 };
 

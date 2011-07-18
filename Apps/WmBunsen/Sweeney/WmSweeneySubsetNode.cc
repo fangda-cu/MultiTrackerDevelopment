@@ -67,20 +67,26 @@ WmSweeneySubsetNode::WmSweeneySubsetNode()
 {
 }
 
-std::vector< BASim::ElasticRod* > WmSweeneySubsetNode::getRods( )
+/*
+size_t WmSweeneySubsetNode::getRodCount( )
 {
-    return m_subsetCurrentRods;
+    return m_subsetCurrentRods.size();
 }
 
-void WmSweeneySubsetNode::addRod( BASim::ElasticRod* i_rod )
+int WmSweeneySubsetNode::getRodIdx( size_t i )
 {
-    m_subsetCurrentRods.push_back( i_rod );
+    return m_subsetCurrentRods[ i ];
+}
+
+void WmSweeneySubsetNode::addRodIdx( int rodIdx )
+{
+    m_subsetCurrentRods.push_back( rodIdx );
 }
 
 void WmSweeneySubsetNode::clearRods( )
 {
     m_subsetCurrentRods.clear();
-}
+}*/
 
 void WmSweeneySubsetNode::setScalpFaceIndices( const MIntArray i_indices )
 {

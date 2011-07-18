@@ -238,6 +238,9 @@ public:
     bool isInRestState() const;
     void setIsInRestState(bool is_at_rest);
 
+    int getSubsetIdx() const;
+    void setSubsetIdx(int subsetIdx);
+
     const Vec3d& getReferenceDirector1(const edge_handle& eh) const;
     void setReferenceDirector1(const edge_handle& eh, const Vec3d& u);
     const Vec3d& getReferenceDirector2(const edge_handle& eh) const;
@@ -399,9 +402,10 @@ protected:
     ObjPropHandle<Scalar> m_base_rotation;
 
     // Flags for Dynamic Grooming
-    ObjPropHandle<bool> m_in_rest_state;
-    ObjPropHandle<bool> m_is_left_strand;
-    ObjPropHandle<bool> m_is_clump_center;
+    ObjPropHandle<bool> m_inRestState;
+    ObjPropHandle<bool> m_isLeftStrand;
+    ObjPropHandle<bool> m_isClumpCenter;
+    ObjPropHandle<int> m_subsetIdx;
 
     VPropHandle<Vec3d> m_vertexPositions;
     VPropHandle<Vec3d> m_vertexVelocities;

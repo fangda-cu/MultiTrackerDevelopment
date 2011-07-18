@@ -53,10 +53,11 @@ ElasticRod::ElasticRod(int numVertices, bool closed) :
     add_property(m_viscosity, "dynamic viscosity", 0.0);
     add_property(m_dt, "rod's time step size", 0.1);
     add_property(m_radius_scale, "scaling for rendering and collisions", 1.0);
-    add_property(m_in_rest_state, "true if the rod has reached its minimum energy state", false);
-    add_property(m_is_left_strand, "true if the rod is on the left side of the scalp", false);
-    add_property(m_is_clump_center, "true if the rod is the center line for a clump", false);
     add_property(m_base_rotation, "rotation of elliptical cross-section major axis", 0.0);
+    add_property(m_inRestState, "true if the rod has reached its minimum energy state", false);
+    add_property(m_isLeftStrand, "true if the rod is on the left side of the scalp", false);
+    add_property(m_isClumpCenter, "true if the rod is the center line for a clump", false);
+    add_property(m_subsetIdx, "index to the subset node that provides this rods parameters", -1);
 
     add_property(m_vertexPositions, "vertex_positions", Vec3d(0, 0, 0));
     add_property(m_vertexVelocities, "vertex velocities", Vec3d(0, 0, 0));
@@ -639,32 +640,42 @@ void ElasticRod::setRadiusScale(Scalar s)
 
 bool ElasticRod::isInRestState() const
 {
-	return property(m_in_rest_state);
+	return property(m_inRestState);
 }
 
 void ElasticRod::setIsInRestState(bool is_at_rest)
 {
-	property(m_in_rest_state) = is_at_rest;
+	property(m_inRestState) = is_at_rest;
 }
 
 bool ElasticRod::isClumpCenterLine() const
 {
-    return property(m_is_clump_center);
+    return property(m_isClumpCenter);
 }
 
 void ElasticRod::setIsClumpCenterLine(bool is_clump_center)
 {
-    property(m_is_clump_center) = is_clump_center;
+    property(m_isClumpCenter) = is_clump_center;
 }
 
 bool ElasticRod::isLeftStrand() const
 {
-    return property(m_is_left_strand);
+    return property(m_isLeftStrand);
 }
 
 void ElasticRod::setIsLeftStrand(bool is_left_strand)
 {
-    property(m_is_left_strand) = is_left_strand;
+    property(m_isLeftStrand) = is_left_strand;
+}
+
+int ElasticRod::getSubsetIdx() const
+{
+    return property(m_subsetIdx);
+}
+
+void ElasticRod::setSubsetIdx(int subsetIdx)
+{
+    property(m_subsetIdx) = subsetIdx;
 }
 
 bool ElasticRod::doReverseHairdo(RodTimeStepper *stepper)
