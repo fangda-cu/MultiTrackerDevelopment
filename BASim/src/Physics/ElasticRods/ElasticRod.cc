@@ -151,7 +151,7 @@ void ElasticRod::computeForces(VecXd& force)
         curr_force.setZero();
         (*fIt)->globalForce(curr_force);
         force += curr_force;
-        TraceStream(g_log, "") << "Computed " << (*fIt)->getName() << " norm = " << curr_force.norm() << '\n';
+      //  TraceStream(g_log, "") << "Computed " << (*fIt)->getName() << " norm = " << curr_force.norm() << '\n';
     }
 }
 

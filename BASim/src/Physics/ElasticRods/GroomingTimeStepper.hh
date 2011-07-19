@@ -227,8 +227,8 @@ public:
             curr_force.setZero();
             m_externalForces[i]->computeForce(m_rod, curr_force);
             f += curr_force;
-            TraceStream(g_log, "") << m_externalForces[i]->getName() << " &rod = " << &m_rod << " norm = " << curr_force.norm()
-                    << '\n';
+        //    TraceStream(g_log, "") << m_externalForces[i]->getName() << " &rod = " << &m_rod << " norm = " << curr_force.norm()
+        //            << '\n';
         }
 
         // m_forces = f - m_forces;

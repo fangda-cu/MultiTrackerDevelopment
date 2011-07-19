@@ -32,7 +32,7 @@ public:
     assert(w.size() == diagonals.size());
     assert(v.size() == diagonals.size());
 
-    int s = diagonals.size();
+    int s = (int) diagonals.size();
     for (int i = 0; i < s; ++i) { w(i) = diagonals(i) * v(i); }
   }
 

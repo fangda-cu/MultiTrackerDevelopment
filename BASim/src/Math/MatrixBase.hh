@@ -130,6 +130,8 @@ inline std::ostream& operator<<(std::ostream& os, const MatrixBase& A)
             os << ',';
     }
     os << '}';
+
+    return os;
 }
 
 } // namespace BASim

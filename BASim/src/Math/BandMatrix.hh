@@ -96,8 +96,8 @@ public:
 
     virtual int add(const IndexArray& rowIdx, const IndexArray& colIdx, const MatXd& values)
     {
-        int nr = rowIdx.size();
-        int nc = colIdx.size();
+        int nr = (int) rowIdx.size();
+        int nc = (int) colIdx.size();
 
         for (int i = 0; i < nr; ++i)
         {
