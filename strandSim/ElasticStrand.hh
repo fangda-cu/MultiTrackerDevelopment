@@ -14,6 +14,7 @@
 #include "BandMatrix.hh"
 #include "ForceAccumulator.hh"
 #include "ElasticStrandParameters.hh"
+#include "Typelist.hh"
 
 namespace strandsim
 {
@@ -23,14 +24,17 @@ class BendingForce;
 class TwistingForce;
 class GravitationForce;
 
+typedef Typelist<StretchingForce, Typelist<BendingForce, Typelist<TwistingForce, Typelist<
+        GravitationForce, NullType> > > > BuiltInForcesList;
+
 class ElasticStrand: public StrandBase
 {
 public:
     typedef ElasticStrandParameters ParametersType;
     typedef VecXd ForceVectorType;
-    typedef strandsim::BandMatrix<Scalar, 10, 10> JacobianMatrixType; // TODO: replace this with a type that has built-in symmetry
+    typedef strandsim::BandMatrix<Scalar, 10, 10> JacobianMatrixType; // TODO: replace this with a type that has built-in symmetry. Or at least squareness.
 
-    ElasticStrand(VecXd& dofs, const ParametersType& parameters);
+    ElasticStrand( VecXd& dofs, const ParametersType& parameters );
 
     virtual ~ElasticStrand();
 
@@ -63,7 +67,7 @@ public:
         return m_totalForces;
     }
 
-     ForceVectorType& getTotalForces()
+    ForceVectorType& getTotalForces()
     {
         return m_totalForces;
     }
@@ -73,30 +77,36 @@ public:
         return m_totalJacobian;
     }
 
-     JacobianMatrixType& getTotalJacobian()
+    JacobianMatrixType& getTotalJacobian()
     {
         return m_totalJacobian;
     }
 
-     const ForceVectorType& getNewTotalForces() const
-     {
-         return m_totalForces;
-     }
+    const ForceVectorType& getNewTotalForces() const
+    {
+        return m_totalForces;
+    }
 
-      ForceVectorType& getNewTotalForces()
-     {
-         return m_totalForces;
-     }
+    ForceVectorType& getNewTotalForces()
+    {
+        return m_totalForces;
+    }
+
+    Scalar getMass( IndexType i ) const
+    {
+        return m_vertexMasses[i];
+    }
 
     void prepareForSolving();
     void prepareForExamining();
     void acceptNewPositions();
 
-private:
+public:
+    // For testing only, otherwise private:
     void resizeInternals();
     void freezeRestShape();
 
-    Mat2d computeBendingMatrix(const IndexType vtx) const;
+    Mat2d computeBendingMatrix( const IndexType vtx ) const;
 
     /**
      * Member variables
@@ -142,11 +152,8 @@ public:
     friend class ForceAccumulator<TwistingForce> ;
     friend class GravitationForce;
     friend class ForceAccumulator<GravitationForce> ;
-
-    friend std::ostream& operator<<(std::ostream& os, const ElasticStrand& strand);
+    friend std::ostream& operator<<( std::ostream& os, const ElasticStrand& strand );
 };
-
-
 
 }
 

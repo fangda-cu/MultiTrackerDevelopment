@@ -20,13 +20,14 @@ PRG1_L     := -lwStrandSim -Wl,--start-group \
                   $(MKLROOT)/lib/em64t/libmkl_intel_thread.a \
                   $(MKLROOT)/lib/em64t/libmkl_core.a \
                  -Wl,--end-group \
-                 -openmp
+                 -openmp \
+                 -lWfigaro # testing and comparison
                  
 ######
 
 LIB1       := wStrandSim
 
-LIB1_CF    += -DBUILD=${BUILD} -DWETA
+LIB1_CF    += -DBUILD=${BUILD} -DWETA -UNDEBUG
 LIB1_CF    += -w1
 
 LIB1_H += ElasticStrandUtils.hh

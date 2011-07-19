@@ -30,7 +30,7 @@ public:
     static void accumulate(Scalar& globalEnergy, VecXd& globalForce, strandsim::BandMatrix<Scalar, 10, 10> globalJacobian,
             const ElasticStrand& strand, const StrandGeometry& geometry);
 
-    static void accumulate(strandsim::BandMatrix<Scalar, 10, 10> globalJacobian,
+    static void accumulate(strandsim::BandMatrix<Scalar, 10, 10>& globalJacobian,
             const ElasticStrand& strand, const StrandGeometry& geometry);
 
 };

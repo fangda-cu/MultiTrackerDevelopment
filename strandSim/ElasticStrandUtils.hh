@@ -58,7 +58,7 @@ inline Vec3d parallelTransport(const Vec3d& u, const Vec3d& t1, const Vec3d& t2)
     return u.dot(t1) * t2 + u.dot(n1) * n2 + u.dot(b) * b;
 }
 
-// Find an arbitrary normal vector
+// Find an arbitrary normal (unit length) vector
 template<int n>
 inline Eigen::Matrix<Scalar, n, 1> findNormal(const Eigen::Matrix<Scalar, n, 1>& u)
 {

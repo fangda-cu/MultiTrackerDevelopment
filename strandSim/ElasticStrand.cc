@@ -22,7 +22,7 @@ ElasticStrand::ElasticStrand(VecXd& dofs, const ParametersType& parameters) :
 
     freezeRestShape(); // for now the rest shape is the shape in which the strand is created, unless modified later on.
 
-    prepareForSolving(); // does nothing if the rest shape is the same as creation shape (see above).
+    prepareForSolving();
 }
 
 ElasticStrand::~ElasticStrand()
@@ -154,15 +154,17 @@ void ElasticStrand::acceptNewPositions()
 
 std::ostream& operator<<(std::ostream& os, const ElasticStrand& strand)
 {
+    os << '{';
     for (int i = 0; i < strand.m_numVertices - 1; i++)
     {
         os << '{' << strand.m_geometry.m_degreesOfFreedom[4 * i] << ", " << strand.m_geometry.m_degreesOfFreedom[4 * i + 1]
-                << ", " << strand.m_geometry.m_degreesOfFreedom[4 * i + 2] << "} ";
-        os << strand.m_geometry.m_degreesOfFreedom[4 * i + 3] << ' ';
+                << ", " << strand.m_geometry.m_degreesOfFreedom[4 * i + 2] << "}, ";
+       // os << strand.m_geometry.m_degreesOfFreedom[4 * i + 3] << ', ';
     }
     os << '{' << strand.m_geometry.m_degreesOfFreedom[4 * (strand.m_numVertices - 1)] << ", "
             << strand.m_geometry.m_degreesOfFreedom[4 * (strand.m_numVertices - 1) + 1] << ", "
             << strand.m_geometry.m_degreesOfFreedom[4 * (strand.m_numVertices - 1) + 2] << '}';
+    os << '}';
 
     return os;
 }

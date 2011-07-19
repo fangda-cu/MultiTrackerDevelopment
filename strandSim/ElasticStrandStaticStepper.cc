@@ -33,13 +33,14 @@ void ElasticStrandStaticStepper::execute(ElasticStrand& strand) const
 
     // Enforce fixed first two vertices by setting the relevant portions of force and Jacobian to zero
     F.segment<numberOfFixedDOFs> (0).setZero();
-    J.localStencilAdd<numberOfFixedDOFs> (0, Eigen::Matrix<Scalar, numberOfFixedDOFs, numberOfFixedDOFs>());
+    J.localStencilReplace<numberOfFixedDOFs> (0, Eigen::Matrix<Scalar, numberOfFixedDOFs, numberOfFixedDOFs>());
 
-    // If we want to add a constant diagonal to J to enforce a trust region here, we need a non-const getTotalJacobian()
+    // Add a constant diagonal to J to enforce a trust region.
+    J.addConstantDiagonal(1.0);
 
     LinearSolver<ElasticStrand::JacobianMatrixType> linearSolver;
     linearSolver.solve(newDOFs, J, F); // X = J^{-1} F
-    newDOFs += strand.getDegreesOfFreedom(); // X = J^{-1} F + X_0
+    newDOFs += strand.getDegreesOfFreedom(); // X = X_0 + J^{-1} F
     // AND THE MASSES????
 
     // Update the new position's frames and forces
