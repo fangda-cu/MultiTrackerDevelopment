@@ -162,6 +162,26 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 
 		int numberOfVerticesPerStrand = i_dataBlock.inputValue( ia_verticesPerStrand ).asInt();
 
+		// grab values from clumping ramp
+        {
+            MRampAttribute rodClumpingRamp( thisMObject(), ia_rodClumpingRamp, & status );
+            CHECK_MSTATUS( status );
+
+            m_rodClumpingRamp.resize( verticesPerRod );
+
+            // build array of strand clumping power and pass to rod
+            for ( size_t i = 0; i < verticesPerRod; i++ )
+            {
+                const float t = float( i ) / float( verticesPerRod - 1 );
+
+                float value;
+                rodClumpingRamp.getValueAtPosition( t, value, & status );
+                CHECK_MSTATUS( status );
+
+                m_rodClumpingRamp[ i ] = value;
+            }
+        }
+
 		// Set Debug Drawing
 		if ( m_rodManager != NULL )
 		{
@@ -232,16 +252,33 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 void  WmSweeneyNode::updateRods( )
 {
     double currentCharge, currentPower, currentClumpDist;
-    m_rodManager->getClumpingParameters( currentCharge, currentPower, currentClumpDist );
+    vector<double> currentClumpingRamp;
+
+    m_rodManager->getClumpingParameters( currentCharge, currentPower, currentClumpDist,
+                currentClumpingRamp );
 
     bool update_all_rods = false;
 
-    if ( m_rodCharge != currentCharge
+    if ( currentClumpingRamp.size() == m_verticesPerRod )
+    {
+        for ( int i = 0; i < m_verticesPerRod; ++i ) {
+            if ( m_rodClumpingRamp[ i ] != currentClumpingRamp[ i ] )
+            {
+                update_all_rods = true;
+            }
+        }
+    }
+    else
+    {
+        update_all_rods = true;
+    }
+
+    if ( update_all_rods //m_rodCharge != currentCharge
             || m_rodPower != currentPower
             || m_rodClumpSeparation != currentClumpDist )
     {
         m_rodManager->setClumpingParameters( m_rodCharge, m_rodPower,
-                m_rodClumpSeparation );
+                m_rodClumpSeparation, m_rodClumpingRamp );
         update_all_rods = true;
     }
 

@@ -13,7 +13,7 @@
 namespace BASim
 {
 
-#define FIRST_ATTRACTED_VERTEX rod.nv()-2
+#define FIRST_ATTRACTED_VERTEX 0 //rod.nv()-2
 
 RodClumpingForce::RodClumpingForce() :
     q(0.0), r(1.0), rho2(0.000025)
@@ -59,13 +59,20 @@ Scalar RodClumpingForce::computeEnergy(const ElasticRod& rod) const
 Scalar RodClumpingForce::computeEnergy(const ElasticRod& rod, const ElasticRod& other) const
 {
     Scalar energy = 0.0;
+
+    Scalar charge = q;
+
     for (int vidx = FIRST_ATTRACTED_VERTEX; vidx < rod.nv(); ++vidx)
     {
+        if ( vidx < vertexQMap.size() )
+        {
+            charge = vertexQMap[ vidx ];
+        }
         const Vec3d& x = rod.getVertex(vidx);
 
         const Vec3d& y = ClosestPointOnRod(x, other);
         const Scalar normep2 = (x[0] - y[0]) * (x[0] - y[0]) + (x[1] - y[1]) * (x[1] - y[1]) + (x[2] - y[2]) * (x[2] - y[2]);
-        energy -= q * normep2 / pow(normep2 + rho2, 1 + 0.5 * r);
+        energy -= charge * normep2 / pow(normep2 + rho2, 1 + 0.5 * r);
     }
 
     return energy;
@@ -81,6 +88,8 @@ void RodClumpingForce::computeForce(const ElasticRod& rod, VecXd& force) const
 
 void RodClumpingForce::computeForce(const ElasticRod& rod, const ElasticRod& other, VecXd& force) const
 {
+    Scalar charge = q;
+
     for (int vidx = FIRST_ATTRACTED_VERTEX; vidx < rod.nv(); ++vidx)
     {
         const Vec3d& x = rod.getVertex(vidx);
@@ -90,7 +99,12 @@ void RodClumpingForce::computeForce(const ElasticRod& rod, const ElasticRod& oth
         const Vec3d& y = ClosestPointOnRod(x, other);
         const Scalar normep2 = (x[0] - y[0]) * (x[0] - y[0]) + (x[1] - y[1]) * (x[1] - y[1]) + (x[2] - y[2]) * (x[2] - y[2]);
 
-        Vec3d localForceFromOtherVtx = q * (y - x) * pow(normep2 + rho2, -1 - 0.5 * r) * (2 - (2 + r) * normep2 / (normep2
+        if ( vidx < vertexQMap.size() )
+        {
+            charge = vertexQMap[ vidx ];
+        }
+
+        Vec3d localForceFromOtherVtx = charge * (y - x) * pow(normep2 + rho2, -1 - 0.5 * r) * (2 - (2 + r) * normep2 / (normep2
                 + rho2));
         localForceFromOther += localForceFromOtherVtx;
 
@@ -141,14 +155,20 @@ void RodClumpingForce::computeLocalForceDX(const ElasticRod& rod, int vidx, cons
     //  const Scalar normepr4 = pow(normep2 + 0.1, 0.5 * r + 2);
     const Scalar normep4 = normep2 * normep2;
 
+    Scalar charge = q;
+    if ( vidx < vertexQMap.size() )
+    {
+        charge = vertexQMap[ vidx ];
+    }
+
     for (int i = 0; i < 3; i++)
     {
         const double xx2 = (x[i] - y[i]) * (x[i] - y[i]);
-        localJ(i, i) = q * (pow(normep2 + rho2, -3 - r / 2.) * (normep4 * r - 2 * rho2 * (-2 * (2 + r) * xx2 + rho2) - normep2
+        localJ(i, i) = charge * (pow(normep2 + rho2, -3 - r / 2.) * (normep4 * r - 2 * rho2 * (-2 * (2 + r) * xx2 + rho2) - normep2
                 * (2 * r * xx2 + r * r * xx2 + 2 * rho2 - r * rho2)));
 
         for (int j = 0; j < i; j++)
-            localJ(i, j) = localJ(j, i) = q * ((-2 - r) * (x[i] - y[i]) * (x[j] - y[j]) * (normep2 * r - 4 * rho2) * pow(
+            localJ(i, j) = localJ(j, i) = charge * ((-2 - r) * (x[i] - y[i]) * (x[j] - y[j]) * (normep2 * r - 4 * rho2) * pow(
                     normep2 + rho2, -3 - r / 2.));
     }
 }

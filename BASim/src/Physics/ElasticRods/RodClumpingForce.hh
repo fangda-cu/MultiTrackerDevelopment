@@ -40,10 +40,10 @@ public:
         r = power;
     }
 
-    /*void setVertexPowerMap(Scalar power)
+    void setVertexPowerMap(const std::vector<double> vertexPowerMap)
     {
-        r = power;
-    }*/
+        vertexQMap = vertexPowerMap;
+    }
 
     void setDistance(Scalar dist)
     {
@@ -65,6 +65,11 @@ public:
         return sqrt(rho2);
     }
 
+    const std::vector<double> getVertexPowerMap() const
+    {
+        return vertexQMap;
+    }
+
 private:
     Scalar computeEnergy(const ElasticRod& rod, const ElasticRod& other) const;
 
@@ -77,7 +82,7 @@ private:
     double q;
     double r;
     double rho2;
-    double vertexPowerMap [];
+    std::vector<double> vertexQMap;
 };
 
 }

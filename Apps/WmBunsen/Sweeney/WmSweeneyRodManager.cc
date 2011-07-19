@@ -216,14 +216,15 @@ void WmSweeneyRodManager::updateSolverSettings( double i_atol, double i_stol, do
 }
 
 void WmSweeneyRodManager::setClumpingParameters( const double charge, const double power,
-        const double dist ) const
+        const double dist, const std::vector<double> vertexPowerMap ) const
 {
-    m_bridsonStepper->setClumpingParameters( charge, power, dist );
+    m_bridsonStepper->setClumpingParameters( charge, power, dist, vertexPowerMap );
 }
 
-void WmSweeneyRodManager::getClumpingParameters( double& charge, double& power, double& dist ) const
+void WmSweeneyRodManager::getClumpingParameters( double& charge, double& power, double& dist,
+        std::vector<double>& vertexPowerMap ) const
 {
-    m_bridsonStepper->getClumpingParameters( charge, power, dist );
+    m_bridsonStepper->getClumpingParameters( charge, power, dist, vertexPowerMap );
 }
 
 void WmSweeneyRodManager::resetSelectedRods()

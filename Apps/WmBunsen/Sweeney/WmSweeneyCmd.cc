@@ -311,10 +311,9 @@ void WmSweeneyCmd::createSweeneyNode()
 
     // They want the curve to default like this. 0@0, 1@1, and also 1@0.1
     stat = MGlobal::executeCommand( MString( "setAttr -s 3 \".rodClumpingRamp[1:3]\"  " ) +
-        "1.0 1.0 1.0 " +
-        "0.1 1.0 1.0 " +
-        "0.0 0.0 1.0 " +
-        ";" );
+            "0.0 0.0 1.0 " +
+            "0.95 0.0 1.0 " +
+            "1.0 1.0 1.0 " + ";" );
     CHECK_MSTATUS( stat );
 
     stat = dagModifier.doIt();

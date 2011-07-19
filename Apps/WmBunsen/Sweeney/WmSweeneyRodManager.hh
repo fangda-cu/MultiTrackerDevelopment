@@ -61,9 +61,11 @@ public:
     void updateSolverSettings(double i_atol, double i_stol, double i_rtol, double i_inftol, int i_numLineSearchIters,
             double i_penaltyStiffness);
 
-    void setClumpingParameters(const double charge, const double power, const double distance) const;
+    void setClumpingParameters(const double charge, const double power, const double distance,
+            const std::vector<double> vertexPowerMap ) const;
 
-    void getClumpingParameters(double& charge, double& power, double& distance) const;
+    void getClumpingParameters(double& charge, double& power, double& distance,
+            std::vector<double>& vertexPowerMap ) const;
 
     void addCollisionMesh(BASim::TriangleMesh* i_triangleMesh, BASim::LevelSet* i_levelSet,
             WmFigMeshController* i_figMeshController);

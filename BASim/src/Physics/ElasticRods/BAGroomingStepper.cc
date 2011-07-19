@@ -3244,28 +3244,36 @@ void BAGroomingStepper::selectClumps()
  */
 
 void BAGroomingStepper::setClumpingParameters( const double charge, const double power,
-        const double dist )
+        const double dist, const std::vector<double> vertexPowerMap )
 {
+    if ( m_clumpingForce == NULL )
+        return;
+
     assert( m_clumpingForce != NULL );
 
     DebugStream( g_log, "" ) << "Changing clumping parameters\n";
 
     m_clumpingForce->setCharge( charge );
+    // TODO (sainsley) : factor this out when we
+    // are certain we are sticking to the ramp
     m_clumpingForce->setPower( power );
     m_clumpingForce->setDistance( dist );
+    m_clumpingForce->setVertexPowerMap( vertexPowerMap );
 
     selectClumps();
 }
 
-void BAGroomingStepper::getClumpingParameters( double& charge, double& power, double& dist )
+void BAGroomingStepper::getClumpingParameters( double& charge, double& power, double& dist,
+        std::vector<double>& vertexPowerMap )
 {
     assert( m_clumpingForce != NULL );
 
-    DebugStream( g_log, "" ) << "Changing clumping parameters\n";
+    DebugStream( g_log, "" ) << "Getting clumping parameters\n";
 
     charge = m_clumpingForce->getCharge();
     power = m_clumpingForce->getPower();
     dist = m_clumpingForce->getDistance();
+    vertexPowerMap = m_clumpingForce->getVertexPowerMap();
 }
 
 }

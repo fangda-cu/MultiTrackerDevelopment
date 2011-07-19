@@ -219,7 +219,7 @@ private:
     double m_rodCharge;
     double m_rodPower;
     double m_rodClumpSeparation;
-    double m_rodClumpingRamp [];
+    std::vector<double> m_rodClumpingRamp;
     // Debug drawing
     bool m_shouldDrawStrands;
     bool m_shouldDrawRootFrames;

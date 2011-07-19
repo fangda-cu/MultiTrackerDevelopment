@@ -143,8 +143,10 @@ public:
         m_perf_param.m_implicit_stiffness = newStiffness;
     }
 
-    void setClumpingParameters( const double charge, const double power, const double dist );
-    void getClumpingParameters( double& charge, double& power, double& dist );
+    void setClumpingParameters( const double charge, const double power, const double dist,
+            const std::vector<double> vertexPowerMap);
+    void getClumpingParameters( double& charge, double& power, double& dist,
+            std::vector<double>& vertexPowerMap );
 
     void setWmPeltPoints( const VecXd& centerRoots )
     {
