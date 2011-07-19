@@ -364,7 +364,7 @@ public:
     
     void setBridsonStepper( BARodStepper* i_bridsonStepper )
     {
-        m_bridsonStepper = i_bridsonStepper;
+        m_bARodStepper = i_bridsonStepper;
     }
 
 //private:
@@ -427,7 +427,7 @@ public:
     
     RodMayaForces* m_rodMayaForces;
     
-    BARodStepper* m_bridsonStepper;
+    BARodStepper* m_bARodStepper;
 };
 
 #endif

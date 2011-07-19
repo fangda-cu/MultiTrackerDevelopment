@@ -100,7 +100,7 @@ public:
     void createClumpCenterLinesFromPelt(const MPointArray& centralArr);
 
 private:
-    BASim::BAGroomingStepper* m_bridsonStepper;
+    BASim::BAGroomingStepper* m_bAGroomingStepper;
     std::vector<BASim::GroomingTimeStepper*> m_rodTimeSteppers;
     std::vector<BASim::RodRenderer*> m_rodRenderers;
     std::vector<BASim::TriangleMesh*> m_triangleMeshes;

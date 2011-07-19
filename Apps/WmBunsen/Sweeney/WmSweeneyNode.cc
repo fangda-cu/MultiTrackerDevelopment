@@ -215,7 +215,7 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 
 		        updateCollisionMeshes( i_dataBlock );
                 updateSolverSettings( i_dataBlock );
-                cout << " TAKE STEP " << endl;
+               // cout << " TAKE STEP " << endl;
                 m_rodManager->takeStep();
 		    }
 		}
