@@ -36,6 +36,7 @@ using namespace BASim;
 /* static */MObject WmSweeneyNode::ia_rodCharge;
 /* static */MObject WmSweeneyNode::ia_rodPower;
 /* static */MObject WmSweeneyNode::ia_rodClumpSeparation;
+/* static */ MObject WmSweeneyNode::ia_rodClumpingRamp;
 
 // Barbershop specific inputs
 /*static*/MObject WmSweeneyNode::ia_strandVertices;
@@ -155,10 +156,7 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 		MVectorArray strandRootFrames = strandRootFramesArrayData.array( &status );
 		CHECK_MSTATUS( status );
 
-		//for ( unsigned int i = 0 ; i < strandRootFrames.length() ; i++ )
-		//	cout << "ROD FRAME # " << i << " " << strandRootFrames[ i ].x << " " << strandRootFrames[ i ].y << " " << strandRootFrames[ i ].z << endl;
-
-		int verticesPerRod = i_dataBlock.inputValue( ia_verticesPerRod ).asInt();
+        int verticesPerRod = i_dataBlock.inputValue( ia_verticesPerRod ).asInt();
 
 		int numberOfClumps = i_dataBlock.inputValue( ia_numberOfClumps ).asInt();
 
@@ -1079,6 +1077,21 @@ void* WmSweeneyNode::creator()
     {
         status.perror("attributeAffects ia_rodClumpSeparation->ca_rodPropertiesSync");
         return status;
+    }
+
+    // Set up clump vertex-power map
+    {
+        ia_rodClumpingRamp = MRampAttribute::createCurveRamp( "rodClumpingRamp", "rcm",
+            & status );
+        CHECK_MSTATUS( status );
+        status = addAttribute( ia_rodClumpingRamp );
+        CHECK_MSTATUS( status );
+        status = attributeAffects( ia_rodClumpingRamp, ca_rodPropertiesSync );
+        if ( !status )
+        {
+            status.perror( "attributeAffects ia_rodClumpingRamp->ca_rodPropertiesSync" );
+            return status;
+        }
     }
 
     {
