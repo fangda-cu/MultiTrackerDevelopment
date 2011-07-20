@@ -3,7 +3,7 @@
 using namespace std;
 
 RodData::RodData() : m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_gravity( 0.0, 0.0, 0.0 ), m_rodMayaForces( NULL ),
-m_bridsonStepper( NULL )
+m_bARodStepper( NULL )
 {
     m_isPlaceHolderRod = true;
     m_enabled = true;
@@ -13,7 +13,7 @@ RodData::RodData( RodOptions& i_rodOptions, std::vector<BASim::Vec3d>& i_rodVert
                   double i_massDamping, BASim::Vec3d& i_gravity, RodTimeStepper::Method i_solverType, 
                   bool i_isReadingFromCache, bool i_doReverseHairdo ) : 
 m_rod( NULL), m_stepper( NULL ), m_rodRenderer( NULL ), m_massDamping( i_massDamping ),
-m_rodMayaForces( NULL ), m_bridsonStepper( NULL )
+m_rodMayaForces( NULL ), m_bARodStepper( NULL )
 {
     m_enabled = true;
 
@@ -198,12 +198,12 @@ void RodData::updateBoundaryConditions()
 
 	double dt = 1.0/24.0;
 
-//	std::cerr << "RodData::updateBoundaryConditions: vertIdx = " << edgeNum << " t0 = " << m_bridsonStepper->getTime() << " prevPos = " << prevVertexPositions[edgeNum] << " nextPos = " << nextVertexPositions[edgeNum] << " vel = " << (nextVertexPositions[ edgeNum ] - prevVertexPositions[ edgeNum ])/dt << endl;
+//	std::cerr << "RodData::updateBoundaryConditions: vertIdx = " << edgeNum << " t0 = " << m_bARodStepper->getTime() << " prevPos = " << prevVertexPositions[edgeNum] << " nextPos = " << nextVertexPositions[edgeNum] << " vel = " << (nextVertexPositions[ edgeNum ] - prevVertexPositions[ edgeNum ])/dt << endl;
 
-        boundary->setDesiredVertexPosition( edgeNum, m_bridsonStepper->getTime(), prevVertexPositions[ edgeNum ], 
+        boundary->setDesiredVertexPosition( edgeNum, m_bARodStepper->getTime(), prevVertexPositions[ edgeNum ], 
 					    (nextVertexPositions[ edgeNum ] - prevVertexPositions[ edgeNum ])/dt);
  
-        boundary->setDesiredVertexPosition( edgeNum + 1, m_bridsonStepper->getTime(),
+        boundary->setDesiredVertexPosition( edgeNum + 1, m_bARodStepper->getTime(),
 					prevVertexPositions[ edgeNum + 1 ],
 					(nextVertexPositions[ edgeNum + 1 ] - prevVertexPositions[ edgeNum + 1 ])/dt);
         

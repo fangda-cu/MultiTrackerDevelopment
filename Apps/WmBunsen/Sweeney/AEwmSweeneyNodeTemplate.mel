@@ -101,7 +101,6 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
     	editorTemplate -addControl "shouldDrawStrands";
     	editorTemplate -addControl "shouldDrawRootFrames";
       	editorTemplate -addControl "shouldDrawVelocity";  
-   		editorTemplate -addControl "shouldDrawOnlySelected";  
     editorTemplate -endLayout;
     
     editorTemplate -addExtraControls;

@@ -126,8 +126,8 @@ protected:
     MSelectionList m_allOtherTransformNodesList;
     MObject m_selectedSweeneyNode;
 
-    MSelectionList m_peltNodeList;
     MObject m_selectedPeltNode;
+    MObject m_selectedPeltMeshNode;
 
     static MStringArray m_results;
 

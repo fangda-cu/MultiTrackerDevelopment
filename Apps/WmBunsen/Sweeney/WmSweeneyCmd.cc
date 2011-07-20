@@ -416,37 +416,31 @@ void WmSweeneyCmd::createSweeneySubsetNode()
 MStatus WmSweeneyCmd::createClumpCenterLinesFromPelt()
 {
     // First let's check that the right nodes have been previously selected.
-    if ( m_selectedSweeneyNode == MObject::kNullObj || m_selectedPeltNode == MObject::kNullObj )
+    if ( m_selectedSweeneyNode == MObject::kNullObj || ( m_selectedPeltNode == MObject::kNullObj
+            && m_selectedPeltMeshNode == MObject::kNullObj ) )
     {
-        MGlobal::displayError( "Please select a wmSweeney node and a wmPeltnode" );
+        MGlobal::displayError( "Please select a wmSweeney node and a wmPelt/wmPeltMesh node" );
         return MStatus::kFailure;
     }
-    // TODO: allow the user to select the mesh directly if it already exists.
 
-    // Get the mesh from the peltNode.
     MObject peltMesh;
-    if ( MFnDependencyNode( m_selectedPeltNode ).findPlug( "meshOut" ).getValue( peltMesh )
+    if ( m_selectedPeltMeshNode != MObject::kNullObj )
+        peltMesh = m_selectedPeltMeshNode;
+    else if ( MFnDependencyNode( m_selectedPeltNode ).findPlug( "meshOut" ).getValue( peltMesh ) // Get the mesh from the peltNode.
             == MStatus::kFailure )
     {
-        MGlobal::displayError(
-                "The selected wmPeltnode doesn't have an output mesh. It should have been created with -mo" );
+        MGlobal::displayError( "The selected wmPeltnode is not valid" );
         return MStatus::kFailure;
     }
-    // TODO: create the mesh if a mesh-less peltNode has been selected.
 
     // Extract the mesh centres.
-    MItMeshPolygon polyIt( peltMesh );
     MPointArray centralArr;
     for ( MItMeshPolygon polyIt( peltMesh ); !polyIt.isDone(); polyIt.next() )
-    {
-        MPoint center = polyIt.center( MSpace::kWorld );
-        std::cout << "Found centre point: " << center << '\n';
-        centralArr.append( center );
-    }
+        centralArr.append( polyIt.center( MSpace::kWorld ) );
 
     MFnDependencyNode sweeneyFn( m_selectedSweeneyNode );
-    WmSweeneyNode* sweeneyNode = ( WmSweeneyNode* ) sweeneyFn.userNode();
-    sweeneyNode->createClumpCenterLinesFromPelt(centralArr);
+    WmSweeneyNode* sweeneyNode = dynamic_cast<WmSweeneyNode*> ( sweeneyFn.userNode() );
+    sweeneyNode->createClumpCenterLinesFromPelt( centralArr );
 
     return MStatus::kSuccess;
 }
@@ -511,6 +505,12 @@ void WmSweeneyCmd::getNodes( MSelectionList i_opt_nodes )
         if ( childPath.apiType() == MFn::kMesh )
         {
             mObj = childPath.node();
+            if ( MFnDependencyNode( mObj ).name().substring( 0, 11 ) == "wmPeltOutput" )
+            {
+                m_selectedPeltMeshNode = childPath.node();
+                std::cerr << "Thank you for selecting a wmPelt mesh\n";
+            }
+
             m_meshList.add( childPath, mObj, false );
         }
         else
@@ -531,14 +531,12 @@ void WmSweeneyCmd::getNodes( MSelectionList i_opt_nodes )
             {
                 mObj = childPath.node();
                 m_selectedSweeneyNode = mObj;
-
                 m_sweeneyNodeList.add( childPath, mObj, false );
             }
             else if ( nodeFn.typeName() == "wmPelt" )
             {
-                mObj = childPath.node();
-                m_selectedPeltNode = mObj;
-                m_peltNodeList.add( childPath, mObj, false );
+                m_selectedPeltNode = childPath.node();
+                m_selectedPeltMeshNode = MObject::kNullObj; // If we are selecting a wmPelt node, this means we want to use all points so let's disable the wmPelt output mesh selection. Otherwise, it will override the wmPelt itself.
             }
             else
             {

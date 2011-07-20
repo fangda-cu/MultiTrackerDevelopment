@@ -5,7 +5,7 @@ using namespace BASim;
 
 WmSweeneyRodManager::WmSweeneyRodManager()
 {
-    m_bridsonStepper = NULL;
+    m_bAGroomingStepper = NULL;
     m_rods.clear();
     m_rodTimeSteppers.clear();
     m_triangleMeshes.clear();
@@ -15,7 +15,7 @@ WmSweeneyRodManager::WmSweeneyRodManager()
 
 WmSweeneyRodManager::~WmSweeneyRodManager()
 {
-    delete m_bridsonStepper;
+    delete m_bAGroomingStepper;
 }
 
 void WmSweeneyRodManager::setRodsDrawDebugging( const bool i_shouldDrawStrands,
@@ -110,7 +110,7 @@ void WmSweeneyRodManager::addCollisionMesh( BASim::TriangleMesh* i_triangleMesh,
 
 void WmSweeneyRodManager::setUseKineticDamping( bool i_useKinecticDamping )
 {
-    m_bridsonStepper->setUseKineticDamping( i_useKinecticDamping );
+    m_bAGroomingStepper->setUseKineticDamping( i_useKinecticDamping );
 }
 
 void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const double i_startTime,
@@ -176,7 +176,7 @@ void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const d
      perfParams.m_implicit_stiffness        = 1.0;
      */
 
-    m_bridsonStepper
+    m_bAGroomingStepper
             = new BAGroomingStepper( m_rods, m_triangleMeshes, m_scriptingControllers,
                     m_rodTimeSteppers, i_timeStep, i_startTime, -1, perfParams, m_levelSets,
                     i_numberOfClumps );
@@ -185,12 +185,12 @@ void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const d
 void WmSweeneyRodManager::updateSolverSettings( double i_atol, double i_stol, double i_rtol,
         double i_inftol, int i_numLineSearchIters, double i_penaltyStiffness )
 {
-    std::cout << "Updating solver settings:" << std::endl;
-    std::cout << "Atol  " << i_atol << std::endl;
-    std::cout << "Stol  " << i_stol << std::endl;
-    std::cout << "Rtol  " << i_rtol << std::endl;
-    std::cout << "Inftol  " << i_inftol << std::endl;
-    std::cout << "Num of Line Search Iterations " << i_numLineSearchIters << std::endl;
+  //  std::cout << "Updating solver settings:" << std::endl;
+  //  std::cout << "Atol  " << i_atol << std::endl;
+  //  std::cout << "Stol  " << i_stol << std::endl;
+  //  std::cout << "Rtol  " << i_rtol << std::endl;
+  //  std::cout << "Inftol  " << i_inftol << std::endl;
+  //  std::cout << "Num of Line Search Iterations " << i_numLineSearchIters << std::endl;
 
     for ( size_t r = 0; r < m_rods.size(); ++r )
     {
@@ -205,30 +205,30 @@ void WmSweeneyRodManager::updateSolverSettings( double i_atol, double i_stol, do
         solver.set_maxlsit( i_numLineSearchIters );
     }
 
-    assert( m_bridsonStepper );
-    m_bridsonStepper->setPenaltyStiffness( i_penaltyStiffness );
+    assert( m_bAGroomingStepper );
+    m_bAGroomingStepper->setPenaltyStiffness( i_penaltyStiffness );
 }
 
 void WmSweeneyRodManager::setClumpingParameters( const double charge, const double power,
         const double dist, const std::vector<double> vertexPowerMap ) const
 {
-    m_bridsonStepper->setClumpingParameters( charge, power, dist, vertexPowerMap );
+    m_bAGroomingStepper->setClumpingParameters( charge, power, dist, vertexPowerMap );
 }
 
 void WmSweeneyRodManager::getClumpingParameters( double& charge, double& power, double& dist,
         std::vector<double>& vertexPowerMap ) const
 {
-    m_bridsonStepper->getClumpingParameters( charge, power, dist, vertexPowerMap );
+    m_bAGroomingStepper->getClumpingParameters( charge, power, dist, vertexPowerMap );
 }
 
 void WmSweeneyRodManager::takeStep()
 {
     // Check if anything has actually been initialised yet. We may still be being loaded by Maya.
-    if ( m_bridsonStepper == NULL )
+    if ( m_bAGroomingStepper == NULL )
         return;
 
     // Force self collisions to be off whilst testing
-    m_bridsonStepper->skipRodRodCollisions( true );
+    m_bAGroomingStepper->skipRodRodCollisions( true );
 
     // Ensure the rod stays stuck on the head
     // Set boundary conditions, they don't need set every frame as the rods don't move but
@@ -254,7 +254,7 @@ void WmSweeneyRodManager::takeStep()
         boundary->setDesiredEdgeAngle( 0, rod->getTheta( 0 ) );
     }
 
-    m_bridsonStepper->execute();
+    m_bAGroomingStepper->execute();
 }
 
 void WmSweeneyRodManager::drawAllRods()
@@ -290,5 +290,5 @@ void WmSweeneyRodManager::createClumpCenterLinesFromPelt( const MPointArray& cen
         centerRoots.segment<3> ( 3 * i ) = Vec3d( point[0], point[1], point[2] );
     }
 
-    m_bridsonStepper->setWmPeltPoints( centerRoots );
+    m_bAGroomingStepper->setWmPeltPoints( centerRoots );
 }
