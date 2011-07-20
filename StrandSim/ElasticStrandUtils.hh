@@ -14,6 +14,8 @@
 namespace strandsim
 {
 
+static const Scalar SMALL_NUMBER = 1.0e-12;
+
 inline Scalar square(const Scalar x)
 {
     return x * x;
@@ -22,12 +24,12 @@ inline Scalar square(const Scalar x)
 template<typename NormableT>
 inline bool isClose(const NormableT& x1, const NormableT& x2)
 {
-    return (x1 - x2).norm() < std::numeric_limits<Scalar>::epsilon();
+    return (x1 - x2).norm() < SMALL_NUMBER;
 }
 
 inline bool isSmall(Scalar x)
 {
-    return fabs(x) < std::numeric_limits<Scalar>::epsilon();
+    return fabs(x) < SMALL_NUMBER;
 }
 
 template<typename MatrixT>

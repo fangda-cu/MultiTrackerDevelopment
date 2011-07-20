@@ -1,20 +1,20 @@
 /*
- * BendingForce.hh
+ * TwistingForce.hh
  *
  *  Created on: 12/07/2011
  *      Author: jaubry
  */
 
-#ifndef BENDINGFORCE_HH_
-#define BENDINGFORCE_HH_
+#ifndef TWISTINGFORCE_HH_
+#define TWISTINGFORCE_HH_
 
 #include "ForceBase.hh"
-#include "ElasticStrand.hh"
+#include "../ElasticStrand.hh"
 
 namespace strandsim
 {
 
-class BendingForce: public ForceBase<ElasticStrand>
+class TwistingForce: public ForceBase<ElasticStrand>
 {
 public:
     static const IndexType s_first = 1; // The first index on which this force can apply
@@ -25,8 +25,8 @@ public:
     typedef ElasticStrand::ForceVectorType ForceVectorType;
     typedef ElasticStrand::JacobianMatrixType JacobianMatrixType;
 
-    BendingForce();
-    virtual ~BendingForce();
+    TwistingForce();
+    virtual ~TwistingForce();
 
     static Scalar localEnergy(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx);
     static LocalForceType localForce(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx);
@@ -38,4 +38,4 @@ public:
 
 }
 
-#endif /* BENDINGFORCE_HH_ */
+#endif /* TWISTINGFORCE_HH_ */

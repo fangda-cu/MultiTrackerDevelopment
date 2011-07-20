@@ -6,7 +6,7 @@
  */
 
 #include "ForceAccumulator.hh"
-#include "ElasticStrand.hh"
+#include "../ElasticStrand.hh"
 #include "StretchingForce.hh"
 #include "BendingForce.hh"
 #include "TwistingForce.hh"

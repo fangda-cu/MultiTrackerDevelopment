@@ -12,7 +12,7 @@
 #include "StrandGeometry.hh"
 #include "ElasticStrandUtils.hh"
 #include "BandMatrix.hh"
-#include "ForceAccumulator.hh"
+#include "Forces/ForceAccumulator.hh"
 #include "ElasticStrandParameters.hh"
 #include "Typelist.hh"
 

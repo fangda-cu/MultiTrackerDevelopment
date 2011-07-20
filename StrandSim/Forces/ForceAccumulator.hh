@@ -8,8 +8,8 @@
 #ifndef FORCEACCUMULATOR_HH_
 #define FORCEACCUMULATOR_HH_
 
-#include "Definitions.hh"
-#include "BandMatrix.hh"
+#include "../Definitions.hh"
+#include "../BandMatrix.hh"
 
 namespace strandsim
 {

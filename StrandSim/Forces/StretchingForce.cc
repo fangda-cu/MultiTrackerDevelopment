@@ -6,7 +6,6 @@
  */
 
 #include "StretchingForce.hh"
-#include "ElasticStrand.hh"
 
 namespace strandsim
 {

@@ -7,54 +7,54 @@ WITHKITS += dev/Figaro/work/jaubry-work
 
 lib_h:
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C BASim USEMAYA=1 $@
-		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C strandSim USEMAYA=1 $@
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C StrandSim USEMAYA=1 $@
 
 lib_d lib_o lib: lib_h
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C BASim USEMAYA=1 $@
-		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C strandSim USEMAYA=1 $@
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C StrandSim USEMAYA=1 $@
 		
 lib_fresh lib_zap lib_clean lib_wipe:
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C BASim USEMAYA=1 $@		
-		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C strandSim USEMAYA=1 $@
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C StrandSim USEMAYA=1 $@
 
 all:	lib
-		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C strandSim
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C StrandSim
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen/icons
 
 dbg:	lib_d
-		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C strandSim  $@
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C StrandSim  $@
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator  $@
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen  $@
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen/icons
 
 opt:	lib_o
-		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C strandSim  $@
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C StrandSim  $@
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator  $@
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen  $@
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen/icons $@
 
 fresh:	lib_fresh
-		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C strandSim  fresh
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C StrandSim  fresh
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator  fresh
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen  fresh
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen/icons fresh
 
 zap:	lib_zap
-		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C strandSim  zap
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C StrandSim  zap
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator zap
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen zap
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen/icons zap
 
 clean:	lib_clean
-		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C strandSim  clean
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C StrandSim  clean
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator  clean
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen  clean
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen/icons clean
 
 wipe:	lib_wipe
-		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C strandSim  wipe
+		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C StrandSim  wipe
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/BASimulator  wipe
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen  wipe
 		$(MAKE) LINUX_COMPILER=$(LINUX_COMPILER) -C Apps/WmBunsen/icons wipe

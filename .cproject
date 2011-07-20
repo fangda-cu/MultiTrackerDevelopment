@@ -9,28 +9,20 @@
 				<extensions>
 					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.MakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.ICCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.VCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 				<configuration artifactName="Figaro" buildProperties="" description="" id="intel.toolchain.linux.ipf.exe.dbg.2049012133.24790594_11.1.0" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="intel.toolchain.linux.ipf.exe.dbg.2049012133.24790594._11.1.0" name="/" resourcePath="">
-						<toolChain id="intel.toolchain.linux.ipf.exe.dbg.1521862831_11.1.0" name="intel.toolchain.linux.ipf.exe.dbg_11.1.0" superClass="intel.toolchain.linux.ipf.exe.dbg_11.1.0">
-							<targetPlatform archList="ia64" binaryParser="org.eclipse.cdt.core.ELF" id="intel.platform.linux.ipf.exe.dbg.363153158_11.1.0" name="Platform.Executable.Debug" osList="linux" superClass="intel.platform.linux.ipf.exe.dbg_11.1.0"/>
-							<builder arguments="-j8" buildPath="${workspace_loc:/Figaro}" command="make" id="intel.builder.linux.ipf.exe.dbg.804819920_11.1.0" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Intel Builder" superClass="intel.builder.linux.ipf.exe.dbg_11.1.0"/>
-							<tool id="intel.cpp.compilestep.linux.ipf.exe.dbg.934316969_11.1.0" name="Intel IA-64 C++ Compiler" superClass="intel.cpp.compilestep.linux.ipf.exe.dbg_11.1.0">
-								<inputType id="intel.cpp.compilestep.input.1744988095" superClass="intel.cpp.compilestep.input"/>
-							</tool>
-							<tool id="intel.c.compilestep.linux.ipf.exe.dbg.197031035_11.1.0" name="Intel IA-64 C Compiler" superClass="intel.c.compilestep.linux.ipf.exe.dbg_11.1.0">
-								<inputType id="intel.c.compilestep.input.706694068" superClass="intel.c.compilestep.input"/>
-							</tool>
-							<tool id="intel.c.linkstep.linux.ipf.exe.dbg.2026629910_11.1.0" name="Intel IA-64 C Linker" superClass="intel.c.linkstep.linux.ipf.exe.dbg_11.1.0"/>
-							<tool id="intel.cpp.linkstep.linux.ipf.exe.dbg.1229779463_11.1.0" name="Intel IA-64 C++ Linker" superClass="intel.cpp.linkstep.linux.ipf.exe.dbg_11.1.0">
-								<inputType id="intel.linkstep.input.412618628" superClass="intel.linkstep.input">
-									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
-									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
-								</inputType>
-							</tool>
+						<toolChain id="intel.toolchain.linux.ipf.exe.dbg.1521862831_11.1.0" name="intel.toolchain.linux.ipf.exe.dbg_11.1.0">
+							<targetPlatform archList="ia64" binaryParser="org.eclipse.cdt.core.ELF" id="intel.platform.linux.ipf.exe.dbg.363153158_11.1.0" name="Platform.Executable.Debug" osList="linux"/>
+							<builder arguments="-j8" buildPath="${workspace_loc:/Figaro}" command="make" id="intel.builder.linux.ipf.exe.dbg.804819920_11.1.0" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Intel Builder"/>
 						</toolChain>
 					</folderInfo>
 				</configuration>
@@ -412,28 +404,20 @@
 				<extensions>
 					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.MakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.ICCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.VCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 				<configuration artifactName="Figaro" buildProperties="" description="Debug + Optimized" id="intel.toolchain.linux.ipf.exe.dbg.2049012133.24790594.1478158211_11.1.0" name="all" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="intel.toolchain.linux.ipf.exe.dbg.2049012133.24790594.1478158211._11.1.0" name="/" resourcePath="">
-						<toolChain id="intel.toolchain.linux.ipf.exe.dbg.904846533_11.1.0" name="intel.toolchain.linux.ipf.exe.dbg_11.1.0" superClass="intel.toolchain.linux.ipf.exe.dbg_11.1.0">
-							<targetPlatform archList="ia64" binaryParser="org.eclipse.cdt.core.ELF" id="intel.platform.linux.ipf.exe.dbg.929670045_11.1.0" name="Platform.Executable.Debug" osList="linux" superClass="intel.platform.linux.ipf.exe.dbg_11.1.0"/>
-							<builder arguments="all" buildPath="${workspace_loc:/Figaro}" command="make" id="intel.builder.linux.ipf.exe.dbg.175156057_11.1.0" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Intel Builder" superClass="intel.builder.linux.ipf.exe.dbg_11.1.0"/>
-							<tool id="intel.cpp.compilestep.linux.ipf.exe.dbg.2147127854_11.1.0" name="Intel IA-64 C++ Compiler" superClass="intel.cpp.compilestep.linux.ipf.exe.dbg_11.1.0">
-								<inputType id="intel.cpp.compilestep.input.98387994" superClass="intel.cpp.compilestep.input"/>
-							</tool>
-							<tool id="intel.c.compilestep.linux.ipf.exe.dbg.2031482313_11.1.0" name="Intel IA-64 C Compiler" superClass="intel.c.compilestep.linux.ipf.exe.dbg_11.1.0">
-								<inputType id="intel.c.compilestep.input.1915021113" superClass="intel.c.compilestep.input"/>
-							</tool>
-							<tool id="intel.c.linkstep.linux.ipf.exe.dbg.1151800959_11.1.0" name="Intel IA-64 C Linker" superClass="intel.c.linkstep.linux.ipf.exe.dbg_11.1.0"/>
-							<tool id="intel.cpp.linkstep.linux.ipf.exe.dbg.1817273804_11.1.0" name="Intel IA-64 C++ Linker" superClass="intel.cpp.linkstep.linux.ipf.exe.dbg_11.1.0">
-								<inputType id="intel.linkstep.input.258124538" superClass="intel.linkstep.input">
-									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
-									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
-								</inputType>
-							</tool>
+						<toolChain id="intel.toolchain.linux.ipf.exe.dbg.904846533_11.1.0" name="intel.toolchain.linux.ipf.exe.dbg_11.1.0">
+							<targetPlatform archList="ia64" binaryParser="org.eclipse.cdt.core.ELF" id="intel.platform.linux.ipf.exe.dbg.929670045_11.1.0" name="Platform.Executable.Debug" osList="linux"/>
+							<builder arguments="all" buildPath="${workspace_loc:/Figaro}" command="make" id="intel.builder.linux.ipf.exe.dbg.175156057_11.1.0" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Intel Builder"/>
 						</toolChain>
 					</folderInfo>
 				</configuration>
@@ -779,6 +763,34 @@
 						</scannerInfoProvider>
 					</profile>
 				</scannerConfigBuildInfo>
+			</storageModule>
+			<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets">
+				<buildTargets>
+					<target name="dbg" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+						<buildCommand>make</buildCommand>
+						<buildArguments>dbg</buildArguments>
+						<buildTarget>dbg</buildTarget>
+						<stopOnError>true</stopOnError>
+						<useDefaultCommand>true</useDefaultCommand>
+						<runAllBuilders>true</runAllBuilders>
+					</target>
+					<target name="opt" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+						<buildCommand>make</buildCommand>
+						<buildArguments>dbg</buildArguments>
+						<buildTarget>opt</buildTarget>
+						<stopOnError>true</stopOnError>
+						<useDefaultCommand>true</useDefaultCommand>
+						<runAllBuilders>true</runAllBuilders>
+					</target>
+					<target name="all" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+						<buildCommand>make</buildCommand>
+						<buildArguments/>
+						<buildTarget>all</buildTarget>
+						<stopOnError>true</stopOnError>
+						<useDefaultCommand>true</useDefaultCommand>
+						<runAllBuilders>true</runAllBuilders>
+					</target>
+				</buildTargets>
 			</storageModule>
 		</cconfiguration>
 	</storageModule>

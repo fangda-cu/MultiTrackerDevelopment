@@ -30,36 +30,40 @@ LIB1       := wStrandSim
 LIB1_CF    += -DBUILD=${BUILD} -DWETA -UNDEBUG
 LIB1_CF    += -w1
 
-LIB1_H += ElasticStrandUtils.hh
-LIB1_H += ElasticStrandParameters.hh
-LIB1_H += StrandStepManager.hh
-LIB1_H += BandMatrix.hh
-LIB1_H += StepperBase.hh
-LIB1_H += ElasticStrandStaticStepper.hh
-LIB1_H += StrandBase.hh
-LIB1_H += ElasticStrand.hh
-LIB1_H += Definitions.hh
-LIB1_H += ForceBase.hh
-LIB1_H += StretchingForce.hh
-LIB1_H += BendingForce.hh
-LIB1_H += TwistingForce.hh
-LIB1_H += ForceAccumulator.hh
-LIB1_H += StrandGeometry.hh
-LIB1_H += LinearSolver.hh
-LIB1_H += GravitationForce.hh
+LIB1_HDIR := .
 
-LIB1_S += StrandStepManager.cc
-LIB1_S += StrandBase.cc
-LIB1_S += ElasticStrandStaticStepper.cc
+LIB1_H += BandMatrix.hh
+LIB1_H += Definitions.hh
+LIB1_H += ElasticStrand.hh
+LIB1_H += ElasticStrandParameters.hh
+LIB1_H += ElasticStrandStaticStepper.hh
+LIB1_H += ElasticStrandUtils.hh
+LIB1_H += Forces/BendingForce.hh
+LIB1_H += Forces/ForceAccumulator.hh
+LIB1_H += Forces/ForceBase.hh
+LIB1_H += Forces/GravitationForce.hh
+LIB1_H += Forces/StretchingForce.hh
+LIB1_H += Forces/TwistingForce.hh
+LIB1_H += LinearSolver.hh
+LIB1_H += StepperBase.hh
+LIB1_H += StrandBase.hh
+LIB1_H += StrandGeometry.hh
+LIB1_H += StrandStepManager.hh
+
+LIB1_SDIR := .
+
 LIB1_S += ElasticStrand.cc
-LIB1_S += ForceBase.cc
-LIB1_S += StretchingForce.cc
-LIB1_S += BendingForce.cc
-LIB1_S += TwistingForce.cc
-LIB1_S += ForceAccumulator.cc
-LIB1_S += StrandGeometry.cc
+LIB1_S += ElasticStrandStaticStepper.cc
+LIB1_S += Forces/BendingForce.cc
+LIB1_S += Forces/ForceAccumulator.cc
+LIB1_S += Forces/ForceBase.cc
+LIB1_S += Forces/GravitationForce.cc
+LIB1_S += Forces/StretchingForce.cc
+LIB1_S += Forces/TwistingForce.cc
 LIB1_S += LinearSolver.cc
-LIB1_S += GravitationForce.cc
+LIB1_S += StrandBase.cc
+LIB1_S += StrandGeometry.cc
+LIB1_S += StrandStepManager.cc
 
 
 

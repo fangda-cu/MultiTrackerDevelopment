@@ -8,7 +8,7 @@
 #ifndef FORCE_HH_
 #define FORCE_HH_
 
-#include "Definitions.hh"
+#include "../Definitions.hh"
 
 namespace strandsim
 {

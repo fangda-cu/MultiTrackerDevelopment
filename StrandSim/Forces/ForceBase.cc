@@ -6,7 +6,7 @@
  */
 
 #include "ForceBase.hh"
-#include "ElasticStrand.hh"
+#include "../ElasticStrand.hh"
 
 namespace strandsim
 {

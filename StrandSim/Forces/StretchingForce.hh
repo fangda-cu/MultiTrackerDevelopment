@@ -1,32 +1,32 @@
 /*
- * TwistingForce.hh
+ * StretchingForce.hh
  *
  *  Created on: 12/07/2011
  *      Author: jaubry
  */
 
-#ifndef TWISTINGFORCE_HH_
-#define TWISTINGFORCE_HH_
+#ifndef STRETCHINGFORCE_HH_
+#define STRETCHINGFORCE_HH_
 
 #include "ForceBase.hh"
-#include "ElasticStrand.hh"
+#include "../ElasticStrand.hh"
 
 namespace strandsim
 {
 
-class TwistingForce: public ForceBase<ElasticStrand>
+class StretchingForce: public ForceBase<ElasticStrand>
 {
 public:
-    static const IndexType s_first = 1; // The first index on which this force can apply
+    static const IndexType s_first = 0; // The first index on which this force can apply
     static const IndexType s_last = 1; // The last index (counting from the end)
 
-    typedef Eigen::Matrix<Scalar, 11, 1> LocalForceType;
-    typedef Eigen::Matrix<Scalar, 11, 11> LocalJacobianType;
+    typedef Eigen::Matrix<Scalar, 6, 1> LocalForceType;
+    typedef Eigen::Matrix<Scalar, 6, 6> LocalJacobianType;
     typedef ElasticStrand::ForceVectorType ForceVectorType;
     typedef ElasticStrand::JacobianMatrixType JacobianMatrixType;
 
-    TwistingForce();
-    virtual ~TwistingForce();
+    StretchingForce();
+    virtual ~StretchingForce();
 
     static Scalar localEnergy(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx);
     static LocalForceType localForce(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx);
@@ -38,4 +38,4 @@ public:
 
 }
 
-#endif /* TWISTINGFORCE_HH_ */
+#endif /* STRETCHINGFORCE_HH_ */
