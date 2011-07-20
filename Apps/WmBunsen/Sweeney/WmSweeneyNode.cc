@@ -185,11 +185,10 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 		// Set Debug Drawing
 		if ( m_rodManager != NULL )
 		{
-		    // TODO (sainsley) : fix this to work with subsets
-		    // when the user hides a subset, we should hide that portion of the rods
-		    bool shouldDrawOnlySelected = i_dataBlock.inputValue( ia_shouldDrawOnlySelected ).asBool();
+		    // TODO (sainsley) : remove all of this logic
+		    // bool shouldDrawOnlySelected = i_dataBlock.inputValue( ia_shouldDrawOnlySelected ).asBool();
 		    m_rodManager->setRodsDrawDebugging( m_shouldDrawStrands, m_shouldDrawRootFrames,
-		            m_shouldDrawVelocity, shouldDrawOnlySelected );
+		            m_shouldDrawVelocity );
 		}
 
 		if ( m_currentTime == m_startTime )
@@ -211,11 +210,14 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 
 			initialiseRodFromBarberShopInput( i_dataBlock );
 
-			// Note : since we only do this at the beginning of the sim
-			/// we need a method to explicitly notify sweeney of the
-			// new subset and append it in case a subset is made mid-sim
-			subsetNodes( m_subsetNodes );
-			computeSubsetRodMapping( i_dataBlock );
+			if ( m_rodManager != NULL )
+            {
+			    // Note : since we only do this at the beginning of the sim
+                /// we need a method to explicitly notify sweeney of the
+                // new subset and append it in case a subset is made mid-sim
+                subsetNodes( m_rodManager->m_subsetNodes );
+                computeSubsetRodMapping( i_dataBlock );
+            }
 
 		}
 		else
@@ -332,7 +334,8 @@ void WmSweeneyNode::updateRodParameters( const int& rodIdx, const bool& update_a
         // TODO (sainsley) : allow rod resolution to be controlled within subsets
         // global for now
 
-        WmSweeneySubsetNode* subset = m_subsetNodes[ current_rod->getSubsetIdx() ];
+        WmSweeneySubsetNode* subset =
+                m_rodManager->m_subsetNodes[ current_rod->getSubsetIdx() ];
 
         i_length = subset->getRodLength( );
         i_rodRadius = subset->getRodRadius( );
@@ -1741,7 +1744,7 @@ MStatus WmSweeneyNode::subsetNodes( std::vector<WmSweeneySubsetNode*>& o_subsetN
 // pass MDataBlock here
 void WmSweeneyNode::computeSubsetRodMapping( MDataBlock& i_dataBlock )
 {
-    if ( m_subsetNodes.size() < 1 )
+    if ( m_rodManager->m_subsetNodes.size() < 1 )
     {
         return;
     }
@@ -1762,9 +1765,9 @@ void WmSweeneyNode::computeSubsetRodMapping( MDataBlock& i_dataBlock )
 
     // first pass : map mesh faces indices back to WmSweeneySubsetNodes
     std::map<int, int> faceIdxToSubsetIdx;
-    for ( size_t i = 0; i < m_subsetNodes.size(); ++i )
+    for ( size_t i = 0; i < m_rodManager->m_subsetNodes.size(); ++i )
     {
-        MIntArray faceIndices = m_subsetNodes[ i ]->getScalpFaceIndices( );
+        MIntArray faceIndices = m_rodManager->m_subsetNodes[ i ]->getScalpFaceIndices( );
         for ( int ii = 0; ii < faceIndices.length(); ++ii )
         {
 

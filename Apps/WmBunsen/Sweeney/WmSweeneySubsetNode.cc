@@ -67,6 +67,36 @@ WmSweeneySubsetNode::WmSweeneySubsetNode()
 {
 }
 
+bool WmSweeneySubsetNode::isVisible( ) const
+{
+    MStatus status;
+
+    MFnDagNode sweeneySubsetNode = MFnDagNode( thisMObject( ) );
+    MFnDagNode sweeneySubsetTransformNode = MFnDagNode( sweeneySubsetNode.parent(0, &status ) );
+
+    CHECK_MSTATUS( status );
+
+    MPlug plug = sweeneySubsetTransformNode.findPlug( "visibility", true, &status );
+    if ( !status )
+    {
+        status.perror( "cannot locate visibility plug for WmSweeneySubsetNode" );
+        return false;
+    }
+
+    bool value = plug.asBool();
+
+    plug = sweeneySubsetNode.findPlug( "visibility", true, &status );
+    if ( !status )
+    {
+        status.perror( "cannot locate visibility plug for WmSweeneySubsetNode" );
+        return false;
+    }
+
+    value = value && plug.asBool();
+
+    return value;
+}
+
 void WmSweeneySubsetNode::setScalpFaceIndices( const MIntArray i_indices )
 {
     cout << "WmSweeneySubsetNode::setScalpFaceIndices::setting indices for " << i_indices.length()
@@ -419,7 +449,7 @@ bool WmSweeneySubsetNode::getIsFixCurlCount( MDataBlock* i_dataBlock ) const
 {
     MStatus status;
 
-    int value;
+    bool value;
     if ( i_dataBlock )
     {
         value = i_dataBlock->inputValue( ia_fixCurlCount, & status ).asBool();
@@ -438,7 +468,7 @@ bool WmSweeneySubsetNode::getIsCurlInXFrame( MDataBlock* i_dataBlock ) const
 {
     MStatus status;
 
-    int value;
+    bool value;
     if ( i_dataBlock )
     {
        value = i_dataBlock->inputValue( ia_curlInXFrame, & status ).asBool();
@@ -457,7 +487,7 @@ bool WmSweeneySubsetNode::getIsPreserveLengthVariation( MDataBlock* i_dataBlock 
 {
     MStatus status;
 
-    int value;
+    bool value;
     if ( i_dataBlock )
     {
        value = i_dataBlock->inputValue( ia_preserveLengthVariation, & status ).asBool();
@@ -476,7 +506,7 @@ bool WmSweeneySubsetNode::getIsRodDamping( MDataBlock* i_dataBlock ) const
 {
     MStatus status;
 
-    int value;
+    bool value;
     if ( i_dataBlock )
     {
        value = i_dataBlock->inputValue( ia_rodDamping, & status ).asBool();
@@ -708,24 +738,6 @@ void WmSweeneySubsetNode::getSolverSettings(
     const MPlug& i_plug, 
     MDataBlock& i_dataBlock )
 {
-    /*MStatus status;
-
-    if ( i_plug ==  oa_someOutput )
-    {
-        MDataHandle someInputDataHandle = i_dataBlock.inputValue( ia_someInput, & status );
-        CHECK_MSTATUS( status );
-        const int i = someInputDataHandle.asInt();
-
-        const int o = i * 12345678;
-        MDataHandle someOutputDataHandle = i_dataBlock.outputValue( oa_someOutput, & status );
-        CHECK_MSTATUS( status );
-        someOutputDataHandle.set( o );
-        CHECK_MSTATUS( status );
-
-        status = i_dataBlock.setClean( i_plug );
-        CHECK_MSTATUS( status );
-    }*/
-
     // compute logic handled in WmSweeneySubsetNode
     return MStatus::kSuccess;
 }

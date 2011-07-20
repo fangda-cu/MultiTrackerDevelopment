@@ -51,7 +51,6 @@
 #include <sys/stat.h>
 
 #include "WmSweeneyRodManager.hh"
-#include "WmSweeneySubsetNode.hh"
 
 class WmSweeneyNode : public MPxLocatorNode 
 {
@@ -231,8 +230,6 @@ private:
 
     // strand lengths from barbershop
     std::vector<double> m_strandLengths;
-
-    std::vector<WmSweeneySubsetNode*> m_subsetNodes;
 
     unsigned int m_numberOfVerticesPerStrand;
 };

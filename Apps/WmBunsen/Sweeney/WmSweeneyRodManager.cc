@@ -11,10 +11,6 @@ WmSweeneyRodManager::WmSweeneyRodManager()
     m_triangleMeshes.clear();
     m_scriptingControllers.clear();
     m_rodRenderers.clear();
-
-    m_selectedRods.clear();
-    m_activeRenderers.clear();
-    m_renderOnlySelected = false;
 }
 
 WmSweeneyRodManager::~WmSweeneyRodManager()
@@ -23,10 +19,8 @@ WmSweeneyRodManager::~WmSweeneyRodManager()
 }
 
 void WmSweeneyRodManager::setRodsDrawDebugging( const bool i_shouldDrawStrands,
-        const bool i_shouldDrawRootFrames, const bool i_shouldDrawVelocity,
-        const bool i_renderOnlySelected )
+        const bool i_shouldDrawRootFrames, const bool i_shouldDrawVelocity )
 {
-    m_renderOnlySelected = i_renderOnlySelected;
 
     for ( size_t r = 0; r < m_rodRenderers.size(); ++r )
     {
@@ -227,18 +221,6 @@ void WmSweeneyRodManager::getClumpingParameters( double& charge, double& power, 
     m_bridsonStepper->getClumpingParameters( charge, power, dist, vertexPowerMap );
 }
 
-void WmSweeneyRodManager::resetSelectedRods()
-{
-    m_selectedRods.clear();
-    m_activeRenderers.clear();
-}
-
-void WmSweeneyRodManager::selectRod( int rodIdx )
-{
-    m_selectedRods.push_back( m_rods[rodIdx] );
-    m_activeRenderers.push_back( m_rodRenderers[rodIdx] );
-}
-
 void WmSweeneyRodManager::takeStep()
 {
     // Check if anything has actually been initialised yet. We may still be being loaded by Maya.
@@ -277,17 +259,20 @@ void WmSweeneyRodManager::takeStep()
 
 void WmSweeneyRodManager::drawAllRods()
 {
-    if ( m_renderOnlySelected )
+    bool renderRod = true;
+
+    for ( size_t r = 0; r < m_rodRenderers.size(); ++r )
     {
-        cout << " RENDERING SELECTED RODS " << m_activeRenderers.size() << endl;
-        for ( size_t r = 0; r < m_activeRenderers.size(); ++r )
+        renderRod = true;
+
+        int subsetIdx = m_rods[r]->getSubsetIdx();
+
+        if ( subsetIdx >= 0 )
         {
-            m_activeRenderers[r]->render();
+            renderRod = m_subsetNodes[ subsetIdx ]->isVisible();
         }
-    }
-    else
-    {
-        for ( size_t r = 0; r < m_rodRenderers.size(); ++r )
+
+        if ( renderRod )
         {
             m_rodRenderers[r]->render();
         }

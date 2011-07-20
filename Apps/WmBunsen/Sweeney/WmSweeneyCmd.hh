@@ -83,7 +83,6 @@ protected:
     void createSweeneySubsetNode();
     MStatus createClumpCenterLinesFromPelt();
     void addCollisionMeshes();
-    //void setSimulatedSubset();
     void setSimulateAll();
 
 public:

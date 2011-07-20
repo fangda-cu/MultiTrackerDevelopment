@@ -5,8 +5,6 @@
 #include <maya/M3dView.h>
 #include <maya/MDagPath.h>
 
-#include "WmSweeneyRodManager.hh"
-
 
 class WmSweeneySubsetNode : public MPxLocatorNode
 {
@@ -52,6 +50,9 @@ class WmSweeneySubsetNode : public MPxLocatorNode
 
     MIntArray getScalpFaceIndices( MDataBlock* i_dataBlock = NULL ) const;
 
+    // Visibility
+    bool isVisible( ) const;
+
     // Rod property accessors
 
     double getRodLength( MDataBlock* i_dataBlock = NULL ) const;
@@ -80,6 +81,7 @@ class WmSweeneySubsetNode : public MPxLocatorNode
             double& i_stol, double& i_atol, double& i_rtol,
             double& i_inftol, int& numLineSearchIters,
             MDataBlock* i_dataBlock = NULL );
+
 
     //////////////////////////////////////////////////////
     // 
