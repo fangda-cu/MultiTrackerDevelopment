@@ -92,7 +92,6 @@ using namespace BASim;
 /* static */MObject WmSweeneyNode::ia_shouldDrawStrands;
 /* static */MObject WmSweeneyNode::ia_shouldDrawRootFrames;
 /* static */MObject WmSweeneyNode::ia_shouldDrawVelocity;
-/* static */MObject WmSweeneyNode::ia_shouldDrawOnlySelected;
 
 WmSweeneyNode::WmSweeneyNode() :
     m_rodManager(NULL)
@@ -185,8 +184,6 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 		// Set Debug Drawing
 		if ( m_rodManager != NULL )
 		{
-		    // TODO (sainsley) : remove all of this logic
-		    // bool shouldDrawOnlySelected = i_dataBlock.inputValue( ia_shouldDrawOnlySelected ).asBool();
 		    m_rodManager->setRodsDrawDebugging( m_shouldDrawStrands, m_shouldDrawRootFrames,
 		            m_shouldDrawVelocity );
 		}
@@ -224,12 +221,7 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 		{
 		    if ( m_rodManager != NULL )
 		    {
-		        // handle subsets
-		        // subsetNodes( m_subsetNodes );
-
 		        // update rod properties
-		        // TODO : pass i_dataBlock here if we can pull subset parameters
-		        // from it -- so far i haven't gotten this to work
 		        updateRods();
 
 		        updateCollisionMeshes( i_dataBlock );
@@ -1346,15 +1338,6 @@ void* WmSweeneyNode::creator()
         status.perror("attributeAffects ia_shouldDrawVelocity->ca_rodPropertiesSync");
         return status;
     }
-    // selected
-    addNumericAttribute(ia_shouldDrawOnlySelected, "shouldDrawOnlySelected", "sdsel", MFnNumericData::kBoolean, false, true);
-    status = attributeAffects(ia_shouldDrawOnlySelected, ca_rodPropertiesSync);
-    if (!status)
-    {
-        status.perror("attributeAffects ia_shouldDrawOnlySelected->ca_rodPropertiesSync");
-        return status;
-    }
-
 
     //Failure  Detection
     addNumericAttribute(ia_maxNumOfSolverIters, "maxNumOfSolverIters", "mnsi", MFnNumericData::kInt, 250, true);
