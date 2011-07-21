@@ -33,17 +33,19 @@ public:
 
     virtual Scalar computeEnergy( const ElasticRod& rod ) const;
 
-    virtual void computeForce(const ElasticRod& rod, VecXd& force) const;
+    virtual void computeForce( const ElasticRod& rod, VecXd& force ) const;
 
     virtual void computeForceEnergy( const ElasticRod& rod, VecXd& force, Scalar& energy ) const;
 
     virtual void
-            computeForceDX( int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J ) const;
+    computeForceDX( int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J ) const;
 
     virtual void
-            computeForceDV( int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J ) const;
+    computeForceDV( int baseindex, const ElasticRod& rod, Scalar scale, MatrixBase& J ) const;
 
 private:
+    void computeLocalForceDX( const ElasticRod& rod, int vidx, Mat3d& localJ ) const;
+
     Scalar m_charge;
     Scalar m_scale;
     Vec3d m_center;

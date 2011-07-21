@@ -67,7 +67,7 @@ void GaussianVolumetricForce::computeForce( const ElasticRod& rod, VecXd& force 
     {
         const Vec3d& x = rod.getVertex( vidx );
         const Vec3d& y = m_scaledInvSigma * ( x - m_center );
-        Scalar localE = m_charge * exp( -0.5 * ( ( x - m_center ).transpose() * y )[0] );
+        const Scalar localE = m_charge * exp( -0.5 * ( ( x - m_center ).transpose() * y )[0] );
 
         force.segment<3> ( rod.vertIdx( vidx, 0 ) ) += y * localE;
     }
@@ -80,7 +80,7 @@ void GaussianVolumetricForce::computeForceEnergy( const ElasticRod& rod, VecXd& 
     {
         const Vec3d& x = rod.getVertex( vidx );
         const Vec3d& y = m_scaledInvSigma * ( x - m_center );
-        Scalar localE = m_charge * exp( -0.5 * ( ( x - m_center ).transpose() * y )[0] );
+        const Scalar localE = m_charge * exp( -0.5 * ( ( x - m_center ).transpose() * y )[0] );
 
         energy += localE;
         force.segment<3> ( rod.vertIdx( vidx, 0 ) ) += y * localE;
@@ -90,6 +90,21 @@ void GaussianVolumetricForce::computeForceEnergy( const ElasticRod& rod, VecXd& 
 void GaussianVolumetricForce::computeForceDX( int baseindex, const ElasticRod& rod, Scalar scale,
         MatrixBase& J ) const
 {
+    Mat3d localJ;
+    for ( int vidx = 0; vidx < rod.nv(); ++vidx )
+    {
+        computeLocalForceDX( rod, vidx, localJ );
+        localJ *= scale;
+        J.pointStencilAdd( rod.vertIdx( vidx, 0 ) + baseindex, localJ );
+    }
+}
+
+void GaussianVolumetricForce::computeLocalForceDX( const ElasticRod& rod, int vidx, Mat3d& localJ ) const
+{
+    const Vec3d& x = rod.getVertex( vidx );
+    const Vec3d& y = m_scaledInvSigma * ( x - m_center );
+    const Scalar localE = m_charge * exp( -0.5 * ( ( x - m_center ).transpose() * y )[0] );
+    localJ = localE * ( m_scaledInvSigma - y * y.transpose() );
 }
 
 void GaussianVolumetricForce::computeForceDV( int baseindex, const ElasticRod& rod, Scalar scale,

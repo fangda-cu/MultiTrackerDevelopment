@@ -130,15 +130,11 @@ void RodClumpingForce::computeForceEnergy( const ElasticRod& rod, VecXd& force, 
 void RodClumpingForce::computeForceDX( int baseindex, const ElasticRod& rod, Scalar scale,
         MatrixBase& J ) const
 {
-    //TraceStream(g_log, "") << "Computing global clumping Jacobian for rod " << rod.globalRodIndex << ": before " << J << '\n';
-
     const std::vector<ElasticRod*>& neighbours = rod.getNearestRootNeighbours();
 
     for ( std::vector<ElasticRod*>::const_iterator neighbour = neighbours.begin(); neighbour
             != neighbours.end(); ++neighbour )
         computeForceDX( baseindex, rod, *( *neighbour ), scale, J );
-
-    //    TraceStream(g_log, "") << "Computing global clumping Jacobian for rod " << rod.globalRodIndex << ": after " << J << '\n';
 }
 
 void RodClumpingForce::computeForceDX( int baseindex, const ElasticRod& rod,
@@ -148,8 +144,7 @@ void RodClumpingForce::computeForceDX( int baseindex, const ElasticRod& rod,
     for ( int vidx = FIRST_ATTRACTED_VERTEX; vidx < rod.nv(); ++vidx )
     {
         computeLocalForceDX( rod, vidx, other, localJ );
-        //       TraceStream(g_log, "") << "Local clumping force Jacobian for rod " << rod.globalRodIndex << " vertex " << vidx
-        //               << " from rod " << other.globalRodIndex << ": " << localJ << '\n';
+        localJ *= scale;
         J.pointStencilAdd( rod.vertIdx( vidx, 0 ) + baseindex, localJ );
     }
 }
@@ -162,7 +157,6 @@ void RodClumpingForce::computeLocalForceDX( const ElasticRod& rod, int vidx,
     const Vec3d& y = ClosestPointOnRod( x, other );
     const Scalar normep2 = ( x[0] - y[0] ) * ( x[0] - y[0] ) + ( x[1] - y[1] ) * ( x[1] - y[1] )
             + ( x[2] - y[2] ) * ( x[2] - y[2] );
-    //  const Scalar normepr4 = pow(normep2 + 0.1, 0.5 * r + 2);
     const Scalar normep4 = normep2 * normep2;
 
     Scalar charge = q;
