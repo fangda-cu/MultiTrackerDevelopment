@@ -271,7 +271,7 @@ void  WmSweeneyNode::updateRods( )
         update_all_rods = true;
     }
 
-    if ( update_all_rods //m_rodCharge != currentCharge
+    if ( update_all_rods || m_rodCharge != currentCharge
             || m_rodPower != currentPower
             || m_rodClumpSeparation != currentClumpDist )
     {

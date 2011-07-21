@@ -74,7 +74,7 @@ Scalar RodClumpingForce::computeEnergy( const ElasticRod& rod, const ElasticRod&
         const Vec3d& y = ClosestPointOnRod( x, other );
         const Scalar normep2 = ( x[0] - y[0] ) * ( x[0] - y[0] ) + ( x[1] - y[1] ) * ( x[1] - y[1] )
                 + ( x[2] - y[2] ) * ( x[2] - y[2] );
-        energy -= charge * normep2 / pow( normep2 + rho2, 1 + 0.5 * r );
+        energy -= q * charge * normep2 / pow( normep2 + rho2, 1 + 0.5 * r );
     }
 
     return energy;
