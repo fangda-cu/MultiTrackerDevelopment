@@ -8,6 +8,8 @@
 #ifndef RODEXTERNALFORCE_HH
 #define RODEXTERNALFORCE_HH
 
+#include "../../Core/Definitions.hh"
+
 namespace BASim
 {
 
