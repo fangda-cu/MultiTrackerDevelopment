@@ -21,12 +21,13 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
 		editorTemplate -addControl "curlCount";
 		editorTemplate -addControl "curlStart";
     	editorTemplate -addControl "rodDamping";
+    editorTemplate -endLayout;
+    editorTemplate -beginLayout "Rod Clumping" -collapse 0;
     	editorTemplate -addControl "rodCharge";
         editorTemplate -addControl "rodPower";
         editorTemplate -addControl "rodClumpSeparation";
         AEaddRampControl ("rodClumpingRamp");
     editorTemplate -endLayout;
-    
     editorTemplate -beginLayout "Solver Tolerances" -collapse 0;
     	editorTemplate -addControl "stol";
     	editorTemplate -addControl "atol";

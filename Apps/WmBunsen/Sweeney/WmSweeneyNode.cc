@@ -1769,7 +1769,9 @@ void WmSweeneyNode::computeSubsetRodMapping( MDataBlock& i_dataBlock )
     std::map<int, int> faceIdxToSubsetIdx;
     for ( size_t i = 0; i < m_rodManager->m_subsetNodes.size(); ++i )
     {
+
         MIntArray faceIndices = m_rodManager->m_subsetNodes[ i ]->getScalpFaceIndices( );
+        cout << " SUBSET " << i << " has " << faceIndices.length() << " faces " << endl;
         for ( int ii = 0; ii < faceIndices.length(); ++ii )
         {
 
@@ -1795,14 +1797,26 @@ void WmSweeneyNode::computeSubsetRodMapping( MDataBlock& i_dataBlock )
         {
             m_rodManager->m_rods[ rodIdx ]->setSubsetIdx( -1 );
         }
-        else {
-            // asign subset to rod
+        else
+        {
+            // assign subset to rod
             int subsetIdx = (*it).second;
             m_rodManager->m_rods[ rodIdx ]->setSubsetIdx( subsetIdx );
         }
-        // add rod to subset
-        //cout << " setting rod subset for subset " << subsetIdx << endl;
-        //WmSweeneySubsetNode* rodSubset = m_subsetNodes[ subsetIdx ];
-        //rodSubset->addRodIdx( rodIdx );
+    }
+
+    // debug loop
+    for ( int i = 0; i < m_rodManager->m_subsetNodes.size(); ++i )
+    {
+
+        int rodCount = 0;
+        // second pass : assign rods to appropriate subset nodes
+        for ( int rodIdx = 0; rodIdx < m_rodManager->m_rods.size(); ++rodIdx )
+        {
+            if ( m_rodManager->m_rods[ rodIdx ]->getSubsetIdx( ) == i )
+                rodCount++;
+        }
+        cout << " SUBSET " << i << " has " << rodCount << " rods " << endl;
+
     }
 }
