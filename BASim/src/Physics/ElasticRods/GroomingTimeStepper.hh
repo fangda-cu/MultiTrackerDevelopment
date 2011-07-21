@@ -258,9 +258,8 @@ public:
                 potentialForce->computeForceEnergy(m_rod, curr_force, curr_energy);
                 f += curr_force;
                 energy += curr_energy;
-                TraceStream(g_log, "GroomingTimeStepper::evaluateConservativeForcesEnergy:") << m_externalForces[i]->getName()
-                        << " &rod = " << &m_rod << " potential energy = " << curr_energy << " force norm = "
-                        << curr_force.norm() << '\n';
+                std::cout << m_externalForces[i]->getName() << " energy = "
+                        << energy << " force norm = " << f.norm() << '\n';
             }
         }
     }
@@ -281,7 +280,7 @@ public:
 
         for (size_t i = 0; i < m_externalForces.size(); ++i)
         {
-            TraceStream(g_log, "") << "Computing global Jacobian for " << m_externalForces[i]->getName() << '\n';
+         //   TraceStream(g_log, "") << "Computing global Jacobian for " << m_externalForces[i]->getName() << '\n';
             m_externalForces[i]->computeForceDX(0, m_rod, scale, J);
         }
     }

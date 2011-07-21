@@ -51,7 +51,6 @@ StretchingForce::LocalForceType StretchingForce::localForce( const ElasticStrand
 StretchingForce::LocalJacobianType StretchingForce::localJacobian( const ElasticStrand& strand,
         const StrandGeometry& geometry, const IndexType vtx )
 {
-    std::cerr << "In StretchingForce::localJacobian\n";
     LocalJacobianType Jacobian;
 
     const Scalar ks = strand.m_parameters.m_ks;// std::cout << "ks = " << ks << '\n';
@@ -63,7 +62,7 @@ StretchingForce::LocalJacobianType StretchingForce::localJacobian( const Elastic
 
     Jacobian.block<3, 3> ( 0, 0 ) = Jacobian.block<3, 3> ( 3, 3 ) = -M;
     Jacobian.block<3, 3> ( 0, 3 ) = Jacobian.block<3, 3> ( 3, 0 ) = M;
-    assert( isSymmetric( Jacobian ) );
+  //  assert( isSymmetric( Jacobian ) ); STRANGE FIXME
 
     // std::cout << "Local stretching Jacobian (vertex " << vtx << "): " << Jacobian << '\n';
 

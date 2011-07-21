@@ -269,7 +269,7 @@ public:
                 f += curr_force;
                 energy += curr_energy;
             }
-            TraceStream(g_log, "") << m_externalForces[i]->getName() << " &rod = " << &m_rod << " potential energy = "
+            std::cout << m_externalForces[i]->getName() << " energy = "
                     << energy << " force norm = " << curr_force.norm() << '\n';
         }
     }

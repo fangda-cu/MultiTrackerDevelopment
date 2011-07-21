@@ -343,6 +343,7 @@ public:
         return "BandMatrix";
     }
 
+    friend std::ostream& operator<<( std::ostream& os, const BandMatrix& M );
 protected:
 
     bool indicesValid(int r, int c) const
@@ -357,6 +358,25 @@ protected:
     int* m_lower; ///< For each row, stores the smallest valid column index
     int* m_upper; ///< For each row, stores the largest valid column index
 };
+
+inline std::ostream& operator<<( std::ostream& os, const BandMatrix& M )
+{
+    os << '{';
+    for ( int i = 0; i < M.rows() - 1; i++ )
+    {
+        os << '{';
+        for ( int j = 0; j < M.cols() - 1; j++ )
+            os << M( i, j ) << ", ";
+        os << M( i, M.cols() - 1 ) << "}, ";
+    }
+    os << '{';
+    for ( int j = 0; j < M.cols() - 1; j++ )
+        os << M( M.rows() - 1, j ) << ", ";
+    os << M( M.rows() - 1, M.cols() - 1 ) << "}}";
+
+    return os;
+}
+
 
 } // namespace BASim
 

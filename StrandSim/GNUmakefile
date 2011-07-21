@@ -15,7 +15,7 @@ PRG1_H     := wStrandTest.hh
 
 PRG1_CF    := -DBUILD=${BUILD} -DWETA
 
-PRG1_L     := -lwStrandSim -Wl,--start-group \
+PRG1_L     := -lwStrandSim_dbg -Wl,--start-group \
                   $(MKLROOT)/lib/em64t/libmkl_intel_lp64.a \
                   $(MKLROOT)/lib/em64t/libmkl_intel_thread.a \
                   $(MKLROOT)/lib/em64t/libmkl_core.a \

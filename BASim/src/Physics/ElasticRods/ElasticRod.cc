@@ -170,8 +170,10 @@ void ElasticRod::computeConservativeForcesEnergy(VecXd& force, Scalar& energy)
     (*fIt)->globalForceEnergy(curr_force, curr_energy);
     force  += curr_force;
     energy += curr_energy;
-    TraceStream(g_log, "") << (*fIt)->getName() << " energy = " << curr_energy << " force norm = " << curr_force.norm() << '\n';
-  }
+  //  TraceStream(g_log, "") << (*fIt)->getName() << " energy = " << curr_energy << " force norm = " << curr_force.norm() << '\n';
+    std::cout <<(*fIt)->getName() << " energy = "
+            << energy << " force norm = " << force.norm() << '\n';
+ }
 }
 
 
@@ -181,7 +183,7 @@ void ElasticRod::computeJacobian(int baseidx, Scalar scale, MatrixBase& J)
 
     for (RodForces::iterator fIt = forces.begin(); fIt != forces.end(); ++fIt)
     {
-        TraceStream(g_log, "") << "Computing global Jacobian for " << (*fIt)->getName() << '\n';
+       // TraceStream(g_log, "") << "Computing global Jacobian for " << (*fIt)->getName() << '\n';
         (*fIt)->globalJacobian(baseidx, scale, J);
     }
     assert(isSymmetric(J));

@@ -43,7 +43,7 @@ void ForceAccumulator<ForceT>::accumulate(Scalar& globalEnergy, VecXd& globalFor
 
 template<typename ForceT>
 void ForceAccumulator<ForceT>::accumulate(Scalar& globalEnergy, VecXd& globalForce,
-        strandsim::BandMatrix<Scalar, 10, 10> globalJacobian, const ElasticStrand& strand, const StrandGeometry& geometry)
+        strandsim::BandMatrix<Scalar, 10, 10>& globalJacobian, const ElasticStrand& strand, const StrandGeometry& geometry)
 {
     assert(geometry.m_framesUpToDate);
 

@@ -34,13 +34,17 @@ Scalar BendingForce::localEnergy(const ElasticStrand& strand, const StrandGeomet
 BendingForce::LocalForceType BendingForce::localForce(const ElasticStrand& strand, const StrandGeometry& geometry,
         const IndexType vtx)
 {
-    const Mat2d& B = strand.m_bendingMatrices[vtx];
-    const Scalar ilen = strand.m_invVoronoiLengths[vtx];
-    const Vec2d& kappa = geometry.m_kappa[vtx];
-    const Vec2d& kappaBar = strand.m_kappaBar[vtx];
-    const Eigen::Matrix<Scalar, 11, 2>& gradKappa = geometry.m_gradKappa[vtx];
+   // std::cout << "Local bending force (vertex " << vtx << ")\n";
+    const Mat2d& B = strand.m_bendingMatrices[vtx];// std::cout << "B = " << B <<'\n';
+    const Scalar ilen = strand.m_invVoronoiLengths[vtx];// std::cout << "ilen = " << ilen <<'\n';
+    const Vec2d& kappa = geometry.m_kappa[vtx];// std::cout << "kappa = " << kappa <<'\n';
+    const Vec2d& kappaBar = strand.m_kappaBar[vtx];// std::cout << "kappaBar = " << kappaBar <<'\n';
+    const Eigen::Matrix<Scalar, 11, 2>& gradKappa = geometry.m_gradKappa[vtx];// std::cout << "gradKappa = " << gradKappa <<'\n';
 
-    return -ilen * gradKappa * B * (kappa - kappaBar);
+    const Eigen::Matrix<Scalar, 11, 1>& bending = -ilen * gradKappa * B * (kappa - kappaBar);
+   // std::cout << "force  = " << bending << '\n';
+
+    return bending;
 }
 
 BendingForce::LocalJacobianType BendingForce::localJacobian(const ElasticStrand& strand, const StrandGeometry& geometry,

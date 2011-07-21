@@ -15,58 +15,35 @@
 
 using namespace strandsim;
 
-static const int nverts = 3;
-static const Scalar totalLength = 20;
-static const Scalar radius = 0.1;
-static const Scalar YoungsModulus = 10000.0;
-static const Scalar shearModulus = 1000.0;
-static const Scalar density = 0.1;
-static const Scalar hhh = 0.1;
+static const int nVertices = 8;
+static const int nDOFs = 4 * nVertices - 1;
+static const Scalar totalLength = nVertices - 1.0;
+static const Scalar radius = 1.0;
+static const Scalar YoungsModulus = 100000.0;
+static const Scalar shearModulus = 100.0;
+static const Scalar density = 1.0;
+static const int nIterations = 1;
 
 void testStrandSim( const std::vector<Vec3d>& i_vertices )
 {
     ElasticStrandParameters params( radius, YoungsModulus, shearModulus, density );
-    VecXd dofs( nverts * 4 - 1 );
+    VecXd dofs( nDOFs );
     for ( int i = 0; i < dofs.size(); i += 4 )
         dofs.segment<3> ( i ) = i_vertices[i / 4];
     ElasticStrand strand( dofs, params );
 
     ElasticStrandStaticStepper stepper;
 
-    //    std::cout << "Strand: " << strand << '\n';
-    //    std::cout << "Masses: ";
-    //    std::cout << '{';
-    //    for ( int i = 0; i < nverts - 1; i++ )
-    //        std::cout << strand.getMass( i ) << ", ";
-    //    std::cout << strand.getMass( nverts - 1 );
-    //    std::cout << '}';
-    //    std::cout << '\n';
+    for ( int i = 0; i < nIterations; ++i )
+    {
+        std::cout << "Iteration number " << i << '\n';
 
-    VecXd forces = strand.getTotalForces();
+        stepper.execute( strand );
+        std::cout << "Vertices: " << strand << '\n';
 
-    // Artificially displace the vertices, so we can test internal forces
-    strand.getNewDegreesOfFreedom() = strand.getDegreesOfFreedom() + hhh * forces;
-
-    strand.prepareForExamining(); // This computes energy and forces
-    strand.acceptNewPositions(); // This computes Jacobian
-
-    std::cout << "Vertices: " << strand << '\n';
-
-    forces = strand.getTotalForces();
-    std::cout << "Forces: " << forces << '\n';
-    std::cout << "Jacobian: " << strand.getTotalJacobian();
-
-    /*
-     for ( int iteration = 0;; iteration++ )
-     {
-     std::cout << "Iteration " << iteration << '\n';
-     std::cout << "Forces: " << strand.getTotalForces() << '\n';
-     stepper.execute( strand );
-     std::cout << "New position: " << strand << '\n';
-     std::cout << "Press ENTER to continue...";
-     std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
-     }
-     */
+       // std::cout << "Press ENTER to continue...\n";
+       // std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
+    }
 
     std::cout << std::endl;
 }
@@ -83,7 +60,7 @@ void testBASim( const std::vector<Vec3d>& i_vertices )
     rodOptions.radiusA = radius; /* millimeter */
     rodOptions.radiusB = radius; /* millimeter */
     rodOptions.refFrame = BASim::ElasticRod::TimeParallel;
-    rodOptions.numVertices = nverts;
+    rodOptions.numVertices = nVertices;
 
     // Use the rod helper function to build the rod
     ElasticRod* rod = setupRod( rodOptions, i_vertices, i_vertices,
@@ -96,51 +73,48 @@ void testBASim( const std::vector<Vec3d>& i_vertices )
     Vec3d i_gravity( 0.0, 0.0, -981.0 );
     stepper->addExternalForce( new RodGravity( i_gravity ) );
 
-    VecXd forces( 4 * nverts - 1 );
+    // Set the rod's fixed vertices
+    RodBoundaryCondition* boundary = stepper->getBoundaryCondition();
+    boundary->setDesiredVertexPosition( 0, rod->getVertex( 0 ) );
+    boundary->setDesiredVertexPosition( 1, rod->getVertex( 1 ) );
+    boundary->setDesiredEdgeAngle( 0, rod->getTheta( 0 ) );
 
-    forces.setZero();
-    stepper->evaluatePDot( forces );
-
-    // Artificially displace the vertices, so we can test internal forces
-    for ( int i = 0; i < 4 * nverts - 1; i++ )
-        rod->setDof( i, rod->getDof( i ) + hhh * forces[i] );
-    rod->updateProperties();
-
-    std::cout << "Vertices: ";
-    std::cout << '{';
-    for ( int i = 0; i < rod->nv() - 1; i++ )
+    for ( int i = 0; i < nIterations; ++i )
     {
-        const Vec3d& vertex = rod->getVertex( i );
-        std::cout << '{' << vertex[0] << ", " << vertex[1] << ", " << vertex[2] << "}, ";
+        std::cout << "Iteration number " << i << '\n';
+
+        rod->setIsInRestState( false );
+        stepper->execute();
+
+        std::cout << "Vertices: ";
+        std::cout << '{';
+        for ( int i = 0; i < rod->nv() - 1; i++ )
+        {
+            const Vec3d& vertex = rod->getVertex( i );
+            std::cout << '{' << vertex[0] << ", " << vertex[1] << ", " << vertex[2] << "}, ";
+        }
+        const Vec3d& vertex = rod->getVertex( rod->nv() - 1 );
+        std::cout << '{' << vertex[0] << ", " << vertex[1] << ", " << vertex[2] << '}';
+        std::cout << '}';
+        std::cout << '\n';
+
+         //  std::cout << "Press ENTER to continue...\n";
+         //  std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
     }
-    const Vec3d& vertex = rod->getVertex( rod->nv() - 1 );
-    std::cout << '{' << vertex[0] << ", " << vertex[1] << ", " << vertex[2] << '}';
-    std::cout << '}';
-    std::cout << '\n';
-
-    //  std::cout << "Masses: ";
-    //   std::cout << '{';
-    //  for ( int i = 0; i < rod->nv() - 1; i++ )
-    //      std::cout << rod->getMass( 4 * i ) << ", ";
-    //   std::cout << rod->getMass( 4 * ( rod->nv() - 1 ) );
-    //   std::cout << '}';
-    //   std::cout << '\n';
-
-    forces.setZero();
-    stepper->evaluatePDot( forces );
-    std::cout << "Forces: " << forces << '\n';
 
 }
 
 int main()
 {
+    g_log = new TextLog( std::cerr, MsgInfo::kDebug, true );
+
     static const int NF = Length<BuiltInForcesList>::value;
 
     std::cout << "Number of built-in forces = " << NF << '\n';
 
     std::vector<Vec3d> i_vertices;
-    for ( int i = 0; i < nverts; i++ )
-        i_vertices.push_back( Vec3d( i * totalLength / ( nverts - 1 ), pow( -1.0, i ), 0.0 ) );
+    for ( int i = 0; i < nVertices; i++ )
+        i_vertices.push_back( Vec3d( i * totalLength / ( nVertices - 1 ), 0.0, 0.0 ) );
 
     std::cout << "This is StrandSim\n";
     testStrandSim( i_vertices );

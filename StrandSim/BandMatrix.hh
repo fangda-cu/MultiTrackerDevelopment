@@ -21,16 +21,6 @@ public:
         m_rows( rows ), m_cols( cols ), m_size( ( kl + ku + 1 ) * cols )
     {
         m_data.resize( m_size );
-        m_lower.resize( m_rows );
-        m_upper.resize( m_rows );
-
-        for ( IndexType i = 0; i < m_rows; ++i )
-        {
-            m_lower[i] = std::max( i - kl, 0 );
-            m_upper[i] = std::min( i + ku + 1, static_cast<int> ( m_cols ) );
-        }
-
-        setZero();
     }
 
     ~BandMatrix()
@@ -44,19 +34,12 @@ public:
         m_size = ( kl + ku + 1 ) * cols;
 
         m_data.resize( m_size );
-        m_lower.resize( m_rows );
-        m_upper.resize( m_rows );
-
-        for ( IndexType i = 0; i < m_rows; ++i )
-        {
-            m_lower[i] = std::max( i - kl, 0 );
-            m_upper[i] = std::min( i + ku + 1, static_cast<int> ( m_cols ) );
-        }
     }
 
     const ScalarT operator()( const IndexType i, const IndexType j ) const
     {
-        assert( indicesValid( i, j ) );
+        if ( !indicesValid( i, j ) )
+            return 0.0;
 
         return m_data[( ku + i - j ) * m_cols + j];
     }
@@ -68,12 +51,29 @@ public:
         return m_data[( ku + i - j ) * m_cols + j];
     }
 
+    // Add lambda * Identity
     void addConstantDiagonal( const Scalar lambda )
     {
         assert( m_cols == m_rows );
 
         for ( int i = 0; i < m_cols; i++ )
             m_data[ku * m_cols + i] += lambda;
+    }
+
+    template<int nfixed>
+    void fixFirstDOFs()
+    {
+        assert( nfixed <= m_rows && nfixed <= m_cols );
+
+        for ( int i = 0; i < nfixed; i++ )
+        {
+            for ( int j = std::max( 0, i - kl ); j <= std::min( ( int ) m_cols-1, i + ku ); ++j )
+                ( *this )( i, j ) = 0.0;
+            for ( int k = std::max( 0, i - ku ); k <= std::min( ( int ) m_rows-1, i + kl ); k++ )
+                ( *this )( k, i ) = 0.0;
+            ( *this )( i, i ) = 1.0;
+
+        }
     }
 
     // Add the local Jacobian to the banded matrix, top left corner at "start" position on the diagonal.
@@ -90,22 +90,6 @@ public:
                 start += 1 - m_cols;
             }
             start += localSize * ( m_cols - 1 ) + m_cols;
-        }
-    }
-
-    template<IndexType localSize>
-    void localStencilReplace( int start, const Eigen::Matrix<ScalarT, localSize, localSize>& localJ )
-    {
-        start += m_cols * ku;
-
-        for ( int i = 0; i < localSize; ++i )
-        {
-            for ( int j = 0; j < localSize; ++j )
-            {
-                m_data[start] += localJ( i, j );
-                start += 1 - m_cols;
-            }
-            start = localSize * ( m_cols - 1 ) + m_cols;
         }
     }
 
@@ -156,7 +140,7 @@ public:
 
     BandMatrix<ScalarT, kl, ku>& operator*=( const ScalarT multiplier )
     {
-        for ( std::vector<ScalarT>::iterator i = m_data.begin(); i != m_data.end(); ++i )
+        for (typename std::vector<ScalarT>::iterator i = m_data.begin(); i != m_data.end(); ++i )
             *i *= multiplier;
 
         return *this;
@@ -166,55 +150,6 @@ public:
     {
         for ( int i = 0; i < m_size; ++i )
             m_data[i] = 0;
-    }
-
-    void zeroRows( const IntArray& idx, ScalarT diag = 1.0 )
-    {
-        for ( int i = 0; i < idx.size(); ++i )
-        {
-            int r = idx[i];
-            assert( r >= 0 && r < MatrixBase::m_rows );
-            int lower = m_lower[r];
-            int upper = m_upper[r];
-
-            for ( int j = lower; j < upper; ++j )
-                ( *this )( r, j ) = 0;
-
-            ( *this )( r, r ) = diag;
-        }
-    }
-
-    int computeStartOfCol( int col )
-    {
-        assert( col >= 0 );
-        assert( col < m_cols );
-
-        return std::max( col - ku, 0 );
-    }
-
-    int computeEndOfCol( int col )
-    {
-        assert( col >= 0 );
-        assert( col < m_cols );
-
-        return std::min( col + kl, m_rows - 1 );
-    }
-
-    void zeroCols( const IntArray& idx, ScalarT diag )
-    {
-        // For each column the user provided
-        for ( int i = 0; i < ( int ) idx.size(); ++i )
-        {
-            int col = idx[i];
-            for ( int row = computeStartOfCol( col ); row <= computeEndOfCol( col ); ++row )
-            {
-                assert( indicesValid( row, col ) );
-                if ( row != col )
-                    ( *this )( row, col ) = 0.0;
-                else
-                    ( *this )( row, col ) = diag;
-            }
-        }
     }
 
     void multiply( VecXd& y, ScalarT s, const VecXd& x ) const
@@ -234,23 +169,6 @@ public:
             }
             y[i] += s * sum;
         }
-    }
-
-    void print() const
-    {
-        std::cout << "[";
-        for ( int i = 0; i < m_rows; ++i )
-        {
-            for ( int j = 0; j < m_cols; ++j )
-            {
-                std::cout << ( *this )( i, j );
-                if ( j < MatrixBase::m_cols - 1 )
-                    std::cout << ", ";
-            }
-            if ( i < MatrixBase::m_rows - 1 )
-                std::cout << "; ";
-        }
-        std::cout << "]" << std::endl;
     }
 
     IndexType rows() const
@@ -287,8 +205,6 @@ private:
     IndexType m_cols;
     IndexType m_size; // Number of non-zero entries
     std::vector<ScalarT> m_data; // Storage of non-zero entries
-    std::vector<IndexType> m_lower; // For each row, stores the smallest valid column index
-    std::vector<IndexType> m_upper; // For each row, stores the largest valid column index
 };
 
 template<typename ScalarT, IndexType kl, IndexType ku>

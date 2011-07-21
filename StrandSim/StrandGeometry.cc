@@ -38,6 +38,9 @@ const StrandGeometry& StrandGeometry::operator=( const StrandGeometry& newGeo )
     m_materialFrames2 = newGeo.m_materialFrames2; // Probably useless, temporary.
 
     // Caches related to bending
+    for ( int i = 0; i < newGeo.m_kappa.size(); i++ )
+        std::cout << newGeo.m_kappa[i] << ' ';
+    std::cout << '\n';
     m_kappa = newGeo.m_kappa;
     m_gradKappa = newGeo.m_gradKappa;
     m_HessKappa = newGeo.m_HessKappa; // Maybe not
@@ -97,6 +100,8 @@ void StrandGeometry::storeInitialFrames()
                         getPreviousTangent( vtx ) ) );
         setReferenceFrame2( vtx, getPreviousTangent( vtx ).cross( getReferenceFrame1( vtx ) ) );
     }
+
+    updateFrames();
 }
 
 void StrandGeometry::updateFrames() // and related stuff
@@ -116,15 +121,29 @@ void StrandGeometry::updateFrames() // and related stuff
                 m_tangents[vtx] );
         u -= u.dot( m_tangents[vtx] ) * m_tangents[vtx];
         u.normalize();
+        const Vec3d& v = m_tangents[vtx].cross( u );
+        // std::cout << "t = " << m_tangents[vtx] << '\n';
+        // std::cout << "u = " << u << '\n';
+        // std::cout << "v = " << v << '\n';
         setReferenceFrame1( vtx, u );
-        setReferenceFrame2( vtx, m_tangents[vtx].cross( u ) );
+        setReferenceFrame2( vtx, v );
 
-        // TODO: update material frames here
-
+        const Scalar theta = m_degreesOfFreedom[4 * vtx + 3];
+        const Scalar c = cos( theta );
+        const Scalar s = sin( theta );
+        setMaterialFrame1( vtx, c * u + s * v );
+        setMaterialFrame2( vtx, -s * u + c * v );
 
         setPreviousTangent( vtx, m_tangents[vtx] ); // TODO: make sure that previous tangents are not used elsewhere
     }
 
+    updateKappaAndTwist();
+
+    m_framesUpToDate = true;
+}
+
+void StrandGeometry::updateKappaAndTwist()
+{
     // Update other cached frame-dependent quantities
     for ( IndexType vtx = 1; vtx < m_numVertices - 1; ++vtx )
     {
@@ -137,18 +156,21 @@ void StrandGeometry::updateFrames() // and related stuff
         m_gradTwists[vtx] = computeGradTwist( vtx );
         m_HessTwists[vtx] = computeHessTwist( vtx ); // Idem.
     }
-
-    m_framesUpToDate = true;
 }
+
 
 Vec2d StrandGeometry::computeKappa( const IndexType vtx ) const
 {
     const Vec3d& kb = discreteCurvatureBinormal( getEdgeVector( vtx - 1 ), getEdgeVector( vtx ) ); // TODO: cache
-
+    // std::cout << "kb = " << kb << '\n';
     const Vec3d& m1e = getMaterialFrame1( vtx - 1 );
+    // std::cout << "m1e = " << m1e << '\n';
     const Vec3d& m2e = getMaterialFrame2( vtx - 1 );
+    // std::cout << "m2e = " << m2e << '\n';
     const Vec3d& m1f = getMaterialFrame1( vtx );
+    // std::cout << "m1f = " << m1f << '\n';
     const Vec3d& m2f = getMaterialFrame2( vtx );
+    // std::cout << "m2f = " << m2f << '\n';
 
     return Vec2d( 0.5 * kb.dot( m2e + m2f ), -0.5 * kb.dot( m1e + m1f ) );
 }

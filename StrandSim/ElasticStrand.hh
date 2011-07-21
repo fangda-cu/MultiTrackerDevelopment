@@ -52,6 +52,8 @@ public:
         return m_newGeometry.m_degreesOfFreedom;
     }
 
+    void filterNewGeometryLength();
+
     bool readyForSolving() const
     {
         return m_readyForSolving;
@@ -82,14 +84,19 @@ public:
         return m_totalJacobian;
     }
 
+    Scalar getNewTotalEnergy() const
+    {
+        return m_newTotalEnergy;
+    }
+
     const ForceVectorType& getNewTotalForces() const
     {
-        return m_totalForces;
+        return m_newTotalForces;
     }
 
     ForceVectorType& getNewTotalForces()
     {
-        return m_totalForces;
+        return m_newTotalForces;
     }
 
     Scalar getMass( IndexType i ) const
