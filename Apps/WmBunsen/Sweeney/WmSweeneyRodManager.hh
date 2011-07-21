@@ -77,7 +77,8 @@ public:
     void drawAllRods();
 
     void setRodsDrawDebugging( const bool i_shouldDrawStrands, const bool i_shouldDrawRootFrames,
-            const bool i_shouldDrawVelocity );
+            const bool i_shouldDrawVelocity, const bool i_shouldOnlyDrawSolved,
+            const bool i_shouldOnlyDrawUnsolved );
 
     size_t numberOfRods()
     {
@@ -101,6 +102,9 @@ private:
     std::vector<BASim::TriangleMesh*> m_triangleMeshes;
     std::vector<BASim::LevelSet*> m_levelSets;
     std::vector<BASim::ScriptingController*> m_scriptingControllers;
+
+    bool m_drawOnlySolved;
+    bool m_drawOnlyUnsolved;
 };
 
 #endif

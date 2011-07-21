@@ -148,6 +148,8 @@ public:
     static MObject ia_shouldDrawStrands;
     static MObject ia_shouldDrawRootFrames;
     static MObject ia_shouldDrawVelocity;
+    static MObject ia_shouldDrawOnlySolved;
+    static MObject ia_shouldDrawOnlyUnsolved;
 
     static MStatus addNumericAttribute( MObject& i_attribute, MString i_longName, 
                                         MString i_shortName,
@@ -222,6 +224,8 @@ private:
     bool m_shouldDrawStrands;
     bool m_shouldDrawRootFrames;
     bool m_shouldDrawVelocity;
+    bool m_shouldDrawOnlySolved;
+    bool m_shouldDrawOnlyUnsolved;
     
     WmSweeneyRodManager* m_rodManager;
     MVectorArray m_strandVertices;

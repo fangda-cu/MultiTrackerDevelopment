@@ -92,6 +92,8 @@ using namespace BASim;
 /* static */MObject WmSweeneyNode::ia_shouldDrawStrands;
 /* static */MObject WmSweeneyNode::ia_shouldDrawRootFrames;
 /* static */MObject WmSweeneyNode::ia_shouldDrawVelocity;
+/* static */MObject WmSweeneyNode::ia_shouldDrawOnlySolved;
+/* static */MObject WmSweeneyNode::ia_shouldDrawOnlyUnsolved;
 
 WmSweeneyNode::WmSweeneyNode() :
     m_rodManager(NULL)
@@ -138,6 +140,8 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
         m_shouldDrawStrands = i_dataBlock.inputValue( ia_shouldDrawStrands ).asBool();
         m_shouldDrawRootFrames = i_dataBlock.inputValue( ia_shouldDrawRootFrames ).asBool();
         m_shouldDrawVelocity = i_dataBlock.inputValue( ia_shouldDrawVelocity ).asBool();
+        m_shouldDrawOnlySolved = i_dataBlock.inputValue( ia_shouldDrawOnlySolved ).asBool();
+        m_shouldDrawOnlyUnsolved = i_dataBlock.inputValue( ia_shouldDrawOnlyUnsolved ).asBool();
 
 		MObject strandVerticesObj = i_dataBlock.inputValue( ia_strandVertices ).data();
 		MFnVectorArrayData strandVerticesArrayData( strandVerticesObj, &status );
@@ -185,7 +189,7 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 		if ( m_rodManager != NULL )
 		{
 		    m_rodManager->setRodsDrawDebugging( m_shouldDrawStrands, m_shouldDrawRootFrames,
-		            m_shouldDrawVelocity );
+		            m_shouldDrawVelocity, m_shouldDrawOnlySolved, m_shouldDrawOnlyUnsolved );
 		}
 
 		if ( m_currentTime == m_startTime )
@@ -1336,6 +1340,21 @@ void* WmSweeneyNode::creator()
     if (!status)
     {
         status.perror("attributeAffects ia_shouldDrawVelocity->ca_rodPropertiesSync");
+        return status;
+    }
+    // solved vs. unsolved rods
+    addNumericAttribute(ia_shouldDrawOnlySolved, "shouldDrawOnlySolved", "sdos", MFnNumericData::kBoolean, false, true);
+    status = attributeAffects(ia_shouldDrawOnlySolved, ca_rodPropertiesSync);
+    if (!status)
+    {
+        status.perror("attributeAffects ia_shouldDrawOnlySolved->ca_rodPropertiesSync");
+        return status;
+    }
+    addNumericAttribute(ia_shouldDrawOnlyUnsolved, "shouldDrawOnlyUnsolved", "sdous", MFnNumericData::kBoolean, false, true);
+    status = attributeAffects(ia_shouldDrawOnlyUnsolved, ca_rodPropertiesSync);
+    if (!status)
+    {
+        status.perror("attributeAffects ia_shouldDrawOnlyUnsolved->ca_rodPropertiesSync");
         return status;
     }
 
