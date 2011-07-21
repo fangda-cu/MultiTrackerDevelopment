@@ -62,7 +62,9 @@ bool StaticSolver<ODE>::execute()
     if (m_keepUpdating)
         position_solve();
 
-    return true;
+    // return false if the rod
+    // is still being solved
+    return !m_keepUpdating;
 }
 
 template<typename ODE>

@@ -26,6 +26,9 @@ void WmSweeneyRodManager::setRodsDrawDebugging( const bool i_shouldDrawStrands,
         const bool i_shouldDrawOnlySolved, const bool i_shouldDrawOnlyUnsolved )
 {
 
+    m_drawOnlySolved = i_shouldDrawOnlySolved;
+    m_drawOnlyUnsolved = i_shouldDrawOnlyUnsolved;
+
     for ( size_t r = 0; r < m_rodRenderers.size(); ++r )
     {
         m_rodRenderers[r]->drawRod() = i_shouldDrawStrands;
@@ -277,11 +280,18 @@ void WmSweeneyRodManager::drawAllRods()
             renderRod = m_subsetNodes[ subsetIdx ]->isVisible();
         }
 
-        // check if rod is unsolved and meant to be hidden
-        // TODO(sainsley) : add flag in rod to know if it's solved
-        // or check bridson stepper if possible
+        bool hasSolved = m_rodTimeSteppers[r]->HasSolved();
 
-        // check if rod is solved and meant to be hidden
+        if ( m_drawOnlyUnsolved )
+        {
+            // check if rod is unsolved and meant to be hidden
+            renderRod = !hasSolved;
+        }
+        else if ( m_drawOnlySolved )
+        {
+            // check if rod is solved and meant to be hidden
+            renderRod = hasSolved;
+        }
 
         if ( renderRod )
         {
