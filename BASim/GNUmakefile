@@ -277,6 +277,7 @@ Physics/ElasticRods/AnisotropicRodIncludes.hh \
 Physics/ElasticRods/EdgeStencil.hh \
 Physics/ElasticRods/ElasticRod.hh \
 Physics/ElasticRods/Force.hh \
+Physics/ElasticRods/GaussianVolumetricForce.hh \
 Physics/ElasticRods/MultipleRodTimeStepper.hh \
 Physics/ElasticRods/PerformanceTuningParameters.hh \
 Physics/ElasticRods/RodAnisoBending.hh \
@@ -379,6 +380,7 @@ src/Physics/ElasticRods/BARodStepper.cc \
 src/Physics/ElasticRods/ElasticRod.cc \
 src/Physics/ElasticRods/ParallelStepper.cc \
 src/Physics/ElasticRods/PerformanceTuningParameters.cc \
+src/Physics/ElasticRods/GaussianVolumetricForce.cc \
 src/Physics/ElasticRods/RodAnisoBending.cc \
 src/Physics/ElasticRods/RodAnisoForce.cc \
 src/Physics/ElasticRods/RodBendingForce.cc \
