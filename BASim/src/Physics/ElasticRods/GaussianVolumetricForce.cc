@@ -99,9 +99,12 @@ void GaussianVolumetricForce::computeForceDX( int baseindex, const ElasticRod& r
     }
 }
 
-void GaussianVolumetricForce::computeLocalForceDX(const ElasticRod& rod, int vidx, Mat3d& localJ) const
+void GaussianVolumetricForce::computeLocalForceDX( const ElasticRod& rod, int vidx, Mat3d& localJ ) const
 {
-
+    const Vec3d& x = rod.getVertex( vidx );
+    const Vec3d& y = m_scaledInvSigma * ( x - m_center );
+    const Scalar localE = m_charge * exp( -0.5 * ( ( x - m_center ).transpose() * y )[0] );
+    localJ = localE * ( m_scaledInvSigma - y * y.transpose() );
 }
 
 void GaussianVolumetricForce::computeForceDV( int baseindex, const ElasticRod& rod, Scalar scale,
