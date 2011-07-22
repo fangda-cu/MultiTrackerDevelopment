@@ -30,6 +30,7 @@ global proc wmSweeneyAddMainMenu()
        	menuItem -label "Create new Sweeney subset node for select faces" -annotation "Applies slider settings only to rods mapped to selected mesh faces"-command "wmSweeney -css";    
        	menuItem -label "Simulate All Rods" -annotation "Applies slider settings globally"-command "wmSweeney -ssa";   
        	menuItem -label "Create clumps from wmPelt node" -annotation "Uses the rods closest to the wmPelt node's points as centres for clumps" -command "wmSweeney -ccp";
+       	menuItem -label "Create Gaussian volumetric force" -annotation "Repulsive force based on selected ellipsoid" -command "wmSweeney -cgv";
     }
 }
 

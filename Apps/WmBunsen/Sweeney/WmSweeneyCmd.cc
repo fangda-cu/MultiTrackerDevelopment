@@ -84,6 +84,7 @@ const char * const kAddCollisionMeshes( "-acm" );
 const char * const kCreateSweeneySubset( "-css" );
 const char * const kSetSimulateAll( "-ssa" );
 const char * const kCreateClumpsFromPelt( "-ccp" );
+const char * const kCreateGaussianVolumetricForce( "-cgv" );
 
 const char * const kHelp( "-h" );
 
@@ -104,6 +105,8 @@ MSyntax WmSweeneyCmd::syntaxCreator()
             "Applies slider settings only to all rods when simulation begins." );
     p_AddFlag( mSyntax, kCreateClumpsFromPelt, "-createClumpsFromPelt",
             "Creates clumps using centerlines from a wmPelt node." );
+    p_AddFlag( mSyntax, kCreateGaussianVolumetricForce, "-createGaussianVolumetricForce",
+            "Creates Gaussian volumetric force from an ellipsoid (sphere)." );
 
     mSyntax.setObjectType( MSyntax::kSelectionList );
     mSyntax.useSelectionAsDefault( true );
@@ -189,6 +192,10 @@ MStatus WmSweeneyCmd::redoIt()
         if ( m_mArgDatabase->isFlagSet( kCreateClumpsFromPelt ) )
         {
             createClumpCenterLinesFromPelt();
+        }
+        if ( m_mArgDatabase->isFlagSet( kCreateGaussianVolumetricForce ) )
+        {
+            createGaussianVolumetricForce();
         }
 
         setResult( m_results );
@@ -310,10 +317,9 @@ void WmSweeneyCmd::createSweeneyNode()
     CHECK_MSTATUS( stat );
 
     // They want the curve to default like this. 0@0, 1@1, and also 1@0.1
-    stat = MGlobal::executeCommand( MString( "setAttr -s 3 \".rodClumpingRamp[1:3]\"  " ) +
-            "0.0 0.0 1.0 " +
-            "0.95 0.0 1.0 " +
-            "1.0 1.0 1.0 " + ";" );
+    stat = MGlobal::executeCommand(
+            MString( "setAttr -s 3 \".rodClumpingRamp[1:3]\"  " ) + "0.0 0.0 1.0 "
+                    + "0.95 0.0 1.0 " + "1.0 1.0 1.0 " + ";" );
     CHECK_MSTATUS( stat );
 
     stat = dagModifier.doIt();
@@ -445,6 +451,49 @@ MStatus WmSweeneyCmd::createClumpCenterLinesFromPelt()
     return MStatus::kSuccess;
 }
 
+MStatus WmSweeneyCmd::createGaussianVolumetricForce()
+{
+    // First let's check that the right nodes have been previously selected.
+    if ( m_selectedSweeneyNode == MObject::kNullObj || m_selectedSphereParentNode
+            == MObject::kNullObj )
+    {
+        MGlobal::displayError( "Please select a wmSweeney node and a sphere node" );
+        return MStatus::kFailure;
+    }
+
+    MStatus status;
+
+    MFnTransform transform( m_selectedSphereParentNode, &status );
+    CHECK_MSTATUS( status );
+
+    Eigen::Quaternion<double> q;
+    status = transform.getRotationQuaternion( q.x(), q.y(), q.z(), q.w() );
+
+    Vec3d scale;
+    status = transform.getScale( &scale[0] );
+    CHECK_MSTATUS( status );
+
+    MVector Mcenter = transform.getTranslation( MSpace::kTransform, &status );
+    CHECK_MSTATUS( status );
+    Vec3d center( Mcenter[0], Mcenter[1], Mcenter[2] );
+
+    std::cout << "Scale = " << scale << '\n';
+    std::cout << "Rotation = " << q.x() << ", " << q.y() << ", " << q.z() << ", " << q.w() << '\n';
+    std::cout << "Center = " << center << '\n';
+
+    Mat3d sigma;
+    sigma.diagonal() = scale;
+    sigma = q.matrix() * sigma * ( q.matrix().transpose() );
+
+    std::cout << "Sigma = " << sigma << '\n';
+
+    MFnDependencyNode sweeneyFn( m_selectedSweeneyNode );
+    WmSweeneyNode* sweeneyNode = dynamic_cast<WmSweeneyNode*> ( sweeneyFn.userNode() );
+    sweeneyNode->createGaussianVolumetricForce( center, sigma );
+
+    return MStatus::kSuccess;
+}
+
 void WmSweeneyCmd::appendToResultString( MString& i_resultString )
 {
     MStatus stat;
@@ -498,6 +547,9 @@ void WmSweeneyCmd::getNodes( MSelectionList i_opt_nodes )
         CHECK_MSTATUS( stat );
         childPath.extendToShape();
 
+        MFnDependencyNode nodeFn( childPath.node( &stat ) );
+        CHECK_MSTATUS( stat );
+
         //////////////////
         //
         // First check for Maya in built nodes
@@ -505,10 +557,15 @@ void WmSweeneyCmd::getNodes( MSelectionList i_opt_nodes )
         if ( childPath.apiType() == MFn::kMesh )
         {
             mObj = childPath.node();
-            if ( MFnDependencyNode( mObj ).name().substring( 0, 11 ) == "wmPeltOutput" )
+
+            if ( nodeFn.name().substring( 0, 11 ) == "wmPeltOutput" )
             {
-                m_selectedPeltMeshNode = childPath.node();
-                std::cerr << "Thank you for selecting a wmPelt mesh\n";
+                m_selectedPeltMeshNode = mObj;
+            }
+            else if ( nodeFn.name().substring( 0, 6 ) == "pSphere" )
+            {
+                m_selectedSphereParentNode = dagFn.parent( 0, &stat );
+                CHECK_MSTATUS( stat );
             }
 
             m_meshList.add( childPath, mObj, false );
@@ -518,9 +575,6 @@ void WmSweeneyCmd::getNodes( MSelectionList i_opt_nodes )
             /////////////////////
             //
             // Now check for user created plugin nodes
-
-            MFnDependencyNode nodeFn( childPath.node( &stat ) );
-            CHECK_MSTATUS( stat );
 
             if ( nodeFn.typeName() == "wmBarbFurSetNode" )
             {

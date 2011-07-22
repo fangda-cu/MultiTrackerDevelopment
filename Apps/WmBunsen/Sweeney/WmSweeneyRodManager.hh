@@ -94,6 +94,7 @@ public:
     std::vector<WmSweeneySubsetNode*> m_subsetNodes;
 
     void createClumpCenterLinesFromPelt(const MPointArray& centralArr);
+    void createGaussianVolumetricForce(const double charge, const Eigen::Vector3d& center, const Eigen::Matrix3d& covariance );
 
 private:
     BASim::BAGroomingStepper* m_bAGroomingStepper;

@@ -183,21 +183,20 @@ void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const d
      perfParams.m_implicit_stiffness        = 1.0;
      */
 
-    m_bAGroomingStepper
-            = new BAGroomingStepper( m_rods, m_triangleMeshes, m_scriptingControllers,
-                    m_rodTimeSteppers, i_timeStep, i_startTime, -1, perfParams, m_levelSets,
-                    i_numberOfClumps );
+    m_bAGroomingStepper = new BAGroomingStepper( m_rods, m_triangleMeshes, m_scriptingControllers,
+            m_rodTimeSteppers, i_timeStep, i_startTime, -1, perfParams, m_levelSets,
+            i_numberOfClumps );
 }
 
 void WmSweeneyRodManager::updateSolverSettings( double i_atol, double i_stol, double i_rtol,
         double i_inftol, int i_numLineSearchIters, double i_penaltyStiffness )
 {
-  //  std::cout << "Updating solver settings:" << std::endl;
-  //  std::cout << "Atol  " << i_atol << std::endl;
-  //  std::cout << "Stol  " << i_stol << std::endl;
-  //  std::cout << "Rtol  " << i_rtol << std::endl;
-  //  std::cout << "Inftol  " << i_inftol << std::endl;
-  //  std::cout << "Num of Line Search Iterations " << i_numLineSearchIters << std::endl;
+    //  std::cout << "Updating solver settings:" << std::endl;
+    //  std::cout << "Atol  " << i_atol << std::endl;
+    //  std::cout << "Stol  " << i_stol << std::endl;
+    //  std::cout << "Rtol  " << i_rtol << std::endl;
+    //  std::cout << "Inftol  " << i_inftol << std::endl;
+    //  std::cout << "Num of Line Search Iterations " << i_numLineSearchIters << std::endl;
 
     for ( size_t r = 0; r < m_rods.size(); ++r )
     {
@@ -277,7 +276,7 @@ void WmSweeneyRodManager::drawAllRods()
 
         if ( subsetIdx >= 0 )
         {
-            renderRod = m_subsetNodes[ subsetIdx ]->isVisible();
+            renderRod = m_subsetNodes[subsetIdx]->isVisible();
         }
 
         bool hasSolved = m_rodTimeSteppers[r]->HasSolved();
@@ -312,4 +311,10 @@ void WmSweeneyRodManager::createClumpCenterLinesFromPelt( const MPointArray& cen
     }
 
     m_bAGroomingStepper->setWmPeltPoints( centerRoots );
+}
+
+void WmSweeneyRodManager::createGaussianVolumetricForce(const double charge, const Eigen::Vector3d& center,
+        const Eigen::Matrix3d& covariance )
+{
+    m_bAGroomingStepper->createGaussianVolumetricForce(charge, center, covariance ); // Currently there can be only one. TODO: implement creation/destruction mechanism.
 }

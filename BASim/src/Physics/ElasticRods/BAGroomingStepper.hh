@@ -28,6 +28,7 @@
 #include "PerformanceTuningParameters.hh"
 #include "../../Util/TextLog.hh"
 #include "RodClumpingForce.hh"
+#include "GaussianVolumetricForce.hh"
 #else
 #include "BASim/src/Core/ScriptingController.hh"
 #include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
@@ -43,6 +44,7 @@
 #include "BASim/src/Core/StatTracker.hh"
 #include "BASim/src/Physics/ElasticRods/MinimalTriangleMeshBackup.hh"
 #include "RodClumpingForce.hh"
+#include "GaussianVolumetricForce.hh"
 #endif
 
 #ifdef HAVE_OPENMP
@@ -153,6 +155,9 @@ public:
         m_wmPeltPoints = centerRoots;
         selectClumps();
     }
+
+    void createGaussianVolumetricForce(const double charge, const Vec3d& center,
+            const Mat3d& covariance );
 
 private:
     /**
@@ -497,6 +502,7 @@ private:
     int m_numberOfClumps;
     RodClumpingForce* m_clumpingForce;
     VecXd m_wmPeltPoints;
+    GaussianVolumetricForce* m_GaussianVolumetricForce;
 
 };
 

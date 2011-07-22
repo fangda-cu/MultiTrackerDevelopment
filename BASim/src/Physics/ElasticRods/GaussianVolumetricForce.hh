@@ -28,6 +28,10 @@ public:
 
     void setScale( const Scalar scale );
 
+    void setCenter(const Vec3d& center);
+
+    void setCovariance(const Mat3d& sigma);
+
     // Compute mean and variance of the given points and assign its result to m_center and m_invSigma (and m_scaledInvSigma)
     void setupSigma( const Eigen::Matrix<Scalar, 3, Eigen::Dynamic>& points );
 

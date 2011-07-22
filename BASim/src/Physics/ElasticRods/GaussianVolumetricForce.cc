@@ -33,6 +33,17 @@ void GaussianVolumetricForce::setCharge( const Scalar charge )
     m_charge = charge;
 }
 
+void GaussianVolumetricForce::setCenter( const Vec3d& center )
+{
+    m_center = center;
+}
+
+void GaussianVolumetricForce::setCovariance( const Mat3d& sigma )
+{
+    m_invSigma = sigma.inverse();
+    m_scaledInvSigma = m_invSigma / ( m_scale * m_scale );
+}
+
 void GaussianVolumetricForce::setupSigma( const Eigen::Matrix<Scalar, 3, Eigen::Dynamic>& points )
 {
     int n = points.cols();

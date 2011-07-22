@@ -3276,4 +3276,23 @@ void BAGroomingStepper::getClumpingParameters( double& charge, double& power, do
     vertexPowerMap = m_clumpingForce->getVertexPowerMap();
 }
 
+void BAGroomingStepper::createGaussianVolumetricForce( const double charge, const Vec3d& center,
+        const Mat3d& covariance )
+{
+    if ( m_GaussianVolumetricForce ) // If we are modifying the existing force
+    {
+        m_GaussianVolumetricForce->setCharge( charge );
+        m_GaussianVolumetricForce->setCenter( center );
+        m_GaussianVolumetricForce->setCovariance( covariance );
+    }
+    else
+    {
+        m_GaussianVolumetricForce = new GaussianVolumetricForce( charge, 1.0, center,
+                covariance.inverse() );
+        for ( std::vector<GroomingTimeStepper*>::iterator stepper = m_steppers.begin(); stepper
+                != m_steppers.end(); ++stepper )
+            ( *stepper )->addExternalForce( m_GaussianVolumetricForce );
+    }
+}
+
 }

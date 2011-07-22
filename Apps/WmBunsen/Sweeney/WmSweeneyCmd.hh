@@ -82,6 +82,7 @@ protected:
     void createSweeneyNode();
     void createSweeneySubsetNode();
     MStatus createClumpCenterLinesFromPelt();
+    MStatus createGaussianVolumetricForce();
     void addCollisionMeshes();
     void setSimulateAll();
 
@@ -126,6 +127,7 @@ protected:
     MSelectionList m_allOtherTransformNodesList;
     MObject m_selectedSweeneyNode;
 
+    MObject m_selectedSphereParentNode;
     MObject m_selectedPeltNode;
     MObject m_selectedPeltMeshNode;
 

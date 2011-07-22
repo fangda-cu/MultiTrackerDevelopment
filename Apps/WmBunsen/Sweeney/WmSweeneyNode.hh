@@ -2,10 +2,10 @@
 #define WMSWEENEYNODE_HH_
 
 /**
-  * @file Apps/WmFigaro/Sweeney/WmSweeneyNode.hh
-  * @author Alasdair Coull (acoull@wetafx.co.nz)
-  * @date 17-05-2011
-  */
+ * @file Apps/WmFigaro/Sweeney/WmSweeneyNode.hh
+ * @author Alasdair Coull (acoull@wetafx.co.nz)
+ * @date 17-05-2011
+ */
 
 #include <maya/MPxLocatorNode.h> 
 #include <maya/MString.h> 
@@ -52,26 +52,25 @@
 
 #include "WmSweeneyRodManager.hh"
 
-class WmSweeneyNode : public MPxLocatorNode 
+class WmSweeneyNode: public MPxLocatorNode
 {
 public:
     WmSweeneyNode();
-    virtual	~WmSweeneyNode();
+    virtual ~WmSweeneyNode();
     virtual MStatus compute( const MPlug& i_plug, MDataBlock& i_dataBlock );
-	virtual void draw( M3dView& i_view, const MDagPath& i_path, 
-                       M3dView::DisplayStyle i_style,
-                       M3dView::DisplayStatus i_status );
+    virtual void draw( M3dView& i_view, const MDagPath& i_path, M3dView::DisplayStyle i_style,
+            M3dView::DisplayStatus i_status );
     virtual bool isBounded() const;
     static void* creator();
     static MStatus initialize();
-    virtual MStatus connectionMade( const  MPlug & plug, const  MPlug & otherPlug, bool asSrc );
-    virtual MStatus connectionBroken( const  MPlug & plug, const  MPlug & otherPlug, bool asSrc );
+    virtual MStatus connectionMade( const MPlug & plug, const MPlug & otherPlug, bool asSrc );
+    virtual MStatus connectionBroken( const MPlug & plug, const MPlug & otherPlug, bool asSrc );
 
     static MTypeId typeID;
     static MString typeName;
     static MObject ia_time;
     static MObject ia_startTime;
-    
+
     // Rod properties
     static MObject ia_length;
     static MObject ia_edgeLength;
@@ -99,7 +98,7 @@ public:
 
     // Collision meshes
     static MObject ia_collisionMeshes;
-    
+
     //Solver Tolerances
     static MObject ia_stol;
     static MObject ia_atol;
@@ -108,14 +107,14 @@ public:
     static MObject ia_numLineSearchIters;
 
     // Performance Tuning
-      //GeneralParameters
+    //GeneralParameters
     static MObject ia_enablePenaltyResponse;
     static MObject ia_implicitThickness;
     static MObject ia_implicitStiffness;
     static MObject ia_levelsetSubsampling;
     static MObject ia_inextensibilityThreshold;
 
-      //Failuredetection
+    //Failuredetection
     static MObject ia_maxNumOfSolverIters;
     static MObject ia_maxNumOfCollisionIters;
     static MObject ia_enableExplosionDetection;
@@ -123,7 +122,7 @@ public:
     static MObject ia_explosionThreshold;
     static MObject ia_stretchingThreshold;
 
-     //FailureResponse
+    //FailureResponse
     static MObject ia_solverFailure;
     static MObject ia_collisionFailure;
     static MObject ia_explosionFailure;
@@ -135,15 +134,15 @@ public:
 
     // Sync attributes to force compute() when inputs change
     static MObject ca_rodPropertiesSync;
-    
+
     // Output to the guide curve deformer
     static MObject oa_simulatedNurbs;
-    
+
     static MObject ia_strandVertices;
     static MObject ia_strandRootFrames;
     //static MObject ia_strandLengths;
     static MObject ia_verticesPerStrand;
-    
+
     // Debug drawing
     static MObject ia_shouldDrawStrands;
     static MObject ia_shouldDrawRootFrames;
@@ -151,18 +150,25 @@ public:
     static MObject ia_shouldDrawOnlySolved;
     static MObject ia_shouldDrawOnlyUnsolved;
 
-    static MStatus addNumericAttribute( MObject& i_attribute, MString i_longName, 
-                                        MString i_shortName,
-                                        MFnNumericData::Type i_type, double i_defaultValue,
-                                        bool i_isInput = true, bool i_isArray = false );
-                                        
-    void constructRodVertices( std::vector< BASim::Vec3d >& o_rodVertices, const MVector& i_direction,
-                       const MVector& i_rootPosition );
+    static MStatus addNumericAttribute( MObject& i_attribute, MString i_longName,
+            MString i_shortName, MFnNumericData::Type i_type, double i_defaultValue,
+            bool i_isInput = true, bool i_isArray = false );
+
+    void constructRodVertices( std::vector<BASim::Vec3d>& o_rodVertices,
+            const MVector& i_direction, const MVector& i_rootPosition );
 
     MStatus subsetNodes( std::vector<WmSweeneySubsetNode*>& o_subsetNodes );
     WmSweeneyRodManager* rodManager();
-        
-    void createClumpCenterLinesFromPelt(const MPointArray& centralArr) { m_rodManager->createClumpCenterLinesFromPelt(centralArr); }
+
+    void createClumpCenterLinesFromPelt( const MPointArray& centralArr )
+    {
+        m_rodManager->createClumpCenterLinesFromPelt( centralArr );
+    }
+
+    void createGaussianVolumetricForce( const Eigen::Vector3d& center, const Eigen::Matrix3d& covariance )
+    {
+        m_rodManager->createGaussianVolumetricForce(m_rodCharge, center, covariance );
+    }
 
 private:
     void initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock );
@@ -171,7 +177,7 @@ private:
     void computeSubsetRodMapping( MDataBlock& i_dataBlock );
     void compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i_dataBlock );
 
-    void updateRods( );
+    void updateRods();
     void updateRodParameters( const int& rodIdx, const bool& update_all_rods );
 
     // reformat all of these to take the updated value as a parameter
@@ -181,7 +187,7 @@ private:
             const double i_rodRadius, const double i_rodAspectRatio );
     void updateStrandRotation( BASim::ElasticRod* current_rod, bool& update_rod,
             const double i_rodRotation );
-    void updateStrandCurl( BASim::ElasticRod* current_rod,  bool& update_rod,
+    void updateStrandCurl( BASim::ElasticRod* current_rod, bool& update_rod,
             BASim::Scalar curvature, BASim::Scalar torsion, const double i_curlStart,
             const double i_verticesPerRod, const bool i_curlInXFrame );
     // TODO(sainsley) : right now solver settings are on a global level
@@ -190,10 +196,11 @@ private:
     void updateSolverSettings( MDataBlock &i_dataBlock );
 
     // Helper functions for scalp mesh
-    void getSurfaceTangent( MFnMesh& surface, BASim::Vec3d& surface_tan, int rodIdx, const BASim::Vec3d strand_tan );
+    void getSurfaceTangent( MFnMesh& surface, BASim::Vec3d& surface_tan, int rodIdx,
+            const BASim::Vec3d strand_tan );
     bool getScalpTangents( std::vector<BASim::Vec3d>& i_scalpTangents );
     void getMeshPath( MDagPath& meshPath, MStatus& status );
-    void getSubsetRods( WmSweeneySubsetNode* subset, std::vector< BASim::ElasticRod* >& subset_rods );
+    void getSubsetRods( WmSweeneySubsetNode* subset, std::vector<BASim::ElasticRod*>& subset_rods );
 
     double m_currentTime;
     double m_previousTime;
@@ -226,7 +233,7 @@ private:
     bool m_shouldDrawVelocity;
     bool m_shouldDrawOnlySolved;
     bool m_shouldDrawOnlyUnsolved;
-    
+
     WmSweeneyRodManager* m_rodManager;
     MVectorArray m_strandVertices;
     MVectorArray m_strandRootFrames;
