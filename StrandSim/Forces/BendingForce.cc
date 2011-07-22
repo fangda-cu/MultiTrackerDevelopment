@@ -21,34 +21,35 @@ BendingForce::~BendingForce()
     // TODO Auto-generated destructor stub
 }
 
-Scalar BendingForce::localEnergy(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx)
+Scalar BendingForce::localEnergy( const ElasticStrand& strand, const StrandGeometry& geometry,
+        const IndexType vtx )
 {
-    const Mat2d& B = strand.m_bendingMatrices[vtx];
-    const Scalar ilen = strand.m_invVoronoiLengths[vtx];
-    const Vec2d& kappa = geometry.m_kappa[vtx];
-    const Vec2d& kappaBar = strand.m_kappaBar[vtx];
+    const Mat2d& B = strand.m_bendingMatrices[vtx];// std::cout << "B = " << B <<'\n';
+    const Scalar ilen = strand.m_invVoronoiLengths[vtx];// std::cout << "ilen = " << ilen <<'\n';
+    const Vec2d& kappa = geometry.m_kappa[vtx];// std::cout << "kappa = " << kappa <<'\n';
+    const Vec2d& kappaBar = strand.m_kappaBar[vtx];// std::cout << "kappaBar = " << kappaBar <<'\n';
 
-    return 0.5 * ilen * (kappa - kappaBar).dot(B * (kappa - kappaBar));
+    return 0.5 * ilen * ( kappa - kappaBar ).dot( B * ( kappa - kappaBar ) );
 }
 
-BendingForce::LocalForceType BendingForce::localForce(const ElasticStrand& strand, const StrandGeometry& geometry,
-        const IndexType vtx)
+BendingForce::LocalForceType BendingForce::localForce( const ElasticStrand& strand,
+        const StrandGeometry& geometry, const IndexType vtx )
 {
-   // std::cout << "Local bending force (vertex " << vtx << ")\n";
+    // std::cout << "Local bending force (vertex " << vtx << ")\n";
     const Mat2d& B = strand.m_bendingMatrices[vtx];// std::cout << "B = " << B <<'\n';
     const Scalar ilen = strand.m_invVoronoiLengths[vtx];// std::cout << "ilen = " << ilen <<'\n';
     const Vec2d& kappa = geometry.m_kappa[vtx];// std::cout << "kappa = " << kappa <<'\n';
     const Vec2d& kappaBar = strand.m_kappaBar[vtx];// std::cout << "kappaBar = " << kappaBar <<'\n';
     const Eigen::Matrix<Scalar, 11, 2>& gradKappa = geometry.m_gradKappa[vtx];// std::cout << "gradKappa = " << gradKappa <<'\n';
 
-    const Eigen::Matrix<Scalar, 11, 1>& bending = -ilen * gradKappa * B * (kappa - kappaBar);
-   // std::cout << "force  = " << bending << '\n';
+    const Eigen::Matrix<Scalar, 11, 1>& bending = -ilen * gradKappa * B * ( kappa - kappaBar );
+    // std::cout << "force  = " << bending << '\n';
 
     return bending;
 }
 
-BendingForce::LocalJacobianType BendingForce::localJacobian(const ElasticStrand& strand, const StrandGeometry& geometry,
-        const IndexType vtx)
+BendingForce::LocalJacobianType BendingForce::localJacobian( const ElasticStrand& strand,
+        const StrandGeometry& geometry, const IndexType vtx )
 {
     LocalJacobianType localJ;
 
@@ -58,25 +59,26 @@ BendingForce::LocalJacobianType BendingForce::localJacobian(const ElasticStrand&
     const Vec2d& kappaBar = strand.m_kappaBar[vtx];
     const Eigen::Matrix<Scalar, 11, 2>& gradKappa = geometry.m_gradKappa[vtx];
 
-    symBProduct(localJ, B, gradKappa);
+    symBProduct( localJ, B, gradKappa );
     localJ *= -ilen;
 
     const std::pair<LocalJacobianType, LocalJacobianType>& hessKappa = geometry.m_HessKappa[vtx]; // Could we compute HessKappa on the spot instead?
-    const Vec2d temp = -ilen * (kappa - kappaBar).transpose() * B;
-    localJ += temp(0) * hessKappa.first + temp(1) * hessKappa.second;
+    const Vec2d temp = -ilen * ( kappa - kappaBar ).transpose() * B;
+    localJ += temp( 0 ) * hessKappa.first + temp( 1 ) * hessKappa.second;
 
     return localJ;
 }
 
-void BendingForce::addInPosition(ForceVectorType& globalForce, const IndexType vtx, const LocalForceType& localForce)
+void BendingForce::addInPosition( ForceVectorType& globalForce, const IndexType vtx,
+        const LocalForceType& localForce )
 {
-    globalForce.segment<11> (4 * (vtx - 1)) += localForce;
+    globalForce.segment<11> ( 4 * ( vtx - 1 ) ) += localForce;
 }
 
-void BendingForce::addInPosition(JacobianMatrixType& globalJacobian, const IndexType vtx,
-        const LocalJacobianType& localJacobian)
+void BendingForce::addInPosition( JacobianMatrixType& globalJacobian, const IndexType vtx,
+        const LocalJacobianType& localJacobian )
 {
-    globalJacobian.localStencilAdd<11> (4 * (vtx - 1), localJacobian);
+    globalJacobian.localStencilAdd<11> ( 4 * ( vtx - 1 ), localJacobian );
 }
 
 }

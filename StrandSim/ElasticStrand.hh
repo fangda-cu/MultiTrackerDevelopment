@@ -24,7 +24,7 @@ class BendingForce;
 class TwistingForce;
 class GravitationForce;
 
-typedef Typelist<StretchingForce, Typelist<BendingForce, Typelist<TwistingForce, Typelist<
+typedef Typelist<StretchingForce, Typelist<TwistingForce, Typelist<BendingForce, Typelist<
         GravitationForce, NullType> > > > BuiltInForcesList;
 
 class ElasticStrand: public StrandBase

@@ -107,9 +107,9 @@ void ElasticStrand::prepareForSolving()
 
     ForceAccumulator<StretchingForce>::accumulate( m_totalEnergy, m_totalForces, m_totalJacobian,
             *this, m_geometry );
-    ForceAccumulator<BendingForce>::accumulate( m_totalEnergy, m_totalForces, m_totalJacobian,
-            *this, m_geometry );
     ForceAccumulator<TwistingForce>::accumulate( m_totalEnergy, m_totalForces, m_totalJacobian,
+            *this, m_geometry );
+    ForceAccumulator<BendingForce>::accumulate( m_totalEnergy, m_totalForces, m_totalJacobian,
             *this, m_geometry );
     ForceAccumulator<GravitationForce>::accumulate( m_totalEnergy, m_totalForces, m_totalJacobian,
             *this, m_geometry );
@@ -133,12 +133,12 @@ void ElasticStrand::prepareForExamining()
     ForceAccumulator<StretchingForce>::accumulate( m_newTotalEnergy, m_newTotalForces, *this,
             m_newGeometry );
     std::cout << "Stretching energy = " << m_newTotalEnergy << " forces norm = " << m_newTotalForces.norm() << '\n';
-    ForceAccumulator<BendingForce>::accumulate( m_newTotalEnergy, m_newTotalForces, *this,
-            m_newGeometry );
-    std::cout << "Bending energy = " << m_newTotalEnergy << " forces norm = " << m_newTotalForces.norm() << '\n';
     ForceAccumulator<TwistingForce>::accumulate( m_newTotalEnergy, m_newTotalForces, *this,
             m_newGeometry );
     std::cout << "Twisting energy = " << m_newTotalEnergy << " forces norm = " << m_newTotalForces.norm() << '\n';
+    ForceAccumulator<BendingForce>::accumulate( m_newTotalEnergy, m_newTotalForces, *this,
+            m_newGeometry );
+    std::cout << "Bending energy = " << m_newTotalEnergy << " forces norm = " << m_newTotalForces.norm() << '\n';
     ForceAccumulator<GravitationForce>::accumulate( m_newTotalEnergy, m_newTotalForces, *this,
             m_newGeometry );
     std::cout << "Grawity energy = " << m_newTotalEnergy << " forces norm = " << m_newTotalForces.norm() << '\n';
@@ -162,8 +162,8 @@ void ElasticStrand::acceptNewPositions()
         m_bendingMatrices[vtx] = computeBendingMatrix( vtx );
 
     ForceAccumulator<StretchingForce>::accumulate( m_totalJacobian, *this, m_geometry );
-    ForceAccumulator<BendingForce>::accumulate( m_totalJacobian, *this, m_geometry );
     ForceAccumulator<TwistingForce>::accumulate( m_totalJacobian, *this, m_geometry );
+    ForceAccumulator<BendingForce>::accumulate( m_totalJacobian, *this, m_geometry );
     ForceAccumulator<TwistingForce>::accumulate( m_totalJacobian, *this, m_geometry );
 
     m_readyForSolving = true;
