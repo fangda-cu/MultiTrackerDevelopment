@@ -74,7 +74,7 @@ Scalar RodClumpingForce::computeEnergy( const ElasticRod& rod, const ElasticRod&
         const Vec3d& y = ClosestPointOnRod( x, other );
         const Scalar normep2 = ( x[0] - y[0] ) * ( x[0] - y[0] ) + ( x[1] - y[1] ) * ( x[1] - y[1] )
                 + ( x[2] - y[2] ) * ( x[2] - y[2] );
-        energy -= charge * normep2 / pow( normep2 + rho2, 1 + 0.5 * r );
+        energy -= q * charge * normep2 / pow( normep2 + rho2, 1 + 0.5 * r );
     }
 
     return energy;
@@ -108,7 +108,7 @@ void RodClumpingForce::computeForce( const ElasticRod& rod, const ElasticRod& ot
             charge = vertexQMap[vidx];
         }
 
-        Vec3d localForceFromOtherVtx = charge * ( x - y ) * pow( normep2 + rho2, -1 - 0.5 * r )
+        Vec3d localForceFromOtherVtx = q * charge * ( x - y ) * pow( normep2 + rho2, -1 - 0.5 * r )
                 * ( 2 - ( 2 + r ) * normep2 / ( normep2 + rho2 ) );
 
         localForceFromOther += localForceFromOtherVtx;
@@ -168,12 +168,12 @@ void RodClumpingForce::computeLocalForceDX( const ElasticRod& rod, int vidx,
     for ( int i = 0; i < 3; i++ )
     {
         const double xx2 = ( x[i] - y[i] ) * ( x[i] - y[i] );
-        localJ( i, i ) = charge * pow( normep2 + rho2, -3 - r / 2. ) * ( 2 * rho2 * ( -2 * ( 2 + r )
+        localJ( i, i ) = q * charge * pow( normep2 + rho2, -3 - r / 2. ) * ( 2 * rho2 * ( -2 * ( 2 + r )
                 * xx2 + rho2 ) + normep2 * ( 2 * r * xx2 + r * r * xx2 + 2 * rho2 - r * rho2 )
                 - normep4 * r );
 
         for ( int j = 0; j < i; j++ )
-            localJ( i, j ) = localJ( j, i ) = charge * ( 2 + r ) * ( x[i] - y[i] ) * ( x[j] - y[j] )
+            localJ( i, j ) = localJ( j, i ) = q * charge * ( 2 + r ) * ( x[i] - y[i] ) * ( x[j] - y[j] )
                     * ( normep2 * r - 4 * rho2 ) * pow( normep2 + rho2, -3 - r / 2. );
     }
 }

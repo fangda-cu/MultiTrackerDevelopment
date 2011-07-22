@@ -46,7 +46,8 @@ BAGroomingStepper::BAGroomingStepper( std::vector<ElasticRod*>& rods,
         std::vector<ScriptingController*>& scripting_controllers,
         std::vector<GroomingTimeStepper*>& steppers, const double& dt, const double time,
         const int num_threads, const PerformanceTuningParameters perf_param,
-        std::vector<LevelSet*>& levelSets, const int numberOfClumps ) :
+        std::vector<LevelSet*>& levelSets, const int numberOfClumps,
+        std::vector<int>& rodsPerSubset ) :
             m_num_dof( 0 ),
             m_rods( rods ),
             m_number_of_rods( m_rods.size() ),
@@ -80,8 +81,10 @@ BAGroomingStepper::BAGroomingStepper( std::vector<ElasticRod*>& rods,
             m_level( 0 ),
             m_geodata( m_xn, m_vnphalf, m_vertex_radii, m_masses, m_collision_immune, m_obj_start,
                     m_perf_param.m_implicit_thickness, m_perf_param.m_implicit_stiffness ),
-            m_level_sets( levelSets ), m_numberOfClumps( numberOfClumps )
+            m_level_sets( levelSets ), m_numberOfClumps( numberOfClumps ),
+            m_rodsPerSubset( rodsPerSubset )
 {
+    // add level set forces
     m_levelset_forces.resize( m_level_sets.size() );
 
     for ( size_t i = 0; i < m_level_sets.size(); ++i )
@@ -95,10 +98,53 @@ BAGroomingStepper::BAGroomingStepper( std::vector<ElasticRod*>& rods,
         }
     }
 
-    for ( std::vector<GroomingTimeStepper*>::iterator stepper = m_steppers.begin(); stepper
-            != m_steppers.end(); ++stepper )
+    int numberOfSubsets = m_rodsPerSubset.size();
+    // add volumetric forces
+    m_volumetric_forces.resize( numberOfSubsets );
+
+    // Assuming this is constant for all rods (for now)
+    int verticesPerRod = m_rods[0]->nv();
+
+    for ( size_t i = 0; i < numberOfSubsets; ++i )
     {
-        ( *stepper )->setMaxIterations( m_perf_param.m_solver.m_max_iterations );
+        // TODO (sainsley) : add method to update charge and scale for this
+        // force via the UI
+        m_volumetric_forces[i] = new GaussianVolumetricForce( );
+        int n = rodsPerSubset[i]*verticesPerRod;
+        Eigen::Matrix<Scalar, 3, Eigen::Dynamic> vertexMatrix (3, n);
+        int currentIdx = 0;
+        for ( size_t rodIdx = 0; rodIdx < m_rods.size(); rodIdx++ )
+        {
+            int subsetIdx = m_rods[rodIdx]->getSubsetIdx();
+            if ( subsetIdx == i )
+            {
+                for ( int vIdx = 0; vIdx < verticesPerRod; ++vIdx )
+                {
+                    Vec3d vert = m_rods[rodIdx]->getVertex( vIdx );
+                    vertexMatrix(0, currentIdx) = vert[0];
+                    vertexMatrix(1, currentIdx) = vert[1];
+                    vertexMatrix(2, currentIdx) = vert[2];
+                    currentIdx++;
+                }
+            }
+        }
+        m_volumetric_forces[i]->setupSigma( vertexMatrix );
+    }
+
+
+    for ( size_t rodIdx = 0; rodIdx < m_rods.size(); rodIdx++ )
+    {
+        int subsetIdx = m_rods[rodIdx]->getSubsetIdx();
+
+        for ( size_t vForceIdx = 0; vForceIdx < m_volumetric_forces.size();
+                vForceIdx++ )
+        {
+            if ( vForceIdx != subsetIdx )
+            {
+                m_steppers[rodIdx]->
+                    addExternalForce( m_volumetric_forces[vForceIdx] );
+            }
+        }
     }
 
     g_log = new TextLog( std::cerr, MsgInfo::kDebug, true );

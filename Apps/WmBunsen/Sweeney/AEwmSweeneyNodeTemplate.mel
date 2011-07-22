@@ -21,12 +21,13 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
 		editorTemplate -addControl "curlCount";
 		editorTemplate -addControl "curlStart";
     	editorTemplate -addControl "rodDamping";
+    editorTemplate -endLayout;
+    editorTemplate -beginLayout "Rod Clumping" -collapse 0;
     	editorTemplate -addControl "rodCharge";
         editorTemplate -addControl "rodPower";
         editorTemplate -addControl "rodClumpSeparation";
         AEaddRampControl ("rodClumpingRamp");
     editorTemplate -endLayout;
-    
     editorTemplate -beginLayout "Solver Tolerances" -collapse 0;
     	editorTemplate -addControl "stol";
     	editorTemplate -addControl "atol";
@@ -41,8 +42,13 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
         	editorTemplate -beginLayout "Implicit Rod-Mesh Penalty" -collapse 0;
           		editorTemplate -addControl "enablePenaltyResponse";
           		editorTemplate -addControl "implicitThickness";
-	  		editorTemplate -addControl "implicitStiffness";
-	  		editorTemplate -addControl "levelsetSubsampling";
+	  			editorTemplate -addControl "implicitStiffness";
+	  			editorTemplate -addControl "levelsetSubsampling";
+        	editorTemplate -endLayout;
+        	
+        	editorTemplate -beginLayout "Rod-Layer Penalty" -collapse 0;
+          		editorTemplate -addControl "rodLayerForceCharge";
+          		editorTemplate -addControl "rodLayerForceScale";
         	editorTemplate -endLayout;
     
         	editorTemplate -beginLayout "Inextensibility Filter" -collapse 0;
