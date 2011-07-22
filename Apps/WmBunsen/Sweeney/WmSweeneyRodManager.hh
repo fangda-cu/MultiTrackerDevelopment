@@ -92,6 +92,7 @@ public:
 
     std::vector<BASim::ElasticRod*> m_rods;
     std::vector<WmSweeneySubsetNode*> m_subsetNodes;
+    std::vector<int> m_rodsPerSubset;
 
     void createClumpCenterLinesFromPelt(const MPointArray& centralArr);
 

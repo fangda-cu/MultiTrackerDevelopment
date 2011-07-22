@@ -68,6 +68,8 @@ using namespace BASim;
 /* static */MObject WmSweeneyNode::ia_implicitThickness;
 /* static */MObject WmSweeneyNode::ia_implicitStiffness;
 /* static */MObject WmSweeneyNode::ia_levelsetSubsampling;
+/* static */MObject WmSweeneyNode::ia_rodLayerCharge;
+/* static */MObject WmSweeneyNode::ia_rodLayerScale;
 /* static */MObject WmSweeneyNode::ia_inextensibilityThreshold;
 
 //Failuredetection
@@ -217,7 +219,7 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
                 /// we need a method to explicitly notify sweeney of the
                 // new subset and append it in case a subset is made mid-sim
                 subsetNodes( m_rodManager->m_subsetNodes );
-                computeSubsetRodMapping( i_dataBlock );
+                computeSubsetRodMapping( i_dataBlock, m_rodManager->m_rodsPerSubset );
             }
 
 		}
@@ -719,6 +721,8 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput(MDataBlock& i_dataBlock)
     perfParams.m_implicit_stiffness = i_dataBlock.inputValue(ia_implicitStiffness).asDouble();
     perfParams.m_levelset_subsampling = i_dataBlock.inputValue(ia_levelsetSubsampling).asInt();
     perfParams.m_inextensibility_threshold = i_dataBlock.inputValue(ia_inextensibilityThreshold).asInt();
+    perfParams.m_rod_layer_force_charge = i_dataBlock.inputValue(ia_rodLayerCharge).asDouble();
+    perfParams.m_rod_layer_force_scale = i_dataBlock.inputValue(ia_rodLayerScale).asDouble();
     perfParams.m_solver.m_max_iterations = i_dataBlock.inputValue(ia_maxNumOfSolverIters).asInt();
     perfParams.m_collision.m_max_iterations = i_dataBlock.inputValue(ia_maxNumOfCollisionIters).asInt();
     perfParams.m_enable_explosion_detection = i_dataBlock.inputValue(ia_enableExplosionDetection).asBool();
@@ -1314,6 +1318,14 @@ void* WmSweeneyNode::creator()
 	status = attributeAffects( ia_levelsetSubsampling, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_levelsetSubsampling->ca_rodPropertiesSync" ); return status; }
 
+	addNumericAttribute( ia_rodLayerCharge, "rodLayerForceCharge", "rlfc", MFnNumericData::kDouble, 0.0, true );
+    status = attributeAffects( ia_rodLayerCharge, ca_rodPropertiesSync );
+    if ( !status ) { status.perror( "attributeAffects ia_rodLayerCharge->ca_rodPropertiesSync" ); return status; }
+
+    addNumericAttribute( ia_rodLayerScale, "rodLayerForceScale", "rlfs", MFnNumericData::kDouble, 0.0, true );
+    status = attributeAffects( ia_rodLayerScale, ca_rodPropertiesSync );
+    if ( !status ) { status.perror( "attributeAffects ia_rodLayerScale->ca_rodPropertiesSync" ); return status; }
+
 	addNumericAttribute( ia_inextensibilityThreshold, "inextensibilityThreshold", "ixf", MFnNumericData::kInt, 0, true );
 	status = attributeAffects( ia_inextensibilityThreshold, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_inextensibilityThreshold->ca_rodPropertiesSync" ); return status; }
@@ -1744,7 +1756,8 @@ MStatus WmSweeneyNode::subsetNodes( std::vector<WmSweeneySubsetNode*>& o_subsetN
 }
 
 // pass MDataBlock here
-void WmSweeneyNode::computeSubsetRodMapping( MDataBlock& i_dataBlock )
+void WmSweeneyNode::computeSubsetRodMapping( MDataBlock& i_dataBlock,
+        std::vector<int>& o_rodsPerSubset )
 {
     if ( m_rodManager->m_subsetNodes.size() < 1 )
     {
@@ -1805,7 +1818,9 @@ void WmSweeneyNode::computeSubsetRodMapping( MDataBlock& i_dataBlock )
         }
     }
 
-    // debug loop
+    o_rodsPerSubset.resize( m_rodManager->m_subsetNodes.size() );
+
+    // set number of rods per subset
     for ( int i = 0; i < m_rodManager->m_subsetNodes.size(); ++i )
     {
 
@@ -1817,6 +1832,6 @@ void WmSweeneyNode::computeSubsetRodMapping( MDataBlock& i_dataBlock )
                 rodCount++;
         }
         cout << " SUBSET " << i << " has " << rodCount << " rods " << endl;
-
+        o_rodsPerSubset[ i ] = rodCount;
     }
 }

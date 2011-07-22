@@ -7,6 +7,8 @@ WmSweeneyRodManager::WmSweeneyRodManager()
 {
     m_bAGroomingStepper = NULL;
     m_rods.clear();
+    m_subsetNodes.clear();
+    m_rodsPerSubset.clear();
     m_rodTimeSteppers.clear();
     m_triangleMeshes.clear();
     m_scriptingControllers.clear();
@@ -186,7 +188,7 @@ void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const d
     m_bAGroomingStepper
             = new BAGroomingStepper( m_rods, m_triangleMeshes, m_scriptingControllers,
                     m_rodTimeSteppers, i_timeStep, i_startTime, -1, perfParams, m_levelSets,
-                    i_numberOfClumps );
+                    i_numberOfClumps, m_rodsPerSubset );
 }
 
 void WmSweeneyRodManager::updateSolverSettings( double i_atol, double i_stol, double i_rtol,

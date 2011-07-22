@@ -27,6 +27,7 @@
 #include "RodPenaltyForce.hh"
 #include "PerformanceTuningParameters.hh"
 #include "../../Util/TextLog.hh"
+#include "GaussianVolumetricForce.hh"
 #include "RodClumpingForce.hh"
 #else
 #include "BASim/src/Core/ScriptingController.hh"
@@ -42,6 +43,7 @@
 #include "Apps/BASimulator/Problems/ProblemBase.hh"
 #include "BASim/src/Core/StatTracker.hh"
 #include "BASim/src/Physics/ElasticRods/MinimalTriangleMeshBackup.hh"
+#include "GaussianVolumetricForce.hh"
 #include "RodClumpingForce.hh"
 #endif
 
@@ -86,7 +88,8 @@ public:
             std::vector<ScriptingController*>& scripting_controllers,
             std::vector<GroomingTimeStepper*>& steppers, const double& dt, const double time,
             const int num_threads, const PerformanceTuningParameters perf_param,
-            std::vector<LevelSet*>& levelSets, const int rods_per_clump );
+            std::vector<LevelSet*>& levelSets, const int rods_per_clump,
+            std::vector<int>& rodsPerSubset );
 
     /**
      * Destructor.
@@ -383,6 +386,9 @@ private:
     // duplicated data.
     std::vector<LevelSet*> &m_level_sets;
 
+    // Total number of subsets on the scalp
+    std::vector<int> &m_rodsPerSubset;
+
     // Controllers to move scripted geometry/rods forward in time and to set boundary conditions
     const std::vector<ScriptingController*>& m_scripting_controllers;
     // Integrator selected by user
@@ -445,6 +451,8 @@ private:
 
     std::vector<RodLevelSetForce*> m_levelset_forces;
 
+    std::vector<GaussianVolumetricForce*> m_volumetric_forces;
+
     // Number of threads to be used for dynamics and collisions
     int m_num_threads;
 
@@ -494,6 +502,7 @@ private:
             m_total_stretching_killed;
 
     std::vector<double> m_initialLengths;
+    // clumping
     int m_numberOfClumps;
     RodClumpingForce* m_clumpingForce;
     VecXd m_wmPeltPoints;

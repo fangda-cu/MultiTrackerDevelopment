@@ -42,8 +42,13 @@ global proc AEwmSweeneyNodeTemplate( string $nodeName )
         	editorTemplate -beginLayout "Implicit Rod-Mesh Penalty" -collapse 0;
           		editorTemplate -addControl "enablePenaltyResponse";
           		editorTemplate -addControl "implicitThickness";
-	  		editorTemplate -addControl "implicitStiffness";
-	  		editorTemplate -addControl "levelsetSubsampling";
+	  			editorTemplate -addControl "implicitStiffness";
+	  			editorTemplate -addControl "levelsetSubsampling";
+        	editorTemplate -endLayout;
+        	
+        	editorTemplate -beginLayout "Rod-Layer Penalty" -collapse 0;
+          		editorTemplate -addControl "rodLayerForceCharge";
+          		editorTemplate -addControl "rodLayerForceScale";
         	editorTemplate -endLayout;
     
         	editorTemplate -beginLayout "Inextensibility Filter" -collapse 0;

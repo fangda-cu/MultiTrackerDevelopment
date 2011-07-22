@@ -113,6 +113,8 @@ public:
     static MObject ia_implicitThickness;
     static MObject ia_implicitStiffness;
     static MObject ia_levelsetSubsampling;
+    static MObject ia_rodLayerCharge;
+    static MObject ia_rodLayerScale;
     static MObject ia_inextensibilityThreshold;
 
       //Failuredetection
@@ -168,7 +170,7 @@ private:
     void initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock );
     void initialiseCollisionMeshes( MDataBlock &i_data );
     void updateCollisionMeshes( MDataBlock& i_dataBlock );
-    void computeSubsetRodMapping( MDataBlock& i_dataBlock );
+    void computeSubsetRodMapping( MDataBlock& i_dataBlock, std::vector<int>& o_rodsPerSubset );
     void compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i_dataBlock );
 
     void updateRods( );

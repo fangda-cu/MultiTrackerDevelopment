@@ -91,6 +91,9 @@ struct PerformanceTuningParameters
     // Number of times the original step has to be halved before the inextensibility filter is applied
     int m_inextensibility_threshold;
 
+    double m_rod_layer_force_charge;
+    double m_rod_layer_force_scale;
+
     /**
      * Failure detection
      */
