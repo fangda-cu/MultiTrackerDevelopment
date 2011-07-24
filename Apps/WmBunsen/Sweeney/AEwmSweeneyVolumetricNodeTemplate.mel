@@ -1,0 +1,12 @@
+
+global proc AEwmSweeneyVolumetricNodeTemplate( string $i_nodeName )
+{
+    editorTemplate -beginScrollLayout "wmSweeneyVolumetricNode";
+
+    editorTemplate -beginLayout "Gaussian Volumetric Force Settings" -collapse 0;
+        editorTemplate -addControl "charge";
+    editorTemplate -endLayout;
+        
+    editorTemplate -addExtraControls;
+    editorTemplate -endScrollLayout;
+}

@@ -76,6 +76,11 @@ public:
         return m_scale;
     }
 
+    double getCharge( )
+    {
+        return m_charge;
+    }
+
 	static MTypeId typeID;
     static MString typeName;
 	static MObject ia_inMesh;

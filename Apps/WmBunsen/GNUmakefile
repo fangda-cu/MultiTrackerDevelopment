@@ -237,6 +237,10 @@ SCR14            := Sweeney/AEwmSweeneySubsetNodeTemplate.mel
 SCR14_MAYA       := 1
 SCR14_INSD       := $(SCR_INSD)
 
+SCR15            := Sweeney/AEwmSweeneyVolumetricNodeTemplate.mel
+SCR15_MAYA       := 1
+SCR15_INSD       := $(SCR_INSD)
+
 ##############################################################################
 include /vol/bob/make/tail.mk
 ##############################################################################

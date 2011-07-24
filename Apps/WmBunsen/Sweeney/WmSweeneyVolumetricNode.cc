@@ -13,6 +13,7 @@ MObject WmSweeneyVolumetricNode::ia_startTime;
 MObject WmSweeneyVolumetricNode::ia_inMesh;
 MObject WmSweeneyVolumetricNode::ia_meshTransform;
 MObject WmSweeneyVolumetricNode::oa_meshData;
+MObject WmSweeneyVolumetricNode::ia_charge;
     
 WmSweeneyVolumetricNode::WmSweeneyVolumetricNode()
     : m_triangleMeshRenderer( NULL ), m_currentMesh( NULL ),
@@ -108,6 +109,10 @@ MStatus WmSweeneyVolumetricNode::compute( const MPlug& i_plug, MDataBlock& i_dat
         MVector Mcenter = transform.getTranslation( MSpace::kTransform, &stat );
         CHECK_MSTATUS( stat );
         m_center = Vec3d( Mcenter[0], Mcenter[1], Mcenter[2] );
+
+        // Get Gaussian charge
+        m_charge = i_data.inputValue( ia_charge, &stat ).asDouble();
+        CHECK_MSTATUS( stat );
 
         // Set up time
         m_previousTime = m_currentTime;
@@ -398,6 +403,19 @@ MStatus WmSweeneyVolumetricNode::initialize()
         if (!stat) { stat.perror("addAttribute oa_meshData"); return stat;}
     }
     
+    {
+        MFnNumericAttribute   nAttr;
+        ia_charge = nAttr.create( "charge", "q", MFnNumericData::kDouble, 0.0, &stat );
+        if (!stat) {
+            stat.perror( "create ia_charge attribute" );
+            return stat;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( true );
+        stat = addAttribute( ia_charge );
+        if (!stat) { stat.perror( "addAttribute charge" ); return stat;}
+    }
+
     stat = attributeAffects( ia_time, oa_meshData );
     if (!stat) { stat.perror( "attributeAffects ia_time->oa_meshData" ); return stat;}
     stat = attributeAffects(ia_startTime, oa_meshData );
@@ -406,6 +424,8 @@ MStatus WmSweeneyVolumetricNode::initialize()
     if (!stat) { stat.perror( "attributeAffects ia_time->oa_meshData" ); return stat;}
     stat = attributeAffects( ia_meshTransform, oa_meshData );
     if (!stat) { stat.perror( "attributeAffects ia_meshTransform->oa_meshData" ); return stat;}
+    stat = attributeAffects( ia_charge, oa_meshData );
+    if (!stat) { stat.perror( "attributeAffects ia_charge->oa_meshData" ); return stat;}
     
     return MS::kSuccess;
 }

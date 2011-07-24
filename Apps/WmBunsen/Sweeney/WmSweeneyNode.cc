@@ -653,7 +653,7 @@ void WmSweeneyNode::initialiseVolumetricMeshes(MDataBlock &i_data)
                 Mat3d sigma;
                 sigma.diagonal() = scale;
                 sigma = q.matrix() * sigma * ( q.matrix().transpose() );
-                m_rodManager->createGaussianVolumetricForce(m_rodCharge, center, sigma );
+                m_rodManager->createGaussianVolumetricForce(volumetricMeshNode->getCharge(), center, sigma );
 
                 //m_rodManager->addCollisionMesh(triangleMesh, figMeshController->currentLevelSet(), figMeshController);
             }
