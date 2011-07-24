@@ -23,6 +23,7 @@
 
 #include "Sweeney/WmSweeneyNode.hh"
 #include "Sweeney/WmSweeneySubsetNode.hh"
+#include "Sweeney/WmSweeneyVolumetricNode.hh"
 #include "Sweeney/Tools/AddRod/WmSwAddRodContext.hh"
 #include "Sweeney/Tools/AddRod/WmSwAddRodContextCommand.hh"
 #include "Sweeney/Tools/AddRod/WmSwAddRodToolCommand.hh"
@@ -177,6 +178,15 @@ MStatus initializePlugin( MObject obj )
         status.perror( "RegisterNode WmSweeneySubsetNode failed" );
     }
 
+    status = plugin.registerNode( WmSweeneyVolumetricNode::typeName, WmSweeneyVolumetricNode::typeID,
+                                        WmSweeneyVolumetricNode::creator,
+                                        WmSweeneyVolumetricNode::initialize,
+                                        WmSweeneyVolumetricNode::kLocatorNode );
+    if ( !status )
+    {
+        status.perror( "RegisterNode WmSweeneyVolumetricNode failed" );
+    }
+
     status = plugin.registerCommand( WmSweeneyCmd::typeName, WmSweeneyCmd::creator, 
                                    WmSweeneyCmd::syntaxCreator );
     if ( !status ) {
@@ -297,6 +307,11 @@ MStatus uninitializePlugin( MObject obj)
     if ( plugin.deregisterNode( WmSweeneySubsetNode::typeID ) != MS::kSuccess )
     {
         status.perror( "DeregisterNode WmSweeneySubsetNode failed" );
+    }
+
+    if ( plugin.deregisterNode( WmSweeneyVolumetricNode::typeID ) != MS::kSuccess )
+    {
+        status.perror( "DeregisterNode WmSweeneyVolumetricNode failed" );
     }
 
 

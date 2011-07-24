@@ -47,6 +47,7 @@
 #include <maya/MFnMatrixAttribute.h>
 #include <maya/MPlugArray.h>
 #include <maya/MQuaternion.h>
+#include <maya/MFnTransform.h>
 
 #include <sys/stat.h>
 
@@ -98,6 +99,9 @@ public:
 
     // Collision meshes
     static MObject ia_collisionMeshes;
+
+    // Volumetric meshes
+    static MObject ia_volumetricMeshes;
 
     //Solver Tolerances
     static MObject ia_stol;
@@ -176,6 +180,8 @@ private:
     void initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock );
     void initialiseCollisionMeshes( MDataBlock &i_data );
     void updateCollisionMeshes( MDataBlock& i_dataBlock );
+    void initialiseVolumetricMeshes( MDataBlock &i_data );
+    void updateVolumetricMeshes( MDataBlock& i_dataBlock );
     void computeSubsetRodMapping( MDataBlock& i_dataBlock, std::vector<int>& o_rodsPerSubset );
     void compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i_dataBlock );
 

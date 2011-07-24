@@ -28,6 +28,7 @@
 #include "../WmFigMeshController.hh"
 
 #include "WmSweeneySubsetNode.hh"
+#include "WmSweeneyVolumetricNode.hh"
 
 #include <tr1/unordered_map>
 

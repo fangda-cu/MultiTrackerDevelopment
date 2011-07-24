@@ -97,6 +97,7 @@ WmFigMeshController.hh \
 Sweeney/WmSweeneyNode.hh \
 Sweeney/WmSweeneyRodManager.hh \
 Sweeney/WmSweeneySubsetNode.hh \
+Sweeney/WmSweeneyVolumetricNode.hh \
 Sweeney/WmSweeneyCmd.hh \
 Sweeney/WmSweeneyUtils.hh \
 Sweeney/Tools/AddRod/WmSwAddRodContext.hh \
@@ -142,6 +143,7 @@ WmFigRodParticleInput.cc \
 WmFigMeshController.cc \
 Sweeney/WmSweeneyNode.cc \
 Sweeney/WmSweeneySubsetNode.cc \
+Sweeney/WmSweeneyVolumetricNode.cc \
 Sweeney/WmSweeneyRodManager.cc \
 Sweeney/WmSweeneyCmd.cc \
 Sweeney/WmSweeneyUtils.cc \

@@ -35,6 +35,7 @@
 
 #include "WmSweeneyCmd.hh"
 #include "WmSweeneyNode.hh"
+#include "WmSweeneyVolumetricNode.hh"
 #include "WmSweeneyUtils.hh"
 #include "../WmBunsenCollisionMeshNode.hh"
 
@@ -454,7 +455,7 @@ MStatus WmSweeneyCmd::createClumpCenterLinesFromPelt()
 MStatus WmSweeneyCmd::createGaussianVolumetricForce()
 {
     // First let's check that the right nodes have been previously selected.
-    if ( m_selectedSweeneyNode == MObject::kNullObj || m_selectedSphereParentNode
+    /*if ( m_selectedSweeneyNode == MObject::kNullObj || m_selectedSphereParentNode
             == MObject::kNullObj )
     {
         MGlobal::displayError( "Please select a wmSweeney node and a sphere node" );
@@ -489,7 +490,121 @@ MStatus WmSweeneyCmd::createGaussianVolumetricForce()
 
     MFnDependencyNode sweeneyFn( m_selectedSweeneyNode );
     WmSweeneyNode* sweeneyNode = dynamic_cast<WmSweeneyNode*> ( sweeneyFn.userNode() );
-    sweeneyNode->createGaussianVolumetricForce( center, sigma );
+    sweeneyNode->createGaussianVolumetricForce( center, sigma );*/
+
+    // start here
+    MStatus stat;
+
+    if ( m_selectedSweeneyNode == MObject::kNullObj )
+    {
+       MGlobal::displayError( "Please select a wmSweeney node to connect the mesh to." );
+       return MS::kFailure;
+    }
+
+    MFnDependencyNode sweeneyNodeFn( m_selectedSweeneyNode, &stat );
+    CHECK_MSTATUS( stat );
+
+    MPlug sweeneyInputPlugArr = sweeneyNodeFn.findPlug( "volumetricMeshes", true, &stat );
+    CHECK_MSTATUS( stat );
+
+    for ( unsigned int l = 0; l < m_meshList.length(); l++ )
+    {
+       MDagPath dagPath;
+       MObject component;
+       m_meshList.getDagPath( l, dagPath, component );
+       dagPath.extendToShape();
+
+       MObject nodeObj = dagPath.node( &stat );
+       CHECK_MSTATUS( stat );
+       MFnDependencyNode nodeFn( nodeObj, &stat );
+
+       // Create a volumetricMeshNode to pipe the mesh through on the way to the dynamics node
+
+       MObject volumetricMeshNodeTObj; // Object for transform node
+       MObject volumetricMeshNodeSObj; // Object for shape node
+       MDagPath shapeDagPath;
+       MObject pObj;
+       MDagModifier dagModifier;
+       MString volumetricNodeShapeName = "";
+
+       createDagNode( WmSweeneyVolumetricNode::typeName.asChar(),
+               WmSweeneyVolumetricNode::typeName.asChar(), pObj, &volumetricMeshNodeTObj,
+               &volumetricMeshNodeSObj, &dagModifier, volumetricNodeShapeName );
+
+       appendToResultString( volumetricNodeShapeName );
+
+       MDagPath volumetricMeshNodeDagPath;
+       stat = MDagPath::getAPathTo( volumetricMeshNodeSObj, volumetricMeshNodeDagPath );
+       CHECK_MSTATUS( stat );
+
+       MString
+               timeStr(
+                       "connectAttr -f time1.outTime " + volumetricMeshNodeDagPath.fullPathName()
+                               + ".time" );
+       dagModifier.commandToExecute( timeStr );
+       dagModifier.doIt();
+
+       if ( nodeFn.typeName() == "mesh" )
+       {
+           MFnMesh meshFn( dagPath, &stat );
+           CHECK_MSTATUS( stat );
+
+           MPlug worldMeshPlug =
+                   meshFn.findPlug( "worldMesh", true, &stat ).elementByLogicalIndex( 0, &stat );
+           CHECK_MSTATUS( stat );
+
+           MPlug collisionMeshNodeInPlug( volumetricMeshNodeSObj,
+                   WmSweeneyVolumetricNode::ia_inMesh );
+
+           stat = dagModifier.connect( worldMeshPlug, collisionMeshNodeInPlug );
+           CHECK_MSTATUS( stat );
+           stat = dagModifier.doIt();
+           CHECK_MSTATUS( stat );
+
+           // We need to track when the mesh transforms so we can do fast level set look ups
+           // if the mesh is only rigidly moving.
+           MPlug worldMatrixPlug =
+                   meshFn.findPlug( "worldMatrix", true, &stat ).elementByLogicalIndex( 0, &stat );
+           CHECK_MSTATUS( stat );
+
+           MPlug volumetricMeshNodeMatrixPlug(volumetricMeshNodeSObj,
+                   WmSweeneyVolumetricNode::ia_meshTransform );
+
+           stat = dagModifier.connect( worldMatrixPlug, volumetricMeshNodeMatrixPlug );
+           CHECK_MSTATUS( stat );
+           stat = dagModifier.doIt();
+           CHECK_MSTATUS( stat );
+
+           MPlug volumetricMeshNodeOutPlug( volumetricMeshNodeSObj,
+                   WmSweeneyVolumetricNode::oa_meshData );
+
+           unsigned int numElements = sweeneyInputPlugArr.numElements( &stat );
+           CHECK_MSTATUS( stat );
+           MPlug sweeneyMeshPlug = sweeneyInputPlugArr.elementByLogicalIndex( numElements );
+           CHECK_MSTATUS( stat );
+           if ( stat.error() )
+           {
+               MGlobal::displayError( stat.errorString() );
+               return MS::kFailure;
+           }
+           stat = dagModifier.connect( volumetricMeshNodeOutPlug, sweeneyMeshPlug );
+           CHECK_MSTATUS( stat );
+           stat = dagModifier.doIt();
+           CHECK_MSTATUS( stat );
+
+           // Connect startTime so the rods reset when the Figaro node resets
+           MPlug volumetricNodeStartTimePlug( volumetricMeshNodeSObj,
+                   WmSweeneyVolumetricNode::ia_startTime );
+           CHECK_MSTATUS( stat );
+           MPlug sweeneyNodeStartTimePlug = sweeneyNodeFn.findPlug( "startTime", true, &stat );
+           CHECK_MSTATUS( stat );
+           stat = dagModifier.connect( sweeneyNodeStartTimePlug, volumetricNodeStartTimePlug );
+           CHECK_MSTATUS( stat );
+           stat = dagModifier.doIt();
+           CHECK_MSTATUS( stat );
+       }
+    }
+
 
     return MStatus::kSuccess;
 }

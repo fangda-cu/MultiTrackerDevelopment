@@ -55,6 +55,9 @@ using namespace BASim;
 // Collision meshes
 /* static */MObject WmSweeneyNode::ia_collisionMeshes;
 
+// Volumetric meshes
+/* static */MObject WmSweeneyNode::ia_volumetricMeshes;
+
 //Solver Tolerances
 /* static */MObject WmSweeneyNode::ia_stol;
 /* static */MObject WmSweeneyNode::ia_atol;
@@ -231,6 +234,7 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 		        updateRods();
 
 		        updateCollisionMeshes( i_dataBlock );
+		        updateVolumetricMeshes( i_dataBlock );
                 updateSolverSettings( i_dataBlock );
 
                 m_rodManager->takeStep();
@@ -595,6 +599,72 @@ void WmSweeneyNode::initialiseCollisionMeshes(MDataBlock &i_data)
     }
 }
 
+void WmSweeneyNode::initialiseVolumetricMeshes(MDataBlock &i_data)
+{
+    MStatus status;
+
+    MArrayDataHandle inArrayH = i_data.inputArrayValue(ia_volumetricMeshes, &status);
+    CHECK_MSTATUS(status);
+    size_t numMeshesConnected = inArrayH.elementCount();
+
+    for (unsigned int i = 0; i < numMeshesConnected; i++)
+    {
+        // Even if we don't use it, grab the data so Maya knows to evaluate the node
+        inArrayH.jumpToElement(i);
+        MDataHandle volumetricMeshH = inArrayH.inputValue(&status);
+        CHECK_MSTATUS(status);
+
+        MPlug plug(thisMObject(), ia_volumetricMeshes);
+        CHECK_MSTATUS(status);
+        if (plug.isArray(&status))
+        {
+            MPlug indxPlug = plug.elementByLogicalIndex(i, &status);
+            CHECK_MSTATUS(status);
+            if (indxPlug.isConnected(&status))
+            {
+                MPlugArray inPlugArr;
+                indxPlug.connectedTo(inPlugArr, true, false, &status);
+                CHECK_MSTATUS(status);
+
+                // Since we asked for the destination there can only be one plug in the array
+                MPlug meshPlug = inPlugArr[0];
+                MObject volumetricMeshNodeObj = meshPlug.node(&status);
+                CHECK_MSTATUS(status);
+                MFnDagNode volumetricMeshNodeFn = MFnDagNode(volumetricMeshNodeObj);
+               /*
+                WmBunsenCollisionMeshNode* collisionMeshNode = (WmBunsenCollisionMeshNode*) collisionMeshNodeFn.userNode();
+
+                TriangleMesh* triangleMesh = NULL;
+                WmFigMeshController* figMeshController = NULL;
+
+                collisionMeshNode->initialise(NULL, i, &triangleMesh, &figMeshController);
+                */
+
+                WmSweeneyVolumetricNode* volumetricMeshNode = (WmSweeneyVolumetricNode*) volumetricMeshNodeFn.userNode();
+                TriangleMesh* triangleMesh = NULL;
+                volumetricMeshNode->initialise(i, &triangleMesh);
+
+                Eigen::Quaternion<double> q = volumetricMeshNode->getQuaternion();
+
+                Vec3d scale = volumetricMeshNode->getScale();
+
+                Vec3d center = volumetricMeshNode->getCenter();
+
+                Mat3d sigma;
+                sigma.diagonal() = scale;
+                sigma = q.matrix() * sigma * ( q.matrix().transpose() );
+                m_rodManager->createGaussianVolumetricForce(m_rodCharge, center, sigma );
+
+                //m_rodManager->addCollisionMesh(triangleMesh, figMeshController->currentLevelSet(), figMeshController);
+            }
+            else
+            {
+                CHECK_MSTATUS(status);
+            }
+        }
+    }
+}
+
 void WmSweeneyNode::updateCollisionMeshes(MDataBlock& i_dataBlock)
 {
     MStatus status;
@@ -610,6 +680,25 @@ void WmSweeneyNode::updateCollisionMeshes(MDataBlock& i_dataBlock)
         // update the collision mesh data in the RodManager.
         inArrayH.jumpToElement(i);
         MDataHandle collisionMeshH = inArrayH.inputValue(&status);
+        CHECK_MSTATUS(status);
+    }
+}
+
+void WmSweeneyNode::updateVolumetricMeshes(MDataBlock& i_dataBlock)
+{
+    MStatus status;
+
+    MArrayDataHandle inArrayH = i_dataBlock.inputArrayValue(ia_volumetricMeshes, &status);
+    CHECK_MSTATUS(status);
+    size_t numMeshesConnected = inArrayH.elementCount();
+
+    for (unsigned int i = 0; i < numMeshesConnected; i++)
+    {
+        // All we need to do is ask Maya for the data and it will pull the attr,
+        // causing a compute in the volumetric mesh node which will directly
+        // update the volumetric mesh data in the RodManager.
+        inArrayH.jumpToElement(i);
+        MDataHandle volumetricMeshH = inArrayH.inputValue(&status);
         CHECK_MSTATUS(status);
     }
 }
@@ -636,7 +725,7 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput(MDataBlock& i_dataBlock)
         return;
     }
 
-    // First, get all the collision mesh data organised
+    // First, get all the collision and volumetric mesh data organised
     initialiseCollisionMeshes(i_dataBlock);
 
     // Create one rod for each barbershop strand. Ignore the strand shape or length but do
@@ -751,6 +840,9 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput(MDataBlock& i_dataBlock)
     m_rodManager->initialiseSimulation(1 / 24.0, m_startTime, perfParams, m_atol, m_stol, m_rtol, m_inftol,
             m_numLineSearchIters, m_numberOfClumps);
     cerr << "initialiseRodFromBarberShopInput() - Simulation initialised at time " << m_startTime << endl;
+
+    // initialize volumetric meshes after simulation is initialized
+    initialiseVolumetricMeshes(i_dataBlock);
 }
 
 void WmSweeneyNode::constructRodVertices( std::vector<BASim::Vec3d>& o_rodVertices, const MVector& i_direction,
@@ -1279,6 +1371,25 @@ void* WmSweeneyNode::creator()
 	}
 	status = attributeAffects( ia_collisionMeshes, ca_rodPropertiesSync );
 	if ( !status ) { status.perror( "attributeAffects ia_collisionMeshes->ca_rodPropertiesSync" ); return status; }
+
+	{
+        MFnNumericAttribute nAttr;
+        ia_volumetricMeshes = nAttr.create( "volumetricMeshes", "vom", MFnNumericData::kBoolean, false, &status );
+        if (!status)
+        {
+            status.perror( "create ia_volumetricMeshes attribute" );
+            return status;
+        }
+        nAttr.setWritable( true );
+        nAttr.setReadable( false );
+        nAttr.setConnectable( true );
+        nAttr.setDisconnectBehavior( MFnAttribute::kDelete );
+        nAttr.setArray( true );
+        status = addAttribute( ia_volumetricMeshes );
+        if ( !status ) { status.perror( "addAttribute ia_volumetricMeshes" ); return status; }
+    }
+    status = attributeAffects( ia_volumetricMeshes, ca_rodPropertiesSync );
+    if ( !status ) { status.perror( "attributeAffects ia_volumetricMeshes->ca_rodPropertiesSync" ); return status; }
 
 	//Solver settings
 	addNumericAttribute( ia_stol, "stol", "stl", MFnNumericData::kDouble, 99, true );
