@@ -19,7 +19,7 @@ ElasticStrandStaticStepper::~ElasticStrandStaticStepper()
 {
 }
 
-inline Scalar funnyclipvalue( Scalar minvalue, Scalar variable, Scalar maxvalue )
+inline Scalar clipValue( Scalar minvalue, Scalar variable, Scalar maxvalue )
 {
     // funny wrap-around behavior ensures we don't get "stuck" at lambda=maxvalue
     if ( variable > maxvalue )
@@ -37,20 +37,20 @@ void ElasticStrandStaticStepper::execute( ElasticStrand& strand )
     const Scalar E = strand.getTotalEnergy();
     std::cout << "Energy before = " << E << '\n';
 
-    ElasticStrand::ForceVectorType& F = strand.getTotalForces();
+    VecXd& F = strand.getTotalForces();
     F.segment<numberOfFixedDOFs> ( 0 ).setZero(); // Enforce fixed DOFs
     std::cout << "Forces norm before = " << F.norm() << '\n';
 
     ElasticStrand::JacobianMatrixType& J = strand.getTotalJacobian();
-    J *= -1.0; // Inelegant and inefficient if you ask me
+    // Change the sign!!!
+    J *= -1.0;
     // Add a constant diagonal to J to enforce a trust region.
     std::cout << "Regularising m_lambda = " << m_lambda << '\n';
     J.addConstantDiagonal( m_lambda - m_previousLambda );
-    J.fixFirstDOFs<numberOfFixedDOFs> (); // Enforce fixed DOFs
+    // Enforce fixed DOFs
+    J.fixFirstDOFs<numberOfFixedDOFs> ();
 
-   // std::cout << "Regularized and fixed Jacobian = " << J << '\n';
-
-    LinearSolver<ElasticStrand::JacobianMatrixType> linearSolver;
+    BandMatrixLinearSolver<10, 10> linearSolver;
     VecXd& newDOFs = strand.getNewDegreesOfFreedom();
 
     linearSolver.solve( newDOFs, J, F ); // X = J^{-1} F
@@ -70,8 +70,7 @@ void ElasticStrandStaticStepper::execute( ElasticStrand& strand )
 
     if ( newE <= E )
     {
-        m_lambda
-                = funnyclipvalue( m_lambdamin, m_lambda * m_geardown / m_successcount, m_lambdamax );
+        m_lambda = clipValue( m_lambdamin, m_lambda * m_geardown / m_successcount, m_lambdamax );
         std::cout << "Accepting position, m_lambda = " << m_lambda << '\n';
 
         // Accept the new position. This also updates the strand for the next solve.
@@ -96,8 +95,7 @@ void ElasticStrandStaticStepper::execute( ElasticStrand& strand )
 
         if ( newFilteredE <= E )
         {
-            m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_geardown / m_successcount,
-                    m_lambdamax );
+            m_lambda = clipValue( m_lambdamin, m_lambda * m_geardown / m_successcount, m_lambdamax );
             std::cout << "Accepting position, m_lambda = " << m_lambda << '\n';
 
             // Accept the new position. This also updates the strand for the next solve.
@@ -112,8 +110,7 @@ void ElasticStrandStaticStepper::execute( ElasticStrand& strand )
             m_failurecount++;
             m_successcount = 1;
             m_previousLambda = m_lambda; // Because we already added m_lambda to the Jacobian, that we want to keep we'll need only to add the increment
-            m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup * m_failurecount,
-                    m_lambdamax );
+            m_lambda = clipValue( m_lambdamin, m_lambda * m_gearup * m_failurecount, m_lambdamax );
             std::cout << "Rejecting position, m_lambda = " << m_lambda << '\n';
         }
     }

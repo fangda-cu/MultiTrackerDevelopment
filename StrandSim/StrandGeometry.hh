@@ -14,10 +14,13 @@
 namespace strandsim
 {
 
+// This class contains all the rod's variable data (i.e. changed by simulation)
 class StrandGeometry
 {
 public:
-    explicit StrandGeometry( VecXd& dofs );
+    explicit StrandGeometry(const VecXd& dofs );
+
+    explicit StrandGeometry(const size_t dofSize);
 
     ~StrandGeometry();
 
@@ -138,8 +141,8 @@ public:
 
     IndexType m_numVertices;
 
-    // For ElasticStrand::m_geometry, the original remains owned by the client (e.g. Maya). For ElasticStrand::m_newGeometry, the original is owned by ElasticStrand
-    VecXd& m_degreesOfFreedom; // size = m_numVertices * 4 -1
+    // The actual positions (3 per vertex + 1 per edge)
+    VecXd m_degreesOfFreedom; // size = m_numVertices * 4 -1
 
     // Previous time storage, for time-parallel stepping
     VecXd m_previousTangents;
@@ -164,6 +167,11 @@ public:
     std::vector<Scalar> m_twists;
     std::vector<Vec11d> m_gradTwists;
     std::vector<Mat11d> m_HessTwists;
+
+    // Energy, force, Jacobian
+    Scalar m_totalEnergy;
+    VecXd m_totalForces;
+
 };
 
 }

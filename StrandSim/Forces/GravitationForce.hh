@@ -22,7 +22,7 @@ public:
 
     typedef Vec3d LocalForceType;
     typedef Mat3d LocalJacobianType;
-    typedef ElasticStrand::ForceVectorType ForceVectorType;
+    typedef VecXd ForceVectorType;
     typedef ElasticStrand::JacobianMatrixType JacobianMatrixType;
 
     GravitationForce();

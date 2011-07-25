@@ -1,5 +1,5 @@
 /*
- * LinearSolver.hh
+ * BandMatrixLinearSolver.hh
  *
  *  Created on: 18/07/2011
  *      Author: jaubry
@@ -9,18 +9,23 @@
 #define LINEARSOLVER_HH_
 
 #include "Definitions.hh"
+#include "BandMatrix.hh"
 
 namespace strandsim
 {
 
-template<typename MatrixT>
-class LinearSolver
+template<int kl, int ku>
+class BandMatrixLinearSolver
 {
 public:
-    LinearSolver();
-    virtual ~LinearSolver();
+    BandMatrixLinearSolver();
+    virtual ~BandMatrixLinearSolver();
 
-    int solve(VecXd& newDOFs, const MatrixT& J, const VecXd& F) const;
+    int solve( VecXd& x, const BandMatrix<Scalar, kl, ku>& A, const VecXd& b );
+
+private:
+    std::vector<Scalar> m_ab;
+    std::vector<int> m_ipiv;
 };
 
 }

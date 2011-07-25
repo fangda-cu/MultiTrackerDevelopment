@@ -22,7 +22,7 @@ public:
 
     typedef Eigen::Matrix<Scalar, 6, 1> LocalForceType;
     typedef Eigen::Matrix<Scalar, 6, 6> LocalJacobianType;
-    typedef ElasticStrand::ForceVectorType ForceVectorType;
+    typedef VecXd ForceVectorType;
     typedef ElasticStrand::JacobianMatrixType JacobianMatrixType;
 
     StretchingForce();

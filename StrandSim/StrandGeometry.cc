@@ -10,8 +10,13 @@
 namespace strandsim
 {
 
-StrandGeometry::StrandGeometry( VecXd& dofs ) :
+StrandGeometry::StrandGeometry( const VecXd& dofs ) :
     m_degreesOfFreedom( dofs ), m_framesUpToDate( false )
+{
+}
+
+StrandGeometry::StrandGeometry( const size_t dofSize ) :
+    m_degreesOfFreedom( VecXd( dofSize ) ), m_framesUpToDate( false )
 {
 }
 
@@ -78,6 +83,8 @@ void StrandGeometry::resizeSelf()
     m_referenceFrames2.resize( 3 * ( m_numVertices - 1 ) );
     m_materialFrames1.resize( 3 * ( m_numVertices - 1 ) );
     m_materialFrames2.resize( 3 * ( m_numVertices - 1 ) );
+
+    m_totalForces.resize(m_degreesOfFreedom.size());
 }
 
 void StrandGeometry::storeInitialFrames()
@@ -157,7 +164,6 @@ void StrandGeometry::updateKappaAndTwist()
         m_HessTwists[vtx] = computeHessTwist( vtx ); // Idem.
     }
 }
-
 
 Vec2d StrandGeometry::computeKappa( const IndexType vtx ) const
 {

@@ -22,7 +22,7 @@ static const Scalar radius = 1.0;
 static const Scalar YoungsModulus = 100000.0;
 static const Scalar shearModulus = 100.0;
 static const Scalar density = 1.0;
-static const int nIterations = 1;
+static const int nIterations = 2;
 
 void testStrandSim( const std::vector<Vec3d>& i_vertices )
 {

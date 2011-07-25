@@ -12,7 +12,6 @@
 #include "StrandGeometry.hh"
 #include "ElasticStrandUtils.hh"
 #include "BandMatrix.hh"
-#include "Forces/ForceAccumulator.hh"
 #include "ElasticStrandParameters.hh"
 #include "Typelist.hh"
 
@@ -31,25 +30,24 @@ class ElasticStrand: public StrandBase
 {
 public:
     typedef ElasticStrandParameters ParametersType;
-    typedef VecXd ForceVectorType;
     typedef strandsim::BandMatrix<Scalar, 10, 10> JacobianMatrixType; // TODO: replace this with a type that has built-in symmetry. Or at least squareness.
 
-    ElasticStrand( VecXd& dofs, const ParametersType& parameters );
+    ElasticStrand( const VecXd& dofs, const ParametersType& parameters );
 
     virtual ~ElasticStrand();
 
     const VecXd& getDegreesOfFreedom() const
     {
-        return m_geometry.m_degreesOfFreedom;
+        return m_currentGeometry->m_degreesOfFreedom;
     }
 
     // Expose the future position storage so it can be changed by the stepper.
     VecXd& getNewDegreesOfFreedom()
     {
-        m_newGeometry.m_framesUpToDate = false;
+        m_futureGeometry->m_framesUpToDate = false;
         m_readyForExamining = false;
 
-        return m_newGeometry.m_degreesOfFreedom;
+        return m_futureGeometry->m_degreesOfFreedom;
     }
 
     void filterNewGeometryLength();
@@ -61,17 +59,17 @@ public:
 
     Scalar getTotalEnergy() const
     {
-        return m_totalEnergy;
+        return m_currentGeometry->m_totalEnergy;
     }
 
-    const ForceVectorType& getTotalForces() const
+    const VecXd& getTotalForces() const
     {
-        return m_totalForces;
+        return m_currentGeometry->m_totalForces;
     }
 
-    ForceVectorType& getTotalForces()
+    VecXd& getTotalForces()
     {
-        return m_totalForces;
+        return m_currentGeometry->m_totalForces;
     }
 
     const JacobianMatrixType& getTotalJacobian() const
@@ -86,17 +84,17 @@ public:
 
     Scalar getNewTotalEnergy() const
     {
-        return m_newTotalEnergy;
+        return m_futureGeometry->m_totalEnergy;
     }
 
-    const ForceVectorType& getNewTotalForces() const
+    const VecXd& getNewTotalForces() const
     {
-        return m_newTotalForces;
+        return m_futureGeometry->m_totalForces;
     }
 
-    ForceVectorType& getNewTotalForces()
+    VecXd& getNewTotalForces()
     {
-        return m_newTotalForces;
+        return m_futureGeometry->m_totalForces;
     }
 
     Scalar getMass( IndexType i ) const
@@ -115,6 +113,15 @@ public:
 
     Mat2d computeBendingMatrix( const IndexType vtx ) const;
 
+    template<typename ForceT>
+    void accumulateEF( StrandGeometry* geometry ) const;
+
+    template<typename ForceT>
+    void accumulateJ( StrandGeometry* geometry ); // TODO: const once Jacobian in geometry
+
+    template<typename ForceT>
+    void accumulateEFJ( StrandGeometry* geometry ); // TODO: const once Jacobian in geometry
+
     /**
      * Member variables
      */
@@ -122,43 +129,36 @@ public:
     // Size of the strand
     IndexType m_numVertices;
 
-    // Storage structure for a copy of the degrees of freedom vector, because m_newGeometry wants a reference.
-    VecXd m_dofsStorage;
-
-    // Current and tentative geometry
-    StrandGeometry m_geometry;
-    StrandGeometry m_newGeometry;
+    // Current and future geometry
+    StrandGeometry* m_currentGeometry;
+    StrandGeometry* m_futureGeometry;
 
     // Rest shape and other physical parameters
     ParametersType m_parameters;
-    std::vector<Mat2d, Eigen::aligned_allocator<Mat2d> > m_bendingMatrices;
     std::vector<Scalar> m_vertexMasses;
     std::vector<Scalar> m_VoronoiLengths; // rest length around each vertex
-    std::vector<Scalar> m_invVoronoiLengths; // inverse of the previous one
+    std::vector<Scalar> m_invVoronoiLengths; // their inverses
     std::vector<Scalar> m_restLengths;
-    std::vector<Vec2d, Eigen::aligned_allocator<Vec2d> > m_kappaBar;
+    std::vector<Vec2d, Eigen::aligned_allocator<Vec2d> > m_restBends;
     std::vector<Scalar> m_restTwists;
 
-    // Force caching, for solving
-    bool m_readyForSolving;
-    Scalar m_totalEnergy;
-    ForceVectorType m_totalForces;
-    JacobianMatrixType m_totalJacobian;
-
-    // Force caching, for examination
+    // Flags
     bool m_readyForExamining;
-    Scalar m_newTotalEnergy;
-    ForceVectorType m_newTotalForces;
+    bool m_readyForSolving;
+
+    // Stuff that should go in the geometry
+    JacobianMatrixType m_totalJacobian;
+    std::vector<Mat2d, Eigen::aligned_allocator<Mat2d> > m_bendingMatrices;
 
 public:
     friend class StretchingForce;
-    friend class ForceAccumulator<StretchingForce> ;
+    //    friend class ForceAccumulator<StretchingForce> ;
     friend class BendingForce;
-    friend class ForceAccumulator<BendingForce> ;
+    //    friend class ForceAccumulator<BendingForce> ;
     friend class TwistingForce;
-    friend class ForceAccumulator<TwistingForce> ;
+    //    friend class ForceAccumulator<TwistingForce> ;
     friend class GravitationForce;
-    friend class ForceAccumulator<GravitationForce> ;
+    //    friend class ForceAccumulator<GravitationForce> ;
     friend std::ostream& operator<<( std::ostream& os, const ElasticStrand& strand );
 };
 
