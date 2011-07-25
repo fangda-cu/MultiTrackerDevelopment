@@ -18,13 +18,11 @@ namespace strandsim
 class StrandGeometry
 {
 public:
-    explicit StrandGeometry(const VecXd& dofs );
+    explicit StrandGeometry( const VecXd& dofs );
 
-    explicit StrandGeometry(const size_t dofSize);
+    explicit StrandGeometry( const size_t dofSize );
 
     ~StrandGeometry();
-
-    const StrandGeometry& operator=( const StrandGeometry& newgeo );
 
     void storeInitialFrames();
 
@@ -130,14 +128,14 @@ public:
     void updateFrames();
     void updateKappaAndTwist();
 
-    Vec2d computeKappa( const IndexType vtx ) const;
-    Eigen::Matrix<Scalar, 11, 2> computeGradKappa( const IndexType vtx ) const;
-    Mat11dPair computeHessKappa( const IndexType vtx ) const;
+    void computeKappa( Vec2d& kappa, const IndexType vtx ) const;
+    void computeGradKappa( Eigen::Matrix<Scalar, 11, 2> & gradKappa, const IndexType vtx ) const;
+    void computeHessKappa( Mat11dPair &, const IndexType vtx ) const;
 
     Scalar computeReferenceTwist( const IndexType vtx ) const;
     Scalar computeTwist( const IndexType vtx ) const;
-    Vec11d computeGradTwist( const IndexType vtx ) const;
-    Mat11d computeHessTwist( const IndexType vtx ) const;
+    void computeGradTwist( Vec11d& gradTwist, const IndexType vtx ) const;
+    void computeHessTwist( Mat11d &, const IndexType vtx ) const;
 
     IndexType m_numVertices;
 
@@ -151,6 +149,7 @@ public:
     bool m_framesUpToDate;
     std::vector<Scalar> m_lengths; // lengths of edges, cached
     std::vector<Vec3d, Eigen::aligned_allocator<Vec3d> > m_tangents;
+    std::vector<Vec3d, Eigen::aligned_allocator<Vec3d> > m_curvatureBinormals;
     VecXd m_referenceFrames1; // first vectors of reference frame
     VecXd m_referenceFrames2; // second vectors of reference frame
     VecXd m_materialFrames1;// first vectors of material frame
@@ -160,13 +159,11 @@ public:
     std::vector<Vec2d, Eigen::aligned_allocator<Vec2d> > m_kappa;
     std::vector<Eigen::Matrix<Scalar, 11, 2>,
             Eigen::aligned_allocator<Eigen::Matrix<Scalar, 11, 2> > > m_gradKappa;
-    std::vector<Mat11dPair, Eigen::aligned_allocator<Mat11dPair> > m_HessKappa; // Maybe not
 
     // Caches related to twisting
     std::vector<Scalar> m_referenceTwists;
     std::vector<Scalar> m_twists;
     std::vector<Vec11d> m_gradTwists;
-    std::vector<Mat11d> m_HessTwists;
 
     // Energy, force, Jacobian
     Scalar m_totalEnergy;

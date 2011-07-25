@@ -15,14 +15,14 @@
 
 using namespace strandsim;
 
-static const int nVertices = 8;
+static const int nVertices = 20;
 static const int nDOFs = 4 * nVertices - 1;
 static const Scalar totalLength = nVertices - 1.0;
 static const Scalar radius = 1.0;
 static const Scalar YoungsModulus = 100000.0;
 static const Scalar shearModulus = 100.0;
 static const Scalar density = 1.0;
-static const int nIterations = 2;
+static const int nIterations = 50000;
 
 void testStrandSim( const std::vector<Vec3d>& i_vertices )
 {
@@ -36,14 +36,14 @@ void testStrandSim( const std::vector<Vec3d>& i_vertices )
 
     for ( int i = 0; i < nIterations; ++i )
     {
-        std::cout << "Iteration number " << i << '\n';
+        //     std::cout << "Iteration number " << i << '\n';
 
         stepper.execute( strand );
-        std::cout << "Vertices: " << strand << '\n';
 
-       // std::cout << "Press ENTER to continue...\n";
-       // std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
+        // std::cout << "Press ENTER to continue...\n";
+        // std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
     }
+    std::cout << "Vertices: " << strand << '\n';
 
     std::cout << std::endl;
 }
@@ -81,26 +81,25 @@ void testBASim( const std::vector<Vec3d>& i_vertices )
 
     for ( int i = 0; i < nIterations; ++i )
     {
-        std::cout << "Iteration number " << i << '\n';
+        //  std::cout << "Iteration number " << i << '\n';
 
         rod->setIsInRestState( false );
         stepper->execute();
 
-        std::cout << "Vertices: ";
-        std::cout << '{';
-        for ( int i = 0; i < rod->nv() - 1; i++ )
-        {
-            const Vec3d& vertex = rod->getVertex( i );
-            std::cout << '{' << vertex[0] << ", " << vertex[1] << ", " << vertex[2] << "}, ";
-        }
-        const Vec3d& vertex = rod->getVertex( rod->nv() - 1 );
-        std::cout << '{' << vertex[0] << ", " << vertex[1] << ", " << vertex[2] << '}';
-        std::cout << '}';
-        std::cout << '\n';
-
-         //  std::cout << "Press ENTER to continue...\n";
-         //  std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
+        //  std::cout << "Press ENTER to continue...\n";
+        //  std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
     }
+    std::cout << "Vertices: ";
+    std::cout << '{';
+    for ( int i = 0; i < rod->nv() - 1; i++ )
+    {
+        const Vec3d& vertex = rod->getVertex( i );
+        std::cout << '{' << vertex[0] << ", " << vertex[1] << ", " << vertex[2] << "}, ";
+    }
+    const Vec3d& vertex = rod->getVertex( rod->nv() - 1 );
+    std::cout << '{' << vertex[0] << ", " << vertex[1] << ", " << vertex[2] << '}';
+    std::cout << '}';
+    std::cout << '\n';
 
 }
 
@@ -114,10 +113,11 @@ int main()
 
     std::vector<Vec3d> i_vertices;
     for ( int i = 0; i < nVertices; i++ )
-        i_vertices.push_back( Vec3d( i * totalLength / ( nVertices - 1 ), 0.0, 0.0 ) );
+        i_vertices.push_back(
+                Vec3d( i * totalLength / ( nVertices - 1 ), sin(0.0* i * M_PI / ( nVertices ) ), 0.0 ) );
 
-    std::cout << "This is StrandSim\n";
-    testStrandSim( i_vertices );
+     std::cout << "This is StrandSim\n";
+     testStrandSim( i_vertices );
 
     std::cout << "This is BASim\n";
     testBASim( i_vertices );

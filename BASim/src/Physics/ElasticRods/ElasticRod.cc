@@ -171,8 +171,8 @@ void ElasticRod::computeConservativeForcesEnergy(VecXd& force, Scalar& energy)
     force  += curr_force;
     energy += curr_energy;
   //  TraceStream(g_log, "") << (*fIt)->getName() << " energy = " << curr_energy << " force norm = " << curr_force.norm() << '\n';
-    std::cout <<(*fIt)->getName() << " energy = "
-            << energy << " force norm = " << force.norm() << '\n';
+  //  std::cout <<(*fIt)->getName() << " energy = "
+  //          << energy << " force norm = " << force.norm() << '\n';
  }
 }
 

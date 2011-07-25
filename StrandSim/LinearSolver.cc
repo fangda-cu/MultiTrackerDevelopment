@@ -38,11 +38,8 @@ int BandMatrixLinearSolver<kl, ku>::solve( VecXd& x, const BandMatrix<double, kl
 
     for ( int j = 0; j < n; ++j )
         for ( int i = std::max( 0, j - ku ); i < std::min( n, j + kl + 1 ); ++i )
-        {
-            int row = kl + ku + i - j;
-            int col = j;
-            m_ab[row + col * ldab] = A( i, j );
-        }
+            m_ab[kl + ku + i - j + j * ldab] = A( i, j );
+
     x = b;
     static const int sckl = kl; // Just because dgbsv wants a pointer
     static const int scku = ku;

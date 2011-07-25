@@ -34,6 +34,9 @@ public:
 
     static void addInPosition(ForceVectorType& globalForce, const IndexType vtx, const LocalForceType& localForce);
     static void addInPosition(JacobianMatrixType& globalJacobian, const IndexType vtx, const LocalJacobianType& localJacobian);
+
+private:
+
 };
 
 }

@@ -174,12 +174,12 @@ bool StaticSolver<ODE>::examine_solution()
 
     // Update the differential equation with the current guess
     m_diffEq.set_q(m_x0 + m_deltaX);
-    std::cout << "Proposed new DOFs = " << m_x0 + m_deltaX << '\n';
+   // std::cout << "Proposed new DOFs = " << m_x0 + m_deltaX << '\n';
 
     updatePositionBasedQuantities();
 
-    std::cout << "Energy after = " << m_energy << '\n';
-    std::cout << "Forces norm after = " << m_rhs.norm() << '\n';
+   // std::cout << "Energy after = " << m_energy << '\n';
+   // std::cout << "Forces norm after = " << m_rhs.norm() << '\n';
 
     // Update the Levenberg-Marquardt trust region size
     /////////////////////////////////////////////////////////////
@@ -283,8 +283,8 @@ bool StaticSolver<ODE>::position_solve()
     // save the initial energy
     m_initEnergy = m_energy;
 
-    std::cout << "Energy before = " << m_initEnergy << '\n';
-    std::cout << "Forces norm before = " << m_rhs.norm() << '\n';
+   // std::cout << "Energy before = " << m_initEnergy << '\n';
+   // std::cout << "Forces norm before = " << m_rhs.norm() << '\n';
 
     STOP_TIMER("StaticSolver::position_solve/setup");
 
@@ -309,7 +309,7 @@ bool StaticSolver<ODE>::position_solve()
     m_A->finalize();
     assert(m_A->isApproxSymmetric(1.0e-6));
 
-    std::cout << "Regularising m_lambda = " << m_lambda << '\n';
+   // std::cout << "Regularising m_lambda = " << m_lambda << '\n';
     for (int i = 0; i < m_ndof; ++i)
     {
         // Spectral shift (Tikhonov regularization)
@@ -374,7 +374,7 @@ bool StaticSolver<ODE>::position_solve()
     if (!done)
     {
       //  TraceStream(g_log, "StaticSolver::position_solve") << "filtering delta_X and trying again...\n";
-std::cout << "Filtering...\n";
+// std::cout << "Filtering...\n";
         filterDeltaX();
 
         // visualize post-filtering velocities

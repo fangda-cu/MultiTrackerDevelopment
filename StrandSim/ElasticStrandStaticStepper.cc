@@ -35,43 +35,42 @@ void ElasticStrandStaticStepper::execute( ElasticStrand& strand )
     static const int numberOfFixedDOFs = 7;
 
     const Scalar E = strand.getTotalEnergy();
-    std::cout << "Energy before = " << E << '\n';
+  //  std::cout << "Energy before = " << E << '\n';
 
     VecXd& F = strand.getTotalForces();
     F.segment<numberOfFixedDOFs> ( 0 ).setZero(); // Enforce fixed DOFs
-    std::cout << "Forces norm before = " << F.norm() << '\n';
+   // std::cout << "Forces norm before = " << F.norm() << '\n';
 
     ElasticStrand::JacobianMatrixType& J = strand.getTotalJacobian();
     // Change the sign!!!
     J *= -1.0;
     // Add a constant diagonal to J to enforce a trust region.
-    std::cout << "Regularising m_lambda = " << m_lambda << '\n';
+   // std::cout << "Regularising m_lambda = " << m_lambda << '\n';
     J.addConstantDiagonal( m_lambda - m_previousLambda );
     // Enforce fixed DOFs
     J.fixFirstDOFs<numberOfFixedDOFs> ();
 
-    BandMatrixLinearSolver<10, 10> linearSolver;
     VecXd& newDOFs = strand.getNewDegreesOfFreedom();
 
     linearSolver.solve( newDOFs, J, F ); // X = J^{-1} F
     newDOFs += strand.getDegreesOfFreedom(); // X = X_0 + J^{-1} F
-    std::cout << "Proposed new DOFS = " << newDOFs << '\n';
+   // std::cout << "Proposed new DOFS = " << newDOFs << '\n';
 
     // Update the new position's frames and forces
     strand.prepareForExamining();
 
     const Scalar newE = strand.getNewTotalEnergy();
-    std::cout << "Energy after = " << newE << '\n';
+   // std::cout << "Energy after = " << newE << '\n';
 
     // Set the new force on the first two vertices to zero, for comparison purposes.
     strand.getNewTotalForces().segment<numberOfFixedDOFs> ( 0 ).setZero();
 
-    std::cout << "Forces norm after = " << strand.getNewTotalForces().norm() << '\n';
+  //  std::cout << "Forces norm after = " << strand.getNewTotalForces().norm() << '\n';
 
     if ( newE <= E )
     {
         m_lambda = clipValue( m_lambdamin, m_lambda * m_geardown / m_successcount, m_lambdamax );
-        std::cout << "Accepting position, m_lambda = " << m_lambda << '\n';
+     //   std::cout << "Accepting position, m_lambda = " << m_lambda << '\n';
 
         // Accept the new position. This also updates the strand for the next solve.
         strand.acceptNewPositions();
@@ -82,21 +81,21 @@ void ElasticStrandStaticStepper::execute( ElasticStrand& strand )
     }
     else
     {
-        std::cout << "Filtering...\n";
+     //   std::cout << "Filtering...\n";
         strand.filterNewGeometryLength();
-        std::cout << "Proposed new DOFS = " << newDOFs << '\n';
+    //    std::cout << "Proposed new DOFS = " << newDOFs << '\n';
         strand.prepareForExamining();
         const Scalar newFilteredE = strand.getNewTotalEnergy();
-        std::cout << "Energy after filtering = " << newFilteredE << '\n';
+    //    std::cout << "Energy after filtering = " << newFilteredE << '\n';
         // Set the new force on the first two vertices to zero, for comparison purposes.
         strand.getNewTotalForces().segment<numberOfFixedDOFs> ( 0 ).setZero();
 
-        std::cout << "Forces norm after filtering = " << strand.getNewTotalForces().norm() << '\n';
+      //  std::cout << "Forces norm after filtering = " << strand.getNewTotalForces().norm() << '\n';
 
         if ( newFilteredE <= E )
         {
             m_lambda = clipValue( m_lambdamin, m_lambda * m_geardown / m_successcount, m_lambdamax );
-            std::cout << "Accepting position, m_lambda = " << m_lambda << '\n';
+          //  std::cout << "Accepting position, m_lambda = " << m_lambda << '\n';
 
             // Accept the new position. This also updates the strand for the next solve.
             strand.acceptNewPositions();
@@ -111,7 +110,7 @@ void ElasticStrandStaticStepper::execute( ElasticStrand& strand )
             m_successcount = 1;
             m_previousLambda = m_lambda; // Because we already added m_lambda to the Jacobian, that we want to keep we'll need only to add the increment
             m_lambda = clipValue( m_lambdamin, m_lambda * m_gearup * m_failurecount, m_lambdamax );
-            std::cout << "Rejecting position, m_lambda = " << m_lambda << '\n';
+         //   std::cout << "Rejecting position, m_lambda = " << m_lambda << '\n';
         }
     }
 

@@ -62,7 +62,8 @@ BendingForce::LocalJacobianType BendingForce::localJacobian( const ElasticStrand
     symBProduct( localJ, B, gradKappa );
     localJ *= -ilen;
 
-    const std::pair<LocalJacobianType, LocalJacobianType>& hessKappa = geometry.m_HessKappa[vtx]; // Could we compute HessKappa on the spot instead?
+    std::pair<LocalJacobianType, LocalJacobianType> hessKappa;
+    geometry.computeHessKappa( hessKappa, vtx );
     const Vec2d temp = -ilen * ( kappa - kappaBar ).transpose() * B;
     localJ += temp( 0 ) * hessKappa.first + temp( 1 ) * hessKappa.second;
 

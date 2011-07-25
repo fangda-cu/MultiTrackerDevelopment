@@ -80,7 +80,7 @@ void ElasticStrand::freezeRestShape()
 
     for ( IndexType vtx = 1; vtx < m_numVertices - 1; ++vtx )
     {
-        m_restBends[vtx] = m_currentGeometry->computeKappa( vtx );
+        m_currentGeometry->computeKappa( m_restBends[vtx], vtx );
         m_restTwists[vtx] = 0; // TODO: check that this is correct
     }
 }

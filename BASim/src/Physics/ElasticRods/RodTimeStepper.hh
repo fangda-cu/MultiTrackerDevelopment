@@ -269,8 +269,8 @@ public:
                 f += curr_force;
                 energy += curr_energy;
             }
-            std::cout << m_externalForces[i]->getName() << " energy = "
-                    << energy << " force norm = " << curr_force.norm() << '\n';
+          //  std::cout << m_externalForces[i]->getName() << " energy = "
+           //         << energy << " force norm = " << curr_force.norm() << '\n';
         }
     }
 

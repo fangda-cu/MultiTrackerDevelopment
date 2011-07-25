@@ -51,7 +51,8 @@ TwistingForce::LocalJacobianType TwistingForce::localJacobian(const ElasticStran
     const Scalar undeformedTwist = strand.m_restTwists[vtx];
 
     const LocalForceType& gradTwist = geometry.m_gradTwists[vtx];
-    const LocalJacobianType& hessTwist = geometry.m_HessTwists[vtx];
+    LocalJacobianType hessTwist;
+    geometry.computeHessTwist(hessTwist, vtx );
 
     return -kt * ilen * ((twist - undeformedTwist) * hessTwist + gradTwist * gradTwist.transpose());
 }

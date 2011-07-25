@@ -34,6 +34,8 @@ private:
     int m_failurecount;
     Scalar m_lambda;
     Scalar m_previousLambda;
+
+    BandMatrixLinearSolver<10, 10> linearSolver;
 };
 
 }

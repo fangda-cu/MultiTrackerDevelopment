@@ -27,7 +27,7 @@ PRG1_L     := -lwStrandSim_dbg -Wl,--start-group \
 
 LIB1       := wStrandSim
 
-LIB1_CF    += -DBUILD=${BUILD} -DWETA -UNDEBUG
+LIB1_CF    += -DBUILD=${BUILD} -DWETA
 LIB1_CF    += -w1
 
 LIB1_HDIR := .

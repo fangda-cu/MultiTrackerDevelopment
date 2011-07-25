@@ -25,40 +25,6 @@ StrandGeometry::~StrandGeometry()
     // TODO Auto-generated destructor stub
 }
 
-const StrandGeometry& StrandGeometry::operator=( const StrandGeometry& newGeo )
-{
-    assert( m_numVertices == newGeo.m_numVertices );
-
-    m_degreesOfFreedom = VecXd( newGeo.m_degreesOfFreedom ); // Copy of the values
-
-    m_previousTangents = newGeo.m_previousTangents; // Probably useless, temporary.
-
-    m_framesUpToDate = newGeo.m_framesUpToDate;
-
-    m_lengths = newGeo.m_lengths; // Probably useless, temporary.
-    m_tangents = newGeo.m_tangents; // Probably useless, temporary.
-    m_referenceFrames1 = newGeo.m_referenceFrames1; // Probably useless, temporary.
-    m_referenceFrames2 = newGeo.m_referenceFrames2; // Probably useless, temporary.
-    m_materialFrames1 = newGeo.m_materialFrames1; // Probably useless, temporary.
-    m_materialFrames2 = newGeo.m_materialFrames2; // Probably useless, temporary.
-
-    // Caches related to bending
-    for ( int i = 0; i < newGeo.m_kappa.size(); i++ )
-        std::cout << newGeo.m_kappa[i] << ' ';
-    std::cout << '\n';
-    m_kappa = newGeo.m_kappa;
-    m_gradKappa = newGeo.m_gradKappa;
-    m_HessKappa = newGeo.m_HessKappa; // Maybe not
-
-    // Caches related to twisting
-    m_referenceTwists = newGeo.m_referenceTwists; // Probably useless, temporary.
-    m_twists = newGeo.m_twists;
-    m_gradTwists = newGeo.m_gradTwists;
-    m_HessTwists = newGeo.m_HessTwists;
-
-    return *this;
-}
-
 void StrandGeometry::resizeSelf()
 {
     assert( m_degreesOfFreedom.size() % 4 == 3 ); // dofs are 3 per vertex, one per edge
@@ -68,15 +34,14 @@ void StrandGeometry::resizeSelf()
 
     m_lengths.resize( m_numVertices - 1 );
     m_tangents.resize( m_numVertices - 1 );
+    m_curvatureBinormals.resize( m_numVertices - 1 );
 
     m_kappa.resize( m_numVertices - 1 );
     m_gradKappa.resize( m_numVertices - 1 );
-    m_HessKappa.resize( m_numVertices - 1 );
 
     m_referenceTwists.resize( m_numVertices - 1 );
     m_twists.resize( m_numVertices - 1 );
     m_gradTwists.resize( m_numVertices - 1 );
-    m_HessTwists.resize( m_numVertices - 1 );
 
     m_previousTangents.resize( 3 * ( m_numVertices - 1 ) );
     m_referenceFrames1.resize( 3 * ( m_numVertices - 1 ) );
@@ -84,7 +49,7 @@ void StrandGeometry::resizeSelf()
     m_materialFrames1.resize( 3 * ( m_numVertices - 1 ) );
     m_materialFrames2.resize( 3 * ( m_numVertices - 1 ) );
 
-    m_totalForces.resize(m_degreesOfFreedom.size());
+    m_totalForces.resize( m_degreesOfFreedom.size() );
 }
 
 void StrandGeometry::storeInitialFrames()
@@ -119,7 +84,7 @@ void StrandGeometry::updateFrames() // and related stuff
     // Update reference frames by time-parallel transportation
     for ( IndexType vtx = 0; vtx < m_numVertices - 1; ++vtx )
     {
-        m_lengths[vtx] = getEdgeVector( vtx ).norm(); // std::cerr << "m_lengths[vtx] = " <<  m_lengths[vtx] <<'\n';
+        m_lengths[vtx] = getEdgeVector( vtx ).norm();
         assert( !isSmall( m_lengths[vtx] ) );
 
         m_tangents[vtx] = getEdgeVector( vtx ) / m_lengths[vtx];
@@ -129,9 +94,6 @@ void StrandGeometry::updateFrames() // and related stuff
         u -= u.dot( m_tangents[vtx] ) * m_tangents[vtx];
         u.normalize();
         const Vec3d& v = m_tangents[vtx].cross( u );
-        // std::cout << "t = " << m_tangents[vtx] << '\n';
-        // std::cout << "u = " << u << '\n';
-        // std::cout << "v = " << v << '\n';
         setReferenceFrame1( vtx, u );
         setReferenceFrame2( vtx, v );
 
@@ -144,6 +106,11 @@ void StrandGeometry::updateFrames() // and related stuff
         setPreviousTangent( vtx, m_tangents[vtx] ); // TODO: make sure that previous tangents are not used elsewhere
     }
 
+    // Cache the discrete curvature binormals
+    for ( IndexType vtx = 1; vtx < m_numVertices - 1; ++vtx )
+        computeCurvatureBinormal( m_curvatureBinormals[vtx], getEdgeVector( vtx - 1 ),
+                getEdgeVector( vtx ) );
+
     updateKappaAndTwist();
 
     m_framesUpToDate = true;
@@ -154,37 +121,29 @@ void StrandGeometry::updateKappaAndTwist()
     // Update other cached frame-dependent quantities
     for ( IndexType vtx = 1; vtx < m_numVertices - 1; ++vtx )
     {
-        m_kappa[vtx] = computeKappa( vtx );
-        m_gradKappa[vtx] = computeGradKappa( vtx );
-        m_HessKappa[vtx] = computeHessKappa( vtx ); // This caching may not be necessary as HessKappa will be used only once.
+        computeKappa( m_kappa[vtx], vtx );
+        computeGradKappa( m_gradKappa[vtx], vtx );
 
-        m_referenceTwists[vtx] = computeReferenceTwist( vtx ); // Idem: does this really need to be cached?
+        m_referenceTwists[vtx] = computeReferenceTwist( vtx );
         m_twists[vtx] = computeTwist( vtx );
-        m_gradTwists[vtx] = computeGradTwist( vtx );
-        m_HessTwists[vtx] = computeHessTwist( vtx ); // Idem.
+        computeGradTwist( m_gradTwists[vtx], vtx );
     }
 }
 
-Vec2d StrandGeometry::computeKappa( const IndexType vtx ) const
+void StrandGeometry::computeKappa( Vec2d & kappa, const IndexType vtx ) const
 {
-    const Vec3d& kb = discreteCurvatureBinormal( getEdgeVector( vtx - 1 ), getEdgeVector( vtx ) ); // TODO: cache
-    // std::cout << "kb = " << kb << '\n';
+    const Vec3d& kb = m_curvatureBinormals[vtx];
     const Vec3d& m1e = getMaterialFrame1( vtx - 1 );
-    // std::cout << "m1e = " << m1e << '\n';
     const Vec3d& m2e = getMaterialFrame2( vtx - 1 );
-    // std::cout << "m2e = " << m2e << '\n';
     const Vec3d& m1f = getMaterialFrame1( vtx );
-    // std::cout << "m1f = " << m1f << '\n';
     const Vec3d& m2f = getMaterialFrame2( vtx );
-    // std::cout << "m2f = " << m2f << '\n';
 
-    return Vec2d( 0.5 * kb.dot( m2e + m2f ), -0.5 * kb.dot( m1e + m1f ) );
+    kappa[0] = 0.5 * kb.dot( m2e + m2f );
+    kappa[1] = -0.5 * kb.dot( m1e + m1f );
 }
 
-Eigen::Matrix<Scalar, 11, 2> StrandGeometry::computeGradKappa( const IndexType vtx ) const
+void StrandGeometry::computeGradKappa( Eigen::Matrix<Scalar, 11, 2>& gradKappa, const IndexType vtx ) const
 {
-    Eigen::Matrix<Scalar, 11, 2> gradKappa;
-
     const Scalar norm_e = m_lengths[vtx - 1];
     const Scalar norm_f = m_lengths[vtx];
 
@@ -215,20 +174,16 @@ Eigen::Matrix<Scalar, 11, 2> StrandGeometry::computeGradKappa( const IndexType v
     gradKappa.block<3, 1> ( 4, 1 ) = Dkappa1De - Dkappa1Df;
     gradKappa.block<3, 1> ( 8, 1 ) = Dkappa1Df;
 
-    const Vec3d& kb = discreteCurvatureBinormal( getEdgeVector( vtx - 1 ), getEdgeVector( vtx ) ); // TODO: cache
+    const Vec3d& kb = m_curvatureBinormals[vtx];
 
     gradKappa( 3, 0 ) = -0.5 * kb.dot( m1e );
     gradKappa( 7, 0 ) = -0.5 * kb.dot( m1f );
     gradKappa( 3, 1 ) = -0.5 * kb.dot( m2e );
     gradKappa( 7, 1 ) = -0.5 * kb.dot( m2f );
-
-    return gradKappa;
 }
 
-Mat11dPair StrandGeometry::computeHessKappa( const IndexType vtx ) const
+void StrandGeometry::computeHessKappa( Mat11dPair & HessKappa, const IndexType vtx ) const
 {
-    Mat11dPair HessKappa;
-
     Mat11d& DDkappa1 = HessKappa.first;
     Mat11d& DDkappa2 = HessKappa.second;
 
@@ -252,7 +207,7 @@ Mat11dPair StrandGeometry::computeHessKappa( const IndexType vtx ) const
 
     const Vec2d& kappa = m_kappa[vtx];
 
-    const Vec3d& kb = discreteCurvatureBinormal( getEdgeVector( vtx - 1 ), getEdgeVector( vtx ) ); // TODO: cache
+    const Vec3d& kb = m_curvatureBinormals[vtx];
 
     const Mat3d& tt_o_tt = outerProd( tilde_t, tilde_t );
     const Mat3d& tf_c_d2t_o_tt = outerProd( tf.cross( tilde_d2 ), tilde_t );
@@ -376,8 +331,6 @@ Mat11dPair StrandGeometry::computeHessKappa( const IndexType vtx ) const
     DDkappa2.block<1, 3> ( 7, 8 ) = DDkappa2.block<3, 1> ( 8, 7 ).transpose();
 
     assert( isSymmetric( DDkappa2 ) );
-
-    return HessKappa;
 }
 
 Scalar StrandGeometry::computeReferenceTwist( const IndexType vtx ) const
@@ -405,30 +358,24 @@ Scalar StrandGeometry::computeTwist( const IndexType vtx ) const
     return m_referenceTwists[vtx] + getTheta( vtx ) - getTheta( vtx - 1 );
 }
 
-Vec11d StrandGeometry::computeGradTwist( const IndexType vtx ) const
+void StrandGeometry::computeGradTwist( Vec11d& Dtwist, const IndexType vtx ) const
 {
-    Vec11d Dtwist;
-
-    const Vec3d& kb = discreteCurvatureBinormal( getEdgeVector( vtx - 1 ), getEdgeVector( vtx ) ); // TODO: cache
+    const Vec3d& kb = m_curvatureBinormals[vtx];
 
     Dtwist.segment<3> ( 0 ) = -0.5 / m_lengths[vtx - 1] * kb;
     Dtwist.segment<3> ( 8 ) = 0.5 / m_lengths[vtx] * kb;
     Dtwist.segment<3> ( 4 ) = -( Dtwist.segment<3> ( 0 ) + Dtwist.segment<3> ( 8 ) );
     Dtwist( 3 ) = -1;
     Dtwist( 7 ) = 1;
-
-    return Dtwist;
 }
 
-Mat11d StrandGeometry::computeHessTwist( const IndexType vtx ) const
+void StrandGeometry::computeHessTwist( Mat11d & DDtwist, const IndexType vtx ) const
 {
-    Mat11d DDtwist;
-
     const Vec3d& te = m_tangents[vtx - 1];
     const Vec3d& tf = m_tangents[vtx];
     const Scalar norm_e = m_lengths[vtx - 1];
     const Scalar norm_f = m_lengths[vtx];
-    const Vec3d& kb = discreteCurvatureBinormal( getEdgeVector( vtx - 1 ), getEdgeVector( vtx ) ); // TODO: cache
+    const Vec3d& kb = m_curvatureBinormals[vtx];
 
     const Scalar chi = 1 + te.dot( tf );
     const Vec3d& tilde_t = 1.0 / chi * ( te + tf );
@@ -450,9 +397,8 @@ Mat11d StrandGeometry::computeHessTwist( const IndexType vtx ) const
     DDtwist.block<3, 3> ( 8, 4 ) = D2mDfDe - D2mDf2;
     DDtwist.block<3, 3> ( 4, 8 ) = D2mDeDf - D2mDf2;
     DDtwist.block<3, 3> ( 8, 8 ) = D2mDf2;
-    assert( isSymmetric( DDtwist ) );
 
-    return DDtwist;
+    assert( isSymmetric( DDtwist ) );
 }
 
 }
