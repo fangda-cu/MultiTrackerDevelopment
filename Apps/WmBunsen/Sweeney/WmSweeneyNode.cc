@@ -216,15 +216,6 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 
 			initialiseRodFromBarberShopInput( i_dataBlock );
 
-			if ( m_rodManager != NULL )
-            {
-			    // Note : since we only do this at the beginning of the sim
-                /// we need a method to explicitly notify sweeney of the
-                // new subset and append it in case a subset is made mid-sim
-                subsetNodes( m_rodManager->m_subsetNodes );
-                computeSubsetRodMapping( i_dataBlock, m_rodManager->m_rodsPerSubset );
-            }
-
 		}
 		else
 		{
@@ -835,6 +826,12 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput(MDataBlock& i_dataBlock)
     double m_rtol = powf(10, -i_dataBlock.inputValue(ia_rtol).asDouble());
     double m_inftol = powf(10, -i_dataBlock.inputValue(ia_inftol).asDouble());
     int m_numLineSearchIters = i_dataBlock.inputValue(ia_numLineSearchIters).asInt();
+
+    // Note : since we only do this at the beginning of the sim
+    /// we need a method to explicitly notify sweeney of the
+    // new subset and append it in case a subset is made mid-sim
+    subsetNodes( m_rodManager->m_subsetNodes );
+    computeSubsetRodMapping( i_dataBlock, m_rodManager->m_rodsPerSubset );
 
     cerr << "initialiseRodFromBarberShopInput() - About to initialise simulation\n";
     m_rodManager->initialiseSimulation(1 / 24.0, m_startTime, perfParams, m_atol, m_stol, m_rtol, m_inftol,
