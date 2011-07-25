@@ -149,6 +149,8 @@ void ElasticStrand::prepareForSolving()
     accumulateEFJ<BendingForce> ( m_currentGeometry );
     accumulateEFJ<GravitationForce> ( m_currentGeometry );
 
+    m_totalJacobian *= -1.0; // To match BASim's sign conventions
+
     m_readyForSolving = true;
 }
 
@@ -188,6 +190,8 @@ void ElasticStrand::acceptNewPositions()
     accumulateJ<TwistingForce> ( m_currentGeometry );
     accumulateJ<BendingForce> ( m_currentGeometry );
     accumulateJ<GravitationForce> ( m_currentGeometry );
+
+    m_totalJacobian *= -1.0; // To match BASim's sign conventions
 
     m_readyForSolving = true;
 }

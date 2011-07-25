@@ -246,6 +246,7 @@ inline void RodTwistingForceSym::localJacobian(ElementJacobian& J, const vertex_
     const ElementJacobian& hessTwist = getHessTwist(vh);
 
     J = kt * milen * ((twist - undeformedTwist) * hessTwist + gradTwist * gradTwist.transpose());
+  //  std::cout << J  << '\n';
 
     assert(isSymmetric(J));
 }
@@ -344,6 +345,7 @@ void RodTwistingForceSym::localJacobianForceEnergy(MatXd& J, VecXd& force, Scala
     // set force and jacobian and accumulate energy
 
     J = -kt / len * ((twist - undefTwist) * hessTwist + gradTwist * gradTwist.transpose());
+// std::cout << J  << '\n';
 
     Scalar value = kt / len * (twist - undefTwist);
 

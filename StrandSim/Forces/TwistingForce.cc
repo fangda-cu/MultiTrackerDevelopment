@@ -54,6 +54,8 @@ TwistingForce::LocalJacobianType TwistingForce::localJacobian(const ElasticStran
     LocalJacobianType hessTwist;
     geometry.computeHessTwist(hessTwist, vtx );
 
+  //  std::cout << -kt * ilen * ((twist - undeformedTwist) * hessTwist + gradTwist * gradTwist.transpose()) << '\n';
+
     return -kt * ilen * ((twist - undeformedTwist) * hessTwist + gradTwist * gradTwist.transpose());
 }
 

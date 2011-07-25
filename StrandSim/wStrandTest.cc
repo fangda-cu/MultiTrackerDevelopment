@@ -15,14 +15,14 @@
 
 using namespace strandsim;
 
-static const int nVertices = 20;
+static const int nVertices = 3;
 static const int nDOFs = 4 * nVertices - 1;
 static const Scalar totalLength = nVertices - 1.0;
 static const Scalar radius = 1.0;
-static const Scalar YoungsModulus = 100000.0;
+static const Scalar YoungsModulus = 10000.0;
 static const Scalar shearModulus = 100.0;
-static const Scalar density = 1.0;
-static const int nIterations = 50000;
+static const Scalar density = 0.1;
+static const int nIterations = 10;
 
 void testStrandSim( const std::vector<Vec3d>& i_vertices )
 {
@@ -36,7 +36,7 @@ void testStrandSim( const std::vector<Vec3d>& i_vertices )
 
     for ( int i = 0; i < nIterations; ++i )
     {
-        //     std::cout << "Iteration number " << i << '\n';
+     //        std::cout << "\nStrandSim Iteration number " << i << '\n';
 
         stepper.execute( strand );
 
@@ -81,7 +81,7 @@ void testBASim( const std::vector<Vec3d>& i_vertices )
 
     for ( int i = 0; i < nIterations; ++i )
     {
-        //  std::cout << "Iteration number " << i << '\n';
+      //    std::cout << "\nBASim iteration number " << i <<  '\n';
 
         rod->setIsInRestState( false );
         stepper->execute();
@@ -114,10 +114,11 @@ int main()
     std::vector<Vec3d> i_vertices;
     for ( int i = 0; i < nVertices; i++ )
         i_vertices.push_back(
-                Vec3d( i * totalLength / ( nVertices - 1 ), sin(0.0* i * M_PI / ( nVertices ) ), 0.0 ) );
+                Vec3d( i * totalLength / ( nVertices - 1 ), sin( 2.0 * i * M_PI / ( nVertices ) ),
+                        0.0 ) );
 
-     std::cout << "This is StrandSim\n";
-     testStrandSim( i_vertices );
+    std::cout << "This is StrandSim\n";
+    testStrandSim( i_vertices );
 
     std::cout << "This is BASim\n";
     testBASim( i_vertices );
