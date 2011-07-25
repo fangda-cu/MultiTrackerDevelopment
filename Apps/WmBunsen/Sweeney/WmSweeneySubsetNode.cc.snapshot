@@ -118,11 +118,7 @@ void WmSweeneySubsetNode::setScalpFaceIndices( const MIntArray i_indices )
     MFnIntArrayData indicesDataFn;
     MObject indicesDataObj = indicesDataFn.create( & status );
     CHECK_MSTATUS( status );
-/*
 
-    MFnIntArrayData indicesDataFn( indicesDataObj, & status );
-    CHECK_MSTATUS( status );
-*/
     MIntArray indices = indicesDataFn.array( & status );
     CHECK_MSTATUS( status );
 
