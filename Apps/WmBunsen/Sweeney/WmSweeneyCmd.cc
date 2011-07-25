@@ -421,6 +421,7 @@ void WmSweeneyCmd::createSweeneySubsetNode()
     CHECK_MSTATUS( stat );
 }
 
+// NOTE(sainsley) : there is a bug here--Maya segfaults if Sweeney node is hidden
 MStatus WmSweeneyCmd::createClumpCenterLinesFromPelt()
 {
     // First let's check that the right nodes have been previously selected.
@@ -431,6 +432,7 @@ MStatus WmSweeneyCmd::createClumpCenterLinesFromPelt()
         return MStatus::kFailure;
     }
 
+    /*
     MObject peltMesh;
     if ( m_selectedPeltMeshNode != MObject::kNullObj )
         peltMesh = m_selectedPeltMeshNode;
@@ -448,7 +450,28 @@ MStatus WmSweeneyCmd::createClumpCenterLinesFromPelt()
 
     MFnDependencyNode sweeneyFn( m_selectedSweeneyNode );
     WmSweeneyNode* sweeneyNode = dynamic_cast<WmSweeneyNode*> ( sweeneyFn.userNode() );
-    sweeneyNode->createClumpCenterLinesFromPelt( centralArr );
+    sweeneyNode->createClumpCenterLinesFromPelt( centralArr );*/
+
+    MStatus stat;
+
+    MFnDependencyNode sweeneyNodeFn( m_selectedSweeneyNode, &stat );
+    CHECK_MSTATUS( stat );
+
+    MFnDependencyNode peltNodeFn( m_selectedPeltNode, &stat );
+    CHECK_MSTATUS( stat );
+
+    MPlug sweeneyMeshPlug = sweeneyNodeFn.findPlug( "peltMesh", true, &stat );
+    CHECK_MSTATUS( stat );
+
+    MPlug peltMeshPlug = peltNodeFn.findPlug( "meshOut", true, &stat );
+    CHECK_MSTATUS( stat );
+
+    cout << " connecting peltMesh to Sweeney " << endl;
+    MDagModifier dagModifier;
+    stat = dagModifier.connect( peltMeshPlug, sweeneyMeshPlug );
+    CHECK_MSTATUS( stat );
+    dagModifier.doIt();
+    CHECK_MSTATUS( stat );
 
     return MStatus::kSuccess;
 }
