@@ -316,8 +316,48 @@ void WmSweeneyRodManager::createClumpCenterLinesFromPelt( const MPointArray& cen
     m_bAGroomingStepper->setWmPeltPoints( centerRoots );
 }
 
-void WmSweeneyRodManager::createGaussianVolumetricForce(const double charge, const Eigen::Vector3d& center,
-        const Eigen::Matrix3d& covariance )
+void WmSweeneyRodManager::createGaussianVolumetricForce( WmSweeneyVolumetricNode* volumeNode )
 {
-    m_bAGroomingStepper->createGaussianVolumetricForce(charge, center, covariance ); // Currently there can be only one. TODO: implement creation/destruction mechanism.
+    m_volumetricNodes = volumeNode;
+
+    Eigen::Quaternion<double> q = volumeNode->getQuaternion();
+
+    Vec3d scale = volumeNode->getScale();
+
+    Vec3d center = volumeNode->getCenter();
+
+    Mat3d sigma;
+    sigma.diagonal() = scale;
+    sigma = q.matrix() * sigma * ( q.matrix().transpose() );
+
+    m_bAGroomingStepper->createGaussianVolumetricForce( volumeNode->getCharge() , center, sigma );
+}
+
+bool WmSweeneyRodManager::updateGaussianVolumetricForce( )
+{
+    Scalar currentCharge;
+    Vec3d currentCenter;
+    Mat3d currentSigma;
+
+    m_bAGroomingStepper->checkGaussianVolumetricForce(currentCharge , currentCenter, currentSigma );
+
+    Eigen::Quaternion<double> q = m_volumetricNodes->getQuaternion();
+
+    Vec3d scale = m_volumetricNodes->getScale();
+
+    Vec3d center = m_volumetricNodes->getCenter();
+
+    Mat3d sigma;
+    sigma.diagonal() = scale;
+    sigma = q.matrix() * sigma * ( q.matrix().transpose() );
+
+    if ( currentCharge != m_volumetricNodes->getCharge() || currentCenter != center
+            || currentSigma != sigma )
+    {
+        m_bAGroomingStepper->updateGaussianVolumetricForce(m_volumetricNodes->getCharge() ,
+                center, sigma );
+        return true;
+    }
+
+    return false;
 }

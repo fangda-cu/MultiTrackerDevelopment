@@ -171,21 +171,21 @@ public:
         m_rodManager->createClumpCenterLinesFromPelt( centralArr );
     }
 
-    void createGaussianVolumetricForce( const Eigen::Vector3d& center, const Eigen::Matrix3d& covariance )
+    /*void createGaussianVolumetricForce( const Eigen::Vector3d& center, const Eigen::Matrix3d& covariance )
     {
         m_rodManager->createGaussianVolumetricForce(m_rodCharge, center, covariance );
-    }
+    }*/
 
 private:
     void initialiseRodFromBarberShopInput( MDataBlock& i_dataBlock );
     void initialiseCollisionMeshes( MDataBlock &i_data );
     void updateCollisionMeshes( MDataBlock& i_dataBlock );
     void initialiseVolumetricMeshes( MDataBlock &i_data );
-    void updateVolumetricMeshes( MDataBlock& i_dataBlock );
+    void updateVolumetricMeshes( MDataBlock& i_dataBlock, bool& update_all_rods );
     void computeSubsetRodMapping( MDataBlock& i_dataBlock, std::vector<int>& o_rodsPerSubset );
     void compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i_dataBlock );
 
-    void updateRods();
+    void updateRods( bool& update_all_rods );
     void updateRodParameters( const int& rodIdx, const bool& update_all_rods );
 
     // reformat all of these to take the updated value as a parameter

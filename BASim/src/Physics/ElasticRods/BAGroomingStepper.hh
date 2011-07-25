@@ -161,6 +161,10 @@ public:
 
     void createGaussianVolumetricForce(const double charge, const Vec3d& center,
             const Mat3d& covariance );
+    void updateGaussianVolumetricForce(const double charge, const Vec3d& center,
+            const Mat3d& covariance );
+    void checkGaussianVolumetricForce(double& charge, Vec3d& center,
+            Mat3d& covariance );
 
 private:
     /**

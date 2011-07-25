@@ -342,6 +342,7 @@ void WmSweeneyCmd::createSweeneySubsetNode()
     MString objectName;
     getSelectedComponents( kFaceComponent, objectName, faces );
 
+    cout << " CREATING NEW NODE FOR " << faces.length() << " selected faces " << endl;
     // check that at least one scalp face is selected
     if ( faces.length() < 1 )
     {
@@ -415,7 +416,7 @@ void WmSweeneyCmd::createSweeneySubsetNode()
 
     WmSweeneySubsetNode* sweeneySubsetNode = ( WmSweeneySubsetNode* ) dagNodeFn.userNode();
     sweeneySubsetNode->setScalpFaceIndices( faces );
-
+    cout << "FINISHED SETTING SCALP FACE INDICIES " << endl;
     stat = dagModifier.doIt();
     CHECK_MSTATUS( stat );
 }

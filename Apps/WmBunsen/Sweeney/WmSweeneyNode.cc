@@ -230,12 +230,13 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 		{
 		    if ( m_rodManager != NULL )
 		    {
-		        // update rod properties
-		        updateRods();
-
+		        bool update_all_rods = false;
 		        updateCollisionMeshes( i_dataBlock );
-		        updateVolumetricMeshes( i_dataBlock );
+		        updateVolumetricMeshes( i_dataBlock, update_all_rods );
                 updateSolverSettings( i_dataBlock );
+
+                // update rod properties
+                updateRods( update_all_rods );
 
                 m_rodManager->takeStep();
 		    }
@@ -253,15 +254,13 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 	return MS::kSuccess;
 }
 
-void  WmSweeneyNode::updateRods( )
+void  WmSweeneyNode::updateRods( bool& update_all_rods )
 {
     double currentCharge, currentPower, currentClumpDist;
     vector<double> currentClumpingRamp;
 
     m_rodManager->getClumpingParameters( currentCharge, currentPower, currentClumpDist,
                 currentClumpingRamp );
-
-    bool update_all_rods = false;
 
     if ( currentClumpingRamp.size() == m_verticesPerRod )
     {
@@ -644,7 +643,7 @@ void WmSweeneyNode::initialiseVolumetricMeshes(MDataBlock &i_data)
                 TriangleMesh* triangleMesh = NULL;
                 volumetricMeshNode->initialise(i, &triangleMesh);
 
-                Eigen::Quaternion<double> q = volumetricMeshNode->getQuaternion();
+                /*Eigen::Quaternion<double> q = volumetricMeshNode->getQuaternion();
 
                 Vec3d scale = volumetricMeshNode->getScale();
 
@@ -652,10 +651,9 @@ void WmSweeneyNode::initialiseVolumetricMeshes(MDataBlock &i_data)
 
                 Mat3d sigma;
                 sigma.diagonal() = scale;
-                sigma = q.matrix() * sigma * ( q.matrix().transpose() );
-                m_rodManager->createGaussianVolumetricForce(volumetricMeshNode->getCharge(), center, sigma );
+                sigma = q.matrix() * sigma * ( q.matrix().transpose() );*/
+                m_rodManager->createGaussianVolumetricForce( volumetricMeshNode );
 
-                //m_rodManager->addCollisionMesh(triangleMesh, figMeshController->currentLevelSet(), figMeshController);
             }
             else
             {
@@ -684,7 +682,7 @@ void WmSweeneyNode::updateCollisionMeshes(MDataBlock& i_dataBlock)
     }
 }
 
-void WmSweeneyNode::updateVolumetricMeshes(MDataBlock& i_dataBlock)
+void WmSweeneyNode::updateVolumetricMeshes(MDataBlock& i_dataBlock, bool& update_all_rods)
 {
     MStatus status;
 
@@ -700,6 +698,18 @@ void WmSweeneyNode::updateVolumetricMeshes(MDataBlock& i_dataBlock)
         inArrayH.jumpToElement(i);
         MDataHandle volumetricMeshH = inArrayH.inputValue(&status);
         CHECK_MSTATUS(status);
+        /*
+        Eigen::Quaternion<double> q = volumetricNode->getQuaternion();
+
+        Vec3d scale = volumetricMeshNode->getScale();
+
+        Vec3d center = volumetricMeshNode->getCenter();
+
+        Mat3d sigma;
+        sigma.diagonal() = scale;
+        sigma = q.matrix() * sigma * ( q.matrix().transpose() );*/
+        update_all_rods = update_all_rods || m_rodManager->updateGaussianVolumetricForce( );
+        //m_rodManager->updateGaussianVolumetricForce( i, volumetricMeshNode->getCharge(), center, sigma );
     }
 }
 
@@ -1823,6 +1833,8 @@ MStatus WmSweeneyNode::subsetNodes( std::vector<WmSweeneySubsetNode*>& o_subsetN
     const unsigned int numElements = fromSubsetNodesPlg.numElements( & status );
     CHECK_MSTATUS( status );
 
+    cout << "NUMBER OF CONNECTED SUBSETS " << numElements << endl;
+
     for ( unsigned int e = 0; e < numElements; e++ )
     {
         MPlug fromSubsetNodesChildPlg = fromSubsetNodesPlg[ e ];
@@ -1846,7 +1858,7 @@ MStatus WmSweeneyNode::subsetNodes( std::vector<WmSweeneySubsetNode*>& o_subsetN
         MFnDagNode subsetFn( subsetObj, & status );
         CHECK_MSTATUS( status );
 
-        //cout << " adding  subset " << subsetFn.fullPathName() << endl;
+        cout << " adding  subset " << subsetFn.fullPathName() << endl;
 
         WmSweeneySubsetNode* subsetNode = (WmSweeneySubsetNode*) subsetFn.userNode( & status );
         CHECK_MSTATUS( status );

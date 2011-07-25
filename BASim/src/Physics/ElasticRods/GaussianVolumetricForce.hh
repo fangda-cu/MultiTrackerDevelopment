@@ -32,6 +32,21 @@ public:
 
     void setCovariance(const Mat3d& sigma);
 
+    Scalar getCharge( ) const
+    {
+        return m_charge;
+    }
+
+    Vec3d getCenter( ) const
+    {
+        return m_center;
+    }
+
+    Mat3d getCovariance( ) const
+    {
+        return m_invSigma.inverse();
+    }
+
     // Compute mean and variance of the given points and assign its result to m_center and m_invSigma (and m_scaledInvSigma)
     void setupSigma( const Eigen::Matrix<Scalar, 3, Eigen::Dynamic>& points );
 
