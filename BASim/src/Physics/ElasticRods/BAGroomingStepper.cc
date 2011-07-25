@@ -84,6 +84,9 @@ BAGroomingStepper::BAGroomingStepper( std::vector<ElasticRod*>& rods,
             m_level_sets( levelSets ), m_numberOfClumps( numberOfClumps ),
             m_rodsPerSubset( rodsPerSubset )
 {
+    g_log = new TextLog( std::cerr, MsgInfo::kInfo, true );
+    InfoStream( g_log, "" ) << "Started logging BAGroomingStepper\n";
+
     // add level set forces
     m_levelset_forces.resize( m_level_sets.size() );
 
@@ -99,6 +102,7 @@ BAGroomingStepper::BAGroomingStepper( std::vector<ElasticRod*>& rods,
     }
 
     int numberOfSubsets = m_rodsPerSubset.size();
+    std::cerr << "Number of subsets = " << numberOfSubsets << '\n';
     // add volumetric forces
     m_volumetric_forces.resize( numberOfSubsets );
 
@@ -128,6 +132,7 @@ BAGroomingStepper::BAGroomingStepper( std::vector<ElasticRod*>& rods,
                 }
             }
         }
+        std::cerr << "Setting up volumetric force for subset " << i << '\n';
         m_volumetric_forces[i]->setupSigma( vertexMatrix );
     }
 
@@ -146,9 +151,6 @@ BAGroomingStepper::BAGroomingStepper( std::vector<ElasticRod*>& rods,
             }
         }
     }
-
-    g_log = new TextLog( std::cerr, MsgInfo::kDebug, true );
-    InfoStream( g_log, "" ) << "Started logging BAGroomingStepper\n";
 
 #ifndef NDEBUG
     for ( int i = 0; i < ( int ) m_number_of_rods; ++i )
@@ -3330,23 +3332,24 @@ void BAGroomingStepper::createGaussianVolumetricForce( const double charge, cons
     for ( std::vector<GroomingTimeStepper*>::iterator stepper = m_steppers.begin(); stepper
             != m_steppers.end(); ++stepper )
         ( *stepper )->addExternalForce( gaussianVolumetricForce );
-    m_GaussianVolumetricForces.push_back( gaussianVolumetricForce );
+    m_volumetric_forces.push_back( gaussianVolumetricForce );
 }
 
 void BAGroomingStepper::updateGaussianVolumetricForce(const int idx, const double charge,
         const Vec3d& center, const Mat3d& covariance )
 {
-    m_GaussianVolumetricForces[ idx ]->setCharge( charge );
-    m_GaussianVolumetricForces[ idx ]->setCenter( center );
-    m_GaussianVolumetricForces[ idx ]->setCovariance( covariance );
+    m_volumetric_forces[ idx ]->setCharge( charge );
+    m_volumetric_forces[ idx ]->setCenter( center );
+    m_volumetric_forces[ idx ]->setCovariance( covariance );
 }
 
-void BAGroomingStepper::checkGaussianVolumetricForce(const int idx, double& charge,
+void BAGroomingStepper::checkGaussianVolumetricForce(const int idx, double& charge, double& scale,
         Vec3d& center, Mat3d& covariance )
 {
-    charge =  m_GaussianVolumetricForces[ idx ]->getCharge();
-    center =  m_GaussianVolumetricForces[ idx ]->getCenter();
-    covariance =  m_GaussianVolumetricForces[ idx ]->getCovariance();
+    charge =  m_volumetric_forces[ idx ]->getCharge();
+    scale = m_volumetric_forces[ idx ]->getScale();
+    center =  m_volumetric_forces[ idx ]->getCenter();
+    covariance =  m_volumetric_forces[ idx ]->getCovariance();
 }
 
 }

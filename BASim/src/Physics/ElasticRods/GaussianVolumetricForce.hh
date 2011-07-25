@@ -37,6 +37,11 @@ public:
         return m_charge;
     }
 
+    Scalar getScale( ) const
+    {
+        return m_scale;
+    }
+
     Vec3d getCenter( ) const
     {
         return m_center;

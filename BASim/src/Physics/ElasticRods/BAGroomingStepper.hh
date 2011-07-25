@@ -163,7 +163,7 @@ public:
             const Mat3d& covariance );
     void updateGaussianVolumetricForce(const int idx, const double charge, const Vec3d& center,
             const Mat3d& covariance );
-    void checkGaussianVolumetricForce(const int idx, double& charge, Vec3d& center,
+    void checkGaussianVolumetricForce(const int idx, double& charge, double& scale, Vec3d& center,
             Mat3d& covariance );
 
 private:
@@ -515,7 +515,6 @@ private:
     int m_numberOfClumps;
     RodClumpingForce* m_clumpingForce;
     VecXd m_wmPeltPoints;
-    std::vector<GaussianVolumetricForce*> m_GaussianVolumetricForces;
 
 };
 

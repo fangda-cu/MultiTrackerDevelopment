@@ -21,11 +21,13 @@
 #include <weta/Wfigaro/Eigen/Core>
 #include <weta/Wfigaro/Eigen/Geometry>
 #include <weta/Wfigaro/Eigen/StdVector>
+#include <weta/Wfigaro/Eigen/Dense>
 #else
 #include <Eigen/LU>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
+#include <Eigen/Dense>
 #endif
 
 #endif // EIGENINCLUDES_HH

@@ -185,10 +185,9 @@ void WmSweeneyRodManager::initialiseSimulation( const double i_timeStep, const d
      perfParams.m_implicit_stiffness        = 1.0;
      */
 
-    m_bAGroomingStepper
-            = new BAGroomingStepper( m_rods, m_triangleMeshes, m_scriptingControllers,
-                    m_rodTimeSteppers, i_timeStep, i_startTime, -1, perfParams, m_levelSets,
-                    i_numberOfClumps, m_rodsPerSubset );
+    m_bAGroomingStepper = new BAGroomingStepper( m_rods, m_triangleMeshes, m_scriptingControllers,
+            m_rodTimeSteppers, i_timeStep, i_startTime, -1, perfParams, m_levelSets,
+            i_numberOfClumps, m_rodsPerSubset );
 }
 
 void WmSweeneyRodManager::updateSolverSettings( double i_atol, double i_stol, double i_rtol,
@@ -264,6 +263,24 @@ void WmSweeneyRodManager::takeStep()
     }
 
     m_bAGroomingStepper->execute();
+
+    Scalar currentCharge;
+    Scalar currentScale;
+    Vec3d currentCenter;
+    Mat3d currentSigma;
+
+    for ( int i = 0; i < m_subsetNodes.size(); ++i )
+    {
+        m_bAGroomingStepper->checkGaussianVolumetricForce( i, currentCharge, currentScale,
+                currentCenter, currentSigma );
+        std::cout << "Transformation centre: " << currentCenter << '\n';
+        Eigen::SelfAdjointEigenSolver<Mat3d> eigenSolver( currentSigma );
+        Vec3d eigenvalues = eigenSolver.eigenvalues();
+        std::cout << "Transformation scale: " << currentScale * sqrt( eigenvalues[0] ) << ", "
+                << currentScale * sqrt( eigenvalues[1] ) << ", " << currentScale * sqrt(
+                eigenvalues[2] ) << '\n';
+        std::cout << "Transformation rotation: " << eigenSolver.eigenvectors() << '\n';
+    }
 }
 
 void WmSweeneyRodManager::drawAllRods()
@@ -330,32 +347,34 @@ void WmSweeneyRodManager::createGaussianVolumetricForce( WmSweeneyVolumetricNode
     sigma.diagonal() = scale;
     sigma = q.matrix() * sigma * ( q.matrix().transpose() );
 
-    m_bAGroomingStepper->createGaussianVolumetricForce( volumeNode->getCharge() , center, sigma );
+    m_bAGroomingStepper->createGaussianVolumetricForce( volumeNode->getCharge(), center, sigma );
 }
 
 bool WmSweeneyRodManager::updateGaussianVolumetricForce( const int volIdx )
 {
     Scalar currentCharge;
+    Scalar currentScale;
     Vec3d currentCenter;
     Mat3d currentSigma;
 
-    m_bAGroomingStepper->checkGaussianVolumetricForce( volIdx, currentCharge , currentCenter, currentSigma );
+    m_bAGroomingStepper->checkGaussianVolumetricForce( volIdx, currentCharge, currentScale,
+            currentCenter, currentSigma );
 
-    Eigen::Quaternion<double> q = m_volumetricNodes[ volIdx ]->getQuaternion();
+    Eigen::Quaternion<double> q = m_volumetricNodes[volIdx]->getQuaternion();
 
-    Vec3d scale = m_volumetricNodes[ volIdx ]->getScale();
+    Vec3d scale = m_volumetricNodes[volIdx]->getScale();
 
-    Vec3d center = m_volumetricNodes[ volIdx ]->getCenter();
+    Vec3d center = m_volumetricNodes[volIdx]->getCenter();
 
     Mat3d sigma;
     sigma.diagonal() = scale;
     sigma = q.matrix() * sigma * ( q.matrix().transpose() );
 
-    if ( currentCharge != m_volumetricNodes[ volIdx ]->getCharge() || currentCenter != center
+    if ( currentCharge != m_volumetricNodes[volIdx]->getCharge() || currentCenter != center
             || currentSigma != sigma )
     {
         m_bAGroomingStepper->updateGaussianVolumetricForce( volIdx,
-                m_volumetricNodes[ volIdx ]->getCharge(), center, sigma );
+                m_volumetricNodes[volIdx]->getCharge(), center, sigma );
         return true;
     }
 
