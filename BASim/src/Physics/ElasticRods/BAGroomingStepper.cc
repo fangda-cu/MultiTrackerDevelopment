@@ -3325,27 +3325,28 @@ void BAGroomingStepper::getClumpingParameters( double& charge, double& power, do
 void BAGroomingStepper::createGaussianVolumetricForce( const double charge, const Vec3d& center,
         const Mat3d& covariance )
 {
-    m_GaussianVolumetricForce = new GaussianVolumetricForce( charge, 1.0, center,
+    GaussianVolumetricForce* gaussianVolumetricForce = new GaussianVolumetricForce( charge, 1.0, center,
             covariance.inverse() );
     for ( std::vector<GroomingTimeStepper*>::iterator stepper = m_steppers.begin(); stepper
             != m_steppers.end(); ++stepper )
-        ( *stepper )->addExternalForce( m_GaussianVolumetricForce );
+        ( *stepper )->addExternalForce( gaussianVolumetricForce );
+    m_GaussianVolumetricForces.push_back( gaussianVolumetricForce );
 }
 
-void BAGroomingStepper::updateGaussianVolumetricForce(const double charge, const Vec3d& center,
-            const Mat3d& covariance )
+void BAGroomingStepper::updateGaussianVolumetricForce(const int idx, const double charge,
+        const Vec3d& center, const Mat3d& covariance )
 {
-    m_GaussianVolumetricForce->setCharge( charge );
-    m_GaussianVolumetricForce->setCenter( center );
-    m_GaussianVolumetricForce->setCovariance( covariance );
+    m_GaussianVolumetricForces[ idx ]->setCharge( charge );
+    m_GaussianVolumetricForces[ idx ]->setCenter( center );
+    m_GaussianVolumetricForces[ idx ]->setCovariance( covariance );
 }
 
-void BAGroomingStepper::checkGaussianVolumetricForce(double& charge, Vec3d& center,
-            Mat3d& covariance )
+void BAGroomingStepper::checkGaussianVolumetricForce(const int idx, double& charge,
+        Vec3d& center, Mat3d& covariance )
 {
-    charge =  m_GaussianVolumetricForce->getCharge();
-    center =  m_GaussianVolumetricForce->getCenter();
-    covariance =  m_GaussianVolumetricForce->getCovariance();
+    charge =  m_GaussianVolumetricForces[ idx ]->getCharge();
+    center =  m_GaussianVolumetricForces[ idx ]->getCenter();
+    covariance =  m_GaussianVolumetricForces[ idx ]->getCovariance();
 }
 
 }

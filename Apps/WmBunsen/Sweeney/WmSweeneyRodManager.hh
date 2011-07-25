@@ -94,12 +94,11 @@ public:
     std::vector<BASim::ElasticRod*> m_rods;
     std::vector<WmSweeneySubsetNode*> m_subsetNodes;
     std::vector<int> m_rodsPerSubset;
-    WmSweeneyVolumetricNode* m_volumetricNodes;
-    //std::vector<int>
+    std::vector<WmSweeneyVolumetricNode*> m_volumetricNodes;
 
-    void createClumpCenterLinesFromPelt(const MPointArray& centralArr);
+    void createClumpCenterLinesFromPelt( const MPointArray& centralArr );
     void createGaussianVolumetricForce( WmSweeneyVolumetricNode* volumeNode );
-    bool updateGaussianVolumetricForce( );
+    bool updateGaussianVolumetricForce( const int volIdx );
 
 private:
     BASim::BAGroomingStepper* m_bAGroomingStepper;

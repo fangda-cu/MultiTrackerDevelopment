@@ -318,7 +318,7 @@ void WmSweeneyRodManager::createClumpCenterLinesFromPelt( const MPointArray& cen
 
 void WmSweeneyRodManager::createGaussianVolumetricForce( WmSweeneyVolumetricNode* volumeNode )
 {
-    m_volumetricNodes = volumeNode;
+    m_volumetricNodes.push_back( volumeNode );
 
     Eigen::Quaternion<double> q = volumeNode->getQuaternion();
 
@@ -333,29 +333,29 @@ void WmSweeneyRodManager::createGaussianVolumetricForce( WmSweeneyVolumetricNode
     m_bAGroomingStepper->createGaussianVolumetricForce( volumeNode->getCharge() , center, sigma );
 }
 
-bool WmSweeneyRodManager::updateGaussianVolumetricForce( )
+bool WmSweeneyRodManager::updateGaussianVolumetricForce( const int volIdx )
 {
     Scalar currentCharge;
     Vec3d currentCenter;
     Mat3d currentSigma;
 
-    m_bAGroomingStepper->checkGaussianVolumetricForce(currentCharge , currentCenter, currentSigma );
+    m_bAGroomingStepper->checkGaussianVolumetricForce( volIdx, currentCharge , currentCenter, currentSigma );
 
-    Eigen::Quaternion<double> q = m_volumetricNodes->getQuaternion();
+    Eigen::Quaternion<double> q = m_volumetricNodes[ volIdx ]->getQuaternion();
 
-    Vec3d scale = m_volumetricNodes->getScale();
+    Vec3d scale = m_volumetricNodes[ volIdx ]->getScale();
 
-    Vec3d center = m_volumetricNodes->getCenter();
+    Vec3d center = m_volumetricNodes[ volIdx ]->getCenter();
 
     Mat3d sigma;
     sigma.diagonal() = scale;
     sigma = q.matrix() * sigma * ( q.matrix().transpose() );
 
-    if ( currentCharge != m_volumetricNodes->getCharge() || currentCenter != center
+    if ( currentCharge != m_volumetricNodes[ volIdx ]->getCharge() || currentCenter != center
             || currentSigma != sigma )
     {
-        m_bAGroomingStepper->updateGaussianVolumetricForce(m_volumetricNodes->getCharge() ,
-                center, sigma );
+        m_bAGroomingStepper->updateGaussianVolumetricForce( volIdx,
+                m_volumetricNodes[ volIdx ]->getCharge(), center, sigma );
         return true;
     }
 

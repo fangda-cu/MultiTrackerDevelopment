@@ -698,18 +698,8 @@ void WmSweeneyNode::updateVolumetricMeshes(MDataBlock& i_dataBlock, bool& update
         inArrayH.jumpToElement(i);
         MDataHandle volumetricMeshH = inArrayH.inputValue(&status);
         CHECK_MSTATUS(status);
-        /*
-        Eigen::Quaternion<double> q = volumetricNode->getQuaternion();
 
-        Vec3d scale = volumetricMeshNode->getScale();
-
-        Vec3d center = volumetricMeshNode->getCenter();
-
-        Mat3d sigma;
-        sigma.diagonal() = scale;
-        sigma = q.matrix() * sigma * ( q.matrix().transpose() );*/
-        update_all_rods = update_all_rods || m_rodManager->updateGaussianVolumetricForce( );
-        //m_rodManager->updateGaussianVolumetricForce( i, volumetricMeshNode->getCharge(), center, sigma );
+        update_all_rods = update_all_rods || m_rodManager->updateGaussianVolumetricForce( i );
     }
 }
 
