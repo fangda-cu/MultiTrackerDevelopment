@@ -28,6 +28,7 @@
 #include <maya/MFnPointArrayData.h>
 #include <maya/MFnMatrixData.h>
 #include <maya/MFnMesh.h>
+#include <maya/MFnMeshData.h>
 #include <maya/MIOStream.h>
 #include <maya/MTime.h>
 #include <maya/MGlobal.h>
@@ -43,6 +44,7 @@
 #include <maya/MFnEnumAttribute.h>
 #include <maya/MFileIO.h>
 #include <maya/MFnCompoundAttribute.h>
+#include <maya/MItMeshPolygon.h>
 
 #include <maya/MFnMatrixAttribute.h>
 #include <maya/MPlugArray.h>
@@ -156,6 +158,8 @@ public:
     static MObject ia_shouldDrawOnlySolved;
     static MObject ia_shouldDrawOnlyUnsolved;
 
+    static MObject ia_peltMesh;
+
     static MStatus addNumericAttribute( MObject& i_attribute, MString i_longName,
             MString i_shortName, MFnNumericData::Type i_type, double i_defaultValue,
             bool i_isInput = true, bool i_isArray = false );
@@ -166,10 +170,10 @@ public:
     MStatus subsetNodes( std::vector<WmSweeneySubsetNode*>& o_subsetNodes );
     WmSweeneyRodManager* rodManager();
 
-    void createClumpCenterLinesFromPelt( const MPointArray& centralArr )
+    /*void createClumpCenterLinesFromPelt( const MPointArray& centralArr )
     {
         m_rodManager->createClumpCenterLinesFromPelt( centralArr );
-    }
+    }*/
 
     /*void createGaussianVolumetricForce( const Eigen::Vector3d& center, const Eigen::Matrix3d& covariance )
     {
@@ -184,6 +188,7 @@ private:
     void updateVolumetricMeshes( MDataBlock& i_dataBlock, bool& update_all_rods );
     void computeSubsetRodMapping( MDataBlock& i_dataBlock, std::vector<int>& o_rodsPerSubset );
     void compute_oa_simulatedNurbs( const MPlug& i_plug, MDataBlock& i_dataBlock );
+    void createClumpCenterLinesFromPelt( MDataBlock& i_dataBlock );
 
     void updateRods( bool& update_all_rods );
     void updateRodParameters( const int& rodIdx, const bool& update_all_rods );

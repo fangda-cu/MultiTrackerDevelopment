@@ -58,6 +58,9 @@ using namespace BASim;
 // Volumetric meshes
 /* static */MObject WmSweeneyNode::ia_volumetricMeshes;
 
+// wmPelt Mesh
+/* static */MObject WmSweeneyNode::ia_peltMesh;
+
 //Solver Tolerances
 /* static */MObject WmSweeneyNode::ia_stol;
 /* static */MObject WmSweeneyNode::ia_atol;
@@ -840,6 +843,7 @@ void WmSweeneyNode::initialiseRodFromBarberShopInput(MDataBlock& i_dataBlock)
 
     // initialize volumetric meshes after simulation is initialized
     initialiseVolumetricMeshes(i_dataBlock);
+    createClumpCenterLinesFromPelt(i_dataBlock);
 }
 
 void WmSweeneyNode::constructRodVertices( std::vector<BASim::Vec3d>& o_rodVertices, const MVector& i_direction,
@@ -892,6 +896,26 @@ void WmSweeneyNode::constructRodVertices( std::vector<BASim::Vec3d>& o_rodVertic
     }
 
    // cerr << "constructRodVertices(): Finished constructing rod vertices\n";
+}
+
+void  WmSweeneyNode::createClumpCenterLinesFromPelt( MDataBlock& i_dataBlock )
+{
+    const MPlug meshPlug( thisMObject(), ia_peltMesh );
+    MObject peltMesh;
+
+    if ( meshPlug.getValue( peltMesh ) // Get the mesh from the peltNode.
+            == MStatus::kFailure )
+    {
+        MGlobal::displayError( "The selected wmPeltnode is not valid" );
+        return;
+    }
+
+    // Extract the mesh centres.
+    MPointArray centralArr;
+    for ( MItMeshPolygon polyIt( peltMesh ); !polyIt.isDone(); polyIt.next() )
+        centralArr.append( polyIt.center( MSpace::kWorld ) );
+
+    m_rodManager->createClumpCenterLinesFromPelt( centralArr );
 }
 
 void WmSweeneyNode::compute_oa_simulatedNurbs(const MPlug& i_plug, MDataBlock& i_dataBlock)
@@ -1387,6 +1411,25 @@ void* WmSweeneyNode::creator()
     }
     status = attributeAffects( ia_volumetricMeshes, ca_rodPropertiesSync );
     if ( !status ) { status.perror( "attributeAffects ia_volumetricMeshes->ca_rodPropertiesSync" ); return status; }
+
+    {
+            MFnTypedAttribute typedAttr;
+            ia_peltMesh = typedAttr.create( "peltMesh", "pltmsh", MFnMeshData::kMesh, &status );
+            if (!status)
+            {
+                status.perror( "create ia_peltMesh attribute" );
+                return status;
+            }
+            typedAttr.setWritable( true );
+            typedAttr.setReadable( false );
+            typedAttr.setConnectable( true );
+            typedAttr.setDisconnectBehavior( MFnAttribute::kDelete );
+            status = addAttribute( ia_peltMesh );
+            if ( !status ) { status.perror( "addAttribute ia_peltMesh" ); return status; }
+    }
+    status = attributeAffects( ia_peltMesh, ca_rodPropertiesSync );
+    if ( !status ) { status.perror( "attributeAffects ia_peltMesh->ca_rodPropertiesSync" ); return status; }
+
 
 	//Solver settings
 	addNumericAttribute( ia_stol, "stol", "stl", MFnNumericData::kDouble, 99, true );
