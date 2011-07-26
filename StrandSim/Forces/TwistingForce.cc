@@ -37,7 +37,7 @@ TwistingForce::LocalForceType TwistingForce::localForce(const ElasticStrand& str
     const Scalar kt = strand.m_parameters.m_kt;
     const Scalar ilen = strand.m_invVoronoiLengths[vtx];
     const Scalar undefTwist = strand.m_restTwists[vtx];
-    const Scalar twist = geometry.m_twists[vtx];
+    const Scalar twist = geometry.m_twists[vtx];// std::cout << "twist = " << twist << '\n';
 
     return -kt * ilen * (twist - undefTwist) * geometry.m_gradTwists[vtx];
 }
@@ -45,16 +45,17 @@ TwistingForce::LocalForceType TwistingForce::localForce(const ElasticStrand& str
 TwistingForce::LocalJacobianType TwistingForce::localJacobian(const ElasticStrand& strand, const StrandGeometry& geometry,
         const IndexType vtx)
 {
-    const Scalar kt = strand.m_parameters.m_kt;
-    const Scalar ilen = strand.m_invVoronoiLengths[vtx];
-    const Scalar twist = geometry.m_twists[vtx];
-    const Scalar undeformedTwist = strand.m_restTwists[vtx];
+    const Scalar kt = strand.m_parameters.m_kt;// std::cout << "kt = " << kt << '\n';
+    const Scalar ilen = strand.m_invVoronoiLengths[vtx];// std::cout << "ilen = " << ilen << '\n';
+    const Scalar twist = geometry.m_twists[vtx];// std::cout << "twist = " << twist << '\n';
+    const Scalar undeformedTwist = strand.m_restTwists[vtx];// std::cout << "undefTwist = " << undeformedTwist << '\n';
 
-    const LocalForceType& gradTwist = geometry.m_gradTwists[vtx];
+    const LocalForceType& gradTwist = geometry.m_gradTwists[vtx];// std::cout << "gradTwist = " << gradTwist << '\n';
     LocalJacobianType hessTwist;
     geometry.computeHessTwist(hessTwist, vtx );
 
-  //  std::cout << -kt * ilen * ((twist - undeformedTwist) * hessTwist + gradTwist * gradTwist.transpose()) << '\n';
+    // std::cout << hessTwist << '\n';
+   // std::cout << -kt * ilen * ((twist - undeformedTwist) * hessTwist + gradTwist * gradTwist.transpose()) << '\n';
 
     return -kt * ilen * ((twist - undeformedTwist) * hessTwist + gradTwist * gradTwist.transpose());
 }

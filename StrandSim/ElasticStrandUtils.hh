@@ -57,7 +57,11 @@ inline Vec3d parallelTransport( const Vec3d& u, const Vec3d& t1, const Vec3d& t2
     b.normalize();
     const Vec3d n1 = t1.cross( b );
     const Vec3d n2 = t2.cross( b );
-    return u.dot( t1 ) * t2 + u.dot( n1 ) * n2 + u.dot( b ) * b;
+    const Vec3d v = u.dot( t1 ) * t2 + u.dot( n1 ) * n2 + u.dot( b ) * b;
+
+    // std::cout << "Parallel transport of " << u << " along " << t1 << " -> " << t2 << " = " << v << '\n';
+
+    return v;
 }
 
 // Find an arbitrary normal (unit length) vector
@@ -157,9 +161,10 @@ inline void symBProduct( Eigen::Matrix<Scalar, n, n>& result, const Mat2d& B,
 
     for ( int i = 0; i < n; ++i )
     {
-        result( i, i ) = BProduct( B, Q.row( i ), Q.row( i ) );
+        const Vec2d& Qrow_i = Q.row( i );
+        result( i, i ) = BProduct( B, Qrow_i, Qrow_i );
         for ( int j = 0; j < i; ++j )
-            result( i, j ) = result( j, i ) = BProduct( B, Q.row( i ), Q.row( j ) );
+            result( i, j ) = result( j, i ) = BProduct( B, Qrow_i, Q.row( j ) );
     }
 }
 

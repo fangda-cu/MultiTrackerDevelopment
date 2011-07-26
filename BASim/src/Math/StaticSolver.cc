@@ -174,12 +174,12 @@ bool StaticSolver<ODE>::examine_solution()
 
     // Update the differential equation with the current guess
     m_diffEq.set_q( m_x0 + m_deltaX );
-  //  std::cout << "Proposed new DOFs = " << m_x0 + m_deltaX << '\n';
+    // std::cout << "Proposed new DOFs = " << m_x0 + m_deltaX << '\n';
 
     updatePositionBasedQuantities();
 
-   // std::cout << "Energy after = " << m_energy << '\n';
-   // std::cout << "Forces norm after = " << m_rhs.norm() << '\n';
+    // std::cout << "Energy after = " << m_energy << '\n';
+    // std::cout << "Forces norm after = " << m_rhs.norm() << '\n';
 
     // Update the Levenberg-Marquardt trust region size
     /////////////////////////////////////////////////////////////
@@ -201,7 +201,7 @@ bool StaticSolver<ODE>::examine_solution()
         // Decrease lambda (= increase trust region size = decrease regularization)
         m_lambda
                 = funnyclipvalue( m_lambdamin, m_lambda * m_geardown / m_successcount, m_lambdamax );
-   //     std::cout << "Good, energy decreased, decreasing lambda to " << m_lambda << '\n';
+        // std::cout << "Good, energy decreased, decreasing lambda to " << m_lambda << '\n';
         //   TraceStream(g_log, "StaticSolver::position_solve") << "prev / new energy = " << m_initEnergy << " / " << m_energy
         //           << "; new residual = " << m_l2norm << "; retaining step; growing trust region: new lambda = " << m_lambda
         //           << "\n";
@@ -285,9 +285,9 @@ bool StaticSolver<ODE>::position_solve()
     // save the initial energy
     m_initEnergy = m_energy;
 
- //   std::cout << "Energy before = " << m_initEnergy << '\n';
-  //  std::cout << "Forces norm before = " << m_rhs.norm() << '\n';
-  //  std::cout << m_rhs << '\n';
+    //   std::cout << "Energy before = " << m_initEnergy << '\n';
+     // std::cout << "Forces norm before = " << m_rhs.norm() << '\n';
+     // std::cout << m_rhs << '\n';
 
     STOP_TIMER("StaticSolver::position_solve/setup");
 
@@ -312,7 +312,10 @@ bool StaticSolver<ODE>::position_solve()
     m_A->finalize();
     assert( m_A->isApproxSymmetric( 1.0e-6 ) );
 
-  //  std::cout << "Regularising m_lambda = " << m_lambda << '\n';
+    //  if (m_successcount > 1)
+    //     std::cout << *m_A << '\n';
+
+    // std::cout << "Regularising m_lambda = " << m_lambda << '\n';
     for ( int i = 0; i < m_ndof; ++i )
     {
         // Spectral shift (Tikhonov regularization)
@@ -338,7 +341,7 @@ bool StaticSolver<ODE>::position_solve()
     STOP_TIMER("StaticSolver::position_solve/setup");
     assert( m_A->isApproxSymmetric( 1.0e-6 ) );
 
-   // std::cout << "Regularized and fixed Jacobian = " << *m_A << '\n';
+    // std::cout << "Regularized and fixed Jacobian = " << *m_A << '\n';
 
     // Solve the linear system for the Newton step m_deltaX
     //
@@ -358,7 +361,7 @@ bool StaticSolver<ODE>::position_solve()
         m_failurecount++;
         // shrink trust region (increase regularization)
         m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup * m_failurecount, m_lambdamax );
-       // std::cout << "Solver failed, increasing lambda to " << m_lambda << '\n';
+        // std::cout << "Solver failed, increasing lambda to " << m_lambda << '\n';
 
         //  DebugStream(g_log, "StaticSolver::position_solve")
         //          << "\033[31;1mWARNING IN StaticSolver:\033[m Problem during linear solve detected. " << " new lambda = "
@@ -378,7 +381,7 @@ bool StaticSolver<ODE>::position_solve()
     if ( !done )
     {
         //  TraceStream(g_log, "StaticSolver::position_solve") << "filtering delta_X and trying again...\n";
-      //  std::cout << "Filtering...\n";
+        // std::cout << "Filtering...\n";
         filterDeltaX();
 
         // visualize post-filtering velocities
@@ -393,7 +396,7 @@ bool StaticSolver<ODE>::position_solve()
             // Increase lambda (= decrease trust region size = increase regularization)
             m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup * m_failurecount,
                     m_lambdamax );
-      //      std::cout << "Still not done, increasing lambda to " << m_lambda << '\n';
+            // std::cout << "Still not done, increasing lambda to " << m_lambda << '\n';
 
             //   TraceStream(g_log, "StaticSolver::position_solve") << "shrinking trust region: new lambda = " << m_lambda << "\n";
             ElasticRod &r = *m_diffEq.getRod();

@@ -51,7 +51,12 @@ inline Vec3d parallelTransport(const Vec3d& u, Vec3d t1, Vec3d t2)
   if (d == 1 || d == -1) return u;
 
   Vec3d b = t1.cross(t2);
-  return d*u + 1/(1+d) * b.dot(u) * b + b.cross(u);
+  Vec3d v = d*u + 1/(1+d) * b.dot(u) * b + b.cross(u);
+
+ // std::cout << "Parallel transport (1) of " << u << " along " << t1 << " -> " << t2 << " = " << v << '\n';
+
+
+  return v;
 }
 
 inline Vec3d parallel_transport(const Vec3d& u,
@@ -65,7 +70,11 @@ inline Vec3d parallel_transport(const Vec3d& u,
   b = (b - (b.dot(t2) * t2)).normalized();
   Vec3d n1 = t1.cross(b);
   Vec3d n2 = t2.cross(b);
-  return u.dot(t1) * t2 + u.dot(n1) * n2 + u.dot(b) * b;
+  Vec3d v = u.dot(t1) * t2 + u.dot(n1) * n2 + u.dot(b) * b;
+
+ // std::cout << "Parallel transport (2) of " << u << " along " << t1 << " -> " << t2 << " = " << v << '\n';
+
+  return v;
 }
 
 /** Finds an orthonormal vector to the given input vector.

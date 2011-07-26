@@ -42,26 +42,6 @@ template<typename T, typename U> struct Length<Typelist<T, U> >
     };
 };
 
-
-template<typename TList, template<typename > class FunctionT> struct TypelistIterator;
-
-template<template<typename > class FunctionT> struct TypelistIterator<NullType, FunctionT>
-{
-    static void execute()
-    {
-    }
-};
-
-template<typename T, typename U, template<typename > class FunctionT> struct TypelistIterator<
-        Typelist<T, U> , FunctionT>
-{
-    static void execute()
-    {
-        FunctionT<T>::execute();
-        TypeListIterator<U, FunctionT>::execute();
-    }
-};
-
 }
 
 #endif /* TYPELIST_HH_ */

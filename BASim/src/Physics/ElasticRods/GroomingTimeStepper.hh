@@ -258,8 +258,7 @@ public:
                 potentialForce->computeForceEnergy(m_rod, curr_force, curr_energy);
                 f += curr_force;
                 energy += curr_energy;
-               // std::cout << m_externalForces[i]->getName() << " energy = "
-                //        << energy << " force norm = " << f.norm() << '\n';
+              // std::cout << "With " << m_externalForces[i]->getName() << ": " << f << '\n';
             }
         }
     }

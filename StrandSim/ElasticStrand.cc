@@ -24,6 +24,7 @@ ElasticStrand::ElasticStrand( const VecXd& dofs, const ParametersType& parameter
 
     m_currentGeometry->storeInitialFrames();
     freezeRestShape(); // for now the rest shape is the shape in which the strand is created, unless modified later on.
+    m_bendingMatrix = computeBendingMatrix( 0 ); // to be replaced by m_bendingMatrices (evolving with geometry) if we do anisotropic rods
 
     m_futureGeometry->storeInitialFrames();
 
@@ -49,7 +50,7 @@ void ElasticStrand::resizeInternals()
     m_restBends.resize( m_numVertices - 1 );
     m_restTwists.resize( m_numVertices - 1 );
 
-    m_bendingMatrices.resize( m_numVertices - 1 ); // NB m_bendingMatrices[0] not used
+    // m_bendingMatrices.resize( m_numVertices - 1 ); // NB m_bendingMatrices[0] not used
     m_vertexMasses.resize( m_numVertices );
     m_VoronoiLengths.resize( m_numVertices );
     m_invVoronoiLengths.resize( m_numVertices );
@@ -101,8 +102,9 @@ void ElasticStrand::accumulateEF( StrandGeometry* geometry ) const
     {
         geometry->m_totalEnergy += ForceT::localEnergy( *this, *geometry, vtx );
         ForceT::addInPosition( geometry->m_totalForces, vtx,
-                ForceT::localForce( *this, *geometry, vtx ) );
+                ForceT::localForce( *this, *geometry, vtx ) ); // Optimise here
     }
+   // std::cout << "With " << ForceT::getName() << ": " << geometry->m_totalForces << '\n';
 }
 
 template<typename ForceT>
@@ -112,7 +114,7 @@ void ElasticStrand::accumulateJ( StrandGeometry* geometry )
 
     for ( IndexType vtx = ForceT::s_first; vtx < m_numVertices - ForceT::s_last; ++vtx )
     {
-        ForceT::addInPosition( m_totalJacobian, vtx, ForceT::localJacobian( *this, *geometry, vtx ) );
+        ForceT::addInPosition( m_totalJacobian, vtx, ForceT::localJacobian( *this, *geometry, vtx ) ); // Optimise here
     }
 }
 
@@ -125,8 +127,8 @@ void ElasticStrand::accumulateEFJ( StrandGeometry* geometry )
     {
         geometry->m_totalEnergy += ForceT::localEnergy( *this, *geometry, vtx );
         ForceT::addInPosition( geometry->m_totalForces, vtx,
-                ForceT::localForce( *this, *geometry, vtx ) );
-        ForceT::addInPosition( m_totalJacobian, vtx, ForceT::localJacobian( *this, *geometry, vtx ) );
+                ForceT::localForce( *this, *geometry, vtx ) ); // Optimise here
+        ForceT::addInPosition( m_totalJacobian, vtx, ForceT::localJacobian( *this, *geometry, vtx ) ); // Optimise here
     }
 }
 
@@ -141,8 +143,8 @@ void ElasticStrand::prepareForSolving()
     m_totalJacobian.setZero();
 
     m_currentGeometry->updateFrames();
-    for ( IndexType vtx = 1; vtx < m_numVertices - 1; ++vtx )
-        m_bendingMatrices[vtx] = computeBendingMatrix( vtx );
+    // for ( IndexType vtx = 1; vtx < m_numVertices - 1; ++vtx )
+    //     m_bendingMatrices[vtx] = computeBendingMatrix( vtx );
 
     accumulateEFJ<StretchingForce> ( m_currentGeometry );
     accumulateEFJ<TwistingForce> ( m_currentGeometry );
@@ -160,12 +162,16 @@ void ElasticStrand::prepareForExamining()
     if ( m_readyForExamining )
         return;
 
+    m_futureGeometry->m_referenceFrames1 = m_currentGeometry->m_referenceFrames1; // We need the old ones to compute the new ones
+    m_futureGeometry->m_previousTangents = m_currentGeometry->m_previousTangents; // Can we avoid the copis?
+    m_futureGeometry->m_referenceTwists = m_currentGeometry->m_referenceTwists;
+
+    m_futureGeometry->updateFrames();
+    //  for ( IndexType vtx = 1; vtx < m_numVertices - 1; ++vtx )
+    //      m_bendingMatrices[vtx] = computeBendingMatrix( vtx );
+
     m_futureGeometry->m_totalEnergy = 0.0;
     m_futureGeometry->m_totalForces.setZero();
-
-    m_futureGeometry->updateFrames(); // This is why we don't want to cache the 2nd derivatives, they won't be used here.
-    for ( IndexType vtx = 1; vtx < m_numVertices - 1; ++vtx )
-        m_bendingMatrices[vtx] = computeBendingMatrix( vtx );
 
     accumulateEF<StretchingForce> ( m_futureGeometry );
     accumulateEF<TwistingForce> ( m_futureGeometry );
@@ -183,8 +189,8 @@ void ElasticStrand::acceptNewPositions()
 
     // Compute the Jacobian
     m_totalJacobian.setZero();
-    for ( IndexType vtx = 1; vtx < m_numVertices - 1; ++vtx )
-        m_bendingMatrices[vtx] = computeBendingMatrix( vtx );
+    // for ( IndexType vtx = 1; vtx < m_numVertices - 1; ++vtx )
+    //     m_bendingMatrices[vtx] = computeBendingMatrix( vtx );
 
     accumulateJ<StretchingForce> ( m_currentGeometry );
     accumulateJ<TwistingForce> ( m_currentGeometry );
@@ -192,6 +198,8 @@ void ElasticStrand::acceptNewPositions()
     accumulateJ<GravitationForce> ( m_currentGeometry );
 
     m_totalJacobian *= -1.0; // To match BASim's sign conventions
+
+    // std::cout << m_totalJacobian << '\n';
 
     m_readyForSolving = true;
 }
@@ -210,18 +218,17 @@ void ElasticStrand::filterNewGeometryLength()
         const Vec3d& xbP = m_currentGeometry->getVertex( i );
         const Vec3d& xbN = m_futureGeometry->getVertex( i ) + disp;
 
-        Scalar lP = ( xbP - xaP ).norm(); // This was computed already, fetch it from where it is cached
-        Scalar lN = ( xbN - xaN ).norm();
+        const Scalar lP = ( xbP - xaP ).norm(); // This was computed already, fetch it from where it is cached
+        const Scalar lN = ( xbN - xaN ).norm();
 
         // compute and store revised delta
-        Vec3d xbNrev = xaN + ( xbN - xaN ) * lP / lN;
+        const Vec3d xbNrev = xaN + ( xbN - xaN ) * lP / lN;
         m_futureGeometry->setVertex( i, xbNrev );
         disp += xbNrev - xbN;
 
         xaP = xbP;
         xaN = xbNrev;
     }
-
 }
 
 std::ostream& operator<<( std::ostream& os, const ElasticStrand& strand )

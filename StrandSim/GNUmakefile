@@ -13,7 +13,7 @@ PRG1       := wStrandTest
 PRG1_S     := wStrandTest.cc
 PRG1_H     := wStrandTest.hh
 
-PRG1_CF    := -DBUILD=${BUILD} -DWETA
+PRG1_CF    := -DBUILD=${BUILD} -DWETA -DTIMING_ON
 
 PRG1_L     := -lwStrandSim_dbg -Wl,--start-group \
                   $(MKLROOT)/lib/em64t/libmkl_intel_lp64.a \

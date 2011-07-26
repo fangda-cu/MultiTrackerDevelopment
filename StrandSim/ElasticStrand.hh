@@ -148,7 +148,8 @@ public:
 
     // Stuff that should go in the geometry
     JacobianMatrixType m_totalJacobian;
-    std::vector<Mat2d, Eigen::aligned_allocator<Mat2d> > m_bendingMatrices;
+    // std::vector<Mat2d, Eigen::aligned_allocator<Mat2d> > m_bendingMatrices;
+    Mat2d m_bendingMatrix;
 
 public:
     friend class StretchingForce;

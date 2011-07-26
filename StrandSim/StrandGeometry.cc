@@ -84,6 +84,7 @@ void StrandGeometry::updateFrames() // and related stuff
     // Update reference frames by time-parallel transportation
     for ( IndexType vtx = 0; vtx < m_numVertices - 1; ++vtx )
     {
+        // std::cout << "Updating frames, vtx " << vtx << '\n';
         m_lengths[vtx] = getEdgeVector( vtx ).norm();
         assert( !isSmall( m_lengths[vtx] ) );
 
@@ -94,7 +95,7 @@ void StrandGeometry::updateFrames() // and related stuff
         u -= u.dot( m_tangents[vtx] ) * m_tangents[vtx];
         u.normalize();
         const Vec3d& v = m_tangents[vtx].cross( u );
-        setReferenceFrame1( vtx, u );
+        setReferenceFrame1( vtx, u );// std::cout << "u = " << u << '\n';
         setReferenceFrame2( vtx, v );
 
         const Scalar theta = m_degreesOfFreedom[4 * vtx + 3];
@@ -335,26 +336,31 @@ void StrandGeometry::computeHessKappa( Mat11dPair & HessKappa, const IndexType v
 
 Scalar StrandGeometry::computeReferenceTwist( const IndexType vtx ) const
 {
-    Scalar referenceTwist = m_referenceTwists[vtx];
+  //  std::cout << "Computing reference twist for vertex " << vtx << '\n';
+    Scalar referenceTwist = m_referenceTwists[vtx];// std::cout << "previous referenceTwist = " << referenceTwist << '\n';
 
-    const Vec3d& u0 = getReferenceFrame1( vtx - 1 );
-    const Vec3d& u1 = getReferenceFrame1( vtx );
-    const Vec3d& tangent = m_tangents[vtx];
+
+    const Vec3d& u0 = getReferenceFrame1( vtx - 1 );// std::cout << "u0 = " << u0 << '\n';
+    const Vec3d& u1 = getReferenceFrame1( vtx );// std::cout << "u1 = " << u1 << '\n';
+    const Vec3d& tangent = m_tangents[vtx];// std::cout << "tangent = " << tangent << '\n';
 
     // transport reference frame to next edge
-    Vec3d ut = parallelTransport( u0, m_tangents[vtx - 1], tangent );
+    Vec3d ut = parallelTransport( u0, m_tangents[vtx - 1], tangent );// std::cout << "ut = " << ut << '\n';
 
     // rotate by current value of reference twist
-    rotateAxisAngle( ut, tangent, referenceTwist );
+    rotateAxisAngle( ut, tangent, referenceTwist );// std::cout << "ut = " << ut << '\n';
 
     // compute increment to reference twist to align reference frames
-    referenceTwist += signedAngle( ut, u1, tangent );
+    referenceTwist += signedAngle( ut, u1, tangent );// std::cout << "referenceTwist = " << referenceTwist << '\n';
 
     return referenceTwist;
 }
 
 Scalar StrandGeometry::computeTwist( const IndexType vtx ) const
 {
+  //  std::cout << "Computing twist for vertex " << vtx << ": ref = " << m_referenceTwists[vtx]
+  //          << " theta = " << getTheta( vtx ) << " previous theta = " << getTheta( vtx - 1 )
+  //          << " total = " << m_referenceTwists[vtx] + getTheta( vtx ) - getTheta( vtx - 1 ) << '\n';
     return m_referenceTwists[vtx] + getTheta( vtx ) - getTheta( vtx - 1 );
 }
 

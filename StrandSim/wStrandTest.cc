@@ -12,17 +12,18 @@
 #include "../BASim/src/Physics/ElasticRods/RodUtils.hh"
 #include "../BASim/src/Physics/ElasticRods/GroomingTimeStepper.hh"
 #include "../BASim/src/Physics/ElasticRods/RodGravity.hh"
+#include "../BASim/src/Core/Timer.hh"
 
 using namespace strandsim;
 
-static const int nVertices = 3;
+static const int nVertices = 20;
 static const int nDOFs = 4 * nVertices - 1;
 static const Scalar totalLength = nVertices - 1.0;
 static const Scalar radius = 1.0;
 static const Scalar YoungsModulus = 10000.0;
-static const Scalar shearModulus = 100.0;
-static const Scalar density = 0.1;
-static const int nIterations = 10;
+static const Scalar shearModulus = 1000.0;
+static const Scalar density = 10.0;
+static const int nIterations = 50000;
 
 void testStrandSim( const std::vector<Vec3d>& i_vertices )
 {
@@ -36,7 +37,7 @@ void testStrandSim( const std::vector<Vec3d>& i_vertices )
 
     for ( int i = 0; i < nIterations; ++i )
     {
-     //        std::cout << "\nStrandSim Iteration number " << i << '\n';
+       // std::cout << "\nStrandSim Iteration number " << i << '\n';
 
         stepper.execute( strand );
 
@@ -81,7 +82,7 @@ void testBASim( const std::vector<Vec3d>& i_vertices )
 
     for ( int i = 0; i < nIterations; ++i )
     {
-      //    std::cout << "\nBASim iteration number " << i <<  '\n';
+        // std::cout << "\nBASim iteration number " << i << '\n';
 
         rod->setIsInRestState( false );
         stepper->execute();
@@ -117,11 +118,17 @@ int main()
                 Vec3d( i * totalLength / ( nVertices - 1 ), sin( 2.0 * i * M_PI / ( nVertices ) ),
                         0.0 ) );
 
+    START_TIMER("StrandSim");
     std::cout << "This is StrandSim\n";
     testStrandSim( i_vertices );
+    STOP_TIMER("StrandSim");
 
+    START_TIMER("BASim");
     std::cout << "This is BASim\n";
     testBASim( i_vertices );
+    STOP_TIMER("BASim");
+
+    BASim::Timer::report();
 
     return 0;
 }

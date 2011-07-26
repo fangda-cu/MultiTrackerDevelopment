@@ -171,8 +171,7 @@ void ElasticRod::computeConservativeForcesEnergy(VecXd& force, Scalar& energy)
     force  += curr_force;
     energy += curr_energy;
   //  TraceStream(g_log, "") << (*fIt)->getName() << " energy = " << curr_energy << " force norm = " << curr_force.norm() << '\n';
-  //  std::cout <<(*fIt)->getName() << " energy = "
-  //          << energy << " force norm = " << force.norm() << '\n';
+  //  std::cout << "With " << (*fIt)->getName() << ": " << force << '\n';
  }
 }
 
@@ -281,19 +280,20 @@ void ElasticRod::computeReferenceTwist()
 
     for (int i = 1; i < nv() - 1; ++i)
     {
-        const Vec3d& u0 = getReferenceDirector1(i - 1);
-        const Vec3d& u1 = getReferenceDirector1(i);
-        const Vec3d& tangent = getTangent(i);
-        Scalar& referenceTwist = property(m_referenceTwist)[i];
+       // std::cout << "Computing reference twist for vertex " << i << '\n';
+        Scalar& referenceTwist = property(m_referenceTwist)[i];// std::cout << "previous referenceTwist = " << referenceTwist << '\n';
+       const Vec3d& u0 = getReferenceDirector1(i - 1);// std::cout << "u0 = " << u0 << '\n';
+        const Vec3d& u1 = getReferenceDirector1(i);// std::cout << "u1 = " << u1 << '\n';
+        const Vec3d& tangent = getTangent(i);// std::cout << "tangent = " << tangent << '\n';
 
         // transport reference frame to next edge
-        Vec3d ut = parallel_transport(u0, getTangent(i - 1), tangent);
+        Vec3d ut = parallel_transport(u0, getTangent(i - 1), tangent);// std::cout << "ut = " << ut << '\n';
 
         // rotate by current value of reference twist
-        rotateAxisAngle(ut, tangent, referenceTwist);
+        rotateAxisAngle(ut, tangent, referenceTwist);// std::cout << "ut = " << ut << '\n';
 
         // compute increment to reference twist to align reference frames
-        referenceTwist += signedAngle(ut, u1, tangent);
+        referenceTwist += signedAngle(ut, u1, tangent);// std::cout << "referenceTwist = " << referenceTwist << '\n';
     }
 }
 

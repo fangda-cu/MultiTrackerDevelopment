@@ -28,6 +28,7 @@ public:
     StretchingForce();
     virtual ~StretchingForce();
 
+    static std::string getName() {return "stretching";}
     static Scalar localEnergy(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx);
     static LocalForceType localForce(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx);
     static LocalJacobianType localJacobian(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx);

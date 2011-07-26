@@ -28,6 +28,7 @@ public:
     BendingForce();
     virtual ~BendingForce();
 
+    static std::string getName() {return "bending";}
     static Scalar localEnergy(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx);
     static LocalForceType localForce(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx);
     static LocalJacobianType localJacobian(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx);
