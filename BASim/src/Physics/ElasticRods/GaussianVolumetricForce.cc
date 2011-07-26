@@ -59,7 +59,7 @@ void GaussianVolumetricForce::setupSigma( const Eigen::Matrix<Scalar, 3, Eigen::
     m_invSigma = Sigma.inverse();
     m_scaledInvSigma = m_invSigma / ( m_scale * m_scale );
 
-    m_charge = 100000.0*pow( m_scaledInvSigma.determinant(), 0.5 ); // L^1 scaling
+    m_charge = 10000.0 * pow( m_scaledInvSigma.determinant(), 0.5 ); // L^1 scaling
 
     std::cout << "charge = " << m_charge << '\n';
 }

@@ -159,9 +159,9 @@ public:
         selectClumps();
     }
 
-    void createGaussianVolumetricForce(const double charge, const Vec3d& center,
+    void createGaussianVolumetricForce(const double charge, const double scale, const Vec3d& center,
             const Mat3d& covariance );
-    void updateGaussianVolumetricForce(const int idx, const double charge, const Vec3d& center,
+    void updateGaussianVolumetricForce(const int idx, const double charge, const double scale, const Vec3d& center,
             const Mat3d& covariance );
     void checkGaussianVolumetricForce(const int idx, double& charge, double& scale, Vec3d& center,
             Mat3d& covariance );
@@ -368,6 +368,8 @@ private:
     void findCenterLines( RodSelectionType& centerLineRods );
     void selectClumps();
     // void updateRodsNeighbours();
+
+    void updateSubsetVolumetricForces();
 
     /*
      * Member variables

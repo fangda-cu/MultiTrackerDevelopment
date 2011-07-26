@@ -347,7 +347,7 @@ void WmSweeneyRodManager::createGaussianVolumetricForce( WmSweeneyVolumetricNode
     sigma.diagonal() = scale;
     sigma = q.matrix() * sigma * ( q.matrix().transpose() );
 
-    m_bAGroomingStepper->createGaussianVolumetricForce( volumeNode->getCharge(), center, sigma );
+    m_bAGroomingStepper->createGaussianVolumetricForce( volumeNode->getCharge(), 1.0, center, sigma );
 }
 
 bool WmSweeneyRodManager::updateGaussianVolumetricForce( const int volIdx )
@@ -374,7 +374,7 @@ bool WmSweeneyRodManager::updateGaussianVolumetricForce( const int volIdx )
             || currentSigma != sigma )
     {
         m_bAGroomingStepper->updateGaussianVolumetricForce( volIdx,
-                m_volumetricNodes[volIdx]->getCharge(), center, sigma );
+                m_volumetricNodes[volIdx]->getCharge(),  1.0, center, sigma );
         return true;
     }
 
