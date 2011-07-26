@@ -276,10 +276,11 @@ void WmSweeneyRodManager::takeStep()
         std::cout << "Transformation centre: " << currentCenter << '\n';
         Eigen::SelfAdjointEigenSolver<Mat3d> eigenSolver( currentSigma );
         Vec3d eigenvalues = eigenSolver.eigenvalues();
-        std::cout << "Transformation scale: " << currentScale * sqrt( eigenvalues[0] ) << ", "
-                << currentScale * sqrt( eigenvalues[1] ) << ", " << currentScale * sqrt(
-                eigenvalues[2] ) << '\n';
+        Vec3d scale( currentScale * sqrt( eigenvalues[0] ), currentScale * sqrt( eigenvalues[1] ),
+                currentScale * sqrt( eigenvalues[2] ) );
+        std::cout << "Transformation scale: " << scale <<'\n';
         std::cout << "Transformation rotation: " << eigenSolver.eigenvectors() << '\n';
+        m_subsetNodes[ i ]->setVolumetricTransform( scale, eigenSolver.eigenvectors(), currentCenter );
     }
 }
 

@@ -5,6 +5,16 @@
 #include <maya/M3dView.h>
 #include <maya/MDagPath.h>
 
+#include <GL/glut.h>
+
+#ifdef WETA
+#include <weta/Wfigaro/Core/EigenIncludes.hh>
+#include <weta/Wfigaro/Physics/World.hh>
+#else
+#include <BASim/src/Core/EigenIncludes.hh>
+#include <BASim/src/Physics/World.hh>
+#endif
+
 
 class WmSweeneySubsetNode : public MPxLocatorNode
 {
@@ -41,6 +51,9 @@ class WmSweeneySubsetNode : public MPxLocatorNode
     void setScalpFaceIndices( const MIntArray i_indicies );
     // debug method for previous method
     void checkScalpFaceIndices();
+
+    void setVolumetricTransform(const BASim::Vec3d scale,
+            const BASim::Mat3d rotation, const BASim::Vec3d translation);
 
     //////////////////////////////////////////////////////
     //
@@ -135,6 +148,9 @@ class WmSweeneySubsetNode : public MPxLocatorNode
                                                 MString i_shortName,
                                                 MFnNumericData::Type i_type, double i_defaultValue,
                                                 bool i_isInput = true, bool i_isArray = false );
+    BASim::Vec3d m_volumetricScale;
+    BASim::Mat3d m_volumetricRotation;
+    BASim::Vec3d m_volumetricTranslation;
 
 };
 

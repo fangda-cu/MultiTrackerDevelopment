@@ -20,6 +20,9 @@ global proc AEwmSweeneySubsetNodeTemplate( string $i_nodeName )
 		editorTemplate -addControl "curlRadius";
 		editorTemplate -addControl "curlCount";
 		editorTemplate -addControl "curlStart";
+		editorTemplate -addControl "drawGaussianVolume";
+		editorTemplate -addControl "volumetricCharge";
+		editorTemplate -addControl "volumetricScale";
     editorTemplate -endLayout;
     
     /*editorTemplate -beginLayout "Solver Tolerances" -collapse 0;

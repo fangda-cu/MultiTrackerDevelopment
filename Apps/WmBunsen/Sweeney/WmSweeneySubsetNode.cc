@@ -65,6 +65,7 @@ WmSweeneySubsetNode::WmSweeneySubsetNode()
 
 /*virtual*/ void WmSweeneySubsetNode::postConstructor()
 {
+
 }
 
 /*virtual*/ WmSweeneySubsetNode::~WmSweeneySubsetNode()
@@ -99,6 +100,14 @@ bool WmSweeneySubsetNode::isVisible( ) const
     value = value && plug.asBool();
 
     return value;
+}
+
+void WmSweeneySubsetNode::setVolumetricTransform(const BASim::Vec3d scale,
+            const BASim::Mat3d rotation, const BASim::Vec3d translation)
+{
+    m_volumetricScale = scale;
+    m_volumetricRotation = rotation;
+    m_volumetricTranslation = translation;
 }
 
 void WmSweeneySubsetNode::setScalpFaceIndices( const MIntArray i_indices )
@@ -756,7 +765,56 @@ void WmSweeneySubsetNode::getSolverSettings(
     M3dView::DisplayStyle i_style, 
     M3dView::DisplayStatus i_status )
 {
-    // Don't draw anything.
+
+    MPlug plug( thisMObject(), ia_drawGaussianVolume );
+    bool draw = plug.asBool();
+
+    if ( draw )
+    {
+
+        i_view.beginGL();
+
+        glPushAttrib( GL_ALL_ATTRIB_BITS );
+
+        GLUquadric* quadric = gluNewQuadric();
+        gluQuadricDrawStyle( quadric, GLU_LINE );
+
+        glMatrixMode(GL_MODELVIEW);
+
+        glPushMatrix();
+
+        //glLoadIdentity();
+
+        GLdouble transformMatrix[16];
+
+        for ( int i = 0; i < 3; i++)
+        {
+            for ( int j = 0; j < 3; j++ )
+            {
+                transformMatrix[ 4*i+j ] = m_volumetricRotation(i,j);
+            }
+
+            transformMatrix[ 12+i ] = m_volumetricTranslation[ i ];
+        }
+        transformMatrix[ 15 ] = 1;
+
+        glMultMatrixd( transformMatrix );
+
+        /*glTranslated( m_volumetricTranslation.x(),  m_volumetricTranslation.y(),
+                m_volumetricTranslation.z() );*/
+
+        glScaled( m_volumetricScale.x(),  m_volumetricScale.y(),
+                        m_volumetricScale.z() );
+
+        gluSphere(quadric, 1.0, 20, 20);
+
+        glPopMatrix();
+
+        glPopAttrib();
+
+        i_view.endGL();
+    }
+
 }
 
 
