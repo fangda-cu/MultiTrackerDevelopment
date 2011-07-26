@@ -113,6 +113,10 @@ class WmSweeneySubsetNode : public MPxLocatorNode
     static MObject ia_rodPower;
     static MObject ia_rodClumpSeparation;
 
+    static MObject ia_volumetricCharge;
+    static MObject ia_volumetricScale;
+    static MObject ia_drawGaussianVolume;
+
     // Solver Tolerances
     static MObject ia_stol;
     static MObject ia_atol;
@@ -122,6 +126,7 @@ class WmSweeneySubsetNode : public MPxLocatorNode
 
     // Connection to Sweeney Node
     static MObject oa_toSweeneyParentNode;
+
 
 
   private:

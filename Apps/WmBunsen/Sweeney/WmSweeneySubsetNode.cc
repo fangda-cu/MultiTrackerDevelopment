@@ -46,6 +46,10 @@ const MString WmSweeneySubsetNode::typeName( "wmSweeneySubsetNode" );
 /* static */ MObject WmSweeneySubsetNode::ia_rodPower;
 /* static */ MObject WmSweeneySubsetNode::ia_rodClumpSeparation;
 
+/* static */ MObject WmSweeneySubsetNode::ia_volumetricCharge;
+/* static */ MObject WmSweeneySubsetNode::ia_volumetricScale;
+/* static */ MObject WmSweeneySubsetNode::ia_drawGaussianVolume;
+
 // Solver Tolerances
 /* static */ MObject WmSweeneySubsetNode::ia_stol;
 /* static */ MObject WmSweeneySubsetNode::ia_atol;
@@ -701,6 +705,13 @@ void WmSweeneySubsetNode::getSolverSettings(
         status = addAttribute( ia_curlStart );
         CHECK_MSTATUS( status );
     }
+
+
+    addNumericAttribute( ia_volumetricCharge, "volumetricForceCharge", "vc", MFnNumericData::kDouble, 0.0, true );
+
+    addNumericAttribute( ia_volumetricScale, "volumetricForceScale", "vs", MFnNumericData::kDouble, 0.0, true );
+
+    addNumericAttribute( ia_drawGaussianVolume, "drawGaussianVolume", "dgv", MFnNumericData::kBoolean, false, true );
 
     addNumericAttribute( ia_fixCurlCount, "fixCurlCount", "fixcurlc", MFnNumericData::kBoolean, false, true );
 
