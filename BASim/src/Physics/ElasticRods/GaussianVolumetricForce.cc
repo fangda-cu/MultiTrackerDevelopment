@@ -53,13 +53,13 @@ void GaussianVolumetricForce::setupSigma( const Eigen::Matrix<Scalar, 3, Eigen::
     for ( int i = 0; i < n; ++i )
         centeredPoints.block<3, 1> ( 0, i ) = points.block<3, 1> ( 0, i ) - m_center;
 
-    const Mat3d& Sigma = centeredPoints * centeredPoints.transpose();
+    const Mat3d& Sigma = centeredPoints * centeredPoints.transpose()/n;
     std::cout << "Sigma = " << Sigma << '\n';
 
     m_invSigma = Sigma.inverse();
     m_scaledInvSigma = m_invSigma / ( m_scale * m_scale );
 
-    m_charge = 10000.0 * pow( m_scaledInvSigma.determinant(), 0.5 ); // L^1 scaling
+    m_charge = 1.0 * pow( m_scaledInvSigma.determinant(), 0.5 ); // L^1 scaling
 
     std::cout << "charge = " << m_charge << '\n';
 }

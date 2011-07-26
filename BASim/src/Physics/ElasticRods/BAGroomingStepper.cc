@@ -523,7 +523,7 @@ bool BAGroomingStepper::execute()
         m_levelset_forces[i]->setSubsampling( m_perf_param.m_levelset_subsampling );
     }
 
-    updateSubsetVolumetricForces();
+    // updateSubsetVolumetricForces();
 
     // Prepare the list initially containing all rods.
     RodSelectionType selected_rods = m_simulated_rods;
@@ -3323,40 +3323,40 @@ void BAGroomingStepper::checkGaussianVolumetricForce( const int idx, double& cha
     covariance = m_volumetric_forces[idx]->getCovariance();
 }
 
-void BAGroomingStepper::updateSubsetVolumetricForces()
+void BAGroomingStepper::updateSubsetVolumetricForce( const int subsetIdx, const double charge, const double scale )
 {
     // Assuming this is constant for all rods (for now)
     const int verticesPerRod = m_rods[0]->nv();
     const int numberOfSubsets = m_rodsPerSubset.size();
 
-    for ( size_t i = 0; i < numberOfSubsets; ++i )
-    {
-        // TODO (sainsley) : add method to update charge and scale for this
-        // force via the UI
-        if ( m_volumetric_forces[i] == NULL )
-            m_volumetric_forces[i] = new GaussianVolumetricForce();
+    /*for ( size_t i = 0; i < numberOfSubsets; ++i )
+    {*/
+    if ( m_volumetric_forces[ subsetIdx ] == NULL )
+        m_volumetric_forces[ subsetIdx ] = new GaussianVolumetricForce();
 
-        const int n = m_rodsPerSubset[i] * verticesPerRod;
-        Eigen::Matrix<Scalar, 3, Eigen::Dynamic> vertexMatrix( 3, n );
-        int currentIdx = 0;
-        for ( size_t rodIdx = 0; rodIdx < m_rods.size(); rodIdx++ )
+    const int n = m_rodsPerSubset[ subsetIdx ] * verticesPerRod;
+    Eigen::Matrix<Scalar, 3, Eigen::Dynamic> vertexMatrix( 3, n );
+    int currentIdx = 0;
+    for ( size_t rodIdx = 0; rodIdx < m_rods.size(); rodIdx++ )
+    {
+        int rodSubsetIdx = m_rods[ rodIdx ]->getSubsetIdx();
+        if ( rodSubsetIdx == subsetIdx )
         {
-            int subsetIdx = m_rods[rodIdx]->getSubsetIdx();
-            if ( subsetIdx == i )
+            for ( int vIdx = 0; vIdx < verticesPerRod; ++vIdx )
             {
-                for ( int vIdx = 0; vIdx < verticesPerRod; ++vIdx )
-                {
-                    Vec3d vert = m_rods[rodIdx]->getVertex( vIdx );
-                    vertexMatrix( 0, currentIdx ) = vert[0];
-                    vertexMatrix( 1, currentIdx ) = vert[1];
-                    vertexMatrix( 2, currentIdx ) = vert[2];
-                    currentIdx++;
-                }
+                Vec3d vert = m_rods[ rodIdx ]->getVertex( vIdx );
+                vertexMatrix( 0, currentIdx ) = vert[ 0 ];
+                vertexMatrix( 1, currentIdx ) = vert[ 1 ];
+                vertexMatrix( 2, currentIdx ) = vert[ 2 ];
+                currentIdx++;
             }
         }
-        //        std::cerr << "Setting up volumetric force for subset " << i << '\n';
-        m_volumetric_forces[i]->setupSigma( vertexMatrix );
     }
+    //        std::cerr << "Setting up volumetric force for subset " << i << '\n';
+    m_volumetric_forces[ subsetIdx ]->setupSigma( vertexMatrix );
+    m_volumetric_forces[ subsetIdx ]->setCharge( charge );
+    m_volumetric_forces[ subsetIdx ]->setScale( scale );
+    /*}*/
 }
 
 }

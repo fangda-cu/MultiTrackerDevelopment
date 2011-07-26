@@ -19,7 +19,7 @@ namespace BASim
 class GaussianVolumetricForce: public BASim::RodExternalConservativeForce
 {
 public:
-    GaussianVolumetricForce( const Scalar charge = 1.0, const Scalar scale = 0.5,
+    GaussianVolumetricForce( const Scalar charge = 1.0, const Scalar scale = 1.0,
             const Vec3d& center = Vec3d(), const Mat3d& invSigma = Mat3d::Identity() );
 
     virtual ~GaussianVolumetricForce();

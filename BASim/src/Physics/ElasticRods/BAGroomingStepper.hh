@@ -165,6 +165,7 @@ public:
             const Mat3d& covariance );
     void checkGaussianVolumetricForce(const int idx, double& charge, double& scale, Vec3d& center,
             Mat3d& covariance );
+    void updateSubsetVolumetricForce( const int subsetIdx, const double charge, const double scale );
 
 private:
     /**
@@ -368,8 +369,6 @@ private:
     void findCenterLines( RodSelectionType& centerLineRods );
     void selectClumps();
     // void updateRodsNeighbours();
-
-    void updateSubsetVolumetricForces();
 
     /*
      * Member variables

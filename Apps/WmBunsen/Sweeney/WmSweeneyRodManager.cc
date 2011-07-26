@@ -262,7 +262,7 @@ void WmSweeneyRodManager::takeStep()
         boundary->setDesiredEdgeAngle( 0, rod->getTheta( 0 ) );
     }
 
-    m_bAGroomingStepper->execute();
+
 
     Scalar currentCharge;
     Scalar currentScale;
@@ -273,15 +273,19 @@ void WmSweeneyRodManager::takeStep()
     {
         m_bAGroomingStepper->checkGaussianVolumetricForce( i, currentCharge, currentScale,
                 currentCenter, currentSigma );
-        std::cout << "Transformation centre: " << currentCenter << '\n';
+      //  std::cout << "Transformation centre: " << currentCenter << '\n';
         Eigen::SelfAdjointEigenSolver<Mat3d> eigenSolver( currentSigma );
         Vec3d eigenvalues = eigenSolver.eigenvalues();
         Vec3d scale( currentScale * sqrt( eigenvalues[0] ), currentScale * sqrt( eigenvalues[1] ),
                 currentScale * sqrt( eigenvalues[2] ) );
-        std::cout << "Transformation scale: " << scale <<'\n';
-        std::cout << "Transformation rotation: " << eigenSolver.eigenvectors() << '\n';
-        m_subsetNodes[ i ]->setVolumetricTransform( scale, eigenSolver.eigenvectors(), currentCenter );
+       // std::cout << "Transformation scale: " << scale <<'\n';
+       // std::cout << "Transformation rotation: " << eigenSolver.eigenvectors() << '\n';
+        m_subsetNodes[ i ]->setVolumetricTransform( scale, eigenSolver.eigenvectors().transpose(), currentCenter );
+        m_bAGroomingStepper->updateSubsetVolumetricForce( i, m_subsetNodes[ i ]->getVolumetricForceCharge(),
+                m_subsetNodes[ i ]->getVolumetricForceScale() );
     }
+
+    m_bAGroomingStepper->execute();
 }
 
 void WmSweeneyRodManager::drawAllRods()

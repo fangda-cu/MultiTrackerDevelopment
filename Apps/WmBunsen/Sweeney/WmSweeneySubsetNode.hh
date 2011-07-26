@@ -80,6 +80,9 @@ class WmSweeneySubsetNode : public MPxLocatorNode
     double getRodPower( MDataBlock* i_dataBlock = NULL ) const;
     double getRodClumpSeparation( MDataBlock* i_dataBlock = NULL ) const;
 
+    double getVolumetricForceCharge( MDataBlock* i_dataBlock = NULL ) const;
+    double getVolumetricForceScale( MDataBlock* i_dataBlock = NULL ) const;
+
     int getVerticesPerRod( MDataBlock* i_dataBlock = NULL ) const;
     int getNumberOfClumps( MDataBlock* i_dataBlock = NULL ) const;
 

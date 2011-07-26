@@ -420,6 +420,44 @@ double WmSweeneySubsetNode::getRodClumpSeparation( MDataBlock* i_dataBlock ) con
     return value;
 }
 
+double WmSweeneySubsetNode::getVolumetricForceCharge( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    double value;
+    if ( i_dataBlock )
+    {
+        value = i_dataBlock->inputValue( ia_volumetricCharge, & status ).asDouble();
+        CHECK_MSTATUS( status );
+    }
+    else
+    {
+        MPlug plug( thisMObject(),  ia_volumetricCharge );
+        value = plug.asDouble();
+    }
+
+    return value;
+}
+
+double WmSweeneySubsetNode::getVolumetricForceScale( MDataBlock* i_dataBlock ) const
+{
+    MStatus status;
+
+    double value;
+    if ( i_dataBlock )
+    {
+        value = i_dataBlock->inputValue( ia_volumetricScale, & status ).asDouble();
+        CHECK_MSTATUS( status );
+    }
+    else
+    {
+        MPlug plug( thisMObject(), ia_volumetricScale );
+        value = plug.asDouble();
+    }
+
+    return value;
+}
+
 int WmSweeneySubsetNode::getVerticesPerRod( MDataBlock* i_dataBlock ) const
 {
     MStatus status;
@@ -718,7 +756,7 @@ void WmSweeneySubsetNode::getSolverSettings(
 
     addNumericAttribute( ia_volumetricCharge, "volumetricForceCharge", "vc", MFnNumericData::kDouble, 0.0, true );
 
-    addNumericAttribute( ia_volumetricScale, "volumetricForceScale", "vs", MFnNumericData::kDouble, 0.0, true );
+    addNumericAttribute( ia_volumetricScale, "volumetricForceScale", "vs", MFnNumericData::kDouble, 1.0, true );
 
     addNumericAttribute( ia_drawGaussianVolume, "drawGaussianVolume", "dgv", MFnNumericData::kBoolean, false, true );
 
@@ -744,9 +782,9 @@ void WmSweeneySubsetNode::getSolverSettings(
     addNumericAttribute( ia_numLineSearchIters, "numLineSearchIters", "nlsi", MFnNumericData::kInt, 2, true );
 
     // parameters set at the beginning of the simulation
-    addNumericAttribute(ia_verticesPerRod, "verticesPerRod", "cpr", MFnNumericData::kInt, 10, true);
+    addNumericAttribute( ia_verticesPerRod, "verticesPerRod", "cpr", MFnNumericData::kInt, 10, true );
 
-    addNumericAttribute(ia_numberOfClumps, "numberOfClumps", "rpc", MFnNumericData::kInt, 5, true);
+    addNumericAttribute( ia_numberOfClumps, "numberOfClumps", "rpc", MFnNumericData::kInt, 5, true );
 
     return MS::kSuccess;
 }
