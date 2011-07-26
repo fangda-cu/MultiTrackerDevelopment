@@ -28,13 +28,25 @@ public:
     TwistingForce();
     virtual ~TwistingForce();
 
-    static std::string getName() {return "twisting";}
-    static Scalar localEnergy(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx);
-    static LocalForceType localForce(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx);
-    static LocalJacobianType localJacobian(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx);
+    static std::string getName()
+    {
+        return "twisting";
+    }
 
-    static void addInPosition(ForceVectorType& globalForce, const IndexType vtx, const LocalForceType& localForce);
-    static void addInPosition(JacobianMatrixType& globalJacobian, const IndexType vtx, const LocalJacobianType& localJacobian);
+    static Scalar localEnergy( const ElasticStrand& strand, const StrandGeometry& geometry,
+            const IndexType vtx );
+
+    static void computeLocalForce( LocalForceType& localF, const ElasticStrand& strand,
+            const StrandGeometry& geometry, const IndexType vtx );
+
+    static void computeLocalJacobian( LocalJacobianType& localJ, const ElasticStrand& strand,
+            const StrandGeometry& geometry, const IndexType vtx );
+
+    static void addInPosition( ForceVectorType& globalForce, const IndexType vtx,
+            const LocalForceType& localForce );
+
+    static void addInPosition( JacobianMatrixType& globalJacobian, const IndexType vtx,
+            const LocalJacobianType& localJacobian );
 };
 
 }

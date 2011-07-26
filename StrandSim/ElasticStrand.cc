@@ -98,13 +98,15 @@ void ElasticStrand::accumulateEF( StrandGeometry* geometry ) const
 {
     assert( geometry->m_framesUpToDate );
 
+    typename ForceT::LocalForceType localF;
+
     for ( IndexType vtx = ForceT::s_first; vtx < m_numVertices - ForceT::s_last; ++vtx )
     {
         geometry->m_totalEnergy += ForceT::localEnergy( *this, *geometry, vtx );
-        ForceT::addInPosition( geometry->m_totalForces, vtx,
-                ForceT::localForce( *this, *geometry, vtx ) ); // Optimise here
+        ForceT::computeLocalForce( localF, *this, *geometry, vtx );
+        ForceT::addInPosition( geometry->m_totalForces, vtx, localF );
     }
-   // std::cout << "With " << ForceT::getName() << ": " << geometry->m_totalForces << '\n';
+    // std::cout << "With " << ForceT::getName() << ": " << geometry->m_totalForces << '\n';
 }
 
 template<typename ForceT>
@@ -112,9 +114,12 @@ void ElasticStrand::accumulateJ( StrandGeometry* geometry )
 {
     assert( geometry->m_framesUpToDate );
 
+    typename ForceT::LocalJacobianType localJ;
+
     for ( IndexType vtx = ForceT::s_first; vtx < m_numVertices - ForceT::s_last; ++vtx )
     {
-        ForceT::addInPosition( m_totalJacobian, vtx, ForceT::localJacobian( *this, *geometry, vtx ) ); // Optimise here
+        ForceT::computeLocalJacobian( localJ, *this, *geometry, vtx );
+        ForceT::addInPosition( m_totalJacobian, vtx, localJ );
     }
 }
 
@@ -123,12 +128,16 @@ void ElasticStrand::accumulateEFJ( StrandGeometry* geometry )
 {
     assert( geometry->m_framesUpToDate );
 
+    typename ForceT::LocalForceType localF;
+    typename ForceT::LocalJacobianType localJ;
+
     for ( IndexType vtx = ForceT::s_first; vtx < m_numVertices - ForceT::s_last; ++vtx )
     {
         geometry->m_totalEnergy += ForceT::localEnergy( *this, *geometry, vtx );
-        ForceT::addInPosition( geometry->m_totalForces, vtx,
-                ForceT::localForce( *this, *geometry, vtx ) ); // Optimise here
-        ForceT::addInPosition( m_totalJacobian, vtx, ForceT::localJacobian( *this, *geometry, vtx ) ); // Optimise here
+        ForceT::computeLocalForce( localF, *this, *geometry, vtx );
+        ForceT::addInPosition( geometry->m_totalForces, vtx, localF );
+        ForceT::computeLocalJacobian( localJ, *this, *geometry, vtx );
+        ForceT::addInPosition( m_totalJacobian, vtx, localJ );
     }
 }
 

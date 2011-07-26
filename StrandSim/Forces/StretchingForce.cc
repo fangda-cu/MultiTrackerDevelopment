@@ -31,28 +31,23 @@ Scalar StretchingForce::localEnergy( const ElasticStrand& strand, const StrandGe
     return 0.5 * ks * square( length / restLength - 1.0 ) * restLength;
 }
 
-StretchingForce::LocalForceType StretchingForce::localForce( const ElasticStrand& strand,
-        const StrandGeometry& geometry, const IndexType vtx )
+void StretchingForce::computeLocalForce( StretchingForce::LocalForceType& localF,
+        const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx )
 {
-    LocalForceType force;
     const Scalar ks = strand.m_parameters.m_ks;// std::cout << "ks = " << ks << '\n';
     const Scalar restLength = strand.m_restLengths[vtx];// std::cout << "restLength = " << restLength << '\n';
     const Scalar length = geometry.m_lengths[vtx];// std::cout << "length = " << length << '\n';
 
     Vec3d f = ks * ( length / restLength - 1.0 ) * geometry.getEdgeVector( vtx ).normalized();
-    force.segment<3> ( 0 ) = f;
-    force.segment<3> ( 3 ) = -f;
+    localF.segment<3> ( 0 ) = f;
+    localF.segment<3> ( 3 ) = -f;
 
     // std::cout << "Local stretching force (vertex " << vtx << "): " << force << '\n';
-
-    return force;
 }
 
-StretchingForce::LocalJacobianType StretchingForce::localJacobian( const ElasticStrand& strand,
-        const StrandGeometry& geometry, const IndexType vtx )
+void StretchingForce::computeLocalJacobian( StretchingForce::LocalJacobianType& localJ,
+        const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx )
 {
-    LocalJacobianType Jacobian;
-
     const Scalar ks = strand.m_parameters.m_ks;// std::cout << "ks = " << ks << '\n';
     const Scalar restLength = strand.m_restLengths[vtx];// std::cout << "restLength = " << restLength << '\n';
     const Scalar length = geometry.m_lengths[vtx];// std::cout << "length = " << length << '\n';
@@ -60,13 +55,11 @@ StretchingForce::LocalJacobianType StretchingForce::localJacobian( const Elastic
     const Mat3d M = ks * ( ( 1.0 / restLength - 1.0 / length ) * Mat3d::Identity() + 1.0 / length
             * edge * edge.transpose() / square( length ) );
 
-    Jacobian.block<3, 3> ( 0, 0 ) = Jacobian.block<3, 3> ( 3, 3 ) = -M;
-    Jacobian.block<3, 3> ( 0, 3 ) = Jacobian.block<3, 3> ( 3, 0 ) = M;
-  //  assert( isSymmetric( Jacobian ) ); STRANGE FIXME
+    localJ.block<3, 3> ( 0, 0 ) = localJ.block<3, 3> ( 3, 3 ) = -M;
+    localJ.block<3, 3> ( 0, 3 ) = localJ.block<3, 3> ( 3, 0 ) = M;
+    //  assert( isSymmetric( Jacobian ) ); STRANGE FIXME
 
     // std::cout << "Local stretching Jacobian (vertex " << vtx << "): " << Jacobian << '\n';
-
-    return Jacobian;
 }
 
 void StretchingForce::addInPosition( ForceVectorType& globalForce, const IndexType vtx,

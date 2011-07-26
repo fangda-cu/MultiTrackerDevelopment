@@ -32,7 +32,7 @@ Scalar BendingForce::localEnergy( const ElasticStrand& strand, const StrandGeome
     return 0.5 * ilen * ( kappa - kappaBar ).dot( B * ( kappa - kappaBar ) );
 }
 
-BendingForce::LocalForceType BendingForce::localForce( const ElasticStrand& strand,
+void BendingForce::computeLocalForce( BendingForce::LocalForceType& localF, const ElasticStrand& strand,
         const StrandGeometry& geometry, const IndexType vtx )
 {
     // std::cout << "Local bending force (vertex " << vtx << ")\n";
@@ -42,17 +42,14 @@ BendingForce::LocalForceType BendingForce::localForce( const ElasticStrand& stra
     const Vec2d& kappaBar = strand.m_restBends[vtx];// std::cout << "kappaBar = " << kappaBar <<'\n';
     const Eigen::Matrix<Scalar, 11, 2>& gradKappa = geometry.m_gradKappa[vtx];// std::cout << "gradKappa = " << gradKappa <<'\n';
 
-    const Eigen::Matrix<Scalar, 11, 1>& bending = -ilen * gradKappa * B * ( kappa - kappaBar );
-    // std::cout << "force  = " << bending << '\n';
-
-    return bending;
+    localF = -ilen * gradKappa * B * ( kappa - kappaBar );
 }
 
-BendingForce::LocalJacobianType BendingForce::localJacobian( const ElasticStrand& strand,
-        const StrandGeometry& geometry, const IndexType vtx )
+//BendingForce::LocalJacobianType BendingForce::localJacobian( const ElasticStrand& strand,
+//        const StrandGeometry& geometry, const IndexType vtx )
+void BendingForce::computeLocalJacobian( BendingForce::LocalJacobianType& localJ,
+        const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx )
 {
-    LocalJacobianType localJ;
-
     const Mat2d& B = strand.m_bendingMatrix;// strand.m_bendingMatrices[vtx];
     const Scalar ilen = strand.m_invVoronoiLengths[vtx];
     const Vec2d& kappa = geometry.m_kappa[vtx];
@@ -66,8 +63,6 @@ BendingForce::LocalJacobianType BendingForce::localJacobian( const ElasticStrand
     geometry.computeHessKappa( hessKappa, vtx );
     const Vec2d temp = -ilen * ( kappa - kappaBar ).transpose() * B;
     localJ += temp( 0 ) * hessKappa.first + temp( 1 ) * hessKappa.second;
-
-    return localJ;
 }
 
 void BendingForce::addInPosition( ForceVectorType& globalForce, const IndexType vtx,

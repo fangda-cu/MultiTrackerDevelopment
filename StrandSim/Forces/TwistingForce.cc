@@ -21,29 +21,30 @@ TwistingForce::~TwistingForce()
     // TODO Auto-generated destructor stub
 }
 
-Scalar TwistingForce::localEnergy(const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx)
+Scalar TwistingForce::localEnergy( const ElasticStrand& strand, const StrandGeometry& geometry,
+        const IndexType vtx )
 {
     const Scalar kt = strand.m_parameters.m_kt;
     const Scalar ilen = strand.m_invVoronoiLengths[vtx];
     const Scalar undefTwist = strand.m_restTwists[vtx];
     const Scalar twist = geometry.m_twists[vtx];
 
-    return 0.5 * kt * square(twist - undefTwist) * ilen;
+    return 0.5 * kt * square( twist - undefTwist ) * ilen;
 }
 
-TwistingForce::LocalForceType TwistingForce::localForce(const ElasticStrand& strand, const StrandGeometry& geometry,
-        const IndexType vtx)
+void TwistingForce::computeLocalForce( TwistingForce::LocalForceType& localF,
+        const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx )
 {
     const Scalar kt = strand.m_parameters.m_kt;
     const Scalar ilen = strand.m_invVoronoiLengths[vtx];
     const Scalar undefTwist = strand.m_restTwists[vtx];
     const Scalar twist = geometry.m_twists[vtx];// std::cout << "twist = " << twist << '\n';
 
-    return -kt * ilen * (twist - undefTwist) * geometry.m_gradTwists[vtx];
+    localF = -kt * ilen * ( twist - undefTwist ) * geometry.m_gradTwists[vtx];
 }
 
-TwistingForce::LocalJacobianType TwistingForce::localJacobian(const ElasticStrand& strand, const StrandGeometry& geometry,
-        const IndexType vtx)
+void TwistingForce::computeLocalJacobian( TwistingForce::LocalJacobianType& localJ,
+        const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx )
 {
     const Scalar kt = strand.m_parameters.m_kt;// std::cout << "kt = " << kt << '\n';
     const Scalar ilen = strand.m_invVoronoiLengths[vtx];// std::cout << "ilen = " << ilen << '\n';
@@ -52,23 +53,25 @@ TwistingForce::LocalJacobianType TwistingForce::localJacobian(const ElasticStran
 
     const LocalForceType& gradTwist = geometry.m_gradTwists[vtx];// std::cout << "gradTwist = " << gradTwist << '\n';
     LocalJacobianType hessTwist;
-    geometry.computeHessTwist(hessTwist, vtx );
+    geometry.computeHessTwist( hessTwist, vtx );
 
     // std::cout << hessTwist << '\n';
-   // std::cout << -kt * ilen * ((twist - undeformedTwist) * hessTwist + gradTwist * gradTwist.transpose()) << '\n';
+    // std::cout << -kt * ilen * ((twist - undeformedTwist) * hessTwist + gradTwist * gradTwist.transpose()) << '\n';
 
-    return -kt * ilen * ((twist - undeformedTwist) * hessTwist + gradTwist * gradTwist.transpose());
+    localJ = -kt * ilen * ( ( twist - undeformedTwist ) * hessTwist + gradTwist
+            * gradTwist.transpose() );
 }
 
-void TwistingForce::addInPosition(ForceVectorType& globalForce, const IndexType vtx, const LocalForceType& localForce)
+void TwistingForce::addInPosition( ForceVectorType& globalForce, const IndexType vtx,
+        const LocalForceType& localForce )
 {
-    globalForce.segment<11> (4 * (vtx - 1)) += localForce;
+    globalForce.segment<11> ( 4 * ( vtx - 1 ) ) += localForce;
 }
 
-void TwistingForce::addInPosition(JacobianMatrixType& globalJacobian, const IndexType vtx,
-        const LocalJacobianType& localJacobian)
+void TwistingForce::addInPosition( JacobianMatrixType& globalJacobian, const IndexType vtx,
+        const LocalJacobianType& localJacobian )
 {
-    globalJacobian.localStencilAdd<11> (4 * (vtx - 1), localJacobian);
+    globalJacobian.localStencilAdd<11> ( 4 * ( vtx - 1 ), localJacobian );
 }
 
 }

@@ -90,6 +90,7 @@ inline Eigen::Matrix<Scalar, n, 1> findNormal( const Eigen::Matrix<Scalar, n, 1>
     v.normalize();
 
     finished: assert( isSmall( u.dot( v ) ) );
+
     return v;
 }
 
