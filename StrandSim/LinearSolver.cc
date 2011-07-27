@@ -26,9 +26,15 @@ template<int kl, int ku>
 int BandMatrixLinearSolver<kl, ku>::solve( VecXd& x, const BandMatrix<double, kl, ku>& A,
         const VecXd& b )
 {
-    const int n = A.rows();
-    const int nrhs = 1;
-    const int ldab = 2 * kl + ku + 1;
+    assert( A.rows() == A.cols() );
+    assert( b.rows() == A.cols() );
+    assert( x.rows() == A.cols() );
+
+    static const int s_kl = kl; // Just because dgbsv wants a pointer
+    static const int s_ku = ku;
+    static const int ldab = 2 * kl + ku + 1;
+    static const int nrhs = 1;
+    const int n = A.cols();
     const int ldb = n;
 
     // Prepare data for LAPACK-style solver
@@ -36,15 +42,21 @@ int BandMatrixLinearSolver<kl, ku>::solve( VecXd& x, const BandMatrix<double, kl
     m_ipiv.resize( n );
     m_ab.resize( ldab * n ); // Space must be made for an  additional kl super-diagonals for LU factorization
 
+    // Copy the data from A to m_ab
+    const std::vector<Scalar>& data = A.getData();
+    int mj = kl;
     for ( int j = 0; j < n; ++j )
-        for ( int i = std::max( 0, j - ku ); i < std::min( n, j + kl + 1 ); ++i )
-            m_ab[kl + ku + i - j + j * ldab] = A( i, j );
+    {
+        for ( int i = 0; i < kl + ku + 1; ++i )
+            m_ab[i + mj] = data[i * n + j];
+        mj += ldab;
+    }
 
+    // Copy the right-hand side
     x = b;
-    static const int sckl = kl; // Just because dgbsv wants a pointer
-    static const int scku = ku;
 
-    dgbsv_( &n, &sckl, &scku, &nrhs, &m_ab[0], &ldab, &m_ipiv[0], x.data(), &ldb, &info );
+    // Solve it!
+    dgbsv_( &n, &s_kl, &s_ku, &nrhs, &m_ab[0], &ldab, &m_ipiv[0], x.data(), &ldb, &info );
 
     return info;
 }

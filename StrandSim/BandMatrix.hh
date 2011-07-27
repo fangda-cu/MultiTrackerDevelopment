@@ -67,9 +67,9 @@ public:
 
         for ( int i = 0; i < nfixed; i++ )
         {
-            for ( int j = std::max( 0, i - kl ); j <= std::min( ( int ) m_cols-1, i + ku ); ++j )
+            for ( int j = std::max( 0, i - kl ); j <= std::min( ( int ) m_cols - 1, i + ku ); ++j )
                 ( *this )( i, j ) = 0.0;
-            for ( int k = std::max( 0, i - ku ); k <= std::min( ( int ) m_rows-1, i + kl ); k++ )
+            for ( int k = std::max( 0, i - ku ); k <= std::min( ( int ) m_rows - 1, i + kl ); k++ )
                 ( *this )( k, i ) = 0.0;
             ( *this )( i, i ) = 1.0;
 
@@ -140,7 +140,7 @@ public:
 
     BandMatrix<ScalarT, kl, ku>& operator*=( const ScalarT multiplier )
     {
-        for (typename std::vector<ScalarT>::iterator i = m_data.begin(); i != m_data.end(); ++i )
+        for ( typename std::vector<ScalarT>::iterator i = m_data.begin(); i != m_data.end(); ++i )
             *i *= multiplier;
 
         return *this;
@@ -193,6 +193,11 @@ public:
                     return false;
 
         return true;
+    }
+
+    const std::vector<ScalarT>& getData() const
+    {
+        return m_data;
     }
 
 private:

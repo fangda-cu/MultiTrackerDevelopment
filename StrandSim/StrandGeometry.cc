@@ -339,7 +339,6 @@ Scalar StrandGeometry::computeReferenceTwist( const IndexType vtx ) const
   //  std::cout << "Computing reference twist for vertex " << vtx << '\n';
     Scalar referenceTwist = m_referenceTwists[vtx];// std::cout << "previous referenceTwist = " << referenceTwist << '\n';
 
-
     const Vec3d& u0 = getReferenceFrame1( vtx - 1 );// std::cout << "u0 = " << u0 << '\n';
     const Vec3d& u1 = getReferenceFrame1( vtx );// std::cout << "u1 = " << u1 << '\n';
     const Vec3d& tangent = m_tangents[vtx];// std::cout << "tangent = " << tangent << '\n';

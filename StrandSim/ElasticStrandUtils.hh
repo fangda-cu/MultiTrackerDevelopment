@@ -51,17 +51,14 @@ inline Vec3d parallelTransport( const Vec3d& u, const Vec3d& t1, const Vec3d& t2
     assert( isSmall( t2.norm() - 1 ) );
 
     Vec3d b = t1.cross( t2 );
-    if ( isSmall( b.norm() ) ) // vectors are colinear
+    if ( isSmall( b.norm() ) ) // vectors are nearly colinear
         return u;
 
     b.normalize();
-    const Vec3d n1 = t1.cross( b );
-    const Vec3d n2 = t2.cross( b );
-    const Vec3d v = u.dot( t1 ) * t2 + u.dot( n1 ) * n2 + u.dot( b ) * b;
+    const Vec3d& n1 = t1.cross( b );
+    const Vec3d& n2 = t2.cross( b );
 
-    // std::cout << "Parallel transport of " << u << " along " << t1 << " -> " << t2 << " = " << v << '\n';
-
-    return v;
+    return u.dot( t1 ) * t2 + u.dot( n1 ) * n2 + u.dot( b ) * b;
 }
 
 // Find an arbitrary normal (unit length) vector
@@ -94,7 +91,7 @@ inline Eigen::Matrix<Scalar, n, 1> findNormal( const Eigen::Matrix<Scalar, n, 1>
     return v;
 }
 
-// Discrete curvature binormal between two consecutive tangent vectors (they don't need to be normalized). Note that the returned vector is not normalised but has magnitude 2 \tan(\phi/2), \phi being the angle between t1 and t2
+// Discrete curvature binormal between two consecutive tangent vectors (they don't need to be normalised). Note that the returned vector is not normalised but has magnitude 2 \tan(\phi/2), \phi being the angle between t1 and t2
 inline void computeCurvatureBinormal( Vec3d& kb, const Vec3d& t1, const Vec3d& t2 )
 {
     kb = 2.0 * t1.cross( t2 ) / ( t1.norm() * t2.norm() + t1.dot( t2 ) );
