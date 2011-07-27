@@ -11,7 +11,8 @@
 namespace strandsim
 {
 
-ClumpingForce::ClumpingForce()
+ClumpingForce::ClumpingForce() :
+    m_charge( 0.0 ), m_power( 1.0 ), m_rho2( 0.000025 )
 {
     // TODO Auto-generated constructor stub
 
@@ -101,8 +102,8 @@ void ClumpingForce::accumulateMutualEFJ( Scalar& energy, VecXd& force,
 
 }
 
-void ClumpingForce::accumulateMutualJ( Scalar& energy, VecXd& force, JacobianMatrixType& Jacobian,
-        const ElasticStrand& strand, const ElasticStrand& other ) const
+void ClumpingForce::accumulateMutualJ( JacobianMatrixType& Jacobian, const ElasticStrand& strand,
+        const ElasticStrand& other ) const
 {
     Scalar chargeMultiplier = 1.0;
 

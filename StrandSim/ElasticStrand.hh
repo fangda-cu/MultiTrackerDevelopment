@@ -57,8 +57,6 @@ public:
         return m_currentGeometry->getVertex( vtx );
     }
 
-    Vec3d closestPoint(const Vec3d& x) const;
-
     void filterNewGeometryLength();
 
     bool readyForSolving() const
@@ -83,12 +81,12 @@ public:
 
     const JacobianMatrixType& getTotalJacobian() const
     {
-        return *(m_currentGeometry->m_totalJacobian);
+        return *( m_currentGeometry->m_totalJacobian );
     }
 
     JacobianMatrixType& getTotalJacobian()
     {
-        return *(m_currentGeometry->m_totalJacobian);
+        return *( m_currentGeometry->m_totalJacobian );
     }
 
     Scalar getNewTotalEnergy() const
@@ -115,8 +113,16 @@ public:
     void prepareForExamining();
     void acceptNewPositions();
 
-public:
-    const std::list<ElasticStrand*>& getClumpingAttractors() const;
+    void addExternalForce( ForceBase* force )
+    {
+        m_externalForces.push_back( force );
+    }
+
+private:
+    const std::list<ElasticStrand*>& getClumpingAttractors() const
+    {
+        return m_clumpingAttractors;
+    }
 
     // For testing only, otherwise private:
     void resizeInternals();
@@ -132,6 +138,8 @@ public:
 
     template<typename ForceT>
     void accumulateEFJ( StrandGeometry* geometry ) const;
+
+    Vec3d closestPoint( const Vec3d& x ) const;
 
     /**
      * Member variables
@@ -152,6 +160,7 @@ public:
     std::vector<Scalar> m_restLengths;
     std::vector<Vec2d, Eigen::aligned_allocator<Vec2d> > m_restBends;
     std::vector<Scalar> m_restTwists;
+
     // If we do anisotropic rods, the following will go in the geometry
     // std::vector<Mat2d, Eigen::aligned_allocator<Mat2d> > m_bendingMatrices;
     Mat2d m_bendingMatrix;
@@ -163,15 +172,14 @@ public:
     // Forces that are not built-in
     std::list<ForceBase*> m_externalForces;
 
+    std::list<ElasticStrand*> m_clumpingAttractors;
+
 public:
     friend class StretchingForce;
-    //    friend class ForceAccumulator<StretchingForce> ;
     friend class BendingForce;
-    //    friend class ForceAccumulator<BendingForce> ;
     friend class TwistingForce;
-    //    friend class ForceAccumulator<TwistingForce> ;
     friend class GravitationForce;
-    //    friend class ForceAccumulator<GravitationForce> ;
+    friend class ClumpingForce;
     friend std::ostream& operator<<( std::ostream& os, const ElasticStrand& strand );
 };
 

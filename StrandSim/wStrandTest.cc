@@ -8,6 +8,8 @@
 #include "wStrandTest.hh"
 #include "ElasticStrand.hh"
 #include "ElasticStrandStaticStepper.hh"
+#include "Forces/ClumpingForce.hh"
+
 #include "../BASim/src/Physics/ElasticRods/ElasticRod.hh"
 #include "../BASim/src/Physics/ElasticRods/RodUtils.hh"
 #include "../BASim/src/Physics/ElasticRods/GroomingTimeStepper.hh"
@@ -32,6 +34,8 @@ void testStrandSim( const std::vector<Vec3d>& i_vertices )
     for ( int i = 0; i < dofs.size(); i += 4 )
         dofs.segment<3> ( i ) = i_vertices[i / 4];
     ElasticStrand strand( dofs, params );
+
+    strand.addExternalForce(new ClumpingForce);
 
     ElasticStrandStaticStepper stepper;
 

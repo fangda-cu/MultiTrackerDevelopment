@@ -228,8 +228,6 @@ void ElasticStrand::acceptNewPositions()
 
     *( m_currentGeometry->m_totalJacobian ) *= -1.0; // To match BASim's sign conventions
 
-    // std::cout << m_totalJacobian << '\n';
-
     m_readyForSolving = true;
 }
 
@@ -268,7 +266,7 @@ Vec3d ElasticStrand::closestPoint( const Vec3d& x ) const
     for ( int vtx = 0; vtx < m_numVertices - 1; ++vtx )
     {
         Vec3d y = ClosestPtPointSegment( x, getVertex( vtx ), getVertex( vtx + 1 ) );
-        Scalar dist = ( y - x ).norm(); // squared norm would be faster here
+        Scalar dist = ( y - x ).squaredNorm();
         if ( dist < mindist )
         {
             mindist = dist;

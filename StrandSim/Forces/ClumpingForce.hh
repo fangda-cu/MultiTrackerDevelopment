@@ -31,6 +31,46 @@ public:
 
     virtual void accumulateJ( StrandGeometry& geometry, const ElasticStrand& strand ) const;
 
+    void setCharge( const Scalar charge )
+    {
+        m_charge = charge;
+    }
+
+    void setPower( const Scalar power )
+    {
+        m_power = power;
+    }
+
+    void setVertexPowerMap( const std::vector<double>& vertexPowerMap )
+    {
+        m_vertexQMap = vertexPowerMap;
+    }
+
+    void setDistance( const Scalar dist )
+    {
+        m_rho2 = dist * dist;
+    }
+
+    double getCharge() const
+    {
+        return m_charge;
+    }
+
+    double getPower() const
+    {
+        return m_power;
+    }
+
+    double getDistance() const
+    {
+        return sqrt( m_rho2 );
+    }
+
+    const std::vector<double>& getVertexPowerMap() const
+    {
+        return m_vertexQMap;
+    }
+
 private:
     void accumulateMutualEF( Scalar& energy, VecXd& force, const ElasticStrand& strand,
             const ElasticStrand& other ) const;
