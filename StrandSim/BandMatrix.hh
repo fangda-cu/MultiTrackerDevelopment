@@ -231,6 +231,8 @@ std::ostream& operator<<( std::ostream& os, const BandMatrix<ScalarT, kl, ku>& M
     return os;
 }
 
+typedef BandMatrix<Scalar, 10, 10> JacobianMatrixType;
+
 }
 
 #endif /* BANDMATRIX_HH_ */

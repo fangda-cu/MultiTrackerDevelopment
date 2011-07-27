@@ -8,12 +8,15 @@
 #ifndef ELASTICSTRAND_HH_
 #define ELASTICSTRAND_HH_
 
+#include <list>
+
 #include "StrandBase.hh"
 #include "StrandGeometry.hh"
 #include "ElasticStrandUtils.hh"
 #include "BandMatrix.hh"
 #include "ElasticStrandParameters.hh"
 #include "Typelist.hh"
+#include "Forces/ForceBase.hh"
 
 namespace strandsim
 {
@@ -30,7 +33,6 @@ class ElasticStrand: public StrandBase
 {
 public:
     typedef ElasticStrandParameters ParametersType;
-    typedef strandsim::BandMatrix<Scalar, 10, 10> JacobianMatrixType; // TODO: replace this with a type that has built-in symmetry. Or at least squareness.
 
     ElasticStrand( const VecXd& dofs, const ParametersType& parameters );
 
@@ -50,6 +52,13 @@ public:
         return m_futureGeometry->m_degreesOfFreedom;
     }
 
+    Vec3d getVertex( const IndexType vtx ) const
+    {
+        return m_currentGeometry->getVertex( vtx );
+    }
+
+    Vec3d closestPoint(const Vec3d& x) const;
+
     void filterNewGeometryLength();
 
     bool readyForSolving() const
@@ -64,22 +73,22 @@ public:
 
     const VecXd& getTotalForces() const
     {
-        return m_currentGeometry->m_totalForces;
+        return m_currentGeometry->m_totalForce;
     }
 
     VecXd& getTotalForces()
     {
-        return m_currentGeometry->m_totalForces;
+        return m_currentGeometry->m_totalForce;
     }
 
     const JacobianMatrixType& getTotalJacobian() const
     {
-        return m_totalJacobian;
+        return *(m_currentGeometry->m_totalJacobian);
     }
 
     JacobianMatrixType& getTotalJacobian()
     {
-        return m_totalJacobian;
+        return *(m_currentGeometry->m_totalJacobian);
     }
 
     Scalar getNewTotalEnergy() const
@@ -89,12 +98,12 @@ public:
 
     const VecXd& getNewTotalForces() const
     {
-        return m_futureGeometry->m_totalForces;
+        return m_futureGeometry->m_totalForce;
     }
 
     VecXd& getNewTotalForces()
     {
-        return m_futureGeometry->m_totalForces;
+        return m_futureGeometry->m_totalForce;
     }
 
     Scalar getMass( IndexType i ) const
@@ -107,6 +116,8 @@ public:
     void acceptNewPositions();
 
 public:
+    const std::list<ElasticStrand*>& getClumpingAttractors() const;
+
     // For testing only, otherwise private:
     void resizeInternals();
     void freezeRestShape();
@@ -117,10 +128,10 @@ public:
     void accumulateEF( StrandGeometry* geometry ) const;
 
     template<typename ForceT>
-    void accumulateJ( StrandGeometry* geometry ); // TODO: const once Jacobian in geometry
+    void accumulateJ( StrandGeometry* geometry ) const;
 
     template<typename ForceT>
-    void accumulateEFJ( StrandGeometry* geometry ); // TODO: const once Jacobian in geometry
+    void accumulateEFJ( StrandGeometry* geometry ) const;
 
     /**
      * Member variables
@@ -141,15 +152,16 @@ public:
     std::vector<Scalar> m_restLengths;
     std::vector<Vec2d, Eigen::aligned_allocator<Vec2d> > m_restBends;
     std::vector<Scalar> m_restTwists;
+    // If we do anisotropic rods, the following will go in the geometry
+    // std::vector<Mat2d, Eigen::aligned_allocator<Mat2d> > m_bendingMatrices;
+    Mat2d m_bendingMatrix;
 
     // Flags
     bool m_readyForExamining;
     bool m_readyForSolving;
 
-    // Stuff that should go in the geometry
-    JacobianMatrixType m_totalJacobian;
-    // std::vector<Mat2d, Eigen::aligned_allocator<Mat2d> > m_bendingMatrices;
-    Mat2d m_bendingMatrix;
+    // Forces that are not built-in
+    std::list<ForceBase*> m_externalForces;
 
 public:
     friend class StretchingForce;

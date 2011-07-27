@@ -20,6 +20,7 @@ typedef uint16_t IndexType;
 typedef Eigen::Matrix<Scalar, 11, 1> Vec11d;
 typedef Eigen::Matrix<Scalar, 11, 11> Mat11d;
 typedef std::pair<Mat11d, Mat11d> Mat11dPair;
+typedef VecXd ForceVectorType;
 
 }
 #endif /* DEFINITIONS_HH_ */

@@ -2,19 +2,18 @@
  * GravitationForce.hh
  *
  *  Created on: 14/07/2011
- *      Author: jaubry
+ *      Author: Jean-Marie Aubry <jaubry@wetafx.co.nz>
  */
 
 #ifndef GRAVITATIONFORCE_HH_
 #define GRAVITATIONFORCE_HH_
 
-#include "ForceBase.hh"
 #include "../ElasticStrand.hh"
 
 namespace strandsim
 {
 
-class GravitationForce: public ForceBase<ElasticStrand>
+class GravitationForce
 {
 public:
     static const IndexType s_first = 0; // The first index on which this force can apply
@@ -23,7 +22,6 @@ public:
     typedef Vec3d LocalForceType;
     typedef Mat3d LocalJacobianType;
     typedef VecXd ForceVectorType;
-    typedef ElasticStrand::JacobianMatrixType JacobianMatrixType;
 
     GravitationForce();
     virtual ~GravitationForce();

@@ -18,7 +18,7 @@ using namespace strandsim;
 
 static const int nVertices = 30;
 static const int nDOFs = 4 * nVertices - 1;
-static const Scalar totalLength = nVertices - 1.0;
+static const Scalar totalLength = 10.0;
 static const Scalar radius = 1.0;
 static const Scalar YoungsModulus = 10000.0;
 static const Scalar shearModulus = 1000.0;
@@ -37,7 +37,7 @@ void testStrandSim( const std::vector<Vec3d>& i_vertices )
 
     for ( int i = 0; i < nIterations; ++i )
     {
-       // std::cout << "\nStrandSim Iteration number " << i << '\n';
+        // std::cout << "\nStrandSim Iteration number " << i << '\n';
 
         stepper.execute( strand );
 
@@ -112,11 +112,20 @@ int main()
 
     std::cout << "Number of built-in forces = " << NF << '\n';
 
+    // Prepare initial rod/strand position
     std::vector<Vec3d> i_vertices;
+
+    // Store arbitrary vertex coordinates
     for ( int i = 0; i < nVertices; i++ )
         i_vertices.push_back(
-                Vec3d( i * totalLength / ( nVertices - 1 ), sin( 2.0 * i * M_PI / ( nVertices ) ),
-                        0.0 ) );
+                Vec3d( i * 1.0 / ( nVertices - 1 ), sin( 2.0 * i * M_PI / ( nVertices ) ), 0.0 ) );
+
+    // Enforce the total length
+    Scalar length = 0.0;
+    for ( int i = 0; i < nVertices - 1; i++ )
+        length += ( i_vertices[i + 1] - i_vertices[i] ).norm();
+    for ( int i = 0; i < nVertices; i++ )
+        i_vertices[i] *= totalLength / length;
 
     START_TIMER("StrandSim");
     std::cout << "This is StrandSim\n";

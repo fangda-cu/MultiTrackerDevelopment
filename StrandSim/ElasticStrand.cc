@@ -20,6 +20,10 @@ ElasticStrand::ElasticStrand( const VecXd& dofs, const ParametersType& parameter
     m_parameters( parameters ), m_currentGeometry( new StrandGeometry( dofs ) ),
             m_futureGeometry( new StrandGeometry( dofs ) ), m_readyForSolving( false )
 {
+    // Allocate the Jacobian matrix and store it in a shared pointer.
+    m_currentGeometry->m_totalJacobian = m_futureGeometry->m_totalJacobian = boost::shared_ptr<
+            JacobianMatrixType>( new JacobianMatrixType );
+
     resizeInternals();
 
     m_currentGeometry->storeInitialFrames();
@@ -54,8 +58,6 @@ void ElasticStrand::resizeInternals()
     m_vertexMasses.resize( m_numVertices );
     m_VoronoiLengths.resize( m_numVertices );
     m_invVoronoiLengths.resize( m_numVertices );
-
-    m_totalJacobian.resize( ndofs, ndofs );
 }
 
 // Take the current geometry as rest shape
@@ -103,14 +105,15 @@ void ElasticStrand::accumulateEF( StrandGeometry* geometry ) const
     for ( IndexType vtx = ForceT::s_first; vtx < m_numVertices - ForceT::s_last; ++vtx )
     {
         geometry->m_totalEnergy += ForceT::localEnergy( *this, *geometry, vtx );
+
         ForceT::computeLocalForce( localF, *this, *geometry, vtx );
-        ForceT::addInPosition( geometry->m_totalForces, vtx, localF );
+        ForceT::addInPosition( geometry->m_totalForce, vtx, localF );
     }
-    // std::cout << "With " << ForceT::getName() << ": " << geometry->m_totalForces << '\n';
+    // std::cout << "With " << ForceT::getName() << ": " << geometry->m_totalForce << '\n';
 }
 
 template<typename ForceT>
-void ElasticStrand::accumulateJ( StrandGeometry* geometry )
+void ElasticStrand::accumulateJ( StrandGeometry* geometry ) const
 {
     assert( geometry->m_framesUpToDate );
 
@@ -119,12 +122,12 @@ void ElasticStrand::accumulateJ( StrandGeometry* geometry )
     for ( IndexType vtx = ForceT::s_first; vtx < m_numVertices - ForceT::s_last; ++vtx )
     {
         ForceT::computeLocalJacobian( localJ, *this, *geometry, vtx );
-        ForceT::addInPosition( m_totalJacobian, vtx, localJ );
+        ForceT::addInPosition( *( geometry->m_totalJacobian ), vtx, localJ );
     }
 }
 
 template<typename ForceT>
-void ElasticStrand::accumulateEFJ( StrandGeometry* geometry )
+void ElasticStrand::accumulateEFJ( StrandGeometry* geometry ) const
 {
     assert( geometry->m_framesUpToDate );
 
@@ -134,10 +137,12 @@ void ElasticStrand::accumulateEFJ( StrandGeometry* geometry )
     for ( IndexType vtx = ForceT::s_first; vtx < m_numVertices - ForceT::s_last; ++vtx )
     {
         geometry->m_totalEnergy += ForceT::localEnergy( *this, *geometry, vtx );
+
         ForceT::computeLocalForce( localF, *this, *geometry, vtx );
-        ForceT::addInPosition( geometry->m_totalForces, vtx, localF );
+        ForceT::addInPosition( geometry->m_totalForce, vtx, localF );
+
         ForceT::computeLocalJacobian( localJ, *this, *geometry, vtx );
-        ForceT::addInPosition( m_totalJacobian, vtx, localJ );
+        ForceT::addInPosition( *( geometry->m_totalJacobian ), vtx, localJ );
     }
 }
 
@@ -148,8 +153,8 @@ void ElasticStrand::prepareForSolving()
         return;
 
     m_currentGeometry->m_totalEnergy = 0.0;
-    m_currentGeometry->m_totalForces.setZero();
-    m_totalJacobian.setZero();
+    m_currentGeometry->m_totalForce.setZero();
+    m_currentGeometry->m_totalJacobian->setZero();
 
     m_currentGeometry->updateFrames();
     // for ( IndexType vtx = 1; vtx < m_numVertices - 1; ++vtx )
@@ -160,7 +165,12 @@ void ElasticStrand::prepareForSolving()
     accumulateEFJ<BendingForce> ( m_currentGeometry );
     accumulateEFJ<GravitationForce> ( m_currentGeometry );
 
-    m_totalJacobian *= -1.0; // To match BASim's sign conventions
+    for ( std::list<ForceBase*>::const_iterator force = m_externalForces.begin(); force
+            != m_externalForces.end(); ++force )
+        if ( *force )
+            ( *force )->accumulateEFJ( *m_currentGeometry, *this );
+
+    *( m_currentGeometry->m_totalJacobian ) *= -1.0; // To match BASim's sign conventions
 
     m_readyForSolving = true;
 }
@@ -180,12 +190,17 @@ void ElasticStrand::prepareForExamining()
     //      m_bendingMatrices[vtx] = computeBendingMatrix( vtx );
 
     m_futureGeometry->m_totalEnergy = 0.0;
-    m_futureGeometry->m_totalForces.setZero();
+    m_futureGeometry->m_totalForce.setZero();
 
     accumulateEF<StretchingForce> ( m_futureGeometry );
     accumulateEF<TwistingForce> ( m_futureGeometry );
     accumulateEF<BendingForce> ( m_futureGeometry );
     accumulateEF<GravitationForce> ( m_futureGeometry );
+
+    for ( std::list<ForceBase*>::const_iterator force = m_externalForces.begin(); force
+            != m_externalForces.end(); ++force )
+        if ( *force )
+            ( *force )->accumulateEF( *m_futureGeometry, *this );
 
     m_readyForExamining = true;
 }
@@ -197,7 +212,7 @@ void ElasticStrand::acceptNewPositions()
     std::swap( m_currentGeometry, m_futureGeometry );
 
     // Compute the Jacobian
-    m_totalJacobian.setZero();
+    m_currentGeometry->m_totalJacobian->setZero();
     // for ( IndexType vtx = 1; vtx < m_numVertices - 1; ++vtx )
     //     m_bendingMatrices[vtx] = computeBendingMatrix( vtx );
 
@@ -206,7 +221,12 @@ void ElasticStrand::acceptNewPositions()
     accumulateJ<BendingForce> ( m_currentGeometry );
     accumulateJ<GravitationForce> ( m_currentGeometry );
 
-    m_totalJacobian *= -1.0; // To match BASim's sign conventions
+    for ( std::list<ForceBase*>::const_iterator force = m_externalForces.begin(); force
+            != m_externalForces.end(); ++force )
+        if ( *force )
+            ( *force )->accumulateJ( *m_currentGeometry, *this );
+
+    *( m_currentGeometry->m_totalJacobian ) *= -1.0; // To match BASim's sign conventions
 
     // std::cout << m_totalJacobian << '\n';
 
@@ -238,6 +258,25 @@ void ElasticStrand::filterNewGeometryLength()
         xaP = xbP;
         xaN = xbNrev;
     }
+}
+
+Vec3d ElasticStrand::closestPoint( const Vec3d& x ) const
+{
+    Scalar mindist = std::numeric_limits<Scalar>::max();
+    Vec3d winner;
+
+    for ( int vtx = 0; vtx < m_numVertices - 1; ++vtx )
+    {
+        Vec3d y = ClosestPtPointSegment( x, getVertex( vtx ), getVertex( vtx + 1 ) );
+        Scalar dist = ( y - x ).norm(); // squared norm would be faster here
+        if ( dist < mindist )
+        {
+            mindist = dist;
+            winner = y;
+        }
+    }
+
+    return winner;
 }
 
 std::ostream& operator<<( std::ostream& os, const ElasticStrand& strand )

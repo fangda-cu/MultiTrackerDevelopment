@@ -2,19 +2,18 @@
  * TwistingForce.hh
  *
  *  Created on: 12/07/2011
- *      Author: jaubry
+ *      Author: Jean-Marie Aubry <jaubry@wetafx.co.nz>
  */
 
 #ifndef TWISTINGFORCE_HH_
 #define TWISTINGFORCE_HH_
 
-#include "ForceBase.hh"
 #include "../ElasticStrand.hh"
 
 namespace strandsim
 {
 
-class TwistingForce: public ForceBase<ElasticStrand>
+class TwistingForce
 {
 public:
     static const IndexType s_first = 1; // The first index on which this force can apply
@@ -23,7 +22,6 @@ public:
     typedef Eigen::Matrix<Scalar, 11, 1> LocalForceType;
     typedef Eigen::Matrix<Scalar, 11, 11> LocalJacobianType;
     typedef VecXd ForceVectorType;
-    typedef ElasticStrand::JacobianMatrixType JacobianMatrixType;
 
     TwistingForce();
     virtual ~TwistingForce();

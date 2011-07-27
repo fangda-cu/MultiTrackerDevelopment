@@ -42,7 +42,7 @@ void ElasticStrandStaticStepper::execute( ElasticStrand& strand )
      // std::cout << "Forces norm before = " << F.norm() << '\n';
      // std::cout << F << '\n';
 
-    ElasticStrand::JacobianMatrixType& J = strand.getTotalJacobian();
+    JacobianMatrixType& J = strand.getTotalJacobian();
     // Add a constant diagonal to J to enforce a trust region.
     // std::cout << "Regularising m_lambda = " << m_lambda << '\n';
     J.addConstantDiagonal( m_lambda - m_previousLambda );

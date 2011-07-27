@@ -49,7 +49,9 @@ void StrandGeometry::resizeSelf()
     m_materialFrames1.resize( 3 * ( m_numVertices - 1 ) );
     m_materialFrames2.resize( 3 * ( m_numVertices - 1 ) );
 
-    m_totalForces.resize( m_degreesOfFreedom.size() );
+    m_totalForce.resize( m_degreesOfFreedom.size() );
+    (*m_totalJacobian).resize( m_degreesOfFreedom.size(), m_degreesOfFreedom.size() );
+
 }
 
 void StrandGeometry::storeInitialFrames()

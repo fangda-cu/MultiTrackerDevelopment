@@ -2,7 +2,7 @@
  * StretchingForce.cc
  *
  *  Created on: 12/07/2011
- *      Author: jaubry
+ *      Author: Jean-Marie Aubry <jaubry@wetafx.co.nz>
  */
 
 #include "StretchingForce.hh"

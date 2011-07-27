@@ -2,19 +2,18 @@
  * StretchingForce.hh
  *
  *  Created on: 12/07/2011
- *      Author: jaubry
+ *      Author: Jean-Marie Aubry <jaubry@wetafx.co.nz>
  */
 
 #ifndef STRETCHINGFORCE_HH_
 #define STRETCHINGFORCE_HH_
 
-#include "ForceBase.hh"
 #include "../ElasticStrand.hh"
 
 namespace strandsim
 {
 
-class StretchingForce: public ForceBase<ElasticStrand>
+class StretchingForce
 {
 public:
     static const IndexType s_first = 0; // The first index on which this force can apply
@@ -23,7 +22,6 @@ public:
     typedef Eigen::Matrix<Scalar, 6, 1> LocalForceType;
     typedef Eigen::Matrix<Scalar, 6, 6> LocalJacobianType;
     typedef VecXd ForceVectorType;
-    typedef ElasticStrand::JacobianMatrixType JacobianMatrixType;
 
     StretchingForce();
     virtual ~StretchingForce();

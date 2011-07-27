@@ -2,28 +2,23 @@
  * ForceBase.cc
  *
  *  Created on: 12/07/2011
- *      Author: jaubry
+ *      Author: Jean-Marie Aubry <jaubry@wetafx.co.nz>
  */
 
 #include "ForceBase.hh"
-#include "../ElasticStrand.hh"
 
 namespace strandsim
 {
 
-template<typename StrandT>
-ForceBase<StrandT>::ForceBase()
+ForceBase::ForceBase()
 {
     // TODO Auto-generated constructor stub
 
 }
 
-template<typename StrandT>
-ForceBase<StrandT>::~ForceBase()
+ForceBase::~ForceBase()
 {
     // TODO Auto-generated destructor stub
 }
-
-template class ForceBase<ElasticStrand>;
 
 }

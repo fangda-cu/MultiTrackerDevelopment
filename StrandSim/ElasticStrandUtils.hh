@@ -166,5 +166,34 @@ inline void symBProduct( Eigen::Matrix<Scalar, n, n>& result, const Mat2d& B,
     }
 }
 
+inline Vec3d ClosestPtPointSegment(const Vec3d& point, const Vec3d& first, const Vec3d& last)
+{
+    if (isClose(point, first))
+        return first;
+    if (isClose(point, last))
+        return last;
+
+    const Scalar vx = last[0] - first[0];
+    const Scalar vy = last[1] - first[1];
+    const Scalar vz = last[2] - first[2];
+    const Scalar inv = 1.0f / (vy * vy + vx * vx + vz * vz);
+    const Scalar dtp = vx * point[0] + vy * point[1] + vz * point[2];
+    const Scalar flx = first[2] * last[1] - first[1] * last[2];
+    const Scalar fly = first[0] * last[2] - first[2] * last[0];
+    const Scalar flz = first[1] * last[0] - first[0] * last[1];
+
+    // First project on the line
+    Vec3d projonline((vz * fly - vy * flz + vx * dtp) * inv, (vx * flz - vz * flx + vy * dtp) * inv,
+            (vy * flx - vx * fly + vz * dtp) * inv);
+
+    // Check if we are outside the interval
+    if ((projonline - last).dot(first - last) <= 0)
+        return last;
+    else if ((projonline - first).dot(last - first) <= 0)
+        return first;
+    else
+        return projonline;
+}
+
 }
 #endif /* ELASTICSTRANDUTILS_HH_ */

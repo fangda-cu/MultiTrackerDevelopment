@@ -2,7 +2,7 @@
  * GravitationForce.cc
  *
  *  Created on: 14/07/2011
- *      Author: jaubry
+ *      Author: Jean-Marie Aubry <jaubry@wetafx.co.nz>
  */
 
 #include "GravitationForce.hh"

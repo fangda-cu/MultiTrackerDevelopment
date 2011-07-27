@@ -9,7 +9,9 @@
 #define STRANDGEOMETRY_HH_
 
 #include "Definitions.hh"
+#include "BandMatrix.hh"
 #include "ElasticStrandUtils.hh"
+#include <boost/shared_ptr.hpp>
 
 namespace strandsim
 {
@@ -165,10 +167,12 @@ public:
     std::vector<Scalar> m_twists;
     std::vector<Vec11d> m_gradTwists;
 
-    // Energy, force, Jacobian
+    // Energy, force
     Scalar m_totalEnergy;
-    VecXd m_totalForces;
+    VecXd m_totalForce;
 
+    // The Jacobian is only needed once. To avoid memory duplication, share a pointer between current and future geometries.
+    boost::shared_ptr<JacobianMatrixType> m_totalJacobian;
 };
 
 }
