@@ -2,7 +2,7 @@
 include /vol/bob/make/head.mk
 ##############################################################################
 
-LINUX_COMPILER := I
+LINUX_COMPILER := GCC
 WITHKITS += dev/Figaro/work/jaubry-work
 
 lib_h:

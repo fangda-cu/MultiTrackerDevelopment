@@ -28,6 +28,10 @@ public:
     {
     }
 
+    virtual ~Collision()
+    {
+    }
+
     virtual bool analyseCollision(double time_step = 0) = 0;
 
     bool isAnalysed() const
@@ -44,7 +48,7 @@ protected:
     static int id_counter;
 };
 
-template<CollisionFilter CF> class CollisionTraits
+template<CollisionFilter CF> struct CollisionTraits
 {
     typedef Collision EdgeEdgeCollisionType;
     typedef Collision VertexFaceCollisionType;
@@ -61,6 +65,10 @@ public:
         f0 = triangle->first();
         f1 = triangle->second();
         f2 = triangle->third();
+    }
+
+    virtual ~EdgeFaceIntersection()
+    {
     }
 
     virtual bool analyseCollision(double time_step = 0);
@@ -94,6 +102,11 @@ public:
         Collision(geodata)
     {
     }
+
+    virtual ~ProximityCollision()
+    {
+    }
+
     virtual bool analyseCollision(double time_step = 0) = 0;
 
     // Penetration depth (sum of radii - minimum distance)
@@ -185,6 +198,10 @@ public:
         r1 = (m_geodata.GetRadius(f0) + m_geodata.GetRadius(f1) + m_geodata.GetRadius(f2)) * (1 / 3.0);
     }
 
+    virtual ~VertexFaceProximityCollision()
+    {
+    }
+
     virtual bool analyseCollision(double time_step = 0);
 
     virtual bool IsFixed()
@@ -230,13 +247,11 @@ public:
 
 };
 
-template<> class CollisionTraits<Proximity>
+template<> struct CollisionTraits<Proximity>
 {
     typedef EdgeEdgeProximityCollision EdgeEdgeCollisionType;
     typedef VertexFaceProximityCollision VertexFaceCollisionType;
 };
-
-
 
 }
 

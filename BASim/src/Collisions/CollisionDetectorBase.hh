@@ -75,9 +75,9 @@ protected:
 
     class BVHParallelizer
     {
+        CollisionDetectorBase* m_coldet;
         const BVHNode& m_node_a;
         const BVHNode& m_node_b;
-        CollisionDetectorBase* m_coldet;
 
     public:
         BVHParallelizer(CollisionDetectorBase* coldet, const BVHNode& node_a, const BVHNode& node_b) :

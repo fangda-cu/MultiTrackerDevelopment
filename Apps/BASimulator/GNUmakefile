@@ -12,7 +12,7 @@ IPATHS 	+= -I$(MKLROOT)/include
 
 ###{ Name of executable to be built.
 ###}
-PRG1_CF		:= -DWETA -DHAVE_PNG -pthread -DHAVE_LAPACK -DWETA -openmp -DHAVE_OPENMP
+PRG1_CF		:= -DWETA -DHAVE_PNG -pthread -DHAVE_LAPACK -DWETA #-openmp -DHAVE_OPENMP
 
 #Nasty but we need it to build BASimulator which uses a file in the BASim library which references a file back in BASim...
 PRG1_CF += -I../../../ -I. #-I/vol/bob/src/code/Figaro/work/acoull-breannanCollisions/
