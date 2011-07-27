@@ -29,7 +29,7 @@ CollisionDetectorBase::~CollisionDetectorBase()
     m_collisions_list = NULL;
 }
 
-template void CollisionDetectorBase::updateCollisions<std::list<Collision*>>(std::list<Collision*>& collisions);
+template void CollisionDetectorBase::updateCollisions<std::list<Collision*> >(std::list<Collision*>& collisions);
 
 template<typename CollisionContainerT>
 void CollisionDetectorBase::updateCollisions(CollisionContainerT& collisions)
@@ -51,6 +51,27 @@ void CollisionDetectorBase::getReady(std::list<Collision*>& cllsns, CollisionFil
     m_collision_filter = collision_filter;
     assert(cllsns.empty());
     m_collisions_list = &cllsns;
+}
+
+template<>
+bool CollisionDetectorBase::appendCollision<EdgeFace>(const YAEdge* edge_a, const YATriangle* triangle)
+{
+    EdgeFaceIntersection* edgeXface = new EdgeFaceIntersection(m_geodata, edge_a, triangle);
+
+    bool collisionDetected = edgeXface->analyseCollision();
+
+    if (collisionDetected)
+    {
+        m_collisions_mutex.Lock();
+        m_collisions_list->push_back(edgeXface);
+        m_collisions_mutex.Unlock();
+        return true;
+    }
+    else
+    {
+        delete edgeXface;
+        return false;
+    }
 }
 
 bool CollisionDetectorBase::appendCollision(const TopologicalElement* elem_a, const TopologicalElement* elem_b)
@@ -129,27 +150,6 @@ void CollisionDetectorBase::updateBoundingBox(BVH& bvh, const std::vector<const 
         BVHNodeType& gretel = bvh.GetNode(node.ChildIndex() + 1);
         updateBoundingBox(bvh, elements, gretel);
         bbox.Insert(gretel.BBox());
-    }
-}
-
-template<>
-bool CollisionDetectorBase::appendCollision<EdgeFace>(const YAEdge* edge_a, const YATriangle* triangle)
-{
-    EdgeFaceIntersection* edgeXface = new EdgeFaceIntersection(m_geodata, edge_a, triangle);
-
-    bool collisionDetected = edgeXface->analyseCollision();
-
-    if (collisionDetected)
-    {
-        m_collisions_mutex.Lock();
-        m_collisions_list->push_back(edgeXface);
-        m_collisions_mutex.Unlock();
-        return true;
-    }
-    else
-    {
-        delete edgeXface;
-        return false;
     }
 }
 

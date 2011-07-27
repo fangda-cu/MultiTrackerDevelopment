@@ -16,7 +16,7 @@
 namespace BASim
 {
 
-typedef unsigned int uint;
+// typedef unsigned int uint;
 
 template<typename ScalarT>
 Eigen::Matrix<ScalarT, 3, 1> min(const Eigen::Matrix<ScalarT, 3, 1>& a, const Eigen::Matrix<ScalarT, 3, 1>& b)

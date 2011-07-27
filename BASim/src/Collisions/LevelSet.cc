@@ -3,11 +3,11 @@
 
 #include "LevelSet.hh"
 
-#include <omp.h>
-#include <GL/gl.h>
+//#include <omp.h>
+//#include <GL/gl.h>
 
-#include <OpenGL/OPENGL_COLOR_RAMP.h>
-#include <OpenGL/OPENGL_COLOR.h>
+//#include <OpenGL/OPENGL_COLOR_RAMP.h>
+//#include <OpenGL/OPENGL_COLOR.h>
 
 #include "../Util/TextLog.hh"
 
@@ -246,6 +246,7 @@ void LevelSet::getGradient(Vec3<Real> &x, Vec3<Real> &grad)
     //m_grad.push_back( eigenGrad );
 }
 
+/*
 void LevelSet::draw()
 {
 //    PhysBAM::OPENGL_COLOR_RAMP<float> colorramp  = *(PhysBAM::OPENGL_COLOR_RAMP<float>::Levelset_Color_Linear_Ramp(PhysBAM::OPENGL_COLOR::Red(), PhysBAM::OPENGL_COLOR::Blue(),(float)(_phi.ni+_phi.nj+_phi.nk)));
@@ -253,23 +254,7 @@ void LevelSet::draw()
     glPushAttrib(GL_ENABLE_BIT | GL_POINT_BIT);
 
     glDisable(GL_LIGHTING);
-  /*  for (uint i=0; i<_phi.ni; i++)
-	for (uint j=0; j<_phi.nj; j++)
-	    for (uint k=0; k<_phi.nk; k++)
-	    {
-		colorramp.Lookup(_phi(i,j,k)).Send_To_GL_Pipeline();
-		if(_phi(i,j,k) <= 0 )    glPointSize(5);
-		else glPointSize(1);
-		    
-		float lbb[3] = { _origin[0] + (i    ) * _dx,
-                                 _origin[1] + (j    ) * _dx,
-                                 _origin[2] + (k    ) * _dx };
-		glBegin(GL_POINTS);
-		glVertex3fv(lbb);
-		glEnd();
-	    }
-    glPopAttrib();*/
-		
+
     //std::cerr<< "level set draw..." << std::endl;
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -391,6 +376,8 @@ void LevelSet::draw()
     glPopAttrib();
 }
 
+*/
+
 void LevelSet::writeFile(std::fstream &levelSetFile)
 {
     levelSetFile.write(reinterpret_cast<char *>(&_origin[0]), sizeof(float) * 3);
@@ -492,7 +479,7 @@ void LevelSet::buildLevelSet(const Vec3Indices &triangles,
     }
 
     // and now we fill in the rest of the distances with fast sweeping
-    omp_set_num_threads(4);
+   // omp_set_num_threads(4);
     for(unsigned int pass=0; pass<2; ++pass)
     {
 #pragma omp parallel sections
