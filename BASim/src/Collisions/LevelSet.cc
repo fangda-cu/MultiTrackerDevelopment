@@ -2,14 +2,11 @@
 //
 
 #include "LevelSet.hh"
-
+#include "../Util/TextLog.hh"
 //#include <omp.h>
 //#include <GL/gl.h>
-
 //#include <OpenGL/OPENGL_COLOR_RAMP.h>
 //#include <OpenGL/OPENGL_COLOR.h>
-
-#include "../Util/TextLog.hh"
 
 using namespace std;
 
@@ -337,41 +334,41 @@ void LevelSet::draw()
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     
-    /*glPointSize( 2.0 );
-    glEnable( GL_POINT_SMOOTH );
-    glBegin( GL_POINTS );
-    glColor3d( 1.0, 0.0, 0.0 );
-    for (size_t p = 0; p < m_transformedRequestPositions.size(); ++p )
-    {
-        glVertex3d( m_transformedRequestPositions[ p ][ 0 ], 
-                    m_transformedRequestPositions[ p ][ 1 ], 
-                    m_transformedRequestPositions[ p ][ 2 ] );
-    }
-    
-    glColor3d( 0.0, 1.0, 0.0 );
-    for (size_t p = 0; p < m_realRequestPositions.size(); ++p )
-    {
-        glVertex3d( m_realRequestPositions[ p ][ 0 ], 
-                    m_realRequestPositions[ p ][ 1 ], 
-                    m_realRequestPositions[ p ][ 2 ] );
-    }
-    glEnd();
-    glDisable( GL_POINT_SMOOTH );    
-
-    glBegin( GL_LINES );
-    glColor3d( 0.0, 0.0, 1.0 );
-    for (size_t p = 0; p < m_grad.size(); ++p )
-    {
-        glVertex3d( m_gradPosition[ p ][ 0 ], 
-                    m_gradPosition[ p ][ 1 ], 
-                    m_gradPosition[ p ][ 2 ] );
-                    
-        Eigen::Vector4f end = m_gradPosition[ p ] + m_grad[ p ];
-        glVertex3d( end[ 0 ], 
-                    end[ 1 ], 
-                    end[ 2 ] );
-    }
-    glEnd();*/
+//    glPointSize( 2.0 );
+//    glEnable( GL_POINT_SMOOTH );
+//    glBegin( GL_POINTS );
+//    glColor3d( 1.0, 0.0, 0.0 );
+//    for (size_t p = 0; p < m_transformedRequestPositions.size(); ++p )
+//    {
+//        glVertex3d( m_transformedRequestPositions[ p ][ 0 ],
+//                    m_transformedRequestPositions[ p ][ 1 ],
+//                    m_transformedRequestPositions[ p ][ 2 ] );
+//    }
+//
+//    glColor3d( 0.0, 1.0, 0.0 );
+//    for (size_t p = 0; p < m_realRequestPositions.size(); ++p )
+//    {
+//        glVertex3d( m_realRequestPositions[ p ][ 0 ],
+//                    m_realRequestPositions[ p ][ 1 ],
+//                    m_realRequestPositions[ p ][ 2 ] );
+//    }
+//    glEnd();
+//    glDisable( GL_POINT_SMOOTH );
+//
+//    glBegin( GL_LINES );
+//    glColor3d( 0.0, 0.0, 1.0 );
+//    for (size_t p = 0; p < m_grad.size(); ++p )
+//    {
+//        glVertex3d( m_gradPosition[ p ][ 0 ],
+//                    m_gradPosition[ p ][ 1 ],
+//                    m_gradPosition[ p ][ 2 ] );
+//
+//        Eigen::Vector4f end = m_gradPosition[ p ] + m_grad[ p ];
+//        glVertex3d( end[ 0 ],
+//                    end[ 1 ],
+//                    end[ 2 ] );
+//    }
+//    glEnd();
     
     glPopAttrib();
 }
