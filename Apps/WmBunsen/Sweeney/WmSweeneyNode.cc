@@ -228,7 +228,8 @@ MStatus WmSweeneyNode::compute(const MPlug& i_plug, MDataBlock& i_dataBlock)
 		        updateCollisionMeshes( i_dataBlock );
 		        updateVolumetricMeshes( i_dataBlock, update_all_rods );
                 updateSolverSettings( i_dataBlock );
-
+                update_all_rods = m_rodManager->updateSubsetVolumetricForces( )
+                        || update_all_rods;
                 // update rod properties
                 updateRods( update_all_rods );
 

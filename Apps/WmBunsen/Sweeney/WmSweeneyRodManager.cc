@@ -262,29 +262,6 @@ void WmSweeneyRodManager::takeStep()
         boundary->setDesiredEdgeAngle( 0, rod->getTheta( 0 ) );
     }
 
-
-
-    Scalar currentCharge;
-    Scalar currentScale;
-    Vec3d currentCenter;
-    Mat3d currentSigma;
-
-    for ( int i = 0; i < m_subsetNodes.size(); ++i )
-    {
-        m_bAGroomingStepper->checkGaussianVolumetricForce( i, currentCharge, currentScale,
-                currentCenter, currentSigma );
-      //  std::cout << "Transformation centre: " << currentCenter << '\n';
-        Eigen::SelfAdjointEigenSolver<Mat3d> eigenSolver( currentSigma );
-        Vec3d eigenvalues = eigenSolver.eigenvalues();
-        Vec3d scale( currentScale * sqrt( eigenvalues[0] ), currentScale * sqrt( eigenvalues[1] ),
-                currentScale * sqrt( eigenvalues[2] ) );
-       // std::cout << "Transformation scale: " << scale <<'\n';
-       // std::cout << "Transformation rotation: " << eigenSolver.eigenvectors() << '\n';
-        m_subsetNodes[ i ]->setVolumetricTransform( scale, eigenSolver.eigenvectors().transpose(), currentCenter );
-        m_bAGroomingStepper->updateSubsetVolumetricForce( i, m_subsetNodes[ i ]->getVolumetricForceCharge(),
-                m_subsetNodes[ i ]->getVolumetricForceScale() );
-    }
-
     m_bAGroomingStepper->execute();
 }
 
@@ -383,5 +360,35 @@ bool WmSweeneyRodManager::updateGaussianVolumetricForce( const int volIdx )
         return true;
     }
 
+    return false;
+}
+
+bool WmSweeneyRodManager::updateSubsetVolumetricForces( )
+{
+    Scalar currentCharge, newCharge;
+    Scalar currentScale, newScale;
+    Vec3d currentCenter;
+    Mat3d currentSigma;
+
+    for ( int i = 0; i < m_subsetNodes.size(); ++i )
+    {
+        m_bAGroomingStepper->checkGaussianVolumetricForce( i, currentCharge, currentScale,
+                currentCenter, currentSigma );
+
+        // Update the volumetric transform for rendering
+        Eigen::SelfAdjointEigenSolver<Mat3d> eigenSolver( currentSigma );
+        Vec3d eigenvalues = eigenSolver.eigenvalues();
+        Vec3d scale( currentScale * sqrt( eigenvalues[0] ), currentScale * sqrt( eigenvalues[1] ),
+                currentScale * sqrt( eigenvalues[2] ) );
+        m_subsetNodes[ i ]->setVolumetricTransform( scale, eigenSolver.eigenvectors().transpose(), currentCenter );
+
+        newCharge = m_subsetNodes[ i ]->getVolumetricForceCharge();
+        newScale = m_subsetNodes[ i ]->getVolumetricForceScale();
+        if ( currentCharge != newCharge || currentScale != newScale )
+        {
+            m_bAGroomingStepper->updateSubsetVolumetricForce( i, newCharge, newScale );
+            return true;
+        }
+    }
     return false;
 }
