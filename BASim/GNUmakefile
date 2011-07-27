@@ -12,7 +12,7 @@ IPATHS 	+= -I$(MKLROOT)/include
 IPATHS 	+= -I../../../
 
 LIB1       := Wfigaro
-LIB1_CF    += -DBUILD=${BUILD} -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA  -openmp -DHAVE_OPENMP
+LIB1_CF    += -DBUILD=${BUILD} -pthread -DHAVE_MKL -fPIC -DHAVE_LAPACK -DWETA # -openmp -DHAVE_OPENMP
 # Please don't commit with -DNDEBUG or -UNDEBUG here as Hudson relies on the flag set by make dbg or make opt.
 LIB1_CF    += -w
 
@@ -349,8 +349,8 @@ src/Collisions/Geometry.cc \
 src/Collisions/Collision.cc \
 src/Collisions/CTCollision.cc \
 src/Collisions/CollisionUtils.cc \
-src/Collisions/CollisionDetector.cc \
 src/Collisions/CollisionDetectorBase.cc \
+src/Collisions/CollisionDetector.cc \
 src/Collisions/RodMeshCollisionDetector.cc \
 src/Collisions/LevelSet.cc \
 src/Core/Util.cc \

@@ -200,7 +200,7 @@ public:
 
 };
 
-template<> class CollisionTraits<ContinuousTime>
+template<> struct CollisionTraits<ContinuousTime>
 {
     typedef EdgeEdgeCTCollision EdgeEdgeCollisionType;
     typedef VertexFaceCTCollision VertexFaceCollisionType;

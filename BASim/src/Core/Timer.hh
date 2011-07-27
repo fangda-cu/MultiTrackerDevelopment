@@ -87,7 +87,7 @@ public:
   /// returns the number of timings elapsed time represents
   int getCumulativeCount()
   {
-    return cumulativeCount;
+    return static_cast<int>(cumulativeCount);
   }
 
   int getNestingLevel() 
