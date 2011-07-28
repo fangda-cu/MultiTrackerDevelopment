@@ -99,6 +99,7 @@ public:
     void createClumpCenterLinesFromPelt( const MPointArray& centralArr );
     void createGaussianVolumetricForce( WmSweeneyVolumetricNode* volumeNode );
     bool updateGaussianVolumetricForce( const int volIdx );
+    bool updateSubsetVolumetricForces( );
 
 private:
     BASim::BAGroomingStepper* m_bAGroomingStepper;
