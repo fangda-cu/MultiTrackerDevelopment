@@ -50,7 +50,8 @@ void StrandGeometry::resizeSelf()
     m_materialFrames2.resize( 3 * ( m_numVertices - 1 ) );
 
     m_totalForce.resize( m_degreesOfFreedom.size() );
-    (*m_totalJacobian).resize( m_degreesOfFreedom.size(), m_degreesOfFreedom.size() );
+    m_totalJacobian->resize( static_cast<IndexType> ( m_degreesOfFreedom.size() ),
+            static_cast<IndexType> ( m_degreesOfFreedom.size() ) );
 
 }
 
@@ -338,7 +339,7 @@ void StrandGeometry::computeHessKappa( Mat11dPair & HessKappa, const IndexType v
 
 Scalar StrandGeometry::computeReferenceTwist( const IndexType vtx ) const
 {
-  //  std::cout << "Computing reference twist for vertex " << vtx << '\n';
+    //  std::cout << "Computing reference twist for vertex " << vtx << '\n';
     Scalar referenceTwist = m_referenceTwists[vtx];// std::cout << "previous referenceTwist = " << referenceTwist << '\n';
 
     const Vec3d& u0 = getReferenceFrame1( vtx - 1 );// std::cout << "u0 = " << u0 << '\n';
@@ -359,9 +360,9 @@ Scalar StrandGeometry::computeReferenceTwist( const IndexType vtx ) const
 
 Scalar StrandGeometry::computeTwist( const IndexType vtx ) const
 {
-  //  std::cout << "Computing twist for vertex " << vtx << ": ref = " << m_referenceTwists[vtx]
-  //          << " theta = " << getTheta( vtx ) << " previous theta = " << getTheta( vtx - 1 )
-  //          << " total = " << m_referenceTwists[vtx] + getTheta( vtx ) - getTheta( vtx - 1 ) << '\n';
+    //  std::cout << "Computing twist for vertex " << vtx << ": ref = " << m_referenceTwists[vtx]
+    //          << " theta = " << getTheta( vtx ) << " previous theta = " << getTheta( vtx - 1 )
+    //          << " total = " << m_referenceTwists[vtx] + getTheta( vtx ) - getTheta( vtx - 1 ) << '\n';
     return m_referenceTwists[vtx] + getTheta( vtx ) - getTheta( vtx - 1 );
 }
 
