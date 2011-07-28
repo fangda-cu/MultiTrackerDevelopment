@@ -48,7 +48,7 @@ inline ElasticRod* setupRod(const RodOptions& opts,
                             const std::vector<Vec3d>& initialPosition,
                             const std::vector<Vec3d>& undeformedPosition,
                             const BASim::Vec3d& i_referenceDir1 = BASim::Vec3d(1,0,0),
-                            const BASim::Vec3d& i_referenceDir2 = BASim::Vec3d(0,1,0) )
+                            const BASim::Vec3d& i_referenceDir2 = BASim::Vec3d(0,1,0), const Scalar baseRotation = 0.0 )
 {
   assert(opts.numVertices == (int) initialPosition.size());
   assert(opts.numVertices == (int) undeformedPosition.size());
@@ -68,7 +68,7 @@ inline ElasticRod* setupRod(const RodOptions& opts,
   rod->setRefFrameType(opts.refFrame);
   rod->setReferenceDirector1(0, i_referenceDir1);
   //rod->setReferenceDirector2(0, i_referenceDir2);
-
+  rod->setBaseRotation(baseRotation);
   // set up using undeformed positions
   for (int i = 0; i < rod->nv(); ++i)
     rod->setVertex(i, undeformedPosition[i]);

@@ -155,6 +155,7 @@ void RodBendingForceSym::updateStiffness()
         rot(0, 1) = -1 * rot(1, 0);
         rot(1, 1) = rot(0, 0);
 
+       // std::cout << "Base rotation = "  << m_rod.baseRotation() << '\n';
         //cout << "RodBendingForceSym::updateStiffness::rotatebase:: " << m_rod.baseRotation() << " " << B << " ";
 
         B = rot * B;
