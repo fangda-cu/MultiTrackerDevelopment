@@ -77,7 +77,7 @@ void ElasticStrand::freezeRestShape()
     for ( IndexType vtx = 0; vtx < m_numVertices; ++vtx )
     {
         m_vertexMasses[vtx] = m_parameters.m_density * m_VoronoiLengths[vtx] * M_PI
-                * m_parameters.m_radius * m_parameters.m_radius;
+                * m_parameters.m_radiusA * m_parameters.m_radiusB;
         m_invVoronoiLengths[vtx] = 1.0 / m_VoronoiLengths[vtx];
     }
 
@@ -88,11 +88,23 @@ void ElasticStrand::freezeRestShape()
     }
 }
 
-// For anisotropic strands this will become meaningful
 Mat2d ElasticStrand::computeBendingMatrix( const IndexType vtx ) const
 {
-    return m_parameters.m_YoungsModulus * 0.25 * M_PI * square( square( m_parameters.m_radius ) )
-            * Mat2d::Identity();
+    // For now the radii are constant along the rod
+    Mat2d B;
+    B( 0, 0 ) = 0.25 * M_PI * m_parameters.m_YoungsModulus * m_parameters.m_radiusB * cube(
+            m_parameters.m_radiusA );
+    B( 1, 1 ) = 0.25 * M_PI * m_parameters.m_YoungsModulus * m_parameters.m_radiusA * cube(
+            m_parameters.m_radiusB );
+
+    // rotate cross section by a constant angle
+  Mat2d rot = Eigen::Rotation2D<Scalar>( m_parameters.m_baseRotation ).toRotationMatrix();
+  std::cout << "Base rotation = "  << m_parameters.m_baseRotation << '\n';
+
+    return rot * B * rot.transpose();
+
+    //  return m_parameters.m_YoungsModulus * 0.25 * M_PI * square( square( m_parameters.m_radius ) )
+    //          * Mat2d::Identity();
 }
 
 template<typename ForceT>

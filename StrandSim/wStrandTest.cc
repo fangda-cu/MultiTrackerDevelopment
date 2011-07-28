@@ -9,6 +9,7 @@
 #include "ElasticStrand.hh"
 #include "ElasticStrandStaticStepper.hh"
 #include "Forces/ClumpingForce.hh"
+#include "Forces/GravitationForce.hh"
 
 #include "../BASim/src/Physics/ElasticRods/ElasticRod.hh"
 #include "../BASim/src/Physics/ElasticRods/RodUtils.hh"
@@ -21,21 +22,27 @@ using namespace strandsim;
 static const int nVertices = 30;
 static const int nDOFs = 4 * nVertices - 1;
 static const Scalar totalLength = 10.0;
-static const Scalar radius = 1.0;
+static const Scalar radiusA = 0.5;
+static const Scalar radiusB = 1.5;
 static const Scalar YoungsModulus = 10000.0;
 static const Scalar shearModulus = 1000.0;
 static const Scalar density = 1.0;
+static const Scalar baseRotation = 0.5;
+static const Vec3d gravity( 0.0, 0.0, -981.0 );
 static const int nIterations = 1000;
 
 void testStrandSim( const std::vector<Vec3d>& i_vertices )
 {
-    ElasticStrandParameters params( radius, YoungsModulus, shearModulus, density );
+    GravitationForce::setGravity( gravity );
+
+    ElasticStrandParameters params( radiusA, radiusB, YoungsModulus, shearModulus, density,
+            baseRotation );
     VecXd dofs( nDOFs );
     for ( int i = 0; i < dofs.size(); i += 4 )
         dofs.segment<3> ( i ) = i_vertices[i / 4];
     ElasticStrand strand( dofs, params );
 
-    strand.addExternalForce(new ClumpingForce);
+    strand.addExternalForce( new ClumpingForce );
 
     ElasticStrandStaticStepper stepper;
 
@@ -62,21 +69,20 @@ void testBASim( const std::vector<Vec3d>& i_vertices )
     rodOptions.ShearModulus = shearModulus; /* megapascal */
     rodOptions.viscosity = 0; /* poise */
     rodOptions.density = density; /* grams per cubic centimeter */
-    rodOptions.radiusA = radius; /* millimeter */
-    rodOptions.radiusB = radius; /* millimeter */
+    rodOptions.radiusA = radiusA; /* millimeter */
+    rodOptions.radiusB = radiusB; /* millimeter */
     rodOptions.refFrame = BASim::ElasticRod::TimeParallel;
     rodOptions.numVertices = nVertices;
 
     // Use the rod helper function to build the rod
     ElasticRod* rod = setupRod( rodOptions, i_vertices, i_vertices,
-            findNormal<3> ( i_vertices[1] - i_vertices[0] ) );
+            findNormal<3> ( i_vertices[1] - i_vertices[0] ), Vec3d(), baseRotation );
 
     // Create a timeStepper to simulate the rod forward in time
     GroomingTimeStepper* stepper = new GroomingTimeStepper( *rod );
     stepper->setDiffEqSolver( BASim::GroomingTimeStepper::STATICS );
 
-    Vec3d i_gravity( 0.0, 0.0, -981.0 );
-    stepper->addExternalForce( new RodGravity( i_gravity ) );
+    stepper->addExternalForce( new RodGravity( gravity ) );
 
     // Set the rod's fixed vertices
     RodBoundaryCondition* boundary = stepper->getBoundaryCondition();

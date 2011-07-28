@@ -42,12 +42,9 @@ void BendingForce::computeLocalForce( BendingForce::LocalForceType& localF,
     const Vec2d& kappaBar = strand.m_restBends[vtx];// std::cout << "kappaBar = " << kappaBar <<'\n';
     const Eigen::Matrix<Scalar, 11, 2>& gradKappa = geometry.m_gradKappa[vtx];// std::cout << "gradKappa = " << gradKappa <<'\n';
 
-    //    localF = -ilen * gradKappa * B * ( kappa - kappaBar );
-    localF = -ilen * B( 0, 0 ) * ( gradKappa * ( kappa - kappaBar ) ); // Okay if B is a constant x identity i.e. if the rods are isotropic.
+   localF = -ilen * gradKappa * B * ( kappa - kappaBar );
 }
 
-//BendingForce::LocalJacobianType BendingForce::localJacobian( const ElasticStrand& strand,
-//        const StrandGeometry& geometry, const IndexType vtx )
 void BendingForce::computeLocalJacobian( BendingForce::LocalJacobianType& localJ,
         const ElasticStrand& strand, const StrandGeometry& geometry, const IndexType vtx )
 {
