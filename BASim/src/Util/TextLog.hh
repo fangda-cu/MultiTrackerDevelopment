@@ -14,8 +14,13 @@
 #include <boost/timer.hpp>
 #include <iosfwd>
 #include <memory>
+#ifdef _MSC_VER
+#include <unordered_set>
+#include <unordered_map>
+#else
 #include <tr1/unordered_set>
 #include <tr1/unordered_map>
+#endif
 
 namespace BASim {
 
@@ -90,8 +95,12 @@ public:
 
     /// Write a message using printf-style formatting, prefixed with its severity and message id.
     /// The message might be suppressed based on its severity and message id (see MsgInfo.hh).
+#ifndef _MSC_VER
     void Write(const MsgInfo& info, const char* format, ...) 
         __attribute__ ((format (printf, 3, 4)));
+#else 
+    void Write(const MsgInfo& info, const char* format, ...);
+#endif
 
     /// Write a string, without any locking or allocation (for signal handling safety).  The
     /// message is prefixed with the severity and message id.  Duplicate messages are not

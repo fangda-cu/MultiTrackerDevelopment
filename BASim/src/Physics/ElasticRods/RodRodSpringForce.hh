@@ -27,8 +27,8 @@ public:
   , m_rod_B(rodB)
   , m_vrt_A(vertA)
   , m_vrt_B(vertB)
-  , m_k(k)
-  , m_l0(l0)
+  , m_k((int)k)
+  , m_l0((int)l0)
   , m_base_idx_A(0)
   , m_base_idx_B(0)
   {

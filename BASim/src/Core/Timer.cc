@@ -2,8 +2,10 @@
 #include <iomanip>
 #include <map>
 #include <string>
-#include <sys/time.h>
-#include <sys/resource.h>
+#ifndef _MSC_VER
+#  include <sys/time.h>
+#  include <sys/resource.h>
+#endif
 #include "Timer.hh"
 #include "../Util/TextLog.hh"
 #include "Cycle.hh"

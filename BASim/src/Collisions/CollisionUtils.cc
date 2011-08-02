@@ -411,7 +411,7 @@ void getIntersectionPoint(const Vec3d& x_edge_0, const Vec3d& x_edge_1, const Ve
     double C = triple(v03, x13, x23);
     double D = triple(x03, x13, x23);
 
-    const double convergence_tol = tol * (std::fabs(0) + std::fabs(0) + std::fabs(C) + std::fabs(D));
+    const double convergence_tol = tol * (std::fabs(0.0) + std::fabs(0.0) + std::fabs(C) + std::fabs(D));
 
     // find intervals to check, or just solve it if it reduces to a quadratic =============================
     std::vector<double> interval_times;

@@ -8,6 +8,8 @@
 #ifndef RODGRAVITY_HH
 #define RODGRAVITY_HH
 
+#include "RodExternalConservativeForce.hh"
+
 namespace BASim
 {
 

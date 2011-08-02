@@ -13,7 +13,7 @@
 #include "../../Core/Timer.hh"
 #include "../../Collisions/Collision.hh"
 #include "../../Collisions/CTCollision.hh"
-
+#include "BASim/src/Physics/ElasticRods/RodPenaltyForce.hh"
 #include <iostream>
 #include <fstream>
 #include "../../Eigen/Eigenvalues"
@@ -92,7 +92,7 @@ BARodStepper::~BARodStepper()
 {
     delete m_collision_detector;
 
-    for (int i = 0; i < m_number_of_rods; i++)
+    for (unsigned int i = 0; i < m_number_of_rods; i++)
     {
         delete m_startForces[i];
         delete m_preDynamicForces[i];
@@ -132,12 +132,12 @@ void BARodStepper::checkDataConsistency()
 
 void BARodStepper::prepareForExecution()
 {
-    for (int i = 0; i < m_number_of_rods; ++i)
+    for (unsigned int i = 0; i < m_number_of_rods; ++i)
         m_rods[i]->globalRodIndex = i;
 
     CopiousStream(g_log, "") << "About to extract rod information\n";
 
-    for (int i = 0; i < m_number_of_rods; ++i)
+    for (unsigned int i = 0; i < m_number_of_rods; ++i)
     {
         // Extract edges from the new rod
         for (int j = 0; j < m_rods[i]->nv() - 1; ++j)
@@ -241,19 +241,19 @@ void BARodStepper::allocateBackups()
     m_vnphalf.setConstant(std::numeric_limits<double>::signaling_NaN());
 
     m_startForces.resize(m_number_of_rods);
-    for (int i = 0; i < m_number_of_rods; i++)
+    for (unsigned int i = 0; i < m_number_of_rods; i++)
         m_startForces[i] = new VecXd(m_rods[i]->ndof());
 
     m_preDynamicForces.resize(m_number_of_rods);
-    for (int i = 0; i < m_number_of_rods; i++)
+    for (unsigned int i = 0; i < m_number_of_rods; i++)
         m_preDynamicForces[i] = new VecXd(m_rods[i]->ndof());
 
     m_preCollisionForces.resize(m_number_of_rods);
-    for (int i = 0; i < m_number_of_rods; i++)
+    for (unsigned int i = 0; i < m_number_of_rods; i++)
         m_preCollisionForces[i] = new VecXd(m_rods[i]->ndof());
 
     m_endForces.resize(m_number_of_rods);
-    for (int i = 0; i < m_number_of_rods; i++)
+    for (unsigned int i = 0; i < m_number_of_rods; i++)
         m_endForces[i] = new VecXd(m_rods[i]->ndof());
 
     m_rodbackups.resize(m_number_of_rods);
@@ -384,7 +384,11 @@ void BARodStepper::setNumThreads(int num_threads)
     }
     else
     {
+#ifndef _MSC_VER
         m_num_threads = sysconf(_SC_NPROCESSORS_ONLN);
+#else
+        m_num_threads = 1; //TODO Add detection of processor count on Windows
+#endif
         CopiousStream(g_log, "") << "Default-set number of threads = " << m_num_threads << "\n";
     }
 #ifdef HAVE_OPENMP
@@ -396,7 +400,7 @@ void BARodStepper::buildCollisionDetector()
 {
     // Load positions for initial construction of the BVH
     RodSelectionType selected_rods;
-    for (int i = 0; i < m_number_of_rods; i++)
+    for (unsigned int i = 0; i < m_number_of_rods; i++)
         selected_rods.push_back(i);
 
     assert(m_xn.size() == m_num_dof);
@@ -439,7 +443,7 @@ void BARodStepper::initializeSimulationList()
     m_simulated_rods.push_back(i);
 #else
     // Initially all rods passed from Maya will be simulated
-    for (int i = 0; i < m_number_of_rods; i++)
+    for (unsigned int i = 0; i < m_number_of_rods; i++)
         m_simulated_rods.push_back(i);
 #endif
     DebugStream(g_log, "") << "This BARodStepper (" << this << ") will simulate " << m_simulated_rods.size() << " rods\n";
@@ -479,7 +483,7 @@ bool BARodStepper::execute()
     bool result;
 
     int k = 0;
-    for (int i = 0; i < m_number_of_rods; ++i)
+    for (unsigned int i = 0; i < m_number_of_rods; ++i)
     {
         // Extract masses from the new rod
         for (ElasticRod::vertex_iter itr = m_rods[i]->vertices_begin(); itr != m_rods[i]->vertices_end(); ++itr)
@@ -745,7 +749,7 @@ void BARodStepper::step_dynamic(const RodSelectionType& selected_rods)
 #ifdef HAVE_OPENMP
 #pragma omp parallel for
 #endif
-    for (int i = 0; i < selected_steppers.size(); i++)
+    for (unsigned int i = 0; i < selected_steppers.size(); i++)
     {
         RodTimeStepper* const stepper = selected_steppers[i];
         if (!stepper->execute())
@@ -786,14 +790,14 @@ void BARodStepper::step_dynamic(const RodSelectionType& selected_rods)
     STOP_TIMER("BARodStepper::step/setup");
 
     START_TIMER("BARodStepper::step/inexten");
-    for (int i = 0; i < selected_steppers.size(); i++)
+    for (unsigned int i = 0; i < selected_steppers.size(); i++)
         applyInextensibilityVelocityFilter(selected_steppers[i]->getRod()->globalRodIndex);
     STOP_TIMER("BARodStepper::step/inexten");
 }
 
 void BARodStepper::step_collision(const RodSelectionType& selected_rods)
 {
-    for (int i = 0; i < m_number_of_rods; i++)
+    for (unsigned int i = 0; i < m_number_of_rods; i++)
         failed_collisions_rods[i] = stretching_rods[i] = false;
 
     START_TIMER("BARodStepper::step/response");
@@ -1725,6 +1729,7 @@ bool BARodStepper::exertCompliantInelasticImpulse(const CTCollision* cllsn)
         //exertInelasticImpulse(cllsn.getVertexFace());
     }
     //TraceStream(g_log, "") << "BARodStepper:exertCompliantInelasticImpulse: post-impulse e-e relative velocity = " << cllsn->GetRelativeVelocity() << '\n';
+    return false;
 }
 
 bool BARodStepper::exertCompliantInelasticEdgeEdgeImpulse(const EdgeEdgeCTCollision& eecol)
@@ -1919,7 +1924,7 @@ bool BARodStepper::exertCompliantInelasticEdgeEdgeImpulseOneFree(const EdgeEdgeC
     if (!m_steppers[rodidx]->HasSolved())
     {
         DebugStream(g_log, "") << "WARNING: attempt to do edge-edge collision with non-dependable rod\n";
-        return;
+        return false;
     }
 
     TraceStream(g_log, "") << "CTcollision: rod " << rodidx << " vs. mesh\n";
@@ -2134,7 +2139,7 @@ bool BARodStepper::exertCompliantInelasticEdgeEdgeImpulseBothFree(const EdgeEdge
     if (!m_steppers[rod0]->HasSolved() || !m_steppers[rod1]->HasSolved())
     { // This should never happen because rod-rod collisions preclude selective adaptivity.
         DebugStream(g_log, "") << "WARNING: attempt to do rod-rod collision on non-dependable rods";
-        return;
+        return false;
     }
 
     TraceStream(g_log, "") << "CTcollision: rod " << rod0 << " vs. rod " << rod1 << '\n';
@@ -2563,6 +2568,8 @@ bool BARodStepper::changeVelocityBothFree(const std::vector<VecXd>& posnnormal0,
         m_vnphalf.segment(rod1base, rod1nvdof) += alpha(nc0 + i - 1) * posnntilde1[i];
     }
 
+    return false;
+
 }
 
 void BARodStepper::extractVertexDOF(std::vector<VecXd>& posnnormal, const std::vector<VecXd>& normal,
@@ -2814,7 +2821,7 @@ void BARodStepper::setupPenaltyForces(std::list<Collision*>& collisions, const R
     DebugStream(g_log, "") << "Detecting collisions for setupPenaltyForces\n";
     m_collision_detector->getCollisions(collisions, Proximity);
 
-    for (int rod_id = 0; rod_id < m_number_of_rods; rod_id++)
+    for (unsigned int rod_id = 0; rod_id < m_number_of_rods; rod_id++)
         assert(m_implicit_pnlty_forces[rod_id]->cleared());
 
     // Store the proximity collision in the RodPenaltyForce

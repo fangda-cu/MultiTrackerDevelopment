@@ -37,6 +37,7 @@
 #include "BASim/src/Physics/ElasticRods/RodMassDamping.hh"
 #include "BASim/src/Physics/ElasticRods/RodGravity.hh"
 #include "BASim/src/Math/Math.hh"
+#include "BASim/src/Math/LinearSystemSolver.hh"
 #include "BASim/src/Core/TriangleMesh.hh"
 #include "BASim/src/Collisions/CollisionUtils.hh"
 #include "BASim/src/Collisions/RodMeshCollisionDetector.hh"
@@ -47,6 +48,7 @@
 #include "GaussianVolumetricForce.hh"
 #include "RodClumpingForce.hh"
 #include "GaussianVolumetricForce.hh"
+#include "PerformanceTuningParameters.hh"
 #endif
 
 #ifdef HAVE_OPENMP

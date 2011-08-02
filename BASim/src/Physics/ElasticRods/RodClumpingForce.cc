@@ -65,7 +65,7 @@ Scalar RodClumpingForce::computeEnergy( const ElasticRod& rod, const ElasticRod&
 
     for ( int vidx = FIRST_ATTRACTED_VERTEX; vidx < rod.nv(); ++vidx )
     {
-        if ( vidx < vertexQMap.size() )
+        if ( vidx < (int)vertexQMap.size() )
         {
             charge = vertexQMap[vidx];
         }
@@ -103,7 +103,7 @@ void RodClumpingForce::computeForce( const ElasticRod& rod, const ElasticRod& ot
         const Scalar normep2 = ( x[0] - y[0] ) * ( x[0] - y[0] ) + ( x[1] - y[1] ) * ( x[1] - y[1] )
                 + ( x[2] - y[2] ) * ( x[2] - y[2] );
 
-        if ( vidx < vertexQMap.size() )
+        if ( vidx < (int)vertexQMap.size() )
         {
             charge = vertexQMap[vidx];
         }
@@ -160,7 +160,7 @@ void RodClumpingForce::computeLocalForceDX( const ElasticRod& rod, int vidx,
     const Scalar normep4 = normep2 * normep2;
 
     Scalar charge = q;
-    if ( vidx < vertexQMap.size() )
+    if ( vidx < (int)vertexQMap.size() )
     {
         charge = vertexQMap[vidx];
     }

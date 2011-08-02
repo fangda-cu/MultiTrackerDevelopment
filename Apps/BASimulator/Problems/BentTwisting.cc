@@ -71,7 +71,7 @@ void BentTwisting::Setup()
   
   RodState statebackup;
   //statebackup.copyState( *rod );
-  statebackup.print(*rod);  
+  //statebackup.print(*rod);  
 }
 
 void BentTwisting::AtEachTimestep()

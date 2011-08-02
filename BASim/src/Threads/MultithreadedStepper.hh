@@ -54,7 +54,7 @@ public:
                 m_num_threads(std::min(num_threads, stepper_container.size())), m_thread_args(m_num_threads), m_success(true)
     {
         //        std::cerr << "Number of threads = " << m_num_threads << std::endl;
-        for (int i = 0; i < m_num_threads; i++)
+        for (unsigned int i = 0; i < m_num_threads; i++)
             m_thread_args[i] = new ThreadArgs(m_it, m_end, m_it_mutex);
     }
 
@@ -62,10 +62,10 @@ public:
     {
         std::vector < pthread_t > threads(m_num_threads);
 
-        for (int t = 0; t < m_num_threads; t++)
+        for (unsigned int t = 0; t < m_num_threads; t++)
             pthread_create(&threads[t], NULL, thread_step, static_cast<void*> (m_thread_args[t]));
 
-        for (int t = 0; t < m_num_threads; t++)
+        for (unsigned int t = 0; t < m_num_threads; t++)
         {
             pthread_join(threads[t], NULL);
             m_success = m_success && m_thread_args[t]->m_success;

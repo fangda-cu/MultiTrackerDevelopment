@@ -83,7 +83,7 @@ public:
 
     inline bool isFlagSet(const Flags& flag) const
     {
-        return (m_flags & flag);
+        return (m_flags & flag) != 0;
     }
     inline void setFlag(const Flags& flag)
     {

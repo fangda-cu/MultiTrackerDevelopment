@@ -10,6 +10,11 @@
 
 #include "YImage.hh"
 
+#ifdef _MSC_VER
+//This doesn't exist on Windows.
+typedef void *voidp;
+#endif
+
 namespace BASim {
 
 YImage::YImage()

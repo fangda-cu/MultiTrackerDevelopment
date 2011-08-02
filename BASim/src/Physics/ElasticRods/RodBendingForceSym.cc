@@ -303,7 +303,7 @@ inline void RodBendingForceSym::localJacobian(ElementJacobian& localJ, const ver
     const Vec2d& kappaBar = getKappaBar(vh);
     const ElementBiForce& gradKappa = getGradKappa(vh);
 
-    symBProduct(localJ, B, gradKappa);
+    symBProduct<11>(localJ, B, gradKappa);
     localJ *= milen;
 
     const ElementBiJacobian& hessKappa = getHessKappa(vh);

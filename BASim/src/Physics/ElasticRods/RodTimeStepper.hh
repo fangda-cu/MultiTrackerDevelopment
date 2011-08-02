@@ -8,6 +8,8 @@
 #ifndef RODTIMESTEPPER_HH
 #define RODTIMESTEPPER_HH
 
+#include <typeinfo>
+
 #ifdef WETA
 #include "../..//Core/ObjectControllerBase.hh"
 #include "RodBoundaryCondition.hh"
@@ -72,6 +74,7 @@ public:
 
     bool execute()
     {
+         
         assert(getTimeStep() == m_rod.getTimeStep());
         m_has_solved = m_diffEqSolver->execute();
         return m_has_solved;

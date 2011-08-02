@@ -18,8 +18,13 @@ RodMeshCollisionDetector::RodMeshCollisionDetector(const GeometricData& geodata,
 {
     if (num_threads > 0)
         m_num_threads = num_threads;
-    else
+    else {
+#ifndef _MSC_VER
         m_num_threads = sysconf(_SC_NPROCESSORS_ONLN);
+#else
+        m_num_threads = 1;  //TODO CPU count detection on windows
+#endif
+    }
 
     m_rod_elements.reserve(edges.size());
     m_mesh_elements.reserve(faces.size());

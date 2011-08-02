@@ -10,6 +10,11 @@
 #else
 #include <BASim/BASim>
 #endif
+
+#ifdef _MSC_VER
+#include <direct.h>
+#endif
+
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
@@ -18,7 +23,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
-#include <sys/time.h>
+//#include <sys/time.h>
 #include <tclap/CmdLine.h>
 #include <typeinfo>
 #include <queue>
@@ -452,7 +457,11 @@ void idle()
         {
             last_frame_num = frame;
             //std::cout << outputdirectory << std::endl;
+#ifdef _MSC_VER
+            _mkdir(outputdirectory.c_str());
+#else
             mkdir(outputdirectory.c_str(), 0755);
+#endif
 
             int file_width = 20;
 
@@ -967,7 +976,7 @@ void RunProblem(int argc, char** argv)
         g_sim_breakpoints = &current_problem->getBreakpoints();
         if (g_sim_breakpoints->size() == 0 || g_sim_breakpoints->back() != std::numeric_limits<double>::infinity())
             g_sim_breakpoints->push(std::numeric_limits<double>::infinity());
-
+         
         glutMainLoop();
     }
     else
@@ -1224,6 +1233,9 @@ int main(int argc, char** argv)
         resumeSerializedScene(g_resume_file);
 
     printCommandLineSplashScreen();
+
+    if(g_log == NULL)
+      g_log = new TextLog(std::cerr, MsgInfo::kDebug, true);
 
     RunProblem(argc, argv);
     return 0;

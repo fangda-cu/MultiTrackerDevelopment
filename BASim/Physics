@@ -34,7 +34,7 @@
 
 #include "src/Physics/ElasticRods/RodBoundaryCondition.hh"
 #include "src/Physics/ElasticRods/RodTimeStepper.hh"
-#include "src/Physics/ElasticRods/RodCollisionTimeStepper.hh"
+//#include "src/Physics/ElasticRods/RodCollisionTimeStepper.hh"
 #include "src/Physics/ElasticRods/MultipleRodTimeStepper.hh"
 
 #include "src/Physics/ElasticRods/RodReverseSolver.hh"

@@ -129,7 +129,7 @@ void RodRenderer::drawSimpleRod()
         glColorMaterial( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE );
 
         //OpenGL::color(m_paletteq[(m_rod.draw_cl % (int)m_paletteq.size())]);
-        const float lineWidth = m_rod.getRadiusScale();
+        const float lineWidth = (float)m_rod.getRadiusScale();
         glLineWidth( lineWidth );
 
         glBegin( GL_LINE_STRIP);

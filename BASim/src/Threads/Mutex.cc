@@ -13,8 +13,12 @@
 #include "Mutex.hh"
 #include <pthread.h>
 #include <sys/types.h>
+#ifndef _MSC_VER
 #include <sys/syscall.h>
 #include <linux/unistd.h>
+#else
+#include <Windows.h>
+#endif
 #include <errno.h>
 #include <iostream>
 #include <assert.h>
@@ -88,7 +92,11 @@ void Mutex::Lock()
 #endif
     pthread_mutex_lock(&m_impl->m_mutex);
     CHECK_STATUS( status, pthread_mutex_lock );
+#ifndef _MSC_VER
     m_impl->m_owner = syscall(__NR_gettid);
+#else
+    m_impl->m_owner = GetCurrentThreadId();
+#endif
 }
 
 void Mutex::Unlock()
@@ -106,7 +114,11 @@ bool Mutex::TryLock()
     int status = pthread_mutex_trylock(&m_impl->m_mutex);
     if (status == 0)
     {
+#ifndef _MSC_VER
         m_impl->m_owner = syscall(__NR_gettid);
+#else
+        m_impl->m_owner = GetCurrentThreadId();
+#endif
         return true;
     }
     if (status == EBUSY)

@@ -20,8 +20,13 @@ CollisionDetectorBase::CollisionDetectorBase(const GeometricData& geodata, const
     // std::cerr << "Constructing CollisionDetectorBase" << std::endl;
     if (num_threads > 0)
         m_num_threads = num_threads;
-    else
-        m_num_threads = sysconf(_SC_NPROCESSORS_ONLN);
+    else {
+#ifndef _MSC_VER
+       m_num_threads = sysconf(_SC_NPROCESSORS_ONLN);
+#else
+       m_num_threads = 1;  //TODO CPU count detection on windows
+#endif
+    }
 }
 
 CollisionDetectorBase::~CollisionDetectorBase()
@@ -114,6 +119,7 @@ bool CollisionDetectorBase::appendCollision(const TopologicalElement* elem_a, co
     default:
         return false;
     }
+    return false;
 }
 
 void CollisionDetectorBase::updateBoundingBox(BVH& bvh, const std::vector<const TopologicalElement*>& elements, BVHNodeType& node)

@@ -224,9 +224,9 @@ void LevelSet::getGradient(Vec3<Real> &x, Vec3<Real> &grad)
                                   i, j, 0.0f);
 
     Eigen::Vector4f eigenGrad;
-    eigenGrad[0] = phiP1 - phiP0;
-    eigenGrad[1] = phiQ1 - phiQ0;
-    eigenGrad[2] = phiR1 - phiR0;
+    eigenGrad[0] = (float)(phiP1 - phiP0);
+    eigenGrad[1] = (float)(phiQ1 - phiQ0);
+    eigenGrad[2] = (float)(phiR1 - phiR0);
     eigenGrad[3] = 1.0f;
     
     // Remove the transform at level set creation time and transform the gradient vector by 
@@ -384,9 +384,9 @@ void LevelSet::writeFile(std::fstream &levelSetFile)
     levelSetFile.write(reinterpret_cast<char *>(&_phi.nk),    sizeof(int));
     levelSetFile.write(reinterpret_cast<char *>(&_phi(0,0,0)),sizeof(float) * _phi.ni * _phi.nj * _phi.nk);
 
-    for (uint i=0; i<_phi.ni; ++i)
-        for (uint j=0; j<_phi.nj; ++j)
-            for (uint k=0; k<_phi.nk; ++k)
+    for (int i=0; i<_phi.ni; ++i)
+        for (int j=0; j<_phi.nj; ++j)
+            for (int k=0; k<_phi.nk; ++k)
                 levelSetFile.write(reinterpret_cast<char *>(&_phiVel(i,j,k)[0]), sizeof(float) * 3);
 }
 
@@ -404,9 +404,9 @@ void LevelSet::loadFile(std::fstream &levelSetFile)
     levelSetFile.read(reinterpret_cast<char *>(&_phi(0,0,0)), sizeof(float) * _phi.ni * _phi.nj * _phi.nk);
 
     _phiVel.resize(nx, ny, nz);
-    for (uint i=0; i<_phi.ni; ++i)
-        for (uint j=0; j<_phi.nj; ++j)
-            for (uint k=0; k<_phi.nk; ++k)
+    for (int i=0; i<_phi.ni; ++i)
+        for (int j=0; j<_phi.nj; ++j)
+            for (int k=0; k<_phi.nk; ++k)
                 levelSetFile.read(reinterpret_cast<char *>(&_phiVel(i,j,k)[0]), sizeof(float) * 3);
 }
 
@@ -652,7 +652,7 @@ float LevelSet::point_triangle_distance(const bridson::Vec3f &p,
     float denom = 1.0f / (va + vb + vc);
     float v = vb * denom;
     float w = vc * denom;
-    float u = 1.0 - v - w;
+    float u = 1.0f - v - w;
 
     t1 = u;
     t2 = v;

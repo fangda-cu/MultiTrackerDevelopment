@@ -131,7 +131,7 @@ inline Scalar StaticSolver<ODE>::funnyclipvalue( Scalar minvalue, Scalar variabl
         variable = minvalue;
 
     // clip
-    return fmin( fmax( variable, minvalue ), maxvalue );
+    return std::min( std::max( variable, minvalue ), maxvalue );
 }
 
 template<typename ODE>

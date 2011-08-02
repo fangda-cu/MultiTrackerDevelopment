@@ -114,6 +114,7 @@ public:
         //        assert((m_deltaX.cwise() == m_deltaX).all());
 
         // rhs == h*h*forces
+       
         TraceStream(g_log, "") << "SymmetricImplicitEuler::computeResidual: evaluating PDot...\n";
         m_rhs.setZero();
         m_diffEq.evaluatePDot(m_rhs);

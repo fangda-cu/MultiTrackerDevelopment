@@ -20,6 +20,7 @@ bool SymmetricImplicitEuler<ODE>::execute()
     START_TIMER("SymmetricImplicitEuler::execute");
 
     START_TIMER("SymmetricImplicitEuler::execute/backup");
+    
     m_diffEq.backupResize();
     m_diffEq.backup();
     STOP_TIMER("SymmetricImplicitEuler::execute/backup");
@@ -36,16 +37,16 @@ bool SymmetricImplicitEuler<ODE>::execute()
 
             return true;
         }
-
         START_TIMER("SymmetricImplicitEuler::execute/backup");
         m_diffEq.backupRestore();
         STOP_TIMER("SymmetricImplicitEuler::execute/backup");
     }
 
+    
     // Falling back to rigid motion if solver failed, so at least the rod doesn't mess up collision detection for this time step
     generateInitialIterate0(m_deltaX);
     // Force the scripted vertices to their place. NB: if the first two vertices are inextensibly scripted this shouldn't be necessary.
-    for (int i = 0; i < m_fixed.size(); ++i)
+    for (unsigned int i = 0; i < m_fixed.size(); ++i)
     {
         const int dof = m_fixed[i];
         m_deltaX(dof) = m_desired[i] - x0(dof); // set desired position
@@ -68,7 +69,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
 
     // Chapter 0: Basic housekeeping
     ////////////////////////////////////////////////////
-
+    
     bool successful_solve = true;
 
     m_diffEq.startStep();
@@ -95,7 +96,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
 
     // Chapter 1: Set up initial guess for Newton Solver
     ////////////////////////////////////////////////////
-
+   
     // m_deltaX is the difference between end of step and start of step positions
 
     // Copy start of step positions and velocities.
@@ -145,6 +146,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
     }
     }
 
+    
     // For prescribed (fixed) DOFS, overwrite heuristic initial guess
     // Set deltaX and v0 for fixed DOFs
     for (int i = 0; i < (int) m_fixed.size(); ++i)
@@ -159,6 +161,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
         assert(approxEq(m_desired[i], /* =approx= */x0(m_fixed[i]) + v0[m_fixed[i]] * m_dt, 1.0e-6));
 #endif
 
+    
     // Update the differential equation with the current guess
     m_diffEq.set_qdot(m_deltaX / m_dt); // set velocity
     m_diffEq.set_q(x0 + m_deltaX); // set position
@@ -182,7 +185,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
 
     // Chapter 2: Iterate using Newton's Method
     ////////////////////////////////////////////////////
-
+    
     int curit = 0;
     for (curit = 0; curit < m_maxit; ++curit)
     {
@@ -337,6 +340,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
         // Now go back and begin next Newton iteration...
     }
 
+    
     TraceStream(g_log, "") << "SymmetricImplicitEuler::position_solve: completed " << curit + 1 << " Newton iterations."
             << '\n';
 

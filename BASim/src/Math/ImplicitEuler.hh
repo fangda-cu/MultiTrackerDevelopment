@@ -71,8 +71,10 @@ public:
 
   bool execute()
   {
-    if (m_solve_for_dv) return velocity_solve();
-    else return position_solve();
+
+     if (m_solve_for_dv) return velocity_solve();
+     else return position_solve();
+     
   }
 
   std::string getName() const

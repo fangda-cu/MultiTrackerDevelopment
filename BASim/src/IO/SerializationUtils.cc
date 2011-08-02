@@ -1141,7 +1141,7 @@ void loadMapStringOption( std::ifstream& ifs, std::map<std::string,Option>& val 
   assert( ifs.is_open() );
   
   // Load the number of options
-  int size = std::numeric_limits<double>::signaling_NaN();
+  int size = (int)std::numeric_limits<double>::signaling_NaN();
   loadVal(ifs,size);
   assert( size >= 0 );
   //std::cout << "Size: " << size << std::endl;

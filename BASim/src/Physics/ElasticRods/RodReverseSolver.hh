@@ -4,7 +4,7 @@
 #define ROD_REVERSE_SOLVER_HH
 
 #include "ElasticRod.hh"
-#include "RodTimeStepper.hh";
+#include "RodTimeStepper.hh"
 #include "../../Math/MatrixBase.hh"
 #include "../../Math/LinearSolverBase.hh"
 #include "../../Math/SolverUtils.hh"

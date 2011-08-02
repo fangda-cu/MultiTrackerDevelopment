@@ -36,7 +36,7 @@ Camera::Camera(const Camera& other)
   , m_zClipping(other.m_zClipping)
 {}
 
-Camera::Camera& Camera::operator=(const Camera& other)
+Camera& Camera::operator=(const Camera& other)
 {
   m_viewCenter = other.m_viewCenter;
   m_eye = other.m_eye;

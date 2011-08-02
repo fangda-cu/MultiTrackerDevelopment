@@ -89,7 +89,8 @@ World::Renderers& World::getRenderers()
 
 void World::execute()
 {
-  Controllers::iterator it;
+
+   Controllers::iterator it;
   for (it = m_controllers.begin(); it != m_controllers.end(); ++it) {
     (*it)->execute();
   }

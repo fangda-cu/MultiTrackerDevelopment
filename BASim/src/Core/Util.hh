@@ -15,7 +15,11 @@ namespace BASim
 
 static const Scalar SMALL_NUMBER = 1e-12; // std::numeric_limits<Scalar>::epsilon();
 
+#ifndef _MSC_VER
 void _error(const char* file, const char* function, int line, const char* message) __attribute__((noreturn));
+#else
+__declspec(noreturn) void _error(const char* file, const char* function, int line, const char* message) ;
+#endif
 
 #define BA_ERROR(message) _error(__FILE__, __FUNCTION__, __LINE__, (message))
 

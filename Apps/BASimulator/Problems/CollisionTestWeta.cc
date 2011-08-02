@@ -353,7 +353,7 @@ void CollisionTestWeta::RodObjectSnaggingMovingObjectSetup()
   
   m_br_stepper = new BARodStepper( m_rods, m_tri_objs, m_scripting_controllers, m_controllers, GetScalarOpt("dt") );
   m_world->addController(m_br_stepper);
-  sleep(1);
+  //sleep(1);
 }
 
 ObjTranslator::ObjTranslator( TriangleMesh& mesh, double time, double dt )
@@ -374,7 +374,7 @@ bool ObjTranslator::execute()
     m_mesh.getVertex(*itr) += Vec3d(-translatedist,0.0,0.0);
     //std::cout << "vertex   position "<< m_mesh.getVertex(*itr)<< std::endl;
   }
-   sleep(2);
+  //sleep(2);
   if( getTime() > 10.5 ) exit(0);
   
   return true;

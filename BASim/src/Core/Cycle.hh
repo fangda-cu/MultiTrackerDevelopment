@@ -188,6 +188,7 @@ INLINE_ELAPSED(__inline__)
 
 /* Visual C++ -- thanks to Morten Nissov for his help with this */
 #if _MSC_VER >= 1200 && _M_IX86 >= 500 && !defined(HAVE_TICK_COUNTER)
+#define NOMINMAX
 #include <windows.h>
 typedef LARGE_INTEGER ticks;
 #define RDTSC __asm __emit 0fh __asm __emit 031h /* hack for VC++ 5.0 */

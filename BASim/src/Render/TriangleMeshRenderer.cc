@@ -29,7 +29,7 @@ void TriangleMeshRenderer::render()
   {
     glEnable(GL_LIGHTING);
 
-    GLfloat gray[] = {0.8,0.8,0.8,1.0}; 
+    GLfloat gray[] = {(GLfloat)0.8f,(GLfloat)0.8f,(GLfloat)0.8f,(GLfloat)1.0f}; 
     glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,gray);
     
     // Render all faces
@@ -47,10 +47,10 @@ void TriangleMeshRenderer::render()
       Vec3d e2 = v[2]-v[0];
       Vec3d n = e1.cross(e2);
       if( n.norm() != 0 ) n.normalize();
-      glNormal3f(n.x(),n.y(),n.z());
-      glVertex3f(v[0].x(),v[0].y(),v[0].z());
-      glVertex3f(v[1].x(),v[1].y(),v[1].z());
-      glVertex3f(v[2].x(),v[2].y(),v[2].z());
+      glNormal3f((GLfloat)n.x(),(GLfloat)n.y(),(GLfloat)n.z());
+      glVertex3f((GLfloat)v[0].x(),(GLfloat)v[0].y(),(GLfloat)v[0].z());
+      glVertex3f((GLfloat)v[1].x(),(GLfloat)v[1].y(),(GLfloat)v[1].z());
+      glVertex3f((GLfloat)v[2].x(),(GLfloat)v[2].y(),(GLfloat)v[2].z());
     }
     glEnd();
     

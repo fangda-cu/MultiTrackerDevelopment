@@ -13,7 +13,11 @@
 #ifndef THREADS_MUTEX_HH
 #define THREADS_MUTEX_HH
 
+#ifndef _MSC_VER
 #include <tr1/memory>
+#else
+#include <memory>
+#endif
 
 namespace BASim
 {

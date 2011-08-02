@@ -9,7 +9,12 @@
 #ifndef UNIFORMGRID_H
 #define UNIFORMGRID_H
 
+#ifndef _MSC_VER
 #include <tr1/unordered_map>
+#else
+#include <unordered_map>
+#endif
+
 #include"CandidateCollision.hh"
 #include "../Math/Math.hh"
 //#include <BASim/src/Physics/ElasticRods/ElasticRod.hh>

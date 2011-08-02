@@ -8,10 +8,10 @@
 #ifndef RODTWISTINGFORCESYM_HH
 #define RODTWISTINGFORCESYM_HH
 
-#ifdef WETA
+//#ifdef WETA
 #include "RodForce.hh"
 #include "VertexStencil.hh"
-#endif
+//#endif
 
 namespace BASim
 {
