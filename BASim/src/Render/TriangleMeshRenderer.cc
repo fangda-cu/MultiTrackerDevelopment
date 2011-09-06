@@ -38,7 +38,7 @@ void TriangleMeshRenderer::render()
     for( TriangleMesh::face_iter fit = m_mesh.faces_begin(); fit != m_mesh.faces_end(); ++fit )
     {
       std::vector<Vec3d> v;
-      for( TriangleMesh::FaceVertexIter fvit = m_mesh.fv_iter(*fit); fvit; ++fvit )
+      for( FaceVertexIterator fvit = m_mesh.fv_iter(*fit); fvit; ++fvit )
       {
         v.push_back(m_mesh.getVertex(*fvit));
       }
@@ -76,7 +76,7 @@ void TriangleMeshRenderer::render()
     OpenGL::color(Color(255,0,0));
     for( TriangleMesh::face_iter fit = m_mesh.faces_begin(); fit != m_mesh.faces_end(); ++fit )
     {
-      for( TriangleMesh::FaceVertexIter fvit = m_mesh.fv_iter(*fit); fvit; ++fvit )
+      for( FaceVertexIterator fvit = m_mesh.fv_iter(*fit); fvit; ++fvit )
       {
         OpenGL::vertex(m_mesh.getVertex(*fvit));
       }      

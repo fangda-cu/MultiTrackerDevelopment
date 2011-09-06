@@ -9,6 +9,7 @@
 #define VERTEXSTENCIL_HH
 
 #include "Stencil.hh"
+#include "BASim/src/Core/TopologicalObject/TopologicalObject.hh"
 
 namespace BASim
 {
@@ -83,7 +84,7 @@ public:
         indices.resize(11);
         handle_ref h = handle();
         ElasticRod& rod = smart_cast<ElasticRod&> (*m_obj);
-        ElasticRod::VertexVertexIter vvit = rod.vv_iter(h);
+        VertexVertexIterator vvit = rod.vv_iter(h);
         handle_type h_prev = *vvit;
         ++vvit;
         handle_type h_next = *vvit;
@@ -95,7 +96,7 @@ public:
             indices(8 + i) = rod.vertIdx(h_next, i);
         }
 
-        ElasticRod::VertexEdgeIter veit = rod.ve_iter(h);
+        VertexEdgeIterator veit = rod.ve_iter(h);
 
         indices(3) = rod.edgeIdx(*veit);
         ++veit;
@@ -106,29 +107,39 @@ public:
     {
         handle_ref h = handle();
         ElasticRod& rod = smart_cast<ElasticRod&> (*m_obj);
-        ElasticRod::VertexVertexIter vvit = rod.vv_iter(h);
+        VertexVertexIterator vvit = rod.vv_iter(h);
         handle_type h_prev = *vvit;
         return rod.vertIdx(h_prev, 0);
     }
 
     ElasticRod::edge_handle inEdge() const
     {
-        return getRod().getVertexTopology(handle())[0];
+        VertexEdgeIterator veit = getRod().ve_iter(handle());
+        return *(veit);
+        //return getRod().getVertexTopology(handle())[0];
     }
 
     ElasticRod::edge_handle outEdge() const
     {
-        return getRod().getVertexTopology(handle())[1];
+        VertexEdgeIterator veit = getRod().ve_iter(handle());
+        ++veit;
+        return *(veit);
+        //return getRod().getVertexTopology(handle())[1];
     }
 
     ElasticRod::vertex_handle prevVert() const
     {
-        return getRod().getEdgeTopology(inEdge())[0];
+        EdgeVertexIterator evit = getRod().ev_iter(inEdge());
+        return *(evit);
+        //return getRod().getEdgeTopology(inEdge())[0];
     }
 
     ElasticRod::vertex_handle nextVert() const
     {
-        return getRod().getEdgeTopology(outEdge())[1];
+        EdgeVertexIterator evit = getRod().ev_iter(outEdge());
+        ++evit;
+        return *(evit); 
+        //return getRod().getEdgeTopology(outEdge())[1];
     }
 
 protected:

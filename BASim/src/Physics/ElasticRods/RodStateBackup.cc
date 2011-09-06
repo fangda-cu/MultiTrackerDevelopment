@@ -882,37 +882,37 @@ bool RodState::compareProperties( const ElasticRod& other, bool printdiffs )
 
 const PropertyContainer& RodState::getVertexPropertyContainer( const ElasticRod& rod )
 {
-  VPropHandle<TopologicalObject::vertex_topology> vh;
+  VPropHandle<int> vh;
   return rod.container(vh);
 }
 
 PropertyContainer& RodState::getVertexPropertyContainer( ElasticRod& rod )
 {
-  VPropHandle<TopologicalObject::vertex_topology> vh;
+  VPropHandle<int> vh;
   return rod.container(vh);
 }  
 
 const PropertyContainer& RodState::getEdgePropertyContainer( const ElasticRod& rod )
 {
-  EPropHandle<TopologicalObject::edge_topology> eh;
+  EPropHandle<int> eh;
   return rod.container(eh);
 }
 
 PropertyContainer& RodState::getEdgePropertyContainer( ElasticRod& rod )
 {
-  EPropHandle<TopologicalObject::edge_topology> eh;
+  EPropHandle<int> eh;
   return rod.container(eh);
 }  
 
 const PropertyContainer& RodState::getFacePropertyContainer( const ElasticRod& rod )
 {
-  FPropHandle<TopologicalObject::face_topology> fh;
+  FPropHandle<int> fh;
   return rod.container(fh);
 }
 
 PropertyContainer& RodState::getFacePropertyContainer( ElasticRod& rod )
 {
-  FPropHandle<TopologicalObject::face_topology> fh;
+  FPropHandle<int> fh;
   return rod.container(fh);
 }  
 

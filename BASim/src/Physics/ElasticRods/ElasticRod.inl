@@ -27,12 +27,14 @@ inline void ElasticRod::setVertex(const vertex_handle& vh, const Vec3d& v)
 
 inline const Vec3d& ElasticRod::getFromVertex(const edge_handle& eh) const
 {
-    return getVertex(getEdgeTopology(eh).getFromVertex());
+   return getVertex(fromVertex(eh));
+   //return getVertex(getEdgeTopology(eh).getFromVertex());
 }
 
 inline const Vec3d& ElasticRod::getToVertex(const edge_handle& eh) const
 {
-    return getVertex(getEdgeTopology(eh).getToVertex());
+   return getVertex(toVertex(eh)); 
+   //return getVertex(getEdgeTopology(eh).getToVertex());
 }
 
 inline const Vec3d& ElasticRod::getVertex(int i) const
@@ -367,12 +369,17 @@ inline void ElasticRod::setCurvatureBinormal(int i, const Vec3d& kb)
 
 inline ElasticRod::edge_handle ElasticRod::inEdge(const vertex_handle& vh) const
 {
-    const vertex_topology& vt = getVertexTopology(vh);
-    return vt[0];
+   VertexEdgeIterator veit = ve_iter(vh);
+   return *(veit);
+    //const vertex_topology& vt = getVertexTopology(vh);
+    //return vt[0];
 }
 
 inline ElasticRod::edge_handle ElasticRod::outEdge(const vertex_handle& vh) const
 {
-    const vertex_topology& vt = getVertexTopology(vh);
-    return vt[1];
+    VertexEdgeIterator veit = ve_iter(vh);
+    ++veit;
+    return *(veit); 
+    //const vertex_topology& vt = getVertexTopology(vh);
+    //return vt[1];
 }

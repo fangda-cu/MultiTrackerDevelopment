@@ -10,7 +10,7 @@
 #ifndef TOPOLOGY_HH
 #define TOPOLOGY_HH
 
-#include "../Definitions.hh"
+#include "BASim/src/Core/Definitions.hh"
 
 namespace BASim {
 
@@ -149,7 +149,7 @@ public:
     : m_verts(3)
   {}
 
-  explicit FaceTopology( const int& n )
+  FaceTopology( const int& n )
     : m_verts(n)
   {
     assert( n >= 3 );
@@ -189,7 +189,7 @@ public:
     return m_verts[i];
   }
 
-  /** Number of edges making up the face (always >= 3) */
+  /** Number of vertices making up the face (always >= 3) */
   size_t size() const
   {
     return m_verts.size();

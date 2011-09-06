@@ -780,6 +780,41 @@ void loadProperty( std::ifstream& ifs, Property<std::vector<Vec3d> >* prop )
     (*prop)[i] = newval;
   }
 }
+
+//////////////////////////
+// std::vector<std::vector<int> > Functions
+void serializeVectorVectorInt( std::ofstream& of, const std::vector< std::vector<int> >& val )
+{
+   assert( of.is_open() );
+   int len = val.size();
+   serializeVal(of,len);
+   for( size_t i = 0; i < val.size(); ++i )
+   {
+      serializeVal(of, val[i].size());
+      for( size_t j = 0; j < val[i].size(); ++j )
+      {
+         serializeVal(of,val[i][j]);
+      }
+   }
+}
+
+void loadVectorVectorInt( std::ifstream& ifs, std::vector< std::vector<int> >& val )
+{
+   assert( ifs.is_open() );
+   int len;
+   loadVal(ifs,len);
+   val.resize(len);
+   for( size_t i = 0; i < val.size(); ++i )
+   {
+      loadVal(ifs, len);
+      val[i].resize(len);
+      for(size_t j = 0; j < val[i].size(); ++j) {
+         loadVal(ifs,val[i][j]);
+      }
+   }
+}
+
+
   
 //////////////////////////
 // std::pair<MatXd,MatXd> Functions
@@ -1024,6 +1059,60 @@ void loadProperty( std::ifstream& ifs, Property<FaceTopology<TopologicalObject> 
   }
 }
 
+//////////////////////////
+// std::vector<bool> Functions
+void serializeVectorBool( std::ofstream& of, const std::vector<bool>& val )
+{
+   assert( of.is_open() );
+   int len = val.size();
+   serializeVal(of,len);
+   for( size_t i = 0; i < val.size(); ++i )
+   {
+      bool temp = val[i];
+      serializeBool(of,temp);
+   }
+}
+
+void loadVectorBool( std::ifstream& ifs, std::vector<bool>& val )
+{
+   assert( ifs.is_open() );
+   int len;
+   loadVal(ifs,len);
+   val.resize(len);
+   for( size_t i = 0; i < val.size(); ++i )
+   {
+      bool temp;
+      loadBool(ifs,temp);
+      val[i] = temp;
+   }
+}
+
+//////////////////////////
+// std::vector<unsigned int> Functions
+void serializeVectorUint( std::ofstream& of, const std::vector<unsigned int>& val )
+{
+   assert( of.is_open() );
+   int len = val.size();
+   serializeVal(of,len);
+   for( size_t i = 0; i < val.size(); ++i )
+   {
+      serializeVal(of,val[i]);
+   }
+}
+
+void loadVectorUint( std::ifstream& ifs, std::vector<unsigned int>& val )
+{
+   assert( ifs.is_open() );
+   int len;
+   loadVal(ifs,len);
+   val.resize(len);
+   for( size_t i = 0; i < val.size(); ++i )
+   {
+      int temp;
+      loadVal(ifs,temp);
+      val[i] = temp;
+   }
+}
 //////////////////////////
 // std::queue<double> Functions
 void serializeDoubleQueue( std::ofstream& of, const std::queue<double>& val )

@@ -10,13 +10,12 @@
 #ifndef TOPOBJHANDLES_HH
 #define TOPOBJHANDLES_HH
 
-#include "../Handle.hh"
-#include "../Property.hh"
+#include "BASim/src/Core/Handle.hh"
+#include "BASim/src/Core/Property.hh"
 
 namespace BASim {
 
 /** Handle for referring to a vertex */
-template <class T>
 class VertexHandle : public HandleBase
 {
 public:
@@ -25,7 +24,6 @@ public:
 };
 
 /** Handle for referring to an edge */
-template <class T>
 class EdgeHandle : public HandleBase
 {
 public:
@@ -34,11 +32,17 @@ public:
 };
 
 /** Handle for referring to a face */
-template <class T>
 class FaceHandle : public HandleBase
 {
 public:
   explicit FaceHandle(int idx = -1) : HandleBase(idx) {}
+};
+
+/** Handle for referring to a tet */
+class TetHandle : public HandleBase
+{
+public:
+   explicit TetHandle(int idx = -1) : HandleBase(idx) {}
 };
 
 /** Handle for referring to vertex properties. */
@@ -75,6 +79,18 @@ public:
   explicit FPropHandle(const PropertyHandleBase<T>& b)
     : PropertyHandleBase<T>(b)
   {}
+};
+
+/** Handle for referring to tet properties. */
+template <typename T>
+class TPropHandle : public PropertyHandleBase<T>
+{
+public:
+
+   explicit TPropHandle(int idx = -1) : PropertyHandleBase<T>(idx) {}
+   explicit TPropHandle(const PropertyHandleBase<T>& b)
+      : PropertyHandleBase<T>(b)
+   {}
 };
 
 } // namespace BASim

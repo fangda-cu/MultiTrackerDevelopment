@@ -35,8 +35,10 @@ void TopologicalObjectSerializer::appendTopologicalObjectToFile( const Topologic
   serializeHeader( of, topobj );
   // Write the number of object, vertex, face, and edge properties
   serializeNumProperties( of, topobj );
-  // Write the size of vertex, edge, and face properties (object properteis are always size 1)
-  serializePropertySizes( of, topobj );
+  // Write out the new graph structure (which was stored as properties in the old structure)
+  TopologicalObject::serializeStructure(of, topobj);
+  // Write the size of vertex, edge, and face properties (object properties are always size 1)
+  //serializePropertySizes( of, topobj );
   
   // Write the vertex properties
   const PropertyContainer::Properties& vprops = getVertexPropertyContainer(topobj).getProperties();
@@ -77,7 +79,7 @@ void TopologicalObjectSerializer::loadTopologicalObjectFromFile( ElasticRod** tp
   *tpobj = dynamic_cast<ElasticRod*>(const_cast<TopologicalObject*>(tempptr));
   assert( *tpobj != NULL );
   
-  // 'Reattatch' properties within rods
+  // 'Reattach' properties within rods
   ElasticRod::RodForces& forces = (*tpobj)->getForces();
   ElasticRod::RodForces::iterator fIt;
   for( fIt = forces.begin(); fIt != forces.end(); ++fIt ) (*fIt)->reattatchProperties();
@@ -96,7 +98,7 @@ void TopologicalObjectSerializer::loadGenericTopologicalObject( TopologicalObjec
   assert( (*tpobj) != NULL );
   assert( objtypid == RODID || objtypid == TRIMESHID );
   
-  //std::cout << "Created a mew rod" << std::endl;
+  //std::cout << "Created a new rod" << std::endl;
   
   // Load the number of object, vertex, edge, and face properties
   int noprps = -1; int nvprps = -1; int neprps = -1; int nfprps = -1;
@@ -105,10 +107,13 @@ void TopologicalObjectSerializer::loadGenericTopologicalObject( TopologicalObjec
   
   //std::cout << "<oprops,vprops,eprops,fprops>: " << noprps << " " << nvprps << " " << neprps << " " << nfprps << std::endl;
   
+  //load the graph structure data
+  TopologicalObject::loadStructure(ifs, **tpobj);
+  
   // Load the number of vertices, edges, and faces (which correspond to the property sizes) 
-  int nv = -1; int ne = -1; int nf = -1;
+  /*int nv = -1; int ne = -1; int nf = -1;
   loadPropertySizes( ifs, nv, ne, nf );
-  assert( nv >= 0 ); assert( ne >= 0 ); assert( nf >= 0 );
+  assert( nv >= 0 ); assert( ne >= 0 ); assert( nf >= 0 );*/
   
   //std::cout << "<nv,ne,nf>: " << nv << " " << ne << " " << nf << std::endl;
   
@@ -127,7 +132,7 @@ void TopologicalObjectSerializer::loadGenericTopologicalObject( TopologicalObjec
   for( int i = 0; i < (int) nvprps; ++i )
   {
     PropertyBase* prop = NULL;
-    loadProperty( ifs, &prop, *tpobj, nv );
+    loadProperty( ifs, &prop, *tpobj, (**tpobj).nv() );
     vctr.getProperties().push_back(prop);
   }
   assert( (int) vctr.size() == nvprps );
@@ -139,7 +144,7 @@ void TopologicalObjectSerializer::loadGenericTopologicalObject( TopologicalObjec
   for( int i = 0; i < (int) neprps; ++i )
   {
     PropertyBase* prop = NULL;
-    loadProperty( ifs, &prop, *tpobj, ne );
+    loadProperty( ifs, &prop, *tpobj, (**tpobj).ne() );
     ectr.getProperties().push_back(prop);
   }
   assert( (int) ectr.size() == neprps );
@@ -151,7 +156,7 @@ void TopologicalObjectSerializer::loadGenericTopologicalObject( TopologicalObjec
   for( int i = 0; i < (int) nfprps; ++i )
   {
     PropertyBase* prop = NULL;
-    loadProperty( ifs, &prop, *tpobj, nf );
+    loadProperty( ifs, &prop, *tpobj, (**tpobj).nf() );
     fctr.getProperties().push_back(prop);
   }
   assert( (int) fctr.size() == nfprps );
@@ -353,37 +358,37 @@ PropertyContainer& TopologicalObjectSerializer::getObjectPropertyContainer( Topo
 
 const PropertyContainer& TopologicalObjectSerializer::getVertexPropertyContainer( const TopologicalObject& rod ) const
 {
-  VPropHandle<TopologicalObject::vertex_topology> vh;
+  VPropHandle<int> vh;
   return rod.container(vh);
 }
 
 PropertyContainer& TopologicalObjectSerializer::getVertexPropertyContainer( TopologicalObject& rod )
 {
-  VPropHandle<TopologicalObject::vertex_topology> vh;
+  VPropHandle<int> vh;
   return rod.container(vh);
 }  
 
 const PropertyContainer& TopologicalObjectSerializer::getEdgePropertyContainer( const TopologicalObject& rod ) const
 {
-  EPropHandle<TopologicalObject::edge_topology> eh;
+  EPropHandle<int> eh;
   return rod.container(eh);
 }
 
 PropertyContainer& TopologicalObjectSerializer::getEdgePropertyContainer( TopologicalObject& rod )
 {
-  EPropHandle<TopologicalObject::edge_topology> eh;
+  EPropHandle<int> eh;
   return rod.container(eh);
 }  
 
 const PropertyContainer& TopologicalObjectSerializer::getFacePropertyContainer( const TopologicalObject& rod ) const
 {
-  FPropHandle<TopologicalObject::face_topology> fh;
+  FPropHandle<int> fh;
   return rod.container(fh);
 }
 
 PropertyContainer& TopologicalObjectSerializer::getFacePropertyContainer( TopologicalObject& rod )
 {
-  FPropHandle<TopologicalObject::face_topology> fh;
+  FPropHandle<int> fh;
   return rod.container(fh);
 }
 

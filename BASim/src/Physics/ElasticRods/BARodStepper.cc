@@ -187,7 +187,7 @@ void BARodStepper::prepareForExecution()
         {
             TriangularFace triface;
             int j = 0;
-            for (TriangleMesh::FaceVertexIter fvit = m_triangle_meshes[i]->fv_iter(*fit); fvit; ++fvit, ++j)
+            for (FaceVertexIterator fvit = m_triangle_meshes[i]->fv_iter(*fit); fvit; ++fvit, ++j)
             {
                 assert(j >= 0);
                 assert(j < 3);

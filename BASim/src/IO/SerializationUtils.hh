@@ -203,6 +203,16 @@ void serializeProperty( std::ofstream& of, Property<std::vector<Vec3d> >* prop )
 void loadProperty( std::ifstream& ifs, Property<std::vector<Vec3d> >* prop );
 
 //////////////////////////
+// std::vector<bool> Functions
+void serializeVectorBool( std::ofstream& of, const std::vector<bool>& val );
+void loadVectorBool( std::ifstream& ifs, std::vector<bool>& val );  
+
+//////////////////////////
+// std::vector<unsigned int> Functions
+void serializeVectorUint( std::ofstream& of, const std::vector<unsigned int>& val );
+void loadVectorUint( std::ifstream& ifs, std::vector<unsigned int>& val );  
+
+//////////////////////////
 // std::pair<MatXd,MatXd> Functions
 void serializePairMatXdMatXd( std::ofstream& of, const std::pair<MatXd,MatXd>& val );  
 void loadPairMatXdMatXd( std::ifstream& ifs, std::pair<MatXd,MatXd>& val );
@@ -254,6 +264,12 @@ void loadProperty( std::ifstream& ifs, Property<FaceTopology<TopologicalObject> 
 // std::queue<double> Functions
 void serializeDoubleQueue( std::ofstream& of, const std::queue<double>& val );  
 void loadDoubleQueue( std::ifstream& ifs, std::queue<double>& val );
+
+//////////////////////////
+// std::vector< std::vector<int> > Functions
+void serializeVectorVectorInt( std::ofstream& of, const std::vector< std::vector<int> >& val );
+void loadVectorVectorInt( std::ifstream& ifs, std::vector< std::vector<int> > & val );
+
 
 //////////////////////////
 // Option Functions

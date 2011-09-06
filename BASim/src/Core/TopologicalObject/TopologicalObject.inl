@@ -7,253 +7,204 @@
  * \date 03/14/2010
  */
 
-inline TopologicalObject::TopologicalObject()
-{
-  add_property(m_nv, "number_of_vertices", 0);
-  add_property(m_ne, "number_of_edges", 0);
-  add_property(m_nf, "number_of_faces", 0);
 
-  add_property(m_vertTop, "vertex_topology");
-  add_property(m_edgeTop, "edge_topology");
-  add_property(m_faceTop, "face_topology");
-}
-
-inline TopologicalObject::vertex_handle TopologicalObject::addVertex()
-{
-  int idx = nv();
-  property(m_nv) += 1;
-  m_vertexProps.resize(nv());
-
-  return vertex_handle(idx);
-}
-
-inline TopologicalObject::edge_handle
-TopologicalObject::addEdge(const vertex_handle& v0, const vertex_handle& v1)
-{
-  int idx = ne();
-  property(m_ne) += 1;
-  m_edgeProps.resize(ne());
-  edge_handle ehnd(idx);
-
-  edge_topology& etop = getEdgeTopology(ehnd);
-  etop.setFromVertex(v0);
-  etop.setToVertex(v1);
-
-  vertex_topology& vtop0 = getVertexTopology(v0);
-  vtop0.addEdge(ehnd);
-
-  vertex_topology& vtop1 = getVertexTopology(v1);
-  vtop1.addEdge(ehnd);
-
-  return ehnd;
-}
-
-inline TopologicalObject::face_handle
-TopologicalObject::addFace(const vertex_handle& v0, const vertex_handle& v1, const vertex_handle& v2)
-{
-  // TODO: Add checks that vertex handles are valid
-  
-  int idx = nf();
-  property(m_nf) += 1;
-  m_faceProps.resize(nf());
-  face_handle fhnd(idx);
-  
-  face_topology& ftop = getFaceTopology(fhnd);
-  assert( ftop.size() == 3 );
-  ftop.setVertex(0,v0);
-  ftop.setVertex(1,v1);
-  ftop.setVertex(2,v2);
-
-  // TODO: add face information to VertexTopology about faces that it belongs to
-
-  return fhnd;
-}
-
-//inline void TopologicalObject::deleteVertex(const vertex_handle& vertex)
-//{
-//  bool delete_vertex_is_implemnted = false;
-//  if( !delete_vertex_is_implemnted ) std::cout << "DELETE VERTEX NOT SUPPORTED" << std::endl;
-//  assert( delete_vertex_is_implemnted );
-//}
-
-//inline void TopologicalObject::deleteEdge(const edge_handle& edge)
-//{
-//  bool delete_edge_is_implemnted = false;
-//  if( !delete_edge_is_implemnted ) std::cout << "DELETE EDGE NOT SUPPORTED" << std::endl;
-//  assert( delete_edge_is_implemnted );
-//}
-
-//inline void TopologicalObject::deleteFace(const face_handle& face)
-//{
-//  bool delete_face_is_implemnted = false;
-//  if( !delete_face_is_implemnted ) std::cout << "DELETE FACE NOT SUPPORTED" << std::endl;
-//  assert( delete_face_is_implemnted );
-//}
 
 inline TopologicalObject::vertex_iter 
 TopologicalObject::vertices_begin()
 {
-  return vertex_iter(this, vertex_handle(0));
+  vertex_iter first_position(this, VertexHandle(-1));
+  ++first_position;
+  return first_position;
 }
 
 inline TopologicalObject::const_vertex_iter
 TopologicalObject::vertices_begin() const
 {
-  return vertex_iter(this, vertex_handle(0));
+  vertex_iter first_position(this, VertexHandle(-1));
+  ++first_position;
+  return first_position;
 }
 
 inline TopologicalObject::vertex_iter 
 TopologicalObject::vertices_end()
 {
-  return vertex_iter(this, vertex_handle(nv()));
+  return vertex_iter(this, VertexHandle(numVertexSlots()));
 }
 
 inline TopologicalObject::const_vertex_iter
 TopologicalObject::vertices_end() const
 {
-  return vertex_iter(this, vertex_handle(nv()));
+  return vertex_iter(this, VertexHandle(numVertexSlots()));
 }
 
 inline TopologicalObject::edge_iter 
 TopologicalObject::edges_begin()
 {
-  return edge_iter(this, edge_handle(0));
+  edge_iter iter(this, EdgeHandle(-1));
+  ++iter;
+  return iter;
 }
 
 inline TopologicalObject::const_edge_iter 
 TopologicalObject::edges_begin() const
 {
-  return edge_iter(this, edge_handle(0));
+  edge_iter iter(this, EdgeHandle(-1));
+  ++iter;
+  return iter;
 }
 
-inline TopologicalObject::face_iter 
-TopologicalObject::faces_begin()
-{
-  return face_iter(this, face_handle(0));
-}
-
-inline TopologicalObject::const_face_iter 
-TopologicalObject::faces_begin() const
-{
-  return face_iter(this, face_handle(0));
-}
 
 inline TopologicalObject::edge_iter 
 TopologicalObject::edges_end()
 {
-  return edge_iter(this, edge_handle(ne()));
+  return edge_iter(this, EdgeHandle(numEdgeSlots()));
 }
 
 inline TopologicalObject::const_edge_iter 
 TopologicalObject::edges_end() const
 {
-  return edge_iter(this, edge_handle(ne()));
+  return edge_iter(this, EdgeHandle(numEdgeSlots()));
+}
+
+inline TopologicalObject::face_iter 
+TopologicalObject::faces_begin()
+{
+  FaceIterator fit(this, FaceHandle(-1));
+  ++fit;
+  return fit;
+}
+
+inline TopologicalObject::const_face_iter 
+TopologicalObject::faces_begin() const
+{
+  FaceIterator fit(this, FaceHandle(-1));
+  ++fit;
+  return fit;
 }
 
 inline TopologicalObject::face_iter 
 TopologicalObject::faces_end()
 {
-  return face_iter(this, face_handle(nf()));
+  return face_iter(this, FaceHandle(numFaceSlots()));
 }
 
 inline TopologicalObject::const_face_iter 
 TopologicalObject::faces_end() const
 {
-  return face_iter(this, face_handle(nf()));
+  return face_iter(this, FaceHandle(numFaceSlots()));
 }
 
-inline TopologicalObject::vertex_topology&
-TopologicalObject::getVertexTopology(const vertex_handle& vh)
+inline TopologicalObject::tet_iter 
+TopologicalObject::tets_begin()
 {
-  return property(m_vertTop)[vh];
+  TetIterator tit(this, TetHandle(-1));
+  ++tit;
+  return tit;
 }
 
-inline const TopologicalObject::vertex_topology&
-TopologicalObject::getVertexTopology(const vertex_handle& vh) const
+inline TopologicalObject::const_tet_iter 
+TopologicalObject::tets_begin() const
 {
-  return property(m_vertTop)[vh];
+  TetIterator tit(this, TetHandle(-1));
+  ++tit;
+  return tit;
 }
 
-inline TopologicalObject::edge_topology&
-TopologicalObject::getEdgeTopology(const edge_handle& eh)
+inline TopologicalObject::tet_iter 
+TopologicalObject::tets_end()
 {
-  return property(m_edgeTop)[eh];
+  return tet_iter(this, tet_handle(numTetSlots()));
 }
 
-inline const TopologicalObject::edge_topology&
-TopologicalObject::getEdgeTopology(const edge_handle& eh) const
+inline TopologicalObject::const_tet_iter 
+TopologicalObject::tets_end() const
 {
-  return property(m_edgeTop)[eh];
+  return tet_iter(this, tet_handle(numTetSlots()));
 }
 
-inline TopologicalObject::face_topology&
-TopologicalObject::getFaceTopology(const face_handle& fh)
+inline VertexEdgeIterator
+TopologicalObject::ve_iter(const VertexHandle& vh)
 {
-  return property(m_faceTop)[fh];
+  return VertexEdgeIterator(this, vh);
 }
 
-inline const TopologicalObject::face_topology&
-TopologicalObject::getFaceTopology(const face_handle& fh) const
+inline const VertexEdgeIterator
+TopologicalObject::ve_iter(const VertexHandle& vh) const
 {
-  return property(m_faceTop)[fh];
+  return VertexEdgeIterator(this, vh);
 }
 
-inline TopologicalObject::VertexEdgeIter
-TopologicalObject::ve_iter(const vertex_handle& vh)
+inline EdgeVertexIterator
+TopologicalObject::ev_iter(const EdgeHandle& eh)
 {
-  return VertexEdgeIter(this, vh);
+  return EdgeVertexIterator(this, eh);
 }
 
-inline TopologicalObject::ConstVertexEdgeIter
-TopologicalObject::ve_iter(const vertex_handle& vh) const
+inline const EdgeVertexIterator
+TopologicalObject::ev_iter(const EdgeHandle& eh) const
 {
-  return VertexEdgeIter(this, vh);
+  return EdgeVertexIterator(this, eh);
 }
 
-inline TopologicalObject::EdgeVertexIter
-TopologicalObject::ev_iter(const edge_handle& eh)
+inline VertexVertexIterator
+TopologicalObject::vv_iter(const VertexHandle& vh)
 {
-  return EdgeVertexIter(this, eh);
+  return VertexVertexIterator(this, vh);
 }
 
-inline TopologicalObject::ConstEdgeVertexIter
-TopologicalObject::ev_iter(const edge_handle& eh) const
+inline const VertexVertexIterator
+TopologicalObject::vv_iter(const VertexHandle& vh) const
 {
-  return EdgeVertexIter(this, eh);
+  return VertexVertexIterator(this, vh);
 }
 
-inline TopologicalObject::VertexVertexIter
-TopologicalObject::vv_iter(const vertex_handle& vh)
+
+
+inline FaceVertexIterator
+TopologicalObject::fv_iter(const FaceHandle& fh)
 {
-  return VertexVertexIter(this, vh);
+  return FaceVertexIterator(this, fh);
 }
 
-inline TopologicalObject::ConstVertexVertexIter
-TopologicalObject::vv_iter(const vertex_handle& vh) const
+inline const FaceVertexIterator
+TopologicalObject::fv_iter(const FaceHandle& fh) const
 {
-  return VertexVertexIter(this, vh);
+  return FaceVertexIterator(this, fh);
 }
 
-inline TopologicalObject::vertex_handle
-TopologicalObject::fromVertex(const edge_handle& eh) const
+inline FaceEdgeIterator
+TopologicalObject::fe_iter(const FaceHandle& fh)
 {
-  return getEdgeTopology(eh).getFromVertex();
+  return FaceEdgeIterator(this, fh);
 }
 
-inline TopologicalObject::vertex_handle
-TopologicalObject::toVertex(const edge_handle& eh) const
+inline const FaceEdgeIterator
+TopologicalObject::fe_iter(const FaceHandle& fh) const
 {
-  return getEdgeTopology(eh).getToVertex();
+  return FaceEdgeIterator(this, fh);
 }
 
-inline TopologicalObject::FaceVertexIter
-TopologicalObject::fv_iter(const face_handle& fh)
+inline VertexFaceIterator
+TopologicalObject::vf_iter(const VertexHandle& vh)
 {
-  return FaceVertexIter(this, fh);
+  return VertexFaceIterator(this, vh);
 }
 
-inline TopologicalObject::ConstFaceVertexIter
-TopologicalObject::fv_iter(const face_handle& fh) const
+inline const VertexFaceIterator
+TopologicalObject::vf_iter(const VertexHandle& vh) const
 {
-  return FaceVertexIter(this, fh);
+  return VertexFaceIterator(this, vh);
 }
+
+inline EdgeFaceIterator
+TopologicalObject::ef_iter(const EdgeHandle& eh)
+{
+  return EdgeFaceIterator(this, eh);
+}
+
+inline const EdgeFaceIterator
+TopologicalObject::ef_iter(const EdgeHandle& eh) const
+{
+  return EdgeFaceIterator(this, eh);
+}
+

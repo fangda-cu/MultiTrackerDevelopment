@@ -207,7 +207,7 @@ public:
       for( TriangleMesh::face_iter itr = trimesh.faces_begin(); itr != trimesh.faces_end(); ++itr )
       {
         objoutput << "f ";
-        for( TriangleMesh::FaceVertexIter fvit = trimesh.fv_iter(*itr); fvit; ++fvit )
+        for( FaceVertexIterator fvit = trimesh.fv_iter(*itr); fvit; ++fvit )
         {
           objoutput << (1+(*fvit).idx()) << " ";
         }

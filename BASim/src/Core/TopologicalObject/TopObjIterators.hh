@@ -5,26 +5,32 @@
  * \date 09/13/2009
  * \author smith@cs.columbia.edu
  * \date 03/14/2010
+ * \author batty@cs.columbia.edu
+ * \date 04/10/2011
  */
 
 #ifndef TOPOBJITERATORS_HH
 #define TOPOBJITERATORS_HH
 
-#include "../Definitions.hh"
+#include "BASim/src/Core/Definitions.hh"
+#include "BASim/src/Core/TopologicalObject/TopObjHandles.hh"
+#include "BASim/src/Core/TopologicalObject/Topology.hh"
 
 namespace BASim {
 
+
+class TopologicalObject;
+
 /** Iterator over vertices */
-template <class T>
 class VertexIterator
 {
 public:
 
-  typedef typename T::vertex_handle   value_type;
-  typedef value_type&                 reference;
-  typedef const value_type&           const_reference;
-  typedef value_type*                 pointer;
-  typedef const value_type*           const_pointer;
+  typedef VertexHandle                    value_type;
+  typedef value_type&                     reference;
+  typedef const value_type&               const_reference;
+  typedef value_type*                     pointer;
+  typedef const value_type*               const_pointer;
 
   VertexIterator() : m_obj(NULL), m_hnd(-1) {}
 
@@ -33,7 +39,7 @@ public:
     , m_hnd(vit.m_hnd)
   {}
 
-  VertexIterator(const T* t, value_type val)
+  VertexIterator(const TopologicalObject* t, value_type val)
     : m_obj(t)
     , m_hnd(val)
   {}
@@ -55,17 +61,10 @@ public:
     return !(operator==(vit));
   }
 
-  VertexIterator& operator++ ()
-  {
-    m_hnd.__increment();
-    return *this;
-  }
+  VertexIterator& operator++ ();
 
-  VertexIterator& operator-- ()
-  {
-    m_hnd.__decrement();
-    return *this;
-  }
+  VertexIterator& operator-- ();
+
 
   reference operator* ()
   {
@@ -89,17 +88,17 @@ public:
 
 protected:
 
-  const T* m_obj;
+  const TopologicalObject* m_obj;
   value_type m_hnd;
 };
 
 /** Iterator over edges */
-template <class T>
+
 class EdgeIterator
 {
 public:
 
-  typedef typename T::edge_handle   value_type;
+  typedef EdgeHandle                value_type;
   typedef value_type&               reference;
   typedef const value_type&         const_reference;
   typedef value_type*               pointer;
@@ -112,7 +111,7 @@ public:
     , m_hnd(eit.m_hnd)
   {}
 
-  EdgeIterator(const T* t, value_type val)
+  EdgeIterator(const TopologicalObject* t, value_type val)
     : m_obj(t)
     , m_hnd(val)
   {}
@@ -134,17 +133,9 @@ public:
     return !(operator==(eit));
   }
 
-  EdgeIterator& operator++ ()
-  {
-    m_hnd.__increment();
-    return *this;
-  }
+  EdgeIterator& operator++ ();
 
-  EdgeIterator& operator-- ()
-  {
-    m_hnd.__decrement();
-    return *this;
-  }
+  EdgeIterator& operator-- ();
 
   reference operator* ()
   {
@@ -168,17 +159,16 @@ public:
 
 protected:
 
-  const T* m_obj;
+  const TopologicalObject* m_obj;
   value_type m_hnd;
 };
 
 /** Iterator over faces */
-template <class T>
 class FaceIterator
 {
 public:
 
-  typedef typename T::face_handle   value_type;
+  typedef FaceHandle                value_type;
   typedef value_type&               reference;
   typedef const value_type&         const_reference;
   typedef value_type*               pointer;
@@ -191,7 +181,7 @@ public:
     , m_hnd(fit.m_hnd)
   {}
 
-  FaceIterator(const T* t, value_type val)
+  FaceIterator(const TopologicalObject* t, value_type val)
     : m_obj(t)
     , m_hnd(val)
   {}
@@ -213,18 +203,10 @@ public:
     return !(operator==(fit));
   }
 
-  FaceIterator& operator++ ()
-  {
-    m_hnd.__increment();
-    return *this;
-  }
-
-  FaceIterator& operator-- ()
-  {
-    m_hnd.__decrement();
-    return *this;
-  }
-
+  FaceIterator& operator++ ();
+ 
+  FaceIterator& operator-- ();
+ 
   reference operator* ()
   {
     return m_hnd;
@@ -247,425 +229,327 @@ public:
 
 protected:
 
-  const T* m_obj;
+  const TopologicalObject* m_obj;
   value_type m_hnd;
 };
 
-/** Circulator over edges adjacent to a vertex */
-template <class T>
+/** Iterator over tetrahedra */
+class TetIterator
+{
+public:
+
+   typedef TetHandle                 value_type;
+   typedef value_type&               reference;
+   typedef const value_type&         const_reference;
+   typedef value_type*               pointer;
+   typedef const value_type*         const_pointer;
+
+   TetIterator() : m_obj(NULL), m_hnd(-1) {}
+
+   TetIterator(const TetIterator& tit)
+      : m_obj(tit.m_obj)
+      , m_hnd(tit.m_hnd)
+   {}
+
+   TetIterator(const TopologicalObject* t, value_type val)
+      : m_obj(t)
+      , m_hnd(val)
+   {}
+
+   TetIterator& operator= (const TetIterator& tit)
+   {
+      m_obj = tit.m_obj;
+      m_hnd = tit.m_hnd;
+      return *this;
+   }
+
+   bool operator== (const TetIterator& tit) const
+   {
+      return ((m_obj == tit.m_obj) && (m_hnd == tit.m_hnd));
+   }
+
+   bool operator!= (const TetIterator& tit) const
+   {
+      return !(operator==(tit));
+   }
+
+   TetIterator& operator++ ();
+   
+
+   TetIterator& operator-- ();
+  
+
+   reference operator* ()
+   {
+      return m_hnd;
+   }
+
+   const_reference operator* () const
+   {
+      return m_hnd;
+   }
+
+   pointer operator-> ()
+   {
+      return &m_hnd;
+   }
+
+   const_pointer operator-> () const
+   {
+      return &m_hnd;
+   }
+
+protected:
+
+   const TopologicalObject* m_obj;
+   value_type m_hnd;
+};
+
+
+/** Iterator over edges adjacent to a vertex */
 class VertexEdgeIterator
 {
 public:
 
-  typedef typename T::vertex_topology topology;
-  typedef typename T::edge_handle     edge_handle;
-  typedef typename T::vertex_handle   vertex_handle;
-  typedef edge_handle                 value_type;
+  typedef EdgeHandle                  value_type;
   typedef value_type&                 reference;
   typedef const value_type&           const_reference;
   typedef value_type*                 pointer;
   typedef const value_type*           const_pointer;
 
-  VertexEdgeIterator() : m_obj(NULL), m_hnd(-1), m_top(NULL), m_idx(0) {}
+  VertexEdgeIterator();
+  VertexEdgeIterator(const VertexEdgeIterator& veit);
+  VertexEdgeIterator(const TopologicalObject* t, const VertexHandle& vh);
 
-  VertexEdgeIterator(const VertexEdgeIterator& veit)
-    : m_obj(veit.m_obj)
-    , m_hnd(veit.m_hnd)
-    , m_top(veit.m_top)
-    , m_idx(0)
-  {}
+  VertexEdgeIterator& operator= (const VertexEdgeIterator& veit);
 
-  VertexEdgeIterator(const T* t, const vertex_handle& vh)
-    : m_obj(t)
-    , m_hnd(vh)
-    , m_top(&t->getVertexTopology(vh))
-    , m_idx(0)
-  {}
+  bool operator== (const VertexEdgeIterator& veit) const;
+  bool operator!= (const VertexEdgeIterator& veit) const;
 
-  VertexEdgeIterator& operator= (const VertexEdgeIterator& veit)
-  {
-    m_obj = veit.m_obj;
-    m_hnd = veit.m_hnd;
-    m_top = veit.m_top;
-    m_idx = veit.m_idx;
-    return *this;
-  }
+  VertexEdgeIterator& operator++ ();
+  VertexEdgeIterator& operator-- ();
 
-  bool operator== (const VertexEdgeIterator& veit) const
-  {
-    assert(m_top);
-    return ((m_obj == veit.m_obj)
-            && ((*m_top)[m_idx] == (*veit.m_top)[veit.m_idx]));
-  }
+  value_type operator* ();
 
-  bool operator!= (const VertexEdgeIterator& veit) const
-  {
-    return !(operator==(veit));
-  }
-
-  VertexEdgeIterator& operator++ ()
-  {
-    ++m_idx;
-    return *this;
-  }
-
-  VertexEdgeIterator& operator-- ()
-  {
-    --m_idx;
-    return *this;
-  }
-
-  reference operator* ()
-  {
-    assert(m_top);
-    return (*const_cast<topology*>(m_top))[m_idx];
-  }
-
-  const_reference operator* () const
-  {
-    assert(m_top);
-    return (*m_top)[m_idx];
-  }
-
-  pointer operator-> ()
-  {
-    assert(m_top);
-    return &(*m_top)[m_idx];
-  }
-
-  const_pointer operator-> () const
-  {
-    assert(m_top);
-    return &(*m_top)[m_idx];
-  }
-
-  operator bool() const
-  {
-    assert(m_top);
-    return m_idx < (*m_top).size();
-  }
+  operator bool() const;
 
 protected:
 
-  const T* m_obj;        ///< Pointer to the topological object
-  vertex_handle m_hnd;   ///< Handle to the vertex whose topology is being considered
-  const topology* m_top; ///< Pointer to connectivity information for vertex
-  size_t m_idx;          ///< Current index into topological information
+  const TopologicalObject* m_obj; ///< Pointer to the topological object
+  VertexHandle m_hnd;            ///< Handle to the vertex whose topology is being considered
+  size_t m_idx;                   ///< Current index into topological information
 };
 
-/** Circulator over vertices adjacent to an edge */
-template <class T>
+/** Iterator over vertices adjacent to an edge */
 class EdgeVertexIterator
 {
 public:
 
-  typedef typename T::edge_topology   topology;
-  typedef typename T::edge_handle     edge_handle;
-  typedef typename T::vertex_handle   vertex_handle;
-  typedef vertex_handle               value_type;
+  typedef VertexHandle               value_type;
   typedef value_type&                 reference;
   typedef const value_type&           const_reference;
   typedef value_type*                 pointer;
   typedef const value_type*           const_pointer;
 
-  EdgeVertexIterator() : m_obj(NULL), m_hnd(-1), m_top(NULL), m_idx(0) {}
+  EdgeVertexIterator();
+  EdgeVertexIterator(const EdgeVertexIterator& evit);
+  EdgeVertexIterator(const TopologicalObject* t, const EdgeHandle& eh);
+ 
+  EdgeVertexIterator& operator= (const EdgeVertexIterator& evit);
+ 
+  bool operator== (const EdgeVertexIterator& evit) const;
+  bool operator!= (const EdgeVertexIterator& evit) const;
+ 
+  EdgeVertexIterator& operator++ ();
+  EdgeVertexIterator& operator-- ();
+ 
+  value_type operator* ();
+ 
+  operator bool() const;
+ 
+protected:
 
-  EdgeVertexIterator(const EdgeVertexIterator& evit)
-    : m_obj(evit.m_obj)
-    , m_hnd(evit.m_hnd)
-    , m_top(evit.m_top)
-    , m_idx(0)
-  {}
+  const TopologicalObject* m_obj; ///< Pointer to topological object
+  EdgeHandle m_hnd;               ///< Handle to edge whose connectivity is being considered
+  size_t m_idx;                   ///< Current index into topology information
+  };
 
-  EdgeVertexIterator(const T* t, const edge_handle& eh)
-    : m_obj(t)
-    , m_hnd(eh)
-    , m_top(&t->getEdgeTopology(eh))
-    , m_idx(0)
-  {}
+//** Iterator over edges adjacent to a face */
+class FaceEdgeIterator
+{
+public:
 
-  EdgeVertexIterator& operator= (const EdgeVertexIterator& evit)
-  {
-    m_obj = evit.m_obj;
-    m_hnd = evit.m_hnd;
-    m_top = evit.m_top;
-    m_idx = evit.m_idx;
-    return *this;
-  }
+  typedef EdgeHandle                  value_type;
+  typedef value_type&                 reference;
+  typedef const value_type&           const_reference;
+  typedef value_type*                 pointer;
+  typedef const value_type*           const_pointer;
 
-  bool operator== (const EdgeVertexIterator& evit) const
-  {
-    assert(m_top);
-    assert(evit.m_top);
-    return ((m_obj == evit.m_obj)
-            && ((*m_top)[m_idx] == (*evit.m_top)[evit.m_idx]));
-  }
+  FaceEdgeIterator();
+  FaceEdgeIterator(const FaceEdgeIterator& evit);
+  FaceEdgeIterator(const TopologicalObject* t, const FaceHandle& eh);
 
-  bool operator!= (const EdgeVertexIterator& evit) const
-  {
-    return !(operator==(evit));
-  }
+  FaceEdgeIterator& operator= (const FaceEdgeIterator& evit);
 
-  EdgeVertexIterator& operator++ ()
-  {
-    ++m_idx;
-    return *this;
-  }
+  bool operator== (const FaceEdgeIterator& evit) const;
+  bool operator!= (const FaceEdgeIterator& evit) const;
 
-  EdgeVertexIterator& operator-- ()
-  {
-    --m_idx;
-    return *this;
-  }
+  FaceEdgeIterator& operator++ ();
+  FaceEdgeIterator& operator-- ();
 
-  reference operator* ()
-  {
-    assert(m_top);
-    return (*const_cast<topology*>(m_top))[m_idx];
-  }
+  value_type operator* ();
 
-  const_reference operator* () const
-  {
-    assert(m_top);
-    return (*m_top)[m_idx];
-  }
-
-  pointer operator-> ()
-  {
-    assert(m_top);
-    return &(*m_top)[m_idx];
-  }
-
-  const_pointer operator-> () const
-  {
-    assert(m_top);
-    return &(*m_top)[m_idx];
-  }
-
-  operator bool() const
-  {
-    assert(m_top);
-    return m_idx < (*m_top).size();
-  }
+  operator bool() const;
 
 protected:
 
-  const T* m_obj;        ///< Pointer to topological object
-  edge_handle m_hnd;     ///< Handle to edge whose connectivity is being considered
-  const topology* m_top; ///< Pointer to connectivity information for edge
-  size_t m_idx;          ///< Current index into topology information
+  const TopologicalObject* m_obj; ///< Pointer to topological object
+  FaceHandle m_hnd;               ///< Handle to face whose connectivity is being considered
+  EdgeHandle m_curEdge;         ///< Handle to current edge
+  int m_idx;                    ///< Index in the iterator, to prevent infinite cycling
 };
 
-/** Circulator over vertices in the one ring of a vertex */
-template <class T>
+/** Iterator over vertices in the one ring of a vertex */
 class VertexVertexIterator
 {
 public:
 
-  typedef typename T::vertex_topology topology;
-  typedef typename T::edge_handle     edge_handle;
-  typedef typename T::vertex_handle   vertex_handle;
-  typedef vertex_handle               value_type;
+  typedef VertexHandle               value_type;
   typedef value_type&                 reference;
   typedef const value_type&           const_reference;
   typedef value_type*                 pointer;
   typedef const value_type*           const_pointer;
 
-  VertexVertexIterator() : m_obj(NULL), m_hnd(-1), m_top(NULL), m_idx(0) {}
+  VertexVertexIterator();
+  VertexVertexIterator(const VertexVertexIterator& vvit);
+  VertexVertexIterator(const TopologicalObject* t, const VertexHandle& vh);
 
-  VertexVertexIterator(const VertexVertexIterator& vvit)
-    : m_obj(vvit.m_obj)
-    , m_hnd(vvit.m_hnd)
-    , m_top(vvit.m_top)
-    , m_idx(0)
-  {}
+  VertexVertexIterator& operator= (const VertexVertexIterator& vvit);
 
-  VertexVertexIterator(const T* t, const vertex_handle& vh)
-    : m_obj(t)
-    , m_hnd(vh)
-    , m_top(&t->getVertexTopology(vh))
-    , m_idx(0)
-  {}
+  bool operator== (const VertexVertexIterator& vvit) const;
+  bool operator!= (const VertexVertexIterator& vvit) const;
 
-  VertexVertexIterator& operator= (const VertexVertexIterator& vvit)
-  {
-    m_obj = vvit.m_obj;
-    m_hnd = vvit.m_hnd;
-    m_top = vvit.m_top;
-    m_idx = vvit.m_idx;
-    return *this;
-  }
+  VertexVertexIterator& operator++ ();
+  VertexVertexIterator& operator-- ();
+ 
+  value_type operator* ();
 
-  bool operator== (const VertexVertexIterator& vvit) const
-  {
-    assert(m_top);
-    assert(vvit.mtop);
-    return ((m_obj == vvit.m_obj)
-            && ((*m_top)[m_idx] == (*vvit.m_top)[vvit.m_idx]));
-  }
-
-  bool operator!= (const VertexVertexIterator& vvit) const
-  {
-    return !(operator==(vvit));
-  }
-
-  VertexVertexIterator& operator++ ()
-  {
-    ++m_idx;
-    return *this;
-  }
-
-  VertexVertexIterator& operator-- ()
-  {
-    --m_idx;
-    return *this;
-  }
-
-  reference operator* ()
-  {
-    assert(m_top);
-    edge_handle& eh = (*const_cast<topology*>(m_top))[m_idx];
-    m_target = m_obj->fromVertex(eh);
-    if (m_target == m_hnd) m_target = m_obj->toVertex(eh);
-    return m_target;
-  }
-
-  const_reference operator* () const
-  {
-    assert(m_top);
-    const edge_handle& eh = (*m_top)[m_idx];
-    m_target = m_obj->fromVertex(eh);
-    if (m_target == m_hnd) m_target = m_obj->toVertex(eh);
-    return m_target;
-  }
-
-  pointer operator-> ()
-  {
-    return &(this->operator*());
-  }
-
-  const_pointer operator-> () const
-  {
-    return &(this->operator*());
-  }
-
-  operator bool() const
-  {
-    assert(m_top);
-    return m_idx < (*m_top).size();
-  }
+  operator bool() const;
 
 protected:
 
-  const T* m_obj;         ///< Pointer to topological object
-  vertex_handle m_hnd;    ///< Handle to vertex whose one-ring is being considered
-  vertex_handle m_target; ///< Handle to vertex that dereference oprator returns
-  const topology* m_top;  ///< Pointer to connectivity information for edge
-  size_t m_idx;           ///< Current index into topology information
+  const TopologicalObject* m_obj;   ///< Pointer to topological object
+  VertexHandle m_hnd;               ///< Handle to vertex whose one-ring is being considered
+  size_t m_idx;                     ///< Current index into topology information
 };
 
-/** Circulator over vertices adjacent to a face */
-template <class T>
+/** Iterator over vertices adjacent to a face */
 class FaceVertexIterator
 {
 public:
 
-  typedef typename T::face_topology   topology;
-  typedef typename T::face_handle     face_handle;
-  typedef typename T::vertex_handle   vertex_handle;
-  typedef vertex_handle               value_type;
+  typedef VertexHandle               value_type;
   typedef value_type&                 reference;
   typedef const value_type&           const_reference;
   typedef value_type*                 pointer;
   typedef const value_type*           const_pointer;
 
-  FaceVertexIterator() : m_obj(NULL), m_hnd(-1), m_top(NULL), m_idx(0) {}
+  FaceVertexIterator();
+  FaceVertexIterator(const FaceVertexIterator& vfit);
+  FaceVertexIterator(const TopologicalObject* t, const FaceHandle& fh);
 
-  FaceVertexIterator(const FaceVertexIterator& vfit)
-    : m_obj(vfit.m_obj)
-    , m_hnd(vfit.m_hnd)
-    , m_top(vfit.m_top)
-    , m_idx(0)
-  {}
+  FaceVertexIterator& operator= (const FaceVertexIterator& vfit);
 
-  FaceVertexIterator(const T* t, const face_handle& fh)
-    : m_obj(t)
-    , m_hnd(fh)
-    , m_top(&t->getFaceTopology(fh))
-    , m_idx(0)
-  {}
+  bool operator== (const FaceVertexIterator& vfit) const;
+  bool operator!= (const FaceVertexIterator& vfit) const;
+ 
+  FaceVertexIterator& operator++ ();
+  FaceVertexIterator& operator-- ();
 
-  FaceVertexIterator& operator= (const FaceVertexIterator& vfit)
-  {
-    m_obj = vfit.m_obj;
-    m_hnd = vfit.m_hnd;
-    m_top = vfit.m_top;
-    m_idx = vfit.m_idx;
-    return *this;
-  }
+  value_type operator* ();
 
-  bool operator== (const FaceVertexIterator& vfit) const
-  {
-    assert(m_top);
-    assert(vfit.m_top);
-    return ((m_obj == vfit.m_obj)
-            && ((*m_top)[m_idx] == (*vfit.m_top)[vfit.m_idx]));
-  }
+  operator bool() const;
+  
+protected:
+  FaceEdgeIterator m_feit;
+  const TopologicalObject* m_obj;
+  FaceHandle m_hnd;
+  /*
+  const TopologicalObject* m_obj;        ///< Pointer to topological object
+  FaceHandle m_hnd;     ///< Handle to face whose connectivity is being considered
+  size_t m_idx;          ///< Current index into topology information
+  */
+};
 
-  bool operator!= (const FaceVertexIterator& vfit) const
-  {
-    return !(operator==(vfit));
-  }
+/** Iterator over faces adjacent to a vertex */
+class VertexFaceIterator
+{
+public:
 
-  FaceVertexIterator& operator++ ()
-  {
-    ++m_idx;
-    return *this;
-  }
+  typedef FaceHandle                  value_type;
+  typedef value_type&                 reference;
+  typedef const value_type&           const_reference;
+  typedef value_type*                 pointer;
+  typedef const value_type*           const_pointer;
 
-  FaceVertexIterator& operator-- ()
-  {
-    --m_idx;
-    return *this;
-  }
+  VertexFaceIterator();
+  VertexFaceIterator(const VertexFaceIterator& vfit);
+  VertexFaceIterator(const TopologicalObject* t, const VertexHandle& fh);
 
-  reference operator* ()
-  {
-    assert(m_top);
-    return (*const_cast<topology*>(m_top))[m_idx];
-  }
 
-  const_reference operator* () const
-  {
-    assert(m_top);
-    return (*m_top)[m_idx];
-  }
+  VertexFaceIterator& operator= (const VertexFaceIterator& vfit);
 
-  pointer operator-> ()
-  {
-    assert(m_top);
-    return &(*m_top)[m_idx];
-  }
+  bool operator== (const VertexFaceIterator& vfit) const;
+  bool operator!= (const VertexFaceIterator& vfit) const;
 
-  const_pointer operator-> () const
-  {
-    assert(m_top);
-    return &(*m_top)[m_idx];
-  }
+  VertexFaceIterator& operator++ ();
+  VertexFaceIterator& operator-- ();
 
-  operator bool() const
-  {
-    assert(m_top);
-    return m_idx < (*m_top).size();
-  }
+  value_type operator* ();
+
+  operator bool() const;
 
 protected:
 
-  const T* m_obj;        ///< Pointer to topological object
-  face_handle m_hnd;     ///< Handle to face whose connectivity is being considered
-  const topology* m_top; ///< Pointer to connectivity information for face
+  const TopologicalObject* m_obj;        ///< Pointer to topological object
+  VertexHandle m_hnd;     ///< Handle to vertex whose connectivity is being considered
   size_t m_idx;          ///< Current index into topology information
 };
+
+/** Iterator over edges adjacent to a vertex */
+class EdgeFaceIterator
+{
+public:
+
+  typedef FaceHandle                  value_type;
+  typedef value_type&                 reference;
+  typedef const value_type&           const_reference;
+  typedef value_type*                 pointer;
+  typedef const value_type*           const_pointer;
+
+  EdgeFaceIterator();
+  EdgeFaceIterator(const EdgeFaceIterator& efit);
+  EdgeFaceIterator(const TopologicalObject* t, const EdgeHandle& eh);
+
+  EdgeFaceIterator& operator= (const EdgeFaceIterator& veit);
+
+  bool operator== (const EdgeFaceIterator& veit) const;
+  bool operator!= (const EdgeFaceIterator& veit) const;
+
+  EdgeFaceIterator& operator++ ();
+  EdgeFaceIterator& operator-- ();
+
+  value_type operator* ();
+
+  operator bool() const;
+
+protected:
+
+  const TopologicalObject* m_obj; ///< Pointer to the topological object
+  EdgeHandle m_hnd;               ///< Handle to the edge whose topology is being considered
+  size_t m_idx;                   ///< Current index into topological information
+};
+
 
 } // namespace BASim
 
