@@ -10,6 +10,7 @@ typedef double Scalar;
 #include "SymmetricImplicitEuler.hh"
 #include "../Physics/ElasticRods/MultipleRodTimeStepper.hh"
 #include "../Physics/ElasticRods/RodTimeStepper.hh"
+#include "../Physics/DeformableObjects/DefoObjTimeStepper.hh"
 
 namespace BASim
 {
@@ -232,7 +233,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
         m_A->finalize();
 
         // Finalize the nonzero structure before the linear solve (for sparse matrices only)
-        m_A->finalizeNonzeros();
+        //m_A->finalizeNonzeros();
         assert(isSymmetric(*m_A));
         STOP_TIMER("SymmetricImplicitEuler::position_solve/setup");
 
@@ -415,5 +416,6 @@ bool SymmetricImplicitEuler<ODE>::generateInitialIterate0(VecXd& dx)
 // Explicit template instantiations
 template class SymmetricImplicitEuler<RodTimeStepper> ;
 template class SymmetricImplicitEuler<MultipleRodTimeStepper> ;
+template class SymmetricImplicitEuler<DefoObjTimeStepper> ;
 
 }

@@ -34,6 +34,15 @@ public:
   int zeroRows(const IntArray& idx, Scalar diag = 1.0);
   int multiply(VecXd& y, Scalar s, const VecXd& x) const;
 
+  //junk from the rods side of things - stubs for now
+  void vertexStencilAdd(int start, const Eigen::Matrix<Scalar, 11, 11>& localJ) {}
+  void edgeStencilAdd(int start, const Eigen::Matrix<Scalar, 6, 6>& localJ) {}
+  void pointStencilAdd(int start, const Eigen::Matrix<Scalar, 3, 3>& localJ) {}
+
+  int zeroCols(const IntArray& idx, Scalar diag);
+  bool isApproxSymmetric( Scalar eps ) const;
+  std::string name() const;
+
   /*
   template <class IndexArray, class ValueMatrix>
   int addValues(IndexArray& rowIdx, IndexArray& colIdx, ValueMatrix& vals);
@@ -60,6 +69,7 @@ public:
   //int assemble();
 
   int finalize();
+  int finalizeNonzeros();
 
   const Mat& getPetscMatrix() const { return m_M; }
   Mat& getPetscMatrix() { return m_M; }

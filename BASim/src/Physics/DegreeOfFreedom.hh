@@ -18,7 +18,7 @@ class DofHandle : public HandleBase
 public:
 
   /// Degrees of freedom can be associated to vertices, edges
-  enum Type { VERTEX_DOF, EDGE_DOF };
+  enum Type { VERTEX_DOF, EDGE_DOF, FACE_DOF, TET_DOF };
 
   explicit DofHandle(int idx = -1)
     : HandleBase(idx)

@@ -383,3 +383,108 @@ inline ElasticRod::edge_handle ElasticRod::outEdge(const vertex_handle& vh) cons
     //const vertex_topology& vt = getVertexTopology(vh);
     //return vt[1];
 }
+
+inline const Scalar& ElasticRod::getDof(int i) const
+{
+   const DofHandle& handle = m_map.getDof(i);
+
+   if (handle.getType() == DofHandle::VERTEX_DOF) {
+      const vertex_handle& vh
+         = static_cast<const vertex_handle&>(handle.getHandle());
+      return getVertexDof(vh, handle.getNum());
+
+   } else {
+      const edge_handle& eh
+         = static_cast<const edge_handle&>(handle.getHandle());
+      return getEdgeDof(eh, handle.getNum());
+
+   }
+}
+
+inline void ElasticRod::setDof(int i, const Scalar& dof)
+{
+   const DofHandle& handle = m_map.getDof(i);
+
+   if (handle.getType() == DofHandle::VERTEX_DOF) {
+      const vertex_handle& vh
+         = static_cast<const vertex_handle&>(handle.getHandle());
+      setVertexDof(vh, handle.getNum(), dof);
+
+   } else {
+      const edge_handle& eh
+         = static_cast<const edge_handle&>(handle.getHandle());
+      setEdgeDof(eh, handle.getNum(), dof);
+
+   }
+}
+
+inline const Scalar& ElasticRod::getVel(int i) const
+{
+   const DofHandle& handle = m_map.getDof(i);
+
+   if (handle.getType() == DofHandle::VERTEX_DOF) {
+      const vertex_handle& vh
+         = static_cast<const vertex_handle&>(handle.getHandle());
+      return getVertexVel(vh, handle.getNum());
+
+   } else {
+      const edge_handle& eh
+         = static_cast<const edge_handle&>(handle.getHandle());
+      return getEdgeVel(eh, handle.getNum());
+
+   }
+}
+
+inline void ElasticRod::setVel(int i, const Scalar& dof)
+{
+   const DofHandle& handle = m_map.getDof(i);
+
+   if (handle.getType() == DofHandle::VERTEX_DOF) {
+      const vertex_handle& vh
+         = static_cast<const vertex_handle&>(handle.getHandle());
+      setVertexVel(vh, handle.getNum(), dof);
+
+   } else {
+      const edge_handle& eh
+         = static_cast<const edge_handle&>(handle.getHandle());
+      setEdgeVel(eh, handle.getNum(), dof);
+
+   }
+}
+
+
+inline const Scalar& ElasticRod::getMass(int i) const
+{
+  const DofHandle& handle = m_map.getDof(i);
+
+  if (handle.getType() == DofHandle::VERTEX_DOF) {
+    const vertex_handle& vh
+      = static_cast<const vertex_handle&>(handle.getHandle());
+    return getVertexMass(vh, handle.getNum());
+
+  } else {
+    const edge_handle& eh
+      = static_cast<const edge_handle&>(handle.getHandle());
+    return getEdgeMass(eh, handle.getNum());
+
+  }
+}
+/*
+inline void ElasticRod::setMass(int i, const Scalar& dof)
+{
+  const DofHandle& handle = m_map.getDof(i);
+
+  if (handle.getType() == DofHandle::VERTEX_DOF) {
+    const vertex_handle& vh
+      = static_cast<const vertex_handle&>(handle.getHandle());
+    setVertexMass(vh, handle.getNum(), dof);
+
+  } else {
+    const edge_handle& eh
+      = static_cast<const edge_handle&>(handle.getHandle());
+    setEdgeMass(eh, handle.getNum(), dof);
+
+  }
+}
+*/
+

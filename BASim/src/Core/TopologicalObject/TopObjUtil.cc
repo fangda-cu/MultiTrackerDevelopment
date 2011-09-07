@@ -228,6 +228,17 @@ bool getEdgeOppositeVertices(const TopologicalObject& obj, const EdgeHandle& eh,
   return true;
 }
 
+bool getFaceThirdVertex(const TopologicalObject& obj, const FaceHandle& fh, const EdgeHandle&eh, VertexHandle& vertex) {
+   //assumes edge eh if one of the edges of face fh
+   for(FaceVertexIterator fvit = obj.fv_iter(fh); fvit; ++fvit) {
+      if(*fvit  != obj.fromVertex(eh) && *fvit != obj.toVertex(eh)) {
+         vertex = *fvit;
+         return true;
+      }
+   }
+   return false;
+}
+
 void sanityCheckTopology(TopologicalObject& obj) {
   
   for(EdgeIterator e_it = obj.edges_begin(); e_it != obj.edges_end(); ++e_it) {

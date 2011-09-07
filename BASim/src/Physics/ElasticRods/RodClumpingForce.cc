@@ -9,6 +9,7 @@
 #include "../../Collisions/CollisionUtils.hh"
 #include "RodClumpingForce.hh"
 #include <limits>
+#include "BASim/src/Math/MatrixBase.hh"
 
 namespace BASim
 {

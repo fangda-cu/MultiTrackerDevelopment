@@ -116,7 +116,7 @@ void ElasticRod::setup()
   computeMaterialDirectors();
   computeVertexMasses();
   if (!quasistatic()) computeEdgeInertias();
-  property(m_ndof) = 3 * nv() + ne();
+  m_ndof = 3 * nv() + ne();
 
   // Add elastic forces
   addForce(m_stretchingForce = new RodStretchingForce(*this));
@@ -531,7 +531,7 @@ void ElasticRod::setupDofIndices()
             handle.setType(DofHandle::VERTEX_DOF);
             handle.setHandle(*vit);
             handle.setNum(j);
-            property(m_map).addMapping(handle, 4 * i + j);
+            m_map.addMapping(handle, 4 * i + j);
         }
     }
 
@@ -544,7 +544,7 @@ void ElasticRod::setupDofIndices()
         handle.setType(DofHandle::EDGE_DOF);
         handle.setHandle(*eit);
         handle.setNum(0);
-        property(m_map).addMapping(handle, 4 * i + 3);
+        m_map.addMapping(handle, 4 * i + 3);
     }
 }
 

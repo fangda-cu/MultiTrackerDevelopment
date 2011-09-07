@@ -118,6 +118,42 @@ inline int PetscMatrix::multiply(VecXd& y, Scalar s, const VecXd& x) const
 
   return 0;
 }
+
+inline int PetscMatrix::zeroCols(const IntArray& idx, Scalar diag) 
+{
+   if(idx.size() == 0) 
+      return 0;
+
+   //Set it to ignore any attempts to create new non-zero entries
+   int ierr = MatSetOption(m_M, MAT_NEW_NONZERO_LOCATIONS, PETSC_FALSE);
+   CHKERRQ(ierr);
+   for(int row = 0; row < m_rows; ++row) {
+      for(unsigned int i = 0; i < idx.size(); ++i)  {
+         if(row != idx[i]) 
+            ierr = MatSetValue(m_M, row, idx[i], 0, INSERT_VALUES);
+         else
+            ierr = MatSetValue(m_M, row, idx[i], diag, INSERT_VALUES);
+         CHKERRQ(ierr);
+      }
+   }
+   ierr = MatSetOption(m_M, MAT_NEW_NONZERO_LOCATIONS, PETSC_TRUE);
+   CHKERRQ(ierr);
+
+   return 0;
+}
+
+inline bool PetscMatrix::isApproxSymmetric( Scalar eps ) const 
+{
+   PetscTruth result;
+   MatIsSymmetric(m_M, eps, &result);
+   return result != 0;
+}
+
+inline std::string PetscMatrix::name() const
+{
+   return "PetscMatrix";
+}
+
 /*
 
   int PetscMatrix::diagonalScale(VecXd& a)
@@ -209,7 +245,7 @@ inline int PetscMatrix::setZero()
 
 inline int PetscMatrix::zeroRows(const IntArray& idx, Scalar diag)
 {
-  MatSetOption(m_M, MAT_KEEP_ZEROED_ROWS, PETSC_TRUE);
+  MatSetOption(m_M, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
   int ierr = MatZeroRows(m_M, idx.size(), &idx[0], diag);
   CHKERRQ(ierr);
   return 0;
@@ -227,13 +263,21 @@ inline int PetscMatrix::zeroRows(const IntArray& idx, Scalar diag)
 
 inline int PetscMatrix::finalize()
 {
-  int ierr = MatAssemblyBegin(m_M, MAT_FINAL_ASSEMBLY);
-  CHKERRQ(ierr);
-  ierr = MatAssemblyEnd(m_M, MAT_FINAL_ASSEMBLY);
-  CHKERRQ(ierr);
-  ierr = MatSetOption(m_M, MAT_NEW_NONZERO_LOCATIONS, PETSC_FALSE);
-  CHKERRQ(ierr);
-  ierr = MatSetOption(m_M, MAT_NEW_NONZERO_LOCATION_ERR, PETSC_TRUE);
-  CHKERRQ(ierr);
-  return 0;
+   int ierr = MatAssemblyBegin(m_M, MAT_FINAL_ASSEMBLY);
+   CHKERRQ(ierr);
+   ierr = MatAssemblyEnd(m_M, MAT_FINAL_ASSEMBLY);
+   CHKERRQ(ierr);
+   return 0;
+}
+
+inline int PetscMatrix::finalizeNonzeros() {
+   int ierr = MatAssemblyBegin(m_M, MAT_FINAL_ASSEMBLY);
+   CHKERRQ(ierr);
+   ierr = MatAssemblyEnd(m_M, MAT_FINAL_ASSEMBLY);
+   CHKERRQ(ierr);
+   ierr = MatSetOption(m_M, MAT_NEW_NONZERO_LOCATIONS, PETSC_FALSE);
+   CHKERRQ(ierr);
+   ierr = MatSetOption(m_M, MAT_NEW_NONZERO_LOCATION_ERR, PETSC_TRUE);
+   CHKERRQ(ierr);
+   return 0;
 }

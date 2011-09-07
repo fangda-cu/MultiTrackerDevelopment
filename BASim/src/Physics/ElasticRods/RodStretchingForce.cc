@@ -7,6 +7,7 @@
 
 #include "RodStretchingForce.hh"
 #include "../../Math/Math.hh"
+#include "BASIM/src/Math/MatrixBase.hh"
 
 #ifdef TEST_ROD_STRETCHING
 #include "BASim/src/Physics/ElasticRods/Tests/RodStretchingTest.hh"

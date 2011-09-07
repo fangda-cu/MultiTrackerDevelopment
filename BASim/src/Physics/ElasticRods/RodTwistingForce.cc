@@ -7,6 +7,7 @@
 
 #include "RodTwistingForce.hh"
 #include "../../Math/Math.hh"
+#include "BASim/src/Math/MatrixBase.hh"
 
 #ifdef TEST_ROD_TWISTING
 #include "BASim/src/Physics/ElasticRods/Tests/RodTwistingTest.hh"

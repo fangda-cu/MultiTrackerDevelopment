@@ -7,6 +7,7 @@
 
 #include "GaussianVolumetricForce.hh"
 #include "ElasticRod.hh"
+#include "BASIM/src/Math/MatrixBase.hh"
 
 namespace BASim
 {

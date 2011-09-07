@@ -30,6 +30,7 @@ public:
 
   virtual Vec3d calculateObjectCenter();
   virtual Scalar calculateObjectBoundingRadius(const Vec3d& center);
+  void cycleMode();
 
 protected:
 

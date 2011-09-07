@@ -12,6 +12,10 @@ SpringRenderer::~SpringRenderer()
 {
 }
 
+void SpringRenderer::cycleMode() {
+
+}
+
 void SpringRenderer::render()
 {
   const Vec3d& vert0 = m_spring.getVertexA();

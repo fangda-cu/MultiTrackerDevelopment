@@ -12,6 +12,7 @@
 #else
 #include "BASim/src/Physics/ElasticRods/RodBendingForceSym.hh"
 #include "BASim/src/Math/Math.hh"
+#include "BASim/src/Math/MatrixBase.hh"
 #endif
 
 using namespace std;

@@ -7,6 +7,7 @@
 #else
 #include "BASim/src/Math/Math.hh"
 #endif
+#include "BASim/src/Math/MatrixBase.hh"
 
 #include "../../Util/TextLog.hh"
 

@@ -54,6 +54,8 @@ public:
   virtual Vec3d calculateObjectCenter() = 0;
   virtual Scalar calculateObjectBoundingRadius(const Vec3d& center) = 0;
 
+  virtual void cycleMode() {}
+
 protected:
 
   void setNormalArray();

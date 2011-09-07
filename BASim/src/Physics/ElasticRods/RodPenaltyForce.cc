@@ -3,6 +3,8 @@
 
 //#include "BASim/src/Collisions/CollisionMeshData.hh"
 #include "RodPenaltyForce.hh"
+#include "BASim/src/Math/MatrixBase.hh"
+
 #ifdef WETA
 #include "../../Math/Math.hh"
 #else

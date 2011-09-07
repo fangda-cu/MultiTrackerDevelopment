@@ -31,6 +31,8 @@ public:
   DrawMode getMode() const { return m_mode; }
   void setMode(DrawMode mode) { m_mode = mode; }
 
+  void cycleMode();
+  
   bool& drawRod() { return m_drawRod; }
   bool& drawMaterial() { return m_drawMaterial; }
   bool& drawRootMaterial() { return m_drawRootMaterial; }

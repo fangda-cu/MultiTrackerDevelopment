@@ -12,7 +12,7 @@ namespace BASim
 {
 
 RodRenderer::RodRenderer( ElasticRod& rod ) :
-    m_rod( rod ), m_tube( m_rod ), m_mode( SMOOTH ), m_drawRod( true ), m_drawMaterial( false ),
+    m_rod( rod ), m_tube( m_rod ), m_mode( SIMPLE ), m_drawRod( true ), m_drawMaterial( false ),
             m_drawRootMaterial( true ), m_drawReference( false ), m_scaleToRadius( true ),
             m_drawArrows( false ), m_drawVelocity( false ), m_drawResponse( false )
 {
@@ -32,6 +32,10 @@ RodRenderer::RodRenderer( ElasticRod& rod ) :
     //root and tip color for simple mode
     m_simpleRod.push_back( Color( 0, 0, 0 ) );
     m_simpleRod.push_back( Color( 155, 200, 100 ) );
+}
+
+void RodRenderer::cycleMode() { 
+  m_mode = (RodRenderer::DrawMode) ((m_mode + 1) % 3); 
 }
 
 void RodRenderer::render()

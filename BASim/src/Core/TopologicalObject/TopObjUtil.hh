@@ -25,6 +25,8 @@ EdgeHandle flipEdge(TopologicalObject& obj, const EdgeHandle& h);
 
 bool getEdgeOppositeVertices(const TopologicalObject& obj, const EdgeHandle& eh, VertexHandle& v0, VertexHandle& v1);
 
+bool getFaceThirdVertex(const TopologicalObject& obj, const FaceHandle& fh, const EdgeHandle&eh, VertexHandle& vertex);
+
 bool isVertexOnBoundary(TopologicalObject& obj, VertexHandle& v);
 
 void sanityCheckTopology(TopologicalObject& obj);

@@ -8,12 +8,12 @@
 #ifndef PHYSOBJECT_HH
 #define PHYSOBJECT_HH
 
-#include "../Core/TopologicalObject/TopologicalObject.hh"
-#include "DegreeOfFreedom.hh"
-#include "../Math/MatrixBase.hh"
+#include "BASim/src/Core/TopologicalObject/TopologicalObject.hh"
+#include "BASim/src/Physics/DegreeOfFreedom.hh"
 
 namespace BASim {
-//class MatrixBase;
+
+class MatrixBase;
 
 /** Base class for physics objects. Provides an array-like interface
     to the degrees of freedom of the object. Derived classes and/or
@@ -42,57 +42,15 @@ public:
 
   //@{
 
-  virtual const Scalar& getDof(int i) const;
-  virtual void setDof(int i, const Scalar& dof);
+  virtual const Scalar& getDof(int i) const = 0;
+  virtual void setDof(int i, const Scalar& dof) = 0;
 
-  virtual const Scalar& getVel(int i) const;
-  virtual void setVel(int i, const Scalar& vel);
+  virtual const Scalar& getVel(int i) const = 0;
+  virtual void setVel(int i, const Scalar& vel) = 0;
 
-  virtual const Scalar& getMass(int i) const;
-  virtual void setMass(int i, const Scalar& mass);
+  virtual const Scalar& getMass(int i) const = 0;
+  //virtual void setMass(int i, const Scalar& mass) = 0;
 
-  //@}
-
-  /** Getting and setting vertex, edge degrees of freedom, velocities,
-      and masses */
-
-  //@{
-
-  virtual const Scalar&
-  getVertexDof(const vertex_handle& vh, int num) const = 0;
-
-  virtual void
-  setVertexDof(const vertex_handle& vh, int num, const Scalar& dof) = 0;
-
-  virtual const Scalar&
-  getEdgeDof(const edge_handle& eh, int num) const = 0;
-
-  virtual void
-  setEdgeDof(const edge_handle& eh, int num, const Scalar& dof) = 0;
-
-  virtual const Scalar&
-  getVertexVel(const vertex_handle& vh, int num) const = 0;
-
-  virtual void
-  setVertexVel(const vertex_handle& vh, int num, const Scalar& vel) = 0;
-
-  virtual const Scalar&
-  getEdgeVel(const edge_handle& eh, int num) const = 0;
-
-  virtual void
-  setEdgeVel(const edge_handle& eh, int num, const Scalar& vel) = 0;
-
-  virtual const Scalar&
-  getVertexMass(const vertex_handle& vh, int num) const = 0;
-
-  virtual void
-  setVertexMass(const vertex_handle& vh, int num, const Scalar& mass) = 0;
-
-  virtual const Scalar&
-  getEdgeMass(const edge_handle& eh, int num) const = 0;
-
-  virtual void
-  setEdgeMass(const edge_handle& eh, int num, const Scalar& mass) = 0;
 
   //@}
 
@@ -101,16 +59,19 @@ public:
   //@{
 
   virtual void computeForces(VecXd& force) {}
-  // virtual void computeJacobian(MatrixBase& J) {}
-
+  virtual void computeJacobian(MatrixBase& J) {}
+  
   //@}
 
+  void addMapping(const DofHandle& dof, int index) { m_map.addMapping(dof, index); ++m_ndof;}
+  
 protected:
-
-  ObjPropHandle<int> m_ndof;   ///< number of degrees of freedom
-  ObjPropHandle<DOFMap> m_map; ///< mapping from indices to degrees of freedom
-
+  
+  int m_ndof; ///< number of degrees of freedom
+  DOFMap m_map; ///< mapping from indices to degrees of freedom
+  
 };
+
 
 /** Handle for referring to a PhysObject. */
 class PhysObjectHandle : public HandleBase

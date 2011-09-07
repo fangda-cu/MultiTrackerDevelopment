@@ -49,6 +49,15 @@ public:
     virtual void computeConservativeForcesEnergy(VecXd& force, Scalar& energy);
     virtual void computeJacobian(int baseidx, Scalar scale, MatrixBase& J);
 
+    virtual const Scalar& getDof(int i) const;
+    virtual void setDof(int i, const Scalar& dof);
+
+    virtual const Scalar& getVel(int i) const;
+    virtual void setVel(int i, const Scalar& vel);
+
+    virtual const Scalar& getMass(int i) const;
+    //virtual void setMass(int i, const Scalar& mass);
+
     virtual const Scalar&
     getVertexDof(const vertex_handle& vh, int num) const;
 

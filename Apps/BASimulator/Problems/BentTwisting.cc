@@ -69,6 +69,9 @@ void BentTwisting::Setup()
   m_world->addObject(rod);
   m_world->addController(stepper);
   
+  RenderBase* rodRender = new RodRenderer(*rod);
+  m_world->addRenderer(rodRender);
+
   RodState statebackup;
   //statebackup.copyState( *rod );
   //statebackup.print(*rod);  

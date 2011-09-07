@@ -631,18 +631,22 @@ void menu(int id)
 
     case 'm':
     {
-        for (int i = 0; i < (int) rod_renderers.size(); ++i)
-        {
-            RodRenderer::DrawMode mode = rod_renderers[i]->getMode();
-            mode = (RodRenderer::DrawMode) ((mode + 1) % RodRenderer::NONE);
-            rod_renderers[i]->setMode(mode);
-        }
-        for (int i = 0; i < (int) triangle_mesh_renderers.size(); ++i)
-        {
-            TriangleMeshRenderer::DrawMode mode = triangle_mesh_renderers[i]->getMode();
-            mode = (TriangleMeshRenderer::DrawMode) ((mode + 1) % TriangleMeshRenderer::NONE);
-            triangle_mesh_renderers[i]->setMode(mode);
-        }
+       
+       for(unsigned int i = 0; i < renderable_objects.size(); ++i)
+          renderable_objects[i]->cycleMode();
+
+       //for (int i = 0; i < (int) rod_renderers.size(); ++i)
+       // {
+       //     RodRenderer::DrawMode mode = rod_renderers[i]->getMode();
+       //     mode = (RodRenderer::DrawMode) ((mode + 1) % RodRenderer::NONE);
+       //     rod_renderers[i]->setMode(mode);
+       // }
+       // for (int i = 0; i < (int) triangle_mesh_renderers.size(); ++i)
+       // {
+       //     TriangleMeshRenderer::DrawMode mode = triangle_mesh_renderers[i]->getMode();
+       //     mode = (TriangleMeshRenderer::DrawMode) ((mode + 1) % TriangleMeshRenderer::NONE);
+       //     triangle_mesh_renderers[i]->setMode(mode);
+       // }
         glutPostRedisplay();
         break;
     }
@@ -941,28 +945,28 @@ void RunProblem(int argc, char** argv)
         World& world = current_problem->getWorld();
         World::Objects& objects = world.getObjects();
 
-        for (World::Objects::const_iterator it = objects.begin(); it != objects.end(); ++it)
-        {
-            assert((*it) != NULL);
+        //for (World::Objects::const_iterator it = objects.begin(); it != objects.end(); ++it)
+        //{
+        //    assert((*it) != NULL);
 
-            ElasticRod* rod = dynamic_cast<ElasticRod*> (*it);
-            TriangleMesh* tripobj = dynamic_cast<TriangleMesh*> (*it);
+        //    ElasticRod* rod = dynamic_cast<ElasticRod*> (*it);
+        //    TriangleMesh* tripobj = dynamic_cast<TriangleMesh*> (*it);
 
-            if (rod)
-            {
-                rod_renderers.push_back(new RodRenderer(*rod));
-                renderable_objects.push_back(rod_renderers.back());
-            }
-            else if (tripobj)
-            {
-                triangle_mesh_renderers.push_back(new TriangleMeshRenderer(*tripobj));
-                renderable_objects.push_back(triangle_mesh_renderers.back());
-            }
-            else
-            {
-                std::cout << "Unknown object encountered" << std::endl;
-            }
-        }
+        //    if (rod)
+        //    {
+        //        rod_renderers.push_back(new RodRenderer(*rod));
+        //        renderable_objects.push_back(rod_renderers.back());
+        //    }
+        //    else if (tripobj)
+        //    {
+        //        triangle_mesh_renderers.push_back(new TriangleMeshRenderer(*tripobj));
+        //        renderable_objects.push_back(triangle_mesh_renderers.back());
+        //    }
+        //    else
+        //    {
+        //        std::cout << "Unknown object encountered" << std::endl;
+        //    }
+        //}
 
         World::Renderers& rndrs = world.getRenderers();
         for (World::Renderers::const_iterator renderitr = rndrs.begin(); renderitr != rndrs.end(); ++renderitr)

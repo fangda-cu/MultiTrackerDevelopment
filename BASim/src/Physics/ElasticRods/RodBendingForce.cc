@@ -6,7 +6,8 @@
  */
 #include "RodBendingForce.hh"
 #include "../../Math/Math.hh"
- 
+#include "../../Math/MatrixBase.hh"
+
 #ifdef TEST_ROD_BENDING
 #include "BASim/src/Physics/ElasticRods/Tests/RodBendingTest.hh"
 #endif // TEST_ROD_BENDING
