@@ -160,7 +160,7 @@ void RodAnisoForce::evalNablaKappa(Mat3d& nk, int i, int v)
 {
   assert(i > 0);
   assert(i < ((int) m_rod.nv())-1);
-  assert(fabs(i-v) <= 1);
+  assert(fabs((float)(i-v)) <= 1);
 
   nk = _nk[2*(i-1)+v];
 }
@@ -222,7 +222,7 @@ void RodAnisoForce::evalNablaPsi(Vec3d& np, int i, int v)
 {
   assert(i > 0);
   assert(i < ((int)m_rod.nv())-1);
-  assert(fabs(i-v) <= 1);
+  assert(fabs((float)(i-v)) <= 1);
 
   np += _np[2*(i-1) + v];
 }

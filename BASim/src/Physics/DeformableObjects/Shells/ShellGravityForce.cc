@@ -12,7 +12,7 @@ ShellGravityForce::ShellGravityForce( ElasticShell& shell, const std::string& na
 
 Scalar ShellGravityForce::globalEnergy() const
 {
-  //TODO: Given a plane as input, we can use the distance to the plane to determine the gravitational potential.
+  //TODO: Given a plane as input, we can use the distance to the plane to determine the gravitational potential. Yes?
   return 0;
 }
 
@@ -26,8 +26,9 @@ void ShellGravityForce::globalForce( VecXd& force ) const
     force[dofIdx] += m_gravity[0] * m_shell.getMass(vh);
     force[dofIdx+1] += m_gravity[1] * m_shell.getMass(vh);
     force[dofIdx+2] += m_gravity[2] * m_shell.getMass(vh);
+    
   }
-
+  
 }
 
 void ShellGravityForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) const

@@ -13,12 +13,17 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
   PhysicalModel(*object), m_obj(object), 
     m_active_faces(shellFaces), 
     m_undeformed_positions(object), 
+    m_undef_xi(object),
     m_damping_undeformed_positions(object), 
+    m_damping_undef_xi(object),
     m_vertex_masses(object),
+    m_edge_masses(object),
     m_thicknesses(object),
     m_volumes(object),
     m_positions(object), 
+    m_xi(object), 
     m_velocities(object),
+    m_xi_vel(object),
     m_thickness(0), m_density(1),
     m_proximity_epsilon(0.01)
 {
@@ -70,18 +75,7 @@ void ElasticShell::setThickness( Scalar thickness )
   m_thickness = thickness;
   for(FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit) {
     m_thicknesses[*fit] = thickness;
-
-    FaceVertexIterator fvit = m_obj->fv_iter(*fit);
-    VertexHandle v0_hnd = *fvit; ++fvit; assert(fvit);
-    VertexHandle v1_hnd = *fvit; ++fvit; assert(fvit);
-    VertexHandle v2_hnd = *fvit; ++fvit; assert(!fvit);
-
-    //compute triangle areas
-    Vec3d v0 = m_undeformed_positions[v1_hnd] - m_undeformed_positions[v0_hnd];
-    Vec3d v1 = m_undeformed_positions[v2_hnd] - m_undeformed_positions[v0_hnd];
-    Vec3d triVec = v0.cross(v1);
-    Scalar area = 0.5*triVec.norm();
-    
+    Scalar area = getArea(*fit, false);
     m_volumes[*fit] = thickness * area;
   }
 
@@ -106,17 +100,25 @@ void ElasticShell::setVertexVelocities( const VertexProperty<Vec3d>& velocities)
   m_velocities = velocities;
 }
 
-Scalar ElasticShell::getArea(const FaceHandle& f) const  {
+Scalar ElasticShell::getArea(const FaceHandle& f, bool current) const  {
   FaceVertexIterator fvit = m_obj->fv_iter(f);
   VertexHandle v0_hnd = *fvit; ++fvit; assert(fvit);
   VertexHandle v1_hnd = *fvit; ++fvit; assert(fvit);
   VertexHandle v2_hnd = *fvit; ++fvit; assert(!fvit);
 
   //compute triangle areas
-  Vec3d v0 = m_positions[v1_hnd] - m_positions[v0_hnd];
-  Vec3d v1 = m_positions[v2_hnd] - m_positions[v0_hnd];
-  Vec3d triVec = v0.cross(v1);
-  return 0.5*triVec.norm();
+  if(current) {
+    Vec3d v0 = m_positions[v1_hnd] - m_positions[v0_hnd];
+    Vec3d v1 = m_positions[v2_hnd] - m_positions[v0_hnd];
+    Vec3d triVec = v0.cross(v1);
+    return 0.5*triVec.norm();
+  }
+  else {
+    Vec3d v0 = m_undeformed_positions[v1_hnd] - m_undeformed_positions[v0_hnd];
+    Vec3d v1 = m_undeformed_positions[v2_hnd] - m_undeformed_positions[v0_hnd];
+    Vec3d triVec = v0.cross(v1);
+    return 0.5*triVec.norm();
+  }
 }
 
 void ElasticShell::computeMasses()
@@ -244,19 +246,27 @@ void ElasticShell::constrainVertex( const VertexHandle& v, const Vec3d& pos )
 void ElasticShell::startStep()
 {
    
+  
   //update the "reference configuration" for computing viscous forces.
   m_damping_undeformed_positions = m_positions;
 
 }
 
 void ElasticShell::endStep() {
-  
   updateThickness();
 
-  //recompute masses
+  
+  //remesh(0.2);  
+  //extendMesh();
+
   computeMasses();
   
-  remesh(0.05);
+  for(VertexIterator veit = m_obj->vertices_begin(); veit != m_obj->vertices_end(); ++veit) {
+    VertexHandle v = *veit;
+    Scalar mass = m_vertex_masses[v];
+    if(mass == 0)
+      std::cout << "Zero mass!\n";
+  }
 
   //check total volume
   Scalar total = 0;
@@ -267,12 +277,36 @@ void ElasticShell::endStep() {
 
   //recompute DOF indexing...
   m_obj->computeDofIndexing();
+
+
+  Scalar position = 0;
+  Scalar velocity = 0;
+  Scalar thickness = 0;
+  int count = 0;
+  for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
+    position += getVertexPosition(*(vit)).norm();
+    velocity += getVertexVelocity(*(vit)).norm();
+    ++count;
+  }
+  int count2 = 0;
+  for(FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit) {
+    thickness += m_thicknesses[*fit];
+    ++count2;
+  }
+  std::cout << "\n\nAverage radius: " << position/(Scalar)count << "\nAverage velocity: " << velocity/(Scalar)count << "\nAverage thickness: " << thickness/(Scalar)count2 << "\n\n" << std::endl;    
+  
+  for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
+    std::cout << "Radius: " << getVertexPosition(*(vit)).norm() << std::endl;
+    std::cout << "Velocity: " << getVertexVelocity(*(vit)).norm() <<std::endl;
+    std::cout << "Mass: " << m_vertex_masses[*vit] << std::endl;
+    break;
+  }
+  
 }
 
 void ElasticShell::remesh( Scalar desiredEdge )
 {
 
-  
   m_broad_phase.update_broad_phase_static(*m_obj, m_positions, m_proximity_epsilon);
   
   //Parameters adapted from Jiao et al. "Anisotropic Mesh Adaptation for Evolving Triangulated Surfaces"
@@ -305,7 +339,7 @@ bool ElasticShell::edgeFlipCausesCollision( const EdgeHandle& edge_index,
                                           const VertexHandle& new_end_a,
                                           const VertexHandle& new_end_b)
 {  
-  printf("Checking edge flip safety\n");
+  //printf("Checking edge flip safety\n");
   
   VertexHandle old_end_a = m_obj->fromVertex(edge_index);
   VertexHandle old_end_b = m_obj->toVertex(edge_index);
@@ -468,8 +502,8 @@ void ElasticShell::flipEdges() {
       Scalar totalVolume = m_volumes[f0] + m_volumes[f1];
 
       //check for collision safety
-      if(edgeFlipCausesCollision(eh, v2, v3))
-        continue;
+      //if(edgeFlipCausesCollision(eh, v2, v3))
+      //  continue;
 
       EdgeHandle newEdge = flipEdge(*m_obj, eh);
       if(!newEdge.isValid()) //couldn't flip the edge, such an edge already existed
@@ -494,8 +528,8 @@ void ElasticShell::flipEdges() {
       m_broad_phase.add_triangle(f1new.idx(), ElTopo::toElTopo(p2), ElTopo::toElTopo(p3), ElTopo::toElTopo(p1), m_proximity_epsilon);
 
       //assign new thicknesses
-      Scalar f0newArea = getArea(f0new);
-      Scalar f1newArea = getArea(f1new);
+      Scalar f0newArea = getArea(f0new, true);
+      Scalar f1newArea = getArea(f1new, true);
       Scalar newThickness = totalVolume / (f0newArea + f1newArea);
       m_thicknesses[f0new] = newThickness;
       m_thicknesses[f1new] = newThickness;
@@ -531,12 +565,24 @@ bool ElasticShell::splitEdges( double desiredEdge, double maxEdge, double maxAng
     EdgeHandle eh = *e_it;
 
     if ( !m_obj->edgeExists(eh) || !isEdgeActive(eh))   { continue; }     // skip inactive/non-existent edges
+    
+    //skip edges that are flowing into the domain
+    bool isConstrained = false;
+    for(unsigned int i = 0; i < m_inflow_boundaries.size(); ++i) {
+      if(std::find(m_inflow_boundaries[i].begin(), m_inflow_boundaries[i].end(),eh) != m_inflow_boundaries[i].end()) {
+        isConstrained = true;
+        break;
+      }
+    }
+    if(isConstrained) continue;
+
     //if ( m_mesh.m_edgetri[i].size() < 2 ) { continue; }                     // skip boundary edges - Why should we?
     //if ( m_masses[ m_mesh.m_edges[i][0] ] > 100.0 && m_masses[ m_mesh.m_edges[i][1] ] > 100.0 )     { continue; }    // skip solids
 
     VertexHandle vertex_a = m_obj->fromVertex(eh);
     VertexHandle vertex_b = m_obj->toVertex(eh);
-
+    
+    
     assert( m_obj->vertexExists(vertex_a) );
     assert( m_obj->vertexExists(vertex_b) );
 
@@ -675,8 +721,8 @@ bool ElasticShell::performSplit(const EdgeHandle& eh) {
   getEdgeOppositeVertices(*m_obj, eh, v2, v3);
 
   ElTopo::Vec3d midpoint_ET = ElTopo::toElTopo(midpoint);
-  if(edgeSplitCausesCollision(midpoint_ET, midpoint_ET, eh))
-    return false;
+  //if(edgeSplitCausesCollision(midpoint_ET, midpoint_ET, eh))
+  //  return false;
 
   //remove the edge and surrounding faces from the collision structure
   m_broad_phase.remove_edge(eh.idx());
@@ -699,8 +745,8 @@ bool ElasticShell::performSplit(const EdgeHandle& eh) {
   for(unsigned int i = 0; i < oldFaces.size(); ++i) {
     m_thicknesses[newFaces[i*2]] = oldThicknesses[i];
     m_thicknesses[newFaces[i*2+1]] = oldThicknesses[i];
-    m_volumes[newFaces[i*2]] = oldThicknesses[i] * getArea(newFaces[i*2]);
-    m_volumes[newFaces[i*2+1]] = oldThicknesses[i] * getArea(newFaces[i*2+1]);
+    m_volumes[newFaces[i*2]] = oldThicknesses[i] * getArea(newFaces[i*2], true);
+    m_volumes[newFaces[i*2+1]] = oldThicknesses[i] * getArea(newFaces[i*2+1], true);
   }
 
   VertexFaceIterator vf_iter = m_obj->vf_iter(v_new);
@@ -740,7 +786,7 @@ bool ElasticShell::edgeSplitCausesCollision( const ElTopo::Vec3d& new_vertex_pos
                                               const ElTopo::Vec3d& new_vertex_smooth_position, 
                                               EdgeHandle edge)
 {
-  printf("Checking edge split safety\n");
+  
   std::vector<FaceHandle> tris;
   EdgeFaceIterator efit = m_obj->ef_iter(edge);
   for(;efit; ++efit) tris.push_back(*efit);
@@ -1251,7 +1297,7 @@ bool ElasticShell::edgeCollapseCausesCollision(const VertexHandle& source_vertex
                                              const ElTopo::Vec3d& vertex_new_position ) {
  
   // Change source vertex predicted position to superimpose onto dest vertex
-  printf("Checking edge collapse safety\n");
+  //printf("Checking edge collapse safety\n");
 
   updateBroadPhaseForCollapse(source_vertex, ElTopo::toElTopo(m_positions[source_vertex]),
                               destination_vertex, ElTopo::toElTopo(m_positions[destination_vertex]));
@@ -1403,9 +1449,11 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
 
       //don't collapse a constrained vertex
       bool pinnedVert = false;
-      for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i)
-        if(v0 == m_constrained_vertices[i] || v1 == m_constrained_vertices[i])
+      for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
+        if(v0 == m_constrained_vertices[i] || v1 == m_constrained_vertices[i]) {
           pinnedVert = true;
+        }
+      }
       if(pinnedVert) continue;
 
       //check if either point is on the boundary
@@ -1437,8 +1485,8 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
       for(;efit; ++efit)
         totalVolume += getVolume(*efit);
 
-      if(edgeCollapseCausesCollision(v0, v1, eh, ElTopo::toElTopo(newPoint)))
-        return;
+      //if(edgeCollapseCausesCollision(v0, v1, eh, ElTopo::toElTopo(newPoint)))
+      //  return;
 
       //remove to-be-deleted stuff from collision grid
       m_broad_phase.remove_vertex(v0.idx());
@@ -1447,7 +1495,13 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
         m_broad_phase.remove_triangle((*efit).idx());
       
       //do the collapse itself
-      m_obj->collapseEdge(eh, v0);
+      std::vector<EdgeHandle> deletedEdges;
+      m_obj->collapseEdge(eh, v0, deletedEdges);
+
+      //remove the edges that were deleted as a side-effect.
+      for(unsigned int q = 0; q < deletedEdges.size(); ++q) {
+         m_broad_phase.remove_edge(deletedEdges[q].idx());
+      }
 
       setVertexVelocity(v1, newVel);
       setVertexPosition(v1, newPoint);
@@ -1458,7 +1512,7 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
       Scalar totalNewArea = 0;
       for(;vfit; ++vfit) {
         FaceHandle fh = *vfit;
-        totalNewArea += std::max(0.0, getArea(fh) - m_volumes[fh] / m_thicknesses[fh]); //only consider increases
+        totalNewArea += std::max(0.0, getArea(fh, true) - m_volumes[fh] / m_thicknesses[fh]); //only consider increases
       }
 
       vfit = m_obj->vf_iter(v1);
@@ -1501,8 +1555,155 @@ void ElasticShell::updateThickness() {
 
 }
 
+void ElasticShell::extendMesh() {
+
+  //only do this if the mesh has moved some minimum distance from the original
+  //inflow position, yeah?
+
+  for(unsigned int boundary = 0; boundary < m_inflow_boundaries.size(); ++boundary) {
+    int count = m_inflow_boundaries[boundary].size();
+    int last = m_inflow_boundaries[boundary].size()-1;
+    
+    //check if open or closed loop
+    VertexHandle loopVertex = getSharedVertex(*m_obj, m_inflow_boundaries[boundary][0], m_inflow_boundaries[boundary][last]);
+
+    //VertexHandle prevVert = m_obj->addVertex(); //loopVertex.isValid() ? loopVertex : m_obj->addVertex();
+    VertexHandle prevVert = m_obj->addVertex(); //loopVertex.isValid() ? loopVertex : m_obj->addVertex();
+
+    std::vector<VertexHandle> vertices;
+    vertices.push_back(prevVert);
+    std::vector<FaceHandle> faces;
+    
+    VertexHandle sharedVert = getSharedVertex(*m_obj, m_inflow_boundaries[boundary][0], m_inflow_boundaries[boundary][1]);
+    VertexHandle prevLowerVert = getEdgesOtherVertex(*m_obj, m_inflow_boundaries[boundary][0], sharedVert);
+
+    EdgeHandle prevEdge = m_obj->addEdge(prevLowerVert, prevVert);
+    VertexHandle loopTopVertex = prevVert;
+    EdgeHandle startEdge = prevEdge; //save this for wrapping around.
+    
+    std::vector<EdgeHandle> newList;
+    for(unsigned int edge = 0; edge < m_inflow_boundaries[boundary].size(); ++edge) {
+      
+      EdgeHandle eh1 = m_inflow_boundaries[boundary][edge];
+      EdgeHandle eh2 = m_inflow_boundaries[boundary][(edge+1)%count];
+
+      VertexHandle sharedVert, otherVert; 
+      if((int)edge < count - 1 || loopVertex.isValid()) { //a middle edge, or the last edge if things loop around
+        sharedVert = getSharedVertex(*m_obj, eh1, eh2);
+        otherVert = getEdgesOtherVertex(*m_obj, eh1, sharedVert);
+      }
+      else {
+        otherVert = prevLowerVert;
+        sharedVert = getEdgesOtherVertex(*m_obj, eh1, otherVert);
+      }
+
+      VertexHandle newVert;
+      EdgeHandle newEdge3;
+      if(edge == count-1 && loopVertex.isValid()) {
+        newVert = loopTopVertex;
+        newEdge3 = startEdge;
+      }
+      else {
+        newVert = m_obj->addVertex();
+        vertices.push_back(newVert);
+        newEdge3 = m_obj->addEdge(sharedVert, newVert);
+      }
+      
+      EdgeHandle newEdge4 = m_obj->addEdge(prevVert, newVert);
 
 
+      //A option
+      EdgeHandle newEdge2 = m_obj->addEdge(prevVert, sharedVert);
+
+      FaceHandle newFace1 = m_obj->addFace(prevEdge, eh1, newEdge2);
+      FaceHandle newFace2 = m_obj->addFace(newEdge2, newEdge3, newEdge4);
+      
+      setFaceActive(newFace1);
+      setFaceActive(newFace2);
+      faces.push_back(newFace1);
+      faces.push_back(newFace2);
+      //Todo: mess with ordering to automatically determine the correct front/back faces
+      //based on the faces we are connecting to.
+      
+      newList.push_back(newEdge4);
+
+      //advance to the next edge
+      prevVert = newVert;
+      prevLowerVert = sharedVert;
+      prevEdge = newEdge3;
+    }
+    
+
+    m_inflow_boundaries[boundary] = newList;
+
+    for(unsigned int i = 0; i < vertices.size(); ++i) {
+      setVertexPosition(vertices[i], m_inflow_positions[boundary][i]);
+      setUndeformedVertexPosition(vertices[i], m_inflow_positions[boundary][i]);
+      setVertexVelocity(vertices[i], m_inflow_velocity[boundary]);
+      m_vertex_masses[vertices[i]] = 0;
+      m_damping_undeformed_positions[vertices[i]] = m_inflow_positions[boundary][i];
+    }
+
+
+    for(unsigned int i = 0; i < faces.size(); ++i) {
+      m_thicknesses[faces[i]] = m_thickness;
+      m_volumes[faces[i]] = 0;
+      m_volumes[faces[i]] = getArea(faces[i])*m_thickness;
+      FaceVertexIterator fvit = m_obj->fv_iter(faces[i]);
+      for(;fvit;++fvit) {
+        VertexHandle vh = *fvit;
+        m_vertex_masses[vh] += m_volumes[faces[i]] * m_density / 3.0;
+      }
+    }
+
+  }
+
+}
+
+void ElasticShell::setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel) {
+  m_inflow_boundaries.push_back(edgeList);
+  m_inflow_velocity.push_back(vel);
+  VertexHandle prevVert;
+  std::vector<Vec3d> posList;
+  for(unsigned int edge = 0; edge < edgeList.size(); ++edge) {
+    EdgeHandle eh1 = edgeList[edge];
+    EdgeHandle eh2 = edgeList[(edge+1)%edgeList.size()];
+    
+    VertexHandle sharedVert, otherVert;
+    if(edge == edgeList.size() - 1) {
+      otherVert = prevVert;
+      sharedVert = getEdgesOtherVertex(*m_obj, eh1, otherVert); 
+    }
+    else {
+      sharedVert = getSharedVertex(*m_obj, eh1, eh2);
+      otherVert = getEdgesOtherVertex(*m_obj, eh1, sharedVert); 
+    }
+
+    Vec3d pos = getVertexPosition(otherVert);
+    posList.push_back(pos);
+    std::cout << "Vertex: " << otherVert.idx() << std::endl;
+    
+    prevVert = sharedVert;
+  }
+  
+  VertexHandle wrapVert = getSharedVertex(*m_obj, edgeList[0], edgeList[edgeList.size()-1]);
+  if(!wrapVert.isValid()) {
+    std::cout << "Edges don't wrap.\n";
+    Vec3d pos = getVertexPosition(prevVert);
+    posList.push_back(pos);
+    std::cout << "Vertex: " << prevVert.idx() << std::endl;
+  } 
+  else {
+    std::cout << "Edges do wrap.\n";
+  }
+  std::cout << "Vertices: " << std::endl;
+  for(unsigned int i = 0; i < posList.size(); ++i)
+    std::cout << posList[i] << " " << std::endl;
+  std::cout << std::endl;
+
+  m_inflow_positions.push_back(posList);
+
+}
 /*
 void ElasticShell::setMass( const DofHandle& hnd, const Scalar& mass )
 {

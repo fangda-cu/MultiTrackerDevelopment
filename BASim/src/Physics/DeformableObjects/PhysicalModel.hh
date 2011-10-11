@@ -43,10 +43,10 @@ public:
   virtual bool isTetActive(const TetHandle& t) const = 0;
 
   //Returns the starting dof index for a given simplex
-  int getVertexDofBase(const VertexHandle& v) const { return m_vertexDofIdxs[v]; }
-  int getEdgeDofBase(const VertexHandle& v) const { return m_edgeDofIdxs[v]; }
-  int getFaceDofBase(const VertexHandle& v) const { return m_faceDofIdxs[v]; }
-  int getTetDofBase(const VertexHandle& v) const { return m_tetDofIdxs[v]; }
+  int getVertexDofBase(const VertexHandle& vh) const { return m_vertexDofIdxs[vh]; }
+  int getEdgeDofBase(const EdgeHandle& eh) const { return m_edgeDofIdxs[eh]; }
+  int getFaceDofBase(const FaceHandle& fh) const { return m_faceDofIdxs[fh]; }
+  int getTetDofBase(const TetHandle& th) const { return m_tetDofIdxs[th]; }
 
   //Sets the initial dof index for each simplex type. This is called by the DeformableModel when the indexing is set up.
   void setVertexDofBase(const VertexHandle&v, int index) { m_vertexDofIdxs[v] = index; }

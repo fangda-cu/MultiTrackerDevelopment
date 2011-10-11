@@ -74,7 +74,7 @@ std::vector<RodRenderer*> rod_renderers;
 std::vector<TriangleMeshRenderer*> triangle_mesh_renderers;
 
 bool render = true;
-bool paused = false;
+bool paused = true;
 bool continuous = true;
 int window_width = 512;
 int window_height = 512;
@@ -146,18 +146,18 @@ void SetLighting()
 {
     // Create a directional white light with a small ambient component
     glEnable( GL_LIGHT0);
-    GLfloat white_ambient[] = { 0.1, 0.1, 0.1, 1.0 };
+    GLfloat white_ambient[] = { 0.1f, 0.1f, 0.1f, 1.0f };
     glLightfv(GL_LIGHT0, GL_AMBIENT, white_ambient);
-    GLfloat white_diffuse[] = { 0.55, 0.55, 0.55, 1.0 };
+    GLfloat white_diffuse[] = { 0.55f, 0.55f, 0.55f, 1.0f };
     glLightfv(GL_LIGHT0, GL_DIFFUSE, white_diffuse);
-    GLfloat upper_corner[] = { 1.0, 1.0, 1.0, 0.0 };
+    GLfloat upper_corner[] = { 1.0f, 1.0f, 1.0f, 0.0f };
     glLightfv(GL_LIGHT0, GL_POSITION, upper_corner);
 
     // Create a much weaker direction light
     glEnable( GL_LIGHT1);
-    GLfloat weak_white_diffuse[] = { 0.3, 0.3, 0.3, 1.0 };
+    GLfloat weak_white_diffuse[] = { 0.3f, 0.3f, 0.3f, 1.0f };
     glLightfv(GL_LIGHT1, GL_DIFFUSE, weak_white_diffuse);
-    GLfloat negative_z[] = { 0.0, 0.0, 1.0, 0.0 };
+    GLfloat negative_z[] = { 0.0f, 0.0f, 1.0f, 0.0f };
     glLightfv(GL_LIGHT1, GL_POSITION, negative_z);
 
     glShadeModel( GL_FLAT);
@@ -363,7 +363,7 @@ void display()
     glColor3f(0.0, 0.0, 0.0);
     //if( g_dsp_sim_tm ) renderBitmapString( 5, window_height-20, 0.0, GLUT_BITMAP_HELVETICA_18, current_problem->ProblemName() );
     if (g_dsp_sim_tm)
-        renderBitmapString(5, window_height - 40, 0.0, GLUT_BITMAP_HELVETICA_18, toString(current_problem->getTime()));
+        renderBitmapString(5, (float)window_height - 40, 0.0, GLUT_BITMAP_HELVETICA_18, toString(current_problem->getTime()));
 
     glutSwapBuffers();
     glPopMatrix();
@@ -395,7 +395,7 @@ void idle()
     {
         double seconds_per_frame = 1.0 / ((double) fps);
         double steps_per_second = 1.0 / ((double) current_problem->getDt());
-        steps_per_frame = floor(seconds_per_frame * steps_per_second + 0.5); // < rounds
+        steps_per_frame = (int)std::max(1.0, floor(seconds_per_frame * steps_per_second + 0.5)); // < rounds
         //std::cout << steps_per_frame << std::endl;
     }
 
@@ -436,6 +436,7 @@ void idle()
         if (!continuous)
             paused = true;
         current_problem->BaseAtEachTimestep();
+        //std::cout << "Time: " << current_problem->getTime() << std::endl;
         if (render)
             glutPostRedisplay();
         //if(render&&generate_movie)
@@ -453,10 +454,11 @@ void idle()
     {
         int frame = floor(current_problem->getTime() / current_problem->getDt() + 0.5);
         //if( floor(current_problem->getTime()/frame_period) >= current_frame )
+    
         if (frame % steps_per_frame == 0 && last_frame_num != frame)
         {
             last_frame_num = frame;
-            //std::cout << outputdirectory << std::endl;
+            std::cout << outputdirectory << std::endl;
 #ifdef _MSC_VER
             _mkdir(outputdirectory.c_str());
 #else
@@ -1224,7 +1226,7 @@ int main(int argc, char** argv)
     time(&g_rawtime);
     g_timeinfo = localtime(&g_rawtime);
     outputdirectory = generateOutputDirName();
-
+    std::cout << "Output dir: " << outputdirectory << std::endl;
     CreateProblemVector();
     atexit(cleanup);
     if (parseCommandLine(argc, argv) < 0)

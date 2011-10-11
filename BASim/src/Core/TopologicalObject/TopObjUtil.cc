@@ -12,6 +12,22 @@ VertexHandle getSharedVertex(const TopologicalObject& obj, const EdgeHandle& e0,
   else return VertexHandle(-1);
 }
 
+VertexHandle getEdgesOtherVertex(const TopologicalObject& obj, const EdgeHandle &eh, const VertexHandle& vh) {
+  VertexHandle v0 = obj.fromVertex(eh), v1 = obj.toVertex(eh);
+  assert(v0 == vh || v1 == vh);
+  return v0 == vh? v1 : v0;
+}
+
+FaceHandle getEdgeOtherFace(const TopologicalObject& obj, const EdgeHandle& eh, const FaceHandle& fh) {
+  EdgeFaceIterator efit = obj.ef_iter(eh);
+  for(; efit; ++efit) {
+    FaceHandle cur = *efit;
+    if(cur != fh)
+      return cur;
+  }
+  return FaceHandle(-1);
+}
+
 bool getEdgeFacePair(const TopologicalObject& obj, const EdgeHandle& eh, FaceHandle& f0, FaceHandle& f1) {
 
   EdgeFaceIterator ef_it = obj.ef_iter(eh);

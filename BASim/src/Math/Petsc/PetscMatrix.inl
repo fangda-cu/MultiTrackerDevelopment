@@ -121,7 +121,7 @@ inline int PetscMatrix::multiply(VecXd& y, Scalar s, const VecXd& x) const
 
 inline int PetscMatrix::zeroCols(const IntArray& idx, Scalar diag) 
 {
-   if(idx.size() == 0) 
+   if(idx.size() < 1) 
       return 0;
 
    //Set it to ignore any attempts to create new non-zero entries
@@ -245,6 +245,7 @@ inline int PetscMatrix::setZero()
 
 inline int PetscMatrix::zeroRows(const IntArray& idx, Scalar diag)
 {
+  if(idx.size() < 1) return 0;
   MatSetOption(m_M, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
   int ierr = MatZeroRows(m_M, idx.size(), &idx[0], diag);
   CHKERRQ(ierr);

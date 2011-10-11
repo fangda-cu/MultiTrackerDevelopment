@@ -127,7 +127,7 @@ public:
   EdgeHandle prevEdge(const FaceHandle& face, const EdgeHandle& curEdge) const;
 
   /** Collapse an edge, deleting the given adjacent vertex */
-  VertexHandle collapseEdge(const EdgeHandle& eh, const VertexHandle& vertToRemove);
+  VertexHandle collapseEdge(const EdgeHandle& eh, const VertexHandle& vertToRemove, std::vector<EdgeHandle>& deletedEdges);
 
   /** \name Iterators */
 

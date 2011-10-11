@@ -302,7 +302,6 @@ namespace BASim {
   FaceEdgeIterator::operator bool() const
   {
     assert(m_obj);
-
     return m_idx >= 0 && m_idx < (int)m_obj->m_FE.getNumEntriesInRow(m_hnd.idx());
   }
 

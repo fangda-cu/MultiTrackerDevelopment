@@ -30,7 +30,6 @@ void DeformableObject::computeForces(VecXd& force) {
   for(model_it = m_models.begin(); model_it != m_models.end(); ++model_it) {
     curr_force.setZero();
     (*model_it)->computeForces(curr_force);
-    
     force += curr_force;
   }
 
@@ -92,8 +91,8 @@ void DeformableObject::computeDofIndexing()
         //for each DOF the model requests
           //index++;
 
-   m_dofHandles.clear();
-   m_dofModels.clear();
+  m_dofHandles.clear();
+  m_dofModels.clear();
 
   //Vertex DOF's
   int dofIndex = 0;

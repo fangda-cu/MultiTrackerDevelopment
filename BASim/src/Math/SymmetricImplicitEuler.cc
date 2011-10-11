@@ -79,7 +79,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
     setZero();
     m_diffEq.getScriptedDofs(m_fixed, m_desired); // m_fixed are DOF indices, m_desired are corresponding desired values
     assert(m_fixed.size() == m_desired.size());
-
+    
 #ifndef NDEBUG // ensure indices in valid range
     for (int i = 0; i < (int) m_fixed.size(); ++i)
         assert(m_fixed[i] >= 0);
@@ -89,10 +89,15 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
 
     // TODO: EG: Is this copying of data REALLY NEEDED? Probably not.
     // Copy masses.
-    if (!m_mass_set) // Assuming masses are constant
+    
+    //if (!m_mass_set) // Assuming masses are constant
     {
+      //printf("Actual copying masses:\n");
         m_diffEq.getMass(m_mass);
-        m_mass_set = true;
+        //for(int i = 0; i < m_mass.size(); ++i) {
+        //   printf("Mass: %e\n", m_mass(i));
+        //}
+        //m_mass_set = true;
     }
 
     // Chapter 1: Set up initial guess for Newton Solver
@@ -167,6 +172,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
     m_diffEq.set_qdot(m_deltaX / m_dt); // set velocity
     m_diffEq.set_q(x0 + m_deltaX); // set position
 
+   
     // Signal the differential equation that it should get
     // ready for the first iteration. In practice this is where the ODE
     // can precompute some reusable quantities that depend on the state (position & velocity)
@@ -177,6 +183,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
     //   2) compute the residual of the ODE
     //   3) cache the residual as m_initial_residual, for convergence test later
     m_initial_residual = m_residual = computeResidual();
+
 
     TraceStream(g_log, "") << "SymmetricImplicitEuler::position_solve: starting Newton solver. Initial guess has residual = "
             << m_residual << ", convergence test will use thresholds atol = " << m_atol << " inftol = " << m_inftol
@@ -221,8 +228,9 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
 
         // Consider inertial contribution from mass matrix
         // m_A = M -h*dF/dv -h^2*dF/dx
-        for (int i = 0; i < m_ndof; ++i)
+        for (int i = 0; i < m_ndof; ++i) {
             m_A->add(i, i, m_mass(i));
+        }
         m_A->finalize();
 
         // Set the rows and columns corresponding to fixed degrees of freedom to 0
@@ -244,10 +252,12 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
         //////////////////////////////////////////////////////////////////
 
         START_TIMER("SymmetricImplicitEuler::position_solve/solver");
+        
         int status = m_solver->solve(m_increment, m_rhs);
         STOP_TIMER("SymmetricImplicitEuler::position_solve/solver");
         if (status < 0)
         {
+          std::cout << "***Solver failed.***\n";
             DebugStream(g_log, "") << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Problem during linear solve detected. "
                     << '\n';
             return false;
@@ -280,7 +290,6 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
             m_residual = computeResidual();
 
             bool converged = isConverged();
-
             TraceStream(g_log, "") << "SymmetricImplicitEuler::position_solve: summary of line search i " << i
                     << ": increment " << m_increment.norm() << " previous " << previous_residual << ", residual " << m_residual
                     << '\n';
@@ -295,6 +304,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
             }
             else if (i >= m_maxlsit)
             {
+               //std::cout << "Exceeded max iterations.\n\n";
                 TraceStream(g_log, "")
                         << "Exceeded max iterations.\nSymmetricImplicitEuler::position_solve/line search: \033[31;1mWARNING IN IMPLICITEULER:\033[m Line search failed. Proceeding anyway.\n\n";
                 break;
@@ -341,7 +351,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
         // Now go back and begin next Newton iteration...
     }
 
-    
+    //std::cout << "SymmetricImplicitEuler solve completed.\n";
     TraceStream(g_log, "") << "SymmetricImplicitEuler::position_solve: completed " << curit + 1 << " Newton iterations."
             << '\n';
 

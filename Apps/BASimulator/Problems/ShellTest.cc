@@ -14,6 +14,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellGravityForce.hh"
 #include "BASim/src/Render/ShellRenderer.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
+#include "BASim/src/Physics/DeformableObjects/Shells/ShellRadialForce.hh"
 
 #include <fstream>
 
@@ -80,12 +81,17 @@ void ShellTest::Setup()
   Scalar Poisson_ratio = GetScalarOpt("shell-Poisson");
   Scalar Youngs_damping = GetScalarOpt("shell-Youngs-damping");
   Scalar Poisson_damping = GetScalarOpt("shell-Poisson-damping");
+  Scalar viscosity = Youngs_damping / 2 / (1 + Poisson_damping);
 
   std::string integrator = GetStringOpt("integrator");
 
   Scalar dx = (Scalar)width / (Scalar)xresolution;
   Scalar dy = (Scalar)height / (Scalar)yresolution;
 
+  bool circular = false;
+
+  //Vec3d start_vel(0,-1,0);
+  Vec3d start_vel(0,0,0);
   //Create the base deformable object (mesh)
   shellObj = new DeformableObject();
 
@@ -95,53 +101,139 @@ void ShellTest::Setup()
   VertexProperty<Vec3d> velocities(shellObj);
   VertexProperty<Vec3d> positions(shellObj);
 
-  /*for(int i = 0; i <= xresolution; ++i) {
+  /*
+  if(!circular) {
+     
      for(int j = 0; j <= yresolution; ++j) {
-        Vec3d vert(i*dx, 0, j*dy);
-        Vec3d undef = vert;
+       for(int i = 0; i <= xresolution; ++i) {
+         Vec3d vert(i*dx, -1 + j*dy, 0);
+         //if(j < 0.5*yresolution) {
+         //  int k = j;
+         //  int j_mod = (int)(0.5*yresolution);
+         //  vert(1) = j_mod*dx;
+         //  vert(2) = (k-j_mod)*dx;
+         //}
+         Vec3d undef = vert;
+           
+         VertexHandle h = shellObj->addVertex();
 
-        VertexHandle h = shellObj->addVertex();
-        positions[h] = vert;
-        velocities[h] = Vec3d(0,0,0);
-        undeformed[h] = undef;
-        vertHandles.push_back(h);
+         positions[h] = vert;
+         velocities[h] = start_vel;
+         undeformed[h] = undef;
+         vertHandles.push_back(h);
+       }
      }
-  }*/
+     
+
+     //build the faces
+     std::vector<Vec3i> tris;
+     for(int i = 0; i < xresolution; ++i) {
+       for(int j = 0; j < yresolution; ++j) {
+         int tl = i + (xresolution+1)*j;
+         int tr = i+1 + (xresolution+1)*j;
+         int bl = i + (xresolution+1)*(j+1);
+         int br = i+1 + (xresolution+1)*(j+1);
+         
+         shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
+         shellObj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
+        }
+     }
+  }
+  else {
+    for(int j = 0; j <= yresolution; ++j) {
+      for(int i = 0; i <= xresolution; ++i) {
+         Scalar circumference = width;
+         Scalar radius = circumference / 2 / pi;
+         Scalar angle = ((Scalar)i / (Scalar)(xresolution+1)) * 2 * pi;
+         Scalar xpos = radius * cos(angle);
+         Scalar zpos = radius * sin(angle);
+         Vec3d vert(xpos, -1 + j*dy, zpos);
+      
+         Vec3d undef = vert;
+           
+         VertexHandle h = shellObj->addVertex();
+
+         positions[h] = vert;
+         velocities[h] = start_vel;
+         undeformed[h] = undef;
+         vertHandles.push_back(h);
+       }
+     }
+     
+
+     //build the faces
+     std::vector<Vec3i> tris;
+     
+     for(int i = 0; i < xresolution+1; ++i) {
+       for(int j = 0; j < yresolution; ++j) {
+         int tl = i + (xresolution+1)*j;
+         int tr = (i+1)%(xresolution+1) + (xresolution+1)*j;
+         int bl = i + (xresolution+1)*(j+1);
+         int br = (i+1)%(xresolution+1) + (xresolution+1)*(j+1);
+         
+         shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
+         shellObj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
+       }
+       //close the circle
+     }
+
+  }
+  */
 
   
-  for(int i = 0; i <= xresolution; ++i) {
-    for(int j = 0; j <= yresolution; ++j) {
-      Vec3d vert(i*dx, j*dy, 0);
-     /* if(j < 0.5*yresolution) {
-        int k = j;
-        int j_mod = (int)(0.5*yresolution);
-        vert(1) = j_mod*dx;
-        vert(2) = (k-j_mod)*dx;
-      }*/
-      Vec3d undef = vert;
-        
-      VertexHandle h = shellObj->addVertex();
+  //create a sphere
+  int layers = 16;
+  int slices = 24;
+  Vec3d centre(0,0,0);
+  Scalar radius = 1.25;
+  
+  std::vector<std::vector<VertexHandle>> vertList;
+  //create top pole
+  VertexHandle topV = shellObj->addVertex();
+  positions[topV] = centre + Vec3d(0,0,radius);
+  velocities[topV] = start_vel;
+  undeformed[topV] = positions[topV];
 
-      positions[h] = vert;
-      velocities[h] = Vec3d(0,0,0);
-      undeformed[h] = undef;
-      vertHandles.push_back(h);
+  //create bottom pole
+  VertexHandle botV = shellObj->addVertex();
+  positions[botV] = centre + Vec3d(0,0,-radius);
+  velocities[botV] = start_vel;
+  undeformed[botV] = positions[botV];
+
+  //fill in the interior
+  vertList.resize(layers-1);
+  for(int j = 0; j < layers-1; ++j) {
+    Scalar heightAngle = -pi/2 + (j+1) * pi/(Scalar)layers;
+    for(int i = 0; i < slices; ++i) {
+      Scalar rotAngle = 2*pi * (Scalar)i / (Scalar)slices;
+      Scalar zVal = radius*sin(heightAngle);
+      Scalar newRad = radius*cos(heightAngle);
+      Scalar xVal = newRad*cos(rotAngle);
+      Scalar yVal = newRad*sin(rotAngle);
+      
+      VertexHandle vNew = shellObj->addVertex();
+      positions[vNew] = centre + Vec3d(xVal,yVal,zVal);
+      velocities[vNew] = start_vel;
+      undeformed[vNew] = positions[vNew];
+      vertList[j].push_back(vNew);
     }
   }
-  
 
-  //build the faces
-  std::vector<Vec3i> tris;
-  for(int i = 0; i < xresolution; ++i) {
-    for(int j = 0; j < yresolution; ++j) {
-      int tl = i + (xresolution+1)*j;
-      int tr = i+1 + (xresolution+1)*j;
-      int bl = i + (xresolution+1)*(j+1);
-      int br = i+1 + (xresolution+1)*(j+1);
-      
-      shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
-      shellObj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
-     }
+  //construct faces
+  for(int j = 0; j < layers; ++j) {
+    for(int i = 0; i < slices; ++i) {
+      if(j == 0) {
+        shellObj->addFace(botV, vertList[j][i], vertList[j][(i+1)%slices]);
+      }
+      else if(j == layers-1) {
+        shellObj->addFace(topV, vertList[j-1][(i+1)%slices], vertList[j-1][i]);
+      }
+      else {
+        shellObj->addFace(vertList[j-1][i], vertList[j][i], vertList[j][(i+1)%slices]);
+        shellObj->addFace(vertList[j-1][i], vertList[j][(i+1)%slices], vertList[j-1][(i+1)%slices]);
+      }
+
+    }
   }
   
 
@@ -158,67 +250,111 @@ void ShellTest::Setup()
   //now add forces to the model
   Scalar timestep = getDt(); //Our Rayleigh damping model relies on knowing the timestep (folds it into the damping stiffness, as in Viscous Threads)
  
-  if(bend_stiffness != 0 || bend_damping != 0)
-    shell->addForce(new DSBendingForce(*shell, "DSBending", bend_stiffness, bend_damping, timestep));
+  //if(bend_stiffness != 0 || bend_damping != 0)
+  //  shell->addForce(new DSBendingForce(*shell, "DSBending", bend_stiffness, bend_damping, timestep));
 
   if(Youngs_modulus != 0 || Youngs_damping != 0) {
     shell->addForce(new CSTMembraneForce(*shell, "CSTMembrane", Youngs_modulus, Poisson_ratio, Youngs_damping, Poisson_damping, timestep));
   }
-  
 
   shell->addForce(new ShellGravityForce(*shell, "Gravity", gravity));
+  Scalar pressureStrength = 0.14;
+  shell->addForce(new ShellRadialForce(*shell, "Radial", Vec3d(0,0,0), pressureStrength));
 
   //and set its properties, including geometry
   shell->setThickness(thickness);
   shell->setDensity(density);
   shell->setUndeformedConfig(undeformed);
   shell->setVertexPositions(positions);
+  for(VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit) {
+    Vec3d radius = (positions[*vit] - centre);
+    radius.normalize();
+    //velocities[*vit] = radius*pressureStrength/12.0/viscosity/thickness;
+    //velocities[*vit] = radius;
+  }
   shell->setVertexVelocities(velocities);
 
-  for(int i  = 0; i < 5; ++i)
-    shell->remesh(0.05);
-
-  std::cout << "Finding top vertices\n";
-  //find the top left and right corners for adding a constraint
-  VertexIterator vit = shellObj->vertices_begin();
-  Vec3d minPos(0,0,0), maxPos(0,0,0);
-  VertexHandle minH, maxH;
-  for(;vit!= shellObj->vertices_end(); ++vit) {
-    Vec3d pos = shell->getVertexPosition(*vit);
-    if(pos[0] <= minPos[0] && pos[1] >= minPos[1]) {
-      minH = *vit;
-      minPos = pos;
-    }
-    if(pos[0] >= maxPos[0] && pos[1] >= maxPos[1]) {
-      maxH = *vit;
-      maxPos = pos;
-    }
-  }
   
   
-  //Pin just the left and right top corners
- /* shell->constrainVertex(minH, minPos);
-  shell->constrainVertex(maxH, maxPos);*/
+  ////find the top left and right corners for adding a constraint
+  //VertexIterator vit = shellObj->vertices_begin();
+  //Vec3d maxPos(-100,-100,-100), minPos(100,100,100);
+  //VertexHandle minH, maxH;
+  //for(;vit!= shellObj->vertices_end(); ++vit) {
+  //  Vec3d pos = shell->getVertexPosition(*vit);
+  //  if(pos[0] <= minPos[0]) {
+  //    minH = *vit;
+  //    minPos = pos;
+  //  }
+  //  if(pos[0] >= maxPos[0]) {
+  //    maxH = *vit;
+  //    maxPos = pos;
+  //  }
+  //}
+  //shell->constrainVertex(minH, minPos);
+  //shell->constrainVertex(maxH, maxPos);
  
-  /*
-  int count = 0;
-  for(FaceIterator fit = shellObj->faces_begin(); fit!=shellObj->faces_end(); ++fit) {
-    ++count;
-    if(count % 3 ==0)
-      shellObj->deleteFace(*fit, false);
-  }*/
+  
+  //Find highest vertex
+  //VertexIterator vit = shellObj->vertices_begin();
+  //Scalar highest = -10000;
+  //for(;vit!= shellObj->vertices_end(); ++vit) {
+  //  Vec3d pos = shell->getVertexPosition(*vit);
+  //  if(pos[1] >= highest) {
+  //    highest = pos[1];
+  //  }
+  //}
+  ////Pin all verts at or near that height
+  //for(vit = shellObj->vertices_begin();vit!= shellObj->vertices_end(); ++vit) {
+  //  Vec3d pos = shell->getVertexPosition(*vit);
+  //  if(pos[1] >= highest - 1e-4)
+  //    shell->constrainVertex(*vit, pos);
+  //}
+  
 
-  std::cout << "Pinning vertices\n";
-  //Pin all vertices in the top row.
-  vit = shellObj->vertices_begin();
-  for(;vit!= shellObj->vertices_end(); ++vit) {
-    Vec3d pos = shell->getVertexPosition(*vit);
-    if(pos[1] >= 0.99)
-      shell->constrainVertex(*vit, pos);
+ /* std::vector<EdgeHandle> extendEdgeList;
+  EdgeIterator eit = shellObj->edges_begin();
+  for(;eit != shellObj->edges_end(); ++eit) {
+    EdgeHandle eh = *eit;
+    VertexHandle vh0 = shellObj->fromVertex(eh);
+    VertexHandle vh1 = shellObj->toVertex(eh);
+    Vec3d pos0 = shell->getVertexPosition(vh0);
+    Vec3d pos1 = shell->getVertexPosition(vh1);
+    if(pos0[1] >= -0.01 && pos1[1] >= -0.01) {
+      extendEdgeList.push_back(eh);
+      std::cout << "Edge: " << eh.idx() << std::endl;
+    }
   }
+  Vec3d inflow_vel = start_vel;
+  shell->setInflowSection(extendEdgeList, inflow_vel);*/
+  std::cout << std::endl;
 
- 
+  //for(int q = 0; q < 0; ++q) {
+  //  int c = 0; 
+  //  std::cout << "Setting up adjusted positions\n";
+  //  VertexIterator vit2 = shellObj->vertices_begin();
+  //  for(;vit2 != shellObj->vertices_end(); ++vit2) {
+  //    //if(c++==0) {
+  //    //  continue;
+  //    //}
+  //    
+  //    Vec3d pos = shell->getVertexPosition(*vit2);
+  //    pos += Vec3d(0,-dy,0);
+  //    shell->setVertexPosition(*vit2, pos);
+  //    //std::cout << "After: " << pos << std::endl;
+  //  }
+
+  //  shell->extendMesh();
+  //}
+  //shell->remesh(0.2);
+  //shell->remesh(0.2);
+  /*shell->remesh(0.1);
+  shell->remesh(0.1);
+  shell->remesh(0.1);*/
+  //shell->remesh(0.1);
+
   shell->computeMasses();
+
 
   //compute the dof indexing for use in the diff_eq solver
   shellObj->computeDofIndexing();

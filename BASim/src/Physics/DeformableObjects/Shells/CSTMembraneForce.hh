@@ -5,8 +5,8 @@
  * \date April 18, 2011
  */
 
-#ifndef CSTMEMBRANEFORCE_H
-#define CSTMEMBRANEFORCE_H
+#ifndef CSTMEMBRANEFORCE_HH
+#define CSTMEMBRANEFORCE_HH
 
 #include "BASim/src/Physics/DeformableObjects/Shells/ElasticShellForce.hh"
 
@@ -63,4 +63,4 @@ protected:
 }
 
 
-#endif //CSTMEMBRANEFORCENEW_H
+#endif //CSTMEMBRANEFORCE_HH

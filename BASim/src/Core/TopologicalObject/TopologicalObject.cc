@@ -580,7 +580,7 @@ void TopologicalObject::compute_nbrsVF() const {
 
 }
 
-VertexHandle TopologicalObject::collapseEdge(const EdgeHandle& eh, const VertexHandle& vertToRemove) {
+VertexHandle TopologicalObject::collapseEdge(const EdgeHandle& eh, const VertexHandle& vertToRemove, std::vector<EdgeHandle>& deletedEdges) {
   
   VertexHandle fromV = fromVertex(eh);
   VertexHandle toV = toVertex(eh);
@@ -715,6 +715,7 @@ VertexHandle TopologicalObject::collapseEdge(const EdgeHandle& eh, const VertexH
     }
 
     //finally, delete the orphaned edge
+    deletedEdges.push_back(e1);
     bool success = deleteEdge(e1, false);
     assert(success);
   }
@@ -751,7 +752,7 @@ void TopologicalObject::serializeStructure(std::ofstream& of, const TopologicalO
 }
 
 void TopologicalObject::loadStructure(std::ifstream& ifs, TopologicalObject& obj) {
-   assert(of.is_open());
+   assert(ifs.is_open());
 
    //core data
    IncidenceMatrix::load(ifs, obj.m_VE);

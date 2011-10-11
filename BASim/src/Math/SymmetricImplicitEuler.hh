@@ -170,6 +170,7 @@ public:
             return true;
         }
         TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged(): convergence test fails" << '\n';
+        //std::cout << "Convergence test failed\n";
         return false;
     }
 

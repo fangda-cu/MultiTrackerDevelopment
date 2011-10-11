@@ -14,6 +14,7 @@
 namespace BASim {
 
 const int ELASTIC_SHELL_DOFS_PER_VERTEX = 3;
+const int ELASTIC_SHELL_DOFS_PER_EDGE = 0; //for mid-edge normal bending discretization
 
 class DeformableObject;
 class ElasticShellForce;
@@ -35,7 +36,7 @@ public:
   const Scalar& getMass(const DofHandle& hnd) const;
  
   int numVertexDofs() const { return ELASTIC_SHELL_DOFS_PER_VERTEX; }
-  int numEdgeDofs() const { return 0; }
+  int numEdgeDofs() const { return ELASTIC_SHELL_DOFS_PER_EDGE; }
   int numFaceDofs() const { return 0; }
   int numTetDofs() const { return 0; }
 
@@ -68,15 +69,17 @@ public:
   Scalar getMass(const VertexHandle& v) const { return m_vertex_masses[v]; }
   Scalar getThickness(const FaceHandle& f) const { return m_thicknesses[f]; }
   Scalar getVolume(const FaceHandle& f) const {return m_volumes[f]; }
-  Scalar getArea(const FaceHandle& f) const;
+  Scalar getArea(const FaceHandle& f, bool current = true) const;
   void setVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_positions[v] = pos; }
   void setUndeformedVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_undeformed_positions[v] = pos; }
   void setVertexVelocity(const VertexHandle& v, const Vec3d& vel) { m_velocities[v] = vel; }
 
   void constrainVertex(const VertexHandle& v, const Vec3d& pos);
 
-  void remesh(Scalar desiredEdge );
+  void setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel);
 
+  void remesh(Scalar desiredEdge );
+  void extendMesh();
 
   void startStep();
   void endStep();
@@ -104,17 +107,28 @@ protected:
   bool edgeFlipCausesCollision( const EdgeHandle& edge_index, const VertexHandle& new_end_a, const VertexHandle& new_end_b);
   
 
-
-
   VertexProperty<Vec3d> m_positions;
+  EdgeProperty<Scalar> m_xi;
+  
   VertexProperty<Vec3d> m_velocities;
+  EdgeProperty<Scalar> m_xi_vel;
+  
   VertexProperty<Scalar> m_vertex_masses;
+  EdgeProperty<Scalar> m_edge_masses;
   
   std::vector<VertexHandle> m_constrained_vertices;
   std::vector<Vec3d> m_constraint_positions;
   
+  std::vector<std::vector<EdgeHandle> > m_inflow_boundaries;
+  std::vector<std::vector<Vec3d> > m_inflow_positions;
+  std::vector<Vec3d> m_inflow_velocity;
+  std::vector<Scalar> m_inflow_thickness;
+
   VertexProperty<Vec3d> m_undeformed_positions;
+  EdgeProperty<Scalar> m_undef_xi;
+  
   VertexProperty<Vec3d> m_damping_undeformed_positions; //"undeformed" configuration that is updated at each step to support damping/viscosity
+  EdgeProperty<Scalar> m_damping_undef_xi;
 
   FaceProperty<Scalar> m_thicknesses;
   FaceProperty<Scalar> m_volumes;

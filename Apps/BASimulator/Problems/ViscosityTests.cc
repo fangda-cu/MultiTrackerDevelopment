@@ -159,7 +159,7 @@ void ViscosityTests::Setup()
     }
     default:
     {
-      std::cout << "UNKOWN TEST CASE: " << GetIntOpt("ViscosityTest") << std::endl;
+      std::cout << "UNKNOWN TEST CASE: " << GetIntOpt("ViscosityTest") << std::endl;
       exit(1);
       break;
     }

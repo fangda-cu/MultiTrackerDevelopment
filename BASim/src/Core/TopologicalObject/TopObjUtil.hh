@@ -15,6 +15,9 @@ bool getEdgeFacePair(const TopologicalObject& obj, const EdgeHandle& eh, FaceHan
 //Given two edges, find a shared vertex if one exists.
 VertexHandle getSharedVertex(const TopologicalObject& obj, const EdgeHandle& e0, const EdgeHandle& e1);
 
+//Given an edge and a vertex which is on the edge, return the edge's other vertex
+VertexHandle getEdgesOtherVertex(const TopologicalObject& obj, const EdgeHandle &eh, const VertexHandle& vh);
+
 //Split an edge and insert a new vertex in between, subdividing all the faces sharing the edge.
 //Should be non-manifold friendly. Orientation is maintained.
 VertexHandle splitEdge(TopologicalObject& obj, const EdgeHandle& h, std::vector<FaceHandle>& newFaces);
@@ -30,6 +33,8 @@ bool getFaceThirdVertex(const TopologicalObject& obj, const FaceHandle& fh, cons
 bool isVertexOnBoundary(TopologicalObject& obj, VertexHandle& v);
 
 void sanityCheckTopology(TopologicalObject& obj);
+
+FaceHandle getEdgeOtherFace(const TopologicalObject& obj, const EdgeHandle& eh, const FaceHandle& fh);
 
 EdgeHandle findEdge( const TopologicalObject& obj, const VertexHandle& v0, const VertexHandle& v1 );
 //bool faceExists(const EdgeHandle& e0, const EdgeHandle& e1, const EdgeHandle& e2)

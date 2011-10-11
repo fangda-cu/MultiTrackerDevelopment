@@ -81,11 +81,11 @@ void ShellRenderer::render()
       Vec3d e2 = v[2]-v[0];
       Vec3d n = e1.cross(e2);
       if( n.norm() != 0 ) n.normalize();
-      /*glNormal3f((GLfloat)n.x(),(GLfloat)n.y(),(GLfloat)n.z());
+      glNormal3f((GLfloat)n.x(),(GLfloat)n.y(),(GLfloat)n.z());
       glVertex3f((GLfloat)v[0].x(),(GLfloat)v[0].y(),(GLfloat)v[0].z());
       glVertex3f((GLfloat)v[1].x(),(GLfloat)v[1].y(),(GLfloat)v[1].z());
-      glVertex3f((GLfloat)v[2].x(),(GLfloat)v[2].y(),(GLfloat)v[2].z());*/
-      drawThickTri(v[0], v[1], v[2], m_shell.getThickness(*fit));
+      glVertex3f((GLfloat)v[2].x(),(GLfloat)v[2].y(),(GLfloat)v[2].z());
+      //drawThickTri(v[0], v[1], v[2], m_shell.getThickness(*fit));
     }
     glEnd();
 
@@ -129,7 +129,7 @@ void ShellRenderer::render()
 
       
       Scalar thickness = m_shell.getThickness(*fit);
-      int colorVal = (int) (255.0 * thickness / 0.05);
+      int colorVal = (int) (255.0 * thickness / 0.01);
       colorVal = clamp(colorVal, 0, 255);
       OpenGL::color(Color(colorVal,0,0));
       std::vector<Vec3d> points(3);
