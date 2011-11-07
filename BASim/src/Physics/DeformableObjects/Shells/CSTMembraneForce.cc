@@ -81,6 +81,16 @@ void CSTMembraneForce::globalForce( VecXd& force )  const
   for (;fit != m_shell.getDefoObj().faces_end(); ++fit) {
     const FaceHandle& fh = *fit;
    
+    if(_debugFlag) {
+      //check if the face is above the central axis, and skip it if not
+      Vec3d centrePoint(0,0,0);
+      for(FaceVertexIterator fvit = m_shell.getDefoObj().fv_iter(fh); fvit; ++fvit) {
+        centrePoint += m_shell.getVertexPosition(*fvit);
+      }
+      centrePoint /= 3.0;
+      if(centrePoint[2] > 0) continue;
+    }
+
     bool valid = gatherDOFs(fh, undeformed, undeformed_damp, deformed, indices);
     if(!valid) continue;
 
@@ -148,6 +158,7 @@ Scalar CSTMembraneForce::elementEnergy(const std::vector<Vec3d>& undeformed,
   
   Eigen::Matrix<Scalar, 3, 3> Tm;
   Scalar lenSqv[3];
+
   computeHash(undeformed, Tm, lenSqv, Young, Poisson, thickness);
 
   // difference of squared lengths of edges
@@ -286,10 +297,13 @@ CSTMembraneForce::computeHash(const std::vector<Vec3d>& undeformed, Eigen::Matri
     }
   }
 
-  Tm1 = 1.0 / (256.0 * (A * A * A * A)) * Tm1;
-  Tm2 = 1.0 / (256.0 * (A * A * A * A)) * Tm2;
-   
-  Tm = (Youngs*thickness)/(1.0-Poisson*Poisson)*((1.0-Poisson)*Tm1 + Poisson*Tm2);
+  //Dropping the 4th multiplication by A accounts for the fact that we are integrating the energy/force/etc
+  //over the area of the triangle. This makes the forces/energies/jacobians consistent as you refine the mesh.
+  //The factors of 1/2 from the s terms (strain definition) have been folded in here as well.
+
+  Tm1 = 1.0 / (128.0 * (A * A * A)) * Tm1;
+  Tm2 = 1.0 / (64.0 * (A * A * A)) * Tm2;
+  Tm = (Youngs*thickness)/2/(1.0-Poisson*Poisson)*((1.0-Poisson)*Tm1 + Poisson*Tm2);
 
 }
 

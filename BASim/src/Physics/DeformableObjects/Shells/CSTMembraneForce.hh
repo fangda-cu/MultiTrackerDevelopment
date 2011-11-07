@@ -12,6 +12,7 @@
 
 //A Constant Strain Triangle discretization of membrane forces in an elastic shell
 //See the (unpublished) document by Denis Zorin for details for this specific derivation.
+//Also see the update document by Christopher Batty that corrects some scaling errors.
 
 namespace BASim {
 

@@ -82,7 +82,9 @@ void ShellTest::Setup()
   Scalar Youngs_damping = GetScalarOpt("shell-Youngs-damping");
   Scalar Poisson_damping = GetScalarOpt("shell-Poisson-damping");
   Scalar viscosity = Youngs_damping / 2 / (1 + Poisson_damping);
-
+  std::cout << "Youngs modulus: " << Youngs_modulus << " Damping: " << Youngs_damping << std::endl;
+  std::cout << "Poisson ratio: " << Poisson_ratio << " Poisson damping: " << Poisson_damping << std::endl;
+  
   std::string integrator = GetStringOpt("integrator");
 
   Scalar dx = (Scalar)width / (Scalar)xresolution;
@@ -179,13 +181,12 @@ void ShellTest::Setup()
 
   }
   */
-
   
   //create a sphere
-  int layers = 16;
-  int slices = 24;
+  int layers = 80;
+  int slices = 80;
   Vec3d centre(0,0,0);
-  Scalar radius = 1.25;
+  Scalar radius = 1.234;
   
   std::vector<std::vector<VertexHandle>> vertList;
   //create top pole
@@ -236,6 +237,15 @@ void ShellTest::Setup()
     }
   }
   
+  //inflate the sphere by some fixed amount
+  Scalar inflateDist = 0.01;
+  for(VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit) {  
+    Vec3d oldPos = positions[*vit];
+    Vec3d normVec = (oldPos-centre);
+    normVec.normalize();
+    positions[*vit] = oldPos + inflateDist*normVec;
+  }
+
 
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj); 
@@ -258,8 +268,8 @@ void ShellTest::Setup()
   }
 
   shell->addForce(new ShellGravityForce(*shell, "Gravity", gravity));
-  Scalar pressureStrength = 0.14;
-  shell->addForce(new ShellRadialForce(*shell, "Radial", Vec3d(0,0,0), pressureStrength));
+  Scalar pressureStrength = 0.1;
+  //shell->addForce(new ShellRadialForce(*shell, "Radial", Vec3d(0,0,0), pressureStrength));
 
   //and set its properties, including geometry
   shell->setThickness(thickness);
@@ -269,7 +279,7 @@ void ShellTest::Setup()
   for(VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit) {
     Vec3d radius = (positions[*vit] - centre);
     radius.normalize();
-    //velocities[*vit] = radius*pressureStrength/12.0/viscosity/thickness;
+    //velocities[*vit] = pressureStrength/12.0/viscosity/thickness*radius;
     //velocities[*vit] = radius;
   }
   shell->setVertexVelocities(velocities);

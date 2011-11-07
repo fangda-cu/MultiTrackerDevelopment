@@ -17,7 +17,7 @@ class ElasticShellForce
 {
 public:
   
-  ElasticShellForce(ElasticShell& shell, const std::string& name = "ElasticShellForce") : m_shell(shell), m_name(name) {}
+  ElasticShellForce(ElasticShell& shell, const std::string& name = "ElasticShellForce") : m_shell(shell), m_name(name), _debugFlag(false) {}
   virtual ~ElasticShellForce() {}
 
   std::string getName() const { return m_name; }
@@ -26,11 +26,13 @@ public:
   virtual void globalForce(VecXd& force) const = 0;
   virtual void globalJacobian(Scalar scale, MatrixBase& Jacobian) const = 0;
 
+  virtual void setDebug(bool flag) {_debugFlag = flag; }
+
 protected:
 
   ElasticShell& m_shell;
   std::string m_name;
-
+  bool _debugFlag;
 };
 
 

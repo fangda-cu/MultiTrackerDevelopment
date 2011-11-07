@@ -150,8 +150,10 @@ void ShellRenderer::render()
     glPointSize(5);
     glBegin(GL_POINTS);
     OpenGL::color(Color(0,0,0));
-    for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) 
-      OpenGL::vertex(m_shell.getVertexPosition(*vit));
+    for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) {
+      Vec3d vertPos = m_shell.getVertexPosition(*vit); 
+      OpenGL::vertex(vertPos);
+    }
     glEnd();
 
     glEnable(GL_LIGHTING);

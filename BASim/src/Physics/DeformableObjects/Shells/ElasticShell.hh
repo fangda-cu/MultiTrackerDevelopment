@@ -66,6 +66,11 @@ public:
   Vec3d getVertexPosition(const VertexHandle& v) const { return m_positions[v]; }
   Vec3d getVertexVelocity(const VertexHandle& v) const { return m_velocities[v]; }
   
+  
+  Scalar getXi(const EdgeHandle& eh);
+  Scalar getUndeformedXi(const EdgeHandle& eh);
+  Scalar getDampingUndeformedXi(const EdgeHandle& eh);
+
   Scalar getMass(const VertexHandle& v) const { return m_vertex_masses[v]; }
   Scalar getThickness(const FaceHandle& f) const { return m_thicknesses[f]; }
   Scalar getVolume(const FaceHandle& f) const {return m_volumes[f]; }

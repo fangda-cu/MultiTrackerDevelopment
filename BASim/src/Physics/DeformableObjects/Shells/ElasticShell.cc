@@ -4,7 +4,7 @@
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 #include "BASim/src/Collisions/ElTopo/ccd_wrapper.hh"
-
+#include "BASim/src/Physics/DeformableObjects/Shells/CSTMembraneForce.hh"
 #include <algorithm>
 
 namespace BASim {
@@ -245,8 +245,35 @@ void ElasticShell::constrainVertex( const VertexHandle& v, const Vec3d& pos )
 
 void ElasticShell::startStep()
 {
-   
-  
+
+   const std::vector<ElasticShellForce*>& forces = getForces();
+   std::vector<ElasticShellForce*>::const_iterator fIt;
+
+   for (fIt = forces.begin(); fIt != forces.end(); ++fIt) {
+      if(typeid(*(*fIt)) == typeid(CSTMembraneForce)) {
+         Scalar potEnergy = (*fIt)->globalEnergy();
+         std::cout << "Energy " << potEnergy;
+         VecXd curr_force(m_obj->nv()*3);
+         curr_force.setZero();
+         (*fIt)->setDebug(true);
+         (*fIt)->globalForce(curr_force);
+         (*fIt)->setDebug(false);
+
+         ////Now sum forces on all the vertices along the circumference
+         Vec3d forceSum;
+         forceSum.setZero();
+         for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
+            Vec3d vertPos = getVertexPosition(*vit);
+            if(vertPos[2] < -1e-5 || vertPos[2] > 1e-5) continue; //skip non-circumferential vertices
+
+            int startIndex = getVertexDofBase(*vit);
+            Vec3d vertForce(curr_force[startIndex], curr_force[startIndex+1], curr_force[startIndex+2]);
+            forceSum += vertForce;
+         }
+         std::cout << "Force sum is: " << forceSum << std::endl;
+      }
+   }
+
   //update the "reference configuration" for computing viscous forces.
   m_damping_undeformed_positions = m_positions;
 
@@ -284,24 +311,39 @@ void ElasticShell::endStep() {
   Scalar thickness = 0;
   int count = 0;
   for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
-    position += getVertexPosition(*(vit)).norm();
-    velocity += getVertexVelocity(*(vit)).norm();
-    ++count;
+    Vec3d curPos = getVertexPosition(*(vit));
+    if(curPos[2] > -1e-5 && curPos[2] < 1e-5) {
+      position += getVertexPosition(*(vit)).norm();
+      velocity += getVertexVelocity(*(vit)).norm();
+      ++count;
+    }
   }
   int count2 = 0;
   for(FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit) {
-    thickness += m_thicknesses[*fit];
-    ++count2;
+    bool anyFound = false;
+    for(FaceVertexIterator fvit = m_obj->fv_iter(*fit); fvit; ++fvit) {
+      VertexHandle vh = *fvit;
+      Vec3d curPos = getVertexPosition(vh);
+      if(curPos[2] > -1e-5 && curPos[2] < 1e-5)
+        anyFound = true;
+    }
+    if(anyFound) {
+      thickness += m_thicknesses[*fit];
+      ++count2;
+    }
   }
   std::cout << "\n\nAverage radius: " << position/(Scalar)count << "\nAverage velocity: " << velocity/(Scalar)count << "\nAverage thickness: " << thickness/(Scalar)count2 << "\n\n" << std::endl;    
   
-  for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
-    std::cout << "Radius: " << getVertexPosition(*(vit)).norm() << std::endl;
-    std::cout << "Velocity: " << getVertexVelocity(*(vit)).norm() <<std::endl;
-    std::cout << "Mass: " << m_vertex_masses[*vit] << std::endl;
-    break;
-  }
+  //What if we update rest config first?
+  //m_damping_undeformed_positions = m_positions;
+
+  //compute forces on HALF the sphere
+  const std::vector<ElasticShellForce*>& forces = getForces();
+  std::vector<ElasticShellForce*>::const_iterator fIt;
+
   
+ 
+ 
 }
 
 void ElasticShell::remesh( Scalar desiredEdge )

@@ -55,10 +55,13 @@ void ShellRadialForce::globalForce( VecXd& force ) const
   for(VertexIterator vit = obj.vertices_begin(); vit != obj.vertices_end(); ++vit) {
     VertexHandle& vh = *vit;
     int dofIdx = m_shell.getVertexDofBase(vh);
+    
+    //compute r^2
     Vec3d direction = m_shell.getVertexPosition(vh) - m_centre;
-    Scalar r_len2 = direction.norm()*direction.norm();
+    Scalar r_len2 = direction.squaredNorm();
+    
     direction.normalize();
-    direction *= m_strength;///r_len2;
+    direction *= m_strength/r_len2;
     
     //visit all triangles and accumulate: ref_area / area 
     Scalar curArea = 0, refArea = 0;
@@ -72,11 +75,6 @@ void ShellRadialForce::globalForce( VecXd& force ) const
     force[dofIdx] += direction[0];
     force[dofIdx+1] += direction[1];
     force[dofIdx+2] += direction[2];
-   /* if(c == 0) {
-      ++c;
-      std::cout << "Area of first vertex: "<< refArea << std::endl;
-      std::cout << "Force: " << direction.norm() << std::endl;
-    }*/
   }
   
 }
