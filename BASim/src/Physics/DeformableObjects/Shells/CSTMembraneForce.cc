@@ -36,9 +36,9 @@ bool CSTMembraneForce::gatherDOFs(const FaceHandle& fh, std::vector<Vec3d>& unde
   int i = 0;
   for(;fv_it; ++fv_it) {
     const VertexHandle& vh = *fv_it;
-    undeformed[i] = m_shell.getUndeformedPosition(vh);
+    undeformed[i] = m_shell.getVertexUndeformed(vh);
     deformed[i] = m_shell.getVertexPosition(vh);
-    damp_undeformed[i] = m_shell.getDampingUndeformedPosition(vh);
+    damp_undeformed[i] = m_shell.getVertexDampingUndeformed(vh);
     int dofBase = m_shell.getVertexDofBase(vh);
     indices[i*3] = dofBase;
     indices[i*3+1] = dofBase+1;
@@ -283,7 +283,6 @@ CSTMembraneForce::computeHash(const std::vector<Vec3d>& undeformed, Eigen::Matri
   Eigen::Matrix<Scalar, 3, 3> Tm1, Tm2;
   
   int i, j, k, l, m, n;
-  // T_{il1} = (1/8/A^4)*(dot(v_k,v_m)*dot(v_j, v_n)+dot(v_k,v_n)*dot(v_j,v_m))
   for (i = 0; i < 3; i++) {
     j = (i + 1) % 3;
     k = (i + 2) % 3;

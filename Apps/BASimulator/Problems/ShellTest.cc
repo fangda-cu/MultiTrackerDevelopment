@@ -100,8 +100,36 @@ void ShellTest::Setup()
   //build a rectangular grid of vertices
   std::vector<VertexHandle> vertHandles;
   VertexProperty<Vec3d> undeformed(shellObj);
-  VertexProperty<Vec3d> velocities(shellObj);
   VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  //set up a small chunk of shell for testing bending
+  VertexHandle v0 = shellObj->addVertex();
+  VertexHandle v1 = shellObj->addVertex();
+  VertexHandle v2 = shellObj->addVertex();
+  VertexHandle v3 = shellObj->addVertex();
+  FaceHandle f0 = shellObj->addFace(v0, v1, v2);
+  FaceHandle f1 = shellObj->addFace(v2, v1, v3);
+
+  //set up a square
+  positions[v0] = undeformed[v0] = Vec3d(0,0,0);
+  positions[v1] = undeformed[v1] = Vec3d(0,0,-1);
+  positions[v2] = undeformed[v2] = Vec3d(1,0,0);
+  positions[v3] = undeformed[v3] = Vec3d(1,0,-1);
+  velocities[v0] = velocities[v1] = velocities[v2] = velocities[v3] = Vec3d(0,0,0);
+
+  //initialize all edges to zero angle for now
+  for(EdgeIterator eit = shellObj->edges_begin(); eit!= shellObj->edges_end(); ++eit) {
+    EdgeHandle eh = *eit;
+    undefAngle[*eit] = edgeAngle[*eit] = edgeVel[*eit] = 0;
+  }
+
+
 
   /*
   if(!circular) {
@@ -182,6 +210,7 @@ void ShellTest::Setup()
   }
   */
   
+  /*
   //create a sphere
   int layers = 80;
   int slices = 80;
@@ -245,7 +274,15 @@ void ShellTest::Setup()
     normVec.normalize();
     positions[*vit] = oldPos + inflateDist*normVec;
   }
+  */
 
+  ////choose some initial velocities
+  //for(VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit) {
+  //  Vec3d radius = (positions[*vit] - centre);
+  //  radius.normalize();
+  //  //velocities[*vit] = pressureStrength/12.0/viscosity/thickness*radius;
+  //  //velocities[*vit] = radius;
+  //}
 
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj); 
@@ -260,32 +297,39 @@ void ShellTest::Setup()
   //now add forces to the model
   Scalar timestep = getDt(); //Our Rayleigh damping model relies on knowing the timestep (folds it into the damping stiffness, as in Viscous Threads)
  
-  //if(bend_stiffness != 0 || bend_damping != 0)
-  //  shell->addForce(new DSBendingForce(*shell, "DSBending", bend_stiffness, bend_damping, timestep));
-
   if(Youngs_modulus != 0 || Youngs_damping != 0) {
     shell->addForce(new CSTMembraneForce(*shell, "CSTMembrane", Youngs_modulus, Poisson_ratio, Youngs_damping, Poisson_damping, timestep));
+    //shell->addForce(new MNBendingForce(*shell, "MNBending", Youngs_modulus, Poisson_ratio, Youngs_damping, Poisson_damping, timestep));
   }
 
+  std::cout << "Gravity: " << gravity << std::endl;
   shell->addForce(new ShellGravityForce(*shell, "Gravity", gravity));
-  Scalar pressureStrength = 0.1;
+  
+  //Scalar pressureStrength = 0.1;
   //shell->addForce(new ShellRadialForce(*shell, "Radial", Vec3d(0,0,0), pressureStrength));
 
   //and set its properties, including geometry
   shell->setThickness(thickness);
   shell->setDensity(density);
-  shell->setUndeformedConfig(undeformed);
+  
+  //positions
+  shell->setVertexUndeformed(undeformed);
   shell->setVertexPositions(positions);
-  for(VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit) {
-    Vec3d radius = (positions[*vit] - centre);
-    radius.normalize();
-    //velocities[*vit] = pressureStrength/12.0/viscosity/thickness*radius;
-    //velocities[*vit] = radius;
-  }
   shell->setVertexVelocities(velocities);
 
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
   
   
+  //CONSTRAINTS
+  
+  //Just pin the first vertex where it is.
+  shell->constrainVertex(v0, shell->getVertexPosition(v0));
+  shell->constrainVertex(v1, shell->getVertexPosition(v1));
+  shell->constrainVertex(v2, shell->getVertexPosition(v2));
+
   ////find the top left and right corners for adding a constraint
   //VertexIterator vit = shellObj->vertices_begin();
   //Vec3d maxPos(-100,-100,-100), minPos(100,100,100);
@@ -337,7 +381,7 @@ void ShellTest::Setup()
   }
   Vec3d inflow_vel = start_vel;
   shell->setInflowSection(extendEdgeList, inflow_vel);*/
-  std::cout << std::endl;
+
 
   //for(int q = 0; q < 0; ++q) {
   //  int c = 0; 

@@ -13,8 +13,8 @@
 
 namespace BASim {
 
-const int ELASTIC_SHELL_DOFS_PER_VERTEX = 3;
-const int ELASTIC_SHELL_DOFS_PER_EDGE = 0; //for mid-edge normal bending discretization
+const int ELASTIC_SHELL_DOFS_PER_VERTEX = 3; //nodal position vectors
+const int ELASTIC_SHELL_DOFS_PER_EDGE = 1; //mid-edge normal bending DOFs (Grinspun et al. 2006)
 
 class DeformableObject;
 class ElasticShellForce;
@@ -45,39 +45,53 @@ public:
   bool isFaceActive(const FaceHandle& f) const { return m_active_faces[f] != 0; }
   bool isTetActive(const TetHandle& t) const { return false; }
 
-  void setFaceActive(const FaceHandle& f) {m_active_faces[f] = true; }
-
   void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues) const;
 
+  void startStep();
+  void endStep();
+
   //*Elastic Shell-specific
+  void setFaceActive(const FaceHandle& f) {m_active_faces[f] = true; }
+
   const std::vector<ElasticShellForce*>& getForces() const;
   void addForce(ElasticShellForce* force);
 
-  void setThickness(Scalar thickness);
-  void setDensity(Scalar density);
+
+  
+  //All DOFs at once
   void setVertexPositions(const VertexProperty<Vec3d>& positions);
   void setVertexVelocities(const VertexProperty<Vec3d>& velocities);
-  void setUndeformedConfig(const VertexProperty<Vec3d>& undef);
-  void computeMasses();
-
-  Vec3d getDampingUndeformedPosition(const VertexHandle& v) const { return m_damping_undeformed_positions[v]; }
-  Vec3d getUndeformedPosition(const VertexHandle& v) const { return m_undeformed_positions[v]; }
+  void setVertexUndeformed(const VertexProperty<Vec3d>& undef);
   
+  void setEdgeXis(const EdgeProperty<Scalar>& xi);
+  void setEdgeUndeformed(const EdgeProperty<Scalar>& undef);
+  void setEdgeVelocities(const EdgeProperty<Scalar>& vels);
+  
+  //Individual DOFs
+  Vec3d getVertexUndeformed(const VertexHandle& v) const { return m_undeformed_positions[v]; }
   Vec3d getVertexPosition(const VertexHandle& v) const { return m_positions[v]; }
   Vec3d getVertexVelocity(const VertexHandle& v) const { return m_velocities[v]; }
-  
-  
-  Scalar getXi(const EdgeHandle& eh);
-  Scalar getUndeformedXi(const EdgeHandle& eh);
+  Vec3d getVertexDampingUndeformed(const VertexHandle& v) const { return m_damping_undeformed_positions[v]; }
+
+  void setUndeformedVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_undeformed_positions[v] = pos; }
+  void setVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_positions[v] = pos; }
+  void setVertexVelocity(const VertexHandle& v, const Vec3d& vel) { m_velocities[v] = vel; }
+
+  Scalar getEdgeUndeformed(const EdgeHandle& eh);
+  Scalar getEdgeXi(const EdgeHandle& eh);
+  Scalar getEdgeVelocity(const EdgeHandle& eh);
   Scalar getDampingUndeformedXi(const EdgeHandle& eh);
+  
+  void computeMasses();
+
+  void setDensity(Scalar density);
+  void setThickness(Scalar thickness);
 
   Scalar getMass(const VertexHandle& v) const { return m_vertex_masses[v]; }
+  Scalar getMass(const EdgeHandle& e) const { return m_edge_masses[e]; }
   Scalar getThickness(const FaceHandle& f) const { return m_thicknesses[f]; }
   Scalar getVolume(const FaceHandle& f) const {return m_volumes[f]; }
   Scalar getArea(const FaceHandle& f, bool current = true) const;
-  void setVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_positions[v] = pos; }
-  void setUndeformedVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_undeformed_positions[v] = pos; }
-  void setVertexVelocity(const VertexHandle& v, const Vec3d& vel) { m_velocities[v] = vel; }
 
   void constrainVertex(const VertexHandle& v, const Vec3d& pos);
 
@@ -86,12 +100,13 @@ public:
   void remesh(Scalar desiredEdge );
   void extendMesh();
 
-  void startStep();
-  void endStep();
-
 protected:
 
   void updateThickness();
+
+  //Most of this is remeshing related and should hopefully be moved somewhere else
+  //The issue is that remeshing needs to be aware of certain mesh parameters to ensure
+  //conservation (e.g. thickness)
 
   bool splitEdges(double desiredEdge, double maxEdge, double maxAngle);
   void collapseEdges(double minAngle, double desiredEdge, double ratio_R, double ratio_r, double minEdge);
@@ -112,6 +127,10 @@ protected:
   bool edgeFlipCausesCollision( const EdgeHandle& edge_index, const VertexHandle& new_end_a, const VertexHandle& new_end_b);
   
 
+  //Various shell data
+  VertexProperty<Vec3d> m_undeformed_positions;
+  EdgeProperty<Scalar> m_undef_xi;
+
   VertexProperty<Vec3d> m_positions;
   EdgeProperty<Scalar> m_xi;
   
@@ -121,30 +140,31 @@ protected:
   VertexProperty<Scalar> m_vertex_masses;
   EdgeProperty<Scalar> m_edge_masses;
   
-  std::vector<VertexHandle> m_constrained_vertices;
-  std::vector<Vec3d> m_constraint_positions;
-  
-  std::vector<std::vector<EdgeHandle> > m_inflow_boundaries;
-  std::vector<std::vector<Vec3d> > m_inflow_positions;
-  std::vector<Vec3d> m_inflow_velocity;
-  std::vector<Scalar> m_inflow_thickness;
-
-  VertexProperty<Vec3d> m_undeformed_positions;
-  EdgeProperty<Scalar> m_undef_xi;
-  
-  VertexProperty<Vec3d> m_damping_undeformed_positions; //"undeformed" configuration that is updated at each step to support damping/viscosity
+  //"undeformed" configuration that is updated at each step to support Rayleigh damping/viscosity
+  VertexProperty<Vec3d> m_damping_undeformed_positions; 
   EdgeProperty<Scalar> m_damping_undef_xi;
 
   FaceProperty<Scalar> m_thicknesses;
   FaceProperty<Scalar> m_volumes;
-  Scalar m_thickness;
-  Scalar m_density;
   
+  Scalar m_density;
+
   FaceProperty<char> m_active_faces; //list of faces to which this model is applied
   //Note: this should ideally use booleans, but std::vector<bool> doesn't support references, which we need. (vector<bool> isn't technically a container)
 
+  //The base object, and the list of forces
   DeformableObject* m_obj;
   std::vector<ElasticShellForce*> m_shell_forces;
+
+  //Constraints 
+  std::vector<VertexHandle> m_constrained_vertices;
+  std::vector<Vec3d> m_constraint_positions;
+  
+  //To handle continually inflowing regions
+  Scalar m_inflow_thickness;
+  std::vector<std::vector<EdgeHandle> > m_inflow_boundaries;
+  std::vector<std::vector<Vec3d> > m_inflow_positions;
+  std::vector<Vec3d> m_inflow_velocity;
   
   //collision-safe remeshing stuff ->Move into subclass? Remesh-able shell?
   Scalar m_proximity_epsilon, m_improve_collision_epsilon;

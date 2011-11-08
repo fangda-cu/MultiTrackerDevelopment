@@ -24,7 +24,7 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
     m_xi(object), 
     m_velocities(object),
     m_xi_vel(object),
-    m_thickness(0), m_density(1),
+    m_density(1),
     m_proximity_epsilon(0.01)
 {
  
@@ -72,7 +72,6 @@ void ElasticShell::addForce( ElasticShellForce* force )
 
 void ElasticShell::setThickness( Scalar thickness )
 {
-  m_thickness = thickness;
   for(FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit) {
     m_thicknesses[*fit] = thickness;
     Scalar area = getArea(*fit, false);
@@ -85,9 +84,14 @@ void ElasticShell::setDensity(Scalar density) {
   m_density = density;
 }
 
-void ElasticShell::setUndeformedConfig( const VertexProperty<Vec3d>& undef )
+void ElasticShell::setVertexUndeformed( const VertexProperty<Vec3d>& undef )
 {
   m_undeformed_positions = undef;
+}
+
+void ElasticShell::setEdgeUndeformed( const EdgeProperty<Scalar>& undef )
+{
+  m_undef_xi = undef;
 }
 
 void ElasticShell::setVertexPositions( const VertexProperty<Vec3d>& positions )
@@ -95,10 +99,21 @@ void ElasticShell::setVertexPositions( const VertexProperty<Vec3d>& positions )
   m_positions = positions;
 }
 
+void ElasticShell::setEdgeXis( const EdgeProperty<Scalar>& positions )
+{
+  m_xi = positions;
+}
+
 void ElasticShell::setVertexVelocities( const VertexProperty<Vec3d>& velocities) 
 {
   m_velocities = velocities;
 }
+
+void ElasticShell::setEdgeVelocities(const EdgeProperty<Scalar>& velocities)
+{
+  m_xi_vel = velocities;
+}
+
 
 Scalar ElasticShell::getArea(const FaceHandle& f, bool current) const  {
   FaceVertexIterator fvit = m_obj->fv_iter(f);
@@ -126,10 +141,11 @@ void ElasticShell::computeMasses()
   //Compute vertex masses in a lumped mass way.
 
   m_vertex_masses.assign(0);
+  m_edge_masses.assign(0);
 
   Scalar area = 0;
 
-  //Iterate over all triangles active in this shell
+  //Iterate over all triangles active in this shell and accumulate vertex masses
   for(FaceIterator f_iter = m_obj->faces_begin(); f_iter != m_obj->faces_end(); ++f_iter) {
     FaceHandle& f_hnd = *f_iter;
     if(m_active_faces[f_hnd]) {
@@ -152,10 +168,21 @@ void ElasticShell::computeMasses()
       m_vertex_masses[v1_hnd] += contribution;
       m_vertex_masses[v2_hnd] += contribution;
 
+      //also accumulate mass to the edges (this mass computation is probably not consistent with what we want)
+      FaceEdgeIterator feit = m_obj->fe_iter(f_hnd);
+      EdgeHandle e0_hnd = *feit; ++feit; assert(feit);
+      EdgeHandle e1_hnd = *feit; ++feit; assert(feit);
+      EdgeHandle e2_hnd = *feit; ++feit; assert(feit);
+
+      m_edge_masses[e0_hnd] += contribution;
+      m_edge_masses[e1_hnd] += contribution;
+      m_edge_masses[e2_hnd] += contribution;
+
       //store the current volumes
       m_volumes[f_hnd] = 3*area*m_thicknesses[f_hnd];
     }
   }
+ 
 }
 
 bool ElasticShell::isVertexActive( const VertexHandle& v ) const
@@ -186,45 +213,75 @@ bool ElasticShell::isEdgeActive( const EdgeHandle& e) const {
 const Scalar& ElasticShell::getDof( const DofHandle& hnd ) const
 {
   //they're all vertex Dofs for a shell
-  assert(hnd.getType() == DofHandle::VERTEX_DOF);
+  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType == DofHandle::EDGE_DOF);
 
   //return reference to the appropriate position in the vector
-  const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
-  return const_cast<Vec3d&>(m_positions[vh])[hnd.getNum()];
+  if(hnd.getType() == DofHandle::VERTEX_DOF) {
+    const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
+    return const_cast<Vec3d&>(m_positions[vh])[hnd.getNum()];
+  }
+  else {
+    const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
+    return const_cast<Scalar&>(m_xi[eh]);
+  }
 }
 
 void ElasticShell::setDof( const DofHandle& hnd, const Scalar& dof )
 {
   //they're all vertex Dofs for a shell
-  assert(hnd.getType() == DofHandle::VERTEX_DOF);
+  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType == DofHandle::EDGE_DOF);
 
-  const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
-  m_positions[vh][hnd.getNum()] = dof;
+  if(hnd.getType() == DofHandle::VERTEX_DOF) {
+    const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
+    m_positions[vh][hnd.getNum()] = dof;
+  }
+  else {
+    const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
+    m_xi[eh] = dof;
+  }
 }
 
 const Scalar& ElasticShell::getVel( const DofHandle& hnd ) const
 {
-  assert(hnd.getType() == DofHandle::VERTEX_DOF);
+  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType == DofHandle::EDGE_DOF);
 
   //return reference to the appropriate position in the vector
-  const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
-  return const_cast<Vec3d&>(m_velocities[vh])[hnd.getNum()];
+  if(hnd.getType() == DofHandle::VERTEX_DOF) {
+    const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
+    return const_cast<Vec3d&>(m_velocities[vh])[hnd.getNum()];
+  }
+  else{
+    const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
+    return const_cast<Scalar&>(m_xi_vel[eh]);
+  }
 }
 
 void ElasticShell::setVel( const DofHandle& hnd, const Scalar& vel )
 {
-  assert(hnd.getType() == DofHandle::VERTEX_DOF);
+  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType == DofHandle::EDGE_DOF);
 
-  const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
-  m_velocities[vh][hnd.getNum()] = vel;
+  if(hnd.getType() == DofHandle::VERTEX_DOF) {
+    const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
+    m_velocities[vh][hnd.getNum()] = vel;
+  }
+  else{
+    const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
+    m_xi_vel[eh] = vel;
+  }
 }
 
 const Scalar& ElasticShell::getMass( const DofHandle& hnd ) const
 {
-  assert(hnd.getType() == DofHandle::VERTEX_DOF);
+  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType == DofHandle::EDGE_DOF);
 
-  const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
-  return m_vertex_masses[vh];
+  if(hnd.getType() == DofHandle::VERTEX_DOF) {
+    const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
+    return m_vertex_masses[vh];
+  }
+  else {
+    const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
+    return m_edge_masses[eh];
+  }
 }
 
 void ElasticShell::getScriptedDofs( IntArray& dofIndices, std::vector<Scalar>& dofValues ) const
@@ -246,13 +303,15 @@ void ElasticShell::constrainVertex( const VertexHandle& v, const Vec3d& pos )
 void ElasticShell::startStep()
 {
 
+  /* //Debugging forces
    const std::vector<ElasticShellForce*>& forces = getForces();
    std::vector<ElasticShellForce*>::const_iterator fIt;
 
+   
    for (fIt = forces.begin(); fIt != forces.end(); ++fIt) {
       if(typeid(*(*fIt)) == typeid(CSTMembraneForce)) {
          Scalar potEnergy = (*fIt)->globalEnergy();
-         std::cout << "Energy " << potEnergy;
+         //std::cout << "Energy " << potEnergy;
          VecXd curr_force(m_obj->nv()*3);
          curr_force.setZero();
          (*fIt)->setDebug(true);
@@ -273,6 +332,7 @@ void ElasticShell::startStep()
          std::cout << "Force sum is: " << forceSum << std::endl;
       }
    }
+   */
 
   //update the "reference configuration" for computing viscous forces.
   m_damping_undeformed_positions = m_positions;
@@ -293,6 +353,7 @@ void ElasticShell::endStep() {
     Scalar mass = m_vertex_masses[v];
     if(mass == 0)
       std::cout << "Zero mass!\n";
+    std::cout << "Velocity " << v.idx() << " = " << getVertexVelocity(v) << std::endl;
   }
 
   //check total volume
@@ -306,6 +367,7 @@ void ElasticShell::endStep() {
   m_obj->computeDofIndexing();
 
 
+  /*
   Scalar position = 0;
   Scalar velocity = 0;
   Scalar thickness = 0;
@@ -333,15 +395,11 @@ void ElasticShell::endStep() {
     }
   }
   std::cout << "\n\nAverage radius: " << position/(Scalar)count << "\nAverage velocity: " << velocity/(Scalar)count << "\nAverage thickness: " << thickness/(Scalar)count2 << "\n\n" << std::endl;    
-  
+  */
+
   //What if we update rest config first?
   //m_damping_undeformed_positions = m_positions;
 
-  //compute forces on HALF the sphere
-  const std::vector<ElasticShellForce*>& forces = getForces();
-  std::vector<ElasticShellForce*>::const_iterator fIt;
-
-  
  
  
 }
@@ -776,7 +834,7 @@ bool ElasticShell::performSplit(const EdgeHandle& eh) {
   VertexHandle v_new = splitEdge(*m_obj, eh, newFaces);
 
   Vec3d velocity = 0.5f*(getVertexVelocity(v0) + getVertexVelocity(v1));
-  Vec3d undef = 0.5f*(getUndeformedPosition(v0) + getUndeformedPosition(v1));
+  Vec3d undef = 0.5f*(getVertexUndeformed(v0) + getVertexUndeformed(v1));
   setVertexVelocity(v_new, velocity);
   setVertexPosition(v_new, midpoint);
   setUndeformedVertexPosition(v_new, undef);
@@ -1508,17 +1566,17 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
       else if(v0_bdry) {
         newPoint = p0;
         newVel = getVertexVelocity(v0);
-        newUndef = getUndeformedPosition(v0);
+        newUndef = getVertexUndeformed(v0);
       }
       else if(v1_bdry) {
         newPoint = p1;
         newVel = getVertexVelocity(v1);
-        newUndef = getUndeformedPosition(v1);
+        newUndef = getVertexUndeformed(v1);
       }
       else {
         newPoint = 0.5f*(p0+p1);
         newVel = 0.5f*(getVertexVelocity(v0) + getVertexVelocity(v1));
-        newUndef = 0.5f*(getUndeformedPosition(v0) + getUndeformedPosition(v1));
+        newUndef = 0.5f*(getVertexUndeformed(v0) + getVertexUndeformed(v1));
       }
 
       //determine area of collapsing faces
@@ -1688,9 +1746,9 @@ void ElasticShell::extendMesh() {
 
 
     for(unsigned int i = 0; i < faces.size(); ++i) {
-      m_thicknesses[faces[i]] = m_thickness;
+      m_thicknesses[faces[i]] = m_inflow_thickness;
       m_volumes[faces[i]] = 0;
-      m_volumes[faces[i]] = getArea(faces[i])*m_thickness;
+      m_volumes[faces[i]] = getArea(faces[i])*m_inflow_thickness;
       FaceVertexIterator fvit = m_obj->fv_iter(faces[i]);
       for(;fvit;++fvit) {
         VertexHandle vh = *fvit;
