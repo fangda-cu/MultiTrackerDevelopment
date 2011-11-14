@@ -12,12 +12,34 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ElasticShellForce.hh"
 #include "BASim/src/Core/TopologicalObject/TopologicalObject.hh"
 #include <memory>
+#include "adt/adreal.h"
+#include "adt/advec.h"
 
 namespace BASim {
 
-struct MNPrecomputed;
+const int NumTriPoints = 3;
 
-const int NumMNBendDof = 21;
+//typedefs and definitions from Meshopt
+typedef Scalar Real;
+typedef CVec3T<Real> Vector3d;
+
+struct MNPrecomputed { 
+
+  // two parameters in the energy formula related to ref config. ->Per Face!
+  Vector3d tau0[NumTriPoints];  // perp to the average edge normal for ref config
+  Real     c0[NumTriPoints];    // 1/dot(tunit0[0],tau0[0])    
+
+  // 3 parameters related to undeformed config that need to be computed
+  // only once ->Per Face!
+  Real   T[NumTriPoints*NumTriPoints]; // matrix T used in the energy computation
+  int    s[NumTriPoints];              // +/- 1 indicating ownership
+  Real   w_undef[NumTriPoints];        // coefficients of the shape
+  // operator in the undeformed state in t_i X t_i basis
+};
+
+
+const int NumMNBendDof = 12;
+const int MNBendStencilSize = 21;
 
 class MNBendingForce : public ElasticShellForce {
 
@@ -32,6 +54,8 @@ public:
   void globalForce(VecXd& force) const;
   void globalJacobian(Scalar scale, MatrixBase& Jacobian) const;
 
+  void update();
+
 private:
 
   Scalar elementEnergy(const std::vector<Scalar>& undeformed,
@@ -45,6 +69,7 @@ private:
                       const std::vector<Scalar>& deformed, 
                       Eigen::Matrix<Scalar,NumMNBendDof,NumMNBendDof>& jac, MNPrecomputed* pre) const;
  
+ void doPrecomputation() const;
  void initializePrecomp( const FaceHandle& face, const std::vector<Scalar>& undeformed, const std::vector<Scalar>& deformed, MNPrecomputed* pre) const;
  void updatePrecomp(const FaceHandle& face, const std::vector<Scalar>& undeformed, const std::vector<Scalar>& deformed, MNPrecomputed* pre) const;
 
@@ -57,7 +82,8 @@ private:
   Scalar m_timestep;
   Scalar m_Youngs, m_Poisson;
   Scalar m_Youngs_damp, m_Poisson_damp;
-
+  mutable FaceProperty<MNPrecomputed> m_precomputed;
+  mutable bool m_initialized;
 };
 
 

@@ -27,6 +27,8 @@ public:
   virtual void globalJacobian(Scalar scale, MatrixBase& Jacobian) const = 0;
 
   virtual void setDebug(bool flag) {_debugFlag = flag; }
+  
+  virtual void update() {};
 
 protected:
 

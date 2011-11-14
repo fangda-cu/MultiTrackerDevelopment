@@ -449,9 +449,8 @@ TopologicalObject::addFace(const VertexHandle& v0, const VertexHandle& v1, const
     for(VertexEdgeIterator ve_iter3(this, v2); ve_iter3; ++ve_iter3)
       if(e_hnd == *ve_iter3)
         e02 = e_hnd;
-
   }
-  
+
   EdgeHandle e12(-1);
   for(VertexEdgeIterator ve_iter(this, v1); ve_iter; ++ve_iter) {
     EdgeHandle e_hnd = *ve_iter;

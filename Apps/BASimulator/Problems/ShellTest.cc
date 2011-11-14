@@ -11,6 +11,7 @@
 #include "BASim/src/Physics/DeformableObjects/DefoObjTimeStepper.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/CSTMembraneForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/DSBendingForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Shells/MNBendingForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellGravityForce.hh"
 #include "BASim/src/Render/ShellRenderer.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
@@ -115,7 +116,7 @@ void ShellTest::Setup()
   VertexHandle v3 = shellObj->addVertex();
   FaceHandle f0 = shellObj->addFace(v0, v1, v2);
   FaceHandle f1 = shellObj->addFace(v2, v1, v3);
-
+  
   //set up a square
   positions[v0] = undeformed[v0] = Vec3d(0,0,0);
   positions[v1] = undeformed[v1] = Vec3d(0,0,-1);
@@ -128,8 +129,8 @@ void ShellTest::Setup()
     EdgeHandle eh = *eit;
     undefAngle[*eit] = edgeAngle[*eit] = edgeVel[*eit] = 0;
   }
-
-
+  std::cout << std::endl;
+  
 
   /*
   if(!circular) {
@@ -299,7 +300,7 @@ void ShellTest::Setup()
  
   if(Youngs_modulus != 0 || Youngs_damping != 0) {
     shell->addForce(new CSTMembraneForce(*shell, "CSTMembrane", Youngs_modulus, Poisson_ratio, Youngs_damping, Poisson_damping, timestep));
-    //shell->addForce(new MNBendingForce(*shell, "MNBending", Youngs_modulus, Poisson_ratio, Youngs_damping, Poisson_damping, timestep));
+    shell->addForce(new MNBendingForce(*shell, "MNBending", Youngs_modulus, Poisson_ratio, Youngs_damping, Poisson_damping, timestep));
   }
 
   std::cout << "Gravity: " << gravity << std::endl;

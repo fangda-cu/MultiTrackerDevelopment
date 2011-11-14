@@ -334,8 +334,15 @@ void ElasticShell::startStep()
    }
    */
 
-  //update the "reference configuration" for computing viscous forces.
+  //update the damping "reference configuration" for computing viscous forces.
   m_damping_undeformed_positions = m_positions;
+  m_damping_undef_xi = m_xi;
+
+  //tell the forces to update anything they need to update
+  const std::vector<ElasticShellForce*>& forces = getForces();
+  for(int i = 0; i < forces.size(); ++i) {
+    forces[i]->update();
+  }
 
 }
 

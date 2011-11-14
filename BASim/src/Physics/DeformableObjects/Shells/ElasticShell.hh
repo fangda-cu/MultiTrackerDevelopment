@@ -77,10 +77,10 @@ public:
   void setVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_positions[v] = pos; }
   void setVertexVelocity(const VertexHandle& v, const Vec3d& vel) { m_velocities[v] = vel; }
 
-  Scalar getEdgeUndeformed(const EdgeHandle& eh);
-  Scalar getEdgeXi(const EdgeHandle& eh);
-  Scalar getEdgeVelocity(const EdgeHandle& eh);
-  Scalar getDampingUndeformedXi(const EdgeHandle& eh);
+  Scalar getEdgeUndeformedXi(const EdgeHandle& eh) const { return m_undef_xi[eh]; }
+  Scalar getEdgeXi(const EdgeHandle& eh) const { return m_xi[eh]; }
+  Scalar getEdgeVelocity(const EdgeHandle& eh) const { return m_xi_vel[eh]; }
+  Scalar getDampingUndeformedXi(const EdgeHandle& eh) const { return m_damping_undef_xi[eh]; }
   
   void computeMasses();
 
