@@ -16,7 +16,7 @@
 #include "BASim/src/Render/ShellRenderer.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellRadialForce.hh"
-
+#include "BASim/src/Physics/DeformableObjects/Shells/ShellSurfaceTensionForce.hh"
 #include <fstream>
 
 ShellTest::ShellTest()
@@ -32,6 +32,8 @@ ShellTest::ShellTest()
   AddOption("x-resolution", "the number of segments along the horizontal edge", 30);
   AddOption("y-resolution", "the number of segments along the vertical edge", 30);
   AddOption("shell-density", "volumetric density of the shell ", 1.0);
+
+  AddOption("surface-tension", "surface tension coefficient of the shell", 1.0);
   
   //discrete shell bending stiffnesses
   AddOption("shell-bending-stiffness", "the bending stiffness of the shell", 0.0f);
@@ -75,6 +77,8 @@ void ShellTest::Setup()
   int yresolution = GetIntOpt("y-resolution");
   Vec3d gravity = GetVecOpt("gravity");
   
+  Scalar surface_tension = GetScalarOpt("surface-tension");
+
   Scalar bend_stiffness = GetScalarOpt("shell-bending-stiffness");
   Scalar bend_damping = GetScalarOpt("shell-bending-damping");
   
@@ -303,8 +307,11 @@ void ShellTest::Setup()
     shell->addForce(new MNBendingForce(*shell, "MNBending", Youngs_modulus, Poisson_ratio, Youngs_damping, Poisson_damping, timestep));
   }
 
-  std::cout << "Gravity: " << gravity << std::endl;
+  //Gravity
   shell->addForce(new ShellGravityForce(*shell, "Gravity", gravity));
+
+  //Surface tension
+  shell->addForce(new ShellSurfaceTensionForce(*shell, "Surface Tension", surface_tension));
   
   //Scalar pressureStrength = 0.1;
   //shell->addForce(new ShellRadialForce(*shell, "Radial", Vec3d(0,0,0), pressureStrength));
@@ -327,9 +334,9 @@ void ShellTest::Setup()
   //CONSTRAINTS
   
   //Just pin the first vertex where it is.
-  shell->constrainVertex(v0, shell->getVertexPosition(v0));
+  /*shell->constrainVertex(v0, shell->getVertexPosition(v0));
   shell->constrainVertex(v1, shell->getVertexPosition(v1));
-  shell->constrainVertex(v2, shell->getVertexPosition(v2));
+  shell->constrainVertex(v2, shell->getVertexPosition(v2));*/
 
   ////find the top left and right corners for adding a constraint
   //VertexIterator vit = shellObj->vertices_begin();

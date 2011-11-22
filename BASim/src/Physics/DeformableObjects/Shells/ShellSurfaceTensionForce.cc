@@ -17,9 +17,8 @@ namespace BASim {
 ShellSurfaceTensionForce::ShellSurfaceTensionForce( 
   ElasticShell& shell, 
   const std::string& name, 
-  Scalar surf_coeff, 
-  Scalar timestep )
-: ElasticShellForce(shell, name), m_surface_tension_coeff(surf_coeff), m_timestep(timestep)
+  Scalar surf_coeff )
+: ElasticShellForce(shell, name), m_surface_tension_coeff(surf_coeff)
 {
   
 }
@@ -72,7 +71,7 @@ Scalar ShellSurfaceTensionForce::globalEnergy() const
 {
   Scalar energy = 0;
   std::vector<int> indices(9);
-  std::vector<Vec3d> undeformed(3), deformed(3), undeformed_damp(3);
+  std::vector<Vec3d> deformed(3);
 
   if(m_surface_tension_coeff == 0) return 0;
 
@@ -99,7 +98,7 @@ void ShellSurfaceTensionForce::globalForce( VecXd& force )  const
   Eigen::Matrix<Scalar, 9, 1> localForce;
 
   if(m_surface_tension_coeff == 0) return;
-
+  std::cout << "Computing surf force\n";
   FaceIterator fit = m_shell.getDefoObj().faces_begin();
   for (;fit != m_shell.getDefoObj().faces_end(); ++fit) {
     const FaceHandle& fh = *fit;
@@ -107,11 +106,14 @@ void ShellSurfaceTensionForce::globalForce( VecXd& force )  const
     bool valid = gatherDOFs(fh, deformed, indices);
     if(!valid) continue;
 
+    std::cout << "Computing face " << fit->idx() << "\n";
+
     elementForce(deformed, localForce);
     for (unsigned int i = 0; i < indices.size(); ++i)
       force(indices[i]) += localForce(i);
    
   }
+  std::cout << "Done surf force\n";
 }
 
 void ShellSurfaceTensionForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) const
@@ -121,6 +123,8 @@ void ShellSurfaceTensionForce::globalJacobian( Scalar scale, MatrixBase& Jacobia
   Eigen::Matrix<Scalar, 9, 9> localMatrix;
 
   if(m_surface_tension_coeff == 0) return;
+
+  std::cout << "Computing surf Jacob\n";
 
   FaceIterator fit = m_shell.getDefoObj().faces_begin();
   for (;fit != m_shell.getDefoObj().faces_end(); ++fit) {
@@ -135,13 +139,14 @@ void ShellSurfaceTensionForce::globalJacobian( Scalar scale, MatrixBase& Jacobia
         Jacobian.add(indices[i], indices[j], scale * localMatrix(i,j));
 
   }
+  std::cout << "Done surf Jacob\n";
 }
 
 
 Scalar ShellSurfaceTensionForce::elementEnergy(const std::vector<Vec3d>& deformed) const
 {
   
-  std::vector<Scalar> deformed_data;
+  std::vector<Scalar> deformed_data(NumSTDof);
   for(unsigned int i = 0; i < deformed.size(); ++i) {
     deformed_data[3*i] = deformed[i][0];
     deformed_data[3*i+1] = deformed[i][1];
@@ -158,7 +163,7 @@ void ShellSurfaceTensionForce::elementForce(const std::vector<Vec3d>& deformed,
                                     Eigen::Matrix<Scalar, 9, 1>& force) const
 {
   assert(deformed.size() == 3);
-  std::vector<Scalar> deformed_data;
+  std::vector<Scalar> deformed_data(NumSTDof);
   for(unsigned int i = 0; i < deformed.size(); ++i) {
     deformed_data[3*i] = deformed[i][0];
     deformed_data[3*i+1] = deformed[i][1];
@@ -178,7 +183,7 @@ void ShellSurfaceTensionForce::elementJacobian(const std::vector<Vec3d>& deforme
 {
   assert(deformed.size() == 3);
 
-  std::vector<Scalar> deformed_data;
+  std::vector<Scalar> deformed_data(NumSTDof);
   for(unsigned int i = 0; i < deformed.size(); ++i) {
     deformed_data[3*i] = deformed[i][0];
     deformed_data[3*i+1] = deformed[i][1];

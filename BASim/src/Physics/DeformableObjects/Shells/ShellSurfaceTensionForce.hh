@@ -30,7 +30,7 @@ class ShellSurfaceTensionForce : public ElasticShellForce {
 
 public:
 
-  ShellSurfaceTensionForce (ElasticShell& shell, const std::string& name = "ShellSurfaceTensionForce", Scalar surfCoeff = 0, Scalar timestep = 1);
+  ShellSurfaceTensionForce (ElasticShell& shell, const std::string& name = "ShellSurfaceTensionForce", Scalar surfCoeff = 0);
   virtual ~ShellSurfaceTensionForce () {}
 
   std::string getName() const;
@@ -49,7 +49,6 @@ protected:
   void elementJacobian(const std::vector<Vec3d>& deformed, 
                        Eigen::Matrix<Scalar, 9, 9>& J) const;
   
-  Scalar m_timestep;
   Scalar m_surface_tension_coeff;
 
 };
