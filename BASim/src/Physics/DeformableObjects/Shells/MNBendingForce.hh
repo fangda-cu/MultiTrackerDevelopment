@@ -38,8 +38,8 @@ struct MNPrecomputed {
 };
 
 
-const int NumMNBendDof = 12;
-const int MNBendStencilSize = 21;
+const int NumMNBendDof = 12;  //3 vertices x dofs each, + 3 edges x 1 dof each
+const int MNBendStencilSize = 21; //same as above + 3 flap vertices x 3 dofs each
 
 class MNBendingForce : public ElasticShellForce {
 
