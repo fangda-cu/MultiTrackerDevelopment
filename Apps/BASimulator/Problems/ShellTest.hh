@@ -36,6 +36,12 @@ protected:
   ElasticShell* shell;
   DefoObjTimeStepper* stepper;
   
+  void setupScene1(); //vertical flat sheet
+  void setupScene2(); //vertical cylindrical sheet
+  void setupScene3(); //spherical sheet
+  void setupScene4(); //two-triangle bending test
+
+
 };
 
 #endif // SHELLTEST_HH

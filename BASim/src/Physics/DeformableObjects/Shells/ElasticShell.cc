@@ -360,7 +360,6 @@ void ElasticShell::endStep() {
     Scalar mass = m_vertex_masses[v];
     if(mass == 0)
       std::cout << "Zero mass!\n";
-    std::cout << "Velocity " << v.idx() << " = " << getVertexVelocity(v) << std::endl;
   }
 
   //check total volume
@@ -368,7 +367,6 @@ void ElasticShell::endStep() {
   for(FaceIterator fit = m_obj->faces_begin(); fit!= m_obj->faces_end(); ++fit) {
     total += m_volumes[*fit];
   }
-  std::cout << "\nVolume: " << total << std::endl;
 
   //recompute DOF indexing...
   m_obj->computeDofIndexing();

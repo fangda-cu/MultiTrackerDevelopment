@@ -49,20 +49,21 @@ template <int DO_HESS>
 adreal<NumSTDof,DO_HESS,Real> STEnergy(const ShellSurfaceTensionForce& mn, const std::vector<Scalar>& deformed, Scalar surf_coeff) {  
 
   // typedefs to simplify code below
-  typedef adreal<NumSTDof,DO_HESS,Real> adrealMN;
-  typedef CVec3T<adrealMN> advecMN;
+  typedef adreal<NumSTDof,DO_HESS,Real> adrealST;
+  typedef CVec3T<adrealST> advecST;
 
   Vector3d* s_deformed = (Vector3d*)(&deformed[0]);
   
   // indep variables
-  advecMN   p[3]; // vertex positions
+  advecST   p[3]; // vertex positions
   set_independent( p[0], s_deformed[0], 0 );
   set_independent( p[1], s_deformed[1], 3 );
   set_independent( p[2], s_deformed[2], 6 );    
     
   //energy = 2*coeff*surface_area
-  adrealMN e(0);
+  adrealST e(0);
   e += surf_coeff*len(cross(p[1] - p[0], p[2] - p[0]));  
+
 
   return e;
 }
@@ -98,7 +99,7 @@ void ShellSurfaceTensionForce::globalForce( VecXd& force )  const
   Eigen::Matrix<Scalar, 9, 1> localForce;
 
   if(m_surface_tension_coeff == 0) return;
-  std::cout << "Computing surf force\n";
+  
   FaceIterator fit = m_shell.getDefoObj().faces_begin();
   for (;fit != m_shell.getDefoObj().faces_end(); ++fit) {
     const FaceHandle& fh = *fit;
@@ -106,14 +107,12 @@ void ShellSurfaceTensionForce::globalForce( VecXd& force )  const
     bool valid = gatherDOFs(fh, deformed, indices);
     if(!valid) continue;
 
-    std::cout << "Computing face " << fit->idx() << "\n";
-
     elementForce(deformed, localForce);
     for (unsigned int i = 0; i < indices.size(); ++i)
       force(indices[i]) += localForce(i);
    
   }
-  std::cout << "Done surf force\n";
+  
 }
 
 void ShellSurfaceTensionForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) const
@@ -123,8 +122,6 @@ void ShellSurfaceTensionForce::globalJacobian( Scalar scale, MatrixBase& Jacobia
   Eigen::Matrix<Scalar, 9, 9> localMatrix;
 
   if(m_surface_tension_coeff == 0) return;
-
-  std::cout << "Computing surf Jacob\n";
 
   FaceIterator fit = m_shell.getDefoObj().faces_begin();
   for (;fit != m_shell.getDefoObj().faces_end(); ++fit) {
@@ -139,7 +136,7 @@ void ShellSurfaceTensionForce::globalJacobian( Scalar scale, MatrixBase& Jacobia
         Jacobian.add(indices[i], indices[j], scale * localMatrix(i,j));
 
   }
-  std::cout << "Done surf Jacob\n";
+  
 }
 
 
