@@ -160,6 +160,7 @@ void ShellSurfaceTensionForce::elementForce(const std::vector<Vec3d>& deformed,
                                     Eigen::Matrix<Scalar, 9, 1>& force) const
 {
   assert(deformed.size() == 3);
+ /* 
   std::vector<Scalar> deformed_data(NumSTDof);
   for(unsigned int i = 0; i < deformed.size(); ++i) {
     deformed_data[3*i] = deformed[i][0];
@@ -167,12 +168,49 @@ void ShellSurfaceTensionForce::elementForce(const std::vector<Vec3d>& deformed,
     deformed_data[3*i+2] = deformed[i][2];
   }
 
+  //AutoDiff version
   adreal<NumSTDof,0,Real> e = STEnergy<0>(*this, deformed_data, m_surface_tension_coeff);     
   for( uint i = 0; i < NumSTDof; i++ )
   {
     force[i] = -e.gradient(i);
   }
+  */
+  
+  //Derived by directly taking the derivative of len(cross(v1,v2))
+  Vec3d v1 = deformed[1] - deformed[0];
+  Vec3d v2 = deformed[2] - deformed[0];
+  Vec3d Aa = v1.cross(v2);
+  Vec3d mul = A / A.norm();
+  Vec3d p2part = m_surface_tension_coeff*v1.cross(mul);
+  Vec3d p1part = m_surface_tension_coeff*mul.cross(v2);
+  Vec3d p0part = -(p1part + p2part);
+  
+  /*  
+  //Alternative implementation
+  //using the fact that gradient of triangle area w.r.t p_i is
+  //half the vector (p_j-p_k) of the opposing edge, rotated 90 degrees 
+  //to point towards p_i, in the triangle plane.
+  Vec3d v0 = deformed[1] - deformed[0];
+  Vec3d v1 = deformed[2] - deformed[1];
+  Vec3d v2 = deformed[0] - deformed[2];
+  Vec3d A = v1.cross(v2);
+  Vec3d mul = A / A.norm();
+  p0part = -m_surface_tension_coeff*mul.cross(v1);
+  p1part = -m_surface_tension_coeff*mul.cross(v2);
+  p2part = -m_surface_tension_coeff*mul.cross(v0);
+  */
 
+  //Assign result back to the force vector
+  force[0] = p0part[0];
+  force[1] = p0part[1];
+  force[2] = p0part[2];
+  force[3] = p1part[0];
+  force[4] = p1part[1];
+  force[5] = p1part[2];
+  force[6] = p2part[0];
+  force[7] = p2part[1];
+  force[8] = p2part[2];
+  
 }
 
 void ShellSurfaceTensionForce::elementJacobian(const std::vector<Vec3d>& deformed,
