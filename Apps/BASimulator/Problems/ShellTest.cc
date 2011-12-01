@@ -44,6 +44,11 @@ ShellTest::ShellTest()
   AddOption("shell-Poisson-damping", "the damping coefficient associated to the shell's Poisson ratio", 0.0f);
   AddOption("shell-Youngs-damping", "the damping coefficient associated with the shell's Young's modulus", 0.0f);
 
+  //DSBend stiffness
+  AddOption("shell-bending-stiffness", "Hinge (Discrete shells) bending stiffness of the shell", 1.0);
+  AddOption("shell-bending-damping", "Hinge (Discrete shells) bending damping coefficient of the shell ", 1.0);
+
+
   //timestepper options
   AddOption("integrator", "type of integrator to use for the shell", "symplectic");
   AddOption("iterations", "maximum number of iterations for the implicit method", (int) 100);
@@ -83,6 +88,9 @@ void ShellTest::Setup()
   Scalar Youngs_damping = GetScalarOpt("shell-Youngs-damping");
   Scalar Poisson_damping = GetScalarOpt("shell-Poisson-damping");
   
+  Scalar DSbendstiffness = GetScalarOpt("shell-bending-stiffness");
+  Scalar DSbenddamping = GetScalarOpt("shell-bending-damping");
+
   std::string integrator = GetStringOpt("integrator");
 
   //Geometry/scene specific
@@ -150,7 +158,13 @@ void ShellTest::Setup()
   if(Youngs_modulus != 0 || Youngs_damping != 0) {
     shell->addForce(new CSTMembraneForce(*shell, "CSTMembrane", Youngs_modulus, Poisson_ratio, Youngs_damping, Poisson_damping, timestep));
     //shell->addForce(new MNBendingForce(*shell, "MNBending", Youngs_modulus, Poisson_ratio, Youngs_damping, Poisson_damping, timestep));
+    
   }
+
+  if(DSbendstiffness != 0 || DSbenddamping !=0)
+    shell->addForce(new DSBendingForce(*shell, "DSBending", DSbendstiffness, DSbenddamping, timestep));
+  
+  
 
   //Gravity force
   shell->addForce(new ShellGravityForce(*shell, "Gravity", gravity));
@@ -264,13 +278,13 @@ void ShellTest::setupScene1() {
   Vec3d start_vel(0,0,0);
   for(int j = 0; j <= yresolution; ++j) {
     for(int i = 0; i <= xresolution; ++i) {
-      Vec3d vert(i*dx, -1 + j*dy, 0);
-      //if(j < 0.5*yresolution) {
-      //  int k = j;
-      //  int j_mod = (int)(0.5*yresolution);
-      //  vert(1) = j_mod*dx;
-      //  vert(2) = (k-j_mod)*dx;
-      //}
+      Vec3d vert(i*dx, j*dy, 0);
+      if(j < 0.5*yresolution) {
+        int k = j;
+        int j_mod = (int)(0.5*yresolution);
+        vert(1) = j_mod*dx;
+        vert(2) = (k-j_mod)*dx;
+      }
       Vec3d undef = vert;
 
       VertexHandle h = shellObj->addVertex();
