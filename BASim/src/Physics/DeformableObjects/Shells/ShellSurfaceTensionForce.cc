@@ -179,7 +179,7 @@ void ShellSurfaceTensionForce::elementForce(const std::vector<Vec3d>& deformed,
   //Derived by directly taking the derivative of len(cross(v1,v2))
   Vec3d v1 = deformed[1] - deformed[0];
   Vec3d v2 = deformed[2] - deformed[0];
-  Vec3d Aa = v1.cross(v2);
+  Vec3d A = v1.cross(v2);
   Vec3d mul = A / A.norm();
   Vec3d p2part = m_surface_tension_coeff*v1.cross(mul);
   Vec3d p1part = m_surface_tension_coeff*mul.cross(v2);
@@ -236,6 +236,8 @@ void ShellSurfaceTensionForce::elementJacobian(const std::vector<Vec3d>& deforme
       jac(i,j) = -e.hessian(i,j);
     }
   }
+
+
 }
 
 
