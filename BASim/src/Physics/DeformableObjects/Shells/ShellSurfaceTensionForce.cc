@@ -218,26 +218,97 @@ void ShellSurfaceTensionForce::elementJacobian(const std::vector<Vec3d>& deforme
 {
   assert(deformed.size() == 3);
 
-  std::vector<Scalar> deformed_data(NumSTDof);
-  for(unsigned int i = 0; i < deformed.size(); ++i) {
-    deformed_data[3*i] = deformed[i][0];
-    deformed_data[3*i+1] = deformed[i][1];
-    deformed_data[3*i+2] = deformed[i][2];
-  }
+  //Eigen::Matrix<Scalar,9,9> jac2;
+  //std::vector<Scalar> deformed_data(NumSTDof);
+  //for(unsigned int i = 0; i < deformed.size(); ++i) {
+  //  deformed_data[3*i] = deformed[i][0];
+  //  deformed_data[3*i+1] = deformed[i][1];
+  //  deformed_data[3*i+2] = deformed[i][2];
+  //}
 
-  jac.setZero();
+  //jac2.setZero();
 
-  adreal<NumSTDof,1,Real> e = STEnergy<1>(*this, deformed_data, m_surface_tension_coeff);     
-  // insert in the element jacobian matrix
-  for( uint i = 0; i < NumSTDof; i++ )
-  {
-    for( uint j = 0; j < NumSTDof; j++ )
-    {
-      jac(i,j) = -e.hessian(i,j);
+  //adreal<NumSTDof,1,Real> e = STEnergy<1>(*this, deformed_data, m_surface_tension_coeff);     
+  //// insert in the element jacobian matrix
+  //for( uint i = 0; i < NumSTDof; i++ )
+  //{
+  //  for( uint j = 0; j < NumSTDof; j++ )
+  //  {
+  //    jac2(i,j) = -e.hessian(i,j);
+  //  }
+  //}
+
+  //now construct from the explicitly worked out derivatives
+  Vec3d a = deformed[0];
+  Vec3d b = deformed[1];
+  Vec3d c = deformed[2];
+
+  Vec3d ab = b-a;
+  Vec3d ac = c-a;
+
+  Scalar K = (ab.dot(ab))*(ac.dot(ac)) - sqr(ab.dot(ac));
+  
+  Vec3d dkdc = 2*(ab.dot(ab)*ac - ab.dot(ac)*ab);
+  Vec3d dkdb = 2*(ac.dot(ac)*ab - ac.dot(ab)*ac);
+  Vec3d dkda = -(dkdc+dkdb);
+
+  Eigen::Matrix<Scalar,3,3> d2kdbdc;
+  Eigen::Matrix<Scalar,3,3> d2kdcdb;
+  Eigen::Matrix<Scalar,3,3> d2kdbdb;
+  Eigen::Matrix<Scalar,3,3> d2kdbda;
+  Eigen::Matrix<Scalar,3,3> d2kdcdc;
+  Eigen::Matrix<Scalar,3,3> d2kdcda;
+  Eigen::Matrix<Scalar,3,3> d2kdada;
+
+  for(int i = 0; i < 3; ++i) {
+    for(int k = 0; k < 3; ++k) {
+      d2kdbdc(i,k) = 2 *( 
+        2*(ab(i))*(ac(k))
+        -(ac(i))*(ab(k))
+        -(i==k?ab.dot(ac):0));
+      d2kdbdb(i,k) = 2 *( 
+        (i==k?ac.dot(ac):0)
+        -(ac(i))*(ac(k))
+        );
+      d2kdcdc(i,k) = 2 *( 
+        (i==k?ab.dot(ab):0)
+        -(ab(i))*(ab(k))
+        );
     }
   }
+  d2kdcdb = d2kdbdc.transpose();
+  d2kdbda = -(d2kdbdb + d2kdbdc);
+  d2kdcda = -(d2kdcdc + d2kdcdb);
+  d2kdada = -(d2kdbda + d2kdcda);
+  Scalar factor1 = -1.0 / (8.0*pow(K, 1.5));
+  Scalar factor2 = +1.0 / (4.0*sqrt(K));
 
+  Eigen::Matrix<Scalar,3,3> dAdbdc = factor1 * dkdb*dkdc.transpose() + factor2 * d2kdbdc;
+  Eigen::Matrix<Scalar,3,3> dAdbdb = factor1 * dkdb*dkdb.transpose() + factor2 * d2kdbdb; 
+  Eigen::Matrix<Scalar,3,3> dAdbda = factor1 * dkdb*dkda.transpose() + factor2 * d2kdbda;
+  Eigen::Matrix<Scalar,3,3> dAdcdc = factor1 * dkdc*dkdc.transpose() + factor2 * d2kdcdc; 
+  Eigen::Matrix<Scalar,3,3> dAdcda = factor1 * dkdc*dkda.transpose() + factor2 * d2kdcda;
+  Eigen::Matrix<Scalar,3,3> dAdada = factor1 * dkda*dkda.transpose() + factor2 * d2kdada;
 
+  //assemble into the main matrix
+  jac.block(0,0, 3,3) = dAdada;            
+  jac.block(3,0, 3,3) = dAdbda;            
+  jac.block(6,0, 3,3) = dAdcda;            
+
+  jac.block(0,3, 3,3) = dAdbda.transpose();
+  jac.block(3,3, 3,3) = dAdbdb;            
+  jac.block(6,3, 3,3) = dAdbdc.transpose();
+
+  jac.block(0,6, 3,3) = dAdcda.transpose();
+  jac.block(3,6, 3,3) = dAdbdc;            
+  jac.block(6,6, 3,3) = dAdcdc;            
+  
+  jac *= -m_surface_tension_coeff * 2;
+
+  //for(int i = 0; i < 9; ++i)
+  //  for(int j = 0; j < 9; ++j)
+  //    if(fabs(jac(i,j) - jac2(i,j)) > 1e-10)
+  //      printf("mismatch\n");
 }
 
 
