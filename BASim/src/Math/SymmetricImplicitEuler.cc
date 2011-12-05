@@ -25,7 +25,6 @@ bool SymmetricImplicitEuler<ODE>::execute()
     m_diffEq.backupResize();
     m_diffEq.backup();
     STOP_TIMER("SymmetricImplicitEuler::execute/backup");
-
     for (int guess = 0; guess <= 5; ++guess)
     {
         if (position_solve(guess))
@@ -35,14 +34,13 @@ bool SymmetricImplicitEuler<ODE>::execute()
             STOP_TIMER("SymmetricImplicitEuler::execute/backup");
 
             STOP_TIMER("SymmetricImplicitEuler::execute");
-
             return true;
         }
         START_TIMER("SymmetricImplicitEuler::execute/backup");
         m_diffEq.backupRestore();
         STOP_TIMER("SymmetricImplicitEuler::execute/backup");
     }
-
+    
     
     // Falling back to rigid motion if solver failed, so at least the rod doesn't mess up collision detection for this time step
     generateInitialIterate0(m_deltaX);
@@ -77,6 +75,10 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
 
     resize();
     setZero();
+
+    //clear the list of constraints to start!
+    m_fixed.clear();
+    m_desired.clear();
     m_diffEq.getScriptedDofs(m_fixed, m_desired); // m_fixed are DOF indices, m_desired are corresponding desired values
     assert(m_fixed.size() == m_desired.size());
     
