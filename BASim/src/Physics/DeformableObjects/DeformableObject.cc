@@ -171,7 +171,6 @@ void DeformableObject::computeDofIndexing()
     }
   }
   m_ndof = dofIndex;
-  std::cout << "DofCount: " << dofIndex << std::endl;
   
 }
 

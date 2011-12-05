@@ -239,6 +239,7 @@ void ShellSurfaceTensionForce::elementJacobian(const std::vector<Vec3d>& deforme
   //}
 
   //now construct from the explicitly worked out derivatives
+  //(See the PDF by Christopher Batty)
   Vec3d a = deformed[0];
   Vec3d b = deformed[1];
   Vec3d c = deformed[2];
@@ -305,10 +306,10 @@ void ShellSurfaceTensionForce::elementJacobian(const std::vector<Vec3d>& deforme
   
   jac *= -m_surface_tension_coeff * 2;
 
-  //for(int i = 0; i < 9; ++i)
-  //  for(int j = 0; j < 9; ++j)
-  //    if(fabs(jac(i,j) - jac2(i,j)) > 1e-10)
-  //      printf("mismatch\n");
+  /*for(int i = 0; i < 9; ++i)
+    for(int j = 0; j < 9; ++j)
+      if(fabs(jac(i,j) - jac2(i,j)) > 1e-10)
+        printf("mismatch\n");*/
 }
 
 

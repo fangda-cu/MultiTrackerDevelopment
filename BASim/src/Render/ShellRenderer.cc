@@ -115,7 +115,6 @@ void ShellRenderer::render()
 
     // Render all faces
     glBegin(GL_TRIANGLES);
-    bool first = true;
     for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
     {
     
@@ -129,7 +128,7 @@ void ShellRenderer::render()
 
       
       Scalar thickness = m_shell.getThickness(*fit);
-      int colorVal = (int) (255.0 * thickness / 0.01);
+      int colorVal = (int) (255.0 * thickness / 0.1);
       colorVal = clamp(colorVal, 0, 255);
       OpenGL::color(Color(colorVal,0,0));
       std::vector<Vec3d> points(3);
@@ -145,6 +144,7 @@ void ShellRenderer::render()
       
     }
     glEnd();
+
 
     // Render all vertices
     glPointSize(5);

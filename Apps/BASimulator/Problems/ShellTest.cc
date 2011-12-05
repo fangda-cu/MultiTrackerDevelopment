@@ -45,8 +45,8 @@ ShellTest::ShellTest()
   AddOption("shell-Youngs-damping", "the damping coefficient associated with the shell's Young's modulus", 0.0f);
 
   //DSBend stiffness
-  AddOption("shell-bending-stiffness", "Hinge (Discrete shells) bending stiffness of the shell", 1.0);
-  AddOption("shell-bending-damping", "Hinge (Discrete shells) bending damping coefficient of the shell ", 1.0);
+  AddOption("shell-bending-stiffness", "Hinge (Discrete shells) bending stiffness of the shell", 0.0);
+  AddOption("shell-bending-damping", "Hinge (Discrete shells) bending damping coefficient of the shell ", 0.0);
 
 
   //timestepper options
@@ -68,7 +68,15 @@ ShellTest::~ShellTest()
   if (stepper != NULL) delete stepper;
 }
 
+typedef void (ShellTest::*sceneFunc)();
 
+
+sceneFunc scenes[] = {0,
+                      &ShellTest::setupScene1, 
+                      &ShellTest::setupScene2, 
+                      &ShellTest::setupScene3, 
+                      &ShellTest::setupScene4, 
+                      &ShellTest::setupScene5};
 
 void ShellTest::Setup()
 {
@@ -102,7 +110,8 @@ void ShellTest::Setup()
   //Create the base deformable object (mesh)
   shellObj = new DeformableObject();
 
-
+  (*this.*scenes[sceneChoice])();
+  /*
   switch(sceneChoice) {
     case 1: setupScene1();
       break;
@@ -114,7 +123,7 @@ void ShellTest::Setup()
       break;
     default:
       break;
-  }
+  }*/
   
 
   
@@ -279,12 +288,12 @@ void ShellTest::setupScene1() {
   for(int j = 0; j <= yresolution; ++j) {
     for(int i = 0; i <= xresolution; ++i) {
       Vec3d vert(i*dx, j*dy, 0);
-      if(j < 0.5*yresolution) {
+     /* if(j < 0.5*yresolution) {
         int k = j;
         int j_mod = (int)(0.5*yresolution);
         vert(1) = j_mod*dx;
         vert(2) = (k-j_mod)*dx;
-      }
+      }*/
       Vec3d undef = vert;
 
       VertexHandle h = shellObj->addVertex();
@@ -642,6 +651,117 @@ void ShellTest::setupScene4() {
 
 }
 
+//a catenary sheet
+void ShellTest::setupScene5() {
+
+  //get params
+  Scalar width = GetScalarOpt("shell-width");
+  Scalar height = GetScalarOpt("shell-height");
+  int xresolution = GetIntOpt("x-resolution");
+  int yresolution = GetIntOpt("y-resolution");
+
+  Scalar dx = (Scalar)width / (Scalar)xresolution;
+  Scalar dy = (Scalar)height / (Scalar)yresolution;
+
+  //build a rectangular grid of vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  Vec3d start_vel(0,0,0);
+  for(int j = 0; j <= yresolution; ++j) {
+    for(int i = 0; i <= xresolution; ++i) {
+      Vec3d vert(i*dx, 0, j*dy);
+    /*  if(j < 0.5*yresolution) {
+        int k = j;
+        int j_mod = (int)(0.5*yresolution);
+        vert(1) = j_mod*dx;
+        vert(2) = (k-j_mod)*dx;
+      }*/
+      Vec3d undef = vert;
+
+      VertexHandle h = shellObj->addVertex();
+
+      positions[h] = vert;
+      velocities[h] = start_vel;
+      undeformed[h] = undef;
+      vertHandles.push_back(h);
+    }
+  }
+
+
+  //build the faces
+  std::vector<Vec3i> tris;
+  for(int i = 0; i < xresolution; ++i) {
+    for(int j = 0; j < yresolution; ++j) {
+      int tl = i + (xresolution+1)*j;
+      int tr = i+1 + (xresolution+1)*j;
+      int bl = i + (xresolution+1)*(j+1);
+      int br = i+1 + (xresolution+1)*(j+1);
+
+      shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
+      shellObj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
+    }
+  }
+
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+  //Find the leftest vertex
+  VertexIterator vit = shellObj->vertices_begin();
+  Scalar lowest = 10000;
+  for(;vit!= shellObj->vertices_end(); ++vit) {
+    Vec3d pos = shell->getVertexPosition(*vit);
+    if(pos[0] <= lowest) {
+      lowest = pos[0];
+    }
+  }
+  //Find the rightest vertex
+  vit = shellObj->vertices_begin();
+  Scalar highest = -10000;
+  for(;vit!= shellObj->vertices_end(); ++vit) {
+    Vec3d pos = shell->getVertexPosition(*vit);
+    if(pos[0] >= highest) {
+      highest = pos[0];
+    }
+  }
+
+  //Pin all verts at or near that height
+  for(vit = shellObj->vertices_begin();vit!= shellObj->vertices_end(); ++vit) {
+    Vec3d pos = shell->getVertexPosition(*vit);
+    if(pos[0] >= highest - 1e-4) {
+      shell->constrainVertex(*vit, pos);
+    }
+    if(pos[0] <= lowest + 1e-4) {
+      shell->constrainVertex(*vit, pos);
+    }
+  }
+ 
+
+}
 
 
 
