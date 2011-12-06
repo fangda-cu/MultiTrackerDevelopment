@@ -76,7 +76,9 @@ sceneFunc scenes[] = {0,
                       &ShellTest::setupScene2, 
                       &ShellTest::setupScene3, 
                       &ShellTest::setupScene4, 
-                      &ShellTest::setupScene5};
+                      &ShellTest::setupScene5,
+                      &ShellTest::setupScene6,
+                      &ShellTest::setupScene7};
 
 void ShellTest::Setup()
 {
@@ -762,6 +764,169 @@ void ShellTest::setupScene5() {
  
 
 }
+
+//a hemispherical bubble with a hole in the top and pinned at the bottom ring
+void ShellTest::setupScene6() {
+  int xresolution = GetIntOpt("x-resolution");
+  int yresolution = GetIntOpt("y-resolution");
+
+  //vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  //create a sphere
+  int layers = yresolution;
+  int slices = xresolution;
+  Vec3d centre(0,0,0);
+  Scalar radius = 1.0;
+  Vec3d start_vel(0,0,0);
+
+  std::vector<std::vector<VertexHandle>> vertList;
+
+  //fill in the interior
+  vertList.resize(layers-1);
+  for(int j = 0; j < layers-1; ++j) {
+    Scalar heightAngle = (j+1) * 0.9* pi / 2 /(Scalar)layers;
+    for(int i = 0; i < slices; ++i) {
+      Scalar rotAngle = 2*pi * (Scalar)i / (Scalar)slices;
+      Scalar zVal = radius*sin(heightAngle);
+      Scalar newRad = radius*cos(heightAngle);
+      Scalar xVal = newRad*cos(rotAngle);
+      Scalar yVal = newRad*sin(rotAngle);
+
+      VertexHandle vNew = shellObj->addVertex();
+      positions[vNew] = centre + Vec3d(xVal,zVal,yVal);
+      velocities[vNew] = start_vel;
+      undeformed[vNew] = positions[vNew];
+      vertList[j].push_back(vNew);
+    }
+  }
+
+  //construct faces
+  for(int j = 0; j < layers-2; ++j) {
+    for(int i = 0; i < slices; ++i) {
+      shellObj->addFace(vertList[j][i], vertList[j+1][i], vertList[j+1][(i+1)%slices]);
+      shellObj->addFace(vertList[j][i], vertList[j+1][(i+1)%slices], vertList[j][(i+1)%slices]);
+    }
+  }
+
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+ 
+  for(unsigned int i = 0; i < vertList[0].size(); ++i)
+    shell->constrainVertex(vertList[0][i], shell->getVertexPosition(vertList[0][i]));
+ 
+
+
+}
+
+//a horizontal sheet pinned between two circles
+void ShellTest::setupScene7() {
+  int xresolution = GetIntOpt("x-resolution");
+  int yresolution = GetIntOpt("y-resolution");
+
+  //vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  //create a sphere
+  int layers = yresolution;
+  int slices = xresolution;
+  Vec3d centre(0,0,0);
+  Scalar out_radius = 1.0;
+  Scalar in_radius = 0.2;
+  Vec3d start_vel(0,0,0);
+
+  std::vector<std::vector<VertexHandle>> vertList;
+
+  Scalar dr = (1.0 - 0.2) / (Scalar) slices;
+  
+  //fill in the interior
+  vertList.resize(layers-1);
+  for(int j = 0; j < layers-1; ++j) {
+    
+    for(int i = 0; i < slices; ++i) {
+      Scalar rotAngle = 2*pi * (Scalar)i / (Scalar)slices;
+      Scalar newRad = 0.2 + j*dr;
+      Scalar xVal = newRad*cos(rotAngle);
+      Scalar yVal = newRad*sin(rotAngle);
+
+      VertexHandle vNew = shellObj->addVertex();
+      positions[vNew] = centre + Vec3d(xVal,0,yVal);
+      velocities[vNew] = start_vel;
+      undeformed[vNew] = positions[vNew];
+      vertList[j].push_back(vNew);
+    }
+  }
+
+  //construct faces
+  for(int j = 0; j < layers-2; ++j) {
+    for(int i = 0; i < slices; ++i) {
+      shellObj->addFace(vertList[j][i], vertList[j+1][i], vertList[j+1][(i+1)%slices]);
+      shellObj->addFace(vertList[j][i], vertList[j+1][(i+1)%slices], vertList[j][(i+1)%slices]);
+    }
+  }
+
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+  //constrain inner and outer loops
+  for(unsigned int i = 0; i < vertList[0].size(); ++i) {
+    shell->constrainVertex(vertList[0][i], shell->getVertexPosition(vertList[0][i]));
+    shell->constrainVertex(vertList[vertList.size()-1][i], shell->getVertexPosition(vertList[vertList.size()-1][i]));
+  }
+
+}
+
 
 
 

@@ -349,8 +349,7 @@ void ElasticShell::startStep()
 void ElasticShell::endStep() {
   updateThickness();
 
-  
-  //remesh(0.2);  
+  remesh(0.05);  
   //extendMesh();
 
   computeMasses();
@@ -668,6 +667,9 @@ bool ElasticShell::splitEdges( double desiredEdge, double maxEdge, double maxAng
   for(;e_it != m_obj->edges_end(); ++e_it) {   
     
     EdgeHandle eh = *e_it;
+    
+    VertexHandle vertex_a = m_obj->fromVertex(eh);
+    VertexHandle vertex_b = m_obj->toVertex(eh);
 
     if ( !m_obj->edgeExists(eh) || !isEdgeActive(eh))   { continue; }     // skip inactive/non-existent edges
     
@@ -679,14 +681,21 @@ bool ElasticShell::splitEdges( double desiredEdge, double maxEdge, double maxAng
         break;
       }
     }
-    if(isConstrained) continue;
+
+    //don't split constrained edges. (alternatively, we could split them, and add the new vert to the constrained list.)
+    bool aConstrained = false, bConstrained = false;
+    for(int i = 0; i < m_constrained_vertices.size(); ++i) {
+      if(m_constrained_vertices[i] == vertex_a)
+        aConstrained = true;
+      if(m_constrained_vertices[i] == vertex_b)
+        bConstrained = true;
+    }
+
+    if(aConstrained && bConstrained || isConstrained) continue;
 
     //if ( m_mesh.m_edgetri[i].size() < 2 ) { continue; }                     // skip boundary edges - Why should we?
     //if ( m_masses[ m_mesh.m_edges[i][0] ] > 100.0 && m_masses[ m_mesh.m_edges[i][1] ] > 100.0 )     { continue; }    // skip solids
 
-    VertexHandle vertex_a = m_obj->fromVertex(eh);
-    VertexHandle vertex_b = m_obj->toVertex(eh);
-    
     
     assert( m_obj->vertexExists(vertex_a) );
     assert( m_obj->vertexExists(vertex_b) );
