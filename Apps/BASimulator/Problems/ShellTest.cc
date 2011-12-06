@@ -17,7 +17,9 @@
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellRadialForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellSurfaceTensionForce.hh"
+
 #include <fstream>
+
 
 ShellTest::ShellTest()
 : Problem("Shell Test", "A rectangular shell"), 
@@ -127,7 +129,6 @@ void ShellTest::Setup()
       break;
   }*/
   
-
   
   bool circular = false;
 
@@ -845,6 +846,27 @@ void ShellTest::setupScene6() {
 
 }
 
+//Planar rotating points
+class XZPlaneRotatingConstraint : public PositionConstraint {
+  Scalar m_rate;
+  Vec3d m_position, m_centre;
+  Scalar m_rad;
+  Scalar m_baseangle;
+public:
+  XZPlaneRotatingConstraint(Vec3d& position, Vec3d& centre, Scalar rate):m_position(position), m_centre(centre), m_rate(rate) {
+    Vec3d offset = m_position - m_centre;
+    offset[1] = 0;
+    m_rad = offset.norm();
+    m_baseangle = atan2(m_position[2]-centre[2], m_position[0]-centre[0]);
+  }
+
+  Vec3d operator()(Scalar time) {
+    Scalar angle = m_baseangle + m_rate*time;
+    return m_centre + m_rad*Vec3d(cos(angle), 0, sin(angle));
+  }
+
+};
+
 //a horizontal sheet pinned between two circles
 void ShellTest::setupScene7() {
   int xresolution = GetIntOpt("x-resolution");
@@ -922,8 +944,16 @@ void ShellTest::setupScene7() {
   //constrain inner and outer loops
   for(unsigned int i = 0; i < vertList[0].size(); ++i) {
     shell->constrainVertex(vertList[0][i], shell->getVertexPosition(vertList[0][i]));
-    shell->constrainVertex(vertList[vertList.size()-1][i], shell->getVertexPosition(vertList[vertList.size()-1][i]));
+    
+    Vec3d pos = shell->getVertexPosition(vertList[vertList.size()-1][i]);
+    XZPlaneRotatingConstraint*p = new XZPlaneRotatingConstraint(pos, centre, 12);
+    shell->constrainVertex(vertList[vertList.size()-1][i], p);
+    //shell->constrainVertex(vertList[vertList.size()-1][i], shell->getVertexPosition(vertList[vertList.size()-1][i]));
   }
+
+  /*shell->remesh(0.05);
+  shell->remesh(0.05);
+  shell->remesh(0.05);*/
 
 }
 

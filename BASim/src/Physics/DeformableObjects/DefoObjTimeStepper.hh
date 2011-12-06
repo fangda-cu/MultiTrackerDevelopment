@@ -20,6 +20,7 @@
 
 namespace BASim {
 
+
 /** Class to time step a deformable object. */
 class DefoObjTimeStepper : public ObjectControllerBase
 {
@@ -50,6 +51,7 @@ public:
   bool execute()
   {
     assert( getTimeStep() == m_obj.getTimeStep() );
+    setTime(getTime() + getTimeStep());
     return m_diffEqSolver->execute();
   }
 
@@ -376,7 +378,8 @@ public:
 
   void getScriptedDofs(IntArray& indices, std::vector<Scalar>& desired)
   {
-    m_obj.getScriptedDofs(indices, desired);
+    Scalar time = getTime();
+    m_obj.getScriptedDofs(indices, desired, time);
    
   }
 

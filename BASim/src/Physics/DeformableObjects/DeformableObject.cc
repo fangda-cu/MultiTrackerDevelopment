@@ -174,11 +174,10 @@ void DeformableObject::computeDofIndexing()
   
 }
 
-void DeformableObject::getScriptedDofs( IntArray& dofIndices, std::vector<Scalar>& dofValues ) const
+void DeformableObject::getScriptedDofs( IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time ) const
 {
   for(unsigned int i = 0; i < m_models.size(); ++i)
-    m_models[i]->getScriptedDofs(dofIndices, dofValues);
-
+    m_models[i]->getScriptedDofs(dofIndices, dofValues, time);
 }
 
 

@@ -284,21 +284,31 @@ const Scalar& ElasticShell::getMass( const DofHandle& hnd ) const
   }
 }
 
-void ElasticShell::getScriptedDofs( IntArray& dofIndices, std::vector<Scalar>& dofValues ) const
+void ElasticShell::getScriptedDofs( IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time ) const
 {
   for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
     int dofBase = getVertexDofBase(m_constrained_vertices[i]);
-    dofIndices.push_back(dofBase); dofValues.push_back(m_constraint_positions[i][0]);
-    dofIndices.push_back(dofBase+1); dofValues.push_back(m_constraint_positions[i][1]);
-    dofIndices.push_back(dofBase+2); dofValues.push_back(m_constraint_positions[i][2]);
+    Vec3d pos = m_constraint_positions[i]->operator()(time);
+    dofIndices.push_back(dofBase); dofValues.push_back(pos[0]);
+    dofIndices.push_back(dofBase+1); dofValues.push_back(pos[1]);
+    dofIndices.push_back(dofBase+2); dofValues.push_back(pos[2]);
   }
 }
 
 void ElasticShell::constrainVertex( const VertexHandle& v, const Vec3d& pos )
 {
   m_constrained_vertices.push_back(v);
-  m_constraint_positions.push_back(pos);
+  PositionConstraint* c = new FixedPositionConstraint(pos);
+  m_constraint_positions.push_back(c);
 }
+
+void ElasticShell::constrainVertex( const VertexHandle& v, PositionConstraint* c )
+{
+  m_constrained_vertices.push_back(v);
+  m_constraint_positions.push_back(c);
+}
+
+
 
 void ElasticShell::startStep()
 {
@@ -349,9 +359,10 @@ void ElasticShell::startStep()
 void ElasticShell::endStep() {
   updateThickness();
 
-  remesh(0.05);  
+  for(int i = 0; i < 3; ++i)
+    remesh(0.08);  
   //extendMesh();
-
+  
   computeMasses();
   
   for(VertexIterator veit = m_obj->vertices_begin(); veit != m_obj->vertices_end(); ++veit) {
@@ -405,6 +416,8 @@ void ElasticShell::endStep() {
   //m_damping_undeformed_positions = m_positions;
 
  
+  //Advance any constraints!
+  
  
 }
 

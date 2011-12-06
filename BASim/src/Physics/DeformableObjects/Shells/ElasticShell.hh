@@ -10,7 +10,7 @@
 #include "BASim/src/Physics/DeformableObjects/PhysicalModel.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjProperty.hh"
 #include "BASim/src/Collisions/ElTopo/broadphasegrid.hh"
-
+#include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
 namespace BASim {
 
 const int ELASTIC_SHELL_DOFS_PER_VERTEX = 3; //nodal position vectors
@@ -45,7 +45,7 @@ public:
   bool isFaceActive(const FaceHandle& f) const { return m_active_faces[f] != 0; }
   bool isTetActive(const TetHandle& t) const { return false; }
 
-  void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues) const;
+  void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time) const;
 
   void startStep();
   void endStep();
@@ -94,6 +94,7 @@ public:
   Scalar getArea(const FaceHandle& f, bool current = true) const;
 
   void constrainVertex(const VertexHandle& v, const Vec3d& pos);
+  void constrainVertex(const VertexHandle& v, PositionConstraint* p); //time varying constraint
 
   void setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel);
 
@@ -158,7 +159,7 @@ protected:
 
   //Constraints 
   std::vector<VertexHandle> m_constrained_vertices;
-  std::vector<Vec3d> m_constraint_positions;
+  std::vector<PositionConstraint*> m_constraint_positions;
   
   //To handle continually inflowing regions
   Scalar m_inflow_thickness;
