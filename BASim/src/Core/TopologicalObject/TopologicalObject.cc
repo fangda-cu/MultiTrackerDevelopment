@@ -2,7 +2,7 @@
 #include "BASim/src/Core/TopologicalObject/TopObjProperty.hh"
 #include <utility>
 #include <set>
-#include "BASim/src/io/SerializationUtils.hh"
+#include "BASim/src/IO/SerializationUtils.hh"
 
 namespace BASim {
 

@@ -11,12 +11,16 @@ set (Directories
   Core
   Core/TopologicalObject
   Collisions
+  Collisions/ElTopo
   IO
   Math
   Physics
   Physics/ElasticRods
+  Physics/DeformableObjects
+  Physics/DeformableObjects/Shells
   Render
   Util
+  Threads
 )
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})

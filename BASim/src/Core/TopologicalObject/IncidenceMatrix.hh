@@ -10,6 +10,7 @@
 
 #include <cassert>
 #include <vector>
+#include <fstream>
 
 namespace BASim {
 

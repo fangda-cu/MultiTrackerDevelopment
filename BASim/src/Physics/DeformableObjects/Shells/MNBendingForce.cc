@@ -23,7 +23,7 @@ ElasticShellForce(shell, name), m_Youngs(Youngs), m_Poisson(Poisson), m_Youngs_d
   
 }
 
-void fillVert(std::vector<Scalar>& data, int startInd, Vec3d& vert) {
+void fillVert(std::vector<Scalar>& data, int startInd, const Vec3d& vert) {
   data[startInd] = vert[0];
   data[startInd+1] = vert[1];
   data[startInd+2] = vert[2];

@@ -11,6 +11,7 @@
 #include <boost/thread/locks.hpp>
 #include <cstdarg>
 #include <iostream>
+#include <cstdio>
 
 namespace BASim {
 

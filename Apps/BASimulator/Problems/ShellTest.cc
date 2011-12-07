@@ -517,7 +517,7 @@ void ShellTest::setupScene3() {
   Scalar radius = 1.234;
   Vec3d start_vel(0,0,0);
 
-  std::vector<std::vector<VertexHandle>> vertList;
+  std::vector<std::vector<VertexHandle> > vertList;
   //create top pole
   VertexHandle topV = shellObj->addVertex();
   positions[topV] = centre + Vec3d(0,0,radius);
@@ -801,7 +801,7 @@ void ShellTest::setupScene6() {
   Scalar radius = 1.0;
   Vec3d start_vel(0,0,0);
 
-  std::vector<std::vector<VertexHandle>> vertList;
+  std::vector<std::vector<VertexHandle> > vertList;
 
   //fill in the interior
   vertList.resize(layers-1);
@@ -903,7 +903,7 @@ void ShellTest::setupScene7() {
   Scalar in_radius = 0.2;
   Vec3d start_vel(0,0,0);
 
-  std::vector<std::vector<VertexHandle>> vertList;
+  std::vector<std::vector<VertexHandle> > vertList;
 
   Scalar dr = (out_radius - in_radius) / (Scalar) layers;
   

@@ -7,7 +7,7 @@
 
 #include "RodStretchingForce.hh"
 #include "../../Math/Math.hh"
-#include "BASIM/src/Math/MatrixBase.hh"
+#include "BASim/src/Math/MatrixBase.hh"
 
 #ifdef TEST_ROD_STRETCHING
 #include "BASim/src/Physics/ElasticRods/Tests/RodStretchingTest.hh"
@@ -324,7 +324,7 @@ void RodStretchingForce::globalReverseJacobian(MatrixBase& J)
 
     ++m_stencil; // skip first edge
 
-    uint eid = 1;
+    unsigned int eid = 1;
     for (; m_stencil != end; ++m_stencil, ++eid)
     {
         edge_handle& eh = m_stencil.handle();
@@ -373,7 +373,7 @@ void RodStretchingForce::updateReverseUndeformedStrain(const VecXd& e)
     iterator end = m_stencil.end();
 
     ++m_stencil;
-    uint eid = 1; // eh.id() ?
+    unsigned int eid = 1; // eh.id() ?
 
     for (; m_stencil != end; ++m_stencil, ++eid)
     {

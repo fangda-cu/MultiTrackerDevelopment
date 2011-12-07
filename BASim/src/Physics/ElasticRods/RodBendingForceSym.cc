@@ -426,7 +426,7 @@ void RodBendingForceSym::globalReverseJacobian(MatrixBase& J)
     IndexArray indices(11);
     iterator end = m_stencil.end();
 
-    uint vid = 1;
+    unsigned int vid = 1;
     for (m_stencil = m_stencil.begin(); m_stencil != end; ++m_stencil, ++vid)
     {
         vertex_handle& vh = m_stencil.handle();
@@ -495,7 +495,7 @@ void RodBendingForceSym::updateReverseUndeformedStrain(const VecXd& e)
     m_stencil = m_stencil.begin();
     iterator end = m_stencil.end();
 
-    uint vid = 1; // eh.id() ?
+    unsigned int vid = 1; // eh.id() ?
 
     for (; m_stencil != end; ++m_stencil, ++vid)
     {

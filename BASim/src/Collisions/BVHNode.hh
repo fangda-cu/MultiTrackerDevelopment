@@ -13,36 +13,36 @@ struct BVHNode
     typedef typename BBoxT::PointType PointType;
 
     BVHNode() :
-        m_end(uint32_t(-1))
+        m_end((unsigned int)(-1))
     {
     }
 
-    BVHNode(const BBoxType& bbox, const uint32_t child_index) :
-        m_bbox(bbox), m_index(child_index), m_end(uint32_t(-1))
+    BVHNode(const BBoxType& bbox, const unsigned int child_index) :
+        m_bbox(bbox), m_index(child_index), m_end((unsigned int)(-1))
     {
     }
 
-    BVHNode(const BBoxType& bbox, const uint32_t leaf_begin, const uint32_t leaf_end) :
+    BVHNode(const BBoxType& bbox, const unsigned int leaf_begin, const unsigned int leaf_end) :
         m_bbox(bbox), m_index(leaf_begin), m_end(leaf_end)
     {
     }
 
     bool IsLeaf() const
     {
-        return m_end != uint32_t(-1);
+        return m_end != (unsigned int)(-1);
     }
 
-    uint32_t LeafBegin() const
+    unsigned int LeafBegin() const
     {
         return m_index;
     }
 
-    uint32_t LeafEnd() const
+    unsigned int LeafEnd() const
     {
         return m_end;
     }
 
-    uint32_t ChildIndex() const
+    unsigned int ChildIndex() const
     {
         return m_index;
     }
@@ -63,8 +63,8 @@ struct BVHNode
     }
 
     BBoxType m_bbox; ///< the node's bbox
-    uint32_t m_index; ///< if an INNER node: the node's first child index, if LEAF: the leaf begin index
-    uint32_t m_end; ///< if an INNER node: -1, if a LEAF: the leaf end index
+    unsigned int m_index; ///< if an INNER node: the node's first child index, if LEAF: the leaf begin index
+    unsigned int m_end; ///< if an INNER node: -1, if a LEAF: the leaf end index
 };
 
 }
