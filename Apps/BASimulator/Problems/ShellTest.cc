@@ -22,45 +22,52 @@
 
 
 ShellTest::ShellTest()
-: Problem("Shell Test", "A rectangular shell"), 
+: Problem("Shell Test", "Various viscous and elastic sheet/shell tests"), 
   shell(NULL), shellObj(NULL), stepper(NULL)
 {
   addDynamicsProps();
   
   //Choice of scene
-  AddOption("shell-scene", "the shell scene to test", 4);
+  AddOption("shell-scene", "the shell scene to test", 1);
 
-  //shell options
+  //Basic shell options
   AddOption("shell-thickness", "the thickness of the shell", 0.01);
-  AddOption("shell-width", "the horizontal side length of the shell", 1.0);
-  AddOption("shell-height", "the vertical side length of the shell", 1.0);
-  AddOption("x-resolution", "the number of segments along the horizontal edge", 30);
-  AddOption("y-resolution", "the number of segments along the vertical edge", 30);
   AddOption("shell-density", "volumetric density of the shell ", 1.0);
 
-  AddOption("surface-tension", "surface tension coefficient of the shell", 1.0);
+  //Shell geometry (x/y may also refer to resolutions in non-cartesian scenarios)
+  AddOption("shell-width", "the horizontal side length of the shell", 1.0);
+  AddOption("shell-height", "the vertical side length of the shell", 1.0);
+  AddOption("shell-x-resolution", "the number of segments along first dimension", 30);
+  AddOption("shell-y-resolution", "the number of segments along second dimension", 30);
   
-  //thickness-dependent elasticity with proper physical-parameters, only for CST membrane so far.
+  //Remeshing options
+  AddOption("shell-remeshing", "whether to perform remeshing", 0);
+  AddOption("shell-remeshing-resolution", "target edge-length", 0.1);
+  AddOption("shell-remeshing-iterations", "number of remeshing iterations to run", 2);
+
+  //Area-based surface tension force
+  AddOption("shell-surface-tension", "surface tension coefficient of the shell", 0.0);
+  
+  //Properties for proper thickness dependent elasticity & viscosity (just CSTMembrane so far)
   AddOption("shell-Poisson", "the Poisson ratio of the shell material", 0.0f);
   AddOption("shell-Youngs", "the Young's modulus of the shell material", 0.0f);
   AddOption("shell-Poisson-damping", "the damping coefficient associated to the shell's Poisson ratio", 0.0f);
   AddOption("shell-Youngs-damping", "the damping coefficient associated with the shell's Young's modulus", 0.0f);
 
-  //DSBend stiffness
+  //Hinge bending (discrete shells) stiffness and damping
   AddOption("shell-bending-stiffness", "Hinge (Discrete shells) bending stiffness of the shell", 0.0);
   AddOption("shell-bending-damping", "Hinge (Discrete shells) bending damping coefficient of the shell ", 0.0);
 
+  //Timestepper options
+  AddOption("integrator", "type of integrator to use for the shell", "implicit");
 
-  //timestepper options
-  AddOption("integrator", "type of integrator to use for the shell", "symplectic");
+  //Solver options
   AddOption("iterations", "maximum number of iterations for the implicit method", (int) 100);
   AddOption("atol", "absolute convergence tolerance", 1e-8);
   AddOption("rtol", "relative convergence tolerance", 1e-8);
   AddOption("stol", "convergence tolerance in terms of the norm of the change in the solution between steps", 1e-8);
   AddOption("inftol", "infinity norm convergence tolerance", 1e-8);
- 
-  // default to no gravity
-  GetVecOpt("gravity") = Vec3d::Zero();
+  
 }
 
 ShellTest::~ShellTest()
@@ -93,7 +100,7 @@ void ShellTest::Setup()
   
   Vec3d gravity = GetVecOpt("gravity");
   
-  Scalar surface_tension = GetScalarOpt("surface-tension");
+  Scalar surface_tension = GetScalarOpt("shell-surface-tension");
 
   Scalar Youngs_modulus = GetScalarOpt("shell-Youngs");
   Scalar Poisson_ratio = GetScalarOpt("shell-Poisson");
@@ -190,7 +197,12 @@ void ShellTest::Setup()
   shell->setThickness(thickness);
   shell->setDensity(density);
   
+  bool remeshing = GetIntOpt("shell-remeshing") == 1?true:false;
+  Scalar remeshing_res = GetScalarOpt("shell-remeshing-resolution");
+  int remeshing_its = GetIntOpt("shell-remeshing-iterations");
   
+
+  shell->setRemeshing(remeshing, remeshing_res, remeshing_its);
 
  /* std::vector<EdgeHandle> extendEdgeList;
   EdgeIterator eit = shellObj->edges_begin();
@@ -270,8 +282,8 @@ void ShellTest::setupScene1() {
   //get params
   Scalar width = GetScalarOpt("shell-width");
   Scalar height = GetScalarOpt("shell-height");
-  int xresolution = GetIntOpt("x-resolution");
-  int yresolution = GetIntOpt("y-resolution");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
 
   Scalar dx = (Scalar)width / (Scalar)xresolution;
   Scalar dy = (Scalar)height / (Scalar)yresolution;
@@ -388,8 +400,8 @@ void ShellTest::setupScene2() {
   //get params
   Scalar width = GetScalarOpt("shell-width");
   Scalar height = GetScalarOpt("shell-height");
-  int xresolution = GetIntOpt("x-resolution");
-  int yresolution = GetIntOpt("y-resolution");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
 
   Scalar dx = (Scalar)width / (Scalar)xresolution;
   Scalar dy = (Scalar)height / (Scalar)yresolution;
@@ -484,8 +496,8 @@ void ShellTest::setupScene2() {
 //spherical shell
 void ShellTest::setupScene3() {
 
-  int xresolution = GetIntOpt("x-resolution");
-  int yresolution = GetIntOpt("y-resolution");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
 
   //build a rectangular grid of vertices
   std::vector<VertexHandle> vertHandles;
@@ -660,8 +672,8 @@ void ShellTest::setupScene5() {
   //get params
   Scalar width = GetScalarOpt("shell-width");
   Scalar height = GetScalarOpt("shell-height");
-  int xresolution = GetIntOpt("x-resolution");
-  int yresolution = GetIntOpt("y-resolution");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
 
   Scalar dx = (Scalar)width / (Scalar)xresolution;
   Scalar dy = (Scalar)height / (Scalar)yresolution;
@@ -768,8 +780,8 @@ void ShellTest::setupScene5() {
 
 //a hemispherical bubble with a hole in the top and pinned at the bottom ring
 void ShellTest::setupScene6() {
-  int xresolution = GetIntOpt("x-resolution");
-  int yresolution = GetIntOpt("y-resolution");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
 
   //vertices
   std::vector<VertexHandle> vertHandles;
@@ -869,8 +881,8 @@ public:
 
 //a horizontal sheet pinned between two circles
 void ShellTest::setupScene7() {
-  int xresolution = GetIntOpt("x-resolution");
-  int yresolution = GetIntOpt("y-resolution");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
 
   //vertices
   std::vector<VertexHandle> vertHandles;

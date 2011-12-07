@@ -11,6 +11,7 @@
 #include "BASim/src/Core/TopologicalObject/TopObjProperty.hh"
 #include "BASim/src/Collisions/ElTopo/broadphasegrid.hh"
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
+
 namespace BASim {
 
 const int ELASTIC_SHELL_DOFS_PER_VERTEX = 3; //nodal position vectors
@@ -56,7 +57,11 @@ public:
   const std::vector<ElasticShellForce*>& getForces() const;
   void addForce(ElasticShellForce* force);
 
-
+  void setRemeshing(bool enable, Scalar rez, int iterations) {
+    m_do_remeshing = enable;
+    m_remesh_edge_length = rez;
+    m_remeshing_iters = iterations;
+  }
   
   //All DOFs at once
   void setVertexPositions(const VertexProperty<Vec3d>& positions);
@@ -148,6 +153,10 @@ protected:
   FaceProperty<Scalar> m_thicknesses;
   FaceProperty<Scalar> m_volumes;
   
+  bool m_do_remeshing;
+  Scalar m_remesh_edge_length;
+  int m_remeshing_iters;
+
   Scalar m_density;
 
   FaceProperty<char> m_active_faces; //list of faces to which this model is applied

@@ -357,29 +357,25 @@ void ElasticShell::startStep()
 }
 
 void ElasticShell::endStep() {
+  
+  //Adjust thicknesses based on area changes
   updateThickness();
 
-  for(int i = 0; i < 3; ++i)
-    remesh(0.08);  
+  //Remeshing
+  if(m_do_remeshing) {
+    for(int i = 0; i < m_remeshing_iters; ++i)
+      remesh(m_remesh_edge_length);  
+
+    //Relabel DOFs if necessary
+    m_obj->computeDofIndexing();
+  }
+
   //extendMesh();
   
+  //Update masses based on new areas/thicknesses
   computeMasses();
   
-  for(VertexIterator veit = m_obj->vertices_begin(); veit != m_obj->vertices_end(); ++veit) {
-    VertexHandle v = *veit;
-    Scalar mass = m_vertex_masses[v];
-    if(mass == 0)
-      std::cout << "Zero mass!\n";
-  }
-
-  //check total volume
-  Scalar total = 0;
-  for(FaceIterator fit = m_obj->faces_begin(); fit!= m_obj->faces_end(); ++fit) {
-    total += m_volumes[*fit];
-  }
-
-  //recompute DOF indexing...
-  m_obj->computeDofIndexing();
+  
 
 
   /*
