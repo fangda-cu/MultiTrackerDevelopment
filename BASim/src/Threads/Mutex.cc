@@ -13,12 +13,9 @@
 #include "Mutex.hh"
 #include <pthread.h>
 #include <sys/types.h>
-#ifndef _MSC_VER
 #include <sys/syscall.h>
-#include <linux/unistd.h>
-#else
-#include <Windows.h>
-#endif
+//#include <linux/unistd.h> //OS_LINUX
+#include <unistd.h> //OS_MACOSX // TODO:THREADING
 #include <errno.h>
 #include <iostream>
 #include <assert.h>
@@ -41,29 +38,33 @@ struct Mutex::Impl
     Impl() :
         m_owner(0)
     {
-#ifdef WETA_DEBUG
-        int status =
-#endif
-        pthread_mutexattr_init(&m_attr);
-        CHECK_STATUS( status, pthread_mutexattr_init );
-#ifdef WETA_DEBUG
-        status = pthread_mutexattr_settype( &m_attr, PTHREAD_MUTEX_ERRORCHECK_NP );
-        CHECK_STATUS( status, pthread_mutexattr_settype );
-#endif
-
-#ifdef WETA_DEBUG
-        status =
-#endif
-        pthread_mutex_init(&m_mutex, &m_attr);
-        CHECK_STATUS( status, pthread_mutex_init );
+// TODO:THREADING      
+      
+//#ifdef WETA_DEBUG
+//        int status =
+//#endif
+//        pthread_mutexattr_init(&m_attr);
+//        CHECK_STATUS( status, pthread_mutexattr_init );
+//#ifdef WETA_DEBUG
+//        status = pthread_mutexattr_settype( &m_attr, PTHREAD_MUTEX_ERRORCHECK_NP );
+//        CHECK_STATUS( status, pthread_mutexattr_settype );
+//#endif
+//
+//#ifdef WETA_DEBUG
+//        status =
+//#endif
+//        pthread_mutex_init(&m_mutex, &m_attr);
+//        CHECK_STATUS( status, pthread_mutex_init );
     }
     ~Impl()
     {
-#ifdef WETA_DEBUG
-        int status =
-#endif
-        pthread_mutex_destroy(&m_mutex);
-        CHECK_STATUS( status, pthread_mutex_destroy );
+// TODO:THREADING
+      
+//#ifdef WETA_DEBUG
+//        int status =
+//#endif
+//        pthread_mutex_destroy(&m_mutex);
+//        CHECK_STATUS( status, pthread_mutex_destroy );
     }
 
     pthread_mutex_t m_mutex;
@@ -87,43 +88,44 @@ long int Mutex::Owner() const
 
 void Mutex::Lock()
 {
-#ifdef WETA_DEBUG
-    int status =
-#endif
-    pthread_mutex_lock(&m_impl->m_mutex);
-    CHECK_STATUS( status, pthread_mutex_lock );
-#ifndef _MSC_VER
-    m_impl->m_owner = syscall(__NR_gettid);
-#else
-    m_impl->m_owner = GetCurrentThreadId();
-#endif
+// TODO:THREADING
+  
+//#ifdef WETA_DEBUG
+//    int status =
+//#endif
+//    pthread_mutex_lock(&m_impl->m_mutex);
+//    CHECK_STATUS( status, pthread_mutex_lock );
+//    //m_impl->m_owner = mach_thread_self(); //OS_MACOSX
+//    m_impl->m_owner = syscall(__NR_gettid); //OS_LINUX
 }
 
 void Mutex::Unlock()
-{
-#ifdef WETA_DEBUG
-    int status =
-#endif
-    pthread_mutex_unlock(&m_impl->m_mutex);
-    CHECK_STATUS( status, pthread_mutex_unlock );
-    m_impl->m_owner = 0; // WARNING: assumes the mutex is not recursive
+{  
+// TODO:THREADING
+  
+//#ifdef WETA_DEBUG
+//    int status =
+//#endif
+//    pthread_mutex_unlock(&m_impl->m_mutex);
+//    CHECK_STATUS( status, pthread_mutex_unlock );
+//    m_impl->m_owner = 0; // WARNING: assumes the mutex is not recursive
 }
 
 bool Mutex::TryLock()
 {
-    int status = pthread_mutex_trylock(&m_impl->m_mutex);
-    if (status == 0)
-    {
-#ifndef _MSC_VER
-        m_impl->m_owner = syscall(__NR_gettid);
-#else
-        m_impl->m_owner = GetCurrentThreadId();
-#endif
-        return true;
-    }
-    if (status == EBUSY)
-        return false; CHECK_STATUS( status, pthread_mutex_trylock );
-    return false;
+  
+// TODO:THREADING
+  
+//    int status = pthread_mutex_trylock(&m_impl->m_mutex);
+//    if (status == 0)
+//    {
+//        //m_impl->m_owner = mach_thread_self(); //OS_MACOSX
+//        m_impl->m_owner = syscall(__NR_gettid); //OS_LINUX
+//        return true;
+//    }
+//    if (status == EBUSY)
+//        return false; CHECK_STATUS( status, pthread_mutex_trylock );
+//    return false;
 }
 
 } // namespace threads
