@@ -221,6 +221,16 @@ inline Mat4d quatToMat(const Quaternion& q)
   return Q;
 }
 
+inline bool isnan( double d )
+{
+    return d != d;
+}
+
+inline bool isinf( double d )
+{
+  return d == std::numeric_limits<double>::infinity() || d == -std::numeric_limits<double>::infinity();
+}
+
 } // namespace BASim
 
 #endif // MATH_HH
