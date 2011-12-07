@@ -289,17 +289,17 @@ public:
     {
     }
 
-    uint32_t size() const
+    unsigned int size() const
     {
-        return (uint32_t) m_objects.size();
+        return (unsigned int) m_objects.size();
     }
 
-    BoundingBox<Scalar> operator[](const uint32_t i) const
+    BoundingBox<Scalar> operator[](const unsigned int i) const
     {
         return m_objects[i]->GetBBox(m_geodata);
     }
 
-    void swap(uint32_t i, uint32_t j)
+    void swap(unsigned int i, unsigned int j)
     {
         std::swap(m_objects[i], m_objects[j]);
     }
@@ -316,17 +316,17 @@ public:
     {
     }
 
-    uint32_t size() const
+    unsigned int size() const
     {
-        return (uint32_t) m_pointIndices.size();
+        return (unsigned int) m_pointIndices.size();
     }
 
-    BoundingBox<Scalar> operator[](const uint32_t i) const
+    BoundingBox<Scalar> operator[](const unsigned int i) const
     {
         return BoundingBox<Scalar> (m_xn.segment<3> (3 * i));
     }
 
-    void swap(uint32_t i, uint32_t j)
+    void swap(unsigned int i, unsigned int j)
     {
         std::swap(m_pointIndices[i], m_pointIndices[j]);
     }

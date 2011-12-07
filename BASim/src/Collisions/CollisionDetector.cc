@@ -154,13 +154,13 @@ void CollisionDetector::computeCollisions(const BVHNodeType& node_a, const BVHNo
     {
         if (&node_a != &node_b)
         {
-            const uint32_t leaf_a_begin = node_a.LeafBegin();
-            const uint32_t leaf_a_end = node_a.LeafEnd();
-            const uint32_t leaf_b_begin = node_b.LeafBegin();
-            const uint32_t leaf_b_end = node_b.LeafEnd();
+            const unsigned int leaf_a_begin = node_a.LeafBegin();
+            const unsigned int leaf_a_end = node_a.LeafEnd();
+            const unsigned int leaf_b_begin = node_b.LeafBegin();
+            const unsigned int leaf_b_end = node_b.LeafEnd();
 
-            for (uint32_t i = leaf_a_begin; i < leaf_a_end; ++i)
-                for (uint32_t j = leaf_b_begin; j < leaf_b_end; ++j)
+            for (unsigned int i = leaf_a_begin; i < leaf_a_end; ++i)
+                for (unsigned int j = leaf_b_begin; j < leaf_b_end; ++j)
                     appendCollision(m_elements[i], m_elements[j]);
         }
 

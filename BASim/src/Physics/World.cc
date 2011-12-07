@@ -1,7 +1,7 @@
 #include "World.hh"
 
 #ifdef HAVE_PETSC
-#include "BASIM/src/Math/Petsc/PetscUtils.hh"
+#include "BASim/src/Math/Petsc/PetscUtils.hh"
 #endif
 
 namespace BASim 

@@ -63,13 +63,13 @@ public:
     }
 
     /// get the i-th node
-    const BVHNodeType& GetNode(const uint32_t i) const
+    const BVHNodeType& GetNode(const unsigned int i) const
     {
         return m_nodes[i];
     }
 
     /// get the i-th node
-    BVHNodeType& GetNode(const uint32_t i)
+    BVHNodeType& GetNode(const unsigned int i)
     {
         return m_nodes[i];
     }
@@ -102,21 +102,21 @@ private:
         StackNode()
         {
         }
-        StackNode(const uint32_t node, const uint32_t begin, const uint32_t end, const uint32_t depth, const BBoxType& kd_bbox) :
+        StackNode(const unsigned int node, const unsigned int begin, const unsigned int end, const unsigned int depth, const BBoxType& kd_bbox) :
             m_node_index(node), m_begin(begin), m_end(end), m_depth(depth), m_kd_bbox(kd_bbox)
         {
         }
 
-        uint32_t m_node_index;
-        uint32_t m_begin;
-        uint32_t m_end;
-        uint32_t m_depth;
+        unsigned int m_node_index;
+        unsigned int m_begin;
+        unsigned int m_end;
+        unsigned int m_depth;
         BBoxType m_kd_bbox;
     };
 
     BVH* m_bvh; ///< output bvh
     std::stack<StackNode> m_stack; ///< internal stack
-    const uint32_t m_max_leaf_size;///< maximum leaf size
+    const unsigned int m_max_leaf_size;///< maximum leaf size
 };
 
 bool do_overlap(const BBoxType& bbox1, const BBoxType& bbox2);
@@ -127,17 +127,17 @@ BBoxType intersection(const BBoxType& bbox1, const BBoxType& bbox2);
 
 typedef BBoxType BBoxType;
 
-bool is_left(const BBoxType& bbox, const uint32_t axis, const Scalar pivot);
+bool is_left(const BBoxType& bbox, const unsigned int axis, const Scalar pivot);
 
 void insert(BBoxType& bbox, const BBoxType& bbox2);
 
 BBoxType merge(const BBoxType& bbox1, const BBoxType& bbox2);
 
 template<typename BBoxFunctorT>
-uint32_t partition(BBoxFunctorT& bboxes, const uint32_t begin, const uint32_t end, const uint32_t axis, const Scalar pivot);
+unsigned int partition(BBoxFunctorT& bboxes, const unsigned int begin, const unsigned int end, const unsigned int axis, const Scalar pivot);
 
 template<typename BBoxFunctorT>
-BBoxType compute_bbox(BBoxFunctorT& bboxes, const uint32_t begin, const uint32_t end);
+BBoxType compute_bbox(BBoxFunctorT& bboxes, const unsigned int begin, const unsigned int end);
 
 }
 

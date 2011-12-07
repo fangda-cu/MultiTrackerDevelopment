@@ -1,6 +1,6 @@
 #include "IncidenceMatrix.hh"
 
-#include "BAsim/src/io/SerializationUtils.hh"
+#include "BASim/src/IO/SerializationUtils.hh"
 
 namespace BASim {
 
