@@ -350,7 +350,7 @@ void ElasticShell::startStep()
 
   //tell the forces to update anything they need to update
   const std::vector<ElasticShellForce*>& forces = getForces();
-  for(int i = 0; i < forces.size(); ++i) {
+  for(unsigned int i = 0; i < forces.size(); ++i) {
     forces[i]->update();
   }
 
@@ -693,7 +693,7 @@ bool ElasticShell::splitEdges( double desiredEdge, double maxEdge, double maxAng
 
     //don't split constrained edges. (alternatively, we could split them, and add the new vert to the constrained list.)
     bool aConstrained = false, bConstrained = false;
-    for(int i = 0; i < m_constrained_vertices.size(); ++i) {
+    for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
       if(m_constrained_vertices[i] == vertex_a)
         aConstrained = true;
       if(m_constrained_vertices[i] == vertex_b)
@@ -728,7 +728,11 @@ bool ElasticShell::splitEdges( double desiredEdge, double maxEdge, double maxAng
     
     if ( !m_obj->edgeExists(eh) || !isEdgeActive(eh))   { continue; }
     if(isSplitDesired(eh, maxEdge, desiredEdge, maxAngle)) {
-      bool splitSuccess = performSplit(eh);
+    
+      VertexHandle newVert;
+      bool splitSuccess = performSplit(eh, newVert);
+      
+      //if the edge was constrained, constrain this vertex
       anySplits |= splitSuccess;
     }
   }
@@ -819,7 +823,7 @@ bool ElasticShell::isSplitDesired(const EdgeHandle& eh, double maxEdge, double d
   return doSplit;
 }
 
-bool ElasticShell::performSplit(const EdgeHandle& eh) {
+bool ElasticShell::performSplit(const EdgeHandle& eh, VertexHandle& new_vert) {
   
   
   //Check for self-intersections being induced...
@@ -901,6 +905,7 @@ bool ElasticShell::performSplit(const EdgeHandle& eh) {
     m_broad_phase.add_triangle((*vf_iter).idx(), tri_verts[0], tri_verts[1], tri_verts[2], m_proximity_epsilon);
   }
   
+  new_vert = v_new;
   return true;
 }
 
@@ -1509,6 +1514,7 @@ bool ElasticShell::edgeCollapseCausesCollision(const VertexHandle& source_vertex
 
 
 void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double ratio_R, double ratio_r, double minEdge) {
+  int count = 0;
 
   EdgeIterator e_it = m_obj->edges_begin();
   for(;e_it != m_obj->edges_end(); ++e_it) {
@@ -1568,16 +1574,17 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
     if(isSmallest && longestEdgeAll < minEdge) //absolute small angle
       doCollapse = true;
 
+
     if(doCollapse) {
 
       //don't collapse a constrained vertex
-      bool pinnedVert = false;
+      bool v0_pinned = false,v1_pinned = false;
       for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
-        if(v0 == m_constrained_vertices[i] || v1 == m_constrained_vertices[i]) {
-          pinnedVert = true;
-        }
+        if(v0 == m_constrained_vertices[i])
+          v0_pinned = true;
+        if(v1 == m_constrained_vertices[i])
+          v1_pinned = true;
       }
-      if(pinnedVert) continue;
 
       //check if either point is on the boundary
       bool v0_bdry, v1_bdry;
@@ -1586,12 +1593,13 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
 
       Vec3d newPoint, newVel, newUndef;
       if(v0_bdry && v1_bdry) continue; //both edges on the boundary, don't collapse!
-      else if(v0_bdry) {
+
+      if(v0_bdry || v0_pinned) {
         newPoint = p0;
         newVel = getVertexVelocity(v0);
         newUndef = getVertexUndeformed(v0);
       }
-      else if(v1_bdry) {
+      else if(v1_bdry || v1_pinned) {
         newPoint = p1;
         newVel = getVertexVelocity(v1);
         newUndef = getVertexUndeformed(v1);

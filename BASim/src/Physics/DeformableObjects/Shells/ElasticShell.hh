@@ -122,7 +122,7 @@ protected:
 
   bool isSplitDesired(const EdgeHandle& eh, double maxEdge, double desiredEdge, double maxAngle);
   bool edgeSplitCausesCollision( const ElTopo::Vec3d& new_vertex_position, const ElTopo::Vec3d& new_vertex_smooth_position, EdgeHandle edge);
-  bool performSplit(const EdgeHandle& eh);
+  bool performSplit(const EdgeHandle& eh, VertexHandle& newVert);
 
   bool performCollapse(const EdgeHandle& eh);
   void updateBroadPhaseForCollapse(const VertexHandle& vertex_a, const ElTopo::Vec3d& new_pos_a, const VertexHandle& vertex_b, const ElTopo::Vec3d& new_pos_b);
