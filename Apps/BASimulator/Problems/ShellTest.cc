@@ -905,20 +905,20 @@ void ShellTest::setupScene7() {
 
   std::vector<std::vector<VertexHandle>> vertList;
 
-  Scalar dr = (1.0 - 0.2) / (Scalar) slices;
+  Scalar dr = (out_radius - in_radius) / (Scalar) layers;
   
   //fill in the interior
   vertList.resize(layers-1);
   for(int j = 0; j < layers-1; ++j) {
     
     for(int i = 0; i < slices; ++i) {
-      Scalar rotAngle = 2*pi * (Scalar)i / (Scalar)slices;
-      Scalar newRad = 0.2 + j*dr;
+      Scalar rotAngle = 2 * pi * (Scalar)i / (Scalar)slices;
+      Scalar newRad = in_radius + j*dr;
       Scalar xVal = newRad*cos(rotAngle);
       Scalar yVal = newRad*sin(rotAngle);
 
       VertexHandle vNew = shellObj->addVertex();
-      positions[vNew] = centre + Vec3d(xVal,0,yVal);
+      positions[vNew] = centre + Vec3d(xVal, 0, yVal);
       velocities[vNew] = start_vel;
       undeformed[vNew] = positions[vNew];
       vertList[j].push_back(vNew);
@@ -958,7 +958,7 @@ void ShellTest::setupScene7() {
     shell->constrainVertex(vertList[0][i], shell->getVertexPosition(vertList[0][i]));
     
     Vec3d pos = shell->getVertexPosition(vertList[vertList.size()-1][i]);
-    XZPlaneRotatingConstraint*p = new XZPlaneRotatingConstraint(pos, centre, 12);
+    XZPlaneRotatingConstraint*p = new XZPlaneRotatingConstraint(pos, centre, 8);
     shell->constrainVertex(vertList[vertList.size()-1][i], p);
     //shell->constrainVertex(vertList[vertList.size()-1][i], shell->getVertexPosition(vertList[vertList.size()-1][i]));
   }
