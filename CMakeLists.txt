@@ -30,7 +30,7 @@ option (TIMING_ON "Enables timing macros" OFF)
 if (TIMING_ON)
   add_definitions (-DTIMING_ON)
 endif (TIMING_ON)
-option (BUILD_MAYA_NODES "Build Maya nodes" ON)
+option (BUILD_MAYA_NODES "Build Maya nodes" OFF)
 
 # Deal with the intel compiler vs gcc
 if (CMAKE_COMPILER_IS_GNUCXX)

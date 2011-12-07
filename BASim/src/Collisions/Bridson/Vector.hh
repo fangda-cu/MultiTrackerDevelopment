@@ -25,7 +25,7 @@ public:
    }
    Vec2(const Vec2& c)
    {
-      for (uint i = 0; i < 2; ++i) v[i] = c.v[i];
+      for (unsigned int i = 0; i < 2; ++i) v[i] = c.v[i];
    }
    Vec2(const T& x, const T& y)
    {
@@ -36,22 +36,22 @@ public:
 
    Vec2& operator= (const Vec2& c)
    {
-      for (uint i = 0; i < 2; ++i) v[i] = c(i);
+      for (unsigned int i = 0; i < 2; ++i) v[i] = c(i);
       return (*this);
    }
 
-   T& operator[] (uint i)
+   T& operator[] (unsigned int i)
    {
       assert(i < 2);
       return v[i];
    }
-   const T& operator[] (uint i) const
+   const T& operator[] (unsigned int i) const
    {
       assert(i < 2);
       return v[i];
    }
 
-   uint size() const
+   unsigned int size() const
    {
       return 2;
    }
@@ -59,16 +59,16 @@ public:
    T norm() const
    {
       T t = 0;
-      for (uint i = 0; i < 2; ++i) t += v[i]*v[i];
+      for (unsigned int i = 0; i < 2; ++i) t += v[i]*v[i];
       return sqrt(t);
    }
 
-   T& operator() (uint i)
+   T& operator() (unsigned int i)
    {
       assert(i < 2);
       return v[i];
    }
-   const T& operator() (uint i) const
+   const T& operator() (unsigned int i) const
    {
       assert(i < 2);
       return v[i];
@@ -94,14 +94,14 @@ public:
    friend Vec2<T> operator+ (const Vec2<T>& a, const Vec2<T>& b)
    {
       Vec2<T> c(a);
-      for (uint i = 0; i < 2; ++i) c.v[i]+=b.v[i];
+      for (unsigned int i = 0; i < 2; ++i) c.v[i]+=b.v[i];
       return c;
    }
 
    friend Vec2<T> operator- (const Vec2<T>& a, const Vec2<T>& b)
    {
       Vec2<T> c(a);
-      for (uint i = 0; i < 2; ++i) c.v[i]-=b.v[i];
+      for (unsigned int i = 0; i < 2; ++i) c.v[i]-=b.v[i];
       return c;
    }
 
@@ -153,11 +153,11 @@ class Mat2
 public:
    Mat2()
    {
-      for (uint i = 0; i < 4; ++i) v[i] = 0;
+      for (unsigned int i = 0; i < 4; ++i) v[i] = 0;
    }
    Mat2(const Mat2& c)
    {
-      for (uint i = 0; i < 4; ++i) v[i] = c.v[i];
+      for (unsigned int i = 0; i < 4; ++i) v[i] = c.v[i];
    }
    Mat2(const T& v00, const T& v01, const T& v10, const T& v11)
    {
@@ -178,23 +178,23 @@ public:
       return (*this);
    }
 
-   uint nr() const
+   unsigned int nr() const
    {
       return 2;
    }
-   uint nc() const
+   unsigned int nc() const
    {
       return 2;
    }
 
-   T& operator() (uint r, uint c)
+   T& operator() (unsigned int r, unsigned int c)
    {
       assert(r < 2);
       assert(c < 2);
       return v[2*r+c];
    }
 
-   const T& operator() (uint r, uint c) const
+   const T& operator() (unsigned int r, unsigned int c) const
    {
       assert(r < 2);
       assert(c < 2);
@@ -265,7 +265,7 @@ public:
 
    Vec3(const Vec3<T>& c)
    {
-      for (uint i = 0; i < 3; ++i) v[i] = c.v[i];
+      for (unsigned int i = 0; i < 3; ++i) v[i] = c.v[i];
    }
 
    Vec3(const T& a, const T& b, const T& c)
@@ -279,21 +279,21 @@ public:
 
    Vec3<T>& operator= (const Vec3<T>& c)
    {
-      for (uint i = 0; i < 3; ++i) v[i] = c.v[i];
+      for (unsigned int i = 0; i < 3; ++i) v[i] = c.v[i];
       return *this;
    }
 
    void scale(const T& a)
    {
-      for (uint i = 0; i < 3 ; ++i) v[i] *= a;
+      for (unsigned int i = 0; i < 3 ; ++i) v[i] *= a;
    }
 
    void diagonalScale(const Vec3<T>& a)
    {
-      for (uint i = 0; i < 3; ++i) v[i] *= a.v[i];
+      for (unsigned int i = 0; i < 3; ++i) v[i] *= a.v[i];
    }
 
-   void add(const uint& i, const T& val)
+   void add(const unsigned int& i, const T& val)
    {
       assert( X==i || Y==i || Z==i );
       v[i] += val;
@@ -302,40 +302,40 @@ public:
    // this += t*a
    void add(const T& t, const Vec3<T>& a)
    {
-      for (uint i = 0; i < 3; ++i) v[i] += t*a.v[i];
+      for (unsigned int i = 0; i < 3; ++i) v[i] += t*a.v[i];
    }
 
    T dot(const Vec3<T>&a) const
    {
       T t = 0;
-      for (uint i = 0; i < 3; ++i) t += v[i]*a.v[i];
+      for (unsigned int i = 0; i < 3; ++i) t += v[i]*a.v[i];
       return t;
    }
 
    T norm() const
    {
       T t = 0;
-      for (uint i = 0; i < 3; ++i) t += v[i]*v[i];
+      for (unsigned int i = 0; i < 3; ++i) t += v[i]*v[i];
       return sqrt(t);
    }
 
    T max() const
    {
        T m = v[0];
-       for (uint i = 1; i < 3; ++i) m = max(m, v[i]);
+       for (unsigned int i = 1; i < 3; ++i) m = max(m, v[i]);
        return m;
    }
 
    T min() const
    {
        T m = v[0];
-       for (uint i = 1; i < 3; ++i) m = min(m, v[i]);
+       for (unsigned int i = 1; i < 3; ++i) m = min(m, v[i]);
        return m;
    }
 
    void clear()
    {
-      for (uint i = 0; i < 3; ++i) v[i] = 0;
+      for (unsigned int i = 0; i < 3; ++i) v[i] = 0;
    }
 
    T* data()
@@ -372,23 +372,23 @@ public:
       return v[Z];
    }
 
-   T& operator() (const uint& i)
+   T& operator() (const unsigned int& i)
    {
       assert(i < 3);
       return v[i];
    }
-   const T& operator() (const uint& i) const
+   const T& operator() (const unsigned int& i) const
    {
       assert(i < 3);
       return v[i];
    }
 
-   T& operator[] (const uint& i)
+   T& operator[] (const unsigned int& i)
    {
       assert(i < 3);
       return v[i];
    }
-   const T& operator[] (const uint& i) const
+   const T& operator[] (const unsigned int& i) const
    {
       assert(i < 3);
       return v[i];
@@ -396,7 +396,7 @@ public:
 
    Vec3<T>& operator*= (const T& a)
    {
-      for (uint i = 0; i < 3; ++i) v[i] *= a;
+      for (unsigned int i = 0; i < 3; ++i) v[i] *= a;
       return *this;
    }
 
@@ -409,19 +409,19 @@ public:
       }
 
       assert( fabs(a) > 1.0e-10 );
-      for (uint i = 0; i < 3; ++i) v[i] /= a;
+      for (unsigned int i = 0; i < 3; ++i) v[i] /= a;
       return *this;
    }
 
    Vec3<T>& operator+= (const Vec3<T>& a)
    {
-      for (uint i = 0; i < 3; ++i) v[i] += a.v[i];
+      for (unsigned int i = 0; i < 3; ++i) v[i] += a.v[i];
       return *this;
    }
 
    Vec3<T>& operator-= (const Vec3<T>& a)
    {
-      for (uint i = 0; i < 3; ++i) v[i] -= a.v[i];
+      for (unsigned int i = 0; i < 3; ++i) v[i] -= a.v[i];
       return *this;
    }
 
@@ -460,13 +460,13 @@ public:
 
    void negate()
    {
-      for (uint i = 0; i < 3; ++i) v[i] = -v[i];
+      for (unsigned int i = 0; i < 3; ++i) v[i] = -v[i];
    }
 
    friend void normalize(Vec3<T>& a)
    {
       T norm = a.norm();
-      for (uint i = 0; i < 3; ++i) a.v[i] /= norm;
+      for (unsigned int i = 0; i < 3; ++i) a.v[i] /= norm;
    }
 
    friend Vec3<T> cross(const Vec3<T>& a, const Vec3<T>& b)
@@ -481,7 +481,7 @@ public:
    friend T dot(const Vec3<T>& a, const Vec3<T>& b)
    {
       T d = 0;
-      for (uint i = 0; i < 3; ++i) d += a.v[i]*b.v[i];
+      for (unsigned int i = 0; i < 3; ++i) d += a.v[i]*b.v[i];
       return d;
    }
 
@@ -495,14 +495,14 @@ public:
    friend Vec3<T> operator+ (const Vec3<T>& a, const Vec3<T>& b)
    {
       Vec3<T> c(a);
-      for (uint i = 0; i < 3; ++i) c.v[i]+=b.v[i];
+      for (unsigned int i = 0; i < 3; ++i) c.v[i]+=b.v[i];
       return c;
    }
 
    friend Vec3<T> operator- (const Vec3<T>& a, const Vec3<T>& b)
    {
       Vec3<T> c(a);
-      for (uint i = 0; i < 3; ++i) c.v[i]-=b.v[i];
+      for (unsigned int i = 0; i < 3; ++i) c.v[i]-=b.v[i];
       return c;
    }
 
@@ -535,7 +535,7 @@ public:
        return a.min();
    }
 
-   uint size() const
+   unsigned int size() const
    {
       return 3;
    }
@@ -543,7 +543,7 @@ public:
    bool isValid() const
    {
       bool valid = true;
-      for (uint i = 0; i < 3; ++i)
+      for (unsigned int i = 0; i < 3; ++i)
       {
          valid = valid && finite(v[i]);
       }
@@ -553,7 +553,7 @@ public:
    friend std::ostream& operator<< (std::ostream& os, const Vec3<T>& a)
    {
       os << "[";
-      for (uint i = 0; i < 3; ++i)
+      for (unsigned int i = 0; i < 3; ++i)
       {
          //if (fabs(a.v[i]) < 1.0e-10) os << 0;
          //else os << a.v[i];
@@ -744,7 +744,7 @@ public:
 
    Vec4(const Vec4<T>& c)
    {
-      for (uint i = 0; i < 4; ++i) v[i] = c.v[i];
+      for (unsigned int i = 0; i < 4; ++i) v[i] = c.v[i];
    }
 
    Vec4(T a, T b, T c, T d)
@@ -759,21 +759,21 @@ public:
 
    Vec4<T>& operator= (const Vec4<T>& c)
    {
-      for (uint i = 0; i < 4; ++i) v[i] = c.v[i];
+      for (unsigned int i = 0; i < 4; ++i) v[i] = c.v[i];
       return *this;
    }
 
    void scale(T a)
    {
-      for (uint i = 0; i < 4 ; ++i) v[i] *= a;
+      for (unsigned int i = 0; i < 4 ; ++i) v[i] *= a;
    }
 
    void diagonalScale(Vec4<T>& a)
    {
-      for (uint i = 0; i < 4; ++i) v[i] *= a.v[i];
+      for (unsigned int i = 0; i < 4; ++i) v[i] *= a.v[i];
    }
 
-   void add(uint i, T val)
+   void add(unsigned int i, T val)
    {
       v[i] += val;
    }
@@ -781,26 +781,26 @@ public:
    // this += t*a
    void add(T t, Vec4<T>& a)
    {
-      for (uint i = 0; i < 4; ++i) v[i] += t*a.v[i];
+      for (unsigned int i = 0; i < 4; ++i) v[i] += t*a.v[i];
    }
 
    T dot(const Vec4<T>&a) const
    {
       T t = 0;
-      for (uint i = 0; i < 4; ++i) t += v[i]*a.v[i];
+      for (unsigned int i = 0; i < 4; ++i) t += v[i]*a.v[i];
       return t;
    }
 
    T norm() const
    {
       T t = 0;
-      for (uint i = 0; i < 4; ++i) t += v[i]*v[i];
+      for (unsigned int i = 0; i < 4; ++i) t += v[i]*v[i];
       return sqrt(t);
    }
 
    void clear()
    {
-      for (uint i = 0; i < 4; ++i) v[i] = 0;
+      for (unsigned int i = 0; i < 4; ++i) v[i] = 0;
    }
 
    T* data()
@@ -846,23 +846,23 @@ public:
       return v[P];
    }
 
-   T& operator() (uint i)
+   T& operator() (unsigned int i)
    {
       assert(i < 4);
       return v[i];
    }
-   const T& operator() (uint i) const
+   const T& operator() (unsigned int i) const
    {
       assert(i < 4);
       return v[i];
    }
 
-   T& operator[] (uint i)
+   T& operator[] (unsigned int i)
    {
       assert(i < 4);
       return v[i];
    }
-   const T& operator[] (uint i) const
+   const T& operator[] (unsigned int i) const
    {
       assert(i < 4);
       return v[i];
@@ -870,25 +870,25 @@ public:
 
    Vec4<T>& operator*= (T a)
    {
-      for (uint i = 0; i < 4; ++i) v[i] *= a;
+      for (unsigned int i = 0; i < 4; ++i) v[i] *= a;
       return *this;
    }
 
    Vec4<T>& operator/= (T a)
    {
-      for (uint i = 0; i < 4; ++i) v[i] /= a;
+      for (unsigned int i = 0; i < 4; ++i) v[i] /= a;
       return *this;
    }
 
    Vec4<T>& operator+= (const Vec4<T>& a)
    {
-      for (uint i = 0; i < 4; ++i) v[i] += a.v[i];
+      for (unsigned int i = 0; i < 4; ++i) v[i] += a.v[i];
       return *this;
    }
 
    Vec3<T>& operator-= (const Vec4<T>& a)
    {
-      for (uint i = 0; i < 4; ++i) v[i] -= a.v[i];
+      for (unsigned int i = 0; i < 4; ++i) v[i] -= a.v[i];
       return *this;
    }
 
@@ -901,19 +901,19 @@ public:
 
    void negate()
    {
-      for (uint i = 0; i < 4; ++i) v[i] = -v[i];
+      for (unsigned int i = 0; i < 4; ++i) v[i] = -v[i];
    }
 
    friend void normalize(Vec4<T>& a)
    {
       T norm = a.norm();
-      for (uint i = 0; i < 4; ++i) a.v[i] /= norm;
+      for (unsigned int i = 0; i < 4; ++i) a.v[i] /= norm;
    }
 
    friend T dot(const Vec4<T>& a, const Vec4<T>& b)
    {
       T d = 0;
-      for (uint i = 0; i < 4; ++i) d += a.v[i]*b.v[i];
+      for (unsigned int i = 0; i < 4; ++i) d += a.v[i]*b.v[i];
       return d;
    }
 
@@ -948,7 +948,7 @@ public:
    friend std::ostream& operator<< (std::ostream& os, const Vec4<T>& a)
    {
       os << "[";
-      for (uint i = 0; i < 4; ++i)
+      for (unsigned int i = 0; i < 4; ++i)
       {
          if (fabs(a.v[i]) < 1.0e-10) os << 0;
          else os << a.v[i];
@@ -983,7 +983,7 @@ public:
                       a(2)*b(0), a(2)*b(1), a(2)*b(2) );
    }
 
-   uint size() const
+   unsigned int size() const
    {
       return 4;
    }
@@ -1002,44 +1002,44 @@ class Mat3
 public:
    Mat3()
    {
-      for (uint i = 0; i < 9; ++i) v[i] = 0;
+      for (unsigned int i = 0; i < 9; ++i) v[i] = 0;
    }
    Mat3(const Mat3& M)
    {
-      for (uint i = 0; i < 9; ++i) v[i] = M.v[i];
+      for (unsigned int i = 0; i < 9; ++i) v[i] = M.v[i];
    }
    ~Mat3() {}
 
    Mat3& operator= (const Mat3& M)
    {
-      for (uint i = 0; i < 9; ++i) v[i] = M.v[i];
+      for (unsigned int i = 0; i < 9; ++i) v[i] = M.v[i];
       return *this;
    }
 
-   T& operator() (uint i, uint j)
+   T& operator() (unsigned int i, unsigned int j)
    {
       assert(i<3 && j<3);
       return v[3*i+j];
    }
 
-   const T& operator() (uint i, uint j) const
+   const T& operator() (unsigned int i, unsigned int j) const
    {
       assert(i<3 && j<3);
       return v[3*i+j];
    }
 
-   uint nr() const
+   unsigned int nr() const
    {
       return 3;
    }
-   uint nc() const
+   unsigned int nc() const
    {
       return 3;
    }
 
    void clear()
    {
-      for (uint i = 0; i < 9; ++i) v[i] = 0;
+      for (unsigned int i = 0; i < 9; ++i) v[i] = 0;
    }
 
 protected:
@@ -1051,8 +1051,8 @@ protected:
 template <class T, class G>
 Mat3<T>& operator*= (Mat3<T>& m, const G& t)
 {
-   for (uint i = 0; i < m.nr(); ++i)
-      for (uint j = 0; j < m.nc(); ++j)
+   for (unsigned int i = 0; i < m.nr(); ++i)
+      for (unsigned int j = 0; j < m.nc(); ++j)
          m(i,j) *= t;
    return m;
 }
@@ -1069,8 +1069,8 @@ template <class T>
 Mat3<T> operator+ (const Mat3<T>& m1, const Mat3<T>& m2)
 {
    Mat3<T> m3;
-   for (uint i = 0; i < m1.nr(); ++i)
-      for (uint j = 0; j < m1.nc(); ++j)
+   for (unsigned int i = 0; i < m1.nr(); ++i)
+      for (unsigned int j = 0; j < m1.nc(); ++j)
          m3(i,j) = m1(i,j) + m2(i,j);
    return m3;
 }
@@ -1078,8 +1078,8 @@ Mat3<T> operator+ (const Mat3<T>& m1, const Mat3<T>& m2)
 template <class T>
 Mat3<T>& operator+= (Mat3<T>& m1, const Mat3<T>& m2)
 {
-   for (uint i = 0; i < 3; ++i)
-      for (uint j = 0; j < 3; ++j)
+   for (unsigned int i = 0; i < 3; ++i)
+      for (unsigned int j = 0; j < 3; ++j)
          m1(i,j) += m2(i,j);
    return m1;
 }
@@ -1087,8 +1087,8 @@ Mat3<T>& operator+= (Mat3<T>& m1, const Mat3<T>& m2)
 template <class T>
 Mat3<T>& operator-= (Mat3<T>& m1, const Mat3<T>& m2)
 {
-   for (uint i = 0; i < 3; ++i)
-      for (uint j = 0; j < 3; ++j)
+   for (unsigned int i = 0; i < 3; ++i)
+      for (unsigned int j = 0; j < 3; ++j)
          m1(i,j) -= m2(i,j);
    return m1;
 }
@@ -1100,8 +1100,8 @@ V dot(const M& m, const V& v)
 
    V r;
 
-   for (uint i = 0; i < m.nr(); ++i)
-      for (uint j = 0; j < m.nc(); ++j)
+   for (unsigned int i = 0; i < m.nr(); ++i)
+      for (unsigned int j = 0; j < m.nc(); ++j)
          r[j] += m(i,j) * v(i);
 
    return r;
@@ -1131,9 +1131,9 @@ template <class T>
 Mat3<T> outerProd(const Vec3<T>& v1, const Vec3<T>& v2)
 {
    Mat3<T> m;
-   for (uint i = 0; i < 3; ++i)
+   for (unsigned int i = 0; i < 3; ++i)
    {
-      for (uint j = 0; j < 3; ++j)
+      for (unsigned int j = 0; j < 3; ++j)
       {
          m(i,j) += v1(i)*v2(j);
       }
@@ -1145,8 +1145,8 @@ template <class V, class T>
 V operator* (const Mat3<T>& m, const V& v1)
 {
    V v2;
-   for (uint i = 0; i < 3; ++i)
-      for (uint j = 0; j < 3; ++j)
+   for (unsigned int i = 0; i < 3; ++i)
+      for (unsigned int j = 0; j < 3; ++j)
          v2(i) += m(i,j)*v1(j);
    return v2;
 }
@@ -1158,16 +1158,16 @@ class Vector
 public:
    enum { X = 0, Y = 1, Z = 2 };
 
-   Vector(uint n = 3) : _n(n)
+   Vector(unsigned int n = 3) : _n(n)
    {
       v = new T[_n];
-      for (uint i = 0; i < _n; ++i) v[i] = 0;
+      for (unsigned int i = 0; i < _n; ++i) v[i] = 0;
    }
 
    Vector(const Vector<T>& c) : _n(c._n)
    {
       v = new T[_n];
-      for (uint i = 0; i < _n; ++i) v[i] = c.v[i];
+      for (unsigned int i = 0; i < _n; ++i) v[i] = c.v[i];
    }
 
    Vector(T a, T b, T c) : _n(3)
@@ -1186,23 +1186,23 @@ public:
    Vector<T>& operator= (const Vector<T>& c)
    {
       assert(_n == c._n);
-      for (uint i = 0; i < _n; ++i) v[i] = c.v[i];
+      for (unsigned int i = 0; i < _n; ++i) v[i] = c.v[i];
       return *this;
    }
 
    void scale(T a)
    {
-      for (uint i = 0; i < _n ; ++i) v[i] *= a;
+      for (unsigned int i = 0; i < _n ; ++i) v[i] *= a;
    }
 
    void diagonalScale(Vector<T>& a)
    {
       assert(_n == a._n);
 
-      for (uint i = 0; i < _n; ++i) v[i] *= a.v[i];
+      for (unsigned int i = 0; i < _n; ++i) v[i] *= a.v[i];
    }
 
-   void add(uint i, T val)
+   void add(unsigned int i, T val)
    {
       assert(i < _n);
       v[i] += val;
@@ -1212,27 +1212,27 @@ public:
    void add(T t, Vector<T>& a)
    {
       assert(_n == a._n);
-      for (uint i = 0; i < _n; ++i) v[i] += t*a.v[i];
+      for (unsigned int i = 0; i < _n; ++i) v[i] += t*a.v[i];
    }
 
    T dot(const Vector<T>&a) const
    {
       assert(_n == a._n);
       T t = 0;
-      for (uint i = 0; i < _n; ++i) t += v[i]*a.v[i];
+      for (unsigned int i = 0; i < _n; ++i) t += v[i]*a.v[i];
       return t;
    }
 
    T norm() const
    {
       T t = 0;
-      for (uint i = 0; i < _n; ++i) t += v[i]*v[i];
+      for (unsigned int i = 0; i < _n; ++i) t += v[i]*v[i];
       return sqrt(t);
    }
 
    void clear()
    {
-      for (uint i = 0; i < _n; ++i) v[i] = 0;
+      for (unsigned int i = 0; i < _n; ++i) v[i] = 0;
    }
 
    T* data()
@@ -1269,18 +1269,18 @@ public:
       return v[Z];
    }
 
-   T& operator() (uint i)
+   T& operator() (unsigned int i)
    {
       assert(i < _n);
       return v[i];
    }
-   const T& operator() (uint i) const
+   const T& operator() (unsigned int i) const
    {
       assert(i < _n);
       return v[i];
    }
 
-   T& operator[] (uint i)
+   T& operator[] (unsigned int i)
    {
       /*
       if( i >= _n)
@@ -1292,7 +1292,7 @@ public:
       return v[i];
    }
 
-   const T& operator[] (uint i) const
+   const T& operator[] (unsigned int i) const
    {
       assert(i < _n);
       return v[i];
@@ -1300,27 +1300,27 @@ public:
 
    Vector<T>& operator*= (T a)
    {
-      for (uint i = 0; i < _n; ++i) v[i] *= a;
+      for (unsigned int i = 0; i < _n; ++i) v[i] *= a;
       return *this;
    }
 
    Vector<T>& operator/= (T a)
    {
-      for (uint i = 0; i < _n; ++i) v[i] /= a;
+      for (unsigned int i = 0; i < _n; ++i) v[i] /= a;
       return *this;
    }
 
    Vector<T>& operator+= (const Vector<T>& a)
    {
       assert(_n == a._n);
-      for (uint i = 0; i < _n; ++i) v[i] += a.v[i];
+      for (unsigned int i = 0; i < _n; ++i) v[i] += a.v[i];
       return *this;
    }
 
    Vector<T>& operator-= (const Vector<T>& a)
    {
       assert(_n == a._n);
-      for (uint i = 0; i < _n; ++i) v[i] -= a.v[i];
+      for (unsigned int i = 0; i < _n; ++i) v[i] -= a.v[i];
       return *this;
    }
 
@@ -1333,13 +1333,13 @@ public:
 
    void negate()
    {
-      for (uint i = 0; i < _n; ++i) v[i] = -v[i];
+      for (unsigned int i = 0; i < _n; ++i) v[i] = -v[i];
    }
 
    friend void normalize(Vector<T>& a)
    {
       T norm = a.norm();
-      for (uint i = 0; i < a._n; ++i) a.v[i] /= norm;
+      for (unsigned int i = 0; i < a._n; ++i) a.v[i] /= norm;
    }
 
    friend Vector<T> cross(const Vector<T>& a, const Vector<T>& b)
@@ -1357,7 +1357,7 @@ public:
    {
       assert(a._n == b._n);
       T d = 0;
-      for (uint i = 0; i < a._n; ++i) d += a.v[i]*b.v[i];
+      for (unsigned int i = 0; i < a._n; ++i) d += a.v[i]*b.v[i];
       return d;
    }
 
@@ -1387,7 +1387,7 @@ public:
    friend std::ostream& operator<< (std::ostream& os, const Vector<T>& a)
    {
       os << "[";
-      for (uint i = 0; i < a._n-1; ++i) os << a.v[i] << ", ";
+      for (unsigned int i = 0; i < a._n-1; ++i) os << a.v[i] << ", ";
       os << a.v[a._n-1] << "]";
       return os;
    }
@@ -1404,9 +1404,9 @@ public:
    {
       assert(a._n == b._n);
       MMat<T> M;
-      for (uint i = 0; i < a._n; ++i)
+      for (unsigned int i = 0; i < a._n; ++i)
       {
-         for (uint j = 0; j < b._n; ++j)
+         for (unsigned int j = 0; j < b._n; ++j)
          {
             M(i,j) += a[i]*b[j];
          }
@@ -1414,13 +1414,13 @@ public:
       return M;
    }
 
-   uint size() const
+   unsigned int size() const
    {
       return _n;
    }
 
 protected:
-   uint _n;
+   unsigned int _n;
    T* v;
 };
 

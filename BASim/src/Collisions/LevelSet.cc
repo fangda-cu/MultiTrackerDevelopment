@@ -26,7 +26,7 @@ LevelSet::~LevelSet()
 }
 /*
 void LevelSet::buildLevelSet(const std::vector<bridson::Vec3ui> &triangles,
-                             const std::vector<uint> &triIndices,
+                             const std::vector<unsigned int> &triIndices,
                              const std::vector<bridson::Vec3f>  &x,
                              const std::vector<bridson::Vec3f>  &v,
                              const bridson::Vec3f &origin, Real length[3],
@@ -40,7 +40,7 @@ void LevelSet::buildLevelSet(const Vec3Indices &triangles,
                              Real dx, int nx, int ny, int nz, int nbrTriangles,
                              Eigen::Matrix4f& transformMatrix)
 {
-    for (uint i=0; i<3; ++i)
+    for (unsigned int i=0; i<3; ++i)
         _origin[i] = origin[i];
 
     _dx = dx;
@@ -257,9 +257,9 @@ void LevelSet::draw()
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     glBegin(GL_QUADS);
-    for (uint i=0; i<(_phi.ni-1); ++i)
-        for (uint j=0; j<(_phi.nj-1); ++j)
-            for (uint k=0; k<(_phi.nk-1); ++k)
+    for (unsigned int i=0; i<(_phi.ni-1); ++i)
+        for (unsigned int j=0; j<(_phi.nj-1); ++j)
+            for (unsigned int k=0; k<(_phi.nk-1); ++k)
             {
                 
       //          std::cerr << "_phi( " << i << ", " << j << ", " << k << ") = " << _phi(i,j,k) << std::endl;
@@ -411,7 +411,7 @@ void LevelSet::loadFile(std::fstream &levelSetFile)
 }
 
 void LevelSet::buildLevelSet(const Vec3Indices &triangles,
-                             const std::vector<uint> &triIndices,
+                             const std::vector<unsigned int> &triIndices,
                                      const std::vector<bridson::Vec3f>  &x,
                                      const std::vector<bridson::Vec3f>  &v,
                                      const bridson::Vec3f &origin,
@@ -433,8 +433,8 @@ void LevelSet::buildLevelSet(const Vec3Indices &triangles,
     //
     bridson::Vec3f ijkmin, ijkmax;
 //    for(unsigned int t=0; t<triangles.size(); ++t){
-    for (std::vector<uint>::const_iterator tItr=triIndices.begin(); tItr!=triIndices.end(); ++tItr){
-        uint t = *tItr;
+    for (std::vector<unsigned int>::const_iterator tItr=triIndices.begin(); tItr!=triIndices.end(); ++tItr){
+        unsigned int t = *tItr;
 //        unsigned int p, q, r; assign(triangles[t], p, q, r);
 	unsigned int p = triangles[t][0], q= triangles[t][1], r = triangles[t][2];
 
