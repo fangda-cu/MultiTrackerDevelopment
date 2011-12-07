@@ -41,7 +41,9 @@ public:
   void setupScene2(); //vertical cylindrical sheet
   void setupScene3(); //spherical sheet
   void setupScene4(); //two-triangle bending test
-  void setupScene5();
+  void setupScene5(); //catenary 
+  void setupScene6(); //hemispherical bubble
+  void setupScene7(); //sheet between two circles
 
 };
 

@@ -284,21 +284,31 @@ const Scalar& ElasticShell::getMass( const DofHandle& hnd ) const
   }
 }
 
-void ElasticShell::getScriptedDofs( IntArray& dofIndices, std::vector<Scalar>& dofValues ) const
+void ElasticShell::getScriptedDofs( IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time ) const
 {
   for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
     int dofBase = getVertexDofBase(m_constrained_vertices[i]);
-    dofIndices.push_back(dofBase); dofValues.push_back(m_constraint_positions[i][0]);
-    dofIndices.push_back(dofBase+1); dofValues.push_back(m_constraint_positions[i][1]);
-    dofIndices.push_back(dofBase+2); dofValues.push_back(m_constraint_positions[i][2]);
+    Vec3d pos = m_constraint_positions[i]->operator()(time);
+    dofIndices.push_back(dofBase); dofValues.push_back(pos[0]);
+    dofIndices.push_back(dofBase+1); dofValues.push_back(pos[1]);
+    dofIndices.push_back(dofBase+2); dofValues.push_back(pos[2]);
   }
 }
 
 void ElasticShell::constrainVertex( const VertexHandle& v, const Vec3d& pos )
 {
   m_constrained_vertices.push_back(v);
-  m_constraint_positions.push_back(pos);
+  PositionConstraint* c = new FixedPositionConstraint(pos);
+  m_constraint_positions.push_back(c);
 }
+
+void ElasticShell::constrainVertex( const VertexHandle& v, PositionConstraint* c )
+{
+  m_constrained_vertices.push_back(v);
+  m_constraint_positions.push_back(c);
+}
+
+
 
 void ElasticShell::startStep()
 {
@@ -347,29 +357,25 @@ void ElasticShell::startStep()
 }
 
 void ElasticShell::endStep() {
+  
+  //Adjust thicknesses based on area changes
   updateThickness();
 
-  
-  //remesh(0.2);  
-  //extendMesh();
+  //Remeshing
+  if(m_do_remeshing) {
+    for(int i = 0; i < m_remeshing_iters; ++i)
+      remesh(m_remesh_edge_length);  
 
+    //Relabel DOFs if necessary
+    m_obj->computeDofIndexing();
+  }
+
+  //extendMesh();
+  
+  //Update masses based on new areas/thicknesses
   computeMasses();
   
-  for(VertexIterator veit = m_obj->vertices_begin(); veit != m_obj->vertices_end(); ++veit) {
-    VertexHandle v = *veit;
-    Scalar mass = m_vertex_masses[v];
-    if(mass == 0)
-      std::cout << "Zero mass!\n";
-  }
-
-  //check total volume
-  Scalar total = 0;
-  for(FaceIterator fit = m_obj->faces_begin(); fit!= m_obj->faces_end(); ++fit) {
-    total += m_volumes[*fit];
-  }
-
-  //recompute DOF indexing...
-  m_obj->computeDofIndexing();
+  
 
 
   /*
@@ -406,6 +412,8 @@ void ElasticShell::endStep() {
   //m_damping_undeformed_positions = m_positions;
 
  
+  //Advance any constraints!
+  
  
 }
 
@@ -668,6 +676,9 @@ bool ElasticShell::splitEdges( double desiredEdge, double maxEdge, double maxAng
   for(;e_it != m_obj->edges_end(); ++e_it) {   
     
     EdgeHandle eh = *e_it;
+    
+    VertexHandle vertex_a = m_obj->fromVertex(eh);
+    VertexHandle vertex_b = m_obj->toVertex(eh);
 
     if ( !m_obj->edgeExists(eh) || !isEdgeActive(eh))   { continue; }     // skip inactive/non-existent edges
     
@@ -679,14 +690,21 @@ bool ElasticShell::splitEdges( double desiredEdge, double maxEdge, double maxAng
         break;
       }
     }
-    if(isConstrained) continue;
+
+    //don't split constrained edges. (alternatively, we could split them, and add the new vert to the constrained list.)
+    bool aConstrained = false, bConstrained = false;
+    for(int i = 0; i < m_constrained_vertices.size(); ++i) {
+      if(m_constrained_vertices[i] == vertex_a)
+        aConstrained = true;
+      if(m_constrained_vertices[i] == vertex_b)
+        bConstrained = true;
+    }
+
+    if(aConstrained && bConstrained || isConstrained) continue;
 
     //if ( m_mesh.m_edgetri[i].size() < 2 ) { continue; }                     // skip boundary edges - Why should we?
     //if ( m_masses[ m_mesh.m_edges[i][0] ] > 100.0 && m_masses[ m_mesh.m_edges[i][1] ] > 100.0 )     { continue; }    // skip solids
 
-    VertexHandle vertex_a = m_obj->fromVertex(eh);
-    VertexHandle vertex_b = m_obj->toVertex(eh);
-    
     
     assert( m_obj->vertexExists(vertex_a) );
     assert( m_obj->vertexExists(vertex_b) );

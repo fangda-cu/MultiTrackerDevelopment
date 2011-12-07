@@ -71,7 +71,7 @@ public:
   virtual void endStep() = 0;
 
   //For constraining particular DOFs
-  virtual void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues) const {};
+  virtual void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time) const {};
 
   //Accessor for the deformable object that this model is attached to.
   DeformableObject& getDefoObj() const { return m_obj; }

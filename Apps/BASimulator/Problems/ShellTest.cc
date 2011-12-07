@@ -17,48 +17,57 @@
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellRadialForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellSurfaceTensionForce.hh"
+
 #include <fstream>
 
+
 ShellTest::ShellTest()
-: Problem("Shell Test", "A rectangular shell"), 
+: Problem("Shell Test", "Various viscous and elastic sheet/shell tests"), 
   shell(NULL), shellObj(NULL), stepper(NULL)
 {
   addDynamicsProps();
   
   //Choice of scene
-  AddOption("shell-scene", "the shell scene to test", 4);
+  AddOption("shell-scene", "the shell scene to test", 1);
 
-  //shell options
+  //Basic shell options
   AddOption("shell-thickness", "the thickness of the shell", 0.01);
-  AddOption("shell-width", "the horizontal side length of the shell", 1.0);
-  AddOption("shell-height", "the vertical side length of the shell", 1.0);
-  AddOption("x-resolution", "the number of segments along the horizontal edge", 30);
-  AddOption("y-resolution", "the number of segments along the vertical edge", 30);
   AddOption("shell-density", "volumetric density of the shell ", 1.0);
 
-  AddOption("surface-tension", "surface tension coefficient of the shell", 1.0);
+  //Shell geometry (x/y may also refer to resolutions in non-cartesian scenarios)
+  AddOption("shell-width", "the horizontal side length of the shell", 1.0);
+  AddOption("shell-height", "the vertical side length of the shell", 1.0);
+  AddOption("shell-x-resolution", "the number of segments along first dimension", 30);
+  AddOption("shell-y-resolution", "the number of segments along second dimension", 30);
   
-  //thickness-dependent elasticity with proper physical-parameters, only for CST membrane so far.
+  //Remeshing options
+  AddOption("shell-remeshing", "whether to perform remeshing", 0);
+  AddOption("shell-remeshing-resolution", "target edge-length", 0.1);
+  AddOption("shell-remeshing-iterations", "number of remeshing iterations to run", 2);
+
+  //Area-based surface tension force
+  AddOption("shell-surface-tension", "surface tension coefficient of the shell", 0.0);
+  
+  //Properties for proper thickness dependent elasticity & viscosity (just CSTMembrane so far)
   AddOption("shell-Poisson", "the Poisson ratio of the shell material", 0.0f);
   AddOption("shell-Youngs", "the Young's modulus of the shell material", 0.0f);
   AddOption("shell-Poisson-damping", "the damping coefficient associated to the shell's Poisson ratio", 0.0f);
   AddOption("shell-Youngs-damping", "the damping coefficient associated with the shell's Young's modulus", 0.0f);
 
-  //DSBend stiffness
+  //Hinge bending (discrete shells) stiffness and damping
   AddOption("shell-bending-stiffness", "Hinge (Discrete shells) bending stiffness of the shell", 0.0);
   AddOption("shell-bending-damping", "Hinge (Discrete shells) bending damping coefficient of the shell ", 0.0);
 
+  //Timestepper options
+  AddOption("integrator", "type of integrator to use for the shell", "implicit");
 
-  //timestepper options
-  AddOption("integrator", "type of integrator to use for the shell", "symplectic");
+  //Solver options
   AddOption("iterations", "maximum number of iterations for the implicit method", (int) 100);
   AddOption("atol", "absolute convergence tolerance", 1e-8);
   AddOption("rtol", "relative convergence tolerance", 1e-8);
   AddOption("stol", "convergence tolerance in terms of the norm of the change in the solution between steps", 1e-8);
   AddOption("inftol", "infinity norm convergence tolerance", 1e-8);
- 
-  // default to no gravity
-  GetVecOpt("gravity") = Vec3d::Zero();
+  
 }
 
 ShellTest::~ShellTest()
@@ -76,7 +85,9 @@ sceneFunc scenes[] = {0,
                       &ShellTest::setupScene2, 
                       &ShellTest::setupScene3, 
                       &ShellTest::setupScene4, 
-                      &ShellTest::setupScene5};
+                      &ShellTest::setupScene5,
+                      &ShellTest::setupScene6,
+                      &ShellTest::setupScene7};
 
 void ShellTest::Setup()
 {
@@ -89,7 +100,7 @@ void ShellTest::Setup()
   
   Vec3d gravity = GetVecOpt("gravity");
   
-  Scalar surface_tension = GetScalarOpt("surface-tension");
+  Scalar surface_tension = GetScalarOpt("shell-surface-tension");
 
   Scalar Youngs_modulus = GetScalarOpt("shell-Youngs");
   Scalar Poisson_ratio = GetScalarOpt("shell-Poisson");
@@ -125,7 +136,6 @@ void ShellTest::Setup()
       break;
   }*/
   
-
   
   bool circular = false;
 
@@ -187,7 +197,12 @@ void ShellTest::Setup()
   shell->setThickness(thickness);
   shell->setDensity(density);
   
+  bool remeshing = GetIntOpt("shell-remeshing") == 1?true:false;
+  Scalar remeshing_res = GetScalarOpt("shell-remeshing-resolution");
+  int remeshing_its = GetIntOpt("shell-remeshing-iterations");
   
+
+  shell->setRemeshing(remeshing, remeshing_res, remeshing_its);
 
  /* std::vector<EdgeHandle> extendEdgeList;
   EdgeIterator eit = shellObj->edges_begin();
@@ -267,8 +282,8 @@ void ShellTest::setupScene1() {
   //get params
   Scalar width = GetScalarOpt("shell-width");
   Scalar height = GetScalarOpt("shell-height");
-  int xresolution = GetIntOpt("x-resolution");
-  int yresolution = GetIntOpt("y-resolution");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
 
   Scalar dx = (Scalar)width / (Scalar)xresolution;
   Scalar dy = (Scalar)height / (Scalar)yresolution;
@@ -385,8 +400,8 @@ void ShellTest::setupScene2() {
   //get params
   Scalar width = GetScalarOpt("shell-width");
   Scalar height = GetScalarOpt("shell-height");
-  int xresolution = GetIntOpt("x-resolution");
-  int yresolution = GetIntOpt("y-resolution");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
 
   Scalar dx = (Scalar)width / (Scalar)xresolution;
   Scalar dy = (Scalar)height / (Scalar)yresolution;
@@ -481,8 +496,8 @@ void ShellTest::setupScene2() {
 //spherical shell
 void ShellTest::setupScene3() {
 
-  int xresolution = GetIntOpt("x-resolution");
-  int yresolution = GetIntOpt("y-resolution");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
 
   //build a rectangular grid of vertices
   std::vector<VertexHandle> vertHandles;
@@ -657,8 +672,8 @@ void ShellTest::setupScene5() {
   //get params
   Scalar width = GetScalarOpt("shell-width");
   Scalar height = GetScalarOpt("shell-height");
-  int xresolution = GetIntOpt("x-resolution");
-  int yresolution = GetIntOpt("y-resolution");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
 
   Scalar dx = (Scalar)width / (Scalar)xresolution;
   Scalar dy = (Scalar)height / (Scalar)yresolution;
@@ -762,6 +777,198 @@ void ShellTest::setupScene5() {
  
 
 }
+
+//a hemispherical bubble with a hole in the top and pinned at the bottom ring
+void ShellTest::setupScene6() {
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
+
+  //vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  //create a sphere
+  int layers = yresolution;
+  int slices = xresolution;
+  Vec3d centre(0,0,0);
+  Scalar radius = 1.0;
+  Vec3d start_vel(0,0,0);
+
+  std::vector<std::vector<VertexHandle>> vertList;
+
+  //fill in the interior
+  vertList.resize(layers-1);
+  for(int j = 0; j < layers-1; ++j) {
+    Scalar heightAngle = (j+1) * 0.9* pi / 2 /(Scalar)layers;
+    for(int i = 0; i < slices; ++i) {
+      Scalar rotAngle = 2*pi * (Scalar)i / (Scalar)slices;
+      Scalar zVal = radius*sin(heightAngle);
+      Scalar newRad = radius*cos(heightAngle);
+      Scalar xVal = newRad*cos(rotAngle);
+      Scalar yVal = newRad*sin(rotAngle);
+
+      VertexHandle vNew = shellObj->addVertex();
+      positions[vNew] = centre + Vec3d(xVal,zVal,yVal);
+      velocities[vNew] = start_vel;
+      undeformed[vNew] = positions[vNew];
+      vertList[j].push_back(vNew);
+    }
+  }
+
+  //construct faces
+  for(int j = 0; j < layers-2; ++j) {
+    for(int i = 0; i < slices; ++i) {
+      shellObj->addFace(vertList[j][i], vertList[j+1][i], vertList[j+1][(i+1)%slices]);
+      shellObj->addFace(vertList[j][i], vertList[j+1][(i+1)%slices], vertList[j][(i+1)%slices]);
+    }
+  }
+
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+ 
+  for(unsigned int i = 0; i < vertList[0].size(); ++i)
+    shell->constrainVertex(vertList[0][i], shell->getVertexPosition(vertList[0][i]));
+ 
+
+
+}
+
+//Planar rotating points
+class XZPlaneRotatingConstraint : public PositionConstraint {
+  Scalar m_rate;
+  Vec3d m_position, m_centre;
+  Scalar m_rad;
+  Scalar m_baseangle;
+public:
+  XZPlaneRotatingConstraint(Vec3d& position, Vec3d& centre, Scalar rate):m_position(position), m_centre(centre), m_rate(rate) {
+    Vec3d offset = m_position - m_centre;
+    offset[1] = 0;
+    m_rad = offset.norm();
+    m_baseangle = atan2(m_position[2]-centre[2], m_position[0]-centre[0]);
+  }
+
+  Vec3d operator()(Scalar time) {
+    Scalar angle = m_baseangle + m_rate*time;
+    return m_centre + m_rad*Vec3d(cos(angle), 0, sin(angle));
+  }
+
+};
+
+//a horizontal sheet pinned between two circles
+void ShellTest::setupScene7() {
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
+
+  //vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  //create a sphere
+  int layers = yresolution;
+  int slices = xresolution;
+  Vec3d centre(0,0,0);
+  Scalar out_radius = 1.0;
+  Scalar in_radius = 0.2;
+  Vec3d start_vel(0,0,0);
+
+  std::vector<std::vector<VertexHandle>> vertList;
+
+  Scalar dr = (out_radius - in_radius) / (Scalar) layers;
+  
+  //fill in the interior
+  vertList.resize(layers-1);
+  for(int j = 0; j < layers-1; ++j) {
+    
+    for(int i = 0; i < slices; ++i) {
+      Scalar rotAngle = 2 * pi * (Scalar)i / (Scalar)slices;
+      Scalar newRad = in_radius + j*dr;
+      Scalar xVal = newRad*cos(rotAngle);
+      Scalar yVal = newRad*sin(rotAngle);
+
+      VertexHandle vNew = shellObj->addVertex();
+      positions[vNew] = centre + Vec3d(xVal, 0, yVal);
+      velocities[vNew] = start_vel;
+      undeformed[vNew] = positions[vNew];
+      vertList[j].push_back(vNew);
+    }
+  }
+
+  //construct faces
+  for(int j = 0; j < layers-2; ++j) {
+    for(int i = 0; i < slices; ++i) {
+      shellObj->addFace(vertList[j][i], vertList[j+1][i], vertList[j+1][(i+1)%slices]);
+      shellObj->addFace(vertList[j][i], vertList[j+1][(i+1)%slices], vertList[j][(i+1)%slices]);
+    }
+  }
+
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+  //constrain inner and outer loops
+  for(unsigned int i = 0; i < vertList[0].size(); ++i) {
+    shell->constrainVertex(vertList[0][i], shell->getVertexPosition(vertList[0][i]));
+    
+    Vec3d pos = shell->getVertexPosition(vertList[vertList.size()-1][i]);
+    XZPlaneRotatingConstraint*p = new XZPlaneRotatingConstraint(pos, centre, 8);
+    shell->constrainVertex(vertList[vertList.size()-1][i], p);
+    //shell->constrainVertex(vertList[vertList.size()-1][i], shell->getVertexPosition(vertList[vertList.size()-1][i]));
+  }
+
+  /*shell->remesh(0.05);
+  shell->remesh(0.05);
+  shell->remesh(0.05);*/
+
+}
+
 
 
 

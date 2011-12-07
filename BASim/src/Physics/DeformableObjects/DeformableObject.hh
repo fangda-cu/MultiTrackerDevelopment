@@ -16,6 +16,22 @@ namespace BASim {
 
 class MatrixBase;
 
+
+//A class to manage position constraints.
+class PositionConstraint {
+public:
+  virtual Vec3d operator()(Scalar time) = 0;
+};
+
+class FixedPositionConstraint : public PositionConstraint {
+  Vec3d m_position;
+
+public:
+  FixedPositionConstraint(const Vec3d& pos) {m_position = pos;}
+  Vec3d operator()(Scalar time){return m_position;}
+
+};
+
 /** Base class for dynamic objects comprised of simplices.
 */
 class DeformableObject : public PhysObject
@@ -39,7 +55,7 @@ public:
   virtual const Scalar& getMass(int i) const;
   //@}
 
-  void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues) const;
+  void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time) const;
 
   void setTimeStep(Scalar dt);
   Scalar getTimeStep();

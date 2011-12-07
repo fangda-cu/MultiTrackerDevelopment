@@ -136,7 +136,7 @@ void ShellRenderer::render()
       for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit )
       {
         Vec3d pos = m_shell.getVertexPosition(*fvit);
-        pos = pos - 0.05*(pos-barycentre);
+        //pos = pos - 0.05*(pos-barycentre);
         OpenGL::vertex(pos);
         points[i] = pos;
         ++i;

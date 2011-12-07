@@ -11,8 +11,8 @@
 
 #include "BASim/src/Physics/DeformableObjects/Shells/ElasticShellForce.hh"
 
-#include "adt/adreal.h"
-#include "adt/advec.h"
+#include "BASim/src/Math/ADT/adreal.h"
+#include "BASim/src/Math/ADT/advec.h"
 
 
 //A surface tension force based on minimizing surface energy, assuming piecewise constant
