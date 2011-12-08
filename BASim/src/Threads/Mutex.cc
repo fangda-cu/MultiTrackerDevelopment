@@ -13,9 +13,14 @@
 #include "Mutex.hh"
 #include <pthread.h>
 #include <sys/types.h>
+#ifndef _MSC_VER
 #include <sys/syscall.h>
 //#include <linux/unistd.h> //OS_LINUX
 #include <unistd.h> //OS_MACOSX // TODO:THREADING
+#else
+#include <Windows.h>
+#endif
+
 #include <errno.h>
 #include <iostream>
 #include <assert.h>

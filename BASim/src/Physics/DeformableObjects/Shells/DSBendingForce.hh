@@ -11,8 +11,13 @@
 #include "BASim/src/Core/Definitions.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ElasticShellForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/TransferFunction.hh"
-#include <tr1/memory>
 #include "BASim/src/Physics/DeformableObjects/Shells/BendingDerivatives.hh"
+
+#ifdef _MSC_VER
+#include <memory>
+#else
+#include <tr1/memory>
+#endif
 
 namespace BASim {
 
