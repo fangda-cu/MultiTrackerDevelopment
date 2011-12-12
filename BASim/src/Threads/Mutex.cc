@@ -131,6 +131,7 @@ bool Mutex::TryLock()
 //    if (status == EBUSY)
 //        return false; CHECK_STATUS( status, pthread_mutex_trylock );
 //    return false;
+   return false;
 }
 
 } // namespace threads

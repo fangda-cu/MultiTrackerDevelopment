@@ -369,12 +369,8 @@ public:
   Scalar get_inftol() const { return m_diffEqSolver->get_inftol(); }
   void set_inftol(Scalar i) { m_diffEqSolver->set_inftol(i); }
 
-  MatrixBase* createMatrix() const
-  {
-    SolverUtils* s = SolverUtils::instance();
-    s->setMatrixType(SolverUtils::PETSC_MATRIX);
-    return s->createSparseMatrix(m_obj.ndof(), m_obj.ndof(), 10);
-  }
+  MatrixBase* createMatrix() const;
+
 
   void getScriptedDofs(IntArray& indices, std::vector<Scalar>& desired)
   {

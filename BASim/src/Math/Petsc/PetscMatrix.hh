@@ -43,6 +43,8 @@ public:
   bool isApproxSymmetric( Scalar eps ) const;
   std::string name() const;
 
+  int resetNonzeros();
+
   /*
   template <class IndexArray, class ValueMatrix>
   int addValues(IndexArray& rowIdx, IndexArray& colIdx, ValueMatrix& vals);

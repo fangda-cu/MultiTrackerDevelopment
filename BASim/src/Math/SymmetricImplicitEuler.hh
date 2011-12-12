@@ -71,40 +71,9 @@ public:
         return "Symmetric Implicit Euler";
     }
 
-    void resize()
-    {
-        m_ndof = m_diffEq.ndof();
-        if (m_mass.size() != m_ndof)
-        {
-            m_mass.resize(m_ndof);
-            x0.resize(m_ndof);
-            v0.resize(m_ndof);
-            m_rhs.resize(m_ndof);
-            m_deltaX.resize(m_ndof);
-            m_deltaX_save.resize(m_ndof);
-            m_increment.resize(m_ndof);
-        }
-        assert(m_A->rows() == m_A->cols());
-        if (m_A->rows() != m_ndof)
-        {
-            assert(m_A != NULL);
-            delete m_A;
-            m_A = m_diffEq.createMatrix();
-            assert(m_solver != NULL);
-            delete m_solver;
-            m_solver = SolverUtils::instance()->createLinearSolver(m_A);
-        }
-    }
+   void resize();
 
-    void setZero()
-    {
-        x0.setZero();
-        v0.setZero();
-        m_rhs.setZero();
-        m_deltaX.setZero();
-        m_increment.setZero();
-        m_A->setZero();
-    }
+    void setZero();
 
     // Computes the inf norm of the residual
     Scalar computeResidual()

@@ -11,6 +11,7 @@ typedef double Scalar;
 #include "../Physics/ElasticRods/MultipleRodTimeStepper.hh"
 #include "../Physics/ElasticRods/RodTimeStepper.hh"
 #include "../Physics/DeformableObjects/DefoObjTimeStepper.hh"
+//#include "../Math/DummyMatrix.hh"
 
 namespace BASim
 {
@@ -218,6 +219,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
 
         // TODO: make the finalize() not virtual
 
+        
         // Consider LHS arising from potential forces (function of position)
         // m_A = -h^2*dF/dx
         m_diffEq.evaluatePDotDX(-m_dt * m_dt, *m_A); // NB m_A is set to zero at construction time and at the end of this loop.
@@ -243,7 +245,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
         m_A->finalize();
 
         // Finalize the nonzero structure before the linear solve (for sparse matrices only)
-        //m_A->finalizeNonzeros();
+        m_A->finalizeNonzeros();
         assert(isSymmetric(*m_A));
         STOP_TIMER("SymmetricImplicitEuler::position_solve/setup");
 
@@ -376,6 +378,48 @@ inline static Vec3d RigidMotion(const Vec3d& x, const Vec3d& p0, const Eigen::An
         const double dt)
 {
     return dt * w0 + p0 - x + rotation._transformVector(x - p0);
+}
+
+template<class ODE>
+void SymmetricImplicitEuler<ODE>::setZero()
+{
+   x0.setZero();
+   v0.setZero();
+   m_rhs.setZero();
+   m_deltaX.setZero();
+   m_increment.setZero();
+   m_A->setZero();
+   m_A->resetNonzeros();
+}
+
+template<class ODE>
+void SymmetricImplicitEuler<ODE>::resize()
+{
+   m_ndof = m_diffEq.ndof();
+   if (m_mass.size() != m_ndof)
+   {
+      m_mass.resize(m_ndof);
+      x0.resize(m_ndof);
+      v0.resize(m_ndof);
+      m_rhs.resize(m_ndof);
+      m_deltaX.resize(m_ndof);
+      m_deltaX_save.resize(m_ndof);
+      m_increment.resize(m_ndof);
+   }
+   assert(m_A->rows() == m_A->cols());
+   if (m_A->rows() != m_ndof)
+   {
+      
+      std::cout << "Building new matrix\n";
+      assert(m_A != NULL);
+      delete m_A;
+      m_A = m_diffEq.createMatrix();
+      std::cout << "Done building matrix\n";
+      assert(m_solver != NULL);
+      delete m_solver;
+      m_solver = SolverUtils::instance()->createLinearSolver(m_A);
+    
+   }
 }
 
 // Initial guess based on rigid motion of the first two vertices, assuming their distance remains constant.

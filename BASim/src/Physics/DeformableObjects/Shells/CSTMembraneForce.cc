@@ -131,9 +131,7 @@ void CSTMembraneForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) cons
     //determine the elastic forces for this element
     if(m_Youngs != 0) {
       elementJacobian(undeformed, deformed, localMatrix, m_Youngs, m_Poisson, thickness);
-      for (unsigned int i = 0; i < indices.size(); ++i)
-        for(unsigned int j = 0; j < indices.size(); ++j)
-          Jacobian.add(indices[i], indices[j], scale * localMatrix(i,j));
+      Jacobian.add(indices, indices, scale*localMatrix);
     }
 
     //determine the viscous forces for this element
@@ -141,10 +139,7 @@ void CSTMembraneForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) cons
       elementJacobian(undeformed_damp, deformed, localMatrix, m_Youngs_damp, m_Poisson_damp, thickness);
       
       //divide by timestep to do Viscous Threads-style symmetric viscous force
-      for (unsigned int i = 0; i < indices.size(); ++i)
-        for(unsigned int j = 0; j < indices.size(); ++j)
-          Jacobian.add(indices[i], indices[j], scale / m_timestep * localMatrix(i,j));
-
+      Jacobian.add(indices, indices, scale / m_timestep * localMatrix);
     }
 
   }
