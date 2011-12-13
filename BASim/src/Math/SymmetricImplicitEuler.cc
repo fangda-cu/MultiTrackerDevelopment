@@ -200,6 +200,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
     int curit = 0;
     for (curit = 0; curit < m_maxit; ++curit)
     {
+
         TraceStream(g_log, "") << "\nSymmetricImplicitEuler::position_solve: Newton iteration = " << curit << "\n";
 
         // TODO: Assert m_A, increment are zero
@@ -256,7 +257,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
         //////////////////////////////////////////////////////////////////
 
         START_TIMER("SymmetricImplicitEuler::position_solve/solver");
-        
+       
         int status = m_solver->solve(m_increment, m_rhs);
         STOP_TIMER("SymmetricImplicitEuler::position_solve/solver");
         if (status < 0)
@@ -266,7 +267,6 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
                     << '\n';
             return false;
         }
-
         START_TIMER("SymmetricImplicitEuler::position_solve/ls");
 
         m_alpha = 1.; // actual step will m_deltaX += alpha * m_increment

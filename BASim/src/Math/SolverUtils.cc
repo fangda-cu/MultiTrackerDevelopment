@@ -14,6 +14,8 @@
 #endif
 #endif // HAVE_LAPACK
 
+#include "BASim/src/Math/SimpleSparseMatrix.hh"
+
 namespace BASim {
 
 SolverUtils* SolverUtils::m_instance = NULL;
@@ -78,7 +80,7 @@ SolverUtils::createSparseMatrix(int rows, int cols, int nnzPerRow) const
   
 #ifdef HAVE_PETSC
   if (matrixType == PETSC_MATRIX)
-    return new PetscMatrix(rows, cols, nnzPerRow);
+    return new SimpleSparseMatrix(rows, cols, nnzPerRow);
 #endif // HAVE_PETSC
 
   std::cerr << "\033[31;1mWARNING IN SOLVERUTILS:\033[m Failed to create sparse matrix. " << std::endl;
@@ -119,8 +121,9 @@ LinearSolverBase* SolverUtils::createLinearSolver(MatrixBase* A) const
 #endif // HAVE_PARDISO
   
 #ifdef HAVE_PETSC
-  if (solverType == PETSC_SOLVER)
+  if (solverType == PETSC_SOLVER) {
     return new PetscLinearSolver(*A);
+  }
 #endif // HAVE_PETSC
 
 #ifdef HAVE_LAPACK

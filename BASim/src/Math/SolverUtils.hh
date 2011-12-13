@@ -13,6 +13,7 @@
 
 #ifdef HAVE_PETSC
 #include "BASim/src/Math/Petsc/PetscMatrix.hh"
+#include "BASim/src/Math/SimpleSparseMatrix.hh"
 #include "BASim/src/Math/Petsc/PetscLinearSolver.hh"
 #endif // HAVE_PETSC
 
