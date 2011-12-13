@@ -409,12 +409,9 @@ void SymmetricImplicitEuler<ODE>::resize()
    assert(m_A->rows() == m_A->cols());
    if (m_A->rows() != m_ndof)
    {
-      
-      std::cout << "Building new matrix\n";
       assert(m_A != NULL);
       delete m_A;
       m_A = m_diffEq.createMatrix();
-      std::cout << "Done building matrix\n";
       assert(m_solver != NULL);
       delete m_solver;
       m_solver = SolverUtils::instance()->createLinearSolver(m_A);

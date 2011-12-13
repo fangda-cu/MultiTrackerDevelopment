@@ -8,7 +8,6 @@ namespace BASim {
    */
   int ConjugateGradient::solve(VecXd& x, const VecXd& b)
   {
-    std::cout << "Performing conjugate gradient solve!\n";
     m_currentIterations = 0;
     m_preconditioner = new DiagonalPreconditioner(m_A);
 

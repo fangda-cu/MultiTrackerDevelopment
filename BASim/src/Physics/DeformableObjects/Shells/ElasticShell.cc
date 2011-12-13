@@ -419,7 +419,7 @@ void ElasticShell::endStep() {
 
 void ElasticShell::remesh( Scalar desiredEdge )
 {
-
+  std::cout << "Remeshing sheet!\n";
   m_broad_phase.update_broad_phase_static(*m_obj, m_positions, m_proximity_epsilon);
   
   //Parameters adapted from Jiao et al. "Anisotropic Mesh Adaptation for Evolving Triangulated Surfaces"
