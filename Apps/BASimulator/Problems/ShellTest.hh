@@ -44,6 +44,7 @@ public:
   void setupScene5(); //catenary 
   void setupScene6(); //hemispherical bubble
   void setupScene7(); //sheet between two circles
+  void setupScene8(); //torus
 
 };
 

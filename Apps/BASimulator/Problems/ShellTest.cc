@@ -87,7 +87,8 @@ sceneFunc scenes[] = {0,
                       &ShellTest::setupScene4, 
                       &ShellTest::setupScene5,
                       &ShellTest::setupScene6,
-                      &ShellTest::setupScene7};
+                      &ShellTest::setupScene7,
+                      &ShellTest::setupScene8};
 
 void ShellTest::Setup()
 {
@@ -955,12 +956,15 @@ void ShellTest::setupScene7() {
 
   //constrain inner and outer loops
   for(unsigned int i = 0; i < vertList[0].size(); ++i) {
-    shell->constrainVertex(vertList[0][i], shell->getVertexPosition(vertList[0][i]));
-    
-    Vec3d pos = shell->getVertexPosition(vertList[vertList.size()-1][i]);
-    XZPlaneRotatingConstraint*p = new XZPlaneRotatingConstraint(pos, centre, 8);
-    shell->constrainVertex(vertList[vertList.size()-1][i], p);
-    //shell->constrainVertex(vertList[vertList.size()-1][i], shell->getVertexPosition(vertList[vertList.size()-1][i]));
+    int outside = vertList.size()-1;
+    int inside = 0;
+
+    shell->constrainVertex(vertList[outside][i], shell->getVertexPosition(vertList[outside][i]));
+
+    Vec3d pos = shell->getVertexPosition(vertList[inside][i]);
+    XZPlaneRotatingConstraint*p = new XZPlaneRotatingConstraint(pos, centre, 20);
+    shell->constrainVertex(vertList[inside][i], p);
+
   }
 
   /*shell->remesh(0.05);
@@ -969,8 +973,109 @@ void ShellTest::setupScene7() {
 
 }
 
+//a torus
+void ShellTest::setupScene8() {
 
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
+  float height = (float)GetScalarOpt("shell-height");
+  float width = (float)GetScalarOpt("shell-width");
+  
+  //width maps to the tube radius
+  //height maps to the large radius
+  float r0 = width;
+  float r1 = height;
 
+  //vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  //create a torus
+  int resolution0 = xresolution;
+  int resolution1 = yresolution;
+  Vec3d centre(0,0,0);
+  Vec3d start_vel(0,0,0);
+
+  std::vector<std::vector<VertexHandle> > vertList;
+
+  Scalar d_phi0 = 2*M_PI / (Scalar) (resolution0-1);
+  Scalar d_phi1 = 2*M_PI / (Scalar) (resolution1-1);
+
+  //fill in the interior
+  vertList.resize(resolution1-1);
+  for(int j = 0; j < resolution1-1; ++j) {
+    Scalar phi1 = j*d_phi1;
+    for(int i = 0; i < resolution0-1; ++i) {
+      Scalar phi0 = i*d_phi0;  
+
+      Scalar x = centre[0] + cos(phi1)*(r1 + r0*cos(phi0));
+      Scalar y = centre[2] + sin(phi1)*(r1 + r0*cos(phi0));
+      Scalar z = centre[1] + r0 * sin(phi0);
+      Vec3d pos(x,z,y);
+      
+      VertexHandle vNew = shellObj->addVertex();
+      positions[vNew] = pos;
+      velocities[vNew] = start_vel;
+      undeformed[vNew] = positions[vNew];
+      vertList[j].push_back(vNew);
+    }
+  }
+
+  
+  //construct faces
+  std::cout << "Testing\n";
+  for(int j = 0; j < vertList.size(); ++j) {
+    for(int i = 0; i < vertList[j].size(); ++i) {
+      int j_next = (j+1)%vertList.size();
+      int i_next = (i+1)%vertList[j].size();
+
+      shellObj->addFace(vertList[j][i], vertList[j_next][i_next], vertList[j_next][i]);
+      shellObj->addFace(vertList[j][i], vertList[j][i_next], vertList[j_next][i_next]);
+    }
+  }
+  
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+  
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+  ////constrain inner and outer loops
+  //for(unsigned int i = 0; i < vertList[0].size(); ++i) {
+  //  int outside = vertList.size()-1;
+  //  int inside = 0;
+
+  //  shell->constrainVertex(vertList[outside][i], shell->getVertexPosition(vertList[outside][i]));
+
+  //  Vec3d pos = shell->getVertexPosition(vertList[inside][i]);
+  //  XZPlaneRotatingConstraint*p = new XZPlaneRotatingConstraint(pos, centre, 20);
+  //  shell->constrainVertex(vertList[inside][i], p);
+
+  //}
+  
+
+}
 
 
 
