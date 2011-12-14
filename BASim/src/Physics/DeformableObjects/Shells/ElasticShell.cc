@@ -419,7 +419,7 @@ void ElasticShell::endStep() {
 
 void ElasticShell::remesh( Scalar desiredEdge )
 {
-  std::cout << "Remeshing sheet!\n";
+
   m_broad_phase.update_broad_phase_static(*m_obj, m_positions, m_proximity_epsilon);
   
   //Parameters adapted from Jiao et al. "Anisotropic Mesh Adaptation for Evolving Triangulated Surfaces"
@@ -740,12 +740,31 @@ bool ElasticShell::splitEdges( double desiredEdge, double maxEdge, double maxAng
   return anySplits;
 }
 
+bool ElasticShell::isConstrained(const VertexHandle& v) const {
+  for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i)
+    if(m_constrained_vertices[i] == v)
+      return true;
+  return false;
+}
+
 bool ElasticShell::isSplitDesired(const EdgeHandle& eh, double maxEdge, double desiredEdge, double maxAngle) {
 
   Scalar sEdge = 0.25*desiredEdge;
 
   VertexHandle v0 = m_obj->fromVertex(eh);
   VertexHandle v1 = m_obj->toVertex(eh);
+  //don't split constrained edges. (alternatively, we could split them, and add the new vert to the constrained list.)
+  
+  bool aConstrained = false, bConstrained = false;
+  for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
+    if(m_constrained_vertices[i] == v0)
+      aConstrained = true;
+    if(m_constrained_vertices[i] == v1)
+      bConstrained = true;
+  }
+
+  if(aConstrained && bConstrained) return false;
+
   assert(v0!=v1);
   Vec3d p0 = getVertexPosition(v0);
   Vec3d p1 = getVertexPosition(v1);
@@ -1593,18 +1612,27 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
 
       Vec3d newPoint, newVel, newUndef;
       if(v0_bdry && v1_bdry) continue; //both edges on the boundary, don't collapse!
-
+      
+      if(v0_pinned && v1_pinned) continue; //both edges pinned, don't collapse
+      
+      VertexHandle vert_to_remove, vert_to_keep;
       if(v0_bdry || v0_pinned) {
+        vert_to_remove = v1;
+        vert_to_keep = v0;
         newPoint = p0;
         newVel = getVertexVelocity(v0);
         newUndef = getVertexUndeformed(v0);
       }
       else if(v1_bdry || v1_pinned) {
+        vert_to_remove = v0;
+        vert_to_keep = v1;
         newPoint = p1;
         newVel = getVertexVelocity(v1);
         newUndef = getVertexUndeformed(v1);
       }
       else {
+        vert_to_remove = v0; //doesn't matter
+        vert_to_keep = v1;
         newPoint = 0.5f*(p0+p1);
         newVel = 0.5f*(getVertexVelocity(v0) + getVertexVelocity(v1));
         newUndef = 0.5f*(getVertexUndeformed(v0) + getVertexUndeformed(v1));
@@ -1620,33 +1648,33 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
       //  return;
 
       //remove to-be-deleted stuff from collision grid
-      m_broad_phase.remove_vertex(v0.idx());
+      m_broad_phase.remove_vertex(vert_to_remove.idx());
       m_broad_phase.remove_edge(eh.idx());
       for(EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit)
         m_broad_phase.remove_triangle((*efit).idx());
       
       //do the collapse itself
       std::vector<EdgeHandle> deletedEdges;
-      m_obj->collapseEdge(eh, v0, deletedEdges);
+      m_obj->collapseEdge(eh, vert_to_remove, deletedEdges);
 
       //remove the edges that were deleted as a side-effect.
       for(unsigned int q = 0; q < deletedEdges.size(); ++q) {
          m_broad_phase.remove_edge(deletedEdges[q].idx());
       }
 
-      setVertexVelocity(v1, newVel);
-      setVertexPosition(v1, newPoint);
-      setUndeformedVertexPosition(v1, newUndef);
+      setVertexVelocity(vert_to_keep, newVel);
+      setVertexPosition(vert_to_keep, newPoint);
+      setUndeformedVertexPosition(vert_to_keep, newUndef);
 
       //increment the thickness of the nearby faces to account for the lost volume
-      VertexFaceIterator vfit = m_obj->vf_iter(v1);
+      VertexFaceIterator vfit = m_obj->vf_iter(vert_to_keep);
       Scalar totalNewArea = 0;
       for(;vfit; ++vfit) {
         FaceHandle fh = *vfit;
         totalNewArea += std::max(0.0, getArea(fh, true) - m_volumes[fh] / m_thicknesses[fh]); //only consider increases
       }
 
-      vfit = m_obj->vf_iter(v1);
+      vfit = m_obj->vf_iter(vert_to_keep);
       for(;vfit; ++vfit) {
         FaceHandle fh = *vfit;
         Scalar newArea = getArea(fh) - m_volumes[fh] / m_thicknesses[fh];
@@ -1657,7 +1685,7 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
       }
 
       //update static collision data for everything incident on the kept vertex
-      updateBroadPhaseStatic(v1);
+      updateBroadPhaseStatic(vert_to_keep);
 
 
     }

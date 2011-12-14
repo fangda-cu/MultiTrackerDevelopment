@@ -100,6 +100,7 @@ public:
 
   void constrainVertex(const VertexHandle& v, const Vec3d& pos);
   void constrainVertex(const VertexHandle& v, PositionConstraint* p); //time varying constraint
+  bool isConstrained(const VertexHandle& v) const;
 
   void setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel);
 
