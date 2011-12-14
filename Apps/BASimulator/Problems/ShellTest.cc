@@ -17,7 +17,7 @@
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellRadialForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellSurfaceTensionForce.hh"
-
+#include "BASim/src/Physics/DeformableObjects/Shells/ShellVolumeForce.hh"
 #include <fstream>
 
 
@@ -81,14 +81,14 @@ typedef void (ShellTest::*sceneFunc)();
 
 
 sceneFunc scenes[] = {0,
-                      &ShellTest::setupScene1, 
-                      &ShellTest::setupScene2, 
-                      &ShellTest::setupScene3, 
-                      &ShellTest::setupScene4, 
-                      &ShellTest::setupScene5,
-                      &ShellTest::setupScene6,
-                      &ShellTest::setupScene7,
-                      &ShellTest::setupScene8};
+                      &ShellTest::setupScene1,   //vertical flat sheet
+                      &ShellTest::setupScene2, //vertical cylindrical sheet
+                      &ShellTest::setupScene3, //spherical sheet
+                      &ShellTest::setupScene4, //two-triangle bending test
+                      &ShellTest::setupScene5, //catenary 
+                      &ShellTest::setupScene6, //hemispherical bubble
+                      &ShellTest::setupScene7, //sheet between two circles
+                      &ShellTest::setupScene8}; //torus
 
 void ShellTest::Setup()
 {
@@ -588,18 +588,19 @@ void ShellTest::setupScene3() {
   shell->setEdgeVelocities(edgeVel);
 
   //inflate the sphere by some fixed amount
-  Scalar inflateDist = 0.1;
+  /*Scalar inflateDist = 0.1;
   for(VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit) {  
     Vec3d oldPos = positions[*vit];
     Vec3d normVec = (oldPos-centre);
     normVec.normalize();
     shell->setVertexPosition(*vit, oldPos + inflateDist*normVec);
-  }
+  }*/
 
   //Add an outward pressure force to inflate the sphere
   //Scalar pressureStrength = 0.1;
   //shell->addForce(new ShellRadialForce(*shell, "Radial", Vec3d(0,0,0), pressureStrength));
 
+  shell->addForce(new ShellVolumeForce(*shell, "Volume", 0.5));
 }
 
 //simple square with two triangles, one pinned in place, to test bending
@@ -1017,7 +1018,7 @@ void ShellTest::setupScene8() {
 
       Scalar x = centre[0] + cos(phi1)*(r1 + r0*cos(phi0));
       Scalar y = centre[2] + sin(phi1)*(r1 + r0*cos(phi0));
-      Scalar z = centre[1] + r0 * sin(phi0);
+      Scalar z = centre[1] + r0 * sin(phi0) + 0.3*r0*sin(10*phi1);
       Vec3d pos(x,z,y);
       
       VertexHandle vNew = shellObj->addVertex();
@@ -1073,7 +1074,7 @@ void ShellTest::setupScene8() {
   //  shell->constrainVertex(vertList[inside][i], p);
 
   //}
-  
+  shell->addForce(new ShellVolumeForce(*shell, "Volume", 10));
 
 }
 
