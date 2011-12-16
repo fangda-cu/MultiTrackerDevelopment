@@ -60,7 +60,19 @@ private:
 
   void Symmetrize(Mat3d& m) const;
 
-  bool gatherDOFs(const EdgeHandle& edge, std::vector<Vec3d>& undeformed, std::vector<Vec3d>& undeformed_damp, std::vector<Vec3d>& deformed, std::vector<int>& indices ) const;
+  bool gatherDOFs(const EdgeHandle& edge, 
+    std::vector<Vec3d>& undeformed, 
+    std::vector<Vec3d>& undeformed_damp, 
+    std::vector<Vec3d>& deformed, 
+    std::vector<int>& indices ) const;
+
+  void gatherDOFs(const EdgeHandle& edge, 
+    const FaceHandle& fh,
+    const FaceHandle& fh2,
+    std::vector<Vec3d>& undeformed, 
+    std::vector<Vec3d>& undeformed_damp,
+    std::vector<Vec3d>& deformed, 
+    std::vector<int>& indices ) const;
 
   void ComputeDihedralAngleSecondDerivatives(EnergyHessian& J,
     Scalar Kb,
@@ -74,6 +86,8 @@ private:
     int p1Index) const;
 
   Scalar getEdgeThickness(const EdgeHandle& edge) const;
+
+  void getEdgeFacePairs(EdgeHandle e, std::vector< std::pair<FaceHandle,FaceHandle> >& facePairs) const;
 
   Scalar m_stiffness, m_damping, m_timestep;
 

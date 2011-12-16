@@ -156,6 +156,13 @@ void ShellRenderer::render()
     }
     glEnd();
 
+   /* glBegin(GL_QUADS);
+    glVertex3f(-2.0f, -0.2, -2.0f);
+    glVertex3f(2.0f, -0.2, -2.0f);
+    glVertex3f(2.0f, -0.2, 2.0f);
+    glVertex3f(-2.0f, -0.2, 2.0f);
+    glEnd();*/
+
     glEnable(GL_LIGHTING);
   }
 

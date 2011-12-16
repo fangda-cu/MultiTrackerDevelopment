@@ -102,6 +102,8 @@ public:
   void constrainVertex(const VertexHandle& v, PositionConstraint* p); //time varying constraint
   bool isConstrained(const VertexHandle& v) const;
 
+  void setCollisionParams(bool enabled, Scalar proximity);
+
   void setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel);
 
   void remesh(Scalar desiredEdge );
@@ -109,6 +111,7 @@ public:
 
 protected:
 
+  void resolveCollisions();
   void updateThickness();
 
   //Most of this is remeshing related and should hopefully be moved somewhere else
@@ -140,7 +143,7 @@ protected:
 
   VertexProperty<Vec3d> m_positions;
   EdgeProperty<Scalar> m_xi;
-  
+
   VertexProperty<Vec3d> m_velocities;
   EdgeProperty<Scalar> m_xi_vel;
   
@@ -148,6 +151,7 @@ protected:
   EdgeProperty<Scalar> m_edge_masses;
   
   //"undeformed" configuration that is updated at each step to support Rayleigh damping/viscosity
+  //This is also used as the "start of step" configuration for eltopo collision resolution
   VertexProperty<Vec3d> m_damping_undeformed_positions; 
   EdgeProperty<Scalar> m_damping_undef_xi;
 
@@ -158,6 +162,7 @@ protected:
   Scalar m_remesh_edge_length;
   int m_remeshing_iters;
 
+  
   Scalar m_density;
 
   FaceProperty<char> m_active_faces; //list of faces to which this model is applied
@@ -179,6 +184,11 @@ protected:
   
   //collision-safe remeshing stuff ->Move into subclass? Remesh-able shell?
   Scalar m_proximity_epsilon, m_improve_collision_epsilon;
+  
+  //collision resolution distance for el topo
+  Scalar m_integrate_collision_epsilon;
+  bool m_process_collisions;
+
   ElTopo::BroadPhaseGrid m_broad_phase;
 };
 

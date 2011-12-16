@@ -20,6 +20,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVolumeForce.hh"
 #include <fstream>
 
+#include "eltopo.h"
 
 ShellTest::ShellTest()
 : Problem("Shell Test", "Various viscous and elastic sheet/shell tests"), 
@@ -34,7 +35,7 @@ ShellTest::ShellTest()
   AddOption("shell-thickness", "the thickness of the shell", 0.01);
   AddOption("shell-density", "volumetric density of the shell ", 1.0);
 
-  //Shell geometry (x/y may also refer to resolutions in non-cartesian scenarios)
+  //Shell geometry (x/y/width/height may also refer to resolutions/sizes in non-cartesian scenarios)
   AddOption("shell-width", "the horizontal side length of the shell", 1.0);
   AddOption("shell-height", "the vertical side length of the shell", 1.0);
   AddOption("shell-x-resolution", "the number of segments along first dimension", 30);
@@ -68,6 +69,7 @@ ShellTest::ShellTest()
   AddOption("stol", "convergence tolerance in terms of the norm of the change in the solution between steps", 1e-8);
   AddOption("inftol", "infinity norm convergence tolerance", 1e-8);
   
+
 }
 
 ShellTest::~ShellTest()
@@ -81,14 +83,15 @@ typedef void (ShellTest::*sceneFunc)();
 
 
 sceneFunc scenes[] = {0,
-                      &ShellTest::setupScene1,   //vertical flat sheet
+                      &ShellTest::setupScene1,  //vertical flat sheet
                       &ShellTest::setupScene2, //vertical cylindrical sheet
                       &ShellTest::setupScene3, //spherical sheet
                       &ShellTest::setupScene4, //two-triangle bending test
                       &ShellTest::setupScene5, //catenary 
                       &ShellTest::setupScene6, //hemispherical bubble
                       &ShellTest::setupScene7, //sheet between two circles
-                      &ShellTest::setupScene8}; //torus
+                      &ShellTest::setupScene8, //torus
+                      &ShellTest::setupScene9};  //non-manifold edge
 
 void ShellTest::Setup()
 {
@@ -245,6 +248,8 @@ void ShellTest::Setup()
 
   shell->computeMasses();
 
+  shell->setCollisionParams(true, 0.1*remeshing_res);
+
   //compute the dof indexing for use in the diff_eq solver
   shellObj->computeDofIndexing();
 
@@ -301,9 +306,10 @@ void ShellTest::setupScene1() {
   EdgeProperty<Scalar> edgeVel(shellObj);
 
   Vec3d start_vel(0,0,0);
+  
   for(int j = 0; j <= yresolution; ++j) {
     for(int i = 0; i <= xresolution; ++i) {
-      Vec3d vert(i*dx, j*dy, 0);
+      Vec3d vert(i*dx, j*dy, 0.01*dx*sin(100*j*dy + 17*i*dx));
      /* if(j < 0.5*yresolution) {
         int k = j;
         int j_mod = (int)(0.5*yresolution);
@@ -387,11 +393,11 @@ void ShellTest::setupScene1() {
     }
   }
   //Pin all verts at or near that height
-  for(vit = shellObj->vertices_begin();vit!= shellObj->vertices_end(); ++vit) {
+ /* for(vit = shellObj->vertices_begin();vit!= shellObj->vertices_end(); ++vit) {
     Vec3d pos = shell->getVertexPosition(*vit);
     if(pos[1] >= highest - 1e-4)
       shell->constrainVertex(*vit, pos);
-  }
+  }*/
 
 }
 
@@ -1079,5 +1085,74 @@ void ShellTest::setupScene8() {
 }
 
 
+//the triangles connected about a single edge, in non-manifold way
+void ShellTest::setupScene9() {
+
+  //build a rectangular grid of vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  //set up a small chunk of shell for testing bending
+  VertexHandle v0 = shellObj->addVertex();
+  VertexHandle v1 = shellObj->addVertex();
+  VertexHandle v2 = shellObj->addVertex();
+  VertexHandle v3 = shellObj->addVertex();
+  VertexHandle v4 = shellObj->addVertex();
+  FaceHandle f0 = shellObj->addFace(v0, v1, v2);
+  FaceHandle f1 = shellObj->addFace(v2, v1, v3);
+  FaceHandle f2 = shellObj->addFace(v1, v2, v4);
+
+  //set up a square
+  positions[v0] = undeformed[v0] = Vec3d(0,0,0);
+  positions[v1] = undeformed[v1] = Vec3d(0,0,-1);
+  positions[v2] = undeformed[v2] = Vec3d(1,0,0);
+  positions[v3] = undeformed[v3] = Vec3d(1,0,-1);
+  
+  positions[v4] = undeformed[v4] = Vec3d(0.5,1,-0.25); //at the centre of the square, one unit up
+
+  velocities[v0] = velocities[v1] = velocities[v2] = velocities[v3] = velocities[v4] = Vec3d(0,0,0);
+
+  //initialize all edges to zero angle for now
+  for(EdgeIterator eit = shellObj->edges_begin(); eit!= shellObj->edges_end(); ++eit) {
+    EdgeHandle eh = *eit;
+    undefAngle[*eit] = edgeAngle[*eit] = edgeVel[*eit] = 0;
+  }
+
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+
+  //CONSTRAINTS
+
+  //Just pin the first triangle right where it is.
+  shell->constrainVertex(v0, shell->getVertexPosition(v0));
+  shell->constrainVertex(v1, shell->getVertexPosition(v1));
+  shell->constrainVertex(v2, shell->getVertexPosition(v2));
+
+}
 
 

@@ -88,6 +88,91 @@ bool DSBendingForce::gatherDOFs(const EdgeHandle& eh,
   return true;
 }
 
+void DSBendingForce::gatherDOFs(const EdgeHandle& eh, 
+                                const FaceHandle& fh,
+                                const FaceHandle& fh2,
+                                std::vector<Vec3d>& undeformed, 
+                                std::vector<Vec3d>& undeformed_damp,
+                                std::vector<Vec3d>& deformed, 
+                                std::vector<int>& indices ) const 
+{
+  assert(undeformed.size() == 4);
+  assert(deformed.size() == 4);
+  assert(indices.size() == 12);
+
+  const DeformableObject& defo = m_shell.getDefoObj();
+
+  VertexHandle from_vh, to_vh;
+  from_vh = defo.fromVertex(eh);
+  to_vh = defo.toVertex(eh);
+
+  //find the 3rd vertex in the first face
+  FaceVertexIterator fv_it = defo.fv_iter(fh);
+  while((*fv_it == from_vh) || (*fv_it == to_vh)) ++fv_it;
+  VertexHandle f1_vh = *fv_it;
+
+  //find the 3rd vertex in the second face
+  FaceVertexIterator fv_it2 = defo.fv_iter(fh2);
+  while((*fv_it2 == from_vh) || (*fv_it2 == to_vh)) ++fv_it2;
+  VertexHandle f2_vh = *fv_it2;
+
+  //push back the edge's two vertices, then the opposing vertices of the two face flaps
+  undeformed[0] = m_shell.getVertexUndeformed(from_vh);
+  undeformed_damp[0] = m_shell.getVertexDampingUndeformed(from_vh);
+  deformed[0] = m_shell.getVertexPosition(from_vh);
+  int baseIdx = m_shell.getVertexDofBase(from_vh);
+  indices[0] = baseIdx;
+  indices[1] = baseIdx+1;
+  indices[2] = baseIdx+2;
+
+  undeformed[1] = m_shell.getVertexUndeformed(to_vh);
+  undeformed_damp[1] = m_shell.getVertexDampingUndeformed(to_vh);
+  deformed[1] = m_shell.getVertexPosition(to_vh);
+  baseIdx = m_shell.getVertexDofBase(to_vh);
+  indices[3] = baseIdx;
+  indices[4] = baseIdx+1;
+  indices[5] = baseIdx+2;
+
+  undeformed[2] = m_shell.getVertexUndeformed(f1_vh);
+  undeformed_damp[2] = m_shell.getVertexDampingUndeformed(f1_vh);
+  deformed[2] = m_shell.getVertexPosition(f1_vh);
+  baseIdx = m_shell.getVertexDofBase(f1_vh);
+  indices[6] = baseIdx;
+  indices[7] = baseIdx+1;
+  indices[8] = baseIdx+2;
+
+  undeformed[3] = m_shell.getVertexUndeformed(f2_vh);
+  undeformed_damp[3] = m_shell.getVertexDampingUndeformed(f2_vh);
+  deformed[3] = m_shell.getVertexPosition(f2_vh);
+  baseIdx = m_shell.getVertexDofBase(f2_vh);
+  indices[9] = baseIdx;
+  indices[10] = baseIdx+1;
+  indices[11] = baseIdx+2;
+
+}
+
+
+void DSBendingForce::getEdgeFacePairs(EdgeHandle eh, std::vector< std::pair<FaceHandle,FaceHandle> >& facePairs) const {
+  DeformableObject& defo = m_shell.getDefoObj();
+
+  std::vector<FaceHandle> faces;;
+  for(EdgeFaceIterator efit = defo.ef_iter(eh); efit; ++efit) {
+    faces.push_back(*efit);
+  }
+  
+  if(faces.size() == 2)
+    facePairs.push_back(std::make_pair(faces[0], faces[1])); //just one pair
+  else if(faces.size() == 3) {
+    facePairs.push_back(std::make_pair(faces[0], faces[1])); //all pairs
+    facePairs.push_back(std::make_pair(faces[0], faces[2]));
+    facePairs.push_back(std::make_pair(faces[1], faces[2]));
+  }
+  else {
+    //TODO Need to work out which faces are closest to each other.
+  }
+
+}
+
 Scalar DSBendingForce::globalEnergy() const
 {
   Scalar energy = 0;
@@ -99,11 +184,15 @@ Scalar DSBendingForce::globalEnergy() const
   for (;eit != defo.edges_end(); ++eit) {
     const EdgeHandle& eh = *eit;
 
-    bool valid = gatherDOFs(eh, undeformed, undeformed_damp, deformed, indices);
-    if(!valid) continue;
+    std::vector< std::pair<FaceHandle, FaceHandle> > pairs;
+    getEdgeFacePairs(eh, pairs);
 
-    //determine the energy for this element
-    energy += elementEnergy(undeformed, deformed);
+    for(unsigned int i = 0; i < pairs.size(); ++i) {
+      gatherDOFs(eh, pairs[i].first, pairs[i].second, undeformed, undeformed_damp, deformed, indices);
+
+      //determine the energy for this element
+      energy += elementEnergy(undeformed, deformed);
+    }
   }
 
   return energy;
@@ -123,28 +212,35 @@ void DSBendingForce::globalForce( VecXd& force ) const
     const EdgeHandle& eh = *eit;
     
     //gather the data
- 
-    bool valid = gatherDOFs(eh, undeformed, undeformed_damp, deformed, indices);
-    if(!valid) continue;
-
-    //determine the elastic forces for this element
-    if(m_stiffness != 0) {
-      elementForce(undeformed, deformed, localForce);
-      for (unsigned int i = 0; i < indices.size(); ++i)
-        force(indices[i]) += m_stiffness * localForce(i);
-    }
-
-    //////determine the (Rayleigh) damping / viscous forces for this element
-    if(m_damping != 0) {
-      elementForce(undeformed_damp, deformed, localForce);
+    std::vector< std::pair<FaceHandle, FaceHandle> > pairs;
+    getEdgeFacePairs(eh, pairs);
+    
+    for(unsigned int p = 0; p < pairs.size(); ++p) {
       
-      //Thickness dependent damping, coefficient mu*h^3/3, div by timestep for symmetric dissipative potential viscosity
-      Scalar thickness = getEdgeThickness(eh);
-      Scalar h3 = thickness*thickness*thickness;
-      Scalar scale_factor = m_damping * h3 / 3.0 / m_timestep;
-      //Scalar scale_factor = m_damping / m_timestep; //old non-thickness dependent
-      for (unsigned int i = 0; i < indices.size(); ++i) {
-         force(indices[i]) += scale_factor * localForce(i);
+      gatherDOFs(eh, pairs[p].first, pairs[p].second, undeformed, undeformed_damp, deformed, indices);
+
+      //account for double-counted faces in the non-manifold case
+      Scalar local_stiffness = (pairs.size() == 2? m_stiffness : 0.5*m_stiffness);
+      Scalar local_damping = (pairs.size() == 2? m_damping : 0.5*m_damping);
+      
+      //determine the elastic forces for this element
+      if(m_stiffness != 0) {
+        elementForce(undeformed, deformed, localForce);
+        for (unsigned int i = 0; i < indices.size(); ++i)
+          force(indices[i]) += local_stiffness * localForce(i);
+      }
+
+      //////determine the (Rayleigh) damping / viscous forces for this element
+      if(m_damping != 0) {
+        elementForce(undeformed_damp, deformed, localForce);
+        
+        //Thickness dependent damping, coefficient mu*h^3/3, div by timestep for symmetric dissipative potential viscosity
+        Scalar thickness = getEdgeThickness(eh);
+        Scalar h3 = thickness*thickness*thickness;
+        Scalar scale_factor = local_damping * h3 / 3.0 / m_timestep;
+        for (unsigned int i = 0; i < indices.size(); ++i) {
+           force(indices[i]) += scale_factor * localForce(i);
+        }
       }
     }
   
@@ -163,29 +259,39 @@ void DSBendingForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) const
   for (;eit != defo.edges_end(); ++eit) {
     const EdgeHandle& eh = *eit;
     
-    //gather the relevant data for the local element
-    //and map the DOF's.
-    bool valid = gatherDOFs(eh, undeformed, undeformed_damp, deformed, indices);
-    if(!valid) continue;
-
-    //determine the forces for this element
-    if(m_stiffness != 0) {
-      elementJacobian(undeformed, deformed, localJacobian);
-      for (unsigned int i = 0; i < indices.size(); ++i)
-        for(unsigned int j = 0; j < indices.size(); ++j) 
-          Jacobian.add(indices[i],indices[j], scale * m_stiffness * localJacobian(i,j));
-    }
     
-    if(m_damping != 0) {
-      elementJacobian(undeformed_damp, deformed, localJacobian);
-      Scalar thickness = getEdgeThickness(eh);
-      Scalar h3 = thickness*thickness*thickness;
-      Scalar scale_factor = scale * m_damping * h3 / 3.0 / m_timestep;
-      //Scalar scale_factor = scale * m_damping / m_timestep; //old non-thickness dependent
+    //gather the data
+    std::vector< std::pair<FaceHandle, FaceHandle> > pairs;
+    getEdgeFacePairs(eh, pairs);
 
-      for (unsigned int i = 0; i < indices.size(); ++i)
-        for(unsigned int j = 0; j < indices.size(); ++j) 
-          Jacobian.add(indices[i],indices[j], scale_factor * localJacobian(i,j));
+    for(unsigned int p = 0; p < pairs.size(); ++p) {
+
+      //gather the relevant data for the local element
+      //and map the DOF's.
+      gatherDOFs(eh, pairs[p].first, pairs[p].second, undeformed, undeformed_damp, deformed, indices);
+
+      //account for double-counted faces in the non-manifold case
+      Scalar local_stiffness = (pairs.size() == 2? m_stiffness : 0.5*m_stiffness);
+      Scalar local_damping = (pairs.size() == 2? m_damping : 0.5*m_damping);
+
+      //determine the forces for this element
+      if(m_stiffness != 0) {
+        elementJacobian(undeformed, deformed, localJacobian);
+        for (unsigned int i = 0; i < indices.size(); ++i)
+          for(unsigned int j = 0; j < indices.size(); ++j) 
+            Jacobian.add(indices[i],indices[j], scale * local_stiffness * localJacobian(i,j));
+      }
+      
+      if(m_damping != 0) {
+        elementJacobian(undeformed_damp, deformed, localJacobian);
+        Scalar thickness = getEdgeThickness(eh);
+        Scalar h3 = thickness*thickness*thickness;
+        Scalar scale_factor = scale * local_damping * h3 / 3.0 / m_timestep;
+
+        for (unsigned int i = 0; i < indices.size(); ++i)
+          for(unsigned int j = 0; j < indices.size(); ++j) 
+            Jacobian.add(indices[i],indices[j], scale_factor * localJacobian(i,j));
+      }
     }
 
   }

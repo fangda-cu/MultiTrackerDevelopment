@@ -45,6 +45,7 @@ public:
   void setupScene6(); //hemispherical bubble
   void setupScene7(); //sheet between two circles
   void setupScene8(); //torus
+  void setupScene9(); //non-manifold edge example
 
 };
 

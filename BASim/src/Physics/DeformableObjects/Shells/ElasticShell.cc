@@ -5,6 +5,8 @@
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 #include "BASim/src/Collisions/ElTopo/ccd_wrapper.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/CSTMembraneForce.hh"
+#include "eltopo.h"
+
 #include <algorithm>
 
 namespace BASim {
@@ -25,7 +27,8 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
     m_velocities(object),
     m_xi_vel(object),
     m_density(1),
-    m_proximity_epsilon(0.01)
+    m_proximity_epsilon(0.01),
+    m_process_collisions(false)
 {
  
 }
@@ -356,8 +359,139 @@ void ElasticShell::startStep()
 
 }
 
-void ElasticShell::endStep() {
+void ElasticShell::resolveCollisions() {
+  //do cloth-style self-collision correction
+  if(!m_process_collisions)
+    return;
+
+  //extra space for ground plane
+  int nverts = m_obj->nv() + 4;
+  int ntris = m_obj->nf() + 2;
   
+  double* invertices_old = new double[3*nverts];
+  double* invertices_new = new double[3*nverts];
+  double* masses = new double[nverts];
+  std::map<int,int> indexMap;
+  std::vector<VertexHandle> indexMap2(nverts);
+
+  //construct vertex data
+  int index = 0;
+  for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
+    VertexHandle vh = *vit;
+    Vec3d newPos = m_positions[vh];
+    invertices_new[3*index] = newPos[0];
+    invertices_new[3*index+1] = newPos[1];
+    invertices_new[3*index+2] = newPos[2];
+
+    Vec3d oldPos = m_damping_undeformed_positions[vh];
+    invertices_old[3*index] = oldPos[0];
+    invertices_old[3*index+1] = oldPos[1];
+    invertices_old[3*index+2] = oldPos[2];
+    
+    masses[index] = getMass(vh);
+    if(isConstrained(vh))
+      masses[index] = 101;
+    indexMap[vh.idx()] = index;
+    indexMap2[index] = vh;
+    ++index;
+  }
+  
+  //also add a simple ground plane
+  int g0 = m_obj->nv();
+  invertices_new[3*g0]     = -2; invertices_new[3*g0+1]     = -0.2; invertices_new[3*g0+2]     = -2;
+  invertices_new[3*(g0+1)] = +2; invertices_new[3*(g0+1)+1] = -0.2; invertices_new[3*(g0+1)+2] = -2;
+  invertices_new[3*(g0+2)] = +2; invertices_new[3*(g0+2)+1] = -0.2; invertices_new[3*(g0+2)+2] = +2;
+  invertices_new[3*(g0+3)] = -2; invertices_new[3*(g0+3)+1] = -0.2; invertices_new[3*(g0+3)+2] = +2;
+  invertices_old[3*g0]     = -2; invertices_old[3*g0+1]     = -0.2; invertices_old[3*g0+2]     = -2;
+  invertices_old[3*(g0+1)] = +2; invertices_old[3*(g0+1)+1] = -0.2; invertices_old[3*(g0+1)+2] = -2;
+  invertices_old[3*(g0+2)] = +2; invertices_old[3*(g0+2)+1] = -0.2; invertices_old[3*(g0+2)+2] = +2;
+  invertices_old[3*(g0+3)] = -2; invertices_old[3*(g0+3)+1] = -0.2; invertices_old[3*(g0+3)+2] = +2;
+  masses[g0] = 101; //"infinite" mass
+  masses[g0+1] = 101;
+  masses[g0+2] = 101;
+  masses[g0+3] = 101;
+
+
+  //construct triangle data
+  int* triangles = new int[3*ntris]; //extra space for ground plane
+  index = 0;
+  for(FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit) {
+    FaceHandle fh = *fit;
+    int c = 0;
+    for(FaceVertexIterator fvit = m_obj->fv_iter(fh); fvit; ++fvit) {
+      VertexHandle vh = *fvit;
+      triangles[3*index+c] = indexMap[vh.idx()];
+      ++c;
+    }
+    ++index;
+  }
+  
+  //add ground plane tris
+  int t0 = m_obj->nf();
+  triangles[3*t0] = g0; triangles[3*t0+1] = g0+1; triangles[3*t0+2] = g0+2;
+  triangles[3*(t0+1)] = g0; triangles[3*(t0+1)+1] = g0+2; triangles[3*(t0+1)+2] = g0+3;
+
+
+  ElTopoGeneralOptions gen_opts;
+  gen_opts.m_collision_safety = true;
+  gen_opts.m_verbose = false;
+  double *outvertex_locations;
+  ElTopoIntegrationOptions int_opts;
+  int_opts.m_dt = 1; //don't think this matters much...
+  int_opts.m_proximity_epsilon = m_integrate_collision_epsilon;
+
+  el_topo_integrate(nverts, invertices_old, invertices_new, ntris, 
+    triangles, masses, &gen_opts, &int_opts, &outvertex_locations);
+
+  //copy back the results
+  for(int i = 0; i < nverts-4; ++i) {
+    Vec3d pos(outvertex_locations[3*i], outvertex_locations[3*i+1], outvertex_locations[3*i+2]);
+    VertexHandle vh = indexMap2[i];
+    setVertexPosition(vh, pos);
+  }
+ 
+  el_topo_free_integrate_results( outvertex_locations );
+
+}
+
+void ElasticShell::setCollisionParams(bool enabled, Scalar proximity) {
+  m_integrate_collision_epsilon = proximity;
+  m_process_collisions = enabled;
+}
+
+void ElasticShell::endStep() {
+ 
+ 
+
+  /*
+  //add ground-plane constraints
+  std::cout << "Proximity threshold: " << m_integrate_collision_epsilon << std::endl;
+  for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
+    Vec3d curPos = getVertexPosition(*(vit));
+    if(curPos[1] < -0.17) {
+      std::cout << "Low vertex:" << (*vit).idx() << " -> " << curPos[1] << std::endl;
+    }
+  }
+
+  std::cout << "Doing collisions.\n";
+  resolveCollisions();
+  
+  //add ground-plane constraints
+  std::cout << "Result of collisions.\n";
+  for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
+    Vec3d curPos = getVertexPosition(*(vit));
+    if(curPos[1] < -0.17) {
+      std::cout << "Low vertex:" << (*vit).idx() << " -> " << curPos[1] << std::endl;
+    }
+    if(curPos[1] < -0.2) {
+      if(!isConstrained(*vit)) {
+        std::cout << "Adding constraint\n";
+        constrainVertex(*vit, new FixedPositionConstraint(curPos));
+      }
+    }
+  }
+  */
+
   //Adjust thicknesses based on area changes
   updateThickness();
 
