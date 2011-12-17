@@ -167,7 +167,8 @@ void DSBendingForce::getEdgeFacePairs(EdgeHandle eh, std::vector< std::pair<Face
     facePairs.push_back(std::make_pair(faces[0], faces[2]));
     facePairs.push_back(std::make_pair(faces[1], faces[2]));
   }
-  else {
+  else if(faces.size() >= 4) {
+    std::cerr << "Non-manifold edges with > 3 faces not yet supported.\n";
     //TODO Need to work out which faces are closest to each other.
   }
 

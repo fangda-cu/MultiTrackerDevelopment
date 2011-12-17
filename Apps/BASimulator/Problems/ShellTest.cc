@@ -18,6 +18,8 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellRadialForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellSurfaceTensionForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVolumeForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexTriSpringForce.hh"
+
 #include <fstream>
 
 #include "eltopo.h"
@@ -1038,8 +1040,8 @@ void ShellTest::setupScene8() {
   
   //construct faces
   std::cout << "Testing\n";
-  for(int j = 0; j < vertList.size(); ++j) {
-    for(int i = 0; i < vertList[j].size(); ++i) {
+  for(unsigned int j = 0; j < vertList.size(); ++j) {
+    for(unsigned int i = 0; i < vertList[j].size(); ++i) {
       int j_next = (j+1)%vertList.size();
       int i_next = (i+1)%vertList[j].size();
 
@@ -1109,6 +1111,12 @@ void ShellTest::setupScene9() {
   FaceHandle f1 = shellObj->addFace(v2, v1, v3);
   FaceHandle f2 = shellObj->addFace(v1, v2, v4);
 
+  VertexHandle v5 = shellObj->addVertex();
+  VertexHandle v6 = shellObj->addVertex();
+  VertexHandle v7 = shellObj->addVertex();
+
+  FaceHandle f3 = shellObj->addFace(v5,v6,v7);
+
   //set up a square
   positions[v0] = undeformed[v0] = Vec3d(0,0,0);
   positions[v1] = undeformed[v1] = Vec3d(0,0,-1);
@@ -1117,7 +1125,12 @@ void ShellTest::setupScene9() {
   
   positions[v4] = undeformed[v4] = Vec3d(0.5,1,-0.25); //at the centre of the square, one unit up
 
+  positions[v5] = undeformed[v5] = Vec3d(0.3, 0.3, 0.3);
+  positions[v6] = undeformed[v6] = Vec3d(0.3, 0.0, 0.3);
+  positions[v7] = undeformed[v7] = Vec3d(0.0, 0.3, 0.3);
+
   velocities[v0] = velocities[v1] = velocities[v2] = velocities[v3] = velocities[v4] = Vec3d(0,0,0);
+  velocities[v5] = velocities[v6] = velocities[v7] = Vec3d(0,0,0);
 
   //initialize all edges to zero angle for now
   for(EdgeIterator eit = shellObj->edges_begin(); eit!= shellObj->edges_end(); ++eit) {
@@ -1144,7 +1157,10 @@ void ShellTest::setupScene9() {
   shell->setEdgeUndeformed(undefAngle);
   shell->setEdgeXis(edgeAngle);
   shell->setEdgeVelocities(edgeVel);
-
+  
+  ShellVertexTriSpringForce* spring = new ShellVertexTriSpringForce(*shell, "SpringTest", 0.1f);
+  spring->addSpring(f3, v0, Vec3d(0.4, 0.4, 0.2));
+  shell->addForce(spring);
 
   //CONSTRAINTS
 
