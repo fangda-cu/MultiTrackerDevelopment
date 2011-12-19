@@ -80,8 +80,10 @@ SolverUtils::createSparseMatrix(int rows, int cols, int nnzPerRow) const
   
 #ifdef HAVE_PETSC
   if (matrixType == PETSC_MATRIX)
-    return new SimpleSparseMatrix(rows, cols, nnzPerRow);
+    return new PetscMatrix(rows, cols, nnzPerRow);
 #endif // HAVE_PETSC
+
+  return new SimpleSparseMatrix(rows, cols, nnzPerRow);
 
   std::cerr << "\033[31;1mWARNING IN SOLVERUTILS:\033[m Failed to create sparse matrix. " << std::endl;
   exit(-1);

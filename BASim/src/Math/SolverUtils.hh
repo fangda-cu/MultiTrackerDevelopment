@@ -11,9 +11,10 @@
 #include "BandMatrix.hh"
 #include "ConjugateGradient.hh"
 
+#include "BASim/src/Math/SimpleSparseMatrix.hh"
+
 #ifdef HAVE_PETSC
 #include "BASim/src/Math/Petsc/PetscMatrix.hh"
-#include "BASim/src/Math/SimpleSparseMatrix.hh"
 #include "BASim/src/Math/Petsc/PetscLinearSolver.hh"
 #endif // HAVE_PETSC
 
@@ -61,6 +62,7 @@ public:
 #ifdef HAVE_PETSC
     PETSC_MATRIX,
 #endif // HAVE_PETSC
+    SIMPLE_SPARSE_MATRIX,
     BAND_MATRIX,
     AUTO_MATRIX
   };
