@@ -22,8 +22,6 @@
 
 #include <fstream>
 
-#include "eltopo.h"
-
 ShellTest::ShellTest()
 : Problem("Shell Test", "Various viscous and elastic sheet/shell tests"), 
   shell(NULL), shellObj(NULL), stepper(NULL)
@@ -1159,7 +1157,7 @@ void ShellTest::setupScene9() {
   shell->setEdgeVelocities(edgeVel);
   
   ShellVertexTriSpringForce* spring = new ShellVertexTriSpringForce(*shell, "SpringTest", 0.1f);
-  spring->addSpring(f3, v0, Vec3d(0.4, 0.4, 0.2));
+  spring->addSpring(f3, v4, Vec3d(0.4, 0.4, 0.2));
   shell->addForce(spring);
 
   //CONSTRAINTS

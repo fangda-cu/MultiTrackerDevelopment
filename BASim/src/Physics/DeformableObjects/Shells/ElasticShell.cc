@@ -5,7 +5,8 @@
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 #include "BASim/src/Collisions/ElTopo/ccd_wrapper.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/CSTMembraneForce.hh"
-#include "eltopo.h"
+
+//#include "eltopo.h"
 
 #include <algorithm>
 
@@ -359,6 +360,7 @@ void ElasticShell::startStep()
 
 }
 
+/*
 void ElasticShell::resolveCollisions() {
   //do cloth-style self-collision correction
   if(!m_process_collisions)
@@ -453,6 +455,7 @@ void ElasticShell::resolveCollisions() {
   el_topo_free_integrate_results( outvertex_locations );
 
 }
+*/
 
 void ElasticShell::setCollisionParams(bool enabled, Scalar proximity) {
   m_integrate_collision_epsilon = proximity;
