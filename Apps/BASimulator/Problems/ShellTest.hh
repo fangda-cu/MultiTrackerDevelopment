@@ -36,6 +36,8 @@ protected:
   ElasticShell* shell;
   DefoObjTimeStepper* stepper;
 
+  Scalar m_timestep;
+
 public:
   void setupScene1(); //vertical flat sheet
   void setupScene2(); //vertical cylindrical sheet

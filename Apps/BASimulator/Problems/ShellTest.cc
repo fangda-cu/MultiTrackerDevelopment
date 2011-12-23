@@ -116,6 +116,9 @@ void ShellTest::Setup()
 
   std::string integrator = GetStringOpt("integrator");
 
+  Scalar timestep = getDt(); //Our Rayleigh damping model relies on knowing the timestep (folds it into the damping stiffness, as in Viscous Threads)
+  m_timestep = timestep;
+
   //Geometry/scene specific
   int sceneChoice = GetIntOpt("shell-scene");
 
@@ -175,8 +178,7 @@ void ShellTest::Setup()
  
 
   //now add forces to the model
-  Scalar timestep = getDt(); //Our Rayleigh damping model relies on knowing the timestep (folds it into the damping stiffness, as in Viscous Threads)
- 
+
   //Stretching and bending forces
   if(Youngs_modulus != 0 || Youngs_damping != 0) {
     shell->addForce(new CSTMembraneForce(*shell, "CSTMembrane", Youngs_modulus, Poisson_ratio, Youngs_damping, Poisson_damping, timestep));
@@ -1156,8 +1158,8 @@ void ShellTest::setupScene9() {
   shell->setEdgeXis(edgeAngle);
   shell->setEdgeVelocities(edgeVel);
   
-  ShellVertexTriSpringForce* spring = new ShellVertexTriSpringForce(*shell, "SpringTest", 0.1f);
-  spring->addSpring(f3, v4, Vec3d(0.4, 0.4, 0.2));
+  ShellVertexTriSpringForce* spring = new ShellVertexTriSpringForce(*shell, "SpringTest", m_timestep);
+  spring->addSpring(f3, v0, Vec3d(0.4, 0.4, 0.2), 0.0, 0.001, 0.5);
   shell->addForce(spring);
 
   //CONSTRAINTS

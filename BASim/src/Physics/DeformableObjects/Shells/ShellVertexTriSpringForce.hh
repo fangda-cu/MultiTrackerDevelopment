@@ -30,7 +30,7 @@ class ShellVertexTriSpringForce : public ElasticShellForce {
 
 public:
 
-  ShellVertexTriSpringForce (ElasticShell& shell, const std::string& name = "ShellVertexTriSpringForce", Scalar strength = 0);
+  ShellVertexTriSpringForce (ElasticShell& shell, const std::string& name = "ShellVertexTriSpringForce", Scalar timestep = 1.0);
   virtual ~ShellVertexTriSpringForce () {}
 
   std::string getName() const;
@@ -39,25 +39,27 @@ public:
   void globalForce(VecXd& force) const;
   void globalJacobian(Scalar scale, MatrixBase& Jacobian) const;
   
-  void addSpring(const FaceHandle& fh, const VertexHandle& vh, const Vec3d& baryCoords);
+  void addSpring(const FaceHandle& fh, const VertexHandle& vh, const Vec3d& baryCoords, Scalar stiffness, Scalar damping, Scalar restlen);
 
 protected:
 
-  bool gatherDOFs(const FaceHandle& fh, const VertexHandle& vh, std::vector<Vec3d>& deformed, std::vector<int>& indices) const;
+  bool gatherDOFs(const FaceHandle& fh, const VertexHandle& vh, std::vector<Vec3d>& deformed, std::vector<Vec3d>& undeformed_damp, std::vector<int>& indices) const;
 
-  Scalar elementEnergy(const std::vector<Vec3d>& deformed, const Vec3d& baryCoords) const;
-  void elementForce(const std::vector<Vec3d>& deformed, const Vec3d& baryCoords, 
+  Scalar elementEnergy(const std::vector<Vec3d>& deformed, const Vec3d& baryCoords, Scalar strength, Scalar restlen) const;
+  void elementForce(const std::vector<Vec3d>& deformed, const Vec3d& baryCoords, Scalar strength, Scalar restlen,
                     Eigen::Matrix<Scalar, NumVTDof, 1>& force) const;
-  void elementJacobian(const std::vector<Vec3d>& deformed, const Vec3d& baryCoords, 
+  void elementJacobian(const std::vector<Vec3d>& deformed, const Vec3d& baryCoords, Scalar strength, Scalar restlen,
                        Eigen::Matrix<Scalar, NumVTDof, NumVTDof>& J) const;
   
   //List of springs
   std::vector<FaceHandle> m_faces;
   std::vector<VertexHandle> m_vertices;
   std::vector<Vec3d> m_barycoords;
+  std::vector<Scalar> m_stiffnesses;
+  std::vector<Scalar> m_damping;
+  std::vector<Scalar> m_restlen;
 
-  Scalar m_strength;
-
+  Scalar m_timestep; //for damping/viscosity
 };
 
 
