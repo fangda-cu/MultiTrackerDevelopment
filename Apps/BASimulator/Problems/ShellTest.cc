@@ -19,6 +19,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellSurfaceTensionForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVolumeForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexTriSpringForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexPointSpringForce.hh"
 
 #include <fstream>
 
@@ -250,7 +251,7 @@ void ShellTest::Setup()
 
   shell->computeMasses();
 
-  shell->setCollisionParams(true, 0.1*remeshing_res);
+  shell->setCollisionParams(true, 0.02*remeshing_res);
 
   //compute the dof indexing for use in the diff_eq solver
   shellObj->computeDofIndexing();
@@ -1158,9 +1159,14 @@ void ShellTest::setupScene9() {
   shell->setEdgeXis(edgeAngle);
   shell->setEdgeVelocities(edgeVel);
   
-  ShellVertexTriSpringForce* spring = new ShellVertexTriSpringForce(*shell, "SpringTest", m_timestep);
+  /*ShellVertexTriSpringForce* spring = new ShellVertexTriSpringForce(*shell, "SpringTest", m_timestep);
   spring->addSpring(f3, v0, Vec3d(0.4, 0.4, 0.2), 0.0, 0.001, 0.5);
+  shell->addForce(spring);*/
+
+  ShellVertexPointSpringForce* spring = new ShellVertexPointSpringForce(*shell, "Spring", m_timestep);
+  spring->addSpring(v7, Vec3d(0.1, 0.3, 0.3), 0.1, 0.0, 0.0);
   shell->addForce(spring);
+
 
   //CONSTRAINTS
 
