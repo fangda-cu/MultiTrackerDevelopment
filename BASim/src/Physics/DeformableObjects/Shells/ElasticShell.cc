@@ -118,7 +118,18 @@ void ElasticShell::setEdgeVelocities(const EdgeProperty<Scalar>& velocities)
   m_xi_vel = velocities;
 }
 
+Scalar ElasticShell::getThickness(const VertexHandle& vh) const {
+  Scalar totalA = 0.0;
+  Scalar w;
+  Scalar total = 0.0;
+  for (VertexFaceIterator vfit = m_obj->vf_iter(vh); vfit; ++vfit){
+      w = getArea(*vfit);
+      totalA += w;
+      total += w*m_thicknesses[*vfit];
+  }
 
+  return total / totalA;
+}
 Scalar ElasticShell::getArea(const FaceHandle& f, bool current) const  {
   FaceVertexIterator fvit = m_obj->fv_iter(f);
   VertexHandle v0_hnd = *fvit; ++fvit; assert(fvit);

@@ -499,6 +499,24 @@ TopologicalObject::fromVertex(const EdgeHandle& eh) const
 
 }
 
+int TopologicalObject::getRelativeOrientation(const TetHandle& th, const FaceHandle& fh) const {
+  if(th.idx() < 0 || th.idx() >= (int)m_TF.getNumRows() || fh.idx() < 0 || fh.idx() >= (int)m_TF.getNumCols())
+     return 0;
+  return m_TF.get(th.idx(), fh.idx());
+}
+
+int TopologicalObject::getRelativeOrientation(const FaceHandle& fh, const EdgeHandle& eh) const {
+  if(fh.idx() < 0 || fh.idx() >= (int)m_FE.getNumRows() || eh.idx() < 0 || eh.idx() >= (int)m_FE.getNumCols())
+     return 0;
+  return m_FE.get(fh.idx(), eh.idx());
+}
+
+int TopologicalObject::getRelativeOrientation(const EdgeHandle& eh, const VertexHandle& vh) const {
+  if(eh.idx() < 0 || eh.idx() >= (int)m_EV.getNumRows() || vh.idx() < 0 || vh.idx() >= (int)m_EV.getNumCols())
+     return 0;
+  return m_EV.get(eh.idx(), vh.idx());
+}
+
 VertexHandle
 TopologicalObject::toVertex(const EdgeHandle& eh) const
 {

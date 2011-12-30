@@ -78,6 +78,10 @@ public:
   /** Number of tetrahedra */
   int nt() const;
 
+  int getRelativeOrientation(const TetHandle& th, const FaceHandle& fh) const;
+  int getRelativeOrientation(const FaceHandle& fh, const EdgeHandle& eh) const;
+  int getRelativeOrientation(const EdgeHandle& eh, const VertexHandle& vh) const;
+
   /** Incidence counts for different simplices */
 
   unsigned int vertexIncidentEdges(const VertexHandle& v) const { return m_VE.getNumEntriesInRow(v.idx()); }

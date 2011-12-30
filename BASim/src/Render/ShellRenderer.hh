@@ -18,11 +18,12 @@ namespace BASim {
   {
   public:
   
-    enum DrawMode { DBG, FLAT, NONE };
+    enum DrawMode { DBG, FLAT, NONE, VOLUMETRIC };
 
     ShellRenderer( const ElasticShell& shell );
     
     void render();
+    Vec3d renderEdges();
     void cycleMode();
     DrawMode getMode() const { return m_mode; }
     void setMode(DrawMode mode) { m_mode = mode; }
@@ -30,6 +31,8 @@ namespace BASim {
     virtual Vec3d calculateObjectCenter();
     virtual Scalar calculateObjectBoundingRadius(const Vec3d& center);
     
+    void getFaceNormals(FaceProperty<Vec3d> & fNormals);
+    void getVertexNormals(VertexProperty<Vec3d> & vNormals, const FaceProperty<Vec3d> & fNormals);
   protected:
     const ElasticShell& m_shell;
     DrawMode m_mode;

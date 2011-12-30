@@ -95,6 +95,7 @@ public:
   Scalar getMass(const VertexHandle& v) const { return m_vertex_masses[v]; }
   Scalar getMass(const EdgeHandle& e) const { return m_edge_masses[e]; }
   Scalar getThickness(const FaceHandle& f) const { return m_thicknesses[f]; }
+  Scalar getThickness(const VertexHandle& vh) const;
   Scalar getVolume(const FaceHandle& f) const {return m_volumes[f]; }
   Scalar getArea(const FaceHandle& f, bool current = true) const;
 
