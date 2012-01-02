@@ -212,5 +212,9 @@ void ShellVertexPointSpringForce::addSpring(const VertexHandle& vh, const Vec3d&
 
 }
 
+bool ShellVertexPointSpringForce::hasSpring(const VertexHandle& vh) {
+  return std::find(m_vertices.begin(), m_vertices.end(), vh) != m_vertices.end();
+}
+
 
 } //namespace BASim

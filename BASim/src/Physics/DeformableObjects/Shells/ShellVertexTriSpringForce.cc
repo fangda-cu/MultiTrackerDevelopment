@@ -242,5 +242,32 @@ void ShellVertexTriSpringForce::addSpring(const FaceHandle& fh, const VertexHand
 
 }
 
+void ShellVertexTriSpringForce::clearSprings() {
+  m_faces.clear();
+  m_vertices.clear();
+  m_barycoords.clear();
+  m_stiffnesses.clear();
+  m_damping.clear();
+  m_restlen.clear();
+}
+
+void ShellVertexTriSpringForce::getSpringLists(std::vector<VertexHandle> &verts, std::vector<FaceHandle>& tris, std::vector<Vec3d> barycoords) {
+  verts = m_vertices;
+  tris = m_faces;
+  barycoords = m_barycoords;
+}
+
+bool ShellVertexTriSpringForce::springExists(const FaceHandle& f, const VertexHandle& v) {
+  
+  //TODO do this more efficiently (store verts per face, for example, so we don't have to search the whole set)
+  for(unsigned int i = 0; i < m_faces.size(); ++i) {
+    if(m_faces[i] == f) {
+      if(m_vertices[i] == v)
+        return true;
+    }
+  }
+  return false;
+}
+
 
 } //namespace BASim

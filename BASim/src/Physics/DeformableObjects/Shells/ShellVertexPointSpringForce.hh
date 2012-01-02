@@ -41,6 +41,7 @@ public:
   
   void addSpring(const VertexHandle& vh, const Vec3d& position, Scalar stiffness, Scalar damping, Scalar restlen);
 
+  bool hasSpring(const VertexHandle& vh);
 protected:
 
   bool gatherDOFs(const VertexHandle& vh, std::vector<Vec3d>& deformed, std::vector<Vec3d>& undeformed_damp, std::vector<int>& indices) const;

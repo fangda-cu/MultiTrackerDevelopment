@@ -15,7 +15,7 @@
 #include "BASim/src/Math/ADT/advec.h"
 
 
-//A set of zero-rest-length springs, each between a tri and a vert.
+//A set of springs, each between a tri and a vert.
 
 namespace BASim {
 
@@ -40,6 +40,9 @@ public:
   void globalJacobian(Scalar scale, MatrixBase& Jacobian) const;
   
   void addSpring(const FaceHandle& fh, const VertexHandle& vh, const Vec3d& baryCoords, Scalar stiffness, Scalar damping, Scalar restlen);
+  void clearSprings();
+  void getSpringLists(std::vector<VertexHandle> &verts, std::vector<FaceHandle>& tris, std::vector<Vec3d> barycoords);
+  bool springExists(const FaceHandle& f, const VertexHandle& v);
 
 protected:
 
@@ -58,6 +61,8 @@ protected:
   std::vector<Scalar> m_stiffnesses;
   std::vector<Scalar> m_damping;
   std::vector<Scalar> m_restlen;
+
+  
 
   Scalar m_timestep; //for damping/viscosity
 };

@@ -6,14 +6,17 @@
 #include "BASim/src/Collisions/ElTopo/ccd_wrapper.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/CSTMembraneForce.hh"
 #include "BASim/src/Math/Math.hh"
+#include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexTriSpringForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexPointSpringForce.hh"
+#include "BASim/src/Collisions/ElTopo/collisionqueries.hh"
 
-//#include "eltopo.h"
+#include "eltopo.h"
 
 #include <algorithm>
 
 namespace BASim {
 
-ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces) : 
+ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep) : 
   PhysicalModel(*object), m_obj(object), 
     m_active_faces(shellFaces), 
     m_undeformed_positions(object), 
@@ -30,9 +33,14 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
     m_xi_vel(object),
     m_density(1),
     m_proximity_epsilon(0.01),
-    m_process_collisions(false)
+    m_process_collisions(false),
+    m_vert_point_springs(NULL),
+    m_vert_tri_springs(NULL)
 {
- 
+  m_vert_point_springs = new ShellVertexPointSpringForce(*this, "VertPointSprings", timestep);
+  m_vert_tri_springs = new ShellVertexTriSpringForce(*this, "VertTriSprings", timestep);
+  addForce(m_vert_point_springs);
+  addForce(m_vert_tri_springs);
 }
 
 ElasticShell::~ElasticShell() {
@@ -314,7 +322,6 @@ void ElasticShell::constrainVertex( const VertexHandle& v, PositionConstraint* c
 }
 
 
-
 void ElasticShell::startStep()
 {
 
@@ -361,15 +368,15 @@ void ElasticShell::startStep()
 
 }
 
-/*
+
 void ElasticShell::resolveCollisions() {
   //do cloth-style self-collision correction
   if(!m_process_collisions)
     return;
 
   //extra space for ground plane
-  int nverts = m_obj->nv();// + 4;
-  int ntris = m_obj->nf();// + 2;
+  int nverts = m_obj->nv();
+  int ntris = m_obj->nf();
   
   double* invertices_old = new double[3*nverts];
   double* invertices_new = new double[3*nverts];
@@ -390,18 +397,6 @@ void ElasticShell::resolveCollisions() {
     invertices_old[3*index] = oldPos[0];
     invertices_old[3*index+1] = oldPos[1];
     invertices_old[3*index+2] = oldPos[2];
-    
-    Vec3d pos = newPos;
-    if(isnan(pos[0]) || isnan(pos[1]) || isnan(pos[2]))
-      std::cout << "NaN vertex0\n";
-    if(isinf(pos[0]) || isinf(pos[1]) || isinf(pos[2]))
-      std::cout << "Inf vertex0\n";
-    pos = oldPos;
-    if(isnan(pos[0]) || isnan(pos[1]) || isnan(pos[2]))
-      std::cout << "NaN vertex1\n";
-    if(isinf(pos[0]) || isinf(pos[1]) || isinf(pos[2]))
-      std::cout << "Inf vertex1\n";
-
 
     masses[index] = getMass(vh);
     if(isConstrained(vh))
@@ -442,14 +437,14 @@ void ElasticShell::resolveCollisions() {
   }
   
   //add ground plane tris
-  //int t0 = m_obj->nf();
-  //triangles[3*t0] = g0; triangles[3*t0+1] = g0+1; triangles[3*t0+2] = g0+2;
-  //triangles[3*(t0+1)] = g0; triangles[3*(t0+1)+1] = g0+2; triangles[3*(t0+1)+2] = g0+3;
-
+ /* int t0 = m_obj->nf();
+  triangles[3*t0] = g0; triangles[3*t0+1] = g0+1; triangles[3*t0+2] = g0+2;
+  triangles[3*(t0+1)] = g0; triangles[3*(t0+1)+1] = g0+2; triangles[3*(t0+1)+2] = g0+3;
+*/
 
   ElTopoGeneralOptions gen_opts;
   gen_opts.m_collision_safety = true;
-  gen_opts.m_verbose = false;
+  gen_opts.m_verbose = true;
   double *outvertex_locations;
   ElTopoIntegrationOptions int_opts;
   int_opts.m_dt = 1; //don't think this matters much...
@@ -459,20 +454,92 @@ void ElasticShell::resolveCollisions() {
     triangles, masses, &gen_opts, &int_opts, &outvertex_locations);
 
   //copy back the results
+  bool badResult = false;
   for(int i = 0; i < nverts; ++i) {
     Vec3d pos(outvertex_locations[3*i], outvertex_locations[3*i+1], outvertex_locations[3*i+2]);
     VertexHandle vh = indexMap2[i];
+    
+    //Check for failed solve.
     if(isnan(pos[0]) || isnan(pos[1]) || isnan(pos[2]))
-      std::cout << "NaN vertex\n";
+      std::cout << "ElTopo Failed: NaN vertex\n";
     if(isinf(pos[0]) || isinf(pos[1]) || isinf(pos[2]))
-      std::cout << "Inf vertex\n";
+      std::cout << "ElTopo Failed: Inf vertex\n";
+    
     setVertexPosition(vh, pos);
   }
  
   el_topo_free_integrate_results( outvertex_locations );
+  delete[] invertices_new;
+  delete[] invertices_old;
+  delete[] masses;
+}
+
+void ElasticShell::addSelfCollisionForces() {
+  
+  //update the broad phase structure with the current mesh data
+  Scalar collision_distance = 0.05;
+  std::cout << "Building collision structure\n";
+  m_broad_phase.update_broad_phase_static(*m_obj, m_positions, collision_distance);
+  std::cout << "Done building collision structure\n";
+  
+  //determine proximity of vertex triangle pairs and
+  //add damped springs between them to handle collisions
+  std::cout << "Processing collision springs\n";
+  //reset the collection of springs
+
+  //consider all vertices
+  for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
+    
+    Vec3d vert_pos = m_positions[*vit];
+    ElTopo::Vec3d vertex_position = ElTopo::toElTopo(vert_pos);
+
+    //construct bound box for the vertex, and find all triangles near it
+    std::vector<unsigned int> overlapping_triangles;
+    Vec3d low = vert_pos - collision_distance*Vec3d(1,1,1), high = vert_pos + collision_distance*Vec3d(1,1,1);
+    
+    m_broad_phase.get_potential_triangle_collisions(ElTopo::toElTopo(low), ElTopo::toElTopo(high), overlapping_triangles);
+
+    for(unsigned int i = 0; i < overlapping_triangles.size(); ++i) {
+      int tri_idx = overlapping_triangles[i];
+      FaceHandle f(tri_idx);
+      
+      
+      if(m_vert_tri_springs->springExists(f, *vit)) continue;
+      
+      ElTopo::Vec3d face_verts[3];
+      int fv = 0;
+      bool goodSpring = true;
+      for(FaceVertexIterator fvit = m_obj->fv_iter(f); fvit; ++fvit) {
+        face_verts[fv] = ElTopo::toElTopo(m_positions[*fvit]);
+        if(*fvit == *vit)
+          goodSpring = false;
+        ++fv;
+      }
+      if(!goodSpring) {
+        continue;
+      }
+     
+
+      //check if the geometry is actually close enough to warrant a spring
+      Vec3d barycoords;
+      Scalar distance;
+      ElTopo::Vec3d normal;
+      check_point_triangle_proximity(vertex_position, face_verts[0], face_verts[1], face_verts[2], distance, barycoords[0], barycoords[1], barycoords[2], normal );
+      //if such a spring doesn't already exist, add it
+      if(distance < collision_distance) {
+        m_vert_tri_springs->addSpring(f, *vit, barycoords, 0.01, 0.01, collision_distance);
+        std::cout << "Adding spring:";
+        std::cout << " Vertex = " << (*vit).idx();
+        std::cout << "\tFace = " << f.idx();
+        std::cout << "\tDistance is :" << distance << std::endl;
+
+      }
+    }
+  }
+  std::cout << "Done processing collision springs\n";
 
 }
-*/
+
 
 void ElasticShell::setCollisionParams(bool enabled, Scalar proximity) {
   m_integrate_collision_epsilon = proximity;
@@ -492,20 +559,33 @@ void ElasticShell::endStep() {
   //}*/
 
   //std::cout << "Doing collisions.\n";
-  //resolveCollisions();
+  resolveCollisions();
   //
   ////add ground-plane constraints
   ////std::cout << "Result of collisions.\n";
+  
   //for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
   //  Vec3d curPos = getVertexPosition(*(vit));
   //  if(curPos[1] < -0.2) {
-  //    if(!isConstrained(*vit)) {
-  //      //std::cout << "Adding constraint\n";
-  //      constrainVertex(*vit, new FixedPositionConstraint(curPos));
+  //    if(!m_vert_point_springs->hasSpring(*vit)) {
+  //      //curPos[1] = -0.2;
+  //      m_vert_point_springs->addSpring(*vit, curPos, 0.2, 0.02, 0.0);
   //    }
   //  }
   //}
+
+
+  for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
+    Vec3d curPos = getVertexPosition(*(vit));
+    if(curPos[1] < -0.2) {
+      if(!isConstrained(*vit)) {
+        constrainVertex(*vit, curPos);
+      }
+    }
+  }
   
+
+  addSelfCollisionForces();
 
   //Adjust thicknesses based on area changes
   updateThickness();
@@ -557,10 +637,7 @@ void ElasticShell::endStep() {
   std::cout << "\n\nAverage radius: " << position/(Scalar)count << "\nAverage velocity: " << velocity/(Scalar)count << "\nAverage thickness: " << thickness/(Scalar)count2 << "\n\n" << std::endl;    
   */
 
-  //What if we update rest config first?
-  //m_damping_undeformed_positions = m_positions;
-
- 
+  
   //Advance any constraints!
   
  

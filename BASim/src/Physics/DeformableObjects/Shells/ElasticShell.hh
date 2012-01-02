@@ -19,11 +19,13 @@ const int ELASTIC_SHELL_DOFS_PER_EDGE = 1; //mid-edge normal bending DOFs (Grins
 
 class DeformableObject;
 class ElasticShellForce;
+class ShellVertexPointSpringForce;
+class ShellVertexTriSpringForce;
 
 class ElasticShell : public PhysicalModel {
 
 public:
-  ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces);
+  ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep);
   ~ElasticShell();
 
   //*Inherited from PhysicalModel
@@ -101,6 +103,9 @@ public:
   void constrainVertex(const VertexHandle& v, const Vec3d& pos);
   void constrainVertex(const VertexHandle& v, PositionConstraint* p); //time varying constraint
   bool isConstrained(const VertexHandle& v) const;
+  
+  void addVertexPointSpring(const VertexHandle& v, const Vec3d& pos, Scalar stiffness, Scalar damping, Scalar length);
+  void addVertexTriSpring(const FaceHandle& f, const VertexHandle& v, const Vec3d& pos, Scalar stiffness, Scalar damping, Scalar length);
 
   void setCollisionParams(bool enabled, Scalar proximity);
 
@@ -136,6 +141,7 @@ protected:
   bool performFlip(const EdgeHandle& eh);
   bool edgeFlipCausesCollision( const EdgeHandle& edge_index, const VertexHandle& new_end_a, const VertexHandle& new_end_b);
   
+  void addSelfCollisionForces();
 
   //Various shell data
   VertexProperty<Vec3d> m_undeformed_positions;
@@ -171,6 +177,9 @@ protected:
   //The base object, and the list of forces
   DeformableObject* m_obj;
   std::vector<ElasticShellForce*> m_shell_forces;
+
+  ShellVertexPointSpringForce* m_vert_point_springs;
+  ShellVertexTriSpringForce* m_vert_tri_springs;
 
   //Constraints 
   std::vector<VertexHandle> m_constrained_vertices;

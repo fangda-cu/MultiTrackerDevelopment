@@ -106,8 +106,8 @@ void ShellRenderer::render()
       Vec3d p0 = m_shell.getVertexPosition(mesh.fromVertex(*eit));
       Vec3d p1 = m_shell.getVertexPosition(mesh.toVertex(*eit));
       Vec3d dir = (p1-p0);
-      p0 = p0 + 0.05*dir;
-      p1 = p1 - 0.05*dir;
+      //p0 = p0 + 0.05*dir;
+      //p1 = p1 - 0.05*dir;
       OpenGL::vertex(p0);
       OpenGL::vertex(p1);
     }
@@ -136,7 +136,7 @@ void ShellRenderer::render()
       for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit )
       {
         Vec3d pos = m_shell.getVertexPosition(*fvit);
-        pos = pos - 0.05*(pos-barycentre);
+        //pos = pos - 0.05*(pos-barycentre);
         OpenGL::vertex(pos);
         points[i] = pos;
         ++i;
@@ -164,6 +164,9 @@ void ShellRenderer::render()
     glEnd();*/
 
     glEnable(GL_LIGHTING);
+
+    //Draw springs...
+
   }
 
 }
