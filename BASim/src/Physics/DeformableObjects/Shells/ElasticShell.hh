@@ -109,10 +109,12 @@ public:
 
   void setCollisionParams(bool enabled, Scalar proximity);
 
-  void setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel);
+  void setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel, Scalar thickness);
+  void setDeletionBox(const Vec3d& lowerBound, const Vec3d& upperBound);
 
   void remesh(Scalar desiredEdge );
   void extendMesh();
+  void deleteRegion();
 
 protected:
 
@@ -187,6 +189,7 @@ protected:
   
   //To handle continually inflowing regions
   Scalar m_inflow_thickness;
+  bool m_inflow;
   std::vector<std::vector<EdgeHandle> > m_inflow_boundaries;
   std::vector<std::vector<Vec3d> > m_inflow_positions;
   std::vector<Vec3d> m_inflow_velocity;
@@ -194,6 +197,9 @@ protected:
   //collision-safe remeshing stuff ->Move into subclass? Remesh-able shell?
   Scalar m_proximity_epsilon, m_improve_collision_epsilon;
   
+  bool m_delete_region;
+  Vec3d m_delete_lower, m_delete_upper;
+
   //collision resolution distance for el topo
   Scalar m_integrate_collision_epsilon;
   bool m_process_collisions;

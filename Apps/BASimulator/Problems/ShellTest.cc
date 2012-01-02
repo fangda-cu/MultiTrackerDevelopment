@@ -21,6 +21,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexTriSpringForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexPointSpringForce.hh"
 
+#include <set>
 #include <fstream>
 
 ShellTest::ShellTest()
@@ -84,15 +85,16 @@ typedef void (ShellTest::*sceneFunc)();
 
 
 sceneFunc scenes[] = {0,
-                      &ShellTest::setupScene1,  //vertical flat sheet
+                      &ShellTest::setupScene1, //vertical flat sheet
                       &ShellTest::setupScene2, //vertical cylindrical sheet
                       &ShellTest::setupScene3, //spherical sheet
                       &ShellTest::setupScene4, //two-triangle bending test
                       &ShellTest::setupScene5, //catenary 
                       &ShellTest::setupScene6, //hemispherical bubble
-                      &ShellTest::setupScene7, //sheet between two circles
+                      &ShellTest::setupScene7, //sheet sheared between two circles
                       &ShellTest::setupScene8, //torus
-                      &ShellTest::setupScene9};  //non-manifold edge
+                      &ShellTest::setupScene9, //non-manifold edge / bending
+                      &ShellTest::setupScene10};  //pouring inflow with deletion 
 
 void ShellTest::Setup()
 {
@@ -102,7 +104,8 @@ void ShellTest::Setup()
   //General shell forces and properties
   Scalar density = GetScalarOpt("shell-density");
   Scalar thickness = GetScalarOpt("shell-thickness");
-  
+  m_initial_thickness = thickness;
+
   Vec3d gravity = GetVecOpt("gravity");
   
   Scalar surface_tension = GetScalarOpt("shell-surface-tension");
@@ -255,7 +258,6 @@ void ShellTest::Setup()
   //compute the dof indexing for use in the diff_eq solver
   shellObj->computeDofIndexing();
 
-  std::cout << "Set up\n";
   stepper = new DefoObjTimeStepper(*shellObj);
   if(integrator == "symplectic")
     stepper->setDiffEqSolver(DefoObjTimeStepper::SYMPL_EULER);
@@ -281,7 +283,7 @@ void ShellTest::Setup()
 
 void ShellTest::AtEachTimestep()
 {
-
+  
 }
 
 //vertical flat sheet, pinned or flowing at top
@@ -1175,4 +1177,102 @@ void ShellTest::setupScene9() {
 
 }
 
+//vertical flat sheet with inflow at the top
+void ShellTest::setupScene10() {
+
+  std::cout << "Setup 10\n";
+  //get params
+  Scalar width = GetScalarOpt("shell-width");
+  Scalar height = GetScalarOpt("shell-height");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
+
+  Scalar dx = (Scalar)width / (Scalar)xresolution;
+  Scalar dy = (Scalar)height / (Scalar)yresolution;
+
+  //build a rectangular grid of vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  Vec3d start_vel(0,-0.5,0);
+  std::set<VertexHandle> topVerts;
+  for(int j = 0; j <= yresolution; ++j) {
+    for(int i = 0; i <= xresolution; ++i) {
+      Vec3d vert(i*dx, j*dy, 0);
+      Vec3d undef = vert;
+
+      VertexHandle h = shellObj->addVertex();
+
+      positions[h] = vert;
+      velocities[h] = start_vel;
+      undeformed[h] = undef;
+      vertHandles.push_back(h);
+      if(j == yresolution)
+        topVerts.insert(h);
+    }
+  }
+  std::cout << "Number of top verts: " << topVerts.size() << std::endl;
+
+  //build the faces
+  std::vector<Vec3i> tris;
+  for(int i = 0; i < xresolution; ++i) {
+    for(int j = 0; j < yresolution; ++j) {
+      int tl = i + (xresolution+1)*j;
+      int tr = i+1 + (xresolution+1)*j;
+      int bl = i + (xresolution+1)*(j+1);
+      int br = i+1 + (xresolution+1)*(j+1);
+
+      shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
+      shellObj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
+    }
+  }
+
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+  //add an inflow at the top of the sheet
+  
+  std::vector<EdgeHandle> extendEdgeList;
+  EdgeIterator eit = shellObj->edges_begin();
+  for(;eit != shellObj->edges_end(); ++eit) {
+    EdgeHandle eh = *eit;
+    VertexHandle vh0 = shellObj->fromVertex(eh);
+    VertexHandle vh1 = shellObj->toVertex(eh);
+    Vec3d pos0 = shell->getVertexPosition(vh0);
+    Vec3d pos1 = shell->getVertexPosition(vh1);
+    if(topVerts.find(vh0) != topVerts.end() && topVerts.find(vh1) != topVerts.end()) {
+      extendEdgeList.push_back(eh);
+      std::cout << "Extendable edge " << eh.idx() << ": " << vh0.idx() << " to " << vh1.idx() << std::endl;
+    }
+  }
+  Vec3d inflow_vel = start_vel;
+  
+  shell->setInflowSection(extendEdgeList, inflow_vel, m_initial_thickness);
+  shell->setDeletionBox(Vec3d(-1, -10, -1), Vec3d(2, -2.0, 1));
+
+}
 

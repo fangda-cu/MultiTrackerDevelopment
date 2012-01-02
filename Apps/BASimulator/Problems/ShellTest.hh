@@ -37,6 +37,7 @@ protected:
   DefoObjTimeStepper* stepper;
 
   Scalar m_timestep;
+  Scalar m_initial_thickness;
 
 public:
   void setupScene1(); //vertical flat sheet
@@ -48,6 +49,7 @@ public:
   void setupScene7(); //sheet between two circles
   void setupScene8(); //torus
   void setupScene9(); //non-manifold edge example
+  void setupScene10(); //flat stretching sheet with inflow/deletion
 
 };
 

@@ -559,10 +559,9 @@ void ElasticShell::endStep() {
   //}*/
 
   //std::cout << "Doing collisions.\n";
-  resolveCollisions();
+  //resolveCollisions();
   //
   ////add ground-plane constraints
-  ////std::cout << "Result of collisions.\n";
   
   //for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
   //  Vec3d curPos = getVertexPosition(*(vit));
@@ -575,31 +574,45 @@ void ElasticShell::endStep() {
   //}
 
 
-  for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
+ /* for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
     Vec3d curPos = getVertexPosition(*(vit));
     if(curPos[1] < -0.2) {
       if(!isConstrained(*vit)) {
         constrainVertex(*vit, curPos);
       }
     }
-  }
+  }*/
   
 
-  addSelfCollisionForces();
+  //addSelfCollisionForces();
 
   //Adjust thicknesses based on area changes
   updateThickness();
+
+  bool do_relabel = false;
+  
+  if(m_inflow) {
+    extendMesh();
+    do_relabel = true;
+  }
+
+  if(m_delete_region) {
+    deleteRegion();
+    do_relabel = true;
+  }
 
   //Remeshing
   if(m_do_remeshing) {
     for(int i = 0; i < m_remeshing_iters; ++i)
       remesh(m_remesh_edge_length);  
-
+    
     //Relabel DOFs if necessary
-    m_obj->computeDofIndexing();
+    do_relabel = true;
   }
 
-  //extendMesh();
+  if(do_relabel)
+    m_obj->computeDofIndexing();
+
   
   //Update masses based on new areas/thicknesses
   computeMasses();
@@ -1940,10 +1953,37 @@ void ElasticShell::updateThickness() {
 
 }
 
+void ElasticShell::deleteRegion() {
+  //Delete faces that have entered the deletion zone.
+
+  std::vector<FaceHandle> faces_to_remove;
+  for(FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit) {
+    //compute barycentre of the face, and if it's in the deletion region, kill it.
+    FaceHandle fh = *fit;
+    Vec3d barycentre(0,0,0);
+    for(FaceVertexIterator fvit = m_obj->fv_iter(fh); fvit; ++fvit) {
+      VertexHandle vh = *fvit;
+      Vec3d pos = m_positions[vh];
+      barycentre += pos;
+
+    }
+    barycentre /= 3.0;
+    
+    //check if barycentre is in the deletion region
+    if(barycentre[0] > m_delete_lower[0] && barycentre[1] >  m_delete_lower[1] && barycentre[2] > m_delete_lower[2] &&
+       barycentre[0] < m_delete_upper[0] && barycentre[1] < m_delete_upper[1] && barycentre[2] < m_delete_upper[2]) {
+      faces_to_remove.push_back(fh);
+    }
+  }
+  for(int i = 0; i < faces_to_remove.size(); ++i)
+    m_obj->deleteFace(faces_to_remove[i], true);
+
+}
+
 void ElasticShell::extendMesh() {
 
-  //only do this if the mesh has moved some minimum distance from the original
-  //inflow position, yeah?
+  //TODO: Find a way to only apply this if the mesh has moved some minimum distance from the original
+  //inflow position, so we don't introduce very poorly shaped elements.
 
   for(unsigned int boundary = 0; boundary < m_inflow_boundaries.size(); ++boundary) {
     int count = m_inflow_boundaries[boundary].size();
@@ -2045,9 +2085,12 @@ void ElasticShell::extendMesh() {
 
 }
 
-void ElasticShell::setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel) {
+void ElasticShell::setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel, Scalar thickness) {
+  m_inflow = true;
   m_inflow_boundaries.push_back(edgeList);
   m_inflow_velocity.push_back(vel);
+  m_inflow_thickness = thickness;
+
   VertexHandle prevVert;
   std::vector<Vec3d> posList;
   for(unsigned int edge = 0; edge < edgeList.size(); ++edge) {
@@ -2088,6 +2131,12 @@ void ElasticShell::setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3
 
   m_inflow_positions.push_back(posList);
 
+}
+
+void ElasticShell::setDeletionBox(const Vec3d& lowerBound, const Vec3d& upperBound) {
+    m_delete_lower = lowerBound;
+    m_delete_upper = upperBound;
+    m_delete_region = true;
 }
 /*
 void ElasticShell::setMass( const DofHandle& hnd, const Scalar& mass )
