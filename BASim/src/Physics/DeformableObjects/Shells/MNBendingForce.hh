@@ -15,6 +15,10 @@
 #include "BASim/src/Math/ADT/adreal.h"
 #include "BASim/src/Math/ADT/advec.h"
 
+//TODO This is not fully debugged or verified. Free boundaries behave oddly, and the xi values are not updated
+//to reflect changes in the reference coordinates, due to the updated Lagrangian approach. - Christopher
+//
+
 namespace BASim {
 
 const int NumTriPoints = 3;

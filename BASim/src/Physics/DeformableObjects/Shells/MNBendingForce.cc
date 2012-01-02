@@ -48,15 +48,12 @@ void MNBendingForce::update() {
   FaceIterator fit = defo.faces_begin();
   for (;fit != defo.faces_end(); ++fit) {
     const FaceHandle& fh = *fit;
-    std::cout << "Face: " << fh.idx() << std::endl;
 
     bool valid = gatherDOFs(fh, undeformed, undeformed_damp, deformed, indices);
     if(!valid) continue;
 
-    std::cout << "Updating precomp info\n";
     updatePrecomp(fh, undeformed, deformed, &m_precomputed[fh]);
   }
-  std::cout << "Completed update\n";
 }
 
 bool MNBendingForce::gatherDOFs(const FaceHandle& fh, 
@@ -79,10 +76,8 @@ bool MNBendingForce::gatherDOFs(const FaceHandle& fh,
   FaceEdgeIterator feit = defo.fe_iter(fh);
   int v = 0;
   int e = 9;
-  std::cout << "  Iterating over edges\n";
   for(; feit; ++feit) {
     EdgeHandle eh = *feit;
-    std::cout << "  Edge:" << eh.idx() << std::endl;
     
     //get the edge DOF
     indices[e] = m_shell.getEdgeDofBase(eh);
@@ -143,26 +138,15 @@ void MNBendingForce::doPrecomputation() const {
   FaceIterator fit = defo.faces_begin();
   for (;fit != defo.faces_end(); ++fit) {
     const FaceHandle& fh = *fit;
-    std::cout << "Face: " << fh.idx() << std::endl;
     
     bool valid = gatherDOFs(fh, undeformed, undeformed_damp, deformed, indices);
     if(!valid) continue;
 
-    std::cout << "Index list: ";
-    for(int i = 0; i < NumMNBendDof; ++i) {
-      std::cout << indices[i] << "  ";
-    }
-    std::cout << std::endl;
-
-    std::cout << "Getting data space\n";
     //construct the "precomputed" data needed for this element
     
-    std::cout << "Initializing\n";
     initializePrecomp(fh, undeformed, deformed, &m_precomputed[fh]);
-    std::cout << "Saving back\n";
-    std::cout << "C value: " << m_precomputed[fh].c0[0] << std::endl;
   }
-  std::cout << "Completed initialization\n";
+
   m_initialized = true;
 }
 
@@ -178,7 +162,6 @@ Scalar MNBendingForce::globalEnergy() const
   FaceIterator fit = defo.faces_begin();
   for (;fit != defo.faces_end(); ++fit) {
     const FaceHandle& fh = *fit;
-    std::cout << "Face: " << fh.idx() << std::endl;
 
     bool valid = gatherDOFs(fh, undeformed, undeformed_damp, deformed, indices);
     if(!valid) continue;
@@ -197,10 +180,9 @@ Scalar MNBendingForce::globalEnergy() const
 
 void MNBendingForce::globalForce( VecXd& force ) const
 {
-  std::cout << "Bending force called\n";
+  
   doPrecomputation();
 
-  std::cout << "Finished precomputation\n";
   Eigen::Matrix<Scalar, NumMNBendDof, 1> localForce;
   std::vector<Scalar> undeformed(MNBendStencilSize), undeformed_damp(MNBendStencilSize), deformed(MNBendStencilSize);
   std::vector<int> indices(NumMNBendDof);
@@ -210,7 +192,6 @@ void MNBendingForce::globalForce( VecXd& force ) const
   FaceIterator fit = defo.faces_begin();
   for (;fit != defo.faces_end(); ++fit) {
     const FaceHandle& fh = *fit;
-    std::cout << "Elastic force for face: " << fh.idx() << std::endl;
     //gather the data
 
     bool valid = gatherDOFs(fh, undeformed, undeformed_damp, deformed, indices);
@@ -218,7 +199,6 @@ void MNBendingForce::globalForce( VecXd& force ) const
 
     //determine the elastic forces for this element
     if(m_Youngs != 0) {
-      std::cout << "Computing element elastic force\n";
       //get the precomputed data for this element
       MNPrecomputed* pre = &m_precomputed[fh];
 
@@ -230,6 +210,7 @@ void MNBendingForce::globalForce( VecXd& force ) const
     }
 
     //determine the (Rayleigh) damping / viscous forces for this element
+    /*
     if(m_Youngs_damp != 0) {
       std::cout << "Warning, doing damping code\n";
       //TODO Precomp
@@ -241,19 +222,15 @@ void MNBendingForce::globalForce( VecXd& force ) const
         force(indices[i]) += localForce(i) / m_timestep;
       }
     }
+    */
 
   }
-  std::cout << "bending force vector\n";
-  for(int i = 0; i < force.size(); ++i) {
-    std::cout << force[i] << " ";
-  }
-  std::cout << std::endl;
 }
 
 
 void MNBendingForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) const
 {
-  std::cout << "Computing bending jacobian\n";
+
   doPrecomputation();
 
   std::vector<Scalar> undeformed(MNBendStencilSize), undeformed_damp(MNBendStencilSize), deformed(MNBendStencilSize);
@@ -281,6 +258,7 @@ void MNBendingForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) const
           Jacobian.add(indices[i],indices[j], scale * localJacobian(i,j));
     }
 
+    /*
     if(m_Youngs_damp != 0) {
       //TODO Precomp
       MNPrecomputed* pre = &m_precomputed[fh];
@@ -290,6 +268,7 @@ void MNBendingForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) const
         for(unsigned int j = 0; j < indices.size(); ++j) 
           Jacobian.add(indices[i],indices[j], scale / m_timestep * localJacobian(i,j));
     }
+    */
 
   }
 }
@@ -422,22 +401,6 @@ void MNBendingForce::initializePrecomp( const FaceHandle& face, const std::vecto
   ComputeFlapNormals(pu,qu,vu,noppu);
   ComputeEdgeFrameParams(vu,tu,noppu,tauu,cu);  
 
-  std::cout << "Computed data:\n";
-  std::cout << "n: " << nu << std::endl;
-  std::cout << "Au: " << Au << std::endl;
-
-  for(int i = 0; i < 3; ++i) {
-    std::cout << "i = " << i << std::endl;
-    std::cout << "p: " << pu[i] << std::endl;
-    std::cout << "v: " << vu[i] << std::endl;
-    std::cout << "t: " << tu[i] << std::endl;
-    
-    std::cout << "nopp: " << noppu[i] << std::endl;
-    std::cout << "q: " << qu[i] << std::endl;
-    std::cout << "tau: " << tauu[i] << std::endl;
-    std::cout << "c: " << cu[i] << std::endl;
-  }
-
   //determine ownership according to whichever face comes first in the relevant edge's iterator.
   FaceEdgeIterator feit = m_shell.getDefoObj().fe_iter(face);
   int i = 0;
@@ -447,20 +410,10 @@ void MNBendingForce::initializePrecomp( const FaceHandle& face, const std::vecto
     pc->s[i] = (*efit == face) ? 1 : -1;
     ++i;
   }
-  std::cout << "Edge ownership: ";
-  for(int i = 0; i < 3; ++i)
-    std::cout << pc->s[i] << " ";
-  std::cout << std::endl;
-
 
   pc->w_undef[0] = (-dot(nu,tauu[0])  + Real(pc->s[0])*xi_undef[0])*cu[0];
   pc->w_undef[1] = (-dot(nu,tauu[1])  + Real(pc->s[1])*xi_undef[1])*cu[1];
   pc->w_undef[2] = (-dot(nu,tauu[2])  + Real(pc->s[2])*xi_undef[2])*cu[2];
-
-  std::cout << "Undef W data: ";
-  for(int i = 0; i < 3; ++i)
-    std::cout << pc->w_undef[i] << " ";
-  std::cout << std::endl;
 
   //Note that it would ordinarily be divided by area^2, but since we integrate over area to compute energy,
   //one of them goes away.
@@ -474,17 +427,12 @@ void MNBendingForce::initializePrecomp( const FaceHandle& face, const std::vecto
 
     Real Y = m_Youngs;
     Real h = m_shell.getThickness(face);
-    Real BendToMembraneRatio = 1000;//mn.getBendToMembraneRatio();
+    Real BendToMembraneRatio = 0.1;//mn.getBendToMembraneRatio();
     Real poisson = m_Poisson;
 
     for(int i=0; i<9; i++ )
       pc->T[i] = BendToMembraneRatio*(Y*h*h*h/12.0)/(1.0-poisson*poisson)*((1.0-poisson)*Tc1[i] + poisson*Tc2[i]);
-
-    std::cout << "T matrix: " << std::endl;
-    for(int i = 0; i < 9; ++i)
-      std::cout << pc->T[i] << " ";
-    std::cout << "\n";
-
+   
 }
 
 // use current deformed positions to compute reference coord system quantities 
