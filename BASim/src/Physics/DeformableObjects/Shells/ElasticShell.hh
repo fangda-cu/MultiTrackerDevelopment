@@ -103,6 +103,7 @@ public:
 
   void getFaceNormals(FaceProperty<Vec3d> & fNormals) const;
   void getVertexNormals(VertexProperty<Vec3d> & vNormals) const;
+  void getThickness(VertexProperty<Scalar> & vThickness) const;
 
   void constrainVertex(const VertexHandle& v, const Vec3d& pos);
   void constrainVertex(const VertexHandle& v, PositionConstraint* p); //time varying constraint

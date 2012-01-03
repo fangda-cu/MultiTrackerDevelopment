@@ -529,8 +529,8 @@ void MNBendingForce::elementForce(const std::vector<Scalar>& undeformed,
   MNPrecomputed* pre) const
 {
   assert( pre );
-  assert( undeformed.getLength() == deformed.getLength() );
-  assert( force.numDof() == undeformed.getLength() );
+  assert( undeformed.size() == deformed.size() );
+//  assert( force.numDof() == undeformed.size() );
 
   adreal<NumMNBendDof,0,Real> e = MNEnergy<0>(*this, undeformed, deformed, const_cast<MNPrecomputed*>(pre) );     
   for( uint i = 0; i < NumMNBendDof; i++ )
@@ -550,8 +550,8 @@ void MNBendingForce::elementJacobian(const std::vector<Scalar>& undeformed,
 
   assert( pre );
   assert( undeformed.size() == NumMNBendDof);
-  assert( undeformed.getLength() == deformed.getLength() );
-  assert( jac.numDof() == undeformed.getLength() );
+  assert( undeformed.size() == deformed.size() );
+//  assert( jac.numDof() == undeformed.size() );
 
 
   adreal<NumMNBendDof,1,Real> e = MNEnergy<1>(*this, undeformed, deformed, const_cast<MNPrecomputed*>(pre) );     

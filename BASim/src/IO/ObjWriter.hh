@@ -23,6 +23,7 @@ public:
 
     static void write(std::ofstream & of, const ElasticShell& mesh);
     static void write(const std::string & filename, const ElasticShell& mesh);
+    static void write(std::ofstream & of, const VertexProperty<Vec3d> & pos, DeformableObject & mesh);
     static void write(std::ofstream & of, const VertexProperty<Vec3d> & pos, const VertexProperty<Vec3d> & normals, DeformableObject & mesh);
     friend class VertexProperty<Vec3d>;
 };
