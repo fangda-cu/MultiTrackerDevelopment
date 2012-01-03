@@ -104,30 +104,9 @@ ShellRenderer::ShellRenderer( const ElasticShell& shell )
 : m_shell(shell)
 , m_mode(FLAT)
 {}
-void ShellRenderer::getFaceNormals(FaceProperty<Vec3d> & fNormals){
-    const DeformableObject& mesh = m_shell.getDefoObj();
-    for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit ){
-        std::vector<Vec3d> v;
-        for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit )
-        {
-          v.push_back(m_shell.getVertexPosition(*fvit));
-        }
-        Vec3d n = (v[1] - v[0]).cross(v[2]-v[0]);
-        n.normalize();
-        fNormals[*fit] = n;
-    }
-}
 
-void ShellRenderer::getVertexNormals(VertexProperty<Vec3d> & vNormals, const FaceProperty<Vec3d> & fNormals){
-    const DeformableObject& mesh = m_shell.getDefoObj();
 
-    for ( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit){
-        for ( VertexFaceIterator vfit = mesh.vf_iter(*vit); vfit; ++vfit){
-            vNormals[*vit] += fNormals[*vfit];
-        }
-        vNormals[*vit].normalize();
-    }
-}
+
 void ShellRenderer::render()
 {
 
@@ -250,8 +229,8 @@ void ShellRenderer::render()
       FaceProperty<Vec3d> faceNormals (&m_shell.getDefoObj());
       VertexProperty<Vec3d> vertexNormals(&m_shell.getDefoObj());
 
-      getFaceNormals(faceNormals);
-      getVertexNormals(vertexNormals, faceNormals);
+      m_shell.getFaceNormals(faceNormals);
+      m_shell.getVertexNormals(vertexNormals);
 
          // Render all faces
          glBegin(GL_TRIANGLES);

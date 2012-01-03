@@ -78,6 +78,8 @@ public:
   Vec3d getVertexVelocity(const VertexHandle& v) const { return m_velocities[v]; }
   Vec3d getVertexDampingUndeformed(const VertexHandle& v) const { return m_damping_undeformed_positions[v]; }
 
+  const VertexProperty<Vec3d>& getVertexPositions() const{ return m_positions;}
+
   void setUndeformedVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_undeformed_positions[v] = pos; }
   void setVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_positions[v] = pos; }
   void setVertexVelocity(const VertexHandle& v, const Vec3d& vel) { m_velocities[v] = vel; }
@@ -98,6 +100,9 @@ public:
   Scalar getThickness(const VertexHandle& vh) const;
   Scalar getVolume(const FaceHandle& f) const {return m_volumes[f]; }
   Scalar getArea(const FaceHandle& f, bool current = true) const;
+
+  void getFaceNormals(FaceProperty<Vec3d> & fNormals) const;
+  void getVertexNormals(VertexProperty<Vec3d> & vNormals) const;
 
   void constrainVertex(const VertexHandle& v, const Vec3d& pos);
   void constrainVertex(const VertexHandle& v, PositionConstraint* p); //time varying constraint

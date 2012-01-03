@@ -130,6 +130,32 @@ Scalar ElasticShell::getThickness(const VertexHandle& vh) const {
 
   return total / totalA;
 }
+void ElasticShell::getFaceNormals(FaceProperty<Vec3d> & fNormals) const{
+    const DeformableObject& mesh = *m_obj;
+    for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit ){
+        std::vector<Vec3d> v;
+        for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit )
+        {
+          v.push_back(getVertexPosition(*fvit));
+        }
+        Vec3d n = (v[1] - v[0]).cross(v[2]-v[0]);
+        n.normalize();
+        fNormals[*fit] = n;
+    }
+}
+void ElasticShell::getVertexNormals(VertexProperty<Vec3d> & vNormals) const{
+    FaceProperty<Vec3d> fNormals(& getDefoObj());
+    getFaceNormals(fNormals);
+    DeformableObject& mesh = *m_obj;
+
+    for ( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit){
+        for ( VertexFaceIterator vfit = mesh.vf_iter(*vit); vfit; ++vfit){
+            vNormals[*vit] += fNormals[*vfit];
+        }
+        vNormals[*vit].normalize();
+    }
+}
+
 Scalar ElasticShell::getArea(const FaceHandle& f, bool current) const  {
   FaceVertexIterator fvit = m_obj->fv_iter(f);
   VertexHandle v0_hnd = *fvit; ++fvit; assert(fvit);

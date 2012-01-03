@@ -31,8 +31,6 @@ namespace BASim {
     virtual Vec3d calculateObjectCenter();
     virtual Scalar calculateObjectBoundingRadius(const Vec3d& center);
     
-    void getFaceNormals(FaceProperty<Vec3d> & fNormals);
-    void getVertexNormals(VertexProperty<Vec3d> & vNormals, const FaceProperty<Vec3d> & fNormals);
   protected:
     const ElasticShell& m_shell;
     DrawMode m_mode;
