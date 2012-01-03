@@ -10,7 +10,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexPointSpringForce.hh"
 #include "BASim/src/Collisions/ElTopo/collisionqueries.hh"
 
-#include "eltopo.h"
+//#include "eltopo.h"
 
 #include <algorithm>
 
@@ -369,6 +369,7 @@ void ElasticShell::startStep()
 }
 
 
+/*
 void ElasticShell::resolveCollisions() {
   //do cloth-style self-collision correction
   if(!m_process_collisions)
@@ -437,10 +438,10 @@ void ElasticShell::resolveCollisions() {
   }
   
   //add ground plane tris
- /* int t0 = m_obj->nf();
-  triangles[3*t0] = g0; triangles[3*t0+1] = g0+1; triangles[3*t0+2] = g0+2;
-  triangles[3*(t0+1)] = g0; triangles[3*(t0+1)+1] = g0+2; triangles[3*(t0+1)+2] = g0+3;
-*/
+  //int t0 = m_obj->nf();
+  //triangles[3*t0] = g0; triangles[3*t0+1] = g0+1; triangles[3*t0+2] = g0+2;
+  //triangles[3*(t0+1)] = g0; triangles[3*(t0+1)+1] = g0+2; triangles[3*(t0+1)+2] = g0+3;
+
 
   ElTopoGeneralOptions gen_opts;
   gen_opts.m_collision_safety = true;
@@ -473,6 +474,7 @@ void ElasticShell::resolveCollisions() {
   delete[] invertices_old;
   delete[] masses;
 }
+*/
 
 void ElasticShell::addSelfCollisionForces() {
   
@@ -581,10 +583,10 @@ void ElasticShell::endStep() {
         constrainVertex(*vit, curPos);
       }
     }
-  }*/
+  }
   
 
-  //addSelfCollisionForces();
+  addSelfCollisionForces();*/
 
   //Adjust thicknesses based on area changes
   updateThickness();
@@ -1988,7 +1990,9 @@ void ElasticShell::extendMesh() {
   for(unsigned int boundary = 0; boundary < m_inflow_boundaries.size(); ++boundary) {
     int count = m_inflow_boundaries[boundary].size();
     int last = m_inflow_boundaries[boundary].size()-1;
-    
+    bool direction = m_inflow_lastdir[boundary];
+    m_inflow_lastdir[boundary] = !m_inflow_lastdir[boundary]; //flip direction for next time
+
     //check if open or closed loop
     VertexHandle loopVertex = getSharedVertex(*m_obj, m_inflow_boundaries[boundary][0], m_inflow_boundaries[boundary][last]);
 
@@ -2036,13 +2040,21 @@ void ElasticShell::extendMesh() {
       
       EdgeHandle newEdge4 = m_obj->addEdge(prevVert, newVert);
 
+      EdgeHandle newEdge2;
+      FaceHandle newFace1, newFace2;
+      if( (edge % 2 == 0 && direction) || (edge % 2 == 1 && !direction)) { //A option
+        newEdge2 = m_obj->addEdge(prevVert, sharedVert);
 
-      //A option
-      EdgeHandle newEdge2 = m_obj->addEdge(prevVert, sharedVert);
+        newFace1 = m_obj->addFace(prevEdge, eh1, newEdge2);
+        newFace2 = m_obj->addFace(newEdge2, newEdge3, newEdge4);
+      }
+      else { //B option
+        newEdge2 = m_obj->addEdge(otherVert, newVert);
 
-      FaceHandle newFace1 = m_obj->addFace(prevEdge, eh1, newEdge2);
-      FaceHandle newFace2 = m_obj->addFace(newEdge2, newEdge3, newEdge4);
-      
+        newFace1 = m_obj->addFace(prevEdge, newEdge4, newEdge2);
+        newFace2 = m_obj->addFace(eh1, newEdge2, newEdge3);
+      }
+
       setFaceActive(newFace1);
       setFaceActive(newFace2);
       faces.push_back(newFace1);
@@ -2090,6 +2102,7 @@ void ElasticShell::setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3
   m_inflow_boundaries.push_back(edgeList);
   m_inflow_velocity.push_back(vel);
   m_inflow_thickness = thickness;
+  m_inflow_lastdir.push_back(false);
 
   VertexHandle prevVert;
   std::vector<Vec3d> posList;

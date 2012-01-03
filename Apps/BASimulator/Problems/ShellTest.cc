@@ -127,59 +127,12 @@ void ShellTest::Setup()
   int sceneChoice = GetIntOpt("shell-scene");
 
 
-  
-
   //Create the base deformable object (mesh)
   shellObj = new DeformableObject();
 
+  //Call the appropriate scene setup function.
   (*this.*scenes[sceneChoice])();
-  /*
-  switch(sceneChoice) {
-    case 1: setupScene1();
-      break;
-    case 2: setupScene2();
-      break;
-    case 3: setupScene3();
-      break;
-    case 4: setupScene4();
-      break;
-    default:
-      break;
-  }*/
-  
-  
-  bool circular = false;
 
-  
-  
-
-
-  /*
-  Vec3d start_vel(0,0,0);
-  if(!circular) {
-     
-     
-  }
-  else {
-    
-  }
-  */
-  
-  
-  /*
-  
-  */
-
-  ////choose some initial velocities
-  //for(VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit) {
-  //  Vec3d radius = (positions[*vit] - centre);
-  //  radius.normalize();
-  //Scalar viscosity = Youngs_damping / 2 / (1 + Poisson_damping);
-  //  //velocities[*vit] = pressureStrength/12.0/viscosity/thickness*radius;
-  //  //velocities[*vit] = radius;
-  //}
-
- 
 
   //now add forces to the model
 
@@ -192,7 +145,6 @@ void ShellTest::Setup()
   if(DSbendstiffness != 0 || DSbenddamping !=0)
     shell->addForce(new DSBendingForce(*shell, "DSBending", DSbendstiffness, DSbenddamping, timestep));
   
-  
 
   //Gravity force
   shell->addForce(new ShellGravityForce(*shell, "Gravity", gravity));
@@ -200,7 +152,6 @@ void ShellTest::Setup()
   //Surface tension force
   if(surface_tension != 0)
     shell->addForce(new ShellSurfaceTensionForce(*shell, "Surface Tension", surface_tension));
-  
 
   //and set its standard properties
   shell->setThickness(thickness);
@@ -209,47 +160,8 @@ void ShellTest::Setup()
   bool remeshing = GetIntOpt("shell-remeshing") == 1?true:false;
   Scalar remeshing_res = GetScalarOpt("shell-remeshing-resolution");
   int remeshing_its = GetIntOpt("shell-remeshing-iterations");
-  
-
   shell->setRemeshing(remeshing, remeshing_res, remeshing_its);
-
- /* std::vector<EdgeHandle> extendEdgeList;
-  EdgeIterator eit = shellObj->edges_begin();
-  for(;eit != shellObj->edges_end(); ++eit) {
-    EdgeHandle eh = *eit;
-    VertexHandle vh0 = shellObj->fromVertex(eh);
-    VertexHandle vh1 = shellObj->toVertex(eh);
-    Vec3d pos0 = shell->getVertexPosition(vh0);
-    Vec3d pos1 = shell->getVertexPosition(vh1);
-    if(pos0[1] >= -0.01 && pos1[1] >= -0.01) {
-      extendEdgeList.push_back(eh);
-      std::cout << "Edge: " << eh.idx() << std::endl;
-    }
-  }
-  Vec3d inflow_vel = start_vel;
-  shell->setInflowSection(extendEdgeList, inflow_vel);*/
-
-
-  //for(int q = 0; q < 0; ++q) {
-  //  int c = 0; 
-  //  std::cout << "Setting up adjusted positions\n";
-  //  VertexIterator vit2 = shellObj->vertices_begin();
-  //  for(;vit2 != shellObj->vertices_end(); ++vit2) {
-  //    //if(c++==0) {
-  //    //  continue;
-  //    //}
-  //    
-  //    Vec3d pos = shell->getVertexPosition(*vit2);
-  //    pos += Vec3d(0,-dy,0);
-  //    shell->setVertexPosition(*vit2, pos);
-  //    //std::cout << "After: " << pos << std::endl;
-  //  }
-
-  //  shell->extendMesh();
-  //}
-
-  //shell->remesh(0.2);
- 
+  //shell->remesh(remeshing_res);
 
   shell->computeMasses();
 
@@ -286,7 +198,7 @@ void ShellTest::AtEachTimestep()
   
 }
 
-//vertical flat sheet, pinned or flowing at top
+//vertical flat sheet
 void ShellTest::setupScene1() {
 
   //get params
@@ -332,7 +244,7 @@ void ShellTest::setupScene1() {
   }
 
 
-  //build the faces
+  //build the faces in a 4-8 pattern
   std::vector<Vec3i> tris;
   for(int i = 0; i < xresolution; ++i) {
     for(int j = 0; j < yresolution; ++j) {
@@ -341,8 +253,14 @@ void ShellTest::setupScene1() {
       int bl = i + (xresolution+1)*(j+1);
       int br = i+1 + (xresolution+1)*(j+1);
 
-      shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
-      shellObj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
+      if((i+j)%2 == 0) {
+        shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
+        shellObj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
+      }
+      else {
+        shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[bl]);
+        shellObj->addFace(vertHandles[bl], vertHandles[tr], vertHandles[br]);
+      }
     }
   }
 
@@ -912,8 +830,9 @@ void ShellTest::setupScene7() {
   int slices = xresolution;
   Vec3d centre(0,0,0);
   Scalar out_radius = 1.0;
-  Scalar in_radius = 0.2;
+  Scalar in_radius = 0.4;
   Vec3d start_vel(0,0,0);
+  Scalar rotation_rate = 0.5;
 
   std::vector<std::vector<VertexHandle> > vertList;
 
@@ -930,7 +849,7 @@ void ShellTest::setupScene7() {
       Scalar yVal = newRad*sin(rotAngle);
 
       VertexHandle vNew = shellObj->addVertex();
-      positions[vNew] = centre + Vec3d(xVal, 0, yVal);
+      positions[vNew] = centre + Vec3d(xVal, 0.01*sin(xVal+yVal), yVal);
       velocities[vNew] = start_vel;
       undeformed[vNew] = positions[vNew];
       vertList[j].push_back(vNew);
@@ -973,7 +892,7 @@ void ShellTest::setupScene7() {
     shell->constrainVertex(vertList[outside][i], shell->getVertexPosition(vertList[outside][i]));
 
     Vec3d pos = shell->getVertexPosition(vertList[inside][i]);
-    XZPlaneRotatingConstraint*p = new XZPlaneRotatingConstraint(pos, centre, 20);
+    XZPlaneRotatingConstraint*p = new XZPlaneRotatingConstraint(pos, centre, rotation_rate);
     shell->constrainVertex(vertList[inside][i], p);
 
   }
