@@ -24,6 +24,21 @@
 #include <set>
 #include <fstream>
 
+ //For OBJDUMP
+#include <sstream>
+#include "BASim/src/IO/ObjWriter.hh"
+#include <iomanip>
+#ifdef _MSC_VER
+#include <direct.h>
+#endif
+#include <sys/stat.h>
+#include <sys/types.h>
+
+// Toggle swith to output obj files
+extern bool g_obj_dump;
+int current_obj_frame = 0;
+extern std::string outputdirectory;
+
 ShellTest::ShellTest()
 : Problem("Shell Test", "Various viscous and elastic sheet/shell tests"), 
   shell(NULL), shellObj(NULL), stepper(NULL)
@@ -74,6 +89,9 @@ ShellTest::ShellTest()
   AddOption("stol", "convergence tolerance in terms of the norm of the change in the solution between steps", 1e-8);
   AddOption("inftol", "infinity norm convergence tolerance", 1e-8);
   
+  //OBJ file dump
+  AddOption("generate-OBJ", "Generate an OBJ file at each timestep", g_obj_dump);
+
 
 }
 
@@ -205,11 +223,37 @@ void ShellTest::Setup()
   RenderBase* shellRender = new ShellRenderer(*shell);
   m_world->addRenderer(shellRender);
   
+  g_obj_dump = GetBoolOpt("generate-OBJ");
+  if (g_obj_dump){
+#ifdef _MSC_VER
+    _mkdir(outputdirectory.c_str());
+#else
+    mkdir(outputdirectory.c_str(), 0755);
+#endif
+  }
+
 }
 
 void ShellTest::AtEachTimestep()
 {
-  
+
+    //Dump OBJ files if needed
+    //Start OBJ file stuff
+    if ( g_obj_dump ){
+
+        std::stringstream name;
+        int file_width = 20;
+
+        name << std::setfill('0');
+        name << outputdirectory << "/frame" << std::setw(file_width) << current_obj_frame << ".OBJ";
+
+        ObjWriter::write(name.str(), *shell);
+        std::cout << "Frame: " << current_obj_frame << "   Time: " << getTime() << "   OBJDump: "
+                            << name.str() << std::endl;
+
+        ++current_obj_frame;
+    }
+
 }
 
 //vertical flat sheet

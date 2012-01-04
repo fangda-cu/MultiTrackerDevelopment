@@ -107,6 +107,9 @@ std::string g_resume_file = "";
 // Simulation "breakpoints" for debugging purposes. Times at which the simulation should be paused.
 std::queue<double>* g_sim_breakpoints;
 
+//Dumping objs
+bool g_obj_dump = false;
+
 void cleanup()
 {
     Timer::report();
@@ -459,11 +462,7 @@ void idle()
         {
             last_frame_num = frame;
             std::cout << outputdirectory << std::endl;
-#ifdef _MSC_VER
-            _mkdir(outputdirectory.c_str());
-#else
-            mkdir(outputdirectory.c_str(), 0755);
-#endif
+
 
             int file_width = 20;
 
@@ -586,6 +585,10 @@ void menu(int id)
 
     case 'i':
         continuous = !continuous;
+        break;
+
+    case 'o':
+        g_obj_dump = !g_obj_dump;
         break;
 
     case '1':
@@ -922,6 +925,7 @@ void setOptions()
     current_problem->AddOption("max-frames", "number of frames to compute", max_frames);
     current_problem->AddOption("max-time", "maximum (simulation) time", max_time);
     current_problem->AddOption("progress-indicator", "prints out time", progress_indicator);
+
 }
 
 void getOptions()
@@ -937,10 +941,19 @@ void getOptions()
     max_frames = current_problem->GetIntOpt("max-frames");
     max_time = current_problem->GetScalarOpt("max-time");
     progress_indicator = current_problem->GetBoolOpt("progress-indicator");
+
+
 }
 
 void RunProblem(int argc, char** argv)
 {
+    if ( render && generate_movie) {
+#ifdef _MSC_VER
+            _mkdir(outputdirectory.c_str());
+#else
+            mkdir(outputdirectory.c_str(), 0755);
+#endif
+    }
     if (render)
     {
         initializeOpenGL(argc, argv);

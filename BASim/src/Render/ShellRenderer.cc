@@ -14,46 +14,99 @@
 
 namespace BASim 
 {
-
-void glVertVec3d(const Vec3d& v) {
-  glVertex3f((GLfloat)v.x(), (GLfloat)v.y(), (GLfloat)v.z());
+GLfloat black[] ={0.0f, 0.0f, 0.0f, 1.0f};
+GLfloat red[] ={0.0f, 0.0f, 1.0f, 1.0f};
+//Draws an arrow whose cone tip has radius equal to base along the z axis,
+//from 0 to 1
+void glutArrow (GLdouble base){
+    //draw from 0 to 1 along the z direction
+    glPushMatrix();
+        glLineWidth(2.0);
+        glBegin(GL_LINES);
+            glVertex3d(0.0,0.0,0.0);
+            glVertex3d(0.0,0.0,0.8);
+        glEnd();
+//        gluQuadricNormals(quad, GLU_SMOOTH);
+//        gluCylinder(quad, 0.1*base, 0.1*base, 0.8, 6, 1);
+        glTranslated(0.0, 0.0, 0.8);
+        glutSolidCone(base, 0.2, 6, 3);
+    glPopMatrix();
+//    gluDeleteQuadric(quad);
 }
 
-void drawThickTri(const Vec3d& v0, const Vec3d& v1, const Vec3d& v2, Scalar thickness) {
-  
-  Vec3d normal = (v1-v0).cross(v2-v0);
-  normal /= normal.norm();
+//Draws an arrow from point a to point b. Base controls the radius of the arrow
+//See glutArrow for how base controls the size
+void glutDirectedArrow(const Vec3d& a, const Vec3d& b, GLdouble base){
+    const Vec3d z =Vec3d(0.0, 0.0, 1.0);
+    const Vec3d dir = b-a;
+    Scalar eps = 1e-8;
 
-  Vec3d v0_f = v0 + normal*thickness;
-  Vec3d v0_b = v0 - normal*thickness;
-  Vec3d v1_f = v1 + normal*thickness;
-  Vec3d v1_b = v1 - normal*thickness;
-  Vec3d v2_f = v2 + normal*thickness;
-  Vec3d v2_b = v2 - normal*thickness;
+    glPushMatrix();
 
-  //glBegin(GL_TRIANGLES);
-  glNormal3f((GLfloat)normal.x(),(GLfloat) normal.y(), (GLfloat)normal.z());
-  glVertVec3d(v0_f);
-  glVertVec3d(v1_f);
-  glVertVec3d(v2_f);
-  
-  glNormal3f((GLfloat)-normal.x(), (GLfloat)-normal.y(), (GLfloat)-normal.z());
-  glVertVec3d(v0_b);
-  glVertVec3d(v1_b);
-  glVertVec3d(v2_b);
-  //glEnd();
+        glTranslated((GLdouble)a.x(), (GLdouble)a.y(), (GLdouble)a.z());
+        Vec3d rotAxis = z.cross(dir);
+////        if (rotAxis.isZero(eps)){//this means it is parallel
+////            if ( dir.z() < 0){
+////                glScaled(0.0, 0.0, -1.0);
+////            }
+////        } else{
+            Scalar theta = angle(z, dir)*180/pi;
+            glRotated((GLdouble)theta, (GLdouble)rotAxis.x(), (GLdouble)rotAxis.y(), (GLdouble)rotAxis.z());
+////        }
+        glScaled(1.0, 1.0, 0.9*(GLdouble)dir.norm());
+        glutArrow(base);
+    glPopMatrix();
+}
+void glVertVec3d(const Vec3d& v) {
+//    OpenGL::vertex((GLfloat)v.x(), (GLfloat)v.y(), (GLfloat)v.z());
+  glVertex3d((GLdouble)v.x(), (GLdouble)v.y(), (GLdouble)v.z());
+}
+void glNormalVec3d(const Vec3d& v) {
+//  OpenGL::normal((GLfloat)v.x(), (GLfloat)v.y(), (GLfloat)v.z());
+    glNormal3d((GLdouble)v.x(), (GLdouble)v.y(), (GLdouble)v.z());
+}
+void drawTri (const Vec3d& a, const Vec3d& b,const Vec3d& c,const Vec3d& n){
+  glNormalVec3d(n);
+  glVertVec3d(a);
+  glVertVec3d(b);
+  glVertVec3d(c);
+}
+void drawStich (const Vec3d& a, const Vec3d& b,const Vec3d& c,const Vec3d& d){
+  Vec3d n = (b-a).cross(d-a);
+  n.normalize();
+
+ drawTri(a, b, c, n);
+ drawTri(c, d, a, n);
+}
+
+void drawThickTri(const Vec3d& v0, const Vec3d& v1, const Vec3d& v2,
+        const Scalar & t0, const Scalar & t1, const Scalar & t2,
+        const Vec3d& n0, const Vec3d& n1, const Vec3d& n2, const Vec3d& normal) {
+
+  glColor3fv(black);
+  Vec3d v0_f = v0 + n0*t0/2.0;
+  Vec3d v0_b = v0 - n0*t0/2.0;
+  Vec3d v1_f = v1 + n1*t1/2.0;
+  Vec3d v1_b = v1 - n1*t1/2.0;
+  Vec3d v2_f = v2 + n2*t2/2.0;
+  Vec3d v2_b = v2 - n2*t2/2.0;
+
+  drawTri (v0_f, v1_f, v2_f, normal);
+  drawTri (v0_b, v1_b, v2_b, -normal);
 
 }
 
 void ShellRenderer::cycleMode() { 
-   m_mode = (ShellRenderer::DrawMode) ((m_mode + 1) % 3); 
+   m_mode = (ShellRenderer::DrawMode) ((m_mode + 1) % 4);
 }
 
 ShellRenderer::ShellRenderer( const ElasticShell& shell )
 : m_shell(shell)
 , m_mode(FLAT)
 {}
-  
+
+
+
 void ShellRenderer::render()
 {
 
@@ -75,16 +128,13 @@ void ShellRenderer::render()
       {
         v.push_back(m_shell.getVertexPosition(*fvit));
       }
-      
+
       // Compute a normal for the face
       Vec3d e1 = v[1]-v[0];
       Vec3d e2 = v[2]-v[0];
       Vec3d n = e1.cross(e2);
       if( n.norm() != 0 ) n.normalize();
-      glNormal3f((GLfloat)n.x(),(GLfloat)n.y(),(GLfloat)n.z());
-      glVertex3f((GLfloat)v[0].x(),(GLfloat)v[0].y(),(GLfloat)v[0].z());
-      glVertex3f((GLfloat)v[1].x(),(GLfloat)v[1].y(),(GLfloat)v[1].z());
-      glVertex3f((GLfloat)v[2].x(),(GLfloat)v[2].y(),(GLfloat)v[2].z());
+      drawTri(v[0], v[1], v[2], n);
       //drawThickTri(v[0], v[1], v[2], m_shell.getThickness(*fit));
     }
     glEnd();
@@ -166,10 +216,97 @@ void ShellRenderer::render()
 
     glEnable(GL_LIGHTING);
 
-    //Draw springs...
+  }else if (m_mode == VOLUMETRIC){
+//      glDisable(GL_LIGHTING);
+      glDisable(GL_LIGHTING);
+
+      const DeformableObject& mesh = m_shell.getDefoObj();
+
+      glEnable(GL_LIGHTING);
+
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+      GLfloat blue[] = {0.1f,0.1f,0.8f,1.0f};
+      glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,blue);
+
+      FaceProperty<Vec3d> faceNormals (&m_shell.getDefoObj());
+      VertexProperty<Vec3d> vertexNormals(&m_shell.getDefoObj());
+
+      m_shell.getFaceNormals(faceNormals);
+      m_shell.getVertexNormals(vertexNormals);
+
+         // Render all faces
+         glBegin(GL_TRIANGLES);
+         for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
+         {
+           Vec3dArray vs;
+           Vec3dArray ns;
+           ScalarArray ts;
+
+           for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit)
+           {
+             vs.push_back(m_shell.getVertexPosition(*fvit));
+             ns.push_back(vertexNormals[*fvit]);
+             ts.push_back(m_shell.getThickness(*fvit));
+           }
+
+           for (FaceEdgeIterator feit = mesh.fe_iter(*fit); feit; ++feit){
+               if (mesh.edgeIncidentFaces(*feit)==1){ //it is a boundary
+                   Vec3d n = faceNormals[*fit];
+
+                   int orient = mesh.getRelativeOrientation(*fit, *feit);
+
+                   Vec3d from, to;
+                   Scalar thickFrom, thickTo;
+                   if (orient == 1){
+                       from = m_shell.getVertexPosition(mesh.fromVertex(*feit));
+                       to = m_shell.getVertexPosition(mesh.toVertex(*feit));
+                       thickFrom = m_shell.getThickness(mesh.fromVertex(*feit));
+                       thickTo = m_shell.getThickness(mesh.toVertex(*feit));
+                   } else {
+                       to = m_shell.getVertexPosition(mesh.fromVertex(*feit));
+                       from  = m_shell.getVertexPosition(mesh.toVertex(*feit));
+                       thickTo = m_shell.getThickness(mesh.fromVertex(*feit));
+                       thickFrom = m_shell.getThickness(mesh.toVertex(*feit));
+                   }
+
+                   drawStich(from - n * thickFrom / 2.0, from + n * thickFrom / 2.0,
+                           to + n * thickTo / 2.0, to - n * thickTo/ 2.0);
+               }
+           }
+
+           drawThickTri(vs[0], vs[1], vs[2],
+                   ts[0], ts[1], ts[2],
+                   ns[0], ns[1], ns[2],
+                   faceNormals[*fit]);
+
+         }
+         //         for( EdgeIterator eit = mesh.edges_begin(); eit != mesh.edges_end(); ++eit )
+         //         {
+         //           Vec3d p0 = m_shell.getVertexPosition(mesh.fromVertex(*eit));
+         //           Vec3d p1 = m_shell.getVertexPosition(mesh.toVertex(*eit));
+         //           glutDirectedArrow(p0, p1, (p1-p0).norm()*0.1);
+         //
+         //
+         //         }
+         glEnd();
+
+         glDisable(GL_LIGHTING);
 
   }
 
+}
+void ShellRenderer::renderEdges(){
+//    draw edges as arrows!
+    const DeformableObject& mesh = m_shell.getDefoObj();
+     glPushMatrix();
+     for( EdgeIterator eit = mesh.edges_begin(); eit != mesh.edges_end(); ++eit )
+     {
+       Vec3d p0 = m_shell.getVertexPosition(mesh.fromVertex(*eit));
+       Vec3d p1 = m_shell.getVertexPosition(mesh.toVertex(*eit));
+       glutDirectedArrow(p0, p1, (p1-p0).norm()*0.1);
+
+     }
+     glPopMatrix();
 }
 
 Vec3d ShellRenderer::calculateObjectCenter()

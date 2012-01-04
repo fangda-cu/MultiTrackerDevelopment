@@ -10,9 +10,12 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexPointSpringForce.hh"
 #include "BASim/src/Collisions/ElTopo/collisionqueries.hh"
 
+
 //#include "eltopo.h"
 
 #include <algorithm>
+
+
 
 namespace BASim {
 
@@ -127,6 +130,48 @@ void ElasticShell::setEdgeVelocities(const EdgeProperty<Scalar>& velocities)
   m_xi_vel = velocities;
 }
 
+Scalar ElasticShell::getThickness(const VertexHandle& vh) const {
+  Scalar totalA = 0.0;
+  Scalar w;
+  Scalar total = 0.0;
+  for (VertexFaceIterator vfit = m_obj->vf_iter(vh); vfit; ++vfit){
+      w = getArea(*vfit);
+      totalA += w;
+      total += w*m_thicknesses[*vfit];
+  }
+
+  return total / totalA;
+}
+void ElasticShell::getFaceNormals(FaceProperty<Vec3d> & fNormals) const{
+    const DeformableObject& mesh = *m_obj;
+    for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit ){
+        std::vector<Vec3d> v;
+        for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit )
+        {
+          v.push_back(getVertexPosition(*fvit));
+        }
+        Vec3d n = (v[1] - v[0]).cross(v[2]-v[0]);
+        n.normalize();
+        fNormals[*fit] = n;
+    }
+}
+void ElasticShell::getVertexNormals(VertexProperty<Vec3d> & vNormals) const{
+    FaceProperty<Vec3d> fNormals(& getDefoObj());
+    getFaceNormals(fNormals);
+    DeformableObject& mesh = *m_obj;
+
+    for ( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit){
+        for ( VertexFaceIterator vfit = mesh.vf_iter(*vit); vfit; ++vfit){
+            vNormals[*vit] += fNormals[*vfit];
+        }
+        vNormals[*vit].normalize();
+    }
+}
+void ElasticShell::getThickness(VertexProperty<Scalar> & vThickness) const{
+    for ( VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit){
+        vThickness[*vit] = getThickness(*vit);
+    }
+}
 
 Scalar ElasticShell::getArea(const FaceHandle& f, bool current) const  {
   FaceVertexIterator fvit = m_obj->fv_iter(f);
@@ -185,7 +230,7 @@ void ElasticShell::computeMasses()
       FaceEdgeIterator feit = m_obj->fe_iter(f_hnd);
       EdgeHandle e0_hnd = *feit; ++feit; assert(feit);
       EdgeHandle e1_hnd = *feit; ++feit; assert(feit);
-      EdgeHandle e2_hnd = *feit; ++feit; assert(feit);
+      EdgeHandle e2_hnd = *feit; ++feit; //assert(feit);
 
       m_edge_masses[e0_hnd] += contribution;
       m_edge_masses[e1_hnd] += contribution;
@@ -226,7 +271,7 @@ bool ElasticShell::isEdgeActive( const EdgeHandle& e) const {
 const Scalar& ElasticShell::getDof( const DofHandle& hnd ) const
 {
   //they're all vertex Dofs for a shell
-  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType == DofHandle::EDGE_DOF);
+  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType() == DofHandle::EDGE_DOF);
 
   //return reference to the appropriate position in the vector
   if(hnd.getType() == DofHandle::VERTEX_DOF) {
@@ -242,7 +287,7 @@ const Scalar& ElasticShell::getDof( const DofHandle& hnd ) const
 void ElasticShell::setDof( const DofHandle& hnd, const Scalar& dof )
 {
   //they're all vertex Dofs for a shell
-  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType == DofHandle::EDGE_DOF);
+  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType() == DofHandle::EDGE_DOF);
 
   if(hnd.getType() == DofHandle::VERTEX_DOF) {
     const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
@@ -256,7 +301,7 @@ void ElasticShell::setDof( const DofHandle& hnd, const Scalar& dof )
 
 const Scalar& ElasticShell::getVel( const DofHandle& hnd ) const
 {
-  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType == DofHandle::EDGE_DOF);
+  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType() == DofHandle::EDGE_DOF);
 
   //return reference to the appropriate position in the vector
   if(hnd.getType() == DofHandle::VERTEX_DOF) {
@@ -271,7 +316,7 @@ const Scalar& ElasticShell::getVel( const DofHandle& hnd ) const
 
 void ElasticShell::setVel( const DofHandle& hnd, const Scalar& vel )
 {
-  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType == DofHandle::EDGE_DOF);
+  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType() == DofHandle::EDGE_DOF);
 
   if(hnd.getType() == DofHandle::VERTEX_DOF) {
     const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
@@ -285,7 +330,7 @@ void ElasticShell::setVel( const DofHandle& hnd, const Scalar& vel )
 
 const Scalar& ElasticShell::getMass( const DofHandle& hnd ) const
 {
-  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType == DofHandle::EDGE_DOF);
+  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType() == DofHandle::EDGE_DOF);
 
   if(hnd.getType() == DofHandle::VERTEX_DOF) {
     const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
@@ -355,6 +400,8 @@ void ElasticShell::startStep()
       }
    }
    */
+
+
 
   //update the damping "reference configuration" for computing viscous forces.
   m_damping_undeformed_positions = m_positions;

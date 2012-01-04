@@ -18,11 +18,12 @@ namespace BASim {
   {
   public:
   
-    enum DrawMode { DBG, FLAT, NONE };
+    enum DrawMode { DBG, FLAT, NONE, VOLUMETRIC };
 
     ShellRenderer( const ElasticShell& shell );
     
     void render();
+    void renderEdges();
     void cycleMode();
     DrawMode getMode() const { return m_mode; }
     void setMode(DrawMode mode) { m_mode = mode; }
