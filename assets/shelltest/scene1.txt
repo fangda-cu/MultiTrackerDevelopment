@@ -1,0 +1,39 @@
+#periodic buckling sheet example
+
+shell-scene 1
+dt 0.01	# time-step size
+
+gravity 0 -1 0	# gravity
+
+shell-CST-stretching 1
+shell-DS-bending 0
+
+#Elastic Parameters
+#shell-Youngs 1.0
+#shell-Poisson 0.5
+
+#Viscous Parameters
+shell-Youngs-damping 5.0
+shell-Poisson-damping 0.5
+
+#Surface Tension
+shell-surface-tension 0.0
+
+shell-remeshing 0
+shell-remeshing-resolution 0.2
+shell-remeshing-iterations 1
+
+integrator implicit	# type of integrator to use for the shell
+
+shell-density 0.1	# volumetric density of the shell 
+shell-thickness 0.1	# the thickness of the shell
+shell-height 6.0	# the vertical side length of the shell
+shell-width 1.0	# the horizontal side length of the shell
+shell-x-resolution 6	# the number of segments along the horizontal edge
+shell-y-resolution 36	# the number of segments along the vertical edge
+
+iterations 100	# maximum number of iterations for the implicit method
+atol 1e-008	# absolute convergence tolerance
+rtol 1e-008	# relative convergence tolerance
+atol 1e-008	# absolute convergence tolerance
+stol 1e-008	# convergence tolerance in terms of the norm of the change in the solution between steps

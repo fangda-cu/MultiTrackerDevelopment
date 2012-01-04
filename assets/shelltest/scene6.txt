@@ -1,0 +1,35 @@
+#hemispherical viscous bubble
+
+shell-scene 6
+dt 0.005	# time-step size
+
+gravity 0 -9.81 0	# gravity
+
+shell-CST-stretching 1
+shell-DS-bending 1
+
+#Viscous Parameters
+shell-Youngs-damping 3000
+shell-Poisson-damping 0.5
+
+#Surface Tension
+shell-surface-tension 0.021
+
+shell-remeshing 1
+shell-remeshing-resolution 0.002
+shell-remeshing-iterations 3
+
+integrator implicit	# type of integrator to use for the shell
+
+shell-density 1000	# volumetric density of the shell 
+shell-thickness 0.0001	# the thickness of the shell
+shell-height 1.0		# the vertical side length of the shell
+shell-width 1.5		# the horizontal side length of the shell
+shell-x-resolution 30	# the number of segments along the horizontal edge
+shell-y-resolution 8	# the number of segments along the vertical edge
+
+iterations 100	# maximum number of iterations for the implicit method
+atol 1e-008	# absolute convergence tolerance
+rtol 1e-008	# relative convergence tolerance
+atol 1e-008	# absolute convergence tolerance
+stol 1e-008	# convergence tolerance in terms of the norm of the change in the solution between steps
