@@ -141,7 +141,7 @@ void ObjWriter::write( std::ofstream & of, const ElasticShell & shell )
             triT.push_back( vhandles[2 * vhIndices[*fvit]] );
             triB.push_back( vhandles[2 * vhIndices[*fvit] + 1] );
         }
-        defObj.addFace( triT[0], triT[1], triT[2] );
+        defObj.addFace( triT[2], triT[1], triT[0] );
         defObj.addFace( triB[0], triB[1], triB[2] );
 
         //Now the stich faces located on the boundaries of the mesh
