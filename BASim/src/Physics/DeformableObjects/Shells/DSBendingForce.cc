@@ -8,8 +8,11 @@
 
 namespace BASim {
 
-DSBendingForce::DSBendingForce( ElasticShell& shell, const std::string& name, Scalar stiffness, Scalar damping, Scalar timestep) : 
-    ElasticShellForce(shell, name), m_stiffness(stiffness), m_damping(damping), m_timestep(timestep), m_func(new LinearTransfer())
+  DSBendingForce::DSBendingForce( ElasticShell& shell, const std::string& name, 
+                                  Scalar Youngs, Scalar Poisson, 
+                                  Scalar Youngs_damp, Scalar Poisson_damp, 
+                                  Scalar timestep) : 
+    ElasticShellForce(shell, name), m_Youngs(Youngs), m_Poisson(Poisson), m_Youngs_damp(Youngs_damp), m_Poisson_damp(Poisson_damp), m_timestep(timestep), m_func(new LinearTransfer())
 {
   
 }
@@ -220,25 +223,29 @@ void DSBendingForce::globalForce( VecXd& force ) const
       
       gatherDOFs(eh, pairs[p].first, pairs[p].second, undeformed, undeformed_damp, deformed, indices);
 
+      //This is just an approximation, since hinge-based bending doesn't actually provide separate control
+      //over Poisson and Youngs.
+      Scalar stiffness_coeff = m_Youngs * cube(getEdgeThickness(eh)) / (12 *(1-square(m_Poisson)));
+      Scalar damping_coeff = m_Youngs_damp * cube(getEdgeThickness(eh)) / (12 *(1-square(m_Poisson_damp)));
+
       //account for double-counted faces in the non-manifold case
-      Scalar local_stiffness = (pairs.size() == 2? m_stiffness : 0.5*m_stiffness);
-      Scalar local_damping = (pairs.size() == 2? m_damping : 0.5*m_damping);
-      
+      if(pairs.size() > 2) {
+        stiffness_coeff /= 2;
+        damping_coeff /= 2;
+      }
+
       //determine the elastic forces for this element
-      if(m_stiffness != 0) {
+      if(stiffness_coeff != 0) {
         elementForce(undeformed, deformed, localForce);
         for (unsigned int i = 0; i < indices.size(); ++i)
-          force(indices[i]) += local_stiffness * localForce(i);
+          force(indices[i]) += stiffness_coeff * localForce(i);
       }
 
       //////determine the (Rayleigh) damping / viscous forces for this element
-      if(m_damping != 0) {
+      if(damping_coeff != 0) {
         elementForce(undeformed_damp, deformed, localForce);
         
-        //Thickness dependent damping, coefficient mu*h^3/3, div by timestep for symmetric dissipative potential viscosity
-        Scalar thickness = getEdgeThickness(eh);
-        Scalar h3 = thickness*thickness*thickness;
-        Scalar scale_factor = local_damping * h3 / 3.0 / m_timestep;
+        Scalar scale_factor = damping_coeff / m_timestep;
         for (unsigned int i = 0; i < indices.size(); ++i) {
            force(indices[i]) += scale_factor * localForce(i);
         }
@@ -271,24 +278,28 @@ void DSBendingForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) const
       //and map the DOF's.
       gatherDOFs(eh, pairs[p].first, pairs[p].second, undeformed, undeformed_damp, deformed, indices);
 
+      //This is an approximation, since hinge-based bending doesn't actually provide separate control
+      //over Poisson and Youngs.
+      Scalar stiffness_coeff = m_Youngs * cube(getEdgeThickness(eh)) / (12 *(1-square(m_Poisson)));
+      Scalar damping_coeff = m_Youngs_damp * cube(getEdgeThickness(eh)) / (12 *(1-square(m_Poisson_damp)));
+
       //account for double-counted faces in the non-manifold case
-      Scalar local_stiffness = (pairs.size() == 2? m_stiffness : 0.5*m_stiffness);
-      Scalar local_damping = (pairs.size() == 2? m_damping : 0.5*m_damping);
+      if(pairs.size() > 2) {
+        stiffness_coeff /= 2;
+        damping_coeff /= 2;
+      }
 
       //determine the forces for this element
-      if(m_stiffness != 0) {
+      if(stiffness_coeff != 0) {
         elementJacobian(undeformed, deformed, localJacobian);
         for (unsigned int i = 0; i < indices.size(); ++i)
           for(unsigned int j = 0; j < indices.size(); ++j) 
-            Jacobian.add(indices[i],indices[j], scale * local_stiffness * localJacobian(i,j));
+            Jacobian.add(indices[i],indices[j], scale * stiffness_coeff * localJacobian(i,j));
       }
       
-      if(m_damping != 0) {
+      if(damping_coeff != 0) {
         elementJacobian(undeformed_damp, deformed, localJacobian);
-        Scalar thickness = getEdgeThickness(eh);
-        Scalar h3 = thickness*thickness*thickness;
-        Scalar scale_factor = scale * local_damping * h3 / 3.0 / m_timestep;
-
+        Scalar scale_factor = scale * damping_coeff / m_timestep;
         for (unsigned int i = 0; i < indices.size(); ++i)
           for(unsigned int j = 0; j < indices.size(); ++j) 
             Jacobian.add(indices[i],indices[j], scale_factor * localJacobian(i,j));

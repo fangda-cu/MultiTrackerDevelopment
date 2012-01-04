@@ -25,7 +25,11 @@ class DSBendingForce : public ElasticShellForce {
 
 public:
 
-  DSBendingForce (ElasticShell& shell, const std::string& name = "DSBendingForce", Scalar stiffness = 0, Scalar damping = 0, Scalar timestep = 1.0);
+  DSBendingForce (ElasticShell& shell, const std::string& name = "DSBendingForce", 
+    Scalar Youngs = 0, Scalar Poisson = 0, 
+    Scalar Youngs_damp = 0, Scalar Poisson_damp = 0, 
+    Scalar timestep = 1.0);
+
   virtual ~DSBendingForce () {}
 
   std::string getName() const;
@@ -89,7 +93,10 @@ private:
 
   void getEdgeFacePairs(EdgeHandle e, std::vector< std::pair<FaceHandle,FaceHandle> >& facePairs) const;
 
-  Scalar m_stiffness, m_damping, m_timestep;
+  //Scalar m_stiffness, m_damping, m_timestep;
+  Scalar m_Youngs, m_Poisson, 
+    m_Youngs_damp, m_Poisson_damp, 
+    m_timestep;
 
   std::tr1::shared_ptr<TransferFunction> m_func;
 };

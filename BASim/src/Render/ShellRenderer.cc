@@ -128,8 +128,9 @@ void ShellRenderer::render()
 
       
       Scalar thickness = m_shell.getThickness(*fit);
-      int colorVal = (int) (255.0 * thickness / 0.1);
+      int colorVal = (int) (255.0 * thickness / 0.001);
       colorVal = clamp(colorVal, 0, 255);
+      colorVal = 255;
       OpenGL::color(Color(colorVal,0,0));
       std::vector<Vec3d> points(3);
       int i = 0;

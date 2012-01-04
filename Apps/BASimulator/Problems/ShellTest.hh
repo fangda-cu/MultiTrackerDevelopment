@@ -50,6 +50,7 @@ public:
   void setupScene8(); //torus
   void setupScene9(); //non-manifold edge example
   void setupScene10(); //flat stretching sheet with inflow/deletion
+  void setupScene11(); //a cube
 
 };
 

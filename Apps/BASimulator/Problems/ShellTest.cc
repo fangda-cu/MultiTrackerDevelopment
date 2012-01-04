@@ -34,7 +34,7 @@ ShellTest::ShellTest()
   AddOption("shell-scene", "the shell scene to test", 1);
 
   //Basic shell options
-  AddOption("shell-thickness", "the thickness of the shell", 0.01);
+  AddOption("shell-thickness", "the (initial) thickness of the shell", 0.01);
   AddOption("shell-density", "volumetric density of the shell ", 1.0);
 
   //Shell geometry (x/y/width/height may also refer to resolutions/sizes in non-cartesian scenarios)
@@ -51,15 +51,18 @@ ShellTest::ShellTest()
   //Area-based surface tension force
   AddOption("shell-surface-tension", "surface tension coefficient of the shell", 0.0);
   
-  //Properties for proper thickness dependent elasticity & viscosity (just CSTMembrane so far)
+  //Properties for thickness-dependent linear elasticity & viscosity
   AddOption("shell-Poisson", "the Poisson ratio of the shell material", 0.0f);
   AddOption("shell-Youngs", "the Young's modulus of the shell material", 0.0f);
   AddOption("shell-Poisson-damping", "the damping coefficient associated to the shell's Poisson ratio", 0.0f);
   AddOption("shell-Youngs-damping", "the damping coefficient associated with the shell's Young's modulus", 0.0f);
 
-  //Hinge bending (discrete shells) stiffness and damping
-  AddOption("shell-bending-stiffness", "Hinge (Discrete shells) bending stiffness of the shell", 0.0);
-  AddOption("shell-bending-damping", "Hinge (Discrete shells) bending damping coefficient of the shell ", 0.0);
+  //Shell forces
+  AddOption("shell-CST-stretching", "whether to apply constant-strain-triangle in-plane stretching", true);
+  AddOption("shell-DS-bending", "whether to apply \"Discrete Shells\" hinge-based bending", false);
+  
+  AddOption("shell-stretching-factor", "extra scale factor to multiply stretching coefficient by", 1.0);
+  AddOption("shell-bending-factor", "extra scale factor to multiple bending coefficient by", 1.0);
 
   //Timestepper options
   AddOption("integrator", "type of integrator to use for the shell", "implicit");
@@ -94,7 +97,8 @@ sceneFunc scenes[] = {0,
                       &ShellTest::setupScene7, //sheet sheared between two circles
                       &ShellTest::setupScene8, //torus
                       &ShellTest::setupScene9, //non-manifold edge / bending
-                      &ShellTest::setupScene10};  //pouring inflow with deletion 
+                      &ShellTest::setupScene10, //pouring inflow with deletion 
+                      &ShellTest::setupScene11}; //a cube with surface tension collapsing to a sphere  
 
 void ShellTest::Setup()
 {
@@ -115,9 +119,13 @@ void ShellTest::Setup()
   Scalar Youngs_damping = GetScalarOpt("shell-Youngs-damping");
   Scalar Poisson_damping = GetScalarOpt("shell-Poisson-damping");
   
-  Scalar DSbendstiffness = GetScalarOpt("shell-bending-stiffness");
-  Scalar DSbenddamping = GetScalarOpt("shell-bending-damping");
+  bool cst_stretch = GetBoolOpt("shell-CST-stretching");
+  bool ds_bend = GetBoolOpt("shell-CST-stretching");
 
+  //fudge factors to modify the elastic-viscous coefficients (so as to manipulate them separately)
+  Scalar cst_scale = GetScalarOpt("shell-stretching-factor");
+  Scalar ds_scale = GetScalarOpt("shell-bending-factor");
+  
   std::string integrator = GetStringOpt("integrator");
 
   Scalar timestep = getDt(); //Our Rayleigh damping model relies on knowing the timestep (folds it into the damping stiffness, as in Viscous Threads)
@@ -138,13 +146,19 @@ void ShellTest::Setup()
 
   //Stretching and bending forces
   if(Youngs_modulus != 0 || Youngs_damping != 0) {
-    shell->addForce(new CSTMembraneForce(*shell, "CSTMembrane", Youngs_modulus, Poisson_ratio, Youngs_damping, Poisson_damping, timestep));
+    
+    //Stretching force (Constant Strain Triangle, i.e. linear FEM)
+    if(cst_stretch)
+      shell->addForce(new CSTMembraneForce(*shell, "CSTMembrane", cst_scale*Youngs_modulus, Poisson_ratio, cst_scale*Youngs_damping, Poisson_damping, timestep));
+    
+    //Bending force (Hinge-based Bending, a la Discrete Shells)
+    if(ds_bend)
+      shell->addForce(new DSBendingForce(*shell, "DSBending", ds_scale*Youngs_modulus, Poisson_ratio, ds_scale*Youngs_damping, Poisson_damping, timestep));
+
+    //Better bending model, not currently functional.
     //shell->addForce(new MNBendingForce(*shell, "MNBending", Youngs_modulus, Poisson_ratio, Youngs_damping, Poisson_damping, timestep));
   }
 
-  if(DSbendstiffness != 0 || DSbenddamping !=0)
-    shell->addForce(new DSBendingForce(*shell, "DSBending", DSbendstiffness, DSbenddamping, timestep));
-  
 
   //Gravity force
   shell->addForce(new ShellGravityForce(*shell, "Gravity", gravity));
@@ -728,7 +742,7 @@ void ShellTest::setupScene6() {
   int layers = yresolution;
   int slices = xresolution;
   Vec3d centre(0,0,0);
-  Scalar radius = 1.0;
+  Scalar radius = 0.01;
   Vec3d start_vel(0,0,0);
 
   std::vector<std::vector<VertexHandle> > vertList;
@@ -736,7 +750,7 @@ void ShellTest::setupScene6() {
   //fill in the interior
   vertList.resize(layers-1);
   for(int j = 0; j < layers-1; ++j) {
-    Scalar heightAngle = (j+1) * 0.9* pi / 2 /(Scalar)layers;
+    Scalar heightAngle = (j+1) * 0.95 * pi / 2 /(Scalar)layers;
     for(int i = 0; i < slices; ++i) {
       Scalar rotAngle = 2*pi * (Scalar)i / (Scalar)slices;
       Scalar zVal = radius*sin(heightAngle);
@@ -783,6 +797,8 @@ void ShellTest::setupScene6() {
  
   for(unsigned int i = 0; i < vertList[0].size(); ++i)
     shell->constrainVertex(vertList[0][i], shell->getVertexPosition(vertList[0][i]));
+  for(unsigned int i = 0; i < vertList[1].size(); ++i)
+    shell->constrainVertex(vertList[1][i], shell->getVertexPosition(vertList[1][i]));
  
 
 
@@ -829,10 +845,10 @@ void ShellTest::setupScene7() {
   int layers = yresolution;
   int slices = xresolution;
   Vec3d centre(0,0,0);
-  Scalar out_radius = 1.0;
-  Scalar in_radius = 0.4;
+  Scalar out_radius = 0.25;
+  Scalar in_radius = 0.1;
   Vec3d start_vel(0,0,0);
-  Scalar rotation_rate = 0.5;
+  Scalar rotation_rate = 0.2;
 
   std::vector<std::vector<VertexHandle> > vertList;
 
@@ -1194,4 +1210,84 @@ void ShellTest::setupScene10() {
   shell->setDeletionBox(Vec3d(-1, -10, -1), Vec3d(2, -2.0, 1));
 
 }
+
+//a cube
+void ShellTest::setupScene11() {
+
+  float height = (float)GetScalarOpt("shell-height");
+  float width = (float)GetScalarOpt("shell-width");
+  Vec3d start_vel(0,0,0);
+ 
+  //vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  //create a cube
+  std::vector<VertexHandle> vertList;
+
+  Scalar offset = height;
+  for(int i = 0; i < 8; ++i) {
+    vertList.push_back(shellObj->addVertex());
+    velocities[vertList[i]] = start_vel;
+  }
+
+  //create positions
+  positions[vertList[0]] = Vec3d(0,0,0);
+  positions[vertList[1]] = Vec3d(0,0,1);
+  positions[vertList[2]] = Vec3d(0,1,0);
+  positions[vertList[3]] = Vec3d(0,1,1);
+  positions[vertList[4]] = Vec3d(1,0,0);
+  positions[vertList[5]] = Vec3d(1,0,1);
+  positions[vertList[6]] = Vec3d(1,1,0);
+  positions[vertList[7]] = Vec3d(1,1,1);
+
+  for(int i = 0; i < 8; ++i) {
+    undeformed[vertList[i]] = positions[vertList[i]];
+  }
+  
+  shellObj->addFace(vertList[0], vertList[2], vertList[4]);
+  shellObj->addFace(vertList[6], vertList[4], vertList[2]);
+  shellObj->addFace(vertList[4], vertList[6], vertList[5]);
+  shellObj->addFace(vertList[5], vertList[6], vertList[7]);
+  shellObj->addFace(vertList[7], vertList[6], vertList[3]);
+  shellObj->addFace(vertList[3], vertList[6], vertList[2]);
+  shellObj->addFace(vertList[3], vertList[2], vertList[1]);
+  shellObj->addFace(vertList[1], vertList[2], vertList[0]);
+  shellObj->addFace(vertList[0], vertList[4], vertList[5]);
+  shellObj->addFace(vertList[0], vertList[5], vertList[1]);
+  shellObj->addFace(vertList[7], vertList[3], vertList[5]);
+  shellObj->addFace(vertList[5], vertList[3], vertList[1]);
+
+  
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+  shell->addForce(new ShellVolumeForce(*shell, "Volume", 10));
+
+}
+
 
