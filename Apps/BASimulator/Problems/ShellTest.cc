@@ -116,7 +116,8 @@ sceneFunc scenes[] = {0,
                       &ShellTest::setupScene8, //torus
                       &ShellTest::setupScene9, //non-manifold edge / bending
                       &ShellTest::setupScene10, //pouring inflow with deletion 
-                      &ShellTest::setupScene11}; //a cube with surface tension collapsing to a sphere  
+                      &ShellTest::setupScene11, //a cube with surface tension collapsing to a sphere  
+                      &ShellTest::setupScene12}; //hemispherical bubble popping with low viscosity
 
 void ShellTest::Setup()
 {
@@ -193,7 +194,8 @@ void ShellTest::Setup()
   Scalar remeshing_res = GetScalarOpt("shell-remeshing-resolution");
   int remeshing_its = GetIntOpt("shell-remeshing-iterations");
   shell->setRemeshing(remeshing, remeshing_res, remeshing_its);
-  //shell->remesh(remeshing_res);
+  
+  shell->remesh(remeshing_res);
 
   shell->computeMasses();
 
@@ -1159,7 +1161,6 @@ void ShellTest::setupScene9() {
 //vertical flat sheet with inflow at the top
 void ShellTest::setupScene10() {
 
-  std::cout << "Setup 10\n";
   //get params
   Scalar width = GetScalarOpt("shell-width");
   Scalar height = GetScalarOpt("shell-height");
@@ -1197,7 +1198,6 @@ void ShellTest::setupScene10() {
         topVerts.insert(h);
     }
   }
-  std::cout << "Number of top verts: " << topVerts.size() << std::endl;
 
   //build the faces
   std::vector<Vec3i> tris;
@@ -1335,3 +1335,80 @@ void ShellTest::setupScene11() {
 }
 
 
+void ShellTest::setupScene12() {
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
+
+  //vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  //create a sphere
+  int layers = yresolution;
+  int slices = xresolution;
+  Vec3d centre(0,0,0);
+  Scalar radius = 5.3;
+  Vec3d start_vel(0,0,0);
+
+  std::vector<std::vector<VertexHandle> > vertList;
+
+  //fill in the interior
+  vertList.resize(layers-1);
+  for(int j = 0; j < layers-1; ++j) {
+    Scalar heightAngle = (j+1) * 0.95 * pi / 2 /(Scalar)layers;
+    for(int i = 0; i < slices; ++i) {
+      Scalar rotAngle = 2*pi * (Scalar)i / (Scalar)slices;
+      Scalar zVal = radius*sin(heightAngle);
+      Scalar newRad = radius*cos(heightAngle);
+      Scalar xVal = newRad*cos(rotAngle);
+      Scalar yVal = newRad*sin(rotAngle);
+
+      VertexHandle vNew = shellObj->addVertex();
+      positions[vNew] = centre + Vec3d(xVal,zVal,yVal);
+      velocities[vNew] = start_vel;
+      undeformed[vNew] = positions[vNew];
+      vertList[j].push_back(vNew);
+    }
+  }
+
+  //construct faces
+  for(int j = 0; j < layers-2; ++j) {
+    for(int i = 0; i < slices; ++i) {
+      shellObj->addFace(vertList[j][i], vertList[j+1][i], vertList[j+1][(i+1)%slices]);
+      shellObj->addFace(vertList[j][i], vertList[j+1][(i+1)%slices], vertList[j][(i+1)%slices]);
+    }
+  }
+
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+  //pin just the bottom layer
+  for(unsigned int i = 0; i < vertList[0].size(); ++i)
+    shell->constrainVertex(vertList[0][i], shell->getVertexPosition(vertList[0][i]));
+  
+
+}

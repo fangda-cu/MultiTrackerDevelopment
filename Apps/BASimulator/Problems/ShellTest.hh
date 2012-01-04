@@ -45,12 +45,13 @@ public:
   void setupScene3(); //spherical sheet
   void setupScene4(); //two-triangle bending test
   void setupScene5(); //catenary 
-  void setupScene6(); //hemispherical bubble
+  void setupScene6(); //viscous hemispherical bubble
   void setupScene7(); //sheet between two circles
   void setupScene8(); //torus
   void setupScene9(); //non-manifold edge example
   void setupScene10(); //flat stretching sheet with inflow/deletion
   void setupScene11(); //a cube
+  void setupScene12(); //popping low viscosity hemispherical bubble with Bernoulli air pressure model
 
 };
 
