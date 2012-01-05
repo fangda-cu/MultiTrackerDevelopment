@@ -47,7 +47,8 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
 }
 
 ElasticShell::~ElasticShell() {
-
+  delete m_vert_tri_springs;
+  delete m_vert_point_springs;
 }
 
 void ElasticShell::computeForces( VecXd& force )
@@ -2024,7 +2025,7 @@ void ElasticShell::deleteRegion() {
       faces_to_remove.push_back(fh);
     }
   }
-  for(int i = 0; i < faces_to_remove.size(); ++i)
+  for(unsigned int i = 0; i < faces_to_remove.size(); ++i)
     m_obj->deleteFace(faces_to_remove[i], true);
 
 }
