@@ -20,6 +20,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVolumeForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexTriSpringForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexPointSpringForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Shells/DrainingBubblePressureForce.hh"
 
 #include <set>
 #include <fstream>
@@ -1360,9 +1361,9 @@ void ShellTest::setupScene12() {
   std::vector<std::vector<VertexHandle> > vertList;
 
   //fill in the interior
-  vertList.resize(layers-1);
-  for(int j = 0; j < layers-1; ++j) {
-    Scalar heightAngle = (j+1) * 0.95 * pi / 2 /(Scalar)layers;
+  vertList.resize(layers);
+  for(int j = 0; j < layers; ++j) {
+    Scalar heightAngle = j * 0.98 * pi / 2 /(Scalar)layers;
     for(int i = 0; i < slices; ++i) {
       Scalar rotAngle = 2*pi * (Scalar)i / (Scalar)slices;
       Scalar zVal = radius*sin(heightAngle);
@@ -1379,7 +1380,7 @@ void ShellTest::setupScene12() {
   }
 
   //construct faces
-  for(int j = 0; j < layers-2; ++j) {
+  for(int j = 0; j < layers-1; ++j) {
     for(int i = 0; i < slices; ++i) {
       if((i+j)%2 == 0) {
         shellObj->addFace(vertList[j][i], vertList[j+1][i], vertList[j+1][(i+1)%slices]);
@@ -1416,5 +1417,26 @@ void ShellTest::setupScene12() {
   for(unsigned int i = 0; i < vertList[0].size(); ++i)
     shell->constrainVertex(vertList[0][i], shell->getVertexPosition(vertList[0][i]));
   
+  //construct list of hole and base edges
+  std::vector<EdgeHandle> holeEdges, baseEdges;
+  
+  //Find the boundary loops
+  int last = vertList.size()-1;
+  for(EdgeIterator eit = shell->getDefoObj().edges_begin(); eit != shell->getDefoObj().edges_end(); ++eit) {
+    EdgeHandle eh = *eit;
+    VertexHandle v0 = shell->getDefoObj().fromVertex(eh);
+    VertexHandle v1 = shell->getDefoObj().toVertex(eh);
+    if(std::find(vertList[0].begin(), vertList[0].end(), v0) != vertList[0].end() && 
+       std::find(vertList[0].begin(), vertList[0].end(), v1) != vertList[0].end()) {
+      baseEdges.push_back(eh);
+    }
+    else if(std::find(vertList[last].begin(), vertList[last].end(), v0) != vertList[last].end() && 
+            std::find(vertList[last].begin(), vertList[last].end(), v1) != vertList[last].end()) {
+      holeEdges.push_back(eh);
+    }
+  }
+
+  Scalar air_density = 1.225e-9; 
+  //shell->addForce(new DrainingBubblePressureForce(*shell, "DrainingBubblePressure", holeEdges, baseEdges, air_density, m_timestep));
 
 }
