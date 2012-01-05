@@ -220,7 +220,7 @@ void ShellTest::Setup()
   
   m_world->addObject(shellObj);
   m_world->addController(stepper);
-  RenderBase* shellRender = new ShellRenderer(*shell);
+  RenderBase* shellRender = new ShellRenderer(*shell, m_initial_thickness);
   m_world->addRenderer(shellRender);
   
   g_obj_dump = GetBoolOpt("generate-OBJ");
