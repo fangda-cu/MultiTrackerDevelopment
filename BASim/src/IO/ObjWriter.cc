@@ -131,7 +131,7 @@ void ObjWriter::write( std::ofstream & of, const ElasticShell & shell )
 
     }
 
-    //Now add all the faces for top and bottom layers and stich
+    //Now add all the faces for top and bottom layers and stitch
     for ( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
     {
         std::vector<VertexHandle> triT;
@@ -144,7 +144,7 @@ void ObjWriter::write( std::ofstream & of, const ElasticShell & shell )
         defObj.addFace( triT[0], triT[1], triT[2] );
         defObj.addFace( triB[0], triB[1], triB[2] );
 
-        //Now the stich faces located on the boundaries of the mesh
+        //Now the stitch faces located on the boundaries of the mesh
         for ( FaceEdgeIterator feit = mesh.fe_iter( *fit ); feit; ++feit )
         {
             if ( mesh.edgeIncidentFaces( *feit ) == 1 )

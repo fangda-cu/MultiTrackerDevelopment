@@ -71,7 +71,7 @@ void drawTri (const Vec3d& a, const Vec3d& b,const Vec3d& c,const Vec3d& n){
   glVertVec3d(b);
   glVertVec3d(c);
 }
-void drawStich (const Vec3d& a, const Vec3d& b,const Vec3d& c,const Vec3d& d){
+void drawStitch (const Vec3d& a, const Vec3d& b,const Vec3d& c,const Vec3d& d){
   Vec3d n = (b-a).cross(d-a);
   n.normalize();
 
@@ -269,7 +269,7 @@ void ShellRenderer::render()
                        thickFrom = m_shell.getThickness(mesh.toVertex(*feit));
                    }
 
-                   drawStich(from - n * thickFrom / 2.0, from + n * thickFrom / 2.0,
+                   drawStitch(from - n * thickFrom / 2.0, from + n * thickFrom / 2.0,
                            to + n * thickTo / 2.0, to - n * thickTo/ 2.0);
                }
            }

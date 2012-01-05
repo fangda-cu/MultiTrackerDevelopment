@@ -195,7 +195,7 @@ void ShellTest::Setup()
   int remeshing_its = GetIntOpt("shell-remeshing-iterations");
   shell->setRemeshing(remeshing, remeshing_res, remeshing_its);
   
-  shell->remesh(remeshing_res);
+  //shell->remesh(remeshing_res);
 
   shell->computeMasses();
 
@@ -1381,8 +1381,14 @@ void ShellTest::setupScene12() {
   //construct faces
   for(int j = 0; j < layers-2; ++j) {
     for(int i = 0; i < slices; ++i) {
-      shellObj->addFace(vertList[j][i], vertList[j+1][i], vertList[j+1][(i+1)%slices]);
-      shellObj->addFace(vertList[j][i], vertList[j+1][(i+1)%slices], vertList[j][(i+1)%slices]);
+      if((i+j)%2 == 0) {
+        shellObj->addFace(vertList[j][i], vertList[j+1][i], vertList[j+1][(i+1)%slices]);
+        shellObj->addFace(vertList[j][i], vertList[j+1][(i+1)%slices], vertList[j][(i+1)%slices]);
+      }
+      else {
+        shellObj->addFace(vertList[j][i], vertList[j+1][i], vertList[j][(i+1)%slices]);
+        shellObj->addFace(vertList[j+1][i], vertList[j+1][(i+1)%slices], vertList[j][(i+1)%slices]);
+      }
     }
   }
 

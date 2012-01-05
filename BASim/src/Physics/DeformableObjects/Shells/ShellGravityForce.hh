@@ -37,4 +37,4 @@ protected:
 }
 
 
-#endif //DSBENDINGFORCE_H
+#endif //SHELLGRAVITYFORCE_H
