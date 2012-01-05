@@ -41,7 +41,7 @@ public:
   
   void addSpring(const FaceHandle& fh, const VertexHandle& vh, const Vec3d& baryCoords, Scalar stiffness, Scalar damping, Scalar restlen);
   void clearSprings();
-  void getSpringLists(std::vector<VertexHandle> &verts, std::vector<FaceHandle>& tris, std::vector<Vec3d> barycoords);
+  void getSpringLists(std::vector<VertexHandle> &verts, std::vector<FaceHandle>& tris, std::vector<Vec3d>& barycoords);
   bool springExists(const FaceHandle& f, const VertexHandle& v);
 
 protected:

@@ -251,7 +251,7 @@ void ShellVertexTriSpringForce::clearSprings() {
   m_restlen.clear();
 }
 
-void ShellVertexTriSpringForce::getSpringLists(std::vector<VertexHandle> &verts, std::vector<FaceHandle>& tris, std::vector<Vec3d> barycoords) {
+void ShellVertexTriSpringForce::getSpringLists(std::vector<VertexHandle> &verts, std::vector<FaceHandle>& tris, std::vector<Vec3d>& barycoords) {
   verts = m_vertices;
   tris = m_faces;
   barycoords = m_barycoords;

@@ -207,6 +207,16 @@ void ShellRenderer::render()
     }
     glEnd();
 
+    //Draw collision springs
+    std::vector<Vec3d> starts, ends;
+    m_shell.getSpringList(starts, ends);
+    glColor3f(1, 0, 0);
+    glBegin(GL_LINES);
+    for(int i = 0; i < starts.size(); ++i) {
+      OpenGL::vertex(starts[i]);
+      OpenGL::vertex(ends[i]);
+    }
+    glEnd();
    /* glBegin(GL_QUADS);
     glVertex3f(-2.0f, -0.2, -2.0f);
     glVertex3f(2.0f, -0.2, -2.0f);
