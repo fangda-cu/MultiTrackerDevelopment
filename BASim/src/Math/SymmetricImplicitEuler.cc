@@ -42,6 +42,7 @@ bool SymmetricImplicitEuler<ODE>::execute()
         STOP_TIMER("SymmetricImplicitEuler::execute/backup");
     }
     
+    std::cout << "***Solver failed, reverting to inertial motion.***\n\n";
     
     // Falling back to rigid motion if solver failed, so at least the rod doesn't mess up collision detection for this time step
     generateInitialIterate0(m_deltaX);
@@ -309,12 +310,14 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
             else if (i >= m_maxlsit)
             {
                //std::cout << "Exceeded max iterations.\n\n";
+              std::cout << "Inner solve exceed max iterations.\n";
                 TraceStream(g_log, "")
                         << "Exceeded max iterations.\nSymmetricImplicitEuler::position_solve/line search: \033[31;1mWARNING IN IMPLICITEULER:\033[m Line search failed. Proceeding anyway.\n\n";
                 break;
             }
             else
             {
+              std::cout << "Cutting increment and iterating. iteration: " << i << " out of " << m_maxlsit << "\n";
                 TraceStream(g_log, "") << "cutting increment and iterating.\n\n";
             }
 
@@ -337,6 +340,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
         // Check for exceeding limit on number of Newton iterations
         if (curit == m_maxit - 1)
         {
+            std::cout << "Reached max number of Newton iterations without convergence.\n\n";
             TraceStream(g_log, "") << "\033[31;1mWARNING IN IMPLICITEULER:\033[m Newton solver reached max iterations: "
                     << m_maxit << " with initial guess " << guess_to_use << '\n';
             return false;
@@ -355,7 +359,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
         // Now go back and begin next Newton iteration...
     }
 
-    //std::cout << "SymmetricImplicitEuler solve completed.\n";
+    std::cout << "SymmetricImplicitEuler solve completed successfully.\n\n";
     TraceStream(g_log, "") << "SymmetricImplicitEuler::position_solve: completed " << curit + 1 << " Newton iterations."
             << '\n';
 
@@ -455,6 +459,15 @@ bool SymmetricImplicitEuler<RodTimeStepper>::generateInitialIterate0(VecXd& dx)
     dx.segment<3> (m_ndof - 3) = RigidMotion(x0.segment<3> (m_ndof - 3), p0, rotation, w0, m_dt);
 
     return true;
+}
+
+// Initial guess for deformable object
+template<>
+bool SymmetricImplicitEuler<DefoObjTimeStepper>::generateInitialIterate0(VecXd& dx)
+{
+  dx = m_dt * v0; //this is the same as initial iterate0
+
+  return true;
 }
 
 template<class ODE>
