@@ -219,6 +219,8 @@ void ShellRenderer::render()
     const DeformableObject& mesh = m_shell.getDefoObj();
 
     // Render all edges
+    glPolygonMode(GL_FRONT, GL_FILL);
+    glPolygonMode(GL_BACK, GL_LINE);
     glLineWidth(2);
     glBegin(GL_LINES);
     OpenGL::color(Color(0,0,0));

@@ -111,7 +111,9 @@ void ObjWriter::write( std::ofstream & of, const ElasticShell & shell )
 
     VertexProperty<int> vhIndices( &shell.getDefoObj() );
     VertexProperty<Vec3d> vertPositions( &defObj );
+    VertexProperty<int> indices (&defObj);
     int current = 0;
+    int currentH = 1; //OBJ vertex numbering starts from 1
 
     //Push all the vertex handles
     for ( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit )
@@ -126,12 +128,17 @@ void ObjWriter::write( std::ofstream & of, const ElasticShell & shell )
 //        vertPositions[vht] =
         vhIndices[*vit] = current++;
 
-        vertPositions[vht] = shell.getVertexPosition(*vit) + vertexNormals[*vit]*vertThickness[*vit]*0.5;
-        vertPositions[vhb] = shell.getVertexPosition(*vit) - vertexNormals[*vit]*vertThickness[*vit]*0.5;
+        vertPositions[vht] = shell.getVertexPosition( *vit )
+                + vertexNormals[*vit] * vertThickness[*vit] * 0.5;
+        vertPositions[vhb] = shell.getVertexPosition( *vit )
+                - vertexNormals[*vit] * vertThickness[*vit] * 0.5;
+
+        indices[vht] = currentH++;
+        indices[vhb] = currentH++;
 
     }
 
-    //Now add all the faces for top and bottom layers and stich
+    //Now add all the faces for top and bottom layers
     for ( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
     {
         std::vector<VertexHandle> triT;
@@ -144,6 +151,11 @@ void ObjWriter::write( std::ofstream & of, const ElasticShell & shell )
         defObj.addFace( triT[2], triT[1], triT[0] );
         defObj.addFace( triB[0], triB[1], triB[2] );
 
+    }
+
+    ObjWriter::write( of, vertPositions, defObj );
+    for ( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
+    {
         //Now the stich faces located on the boundaries of the mesh
         for ( FaceEdgeIterator feit = mesh.fe_iter( *fit ); feit; ++feit )
         {
@@ -155,27 +167,26 @@ void ObjWriter::write( std::ofstream & of, const ElasticShell & shell )
                 if ( orient == 1 )
                 {
                     from = vhIndices[mesh.fromVertex( *feit )];
-                    to   = vhIndices[mesh.toVertex( *feit )];
+                    to = vhIndices[mesh.toVertex( *feit )];
                 }
                 else
                 {
                     from = vhIndices[mesh.toVertex( *feit )];
-                    to   = vhIndices[mesh.fromVertex( *feit )];
+                    to = vhIndices[mesh.fromVertex( *feit )];
                 }
-                VertexHandle tl = vhandles[2*from];
-                VertexHandle bl = vhandles[2*from+1];
-                VertexHandle tr = vhandles[2*to];
-                VertexHandle br = vhandles[2*to+1];
+                int tl = indices[vhandles[2 * from]];
+                int bl = indices[vhandles[2 * from + 1]];
+                int tr = indices[vhandles[2 * to]];
+                int br = indices[vhandles[2 * to + 1]];
 
-                defObj.addFace(tl, bl, br);
-                defObj.addFace(tl, br, tr);
+
+                of << "f " << tl << " " << bl << " " << br << " " << tr << std::endl;
+//                defObj.addFace( tl, bl, br );
+//                defObj.addFace( tl, br, tr );
 
             }
         }
     }
-
-
-    ObjWriter::write( of, vertPositions, defObj );
 }
 
 }/* namespace BASim */

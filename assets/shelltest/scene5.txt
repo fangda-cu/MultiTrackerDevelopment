@@ -15,7 +15,7 @@ shell-surface-tension 0.0
 
 shell-remeshing 1
 shell-remeshing-resolution 0.2
-shell-remeshing-iterations 5
+shell-remeshing-iterations 8
 
 integrator implicit	# type of integrator to use for the shell
 
