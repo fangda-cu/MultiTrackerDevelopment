@@ -125,6 +125,8 @@ public:
   void extendMesh();
   void deleteRegion();
 
+  void getSpringList(std::vector<Vec3d>& start, std::vector<Vec3d>& end) const;
+
 protected:
 
   void resolveCollisions();

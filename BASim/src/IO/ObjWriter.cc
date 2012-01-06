@@ -156,7 +156,7 @@ void ObjWriter::write( std::ofstream & of, const ElasticShell & shell )
     ObjWriter::write( of, vertPositions, defObj );
     for ( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
     {
-        //Now the stich faces located on the boundaries of the mesh
+        //Now the stitch faces located on the boundaries of the mesh
         for ( FaceEdgeIterator feit = mesh.fe_iter( *fit ); feit; ++feit )
         {
             if ( mesh.edgeIncidentFaces( *feit ) == 1 )

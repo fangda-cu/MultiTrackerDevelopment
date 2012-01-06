@@ -47,7 +47,8 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
 }
 
 ElasticShell::~ElasticShell() {
-
+  delete m_vert_tri_springs;
+  delete m_vert_point_springs;
 }
 
 void ElasticShell::computeForces( VecXd& force )
@@ -542,7 +543,7 @@ void ElasticShell::resolveCollisions() {
 void ElasticShell::addSelfCollisionForces() {
   
   //update the broad phase structure with the current mesh data
-  Scalar collision_distance = 0.05;
+  Scalar collision_distance = 0.1;
   std::cout << "Building collision structure\n";
   m_broad_phase.update_broad_phase_static(*m_obj, m_positions, collision_distance);
   std::cout << "Done building collision structure\n";
@@ -592,7 +593,7 @@ void ElasticShell::addSelfCollisionForces() {
       check_point_triangle_proximity(vertex_position, face_verts[0], face_verts[1], face_verts[2], distance, barycoords[0], barycoords[1], barycoords[2], normal );
       //if such a spring doesn't already exist, add it
       if(distance < collision_distance) {
-        m_vert_tri_springs->addSpring(f, *vit, barycoords, 0.01, 0.01, collision_distance);
+        m_vert_tri_springs->addSpring(f, *vit, barycoords, 0.2, 0.02, collision_distance);
         std::cout << "Adding spring:";
         std::cout << " Vertex = " << (*vit).idx();
         std::cout << "\tFace = " << f.idx();
@@ -605,6 +606,22 @@ void ElasticShell::addSelfCollisionForces() {
 
 }
 
+void ElasticShell::getSpringList(std::vector<Vec3d>& start, std::vector<Vec3d>& end)  const {
+  std::vector<VertexHandle> verts;
+  std::vector<Vec3d> bary;
+  std::vector<FaceHandle> faces;
+  m_vert_tri_springs->getSpringLists(verts, faces, bary);
+  for(int i = 0; i < verts.size(); ++i) {
+    start.push_back(m_positions[verts[i]]);
+    
+    FaceVertexIterator fvit = m_obj->fv_iter(faces[i]);
+    Vec3d v0 = m_positions[*fvit];++fvit;
+    Vec3d v1 = m_positions[*fvit];++fvit;
+    Vec3d v2 = m_positions[*fvit];
+    Vec3d result = bary[i][0] * v0 + bary[i][1] * v1 + bary[i][2] * v2;
+    end.push_back(result);
+  }
+}
 
 void ElasticShell::setCollisionParams(bool enabled, Scalar proximity) {
   m_integrate_collision_epsilon = proximity;
@@ -628,15 +645,16 @@ void ElasticShell::endStep() {
   //
   ////add ground-plane constraints
   
-  //for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
-  //  Vec3d curPos = getVertexPosition(*(vit));
-  //  if(curPos[1] < -0.2) {
-  //    if(!m_vert_point_springs->hasSpring(*vit)) {
-  //      //curPos[1] = -0.2;
-  //      m_vert_point_springs->addSpring(*vit, curPos, 0.2, 0.02, 0.0);
-  //    }
-  //  }
-  //}
+  //Ground penalty force.
+  /*for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
+    Vec3d curPos = getVertexPosition(*(vit));
+    if(curPos[1] < -0.2) {
+      if(!m_vert_point_springs->hasSpring(*vit)) {
+        curPos[1] = -0.2;
+        m_vert_point_springs->addSpring(*vit, curPos, 0.2, 0.02, 0.0);
+      }
+    }
+  }*/
 
 
  /* for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
@@ -647,9 +665,9 @@ void ElasticShell::endStep() {
       }
     }
   }
-  
+  */
 
-  addSelfCollisionForces();*/
+  //addSelfCollisionForces();
 
   //Adjust thicknesses based on area changes
   updateThickness();
@@ -911,7 +929,7 @@ void ElasticShell::flipEdges() {
 
     dir0 = p0-p3; dir1 = p1 - p3;
     Scalar angle1 = acos(dir0.dot(dir1));
-    if(angle0 + angle1 > 1.00001*M_PI) {
+    if(angle0 + angle1 > M_PI) {
 
       //determine volume of the region being flipped
       FaceHandle f0, f1;
@@ -2040,7 +2058,7 @@ void ElasticShell::deleteRegion() {
       faces_to_remove.push_back(fh);
     }
   }
-  for(int i = 0; i < faces_to_remove.size(); ++i)
+  for(unsigned int i = 0; i < faces_to_remove.size(); ++i)
     m_obj->deleteFace(faces_to_remove[i], true);
 
 }

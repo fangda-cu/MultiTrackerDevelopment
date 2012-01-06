@@ -462,7 +462,12 @@ void idle()
         {
             last_frame_num = frame;
             std::cout << outputdirectory << std::endl;
-
+            
+#ifdef _MSC_VER
+            _mkdir(outputdirectory.c_str());
+#else
+            mkdir(outputdirectory.c_str(), 0755);
+#endif
 
             int file_width = 20;
 
