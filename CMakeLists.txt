@@ -50,6 +50,10 @@ if (CMAKE_COMPILER_IS_GNUCXX)
       add_definitions (-DNDEBUG)
       set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -mfpmath=sse -msse2 -fno-check-new -fstrict-aliasing") # -fno-exceptions
     endif (CMAKE_BUILD_TYPE MATCHES Release)
+    if (CMAKE_BUILD_TYPE MATCHES Profile)
+      add_definitions (-DNDEBUG)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -mfpmath=sse -msse2 -fno-check-new -fstrict-aliasing -pg")
+    endif (CMAKE_BUILD_TYPE MATCHES Profile)
   endif (CMAKE_SYSTEM_NAME MATCHES Linux)
 endif (CMAKE_COMPILER_IS_GNUCXX)
 

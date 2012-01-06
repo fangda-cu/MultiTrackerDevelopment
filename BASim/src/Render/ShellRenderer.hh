@@ -20,7 +20,7 @@ namespace BASim {
   
     enum DrawMode { DBG, FLAT, NONE, VOLUMETRIC };
 
-    ShellRenderer( const ElasticShell& shell );
+    ShellRenderer( const ElasticShell& shell, const Scalar thickness = 1.0 );
     
     void render();
     void renderEdges();
@@ -34,6 +34,7 @@ namespace BASim {
   protected:
     const ElasticShell& m_shell;
     DrawMode m_mode;
+    const Scalar m_refthickness;
   };
   
 } // namespace BASim

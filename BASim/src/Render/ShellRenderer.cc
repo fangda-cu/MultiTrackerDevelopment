@@ -16,6 +16,56 @@ namespace BASim
 {
 GLfloat black[] ={0.0f, 0.0f, 0.0f, 1.0f};
 GLfloat red[] ={0.0f, 0.0f, 1.0f, 1.0f};
+
+//Color routine to use HSV colors instead of RGB taken
+//from http://en.wikipedia.org/wiki/HSL_and_HSV#Converting_to_RGB
+// HSV \in (0-360, 0-1, 0-1)
+void hsvToRgb(const GLdouble _h, const GLdouble _s, const GLdouble _v,
+        GLdouble & r,GLdouble & g,GLdouble & b){
+    GLdouble c, m, x, hp;
+    GLdouble h = clamp<Scalar>(_h, 0, 360);
+    GLdouble s = clamp<Scalar>(_s, 0, 1);
+    GLdouble v = clamp<Scalar>(_v, 0, 1);
+    c = v * s;
+    m = v - c;
+    hp = h / 60.;
+    x = c * (GLdouble) ( 1 - abs((GLint)hp % 2 - 1));
+    assert ( hp < 6. && hp >= 0);
+    if ( hp < 1){
+        r = c;
+        g = x;
+        b = 0;
+    } else if ( hp < 2){
+        r = x;
+        g = c;
+        b = 0;
+    } else if ( hp < 3){
+        r = 0;
+        g = c;
+        b = x;
+    } else if ( hp < 4 ){
+        r = 0;
+        g = x;
+        b = c;
+    } else if ( hp < 5){
+        r = x;
+        g = 0;
+        b = c;
+    } else if ( hp < 6){
+        r = c;
+        g = 0;
+        b = x;
+    }
+    r += m;
+    g += m;
+    c += m;
+}
+void glColorHSV3d(const GLdouble h, const GLdouble s, const GLdouble v){
+    GLdouble r, g, b;
+    hsvToRgb ( h, s, v, r, g, b);
+    glColor3d ( r, g, b);
+}
+
 //Draws an arrow whose cone tip has radius equal to base along the z axis,
 //from 0 to 1
 void glutArrow (GLdouble base){
@@ -100,10 +150,12 @@ void ShellRenderer::cycleMode() {
    m_mode = (ShellRenderer::DrawMode) ((m_mode + 1) % 4);
 }
 
-ShellRenderer::ShellRenderer( const ElasticShell& shell )
+ShellRenderer::ShellRenderer( const ElasticShell& shell, const Scalar thickness )
 : m_shell(shell)
 , m_mode(FLAT)
-{}
+, m_refthickness( 2*thickness)
+{
+}
 
 
 
@@ -113,17 +165,35 @@ void ShellRenderer::render()
   if( m_mode == FLAT )
   {
     glEnable(GL_LIGHTING);
+    glEnable(GL_COLOR_MATERIAL);
 
-    GLfloat gray[] = {0.8f,0.8f,0.8f,1.0f}; 
-    glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,gray);
+    //Define the hue palette... red for negative thickness
+
+//    GLfloat gray[] = {0.8f,0.8f,0.8f,1.0f};
+//    glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,gray);
 
     // Render all faces
     glBegin(GL_TRIANGLES);
     //OpenGL::color(Color(255,0,0));
     const DeformableObject& mesh = m_shell.getDefoObj();
+
     for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
     {
       std::vector<Vec3d> v;
+      Scalar t = m_shell.getThickness(*fit);
+      Scalar hue;
+      Scalar sat;
+      if ( t < 0){//use only red
+          hue = 0;
+          sat = fabs(t/m_refthickness - 0.3);
+
+          //use the red if t < 0
+      }else{
+          hue = 240;
+          sat = t/m_refthickness + 0.3;
+      }
+      glColorHSV3d(hue,sat , 1);
+      glColorMaterial (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
       for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit )
       {
         v.push_back(m_shell.getVertexPosition(*fvit));
@@ -139,6 +209,7 @@ void ShellRenderer::render()
     }
     glEnd();
 
+    glDisable(GL_COLOR_MATERIAL);
     glDisable(GL_LIGHTING);
   }
   else if( m_mode == DBG )
@@ -148,6 +219,8 @@ void ShellRenderer::render()
     const DeformableObject& mesh = m_shell.getDefoObj();
 
     // Render all edges
+    glPolygonMode(GL_FRONT, GL_FILL);
+    glPolygonMode(GL_BACK, GL_LINE);
     glLineWidth(2);
     glBegin(GL_LINES);
     OpenGL::color(Color(0,0,0));
@@ -350,3 +423,4 @@ double ShellRenderer::calculateObjectBoundingRadius( const Vec3d& center )
 }
 
 } // namespace BASim
+

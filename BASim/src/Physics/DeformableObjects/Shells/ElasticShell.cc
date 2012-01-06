@@ -141,7 +141,21 @@ Scalar ElasticShell::getThickness(const VertexHandle& vh) const {
       total += w*m_thicknesses[*vfit];
   }
 
+  assert ( totalA > 0.);
+  assert ( total > 0.);
   return total / totalA;
+}
+Scalar ElasticShell::getMaxThickness() const {
+  Scalar max = -1000000;
+  for( FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit ){
+      if (m_thicknesses[*fit] > max ) max = m_thicknesses[*fit];
+  }
+}
+Scalar ElasticShell::getMinThickness() const {
+  Scalar min = 1000000;
+  for( FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit ){
+      if (m_thicknesses[*fit] < min ) min = m_thicknesses[*fit];
+  }
 }
 void ElasticShell::getFaceNormals(FaceProperty<Vec3d> & fNormals) const{
     const DeformableObject& mesh = *m_obj;
@@ -160,10 +174,12 @@ void ElasticShell::getVertexNormals(VertexProperty<Vec3d> & vNormals) const{
     FaceProperty<Vec3d> fNormals(& getDefoObj());
     getFaceNormals(fNormals);
     DeformableObject& mesh = *m_obj;
-
+    Scalar w = 0.0;
     for ( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit){
+        vNormals[*vit] = Vec3d(0.0,0.0,0.0);
         for ( VertexFaceIterator vfit = mesh.vf_iter(*vit); vfit; ++vfit){
-            vNormals[*vit] += fNormals[*vfit];
+            w = getArea(*vfit);
+            vNormals[*vit] += w*fNormals[*vfit];
         }
         vNormals[*vit].normalize();
     }
