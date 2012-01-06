@@ -370,7 +370,7 @@ void ElasticShell::constrainVertex( const VertexHandle& v, PositionConstraint* c
 
 void ElasticShell::startStep()
 {
-
+  std::cout << "Starting startStep\n";
   /* //Debugging forces
    const std::vector<ElasticShellForce*>& forces = getForces();
    std::vector<ElasticShellForce*>::const_iterator fIt;
@@ -413,7 +413,7 @@ void ElasticShell::startStep()
   for(unsigned int i = 0; i < forces.size(); ++i) {
     forces[i]->update();
   }
-
+  std::cout << "Done startStep\n";
 }
 
 
@@ -613,7 +613,7 @@ void ElasticShell::setCollisionParams(bool enabled, Scalar proximity) {
 }
 
 void ElasticShell::endStep() {
- 
+ std::cout << "Starting endStep\n";
   
   ////add ground-plane constraints
   //std::cout << "Proximity threshold: " << m_integrate_collision_epsilon << std::endl;
@@ -719,7 +719,7 @@ void ElasticShell::endStep() {
 
   
   //Advance any constraints!
-  
+  std::cout << "Done endStep\n";
  
 }
 

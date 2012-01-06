@@ -16,7 +16,7 @@ shell-DS-bending 1
 shell-surface-tension 0.0
 
 shell-remeshing 1
-shell-remeshing-resolution 0.1
+shell-remeshing-resolution 0.05
 shell-remeshing-iterations 5
 
 integrator implicit	# type of integrator to use for the shell
