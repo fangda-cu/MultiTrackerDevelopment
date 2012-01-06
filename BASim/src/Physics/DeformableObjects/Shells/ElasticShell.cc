@@ -630,7 +630,7 @@ void ElasticShell::endStep() {
   ////add ground-plane constraints
   
   //Ground penalty force.
-  for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
+  /*for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
     Vec3d curPos = getVertexPosition(*(vit));
     if(curPos[1] < -0.2) {
       if(!m_vert_point_springs->hasSpring(*vit)) {
@@ -638,7 +638,7 @@ void ElasticShell::endStep() {
         m_vert_point_springs->addSpring(*vit, curPos, 0.2, 0.02, 0.0);
       }
     }
-  }
+  }*/
 
 
  /* for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
@@ -651,7 +651,7 @@ void ElasticShell::endStep() {
   }
   */
 
-  addSelfCollisionForces();
+  //addSelfCollisionForces();
 
   //Adjust thicknesses based on area changes
   updateThickness();
@@ -913,7 +913,7 @@ void ElasticShell::flipEdges() {
 
     dir0 = p0-p3; dir1 = p1 - p3;
     Scalar angle1 = acos(dir0.dot(dir1));
-    if(angle0 + angle1 > 1.00001*M_PI) {
+    if(angle0 + angle1 > M_PI) {
 
       //determine volume of the region being flipped
       FaceHandle f0, f1;
