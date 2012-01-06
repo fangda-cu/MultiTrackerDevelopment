@@ -393,7 +393,7 @@ void ShellTest::setupScene2() {
   int xresolution = GetIntOpt("shell-x-resolution");
   int yresolution = GetIntOpt("shell-y-resolution");
 
-  Scalar dx = (Scalar)width / (Scalar)xresolution;
+  //Scalar dx = (Scalar)width / (Scalar)xresolution;
   Scalar dy = (Scalar)height / (Scalar)yresolution;
 
   //build a rectangular grid of vertices
@@ -1436,7 +1436,7 @@ void ShellTest::setupScene12() {
     }
   }
 
-  Scalar air_density = 1.225e-9; 
+  //Scalar air_density = 1.225e-9; 
   //shell->addForce(new DrainingBubblePressureForce(*shell, "DrainingBubblePressure", holeEdges, baseEdges, air_density, m_timestep));
 
 }

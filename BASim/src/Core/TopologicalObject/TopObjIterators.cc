@@ -131,7 +131,7 @@ namespace BASim {
     assert(m_obj);
     assert(m_obj->vertexExists(m_hnd));
 
-    if(m_idx >= m_obj->m_VE.getNumEntriesInRow(m_hnd.idx()) || m_idx < 0)
+    if(m_idx >= m_obj->m_VE.getNumEntriesInRow(m_hnd.idx()))
       return EdgeHandle(-1);
     return EdgeHandle(m_obj->m_VE.getColByIndex(m_hnd.idx(), m_idx));
   }
@@ -141,7 +141,7 @@ namespace BASim {
   {
     assert(m_obj);
     assert(m_obj->vertexExists(m_hnd));
-    return m_idx >= 0 && m_idx < m_obj->m_VE.getNumEntriesInRow(m_hnd.idx());
+    return m_idx < m_obj->m_VE.getNumEntriesInRow(m_hnd.idx());
   }
 
   //* EdgeVertex circulator routines */
@@ -224,7 +224,7 @@ namespace BASim {
   {
     assert(m_obj);
     
-    return m_idx >= 0 && m_idx < m_obj->m_EV.getNumEntriesInRow(m_hnd.idx());
+    return m_idx < m_obj->m_EV.getNumEntriesInRow(m_hnd.idx());
   }
 
   //* FaceEdge circulator routines */
@@ -302,7 +302,7 @@ namespace BASim {
   FaceEdgeIterator::operator bool() const
   {
     assert(m_obj);
-    return m_idx >= 0 && m_idx < (int)m_obj->m_FE.getNumEntriesInRow(m_hnd.idx());
+    return m_idx < (int)m_obj->m_FE.getNumEntriesInRow(m_hnd.idx());
   }
 
   //* VertexVertex circulator routines */
@@ -361,7 +361,7 @@ namespace BASim {
     assert(m_obj);
     assert(m_obj->vertexExists(m_hnd));
 
-    if(m_idx < 0 || m_idx >=  m_obj->m_VE.getNumEntriesInRow(m_hnd.idx()))
+    if(m_idx >=  m_obj->m_VE.getNumEntriesInRow(m_hnd.idx()))
       return VertexHandle(-1);
 
     //get nbr edge
@@ -382,7 +382,7 @@ namespace BASim {
   {
     assert(m_obj);
     assert(m_obj->vertexExists(m_hnd));
-    return m_idx >= 0 && m_idx < m_obj->m_VE.getNumEntriesInRow(m_hnd.idx());
+    return m_idx < m_obj->m_VE.getNumEntriesInRow(m_hnd.idx());
   }
 
 
@@ -510,7 +510,7 @@ namespace BASim {
   VertexFaceIterator::value_type VertexFaceIterator::operator* ()
   {
     assert(m_obj);
-    if(m_idx < 0 || m_idx >= m_obj->m_nbrsVF.getNumEntriesInRow(m_hnd.idx()))
+    if(m_idx >= m_obj->m_nbrsVF.getNumEntriesInRow(m_hnd.idx()))
       return FaceHandle(-1);
     return FaceHandle(m_obj->m_nbrsVF.getColByIndex(m_hnd.idx(), m_idx));
   }
@@ -519,7 +519,7 @@ namespace BASim {
   VertexFaceIterator::operator bool() const
   {
     assert(m_obj);
-    return m_idx >= 0 && m_idx < m_obj->m_nbrsVF.getNumEntriesInRow(m_hnd.idx());
+    return m_idx < m_obj->m_nbrsVF.getNumEntriesInRow(m_hnd.idx());
   }
 
   //* EdgeFace iterator routines */
@@ -587,7 +587,7 @@ namespace BASim {
   {
     assert(m_obj);
     assert(m_obj->edgeExists(m_hnd));
-    return m_idx >= 0 && m_idx < m_obj->m_EF.getNumEntriesInRow(m_hnd.idx());
+    return m_idx < m_obj->m_EF.getNumEntriesInRow(m_hnd.idx());
   }
 
 }

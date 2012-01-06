@@ -455,7 +455,7 @@ void idle()
 
     if (render && generate_movie)
     {
-        int frame = floor(current_problem->getTime() / current_problem->getDt() + 0.5);
+        int frame = (int)floor(current_problem->getTime() / current_problem->getDt() + 0.5);
         //if( floor(current_problem->getTime()/frame_period) >= current_frame )
     
         if (frame % steps_per_frame == 0 && last_frame_num != frame)

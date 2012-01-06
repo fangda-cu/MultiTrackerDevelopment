@@ -622,7 +622,7 @@ VertexHandle TopologicalObject::collapseEdge(const EdgeHandle& eh, const VertexH
 
         //walk over the other faces that this edge belongs to, checking for a shared edge
         for(unsigned int j = 0; j < m_EF.getNumEntriesInRow(edge_idx); ++j) {
-          int curFace = m_EF.getColByIndex(edge_idx, j);
+          unsigned int curFace = m_EF.getColByIndex(edge_idx, j);
           
           //if we see a shared edge, then the collapsing edge merges two faces
           //and that's unacceptable.
@@ -733,7 +733,7 @@ VertexHandle TopologicalObject::collapseEdge(const EdgeHandle& eh, const VertexH
 
     //finally, delete the orphaned edge
     deletedEdges.push_back(e1);
-    bool success = deleteEdge(e1, false);
+    success = deleteEdge(e1, false);
     assert(success);
   }
   

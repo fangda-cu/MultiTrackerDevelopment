@@ -51,7 +51,7 @@ void ShellRadialForce::globalForce( VecXd& force ) const
 
   }
   */
-  int c = 0;
+
   for(VertexIterator vit = obj.vertices_begin(); vit != obj.vertices_end(); ++vit) {
     VertexHandle& vh = *vit;
     int dofIdx = m_shell.getVertexDofBase(vh);
