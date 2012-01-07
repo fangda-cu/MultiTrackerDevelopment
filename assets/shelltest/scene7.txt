@@ -2,7 +2,7 @@
 #parameters from Benjamin and Mullin 1988
 
 shell-scene 7
-dt 0.02	# time-step size
+dt 0.025	# time-step size
 
 gravity 0 0 0	# gravity
 
@@ -30,8 +30,9 @@ shell-density 1.0	# volumetric density of the shell
 shell-thickness 0.001	# the thickness of the shell
 shell-height 1.0	# the vertical side length of the shell
 shell-width 1.5	# the horizontal side length of the shell
-shell-x-resolution 50	# the number of segments along the horizontal edge
-shell-y-resolution 15	# the number of segments along the vertical edge
+
+shell-x-resolution 100	# the number of segments along the horizontal edge
+shell-y-resolution 30	# the number of segments along the vertical edge
 
 iterations 100	# maximum number of iterations for the implicit method
 atol 1e-008	# absolute convergence tolerance

@@ -146,16 +146,18 @@ Scalar ElasticShell::getThickness(const VertexHandle& vh) const {
   return total / totalA;
 }
 Scalar ElasticShell::getMaxThickness() const {
-  Scalar max = -1000000;
+  Scalar maxVal = -1000000;
   for( FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit ){
-      if (m_thicknesses[*fit] > max ) max = m_thicknesses[*fit];
+      if (m_thicknesses[*fit] > maxVal ) maxVal = m_thicknesses[*fit];
   }
+  return maxVal;
 }
 Scalar ElasticShell::getMinThickness() const {
-  Scalar min = 1000000;
+  Scalar minVal = 1000000;
   for( FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit ){
-      if (m_thicknesses[*fit] < min ) min = m_thicknesses[*fit];
+      if (m_thicknesses[*fit] < minVal ) minVal = m_thicknesses[*fit];
   }
+  return minVal;
 }
 void ElasticShell::getFaceNormals(FaceProperty<Vec3d> & fNormals) const{
     const DeformableObject& mesh = *m_obj;
