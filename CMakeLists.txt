@@ -63,6 +63,7 @@ endif (CMAKE_BUILD_TYPE MATCHES Debug)
 
 # Eigen library is required
 find_package (Eigen REQUIRED)
+add_definitions (-DEIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET )
 include_directories (${EIGEN_INCLUDE_DIR})
 
 option (USE_PNG "Builds in support for exporting to png" ON)
