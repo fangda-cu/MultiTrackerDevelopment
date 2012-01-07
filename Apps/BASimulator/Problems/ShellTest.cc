@@ -21,6 +21,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexTriSpringForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexPointSpringForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/DrainingBubblePressureForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Shells/ShellBathForce.hh"
 
 #include <set>
 #include <fstream>
@@ -912,7 +913,10 @@ void ShellTest::setupScene7() {
       Scalar yVal = newRad*sin(rotAngle);
 
       VertexHandle vNew = shellObj->addVertex();
-      positions[vNew] = centre + Vec3d(xVal, 0.01*sin(xVal+yVal), yVal);
+
+      //perturbed vertically to generate some initial bending
+      positions[vNew] = centre + Vec3d(xVal, 0.0001*sin(4*M_PI*(newRad-in_radius)/(out_radius-in_radius)), yVal);
+
       velocities[vNew] = start_vel;
       undeformed[vNew] = positions[vNew];
       vertList[j].push_back(vNew);
@@ -960,9 +964,8 @@ void ShellTest::setupScene7() {
 
   }
 
-  /*shell->remesh(0.05);
-  shell->remesh(0.05);
-  shell->remesh(0.05);*/
+  //shell->addForce(new ShellBathForce(*shell, "BathForce", Vec3d(0,-9.81,0), 1000, 0.0));
+
 
 }
 
