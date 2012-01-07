@@ -82,8 +82,6 @@ Scalar ShellSurfaceTensionForce::globalEnergy() const
     
     gatherDOFs(fh, deformed, indices);
     
-    Scalar thickness = m_shell.getThickness(fh);
-    
     //determine the energy for this element
     energy += elementEnergy(deformed);
 

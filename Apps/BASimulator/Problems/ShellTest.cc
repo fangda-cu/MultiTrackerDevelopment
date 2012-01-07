@@ -23,6 +23,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/DrainingBubblePressureForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellBathForce.hh"
 
+
 #include <set>
 #include <fstream>
 
@@ -964,8 +965,7 @@ void ShellTest::setupScene7() {
 
   }
 
-  //shell->addForce(new ShellBathForce(*shell, "BathForce", Vec3d(0,-9.81,0), 1000, 0.0));
-
+  //shell->addForce(new ShellBathForce(*shell, "BathForce", Vec3d(0,-9.81,0), 10, 0.0));
 
 }
 
