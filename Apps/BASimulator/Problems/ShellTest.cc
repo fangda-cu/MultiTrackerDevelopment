@@ -903,8 +903,8 @@ void ShellTest::setupScene7() {
   Scalar dr = (out_radius - in_radius) / (Scalar) layers;
   
   //fill in the interior
-  vertList.resize(layers-1);
-  for(int j = 0; j < layers-1; ++j) {
+  vertList.resize(layers+1);
+  for(int j = 0; j < layers+1; ++j) {
     
     for(int i = 0; i < slices; ++i) {
       Scalar rotAngle = 2 * pi * (Scalar)i / (Scalar)slices;
@@ -924,7 +924,7 @@ void ShellTest::setupScene7() {
   }
 
   //construct faces
-  for(int j = 0; j < layers-2; ++j) {
+  for(int j = 0; j < layers; ++j) {
     for(int i = 0; i < slices; ++i) {
       shellObj->addFace(vertList[j][i], vertList[j+1][i], vertList[j+1][(i+1)%slices]);
       shellObj->addFace(vertList[j][i], vertList[j+1][(i+1)%slices], vertList[j][(i+1)%slices]);
