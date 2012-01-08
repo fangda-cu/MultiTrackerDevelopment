@@ -1,7 +1,7 @@
 #Falling viscous sheet stretching example
 
 shell-scene 10
-dt 0.01	# time-step size
+dt 0.02	# time-step size
 
 gravity 0 -9.81 0	# gravity
 
@@ -15,7 +15,7 @@ shell-Poisson-damping 0.5
 #Surface Tension
 shell-surface-tension 0.0
 
-shell-remeshing 0
+shell-remeshing 1
 shell-remeshing-resolution 0.05
 shell-remeshing-iterations 1
 

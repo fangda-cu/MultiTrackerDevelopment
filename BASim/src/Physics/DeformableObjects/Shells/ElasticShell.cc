@@ -911,6 +911,15 @@ void ElasticShell::flipEdges() {
   for(;e_it != m_obj->edges_end(); ++e_it) {
     EdgeHandle eh = *e_it;
 
+    bool isInflow = false;
+    for(unsigned int i = 0; i < m_inflow_boundaries.size(); ++i) {
+      if(std::find(m_inflow_boundaries[i].begin(), m_inflow_boundaries[i].end(),eh) != m_inflow_boundaries[i].end()) {
+        isInflow = true;
+        break;
+      }
+    }
+    if(isInflow) continue;
+
     VertexHandle v0 = m_obj->fromVertex(eh);
     VertexHandle v1 = m_obj->toVertex(eh);
     assert(v0!=v1);
@@ -941,6 +950,7 @@ void ElasticShell::flipEdges() {
       //check for collision safety
       //if(edgeFlipCausesCollision(eh, v2, v3))
       //  continue;
+
 
       EdgeHandle newEdge = flipEdge(*m_obj, eh);
       if(!newEdge.isValid()) //couldn't flip the edge, such an edge already existed
@@ -1050,6 +1060,15 @@ bool ElasticShell::splitEdges( double desiredEdge, double maxEdge, double maxAng
 
     EdgeHandle eh = sortable_edges_to_try[i].edge_hnd;
     
+    bool isConstrained = false;
+    for(unsigned int i = 0; i < m_inflow_boundaries.size(); ++i) {
+      if(std::find(m_inflow_boundaries[i].begin(), m_inflow_boundaries[i].end(),eh) != m_inflow_boundaries[i].end()) {
+        isConstrained = true;
+        break;
+      }
+    }
+    if(isConstrained) continue;
+
     if ( !m_obj->edgeExists(eh) || !isEdgeActive(eh))   { continue; }
     if(isSplitDesired(eh, maxEdge, desiredEdge, maxAngle)) {
     
@@ -1919,6 +1938,15 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
 
 
     if(doCollapse) {
+
+      bool isInflow = false;
+      for(unsigned int i = 0; i < m_inflow_boundaries.size(); ++i) {
+        if(std::find(m_inflow_boundaries[i].begin(), m_inflow_boundaries[i].end(),eh) != m_inflow_boundaries[i].end()) {
+          isInflow = true;
+          break;
+        }
+      }
+      if(isInflow) continue;
 
       //don't collapse a constrained vertex
       bool v0_pinned = false,v1_pinned = false;
