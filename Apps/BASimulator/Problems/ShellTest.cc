@@ -1237,7 +1237,7 @@ void ShellTest::setupScene10() {
   EdgeProperty<Scalar> edgeAngle(shellObj);
   EdgeProperty<Scalar> edgeVel(shellObj);
 
-  Vec3d start_vel(0,-0.5,0);
+  Vec3d start_vel(0,-2,0);
   std::set<VertexHandle> topVerts;
   for(int j = 0; j <= yresolution; ++j) {
     for(int i = 0; i <= xresolution; ++i) {
@@ -1307,7 +1307,7 @@ void ShellTest::setupScene10() {
   Vec3d inflow_vel = start_vel;
   
   shell->setInflowSection(extendEdgeList, inflow_vel, m_initial_thickness);
-  shell->setDeletionBox(Vec3d(-1, -10, -1), Vec3d(2, -2.0, 1));
+  shell->setDeletionBox(Vec3d(-1, -10, -1), Vec3d(2, -4.0, 1));
 
 }
 
