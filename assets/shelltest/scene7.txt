@@ -16,7 +16,7 @@ shell-Poisson-damping 0.5
 shell-surface-tension 0.0728
 
 shell-remeshing 1
-shell-remeshing-resolution 0.02
+shell-remeshing-resolution 0.01
 shell-remeshing-iterations 3
 
 integrator implicit	# type of integrator to use for the shell
@@ -31,8 +31,8 @@ shell-width 1.5		# the horizontal side length of the shell
 #the density of the fluid bath
 shell-bath-density 10.0 
 
-shell-x-resolution 40	# the number of segments along the horizontal edge
-shell-y-resolution 13	# the number of segments along the vertical edge
+shell-x-resolution 80	# the number of segments along the horizontal edge
+shell-y-resolution 25	# the number of segments along the vertical edge
 
 iterations 100	# maximum number of iterations for the implicit method
 atol 1e-008	# absolute convergence tolerance
