@@ -9,10 +9,6 @@ gravity 0 0 0	# gravity
 shell-CST-stretching 1
 shell-DS-bending 1
 
-#Elastic Parameters
-#shell-Youngs 20.0
-#shell-Poisson 0.5
-
 #Viscous Parameters
 shell-Youngs-damping 5000.0
 shell-Poisson-damping 0.5
@@ -26,10 +22,12 @@ shell-remeshing-iterations 3
 
 integrator implicit	# type of integrator to use for the shell
 
-shell-density 1.0	# volumetric density of the shell 
+shell-density 0.978	# volumetric density of the shell 
 shell-thickness 0.001	# the thickness of the shell
 shell-height 1.0	# the vertical side length of the shell
 shell-width 1.5	# the horizontal side length of the shell
+shell-rotation-rate 0.2 #the old default rotation rate
+shell-bath-density 0.0 #old default, no bath
 
 shell-x-resolution 100	# the number of segments along the horizontal edge
 shell-y-resolution 30	# the number of segments along the vertical edge

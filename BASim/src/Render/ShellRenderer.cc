@@ -215,12 +215,11 @@ void ShellRenderer::render()
   else if( m_mode == DBG )
   {
     glDisable(GL_LIGHTING);
-
     const DeformableObject& mesh = m_shell.getDefoObj();
 
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
     // Render all edges
-    glPolygonMode(GL_FRONT, GL_FILL);
-    glPolygonMode(GL_BACK, GL_LINE);
     glLineWidth(2);
     glBegin(GL_LINES);
     OpenGL::color(Color(0,0,0));

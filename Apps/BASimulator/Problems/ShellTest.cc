@@ -55,12 +55,16 @@ ShellTest::ShellTest()
   AddOption("shell-thickness", "the (initial) thickness of the shell", 0.01);
   AddOption("shell-density", "volumetric density of the shell ", 1.0);
 
-  //Shell geometry (x/y/width/height may also refer to resolutions/sizes in non-cartesian scenarios)
+  //Scene specific stuff (geometry, scene-specific forces, etc.)
   AddOption("shell-width", "the horizontal side length of the shell", 1.0);
   AddOption("shell-height", "the vertical side length of the shell", 1.0);
   AddOption("shell-x-resolution", "the number of segments along first dimension", 30);
   AddOption("shell-y-resolution", "the number of segments along second dimension", 30);
   
+  //sheared wrinkling parameters
+  AddOption("shell-rotation-rate", "the rate at which inner cylinder rotates for sheared wrinkling test", 0.0);
+  AddOption("shell-bath-density", "the density of water fluid bath for sheared wrinkling test", 1.0);
+
   //Remeshing options
   AddOption("shell-remeshing", "whether to perform remeshing", 0);
   AddOption("shell-remeshing-resolution", "target edge-length", 0.1);
@@ -897,7 +901,7 @@ void ShellTest::setupScene7() {
   Scalar out_radius = 0.25;
   Scalar in_radius = 0.1;
   Vec3d start_vel(0,0,0);
-  Scalar rotation_rate = 0.2;
+  Scalar rotation_rate = GetScalarOpt("shell-rotation-rate");
 
   std::vector<std::vector<VertexHandle> > vertList;
 
@@ -964,8 +968,10 @@ void ShellTest::setupScene7() {
     shell->constrainVertex(vertList[inside][i], p);
 
   }
-
-  //shell->addForce(new ShellBathForce(*shell, "BathForce", Vec3d(0,-9.81,0), 10, 0.0));
+  
+  Scalar bath_density = GetScalarOpt("shell-bath-density");
+  //we assume gravity of -9.81 and bath height of 0.0
+  shell->addForce(new ShellBathForce(*shell, "BathForce", Vec3d(0,-9.81,0), bath_density, 0.0));
 
 }
 
