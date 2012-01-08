@@ -878,6 +878,43 @@ public:
 
 };
 
+//Planar rotating points
+class XZPlaneVariableRotationConstraint : public PositionConstraint {
+  
+  std::vector<Scalar> m_times, m_start_rates, m_accelerations;
+
+  Vec3d m_position, m_centre;
+  Scalar m_rad;
+  Scalar m_baseangle;
+
+public:
+  XZPlaneVariableRotationConstraint(Vec3d& position, Vec3d& centre, 
+                            std::vector<Scalar>& times, std::vector<Scalar>& startRates, std::vector<Scalar>& accels)
+    :m_position(position), m_centre(centre), m_times(times), m_start_rates(startRates), m_accelerations(accels) {
+    Vec3d offset = m_position - m_centre;
+    offset[1] = 0;
+    m_rad = offset.norm();
+    m_baseangle = atan2(m_position[2]-centre[2], m_position[0]-centre[0]);
+  }
+
+  Vec3d operator()(Scalar time) {
+    
+    //integrate up from t=0 to t=time to get the current angle
+    int segment = 0;
+    Scalar accum_time = 0;
+    Scalar accum_angle = m_baseangle;
+    while(m_times[segment] < time) {
+      Scalar dt = m_times[segment+1] < time? m_times[segment+1]-m_times[segment] : time - m_times[segment];
+      accum_angle += m_start_rates[segment]*dt + 0.5*m_accelerations[segment]*square(dt);
+      ++segment;
+    }
+
+    //work out the current target position
+    return m_centre + m_rad*Vec3d(cos(accum_angle), 0, sin(accum_angle));
+  }
+
+};
+
 //a horizontal sheet pinned between two circles
 void ShellTest::setupScene7() {
   int xresolution = GetIntOpt("shell-x-resolution");
@@ -964,7 +1001,16 @@ void ShellTest::setupScene7() {
     shell->constrainVertex(vertList[outside][i], shell->getVertexPosition(vertList[outside][i]));
 
     Vec3d pos = shell->getVertexPosition(vertList[inside][i]);
-    XZPlaneRotatingConstraint*p = new XZPlaneRotatingConstraint(pos, centre, rotation_rate);
+    
+    //Constant rotation
+    //XZPlaneRotatingConstraint*p = new XZPlaneRotatingConstraint(pos, centre, rotation_rate);
+    std::vector<Scalar> times, rates, accels;
+    times.push_back(0); rates.push_back(0.03); accels.push_back(0);          //fixed velocity of 0.03 over [0, 400]
+    times.push_back(400); rates.push_back(0.03); accels.push_back(-3.75e-5); //decelerate linearly from 0.03 to 0 over [400,1200]
+    times.push_back(1200); rates.push_back(0.0); accels.push_back(0);        //stop rotating
+    times.push_back(2000); rates.push_back(0.0); accels.push_back(0);
+    XZPlaneVariableRotationConstraint*p = new XZPlaneVariableRotationConstraint(pos, centre, times, rates, accels);
+    
     shell->constrainVertex(vertList[inside][i], p);
 
   }
