@@ -26,9 +26,7 @@ shell-thickness 0.002	# the thickness of the shell
 shell-height 1.0		# the vertical side length of the shell
 shell-width 1.5		# the horizontal side length of the shell
 
-#the rate at which the inner cylinder rotates
-shell-rotation-rate 0.03 # wrinkling, settles to steady state
-#shell-rotation-rate 0.01 # no wrinkling, at least to the point that I ran the simulation
+#rotation rates are scripted in the shelltest code.
 
 #the density of the fluid bath
 shell-bath-density 10.0 
