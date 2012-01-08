@@ -2134,8 +2134,8 @@ void ElasticShell::extendMesh() {
       else { //B option
         newEdge2 = m_obj->addEdge(otherVert, newVert);
 
-        newFace1 = m_obj->addFace(prevEdge, newEdge4, newEdge2);
-        newFace2 = m_obj->addFace(eh1, newEdge2, newEdge3);
+        newFace1 = m_obj->addFace(prevEdge, newEdge2, newEdge4);
+        newFace2 = m_obj->addFace(eh1, newEdge3, newEdge2);
       }
 
       setFaceActive(newFace1);
