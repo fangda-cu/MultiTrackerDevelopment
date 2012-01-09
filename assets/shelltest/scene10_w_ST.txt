@@ -13,10 +13,10 @@ shell-Youngs-damping 0.1
 shell-Poisson-damping 0.5
 
 #Surface Tension
-shell-surface-tension 0.0
+shell-surface-tension 0.005
 
 shell-remeshing 1
-shell-remeshing-resolution 0.05
+shell-remeshing-resolution 0.1
 shell-remeshing-iterations 1
 
 integrator implicit	# type of integrator to use for the shell
