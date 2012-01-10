@@ -119,7 +119,7 @@ public:
   void addVertexTriSpring(const FaceHandle& f, const VertexHandle& v, const Vec3d& pos, Scalar stiffness, Scalar damping, Scalar length);
 
   void setCollisionParams(Scalar proximity, Scalar stiffness, Scalar damping);
-  void setGroundPlane(bool enabled, Scalar height);
+  void setGroundPlane(bool enabled, Scalar height, Scalar velocity);
   void setSelfCollision(bool enabled);
 
   void setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel, Scalar thickness);
@@ -196,7 +196,6 @@ protected:
   std::vector<ElasticShellForce*> m_shell_forces;
 
   ShellVertexPointSpringForce* m_vert_point_springs;
-  ShellVertexTriSpringForce* m_vert_tri_springs;
   ShellStickyRepulsionForce* m_repulsion_springs;
 
   //Constraints 
@@ -222,6 +221,7 @@ protected:
   Scalar m_ground_height;
   bool m_self_collisions;
   bool m_ground_collisions;
+  Scalar m_ground_velocity;
   Scalar m_collision_spring_stiffness, m_collision_spring_damping;
 
   ElTopo::BroadPhaseGrid m_broad_phase;

@@ -43,6 +43,9 @@ public:
   void getSpringLists(std::vector<VertexHandle> &verts, std::vector<FaceHandle>& tris, std::vector<Vec3d>& barycoords);
   bool springExists(const FaceHandle& f, const VertexHandle& v);
 
+  void clearSprings(VertexHandle& v);
+  void clearSprings(FaceHandle& f);
+
 protected:
 
   bool gatherDOFs(const FaceHandle& fh, const VertexHandle& vh, std::vector<Vec3d>& deformed, std::vector<Vec3d>& undeformed_damp, std::vector<int>& indices) const;

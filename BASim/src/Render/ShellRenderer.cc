@@ -279,24 +279,48 @@ void ShellRenderer::render()
     }
     glEnd();
 
+    glPointSize(10);
+    OpenGL::color(Color(0,1,0));
+    glBegin(GL_POINTS);
+    for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) {
+      Vec3d vertPos = m_shell.getVertexPosition(*vit); 
+      if(m_shell.isConstrained(*vit)) {
+        OpenGL::vertex(vertPos);
+      }
+    }
+    glEnd();
+
     //Draw collision springs
     std::vector<Vec3d> starts, ends;
     m_shell.getSpringList(starts, ends);
-    glColor3f(1, 0, 0);
+    glLineWidth(5);
+    
     glBegin(GL_LINES);
-    for(int i = 0; i < starts.size(); ++i) {
+    glColor3f(0.0, 1.0, 0.0);
+     for(int i = 0; i < starts.size(); ++i) {
       OpenGL::vertex(starts[i]);
       OpenGL::vertex(ends[i]);
     }
     glEnd();
-    glPointSize(3);
+
+    glPointSize(10);
     glBegin(GL_POINTS);
     glColor3f(0,0,1);
     for(int i = 0; i < starts.size(); ++i) {
       OpenGL::vertex(starts[i]);
+    }
+    glEnd();
+    glPointSize(10);
+    
+    glBegin(GL_POINTS);
+    glColor3f(0,1,1);
+    for(int i = 0; i < ends.size(); ++i) {
       OpenGL::vertex(ends[i]);
     }
     glEnd();
+
+
+
    /* glBegin(GL_QUADS);
     glVertex3f(-2.0f, -0.2, -2.0f);
     glVertex3f(2.0f, -0.2, -2.0f);

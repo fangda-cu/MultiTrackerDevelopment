@@ -268,6 +268,56 @@ void ShellStickyRepulsionForce::clearSprings() {
   m_restlen.clear();
 }
 
+void ShellStickyRepulsionForce::clearSprings(VertexHandle& v) {
+  bool deletedElt = true;
+  while(deletedElt) {
+    int target = -1;
+    deletedElt = false;
+    for(unsigned int i = 0; i < m_vertices.size(); ++i) {
+      if(m_vertices[i] == v) {
+        target = i;
+        deletedElt = true;
+        break;
+      }
+    }
+
+    if(target != -1) {
+      m_faces.erase(m_faces.begin() + target);
+      m_vertices.erase(m_vertices.begin() + target);
+      m_barycoords.erase(m_barycoords.begin() + target);
+      m_stiffnesses.erase(m_stiffnesses.begin() + target);
+      m_damping.erase(m_damping.begin() + target);
+      m_restlen.erase(m_restlen.begin() + target);
+    }
+  }
+
+}
+
+void ShellStickyRepulsionForce::clearSprings(FaceHandle& f) {
+  bool deletedElt = true;
+  while(deletedElt) {
+    int target = -1;
+    deletedElt = false;
+    for(unsigned int i = 0; i < m_faces.size(); ++i) {
+      if(m_faces[i] == f) {
+        target = i;
+        deletedElt = true;
+        break;
+      }
+    }
+
+    if(target != -1) {
+      m_faces.erase(m_faces.begin() + target);
+      m_vertices.erase(m_vertices.begin() + target);
+      m_barycoords.erase(m_barycoords.begin() + target);
+      m_stiffnesses.erase(m_stiffnesses.begin() + target);
+      m_damping.erase(m_damping.begin() + target);
+      m_restlen.erase(m_restlen.begin() + target);
+    }
+  }
+
+}
+
 void ShellStickyRepulsionForce::getSpringLists(std::vector<VertexHandle> &verts, std::vector<FaceHandle>& tris, std::vector<Vec3d>& barycoords) {
   verts = m_vertices;
   tris = m_faces;
@@ -275,7 +325,7 @@ void ShellStickyRepulsionForce::getSpringLists(std::vector<VertexHandle> &verts,
 }
 
 bool ShellStickyRepulsionForce::springExists(const FaceHandle& f, const VertexHandle& v) {
-  
+
   //TODO do this more efficiently (store verts per face, for example, so we don't have to search the whole set)
   for(unsigned int i = 0; i < m_faces.size(); ++i) {
     if(m_faces[i] == f) {

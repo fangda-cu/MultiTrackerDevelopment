@@ -38,20 +38,16 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
     m_density(1),
     m_proximity_epsilon(0.01),
     m_vert_point_springs(NULL),
-    m_vert_tri_springs(NULL),
     m_repulsion_springs(NULL)
 {
   m_vert_point_springs = new ShellVertexPointSpringForce(*this, "VertPointSprings", timestep);
-  m_vert_tri_springs = new ShellVertexTriSpringForce(*this, "VertTriSprings", timestep);
   m_repulsion_springs = new ShellStickyRepulsionForce(*this, "RepulsionSprings", timestep);
 
   addForce(m_vert_point_springs);
-  addForce(m_vert_tri_springs);
   addForce(m_repulsion_springs);
 }
 
 ElasticShell::~ElasticShell() {
-  delete m_vert_tri_springs;
   delete m_vert_point_springs;
   delete m_repulsion_springs;
 }
@@ -369,6 +365,7 @@ const Scalar& ElasticShell::getMass( const DofHandle& hnd ) const
 void ElasticShell::getScriptedDofs( IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time ) const
 {
   for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
+    
     int dofBase = getVertexDofBase(m_constrained_vertices[i]);
     Vec3d pos = m_constraint_positions[i]->operator()(time);
     dofIndices.push_back(dofBase); dofValues.push_back(pos[0]);
@@ -392,21 +389,28 @@ void ElasticShell::constrainVertex( const VertexHandle& v, PositionConstraint* c
 
 void ElasticShell::releaseVertex( const VertexHandle& v)
 {
-  //find the vertex
-  int index = -1;
-  for(int i = 0; i < m_constraint_positions.size(); ++i) {
-    if(m_constrained_vertices[i] == v) {
-      index = i;
-      break;
+ 
+  bool deletedVertex = true;
+  while(deletedVertex) {
+    deletedVertex = false;
+    //can only have one constraint or things get broken anyways(right?), so no need to search for multiple
+    int index = -1;
+    for(unsigned int i = 0; i < m_constraint_positions.size(); ++i) {
+      if(m_constrained_vertices[i] == v) {
+        index = i;
+        deletedVertex = true;
+        break;
+      }
+    }
+
+    //remove the constraint
+    if(index != -1) {
+      delete m_constraint_positions[index];
+      m_constraint_positions.erase(m_constraint_positions.begin()+index);
+      m_constrained_vertices.erase(m_constrained_vertices.begin()+index);
     }
   }
-
-  //remove the constraint
-  if(index != -1) {
-    m_constraint_positions.erase(m_constraint_positions.begin()+index);
-    m_constrained_vertices.erase(m_constrained_vertices.begin()+index);
-  }
-
+  
   
 }
 
@@ -571,6 +575,7 @@ void ElasticShell::addSelfCollisionForces() {
   
   //update the broad phase structure with the current mesh data
   Scalar collision_distance = m_collision_proximity;
+
   m_broad_phase.update_broad_phase_static(*m_obj, m_positions, collision_distance);
   
   //determine proximity of vertex triangle pairs and
@@ -578,7 +583,6 @@ void ElasticShell::addSelfCollisionForces() {
   
   //consider all vertices
   for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
-    
     Vec3d vert_pos = m_positions[*vit];
     ElTopo::Vec3d vertex_position = ElTopo::toElTopo(vert_pos);
 
@@ -592,8 +596,6 @@ void ElasticShell::addSelfCollisionForces() {
       int tri_idx = overlapping_triangles[i];
       FaceHandle f(tri_idx);
       
-      
-      //if(m_vert_tri_springs->springExists(f, *vit)) continue;
       if(m_repulsion_springs->springExists(f, *vit)) continue;
 
       ElTopo::Vec3d face_verts[3];
@@ -608,8 +610,7 @@ void ElasticShell::addSelfCollisionForces() {
       if(!goodSpring) {
         continue;
       }
-     
-
+      
       //check if the geometry is actually close enough to warrant a spring
       Vec3d barycoords;
       Scalar distance;
@@ -617,18 +618,10 @@ void ElasticShell::addSelfCollisionForces() {
       check_point_triangle_proximity(vertex_position, face_verts[0], face_verts[1], face_verts[2], distance, barycoords[0], barycoords[1], barycoords[2], normal );
       //if such a spring doesn't already exist, add it
       if(distance < collision_distance) {
-        //m_vert_tri_springs->addSpring(f, *vit, barycoords, m_collision_spring_stiffness, m_collision_spring_damping, collision_distance);
         m_repulsion_springs->addSpring(f, *vit, barycoords, m_collision_spring_stiffness, m_collision_spring_damping, collision_distance);
-        
-        /*std::cout << "Adding spring:";
-        std::cout << " Vertex = " << (*vit).idx();
-        std::cout << "\tFace = " << f.idx();
-        std::cout << "\tDistance is :" << distance << std::endl;*/
-
       }
     }
   }
-  std::cout << "Done processing collision springs\n";
 
 }
 
@@ -636,7 +629,7 @@ void ElasticShell::getSpringList(std::vector<Vec3d>& start, std::vector<Vec3d>& 
   std::vector<VertexHandle> verts;
   std::vector<Vec3d> bary;
   std::vector<FaceHandle> faces;
-  //m_vert_tri_springs->getSpringLists(verts, faces, bary);
+  
   m_repulsion_springs->getSpringLists(verts, faces, bary);
   for(unsigned int i = 0; i < verts.size(); ++i) {
     start.push_back(m_positions[verts[i]]);
@@ -656,10 +649,12 @@ void ElasticShell::setCollisionParams(Scalar proximity, Scalar stiffness, Scalar
   m_collision_proximity = proximity;
 }
 
-void ElasticShell::setGroundPlane(bool enabled, Scalar height) {
+void ElasticShell::setGroundPlane(bool enabled, Scalar height, Scalar velocity) {
   m_ground_collisions = enabled;
   m_ground_height = height;
+  m_ground_velocity = velocity;
 }
+
 void ElasticShell::setSelfCollision(bool enabled) {
   m_self_collisions = enabled;
 }
@@ -671,9 +666,11 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 
   //El Topo collision processing.
   //resolveCollisions();
- std::cout << "Ground:  " << m_ground_height << std::endl;
+ 
   //Ground plane penalty force.
+  
   if(m_ground_collisions) {
+    std::cout << "Adding ground collisions.\n";
    /*for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
       Vec3d curPos = getVertexPosition(*(vit));
       if(curPos[1] < m_ground_height) {
@@ -690,33 +687,47 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
       Vec3d curPos = getVertexPosition(*(vit));
       if(curPos[1] < m_ground_height) {
         if(!isConstrained(*vit)) {
-          constrainVertex(*vit, curPos);
+          //constrainVertex(*vit, curPos);
+          
+          //Sinking
+          //constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, m_ground_velocity, 0), time));
+          
+          //Conveying
+          constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, 0, m_ground_velocity), time));
         }
       }
     }
  }
  
-  //apply penalty springs for self-collision
-  if(m_self_collisions)
-    addSelfCollisionForces();
   
+  //apply penalty springs for self-collision
+  if(m_self_collisions) {
+    std::cout << "Adding self-collision springs\n";
+    addSelfCollisionForces();
+  }
+  
+  std::cout << "Adjusting thicknesses\n";
   //Adjust thicknesses based on area changes
   updateThickness();
 
   bool do_relabel = false;
   
   if(m_inflow) {
+    std::cout << "Extending the mesh\n";
     extendMesh(time);
     do_relabel = true;
   }
 
+  
   if(m_delete_region) {
+    std::cout << "Deleting material\n";
     deleteRegion();
     do_relabel = true;
   }
 
   //Remeshing
   if(m_do_remeshing) {
+    std::cout << "Remeshing\n";
     for(int i = 0; i < m_remeshing_iters; ++i)
       remesh(m_remesh_edge_length);  
     
@@ -724,10 +735,13 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     do_relabel = true;
   }
 
-  if(do_relabel)
-    m_obj->computeDofIndexing();
-
   
+  if(do_relabel) {
+    std::cout << "Re-indexing\n";
+    m_obj->computeDofIndexing();
+  }
+
+  std::cout << "Recomputing masses\n";
   //Update masses based on new areas/thicknesses
   computeMasses();
   
@@ -2115,8 +2129,23 @@ void ElasticShell::deleteRegion() {
       faces_to_remove.push_back(fh);
     }
   }
-  for(unsigned int i = 0; i < faces_to_remove.size(); ++i)
-    m_obj->deleteFace(faces_to_remove[i], true);
+  for(unsigned int i = 0; i < faces_to_remove.size(); ++i) {
+    VertexHandle faceVerts[3];
+    FaceVertexIterator fvit = m_obj->fv_iter(faces_to_remove[i]);
+    int j = 0;
+    for(;fvit;++fvit) {
+      releaseVertex(*fvit);
+      m_repulsion_springs->clearSprings(*fvit);
+    }
+    m_repulsion_springs->clearSprings(faces_to_remove[i]);
+    
+    bool success = m_obj->deleteFace(faces_to_remove[i], true);
+    if(!success || m_obj->faceExists(faces_to_remove[i])) {
+      std::cout << "Failed to delete face:" << faces_to_remove[i].idx() << "\n";
+      std::cout << "Return result:" << success << std::endl;
+      exit(-1);
+    }
+  }
 
 }
 
@@ -2234,6 +2263,9 @@ void ElasticShell::extendMesh(Scalar current_time) {
       m_damping_undeformed_positions[vertices[i]] = m_inflow_positions[boundary][i];
 
       //constrain the vertex velocity of the new vertex
+      if(isConstrained(vertices[i])) {
+        printf("\n\n\n***Weirdness***!\n\n\n");
+      }
       constrainVertex(vertices[i], new FixedVelocityConstraint(m_inflow_positions[boundary][i], m_inflow_velocity[boundary], current_time));
     }
 
@@ -2278,25 +2310,15 @@ void ElasticShell::setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3
 
     Vec3d pos = getVertexPosition(otherVert);
     posList.push_back(pos);
-    std::cout << "Vertex: " << otherVert.idx() << std::endl;
     
     prevVert = sharedVert;
   }
   
   VertexHandle wrapVert = getSharedVertex(*m_obj, edgeList[0], edgeList[edgeList.size()-1]);
   if(!wrapVert.isValid()) {
-    std::cout << "Edges don't wrap.\n";
     Vec3d pos = getVertexPosition(prevVert);
     posList.push_back(pos);
-    std::cout << "Vertex: " << prevVert.idx() << std::endl;
   } 
-  else {
-    std::cout << "Edges do wrap.\n";
-  }
-  std::cout << "Vertices: " << std::endl;
-  for(unsigned int i = 0; i < posList.size(); ++i)
-    std::cout << posList[i] << " " << std::endl;
-  std::cout << std::endl;
 
   m_inflow_positions.push_back(posList);
 

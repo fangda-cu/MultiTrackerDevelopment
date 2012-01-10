@@ -90,11 +90,13 @@ ShellTest::ShellTest()
   AddOption("shell-self-collision", "whether to add self-collision springs", false);
   AddOption("shell-ground-plane", "whether to add ground plane collision springs", false);
   AddOption("shell-ground-plane-height", "height of the ground plane", 0.0);
+  AddOption("shell-ground-plane-velocity", "the rate at which particles colliding with the ground (bath) are pulled into it.", 0.0);
+
   AddOption("shell-collision-spring-stiffness", "stiffness coefficient of the collision springs", 0.0);
   AddOption("shell-collision-spring-damping", "damping coefficient of the collision springs", 0.0);
   AddOption("shell-collision-proximity", "the collision spring rest length and distance at which to add springs", 0.0);
   
-  //Timestepper options
+    //Timestepper options
   AddOption("integrator", "type of integrator to use for the shell", "implicit");
 
   //Solver options
@@ -223,8 +225,8 @@ void ShellTest::Setup()
   
   bool groundPlane = GetBoolOpt("shell-ground-plane");
   Scalar gpHeight = GetScalarOpt("shell-ground-plane-height");
-  shell->setGroundPlane(groundPlane, gpHeight);
-  std::cout << "Ground plane height: " << gpHeight << std::endl;
+  Scalar gpSpeed = GetScalarOpt("shell-ground-plane-velocity");
+  shell->setGroundPlane(groundPlane, gpHeight, gpSpeed);
   bool selfCollide = GetBoolOpt("shell-self-collision");
   shell->setSelfCollision(selfCollide);
 
@@ -1321,7 +1323,6 @@ void ShellTest::setupScene10() {
     Vec3d pos1 = shell->getVertexPosition(vh1);
     if(topVerts.find(vh0) != topVerts.end() && topVerts.find(vh1) != topVerts.end()) {
       extendEdgeList.push_back(eh);
-      std::cout << "Extendable edge " << eh.idx() << ": " << vh0.idx() << " to " << vh1.idx() << std::endl;
     }
   }
   Vec3d inflow_vel = start_vel;
@@ -1609,11 +1610,12 @@ void ShellTest::setupScene13() {
     Vec3d pos1 = shell->getVertexPosition(vh1);
     if(topVerts.find(vh0) != topVerts.end() && topVerts.find(vh1) != topVerts.end()) {
       extendEdgeList.push_back(eh);
-      std::cout << "Extendable edge " << eh.idx() << ": " << vh0.idx() << " to " << vh1.idx() << std::endl;
     }
   }
   Vec3d inflow_vel = start_vel;
 
- 
   shell->setInflowSection(extendEdgeList, inflow_vel, m_initial_thickness);
+  Scalar ground = GetScalarOpt("shell-ground-plane-height");
+  shell->setDeletionBox(Vec3d(-2, -5, -2), Vec3d(2, ground-0.02, 2));
+
 }
