@@ -67,8 +67,8 @@ public:
 
   virtual const Scalar& getMass(const DofHandle& hnd) const = 0;
   
-  virtual void startStep() = 0;
-  virtual void endStep() = 0;
+  virtual void startStep(Scalar time, Scalar timestep) = 0;
+  virtual void endStep(Scalar time, Scalar timestep) = 0;
 
   //For constraining particular DOFs
   virtual void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time) const {};

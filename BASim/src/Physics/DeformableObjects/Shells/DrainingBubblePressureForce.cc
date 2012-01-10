@@ -72,7 +72,7 @@ void DrainingBubblePressureForce::update() {
   Vec3d v0 = m_shell.getVertexPosition(vh0);
 
   //Iterate over all the edges, summing triangle areas, and the top loop volume
-  for(int i = 0; i < m_hole_edges.size(); ++i) {
+  for(unsigned int i = 0; i < m_hole_edges.size(); ++i) {
     EdgeHandle curEdge = m_hole_edges[i];
     VertexHandle vh1 = m_shell.getDefoObj().fromVertex(curEdge);
     VertexHandle vh2 = m_shell.getDefoObj().toVertex(curEdge);
@@ -96,7 +96,7 @@ void DrainingBubblePressureForce::update() {
   v0 = m_shell.getVertexPosition(vh0);
 
   //Iterate over all the edges, summing triangle areas, and the top loop volume
-  for(int i = 0; i < m_base_edges.size(); ++i) {
+  for(unsigned int i = 0; i < m_base_edges.size(); ++i) {
     EdgeHandle curEdge = m_base_edges[i];
     VertexHandle vh1 = m_shell.getDefoObj().fromVertex(curEdge);
     VertexHandle vh2 = m_shell.getDefoObj().toVertex(curEdge);

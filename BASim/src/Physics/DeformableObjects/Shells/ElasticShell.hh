@@ -21,6 +21,7 @@ class DeformableObject;
 class ElasticShellForce;
 class ShellVertexPointSpringForce;
 class ShellVertexTriSpringForce;
+class ShellStickyRepulsionForce;
 
 class ElasticShell : public PhysicalModel {
 
@@ -50,8 +51,8 @@ public:
 
   void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time) const;
 
-  void startStep();
-  void endStep();
+  void startStep(Scalar time, Scalar timestep);
+  void endStep(Scalar time, Scalar timestep);
 
   //*Elastic Shell-specific
   void setFaceActive(const FaceHandle& f) {m_active_faces[f] = true; }
@@ -111,18 +112,21 @@ public:
 
   void constrainVertex(const VertexHandle& v, const Vec3d& pos);
   void constrainVertex(const VertexHandle& v, PositionConstraint* p); //time varying constraint
+  void releaseVertex(const VertexHandle& v);
   bool isConstrained(const VertexHandle& v) const;
   
   void addVertexPointSpring(const VertexHandle& v, const Vec3d& pos, Scalar stiffness, Scalar damping, Scalar length);
   void addVertexTriSpring(const FaceHandle& f, const VertexHandle& v, const Vec3d& pos, Scalar stiffness, Scalar damping, Scalar length);
 
-  void setCollisionParams(bool enabled, Scalar proximity);
+  void setCollisionParams(Scalar proximity, Scalar stiffness, Scalar damping);
+  void setGroundPlane(bool enabled, Scalar height);
+  void setSelfCollision(bool enabled);
 
   void setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel, Scalar thickness);
   void setDeletionBox(const Vec3d& lowerBound, const Vec3d& upperBound);
 
   void remesh(Scalar desiredEdge );
-  void extendMesh();
+  void extendMesh(Scalar current_time);
   void deleteRegion();
 
   void getSpringList(std::vector<Vec3d>& start, std::vector<Vec3d>& end) const;
@@ -193,6 +197,7 @@ protected:
 
   ShellVertexPointSpringForce* m_vert_point_springs;
   ShellVertexTriSpringForce* m_vert_tri_springs;
+  ShellStickyRepulsionForce* m_repulsion_springs;
 
   //Constraints 
   std::vector<VertexHandle> m_constrained_vertices;
@@ -212,9 +217,12 @@ protected:
   bool m_delete_region;
   Vec3d m_delete_lower, m_delete_upper;
 
-  //collision resolution distance for el topo
-  Scalar m_integrate_collision_epsilon;
-  bool m_process_collisions;
+ 
+  Scalar m_collision_proximity;
+  Scalar m_ground_height;
+  bool m_self_collisions;
+  bool m_ground_collisions;
+  Scalar m_collision_spring_stiffness, m_collision_spring_damping;
 
   ElTopo::BroadPhaseGrid m_broad_phase;
 };

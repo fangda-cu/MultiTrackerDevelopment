@@ -331,6 +331,7 @@ public:
   void startStep()
   {
     //m_rod.viscousUpdate();
+    m_obj.setTime(m_diffEqSolver->getTime());
     m_obj.startStep();
   }
 
