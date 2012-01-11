@@ -73,10 +73,30 @@ adreal<NumRepulsionDof,DO_HESS,Real> RepulsionEnergy(const ShellStickyRepulsionF
     
   adrealVT e(0);
   
+  /*  
+  //"EXACT" VERSION
   //normal energy
   advecVT normalVec = cross(p[2] - p[0], p[1] - p[0]);
   normalize(normalVec);
   
+  if(dot(s_deformed[3] - s_deformed[0], cross(s_deformed[2] - s_deformed[0], s_deformed[1] - s_deformed[0])) > 0) {
+    e += 0.5*strength*sqr( dot(p[3] - p[0], normalVec) - undef_len);  
+  }
+  else {
+    e += 0.5*strength*sqr( -dot(p[3] - p[0], normalVec) - undef_len);  
+  }
+
+  //tangential energy
+  advecVT offset = p[3] - (baryCoords[0]*p[0] + baryCoords[1]*p[1] + baryCoords[2]*p[2]);
+  e += 0.5*strength*lenSq(offset - dot(offset,normalVec)*normalVec);
+  */
+
+  
+  //INEXACT VERSION: Assumes normal is fixed over the timestep. Faster to evaluate.
+  Vector3d normalVec = cross(s_deformed[2] - s_deformed[0], s_deformed[1] - s_deformed[0]); 
+  //advecVT normalVec = cross(p[2] - p[0], p[1] - p[0]);
+  normalize(normalVec);
+
   if(dot(s_deformed[3] - s_deformed[0], cross(s_deformed[2] - s_deformed[0], s_deformed[1] - s_deformed[0])) > 0) {
     e += 0.5*strength*sqr( dot(p[3] - p[0], normalVec) - undef_len);  
   }
