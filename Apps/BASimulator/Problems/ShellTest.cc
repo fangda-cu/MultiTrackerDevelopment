@@ -1047,9 +1047,11 @@ void ShellTest::setupScene7() {
     
     //Constant rotation
     //XZPlaneRotatingConstraint*p = new XZPlaneRotatingConstraint(pos, centre, rotation_rate);
+
+    //Use the rotation rate already inside
     std::vector<Scalar> times, rates, accels;
-    times.push_back(0); rates.push_back(0.03); accels.push_back(0);          //fixed velocity of 0.03 over [0, 400]
-    times.push_back(400); rates.push_back(0.03); accels.push_back(-3.75e-5); //decelerate linearly from 0.03 to 0 over [400,1200]
+    times.push_back(0); rates.push_back(rotation_rate); accels.push_back(0);          //fixed velocity of 0.03 over [0, 400]
+    times.push_back(400); rates.push_back(rotation_rate); accels.push_back(-rotation_rate/800.0); //decelerate linearly from 0.03 to 0 over [400,1200]
     times.push_back(1200); rates.push_back(0.0); accels.push_back(0);        //stop rotating
     times.push_back(2000); rates.push_back(0.0); accels.push_back(0);
     XZPlaneVariableRotationConstraint*p = new XZPlaneVariableRotationConstraint(pos, centre, times, rates, accels);
