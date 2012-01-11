@@ -257,6 +257,8 @@ void ShellStickyRepulsionForce::addSpring(const FaceHandle& fh, const VertexHand
   m_damping.push_back(damping);
   m_restlen.push_back(restlen);
 
+  m_springset.insert(std::make_pair(fh.idx(),vh.idx()));
+
 }
 
 void ShellStickyRepulsionForce::clearSprings() {
@@ -266,6 +268,8 @@ void ShellStickyRepulsionForce::clearSprings() {
   m_stiffnesses.clear();
   m_damping.clear();
   m_restlen.clear();
+  
+  m_springset.clear();
 }
 
 void ShellStickyRepulsionForce::clearSprings(VertexHandle& v) {
@@ -288,6 +292,17 @@ void ShellStickyRepulsionForce::clearSprings(VertexHandle& v) {
       m_stiffnesses.erase(m_stiffnesses.begin() + target);
       m_damping.erase(m_damping.begin() + target);
       m_restlen.erase(m_restlen.begin() + target);
+    }
+  }
+
+  //adjust the springset too
+  for (std::set< std::pair<int,int> >::iterator it = m_springset.begin(); it != m_springset.end(); ) {
+    std::pair<int,int> springPair = *it;
+    if (springPair.second == v.idx()) {
+      m_springset.erase(it++);
+    }
+    else {
+      ++it;
     }
   }
 
@@ -316,6 +331,17 @@ void ShellStickyRepulsionForce::clearSprings(FaceHandle& f) {
     }
   }
 
+  //adjust the springset too
+  for (std::set< std::pair<int,int> >::iterator it = m_springset.begin(); it != m_springset.end(); ) {
+    std::pair<int,int> springPair = *it;
+    if (springPair.first == f.idx()) {
+      m_springset.erase(it++);
+    }
+    else {
+      ++it;
+    }
+  }
+
 }
 
 void ShellStickyRepulsionForce::getSpringLists(std::vector<VertexHandle> &verts, std::vector<FaceHandle>& tris, std::vector<Vec3d>& barycoords) {
@@ -326,6 +352,8 @@ void ShellStickyRepulsionForce::getSpringLists(std::vector<VertexHandle> &verts,
 
 bool ShellStickyRepulsionForce::springExists(const FaceHandle& f, const VertexHandle& v) {
 
+  return m_springset.find(std::make_pair(f.idx(), v.idx())) != m_springset.end();
+  /*
   //TODO do this more efficiently (store verts per face, for example, so we don't have to search the whole set)
   for(unsigned int i = 0; i < m_faces.size(); ++i) {
     if(m_faces[i] == f) {
@@ -334,6 +362,7 @@ bool ShellStickyRepulsionForce::springExists(const FaceHandle& f, const VertexHa
     }
   }
   return false;
+  */
 }
 
 

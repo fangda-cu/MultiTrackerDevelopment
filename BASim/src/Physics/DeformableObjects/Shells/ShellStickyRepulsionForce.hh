@@ -12,7 +12,7 @@
 
 #include "BASim/src/Math/ADT/adreal.h"
 #include "BASim/src/Math/ADT/advec.h"
-
+#include <set>
 
 //A set of springs, each between a tri and a vert.
 
@@ -64,6 +64,8 @@ protected:
   std::vector<Scalar> m_damping;
   std::vector<Scalar> m_restlen;
 
+  //for fast checking to see if a given spring already exists
+  std::set< std::pair<int,int> > m_springset; 
   
 
   Scalar m_timestep; //for damping/viscosity
