@@ -12,7 +12,7 @@
 #include "BASim/src/Collisions/ElTopo/collisionqueries.hh"
 
 
-#include "eltopo.h"
+//#include "eltopo.h"
 
 #include <algorithm>
 
@@ -464,7 +464,7 @@ void ElasticShell::startStep(Scalar time, Scalar timestep)
 }
 
 
-
+/*
 void ElasticShell::resolveCollisions() {
   //do cloth-style self-collision correction
   if(!m_self_collisions)
@@ -569,7 +569,7 @@ void ElasticShell::resolveCollisions() {
   delete[] invertices_old;
   delete[] masses;
 }
-
+*/
 
 void ElasticShell::addSelfCollisionForces() {
   
@@ -2312,6 +2312,8 @@ void ElasticShell::setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3
     posList.push_back(pos);
     
     prevVert = sharedVert;
+    
+    //constrainVertex(vertices[i], new FixedVelocityConstraint(m_inflow_positions[boundary][i], vel, 0));
   }
   
   VertexHandle wrapVert = getSharedVertex(*m_obj, edgeList[0], edgeList[edgeList.size()-1]);
