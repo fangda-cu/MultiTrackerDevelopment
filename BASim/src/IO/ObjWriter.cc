@@ -29,6 +29,7 @@ void ObjWriter::write( const std::string & filename, const ElasticShell& mesh )
 {
     std::ofstream of( filename.c_str() );
     ObjWriter::write( of, mesh );
+    of.close();
 }
 void ObjWriter::write( std::ofstream & of, const VertexProperty<Vec3d> & pos,
         DeformableObject & mesh )

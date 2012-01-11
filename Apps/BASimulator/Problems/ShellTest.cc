@@ -30,6 +30,7 @@
  //For OBJDUMP
 #include <sstream>
 #include "BASim/src/IO/ObjWriter.hh"
+#include "BASim/src/IO/PlyWriter.hh"
 #include <iomanip>
 #ifdef _MSC_VER
 #include <direct.h>
@@ -37,9 +38,12 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-// Toggle swith to output obj files
+// Toggle switch to output obj files
 extern bool g_obj_dump;
 int current_obj_frame = 0;
+extern bool g_ply_dump;
+int current_ply_frame = 0;
+
 extern std::string outputdirectory;
 
 ShellTest::ShellTest()
@@ -98,6 +102,7 @@ ShellTest::ShellTest()
   
   //OBJ file dump
   AddOption("generate-OBJ", "Generate an OBJ file at each timestep", g_obj_dump);
+  AddOption("generate-PLY", "Generate a PLY file at each timestep", g_ply_dump);
 
 
 }
@@ -233,7 +238,9 @@ void ShellTest::Setup()
   m_world->addRenderer(shellRender);
   
   g_obj_dump = GetBoolOpt("generate-OBJ");
-  if (g_obj_dump){
+  g_ply_dump = GetBoolOpt("generate-PLY");
+
+  if (g_obj_dump || g_ply_dump){
 #ifdef _MSC_VER
     _mkdir(outputdirectory.c_str());
 #else
@@ -246,6 +253,20 @@ void ShellTest::Setup()
 void ShellTest::AtEachTimestep()
 {
 
+    //dump PLY files if needed
+    if ( g_ply_dump ){
+        std::stringstream name;
+        int file_width = 20;
+
+        name << std::setfill('0');
+        name << outputdirectory << "/frame" << std::setw(file_width) << current_ply_frame << ".PLY";
+
+        PlyWriter::write(name.str(), *shell);
+        std::cout << "Frame: " << current_ply_frame << "   Time: " << getTime() << "   PLYDump: "
+                            << name.str() << std::endl;
+
+        ++current_ply_frame;
+    }
     //Dump OBJ files if needed
     //Start OBJ file stuff
     if ( g_obj_dump ){

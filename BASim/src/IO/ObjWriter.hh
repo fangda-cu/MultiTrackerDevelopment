@@ -11,6 +11,7 @@
 #include "../Physics/DeformableObjects/Shells/ElasticShell.hh"
 #include <iostream>
 #include <fstream>
+#include <string>
 
 namespace BASim
 {

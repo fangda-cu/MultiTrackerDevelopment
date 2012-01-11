@@ -107,8 +107,9 @@ std::string g_resume_file = "";
 // Simulation "breakpoints" for debugging purposes. Times at which the simulation should be paused.
 std::queue<double>* g_sim_breakpoints;
 
-//Dumping objs
+//Dumping objs and plys
 bool g_obj_dump = false;
+bool g_ply_dump = false;
 
 void cleanup()
 {
@@ -594,6 +595,23 @@ void menu(int id)
 
     case 'o':
         g_obj_dump = !g_obj_dump;
+        if (g_obj_dump ){
+        #ifdef _MSC_VER
+            _mkdir(outputdirectory.c_str());
+        #else
+            mkdir(outputdirectory.c_str(), 0755);
+        #endif
+          }
+        break;
+    case 'p':
+        g_ply_dump = !g_ply_dump;
+        if (g_ply_dump){
+        #ifdef _MSC_VER
+            _mkdir(outputdirectory.c_str());
+        #else
+            mkdir(outputdirectory.c_str(), 0755);
+        #endif
+        }
         break;
 
     case '1':
