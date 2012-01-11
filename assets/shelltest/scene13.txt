@@ -16,13 +16,14 @@ shell-Poisson-damping 0.5
 shell-surface-tension 0.0
 
 shell-remeshing 0
-shell-remeshing-resolution 0.2
+shell-remeshing-resolution 0.02
 shell-remeshing-iterations 1
 
 #collision stuff
 shell-self-collision true
 shell-ground-plane true
-shell-ground-plane-height -0.1
+shell-ground-plane-height -0.8
+shell-ground-plane-velocity 0.0
 shell-collision-spring-stiffness 0.001
 shell-collision-spring-damping 0.0
 shell-collision-proximity 0.01
