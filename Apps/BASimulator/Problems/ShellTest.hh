@@ -52,6 +52,7 @@ public:
   void setupScene10(); //flat stretching sheet with inflow/deletion
   void setupScene11(); //a cube
   void setupScene12(); //popping low viscosity hemispherical bubble with Bernoulli air pressure model
+  void setupScene13(); //a constant inflow hitting a solid boundary
 
 };
 

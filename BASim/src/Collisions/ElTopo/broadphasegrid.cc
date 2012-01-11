@@ -12,7 +12,7 @@
 // ---------------------------------------------------------
 
 #include "broadphasegrid.hh"
-
+#include <limits>
 // ---------------------------------------------------------
 // Global externs
 // ---------------------------------------------------------
@@ -103,6 +103,9 @@ void BroadPhaseGrid::build_acceleration_grid( AccelerationGrid& grid,
 void BroadPhaseGrid::update_broad_phase_static( const BASim::TopologicalObject& m_obj, const BASim::VertexProperty<BASim::Vec3d>& vertices, double proximity_epsilon  )
 {
    
+  Vec3d maxVec(std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max());
+  Vec3d minVec(-std::numeric_limits<double>::max(),-std::numeric_limits<double>::max(),-std::numeric_limits<double>::max());
+
    double sum = 0;
    int count = 0;
    for(BASim::EdgeIterator iter = m_obj.edges_begin(); iter != m_obj.edges_end(); ++iter) {
@@ -119,7 +122,8 @@ void BroadPhaseGrid::update_broad_phase_static( const BASim::TopologicalObject& 
    
    {
       unsigned int num_vertices = m_obj.nv();
-      std::vector<Vec3d> vertex_xmins(num_vertices), vertex_xmaxs(num_vertices);
+      
+      std::vector<Vec3d> vertex_xmins(num_vertices,maxVec), vertex_xmaxs(num_vertices,minVec);
       
       for(BASim::VertexIterator iter = m_obj.vertices_begin(); iter != m_obj.vertices_end(); ++iter) {
          BASim::VertexHandle vert = *iter;
@@ -139,7 +143,7 @@ void BroadPhaseGrid::update_broad_phase_static( const BASim::TopologicalObject& 
    {
       unsigned int num_edges = m_obj.ne();
       Vec3d offset(proximity_epsilon, proximity_epsilon, proximity_epsilon);
-      std::vector<Vec3d> edge_xmins(num_edges), edge_xmaxs(num_edges);
+    std::vector<Vec3d> edge_xmins(num_edges,maxVec), edge_xmaxs(num_edges,minVec);
       
       for(BASim::EdgeIterator iter = m_obj.edges_begin(); iter != m_obj.edges_end(); ++iter) {
          BASim::EdgeHandle edge = *iter;
@@ -161,7 +165,7 @@ void BroadPhaseGrid::update_broad_phase_static( const BASim::TopologicalObject& 
    {
       unsigned int num_triangles = m_obj.nf(); 
       Vec3d offset(proximity_epsilon, proximity_epsilon, proximity_epsilon);
-      std::vector<Vec3d> tri_xmins(num_triangles), tri_xmaxs(num_triangles);
+     std::vector<Vec3d> tri_xmins(num_triangles, maxVec), tri_xmaxs(num_triangles, minVec);
       
       for(BASim::FaceIterator iter = m_obj.faces_begin(); iter != m_obj.faces_end(); ++iter) {
          BASim::FaceHandle face = *iter;

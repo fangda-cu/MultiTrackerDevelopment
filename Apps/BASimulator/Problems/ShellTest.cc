@@ -90,7 +90,17 @@ ShellTest::ShellTest()
   AddOption("shell-stretching-factor", "extra scale factor to multiply stretching coefficient by", 1.0);
   AddOption("shell-bending-factor", "extra scale factor to multiple bending coefficient by", 1.0);
 
-  //Timestepper options
+  //Collision options
+  AddOption("shell-self-collision", "whether to add self-collision springs", false);
+  AddOption("shell-ground-plane", "whether to add ground plane collision springs", false);
+  AddOption("shell-ground-plane-height", "height of the ground plane", 0.0);
+  AddOption("shell-ground-plane-velocity", "the rate at which particles colliding with the ground (bath) are pulled into it.", 0.0);
+
+  AddOption("shell-collision-spring-stiffness", "stiffness coefficient of the collision springs", 0.0);
+  AddOption("shell-collision-spring-damping", "damping coefficient of the collision springs", 0.0);
+  AddOption("shell-collision-proximity", "the collision spring rest length and distance at which to add springs", 0.0);
+  
+    //Timestepper options
   AddOption("integrator", "type of integrator to use for the shell", "implicit");
 
   //Solver options
@@ -129,7 +139,9 @@ sceneFunc scenes[] = {0,
                       &ShellTest::setupScene9, //non-manifold edge / bending
                       &ShellTest::setupScene10, //pouring inflow with deletion 
                       &ShellTest::setupScene11, //a cube with surface tension collapsing to a sphere  
-                      &ShellTest::setupScene12}; //hemispherical bubble popping with low viscosity
+                      &ShellTest::setupScene12, //hemispherical bubble popping with low viscosity
+                      &ShellTest::setupScene13 };  //an constant inflow hitting a solid floor and buckling
+
 
 void ShellTest::Setup()
 {
@@ -151,7 +163,7 @@ void ShellTest::Setup()
   Scalar Poisson_damping = GetScalarOpt("shell-Poisson-damping");
   
   bool cst_stretch = GetBoolOpt("shell-CST-stretching");
-  bool ds_bend = GetBoolOpt("shell-CST-stretching");
+  bool ds_bend = GetBoolOpt("shell-DS-bending");
 
   //fudge factors to modify the elastic-viscous coefficients (so as to manipulate them separately)
   Scalar cst_scale = GetScalarOpt("shell-stretching-factor");
@@ -211,7 +223,17 @@ void ShellTest::Setup()
 
   shell->computeMasses();
 
-  shell->setCollisionParams(true, 0.005);
+  Scalar stiffness = GetScalarOpt("shell-collision-spring-stiffness");
+  Scalar damping = GetScalarOpt("shell-collision-spring-damping");
+  Scalar proximity = GetScalarOpt("shell-collision-proximity");
+  shell->setCollisionParams(proximity, stiffness, damping);
+  
+  bool groundPlane = GetBoolOpt("shell-ground-plane");
+  Scalar gpHeight = GetScalarOpt("shell-ground-plane-height");
+  Scalar gpSpeed = GetScalarOpt("shell-ground-plane-velocity");
+  shell->setGroundPlane(groundPlane, gpHeight, gpSpeed);
+  bool selfCollide = GetBoolOpt("shell-self-collision");
+  shell->setSelfCollision(selfCollide);
 
   //compute the dof indexing for use in the diff_eq solver
   shellObj->computeDofIndexing();
@@ -1322,7 +1344,6 @@ void ShellTest::setupScene10() {
     Vec3d pos1 = shell->getVertexPosition(vh1);
     if(topVerts.find(vh0) != topVerts.end() && topVerts.find(vh1) != topVerts.end()) {
       extendEdgeList.push_back(eh);
-      std::cout << "Extendable edge " << eh.idx() << ": " << vh0.idx() << " to " << vh1.idx() << std::endl;
     }
   }
   Vec3d inflow_vel = start_vel;
@@ -1514,5 +1535,108 @@ void ShellTest::setupScene12() {
 
   //Scalar air_density = 1.225e-9; 
   //shell->addForce(new DrainingBubblePressureForce(*shell, "DrainingBubblePressure", holeEdges, baseEdges, air_density, m_timestep));
+
+}
+
+//vertical flat sheet with inflow at the top
+void ShellTest::setupScene13() {
+
+  //get params
+  Scalar width = GetScalarOpt("shell-width");
+  Scalar height = GetScalarOpt("shell-height");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
+
+  Scalar dx = (Scalar)width / (Scalar)xresolution;
+  Scalar dy = (Scalar)height / (Scalar)yresolution;
+
+  //build a rectangular grid of vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  Vec3d start_vel(0,-0.1,0);
+  std::set<VertexHandle> topVerts;
+  for(int j = 0; j <= yresolution; ++j) {
+    for(int i = 0; i <= xresolution; ++i) {
+      Vec3d vert(i*dx, j*dy, 0.0001*sin(100*(j*dy)));
+      Vec3d undef = vert;
+
+      VertexHandle h = shellObj->addVertex();
+
+      positions[h] = vert;
+      velocities[h] = start_vel;
+      undeformed[h] = undef;
+      vertHandles.push_back(h);
+      if(j == yresolution)
+        topVerts.insert(h);
+    }
+  }
+
+  //build the faces
+  std::vector<Vec3i> tris;
+  for(int i = 0; i < xresolution; ++i) {
+    for(int j = 0; j < yresolution; ++j) {
+      int tl = i + (xresolution+1)*j;
+      int tr = i+1 + (xresolution+1)*j;
+      int bl = i + (xresolution+1)*(j+1);
+      int br = i+1 + (xresolution+1)*(j+1);
+
+      if((i+j)%2 == 0) {
+        shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
+        shellObj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
+      }
+      else {
+        shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[bl]);
+        shellObj->addFace(vertHandles[bl], vertHandles[tr], vertHandles[br]);
+      }
+    }
+  }
+
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+  //add an inflow at the top of the sheet
+
+  std::vector<EdgeHandle> extendEdgeList;
+  EdgeIterator eit = shellObj->edges_begin();
+  for(;eit != shellObj->edges_end(); ++eit) {
+    EdgeHandle eh = *eit;
+    VertexHandle vh0 = shellObj->fromVertex(eh);
+    VertexHandle vh1 = shellObj->toVertex(eh);
+    Vec3d pos0 = shell->getVertexPosition(vh0);
+    Vec3d pos1 = shell->getVertexPosition(vh1);
+    if(topVerts.find(vh0) != topVerts.end() && topVerts.find(vh1) != topVerts.end()) {
+      extendEdgeList.push_back(eh);
+    }
+  }
+  Vec3d inflow_vel = start_vel;
+
+  shell->setInflowSection(extendEdgeList, inflow_vel, m_initial_thickness);
+  Scalar ground = GetScalarOpt("shell-ground-plane-height");
+  shell->setDeletionBox(Vec3d(-2, -5, -2), Vec3d(2, ground-0.02, 2));
 
 }

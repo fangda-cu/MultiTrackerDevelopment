@@ -24,6 +24,7 @@ int EigenSparseMatrix::resetNonzeros() {
 
 int EigenSparseMatrix::zeroRows(const IntArray& idx, Scalar diag)
 {
+  //NOTE: This zeros rows AND symmetric columns
 
   for(unsigned int i = 0; i < idx.size(); ++i) {
     int row = idx[i];
@@ -32,8 +33,10 @@ int EigenSparseMatrix::zeroRows(const IntArray& idx, Scalar diag)
     for (Eigen::DynamicSparseMatrix<Scalar,Eigen::RowMajor>::InnerIterator it(m_dynamic,row); it; ++it)
     {
       int col = it.col();
-      if(col != row)
+      if(col != row) {
         m_dynamic.coeffRef(row, col) = 0; //zero it out
+        m_dynamic.coeffRef(col, row) = 0; //zero the opposite assuming symmetry, since doing zeroCols properly is slower.
+      }
       else
         m_dynamic.coeffRef(row, col) = diag;
     }
@@ -82,6 +85,7 @@ int EigenSparseMatrix::zeroCols(const IntArray& idx, Scalar diag)
    //iterate over the list of columns to clear. 
    //This is brute-forcey, but I don't know that Eigen (and the matrix structure itself) offers us any choice
 
+  /*
   //Iterate through the list of colums
    for(unsigned int i = 0; i < idx.size(); ++i) {
 
@@ -96,6 +100,7 @@ int EigenSparseMatrix::zeroCols(const IntArray& idx, Scalar diag)
          }
       }
    }
+   */ 
 
    return 0;
 }

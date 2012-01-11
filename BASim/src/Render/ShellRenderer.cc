@@ -165,12 +165,12 @@ void ShellRenderer::render()
   if( m_mode == FLAT )
   {
     glEnable(GL_LIGHTING);
-    glEnable(GL_COLOR_MATERIAL);
+    //glEnable(GL_COLOR_MATERIAL);
 
     //Define the hue palette... red for negative thickness
 
-//    GLfloat gray[] = {0.8f,0.8f,0.8f,1.0f};
-//    glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,gray);
+    GLfloat gray[] = {0.8f,0.8f,0.8f,1.0f};
+    glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE,gray);
 
     // Render all faces
     glBegin(GL_TRIANGLES);
@@ -180,19 +180,19 @@ void ShellRenderer::render()
     for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
     {
       std::vector<Vec3d> v;
-      Scalar t = m_shell.getThickness(*fit);
-      Scalar hue;
-      Scalar sat;
-      if ( t < 0){//use only red
-          hue = 0;
-          sat = fabs(t/m_refthickness - 0.3);
+      //Scalar t = m_shell.getThickness(*fit);
+      //Scalar hue;
+      //Scalar sat;
+      //if ( t < 0){//use only red
+      //    hue = 0;
+      //    sat = fabs(t/m_refthickness - 0.3);
 
-          //use the red if t < 0
-      }else{
-          hue = 240;
-          sat = t/m_refthickness + 0.3;
-      }
-      glColorHSV3d(hue,sat , 1);
+      //    //use the red if t < 0
+      //}else{
+      //    hue = 240;
+      //    sat = t/m_refthickness + 0.3;
+      //}
+      //glColorHSV3d(hue,sat , 1);
       glColorMaterial (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
       for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit )
       {
@@ -209,7 +209,7 @@ void ShellRenderer::render()
     }
     glEnd();
 
-    glDisable(GL_COLOR_MATERIAL);
+    //glDisable(GL_COLOR_MATERIAL);
     glDisable(GL_LIGHTING);
   }
   else if( m_mode == DBG )
@@ -279,16 +279,48 @@ void ShellRenderer::render()
     }
     glEnd();
 
+    glPointSize(10);
+    OpenGL::color(Color(0,1,0));
+    glBegin(GL_POINTS);
+    for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) {
+      Vec3d vertPos = m_shell.getVertexPosition(*vit); 
+      if(m_shell.isConstrained(*vit)) {
+        OpenGL::vertex(vertPos);
+      }
+    }
+    glEnd();
+
     //Draw collision springs
     std::vector<Vec3d> starts, ends;
     m_shell.getSpringList(starts, ends);
-    glColor3f(1, 0, 0);
+    glLineWidth(5);
+    
     glBegin(GL_LINES);
-    for(int i = 0; i < starts.size(); ++i) {
+    glColor3f(0.0, 1.0, 0.0);
+     for(int i = 0; i < starts.size(); ++i) {
       OpenGL::vertex(starts[i]);
       OpenGL::vertex(ends[i]);
     }
     glEnd();
+
+    glPointSize(10);
+    glBegin(GL_POINTS);
+    glColor3f(0,0,1);
+    for(int i = 0; i < starts.size(); ++i) {
+      OpenGL::vertex(starts[i]);
+    }
+    glEnd();
+    glPointSize(10);
+    
+    glBegin(GL_POINTS);
+    glColor3f(0,1,1);
+    for(int i = 0; i < ends.size(); ++i) {
+      OpenGL::vertex(ends[i]);
+    }
+    glEnd();
+
+
+
    /* glBegin(GL_QUADS);
     glVertex3f(-2.0f, -0.2, -2.0f);
     glVertex3f(2.0f, -0.2, -2.0f);

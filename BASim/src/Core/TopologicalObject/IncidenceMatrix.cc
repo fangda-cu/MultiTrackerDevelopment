@@ -4,9 +4,8 @@
 
 namespace BASim {
 
-int signum(int val) {
+inline int signum(int val) {
   return (val >= 0 ? 1 : -1);
-
 }
 
 IncidenceMatrix::IncidenceMatrix() : 
@@ -49,17 +48,20 @@ void IncidenceMatrix::set(unsigned int i, unsigned int j, int new_val) {
    assert(new_val == 1 || new_val == -1);
   
    int colShift = j+1;
-   for(unsigned int k=0; k<m_indices[i].size(); ++k){
-      if(abs(m_indices[i][k])==colShift){
-         m_indices[i][k]=signum(new_val)*colShift; //change its sign to match
+   unsigned int loop_end = m_indices[i].size();
+   for(unsigned int k=0; k < loop_end; ++k){
+     int& refVal = m_indices[i][k];
+     int curVal = refVal > 0?refVal:-refVal;
+     if(curVal == colShift){
+       refVal=new_val>0?colShift:-colShift; //change its sign to match
          return;
       }
-      else if(abs(m_indices[i][k])>(int)j){
-         insert_vec(m_indices[i], (int)k, signum(new_val)*colShift); //set sign to match
+      else if(curVal>(int)j){
+         insert_vec(m_indices[i], (int)k, new_val>0?colShift:-colShift); //set sign to match
          return;
       }
    }
-   m_indices[i].push_back(signum(new_val)*colShift);
+   m_indices[i].push_back(new_val>0?colShift:-colShift);
 }
 
 int IncidenceMatrix::get(unsigned int i, unsigned int j) const {

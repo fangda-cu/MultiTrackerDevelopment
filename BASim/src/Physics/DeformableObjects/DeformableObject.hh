@@ -32,6 +32,20 @@ public:
 
 };
 
+class FixedVelocityConstraint : public PositionConstraint {
+  Vec3d m_initial_position;
+  Vec3d m_velocity;
+  Scalar m_start_time;
+
+public:
+  FixedVelocityConstraint(const Vec3d& pos, const Vec3d& velocity, Scalar creationTime)
+    : m_initial_position(pos), m_velocity(velocity), m_start_time(creationTime) {}
+
+  Vec3d operator()(Scalar time){return m_initial_position + (time-m_start_time)*m_velocity;}
+
+};
+
+
 /** Base class for dynamic objects comprised of simplices.
 */
 class DeformableObject : public PhysObject
@@ -59,8 +73,11 @@ public:
 
   void setTimeStep(Scalar dt);
   Scalar getTimeStep();
-  void startStep() { for(unsigned int i = 0; i < m_models.size(); ++i) m_models[i]->startStep(); }
-  void endStep() { for(unsigned int i = 0; i < m_models.size(); ++i) m_models[i]->endStep(); }
+  void setTime(Scalar time);
+  Scalar getTime();
+
+  void startStep() { for(unsigned int i = 0; i < m_models.size(); ++i) m_models[i]->startStep(m_time, m_dt); }
+  void endStep() { for(unsigned int i = 0; i < m_models.size(); ++i) m_models[i]->endStep(m_time, m_dt); }
 
   void addModel(PhysicalModel* model);
   PhysicalModel* getModel(int i) const { assert(i < (int)m_models.size()); return m_models[i]; }
@@ -73,6 +90,7 @@ protected:
 
   std::vector<PhysicalModel*> m_models; ///< physical models layered on this object (each with its own forces)
   Scalar m_dt;  ///< size of time step
+  Scalar m_time; //current time 
 
   std::vector<int> m_dofModels; //for each dof, which model does it belong to 
   std::vector<DofHandle> m_dofHandles; //for each dof, the information to look it up in the model (handle, type, DOF number).

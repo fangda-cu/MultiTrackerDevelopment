@@ -22,6 +22,14 @@ void DeformableObject::setTimeStep(Scalar dt) {
 Scalar DeformableObject::getTimeStep() {
   return m_dt;
 }
+void DeformableObject::setTime(Scalar time) {
+  m_time = time;
+}
+
+Scalar DeformableObject::getTime() {
+  return m_dt;
+}
+
 
 void DeformableObject::computeForces(VecXd& force) {
   
