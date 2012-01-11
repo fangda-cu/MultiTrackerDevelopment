@@ -2135,7 +2135,8 @@ void ElasticShell::deleteRegion() {
     int j = 0;
     for(;fvit;++fvit) {
       releaseVertex(*fvit);
-      m_repulsion_springs->clearSprings(*fvit);
+      VertexHandle temp = *fvit;
+      m_repulsion_springs->clearSprings(temp);
     }
     m_repulsion_springs->clearSprings(faces_to_remove[i]);
     
