@@ -690,10 +690,10 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
           //constrainVertex(*vit, curPos);
           
           //Sinking
-          //constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, m_ground_velocity, 0), time));
+          constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, m_ground_velocity, 0), time));
           
           //Conveying
-          constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, 0, m_ground_velocity), time));
+          //constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, 0, m_ground_velocity), time));
         }
       }
     }
@@ -2130,24 +2130,37 @@ void ElasticShell::deleteRegion() {
     }
   }
   for(unsigned int i = 0; i < faces_to_remove.size(); ++i) {
-    VertexHandle faceVerts[3];
-    FaceVertexIterator fvit = m_obj->fv_iter(faces_to_remove[i]);
-    int j = 0;
-    for(;fvit;++fvit) {
-      releaseVertex(*fvit);
-      VertexHandle temp = *fvit;
-      m_repulsion_springs->clearSprings(temp);
-    }
-    m_repulsion_springs->clearSprings(faces_to_remove[i]);
-    
-    bool success = m_obj->deleteFace(faces_to_remove[i], true);
-    if(!success || m_obj->faceExists(faces_to_remove[i])) {
-      std::cout << "Failed to delete face:" << faces_to_remove[i].idx() << "\n";
-      std::cout << "Return result:" << success << std::endl;
-      exit(-1);
-    }
+    removeFace(faces_to_remove[i]);
   }
 
+}
+
+void ElasticShell::removeFace(FaceHandle& f) {
+  //safely remove a face
+  //and all the constraints/springs that link to it.
+
+  //collect the vertices that comprise the face
+  VertexHandle faceVerts[3];
+  FaceVertexIterator fvit = m_obj->fv_iter(f);
+  int j = 0;
+  for(;fvit;++fvit) {
+    faceVerts[j] = *fvit;
+    ++j;
+  }
+  
+  //remove springs on this face
+  m_repulsion_springs->clearSprings(f);
+
+  //delete the face, and recursively, any unused vertices
+  m_obj->deleteFace(f, true);
+
+  //now remove the springs and constraints to any vertices deleted as a side effect
+  for(int j = 0; j < 3; ++j) {
+    if(!m_obj->vertexExists(faceVerts[j])) {
+      releaseVertex(faceVerts[j]);
+      m_repulsion_springs->clearSprings(faceVerts[j]);
+    }
+  }
 }
 
 void ElasticShell::extendMesh(Scalar current_time) {

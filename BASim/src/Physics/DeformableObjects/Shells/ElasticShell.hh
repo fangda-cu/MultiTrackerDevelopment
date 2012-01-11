@@ -129,6 +129,8 @@ public:
   void extendMesh(Scalar current_time);
   void deleteRegion();
 
+  void removeFace(FaceHandle& f);
+
   void getSpringList(std::vector<Vec3d>& start, std::vector<Vec3d>& end) const;
 
 protected:
