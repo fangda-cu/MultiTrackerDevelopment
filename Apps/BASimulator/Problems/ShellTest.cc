@@ -1565,7 +1565,7 @@ void ShellTest::setupScene13() {
   std::set<VertexHandle> topVerts;
   for(int j = 0; j <= yresolution; ++j) {
     for(int i = 0; i <= xresolution; ++i) {
-      Vec3d vert(i*dx, j*dy, 0.0001*sin(100*(j*dy)));
+      Vec3d vert(i*dx, j*dy, 0.00001*sin(10000*(j*dy)));
       Vec3d undef = vert;
 
       VertexHandle h = shellObj->addVertex();
@@ -1637,6 +1637,6 @@ void ShellTest::setupScene13() {
 
   shell->setInflowSection(extendEdgeList, inflow_vel, m_initial_thickness);
   Scalar ground = GetScalarOpt("shell-ground-plane-height");
-  shell->setDeletionBox(Vec3d(-2, -5, -2), Vec3d(2, ground-0.02, 2));
+  //shell->setDeletionBox(Vec3d(-2, -5, -2), Vec3d(2, ground-0.02, 2));
 
 }
