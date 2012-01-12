@@ -135,7 +135,7 @@ public:
 
 protected:
 
-  void resolveCollisions();
+  void resolveCollisions(Scalar timestep);
   void updateThickness();
 
   //Most of this is remeshing related and should hopefully be moved somewhere else

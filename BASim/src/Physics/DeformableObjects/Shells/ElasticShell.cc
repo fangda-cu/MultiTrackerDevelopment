@@ -34,7 +34,7 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
     m_velocities(object),
     m_xi_vel(object),
     m_density(1),
-    m_proximity_epsilon(0.01),
+    m_proximity_epsilon(0.0001),
     m_vert_point_springs(NULL),
     m_repulsion_springs(NULL)
 {
@@ -463,7 +463,7 @@ void ElasticShell::startStep(Scalar time, Scalar timestep)
 
 
 /*
-void ElasticShell::resolveCollisions() {
+void ElasticShell::resolveCollisions(Scalar timestep) {
   //do cloth-style self-collision correction
   if(!m_self_collisions)
     return;
@@ -502,14 +502,14 @@ void ElasticShell::resolveCollisions() {
   
   //also add a simple ground plane
   //int g0 = m_obj->nv();
-  //invertices_new[3*g0]     = -2; invertices_new[3*g0+1]     = -0.2; invertices_new[3*g0+2]     = -2;
-  //invertices_new[3*(g0+1)] = +2; invertices_new[3*(g0+1)+1] = -0.2; invertices_new[3*(g0+1)+2] = -2;
-  //invertices_new[3*(g0+2)] = +2; invertices_new[3*(g0+2)+1] = -0.2; invertices_new[3*(g0+2)+2] = +2;
-  //invertices_new[3*(g0+3)] = -2; invertices_new[3*(g0+3)+1] = -0.2; invertices_new[3*(g0+3)+2] = +2;
-  //invertices_old[3*g0]     = -2; invertices_old[3*g0+1]     = -0.2; invertices_old[3*g0+2]     = -2;
-  //invertices_old[3*(g0+1)] = +2; invertices_old[3*(g0+1)+1] = -0.2; invertices_old[3*(g0+1)+2] = -2;
-  //invertices_old[3*(g0+2)] = +2; invertices_old[3*(g0+2)+1] = -0.2; invertices_old[3*(g0+2)+2] = +2;
-  //invertices_old[3*(g0+3)] = -2; invertices_old[3*(g0+3)+1] = -0.2; invertices_old[3*(g0+3)+2] = +2;
+  //invertices_new[3*g0]     = -0.5; invertices_new[3*g0+1]     = -0.1; invertices_new[3*g0+2]     = -0.5;
+  //invertices_new[3*(g0+1)] = +0.5; invertices_new[3*(g0+1)+1] = -0.1; invertices_new[3*(g0+1)+2] = -0.5;
+  //invertices_new[3*(g0+2)] = +0.5; invertices_new[3*(g0+2)+1] = -0.1; invertices_new[3*(g0+2)+2] = +0.5;
+  //invertices_new[3*(g0+3)] = -0.5; invertices_new[3*(g0+3)+1] = -0.1; invertices_new[3*(g0+3)+2] = +0.5;
+  //invertices_old[3*g0]     = -0.5; invertices_old[3*g0+1]     = -0.1; invertices_old[3*g0+2]     = -0.5;
+  //invertices_old[3*(g0+1)] = +0.5; invertices_old[3*(g0+1)+1] = -0.1; invertices_old[3*(g0+1)+2] = -0.5;
+  //invertices_old[3*(g0+2)] = +0.5; invertices_old[3*(g0+2)+1] = -0.1; invertices_old[3*(g0+2)+2] = +0.5;
+  //invertices_old[3*(g0+3)] = -0.5; invertices_old[3*(g0+3)+1] = -0.1; invertices_old[3*(g0+3)+2] = +0.5;
   //masses[g0] = 101; //"infinite" mass
   //masses[g0+1] = 101;
   //masses[g0+2] = 101;
@@ -530,7 +530,7 @@ void ElasticShell::resolveCollisions() {
     ++index;
   }
   
-  //add ground plane tris
+  ////add ground plane tris
   //int t0 = m_obj->nf();
   //triangles[3*t0] = g0; triangles[3*t0+1] = g0+1; triangles[3*t0+2] = g0+2;
   //triangles[3*(t0+1)] = g0; triangles[3*(t0+1)+1] = g0+2; triangles[3*(t0+1)+2] = g0+3;
@@ -541,7 +541,7 @@ void ElasticShell::resolveCollisions() {
   gen_opts.m_verbose = true;
   double *outvertex_locations;
   ElTopoIntegrationOptions int_opts;
-  int_opts.m_dt = 1; //don't think this matters much...
+  int_opts.m_dt = timestep; 
   int_opts.m_proximity_epsilon = m_proximity_epsilon;
 
   el_topo_integrate(nverts, invertices_old, invertices_new, ntris, 
@@ -559,7 +559,10 @@ void ElasticShell::resolveCollisions() {
     if(isinf(pos[0]) || isinf(pos[1]) || isinf(pos[2]))
       std::cout << "ElTopo Failed: Inf vertex\n";
     
+    Vec3d vel = (pos - m_damping_undeformed_positions[vh]) / timestep;
+
     setVertexPosition(vh, pos);
+    setVertexVelocity(vh, vel);
   }
  
   el_topo_free_integrate_results( outvertex_locations );
@@ -664,21 +667,20 @@ void ElasticShell::setSelfCollision(bool enabled) {
 
 
 void ElasticShell::endStep(Scalar time, Scalar timestep) {
- std::cout << "Starting endStep\n";
+  std::cout << "Starting endStep\n";
   
 
   //El Topo collision processing.
-  //resolveCollisions();
- 
-  //Ground plane penalty force.
+  //resolveCollisions(timestep);
   
+  //Ground plane penalty force.
   if(m_ground_collisions) {
-    std::cout << "Adding ground collisions.\n";
-   /*for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
+    //std::cout << "Adding ground collisions.\n";
+  /* for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
       Vec3d curPos = getVertexPosition(*(vit));
-      if(curPos[1] < m_ground_height) {
+      if(curPos[1] < m_ground_height + m_collision_proximity) {
         if(!m_vert_point_springs->hasSpring(*vit)) {
-          curPos[1] = m_ground_height;
+          curPos[1] = m_ground_height + m_collision_proximity;
           m_vert_point_springs->addSpring(*vit, curPos, m_collision_spring_stiffness, m_collision_spring_damping, 0.0);
         }
       }
@@ -700,37 +702,42 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
         }
       }
     }
+    
  }
+
+ 
 
   //apply penalty springs for self-collision
   if(m_self_collisions) {
-    std::cout << "Adding self-collision springs\n";
+    //std::cout << "Adding self-collision springs\n";
     addSelfCollisionForces();
   }
+
+
   
   
-  std::cout << "Adjusting thicknesses\n";
+  //std::cout << "Adjusting thicknesses\n";
   //Adjust thicknesses based on area changes
   updateThickness();
 
   bool do_relabel = false;
   
   if(m_inflow) {
-    std::cout << "Extending the mesh\n";
+    //std::cout << "Extending the mesh\n";
     extendMesh(time);
     do_relabel = true;
   }
 
   
   if(m_delete_region) {
-    std::cout << "Deleting material\n";
+    //std::cout << "Deleting material\n";
     deleteRegion();
     do_relabel = true;
   }
 
   //Remeshing
   if(m_do_remeshing) {
-    std::cout << "Remeshing\n";
+    //std::cout << "Remeshing\n";
     for(int i = 0; i < m_remeshing_iters; ++i)
       remesh(m_remesh_edge_length);  
     
@@ -742,11 +749,11 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 
   
   if(do_relabel) {
-    std::cout << "Re-indexing\n";
+    //std::cout << "Re-indexing\n";
     m_obj->computeDofIndexing();
   }
 
-  std::cout << "Recomputing masses\n";
+  //std::cout << "Recomputing masses\n";
   //Update masses based on new areas/thicknesses
   computeMasses();
   
