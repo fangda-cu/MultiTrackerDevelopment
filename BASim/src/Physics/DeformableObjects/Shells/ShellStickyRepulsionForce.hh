@@ -43,6 +43,9 @@ public:
   void getSpringLists(std::vector<VertexHandle> &verts, std::vector<FaceHandle>& tris, std::vector<Vec3d>& barycoords);
   bool springExists(const FaceHandle& f, const VertexHandle& v);
 
+  bool isVertexInUse(const VertexHandle& v);
+  bool isFaceInUse(const FaceHandle& f);
+
   void clearSprings(VertexHandle& v);
   void clearSprings(FaceHandle& f);
 

@@ -73,40 +73,26 @@ adreal<NumRepulsionDof,DO_HESS,Real> RepulsionEnergy(const ShellStickyRepulsionF
     
   adrealVT e(0);
   
-  /*  
-  //"EXACT" VERSION
-  //normal energy
-  advecVT normalVec = cross(p[2] - p[0], p[1] - p[0]);
-  normalize(normalVec);
   
-  if(dot(s_deformed[3] - s_deformed[0], cross(s_deformed[2] - s_deformed[0], s_deformed[1] - s_deformed[0])) > 0) {
-    e += 0.5*strength*sqr( dot(p[3] - p[0], normalVec) - undef_len);  
-  }
-  else {
-    e += 0.5*strength*sqr( -dot(p[3] - p[0], normalVec) - undef_len);  
-  }
-
-  //tangential energy
-  advecVT offset = p[3] - (baryCoords[0]*p[0] + baryCoords[1]*p[1] + baryCoords[2]*p[2]);
-  e += 0.5*strength*lenSq(offset - dot(offset,normalVec)*normalVec);
-  */
-
+  Vector3d normalReal = cross(s_deformed[2] - s_deformed[0], s_deformed[1] - s_deformed[0]); 
+  advecVT normalVbl = cross(p[2] - p[0], p[1] - p[0]);
   
-  //INEXACT VERSION: Assumes normal is fixed over the timestep. Faster to evaluate.
-  Vector3d normalVec = cross(s_deformed[2] - s_deformed[0], s_deformed[1] - s_deformed[0]); 
-  //advecVT normalVec = cross(p[2] - p[0], p[1] - p[0]);
-  normalize(normalVec);
+  normalize(normalVbl);
+  normalize(normalReal);
 
   if(dot(s_deformed[3] - s_deformed[0], cross(s_deformed[2] - s_deformed[0], s_deformed[1] - s_deformed[0])) > 0) {
-    e += 0.5*strength*sqr( dot(p[3] - p[0], normalVec) - undef_len);  
+    e += 0.5*strength*sqr( dot(p[3] - p[0], normalVbl) - undef_len);  
   }
   else {
-    e += 0.5*strength*sqr( -dot(p[3] - p[0], normalVec) - undef_len);  
+    e += 0.5*strength*sqr( -dot(p[3] - p[0], normalVbl) - undef_len);  
   }
-
+ 
   //tangential energy
   advecVT offset = p[3] - (baryCoords[0]*p[0] + baryCoords[1]*p[1] + baryCoords[2]*p[2]);
-  e += 0.5*strength*lenSq(offset - dot(offset,normalVec)*normalVec);
+  //note, this is an approx for speed. - should also use normalVbl here.
+  e += 0.5*strength*lenSq(offset - dot(offset,normalReal)*normalReal); 
+  //the true version
+  //e += 0.5*strength*lenSq(offset - dot(offset,normalVbl)*normalVbl); 
 
   return e;
 }
@@ -371,19 +357,17 @@ void ShellStickyRepulsionForce::getSpringLists(std::vector<VertexHandle> &verts,
 }
 
 bool ShellStickyRepulsionForce::springExists(const FaceHandle& f, const VertexHandle& v) {
-
   return m_springset.find(std::make_pair(f.idx(), v.idx())) != m_springset.end();
-  /*
-  //TODO do this more efficiently (store verts per face, for example, so we don't have to search the whole set)
-  for(unsigned int i = 0; i < m_faces.size(); ++i) {
-    if(m_faces[i] == f) {
-      if(m_vertices[i] == v)
-        return true;
-    }
-  }
-  return false;
-  */
 }
+
+bool ShellStickyRepulsionForce::isVertexInUse(const VertexHandle& vh) {
+  return std::find(m_vertices.begin(), m_vertices.end(), vh) != m_vertices.end();
+}
+
+bool ShellStickyRepulsionForce::isFaceInUse(const FaceHandle& fh) {
+  return std::find(m_faces.begin(), m_faces.end(), fh) != m_faces.end();
+}
+
 
 
 } //namespace BASim

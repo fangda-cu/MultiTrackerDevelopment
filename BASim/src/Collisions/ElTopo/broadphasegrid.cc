@@ -55,6 +55,9 @@ void BroadPhaseGrid::build_acceleration_grid( AccelerationGrid& grid,
    
    for(unsigned int i = 0; i < n; i++)
    {
+     //skip inverted BB's
+      if ( xmins[i][0] > xmaxs[i][0] )  { continue; }
+
       update_minmax(xmins[i], xmin, xmax);
       update_minmax(xmaxs[i], xmin, xmax);
       maxdistance = std::max(maxdistance, mag(xmaxs[i] - xmins[i]));
@@ -103,8 +106,8 @@ void BroadPhaseGrid::build_acceleration_grid( AccelerationGrid& grid,
 void BroadPhaseGrid::update_broad_phase_static( const BASim::TopologicalObject& m_obj, const BASim::VertexProperty<BASim::Vec3d>& vertices, double proximity_epsilon  )
 {
    
-  Vec3d maxVec(std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max());
-  Vec3d minVec(-std::numeric_limits<double>::max(),-std::numeric_limits<double>::max(),-std::numeric_limits<double>::max());
+  Vec3d maxVec(std::numeric_limits<double>::max()-1,std::numeric_limits<double>::max()-1,std::numeric_limits<double>::max()-1);
+  Vec3d minVec(-std::numeric_limits<double>::max()+1,-std::numeric_limits<double>::max()+1,-std::numeric_limits<double>::max()+1);
 
    double sum = 0;
    int count = 0;
@@ -163,6 +166,7 @@ void BroadPhaseGrid::update_broad_phase_static( const BASim::TopologicalObject& 
    }
    
    {
+
       unsigned int num_triangles = m_obj.nf(); 
       Vec3d offset(proximity_epsilon, proximity_epsilon, proximity_epsilon);
      std::vector<Vec3d> tri_xmins(num_triangles, maxVec), tri_xmaxs(num_triangles, minVec);

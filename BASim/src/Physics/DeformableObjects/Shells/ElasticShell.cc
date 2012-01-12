@@ -16,8 +16,6 @@
 
 #include <algorithm>
 
-
-
 namespace BASim {
 
 ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep) : 
@@ -582,8 +580,10 @@ void ElasticShell::addSelfCollisionForces() {
   //add damped springs between them to handle new collisions
   
   //consider all vertices
+  
   for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
-    Vec3d vert_pos = m_positions[*vit];
+    VertexHandle vh = *vit;
+    Vec3d vert_pos = m_positions[vh];
     ElTopo::Vec3d vertex_position = ElTopo::toElTopo(vert_pos);
 
     //construct bound box for the vertex, and find all triangles near it
@@ -591,19 +591,20 @@ void ElasticShell::addSelfCollisionForces() {
     Vec3d low = vert_pos - collision_distance*Vec3d(1,1,1), high = vert_pos + collision_distance*Vec3d(1,1,1);
     
     m_broad_phase.get_potential_triangle_collisions(ElTopo::toElTopo(low), ElTopo::toElTopo(high), overlapping_triangles);
-
     for(unsigned int i = 0; i < overlapping_triangles.size(); ++i) {
       int tri_idx = overlapping_triangles[i];
       FaceHandle f(tri_idx);
       
-      if(m_repulsion_springs->springExists(f, *vit)) continue;
+      if(m_repulsion_springs->springExists(f, vh)) {
+        continue;
+      }
 
       ElTopo::Vec3d face_verts[3];
       int fv = 0;
       bool goodSpring = true;
       for(FaceVertexIterator fvit = m_obj->fv_iter(f); fvit; ++fvit) {
         face_verts[fv] = ElTopo::toElTopo(m_positions[*fvit]);
-        if(*fvit == *vit)
+        if(*fvit == vh)
           goodSpring = false;
         ++fv;
       }
@@ -618,11 +619,12 @@ void ElasticShell::addSelfCollisionForces() {
       check_point_triangle_proximity(vertex_position, face_verts[0], face_verts[1], face_verts[2], distance, barycoords[0], barycoords[1], barycoords[2], normal );
       //if such a spring doesn't already exist, add it
       if(distance < collision_distance) {
-        m_repulsion_springs->addSpring(f, *vit, barycoords, m_collision_spring_stiffness, m_collision_spring_damping, collision_distance);
+        m_repulsion_springs->addSpring(f, vh, barycoords, m_collision_spring_stiffness, m_collision_spring_damping, collision_distance);
       }
     }
   }
-
+  
+  
 }
 
 void ElasticShell::getSpringList(std::vector<Vec3d>& start, std::vector<Vec3d>& end)  const {
@@ -641,6 +643,7 @@ void ElasticShell::getSpringList(std::vector<Vec3d>& start, std::vector<Vec3d>& 
     Vec3d result = bary[i][0] * v0 + bary[i][1] * v1 + bary[i][2] * v2;
     end.push_back(result);
   }
+
 }
 
 void ElasticShell::setCollisionParams(Scalar proximity, Scalar stiffness, Scalar damping) {
@@ -698,13 +701,13 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
       }
     }
  }
- 
-  
+
   //apply penalty springs for self-collision
   if(m_self_collisions) {
     std::cout << "Adding self-collision springs\n";
     addSelfCollisionForces();
   }
+  
   
   std::cout << "Adjusting thicknesses\n";
   //Adjust thicknesses based on area changes
@@ -734,6 +737,8 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     //Relabel DOFs if necessary
     do_relabel = true;
   }
+
+  
 
   
   if(do_relabel) {
@@ -785,7 +790,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 void ElasticShell::remesh( Scalar desiredEdge )
 {
 
-  m_broad_phase.update_broad_phase_static(*m_obj, m_positions, m_proximity_epsilon);
+  m_broad_phase.update_broad_phase_static(*m_obj, m_positions, m_collision_proximity);
   
   //Parameters adapted from Jiao et al. "Anisotropic Mesh Adaptation for Evolving Triangulated Surfaces"
   Scalar ratio_R = 0.45;
@@ -961,6 +966,15 @@ void ElasticShell::flipEdges() {
     }
     if(isInflow) continue;
 
+    //if either of the faces has a spring stuck to it, don't flip!
+    bool springAttached = false;
+    for(EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit) {
+      FaceHandle fh = *efit;
+      if(m_repulsion_springs->isFaceInUse(fh))
+        springAttached = true;    
+    }
+    if(springAttached) continue;
+
     VertexHandle v0 = m_obj->fromVertex(eh);
     VertexHandle v1 = m_obj->toVertex(eh);
     assert(v0!=v1);
@@ -992,28 +1006,30 @@ void ElasticShell::flipEdges() {
       //if(edgeFlipCausesCollision(eh, v2, v3))
       //  continue;
 
-
+      //EdgeHandle newEdge(-1);
       EdgeHandle newEdge = flipEdge(*m_obj, eh);
       if(!newEdge.isValid()) //couldn't flip the edge, such an edge already existed
         continue;
       
       //update the collision data
       //remove the old edge/tris
-      m_broad_phase.remove_edge(eh.idx());
+      /*m_broad_phase.remove_edge(eh.idx());
       m_broad_phase.remove_triangle(f0.idx());
-      m_broad_phase.remove_triangle(f1.idx());
+      m_broad_phase.remove_triangle(f1.idx());*/
       
       FaceHandle f0new, f1new;
       getEdgeFacePair(*m_obj, newEdge, f0new, f1new);
       setFaceActive(f0new);
       setFaceActive(f1new);
 
+      /*
       //update the collision data
       //add the new edge/tris
       m_broad_phase.add_edge(newEdge.idx(), ElTopo::toElTopo(p2), ElTopo::toElTopo(p3), m_proximity_epsilon);
       //(vertex ordering shouldn't matter here)
       m_broad_phase.add_triangle(f0new.idx(), ElTopo::toElTopo(p2), ElTopo::toElTopo(p3), ElTopo::toElTopo(p0), m_proximity_epsilon);
       m_broad_phase.add_triangle(f1new.idx(), ElTopo::toElTopo(p2), ElTopo::toElTopo(p3), ElTopo::toElTopo(p1), m_proximity_epsilon);
+      */
 
       //assign new thicknesses
       Scalar f0newArea = getArea(f0new, true);
@@ -1028,6 +1044,8 @@ void ElasticShell::flipEdges() {
   }
 
 }
+
+
 
 struct SortableEdge
 {
@@ -1066,20 +1084,28 @@ bool ElasticShell::splitEdges( double desiredEdge, double maxEdge, double maxAng
       }
     }
 
-    //don't split constrained edges. (alternatively, we could split them, and add the new vert to the constrained list.)
+    //don't split constrained edges. (alternatively, we could split them, and add the new vert to the constrained list somehow.)
     bool aConstrained = false, bConstrained = false;
+    
     for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
       if(m_constrained_vertices[i] == vertex_a)
         aConstrained = true;
       if(m_constrained_vertices[i] == vertex_b)
         bConstrained = true;
     }
-
+    
     if(aConstrained && bConstrained || isConstrained) continue;
 
-    //if ( m_mesh.m_edgetri[i].size() < 2 ) { continue; }                     // skip boundary edges - Why should we?
-    //if ( m_masses[ m_mesh.m_edges[i][0] ] > 100.0 && m_masses[ m_mesh.m_edges[i][1] ] > 100.0 )     { continue; }    // skip solids
-
+    //don't split faces that have springs attached (for now).
+    bool facesHaveSprings = false;
+    for(EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit) {
+      FaceHandle fh = *efit;
+      if(m_repulsion_springs->isFaceInUse(fh)) {
+        facesHaveSprings = true;
+        break;
+      }
+    }
+    if(facesHaveSprings) continue;
     
     assert( m_obj->vertexExists(vertex_a) );
     assert( m_obj->vertexExists(vertex_b) );
@@ -1130,6 +1156,7 @@ bool ElasticShell::isConstrained(const VertexHandle& v) const {
       return true;
   return false;
 }
+
 
 bool ElasticShell::isSplitDesired(const EdgeHandle& eh, double maxEdge, double desiredEdge, double maxAngle) {
 
@@ -1988,6 +2015,18 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
         }
       }
       if(isInflow) continue;
+      
+      //don't collapse faces that have springs attached (for now).
+      bool facesHaveSprings = false;
+      for(EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit) {
+        FaceHandle fh = *efit;
+        if(m_repulsion_springs->isFaceInUse(fh)) {
+          facesHaveSprings = true;
+          break;
+        }
+      }
+      if(facesHaveSprings) continue;
+
 
       //don't collapse a constrained vertex
       bool v0_pinned = false,v1_pinned = false;
@@ -2277,9 +2316,6 @@ void ElasticShell::extendMesh(Scalar current_time) {
       m_damping_undeformed_positions[vertices[i]] = m_inflow_positions[boundary][i];
 
       //constrain the vertex velocity of the new vertex
-      if(isConstrained(vertices[i])) {
-        printf("\n\n\n***Weirdness***!\n\n\n");
-      }
       constrainVertex(vertices[i], new FixedVelocityConstraint(m_inflow_positions[boundary][i], m_inflow_velocity[boundary], current_time));
     }
 
