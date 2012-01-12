@@ -44,6 +44,149 @@ bool getEdgeFacePair(const TopologicalObject& obj, const EdgeHandle& eh, FaceHan
   return true;
 }
 
+void addPrevSide(TopologicalObject & obj, const FaceHandle &f, const EdgeHandle &e,
+        const VertexHandle& pivot, VertexHandle &newVert, std::vector<EdgeHandle> & oldEdges,
+        std::vector<FaceHandle> & oldFaces, std::vector<FaceHandle> &newFaces){
+    EdgeHandle curEdge = obj.prevEdge(f, e);
+    FaceHandle curFace = f;
+    VertexHandle thirdV;
+    while ( curEdge.idx() != -1 ){
+
+//       obj.addEdge(newVert, getEdgesOtherVertex(obj, curEdge, pivot));
+       oldEdges.push_back(curEdge);
+
+       curFace = getEdgeOtherFace(obj, curEdge, curFace );
+       if ( curFace.idx() == -1 ) break;
+       getFaceThirdVertex(obj, curFace, curEdge, thirdV);
+       newFaces.push_back(obj.addFace(newVert, getEdgesOtherVertex(obj, curEdge, pivot), thirdV ));
+       oldFaces.push_back(curFace);
+
+       curEdge = obj.prevEdge ( curFace, curEdge);
+    }
+
+}
+void addNextSide(TopologicalObject & obj, const FaceHandle &f, const EdgeHandle &e,
+        const VertexHandle& pivot, VertexHandle &newVert, std::vector<EdgeHandle> & oldEdges,
+        std::vector<FaceHandle> & oldFaces, std::vector<FaceHandle> &newFaces){
+    EdgeHandle curEdge = obj.nextEdge(f, e);
+    FaceHandle curFace = f;
+    VertexHandle thirdV;
+    while ( curEdge.idx() != -1 ){
+
+        //TODO:instead of adding edges, just move them
+//        std::cout << obj.ne();
+//       obj.addEdge(newVert, getEdgesOtherVertex(obj, curEdge, pivot));
+//       std::cout << " - " << obj.ne() << std::endl;
+       oldEdges.push_back(curEdge);
+
+       curFace = getEdgeOtherFace(obj, curEdge, curFace );
+       if ( curFace.idx() == -1 ) break;
+       getFaceThirdVertex(obj, curFace, curEdge, thirdV);
+
+       newFaces.push_back(obj.addFace(newVert, thirdV, getEdgesOtherVertex(obj, curEdge, pivot)));
+       oldFaces.push_back(curFace);
+
+       curEdge = obj.nextEdge ( curFace, curEdge);
+    }
+
+}
+void tearVertexAlong(TopologicalObject& obj,const EdgeHandle& e, const VertexHandle &va,
+        VertexHandle & newVert, std::vector<FaceHandle> &newFaces,
+        std::vector<FaceHandle> &facesToDelete, std::vector<EdgeHandle> &edgesToDelete){
+
+    assert ( va == obj.fromVertex(e) || va == obj.toVertex(e));
+
+    //(va, vb) edge will remain on the top, the new verts will make the bottom, that is, f1
+
+    //Figure out the orientation of the faces
+    EdgeFaceIterator efit = obj.ef_iter(e);
+    FaceHandle f1 = *efit;
+    EdgeHandle next = obj.nextEdge(*efit, e);
+    if ( getSharedVertex(obj, e, next) != va){
+        ++efit;
+    }
+    f1 = *efit;
+
+    VertexHandle other = getEdgesOtherVertex(obj, e, va);
+
+    //Add one new vert
+    newVert = obj.addVertex();
+
+    //Accumulators to know what to delete at the end
+    //Add the first edge and faces
+//    EdgeHandle newEdge = obj.addEdge(newVert, other);
+    VertexHandle thirdV;
+    getFaceThirdVertex(obj, f1, e, thirdV);
+
+    facesToDelete.push_back(f1);
+    newFaces.push_back(obj.addFace(other, newVert, thirdV));
+
+    //Add in all the walkable directions to the new verts
+    addNextSide(obj, f1, e, va, newVert, edgesToDelete, facesToDelete, newFaces);
+
+}
+void tearEdge(TopologicalObject& obj,const EdgeHandle& e, const VertexHandle &va, const VertexHandle & vb,
+        VertexHandle & newVerta, VertexHandle & newVertb, std::vector<FaceHandle> &newFaces,
+        std::vector<FaceHandle> &facesToDelete, std::vector<EdgeHandle> &edgesToDelete){
+    assert ( va == obj.fromVertex(e) && vb == obj.toVertex(e));
+
+    //(va, vb) edge will remain on the top, the new verts will make the bottom, that is, f1
+
+    //Figure out the orientation of the faces
+    EdgeFaceIterator efit = obj.ef_iter(e);
+    FaceHandle f1;
+    FaceHandle f2;
+    EdgeHandle next = obj.nextEdge(*efit, e);
+    if ( getSharedVertex(obj, e, next) == va){
+        f1 = *efit;
+        ++efit;
+        f2 = *efit;
+    }
+    else{
+        f2 = *efit;
+        ++efit;
+        f1 = *efit;
+    }
+
+    //Add the new verts
+    newVerta = obj.addVertex();
+    newVertb = obj.addVertex();
+
+    //Accumulators to know what to delete at the end
+    //Add the first edge and faces
+    //Note: no need to add the edge when adding a face
+//    EdgeHandle newEdge = obj.addEdge(newVerta, newVertb);
+    VertexHandle thirdV;
+    getFaceThirdVertex(obj, f1, e, thirdV);
+
+    facesToDelete.push_back(f1);
+    newFaces.push_back(obj.addFace(newVertb, newVerta, thirdV));
+
+
+    //Add in all the walkable directions to the new verts
+    std::cout << "\t\tEdges before next walk: " << obj.ne() << std::endl;
+    addNextSide(obj, f1, e, va, newVerta, edgesToDelete, facesToDelete, newFaces);
+    std::cout << "\t\tEdges before prev walk: " << obj.ne() << std::endl;
+    addPrevSide(obj, f1, e, vb, newVertb, edgesToDelete, facesToDelete, newFaces);
+    std::cout << "\t\tEdges after both walks: " << obj.ne() << std::endl;
+
+
+    //Deletion defered to caller so that attributes can be copied
+//    //Now delete all the extra things
+//    // -all faces that were added to the newverts
+//    // -all edges that were added to the newverts
+//    for (int i = 0; i < (int)facesToDelete.size(); ++i){
+//        obj.deleteFace(facesToDelete[i], false);
+//    }
+//    for (int i = 0; i < (int)edgesToDelete.size(); ++i){
+//        obj.deleteEdge(edgesToDelete[i], false);
+//    }
+
+
+
+}
+
+
 VertexHandle splitEdge(TopologicalObject& obj, const EdgeHandle& splitEdge, std::vector<FaceHandle>& newFaces) {
   EdgeFaceIterator ef_iter = obj.ef_iter(splitEdge);
 

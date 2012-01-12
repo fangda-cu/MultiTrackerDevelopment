@@ -120,6 +120,11 @@ public:
   //** Return true if the tet handle points to a tet vertex. */
   bool tetExists(const tet_handle& tet) const;
   
+  //*** Return true if the VH is incident to a boundary edge. */
+  bool isBoundary(const VertexHandle & vh) const;
+  //*** Return true if the EH is a boundary edge. */
+  bool isBoundary(const EdgeHandle & eh) const;
+
   /** Returns a handle to the vertex at the tail of the edge */
   VertexHandle fromVertex(const EdgeHandle& eh) const;
   /** Returns a handle to the vertex at the head of the edge */

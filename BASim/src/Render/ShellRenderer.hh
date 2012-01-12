@@ -24,6 +24,7 @@ namespace BASim {
     
     void render();
     void renderEdges();
+    void renderVelocity();
     void cycleMode();
     DrawMode getMode() const { return m_mode; }
     void setMode(DrawMode mode) { m_mode = mode; }

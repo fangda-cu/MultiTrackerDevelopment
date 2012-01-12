@@ -100,6 +100,10 @@ ShellTest::ShellTest()
   AddOption("shell-collision-spring-damping", "damping coefficient of the collision springs", 0.0);
   AddOption("shell-collision-proximity", "the collision spring rest length and distance at which to add springs", 0.0);
   
+  //Tearing options
+  AddOption("shell-tearing", "wheter to add tearing to the model", false);
+  AddOption("shell-tearing-threshold", "the thickness threshold to use for tearing", 0.0 );
+
     //Timestepper options
   AddOption("integrator", "type of integrator to use for the shell", "implicit");
 
@@ -234,6 +238,10 @@ void ShellTest::Setup()
   shell->setGroundPlane(groundPlane, gpHeight, gpSpeed);
   bool selfCollide = GetBoolOpt("shell-self-collision");
   shell->setSelfCollision(selfCollide);
+
+  bool tearing = GetBoolOpt("shell-tearing");
+  Scalar tearingThres = GetScalarOpt("shell-tearing-threshold");
+  shell->setTearing(tearing, tearingThres);
 
   //compute the dof indexing for use in the diff_eq solver
   shellObj->computeDofIndexing();
