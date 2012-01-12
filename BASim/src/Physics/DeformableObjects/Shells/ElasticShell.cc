@@ -2224,7 +2224,7 @@ void ElasticShell::extendMesh(Scalar current_time) {
     Scalar baseLength = (curPos - curPos2).norm();
     Scalar len1 = (curPos - startPos).norm();
     Scalar len2 = (curPos2 - startPos).norm();
-    if(len1/baseLength < 0.5 || len2 / baseLength < 0.5) continue;
+    if(len1/baseLength < 0.7 || len2 / baseLength < 0.7) continue;
 
 
     int count = m_inflow_boundaries[boundary].size();
