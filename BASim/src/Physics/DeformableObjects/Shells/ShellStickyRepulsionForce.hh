@@ -12,7 +12,7 @@
 
 #include "BASim/src/Math/ADT/adreal.h"
 #include "BASim/src/Math/ADT/advec.h"
-
+#include <set>
 
 //A set of springs, each between a tri and a vert.
 
@@ -43,6 +43,9 @@ public:
   void getSpringLists(std::vector<VertexHandle> &verts, std::vector<FaceHandle>& tris, std::vector<Vec3d>& barycoords);
   bool springExists(const FaceHandle& f, const VertexHandle& v);
 
+  bool isVertexInUse(const VertexHandle& v);
+  bool isFaceInUse(const FaceHandle& f);
+
   void clearSprings(VertexHandle& v);
   void clearSprings(FaceHandle& f);
 
@@ -64,6 +67,8 @@ protected:
   std::vector<Scalar> m_damping;
   std::vector<Scalar> m_restlen;
 
+  //for fast checking to see if a given spring already exists
+  std::set< std::pair<int,int> > m_springset; 
   
 
   Scalar m_timestep; //for damping/viscosity

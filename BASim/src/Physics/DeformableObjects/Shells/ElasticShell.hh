@@ -129,6 +129,8 @@ public:
   void extendMesh(Scalar current_time);
   void deleteRegion();
 
+  void removeFace(FaceHandle& f);
+
   void getSpringList(std::vector<Vec3d>& start, std::vector<Vec3d>& end) const;
 
   //Fracture functions
@@ -151,7 +153,7 @@ protected:
   void performTear(const EdgeHandle & eh, const VertexHandle &v0, const VertexHandle &v1,
           const bool & aBound, const bool & bBound);
 
-  void resolveCollisions();
+  void resolveCollisions(Scalar timestep);
   void updateThickness();
 
   //Most of this is remeshing related and should hopefully be moved somewhere else

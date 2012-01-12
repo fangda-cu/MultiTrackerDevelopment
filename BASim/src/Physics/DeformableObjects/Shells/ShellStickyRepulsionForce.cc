@@ -73,20 +73,26 @@ adreal<NumRepulsionDof,DO_HESS,Real> RepulsionEnergy(const ShellStickyRepulsionF
     
   adrealVT e(0);
   
-  //normal energy
-  advecVT normalVec = cross(p[2] - p[0], p[1] - p[0]);
-  normalize(normalVec);
   
+  Vector3d normalReal = cross(s_deformed[2] - s_deformed[0], s_deformed[1] - s_deformed[0]); 
+  advecVT normalVbl = cross(p[2] - p[0], p[1] - p[0]);
+  
+  normalize(normalVbl);
+  normalize(normalReal);
+
   if(dot(s_deformed[3] - s_deformed[0], cross(s_deformed[2] - s_deformed[0], s_deformed[1] - s_deformed[0])) > 0) {
-    e += 0.5*strength*sqr( dot(p[3] - p[0], normalVec) - undef_len);  
+    e += 0.5*strength*sqr( dot(p[3] - p[0], normalVbl) - undef_len);  
   }
   else {
-    e += 0.5*strength*sqr( -dot(p[3] - p[0], normalVec) - undef_len);  
+    e += 0.5*strength*sqr( -dot(p[3] - p[0], normalVbl) - undef_len);  
   }
-
+ 
   //tangential energy
   advecVT offset = p[3] - (baryCoords[0]*p[0] + baryCoords[1]*p[1] + baryCoords[2]*p[2]);
-  e += 0.5*strength*lenSq(offset - dot(offset,normalVec)*normalVec);
+  //note, this is an approx for speed. - should also use normalVbl here.
+  e += 0.5*strength*lenSq(offset - dot(offset,normalReal)*normalReal); 
+  //the true version
+  //e += 0.5*strength*lenSq(offset - dot(offset,normalVbl)*normalVbl); 
 
   return e;
 }
@@ -257,6 +263,8 @@ void ShellStickyRepulsionForce::addSpring(const FaceHandle& fh, const VertexHand
   m_damping.push_back(damping);
   m_restlen.push_back(restlen);
 
+  m_springset.insert(std::make_pair(fh.idx(),vh.idx()));
+
 }
 
 void ShellStickyRepulsionForce::clearSprings() {
@@ -266,6 +274,8 @@ void ShellStickyRepulsionForce::clearSprings() {
   m_stiffnesses.clear();
   m_damping.clear();
   m_restlen.clear();
+  
+  m_springset.clear();
 }
 
 void ShellStickyRepulsionForce::clearSprings(VertexHandle& v) {
@@ -288,6 +298,17 @@ void ShellStickyRepulsionForce::clearSprings(VertexHandle& v) {
       m_stiffnesses.erase(m_stiffnesses.begin() + target);
       m_damping.erase(m_damping.begin() + target);
       m_restlen.erase(m_restlen.begin() + target);
+    }
+  }
+
+  //adjust the springset too
+  for (std::set< std::pair<int,int> >::iterator it = m_springset.begin(); it != m_springset.end(); ) {
+    std::pair<int,int> springPair = *it;
+    if (springPair.second == v.idx()) {
+      m_springset.erase(it++);
+    }
+    else {
+      ++it;
     }
   }
 
@@ -316,6 +337,17 @@ void ShellStickyRepulsionForce::clearSprings(FaceHandle& f) {
     }
   }
 
+  //adjust the springset too
+  for (std::set< std::pair<int,int> >::iterator it = m_springset.begin(); it != m_springset.end(); ) {
+    std::pair<int,int> springPair = *it;
+    if (springPair.first == f.idx()) {
+      m_springset.erase(it++);
+    }
+    else {
+      ++it;
+    }
+  }
+
 }
 
 void ShellStickyRepulsionForce::getSpringLists(std::vector<VertexHandle> &verts, std::vector<FaceHandle>& tris, std::vector<Vec3d>& barycoords) {
@@ -325,16 +357,17 @@ void ShellStickyRepulsionForce::getSpringLists(std::vector<VertexHandle> &verts,
 }
 
 bool ShellStickyRepulsionForce::springExists(const FaceHandle& f, const VertexHandle& v) {
-
-  //TODO do this more efficiently (store verts per face, for example, so we don't have to search the whole set)
-  for(unsigned int i = 0; i < m_faces.size(); ++i) {
-    if(m_faces[i] == f) {
-      if(m_vertices[i] == v)
-        return true;
-    }
-  }
-  return false;
+  return m_springset.find(std::make_pair(f.idx(), v.idx())) != m_springset.end();
 }
+
+bool ShellStickyRepulsionForce::isVertexInUse(const VertexHandle& vh) {
+  return std::find(m_vertices.begin(), m_vertices.end(), vh) != m_vertices.end();
+}
+
+bool ShellStickyRepulsionForce::isFaceInUse(const FaceHandle& fh) {
+  return std::find(m_faces.begin(), m_faces.end(), fh) != m_faces.end();
+}
+
 
 
 } //namespace BASim

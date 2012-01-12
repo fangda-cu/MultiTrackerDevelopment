@@ -164,11 +164,8 @@ void tearEdge(TopologicalObject& obj,const EdgeHandle& e, const VertexHandle &va
 
 
     //Add in all the walkable directions to the new verts
-    std::cout << "\t\tEdges before next walk: " << obj.ne() << std::endl;
     addNextSide(obj, f1, e, va, newVerta, edgesToDelete, facesToDelete, newFaces);
-    std::cout << "\t\tEdges before prev walk: " << obj.ne() << std::endl;
     addPrevSide(obj, f1, e, vb, newVertb, edgesToDelete, facesToDelete, newFaces);
-    std::cout << "\t\tEdges after both walks: " << obj.ne() << std::endl;
 
 
     //Deletion defered to caller so that attributes can be copied
