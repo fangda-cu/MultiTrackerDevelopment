@@ -161,6 +161,7 @@ ShellRenderer::ShellRenderer( const ElasticShell& shell, const Scalar thickness 
 
 void ShellRenderer::render()
 {
+    glPushMatrix();
 
   if( m_mode == FLAT )
   {
@@ -214,13 +215,16 @@ void ShellRenderer::render()
   }
   else if( m_mode == DBG )
   {
+
+//      renderVelocity();
+
     glDisable(GL_LIGHTING);
     const DeformableObject& mesh = m_shell.getDefoObj();
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     // Render all edges
-    glLineWidth(2);
+    glLineWidth(3);
     glBegin(GL_LINES);
     OpenGL::color(Color(0,0,0));
     for( EdgeIterator eit = mesh.edges_begin(); eit != mesh.edges_end(); ++eit )
@@ -230,6 +234,13 @@ void ShellRenderer::render()
       Vec3d dir = (p1-p0);
       //p0 = p0 + 0.05*dir;
       //p1 = p1 - 0.05*dir;
+      if ( m_shell.shouldFracture(*eit) && (mesh.isBoundary(mesh.fromVertex(*eit)) || mesh.isBoundary(mesh.toVertex(*eit)))){
+          OpenGL::color(Color(1.0, 1.0, 0.0));
+      } else if (mesh.isBoundary(*eit)){
+          OpenGL::color(Color(0.0, 1.0, 0.0));
+      } else{
+          OpenGL::color(Color(0,0,0));
+      }
       OpenGL::vertex(p0);
       OpenGL::vertex(p1);
     }
@@ -407,7 +418,19 @@ void ShellRenderer::render()
          glDisable(GL_LIGHTING);
 
   }
+  glPopMatrix();
 
+}
+void ShellRenderer::renderVelocity(){
+    //Draw velocity field as arrows
+    const DeformableObject& mesh = m_shell.getDefoObj();
+    glPushMatrix();
+    for ( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit){
+        Vec3d p0 = m_shell.getVertexPosition(*vit);
+        Vec3d v0 = m_shell.getVertexVelocity(*vit);
+        glutDirectedArrow(p0, p0 + v0, v0.norm()*0.1);
+    }
+    glPopMatrix();
 }
 void ShellRenderer::renderEdges(){
 //    draw edges as arrows!

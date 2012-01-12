@@ -516,7 +516,16 @@ int TopologicalObject::getRelativeOrientation(const EdgeHandle& eh, const Vertex
      return 0;
   return m_EV.get(eh.idx(), vh.idx());
 }
-
+bool TopologicalObject::isBoundary(const VertexHandle & vh) const {
+    for ( VertexEdgeIterator veit = ve_iter(vh); veit; ++veit){
+        if( isBoundary(*veit) ){ return true; }
+    }
+    return false;
+}
+bool TopologicalObject::isBoundary(const EdgeHandle & eh) const{
+    //TODO: extend this for non-manifold meshes
+    return (edgeIncidentFaces(eh) == 1);
+}
 VertexHandle
 TopologicalObject::toVertex(const EdgeHandle& eh) const
 {

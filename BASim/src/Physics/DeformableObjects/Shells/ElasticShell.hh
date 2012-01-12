@@ -133,7 +133,25 @@ public:
 
   void getSpringList(std::vector<Vec3d>& start, std::vector<Vec3d>& end) const;
 
+  //Fracture functions
+  typedef std::vector<VertexHandle> VHList;
+  typedef std::vector<bool> BoolList;
+
+  void fracture();
+  void getDesiredFractures(std::vector<EdgeHandle> & edges, VHList & froms,
+           VHList & tos,  BoolList & fromsB,  BoolList & tosB );
+  bool shouldFracture (const EdgeHandle & eh) const;
+  bool isInflow(const EdgeHandle & eh) const;
+  void setTearing(bool tearing, Scalar thres){
+      m_tearing = tearing;
+      m_tear_thres = thres;
+  }
+
+
 protected:
+
+  void performTear(const EdgeHandle & eh, const VertexHandle &v0, const VertexHandle &v1,
+          const bool & aBound, const bool & bBound);
 
   void resolveCollisions(Scalar timestep);
   void updateThickness();
@@ -227,6 +245,11 @@ protected:
   Scalar m_collision_spring_stiffness, m_collision_spring_damping;
 
   ElTopo::BroadPhaseGrid m_broad_phase;
+
+  //Fracture properties
+  bool m_tearing;
+  Scalar m_tear_thres;
+
 };
 
 }

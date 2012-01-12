@@ -15,6 +15,7 @@
 //#include "eltopo.h"
 
 #include <algorithm>
+#include <numeric>
 
 namespace BASim {
 
@@ -667,8 +668,15 @@ void ElasticShell::setSelfCollision(bool enabled) {
 
 
 void ElasticShell::endStep(Scalar time, Scalar timestep) {
-  std::cout << "Starting endStep\n";
-  
+
+ std::cout << "Starting endStep\n";
+ bool do_relabel = false;
+//Tearing processing
+  if(m_tearing){
+      std::cout << "Processing tearing. \n";
+      fracture();
+      do_relabel = true;
+  }
 
   //El Topo collision processing.
   //resolveCollisions(timestep);
@@ -720,8 +728,8 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   //Adjust thicknesses based on area changes
   updateThickness();
 
-  bool do_relabel = false;
   
+
   if(m_inflow) {
     //std::cout << "Extending the mesh\n";
     extendMesh(time);
@@ -793,7 +801,205 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   std::cout << "Done endStep\n";
  
 }
+void ElasticShell::fracture(){
+    //Here comes all the fracture code
 
+
+    //Figure out which edges will be taken down
+    std::vector<EdgeHandle> edgesToFrac;
+    VHList fromVH;
+    VHList toVH;
+    BoolList fromBound;
+    BoolList toBound;
+    getDesiredFractures(edgesToFrac, fromVH, toVH, fromBound, toBound);
+
+//    std::cout << "Fracturing " << edgesToFrac.size() << " edges" << std::endl;
+
+    //All of these are fractured interior, now figure out which will become boundaries
+    for(unsigned int i = 0; i < edgesToFrac.size(); ++i){
+        //skip constraints
+
+        if (fromBound[i] || toBound[i]){
+#ifndef NDEBUG
+            int facesBef = m_obj->nf();
+            int edgesBef = m_obj->ne();
+            int vertsBef = m_obj->nv();
+#endif
+            //Triple check that it will be ok to tear
+            if ( m_obj->edgeExists(edgesToFrac[i]) && shouldFracture(edgesToFrac[i])){
+                performTear(edgesToFrac[i], m_obj->fromVertex(edgesToFrac[i]),
+                        m_obj->toVertex(edgesToFrac[i]), false, false);
+            }
+#ifndef NDEBUG
+            std::cout << "\tFaces after: " << m_obj->nf() << std::endl;
+            std::cout << "\tEdges after: " << m_obj->ne() << std::endl;
+            std::cout << "\tVerts after: " << m_obj->nv() << std::endl;
+            assert( (facesBef - m_obj->nf()) == 0);
+            assert( (edgesBef - m_obj->ne()) == -1);
+            assert( (vertsBef - m_obj->nv()) == 0);
+#endif
+        }
+    }
+//    for ( int i = 0 ; i < 5; ++i){
+//        for(EdgeIterator eit = m_obj->edges_begin(); eit != m_obj->edges_end(); ++eit){
+//
+//        }
+//    }
+}
+void ElasticShell::performTear(const EdgeHandle & eh, const VertexHandle &v0, const VertexHandle &v1,
+        const bool & _aBound, const bool & _bBound){
+    //Check for self-intersections being induced...
+
+    assert(v0!=v1);
+
+    std::vector<FaceHandle> oldFaces;
+    std::vector<EdgeHandle> oldEdges;
+    std::vector<FaceHandle> newFaces;
+    VertexHandle newVerta, newVertb;
+
+//    ElTopo::Vec3d midpoint_ET = ElTopo::toElTopo(midpoint);
+    //if(edgeSplitCausesCollision(midpoint_ET, midpoint_ET, eh))
+    //  return false;
+
+//    //remove the edge and surrounding faces from the collision structure
+//    m_broad_phase.remove_edge(eh.idx());
+//    for(unsigned int i = 0; i < oldFaces.size(); ++i)
+//      m_broad_phase.remove_triangle(oldFaces[i].idx());
+
+    //perform the actual split
+    bool aBound = m_obj->isBoundary(v0);
+    bool bBound = m_obj->isBoundary(v1);
+    if ( aBound && bBound){
+//        std::cout << "\tSeparating geom" << std::endl;
+        tearEdge(*m_obj, eh, v0, v1, newVerta, newVertb, newFaces, oldFaces, oldEdges);
+        setVertexVelocity(newVerta, getVertexVelocity(v0));
+        setVertexPosition(newVerta, getVertexPosition(v0));
+        setUndeformedVertexPosition(newVerta, getVertexUndeformed(v0));
+
+        setVertexVelocity(newVertb, getVertexVelocity(v1));
+        setVertexPosition(newVertb, getVertexPosition(v1));
+        setUndeformedVertexPosition(newVertb, getVertexUndeformed(v1));
+
+    } else if ( aBound && !bBound){
+//        std::cout << "\tSeparating from" << std::endl;
+        tearVertexAlong(*m_obj, eh, v0, newVerta, newFaces, oldFaces, oldEdges);
+        setVertexVelocity(newVerta, getVertexVelocity(v0));
+        setVertexPosition(newVerta, getVertexPosition(v0));
+        setUndeformedVertexPosition(newVerta, getVertexUndeformed(v0));
+
+    } else if ( !aBound && bBound){
+//        std::cout << "\tSeparating to" << std::endl;
+        tearVertexAlong(*m_obj, eh, v1, newVertb, newFaces, oldFaces, oldEdges);
+        setVertexVelocity(newVertb, getVertexVelocity(v1));
+        setVertexPosition(newVertb, getVertexPosition(v1));
+        setUndeformedVertexPosition(newVertb, getVertexUndeformed(v1));
+    } else{
+        std::cout << "\tUpdated bounds make this edge non-fracturable" << std::endl;
+        return;
+    }
+
+    //set consistent volumes and thickness for new faces
+//    std::cout << "\tFaces added: " << newFaces.size() << std::endl;
+//    std::cout << "\tEdges at this point(before deleting): " << m_obj->ne() << std::endl;
+//    std::cout << "\tFaces that will be deleted: " << oldFaces.size() << std::endl;
+//    std::cout << "\tEdges that will be deleted: " << oldEdges.size() << std::endl;
+
+    assert(oldFaces.size() == newFaces.size());
+    for(unsigned int i = 0; i < oldFaces.size(); ++i) {
+      m_thicknesses[newFaces[i]] = m_thicknesses[oldFaces[i]];
+      m_volumes[newFaces[i]] = m_volumes[oldFaces[i]];
+    }
+
+    //Time to delete the extra tris
+    //Now delete all the extra things
+    // -all faces that were added to the newverts
+    // -all edges that were added to the newverts
+    for (int i = 0; i < (int)oldFaces.size(); ++i){
+        m_obj->deleteFace(oldFaces[i], false);
+    }
+    for (int i = 0; i < (int)oldEdges.size(); ++i){
+        m_obj->deleteEdge(oldEdges[i], false);
+    }
+    std::cout << "\tEdges at this point(after deleting): " << m_obj->ne() << std::endl;
+
+    for(int i = 0; i < (int) newFaces.size(); ++i){
+        setFaceActive(newFaces[i]);
+    }
+
+    //update collision data structures
+
+//    //add vertices
+//    m_broad_phase.add_vertex(v_new.idx(), ElTopo::toElTopo(midpoint), m_proximity_epsilon);
+//
+//    //add edges
+//    VertexEdgeIterator ve_iter = m_obj->ve_iter(v_new);
+//    for(; ve_iter; ++ve_iter) {
+//      std::vector<ElTopo::Vec3d> edge_verts;
+//      EdgeVertexIterator ev_iter = m_obj->ev_iter(*ve_iter);
+//      for(; ev_iter; ++ev_iter)
+//        edge_verts.push_back(ElTopo::toElTopo(getVertexPosition(*ev_iter)));
+//      m_broad_phase.add_edge((*ve_iter).idx(), edge_verts[0], edge_verts[1], m_proximity_epsilon);
+//    }
+//
+//    //add tris
+//    vf_iter = m_obj->vf_iter(v_new);
+//    for(;vf_iter; ++vf_iter) {
+//      std::vector<ElTopo::Vec3d> tri_verts;
+//      FaceVertexIterator fv_iter = m_obj->fv_iter(*vf_iter);
+//      for(; fv_iter; ++fv_iter)
+//        tri_verts.push_back(ElTopo::toElTopo(getVertexPosition(*fv_iter)));
+//      m_broad_phase.add_triangle((*vf_iter).idx(), tri_verts[0], tri_verts[1], tri_verts[2], m_proximity_epsilon);
+//    }
+
+//    new_vert = v_new;
+
+}
+bool ElasticShell::isInflow(const EdgeHandle & eh) const{
+    bool isInflow = false;
+    for(unsigned int i = 0; i < m_inflow_boundaries.size(); ++i) {
+      if(std::find(m_inflow_boundaries[i].begin(), m_inflow_boundaries[i].end(),eh) != m_inflow_boundaries[i].end()) {
+        isInflow = true;
+        break;
+      }
+    }
+    return isInflow;
+}
+void ElasticShell::getDesiredFractures(std::vector<EdgeHandle> & edges, VHList & froms,
+         VHList & tos,  BoolList & fromsB,  BoolList & tosB ){
+    for ( EdgeIterator eit = m_obj->edges_begin(); eit != m_obj->edges_end(); ++eit){
+        //Now look if is exceeds the threshold
+        if ( shouldFracture(*eit) ){
+           froms.push_back(m_obj->fromVertex(*eit));
+           tos.push_back( m_obj->toVertex(*eit) );
+
+           fromsB.push_back(m_obj->isBoundary(froms.back()));
+           tosB.push_back(m_obj->isBoundary(tos.back()));
+
+           edges.push_back(*eit);
+        }
+    }
+}
+bool ElasticShell::shouldFracture (const EdgeHandle & eh) const{
+    //Ignore inflow edges
+    if(isInflow(eh)) return false;
+    //Ignore constrain edges
+    if ( isConstrained(m_obj->fromVertex(eh)) || isConstrained(m_obj->toVertex(eh))) return false;
+
+    //Ignore boundary edges
+    if ( m_obj->isBoundary(eh) ) return false;
+
+    //Get the average thickness weighted by areas for each edge
+    Scalar thickness = 0.0;
+    Scalar totalA = 0.0;
+    for ( EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit){
+        Scalar w = getArea(*efit);
+        thickness += w * getThickness(*efit);
+        totalA += w;
+    }
+    thickness /= totalA;
+
+    return (thickness < m_tear_thres) && (m_obj->isBoundary(m_obj->fromVertex(eh)) || m_obj->isBoundary(m_obj->toVertex(eh)));
+}
 void ElasticShell::remesh( Scalar desiredEdge )
 {
 
@@ -964,13 +1170,8 @@ void ElasticShell::flipEdges() {
   for(;e_it != m_obj->edges_end(); ++e_it) {
     EdgeHandle eh = *e_it;
 
-    bool isInflow = false;
-    for(unsigned int i = 0; i < m_inflow_boundaries.size(); ++i) {
-      if(std::find(m_inflow_boundaries[i].begin(), m_inflow_boundaries[i].end(),eh) != m_inflow_boundaries[i].end()) {
-        isInflow = true;
-        break;
-      }
-    }
+    bool isInflow = this->isInflow(eh);
+
     if(isInflow) continue;
 
     //if either of the faces has a spring stuck to it, don't flip!
@@ -1066,7 +1267,6 @@ struct SortableEdge
     return (this->edge_length < other.edge_length);
   }
 };
-
 bool ElasticShell::splitEdges( double desiredEdge, double maxEdge, double maxAngle) {
 
   //sort edges in order of length, so we split long ones first
@@ -1076,31 +1276,30 @@ bool ElasticShell::splitEdges( double desiredEdge, double maxEdge, double maxAng
   for(;e_it != m_obj->edges_end(); ++e_it) {   
     
     EdgeHandle eh = *e_it;
-    
+
     VertexHandle vertex_a = m_obj->fromVertex(eh);
     VertexHandle vertex_b = m_obj->toVertex(eh);
 
     if ( !m_obj->edgeExists(eh) || !isEdgeActive(eh))   { continue; }     // skip inactive/non-existent edges
     
     //skip edges that are flowing into the domain
-    bool isConstrained = false;
-    for(unsigned int i = 0; i < m_inflow_boundaries.size(); ++i) {
-      if(std::find(m_inflow_boundaries[i].begin(), m_inflow_boundaries[i].end(),eh) != m_inflow_boundaries[i].end()) {
-        isConstrained = true;
-        break;
-      }
-    }
+    bool isConstrained = isInflow(eh);
 
-    //don't split constrained edges. (alternatively, we could split them, and add the new vert to the constrained list somehow.)
-    bool aConstrained = false, bConstrained = false;
-    
-    for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
-      if(m_constrained_vertices[i] == vertex_a)
-        aConstrained = true;
-      if(m_constrained_vertices[i] == vertex_b)
-        bConstrained = true;
-    }
-    
+    //don't split constrained edges. (alternatively, we could split them, and add the new vert to the constrained list.)
+    bool aConstrained = this->isConstrained(vertex_a);
+    bool bConstrained = this->isConstrained(vertex_b);
+
+
+//    //don't split constrained edges. (alternatively, we could split them, and add the new vert to the constrained list somehow.)
+//    bool aConstrained = false, bConstrained = false;
+//
+//    for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
+//      if(m_constrained_vertices[i] == vertex_a)
+//        aConstrained = true;
+//      if(m_constrained_vertices[i] == vertex_b)
+//        bConstrained = true;
+//    }
+
     if(aConstrained && bConstrained || isConstrained) continue;
 
     //don't split faces that have springs attached (for now).
