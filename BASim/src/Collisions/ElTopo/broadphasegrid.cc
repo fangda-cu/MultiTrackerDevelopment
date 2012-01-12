@@ -89,6 +89,7 @@ void BroadPhaseGrid::build_acceleration_grid( AccelerationGrid& grid,
    {
       unsigned int index = i - 1;
       
+      
       // don't add inside-out AABBs
       if ( xmins[index][0] > xmaxs[index][0] )  { continue; }
       
@@ -106,8 +107,8 @@ void BroadPhaseGrid::build_acceleration_grid( AccelerationGrid& grid,
 void BroadPhaseGrid::update_broad_phase_static( const BASim::TopologicalObject& m_obj, const BASim::VertexProperty<BASim::Vec3d>& vertices, double proximity_epsilon  )
 {
    
-  Vec3d maxVec(std::numeric_limits<double>::max()-1,std::numeric_limits<double>::max()-1,std::numeric_limits<double>::max()-1);
-  Vec3d minVec(-std::numeric_limits<double>::max()+1,-std::numeric_limits<double>::max()+1,-std::numeric_limits<double>::max()+1);
+  Vec3d maxVec(10000,10000,10000);
+  Vec3d minVec(-10000, -10000, -10000);
 
    double sum = 0;
    int count = 0;
@@ -132,9 +133,14 @@ void BroadPhaseGrid::update_broad_phase_static( const BASim::TopologicalObject& 
          BASim::VertexHandle vert = *iter;
          BASim::Vec3d pos = vertices[vert];
          int i = vert.idx(); //using internal index is a bit dangerous, if internal relabelling is ever allowed...
-         if(vertex_xmins.size() <= i) {
+         if((int)vertex_xmins.size() <= i) {
+           int old_size = vertex_xmins.size();
            vertex_xmins.resize(i+1);
            vertex_xmaxs.resize(i+1);
+           for(int t = old_size; t < i; ++t) {
+             vertex_xmins[t] = maxVec;
+             vertex_xmaxs[t] = minVec;
+           }
          }
          vertex_xmins[i] = Vec3d(pos[0] - proximity_epsilon, pos[1] - proximity_epsilon, pos[2] - proximity_epsilon);
          vertex_xmaxs[i] = Vec3d(pos[0] + proximity_epsilon, pos[1] + proximity_epsilon, pos[2] + proximity_epsilon);;
@@ -155,9 +161,14 @@ void BroadPhaseGrid::update_broad_phase_static( const BASim::TopologicalObject& 
          Vec3d min_v, max_v;
          minmax(pos0, pos1, min_v, max_v);
          int i = edge.idx(); //using internal index is a bit dangerous, if internal relabelling is ever allowed...
-         if(edge_xmins.size() <= i) {
+         if((int)edge_xmins.size() <= i) {
+           int old_size = edge_xmins.size();
            edge_xmins.resize(i+1);
            edge_xmaxs.resize(i+1);
+           for(int t = old_size; t < i; ++t) {
+             edge_xmins[t] = maxVec;
+             edge_xmaxs[t] = minVec;
+           }
          }
          edge_xmins[i] = min_v - offset;
          edge_xmaxs[i] = max_v + offset;
@@ -170,7 +181,7 @@ void BroadPhaseGrid::update_broad_phase_static( const BASim::TopologicalObject& 
       unsigned int num_triangles = m_obj.nf(); 
       Vec3d offset(proximity_epsilon, proximity_epsilon, proximity_epsilon);
      std::vector<Vec3d> tri_xmins(num_triangles, maxVec), tri_xmaxs(num_triangles, minVec);
-      
+
       for(BASim::FaceIterator iter = m_obj.faces_begin(); iter != m_obj.faces_end(); ++iter) {
          BASim::FaceHandle face = *iter;
          Vec3d min_v, max_v;
@@ -187,9 +198,14 @@ void BroadPhaseGrid::update_broad_phase_static( const BASim::TopologicalObject& 
             }
          }
          int i = face.idx(); //using internal index is a bit dangerous, if internal relabelling is ever allowed...
-         if(tri_xmins.size() <= i) {
+         if(i >= tri_xmins.size()) {
+           int old_size = tri_xmins.size();
            tri_xmins.resize(i+1);
            tri_xmaxs.resize(i+1);
+           for(int t = old_size; t < i; ++t) {
+             tri_xmins[t] = maxVec;
+             tri_xmaxs[t] = minVec;
+           }
          }
          tri_xmins[i] = min_v - offset;
          tri_xmaxs[i] = max_v + offset;
