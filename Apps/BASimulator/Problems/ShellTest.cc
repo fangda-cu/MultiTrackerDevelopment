@@ -425,11 +425,11 @@ void ShellTest::setupScene1() {
     }
   }
   //Pin all verts at or near that height
- /* for(vit = shellObj->vertices_begin();vit!= shellObj->vertices_end(); ++vit) {
+  for(vit = shellObj->vertices_begin();vit!= shellObj->vertices_end(); ++vit) {
     Vec3d pos = shell->getVertexPosition(*vit);
     if(pos[1] >= highest - 1e-4)
       shell->constrainVertex(*vit, pos);
-  }*/
+  }
 
 }
 
