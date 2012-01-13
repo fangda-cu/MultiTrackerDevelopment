@@ -671,12 +671,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 
  std::cout << "Starting endStep\n";
  bool do_relabel = false;
-//Tearing processing
-  if(m_tearing){
-      std::cout << "Processing tearing. \n";
-      fracture();
-      do_relabel = true;
-  }
+
 
   //El Topo collision processing.
   //resolveCollisions(timestep);
@@ -717,14 +712,14 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 
   //apply penalty springs for self-collision
   if(m_self_collisions) {
-    //std::cout << "Adding self-collision springs\n";
+    std::cout << "Adding self-collision springs\n";
     addSelfCollisionForces();
   }
 
 
   
   
-  //std::cout << "Adjusting thicknesses\n";
+  std::cout << "Adjusting thicknesses\n";
   //Adjust thicknesses based on area changes
   updateThickness();
 
@@ -745,7 +740,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 
   //Remeshing
   if(m_do_remeshing) {
-    //std::cout << "Remeshing\n";
+    std::cout << "Remeshing\n";
     for(int i = 0; i < m_remeshing_iters; ++i)
       remesh(m_remesh_edge_length);  
     
@@ -753,11 +748,16 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     do_relabel = true;
   }
 
-  
+  //Tearing processing
+  if(m_tearing){
+    std::cout << "Processing tearing. \n";
+    fracture();
+    do_relabel = true;
+  }
 
   
   if(do_relabel) {
-    //std::cout << "Re-indexing\n";
+    std::cout << "Re-indexing\n";
     m_obj->computeDofIndexing();
   }
 
@@ -1003,7 +1003,7 @@ bool ElasticShell::shouldFracture (const EdgeHandle & eh) const{
 void ElasticShell::remesh( Scalar desiredEdge )
 {
 
-  m_broad_phase.update_broad_phase_static(*m_obj, m_positions, m_collision_proximity);
+  //m_broad_phase.update_broad_phase_static(*m_obj, m_positions, m_collision_proximity);
   
   //Parameters adapted from Jiao et al. "Anisotropic Mesh Adaptation for Evolving Triangulated Surfaces"
   Scalar ratio_R = 0.45;
@@ -1016,17 +1016,9 @@ void ElasticShell::remesh( Scalar desiredEdge )
   Scalar minAngle = 15.0*M_PI/180.0;
   Scalar maxAngle = 145.0*M_PI/180.0;
   
-  int counter = 0;
-  for(int i = 0; i < 5; ++i) { //do a few passes over the data for good measure
-  
-    splitEdges(desiredEdge, maxEdge, maxAngle);
-    
-    flipEdges();
-    
-    collapseEdges(minAngle, desiredEdge, ratio_R, ratio_r, minEdge);
-
-  }
-  
+  splitEdges(desiredEdge, maxEdge, maxAngle);
+  flipEdges();
+  collapseEdges(minAngle, desiredEdge, ratio_R, ratio_r, minEdge);
   
 }
 
@@ -1488,9 +1480,9 @@ bool ElasticShell::performSplit(const EdgeHandle& eh, VertexHandle& new_vert) {
   //  return false;
 
   //remove the edge and surrounding faces from the collision structure
-  m_broad_phase.remove_edge(eh.idx());
-  for(unsigned int i = 0; i < oldFaces.size(); ++i)
-    m_broad_phase.remove_triangle(oldFaces[i].idx());
+  //m_broad_phase.remove_edge(eh.idx());
+  //for(unsigned int i = 0; i < oldFaces.size(); ++i)
+  //  m_broad_phase.remove_triangle(oldFaces[i].idx());
   
   //perform the actual split
   std::vector<FaceHandle> newFaces;
@@ -1519,7 +1511,7 @@ bool ElasticShell::performSplit(const EdgeHandle& eh, VertexHandle& new_vert) {
   //update collision data structures
 
   //add vertices
-  m_broad_phase.add_vertex(v_new.idx(), ElTopo::toElTopo(midpoint), m_proximity_epsilon);
+  //m_broad_phase.add_vertex(v_new.idx(), ElTopo::toElTopo(midpoint), m_proximity_epsilon);
   
   //add edges
   VertexEdgeIterator ve_iter = m_obj->ve_iter(v_new);
@@ -1528,7 +1520,7 @@ bool ElasticShell::performSplit(const EdgeHandle& eh, VertexHandle& new_vert) {
     EdgeVertexIterator ev_iter = m_obj->ev_iter(*ve_iter);
     for(; ev_iter; ++ev_iter)
       edge_verts.push_back(ElTopo::toElTopo(getVertexPosition(*ev_iter)));
-    m_broad_phase.add_edge((*ve_iter).idx(), edge_verts[0], edge_verts[1], m_proximity_epsilon);
+    //m_broad_phase.add_edge((*ve_iter).idx(), edge_verts[0], edge_verts[1], m_proximity_epsilon);
   }
 
   //add tris
@@ -1538,7 +1530,7 @@ bool ElasticShell::performSplit(const EdgeHandle& eh, VertexHandle& new_vert) {
     FaceVertexIterator fv_iter = m_obj->fv_iter(*vf_iter);
     for(; fv_iter; ++fv_iter)
       tri_verts.push_back(ElTopo::toElTopo(getVertexPosition(*fv_iter)));
-    m_broad_phase.add_triangle((*vf_iter).idx(), tri_verts[0], tri_verts[1], tri_verts[2], m_proximity_epsilon);
+    //m_broad_phase.add_triangle((*vf_iter).idx(), tri_verts[0], tri_verts[1], tri_verts[2], m_proximity_epsilon);
   }
   
   new_vert = v_new;
@@ -2212,7 +2204,7 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
 
 
     if(doCollapse) {
-
+      
       bool isInflow = false;
       for(unsigned int i = 0; i < m_inflow_boundaries.size(); ++i) {
         if(std::find(m_inflow_boundaries[i].begin(), m_inflow_boundaries[i].end(),eh) != m_inflow_boundaries[i].end()) {
@@ -2221,6 +2213,7 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
         }
       }
       if(isInflow) continue;
+      
       
       //don't collapse faces that have springs attached (for now).
       bool facesHaveSprings = false;
@@ -2233,7 +2226,7 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
       }
       if(facesHaveSprings) continue;
 
-
+      
       //don't collapse a constrained vertex
       bool v0_pinned = false,v1_pinned = false;
       for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
@@ -2243,6 +2236,7 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
           v1_pinned = true;
       }
 
+      
       //check if either point is on the boundary
       bool v0_bdry, v1_bdry;
       v0_bdry = isVertexOnBoundary(*m_obj, v0);
@@ -2276,6 +2270,7 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
         newUndef = 0.5f*(getVertexUndeformed(v0) + getVertexUndeformed(v1));
       }
 
+      
       //determine area of collapsing faces
       EdgeFaceIterator efit = m_obj->ef_iter(eh);
       Scalar totalVolume = 0;
@@ -2286,25 +2281,27 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
       //  return;
 
       //remove to-be-deleted stuff from collision grid
-      m_broad_phase.remove_vertex(vert_to_remove.idx());
-      m_broad_phase.remove_edge(eh.idx());
-      for(EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit)
-        m_broad_phase.remove_triangle((*efit).idx());
+      //m_broad_phase.remove_vertex(vert_to_remove.idx());
+      //m_broad_phase.remove_edge(eh.idx());
+      //for(EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit)
+      //  m_broad_phase.remove_triangle((*efit).idx());
       
+
       //do the collapse itself
       std::vector<EdgeHandle> deletedEdges;
       m_obj->collapseEdge(eh, vert_to_remove, deletedEdges);
-
+      
       //remove the edges that were deleted as a side-effect.
-      for(unsigned int q = 0; q < deletedEdges.size(); ++q) {
+      /*for(unsigned int q = 0; q < deletedEdges.size(); ++q) {
          m_broad_phase.remove_edge(deletedEdges[q].idx());
-      }
+      }*/
 
       setVertexVelocity(vert_to_keep, newVel);
       setVertexPosition(vert_to_keep, newPoint);
       setUndeformedVertexPosition(vert_to_keep, newUndef);
 
       //increment the thickness of the nearby faces to account for the lost volume
+
       VertexFaceIterator vfit = m_obj->vf_iter(vert_to_keep);
       Scalar totalNewArea = 0;
       for(;vfit; ++vfit) {
@@ -2323,8 +2320,7 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
       }
 
       //update static collision data for everything incident on the kept vertex
-      updateBroadPhaseStatic(vert_to_keep);
-
+      //updateBroadPhaseStatic(vert_to_keep);
 
     }
   }
