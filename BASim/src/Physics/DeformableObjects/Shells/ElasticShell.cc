@@ -2439,7 +2439,9 @@ void ElasticShell::extendMesh(Scalar current_time) {
     Scalar baseLength = (curPos - curPos2).norm();
     Scalar len1 = (curPos - startPos).norm();
     Scalar len2 = (curPos2 - startPos).norm();
-    if(len1/baseLength < 0.7 || len2 / baseLength < 0.7) continue;
+    if(len1/baseLength < 0.7 || len2 / baseLength < 0.7) {
+      continue;
+    }
 
 
     int count = m_inflow_boundaries[boundary].size();
@@ -2577,20 +2579,23 @@ void ElasticShell::setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3
     }
     else {
       sharedVert = getSharedVertex(*m_obj, eh1, eh2);
-      otherVert = getEdgesOtherVertex(*m_obj, eh1, sharedVert); 
+      otherVert = getEdgesOtherVertex(*m_obj, eh1, sharedVert);
+      
     }
 
     Vec3d pos = getVertexPosition(otherVert);
+    constrainVertex(otherVert, new FixedVelocityConstraint(pos, vel, 0));
     posList.push_back(pos);
     
     prevVert = sharedVert;
     
-    //constrainVertex(vertices[i], new FixedVelocityConstraint(m_inflow_positions[boundary][i], vel, 0));
+    
   }
   
   VertexHandle wrapVert = getSharedVertex(*m_obj, edgeList[0], edgeList[edgeList.size()-1]);
   if(!wrapVert.isValid()) {
     Vec3d pos = getVertexPosition(prevVert);
+    constrainVertex(prevVert, new FixedVelocityConstraint(pos, vel, 0));
     posList.push_back(pos);
   } 
 
