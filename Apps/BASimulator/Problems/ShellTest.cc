@@ -65,6 +65,8 @@ ShellTest::ShellTest()
   AddOption("shell-x-resolution", "the number of segments along first dimension", 30);
   AddOption("shell-y-resolution", "the number of segments along second dimension", 30);
   
+  AddOption("shell-initial-velocity", "starting velocity in the y direction", -0.1);
+  
   //sheared wrinkling parameters
   AddOption("shell-rotation-rate", "the rate at which inner cylinder rotates for sheared wrinkling test", 0.0);
   AddOption("shell-bath-density", "the density of water fluid bath for sheared wrinkling test", 1.0);
@@ -1571,7 +1573,9 @@ void ShellTest::setupScene13() {
   EdgeProperty<Scalar> edgeAngle(shellObj);
   EdgeProperty<Scalar> edgeVel(shellObj);
 
-  Vec3d start_vel(0,-0.1,0);
+  Scalar drop_vel = GetScalarOpt("shell-initial-velocity");
+
+  Vec3d start_vel(0,drop_vel,0);
   std::set<VertexHandle> topVerts;
   for(int j = 0; j <= yresolution; ++j) {
     for(int i = 0; i <= xresolution; ++i) {
