@@ -248,7 +248,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
 
         // Finalize the nonzero structure before the linear solve (for sparse matrices only)
         m_A->finalizeNonzeros();
-        assert(isSymmetric(*m_A));
+        assert(isSymmetric(*m_A, 1.0e-6));
         STOP_TIMER("SymmetricImplicitEuler::position_solve/setup");
 
         // Solve the linear system for the "Newton direction" m_increment
@@ -368,7 +368,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
 #ifndef NDEBUG      // Ensure that fixed DOFs are at their desired values
     if (successful_solve)
     {
-        VecXd xf(m_ndof);
+        VecXd xf(m_diffEq.ndof());
         m_diffEq.getX(xf);
         for (int i = 0; i < (int) m_fixed.size(); ++i)
             assert(approxEq(m_desired[i], xf(m_fixed[i]), 1.0e-6));
