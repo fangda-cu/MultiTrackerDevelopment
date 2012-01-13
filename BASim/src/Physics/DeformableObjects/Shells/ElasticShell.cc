@@ -820,24 +820,12 @@ void ElasticShell::fracture(){
         //skip constraints
 
         if (fromBound[i] || toBound[i]){
-#ifndef NDEBUG
-            int facesBef = m_obj->nf();
-            int edgesBef = m_obj->ne();
-            int vertsBef = m_obj->nv();
-#endif
+
             //Triple check that it will be ok to tear
             if ( m_obj->edgeExists(edgesToFrac[i]) && shouldFracture(edgesToFrac[i])){
-                performTear(edgesToFrac[i], m_obj->fromVertex(edgesToFrac[i]),
-                        m_obj->toVertex(edgesToFrac[i]), false, false);
+                performTearing(edgesToFrac[i]);
             }
-#ifndef NDEBUG
-            std::cout << "\tFaces after: " << m_obj->nf() << std::endl;
-            std::cout << "\tEdges after: " << m_obj->ne() << std::endl;
-            std::cout << "\tVerts after: " << m_obj->nv() << std::endl;
-            assert( (facesBef - m_obj->nf()) == 0);
-            assert( (edgesBef - m_obj->ne()) == -1);
-            assert( (vertsBef - m_obj->nv()) == 0);
-#endif
+
         }
     }
 //    for ( int i = 0 ; i < 5; ++i){
@@ -846,10 +834,19 @@ void ElasticShell::fracture(){
 //        }
 //    }
 }
-void ElasticShell::performTear(const EdgeHandle & eh, const VertexHandle &v0, const VertexHandle &v1,
-        const bool & _aBound, const bool & _bBound){
-    //Check for self-intersections being induced...
+void ElasticShell::performTearing(const EdgeHandle & eh){
 
+#ifndef NDEBUG
+            int facesBef = m_obj->nf();
+            int edgesBef = m_obj->ne();
+            int vertsBef = m_obj->nv();
+#endif
+
+    //Check for self-intersections being induced...
+    VertexHandle v0 = m_obj->fromVertex(eh);
+    VertexHandle v1 = m_obj->toVertex(eh);
+    bool aBound = m_obj->isBoundary(v0);
+    bool bBound = m_obj->isBoundary(v1);
     assert(v0!=v1);
 
     std::vector<FaceHandle> oldFaces;
@@ -867,10 +864,8 @@ void ElasticShell::performTear(const EdgeHandle & eh, const VertexHandle &v0, co
 //      m_broad_phase.remove_triangle(oldFaces[i].idx());
 
     //perform the actual split
-    bool aBound = m_obj->isBoundary(v0);
-    bool bBound = m_obj->isBoundary(v1);
     if ( aBound && bBound){
-//        std::cout << "\tSeparating geom" << std::endl;
+        std::cout << "\tSeparating geom" << std::endl;
         tearEdge(*m_obj, eh, v0, v1, newVerta, newVertb, newFaces, oldFaces, oldEdges);
         setVertexVelocity(newVerta, getVertexVelocity(v0));
         setVertexPosition(newVerta, getVertexPosition(v0));
@@ -880,21 +875,29 @@ void ElasticShell::performTear(const EdgeHandle & eh, const VertexHandle &v0, co
         setVertexPosition(newVertb, getVertexPosition(v1));
         setUndeformedVertexPosition(newVertb, getVertexUndeformed(v1));
 
+
+
     } else if ( aBound && !bBound){
-//        std::cout << "\tSeparating from" << std::endl;
+        std::cout << "\tSeparating from" << std::endl;
         tearVertexAlong(*m_obj, eh, v0, newVerta, newFaces, oldFaces, oldEdges);
         setVertexVelocity(newVerta, getVertexVelocity(v0));
         setVertexPosition(newVerta, getVertexPosition(v0));
         setUndeformedVertexPosition(newVerta, getVertexUndeformed(v0));
 
     } else if ( !aBound && bBound){
-//        std::cout << "\tSeparating to" << std::endl;
+        std::cout << "\tSeparating to" << std::endl;
         tearVertexAlong(*m_obj, eh, v1, newVertb, newFaces, oldFaces, oldEdges);
         setVertexVelocity(newVertb, getVertexVelocity(v1));
         setVertexPosition(newVertb, getVertexPosition(v1));
         setUndeformedVertexPosition(newVertb, getVertexUndeformed(v1));
     } else{
         std::cout << "\tUpdated bounds make this edge non-fracturable" << std::endl;
+#ifndef NDEBUG
+        //Check that the correct number of things was created
+            assert( (facesBef - m_obj->nf()) == 0);
+            assert( (edgesBef - m_obj->ne()) == 0);
+            assert( (vertsBef - m_obj->nv()) == 0);
+#endif
         return;
     }
 
@@ -920,7 +923,20 @@ void ElasticShell::performTear(const EdgeHandle & eh, const VertexHandle &v0, co
     for (int i = 0; i < (int)oldEdges.size(); ++i){
         m_obj->deleteEdge(oldEdges[i], false);
     }
-    std::cout << "\tEdges at this point(after deleting): " << m_obj->ne() << std::endl;
+
+#ifndef NDEBUG
+        //Check that the correct number of things was created
+//            std::cout << "\tFaces after: " << m_obj->nf() << std::endl;
+//            std::cout << "\tEdges after: " << m_obj->ne() << std::endl;
+//            std::cout << "\tVerts after: " << m_obj->nv() << std::endl;
+            assert( (facesBef - m_obj->nf()) == 0);
+            assert( (edgesBef - m_obj->ne()) == -1);
+            if ( aBound && bBound)
+                assert( (vertsBef - m_obj->nv()) == -2);
+            else if ( aBound || bBound )
+                assert( (vertsBef - m_obj->nv()) == -1);
+#endif
+//    std::cout << "\tEdges at this point(after deleting): " << m_obj->ne() << std::endl;
 
     for(int i = 0; i < (int) newFaces.size(); ++i){
         setFaceActive(newFaces[i]);

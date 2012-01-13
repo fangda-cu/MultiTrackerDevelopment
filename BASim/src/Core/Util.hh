@@ -100,6 +100,19 @@ inline bool isSymmetric(const MatrixT& A)
     return true;
 }
 
+template<typename MatrixT>
+inline bool isSymmetric(const MatrixT& A, Scalar tol)
+{
+    for (int i = 0; i < A.rows(); ++i)
+        for (int j = i + 1; j < A.cols(); ++j)
+            if ((A(i, j) - A(j, i)) > tol )
+            {
+                std::cerr << "isSymmetric failing by " << fabs(A(i, j) - A(j, i)) << '\n';
+                return false;
+            }
+    return true;
+}
+
 // Computes u B v^T, assuming B is symmetric 2x2 and u, v are 2x1 vectors.
 inline Scalar BProduct(const Mat2d& B, const Vec2d& u, const Vec2d& v)
 {

@@ -150,8 +150,7 @@ public:
 
 protected:
 
-  void performTear(const EdgeHandle & eh, const VertexHandle &v0, const VertexHandle &v1,
-          const bool & aBound, const bool & bBound);
+  void performTearing(const EdgeHandle & eh);
 
   void resolveCollisions(Scalar timestep);
   void updateThickness();
