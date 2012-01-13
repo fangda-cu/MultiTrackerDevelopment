@@ -622,8 +622,12 @@ void ElasticShell::addSelfCollisionForces() {
       ElTopo::Vec3d normal;
       check_point_triangle_proximity(vertex_position, face_verts[0], face_verts[1], face_verts[2], distance, barycoords[0], barycoords[1], barycoords[2], normal );
       //if such a spring doesn't already exist, add it
+      ElTopo::Vec3d faceNormal = cross(face_verts[1] - face_verts[0], face_verts[2] - face_verts[0]);
+      normalize(faceNormal);
+      ElTopo::Vec3d offset = vertex_position - (barycoords[0]*face_verts[0] + barycoords[1]*face_verts[1] + barycoords[2]*face_verts[2]);
+      Scalar normalDist = dot(offset,faceNormal);
       if(distance < collision_distance) {
-        m_repulsion_springs->addSpring(f, vh, barycoords, m_collision_spring_stiffness, m_collision_spring_damping, collision_distance);
+        m_repulsion_springs->addSpring(f, vh, barycoords, m_collision_spring_stiffness, m_collision_spring_damping, fabs(normalDist));
       }
     }
   }
