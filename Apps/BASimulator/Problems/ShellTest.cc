@@ -284,8 +284,10 @@ void ShellTest::Setup()
 
 void ShellTest::AtEachTimestep()
 {
-
-    //dump PLY files if needed
+  
+  std::cout << "Time: " << std::endl;
+    
+  //dump PLY files if needed
     if ( g_ply_dump ){
         std::stringstream name;
         int file_width = 20;
