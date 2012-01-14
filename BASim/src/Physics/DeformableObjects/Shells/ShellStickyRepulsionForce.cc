@@ -73,22 +73,25 @@ adreal<NumRepulsionDof,DO_HESS,Real> RepulsionEnergy(const ShellStickyRepulsionF
     
   adrealVT e(0);
   
-  
   Vector3d normalReal = cross(s_deformed[2] - s_deformed[0], s_deformed[1] - s_deformed[0]); 
   advecVT normalVbl = cross(p[2] - p[0], p[1] - p[0]);
   
   normalize(normalVbl);
   normalize(normalReal);
 
+  advecVT offset = p[3] - (baryCoords[0]*p[0] + baryCoords[1]*p[1] + baryCoords[2]*p[2]);
+
   if(dot(s_deformed[3] - s_deformed[0], cross(s_deformed[2] - s_deformed[0], s_deformed[1] - s_deformed[0])) > 0) {
-    e += 0.5*strength*sqr( dot(p[3] - p[0], normalVbl) - undef_len);  
+    //e += 0.5*strength*sqr( dot(p[3] - p[0], normalReal) - undef_len);  
+    e += 0.5*strength*sqr( dot(offset, normalReal) - undef_len);  
   }
   else {
-    e += 0.5*strength*sqr( -dot(p[3] - p[0], normalVbl) - undef_len);  
+    //e += 0.5*strength*sqr( -dot(p[3] - p[0], normalReal) - undef_len);  
+    e += 0.5*strength*sqr( -dot(offset, normalReal) - undef_len);  
   }
  
   //tangential energy
-  advecVT offset = p[3] - (baryCoords[0]*p[0] + baryCoords[1]*p[1] + baryCoords[2]*p[2]);
+  
   //note, this is an approx for speed. - should also use normalVbl here.
   e += 0.5*strength*lenSq(offset - dot(offset,normalReal)*normalReal); 
   //the true version
@@ -264,7 +267,25 @@ void ShellStickyRepulsionForce::addSpring(const FaceHandle& fh, const VertexHand
   m_restlen.push_back(restlen);
 
   m_springset.insert(std::make_pair(fh.idx(),vh.idx()));
+  
+  /*
+  Scalar energy = 0;
+  std::vector<int> indices(NumRepulsionDof );
+  std::vector<Vec3d> deformed(NumRepulsionVerts );
+  std::vector<Vec3d> undef_damp(NumRepulsionVerts );
 
+  gatherDOFs(fh, vh, deformed, undef_damp, indices);
+  energy += elementEnergy(deformed, baryCoords, stiffness, restlen);
+  
+  std::cout << "Energy: " << energy << std::endl;
+  
+  Eigen::Matrix<Scalar, NumRepulsionDof , 1> localForce;
+  
+  elementForce(deformed, baryCoords, stiffness, restlen, localForce);
+  for(int i = 0; i < 12; ++i)
+    std::cout << localForce(i) << ", ";
+  std::cout << std::endl;
+  */
 }
 
 void ShellStickyRepulsionForce::clearSprings() {
