@@ -7,6 +7,15 @@
 #include <iostream>
 #include <limits>
 
+#include "OpenMesh/Core/io/MeshIO.hh"
+#include "OpenMesh/Tools/Subdivider/Uniform/ModifiedButterflyT.hh"
+#include "OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh"
+#include "OpenMesh/Tools/Subdivider/Uniform/CompositeSqrt3T.hh"
+#include "OpenMesh/Tools/Subdivider/Uniform/Sqrt3T.hh"
+
+
+typedef OpenMesh::TriMesh_ArrayKernelT<>  MyMesh;
+
 class ShellMarchingTets : public MarchingTets {
 public:
   Array3f& m_data;
@@ -48,7 +57,8 @@ void main(int argc, char* argv[]) {
   if(argc < 2) std::cout << "ERROR: Must provide PLY file as first command line arg.\n";
   std::string input_file(argv[1]);
 
-  float scale_factor = 2.4f;
+  float scale_factor = 1.8f;
+  int subdivision_iterations = 2;
 
   std::vector<Vec3f> positions;
   std::vector<Vec3ui> faces;
@@ -118,7 +128,84 @@ void main(int argc, char* argv[]) {
     reader >> dummy >> cur_pos[0] >> cur_pos[1] >> cur_pos[2];
     faces[i] = cur_pos;
   }
-    
+
+  //BEGIN OPENMESH SECTION
+
+  std::cout << "Setting up openmesh\n";
+  //Build an OpenMesh mesh, subdivide, and then re-collect the data
+  MyMesh triMesh;
+  std::vector<MyMesh::VertexHandle> vhandles;
+  for(unsigned int i = 0; i < positions.size(); ++i) {
+    MyMesh::Point point(positions[i][0], positions[i][1],positions[i][2]);
+    vhandles.push_back(triMesh.add_vertex(point));
+  }
+  
+  std::vector<MyMesh::VertexHandle>  face_vhandles(3);
+  for(unsigned int i = 0; i < faces.size(); ++i) {
+    face_vhandles[0] = vhandles[faces[i][0]];
+    face_vhandles[1] = vhandles[faces[i][1]];
+    face_vhandles[2] = vhandles[faces[i][2]];
+    triMesh.add_face(face_vhandles);
+  }
+
+  std::cout << "Subdividing\n";
+  OpenMesh::Subdivider::Uniform::Sqrt3T<MyMesh> subdivider;
+  
+  subdivider.attach(triMesh);
+  subdivider.operator()(subdivision_iterations);
+  subdivider.detach();
+
+  //Okay, now strip out the mesh data, and put it back into faces and vertices!
+  std::vector<Vec3ui> new_faces;
+  std::vector<Vec3f> new_verts;
+  std::vector<double> new_thickness;
+
+  std::cout << "Going back to regular data structure\n";
+  
+  std::cout << "Num verts old and new:" << positions.size() << " " << triMesh.n_vertices() << std::endl;
+  
+  OpenMesh::VPropHandleT<int> index_list;
+  triMesh.add_property(index_list);
+  OpenMesh::VPropHandleT<float> thickness_list;
+  triMesh.add_property(thickness_list);
+  
+  int index = 0;
+  for (MyMesh::VertexIter v_it=triMesh.vertices_begin(); v_it!=triMesh.vertices_end(); ++v_it) {
+    //assign indices to the points
+    triMesh.property(index_list,v_it) = index;
+    MyMesh::Point p = triMesh.point(v_it);
+    new_verts.push_back(Vec3f(p[0], p[1], p[2]));
+    new_thickness.push_back(max_thickness);
+    ++index;
+  }
+
+  for (MyMesh::VertexIter v_it=triMesh.vertices_begin(); v_it!=triMesh.vertices_end(); ++v_it) {
+    //assign indices to the points
+    //std::cout << "Vertex index: " << triMesh.data(v_it).index << std::endl;
+  }
+  
+  std::cout << "Now faces\n";
+  for(MyMesh::FaceIter f_it=triMesh.faces_begin(); f_it!=triMesh.faces_end(); ++f_it) {
+    Vec3ui newFace;
+    int c = 0;
+    for(MyMesh::FaceVertexIter fv_it = triMesh.fv_begin(f_it); fv_it != triMesh.fv_end(f_it); ++fv_it) {
+      newFace[c] = triMesh.property(index_list,fv_it);
+      ++c;
+    }
+    new_faces.push_back(newFace);
+  }
+
+  OpenMesh::IO::write_mesh(triMesh, "subd.OBJ");
+
+  std::cout << "Copying back data\n";
+  faces = new_faces;
+  positions = new_verts;
+  thicknesses = new_thickness;
+  std::cout << "Sizes: f" << faces.size() << " v " << positions.size() << " t " << thicknesses.size() << std::endl;
+
+
+  //END OPENMESH SECTION
+
   //make signed distance field
   float dx = min_thickness / scale_factor; 
   //pad a bit

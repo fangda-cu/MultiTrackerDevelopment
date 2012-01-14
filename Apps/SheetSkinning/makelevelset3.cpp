@@ -364,7 +364,7 @@ void make_distance_field3(const std::vector<Vec3ui> &tri, const std::vector<Vec3
 
         Vec3f barycoord;
         point_triangle_distance(point, v0, v1, v2, barycoord);
-        float thickness = barycoord[0]*thicknesses[t0] + barycoord[1]*thicknesses[t1] + barycoord[2]*thicknesses[2];
+        float thickness = (float)(barycoord[0]*thicknesses[t0] + barycoord[1]*thicknesses[t1] + barycoord[2]*thicknesses[2]);
         
         //subtract off the thickness to get a signed distance, negative inside, positive outside.
         phi(i,j,k) -= thickness;
