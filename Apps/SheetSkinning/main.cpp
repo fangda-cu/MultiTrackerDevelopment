@@ -58,7 +58,7 @@ void main(int argc, char* argv[]) {
   std::string input_file(argv[1]);
 
   float scale_factor = 1.8f;
-  int subdivision_iterations = 2;
+  int subdivision_iterations = 1;
 
   std::vector<Vec3f> positions;
   std::vector<Vec3ui> faces;
@@ -134,10 +134,19 @@ void main(int argc, char* argv[]) {
   std::cout << "Setting up openmesh\n";
   //Build an OpenMesh mesh, subdivide, and then re-collect the data
   MyMesh triMesh;
+  OpenMesh::VPropHandleT<float> thickness_list;
+  OpenMesh::VPropHandleT<bool> originals_list;
+  triMesh.add_property(thickness_list);
+  triMesh.add_property(originals_list);
+
   std::vector<MyMesh::VertexHandle> vhandles;
   for(unsigned int i = 0; i < positions.size(); ++i) {
     MyMesh::Point point(positions[i][0], positions[i][1],positions[i][2]);
-    vhandles.push_back(triMesh.add_vertex(point));
+    MyMesh::VertexHandle vh = triMesh.add_vertex(point);
+    //set thickness...
+    triMesh.property(thickness_list,vh) = thicknesses[i];
+    triMesh.property(originals_list,vh) = true;
+    vhandles.push_back(vh);
   }
   
   std::vector<MyMesh::VertexHandle>  face_vhandles(3);
@@ -159,32 +168,43 @@ void main(int argc, char* argv[]) {
   std::vector<Vec3ui> new_faces;
   std::vector<Vec3f> new_verts;
   std::vector<double> new_thickness;
-
-  std::cout << "Going back to regular data structure\n";
-  
-  std::cout << "Num verts old and new:" << positions.size() << " " << triMesh.n_vertices() << std::endl;
   
   OpenMesh::VPropHandleT<int> index_list;
   triMesh.add_property(index_list);
-  OpenMesh::VPropHandleT<float> thickness_list;
-  triMesh.add_property(thickness_list);
   
+  
+
+
+
+  for(int iteration = 0; iteration < 100; ++iteration) {
+    for (MyMesh::VertexIter v_it=triMesh.vertices_begin(); v_it!=triMesh.vertices_end(); ++v_it) {
+      //assign indices to the points
+      if(triMesh.property(originals_list, v_it)) continue; //don't smooth the original thickness data.
+
+      float avg_thickness = 0;
+      int count = 0;
+      for(MyMesh::VertexVertexIter vv_it = triMesh.vv_begin(v_it); vv_it != triMesh.vv_end(v_it); ++vv_it) {
+        if(triMesh.property(originals_list, vv_it)) {
+          avg_thickness += triMesh.property(thickness_list,vv_it);
+          ++count;
+        }
+      }
+      triMesh.property(thickness_list,v_it) = avg_thickness / (float)count;
+    }
+  }
+  //Smooth the thicknesses from the old mesh to the new mesh.
+  
+
   int index = 0;
   for (MyMesh::VertexIter v_it=triMesh.vertices_begin(); v_it!=triMesh.vertices_end(); ++v_it) {
     //assign indices to the points
     triMesh.property(index_list,v_it) = index;
     MyMesh::Point p = triMesh.point(v_it);
     new_verts.push_back(Vec3f(p[0], p[1], p[2]));
-    new_thickness.push_back(max_thickness);
+    new_thickness.push_back(triMesh.property(thickness_list, v_it));
     ++index;
   }
 
-  for (MyMesh::VertexIter v_it=triMesh.vertices_begin(); v_it!=triMesh.vertices_end(); ++v_it) {
-    //assign indices to the points
-    //std::cout << "Vertex index: " << triMesh.data(v_it).index << std::endl;
-  }
-  
-  std::cout << "Now faces\n";
   for(MyMesh::FaceIter f_it=triMesh.faces_begin(); f_it!=triMesh.faces_end(); ++f_it) {
     Vec3ui newFace;
     int c = 0;
@@ -194,16 +214,14 @@ void main(int argc, char* argv[]) {
     }
     new_faces.push_back(newFace);
   }
+  // Write the subd mesh for debugging
+  //OpenMesh::IO::write_mesh(triMesh, "subd.OBJ");
 
-  OpenMesh::IO::write_mesh(triMesh, "subd.OBJ");
-
-  std::cout << "Copying back data\n";
+  //Copy data back into the regular structures.
   faces = new_faces;
   positions = new_verts;
   thicknesses = new_thickness;
-  std::cout << "Sizes: f" << faces.size() << " v " << positions.size() << " t " << thicknesses.size() << std::endl;
-
-
+  
   //END OPENMESH SECTION
 
   //make signed distance field
