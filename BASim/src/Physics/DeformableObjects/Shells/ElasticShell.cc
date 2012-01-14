@@ -807,26 +807,24 @@ void ElasticShell::fracture(){
 
     //Figure out which edges will be taken down
     std::vector<EdgeHandle> edgesToFrac;
-    VHList fromVH;
-    VHList toVH;
-    BoolList fromBound;
-    BoolList toBound;
-    getDesiredFractures(edgesToFrac, fromVH, toVH, fromBound, toBound);
+    getDesiredFractures(edgesToFrac);
 
-//    std::cout << "Fracturing " << edgesToFrac.size() << " edges" << std::endl;
+    std::cout << "Fracturing " << edgesToFrac.size() << " edges" << std::endl;
 
-    //All of these are fractured interior, now figure out which will become boundaries
+//    if ( edgesToFrac.size() != 0 && m_obj->edgeExists(edgesToFrac[0]) && shouldFracture(edgesToFrac[0]))
+//        performTearing(edgesToFrac[0]);
+//    All of these are fractured interior, now figure out which will become boundaries
     for(unsigned int i = 0; i < edgesToFrac.size(); ++i){
         //skip constraints
 
-        if (fromBound[i] || toBound[i]){
+//        if (fromBound[i] || toBound[i]){
 
             //Triple check that it will be ok to tear
             if ( m_obj->edgeExists(edgesToFrac[i]) && shouldFracture(edgesToFrac[i])){
                 performTearing(edgesToFrac[i]);
             }
 
-        }
+//        }
     }
 //    for ( int i = 0 ; i < 5; ++i){
 //        for(EdgeIterator eit = m_obj->edges_begin(); eit != m_obj->edges_end(); ++eit){
@@ -891,14 +889,22 @@ void ElasticShell::performTearing(const EdgeHandle & eh){
         setVertexPosition(newVertb, getVertexPosition(v1));
         setUndeformedVertexPosition(newVertb, getVertexUndeformed(v1));
     } else{
-        std::cout << "\tUpdated bounds make this edge non-fracturable" << std::endl;
-#ifndef NDEBUG
-        //Check that the correct number of things was created
-            assert( (facesBef - m_obj->nf()) == 0);
-            assert( (edgesBef - m_obj->ne()) == 0);
-            assert( (vertsBef - m_obj->nv()) == 0);
-#endif
-        return;
+        std::cout << "\t******************************Updated bounds make this edge non-fracturable" << std::endl;
+        VHList newVerts;
+        tearInteriorEdge(*m_obj, eh, v0, v1, newVerts, newFaces, oldFaces, oldEdges);
+
+        assert(newVerts.size() == 4);
+        assert(oldFaces.size() == 2);
+        assert(newFaces.size() == 4);
+        //Copy the values to the new vertices
+        Vec3d newVel = 0.5f * (getVertexVelocity(v0) + getVertexVelocity(v1));
+        Vec3d newPos = 0.5f * (getVertexPosition(v0) + getVertexPosition(v1));
+        Vec3d newUnd = 0.5f * (getVertexUndeformed(v0) + getVertexUndeformed(v1));
+        for ( unsigned int i = 0; i < newVerts.size(); ++i){
+            setVertexVelocity(newVerts[i], newVel);
+            setVertexPosition(newVerts[i], newPos);
+            setUndeformedVertexPosition(newVerts[i], newUnd);
+        }
     }
 
     //set consistent volumes and thickness for new faces
@@ -907,10 +913,18 @@ void ElasticShell::performTearing(const EdgeHandle & eh){
 //    std::cout << "\tFaces that will be deleted: " << oldFaces.size() << std::endl;
 //    std::cout << "\tEdges that will be deleted: " << oldEdges.size() << std::endl;
 
-    assert(oldFaces.size() == newFaces.size());
-    for(unsigned int i = 0; i < oldFaces.size(); ++i) {
-      m_thicknesses[newFaces[i]] = m_thicknesses[oldFaces[i]];
-      m_volumes[newFaces[i]] = m_volumes[oldFaces[i]];
+    if ( aBound || bBound ){//Update the thicknesses and volumes for noninterior
+        assert(oldFaces.size() == newFaces.size());
+        for(unsigned int i = 0; i < oldFaces.size(); ++i) {
+          m_thicknesses[newFaces[i]] = m_thicknesses[oldFaces[i]];
+          m_volumes[newFaces[i]] = m_volumes[oldFaces[i]];
+        }
+    }else {//and for interior
+        assert(oldFaces.size() == 2);
+        assert(newFaces.size() == 4);
+
+        m_thicknesses[newFaces[0]] = m_thicknesses[newFaces[1]] = m_thicknesses[oldFaces[0]];
+        m_thicknesses[newFaces[1]] = m_thicknesses[newFaces[2]] = m_thicknesses[oldFaces[1]];
     }
 
     //Time to delete the extra tris
@@ -929,12 +943,22 @@ void ElasticShell::performTearing(const EdgeHandle & eh){
 //            std::cout << "\tFaces after: " << m_obj->nf() << std::endl;
 //            std::cout << "\tEdges after: " << m_obj->ne() << std::endl;
 //            std::cout << "\tVerts after: " << m_obj->nv() << std::endl;
-            assert( (facesBef - m_obj->nf()) == 0);
-            assert( (edgesBef - m_obj->ne()) == -1);
-            if ( aBound && bBound)
+            if ( aBound && bBound){
+                assert( (facesBef - m_obj->nf()) == 0);
+                assert( (edgesBef - m_obj->ne()) == -1);
                 assert( (vertsBef - m_obj->nv()) == -2);
-            else if ( aBound || bBound )
+            }
+            else if ( aBound || bBound ){
+                assert( (facesBef - m_obj->nf()) == 0);
+                assert( (edgesBef - m_obj->ne()) == -1);
                 assert( (vertsBef - m_obj->nv()) == -1);
+            }
+            else {
+                //Check that the correct number of things was created
+                assert( (facesBef - m_obj->nf()) == -2);
+                assert( (edgesBef - m_obj->ne()) == -7);
+                assert( (vertsBef - m_obj->nv()) == -4);
+            }
 #endif
 //    std::cout << "\tEdges at this point(after deleting): " << m_obj->ne() << std::endl;
 
@@ -980,17 +1004,10 @@ bool ElasticShell::isInflow(const EdgeHandle & eh) const{
     }
     return isInflow;
 }
-void ElasticShell::getDesiredFractures(std::vector<EdgeHandle> & edges, VHList & froms,
-         VHList & tos,  BoolList & fromsB,  BoolList & tosB ){
+void ElasticShell::getDesiredFractures(std::vector<EdgeHandle> & edges ){
     for ( EdgeIterator eit = m_obj->edges_begin(); eit != m_obj->edges_end(); ++eit){
         //Now look if is exceeds the threshold
         if ( shouldFracture(*eit) ){
-           froms.push_back(m_obj->fromVertex(*eit));
-           tos.push_back( m_obj->toVertex(*eit) );
-
-           fromsB.push_back(m_obj->isBoundary(froms.back()));
-           tosB.push_back(m_obj->isBoundary(tos.back()));
-
            edges.push_back(*eit);
         }
     }
@@ -1013,8 +1030,10 @@ bool ElasticShell::shouldFracture (const EdgeHandle & eh) const{
         totalA += w;
     }
     thickness /= totalA;
-
-    return (thickness < m_tear_thres) && (m_obj->isBoundary(m_obj->fromVertex(eh)) || m_obj->isBoundary(m_obj->toVertex(eh)));
+    Scalar p = (Scalar) rand() / (Scalar) RAND_MAX;
+//    return (thickness < m_tear_thres) && (m_obj->isBoundary(m_obj->fromVertex(eh)) || m_obj->isBoundary(m_obj->toVertex(eh)))
+//            && ( p <  m_tear_rand);
+    return (thickness < m_tear_thres)  && ( p <  m_tear_rand);
 }
 void ElasticShell::remesh( Scalar desiredEdge )
 {

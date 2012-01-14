@@ -138,13 +138,13 @@ public:
   typedef std::vector<bool> BoolList;
 
   void fracture();
-  void getDesiredFractures(std::vector<EdgeHandle> & edges, VHList & froms,
-           VHList & tos,  BoolList & fromsB,  BoolList & tosB );
+  void getDesiredFractures(std::vector<EdgeHandle> & edges );
   bool shouldFracture (const EdgeHandle & eh) const;
   bool isInflow(const EdgeHandle & eh) const;
-  void setTearing(bool tearing, Scalar thres){
+  void setTearing(bool tearing, Scalar thres, Scalar rand){
       m_tearing = tearing;
       m_tear_thres = thres;
+      m_tear_rand = rand;
   }
 
 
@@ -248,6 +248,7 @@ protected:
   //Fracture properties
   bool m_tearing;
   Scalar m_tear_thres;
+  Scalar m_tear_rand;
 
 };
 

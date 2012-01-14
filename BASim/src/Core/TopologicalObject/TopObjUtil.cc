@@ -125,9 +125,50 @@ void tearVertexAlong(TopologicalObject& obj,const EdgeHandle& e, const VertexHan
     addNextSide(obj, f1, e, va, newVert, edgesToDelete, facesToDelete, newFaces);
 
 }
+void tearInteriorEdge(TopologicalObject& obj,const EdgeHandle& e, const VertexHandle &va, const VertexHandle & vb,
+        std::vector<VertexHandle> &newVerts,
+        std::vector<FaceHandle> &newFaces,
+        std::vector<FaceHandle> &facesToDelete,
+        std::vector<EdgeHandle> &edgesToDelete){
+    assert ( obj.edgeExists(e));
+    assert ( obj.edgeIncidentFaces(e) == 2);
+    assert ( va == obj.fromVertex(e) && vb == obj.toVertex(e));
+    assert ( !obj.isBoundary(va));
+    assert ( !obj.isBoundary(vb));
+    EdgeFaceIterator efit = obj.ef_iter(e);
+    FaceHandle f1 = *efit;
+    ++efit;
+    FaceHandle f2 = *efit;
+
+    VertexHandle vc, vd;
+    getFaceThirdVertex(obj, f1, e, vc);
+    getFaceThirdVertex(obj, f2, e, vd);
+
+    //Add the new vertices: 4 in total
+    newVerts.push_back ( obj.addVertex() );
+    newVerts.push_back ( obj.addVertex() );
+    newVerts.push_back ( obj.addVertex() );
+    newVerts.push_back ( obj.addVertex() );
+
+    //Add the faces: 4 in total; this will also add the edges
+
+    newFaces.push_back ( obj.addFace(va, newVerts[0], vc) );//First the two faces corresponding to f1
+    newFaces.push_back ( obj.addFace(vc, newVerts[1], vb) );
+    newFaces.push_back ( obj.addFace(vb, newVerts[2], vd) );//Then the ones corresponding to f2
+    newFaces.push_back ( obj.addFace(vd, newVerts[3], va) );
+
+    //Store in the accum lists what will be deleted and what was added
+    edgesToDelete.push_back(e); //This edge must be deleted
+    //Both original faces
+    facesToDelete.push_back(f1);
+    facesToDelete.push_back(f2);
+
+}
 void tearEdge(TopologicalObject& obj,const EdgeHandle& e, const VertexHandle &va, const VertexHandle & vb,
         VertexHandle & newVerta, VertexHandle & newVertb, std::vector<FaceHandle> &newFaces,
         std::vector<FaceHandle> &facesToDelete, std::vector<EdgeHandle> &edgesToDelete){
+    assert ( obj.edgeExists(e));
+    assert ( obj.edgeIncidentFaces(e) == 2);
     assert ( va == obj.fromVertex(e) && vb == obj.toVertex(e));
 
     //(va, vb) edge will remain on the top, the new verts will make the bottom, that is, f1

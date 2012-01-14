@@ -39,7 +39,11 @@ FaceHandle getEdgeOtherFace(const TopologicalObject& obj, const EdgeHandle& eh, 
 EdgeHandle findEdge( const TopologicalObject& obj, const VertexHandle& v0, const VertexHandle& v1 );
 //bool faceExists(const EdgeHandle& e0, const EdgeHandle& e1, const EdgeHandle& e2)
 //bool faceExists(const VertexHandle& v0, const VertexHandle& v1, const VertexHandle& v2)
-
+void tearInteriorEdge(TopologicalObject& obj,const EdgeHandle& e, const VertexHandle &va, const VertexHandle & vb,
+        std::vector<VertexHandle> &newVerts,
+        std::vector<FaceHandle> &newFaces,
+        std::vector<FaceHandle> &facesToDelete,
+        std::vector<EdgeHandle> &edgesToDelete);
 void tearEdge(TopologicalObject& obj,const EdgeHandle& e, const VertexHandle &va, const VertexHandle & vb,
         VertexHandle & newVerta, VertexHandle & newVertb, std::vector<FaceHandle> &newFaces,
         std::vector<FaceHandle> &facesToDelete, std::vector<EdgeHandle> &edgesToDelete);

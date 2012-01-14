@@ -103,6 +103,7 @@ ShellTest::ShellTest()
   //Tearing options
   AddOption("shell-tearing", "wheter to add tearing to the model", false);
   AddOption("shell-tearing-threshold", "the thickness threshold to use for tearing", 0.0 );
+  AddOption("shell-tearing-randomness", "percent of fracture edges that will actually tear apart", 0.6 );
 
     //Timestepper options
   AddOption("integrator", "type of integrator to use for the shell", "implicit");
@@ -144,7 +145,8 @@ sceneFunc scenes[] = {0,
                       &ShellTest::setupScene10, //pouring inflow with deletion 
                       &ShellTest::setupScene11, //a cube with surface tension collapsing to a sphere  
                       &ShellTest::setupScene12, //hemispherical bubble popping with low viscosity
-                      &ShellTest::setupScene13 };  //an constant inflow hitting a solid floor and buckling
+                      &ShellTest::setupScene13, //an constant inflow hitting a solid floor and buckling
+                      &ShellTest::setupScene14};
 
 
 void ShellTest::Setup()
@@ -241,7 +243,9 @@ void ShellTest::Setup()
 
   bool tearing = GetBoolOpt("shell-tearing");
   Scalar tearingThres = GetScalarOpt("shell-tearing-threshold");
-  shell->setTearing(tearing, tearingThres);
+  Scalar tearingRand = GetScalarOpt( "shell-tearing-randomness");
+//  tearingRand = clamp(tearingRand, 0.0, 1.0);
+  shell->setTearing(tearing, tearingThres, tearingRand);
 
   //compute the dof indexing for use in the diff_eq solver
   shellObj->computeDofIndexing();
@@ -1648,5 +1652,148 @@ void ShellTest::setupScene13() {
   shell->setInflowSection(extendEdgeList, inflow_vel, m_initial_thickness);
   Scalar ground = GetScalarOpt("shell-ground-plane-height");
   //shell->setDeletionBox(Vec3d(-2, -5, -2), Vec3d(2, ground-0.02, 2));
+
+}
+//a square catenary
+void ShellTest::setupScene14() {
+
+  //get params
+  Scalar width = GetScalarOpt("shell-width");
+  Scalar height = GetScalarOpt("shell-height");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
+
+  Scalar dx = (Scalar)width / (Scalar)xresolution;
+  Scalar dy = (Scalar)height / (Scalar)yresolution;
+
+  //build a rectangular grid of vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  Vec3d start_vel(0,0,0);
+  for(int j = 0; j < yresolution; ++j) {
+    for(int i = 0; i <= xresolution; ++i) {
+      Scalar thet = 2. * pi * (Scalar) j / (Scalar) yresolution;
+      Vec3d vert(i*dx, height * sin(thet), height * cos(thet));
+    /*  if(j < 0.5*yresolution) {
+        int k = j;
+        int j_mod = (int)(0.5*yresolution);
+        vert(1) = j_mod*dx;
+        vert(2) = (k-j_mod)*dx;
+      }*/
+      Vec3d undef = vert;
+
+      VertexHandle h = shellObj->addVertex();
+
+      positions[h] = vert;
+      velocities[h] = start_vel;
+      undeformed[h] = undef;
+      vertHandles.push_back(h);
+    }
+  }
+
+
+  //build the faces
+  std::vector<Vec3i> tris;
+  for(int i = 0; i < xresolution; ++i) {
+    for(int j = 0; j < yresolution; ++j) {
+      int tl = i + (xresolution+1)*j;
+      int tr = i+1 + (xresolution+1)*j;
+      int bl = i + (xresolution+1)*(j+1);
+      int br = i+1 + (xresolution+1)*(j+1);
+
+      tl %= (xresolution+1) * yresolution;
+      tr %= (xresolution+1) * yresolution;
+      bl %= (xresolution+1) * yresolution;
+      br %= (xresolution+1) * yresolution;
+
+      shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
+      shellObj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
+    }
+  }
+
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj);
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+  //Find the leftest vertex
+  VertexIterator vit = shellObj->vertices_begin();
+  Scalar lowest_x = 10000;
+  Scalar lowest_z = 10000;
+  for(;vit!= shellObj->vertices_end(); ++vit) {
+    Vec3d pos = shell->getVertexPosition(*vit);
+    if(pos[0] <= lowest_x) {
+      lowest_x = pos[0];
+    }
+    if(pos[2] <= lowest_z) {
+      lowest_z = pos[2];
+    }
+  }
+  //Find the rightest vertex
+  vit = shellObj->vertices_begin();
+  Scalar highest_x = -10000;
+  Scalar highest_z = -10000;
+  for(;vit!= shellObj->vertices_end(); ++vit) {
+    Vec3d pos = shell->getVertexPosition(*vit);
+    if(pos[0] >= highest_x) {
+      highest_x = pos[0];
+    }
+    if(pos[2] >= highest_z) {
+      highest_z = pos[2];
+    }
+  }
+
+  //Pin all verts at or near that height
+//  for( int i = 0; i <= xresolution; ++i){
+//      int offset_i = i + yresolution*(xresolution+1);
+//      shell->constrainVertex(vertHandles[i], shell->getVertexPosition(vertHandles[i]));
+//      shell->constrainVertex(vertHandles[offset_i], shell->getVertexPosition(vertHandles[offset_i]));
+//  }
+//  for( int j = 1; j <= yresolution-1; j+= (xresolution+1)){
+//    int offset_j = j + xresolution;
+//    shell->constrainVertex(vertHandles[j], shell->getVertexPosition(vertHandles[j]));
+//    shell->constrainVertex(vertHandles[offset_j], shell->getVertexPosition(vertHandles[offset_j]));
+//  }
+  for(vit = shellObj->vertices_begin();vit!= shellObj->vertices_end(); ++vit) {
+    Vec3d pos = shell->getVertexPosition(*vit);
+    if(pos[0] >= highest_x - 1e-4) {
+        FixedVelocityConstraint* c = new FixedVelocityConstraint(pos, Vec3d(0.25, 0.0, 0.0), 0.0);
+        shell->constrainVertex(*vit, c);
+    }
+    if(pos[0] <= lowest_x + 1e-4) {
+      FixedVelocityConstraint* c = new FixedVelocityConstraint(pos, Vec3d(-0.25, 0.0, 0.0), 0.0);
+      shell->constrainVertex(*vit, c);
+    }
+//    if(pos[2] >= highest_z - 1e-4) {
+//      shell->constrainVertex(*vit, pos);
+//    }
+//    if(pos[2] <= lowest_z + 1e-4) {
+//      shell->constrainVertex(*vit, pos);
+//    }
+  }
+
 
 }
