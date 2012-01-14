@@ -1,0 +1,47 @@
+#ifndef MARCHINGTETS_H
+#define MARCHINGTETS_H
+
+#include "hashtable.h"
+#include "trimesh.h"
+#include "vec.h"
+
+class MarchingTets{
+   public:
+   // the mesh that marching tets is creating
+   TriMesh mesh; // mesh connectivity
+   std::vector<Vec3f> x; // mesh vertex locations
+
+   // marching tets grid definition
+   Vec3f origin; // where the grid point (0,0,0) is
+   float dx; // the grid spacing
+
+   private:
+   // internal tables for saving information on what has been done so far
+   HashTable<Vec6i,unsigned int> edge_cross; // stores vertices that have been created already at given edge crossings
+   HashTable<Vec3i,char> cube_record; // indicates if a cube has already been contoured or not
+
+   public:
+   explicit MarchingTets(float dx_=1)
+      : origin(0), dx(dx_)
+   {}
+
+   explicit MarchingTets(const Vec3f &origin_, float dx_=1)
+      : origin(origin_), dx(dx_)
+   {}
+
+   virtual ~MarchingTets(void)
+   {}
+
+   // add triangles for contour in the given cube (from grid points (i,j,k) to (i+1,j+1,k+1)) if not there already
+   void contour_cube(int i, int j, int k);
+
+   // how we actually find the value of the implicit surface function at a grid point: override this
+   virtual float eval(int i, int j, int k)=0;
+
+   // helper functions
+   private:
+   void contour_tet(const Vec3i &x0, Vec3i &x1, Vec3i &x2, Vec3i &x3, float p0, float p1, float p2, float p3);
+   int find_edge_cross(const Vec3i &x0, const Vec3i &x1, float p0, float p1);
+};
+
+#endif
