@@ -123,7 +123,7 @@ public:
   void setGroundPlane(bool enabled, Scalar height, Scalar velocity);
   void setSelfCollision(bool enabled);
 
-  void setCollisionSphere(bool enabled, Scalar radius, Vec3d position);
+  void setCollisionSphere(bool enabled, Scalar radius, Vec3d position, Vec3d velocity);
 
   void setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel, Scalar thickness);
   void setDeletionBox(const Vec3d& lowerBound, const Vec3d& upperBound);
@@ -148,6 +148,11 @@ public:
   void setTearing(bool tearing, Scalar thres){
       m_tearing = tearing;
       m_tear_thres = thres;
+  }
+
+  void getCollisionSphere(Vec3d& position, Scalar& radius) const {
+    position = m_sphere_position;
+    radius = m_sphere_radius;
   }
 
 
@@ -248,13 +253,14 @@ protected:
   Scalar m_sphere_radius;
   Vec3d m_sphere_position;
   bool m_sphere_collisions;
+  Vec3d m_sphere_velocity;
 
   ElTopo::BroadPhaseGrid m_broad_phase;
 
   //Fracture properties
   bool m_tearing;
   Scalar m_tear_thres;
-
+  
 };
 
 }
