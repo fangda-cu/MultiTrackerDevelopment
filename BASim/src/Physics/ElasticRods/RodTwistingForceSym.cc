@@ -19,6 +19,8 @@ using namespace std;
 namespace BASim
 {
 
+typedef unsigned uint;
+
 RodTwistingForceSym::RodTwistingForceSym( ElasticRod& rod, bool vscs, bool runinit ) :
     RodForceT<VertexStencil> ( rod, "RodTwistingForceSym" )
 {
