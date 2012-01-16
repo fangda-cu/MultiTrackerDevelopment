@@ -702,10 +702,10 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
           //constrainVertex(*vit, curPos);
           
           //Sinking
-          constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, m_ground_velocity, 0), time));
+          //constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, m_ground_velocity, 0), time));
           
           //Conveying
-          //constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, 0, m_ground_velocity), time));
+          constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, 0, m_ground_velocity), time));
         }
       }
     }
@@ -1026,16 +1026,16 @@ void ElasticShell::remesh( Scalar desiredEdge )
   //m_broad_phase.update_broad_phase_static(*m_obj, m_positions, m_collision_proximity);
   
   //Parameters adapted from Jiao et al. "Anisotropic Mesh Adaptation for Evolving Triangulated Surfaces"
-  Scalar ratio_R = 0.45;
-  Scalar ratio_r = 0.25;
+  Scalar ratio_R = 0.5;
+  Scalar ratio_r = 0.1;
   
-  Scalar sEdge = 0.25*desiredEdge;
-  Scalar minEdge = ratio_R*desiredEdge;
-  Scalar maxEdge = 1.5*desiredEdge;
+  Scalar minEdge = ratio_R*desiredEdge; //L in the jiao paper
+  Scalar maxEdge = 1.5*desiredEdge; //S in the jiao paper
 
   Scalar minAngle = 15.0*M_PI/180.0;
-  Scalar maxAngle = 145.0*M_PI/180.0;
+  Scalar maxAngle = 160.0*M_PI/180.0;
   
+  flipEdges();
   splitEdges(desiredEdge, maxEdge, maxAngle);
   flipEdges();
   collapseEdges(minAngle, desiredEdge, ratio_R, ratio_r, minEdge);
@@ -1215,7 +1215,14 @@ void ElasticShell::flipEdges() {
 
     dir0 = p0-p3; dir1 = p1 - p3;
     Scalar angle1 = acos(dir0.dot(dir1));
+    
     if(angle0 + angle1 > M_PI) {
+
+      //check area of proposed tris
+      Scalar area0 = (p2-p0).cross(p3-p0).norm();
+      if(area0 < 1e-12) continue;
+      Scalar area1 = (p2-p1).cross(p3-p1).norm();
+      if(area1 < 1e-12) continue;
 
       //determine volume of the region being flipped
       FaceHandle f0, f1;
@@ -2268,29 +2275,159 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
       if(v0_pinned && v1_pinned) continue; //both edges pinned, don't collapse
       
       VertexHandle vert_to_remove, vert_to_keep;
+      
+      std::vector<VertexHandle> options_remove_point; options_remove_point.reserve(3);
+      std::vector<VertexHandle> options_keep_point; options_keep_point.reserve(3);
+      std::vector<Vec3d> options_new_pos; options_new_pos.reserve(3);
+      std::vector<Vec3d> options_new_vel; options_new_vel.reserve(3);
+      std::vector<Vec3d> options_new_undef; options_new_undef.reserve(3);
       if(v0_bdry || v0_pinned) {
-        vert_to_remove = v1;
-        vert_to_keep = v0;
-        newPoint = p0;
-        newVel = getVertexVelocity(v0);
-        newUndef = getVertexUndeformed(v0);
+        options_remove_point.push_back(v1);
+        options_keep_point.push_back(v0);
+        options_new_pos.push_back(p0);
+        options_new_vel.push_back(getVertexVelocity(v0));
+        options_new_undef.push_back(getVertexUndeformed(v0));
       }
       else if(v1_bdry || v1_pinned) {
         vert_to_remove = v0;
         vert_to_keep = v1;
-        newPoint = p1;
-        newVel = getVertexVelocity(v1);
-        newUndef = getVertexUndeformed(v1);
+        options_remove_point.push_back(v0);
+        options_keep_point.push_back(v1);
+        options_new_pos.push_back(p1);
+        options_new_vel.push_back(getVertexVelocity(v1));
+        options_new_undef.push_back(getVertexUndeformed(v1));
       }
-      else {
-        vert_to_remove = v0; //doesn't matter
-        vert_to_keep = v1;
-        newPoint = 0.5f*(p0+p1);
-        newVel = 0.5f*(getVertexVelocity(v0) + getVertexVelocity(v1));
-        newUndef = 0.5f*(getVertexUndeformed(v0) + getVertexUndeformed(v1));
+      else { //either one works, so consider several options in case one or more is bad!
+        //use average point
+        options_remove_point.push_back(v0);
+        options_keep_point.push_back(v1);
+        options_new_pos.push_back(0.5f*(p0+p1));
+        options_new_vel.push_back(0.5*(getVertexVelocity(v0) + getVertexVelocity(v1)));
+        options_new_undef.push_back(0.5*(getVertexUndeformed(v0) + getVertexUndeformed(v1)));
+
+        //use point 0
+        options_remove_point.push_back(v0);
+        options_keep_point.push_back(v1);
+        options_new_pos.push_back(p1);
+        options_new_vel.push_back(getVertexVelocity(v1));
+        options_new_undef.push_back(getVertexUndeformed(v1));
+
+        //use point 1
+        options_remove_point.push_back(v1);
+        options_keep_point.push_back(v0);
+        options_new_pos.push_back(p0);
+        options_new_vel.push_back(getVertexVelocity(v0));
+        options_new_undef.push_back(getVertexUndeformed(v0));
       }
 
+      bool collapseOkay = false;
+      int choice = 0;
+      /*
+      while(!collapseOkay && choice < (int)options_remove_point.size()) {
+        
+        //assume good until proven bad
+        collapseOkay = true;
+        
+        //compute expected areas and normals of all faces involved in the collapse,
+        //to ensure no areas go near zero and no normals get badly flipped
+        VertexHandle firstVert = options_keep_point[choice];
+        VertexHandle secondVert = options_remove_point[choice];
+
+        for(VertexFaceIterator vfit = m_obj->vf_iter(firstVert); vfit; ++vfit) {
+          FaceHandle faceToCheck = *vfit;
+          Vec3d faceVerts[3];
+          Vec3d faceVertsNew[3];
+          int vNo = 0;
+          bool collapsingTri = false;
+          for(FaceVertexIterator fvit = m_obj->fv_iter(faceToCheck); fvit; ++fvit) {
+            VertexHandle curVert = *fvit;
+            if(curVert == secondVert) {
+              collapsingTri = true;
+              break;
+            }
+            faceVerts[vNo] = m_positions[curVert];
+            faceVertsNew[vNo] = (curVert == firstVert) ? options_new_pos[choice] : m_positions[curVert];
+            ++vNo;
+          }
+          if(collapsingTri) continue;
+
+          Vec3d normalOld = (faceVerts[2] - faceVerts[0]).cross(faceVerts[1]-faceVerts[0]);
+          Scalar areaOld = fabs(normalOld.norm())/2;
+
+          Vec3d normalNew = (faceVertsNew[2] - faceVertsNew[0]).cross(faceVertsNew[1]-faceVertsNew[0]);
+          Scalar areaNew = fabs(normalNew.norm())/2;
+          if(areaNew < 0.0001 * square(m_remesh_edge_length)) {
+            collapseOkay = false;
+            std::cout << "Prevented small area collapse\n";
+            break;
+          }
+          if(normalOld.dot(normalNew) <= 0) {//direction flip, don't do it!
+            collapseOkay = false;
+            std::cout << "Prevented direction flip collapse\n";
+            break;
+          }
+        }
+
+        if(!collapseOkay) {
+          ++choice;
+          continue;
+        }
+
+        //TODO Refactor redundant code.
+        //compute expected areas and normals of all faces involved in the collapse,
+        //to ensure no areas go near zero and no normals get badly flipped
+        for(VertexFaceIterator vfit = m_obj->vf_iter(secondVert); vfit; ++vfit) {
+          FaceHandle faceToCheck = *vfit;
+          Vec3d faceVerts[3];
+          Vec3d faceVertsNew[3];
+          int vNo = 0;
+          bool collapsingTri = false;
+          for(FaceVertexIterator fvit = m_obj->fv_iter(faceToCheck); fvit; ++fvit) {
+            VertexHandle curVert = *fvit;
+            if(curVert == firstVert) {
+              collapsingTri = true;
+              break;
+            }
+            faceVerts[vNo] = m_positions[curVert];
+            faceVertsNew[vNo] = (curVert == secondVert) ? options_new_pos[choice] : m_positions[curVert];
+            ++vNo;
+          }
+          if(collapsingTri) continue;
+          Vec3d normalOld = (faceVerts[2] - faceVerts[0]).cross(faceVerts[1]-faceVerts[0]);
+          Scalar areaOld = fabs(normalOld.norm())/2;
+
+          Vec3d normalNew = (faceVertsNew[2] - faceVertsNew[0]).cross(faceVertsNew[1]-faceVertsNew[0]);
+          Scalar areaNew = fabs(normalNew.norm())/2;
+
+          if(areaNew < 0.0001 * square(m_remesh_edge_length)) {
+            collapseOkay = false;
+            std::cout << "Prevented small area collapse\n";
+            break;
+          }
+          if(normalOld.dot(normalNew) <= 0) {//direction flip, don't do it!
+            collapseOkay = false;
+            std::cout << "Prevented direction flip collapse\n";
+            break;
+          }
+        }
+
+        if(!collapseOkay) {
+          ++choice;
+          continue;
+        }
+      }
       
+      if(choice == options_keep_point.size()) continue; //none of the options was tolerable, so skip it.
+      */
+
+      //pick out the one we liked.
+      vert_to_keep = options_keep_point[choice];
+      vert_to_remove = options_remove_point[choice];
+      newPoint = options_new_pos[choice];
+      newVel = options_new_vel[choice];
+      newUndef = options_new_undef[choice];
+
+
       //determine area of collapsing faces
       EdgeFaceIterator efit = m_obj->ef_iter(eh);
       Scalar totalVolume = 0;
@@ -2439,7 +2576,9 @@ void ElasticShell::extendMesh(Scalar current_time) {
     Scalar baseLength = (curPos - curPos2).norm();
     Scalar len1 = (curPos - startPos).norm();
     Scalar len2 = (curPos2 - startPos).norm();
-    if(len1/baseLength < 0.7 || len2 / baseLength < 0.7) continue;
+    if(len1/baseLength < 0.7 || len2 / baseLength < 0.7) {
+      continue;
+    }
 
 
     int count = m_inflow_boundaries[boundary].size();
@@ -2577,20 +2716,23 @@ void ElasticShell::setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3
     }
     else {
       sharedVert = getSharedVertex(*m_obj, eh1, eh2);
-      otherVert = getEdgesOtherVertex(*m_obj, eh1, sharedVert); 
+      otherVert = getEdgesOtherVertex(*m_obj, eh1, sharedVert);
+      
     }
 
     Vec3d pos = getVertexPosition(otherVert);
+    constrainVertex(otherVert, new FixedVelocityConstraint(pos, vel, 0));
     posList.push_back(pos);
     
     prevVert = sharedVert;
     
-    //constrainVertex(vertices[i], new FixedVelocityConstraint(m_inflow_positions[boundary][i], vel, 0));
+    
   }
   
   VertexHandle wrapVert = getSharedVertex(*m_obj, edgeList[0], edgeList[edgeList.size()-1]);
   if(!wrapVert.isValid()) {
     Vec3d pos = getVertexPosition(prevVert);
+    constrainVertex(prevVert, new FixedVelocityConstraint(pos, vel, 0));
     posList.push_back(pos);
   } 
 

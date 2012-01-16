@@ -22,7 +22,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexPointSpringForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/DrainingBubblePressureForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellBathForce.hh"
-
+#include "BASim/src/Collisions/ElTopo/util.hh"
 
 #include <set>
 #include <fstream>
@@ -64,6 +64,10 @@ ShellTest::ShellTest()
   AddOption("shell-height", "the vertical side length of the shell", 1.0);
   AddOption("shell-x-resolution", "the number of segments along first dimension", 30);
   AddOption("shell-y-resolution", "the number of segments along second dimension", 30);
+  
+  AddOption("shell-initial-velocity", "starting velocity in the y direction", -0.1);
+  AddOption("shell-inflate-sphere-coeff", "coefficient for inflating sphere", 0.0);
+  AddOption("shell-inflate-sphere-const-pressure", "whether to use constant pressure version", false);
   
   //sheared wrinkling parameters
   AddOption("shell-rotation-rate", "the rate at which inner cylinder rotates for sheared wrinkling test", 0.0);
@@ -146,6 +150,20 @@ sceneFunc scenes[] = {0,
                       &ShellTest::setupScene12, //hemispherical bubble popping with low viscosity
                       &ShellTest::setupScene13 };  //an constant inflow hitting a solid floor and buckling
 
+Scalar bubbleThicknessFunction(Vec3d pos) {
+  //NOTE: Assumes radius of 0.01;
+  float rad = 0.01f;
+  float height_frac = pos[1] / 0.01f;
+  float transition_point = 1.0f;
+  if(height_frac > transition_point) {
+    return 0.0001;
+  }
+  else {
+    float s = height_frac/transition_point;
+    return s*0.0001 + (1-s)*0.00015;
+  }
+
+}
 
 void ShellTest::Setup()
 {
@@ -180,7 +198,22 @@ void ShellTest::Setup()
 
   //Geometry/scene specific
   int sceneChoice = GetIntOpt("shell-scene");
+  m_active_scene = sceneChoice;
 
+  if(sceneChoice == 3) {
+    Scalar pressureStrength = GetScalarOpt("shell-inflate-sphere-coeff");
+
+    sphere_data.open("sphere_data.txt");
+    sphere_data << "Input parameter data..." << std::endl;
+    sphere_data << "Viscosity: " << Youngs_damping/3 << std::endl;
+    sphere_data << "Initial thickness: " << thickness << std::endl;
+    sphere_data << "Pressure coefficient, k: " << pressureStrength << std::endl;
+    sphere_data << "Density: " << density << std::endl;
+    sphere_data << std::endl;
+    sphere_data << "Simulation data, in comma-separated format... radius,velocity and thickness are area-weighted averages over all triangles" << std::endl;
+    sphere_data << "time,radius,computed pressure,surface area,current thickness,velocity" << std::endl;
+
+  }
 
   //Create the base deformable object (mesh)
   shellObj = new DeformableObject();
@@ -215,7 +248,23 @@ void ShellTest::Setup()
     shell->addForce(new ShellSurfaceTensionForce(*shell, "Surface Tension", surface_tension));
 
   //and set its standard properties
-  shell->setThickness(thickness);
+  if(sceneChoice == 6) {
+    //make the thickness vary for the bubble example
+    for(FaceIterator fit = shellObj->faces_begin(); fit != shellObj->faces_end(); ++fit) {
+      FaceHandle fh = *fit;
+      Vec3d barycentre(0,0,0);
+      for(FaceVertexIterator fvit = shellObj->fv_iter(fh); fvit; ++fvit) {
+        VertexHandle vh = *fvit;
+        Vec3d position = shell->getVertexPosition(vh);
+        barycentre += position;
+      }
+      barycentre/=3.0;
+      shell->setThickness(fh, bubbleThicknessFunction(barycentre));
+    }
+  }
+  else {
+    shell->setThickness(thickness);
+  }
   shell->setDensity(density);
   
   bool remeshing = GetIntOpt("shell-remeshing") == 1?true:false;
@@ -243,6 +292,9 @@ void ShellTest::Setup()
   Scalar tearingThres = GetScalarOpt("shell-tearing-threshold");
   shell->setTearing(tearing, tearingThres);
 
+  //for(int i = 0; i < 3; ++i)
+  //  shell->remesh(remeshing_res);
+    
   //compute the dof indexing for use in the diff_eq solver
   shellObj->computeDofIndexing();
 
@@ -282,8 +334,10 @@ void ShellTest::Setup()
 
 void ShellTest::AtEachTimestep()
 {
-
-    //dump PLY files if needed
+  
+  std::cout << "Time: " << std::endl;
+    
+  //dump PLY files if needed
     if ( g_ply_dump ){
         std::stringstream name;
         int file_width = 20;
@@ -313,6 +367,52 @@ void ShellTest::AtEachTimestep()
 
         ++current_obj_frame;
     }
+
+    if(m_active_scene) {
+      //Write out the data for the analytical example
+
+      Scalar velocity = 0;
+      int count = 0;
+      Scalar rad = 0;
+      Scalar area = 0;
+      Scalar thickness = 0;
+      for(FaceIterator fit = shellObj->faces_begin(); fit!= shellObj->faces_end(); ++fit) {
+        FaceHandle fh = *fit;
+        Scalar faceArea = shell->getArea(fh);
+        Scalar faceRad = 0;
+        Scalar faceVel = 0;
+        for(FaceVertexIterator fvit = shellObj->fv_iter(fh); fvit; ++fvit) {
+          VertexHandle vh = *fvit;
+          faceVel += shell->getVertexVelocity(vh).norm();
+          faceRad += shell->getVertexPosition(vh).norm();
+        }
+        thickness += shell->getThickness(fh)*faceArea;
+        velocity += faceVel/3*faceArea;
+        rad += faceRad/3*faceArea;
+        area += faceArea;
+      }
+      rad /= area;
+      velocity /= area;
+      thickness /= area;
+      std::cout << "Average velocity: " << velocity << std::endl;
+      std::cout << "Average radius: " << rad << std::endl;
+      std::cout << "Average thickness: " << thickness << std::endl;
+      Scalar viscosity = GetScalarOpt("shell-Youngs-damping") / 3.0;
+      Scalar thickness0 = GetScalarOpt("shell-thickness");
+      Scalar pressureStrength = GetScalarOpt("shell-inflate-sphere-coeff");
+      bool constPressure = GetBoolOpt("shell-inflate-sphere-const-pressure");
+
+      Scalar radMul = constPressure? rad*rad : 1;
+      double expected_vel = pressureStrength * radMul /(12.0*viscosity*thickness0);
+      Scalar pressure_val = pressureStrength / (constPressure? 1 : rad*rad);
+      //time,radius,computed pressure,surface area,current thickness,velocity
+      sphere_data << getTime() << "," << rad << "," << pressure_val << "," << area << "," << thickness << "," << velocity << std::endl;
+      sphere_data.flush();
+
+      std::cout << "Velocity: " << velocity << std::endl;
+      std::cout << "Expected velocity: " << expected_vel << std::endl;
+    }
+    std::cout << "Time: " << this->getTime() << std::endl; 
 
 }
 
@@ -561,10 +661,11 @@ void ShellTest::setupScene3() {
   int layers = yresolution;
   int slices = xresolution;
   Vec3d centre(0,0,0);
-  Scalar radius = 1.234;
+  Scalar radius = 1.0;
   Vec3d start_vel(0,0,0);
 
-  std::vector<std::vector<VertexHandle> > vertList;
+  
+  /*
   //create top pole
   VertexHandle topV = shellObj->addVertex();
   positions[topV] = centre + Vec3d(0,0,radius);
@@ -612,6 +713,36 @@ void ShellTest::setupScene3() {
 
     }
   }
+  */
+
+  //load a nicer sphere from disk
+  ifstream infile("sphere1.obj");
+  if(!infile)
+    std::cout << "Error loading file\n";
+  std::string line;
+  std::vector<VertexHandle> vertList;
+  while(!infile.eof()) {
+    std::getline(infile, line);
+    if(line.substr(0,1) == std::string("v")) {
+      std::stringstream data(line);
+      char c;
+      Vec3d point;
+      data >> c >> point[0] >> point[1] >> point[2];
+
+      VertexHandle vNew = shellObj->addVertex();
+      positions[vNew] = point;
+      velocities[vNew] = start_vel;
+      undeformed[vNew] = point;
+      vertList.push_back(vNew);
+    }
+    else {
+      std::stringstream data(line);
+      char c;
+      int v0,v1,v2;
+      data >> c >> v0 >> v1 >> v2;
+      shellObj->addFace(vertList[v0-1],vertList[v1-1],vertList[v2-1]);
+    }
+  }
 
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj); 
@@ -641,12 +772,14 @@ void ShellTest::setupScene3() {
     normVec.normalize();
     shell->setVertexPosition(*vit, oldPos + inflateDist*normVec);
   }*/
-
+  
   //Add an outward pressure force to inflate the sphere
+  Scalar pressureStrength = GetScalarOpt("shell-inflate-sphere-coeff");
+  bool constPressure = GetBoolOpt("shell-inflate-sphere-const-pressure");
   //Scalar pressureStrength = 0.1;
-  //shell->addForce(new ShellRadialForce(*shell, "Radial", Vec3d(0,0,0), pressureStrength));
+  shell->addForce(new ShellRadialForce(*shell, "Radial", Vec3d(0,0,0), pressureStrength, constPressure));
 
-  shell->addForce(new ShellVolumeForce(*shell, "Volume", 0.5));
+  //shell->addForce(new ShellVolumeForce(*shell, "Volume", 0.5));
 }
 
 //simple square with two triangles, one pinned in place, to test bending
@@ -851,6 +984,8 @@ void ShellTest::setupScene6() {
 
   std::vector<std::vector<VertexHandle> > vertList;
 
+  
+   int seed = 0;
   //fill in the interior
   vertList.resize(layers-1);
   for(int j = 0; j < layers-1; ++j) {
@@ -862,8 +997,12 @@ void ShellTest::setupScene6() {
       Scalar xVal = newRad*cos(rotAngle);
       Scalar yVal = newRad*sin(rotAngle);
 
+      float x_n,y_n,z_n;
+      x_n = 0.00001*ElTopo::randhashd(seed++);
+      y_n = 0.00001*ElTopo::randhashd(seed++);
+      z_n = 0.00001*ElTopo::randhashd(seed++);
       VertexHandle vNew = shellObj->addVertex();
-      positions[vNew] = centre + Vec3d(xVal,zVal,yVal);
+      positions[vNew] = centre + Vec3d(xVal,zVal,yVal) + Vec3d(x_n, y_n, z_n);
       velocities[vNew] = start_vel;
       undeformed[vNew] = positions[vNew];
       vertList[j].push_back(vNew);
@@ -899,11 +1038,13 @@ void ShellTest::setupScene6() {
   shell->setEdgeVelocities(edgeVel);
 
  
-  for(unsigned int i = 0; i < vertList[0].size(); ++i)
-    shell->constrainVertex(vertList[0][i], shell->getVertexPosition(vertList[0][i]));
-  for(unsigned int i = 0; i < vertList[1].size(); ++i)
-    shell->constrainVertex(vertList[1][i], shell->getVertexPosition(vertList[1][i]));
- 
+  float freeze_height = 0.003;
+  for(VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit) {
+    VertexHandle vh = *vit; 
+    Vec3d position = shell->getVertexPosition(vh);
+    if(position[1] < freeze_height)
+      shell->constrainVertex(vh, position);
+  }
 
 
 }
@@ -1571,7 +1712,9 @@ void ShellTest::setupScene13() {
   EdgeProperty<Scalar> edgeAngle(shellObj);
   EdgeProperty<Scalar> edgeVel(shellObj);
 
-  Vec3d start_vel(0,-0.1,0);
+  Scalar drop_vel = GetScalarOpt("shell-initial-velocity");
+
+  Vec3d start_vel(0,drop_vel,0);
   std::set<VertexHandle> topVerts;
   for(int j = 0; j <= yresolution; ++j) {
     for(int i = 0; i <= xresolution; ++i) {
