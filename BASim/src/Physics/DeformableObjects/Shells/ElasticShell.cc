@@ -666,10 +666,11 @@ void ElasticShell::setGroundPlane(bool enabled, Scalar height, Scalar velocity) 
   m_ground_velocity = velocity;
 }
 
-void ElasticShell::setCollisionSphere(bool enabled, Scalar radius, Vec3d position) {
+void ElasticShell::setCollisionSphere(bool enabled, Scalar radius, Vec3d position, Vec3d velocity) {
   m_sphere_collisions = enabled;
   m_sphere_radius = radius;
   m_sphere_position = position;
+  m_sphere_velocity = velocity;
 }
 
 void ElasticShell::setSelfCollision(bool enabled) {
@@ -720,12 +721,11 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
  }
 
 
-  //Ground plane penalty force.
   if(m_sphere_collisions) {
     //Hard constraints 
     for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
       Vec3d curPos = getVertexPosition(*(vit));
-      Vec3d offset = curPos - m_sphere_position;
+      Vec3d offset = curPos - (m_sphere_position+m_sphere_velocity*time);
       if(offset.norm() < m_sphere_radius) {
         if(!isConstrained(*vit)) {
          
@@ -733,7 +733,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
           //constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, m_ground_velocity, 0), time));
           
           //Conveying
-          constrainVertex(*vit, curPos);
+          constrainVertex(*vit, new FixedVelocityConstraint(curPos, m_sphere_velocity, time));
         }
       }
     }
@@ -2629,7 +2629,7 @@ void ElasticShell::extendMesh(Scalar current_time) {
     Scalar baseLength = (curPos - curPos2).norm();
     Scalar len1 = (curPos - startPos).norm();
     Scalar len2 = (curPos2 - startPos).norm();
-    if(len1/baseLength < 0.7 || len2 / baseLength < 0.7) {
+    if(len1/baseLength < 0.4 || len2 / baseLength < 0.4) {
       continue;
     }
 
