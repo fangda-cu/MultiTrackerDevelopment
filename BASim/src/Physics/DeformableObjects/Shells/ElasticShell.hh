@@ -100,6 +100,7 @@ public:
   Scalar getMass(const VertexHandle& v) const { return m_vertex_masses[v]; }
   Scalar getMass(const EdgeHandle& e) const { return m_edge_masses[e]; }
   Scalar getThickness(const FaceHandle& f) const { return m_thicknesses[f]; }
+  void setThickness(const FaceHandle& f, Scalar thick) { m_thicknesses[f] = thick; }
   Scalar getThickness(const VertexHandle& vh) const;
   Scalar getMaxThickness () const;
   Scalar getMinThickness () const;
@@ -121,6 +122,8 @@ public:
   void setCollisionParams(Scalar proximity, Scalar stiffness, Scalar damping);
   void setGroundPlane(bool enabled, Scalar height, Scalar velocity);
   void setSelfCollision(bool enabled);
+
+  void setCollisionSphere(bool enabled, Scalar radius, Vec3d position);
 
   void setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel, Scalar thickness);
   void setDeletionBox(const Vec3d& lowerBound, const Vec3d& upperBound);
@@ -242,6 +245,9 @@ protected:
   bool m_ground_collisions;
   Scalar m_ground_velocity;
   Scalar m_collision_spring_stiffness, m_collision_spring_damping;
+  Scalar m_sphere_radius;
+  Vec3d m_sphere_position;
+  bool m_sphere_collisions;
 
   ElTopo::BroadPhaseGrid m_broad_phase;
 

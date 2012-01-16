@@ -4,8 +4,8 @@
 
 namespace BASim {
 
-ShellRadialForce::ShellRadialForce( ElasticShell& shell, const std::string& name, const Vec3d& centre, Scalar strength ) : 
-    ElasticShellForce(shell, name), m_centre(centre), m_strength(strength)
+ShellRadialForce::ShellRadialForce( ElasticShell& shell, const std::string& name, const Vec3d& centre, Scalar strength, bool constPressure) : 
+    ElasticShellForce(shell, name), m_centre(centre), m_strength(strength), m_constant_pressure(constPressure)
 {
 
 }
@@ -61,7 +61,12 @@ void ShellRadialForce::globalForce( VecXd& force ) const
     Scalar r_len2 = direction.squaredNorm();
     
     direction.normalize();
-    direction *= m_strength/r_len2;
+    if(m_constant_pressure) {
+      direction *= m_strength;///r_len2;
+    }
+    else {
+      direction *= m_strength/r_len2;    
+    }
     
     //visit all triangles and accumulate: ref_area / area 
     Scalar curArea = 0, refArea = 0;

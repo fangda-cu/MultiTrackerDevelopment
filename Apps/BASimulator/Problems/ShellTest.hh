@@ -24,6 +24,8 @@ public:
   ShellTest();
   virtual ~ShellTest();
 
+  std::ofstream sphere_data;
+
   //virtual void serialize( std::ofstream& of );
   //virtual void resumeFromfile( std::ifstream& ifs );
 
@@ -38,6 +40,7 @@ protected:
 
   Scalar m_timestep;
   Scalar m_initial_thickness;
+  int m_active_scene;
 
 public:
   void setupScene1(); //vertical flat sheet
@@ -53,7 +56,7 @@ public:
   void setupScene11(); //a cube
   void setupScene12(); //popping low viscosity hemispherical bubble with Bernoulli air pressure model
   void setupScene13(); //a constant inflow hitting a solid boundary
-  void setupScene14(); //a square catenary
+  void setupScene14(); //a rectangular sheet falling onto a sphere
 
 };
 
