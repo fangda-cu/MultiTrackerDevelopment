@@ -16,7 +16,7 @@ class ShellRadialForce : public ElasticShellForce {
 
 public:
 
-  ShellRadialForce (ElasticShell& shell, const std::string& name = "ShellRadialForce", const Vec3d& centrePos=Vec3d(0,0,0), Scalar strength=0);
+  ShellRadialForce (ElasticShell& shell, const std::string& name = "ShellRadialForce", const Vec3d& centrePos=Vec3d(0,0,0), Scalar strength=0, bool constPressure=false);
   virtual ~ShellRadialForce () {}
 
   std::string getName() const;
@@ -29,7 +29,7 @@ protected:
 
   Vec3d m_centre; //centre point of force
   Scalar m_strength; //outward strength of the force
-
+  bool m_constant_pressure; //whether to divide the force by rad^2
 };
 
 

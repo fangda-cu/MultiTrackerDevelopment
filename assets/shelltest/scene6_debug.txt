@@ -1,7 +1,7 @@
 #hemispherical viscous bubble
 
 shell-scene 6
-dt 0.005	# time-step size
+dt 0.05	# time-step size
 
 gravity 0 -9.81 0	# gravity
 
@@ -12,20 +12,22 @@ shell-DS-bending 1
 shell-Youngs-damping 3000
 shell-Poisson-damping 0.5
 
+shell-bending-factor 0.5
+
 #Surface Tension
 shell-surface-tension 0.021
 
-shell-remeshing 1
+shell-remeshing 0
 shell-remeshing-resolution 0.001
 shell-remeshing-iterations 3
 
 integrator implicit	# type of integrator to use for the shell
 
 shell-density 980	# volumetric density of the shell 
-shell-thickness 0.0001	# the thickness of the shell
+shell-thickness 0.0001	 # the thickness of the shell
 shell-height 1.0		# the vertical side length of the shell
 shell-width 1.5		# the horizontal side length of the shell
-shell-x-resolution 50	# the number of segments along the horizontal edge
+shell-x-resolution 60	# the number of segments along the horizontal edge
 shell-y-resolution 32	# the number of segments along the vertical edge
 
 iterations 100	# maximum number of iterations for the implicit method

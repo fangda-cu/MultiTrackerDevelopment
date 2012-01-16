@@ -24,6 +24,8 @@ public:
   ShellTest();
   virtual ~ShellTest();
 
+  std::ofstream sphere_data;
+
   //virtual void serialize( std::ofstream& of );
   //virtual void resumeFromfile( std::ifstream& ifs );
 
@@ -38,6 +40,7 @@ protected:
 
   Scalar m_timestep;
   Scalar m_initial_thickness;
+  int m_active_scene;
 
 public:
   void setupScene1(); //vertical flat sheet

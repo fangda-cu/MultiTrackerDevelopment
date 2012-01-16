@@ -2322,6 +2322,7 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
 
       bool collapseOkay = false;
       int choice = 0;
+      /*
       while(!collapseOkay && choice < (int)options_remove_point.size()) {
         
         //assume good until proven bad
@@ -2415,9 +2416,10 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
           continue;
         }
       }
-
-      if(choice == options_keep_point.size()) continue; //none of the options was tolerable, so skip it.
       
+      if(choice == options_keep_point.size()) continue; //none of the options was tolerable, so skip it.
+      */
+
       //pick out the one we liked.
       vert_to_keep = options_keep_point[choice];
       vert_to_remove = options_remove_point[choice];
