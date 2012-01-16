@@ -846,6 +846,7 @@ void ElasticShell::fracture(){
 //        performTearing(edgesToFrac[0]);
 //    All of these are fractured interior, now figure out which will become boundaries
     for(unsigned int i = 0; i < edgesToFrac.size(); ++i){
+//    for(unsigned int i = 0; i < 1 && i < edgesToFrac.size(); ++i){
         //skip constraints
 
 //        if (fromBound[i] || toBound[i]){
@@ -954,8 +955,14 @@ void ElasticShell::performTearing(const EdgeHandle & eh){
         assert(oldFaces.size() == 2);
         assert(newFaces.size() == 4);
 
-        m_thicknesses[newFaces[0]] = m_thicknesses[newFaces[1]] = m_thicknesses[oldFaces[0]];
-        m_thicknesses[newFaces[1]] = m_thicknesses[newFaces[2]] = m_thicknesses[oldFaces[1]];
+        m_thicknesses[newFaces[0]] = m_thicknesses[oldFaces[0]];
+        m_thicknesses[newFaces[1]] = m_thicknesses[oldFaces[0]];
+        m_thicknesses[newFaces[2]] = m_thicknesses[oldFaces[1]];
+        m_thicknesses[newFaces[3]] = m_thicknesses[oldFaces[1]];
+
+        m_volumes[newFaces[0]] = m_volumes[newFaces[1]] = m_volumes[oldFaces[0]]/2.0;
+        m_volumes[newFaces[2]] = m_volumes[newFaces[3]] = m_volumes[oldFaces[1]]/2.0;
+
     }
 
     //Time to delete the extra tris

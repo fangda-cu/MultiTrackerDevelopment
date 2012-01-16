@@ -51,10 +51,10 @@ void tearVertexAlong(TopologicalObject& obj,const EdgeHandle& e, const VertexHan
         VertexHandle & newVert, std::vector<FaceHandle> &newFaces,
         std::vector<FaceHandle> &facesToDelete, std::vector<EdgeHandle> &edgesToDelete);
 void addPrevSide(TopologicalObject & obj, const FaceHandle &f, const EdgeHandle &e,
-        const VertexHandle& pivot, VertexHandle &newVert, std::vector<EdgeHandle> & oldEdges,
+        const VertexHandle& pivot, const VertexHandle &newVert, std::vector<EdgeHandle> & oldEdges,
         std::vector<FaceHandle> & oldFaces, std::vector<FaceHandle> &newFaces);
 void addNextSide(TopologicalObject & obj, const FaceHandle &f, const EdgeHandle &e,
-        const VertexHandle& pivot, VertexHandle &newVert, std::vector<EdgeHandle> & oldEdges,
+        const VertexHandle& pivot, const VertexHandle &newVert, std::vector<EdgeHandle> & oldEdges,
         std::vector<FaceHandle> & oldFaces, std::vector<FaceHandle> &newFaces);
 
 } //namespace BASim 

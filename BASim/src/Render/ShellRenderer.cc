@@ -221,7 +221,9 @@ void ShellRenderer::render()
     glDisable(GL_LIGHTING);
     const DeformableObject& mesh = m_shell.getDefoObj();
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glPolygonMode(GL_FRONT, GL_FILL);
+    glPolygonMode(GL_BACK, GL_LINE);
+
 
     // Render all edges
     glLineWidth(3);

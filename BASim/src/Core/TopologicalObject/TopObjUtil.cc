@@ -45,7 +45,7 @@ bool getEdgeFacePair(const TopologicalObject& obj, const EdgeHandle& eh, FaceHan
 }
 
 void addPrevSide(TopologicalObject & obj, const FaceHandle &f, const EdgeHandle &e,
-        const VertexHandle& pivot, VertexHandle &newVert, std::vector<EdgeHandle> & oldEdges,
+        const VertexHandle& pivot, const VertexHandle &newVert, std::vector<EdgeHandle> & oldEdges,
         std::vector<FaceHandle> & oldFaces, std::vector<FaceHandle> &newFaces){
     EdgeHandle curEdge = obj.prevEdge(f, e);
     FaceHandle curFace = f;
@@ -66,7 +66,7 @@ void addPrevSide(TopologicalObject & obj, const FaceHandle &f, const EdgeHandle 
 
 }
 void addNextSide(TopologicalObject & obj, const FaceHandle &f, const EdgeHandle &e,
-        const VertexHandle& pivot, VertexHandle &newVert, std::vector<EdgeHandle> & oldEdges,
+        const VertexHandle& pivot, const VertexHandle &newVert, std::vector<EdgeHandle> & oldEdges,
         std::vector<FaceHandle> & oldFaces, std::vector<FaceHandle> &newFaces){
     EdgeHandle curEdge = obj.nextEdge(f, e);
     FaceHandle curFace = f;
