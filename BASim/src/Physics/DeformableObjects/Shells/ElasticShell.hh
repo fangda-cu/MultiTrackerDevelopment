@@ -123,6 +123,8 @@ public:
   void setGroundPlane(bool enabled, Scalar height, Scalar velocity);
   void setSelfCollision(bool enabled);
 
+  void setCollisionSphere(bool enabled, Scalar radius, Vec3d position);
+
   void setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel, Scalar thickness);
   void setDeletionBox(const Vec3d& lowerBound, const Vec3d& upperBound);
 
@@ -243,6 +245,9 @@ protected:
   bool m_ground_collisions;
   Scalar m_ground_velocity;
   Scalar m_collision_spring_stiffness, m_collision_spring_damping;
+  Scalar m_sphere_radius;
+  Vec3d m_sphere_position;
+  bool m_sphere_collisions;
 
   ElTopo::BroadPhaseGrid m_broad_phase;
 

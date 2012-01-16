@@ -148,7 +148,8 @@ sceneFunc scenes[] = {0,
                       &ShellTest::setupScene10, //pouring inflow with deletion 
                       &ShellTest::setupScene11, //a cube with surface tension collapsing to a sphere  
                       &ShellTest::setupScene12, //hemispherical bubble popping with low viscosity
-                      &ShellTest::setupScene13 };  //an constant inflow hitting a solid floor and buckling
+                      &ShellTest::setupScene13, //an constant inflow hitting a solid floor and buckling
+                      &ShellTest::setupScene14 };  
 
 Scalar bubbleThicknessFunction(Vec3d pos) {
   //NOTE: Assumes radius of 0.01;
@@ -368,7 +369,7 @@ void ShellTest::AtEachTimestep()
         ++current_obj_frame;
     }
 
-    if(m_active_scene) {
+    if(m_active_scene == 3) {
       //Write out the data for the analytical example
 
       Scalar velocity = 0;
@@ -1791,5 +1792,84 @@ void ShellTest::setupScene13() {
   shell->setInflowSection(extendEdgeList, inflow_vel, m_initial_thickness);
   Scalar ground = GetScalarOpt("shell-ground-plane-height");
   //shell->setDeletionBox(Vec3d(-2, -5, -2), Vec3d(2, ground-0.02, 2));
+
+}
+
+
+//a rectanguler sheet falling onto a sphere
+void ShellTest::setupScene14() {
+
+  //get params
+  Scalar width = GetScalarOpt("shell-width");
+  Scalar height = GetScalarOpt("shell-height");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
+
+  Scalar dx = (Scalar)width / (Scalar)xresolution;
+  Scalar dy = (Scalar)height / (Scalar)yresolution;
+
+  //build a rectangular grid of vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  Vec3d start_vel(0,0,0);
+  for(int j = 0; j <= yresolution; ++j) {
+    for(int i = 0; i <= xresolution; ++i) {
+      Vec3d vert(i*dx, 0, j*dy);
+
+      Vec3d undef = vert;
+
+      VertexHandle h = shellObj->addVertex();
+
+      positions[h] = vert;
+      velocities[h] = start_vel;
+      undeformed[h] = undef;
+      vertHandles.push_back(h);
+    }
+  }
+
+
+  //build the faces
+  std::vector<Vec3i> tris;
+  for(int i = 0; i < xresolution; ++i) {
+    for(int j = 0; j < yresolution; ++j) {
+      int tl = i + (xresolution+1)*j;
+      int tr = i+1 + (xresolution+1)*j;
+      int bl = i + (xresolution+1)*(j+1);
+      int br = i+1 + (xresolution+1)*(j+1);
+
+      shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
+      shellObj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
+    }
+  }
+
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+  shell->setCollisionSphere(true, 0.1, Vec3d(0.5,-0.3,0.5));
 
 }

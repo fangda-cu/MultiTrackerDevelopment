@@ -56,6 +56,7 @@ public:
   void setupScene11(); //a cube
   void setupScene12(); //popping low viscosity hemispherical bubble with Bernoulli air pressure model
   void setupScene13(); //a constant inflow hitting a solid boundary
+  void setupScene14(); //a rectangular sheet falling onto a sphere
 
 };
 

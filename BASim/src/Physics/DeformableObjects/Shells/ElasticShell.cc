@@ -666,6 +666,12 @@ void ElasticShell::setGroundPlane(bool enabled, Scalar height, Scalar velocity) 
   m_ground_velocity = velocity;
 }
 
+void ElasticShell::setCollisionSphere(bool enabled, Scalar radius, Vec3d position) {
+  m_sphere_collisions = enabled;
+  m_sphere_radius = radius;
+  m_sphere_position = position;
+}
+
 void ElasticShell::setSelfCollision(bool enabled) {
   m_self_collisions = enabled;
 }
@@ -682,6 +688,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   
   //Ground plane penalty force.
   if(m_ground_collisions) {
+    std::cout << "Processing ground plane\n";
     //std::cout << "Adding ground collisions.\n";
   /* for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
       Vec3d curPos = getVertexPosition(*(vit));
@@ -712,6 +719,26 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     
  }
 
+
+  //Ground plane penalty force.
+  if(m_sphere_collisions) {
+    //Hard constraints 
+    for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
+      Vec3d curPos = getVertexPosition(*(vit));
+      Vec3d offset = curPos - m_sphere_position;
+      if(offset.norm() < m_sphere_radius) {
+        if(!isConstrained(*vit)) {
+         
+          //Sinking
+          //constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, m_ground_velocity, 0), time));
+          
+          //Conveying
+          constrainVertex(*vit, curPos);
+        }
+      }
+    }
+    
+ }
  
 
   //apply penalty springs for self-collision
