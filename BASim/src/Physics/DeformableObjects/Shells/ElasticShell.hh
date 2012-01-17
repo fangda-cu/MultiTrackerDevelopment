@@ -124,6 +124,7 @@ public:
   void setSelfCollision(bool enabled);
 
   void setCollisionSphere(bool enabled, Scalar radius, Vec3d position, Vec3d velocity);
+  void setCollisionObject(bool enabled, const Vec3d& position, const Vec3d& velocity, const ElTopo::Array3f& grid_data, const Vec3d& origin, Scalar dx);
 
   void setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel, Scalar thickness);
   void setDeletionBox(const Vec3d& lowerBound, const Vec3d& upperBound);
@@ -254,6 +255,13 @@ protected:
   Vec3d m_sphere_position;
   bool m_sphere_collisions;
   Vec3d m_sphere_velocity;
+
+  bool m_object_collisions;
+  Vec3d m_object_position;
+  Vec3d m_object_velocity;
+  ElTopo::Array3f m_object_SDF;
+  Vec3d m_object_origin;
+  Scalar m_object_dx;
 
   ElTopo::BroadPhaseGrid m_broad_phase;
 

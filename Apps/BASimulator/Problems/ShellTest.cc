@@ -104,6 +104,9 @@ ShellTest::ShellTest()
   AddOption("shell-collision-spring-damping", "damping coefficient of the collision springs", 0.0);
   AddOption("shell-collision-proximity", "the collision spring rest length and distance at which to add springs", 0.0);
   
+  AddOption("shell-collision-object-file", "source SDF for object collision", "");
+  AddOption("shell-collision-object-offset", "translation of the object", Vec3d(0,0,0));
+  
   //Tearing options
   AddOption("shell-tearing", "wheter to add tearing to the model", false);
   AddOption("shell-tearing-threshold", "the thickness threshold to use for tearing", 0.0 );
@@ -151,8 +154,9 @@ sceneFunc scenes[] = {0,
                       &ShellTest::setupScene12, //hemispherical bubble popping with low viscosity
                       &ShellTest::setupScene13, //an constant inflow hitting a solid floor and buckling
                       &ShellTest::setupScene14, //a sheet falling onto a static sphere
-                      &ShellTest::setupScene15,
-                      &ShellTest::setupScene16}; //a sheet pouring onto a moving sphere on a conveyor belt
+                      &ShellTest::setupScene15, //tearing
+                      &ShellTest::setupScene16, //a sheet pouring onto a moving sphere on a conveyor belt
+                      &ShellTest::setupScene17}; //a sheet falling onto an object defined by a SDF
 
 Scalar bubbleThicknessFunction(Vec3d pos) {
   //NOTE: Assumes radius of 0.01;
@@ -1985,6 +1989,7 @@ void ShellTest::setupScene16() {
   //shell->setDeletionBox(Vec3d(-2, -5, -2), Vec3d(2, ground-0.02, 2));
 
 }
+
 void ShellTest::setupScene15() {
 
 
@@ -2142,4 +2147,104 @@ void ShellTest::setupScene15() {
   }
 
 
+}
+
+
+//a rectangular sheet falling onto a SDF
+void ShellTest::setupScene17() {
+
+  //get params
+  Scalar width = GetScalarOpt("shell-width");
+  Scalar height = GetScalarOpt("shell-height");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
+
+  Scalar dx = (Scalar)width / (Scalar)xresolution;
+  Scalar dy = (Scalar)height / (Scalar)yresolution;
+
+  //build a rectangular grid of vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  Vec3d start_vel(0,0,0);
+  for(int j = 0; j <= yresolution; ++j) {
+    for(int i = 0; i <= xresolution; ++i) {
+      Vec3d vert(i*dx, 0, j*dy);
+
+      Vec3d undef = vert;
+
+      VertexHandle h = shellObj->addVertex();
+
+      positions[h] = vert;
+      velocities[h] = start_vel;
+      undeformed[h] = undef;
+      vertHandles.push_back(h);
+    }
+  }
+
+
+  //build the faces
+  std::vector<Vec3i> tris;
+  for(int i = 0; i < xresolution; ++i) {
+    for(int j = 0; j < yresolution; ++j) {
+      int tl = i + (xresolution+1)*j;
+      int tr = i+1 + (xresolution+1)*j;
+      int bl = i + (xresolution+1)*(j+1);
+      int br = i+1 + (xresolution+1)*(j+1);
+
+      shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
+      shellObj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
+    }
+  }
+
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+  //shell->setCollisionSphere(true, 0.1, Vec3d(0.5,-0.3,0.5), Vec3d(0.0,0.0,0.0));
+  
+  //load SDF
+  ElTopo::Array3f phi_grid;
+  std::string filename = GetStringOpt("shell-collision-object-file");
+  std::ifstream infile(filename.c_str());
+  if(!infile){
+    std::cout << "File open error\n";
+  }
+  int ni, nj, nk;
+  Scalar grid_dx;
+  Vec3d origin;
+  infile >> ni >> nj >> nk;
+  infile >> origin[0] >> origin[1] >> origin[2];
+  infile >> grid_dx;
+  phi_grid.resize(ni, nj, nk);
+  for(int i = 0; i < phi_grid.a.size(); ++i)
+    infile >> phi_grid.a[i];
+  infile.close();
+
+  Vec3d objectPos = GetVecOpt("shell-collision-object-offset");
+
+  shell->setCollisionObject(true, objectPos, Vec3d(0,-0.5,0), phi_grid, origin, grid_dx);
 }
