@@ -110,7 +110,8 @@ ShellTest::ShellTest()
   //Tearing options
   AddOption("shell-tearing", "wheter to add tearing to the model", false);
   AddOption("shell-tearing-threshold", "the thickness threshold to use for tearing", 0.0 );
-  AddOption("shell-tearing-randomness", "percent of fracture edges that will actually tear apart", 0.6 );
+  AddOption("shell-tearing-randomness", "percent of fracture edges that will actually tear apart", 1.0 );
+  AddOption("shell-ring-velocity", "velocity in the x direction for the rings", 0.25);
 
     //Timestepper options
   AddOption("integrator", "type of integrator to use for the shell", "implicit");
@@ -2134,15 +2135,18 @@ void ShellTest::setupScene15() {
     }
   }
 
+  Scalar ringVel = GetScalarOpt("shell-ring-velocity");
   //Pin all verts at or near that height
   for(vit = shellObj->vertices_begin();vit!= shellObj->vertices_end(); ++vit) {
     Vec3d pos = shell->getVertexPosition(*vit);
     if(pos[0] >= highest - 1e-4) {
-        PositionConstraint* fvc = new FixedVelocityConstraint(pos, Vec3d(0.25, 0.0, 0.0), 0.0);
+        FixedVelocityConstraint* fvc = new FixedVelocityConstraint(pos, Vec3d(ringVel, 0.0, 0.0), 0.0);
         shell->constrainVertex(*vit, fvc);
     }
     if(pos[0] <= lowest + 1e-4) {
-        PositionConstraint* fvc = new FixedVelocityConstraint(pos, Vec3d(-0.25, 0.0, 0.0), 0.0);
+        FixedVelocityConstraint* fvc = new FixedVelocityConstraint(pos, Vec3d(-ringVel, 0.0, 0.0), 0.0);
+
+
         shell->constrainVertex(*vit, fvc);
     }
   }
