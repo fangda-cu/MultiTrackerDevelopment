@@ -2660,7 +2660,7 @@ void ElasticShell::extendMesh(Scalar current_time) {
     Scalar baseLength = (curPos - curPos2).norm();
     Scalar len1 = (curPos - startPos).norm();
     Scalar len2 = (curPos2 - startPos).norm();
-    if(len1/baseLength < 0.4 || len2 / baseLength < 0.4) {
+    if(len1/baseLength < 0.7 || len2 / baseLength < 0.7) {
       continue;
     }
 
