@@ -151,7 +151,7 @@ sceneFunc scenes[] = {0,
                       &ShellTest::setupScene12, //hemispherical bubble popping with low viscosity
                       &ShellTest::setupScene13, //an constant inflow hitting a solid floor and buckling
                       &ShellTest::setupScene14, //a sheet falling onto a static sphere
-                      &ShellTest::setupScene15;
+                      &ShellTest::setupScene15,
                       &ShellTest::setupScene16}; //a sheet pouring onto a moving sphere on a conveyor belt
 
 Scalar bubbleThicknessFunction(Vec3d pos) {
