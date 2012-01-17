@@ -61,6 +61,7 @@ public:
   void setupScene16(); //a pouring sheet falling onto conveyor belt with objects(sphere)
   void setupScene17(); //a sheet falling onto a static object defined by a signed distance field
   void setupScene18(); //a constant inflow hitting a solid boundary
+  void setupScene19(); //tearing ball flow
 };
 
 #endif // SHELLTEST_HH

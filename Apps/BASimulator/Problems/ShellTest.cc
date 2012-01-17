@@ -158,7 +158,8 @@ sceneFunc scenes[] = {0,
                       &ShellTest::setupScene15, //tearing
                       &ShellTest::setupScene16, //a sheet pouring onto a moving sphere on a conveyor belt
                       &ShellTest::setupScene17, //a constant inflow hitting a solid boundary}
-                      &ShellTest::setupScene18} ; //a sheet falling onto an object defined by a SDF
+                      &ShellTest::setupScene18, //a sheet falling onto an object defined by a SDF
+                      &ShellTest::setupScene19} ; //a sheet falling with a sphere going through
 
 Scalar bubbleThicknessFunction(Vec3d pos) {
   //NOTE: Assumes radius of 0.01;
@@ -2356,6 +2357,116 @@ void ShellTest::setupScene18() {
 
   shell->setInflowSection(extendEdgeList, inflow_vel, m_initial_thickness);
   Scalar ground = GetScalarOpt("shell-ground-plane-height");
+  //shell->setDeletionBox(Vec3d(-2, -5, -2), Vec3d(2, ground-0.02, 2));
+
+}
+
+
+
+//a sphere shooting through a descending liquid sheet
+void ShellTest::setupScene19() {
+
+  //get params
+  Scalar width = GetScalarOpt("shell-width");
+  Scalar height = GetScalarOpt("shell-height");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
+
+  Scalar dx = (Scalar)width / (Scalar)xresolution;
+  Scalar dy = (Scalar)height / (Scalar)yresolution;
+
+  //build a rectangular grid of vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  Scalar drop_vel = GetScalarOpt("shell-initial-velocity");
+
+  Vec3d start_vel(0,drop_vel,0);
+  std::set<VertexHandle> topVerts;
+  for(int j = 0; j <= yresolution; ++j) {
+    for(int i = 0; i <= xresolution; ++i) {
+      Vec3d vert(i*dx, j*dy, 0.00001*sin(10000*(j*dy)));
+      Vec3d undef = vert;
+
+      VertexHandle h = shellObj->addVertex();
+
+      positions[h] = vert;
+      velocities[h] = start_vel;
+      undeformed[h] = undef;
+      vertHandles.push_back(h);
+      if(j == yresolution)
+        topVerts.insert(h);
+    }
+  }
+
+  //build the faces
+  std::vector<Vec3i> tris;
+  for(int i = 0; i < xresolution; ++i) {
+    for(int j = 0; j < yresolution; ++j) {
+      int tl = i + (xresolution+1)*j;
+      int tr = i+1 + (xresolution+1)*j;
+      int bl = i + (xresolution+1)*(j+1);
+      int br = i+1 + (xresolution+1)*(j+1);
+
+      if((i+j)%2 == 0) {
+        shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
+        shellObj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
+      }
+      else {
+        shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[bl]);
+        shellObj->addFace(vertHandles[bl], vertHandles[tr], vertHandles[br]);
+      }
+    }
+  }
+
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+  //add an inflow at the top of the sheet
+
+  std::vector<EdgeHandle> extendEdgeList;
+  EdgeIterator eit = shellObj->edges_begin();
+  for(;eit != shellObj->edges_end(); ++eit) {
+    EdgeHandle eh = *eit;
+    VertexHandle vh0 = shellObj->fromVertex(eh);
+    VertexHandle vh1 = shellObj->toVertex(eh);
+    Vec3d pos0 = shell->getVertexPosition(vh0);
+    Vec3d pos1 = shell->getVertexPosition(vh1);
+    if(topVerts.find(vh0) != topVerts.end() && topVerts.find(vh1) != topVerts.end()) {
+      extendEdgeList.push_back(eh);
+    }
+  }
+  Vec3d inflow_vel = start_vel;
+
+  shell->setInflowSection(extendEdgeList, inflow_vel, m_initial_thickness);
+  Scalar ground = GetScalarOpt("shell-ground-plane-height");
+  Scalar ground_vel = GetScalarOpt("shell-ground-plane-velocity");
+  shell->setCollisionSphere(true, 6, Vec3d(20, 20, -25), Vec3d(0,0,ground_vel));
+
   //shell->setDeletionBox(Vec3d(-2, -5, -2), Vec3d(2, ground-0.02, 2));
 
 }
