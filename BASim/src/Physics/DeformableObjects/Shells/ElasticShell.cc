@@ -11,6 +11,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellStickyRepulsionForce.hh"
 #include "BASim/src/Collisions/ElTopo/collisionqueries.hh"
 
+#include "BASim/src/Collisions/ElTopo/array3.hh"
 
 //#include "eltopo.h"
 
@@ -673,6 +674,17 @@ void ElasticShell::setCollisionSphere(bool enabled, Scalar radius, Vec3d positio
   m_sphere_velocity = velocity;
 }
 
+void ElasticShell::setCollisionObject(bool enabled, const Vec3d& position, const Vec3d& velocity, const ElTopo::Array3f& phi_grid, 
+                                      const Vec3d& origin, Scalar dx) {
+  m_object_collisions = enabled;
+  m_object_position = position;
+  m_object_velocity = velocity;
+  m_object_SDF = phi_grid;
+  m_object_origin = origin;
+  m_object_dx = dx;
+
+}
+
 void ElasticShell::setSelfCollision(bool enabled) {
   m_self_collisions = enabled;
 }
@@ -740,6 +752,25 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     
  }
  
+  if(m_object_collisions) {
+    for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
+      Vec3d curPos = getVertexPosition(*(vit));
+      Vec3d offset = (curPos - (m_object_origin + m_object_position)) / m_object_dx;
+      offset[0] = clamp(offset[0], 0.0, m_object_SDF.ni-1.6);
+      offset[1] = clamp(offset[1], 0.0, m_object_SDF.nj-1.6);
+      offset[2] = clamp(offset[2], 0.0, m_object_SDF.nk-1.6);
+      Scalar dist_value = m_object_SDF((int)offset[0], (int)offset[1], (int)offset[2]);      
+      if(dist_value < 0) {
+        if(!isConstrained(*vit)) {
+
+          //Conveying
+          constrainVertex(*vit, curPos);
+          //constrainVertex(*vit, new FixedVelocityConstraint(curPos, m_sphere_velocity, time));
+        }
+      }
+    }
+
+  }
 
   //apply penalty springs for self-collision
   if(m_self_collisions) {
@@ -2629,7 +2660,7 @@ void ElasticShell::extendMesh(Scalar current_time) {
     Scalar baseLength = (curPos - curPos2).norm();
     Scalar len1 = (curPos - startPos).norm();
     Scalar len2 = (curPos2 - startPos).norm();
-    if(len1/baseLength < 0.4 || len2 / baseLength < 0.4) {
+    if(len1/baseLength < 0.7 || len2 / baseLength < 0.7) {
       continue;
     }
 

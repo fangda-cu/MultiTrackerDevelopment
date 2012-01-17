@@ -226,7 +226,7 @@ void ShellRenderer::render()
 
 
     // Render all edges
-    glLineWidth(3);
+    glLineWidth(2);
     glBegin(GL_LINES);
     OpenGL::color(Color(0,0,0));
     for( EdgeIterator eit = mesh.edges_begin(); eit != mesh.edges_end(); ++eit )
@@ -234,8 +234,8 @@ void ShellRenderer::render()
       Vec3d p0 = m_shell.getVertexPosition(mesh.fromVertex(*eit));
       Vec3d p1 = m_shell.getVertexPosition(mesh.toVertex(*eit));
       Vec3d dir = (p1-p0);
-      //p0 = p0 + 0.05*dir;
-      //p1 = p1 - 0.05*dir;
+      p0 = p0 + 0.05*dir;
+      p1 = p1 - 0.05*dir;
       if ( m_shell.shouldFracture(*eit) && (mesh.isBoundary(mesh.fromVertex(*eit)) || mesh.isBoundary(mesh.toVertex(*eit)))){
           OpenGL::color(Color(1.0, 1.0, 0.0));
       } else if (mesh.isBoundary(*eit)){
@@ -263,16 +263,17 @@ void ShellRenderer::render()
 
       
       Scalar thickness = m_shell.getThickness(*fit);
-      int colorVal = (int) (255.0 * thickness / 0.001);
+      int colorVal = (int) (255.0 * thickness/ 0.0001); //rescale
+      //int colorVal = (int) (255.0 * (thickness - 0.0025) / 0.0025); //test
       colorVal = clamp(colorVal, 0, 255);
-      colorVal = 255;
+      //colorVal = 255;
       OpenGL::color(Color(colorVal,0,0));
       std::vector<Vec3d> points(3);
       int i = 0;
       for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit )
       {
         Vec3d pos = m_shell.getVertexPosition(*fvit);
-        //pos = pos - 0.05*(pos-barycentre);
+        pos = pos - 0.05*(pos-barycentre);
         OpenGL::vertex(pos);
         points[i] = pos;
         ++i;
@@ -314,6 +315,16 @@ void ShellRenderer::render()
       OpenGL::vertex(starts[i]);
       OpenGL::vertex(ends[i]);
     }
+    glEnd();
+
+    Vec3d spherePos;
+    Scalar sphereRad;
+    m_shell.getCollisionSphere(spherePos, sphereRad);
+    std::cout << "Sphere pos: " << spherePos << std::endl;
+    glPointSize(20);
+    glColor3f(1,0,0);
+    glBegin(GL_POINTS);
+    glVertex3f(spherePos[0], spherePos[1], spherePos[2]);
     glEnd();
 
     glPointSize(10);

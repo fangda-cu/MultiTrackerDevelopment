@@ -57,8 +57,10 @@ public:
   void setupScene12(); //popping low viscosity hemispherical bubble with Bernoulli air pressure model
   void setupScene13(); //a constant inflow hitting a solid boundary
   void setupScene14(); //a rectangular sheet falling onto a sphere
-  void setupScene15(); //Two anular rings spreading apart
+  void setupScene15(); //Two annular rings spreading apart
   void setupScene16(); //a pouring sheet falling onto conveyor belt with objects(sphere)
+  void setupScene17(); //a sheet falling onto a static object defined by a signed distance field
+  void setupScene18(); //a constant inflow hitting a solid boundary
 };
 
 #endif // SHELLTEST_HH
