@@ -24,8 +24,8 @@ integrator implicit	# type of integrator to use for the shell
 
 #Tearing parameters
 shell-tearing 1
-shell-tearing-threshold 0.05 #threshold when the sheet will break
-shell-tearing-randomness 0.50 #% chance of tearing
+shell-tearing-threshold 0.08 #threshold when the sheet will break
+shell-tearing-randomness 1.00 #% chance of tearing
 
 shell-density 0.1	# volumetric density of the shell 
 shell-thickness 0.1	# the thickness of the shell

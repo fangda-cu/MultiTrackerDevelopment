@@ -68,6 +68,7 @@ void addPrevSide(TopologicalObject & obj, const FaceHandle &f, const EdgeHandle 
 void addNextSide(TopologicalObject & obj, const FaceHandle &f, const EdgeHandle &e,
         const VertexHandle& pivot, const VertexHandle &newVert, std::vector<EdgeHandle> & oldEdges,
         std::vector<FaceHandle> & oldFaces, std::vector<FaceHandle> &newFaces){
+    assert (obj.fromVertex(e) == pivot || obj.toVertex(e) == pivot);
     EdgeHandle curEdge = obj.nextEdge(f, e);
     FaceHandle curFace = f;
     VertexHandle thirdV;
@@ -95,6 +96,7 @@ void tearVertexAlong(TopologicalObject& obj,const EdgeHandle& e, const VertexHan
         std::vector<FaceHandle> &facesToDelete, std::vector<EdgeHandle> &edgesToDelete){
 
     assert ( va == obj.fromVertex(e) || va == obj.toVertex(e));
+    assert ( obj.edgeIncidentFaces(e) == 2);
 
     //(va, vb) edge will remain on the top, the new verts will make the bottom, that is, f1
 
