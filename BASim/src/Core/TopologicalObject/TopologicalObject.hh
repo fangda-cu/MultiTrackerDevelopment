@@ -304,7 +304,6 @@ protected:
   
   //Given two faces, return the shared edge if one exists
   EdgeHandle getSharedEdge(const FaceHandle& f0, const FaceHandle& f1) const;
-  EdgeHandle nextEdge(const FaceHandle& f, const EdgeHandle& curEdge, int direction) const;
 
   //Old simplex property containers
   PropertyContainer m_vertexProps; ///< Vertex property container

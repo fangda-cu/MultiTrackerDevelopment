@@ -276,14 +276,14 @@ namespace BASim {
   FaceEdgeIterator&  FaceEdgeIterator::operator++ ()
   {
     ++m_idx;
-    m_curEdge = m_obj->nextEdge(m_hnd, m_curEdge, 1);
+    m_curEdge = m_obj->nextEdge(m_hnd, m_curEdge);//, 1);
     return *this;
   }
 
   FaceEdgeIterator&  FaceEdgeIterator::operator-- ()
   {
     --m_idx;
-    m_curEdge = m_obj->nextEdge(m_hnd, m_curEdge, -1);
+    m_curEdge = m_obj->prevEdge(m_hnd, m_curEdge);//, -1);
     return *this;
   }
 

@@ -38,30 +38,51 @@ unsigned int IncidenceMatrix::getColByIndex(unsigned int i, unsigned int index_i
   return abs(m_indices[i][index_in_row]) - 1;
 }
 
+unsigned int IncidenceMatrix::getIndexByCol(unsigned int i, unsigned int col) const {
+   for(int j = 0; j < m_indices[i].size(); ++j) {
+      if(abs(m_indices[i][j]) - 1 == col )
+         return j;
+   }
+   return -1;
+}
+
+void IncidenceMatrix::setByIndex(unsigned int i, unsigned int index_in_row, unsigned int col, int value) {
+   assert(value == 1 || value == -1);
+   if(index_in_row >= m_indices[i].size()) m_indices[i].resize(index_in_row+1);
+
+   m_indices[i][index_in_row] = (col+1)*value;
+}
+
+
+void IncidenceMatrix::cycleRow(unsigned int i) {
+   int t = m_indices[i][0];
+   int row_len = m_indices[i].size();
+   for(int j = 0; j < row_len-1; ++j)
+      m_indices[i][j] = m_indices[i][j+1];
+   m_indices[i][row_len-1] = t;
+}
+
+
 void IncidenceMatrix::set(unsigned int i, unsigned int j, int new_val) {
    assert(i < n_rows && j < n_cols);
    if(new_val == 0) {
-     zero(i,j);
-     return;
+      zero(i,j);
+      return;
    }
 
    assert(new_val == 1 || new_val == -1);
-  
+
    int colShift = j+1;
-   unsigned int loop_end = m_indices[i].size();
-   for(unsigned int k=0; k < loop_end; ++k){
-     int& refVal = m_indices[i][k];
-     int curVal = refVal > 0?refVal:-refVal;
-     if(curVal == colShift){
-       refVal=new_val>0?colShift:-colShift; //change its sign to match
-         return;
-      }
-      else if(curVal>(int)j){
-         insert_vec(m_indices[i], (int)k, new_val>0?colShift:-colShift); //set sign to match
-         return;
+   bool found = false;
+   for(unsigned int cur = 0; cur < m_indices[i].size(); ++cur) {
+      if(abs(m_indices[i][cur]) == (int)colShift ) {
+         m_indices[i][cur] = signum(new_val)*colShift;
+         found = true;
+         break;
       }
    }
-   m_indices[i].push_back(new_val>0?colShift:-colShift);
+   if(!found)
+      m_indices[i].push_back(signum(new_val)*colShift);
 }
 
 int IncidenceMatrix::get(unsigned int i, unsigned int j) const {
@@ -82,11 +103,9 @@ void IncidenceMatrix::zero(unsigned int i, unsigned int j) {
    int colShift = j+1;
    for(unsigned int k=0; k<m_indices[i].size(); ++k){
       if(abs(m_indices[i][k])==colShift){
-         remove_vec(m_indices[i], k);
+         m_indices[i].erase(m_indices[i].begin()+k);
          return;
       }
-      else if(abs(m_indices[i][k]) > colShift)
-         return;
    }
 }
 

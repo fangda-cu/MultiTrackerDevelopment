@@ -14,24 +14,6 @@
 
 namespace BASim {
 
-  //Some little utility functions for inserting/deleting in std::vectors
-  template<class T>
-  void insert_vec(std::vector<T>& a, unsigned int index, T e)
-  {
-    a.push_back(a.back());
-    for(unsigned int i=(unsigned int)a.size()-1; i>index; --i)
-      a[i]=a[i-1];
-    a[index]=e;
-  }
-
-  template<class T>
-  void remove_vec(std::vector<T>& a, unsigned int index)
-  {
-    for(unsigned int i=index; i<a.size()-1; ++i)
-      a[i]=a[i+1];
-    a.pop_back();
-  }
-
   //A simple std::vector-based sparse compressed row incidence matrix 
   //to store the topology of our simplex mesh structure.
   //It needs to be resize-able in order to add/delete simplices.
@@ -71,7 +53,13 @@ namespace BASim {
     unsigned int getNumEntriesInRow(unsigned int row) const;
     unsigned int getColByIndex(unsigned int i, unsigned int index_in_row) const;
     int getValueByIndex(unsigned int i, unsigned int index_in_row) const;
+    
+    unsigned int getIndexByCol(unsigned int i, unsigned int col) const;
 
+    void setByIndex(unsigned int i, unsigned int index_in_row, unsigned int col, int value);
+    
+    void cycleRow(unsigned int i);
+    
     //Debugging
     void printMatrix() const;
     

@@ -133,8 +133,9 @@ TopologicalObject::addEdge(const VertexHandle& v0, const VertexHandle& v1)
   }
 
   //build new edge connectivity
-  m_EV.set(new_index, v0.idx(), -1);
-  m_EV.set(new_index, v1.idx(), 1);
+  //Choose ordering within the row explicitly
+  m_EV.setByIndex(new_index, 0, v0.idx(), -1);
+  m_EV.setByIndex(new_index, 1, v1.idx(), +1);
 
   m_VE.set(v0.idx(), new_index, -1);
   m_VE.set(v1.idx(), new_index, 1);
@@ -225,9 +226,17 @@ TopologicalObject::addFace(const EdgeHandle& e0,
   bool flip2 = (shared_vert1_hnd != fromVertex(e2));
 
   //build face connectivity
-  m_FE.set(new_index, e0.idx(), flip0?-1:1);
-  m_FE.set(new_index, e1.idx(), flip1?-1:1);
-  m_FE.set(new_index, e2.idx(), flip2?-1:1);
+  //get a unique ordering by arbitrarily choosing smallest index to go first
+  int smallest = std::min(std::min(e0.idx(), e1.idx()), e2.idx());
+
+  //add'em in requested ordering
+  m_FE.setByIndex(new_index, 0, e0.idx(), flip0?-1:1);
+  m_FE.setByIndex(new_index, 1, e1.idx(), flip1?-1:1);
+  m_FE.setByIndex(new_index, 2, e2.idx(), flip2?-1:1);
+
+  //cycle to get the smallest one first, for consistency
+  while(m_FE.getColByIndex((unsigned int)new_index, (unsigned int)0) != (unsigned int)smallest)
+     m_FE.cycleRow(new_index);
 
   m_EF.set(e0.idx(), new_index, flip0?-1:1);
   m_EF.set(e1.idx(), new_index, flip1?-1:1);
@@ -494,8 +503,20 @@ TopologicalObject::fromVertex(const EdgeHandle& eh) const
 {
   assert(m_EV.getNumEntriesInRow(eh.idx()) == 2);
 
-  return m_EV.getValueByIndex(eh.idx(), 0) == -1? 
-    VertexHandle(m_EV.getColByIndex(eh.idx(), 0)) : VertexHandle(m_EV.getColByIndex(eh.idx(), 1));
+  return VertexHandle(m_EV.getColByIndex(eh.idx(), 0));
+  //return m_EV.getValueByIndex(eh.idx(), 0) == -1? 
+  //  VertexHandle(m_EV.getColByIndex(eh.idx(), 0)) : VertexHandle(m_EV.getColByIndex(eh.idx(), 1));
+
+}
+
+VertexHandle
+TopologicalObject::toVertex(const EdgeHandle& eh) const
+{
+   assert(m_EV.getNumEntriesInRow(eh.idx()) == 2);
+
+   return VertexHandle(m_EV.getColByIndex(eh.idx(), 1));
+   //return m_EV.getValueByIndex(eh.idx(), 0) == 1? 
+   //   VertexHandle(m_EV.getColByIndex(eh.idx(), 0)) : VertexHandle(m_EV.getColByIndex(eh.idx(), 1));
 
 }
 
@@ -526,55 +547,36 @@ bool TopologicalObject::isBoundary(const EdgeHandle & eh) const{
     //TODO: extend this for non-manifold meshes
     return (edgeIncidentFaces(eh) == 1);
 }
-VertexHandle
-TopologicalObject::toVertex(const EdgeHandle& eh) const
-{
-  assert(m_EV.getNumEntriesInRow(eh.idx()) == 2);
 
-  return m_EV.getValueByIndex(eh.idx(), 0) == 1? 
-    VertexHandle(m_EV.getColByIndex(eh.idx(), 0)) : VertexHandle(m_EV.getColByIndex(eh.idx(), 1));
-
-}
-
-EdgeHandle TopologicalObject::nextEdge(const FaceHandle& face, const EdgeHandle& curEdge, int direction) const {
-  assert(faceExists(face));
-  assert(edgeExists(curEdge));
-  assert(m_FE.getNumEntriesInRow(face.idx()) == 3);
-  assert(direction == 1 || direction == -1);
-
-  //Determine the edge sign (and hence direction wrt the face).
-  int curSign = m_FE.get(face.idx(), curEdge.idx());
-  
-  assert(curSign != 0);
-
-  //Grab the end vertex, from the face's perspective.
-  VertexHandle sharedVertex = direction*curSign == 1 ? toVertex(curEdge) : fromVertex(curEdge);
-
-  //Check the face's edges for the one that also shares this vertex, as its initial vertex, wrt the face ordering.
-  for(int i = 0; i < 3; ++i) {
-    EdgeHandle e_hnd(m_FE.getColByIndex(face.idx(), i));
-    if(e_hnd == curEdge) continue;
-    int sign = m_FE.getValueByIndex(face.idx(), i);
-
-    //If the 'from' vertex matches the target shared vertex, return this edge.
-    VertexHandle fromVert = direction*sign == 1? fromVertex(e_hnd) : toVertex(e_hnd);
-    if(fromVert == sharedVertex) {
-      return e_hnd;
-    }
-  }
-
-  assert(false); //failed to find an edge that shares the face
-
-  return EdgeHandle(-1);
-}
 
 
 EdgeHandle TopologicalObject::nextEdge(const FaceHandle& face, const EdgeHandle& curEdge) const {
-  return nextEdge(face, curEdge, 1);
+   //take advantage of known fixed ordering of indices
+   int faceIdx = face.idx();
+   int colIdx = curEdge.idx();
+   int col0 = m_FE.getColByIndex(faceIdx, 0);
+   int col1 = m_FE.getColByIndex(faceIdx, 1);
+   if(col0 == colIdx)
+      return EdgeHandle(col1);
+   else if(col1 == colIdx)
+      return EdgeHandle(m_FE.getColByIndex(faceIdx, 2));
+   else 
+      return EdgeHandle(col0);
+   //return nextEdge(face, curEdge, 1);
 }
 
 EdgeHandle TopologicalObject::prevEdge(const FaceHandle& face, const EdgeHandle& curEdge) const {
-  return nextEdge(face, curEdge, -1);
+   int faceIdx = face.idx();
+   int colIdx = curEdge.idx();
+   int col0 = m_FE.getColByIndex(faceIdx, 0);
+   int col2 = m_FE.getColByIndex(faceIdx, 2);
+   if(col0 == colIdx)
+      return EdgeHandle(col2);
+   else if(col2 == colIdx)
+      return EdgeHandle(col0);
+   else 
+      return EdgeHandle(m_FE.getColByIndex(faceIdx, 1));
+   //return nextEdge(face, curEdge, -1);
 }
 
 void TopologicalObject::compute_nbrsVF() const {
@@ -629,7 +631,9 @@ VertexHandle TopologicalObject::collapseEdge(const EdgeHandle& eh, const VertexH
       int edge_idx = m_FE.getColByIndex(face_idx, i);
       if(edge_idx != eh.idx()) {
 
-        //walk over the other faces that this edge belongs to, checking for a shared edge
+        //walk over the other faces that this edge belongs to, checking for a shared edge.
+         //if the same edge appears twice, we know that we have a tet-like arrangement being
+         //collapsed into a single plane, which is no good.
         for(unsigned int j = 0; j < m_EF.getNumEntriesInRow(edge_idx); ++j) {
           unsigned int curFace = m_EF.getColByIndex(edge_idx, j);
           
@@ -680,10 +684,11 @@ VertexHandle TopologicalObject::collapseEdge(const EdgeHandle& eh, const VertexH
     int vertSign = edgeIndices[i].second;
     
     m_VE.zero(vertToRemove.idx(), edgeInd);
-    m_EV.zero(edgeInd, vertToRemove.idx());
-    
     m_VE.set(vertToKeep, edgeInd, vertSign);
-    m_EV.set(edgeInd, vertToKeep, vertSign);
+
+    //replace the data in the correct slot (0 == from, 1 == to).
+    m_EV.setByIndex(edgeInd, vertSign==-1? 0 : 1, vertToKeep, vertSign);
+    
   }
 
   
@@ -734,10 +739,17 @@ VertexHandle TopologicalObject::collapseEdge(const EdgeHandle& eh, const VertexH
 
       int newSign = flipSign*edgeSign;
       m_EF.zero(e1.idx(), faceInd);
-      m_FE.zero(faceInd, e1.idx());
-
       m_EF.set(e0.idx(), faceInd, newSign);
-      m_FE.set(faceInd, e0.idx(), newSign);
+      
+      //determine row index of this one
+      int ind = m_FE.getIndexByCol(faceInd, e1.idx());
+      m_FE.setByIndex(faceInd, ind, e0.idx(), newSign);
+
+      //cycle the row to make sure the smallest column index is still stored first 
+      //(this helps ensure the face is uniquely defined)
+      while(m_FE.getColByIndex(faceInd, 0) > m_FE.getColByIndex(faceInd, 1) || m_FE.getColByIndex(faceInd, 0) > m_FE.getColByIndex(faceInd, 2))
+         m_FE.cycleRow(faceInd);
+    
     }
 
     //finally, delete the orphaned edge
