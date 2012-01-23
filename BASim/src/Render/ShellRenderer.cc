@@ -317,15 +317,14 @@ void ShellRenderer::render()
     }
     glEnd();
 
-    Vec3d spherePos;
-    Scalar sphereRad;
-    m_shell.getCollisionSphere(spherePos, sphereRad);
-    std::cout << "Sphere pos: " << spherePos << std::endl;
-    glPointSize(20);
-    glColor3f(1,0,0);
-    glBegin(GL_POINTS);
-    glVertex3f(spherePos[0], spherePos[1], spherePos[2]);
-    glEnd();
+    //Vec3d spherePos;
+    //Scalar sphereRad;
+    //m_shell.getCollisionSphere(spherePos, sphereRad);
+    //glPointSize(20);
+    //glColor3f(1,0,0);
+    //glBegin(GL_POINTS);
+    //glVertex3f(spherePos[0], spherePos[1], spherePos[2]);
+    //glEnd();
 
     glPointSize(10);
     glBegin(GL_POINTS);

@@ -38,7 +38,10 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
     m_density(1),
     m_proximity_epsilon(0.0001),
     m_vert_point_springs(NULL),
-    m_repulsion_springs(NULL)
+    m_repulsion_springs(NULL),
+    m_sphere_collisions(false),
+    m_object_collisions(false),
+    m_ground_collisions(false)
 {
   m_vert_point_springs = new ShellVertexPointSpringForce(*this, "VertPointSprings", timestep);
   m_repulsion_springs = new ShellStickyRepulsionForce(*this, "RepulsionSprings", timestep);
@@ -763,7 +766,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
       if(dist_value < 0) {
         if(!isConstrained(*vit)) {
 
-          //Conveying
+          //Fixed position
           constrainVertex(*vit, curPos);
           //constrainVertex(*vit, new FixedVelocityConstraint(curPos, m_sphere_velocity, time));
         }
@@ -2756,12 +2759,11 @@ void ElasticShell::extendMesh(Scalar current_time) {
     for(unsigned int i = 0; i < vertices.size(); ++i) {
       setVertexPosition(vertices[i], m_inflow_positions[boundary][i]);
       setUndeformedVertexPosition(vertices[i], m_inflow_positions[boundary][i]);
-      setVertexVelocity(vertices[i], m_inflow_velocity[boundary]);
+      setVertexVelocity(vertices[i], m_inflow_velocities[boundary][i]);
       m_vertex_masses[vertices[i]] = 0;
       m_damping_undeformed_positions[vertices[i]] = m_inflow_positions[boundary][i];
 
-      //constrain the vertex velocity of the new vertex
-      constrainVertex(vertices[i], new FixedVelocityConstraint(m_inflow_positions[boundary][i], m_inflow_velocity[boundary], current_time));
+      constrainVertex(vertices[i], new FixedVelocityConstraint(m_inflow_positions[boundary][i], m_inflow_velocities[boundary][i], current_time));
     }
 
 
@@ -2783,12 +2785,12 @@ void ElasticShell::extendMesh(Scalar current_time) {
 void ElasticShell::setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel, Scalar thickness) {
   m_inflow = true;
   m_inflow_boundaries.push_back(edgeList);
-  m_inflow_velocity.push_back(vel);
+  //m_inflow_velocity.push_back(vel);
   m_inflow_thickness = thickness;
   m_inflow_lastdir.push_back(false);
 
   VertexHandle prevVert;
-  std::vector<Vec3d> posList;
+  std::vector<Vec3d> posList,velList;
   for(unsigned int edge = 0; edge < edgeList.size(); ++edge) {
     EdgeHandle eh1 = edgeList[edge];
     EdgeHandle eh2 = edgeList[(edge+1)%edgeList.size()];
@@ -2807,9 +2809,9 @@ void ElasticShell::setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3
     Vec3d pos = getVertexPosition(otherVert);
     constrainVertex(otherVert, new FixedVelocityConstraint(pos, vel, 0));
     posList.push_back(pos);
+    velList.push_back(vel);
     
     prevVert = sharedVert;
-    
     
   }
   
@@ -2821,6 +2823,7 @@ void ElasticShell::setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3
   } 
 
   m_inflow_positions.push_back(posList);
+  m_inflow_velocities.push_back(velList);
 
 }
 

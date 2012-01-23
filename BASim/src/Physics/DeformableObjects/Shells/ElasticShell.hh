@@ -235,7 +235,7 @@ protected:
   bool m_inflow;
   std::vector<std::vector<EdgeHandle> > m_inflow_boundaries;
   std::vector<std::vector<Vec3d> > m_inflow_positions;
-  std::vector<Vec3d> m_inflow_velocity;
+  std::vector<std::vector<Vec3d> > m_inflow_velocities;
   std::vector<bool> m_inflow_lastdir;
   
   //collision-safe remeshing stuff ->Move into subclass? Remesh-able shell?

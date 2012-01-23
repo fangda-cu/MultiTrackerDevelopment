@@ -163,14 +163,14 @@ sceneFunc scenes[] = {0,
 
 Scalar bubbleThicknessFunction(Vec3d pos) {
   //NOTE: Assumes radius of 0.01;
-  float rad = 0.01f;
-  float height_frac = pos[1] / 0.01f;
-  float transition_point = 1.0f;
+  Scalar rad = 0.01f;
+  Scalar height_frac = pos[1] / 0.01f;
+  Scalar transition_point = 1.0f;
   if(height_frac > transition_point) {
     return 0.0001;
   }
   else {
-    float s = height_frac/transition_point;
+    Scalar s = height_frac/transition_point;
     return s*0.0001 + (1-s)*0.00015;
   }
 
@@ -577,7 +577,8 @@ void ShellTest::setupScene2() {
   EdgeProperty<Scalar> edgeAngle(shellObj);
   EdgeProperty<Scalar> edgeVel(shellObj);
   
-  Vec3d start_vel(0,0,0);
+  Vec3d start_vel(0,1.0,0);
+  std::set<VertexHandle> topVerts;
   for(int j = 0; j <= yresolution; ++j) {
     for(int i = 0; i <= xresolution; ++i) {
       Scalar circumference = width;
@@ -592,8 +593,12 @@ void ShellTest::setupScene2() {
       VertexHandle h = shellObj->addVertex();
 
       positions[h] = vert;
-      velocities[h] = start_vel;
+      Vec3d temp = vert;
+      temp.normalize();
+      velocities[h] = temp*start_vel.norm() + Vec3d(0,start_vel.norm(), 0);
       undeformed[h] = undef;
+      if(j == 0)
+        topVerts.insert(h);
       vertHandles.push_back(h);
     }
   }
@@ -609,8 +614,13 @@ void ShellTest::setupScene2() {
       int bl = i + (xresolution+1)*(j+1);
       int br = (i+1)%(xresolution+1) + (xresolution+1)*(j+1);
 
-      shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
-      shellObj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
+      //Flowing down
+      //shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
+      //shellObj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
+
+      //Flowing up
+      shellObj->addFace(vertHandles[tl], vertHandles[br], vertHandles[tr]);
+      shellObj->addFace(vertHandles[tl], vertHandles[bl], vertHandles[br]);
     }
     //close the circle
   }
@@ -636,21 +646,37 @@ void ShellTest::setupScene2() {
   shell->setEdgeVelocities(edgeVel);
 
 
-  //Find highest vertex
-  VertexIterator vit = shellObj->vertices_begin();
-  Scalar highest = -10000;
-  for(;vit!= shellObj->vertices_end(); ++vit) {
-    Vec3d pos = shell->getVertexPosition(*vit);
-    if(pos[1] >= highest) {
-      highest = pos[1];
+  ////Find highest vertex
+  //VertexIterator vit = shellObj->vertices_begin();
+  //Scalar highest = -10000;
+  //for(;vit!= shellObj->vertices_end(); ++vit) {
+  //  Vec3d pos = shell->getVertexPosition(*vit);
+  //  if(pos[1] >= highest) {
+  //    highest = pos[1];
+  //  }
+  //}
+  ////Pin all verts at or near that height
+  //for(vit = shellObj->vertices_begin();vit!= shellObj->vertices_end(); ++vit) {
+  //  Vec3d pos = shell->getVertexPosition(*vit);
+  //  if(pos[1] >= highest - 1e-4)
+  //    shell->constrainVertex(*vit, pos);
+  //}
+
+  std::vector<EdgeHandle> extendEdgeList;
+  EdgeIterator eit = shellObj->edges_begin();
+  for(;eit != shellObj->edges_end(); ++eit) {
+    EdgeHandle eh = *eit;
+    VertexHandle vh0 = shellObj->fromVertex(eh);
+    VertexHandle vh1 = shellObj->toVertex(eh);
+    Vec3d pos0 = shell->getVertexPosition(vh0);
+    Vec3d pos1 = shell->getVertexPosition(vh1);
+    if(topVerts.find(vh0) != topVerts.end() && topVerts.find(vh1) != topVerts.end()) {
+      extendEdgeList.push_back(eh);
     }
   }
-  //Pin all verts at or near that height
-  for(vit = shellObj->vertices_begin();vit!= shellObj->vertices_end(); ++vit) {
-    Vec3d pos = shell->getVertexPosition(*vit);
-    if(pos[1] >= highest - 1e-4)
-      shell->constrainVertex(*vit, pos);
-  }
+  Vec3d inflow_vel = start_vel;
+
+  shell->setInflowSection(extendEdgeList, inflow_vel, m_initial_thickness);
 }
 
 //spherical shell
