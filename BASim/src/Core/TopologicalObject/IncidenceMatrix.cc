@@ -71,18 +71,20 @@ void IncidenceMatrix::set(unsigned int i, unsigned int j, int new_val) {
    }
 
    assert(new_val == 1 || new_val == -1);
-
+  
    int colShift = j+1;
    bool found = false;
    for(unsigned int cur = 0; cur < m_indices[i].size(); ++cur) {
-      if(abs(m_indices[i][cur]) == (int)colShift ) {
-         m_indices[i][cur] = signum(new_val)*colShift;
+      int& data_value = m_indices[i][cur];
+      if(data_value == colShift || data_value == -colShift) {
+         data_value = (new_val > 0? colShift : -colShift);
          found = true;
          break;
       }
    }
+
    if(!found)
-      m_indices[i].push_back(signum(new_val)*colShift);
+      m_indices[i].push_back(new_val>0?colShift:-colShift);
 }
 
 int IncidenceMatrix::get(unsigned int i, unsigned int j) const {

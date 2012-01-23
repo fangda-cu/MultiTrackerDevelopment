@@ -13,7 +13,8 @@ inline EigenSparseMatrix::EigenSparseMatrix(int s)
 inline EigenSparseMatrix::EigenSparseMatrix(int r, int c, int nnz)
   : MatrixBase(r, c), m_dynamic(r,c), m_static(r,c)
 {
-  m_dynamic.reserve(nnz);
+   //nnz is est #per row, so multiply to get a good estimate.
+  m_dynamic.reserve(r*nnz);
 }
 
 inline EigenSparseMatrix::EigenSparseMatrix(const EigenSparseMatrix& M)

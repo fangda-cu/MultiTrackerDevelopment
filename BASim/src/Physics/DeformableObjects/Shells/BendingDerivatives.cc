@@ -231,8 +231,10 @@ void DSBendingForce::ComputeDihedralAngleSecondDerivatives(EnergyHessian& J,
     Scalar vNorm_n1Norm2_Inv = (1. / (vNorm * n1Norm2));
     Scalar vNorm_n2Norm2_Inv = (1. / (vNorm * n2Norm2));
 
-    Mat3d Dq1_Dp1_theta =   vNorm_n1Norm2_Inv * n1v - (vNorm / n1Norm3) * t11n1Sym;
-    Mat3d Dq1_Dp2_theta = - vNorm_n1Norm2_Inv * n1v - (vNorm / n1Norm3) * t12n1Sym;
+    Scalar sharedScalar = (vNorm / n1Norm3);
+    Mat3d sharedMat = vNorm_n1Norm2_Inv * n1v;
+    Mat3d Dq1_Dp1_theta =   sharedMat - sharedScalar * t11n1Sym;
+    Mat3d Dq1_Dp2_theta = - sharedMat - sharedScalar * t12n1Sym;
     J.Add(q1Index, p1Index, Dtheta_phi * Dq1_Dp1_theta);
     J.Add(q1Index, p2Index, Dtheta_phi * Dq1_Dp2_theta);
 
@@ -242,8 +244,10 @@ void DSBendingForce::ComputeDihedralAngleSecondDerivatives(EnergyHessian& J,
     J.Add(p1Index, q1Index, Dtheta_phi * Dp1_Dq1_theta);
     J.Add(p2Index, q1Index, Dtheta_phi * Dp2_Dq1_theta);
 
-    Mat3d Dq2_Dp1_theta =   vNorm_n2Norm2_Inv * n2v - (vNorm / n2Norm3) * t21n2Sym;
-    Mat3d Dq2_Dp2_theta = - vNorm_n2Norm2_Inv * n2v - (vNorm / n2Norm3) * t22n2Sym;
+    Scalar sharedScalar2 = (vNorm / n2Norm3);
+    Mat3d sharedMat2 = vNorm_n2Norm2_Inv * n2v;
+    Mat3d Dq2_Dp1_theta =   sharedMat2 - sharedScalar2 * t21n2Sym;
+    Mat3d Dq2_Dp2_theta = - sharedMat2 - sharedScalar2 * t22n2Sym;
     J.Add(q2Index, p1Index, Dtheta_phi * Dq2_Dp1_theta);
     J.Add(q2Index, p2Index, Dtheta_phi * Dq2_Dp2_theta);
 
@@ -253,27 +257,30 @@ void DSBendingForce::ComputeDihedralAngleSecondDerivatives(EnergyHessian& J,
     J.Add(p1Index, q2Index, Dtheta_phi * Dp1_Dq2_theta);
     J.Add(p2Index, q2Index, Dtheta_phi * Dp2_Dq2_theta);
 
-    Mat3d Dq1_Dq1_theta = - (vNorm / n1Norm3) * n1t1Sym;
-    Mat3d Dq2_Dq2_theta = - (vNorm / n2Norm3) * n2t2Sym;
+    Mat3d Dq1_Dq1_theta = - sharedScalar * n1t1Sym;
+    Mat3d Dq2_Dq2_theta = - sharedScalar2 * n2t2Sym;
     J.Add(q1Index, q1Index, Dtheta_phi * Dq1_Dq1_theta);
     J.Add(q2Index, q2Index, Dtheta_phi * Dq2_Dq2_theta);
 
     //Mat3d A11 = outerProd(n1, - v  - (n1Norm/vNorm2)*t1);
     //Mat3d A12 = outerProd(n2, - v  - (n2Norm/vNorm2)*t2);
-    Mat3d A21 = outerProd(n1,   v  - (n1Norm / vNorm2) * t1);
-    Mat3d A22 = outerProd(n2,   v  - (n2Norm / vNorm2) * t2);
+    Scalar inv_vNorm2 = 1./vNorm2;
+    Scalar inv_n1Norm = 1./n1Norm;
+    Scalar inv_n2Norm = 1./n2Norm;
+    Mat3d A21 = outerProd(n1,   v  - (n1Norm * inv_vNorm2) * t1);
+    Mat3d A22 = outerProd(n2,   v  - (n2Norm * inv_vNorm2) * t2);
 
-    Mat3d Dp1_F11 = vNorm_n1Norm2_Inv * ((-dot(v11, v) / n1Norm) * t11n1Sym - (n1Norm / vNorm2) * n1t1);
-    Mat3d Dp1_F12 = vNorm_n2Norm2_Inv * ((-dot(v21, v) / n2Norm) * t21n2Sym - (n2Norm / vNorm2) * n2t2);
+    Mat3d Dp1_F11 = vNorm_n1Norm2_Inv * ((-dot(v11, v) * inv_n1Norm) * t11n1Sym - (n1Norm * inv_vNorm2) * n1t1);
+    Mat3d Dp1_F12 = vNorm_n2Norm2_Inv * ((-dot(v21, v) * inv_n2Norm) * t21n2Sym - (n2Norm * inv_vNorm2) * n2t2);
 
-    Mat3d Dp1_F21 = vNorm_n1Norm2_Inv * ((dot(v12, v) / n1Norm) * t11n1Sym - A21);
-    Mat3d Dp1_F22 = vNorm_n2Norm2_Inv * ((dot(v22, v) / n2Norm) * t21n2Sym - A22);
+    Mat3d Dp1_F21 = vNorm_n1Norm2_Inv * ((dot(v12, v) * inv_n1Norm) * t11n1Sym - A21);
+    Mat3d Dp1_F22 = vNorm_n2Norm2_Inv * ((dot(v22, v) * inv_n2Norm) * t21n2Sym - A22);
 
     //Mat3d Dp2_F11 = vNorm_n1Norm2_Inv * ((-dot(v11,v)/n1Norm)*t12n1Sym - A11);
     //Mat3d Dp2_F12 = vNorm_n2Norm2_Inv * ((-dot(v21,v)/n2Norm)*t22n2Sym - A12);
 
-    Mat3d Dp2_F21 = vNorm_n1Norm2_Inv * ((dot(v12, v) / n1Norm) * t12n1Sym - (n1Norm / vNorm2) * n1t1);
-    Mat3d Dp2_F22 = vNorm_n2Norm2_Inv * ((dot(v22, v) / n2Norm) * t22n2Sym - (n2Norm / vNorm2) * n2t2);
+    Mat3d Dp2_F21 = vNorm_n1Norm2_Inv * ((dot(v12, v) * inv_n1Norm) * t12n1Sym - (n1Norm * inv_vNorm2) * n1t1);
+    Mat3d Dp2_F22 = vNorm_n2Norm2_Inv * ((dot(v22, v) * inv_n2Norm) * t22n2Sym - (n2Norm * inv_vNorm2) * n2t2);
 
     // Dpi_Dpj_theta force acting on pj, derivative w.r.t. pi
     Mat3d Dp1_Dp1_theta = Dp1_F11 + Dp1_F12;

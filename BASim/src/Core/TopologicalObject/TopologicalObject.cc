@@ -97,9 +97,11 @@ TopologicalObject::addEdge(const VertexHandle& v0, const VertexHandle& v1)
   assert(v0.idx() != v1.idx()); //prevent self-edges - I don't think they are useful.
 
   //check if an edge matching this description exists!
-  for(unsigned int i = 0; i < m_VE.getNumEntriesInRow(v0.idx()); ++i) {
+  unsigned int loop_end = m_VE.getNumEntriesInRow(v0.idx());
+  for(unsigned int i = 0; i < loop_end; ++i) {
     int edgeID = m_VE.getColByIndex(v0.idx(), i);
-    for(unsigned int j = 0; j < m_EV.getNumEntriesInRow(edgeID); ++j){
+    unsigned int loop_end2 = m_EV.getNumEntriesInRow(edgeID);
+    for(unsigned int j = 0; j < loop_end2; ++j){
       int vertID = m_EV.getColByIndex(edgeID, j);
       assert(vertID != v1.idx()); //this creates a duplicate edge
     }
@@ -159,6 +161,8 @@ TopologicalObject::addFace(const EdgeHandle& e0,
   //check if a face matching this description exists!
   //grab one edge, and check all of its faces.
   //This is probably expensive/unnecessary to do all the time so might want to comment it.
+  
+  /* //Commented out for efficiency.
   for(unsigned int i = 0; i < m_EF.getNumEntriesInRow(e0.idx()); ++i) {
      int faceInd = m_EF.getColByIndex(e0.idx(), i);
      for(unsigned int j = 0; j < m_FE.getNumEntriesInRow(faceInd); ++j) {
@@ -180,6 +184,7 @@ TopologicalObject::addFace(const EdgeHandle& e0,
         assert(edgeInd != e0.idx() && edgeInd != e1.idx());
      }
   }
+  */
 
   //get the next free face or add one
   int new_index;
@@ -296,7 +301,7 @@ TopologicalObject::addTet(const FaceHandle& f0,
 
   EdgeHandle shared_edge2 = getSharedEdge(f0, f3);
   bool flip3 = flip_face0 ? m_FE.get(f0.idx(), shared_edge2.idx()) == m_FE.get(f3.idx(), shared_edge2.idx()) : 
-                            m_FE.get(f0.idx(), shared_edge2.idx()) != m_FE.get(f3.idx(), shared_edge1.idx());
+                            m_FE.get(f0.idx(), shared_edge2.idx()) != m_FE.get(f3.idx(), shared_edge2.idx());
 
   //build tet connectivity
   m_TF.set(new_index, f0.idx(), flip_face0?1:-1);
@@ -347,7 +352,8 @@ bool TopologicalObject::deleteEdge(const EdgeHandle& edge, bool recurse)
     return false;
 
   //determine the corresponding vertices
-  for(unsigned int i = 0; i < m_EV.getNumEntriesInRow(edge.idx()); ++i) {
+  unsigned int loop_end =  m_EV.getNumEntriesInRow(edge.idx());
+  for(unsigned int i = 0; i < loop_end; ++i) {
 
     //delete the edge entry in the transpose
     int col = m_EV.getColByIndex(edge.idx(),i);
@@ -377,7 +383,8 @@ bool TopologicalObject::deleteFace(const FaceHandle& face, bool recurse)
     return false;
 
   //determine the corresponding edges
-  for(unsigned int i = 0; i < m_FE.getNumEntriesInRow(face.idx()); ++i) {
+  unsigned int loop_end = m_FE.getNumEntriesInRow(face.idx());
+  for(unsigned int i = 0; i < loop_end; ++i) {
 
     //remove face entry from the transpose
     int col = m_FE.getColByIndex(face.idx(), i);
@@ -408,7 +415,8 @@ bool TopologicalObject::deleteTet(const tet_handle& tet, bool recurse) {
   //as it can in the lower cases.
 
   //determine the corresponding faces
-  for(unsigned int i = 0; i < m_TF.getNumEntriesInRow(tet.idx()); ++i) {
+  unsigned int loop_end = m_TF.getNumEntriesInRow(tet.idx());
+  for(unsigned int i = 0; i < loop_end; ++i) {
 
     //clear the tet entries in the transpose
     int col = m_TF.getColByIndex(tet.idx(), i);
@@ -591,11 +599,13 @@ void TopologicalObject::compute_nbrsVF() const {
   for(unsigned int vert_idx = 0; vert_idx < m_VE.getNumRows(); ++vert_idx) {
 
     //consider each edge of the face
-    for(unsigned int e = 0; e < m_VE.getNumEntriesInRow(vert_idx); ++e) {
+     unsigned int loop_end = m_VE.getNumEntriesInRow(vert_idx);
+    for(unsigned int e = 0; e < loop_end; ++e) {
       unsigned int edge_idx = m_VE.getColByIndex(vert_idx, e);
 
       //consider each face of the edge
-      for(unsigned int f = 0; f < m_EF.getNumEntriesInRow(edge_idx); ++f) {
+      unsigned int loop_end2 = m_EF.getNumEntriesInRow(edge_idx);
+      for(unsigned int f = 0; f < loop_end2; ++f) {
         unsigned int face_idx = m_EF.getColByIndex(edge_idx, f);
 
         //set the vertex to true. (This will be visited ~2x for each face, but that's okay.)
@@ -640,7 +650,8 @@ VertexHandle TopologicalObject::collapseEdge(const EdgeHandle& eh, const VertexH
           //if we see a shared edge, then the collapsing edge merges two faces
           //and that's unacceptable.
           if(curFace != face_idx) {
-            for(unsigned int k = 0; k < m_FE.getNumEntriesInRow(curFace); ++k) {
+            unsigned int loop_end4 = m_FE.getNumEntriesInRow(curFace);
+            for(unsigned int k = 0; k < loop_end4; ++k) {
               int curEdge = m_FE.getColByIndex(curFace, k);
               
               if(neighbourEdges.find(curEdge) != neighbourEdges.end()) {
@@ -670,7 +681,8 @@ VertexHandle TopologicalObject::collapseEdge(const EdgeHandle& eh, const VertexH
   
   //determine all existing edges using the vertex being eliminated
   std::vector< std::pair<int,int> > edgeIndices;
-  for(unsigned int e = 0; e < m_VE.getNumEntriesInRow(vertToRemove.idx()); ++e) {
+  unsigned int loop_end = m_VE.getNumEntriesInRow(vertToRemove.idx());
+  for(unsigned int e = 0; e < loop_end; ++e) {
     unsigned int edgeInd = m_VE.getColByIndex(vertToRemove.idx(), e);
     int sign = m_VE.getValueByIndex(vertToRemove.idx(), e);
     edgeIndices.push_back(std::make_pair(edgeInd,sign));
@@ -696,7 +708,8 @@ VertexHandle TopologicalObject::collapseEdge(const EdgeHandle& eh, const VertexH
   //identify duplicate edges for deletion.
   std::vector< std::pair<int,int> > duplicateEdges; //list of (edge,edge) pairs that are duplicates
   std::map<int,int> vertEdgeMap;//for each vertex in the set of nbrs, the first edge we hit that uses it.
-  for(unsigned int e = 0; e < m_VE.getNumEntriesInRow(vertToKeep); ++e) {
+  unsigned int loop_end2 = m_VE.getNumEntriesInRow(vertToKeep);
+  for(unsigned int e = 0; e < loop_end2; ++e) {
     int edgeInd = m_VE.getColByIndex(vertToKeep,e);
     int fromV = fromVertex(EdgeHandle(edgeInd)).idx();
     int toV = toVertex(EdgeHandle(edgeInd)).idx();
@@ -724,7 +737,8 @@ VertexHandle TopologicalObject::collapseEdge(const EdgeHandle& eh, const VertexH
 
     //collect all faces that use this edge
     std::vector< std::pair<int,int> > faceIndices;
-    for(unsigned int f = 0; f < m_EF.getNumEntriesInRow(e1.idx()); ++f) {
+    unsigned int loop_end3 = m_EF.getNumEntriesInRow(e1.idx());
+    for(unsigned int f = 0; f < loop_end3; ++f) {
       unsigned int faceInd = m_EF.getColByIndex(e1.idx(), f);
       int sign = m_EF.getValueByIndex(e1.idx(), f);
       faceIndices.push_back(std::make_pair(faceInd,sign));

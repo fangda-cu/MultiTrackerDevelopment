@@ -198,7 +198,7 @@ void BroadPhaseGrid::update_broad_phase_static( const BASim::TopologicalObject& 
             }
          }
          int i = face.idx(); //using internal index is a bit dangerous, if internal relabelling is ever allowed...
-         if(i >= tri_xmins.size()) {
+         if(i >= (int)tri_xmins.size()) {
            int old_size = tri_xmins.size();
            tri_xmins.resize(i+1);
            tri_xmaxs.resize(i+1);
