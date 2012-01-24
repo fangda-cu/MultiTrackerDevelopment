@@ -2820,6 +2820,7 @@ void ElasticShell::setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3
     Vec3d pos = getVertexPosition(prevVert);
     constrainVertex(prevVert, new FixedVelocityConstraint(pos, vel, 0));
     posList.push_back(pos);
+    velList.push_back(vel);
   } 
 
   m_inflow_positions.push_back(posList);
