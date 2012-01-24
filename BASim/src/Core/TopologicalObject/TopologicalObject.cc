@@ -581,9 +581,9 @@ EdgeHandle TopologicalObject::prevEdge(const FaceHandle& face, const EdgeHandle&
    if(col0 == colIdx)
       return EdgeHandle(col2);
    else if(col2 == colIdx)
-      return EdgeHandle(col0);
-   else 
       return EdgeHandle(m_FE.getColByIndex(faceIdx, 1));
+   else 
+      return EdgeHandle(col0);
    //return nextEdge(face, curEdge, -1);
 }
 

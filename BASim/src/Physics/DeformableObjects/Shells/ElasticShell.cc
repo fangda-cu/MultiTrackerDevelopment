@@ -1078,7 +1078,7 @@ bool ElasticShell::isInflow(const EdgeHandle & eh) const{
 }
 void ElasticShell::getDesiredFractures(std::vector<EdgeHandle> & edges ){
     for ( EdgeIterator eit = m_obj->edges_begin(); eit != m_obj->edges_end(); ++eit){
-        //Now look if is exceeds the threshold
+        //Now look if it exceeds the threshold
         if ( shouldFracture(*eit) ){
            edges.push_back(*eit);
         }
