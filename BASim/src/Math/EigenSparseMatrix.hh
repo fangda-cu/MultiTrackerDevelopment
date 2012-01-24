@@ -49,6 +49,9 @@ public:
   int finalize();
   int finalizeNonzeros();
 
+  const Eigen::SparseMatrix<Scalar>& getEigenMatrix() const { return m_static; }
+  Eigen::SparseMatrix<Scalar>& getPetscMatrix() { return m_static; }
+
 protected:
 
   Eigen::DynamicSparseMatrix<Scalar,Eigen::RowMajor> m_dynamic;

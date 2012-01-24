@@ -4,7 +4,7 @@ namespace BASim {
 
 int EigenSparseMatrix::setZero()
 {
-  //iterate through the matrix and explicitly zero the entries (this should leave the structure intact)
+  //iterate through the matrix and explicitly zero the entries (this should leave the structure intact?)
   for (int k=0; k<m_dynamic.outerSize(); ++k) {
     for (Eigen::DynamicSparseMatrix<Scalar,Eigen::RowMajor>::InnerIterator it(m_dynamic,k); it; ++it)
     {

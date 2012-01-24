@@ -16,7 +16,7 @@
 
 #include "BASim/src/Math/SimpleSparseMatrix.hh"
 #include "BASim/src/Math/EigenSparseMatrix.hh"
-
+#include "BASim/src/Math/Eigen/EigenLinearSolver.hh"
 namespace BASim {
 
 SolverUtils* SolverUtils::m_instance = NULL;
@@ -36,7 +36,9 @@ std::string SolverUtils::getSolverName() const
 {
   if (solverType == CONJUGATE_GRADIENT)
     return "CONJUGATE_GRADIENT";
-
+  
+  if(solverType == EIGEN_LDLT) 
+     return "EIGEN_LDLT";
 #ifdef HAVE_PARDISO
   if (solverType == PARDISO_SOLVER)
     return "PARDISO_SOLVER";
@@ -119,6 +121,9 @@ LinearSolverBase* SolverUtils::createLinearSolver(MatrixBase* A) const
   if (solverType == CONJUGATE_GRADIENT)
     return new ConjugateGradient(*A);
 
+  if(solverType == EIGEN_LDLT)
+     return new EigenLinearSolver(*A);
+
 #ifdef HAVE_PARDISO
   if (solverType == PARDISO_SOLVER)
     return new PardisoLinearSolver(dynamic_cast<PardisoMatrix&>(*A));
@@ -137,7 +142,8 @@ LinearSolverBase* SolverUtils::createLinearSolver(MatrixBase* A) const
   }
 #endif // HAVE_LAPACK
 
-  //std::cout << "cg" << std::endl;
+
+
   return new ConjugateGradient(*A);
 }
 

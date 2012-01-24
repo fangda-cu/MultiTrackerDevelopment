@@ -203,7 +203,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
     {
 
         TraceStream(g_log, "") << "\nSymmetricImplicitEuler::position_solve: Newton iteration = " << curit << "\n";
-
+        std::cout << "Newton iteration: " << curit << std::endl;
         // TODO: Assert m_A, increment are zero
 
         START_TIMER("SymmetricImplicitEuler::position_solve/setup");

@@ -51,6 +51,7 @@ public:
     MKL_LINEAR_SOLVER,
 #endif // HAVE_LAPACK
     CONJUGATE_GRADIENT,
+    EIGEN_LDLT,
     AUTO_SOLVER
   };
 
@@ -63,6 +64,7 @@ public:
     PETSC_MATRIX,
 #endif // HAVE_PETSC
     SIMPLE_SPARSE_MATRIX,
+    EIGEN_SPARSE_MATRIX,
     BAND_MATRIX,
     AUTO_MATRIX
   };
