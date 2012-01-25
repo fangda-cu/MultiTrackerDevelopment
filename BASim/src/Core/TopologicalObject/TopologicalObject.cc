@@ -570,7 +570,6 @@ EdgeHandle TopologicalObject::nextEdge(const FaceHandle& face, const EdgeHandle&
       return EdgeHandle(m_FE.getColByIndex(faceIdx, 2));
    else 
       return EdgeHandle(col0);
-   //return nextEdge(face, curEdge, 1);
 }
 
 EdgeHandle TopologicalObject::prevEdge(const FaceHandle& face, const EdgeHandle& curEdge) const {
@@ -584,7 +583,6 @@ EdgeHandle TopologicalObject::prevEdge(const FaceHandle& face, const EdgeHandle&
       return EdgeHandle(m_FE.getColByIndex(faceIdx, 1));
    else 
       return EdgeHandle(col0);
-   //return nextEdge(face, curEdge, -1);
 }
 
 void TopologicalObject::compute_nbrsVF() const {

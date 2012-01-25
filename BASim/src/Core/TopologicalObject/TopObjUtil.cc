@@ -72,6 +72,7 @@ void addNextSide(TopologicalObject & obj, const FaceHandle &f, const EdgeHandle 
     EdgeHandle curEdge = obj.nextEdge(f, e);
     FaceHandle curFace = f;
     VertexHandle thirdV;
+    
     while ( curEdge.idx() != -1 ){
 
         //TODO:instead of adding edges, just move them
@@ -83,8 +84,10 @@ void addNextSide(TopologicalObject & obj, const FaceHandle &f, const EdgeHandle 
        curFace = getEdgeOtherFace(obj, curEdge, curFace );
        if ( curFace.idx() == -1 ) break;
        getFaceThirdVertex(obj, curFace, curEdge, thirdV);
-
-       newFaces.push_back(obj.addFace(newVert, thirdV, getEdgesOtherVertex(obj, curEdge, pivot)));
+       VertexHandle otherV = getEdgesOtherVertex(obj, curEdge, pivot);
+       
+       FaceHandle newFace = obj.addFace(newVert, thirdV, otherV);
+       newFaces.push_back(newFace);
        oldFaces.push_back(curFace);
 
        curEdge = obj.nextEdge ( curFace, curEdge);
@@ -153,11 +156,22 @@ void tearInteriorEdge(TopologicalObject& obj,const EdgeHandle& e, const VertexHa
     newVerts.push_back ( obj.addVertex() );
 
     //Add the faces: 4 in total; this will also add the edges
-
-    newFaces.push_back ( obj.addFace(va, newVerts[0], vc) );//First the two faces corresponding to f1
-    newFaces.push_back ( obj.addFace(vc, newVerts[1], vb) );
-    newFaces.push_back ( obj.addFace(vb, newVerts[2], vd) );//Then the ones corresponding to f2
-    newFaces.push_back ( obj.addFace(vd, newVerts[3], va) );
+    if(obj.getRelativeOrientation(f1, e) == 1) {
+       newFaces.push_back ( obj.addFace(va, newVerts[0], vc) );//First the two faces corresponding to f1
+       newFaces.push_back ( obj.addFace(vc, newVerts[1], vb) );
+    }
+    else {
+       newFaces.push_back ( obj.addFace(va, vc, newVerts[0]) );//First the two faces corresponding to f1
+       newFaces.push_back ( obj.addFace(vc, vb, newVerts[1]) );
+    }
+    if(obj.getRelativeOrientation(f2, e) == -1) {
+       newFaces.push_back ( obj.addFace(vb, newVerts[2], vd) );//Then the ones corresponding to f2
+       newFaces.push_back ( obj.addFace(vd, newVerts[3], va) );
+    }
+    else {
+       newFaces.push_back ( obj.addFace(vb, vd, newVerts[2]) );//Then the ones corresponding to f2
+       newFaces.push_back ( obj.addFace(vd, va, newVerts[3]) );
+    }
 
     //Store in the accum lists what will be deleted and what was added
     edgesToDelete.push_back(e); //This edge must be deleted
@@ -199,6 +213,7 @@ void tearEdge(TopologicalObject& obj,const EdgeHandle& e, const VertexHandle &va
     //Add the first edge and faces
     //Note: no need to add the edge when adding a face
 //    EdgeHandle newEdge = obj.addEdge(newVerta, newVertb);
+    
     VertexHandle thirdV;
     getFaceThirdVertex(obj, f1, e, thirdV);
 
@@ -221,7 +236,6 @@ void tearEdge(TopologicalObject& obj,const EdgeHandle& e, const VertexHandle &va
 //    for (int i = 0; i < (int)edgesToDelete.size(); ++i){
 //        obj.deleteEdge(edgesToDelete[i], false);
 //    }
-
 
 
 }

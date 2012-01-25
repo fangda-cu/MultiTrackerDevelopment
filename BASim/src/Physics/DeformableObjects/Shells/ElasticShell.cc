@@ -956,6 +956,7 @@ void ElasticShell::performTearing(const EdgeHandle & eh){
         setUndeformedVertexPosition(newVertb, getVertexUndeformed(v1));
     } else{
         std::cout << "\t******************************Updated bounds make this edge non-fracturable" << std::endl;
+        
         VHList newVerts;
         tearInteriorEdge(*m_obj, eh, v0, v1, newVerts, newFaces, oldFaces, oldEdges);
 
@@ -971,6 +972,7 @@ void ElasticShell::performTearing(const EdgeHandle & eh){
             setVertexPosition(newVerts[i], newPos);
             setUndeformedVertexPosition(newVerts[i], newUnd);
         }
+        
     }
 
     //set consistent volumes and thickness for new faces
