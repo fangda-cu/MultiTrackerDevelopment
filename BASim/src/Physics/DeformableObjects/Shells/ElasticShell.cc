@@ -1126,7 +1126,6 @@ void ElasticShell::remesh( Scalar desiredEdge )
   
   flipEdges();
   splitEdges(desiredEdge, maxEdge, maxAngle);
-  flipEdges();
   collapseEdges(minAngle, desiredEdge, ratio_R, ratio_r, minEdge);
   
 }
@@ -2519,9 +2518,9 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
 
       //determine area of collapsing faces
       EdgeFaceIterator efit = m_obj->ef_iter(eh);
-      Scalar totalVolume = 0;
+      Scalar totalVolumeLoss = 0;
       for(;efit; ++efit)
-        totalVolume += getVolume(*efit);
+        totalVolumeLoss += getVolume(*efit);
 
       //if(edgeCollapseCausesCollision(v0, v1, eh, ElTopo::toElTopo(newPoint)))
       //  return;
@@ -2548,6 +2547,7 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
 
       //increment the thickness of the nearby faces to account for the lost volume
 
+      //sum up the total area increases in the faces
       VertexFaceIterator vfit = m_obj->vf_iter(vert_to_keep);
       Scalar totalNewArea = 0;
       for(;vfit; ++vfit) {
@@ -2555,16 +2555,31 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
         totalNewArea += std::max(0.0, getArea(fh, true) - m_volumes[fh] / m_thicknesses[fh]); //only consider increases
       }
 
+      //add the volume losses in the surrounding faces
+      vfit = m_obj->vf_iter(vert_to_keep);
+      for(;vfit; ++vfit) {
+        FaceHandle fh = *vfit;
+        Scalar areaLoss = m_volumes[fh] / m_thicknesses[fh] - getArea(fh, true);
+        if(areaLoss > 0) {
+          totalVolumeLoss += areaLoss * m_thicknesses[fh];
+        }
+      }
+
       vfit = m_obj->vf_iter(vert_to_keep);
       for(;vfit; ++vfit) {
         FaceHandle fh = *vfit;
         Scalar newArea = getArea(fh) - m_volumes[fh] / m_thicknesses[fh];
-        if(newArea <= 0) continue;
-
-        m_volumes[fh] += (newArea / totalNewArea) * totalVolume; //allocate extra volume proportional to area increases
-        m_thicknesses[fh] = m_volumes[fh] / getArea(fh);
+        if(newArea <= 0) { //face lost area
+          //keep the old thickness, assign the new volume according to the adjusted smaller area
+          m_volumes[fh] = getArea(fh)*m_thicknesses[fh];
+        }
+        else { //face gained area
+          //distribute this expanding face some of the volume
+          m_volumes[fh] += (newArea / totalNewArea) * totalVolumeLoss; //allocate extra volume proportional to area increases
+          m_thicknesses[fh] = m_volumes[fh] / getArea(fh);
+        }
       }
-
+      std::cout << "Did a collapse\n";
       //update static collision data for everything incident on the kept vertex
       //updateBroadPhaseStatic(vert_to_keep);
 
