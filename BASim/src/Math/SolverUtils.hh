@@ -41,9 +41,9 @@ public:
 
   // define solver types
   enum SolverType {
-#ifdef HAVE_PARDISO
+#ifdef HAVE_MKL
     PARDISO_SOLVER,
-#endif // HAVE_PETSC
+#endif // HAVE_MKL
 #ifdef HAVE_PETSC
     PETSC_SOLVER,
 #endif // HAVE_PETSC

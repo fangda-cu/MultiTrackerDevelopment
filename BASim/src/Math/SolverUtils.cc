@@ -14,6 +14,10 @@
 #endif
 #endif // HAVE_LAPACK
 
+#ifdef HAVE_MKL
+#include "BASim/src/Math/Pardiso/PardisoMKLSolver.hh"
+#endif
+
 #include "BASim/src/Math/SimpleSparseMatrix.hh"
 #include "BASim/src/Math/EigenSparseMatrix.hh"
 #include "BASim/src/Math/Eigen/EigenLinearSolver.hh"
@@ -39,7 +43,7 @@ std::string SolverUtils::getSolverName() const
   
   if(solverType == EIGEN_LDLT) 
      return "EIGEN_LDLT";
-#ifdef HAVE_PARDISO
+#ifdef HAVE_MKL
   if (solverType == PARDISO_SOLVER)
     return "PARDISO_SOLVER";
 #endif
@@ -122,13 +126,18 @@ LinearSolverBase* SolverUtils::createLinearSolver(MatrixBase* A) const
     return new ConjugateGradient(*A);
 
   if(solverType == EIGEN_LDLT)
-     return new EigenLinearSolver(*A);
+    return new EigenLinearSolver(*A);
 
-#ifdef HAVE_PARDISO
-  if (solverType == PARDISO_SOLVER)
-    return new PardisoLinearSolver(dynamic_cast<PardisoMatrix&>(*A));
-#endif // HAVE_PARDISO
+//#ifdef HAVE_PARDISO
+//  if (solverType == PARDISO_SOLVER)
+//    return new PardisoLinearSolver(dynamic_cast<PardisoMatrix&>(*A));
+//#endif // HAVE_PARDISO
   
+#ifdef HAVE_MKL
+  if (solverType == PARDISO_SOLVER)
+    return new PardisoMKLSolver(dynamic_cast<EigenSparseMatrix&>(*A));
+#endif
+
 #ifdef HAVE_PETSC
   if (solverType == PETSC_SOLVER) {
     return new PetscLinearSolver(*A);
@@ -142,9 +151,12 @@ LinearSolverBase* SolverUtils::createLinearSolver(MatrixBase* A) const
   }
 #endif // HAVE_LAPACK
 
-
-
+#ifdef HAVE_MKL
   return new ConjugateGradient(*A);
+  
+#else
+  return new ConjugateGradient(*A);
+#endif
 }
 
 } // namespace BASim

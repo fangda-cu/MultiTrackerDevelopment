@@ -49,13 +49,13 @@ public:
   int finalize();
   int finalizeNonzeros();
 
-  const Eigen::SparseMatrix<Scalar>& getEigenMatrix() const { return m_static; }
-  Eigen::SparseMatrix<Scalar>& getPetscMatrix() { return m_static; }
+  const Eigen::SparseMatrix<Scalar,Eigen::RowMajor>& getEigenMatrix() const { return m_static; }
+  Eigen::SparseMatrix<Scalar,Eigen::RowMajor>& getEigenMatrix() { return m_static; }
 
 protected:
 
   Eigen::DynamicSparseMatrix<Scalar,Eigen::RowMajor> m_dynamic;
-  Eigen::SparseMatrix<Scalar> m_static;
+  Eigen::SparseMatrix<Scalar, Eigen::RowMajor> m_static;
   
 };
 
