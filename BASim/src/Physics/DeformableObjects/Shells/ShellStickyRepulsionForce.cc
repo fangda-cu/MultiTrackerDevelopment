@@ -281,9 +281,9 @@ void ShellStickyRepulsionForce::elementJacobian(const std::vector<Vec3d>& deform
   jac.setZero();
 
   bool useAutodiff = false;
-  //if(useAutodiff) {
+  if(useAutodiff) {
     adreal<NumRepulsionDof,1,Real> e = RepulsionEnergy<1>(*this, deformed_data, baryCoords, strength, restlen);     
-    // insert in the element jacobian matrix
+    // insert in the element Jacobian matrix
     for( uint i = 0; i < NumRepulsionDof; i++ )
     {
       for( uint j = 0; j < NumRepulsionDof; j++ )
@@ -291,7 +291,39 @@ void ShellStickyRepulsionForce::elementJacobian(const std::vector<Vec3d>& deform
         jac(i,j) = -e.hessian(i,j);
       }
     }
+  }
+  else {
+    //explicit derivatives
   
+    //Normal to the triangle
+    Vec3d normal = (deformed[2] - deformed[0]).cross(deformed[1] - deformed[0]);
+    normal.normalize();
+
+    //Offset vector from point on the triangle to the vertex
+    Vec3d offset = deformed[3] - (baryCoords[0]*deformed[0] + baryCoords[1]*deformed[1] + baryCoords[2]*deformed[2]);
+
+    Eigen::Matrix<Scalar,3,3> idmat = Eigen::Matrix<Scalar,3,3>::Identity();
+
+    jac.block<3,3>(0,0) = -strength * baryCoords[0] * baryCoords[0] * idmat;
+    jac.block<3,3>(0,3) = -strength * baryCoords[0] * baryCoords[1] * idmat;
+    jac.block<3,3>(0,6) = -strength * baryCoords[0] * baryCoords[2] * idmat;
+    jac.block<3,3>(0,9) = +strength * baryCoords[0] * idmat;
+
+    jac.block<3,3>(3,0) = -strength * baryCoords[1] * baryCoords[0] * idmat;
+    jac.block<3,3>(3,3) = -strength * baryCoords[1] * baryCoords[1] * idmat;
+    jac.block<3,3>(3,6) = -strength * baryCoords[1] * baryCoords[2] * idmat;
+    jac.block<3,3>(3,9) = +strength * baryCoords[1] * idmat;
+
+    jac.block<3,3>(6,0) = -strength * baryCoords[2] * baryCoords[0] * idmat;
+    jac.block<3,3>(6,3) = -strength * baryCoords[2] * baryCoords[1] * idmat;
+    jac.block<3,3>(6,6) = -strength * baryCoords[2] * baryCoords[2] * idmat;
+    jac.block<3,3>(6,9) = +strength * baryCoords[2] * idmat;
+
+    jac.block<3,3>(9,0) = +strength * baryCoords[0] * idmat;
+    jac.block<3,3>(9,3) = +strength * baryCoords[1] * idmat;
+    jac.block<3,3>(9,6) = +strength * baryCoords[2] * idmat;
+    jac.block<3,3>(9,9) = -strength * idmat;
+  }
 
 
 }
