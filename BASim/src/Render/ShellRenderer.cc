@@ -311,7 +311,7 @@ void ShellRenderer::render()
     
     glBegin(GL_LINES);
     glColor3f(0.0, 1.0, 0.0);
-     for(int i = 0; i < starts.size(); ++i) {
+     for(unsigned int i = 0; i < starts.size(); ++i) {
       OpenGL::vertex(starts[i]);
       OpenGL::vertex(ends[i]);
     }
@@ -329,7 +329,7 @@ void ShellRenderer::render()
     glPointSize(10);
     glBegin(GL_POINTS);
     glColor3f(0,0,1);
-    for(int i = 0; i < starts.size(); ++i) {
+    for(unsigned int i = 0; i < starts.size(); ++i) {
       OpenGL::vertex(starts[i]);
     }
     glEnd();
@@ -337,7 +337,7 @@ void ShellRenderer::render()
     
     glBegin(GL_POINTS);
     glColor3f(0,1,1);
-    for(int i = 0; i < ends.size(); ++i) {
+    for(unsigned int i = 0; i < ends.size(); ++i) {
       OpenGL::vertex(ends[i]);
     }
     glEnd();

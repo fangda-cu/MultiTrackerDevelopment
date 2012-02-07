@@ -221,7 +221,7 @@ void ShellStickyRepulsionForce::elementForce(const std::vector<Vec3d>& deformed,
     deformed_data[3*i+2] = deformed[i][2];
   }
 
-  bool useAutodiff = true;
+  bool useAutodiff = false;
   if(useAutodiff) {
     //AutoDiff version
     adreal<NumRepulsionDof,0,Real> e = RepulsionEnergy<0>(*this, deformed_data, baryCoords, strength, restlen);     
@@ -264,18 +264,6 @@ void ShellStickyRepulsionForce::elementForce(const std::vector<Vec3d>& deformed,
     force.block<3,1>(9,0) = forceV3;
   }
 
- 
-  /* std::cout << "XXXXX\n";
-
-  std::cout << "Correct force: ";
-  for(int i = 0; i < 12; ++i)
-  std::cout << force[i] << " " << std::endl;
-
-  std::cout << "Newest force!: ";
-  for(int i = 0; i < 12; ++i)
-  std::cout << force2[i] << " " << std::endl;
-
-  std::cout << "XXXXX\n";*/
 }
 
 void ShellStickyRepulsionForce::elementJacobian(const std::vector<Vec3d>& deformed, const Vec3d& baryCoords, Scalar strength, Scalar restlen,
@@ -283,7 +271,6 @@ void ShellStickyRepulsionForce::elementJacobian(const std::vector<Vec3d>& deform
 {
   assert(deformed.size() == NumRepulsionVerts );
 
-  Eigen::Matrix<Scalar,NumRepulsionDof,NumRepulsionDof> jac2;
   std::vector<Scalar> deformed_data(NumRepulsionDof);
   for(unsigned int i = 0; i < deformed.size(); ++i) {
     deformed_data[3*i] = deformed[i][0];
@@ -291,17 +278,21 @@ void ShellStickyRepulsionForce::elementJacobian(const std::vector<Vec3d>& deform
     deformed_data[3*i+2] = deformed[i][2];
   }
 
-  jac2.setZero();
+  jac.setZero();
 
-  adreal<NumRepulsionDof,1,Real> e = RepulsionEnergy<1>(*this, deformed_data, baryCoords, strength, restlen);     
-  // insert in the element jacobian matrix
-  for( uint i = 0; i < NumRepulsionDof; i++ )
-  {
-    for( uint j = 0; j < NumRepulsionDof; j++ )
+  bool useAutodiff = false;
+  //if(useAutodiff) {
+    adreal<NumRepulsionDof,1,Real> e = RepulsionEnergy<1>(*this, deformed_data, baryCoords, strength, restlen);     
+    // insert in the element jacobian matrix
+    for( uint i = 0; i < NumRepulsionDof; i++ )
     {
-      jac2(i,j) = -e.hessian(i,j);
+      for( uint j = 0; j < NumRepulsionDof; j++ )
+      {
+        jac(i,j) = -e.hessian(i,j);
+      }
     }
-  }
+  
+
 
 }
 

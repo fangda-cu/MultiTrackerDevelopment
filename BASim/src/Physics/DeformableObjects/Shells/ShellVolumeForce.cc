@@ -233,7 +233,6 @@ void ShellVolumeForce::elementJacobian(const std::vector<Vec3d>& deformed,
 {
   assert(deformed.size() == 3);
 
-  Eigen::Matrix<Scalar,9,9> jac2;
   std::vector<Scalar> deformed_data(NumVolDof);
   for(unsigned int i = 0; i < deformed.size(); ++i) {
     deformed_data[3*i] = deformed[i][0];
@@ -241,7 +240,7 @@ void ShellVolumeForce::elementJacobian(const std::vector<Vec3d>& deformed,
     deformed_data[3*i+2] = deformed[i][2];
   }
 
-  jac2.setZero();
+  jac.setZero();
 
   adreal<NumVolDof,1,Real> e = VolumeEnergy<1>(*this, deformed_data, m_ref_point);     
   // insert in the element jacobian matrix
@@ -249,7 +248,7 @@ void ShellVolumeForce::elementJacobian(const std::vector<Vec3d>& deformed,
   {
     for( uint j = 0; j < NumVolDof; j++ )
     {
-      jac2(i,j) = -e.hessian(i,j);
+      jac(i,j) = -e.hessian(i,j);
     }
   }
 
