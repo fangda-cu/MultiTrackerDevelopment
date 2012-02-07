@@ -81,18 +81,18 @@ adreal<NumRepulsionDof,DO_HESS,Real> RepulsionEnergy(const ShellStickyRepulsionF
 
   advecVT offset = p[3] - (baryCoords[0]*p[0] + baryCoords[1]*p[1] + baryCoords[2]*p[2]);
 
-  if(dot(s_deformed[3] - s_deformed[0], cross(s_deformed[2] - s_deformed[0], s_deformed[1] - s_deformed[0])) > 0) {
-    //e += 0.5*strength*sqr( dot(p[3] - p[0], normalReal) - undef_len);  
+  if(dot(s_deformed[3] - s_deformed[0], normalReal) > 0) {
     e += 0.5*strength*sqr( dot(offset, normalReal) - undef_len);  
+    //e += 0.5*strength*sqr( dot(offset, normalVbl) - undef_len);  
   }
   else {
-    //e += 0.5*strength*sqr( -dot(p[3] - p[0], normalReal) - undef_len);  
     e += 0.5*strength*sqr( -dot(offset, normalReal) - undef_len);  
+    //e += 0.5*strength*sqr( -dot(offset, normalVbl) - undef_len);  
   }
  
   //tangential energy
   
-  //note, this is an approx for speed. - should also use normalVbl here.
+  //note, this is an approx for speed.
   e += 0.5*strength*lenSq(offset - dot(offset,normalReal)*normalReal); 
   //the true version
   //e += 0.5*strength*lenSq(offset - dot(offset,normalVbl)*normalVbl); 
@@ -221,13 +221,61 @@ void ShellStickyRepulsionForce::elementForce(const std::vector<Vec3d>& deformed,
     deformed_data[3*i+2] = deformed[i][2];
   }
 
-  //AutoDiff version
-  adreal<NumRepulsionDof,0,Real> e = RepulsionEnergy<0>(*this, deformed_data, baryCoords, strength, restlen);     
-  for( uint i = 0; i < NumRepulsionDof; i++ )
-  {
-    force[i] = -e.gradient(i);
+  bool useAutodiff = true;
+  if(useAutodiff) {
+    //AutoDiff version
+    adreal<NumRepulsionDof,0,Real> e = RepulsionEnergy<0>(*this, deformed_data, baryCoords, strength, restlen);     
+    for( uint i = 0; i < NumRepulsionDof; i++ )
+    {
+      force[i] = -e.gradient(i);
+    }
   }
-   
+  else {
+
+    //Explicit version. p0,p1,p2 is the triangle. p3 is the other vertex.
+    Eigen::Matrix<Scalar, NumRepulsionDof, 1> force2;
+
+    //Normal to the triangle
+    Vec3d normal = (deformed[2] - deformed[0]).cross(deformed[1] - deformed[0]);
+    normal.normalize();
+
+    //Offset vector from point on the triangle to the vertex
+    Vec3d offset = deformed[3] - (baryCoords[0]*deformed[0] + baryCoords[1]*deformed[1] + baryCoords[2]*deformed[2]);
+
+    //Normal component spring, with non-zero rest length
+    Vec3d forceFactor;
+    if(offset.dot(normal) > 0)
+      forceFactor = strength * (offset.dot(normal) - restlen) * normal;
+    else
+      forceFactor = -strength * (-offset.dot(normal) - restlen) * normal;
+  
+    //Tangential zero-rest-length spring
+    Vec3d normalComponent = offset.dot(normal)*normal;
+    forceFactor += strength * (offset-normalComponent); 
+
+    Vec3d forceV0 = baryCoords[0]*forceFactor;
+    Vec3d forceV1 = baryCoords[1]*forceFactor;
+    Vec3d forceV2 = baryCoords[2]*forceFactor;
+    Vec3d forceV3 = -forceFactor;
+
+    force.block<3,1>(0,0) = forceV0;
+    force.block<3,1>(3,0) = forceV1;
+    force.block<3,1>(6,0) = forceV2;
+    force.block<3,1>(9,0) = forceV3;
+  }
+
+ 
+  /* std::cout << "XXXXX\n";
+
+  std::cout << "Correct force: ";
+  for(int i = 0; i < 12; ++i)
+  std::cout << force[i] << " " << std::endl;
+
+  std::cout << "Newest force!: ";
+  for(int i = 0; i < 12; ++i)
+  std::cout << force2[i] << " " << std::endl;
+
+  std::cout << "XXXXX\n";*/
 }
 
 void ShellStickyRepulsionForce::elementJacobian(const std::vector<Vec3d>& deformed, const Vec3d& baryCoords, Scalar strength, Scalar restlen,
