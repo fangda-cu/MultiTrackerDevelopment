@@ -23,7 +23,7 @@ public:
     : LinearSolverBase(A)
     , m_maxIterations(std::max(A.rows(), A.cols()))
     , m_currentIterations(0)
-    , m_rnorm(1.0e-10)
+    , m_rnorm(1.0e-8)
     , m_preconditioner(NULL)
   {}
 

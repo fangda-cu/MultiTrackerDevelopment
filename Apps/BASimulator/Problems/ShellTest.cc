@@ -1036,7 +1036,7 @@ void ShellTest::setupScene6() {
       Scalar xVal = newRad*cos(rotAngle);
       Scalar yVal = newRad*sin(rotAngle);
 
-      float x_n,y_n,z_n;
+      Scalar x_n,y_n,z_n;
       x_n = 0.00001*ElTopo::randhashd(seed++);
       y_n = 0.00001*ElTopo::randhashd(seed++);
       z_n = 0.00001*ElTopo::randhashd(seed++);
@@ -1077,7 +1077,7 @@ void ShellTest::setupScene6() {
   shell->setEdgeVelocities(edgeVel);
 
  
-  float freeze_height = 0.003;
+  Scalar freeze_height = 0.003;
   for(VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit) {
     VertexHandle vh = *vit; 
     Vec3d position = shell->getVertexPosition(vh);
@@ -2272,7 +2272,7 @@ void ShellTest::setupScene17() {
   infile >> origin[0] >> origin[1] >> origin[2];
   infile >> grid_dx;
   phi_grid.resize(ni, nj, nk);
-  for(int i = 0; i < phi_grid.a.size(); ++i)
+  for(unsigned int i = 0; i < phi_grid.a.size(); ++i)
     infile >> phi_grid.a[i];
   infile.close();
 
