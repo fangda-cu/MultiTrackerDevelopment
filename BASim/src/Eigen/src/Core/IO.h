@@ -141,7 +141,8 @@ struct significant_decimals_default_impl
   typedef typename NumTraits<Scalar>::Real RealScalar;
   static inline int run()
   {
-    return cast<RealScalar,int>(std::ceil(-log(NumTraits<RealScalar>::epsilon())/log(RealScalar(10))));
+    using std::ceil;
+    return cast<RealScalar,int>(ceil(-log(NumTraits<RealScalar>::epsilon())/log(RealScalar(10))));
   }
 };
 
@@ -170,7 +171,7 @@ std::ostream & print_matrix(std::ostream & s, const Derived& _m, const IOFormat&
     return s;
   }
   
-  const typename Derived::Nested m = _m;
+  typename Derived::Nested m = _m;
   typedef typename Derived::Scalar Scalar;
   typedef typename Derived::Index Index;
 

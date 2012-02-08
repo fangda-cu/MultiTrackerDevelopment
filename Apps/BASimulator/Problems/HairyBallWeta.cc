@@ -228,22 +228,22 @@ void SphereRotatorW::transformRodRoot( ElasticRod* rod, const Mat3d& transformat
   //std::cout << "rod vertex 10  position "<< rod->getVertex(10)<< std::endl;
   //sleep(1)
   //fprintf(m_pFile, "this is a test");
-  float v10_0= (float)roundto( test10(0), 10000.0f );
-  float v10_1= (float)roundto( test10(1), 10000.0f );
-  float v10_2= (float)roundto( test10(2), 10000.0f );
-  float v19_0= (float)roundto( test19(0), 10000.0f );
-  float v19_1= (float)roundto( test19(1), 10000.0f );
-  float v19_2= (float)roundto( test19(2), 10000.0f );
-  float v39_0= (float)roundto( test39(0), 10000.0f );
-  float v39_1= (float)roundto( test39(1), 10000.0f );
-  float v39_2= (float)roundto( test39(2), 10000.0f );
+  float v10_0= roundto( (float)test10(0), 10000.0f );
+  float v10_1= roundto( (float)test10(1), 10000.0f );
+  float v10_2= roundto( (float)test10(2), 10000.0f );
+  float v19_0= roundto( (float)test19(0), 10000.0f );
+  float v19_1= roundto( (float)test19(1), 10000.0f );
+  float v19_2= roundto( (float)test19(2), 10000.0f );
+  float v39_0= roundto( (float)test39(0), 10000.0f );
+  float v39_1= roundto( (float)test39(1), 10000.0f );
+  float v39_2= roundto( (float)test39(2), 10000.0f );
   fprintf(m_pFile, "%9.4f %9.4f %9.4f\n", v10_0, v10_1, v10_2);
   fprintf(m_pFile, "%9.4f %9.4f %9.4f\n", v19_0, v19_1, v19_2);
   fprintf(m_pFile, "%9.4f %9.4f %9.4f\n", v39_0, v39_1, v39_2);
 
 }
 
-float SphereRotatorW::roundto(float val, float prec) { return floor( prec * val + 0.5 ) / prec; }
+float SphereRotatorW::roundto(float val, float prec) { return floor( prec * val + 0.5f ) / prec; }
 
 
 

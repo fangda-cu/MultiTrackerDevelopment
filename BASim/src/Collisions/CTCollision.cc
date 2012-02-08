@@ -24,6 +24,7 @@ int EdgeEdgeCTCollision::GetRodVertex() const
     if (e1_v0 < m_geodata.GetObjStart())
         return e1_v0;
     assert(0);
+    return -1;
 }
 
 bool EdgeEdgeCTCollision::analyseCollision(double time_step)

@@ -239,6 +239,8 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
         }
         m_A->finalize();
 
+        m_A->finalizeNonzeros();
+
         // Set the rows and columns corresponding to fixed degrees of freedom to 0
         m_A->zeroRows(m_fixed, 1.0);
         m_A->finalize();
@@ -247,7 +249,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
         m_A->finalize();
 
         // Finalize the nonzero structure before the linear solve (for sparse matrices only)
-        m_A->finalizeNonzeros();
+        
         assert(isSymmetric(*m_A, 1.0e-6));
         STOP_TIMER("SymmetricImplicitEuler::position_solve/setup");
 

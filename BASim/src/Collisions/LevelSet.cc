@@ -46,7 +46,7 @@ void LevelSet::buildLevelSet(const Vec3Indices &triangles,
     _dx = dx;
 
     //TraceStream(g_log, "LevelSet::buildLevelSet") << "Level set dimensions: (" << nx << "," << ny << "," << nz << ") " << _dx << "\n";
-    buildLevelSet(triangles, triIndices, x, v, _origin, _dx, nx, ny, nz, _phi, _phiVel);
+    buildLevelSet(triangles, triIndices, x, v, _origin, (float)_dx, nx, ny, nz, _phi, _phiVel);
     _initialized = true;
     
     // Maya matrices are flipped from Eigen matrices
@@ -63,7 +63,7 @@ void LevelSet::setTransformationMatrix( Eigen::Matrix4f& i_matrix )
 
 Real LevelSet::getLevelSetValue(Vec3<Real> x)
 {    
-    Eigen::Vector4f samplePoint( x[ 0 ], x[ 1 ], x[ 2 ], 1 );        
+    Eigen::Vector4f samplePoint( (float)x[ 0 ], (float)x[ 1 ], (float)x[ 2 ], 1 );        
     
     //m_realRequestPositions.push_back( samplePoint );
     
@@ -102,7 +102,7 @@ Real LevelSet::getLevelSetValue(Vec3<Real> x)
 
 Real LevelSet::getLevelSetValueVelocity(Vec3<Real> &x, Vec3<Real> &v)
 {
-    Eigen::Vector4f samplePoint( x[ 0 ], x[ 1 ], x[ 2 ], 1 );        
+    Eigen::Vector4f samplePoint( (float)x[ 0 ], (float)x[ 1 ], (float)x[ 2 ], 1 );        
     
     //m_realRequestPositions.push_back( samplePoint );
     
@@ -136,7 +136,7 @@ Real LevelSet::getLevelSetValueVelocity(Vec3<Real> &x, Vec3<Real> &v)
                                           _phiVel(i + 1, j    , k + 1),
                                           _phiVel(i    , j + 1, k + 1),
                                           _phiVel(i + 1, j + 1, k + 1),
-                                          fi, fj, fk);
+                                          (float)fi, (float)fj, (float)fk);
 
     for (int i=0; i<3; ++i)
         v[i] = vel[i];
@@ -146,7 +146,7 @@ Real LevelSet::getLevelSetValueVelocity(Vec3<Real> &x, Vec3<Real> &v)
 
 void LevelSet::getGradient(Vec3<Real> &x, Vec3<Real> &grad)
 {
-    Eigen::Vector4f samplePoint( x[ 0 ], x[ 1 ], x[ 2 ], 1 );        
+    Eigen::Vector4f samplePoint( (float)x[ 0 ], (float)x[ 1 ], (float)x[ 2 ], 1 );        
 
     //m_gradPosition.push_back( samplePoint );
 
@@ -154,9 +154,9 @@ void LevelSet::getGradient(Vec3<Real> &x, Vec3<Real> &grad)
     samplePoint = concatMatrix * samplePoint;
     
     
-    float i = ((double)samplePoint[0] - _origin[0]) / _dx;
-    float j = ((double)samplePoint[1] - _origin[1]) / _dx;
-    float k = ((double)samplePoint[2] - _origin[2]) / _dx;
+    float i = (float)(((double)samplePoint[0] - _origin[0]) / _dx);
+    float j = (float)(((double)samplePoint[1] - _origin[1]) / _dx);
+    float k = (float)(((double)samplePoint[2] - _origin[2]) / _dx);
 
     int p, q, r;
     bridson::get_barycentric(i, p, i, 1, _phi.ni);

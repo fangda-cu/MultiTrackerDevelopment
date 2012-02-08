@@ -34,6 +34,10 @@
 // defined e.g. EIGEN_DONT_ALIGN) so it needs to be done before we do anything with vectorization.
 #include "src/Core/util/Macros.h"
 
+// this include file manages BLAS and MKL related macros
+// and inclusion of their respective header files
+#include "src/Core/util/MKL_support.h"
+
 // if alignment is disabled, then disable vectorization. Note: EIGEN_ALIGN is the proper check, it takes into
 // account both the user's will (EIGEN_DONT_ALIGN) and our own platform checks
 #if !EIGEN_ALIGN
@@ -51,16 +55,16 @@
       #define EIGEN_SSE2_ON_MSVC_2008_OR_LATER
     #endif
   #endif
-#endif
-
-// Remember that usage of defined() in a #define is undefined by the standard
-#if (defined __SSE2__) && ( (!defined __GNUC__) || EIGEN_GNUC_AT_LEAST(4,2) )
-  #define EIGEN_SSE2_BUT_NOT_OLD_GCC
+#else
+  // Remember that usage of defined() in a #define is undefined by the standard
+  #if (defined __SSE2__) && ( (!defined __GNUC__) || EIGEN_GNUC_AT_LEAST(4,2) )
+    #define EIGEN_SSE2_ON_NON_MSVC_BUT_NOT_OLD_GCC
+  #endif
 #endif
 
 #ifndef EIGEN_DONT_VECTORIZE
 
-  #if defined (EIGEN_SSE2_BUT_NOT_OLD_GCC) || defined(EIGEN_SSE2_ON_MSVC_2008_OR_LATER)
+  #if defined (EIGEN_SSE2_ON_NON_MSVC_BUT_NOT_OLD_GCC) || defined(EIGEN_SSE2_ON_MSVC_2008_OR_LATER)
 
     // Defines symbols for compile-time detection of which instructions are
     // used.
@@ -143,6 +147,7 @@
 #ifdef EIGEN_HAS_ERRNO
 #include <cerrno>
 #endif
+#include <cstddef>
 #include <cstdlib>
 #include <cmath>
 #include <complex>
@@ -166,7 +171,7 @@
   #include <intrin.h>
 #endif
 
-#if (defined(_CPPUNWIND) || defined(__EXCEPTIONS)) && !defined(EIGEN_NO_EXCEPTIONS)
+#if defined(_CPPUNWIND) || defined(__EXCEPTIONS)
   #define EIGEN_EXCEPTIONS
 #endif
 
@@ -174,16 +179,7 @@
   #include <new>
 #endif
 
-// this needs to be done after all possible windows C header includes and before any Eigen source includes
-// (system C++ includes are supposed to be able to deal with this already):
-// windows.h defines min and max macros which would make Eigen fail to compile.
-#if defined(min) || defined(max)
-#error The preprocessor symbols 'min' or 'max' are defined. If you are compiling on Windows, do #define NOMINMAX to prevent windows.h from defining these symbols.
-#endif
-
-// defined in bits/termios.h
-#undef B0
-
+/** \brief Namespace containing all symbols from the %Eigen library. */
 namespace Eigen {
 
 inline static const char *SimdInstructionSetsInUse(void) {
@@ -239,6 +235,8 @@ inline static const char *SimdInstructionSetsInUse(void) {
 // we use size_t frequently and we'll never remember to prepend it with std:: everytime just to
 // ensure QNX/QCC support
 using std::size_t;
+// gcc 4.6.0 wants std:: for ptrdiff_t 
+using std::ptrdiff_t;
 
 /** \defgroup Core_Module Core module
   * This is the main module of Eigen providing dense matrix and vector support
@@ -248,6 +246,10 @@ using std::size_t;
   * \code
   * #include <Eigen/Core>
   * \endcode
+  */
+
+/** \defgroup Support_modules Support modules [category]
+  * Category of modules which add support for external libraries.
   */
 
 #include "src/Core/util/Constants.h"
@@ -321,7 +323,7 @@ using std::size_t;
 #include "src/Core/CommaInitializer.h"
 #include "src/Core/Flagged.h"
 #include "src/Core/ProductBase.h"
-#include "src/Core/Product.h"
+#include "src/Core/GeneralProduct.h"
 #include "src/Core/TriangularMatrix.h"
 #include "src/Core/SelfAdjointView.h"
 #include "src/Core/SolveTriangular.h"
@@ -349,6 +351,21 @@ using std::size_t;
 #include "src/Core/Reverse.h"
 #include "src/Core/ArrayBase.h"
 #include "src/Core/ArrayWrapper.h"
+
+#ifdef EIGEN_USE_BLAS
+#include "src/Core/products/GeneralMatrixMatrix_MKL.h"
+#include "src/Core/products/GeneralMatrixVector_MKL.h"
+#include "src/Core/products/GeneralMatrixMatrixTriangular_MKL.h"
+#include "src/Core/products/SelfadjointMatrixMatrix_MKL.h"
+#include "src/Core/products/SelfadjointMatrixVector_MKL.h"
+#include "src/Core/products/TriangularMatrixMatrix_MKL.h"
+#include "src/Core/products/TriangularMatrixVector_MKL.h"
+#include "src/Core/products/TriangularSolverMatrix_MKL.h"
+#endif // EIGEN_USE_BLAS
+
+#ifdef EIGEN_USE_MKL_VML
+#include "src/Core/Assign_MKL.h"
+#endif
 
 } // namespace Eigen
 

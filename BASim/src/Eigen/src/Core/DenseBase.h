@@ -56,7 +56,13 @@ template<typename Derived> class DenseBase
     class InnerIterator;
 
     typedef typename internal::traits<Derived>::StorageKind StorageKind;
-    typedef typename internal::traits<Derived>::Index Index; /**< The type of indices */
+
+    /** \brief The type of indices 
+      * \details To change this, \c \#define the preprocessor symbol \c EIGEN_DEFAULT_DENSE_INDEX_TYPE.
+      * \sa \ref TopicPreprocessorDirectives.
+      */
+    typedef typename internal::traits<Derived>::Index Index; 
+
     typedef typename internal::traits<Derived>::Scalar Scalar;
     typedef typename internal::packet_traits<Scalar>::type PacketScalar;
     typedef typename NumTraits<Scalar>::Real RealScalar;
@@ -370,12 +376,13 @@ template<typename Derived> class DenseBase
     inline Derived& operator*=(const Scalar& other);
     inline Derived& operator/=(const Scalar& other);
 
+    typedef typename internal::add_const_on_value_type<typename internal::eval<Derived>::type>::type EvalReturnType;
     /** \returns the matrix or vector obtained by evaluating this expression.
       *
       * Notice that in the case of a plain matrix or vector (not an expression) this function just returns
       * a const reference, in order to avoid a useless copy.
       */
-    EIGEN_STRONG_INLINE const typename internal::eval<Derived>::type eval() const
+    EIGEN_STRONG_INLINE EvalReturnType eval() const
     {
       // Even though MSVC does not honor strong inlining when the return type
       // is a dynamic matrix, we desperately need strong inlining for fixed

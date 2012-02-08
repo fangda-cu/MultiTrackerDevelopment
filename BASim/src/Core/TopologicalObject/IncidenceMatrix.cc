@@ -39,7 +39,7 @@ unsigned int IncidenceMatrix::getColByIndex(unsigned int i, unsigned int index_i
 }
 
 unsigned int IncidenceMatrix::getIndexByCol(unsigned int i, unsigned int col) const {
-   for(int j = 0; j < m_indices[i].size(); ++j) {
+   for(unsigned int j = 0; j < m_indices[i].size(); ++j) {
       if(abs(m_indices[i][j]) - 1 == col )
          return j;
    }

@@ -49,13 +49,16 @@ public:
   int finalize();
   int finalizeNonzeros();
 
-  const Eigen::SparseMatrix<Scalar,Eigen::RowMajor>& getEigenMatrix() const { return m_static; }
-  Eigen::SparseMatrix<Scalar,Eigen::RowMajor>& getEigenMatrix() { return m_static; }
+  const Eigen::SparseMatrix<Scalar,Eigen::RowMajor>& getEigenMatrix() const { return m_dynamic; }
+  Eigen::SparseMatrix<Scalar,Eigen::RowMajor>& getEigenMatrix() { return m_dynamic; }
 
 protected:
+  
+  //build matrix as a list of triplets
+  std::vector< Eigen::Triplet<Scalar> > m_triplets;
 
-  Eigen::DynamicSparseMatrix<Scalar,Eigen::RowMajor> m_dynamic;
-  Eigen::SparseMatrix<Scalar, Eigen::RowMajor> m_static;
+  //then convert to a sparse matrix
+  Eigen::SparseMatrix<Scalar, Eigen::RowMajor> m_dynamic;
   
 };
 

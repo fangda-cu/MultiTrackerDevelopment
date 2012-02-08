@@ -72,7 +72,7 @@ struct selfadjoint_product_selector<MatrixType,OtherType,UpLo,true>
     typedef internal::blas_traits<OtherType> OtherBlasTraits;
     typedef typename OtherBlasTraits::DirectLinearAccessType ActualOtherType;
     typedef typename internal::remove_all<ActualOtherType>::type _ActualOtherType;
-    const ActualOtherType actualOther = OtherBlasTraits::extract(other.derived());
+    typename internal::add_const_on_value_type<ActualOtherType>::type actualOther = OtherBlasTraits::extract(other.derived());
 
     Scalar actualAlpha = alpha * OtherBlasTraits::extractScalarFactor(other.derived());
 
@@ -81,27 +81,17 @@ struct selfadjoint_product_selector<MatrixType,OtherType,UpLo,true>
       UseOtherDirectly = _ActualOtherType::InnerStrideAtCompileTime==1
     };
     internal::gemv_static_vector_if<Scalar,OtherType::SizeAtCompileTime,OtherType::MaxSizeAtCompileTime,!UseOtherDirectly> static_other;
-    
-    bool freeOtherPtr = false;
-    Scalar* actualOtherPtr;
-    if(UseOtherDirectly)
-      actualOtherPtr = const_cast<Scalar*>(actualOther.data());
-    else
-    {
-      if((actualOtherPtr=static_other.data())==0)
-      {
-        freeOtherPtr = true;
-        actualOtherPtr = ei_aligned_stack_new(Scalar,other.size());
-      }
+
+    ei_declare_aligned_stack_constructed_variable(Scalar, actualOtherPtr, other.size(),
+      (UseOtherDirectly ? const_cast<Scalar*>(actualOther.data()) : static_other.data()));
+      
+    if(!UseOtherDirectly)
       Map<typename _ActualOtherType::PlainObject>(actualOtherPtr, actualOther.size()) = actualOther;
-    }
     
     selfadjoint_rank1_update<Scalar,Index,StorageOrder,UpLo,
                               OtherBlasTraits::NeedToConjugate  && NumTraits<Scalar>::IsComplex,
                             (!OtherBlasTraits::NeedToConjugate) && NumTraits<Scalar>::IsComplex>
           ::run(other.size(), mat.data(), mat.outerStride(), actualOtherPtr, actualAlpha);
-    
-    if((!UseOtherDirectly) && freeOtherPtr) ei_aligned_stack_delete(Scalar, actualOtherPtr, other.size());
   }
 };
 
@@ -115,12 +105,12 @@ struct selfadjoint_product_selector<MatrixType,OtherType,UpLo,false>
     typedef internal::blas_traits<OtherType> OtherBlasTraits;
     typedef typename OtherBlasTraits::DirectLinearAccessType ActualOtherType;
     typedef typename internal::remove_all<ActualOtherType>::type _ActualOtherType;
-    const ActualOtherType actualOther = OtherBlasTraits::extract(other.derived());
+    typename internal::add_const_on_value_type<ActualOtherType>::type actualOther = OtherBlasTraits::extract(other.derived());
 
     Scalar actualAlpha = alpha * OtherBlasTraits::extractScalarFactor(other.derived());
 
     enum { IsRowMajor = (internal::traits<MatrixType>::Flags&RowMajorBit) ? 1 : 0 };
-    
+
     internal::general_matrix_matrix_triangular_product<Index,
       Scalar, _ActualOtherType::Flags&RowMajorBit ? RowMajor : ColMajor,   OtherBlasTraits::NeedToConjugate  && NumTraits<Scalar>::IsComplex,
       Scalar, _ActualOtherType::Flags&RowMajorBit ? ColMajor : RowMajor, (!OtherBlasTraits::NeedToConjugate) && NumTraits<Scalar>::IsComplex,

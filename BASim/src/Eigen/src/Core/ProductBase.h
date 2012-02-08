@@ -115,10 +115,10 @@ class ProductBase : public MatrixBase<Derived>
     inline void evalTo(Dest& dst) const { dst.setZero(); scaleAndAddTo(dst,Scalar(1)); }
 
     template<typename Dest>
-    inline void addTo(Dest& dst) const { scaleAndAddTo(dst,1); }
+    inline void addTo(Dest& dst) const { scaleAndAddTo(dst,Scalar(1)); }
 
     template<typename Dest>
-    inline void subTo(Dest& dst) const { scaleAndAddTo(dst,-1); }
+    inline void subTo(Dest& dst) const { scaleAndAddTo(dst,Scalar(-1)); }
 
     template<typename Dest>
     inline void scaleAndAddTo(Dest& dst,Scalar alpha) const { derived().scaleAndAddTo(dst,alpha); }
@@ -179,8 +179,8 @@ class ProductBase : public MatrixBase<Derived>
 
   protected:
 
-    const LhsNested m_lhs;
-    const RhsNested m_rhs;
+    LhsNested m_lhs;
+    RhsNested m_rhs;
 
     mutable PlainObject m_result;
 };
@@ -256,16 +256,16 @@ class ScaledProduct
     : Base(prod.lhs(),prod.rhs()), m_prod(prod), m_alpha(x) {}
 
     template<typename Dest>
-    inline void evalTo(Dest& dst) const { dst.setZero(); scaleAndAddTo(dst,m_alpha); }
+    inline void evalTo(Dest& dst) const { dst.setZero(); scaleAndAddTo(dst, Scalar(1)); }
 
     template<typename Dest>
-    inline void addTo(Dest& dst) const { scaleAndAddTo(dst,m_alpha); }
+    inline void addTo(Dest& dst) const { scaleAndAddTo(dst, Scalar(1)); }
 
     template<typename Dest>
-    inline void subTo(Dest& dst) const { scaleAndAddTo(dst,-m_alpha); }
+    inline void subTo(Dest& dst) const { scaleAndAddTo(dst, Scalar(-1)); }
 
     template<typename Dest>
-    inline void scaleAndAddTo(Dest& dst,Scalar alpha) const { m_prod.derived().scaleAndAddTo(dst,alpha); }
+    inline void scaleAndAddTo(Dest& dst,Scalar alpha) const { m_prod.derived().scaleAndAddTo(dst,alpha * m_alpha); }
 
     const Scalar& alpha() const { return m_alpha; }
     

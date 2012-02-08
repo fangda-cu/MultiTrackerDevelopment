@@ -111,7 +111,7 @@ template<typename Derived> class MatrixBase
 
     /** \returns the size of the main diagonal, which is min(rows(),cols()).
       * \sa rows(), cols(), SizeAtCompileTime. */
-    inline Index diagonalSize() const { return std::min(rows(),cols()); }
+    inline Index diagonalSize() const { return (std::min)(rows(),cols()); }
 
     /** \brief The plain matrix type corresponding to this expression.
       *
@@ -330,7 +330,7 @@ template<typename Derived> class MatrixBase
     /** \returns an \link ArrayBase Array \endlink expression of this matrix
       * \sa ArrayBase::matrix() */
     ArrayWrapper<Derived> array() { return derived(); }
-    const ArrayWrapper<Derived> array() const { return derived(); }
+    const ArrayWrapper<const Derived> array() const { return derived(); }
 
 /////////// LU module ///////////
 
@@ -465,6 +465,8 @@ template<typename Derived> class MatrixBase
     const MatrixFunctionReturnValue<Derived> sinh() const;
     const MatrixFunctionReturnValue<Derived> cos() const;
     const MatrixFunctionReturnValue<Derived> sin() const;
+    const MatrixSquareRootReturnValue<Derived> sqrt() const;
+    const MatrixLogarithmReturnValue<Derived> log() const;
 
 #ifdef EIGEN2_SUPPORT
     template<typename ProductDerived, typename Lhs, typename Rhs>
@@ -511,10 +513,10 @@ template<typename Derived> class MatrixBase
   protected:
     // mixing arrays and matrices is not legal
     template<typename OtherDerived> Derived& operator+=(const ArrayBase<OtherDerived>& )
-    {EIGEN_STATIC_ASSERT(sizeof(typename OtherDerived::Scalar)==-1,YOU_CANNOT_MIX_ARRAYS_AND_MATRICES);}
+    {EIGEN_STATIC_ASSERT(std::ptrdiff_t(sizeof(typename OtherDerived::Scalar))==-1,YOU_CANNOT_MIX_ARRAYS_AND_MATRICES); return *this;}
     // mixing arrays and matrices is not legal
     template<typename OtherDerived> Derived& operator-=(const ArrayBase<OtherDerived>& )
-    {EIGEN_STATIC_ASSERT(sizeof(typename OtherDerived::Scalar)==-1,YOU_CANNOT_MIX_ARRAYS_AND_MATRICES);}
+    {EIGEN_STATIC_ASSERT(std::ptrdiff_t(sizeof(typename OtherDerived::Scalar))==-1,YOU_CANNOT_MIX_ARRAYS_AND_MATRICES); return *this;}
 };
 
 #endif // EIGEN_MATRIXBASE_H

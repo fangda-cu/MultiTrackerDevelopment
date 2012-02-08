@@ -291,7 +291,7 @@ template<typename _MatrixType> class EigenSolver
 
     ComputationInfo info() const
     {
-      eigen_assert(m_isInitialized && "ComplexEigenSolver is not initialized.");
+      eigen_assert(m_isInitialized && "EigenSolver is not initialized.");
       return m_realSchur.info();
     }
 
@@ -339,10 +339,11 @@ typename EigenSolver<MatrixType>::EigenvectorsType EigenSolver<MatrixType>::eige
   EigenvectorsType matV(n,n);
   for (Index j=0; j<n; ++j)
   {
-    if (internal::isMuchSmallerThan(internal::imag(m_eivalues.coeff(j)), internal::real(m_eivalues.coeff(j))))
+    if (internal::isMuchSmallerThan(internal::imag(m_eivalues.coeff(j)), internal::real(m_eivalues.coeff(j))) || j+1==n)
     {
       // we have a real eigen value
       matV.col(j) = m_eivec.col(j).template cast<ComplexScalar>();
+      matV.col(j).normalize();
     }
     else
     {
@@ -367,7 +368,7 @@ EigenSolver<MatrixType>& EigenSolver<MatrixType>::compute(const MatrixType& matr
 
   // Reduce to real Schur form.
   m_realSchur.compute(matrix, computeEigenvectors);
-  if (m_realSchur.info() == Success_EIGEN)
+  if (m_realSchur.info() == Success)
   {
     m_matT = m_realSchur.matrixT();
     if (computeEigenvectors)
@@ -431,10 +432,10 @@ void EigenSolver<MatrixType>::doComputeEigenvectors()
   const Scalar eps = NumTraits<Scalar>::epsilon();
 
   // inefficient! this is already computed in RealSchur
-  Scalar norm = 0.0;
+  Scalar norm(0);
   for (Index j = 0; j < size; ++j)
   {
-    norm += m_matT.row(j).segment(std::max(j-1,Index(0)), size-std::max(j-1,Index(0))).cwiseAbs().sum();
+    norm += m_matT.row(j).segment((std::max)(j-1,Index(0)), size-(std::max)(j-1,Index(0))).cwiseAbs().sum();
   }
   
   // Backsubstitute to find vectors of upper triangular form
@@ -449,9 +450,9 @@ void EigenSolver<MatrixType>::doComputeEigenvectors()
     Scalar q = m_eivalues.coeff(n).imag();
 
     // Scalar vector
-    if (q == 0)
+    if (q == Scalar(0))
     {
-      Scalar lastr=0, lastw=0;
+      Scalar lastr(0), lastw(0);
       Index l = n;
 
       m_matT.coeffRef(n,n) = 1.0;
@@ -490,14 +491,14 @@ void EigenSolver<MatrixType>::doComputeEigenvectors()
 
           // Overflow control
           Scalar t = internal::abs(m_matT.coeff(i,n));
-          if ((eps * t) * t > 1)
+          if ((eps * t) * t > Scalar(1))
             m_matT.col(n).tail(size-i) /= t;
         }
       }
     }
-    else if (q < 0) // Complex vector
+    else if (q < Scalar(0) && n > 0) // Complex vector
     {
-      Scalar lastra=0, lastsa=0, lastw=0;
+      Scalar lastra(0), lastsa(0), lastw(0);
       Index l = n-1;
 
       // Last vector component imaginary so matrix is triangular
@@ -529,7 +530,7 @@ void EigenSolver<MatrixType>::doComputeEigenvectors()
         else
         {
           l = i;
-          if (m_eivalues.coeff(i).imag() == 0)
+          if (m_eivalues.coeff(i).imag() == RealScalar(0))
           {
             std::complex<Scalar> cc = cdiv(-ra,-sa,w,q);
             m_matT.coeffRef(i,n-1) = internal::real(cc);
@@ -562,12 +563,20 @@ void EigenSolver<MatrixType>::doComputeEigenvectors()
           }
 
           // Overflow control
-          Scalar t = std::max(internal::abs(m_matT.coeff(i,n-1)),internal::abs(m_matT.coeff(i,n)));
-          if ((eps * t) * t > 1)
+          using std::max;
+          Scalar t = (max)(internal::abs(m_matT.coeff(i,n-1)),internal::abs(m_matT.coeff(i,n)));
+          if ((eps * t) * t > Scalar(1))
             m_matT.block(i, n-1, size-i, 2) /= t;
 
         }
       }
+      
+      // We handled a pair of complex conjugate eigenvalues, so need to skip them both
+      n--;
+    }
+    else
+    {
+      eigen_assert(0 && "Internal bug in EigenSolver"); // this should not happen
     }
   }
 

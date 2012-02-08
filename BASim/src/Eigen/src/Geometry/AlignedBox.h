@@ -111,13 +111,13 @@ EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF_VECTORIZABLE_FIXED_SIZE(_Scalar,_AmbientDim)
   }
 
   /** \returns the minimal corner */
-  inline const VectorType& min() const { return m_min; }
+  inline const VectorType& (min)() const { return m_min; }
   /** \returns a non const reference to the minimal corner */
-  inline VectorType& min() { return m_min; }
+  inline VectorType& (min)() { return m_min; }
   /** \returns the maximal corner */
-  inline const VectorType& max() const { return m_max; }
+  inline const VectorType& (max)() const { return m_max; }
   /** \returns a non const reference to the maximal corner */
-  inline VectorType& max() { return m_max; }
+  inline VectorType& (max)() { return m_max; }
 
   /** \returns the center of the box */
   inline const CwiseUnaryOp<internal::scalar_quotient1_op<Scalar>,
@@ -190,19 +190,19 @@ EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF_VECTORIZABLE_FIXED_SIZE(_Scalar,_AmbientDim)
   template<typename Derived>
   inline bool contains(const MatrixBase<Derived>& a_p) const
   {
-    const typename internal::nested<Derived,2>::type p(a_p.derived());
+    typename internal::nested<Derived,2>::type p(a_p.derived());
     return (m_min.array()<=p.array()).all() && (p.array()<=m_max.array()).all();
   }
 
   /** \returns true if the box \a b is entirely inside the box \c *this. */
   inline bool contains(const AlignedBox& b) const
-  { return (m_min.array()<=b.min().array()).all() && (b.max().array()<=m_max.array()).all(); }
+  { return (m_min.array()<=(b.min)().array()).all() && ((b.max)().array()<=m_max.array()).all(); }
 
   /** Extends \c *this such that it contains the point \a p and returns a reference to \c *this. */
   template<typename Derived>
   inline AlignedBox& extend(const MatrixBase<Derived>& a_p)
   {
-    const typename internal::nested<Derived,2>::type p(a_p.derived());
+    typename internal::nested<Derived,2>::type p(a_p.derived());
     m_min = m_min.cwiseMin(p);
     m_max = m_max.cwiseMax(p);
     return *this;
@@ -287,8 +287,8 @@ EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF_VECTORIZABLE_FIXED_SIZE(_Scalar,_AmbientDim)
   template<typename OtherScalarType>
   inline explicit AlignedBox(const AlignedBox<OtherScalarType,AmbientDimAtCompileTime>& other)
   {
-    m_min = other.min().template cast<Scalar>();
-    m_max = other.max().template cast<Scalar>();
+    m_min = (other.min)().template cast<Scalar>();
+    m_max = (other.max)().template cast<Scalar>();
   }
 
   /** \returns \c true if \c *this is approximately equal to \a other, within the precision
@@ -310,7 +310,7 @@ template<typename Derived>
 inline Scalar AlignedBox<Scalar,AmbientDim>::squaredExteriorDistance(const MatrixBase<Derived>& a_p) const
 {
   const typename internal::nested<Derived,2*AmbientDim>::type p(a_p.derived());
-  Scalar dist2 = 0.;
+  Scalar dist2(0);
   Scalar aux;
   for (Index k=0; k<dim(); ++k)
   {
@@ -331,7 +331,7 @@ inline Scalar AlignedBox<Scalar,AmbientDim>::squaredExteriorDistance(const Matri
 template<typename Scalar,int AmbientDim>
 inline Scalar AlignedBox<Scalar,AmbientDim>::squaredExteriorDistance(const AlignedBox& b) const
 {
-  Scalar dist2 = 0.;
+  Scalar dist2(0);
   Scalar aux;
   for (Index k=0; k<dim(); ++k)
   {
@@ -348,5 +348,39 @@ inline Scalar AlignedBox<Scalar,AmbientDim>::squaredExteriorDistance(const Align
   }
   return dist2;
 }
+
+/** \defgroup alignedboxtypedefs Global aligned box typedefs
+  *
+  * \ingroup Geometry_Module
+  *
+  * Eigen defines several typedef shortcuts for most common aligned box types.
+  *
+  * The general patterns are the following:
+  *
+  * \c AlignedBoxSizeType where \c Size can be \c 1, \c 2,\c 3,\c 4 for fixed size boxes or \c X for dynamic size,
+  * and where \c Type can be \c i for integer, \c f for float, \c d for double.
+  *
+  * For example, \c AlignedBox3d is a fixed-size 3x3 aligned box type of doubles, and \c AlignedBoxXf is a dynamic-size aligned box of floats.
+  *
+  * \sa class AlignedBox
+  */
+
+#define EIGEN_MAKE_TYPEDEFS(Type, TypeSuffix, Size, SizeSuffix)    \
+/** \ingroup alignedboxtypedefs */                                 \
+typedef AlignedBox<Type, Size>   AlignedBox##SizeSuffix##TypeSuffix;
+
+#define EIGEN_MAKE_TYPEDEFS_ALL_SIZES(Type, TypeSuffix) \
+EIGEN_MAKE_TYPEDEFS(Type, TypeSuffix, 1, 1) \
+EIGEN_MAKE_TYPEDEFS(Type, TypeSuffix, 2, 2) \
+EIGEN_MAKE_TYPEDEFS(Type, TypeSuffix, 3, 3) \
+EIGEN_MAKE_TYPEDEFS(Type, TypeSuffix, 4, 4) \
+EIGEN_MAKE_TYPEDEFS(Type, TypeSuffix, Dynamic, X)
+
+EIGEN_MAKE_TYPEDEFS_ALL_SIZES(int,                  i)
+EIGEN_MAKE_TYPEDEFS_ALL_SIZES(float,                f)
+EIGEN_MAKE_TYPEDEFS_ALL_SIZES(double,               d)
+
+#undef EIGEN_MAKE_TYPEDEFS_ALL_SIZES
+#undef EIGEN_MAKE_TYPEDEFS
 
 #endif // EIGEN_ALIGNEDBOX_H

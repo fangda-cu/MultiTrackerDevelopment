@@ -5,32 +5,33 @@ namespace BASim {
 int EigenSparseMatrix::setZero()
 {
   //iterate through the matrix and explicitly zero the entries (this should leave the structure intact?)
-  for (int k=0; k<m_dynamic.outerSize(); ++k) {
-    for (Eigen::DynamicSparseMatrix<Scalar,Eigen::RowMajor>::InnerIterator it(m_dynamic,k); it; ++it)
+  /*for (int k=0; k<m_dynamic.outerSize(); ++k) {
+    for (Eigen::SparseMatrix<Scalar,Eigen::RowMajor>::InnerIterator it(m_dynamic,k); it; ++it)
     {
       m_dynamic.coeffRef(it.row(), it.col()) = 0;
     }
-  }
+  }*/
+  //TODO Maybe do something else here?
+  m_triplets.clear();
 
   return 0;
 }
 
 int EigenSparseMatrix::resetNonzeros() {
    
-  m_dynamic = Eigen::DynamicSparseMatrix<Scalar,Eigen::RowMajor>(m_rows, m_cols);
-
+  //m_dynamic = Eigen::SparseMatrix<Scalar,Eigen::RowMajor>(m_rows, m_cols);
+  m_triplets.clear();
    return 0;
 }
 
 int EigenSparseMatrix::zeroRows(const IntArray& idx, Scalar diag)
 {
-  //NOTE: This zeros rows AND symmetric columns
-
+  
+  //NOTE: This zeros rows AND symmetric columns, since that seems quickest.
   for(unsigned int i = 0; i < idx.size(); ++i) {
     int row = idx[i];
-   
     //iterate across the row zeroing entries
-    for (Eigen::DynamicSparseMatrix<Scalar,Eigen::RowMajor>::InnerIterator it(m_dynamic,row); it; ++it)
+    for (Eigen::SparseMatrix<Scalar,Eigen::RowMajor>::InnerIterator it(m_dynamic,row); it; ++it)
     {
       int col = it.col();
       if(col != row) {
@@ -40,8 +41,27 @@ int EigenSparseMatrix::zeroRows(const IntArray& idx, Scalar diag)
       else
         m_dynamic.coeffRef(row, col) = diag;
     }
-    
   }
+  /*
+  //NOTE: This zeros rows AND symmetric columns
+  std::vector< Eigen::Triplet<Scalar> > tripletsNew;
+  tripletsNew.reserve(m_triplets.size());
+
+  for(unsigned int i = 0; i < m_triplets.size(); ++i) {
+    int row = m_triplets[i].row();
+    int col = m_triplets[i].col();
+    if(std::find(idx.begin(), idx.end(), row) != idx.end() || std::find(idx.begin(), idx.end(), col) != idx.end()) {
+      if(col == row)
+        tripletsNew.push_back(Eigen::Triplet<Scalar>() );
+    }
+    else {
+      tripletsNew.push_back(m_triplets[i]);
+    }
+  }
+ 
+ m_triplets = tripletsNew;
+ */
+
   return 0;
 }
 
@@ -52,16 +72,21 @@ int EigenSparseMatrix::finalize()
 }
 
 int EigenSparseMatrix::finalizeNonzeros() {
-  //Convert over to a regular sparse matrix for
-  //doing fast multiplication
-  m_static = Eigen::SparseMatrix<Scalar>(m_dynamic);
+  
+  m_dynamic.setFromTriplets(m_triplets.begin(), m_triplets.end());
   return 0;
 }
 
 
 int EigenSparseMatrix::scale(Scalar val)
 {
-  m_dynamic *= val;
+  //replace all values with scaled versions
+  for(unsigned int i = 0; i < m_triplets.size(); ++i) {
+    int row = m_triplets[i].row();
+    int col = m_triplets[i].col();
+    Scalar value = m_triplets[i].value();
+    m_triplets[i] = Eigen::Triplet<Scalar>(row,col,value*val);
+  }
 
   return 0;
 }
@@ -74,9 +99,8 @@ int EigenSparseMatrix::multiply(VecXd& y, Scalar s, const VecXd& x) const
   
   //Use the non-dynamic sparse matrix for multiplying (i.e. within conjugate gradient)
   //since it's expected to be faster. Assumes finalizeNonZeros was called already.
-  //y += s*(m_dynamic*x); 
-  y += s*(m_static*x);
-
+  y += s*(m_dynamic*x); 
+  
   return 0;
 }
 

@@ -121,7 +121,7 @@ template<typename MatrixType,int _Direction> class Homogeneous
     }
 
   protected:
-    const typename MatrixType::Nested m_matrix;
+    typename MatrixType::Nested m_matrix;
 };
 
 /** \geometry_module
@@ -216,8 +216,8 @@ template<typename Scalar, int Dim, int Mode,int Options>
 struct take_matrix_for_product<Transform<Scalar, Dim, Mode, Options> >
 {
   typedef Transform<Scalar, Dim, Mode, Options> TransformType;
-  typedef typename TransformType::ConstAffinePart type;
-  static const type run (const TransformType& x) { return x.affine(); }
+  typedef typename internal::add_const<typename TransformType::ConstAffinePart>::type type;
+  static type run (const TransformType& x) { return x.affine(); }
 };
 
 template<typename Scalar, int Dim, int Options>
@@ -232,13 +232,15 @@ template<typename MatrixType,typename Lhs>
 struct traits<homogeneous_left_product_impl<Homogeneous<MatrixType,Vertical>,Lhs> >
 {
   typedef typename take_matrix_for_product<Lhs>::type LhsMatrixType;
+  typedef typename remove_all<MatrixType>::type MatrixTypeCleaned;
+  typedef typename remove_all<LhsMatrixType>::type LhsMatrixTypeCleaned;
   typedef typename make_proper_matrix_type<
-                 typename traits<MatrixType>::Scalar,
-                 LhsMatrixType::RowsAtCompileTime,
-                 MatrixType::ColsAtCompileTime,
-                 MatrixType::PlainObject::Options,
-                 LhsMatrixType::MaxRowsAtCompileTime,
-                 MatrixType::MaxColsAtCompileTime>::type ReturnType;
+                 typename traits<MatrixTypeCleaned>::Scalar,
+                 LhsMatrixTypeCleaned::RowsAtCompileTime,
+                 MatrixTypeCleaned::ColsAtCompileTime,
+                 MatrixTypeCleaned::PlainObject::Options,
+                 LhsMatrixTypeCleaned::MaxRowsAtCompileTime,
+                 MatrixTypeCleaned::MaxColsAtCompileTime>::type ReturnType;
 };
 
 template<typename MatrixType,typename Lhs>
@@ -246,7 +248,8 @@ struct homogeneous_left_product_impl<Homogeneous<MatrixType,Vertical>,Lhs>
   : public ReturnByValue<homogeneous_left_product_impl<Homogeneous<MatrixType,Vertical>,Lhs> >
 {
   typedef typename traits<homogeneous_left_product_impl>::LhsMatrixType LhsMatrixType;
-  typedef typename remove_all<typename LhsMatrixType::Nested>::type LhsMatrixTypeNested;
+  typedef typename remove_all<LhsMatrixType>::type LhsMatrixTypeCleaned;
+  typedef typename remove_all<typename LhsMatrixTypeCleaned::Nested>::type LhsMatrixTypeNested;
   typedef typename MatrixType::Index Index;
   homogeneous_left_product_impl(const Lhs& lhs, const MatrixType& rhs)
     : m_lhs(take_matrix_for_product<Lhs>::run(lhs)),
@@ -267,8 +270,8 @@ struct homogeneous_left_product_impl<Homogeneous<MatrixType,Vertical>,Lhs>
             .template replicate<MatrixType::ColsAtCompileTime>(m_rhs.cols());
   }
 
-  const typename LhsMatrixType::Nested m_lhs;
-  const typename MatrixType::Nested m_rhs;
+  typename LhsMatrixTypeCleaned::Nested m_lhs;
+  typename MatrixType::Nested m_rhs;
 };
 
 template<typename MatrixType,typename Rhs>
@@ -306,8 +309,8 @@ struct homogeneous_right_product_impl<Homogeneous<MatrixType,Horizontal>,Rhs>
             .template replicate<MatrixType::RowsAtCompileTime>(m_lhs.rows());
   }
 
-  const typename MatrixType::Nested m_lhs;
-  const typename Rhs::Nested m_rhs;
+  typename MatrixType::Nested m_lhs;
+  typename Rhs::Nested m_rhs;
 };
 
 } // end namespace internal

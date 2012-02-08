@@ -304,7 +304,7 @@ inline void get_barycentric(T x, int& i, T& f, int i_low, int i_high)
 
 template<class S, class T>
 inline S lerp(const S& value0, const S& value1, T f)
-{ return value0*(1-f) + value1*f; }
+{ return (S)(value0*((T)1-f) + value1*f); }
 
 template<class S, class T>
 inline S bilerp(const S& v00, const S& v10, 
