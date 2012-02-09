@@ -1171,7 +1171,7 @@ void ShellTest::setupScene7() {
   Vec3d start_vel(0,0,0);
   Scalar rotation_rate = GetScalarOpt("shell-rotation-rate");
 
-  std::vector<std::vector<VertexHandle> > vertList;
+  std::vector< std::vector<VertexHandle> > vertList;
 
   Scalar dr = (out_radius - in_radius) / (Scalar) layers;
   

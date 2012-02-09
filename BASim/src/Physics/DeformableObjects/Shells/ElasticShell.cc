@@ -2579,7 +2579,7 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
           m_thicknesses[fh] = m_volumes[fh] / getArea(fh);
         }
       }
-      std::cout << "Did a collapse\n";
+      //std::cout << "Did a collapse\n";
       //update static collision data for everything incident on the kept vertex
       //updateBroadPhaseStatic(vert_to_keep);
 

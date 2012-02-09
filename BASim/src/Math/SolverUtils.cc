@@ -21,6 +21,8 @@
 #include "BASim/src/Math/SimpleSparseMatrix.hh"
 #include "BASim/src/Math/EigenSparseMatrix.hh"
 #include "BASim/src/Math/Eigen/EigenLinearSolver.hh"
+#include "BASim/src/Math/Eigen/EigenCGSolver.hh"
+
 namespace BASim {
 
 SolverUtils* SolverUtils::m_instance = NULL;
@@ -153,7 +155,6 @@ LinearSolverBase* SolverUtils::createLinearSolver(MatrixBase* A) const
 
 #ifdef HAVE_MKL
   return new ConjugateGradient(*A);
-  
 #else
   return new ConjugateGradient(*A);
 #endif
