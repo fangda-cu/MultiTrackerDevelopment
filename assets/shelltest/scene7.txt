@@ -27,6 +27,7 @@ shell-height 1.0		# the vertical side length of the shell
 shell-width 1.5		# the horizontal side length of the shell
 
 #rotation rates are scripted in the shelltest code.
+shell-rotation-rate 0.03
 
 #the density of the fluid bath
 shell-bath-density 10.0 
