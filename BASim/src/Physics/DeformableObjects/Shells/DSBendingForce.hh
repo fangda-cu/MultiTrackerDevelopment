@@ -64,12 +64,6 @@ private:
 
   void Symmetrize(Mat3d& m) const;
 
-  bool gatherDOFs(const EdgeHandle& edge, 
-    std::vector<Vec3d>& undeformed, 
-    std::vector<Vec3d>& undeformed_damp, 
-    std::vector<Vec3d>& deformed, 
-    std::vector<int>& indices ) const;
-
   void gatherDOFs(const EdgeHandle& edge, 
     const FaceHandle& fh,
     const FaceHandle& fh2,

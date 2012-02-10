@@ -4,22 +4,26 @@ namespace BASim {
 
 int EigenSparseMatrix::setZero()
 {
-  //iterate through the matrix and explicitly zero the entries (this should leave the structure intact?)
-  /*for (int k=0; k<m_dynamic.outerSize(); ++k) {
-    for (Eigen::SparseMatrix<Scalar,Eigen::RowMajor>::InnerIterator it(m_dynamic,k); it; ++it)
-    {
-      m_dynamic.coeffRef(it.row(), it.col()) = 0;
+  if(m_pattern_fixed) {
+    //iterate through the matrix and explicitly zero the entries (this should leave the structure intact?)
+    for (int k=0; k<m_dynamic.outerSize(); ++k) {
+      for (Eigen::SparseMatrix<Scalar,Eigen::RowMajor>::InnerIterator it(m_dynamic,k); it; ++it)
+      {
+        m_dynamic.coeffRef(it.row(), it.col()) = 0;
+      }
     }
-  }*/
-  //TODO Maybe do something else here?
-  m_triplets.clear();
+  }
+  else {
+    m_triplets.clear();
+  }
 
   return 0;
 }
 
 int EigenSparseMatrix::resetNonzeros() {
-   
+
   //m_dynamic = Eigen::SparseMatrix<Scalar,Eigen::RowMajor>(m_rows, m_cols);
+  m_pattern_fixed = false;
   m_triplets.clear();
    return 0;
 }
@@ -72,8 +76,10 @@ int EigenSparseMatrix::finalize()
 }
 
 int EigenSparseMatrix::finalizeNonzeros() {
-  
-  m_dynamic.setFromTriplets(m_triplets.begin(), m_triplets.end());
+  if(!m_pattern_fixed) {
+    m_pattern_fixed = true;
+    m_dynamic.setFromTriplets(m_triplets.begin(), m_triplets.end());
+  }
   return 0;
 }
 
@@ -81,11 +87,16 @@ int EigenSparseMatrix::finalizeNonzeros() {
 int EigenSparseMatrix::scale(Scalar val)
 {
   //replace all values with scaled versions
-  for(unsigned int i = 0; i < m_triplets.size(); ++i) {
-    int row = m_triplets[i].row();
-    int col = m_triplets[i].col();
-    Scalar value = m_triplets[i].value();
-    m_triplets[i] = Eigen::Triplet<Scalar>(row,col,value*val);
+  if(!m_pattern_fixed) {
+    for(unsigned int i = 0; i < m_triplets.size(); ++i) {
+      int row = m_triplets[i].row();
+      int col = m_triplets[i].col();
+      Scalar value = m_triplets[i].value();
+      m_triplets[i] = Eigen::Triplet<Scalar>(row,col,value*val);
+    }
+  }
+  else {
+    m_dynamic *= val;
   }
 
   return 0;

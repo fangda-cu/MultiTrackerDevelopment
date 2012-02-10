@@ -59,6 +59,8 @@ protected:
 
   //then convert to a sparse matrix
   Eigen::SparseMatrix<Scalar, Eigen::RowMajor> m_dynamic;
+
+  bool m_pattern_fixed;
   
 };
 
