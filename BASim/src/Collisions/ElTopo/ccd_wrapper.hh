@@ -14,7 +14,7 @@
 
 #include "BASim/src/Collisions/ElTopo/vec.hh"
 
-namespace ElTopo {
+namespace ElTopoCode {
 
 #define USE_CUBIC_SOLVER_CCD
 //#define USE_TUNICATE_CCD

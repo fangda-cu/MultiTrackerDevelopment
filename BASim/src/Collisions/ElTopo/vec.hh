@@ -18,7 +18,7 @@
 // Arithmetic operators are appropriately overloaded, and functions are defined
 // for additional operations (such as dot-products, norms, cross-products, etc.)
 
-namespace ElTopo {
+namespace ElTopoCode {
 
 template<unsigned int N, class T>
 struct Vec

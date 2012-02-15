@@ -17,7 +17,7 @@
 #include <tunicate.h>
 #include <vec.h>
 
-namespace ElTopo {
+namespace ElTopoCode {
 const unsigned int nv = 1000000;
 
 // return a unit-length vector orthogonal to u and v

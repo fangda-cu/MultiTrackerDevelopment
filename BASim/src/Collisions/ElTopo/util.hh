@@ -7,7 +7,7 @@
 #include <iostream>
 
 #include "array3.hh"
-namespace ElTopo {
+namespace ElTopoCode {
 
 
 #ifndef M_PI

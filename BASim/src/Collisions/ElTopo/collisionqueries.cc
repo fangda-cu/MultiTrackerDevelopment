@@ -1,6 +1,6 @@
 #include "collisionqueries.hh"
 
-namespace ElTopo {
+namespace ElTopoCode {
 
 // check if segment x0-x1 and segment x2-x3 are intersecting and return barycentric coordinates of intersection if so
 bool check_edge_edge_intersection( const Vec2d &x0, const Vec2d &x1, const Vec2d &x2, const Vec2d &x3, double &s01, double &s23, double tolerance )

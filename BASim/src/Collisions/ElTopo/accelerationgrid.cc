@@ -42,7 +42,7 @@
 ///
 // --------------------------------------------------------
 
-namespace ElTopo {
+namespace ElTopoCode {
 
 AccelerationGrid::AccelerationGrid() :
    m_cells(0,0,0),

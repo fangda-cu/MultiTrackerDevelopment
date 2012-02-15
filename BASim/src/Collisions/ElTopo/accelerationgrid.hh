@@ -30,7 +30,7 @@
 /// Regular grid collision culling structure
 ///
 // --------------------------------------------------------
-namespace ElTopo {
+namespace ElTopoCode {
 
 class AccelerationGrid
 {

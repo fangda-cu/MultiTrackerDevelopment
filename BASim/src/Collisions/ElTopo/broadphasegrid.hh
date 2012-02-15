@@ -30,7 +30,7 @@
 /// Broad phase collision detector using three regular grids: one grid each for vertices, edges and triangles.
 ///
 // --------------------------------------------------------
-namespace ElTopo {
+namespace ElTopoCode {
 
 Vec3d toElTopo(BASim::Vec3d vec);
 

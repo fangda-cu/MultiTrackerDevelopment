@@ -592,13 +592,13 @@ void ElasticShell::addSelfCollisionForces() {
   for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
     VertexHandle vh = *vit;
     Vec3d vert_pos = m_positions[vh];
-    ElTopo::Vec3d vertex_position = ElTopo::toElTopo(vert_pos);
+    ElTopoCode::Vec3d vertex_position = ElTopoCode::toElTopo(vert_pos);
 
     //construct bound box for the vertex, and find all triangles near it
     std::vector<unsigned int> overlapping_triangles;
     Vec3d low = vert_pos - collision_distance*Vec3d(1,1,1), high = vert_pos + collision_distance*Vec3d(1,1,1);
     
-    m_broad_phase.get_potential_triangle_collisions(ElTopo::toElTopo(low), ElTopo::toElTopo(high), overlapping_triangles);
+    m_broad_phase.get_potential_triangle_collisions(ElTopoCode::toElTopo(low), ElTopoCode::toElTopo(high), overlapping_triangles);
     for(unsigned int i = 0; i < overlapping_triangles.size(); ++i) {
       int tri_idx = overlapping_triangles[i];
       FaceHandle f(tri_idx);
@@ -607,11 +607,11 @@ void ElasticShell::addSelfCollisionForces() {
         continue;
       }
 
-      ElTopo::Vec3d face_verts[3];
+      ElTopoCode::Vec3d face_verts[3];
       int fv = 0;
       bool goodSpring = true;
       for(FaceVertexIterator fvit = m_obj->fv_iter(f); fvit; ++fvit) {
-        face_verts[fv] = ElTopo::toElTopo(m_positions[*fvit]);
+        face_verts[fv] = ElTopoCode::toElTopo(m_positions[*fvit]);
         if(*fvit == vh)
           goodSpring = false;
         ++fv;
@@ -623,12 +623,12 @@ void ElasticShell::addSelfCollisionForces() {
       //check if the geometry is actually close enough to warrant a spring
       Vec3d barycoords;
       Scalar distance;
-      ElTopo::Vec3d normal;
+      ElTopoCode::Vec3d normal;
       check_point_triangle_proximity(vertex_position, face_verts[0], face_verts[1], face_verts[2], distance, barycoords[0], barycoords[1], barycoords[2], normal );
       //if such a spring doesn't already exist, add it
-      ElTopo::Vec3d faceNormal = cross(face_verts[1] - face_verts[0], face_verts[2] - face_verts[0]);
+      ElTopoCode::Vec3d faceNormal = cross(face_verts[1] - face_verts[0], face_verts[2] - face_verts[0]);
       normalize(faceNormal);
-      ElTopo::Vec3d offset = vertex_position - (barycoords[0]*face_verts[0] + barycoords[1]*face_verts[1] + barycoords[2]*face_verts[2]);
+      ElTopoCode::Vec3d offset = vertex_position - (barycoords[0]*face_verts[0] + barycoords[1]*face_verts[1] + barycoords[2]*face_verts[2]);
       Scalar normalDist = dot(offset,faceNormal);
       if(distance < collision_distance) {
         m_repulsion_springs->addSpring(f, vh, barycoords, m_collision_spring_stiffness, m_collision_spring_damping, fabs(normalDist));
@@ -677,7 +677,7 @@ void ElasticShell::setCollisionSphere(bool enabled, Scalar radius, Vec3d positio
   m_sphere_velocity = velocity;
 }
 
-void ElasticShell::setCollisionObject(bool enabled, const Vec3d& position, const Vec3d& velocity, const ElTopo::Array3f& phi_grid, 
+void ElasticShell::setCollisionObject(bool enabled, const Vec3d& position, const Vec3d& velocity, const ElTopoCode::Array3f& phi_grid, 
                                       const Vec3d& origin, Scalar dx) {
   m_object_collisions = enabled;
   m_object_position = position;
@@ -1141,13 +1141,13 @@ bool ElasticShell::edgeFlipCausesCollision( const EdgeHandle& edge_index,
   VertexHandle old_end_b = m_obj->toVertex(edge_index);
   VertexHandle tet_vertex_indices[4] = { old_end_a, old_end_b, new_end_a, new_end_b };
 
-  const ElTopo::Vec3d tet_vertex_positions[4] = { ElTopo::toElTopo(m_positions[ tet_vertex_indices[0] ]), 
-    ElTopo::toElTopo(m_positions[ tet_vertex_indices[1] ]), 
-    ElTopo::toElTopo(m_positions[ tet_vertex_indices[2] ]), 
-    ElTopo::toElTopo(m_positions[ tet_vertex_indices[3] ]) };
+  const ElTopoCode::Vec3d tet_vertex_positions[4] = { ElTopoCode::toElTopo(m_positions[ tet_vertex_indices[0] ]), 
+    ElTopoCode::toElTopo(m_positions[ tet_vertex_indices[1] ]), 
+    ElTopoCode::toElTopo(m_positions[ tet_vertex_indices[2] ]), 
+    ElTopoCode::toElTopo(m_positions[ tet_vertex_indices[3] ]) };
 
-  ElTopo::Vec3d low, high;
-  ElTopo::minmax( tet_vertex_positions[0], tet_vertex_positions[1], tet_vertex_positions[2], tet_vertex_positions[3], low, high );
+  ElTopoCode::Vec3d low, high;
+  ElTopoCode::minmax( tet_vertex_positions[0], tet_vertex_positions[1], tet_vertex_positions[2], tet_vertex_positions[3], low, high );
 
   std::vector<unsigned int> overlapping_vertices;
   m_broad_phase.get_potential_vertex_collisions( low, high, overlapping_vertices );
@@ -1161,7 +1161,7 @@ bool ElasticShell::edgeFlipCausesCollision( const EdgeHandle& edge_index,
       continue;
     }
 
-    if ( ElTopo::point_tetrahedron_intersection( ElTopo::toElTopo(m_positions[VertexHandle(overlapping_vertices[i])]), overlapping_vertices[i],
+    if ( ElTopoCode::point_tetrahedron_intersection( ElTopoCode::toElTopo(m_positions[VertexHandle(overlapping_vertices[i])]), overlapping_vertices[i],
       tet_vertex_positions[0], tet_vertex_indices[0].idx(),
       tet_vertex_positions[1], tet_vertex_indices[1].idx(),
       tet_vertex_positions[2], tet_vertex_indices[2].idx(),
@@ -1174,12 +1174,12 @@ bool ElasticShell::edgeFlipCausesCollision( const EdgeHandle& edge_index,
   //
   // Check new triangle A vs existing edges
   //
-  const ElTopo::Vec3d old_a_pos = ElTopo::toElTopo(m_positions[old_end_a]), 
-    old_b_pos = ElTopo::toElTopo(m_positions[old_end_b]), 
-    new_a_pos = ElTopo::toElTopo(m_positions[new_end_a]), 
-    new_b_pos = ElTopo::toElTopo(m_positions[new_end_b]);
+  const ElTopoCode::Vec3d old_a_pos = ElTopoCode::toElTopo(m_positions[old_end_a]), 
+    old_b_pos = ElTopoCode::toElTopo(m_positions[old_end_b]), 
+    new_a_pos = ElTopoCode::toElTopo(m_positions[new_end_a]), 
+    new_b_pos = ElTopoCode::toElTopo(m_positions[new_end_b]);
 
-  ElTopo::minmax( old_a_pos, new_a_pos, new_b_pos, low, high );
+  ElTopoCode::minmax( old_a_pos, new_a_pos, new_b_pos, low, high );
   std::vector<unsigned int> overlapping_edges;
   m_broad_phase.get_potential_edge_collisions( low, high, overlapping_edges );
 
@@ -1190,8 +1190,8 @@ bool ElasticShell::edgeFlipCausesCollision( const EdgeHandle& edge_index,
                  edge_1 = m_obj->toVertex(overlapping_edge_index);
 
     if( segment_triangle_intersection( 
-          ElTopo::toElTopo(m_positions[edge_0]), edge_0.idx(), 
-          ElTopo::toElTopo(m_positions[edge_1]), edge_1.idx(),
+          ElTopoCode::toElTopo(m_positions[edge_0]), edge_0.idx(), 
+          ElTopoCode::toElTopo(m_positions[edge_1]), edge_1.idx(),
           old_a_pos, old_end_a.idx(), 
           new_a_pos, new_end_a.idx(), 
           new_b_pos, new_end_b.idx(),
@@ -1205,7 +1205,7 @@ bool ElasticShell::edgeFlipCausesCollision( const EdgeHandle& edge_index,
   // Check new triangle B vs existing edges
   //
 
-  ElTopo::minmax(old_b_pos, new_a_pos, new_b_pos, low, high );
+  ElTopoCode::minmax(old_b_pos, new_a_pos, new_b_pos, low, high );
 
   overlapping_edges.clear();
   m_broad_phase.get_potential_edge_collisions( low, high, overlapping_edges );
@@ -1217,8 +1217,8 @@ bool ElasticShell::edgeFlipCausesCollision( const EdgeHandle& edge_index,
                  edge_1 = m_obj->toVertex(overlapping_edge_index);
 
     if( segment_triangle_intersection( 
-      ElTopo::toElTopo(m_positions[edge_0]), edge_0.idx(), 
-      ElTopo::toElTopo(m_positions[edge_1]), edge_1.idx(),
+      ElTopoCode::toElTopo(m_positions[edge_0]), edge_0.idx(), 
+      ElTopoCode::toElTopo(m_positions[edge_1]), edge_1.idx(),
       old_b_pos, old_end_b.idx(), 
       new_a_pos, new_end_a.idx(), 
       new_b_pos, new_end_b.idx(),
@@ -1240,9 +1240,9 @@ bool ElasticShell::edgeFlipCausesCollision( const EdgeHandle& edge_index,
   {
     FaceHandle face(overlapping_triangles[i]);
     FaceVertexIterator fvit = m_obj->fv_iter(face);
-    std::vector< std::pair<ElTopo::Vec3d,int> > face_verts;
+    std::vector< std::pair<ElTopoCode::Vec3d,int> > face_verts;
     for(;fvit; ++fvit) {
-      ElTopo::Vec3d vert = ElTopo::toElTopo(m_positions[*fvit]);
+      ElTopoCode::Vec3d vert = ElTopoCode::toElTopo(m_positions[*fvit]);
       int id = (*fvit).idx();
       face_verts.push_back(std::make_pair(vert, id));
     }
@@ -1590,7 +1590,7 @@ bool ElasticShell::performSplit(const EdgeHandle& eh, VertexHandle& new_vert) {
   VertexHandle v2, v3;
   getEdgeOppositeVertices(*m_obj, eh, v2, v3);
 
-  ElTopo::Vec3d midpoint_ET = ElTopo::toElTopo(midpoint);
+  ElTopoCode::Vec3d midpoint_ET = ElTopoCode::toElTopo(midpoint);
   //if(edgeSplitCausesCollision(midpoint_ET, midpoint_ET, eh))
   //  return false;
 
@@ -1631,20 +1631,20 @@ bool ElasticShell::performSplit(const EdgeHandle& eh, VertexHandle& new_vert) {
   //add edges
   VertexEdgeIterator ve_iter = m_obj->ve_iter(v_new);
   for(; ve_iter; ++ve_iter) {
-    std::vector<ElTopo::Vec3d> edge_verts; 
+    std::vector<ElTopoCode::Vec3d> edge_verts; 
     EdgeVertexIterator ev_iter = m_obj->ev_iter(*ve_iter);
     for(; ev_iter; ++ev_iter)
-      edge_verts.push_back(ElTopo::toElTopo(getVertexPosition(*ev_iter)));
+      edge_verts.push_back(ElTopoCode::toElTopo(getVertexPosition(*ev_iter)));
     //m_broad_phase.add_edge((*ve_iter).idx(), edge_verts[0], edge_verts[1], m_proximity_epsilon);
   }
 
   //add tris
   vf_iter = m_obj->vf_iter(v_new);
   for(;vf_iter; ++vf_iter) {
-    std::vector<ElTopo::Vec3d> tri_verts; 
+    std::vector<ElTopoCode::Vec3d> tri_verts; 
     FaceVertexIterator fv_iter = m_obj->fv_iter(*vf_iter);
     for(; fv_iter; ++fv_iter)
-      tri_verts.push_back(ElTopo::toElTopo(getVertexPosition(*fv_iter)));
+      tri_verts.push_back(ElTopoCode::toElTopo(getVertexPosition(*fv_iter)));
     //m_broad_phase.add_triangle((*vf_iter).idx(), tri_verts[0], tri_verts[1], tri_verts[2], m_proximity_epsilon);
   }
   
@@ -1653,8 +1653,8 @@ bool ElasticShell::performSplit(const EdgeHandle& eh, VertexHandle& new_vert) {
 }
 
 
-bool ElasticShell::edgeSplitCausesCollision( const ElTopo::Vec3d& new_vertex_position, 
-                                              const ElTopo::Vec3d& new_vertex_smooth_position, 
+bool ElasticShell::edgeSplitCausesCollision( const ElTopoCode::Vec3d& new_vertex_position, 
+                                              const ElTopoCode::Vec3d& new_vertex_smooth_position, 
                                               EdgeHandle edge)
 {
   
@@ -1665,11 +1665,11 @@ bool ElasticShell::edgeSplitCausesCollision( const ElTopo::Vec3d& new_vertex_pos
   // new point vs all triangles
   {
 
-    ElTopo::Vec3d aabb_low, aabb_high;
-    ElTopo::minmax( new_vertex_position, new_vertex_smooth_position, aabb_low, aabb_high );
+    ElTopoCode::Vec3d aabb_low, aabb_high;
+    ElTopoCode::minmax( new_vertex_position, new_vertex_smooth_position, aabb_low, aabb_high );
 
-    aabb_low -= m_proximity_epsilon * ElTopo::Vec3d(1,1,1);
-    aabb_high += m_proximity_epsilon * ElTopo::Vec3d(1,1,1);
+    aabb_low -= m_proximity_epsilon * ElTopoCode::Vec3d(1,1,1);
+    aabb_high += m_proximity_epsilon * ElTopoCode::Vec3d(1,1,1);
 
     std::vector<unsigned int> overlapping_triangles;
     m_broad_phase.get_potential_triangle_collisions( aabb_low, aabb_high, overlapping_triangles );
@@ -1693,10 +1693,10 @@ bool ElasticShell::edgeSplitCausesCollision( const ElTopo::Vec3d& new_vertex_pos
 
       double t_zero_distance;
       unsigned int dummy_index = -1;
-      ElTopo::point_triangle_distance( new_vertex_position, dummy_index, 
-        ElTopo::toElTopo(m_positions[ triangle_vertex_0 ]), triangle_vertex_0.idx(),
-        ElTopo::toElTopo(m_positions[ triangle_vertex_1 ]), triangle_vertex_1.idx(),
-        ElTopo::toElTopo(m_positions[ triangle_vertex_2 ]), triangle_vertex_2.idx(),
+      ElTopoCode::point_triangle_distance( new_vertex_position, dummy_index, 
+        ElTopoCode::toElTopo(m_positions[ triangle_vertex_0 ]), triangle_vertex_0.idx(),
+        ElTopoCode::toElTopo(m_positions[ triangle_vertex_1 ]), triangle_vertex_1.idx(),
+        ElTopoCode::toElTopo(m_positions[ triangle_vertex_2 ]), triangle_vertex_2.idx(),
         t_zero_distance );
 
       if ( t_zero_distance < m_improve_collision_epsilon )
@@ -1707,11 +1707,11 @@ bool ElasticShell::edgeSplitCausesCollision( const ElTopo::Vec3d& new_vertex_pos
       //Not sorting the indices here... 
       //Apparently that only matters for the exact CCD stuff Robert put together (since it relies on simulation of simplicity(SOS)).
       //I'm using standard cubic CCD.
-      ElTopo::Vec3d s0 = ElTopo::toElTopo(m_positions[ triangle_vertex_0 ]), 
-        s1 = ElTopo::toElTopo(m_positions[ triangle_vertex_1 ]), 
-        s2 = ElTopo::toElTopo(m_positions[ triangle_vertex_2 ]);
+      ElTopoCode::Vec3d s0 = ElTopoCode::toElTopo(m_positions[ triangle_vertex_0 ]), 
+        s1 = ElTopoCode::toElTopo(m_positions[ triangle_vertex_1 ]), 
+        s2 = ElTopoCode::toElTopo(m_positions[ triangle_vertex_2 ]);
 
-      if ( ElTopo::point_triangle_collision(  new_vertex_position, new_vertex_smooth_position, dummy_index,
+      if ( ElTopoCode::point_triangle_collision(  new_vertex_position, new_vertex_smooth_position, dummy_index,
         s0, s0, triangle_vertex_0.idx(),
         s1, s2, triangle_vertex_1.idx(),
         s2, s2, triangle_vertex_2.idx() ) )
@@ -1739,19 +1739,19 @@ bool ElasticShell::edgeSplitCausesCollision( const ElTopo::Vec3d& new_vertex_pos
       if(success) vertex_list.push_back(third_vert);
     }
 
-    ElTopo::Vec3d edge_aabb_low, edge_aabb_high;
+    ElTopoCode::Vec3d edge_aabb_low, edge_aabb_high;
 
     // do one big query into the broadphase for all new edges
-    ElTopo::minmax(new_vertex_position, new_vertex_smooth_position, edge_aabb_low, edge_aabb_high);
-    std::vector<ElTopo::Vec3d> verts_pos;
+    ElTopoCode::minmax(new_vertex_position, new_vertex_smooth_position, edge_aabb_low, edge_aabb_high);
+    std::vector<ElTopoCode::Vec3d> verts_pos;
     for(unsigned int i = 0; i < vertex_list.size(); ++i) {
-      ElTopo::Vec3d pos = ElTopo::toElTopo(m_positions[vertex_list[i]]); 
+      ElTopoCode::Vec3d pos = ElTopoCode::toElTopo(m_positions[vertex_list[i]]); 
       verts_pos.push_back(pos);
-      ElTopo::update_minmax(pos, edge_aabb_low, edge_aabb_high);
+      ElTopoCode::update_minmax(pos, edge_aabb_low, edge_aabb_high);
     }
     
-    edge_aabb_low -= m_proximity_epsilon * ElTopo::Vec3d(1,1,1);
-    edge_aabb_high += m_proximity_epsilon * ElTopo::Vec3d(1,1,1);
+    edge_aabb_low -= m_proximity_epsilon * ElTopoCode::Vec3d(1,1,1);
+    edge_aabb_high += m_proximity_epsilon * ElTopoCode::Vec3d(1,1,1);
 
     std::vector<unsigned int> overlapping_edges;
     m_broad_phase.get_potential_edge_collisions( edge_aabb_low, edge_aabb_high, overlapping_edges );
@@ -1766,12 +1766,12 @@ bool ElasticShell::edgeSplitCausesCollision( const ElTopo::Vec3d& new_vertex_pos
       VertexHandle edge_vertex_1 = m_obj->toVertex(eh);
       unsigned int dummy_index = -1;
 
-      ElTopo::Vec3d edge_vert_0_pos = ElTopo::toElTopo(m_positions[edge_vertex_0]);
-      ElTopo::Vec3d edge_vert_1_pos = ElTopo::toElTopo(m_positions[edge_vertex_1]);
+      ElTopoCode::Vec3d edge_vert_0_pos = ElTopoCode::toElTopo(m_positions[edge_vertex_0]);
+      ElTopoCode::Vec3d edge_vert_1_pos = ElTopoCode::toElTopo(m_positions[edge_vertex_1]);
 
       for(unsigned int v_ind = 0; v_ind < vertex_list.size(); ++v_ind) {
         VertexHandle vertex_a = vertex_list[v_ind];
-        ElTopo::Vec3d vert_a_pos = verts_pos[v_ind];
+        ElTopoCode::Vec3d vert_a_pos = verts_pos[v_ind];
 
         if ( vertex_a != edge_vertex_0 && vertex_a != edge_vertex_1 ) 
         {
@@ -1805,10 +1805,10 @@ bool ElasticShell::edgeSplitCausesCollision( const ElTopo::Vec3d& new_vertex_pos
 
     VertexHandle vertex_a = m_obj->fromVertex(edge);
     VertexHandle vertex_b = m_obj->toVertex(edge);
-    const ElTopo::Vec3d& position_a = ElTopo::toElTopo(m_positions[vertex_a]);
-    const ElTopo::Vec3d& position_b = ElTopo::toElTopo(m_positions[vertex_b]);
-    const ElTopo::Vec3d& position_e = new_vertex_position;
-    const ElTopo::Vec3d& newposition_e = new_vertex_smooth_position;
+    const ElTopoCode::Vec3d& position_a = ElTopoCode::toElTopo(m_positions[vertex_a]);
+    const ElTopoCode::Vec3d& position_b = ElTopoCode::toElTopo(m_positions[vertex_b]);
+    const ElTopoCode::Vec3d& position_e = new_vertex_position;
+    const ElTopoCode::Vec3d& newposition_e = new_vertex_smooth_position;
     unsigned int dummy_e = -1;
 
     //make list of vertices that are not on the central edge
@@ -1820,19 +1820,19 @@ bool ElasticShell::edgeSplitCausesCollision( const ElTopo::Vec3d& new_vertex_pos
       if(success) vertex_list.push_back(third_vert);
     }
 
-    ElTopo::Vec3d triangle_aabb_low, triangle_aabb_high;
+    ElTopoCode::Vec3d triangle_aabb_low, triangle_aabb_high;
 
     // do one big query into the broadphase for all new triangles
-    ElTopo::minmax(new_vertex_position, new_vertex_smooth_position, position_a, position_b, triangle_aabb_low, triangle_aabb_high);
-    std::vector<ElTopo::Vec3d> verts_pos;
+    ElTopoCode::minmax(new_vertex_position, new_vertex_smooth_position, position_a, position_b, triangle_aabb_low, triangle_aabb_high);
+    std::vector<ElTopoCode::Vec3d> verts_pos;
     for(unsigned int i = 0; i < vertex_list.size(); ++i) {
-      ElTopo::Vec3d pos = ElTopo::toElTopo(m_positions[vertex_list[i]]); 
+      ElTopoCode::Vec3d pos = ElTopoCode::toElTopo(m_positions[vertex_list[i]]); 
       verts_pos.push_back(pos);
-      ElTopo::update_minmax(pos, triangle_aabb_low, triangle_aabb_high);
+      ElTopoCode::update_minmax(pos, triangle_aabb_low, triangle_aabb_high);
     }
 
-    triangle_aabb_low -= m_proximity_epsilon * ElTopo::Vec3d(1,1,1);
-    triangle_aabb_high += m_proximity_epsilon * ElTopo::Vec3d(1,1,1);
+    triangle_aabb_low -= m_proximity_epsilon * ElTopoCode::Vec3d(1,1,1);
+    triangle_aabb_high += m_proximity_epsilon * ElTopoCode::Vec3d(1,1,1);
 
     std::vector<unsigned int> overlapping_vertices;
     m_broad_phase.get_potential_vertex_collisions( triangle_aabb_low, triangle_aabb_high, overlapping_vertices );
@@ -1843,25 +1843,25 @@ bool ElasticShell::edgeSplitCausesCollision( const ElTopo::Vec3d& new_vertex_pos
       //if ( m_mesh.m_vtxtri[overlapping_vertices[i]].empty() ) { continue; } //an optimization?
 
       unsigned int overlapping_vert_index = overlapping_vertices[i];
-      const ElTopo::Vec3d& vert = ElTopo::toElTopo(m_positions[VertexHandle(overlapping_vert_index)]);
+      const ElTopoCode::Vec3d& vert = ElTopoCode::toElTopo(m_positions[VertexHandle(overlapping_vert_index)]);
 
       //visit all vertices that are opposite to the edge to be split in the triangles containing it, and construct two resulting triangles
       for(unsigned int j = 0; j < vertex_list.size(); ++j) { 
         
         VertexHandle vertex_j = vertex_list[j];
-        ElTopo::Vec3d position_j = ElTopo::toElTopo(m_positions[vertex_j]);
+        ElTopoCode::Vec3d position_j = ElTopoCode::toElTopo(m_positions[vertex_j]);
 
         // triangle ae_j (top half)
         if ( overlapping_vertices[i] != vertex_a.idx() && overlapping_vertices[i] != vertex_j.idx() )
         {
           double t_zero_distance;
-          ElTopo::point_triangle_distance( vert, overlapping_vert_index, position_a, vertex_a.idx(), position_e, dummy_e, position_j, vertex_j.idx(), t_zero_distance );
+          ElTopoCode::point_triangle_distance( vert, overlapping_vert_index, position_a, vertex_a.idx(), position_e, dummy_e, position_j, vertex_j.idx(), t_zero_distance );
           if ( t_zero_distance < m_improve_collision_epsilon )
           {
             return true;
           }
 
-          if ( ElTopo::point_triangle_collision( vert, vert, overlapping_vert_index,
+          if ( ElTopoCode::point_triangle_collision( vert, vert, overlapping_vert_index,
             position_a, position_a, vertex_a.idx(),
             position_j, position_j, vertex_j.idx(),
             position_e, newposition_e, dummy_e ) )
@@ -1874,13 +1874,13 @@ bool ElasticShell::edgeSplitCausesCollision( const ElTopo::Vec3d& new_vertex_pos
         if ( overlapping_vertices[i] != vertex_b.idx() && overlapping_vertices[i] != vertex_j.idx() )
         {
           double t_zero_distance;
-          ElTopo::point_triangle_distance( vert, overlapping_vert_index, position_b, vertex_b.idx(), position_e, dummy_e, position_j, vertex_j.idx(), t_zero_distance );
+          ElTopoCode::point_triangle_distance( vert, overlapping_vert_index, position_b, vertex_b.idx(), position_e, dummy_e, position_j, vertex_j.idx(), t_zero_distance );
           if ( t_zero_distance < m_improve_collision_epsilon )
           {
             return true;
           }
 
-          if ( ElTopo::point_triangle_collision( vert, vert, overlapping_vert_index,
+          if ( ElTopoCode::point_triangle_collision( vert, vert, overlapping_vert_index,
             position_b, position_b, vertex_b.idx(),
             position_j, position_j, vertex_j.idx(),
             position_e, newposition_e, dummy_e ) )
@@ -1904,11 +1904,11 @@ void ElasticShell::updateBroadPhaseStatic(const VertexHandle& vertex_a)
   //i.e. change their bounding boxes to include their whole motion, while all other data
   //has just static bound boxes.
 
-  ElTopo::Vec3d offset(m_proximity_epsilon, m_proximity_epsilon, m_proximity_epsilon);
-  ElTopo::Vec3d low, high;
+  ElTopoCode::Vec3d offset(m_proximity_epsilon, m_proximity_epsilon, m_proximity_epsilon);
+  ElTopoCode::Vec3d low, high;
   
   //update vertices bounding box to include pseudomotion
-  ElTopo::Vec3d pos = ElTopo::toElTopo(m_positions[vertex_a]);
+  ElTopoCode::Vec3d pos = ElTopoCode::toElTopo(m_positions[vertex_a]);
   m_broad_phase.update_vertex( vertex_a.idx(), pos + offset, pos - offset);
 
   for ( VertexEdgeIterator veit = m_obj->ve_iter(vertex_a); veit; ++veit)
@@ -1917,9 +1917,9 @@ void ElasticShell::updateBroadPhaseStatic(const VertexHandle& vertex_a)
     EdgeHandle eh = *veit;
     VertexHandle vha = m_obj->fromVertex(eh);
     VertexHandle vhb = m_obj->toVertex(eh);
-    ElTopo::Vec3d pa = ElTopo::toElTopo(m_positions[vha]);
-    ElTopo::Vec3d pb = ElTopo::toElTopo(m_positions[vhb]);
-    ElTopo::minmax(pa, pb, low, high);
+    ElTopoCode::Vec3d pa = ElTopoCode::toElTopo(m_positions[vha]);
+    ElTopoCode::Vec3d pb = ElTopoCode::toElTopo(m_positions[vhb]);
+    ElTopoCode::minmax(pa, pb, low, high);
 
     m_broad_phase.update_edge( (*veit).idx(), low, high );
   }
@@ -1931,11 +1931,11 @@ void ElasticShell::updateBroadPhaseStatic(const VertexHandle& vertex_a)
     int c = 0;
     for(FaceVertexIterator fvit = m_obj->fv_iter(fh); fvit; ++fvit, ++c) {
       VertexHandle vha = *fvit;
-      ElTopo::Vec3d pa = ElTopo::toElTopo(m_positions[vha]);
+      ElTopoCode::Vec3d pa = ElTopoCode::toElTopo(m_positions[vha]);
       if(c == 0)
         low = high = pa;
       else
-        ElTopo::update_minmax(pa, low, high);
+        ElTopoCode::update_minmax(pa, low, high);
     }
 
     m_broad_phase.update_triangle( (*vfit).idx(), low, high );
@@ -1943,23 +1943,23 @@ void ElasticShell::updateBroadPhaseStatic(const VertexHandle& vertex_a)
   
 }
 
-void ElasticShell::updateBroadPhaseForCollapse(const VertexHandle& vertex_a, const ElTopo::Vec3d& new_pos_a, 
-                                               const VertexHandle& vertex_b, const ElTopo::Vec3d& new_pos_b) 
+void ElasticShell::updateBroadPhaseForCollapse(const VertexHandle& vertex_a, const ElTopoCode::Vec3d& new_pos_a, 
+                                               const VertexHandle& vertex_b, const ElTopoCode::Vec3d& new_pos_b) 
 {
 
   //update the broad phase grid to reflect the fact that two of the vertices are moving
   //i.e. change their bounding boxes to include their whole motion, while all other data
   //has just static bound boxes.
 
-  ElTopo::Vec3d offset(m_proximity_epsilon, m_proximity_epsilon, m_proximity_epsilon);
-  ElTopo::Vec3d low, high;
+  ElTopoCode::Vec3d offset(m_proximity_epsilon, m_proximity_epsilon, m_proximity_epsilon);
+  ElTopoCode::Vec3d low, high;
 
   VertexHandle verts[2] = {vertex_a, vertex_b};
-  ElTopo::Vec3d verts_pos[2] = {new_pos_a, new_pos_b};
+  ElTopoCode::Vec3d verts_pos[2] = {new_pos_a, new_pos_b};
 
   for(int i = 0; i < 2; ++i) {
     //update vertices bounding box to include pseudomotion
-    ElTopo::minmax(ElTopo::toElTopo(m_positions[verts[i]]), verts_pos[i], low, high);
+    ElTopoCode::minmax(ElTopoCode::toElTopo(m_positions[verts[i]]), verts_pos[i], low, high);
     low -= offset; high += offset;
     m_broad_phase.update_vertex( verts[i].idx(), low, high );
 
@@ -1969,17 +1969,17 @@ void ElasticShell::updateBroadPhaseForCollapse(const VertexHandle& vertex_a, con
       EdgeHandle eh = *veit;
       VertexHandle vha = m_obj->fromVertex(eh);
       VertexHandle vhb = m_obj->toVertex(eh);
-      ElTopo::Vec3d pa = ElTopo::toElTopo(m_positions[vha]);
-      ElTopo::Vec3d pb = ElTopo::toElTopo(m_positions[vhb]);
-      ElTopo::minmax(pa, pb, low, high);
+      ElTopoCode::Vec3d pa = ElTopoCode::toElTopo(m_positions[vha]);
+      ElTopoCode::Vec3d pb = ElTopoCode::toElTopo(m_positions[vhb]);
+      ElTopoCode::minmax(pa, pb, low, high);
       
       //check if either vertex moved, and if so, add the position to the bound box
       for(int j = 0; j < 2; ++j) {
         if(vha == verts[j]) {
-          ElTopo::update_minmax(verts_pos[j], low, high);
+          ElTopoCode::update_minmax(verts_pos[j], low, high);
         }
         if(vhb == verts[j]) {
-          ElTopo::update_minmax(verts_pos[j], low, high);
+          ElTopoCode::update_minmax(verts_pos[j], low, high);
         }
       }
       
@@ -1993,11 +1993,11 @@ void ElasticShell::updateBroadPhaseForCollapse(const VertexHandle& vertex_a, con
       int c = 0;
       for(FaceVertexIterator fvit = m_obj->fv_iter(fh); fvit; ++fvit, ++c) {
         VertexHandle vha = *fvit;
-        ElTopo::Vec3d pa = ElTopo::toElTopo(m_positions[vha]);
+        ElTopoCode::Vec3d pa = ElTopoCode::toElTopo(m_positions[vha]);
         if(c == 0)
           low = high = pa;
         else
-          ElTopo::update_minmax(pa, low, high);
+          ElTopoCode::update_minmax(pa, low, high);
       }
 
       //check if any vertex moved, and if so, add that position to the bound box
@@ -2005,7 +2005,7 @@ void ElasticShell::updateBroadPhaseForCollapse(const VertexHandle& vertex_a, con
         for(FaceVertexIterator fvit = m_obj->fv_iter(fh); fvit; ++fvit) {
           VertexHandle vha = *fvit;
           if(vha == verts[j]) {
-            ElTopo::update_minmax(verts_pos[j], low, high);
+            ElTopoCode::update_minmax(verts_pos[j], low, high);
           }
         }
       }
@@ -2024,7 +2024,7 @@ void ElasticShell::updateBroadPhaseForCollapse(const VertexHandle& vertex_a, con
 
 bool ElasticShell::checkTriangleVsTriangleCollisionForCollapse( const FaceHandle& triangle_a, const FaceHandle& triangle_b,  
                                                                const VertexHandle& source_vert, const VertexHandle& dest_vert,
-                                                               ElTopo::Vec3d new_position)
+                                                               ElTopoCode::Vec3d new_position)
 {
   // --------------------------------------------------------
   // Point-triangle
@@ -2037,8 +2037,8 @@ bool ElasticShell::checkTriangleVsTriangleCollisionForCollapse( const FaceHandle
     VertexHandle vertex_0 = *fvit;
     
     VertexHandle vert_ids[3];
-    ElTopo::Vec3d vert_pos[3];
-    ElTopo::Vec3d new_vert_pos[3];
+    ElTopoCode::Vec3d vert_pos[3];
+    ElTopoCode::Vec3d new_vert_pos[3];
 
     int c = 0;
     bool shared_vert = false;
@@ -2049,17 +2049,17 @@ bool ElasticShell::checkTriangleVsTriangleCollisionForCollapse( const FaceHandle
         break;
       }
       vert_ids[c] = v;
-      vert_pos[c] = ElTopo::toElTopo(m_positions[vert_ids[c]]);
+      vert_pos[c] = ElTopoCode::toElTopo(m_positions[vert_ids[c]]);
       new_vert_pos[c] = (v == source_vert || v == dest_vert)? new_position : vert_pos[c];
     }
 
     if(shared_vert) continue;
   
-    ElTopo::Vec3d vert_0_pos, vert_0_newpos;
-    vert_0_pos = ElTopo::toElTopo(m_positions[ vertex_0 ]);
+    ElTopoCode::Vec3d vert_0_pos, vert_0_newpos;
+    vert_0_pos = ElTopoCode::toElTopo(m_positions[ vertex_0 ]);
     vert_0_newpos = (vertex_0 == source_vert || vertex_0 == dest_vert)? new_position : vert_0_pos;
 
-    if ( ElTopo::point_triangle_collision(  
+    if ( ElTopoCode::point_triangle_collision(  
       vert_0_pos, vert_0_newpos, vertex_0.idx(),
       vert_pos[0], new_vert_pos[0], vert_ids[0].idx(), 
       vert_pos[1], new_vert_pos[1], vert_ids[1].idx(),
@@ -2077,8 +2077,8 @@ bool ElasticShell::checkTriangleVsTriangleCollisionForCollapse( const FaceHandle
     VertexHandle vertex_0 = *fvit;
 
     VertexHandle vert_ids[3];
-    ElTopo::Vec3d vert_pos[3];
-    ElTopo::Vec3d new_vert_pos[3];
+    ElTopoCode::Vec3d vert_pos[3];
+    ElTopoCode::Vec3d new_vert_pos[3];
 
     int c = 0;
     bool shared_vert = false;
@@ -2089,17 +2089,17 @@ bool ElasticShell::checkTriangleVsTriangleCollisionForCollapse( const FaceHandle
         break;
       }
       vert_ids[c] = v;
-      vert_pos[c] = ElTopo::toElTopo(m_positions[vert_ids[c]]);
+      vert_pos[c] = ElTopoCode::toElTopo(m_positions[vert_ids[c]]);
       new_vert_pos[c] = (v == source_vert || v == dest_vert)? new_position : vert_pos[c];
     }
 
     if(shared_vert) continue;
 
-    ElTopo::Vec3d vert_0_pos, vert_0_newpos;
-    vert_0_pos = ElTopo::toElTopo(m_positions[ vertex_0 ]);
+    ElTopoCode::Vec3d vert_0_pos, vert_0_newpos;
+    vert_0_pos = ElTopoCode::toElTopo(m_positions[ vertex_0 ]);
     vert_0_newpos = (vertex_0 == source_vert || vertex_0 == dest_vert)? new_position : vert_0_pos;
 
-    if ( ElTopo::point_triangle_collision(  
+    if ( ElTopoCode::point_triangle_collision(  
       vert_0_pos, vert_0_newpos, vertex_0.idx(),
       vert_pos[0], new_vert_pos[0], vert_ids[0].idx(), 
       vert_pos[1], new_vert_pos[1], vert_ids[1].idx(),
@@ -2141,14 +2141,14 @@ bool ElasticShell::checkTriangleVsTriangleCollisionForCollapse( const FaceHandle
       }
 
       VertexHandle vert_ids[4] = {vertex_0, vertex_1, vertex_2, vertex_3};
-      ElTopo::Vec3d vert_pos[4], new_vert_pos[4];
+      ElTopoCode::Vec3d vert_pos[4], new_vert_pos[4];
       for(int c = 0; c < 4; ++c) {
         VertexHandle v = vert_ids[c];
-        vert_pos[c] = ElTopo::toElTopo(m_positions[vert_ids[c]]);
+        vert_pos[c] = ElTopoCode::toElTopo(m_positions[vert_ids[c]]);
         new_vert_pos[c] = (v == source_vert || v == dest_vert)? new_position : vert_pos[c];
       }
 
-      if ( ElTopo::segment_segment_collision(  
+      if ( ElTopoCode::segment_segment_collision(  
         vert_pos[0], new_vert_pos[0], vertex_0.idx(), 
         vert_pos[1], new_vert_pos[1], vertex_1.idx(),
         vert_pos[2], new_vert_pos[2], vertex_2.idx(),
@@ -2165,13 +2165,13 @@ bool ElasticShell::checkTriangleVsTriangleCollisionForCollapse( const FaceHandle
 bool ElasticShell::edgeCollapseCausesCollision(const VertexHandle& source_vertex, 
                                              const VertexHandle& destination_vertex, 
                                              const EdgeHandle& edge_index, 
-                                             const ElTopo::Vec3d& vertex_new_position ) {
+                                             const ElTopoCode::Vec3d& vertex_new_position ) {
  
   // Change source vertex predicted position to superimpose onto dest vertex
   //printf("Checking edge collapse safety\n");
 
-  updateBroadPhaseForCollapse(source_vertex, ElTopo::toElTopo(m_positions[source_vertex]),
-                              destination_vertex, ElTopo::toElTopo(m_positions[destination_vertex]));
+  updateBroadPhaseForCollapse(source_vertex, ElTopoCode::toElTopo(m_positions[source_vertex]),
+                              destination_vertex, ElTopoCode::toElTopo(m_positions[destination_vertex]));
   
   // Get the set of triangles which are going to be deleted
   std::vector< FaceHandle > triangles_incident_to_edge;
@@ -2206,22 +2206,22 @@ bool ElasticShell::edgeCollapseCausesCollision(const VertexHandle& source_vertex
 
     if ( triangle_will_be_deleted ) { continue; }
 
-    std::vector<ElTopo::Vec3d> tri_verts_old;
-    std::vector<ElTopo::Vec3d> tri_verts_new;
+    std::vector<ElTopoCode::Vec3d> tri_verts_old;
+    std::vector<ElTopoCode::Vec3d> tri_verts_new;
     for(FaceVertexIterator fvit = m_obj->fv_iter(moving_triangles[i]); fvit; ++fvit) {
       VertexHandle vh = *fvit;
-      ElTopo::Vec3d old_pos = ElTopo::toElTopo(m_positions[vh]);
+      ElTopoCode::Vec3d old_pos = ElTopoCode::toElTopo(m_positions[vh]);
       tri_verts_old.push_back(old_pos);
 
       //check if the vertex is being moved
-      ElTopo::Vec3d vert_pos = (vh == source_vertex || vh == destination_vertex)? old_pos : vertex_new_position; 
+      ElTopoCode::Vec3d vert_pos = (vh == source_vertex || vh == destination_vertex)? old_pos : vertex_new_position; 
       tri_verts_new.push_back(vert_pos);
     }
     assert(tri_verts_old.size() == 3);
     assert(tri_verts_new.size() == 3);
 
     // Test the triangle vs all other triangles
-    ElTopo::Vec3d aabb_low, aabb_high;
+    ElTopoCode::Vec3d aabb_low, aabb_high;
     minmax( tri_verts_old[0], tri_verts_old[1], tri_verts_old[2], 
       tri_verts_new[0], tri_verts_new[1], tri_verts_new[2], 
       aabb_low, aabb_high );

@@ -18,11 +18,15 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellRadialForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellSurfaceTensionForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVolumeForce.hh"
-#include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexTriSpringForce.hh"
-#include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexPointSpringForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/DrainingBubblePressureForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellBathForce.hh"
 #include "BASim/src/Collisions/ElTopo/util.hh"
+
+//An ElTopo global variable.
+#include "runstats.h"
+namespace ElTopo {
+  ElTopo::RunStats g_stats;
+}
 
 #include <set>
 #include <fstream>
@@ -90,7 +94,7 @@ ShellTest::ShellTest()
   //Shell forces
   AddOption("shell-CST-stretching", "whether to apply constant-strain-triangle in-plane stretching", true);
   AddOption("shell-DS-bending", "whether to apply \"Discrete Shells\" hinge-based bending", false);
-  
+  AddOption("shell-MN-bending", "whether to apply Mid-edge Normal based bending (Morley elt)", false);
   AddOption("shell-stretching-factor", "extra scale factor to multiply stretching coefficient by", 1.0);
   AddOption("shell-bending-factor", "extra scale factor to multiple bending coefficient by", 1.0);
 
@@ -197,6 +201,7 @@ void ShellTest::Setup()
   
   bool cst_stretch = GetBoolOpt("shell-CST-stretching");
   bool ds_bend = GetBoolOpt("shell-DS-bending");
+  bool mn_bend = GetBoolOpt("shell-MN-bending");
 
   //fudge factors to modify the elastic-viscous coefficients (so as to manipulate them separately)
   Scalar cst_scale = GetScalarOpt("shell-stretching-factor");
@@ -247,7 +252,8 @@ void ShellTest::Setup()
       shell->addForce(new DSBendingForce(*shell, "DSBending", ds_scale*Youngs_modulus, Poisson_ratio, ds_scale*Youngs_damping, Poisson_damping, timestep));
 
     //Better bending model, not currently functional.
-    //shell->addForce(new MNBendingForce(*shell, "MNBending", Youngs_modulus, Poisson_ratio, Youngs_damping, Poisson_damping, timestep));
+    if(mn_bend)
+      shell->addForce(new MNBendingForce(*shell, "MNBending", Youngs_modulus, Poisson_ratio, Youngs_damping, Poisson_damping, timestep));
   }
 
 
@@ -456,13 +462,13 @@ void ShellTest::setupScene1() {
   
   for(int j = 0; j <= yresolution; ++j) {
     for(int i = 0; i <= xresolution; ++i) {
-      Vec3d vert(i*dx, j*dy, 0.01*dx*sin(100*j*dy + 17*i*dx));
-     /* if(j < 0.5*yresolution) {
+      Vec3d vert(i*dx, j*dy, 0);//0.01*dx*sin(100*j*dy + 17*i*dx));
+      if(j < 0.5*yresolution) {
         int k = j;
         int j_mod = (int)(0.5*yresolution);
         vert(1) = j_mod*dx;
         vert(2) = (k-j_mod)*dx;
-      }*/
+      }
       Vec3d undef = vert;
 
       VertexHandle h = shellObj->addVertex();
@@ -1037,9 +1043,9 @@ void ShellTest::setupScene6() {
       Scalar yVal = newRad*sin(rotAngle);
 
       Scalar x_n,y_n,z_n;
-      x_n = 0.00001*ElTopo::randhashd(seed++);
-      y_n = 0.00001*ElTopo::randhashd(seed++);
-      z_n = 0.00001*ElTopo::randhashd(seed++);
+      x_n = 0.00001*ElTopoCode::randhashd(seed++);
+      y_n = 0.00001*ElTopoCode::randhashd(seed++);
+      z_n = 0.00001*ElTopoCode::randhashd(seed++);
       VertexHandle vNew = shellObj->addVertex();
       positions[vNew] = centre + Vec3d(xVal,zVal,yVal) + Vec3d(x_n, y_n, z_n);
       velocities[vNew] = start_vel;
@@ -2259,7 +2265,7 @@ void ShellTest::setupScene17() {
   //shell->setCollisionSphere(true, 0.1, Vec3d(0.5,-0.3,0.5), Vec3d(0.0,0.0,0.0));
   
   //load SDF
-  ElTopo::Array3f phi_grid;
+  ElTopoCode::Array3f phi_grid;
   std::string filename = GetStringOpt("shell-collision-object-file");
   std::ifstream infile(filename.c_str());
   if(!infile){

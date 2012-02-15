@@ -14,7 +14,7 @@
 
 #include "BASim/src/Collisions/ElTopo/collisionqueries.hh"
 
-namespace ElTopo {
+namespace ElTopoCode {
 
 static const double collision_epsilon = 1e-6;
 

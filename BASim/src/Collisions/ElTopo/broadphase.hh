@@ -21,7 +21,7 @@
 
 #include "vec.hh"
 
-namespace ElTopo {
+namespace ElTopoCode {
 // ---------------------------------------------------------
 //  Forwards and typedefs
 // ---------------------------------------------------------

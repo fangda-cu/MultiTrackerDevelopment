@@ -3,7 +3,7 @@
 
 #include "vec.hh"
 
-namespace ElTopo {
+namespace ElTopoCode {
 // 2D ====================================================================================================
 
 bool check_edge_edge_intersection(const Vec2d &x0, const Vec2d &x1, const Vec2d &x2, const Vec2d &x3, double &s01, double &s23, double tolerance );

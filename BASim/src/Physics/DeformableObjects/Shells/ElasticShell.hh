@@ -124,7 +124,7 @@ public:
   void setSelfCollision(bool enabled);
 
   void setCollisionSphere(bool enabled, Scalar radius, Vec3d position, Vec3d velocity);
-  void setCollisionObject(bool enabled, const Vec3d& position, const Vec3d& velocity, const ElTopo::Array3f& grid_data, const Vec3d& origin, Scalar dx);
+  void setCollisionObject(bool enabled, const Vec3d& position, const Vec3d& velocity, const ElTopoCode::Array3f& grid_data, const Vec3d& origin, Scalar dx);
 
   void setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel, Scalar thickness);
   void setDeletionBox(const Vec3d& lowerBound, const Vec3d& upperBound);
@@ -175,13 +175,13 @@ protected:
   void updateBroadPhaseStatic(const VertexHandle& vertex_a);
 
   bool isSplitDesired(const EdgeHandle& eh, double maxEdge, double desiredEdge, double maxAngle);
-  bool edgeSplitCausesCollision( const ElTopo::Vec3d& new_vertex_position, const ElTopo::Vec3d& new_vertex_smooth_position, EdgeHandle edge);
+  bool edgeSplitCausesCollision( const ElTopoCode::Vec3d& new_vertex_position, const ElTopoCode::Vec3d& new_vertex_smooth_position, EdgeHandle edge);
   bool performSplit(const EdgeHandle& eh, VertexHandle& newVert);
 
   bool performCollapse(const EdgeHandle& eh);
-  void updateBroadPhaseForCollapse(const VertexHandle& vertex_a, const ElTopo::Vec3d& new_pos_a, const VertexHandle& vertex_b, const ElTopo::Vec3d& new_pos_b);
-  bool edgeCollapseCausesCollision(const VertexHandle& source_vertex, const VertexHandle& destination_vertex, const EdgeHandle& edge_index, const ElTopo::Vec3d& vertex_new_position );
-  bool checkTriangleVsTriangleCollisionForCollapse( const FaceHandle& triangle_a, const FaceHandle& triangle_b, const VertexHandle& source_vert, const VertexHandle& dest_vert, ElTopo::Vec3d new_position);
+  void updateBroadPhaseForCollapse(const VertexHandle& vertex_a, const ElTopoCode::Vec3d& new_pos_a, const VertexHandle& vertex_b, const ElTopoCode::Vec3d& new_pos_b);
+  bool edgeCollapseCausesCollision(const VertexHandle& source_vertex, const VertexHandle& destination_vertex, const EdgeHandle& edge_index, const ElTopoCode::Vec3d& vertex_new_position );
+  bool checkTriangleVsTriangleCollisionForCollapse( const FaceHandle& triangle_a, const FaceHandle& triangle_b, const VertexHandle& source_vert, const VertexHandle& dest_vert, ElTopoCode::Vec3d new_position);
 
   bool performFlip(const EdgeHandle& eh);
   bool edgeFlipCausesCollision( const EdgeHandle& edge_index, const VertexHandle& new_end_a, const VertexHandle& new_end_b);
@@ -259,11 +259,11 @@ protected:
   bool m_object_collisions;
   Vec3d m_object_position;
   Vec3d m_object_velocity;
-  ElTopo::Array3f m_object_SDF;
+  ElTopoCode::Array3f m_object_SDF;
   Vec3d m_object_origin;
   Scalar m_object_dx;
 
-  ElTopo::BroadPhaseGrid m_broad_phase;
+  ElTopoCode::BroadPhaseGrid m_broad_phase;
 
   //Fracture properties
   bool m_tearing;

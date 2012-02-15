@@ -6,7 +6,7 @@
 #include <cassert>
 #include <vector>
 
-namespace ElTopo {
+namespace ElTopoCode {
 
 template<class T, class ArrayT=std::vector<T> >
 struct Array2

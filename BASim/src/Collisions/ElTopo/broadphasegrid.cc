@@ -34,7 +34,7 @@
 /// Construct one grid from the given set of AABBs, using the given length scale as the cell size, with the given padding
 ///
 // --------------------------------------------------------
-namespace ElTopo {
+namespace ElTopoCode {
 
 Vec3d toElTopo(BASim::Vec3d vec) {
    return Vec3d(vec[0], vec[1], vec[2]);

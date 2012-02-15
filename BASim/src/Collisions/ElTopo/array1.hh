@@ -19,7 +19,7 @@
 // resize() and push_back() are limited.
 // Note: for the most part assertions are done with assert(), not exceptions...
 
-namespace ElTopo {
+namespace ElTopoCode {
 // gross template hacking to determine if a type is integral or not
 struct Array1True {};
 struct Array1False {};
