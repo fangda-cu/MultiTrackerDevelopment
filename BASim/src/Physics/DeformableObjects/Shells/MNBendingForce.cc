@@ -38,8 +38,11 @@ void fillVertNaN(std::vector<Scalar>& data, int startInd) {
 }
 
 void MNBendingForce::update() {
+  
   if(m_initialized)
     return;
+  
+  std::cout << "Initial update() called.\n";
 
   DeformableObject& defo = m_shell.getDefoObj();
   std::vector<Scalar> undeformed(MNBendStencilSize), undeformed_damp(MNBendStencilSize), deformed(MNBendStencilSize);
@@ -108,7 +111,6 @@ bool MNBendingForce::gatherDOFs(const FaceHandle& fh,
       fillVert(undeformed_damp, v+9, m_shell.getVertexDampingUndeformed(qh));
     }
     else {
-      
       fillVertNaN(deformed, v+9);
       fillVertNaN(undeformed, v+9);
       fillVertNaN(undeformed_damp, v+9);
@@ -346,7 +348,9 @@ adreal<NumMNBendDof,DO_HESS,Real> MNEnergy(const MNBendingForce& mn, const std::
   mapDof( undeformed, s_undeformed );    
   mapDof( deformed, s_deformed );
 
-  // indep variables
+  const Vector3d* qu  = s_undeformed.q;
+
+  // independent variables
   advecMN   p[NumTriPoints]; // vertex positions
   set_independent( p[0], s_deformed.p[0], 0 );
   set_independent( p[1], s_deformed.p[1], 3 );
@@ -357,16 +361,24 @@ adreal<NumMNBendDof,DO_HESS,Real> MNEnergy(const MNBendingForce& mn, const std::
   xi[1].set_independent( s_deformed.xi[1], 10 );
   xi[2].set_independent( s_deformed.xi[2], 11 );        
 
-  // dep variables
+  // dependent variables
   advecMN v[NumTriPoints], t[NumTriPoints], n;   
   adrealMN   A;  
   adrealMN  w[NumTriPoints];
 
-  ComputeTriangleAttrib(p,v,t,n,A);
+  ComputeTriangleAttrib(p,v,t,n,A); 
+
+  bool nbrValid0 = !isnan(qu[0](0));
+  bool nbrValid1 = !isnan(qu[1](0));
+  bool nbrValid2 = !isnan(qu[2](0));
 
   w[0] = (-dot(n,pc->tau0[0])  + Real(pc->s[0])*xi[0])*pc->c0[0];
   w[1] = (-dot(n,pc->tau0[1])  + Real(pc->s[1])*xi[1])*pc->c0[1];
   w[2] = (-dot(n,pc->tau0[2])  + Real(pc->s[2])*xi[2])*pc->c0[2];
+
+  if(!nbrValid0) w[0] = 0;
+  if(!nbrValid1) w[1] = 0;
+  if(!nbrValid2) w[2] = 0;
 
   adrealMN e(0);
   for(int i= 0; i < NumTriPoints; i++)
@@ -382,7 +394,7 @@ adreal<NumMNBendDof,DO_HESS,Real> MNEnergy(const MNBendingForce& mn, const std::
 void MNBendingForce::initializePrecomp( const FaceHandle& face, const std::vector<Scalar>& undeformed, const std::vector<Scalar>& deformed, MNPrecomputed* pc) const 
 { 
   // map generic variables to energy-specific structures
-
+  std::cout << "init";
   MNBendDofStruct s_undeformed;
   mapDof( undeformed, s_undeformed );
 
@@ -410,34 +422,41 @@ void MNBendingForce::initializePrecomp( const FaceHandle& face, const std::vecto
     pc->s[i] = (*efit == face) ? 1 : -1;
     ++i;
   }
+  bool nbrValid0 = !isnan(qu[0](0));
+  bool nbrValid1 = !isnan(qu[1](0));
+  bool nbrValid2 = !isnan(qu[2](0));
 
   pc->w_undef[0] = (-dot(nu,tauu[0])  + Real(pc->s[0])*xi_undef[0])*cu[0];
   pc->w_undef[1] = (-dot(nu,tauu[1])  + Real(pc->s[1])*xi_undef[1])*cu[1];
   pc->w_undef[2] = (-dot(nu,tauu[2])  + Real(pc->s[2])*xi_undef[2])*cu[2];
+
+  if(!nbrValid0) pc->w_undef[0] = 0;
+  if(!nbrValid1) pc->w_undef[1] = 0;
+  if(!nbrValid2) pc->w_undef[2] = 0;
 
   //Note that it would ordinarily be divided by area^2, but since we integrate over area to compute energy,
   //one of them goes away.
   Real Tc1[9], Tc2[9];
   for(int i=0; i <= 2; i++)
     for(int j=0; j <= 2; j++) {
-      Tc1[NumTriPoints*j+i] = sqr(dot(vu[i],vu[j]))/Au/len(vu[i])/len(vu[j]);                 
-      //Tc2[NumTriPoints*j+i] = len(vu[i])*len(vu[j])/Au; //Error! I think both should be divided by: (len(vu[i]) * len(vu[j])) - CB
-      Tc2[NumTriPoints*j+i] = 1.0/Au; //Christopher's proposed correction
+      Tc1[NumTriPoints*j+i] = dot(vu[i],vu[j])*dot(vu[i],vu[j])/Au/len(vu[i])/len(vu[j]); //sqr(dot(vu[i],vu[j]))/Au/len(vu[i])/len(vu[j]);                 
+      Tc2[NumTriPoints*j+i] = len(vu[i])*len(vu[j])/Au;
     }
 
     Real Y = m_Youngs;
     Real h = m_shell.getThickness(face);
-    Real BendToMembraneRatio = 0.1;//mn.getBendToMembraneRatio();
     Real poisson = m_Poisson;
 
     for(int i=0; i<9; i++ )
-      pc->T[i] = BendToMembraneRatio*(Y*h*h*h/12.0)/(1.0-poisson*poisson)*((1.0-poisson)*Tc1[i] + poisson*Tc2[i]);
+      pc->T[i] = (Y*h*h*h/12.0)/(1.0-poisson*poisson)*((1.0-poisson)*Tc1[i] + poisson*Tc2[i]);
    
 }
 
-// use current deformed positions to compute reference coord system quantities 
+// use current deformed positions to compute reference coordinate system quantities 
 void MNBendingForce::updatePrecomp(const FaceHandle& face, const std::vector<Scalar>& undeformed, const std::vector<Scalar>& deformed, MNPrecomputed* pre) const
 {    
+  std::cout << "upd";
+
   // map generic variables to energy-specific structures
   MNPrecomputed* pc = pre;
   MNBendDofStruct s_deformed;
@@ -503,7 +522,7 @@ void MNBendingForce::elementJacobian(const std::vector<Scalar>& undeformed,
 
 
   adreal<NumMNBendDof,1,Real> e = MNEnergy<1>(*this, undeformed, deformed, const_cast<MNPrecomputed*>(pre) );     
-  // insert in the element jacobian matrix
+  // insert in the element Jacobian matrix
   for( uint i = 0; i < NumMNBendDof; i++ )
   {
     for( uint j = 0; j < NumMNBendDof; j++ )

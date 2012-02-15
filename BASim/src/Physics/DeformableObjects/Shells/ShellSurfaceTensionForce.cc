@@ -245,7 +245,8 @@ void ShellSurfaceTensionForce::elementJacobian(const std::vector<Vec3d>& deforme
   Vec3d ab = b-a;
   Vec3d ac = c-a;
 
-  Scalar K = (ab.dot(ab))*(ac.dot(ac)) - sqr(ab.dot(ac));
+  //Scalar K = (ab.dot(ab))*(ac.dot(ac)) - sqr(ab.dot(ac));
+  Scalar K = (ab.dot(ab))*(ac.dot(ac)) - (ab.dot(ac))*(ab.dot(ac));
   
   Vec3d dkdc = 2*(ab.dot(ab)*ac - ab.dot(ac)*ab);
   Vec3d dkdb = 2*(ac.dot(ac)*ab - ac.dot(ab)*ac);

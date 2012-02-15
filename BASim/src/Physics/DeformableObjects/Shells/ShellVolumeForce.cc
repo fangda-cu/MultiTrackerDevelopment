@@ -113,7 +113,8 @@ Scalar ShellVolumeForce::globalEnergy() const
     volume += elementEnergy(deformed);
   }
 
-  return 0.5 * m_strength * sqr(volume - m_target_volume);
+  //return 0.5 * m_strength * sqr(volume - m_target_volume);
+  return 0.5 * m_strength * (volume - m_target_volume)*(volume - m_target_volume);
 }
 
 void ShellVolumeForce::globalForce( VecXd& force )  const

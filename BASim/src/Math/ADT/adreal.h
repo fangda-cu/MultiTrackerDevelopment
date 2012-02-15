@@ -48,8 +48,8 @@ using namespace std;
   }                                             \
   return temp
 
-#define sqr(x) ((x)*(x))
-#define cub(x) ((x)*(x)*(x))
+//#define sqr(x) ((x)*(x))
+//#define cub(x) ((x)*(x)*(x))
 
 
 
@@ -331,8 +331,10 @@ template <int NUM_VARS,int DO_HESS, class constreal> void compareAD
 
   normg = 0; diffg = 0;
   for(int i =0; i < NUM_VARS; i++) {
-    normg += sqr(ad1.gradient(i));
-    diffg += sqr(ad1.gradient(i)-ad2.gradient(i));
+    //normg += sqr(ad1.gradient(i));
+    //diffg += sqr(ad1.gradient(i)-ad2.gradient(i));
+    normg += ad1.gradient(i)*ad1.gradient(i);
+    diffg += (ad1.gradient(i)-ad2.gradient(i))*(ad1.gradient(i)-ad2.gradient(i));
   }
   normg = sqrt(normg);
   diffg = sqrt(diffg);
@@ -342,8 +344,8 @@ template <int NUM_VARS,int DO_HESS, class constreal> void compareAD
     normh = 0; diffh = 0;
     for(int i =0; i < NUM_VARS; i++) {
       for(int j =0; j < NUM_VARS; j++) {
-        normh += sqr(ad1.hessian(i,j));
-        diffh += sqr(ad1.hessian(i,j)-ad2.hessian(i,j));
+        normh += (ad1.hessian(i,j))*(ad1.hessian(i,j)); //sqr(ad1.hessian(i,j));
+        diffh += (ad1.hessian(i,j)-ad2.hessian(i,j))*(ad1.hessian(i,j)-ad2.hessian(i,j)); //sqr(ad1.hessian(i,j)-ad2.hessian(i,j));
       }
     }
     normh = sqrt(normh);

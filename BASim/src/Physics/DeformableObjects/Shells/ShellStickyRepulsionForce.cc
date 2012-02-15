@@ -82,11 +82,13 @@ adreal<NumRepulsionDof,DO_HESS,Real> RepulsionEnergy(const ShellStickyRepulsionF
   advecVT offset = p[3] - (baryCoords[0]*p[0] + baryCoords[1]*p[1] + baryCoords[2]*p[2]);
 
   if(dot(s_deformed[3] - s_deformed[0], normalReal) > 0) {
-    e += 0.5*strength*sqr( dot(offset, normalReal) - undef_len);  
+    e += 0.5*strength*( dot(offset, normalReal) - undef_len)*( dot(offset, normalReal) - undef_len);  
+    //e += 0.5*strength*sqr( dot(offset, normalReal) - undef_len);  
     //e += 0.5*strength*sqr( dot(offset, normalVbl) - undef_len);  
   }
   else {
-    e += 0.5*strength*sqr( -dot(offset, normalReal) - undef_len);  
+    e += 0.5*strength*( -dot(offset, normalReal) - undef_len)*( -dot(offset, normalReal) - undef_len);  
+    //e += 0.5*strength*sqr( -dot(offset, normalReal) - undef_len);  
     //e += 0.5*strength*sqr( -dot(offset, normalVbl) - undef_len);  
   }
  

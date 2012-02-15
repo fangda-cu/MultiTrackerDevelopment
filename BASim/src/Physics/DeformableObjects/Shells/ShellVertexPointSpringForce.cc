@@ -53,7 +53,8 @@ adreal<NumSpringDofs,DO_HESS,Real> VertPointSpringEnergy(const ShellVertexPointS
   set_independent( p[0], s_deformed[0], 0 );
     
   adrealVT e(0);
-  e += 0.5*strength*sqr(len(p[0] - target_position) - undef_len);  
+  //e += 0.5*strength*sqr(len(p[0] - target_position) - undef_len);  
+  e += 0.5*strength*(len(p[0] - target_position) - undef_len)*(len(p[0] - target_position) - undef_len);  
 
   return e;
 }
