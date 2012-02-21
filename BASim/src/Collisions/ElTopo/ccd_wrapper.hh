@@ -9,8 +9,8 @@
 // ---------------------------------------------------------
 
 
-#ifndef CCD_WRAPPER_H
-#define CCD_WRAPPER_H
+#ifndef ELTOPO_CCD_WRAPPER_H
+#define ELTOPO_CCD_WRAPPER_H
 
 #include "BASim/src/Collisions/ElTopo/vec.hh"
 

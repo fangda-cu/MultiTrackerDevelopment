@@ -7,8 +7,8 @@
 //
 // ---------------------------------------------------------
 
-#ifndef BROADPHASEGRID_H
-#define BROADPHASEGRID_H
+#ifndef ELTOPO_BROADPHASEGRID_H
+#define ELTOPO_BROADPHASEGRID_H
 
 // ---------------------------------------------------------
 // Nested includes

@@ -12,6 +12,20 @@ VertexHandle getSharedVertex(const TopologicalObject& obj, const EdgeHandle& e0,
   else return VertexHandle(-1);
 }
 
+EdgeHandle getSharedEdge(const TopologicalObject& obj, const FaceHandle& f0, const FaceHandle& f1) {
+  //search for shared edge betwixt the two
+  for(FaceEdgeIterator fit = obj.fe_iter(f0); fit; ++fit) {
+    EdgeHandle e_out = *fit;
+    for(FaceEdgeIterator fit2 = obj.fe_iter(f1); fit2; ++fit2) {
+      EdgeHandle e_in = *fit2;
+      if(e_out == e_in)
+        return e_out;
+    }
+  }
+
+  return EdgeHandle(-1);
+}
+
 VertexHandle getEdgesOtherVertex(const TopologicalObject& obj, const EdgeHandle &eh, const VertexHandle& vh) {
   VertexHandle v0 = obj.fromVertex(eh), v1 = obj.toVertex(eh);
   assert(v0 == vh || v1 == vh);
@@ -520,6 +534,22 @@ EdgeHandle findEdge( const TopologicalObject& obj, const VertexHandle& v0, const
       return eh;
   }
   return EdgeHandle(-1);
+}
+
+bool isFaceMatch(const TopologicalObject& obj, const FaceHandle& fh, const VertexHandle& v0, const VertexHandle& v1, const VertexHandle& v2) {
+  //This could probably be done more optimally internally to TopologicalObject
+  std::vector<VertexHandle> src_vh;
+  src_vh.push_back(v0);src_vh.push_back(v1);src_vh.push_back(v2);
+  std::vector<VertexHandle> face_vh(3);
+  int i = 0;
+  for(FaceVertexIterator fvit = obj.fv_iter(fh); fvit; ++fvit) {
+    face_vh[i] = *fvit;
+    ++i;
+  }
+  std::sort(face_vh.begin(), face_vh.end());
+  std::sort(src_vh.begin(), src_vh.end());
+  
+  return face_vh[0] == src_vh[0] && face_vh[1] == src_vh[1] && face_vh[2] == src_vh[2];
 }
 
 }

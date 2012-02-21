@@ -15,6 +15,9 @@ bool getEdgeFacePair(const TopologicalObject& obj, const EdgeHandle& eh, FaceHan
 //Given two edges, find a shared vertex if one exists.
 VertexHandle getSharedVertex(const TopologicalObject& obj, const EdgeHandle& e0, const EdgeHandle& e1);
 
+//Given two faces, find a shared edge if one exists.
+EdgeHandle getSharedEdge(const TopologicalObject& obj, const FaceHandle& f0, const FaceHandle& f1);
+
 //Given an edge and a vertex which is on the edge, return the edge's other vertex
 VertexHandle getEdgesOtherVertex(const TopologicalObject& obj, const EdgeHandle &eh, const VertexHandle& vh);
 
@@ -56,6 +59,8 @@ void addPrevSide(TopologicalObject & obj, const FaceHandle &f, const EdgeHandle 
 void addNextSide(TopologicalObject & obj, const FaceHandle &f, const EdgeHandle &e,
         const VertexHandle& pivot, const VertexHandle &newVert, std::vector<EdgeHandle> & oldEdges,
         std::vector<FaceHandle> & oldFaces, std::vector<FaceHandle> &newFaces);
+
+bool isFaceMatch(const TopologicalObject& obj, const FaceHandle& fh, const VertexHandle& v0, const VertexHandle& v1, const VertexHandle& v2);
 
 } //namespace BASim 
 

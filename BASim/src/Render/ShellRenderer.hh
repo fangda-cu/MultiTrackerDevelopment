@@ -20,7 +20,7 @@ namespace BASim {
   
     enum DrawMode { DBG, FLAT, NONE, VOLUMETRIC };
 
-    ShellRenderer( const ElasticShell& shell, const Scalar thickness = 1.0 );
+    ShellRenderer( ElasticShell& shell, const Scalar thickness = 1.0 );
     
     void render();
     void renderEdges();
@@ -33,7 +33,7 @@ namespace BASim {
     virtual Scalar calculateObjectBoundingRadius(const Vec3d& center);
     
   protected:
-    const ElasticShell& m_shell;
+    ElasticShell& m_shell;
     DrawMode m_mode;
     const Scalar m_refthickness;
   };

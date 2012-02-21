@@ -7,8 +7,8 @@
 //
 // ---------------------------------------------------------
 
-#ifndef ACCELERATIONGRID_H
-#define ACCELERATIONGRID_H
+#ifndef ELTOPO_ACCELERATIONGRID_H
+#define ELTOPO_ACCELERATIONGRID_H
 
 // ---------------------------------------------------------
 // Nested includes

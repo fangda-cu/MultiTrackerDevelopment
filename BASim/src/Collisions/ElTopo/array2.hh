@@ -1,5 +1,5 @@
-#ifndef ARRAY2_H
-#define ARRAY2_H
+#ifndef ELTOPO_ARRAY2_H
+#define ELTOPO_ARRAY2_H
 
 #include "array1.h"
 #include <algorithm>

@@ -12,6 +12,12 @@
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
 #include "BASim/src/Math/Math.hh"
 
+#include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
+
+//ElTopo in order to test out the remeshing operations
+#include "surftrack.h"
+
+
 namespace BASim 
 {
 GLfloat black[] ={0.0f, 0.0f, 0.0f, 1.0f};
@@ -150,7 +156,7 @@ void ShellRenderer::cycleMode() {
    m_mode = (ShellRenderer::DrawMode) ((m_mode + 1) % 4);
 }
 
-ShellRenderer::ShellRenderer( const ElasticShell& shell, const Scalar thickness )
+ShellRenderer::ShellRenderer( ElasticShell& shell, const Scalar thickness )
 : m_shell(shell)
 , m_mode(FLAT)
 , m_refthickness( 2*thickness)
@@ -176,7 +182,7 @@ void ShellRenderer::render()
     // Render all faces
     glBegin(GL_TRIANGLES);
     //OpenGL::color(Color(255,0,0));
-    const DeformableObject& mesh = m_shell.getDefoObj();
+    DeformableObject& mesh = m_shell.getDefoObj();
 
     for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
     {
@@ -219,12 +225,12 @@ void ShellRenderer::render()
 //      renderVelocity();
 
     glDisable(GL_LIGHTING);
-    const DeformableObject& mesh = m_shell.getDefoObj();
+    DeformableObject& mesh = m_shell.getDefoObj();
 
-    glPolygonMode(GL_FRONT, GL_FILL);
-    glPolygonMode(GL_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-
+    
     // Render all edges
     glLineWidth(2);
     glBegin(GL_LINES);
@@ -303,6 +309,7 @@ void ShellRenderer::render()
       }
     }
     glEnd();
+    
 
     //Draw collision springs
     std::vector<Vec3d> starts, ends;
@@ -351,13 +358,17 @@ void ShellRenderer::render()
     glVertex3f(-2.0f, -0.2, 2.0f);
     glEnd();*/
 
+
+
+
+    
     glEnable(GL_LIGHTING);
 
   }else if (m_mode == VOLUMETRIC){
 //      glDisable(GL_LIGHTING);
       glDisable(GL_LIGHTING);
 
-      const DeformableObject& mesh = m_shell.getDefoObj();
+      DeformableObject& mesh = m_shell.getDefoObj();
 
       glEnable(GL_LIGHTING);
 

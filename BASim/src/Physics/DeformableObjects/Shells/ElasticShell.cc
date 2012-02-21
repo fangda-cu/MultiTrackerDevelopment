@@ -12,8 +12,10 @@
 #include "BASim/src/Collisions/ElTopo/collisionqueries.hh"
 
 #include "BASim/src/Collisions/ElTopo/array3.hh"
+#include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 
-//#include "eltopo.h"
+#include "surftrack.h"
+
 
 #include <algorithm>
 #include <numeric>
@@ -806,8 +808,9 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   //Remeshing
   if(m_do_remeshing) {
     std::cout << "Remeshing\n";
-    for(int i = 0; i < m_remeshing_iters; ++i)
-      remesh(m_remesh_edge_length);  
+    //for(int i = 0; i < m_remeshing_iters; ++i)
+    //  remesh(m_remesh_edge_length);  
+    remesh_new();
     
     //Relabel DOFs if necessary
     do_relabel = true;
@@ -1109,6 +1112,238 @@ bool ElasticShell::shouldFracture (const EdgeHandle & eh) const{
 //            && ( p <  m_tear_rand);
     return (thickness < m_tear_thres)  && ( p <  m_tear_rand);
 }
+
+
+void ElasticShell::remesh_new()
+{
+
+  //Set up a SurfTrack, run remeshing, render the new mesh
+  ElTopo::SurfTrackInitializationParameters construction_parameters;
+  construction_parameters.m_allow_vertex_movement = false;
+  construction_parameters.m_min_edge_length = 0.05;
+  construction_parameters.m_max_edge_length = 0.2;
+  construction_parameters.m_max_volume_change = 10000;   
+  construction_parameters.m_min_triangle_angle = 20;
+  construction_parameters.m_max_triangle_angle = 150;
+  construction_parameters.m_verbose = false;
+  construction_parameters.m_use_curvature_when_collapsing = false;
+  construction_parameters.m_use_curvature_when_splitting = false;
+
+  //TODO If we try using other subdivision schemes for splitting edges
+  //note that the manner in which the edge split operation is performed
+  //will need to be adjusted to properly preserve total volume.
+
+  std::vector<ElTopo::Vec3d> vert_data;
+  std::vector<ElTopo::Vec3st> tri_data;
+  std::vector<Scalar> masses;
+
+  DeformableObject& mesh = getDefoObj();
+
+  //Index mappings between us and El Topo
+  VertexProperty<int> vert_numbers(&mesh);
+  FaceProperty<int> face_numbers(&mesh);
+  std::vector<VertexHandle> reverse_vertmap;
+  std::vector<FaceHandle> reverse_trimap;
+
+
+  std::cout << "Collect vertices.\n";
+  //walk through vertices, create linear list, store numbering
+  int id = 0;
+  for(VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit) {
+    VertexHandle vh = *vit;
+    Vec3d vert = getVertexPosition(vh);
+    Scalar mass = getMass(vh);
+    vert_data.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
+    masses.push_back(mass);
+    vert_numbers[vh] = id;
+    reverse_vertmap.push_back(vh);
+
+    ++id;
+  }
+
+  std::cout << "Collect tris\n";
+  //walk through tris, creating linear list, using the vertex numbering assigned above
+  id = 0;
+  for(FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit) {
+    FaceHandle fh = *fit;
+    ElTopo::Vec3st tri;
+    int i = 0;
+    for(FaceVertexIterator fvit = mesh.fv_iter(fh); fvit; ++fvit) {
+      VertexHandle vh = *fvit;
+      tri[i] = vert_numbers[vh];
+      ++i;
+    }
+    tri_data.push_back(tri);
+    face_numbers[fh] = id;
+    reverse_trimap.push_back(fh);
+    ++id;
+  }
+
+  std::cout << "\n\nCreate surface_tracker\n";
+  ElTopo::SurfTrack surface_tracker( vert_data, tri_data, masses, construction_parameters ); 
+
+  surface_tracker.improve_mesh();
+
+  std::cout << "Performing " << surface_tracker.m_mesh_change_history.size() << " Improvement Operations:\n";
+  for(unsigned int i = 0; i < surface_tracker.m_mesh_change_history.size(); ++i) {
+    ElTopo::MeshUpdateEvent event = surface_tracker.m_mesh_change_history[i];
+    if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_COLLAPSE) {
+      std::cout << "Collapse.\n";
+      
+      int t0 = event.m_deleted_tris[0];
+      int t1 = event.m_deleted_tris[1];
+      //Find associated tris
+      FaceHandle f0 = reverse_trimap[t0];
+      FaceHandle f1 = reverse_trimap[t1];
+      EdgeHandle eh = getSharedEdge(mesh, f0, f1);
+      
+      Vec3d new_pos(event.m_vert_position[0], event.m_vert_position[1], event.m_vert_position[2]);
+      VertexHandle dead_vert = reverse_vertmap[event.m_deleted_verts[0]];
+      VertexHandle keep_vert = getEdgesOtherVertex(mesh, eh, dead_vert);
+      int kept_vert_ET_id = vert_numbers[keep_vert];
+
+      performCollapse(eh, dead_vert, keep_vert, new_pos);
+
+      //delete the vertex
+      reverse_vertmap[event.m_deleted_verts[0]] = VertexHandle(-1); //mark vert as invalid
+      
+      //delete the triangles
+      for(unsigned int tri = 0; tri < event.m_deleted_tris.size(); ++tri) {
+        reverse_trimap[event.m_deleted_tris[tri]] = FaceHandle(-1);
+      }
+      
+      //remap the created triangles
+      for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
+        ElTopo::Vec3st new_face = event.m_created_tri_data[i];
+
+        //determine handles in our indexing
+        VertexHandle v0 = reverse_vertmap[new_face[0]];
+        VertexHandle v1 = reverse_vertmap[new_face[1]];
+        VertexHandle v2 = reverse_vertmap[new_face[2]];
+        assert(v0.isValid() && v1.isValid() && v2.isValid());
+        
+        bool face_matched = false;
+        for(VertexFaceIterator vfit = mesh.vf_iter(keep_vert); vfit; ++vfit) {
+          FaceHandle face_candidate = *vfit;
+          if(isFaceMatch(mesh, face_candidate, v0, v1, v2)) {
+            if(reverse_trimap.size() <= event.m_created_tris[i]) 
+              reverse_trimap.resize(event.m_created_tris[i]+1);
+            reverse_trimap[event.m_created_tris[i]] = face_candidate;
+            face_numbers[face_candidate] = event.m_created_tris[i];
+            face_matched = true;
+            break;
+          }
+        }
+
+        if(!face_matched)
+          std::cout << "ERROR: Couldn't match the face.\n\n\n";
+      }
+    }
+    else if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_SPLIT) {
+      std::cout << "Split.\n";
+      //Identify the edge based on its endpoint vertices instead
+
+      int t0 = event.m_deleted_tris[0];
+      int t1 = event.m_deleted_tris[1];
+      //Find associated tris
+      FaceHandle f0 = reverse_trimap[t0];
+      FaceHandle f1 = reverse_trimap[t1];
+      EdgeHandle eh = getSharedEdge(mesh, f0, f1);
+      VertexHandle new_vert;
+      Vec3d new_pos(event.m_vert_position[0], event.m_vert_position[1], event.m_vert_position[2]);
+      
+      //Do the same split as El Topo
+      performSplitET(eh, new_pos, new_vert);
+      
+      //now update the mapping between structures
+      //vertices
+      vert_numbers[new_vert] = event.m_created_verts[0];
+      if(reverse_vertmap.size() <= event.m_created_verts[0]) reverse_vertmap.resize(event.m_created_verts[0]+1, VertexHandle(-1));
+      reverse_vertmap[event.m_created_verts[0]] = new_vert; //the vertex will always be added at the end?
+      
+      //faces
+      for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
+        ElTopo::Vec3st new_face = event.m_created_tri_data[i];
+        
+        //determine handles in our indexing
+        VertexHandle v0 = reverse_vertmap[new_face[0]];
+        VertexHandle v1 = reverse_vertmap[new_face[1]];
+        VertexHandle v2 = reverse_vertmap[new_face[2]];
+        assert(v0.isValid() && v1.isValid() && v2.isValid());
+
+        bool face_matched = false;
+        for(VertexFaceIterator vfit = mesh.vf_iter(new_vert); vfit; ++vfit) {
+          FaceHandle face_candidate = *vfit;
+          if(isFaceMatch(mesh, face_candidate, v0, v1, v2)) {
+            if(reverse_trimap.size() <= event.m_created_tris[i]) 
+              reverse_trimap.resize(event.m_created_tris[i]+1);
+            reverse_trimap[event.m_created_tris[i]] = face_candidate;
+            face_numbers[face_candidate] = event.m_created_tris[i];
+            face_matched = true;
+            break;
+          }
+        }
+        
+        if(!face_matched)
+          std::cout << "ERROR: Couldn't match the face.\n\n\n";
+      }
+
+      //kill the reverse map elements for the deleted faces, since no longer valid.
+      reverse_trimap[t0] = FaceHandle(-1);
+      reverse_trimap[t1] = FaceHandle(-1);
+
+    }
+    else if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_FLIP) {
+      std::cout << "Flip\n";
+      int t0 = event.m_deleted_tris[0];
+      int t1 = event.m_deleted_tris[1];
+      //Find associated tris
+      FaceHandle f0 = reverse_trimap[t0];
+      FaceHandle f1 = reverse_trimap[t1];
+      EdgeHandle eh = getSharedEdge(mesh, f0, f1);
+      EdgeHandle newEdge;
+      //Do the same flip as El Topo
+      performFlip(eh, newEdge);
+
+      //faces
+      for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
+        ElTopo::Vec3st new_face = event.m_created_tri_data[i];
+
+        //determine handles in our indexing
+        VertexHandle v0 = reverse_vertmap[new_face[0]];
+        VertexHandle v1 = reverse_vertmap[new_face[1]];
+        VertexHandle v2 = reverse_vertmap[new_face[2]];
+        assert(v0.isValid() && v1.isValid() && v2.isValid());
+
+        bool face_matched = false;
+        for(EdgeFaceIterator efit = mesh.ef_iter(newEdge); efit; ++efit) {
+          FaceHandle face_candidate = *efit;
+          if(isFaceMatch(mesh, face_candidate, v0, v1, v2)) {
+            if(reverse_trimap.size() <= event.m_created_tris[i]) 
+              reverse_trimap.resize(event.m_created_tris[i]+1);
+            reverse_trimap[event.m_created_tris[i]] = face_candidate;
+            face_numbers[face_candidate] = event.m_created_tris[i];
+            face_matched = true;
+            break;
+          }
+        }
+
+        if(!face_matched)
+          std::cout << "ERROR: Couldn't match the face.\n\n\n";
+      }
+
+      //kill the reverse map elements for the deleted faces, since no longer valid.
+      reverse_trimap[t0] = FaceHandle(-1);
+      reverse_trimap[t1] = FaceHandle(-1);
+    }
+    else {
+      std::cout << "unknown operation";
+    }
+  }
+  std::cout << "Done\n";
+}
+
+
 void ElasticShell::remesh( Scalar desiredEdge )
 {
 
@@ -1311,50 +1546,8 @@ void ElasticShell::flipEdges() {
       if(area0 < 1e-12) continue;
       Scalar area1 = (p2-p1).cross(p3-p1).norm();
       if(area1 < 1e-12) continue;
-
-      //determine volume of the region being flipped
-      FaceHandle f0, f1;
-      getEdgeFacePair(*m_obj, eh, f0, f1);
-      Scalar totalVolume = m_volumes[f0] + m_volumes[f1];
-
-      //check for collision safety
-      //if(edgeFlipCausesCollision(eh, v2, v3))
-      //  continue;
-
-      //EdgeHandle newEdge(-1);
-      EdgeHandle newEdge = flipEdge(*m_obj, eh);
-      if(!newEdge.isValid()) //couldn't flip the edge, such an edge already existed
-        continue;
-      
-      //update the collision data
-      //remove the old edge/tris
-      /*m_broad_phase.remove_edge(eh.idx());
-      m_broad_phase.remove_triangle(f0.idx());
-      m_broad_phase.remove_triangle(f1.idx());*/
-      
-      FaceHandle f0new, f1new;
-      getEdgeFacePair(*m_obj, newEdge, f0new, f1new);
-      setFaceActive(f0new);
-      setFaceActive(f1new);
-
-      /*
-      //update the collision data
-      //add the new edge/tris
-      m_broad_phase.add_edge(newEdge.idx(), ElTopo::toElTopo(p2), ElTopo::toElTopo(p3), m_proximity_epsilon);
-      //(vertex ordering shouldn't matter here)
-      m_broad_phase.add_triangle(f0new.idx(), ElTopo::toElTopo(p2), ElTopo::toElTopo(p3), ElTopo::toElTopo(p0), m_proximity_epsilon);
-      m_broad_phase.add_triangle(f1new.idx(), ElTopo::toElTopo(p2), ElTopo::toElTopo(p3), ElTopo::toElTopo(p1), m_proximity_epsilon);
-      */
-
-      //assign new thicknesses
-      Scalar f0newArea = getArea(f0new, true);
-      Scalar f1newArea = getArea(f1new, true);
-      Scalar newThickness = totalVolume / (f0newArea + f1newArea);
-      m_thicknesses[f0new] = newThickness;
-      m_thicknesses[f1new] = newThickness;
-      m_volumes[f0new] = f0newArea*newThickness;
-      m_volumes[f1new] = f1newArea*newThickness;
-
+      EdgeHandle newEdge;
+      performFlip(eh, newEdge);
     }
   }
 
@@ -1568,9 +1761,6 @@ bool ElasticShell::isSplitDesired(const EdgeHandle& eh, double maxEdge, double d
 
 bool ElasticShell::performSplit(const EdgeHandle& eh, VertexHandle& new_vert) {
   
-  
-  //Check for self-intersections being induced...
-
   VertexHandle v0 = m_obj->fromVertex(eh);
   VertexHandle v1 = m_obj->toVertex(eh);
   assert(v0!=v1);
@@ -1591,14 +1781,7 @@ bool ElasticShell::performSplit(const EdgeHandle& eh, VertexHandle& new_vert) {
   getEdgeOppositeVertices(*m_obj, eh, v2, v3);
 
   ElTopoCode::Vec3d midpoint_ET = ElTopoCode::toElTopo(midpoint);
-  //if(edgeSplitCausesCollision(midpoint_ET, midpoint_ET, eh))
-  //  return false;
 
-  //remove the edge and surrounding faces from the collision structure
-  //m_broad_phase.remove_edge(eh.idx());
-  //for(unsigned int i = 0; i < oldFaces.size(); ++i)
-  //  m_broad_phase.remove_triangle(oldFaces[i].idx());
-  
   //perform the actual split
   std::vector<FaceHandle> newFaces;
   VertexHandle v_new = splitEdge(*m_obj, eh, newFaces);
@@ -1623,11 +1806,6 @@ bool ElasticShell::performSplit(const EdgeHandle& eh, VertexHandle& new_vert) {
   for(;vf_iter; ++vf_iter)
     setFaceActive(*vf_iter);
 
-  //update collision data structures
-
-  //add vertices
-  //m_broad_phase.add_vertex(v_new.idx(), ElTopo::toElTopo(midpoint), m_proximity_epsilon);
-  
   //add edges
   VertexEdgeIterator ve_iter = m_obj->ve_iter(v_new);
   for(; ve_iter; ++ve_iter) {
@@ -1635,7 +1813,6 @@ bool ElasticShell::performSplit(const EdgeHandle& eh, VertexHandle& new_vert) {
     EdgeVertexIterator ev_iter = m_obj->ev_iter(*ve_iter);
     for(; ev_iter; ++ev_iter)
       edge_verts.push_back(ElTopoCode::toElTopo(getVertexPosition(*ev_iter)));
-    //m_broad_phase.add_edge((*ve_iter).idx(), edge_verts[0], edge_verts[1], m_proximity_epsilon);
   }
 
   //add tris
@@ -1645,11 +1822,163 @@ bool ElasticShell::performSplit(const EdgeHandle& eh, VertexHandle& new_vert) {
     FaceVertexIterator fv_iter = m_obj->fv_iter(*vf_iter);
     for(; fv_iter; ++fv_iter)
       tri_verts.push_back(ElTopoCode::toElTopo(getVertexPosition(*fv_iter)));
-    //m_broad_phase.add_triangle((*vf_iter).idx(), tri_verts[0], tri_verts[1], tri_verts[2], m_proximity_epsilon);
   }
   
   new_vert = v_new;
   return true;
+}
+
+void ElasticShell::performSplitET(const EdgeHandle& eh, const Vec3d& midpoint, VertexHandle& new_vert) {
+
+  VertexHandle v0 = m_obj->fromVertex(eh);
+  VertexHandle v1 = m_obj->toVertex(eh);
+  assert(v0!=v1);
+  Vec3d p0 = getVertexPosition(v0);
+  Vec3d p1 = getVertexPosition(v1);
+
+  std::vector<FaceHandle> oldFaces;
+  std::vector<Scalar> oldThicknesses;
+  for(EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit) {
+    FaceHandle f = *efit;
+    oldFaces.push_back(f);
+    oldThicknesses.push_back(getThickness(f));
+  }
+
+  VertexHandle v2, v3;
+  getEdgeOppositeVertices(*m_obj, eh, v2, v3);
+
+  ElTopoCode::Vec3d midpoint_ET = ElTopoCode::toElTopo(midpoint);
+
+  //perform the actual split
+  std::vector<FaceHandle> newFaces;
+  VertexHandle v_new = splitEdge(*m_obj, eh, newFaces);
+
+  
+  //determine split fraction, and using it to lerp the vertex data
+  Vec3d dx(p1-p0);
+  double m2 = dx.squaredNorm();
+  Scalar s = clamp((p1-midpoint).dot(dx)/m2, 0., 1.);
+  
+  Vec3d velocity = s*getVertexVelocity(v0) + (1-s)*getVertexVelocity(v1);
+  Vec3d undef = s*getVertexUndeformed(v0) + (1-s)*getVertexUndeformed(v1);
+  setVertexVelocity(v_new, velocity);
+  setVertexPosition(v_new, midpoint);
+  setUndeformedVertexPosition(v_new, undef);
+
+  //set consistent volumes and thickness for new faces
+  //TODO If the new point (chosen by ET) is allowed to be off the original edge, areas also change and this
+  //code will need to be adjusted accordingly.
+  assert(oldFaces.size() == newFaces.size()/2);
+  Scalar newVolume = 0;
+  for(unsigned int i = 0; i < oldFaces.size(); ++i) {
+    m_thicknesses[newFaces[i*2]] = oldThicknesses[i];
+    m_thicknesses[newFaces[i*2+1]] = oldThicknesses[i];
+    m_volumes[newFaces[i*2]] = oldThicknesses[i] * getArea(newFaces[i*2], true);
+    m_volumes[newFaces[i*2+1]] = oldThicknesses[i] * getArea(newFaces[i*2+1], true);
+  }
+
+  VertexFaceIterator vf_iter = m_obj->vf_iter(v_new);
+  for(;vf_iter; ++vf_iter)
+    setFaceActive(*vf_iter);
+
+  new_vert = v_new;
+}
+
+void ElasticShell::performCollapse(const EdgeHandle& eh, const VertexHandle& vert_to_remove, const VertexHandle& vert_to_keep, const Vec3d& new_position) {
+  
+  //determine area of collapsing faces
+  EdgeFaceIterator efit = m_obj->ef_iter(eh);
+  Scalar totalVolumeLoss = 0;
+  for(;efit; ++efit)
+    totalVolumeLoss += getVolume(*efit);
+
+  //use the new position to determine how to lerp the vertex data.
+  
+  Vec3d p0 = getVertexPosition(vert_to_remove);
+  Vec3d p1 = getVertexPosition(vert_to_keep);
+
+  Vec3d dx(p1-p0);
+  double m2 = dx.squaredNorm();
+  Scalar s = clamp((p1-new_position).dot(dx)/m2, 0., 1.);
+
+  Vec3d newVelocity = s*getVertexVelocity(vert_to_remove) + (1-s)*getVertexVelocity(vert_to_keep);
+  Vec3d newUndef = s*getVertexUndeformed(vert_to_remove) + (1-s)*getVertexUndeformed(vert_to_keep);
+
+  //do the collapse itself
+  std::vector<EdgeHandle> deletedEdges;
+  m_obj->collapseEdge(eh, vert_to_remove, deletedEdges);
+
+  //determine 
+  setVertexPosition(vert_to_keep, new_position);
+
+  setVertexVelocity(vert_to_keep, newVelocity);
+  setUndeformedVertexPosition(vert_to_keep, newUndef);
+
+  //increment the thickness of the nearby faces to account for the lost volume
+
+  //sum up the total area increases in the faces
+  VertexFaceIterator vfit = m_obj->vf_iter(vert_to_keep);
+  Scalar totalNewArea = 0;
+  for(;vfit; ++vfit) {
+    FaceHandle fh = *vfit;
+    totalNewArea += std::max(0.0, getArea(fh, true) - m_volumes[fh] / m_thicknesses[fh]); //only consider increases
+  }
+
+  //add the volume losses in the surrounding faces
+  vfit = m_obj->vf_iter(vert_to_keep);
+  for(;vfit; ++vfit) {
+    FaceHandle fh = *vfit;
+    Scalar areaLoss = m_volumes[fh] / m_thicknesses[fh] - getArea(fh, true);
+    if(areaLoss > 0) {
+      totalVolumeLoss += areaLoss * m_thicknesses[fh];
+    }
+  }
+
+  vfit = m_obj->vf_iter(vert_to_keep);
+  for(;vfit; ++vfit) {
+    FaceHandle fh = *vfit;
+    Scalar newArea = getArea(fh) - m_volumes[fh] / m_thicknesses[fh];
+    if(newArea <= 0) { //face lost area
+      //keep the old thickness, assign the new volume according to the adjusted smaller area
+      m_volumes[fh] = getArea(fh)*m_thicknesses[fh];
+    }
+    else { //face gained area
+      //distribute this expanding face some of the volume
+      m_volumes[fh] += (newArea / totalNewArea) * totalVolumeLoss; //allocate extra volume proportional to area increases
+      m_thicknesses[fh] = m_volumes[fh] / getArea(fh);
+    }
+  }
+}
+
+bool ElasticShell::performFlip(const EdgeHandle& eh, EdgeHandle& newEdge) {
+      
+  //determine volume of the region being flipped
+    FaceHandle f0, f1;
+    getEdgeFacePair(*m_obj, eh, f0, f1);
+    Scalar totalVolume = m_volumes[f0] + m_volumes[f1];
+
+    //EdgeHandle newEdge(-1);
+    newEdge = flipEdge(*m_obj, eh);
+    if(!newEdge.isValid()) {//couldn't flip the edge, such an edge already existed
+      std::cout << "Edge flip failed for some reason...\n";
+      return false;
+    }
+  
+    FaceHandle f0new, f1new;
+    getEdgeFacePair(*m_obj, newEdge, f0new, f1new);
+    setFaceActive(f0new);
+    setFaceActive(f1new);
+
+    //assign new thicknesses
+    Scalar f0newArea = getArea(f0new, true);
+    Scalar f1newArea = getArea(f1new, true);
+    Scalar newThickness = totalVolume / (f0newArea + f1newArea);
+    m_thicknesses[f0new] = newThickness;
+    m_thicknesses[f1new] = newThickness;
+    m_volumes[f0new] = f0newArea*newThickness;
+    m_volumes[f1new] = f1newArea*newThickness;
+    
+    return true;
 }
 
 
@@ -2514,74 +2843,10 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
       newPoint = options_new_pos[choice];
       newVel = options_new_vel[choice];
       newUndef = options_new_undef[choice];
+     
 
+      performCollapse(eh, vert_to_remove, vert_to_keep, newPoint);
 
-      //determine area of collapsing faces
-      EdgeFaceIterator efit = m_obj->ef_iter(eh);
-      Scalar totalVolumeLoss = 0;
-      for(;efit; ++efit)
-        totalVolumeLoss += getVolume(*efit);
-
-      //if(edgeCollapseCausesCollision(v0, v1, eh, ElTopo::toElTopo(newPoint)))
-      //  return;
-
-      //remove to-be-deleted stuff from collision grid
-      //m_broad_phase.remove_vertex(vert_to_remove.idx());
-      //m_broad_phase.remove_edge(eh.idx());
-      //for(EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit)
-      //  m_broad_phase.remove_triangle((*efit).idx());
-      
-
-      //do the collapse itself
-      std::vector<EdgeHandle> deletedEdges;
-      m_obj->collapseEdge(eh, vert_to_remove, deletedEdges);
-      
-      //remove the edges that were deleted as a side-effect.
-      /*for(unsigned int q = 0; q < deletedEdges.size(); ++q) {
-         m_broad_phase.remove_edge(deletedEdges[q].idx());
-      }*/
-
-      setVertexVelocity(vert_to_keep, newVel);
-      setVertexPosition(vert_to_keep, newPoint);
-      setUndeformedVertexPosition(vert_to_keep, newUndef);
-
-      //increment the thickness of the nearby faces to account for the lost volume
-
-      //sum up the total area increases in the faces
-      VertexFaceIterator vfit = m_obj->vf_iter(vert_to_keep);
-      Scalar totalNewArea = 0;
-      for(;vfit; ++vfit) {
-        FaceHandle fh = *vfit;
-        totalNewArea += std::max(0.0, getArea(fh, true) - m_volumes[fh] / m_thicknesses[fh]); //only consider increases
-      }
-
-      //add the volume losses in the surrounding faces
-      vfit = m_obj->vf_iter(vert_to_keep);
-      for(;vfit; ++vfit) {
-        FaceHandle fh = *vfit;
-        Scalar areaLoss = m_volumes[fh] / m_thicknesses[fh] - getArea(fh, true);
-        if(areaLoss > 0) {
-          totalVolumeLoss += areaLoss * m_thicknesses[fh];
-        }
-      }
-
-      vfit = m_obj->vf_iter(vert_to_keep);
-      for(;vfit; ++vfit) {
-        FaceHandle fh = *vfit;
-        Scalar newArea = getArea(fh) - m_volumes[fh] / m_thicknesses[fh];
-        if(newArea <= 0) { //face lost area
-          //keep the old thickness, assign the new volume according to the adjusted smaller area
-          m_volumes[fh] = getArea(fh)*m_thicknesses[fh];
-        }
-        else { //face gained area
-          //distribute this expanding face some of the volume
-          m_volumes[fh] += (newArea / totalNewArea) * totalVolumeLoss; //allocate extra volume proportional to area increases
-          m_thicknesses[fh] = m_volumes[fh] / getArea(fh);
-        }
-      }
-      //std::cout << "Did a collapse\n";
-      //update static collision data for everything incident on the kept vertex
-      //updateBroadPhaseStatic(vert_to_keep);
 
     }
   }

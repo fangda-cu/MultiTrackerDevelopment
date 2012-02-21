@@ -130,6 +130,9 @@ public:
   void setDeletionBox(const Vec3d& lowerBound, const Vec3d& upperBound);
 
   void remesh(Scalar desiredEdge );
+  
+  void remesh_new();
+
   void extendMesh(Scalar current_time);
   void deleteRegion();
 
@@ -177,13 +180,14 @@ protected:
   bool isSplitDesired(const EdgeHandle& eh, double maxEdge, double desiredEdge, double maxAngle);
   bool edgeSplitCausesCollision( const ElTopoCode::Vec3d& new_vertex_position, const ElTopoCode::Vec3d& new_vertex_smooth_position, EdgeHandle edge);
   bool performSplit(const EdgeHandle& eh, VertexHandle& newVert);
+  void performSplitET(const EdgeHandle& eh, const Vec3d& newpos, VertexHandle& newVert);
 
-  bool performCollapse(const EdgeHandle& eh);
+  void performCollapse(const EdgeHandle& eh, const VertexHandle& vert_to_remove, const VertexHandle& vert_to_keep, const Vec3d& new_position);
   void updateBroadPhaseForCollapse(const VertexHandle& vertex_a, const ElTopoCode::Vec3d& new_pos_a, const VertexHandle& vertex_b, const ElTopoCode::Vec3d& new_pos_b);
   bool edgeCollapseCausesCollision(const VertexHandle& source_vertex, const VertexHandle& destination_vertex, const EdgeHandle& edge_index, const ElTopoCode::Vec3d& vertex_new_position );
   bool checkTriangleVsTriangleCollisionForCollapse( const FaceHandle& triangle_a, const FaceHandle& triangle_b, const VertexHandle& source_vert, const VertexHandle& dest_vert, ElTopoCode::Vec3d new_position);
 
-  bool performFlip(const EdgeHandle& eh);
+  bool performFlip(const EdgeHandle& eh, EdgeHandle& newEdge);
   bool edgeFlipCausesCollision( const EdgeHandle& edge_index, const VertexHandle& new_end_a, const VertexHandle& new_end_b);
   
   void addSelfCollisionForces();
