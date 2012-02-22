@@ -1120,15 +1120,15 @@ void ElasticShell::remesh_new()
   //Set up a SurfTrack, run remeshing, render the new mesh
   ElTopo::SurfTrackInitializationParameters construction_parameters;
   construction_parameters.m_allow_vertex_movement = false;
-  construction_parameters.m_min_edge_length = 0.05;
+  construction_parameters.m_min_edge_length = 0.08;
   construction_parameters.m_max_edge_length = 0.2;
   construction_parameters.m_max_volume_change = 10000;   
-  construction_parameters.m_min_triangle_angle = 20;
-  construction_parameters.m_max_triangle_angle = 150;
+  construction_parameters.m_min_triangle_angle = 5;
+  construction_parameters.m_max_triangle_angle = 175;
   construction_parameters.m_verbose = false;
   construction_parameters.m_use_curvature_when_collapsing = false;
   construction_parameters.m_use_curvature_when_splitting = false;
-
+  construction_parameters.m_allow_non_manifold = false;
   //TODO If we try using other subdivision schemes for splitting edges
   //note that the manner in which the edge split operation is performed
   //will need to be adjusted to properly preserve total volume.
@@ -1190,12 +1190,9 @@ void ElasticShell::remesh_new()
     if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_COLLAPSE) {
       std::cout << "Collapse.\n";
       
-      int t0 = event.m_deleted_tris[0];
-      int t1 = event.m_deleted_tris[1];
-      //Find associated tris
-      FaceHandle f0 = reverse_trimap[t0];
-      FaceHandle f1 = reverse_trimap[t1];
-      EdgeHandle eh = getSharedEdge(mesh, f0, f1);
+      VertexHandle v0 = reverse_vertmap[event.m_v0];
+      VertexHandle v1 = reverse_vertmap[event.m_v1];
+      EdgeHandle eh = findEdge(mesh, v0, v1);
       
       Vec3d new_pos(event.m_vert_position[0], event.m_vert_position[1], event.m_vert_position[2]);
       VertexHandle dead_vert = reverse_vertmap[event.m_deleted_verts[0]];
@@ -1243,12 +1240,9 @@ void ElasticShell::remesh_new()
       std::cout << "Split.\n";
       //Identify the edge based on its endpoint vertices instead
 
-      int t0 = event.m_deleted_tris[0];
-      int t1 = event.m_deleted_tris[1];
-      //Find associated tris
-      FaceHandle f0 = reverse_trimap[t0];
-      FaceHandle f1 = reverse_trimap[t1];
-      EdgeHandle eh = getSharedEdge(mesh, f0, f1);
+      VertexHandle v0 = reverse_vertmap[event.m_v0];
+      VertexHandle v1 = reverse_vertmap[event.m_v1];
+      EdgeHandle eh = findEdge(mesh, v0, v1);
       VertexHandle new_vert;
       Vec3d new_pos(event.m_vert_position[0], event.m_vert_position[1], event.m_vert_position[2]);
       
@@ -1289,8 +1283,9 @@ void ElasticShell::remesh_new()
       }
 
       //kill the reverse map elements for the deleted faces, since no longer valid.
-      reverse_trimap[t0] = FaceHandle(-1);
-      reverse_trimap[t1] = FaceHandle(-1);
+      for(size_t i = 0; i < event.m_deleted_tris.size(); ++i) {
+        reverse_trimap[event.m_deleted_tris[i]] = FaceHandle(-1);
+      }
 
     }
     else if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_FLIP) {
@@ -2687,10 +2682,12 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
       v1_bdry = isVertexOnBoundary(*m_obj, v1);
 
       Vec3d newPoint, newVel, newUndef;
-      if(v0_bdry && v1_bdry) continue; //both edges on the boundary, don't collapse!
+      if(v0_bdry && v1_bdry) continue; //both verts on the boundary, don't collapse!
       
-      if(v0_pinned && v1_pinned) continue; //both edges pinned, don't collapse
+      if(v0_pinned && v1_pinned) continue; //both verts pinned, don't collapse
       
+      //TODO What about when one is boundary, and the other is pinned?
+
       VertexHandle vert_to_remove, vert_to_keep;
       
       std::vector<VertexHandle> options_remove_point; options_remove_point.reserve(3);
