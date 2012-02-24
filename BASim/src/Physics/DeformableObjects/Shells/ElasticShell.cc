@@ -1146,7 +1146,6 @@ void ElasticShell::remesh_new()
   std::vector<FaceHandle> reverse_trimap;
 
 
-  std::cout << "Collect vertices.\n";
   //walk through vertices, create linear list, store numbering
   int id = 0;
   for(VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit) {
@@ -1161,7 +1160,6 @@ void ElasticShell::remesh_new()
     ++id;
   }
 
-  std::cout << "Collect tris\n";
   //walk through tris, creating linear list, using the vertex numbering assigned above
   id = 0;
   for(FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit) {
@@ -1179,7 +1177,6 @@ void ElasticShell::remesh_new()
     ++id;
   }
 
-  std::cout << "\n\nCreate surface_tracker\n";
   ElTopo::SurfTrack surface_tracker( vert_data, tri_data, masses, construction_parameters ); 
 
   surface_tracker.improve_mesh();
@@ -1187,12 +1184,12 @@ void ElasticShell::remesh_new()
   std::cout << "Performing " << surface_tracker.m_mesh_change_history.size() << " Improvement Operations:\n";
   for(unsigned int i = 0; i < surface_tracker.m_mesh_change_history.size(); ++i) {
     ElTopo::MeshUpdateEvent event = surface_tracker.m_mesh_change_history[i];
+    
+    VertexHandle v0 = reverse_vertmap[event.m_v0];
+    VertexHandle v1 = reverse_vertmap[event.m_v1];
+    EdgeHandle eh = findEdge(mesh, v0, v1);
+
     if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_COLLAPSE) {
-      std::cout << "Collapse.\n";
-      
-      VertexHandle v0 = reverse_vertmap[event.m_v0];
-      VertexHandle v1 = reverse_vertmap[event.m_v1];
-      EdgeHandle eh = findEdge(mesh, v0, v1);
       
       Vec3d new_pos(event.m_vert_position[0], event.m_vert_position[1], event.m_vert_position[2]);
       VertexHandle dead_vert = reverse_vertmap[event.m_deleted_verts[0]];
@@ -1203,11 +1200,6 @@ void ElasticShell::remesh_new()
 
       //delete the vertex
       reverse_vertmap[event.m_deleted_verts[0]] = VertexHandle(-1); //mark vert as invalid
-      
-      //delete the triangles
-      for(unsigned int tri = 0; tri < event.m_deleted_tris.size(); ++tri) {
-        reverse_trimap[event.m_deleted_tris[tri]] = FaceHandle(-1);
-      }
       
       //remap the created triangles
       for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
@@ -1237,12 +1229,8 @@ void ElasticShell::remesh_new()
       }
     }
     else if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_SPLIT) {
-      std::cout << "Split.\n";
       //Identify the edge based on its endpoint vertices instead
 
-      VertexHandle v0 = reverse_vertmap[event.m_v0];
-      VertexHandle v1 = reverse_vertmap[event.m_v1];
-      EdgeHandle eh = findEdge(mesh, v0, v1);
       VertexHandle new_vert;
       Vec3d new_pos(event.m_vert_position[0], event.m_vert_position[1], event.m_vert_position[2]);
       
@@ -1281,23 +1269,11 @@ void ElasticShell::remesh_new()
         if(!face_matched)
           std::cout << "ERROR: Couldn't match the face.\n\n\n";
       }
-
-      //kill the reverse map elements for the deleted faces, since no longer valid.
-      for(size_t i = 0; i < event.m_deleted_tris.size(); ++i) {
-        reverse_trimap[event.m_deleted_tris[i]] = FaceHandle(-1);
-      }
-
     }
     else if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_FLIP) {
-      std::cout << "Flip\n";
-      int t0 = event.m_deleted_tris[0];
-      int t1 = event.m_deleted_tris[1];
-      //Find associated tris
-      FaceHandle f0 = reverse_trimap[t0];
-      FaceHandle f1 = reverse_trimap[t1];
-      EdgeHandle eh = getSharedEdge(mesh, f0, f1);
-      EdgeHandle newEdge;
+      
       //Do the same flip as El Topo
+      EdgeHandle newEdge;
       performFlip(eh, newEdge);
 
       //faces
@@ -1326,16 +1302,17 @@ void ElasticShell::remesh_new()
         if(!face_matched)
           std::cout << "ERROR: Couldn't match the face.\n\n\n";
       }
-
-      //kill the reverse map elements for the deleted faces, since no longer valid.
-      reverse_trimap[t0] = FaceHandle(-1);
-      reverse_trimap[t1] = FaceHandle(-1);
     }
     else {
-      std::cout << "unknown operation";
+      std::cout << "ERROR: unknown remeshing operation";
+    }
+
+    //kill the reverse map elements for the deleted faces, since no longer valid.
+    for(size_t i = 0; i < event.m_deleted_tris.size(); ++i) {
+      reverse_trimap[event.m_deleted_tris[i]] = FaceHandle(-1);
     }
   }
-  std::cout << "Done\n";
+  
 }
 
 
