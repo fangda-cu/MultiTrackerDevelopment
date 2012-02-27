@@ -468,6 +468,87 @@ void ElasticShell::startStep(Scalar time, Scalar timestep)
   std::cout << "Done startStep\n";
 }
 
+void ElasticShell::resolveCollisions(Scalar timestep) {
+
+  //Convert the data to the form required by El Topo!
+  std::vector<ElTopo::Vec3d> vert_new, vert_old;
+  std::vector<ElTopo::Vec3st> tri_data;
+  std::vector<Scalar> masses;
+
+  DeformableObject& mesh = getDefoObj();
+
+  //Index mappings between us and El Topo
+  VertexProperty<int> vert_numbers(&mesh);
+  FaceProperty<int> face_numbers(&mesh);
+  std::vector<VertexHandle> reverse_vertmap;
+  std::vector<FaceHandle> reverse_trimap;
+
+  //walk through vertices, create linear list, store numbering
+  int id = 0;
+  for(VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit) {
+    VertexHandle vh = *vit;
+    Vec3d vert = getVertexPosition(vh);
+    Vec3d old_vert = m_damping_undeformed_positions[vh];
+    Scalar mass = getMass(vh);
+
+    vert_new.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
+    vert_old.push_back(ElTopo::Vec3d(old_vert[0], old_vert[1], old_vert[2]));
+    masses.push_back(mass);
+    vert_numbers[vh] = id;
+    reverse_vertmap.push_back(vh);
+
+    ++id;
+  }
+
+  //walk through tris, creating linear list, using the vertex numbering assigned above
+  id = 0;
+  for(FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit) {
+    FaceHandle fh = *fit;
+    ElTopo::Vec3st tri;
+    int i = 0;
+    for(FaceVertexIterator fvit = mesh.fv_iter(fh); fvit; ++fvit) {
+      VertexHandle vh = *fvit;
+      tri[i] = vert_numbers[vh];
+      ++i;
+    }
+    tri_data.push_back(tri);
+    face_numbers[fh] = id;
+    reverse_trimap.push_back(fh);
+    ++id;
+  }
+
+
+  // build a DynamicSurface
+  Scalar collision_proximity = 1e-5;
+  Scalar friction_coeff = 0;
+  ElTopo::DynamicSurface dynamic_surface( vert_old, tri_data, masses, collision_proximity, friction_coeff, true );
+
+  dynamic_surface.set_all_newpositions( vert_new );
+
+  // advance by dt
+  double actual_dt;
+  dynamic_surface.integrate( timestep, actual_dt );
+  if(actual_dt != timestep)
+    std::cout << "Failed to step the full length of the recommended step!\n";
+  // the dt used may be different than specified (if we cut the time step)
+  
+  //figure out what the actual velocities were, and update the mesh data
+  for(unsigned int i = 0; i < vert_new.size(); ++i) {
+    VertexHandle vh = reverse_vertmap[i];
+    ElTopo::Vec3d pos = dynamic_surface.get_position(i);
+    ElTopo::Vec3d vel = (pos - vert_old[i]) / timestep;
+    Vec3d new_pos(pos[0], pos[1], pos[2]);
+    Vec3d new_vel(vel[0], vel[1], vel[2]);
+    setVertexPosition(vh, new_pos);
+    setVertexVelocity(vh, new_vel);
+
+    if(isnan(pos[0]) || isnan(pos[1]) || isnan(pos[2]))
+      std::cout << "ElTopo Failed: NaN vertex\n";
+    if(isinf(pos[0]) || isinf(pos[1]) || isinf(pos[2]))
+      std::cout << "ElTopo Failed: Inf vertex\n";
+  }
+
+}
 
 /*
 void ElasticShell::resolveCollisions(Scalar timestep) {
@@ -697,46 +778,34 @@ void ElasticShell::setSelfCollision(bool enabled) {
 
 void ElasticShell::endStep(Scalar time, Scalar timestep) {
 
- std::cout << "Starting endStep\n";
- bool do_relabel = false;
+  std::cout << "Starting endStep.\n";
+  bool do_relabel = false;
 
 
   //El Topo collision processing.
+  std::cout << "Resolving collisions\n";
   //resolveCollisions(timestep);
-  
+  std::cout << "Finished resolving collisions.\n";
+
   //Ground plane penalty force.
   if(m_ground_collisions) {
-    std::cout << "Processing ground plane\n";
-    //std::cout << "Adding ground collisions.\n";
-  /* for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
-      Vec3d curPos = getVertexPosition(*(vit));
-      if(curPos[1] < m_ground_height + m_collision_proximity) {
-        if(!m_vert_point_springs->hasSpring(*vit)) {
-          curPos[1] = m_ground_height + m_collision_proximity;
-          m_vert_point_springs->addSpring(*vit, curPos, m_collision_spring_stiffness, m_collision_spring_damping, 0.0);
-        }
-      }
-    }*/
-    
-    //Hard constraints instead
 
+    //Hard constraints
     for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
       Vec3d curPos = getVertexPosition(*(vit));
       if(curPos[1] < m_ground_height) {
         if(!isConstrained(*vit)) {
           //constrainVertex(*vit, curPos);
-          
+
           //Sinking
           //constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, m_ground_velocity, 0), time));
-          
+
           //Conveying
           constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, 0, m_ground_velocity), time));
         }
       }
     }
-    
- }
-
+  }
 
   if(m_sphere_collisions) {
     //Hard constraints 
@@ -745,18 +814,17 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
       Vec3d offset = curPos - (m_sphere_position+m_sphere_velocity*time);
       if(offset.norm() < m_sphere_radius) {
         if(!isConstrained(*vit)) {
-         
+
           //Sinking
           //constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, m_ground_velocity, 0), time));
-          
+
           //Conveying
           constrainVertex(*vit, new FixedVelocityConstraint(curPos, m_sphere_velocity, time));
         }
       }
     }
-    
- }
- 
+  }
+
   if(m_object_collisions) {
     for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
       Vec3d curPos = getVertexPosition(*(vit));
@@ -774,33 +842,22 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
         }
       }
     }
-
   }
 
   //apply penalty springs for self-collision
   if(m_self_collisions) {
-    std::cout << "Adding self-collision springs\n";
     addSelfCollisionForces();
   }
 
-
-  
-  
-  std::cout << "Adjusting thicknesses\n";
   //Adjust thicknesses based on area changes
   updateThickness();
 
-  
-
   if(m_inflow) {
-    //std::cout << "Extending the mesh\n";
     extendMesh(time);
     do_relabel = true;
   }
 
-  
   if(m_delete_region) {
-    //std::cout << "Deleting material\n";
     deleteRegion();
     do_relabel = true;
   }
@@ -811,7 +868,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     //for(int i = 0; i < m_remeshing_iters; ++i)
     //  remesh(m_remesh_edge_length);  
     remesh_new();
-    
+
     //Relabel DOFs if necessary
     do_relabel = true;
   }
@@ -823,52 +880,20 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     do_relabel = true;
   }
 
-  
   if(do_relabel) {
     std::cout << "Re-indexing\n";
     m_obj->computeDofIndexing();
   }
 
-  //std::cout << "Recomputing masses\n";
+  
   //Update masses based on new areas/thicknesses
   computeMasses();
-  
-  
-  /*
-  Scalar position = 0;
-  Scalar velocity = 0;
-  Scalar thickness = 0;
-  int count = 0;
-  for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
-    Vec3d curPos = getVertexPosition(*(vit));
-    if(curPos[2] > -1e-5 && curPos[2] < 1e-5) {
-      position += getVertexPosition(*(vit)).norm();
-      velocity += getVertexVelocity(*(vit)).norm();
-      ++count;
-    }
-  }
-  int count2 = 0;
-  for(FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit) {
-    bool anyFound = false;
-    for(FaceVertexIterator fvit = m_obj->fv_iter(*fit); fvit; ++fvit) {
-      VertexHandle vh = *fvit;
-      Vec3d curPos = getVertexPosition(vh);
-      if(curPos[2] > -1e-5 && curPos[2] < 1e-5)
-        anyFound = true;
-    }
-    if(anyFound) {
-      thickness += m_thicknesses[*fit];
-      ++count2;
-    }
-  }
-  std::cout << "\n\nAverage radius: " << position/(Scalar)count << "\nAverage velocity: " << velocity/(Scalar)count << "\nAverage thickness: " << thickness/(Scalar)count2 << "\n\n" << std::endl;    
-  */
 
-  
-  //Advance any constraints!
-  std::cout << "Done endStep\n";
- 
+
+  std::cout << "Completed endStep\n";
+
 }
+
 void ElasticShell::fracture(){
     //Here comes all the fracture code
 
@@ -1198,10 +1223,10 @@ void ElasticShell::remesh_new()
 
       performCollapse(eh, dead_vert, keep_vert, new_pos);
 
-      //delete the vertex
+      // Delete the vertex
       reverse_vertmap[event.m_deleted_verts[0]] = VertexHandle(-1); //mark vert as invalid
       
-      //remap the created triangles
+      // Update faces
       for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
         ElTopo::Vec3st new_face = event.m_created_tri_data[i];
 
@@ -1237,13 +1262,13 @@ void ElasticShell::remesh_new()
       //Do the same split as El Topo
       performSplitET(eh, new_pos, new_vert);
       
-      //now update the mapping between structures
-      //vertices
+      //now update the mapping between structures vertices
       vert_numbers[new_vert] = event.m_created_verts[0];
-      if(reverse_vertmap.size() <= event.m_created_verts[0]) reverse_vertmap.resize(event.m_created_verts[0]+1, VertexHandle(-1));
-      reverse_vertmap[event.m_created_verts[0]] = new_vert; //the vertex will always be added at the end?
+      if(reverse_vertmap.size() <= event.m_created_verts[0]) 
+        reverse_vertmap.resize(event.m_created_verts[0]+1, VertexHandle(-1));
+      reverse_vertmap[event.m_created_verts[0]] = new_vert; //the vertex will always be added at the end by El Topo
       
-      //faces
+      // Update faces
       for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
         ElTopo::Vec3st new_face = event.m_created_tri_data[i];
         
@@ -1276,7 +1301,7 @@ void ElasticShell::remesh_new()
       EdgeHandle newEdge;
       performFlip(eh, newEdge);
 
-      //faces
+      // Update faces
       for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
         ElTopo::Vec3st new_face = event.m_created_tri_data[i];
 
