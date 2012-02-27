@@ -877,9 +877,8 @@ bool EdgeCollapser::collapse_edge2( size_t edge )
   // --------------
   // decide on new vertex position
 
-  // rank 1, 2, 3, 4 = smooth, ridge, peak, boundary
+  // rank 1, 2, 3 = smooth, ridge, peak
   // if the vertex ranks don't match, keep the higher rank vertex
-  // I'm hijacking the rank comparison framework to try to handle boundaries too
 
   Vec3d vertex_new_position;
 
@@ -889,7 +888,7 @@ bool EdgeCollapser::collapse_edge2( size_t edge )
   unsigned int keep_rank = m_surf.vertex_primary_space_rank( vertex_to_keep );
   unsigned int delete_rank = m_surf.vertex_primary_space_rank( vertex_to_delete );
   
-  // hijack rank comparison to handle boundaries too
+  //boundary vertices supersede all other feature points
   if(keep_vert_is_boundary) keep_rank = 4;
   if(del_vert_is_boundary) delete_rank = 4;
 
@@ -917,11 +916,18 @@ bool EdgeCollapser::collapse_edge2( size_t edge )
   {
     // Not allowed to move the vertex tangential to the surface during improve
 
+    if( keep_rank > 1 && del_vert_is_boundary || 
+      keep_vert_is_boundary && delete_rank > 1) {
+        //don't do collapses between feature points and boundaries
+        if ( m_surf.m_verbose ) { std::cout << "collapse between a feature point and a boundary point disallowed" << std::endl; }
+        return false;
+    }
+
     if ( delete_rank > keep_rank )
     {
-      size_t tmp = vertex_to_delete;
-      vertex_to_delete = vertex_to_keep;
-      vertex_to_keep = tmp;
+      swap(vertex_to_keep, vertex_to_delete);
+      swap(keep_rank, delete_rank);
+      swap(del_vert_is_boundary, keep_vert_is_boundary);
     }
 
     vertex_new_position = m_surf.get_position(vertex_to_keep);
