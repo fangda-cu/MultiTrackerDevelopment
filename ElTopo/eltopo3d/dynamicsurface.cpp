@@ -1453,6 +1453,7 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
     {
         std::vector<size_t> edge_candidates;
         
+        //bool get_solid_edges = true;//!triangle_is_solid(i);
         bool get_solid_edges = !triangle_is_solid(i);
         
         Vec3d low, high;
@@ -1471,7 +1472,7 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
         {
             
             assert ( !triangle_is_solid( i ) || !edge_is_solid( edge_candidates[j] ) );
-            
+
             const Vec2st& edge = m_mesh.m_edges[ edge_candidates[j] ];
             
             if ( edge[0] == edge[1] )    { continue; }

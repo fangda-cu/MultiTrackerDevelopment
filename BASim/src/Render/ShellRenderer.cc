@@ -269,7 +269,7 @@ void ShellRenderer::render()
 
       
       Scalar thickness = m_shell.getThickness(*fit);
-      int colorVal = (int) (255.0 * thickness/ 0.0001); //rescale
+      int colorVal = (int) (255.0 * thickness/ 0.05); //rescale
       //int colorVal = (int) (255.0 * (thickness - 0.0025) / 0.0025); //test
       colorVal = clamp(colorVal, 0, 255);
       //colorVal = 255;

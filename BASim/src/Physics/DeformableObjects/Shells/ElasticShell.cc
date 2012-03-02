@@ -789,7 +789,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 
   //El Topo collision processing.
   std::cout << "Resolving collisions\n";
-  //resolveCollisions(timestep);
+  resolveCollisions(timestep);
   std::cout << "Finished resolving collisions.\n";
 
   //Ground plane penalty force.
@@ -1150,8 +1150,8 @@ void ElasticShell::remesh_new()
   //Set up a SurfTrack, run remeshing, render the new mesh
   ElTopo::SurfTrackInitializationParameters construction_parameters;
   construction_parameters.m_allow_vertex_movement = false;
-  construction_parameters.m_min_edge_length = 0.08;
-  construction_parameters.m_max_edge_length = 0.2;
+  construction_parameters.m_min_edge_length = 0.5*m_remesh_edge_length;
+  construction_parameters.m_max_edge_length = 1.5*m_remesh_edge_length;
   construction_parameters.m_max_volume_change = numeric_limits<double>::max();   
   construction_parameters.m_min_triangle_angle = 5;
   construction_parameters.m_max_triangle_angle = 175;

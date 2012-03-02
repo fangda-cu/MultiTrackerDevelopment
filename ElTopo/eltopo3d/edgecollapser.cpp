@@ -330,7 +330,7 @@ bool EdgeCollapser::collapse_edge_introduces_volume_change( size_t source_vertex
 
 // ---------------------------------------------------------
 ///
-/// Returns true if the edge collapse would introduce a triangle with a min or max angle outside of the speficied min or max.
+/// Returns true if the edge collapse would introduce a triangle with a min or max angle outside of the specified min or max.
 ///
 // ---------------------------------------------------------
 
@@ -1169,8 +1169,7 @@ bool EdgeCollapser::collapse_pass()
     for( size_t i = 0; i < m_surf.m_mesh.m_edges.size(); i++ )
     {    
         double current_length;
-        bool should_collapse = edge_is_collapsible2(i, current_length);
-        if(should_collapse) 
+        if(edge_is_collapsible2(i, current_length)) 
           sortable_edges_to_try.push_back( SortableEdge( i, current_length ) );
     }
     
