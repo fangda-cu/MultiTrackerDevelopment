@@ -493,7 +493,12 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
 
     vert_new.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
     vert_old.push_back(ElTopo::Vec3d(old_vert[0], old_vert[1], old_vert[2]));
-    masses.push_back(mass);
+    if(isConstrained(vh)) {
+      masses.push_back(numeric_limits<Scalar>::infinity());
+    }
+    else {
+      masses.push_back(mass);
+    }
     vert_numbers[vh] = id;
     reverse_vertmap.push_back(vh);
 
@@ -529,7 +534,7 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
   double actual_dt;
   dynamic_surface.integrate( timestep, actual_dt );
   if(actual_dt != timestep)
-    std::cout << "Failed to step the full length of the recommended step!\n";
+    std::cout << "XXXXXXXXX Failed to step the full length of the recommended step!XXXXX\n";
   // the dt used may be different than specified (if we cut the time step)
   
   //figure out what the actual velocities were, and update the mesh data
@@ -868,6 +873,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     //for(int i = 0; i < m_remeshing_iters; ++i)
     //  remesh(m_remesh_edge_length);  
     remesh_new();
+    std::cout << "Completed remeshing\n";
 
     //Relabel DOFs if necessary
     do_relabel = true;
@@ -885,7 +891,6 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     m_obj->computeDofIndexing();
   }
 
-  
   //Update masses based on new areas/thicknesses
   computeMasses();
 
@@ -1147,7 +1152,7 @@ void ElasticShell::remesh_new()
   construction_parameters.m_allow_vertex_movement = false;
   construction_parameters.m_min_edge_length = 0.08;
   construction_parameters.m_max_edge_length = 0.2;
-  construction_parameters.m_max_volume_change = 10000;   
+  construction_parameters.m_max_volume_change = numeric_limits<double>::max();   
   construction_parameters.m_min_triangle_angle = 5;
   construction_parameters.m_max_triangle_angle = 175;
   construction_parameters.m_verbose = false;
@@ -1178,7 +1183,10 @@ void ElasticShell::remesh_new()
     Vec3d vert = getVertexPosition(vh);
     Scalar mass = getMass(vh);
     vert_data.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
-    masses.push_back(mass);
+    if(isConstrained(vh))
+      masses.push_back(numeric_limits<Scalar>::infinity());
+    else
+      masses.push_back(mass);
     vert_numbers[vh] = id;
     reverse_vertmap.push_back(vh);
 
