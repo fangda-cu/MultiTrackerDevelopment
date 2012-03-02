@@ -106,7 +106,7 @@ private:
                                                 size_t edge_index, 
                                                 const Vec3d& vertex_new_position );   
     
-    /// Returns true if the edge collapse would introduce a triangle with a min or max angle outside of the speficied min or max.
+    /// Returns true if the edge collapse would introduce a triangle with a min or max angle outside of the specified min or max.
     ///
     bool collapse_edge_introduces_bad_angle( size_t source_vertex, 
                                             size_t destination_vertex, 
@@ -119,7 +119,7 @@ private:
     
     /// Determine if the edge should be allowed to collapse
     ///
-    bool edge_is_collapsible( size_t edge_index );
+    bool edge_is_collapsible2( size_t edge_index, double& cur_length );
     
     
 };

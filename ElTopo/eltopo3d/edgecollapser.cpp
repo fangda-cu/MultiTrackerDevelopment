@@ -752,11 +752,11 @@ bool EdgeCollapser::collapse_edge2( size_t edge )
   bool del_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_delete];
   bool edge_is_boundary = m_surf.m_mesh.m_is_boundary_edge[edge];
   
-  // disallow the case where an edge is not on the boundary,
-  // but both of its vertices are, since collapsing that will 
-  // result in two triangles sharing a non-manifold vertex.
-  if(keep_vert_is_boundary && del_vert_is_boundary && !edge_is_boundary)
-    return false;
+  // don't collapse when both edges are on the boundary
+  // TODO In future should probably try to allow this, and
+  // watch out for the tricky non-manifold case where both 
+  // vertices are boundary, but edge is not.
+  assert(!keep_vert_is_boundary || !del_vert_is_boundary);
   
   if ( m_surf.m_verbose ) { std::cout << "Collapsing edge.  Doomed vertex: " << vertex_to_delete << " --- Vertex to keep: " << vertex_to_keep << std::endl; }
 
@@ -1108,23 +1108,32 @@ bool EdgeCollapser::collapse_edge2( size_t edge )
 ///
 // --------------------------------------------------------
 
-bool EdgeCollapser::edge_is_collapsible( size_t edge_index )
+bool EdgeCollapser::edge_is_collapsible2( size_t edge_index, double& current_length )
 {
-    
-    // skip deleted and solid edges
-    if ( m_surf.m_mesh.edge_is_deleted(edge_index) ) { return false; }
-    if ( m_surf.edge_is_solid(edge_index) ) { return false; }
-    
-    // skip non-manifold and boundary edges
-    if ( m_surf.m_mesh.m_edge_to_triangle_map[edge_index].size() != 2 ) { return false; }
-    if ( m_surf.m_mesh.m_is_boundary_edge[edge_index] ) { return false; }
-    
-    // also skip edges with one vertex on a boundary
-    const Vec2st& edge = m_surf.m_mesh.m_edges[edge_index];
-    if ( m_surf.m_mesh.m_is_boundary_vertex[edge[0]] || m_surf.m_mesh.m_is_boundary_vertex[edge[1]] ) { return false; }
-    
-    return true;
-    
+
+  // skip deleted and solid edges
+  if ( m_surf.m_mesh.edge_is_deleted(edge_index) ) { return false; }
+  if ( m_surf.edge_is_solid(edge_index) ) { return false; }
+
+  //disallow boundary edges, or both vertices on the boundary
+  if ( m_surf.m_mesh.m_edge_to_triangle_map[edge_index].size() < 2 || 
+    m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[edge_index][0]] &&
+    m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[edge_index][1]] ) 
+  {
+    return false;
+  }
+
+  if ( m_use_curvature )
+  {
+    current_length = get_curvature_scaled_length( m_surf, m_surf.m_mesh.m_edges[edge_index][0], m_surf.m_mesh.m_edges[edge_index][1], m_min_curvature_multiplier, 1e+30 );
+  }
+  else
+  {
+    current_length = m_surf.get_edge_length(edge_index);
+  }
+
+  return current_length < m_min_edge_length;
+
 }
 
 
@@ -1159,47 +1168,10 @@ bool EdgeCollapser::collapse_pass()
     
     for( size_t i = 0; i < m_surf.m_mesh.m_edges.size(); i++ )
     {    
-        if ( m_surf.m_mesh.edge_is_deleted(i) )   { continue; }  // skip deleted edges
-        if ( m_surf.edge_is_solid(i) ) { continue; }             // skip solids
-        
-        //If we're disallowing all boundary collapses
-        //if ( m_surf.m_mesh.m_edge_to_triangle_map[i].size() < 2 )  { continue; }  // skip boundary edges
-        //if( m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[i][0]] || 
-        //   m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[i][1]] ) // skip edges where either endpoint is boundary
-        //{
-        //    continue;
-        //}
-
-        //Disallow only boundary collapses where the vertices are on different boundaries (leads to non-manifold)
-        /*if ( m_surf.m_mesh.m_edge_to_triangle_map[i].size() > 1 && 
-        m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[i][0]] &&
-        m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[i][1]] ) 
-        {
-        continue;
-        }*/
-
-        //disallow boundary edges, or both vertices on the boundary
-        if ( m_surf.m_mesh.m_edge_to_triangle_map[i].size() < 2 || 
-          m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[i][0]] &&
-          m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[i][1]] ) 
-        {
-          continue;
-        }
         double current_length;
-        
-        if ( m_use_curvature )
-        {
-            current_length = get_curvature_scaled_length( m_surf, m_surf.m_mesh.m_edges[i][0], m_surf.m_mesh.m_edges[i][1], m_min_curvature_multiplier, 1e+30 );
-        }
-        else
-        {
-            current_length = m_surf.get_edge_length(i);
-        }
-        
-        if ( current_length < m_min_edge_length )
-        {
-            sortable_edges_to_try.push_back( SortableEdge( i, current_length ) );
-        }
+        bool should_collapse = edge_is_collapsible2(i, current_length);
+        if(should_collapse) 
+          sortable_edges_to_try.push_back( SortableEdge( i, current_length ) );
     }
     
     //
@@ -1224,61 +1196,21 @@ bool EdgeCollapser::collapse_pass()
         
         assert( e < m_surf.m_mesh.m_edges.size() );
         
-        if ( m_surf.m_mesh.edge_is_deleted(e) ) { continue; }
-        
-        double edge_length;
-        
-        if ( m_use_curvature )
-        {
-            edge_length = get_curvature_scaled_length( m_surf, m_surf.m_mesh.m_edges[e][0], m_surf.m_mesh.m_edges[e][1], m_min_curvature_multiplier, 1e+30 );
-        }
-        else
-        {
-            edge_length = m_surf.get_edge_length(e);
-        }
-        
-        if ( edge_length < m_min_edge_length )
-        {        
-            
-            if ( m_surf.m_mesh.m_edges[e][0] == m_surf.m_mesh.m_edges[e][1] )   { continue; }     // skip deleted edges         
-            
-            //Disallow all boundary collapses
-            //if ( m_surf.m_mesh.m_edge_to_triangle_map[e].size() < 2 )  { continue; }  // skip boundary edges
-            //if( m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[e][0]] || 
-            //   m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[e][1]] ) // skip edges with boundary vertices
-            //{
-            //  continue; 
-            //}
-            
-            //Disallow only boundary collapses where the vertices are on different boundaries (leads to non-manifold)
-            /*if ( m_surf.m_mesh.m_edge_to_triangle_map[e].size() > 1 && 
-              m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[e][0]] &&
-              m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[e][1]] ) 
-            {
-              continue;
-            }*/
-            if ( m_surf.m_mesh.m_edge_to_triangle_map[e].size() < 2 || 
-              m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[e][0]] &&
-              m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[e][1]] ) 
-            {
-              continue;
-            }
-            
-            bool result = collapse_edge2( e );
-            
-            if ( result )
-            { 
-                // clean up degenerate triangles and tets
-                m_surf.trim_non_manifold( m_surf.m_dirty_triangles );            
-            }
-            
-            collapse_occurred |= result;
-            
+        double dummy;
+        if(edge_is_collapsible2(e, dummy)) {
+          bool result = collapse_edge2( e );
+
+          if ( result )
+          { 
+            // clean up degenerate triangles and tets
+            m_surf.trim_non_manifold( m_surf.m_dirty_triangles );            
+          }
+
+          collapse_occurred |= result;
         }
     }
     
     return collapse_occurred;
-    
     
 }
 

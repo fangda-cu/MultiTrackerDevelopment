@@ -1058,10 +1058,6 @@ bool EdgeSplitter::edge_is_splittable2( size_t edge_index )
   if ( m_surf.m_mesh.edge_is_deleted(edge_index) ) { return false; }
   if ( m_surf.edge_is_solid(edge_index) ) { return false; }
 
-  // skip non-manifold and boundary edges
-  //if ( m_surf.m_mesh.m_edge_to_triangle_map[edge_index].size() != 2 ) { return false; }
-  //if ( m_surf.m_mesh.m_is_boundary_edge[edge_index] ) { return false; }
-
   return true;
 
 }
