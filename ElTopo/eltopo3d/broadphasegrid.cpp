@@ -184,7 +184,7 @@ void BroadPhaseGrid::update_broad_phase( const DynamicSurface& surface, bool con
             }
             
             // if either vertex is solid, it has to go into the solid broad phase
-            if ( surface.edge_is_solid(i) )
+            if ( surface.edge_is_all_solid(i) )
             {
                 solid_edge_xmins.push_back( xmin );
                 solid_edge_xmaxs.push_back( xmax );
@@ -238,7 +238,7 @@ void BroadPhaseGrid::update_broad_phase( const DynamicSurface& surface, bool con
                 surface.triangle_static_bounds(i, xmin, xmax);
             }
             
-            if ( surface.triangle_is_solid( i ) )
+            if ( surface.triangle_is_all_solid( i ) )
             {
                 solid_tri_xmins.push_back( xmin );
                 solid_tri_xmaxs.push_back( xmax );

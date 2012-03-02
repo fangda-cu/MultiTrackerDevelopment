@@ -530,7 +530,7 @@ void CollisionPipeline::dynamic_triangle_vs_all_point_proximities(double dt)
     
     for ( size_t i = 0; i < m_surface.m_mesh.num_triangles(); ++i )
     {
-        if ( m_surface.triangle_is_solid( i ) )
+        if ( m_surface.triangle_is_all_solid( i ) )
         {
             continue;
         }
@@ -558,7 +558,7 @@ void CollisionPipeline::dynamic_edge_vs_all_edge_proximities(double dt)
     
     for ( size_t i = 0; i < m_surface.m_mesh.m_edges.size(); ++i )
     {
-        if ( m_surface.edge_is_solid( i ) )
+        if ( m_surface.edge_is_all_solid( i ) )
         {
             continue;
         }
@@ -629,7 +629,7 @@ bool CollisionPipeline::detect_segment_segment_collision( const Vec3st& candidat
     if (e1[1] < e1[0]) { swap(e1[0], e1[1]); }
     
     
-    if ( m_surface.edge_is_solid( candidate[0] ) && m_surface.edge_is_solid( candidate[1] ) )
+    if ( m_surface.edge_is_all_solid( candidate[0] ) && m_surface.edge_is_all_solid( candidate[1] ) )
     {
         return false;
     }
@@ -677,7 +677,7 @@ bool CollisionPipeline::detect_point_triangle_collision( const Vec3st& candidate
     }
     
     
-    if ( m_surface.triangle_is_solid( t ) && m_surface.vertex_is_solid( v ) )
+    if ( m_surface.triangle_is_all_solid( t ) && m_surface.vertex_is_solid( v ) )
     {
         return false;
     }
@@ -953,7 +953,7 @@ void CollisionPipeline::dynamic_triangle_vs_all_point_collisions( double dt,
     
     for ( size_t i = 0; i < m_surface.m_mesh.num_triangles(); ++i )
     {
-        if ( m_surface.triangle_is_solid( i ) )
+        if ( m_surface.triangle_is_all_solid( i ) )
         {
             continue;
         }
@@ -989,7 +989,7 @@ void CollisionPipeline::dynamic_edge_vs_all_edge_collisions( double dt,
     
     for ( size_t i = 0; i < m_surface.m_mesh.m_edges.size(); ++i )
     {
-        if ( m_surface.edge_is_solid( i ) )
+        if ( m_surface.edge_is_all_solid( i ) )
         {
             continue;
         }
@@ -1157,7 +1157,7 @@ bool CollisionPipeline::detect_collisions( std::vector<Collision>& collisions )
     
     for ( size_t i = 0; i < m_surface.m_mesh.num_triangles(); ++i )
     {
-        if ( m_surface.triangle_is_solid(i) )
+        if ( m_surface.triangle_is_all_solid(i) )
         {
             continue;
         }
@@ -1171,7 +1171,7 @@ bool CollisionPipeline::detect_collisions( std::vector<Collision>& collisions )
     
     for ( size_t i = 0; i < m_surface.m_mesh.m_edges.size(); ++i )
     {
-        if ( m_surface.edge_is_solid(i) )
+        if ( m_surface.edge_is_all_solid(i) )
         {
             continue;
         }

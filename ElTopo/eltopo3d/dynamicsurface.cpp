@@ -646,13 +646,13 @@ void DynamicSurface::update_static_broad_phase( size_t vertex_index )
     for ( size_t t = 0; t < incident_tris.size(); ++t )
     {
         triangle_static_bounds( incident_tris[t], low, high );
-        m_broad_phase->update_triangle( incident_tris[t], low, high, triangle_is_solid(incident_tris[t]) );
+        m_broad_phase->update_triangle( incident_tris[t], low, high, triangle_is_all_solid(incident_tris[t]) );
     }
     
     for ( size_t e = 0; e < incident_edges.size(); ++e )
     {
         edge_static_bounds( incident_edges[e], low, high );
-        m_broad_phase->update_edge( incident_edges[e], low, high, edge_is_solid(incident_edges[e]) );
+        m_broad_phase->update_edge( incident_edges[e], low, high, edge_is_all_solid(incident_edges[e]) );
     }
     
 }
@@ -678,13 +678,13 @@ void DynamicSurface::update_continuous_broad_phase( size_t vertex_index )
     for ( size_t t = 0; t < incident_tris.size(); ++t )
     {
         triangle_continuous_bounds( incident_tris[t], low, high );
-        m_broad_phase->update_triangle( incident_tris[t], low, high, triangle_is_solid(incident_tris[t]) );
+        m_broad_phase->update_triangle( incident_tris[t], low, high, triangle_is_all_solid(incident_tris[t]) );
     }
     
     for ( size_t e = 0; e < incident_edges.size(); ++e )
     {
         edge_continuous_bounds( incident_edges[e], low, high );
-        m_broad_phase->update_edge( incident_edges[e], low, high, edge_is_solid(incident_edges[e]) );
+        m_broad_phase->update_edge( incident_edges[e], low, high, edge_is_all_solid(incident_edges[e]) );
     }
 }
 
@@ -1453,16 +1453,16 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
     {
         std::vector<size_t> edge_candidates;
         
-        //bool get_solid_edges = true;//!triangle_is_solid(i);
-        bool get_solid_edges = !triangle_is_solid(i);
-        
+        bool get_solid_edges = !triangle_is_all_solid(i);
+
         Vec3d low, high;
         triangle_static_bounds( i, low, high );       
         m_broad_phase->get_potential_edge_collisions( low, high, get_solid_edges, true, edge_candidates );
         
         const Vec3st& triangle = m_mesh.get_triangle(i);
         
-        if ( triangle[0] == triangle[1] || triangle[1] == triangle[2] || triangle[2] == triangle[0] )    { continue; }
+        //skip deleted triangles
+        if(m_mesh.triangle_is_deleted(i)) continue;
         
         assert( m_mesh.get_edge_index( triangle[0], triangle[1] ) != m_mesh.m_edges.size() );
         assert( m_mesh.get_edge_index( triangle[1], triangle[2] ) != m_mesh.m_edges.size() );
@@ -1470,18 +1470,18 @@ void DynamicSurface::get_intersections( bool degeneracy_counts_as_intersection,
         
         for ( size_t j = 0; j < edge_candidates.size(); ++j )
         {
-            
-            assert ( !triangle_is_solid( i ) || !edge_is_solid( edge_candidates[j] ) );
-
+          
             const Vec2st& edge = m_mesh.m_edges[ edge_candidates[j] ];
             
-            if ( edge[0] == edge[1] )    { continue; }
-            
+            if(m_mesh.edge_is_deleted( edge_candidates[j] ) ) continue;
+
             if (    edge[0] == triangle[0] || edge[0] == triangle[1] || edge[0] == triangle[2] 
                 || edge[1] == triangle[0] || edge[1] == triangle[1] || edge[1] == triangle[2] )
             {
                 continue;
             }
+
+            assert( !triangle_is_all_solid( i ) || !edge_is_all_solid( edge_candidates[j] ) );
             
             const Vec3d& e0 = use_new_positions ? get_newposition(edge[0]) : get_position(edge[0]);
             const Vec3d& e1 = use_new_positions ? get_newposition(edge[1]) : get_position(edge[1]);

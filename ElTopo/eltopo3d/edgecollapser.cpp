@@ -1113,7 +1113,7 @@ bool EdgeCollapser::edge_is_collapsible2( size_t edge_index, double& current_len
 
   // skip deleted and solid edges
   if ( m_surf.m_mesh.edge_is_deleted(edge_index) ) { return false; }
-  if ( m_surf.edge_is_solid(edge_index) ) { return false; }
+  if ( m_surf.edge_is_any_solid(edge_index) ) { return false; }
 
   //disallow boundary edges, or both vertices on the boundary
   if ( m_surf.m_mesh.m_edge_to_triangle_map[edge_index].size() < 2 || 

@@ -222,23 +222,23 @@ size_t SurfTrack::add_triangle( const Vec3st& t )
         // Add to the triangle grid
         Vec3d low, high;
         triangle_static_bounds( new_triangle_index, low, high );
-        m_broad_phase->add_triangle( new_triangle_index, low, high, triangle_is_solid(new_triangle_index) );
+        m_broad_phase->add_triangle( new_triangle_index, low, high, triangle_is_all_solid(new_triangle_index) );
         
         // Add edges to grid as well
         size_t new_edge_index = m_mesh.get_edge_index( t[0], t[1] );
         assert( new_edge_index != m_mesh.m_edges.size() );
         edge_static_bounds( new_edge_index, low, high );
-        m_broad_phase->add_edge( new_edge_index, low, high, edge_is_solid( new_edge_index ) );
+        m_broad_phase->add_edge( new_edge_index, low, high, edge_is_all_solid( new_edge_index ) );
         
         new_edge_index = m_mesh.get_edge_index( t[1], t[2] );
         assert( new_edge_index != m_mesh.m_edges.size() );   
         edge_static_bounds( new_edge_index, low, high );
-        m_broad_phase->add_edge( new_edge_index, low, high, edge_is_solid( new_edge_index )  );
+        m_broad_phase->add_edge( new_edge_index, low, high, edge_is_all_solid( new_edge_index )  );
         
         new_edge_index = m_mesh.get_edge_index( t[2], t[0] );
         assert( new_edge_index != m_mesh.m_edges.size() );   
         edge_static_bounds( new_edge_index, low, high );
-        m_broad_phase->add_edge( new_edge_index, low, high, edge_is_solid( new_edge_index )  );
+        m_broad_phase->add_edge( new_edge_index, low, high, edge_is_all_solid( new_edge_index )  );
     }
     
     m_triangle_change_history.push_back( TriangleUpdateEvent( TriangleUpdateEvent::TRIANGLE_ADD, new_triangle_index, t ) );

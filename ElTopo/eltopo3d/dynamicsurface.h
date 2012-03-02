@@ -175,14 +175,30 @@ public:
     ///
     inline bool vertex_is_solid( size_t vertex_index ) const;
     
-    /// Determine if the edge is on a solid surface (has infinite mass).
+    /*/// Determine if the edge is on a solid surface (has infinite mass).
     ///
     inline bool edge_is_solid( size_t eedge_index ) const;
     
     /// Determine if the triangle is on a solid surface (has infinite mass).
     ///    
-    inline bool triangle_is_solid( size_t triangle_index ) const;
+    inline bool triangle_is_solid( size_t triangle_index ) const;*/
+
+    /// Determine if the edge has any solid vertices
+    ///
+    inline bool edge_is_any_solid( size_t eedge_index ) const;
+
+    /// Determine if the triangle has any solids vertices
+    ///    
+    inline bool triangle_is_any_solid( size_t triangle_index ) const;
     
+    /// Determine if the edge has all solid vertices
+    ///
+    inline bool edge_is_all_solid( size_t eedge_index ) const;
+
+    /// Determine if the triangle has all solid vertices
+    ///    
+    inline bool triangle_is_all_solid( size_t triangle_index ) const;
+
     /// Compute the total surface area defined by the mesh
     ///
     inline double get_surface_area( ) const;
@@ -652,7 +668,7 @@ inline double DynamicSurface::get_average_non_solid_edge_length() const
     {
         const Vec2st& e = m_mesh.m_edges[i]; 
         if ( e[0] == e[1] )  { continue; }
-        if ( edge_is_solid(i) ) { continue; }
+        if ( edge_is_all_solid(i) ) { continue; }
         sum_lengths += mag( get_position(e[1]) - get_position(e[0]) ); 
         ++counted_edges;
     }
@@ -755,7 +771,7 @@ inline bool DynamicSurface::vertex_is_solid( size_t v ) const
 ///
 // --------------------------------------------------------
 
-inline bool DynamicSurface::edge_is_solid( size_t e ) const
+inline bool DynamicSurface::edge_is_any_solid( size_t e ) const
 {
     const Vec2st& edge = m_mesh.m_edges[e];
     return ( vertex_is_solid(edge[0]) || vertex_is_solid(edge[1]) );
@@ -767,12 +783,35 @@ inline bool DynamicSurface::edge_is_solid( size_t e ) const
 ///
 // --------------------------------------------------------
 
-inline bool DynamicSurface::triangle_is_solid( size_t t ) const
+inline bool DynamicSurface::triangle_is_any_solid( size_t t ) const
 {
     const Vec3st& tri = m_mesh.get_triangle(t);
     return ( vertex_is_solid(tri[0]) || vertex_is_solid(tri[1]) || vertex_is_solid(tri[2]) );
 }
 
+// --------------------------------------------------------
+///
+/// Return true if both end vertices of the specified edge is solid (should be treated as having infinite mass).
+///
+// --------------------------------------------------------
+
+inline bool DynamicSurface::edge_is_all_solid( size_t e ) const
+{
+  const Vec2st& edge = m_mesh.m_edges[e];
+  return ( vertex_is_solid(edge[0]) && vertex_is_solid(edge[1]) );
+}
+
+// --------------------------------------------------------
+///
+/// Return true if all corner vertices of the specified triangle is solid (should be treated as having infinite mass).
+///
+// --------------------------------------------------------
+
+inline bool DynamicSurface::triangle_is_all_solid( size_t t ) const
+{
+  const Vec3st& tri = m_mesh.get_triangle(t);
+  return ( vertex_is_solid(tri[0]) && vertex_is_solid(tri[1]) && vertex_is_solid(tri[2]) );
+}
 
 // ---------------------------------------------------------
 ///

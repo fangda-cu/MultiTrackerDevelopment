@@ -298,7 +298,7 @@ double get_curvature_scaled_length(const SurfTrack& surf,
 
 // ---------------------------------------------------------
 ///
-/// Return the minimun triangle area in the specified surface.
+/// Return the minimum triangle area in the specified surface.
 ///
 // ---------------------------------------------------------
 
@@ -308,7 +308,7 @@ double min_triangle_area( const SurfTrack& surf )
     for ( size_t i = 0; i < surf.m_mesh.num_triangles(); ++i )
     {
         if ( surf.m_mesh.triangle_is_deleted(i) ) { continue; }
-        if ( surf.triangle_is_solid(i) ) { continue; }
+        if ( surf.triangle_is_all_solid(i) ) { continue; }
         
         double area = surf.get_triangle_area(i);
         min_area = std::min( area, min_area );
