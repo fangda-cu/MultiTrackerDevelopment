@@ -1,0 +1,47 @@
+#Falling viscous sheet stretching example
+
+shell-scene 13
+dt 5	# time-step size
+
+gravity 0 -0.000981 0	# gravity
+
+shell-CST-stretching 1
+shell-DS-bending 1
+
+#Viscous Parameters
+shell-Youngs-damping 0.007
+shell-Poisson-damping 0.5
+
+#Surface Tension
+shell-surface-tension 0.0
+
+shell-remeshing 1
+shell-remeshing-resolution 2.0
+shell-remeshing-iterations 1
+
+#collision stuff
+shell-self-collision true
+shell-ground-plane true
+shell-ground-plane-height -1
+shell-ground-plane-velocity 0.0025
+shell-collision-spring-stiffness 1.5e-6
+shell-collision-spring-damping 1e-8
+shell-collision-proximity 0.5
+
+shell-initial-velocity -0.01
+
+integrator implicit	# type of integrator to use for the shell
+
+shell-density 0.0001    # volumetric density of the shell 
+shell-thickness 0.25	# the thickness of the shell
+shell-height 25.0	# the vertical side length of the shell
+shell-width 10.0	# the horizontal side length of the shell
+shell-y-resolution 20	# the number of segments along the vertical edge
+shell-x-resolution 8	# the number of segments along the horizontal edge
+
+
+iterations 100	# maximum number of iterations for the implicit method
+atol 1e-008	# absolute convergence tolerance
+rtol 1e-008	# relative convergence tolerance
+atol 1e-008	# absolute convergence tolerance
+stol 1e-008	# convergence tolerance in terms of the norm of the change in the solution between steps

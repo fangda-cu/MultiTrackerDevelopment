@@ -1,7 +1,7 @@
 #periodic buckling sheet example
 
 shell-scene 1
-dt 0.05	# time-step size
+dt 0.02	# time-step size
 
 gravity 0 -1 0	# gravity
 
@@ -10,11 +10,11 @@ shell-DS-bending 1
 shell-MN-bending 0
 
 #Elastic Parameters
-#shell-Youngs 0
+#shell-Youngs 0.01
 #shell-Poisson 0.5
 
 #Viscous Parameters
-shell-Youngs-damping 0.01
+shell-Youngs-damping 0.5
 shell-Poisson-damping 0.5
 
 #Surface Tension
@@ -27,7 +27,7 @@ shell-remeshing-iterations 1
 
 #collision stuff
 shell-self-collision false
-shell-ground-plane false
+shell-ground-plane true
 shell-ground-plane-height -0.5
 shell-collision-spring-stiffness 0.2
 shell-collision-spring-damping 0.01
@@ -39,11 +39,11 @@ shell-density 0.1	# volumetric density of the shell
 shell-thickness 0.05	# the thickness of the shell
 shell-height 1.0	# the vertical side length of the shell
 shell-width 1.0	# the horizontal side length of the shell
-shell-x-resolution 18	# the number of segments along the horizontal edge
-shell-y-resolution 18	# the number of segments along the vertical edge
+shell-x-resolution 10	# the number of segments along the horizontal edge
+shell-y-resolution 10	# the number of segments along the vertical edge
 
 iterations 100	# maximum number of iterations for the implicit method
-atol 1e-008	# absolute convergence tolerance
-rtol 1e-008	# relative convergence tolerance
-atol 1e-008	# absolute convergence tolerance
-stol 1e-008	# convergence tolerance in terms of the norm of the change in the solution between steps
+atol 1e-009	# absolute convergence tolerance
+rtol 1e-009 # relative convergence tolerance
+atol 1e-009	# absolute convergence tolerance
+stol 1e-009	# convergence tolerance in terms of the norm of the change in the solution between steps
