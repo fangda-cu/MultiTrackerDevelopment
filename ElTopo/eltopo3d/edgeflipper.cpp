@@ -472,6 +472,7 @@ bool EdgeFlipper::flip_pass( )
         {
             if ( m_mesh.m_edges[i][0] == m_mesh.m_edges[i][1] )   { continue; }
             if ( m_mesh.m_edge_to_triangle_map[i].size() > 4 || m_mesh.m_edge_to_triangle_map[i].size() < 2 )   { continue; }
+            
             //if ( m_mesh.m_is_boundary_vertex[ m_mesh.m_edges[i][0] ] || m_mesh.m_is_boundary_vertex[ m_mesh.m_edges[i][1] ] )  { continue; }  // skip boundary vertices
             //NOTE: This check disables flipping on edges where either endpoint is on the boundary.
             //For cloth/shell-like scenarios this is a problem
@@ -508,6 +509,10 @@ bool EdgeFlipper::flip_pass( )
                 assert(0);
             }
             
+            //don't flip if one of the faces is all solid
+            if(m_surf.triangle_is_all_solid(triangle_a) || m_surf.triangle_is_all_solid(triangle_b))
+              continue;
+
             // Don't flip edge on a degenerate triangle
             const Vec3st& tri_a = m_mesh.get_triangle( triangle_a );
             const Vec3st& tri_b = m_mesh.get_triangle( triangle_b );

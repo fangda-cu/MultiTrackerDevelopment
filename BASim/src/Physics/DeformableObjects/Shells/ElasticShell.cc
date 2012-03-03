@@ -1210,6 +1210,20 @@ void ElasticShell::remesh_new()
     ++id;
   }
 
+  //constrain all the vertices in faces that are used by collision springs to prevent remeshing there
+  std::vector<VertexHandle> verts;
+  std::vector<FaceHandle> faces;
+  std::vector<Vec3d> coords;
+  m_repulsion_springs->getSpringLists(verts, faces, coords);
+  for(unsigned int i = 0; i < faces.size(); ++i) {
+    FaceVertexIterator fvit = getDefoObj().fv_iter(faces[i]);
+    for(;fvit; ++fvit) {
+      VertexHandle vh = *fvit;
+      masses[vert_numbers[vh]] = numeric_limits<Scalar>::infinity();
+    }
+  }
+
+
   ElTopo::SurfTrack surface_tracker( vert_data, tri_data, masses, construction_parameters ); 
 
   surface_tracker.improve_mesh();
