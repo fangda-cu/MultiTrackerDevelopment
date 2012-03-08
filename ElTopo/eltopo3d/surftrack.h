@@ -270,7 +270,7 @@ struct MeshUpdateEvent
     EDGE_SPLIT,
     EDGE_FLIP,
     EDGE_COLLAPSE,
-    VERTEX_SMOOTH
+    EDGE_CUT,
   };
 
   /// Constructors
@@ -284,6 +284,9 @@ struct MeshUpdateEvent
 
   /// The start and end vertices of the edge
   size_t m_v0, m_v1;
+  
+  // Another identifying vertex, needed for internal cuts
+  size_t m_v2; 
 
   /// The index of the triangles involved. 
   ///
@@ -294,11 +297,14 @@ struct MeshUpdateEvent
   ///
   std::vector<Vec3st> m_created_tri_data;
   
-  /// The index of the vertices involved. 
+  /// The indices of the vertices involved. 
   ///
   std::vector<size_t> m_deleted_verts;
   std::vector<size_t> m_created_verts;
   
+  /// The positions of the created vertices
+  ///
+  std::vector<Vec3d> m_created_vert_data;
 
   /// The location of the final vertex (for a split, collapse, or possibly smooth)
   ///

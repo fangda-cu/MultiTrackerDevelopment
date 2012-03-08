@@ -156,6 +156,22 @@ bool MeshPincher::pull_apart_vertex( size_t vertex_index, const std::vector< Tri
             
             for ( size_t j=0; j < overlapping_triangles.size(); ++j )
             {        
+
+                //prevent checking against to-be-deleted triangles
+                bool go_to_next_triangle = false;
+                for ( size_t d = 0; d < triangles_to_delete.size(); ++d )
+                {
+                  if ( overlapping_triangles[j] == triangles_to_delete[d] )
+                  {
+                    go_to_next_triangle = true;
+                    break;
+                  }
+                }
+                if ( go_to_next_triangle )   
+                { 
+                  continue; 
+                }
+
                 const Vec3st& tri_j = m_surf.m_mesh.get_triangle(overlapping_triangles[j]);
                 
                 assert( tri_j[0] != tri_j[1] );
@@ -167,20 +183,27 @@ bool MeshPincher::pull_apart_vertex( size_t vertex_index, const std::vector< Tri
                     break;
                 }
             }
+            if(collision_occurs)
+              break;
         }
         
         // check new triangles vs each other as well
-        for ( size_t i = 0; i < triangles_to_add.size(); ++i ) 
+        if(!collision_occurs) 
         {
-            for ( size_t j = i+1; j < triangles_to_add.size(); ++j ) 
-            {
-                if ( check_triangle_triangle_intersection( triangles_to_add[i], triangles_to_add[j], m_surf.get_positions() ) )
-                {
-                    // collision occurs - abort separation
-                    collision_occurs = true;
-                    break;
-                }         
-            }
+          for ( size_t i = 0; i < triangles_to_add.size(); ++i ) 
+          {
+              for ( size_t j = i+1; j < triangles_to_add.size(); ++j ) 
+              {
+                  if ( check_triangle_triangle_intersection( triangles_to_add[i], triangles_to_add[j], m_surf.get_positions() ) )
+                  {
+                      // collision occurs - abort separation
+                      collision_occurs = true;
+                      break;
+                  }         
+              }
+              if(collision_occurs)
+                break;
+          }
         }
     }
     

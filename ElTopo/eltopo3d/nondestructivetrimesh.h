@@ -160,6 +160,10 @@ public:
     ///
     inline size_t get_common_edge( size_t triangle_a, size_t triangle_b );
     
+    /// Return the vertex incident on two edges.  Returns ~0 if edges are not adjacent.
+    ///
+    inline size_t get_common_vertex( size_t edge_a, size_t edge_b );
+
     /// Determine if two triangles are adjacent (if they share an edge)
     ///
     inline bool triangles_are_adjacent( size_t triangle_a, size_t triangle_b );
@@ -652,6 +656,30 @@ inline size_t NonDestructiveTriMesh::get_common_edge( size_t triangle_a, size_t 
     return static_cast<unsigned int>(~0);
 }
 
+// --------------------------------------------------------
+///
+/// Return the vertex incident on two edges.  Returns ~0 if edges are not adjacent.
+///
+// --------------------------------------------------------
+
+inline size_t NonDestructiveTriMesh::get_common_vertex( size_t edge_a, size_t edge_b )
+{
+  const Vec2st& edge_a_verts = m_edges[edge_a];
+  const Vec2st& edge_b_verts = m_edges[edge_b];
+
+  for ( unsigned int i = 0; i < 2; ++i )
+  {
+    for ( unsigned int j = 0; j < 2; ++j )
+    {
+      if ( edge_a_verts[i] == edge_b_verts[j] )
+      {
+        return edge_a_verts[i];
+      }
+    }      
+  }
+
+  return static_cast<unsigned int>(~0);
+}
 
 // --------------------------------------------------------
 ///
