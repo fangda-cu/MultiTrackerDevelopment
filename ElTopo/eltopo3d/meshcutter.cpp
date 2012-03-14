@@ -37,8 +37,10 @@ void MeshCutter::partition_edge_neighbourhood( size_t edge_index, std::vector< T
   assert(m_surf.m_mesh.m_is_boundary_vertex[vtx0] || m_surf.m_mesh.m_is_boundary_vertex[vtx1]);
   assert(!m_surf.m_mesh.m_is_boundary_edge[edge_index]);  // require the edge to be interior, otherwise splitting makes no sense
   assert(m_surf.m_mesh.m_edge_to_triangle_map[edge_index].size() == 2); // require manifold geometry for now.
-  
+  assert(!m_surf.m_mesh.edge_is_deleted(edge_index)); //don't process dead edges
+
   // find triangles incident to boundary vertices
+  
   TriangleSet incident_triangles;
   if(m_surf.m_mesh.m_is_boundary_vertex[vtx0]) {
     TriangleSet set0 = m_surf.m_mesh.m_vertex_to_triangle_map[vtx0];
@@ -49,6 +51,11 @@ void MeshCutter::partition_edge_neighbourhood( size_t edge_index, std::vector< T
     incident_triangles.insert(incident_triangles.end(), set1.begin(), set1.end());
   }
 
+  //TODO Faster to use an ACTUAL std::set when building the list?
+  sort( incident_triangles.begin(), incident_triangles.end() );
+  incident_triangles.erase( unique( incident_triangles.begin(), incident_triangles.end() ), incident_triangles.end() );
+
+  
   // unvisited triangles which are adjacent to some visited ones and incident to vt
   TriangleSet unvisited_triangles, visited_triangles;
 
@@ -199,6 +206,7 @@ bool MeshCutter::pull_apart_edge( size_t edge_index, const std::vector< Triangle
   MeshUpdateEvent cut_event(MeshUpdateEvent::EDGE_CUT);
   cut_event.m_v0 = vtx0;
   cut_event.m_v1 = vtx1;
+  cut_event.m_v2 = static_cast<unsigned int>(~0); //flag as unused
 
   bool success = perform_pull_apart(boundary_verts, connected_components, cut_event);
   if(success)
@@ -426,7 +434,7 @@ bool MeshCutter::perform_pull_apart(const std::vector<size_t>& boundary_verts, c
     history.m_deleted_tris.push_back( triangles_to_delete[i] );
   }
 
-  m_surf.m_mesh_change_history.push_back(history);
+  //m_surf.m_mesh_change_history.push_back(history);
 
   if ( m_surf.m_collision_safety )
   {
@@ -454,16 +462,16 @@ void MeshCutter::separate_edges(const std::vector<std::pair<size_t,size_t> >& ed
     
     for ( size_t i = 0; i < edge_set.size(); ++i )
     {
-        // Grab the two end vertices
-        std::pair<size_t,size_t> verts = edge_set[i];
-        size_t vtx0 = verts.first;
-        size_t vtx1 = verts.second;
+        // Grab the two end vertices, find the edge
+        std::pair<size_t,size_t> vert_pair = edge_set[i];
+        size_t vtx0 = vert_pair.first;
+        size_t vtx1 = vert_pair.second;
         size_t edge = m_surf.m_mesh.get_edge_index(vtx0, vtx1);
         
-        //if one of the two end vertices is a boundary vertex, process it
-        if(m_surf.m_mesh.m_is_boundary_vertex[vtx0] && !m_surf.m_mesh.m_is_boundary_vertex[vtx1]
-        || !m_surf.m_mesh.m_is_boundary_vertex[vtx0] && m_surf.m_mesh.m_is_boundary_vertex[vtx1]) {
-            boundary_edges.push_back(verts);
+        //if at least one of the two end vertices is a boundary vertex, and this isn't a boundary edge,
+        //we will want to process the cut
+        if((m_surf.m_mesh.m_is_boundary_vertex[vtx0] || m_surf.m_mesh.m_is_boundary_vertex[vtx1]) & !m_surf.m_mesh.m_is_boundary_edge[edge]) {
+            boundary_edges.push_back(vert_pair);
         }
     }
 
@@ -478,17 +486,32 @@ void MeshCutter::separate_edges(const std::vector<std::pair<size_t,size_t> >& ed
         
         int bdry_count = 0;
         bdry_count += m_surf.m_mesh.m_is_boundary_vertex[vtx0]?1:0;
-
+        bdry_count += m_surf.m_mesh.m_is_boundary_vertex[vtx1]?1:0;
+        
+        std::cout << "Cutting edge with " << bdry_count << " boundary vertices.\n";
         // Partition the set of triangles adjacent to this vertex into connected components
         std::vector< TriangleSet > connected_components;
         
+        std::cout << "Partitioning edges.\n";
         partition_edge_neighbourhood( edge, connected_components );
-        
+        std::cout << "Partitioned successfully.\n";
+        std::cout << "Connected components:";
+        for(unsigned int j = 0; j < connected_components.size(); ++j) {
+          std::cout << "Component " << j << ": ";
+          for(unsigned int k = 0; k < connected_components[j].size(); ++k) {
+            std::cout << connected_components[j][k] << " ";
+          }
+          std::cout << std::endl;
+        }
+
         if ( connected_components.size() > 1 ) 
         {
+            std::cout << "Doing the cutting itself.\n";
+
             bool cut = pull_apart_edge( edge, connected_components );
             if ( cut )
             {
+              std::cout << "Cut succeeded\n";
                 // TODO: Shouldn't need this.
                 m_surf.rebuild_continuous_broad_phase();
             }

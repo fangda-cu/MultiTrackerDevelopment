@@ -154,6 +154,8 @@ public:
       m_tear_rand = rand;
   }
 
+  void fracture_new();
+
   void getCollisionSphere(Vec3d& position, Scalar& radius) const {
     position = m_sphere_position;
     radius = m_sphere_radius;

@@ -106,6 +106,7 @@ m_flipper( *this, initial_parameters.m_edge_flip_min_length_change ),
 m_smoother( *this ),
 m_merger( *this ),
 m_pincher( *this ),
+m_cutter( *this ),
 m_improve_collision_epsilon( initial_parameters.m_improve_collision_epsilon ),
 m_edge_flip_min_length_change( initial_parameters.m_edge_flip_min_length_change ),
 m_max_volume_change( UNINITIALIZED_DOUBLE ),   
@@ -643,28 +644,48 @@ void SurfTrack::improve_mesh( )
     
     if ( m_perform_improvement )
     {
-        
+
+      for(int loop= 0; loop < 3; ++loop) {
         // edge splitting
+        std::cout << "Split\n";
         while ( m_splitter.split_pass() ) {}
         
+        std::cout << "Flip\n";
         // edge flipping
         m_flipper.flip_pass();		
 
+        std::cout << "Collapse\n";
         // edge collapsing
         while ( m_collapser.collapse_pass() ) {}
         
+        std::cout << "Smooth\n";
         // null-space smoothing
         if ( m_allow_vertex_movement )
         {
             m_smoother.null_space_smoothing_pass( 1.0 );
         }
-        
+      }
+
+        std::cout << "Check collisions\n";
         if ( m_collision_safety )
         {
             assert_mesh_is_intersection_free( false );
         }      
     }
     
+}
+
+void SurfTrack::cut_mesh( const std::vector< std::pair<size_t,size_t> >& edges)
+{     
+
+  // edge cutting
+  m_cutter.separate_edges(edges);
+
+  if ( m_collision_safety )
+  {
+    assert_mesh_is_intersection_free( false );
+  }      
+  
 }
 
 // --------------------------------------------------------

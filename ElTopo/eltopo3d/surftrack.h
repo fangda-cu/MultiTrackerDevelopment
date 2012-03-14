@@ -17,6 +17,7 @@
 #include <meshmerger.h>
 #include <meshpincher.h>
 #include <meshsmoother.h>
+#include <meshcutter.h>
 
 // ---------------------------------------------------------
 //  Forwards and typedefs
@@ -275,7 +276,7 @@ struct MeshUpdateEvent
 
   /// Constructors
   ///
-  MeshUpdateEvent(EventType eType):m_type(eType)
+  MeshUpdateEvent(EventType eType):m_type(eType), m_deleted_tris(0), m_created_tris(0), m_created_tri_data(0)
   {}
 
   /// What type of mesh event this is
@@ -384,6 +385,11 @@ public:
     ///
     void topology_changes( );
     
+    /// Run mesh cutting operations on a given set of edges
+    ///
+    void cut_mesh( const std::vector< std::pair<size_t, size_t> >& edges);
+
+
     //
     // Mesh cleanup
     //
@@ -428,6 +434,10 @@ public:
     ///
     MeshPincher m_pincher;
     
+    /// Surface cutting (tearing) operation object
+    ///
+    MeshCutter m_cutter;
+
     /// Collision epsilon to use during mesh improvement operations
     ///
     double m_improve_collision_epsilon;

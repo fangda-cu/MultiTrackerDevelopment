@@ -17,7 +17,6 @@
 
 #include <cstddef>
 #include <vector>
-#include <surftrack.h>
 
 // ---------------------------------------------------------
 //  Forwards and typedefs
@@ -26,6 +25,7 @@
 namespace ElTopo {
 
 class SurfTrack;
+struct MeshUpdateEvent;
 template<unsigned int N, class T> struct Vec;
 typedef Vec<3,size_t> Vec3st;
 

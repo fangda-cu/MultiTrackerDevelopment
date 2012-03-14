@@ -386,7 +386,7 @@ bool MeshMerger::merge_pass( )
         const Vec2st& e0 = m_surf.m_mesh.m_edges[i];
         
         if ( e0[0] == e0[1] ) { continue; }
-        if ( m_surf.edge_is_solid(i) ) { continue; }
+        if ( m_surf.edge_is_any_solid(i) ) { continue; }
         
         if ( m_surf.m_mesh.m_is_boundary_vertex[ e0[0] ] || m_surf.m_mesh.m_is_boundary_vertex[ e0[1] ] )  { continue; }  // skip boundary vertices
         

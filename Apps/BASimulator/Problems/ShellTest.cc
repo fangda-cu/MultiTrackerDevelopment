@@ -112,7 +112,7 @@ ShellTest::ShellTest()
   AddOption("shell-collision-object-offset", "translation of the object", Vec3d(0,0,0));
   
   //Tearing options
-  AddOption("shell-tearing", "wheter to add tearing to the model", false);
+  AddOption("shell-tearing", "whether to add tearing to the model", false);
   AddOption("shell-tearing-threshold", "the thickness threshold to use for tearing", 0.0 );
   AddOption("shell-tearing-randomness", "percent of fracture edges that will actually tear apart", 1.0 );
   AddOption("shell-ring-velocity", "velocity in the x direction for the rings", 0.25);

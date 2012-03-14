@@ -38,7 +38,7 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
     m_velocities(object),
     m_xi_vel(object),
     m_density(1),
-    m_proximity_epsilon(0.0001),
+    m_proximity_epsilon(1e-5),
     m_vert_point_springs(NULL),
     m_repulsion_springs(NULL),
     m_sphere_collisions(false),
@@ -524,9 +524,8 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
 
 
   // build a DynamicSurface
-  Scalar collision_proximity = 1e-5;
   Scalar friction_coeff = 0;
-  ElTopo::DynamicSurface dynamic_surface( vert_old, tri_data, masses, collision_proximity, friction_coeff, true );
+  ElTopo::DynamicSurface dynamic_surface( vert_old, tri_data, masses, m_proximity_epsilon, friction_coeff, true, false );
 
   dynamic_surface.set_all_newpositions( vert_new );
 
@@ -555,115 +554,6 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
 
 }
 
-/*
-void ElasticShell::resolveCollisions(Scalar timestep) {
-  //do cloth-style self-collision correction
-  if(!m_self_collisions)
-    return;
-
-  //extra space for ground plane
-  int nverts = m_obj->nv();
-  int ntris = m_obj->nf();
-  
-  double* invertices_old = new double[3*nverts];
-  double* invertices_new = new double[3*nverts];
-  double* masses = new double[nverts];
-  std::map<int,int> indexMap;
-  std::vector<VertexHandle> indexMap2(nverts);
-
-  //construct vertex data
-  int index = 0;
-  for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
-    VertexHandle vh = *vit;
-    Vec3d newPos = m_positions[vh];
-    invertices_new[3*index] = newPos[0];
-    invertices_new[3*index+1] = newPos[1];
-    invertices_new[3*index+2] = newPos[2];
-
-    Vec3d oldPos = m_damping_undeformed_positions[vh];
-    invertices_old[3*index] = oldPos[0];
-    invertices_old[3*index+1] = oldPos[1];
-    invertices_old[3*index+2] = oldPos[2];
-
-    masses[index] = getMass(vh);
-    if(isConstrained(vh))
-      masses[index] = 101;
-    indexMap[vh.idx()] = index;
-    indexMap2[index] = vh;
-    ++index;
-  }
-  
-  //also add a simple ground plane
-  //int g0 = m_obj->nv();
-  //invertices_new[3*g0]     = -0.5; invertices_new[3*g0+1]     = -0.1; invertices_new[3*g0+2]     = -0.5;
-  //invertices_new[3*(g0+1)] = +0.5; invertices_new[3*(g0+1)+1] = -0.1; invertices_new[3*(g0+1)+2] = -0.5;
-  //invertices_new[3*(g0+2)] = +0.5; invertices_new[3*(g0+2)+1] = -0.1; invertices_new[3*(g0+2)+2] = +0.5;
-  //invertices_new[3*(g0+3)] = -0.5; invertices_new[3*(g0+3)+1] = -0.1; invertices_new[3*(g0+3)+2] = +0.5;
-  //invertices_old[3*g0]     = -0.5; invertices_old[3*g0+1]     = -0.1; invertices_old[3*g0+2]     = -0.5;
-  //invertices_old[3*(g0+1)] = +0.5; invertices_old[3*(g0+1)+1] = -0.1; invertices_old[3*(g0+1)+2] = -0.5;
-  //invertices_old[3*(g0+2)] = +0.5; invertices_old[3*(g0+2)+1] = -0.1; invertices_old[3*(g0+2)+2] = +0.5;
-  //invertices_old[3*(g0+3)] = -0.5; invertices_old[3*(g0+3)+1] = -0.1; invertices_old[3*(g0+3)+2] = +0.5;
-  //masses[g0] = 101; //"infinite" mass
-  //masses[g0+1] = 101;
-  //masses[g0+2] = 101;
-  //masses[g0+3] = 101;
-
-
-  //construct triangle data
-  int* triangles = new int[3*ntris]; //extra space for ground plane
-  index = 0;
-  for(FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit) {
-    FaceHandle fh = *fit;
-    int c = 0;
-    for(FaceVertexIterator fvit = m_obj->fv_iter(fh); fvit; ++fvit) {
-      VertexHandle vh = *fvit;
-      triangles[3*index+c] = indexMap[vh.idx()];
-      ++c;
-    }
-    ++index;
-  }
-  
-  ////add ground plane tris
-  //int t0 = m_obj->nf();
-  //triangles[3*t0] = g0; triangles[3*t0+1] = g0+1; triangles[3*t0+2] = g0+2;
-  //triangles[3*(t0+1)] = g0; triangles[3*(t0+1)+1] = g0+2; triangles[3*(t0+1)+2] = g0+3;
-
-
-  ElTopoGeneralOptions gen_opts;
-  gen_opts.m_collision_safety = true;
-  gen_opts.m_verbose = true;
-  double *outvertex_locations;
-  ElTopoIntegrationOptions int_opts;
-  int_opts.m_dt = timestep; 
-  int_opts.m_proximity_epsilon = m_proximity_epsilon;
-
-  el_topo_integrate(nverts, invertices_old, invertices_new, ntris, 
-    triangles, masses, &gen_opts, &int_opts, &outvertex_locations);
-
-  //copy back the results
-  bool badResult = false;
-  for(int i = 0; i < nverts; ++i) {
-    Vec3d pos(outvertex_locations[3*i], outvertex_locations[3*i+1], outvertex_locations[3*i+2]);
-    VertexHandle vh = indexMap2[i];
-    
-    //Check for failed solve.
-    if(isnan(pos[0]) || isnan(pos[1]) || isnan(pos[2]))
-      std::cout << "ElTopo Failed: NaN vertex\n";
-    if(isinf(pos[0]) || isinf(pos[1]) || isinf(pos[2]))
-      std::cout << "ElTopo Failed: Inf vertex\n";
-    
-    Vec3d vel = (pos - m_damping_undeformed_positions[vh]) / timestep;
-
-    setVertexPosition(vh, pos);
-    setVertexVelocity(vh, vel);
-  }
- 
-  el_topo_free_integrate_results( outvertex_locations );
-  delete[] invertices_new;
-  delete[] invertices_old;
-  delete[] masses;
-}
-*/
 
 void ElasticShell::addSelfCollisionForces() {
   
@@ -879,11 +769,15 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     do_relabel = true;
   }
 
+  static int only_twice = 0;
+
   //Tearing processing
   if(m_tearing){
     std::cout << "Processing tearing. \n";
-    fracture();
+    //fracture();
+    fracture_new();
     do_relabel = true;
+    only_twice++;
   }
 
   if(do_relabel) {
@@ -896,6 +790,198 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 
 
   std::cout << "Completed endStep\n";
+
+}
+
+
+void ElasticShell::fracture_new() {
+
+  //Set up a SurfTrack, run remeshing, render the new mesh
+  ElTopo::SurfTrackInitializationParameters construction_parameters;
+  construction_parameters.m_proximity_epsilon = m_proximity_epsilon;
+  construction_parameters.m_allow_vertex_movement = false;
+  construction_parameters.m_min_edge_length = 0.5*m_remesh_edge_length;
+  construction_parameters.m_max_edge_length = 1.5*m_remesh_edge_length;
+  construction_parameters.m_max_volume_change = numeric_limits<double>::max();   
+  construction_parameters.m_min_triangle_angle = 5;
+  construction_parameters.m_max_triangle_angle = 175;
+  construction_parameters.m_verbose = false;
+  construction_parameters.m_use_curvature_when_collapsing = false;
+  construction_parameters.m_use_curvature_when_splitting = false;
+  construction_parameters.m_allow_non_manifold = false;
+  construction_parameters.m_collision_safety = true;
+  //TODO If we try using other subdivision schemes for splitting edges
+  //note that the manner in which the edge split operation is performed
+  //will need to be adjusted to properly preserve total volume.
+
+  std::vector<ElTopo::Vec3d> vert_data;
+  std::vector<ElTopo::Vec3st> tri_data;
+  std::vector<Scalar> masses;
+
+  DeformableObject& mesh = getDefoObj();
+
+  //Index mappings between us and El Topo
+  VertexProperty<int> vert_numbers(&mesh);
+  FaceProperty<int> face_numbers(&mesh);
+  std::vector<VertexHandle> reverse_vertmap;
+  std::vector<FaceHandle> reverse_trimap;
+
+
+  //walk through vertices, create linear list, store numbering
+  int id = 0;
+  for(VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit) {
+    VertexHandle vh = *vit;
+    Vec3d vert = getVertexPosition(vh);
+    Scalar mass = getMass(vh);
+    vert_data.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
+    if(isConstrained(vh))
+      masses.push_back(numeric_limits<Scalar>::infinity());
+    else
+      masses.push_back(mass);
+    vert_numbers[vh] = id;
+    reverse_vertmap.push_back(vh);
+
+    Vec3d pos = getVertexPosition(vh);
+
+    ++id;
+  }
+
+  //walk through tris, creating linear list, using the vertex numbering assigned above
+  id = 0;
+  for(FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit) {
+    FaceHandle fh = *fit;
+    ElTopo::Vec3st tri;
+    int i = 0;
+    for(FaceVertexIterator fvit = mesh.fv_iter(fh); fvit; ++fvit) {
+      VertexHandle vh = *fvit;
+      tri[i] = vert_numbers[vh];
+      ++i;
+    }
+    tri_data.push_back(tri);
+    face_numbers[fh] = id;
+    reverse_trimap.push_back(fh);
+    ++id;
+  }
+
+  //constrain all the vertices in faces that are used by collision springs to prevent remeshing there
+  std::vector<VertexHandle> verts;
+  std::vector<FaceHandle> faces;
+  std::vector<Vec3d> coords;
+  m_repulsion_springs->getSpringLists(verts, faces, coords);
+  for(unsigned int i = 0; i < faces.size(); ++i) {
+    FaceVertexIterator fvit = getDefoObj().fv_iter(faces[i]);
+    for(;fvit; ++fvit) {
+      VertexHandle vh = *fvit;
+      masses[vert_numbers[vh]] = numeric_limits<Scalar>::infinity();
+    }
+  }
+
+  
+  ElTopo::SurfTrack surface_tracker( vert_data, tri_data, masses, construction_parameters ); 
+
+  std::cout << "Collecting desired cuts\n";
+  std::vector< std::pair<size_t,size_t> > edges_to_cut;
+  for(EdgeIterator it = mesh.edges_begin(); it != mesh.edges_end(); ++it) {
+    EdgeHandle eh = *it;
+    VertexHandle vh0 = mesh.fromVertex(eh);
+    VertexHandle vh1 = mesh.toVertex(eh);
+    Vec3d pos0 = getVertexPosition(vh0);
+    Vec3d pos1 = getVertexPosition(vh1);
+    if(mesh.isBoundary(eh)) continue;
+    if(pos0[1] > 2.7 && pos0[1] < 3.3 && pos1[1] > 2.7 && pos1[1] < 3.3) {
+      edges_to_cut.push_back(make_pair(vert_numbers[vh0],vert_numbers[vh1]));
+    }
+  }
+
+  std::cout << "Doing cutting with El Topo\n";
+  surface_tracker.cut_mesh(edges_to_cut);
+
+  
+  std::cout << "Performing " << surface_tracker.m_mesh_change_history.size() << " Cutting Operations:\n";
+  for(unsigned int j = 0; j < surface_tracker.m_mesh_change_history.size(); ++j) {
+    ElTopo::MeshUpdateEvent event = surface_tracker.m_mesh_change_history[j];
+
+    VertexHandle v0 = reverse_vertmap[event.m_v0];
+    VertexHandle v1 = reverse_vertmap[event.m_v1];
+    EdgeHandle eh = findEdge(mesh, v0, v1);
+
+    assert(event.m_type == ElTopo::MeshUpdateEvent::EDGE_CUT);
+      
+    //Identify the edge based on its endpoint vertices instead
+    std::cout << "Cut\n";
+
+    //based on the type of cut, perform the appropriate operation
+    bool aBound = m_obj->isBoundary(v0);
+    bool bBound = m_obj->isBoundary(v1);
+    
+    std::vector<VertexHandle> srcVerts;
+    if(aBound) srcVerts.push_back(v0);
+    if(bBound) srcVerts.push_back(v1);
+
+    std::vector<FaceHandle> newFaces;
+    std::vector<FaceHandle> deletedFaces;
+    std::vector<EdgeHandle> deleteEdges;
+    std::vector<VertexHandle> newVerts;
+
+    //Do exactly the same cut as El Topo
+    //if(aBound && ! bBound || !aBound && bBound) { //one vertex boundary
+      
+    for(unsigned int i = 0; i < event.m_created_verts.size(); ++i) {
+      VertexHandle nv = mesh.addVertex();
+      newVerts.push_back(nv);
+        
+      //Update the mapping
+      vert_numbers[nv] = event.m_created_verts[i];
+      if(reverse_vertmap.size() <= event.m_created_verts[i]) 
+        reverse_vertmap.resize(event.m_created_verts[i]+1, VertexHandle(-1));
+      reverse_vertmap[event.m_created_verts[i]] = nv;
+
+      //Set the various data for the new vertex
+      Vec3d new_pos(event.m_created_vert_data[i][0], 
+                    event.m_created_vert_data[i][1], 
+                    event.m_created_vert_data[i][2]);
+      setVertexPosition(nv, new_pos);
+
+      VertexHandle source = srcVerts[i];
+      setVertexVelocity(nv, getVertexVelocity(source));
+      setUndeformedVertexPosition(nv, getVertexUndeformed(source));
+    }
+      
+    // Add/update faces
+    for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
+      ElTopo::Vec3st new_face = event.m_created_tri_data[i];
+
+      //determine handles in our indexing
+      VertexHandle v0 = reverse_vertmap[new_face[0]];
+      VertexHandle v1 = reverse_vertmap[new_face[1]];
+      VertexHandle v2 = reverse_vertmap[new_face[2]];
+      assert(v0.isValid() && v1.isValid() && v2.isValid());
+
+      FaceHandle newFaceHandle = mesh.addFace(v0, v1, v2); //build the face. do we need to correct the ordering?
+      setFaceActive(newFaceHandle);
+
+      face_numbers[newFaceHandle] = event.m_created_tris[i];
+      if(reverse_trimap.size() <= event.m_created_tris[i]) 
+        reverse_trimap.resize(event.m_created_tris[i]+1);
+      reverse_trimap[event.m_created_tris[i]] = newFaceHandle;
+        
+      //copy data from the old version of the face
+      FaceHandle oldFaceHandle = reverse_trimap[event.m_deleted_tris[i]];
+      m_thicknesses[newFaceHandle] = m_thicknesses[oldFaceHandle];
+      m_volumes[newFaceHandle] = m_volumes[oldFaceHandle];
+        
+    }
+    
+    //delete the dead faces, and clean up the mapping
+    for(size_t i = 0; i < event.m_deleted_tris.size(); ++i) {
+      size_t tri_to_delete = event.m_deleted_tris[i];
+      FaceHandle localFace = reverse_trimap[tri_to_delete];
+      mesh.deleteFace(localFace, true);
+
+      reverse_trimap[event.m_deleted_tris[i]] = FaceHandle(-1);
+    }
+  }
+  
 
 }
 
@@ -931,6 +1017,11 @@ void ElasticShell::fracture(){
 //        }
 //    }
 }
+
+
+
+
+
 void ElasticShell::performTearing(const EdgeHandle & eh){
 
 #ifndef NDEBUG
@@ -1149,6 +1240,7 @@ void ElasticShell::remesh_new()
 
   //Set up a SurfTrack, run remeshing, render the new mesh
   ElTopo::SurfTrackInitializationParameters construction_parameters;
+  construction_parameters.m_proximity_epsilon = m_proximity_epsilon;
   construction_parameters.m_allow_vertex_movement = false;
   construction_parameters.m_min_edge_length = 0.5*m_remesh_edge_length;
   construction_parameters.m_max_edge_length = 1.5*m_remesh_edge_length;
@@ -1159,6 +1251,7 @@ void ElasticShell::remesh_new()
   construction_parameters.m_use_curvature_when_collapsing = false;
   construction_parameters.m_use_curvature_when_splitting = false;
   construction_parameters.m_allow_non_manifold = false;
+  construction_parameters.m_collision_safety = true;
   //TODO If we try using other subdivision schemes for splitting edges
   //note that the manner in which the edge split operation is performed
   //will need to be adjusted to properly preserve total volume.
@@ -1223,21 +1316,21 @@ void ElasticShell::remesh_new()
     }
   }
 
-
+  std::cout << "Calling surface improvement\n";
   ElTopo::SurfTrack surface_tracker( vert_data, tri_data, masses, construction_parameters ); 
 
   surface_tracker.improve_mesh();
 
   std::cout << "Performing " << surface_tracker.m_mesh_change_history.size() << " Improvement Operations:\n";
-  for(unsigned int i = 0; i < surface_tracker.m_mesh_change_history.size(); ++i) {
-    ElTopo::MeshUpdateEvent event = surface_tracker.m_mesh_change_history[i];
+  for(unsigned int j = 0; j < surface_tracker.m_mesh_change_history.size(); ++j) {
+    ElTopo::MeshUpdateEvent event = surface_tracker.m_mesh_change_history[j];
     
     VertexHandle v0 = reverse_vertmap[event.m_v0];
     VertexHandle v1 = reverse_vertmap[event.m_v1];
     EdgeHandle eh = findEdge(mesh, v0, v1);
 
     if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_COLLAPSE) {
-      
+      std::cout << "Collapse\n";
       Vec3d new_pos(event.m_vert_position[0], event.m_vert_position[1], event.m_vert_position[2]);
       VertexHandle dead_vert = reverse_vertmap[event.m_deleted_verts[0]];
       VertexHandle keep_vert = getEdgesOtherVertex(mesh, eh, dead_vert);
@@ -1277,6 +1370,7 @@ void ElasticShell::remesh_new()
     }
     else if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_SPLIT) {
       //Identify the edge based on its endpoint vertices instead
+      std::cout << "Split\n";
 
       VertexHandle new_vert;
       Vec3d new_pos(event.m_vert_position[0], event.m_vert_position[1], event.m_vert_position[2]);
@@ -1319,10 +1413,12 @@ void ElasticShell::remesh_new()
     }
     else if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_FLIP) {
       
+      std::cout << "Flip\n";
       //Do the same flip as El Topo
       EdgeHandle newEdge;
       performFlip(eh, newEdge);
-
+      
+      
       // Update faces
       for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
         ElTopo::Vec3st new_face = event.m_created_tri_data[i];
@@ -1335,10 +1431,13 @@ void ElasticShell::remesh_new()
 
         bool face_matched = false;
         for(EdgeFaceIterator efit = mesh.ef_iter(newEdge); efit; ++efit) {
+
           FaceHandle face_candidate = *efit;
           if(isFaceMatch(mesh, face_candidate, v0, v1, v2)) {
+
             if(reverse_trimap.size() <= event.m_created_tris[i]) 
               reverse_trimap.resize(event.m_created_tris[i]+1);
+
             reverse_trimap[event.m_created_tris[i]] = face_candidate;
             face_numbers[face_candidate] = event.m_created_tris[i];
             face_matched = true;
@@ -1349,11 +1448,12 @@ void ElasticShell::remesh_new()
         if(!face_matched)
           std::cout << "ERROR: Couldn't match the face.\n\n\n";
       }
+      
     }
     else {
       std::cout << "ERROR: unknown remeshing operation";
     }
-
+    
     //kill the reverse map elements for the deleted faces, since no longer valid.
     for(size_t i = 0; i < event.m_deleted_tris.size(); ++i) {
       reverse_trimap[event.m_deleted_tris[i]] = FaceHandle(-1);
@@ -1382,140 +1482,6 @@ void ElasticShell::remesh( Scalar desiredEdge )
   splitEdges(desiredEdge, maxEdge, maxAngle);
   collapseEdges(minAngle, desiredEdge, ratio_R, ratio_r, minEdge);
   
-}
-
-
-bool ElasticShell::edgeFlipCausesCollision( const EdgeHandle& edge_index, 
-                                          const VertexHandle& new_end_a,
-                                          const VertexHandle& new_end_b)
-{  
-  //printf("Checking edge flip safety\n");
-  
-  VertexHandle old_end_a = m_obj->fromVertex(edge_index);
-  VertexHandle old_end_b = m_obj->toVertex(edge_index);
-  VertexHandle tet_vertex_indices[4] = { old_end_a, old_end_b, new_end_a, new_end_b };
-
-  const ElTopoCode::Vec3d tet_vertex_positions[4] = { ElTopoCode::toElTopo(m_positions[ tet_vertex_indices[0] ]), 
-    ElTopoCode::toElTopo(m_positions[ tet_vertex_indices[1] ]), 
-    ElTopoCode::toElTopo(m_positions[ tet_vertex_indices[2] ]), 
-    ElTopoCode::toElTopo(m_positions[ tet_vertex_indices[3] ]) };
-
-  ElTopoCode::Vec3d low, high;
-  ElTopoCode::minmax( tet_vertex_positions[0], tet_vertex_positions[1], tet_vertex_positions[2], tet_vertex_positions[3], low, high );
-
-  std::vector<unsigned int> overlapping_vertices;
-  m_broad_phase.get_potential_vertex_collisions( low, high, overlapping_vertices );
-
-  // do point-in-tet tests (any points already in the tet formed by the flipping edge)
-  for ( unsigned int i = 0; i < overlapping_vertices.size(); ++i ) 
-  { 
-    if ( (overlapping_vertices[i] == old_end_a.idx()) || (overlapping_vertices[i] == old_end_b.idx()) || 
-      (overlapping_vertices[i] == new_end_a.idx()) || (overlapping_vertices[i] == new_end_b.idx()) ) 
-    {
-      continue;
-    }
-
-    if ( ElTopoCode::point_tetrahedron_intersection( ElTopoCode::toElTopo(m_positions[VertexHandle(overlapping_vertices[i])]), overlapping_vertices[i],
-      tet_vertex_positions[0], tet_vertex_indices[0].idx(),
-      tet_vertex_positions[1], tet_vertex_indices[1].idx(),
-      tet_vertex_positions[2], tet_vertex_indices[2].idx(),
-      tet_vertex_positions[3], tet_vertex_indices[3].idx() ) ) 
-    {
-      return true;
-    }
-  }
-
-  //
-  // Check new triangle A vs existing edges
-  //
-  const ElTopoCode::Vec3d old_a_pos = ElTopoCode::toElTopo(m_positions[old_end_a]), 
-    old_b_pos = ElTopoCode::toElTopo(m_positions[old_end_b]), 
-    new_a_pos = ElTopoCode::toElTopo(m_positions[new_end_a]), 
-    new_b_pos = ElTopoCode::toElTopo(m_positions[new_end_b]);
-
-  ElTopoCode::minmax( old_a_pos, new_a_pos, new_b_pos, low, high );
-  std::vector<unsigned int> overlapping_edges;
-  m_broad_phase.get_potential_edge_collisions( low, high, overlapping_edges );
-
-  for ( unsigned int i = 0; i < overlapping_edges.size(); ++i )
-  {
-    EdgeHandle overlapping_edge_index(overlapping_edges[i]);
-    VertexHandle edge_0 = m_obj->fromVertex(overlapping_edge_index), 
-                 edge_1 = m_obj->toVertex(overlapping_edge_index);
-
-    if( segment_triangle_intersection( 
-          ElTopoCode::toElTopo(m_positions[edge_0]), edge_0.idx(), 
-          ElTopoCode::toElTopo(m_positions[edge_1]), edge_1.idx(),
-          old_a_pos, old_end_a.idx(), 
-          new_a_pos, new_end_a.idx(), 
-          new_b_pos, new_end_b.idx(),
-          true, false ) ) 
-    {
-        return true;
-    }
-  }
-
-  //
-  // Check new triangle B vs existing edges
-  //
-
-  ElTopoCode::minmax(old_b_pos, new_a_pos, new_b_pos, low, high );
-
-  overlapping_edges.clear();
-  m_broad_phase.get_potential_edge_collisions( low, high, overlapping_edges );
-
-  for ( unsigned int i = 0; i < overlapping_edges.size(); ++i )
-  {
-    EdgeHandle overlapping_edge_index(overlapping_edges[i]);
-    VertexHandle edge_0 = m_obj->fromVertex(overlapping_edge_index), 
-                 edge_1 = m_obj->toVertex(overlapping_edge_index);
-
-    if( segment_triangle_intersection( 
-      ElTopoCode::toElTopo(m_positions[edge_0]), edge_0.idx(), 
-      ElTopoCode::toElTopo(m_positions[edge_1]), edge_1.idx(),
-      old_b_pos, old_end_b.idx(), 
-      new_a_pos, new_end_a.idx(), 
-      new_b_pos, new_end_b.idx(),
-      true, false ) ) 
-    {
-      return true;
-    }
-  }
-
-  //
-  // Check new edge vs existing triangles
-  //   
-
-  minmax( new_a_pos, new_b_pos, low, high );
-  std::vector<unsigned int> overlapping_triangles;
-  m_broad_phase.get_potential_triangle_collisions( low, high, overlapping_triangles );
-
-  for ( unsigned int i = 0; i <  overlapping_triangles.size(); ++i )
-  {
-    FaceHandle face(overlapping_triangles[i]);
-    FaceVertexIterator fvit = m_obj->fv_iter(face);
-    std::vector< std::pair<ElTopoCode::Vec3d,int> > face_verts;
-    for(;fvit; ++fvit) {
-      ElTopoCode::Vec3d vert = ElTopoCode::toElTopo(m_positions[*fvit]);
-      int id = (*fvit).idx();
-      face_verts.push_back(std::make_pair(vert, id));
-    }
-    assert (face_verts.size() == 3);
-
-    if( segment_triangle_intersection( 
-      new_a_pos, new_end_a.idx(), 
-      new_b_pos, new_end_b.idx(),
-      face_verts[0].first, face_verts[0].second,
-      face_verts[1].first, face_verts[1].second,
-      face_verts[2].first, face_verts[2].second,
-      true, false ) ) 
-    {
-      return true;
-    }
-  }
-
-  return false;
-
 }
 
 void ElasticShell::flipEdges() {
@@ -2000,251 +1966,6 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, EdgeHandle& newEdge) {
     return true;
 }
 
-
-bool ElasticShell::edgeSplitCausesCollision( const ElTopoCode::Vec3d& new_vertex_position, 
-                                              const ElTopoCode::Vec3d& new_vertex_smooth_position, 
-                                              EdgeHandle edge)
-{
-  
-  std::vector<FaceHandle> tris;
-  EdgeFaceIterator efit = m_obj->ef_iter(edge);
-  for(;efit; ++efit) tris.push_back(*efit);
-
-  // new point vs all triangles
-  {
-
-    ElTopoCode::Vec3d aabb_low, aabb_high;
-    ElTopoCode::minmax( new_vertex_position, new_vertex_smooth_position, aabb_low, aabb_high );
-
-    aabb_low -= m_proximity_epsilon * ElTopoCode::Vec3d(1,1,1);
-    aabb_high += m_proximity_epsilon * ElTopoCode::Vec3d(1,1,1);
-
-    std::vector<unsigned int> overlapping_triangles;
-    m_broad_phase.get_potential_triangle_collisions( aabb_low, aabb_high, overlapping_triangles );
-
-    for ( unsigned int i = 0; i < overlapping_triangles.size(); ++i )
-    {
-      
-      if(std::find(tris.begin(), tris.end(), FaceHandle(overlapping_triangles[i])) != tris.end())
-      {
-        continue;
-      }
-      
-      FaceHandle fh(overlapping_triangles[i]);
-
-      //extract vertices
-      FaceVertexIterator fvit = m_obj->fv_iter(fh);
-      VertexHandle triangle_vertex_0 = *fvit; ++fvit;
-      VertexHandle triangle_vertex_1 = *fvit; ++fvit;
-      VertexHandle triangle_vertex_2 = *fvit; ++fvit; 
-      assert(!fvit);
-
-      double t_zero_distance;
-      unsigned int dummy_index = -1;
-      ElTopoCode::point_triangle_distance( new_vertex_position, dummy_index, 
-        ElTopoCode::toElTopo(m_positions[ triangle_vertex_0 ]), triangle_vertex_0.idx(),
-        ElTopoCode::toElTopo(m_positions[ triangle_vertex_1 ]), triangle_vertex_1.idx(),
-        ElTopoCode::toElTopo(m_positions[ triangle_vertex_2 ]), triangle_vertex_2.idx(),
-        t_zero_distance );
-
-      if ( t_zero_distance < m_improve_collision_epsilon )
-      {
-        return true;
-      }
-     
-      //Not sorting the indices here... 
-      //Apparently that only matters for the exact CCD stuff Robert put together (since it relies on simulation of simplicity(SOS)).
-      //I'm using standard cubic CCD.
-      ElTopoCode::Vec3d s0 = ElTopoCode::toElTopo(m_positions[ triangle_vertex_0 ]), 
-        s1 = ElTopoCode::toElTopo(m_positions[ triangle_vertex_1 ]), 
-        s2 = ElTopoCode::toElTopo(m_positions[ triangle_vertex_2 ]);
-
-      if ( ElTopoCode::point_triangle_collision(  new_vertex_position, new_vertex_smooth_position, dummy_index,
-        s0, s0, triangle_vertex_0.idx(),
-        s1, s2, triangle_vertex_1.idx(),
-        s2, s2, triangle_vertex_2.idx() ) )
-
-      {
-        return true;
-      }
-    }
-
-  }
-
-  
-  // new edges vs all edges
-  
-  {
-
-    //make list of all vertices that would connect to the new central vertex
-    //this is basically the list of proposed edges
-    std::vector<VertexHandle> vertex_list;
-    vertex_list.push_back(m_obj->fromVertex(edge));
-    vertex_list.push_back(m_obj->toVertex(edge));
-    for(unsigned int i = 0; i < tris.size(); ++i) {
-      VertexHandle third_vert;
-      bool success = getFaceThirdVertex(*m_obj, tris[i], edge, third_vert);
-      if(success) vertex_list.push_back(third_vert);
-    }
-
-    ElTopoCode::Vec3d edge_aabb_low, edge_aabb_high;
-
-    // do one big query into the broadphase for all new edges
-    ElTopoCode::minmax(new_vertex_position, new_vertex_smooth_position, edge_aabb_low, edge_aabb_high);
-    std::vector<ElTopoCode::Vec3d> verts_pos;
-    for(unsigned int i = 0; i < vertex_list.size(); ++i) {
-      ElTopoCode::Vec3d pos = ElTopoCode::toElTopo(m_positions[vertex_list[i]]); 
-      verts_pos.push_back(pos);
-      ElTopoCode::update_minmax(pos, edge_aabb_low, edge_aabb_high);
-    }
-    
-    edge_aabb_low -= m_proximity_epsilon * ElTopoCode::Vec3d(1,1,1);
-    edge_aabb_high += m_proximity_epsilon * ElTopoCode::Vec3d(1,1,1);
-
-    std::vector<unsigned int> overlapping_edges;
-    m_broad_phase.get_potential_edge_collisions( edge_aabb_low, edge_aabb_high, overlapping_edges );
-
-    for ( unsigned int i = 0; i < overlapping_edges.size(); ++i )
-    {
-
-      if ( overlapping_edges[i] == edge.idx() ) { continue; }
-
-      EdgeHandle eh(overlapping_edges[i]);
-      VertexHandle edge_vertex_0 = m_obj->fromVertex(eh);
-      VertexHandle edge_vertex_1 = m_obj->toVertex(eh);
-      unsigned int dummy_index = -1;
-
-      ElTopoCode::Vec3d edge_vert_0_pos = ElTopoCode::toElTopo(m_positions[edge_vertex_0]);
-      ElTopoCode::Vec3d edge_vert_1_pos = ElTopoCode::toElTopo(m_positions[edge_vertex_1]);
-
-      for(unsigned int v_ind = 0; v_ind < vertex_list.size(); ++v_ind) {
-        VertexHandle vertex_a = vertex_list[v_ind];
-        ElTopoCode::Vec3d vert_a_pos = verts_pos[v_ind];
-
-        if ( vertex_a != edge_vertex_0 && vertex_a != edge_vertex_1 ) 
-        {
-          double t_zero_distance;   
-          segment_segment_distance( new_vertex_position, dummy_index,
-            vert_a_pos, vertex_a.idx(), 
-            edge_vert_0_pos, edge_vertex_0.idx(),
-            edge_vert_1_pos, edge_vertex_1.idx(),
-            t_zero_distance );
-
-          if ( t_zero_distance < m_improve_collision_epsilon )
-          {
-            return true;
-          }
-
-          if ( segment_segment_collision( vert_a_pos, vert_a_pos, vertex_a.idx(),
-            new_vertex_position, new_vertex_smooth_position, dummy_index,
-            edge_vert_0_pos, edge_vert_0_pos, edge_vertex_0.idx(),
-            edge_vert_1_pos, edge_vert_1_pos, edge_vertex_1.idx() ) )
-          {      
-            return true;
-          }
-        }
-      }
-    }
-  }
-
-  // new triangle vs all points
-  
-  {
-
-    VertexHandle vertex_a = m_obj->fromVertex(edge);
-    VertexHandle vertex_b = m_obj->toVertex(edge);
-    const ElTopoCode::Vec3d& position_a = ElTopoCode::toElTopo(m_positions[vertex_a]);
-    const ElTopoCode::Vec3d& position_b = ElTopoCode::toElTopo(m_positions[vertex_b]);
-    const ElTopoCode::Vec3d& position_e = new_vertex_position;
-    const ElTopoCode::Vec3d& newposition_e = new_vertex_smooth_position;
-    unsigned int dummy_e = -1;
-
-    //make list of vertices that are not on the central edge
-    //this is basically (half) the list of proposed triangles
-    std::vector<VertexHandle> vertex_list;
-    for(unsigned int i = 0; i < tris.size(); ++i) {
-      VertexHandle third_vert;
-      bool success = getFaceThirdVertex(*m_obj, tris[i], edge, third_vert);
-      if(success) vertex_list.push_back(third_vert);
-    }
-
-    ElTopoCode::Vec3d triangle_aabb_low, triangle_aabb_high;
-
-    // do one big query into the broadphase for all new triangles
-    ElTopoCode::minmax(new_vertex_position, new_vertex_smooth_position, position_a, position_b, triangle_aabb_low, triangle_aabb_high);
-    std::vector<ElTopoCode::Vec3d> verts_pos;
-    for(unsigned int i = 0; i < vertex_list.size(); ++i) {
-      ElTopoCode::Vec3d pos = ElTopoCode::toElTopo(m_positions[vertex_list[i]]); 
-      verts_pos.push_back(pos);
-      ElTopoCode::update_minmax(pos, triangle_aabb_low, triangle_aabb_high);
-    }
-
-    triangle_aabb_low -= m_proximity_epsilon * ElTopoCode::Vec3d(1,1,1);
-    triangle_aabb_high += m_proximity_epsilon * ElTopoCode::Vec3d(1,1,1);
-
-    std::vector<unsigned int> overlapping_vertices;
-    m_broad_phase.get_potential_vertex_collisions( triangle_aabb_low, triangle_aabb_high, overlapping_vertices );
-
-    for ( unsigned int i = 0; i < overlapping_vertices.size(); ++i )
-    {
-
-      //if ( m_mesh.m_vtxtri[overlapping_vertices[i]].empty() ) { continue; } //an optimization?
-
-      unsigned int overlapping_vert_index = overlapping_vertices[i];
-      const ElTopoCode::Vec3d& vert = ElTopoCode::toElTopo(m_positions[VertexHandle(overlapping_vert_index)]);
-
-      //visit all vertices that are opposite to the edge to be split in the triangles containing it, and construct two resulting triangles
-      for(unsigned int j = 0; j < vertex_list.size(); ++j) { 
-        
-        VertexHandle vertex_j = vertex_list[j];
-        ElTopoCode::Vec3d position_j = ElTopoCode::toElTopo(m_positions[vertex_j]);
-
-        // triangle ae_j (top half)
-        if ( overlapping_vertices[i] != vertex_a.idx() && overlapping_vertices[i] != vertex_j.idx() )
-        {
-          double t_zero_distance;
-          ElTopoCode::point_triangle_distance( vert, overlapping_vert_index, position_a, vertex_a.idx(), position_e, dummy_e, position_j, vertex_j.idx(), t_zero_distance );
-          if ( t_zero_distance < m_improve_collision_epsilon )
-          {
-            return true;
-          }
-
-          if ( ElTopoCode::point_triangle_collision( vert, vert, overlapping_vert_index,
-            position_a, position_a, vertex_a.idx(),
-            position_j, position_j, vertex_j.idx(),
-            position_e, newposition_e, dummy_e ) )
-          {         
-            return true;
-          }
-        }
-
-        // triangle be_j (bottom half)
-        if ( overlapping_vertices[i] != vertex_b.idx() && overlapping_vertices[i] != vertex_j.idx() )
-        {
-          double t_zero_distance;
-          ElTopoCode::point_triangle_distance( vert, overlapping_vert_index, position_b, vertex_b.idx(), position_e, dummy_e, position_j, vertex_j.idx(), t_zero_distance );
-          if ( t_zero_distance < m_improve_collision_epsilon )
-          {
-            return true;
-          }
-
-          if ( ElTopoCode::point_triangle_collision( vert, vert, overlapping_vert_index,
-            position_b, position_b, vertex_b.idx(),
-            position_j, position_j, vertex_j.idx(),
-            position_e, newposition_e, dummy_e ) )
-          {         
-            return true;
-          }
-                 
-        }
-      }
-    }
-  }
-  
-
-  return false;
-}
-
 void ElasticShell::updateBroadPhaseStatic(const VertexHandle& vertex_a) 
 {
 
@@ -2509,100 +2230,6 @@ bool ElasticShell::checkTriangleVsTriangleCollisionForCollapse( const FaceHandle
 
   return false;
 }
-
-bool ElasticShell::edgeCollapseCausesCollision(const VertexHandle& source_vertex, 
-                                             const VertexHandle& destination_vertex, 
-                                             const EdgeHandle& edge_index, 
-                                             const ElTopoCode::Vec3d& vertex_new_position ) {
- 
-  // Change source vertex predicted position to superimpose onto dest vertex
-  //printf("Checking edge collapse safety\n");
-
-  updateBroadPhaseForCollapse(source_vertex, ElTopoCode::toElTopo(m_positions[source_vertex]),
-                              destination_vertex, ElTopoCode::toElTopo(m_positions[destination_vertex]));
-  
-  // Get the set of triangles which are going to be deleted
-  std::vector< FaceHandle > triangles_incident_to_edge;
-  for(EdgeFaceIterator efit = m_obj->ef_iter(edge_index); efit; ++efit) {
-    triangles_incident_to_edge.push_back(*efit);
-  }
-
-  // Get the set of triangles which move because of this motion
-  std::vector<FaceHandle> moving_triangles;
-  for ( VertexFaceIterator vfit = m_obj->vf_iter(source_vertex); vfit; ++vfit ){
-    moving_triangles.push_back( *vfit );
-  }
-  for ( VertexFaceIterator vfit = m_obj->vf_iter(destination_vertex); vfit; ++vfit ) {
-    moving_triangles.push_back( *vfit );
-  }
-  
-
-  // Check this set of triangles for collisions, holding everything else static
-  for ( unsigned int i = 0; i < moving_triangles.size(); ++i )
-  { 
-
-    // Disregard triangles which will end up being deleted - those triangles incident to the collapsing edge.
-    bool triangle_will_be_deleted = false;
-    for ( unsigned int j = 0; j < triangles_incident_to_edge.size(); ++j )
-    {
-      if ( moving_triangles[i] == triangles_incident_to_edge[j] )
-      {
-        triangle_will_be_deleted = true;
-        break;
-      }
-    }
-
-    if ( triangle_will_be_deleted ) { continue; }
-
-    std::vector<ElTopoCode::Vec3d> tri_verts_old;
-    std::vector<ElTopoCode::Vec3d> tri_verts_new;
-    for(FaceVertexIterator fvit = m_obj->fv_iter(moving_triangles[i]); fvit; ++fvit) {
-      VertexHandle vh = *fvit;
-      ElTopoCode::Vec3d old_pos = ElTopoCode::toElTopo(m_positions[vh]);
-      tri_verts_old.push_back(old_pos);
-
-      //check if the vertex is being moved
-      ElTopoCode::Vec3d vert_pos = (vh == source_vertex || vh == destination_vertex)? old_pos : vertex_new_position; 
-      tri_verts_new.push_back(vert_pos);
-    }
-    assert(tri_verts_old.size() == 3);
-    assert(tri_verts_new.size() == 3);
-
-    // Test the triangle vs all other triangles
-    ElTopoCode::Vec3d aabb_low, aabb_high;
-    minmax( tri_verts_old[0], tri_verts_old[1], tri_verts_old[2], 
-      tri_verts_new[0], tri_verts_new[1], tri_verts_new[2], 
-      aabb_low, aabb_high );
-
-    std::vector<unsigned int> overlapping_triangles;
-    m_broad_phase.get_potential_triangle_collisions( aabb_low, aabb_high, overlapping_triangles );
-
-    for ( unsigned j=0; j < overlapping_triangles.size(); ++j )
-    {
-      // Don't check against triangles which are incident to the dest vertex
-      bool triangle_incident_to_dest = false;
-      for ( unsigned int k = 0; k < moving_triangles.size(); ++k )
-      {
-        if ( moving_triangles[k].idx() == overlapping_triangles[j] )
-        {
-          triangle_incident_to_dest = true;
-          break;
-        }
-      }
-      if ( triangle_incident_to_dest )    { continue; }
-
-      if ( checkTriangleVsTriangleCollisionForCollapse( moving_triangles[i], FaceHandle(overlapping_triangles[j]), source_vertex, destination_vertex, vertex_new_position) )
-      {
-        return true;
-      }
-    }
-  
-  }
-
-  return false;
-}
-
-
 
 void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double ratio_R, double ratio_r, double minEdge) {
   int count = 0;

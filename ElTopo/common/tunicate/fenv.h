@@ -1,7 +1,11 @@
 #ifndef FENV_H
 #define FENV_H
-#pragma fenv_access (on)
 #include <float.h>
+#include <stdio.h>
+#include <errno.h>
+
+#pragma fenv_access(on)
+
 
 //define the functions we need. I hate Microsoft! Just implement C99 already, c'mon.
 #define FE_DOWNWARD   _RC_DOWN

@@ -7,7 +7,7 @@
 #include <expansion.h>
 #include <neg.h>
 #include <fenv.h>
-
+#include <iostream>
 
 
 void
@@ -167,6 +167,12 @@ interval_orientation3d(const double* x0,
     *lower=simple_orientation3d(x0, x1, x2, x3);
     fesetround(FE_UPWARD);
     *upper=simple_orientation3d(x0, x1, x2, x3);
+    if(!(*lower<=*upper)) {
+      printf("Lower: %0.20e Upper: %0.20e\n", *lower, *upper);
+      printf("Input: %0.20e %0.20e %0.20e %0.20e\n", x0, x1, x2, x3);
+      unsigned int result = _controlfp(0, 0);
+      printf("0x%.4x ", result);
+    }
     assert(*lower<=*upper);
 }
 
