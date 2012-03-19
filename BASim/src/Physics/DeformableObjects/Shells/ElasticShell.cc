@@ -883,15 +883,13 @@ void ElasticShell::fracture_new() {
   std::vector< std::pair<size_t,size_t> > edges_to_cut;
   for(EdgeIterator it = mesh.edges_begin(); it != mesh.edges_end(); ++it) {
     EdgeHandle eh = *it;
-    VertexHandle vh0 = mesh.fromVertex(eh);
-    VertexHandle vh1 = mesh.toVertex(eh);
-    Vec3d pos0 = getVertexPosition(vh0);
-    Vec3d pos1 = getVertexPosition(vh1);
-    if(mesh.isBoundary(eh)) continue;
-    if(pos0[1] > 2.7 && pos0[1] < 3.3 && pos1[1] > 2.7 && pos1[1] < 3.3) {
+    if(shouldFracture(eh)) {
+      VertexHandle vh0 = mesh.fromVertex(eh);
+      VertexHandle vh1 = mesh.toVertex(eh);
       edges_to_cut.push_back(make_pair(vert_numbers[vh0],vert_numbers[vh1]));
     }
   }
+  std::cout << "Requesting cutting of " << edges_to_cut.size() << std::endl;
 
   std::cout << "Doing cutting with El Topo\n";
   surface_tracker.cut_mesh(edges_to_cut);
@@ -1033,7 +1031,7 @@ void ElasticShell::performTearing(const EdgeHandle & eh){
             int vertsBef = m_obj->nv();
 #endif
 
-    //Check for self-intersections being induced...
+    
     VertexHandle v0 = m_obj->fromVertex(eh);
     VertexHandle v1 = m_obj->toVertex(eh);
     bool aBound = m_obj->isBoundary(v0);

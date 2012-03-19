@@ -242,7 +242,7 @@ void ShellRenderer::render()
       Vec3d dir = (p1-p0);
       p0 = p0 + 0.05*dir;
       p1 = p1 - 0.05*dir;
-      if ( m_shell.shouldFracture(*eit) && (mesh.isBoundary(mesh.fromVertex(*eit)) || mesh.isBoundary(mesh.toVertex(*eit)))){
+      if ( m_shell.shouldFracture(*eit) ){
           OpenGL::color(Color(1.0, 1.0, 0.0));
       } else if (mesh.isBoundary(*eit)){
           OpenGL::color(Color(0.0, 1.0, 0.0));
