@@ -917,7 +917,10 @@ void ElasticShell::fracture_new() {
     std::vector<VertexHandle> srcVerts;
     if(aBound) srcVerts.push_back(v0);
     if(bBound) srcVerts.push_back(v1);
-
+    if(!aBound & !bBound) {
+      VertexHandle vShared = reverse_vertmap[event.m_v2];
+      srcVerts.push_back(vShared);
+    }
     std::vector<FaceHandle> newFaces;
     std::vector<FaceHandle> deletedFaces;
     std::vector<EdgeHandle> deleteEdges;

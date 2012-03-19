@@ -679,7 +679,7 @@ void SurfTrack::cut_mesh( const std::vector< std::pair<size_t,size_t> >& edges)
 {     
 
   // edge cutting
-  m_cutter.separate_edges(edges);
+  m_cutter.separate_edges_new(edges);
 
   if ( m_collision_safety )
   {

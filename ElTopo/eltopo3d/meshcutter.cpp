@@ -73,8 +73,14 @@ void MeshCutter::partition_edge_neighbourhood_internal( size_t edge0, size_t edg
   Vec2st edge_data1 = m_surf.m_mesh.m_edges[edge1];
   
   size_t shared_vert = m_surf.m_mesh.get_common_vertex(edge0, edge1);
+  std::cout << "Shared: " << shared_vert << std::endl;
   size_t vtx0 = edge_data0[0] == shared_vert? edge_data0[1] : edge_data0[0]; 
   size_t vtx1 = edge_data1[0] == shared_vert? edge_data1[1] : edge_data1[0]; 
+
+  std::cout << "Others: " << vtx0 << " and " << vtx1 << std::endl;
+  std::cout << "Boundary?\n" << m_surf.m_mesh.m_is_boundary_vertex[vtx0] << " "
+                            << m_surf.m_mesh.m_is_boundary_vertex[vtx1] << " " 
+                            << m_surf.m_mesh.m_is_boundary_vertex[shared_vert] << std::endl;
 
   //ensure this is a pair of interior edges, with no boundary vertices
   assert(!m_surf.m_mesh.m_is_boundary_vertex[vtx0] && 
@@ -219,7 +225,7 @@ bool MeshCutter::pull_apart_edge( size_t edge_index, const std::vector< Triangle
 ///--------------------------------------------------------
 
 
-bool MeshCutter::pull_apart_edge_internal( size_t edge0, size_t edge1, const std::vector< TriangleSet >& connected_components )
+bool MeshCutter::pull_apart_edge_internal( size_t edge0, size_t edge1, const std::vector< TriangleSet >& connected_components, size_t& new_vert )
 {
 
   Vec2st edge_data0 = m_surf.m_mesh.m_edges[edge0];
@@ -251,8 +257,10 @@ bool MeshCutter::pull_apart_edge_internal( size_t edge0, size_t edge1, const std
   cut_event.m_v2 = shared_vert;
 
   bool success = perform_pull_apart(boundary_verts, connected_components, cut_event);
-  if(success)
+  if(success) {
     m_surf.m_mesh_change_history.push_back(cut_event);
+    new_vert = cut_event.m_created_verts[0];
+  }
 
  return success;
 }
@@ -460,6 +468,8 @@ void MeshCutter::separate_edges(const std::vector<std::pair<size_t,size_t> >& ed
     
     std::vector< std::pair<size_t,size_t> > boundary_edges;
     
+    std::set<size_t> boundary_edges_to_split;
+
     for ( size_t i = 0; i < edge_set.size(); ++i )
     {
         // Grab the two end vertices, find the edge
@@ -519,6 +529,205 @@ void MeshCutter::separate_edges(const std::vector<std::pair<size_t,size_t> >& ed
     }
 }
 
+
+void MeshCutter::separate_edges_new(const std::vector<std::pair<size_t,size_t> >& edge_set)
+{
+
+  std::vector< std::pair<size_t,size_t> > boundary_edges;
+  
+  std::vector<size_t> edges_to_split;
+  std::set<size_t> edges_to_split_set;
+  for ( size_t i = 0; i < edge_set.size(); ++i )
+  {
+    // Grab the two end vertices, find the edge
+    std::pair<size_t,size_t> vert_pair = edge_set[i];
+    size_t vtx0 = vert_pair.first;
+    size_t vtx1 = vert_pair.second;
+    size_t edge = m_surf.m_mesh.get_edge_index(vtx0, vtx1);
+    
+    assert(!m_surf.m_mesh.m_is_boundary_edge[edge]); //user shouldn't pass in boundary edges for splitting!
+    
+    edges_to_split.push_back(edge);
+    edges_to_split_set.insert(edge);
+  }
+  
+  std::set<size_t> boundary_edges_to_split;
+  std::set< std::pair<size_t,size_t> > internal_edge_pairs_to_split;
+
+  for ( std::vector<size_t>::iterator it = edges_to_split.begin(); it != edges_to_split.end(); ++it )
+  {
+    // Grab the two end vertices
+    size_t edge = *it;
+    size_t vtx0 = m_surf.m_mesh.m_edges[edge][0];
+    size_t vtx1 = m_surf.m_mesh.m_edges[edge][1];
+
+    //if at least one of the two end vertices is a boundary vertex, this is an easy edge cut to handle
+    if((m_surf.m_mesh.m_is_boundary_vertex[vtx0] || m_surf.m_mesh.m_is_boundary_vertex[vtx1])) {
+      boundary_edges_to_split.insert(edge);
+    }
+    else {
+      //Search for another splitting edge that shares a vertex with this one.
+      
+      //This is n^2 for now. For massive amounts of tearing, it could perhaps be a bottleneck,
+      //in which case, better to split as many easy boundary edges as possible before wasting time
+      //searching for internal cuts, since internal cuts often become boundary cuts during the process
+      
+      for(std::vector<size_t>::iterator it2 = it+1; it2 != edges_to_split.end(); ++it2) {
+        size_t other_edge = *it2;
+        size_t vtx2 = m_surf.m_mesh.m_edges[other_edge][0];
+        size_t vtx3 = m_surf.m_mesh.m_edges[other_edge][1];
+
+        //don't bother with edges who themselves have boundary verts, since they're easy.
+        if(m_surf.m_mesh.m_is_boundary_vertex[vtx2] || m_surf.m_mesh.m_is_boundary_vertex[vtx3])
+          continue;
+
+        if(vtx2 == vtx0 || vtx2 == vtx1 || vtx3 == vtx0 || vtx3 == vtx1) {
+          internal_edge_pairs_to_split.insert(std::make_pair(edge, other_edge));
+        }
+      }
+      
+    }
+  }
+  
+  while(boundary_edges_to_split.size() > 0 || internal_edge_pairs_to_split.size() > 0) {
+    
+    //prefer boundary-incident edges, since they generate more of themselves
+    
+    if(boundary_edges_to_split.size() > 0) {
+      
+      //process a boundary edge
+      size_t edge = *(boundary_edges_to_split.begin());
+      boundary_edges_to_split.erase(edge);
+      
+      //don't process if this is a boundary edge - they can't be split
+      if(m_surf.m_mesh.m_is_boundary_edge[edge]) continue;
+      
+      size_t vtx0 = m_surf.m_mesh.m_edges[edge][0];
+      size_t vtx1 = m_surf.m_mesh.m_edges[edge][1];
+
+      bool bound0 = m_surf.m_mesh.m_is_boundary_vertex[vtx0];
+      bool bound1 = m_surf.m_mesh.m_is_boundary_vertex[vtx1];
+
+      int bdry_count = 0;
+      bdry_count += bound0?1:0;
+      bdry_count += bound1?1:0;
+      
+      std::vector<size_t> potential_new_boundary_edges;
+      if(!bound0)
+        potential_new_boundary_edges.insert(potential_new_boundary_edges.end(),
+                                            m_surf.m_mesh.m_vertex_to_edge_map[vtx0].begin(),
+                                            m_surf.m_mesh.m_vertex_to_edge_map[vtx0].end());
+      if(!bound1)
+        potential_new_boundary_edges.insert(potential_new_boundary_edges.end(),
+                                            m_surf.m_mesh.m_vertex_to_edge_map[vtx1].begin(),
+                                            m_surf.m_mesh.m_vertex_to_edge_map[vtx1].end());
+
+      assert(bdry_count > 0);
+
+      // Partition the set of triangles adjacent to this vertex into connected components
+      std::vector< TriangleSet > connected_components;
+
+      partition_edge_neighbourhood( edge, connected_components );
+
+      if ( connected_components.size() > 1 ) 
+      {
+        
+        bool cut = pull_apart_edge( edge, connected_components );
+        if ( cut )
+        {
+
+          //check which incident edges are now more easily cut-able, and add them to the boundary list.
+          for(unsigned int q = 0; q < potential_new_boundary_edges.size(); ++q) {
+            size_t new_boundary_edge = potential_new_boundary_edges[q];
+            size_t vtxA = m_surf.m_mesh.m_edges[new_boundary_edge][0];
+            size_t vtxB = m_surf.m_mesh.m_edges[new_boundary_edge][1];
+            if((m_surf.m_mesh.m_is_boundary_vertex[vtxA] || m_surf.m_mesh.m_is_boundary_vertex[vtxB]) && 
+              edges_to_split_set.find(new_boundary_edge) != edges_to_split_set.end())
+              boundary_edges_to_split.insert(new_boundary_edge);
+          }
+
+          // TODO: Shouldn't need this.
+          m_surf.rebuild_continuous_broad_phase();
+        }
+        else 
+          std::cout << "Cut failed, for what it's worth\n";
+      }
+
+    }
+    else if(internal_edge_pairs_to_split.size() > 0) {
+      
+      //process an internal edge pair
+      std::pair<size_t, size_t> edge_pair = *(internal_edge_pairs_to_split.begin());
+      internal_edge_pairs_to_split.erase(edge_pair);
+
+      size_t edge0 = edge_pair.first;
+      size_t edge1 = edge_pair.second;
+      
+      if(m_surf.m_mesh.m_is_boundary_edge[edge0] || m_surf.m_mesh.m_is_boundary_edge[edge1])
+        continue; //cannot process this scenario. (May have been introduced by other cuts)
+      
+      
+
+      size_t shared_vert = m_surf.m_mesh.get_common_vertex(edge0, edge1);
+      Vec2st edge_data0 = m_surf.m_mesh.m_edges[edge0];
+      Vec2st edge_data1 = m_surf.m_mesh.m_edges[edge1];
+      size_t vtx0 = edge_data0[0] == shared_vert? edge_data0[1] : edge_data0[0]; 
+      size_t vtx1 = edge_data1[0] == shared_vert? edge_data1[1] : edge_data1[0]; 
+      
+      
+      if(m_surf.m_mesh.m_is_boundary_vertex[vtx0] || 
+         m_surf.m_mesh.m_is_boundary_vertex[vtx1] || 
+         m_surf.m_mesh.m_is_boundary_vertex[shared_vert]) {
+        continue; //cannot process this scenario. (May have been introduced by other cuts)
+      }
+      std::vector< TriangleSet > connected_components;
+
+      partition_edge_neighbourhood_internal( edge0, edge1, connected_components );
+
+      if ( connected_components.size() > 1 ) 
+      {
+        size_t new_vert;
+        bool cut = pull_apart_edge_internal( edge0, edge1, connected_components, new_vert );
+        if ( cut )
+        {
+
+          std::vector<size_t> incident_verts;
+          incident_verts.push_back(shared_vert);
+          incident_verts.push_back(vtx0);
+          incident_verts.push_back(vtx1);
+          incident_verts.push_back(new_vert);
+          
+          //Add all the other edges incident on any of this section's vertices
+
+          for(unsigned int q = 0; q < incident_verts.size(); ++q) {
+            size_t vert = incident_verts[q];
+            for(unsigned int r = 0; r < m_surf.m_mesh.m_vertex_to_edge_map[vert].size(); ++r) {
+              size_t new_boundary_edge = m_surf.m_mesh.m_vertex_to_edge_map[vert][q];
+
+              if(edges_to_split_set.find(new_boundary_edge) != edges_to_split_set.end() &&
+                !m_surf.m_mesh.m_is_boundary_edge[new_boundary_edge]) {
+                  boundary_edges_to_split.insert(new_boundary_edge);
+              }
+            }
+          }
+          
+          // TODO: Shouldn't need this.
+          m_surf.rebuild_continuous_broad_phase();
+        }
+        else 
+          std::cout << "Cut failed, for what it's worth\n";
+      }
+
+    }
+    else {
+      //Should never get here.
+      assert(false);
+    }
+
+  } 
+
+ 
+}
 }
 
 

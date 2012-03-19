@@ -57,7 +57,8 @@ public:
     /// Given a list of edges, try to separate them
     ///
     void separate_edges(const std::vector<std::pair<size_t,size_t> >& edge_set);
-    
+    void separate_edges_new(const std::vector<std::pair<size_t,size_t> >& edge_set);
+
 private:
 
     /// The mesh this object operates on
@@ -82,7 +83,7 @@ private:
     /// Duplicate one or two boundary vertices of an edge, and move the copies away from each other slightly
     ///
     bool pull_apart_edge( size_t edge_index, const std::vector< TriangleSet >& connected_components );
-    bool pull_apart_edge_internal( size_t edge0, size_t edge1, const std::vector< TriangleSet >& connected_components );
+    bool pull_apart_edge_internal( size_t edge0, size_t edge1, const std::vector< TriangleSet >& connected_components, size_t& new_vert );
 
     /// Helper function to do the separation, given the connected components
     ///
