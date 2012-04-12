@@ -766,8 +766,8 @@ void ShellTest::setupScene3() {
     std::cout << "Error loading file\n";
   std::string line;
   std::vector<VertexHandle> vertList;
+  std::getline(infile, line);
   while(!infile.eof()) {
-    std::getline(infile, line);
     if(line.substr(0,1) == std::string("v")) {
       std::stringstream data(line);
       char c;
@@ -787,6 +787,7 @@ void ShellTest::setupScene3() {
       data >> c >> v0 >> v1 >> v2;
       shellObj->addFace(vertList[v0-1],vertList[v1-1],vertList[v2-1]);
     }
+    std::getline(infile, line);
   }
 
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
@@ -915,6 +916,7 @@ void ShellTest::setupScene5() {
   EdgeProperty<Scalar> edgeAngle(shellObj);
   EdgeProperty<Scalar> edgeVel(shellObj);
 
+  Vec3d offset(0.1, 0.1, 0.1);
   Vec3d start_vel(0,0,0);
   for(int j = 0; j <= yresolution; ++j) {
     for(int i = 0; i <= xresolution; ++i) {
@@ -925,6 +927,7 @@ void ShellTest::setupScene5() {
         vert(1) = j_mod*dx;
         vert(2) = (k-j_mod)*dx;
       }*/
+      vert += offset;
       Vec3d undef = vert;
 
       VertexHandle h = shellObj->addVertex();
