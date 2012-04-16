@@ -598,6 +598,7 @@ void MeshCutter::separate_edges_new(const std::vector<std::pair<size_t,size_t> >
         }
       }
       
+      
     }
   }
 
@@ -737,9 +738,9 @@ void MeshCutter::separate_edges_new(const std::vector<std::pair<size_t,size_t> >
     }
 
   } 
-
  
 }
+
 }
 
 

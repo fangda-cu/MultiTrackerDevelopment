@@ -240,8 +240,8 @@ void ShellRenderer::render()
       Vec3d p0 = m_shell.getVertexPosition(mesh.fromVertex(*eit));
       Vec3d p1 = m_shell.getVertexPosition(mesh.toVertex(*eit));
       Vec3d dir = (p1-p0);
-      p0 = p0 + 0.05*dir;
-      p1 = p1 - 0.05*dir;
+      //p0 = p0 + 0.05*dir;
+      //p1 = p1 - 0.05*dir;
       if ( m_shell.shouldFracture(*eit) ){
           OpenGL::color(Color(1.0, 1.0, 0.0));
       } else if (mesh.isBoundary(*eit)){
@@ -271,15 +271,15 @@ void ShellRenderer::render()
       Scalar thickness = m_shell.getThickness(*fit);
       int colorVal = (int) (255.0 * thickness/ 0.05); //rescale
       //int colorVal = (int) (255.0 * (thickness - 0.0025) / 0.0025); //test
-      colorVal = clamp(colorVal, 0, 255);
-      //colorVal = 255;
+      //colorVal = clamp(colorVal, 0, 255);
+      colorVal = 255;
       OpenGL::color(Color(colorVal,0,0));
       std::vector<Vec3d> points(3);
       int i = 0;
       for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit )
       {
         Vec3d pos = m_shell.getVertexPosition(*fvit);
-        pos = pos - 0.05*(pos-barycentre);
+        //pos = pos - 0.05*(pos-barycentre);
         OpenGL::vertex(pos);
         points[i] = pos;
         ++i;

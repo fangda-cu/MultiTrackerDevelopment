@@ -676,7 +676,6 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   std::cout << "Starting endStep.\n";
   bool do_relabel = false;
 
-
   //El Topo collision processing.
   std::cout << "Resolving collisions\n";
   resolveCollisions(timestep);
@@ -1414,7 +1413,7 @@ void ElasticShell::remesh_new()
     }
     else if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_FLIP) {
       
-      std::cout << "Flip\n";
+      //std::cout << "Flip\n";
       //Do the same flip as El Topo
       EdgeHandle newEdge;
       performFlip(eh, newEdge);

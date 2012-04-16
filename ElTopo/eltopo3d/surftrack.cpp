@@ -658,19 +658,20 @@ void SurfTrack::improve_mesh( )
         // edge collapsing
         while ( m_collapser.collapse_pass() ) {}
         
-        std::cout << "Smooth\n";
+        
         // null-space smoothing
         if ( m_allow_vertex_movement )
         {
+            std::cout << "Smooth\n";
             m_smoother.null_space_smoothing_pass( 1.0 );
         }
       }
 
+      if ( m_collision_safety )
+      {
         std::cout << "Check collisions\n";
-        if ( m_collision_safety )
-        {
-            assert_mesh_is_intersection_free( false );
-        }      
+        assert_mesh_is_intersection_free( false );
+      }      
     }
     
 }

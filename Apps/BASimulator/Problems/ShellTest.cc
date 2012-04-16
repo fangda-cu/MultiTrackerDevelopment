@@ -225,6 +225,7 @@ void ShellTest::Setup()
     sphere_data << "Initial thickness: " << thickness << std::endl;
     sphere_data << "Pressure coefficient, k: " << pressureStrength << std::endl;
     sphere_data << "Density: " << density << std::endl;
+    sphere_data << "Surface tension: " << surface_tension << std::endl;
     sphere_data << std::endl;
     sphere_data << "Simulation data, in comma-separated format... radius,velocity and thickness are area-weighted averages over all triangles" << std::endl;
     sphere_data << "time,radius,computed pressure,surface area,current thickness,velocity" << std::endl;
