@@ -1,4 +1,4 @@
-#Enrobing process
+#Sphere tearing through falling sheet
 
 generate-PLY false
 

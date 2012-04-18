@@ -645,16 +645,16 @@ void SurfTrack::improve_mesh( )
     if ( m_perform_improvement )
     {
 
-      for(int loop= 0; loop < 3; ++loop) {
+      for(int loop = 0; loop < 2; ++loop) {
         // edge splitting
-        std::cout << "Split\n";
+        //std::cout << "Split\n";
         while ( m_splitter.split_pass() ) {}
         
-        std::cout << "Flip\n";
+        //std::cout << "Flip\n";
         // edge flipping
         m_flipper.flip_pass();		
 
-        std::cout << "Collapse\n";
+        //std::cout << "Collapse\n";
         // edge collapsing
         while ( m_collapser.collapse_pass() ) {}
         

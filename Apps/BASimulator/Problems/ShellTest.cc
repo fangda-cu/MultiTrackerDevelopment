@@ -355,7 +355,6 @@ void ShellTest::Setup()
 void ShellTest::AtEachTimestep()
 {
   
-  std::cout << "Time: " << std::endl;
     
   //dump PLY files if needed
     if ( g_ply_dump ){

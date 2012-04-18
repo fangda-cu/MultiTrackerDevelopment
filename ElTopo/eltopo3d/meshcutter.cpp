@@ -555,7 +555,7 @@ void MeshCutter::separate_edges_new(const std::vector<std::pair<size_t,size_t> >
     edges_to_split_set.insert(edge);
   }
   
-  std::cout << "Edge set contains:" << edges_to_split.size() << std::endl;
+  //std::cout << "Edge set contains:" << edges_to_split.size() << std::endl;
 
   std::set<size_t> boundary_edges_to_split;
   std::set< std::pair<size_t,size_t> > internal_edge_pairs_to_split;
@@ -602,9 +602,6 @@ void MeshCutter::separate_edges_new(const std::vector<std::pair<size_t,size_t> >
     }
   }
 
-  std::cout << "internal:" << internal_edge_pairs_to_split.size() << std::endl;
-  std::cout << "boundary:" << boundary_edges_to_split.size() << std::endl;
-  
   while(boundary_edges_to_split.size() > 0 || internal_edge_pairs_to_split.size() > 0) {
     
     //prefer boundary-incident edges, since they generate more of themselves

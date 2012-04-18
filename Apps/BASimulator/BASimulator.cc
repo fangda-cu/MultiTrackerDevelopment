@@ -62,6 +62,9 @@
 #include <sys/types.h>
 #include <time.h>
 
+//Use El Topo / UBC timer routines for simplicity.
+#include "wallclocktime.h"
+
 std::vector<Problem*> problems;
 #include "CreateProblemVector.inl"
 
@@ -394,6 +397,9 @@ void serializeScene(const std::string& output_file);
 
 void idle()
 {
+
+    
+
     // Some stuff for dumping movies
     if (fps > 0)
     {
@@ -439,7 +445,24 @@ void idle()
     {
         if (!continuous)
             paused = true;
+
+        static double sim_time = 0;
+        static int step_count = 0;
+        double start_time = ElTopo::get_time_in_seconds();
+
         current_problem->BaseAtEachTimestep();
+
+        double end_time = ElTopo::get_time_in_seconds();
+        sim_time += end_time - start_time;
+        step_count++;
+        
+        //dump real world timings for gathering approximate performance info
+        std::cout << "Seconds spent on this time step: " << end_time - start_time << std::endl;
+        std::cout << "Number of steps: " << step_count << std::endl;
+        std::cout << "Cumulative seconds spent on simulation: " << sim_time << std::endl;
+        std::cout << "Average seconds per time step: " << sim_time / (double)step_count << std::endl;
+        
+
         //std::cout << "Time: " << current_problem->getTime() << std::endl;
         if (render)
             glutPostRedisplay();
@@ -1273,6 +1296,9 @@ int main(int argc, char** argv)
         current_problem->BaseSetup(argc, argv);
     else
         resumeSerializedScene(g_resume_file);
+    
+    //initialize timer
+    ElTopo::set_time_base();
 
     printCommandLineSplashScreen();
 

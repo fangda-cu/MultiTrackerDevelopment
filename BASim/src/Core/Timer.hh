@@ -20,7 +20,7 @@ namespace BASim {
 
 #define PRINT_TIMER(name)                                         \
   {                                                               \
-    std::cout << name << ": " << Timer::getTimer(name).getTotal() \
+    std::cout << name << ": " << Timer::getTimer(name).getCumulativeElapsed() \
               << std::endl;                                       \
   }
 

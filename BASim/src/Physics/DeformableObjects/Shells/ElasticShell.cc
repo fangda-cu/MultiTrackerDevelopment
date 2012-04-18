@@ -878,7 +878,7 @@ void ElasticShell::fracture_new() {
   
   ElTopo::SurfTrack surface_tracker( vert_data, tri_data, masses, construction_parameters ); 
 
-  std::cout << "Collecting desired cuts\n";
+  //std::cout << "Collecting desired cuts\n";
   std::vector< std::pair<size_t,size_t> > edges_to_cut;
   for(EdgeIterator it = mesh.edges_begin(); it != mesh.edges_end(); ++it) {
     EdgeHandle eh = *it;
@@ -888,9 +888,9 @@ void ElasticShell::fracture_new() {
       edges_to_cut.push_back(make_pair(vert_numbers[vh0],vert_numbers[vh1]));
     }
   }
-  std::cout << "Requesting cutting of " << edges_to_cut.size() << std::endl;
+  //std::cout << "Requesting cutting of " << edges_to_cut.size() << std::endl;
 
-  std::cout << "Doing cutting with El Topo\n";
+  std::cout << "Doing cutting with El Topo.\n";
   surface_tracker.cut_mesh(edges_to_cut);
 
   
@@ -905,7 +905,7 @@ void ElasticShell::fracture_new() {
     assert(event.m_type == ElTopo::MeshUpdateEvent::EDGE_CUT);
       
     //Identify the edge based on its endpoint vertices instead
-    std::cout << "Cut\n";
+    //std::cout << "Cut\n";
 
     //based on the type of cut, perform the appropriate operation
     bool aBound = m_obj->isBoundary(v0);
@@ -925,7 +925,7 @@ void ElasticShell::fracture_new() {
 
     //Do exactly the same cut as El Topo
     //if(aBound && ! bBound || !aBound && bBound) { //one vertex boundary
-      
+    
     for(unsigned int i = 0; i < event.m_created_verts.size(); ++i) {
       VertexHandle nv = mesh.addVertex();
       newVerts.push_back(nv);
