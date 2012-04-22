@@ -52,9 +52,13 @@ public:
     bool collapse_pass();
     
     
-    /// Mimimum edge length.  Edges shorter than this will be collapsed.
+    /// Minimum edge length.  Edges shorter than this will be collapsed.
     ///
-    double m_min_edge_length;   
+    double m_min_edge_length;  
+
+    /// Maximum edge length.  Edges longer than this will not be collapsed.
+    ///
+    double m_max_edge_length; 
     
     /// Whether to scale by curvature when computing edge lengths, in order to coarsen low-curvature regions
     ///

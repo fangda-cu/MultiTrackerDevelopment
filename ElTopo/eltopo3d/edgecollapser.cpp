@@ -38,6 +38,7 @@ extern RunStats g_stats;
 
 EdgeCollapser::EdgeCollapser( SurfTrack& surf, bool use_curvature, double min_curvature_multiplier ) :
 m_min_edge_length( UNINITIALIZED_DOUBLE ),
+m_max_edge_length( UNINITIALIZED_DOUBLE ),
 m_use_curvature( use_curvature ),
 m_min_curvature_multiplier( min_curvature_multiplier ),
 m_surf( surf )
@@ -1122,17 +1123,21 @@ bool EdgeCollapser::edge_is_collapsible2( size_t edge_index, double& current_len
   {
     return false;
   }
-
+  
+  current_length = m_surf.get_edge_length(edge_index);
   if ( m_use_curvature )
   {
-    current_length = get_curvature_scaled_length( m_surf, m_surf.m_mesh.m_edges[edge_index][0], m_surf.m_mesh.m_edges[edge_index][1], m_min_curvature_multiplier, 1e+30 );
+    double curvature_value = get_edge_curvature( m_surf, m_surf.m_mesh.m_edges[edge_index][0], m_surf.m_mesh.m_edges[edge_index][1] );
+    int circlesegs = 10;
+    double curvature_min_length = 2*M_PI / (double)circlesegs / curvature_value;
+    return current_length < curvature_min_length && current_length <= m_max_edge_length;
+    
   }
   else
   {
-    current_length = m_surf.get_edge_length(edge_index);
+    return current_length < m_min_edge_length;  
   }
 
-  return current_length < m_min_edge_length;
 
 }
 

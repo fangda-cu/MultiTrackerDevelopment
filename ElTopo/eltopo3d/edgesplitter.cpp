@@ -36,6 +36,7 @@ extern RunStats g_stats;
 
 EdgeSplitter::EdgeSplitter( SurfTrack& surf, bool use_curvature, double max_curvature_multiplier ) :
 m_max_edge_length( UNINITIALIZED_DOUBLE ),
+m_min_edge_length( UNINITIALIZED_DOUBLE ),
 m_use_curvature( use_curvature ),
 m_max_curvature_multiplier( max_curvature_multiplier ),
 m_surf( surf )
@@ -1182,6 +1183,7 @@ bool EdgeSplitter::large_angle_split_pass2()
 
 }
 
+
 // --------------------------------------------------------
 ///
 /// Split all long edges
@@ -1213,19 +1215,24 @@ bool EdgeSplitter::split_pass()
         
         double length;
         
+        length = m_surf.get_edge_length(i);
         if ( m_use_curvature )
         {
-            length = get_curvature_scaled_length( m_surf, vertex_a, vertex_b, 0.0, m_max_curvature_multiplier, 1.0 );
+          double curvature_value = get_edge_curvature( m_surf, vertex_a, vertex_b );
+          int circlesegs = 5;
+          double curvature_max_length = 2*M_PI / (double)circlesegs / curvature_value;
+          if(length > curvature_max_length && length >= m_min_edge_length) {
+              sortable_edges_to_try.push_back( SortableEdge( i, length ) );
+          }
         }
         else
         {
-            length = m_surf.get_edge_length(i);
+            if ( length > m_max_edge_length )
+            {
+              sortable_edges_to_try.push_back( SortableEdge( i, length ) );
+            }
         }
         
-        if ( length > m_max_edge_length )
-        {
-            sortable_edges_to_try.push_back( SortableEdge( i, length ) );
-        }
     }
     
     
@@ -1251,24 +1258,30 @@ bool EdgeSplitter::split_pass()
         size_t vertex_b = mesh.m_edges[longest_edge][1];
         
         // recompute edge length -- a prior split may have somehow fixed this edge already
-        double longest_edge_length;
+        double longest_edge_length = m_surf.get_edge_length(longest_edge);
         
         if ( m_use_curvature )
         {
-            longest_edge_length = get_curvature_scaled_length( m_surf, vertex_a, vertex_b, 0.0, m_max_curvature_multiplier, 1.0 );
+          double curvature_value = get_edge_curvature( m_surf, vertex_a, vertex_b );
+          int circlesegs = 5;
+          double curvature_max_length = 2*M_PI / (double)circlesegs / curvature_value;
+          if(longest_edge_length > curvature_max_length && longest_edge_length >= m_min_edge_length) {
+            // perform the actual edge split
+            bool result = split_edge2( longest_edge );         
+            split_occurred |= result;
+          }
         }
         else
         {
             longest_edge_length = m_surf.get_edge_length(longest_edge);
+            if ( longest_edge_length > m_max_edge_length )
+            {
+              // perform the actual edge split
+              bool result = split_edge2( longest_edge );         
+              split_occurred |= result;
+            }
         }
         
-
-        if ( longest_edge_length > m_max_edge_length )
-        {
-            // perform the actual edge split
-            bool result = split_edge2( longest_edge );         
-            split_occurred |= result;
-        }
     }
     
     

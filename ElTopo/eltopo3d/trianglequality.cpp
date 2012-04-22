@@ -304,6 +304,38 @@ double get_curvature_scaled_length(const SurfTrack& surf,
     
 }
 
+
+// ---------------------------------------------------------
+///
+/// Get the length of the specified edge, scaled by an estimate of curvature at each of the vertices.
+///
+// ---------------------------------------------------------
+
+double get_edge_curvature(const SurfTrack& surf, 
+  size_t vertex_a, 
+  size_t vertex_b)
+{
+
+  assert( vertex_a < surf.get_num_vertices() );
+  assert( vertex_b < surf.get_num_vertices() );
+
+#ifdef USE_INV_MIN_RADIUS
+  double curv_a = std::fabs( inv_min_radius_curvature( surf, vertex_a ) );
+#else
+  double curv_a = unsigned_vertex_mean_curvature( vertex_a, surf );
+#endif
+
+#ifdef USE_INV_MIN_RADIUS
+  double curv_b = std::fabs( inv_min_radius_curvature( surf, vertex_b ) );
+#else
+  double curv_b = unsigned_vertex_mean_curvature( vertex_b, m_surf );
+#endif
+
+  return 0.5 * ( curv_a + curv_b );
+
+}
+
+
 // ---------------------------------------------------------
 ///
 /// Return the minimum triangle area in the specified surface.

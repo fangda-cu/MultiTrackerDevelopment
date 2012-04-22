@@ -61,7 +61,12 @@ public:
 
     /// Maximum edge length.  Edges longer than this will be subdivided.
     ///
-    double m_max_edge_length;   
+    double m_max_edge_length; 
+    
+    /// Minimum edge length.  Edges at or below this length should not be split.
+    ///
+
+    double m_min_edge_length;
 
     /// Whether to scale by curvature when computing edge lengths, in order to refine high-curvature regions
     ///
@@ -117,6 +122,10 @@ private:
     bool edge_is_splittable( size_t edge_index );
     bool edge_is_splittable2( size_t edge_index );
     
+    /// Determine if the edge's length is such that a split is desired
+    ///
+    bool edge_length_needs_split(size_t edge_index);
+
     /// Split an edge, using subdivision_scheme to determine the new vertex location, if safe to do so.
     ///
     bool split_edge( size_t edge );

@@ -79,6 +79,12 @@ double get_curvature_scaled_length(const SurfTrack& surf,
                                    double max_curvature_multiplier,
                                    double rest_curvature = 2.0 );
 
+/// Get the length of the specified edge, scaled by an estimate of curvature at each of the vertices.
+///
+double get_edge_curvature(const SurfTrack& surf, 
+  size_t vertex_a, 
+  size_t vertex_b);
+
 /// Get Kappa * n, the surface normal multiplied by mean curvature at the specified vertex.
 ///
 void vertex_mean_curvature_normal( size_t vertex_index, const SurfTrack& surf, Vec3d& out, double& weight_sum );

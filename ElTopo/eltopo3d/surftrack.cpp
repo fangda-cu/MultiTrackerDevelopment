@@ -151,7 +151,11 @@ m_defragged_vertex_map()
     {
         double avg_length = DynamicSurface::get_average_non_solid_edge_length();   
         m_collapser.m_min_edge_length = initial_parameters.m_min_edge_length * avg_length;
+        m_collapser.m_max_edge_length = initial_parameters.m_max_edge_length * avg_length;
+
         m_splitter.m_max_edge_length = initial_parameters.m_max_edge_length * avg_length;
+        m_splitter.m_min_edge_length = initial_parameters.m_min_edge_length * avg_length;
+        
         m_min_edge_length = initial_parameters.m_min_edge_length * avg_length;
         m_max_edge_length = initial_parameters.m_max_edge_length * avg_length;
         m_max_volume_change = initial_parameters.m_max_volume_change * avg_length * avg_length * avg_length;        
@@ -159,7 +163,11 @@ m_defragged_vertex_map()
     else
     {
         m_collapser.m_min_edge_length = initial_parameters.m_min_edge_length;
+        m_collapser.m_max_edge_length = initial_parameters.m_max_edge_length;
+
         m_splitter.m_max_edge_length = initial_parameters.m_max_edge_length;
+        m_splitter.m_min_edge_length = initial_parameters.m_min_edge_length;
+        
         m_min_edge_length = initial_parameters.m_min_edge_length;
         m_max_edge_length = initial_parameters.m_max_edge_length;
         m_max_volume_change = initial_parameters.m_max_volume_change;  

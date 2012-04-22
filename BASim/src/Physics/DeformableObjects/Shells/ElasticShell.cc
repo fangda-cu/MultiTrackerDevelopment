@@ -1321,17 +1321,21 @@ void ElasticShell::remesh_new()
     ++id;
   }
 
-  //constrain all the vertices in faces that are used by collision springs to prevent remeshing there
+  //constrain all the vertices in faces that are used by collision springs to prevent remeshing there,
+  //as well as the associated opposite vertex.
   std::vector<VertexHandle> verts;
   std::vector<FaceHandle> faces;
   std::vector<Vec3d> coords;
   m_repulsion_springs->getSpringLists(verts, faces, coords);
   for(unsigned int i = 0; i < faces.size(); ++i) {
     FaceVertexIterator fvit = getDefoObj().fv_iter(faces[i]);
+    //vertices of the face...
     for(;fvit; ++fvit) {
       VertexHandle vh = *fvit;
       masses[vert_numbers[vh]] = numeric_limits<Scalar>::infinity();
     }
+    //and the other vertex
+    masses[vert_numbers[verts[i]]] = numeric_limits<Scalar>::infinity();
   }
 
   std::cout << "Calling surface improvement\n";
