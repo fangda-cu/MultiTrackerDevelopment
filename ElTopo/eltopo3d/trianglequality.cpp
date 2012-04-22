@@ -269,17 +269,21 @@ double get_curvature_scaled_length(const SurfTrack& surf,
     
     double length = dist(  surf.get_position( vertex_a ), surf.get_position( vertex_b ) );
     
-    
+    //std::cout << "\n\nTrue length: " << length << std::endl;
 #ifdef USE_INV_MIN_RADIUS
     double curv_a = std::fabs( inv_min_radius_curvature( surf, vertex_a ) );
 #else
     double curv_a = unsigned_vertex_mean_curvature( vertex_a, surf );
 #endif
     
+    
+
     curv_a /= rest_curvature;
     curv_a = std::max( min_curvature_multiplier, curv_a );
     curv_a = std::min( max_curvature_multiplier, curv_a );
     
+    //std::cout << "Curv a: " << curv_a << std::endl;
+
 #ifdef USE_INV_MIN_RADIUS
     double curv_b = std::fabs( inv_min_radius_curvature( surf, vertex_b ) );
 #else
@@ -290,8 +294,12 @@ double get_curvature_scaled_length(const SurfTrack& surf,
     curv_b = std::max( min_curvature_multiplier, curv_b );
     curv_b = std::min( max_curvature_multiplier, curv_b );
     
+    //std::cout << "Curv b: " << curv_b << std::endl;
+
     length *= 0.5 * ( curv_a + curv_b );
     
+    //std::cout << "Multiplier: " << 0.5*(curv_a+curv_b) << std::endl;
+
     return length;
     
 }

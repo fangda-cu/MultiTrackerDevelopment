@@ -570,6 +570,7 @@ void ElasticShell::addSelfCollisionForces() {
   for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
     VertexHandle vh = *vit;
     Vec3d vert_pos = m_positions[vh];
+    ElTopoCode::Vec3d vert_vel = ElTopoCode::toElTopo(m_velocities[vh]);
     ElTopoCode::Vec3d vertex_position = ElTopoCode::toElTopo(vert_pos);
 
     //construct bound box for the vertex, and find all triangles near it
@@ -586,10 +587,12 @@ void ElasticShell::addSelfCollisionForces() {
       }
 
       ElTopoCode::Vec3d face_verts[3];
+      ElTopoCode::Vec3d face_vels[3];
       int fv = 0;
       bool goodSpring = true;
       for(FaceVertexIterator fvit = m_obj->fv_iter(f); fvit; ++fvit) {
         face_verts[fv] = ElTopoCode::toElTopo(m_positions[*fvit]);
+        face_vels[fv] = ElTopoCode::toElTopo(m_velocities[*fvit]);
         if(*fvit == vh)
           goodSpring = false;
         ++fv;
@@ -609,7 +612,12 @@ void ElasticShell::addSelfCollisionForces() {
       ElTopoCode::Vec3d offset = vertex_position - (barycoords[0]*face_verts[0] + barycoords[1]*face_verts[1] + barycoords[2]*face_verts[2]);
       Scalar normalDist = dot(offset,faceNormal);
       if(distance < collision_distance) {
-        m_repulsion_springs->addSpring(f, vh, barycoords, m_collision_spring_stiffness, m_collision_spring_damping, fabs(normalDist));
+        
+        //look at velocities of closest points to see if the geometry is approaching
+        ElTopoCode::Vec3d close_point_vel = barycoords[0]*face_vels[0] + barycoords[1]*face_vels[1] + barycoords[2]*face_vels[2];
+        ElTopoCode::Vec3d rel_vel = vert_vel - close_point_vel;
+        //if(dot(rel_vel, offset) < 0) //add spring only if they are approaching
+          m_repulsion_springs->addSpring(f, vh, barycoords, m_collision_spring_stiffness, m_collision_spring_damping, fabs(normalDist));
       }
     }
   }
@@ -673,8 +681,12 @@ void ElasticShell::setSelfCollision(bool enabled) {
 
 void ElasticShell::endStep(Scalar time, Scalar timestep) {
 
+
+
   std::cout << "Starting endStep.\n";
   bool do_relabel = false;
+
+  std::cout << "Vertex count: " << m_obj->nv() << std::endl;
 
   //El Topo collision processing.
   std::cout << "Resolving collisions\n";
@@ -805,8 +817,10 @@ void ElasticShell::fracture_new() {
   construction_parameters.m_min_triangle_angle = 5;
   construction_parameters.m_max_triangle_angle = 175;
   construction_parameters.m_verbose = false;
+
   construction_parameters.m_use_curvature_when_collapsing = false;
   construction_parameters.m_use_curvature_when_splitting = false;
+  
   construction_parameters.m_allow_non_manifold = false;
   construction_parameters.m_collision_safety = true;
   //TODO If we try using other subdivision schemes for splitting edges
@@ -1248,10 +1262,14 @@ void ElasticShell::remesh_new()
   construction_parameters.m_min_triangle_angle = 5;
   construction_parameters.m_max_triangle_angle = 175;
   construction_parameters.m_verbose = false;
-  construction_parameters.m_use_curvature_when_collapsing = false;
-  construction_parameters.m_use_curvature_when_splitting = false;
   construction_parameters.m_allow_non_manifold = false;
   construction_parameters.m_collision_safety = true;
+
+  construction_parameters.m_use_curvature_when_collapsing = false;
+  construction_parameters.m_use_curvature_when_splitting = false;
+  //construction_parameters.m_max_curvature_multiplier = 1000;
+  //construction_parameters.m_min_curvature_multiplier = 1.0;
+
   //TODO If we try using other subdivision schemes for splitting edges
   //note that the manner in which the edge split operation is performed
   //will need to be adjusted to properly preserve total volume.
@@ -1370,7 +1388,7 @@ void ElasticShell::remesh_new()
     }
     else if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_SPLIT) {
       //Identify the edge based on its endpoint vertices instead
-      std::cout << "Split\n";
+      //std::cout << "Split\n";
 
       VertexHandle new_vert;
       Vec3d new_pos(event.m_vert_position[0], event.m_vert_position[1], event.m_vert_position[2]);

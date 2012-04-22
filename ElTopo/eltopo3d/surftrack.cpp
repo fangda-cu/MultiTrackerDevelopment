@@ -644,8 +644,13 @@ void SurfTrack::improve_mesh( )
     
     if ( m_perform_improvement )
     {
+      if ( m_collision_safety )
+      {
+        std::cout << "Checking collisions before remeshing.\n";
+        assert_mesh_is_intersection_free( false );
+      }
 
-      for(int loop = 0; loop < 2; ++loop) {
+      for(int loop = 0; loop < 3; ++loop) {
         // edge splitting
         //std::cout << "Split\n";
         while ( m_splitter.split_pass() ) {}
@@ -669,7 +674,7 @@ void SurfTrack::improve_mesh( )
 
       if ( m_collision_safety )
       {
-        std::cout << "Check collisions\n";
+        std::cout << "Checking collisions after remeshing.\n";
         assert_mesh_is_intersection_free( false );
       }      
     }
@@ -679,11 +684,18 @@ void SurfTrack::improve_mesh( )
 void SurfTrack::cut_mesh( const std::vector< std::pair<size_t,size_t> >& edges)
 {     
 
+  if ( m_collision_safety )
+  {
+    std::cout << "Checking collisions before cutting.\n";
+    assert_mesh_is_intersection_free( false );
+  }
+
   // edge cutting
   m_cutter.separate_edges_new(edges);
 
   if ( m_collision_safety )
   {
+    std::cout << "Checking collisions after cutting.\n";
     assert_mesh_is_intersection_free( false );
   }      
   

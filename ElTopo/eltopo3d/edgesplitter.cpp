@@ -1215,7 +1215,7 @@ bool EdgeSplitter::split_pass()
         
         if ( m_use_curvature )
         {
-            length = get_curvature_scaled_length( m_surf, vertex_a, vertex_b, 0.0, m_max_curvature_multiplier );
+            length = get_curvature_scaled_length( m_surf, vertex_a, vertex_b, 0.0, m_max_curvature_multiplier, 1.0 );
         }
         else
         {
@@ -1255,7 +1255,7 @@ bool EdgeSplitter::split_pass()
         
         if ( m_use_curvature )
         {
-            longest_edge_length = get_curvature_scaled_length( m_surf, vertex_a, vertex_b, 0.0, m_max_curvature_multiplier );
+            longest_edge_length = get_curvature_scaled_length( m_surf, vertex_a, vertex_b, 0.0, m_max_curvature_multiplier, 1.0 );
         }
         else
         {
