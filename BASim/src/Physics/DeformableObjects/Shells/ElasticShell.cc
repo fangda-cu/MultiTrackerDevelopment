@@ -15,7 +15,7 @@
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 
 #include "surftrack.h"
-
+#include "subdivisionscheme.h"
 
 #include <algorithm>
 #include <numeric>
@@ -821,6 +821,8 @@ void ElasticShell::fracture_new() {
   construction_parameters.m_use_curvature_when_collapsing = false;
   construction_parameters.m_use_curvature_when_splitting = false;
   
+  construction_parameters.m_subdivision_scheme = new ElTopo::ButterflyScheme();
+
   construction_parameters.m_allow_non_manifold = false;
   construction_parameters.m_collision_safety = true;
   //TODO If we try using other subdivision schemes for splitting edges
@@ -1860,6 +1862,7 @@ void ElasticShell::performSplitET(const EdgeHandle& eh, const Vec3d& midpoint, V
   std::vector<FaceHandle> newFaces;
   VertexHandle v_new = splitEdge(*m_obj, eh, newFaces);
 
+  Vec3d simple_midpoint = 0.5*(p1 + p0);
   
   //determine split fraction, and using it to lerp the vertex data
   Vec3d dx(p1-p0);
@@ -1869,19 +1872,31 @@ void ElasticShell::performSplitET(const EdgeHandle& eh, const Vec3d& midpoint, V
   Vec3d velocity = s*getVertexVelocity(v0) + (1-s)*getVertexVelocity(v1);
   Vec3d undef = s*getVertexUndeformed(v0) + (1-s)*getVertexUndeformed(v1);
   setVertexVelocity(v_new, velocity);
-  setVertexPosition(v_new, midpoint);
   setUndeformedVertexPosition(v_new, undef);
+
+  //initially set to the exact midpoint for simplicity
+  setVertexPosition(v_new, simple_midpoint);
 
   //set consistent volumes and thickness for new faces
   //TODO If the new point (chosen by ET) is allowed to be off the original edge, areas also change and this
   //code will need to be adjusted accordingly.
   assert(oldFaces.size() == newFaces.size()/2);
-  Scalar newVolume = 0;
+  
+  //Old way, ignores vertex movement, assumes simple midpoint
   for(unsigned int i = 0; i < oldFaces.size(); ++i) {
     m_thicknesses[newFaces[i*2]] = oldThicknesses[i];
     m_thicknesses[newFaces[i*2+1]] = oldThicknesses[i];
     m_volumes[newFaces[i*2]] = oldThicknesses[i] * getArea(newFaces[i*2], true);
     m_volumes[newFaces[i*2+1]] = oldThicknesses[i] * getArea(newFaces[i*2+1], true);
+  }
+
+  //Now update to reflect motion of the midpoint to the desired position
+  setVertexPosition(v_new, midpoint);
+
+  //Volumes haven't changed, but thicknesses have due to area change.
+  for(unsigned int i = 0; i < oldFaces.size(); ++i) {
+    m_thicknesses[newFaces[i*2]] = m_volumes[newFaces[i*2]] / getArea(newFaces[i*2], true);
+    m_thicknesses[newFaces[i*2+1]] = m_volumes[newFaces[i*2+1]] / getArea(newFaces[i*2+1], true);
   }
 
   VertexFaceIterator vf_iter = m_obj->vf_iter(v_new);
