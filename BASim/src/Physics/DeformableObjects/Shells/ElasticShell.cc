@@ -1878,11 +1878,9 @@ void ElasticShell::performSplitET(const EdgeHandle& eh, const Vec3d& midpoint, V
   setVertexPosition(v_new, simple_midpoint);
 
   //set consistent volumes and thickness for new faces
-  //TODO If the new point (chosen by ET) is allowed to be off the original edge, areas also change and this
-  //code will need to be adjusted accordingly.
   assert(oldFaces.size() == newFaces.size()/2);
   
-  //Old way, ignores vertex movement, assumes simple midpoint
+  //Old way, ignores vertex movement, assumes simple (true) midpoint
   for(unsigned int i = 0; i < oldFaces.size(); ++i) {
     m_thicknesses[newFaces[i*2]] = oldThicknesses[i];
     m_thicknesses[newFaces[i*2+1]] = oldThicknesses[i];
