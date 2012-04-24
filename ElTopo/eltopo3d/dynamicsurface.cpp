@@ -467,11 +467,11 @@ unsigned int DynamicSurface::vertex_primary_space_rank( size_t v ) const
 void DynamicSurface::integrate( double desired_dt, double& actual_dt )
 {     
     
-    if ( m_collision_safety )
-    {
-      std::cout << "Checking collisions before integration.\n";
-      assert_mesh_is_intersection_free( false );
-    }
+    //if ( m_collision_safety )
+    //{
+    //  std::cout << "Checking collisions before integration.\n";
+    //  assert_mesh_is_intersection_free( false );
+    //}
 
     static const bool DEGEN_DOES_NOT_COUNT = false;   
     static const bool USE_NEW_POSITIONS = true;

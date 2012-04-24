@@ -334,7 +334,7 @@ void SurfTrack::defrag_mesh( )
 {
     
     //
-    // First clear deleted vertices from the data stuctures
+    // First clear deleted vertices from the data structures
     // 
     
     double start_time = get_time_in_seconds();
@@ -652,11 +652,11 @@ void SurfTrack::improve_mesh( )
     
     if ( m_perform_improvement )
     {
-      if ( m_collision_safety )
-      {
-        std::cout << "Checking collisions before remeshing.\n";
-        assert_mesh_is_intersection_free( false );
-      }
+      //if ( m_collision_safety )
+      //{
+      //  std::cout << "Checking collisions before remeshing.\n";
+      //  assert_mesh_is_intersection_free( false );
+      //}
 
       for(int loop = 0; loop < 3; ++loop) {
         // edge splitting
@@ -692,11 +692,11 @@ void SurfTrack::improve_mesh( )
 void SurfTrack::cut_mesh( const std::vector< std::pair<size_t,size_t> >& edges)
 {     
 
-  if ( m_collision_safety )
-  {
-    std::cout << "Checking collisions before cutting.\n";
-    assert_mesh_is_intersection_free( false );
-  }
+  //if ( m_collision_safety )
+  //{
+  //  std::cout << "Checking collisions before cutting.\n";
+  //  assert_mesh_is_intersection_free( false );
+  //}
 
   // edge cutting
   m_cutter.separate_edges_new(edges);
