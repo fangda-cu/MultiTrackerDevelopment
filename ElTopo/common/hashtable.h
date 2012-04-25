@@ -26,13 +26,13 @@ struct DefaultHashFunction
     unsigned int operator() (const Key &k) const { return hash(k); }
 };
 
-struct equal
+struct my_equal
 {
     template<typename T>
     bool operator() (const T &a, const T &b) const { return a==b; }
 };
 
-template<typename Key, typename Data, class HashFunction=DefaultHashFunction, class KeyEqual=equal>
+template<typename Key, typename Data, class HashFunction=DefaultHashFunction, class KeyEqual=my_equal>
 struct HashTable
 {
     unsigned int table_rank;

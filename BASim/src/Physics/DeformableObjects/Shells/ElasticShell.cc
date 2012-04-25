@@ -6,7 +6,7 @@
 #include "BASim/src/Collisions/ElTopo/ccd_wrapper.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/CSTMembraneForce.hh"
 #include "BASim/src/Math/Math.hh"
-#include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexTriSpringForce.hh"
+//#include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexTriSpringForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexPointSpringForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellStickyRepulsionForce.hh"
 #include "BASim/src/Collisions/ElTopo/collisionqueries.hh"
