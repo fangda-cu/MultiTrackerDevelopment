@@ -14,6 +14,7 @@ set (Directories
   Collisions/ElTopo
   IO
   Math
+  Math/Eigen
   Physics
   Physics/ElasticRods
   Physics/DeformableObjects

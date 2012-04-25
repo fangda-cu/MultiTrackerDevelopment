@@ -5,7 +5,7 @@
 #include <bitset>
 #include <cassert>
 #include <cmath>
-#include <fenv.h>
+#include "fenv_include.h"
 #include <iostream>
 #include <string.h>
 

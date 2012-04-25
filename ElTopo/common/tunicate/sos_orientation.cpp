@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <fenv.h>
+#include "fenv_include.h"
 #include <limits>
 #include <tunicate.h>
 

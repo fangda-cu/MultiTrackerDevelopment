@@ -146,9 +146,16 @@ if (USE_OPENMP)
   endif (OPENMP_FOUND)
 endif (USE_OPENMP)
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ElTopo/eltopo3d)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ElTopo/common)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ElTopo/common/newsparse)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ElTopo/common/tunicate)
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
+
 add_subdirectory (BASim)
+
+add_subdirectory (ElTopo) 
 
 if (BUILD_APPS)
   add_subdirectory (Apps)

@@ -7,7 +7,7 @@
 //
 // ---------------------------------------------------------
 
-#include <bfstream.h>
+//#include <bfstream.h>
 #include <ccd_defs.h>
 #include <ccd_wrapper.h>
 #include <collisionqueries.h>
