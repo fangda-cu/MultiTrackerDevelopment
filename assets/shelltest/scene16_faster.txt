@@ -1,9 +1,8 @@
 #Enrobing process
 
-generate-PLY false
 
 shell-scene 16
-dt 4	# time-step size
+dt 5	# time-step size
 
 gravity 0 -0.000981 0	# gravity
 
@@ -18,7 +17,7 @@ shell-Poisson-damping 0.5
 shell-surface-tension 0.0
 
 shell-remeshing 1
-shell-remeshing-resolution 1.3
+shell-remeshing-resolution 0.5
 shell-remeshing-iterations 1
 
 #collision stuff
@@ -28,7 +27,7 @@ shell-ground-plane-height -4
 shell-ground-plane-velocity 0.04
 shell-collision-spring-stiffness 1.5e-6
 shell-collision-spring-damping 1e-8
-shell-collision-proximity 0.15
+shell-collision-proximity 0.1
 
 shell-initial-velocity -0.01
 
@@ -38,8 +37,8 @@ shell-density 0.0001    # volumetric density of the shell
 shell-thickness 0.25	# the thickness of the shell
 shell-height 20.0	# the vertical side length of the shell
 shell-width 40.0	# the horizontal side length of the shell
-shell-y-resolution 15	# the number of segments along the vertical edge
-shell-x-resolution 22	# the number of segments along the horizontal edge
+shell-y-resolution 25	# the number of segments along the vertical edge
+shell-x-resolution 40	# the number of segments along the horizontal edge
 
 
 iterations 100	# maximum number of iterations for the implicit method
