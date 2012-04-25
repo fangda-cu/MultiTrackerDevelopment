@@ -155,7 +155,7 @@ include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory (BASim)
 
-#add_subdirectory (ElTopo) 
+add_subdirectory (ElTopo) 
 
 if (BUILD_APPS)
   add_subdirectory (Apps)

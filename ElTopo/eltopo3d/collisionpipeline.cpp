@@ -20,6 +20,10 @@
 // Global externs
 // ---------------------------------------------------------
 
+extern bool tunicate_verbose;   
+extern bool simplex_verbose;
+
+
 namespace ElTopo {
 
 extern RunStats g_stats;
@@ -1339,10 +1343,8 @@ void CollisionPipeline::detect_collisions( size_t edge_index,
     double s0, s1, s2, s3, rel_disp;
     Vec3d normal;
     
-    extern bool tunicate_verbose;   
     tunicate_verbose = true;
     
-    extern bool simplex_verbose;
     simplex_verbose = true;
     
     // edge vs triangle edge 0

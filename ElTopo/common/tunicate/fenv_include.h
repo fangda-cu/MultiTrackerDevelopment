@@ -1,5 +1,14 @@
-#ifndef FENV_H
-#define FENV_H
+#ifndef FENVINCLUDE_H
+#define FENVINCLUDE_H
+
+#ifndef _MSC_VER
+
+//if not Windows, include the standard fenv.v.h
+#include <fenv.h>
+
+#else 
+
+//on Windows, cook up the functions we need
 #include <float.h>
 #include <stdio.h>
 #include <errno.h>
@@ -16,5 +25,7 @@
 inline void fesetround(unsigned int choice) {
   _controlfp(choice, _MCW_RC);
 }
+
+#endif
 
 #endif
