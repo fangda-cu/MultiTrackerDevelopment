@@ -3,7 +3,7 @@
 generate-PLY false
 
 shell-scene 19
-dt 1	# time-step size
+dt 0.25	# time-step size
 
 gravity 0 -0.000981 0	# gravity
 
@@ -15,17 +15,17 @@ shell-Youngs-damping 0.0005
 shell-Poisson-damping 0.5
 
 #Surface Tension
-shell-surface-tension 0.001
+shell-surface-tension 0.00000035
 
 shell-remeshing 1
-shell-remeshing-resolution 1.0
+shell-remeshing-resolution 0.8
 shell-remeshing-iterations 1
 
 #collision stuff
 shell-self-collision false
 shell-ground-plane false
 shell-ground-plane-height -4
-shell-ground-plane-velocity 0.5
+shell-ground-plane-velocity 0.4
 shell-collision-spring-stiffness 1.5e-6
 shell-collision-spring-damping 1e-8
 shell-collision-proximity 0.15
