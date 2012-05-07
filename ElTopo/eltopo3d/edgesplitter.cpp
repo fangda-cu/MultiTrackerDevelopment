@@ -1162,7 +1162,7 @@ bool EdgeSplitter::large_angle_split_pass2()
       if ( angle0 > m_surf.m_max_triangle_angle )
       {
 
-        bool result = split_edge( e );
+        bool result = split_edge2( e );
 
         if ( result )
         {
