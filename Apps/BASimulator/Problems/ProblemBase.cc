@@ -79,7 +79,8 @@ int Problem::LoadOptions(const char* filename)
   string line, option;
   istringstream sIn;
   string tmp;
-  for (getline(input, line); !input.eof(); getline(input, line)) { // FIXME: this won't read the last line of the option file if it is not ended by a newline.
+  do {
+    getline(input, line);
     sIn.clear();
     option.clear();
     sIn.str(line);
@@ -109,7 +110,7 @@ int Problem::LoadOptions(const char* filename)
     } else {
       cerr << "Invalid option type" << endl;
     }
-  }
+  } while(!input.eof());
   input.close();
 
   return 0;
@@ -317,9 +318,9 @@ void Problem::addRodTimeStepperOptions()
   AddOption("integrator", "type of integrator to use for the rod", "implicit");
   AddOption("iterations", "maximum number of iterations for implicit method",
             (int) 50);
-  AddOption("atol", "absolute convergence tolerance", 1e-8);
-  AddOption("rtol", "relative convergence tolerance", 1e-8);
-  AddOption("stol", "convergence tolerance in terms of the norm of the change in the solution between steps", 1e-8);
+  AddOption("atol", "absolute convergence tolerance of L2 norm", 1e-8);
+  AddOption("rtol", "relative convergence tolerance of L2 norm", 1e-8);
+  AddOption("stol", "convergence tolerance in terms of the L2 norm of the change in the solution between steps", 1e-8);
   AddOption("inftol", "infinity norm convergence tolerance", 1e-8);
   AddOption("velocity-solve", "solve for velocity increments in implicit Euler (if false, the solve is for position increments)", false);
 }
