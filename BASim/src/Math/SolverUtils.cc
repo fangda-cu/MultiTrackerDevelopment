@@ -124,8 +124,11 @@ SolverUtils::createBandMatrix(int rows, int cols, int kl, int ku) const
 
 LinearSolverBase* SolverUtils::createLinearSolver(MatrixBase* A) const
 {
-  if (solverType == CONJUGATE_GRADIENT)
-    return new ConjugateGradient(*A);
+  if (solverType == CONJUGATE_GRADIENT) {
+    ConjugateGradient* solver = new ConjugateGradient(*A);
+    solver->setRNorm(1e-12);
+    return solver;
+  }
 
   if(solverType == EIGEN_LDLT)
     return new EigenLinearSolver(*A);
@@ -153,11 +156,10 @@ LinearSolverBase* SolverUtils::createLinearSolver(MatrixBase* A) const
   }
 #endif // HAVE_LAPACK
 
-#ifdef HAVE_MKL
-  return new ConjugateGradient(*A);
-#else
-  return new ConjugateGradient(*A);
-#endif
+  //default
+  ConjugateGradient* solver = new ConjugateGradient(*A);
+  solver->setRNorm(1e-12);
+  return solver;
 }
 
 } // namespace BASim
