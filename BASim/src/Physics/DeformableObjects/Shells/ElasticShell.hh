@@ -20,7 +20,6 @@ const int ELASTIC_SHELL_DOFS_PER_EDGE = 1; //mid-edge normal bending DOFs (Grins
 class DeformableObject;
 class ElasticShellForce;
 class ShellVertexPointSpringForce;
-class ShellVertexTriSpringForce;
 class ShellStickyRepulsionForce;
 
 class ElasticShell : public PhysicalModel {

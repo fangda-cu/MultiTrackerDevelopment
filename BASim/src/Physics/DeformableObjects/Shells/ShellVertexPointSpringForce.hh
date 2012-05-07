@@ -1,5 +1,5 @@
 /**
- * \file ShellVertexTriSpringForce.hh
+ * \file ShellVertexPointSpringForce.hh
  *
  * \author batty@cs.columbia.edu
  * \date Nov 22, 2011

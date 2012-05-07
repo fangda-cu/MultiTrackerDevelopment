@@ -1437,10 +1437,7 @@ void ShellTest::setupScene9() {
   shell->setEdgeUndeformed(undefAngle);
   shell->setEdgeXis(edgeAngle);
   shell->setEdgeVelocities(edgeVel);
-  
-  /*ShellVertexTriSpringForce* spring = new ShellVertexTriSpringForce(*shell, "SpringTest", m_timestep);
-  spring->addSpring(f3, v0, Vec3d(0.4, 0.4, 0.2), 0.0, 0.001, 0.5);
-  shell->addForce(spring);*/
+ 
 
   /*ShellVertexPointSpringForce* spring = new ShellVertexPointSpringForce(*shell, "Spring", m_timestep);
   spring->addSpring(v7, Vec3d(0.1, 0.3, 0.3), 0.1, 0.0, 0.0);

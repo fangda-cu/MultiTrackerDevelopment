@@ -1,5 +1,5 @@
 /**
- * \file ShellVertexTriSpringForce.cc
+ * \file ShellStickyRepulsionSpringForce.cc
  *
  * \author batty@cs.columbia.edu
  * \date Nov 22, 2011
