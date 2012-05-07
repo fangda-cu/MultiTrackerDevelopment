@@ -37,7 +37,7 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
     m_velocities(object),
     m_xi_vel(object),
     m_density(1),
-    m_proximity_epsilon(1e-5),
+    m_collision_epsilon(1e-5),
     m_vert_point_springs(NULL),
     m_repulsion_springs(NULL),
     m_sphere_collisions(false),
@@ -492,7 +492,7 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
 
   // build a DynamicSurface
   Scalar friction_coeff = 0;
-  ElTopo::DynamicSurface dynamic_surface( vert_old, tri_data, masses, m_proximity_epsilon, friction_coeff, true, false );
+  ElTopo::DynamicSurface dynamic_surface( vert_old, tri_data, masses, m_collision_epsilon, friction_coeff, true, false );
 
   dynamic_surface.set_all_newpositions( vert_new );
 
@@ -611,7 +611,8 @@ void ElasticShell::getSpringList(std::vector<Vec3d>& start, std::vector<Vec3d>& 
 
 }
 
-void ElasticShell::setCollisionParams(Scalar proximity, Scalar stiffness, Scalar damping) {
+void ElasticShell::setCollisionParams(Scalar proximity, Scalar epsilon, Scalar stiffness, Scalar damping) {
+  m_collision_epsilon = epsilon;
   m_collision_spring_stiffness = stiffness;
   m_collision_spring_damping = damping;
   m_collision_proximity = proximity;
@@ -772,7 +773,7 @@ void ElasticShell::fracture() {
 
   //Set up a SurfTrack, run remeshing, render the new mesh
   ElTopo::SurfTrackInitializationParameters construction_parameters;
-  construction_parameters.m_proximity_epsilon = m_proximity_epsilon;
+  construction_parameters.m_proximity_epsilon = m_collision_epsilon;
   construction_parameters.m_allow_vertex_movement = false;
   construction_parameters.m_min_edge_length = 0.5*m_remesh_edge_length;
   construction_parameters.m_max_edge_length = 1.5*m_remesh_edge_length;
@@ -1007,7 +1008,7 @@ void ElasticShell::remesh()
 
   //Set up a SurfTrack, run remeshing, render the new mesh
   ElTopo::SurfTrackInitializationParameters construction_parameters;
-  construction_parameters.m_proximity_epsilon = m_proximity_epsilon;
+  construction_parameters.m_proximity_epsilon = m_collision_epsilon;
   construction_parameters.m_allow_vertex_movement = false;
   construction_parameters.m_min_edge_length = 0.5*m_remesh_edge_length;
   construction_parameters.m_max_edge_length = 1.5*m_remesh_edge_length;

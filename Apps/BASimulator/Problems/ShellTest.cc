@@ -107,7 +107,8 @@ ShellTest::ShellTest()
   AddOption("shell-collision-spring-stiffness", "stiffness coefficient of the collision springs", 0.0);
   AddOption("shell-collision-spring-damping", "damping coefficient of the collision springs", 0.0);
   AddOption("shell-collision-proximity", "the collision spring rest length and distance at which to add springs", 0.0);
-  
+  AddOption("shell-collision-epsilon", "the distance tolerance for El Topo to flag a collision", 1e-5);
+
   AddOption("shell-collision-object-file", "source SDF for object collision", "");
   AddOption("shell-collision-object-offset", "translation of the object", Vec3d(0,0,0));
   
@@ -117,7 +118,7 @@ ShellTest::ShellTest()
   AddOption("shell-tearing-randomness", "percent of fracture edges that will actually tear apart", 1.0 );
   AddOption("shell-ring-velocity", "velocity in the x direction for the rings", 0.25);
 
-    //Timestepper options
+  //Time stepper options
   AddOption("integrator", "type of integrator to use for the shell", "implicit");
 
   //Solver options
@@ -297,7 +298,8 @@ void ShellTest::Setup()
   Scalar stiffness = GetScalarOpt("shell-collision-spring-stiffness");
   Scalar damping = GetScalarOpt("shell-collision-spring-damping");
   Scalar proximity = GetScalarOpt("shell-collision-proximity");
-  shell->setCollisionParams(proximity, stiffness, damping);
+  Scalar epsilon = GetScalarOpt("shell-collision-epsilon");
+  shell->setCollisionParams(proximity, epsilon, stiffness, damping);
   
   bool groundPlane = GetBoolOpt("shell-ground-plane");
   Scalar gpHeight = GetScalarOpt("shell-ground-plane-height");

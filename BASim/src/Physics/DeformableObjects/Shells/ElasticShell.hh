@@ -118,7 +118,7 @@ public:
   void addVertexPointSpring(const VertexHandle& v, const Vec3d& pos, Scalar stiffness, Scalar damping, Scalar length);
   void addVertexTriSpring(const FaceHandle& f, const VertexHandle& v, const Vec3d& pos, Scalar stiffness, Scalar damping, Scalar length);
 
-  void setCollisionParams(Scalar proximity, Scalar stiffness, Scalar damping);
+  void setCollisionParams(Scalar proximity, Scalar epsilon, Scalar stiffness, Scalar damping);
   void setGroundPlane(bool enabled, Scalar height, Scalar velocity);
   void setSelfCollision(bool enabled);
 
@@ -220,14 +220,13 @@ protected:
   std::vector<std::vector<Vec3d> > m_inflow_velocities;
   std::vector<bool> m_inflow_lastdir;
   
-  //collision-safe remeshing stuff ->Move into subclass? Remesh-able shell?
-  Scalar m_proximity_epsilon, m_improve_collision_epsilon;
   
   bool m_delete_region;
   Vec3d m_delete_lower, m_delete_upper;
 
- 
-  Scalar m_collision_proximity;
+  Scalar m_collision_epsilon; //epsilon tolerance for El Topo collisions
+  Scalar m_collision_proximity; //distance at which to trigger spring penalty forces
+
   Scalar m_ground_height;
   bool m_self_collisions;
   bool m_ground_collisions;
