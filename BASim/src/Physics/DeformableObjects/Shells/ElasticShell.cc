@@ -1238,16 +1238,37 @@ bool ElasticShell::shouldFracture (const EdgeHandle & eh) const{
     //Get the average thickness weighted by areas for each edge
     Scalar thickness = 0.0;
     Scalar totalA = 0.0;
+    bool both_thin = true;
+    //bool both_safe_to_cut = true; //check if the triangle has at least two edges still attached.
     for ( EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit){
+        int face_nbr_count = 0;
         Scalar w = getArea(*efit);
         thickness += w * getThickness(*efit);
         totalA += w;
+        if(getThickness(*efit) > m_tear_thres)
+          both_thin = false;
+        //FaceHandle cur_face = *efit;
+        //for(FaceEdgeIterator feit = m_obj->fe_iter(cur_face); feit; ++feit) {
+        //  EdgeHandle cur_edge = *feit;
+        //  if(cur_edge == eh) continue;
+        //  int incident_faces = m_obj->edgeIncidentFaces(cur_edge);
+        //  if(incident_faces > 1)  
+        //    ++face_nbr_count;
+        //}
+        //if(face_nbr_count < 2) {//try to avoid cutting the last edge in a face, in order to prevent disconnected triangles.
+        //  both_safe_to_cut = false;
+        //  break;
+        //}
+
     }
     thickness /= totalA;
     Scalar p = (Scalar) rand() / (Scalar) RAND_MAX;
 //    return (thickness < m_tear_thres) && (m_obj->isBoundary(m_obj->fromVertex(eh)) || m_obj->isBoundary(m_obj->toVertex(eh)))
 //            && ( p <  m_tear_rand);
-    return (thickness < m_tear_thres)  && ( p <  m_tear_rand);
+    
+    return both_thin && (p <  m_tear_rand);
+    //return (both_safe_to_cut) && (both_thin)  && ( p <  m_tear_rand);
+    //return (both_safe_to_cut) && (thickness < m_tear_thres)  && ( p <  m_tear_rand);
 }
 
 
