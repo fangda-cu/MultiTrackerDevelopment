@@ -6,7 +6,6 @@
 #include "BASim/src/Collisions/ElTopo/ccd_wrapper.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/CSTMembraneForce.hh"
 #include "BASim/src/Math/Math.hh"
-//#include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexTriSpringForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexPointSpringForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellStickyRepulsionForce.hh"
 #include "BASim/src/Collisions/ElTopo/collisionqueries.hh"
@@ -423,38 +422,6 @@ void ElasticShell::releaseVertex( const VertexHandle& v)
 void ElasticShell::startStep(Scalar time, Scalar timestep)
 {
   std::cout << "Starting startStep\n";
-  /* //Debugging forces
-   const std::vector<ElasticShellForce*>& forces = getForces();
-   std::vector<ElasticShellForce*>::const_iterator fIt;
-
-   
-   for (fIt = forces.begin(); fIt != forces.end(); ++fIt) {
-      if(typeid(*(*fIt)) == typeid(CSTMembraneForce)) {
-         Scalar potEnergy = (*fIt)->globalEnergy();
-         //std::cout << "Energy " << potEnergy;
-         VecXd curr_force(m_obj->nv()*3);
-         curr_force.setZero();
-         (*fIt)->setDebug(true);
-         (*fIt)->globalForce(curr_force);
-         (*fIt)->setDebug(false);
-
-         ////Now sum forces on all the vertices along the circumference
-         Vec3d forceSum;
-         forceSum.setZero();
-         for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
-            Vec3d vertPos = getVertexPosition(*vit);
-            if(vertPos[2] < -1e-5 || vertPos[2] > 1e-5) continue; //skip non-circumferential vertices
-
-            int startIndex = getVertexDofBase(*vit);
-            Vec3d vertForce(curr_force[startIndex], curr_force[startIndex+1], curr_force[startIndex+2]);
-            forceSum += vertForce;
-         }
-         std::cout << "Force sum is: " << forceSum << std::endl;
-      }
-   }
-   */
-
-
 
   //update the damping "reference configuration" for computing viscous forces.
   m_damping_undeformed_positions = m_positions;
@@ -505,7 +472,7 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
     ++id;
   }
 
-  //walk through tris, creating linear list, using the vertex numbering assigned above
+  //walk through triangles, creating linear list, using the vertex numbering assigned above
   id = 0;
   for(FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit) {
     FaceHandle fh = *fit;
@@ -681,8 +648,6 @@ void ElasticShell::setSelfCollision(bool enabled) {
 
 void ElasticShell::endStep(Scalar time, Scalar timestep) {
 
-
-
   std::cout << "Starting endStep.\n";
   bool do_relabel = false;
 
@@ -771,9 +736,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   //Remeshing
   if(m_do_remeshing) {
     std::cout << "Remeshing\n";
-    //for(int i = 0; i < m_remeshing_iters; ++i)
-    //  remesh(m_remesh_edge_length);  
-    remesh_new();
+    remesh();
     std::cout << "Completed remeshing\n";
 
     //Relabel DOFs if necessary
@@ -786,7 +749,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   if(m_tearing){
     std::cout << "Processing tearing. \n";
     //fracture();
-    fracture_new();
+    fracture();
     do_relabel = true;
     only_twice++;
   }
@@ -805,7 +768,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 }
 
 
-void ElasticShell::fracture_new() {
+void ElasticShell::fracture() {
 
   //Set up a SurfTrack, run remeshing, render the new mesh
   ElTopo::SurfTrackInitializationParameters construction_parameters;
@@ -825,9 +788,6 @@ void ElasticShell::fracture_new() {
 
   construction_parameters.m_allow_non_manifold = false;
   construction_parameters.m_collision_safety = true;
-  //TODO If we try using other subdivision schemes for splitting edges
-  //note that the manner in which the edge split operation is performed
-  //will need to be adjusted to properly preserve total volume.
 
   std::vector<ElTopo::Vec3d> vert_data;
   std::vector<ElTopo::Vec3st> tri_data;
@@ -861,7 +821,7 @@ void ElasticShell::fracture_new() {
     ++id;
   }
 
-  //walk through tris, creating linear list, using the vertex numbering assigned above
+  //walk through triangles, creating linear list, using the vertex numbering assigned above
   id = 0;
   for(FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit) {
     FaceHandle fh = *fit;
@@ -894,7 +854,6 @@ void ElasticShell::fracture_new() {
   
   ElTopo::SurfTrack surface_tracker( vert_data, tri_data, masses, construction_parameters ); 
 
-  //std::cout << "Collecting desired cuts\n";
   std::vector< std::pair<size_t,size_t> > edges_to_cut;
   for(EdgeIterator it = mesh.edges_begin(); it != mesh.edges_end(); ++it) {
     EdgeHandle eh = *it;
@@ -904,7 +863,6 @@ void ElasticShell::fracture_new() {
       edges_to_cut.push_back(make_pair(vert_numbers[vh0],vert_numbers[vh1]));
     }
   }
-  //std::cout << "Requesting cutting of " << edges_to_cut.size() << std::endl;
 
   std::cout << "Doing cutting with El Topo.\n";
   surface_tracker.cut_mesh(edges_to_cut);
@@ -921,7 +879,6 @@ void ElasticShell::fracture_new() {
     assert(event.m_type == ElTopo::MeshUpdateEvent::EDGE_CUT);
       
     //Identify the edge based on its endpoint vertices instead
-    //std::cout << "Cut\n";
 
     //based on the type of cut, perform the appropriate operation
     bool aBound = m_obj->isBoundary(v0);
@@ -940,8 +897,6 @@ void ElasticShell::fracture_new() {
     std::vector<VertexHandle> newVerts;
 
     //Do exactly the same cut as El Topo
-    //if(aBound && ! bBound || !aBound && bBound) { //one vertex boundary
-    
     for(unsigned int i = 0; i < event.m_created_verts.size(); ++i) {
       VertexHandle nv = mesh.addVertex();
       newVerts.push_back(nv);
@@ -973,7 +928,7 @@ void ElasticShell::fracture_new() {
       VertexHandle v2 = reverse_vertmap[new_face[2]];
       assert(v0.isValid() && v1.isValid() && v2.isValid());
 
-      FaceHandle newFaceHandle = mesh.addFace(v0, v1, v2); //build the face. do we need to correct the ordering?
+      FaceHandle newFaceHandle = mesh.addFace(v0, v1, v2); //build the face. 
       setFaceActive(newFaceHandle);
 
       face_numbers[newFaceHandle] = event.m_created_tris[i];
@@ -1001,213 +956,7 @@ void ElasticShell::fracture_new() {
 
 }
 
-void ElasticShell::fracture(){
-    //Here comes all the fracture code
 
-
-    //Figure out which edges will be taken down
-    std::vector<EdgeHandle> edgesToFrac;
-    getDesiredFractures(edgesToFrac);
-
-    std::cout << "Fracturing " << edgesToFrac.size() << " edges" << std::endl;
-
-//    if ( edgesToFrac.size() != 0 && m_obj->edgeExists(edgesToFrac[0]) && shouldFracture(edgesToFrac[0]))
-//        performTearing(edgesToFrac[0]);
-//    All of these are fractured interior, now figure out which will become boundaries
-    for(unsigned int i = 0; i < edgesToFrac.size(); ++i){
-//    for(unsigned int i = 0; i < 1 && i < edgesToFrac.size(); ++i){
-        //skip constraints
-
-//        if (fromBound[i] || toBound[i]){
-
-            //Triple check that it will be ok to tear
-            if ( m_obj->edgeExists(edgesToFrac[i]) && shouldFracture(edgesToFrac[i])){
-                performTearing(edgesToFrac[i]);
-            }
-
-//        }
-    }
-//    for ( int i = 0 ; i < 5; ++i){
-//        for(EdgeIterator eit = m_obj->edges_begin(); eit != m_obj->edges_end(); ++eit){
-//
-//        }
-//    }
-}
-
-
-
-
-
-void ElasticShell::performTearing(const EdgeHandle & eh){
-
-#ifndef NDEBUG
-            int facesBef = m_obj->nf();
-            int edgesBef = m_obj->ne();
-            int vertsBef = m_obj->nv();
-#endif
-
-    
-    VertexHandle v0 = m_obj->fromVertex(eh);
-    VertexHandle v1 = m_obj->toVertex(eh);
-    bool aBound = m_obj->isBoundary(v0);
-    bool bBound = m_obj->isBoundary(v1);
-    assert(v0!=v1);
-
-    std::vector<FaceHandle> oldFaces;
-    std::vector<EdgeHandle> oldEdges;
-    std::vector<FaceHandle> newFaces;
-    VertexHandle newVerta, newVertb;
-
-//    ElTopo::Vec3d midpoint_ET = ElTopo::toElTopo(midpoint);
-    //if(edgeSplitCausesCollision(midpoint_ET, midpoint_ET, eh))
-    //  return false;
-
-//    //remove the edge and surrounding faces from the collision structure
-//    m_broad_phase.remove_edge(eh.idx());
-//    for(unsigned int i = 0; i < oldFaces.size(); ++i)
-//      m_broad_phase.remove_triangle(oldFaces[i].idx());
-
-    //perform the actual split
-    if ( aBound && bBound){
-        std::cout << "\tSeparating geom" << std::endl;
-        tearEdge(*m_obj, eh, v0, v1, newVerta, newVertb, newFaces, oldFaces, oldEdges);
-        setVertexVelocity(newVerta, getVertexVelocity(v0));
-        setVertexPosition(newVerta, getVertexPosition(v0));
-        setUndeformedVertexPosition(newVerta, getVertexUndeformed(v0));
-
-        setVertexVelocity(newVertb, getVertexVelocity(v1));
-        setVertexPosition(newVertb, getVertexPosition(v1));
-        setUndeformedVertexPosition(newVertb, getVertexUndeformed(v1));
-
-
-
-    } else if ( aBound && !bBound){
-        std::cout << "\tSeparating from" << std::endl;
-        tearVertexAlong(*m_obj, eh, v0, newVerta, newFaces, oldFaces, oldEdges);
-        setVertexVelocity(newVerta, getVertexVelocity(v0));
-        setVertexPosition(newVerta, getVertexPosition(v0));
-        setUndeformedVertexPosition(newVerta, getVertexUndeformed(v0));
-
-    } else if ( !aBound && bBound){
-        std::cout << "\tSeparating to" << std::endl;
-        tearVertexAlong(*m_obj, eh, v1, newVertb, newFaces, oldFaces, oldEdges);
-        setVertexVelocity(newVertb, getVertexVelocity(v1));
-        setVertexPosition(newVertb, getVertexPosition(v1));
-        setUndeformedVertexPosition(newVertb, getVertexUndeformed(v1));
-    } else{
-        std::cout << "\t******************************Updated bounds make this edge non-fracturable" << std::endl;
-        
-        VHList newVerts;
-        tearInteriorEdge(*m_obj, eh, v0, v1, newVerts, newFaces, oldFaces, oldEdges);
-
-        assert(newVerts.size() == 4);
-        assert(oldFaces.size() == 2);
-        assert(newFaces.size() == 4);
-        //Copy the values to the new vertices
-        Vec3d newVel = 0.5f * (getVertexVelocity(v0) + getVertexVelocity(v1));
-        Vec3d newPos = 0.5f * (getVertexPosition(v0) + getVertexPosition(v1));
-        Vec3d newUnd = 0.5f * (getVertexUndeformed(v0) + getVertexUndeformed(v1));
-        for ( unsigned int i = 0; i < newVerts.size(); ++i){
-            setVertexVelocity(newVerts[i], newVel);
-            setVertexPosition(newVerts[i], newPos);
-            setUndeformedVertexPosition(newVerts[i], newUnd);
-        }
-        
-    }
-
-    //set consistent volumes and thickness for new faces
-//    std::cout << "\tFaces added: " << newFaces.size() << std::endl;
-//    std::cout << "\tEdges at this point(before deleting): " << m_obj->ne() << std::endl;
-//    std::cout << "\tFaces that will be deleted: " << oldFaces.size() << std::endl;
-//    std::cout << "\tEdges that will be deleted: " << oldEdges.size() << std::endl;
-
-    if ( aBound || bBound ){//Update the thicknesses and volumes for noninterior
-        assert(oldFaces.size() == newFaces.size());
-        for(unsigned int i = 0; i < oldFaces.size(); ++i) {
-          m_thicknesses[newFaces[i]] = m_thicknesses[oldFaces[i]];
-          m_volumes[newFaces[i]] = m_volumes[oldFaces[i]];
-        }
-    }else {//and for interior
-        assert(oldFaces.size() == 2);
-        assert(newFaces.size() == 4);
-
-        m_thicknesses[newFaces[0]] = m_thicknesses[oldFaces[0]];
-        m_thicknesses[newFaces[1]] = m_thicknesses[oldFaces[0]];
-        m_thicknesses[newFaces[2]] = m_thicknesses[oldFaces[1]];
-        m_thicknesses[newFaces[3]] = m_thicknesses[oldFaces[1]];
-
-        m_volumes[newFaces[0]] = m_volumes[newFaces[1]] = m_volumes[oldFaces[0]]/2.0;
-        m_volumes[newFaces[2]] = m_volumes[newFaces[3]] = m_volumes[oldFaces[1]]/2.0;
-
-    }
-
-    //Time to delete the extra tris
-    //Now delete all the extra things
-    // -all faces that were added to the newverts
-    // -all edges that were added to the newverts
-    for (int i = 0; i < (int)oldFaces.size(); ++i){
-        m_obj->deleteFace(oldFaces[i], false);
-    }
-    for (int i = 0; i < (int)oldEdges.size(); ++i){
-        m_obj->deleteEdge(oldEdges[i], false);
-    }
-
-#ifndef NDEBUG
-        //Check that the correct number of things was created
-//            std::cout << "\tFaces after: " << m_obj->nf() << std::endl;
-//            std::cout << "\tEdges after: " << m_obj->ne() << std::endl;
-//            std::cout << "\tVerts after: " << m_obj->nv() << std::endl;
-            if ( aBound && bBound){
-                assert( (facesBef - m_obj->nf()) == 0);
-                assert( (edgesBef - m_obj->ne()) == -1);
-                assert( (vertsBef - m_obj->nv()) == -2);
-            }
-            else if ( aBound || bBound ){
-                assert( (facesBef - m_obj->nf()) == 0);
-                assert( (edgesBef - m_obj->ne()) == -1);
-                assert( (vertsBef - m_obj->nv()) == -1);
-            }
-            else {
-                //Check that the correct number of things was created
-                assert( (facesBef - m_obj->nf()) == -2);
-                assert( (edgesBef - m_obj->ne()) == -7);
-                assert( (vertsBef - m_obj->nv()) == -4);
-            }
-#endif
-//    std::cout << "\tEdges at this point(after deleting): " << m_obj->ne() << std::endl;
-
-    for(int i = 0; i < (int) newFaces.size(); ++i){
-        setFaceActive(newFaces[i]);
-    }
-
-    //update collision data structures
-
-//    //add vertices
-//    m_broad_phase.add_vertex(v_new.idx(), ElTopo::toElTopo(midpoint), m_proximity_epsilon);
-//
-//    //add edges
-//    VertexEdgeIterator ve_iter = m_obj->ve_iter(v_new);
-//    for(; ve_iter; ++ve_iter) {
-//      std::vector<ElTopo::Vec3d> edge_verts;
-//      EdgeVertexIterator ev_iter = m_obj->ev_iter(*ve_iter);
-//      for(; ev_iter; ++ev_iter)
-//        edge_verts.push_back(ElTopo::toElTopo(getVertexPosition(*ev_iter)));
-//      m_broad_phase.add_edge((*ve_iter).idx(), edge_verts[0], edge_verts[1], m_proximity_epsilon);
-//    }
-//
-//    //add tris
-//    vf_iter = m_obj->vf_iter(v_new);
-//    for(;vf_iter; ++vf_iter) {
-//      std::vector<ElTopo::Vec3d> tri_verts;
-//      FaceVertexIterator fv_iter = m_obj->fv_iter(*vf_iter);
-//      for(; fv_iter; ++fv_iter)
-//        tri_verts.push_back(ElTopo::toElTopo(getVertexPosition(*fv_iter)));
-//      m_broad_phase.add_triangle((*vf_iter).idx(), tri_verts[0], tri_verts[1], tri_verts[2], m_proximity_epsilon);
-//    }
-
-//    new_vert = v_new;
-
-}
 bool ElasticShell::isInflow(const EdgeHandle & eh) const{
     bool isInflow = false;
     for(unsigned int i = 0; i < m_inflow_boundaries.size(); ++i) {
@@ -1218,18 +967,14 @@ bool ElasticShell::isInflow(const EdgeHandle & eh) const{
     }
     return isInflow;
 }
-void ElasticShell::getDesiredFractures(std::vector<EdgeHandle> & edges ){
-    for ( EdgeIterator eit = m_obj->edges_begin(); eit != m_obj->edges_end(); ++eit){
-        //Now look if it exceeds the threshold
-        if ( shouldFracture(*eit) ){
-           edges.push_back(*eit);
-        }
-    }
-}
+
+
 bool ElasticShell::shouldFracture (const EdgeHandle & eh) const{
+    
     //Ignore inflow edges
     if(isInflow(eh)) return false;
-    //Ignore constrain edges
+ 
+    //Ignore constrained edges
     if ( isConstrained(m_obj->fromVertex(eh)) || isConstrained(m_obj->toVertex(eh))) return false;
 
     //Ignore boundary edges
@@ -1238,8 +983,9 @@ bool ElasticShell::shouldFracture (const EdgeHandle & eh) const{
     //Get the average thickness weighted by areas for each edge
     Scalar thickness = 0.0;
     Scalar totalA = 0.0;
-    bool both_thin = true;
-    //bool both_safe_to_cut = true; //check if the triangle has at least two edges still attached.
+    
+    bool both_thin = true; //just check if all faces are thin
+
     for ( EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit){
         int face_nbr_count = 0;
         Scalar w = getArea(*efit);
@@ -1247,32 +993,16 @@ bool ElasticShell::shouldFracture (const EdgeHandle & eh) const{
         totalA += w;
         if(getThickness(*efit) > m_tear_thres)
           both_thin = false;
-        //FaceHandle cur_face = *efit;
-        //for(FaceEdgeIterator feit = m_obj->fe_iter(cur_face); feit; ++feit) {
-        //  EdgeHandle cur_edge = *feit;
-        //  if(cur_edge == eh) continue;
-        //  int incident_faces = m_obj->edgeIncidentFaces(cur_edge);
-        //  if(incident_faces > 1)  
-        //    ++face_nbr_count;
-        //}
-        //if(face_nbr_count < 2) {//try to avoid cutting the last edge in a face, in order to prevent disconnected triangles.
-        //  both_safe_to_cut = false;
-        //  break;
-        //}
-
+       
     }
     thickness /= totalA;
     Scalar p = (Scalar) rand() / (Scalar) RAND_MAX;
-//    return (thickness < m_tear_thres) && (m_obj->isBoundary(m_obj->fromVertex(eh)) || m_obj->isBoundary(m_obj->toVertex(eh)))
-//            && ( p <  m_tear_rand);
     
     return both_thin && (p <  m_tear_rand);
-    //return (both_safe_to_cut) && (both_thin)  && ( p <  m_tear_rand);
-    //return (both_safe_to_cut) && (thickness < m_tear_thres)  && ( p <  m_tear_rand);
 }
 
 
-void ElasticShell::remesh_new()
+void ElasticShell::remesh()
 {
 
   //Set up a SurfTrack, run remeshing, render the new mesh
@@ -1508,183 +1238,6 @@ void ElasticShell::remesh_new()
 }
 
 
-void ElasticShell::remesh( Scalar desiredEdge )
-{
-
-  //m_broad_phase.update_broad_phase_static(*m_obj, m_positions, m_collision_proximity);
-  
-  //Parameters adapted from Jiao et al. "Anisotropic Mesh Adaptation for Evolving Triangulated Surfaces"
-  Scalar ratio_R = 0.5;
-  Scalar ratio_r = 0.1;
-  
-  Scalar minEdge = ratio_R*desiredEdge; //L in the jiao paper
-  Scalar maxEdge = 1.5*desiredEdge; //S in the jiao paper
-
-  Scalar minAngle = 15.0*M_PI/180.0;
-  Scalar maxAngle = 160.0*M_PI/180.0;
-  
-  flipEdges();
-  splitEdges(desiredEdge, maxEdge, maxAngle);
-  collapseEdges(minAngle, desiredEdge, ratio_R, ratio_r, minEdge);
-  
-}
-
-void ElasticShell::flipEdges() {
-
-  EdgeIterator e_it = m_obj->edges_begin();
-  for(;e_it != m_obj->edges_end(); ++e_it) {
-    EdgeHandle eh = *e_it;
-
-    bool isInflow = this->isInflow(eh);
-
-    if(isInflow) continue;
-
-    //if either of the faces has a spring stuck to it, don't flip!
-    bool springAttached = false;
-    for(EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit) {
-      FaceHandle fh = *efit;
-      if(m_repulsion_springs->isFaceInUse(fh))
-        springAttached = true;    
-    }
-    if(springAttached) continue;
-
-    VertexHandle v0 = m_obj->fromVertex(eh);
-    VertexHandle v1 = m_obj->toVertex(eh);
-    assert(v0!=v1);
-    Vec3d p0 = getVertexPosition(v0);
-    Vec3d p1 = getVertexPosition(v1);
-    VertexHandle v2, v3;
-    Scalar edgeLength = (p1-p0).norm();
-    bool success = getEdgeOppositeVertices(*m_obj, eh, v2, v3);
-    if(!success) continue;
-
-
-    Vec3d p2 = getVertexPosition(v2);
-    Vec3d p3 = getVertexPosition(v3);
-    Scalar oppEdgeLength = (p3-p2).norm();
-
-    Vec3d dir0 = p0-p2, dir1 = p1 - p2;
-    Scalar angle0 = acos(dir0.dot(dir1));
-
-    dir0 = p0-p3; dir1 = p1 - p3;
-    Scalar angle1 = acos(dir0.dot(dir1));
-    
-    if(angle0 + angle1 > M_PI) {
-
-      //check area of proposed tris
-      Scalar area0 = (p2-p0).cross(p3-p0).norm();
-      if(area0 < 1e-12) continue;
-      Scalar area1 = (p2-p1).cross(p3-p1).norm();
-      if(area1 < 1e-12) continue;
-      EdgeHandle newEdge;
-      performFlip(eh, newEdge);
-    }
-  }
-
-}
-
-
-
-struct SortableEdge
-{
-  EdgeHandle edge_hnd;
-  double edge_length;
-
-  SortableEdge( EdgeHandle eh, double el ) : edge_hnd(eh), edge_length(el) {}
-
-  bool operator<( const SortableEdge& other ) const
-  {
-    return (this->edge_length < other.edge_length);
-  }
-};
-bool ElasticShell::splitEdges( double desiredEdge, double maxEdge, double maxAngle) {
-
-  //sort edges in order of length, so we split long ones first
-  std::vector<SortableEdge> sortable_edges_to_try;
-  
-  EdgeIterator e_it = m_obj->edges_begin();
-  for(;e_it != m_obj->edges_end(); ++e_it) {   
-    
-    EdgeHandle eh = *e_it;
-
-    VertexHandle vertex_a = m_obj->fromVertex(eh);
-    VertexHandle vertex_b = m_obj->toVertex(eh);
-
-    if ( !m_obj->edgeExists(eh) || !isEdgeActive(eh))   { continue; }     // skip inactive/non-existent edges
-    
-    //skip edges that are flowing into the domain
-    bool isConstrained = isInflow(eh);
-
-    //don't split constrained edges. (alternatively, we could split them, and add the new vert to the constrained list.)
-    bool aConstrained = this->isConstrained(vertex_a);
-    bool bConstrained = this->isConstrained(vertex_b);
-
-
-//    //don't split constrained edges. (alternatively, we could split them, and add the new vert to the constrained list somehow.)
-//    bool aConstrained = false, bConstrained = false;
-//
-//    for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
-//      if(m_constrained_vertices[i] == vertex_a)
-//        aConstrained = true;
-//      if(m_constrained_vertices[i] == vertex_b)
-//        bConstrained = true;
-//    }
-
-    if(aConstrained && bConstrained || isConstrained) continue;
-
-    //don't split faces that have springs attached (for now).
-    bool facesHaveSprings = false;
-    for(EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit) {
-      FaceHandle fh = *efit;
-      if(m_repulsion_springs->isFaceInUse(fh)) {
-        facesHaveSprings = true;
-        break;
-      }
-    }
-    if(facesHaveSprings) continue;
-    
-    assert( m_obj->vertexExists(vertex_a) );
-    assert( m_obj->vertexExists(vertex_b) );
-
-    double current_length = (m_positions[ vertex_a ] - m_positions[ vertex_b ]).norm();
-
-    if ( current_length > maxEdge ) {
-      sortable_edges_to_try.push_back( SortableEdge( eh, current_length ) );
-    }
-  }
-
-  
-  //sort into ascending order
-  std::sort( sortable_edges_to_try.begin(), sortable_edges_to_try.end() );
-  bool anySplits = false;
-
-  //iterate from biggest to smallest (end to start)
-  for(int i = sortable_edges_to_try.size()-1; i >= 0; --i) {
-
-    EdgeHandle eh = sortable_edges_to_try[i].edge_hnd;
-    
-    bool isConstrained = false;
-    for(unsigned int i = 0; i < m_inflow_boundaries.size(); ++i) {
-      if(std::find(m_inflow_boundaries[i].begin(), m_inflow_boundaries[i].end(),eh) != m_inflow_boundaries[i].end()) {
-        isConstrained = true;
-        break;
-      }
-    }
-    if(isConstrained) continue;
-
-    if ( !m_obj->edgeExists(eh) || !isEdgeActive(eh))   { continue; }
-    if(isSplitDesired(eh, maxEdge, desiredEdge, maxAngle)) {
-    
-      VertexHandle newVert;
-      bool splitSuccess = performSplit(eh, newVert);
-      
-      //if the edge was constrained, constrain this vertex
-      anySplits |= splitSuccess;
-    }
-  }
-  
-  return anySplits;
-}
 
 bool ElasticShell::isConstrained(const VertexHandle& v) const {
   for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i)
@@ -1693,102 +1246,7 @@ bool ElasticShell::isConstrained(const VertexHandle& v) const {
   return false;
 }
 
-
-bool ElasticShell::isSplitDesired(const EdgeHandle& eh, double maxEdge, double desiredEdge, double maxAngle) {
-
-  Scalar sEdge = 0.25*desiredEdge;
-
-  VertexHandle v0 = m_obj->fromVertex(eh);
-  VertexHandle v1 = m_obj->toVertex(eh);
-  //don't split constrained edges. (alternatively, we could split them, and add the new vert to the constrained list.)
-  
-  bool aConstrained = false, bConstrained = false;
-  for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
-    if(m_constrained_vertices[i] == v0)
-      aConstrained = true;
-    if(m_constrained_vertices[i] == v1)
-      bConstrained = true;
-  }
-
-  if(aConstrained && bConstrained) return false;
-
-  assert(v0!=v1);
-  Vec3d p0 = getVertexPosition(v0);
-  Vec3d p1 = getVertexPosition(v1);
-  Scalar edgeLength = (p1-p0).norm();
-  bool doSplit = false;
-
-  if(edgeLength > maxEdge) {
-    //"Absolute longness"
-
-    //only do the split if the adjacent faces have no edges longer than this one.
-    bool edgeLongest = true;
-    for(EdgeFaceIterator ef_it = m_obj->ef_iter(eh); ef_it && edgeLongest; ++ef_it) {
-      for(FaceEdgeIterator fe_it = m_obj->fe_iter(*ef_it); fe_it; ++fe_it) {
-        EdgeHandle otherEdge = *fe_it;
-        if(otherEdge == eh) continue;
-
-        Scalar otherLen = (getVertexPosition(m_obj->fromVertex(otherEdge)) - getVertexPosition(m_obj->toVertex(otherEdge))).norm();
-        if(otherLen > edgeLength) {
-          edgeLongest = false;
-          break;
-        }
-      }
-    }
-    if(!edgeLongest) return false;
-
-    doSplit = true;
-  }
-
-  
-  if(!doSplit && edgeLength > desiredEdge) {
-
-    //Additional criterion from Jiao et al. - Brochu uses just the above
-
-    //"Relative longness"
-    VertexHandle opp0, opp1;
-    getEdgeOppositeVertices(*m_obj, eh, opp0, opp1);
-    bool bothAnglesSmall = true;
-    if(opp0.isValid()) {
-      Vec3d p2 = getVertexPosition(opp0);
-      Vec3d dir0 = p0-p2, dir1 = p1 - p2;
-      Scalar angle0 = acos(dir0.dot(dir1));
-      if(angle0 > maxAngle)
-        bothAnglesSmall = false;
-    }
-    if(opp1.isValid()) {
-      Vec3d p3 = getVertexPosition(opp1);
-      Vec3d dir0 = p0-p3, dir1 = p1 - p3;
-      Scalar angle1 = acos(dir0.dot(dir1));
-      if(angle1 > maxAngle)
-        bothAnglesSmall = false;
-    }
-
-    if(!bothAnglesSmall) {
-      //check if shortest edge is above a threshold
-      Scalar shortestEdge = 100*maxEdge;
-      for(EdgeFaceIterator ef_it = m_obj->ef_iter(eh); ef_it; ++ef_it) {
-        for(FaceEdgeIterator fe_it = m_obj->fe_iter(*ef_it); fe_it; ++fe_it) {
-          EdgeHandle otherEdge = *fe_it;
-
-          if(!otherEdge.isValid())continue;
-
-          Scalar otherLen = (getVertexPosition(m_obj->fromVertex(otherEdge)) - getVertexPosition(m_obj->toVertex(otherEdge))).norm();
-          if(otherLen < shortestEdge) {
-            shortestEdge = otherLen;
-          }
-        }
-      }
-      if(shortestEdge > sEdge) {
-        doSplit = true;
-      }
-    }
-  }
-  
-
-  return doSplit;
-}
-
+/*
 bool ElasticShell::performSplit(const EdgeHandle& eh, VertexHandle& new_vert) {
   
   VertexHandle v0 = m_obj->fromVertex(eh);
@@ -1857,6 +1315,7 @@ bool ElasticShell::performSplit(const EdgeHandle& eh, VertexHandle& new_vert) {
   new_vert = v_new;
   return true;
 }
+*/
 
 void ElasticShell::performSplitET(const EdgeHandle& eh, const Vec3d& midpoint, VertexHandle& new_vert) {
 
@@ -2022,539 +1481,7 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, EdgeHandle& newEdge) {
     return true;
 }
 
-void ElasticShell::updateBroadPhaseStatic(const VertexHandle& vertex_a) 
-{
 
-  //update the broad phase grid to reflect the fact that two of the vertices are moving
-  //i.e. change their bounding boxes to include their whole motion, while all other data
-  //has just static bound boxes.
-
-  ElTopoCode::Vec3d offset(m_proximity_epsilon, m_proximity_epsilon, m_proximity_epsilon);
-  ElTopoCode::Vec3d low, high;
-  
-  //update vertices bounding box to include pseudomotion
-  ElTopoCode::Vec3d pos = ElTopoCode::toElTopo(m_positions[vertex_a]);
-  m_broad_phase.update_vertex( vertex_a.idx(), pos + offset, pos - offset);
-
-  for ( VertexEdgeIterator veit = m_obj->ve_iter(vertex_a); veit; ++veit)
-  {
-    //get current edge pos
-    EdgeHandle eh = *veit;
-    VertexHandle vha = m_obj->fromVertex(eh);
-    VertexHandle vhb = m_obj->toVertex(eh);
-    ElTopoCode::Vec3d pa = ElTopoCode::toElTopo(m_positions[vha]);
-    ElTopoCode::Vec3d pb = ElTopoCode::toElTopo(m_positions[vhb]);
-    ElTopoCode::minmax(pa, pb, low, high);
-
-    m_broad_phase.update_edge( (*veit).idx(), low, high );
-  }
-
-  for ( VertexFaceIterator vfit = m_obj->vf_iter(vertex_a); vfit; ++vfit )
-  {
-    //get current tri pos
-    FaceHandle fh = *vfit;
-    int c = 0;
-    for(FaceVertexIterator fvit = m_obj->fv_iter(fh); fvit; ++fvit, ++c) {
-      VertexHandle vha = *fvit;
-      ElTopoCode::Vec3d pa = ElTopoCode::toElTopo(m_positions[vha]);
-      if(c == 0)
-        low = high = pa;
-      else
-        ElTopoCode::update_minmax(pa, low, high);
-    }
-
-    m_broad_phase.update_triangle( (*vfit).idx(), low, high );
-  }
-  
-}
-
-void ElasticShell::updateBroadPhaseForCollapse(const VertexHandle& vertex_a, const ElTopoCode::Vec3d& new_pos_a, 
-                                               const VertexHandle& vertex_b, const ElTopoCode::Vec3d& new_pos_b) 
-{
-
-  //update the broad phase grid to reflect the fact that two of the vertices are moving
-  //i.e. change their bounding boxes to include their whole motion, while all other data
-  //has just static bound boxes.
-
-  ElTopoCode::Vec3d offset(m_proximity_epsilon, m_proximity_epsilon, m_proximity_epsilon);
-  ElTopoCode::Vec3d low, high;
-
-  VertexHandle verts[2] = {vertex_a, vertex_b};
-  ElTopoCode::Vec3d verts_pos[2] = {new_pos_a, new_pos_b};
-
-  for(int i = 0; i < 2; ++i) {
-    //update vertices bounding box to include pseudomotion
-    ElTopoCode::minmax(ElTopoCode::toElTopo(m_positions[verts[i]]), verts_pos[i], low, high);
-    low -= offset; high += offset;
-    m_broad_phase.update_vertex( verts[i].idx(), low, high );
-
-    for ( VertexEdgeIterator veit = m_obj->ve_iter(verts[i]); veit; ++veit)
-    {
-      //get current edge pos
-      EdgeHandle eh = *veit;
-      VertexHandle vha = m_obj->fromVertex(eh);
-      VertexHandle vhb = m_obj->toVertex(eh);
-      ElTopoCode::Vec3d pa = ElTopoCode::toElTopo(m_positions[vha]);
-      ElTopoCode::Vec3d pb = ElTopoCode::toElTopo(m_positions[vhb]);
-      ElTopoCode::minmax(pa, pb, low, high);
-      
-      //check if either vertex moved, and if so, add the position to the bound box
-      for(int j = 0; j < 2; ++j) {
-        if(vha == verts[j]) {
-          ElTopoCode::update_minmax(verts_pos[j], low, high);
-        }
-        if(vhb == verts[j]) {
-          ElTopoCode::update_minmax(verts_pos[j], low, high);
-        }
-      }
-      
-      m_broad_phase.update_edge( (*veit).idx(), low, high );
-    }
-
-    for ( VertexFaceIterator vfit = m_obj->vf_iter(verts[i]); vfit; ++vfit )
-    {
-      //get current tri pos
-      FaceHandle fh = *vfit;
-      int c = 0;
-      for(FaceVertexIterator fvit = m_obj->fv_iter(fh); fvit; ++fvit, ++c) {
-        VertexHandle vha = *fvit;
-        ElTopoCode::Vec3d pa = ElTopoCode::toElTopo(m_positions[vha]);
-        if(c == 0)
-          low = high = pa;
-        else
-          ElTopoCode::update_minmax(pa, low, high);
-      }
-
-      //check if any vertex moved, and if so, add that position to the bound box
-      for(int j = 0; j < 2; ++j) {
-        for(FaceVertexIterator fvit = m_obj->fv_iter(fh); fvit; ++fvit) {
-          VertexHandle vha = *fvit;
-          if(vha == verts[j]) {
-            ElTopoCode::update_minmax(verts_pos[j], low, high);
-          }
-        }
-      }
-
-      m_broad_phase.update_triangle( (*vfit).idx(), low, high );
-    }
-  }
-}
-
-// --------------------------------------------------------
-///
-/// Continuous collision detection between two triangles.  Duplicates collision detection, so 
-/// should be used rarely, and only when inconvenient to run edge-edge and point-tri tests individually.
-///
-// --------------------------------------------------------
-
-bool ElasticShell::checkTriangleVsTriangleCollisionForCollapse( const FaceHandle& triangle_a, const FaceHandle& triangle_b,  
-                                                               const VertexHandle& source_vert, const VertexHandle& dest_vert,
-                                                               ElTopoCode::Vec3d new_position)
-{
-  // --------------------------------------------------------
-  // Point-triangle
-  // --------------------------------------------------------
-
-  // one point from triangle_a vs triangle_b
-
-  for ( FaceVertexIterator fvit = m_obj->fv_iter(triangle_a); fvit; ++fvit)
-  {
-    VertexHandle vertex_0 = *fvit;
-    
-    VertexHandle vert_ids[3];
-    ElTopoCode::Vec3d vert_pos[3];
-    ElTopoCode::Vec3d new_vert_pos[3];
-
-    int c = 0;
-    bool shared_vert = false;
-    for(FaceVertexIterator fvit2 = m_obj->fv_iter(triangle_b); fvit2; ++fvit2, ++c) {
-      VertexHandle v = *fvit2;
-      if(v == vertex_0) {
-        shared_vert = true;
-        break;
-      }
-      vert_ids[c] = v;
-      vert_pos[c] = ElTopoCode::toElTopo(m_positions[vert_ids[c]]);
-      new_vert_pos[c] = (v == source_vert || v == dest_vert)? new_position : vert_pos[c];
-    }
-
-    if(shared_vert) continue;
-  
-    ElTopoCode::Vec3d vert_0_pos, vert_0_newpos;
-    vert_0_pos = ElTopoCode::toElTopo(m_positions[ vertex_0 ]);
-    vert_0_newpos = (vertex_0 == source_vert || vertex_0 == dest_vert)? new_position : vert_0_pos;
-
-    if ( ElTopoCode::point_triangle_collision(  
-      vert_0_pos, vert_0_newpos, vertex_0.idx(),
-      vert_pos[0], new_vert_pos[0], vert_ids[0].idx(), 
-      vert_pos[1], new_vert_pos[1], vert_ids[1].idx(),
-      vert_pos[2], new_vert_pos[2], vert_ids[2].idx() ) )
-
-    {
-      return true;
-    }
-  }
-
-  // one point from triangle_b vs triangle_a
-
-  for ( FaceVertexIterator fvit = m_obj->fv_iter(triangle_b); fvit; ++fvit)
-  {
-    VertexHandle vertex_0 = *fvit;
-
-    VertexHandle vert_ids[3];
-    ElTopoCode::Vec3d vert_pos[3];
-    ElTopoCode::Vec3d new_vert_pos[3];
-
-    int c = 0;
-    bool shared_vert = false;
-    for(FaceVertexIterator fvit2 = m_obj->fv_iter(triangle_a); fvit2; ++fvit2, ++c) {
-      VertexHandle v = *fvit2;
-      if(v == vertex_0) {
-        shared_vert = true;
-        break;
-      }
-      vert_ids[c] = v;
-      vert_pos[c] = ElTopoCode::toElTopo(m_positions[vert_ids[c]]);
-      new_vert_pos[c] = (v == source_vert || v == dest_vert)? new_position : vert_pos[c];
-    }
-
-    if(shared_vert) continue;
-
-    ElTopoCode::Vec3d vert_0_pos, vert_0_newpos;
-    vert_0_pos = ElTopoCode::toElTopo(m_positions[ vertex_0 ]);
-    vert_0_newpos = (vertex_0 == source_vert || vertex_0 == dest_vert)? new_position : vert_0_pos;
-
-    if ( ElTopoCode::point_triangle_collision(  
-      vert_0_pos, vert_0_newpos, vertex_0.idx(),
-      vert_pos[0], new_vert_pos[0], vert_ids[0].idx(), 
-      vert_pos[1], new_vert_pos[1], vert_ids[1].idx(),
-      vert_pos[2], new_vert_pos[2], vert_ids[2].idx() ) )
-
-    {
-      return true;
-    }
-  }
-
-
-
-  // --------------------------------------------------------
-  // edge-edge
-  // --------------------------------------------------------
-  
- 
-  for ( FaceEdgeIterator feit = m_obj->fe_iter(triangle_a); feit; ++feit)
-  {
-
-    EdgeHandle edge_0 = *feit;
-    
-    // one edge
-    VertexHandle vertex_0 = m_obj->fromVertex(edge_0);
-    VertexHandle vertex_1 = m_obj->toVertex(edge_0);
-
-    for ( FaceEdgeIterator feit2 = m_obj->fe_iter(triangle_b); feit2; ++feit2)
-    {
-      
-      EdgeHandle edge_1 = *feit2;
-
-      // another edge
-      VertexHandle vertex_2 = m_obj->fromVertex(edge_1);
-      VertexHandle vertex_3 = m_obj->toVertex(edge_1);
-
-      if ( vertex_0 == vertex_2 || vertex_0 == vertex_3 || vertex_1 == vertex_2 || vertex_1 == vertex_3 )
-      {
-        continue;
-      }
-
-      VertexHandle vert_ids[4] = {vertex_0, vertex_1, vertex_2, vertex_3};
-      ElTopoCode::Vec3d vert_pos[4], new_vert_pos[4];
-      for(int c = 0; c < 4; ++c) {
-        VertexHandle v = vert_ids[c];
-        vert_pos[c] = ElTopoCode::toElTopo(m_positions[vert_ids[c]]);
-        new_vert_pos[c] = (v == source_vert || v == dest_vert)? new_position : vert_pos[c];
-      }
-
-      if ( ElTopoCode::segment_segment_collision(  
-        vert_pos[0], new_vert_pos[0], vertex_0.idx(), 
-        vert_pos[1], new_vert_pos[1], vertex_1.idx(),
-        vert_pos[2], new_vert_pos[2], vertex_2.idx(),
-        vert_pos[3], new_vert_pos[3], vertex_3.idx() ) )               
-      {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double ratio_R, double ratio_r, double minEdge) {
-  int count = 0;
-
-  EdgeIterator e_it = m_obj->edges_begin();
-  for(;e_it != m_obj->edges_end(); ++e_it) {
-
-    EdgeHandle eh = *e_it;
-
-    VertexHandle v0 = m_obj->fromVertex(eh);
-    VertexHandle v1 = m_obj->toVertex(eh);
-    assert(v0!=v1);
-    Vec3d p0 = getVertexPosition(v0);
-    Vec3d p1 = getVertexPosition(v1);
-    Scalar edgeLength = (p1-p0).norm();
-
-    bool doCollapse = false;
-
-    //"Absolute small angle", "Relative shortness", "Absolute small angle", "Relative small triangle"
-    bool smallAngle = false;
-    bool relativeShortness = false;
-    bool isSmallest = true;
-    Scalar longestEdgeAll = 0;
-    for(EdgeFaceIterator ef_iter = m_obj->ef_iter(eh); ef_iter; ++ef_iter) {
-      Scalar longestEdge = edgeLength;
-      for(FaceEdgeIterator fe_iter = m_obj->fe_iter(*ef_iter); fe_iter; ++fe_iter) {
-        EdgeHandle edge_other = *fe_iter;
-        if(edge_other == eh) continue;
-
-        VertexHandle fromV = m_obj->fromVertex(edge_other);
-        VertexHandle toV = m_obj->toVertex(edge_other);
-        Scalar thisLength = (getVertexPosition(fromV) - getVertexPosition(toV)).norm();
-        longestEdge = std::max(longestEdge, thisLength);
-        if(thisLength < edgeLength)
-          isSmallest = false;
-        if(smallAngle) continue;
-
-        VertexHandle oppV = fromV == v0 || fromV == v1 ? toV : fromV;
-        Vec3d p2 = getVertexPosition(oppV);
-        Vec3d dir0 = p0-p2, dir1 = p1 - p2;
-        Scalar angle0 = acos(dir0.dot(dir1));
-        if(angle0 < minAngle) {
-          smallAngle = true;
-        }
-      }
-
-      longestEdgeAll = std::max(longestEdgeAll, longestEdge);
-
-      if(smallAngle && longestEdge < desiredEdge) //absolute shortness
-        doCollapse = true;
-
-    }
-
-    if(longestEdgeAll < desiredEdge && edgeLength < ratio_R*longestEdgeAll) //Relative small triangle
-      doCollapse = true;
-
-    if(edgeLength < ratio_r*longestEdgeAll) //relative shortness
-      doCollapse = true;
-
-    if(isSmallest && longestEdgeAll < minEdge) //absolute small angle
-      doCollapse = true;
-
-
-    if(doCollapse) {
-      
-      bool isInflow = false;
-      for(unsigned int i = 0; i < m_inflow_boundaries.size(); ++i) {
-        if(std::find(m_inflow_boundaries[i].begin(), m_inflow_boundaries[i].end(),eh) != m_inflow_boundaries[i].end()) {
-          isInflow = true;
-          break;
-        }
-      }
-      if(isInflow) continue;
-      
-      
-      //don't collapse faces that have springs attached (for now).
-      bool facesHaveSprings = false;
-      for(EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit) {
-        FaceHandle fh = *efit;
-        if(m_repulsion_springs->isFaceInUse(fh)) {
-          facesHaveSprings = true;
-          break;
-        }
-      }
-      if(facesHaveSprings) continue;
-
-      
-      //don't collapse a constrained vertex
-      bool v0_pinned = false,v1_pinned = false;
-      for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
-        if(v0 == m_constrained_vertices[i])
-          v0_pinned = true;
-        if(v1 == m_constrained_vertices[i])
-          v1_pinned = true;
-      }
-
-      
-      //check if either point is on the boundary
-      bool v0_bdry, v1_bdry;
-      v0_bdry = isVertexOnBoundary(*m_obj, v0);
-      v1_bdry = isVertexOnBoundary(*m_obj, v1);
-
-      Vec3d newPoint, newVel, newUndef;
-      if(v0_bdry && v1_bdry) continue; //both verts on the boundary, don't collapse!
-      
-      if(v0_pinned && v1_pinned) continue; //both verts pinned, don't collapse
-      
-      //TODO What about when one is boundary, and the other is pinned?
-
-      VertexHandle vert_to_remove, vert_to_keep;
-      
-      std::vector<VertexHandle> options_remove_point; options_remove_point.reserve(3);
-      std::vector<VertexHandle> options_keep_point; options_keep_point.reserve(3);
-      std::vector<Vec3d> options_new_pos; options_new_pos.reserve(3);
-      std::vector<Vec3d> options_new_vel; options_new_vel.reserve(3);
-      std::vector<Vec3d> options_new_undef; options_new_undef.reserve(3);
-      if(v0_bdry || v0_pinned) {
-        options_remove_point.push_back(v1);
-        options_keep_point.push_back(v0);
-        options_new_pos.push_back(p0);
-        options_new_vel.push_back(getVertexVelocity(v0));
-        options_new_undef.push_back(getVertexUndeformed(v0));
-      }
-      else if(v1_bdry || v1_pinned) {
-        vert_to_remove = v0;
-        vert_to_keep = v1;
-        options_remove_point.push_back(v0);
-        options_keep_point.push_back(v1);
-        options_new_pos.push_back(p1);
-        options_new_vel.push_back(getVertexVelocity(v1));
-        options_new_undef.push_back(getVertexUndeformed(v1));
-      }
-      else { //either one works, so consider several options in case one or more is bad!
-        //use average point
-        options_remove_point.push_back(v0);
-        options_keep_point.push_back(v1);
-        options_new_pos.push_back(0.5f*(p0+p1));
-        options_new_vel.push_back(0.5*(getVertexVelocity(v0) + getVertexVelocity(v1)));
-        options_new_undef.push_back(0.5*(getVertexUndeformed(v0) + getVertexUndeformed(v1)));
-
-        //use point 0
-        options_remove_point.push_back(v0);
-        options_keep_point.push_back(v1);
-        options_new_pos.push_back(p1);
-        options_new_vel.push_back(getVertexVelocity(v1));
-        options_new_undef.push_back(getVertexUndeformed(v1));
-
-        //use point 1
-        options_remove_point.push_back(v1);
-        options_keep_point.push_back(v0);
-        options_new_pos.push_back(p0);
-        options_new_vel.push_back(getVertexVelocity(v0));
-        options_new_undef.push_back(getVertexUndeformed(v0));
-      }
-
-      bool collapseOkay = false;
-      int choice = 0;
-      /*
-      while(!collapseOkay && choice < (int)options_remove_point.size()) {
-        
-        //assume good until proven bad
-        collapseOkay = true;
-        
-        //compute expected areas and normals of all faces involved in the collapse,
-        //to ensure no areas go near zero and no normals get badly flipped
-        VertexHandle firstVert = options_keep_point[choice];
-        VertexHandle secondVert = options_remove_point[choice];
-
-        for(VertexFaceIterator vfit = m_obj->vf_iter(firstVert); vfit; ++vfit) {
-          FaceHandle faceToCheck = *vfit;
-          Vec3d faceVerts[3];
-          Vec3d faceVertsNew[3];
-          int vNo = 0;
-          bool collapsingTri = false;
-          for(FaceVertexIterator fvit = m_obj->fv_iter(faceToCheck); fvit; ++fvit) {
-            VertexHandle curVert = *fvit;
-            if(curVert == secondVert) {
-              collapsingTri = true;
-              break;
-            }
-            faceVerts[vNo] = m_positions[curVert];
-            faceVertsNew[vNo] = (curVert == firstVert) ? options_new_pos[choice] : m_positions[curVert];
-            ++vNo;
-          }
-          if(collapsingTri) continue;
-
-          Vec3d normalOld = (faceVerts[2] - faceVerts[0]).cross(faceVerts[1]-faceVerts[0]);
-          Scalar areaOld = fabs(normalOld.norm())/2;
-
-          Vec3d normalNew = (faceVertsNew[2] - faceVertsNew[0]).cross(faceVertsNew[1]-faceVertsNew[0]);
-          Scalar areaNew = fabs(normalNew.norm())/2;
-          if(areaNew < 0.0001 * square(m_remesh_edge_length)) {
-            collapseOkay = false;
-            std::cout << "Prevented small area collapse\n";
-            break;
-          }
-          if(normalOld.dot(normalNew) <= 0) {//direction flip, don't do it!
-            collapseOkay = false;
-            std::cout << "Prevented direction flip collapse\n";
-            break;
-          }
-        }
-
-        if(!collapseOkay) {
-          ++choice;
-          continue;
-        }
-
-        //TODO Refactor redundant code.
-        //compute expected areas and normals of all faces involved in the collapse,
-        //to ensure no areas go near zero and no normals get badly flipped
-        for(VertexFaceIterator vfit = m_obj->vf_iter(secondVert); vfit; ++vfit) {
-          FaceHandle faceToCheck = *vfit;
-          Vec3d faceVerts[3];
-          Vec3d faceVertsNew[3];
-          int vNo = 0;
-          bool collapsingTri = false;
-          for(FaceVertexIterator fvit = m_obj->fv_iter(faceToCheck); fvit; ++fvit) {
-            VertexHandle curVert = *fvit;
-            if(curVert == firstVert) {
-              collapsingTri = true;
-              break;
-            }
-            faceVerts[vNo] = m_positions[curVert];
-            faceVertsNew[vNo] = (curVert == secondVert) ? options_new_pos[choice] : m_positions[curVert];
-            ++vNo;
-          }
-          if(collapsingTri) continue;
-          Vec3d normalOld = (faceVerts[2] - faceVerts[0]).cross(faceVerts[1]-faceVerts[0]);
-          Scalar areaOld = fabs(normalOld.norm())/2;
-
-          Vec3d normalNew = (faceVertsNew[2] - faceVertsNew[0]).cross(faceVertsNew[1]-faceVertsNew[0]);
-          Scalar areaNew = fabs(normalNew.norm())/2;
-
-          if(areaNew < 0.0001 * square(m_remesh_edge_length)) {
-            collapseOkay = false;
-            std::cout << "Prevented small area collapse\n";
-            break;
-          }
-          if(normalOld.dot(normalNew) <= 0) {//direction flip, don't do it!
-            collapseOkay = false;
-            std::cout << "Prevented direction flip collapse\n";
-            break;
-          }
-        }
-
-        if(!collapseOkay) {
-          ++choice;
-          continue;
-        }
-      }
-      
-      if(choice == options_keep_point.size()) continue; //none of the options was tolerable, so skip it.
-      */
-
-      //pick out the one we liked.
-      vert_to_keep = options_keep_point[choice];
-      vert_to_remove = options_remove_point[choice];
-      newPoint = options_new_pos[choice];
-      newVel = options_new_vel[choice];
-      newUndef = options_new_undef[choice];
-     
-
-      performCollapse(eh, vert_to_remove, vert_to_keep, newPoint);
-
-
-    }
-  }
-}
 
 void ElasticShell::updateThickness() {
   FaceIterator fit = m_obj->faces_begin();
@@ -2574,7 +1501,6 @@ void ElasticShell::updateThickness() {
     Scalar newThickness = m_volumes[f] / area;
     m_thicknesses[f] = newThickness;
   }
-
 
 }
 
@@ -2819,15 +1745,6 @@ void ElasticShell::setDeletionBox(const Vec3d& lowerBound, const Vec3d& upperBou
     m_delete_upper = upperBound;
     m_delete_region = true;
 }
-/*
-void ElasticShell::setMass( const DofHandle& hnd, const Scalar& mass )
-{
-  assert(hnd.getType() == DofHandle::VERTEX_DOF);
-
-  const VertexHandle vh = static_cast<const VertexHandle&>(hnd.getHandle());
-  m_vertex_masses[vh] = mass;
-}
-*/
 
 
 } //namespace BASim
