@@ -777,8 +777,8 @@ void ElasticShell::fracture() {
   construction_parameters.m_min_edge_length = 0.5*m_remesh_edge_length;
   construction_parameters.m_max_edge_length = 1.5*m_remesh_edge_length;
   construction_parameters.m_max_volume_change = numeric_limits<double>::max();   
-  construction_parameters.m_min_triangle_angle = 5;
-  construction_parameters.m_max_triangle_angle = 175;
+  construction_parameters.m_min_triangle_angle = 15;
+  construction_parameters.m_max_triangle_angle = 165;
   construction_parameters.m_verbose = false;
 
   construction_parameters.m_use_curvature_when_collapsing = false;
