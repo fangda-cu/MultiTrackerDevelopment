@@ -1057,7 +1057,7 @@ bool EdgeSplitter::edge_is_splittable2( size_t edge_index )
 
   // skip deleted and solid edges
   if ( m_surf.m_mesh.edge_is_deleted(edge_index) ) { return false; }
-  if ( m_surf.edge_is_any_solid(edge_index) ) { return false; }
+  if ( m_surf.edge_is_all_solid(edge_index) ) { return false; }
 
   return true;
 
