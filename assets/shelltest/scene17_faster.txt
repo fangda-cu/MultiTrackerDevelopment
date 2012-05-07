@@ -1,7 +1,7 @@
 #bunny drape
 
 shell-scene 17
-dt 0.002	# time-step size
+dt 0.005	# time-step size
 
 gravity 0 -9.81 0	# gravity
 
@@ -40,7 +40,7 @@ shell-x-resolution 60	# the number of segments along the horizontal edge
 shell-y-resolution 60	# the number of segments along the vertical edge
 
 iterations 100	# maximum number of iterations for the implicit method
-atol 1e-009# absolute convergence tolerance
-rtol 1e-008	# relative convergence tolerance
-atol 1e-008	# absolute convergence tolerance
-stol 1e-008	# convergence tolerance in terms of the norm of the change in the solution between steps
+atol 1e-0012	# absolute convergence tolerance of L2 norm
+rtol 1e-0012	# relative convergence tolerance of L2 norm
+stol 1e-0012	# convergence tolerance in terms of the L2 norm of the change in the solution between steps
+inftol 1e-0012 	# absolute convergence tolerance in L_inf norm

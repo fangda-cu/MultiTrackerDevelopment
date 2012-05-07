@@ -1,6 +1,8 @@
 #Sphere tearing through falling sheet
 
 generate-PLY false
+generate-OBJ true
+max-time 600
 
 shell-scene 19
 dt 0.25	# time-step size

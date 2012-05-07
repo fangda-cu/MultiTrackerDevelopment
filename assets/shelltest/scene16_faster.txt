@@ -1,5 +1,6 @@
 #Enrobing process
 
+max-time 1800
 
 shell-scene 16
 dt 5	# time-step size
