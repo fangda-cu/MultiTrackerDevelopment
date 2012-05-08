@@ -1024,10 +1024,6 @@ void ElasticShell::remesh()
   //construction_parameters.m_max_curvature_multiplier = 1000;
   //construction_parameters.m_min_curvature_multiplier = 1.0;
 
-  //TODO If we try using other subdivision schemes for splitting edges
-  //note that the manner in which the edge split operation is performed
-  //will need to be adjusted to properly preserve total volume.
-
   std::vector<ElTopo::Vec3d> vert_data;
   std::vector<ElTopo::Vec3st> tri_data;
   std::vector<Scalar> masses;

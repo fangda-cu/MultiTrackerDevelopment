@@ -172,7 +172,8 @@ void ShellVolumeForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) cons
 
   }
   
-  //TODO This Jacobian isn't quite right (lacks the second term), but maybe it'll work anyway?
+  //TODO This Jacobian isn't quite right (lacks the second term), 
+  //I guess that makes it a Gauss-Newton approximation?
  
   
 }

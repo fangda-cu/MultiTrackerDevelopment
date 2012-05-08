@@ -56,7 +56,6 @@ public:
     /// Split edges opposite large angles
     ///
     bool large_angle_split_pass();
-    bool large_angle_split_pass2();
     
 
     /// Maximum edge length.  Edges longer than this will be subdivided.
@@ -100,16 +99,6 @@ private:
     /// Determine if the pseudo-trajectory of the new vertex has a collision with the existing mesh.
     ///
     bool split_edge_pseudo_motion_introduces_intersection( const Vec3d& new_vertex_position, 
-                                                          const Vec3d& new_vertex_smooth_position, 
-                                                          size_t edge,
-                                                          size_t tri0, 
-                                                          size_t tri1,
-                                                          size_t vertex_a,
-                                                          size_t vertex_b,
-                                                          size_t vertex_c,
-                                                          size_t vertex_d );
-
-    bool split_edge_pseudo_motion_introduces_intersection2( const Vec3d& new_vertex_position, 
       const Vec3d& new_vertex_smooth_position, 
       size_t edge,
       size_t vertex_a,
@@ -120,7 +109,6 @@ private:
     /// Determine if edge should be allowed to be split
     ///    
     bool edge_is_splittable( size_t edge_index );
-    bool edge_is_splittable2( size_t edge_index );
     
     /// Determine if the edge's length is such that a split is desired
     ///
@@ -129,7 +117,6 @@ private:
     /// Split an edge, using subdivision_scheme to determine the new vertex location, if safe to do so.
     ///
     bool split_edge( size_t edge );
-    bool split_edge2( size_t edge );
     
 };
 
