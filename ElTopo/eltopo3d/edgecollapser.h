@@ -119,11 +119,10 @@ private:
     /// Delete an edge by moving its source vertex to its destination vertex
     ///
     bool collapse_edge( size_t edge );
-    bool collapse_edge2( size_t edge );
     
     /// Determine if the edge should be allowed to collapse
     ///
-    bool edge_is_collapsible2( size_t edge_index, double& cur_length );
+    bool edge_is_collapsible( size_t edge_index, double& cur_length );
     
     
 };
