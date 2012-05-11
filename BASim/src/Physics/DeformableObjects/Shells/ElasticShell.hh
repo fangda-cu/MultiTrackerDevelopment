@@ -67,25 +67,25 @@ public:
   }
   
   //All DOFs at once
-  void setVertexPositions(const VertexProperty<Vec3d>& positions);
-  void setVertexVelocities(const VertexProperty<Vec3d>& velocities);
-  void setVertexUndeformed(const VertexProperty<Vec3d>& undef);
+//////////////////  void setVertexPositions(const VertexProperty<Vec3d>& positions);
+//////////////////  void setVertexVelocities(const VertexProperty<Vec3d>& velocities);
+//////////////////  void setVertexUndeformed(const VertexProperty<Vec3d>& undef);
   
   void setEdgeXis(const EdgeProperty<Scalar>& xi);
   void setEdgeUndeformed(const EdgeProperty<Scalar>& undef);
   void setEdgeVelocities(const EdgeProperty<Scalar>& vels);
   
   //Individual DOFs
-  Vec3d getVertexUndeformed(const VertexHandle& v) const { return m_undeformed_positions[v]; }
-  Vec3d getVertexPosition(const VertexHandle& v) const { return m_positions[v]; }
-  Vec3d getVertexVelocity(const VertexHandle& v) const { return m_velocities[v]; }
-  Vec3d getVertexDampingUndeformed(const VertexHandle& v) const { return m_damping_undeformed_positions[v]; }
+//////////////////  Vec3d getVertexUndeformed(const VertexHandle& v) const { return m_undeformed_positions[v]; }
+//////////////////  Vec3d getVertexPosition(const VertexHandle& v) const { return m_positions[v]; }
+//////////////////  Vec3d getVertexVelocity(const VertexHandle& v) const { return m_velocities[v]; }
+//////////////////  Vec3d getVertexDampingUndeformed(const VertexHandle& v) const { return m_damping_undeformed_positions[v]; }
 
-  const VertexProperty<Vec3d>& getVertexPositions() const{ return m_positions;}
+//////////////////  const VertexProperty<Vec3d>& getVertexPositions() const{ return m_positions;}
 
-  void setUndeformedVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_undeformed_positions[v] = pos; }
-  void setVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_positions[v] = pos; }
-  void setVertexVelocity(const VertexHandle& v, const Vec3d& vel) { m_velocities[v] = vel; }
+//////////////////  void setUndeformedVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_undeformed_positions[v] = pos; }
+//////////////////  void setVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_positions[v] = pos; }
+//////////////////  void setVertexVelocity(const VertexHandle& v, const Vec3d& vel) { m_velocities[v] = vel; }
 
   Scalar getEdgeUndeformedXi(const EdgeHandle& eh) const { return m_undef_xi[eh]; }
   Scalar getEdgeXi(const EdgeHandle& eh) const { return m_xi[eh]; }
@@ -97,7 +97,7 @@ public:
   void setDensity(Scalar density);
   void setThickness(Scalar thickness);
 
-  Scalar getMass(const VertexHandle& v) const { return m_vertex_masses[v]; }
+//////////////////  Scalar getMass(const VertexHandle& v) const { return m_vertex_masses[v]; }
   Scalar getMass(const EdgeHandle& e) const { return m_edge_masses[e]; }
   Scalar getThickness(const FaceHandle& f) const { return m_thicknesses[f]; }
   void setThickness(const FaceHandle& f, Scalar thick) { m_thicknesses[f] = thick; }
@@ -195,21 +195,21 @@ protected:
   void addSelfCollisionForces();
 
   //Various shell data
-  VertexProperty<Vec3d> m_undeformed_positions;
+//////////////////  VertexProperty<Vec3d> m_undeformed_positions;
   EdgeProperty<Scalar> m_undef_xi;
 
-  VertexProperty<Vec3d> m_positions;
+//////////////////  VertexProperty<Vec3d> m_positions;
   EdgeProperty<Scalar> m_xi;
 
-  VertexProperty<Vec3d> m_velocities;
+//////////////////  VertexProperty<Vec3d> m_velocities;
   EdgeProperty<Scalar> m_xi_vel;
   
-  VertexProperty<Scalar> m_vertex_masses;
+//////////////////  VertexProperty<Scalar> m_vertex_masses;
   EdgeProperty<Scalar> m_edge_masses;
   
   //"undeformed" configuration that is updated at each step to support Rayleigh damping/viscosity
   //This is also used as the "start of step" configuration for eltopo collision resolution
-  VertexProperty<Vec3d> m_damping_undeformed_positions; 
+//////////////////  VertexProperty<Vec3d> m_damping_undeformed_positions; 
   EdgeProperty<Scalar> m_damping_undef_xi;
 
   FaceProperty<Scalar> m_thicknesses;
