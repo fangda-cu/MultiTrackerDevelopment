@@ -84,11 +84,13 @@ public:
   //Individual DOFs
   Vec3d getVertexPosition                 (const VertexHandle& v) const;
   Vec3d getVertexVelocity                 (const VertexHandle& v) const;
+  Scalar getVertexMass                    (const VertexHandle& v) const;
   Vec3d getVertexUndeformedPosition       (const VertexHandle& v) const;
   Vec3d getVertexDampingUndeformedPosition(const VertexHandle& v) const;
   
   void setVertexPosition                  (const VertexHandle& v, const Vec3d& pos);
   void setVertexVelocity                  (const VertexHandle& v, const Vec3d& vel);
+  void setVertexMass                      (const VertexHandle& v, Scalar m);
   void setVertexUndeformedPosition        (const VertexHandle& v, const Vec3d& pos);
   void setVertexDampingUndeformedPosition (const VertexHandle& v, const Vec3d& pos);
   

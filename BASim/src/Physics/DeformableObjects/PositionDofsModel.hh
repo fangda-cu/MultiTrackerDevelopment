@@ -117,11 +117,13 @@ namespace BASim
     //Individual DOFs
     Vec3d getPosition                 (const VertexHandle& v) const { return m_positions[v]; }
     Vec3d getVelocity                 (const VertexHandle& v) const { return m_velocities[v]; }
+    Scalar getMass                    (const VertexHandle& v) const { return m_vertex_masses[v]; }
     Vec3d getUndeformedPosition       (const VertexHandle& v) const { return m_undeformed_positions[v]; }
     Vec3d getDampingUndeformedPosition(const VertexHandle& v) const { return m_damping_undeformed_positions[v]; }
     
     void setPosition                  (const VertexHandle& v, const Vec3d& pos) { m_positions[v] = pos; }
     void setVelocity                  (const VertexHandle& v, const Vec3d& vel) { m_velocities[v] = vel; }
+    void setMass                      (const VertexHandle& v, Scalar m)         { m_vertex_masses[v] = m; }
     void setUndeformedPosition        (const VertexHandle& v, const Vec3d& pos) { m_undeformed_positions[v] = pos; }
     void setDampingUndeformedPosition (const VertexHandle& v, const Vec3d& pos) { m_damping_undeformed_positions[v] = pos; }
     
@@ -148,8 +150,8 @@ namespace BASim
 
     
   public:
-    virtual void startStep(Scalar time, Scalar timestep) { }    
-    virtual void endStep(Scalar time, Scalar timestep) { }
+    virtual void startStep(Scalar time, Scalar timestep);
+    virtual void endStep(Scalar time, Scalar timestep);
     
   protected:
     // Dof, Dof dot, and Dof mass

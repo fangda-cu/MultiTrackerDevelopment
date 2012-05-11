@@ -104,11 +104,13 @@ void DeformableObject::setVertexDampingUndeformedPositions(const VertexProperty<
 //Individual DOFs
 Vec3d DeformableObject::getVertexPosition                 (const VertexHandle& v) const { return m_posdofsmodel->getPosition(v); }
 Vec3d DeformableObject::getVertexVelocity                 (const VertexHandle& v) const { return m_posdofsmodel->getVelocity(v); }
+Scalar DeformableObject::getVertexMass                    (const VertexHandle& v) const { return m_posdofsmodel->getMass(v); }
 Vec3d DeformableObject::getVertexUndeformedPosition       (const VertexHandle& v) const { return m_posdofsmodel->getUndeformedPosition(v); }
 Vec3d DeformableObject::getVertexDampingUndeformedPosition(const VertexHandle& v) const { return m_posdofsmodel->getDampingUndeformedPosition(v); }
 
 void DeformableObject::setVertexPosition                  (const VertexHandle& v, const Vec3d& pos) { m_posdofsmodel->setPosition(v, pos); }
 void DeformableObject::setVertexVelocity                  (const VertexHandle& v, const Vec3d& vel) { m_posdofsmodel->setVelocity(v, vel); }
+void DeformableObject::setVertexMass                      (const VertexHandle& v, Scalar m)         { m_posdofsmodel->setMass(v, m); }
 void DeformableObject::setVertexUndeformedPosition        (const VertexHandle& v, const Vec3d& pos) { m_posdofsmodel->setUndeformedPosition(v, pos); }
 void DeformableObject::setVertexDampingUndeformedPosition (const VertexHandle& v, const Vec3d& pos) { m_posdofsmodel->setDampingUndeformedPosition(v, pos); }
   

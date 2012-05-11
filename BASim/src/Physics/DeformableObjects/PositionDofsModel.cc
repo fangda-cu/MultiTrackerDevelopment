@@ -8,4 +8,16 @@
 
 #include "BASim/src/Physics/DeformableObjects/PositionDofsModel.hh"
 
+namespace BASim
+{
+  void PositionDofsModel::startStep(Scalar time, Scalar timestep)
+  {
+    m_damping_undeformed_positions = m_positions;
+  }
 
+  void PositionDofsModel::endStep(Scalar time, Scalar timestep)
+  {
+    
+  }
+  
+}
