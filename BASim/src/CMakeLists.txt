@@ -89,5 +89,38 @@ if (TEST_ROD_BENDING_FORCE)
   set (Sources ${Sources} Physics/ElasticRods/Tests/RodBendingTest.cc)
 endif (TEST_ROD_BENDING_FORCE)
 
-add_library (BASim SHARED ${Headers} ${Inlines} ${Templates} ${Sources})
-target_link_libraries (BASim ${DEFAULT_LIBRARIES})
+# create source groups for the IDE support
+set (CREATE_SOURCE_GROUPS true)
+if (CREATE_SOURCE_GROUPS)
+  source_group ("Others" FILES ${Headers} ${Inlines} ${Templates} ${Sources})
+
+  foreach (d ${Directories})
+    string (COMPARE EQUAL ${d} "." currentdir)
+    file (GLOB files "${d}/*")
+    if (${currentdir})
+      set (groupname "Sources")
+    else ()
+      string (REPLACE / \\ groupname ${d})
+    endif ()
+    source_group (${groupname} FILES ${files})
+  endforeach ()
+
+  # top level headers
+  file (GLOB TopLevelHeaders "../*")
+  foreach (d ${TopLevelHeaders})
+    string (REGEX MATCH ^.*/src$ regexmatch1 ${d})
+    string (REGEX MATCH ^.*/CMakeLists.txt$ regexmatch2 ${d})
+    if (regexmatch1 OR regexmatch2)
+      list (REMOVE_ITEM TopLevelHeaders ${d})
+    endif ()
+  endforeach ()
+  source_group ("TopLevel" FILES ${TopLevelHeaders})
+
+endif (CREATE_SOURCE_GROUPS)
+
+# add files in alphabetical order helps when generating IDE projects
+set (Files ${Headers} ${Inlines} ${Templates} ${Sources} ${TopLevelHeaders})
+list (SORT Files)
+
+add_library (BASim SHARED ${Files})
+target_link_libraries (BASim ElTopo ${DEFAULT_LIBRARIES})

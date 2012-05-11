@@ -12,6 +12,7 @@ typedef double Scalar;
 #include "../Physics/ElasticRods/RodTimeStepper.hh"
 #include "../Physics/DeformableObjects/DefoObjTimeStepper.hh"
 //#include "../Math/DummyMatrix.hh"
+#include "Math.hh"
 
 namespace BASim
 {

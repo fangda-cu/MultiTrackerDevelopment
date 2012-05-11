@@ -24,9 +24,6 @@
 
 //An ElTopo global variable.
 #include "runstats.h"
-namespace ElTopo {
-  ElTopo::RunStats g_stats;
-}
 
 #include <set>
 #include <fstream>
