@@ -92,10 +92,9 @@ public:
   void setVertexUndeformedPosition        (const VertexHandle& v, const Vec3d& pos);
   void setVertexDampingUndeformedPosition (const VertexHandle& v, const Vec3d& pos);
   
-  void computeMasses();
-
-  
-  
+  void clearMasses();
+  void accumulateMasses(const VertexProperty<Scalar>& masses);  
+  void accumulateMass(const VertexHandle&v, Scalar mass);
   
   void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time) const;
 

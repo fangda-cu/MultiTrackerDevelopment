@@ -125,6 +125,28 @@ namespace BASim
     void setUndeformedPosition        (const VertexHandle& v, const Vec3d& pos) { m_undeformed_positions[v] = pos; }
     void setDampingUndeformedPosition (const VertexHandle& v, const Vec3d& pos) { m_damping_undeformed_positions[v] = pos; }
     
+    // Masses computation
+    // Masses are computed by summing the masses computed by all models
+    void clearMasses() 
+    { 
+      //TODO: this can use optimization
+      for (VertexIterator i = getDefoObj().vertices_begin(); i != getDefoObj().vertices_end(); ++i) 
+        m_vertex_masses[*i] = 0; 
+    }
+    
+    void accumulateMasses(const VertexProperty<Scalar>& masses)
+    {
+      //TODO: this can use optimization
+      for (VertexIterator i = getDefoObj().vertices_begin(); i != getDefoObj().vertices_end(); ++i) 
+        m_vertex_masses[*i] += masses[*i]; 
+    }
+    
+    void accumulateMass(const VertexHandle&v, Scalar mass)
+    {
+      m_vertex_masses[v] += mass;
+    }
+
+    
   public:
     virtual void startStep(Scalar time, Scalar timestep) { }    
     virtual void endStep(Scalar time, Scalar timestep) { }
