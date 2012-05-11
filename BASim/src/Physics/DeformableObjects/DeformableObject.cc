@@ -8,6 +8,7 @@ DeformableObject::DeformableObject() :
   m_dt(1), m_models(0), m_posdofsmodel(NULL)
 {
   m_posdofsmodel = new PositionDofsModel(this);
+  addModel(m_posdofsmodel);
 }
 
 DeformableObject::~DeformableObject()
@@ -123,6 +124,9 @@ void DeformableObject::updateVertexMasses()
   for (size_t i = 0; i < m_models.size(); i++)
     accumulateVertexMasses(m_models[i]->getVertexMasses());
 }
+  
+int DeformableObject::getPositionDofBase(const VertexHandle& vh) const { return m_posdofsmodel->getVertexDofBase(vh); }
+
 
 void DeformableObject::computeDofIndexing()
 {
@@ -228,14 +232,12 @@ void DeformableObject::startStep()
 { 
   for(unsigned int i = 0; i < m_models.size(); ++i) 
     m_models[i]->startStep(m_time, m_dt); 
-  m_posdofsmodel->startStep(m_time, m_dt); 
 }
 
 void DeformableObject::endStep() 
 { 
   for(unsigned int i = 0; i < m_models.size(); ++i) 
     m_models[i]->endStep(m_time, m_dt); 
-  m_posdofsmodel->endStep(m_time, m_dt); 
 }
 
 

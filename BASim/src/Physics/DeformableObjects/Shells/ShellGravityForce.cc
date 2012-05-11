@@ -22,7 +22,8 @@ void ShellGravityForce::globalForce( VecXd& force ) const
   DeformableObject& obj = m_shell.getDefoObj();
   for(VertexIterator vit = obj.vertices_begin(); vit != obj.vertices_end(); ++vit) {
     VertexHandle& vh = *vit;
-    int dofIdx = m_shell.getVertexDofBase(vh);
+////////////////////    int dofIdx = m_shell.getVertexDofBase(vh);
+    int dofIdx = m_shell.getDefoObj().getPositionDofBase(vh);
     force[dofIdx] += m_gravity[0] * m_shell.getMass(vh);
     force[dofIdx+1] += m_gravity[1] * m_shell.getMass(vh);
     force[dofIdx+2] += m_gravity[2] * m_shell.getMass(vh);

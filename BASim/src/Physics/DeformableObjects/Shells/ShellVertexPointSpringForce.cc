@@ -30,7 +30,8 @@ bool ShellVertexPointSpringForce::gatherDOFs(const VertexHandle& vh, std::vector
   //extract the vertex data
   deformed[0] = m_shell.getVertexPosition(vh);
   undef_damp[0] = m_shell.getVertexDampingUndeformed(vh);
-  int dofBase = m_shell.getVertexDofBase(vh);
+////////////////////    int dofBase = m_shell.getVertexDofBase(vh);
+  int dofBase = m_shell.getDefoObj().getPositionDofBase(vh);
   indices[0] = dofBase;
   indices[1] = dofBase+1;
   indices[2] = dofBase+2;

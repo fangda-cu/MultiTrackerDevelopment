@@ -100,6 +100,9 @@ public:
   
   void updateVertexMasses();  // call this whenever a model has recomputed its own mass and needs the total mass of the obj updated
   
+  // Dof base indices for the position dofs
+  int getPositionDofBase(const VertexHandle& vh) const;
+  
   void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time) const;
 
   void setTimeStep(Scalar dt);
@@ -120,7 +123,7 @@ public:
 protected:
 
   std::vector<PhysicalModel*> m_models; ///< physical models layered on this object (each with its own forces)
-  PositionDofsModel * m_posdofsmodel; // note that this model is not in the m_models list
+  PositionDofsModel * m_posdofsmodel; // note that this model is also in the m_models list
   Scalar m_dt;  ///< size of time step
   Scalar m_time; //current time 
 

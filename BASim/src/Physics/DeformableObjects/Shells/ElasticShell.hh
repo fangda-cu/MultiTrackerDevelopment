@@ -14,7 +14,7 @@
 
 namespace BASim {
 
-const int ELASTIC_SHELL_DOFS_PER_VERTEX = 3; //nodal position vectors
+const int ELASTIC_SHELL_DOFS_PER_VERTEX = 0; //nodal position vectors
 const int ELASTIC_SHELL_DOFS_PER_EDGE = 1; //mid-edge normal bending DOFs (Grinspun et al. 2006)
 
 class DeformableObject;

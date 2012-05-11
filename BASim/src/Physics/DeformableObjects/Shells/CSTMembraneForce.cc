@@ -39,7 +39,8 @@ bool CSTMembraneForce::gatherDOFs(const FaceHandle& fh, std::vector<Vec3d>& unde
     undeformed[i] = m_shell.getVertexUndeformed(vh);
     deformed[i] = m_shell.getVertexPosition(vh);
     damp_undeformed[i] = m_shell.getVertexDampingUndeformed(vh);
-    int dofBase = m_shell.getVertexDofBase(vh);
+////////////////////    int dofBase = m_shell.getVertexDofBase(vh);
+    int dofBase = m_shell.getDefoObj().getPositionDofBase(vh);
     indices[i*3] = dofBase;
     indices[i*3+1] = dofBase+1;
     indices[i*3+2] = dofBase+2;
