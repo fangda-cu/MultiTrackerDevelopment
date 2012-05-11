@@ -62,6 +62,7 @@ public:
   void setupScene17(); //a sheet falling onto a static object defined by a signed distance field
   void setupScene18(); //a constant inflow hitting a solid boundary
   void setupScene19(); //tearing ball flow
+  void setupScene20_BendingTest(); //a Morley element bending test
 };
 
 #endif // SHELLTEST_HH

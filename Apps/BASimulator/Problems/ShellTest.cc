@@ -164,7 +164,8 @@ sceneFunc scenes[] = {0,
                       &ShellTest::setupScene16, //a sheet pouring onto a moving sphere on a conveyor belt
                       &ShellTest::setupScene17, //a constant inflow hitting a solid boundary}
                       &ShellTest::setupScene18, //a sheet falling onto an object defined by a SDF
-                      &ShellTest::setupScene19} ; //a sheet falling with a sphere going through
+                      &ShellTest::setupScene19, //a sheet falling with a sphere going through
+                      &ShellTest::setupScene20_BendingTest} ; //a test case for Morley element bending
 
 Scalar bubbleThicknessFunction(Vec3d pos) {
   //NOTE: Assumes radius of 0.01;
@@ -239,6 +240,8 @@ void ShellTest::Setup()
   //Call the appropriate scene setup function.
   (*this.*scenes[sceneChoice])();
 
+  
+  shell->setThickness(thickness);
 
   //now add forces to the model
 
@@ -254,8 +257,43 @@ void ShellTest::Setup()
       shell->addForce(new DSBendingForce(*shell, "DSBending", ds_scale*Youngs_modulus, Poisson_ratio, ds_scale*Youngs_damping, Poisson_damping, timestep));
 
     //Better bending model, not currently functional.
-    if(mn_bend)
-      shell->addForce(new MNBendingForce(*shell, "MNBending", Youngs_modulus, Poisson_ratio, Youngs_damping, Poisson_damping, timestep));
+    if(mn_bend) {
+      MNBendingForce* mnforce = new MNBendingForce(*shell, "MNBending", Youngs_modulus, Poisson_ratio, Youngs_damping, Poisson_damping, timestep);
+      shell->addForce(mnforce);
+      mnforce->update(); //set initial reference normal vectors
+
+      //now! adjust the vertices under a rotation, and check the energy.
+      int i = 0;
+      for(VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit) {
+        VertexHandle h = *vit;
+        Scalar theta = M_PI/12;
+        Scalar ypos = sin(theta);
+        Scalar xpos = cos(theta);
+        if(i == 2)
+          shell->setVertexPosition(h, Vec3d(-xpos, -ypos, 0));
+        else if(i == 3)
+          shell->setVertexPosition(h, Vec3d(-xpos, -ypos, 2));
+        /*else if(i == 4)
+          shell->setVertexPosition(h, Vec3d(-xpos, -ypos, -2));*/
+        ++i;
+      }
+
+      i = 0;
+      EdgeProperty<Scalar> xiValues(shellObj);
+      for(EdgeIterator eit = shellObj->edges_begin(); eit != shellObj->edges_end(); ++eit) {
+        EdgeHandle eh = *eit;
+        if(i == 2) {
+          xiValues[eh] = 0.183;
+        }
+        else xiValues[eh] = 0;
+        ++i;
+      }
+      shell->setEdgeXis(xiValues);
+      
+      Scalar energy = mnforce->globalEnergy();
+      std::cout << "Energy: " << energy << std::endl;
+    }
+
   }
 
 
@@ -281,9 +319,7 @@ void ShellTest::Setup()
       shell->setThickness(fh, bubbleThicknessFunction(barycentre));
     }
   }
-  else {
-    shell->setThickness(thickness);
-  }
+
   shell->setDensity(density);
   
   bool remeshing = GetIntOpt("shell-remeshing") == 1?true:false;
@@ -464,13 +500,13 @@ void ShellTest::setupScene1() {
   
   for(int j = 0; j <= yresolution; ++j) {
     for(int i = 0; i <= xresolution; ++i) {
-      Vec3d vert(i*dx, j*dy, 0);//0.01*dx*sin(100*j*dy + 17*i*dx));
-      if(j < 0.5*yresolution) {
+      Vec3d vert(i*dx, j*dy, j*dy);//0.01*dx*sin(100*j*dy + 17*i*dx)); // sin(3*j*dy)
+     /* if(j < 0.5*yresolution) {
         int k = j;
         int j_mod = (int)(0.5*yresolution);
         vert(1) = j_mod*dx;
         vert(2) = (k-j_mod)*dx;
-      }
+      }*/
       Vec3d undef = vert;
 
       VertexHandle h = shellObj->addVertex();
@@ -798,6 +834,15 @@ void ShellTest::setupScene3() {
   for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
     shellFaces[*fIt] = true;
 
+  for(EdgeIterator eit = shellObj->edges_begin(); eit != shellObj->edges_end(); ++eit) {
+    EdgeHandle edge = *eit;
+    //compute tau_i_0
+    //compute true normal
+    //compute projection of normal onto tau, i.e. Psi
+    undefAngle[edge] = 0;
+    edgeAngle[edge] = 0;
+  }
+
   //now create the physical model to hang on the mesh
   shell = new ElasticShell(shellObj, shellFaces, m_timestep);
   shellObj->addModel(shell);
@@ -811,6 +856,7 @@ void ShellTest::setupScene3() {
   shell->setEdgeUndeformed(undefAngle);
   shell->setEdgeXis(edgeAngle);
   shell->setEdgeVelocities(edgeVel);
+
 
   //inflate the sphere by some fixed amount
   /*Scalar inflateDist = 0.1;
@@ -2504,3 +2550,86 @@ void ShellTest::setupScene19() {
   //shell->setDeletionBox(Vec3d(-2, -5, -2), Vec3d(2, ground-0.02, 2));
 
 }
+
+//vertical flat sheet
+void ShellTest::setupScene20_BendingTest() {
+
+ 
+  //build a rectangular grid of vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  Vec3d start_vel(0,0,0);
+
+  std::vector<Vec3d> test_vertices;
+  test_vertices.push_back(Vec3d(0,0,1));
+  test_vertices.push_back(Vec3d(0,0,-1));
+  test_vertices.push_back(Vec3d(-1,0,0));
+  test_vertices.push_back(Vec3d(-1,0,2));
+  //test_vertices.push_back(Vec3d(-1,0,-2));
+  for(int i = 0; i < test_vertices.size(); ++i) {
+    VertexHandle h = shellObj->addVertex();
+    vertHandles.push_back(h);
+    positions[h] = test_vertices[i];
+    Scalar theta = M_PI/12;
+    Scalar ypos = sin(theta);
+    Scalar xpos = cos(theta);
+   /* if(i == 2)
+      positions[h] = Vec3d(-xpos, -ypos, 0);
+    else if(i == 3)
+      positions[h] = Vec3d(-xpos, -ypos, 2);
+    else if(i == 4)
+      positions[h] = Vec3d(-xpos, -ypos, -2);*/
+
+    velocities[h] = start_vel;
+    undeformed[h] = test_vertices[i];
+  }
+
+
+  std::vector<Vec3i> tris;
+  tris.push_back(Vec3i(0,1,2));
+  tris.push_back(Vec3i(0,2,3));
+  //tris.push_back(Vec3i(1,4,2));
+  for(int i = 0; i < tris.size(); ++i) {
+    shellObj->addFace(vertHandles[tris[i][0]], vertHandles[tris[i][1]], vertHandles[tris[i][2]]);
+  }
+  
+  
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+  //Pin two verts
+  Vec3d pos = shell->getVertexPosition(vertHandles[0]);
+  shell->constrainVertex(vertHandles[0], pos);
+  
+  pos = shell->getVertexPosition(vertHandles[1]);
+  shell->constrainVertex(vertHandles[1], pos);
+
+
+}
+
+
