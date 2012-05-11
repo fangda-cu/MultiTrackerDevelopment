@@ -348,7 +348,7 @@ void ElasticShell::getScriptedDofs( IntArray& dofIndices, std::vector<Scalar>& d
 {
   for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
     
-    int dofBase = getVertexDofBase(m_constrained_vertices[i]);
+    int dofBase = m_obj->getPositionDofBase(m_constrained_vertices[i]);
     Vec3d pos = m_constraint_positions[i]->operator()(time);
     dofIndices.push_back(dofBase); dofValues.push_back(pos[0]);
     dofIndices.push_back(dofBase+1); dofValues.push_back(pos[1]);

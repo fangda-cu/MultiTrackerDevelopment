@@ -289,8 +289,7 @@ void ShellTest::Setup()
   
   //shell->remesh(remeshing_res);
 
-/////////////////  shell->computeMasses();
-/////////////////?
+  shell->computeMasses();
   
   Scalar stiffness = GetScalarOpt("shell-collision-spring-stiffness");
   Scalar damping = GetScalarOpt("shell-collision-spring-damping");

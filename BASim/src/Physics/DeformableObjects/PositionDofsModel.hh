@@ -47,7 +47,7 @@ namespace BASim
     
   public:
     //Determines whether a particular simplex is active in the given model.
-    virtual bool isVertexActive(const VertexHandle& v) const { return false; }
+    virtual bool isVertexActive(const VertexHandle& v) const { return true; }
     virtual bool isEdgeActive(const EdgeHandle& e) const { return false; }
     virtual bool isFaceActive(const FaceHandle& f) const { return false; }
     virtual bool isTetActive(const TetHandle& t) const { return false; }
