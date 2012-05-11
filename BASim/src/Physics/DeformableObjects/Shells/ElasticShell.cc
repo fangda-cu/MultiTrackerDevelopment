@@ -29,7 +29,7 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
     m_undef_xi(object),
 /////////////////    m_damping_undeformed_positions(object), 
     m_damping_undef_xi(object),
-/////////////////    m_vertex_masses(object),
+    m_vertex_masses(object),
     m_edge_masses(object),
     m_thicknesses(object),
     m_volumes(object),
@@ -229,53 +229,56 @@ Scalar ElasticShell::getArea(const FaceHandle& f, bool current) const  {
   }
 }
 
-void ElasticShell::accumulateMasses()
+void ElasticShell::computeMasses()
 {
   //Compute vertex masses in a lumped mass way.
 
-//  m_vertex_masses.assign(0);
-//  m_edge_masses.assign(0);
-//
-//  Scalar area = 0;
-//
-//  //Iterate over all triangles active in this shell and accumulate vertex masses
-//  for(FaceIterator f_iter = m_obj->faces_begin(); f_iter != m_obj->faces_end(); ++f_iter) {
-//    FaceHandle& f_hnd = *f_iter;
-//    if(m_active_faces[f_hnd]) {
-//
-//      //get the three vertices
-//      FaceVertexIterator fvit = m_obj->fv_iter(f_hnd);
-//      VertexHandle v0_hnd = *fvit; ++fvit; assert(fvit);
-//      VertexHandle v1_hnd = *fvit; ++fvit; assert(fvit);
-//      VertexHandle v2_hnd = *fvit; ++fvit; assert(!fvit);
-//
-//      //compute triangle areas
-//      Vec3d v0 = m_positions[v1_hnd] - m_positions[v0_hnd];
-//      Vec3d v1 = m_positions[v2_hnd] - m_positions[v0_hnd];
-//      Vec3d triVec = v0.cross(v1);
-//      Scalar area = 0.5*sqrt(triVec.dot(triVec)) / 3.0;
-//      Scalar contribution = m_thicknesses[f_hnd] * m_density * area;
-//      
-//      //accumulate mass to the vertices
-//      m_vertex_masses[v0_hnd] += contribution;
-//      m_vertex_masses[v1_hnd] += contribution;
-//      m_vertex_masses[v2_hnd] += contribution;
-//
-//      //also accumulate mass to the edges (this mass computation is probably not consistent with what we want)
-//      FaceEdgeIterator feit = m_obj->fe_iter(f_hnd);
-//      EdgeHandle e0_hnd = *feit; ++feit; assert(feit);
-//      EdgeHandle e1_hnd = *feit; ++feit; assert(feit);
-//      EdgeHandle e2_hnd = *feit; ++feit; //assert(feit);
-//
-//      m_edge_masses[e0_hnd] += contribution;
-//      m_edge_masses[e1_hnd] += contribution;
-//      m_edge_masses[e2_hnd] += contribution;
-//
-//      //store the current volumes
-//      m_volumes[f_hnd] = 3*area*m_thicknesses[f_hnd];
-//    }
-//  }
+  m_vertex_masses.assign(0);
+  m_edge_masses.assign(0);
+
+  Scalar area = 0;
+
+  //Iterate over all triangles active in this shell and accumulate vertex masses
+  for(FaceIterator f_iter = m_obj->faces_begin(); f_iter != m_obj->faces_end(); ++f_iter) {
+    FaceHandle& f_hnd = *f_iter;
+    if(m_active_faces[f_hnd]) {
+
+      //get the three vertices
+      FaceVertexIterator fvit = m_obj->fv_iter(f_hnd);
+      VertexHandle v0_hnd = *fvit; ++fvit; assert(fvit);
+      VertexHandle v1_hnd = *fvit; ++fvit; assert(fvit);
+      VertexHandle v2_hnd = *fvit; ++fvit; assert(!fvit);
+
+      //compute triangle areas
+///////////////////      Vec3d v0 = m_positions[v1_hnd] - m_positions[v0_hnd];
+///////////////////      Vec3d v1 = m_positions[v2_hnd] - m_positions[v0_hnd];
+      Vec3d v0 = getVertexPosition(v1_hnd) - getVertexPosition(v0_hnd);
+      Vec3d v1 = getVertexPosition(v2_hnd) - getVertexPosition(v0_hnd);
+      Vec3d triVec = v0.cross(v1);
+      Scalar area = 0.5*sqrt(triVec.dot(triVec)) / 3.0;
+      Scalar contribution = m_thicknesses[f_hnd] * m_density * area;
+      
+      //accumulate mass to the vertices
+      m_vertex_masses[v0_hnd] += contribution;
+      m_vertex_masses[v1_hnd] += contribution;
+      m_vertex_masses[v2_hnd] += contribution;
+
+      //also accumulate mass to the edges (this mass computation is probably not consistent with what we want)
+      FaceEdgeIterator feit = m_obj->fe_iter(f_hnd);
+      EdgeHandle e0_hnd = *feit; ++feit; assert(feit);
+      EdgeHandle e1_hnd = *feit; ++feit; assert(feit);
+      EdgeHandle e2_hnd = *feit; ++feit; //assert(feit);
+
+      m_edge_masses[e0_hnd] += contribution;
+      m_edge_masses[e1_hnd] += contribution;
+      m_edge_masses[e2_hnd] += contribution;
+
+      //store the current volumes
+      m_volumes[f_hnd] = 3*area*m_thicknesses[f_hnd];
+    }
+  }
  
+  m_obj->updateVertexMasses();
 }
 
 bool ElasticShell::isVertexActive( const VertexHandle& v ) const
@@ -787,8 +790,7 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   }
 
   //Update masses based on new areas/thicknesses
-/////////////////  computeMasses();
-/////////////////?
+  computeMasses();
 
   std::cout << "Completed endStep\n";
 
@@ -2734,7 +2736,7 @@ void ElasticShell::extendMesh(Scalar current_time) {
       setVertexVelocity(vertices[i], m_inflow_velocities[boundary][i]);
 /////////////////      m_vertex_masses[vertices[i]] = 0;
 /////////////////      m_damping_undeformed_positions[vertices[i]] = m_inflow_positions[boundary][i];
-      m_obj->setVertexMass(vertices[i], 0);
+      m_vertex_masses[vertices[i]] = 0;
       m_obj->setVertexDampingUndeformedPosition(vertices[i], m_inflow_positions[boundary][i]);
 
       constrainVertex(vertices[i], new FixedVelocityConstraint(m_inflow_positions[boundary][i], m_inflow_velocities[boundary][i], current_time));
@@ -2748,12 +2750,13 @@ void ElasticShell::extendMesh(Scalar current_time) {
       FaceVertexIterator fvit = m_obj->fv_iter(faces[i]);
       for(;fvit;++fvit) {
         VertexHandle vh = *fvit;
-/////////////////        m_vertex_masses[vh] += m_volumes[faces[i]] * m_density / 3.0;
-/////////////////?
+        m_vertex_masses[vh] += m_volumes[faces[i]] * m_density / 3.0;
       }
     }
 
   }
+  
+  computeMasses();
 
 }
 

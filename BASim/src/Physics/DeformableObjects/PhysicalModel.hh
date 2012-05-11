@@ -70,6 +70,9 @@ public:
   virtual void startStep(Scalar time, Scalar timestep) = 0;
   virtual void endStep(Scalar time, Scalar timestep) = 0;
 
+  //Masses for the shared position DOFS
+  virtual const VertexProperty<Scalar> & getVertexMasses() const = 0;
+  
   //For constraining particular DOFs
   virtual void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time) const {};
 

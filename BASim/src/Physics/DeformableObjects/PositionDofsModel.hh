@@ -148,6 +148,9 @@ namespace BASim
       m_vertex_masses[v] += mass;
     }
 
+    // in compliance with the PhysicalModel interface, this method has to be implemented; but it's
+    // actually useless here due to the special role of this model.
+    virtual const VertexProperty<Scalar> & getVertexMasses() const { return m_vertex_masses; }
     
   public:
     virtual void startStep(Scalar time, Scalar timestep);

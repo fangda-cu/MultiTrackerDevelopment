@@ -95,7 +95,8 @@ public:
   Scalar getEdgeVelocity(const EdgeHandle& eh) const { return m_xi_vel[eh]; }
   Scalar getDampingUndeformedXi(const EdgeHandle& eh) const { return m_damping_undef_xi[eh]; }
   
-  void accumulateMasses();
+  const VertexProperty<Scalar> & getVertexMasses() const { return m_vertex_masses; }
+  void computeMasses();
 
   void setDensity(Scalar density);
   void setThickness(Scalar thickness);
@@ -207,7 +208,7 @@ protected:
 //////////////////  VertexProperty<Vec3d> m_velocities;
   EdgeProperty<Scalar> m_xi_vel;
   
-//////////////////  VertexProperty<Scalar> m_vertex_masses;
+  VertexProperty<Scalar> m_vertex_masses;
   EdgeProperty<Scalar> m_edge_masses;
   
   //"undeformed" configuration that is updated at each step to support Rayleigh damping/viscosity

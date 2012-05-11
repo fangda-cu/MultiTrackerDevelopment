@@ -8,7 +8,6 @@ DeformableObject::DeformableObject() :
   m_dt(1), m_models(0), m_posdofsmodel(NULL)
 {
   m_posdofsmodel = new PositionDofsModel(this);
-  addModel(m_posdofsmodel);
 }
 
 DeformableObject::~DeformableObject()
@@ -114,9 +113,16 @@ void DeformableObject::setVertexMass                      (const VertexHandle& v
 void DeformableObject::setVertexUndeformedPosition        (const VertexHandle& v, const Vec3d& pos) { m_posdofsmodel->setUndeformedPosition(v, pos); }
 void DeformableObject::setVertexDampingUndeformedPosition (const VertexHandle& v, const Vec3d& pos) { m_posdofsmodel->setDampingUndeformedPosition(v, pos); }
   
-void DeformableObject::clearMasses() { m_posdofsmodel->clearMasses(); }
-void DeformableObject::accumulateMasses(const VertexProperty<Scalar>& masses) { m_posdofsmodel->accumulateMasses(masses); }
-void DeformableObject::accumulateMass(const VertexHandle& v, Scalar mass) { m_posdofsmodel->accumulateMass(v, mass); }
+void DeformableObject::clearVertexMasses() { m_posdofsmodel->clearMasses(); }
+void DeformableObject::accumulateVertexMasses(const VertexProperty<Scalar>& masses) { m_posdofsmodel->accumulateMasses(masses); }
+void DeformableObject::accumulateVertexMass(const VertexHandle& v, Scalar mass) { m_posdofsmodel->accumulateMass(v, mass); }
+
+void DeformableObject::updateVertexMasses()
+{
+  clearVertexMasses();
+  for (size_t i = 0; i < m_models.size(); i++)
+    accumulateVertexMasses(m_models[i]->getVertexMasses());
+}
 
 void DeformableObject::computeDofIndexing()
 {
