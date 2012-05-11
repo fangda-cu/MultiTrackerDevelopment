@@ -199,13 +199,10 @@ protected:
   void addSelfCollisionForces();
 
   //Various shell data
-//////////////////  VertexProperty<Vec3d> m_undeformed_positions;
   EdgeProperty<Scalar> m_undef_xi;
 
-//////////////////  VertexProperty<Vec3d> m_positions;
   EdgeProperty<Scalar> m_xi;
 
-//////////////////  VertexProperty<Vec3d> m_velocities;
   EdgeProperty<Scalar> m_xi_vel;
   
   VertexProperty<Scalar> m_vertex_masses;
@@ -213,7 +210,6 @@ protected:
   
   //"undeformed" configuration that is updated at each step to support Rayleigh damping/viscosity
   //This is also used as the "start of step" configuration for eltopo collision resolution
-//////////////////  VertexProperty<Vec3d> m_damping_undeformed_positions; 
   EdgeProperty<Scalar> m_damping_undef_xi;
 
   FaceProperty<Scalar> m_thicknesses;

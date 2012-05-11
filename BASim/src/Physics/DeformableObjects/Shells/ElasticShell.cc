@@ -25,17 +25,13 @@ namespace BASim {
 ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep) : 
   PhysicalModel(*object), m_obj(object), 
     m_active_faces(shellFaces), 
-/////////////////    m_undeformed_positions(object), 
     m_undef_xi(object),
-/////////////////    m_damping_undeformed_positions(object), 
     m_damping_undef_xi(object),
     m_vertex_masses(object),
     m_edge_masses(object),
     m_thicknesses(object),
     m_volumes(object),
-/////////////////    m_positions(object), 
     m_xi(object), 
-/////////////////    m_velocities(object),
     m_xi_vel(object),
     m_density(1),
     m_proximity_epsilon(1e-5),
@@ -250,8 +246,6 @@ void ElasticShell::computeMasses()
       VertexHandle v2_hnd = *fvit; ++fvit; assert(!fvit);
 
       //compute triangle areas
-///////////////////      Vec3d v0 = m_positions[v1_hnd] - m_positions[v0_hnd];
-///////////////////      Vec3d v1 = m_positions[v2_hnd] - m_positions[v0_hnd];
       Vec3d v0 = getVertexPosition(v1_hnd) - getVertexPosition(v0_hnd);
       Vec3d v1 = getVertexPosition(v2_hnd) - getVertexPosition(v0_hnd);
       Vec3d triVec = v0.cross(v1);
@@ -440,7 +434,6 @@ void ElasticShell::startStep(Scalar time, Scalar timestep)
 
 
   //update the damping "reference configuration" for computing viscous forces.
-/////////////////  m_damping_undeformed_positions = m_positions;
   m_damping_undef_xi = m_xi;
 
   //tell the forces to update anything they need to update
@@ -471,7 +464,6 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
   for(VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit) {
     VertexHandle vh = *vit;
     Vec3d vert = getVertexPosition(vh);
-///////////////////    Vec3d old_vert = m_damping_undeformed_positions[vh];
     Vec3d old_vert = getVertexDampingUndeformed(vh);
     Scalar mass = getMass(vh);
 
@@ -544,7 +536,6 @@ void ElasticShell::addSelfCollisionForces() {
   //update the broad phase structure with the current mesh data
   Scalar collision_distance = m_collision_proximity;
 
-////////////////  m_broad_phase.update_broad_phase_static(*m_obj, m_positions, collision_distance);
   m_broad_phase.update_broad_phase_static(*m_obj, getVertexPositions(), collision_distance);
   
   //determine proximity of vertex triangle pairs and
@@ -554,9 +545,7 @@ void ElasticShell::addSelfCollisionForces() {
   
   for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
     VertexHandle vh = *vit;
-/////////////////    Vec3d vert_pos = m_positions[vh];
     Vec3d vert_pos = getVertexPosition(vh);
-/////////////////    ElTopoCode::Vec3d vert_vel = ElTopoCode::toElTopo(m_velocities[vh]);
     ElTopoCode::Vec3d vert_vel = ElTopoCode::toElTopo(getVertexVelocity(vh));
     ElTopoCode::Vec3d vertex_position = ElTopoCode::toElTopo(vert_pos);
 
@@ -578,9 +567,7 @@ void ElasticShell::addSelfCollisionForces() {
       int fv = 0;
       bool goodSpring = true;
       for(FaceVertexIterator fvit = m_obj->fv_iter(f); fvit; ++fvit) {
-/////////////////        face_verts[fv] = ElTopoCode::toElTopo(m_positions[*fvit]);
         face_verts[fv] = ElTopoCode::toElTopo(getVertexPosition(*fvit));
-/////////////////        face_vels[fv] = ElTopoCode::toElTopo(m_velocities[*fvit]);
         face_vels[fv] = ElTopoCode::toElTopo(getVertexVelocity(*fvit));
         if(*fvit == vh)
           goodSpring = false;
@@ -621,13 +608,9 @@ void ElasticShell::getSpringList(std::vector<Vec3d>& start, std::vector<Vec3d>& 
   
   m_repulsion_springs->getSpringLists(verts, faces, bary);
   for(unsigned int i = 0; i < verts.size(); ++i) {
-/////////////////    start.push_back(m_positions[verts[i]]);
     start.push_back(getVertexPosition(verts[i]));
     
     FaceVertexIterator fvit = m_obj->fv_iter(faces[i]);
-/////////////////    Vec3d v0 = m_positions[*fvit];++fvit;
-/////////////////    Vec3d v1 = m_positions[*fvit];++fvit;
-/////////////////    Vec3d v2 = m_positions[*fvit];
     Vec3d v0 = getVertexPosition(*fvit);++fvit;
     Vec3d v1 = getVertexPosition(*fvit);++fvit;
     Vec3d v2 = getVertexPosition(*fvit);
@@ -1617,7 +1600,6 @@ bool ElasticShell::splitEdges( double desiredEdge, double maxEdge, double maxAng
     assert( m_obj->vertexExists(vertex_a) );
     assert( m_obj->vertexExists(vertex_b) );
 
-/////////////////    double current_length = (m_positions[ vertex_a ] - m_positions[ vertex_b ]).norm();
     double current_length = (getVertexPosition(vertex_a) - getVertexPosition(vertex_b)).norm();
 
     if ( current_length > maxEdge ) {
@@ -2005,7 +1987,6 @@ void ElasticShell::updateBroadPhaseStatic(const VertexHandle& vertex_a)
   ElTopoCode::Vec3d low, high;
   
   //update vertices bounding box to include pseudomotion
-/////////////////  ElTopoCode::Vec3d pos = ElTopoCode::toElTopo(m_positions[vertex_a]);
   ElTopoCode::Vec3d pos = ElTopoCode::toElTopo(getVertexPosition(vertex_a));
   m_broad_phase.update_vertex( vertex_a.idx(), pos + offset, pos - offset);
 
@@ -2015,8 +1996,6 @@ void ElasticShell::updateBroadPhaseStatic(const VertexHandle& vertex_a)
     EdgeHandle eh = *veit;
     VertexHandle vha = m_obj->fromVertex(eh);
     VertexHandle vhb = m_obj->toVertex(eh);
-/////////////////    ElTopoCode::Vec3d pa = ElTopoCode::toElTopo(m_positions[vha]);
-/////////////////    ElTopoCode::Vec3d pb = ElTopoCode::toElTopo(m_positions[vhb]);
     ElTopoCode::Vec3d pa = ElTopoCode::toElTopo(getVertexPosition(vha));
     ElTopoCode::Vec3d pb = ElTopoCode::toElTopo(getVertexPosition(vhb));
     ElTopoCode::minmax(pa, pb, low, high);
@@ -2031,7 +2010,6 @@ void ElasticShell::updateBroadPhaseStatic(const VertexHandle& vertex_a)
     int c = 0;
     for(FaceVertexIterator fvit = m_obj->fv_iter(fh); fvit; ++fvit, ++c) {
       VertexHandle vha = *fvit;
-/////////////////      ElTopoCode::Vec3d pa = ElTopoCode::toElTopo(m_positions[vha]);
       ElTopoCode::Vec3d pa = ElTopoCode::toElTopo(getVertexPosition(vha));
       if(c == 0)
         low = high = pa;
@@ -2060,7 +2038,6 @@ void ElasticShell::updateBroadPhaseForCollapse(const VertexHandle& vertex_a, con
 
   for(int i = 0; i < 2; ++i) {
     //update vertices bounding box to include pseudomotion
-/////////////////    ElTopoCode::minmax(ElTopoCode::toElTopo(m_positions[verts[i]]), verts_pos[i], low, high);
     ElTopoCode::minmax(ElTopoCode::toElTopo(getVertexPosition(verts[i])), verts_pos[i], low, high);
     low -= offset; high += offset;
     m_broad_phase.update_vertex( verts[i].idx(), low, high );
@@ -2071,8 +2048,6 @@ void ElasticShell::updateBroadPhaseForCollapse(const VertexHandle& vertex_a, con
       EdgeHandle eh = *veit;
       VertexHandle vha = m_obj->fromVertex(eh);
       VertexHandle vhb = m_obj->toVertex(eh);
-/////////////////      ElTopoCode::Vec3d pa = ElTopoCode::toElTopo(m_positions[vha]);
-/////////////////      ElTopoCode::Vec3d pb = ElTopoCode::toElTopo(m_positions[vhb]);
       ElTopoCode::Vec3d pa = ElTopoCode::toElTopo(getVertexPosition(vha));
       ElTopoCode::Vec3d pb = ElTopoCode::toElTopo(getVertexPosition(vhb));
       ElTopoCode::minmax(pa, pb, low, high);
@@ -2097,7 +2072,6 @@ void ElasticShell::updateBroadPhaseForCollapse(const VertexHandle& vertex_a, con
       int c = 0;
       for(FaceVertexIterator fvit = m_obj->fv_iter(fh); fvit; ++fvit, ++c) {
         VertexHandle vha = *fvit;
-/////////////////        ElTopoCode::Vec3d pa = ElTopoCode::toElTopo(m_positions[vha]);
         ElTopoCode::Vec3d pa = ElTopoCode::toElTopo(getVertexPosition(vha));
         if(c == 0)
           low = high = pa;
@@ -2154,7 +2128,6 @@ bool ElasticShell::checkTriangleVsTriangleCollisionForCollapse( const FaceHandle
         break;
       }
       vert_ids[c] = v;
-/////////////////      vert_pos[c] = ElTopoCode::toElTopo(m_positions[vert_ids[c]]);
       vert_pos[c] = ElTopoCode::toElTopo(getVertexPosition(vert_ids[c]));
       new_vert_pos[c] = (v == source_vert || v == dest_vert)? new_position : vert_pos[c];
     }
@@ -2162,7 +2135,6 @@ bool ElasticShell::checkTriangleVsTriangleCollisionForCollapse( const FaceHandle
     if(shared_vert) continue;
   
     ElTopoCode::Vec3d vert_0_pos, vert_0_newpos;
-/////////////////    vert_0_pos = ElTopoCode::toElTopo(m_positions[ vertex_0 ]);
     vert_0_pos = ElTopoCode::toElTopo(getVertexPosition(vertex_0));
     vert_0_newpos = (vertex_0 == source_vert || vertex_0 == dest_vert)? new_position : vert_0_pos;
 
@@ -2196,7 +2168,6 @@ bool ElasticShell::checkTriangleVsTriangleCollisionForCollapse( const FaceHandle
         break;
       }
       vert_ids[c] = v;
-/////////////////      vert_pos[c] = ElTopoCode::toElTopo(m_positions[vert_ids[c]]);
       vert_pos[c] = ElTopoCode::toElTopo(getVertexPosition(vert_ids[c]));
       new_vert_pos[c] = (v == source_vert || v == dest_vert)? new_position : vert_pos[c];
     }
@@ -2204,7 +2175,6 @@ bool ElasticShell::checkTriangleVsTriangleCollisionForCollapse( const FaceHandle
     if(shared_vert) continue;
 
     ElTopoCode::Vec3d vert_0_pos, vert_0_newpos;
-/////////////////    vert_0_pos = ElTopoCode::toElTopo(m_positions[ vertex_0 ]);
     vert_0_pos = ElTopoCode::toElTopo(getVertexPosition(vertex_0));
     vert_0_newpos = (vertex_0 == source_vert || vertex_0 == dest_vert)? new_position : vert_0_pos;
 
@@ -2253,7 +2223,6 @@ bool ElasticShell::checkTriangleVsTriangleCollisionForCollapse( const FaceHandle
       ElTopoCode::Vec3d vert_pos[4], new_vert_pos[4];
       for(int c = 0; c < 4; ++c) {
         VertexHandle v = vert_ids[c];
-/////////////////        vert_pos[c] = ElTopoCode::toElTopo(m_positions[vert_ids[c]]);
         vert_pos[c] = ElTopoCode::toElTopo(getVertexPosition(vert_ids[c]));
         new_vert_pos[c] = (v == source_vert || v == dest_vert)? new_position : vert_pos[c];
       }
@@ -2573,7 +2542,6 @@ void ElasticShell::deleteRegion() {
     Vec3d barycentre(0,0,0);
     for(FaceVertexIterator fvit = m_obj->fv_iter(fh); fvit; ++fvit) {
       VertexHandle vh = *fvit;
-/////////////////      Vec3d pos = m_positions[vh];
       Vec3d pos = getVertexPosition(vh);
       barycentre += pos;
 
@@ -2628,8 +2596,6 @@ void ElasticShell::extendMesh(Scalar current_time) {
     VertexHandle vfrom = m_obj->fromVertex(edge0);
     VertexHandle vto = m_obj->toVertex(edge0);
     Vec3d startPos = m_inflow_positions[boundary][0];
-/////////////////    Vec3d curPos = m_positions[vfrom];
-/////////////////    Vec3d curPos2 = m_positions[vto];
     Vec3d curPos = getVertexPosition(vfrom);
     Vec3d curPos2 = getVertexPosition(vto);
     
@@ -2734,8 +2700,6 @@ void ElasticShell::extendMesh(Scalar current_time) {
       setVertexPosition(vertices[i], m_inflow_positions[boundary][i]);
       setUndeformedVertexPosition(vertices[i], m_inflow_positions[boundary][i]);
       setVertexVelocity(vertices[i], m_inflow_velocities[boundary][i]);
-/////////////////      m_vertex_masses[vertices[i]] = 0;
-/////////////////      m_damping_undeformed_positions[vertices[i]] = m_inflow_positions[boundary][i];
       m_vertex_masses[vertices[i]] = 0;
       m_obj->setVertexDampingUndeformedPosition(vertices[i], m_inflow_positions[boundary][i]);
 

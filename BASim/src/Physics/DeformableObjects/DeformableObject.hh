@@ -107,8 +107,8 @@ public:
   void setTime(Scalar time);
   Scalar getTime();
 
-  void startStep() { for(unsigned int i = 0; i < m_models.size(); ++i) m_models[i]->startStep(m_time, m_dt); }
-  void endStep() { for(unsigned int i = 0; i < m_models.size(); ++i) m_models[i]->endStep(m_time, m_dt); }
+  void startStep();
+  void endStep();
 
   void addModel(PhysicalModel* model);
   PhysicalModel* getModel(int i) const { assert(i < (int)m_models.size()); return m_models[i]; }
