@@ -4,7 +4,7 @@
 
 namespace BASim 
 {  
-  ElasticRodModel::ElasticRodModel(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep) : 
+  ElasticRodModel::ElasticRodModel(DeformableObject* object, const std::vector<EdgeHandle> & rodedge, Scalar timestep) : 
   PhysicalModel(*object), m_obj(object), 
 //  m_active_faces(shellFaces), /////////////////////
   m_undef_xi(object),
@@ -294,7 +294,6 @@ namespace BASim
     const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
     return m_edge_masses[eh];/////////////////////
   }
-  
   
   void ElasticRodModel::startStep(Scalar time, Scalar timestep)
   {

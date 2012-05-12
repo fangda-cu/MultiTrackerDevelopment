@@ -16,11 +16,11 @@ namespace BASim
   const int ELASTIC_ROD_DOFS_PER_VERTEX = 0;  //nodal position vectors
   const int ELASTIC_ROD_DOFS_PER_EDGE = 1;    //edge twist
     
-  class ElasticRodModel : public PhysicalModel 
+  class ElasticRodModel : public PhysicalModel
   {
     
   public:
-    ElasticRodModel(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep); ////////////////
+    ElasticRodModel(DeformableObject* object, const std::vector<EdgeHandle> & rodedges, Scalar timestep); ////////////////
     ~ElasticRodModel();
     
     //*Inherited from PhysicalModel
