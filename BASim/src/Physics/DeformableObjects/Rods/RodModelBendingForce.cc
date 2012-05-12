@@ -1,5 +1,6 @@
 #include "RodModelBendingForce.hh"
 #include "BASim/src/Math/MatrixBase.hh"
+#include "BASim/src/Math/Math.hh"
 
 using namespace BASim;
 
@@ -60,9 +61,43 @@ void RodModelBendingForce::globalJacobian(Scalar scale, MatrixBase & Jacobian)
   }
 }
 
+Mat2d RodModelBendingForce::computeStiffness(Stencil & s, bool viscous)
+{
+  Scalar E = (viscous ? m_youngs_modulus_damping : m_youngs_modulus);
+  if (E == 0) return Mat2d::Zero();
+  
+  Vec2d ra = rod().getRadii(s.e1);
+  Vec2d rb = rod().getRadii(s.e2);
+  
+  Scalar a = (ra(0) + rb(0)) / 2.0;
+  Scalar b = (ra(1) + rb(1)) / 2.0;
+  Mat2d B(Mat2d::Zero());
+  B(0, 0) = E * M_PI * cube(a) * b / 4.0;
+  B(1, 1) = E * M_PI * a * cube(b) / 4.0;
+  
+// base rotation is not supported
+//  // rotate cross section
+//  Mat2d rot(Mat2d::Zero());
+//  rot(0, 0) = cos(m_rod.baseRotation());
+//  rot(1, 0) = sin(m_rod.baseRotation());
+//  rot(0, 1) = -1 * rot(1, 0);
+//  rot(1, 1) = rot(0, 0);
+//  
+//  B = rot * B * rot.transpose();
+  
+  return B;
+}
+
 Scalar RodModelBendingForce::localEnergy(Stencil & s, bool viscous)
 {
+  //TODO: this can use optimization (caching quantities like edge length, like BASim does with updateProperties)
+  Mat2d B = computeStiffness(s, viscous);
+  Scalar len = getRefVertexLength(s.v);
   
+  const Vec2d& kappa = getKappa(vh);
+  const Vec2d& kappaBar = getKappaBar(vh);
+  
+  return 0.5 / len * (kappa - kappaBar).dot(B * (kappa - kappaBar));
 }
 
 void RodModelBendingForce::localForce(ElementForce & force, Stencil & s, bool viscous)

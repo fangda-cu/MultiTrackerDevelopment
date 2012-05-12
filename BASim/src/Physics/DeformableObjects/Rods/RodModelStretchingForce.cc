@@ -61,14 +61,19 @@ void RodModelStretchingForce::globalJacobian(Scalar scale, MatrixBase & Jacobian
   }
 }
 
+Scalar RodModelStretchingForce::computeStiffness(Stencil & s, bool viscous)
+{
+  Scalar E = (viscous ? m_youngs_modulus_damping : m_youngs_modulus);
+  if (E == 0) return 0;
+  
+  Vec2d r = rod().getRadii(s.e);
+  return E * M_PI * r(0) * r(1);
+}
+
 Scalar RodModelStretchingForce::localEnergy(Stencil & s, bool viscous)
 {
   //TODO: this can use optimization (caching quantities like edge length, like BASim does with updateProperties)
-  Scalar E = (viscous ? m_youngs_modulus_damping : m_youngs_modulus);
-  if (E == 0) return 0;
-
-  Vec2d r = rod().getRadii(s.e);
-  Scalar ks = E * M_PI * r(0) * r(1);
+  Scalar ks = computeStiffness(s, viscous);
   
   DeformableObject & obj = rod().getDefoObj();
   Scalar reflen = (viscous ? 
@@ -82,11 +87,7 @@ Scalar RodModelStretchingForce::localEnergy(Stencil & s, bool viscous)
 void RodModelStretchingForce::localForce(ElementForce & force, Stencil & s, bool viscous)
 {
   //TODO: this can use optimization (caching quantities like edge length, like BASim does with updateProperties)
-  Scalar E = (viscous ? m_youngs_modulus_damping : m_youngs_modulus);
-  if (E == 0) return;
-  
-  Vec2d r = rod().getRadii(s.e);
-  Scalar ks = E * M_PI * r(0) * r(1);
+  Scalar ks = computeStiffness(s, viscous);
   
   DeformableObject & obj = rod().getDefoObj();
   Scalar reflen = (viscous ? 
@@ -103,11 +104,7 @@ void RodModelStretchingForce::localForce(ElementForce & force, Stencil & s, bool
 void RodModelStretchingForce::localJacobian(ElementJacobian & jacobian, Stencil & s, bool viscous)
 {
   //TODO: this can use optimization (caching quantities like edge length, like BASim does with updateProperties)
-  Scalar E = (viscous ? m_youngs_modulus_damping : m_youngs_modulus);
-  if (E == 0) return;
-  
-  Vec2d r = rod().getRadii(s.e);
-  Scalar ks = E * M_PI * r(0) * r(1);
+  Scalar ks = computeStiffness(s, viscous);
   
   DeformableObject & obj = rod().getDefoObj();
   Vec3d e = obj.getVertexPosition(s.v2) - obj.getVertexPosition(s.v1);

@@ -43,6 +43,8 @@ namespace BASim
     void globalJacobian(Scalar scale, MatrixBase & Jacobian);
     
   protected:
+    Mat2d computeStiffness(Stencil & s, bool viscous);
+
     Scalar localEnergy(Stencil & s, bool viscous);
     void localForce(ElementForce & force, Stencil & s, bool viscous);
     void localJacobian(ElementJacobian & jacobian, Stencil & s, bool viscous);
