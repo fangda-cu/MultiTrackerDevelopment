@@ -50,7 +50,8 @@ void DSBendingForce::gatherDOFs(const EdgeHandle& eh,
   undeformed[0] = m_shell.getVertexUndeformed(from_vh);
   undeformed_damp[0] = m_shell.getVertexDampingUndeformed(from_vh);
   deformed[0] = m_shell.getVertexPosition(from_vh);
-  int baseIdx = m_shell.getVertexDofBase(from_vh);
+////////////////////  int baseIdx = m_shell.getVertexDofBase(from_vh);
+  int baseIdx = m_shell.getDefoObj().getPositionDofBase(from_vh);
   indices[0] = baseIdx;
   indices[1] = baseIdx+1;
   indices[2] = baseIdx+2;
@@ -58,7 +59,8 @@ void DSBendingForce::gatherDOFs(const EdgeHandle& eh,
   undeformed[1] = m_shell.getVertexUndeformed(to_vh);
   undeformed_damp[1] = m_shell.getVertexDampingUndeformed(to_vh);
   deformed[1] = m_shell.getVertexPosition(to_vh);
-  baseIdx = m_shell.getVertexDofBase(to_vh);
+////////////////////  baseIdx = m_shell.getVertexDofBase(to_vh);
+  baseIdx = m_shell.getDefoObj().getPositionDofBase(to_vh);
   indices[3] = baseIdx;
   indices[4] = baseIdx+1;
   indices[5] = baseIdx+2;
@@ -66,7 +68,8 @@ void DSBendingForce::gatherDOFs(const EdgeHandle& eh,
   undeformed[2] = m_shell.getVertexUndeformed(f1_vh);
   undeformed_damp[2] = m_shell.getVertexDampingUndeformed(f1_vh);
   deformed[2] = m_shell.getVertexPosition(f1_vh);
-  baseIdx = m_shell.getVertexDofBase(f1_vh);
+////////////////////  baseIdx = m_shell.getVertexDofBase(f1_vh);
+  baseIdx = m_shell.getDefoObj().getPositionDofBase(f1_vh);
   indices[6] = baseIdx;
   indices[7] = baseIdx+1;
   indices[8] = baseIdx+2;
@@ -74,7 +77,8 @@ void DSBendingForce::gatherDOFs(const EdgeHandle& eh,
   undeformed[3] = m_shell.getVertexUndeformed(f2_vh);
   undeformed_damp[3] = m_shell.getVertexDampingUndeformed(f2_vh);
   deformed[3] = m_shell.getVertexPosition(f2_vh);
-  baseIdx = m_shell.getVertexDofBase(f2_vh);
+////////////////////  baseIdx = m_shell.getVertexDofBase(f2_vh);
+  baseIdx = m_shell.getDefoObj().getPositionDofBase(f2_vh);
   indices[9] = baseIdx;
   indices[10] = baseIdx+1;
   indices[11] = baseIdx+2;
