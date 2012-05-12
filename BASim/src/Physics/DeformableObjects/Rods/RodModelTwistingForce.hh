@@ -23,11 +23,17 @@ namespace BASim
       VertexHandle v;
       EdgeHandle e1;
       EdgeHandle e2;
-    };
+      IntArray dofindices;
+   };
     
   public:
     RodModelTwistingForce(ElasticRodModel & rod, Scalar shear_modulus, Scalar shear_modulus_damping);
     virtual ~RodModelTwistingForce();
+    
+  public:
+    void addStencil(Stencil & s) { m_stencils.push_back(s); }
+    std::vector<Stencil> & stencils() { return m_stencils; }
+    const std::vector<Stencil> & stencils() const { return m_stencils; }
     
   public:
     Scalar globalEnergy();
@@ -40,6 +46,8 @@ namespace BASim
     void localJacobian(ElementJacobian & f, Stencil & s);
     
   protected:
+    std::vector<Stencil> m_stencils;
+    
     Scalar m_shear_modulus;
     Scalar m_shear_modulus_damping;
     
