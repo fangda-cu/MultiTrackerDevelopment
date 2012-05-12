@@ -19,6 +19,7 @@ set (Directories
   Physics/ElasticRods
   Physics/DeformableObjects
   Physics/DeformableObjects/Shells
+  Physics/DeformableObjects/Rods
   Render
   Util
   Threads
