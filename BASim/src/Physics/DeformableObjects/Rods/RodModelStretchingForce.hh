@@ -28,7 +28,7 @@ namespace BASim
     };
 
   public:
-    RodModelStretchingForce(ElasticRodModel & rod, Scalar youngs_modulus, Scalar youngs_modulus_damping);
+    RodModelStretchingForce(ElasticRodModel & rod, Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar timestep);
     virtual ~RodModelStretchingForce();
 
   public:
@@ -42,15 +42,17 @@ namespace BASim
     void globalJacobian(Scalar scale, MatrixBase & Jacobian);
   
   protected:
-    Scalar localEnergy(Stencil & s);
-    void localForce(ElementForce & f, Stencil & s);
-    void localJacobian(ElementJacobian & f, Stencil & s);
+    Scalar localEnergy(Stencil & s, bool viscous);
+    void localForce(ElementForce & f, Stencil & s, bool viscous);
+    void localJacobian(ElementJacobian & f, Stencil & s, bool viscous);
 
   protected:
     std::vector<Stencil> m_stencils;
     
     Scalar m_youngs_modulus;
     Scalar m_youngs_modulus_damping;
+    
+    Scalar m_timestep;
     
   };
   

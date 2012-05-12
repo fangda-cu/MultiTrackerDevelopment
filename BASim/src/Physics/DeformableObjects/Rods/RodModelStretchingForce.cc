@@ -3,10 +3,11 @@
 
 using namespace BASim;
 
-RodModelStretchingForce::RodModelStretchingForce(ElasticRodModel & rod, Scalar youngs_modulus, Scalar youngs_modulus_damping) :
+RodModelStretchingForce::RodModelStretchingForce(ElasticRodModel & rod, Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar timestep) :
   RodModelForce(rod, "RodModelStretchingForce"),
   m_youngs_modulus(youngs_modulus),
-  m_youngs_modulus_damping(youngs_modulus_damping)
+  m_youngs_modulus_damping(youngs_modulus_damping),
+  m_timestep(timestep)
 {
   
 }
@@ -21,7 +22,8 @@ Scalar RodModelStretchingForce::globalEnergy()
   Scalar energy = 0;
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
-    energy += localEnergy(m_stencils[i]);
+    // energy only include non-viscous forces
+    energy += localEnergy(m_stencils[i], false);
   }
   return energy;
 }
@@ -31,9 +33,15 @@ void RodModelStretchingForce::globalForce(VecXd & force)
   ElementForce localforce;
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
-    localForce(localforce, m_stencils[i]);    
+    // non-viscous force
+    localForce(localforce, m_stencils[i], false);
     for (size_t j = 0; j < m_stencils[i].dofindices.size(); j++)
       force(m_stencils[i].dofindices[j]) += localforce(j);
+    
+    // viscous force
+    localForce(localforce, m_stencils[i], true);
+    for (size_t j = 0; j < m_stencils[i].dofindices.size(); j++)
+      force(m_stencils[i].dofindices[j]) += localforce(j) / m_timestep;
   }
 }
 
@@ -42,12 +50,17 @@ void RodModelStretchingForce::globalJacobian(Scalar scale, MatrixBase & Jacobian
   ElementJacobian localjacobian;
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
-    localJacobian(localjacobian, m_stencils[i]);    
+    // non-viscous force
+    localJacobian(localjacobian, m_stencils[i], false);
     Jacobian.add(m_stencils[i].dofindices, m_stencils[i].dofindices, scale * localjacobian);
+    
+    // viscous force
+    localJacobian(localjacobian, m_stencils[i], true);
+    Jacobian.add(m_stencils[i].dofindices, m_stencils[i].dofindices, scale / m_timestep * localjacobian);
   }
 }
 
-Scalar RodModelStretchingForce::localEnergy(Stencil & s)
+Scalar RodModelStretchingForce::localEnergy(Stencil & s, bool viscous)
 {
 //  Scalar ks = getKs(eh);
 //  if (ks == 0.0)
@@ -59,12 +72,12 @@ Scalar RodModelStretchingForce::localEnergy(Stencil & s)
 //  return ks / 2.0 * square(len / refLength - 1.0) * refLength;
 }
 
-void RodModelStretchingForce::localForce(ElementForce & f, Stencil & s)
+void RodModelStretchingForce::localForce(ElementForce & f, Stencil & s, bool viscous)
 {
   
 }
 
-void RodModelStretchingForce::localJacobian(ElementJacobian & f, Stencil & s)
+void RodModelStretchingForce::localJacobian(ElementJacobian & f, Stencil & s, bool viscous)
 {
   
 }
