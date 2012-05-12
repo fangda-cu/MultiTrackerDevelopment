@@ -6,7 +6,6 @@ namespace BASim
 {  
   ElasticRodModel::ElasticRodModel(DeformableObject* object, const std::vector<EdgeHandle> & rodedge, Scalar timestep) : 
   PhysicalModel(*object), 
-  m_elastic_rod(),
   m_obj(object), 
 //  m_active_faces(shellFaces), /////////////////////
   m_theta(object), /////////////////////
