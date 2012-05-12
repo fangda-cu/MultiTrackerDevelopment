@@ -42,8 +42,8 @@ namespace BASim
     
   protected:
     Scalar localEnergy(Stencil & s, bool viscous);
-    void localForce(ElementForce & f, Stencil & s, bool viscous);
-    void localJacobian(ElementJacobian & f, Stencil & s, bool viscous);
+    void localForce(ElementForce & force, Stencil & s, bool viscous);
+    void localJacobian(ElementJacobian & jacobian, Stencil & s, bool viscous);
     
   protected:
     std::vector<Stencil> m_stencils;

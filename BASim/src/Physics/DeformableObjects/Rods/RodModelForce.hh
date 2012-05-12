@@ -30,6 +30,9 @@ namespace BASim
     
     virtual void update() { }
     
+    ElasticRodModel & rod() { return m_rod; }
+    const ElasticRodModel & rod() const { return m_rod; }
+    
   protected:
     ElasticRodModel & m_rod;
     std::string m_name;

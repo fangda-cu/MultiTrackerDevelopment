@@ -65,12 +65,12 @@ Scalar RodModelTwistingForce::localEnergy(Stencil & s, bool viscous)
   
 }
 
-void RodModelTwistingForce::localForce(ElementForce & f, Stencil & s, bool viscous)
+void RodModelTwistingForce::localForce(ElementForce & force, Stencil & s, bool viscous)
 {
   
 }
 
-void RodModelTwistingForce::localJacobian(ElementJacobian & f, Stencil & s, bool viscous)
+void RodModelTwistingForce::localJacobian(ElementJacobian & jacobian, Stencil & s, bool viscous)
 {
   
 }
