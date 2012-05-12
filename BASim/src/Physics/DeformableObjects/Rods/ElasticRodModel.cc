@@ -5,7 +5,9 @@
 namespace BASim 
 {  
   ElasticRodModel::ElasticRodModel(DeformableObject* object, const std::vector<EdgeHandle> & rodedge, Scalar timestep) : 
-  PhysicalModel(*object), m_obj(object), 
+  PhysicalModel(*object), 
+  m_elastic_rod(),
+  m_obj(object), 
 //  m_active_faces(shellFaces), /////////////////////
   m_theta(object), /////////////////////
   m_theta_vel(object),/////////////////////
@@ -300,6 +302,8 @@ namespace BASim
   {
     std::cout << "Starting startStep\n";
 
+    startIteration(time, timestep);
+    
     //update the damping "reference configuration" for computing viscous forces.
     m_damping_undef_theta = m_theta;/////////////////////
     
@@ -317,6 +321,8 @@ namespace BASim
     std::cout << "Starting endStep.\n";
 //    bool do_relabel = false;/////////////////////
     
+    endIteration(time, timestep);
+    
     std::cout << "Vertex count: " << m_obj->nv() << std::endl;
     
     //Adjust thicknesses based on area changes
@@ -328,6 +334,20 @@ namespace BASim
     std::cout << "Completed endStep\n";
   }
 
+  void ElasticRodModel::startIteration(Scalar time, Scalar timestep)
+  {
+    
+  }
+  
+  void ElasticRodModel::endIteration(Scalar time, Scalar timestep)
+  {
+    // copy position dofs and edge theta dofs into ElasticRod's local copy
+    
+    
+    // ElasticRod endIteration operation: upcate the derived properties
+    m_elastic_rod.updateProperties();
+  }
+  
   ////////////////////////////////////////
   void ElasticRodModel::updateRadii()
   {

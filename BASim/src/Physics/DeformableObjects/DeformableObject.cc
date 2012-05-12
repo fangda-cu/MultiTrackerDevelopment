@@ -240,5 +240,17 @@ void DeformableObject::endStep()
     m_models[i]->endStep(m_time, m_dt); 
 }
 
+void DeformableObject::startIteration() 
+{ 
+  for(unsigned int i = 0; i < m_models.size(); ++i) 
+    m_models[i]->startIteration(m_time, m_dt); 
+}
+
+void DeformableObject::endIteration() 
+{ 
+  for(unsigned int i = 0; i < m_models.size(); ++i) 
+    m_models[i]->endIteration(m_time, m_dt); 
+}
+
 
 } //namespace BASim

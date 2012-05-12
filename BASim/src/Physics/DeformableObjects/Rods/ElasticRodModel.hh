@@ -18,15 +18,14 @@ namespace BASim
   const int ELASTIC_ROD_DOFS_PER_VERTEX = 0;  //nodal position vectors
   const int ELASTIC_ROD_DOFS_PER_EDGE = 1;    //edge twist
     
-  class ElasticRodModel : public PhysicalModel, public ElasticRod
+  class ElasticRodModel : public PhysicalModel
   {
     
   public:
     ElasticRodModel(DeformableObject* object, const std::vector<EdgeHandle> & rodedges, Scalar timestep); ////////////////
     ~ElasticRodModel();
     
-    //***********************************
-    // Inherited from PhysicalModel
+    //*Inherited from PhysicalModel
     void computeForces(VecXd& force);
     void computeJacobian(Scalar scale, MatrixBase& J);
     
@@ -48,6 +47,9 @@ namespace BASim
     
     void startStep(Scalar time, Scalar timestep);
     void endStep(Scalar time, Scalar timestep);
+    
+    void startIteration(Scalar time, Scalar timestep);
+    void endIteration(Scalar time, Scalar timestep);
     
 //    void setEdgeActive(const EdgeHandle & e)/////////////////////
     
@@ -86,13 +88,12 @@ namespace BASim
     
 //    void getThickness(VertexProperty<Scalar> & vThickness) const;/////////////////////
           
-    //*********************************
-    // Inherited from ElasticRod
-    
-    
   protected:
     void updateRadii();/////////////////////
             
+    // ElasticRod instance, serving as a data interface for reusing BASim's rod forces
+    ElasticRod m_elastic_rod;
+    
     //Rod dofs
     EdgeProperty<Scalar> m_theta;
     EdgeProperty<Scalar> m_theta_vel;

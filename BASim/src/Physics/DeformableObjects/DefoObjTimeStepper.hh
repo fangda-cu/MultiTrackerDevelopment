@@ -341,10 +341,14 @@ public:
     //m_obj.updateProperties();
   }
 
-  void startIteration() {}
+  void startIteration() 
+  {
+    m_obj.startIteration();
+  }
 
   void endIteration()
   {
+    m_obj.endIteration();
     //m_obj.updateProperties();
   }
 

@@ -112,6 +112,9 @@ public:
 
   void startStep();
   void endStep();
+  
+  void startIteration();
+  void endIteration();
 
   void addModel(PhysicalModel* model);
   PhysicalModel* getModel(int i) const { assert(i < (int)m_models.size()); return m_models[i]; }
