@@ -16,7 +16,10 @@ struct MNBendDofStruct
 
 
 MNBendingForce::MNBendingForce(ElasticShell& shell, const std::string& name, Scalar Youngs, Scalar Poisson, Scalar Youngs_damping, Scalar Poisson_damping, Scalar timestep) : 
-ElasticShellForce(shell, name), m_Youngs(Youngs), m_Poisson(Poisson), m_Youngs_damp(Youngs_damping), m_Poisson_damp(Poisson_damping), m_timestep(timestep), m_precomputed(&(shell.getDefoObj())), m_initialized(false), m_updated(false)
+ElasticShellForce(shell, name), m_Youngs(Youngs), m_Poisson(Poisson), 
+                                m_Youngs_damp(Youngs_damping), m_Poisson_damp(Poisson_damping), 
+                                m_timestep(timestep), m_precomputed(&(shell.getDefoObj())), 
+                                m_initialized(false), m_done_first_update(false)
 {
   
 }
@@ -28,34 +31,11 @@ void fillVert(std::vector<Scalar>& data, int startInd, const Vec3d& vert) {
 }
 
 void fillVertNaN(std::vector<Scalar>& data, int startInd) {
-  Scalar zero = 0.0;
-  Scalar NaN = 0.0 / zero;
+  //Fill in NaN's when a neighboring flap vertex doesn't exist.
+  Scalar NaN = numeric_limits<Scalar>::quiet_NaN();
   data[startInd] = NaN;
   data[startInd+1] = NaN;
   data[startInd+2] = NaN;
-}
-
-void MNBendingForce::update() {
-  
-  if(m_updated)
-    return;
-
-  std::cout << "updatePrecomp().\n";
-  
-  DeformableObject& defo = m_shell.getDefoObj();
-  std::vector<Scalar> undeformed(MNBendStencilSize), undeformed_damp(MNBendStencilSize), deformed(MNBendStencilSize);
-  std::vector<int> indices(MNBendStencilSize);
-
-  FaceIterator fit = defo.faces_begin();
-  for (;fit != defo.faces_end(); ++fit) {
-    const FaceHandle& fh = *fit;
-
-    bool valid = gatherDOFs(fh, undeformed, undeformed_damp, deformed, indices);
-    if(!valid) continue;
-
-    updatePrecomp(fh, deformed, &m_precomputed[fh]);
-  }
-  m_updated = true;
 }
 
 bool MNBendingForce::gatherDOFs(const FaceHandle& fh, 
@@ -68,8 +48,8 @@ bool MNBendingForce::gatherDOFs(const FaceHandle& fh,
   assert(undeformed_damp.size() == MNBendStencilSize);
   assert(deformed.size() == MNBendStencilSize);
   assert(indices.size() == MNBendStencilSize);
-  //data consists of 3 face vertices, then 3 (opposing, ordered) flap vertices,
-  //then the xi values on the 3 edges.
+  // The data consists of 3 face vertices, then 3 (opposing, ordered) flap vertices,
+  // then the xi values on the 3 edges.
 
   if(!m_shell.isFaceActive(fh)) return false;
 
@@ -81,13 +61,13 @@ bool MNBendingForce::gatherDOFs(const FaceHandle& fh,
   for(; feit; ++feit) {
     EdgeHandle eh = *feit;
     
-    //get the edge DOF
+    // Get the edge DOF
     indices[e] = m_shell.getEdgeDofBase(eh);
     deformed[e] = m_shell.getEdgeXi(eh);
     undeformed[e] = m_shell.getEdgeUndeformedXi(eh);
     undeformed_damp[e] = m_shell.getDampingUndeformedXi(eh);
 
-    //vertex opposite the edge in the central tri
+    // Vertex opposite the edge in the central triangle
     VertexHandle ph; 
     getFaceThirdVertex(defo, fh, eh, ph);
     int baseID = m_shell.getVertexDofBase(ph);
@@ -99,7 +79,7 @@ bool MNBendingForce::gatherDOFs(const FaceHandle& fh,
     fillVert(undeformed, v, m_shell.getVertexUndeformed(ph));
     fillVert(undeformed_damp, v, m_shell.getVertexDampingUndeformed(ph));
 
-    //vertex opposite the edge on the flap triangle for this edge
+    // Vertex opposite the edge on the flap triangle for this edge
     FaceHandle flapFace = getEdgeOtherFace(defo, eh, fh);
     if(flapFace.isValid()) {
       VertexHandle qh; 
@@ -127,12 +107,14 @@ void mapDof(const std::vector<Scalar>& src, MNBendDofStruct& dest) {
   dest.xi = (Real*)&src[18];
 }
 
-void MNBendingForce::doPrecomputation() const {
-  
-  /*if(m_initialized)
-  return;*/
+//--------------------
 
-  std::cout << "doPrecomp.\n";
+void MNBendingForce::initialize() const {
+  
+  if(m_initialized)
+    return;
+
+  std::cout << "initialize()\n";
 
   DeformableObject& defo = m_shell.getDefoObj();
   std::vector<Scalar> undeformed(MNBendStencilSize), undeformed_damp(MNBendStencilSize), deformed(MNBendStencilSize);
@@ -145,18 +127,44 @@ void MNBendingForce::doPrecomputation() const {
     bool valid = gatherDOFs(fh, undeformed, undeformed_damp, deformed, indices);
     if(!valid) continue;
 
-    //construct the precomputed data needed for this element
-    
-    initializePrecomp(fh, undeformed, &m_precomputed[fh]);
+    //construct the rest config and precomputed data needed for this element
+    computeRestConfigData(fh, undeformed, &m_precomputed[fh]);
   }
 
   m_initialized = true;
 }
 
+
+void MNBendingForce::update() {
+
+  if(!m_initialized)
+    initialize();
+
+  std::cout << "update()\n";
+
+  DeformableObject& defo = m_shell.getDefoObj();
+  std::vector<Scalar> undeformed(MNBendStencilSize), undeformed_damp(MNBendStencilSize), deformed(MNBendStencilSize);
+  std::vector<int> indices(MNBendStencilSize);
+
+  FaceIterator fit = defo.faces_begin();
+  for (;fit != defo.faces_end(); ++fit) {
+    const FaceHandle& fh = *fit;
+
+    bool valid = gatherDOFs(fh, undeformed, undeformed_damp, deformed, indices);
+    if(!valid) continue;
+
+    updateReferenceCoordinates(fh, deformed, &m_precomputed[fh]);
+  }
+  
+  m_done_first_update = true;
+
+}
+
+
+//--------------------
+
 Scalar MNBendingForce::globalEnergy() const
 {
-  std::cout << "Global energy\n";
-  doPrecomputation();
 
   Scalar energy = 0;
   DeformableObject& defo = m_shell.getDefoObj();
@@ -185,8 +193,6 @@ Scalar MNBendingForce::globalEnergy() const
 
 void MNBendingForce::globalForce( VecXd& force ) const
 {
-  
-  doPrecomputation();
 
   Eigen::Matrix<Scalar, NumMNBendDof, 1> localForce;
   std::vector<Scalar> undeformed(MNBendStencilSize), undeformed_damp(MNBendStencilSize), deformed(MNBendStencilSize);
@@ -236,8 +242,6 @@ void MNBendingForce::globalForce( VecXd& force ) const
 void MNBendingForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) const
 {
 
-  doPrecomputation();
-
   std::vector<Scalar> undeformed(MNBendStencilSize), undeformed_damp(MNBendStencilSize), deformed(MNBendStencilSize);
   std::vector<int> indices(NumMNBendDof);
   Eigen::Matrix<Scalar, NumMNBendDof, NumMNBendDof> localJacobian;
@@ -278,6 +282,7 @@ void MNBendingForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) const
   }
 }
 
+//--------------------
 
 //  compute a set of quantities associated with a triangle 
 //  used in several functions
@@ -330,13 +335,13 @@ void ComputeEdgeFrameParams(
   tunit[0] = dir(t[0]);             tunit[1] = dir(t[1]);              tunit[2] = dir(t[2]); 
 
   tau[0] = dir(t[0]-topp[0]); tau[1] = dir(t[1]-topp[1]); tau[2] = dir(t[2]-topp[2]);
-
+  
   c[0] = dot(tunit[0],tau[0]); assert(fabs(c[0]) > FLT_EPSILON); c[0] =   1.0/c[0];
   c[1] = dot(tunit[1],tau[1]); assert(fabs(c[1]) > FLT_EPSILON); c[1] =   1.0/c[1];
   c[2] = dot(tunit[2],tau[2]); assert(fabs(c[2]) > FLT_EPSILON); c[2] =   1.0/c[2];  
 }
 
-
+//--------------------
 
 template <int DO_HESS>
 adreal<NumMNBendDof,DO_HESS,Real> MNEnergy(const MNBendingForce& mn, const std::vector<Scalar>& undeformed, const std::vector<Scalar>& deformed, MNPrecomputed* pre) {  
@@ -344,11 +349,6 @@ adreal<NumMNBendDof,DO_HESS,Real> MNEnergy(const MNBendingForce& mn, const std::
   // typedefs to simplify code below
   typedef adreal<NumMNBendDof,DO_HESS,Real> adrealMN;
   typedef CVec3T<adrealMN> advecMN;
-
- /* std::cout << "Stuff:";
-  for(int i = 0; i < deformed.size(); ++i)
-    std::cout << deformed[i] << " ";
-  std::cout << std::endl;*/
 
   MNPrecomputed* pc = pre;
 
@@ -397,15 +397,7 @@ adreal<NumMNBendDof,DO_HESS,Real> MNEnergy(const MNBendingForce& mn, const std::
   if(!nbrValid2) w[2] = 0;
 
   //std::cout << "W values:\n" << w[0].value() << " " << w[1].value() << " " << w[2].value() << std::endl << std::endl;
-  
-  /*std::cout << "T matrix:\n";
-  for(int i= 0; i < NumTriPoints; i++) {
-    for(int j= 0; j < NumTriPoints; j++) {
-      std::cout << pc->T[NumTriPoints*i+j] << " "; 
-    }
-    std::cout << std::endl;
-  }*/
-
+ 
   adrealMN e(0);
   for(int i= 0; i < NumTriPoints; i++)
     for(int j= 0; j < NumTriPoints; j++)
@@ -415,9 +407,10 @@ adreal<NumMNBendDof,DO_HESS,Real> MNEnergy(const MNBendingForce& mn, const std::
   return e;
 }
 
+//--------------------
 
 // compute T and w_undef from undeformed configuration
-void MNBendingForce::initializePrecomp( const FaceHandle& face, const std::vector<Scalar>& undeformed, MNPrecomputed* pc) const 
+void MNBendingForce::computeRestConfigData( const FaceHandle& face, const std::vector<Scalar>& undeformed, MNPrecomputed* pc) const 
 { 
   // map generic variables to energy-specific structures
   MNBendDofStruct s_undeformed;
@@ -461,38 +454,27 @@ void MNBendingForce::initializePrecomp( const FaceHandle& face, const std::vecto
   
   //Note that it would ordinarily be divided by area^2, but since we integrate over area to compute energy,
   //one of them goes away.
-  /*std::cout << "Vus: " << vu[0] << " <> " << vu[1] << " <> " << vu[2] << std::endl;
-  std::cout << "Au: " << Au << std::endl;
-*/
   Real Tc1[9], Tc2[9];
   for(int i=0; i <= 2; i++) {
     for(int j=0; j <= 2; j++) {
       Tc1[NumTriPoints*j+i] = dot(vu[i],vu[j])*dot(vu[i],vu[j])/Au/len(vu[i])/len(vu[j]);
       Tc2[NumTriPoints*j+i] = len(vu[i])*len(vu[j])/Au;
-      //std::cout << "Tc1: " << Tc1[NumTriPoints*j+i] <<  " TC2: " << Tc2[NumTriPoints*j+i] << std::endl;
     }
   }
-
-
-
+ 
   Real Y = m_Youngs;
   Real h = m_shell.getThickness(face);
   Real poisson = m_Poisson;
-  /*std::cout << "Y: " << Y << "  h: " << h <<  "  Poisson: " << poisson << std::endl;
-  std::cout << "T:";*/
   for(int i=0; i<9; i++ ) {
     pc->T[i] = (Y*h*h*h/12.0)/(1.0-poisson*poisson)*((1.0-poisson)*Tc1[i] + poisson*Tc2[i]);
-    //std::cout << pc->T[i] << " ";
   }
-  //std::cout << std::endl;
    
 }
 
 // use current deformed positions to compute reference coordinate system quantities 
-void MNBendingForce::updatePrecomp(const FaceHandle& face, const std::vector<Scalar>& deformed, MNPrecomputed* pre) const
+void MNBendingForce::updateReferenceCoordinates(const FaceHandle& face, const std::vector<Scalar>& deformed, MNPrecomputed* pre) const
 {    
   
-
   // map generic variables to energy-specific structures
   MNPrecomputed* pc = pre;
   MNBendDofStruct s_deformed;
@@ -508,13 +490,41 @@ void MNBendingForce::updatePrecomp(const FaceHandle& face, const std::vector<Sca
   Real   A0;  
   Vector3d   nopp0[NumTriPoints]; 
 
-  ComputeTriangleAttrib(p0,v0,t0,n0,A0);
-  ComputeFlapNormals(p0,q0,v0,nopp0);
-  ComputeEdgeFrameParams(v0,t0,nopp0,tau0,c0);  
-  //std::cout << "Taus:" << tau0[0] << " <> " << tau0[1] << " <> " << tau0[2] << " <>\n";
+  if(!m_done_first_update) {
+    //assume zero xi values on the first pass, and just use the actual average normals
+    ComputeTriangleAttrib(p0,v0,t0,n0,A0);
+    ComputeFlapNormals(p0,q0,v0,nopp0);
+    ComputeEdgeFrameParams(v0,t0,nopp0,tau0,c0); 
+  }
+  else {
+    ComputeTriangleAttrib(p0,v0,t0,n0,A0);
+
+    //reconstruct the mid-edge normals from stored tau0 and current xi's. 
+    //Are we just to use the *current* edge vector v for this? Think so...
+    Vector3d avgNormal[NumTriPoints], actualNormal[NumTriPoints];
+    for(int i = 0; i < 3; ++i) {
+      avgNormal[i] = dir(cross(tau0[i],v0[i]));
+      Scalar normalComp = sqrt(1.0 - (s_deformed.xi[i])*(s_deformed.xi[i]));
+      actualNormal[i] = tau0[i] * (Real)(pc->s[i]) * s_deformed.xi[i] + normalComp * avgNormal[i];
+    }
+
+    //compute new tau's and c0's
+    ComputeFlapNormals(p0,q0,v0,nopp0);
+    ComputeEdgeFrameParams(v0,t0,nopp0,tau0,c0); 
+
+    //compute new xi's.
+    for(int i = 0; i < 3; ++i) {
+      s_deformed.xi[i] = pc->s[i] * dot(actualNormal[i], tau0[i]);
+    }
+  }
+
+  
+
+ 
 
 }
 
+//--------------------
 
 Scalar MNBendingForce::elementEnergy(const std::vector<Scalar>& undeformed,
   const std::vector<Scalar>& deformed, MNPrecomputed* pre) const 

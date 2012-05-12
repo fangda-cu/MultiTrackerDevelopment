@@ -258,9 +258,9 @@ void ShellTest::Setup()
 
     //Better bending model, not currently functional.
     if(mn_bend) {
-      MNBendingForce* mnforce = new MNBendingForce(*shell, "MNBending", Youngs_modulus, Poisson_ratio, Youngs_damping, Poisson_damping, timestep);
+      MNBendingForce* mnforce = new MNBendingForce(*shell, "MNBending", ds_scale*Youngs_modulus, Poisson_ratio, ds_scale*Youngs_damping, Poisson_damping, timestep);
       shell->addForce(mnforce);
-      mnforce->update(); //set initial reference normal vectors
+      //mnforce->update(); //set initial reference normal vectors
 
       //now! adjust the vertices under a rotation, and check the energy.
       int i = 0;
@@ -269,10 +269,10 @@ void ShellTest::Setup()
         Scalar theta = M_PI/12;
         Scalar ypos = sin(theta);
         Scalar xpos = cos(theta);
-        if(i == 2)
+       /* if(i == 2)
           shell->setVertexPosition(h, Vec3d(-xpos, -ypos, 0));
         else if(i == 3)
-          shell->setVertexPosition(h, Vec3d(-xpos, -ypos, 2));
+          shell->setVertexPosition(h, Vec3d(-xpos, -ypos, 2));*/
         /*else if(i == 4)
           shell->setVertexPosition(h, Vec3d(-xpos, -ypos, -2));*/
         ++i;
@@ -282,16 +282,16 @@ void ShellTest::Setup()
       EdgeProperty<Scalar> xiValues(shellObj);
       for(EdgeIterator eit = shellObj->edges_begin(); eit != shellObj->edges_end(); ++eit) {
         EdgeHandle eh = *eit;
-        if(i == 2) {
+        /*if(i == 2) {
           xiValues[eh] = 0.183;
         }
-        else xiValues[eh] = 0;
+        else */xiValues[eh] = 0;
         ++i;
       }
       shell->setEdgeXis(xiValues);
       
-      Scalar energy = mnforce->globalEnergy();
-      std::cout << "Energy: " << energy << std::endl;
+      //Scalar energy = mnforce->globalEnergy();
+      //std::cout << "Energy: " << energy << std::endl;
     }
 
   }
@@ -500,13 +500,13 @@ void ShellTest::setupScene1() {
   
   for(int j = 0; j <= yresolution; ++j) {
     for(int i = 0; i <= xresolution; ++i) {
-      Vec3d vert(i*dx, j*dy, j*dy);//0.01*dx*sin(100*j*dy + 17*i*dx)); // sin(3*j*dy)
-     /* if(j < 0.5*yresolution) {
+      Vec3d vert(i*dx, j*dy, 0);//0.01*dx*sin(100*j*dy + 17*i*dx)); // sin(3*j*dy)
+      if(j < 0.5*yresolution) {
         int k = j;
         int j_mod = (int)(0.5*yresolution);
         vert(1) = j_mod*dx;
         vert(2) = (k-j_mod)*dx;
-      }*/
+      }
       Vec3d undef = vert;
 
       VertexHandle h = shellObj->addVertex();
@@ -2574,7 +2574,7 @@ void ShellTest::setupScene20_BendingTest() {
   test_vertices.push_back(Vec3d(-1,0,0));
   test_vertices.push_back(Vec3d(-1,0,2));
   //test_vertices.push_back(Vec3d(-1,0,-2));
-  for(int i = 0; i < test_vertices.size(); ++i) {
+  for(unsigned int i = 0; i < test_vertices.size(); ++i) {
     VertexHandle h = shellObj->addVertex();
     vertHandles.push_back(h);
     positions[h] = test_vertices[i];
@@ -2597,7 +2597,7 @@ void ShellTest::setupScene20_BendingTest() {
   tris.push_back(Vec3i(0,1,2));
   tris.push_back(Vec3i(0,2,3));
   //tris.push_back(Vec3i(1,4,2));
-  for(int i = 0; i < tris.size(); ++i) {
+  for(unsigned int i = 0; i < tris.size(); ++i) {
     shellObj->addFace(vertHandles[tris[i][0]], vertHandles[tris[i][1]], vertHandles[tris[i][2]]);
   }
   

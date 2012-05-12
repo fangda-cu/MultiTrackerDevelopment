@@ -256,9 +256,9 @@ void ElasticShell::computeMasses()
       EdgeHandle e1_hnd = *feit; ++feit; assert(feit);
       EdgeHandle e2_hnd = *feit; ++feit; //assert(feit);
 
-      m_edge_masses[e0_hnd] += contribution;
-      m_edge_masses[e1_hnd] += contribution;
-      m_edge_masses[e2_hnd] += contribution;
+      m_edge_masses[e0_hnd] += contribution/100;
+      m_edge_masses[e1_hnd] += contribution/100;
+      m_edge_masses[e2_hnd] += contribution/100;
 
       //store the current volumes
       m_volumes[f_hnd] = 3*area*m_thicknesses[f_hnd];
