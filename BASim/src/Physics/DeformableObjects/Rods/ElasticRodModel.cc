@@ -341,11 +341,11 @@ namespace BASim
   
   void ElasticRodModel::endIteration(Scalar time, Scalar timestep)
   {
-    // copy position dofs and edge theta dofs into ElasticRod's local copy
-    
-    
-    // ElasticRod endIteration operation: upcate the derived properties
-    m_elastic_rod.updateProperties();
+//    // copy position dofs and edge theta dofs into ElasticRod's local copy
+//    
+//    
+//    // ElasticRod endIteration operation: upcate the derived properties
+//    m_elastic_rod.updateProperties();
   }
   
   ////////////////////////////////////////

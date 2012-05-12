@@ -9,7 +9,7 @@
 
 #include "BASim/src/Physics/DeformableObjects/PhysicalModel.hh"
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
-#include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
+//#include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
 
 namespace BASim 
 {
@@ -91,8 +91,8 @@ namespace BASim
   protected:
     void updateRadii();/////////////////////
             
-    // ElasticRod instance, serving as a data interface for reusing BASim's rod forces
-    ElasticRod m_elastic_rod;
+//    // ElasticRod instance, serving as a data interface for reusing BASim's rod forces
+//    ElasticRod m_elastic_rod;
     
     //Rod dofs
     EdgeProperty<Scalar> m_theta;

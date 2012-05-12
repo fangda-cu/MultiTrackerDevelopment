@@ -9,11 +9,11 @@
 #define RODMODELSTRETCHINGFORCE_HH
 
 #include "BASim/src/Physics/DeformableObjects/Rods/RodModelForce.hh"
-#include "BASim/src/Physics/ElasticRods/RodStretchingForce.hh"
+//#include "BASim/src/Physics/ElasticRods/RodStretchingForce.hh"
 
 namespace BASim 
 {
-  class RodModelStretchingForce : public RodModelForce, public RodStretchingForce
+  class RodModelStretchingForce : public RodModelForce
   {
   public:
     struct Stencil
