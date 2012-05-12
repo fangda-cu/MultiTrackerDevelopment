@@ -9,6 +9,7 @@
 
 #include "BASim/src/Physics/DeformableObjects/PhysicalModel.hh"
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
+#include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
 
 namespace BASim 
 {

@@ -227,8 +227,8 @@ namespace BASim
   }
   
 /////////////////////
-//  bool ElasticShell::isVertexActive( const VertexHandle& v ) const
-//  {
+  bool ElasticRodModel::isVertexActive( const VertexHandle& v ) const
+  {
 //    //determine if the vertex is on any active face
 //    VertexFaceIterator vf = m_obj->vf_iter(v);
 //    for(;vf; ++vf) {
@@ -238,9 +238,10 @@ namespace BASim
 //    }
 //    
 //    return false;
-//  }
-//  
-//  bool ElasticShell::isEdgeActive( const EdgeHandle& e) const {
+  }
+  
+  bool ElasticRodModel::isEdgeActive( const EdgeHandle& e) const 
+  {
 //    //if any adjacent face is active, we say this edge is active.
 //    EdgeFaceIterator ef = m_obj->ef_iter(e);
 //    for(;ef;++ef) {
@@ -250,7 +251,7 @@ namespace BASim
 //    }
 //    
 //    return false;
-//  }
+  }
   
   const Scalar& ElasticRodModel::getDof( const DofHandle& hnd ) const
   {
@@ -326,5 +327,11 @@ namespace BASim
     
     std::cout << "Completed endStep\n";
   }
+
+  ////////////////////////////////////////
+  void ElasticRodModel::updateThickness()
+  {
     
+  }
+  
 } //namespace BASim
