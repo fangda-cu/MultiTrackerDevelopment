@@ -13,18 +13,20 @@
 
 namespace BASim 
 {
+  class RodModelForce;
   
   const int ELASTIC_ROD_DOFS_PER_VERTEX = 0;  //nodal position vectors
   const int ELASTIC_ROD_DOFS_PER_EDGE = 1;    //edge twist
     
-  class ElasticRodModel : public PhysicalModel
+  class ElasticRodModel : public PhysicalModel, public ElasticRod
   {
     
   public:
     ElasticRodModel(DeformableObject* object, const std::vector<EdgeHandle> & rodedges, Scalar timestep); ////////////////
     ~ElasticRodModel();
     
-    //*Inherited from PhysicalModel
+    //***********************************
+    // Inherited from PhysicalModel
     void computeForces(VecXd& force);
     void computeJacobian(Scalar scale, MatrixBase& J);
     
@@ -47,49 +49,55 @@ namespace BASim
     void startStep(Scalar time, Scalar timestep);
     void endStep(Scalar time, Scalar timestep);
     
-    //*Elastic Shell-specific
-//    void setFaceActive(const FaceHandle& f) {m_active_faces[f] = true; }/////////////////////
+//    void setEdgeActive(const EdgeHandle & e)/////////////////////
     
-//    const std::vector<ElasticShellForce*>& getForces() const;/////////////////////
-//    void addForce(ElasticShellForce* force);/////////////////////
+    const std::vector<RodModelForce *> & getForces() const;/////////////////////
+    void addForce(RodModelForce * force);/////////////////////
     
     /////////////////////
-    void setEdgeXis(const EdgeProperty<Scalar>& xi);
-    void setEdgeVelocities(const EdgeProperty<Scalar>& vels);
-    void setEdgeUndeformed(const EdgeProperty<Scalar>& undef);
+    void setEdgeThetas(const EdgeProperty<Scalar>& theta);
+    void setEdgeThetaVelocities(const EdgeProperty<Scalar>& vels);
+    void setEdgeUndeformedThetas(const EdgeProperty<Scalar>& undef);
 
     /////////////////////
-    Scalar getEdgeXi(const EdgeHandle& eh) const { return m_xi[eh]; }
-    Scalar getEdgeVelocity(const EdgeHandle& eh) const { return m_xi_vel[eh]; }
-    Scalar getEdgeUndeformedXi(const EdgeHandle& eh) const { return m_undef_xi[eh]; }
-    Scalar getDampingUndeformedXi(const EdgeHandle& eh) const { return m_damping_undef_xi[eh]; }
+    Scalar getEdgeTheta(const EdgeHandle& eh) const { return m_theta[eh]; }
+    Scalar getEdgeThetaVelocity(const EdgeHandle& eh) const { return m_theta_vel[eh]; }
+    Scalar getEdgeUndeformedTheta(const EdgeHandle& eh) const { return m_undef_theta[eh]; }
+    Scalar getEdgeDampingUndeformedTheta(const EdgeHandle& eh) const { return m_damping_undef_theta[eh]; }
     
-    const VertexProperty<Scalar> & getVertexMasses() const { return m_vertex_masses; }
+    const VertexProperty<Scalar> & getVertexMasses() const { return m_vertex_masses; }  // inherited from PhysicalModel
     void computeMasses();/////////////////////
     
     void setDensity(Scalar density);
     void setRadii(Scalar ra, Scalar rb);/////////////////////
     
     Scalar getMass(const VertexHandle& v) const { return m_obj->getVertexMass(v); }
-    Scalar getMass(const EdgeHandle& e) const { return m_edge_masses[e]; }/////////////////////
-    Scalar getThickness(const FaceHandle& f) const { }// return m_thicknesses[f]; }/////////////////////
-    void setThickness(const FaceHandle& f, Scalar thick) { } //m_thicknesses[f] = thick; }/////////////////////
-    Scalar getThickness(const VertexHandle& vh) const;/////////////////////
-    Scalar getMaxThickness () const;/////////////////////
-    Scalar getMinThickness () const;/////////////////////
-    Scalar getVolume(const FaceHandle& f) const {return m_volumes[f]; }/////////////////////
-    Scalar getArea(const FaceHandle& f, bool current = true) const;/////////////////////
+    Scalar getMass(const EdgeHandle& e) const { return m_edge_masses[e]; }
     
-    void getThickness(VertexProperty<Scalar> & vThickness) const;/////////////////////
-            
+    Vec2d getRadii(const EdgeHandle& e) const { return m_radii[e]; } /////////////////////
+    void setRadii(const EdgeHandle& e, const Vec2d & r) { m_radii[e] = r; } /////////////////////
+    
+//    Scalar getThickness(const VertexHandle& vh) const;/////////////////////
+//    Scalar getMaxThickness () const;/////////////////////
+//    Scalar getMinThickness () const;/////////////////////
+
+    Scalar getVolume(const EdgeHandle& e) const { return m_volumes[e]; }/////////////////////
+//    Scalar getArea(const FaceHandle& f, bool current = true) const;/////////////////////
+    
+//    void getThickness(VertexProperty<Scalar> & vThickness) const;/////////////////////
+          
+    //*********************************
+    // Inherited from ElasticRod
+    
+    
   protected:
-    void updateThickness();/////////////////////
+    void updateRadii();/////////////////////
             
-    //Various shell data
-    EdgeProperty<Scalar> m_xi;
-    EdgeProperty<Scalar> m_xi_vel;
-    EdgeProperty<Scalar> m_undef_xi;    
-    EdgeProperty<Scalar> m_damping_undef_xi;
+    //Rod dofs
+    EdgeProperty<Scalar> m_theta;
+    EdgeProperty<Scalar> m_theta_vel;
+    EdgeProperty<Scalar> m_undef_theta;    
+    EdgeProperty<Scalar> m_damping_undef_theta;
     
     VertexProperty<Scalar> m_vertex_masses;
     EdgeProperty<Scalar> m_edge_masses;

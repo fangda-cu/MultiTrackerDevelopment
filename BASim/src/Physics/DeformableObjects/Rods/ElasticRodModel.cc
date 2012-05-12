@@ -7,14 +7,14 @@ namespace BASim
   ElasticRodModel::ElasticRodModel(DeformableObject* object, const std::vector<EdgeHandle> & rodedge, Scalar timestep) : 
   PhysicalModel(*object), m_obj(object), 
 //  m_active_faces(shellFaces), /////////////////////
-  m_undef_xi(object),
-  m_damping_undef_xi(object),
+  m_theta(object), /////////////////////
+  m_theta_vel(object),/////////////////////
+  m_undef_theta(object),
+  m_damping_undef_theta(object),
   m_vertex_masses(object),
   m_edge_masses(object),
   m_radii(object),
   m_volumes(object),
-  m_xi(object), /////////////////////
-  m_xi_vel(object),/////////////////////
   m_density(1)
   {
   
@@ -82,23 +82,23 @@ namespace BASim
     m_density = density;
   }
   
-  void ElasticRodModel::setEdgeUndeformed( const EdgeProperty<Scalar>& undef )/////////////////////
+  void ElasticRodModel::setEdgeThetas( const EdgeProperty<Scalar>& positions )/////////////////////
   {
-    m_undef_xi = undef;
+    m_theta = positions;
   }
   
-  void ElasticRodModel::setEdgeXis( const EdgeProperty<Scalar>& positions )/////////////////////
+  void ElasticRodModel::setEdgeThetaVelocities(const EdgeProperty<Scalar>& velocities)/////////////////////
   {
-    m_xi = positions;
+    m_theta_vel = velocities;
   }
-  
-  void ElasticRodModel::setEdgeVelocities(const EdgeProperty<Scalar>& velocities)/////////////////////
+
+  void ElasticRodModel::setEdgeUndeformedThetas( const EdgeProperty<Scalar>& undef )/////////////////////
   {
-    m_xi_vel = velocities;
-  }
-  
-  Scalar ElasticRodModel::getThickness(const VertexHandle& vh) const 
-  {
+    m_undef_theta = undef;
+  }  
+
+//  Scalar ElasticRodModel::getThickness(const VertexHandle& vh) const 
+//  {
 /////////////////////
 //    Scalar totalA = 0.0;
 //    Scalar w;
@@ -112,38 +112,38 @@ namespace BASim
 //    assert ( totalA > 0.);
 //    assert ( total > 0.);
 //    return total / totalA;
-  }
-  
-  Scalar ElasticRodModel::getMaxThickness() const 
-  {
+//  }
+//  
+//  Scalar ElasticRodModel::getMaxThickness() const 
+//  {
 /////////////////////
 //    Scalar maxVal = -1000000;
 //    for( FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit ){
 //      if (m_thicknesses[*fit] > maxVal ) maxVal = m_thicknesses[*fit];
 //    }
 //    return maxVal;
-  }
-  
-  Scalar ElasticRodModel::getMinThickness() const 
-  {
+//  }
+//  
+//  Scalar ElasticRodModel::getMinThickness() const 
+//  {
 /////////////////////
 //    Scalar minVal = 1000000;
 //    for( FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit ){
 //      if (m_thicknesses[*fit] < minVal ) minVal = m_thicknesses[*fit];
 //    }
 //    return minVal;
-  }
-  
-  void ElasticRodModel::getThickness(VertexProperty<Scalar> & vThickness) const
-  {
+//  }
+//  
+//  void ElasticRodModel::getThickness(VertexProperty<Scalar> & vThickness) const
+//  {
 /////////////////////
 //    for ( VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit){
 //      vThickness[*vit] = getThickness(*vit);
 //    }
-  }
-  
-  Scalar ElasticRodModel::getArea(const FaceHandle& f, bool current) const  
-  {
+//  }
+//  
+//  Scalar ElasticRodModel::getArea(const FaceHandle& f, bool current) const  
+//  {
 /////////////////////
 //    FaceVertexIterator fvit = m_obj->fv_iter(f);
 //    VertexHandle v0_hnd = *fvit; ++fvit; assert(fvit);
@@ -173,7 +173,7 @@ namespace BASim
 //      Vec3d triVec = v0.cross(v1);
 //      return 0.5*triVec.norm();
 //    }
-  }
+//  }
   
   void ElasticRodModel::computeMasses()
   {
@@ -260,7 +260,7 @@ namespace BASim
     
     //return reference to the appropriate position in the vector
     const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-    return const_cast<Scalar&>(m_xi[eh]);/////////////////////
+    return const_cast<Scalar&>(m_theta[eh]);/////////////////////
   }
   
   void ElasticRodModel::setDof( const DofHandle& hnd, const Scalar& dof )
@@ -269,7 +269,7 @@ namespace BASim
     assert(hnd.getType() == DofHandle::EDGE_DOF);
     
     const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-    m_xi[eh] = dof;/////////////////////
+    m_theta[eh] = dof;/////////////////////
   }
   
   const Scalar& ElasticRodModel::getVel( const DofHandle& hnd ) const
@@ -277,7 +277,7 @@ namespace BASim
     assert(hnd.getType() == DofHandle::EDGE_DOF);
     
     const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-    return const_cast<Scalar&>(m_xi_vel[eh]);/////////////////////
+    return const_cast<Scalar&>(m_theta_vel[eh]);/////////////////////
   }
   
   void ElasticRodModel::setVel( const DofHandle& hnd, const Scalar& vel )
@@ -285,7 +285,7 @@ namespace BASim
     assert(hnd.getType() == DofHandle::EDGE_DOF);
     
     const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-    m_xi_vel[eh] = vel;/////////////////////
+    m_theta_vel[eh] = vel;/////////////////////
   }
   
   const Scalar& ElasticRodModel::getMass( const DofHandle& hnd ) const
@@ -301,7 +301,7 @@ namespace BASim
     std::cout << "Starting startStep\n";
 
     //update the damping "reference configuration" for computing viscous forces.
-    m_damping_undef_xi = m_xi;/////////////////////
+    m_damping_undef_theta = m_theta;/////////////////////
     
     //tell the forces to update anything they need to update
 /////////////////////
@@ -315,12 +315,12 @@ namespace BASim
   void ElasticRodModel::endStep(Scalar time, Scalar timestep) 
   {
     std::cout << "Starting endStep.\n";
-    bool do_relabel = false;
+//    bool do_relabel = false;/////////////////////
     
     std::cout << "Vertex count: " << m_obj->nv() << std::endl;
     
     //Adjust thicknesses based on area changes
-    updateThickness();/////////////////////
+    updateRadii();/////////////////////
     
     //Update masses based on new areas/thicknesses
     computeMasses();
@@ -329,7 +329,7 @@ namespace BASim
   }
 
   ////////////////////////////////////////
-  void ElasticRodModel::updateThickness()
+  void ElasticRodModel::updateRadii()
   {
     
   }
