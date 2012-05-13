@@ -471,6 +471,13 @@ void RodShellTest::setupScene2()
   Scalar rod_Shear_damping = GetScalarOpt("rod-Shear-damping");
   rod->setup(m_timestep, rod_Youngs_modulus, rod_Youngs_damping, rod_Shear_modulus, rod_Shear_damping, &ref_dir);
   
+  obj->constrainVertex(vertex_handles[0], positions[vertex_handles[0]]);  // fix head position
+  obj->constrainVertex(vertex_handles[1], positions[vertex_handles[1]]);  // fix head tangent
+  obj->constrainVertex(vertex_handles[nv - 1], positions[vertex_handles[nv - 1]]);  // fix tail position
+  obj->constrainVertex(vertex_handles[nv - 2], positions[vertex_handles[nv - 2]]);  // fix tail tangent
+  rod->constrainEdgeVel(rodEdges[0], 0, 1, 0);  // twist rate = 1 at the head
+  rod->constrainEdge(rodEdges[nv - 2], 0);      // no twist at the tail
+  
   // create an empty shell model
   FaceProperty<char> shellFaces(obj); 
   shellFaces.assign(false); // no face anyway  
