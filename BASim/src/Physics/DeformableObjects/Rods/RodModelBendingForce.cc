@@ -90,14 +90,14 @@ Mat2d RodModelBendingForce::computeStiffness(Stencil & s, bool viscous)
 
 Scalar RodModelBendingForce::localEnergy(Stencil & s, bool viscous)
 {
-  //TODO: this can use optimization (caching quantities like edge length, like BASim does with updateProperties)
-  Mat2d B = computeStiffness(s, viscous);
-  Scalar len = getRefVertexLength(s.v);
-  
-  const Vec2d& kappa = getKappa(vh);
-  const Vec2d& kappaBar = getKappaBar(vh);
-  
-  return 0.5 / len * (kappa - kappaBar).dot(B * (kappa - kappaBar));
+//  //TODO: this can use optimization (caching quantities like edge length, like BASim does with updateProperties)
+//  Mat2d B = computeStiffness(s, viscous);
+//  Scalar len = getRefVertexLength(s.v);
+//  
+//  const Vec2d& kappa = getKappa(vh);
+//  const Vec2d& kappaBar = getKappaBar(vh);
+//  
+//  return 0.5 / len * (kappa - kappaBar).dot(B * (kappa - kappaBar));
 }
 
 void RodModelBendingForce::localForce(ElementForce & force, Stencil & s, bool viscous)

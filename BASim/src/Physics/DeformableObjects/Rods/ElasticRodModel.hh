@@ -20,6 +20,28 @@ namespace BASim
     
   class ElasticRodModel : public PhysicalModel
   {
+  public:
+    struct Stencil
+    {
+      IntArray dofindices;
+    };
+    
+    // two common types of stencils (reusable by forces)
+    struct EdgeStencil : Stencil  // one rod edge
+    {
+      EdgeHandle e;
+      VertexHandle v1;
+      VertexHandle v2;
+    };
+    
+    struct JointStencil : Stencil // a pair of incident rod edges
+    {
+      EdgeHandle e1;
+      EdgeHandle e2;
+      VertexHandle v1;
+      VertexHandle v2;
+      VertexHandle v3;
+    };
     
   public:
     ElasticRodModel(DeformableObject* object, const std::vector<EdgeHandle> & rodedges, Scalar timestep); ////////////////
@@ -88,11 +110,33 @@ namespace BASim
     
 //    void getThickness(VertexProperty<Scalar> & vThickness) const;/////////////////////
           
+    // Cached properties, in support for the forces (similar to BASim)
+    void upateProperties();
+    
+    // edge properties
+    Vec3d & getEdge(const EdgeHandle & e) { return m_properties_edge[e]; }
+    Vec3d & getEdgeTangent(const EdgeHandle & e) { return m_properties_edge_tangent[e]; }
+    Scalar & getEdgeLength(const EdgeHandle & e) { return m_properties_edge_length[e]; }
+    Vec3d & getReferenceDirector1(const EdgeHandle & e) { return m_properties_reference_director1[e]; }
+    Vec3d & getReferenceDirector2(const EdgeHandle & e) { return m_properties_reference_director2[e]; }
+    Vec3d & getMaterialDirector1(const EdgeHandle & e) { return m_properties_reference_director1[e]; }
+    Vec3d & getMaterialDirector2(const EdgeHandle & e) { return m_properties_reference_director2[e]; }
+    
+    // vertex properties
+    Scalar & getVoronoiLength(const VertexHandle & v) { return m_properties_voronoi_length[v]; }
+    Scalar & getReferenceTwist(const VertexHandle & v) { return m_properties_reference_twist[v]; }
+    Vec3d & getCurvatureBinormal(const VertexHandle & v) { return m_properties_curvature_binormal[v]; }
+    
+    
   protected:
     void updateRadii();/////////////////////
             
 //    // ElasticRod instance, serving as a data interface for reusing BASim's rod forces
 //    ElasticRod m_elastic_rod;
+    
+    // list of stencils in the mesh that are part of the rod
+    std::vector<EdgeStencil> m_edge_stencils;
+    std::vector<JointStencil> m_joint_stencils;
     
     //Rod dofs
     EdgeProperty<Scalar> m_theta;
@@ -108,13 +152,24 @@ namespace BASim
         
     Scalar m_density;
     
-//    FaceProperty<char> m_active_faces; //list of faces to which this model is applied  /////////////////////
-    //Note: this should ideally use booleans, but std::vector<bool> doesn't support references, which we need. (vector<bool> isn't technically a container)
     
     //The base object, and the list of forces
     DeformableObject* m_obj;
 //    std::vector<ElasticShellForce*> m_shell_forces;/////////////////////
         
+    // cached properties
+    EdgeProperty<Vec3d>   m_properties_edge;
+    EdgeProperty<Vec3d>   m_properties_edge_tangent;
+    EdgeProperty<Scalar>  m_properties_edge_length;
+    EdgeProperty<Vec3d>   m_properties_reference_director1;
+    EdgeProperty<Vec3d>   m_properties_reference_director2;
+    EdgeProperty<Vec3d>   m_properties_material_director1;
+    EdgeProperty<Vec3d>   m_properties_material_director2;
+    
+    VertexProperty<Scalar>  m_properties_voronoi_length;
+    VertexProperty<Scalar>  m_properties_reference_twist;
+    VertexProperty<Vec3d>   m_properties_curvature_binormal;    
+    
   };
   
 }

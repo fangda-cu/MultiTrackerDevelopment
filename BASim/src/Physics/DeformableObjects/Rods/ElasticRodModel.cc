@@ -4,8 +4,11 @@
 
 namespace BASim 
 {  
-  ElasticRodModel::ElasticRodModel(DeformableObject* object, const std::vector<EdgeHandle> & rodedge, Scalar timestep) : 
+  ElasticRodModel::ElasticRodModel(DeformableObject* object, const std::vector<EdgeHandle> & rodedges, Scalar timestep) : 
   PhysicalModel(*object), 
+//  m_active_edges(rodedges),
+  m_edge_stencils(),
+  m_joint_stencils(),
   m_obj(object), 
 //  m_active_faces(shellFaces), /////////////////////
   m_theta(object), /////////////////////
@@ -16,7 +19,17 @@ namespace BASim
   m_edge_masses(object),
   m_radii(object),
   m_volumes(object),
-  m_density(1)
+  m_density(1),
+  m_properties_edge(object),
+  m_properties_edge_tangent(object),
+  m_properties_edge_length(object),
+  m_properties_reference_director1(object),
+  m_properties_reference_director2(object),
+  m_properties_material_director1(object),
+  m_properties_material_director2(object),
+  m_properties_voronoi_length(object),
+  m_properties_reference_twist(object),
+  m_properties_curvature_binormal(object)
   {
   
   }
@@ -352,5 +365,105 @@ namespace BASim
   {
     
   }
-  
+
+  void ElasticRodModel::upateProperties()
+  {
+    // This code is adapted from BASim::ElasticRod::updateProperties(). The order of the computation is preserved. No optimization applied.
+    DeformableObject & obj = getDefoObj();
+    
+    // compute edges
+    for (size_t i = 0; i < m_edge_stencils.size(); i++)
+    {
+      EdgeStencil & s = m_edge_stencils[i];
+      m_properties_edge[s.e] = obj.getVertexPosition(s.v2) - obj.getVertexPosition(s.v1);
+    }      
+    
+    // compoute reference directors (Time Parallel only; code from BASim::ElasticRod::computeTimeParallel())
+    for (size_t i = 0; i < m_edge_stencils.size(); i++)
+    {
+      EdgeStencil & s = m_edge_stencils[i];
+      Vec3d t = getEdge(s.e).normalized();
+      Vec3d u = parallel_transport(getReferenceDirector1(s.e), getEdgeTangent(s.e), t);
+      u = (u - u.dot(t) * t).normalized();
+      m_properties_reference_director1[s.e] = u;
+      m_properties_reference_director2[s.e] = t.cross(u);
+    }
+      
+    // compute edge tangents
+    for (size_t i = 0; i < m_edge_stencils.size(); i++)
+    {
+      EdgeStencil & s = m_edge_stencils[i];
+      m_properties_edge_tangent[s.e] = getEdge(s.e).normalized();
+    }
+    
+    // compute reference twists (code from BASim::ElasticRod::computeReferenceTwist())
+    for (size_t i = 0; i < m_joint_stencils.size(); i++)
+    {
+      JointStencil & s = m_joint_stencils[i];
+      
+      Scalar referenceTwist = getReferenceTwist(s.v2);// std::cout << "previous referenceTwist = " << referenceTwist << '\n';
+      const Vec3d & u0 = getReferenceDirector1(s.e1);// std::cout << "u0 = " << u0 << '\n';
+      const Vec3d & u1 = getReferenceDirector1(s.e2);// std::cout << "u1 = " << u1 << '\n';
+      const Vec3d & tangent0 = getEdgeTangent(s.e1);// std::cout << "t0 = " << t0 << '\n';
+      const Vec3d & tangent1 = getEdgeTangent(s.e2);// std::cout << "t1 = " << t1 << '\n';
+      
+      // transport reference frame to next edge
+      Vec3d ut = parallel_transport(u0, tangent0, tangent1);// std::cout << "ut = " << ut << '\n';
+      
+      // rotate by current value of reference twist
+      rotateAxisAngle(ut, tangent1, referenceTwist);// std::cout << "ut = " << ut << '\n';
+      
+      // compute increment to reference twist to align reference frames
+      referenceTwist += signedAngle(ut, u1, tangent1);// std::cout << "referenceTwist = " << referenceTwist << '\n';
+      
+      m_properties_reference_twist[s.v2] = referenceTwist;
+    }    
+    
+    // compute curvature binormals
+    for (size_t i = 0; i < m_joint_stencils.size(); i++)
+    {
+      JointStencil & s = m_joint_stencils[i];
+      Vec3d & t0 = getEdgeTangent(s.e1);
+      Vec3d & t1 = getEdgeTangent(s.e2);
+      assert(approxEq(t0.norm(), 1.0));
+      assert(approxEq(t1.norm(), 1.0));
+      m_properties_curvature_binormal[s.v2] = 2.0 * t0.cross(t1) / (1.0 + t0.dot(t1));
+    }    
+
+    // compute edge lengths    
+    for (size_t i = 0; i < m_edge_stencils.size(); i++)
+    {
+      EdgeStencil & s = m_edge_stencils[i];
+      m_properties_edge_length[s.e] = m_properties_edge[s.e].norm();
+    }
+    
+    // compute voronoi lengths (this code is different than BASim::ElasticRod::computeVoronoiLength() due to topology)
+    for (VertexIterator i = getDefoObj().vertices_begin(); i != getDefoObj().vertices_end(); ++i) 
+    {
+      m_properties_voronoi_length[*i] = 0;
+    }
+    
+    for (size_t i = 0; i < m_edge_stencils.size(); i++)
+    {
+      EdgeStencil & s = m_edge_stencils[i];
+      m_properties_voronoi_length[s.v1] += getEdgeLength(s.e) * 0.5;
+      m_properties_voronoi_length[s.v2] += getEdgeLength(s.e) * 0.5;
+    }    
+
+    // compute material directors (code from BASim::ElasticRod::computeMaterialDirectors())
+    for (size_t i = 0; i < m_edge_stencils.size(); i++)
+    {
+      EdgeStencil & s = m_edge_stencils[i];
+      Scalar ca = cos(getEdgeTheta(s.e));
+      Scalar sa = sin(getEdgeTheta(s.e));
+      const Vec3d& u = getReferenceDirector1(s.e);
+      const Vec3d& v = getReferenceDirector2(s.e);
+      m_properties_material_director1[s.e] = ca * u + sa * v;
+      m_properties_material_director1[s.e] = -sa * u + ca * v;
+    }
+    
+//    updateForceProperties();
+
+  }
+
 } //namespace BASim
