@@ -18,13 +18,7 @@ namespace BASim
     typedef Eigen::Matrix<Scalar, 11, 1> ElementForce;
     typedef Eigen::Matrix<Scalar, 11, 11> ElementJacobian;
     
-    struct Stencil
-    {
-      VertexHandle v;
-      EdgeHandle e1;
-      EdgeHandle e2;
-      IntArray dofindices;
-   };
+    typedef ElasticRodModel::JointStencil Stencil;
     
   public:
     RodModelTwistingForce(ElasticRodModel & rod, Scalar shear_modulus, Scalar shear_modulus_damping, Scalar timestep);
@@ -34,6 +28,11 @@ namespace BASim
     void addStencil(Stencil & s) { m_stencils.push_back(s); }
     std::vector<Stencil> & stencils() { return m_stencils; }
     const std::vector<Stencil> & stencils() const { return m_stencils; }
+    
+  public:
+    void updateStiffness();
+    void updateViscousReferenceStrain();
+    void updateProperties();
     
   public:
     Scalar globalEnergy();

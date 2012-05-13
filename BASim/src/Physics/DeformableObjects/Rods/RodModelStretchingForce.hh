@@ -9,7 +9,6 @@
 #define RODMODELSTRETCHINGFORCE_HH
 
 #include "BASim/src/Physics/DeformableObjects/Rods/RodModelForce.hh"
-//#include "BASim/src/Physics/ElasticRods/RodStretchingForce.hh"
 
 namespace BASim 
 {
@@ -19,13 +18,7 @@ namespace BASim
     typedef Eigen::Matrix<Scalar, 6, 1> ElementForce;
     typedef Eigen::Matrix<Scalar, 6, 6> ElementJacobian;
 
-    struct Stencil
-    {
-      EdgeHandle e;
-      VertexHandle v1;
-      VertexHandle v2;
-      IntArray dofindices;
-    };
+    typedef ElasticRodModel::EdgeStencil Stencil;
 
   public:
     RodModelStretchingForce(ElasticRodModel & rod, Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar timestep);
@@ -37,13 +30,16 @@ namespace BASim
     const std::vector<Stencil> & stencils() const { return m_stencils; }
     
   public:
+    void updateStiffness();
+    void updateViscousReferenceStrain();
+    void updateProperties();
+    
+  public:
     Scalar globalEnergy();
     void globalForce(VecXd & force);
     void globalJacobian(Scalar scale, MatrixBase & Jacobian);
-  
+
   protected:
-    Scalar computeStiffness(Stencil & s, bool viscous);
-    
     Scalar localEnergy(Stencil & s, bool viscous);
     void localForce(ElementForce & force, Stencil & s, bool viscous);
     void localJacobian(ElementJacobian & jacobian, Stencil & s, bool viscous);
@@ -55,6 +51,16 @@ namespace BASim
     Scalar m_youngs_modulus_damping;
     
     Scalar m_timestep;
+
+    // cached stiffnesses
+    EdgeProperty<Scalar> m_stiffness;
+    EdgeProperty<Scalar> m_viscous_stiffness;
+    
+    // reference strains
+    EdgeProperty<Scalar> m_undeformed_length;
+    EdgeProperty<Scalar> m_damping_undeformed_length;
+    
+    // cached properties (none)
     
   };
   

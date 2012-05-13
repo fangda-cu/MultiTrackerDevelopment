@@ -24,12 +24,17 @@ namespace BASim
 
     std::string getName() const { return m_name; }
     
+  public:
     virtual Scalar globalEnergy() = 0;
     virtual void globalForce(VecXd & force) = 0;
     virtual void globalJacobian(Scalar scale, MatrixBase & Jacobian) = 0;
     
-    virtual void update() { }
+  public:
+    virtual void updateStiffness() { }               // called whenever rod radii change
+    virtual void updateViscousReferenceStrain() { }  // called at the beginning of every time step
+    virtual void updateProperties() { }              // called at every solver iteration (rod updateProperties()), updating cached properties
     
+  public:
     ElasticRodModel & rod() { return m_rod; }
     const ElasticRodModel & rod() const { return m_rod; }
     

@@ -19,14 +19,12 @@ namespace BASim
     typedef Eigen::Matrix<Scalar, 11, 2> ElementBiForce;
     typedef Eigen::Matrix<Scalar, 11, 11> ElementJacobian;
     typedef std::pair<ElementJacobian, ElementJacobian> ElementBiJacobian;
+
+    typedef ElasticRodModel::JointStencil Stencil;
     
-    struct Stencil
-    {
-      VertexHandle v;
-      EdgeHandle e1;
-      EdgeHandle e2;
-      IntArray dofindices;
-    };
+  public:
+    RodModelBendingForce(ElasticRodModel & rod, Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar timestep);
+    virtual ~RodModelBendingForce();
     
   public:
     void addStencil(Stencil & s) { m_stencils.push_back(s); }
@@ -34,8 +32,9 @@ namespace BASim
     const std::vector<Stencil> & stencils() const { return m_stencils; }
     
   public:
-    RodModelBendingForce(ElasticRodModel & rod, Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar timestep);
-    virtual ~RodModelBendingForce();
+    void updateStiffness();
+    void updateViscousReferenceStrain();
+    void updateProperties();
     
   public:
     Scalar globalEnergy();
@@ -43,8 +42,6 @@ namespace BASim
     void globalJacobian(Scalar scale, MatrixBase & Jacobian);
     
   protected:
-    Mat2d computeStiffness(Stencil & s, bool viscous);
-
     Scalar localEnergy(Stencil & s, bool viscous);
     void localForce(ElementForce & force, Stencil & s, bool viscous);
     void localJacobian(ElementJacobian & jacobian, Stencil & s, bool viscous);

@@ -1,6 +1,7 @@
 #include "RodModelStretchingForce.hh"
 #include "BASim/src/Math/MatrixBase.hh"
 #include "BASim/src/Math/Math.hh"
+#include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
 
 using namespace BASim;
 
@@ -8,9 +9,17 @@ RodModelStretchingForce::RodModelStretchingForce(ElasticRodModel & rod, Scalar y
   RodModelForce(rod, "RodModelStretchingForce"),
   m_youngs_modulus(youngs_modulus),
   m_youngs_modulus_damping(youngs_modulus_damping),
-  m_timestep(timestep)
+  m_timestep(timestep),
+  m_stiffness(&rod.getDefoObj()),
+  m_viscous_stiffness(&rod.getDefoObj()),
+  m_undeformed_length(&rod.getDefoObj()),
+  m_damping_undeformed_length(&rod.getDefoObj())
 {
-  
+  for (size_t i = 0; i < m_stencils.size(); i++)
+  {
+    Stencil & s = m_stencils[i];
+    m_undeformed_length[s.e] = rod.getEdgeLength(s.e);
+  }
 }
 
 RodModelStretchingForce::~RodModelStretchingForce()
@@ -61,25 +70,13 @@ void RodModelStretchingForce::globalJacobian(Scalar scale, MatrixBase & Jacobian
   }
 }
 
-Scalar RodModelStretchingForce::computeStiffness(Stencil & s, bool viscous)
-{
-  Scalar E = (viscous ? m_youngs_modulus_damping : m_youngs_modulus);
-  if (E == 0) return 0;
-  
-  Vec2d r = rod().getRadii(s.e);
-  return E * M_PI * r(0) * r(1);
-}
-
 Scalar RodModelStretchingForce::localEnergy(Stencil & s, bool viscous)
 {
   //TODO: this can use optimization (caching quantities like edge length, like BASim does with updateProperties)
-  Scalar ks = computeStiffness(s, viscous);
+  Scalar ks = (viscous ? m_viscous_stiffness[s.e] : m_stiffness[s.e]);
   
-  DeformableObject & obj = rod().getDefoObj();
-  Scalar reflen = (viscous ? 
-                      (obj.getVertexDampingUndeformedPosition(s.v2) - obj.getVertexDampingUndeformedPosition(s.v1)).norm() : 
-                      (obj.getVertexUndeformedPosition(s.v2) - obj.getVertexUndeformedPosition(s.v1)).norm());
-  Scalar len = (obj.getVertexPosition(s.v2) - obj.getVertexPosition(s.v1)).norm();
+  Scalar reflen = (viscous ? m_damping_undeformed_length[s.e] : m_undeformed_length[s.e]);
+  Scalar len = rod().getEdgeLength(s.e);
   
   return ks / 2.0 * square(len / reflen - 1.0) * reflen;
 }
@@ -87,14 +84,11 @@ Scalar RodModelStretchingForce::localEnergy(Stencil & s, bool viscous)
 void RodModelStretchingForce::localForce(ElementForce & force, Stencil & s, bool viscous)
 {
   //TODO: this can use optimization (caching quantities like edge length, like BASim does with updateProperties)
-  Scalar ks = computeStiffness(s, viscous);
+  Scalar ks = (viscous ? m_viscous_stiffness[s.e] : m_stiffness[s.e]);
   
-  DeformableObject & obj = rod().getDefoObj();
-  Scalar reflen = (viscous ? 
-                   (obj.getVertexDampingUndeformedPosition(s.v2) - obj.getVertexDampingUndeformedPosition(s.v1)).norm() : 
-                   (obj.getVertexUndeformedPosition(s.v2) - obj.getVertexUndeformedPosition(s.v1)).norm());
-  Scalar len = (obj.getVertexPosition(s.v2) - obj.getVertexPosition(s.v1)).norm();
-  Vec3d tangent = (obj.getVertexPosition(s.v2) - obj.getVertexPosition(s.v1)).normalized();
+  Scalar reflen = (viscous ? m_damping_undeformed_length[s.e] : m_undeformed_length[s.e]);
+  Scalar len = rod().getEdgeLength(s.e);
+  Vec3d tangent = rod().getEdgeTangent(s.e);
   
   Vec3d f = ks * (len / reflen - 1.0) * tangent;
   force.segment<3> (0) = f;
@@ -104,14 +98,11 @@ void RodModelStretchingForce::localForce(ElementForce & force, Stencil & s, bool
 void RodModelStretchingForce::localJacobian(ElementJacobian & jacobian, Stencil & s, bool viscous)
 {
   //TODO: this can use optimization (caching quantities like edge length, like BASim does with updateProperties)
-  Scalar ks = computeStiffness(s, viscous);
+  Scalar ks = (viscous ? m_viscous_stiffness[s.e] : m_stiffness[s.e]);
   
-  DeformableObject & obj = rod().getDefoObj();
-  Vec3d e = obj.getVertexPosition(s.v2) - obj.getVertexPosition(s.v1);
-  Scalar reflen = (viscous ? 
-                   (obj.getVertexDampingUndeformedPosition(s.v2) - obj.getVertexDampingUndeformedPosition(s.v1)).norm() : 
-                   (obj.getVertexUndeformedPosition(s.v2) - obj.getVertexUndeformedPosition(s.v1)).norm());
-  Scalar len = (obj.getVertexPosition(s.v2) - obj.getVertexPosition(s.v1)).norm();
+  Vec3d e = rod().getEdge(s.e);
+  Scalar reflen = (viscous ? m_damping_undeformed_length[s.e] : m_undeformed_length[s.e]);
+  Scalar len = rod().getEdgeLength(s.e);
   Mat3d M = ks * ((1.0 / reflen - 1.0 / len) * Mat3d::Identity() + 1.0 / len * outerProd(e, e) / square(len));
   
   //TODO: this is copied from RodStretchingForce::elemengJacobian(). can't this be implemented using blocks?
@@ -126,3 +117,30 @@ void RodModelStretchingForce::localJacobian(ElementJacobian & jacobian, Stencil 
   
   assert(isSymmetric(j));
 }
+
+void RodModelStretchingForce::updateStiffness()
+{
+  for (size_t i = 0; i < m_stencils.size(); i++)
+  {
+    Stencil & s = m_stencils[i];
+    Vec2d r = rod().getRadii(s.e);
+    Scalar cross_section = M_PI * r(0) * r(1);
+    m_stiffness[s.e] = m_youngs_modulus * cross_section;
+    m_viscous_stiffness[s.e] = m_youngs_modulus_damping * cross_section;
+  }
+}
+
+void RodModelStretchingForce::updateViscousReferenceStrain()
+{
+  for (size_t i = 0; i < m_stencils.size(); i++)
+  {
+    Stencil & s = m_stencils[i];
+    m_damping_undeformed_length[s.e] = rod().getEdgeLength(s.e);
+  }
+}
+
+void RodModelStretchingForce::updateProperties()
+{
+  
+}
+
