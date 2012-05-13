@@ -346,56 +346,8 @@ const Scalar& ElasticShell::getMass( const DofHandle& hnd ) const
 
 void ElasticShell::getScriptedDofs( IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time ) const
 {
-  for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
-    
-    int dofBase = m_obj->getPositionDofBase(m_constrained_vertices[i]);
-    Vec3d pos = m_constraint_positions[i]->operator()(time);
-    dofIndices.push_back(dofBase); dofValues.push_back(pos[0]);
-    dofIndices.push_back(dofBase+1); dofValues.push_back(pos[1]);
-    dofIndices.push_back(dofBase+2); dofValues.push_back(pos[2]);
-  }
+  // position dof scripting is moved to PositionDofsModel. ElasticShell does not support edge dof scripting.
 }
-
-void ElasticShell::constrainVertex( const VertexHandle& v, const Vec3d& pos )
-{
-  m_constrained_vertices.push_back(v);
-  PositionConstraint* c = new FixedPositionConstraint(pos);
-  m_constraint_positions.push_back(c);
-}
-
-void ElasticShell::constrainVertex( const VertexHandle& v, PositionConstraint* c )
-{
-  m_constrained_vertices.push_back(v);
-  m_constraint_positions.push_back(c);
-}
-
-void ElasticShell::releaseVertex( const VertexHandle& v)
-{
- 
-  bool deletedVertex = true;
-  while(deletedVertex) {
-    deletedVertex = false;
-    //can only have one constraint or things get broken anyways(right?), so no need to search for multiple
-    int index = -1;
-    for(unsigned int i = 0; i < m_constraint_positions.size(); ++i) {
-      if(m_constrained_vertices[i] == v) {
-        index = i;
-        deletedVertex = true;
-        break;
-      }
-    }
-
-    //remove the constraint
-    if(index != -1) {
-      delete m_constraint_positions[index];
-      m_constraint_positions.erase(m_constraint_positions.begin()+index);
-      m_constrained_vertices.erase(m_constrained_vertices.begin()+index);
-    }
-  }
-  
-  
-}
-
 
 void ElasticShell::startStep(Scalar time, Scalar timestep)
 {
@@ -469,7 +421,7 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
 
     vert_new.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
     vert_old.push_back(ElTopo::Vec3d(old_vert[0], old_vert[1], old_vert[2]));
-    if(isConstrained(vh)) {
+    if(getDefoObj().isConstrained(vh)) {
       masses.push_back(numeric_limits<Scalar>::infinity());
     }
     else {
@@ -679,14 +631,14 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
       Vec3d curPos = getVertexPosition(*(vit));
       if(curPos[1] < m_ground_height) {
-        if(!isConstrained(*vit)) {
+        if(!getDefoObj().isConstrained(*vit)) {
           //constrainVertex(*vit, curPos);
 
           //Sinking
           //constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, m_ground_velocity, 0), time));
 
           //Conveying
-          constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, 0, m_ground_velocity), time));
+          getDefoObj().constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, 0, m_ground_velocity), time));
         }
       }
     }
@@ -698,13 +650,13 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
       Vec3d curPos = getVertexPosition(*(vit));
       Vec3d offset = curPos - (m_sphere_position+m_sphere_velocity*time);
       if(offset.norm() < m_sphere_radius) {
-        if(!isConstrained(*vit)) {
+        if(!getDefoObj().isConstrained(*vit)) {
 
           //Sinking
           //constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, m_ground_velocity, 0), time));
 
           //Conveying
-          constrainVertex(*vit, new FixedVelocityConstraint(curPos, m_sphere_velocity, time));
+          getDefoObj().constrainVertex(*vit, new FixedVelocityConstraint(curPos, m_sphere_velocity, time));
         }
       }
     }
@@ -719,10 +671,10 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
       offset[2] = clamp(offset[2], 0.0, m_object_SDF.nk-1.6);
       Scalar dist_value = m_object_SDF((int)offset[0], (int)offset[1], (int)offset[2]);      
       if(dist_value < 0) {
-        if(!isConstrained(*vit)) {
+        if(!getDefoObj().isConstrained(*vit)) {
 
           //Fixed position
-          constrainVertex(*vit, curPos);
+          getDefoObj().constrainVertex(*vit, curPos);
           //constrainVertex(*vit, new FixedVelocityConstraint(curPos, m_sphere_velocity, time));
         }
       }
@@ -827,7 +779,7 @@ void ElasticShell::fracture_new() {
     Vec3d vert = getVertexPosition(vh);
     Scalar mass = getMass(vh);
     vert_data.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
-    if(isConstrained(vh))
+    if(getDefoObj().isConstrained(vh))
       masses.push_back(numeric_limits<Scalar>::infinity());
     else
       masses.push_back(mass);
@@ -1208,7 +1160,7 @@ bool ElasticShell::shouldFracture (const EdgeHandle & eh) const{
     //Ignore inflow edges
     if(isInflow(eh)) return false;
     //Ignore constrain edges
-    if ( isConstrained(m_obj->fromVertex(eh)) || isConstrained(m_obj->toVertex(eh))) return false;
+    if ( getDefoObj().isConstrained(m_obj->fromVertex(eh)) || getDefoObj().isConstrained(m_obj->toVertex(eh))) return false;
 
     //Ignore boundary edges
     if ( m_obj->isBoundary(eh) ) return false;
@@ -1274,7 +1226,7 @@ void ElasticShell::remesh_new()
     Vec3d vert = getVertexPosition(vh);
     Scalar mass = getMass(vh);
     vert_data.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
-    if(isConstrained(vh))
+    if(getDefoObj().isConstrained(vh))
       masses.push_back(numeric_limits<Scalar>::infinity());
     else
       masses.push_back(mass);
@@ -1573,8 +1525,8 @@ bool ElasticShell::splitEdges( double desiredEdge, double maxEdge, double maxAng
     bool isConstrained = isInflow(eh);
 
     //don't split constrained edges. (alternatively, we could split them, and add the new vert to the constrained list.)
-    bool aConstrained = this->isConstrained(vertex_a);
-    bool bConstrained = this->isConstrained(vertex_b);
+    bool aConstrained = getDefoObj().isConstrained(vertex_a);
+    bool bConstrained = getDefoObj().isConstrained(vertex_b);
 
 
 //    //don't split constrained edges. (alternatively, we could split them, and add the new vert to the constrained list somehow.)
@@ -1643,14 +1595,6 @@ bool ElasticShell::splitEdges( double desiredEdge, double maxEdge, double maxAng
   return anySplits;
 }
 
-bool ElasticShell::isConstrained(const VertexHandle& v) const {
-  for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i)
-    if(m_constrained_vertices[i] == v)
-      return true;
-  return false;
-}
-
-
 bool ElasticShell::isSplitDesired(const EdgeHandle& eh, double maxEdge, double desiredEdge, double maxAngle) {
 
   Scalar sEdge = 0.25*desiredEdge;
@@ -1659,13 +1603,8 @@ bool ElasticShell::isSplitDesired(const EdgeHandle& eh, double maxEdge, double d
   VertexHandle v1 = m_obj->toVertex(eh);
   //don't split constrained edges. (alternatively, we could split them, and add the new vert to the constrained list.)
   
-  bool aConstrained = false, bConstrained = false;
-  for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
-    if(m_constrained_vertices[i] == v0)
-      aConstrained = true;
-    if(m_constrained_vertices[i] == v1)
-      bConstrained = true;
-  }
+  bool aConstrained = getDefoObj().isConstrained(v0);
+  bool bConstrained = getDefoObj().isConstrained(v1);
 
   if(aConstrained && bConstrained) return false;
 
@@ -2331,13 +2270,8 @@ void ElasticShell::collapseEdges(double minAngle, double desiredEdge, double rat
 
       
       //don't collapse a constrained vertex
-      bool v0_pinned = false,v1_pinned = false;
-      for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
-        if(v0 == m_constrained_vertices[i])
-          v0_pinned = true;
-        if(v1 == m_constrained_vertices[i])
-          v1_pinned = true;
-      }
+      bool v0_pinned = getDefoObj().isConstrained(v0);
+      bool v1_pinned = getDefoObj().isConstrained(v1);
 
       
       //check if either point is on the boundary
@@ -2585,7 +2519,7 @@ void ElasticShell::removeFace(FaceHandle& f) {
   //now remove the springs and constraints to any vertices deleted as a side effect
   for(int j = 0; j < 3; ++j) {
     if(!m_obj->vertexExists(faceVerts[j])) {
-      releaseVertex(faceVerts[j]);
+      getDefoObj().releaseVertex(faceVerts[j]);
       m_repulsion_springs->clearSprings(faceVerts[j]);
     }
   }
@@ -2636,7 +2570,7 @@ void ElasticShell::extendMesh(Scalar current_time) {
     std::vector<EdgeHandle> newList;
     for(unsigned int edge = 0; edge < m_inflow_boundaries[boundary].size(); ++edge) {
       
-      releaseVertex(prevLowerVert);
+      getDefoObj().releaseVertex(prevLowerVert);
 
       EdgeHandle eh1 = m_inflow_boundaries[boundary][edge];
       EdgeHandle eh2 = m_inflow_boundaries[boundary][(edge+1)%count];
@@ -2694,7 +2628,7 @@ void ElasticShell::extendMesh(Scalar current_time) {
       prevLowerVert = sharedVert;
       prevEdge = newEdge3;
     }
-    releaseVertex(prevLowerVert);
+    getDefoObj().releaseVertex(prevLowerVert);
     
 
     m_inflow_boundaries[boundary] = newList;
@@ -2706,7 +2640,7 @@ void ElasticShell::extendMesh(Scalar current_time) {
       m_vertex_masses[vertices[i]] = 0;
       m_obj->setVertexDampingUndeformedPosition(vertices[i], m_inflow_positions[boundary][i]);
 
-      constrainVertex(vertices[i], new FixedVelocityConstraint(m_inflow_positions[boundary][i], m_inflow_velocities[boundary][i], current_time));
+      getDefoObj().constrainVertex(vertices[i], new FixedVelocityConstraint(m_inflow_positions[boundary][i], m_inflow_velocities[boundary][i], current_time));
     }
 
 
@@ -2752,7 +2686,7 @@ void ElasticShell::setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3
     }
 
     Vec3d pos = getVertexPosition(otherVert);
-    constrainVertex(otherVert, new FixedVelocityConstraint(pos, vel, 0));
+    getDefoObj().constrainVertex(otherVert, new FixedVelocityConstraint(pos, vel, 0));
     posList.push_back(pos);
     velList.push_back(vel);
     
@@ -2763,7 +2697,7 @@ void ElasticShell::setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3
   VertexHandle wrapVert = getSharedVertex(*m_obj, edgeList[0], edgeList[edgeList.size()-1]);
   if(!wrapVert.isValid()) {
     Vec3d pos = getVertexPosition(prevVert);
-    constrainVertex(prevVert, new FixedVelocityConstraint(pos, vel, 0));
+    getDefoObj().constrainVertex(prevVert, new FixedVelocityConstraint(pos, vel, 0));
     posList.push_back(pos);
     velList.push_back(vel);
   } 

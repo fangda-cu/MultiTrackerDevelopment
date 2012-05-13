@@ -105,6 +105,12 @@ public:
   
   void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time) const;
 
+  // scripting on position dofs
+  void constrainVertex(const VertexHandle & v, const Vec3d & pos);
+  void constrainVertex(const VertexHandle & v, PositionConstraint * p); //time varying constraint
+  void releaseVertex(const VertexHandle & v);
+  bool isConstrained(const VertexHandle & v) const;
+
   void setTimeStep(Scalar dt);
   Scalar getTimeStep();
   void setTime(Scalar time);

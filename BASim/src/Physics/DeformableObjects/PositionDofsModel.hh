@@ -129,29 +129,22 @@ namespace BASim
     
     // Masses computation
     // Masses are computed by summing the masses computed by all models
-    void clearMasses() 
-    { 
-      //TODO: this can use optimization
-//      for (VertexIterator i = getDefoObj().vertices_begin(); i != getDefoObj().vertices_end(); ++i) 
-//        m_vertex_masses[*i] = 0; 
-      m_vertex_masses.assign(0);
-    }
-    
-    void accumulateMasses(const VertexProperty<Scalar>& masses)
-    {
-      //TODO: this can use optimization
-      for (VertexIterator i = getDefoObj().vertices_begin(); i != getDefoObj().vertices_end(); ++i) 
-        m_vertex_masses[*i] += masses[*i]; 
-    }
-    
-    void accumulateMass(const VertexHandle&v, Scalar mass)
-    {
-      m_vertex_masses[v] += mass;
-    }
+    void clearMasses() { m_vertex_masses.assign(0); }
+    void accumulateMasses(const VertexProperty<Scalar> & masses);
+    void accumulateMass(const VertexHandle & v, Scalar mass) { m_vertex_masses[v] += mass; }
 
     // in compliance with the PhysicalModel interface, this method has to be implemented; but it's
     // actually useless here due to the special role of this model.
     virtual const VertexProperty<Scalar> & getVertexMasses() const { return m_vertex_masses; }
+
+    // dof scripting interface inherited from PhysicalModel
+    void getScriptedDofs(IntArray & dofIndices, std::vector<Scalar> & dofValues, Scalar time) const;
+
+    // scripting on position dofs
+    void constrainVertex(const VertexHandle & v, const Vec3d & pos);
+    void constrainVertex(const VertexHandle & v, PositionConstraint * p); //time varying constraint
+    void releaseVertex(const VertexHandle & v);
+    bool isConstrained(const VertexHandle & v) const;
     
   public:
     virtual void startStep(Scalar time, Scalar timestep);
@@ -166,6 +159,10 @@ namespace BASim
     // Dof bar
     VertexProperty<Vec3d> m_undeformed_positions;
     VertexProperty<Vec3d> m_damping_undeformed_positions; 
+
+    // Position dof constraints 
+    std::vector<VertexHandle> m_constrained_vertices;
+    std::vector<PositionConstraint *> m_constraint_positions;    
 
   };
   

@@ -394,7 +394,7 @@ void RodShellTest::setupScene1()
   for(vit = obj->vertices_begin();vit!= obj->vertices_end(); ++vit) {
     Vec3d pos = shell->getVertexPosition(*vit);
     if(pos[1] >= highest - 1e-4)
-      shell->constrainVertex(*vit, pos);
+      obj->constrainVertex(*vit, pos);
   }
   
   // create an empty rod model

@@ -552,7 +552,7 @@ void ShellTest::setupScene1() {
   for(vit = shellObj->vertices_begin();vit!= shellObj->vertices_end(); ++vit) {
     Vec3d pos = shell->getVertexPosition(*vit);
     if(pos[1] >= highest - 1e-4)
-      shell->constrainVertex(*vit, pos);
+      shell->getDefoObj().constrainVertex(*vit, pos);
   }
 
 }
@@ -884,9 +884,9 @@ void ShellTest::setupScene4() {
   //CONSTRAINTS
 
   //Just pin the first triangle right where it is.
-  shell->constrainVertex(v0, shell->getVertexPosition(v0));
-  shell->constrainVertex(v1, shell->getVertexPosition(v1));
-  shell->constrainVertex(v2, shell->getVertexPosition(v2));
+  shell->getDefoObj().constrainVertex(v0, shell->getVertexPosition(v0));
+  shell->getDefoObj().constrainVertex(v1, shell->getVertexPosition(v1));
+  shell->getDefoObj().constrainVertex(v2, shell->getVertexPosition(v2));
 
 }
 
@@ -994,10 +994,10 @@ void ShellTest::setupScene5() {
   for(vit = shellObj->vertices_begin();vit!= shellObj->vertices_end(); ++vit) {
     Vec3d pos = shell->getVertexPosition(*vit);
     if(pos[0] >= highest - 1e-4) {
-      shell->constrainVertex(*vit, pos);
+      shell->getDefoObj().constrainVertex(*vit, pos);
     }
     if(pos[0] <= lowest + 1e-4) {
-      shell->constrainVertex(*vit, pos);
+      shell->getDefoObj().constrainVertex(*vit, pos);
     }
   }
  
@@ -1088,7 +1088,7 @@ void ShellTest::setupScene6() {
     VertexHandle vh = *vit; 
     Vec3d position = shell->getVertexPosition(vh);
     if(position[1] < freeze_height)
-      shell->constrainVertex(vh, position);
+      shell->getDefoObj().constrainVertex(vh, position);
   }
 
 
@@ -1235,7 +1235,7 @@ void ShellTest::setupScene7() {
     int outside = vertList.size()-1;
     int inside = 0;
 
-    shell->constrainVertex(vertList[outside][i], shell->getVertexPosition(vertList[outside][i]));
+    shell->getDefoObj().constrainVertex(vertList[outside][i], shell->getVertexPosition(vertList[outside][i]));
 
     Vec3d pos = shell->getVertexPosition(vertList[inside][i]);
     
@@ -1250,7 +1250,7 @@ void ShellTest::setupScene7() {
     times.push_back(2000); rates.push_back(0.0); accels.push_back(0);
     XZPlaneVariableRotationConstraint*p = new XZPlaneVariableRotationConstraint(pos, centre, times, rates, accels);
     
-    shell->constrainVertex(vertList[inside][i], p);
+    shell->getDefoObj().constrainVertex(vertList[inside][i], p);
 
   }
   
@@ -1447,9 +1447,9 @@ void ShellTest::setupScene9() {
   //CONSTRAINTS
 
   //Just pin the first triangle right where it is.
-  shell->constrainVertex(v0, shell->getVertexPosition(v0));
-  shell->constrainVertex(v1, shell->getVertexPosition(v1));
-  shell->constrainVertex(v2, shell->getVertexPosition(v2));
+  shell->getDefoObj().constrainVertex(v0, shell->getVertexPosition(v0));
+  shell->getDefoObj().constrainVertex(v1, shell->getVertexPosition(v1));
+  shell->getDefoObj().constrainVertex(v2, shell->getVertexPosition(v2));
 
 }
 
@@ -1708,7 +1708,7 @@ void ShellTest::setupScene12() {
 
   //pin just the bottom layer
   for(unsigned int i = 0; i < vertList[0].size(); ++i)
-    shell->constrainVertex(vertList[0][i], shell->getVertexPosition(vertList[0][i]));
+    shell->getDefoObj().constrainVertex(vertList[0][i], shell->getVertexPosition(vertList[0][i]));
   
   //construct list of hole and base edges
   std::vector<EdgeHandle> holeEdges, baseEdges;
@@ -2174,13 +2174,13 @@ void ShellTest::setupScene15() {
     Vec3d pos = shell->getVertexPosition(*vit);
     if(pos[0] >= highest - 1e-4) {
         FixedVelocityConstraint* fvc = new FixedVelocityConstraint(pos, Vec3d(ringVel, 0.0, 0.0), 0.0);
-        shell->constrainVertex(*vit, fvc);
+        shell->getDefoObj().constrainVertex(*vit, fvc);
     }
     if(pos[0] <= lowest + 1e-4) {
         FixedVelocityConstraint* fvc = new FixedVelocityConstraint(pos, Vec3d(-ringVel, 0.0, 0.0), 0.0);
 
 
-        shell->constrainVertex(*vit, fvc);
+        shell->getDefoObj().constrainVertex(*vit, fvc);
     }
   }
 

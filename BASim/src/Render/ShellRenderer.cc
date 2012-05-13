@@ -304,7 +304,7 @@ void ShellRenderer::render()
     glBegin(GL_POINTS);
     for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) {
       Vec3d vertPos = m_shell.getVertexPosition(*vit); 
-      if(m_shell.isConstrained(*vit)) {
+      if(m_shell.getDefoObj().isConstrained(*vit)) {
         OpenGL::vertex(vertPos);
       }
     }

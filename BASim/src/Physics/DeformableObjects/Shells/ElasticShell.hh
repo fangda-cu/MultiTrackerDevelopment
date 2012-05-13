@@ -115,11 +115,6 @@ public:
   void getVertexNormals(VertexProperty<Vec3d> & vNormals) const;
   void getThickness(VertexProperty<Scalar> & vThickness) const;
 
-  void constrainVertex(const VertexHandle& v, const Vec3d& pos);
-  void constrainVertex(const VertexHandle& v, PositionConstraint* p); //time varying constraint
-  void releaseVertex(const VertexHandle& v);
-  bool isConstrained(const VertexHandle& v) const;
-  
   void addVertexPointSpring(const VertexHandle& v, const Vec3d& pos, Scalar stiffness, Scalar damping, Scalar length);
   void addVertexTriSpring(const FaceHandle& f, const VertexHandle& v, const Vec3d& pos, Scalar stiffness, Scalar damping, Scalar length);
 
@@ -232,10 +227,6 @@ protected:
   ShellVertexPointSpringForce* m_vert_point_springs;
   ShellStickyRepulsionForce* m_repulsion_springs;
 
-  //Constraints 
-  std::vector<VertexHandle> m_constrained_vertices;
-  std::vector<PositionConstraint*> m_constraint_positions;
-  
   //To handle continually inflowing regions
   Scalar m_inflow_thickness;
   bool m_inflow;
