@@ -97,22 +97,51 @@ namespace BASim
     }
   }
   
-  void ElasticRodModel::setupForces(Scalar youngs, Scalar youngs_damping, Scalar shearing, Scalar shearing_damping, Scalar timestep)
+  void ElasticRodModel::setup(
+             Scalar youngs, 
+             Scalar youngs_damping, 
+             Scalar shear, 
+             Scalar shear_damping, 
+             Scalar timestep, 
+             const EdgeProperty<Vec3d> * undeformed_reference_director1)
   {    
     DeformableObject & obj = getDefoObj();
-    
+
     // swap in the undeformed configuration as current configuration, because rod force initialization code assumes this
     VertexProperty<Vec3d> current_position_copy(obj.getVertexPositions());
     obj.setVertexPositions(obj.getVertexUndeformedPositions());
     EdgeProperty<Scalar> current_theta_copy(m_theta);
     m_theta = m_undef_theta;
     
+    // adopt the reference directors specified by user, or generate them if not specified
+    if (undeformed_reference_director1)
+    {
+      m_properties_reference_director1 = *undeformed_reference_director1; // director2 will be computed in updateProperties()
+      for (size_t i = 0; i < m_edge_stencils.size(); i++)
+      {
+        EdgeStencil & s = m_edge_stencils[i];
+        Vec3d t = (obj.getVertexPosition(s.v2) - obj.getVertexPosition(s.v1)).normalized();
+        if (approxEq(m_properties_reference_director1[s.e].norm(), 0.0, 1e-6) || 
+            !approxEq(m_properties_reference_director1[s.e].dot(t), 0.0, 1e-6)) // reject user specified if it's too short or not orthogonal to the edge tangent
+          findOrthogonal(m_properties_reference_director1[s.e], t);
+      }
+    } else
+    {
+      for (size_t i = 0; i < m_edge_stencils.size(); i++)
+      {
+        EdgeStencil & s = m_edge_stencils[i];
+        Vec3d t = (obj.getVertexPosition(s.v2) - obj.getVertexPosition(s.v1)).normalized();
+        findOrthogonal(m_properties_reference_director1[s.e], t);
+      }
+    }
+
+    // compute the derived properties, based on undeformed configuration and user sepcified undeformed reference directors
     updateProperties();
     
     // set up the three internal forces
     m_stretching_force = new RodModelStretchingForce(*this, m_edge_stencils, youngs, youngs_damping, timestep);
     m_bending_force = new RodModelBendingForce(*this, m_joint_stencils, youngs, youngs_damping, timestep);
-    m_twisting_force = new RodModelTwistingForce(*this, m_joint_stencils, shearing, shearing_damping, timestep);
+    m_twisting_force = new RodModelTwistingForce(*this, m_joint_stencils, shear, shear_damping, timestep);
     
     addForce(m_stretching_force);
     addForce(m_bending_force);
@@ -121,6 +150,9 @@ namespace BASim
     // restore the current configuration
     obj.setVertexPositions(current_position_copy);
     m_theta = current_theta_copy;
+
+    // compute the derived properties again, this time based on current (i.e. initial) configuration, and the reference directors will be updated too
+    updateProperties();
   }
   
   ElasticRodModel::~ElasticRodModel() 

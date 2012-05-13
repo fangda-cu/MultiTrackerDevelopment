@@ -51,6 +51,14 @@ namespace BASim
     
     ~ElasticRodModel();
     
+    void setup(
+           Scalar youngs_modulus, 
+           Scalar youngs_modulus_damping, 
+           Scalar shear_modulus, 
+           Scalar shear_modulus_damping, 
+           Scalar timestep, 
+           const EdgeProperty<Vec3d> * undeformed_reference_director1 = NULL);
+    
     //*Inherited from PhysicalModel
     void computeForces(VecXd& force);
     void computeJacobian(Scalar scale, MatrixBase& J);
@@ -79,7 +87,6 @@ namespace BASim
     
 //    void setEdgeActive(const EdgeHandle & e)/////////////////////
     
-    void setupForces(Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar shearing_modulus, Scalar shearing_modulus_damping, Scalar timestep);
     const std::vector<RodModelForce *> & getForces() const { return m_forces; } /////////////////////
     void addForce(RodModelForce * force) { assert(force); m_forces.push_back(force); }  /////////////////////
     

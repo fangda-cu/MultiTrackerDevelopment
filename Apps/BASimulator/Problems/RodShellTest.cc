@@ -207,17 +207,6 @@ void RodShellTest::Setup()
   
   //////////////////////////////////////////////////////////////////////////
   //
-  // rod forces
-  //
-  //////////////////////////////////////////////////////////////////////////
-  Scalar rod_Youngs_modulus = GetScalarOpt("rod-Youngs");
-  Scalar rod_Shear_modulus = GetScalarOpt("rod-Shear");
-  Scalar rod_Youngs_damping = GetScalarOpt("rod-Youngs-damping");
-  Scalar rod_Shear_damping = GetScalarOpt("rod-Shear-damping");
-  rod->setupForces(m_timestep, rod_Youngs_modulus, rod_Youngs_damping, rod_Shear_modulus, rod_Shear_damping);
-  
-  //////////////////////////////////////////////////////////////////////////
-  //
   // rod and shell mass
   //
   //////////////////////////////////////////////////////////////////////////
@@ -416,6 +405,13 @@ void RodShellTest::setupScene1()
   rod->setEdgeThetaVelocities(zeros);
   rod->setEdgeUndeformedThetas(zeros);
 
+  // rod forces
+  Scalar rod_Youngs_modulus = GetScalarOpt("rod-Youngs");
+  Scalar rod_Shear_modulus = GetScalarOpt("rod-Shear");
+  Scalar rod_Youngs_damping = GetScalarOpt("rod-Youngs-damping");
+  Scalar rod_Shear_damping = GetScalarOpt("rod-Shear-damping");
+  rod->setup(m_timestep, rod_Youngs_modulus, rod_Youngs_damping, rod_Shear_modulus, rod_Shear_damping);
+  
 }
 
 void RodShellTest::setupScene2() 
@@ -444,10 +440,15 @@ void RodShellTest::setupScene2()
   obj->setVertexVelocities(velocities);
   obj->setVertexUndeformedPositions(undeformed);
   
-  // allocate edges
+  // allocate edges, and set the undeformed reference frame
   std::vector<EdgeHandle> rodEdges;
+  EdgeProperty<Vec3d> ref_dir(obj);
   for (int i = 0; i < nv - 1; i++)
-    rodEdges.push_back(obj->addEdge(vertex_handles[i], vertex_handles[i + 1]));
+  {
+    EdgeHandle h = obj->addEdge(vertex_handles[i], vertex_handles[i + 1]);
+    rodEdges.push_back(h);
+    ref_dir[h] = Vec3d(0, 0, 1);
+  }
 
   // create rod model
   rod = new ElasticRodModel(obj, rodEdges, m_timestep);
@@ -460,6 +461,13 @@ void RodShellTest::setupScene2()
   rod->setEdgeThetaVelocities(zeros);
   rod->setEdgeUndeformedThetas(zeros);
 
+  // rod forces, and init ref frame
+  Scalar rod_Youngs_modulus = GetScalarOpt("rod-Youngs");
+  Scalar rod_Shear_modulus = GetScalarOpt("rod-Shear");
+  Scalar rod_Youngs_damping = GetScalarOpt("rod-Youngs-damping");
+  Scalar rod_Shear_damping = GetScalarOpt("rod-Shear-damping");
+  rod->setup(m_timestep, rod_Youngs_modulus, rod_Youngs_damping, rod_Shear_modulus, rod_Shear_damping, &ref_dir);
+  
   // create an empty shell model
   FaceProperty<char> shellFaces(obj); 
   shellFaces.assign(false); // no face anyway  
