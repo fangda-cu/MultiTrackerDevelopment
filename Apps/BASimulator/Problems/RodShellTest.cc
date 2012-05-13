@@ -147,7 +147,7 @@ void RodShellTest::Setup()
   m_timestep = timestep;
   
   //Geometry/scene specific
-  int sceneChoice = GetIntOpt("shell-scene");
+  int sceneChoice = GetIntOpt("rodshell-scene");
   m_active_scene = sceneChoice;
   
   //Create the base deformable object (mesh)
@@ -178,6 +178,7 @@ void RodShellTest::Setup()
   //Gravity force
   shell->addForce(new ShellGravityForce(*shell, "Gravity", gravity));
   
+  shell->setThickness(thickness);
   shell->setDensity(density);
   
   bool remeshing = GetIntOpt("shell-remeshing") == 1?true:false;
