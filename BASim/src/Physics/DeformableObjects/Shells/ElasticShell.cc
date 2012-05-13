@@ -664,6 +664,9 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 
   std::cout << "Vertex count: " << m_obj->nv() << std::endl;
 
+  if (m_obj->nf() == 0) // ElTopo crashes if given a mesh with zero triangles, which is possible for example when we're only testing rods.
+    return;
+  
   //El Topo collision processing.
   std::cout << "Resolving collisions\n";
   resolveCollisions(timestep);
