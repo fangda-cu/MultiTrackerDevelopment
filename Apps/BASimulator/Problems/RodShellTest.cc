@@ -13,6 +13,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/MNBendingForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellGravityForce.hh"
 #include "BASim/src/Render/ShellRenderer.hh"
+#include "BASim/src/Render/RodModelRenderer.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 
 RodShellTest::RodShellTest() : 
@@ -284,6 +285,8 @@ void RodShellTest::Setup()
   m_world->addController(stepper);
   RenderBase* shellRender = new ShellRenderer(*shell, initial_thickness);
   m_world->addRenderer(shellRender);
+  RenderBase* rodRender = new RodModelRenderer(*rod);
+  m_world->addRenderer(rodRender);
   
 }
 
