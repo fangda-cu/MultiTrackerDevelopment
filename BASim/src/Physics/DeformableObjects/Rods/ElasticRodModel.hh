@@ -75,8 +75,8 @@ namespace BASim
     
 //    void setEdgeActive(const EdgeHandle & e)/////////////////////
     
-    const std::vector<RodModelForce *> & getForces() const;/////////////////////
-    void addForce(RodModelForce * force);/////////////////////
+    const std::vector<RodModelForce *> & getForces() const { return m_forces; } /////////////////////
+    void addForce(RodModelForce * force) { assert(force); m_forces.push_back(force); }  /////////////////////
     
     /////////////////////
     void setEdgeThetas(const EdgeProperty<Scalar>& theta);
@@ -131,14 +131,11 @@ namespace BASim
   protected:
     void updateRadii();/////////////////////
             
-//    // ElasticRod instance, serving as a data interface for reusing BASim's rod forces
-//    ElasticRod m_elastic_rod;
-    
     // list of stencils in the mesh that are part of the rod
     std::vector<EdgeStencil> m_edge_stencils;
     std::vector<JointStencil> m_joint_stencils;
     
-    //Rod dofs
+    // rod dofs
     EdgeProperty<Scalar> m_theta;
     EdgeProperty<Scalar> m_theta_vel;
     EdgeProperty<Scalar> m_undef_theta;    
@@ -151,10 +148,9 @@ namespace BASim
     EdgeProperty<Scalar> m_volumes;
         
     Scalar m_density;
-    
-    
-    //The base object, and the list of forces
-//    std::vector<ElasticShellForce*> m_shell_forces;/////////////////////
+
+    // forces
+    std::vector<RodModelForce *> m_forces;
         
     // cached properties
     EdgeProperty<Vec3d>   m_properties_edge;

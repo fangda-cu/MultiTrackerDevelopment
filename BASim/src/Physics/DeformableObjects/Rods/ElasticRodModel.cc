@@ -1,6 +1,9 @@
 #include "BASim/src/Physics/DeformableObjects/Rods/ElasticRodModel.hh"
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
 #include "BASim/src/Math/Math.hh"
+#include "BASim/src/Physics/DeformableObjects/Rods/RodModelStretchingForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Rods/RodModelBendingForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Rods/RodModelTwistingForce.hh"
 
 namespace BASim 
 {  
@@ -19,6 +22,7 @@ namespace BASim
   m_radii(object),
   m_volumes(object),
   m_density(1),
+  m_forces(),
   m_properties_edge(object),
   m_properties_edge_tangent(object),
   m_properties_edge_length(object),
@@ -38,30 +42,23 @@ namespace BASim
   
   }
   
-  void ElasticRodModel::computeForces( VecXd& force )
+  void ElasticRodModel::computeForces(VecXd & force)
   {
 /////////////////////
-//    const std::vector<ElasticShellForce*>& forces = getForces();
-//    std::vector<ElasticShellForce*>::const_iterator fIt;
-//    
-//    VecXd curr_force(force.size());
-//    for (fIt = forces.begin(); fIt != forces.end(); ++fIt) {
-//      curr_force.setZero();
-//      (*fIt)->globalForce(curr_force);
-//      
-//      force += curr_force;
-//    }
-    
+    VecXd curr_force(force.size());
+    for (size_t i = 0; i < m_forces.size(); i++) 
+    {
+      curr_force.setZero();
+      m_forces[i]->globalForce(curr_force);
+      force += curr_force;
+    }    
   }
   
-  void ElasticRodModel::computeJacobian( Scalar scale, MatrixBase& J )
+  void ElasticRodModel::computeJacobian(Scalar scale, MatrixBase & J)
   {
 /////////////////////
-//    const std::vector<ElasticShellForce*>& forces = getForces();
-//    std::vector<ElasticShellForce*>::const_iterator fIt;
-//    
-//    for (fIt = forces.begin(); fIt != forces.end(); ++fIt)
-//      (*fIt)->globalJacobian(scale, J);
+    for (size_t i = 0; i < m_forces.size(); i++)
+      m_forces[i]->globalJacobian(scale, J);
   }
   
 /////////////////////
@@ -87,7 +84,11 @@ namespace BASim
 //      Scalar area = getArea(*fit, false);
 //      m_volumes[*fit] = thickness * area;
 //    }
-    
+    for (EdgeIterator i = getDefoObj().edges_begin(); i != getDefoObj().edges_end(); ++i)
+    {
+      m_radii[*i] = Vec2d(ra, rb);
+      m_volumes[*i] = M_PI * ra * rb * getEdgeLength(*i);
+    }
   }
   
   void ElasticRodModel::setDensity(Scalar density) 
@@ -95,17 +96,17 @@ namespace BASim
     m_density = density;
   }
   
-  void ElasticRodModel::setEdgeThetas( const EdgeProperty<Scalar>& positions )/////////////////////
+  void ElasticRodModel::setEdgeThetas(const EdgeProperty<Scalar>& thetas)/////////////////////
   {
-    m_theta = positions;
+    m_theta = thetas;
   }
   
-  void ElasticRodModel::setEdgeThetaVelocities(const EdgeProperty<Scalar>& velocities)/////////////////////
+  void ElasticRodModel::setEdgeThetaVelocities(const EdgeProperty<Scalar>& vels)/////////////////////
   {
-    m_theta_vel = velocities;
+    m_theta_vel = vels;
   }
 
-  void ElasticRodModel::setEdgeUndeformedThetas( const EdgeProperty<Scalar>& undef )/////////////////////
+  void ElasticRodModel::setEdgeUndeformedThetas(const EdgeProperty<Scalar>& undef)/////////////////////
   {
     m_undef_theta = undef;
   }  
@@ -313,10 +314,9 @@ namespace BASim
   {
     std::cout << "Starting startStep\n";
 
-//    for (size_t i = 0; i < m_forces.size(); i++)
-//      m_forces[i].updateViscousReferenceStrain();
-    
-    startIteration(time, timestep);
+    // viscous update
+    for (size_t i = 0; i < m_forces.size(); i++)
+      m_forces[i]->updateViscousReferenceStrain();
     
     //update the damping "reference configuration" for computing viscous forces.
     m_damping_undef_theta = m_theta;/////////////////////
@@ -335,22 +335,24 @@ namespace BASim
     std::cout << "Starting endStep.\n";
 //    bool do_relabel = false;/////////////////////
     
-    endIteration(time, timestep);
-    
     std::cout << "Vertex count: " << getDefoObj().nv() << std::endl;
     
-    //Adjust thicknesses based on area changes
+    // adjust radii based on edge length changes
     updateRadii();/////////////////////
     
-    //Update masses based on new areas/thicknesses
+    // update masses based on new edge length/radii
     computeMasses();
+    
+    // update stiffness, since radii have changed
+    for (size_t i = 0; i < m_forces.size(); i++)
+      m_forces[i]->updateStiffness();
     
     std::cout << "Completed endStep\n";
   }
 
   void ElasticRodModel::startIteration(Scalar time, Scalar timestep)
   {
-    
+
   }
   
   void ElasticRodModel::endIteration(Scalar time, Scalar timestep)
@@ -362,7 +364,12 @@ namespace BASim
   ////////////////////////////////////////
   void ElasticRodModel::updateRadii()
   {
-    
+    for (size_t i = 0; i < m_edge_stencils.size(); i++)
+    {
+      EdgeStencil & s = m_edge_stencils[i];
+      Vec2d old_radii = m_radii[s.e];
+      m_radii[s.e] = old_radii * sqrt(m_volumes[s.e] / (getEdgeLength(s.e) * M_PI * old_radii(0) * old_radii(1)));
+    }
   }
 
   void ElasticRodModel::updateProperties()
@@ -461,8 +468,8 @@ namespace BASim
       m_properties_material_director1[s.e] = -sa * u + ca * v;
     }
     
-//    for (size_t i = 0; i < m_forces.size(); i++)
-//      m_forces[i].updateProperties();
+    for (size_t i = 0; i < m_forces.size(); i++)
+      m_forces[i]->updateProperties();
   }
 
 } //namespace BASim
