@@ -71,7 +71,6 @@ void RodModelStretchingForce::globalJacobian(Scalar scale, MatrixBase & Jacobian
 
 Scalar RodModelStretchingForce::localEnergy(Stencil & s, bool viscous)
 {
-  //TODO: this can use optimization (caching quantities like edge length, like BASim does with updateProperties)
   Scalar ks = (viscous ? m_viscous_stiffness[s.e] : m_stiffness[s.e]);
   
   Scalar reflen = (viscous ? m_damping_undeformed_length[s.e] : m_undeformed_length[s.e]);
@@ -82,7 +81,6 @@ Scalar RodModelStretchingForce::localEnergy(Stencil & s, bool viscous)
 
 void RodModelStretchingForce::localForce(ElementForce & force, Stencil & s, bool viscous)
 {
-  //TODO: this can use optimization (caching quantities like edge length, like BASim does with updateProperties)
   Scalar ks = (viscous ? m_viscous_stiffness[s.e] : m_stiffness[s.e]);
   
   Scalar reflen = (viscous ? m_damping_undeformed_length[s.e] : m_undeformed_length[s.e]);
@@ -96,7 +94,6 @@ void RodModelStretchingForce::localForce(ElementForce & force, Stencil & s, bool
 
 void RodModelStretchingForce::localJacobian(ElementJacobian & jacobian, Stencil & s, bool viscous)
 {
-  //TODO: this can use optimization (caching quantities like edge length, like BASim does with updateProperties)
   Scalar ks = (viscous ? m_viscous_stiffness[s.e] : m_stiffness[s.e]);
   
   Vec3d e = rod().getEdge(s.e);

@@ -48,6 +48,9 @@ namespace BASim
     
     void computeReferenceStrain();
     
+    ElementBiForce computeGradKappa(Stencil & s);
+    ElementBiJacobian computeHessKappa(Stencil & s);
+    
   protected:
     std::vector<Stencil> m_stencils;
     
