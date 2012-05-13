@@ -33,7 +33,8 @@ namespace BASim
   m_properties_material_director2(object),
   m_properties_voronoi_length(object),
   m_properties_reference_twist(object),
-  m_properties_curvature_binormal(object)
+  m_properties_curvature_binormal(object),
+  m_undeformed_reference_director1(NULL)
   {
     // parse the edges in the context of the mesh and generate a list of edge and joint stencils
     // edge stencils
@@ -124,13 +125,12 @@ namespace BASim
     }
   }
   
-  void ElasticRodModel::setup(
-             Scalar youngs, 
-             Scalar youngs_damping, 
-             Scalar shear, 
-             Scalar shear_damping, 
-             Scalar timestep, 
-             const EdgeProperty<Vec3d> * undeformed_reference_director1)
+  void ElasticRodModel::setUndeformedReferenceDirector1(const EdgeProperty<Vec3d> & undeformed_reference_director1)
+  {
+    m_undeformed_reference_director1 = new EdgeProperty<Vec3d>(undeformed_reference_director1);
+  }
+  
+  void ElasticRodModel::setup(Scalar youngs, Scalar youngs_damping, Scalar shear, Scalar shear_damping, Scalar timestep)
   {    
     DeformableObject & obj = getDefoObj();
 
@@ -141,9 +141,9 @@ namespace BASim
     m_theta = m_undef_theta;
     
     // adopt the reference directors specified by user, or generate them if not specified
-    if (undeformed_reference_director1)
+    if (m_undeformed_reference_director1)
     {
-      m_properties_reference_director1 = *undeformed_reference_director1; // director2 will be computed in updateProperties()
+      m_properties_reference_director1 = *m_undeformed_reference_director1; // director2 will be computed in updateProperties()
       for (size_t i = 0; i < m_edge_stencils.size(); i++)
       {
         EdgeStencil & s = m_edge_stencils[i];
@@ -152,6 +152,7 @@ namespace BASim
             !approxEq(m_properties_reference_director1[s.e].dot(t), 0.0, 1e-6)) // reject user specified if it's too short or not orthogonal to the edge tangent
           findOrthogonal(m_properties_reference_director1[s.e], t);
       }
+      delete m_undeformed_reference_director1;
     } else
     {
       for (size_t i = 0; i < m_edge_stencils.size(); i++)

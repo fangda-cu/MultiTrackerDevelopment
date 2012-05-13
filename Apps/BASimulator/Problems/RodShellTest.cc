@@ -181,6 +181,20 @@ void RodShellTest::Setup()
   //Call the appropriate scene setup function.
   (*this.*rodshell_scenes[sceneChoice])();
   
+  //compute the dof indexing for use in the diff_eq solver
+  obj->computeDofIndexing();
+  
+  //////////////////////////////////////////////////////////////////////////
+  //
+  // rod forces
+  //
+  //////////////////////////////////////////////////////////////////////////
+  Scalar rod_Youngs_modulus = GetScalarOpt("rod-Youngs");
+  Scalar rod_Shear_modulus = GetScalarOpt("rod-Shear");
+  Scalar rod_Youngs_damping = GetScalarOpt("rod-Youngs-damping");
+  Scalar rod_Shear_damping = GetScalarOpt("rod-Shear-damping");
+  rod->setup(rod_Youngs_modulus, rod_Youngs_damping, rod_Shear_modulus, rod_Shear_damping, m_timestep);
+
   //////////////////////////////////////////////////////////////////////////
   //
   // shell forces
@@ -201,7 +215,6 @@ void RodShellTest::Setup()
     if(mn_bend)
       shell->addForce(new MNBendingForce(*shell, "MNBending", shell_Youngs_modulus, shell_Poisson_ratio, shell_Youngs_damping, shell_Poisson_damping, timestep));
   }
-  
   
   //Gravity force (handled by shell only, not rod because we only need one copy of the force)
   shell->addForce(new ShellGravityForce(*shell, "Gravity", gravity)); // TODO: move gravity force to the PositionDofsModel?
@@ -254,12 +267,9 @@ void RodShellTest::Setup()
   
   //////////////////////////////////////////////////////////////////////////
   //
-  // index dofs
+  // create time stepper
   //
   //////////////////////////////////////////////////////////////////////////
-  //compute the dof indexing for use in the diff_eq solver
-  obj->computeDofIndexing();
-  
   stepper = new DefoObjTimeStepper(*obj);
   if(integrator == "symplectic")
     stepper->setDiffEqSolver(DefoObjTimeStepper::SYMPL_EULER);
@@ -408,13 +418,6 @@ void RodShellTest::setupScene1()
   rod->setEdgeThetaVelocities(zeros);
   rod->setEdgeUndeformedThetas(zeros);
 
-  // rod forces
-  Scalar rod_Youngs_modulus = GetScalarOpt("rod-Youngs");
-  Scalar rod_Shear_modulus = GetScalarOpt("rod-Shear");
-  Scalar rod_Youngs_damping = GetScalarOpt("rod-Youngs-damping");
-  Scalar rod_Shear_damping = GetScalarOpt("rod-Shear-damping");
-  rod->setup(m_timestep, rod_Youngs_modulus, rod_Youngs_damping, rod_Shear_modulus, rod_Shear_damping);
-  
 }
 
 void RodShellTest::setupScene2() 
@@ -465,11 +468,7 @@ void RodShellTest::setupScene2()
   rod->setEdgeUndeformedThetas(zeros);
 
   // rod forces, and init ref frame
-  Scalar rod_Youngs_modulus = GetScalarOpt("rod-Youngs");
-  Scalar rod_Shear_modulus = GetScalarOpt("rod-Shear");
-  Scalar rod_Youngs_damping = GetScalarOpt("rod-Youngs-damping");
-  Scalar rod_Shear_damping = GetScalarOpt("rod-Shear-damping");
-  rod->setup(m_timestep, rod_Youngs_modulus, rod_Youngs_damping, rod_Shear_modulus, rod_Shear_damping, &ref_dir);
+  rod->setUndeformedReferenceDirector1(ref_dir);
   
   obj->constrainVertex(vertex_handles[0], positions[vertex_handles[0]]);  // fix head position
   obj->constrainVertex(vertex_handles[1], positions[vertex_handles[1]]);  // fix head tangent

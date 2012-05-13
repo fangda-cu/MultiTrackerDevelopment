@@ -51,13 +51,7 @@ namespace BASim
     
     ~ElasticRodModel();
     
-    void setup(
-           Scalar youngs_modulus, 
-           Scalar youngs_modulus_damping, 
-           Scalar shear_modulus, 
-           Scalar shear_modulus_damping, 
-           Scalar timestep, 
-           const EdgeProperty<Vec3d> * undeformed_reference_director1 = NULL);
+    void setup(Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar shear_modulus, Scalar shear_modulus_damping, Scalar timestep);
     
     //*Inherited from PhysicalModel
     void computeForces(VecXd& force);
@@ -139,6 +133,10 @@ namespace BASim
     Scalar & getReferenceTwist(const VertexHandle & v) { return m_properties_reference_twist[v]; }
     Vec3d & getCurvatureBinormal(const VertexHandle & v) { return m_properties_curvature_binormal[v]; }
     
+    // reference director 1 is the only derived property that needs initialization. this will only be used in setup().
+    // if not specified, the reference directors will be generated randomly in setup().
+    void setUndeformedReferenceDirector1(const EdgeProperty<Vec3d> & undeformed_reference_director1);
+    
     // dof scripting interface inherited from PhysicalModel
     void getScriptedDofs(IntArray & dofIndices, std::vector<Scalar> & dofValues, Scalar time) const;
     
@@ -191,6 +189,9 @@ namespace BASim
     VertexProperty<Scalar>  m_properties_reference_twist;
     VertexProperty<Vec3d>   m_properties_curvature_binormal;    
 
+    // initialization of the cached properties
+    const EdgeProperty<Vec3d> * m_undeformed_reference_director1;
+    
     // dof scripting
     std::vector<std::pair<EdgeHandle, Scalar> > m_edge_constraints;
     std::vector<std::pair<EdgeHandle, Vec3d> > m_edge_vel_constraints;
