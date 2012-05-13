@@ -9,7 +9,10 @@ RodModelTwistingForce::RodModelTwistingForce(ElasticRodModel & rod, Scalar shear
   m_shear_modulus_damping(shear_modulus_damping),
   m_timestep(timestep)
 {
-  
+  updateProperties();
+  updateStiffness();
+  updateViscousReferenceStrain();
+  computeReferenceStrain();
 }
 
 RodModelTwistingForce::~RodModelTwistingForce()
@@ -74,3 +77,41 @@ void RodModelTwistingForce::localJacobian(ElementJacobian & jacobian, Stencil & 
 {
   
 }
+
+void RodModelTwistingForce::updateStiffness()
+{
+  for (size_t i = 0; i < m_stencils.size(); i++)
+  {
+    Stencil & s = m_stencils[i];
+    
+  }
+}
+
+void RodModelTwistingForce::updateViscousReferenceStrain()
+{
+  for (size_t i = 0; i < m_stencils.size(); i++)
+  {
+    Stencil & s = m_stencils[i];
+
+  }
+}
+
+void RodModelTwistingForce::updateProperties()
+{
+  for (size_t i = 0; i < m_stencils.size(); i++)
+  {
+    Stencil & s = m_stencils[i];
+    
+  }
+}
+
+void RodModelTwistingForce::computeReferenceStrain()
+{
+  for (size_t i = 0; i < m_stencils.size(); i++)
+  {
+    Stencil & s = m_stencils[i];
+
+  }
+}
+
+

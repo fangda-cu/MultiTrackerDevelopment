@@ -15,11 +15,10 @@ RodModelStretchingForce::RodModelStretchingForce(ElasticRodModel & rod, Scalar y
   m_undeformed_length(&rod.getDefoObj()),
   m_damping_undeformed_length(&rod.getDefoObj())
 {
-  for (size_t i = 0; i < m_stencils.size(); i++)
-  {
-    Stencil & s = m_stencils[i];
-    m_undeformed_length[s.e] = rod.getEdgeLength(s.e);
-  }
+  updateProperties();
+  updateStiffness();
+  updateViscousReferenceStrain();
+  computeReferenceStrain();
 }
 
 RodModelStretchingForce::~RodModelStretchingForce()
@@ -142,5 +141,14 @@ void RodModelStretchingForce::updateViscousReferenceStrain()
 void RodModelStretchingForce::updateProperties()
 {
   
+}
+
+void RodModelStretchingForce::computeReferenceStrain()
+{
+  for (size_t i = 0; i < m_stencils.size(); i++)
+  {
+    Stencil & s = m_stencils[i];
+    m_undeformed_length[s.e] = rod().getEdgeLength(s.e);
+  }
 }
 

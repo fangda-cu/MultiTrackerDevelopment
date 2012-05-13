@@ -46,6 +46,8 @@ namespace BASim
     void localForce(ElementForce & force, Stencil & s, bool viscous);
     void localJacobian(ElementJacobian & jacobian, Stencil & s, bool viscous);
     
+    void computeReferenceStrain();
+    
   protected:
     std::vector<Stencil> m_stencils;
     
@@ -53,6 +55,18 @@ namespace BASim
     Scalar m_youngs_modulus_damping;
     
     Scalar m_timestep;
+    
+    // cached stiffnesses
+    VertexProperty<Mat2d> m_stiffness;
+    VertexProperty<Mat2d> m_viscous_stiffness;
+    
+    // reference strains
+    VertexProperty<Vec2d> m_undeformed_kappa;
+    VertexProperty<Vec2d> m_damping_undeformed_kappa;
+    VertexProperty<Scalar> m_reference_voronoi_length;
+    
+    // cached properties
+    VertexProperty<Vec2d> m_kappa;
     
   };
   

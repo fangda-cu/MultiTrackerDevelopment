@@ -44,6 +44,8 @@ namespace BASim
     void localForce(ElementForce & force, Stencil & s, bool viscous);
     void localJacobian(ElementJacobian & jacobian, Stencil & s, bool viscous);
 
+    void computeReferenceStrain();
+    
   protected:
     std::vector<Stencil> m_stencils;
     
