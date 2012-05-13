@@ -4,12 +4,11 @@
 
 namespace BASim 
 {  
-  ElasticRodModel::ElasticRodModel(DeformableObject* object, const std::vector<EdgeHandle> & rodedges, Scalar timestep) : 
+  ElasticRodModel::ElasticRodModel(DeformableObject * object, const std::vector<EdgeHandle> & rodedges, Scalar timestep) : 
   PhysicalModel(*object), 
 //  m_active_edges(rodedges),
   m_edge_stencils(),
   m_joint_stencils(),
-  m_obj(object), 
 //  m_active_faces(shellFaces), /////////////////////
   m_theta(object), /////////////////////
   m_theta_vel(object),/////////////////////
@@ -314,6 +313,9 @@ namespace BASim
   {
     std::cout << "Starting startStep\n";
 
+//    for (size_t i = 0; i < m_forces.size(); i++)
+//      m_forces[i].updateViscousReferenceStrain();
+    
     startIteration(time, timestep);
     
     //update the damping "reference configuration" for computing viscous forces.
@@ -335,7 +337,7 @@ namespace BASim
     
     endIteration(time, timestep);
     
-    std::cout << "Vertex count: " << m_obj->nv() << std::endl;
+    std::cout << "Vertex count: " << getDefoObj().nv() << std::endl;
     
     //Adjust thicknesses based on area changes
     updateRadii();/////////////////////
@@ -353,11 +355,8 @@ namespace BASim
   
   void ElasticRodModel::endIteration(Scalar time, Scalar timestep)
   {
-//    // copy position dofs and edge theta dofs into ElasticRod's local copy
-//    
-//    
-//    // ElasticRod endIteration operation: upcate the derived properties
-//    m_elastic_rod.updateProperties();
+    // ElasticRod endIteration operation: upcate the derived properties
+    updateProperties();
   }
   
   ////////////////////////////////////////
@@ -366,7 +365,7 @@ namespace BASim
     
   }
 
-  void ElasticRodModel::upateProperties()
+  void ElasticRodModel::updateProperties()
   {
     // This code is adapted from BASim::ElasticRod::updateProperties(). The order of the computation is preserved. No optimization applied.
     DeformableObject & obj = getDefoObj();
@@ -462,8 +461,8 @@ namespace BASim
       m_properties_material_director1[s.e] = -sa * u + ca * v;
     }
     
-//    updateForceProperties();
-
+//    for (size_t i = 0; i < m_forces.size(); i++)
+//      m_forces[i].updateProperties();
   }
 
 } //namespace BASim

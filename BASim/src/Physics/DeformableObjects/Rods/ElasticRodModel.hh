@@ -95,7 +95,7 @@ namespace BASim
     void setDensity(Scalar density);
     void setRadii(Scalar ra, Scalar rb);/////////////////////
     
-    Scalar getMass(const VertexHandle& v) const { return m_obj->getVertexMass(v); }
+    Scalar getMass(const VertexHandle& v) const { return getDefoObj().getVertexMass(v); }
     Scalar getMass(const EdgeHandle& e) const { return m_edge_masses[e]; }
     
     Vec2d getRadii(const EdgeHandle& e) const { return m_radii[e]; } /////////////////////
@@ -111,7 +111,7 @@ namespace BASim
 //    void getThickness(VertexProperty<Scalar> & vThickness) const;/////////////////////
           
     // Cached properties, in support for the forces (similar to BASim)
-    void upateProperties();
+    void updateProperties();
     
     // edge properties
     Vec3d & getEdge(const EdgeHandle & e) { return m_properties_edge[e]; }
@@ -154,7 +154,6 @@ namespace BASim
     
     
     //The base object, and the list of forces
-    DeformableObject* m_obj;
 //    std::vector<ElasticShellForce*> m_shell_forces;/////////////////////
         
     // cached properties
