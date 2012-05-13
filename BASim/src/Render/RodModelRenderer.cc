@@ -17,9 +17,8 @@ namespace BASim
     m_mode(SIMPLE), 
     m_drawRod(true), 
     m_drawMaterial(false),
-    m_drawRootMaterial(true), 
+    m_drawRootMaterial(false), 
     m_drawReference(false), 
-    m_scaleToRadius(true),
     m_drawArrows(false), 
     m_drawVelocity(false)
   {

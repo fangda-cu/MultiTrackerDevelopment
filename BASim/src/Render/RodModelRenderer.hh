@@ -36,7 +36,6 @@ namespace BASim
     bool & drawMaterial() { return m_drawMaterial; }
     bool & drawRootMaterial() { return m_drawRootMaterial; }
     bool & drawReference() { return m_drawReference; }
-    bool & scaleToRadius() { return m_scaleToRadius; }
     bool & drawArrows() { return m_drawArrows; }
     bool & drawVelocity() { return m_drawVelocity; }
     
@@ -60,7 +59,6 @@ namespace BASim
     bool m_drawMaterial;
     bool m_drawRootMaterial;
     bool m_drawReference;
-    bool m_scaleToRadius;
     bool m_drawArrows;
     bool m_drawVelocity;
     
