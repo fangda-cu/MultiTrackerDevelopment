@@ -192,52 +192,25 @@ namespace BASim
   void ElasticRodModel::computeMasses()
   {
 /////////////////////
-//    //Compute vertex masses in a lumped mass way.
-//    
-//    m_vertex_masses.assign(0);
-//    m_edge_masses.assign(0);
-//    
-//    Scalar area = 0;
-//    
-//    //Iterate over all triangles active in this shell and accumulate vertex masses
-//    for(FaceIterator f_iter = m_obj->faces_begin(); f_iter != m_obj->faces_end(); ++f_iter) {
-//      FaceHandle& f_hnd = *f_iter;
-//      if(m_active_faces[f_hnd]) {
-//        
-//        //get the three vertices
-//        FaceVertexIterator fvit = m_obj->fv_iter(f_hnd);
-//        VertexHandle v0_hnd = *fvit; ++fvit; assert(fvit);
-//        VertexHandle v1_hnd = *fvit; ++fvit; assert(fvit);
-//        VertexHandle v2_hnd = *fvit; ++fvit; assert(!fvit);
-//        
-//        //compute triangle areas
-//        Vec3d v0 = getVertexPosition(v1_hnd) - getVertexPosition(v0_hnd);
-//        Vec3d v1 = getVertexPosition(v2_hnd) - getVertexPosition(v0_hnd);
-//        Vec3d triVec = v0.cross(v1);
-//        Scalar area = 0.5*sqrt(triVec.dot(triVec)) / 3.0;
-//        Scalar contribution = m_thicknesses[f_hnd] * m_density * area;
-//        
-//        //accumulate mass to the vertices
-//        m_vertex_masses[v0_hnd] += contribution;
-//        m_vertex_masses[v1_hnd] += contribution;
-//        m_vertex_masses[v2_hnd] += contribution;
-//        
-//        //also accumulate mass to the edges (this mass computation is probably not consistent with what we want)
-//        FaceEdgeIterator feit = m_obj->fe_iter(f_hnd);
-//        EdgeHandle e0_hnd = *feit; ++feit; assert(feit);
-//        EdgeHandle e1_hnd = *feit; ++feit; assert(feit);
-//        EdgeHandle e2_hnd = *feit; ++feit; //assert(feit);
-//        
-//        m_edge_masses[e0_hnd] += contribution;
-//        m_edge_masses[e1_hnd] += contribution;
-//        m_edge_masses[e2_hnd] += contribution;
-//        
-//        //store the current volumes
-//        m_volumes[f_hnd] = 3*area*m_thicknesses[f_hnd];
-//      }
-//    }
-//    
-//    m_obj->updateVertexMasses();
+    //Compute vertex masses in a lumped mass way.
+    
+    m_vertex_masses.assign(0);
+    m_edge_masses.assign(0);
+    
+    for (size_t i = 0; i < m_edge_stencils.size(); i++)
+    {
+      EdgeStencil & s = m_edge_stencils[i];
+      
+      Vec2d r = getRadii(s.e);
+      Scalar mass = m_density * M_PI * r(0) * r(1) * getEdgeLength(s.e);
+      Scalar inertia = 0.25 * mass * (square(r(0)) + square(r(1)));
+      
+      m_edge_masses[s.e] = inertia;
+      m_vertex_masses[s.v1] += mass * 0.5;
+      m_vertex_masses[s.v2] += mass * 0.5;
+    }
+    
+    getDefoObj().updateVertexMasses();
   }
   
 /////////////////////
@@ -444,10 +417,11 @@ namespace BASim
     }
     
     // compute voronoi lengths (this code is different than BASim::ElasticRod::computeVoronoiLength() due to topology)
-    for (VertexIterator i = getDefoObj().vertices_begin(); i != getDefoObj().vertices_end(); ++i) 
-    {
-      m_properties_voronoi_length[*i] = 0;
-    }
+//    for (VertexIterator i = getDefoObj().vertices_begin(); i != getDefoObj().vertices_end(); ++i) 
+//    {
+//      m_properties_voronoi_length[*i] = 0;
+//    }
+    m_properties_voronoi_length.assign(0);
     
     for (size_t i = 0; i < m_edge_stencils.size(); i++)
     {

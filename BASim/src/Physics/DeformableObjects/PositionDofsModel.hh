@@ -132,8 +132,9 @@ namespace BASim
     void clearMasses() 
     { 
       //TODO: this can use optimization
-      for (VertexIterator i = getDefoObj().vertices_begin(); i != getDefoObj().vertices_end(); ++i) 
-        m_vertex_masses[*i] = 0; 
+//      for (VertexIterator i = getDefoObj().vertices_begin(); i != getDefoObj().vertices_end(); ++i) 
+//        m_vertex_masses[*i] = 0; 
+      m_vertex_masses.assign(0);
     }
     
     void accumulateMasses(const VertexProperty<Scalar>& masses)
