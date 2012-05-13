@@ -5,8 +5,9 @@
 
 using namespace BASim;
 
-RodModelStretchingForce::RodModelStretchingForce(ElasticRodModel & rod, Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar timestep) :
+RodModelStretchingForce::RodModelStretchingForce(ElasticRodModel & rod, const std::vector<Stencil> & stencils, Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar timestep) :
   RodModelForce(rod, timestep, "RodModelStretchingForce"),
+  m_stencils(stencils),
   m_youngs_modulus(youngs_modulus),
   m_youngs_modulus_damping(youngs_modulus_damping),
   m_stiffness(&rod.getDefoObj()),

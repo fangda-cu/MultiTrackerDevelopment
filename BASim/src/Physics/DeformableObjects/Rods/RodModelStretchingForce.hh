@@ -21,7 +21,7 @@ namespace BASim
     typedef ElasticRodModel::EdgeStencil Stencil;
 
   public:
-    RodModelStretchingForce(ElasticRodModel & rod, Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar timestep);
+    RodModelStretchingForce(ElasticRodModel & rod, const std::vector<Stencil> & stencils, Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar timestep);
     virtual ~RodModelStretchingForce();
 
   public:

@@ -110,13 +110,9 @@ namespace BASim
     updateProperties();
     
     // set up the three internal forces
-    m_stretching_force = new RodModelStretchingForce(*this, youngs, youngs_damping, timestep);
-    m_bending_force = new RodModelBendingForce(*this, youngs, youngs_damping, timestep);
-    m_twisting_force = new RodModelTwistingForce(*this, shearing, shearing_damping, timestep);
-    
-    m_stretching_force->stencils() = m_edge_stencils;
-    m_bending_force->stencils() = m_joint_stencils;
-    m_twisting_force->stencils() = m_joint_stencils;
+    m_stretching_force = new RodModelStretchingForce(*this, m_edge_stencils, youngs, youngs_damping, timestep);
+    m_bending_force = new RodModelBendingForce(*this, m_joint_stencils, youngs, youngs_damping, timestep);
+    m_twisting_force = new RodModelTwistingForce(*this, m_joint_stencils, shearing, shearing_damping, timestep);
     
     addForce(m_stretching_force);
     addForce(m_bending_force);
