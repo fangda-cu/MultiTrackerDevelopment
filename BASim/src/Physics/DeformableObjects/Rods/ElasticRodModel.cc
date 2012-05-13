@@ -50,6 +50,16 @@ namespace BASim
       s.v2 = *evit; ++evit;
       assert(!evit);
       
+      s.dofindices.resize(6);
+      int dofbase = getDefoObj().getPositionDofBase(s.v1);
+      s.dofindices[0] = dofbase;
+      s.dofindices[1] = dofbase + 1;
+      s.dofindices[2] = dofbase + 2;
+      dofbase = getDefoObj().getPositionDofBase(s.v2);
+      s.dofindices[3] = dofbase;
+      s.dofindices[4] = dofbase + 1;
+      s.dofindices[5] = dofbase + 2;
+      
       m_edge_stencils.push_back(s);      
     }
     
@@ -91,6 +101,23 @@ namespace BASim
           s.v3 = (s.v2 == v1 ? v2 : v1);
           assert((s.v3 == v1 && s.v2 == v2) || (s.v3 == v2 && s.v2 == v1));
           
+          s.dofindices.resize(11);
+          int dofbase = getDefoObj().getPositionDofBase(s.v1);
+          s.dofindices[0] = dofbase;
+          s.dofindices[1] = dofbase + 1;
+          s.dofindices[2] = dofbase + 2;
+          dofbase = getDefoObj().getPositionDofBase(s.v2);
+          s.dofindices[4] = dofbase;
+          s.dofindices[5] = dofbase + 1;
+          s.dofindices[6] = dofbase + 2;
+          dofbase = getDefoObj().getPositionDofBase(s.v3);
+          s.dofindices[8] = dofbase;
+          s.dofindices[9] = dofbase + 1;
+          s.dofindices[10] = dofbase + 2;
+          
+          s.dofindices[3] = getEdgeDofBase(s.e1);
+          s.dofindices[6] = getEdgeDofBase(s.e2);
+
           m_joint_stencils.push_back(s);
         }
       }
