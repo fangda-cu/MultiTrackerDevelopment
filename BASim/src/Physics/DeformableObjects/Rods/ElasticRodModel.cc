@@ -12,6 +12,7 @@ namespace BASim
 //  m_active_edges(rodedges),
   m_edge_stencils(),
   m_joint_stencils(),
+  m_edge_active(object),
 //  m_active_faces(shellFaces), /////////////////////
   m_theta(object), /////////////////////
   m_theta_vel(object),/////////////////////
@@ -36,12 +37,10 @@ namespace BASim
   {
     // parse the edges in the context of the mesh and generate a list of edge and joint stencils
     // edge stencils
-    EdgeProperty<char> edge_active(object);
-    edge_active.assign(0);
-    
+    m_edge_active.assign(0);    
     for (size_t i = 0; i < rodedges.size(); i++)
     {
-      edge_active[rodedges[i]] = 1;
+      m_edge_active[rodedges[i]] = 1;
 
       // each rod edge forms an edge stencil
       EdgeStencil s;
@@ -60,7 +59,7 @@ namespace BASim
       // detect all the rod edges that are incident to this vertex
       std::vector<EdgeHandle> active_incident_edges;
       for (VertexEdgeIterator veit = object->ve_iter(*i); veit; ++veit)
-        if (edge_active[*veit])
+        if (m_edge_active[*veit])
           active_incident_edges.push_back(*veit);
       
       if (active_incident_edges.size() >= 2)
@@ -287,33 +286,6 @@ namespace BASim
     }
     
     getDefoObj().updateVertexMasses();
-  }
-  
-/////////////////////
-  bool ElasticRodModel::isVertexActive( const VertexHandle& v ) const
-  {
-//    //determine if the vertex is on any active face
-//    VertexFaceIterator vf = m_obj->vf_iter(v);
-//    for(;vf; ++vf) {
-//      if(isFaceActive(*vf)) {
-//        return true;
-//      }
-//    }
-//    
-//    return false;
-  }
-  
-  bool ElasticRodModel::isEdgeActive( const EdgeHandle& e) const 
-  {
-//    //if any adjacent face is active, we say this edge is active.
-//    EdgeFaceIterator ef = m_obj->ef_iter(e);
-//    for(;ef;++ef) {
-//      if(isFaceActive(*ef)) {
-//        return true;
-//      }
-//    }
-//    
-//    return false;
   }
   
   const Scalar& ElasticRodModel::getDof( const DofHandle& hnd ) const

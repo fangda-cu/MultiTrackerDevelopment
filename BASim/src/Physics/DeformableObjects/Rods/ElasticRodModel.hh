@@ -73,8 +73,8 @@ namespace BASim
     int numFaceDofs() const { return 0; }
     int numTetDofs() const { return 0; }
     
-    bool isVertexActive(const VertexHandle& v) const;  /////////////////////
-    bool isEdgeActive(const EdgeHandle& e) const;   /////////////////////
+    bool isVertexActive(const VertexHandle& v) const { return false; }
+    bool isEdgeActive(const EdgeHandle& e) const { return m_edge_active[e]; }
     bool isFaceActive(const FaceHandle& f) const { return false; }
     bool isTetActive(const TetHandle& t) const { return false; }
     
@@ -145,6 +145,9 @@ namespace BASim
     // list of stencils in the mesh that are part of the rod
     std::vector<EdgeStencil> m_edge_stencils;
     std::vector<JointStencil> m_joint_stencils;
+    
+    // active flag for each edge, used for isEdgeActive() query which is required by defo obj's dof indexing
+    EdgeProperty<char> m_edge_active;
     
     // rod dofs
     EdgeProperty<Scalar> m_theta;
