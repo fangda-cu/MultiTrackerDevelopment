@@ -372,6 +372,8 @@ void display()
     if (g_dsp_sim_tm)
         renderBitmapString(5, (float)window_height - 40, 0.0, GLUT_BITMAP_HELVETICA_18, toString(current_problem->getTime()));
 
+    glPopMatrix();
+    glPopMatrix();
     glutSwapBuffers();
     glPopMatrix();
 }
