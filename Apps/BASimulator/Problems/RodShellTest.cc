@@ -27,7 +27,18 @@ RodShellTest::RodShellTest() :
   
   //Choice of scene
   AddOption("rodshell-scene", "the scene to test", 1);
-  
+
+  //Basic rod options
+  AddOption("rod-radius-a", "major radius of the rod", 0.01);
+  AddOption("rod-radius-b", "minor radius of the rod", 0.01);
+  AddOption("rod-density", "volumetric density of the rod ", 1.0);
+
+  //Properties for the thickness-dependent linear elasticity & viscosity
+  AddOption("rod-Youngs", "the Young's modulus of the rodl material", 0.0f);
+  AddOption("rod-Shear", "the shear modulus of the rod material", 0.0f);
+  AddOption("rod-Youngs-damping", "the damping coefficient associated with the rod's Young's modulus", 0.0f);
+  AddOption("rod-Shear-damping", "the damping coefficient associated to the rod's shear modulus", 0.0f);
+
   //Basic shell options
   AddOption("shell-thickness", "the (initial) thickness of the shell", 0.01);
   AddOption("shell-density", "volumetric density of the shell ", 1.0);
@@ -119,19 +130,27 @@ void RodShellTest::Setup()
 {
   loadDynamicsProps();
   
+  //////////////////////////////////////////////////////////////////////////
+  //
+  // load options
+  //
+  //////////////////////////////////////////////////////////////////////////
   //General shell forces and properties
-  Scalar density = GetScalarOpt("shell-density");
-  Scalar thickness = GetScalarOpt("shell-thickness");
-  Scalar initial_thickness = thickness;
+  Scalar shell_density = GetScalarOpt("shell-density");
+  Scalar shell_thickness = GetScalarOpt("shell-thickness");
+  Scalar initial_thickness = shell_thickness;
+  Scalar rod_density = GetScalarOpt("rod-density");
+  Scalar rod_radius_a = GetScalarOpt("rod-radius-a");
+  Scalar rod_radius_b = GetScalarOpt("rod-radius-b");
   
   Vec3d gravity = GetVecOpt("gravity");
   
   Scalar surface_tension = GetScalarOpt("shell-surface-tension");
   
-  Scalar Youngs_modulus = GetScalarOpt("shell-Youngs");
-  Scalar Poisson_ratio = GetScalarOpt("shell-Poisson");
-  Scalar Youngs_damping = GetScalarOpt("shell-Youngs-damping");
-  Scalar Poisson_damping = GetScalarOpt("shell-Poisson-damping");
+  Scalar shell_Youngs_modulus = GetScalarOpt("shell-Youngs");
+  Scalar shell_Poisson_ratio = GetScalarOpt("shell-Poisson");
+  Scalar shell_Youngs_damping = GetScalarOpt("shell-Youngs-damping");
+  Scalar shell_Poisson_damping = GetScalarOpt("shell-Poisson-damping");
   
   bool cst_stretch = GetBoolOpt("shell-CST-stretching");
   bool ds_bend = GetBoolOpt("shell-DS-bending");
@@ -146,6 +165,11 @@ void RodShellTest::Setup()
   Scalar timestep = getDt(); //Our Rayleigh damping model relies on knowing the timestep (folds it into the damping stiffness, as in Viscous Threads)
   m_timestep = timestep;
   
+  //////////////////////////////////////////////////////////////////////////
+  //
+  // scene setup
+  //
+  //////////////////////////////////////////////////////////////////////////
   //Geometry/scene specific
   int sceneChoice = GetIntOpt("rodshell-scene");
   m_active_scene = sceneChoice;
@@ -156,39 +180,55 @@ void RodShellTest::Setup()
   //Call the appropriate scene setup function.
   (*this.*rodshell_scenes[sceneChoice])();
   
-  //now add forces to the model
-  
+  //////////////////////////////////////////////////////////////////////////
+  //
+  // shell forces
+  //
+  //////////////////////////////////////////////////////////////////////////
   //Stretching and bending forces
-  if(Youngs_modulus != 0 || Youngs_damping != 0) {
+  if(shell_Youngs_modulus != 0 || shell_Youngs_damping != 0) {
     
     //Stretching force (Constant Strain Triangle, i.e. linear FEM)
     if(cst_stretch)
-      shell->addForce(new CSTMembraneForce(*shell, "CSTMembrane", cst_scale*Youngs_modulus, Poisson_ratio, cst_scale*Youngs_damping, Poisson_damping, timestep));
+      shell->addForce(new CSTMembraneForce(*shell, "CSTMembrane", cst_scale*shell_Youngs_modulus, shell_Poisson_ratio, cst_scale*shell_Youngs_damping, shell_Poisson_damping, timestep));
     
     //Bending force (Hinge-based Bending, a la Discrete Shells)
     if(ds_bend)
-      shell->addForce(new DSBendingForce(*shell, "DSBending", ds_scale*Youngs_modulus, Poisson_ratio, ds_scale*Youngs_damping, Poisson_damping, timestep));
+      shell->addForce(new DSBendingForce(*shell, "DSBending", ds_scale*shell_Youngs_modulus, shell_Poisson_ratio, ds_scale*shell_Youngs_damping, shell_Poisson_damping, timestep));
     
     //Better bending model, not currently functional.
     if(mn_bend)
-      shell->addForce(new MNBendingForce(*shell, "MNBending", Youngs_modulus, Poisson_ratio, Youngs_damping, Poisson_damping, timestep));
+      shell->addForce(new MNBendingForce(*shell, "MNBending", shell_Youngs_modulus, shell_Poisson_ratio, shell_Youngs_damping, shell_Poisson_damping, timestep));
   }
   
   
-  //Gravity force
-  shell->addForce(new ShellGravityForce(*shell, "Gravity", gravity));
+  //Gravity force (handled by shell only, not rod because we only need one copy of the force)
+  shell->addForce(new ShellGravityForce(*shell, "Gravity", gravity)); // TODO: move gravity force to the PositionDofsModel?
   
-  shell->setThickness(thickness);
-  shell->setDensity(density);
+  //////////////////////////////////////////////////////////////////////////
+  //
+  // rod and shell mass
+  //
+  //////////////////////////////////////////////////////////////////////////
+  shell->setThickness(shell_thickness);
+  shell->setDensity(shell_density);
+  rod->setRadii(rod_radius_a, rod_radius_b);
+  rod->setDensity(rod_density);
   
+  shell->computeMasses();
+  rod->computeMasses();
+  
+  //////////////////////////////////////////////////////////////////////////
+  //
+  // shell specific (remeshing, collision, tearing etc)
+  //
+  //////////////////////////////////////////////////////////////////////////
   bool remeshing = GetIntOpt("shell-remeshing") == 1?true:false;
   Scalar remeshing_res = GetScalarOpt("shell-remeshing-resolution");
   int remeshing_its = GetIntOpt("shell-remeshing-iterations");
   shell->setRemeshing(remeshing, remeshing_res, remeshing_its);
   
   //shell->remesh(remeshing_res);
-  
-  shell->computeMasses();
   
   Scalar stiffness = GetScalarOpt("shell-collision-spring-stiffness");
   Scalar damping = GetScalarOpt("shell-collision-spring-damping");
@@ -211,6 +251,11 @@ void RodShellTest::Setup()
   //for(int i = 0; i < 3; ++i)
   //  shell->remesh(remeshing_res);
   
+  //////////////////////////////////////////////////////////////////////////
+  //
+  // index dofs
+  //
+  //////////////////////////////////////////////////////////////////////////
   //compute the dof indexing for use in the diff_eq solver
   obj->computeDofIndexing();
   
@@ -230,6 +275,11 @@ void RodShellTest::Setup()
   stepper->set_rtol(GetScalarOpt("rtol"));
   stepper->set_inftol(GetScalarOpt("inftol"));
   
+  //////////////////////////////////////////////////////////////////////////
+  //
+  // add renderers and controllers to the simulator
+  //
+  //////////////////////////////////////////////////////////////////////////
   m_world->addObject(obj);
   m_world->addController(stepper);
   RenderBase* shellRender = new ShellRenderer(*shell, initial_thickness);
@@ -242,10 +292,8 @@ void RodShellTest::AtEachTimestep()
 
 }
 
-//vertical flat sheet
 void RodShellTest::setupScene1() 
 {
-  
   //get params
   Scalar width = GetScalarOpt("shell-width");
   Scalar height = GetScalarOpt("shell-height");
@@ -346,9 +394,16 @@ void RodShellTest::setupScene1()
       shell->constrainVertex(*vit, pos);
   }
   
+  //empty rod
+  Scalar rod_Youngs_modulus = GetScalarOpt("rod-Youngs");
+  Scalar rod_Shear_modulus = GetScalarOpt("rod-Shear");
+  Scalar rod_Youngs_damping = GetScalarOpt("rod-Youngs-damping");
+  Scalar rod_Shear_damping = GetScalarOpt("rod-Shear-damping");
+  rod = new ElasticRodModel(obj, std::vector<EdgeHandle>(), m_timestep, rod_Youngs_modulus, rod_Youngs_damping, rod_Shear_modulus, rod_Shear_damping);
+  obj->addModel(rod);
+  
 }
 
-//vertical cylinder, pinned or flowing at top
 void RodShellTest::setupScene2() 
 {
   

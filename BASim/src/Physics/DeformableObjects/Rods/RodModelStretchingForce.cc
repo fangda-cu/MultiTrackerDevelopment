@@ -110,7 +110,7 @@ void RodModelStretchingForce::localJacobian(ElementJacobian & jacobian, Stencil 
     }
   }
   
-  assert(isSymmetric(j));
+  assert(isSymmetric(jacobian));
 }
 
 void RodModelStretchingForce::updateStiffness()
