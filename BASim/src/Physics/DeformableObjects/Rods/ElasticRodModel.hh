@@ -14,6 +14,9 @@
 namespace BASim 
 {
   class RodModelForce;
+  class RodModelStretchingForce;
+  class RodModelBendingForce;
+  class RodModelTwistingForce;
   
   const int ELASTIC_ROD_DOFS_PER_VERTEX = 0;  //nodal position vectors
   const int ELASTIC_ROD_DOFS_PER_EDGE = 1;    //edge twist
@@ -44,7 +47,15 @@ namespace BASim
     };
     
   public:
-    ElasticRodModel(DeformableObject* object, const std::vector<EdgeHandle> & rodedges, Scalar timestep); ////////////////
+    ElasticRodModel(
+      DeformableObject* object, 
+      const std::vector<EdgeHandle> & rodedges, 
+      Scalar timestep, 
+      Scalar youngs_modulus, 
+      Scalar youngs_modulus_damping, 
+      Scalar shearing_modulus, 
+      Scalar shearing_modulus_damping); ////////////////
+    
     ~ElasticRodModel();
     
     //*Inherited from PhysicalModel
@@ -149,8 +160,11 @@ namespace BASim
         
     Scalar m_density;
 
-    // forces
+    // forces, including the three internal forces
     std::vector<RodModelForce *> m_forces;
+    RodModelStretchingForce * m_stretching_force;
+    RodModelBendingForce * m_bending_force;
+    RodModelTwistingForce * m_twisting_force;
         
     // cached properties
     EdgeProperty<Vec3d>   m_properties_edge;

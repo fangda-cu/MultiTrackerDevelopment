@@ -7,7 +7,7 @@
 
 namespace BASim 
 {  
-  ElasticRodModel::ElasticRodModel(DeformableObject * object, const std::vector<EdgeHandle> & rodedges, Scalar timestep) : 
+  ElasticRodModel::ElasticRodModel(DeformableObject * object, const std::vector<EdgeHandle> & rodedges, Scalar timestep, Scalar youngs, Scalar youngs_damping, Scalar shearing, Scalar shearing_damping) : 
   PhysicalModel(*object), 
 //  m_active_edges(rodedges),
   m_edge_stencils(),
@@ -34,12 +34,88 @@ namespace BASim
   m_properties_reference_twist(object),
   m_properties_curvature_binormal(object)
   {
-  
+    // parse the edges in the context of the mesh and generate a list of edge and joint stencils
+    // edge stencils
+    EdgeProperty<char> edge_active(object);
+    edge_active.assign(0);
+    
+    for (size_t i = 0; i < rodedges.size(); i++)
+    {
+      edge_active[rodedges[i]] = 1;
+
+      // each rod edge forms an edge stencil
+      EdgeStencil s;
+      s.e = rodedges[i];
+      EdgeVertexIterator evit = object->ev_iter(s.e);
+      s.v1 = *evit; ++evit;
+      s.v2 = *evit; ++evit;
+      assert(!evit);
+      
+      m_edge_stencils.push_back(s);      
+    }
+    
+    // joint stencils
+    for (VertexIterator i = object->vertices_begin(); i != object->vertices_end(); ++i)
+    {
+      // detect all the rod edges that are incident to this vertex
+      std::vector<EdgeHandle> active_incident_edges;
+      for (VertexEdgeIterator veit = object->ve_iter(*i); veit; ++veit)
+        if (edge_active[*veit])
+          active_incident_edges.push_back(*veit);
+      
+      if (active_incident_edges.size() >= 2)
+      {
+        // 2 or more incident edges are rod edges: need to generate one or more joint stencils here
+        // 2 edges: generate one joint stencil only
+        // >2 edges: generate a ring of joint stencils
+        for (size_t j = 0; j < (active_incident_edges.size() == 2 ? 1 : active_incident_edges.size()); j++)
+        {
+          JointStencil s;
+          s.v2 = *i;
+          s.e1 = active_incident_edges[j];
+          s.e2 = active_incident_edges[(j + 1) % active_incident_edges.size()];
+
+          EdgeVertexIterator evit;
+          VertexHandle v1, v2;
+          
+          evit = object->ev_iter(s.e1);
+          v1 = *evit; ++evit;
+          v2 = *evit; ++evit;
+          assert(!evit);
+          s.v1 = (s.v2 == v1 ? v2 : v1);
+          assert((s.v1 == v1 && s.v2 == v2) || (s.v1 == v2 && s.v2 == v1));
+          
+          evit = object->ev_iter(s.e2);
+          v1 = *evit; ++evit;
+          v2 = *evit; ++evit;
+          assert(!evit);
+          s.v3 = (s.v2 == v1 ? v2 : v1);
+          assert((s.v3 == v1 && s.v2 == v2) || (s.v3 == v2 && s.v2 == v1));
+          
+          m_joint_stencils.push_back(s);
+        }
+      }
+    }
+    
+    // set up the three internal forces
+    m_stretching_force = new RodModelStretchingForce(*this, youngs, youngs_damping, timestep);
+    m_bending_force = new RodModelBendingForce(*this, youngs, youngs_damping, timestep);
+    m_twisting_force = new RodModelTwistingForce(*this, shearing, shearing_damping, timestep);
+    
+    m_stretching_force->stencils() = m_edge_stencils;
+    m_bending_force->stencils() = m_joint_stencils;
+    m_twisting_force->stencils() = m_joint_stencils;
+    
+    addForce(m_stretching_force);
+    addForce(m_bending_force);
+    addForce(m_twisting_force);
   }
   
   ElasticRodModel::~ElasticRodModel() 
   {
-  
+    delete m_stretching_force;
+    delete m_bending_force;
+    delete m_twisting_force;
   }
   
   void ElasticRodModel::computeForces(VecXd & force)
