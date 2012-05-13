@@ -55,8 +55,6 @@ namespace BASim
     Scalar m_shear_modulus;
     Scalar m_shear_modulus_damping;
     
-    Scalar m_timestep;
-    
     // cached stiffnesses
     VertexProperty<Scalar> m_stiffness;
     VertexProperty<Scalar> m_viscous_stiffness;

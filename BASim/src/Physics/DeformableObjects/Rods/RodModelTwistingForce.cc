@@ -5,10 +5,9 @@
 using namespace BASim;
 
 RodModelTwistingForce::RodModelTwistingForce(ElasticRodModel & rod, Scalar shear_modulus, Scalar shear_modulus_damping, Scalar timestep) :
-  RodModelForce(rod, "RodModelStretchingForce"),
+  RodModelForce(rod, timestep, "RodModelStretchingForce"),
   m_shear_modulus(shear_modulus),
   m_shear_modulus_damping(shear_modulus_damping),
-  m_timestep(timestep),
   m_stiffness(&rod.getDefoObj()),
   m_viscous_stiffness(&rod.getDefoObj()),
   m_undeformed_twist(&rod.getDefoObj()),
@@ -51,7 +50,7 @@ void RodModelTwistingForce::globalForce(VecXd & force)
     // viscous force
     localForce(localforce, m_stencils[i], true);
     for (size_t j = 0; j < m_stencils[i].dofindices.size(); j++)
-      force(m_stencils[i].dofindices[j]) += localforce(j) / m_timestep;
+      force(m_stencils[i].dofindices[j]) += localforce(j) / timeStep();
   }
 }
 
@@ -66,7 +65,7 @@ void RodModelTwistingForce::globalJacobian(Scalar scale, MatrixBase & Jacobian)
     
     // viscous force
     localJacobian(localjacobian, m_stencils[i], true);
-    Jacobian.add(m_stencils[i].dofindices, m_stencils[i].dofindices, scale / m_timestep * localjacobian);
+    Jacobian.add(m_stencils[i].dofindices, m_stencils[i].dofindices, scale / timeStep() * localjacobian);
   }
 }
 

@@ -16,9 +16,10 @@ namespace BASim
   class RodModelForce
   {
   public:
-    RodModelForce(ElasticRodModel & rod, const std::string & name = "RodModelForce") : 
+    RodModelForce(ElasticRodModel & rod, Scalar timestep, const std::string & name = "RodModelForce") : 
       m_rod(rod), 
-      m_name(name)
+      m_name(name),
+      m_timestep(timestep)
     { }
     virtual ~RodModelForce() { }
 
@@ -30,7 +31,7 @@ namespace BASim
     virtual void globalJacobian(Scalar scale, MatrixBase & Jacobian) = 0;
     
   public:
-    virtual void updateStiffness() { }               // called whenever rod radii change
+    virtual void updateStiffness() { }               // called whenever rod radii change, or time step changes (for viscous stiffness)
     virtual void updateViscousReferenceStrain() { }  // called at the beginning of every time step
     virtual void updateProperties() { }              // called at every solver iteration (rod updateProperties()), updating cached properties
     
@@ -38,9 +39,14 @@ namespace BASim
     ElasticRodModel & rod() { return m_rod; }
     const ElasticRodModel & rod() const { return m_rod; }
     
+    Scalar & timeStep() { return m_timestep; }
+    const Scalar & timeStep() const { return m_timestep; }
+    
   protected:
     ElasticRodModel & m_rod;
     std::string m_name;
+
+    Scalar m_timestep;  // this is needed for computing viscous forces' stiffnesses
     
   };
   

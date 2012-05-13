@@ -57,8 +57,6 @@ namespace BASim
     Scalar m_youngs_modulus;
     Scalar m_youngs_modulus_damping;
     
-    Scalar m_timestep;
-    
     // cached stiffnesses
     VertexProperty<Mat2d> m_stiffness;
     VertexProperty<Mat2d> m_viscous_stiffness;
