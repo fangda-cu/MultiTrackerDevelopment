@@ -207,6 +207,17 @@ void RodShellTest::Setup()
   
   //////////////////////////////////////////////////////////////////////////
   //
+  // rod forces
+  //
+  //////////////////////////////////////////////////////////////////////////
+  Scalar rod_Youngs_modulus = GetScalarOpt("rod-Youngs");
+  Scalar rod_Shear_modulus = GetScalarOpt("rod-Shear");
+  Scalar rod_Youngs_damping = GetScalarOpt("rod-Youngs-damping");
+  Scalar rod_Shear_damping = GetScalarOpt("rod-Shear-damping");
+  rod->setupForces(m_timestep, rod_Youngs_modulus, rod_Youngs_damping, rod_Shear_modulus, rod_Shear_damping);
+  
+  //////////////////////////////////////////////////////////////////////////
+  //
   // rod and shell mass
   //
   //////////////////////////////////////////////////////////////////////////
@@ -394,14 +405,17 @@ void RodShellTest::setupScene1()
       shell->constrainVertex(*vit, pos);
   }
   
-  //empty rod
-  Scalar rod_Youngs_modulus = GetScalarOpt("rod-Youngs");
-  Scalar rod_Shear_modulus = GetScalarOpt("rod-Shear");
-  Scalar rod_Youngs_damping = GetScalarOpt("rod-Youngs-damping");
-  Scalar rod_Shear_damping = GetScalarOpt("rod-Shear-damping");
-  rod = new ElasticRodModel(obj, std::vector<EdgeHandle>(), m_timestep, rod_Youngs_modulus, rod_Youngs_damping, rod_Shear_modulus, rod_Shear_damping);
+  // create an empty rod model
+  rod = new ElasticRodModel(obj, std::vector<EdgeHandle>(), m_timestep);
   obj->addModel(rod);
   
+  // set init dofs for edges
+  EdgeProperty<Scalar> zeros(obj);
+  zeros.assign(0);
+  rod->setEdgeThetas(zeros);
+  rod->setEdgeThetaVelocities(zeros);
+  rod->setEdgeUndeformedThetas(zeros);
+
 }
 
 void RodShellTest::setupScene2() 
@@ -436,24 +450,25 @@ void RodShellTest::setupScene2()
     rodEdges.push_back(obj->addEdge(vertex_handles[i], vertex_handles[i + 1]));
 
   // create rod model
-  Scalar rod_Youngs_modulus = GetScalarOpt("rod-Youngs");
-  Scalar rod_Shear_modulus = GetScalarOpt("rod-Shear");
-  Scalar rod_Youngs_damping = GetScalarOpt("rod-Youngs-damping");
-  Scalar rod_Shear_damping = GetScalarOpt("rod-Shear-damping");
-  rod = new ElasticRodModel(obj, rodEdges, m_timestep, rod_Youngs_modulus, rod_Youngs_damping, rod_Shear_modulus, rod_Shear_damping);
+  rod = new ElasticRodModel(obj, rodEdges, m_timestep);
   obj->addModel(rod);
 
-  // set init dofs for edges
+  // set init rod dofs for edges
   EdgeProperty<Scalar> zeros(obj);
   zeros.assign(0);
   rod->setEdgeThetas(zeros);
   rod->setEdgeThetaVelocities(zeros);
   rod->setEdgeUndeformedThetas(zeros);
 
-  // create shell model
+  // create an empty shell model
   FaceProperty<char> shellFaces(obj); 
   shellFaces.assign(false); // no face anyway  
   shell = new ElasticShell(obj, shellFaces, m_timestep);
   obj->addModel(shell);
 
+  // set init shell dofs for edges
+  shell->setEdgeXis(zeros);
+  shell->setEdgeVelocities(zeros);
+  shell->setEdgeUndeformed(zeros);
+  
 }

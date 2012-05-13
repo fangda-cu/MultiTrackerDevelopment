@@ -7,7 +7,7 @@
 
 namespace BASim 
 {  
-  ElasticRodModel::ElasticRodModel(DeformableObject * object, const std::vector<EdgeHandle> & rodedges, Scalar timestep, Scalar youngs, Scalar youngs_damping, Scalar shearing, Scalar shearing_damping) : 
+  ElasticRodModel::ElasticRodModel(DeformableObject * object, const std::vector<EdgeHandle> & rodedges, Scalar timestep) : 
   PhysicalModel(*object), 
 //  m_active_edges(rodedges),
   m_edge_stencils(),
@@ -95,6 +95,19 @@ namespace BASim
         }
       }
     }
+  }
+  
+  void ElasticRodModel::setupForces(Scalar youngs, Scalar youngs_damping, Scalar shearing, Scalar shearing_damping, Scalar timestep)
+  {    
+    DeformableObject & obj = getDefoObj();
+    
+    // swap in the undeformed configuration as current configuration, because rod force initialization code assumes this
+    VertexProperty<Vec3d> current_position_copy(obj.getVertexPositions());
+    obj.setVertexPositions(obj.getVertexUndeformedPositions());
+    EdgeProperty<Scalar> current_theta_copy(m_theta);
+    m_theta = m_undef_theta;
+    
+    updateProperties();
     
     // set up the three internal forces
     m_stretching_force = new RodModelStretchingForce(*this, youngs, youngs_damping, timestep);
@@ -108,6 +121,10 @@ namespace BASim
     addForce(m_stretching_force);
     addForce(m_bending_force);
     addForce(m_twisting_force);
+    
+    // restore the current configuration
+    obj.setVertexPositions(current_position_copy);
+    m_theta = current_theta_copy;
   }
   
   ElasticRodModel::~ElasticRodModel() 

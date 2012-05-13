@@ -47,14 +47,7 @@ namespace BASim
     };
     
   public:
-    ElasticRodModel(
-      DeformableObject* object, 
-      const std::vector<EdgeHandle> & rodedges, 
-      Scalar timestep, 
-      Scalar youngs_modulus, 
-      Scalar youngs_modulus_damping, 
-      Scalar shearing_modulus, 
-      Scalar shearing_modulus_damping); ////////////////
+    ElasticRodModel(DeformableObject* object, const std::vector<EdgeHandle> & rodedges, Scalar timestep); ////////////////
     
     ~ElasticRodModel();
     
@@ -86,6 +79,7 @@ namespace BASim
     
 //    void setEdgeActive(const EdgeHandle & e)/////////////////////
     
+    void setupForces(Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar shearing_modulus, Scalar shearing_modulus_damping, Scalar timestep);
     const std::vector<RodModelForce *> & getForces() const { return m_forces; } /////////////////////
     void addForce(RodModelForce * force) { assert(force); m_forces.push_back(force); }  /////////////////////
     
