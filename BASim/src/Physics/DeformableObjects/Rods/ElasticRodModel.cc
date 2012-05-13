@@ -539,4 +539,57 @@ namespace BASim
       m_forces[i]->updateProperties();
   }
 
+  void ElasticRodModel::getScriptedDofs(IntArray & dofIndices, std::vector<Scalar> & dofValues, Scalar time) const
+  {
+    for (std::vector<std::pair<EdgeHandle, Scalar> >::const_iterator i = m_edge_constraints.begin(); i != m_edge_constraints.end(); i++)
+    {
+      dofIndices.push_back(getEdgeDofBase(i->first));
+      dofValues.push_back(i->second);
+    }
+    for (std::vector<std::pair<EdgeHandle, Vec3d> >::const_iterator i = m_edge_vel_constraints.begin(); i != m_edge_vel_constraints.end(); i++)
+    {
+      dofIndices.push_back(getEdgeDofBase(i->first));
+      dofValues.push_back(i->second(0) + i->second(1) * (time - i->second(2)));
+    }  
+  }
+  
+  // scripting on edge dofs
+  void ElasticRodModel::constrainEdge(const EdgeHandle & e, Scalar t)
+  {
+    m_edge_constraints.push_back(std::pair<EdgeHandle, Scalar>(e, t));
+  }
+  
+  void ElasticRodModel::constrainEdgeVel(const EdgeHandle & e, Scalar init_value, Scalar velocity, Scalar start_time)
+  {
+    m_edge_vel_constraints.push_back(std::pair<EdgeHandle, Vec3d>(e, Vec3d(init_value, velocity, start_time)));
+  }
+  
+  void ElasticRodModel::releaseEdge(const EdgeHandle & e)
+  {
+    // assume no duplicates
+    for (std::vector<std::pair<EdgeHandle, Scalar> >::iterator i = m_edge_constraints.begin(); i != m_edge_constraints.end(); i++)
+      if (i->first == e)
+      {
+        m_edge_constraints.erase(i);
+        return;
+      }
+    for (std::vector<std::pair<EdgeHandle, Vec3d> >::iterator i = m_edge_vel_constraints.begin(); i != m_edge_vel_constraints.end(); i++)
+      if (i->first == e)
+      {
+        m_edge_vel_constraints.erase(i);
+        return;
+      }
+  }
+  
+  bool ElasticRodModel::isConstrained(const EdgeHandle & e) const
+  {
+    for (std::vector<std::pair<EdgeHandle, Scalar> >::const_iterator i = m_edge_constraints.begin(); i != m_edge_constraints.end(); i++)
+      if (i->first == e)
+        return true;
+    for (std::vector<std::pair<EdgeHandle, Vec3d> >::const_iterator i = m_edge_vel_constraints.begin(); i != m_edge_vel_constraints.end(); i++)
+      if (i->first == e)
+        return true;
+    return false;
+  }
+
 } //namespace BASim

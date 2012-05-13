@@ -139,6 +139,14 @@ namespace BASim
     Scalar & getReferenceTwist(const VertexHandle & v) { return m_properties_reference_twist[v]; }
     Vec3d & getCurvatureBinormal(const VertexHandle & v) { return m_properties_curvature_binormal[v]; }
     
+    // dof scripting interface inherited from PhysicalModel
+    void getScriptedDofs(IntArray & dofIndices, std::vector<Scalar> & dofValues, Scalar time) const;
+    
+    // scripting on edge dofs
+    void constrainEdge(const EdgeHandle & e, Scalar t);
+    void constrainEdgeVel(const EdgeHandle & e, Scalar init_value, Scalar velocity, Scalar start_time); //time varying constraint
+    void releaseEdge(const EdgeHandle & e);
+    bool isConstrained(const EdgeHandle & e) const;
     
   protected:
     void updateRadii();/////////////////////
@@ -182,6 +190,10 @@ namespace BASim
     VertexProperty<Scalar>  m_properties_voronoi_length;
     VertexProperty<Scalar>  m_properties_reference_twist;
     VertexProperty<Vec3d>   m_properties_curvature_binormal;    
+
+    // dof scripting
+    std::vector<std::pair<EdgeHandle, Scalar> > m_edge_constraints;
+    std::vector<std::pair<EdgeHandle, Vec3d> > m_edge_vel_constraints;
     
   };
   
