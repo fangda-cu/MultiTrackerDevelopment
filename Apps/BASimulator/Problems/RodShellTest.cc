@@ -15,6 +15,7 @@
 #include "BASim/src/Render/ShellRenderer.hh"
 #include "BASim/src/Render/RodModelRenderer.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
+#include "BASim/src/Physics/DeformableObjects/Rods/RodModelForce.hh"
 
 RodShellTest::RodShellTest() : 
   Problem("Rod Shell Test", "Rod shell integration tests"), 
@@ -186,19 +187,6 @@ void RodShellTest::Setup()
   
   //////////////////////////////////////////////////////////////////////////
   //
-  // rod and shell mass
-  //
-  //////////////////////////////////////////////////////////////////////////
-  shell->setThickness(shell_thickness);
-  shell->setDensity(shell_density);
-  rod->setRadii(rod_radius_a, rod_radius_b);
-  rod->setDensity(rod_density);
-  
-  shell->computeMasses();
-  rod->computeMasses();
-  
-  //////////////////////////////////////////////////////////////////////////
-  //
   // rod forces
   //
   //////////////////////////////////////////////////////////////////////////
@@ -231,6 +219,22 @@ void RodShellTest::Setup()
   
   //Gravity force (handled by shell only, not rod because we only need one copy of the force)
   shell->addForce(new ShellGravityForce(*shell, "Gravity", gravity)); // TODO: move gravity force to the PositionDofsModel?
+  
+  //////////////////////////////////////////////////////////////////////////
+  //
+  // rod and shell mass
+  //
+  //////////////////////////////////////////////////////////////////////////
+  shell->setThickness(shell_thickness);
+  shell->setDensity(shell_density);
+  rod->setRadii(rod_radius_a, rod_radius_b);
+  rod->setDensity(rod_density);
+  
+  shell->computeMasses();
+  rod->computeMasses();
+  
+  for (size_t i = 0; i < rod->getForces().size(); i++)
+    rod->getForces()[i]->updateStiffness();
   
   //////////////////////////////////////////////////////////////////////////
   //
