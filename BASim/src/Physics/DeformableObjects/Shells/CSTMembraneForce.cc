@@ -81,16 +81,6 @@ void CSTMembraneForce::globalForce( VecXd& force )  const
   for (;fit != m_shell.getDefoObj().faces_end(); ++fit) {
     const FaceHandle& fh = *fit;
    
-    if(_debugFlag) {
-      //check if the face is above the central axis, and skip it if not
-      Vec3d centrePoint(0,0,0);
-      for(FaceVertexIterator fvit = m_shell.getDefoObj().fv_iter(fh); fvit; ++fvit) {
-        centrePoint += m_shell.getVertexPosition(*fvit);
-      }
-      centrePoint /= 3.0;
-      if(centrePoint[2] > 0) continue;
-    }
-
     bool valid = gatherDOFs(fh, undeformed, undeformed_damp, deformed, indices);
     if(!valid) continue;
 

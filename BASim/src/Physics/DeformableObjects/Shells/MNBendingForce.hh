@@ -26,6 +26,15 @@ const int NumTriPoints = 3;
 typedef Scalar Real;
 typedef CVec3T<Real> Vector3d;
 
+
+struct MNBendDofStruct
+{
+  Vector3d* p;  //three triangle vertices
+  Vector3d* q;  //three flap vertices (for the face opposite the above vertex)
+  Real* xi;     //the "angle" DOF for each edge
+};
+
+
 struct MNPrecomputed { 
 
   // 2 parameters in the energy formula related to the current global reference vectors (tau) for defining xi variables

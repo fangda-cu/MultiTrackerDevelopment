@@ -191,6 +191,8 @@ void ElasticShell::getVertexNormals(VertexProperty<Vec3d> & vNormals) const{
         vNormals[*vit].normalize();
     }
 }
+
+
 void ElasticShell::getThickness(VertexProperty<Scalar> & vThickness) const{
     for ( VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit){
         vThickness[*vit] = getThickness(*vit);
@@ -256,9 +258,9 @@ void ElasticShell::computeMasses()
       EdgeHandle e1_hnd = *feit; ++feit; assert(feit);
       EdgeHandle e2_hnd = *feit; ++feit; //assert(feit);
 
-      m_edge_masses[e0_hnd] += contribution/100;
-      m_edge_masses[e1_hnd] += contribution/100;
-      m_edge_masses[e2_hnd] += contribution/100;
+      m_edge_masses[e0_hnd] += contribution/10;
+      m_edge_masses[e1_hnd] += contribution/10;
+      m_edge_masses[e2_hnd] += contribution/10;
 
       //store the current volumes
       m_volumes[f_hnd] = 3*area*m_thicknesses[f_hnd];

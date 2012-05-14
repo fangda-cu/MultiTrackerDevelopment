@@ -7,13 +7,6 @@
 namespace BASim {
 
 
-struct MNBendDofStruct
-{
-  Vector3d* p;  //three triangle vertices
-  Vector3d* q;  //three flap vertices (for the face opposite the above vertex)
-  Real* xi;     //the "angle" DOF for each edge
-};
-
 
 MNBendingForce::MNBendingForce(ElasticShell& shell, const std::string& name, Scalar Youngs, Scalar Poisson, Scalar Youngs_damping, Scalar Poisson_damping, Scalar timestep) : 
 ElasticShellForce(shell, name), m_Youngs(Youngs), m_Poisson(Poisson), 
@@ -32,7 +25,7 @@ void fillVert(std::vector<Scalar>& data, int startInd, const Vec3d& vert) {
 
 void fillVertNaN(std::vector<Scalar>& data, int startInd) {
   //Fill in NaN's when a neighboring flap vertex doesn't exist.
-  Scalar NaN = numeric_limits<Scalar>::quiet_NaN();
+  Scalar NaN = numeric_limits<Scalar>::signaling_NaN();
   data[startInd] = NaN;
   data[startInd+1] = NaN;
   data[startInd+2] = NaN;
@@ -47,7 +40,7 @@ bool MNBendingForce::gatherDOFs(const FaceHandle& fh,
   assert(undeformed.size() == MNBendStencilSize);
   assert(undeformed_damp.size() == MNBendStencilSize);
   assert(deformed.size() == MNBendStencilSize);
-  assert(indices.size() == MNBendStencilSize);
+  assert(indices.size() == NumMNBendDof);
   // The data consists of 3 face vertices, then 3 (opposing, ordered) flap vertices,
   // then the xi values on the 3 edges.
 
@@ -57,7 +50,7 @@ bool MNBendingForce::gatherDOFs(const FaceHandle& fh,
 
   FaceEdgeIterator feit = defo.fe_iter(fh);
   int v = 0;
-  int e = 18;
+  int e = 9; //we don't use the flap vertices, so we ignore their indices for the purpose of mapping back to the Jacobian.
   for(; feit; ++feit) {
     EdgeHandle eh = *feit;
     
@@ -118,7 +111,7 @@ void MNBendingForce::initialize() const {
 
   DeformableObject& defo = m_shell.getDefoObj();
   std::vector<Scalar> undeformed(MNBendStencilSize), undeformed_damp(MNBendStencilSize), deformed(MNBendStencilSize);
-  std::vector<int> indices(MNBendStencilSize);
+  std::vector<int> indices(NumMNBendDof);
 
   FaceIterator fit = defo.faces_begin();
   for (;fit != defo.faces_end(); ++fit) {
@@ -144,7 +137,7 @@ void MNBendingForce::update() {
 
   DeformableObject& defo = m_shell.getDefoObj();
   std::vector<Scalar> undeformed(MNBendStencilSize), undeformed_damp(MNBendStencilSize), deformed(MNBendStencilSize);
-  std::vector<int> indices(MNBendStencilSize);
+  std::vector<int> indices(NumMNBendDof);
 
   FaceIterator fit = defo.faces_begin();
   for (;fit != defo.faces_end(); ++fit) {
@@ -262,9 +255,7 @@ void MNBendingForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) const
       MNPrecomputed* pre = &m_precomputed[fh];
 
       elementJacobian(undeformed, deformed, localJacobian, pre);
-      for (unsigned int i = 0; i < indices.size(); ++i)
-        for(unsigned int j = 0; j < indices.size(); ++j) 
-          Jacobian.add(indices[i],indices[j], scale * localJacobian(i,j));
+      Jacobian.add(indices,indices, scale * localJacobian);
     }
 
     /*
@@ -364,10 +355,6 @@ adreal<NumMNBendDof,DO_HESS,Real> MNEnergy(const MNBendingForce& mn, const std::
   set_independent( p[1], s_deformed.p[1], 3 );
   set_independent( p[2], s_deformed.p[2], 6 );    
 
-  //TODO Maybe only set these if the edge has a neighbour triangle? i.e. is not a boundary?
-  //std::cout << "Input pos: " << s_deformed.p[0][0] << " " << s_deformed.p[0][1] << " " << s_deformed.p[0][2]  << std::endl;
-  //std::cout << "Input xis: " << s_deformed.xi[0] << " " << s_deformed.xi[1] << " " << s_deformed.xi[2]  << std::endl;
-
   adrealMN  xi[NumTriPoints]; // mid-edge normal variables
   xi[0].set_independent( s_deformed.xi[0], 9 );
   xi[1].set_independent( s_deformed.xi[1], 10 );
@@ -384,10 +371,6 @@ adreal<NumMNBendDof,DO_HESS,Real> MNEnergy(const MNBendingForce& mn, const std::
   bool nbrValid1 = !isnan(qu[1](0));
   bool nbrValid2 = !isnan(qu[2](0));
 
-  //std::cout << "normal values: " << n[0].value() << " " << n[1].value() << " " << n[2].value() << std::endl;
-  //std::cout << "c0 values: " << pc->c0[0] << " " << pc->c0[1] << " " << pc->c0[2] << "\n";
-  //std::cout << "xi values: " << xi[0].value() << " " << xi[1].value() << " " << xi[2].value() << "\n";
-
   w[0] = (-dot(n,pc->tau0[0])  + Real(pc->s[0])*xi[0])*pc->c0[0];
   w[1] = (-dot(n,pc->tau0[1])  + Real(pc->s[1])*xi[1])*pc->c0[1];
   w[2] = (-dot(n,pc->tau0[2])  + Real(pc->s[2])*xi[2])*pc->c0[2];
@@ -396,8 +379,6 @@ adreal<NumMNBendDof,DO_HESS,Real> MNEnergy(const MNBendingForce& mn, const std::
   if(!nbrValid1) w[1] = 0;
   if(!nbrValid2) w[2] = 0;
 
-  //std::cout << "W values:\n" << w[0].value() << " " << w[1].value() << " " << w[2].value() << std::endl << std::endl;
- 
   adrealMN e(0);
   for(int i= 0; i < NumTriPoints; i++)
     for(int j= 0; j < NumTriPoints; j++)
@@ -503,9 +484,10 @@ void MNBendingForce::updateReferenceCoordinates(const FaceHandle& face, const st
     //Are we just to use the *current* edge vector v for this? Think so...
     Vector3d avgNormal[NumTriPoints], actualNormal[NumTriPoints];
     for(int i = 0; i < 3; ++i) {
-      avgNormal[i] = dir(cross(tau0[i],v0[i]));
-      Scalar normalComp = sqrt(1.0 - (s_deformed.xi[i])*(s_deformed.xi[i]));
-      actualNormal[i] = tau0[i] * (Real)(pc->s[i]) * s_deformed.xi[i] + normalComp * avgNormal[i];
+      //Use proper equations to recover the normal.
+      Vector3d unitT0 = dir(t0[i]);
+      Scalar psi = (pc->s[i]*s_deformed.xi[i] - dot(n0,tau0[i])) / dot(unitT0,tau0[i]);
+      actualNormal[i] = n0 + psi*t0[i];
     }
 
     //compute new tau's and c0's
@@ -518,9 +500,6 @@ void MNBendingForce::updateReferenceCoordinates(const FaceHandle& face, const st
     }
   }
 
-  
-
- 
 
 }
 

@@ -12,6 +12,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/CSTMembraneForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/DSBendingForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/MNBendingForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Shells/MNBendingForce2.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellGravityForce.hh"
 #include "BASim/src/Render/ShellRenderer.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
@@ -269,10 +270,10 @@ void ShellTest::Setup()
         Scalar theta = M_PI/12;
         Scalar ypos = sin(theta);
         Scalar xpos = cos(theta);
-       /* if(i == 2)
-          shell->setVertexPosition(h, Vec3d(-xpos, -ypos, 0));
+        /*if(i == 2)
+        shell->setVertexPosition(h, Vec3d(-xpos, -ypos, 0));
         else if(i == 3)
-          shell->setVertexPosition(h, Vec3d(-xpos, -ypos, 2));*/
+        shell->setVertexPosition(h, Vec3d(-xpos, -ypos, 2));*/
         /*else if(i == 4)
           shell->setVertexPosition(h, Vec3d(-xpos, -ypos, -2));*/
         ++i;
@@ -282,16 +283,17 @@ void ShellTest::Setup()
       EdgeProperty<Scalar> xiValues(shellObj);
       for(EdgeIterator eit = shellObj->edges_begin(); eit != shellObj->edges_end(); ++eit) {
         EdgeHandle eh = *eit;
-        /*if(i == 2) {
-          xiValues[eh] = 0.183;
+        if(i == 2) {
+          //xiValues[eh] = 0.183;
         }
-        else */xiValues[eh] = 0;
+        else 
+          xiValues[eh] = 0;
         ++i;
       }
       shell->setEdgeXis(xiValues);
       
-      //Scalar energy = mnforce->globalEnergy();
-      //std::cout << "Energy: " << energy << std::endl;
+      Scalar energy = mnforce->globalEnergy();
+      std::cout << "Energy: " << energy << std::endl;
     }
 
   }
@@ -2571,9 +2573,9 @@ void ShellTest::setupScene20_BendingTest() {
   std::vector<Vec3d> test_vertices;
   test_vertices.push_back(Vec3d(0,0,1));
   test_vertices.push_back(Vec3d(0,0,-1));
-  test_vertices.push_back(Vec3d(-1,0,0));
-  test_vertices.push_back(Vec3d(-1,0,2));
-  //test_vertices.push_back(Vec3d(-1,0,-2));
+  test_vertices.push_back(Vec3d(-1,0,-1));
+  test_vertices.push_back(Vec3d(-1,0,1));
+  test_vertices.push_back(Vec3d(-1,0,-2));
   for(unsigned int i = 0; i < test_vertices.size(); ++i) {
     VertexHandle h = shellObj->addVertex();
     vertHandles.push_back(h);
@@ -2581,11 +2583,11 @@ void ShellTest::setupScene20_BendingTest() {
     Scalar theta = M_PI/12;
     Scalar ypos = sin(theta);
     Scalar xpos = cos(theta);
-   /* if(i == 2)
-      positions[h] = Vec3d(-xpos, -ypos, 0);
-    else if(i == 3)
-      positions[h] = Vec3d(-xpos, -ypos, 2);
-    else if(i == 4)
+    /*if(i == 3)
+      positions[h] = Vec3d(-1, -0.5, 1);*/
+    /*else if(i == 3)
+      positions[h] = Vec3d(-xpos, -ypos, 1);*/
+    /*else if(i == 4)
       positions[h] = Vec3d(-xpos, -ypos, -2);*/
 
     velocities[h] = start_vel;
@@ -2596,7 +2598,7 @@ void ShellTest::setupScene20_BendingTest() {
   std::vector<Vec3i> tris;
   tris.push_back(Vec3i(0,1,2));
   tris.push_back(Vec3i(0,2,3));
-  //tris.push_back(Vec3i(1,4,2));
+  tris.push_back(Vec3i(1,4,2));
   for(unsigned int i = 0; i < tris.size(); ++i) {
     shellObj->addFace(vertHandles[tris[i][0]], vertHandles[tris[i][1]], vertHandles[tris[i][2]]);
   }
@@ -2629,6 +2631,8 @@ void ShellTest::setupScene20_BendingTest() {
   pos = shell->getVertexPosition(vertHandles[1]);
   shell->constrainVertex(vertHandles[1], pos);
 
+  pos = shell->getVertexPosition(vertHandles[2]);
+  shell->constrainVertex(vertHandles[2], pos);
 
 }
 
