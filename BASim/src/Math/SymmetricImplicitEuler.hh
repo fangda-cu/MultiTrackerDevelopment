@@ -132,12 +132,12 @@ public:
             return true;
         }
         // L2 norm of change in solution at last step of solve is less than tolerance
-        if (m_alpha * m_increment.norm() < m_stol)
+       /* if (m_alpha * m_increment.norm() < m_stol)
         {
             TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged(): converged stol: " << " |increment|_L2 < "
                     << m_stol << " = stol " << '\n';
             return true;
-        }
+        }*/
         TraceStream(g_log, "") << "SymmetricImplicitEuler::isConverged(): convergence test fails" << '\n';
         //std::cout << "Convergence test failed\n";
         return false;

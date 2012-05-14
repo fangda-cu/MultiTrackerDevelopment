@@ -103,7 +103,7 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
         //}
         //m_mass_set = true;
     }
-
+    
     // Chapter 1: Set up initial guess for Newton Solver
     ////////////////////////////////////////////////////
    
