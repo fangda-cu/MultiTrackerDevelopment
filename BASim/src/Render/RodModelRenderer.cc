@@ -70,21 +70,23 @@ namespace BASim
     glEnable( GL_COLOR_MATERIAL);
     glColorMaterial( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE );
     
+    glLineWidth(5);
+    
     glBegin( GL_LINES);
     
     DeformableObject & obj = m_rod.getDefoObj();
     for (EdgeIterator eit = obj.edges_begin(); eit != obj.edges_end(); ++eit)
     {
-      EdgeVertexIterator evit = m_rod.getDefoObj().ev_iter( *eit );
-      
-      do
+      if (m_rod.isEdgeActive(*eit))
       {
-        Vec3d x = m_rod.getDefoObj().getVertexPosition( *evit );
-        OpenGL::color( m_simpleRod[0] );
-        OpenGL::vertex( x );
-        ++evit;
+        EdgeVertexIterator evit = m_rod.getDefoObj().ev_iter( *eit );
+        Vec3d v1 = m_rod.getDefoObj().getVertexPosition(*evit); ++evit;
+        Vec3d v2 = m_rod.getDefoObj().getVertexPosition(*evit); ++evit;
         
-      } while (evit);
+        OpenGL::color(m_simpleRod[0]);
+        OpenGL::vertex(v1);
+        OpenGL::vertex(v2);      
+      }
     }    
     
     glEnd();
