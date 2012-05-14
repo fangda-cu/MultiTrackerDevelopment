@@ -571,7 +571,7 @@ namespace BASim
       const Vec3d& u = getReferenceDirector1(s.e);
       const Vec3d& v = getReferenceDirector2(s.e);
       m_properties_material_director1[s.e] = ca * u + sa * v;
-      m_properties_material_director1[s.e] = -sa * u + ca * v;
+      m_properties_material_director2[s.e] = -sa * u + ca * v;
     }
     
     for (size_t i = 0; i < m_forces.size(); i++)
