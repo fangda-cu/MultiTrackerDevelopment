@@ -61,12 +61,12 @@ namespace BASim
   
   void RodModelRenderer::drawDebugRod()
   {    
-    glLineWidth(5);
-    
-    glBegin(GL_LINES);
-    OpenGL::color(m_simpleRod[0]);
+    glDisable(GL_LIGHTING);
     
     DeformableObject & obj = m_rod.getDefoObj();
+    glLineWidth(5);
+    glBegin(GL_LINES);
+    OpenGL::color(m_simpleRod[0]);
     for (EdgeIterator eit = obj.edges_begin(); eit != obj.edges_end(); ++eit)
     {
       if (m_rod.isEdgeActive(*eit))
@@ -78,8 +78,32 @@ namespace BASim
         OpenGL::vertex(v1);
         OpenGL::vertex(v2);      
       }
-    }    
+    }        
+    glEnd();
     
+    // render material frames
+    glLineWidth(1);
+    glBegin(GL_LINES);
+    for (EdgeIterator eit = obj.edges_begin(); eit != obj.edges_end(); ++eit)
+    {
+      if (m_rod.isEdgeActive(*eit))
+      {
+        EdgeVertexIterator evit = m_rod.getDefoObj().ev_iter( *eit );
+        Vec3d v1 = m_rod.getDefoObj().getVertexPosition(*evit); ++evit;
+        Vec3d v2 = m_rod.getDefoObj().getVertexPosition(*evit); ++evit;
+        Vec3d vcenter = (v1 + v2) / 2;
+        Vec3d md1 = m_rod.getMaterialDirector1(*eit);
+        Vec3d md2 = m_rod.getMaterialDirector2(*eit);
+        Vec2d radii = m_rod.getRadii(*eit);
+        Scalar r = (radii.x() + radii.y()) / 2;
+        OpenGL::color(m_palette[0]);
+        OpenGL::vertex(vcenter);
+        OpenGL::vertex(Vec3d(vcenter + md1 * r));
+        OpenGL::color(m_palette[1]);
+        OpenGL::vertex(vcenter);
+        OpenGL::vertex(Vec3d(vcenter + md2 * r));
+      }
+    }    
     glEnd();
   }
   
