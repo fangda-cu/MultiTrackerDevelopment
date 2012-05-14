@@ -103,6 +103,11 @@ namespace BASim
     m_undeformed_reference_director1 = new EdgeProperty<Vec3d>(undeformed_reference_director1);
   }
   
+  void ElasticRodModel::setUndeformedPositions(const VertexProperty<Vec3d> & undeformed_positions)
+  {
+    m_undeformed_positions = new VertexProperty<Vec3d>(undeformed_positions);
+  }
+  
   void ElasticRodModel::setup(Scalar youngs, Scalar youngs_damping, Scalar shear, Scalar shear_damping, Scalar timestep)
   {    
     DeformableObject & obj = getDefoObj();
@@ -147,7 +152,10 @@ namespace BASim
     
     // swap in the undeformed configuration as current configuration, because rod force initialization code assumes this
     VertexProperty<Vec3d> current_position_copy(obj.getVertexPositions());
-    obj.setVertexPositions(obj.getVertexUndeformedPositions());
+    if (m_undeformed_positions)
+      obj.setVertexPositions(*m_undeformed_positions);
+    else
+      obj.setVertexPositions(obj.getVertexUndeformedPositions());
     EdgeProperty<Scalar> current_theta_copy(m_theta);
     m_theta = m_undef_theta;
     

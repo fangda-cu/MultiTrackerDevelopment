@@ -137,6 +137,12 @@ namespace BASim
     // if not specified, the reference directors will be generated randomly in setup().
     void setUndeformedReferenceDirector1(const EdgeProperty<Vec3d> & undeformed_reference_director1);
     
+    // set undeformed positions, used in setup(). this overrides the one in position dofs model. this allows the rod
+    //  to have a different undeformed configuration than the undef config in position dofs model that serves as a 
+    //  common undef config for all models.
+    // if not specified, the undef config in position dofs model will be used in setup().
+    void setUndeformedPositions(const VertexProperty<Vec3d> & undeformed_positions);
+    
     // dof scripting interface inherited from PhysicalModel
     void getScriptedDofs(IntArray & dofIndices, std::vector<Scalar> & dofValues, Scalar time) const;
     
@@ -191,6 +197,12 @@ namespace BASim
 
     // initialization of the cached properties
     const EdgeProperty<Vec3d> * m_undeformed_reference_director1;
+    
+    // undeformed configuration storage: this is used in setup. this allows specifying for the rod a different 
+    //  undeformed configuration than the one in the position dofs model, which will serve as the common undeformed
+    //  configuration for all models. if this member is not assigned, the one in position dofs model will be used
+    //  in setup().
+    const VertexProperty<Vec3d> * m_undeformed_positions;
     
     // dof scripting
     std::vector<std::pair<EdgeHandle, Scalar> > m_edge_constraints;
