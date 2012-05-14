@@ -32,6 +32,7 @@ public:
   void setupScene1(); // shell test: vertical flat sheet
   void setupScene2(); // rod test: bent twisting
   void setupScene3(); // simple rod shell test: scene 1 with a rod rib
+  void setupScene4(); // umbrella opening
   
 protected:
   void Setup();
