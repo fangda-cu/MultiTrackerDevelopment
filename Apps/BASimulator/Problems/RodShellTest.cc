@@ -625,7 +625,7 @@ void RodShellTest::setupScene3()
   
   std::cout << "rod edge count = " << rodEdges.size() << std::endl;
   
-  // create an empty rod model
+  // create a rod model
   rod = new ElasticRodModel(obj, rodEdges, m_timestep);
   obj->addModel(rod);
   
@@ -650,66 +650,103 @@ void RodShellTest::setupScene4()
   //get params
   Scalar width = GetScalarOpt("shell-width");
   Scalar height = GetScalarOpt("shell-height");
-  int xresolution = GetIntOpt("shell-x-resolution");
-  int yresolution = GetIntOpt("shell-y-resolution");
+  int resolution = GetIntOpt("shell-x-resolution"); // only one resolution
   
-  Scalar dx = (Scalar)width / (Scalar)xresolution;
-  Scalar dy = (Scalar)height / (Scalar)yresolution;
-  
-  //build a rectangular grid of vertices
+  //build a hexagonal grid of vertices
   std::vector<VertexHandle> vertHandles;
-  VertexProperty<Vec3d> undeformed(obj);
   VertexProperty<Vec3d> positions(obj);
   VertexProperty<Vec3d> velocities(obj);
+  VertexProperty<Vec3d> undeformed(obj);
+  VertexProperty<Vec3d> rodundeformed(obj);
   
   //edge properties
   EdgeProperty<Scalar> undefAngle(obj);
   EdgeProperty<Scalar> edgeAngle(obj);
   EdgeProperty<Scalar> edgeVel(obj);
   
-  Vec3d start_vel(0,0,0);
+  VertexHandle h = obj->addVertex();
+  positions[h] = Vec3d(0, 0, 0);
+  velocities[h] = Vec3d(0, 0, 0);
+  undeformed[h] = Vec3d(0, 0, 0);
+  vertHandles.push_back(h);
   
-  for(int j = 0; j <= yresolution; ++j) {
-    for(int i = 0; i <= xresolution; ++i) {
-      Vec3d vert(i*dx, j*dy, 0);//0.01*dx*sin(100*j*dy + 17*i*dx));
-      if(j < 0.5*yresolution) {
-        int k = j;
-        int j_mod = (int)(0.5*yresolution);
-        vert(1) = j_mod*dx;
-        vert(2) = (k-j_mod)*dx;
+  int nblock = 6;
+  int nv_block = resolution * (resolution + 1) / 2;
+  int nv_total = nv_block * nblock + 1;
+  
+  // hexagonal pyramid umbrella, hard-coded for now
+  for (int k = 0; k < nblock; k++)
+  {
+    Mat2d R;
+    R(0, 0) = cos(k * 2 * M_PI / nblock);
+    R(0, 1) = sin(k * 2 * M_PI / nblock);
+    R(1, 0) = -sin(k * 2 * M_PI / nblock);
+    R(1, 1) = cos(k * 2 * M_PI / nblock);
+    for (int j = 1; j <= resolution; j++) 
+    {
+      for (int i = 0; i < j; i++) 
+      {
+        Vec2d v2d;
+        v2d.x() = width / resolution * ((i - j * 0.5) * sqrt(3) * 2 / 3);
+        v2d.y() = width / resolution * j;
+        v2d = R * v2d;
+        
+        Vec3d vert(v2d.x(), -height / resolution * j, -v2d.y());
+        Vec3d undef = vert;
+        
+        v2d *= (vert.norm() / v2d.norm());
+        Vec3d rodundef(v2d.x(), 0, -v2d.y()); // fully opened state as rod's undeformed configuration
+        
+        VertexHandle h = obj->addVertex();
+        
+        positions[h] = vert;
+        velocities[h] = Vec3d(0, 0, 0);
+        undeformed[h] = undef;
+        rodundeformed[h] = rodundef;
+        vertHandles.push_back(h);
       }
-      Vec3d undef = vert;
-      
-      VertexHandle h = obj->addVertex();
-      
-      positions[h] = vert;
-      velocities[h] = start_vel;
-      undeformed[h] = undef;
-      vertHandles.push_back(h);
     }
   }
   
-  //build the faces in a 4-8 pattern
+  // connect the vertices into hexagonal mesh
   std::vector<Vec3i> tris;
-  for(int i = 0; i < xresolution; ++i) {
-    for(int j = 0; j < yresolution; ++j) {
-      int tl = i + (xresolution+1)*j;
-      int tr = i+1 + (xresolution+1)*j;
-      int bl = i + (xresolution+1)*(j+1);
-      int br = i+1 + (xresolution+1)*(j+1);
+  for (int k = 0; k < nblock; k++)
+  {
+    for (int j = 0; j < resolution; j++) 
+    {
+      for (int i = 0; i < j; i++) 
+      {
+        int v1 = 1 + k * nv_block + j * (j - 1) / 2 + i;
+        int v2 = 1 + k * nv_block + (j + 1) * j / 2 + i;
+        int v3 = 1 + k * nv_block + (j + 1) * j / 2 + i + 1;
+        obj->addFace(vertHandles[v1], vertHandles[v2], vertHandles[v3]);
+      }
+
+      for (int i = 0; i < j - 1; i++) 
+      {
+        int v1 = 1 + k * nv_block + j * (j - 1) / 2 + i;
+        int v2 = 1 + k * nv_block + (j + 1) * j / 2 + i + 1;
+        int v3 = 1 + k * nv_block + j * (j - 1) / 2 + i + 1;
+        obj->addFace(vertHandles[v1], vertHandles[v2], vertHandles[v3]);
+      }
       
-      if((i+j)%2 == 0) {
-        obj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
-        obj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
+      int v1 = (j == 0 ? 0 : (1 + ((k + 1) % nblock) * nv_block + j * (j - 1) / 2 + 0));
+      int v2 = 1 + k * nv_block + (j + 1) * j / 2 + j;
+      int v3 = 1 + ((k + 1) % nblock) * nv_block + (j + 1) * j / 2 + 0;
+      obj->addFace(vertHandles[v1], vertHandles[v2], vertHandles[v3]);
+      
+      if (j > 0)
+      {
+        int v1 = 1 + k * nv_block + j * (j - 1) / 2 + j - 1;
+        int v2 = 1 + k * nv_block + (j + 1) * j / 2 + j;
+        int v3 = 1 + ((k + 1) % nblock) * nv_block + j * (j - 1) / 2 + 0;
+        obj->addFace(vertHandles[v1], vertHandles[v2], vertHandles[v3]);
       }
-      else {
-        obj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[bl]);
-        obj->addFace(vertHandles[bl], vertHandles[tr], vertHandles[br]);
-      }
+      
     }
   }
   
-  std::cout << "resolution = " << xresolution << "x" << yresolution << std::endl;
+  std::cout << "resolution = " << resolution << std::endl;
   std::cout << "mesh nv = " << obj->nv() << " ne = " << obj->ne() << " nf = " << obj->nf() << std::endl;
   
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
@@ -732,47 +769,25 @@ void RodShellTest::setupScene4()
   shell->setEdgeXis(edgeAngle);
   shell->setEdgeVelocities(edgeVel);
   
-  //Find highest vertex
-  VertexIterator vit = obj->vertices_begin();
-  Scalar highest = -10000;
-  for(;vit!= obj->vertices_end(); ++vit) {
-    Vec3d pos = shell->getVertexPosition(*vit);
-    if(pos[1] >= highest) {
-      highest = pos[1];
-    }
-  }
+  //Pin the center vertex
+  obj->constrainVertex(vertHandles[0], positions[vertHandles[0]]);
   
-  //Pin all verts at or near that height
-  for(vit = obj->vertices_begin();vit!= obj->vertices_end(); ++vit) {
-    Vec3d pos = shell->getVertexPosition(*vit);
-    if(pos[1] >= highest - 1e-4)
-      obj->constrainVertex(*vit, pos);
-  }
-  
-  // find vertical edges in the center
-  std::vector<EdgeHandle> rodEdges;
-  EdgeHandle highestedge;
-  Scalar bw = 0.001;
-  for (EdgeIterator eit = obj->edges_begin(); eit != obj->edges_end(); ++eit)
+  // collect rod edges
+  std::vector<EdgeHandle> rodEdges;  
+  for (int k = 0; k < nblock; k++)
   {
-    EdgeVertexIterator evit = obj->ev_iter(*eit);
-    VertexHandle v1 = *evit; ++evit;
-    VertexHandle v2 = *evit; ++evit;
-    Vec3d pos1 = obj->getVertexPosition(v1);
-    Vec3d pos2 = obj->getVertexPosition(v2);
-    
-    if (pos1[0] >= width * (0.5 - bw) && pos1[0] <= width * (0.5 + bw) && pos2[0] >= width * (0.5 - bw) && pos2[0] <= width * (0.5 + bw))
+    for (int j = 0; j < resolution; j++)
     {
-      rodEdges.push_back(*eit);
-      if (pos1[1] >= highest - 1e-4 || pos2[1] >= highest - 1e-4)
+      VertexHandle v1 = (j == 0 ? vertHandles[0] : (vertHandles[1 + k * nv_block + j * (j - 1) / 2 + 0]));
+      VertexHandle v2 = vertHandles[1 + k * nv_block + (j + 1) * j / 2 + 0];
+      for (VertexEdgeIterator veit = obj->ve_iter(v1); veit; ++veit)
       {
-        highestedge = *eit;
+        VertexHandle vother = (obj->toVertex(*veit) == v1 ? obj->fromVertex(*veit) : obj->toVertex(*veit));
+        if (vother == v2)
+          rodEdges.push_back(*veit);
       }
     }
-    
   }
-  
-  std::cout << "rod edge count = " << rodEdges.size() << std::endl;
   
   // create an empty rod model
   rod = new ElasticRodModel(obj, rodEdges, m_timestep);
@@ -785,11 +800,6 @@ void RodShellTest::setupScene4()
   rod->setEdgeThetaVelocities(zeros);
   rod->setEdgeUndeformedThetas(zeros);
   
-  if (highestedge.isValid())
-  {
-    std::cout << highestedge.idx() << std::endl;
-    //    rod->constrainEdgeVel(highestedge, 0, 0.1, 0);
-    rod->constrainEdge(highestedge, 0);
-  }
+  rod->setUndeformedPositions(rodundeformed);
   
 }
