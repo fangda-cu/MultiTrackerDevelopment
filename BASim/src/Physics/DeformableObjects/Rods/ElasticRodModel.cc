@@ -34,7 +34,8 @@ namespace BASim
   m_properties_voronoi_length(object),
   m_properties_reference_twist(object),
   m_properties_curvature_binormal(object),
-  m_undeformed_reference_director1(NULL)
+  m_undeformed_reference_director1(NULL),
+  m_undeformed_positions(NULL)
   {
     // parse the edges in the context of the mesh and generate a list of edge and joint stencils
     // edge stencils
