@@ -636,7 +636,10 @@ void RodShellTest::setupScene3()
   rod->setEdgeUndeformedThetas(zeros);
   
   if (highestedge)
-    rod->constrainEdge(*highestedge, 0);
+  {
+//    rod->constrainEdgeVel(*highestedge, 0, 0.1, 0);
+      rod->constrainEdge(*highestedge, 0);
+  }
   
 }
 

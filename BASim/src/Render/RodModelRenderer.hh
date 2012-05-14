@@ -16,12 +16,14 @@
 
 namespace BASim 
 {  
-  /** Class that implements OpenGL rendering for ElasticRodModel (code mostly adapted from RodRenderer). */
+  /** Class that implements OpenGL rendering for ElasticRodModel (code mostly adapted 
+   *  from RodRenderer, but adopting ShellRenderer's draw modes in order to keep in
+   *  sync with it when used together). */
   class RodModelRenderer : public RenderBase
   {
   public:    
-    enum DrawMode { SIMPLE, SMOOTH, NONE };
-    
+    enum DrawMode { NONE, DBG, FLAT, VOLUMETRIC };
+        
   public:
     explicit RodModelRenderer(ElasticRodModel & rod);
     
@@ -43,7 +45,7 @@ namespace BASim
     virtual Scalar calculateObjectBoundingRadius(const Vec3d& center);
     
   protected:
-    void drawSimpleRod();
+    void drawDebugRod();
     void drawSmoothRod();
     
     void drawMaterialFrame() { assert(!"Not implemented"); }

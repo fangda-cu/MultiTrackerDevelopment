@@ -158,7 +158,7 @@ void ShellRenderer::cycleMode() {
 
 ShellRenderer::ShellRenderer( ElasticShell& shell, const Scalar thickness )
 : m_shell(shell)
-, m_mode(FLAT)
+, m_mode(DBG)
 , m_refthickness( 2*thickness)
 {
 }
@@ -232,7 +232,7 @@ void ShellRenderer::render()
 
     
     // Render all edges
-    glLineWidth(2);
+    glLineWidth(1);
     glBegin(GL_LINES);
     OpenGL::color(Color(0,0,0));
     for( EdgeIterator eit = mesh.edges_begin(); eit != mesh.edges_end(); ++eit )
@@ -290,17 +290,17 @@ void ShellRenderer::render()
 
 
     // Render all vertices
-    glPointSize(5);
-    glBegin(GL_POINTS);
-    OpenGL::color(Color(0,0,0));
-    for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) {
-      Vec3d vertPos = m_shell.getVertexPosition(*vit); 
-      OpenGL::vertex(vertPos);
-    }
-    glEnd();
+//    glPointSize(5);
+//    glBegin(GL_POINTS);
+//    OpenGL::color(Color(0,0,0));
+//    for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) {
+//      Vec3d vertPos = m_shell.getVertexPosition(*vit); 
+//      OpenGL::vertex(vertPos);
+//    }
+//    glEnd();
 
     glPointSize(10);
-    OpenGL::color(Color(0,1,0));
+    OpenGL::color(Color(0,255,0));
     glBegin(GL_POINTS);
     for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) {
       Vec3d vertPos = m_shell.getVertexPosition(*vit); 
