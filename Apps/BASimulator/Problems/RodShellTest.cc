@@ -478,8 +478,8 @@ void RodShellTest::setupScene2()
   obj->constrainVertex(vertex_handles[1], positions[vertex_handles[1]]);  // fix head tangent
   obj->constrainVertex(vertex_handles[nv - 1], positions[vertex_handles[nv - 1]]);  // fix tail position
   obj->constrainVertex(vertex_handles[nv - 2], positions[vertex_handles[nv - 2]]);  // fix tail tangent
-  rod->constrainEdgeVel(rodEdges[0], 0, 1, 0);  // twist rate = 1 at the head
-  rod->constrainEdge(rodEdges[nv - 2], 0);      // no twist at the tail
+  rod->constrainEdge(rodEdges[0], 0);      // no twist at the head
+  rod->constrainEdgeVel(rodEdges[nv - 2], 0, 1, 0);  // twist rate = 1 at the tail
   
   // create an empty shell model
   FaceProperty<char> shellFaces(obj); 
