@@ -50,15 +50,16 @@ bool MNBendingForce::gatherDOFs(const FaceHandle& fh,
 
   FaceEdgeIterator feit = defo.fe_iter(fh);
   int v = 0;
-  int e = 9; //we don't use the flap vertices, so we ignore their indices for the purpose of mapping back to the Jacobian.
+  int e_short = 9; //we don't use the flap vertices, so we ignore their indices for the purpose of mapping back to the Jacobian.
+  int e_long = 18; //we do use them in the various data vectors, so keep them here.
   for(; feit; ++feit) {
     EdgeHandle eh = *feit;
     
     // Get the edge DOF
-    indices[e] = m_shell.getEdgeDofBase(eh);
-    deformed[e] = m_shell.getEdgeXi(eh);
-    undeformed[e] = m_shell.getEdgeUndeformedXi(eh);
-    undeformed_damp[e] = m_shell.getDampingUndeformedXi(eh);
+    indices[e_short] = m_shell.getEdgeDofBase(eh);
+    deformed[e_long] = m_shell.getEdgeXi(eh);
+    undeformed[e_long] = m_shell.getEdgeUndeformedXi(eh);
+    undeformed_damp[e_long] = m_shell.getDampingUndeformedXi(eh);
 
     // Vertex opposite the edge in the central triangle
     VertexHandle ph; 
@@ -88,7 +89,8 @@ bool MNBendingForce::gatherDOFs(const FaceHandle& fh,
       fillVertNaN(undeformed_damp, v+9);
     }
 
-    e++;
+    e_short++;
+    e_long++;
     v+=3;
   }
   return true;
@@ -186,6 +188,9 @@ Scalar MNBendingForce::globalEnergy() const
 
 void MNBendingForce::globalForce( VecXd& force ) const
 {
+
+  Scalar energy = globalEnergy();
+  //std::cout << "Energy: " << energy << std::endl;
 
   Eigen::Matrix<Scalar, NumMNBendDof, 1> localForce;
   std::vector<Scalar> undeformed(MNBendStencilSize), undeformed_damp(MNBendStencilSize), deformed(MNBendStencilSize);
@@ -375,10 +380,12 @@ adreal<NumMNBendDof,DO_HESS,Real> MNEnergy(const MNBendingForce& mn, const std::
   w[1] = (-dot(n,pc->tau0[1])  + Real(pc->s[1])*xi[1])*pc->c0[1];
   w[2] = (-dot(n,pc->tau0[2])  + Real(pc->s[2])*xi[2])*pc->c0[2];
 
-  if(!nbrValid0) w[0] = 0;
+  
+  if(!nbrValid0) w[0] = 0; 
   if(!nbrValid1) w[1] = 0;
-  if(!nbrValid2) w[2] = 0;
+  if(!nbrValid2) w[2] = 0; 
 
+  
   adrealMN e(0);
   for(int i= 0; i < NumTriPoints; i++)
     for(int j= 0; j < NumTriPoints; j++)
@@ -415,19 +422,22 @@ void MNBendingForce::computeRestConfigData( const FaceHandle& face, const std::v
   //determine ownership according to whichever face comes first in the relevant edge's iterator.
   FaceEdgeIterator feit = m_shell.getDefoObj().fe_iter(face);
   int i = 0;
+  
   for(; feit; ++feit ) {
     EdgeHandle eh = *feit;
     EdgeFaceIterator efit = m_shell.getDefoObj().ef_iter(eh);
-    pc->s[i] = (*efit == face) ? 1 : -1;
+    FaceHandle firstFace = *efit;
+    pc->s[i] = (firstFace == face) ? 1 : -1;
     ++i;
   }
+
   bool nbrValid0 = !isnan(qu[0](0));
   bool nbrValid1 = !isnan(qu[1](0));
   bool nbrValid2 = !isnan(qu[2](0));
 
-  pc->w_undef[0] = (-dot(nu,tauu[0])  + Real(pc->s[0])*xi_undef[0])*cu[0];
-  pc->w_undef[1] = (-dot(nu,tauu[1])  + Real(pc->s[1])*xi_undef[1])*cu[1];
-  pc->w_undef[2] = (-dot(nu,tauu[2])  + Real(pc->s[2])*xi_undef[2])*cu[2];
+  pc->w_undef[0] = (-dot(nu,tauu[0]) + Real(pc->s[0])*xi_undef[0])*cu[0];
+  pc->w_undef[1] = (-dot(nu,tauu[1]) + Real(pc->s[1])*xi_undef[1])*cu[1];
+  pc->w_undef[2] = (-dot(nu,tauu[2]) + Real(pc->s[2])*xi_undef[2])*cu[2];
 
   if(!nbrValid0) pc->w_undef[0] = 0;
   if(!nbrValid1) pc->w_undef[1] = 0;
@@ -476,8 +486,11 @@ void MNBendingForce::updateReferenceCoordinates(const FaceHandle& face, const st
     ComputeTriangleAttrib(p0,v0,t0,n0,A0);
     ComputeFlapNormals(p0,q0,v0,nopp0);
     ComputeEdgeFrameParams(v0,t0,nopp0,tau0,c0); 
+
+    /*std::cout << "Taus: " << tau0[0] << "\n" << tau0[1] << "\n" << tau0[2] << std::endl;
+    std::cout << "Nbr normal: " << nopp0[0] << "\n" << nopp0[1] << "\n" << nopp0[2] << std::endl;*/
   }
-  else {
+  else { //TODO: Delete this. It is apparently unnecessary.
     ComputeTriangleAttrib(p0,v0,t0,n0,A0);
 
     //reconstruct the mid-edge normals from stored tau0 and current xi's. 
@@ -523,10 +536,8 @@ void MNBendingForce::elementForce(const std::vector<Scalar>& undeformed,
 {
   assert( pre );
   assert( undeformed.size() == deformed.size() );
-//  assert( force.numDof() == undeformed.size() );
 
   Scalar energyValue = elementEnergy(undeformed, deformed, pre);
-  //std::cout << "Energy ? " << energyValue << std::endl;
 
   adreal<NumMNBendDof,0,Real> e = MNEnergy<0>(*this, undeformed, deformed, const_cast<MNPrecomputed*>(pre) );     
   for( uint i = 0; i < NumMNBendDof; i++ )
@@ -545,9 +556,8 @@ void MNBendingForce::elementJacobian(const std::vector<Scalar>& undeformed,
   jac.setZero();
 
   assert( pre );
-  assert( undeformed.size() == NumMNBendDof);
+  assert( undeformed.size() == MNBendStencilSize);
   assert( undeformed.size() == deformed.size() );
-//  assert( jac.numDof() == undeformed.size() );
 
 
   adreal<NumMNBendDof,1,Real> e = MNEnergy<1>(*this, undeformed, deformed, const_cast<MNPrecomputed*>(pre) );     

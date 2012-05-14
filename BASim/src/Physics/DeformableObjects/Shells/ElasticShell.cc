@@ -252,15 +252,15 @@ void ElasticShell::computeMasses()
       m_vertex_masses[v1_hnd] += contribution;
       m_vertex_masses[v2_hnd] += contribution;
 
-      //also accumulate mass to the edges (this mass computation is probably not consistent with what we want)
+      //set edge masses to zero, since we want to solve them quasistatically (they're derivative DOFs)
       FaceEdgeIterator feit = m_obj->fe_iter(f_hnd);
       EdgeHandle e0_hnd = *feit; ++feit; assert(feit);
       EdgeHandle e1_hnd = *feit; ++feit; assert(feit);
       EdgeHandle e2_hnd = *feit; ++feit; //assert(feit);
 
-      m_edge_masses[e0_hnd] += contribution/10;
-      m_edge_masses[e1_hnd] += contribution/10;
-      m_edge_masses[e2_hnd] += contribution/10;
+      m_edge_masses[e0_hnd] = 0;
+      m_edge_masses[e1_hnd] = 0;
+      m_edge_masses[e2_hnd] = 0;
 
       //store the current volumes
       m_volumes[f_hnd] = 3*area*m_thicknesses[f_hnd];

@@ -230,13 +230,17 @@ void ShellRenderer::render()
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    
+    FaceProperty<Vec3d> faceNormals(&m_shell.getDefoObj());
+    m_shell.getFaceNormals(faceNormals);
+
     // Render all edges
     glLineWidth(2);
     glBegin(GL_LINES);
     OpenGL::color(Color(0,0,0));
+    
     for( EdgeIterator eit = mesh.edges_begin(); eit != mesh.edges_end(); ++eit )
     {
+      EdgeHandle eh = *eit;
       Vec3d p0 = m_shell.getVertexPosition(mesh.fromVertex(*eit));
       Vec3d p1 = m_shell.getVertexPosition(mesh.toVertex(*eit));
       Vec3d dir = (p1-p0);
@@ -251,8 +255,32 @@ void ShellRenderer::render()
       }
       OpenGL::vertex(p0);
       OpenGL::vertex(p1);
+
+      //Draw edge avg normal vector
+      //get adjacent faces
+      EdgeFaceIterator efit = m_shell.getDefoObj().ef_iter(eh);
+      Vec3d normal1 = faceNormals[*efit]; ++efit;
+      Vec3d normal2;
+      if(efit)
+        normal2 = faceNormals[*efit];
+      else
+        normal2 = normal1;
+
+      Vec3d avgNormal = 0.5*(normal1+normal2);
+      Scalar magnitude = avgNormal.norm();
+      avgNormal /= magnitude;
+
+      Vec3d midpoint = 0.5*(p0+p1);
+      Vec3d endpoint = midpoint + 0.5*avgNormal;
+      /*OpenGL::color(Color(0,0,0));
+      OpenGL::vertex(midpoint);
+      OpenGL::vertex(endpoint);*/
+
+      //Now work out what the mid-edge normal is, and render that.
+     
     }
     glEnd();
+    std::cout << std::endl;
 
     // Render all faces
     glBegin(GL_TRIANGLES);
