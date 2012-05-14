@@ -125,8 +125,8 @@ namespace BASim
     Scalar & getEdgeLength(const EdgeHandle & e) { return m_properties_edge_length[e]; }
     Vec3d & getReferenceDirector1(const EdgeHandle & e) { return m_properties_reference_director1[e]; }
     Vec3d & getReferenceDirector2(const EdgeHandle & e) { return m_properties_reference_director2[e]; }
-    Vec3d & getMaterialDirector1(const EdgeHandle & e) { return m_properties_reference_director1[e]; }
-    Vec3d & getMaterialDirector2(const EdgeHandle & e) { return m_properties_reference_director2[e]; }
+    Vec3d & getMaterialDirector1(const EdgeHandle & e) { return m_properties_material_director1[e]; }
+    Vec3d & getMaterialDirector2(const EdgeHandle & e) { return m_properties_material_director2[e]; }
     
     // vertex properties
     Scalar & getVoronoiLength(const VertexHandle & v) { return m_properties_voronoi_length[v]; }
