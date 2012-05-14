@@ -2,7 +2,7 @@
 #include "BASim/src/Math/MatrixBase.hh"
 #include "BASim/src/Math/Math.hh"
 
-//#define EXACT_BENDING_JACOBIAN
+#define EXACT_BENDING_JACOBIAN
 
 using namespace BASim;
 
