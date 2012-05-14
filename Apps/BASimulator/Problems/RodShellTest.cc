@@ -601,7 +601,7 @@ void RodShellTest::setupScene3()
   
   // find vertical edges in the center
   std::vector<EdgeHandle> rodEdges;
-  EdgeHandle * highestedge = NULL;
+  EdgeHandle highestedge;
   Scalar bw = 0.001;
   for (EdgeIterator eit = obj->edges_begin(); eit != obj->edges_end(); ++eit)
   {
@@ -614,12 +614,12 @@ void RodShellTest::setupScene3()
     if (pos1[0] >= width * (0.5 - bw) && pos1[0] <= width * (0.5 + bw) && pos2[0] >= width * (0.5 - bw) && pos2[0] <= width * (0.5 + bw))
     {
       rodEdges.push_back(*eit);
+      if (pos1[1] >= highest - 1e-4 || pos2[1] >= highest - 1e-4)
+      {
+        highestedge = *eit;
+      }
     }
     
-    if (pos1[1] >= highest - 1e-4 || pos2[1] >= highest - 1e-4)
-    {
-      highestedge = &(*eit);
-    }
   }
   
   std::cout << "rod edge count = " << rodEdges.size() << std::endl;
@@ -635,10 +635,11 @@ void RodShellTest::setupScene3()
   rod->setEdgeThetaVelocities(zeros);
   rod->setEdgeUndeformedThetas(zeros);
   
-  if (highestedge)
+  if (highestedge.isValid())
   {
-//    rod->constrainEdgeVel(*highestedge, 0, 0.1, 0);
-      rod->constrainEdge(*highestedge, 0);
+    std::cout << highestedge.idx() << std::endl;
+//    rod->constrainEdgeVel(highestedge, 0, 0.1, 0);
+    rod->constrainEdge(highestedge, 0);
   }
   
 }
