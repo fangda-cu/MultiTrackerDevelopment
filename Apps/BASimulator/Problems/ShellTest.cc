@@ -12,7 +12,6 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/CSTMembraneForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/DSBendingForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/MNBendingForce.hh"
-#include "BASim/src/Physics/DeformableObjects/Shells/MNBendingForce2.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellGravityForce.hh"
 #include "BASim/src/Render/ShellRenderer.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
@@ -261,39 +260,6 @@ void ShellTest::Setup()
     if(mn_bend) {
       MNBendingForce* mnforce = new MNBendingForce(*shell, "MNBending", ds_scale*Youngs_modulus, Poisson_ratio, ds_scale*Youngs_damping, Poisson_damping, timestep);
       shell->addForce(mnforce);
-      //mnforce->update(); //set initial reference normal vectors
-
-      //now! adjust the vertices under a rotation, and check the energy.
-      int i = 0;
-      for(VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit) {
-        VertexHandle h = *vit;
-        Scalar theta = M_PI/12;
-        Scalar ypos = sin(theta);
-        Scalar xpos = cos(theta);
-        /*if(i == 2)
-        shell->setVertexPosition(h, Vec3d(-xpos, -ypos, 0));
-        else if(i == 3)
-        shell->setVertexPosition(h, Vec3d(-xpos, -ypos, 2));*/
-        /*else if(i == 4)
-          shell->setVertexPosition(h, Vec3d(-xpos, -ypos, -2));*/
-        ++i;
-      }
-
-      i = 0;
-      EdgeProperty<Scalar> xiValues(shellObj);
-      for(EdgeIterator eit = shellObj->edges_begin(); eit != shellObj->edges_end(); ++eit) {
-        EdgeHandle eh = *eit;
-        if(i == 2) {
-          //xiValues[eh] = 0.183;
-        }
-        else 
-          xiValues[eh] = 0;
-        ++i;
-      }
-      shell->setEdgeXis(xiValues);
-      
-      Scalar energy = mnforce->globalEnergy();
-      std::cout << "Energy: " << energy << std::endl;
     }
 
   }
@@ -502,7 +468,7 @@ void ShellTest::setupScene1() {
   
   for(int j = 0; j <= yresolution; ++j) {
     for(int i = 0; i <= xresolution; ++i) {
-      Vec3d vert(i*dx, j*dy, 0);//0.01*dx*sin(100*j*dy + 17*i*dx)); // sin(3*j*dy)
+      Vec3d vert(i*dx, j*dy, 0);//0.01*dx*sin(100*j*dy + 17*i*dx)); // 
       if(j < 0.5*yresolution) {
         int k = j;
         int j_mod = (int)(0.5*yresolution);
@@ -2576,6 +2542,10 @@ void ShellTest::setupScene20_BendingTest() {
   test_vertices.push_back(Vec3d(-1,0,-1));
   test_vertices.push_back(Vec3d(-1,0,1));
   test_vertices.push_back(Vec3d(-1,0,-2));
+  test_vertices.push_back(Vec3d(-2,0,-2));
+  test_vertices.push_back(Vec3d(0,0,-2));
+  test_vertices.push_back(Vec3d(-2,0,0));
+
   for(unsigned int i = 0; i < test_vertices.size(); ++i) {
     VertexHandle h = shellObj->addVertex();
     vertHandles.push_back(h);
@@ -2583,22 +2553,27 @@ void ShellTest::setupScene20_BendingTest() {
     Scalar theta = M_PI/12;
     Scalar ypos = sin(theta);
     Scalar xpos = cos(theta);
-    /*if(i == 3)
-      positions[h] = Vec3d(-1, -0.5, 1);*/
-    /*else if(i == 3)
-      positions[h] = Vec3d(-xpos, -ypos, 1);*/
-    /*else if(i == 4)
-      positions[h] = Vec3d(-xpos, -ypos, -2);*/
+    //if(i == 0)
+    //  positions[h] = Vec3d(0, 1, 1);
+    //if(i == 4)
+    //  positions[h] = Vec3d(-1, -1, -2);
 
     velocities[h] = start_vel;
     undeformed[h] = test_vertices[i];
   }
 
+  
+
+
 
   std::vector<Vec3i> tris;
   tris.push_back(Vec3i(0,1,2));
-  tris.push_back(Vec3i(0,2,3));
+  //tris.push_back(Vec3i(0,2,3));
   tris.push_back(Vec3i(1,4,2));
+  tris.push_back(Vec3i(2,4,5));
+  //tris.push_back(Vec3i(1,6,4));
+  //tris.push_back(Vec3i(3,2,5));
+  //tris.push_back(Vec3i(3,5,7));
   for(unsigned int i = 0; i < tris.size(); ++i) {
     shellObj->addFace(vertHandles[tris[i][0]], vertHandles[tris[i][1]], vertHandles[tris[i][2]]);
   }
@@ -2633,6 +2608,9 @@ void ShellTest::setupScene20_BendingTest() {
 
   pos = shell->getVertexPosition(vertHandles[2]);
   shell->constrainVertex(vertHandles[2], pos);
+
+ /* pos = shell->getVertexPosition(vertHandles[4]);
+  shell->constrainVertex(vertHandles[4], pos);*/
 
 }
 
