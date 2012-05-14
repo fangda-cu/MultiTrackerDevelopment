@@ -31,6 +31,7 @@ public:
 public:
   void setupScene1(); // shell test: vertical flat sheet
   void setupScene2(); // rod test: bent twisting
+  void setupScene3(); // simple rod shell test: scene 1 with a rod rib
   
 protected:
   void Setup();
