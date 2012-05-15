@@ -815,7 +815,7 @@ void RodShellTest::setupScene5()
 {
 	std::vector<Vec3d> vertices;
 	std::vector<Vec3i> faces;
-  std::ifstream objfile("assets/rodshelltest/droplet50.obj");
+  std::ifstream objfile("assets/rodshelltest/tescircle400.obj");
   
 	char c;
 	while (objfile >> c)
@@ -833,11 +833,16 @@ void RodShellTest::setupScene5()
 			{
 				Vec3i face;
 				objfile >> face.x() >> face.y() >> face.z();
+        face.x()--;
+        face.y()--;
+        face.z()--;
 				faces.push_back(face);
 			}
         break;
 		}
 	}
+  
+  objfile.close();
   
   //get params
   Scalar width = GetScalarOpt("shell-width");
@@ -854,12 +859,6 @@ void RodShellTest::setupScene5()
   EdgeProperty<Scalar> undefAngle(obj);
   EdgeProperty<Scalar> edgeAngle(obj);
   EdgeProperty<Scalar> edgeVel(obj);
-  
-  VertexHandle h = obj->addVertex();
-  positions[h] = Vec3d(0, 0, 0);
-  velocities[h] = Vec3d(0, 0, 0);
-  undeformed[h] = Vec3d(0, 0, 0);
-  vertHandles.push_back(h);
   
   // hexagonal pyramid umbrella, hard-coded for now
   for (size_t i = 0; i < vertices.size(); i++)
@@ -904,8 +903,16 @@ void RodShellTest::setupScene5()
   shell->setEdgeXis(edgeAngle);
   shell->setEdgeVelocities(edgeVel);
   
-  //Pin the center vertex
-  obj->constrainVertex(vertHandles[0], positions[vertHandles[0]]);
+  // find the two end points in the x direction
+  VertexHandle left = *obj->vertices_begin();
+  VertexHandle right = left;
+  for (VertexIterator i = obj->vertices_begin(); i != obj->vertices.end(); ++i)
+  {
+    if (obj->getVertexPosition(*i).x() < obj->getVertexPosition
+  }
+  
+  //Pin the two end points
+//  obj->constrainVertex(vertHandles[0], positions[vertHandles[0]]);
   
   // collect rod edges
   std::vector<EdgeHandle> rodEdges;  
