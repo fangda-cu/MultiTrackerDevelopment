@@ -256,11 +256,9 @@ void ShellTest::Setup()
     if(ds_bend)
       shell->addForce(new DSBendingForce(*shell, "DSBending", ds_scale*Youngs_modulus, Poisson_ratio, ds_scale*Youngs_damping, Poisson_damping, timestep));
 
-    //Better bending model, not currently functional.
-    if(mn_bend) {
-      MNBendingForce* mnforce = new MNBendingForce(*shell, "MNBending", ds_scale*Youngs_modulus, Poisson_ratio, ds_scale*Youngs_damping, Poisson_damping, timestep);
-      shell->addForce(mnforce);
-    }
+    //Better bending model (Mid-Edge normals, a la Computing discrete shape operators on general meshes)
+    if(mn_bend)
+      shell->addForce(new MNBendingForce(*shell, "MNBending", ds_scale*Youngs_modulus, Poisson_ratio, ds_scale*Youngs_damping, Poisson_damping, timestep));
 
   }
 

@@ -4,10 +4,13 @@
 #include "BASim/src/Math/MatrixBase.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 
+
+//An implementation of the mid-edge normal bending force from 
+//"Computing Discrete Shape Operators on General Meshes", Grinspun et al. 2006
+//Adapted from older "meshopt" code from Columbia/NYU
+
 namespace BASim {
-
-
-
+  
 MNBendingForce::MNBendingForce(ElasticShell& shell, const std::string& name, Scalar Youngs, Scalar Poisson, Scalar Youngs_damping, Scalar Poisson_damping, Scalar timestep) : 
 ElasticShellForce(shell, name), m_Youngs(Youngs), m_Poisson(Poisson), 
                                 m_Youngs_damp(Youngs_damping), m_Poisson_damp(Poisson_damping), 
@@ -41,8 +44,16 @@ bool MNBendingForce::gatherDOFs(const FaceHandle& fh,
   assert(undeformed_damp.size() == MNBendStencilSize);
   assert(deformed.size() == MNBendStencilSize);
   assert(indices.size() == NumMNBendDof);
-  // The data consists of 3 face vertices, then 3 (opposing, ordered) flap vertices,
+
+  // The data consists of 3 face vertices, 
+  //then 3 (opposing, ordered) flap vertices,
   // then the xi values on the 3 edges.
+
+  //We fill undeformed, deformed, and deformed_damp with:
+  //3 triangle vertices (0-8), 3 corresponding flap vertices (9-17), and 3 edge vbles (18-20)
+  
+  //We fill "indices" with the associated global DOF indices for just the 3 tri vertices (0-8) and 3 edge vbles (9-11); 
+  //Flap verts are *not needed* or used in the forces/Jacobians, so they are not mapped here.
 
   if(!m_shell.isFaceActive(fh)) return false;
 
@@ -109,8 +120,6 @@ void MNBendingForce::initialize() const {
   if(m_initialized)
     return;
 
-  std::cout << "initialize()\n";
-
   DeformableObject& defo = m_shell.getDefoObj();
   std::vector<Scalar> undeformed(MNBendStencilSize), undeformed_damp(MNBendStencilSize), deformed(MNBendStencilSize);
   std::vector<int> indices(NumMNBendDof);
@@ -123,7 +132,7 @@ void MNBendingForce::initialize() const {
     if(!valid) continue;
 
     //construct the rest config and precomputed data needed for this element
-    computeRestConfigData(fh, undeformed, &m_precomputed[fh]);
+    computeRestConfigData(fh, undeformed, m_Youngs, m_Poisson, &m_precomputed[fh]);
   }
 
   m_initialized = true;
@@ -134,8 +143,6 @@ void MNBendingForce::update() {
 
   if(!m_initialized)
     initialize();
-
-  std::cout << "update()\n";
 
   DeformableObject& defo = m_shell.getDefoObj();
   std::vector<Scalar> undeformed(MNBendStencilSize), undeformed_damp(MNBendStencilSize), deformed(MNBendStencilSize);
@@ -187,9 +194,6 @@ Scalar MNBendingForce::globalEnergy() const
 void MNBendingForce::globalForce( VecXd& force ) const
 {
 
-  Scalar energy = globalEnergy();
-  //std::cout << "Energy: " << energy << std::endl;
-
   Eigen::Matrix<Scalar, NumMNBendDof, 1> localForce;
   std::vector<Scalar> undeformed(MNBendStencilSize), undeformed_damp(MNBendStencilSize), deformed(MNBendStencilSize);
   std::vector<int> indices(NumMNBendDof);
@@ -205,31 +209,36 @@ void MNBendingForce::globalForce( VecXd& force ) const
     if(!valid) continue;
 
     //determine the elastic forces for this element
+    MNPrecomputed* pre = &m_precomputed[fh];
     if(m_Youngs != 0) {
-      //get the precomputed data for this element
-      MNPrecomputed* pre = &m_precomputed[fh];
-
+      
       elementForce(undeformed, deformed, localForce, pre);
+
       for (unsigned int i = 0; i < indices.size(); ++i) {
         force(indices[i]) += localForce(i);
       }
-
     }
 
-    //determine the (Rayleigh) damping / viscous forces for this element
-    /*
+    //determine the (Rayleigh) damping / viscous forces for this element, a la Stokes-Rayleigh (DVS paper)
     if(m_Youngs_damp != 0) {
-      std::cout << "Warning, doing damping code\n";
-      //TODO Precomp
-      MNPrecomputed* pre = &m_precomputed[fh];
+      MNPrecomputed pre_damp;
+      
+      computeRestConfigData(fh, undeformed_damp, m_Youngs_damp, m_Poisson_damp, &pre_damp);
+      
+      //copy current reference configuration over
+      for(int i = 0; i < NumTriPoints; ++i) {
+        pre_damp.c0[i] = pre->c0[i];
+        pre_damp.tau0[i] = pre->tau0[i];
+      }
+     
+      elementForce(undeformed_damp, deformed, localForce, &pre_damp);
 
-      elementForce(undeformed_damp, deformed, localForce, pre);
       for (unsigned int i = 0; i < indices.size(); ++i) {
-        //divide by timestep for symmetric dissipative potential viscosity
         force(indices[i]) += localForce(i) / m_timestep;
       }
+      
     }
-    */
+    
 
   }
 }
@@ -247,31 +256,33 @@ void MNBendingForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) const
   for (;fit != defo.faces_end(); ++fit) {
     const FaceHandle& fh = *fit;
 
-    //gather the relevant data for the local element
-    //and map the DOF's.
     bool valid = gatherDOFs(fh, undeformed, undeformed_damp, deformed, indices);
     if(!valid) continue;
 
-    //determine the forces for this element
+    //determine the elastic Jacobian for this element
+    MNPrecomputed* pre = &m_precomputed[fh];
     if(m_Youngs != 0) {
-      //get the precomputed data for this element
-      MNPrecomputed* pre = &m_precomputed[fh];
-
       elementJacobian(undeformed, deformed, localJacobian, pre);
       Jacobian.add(indices,indices, scale * localJacobian);
     }
 
-    /*
+    //determine the viscous Jacobian for this element
     if(m_Youngs_damp != 0) {
-      //TODO Precomp
-      MNPrecomputed* pre = &m_precomputed[fh];
-      elementJacobian(undeformed_damp, deformed, localJacobian, pre);
+      
+      MNPrecomputed pre_damp;
+      computeRestConfigData(fh, undeformed_damp, m_Youngs_damp, m_Poisson_damp, &pre_damp);
+      
+      //copy current reference configuration over
+      for(int i = 0; i < NumTriPoints; ++i) {
+        pre_damp.c0[i] = pre->c0[i];
+        pre_damp.tau0[i] = pre->tau0[i];
+      }
 
-      for(unsigned int i = 0; i < indices.size(); ++i)
-        for(unsigned int j = 0; j < indices.size(); ++j) 
-          Jacobian.add(indices[i],indices[j], scale / m_timestep * localJacobian(i,j));
+      elementJacobian(undeformed_damp, deformed, localJacobian, &pre_damp);
+
+      Jacobian.add(indices, indices, scale / m_timestep * localJacobian);
     }
-    */
+    
 
   }
 }
@@ -396,7 +407,9 @@ adreal<NumMNBendDof,DO_HESS,Real> MNEnergy(const MNBendingForce& mn, const std::
 //--------------------
 
 // compute T and w_undef from undeformed configuration
-void MNBendingForce::computeRestConfigData( const FaceHandle& face, const std::vector<Scalar>& undeformed, MNPrecomputed* pc) const 
+void MNBendingForce::computeRestConfigData( const FaceHandle& face, const std::vector<Scalar>& undeformed, 
+  Scalar Youngs, Scalar Poisson, 
+  MNPrecomputed* pc) const 
 { 
   // map generic variables to energy-specific structures
   MNBendDofStruct s_undeformed;
@@ -451,11 +464,9 @@ void MNBendingForce::computeRestConfigData( const FaceHandle& face, const std::v
     }
   }
  
-  Real Y = m_Youngs;
   Real h = m_shell.getThickness(face);
-  Real poisson = m_Poisson;
   for(int i=0; i<9; i++ ) {
-    pc->T[i] = (Y*h*h*h/12.0)/(1.0-poisson*poisson)*((1.0-poisson)*Tc1[i] + poisson*Tc2[i]);
+    pc->T[i] = (Youngs*h*h*h/12.0)/(1.0-Poisson*Poisson)*((1.0-Poisson)*Tc1[i] + Poisson*Tc2[i]);
   }
    
 }
@@ -484,7 +495,6 @@ void MNBendingForce::updateReferenceCoordinates(const FaceHandle& face, const st
   ComputeEdgeFrameParams(v0,t0,nopp0,tau0,c0); 
 
 
-
 }
 
 //--------------------
@@ -507,8 +517,6 @@ void MNBendingForce::elementForce(const std::vector<Scalar>& undeformed,
 {
   assert( pre );
   assert( undeformed.size() == deformed.size() );
-
-  Scalar energyValue = elementEnergy(undeformed, deformed, pre);
 
   adreal<NumMNBendDof,0,Real> e = MNEnergy<0>(*this, undeformed, deformed, const_cast<MNPrecomputed*>(pre) );     
   for( uint i = 0; i < NumMNBendDof; i++ )

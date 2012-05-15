@@ -49,7 +49,7 @@ struct MNPrecomputed {
 };
 
 const int NumMNBendDof = 12;  //3 vertices x dofs each, + 3 edges x 1 dof each
-const int MNBendStencilSize = 21; //same as above + 3 flap vertices x 3 dofs each
+const int MNBendStencilSize = 21; //same as above, plus additional 3 flap vertices x 3 components each
 
 class MNBendingForce : public ElasticShellForce {
 
@@ -84,7 +84,9 @@ private:
                       Eigen::Matrix<Scalar,NumMNBendDof,NumMNBendDof>& jac, MNPrecomputed* pre) const;
  
  
-  void computeRestConfigData( const FaceHandle& face, const std::vector<Scalar>& undeformed, MNPrecomputed* pre) const;
+  void computeRestConfigData( const FaceHandle& face, const std::vector<Scalar>& undeformed, 
+    Scalar Youngs, Scalar Poisson, 
+    MNPrecomputed* pre) const;
   void updateReferenceCoordinates(const FaceHandle& face, const std::vector<Scalar>& deformed, MNPrecomputed* pre) const;
 
   bool gatherDOFs(const FaceHandle& edge, 
