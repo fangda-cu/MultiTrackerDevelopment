@@ -24,6 +24,9 @@ namespace BASim
   m_volumes(object),
   m_density(1),
   m_forces(),
+  m_stretching_force(NULL),
+  m_bending_force(NULL),
+  m_twisting_force(NULL),
   m_properties_edge(object),
   m_properties_edge_tangent(object),
   m_properties_edge_length(object),
@@ -43,6 +46,8 @@ namespace BASim
 
       // each rod edge forms an edge stencil
       EdgeStencil s;
+      s.id = m_edge_stencils.size();
+      
       s.e = rodedges[i];
       EdgeVertexIterator evit = object->ev_iter(s.e);
       s.v1 = *evit; ++evit;
@@ -69,6 +74,8 @@ namespace BASim
         for (size_t j = 0; j < (active_incident_edges.size() == 2 ? 1 : active_incident_edges.size()); j++)
         {
           JointStencil s;
+          s.id = m_joint_stencils.size();
+          
           s.v2 = *i;
           s.e1 = active_incident_edges[j];
           s.e2 = active_incident_edges[(j + 1) % active_incident_edges.size()];
@@ -596,14 +603,17 @@ namespace BASim
     for (size_t i = 0; i < m_edge_stencils.size(); i++)
     {
       EdgeStencil & s = m_edge_stencils[i];
-      m_stretching_force->stencils()[s.id].copyData(s);
+      if (m_stretching_force)
+        m_stretching_force->stencils()[s.id].copyData(s);
     }
     
     for (size_t i = 0; i < m_joint_stencils.size(); i++)
     {
       JointStencil & s = m_joint_stencils[i];
-      m_bending_force->stencils()[s.id].copyData(s);
-      m_twisting_force->stencils()[s.id].copyData(s);
+      if (m_bending_force)
+        m_bending_force->stencils()[s.id].copyData(s);
+      if (m_twisting_force)
+        m_twisting_force->stencils()[s.id].copyData(s);
     }
     
     // forces' updateProperties()
