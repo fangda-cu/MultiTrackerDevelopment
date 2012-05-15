@@ -1,28 +1,28 @@
 dt 0.05	# time-step size
-gravity 0 -1 0	# gravity
+gravity 0 -0.1 0	# gravity
 
 rodshell-scene 5	# the scene to test
 
 rod-density 1	# volumetric density of the rod 
-rod-radius-a 0.05	# major radius of the rod
-rod-radius-b 0.05	# minor radius of the rod
+rod-radius-a 0.5	# major radius of the rod
+rod-radius-b 0.5	# minor radius of the rod
 
 rod-Youngs 1000	# the Young's modulus of the rodl material
-rod-Youngs-damping 0	# the damping coefficient associated with the rod's Young's modulus
-rod-Shear 300	# the shear modulus of the rod material
-rod-Shear-damping 0	# the damping coefficient associated to the rod's shear modulus
+rod-Youngs-damping 100	# the damping coefficient associated with the rod's Young's modulus
+rod-Shear 500	# the shear modulus of the rod material
+rod-Shear-damping 100	# the damping coefficient associated to the rod's shear modulus
 
 shell-x-resolution 6	# the number of segments along first dimension
 shell-y-resolution 30	# the number of segments along second dimension
 
 shell-width 1	# the horizontal side length of the shell
 shell-height 1	# the vertical side length of the shell
-shell-density 0.1	# volumetric density of the shell 
-shell-thickness 0.02	# the (initial) thickness of the shell
+shell-density 0.01	# volumetric density of the shell 
+shell-thickness 0.01	# the (initial) thickness of the shell
 
-shell-Youngs 1	# the Young's modulus of the shell material
+shell-Youngs 10	# the Young's modulus of the shell material
 shell-Youngs-damping 0.0	# the damping coefficient associated with the shell's Young's modulus
-shell-Poisson 0.3	# the Poisson ratio of the shell material
+shell-Poisson 0.5	# the Poisson ratio of the shell material
 shell-Poisson-damping 0.0	# the damping coefficient associated to the shell's Poisson ratio
 
 shell-CST-stretching 1	# whether to apply constant-strain-triangle in-plane stretching

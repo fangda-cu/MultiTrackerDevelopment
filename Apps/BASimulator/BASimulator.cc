@@ -84,7 +84,7 @@ int window_height = 512;
 int max_frames = -1;
 Scalar max_time = -1;
 bool progress_indicator = false;
-bool generate_movie = false;
+bool generate_movie = true;
 
 // Display the simulation time or not
 bool g_dsp_sim_tm = true;

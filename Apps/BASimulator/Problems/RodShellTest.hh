@@ -48,7 +48,19 @@ protected:
   Scalar m_timestep;
   
   int m_active_scene;
+  Scalar m_time;
 
+  ////////////////////////
+  // scene specific data
+  // scene 5:
+  VertexHandle m_s5_l1;
+  VertexHandle m_s5_l2;
+  VertexHandle m_s5_r1;
+  VertexHandle m_s5_r2;
+
+  EdgeHandle m_s5_le;
+  EdgeHandle m_s5_re;
+  
 };
 
 

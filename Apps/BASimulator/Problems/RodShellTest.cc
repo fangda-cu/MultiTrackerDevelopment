@@ -23,7 +23,8 @@ RodShellTest::RodShellTest() :
   rod(NULL), 
   shell(NULL), 
   stepper(NULL),
-  m_active_scene(1)
+  m_active_scene(1),
+  m_time(0)
 {
   addDynamicsProps();
   
@@ -315,6 +316,46 @@ void RodShellTest::Setup()
 
 void RodShellTest::AtEachTimestep()
 {
+  m_time += m_timestep;
+  
+  if (m_active_scene == 5)
+  {
+    const Vec3d l_vel(1.0, 0, 0);
+    const Vec3d r_vel(-1.0, 0, 0);
+    const Scalar l_rot_rate = 0.0;
+    const Scalar r_rot_rate = 1.0;
+    const Scalar l_rot_max = M_PI;
+    const Scalar r_rot_max = M_PI;
+    const Scalar l_twist_rate = 1.0;
+    const Scalar r_twist_rate = 0.5;
+    const Scalar l_twist_max = M_PI / 2;
+    const Scalar r_twist_max = M_PI / 2;
+    
+    Vec3d l1 = obj->getVertexUndeformedPosition(m_s5_l1);
+    Vec3d l2 = obj->getVertexUndeformedPosition(m_s5_l2);
+    Vec3d r1 = obj->getVertexUndeformedPosition(m_s5_r1);
+    Vec3d r2 = obj->getVertexUndeformedPosition(m_s5_r2);
+
+    Vec3d lc = (l1 + l2) / 2 + l_vel * std::min(m_time, 3.0);
+    Vec3d rc = (r1 + r2) / 2 + r_vel * std::min(m_time, 3.0);
+    
+    Scalar l_angle = (l_rot_rate >= 0 ? std::min(l_rot_max, l_rot_rate * m_time) : std::max(l_rot_max, l_rot_rate * m_time));
+    Scalar r_angle = (r_rot_rate >= 0 ? std::min(r_rot_max, r_rot_rate * m_time) : std::max(r_rot_max, r_rot_rate * m_time));
+    Mat3d l_rot, r_rot;
+    l_rot << cos(l_angle), 0, sin(l_angle), 0, 1, 0, -sin(l_angle), 0, cos(l_angle);
+    r_rot << cos(r_angle), 0, sin(r_angle), 0, 1, 0, -sin(r_angle), 0, cos(r_angle);
+    
+    obj->constrainVertex(m_s5_l1, lc + l_rot * (l1 - l2) / 2);
+    obj->constrainVertex(m_s5_l2, lc + l_rot * (l2 - l1) / 2);
+    obj->constrainVertex(m_s5_r1, rc + r_rot * (r1 - r2) / 2);
+    obj->constrainVertex(m_s5_r2, rc + r_rot * (r2 - r1) / 2);
+    
+    Scalar l_twist = (l_twist_rate > 0 ? std::min(l_twist_max, l_twist_rate * m_time) : std::max(l_twist_max, l_twist_rate * m_time));
+    Scalar r_twist = (r_twist_rate > 0 ? std::min(r_twist_max, r_twist_rate * m_time) : std::max(r_twist_max, r_twist_rate * m_time));
+    
+//    rod->constrainEdge(m_s5_le, l_twist);
+//    rod->constrainEdge(m_s5_re, r_twist);
+  }
 
 }
 
@@ -904,23 +945,42 @@ void RodShellTest::setupScene5()
   shell->setEdgeVelocities(edgeVel);
   
   // find the two end points in the x direction
-  VertexHandle left = *obj->vertices_begin();
-  VertexHandle right = left;
-  for (VertexIterator i = obj->vertices_begin(); i != obj->vertices.end(); ++i)
+  m_s5_l1 = *obj->vertices_begin();
+  m_s5_r1 = m_s5_l1;
+  for (VertexIterator i = obj->vertices_begin(); i != obj->vertices_end(); ++i)
   {
-    if (obj->getVertexPosition(*i).x() < obj->getVertexPosition
+    if (obj->getVertexPosition(*i).x() < obj->getVertexPosition(m_s5_l1).x())
+      m_s5_l1 = *i;
+    if (obj->getVertexPosition(*i).x() > obj->getVertexPosition(m_s5_r1).x())
+      m_s5_r1 = *i;
   }
   
+  for (VertexEdgeIterator veit = obj->ve_iter(m_s5_l1); veit; ++veit)
+    if (obj->isBoundary(*veit))
+      if (obj->fromVertex(*veit) == m_s5_l1)
+        m_s5_l2 = obj->toVertex(*veit), m_s5_le = *veit;
+  
+  for (VertexEdgeIterator veit = obj->ve_iter(m_s5_r1); veit; ++veit)
+    if (obj->isBoundary(*veit))
+      if (obj->fromVertex(*veit) == m_s5_r1)
+        m_s5_r2 = obj->toVertex(*veit), m_s5_re = *veit;
+  
+  std::cout << "left 1 = " << obj->getVertexPosition(m_s5_l1) << std::endl;
+  std::cout << "left 2 = " << obj->getVertexPosition(m_s5_l2) << std::endl;
+  std::cout << "right 1 = " << obj->getVertexPosition(m_s5_r1) << std::endl;
+  std::cout << "right 2 = " << obj->getVertexPosition(m_s5_r2) << std::endl;
+  
   //Pin the two end points
-//  obj->constrainVertex(vertHandles[0], positions[vertHandles[0]]);
+//  obj->constrainVertex(m_s5_l1, positions[m_s5_l1]);
+//  obj->constrainVertex(m_s5_l2, positions[m_s5_l2]);
+//  obj->constrainVertex(m_s5_r1, positions[m_s5_r1]);
+//  obj->constrainVertex(m_s5_r2, positions[m_s5_r2]);
   
   // collect rod edges
   std::vector<EdgeHandle> rodEdges;  
   for (EdgeIterator i = obj->edges_begin(); i != obj->edges_end(); ++i)
     if (obj->isBoundary(*i))
       rodEdges.push_back(*i);
-  
-  rodEdges.clear();
   
   // create an empty rod model
   rod = new ElasticRodModel(obj, rodEdges, m_timestep);
@@ -934,5 +994,9 @@ void RodShellTest::setupScene5()
   rod->setEdgeUndeformedThetas(zeros);
   
   rod->setUndeformedPositions(rodundeformed);
+  
+//  rod->constrainEdge(m_s5_le, 0);
+//  rod->constrainEdge(m_s5_re, 0);
+  
 }
 
