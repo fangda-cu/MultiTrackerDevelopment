@@ -1,0 +1,63 @@
+dt 0.05	# time-step size
+gravity 0 -1 0	# gravity
+
+rodshell-scene 5	# the scene to test
+
+rod-density 1	# volumetric density of the rod 
+rod-radius-a 0.05	# major radius of the rod
+rod-radius-b 0.05	# minor radius of the rod
+
+rod-Youngs 1000	# the Young's modulus of the rodl material
+rod-Youngs-damping 0	# the damping coefficient associated with the rod's Young's modulus
+rod-Shear 300	# the shear modulus of the rod material
+rod-Shear-damping 0	# the damping coefficient associated to the rod's shear modulus
+
+shell-x-resolution 6	# the number of segments along first dimension
+shell-y-resolution 30	# the number of segments along second dimension
+
+shell-width 1	# the horizontal side length of the shell
+shell-height 1	# the vertical side length of the shell
+shell-density 0.1	# volumetric density of the shell 
+shell-thickness 0.02	# the (initial) thickness of the shell
+
+shell-Youngs 1	# the Young's modulus of the shell material
+shell-Youngs-damping 0.0	# the damping coefficient associated with the shell's Young's modulus
+shell-Poisson 0.3	# the Poisson ratio of the shell material
+shell-Poisson-damping 0.0	# the damping coefficient associated to the shell's Poisson ratio
+
+shell-CST-stretching 1	# whether to apply constant-strain-triangle in-plane stretching
+shell-DS-bending 1	# whether to apply "Discrete Shells" hinge-based bending
+shell-MN-bending 0	# whether to apply Mid-edge Normal based bending (Morley elt)
+
+shell-bath-density 1	# the density of water fluid bath for sheared wrinkling test
+shell-bending-factor 1	# extra scale factor to multiple bending coefficient by
+shell-collision-object-file 	# source SDF for object collision
+shell-collision-object-offset 0 0 0	# translation of the object
+shell-collision-proximity 0.05	# the collision spring rest length and distance at which to add springs
+shell-collision-spring-damping 0	# damping coefficient of the collision springs
+shell-collision-spring-stiffness 0.2	# stiffness coefficient of the collision springs
+shell-ground-plane false	# whether to add ground plane collision springs
+shell-ground-plane-height -0.5	# height of the ground plane
+shell-ground-plane-velocity 0	# the rate at which particles colliding with the ground (bath) are pulled into it.
+shell-inflate-sphere-coeff 0	# coefficient for inflating sphere
+shell-inflate-sphere-const-pressure false	# whether to use constant pressure version
+shell-initial-velocity -0.1	# starting velocity in the y direction
+shell-remeshing 0	# whether to perform remeshing
+shell-remeshing-iterations 2	# number of remeshing iterations to run
+shell-remeshing-resolution 0.1	# target edge-length
+shell-ring-velocity 0.25	# velocity in the x direction for the rings
+shell-rotation-rate 0	# the rate at which inner cylinder rotates for sheared wrinkling test
+shell-self-collision false	# whether to add self-collision springs
+shell-stretching-factor 1	# extra scale factor to multiply stretching coefficient by
+shell-surface-tension 0	# surface tension coefficient of the shell
+shell-tearing false	# whether to add tearing to the model
+shell-tearing-randomness 1	# percent of fracture edges that will actually tear apart
+shell-tearing-threshold 0	# the thickness threshold to use for tearing
+
+atol 1e-08	# absolute convergence tolerance
+inftol 1e-08	# infinity norm convergence tolerance
+rtol 1e-08	# relative convergence tolerance
+stol 1e-08	# convergence tolerance in terms of the norm of the change in the solution between steps
+integrator implicit	# type of integrator to use for the shell
+iterations 100	# maximum number of iterations for the implicit method
+

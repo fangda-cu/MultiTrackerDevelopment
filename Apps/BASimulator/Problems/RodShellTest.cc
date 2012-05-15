@@ -128,7 +128,8 @@ sceneFunc rodshell_scenes[] =
   &RodShellTest::setupScene1,  // shell test: vertical flat sheet
   &RodShellTest::setupScene2,  // rod test: bent twisting
   &RodShellTest::setupScene3,  // simple rod shell test: scene 1 with a rod rib
-  &RodShellTest::setupScene4   // umbrella opening
+  &RodShellTest::setupScene4,  // umbrella opening
+  &RodShellTest::setupScene5   // car sunshade folding
 };
 
 void RodShellTest::Setup()
@@ -809,3 +810,122 @@ void RodShellTest::setupScene4()
   rod->setUndeformedPositions(rodundeformed);
   
 }
+
+void RodShellTest::setupScene5()
+{
+	std::vector<Vec3d> vertices;
+	std::vector<Vec3i> faces;
+  std::ifstream objfile("assets/rodshelltest/droplet50.obj");
+  
+	char c;
+	while (objfile >> c)
+	{
+		switch (c)
+		{
+      case 'v':
+			{
+				Vec3d pos;
+				objfile >> pos.x() >> pos.y() >> pos.z();
+				vertices.push_back(pos);
+			}
+        break;
+      case 'f':
+			{
+				Vec3i face;
+				objfile >> face.x() >> face.y() >> face.z();
+				faces.push_back(face);
+			}
+        break;
+		}
+	}
+  
+  //get params
+  Scalar width = GetScalarOpt("shell-width");
+  Scalar height = GetScalarOpt("shell-height");
+  
+  //build a hexagonal grid of vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> positions(obj);
+  VertexProperty<Vec3d> velocities(obj);
+  VertexProperty<Vec3d> undeformed(obj);
+  VertexProperty<Vec3d> rodundeformed(obj);
+  
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(obj);
+  EdgeProperty<Scalar> edgeAngle(obj);
+  EdgeProperty<Scalar> edgeVel(obj);
+  
+  VertexHandle h = obj->addVertex();
+  positions[h] = Vec3d(0, 0, 0);
+  velocities[h] = Vec3d(0, 0, 0);
+  undeformed[h] = Vec3d(0, 0, 0);
+  vertHandles.push_back(h);
+  
+  // hexagonal pyramid umbrella, hard-coded for now
+  for (size_t i = 0; i < vertices.size(); i++)
+  {
+    VertexHandle h = obj->addVertex();
+      
+    Vec3d vert = vertices[i] * width;
+    Vec3d rodundef = vert;
+    
+    positions[h] = vert;
+    velocities[h] = Vec3d(0, 0, 0);
+    undeformed[h] = vert;
+    rodundeformed[h] = rodundef;
+    vertHandles.push_back(h);
+  }
+  
+  // connect the vertices into hexagonal mesh
+  for (size_t i = 0; i < faces.size(); i++)
+  {
+    obj->addFace(vertHandles[faces[i][0]], vertHandles[faces[i][1]], vertHandles[faces[i][2]]);
+  }
+  
+  std::cout << "mesh nv = " << obj->nv() << " ne = " << obj->ne() << " nf = " << obj->nf() << std::endl;
+  
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(obj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = obj->faces_begin(); fIt != obj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+  
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(obj, shellFaces, m_timestep);
+  obj->addModel(shell);
+  
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+  
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+  
+  //Pin the center vertex
+  obj->constrainVertex(vertHandles[0], positions[vertHandles[0]]);
+  
+  // collect rod edges
+  std::vector<EdgeHandle> rodEdges;  
+  for (EdgeIterator i = obj->edges_begin(); i != obj->edges_end(); ++i)
+    if (obj->isBoundary(*i))
+      rodEdges.push_back(*i);
+  
+  rodEdges.clear();
+  
+  // create an empty rod model
+  rod = new ElasticRodModel(obj, rodEdges, m_timestep);
+  obj->addModel(rod);
+  
+  // set init dofs for edges
+  EdgeProperty<Scalar> zeros(obj);
+  zeros.assign(0);
+  rod->setEdgeThetas(zeros);
+  rod->setEdgeThetaVelocities(zeros);
+  rod->setEdgeUndeformedThetas(zeros);
+  
+  rod->setUndeformedPositions(rodundeformed);
+}
+
