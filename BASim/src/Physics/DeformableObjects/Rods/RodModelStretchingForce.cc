@@ -5,16 +5,23 @@
 
 using namespace BASim;
 
-RodModelStretchingForce::RodModelStretchingForce(ElasticRodModel & rod, const std::vector<Stencil> & stencils, Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar timestep) :
+RodModelStretchingForce::RodModelStretchingForce(ElasticRodModel & rod, const std::vector<ElasticRodModel::EdgeStencil> & stencils, Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar timestep) :
   RodModelForce(rod, timestep, "RodModelStretchingForce"),
-  m_stencils(stencils),
+  m_stencils(),
   m_youngs_modulus(youngs_modulus),
-  m_youngs_modulus_damping(youngs_modulus_damping),
-  m_stiffness(&rod.getDefoObj()),
-  m_viscous_stiffness(&rod.getDefoObj()),
-  m_undeformed_length(&rod.getDefoObj()),
-  m_damping_undeformed_length(&rod.getDefoObj())
+  m_youngs_modulus_damping(youngs_modulus_damping)
 {
+  for (size_t i = 0; i < stencils.size(); i++)
+  {
+    Stencil s(stencils[i]);
+    s.stiffness = 0;
+    s.viscous_stiffness = 0;
+    s.undeformed_length = 0;
+    s.damping_undeformed_length = 0;
+    
+    m_stencils.push_back(s);
+  }
+
   updateProperties();
   updateStiffness();
   updateViscousReferenceStrain();
@@ -71,9 +78,9 @@ void RodModelStretchingForce::globalJacobian(Scalar scale, MatrixBase & Jacobian
 
 Scalar RodModelStretchingForce::localEnergy(Stencil & s, bool viscous)
 {
-  Scalar ks = (viscous ? m_viscous_stiffness[s.e] : m_stiffness[s.e]);
+  Scalar ks = (viscous ? s.viscous_stiffness : s.stiffness);
   
-  Scalar reflen = (viscous ? m_damping_undeformed_length[s.e] : m_undeformed_length[s.e]);
+  Scalar reflen = (viscous ? s.damping_undeformed_length : s.undeformed_length);
   Scalar len = rod().getEdgeLength(s.e);
   
   return ks / 2.0 * square(len / reflen - 1.0) * reflen;
@@ -81,9 +88,9 @@ Scalar RodModelStretchingForce::localEnergy(Stencil & s, bool viscous)
 
 void RodModelStretchingForce::localForce(ElementForce & force, Stencil & s, bool viscous)
 {
-  Scalar ks = (viscous ? m_viscous_stiffness[s.e] : m_stiffness[s.e]);
+  Scalar ks = (viscous ? s.viscous_stiffness : s.stiffness);
   
-  Scalar reflen = (viscous ? m_damping_undeformed_length[s.e] : m_undeformed_length[s.e]);
+  Scalar reflen = (viscous ? s.damping_undeformed_length : s.undeformed_length);
   Scalar len = rod().getEdgeLength(s.e);
   Vec3d tangent = rod().getEdgeTangent(s.e);
   
@@ -94,10 +101,10 @@ void RodModelStretchingForce::localForce(ElementForce & force, Stencil & s, bool
 
 void RodModelStretchingForce::localJacobian(ElementJacobian & jacobian, Stencil & s, bool viscous)
 {
-  Scalar ks = (viscous ? m_viscous_stiffness[s.e] : m_stiffness[s.e]);
+  Scalar ks = (viscous ? s.viscous_stiffness : s.stiffness);
   
   Vec3d e = rod().getEdge(s.e);
-  Scalar reflen = (viscous ? m_damping_undeformed_length[s.e] : m_undeformed_length[s.e]);
+  Scalar reflen = (viscous ? s.damping_undeformed_length : s.undeformed_length);
   Scalar len = rod().getEdgeLength(s.e);
   Mat3d M = ks * ((1.0 / reflen - 1.0 / len) * Mat3d::Identity() + 1.0 / len * outerProd(e, e) / square(len));
   
@@ -121,8 +128,8 @@ void RodModelStretchingForce::updateStiffness()
     Stencil & s = m_stencils[i];
     Vec2d r = rod().getRadii(s.e);
     Scalar cross_section = M_PI * r(0) * r(1);
-    m_stiffness[s.e] = m_youngs_modulus * cross_section;
-    m_viscous_stiffness[s.e] = m_youngs_modulus_damping * cross_section;
+    s.stiffness = m_youngs_modulus * cross_section;
+    s.viscous_stiffness = m_youngs_modulus_damping * cross_section;
   }
 }
 
@@ -131,7 +138,7 @@ void RodModelStretchingForce::updateViscousReferenceStrain()
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
-    m_damping_undeformed_length[s.e] = rod().getEdgeLength(s.e);
+    s.damping_undeformed_length = rod().getEdgeLength(s.e);
   }
 }
 
@@ -145,7 +152,7 @@ void RodModelStretchingForce::computeReferenceStrain()
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
-    m_undeformed_length[s.e] = rod().getEdgeLength(s.e);
+    s.undeformed_length = rod().getEdgeLength(s.e);
   }
 }
 

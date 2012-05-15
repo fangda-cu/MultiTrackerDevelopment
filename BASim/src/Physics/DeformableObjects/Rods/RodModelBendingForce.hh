@@ -20,10 +20,26 @@ namespace BASim
     typedef Eigen::Matrix<Scalar, 11, 11> ElementJacobian;
     typedef std::pair<ElementJacobian, ElementJacobian> ElementBiJacobian;
 
-    typedef ElasticRodModel::JointStencil Stencil;
+//    typedef ElasticRodModel::JointStencil Stencil;
+    struct Stencil : public ElasticRodModel::JointStencil
+    {
+      Stencil(const ElasticRodModel::JointStencil & s) : ElasticRodModel::JointStencil(s) { }
+      
+      // cached stiffness
+      Mat2d stiffness;
+      Mat2d viscous_stiffness;
+      
+      // reference strain
+      Vec2d undeformed_kappa;
+      Vec2d damping_undeformed_kappa;
+      Scalar reference_voronoi_length;
+      
+      // cached properties
+      Vec2d kappa;
+    };
     
   public:
-    RodModelBendingForce(ElasticRodModel & rod, std::vector<Stencil> & stencils, Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar timestep);
+    RodModelBendingForce(ElasticRodModel & rod, const std::vector<ElasticRodModel::JointStencil> & stencils, Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar timestep);
     virtual ~RodModelBendingForce();
     
   public:
@@ -52,22 +68,22 @@ namespace BASim
     ElementBiJacobian computeHessKappa(Stencil & s);
     
   protected:
-    std::vector<Stencil> & m_stencils;
+    std::vector<Stencil> m_stencils;
     
     Scalar m_youngs_modulus;
     Scalar m_youngs_modulus_damping;
     
-    // cached stiffnesses
-    VertexProperty<Mat2d> m_stiffness;
-    VertexProperty<Mat2d> m_viscous_stiffness;
-    
-    // reference strains
-    VertexProperty<Vec2d> m_undeformed_kappa;
-    VertexProperty<Vec2d> m_damping_undeformed_kappa;
-    VertexProperty<Scalar> m_reference_voronoi_length;
-    
-    // cached properties
-    VertexProperty<Vec2d> m_kappa;
+//    // cached stiffnesses
+//    VertexProperty<Mat2d> m_stiffness;
+//    VertexProperty<Mat2d> m_viscous_stiffness;
+//    
+//    // reference strains
+//    VertexProperty<Vec2d> m_undeformed_kappa;
+//    VertexProperty<Vec2d> m_damping_undeformed_kappa;
+//    VertexProperty<Scalar> m_reference_voronoi_length;
+//    
+//    // cached properties
+//    VertexProperty<Vec2d> m_kappa;
     
   };
   

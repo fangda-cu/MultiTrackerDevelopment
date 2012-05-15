@@ -552,7 +552,7 @@ namespace BASim
       rotateAxisAngle(ut, tangent1, referenceTwist);// std::cout << "ut = " << ut << '\n';
       
       // compute increment to reference twist to align reference frames
-      referenceTwist += signedAngle(ut, u1, tangent1);// std::cout << "referenceTwist = " << referenceTwist << '\n';      
+      referenceTwist += signedAngle(ut, u1, tangent1);// std::cout << "referenceTwist = " << referenceTwist << '\n';
     }
     
     // compute curvature binormals
@@ -592,6 +592,21 @@ namespace BASim
       m_properties_material_director2[s.e] = -sa * u + ca * v;
     }
     
+    // propagate newly computed stencil data to internal force stencils
+    for (size_t i = 0; i < m_edge_stencils.size(); i++)
+    {
+      EdgeStencil & s = m_edge_stencils[i];
+      m_stretching_force->stencils()[s.id].copyData(s);
+    }
+    
+    for (size_t i = 0; i < m_joint_stencils.size(); i++)
+    {
+      JointStencil & s = m_joint_stencils[i];
+      m_bending_force->stencils()[s.id].copyData(s);
+      m_twisting_force->stencils()[s.id].copyData(s);
+    }
+    
+    // forces' updateProperties()
     for (size_t i = 0; i < m_forces.size(); i++)
       m_forces[i]->updateProperties();
   }

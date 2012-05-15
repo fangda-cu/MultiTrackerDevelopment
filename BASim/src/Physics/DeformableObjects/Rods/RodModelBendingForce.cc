@@ -6,18 +6,25 @@
 
 using namespace BASim;
 
-RodModelBendingForce::RodModelBendingForce(ElasticRodModel & rod, std::vector<Stencil> & stencils, Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar timestep) :
+RodModelBendingForce::RodModelBendingForce(ElasticRodModel & rod, const std::vector<ElasticRodModel::JointStencil> & stencils, Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar timestep) :
   RodModelForce(rod, timestep, "RodModelStretchingForce"),
-  m_stencils(stencils),
+  m_stencils(),
   m_youngs_modulus(youngs_modulus),
-  m_youngs_modulus_damping(youngs_modulus_damping),
-  m_stiffness(&rod.getDefoObj()),
-  m_viscous_stiffness(&rod.getDefoObj()),
-  m_undeformed_kappa(&rod.getDefoObj()),
-  m_damping_undeformed_kappa(&rod.getDefoObj()),
-  m_reference_voronoi_length(&rod.getDefoObj()),
-  m_kappa(&rod.getDefoObj())
+  m_youngs_modulus_damping(youngs_modulus_damping)
 {
+  for (size_t i = 0; i < stencils.size(); i++)
+  {
+    Stencil s(stencils[i]);
+    s.stiffness.setZero();
+    s.viscous_stiffness.setZero();
+    s.undeformed_kappa.setZero();
+    s.damping_undeformed_kappa.setZero();
+    s.reference_voronoi_length = 0;
+    s.kappa.setZero();
+    
+    m_stencils.push_back(s);
+  }
+  
   updateProperties();
   updateStiffness();
   updateViscousReferenceStrain();
@@ -102,20 +109,20 @@ void RodModelBendingForce::globalJacobian(Scalar scale, MatrixBase & Jacobian)
 
 Scalar RodModelBendingForce::localEnergy(Stencil & s, bool viscous)
 {
-  const Mat2d & B = (viscous ? m_viscous_stiffness[s.v2] : m_stiffness[s.v2]);
-  const Scalar len = m_reference_voronoi_length[s.v2];
-  const Vec2d & kappa = m_kappa[s.v2];
-  const Vec2d & kappaBar = (viscous ? m_damping_undeformed_kappa[s.v2] : m_undeformed_kappa[s.v2]);
+  const Mat2d & B = (viscous ? s.viscous_stiffness : s.stiffness);
+  const Scalar len = s.reference_voronoi_length;
+  const Vec2d & kappa = s.kappa;
+  const Vec2d & kappaBar = (viscous ? s.damping_undeformed_kappa : s.undeformed_kappa);
   
   return 0.5 / len * (kappa - kappaBar).dot(B * (kappa - kappaBar));
 }
 
 void RodModelBendingForce::localForce(ElementForce & force, Stencil & s, bool viscous)
 {
-  const Mat2d & B = (viscous ? m_viscous_stiffness[s.v2] : m_stiffness[s.v2]);
-  const Scalar len = m_reference_voronoi_length[s.v2];
-  const Vec2d & kappa = m_kappa[s.v2];
-  const Vec2d & kappaBar = (viscous ? m_damping_undeformed_kappa[s.v2] : m_undeformed_kappa[s.v2]);
+  const Mat2d & B = (viscous ? s.viscous_stiffness : s.stiffness);
+  const Scalar len = s.reference_voronoi_length;
+  const Vec2d & kappa = s.kappa;
+  const Vec2d & kappaBar = (viscous ? s.damping_undeformed_kappa : s.undeformed_kappa);
 
   //TODO: cache grad kappa and hess kappa like BASim does
   ElementBiForce gradKappa = computeGradKappa(s);
@@ -124,8 +131,8 @@ void RodModelBendingForce::localForce(ElementForce & force, Stencil & s, bool vi
 
 void RodModelBendingForce::localJacobian(ElementJacobian & jacobian, Stencil & s, bool viscous)
 {
-  const Mat2d & B = (viscous ? m_viscous_stiffness[s.v2] : m_stiffness[s.v2]);
-  const Scalar len = m_reference_voronoi_length[s.v2];
+  const Mat2d & B = (viscous ? s.viscous_stiffness : s.stiffness);
+  const Scalar len = s.reference_voronoi_length;
   
   //TODO: cache grad kappa and hess kappa like BASim does
   ElementBiForce gradKappa = computeGradKappa(s);
@@ -134,8 +141,8 @@ void RodModelBendingForce::localJacobian(ElementJacobian & jacobian, Stencil & s
   
   // this part of the computation can be traded off for performance. refer to StrandSim::BendingForce::computeLocalJacobian()
 #ifdef EXACT_BENDING_JACOBIAN
-  const Vec2d & kappa = m_kappa[s.v2];
-  const Vec2d & kappaBar = (viscous ? m_damping_undeformed_kappa[s.v2] : m_undeformed_kappa[s.v2]);
+  const Vec2d & kappa = s.kappa;
+  const Vec2d & kappaBar = (viscous ? s.damping_undeformed_kappa : s.undeformed_kappa);
 
   ElementBiJacobian hessKappa = computeHessKappa(s);
   const Vec2d temp = -(kappa - kappaBar).transpose() * B / len;
@@ -168,8 +175,8 @@ void RodModelBendingForce::updateStiffness()
 //
 //    B = rot * B * rot.transpose();
     
-    m_stiffness[s.v2] = B * m_youngs_modulus;
-    m_viscous_stiffness[s.v2] = B * m_youngs_modulus_damping;
+    s.stiffness = B * m_youngs_modulus;
+    s.viscous_stiffness = B * m_youngs_modulus_damping;
   }
 }
 
@@ -178,7 +185,7 @@ void RodModelBendingForce::updateViscousReferenceStrain()
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
-    m_damping_undeformed_kappa[s.v2] = m_kappa[s.v2];
+    s.damping_undeformed_kappa = s.kappa;
   }
 }
 
@@ -192,7 +199,7 @@ void RodModelBendingForce::updateProperties()
     const Vec3d   m2e = rod().getMaterialDirector2(s.e1) * (s.e1flip ? -1 : 1);
     const Vec3d & m1f = rod().getMaterialDirector1(s.e2);
     const Vec3d   m2f = rod().getMaterialDirector2(s.e2) * (s.e2flip ? -1 : 1);
-    m_kappa[s.v2] = Vec2d(0.5 * kb.dot(m2e + m2f), -0.5 * kb.dot(m1e + m1f));
+    s.kappa = Vec2d(0.5 * kb.dot(m2e + m2f), -0.5 * kb.dot(m1e + m1f));
   }
 }
 
@@ -201,8 +208,8 @@ void RodModelBendingForce::computeReferenceStrain()
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
-    m_undeformed_kappa[s.v2] = m_kappa[s.v2];
-    m_reference_voronoi_length[s.v2] = s.voronoiLength;
+    s.undeformed_kappa = s.kappa;
+    s.reference_voronoi_length = s.voronoiLength;
   }
 }
 
@@ -227,7 +234,7 @@ RodModelBendingForce::ElementBiForce RodModelBendingForce::computeGradKappa(Sten
   Vec3d tilde_d1 = (d1e + d1f) / chi;
   Vec3d tilde_d2 = (d2e + d2f) / chi;
   
-  const Vec2d& kappa = m_kappa[s.v2];
+  const Vec2d& kappa = s.kappa;
   Scalar kappa1 = kappa(0);
   Scalar kappa2 = kappa(1);
   
@@ -281,7 +288,7 @@ RodModelBendingForce::ElementBiJacobian RodModelBendingForce::computeHessKappa(S
   const Vec3d tilde_d1 = (d1e + d1f) / chi;
   const Vec3d tilde_d2 = (d2e + d2f) / chi;
   
-  const Vec2d& kappa = m_kappa[s.v2];
+  const Vec2d& kappa = s.kappa;
   const Scalar kappa1 = kappa(0);
   const Scalar kappa2 = kappa(1);
   

@@ -4,18 +4,25 @@
 
 using namespace BASim;
 
-RodModelTwistingForce::RodModelTwistingForce(ElasticRodModel & rod, std::vector<Stencil> & stencils, Scalar shear_modulus, Scalar shear_modulus_damping, Scalar timestep) :
+RodModelTwistingForce::RodModelTwistingForce(ElasticRodModel & rod, const std::vector<ElasticRodModel::JointStencil> & stencils, Scalar shear_modulus, Scalar shear_modulus_damping, Scalar timestep) :
   RodModelForce(rod, timestep, "RodModelStretchingForce"),
-  m_stencils(stencils),
+  m_stencils(),
   m_shear_modulus(shear_modulus),
-  m_shear_modulus_damping(shear_modulus_damping),
-  m_stiffness(&rod.getDefoObj()),
-  m_viscous_stiffness(&rod.getDefoObj()),
-  m_undeformed_twist(&rod.getDefoObj()),
-  m_damping_undeformed_twist(&rod.getDefoObj()),
-  m_reference_voronoi_length(&rod.getDefoObj()),
-  m_twist(&rod.getDefoObj())
+  m_shear_modulus_damping(shear_modulus_damping)
 {
+  for (size_t i = 0; i < stencils.size(); i++)
+  {
+    Stencil s(stencils[i]);
+    s.stiffness = 0;
+    s.viscous_stiffness = 0;
+    s.undeformed_twist = 0;
+    s.damping_undeformed_twist = 0;
+    s.reference_voronoi_length = 0;
+    s.twist = 0;
+    
+    m_stencils.push_back(s);
+  }
+
   updateProperties();
   updateStiffness();
   updateViscousReferenceStrain();
@@ -100,30 +107,30 @@ void RodModelTwistingForce::globalJacobian(Scalar scale, MatrixBase & Jacobian)
 
 Scalar RodModelTwistingForce::localEnergy(Stencil & s, bool viscous)
 {
-  Scalar kt = (viscous ? m_viscous_stiffness[s.v2] : m_stiffness[s.v2]);
-  Scalar len = m_reference_voronoi_length[s.v2];
-  Scalar undefTwist = (viscous ? m_damping_undeformed_twist[s.v2] : m_undeformed_twist[s.v2]);
-  Scalar twist = m_twist[s.v2];
+  Scalar kt = (viscous ? s.viscous_stiffness : s.stiffness);
+  Scalar len = s.reference_voronoi_length;
+  Scalar undefTwist = (viscous ? s.damping_undeformed_twist : s.undeformed_twist);
+  Scalar twist = s.twist;
   
   return kt / ( 2.0 * len ) * square( twist - undefTwist );
 }
 
 void RodModelTwistingForce::localForce(ElementForce & force, Stencil & s, bool viscous)
 {
-  Scalar kt = (viscous ? m_viscous_stiffness[s.v2] : m_stiffness[s.v2]);
-  Scalar len = m_reference_voronoi_length[s.v2];
-  Scalar undefTwist = (viscous ? m_damping_undeformed_twist[s.v2] : m_undeformed_twist[s.v2]);
-  Scalar twist = m_twist[s.v2];
+  Scalar kt = (viscous ? s.viscous_stiffness : s.stiffness);
+  Scalar len = s.reference_voronoi_length;
+  Scalar undefTwist = (viscous ? s.damping_undeformed_twist : s.undeformed_twist);
+  Scalar twist = s.twist;
 
   force = -kt / len * (twist - undefTwist) * computeGradTwist(s);
 }
 
 void RodModelTwistingForce::localJacobian(ElementJacobian & jacobian, Stencil & s, bool viscous)
 {
-  Scalar kt = (viscous ? m_viscous_stiffness[s.v2] : m_stiffness[s.v2]);
-  Scalar len = m_reference_voronoi_length[s.v2];
-  Scalar undefTwist = (viscous ? m_damping_undeformed_twist[s.v2] : m_undeformed_twist[s.v2]);
-  Scalar twist = m_twist[s.v2];
+  Scalar kt = (viscous ? s.viscous_stiffness : s.stiffness);
+  Scalar len = s.reference_voronoi_length;
+  Scalar undefTwist = (viscous ? s.damping_undeformed_twist : s.undeformed_twist);
+  Scalar twist = s.twist;
   
   ElementForce gradTwist = computeGradTwist(s);
   ElementJacobian hessTwist = computeHessTwist(s);
@@ -147,8 +154,8 @@ void RodModelTwistingForce::updateStiffness()
 
     Scalar k = M_PI * a * b * (square(a) + square(b)) / 4.0;
     
-    m_stiffness[s.v2] = k * m_shear_modulus;
-    m_viscous_stiffness[s.v2] = k * m_shear_modulus_damping;
+    s.stiffness = k * m_shear_modulus;
+    s.viscous_stiffness = k * m_shear_modulus_damping;
   }
 }
 
@@ -157,7 +164,7 @@ void RodModelTwistingForce::updateViscousReferenceStrain()
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
-    m_damping_undeformed_twist[s.v2] = m_twist[s.v2];
+    s.damping_undeformed_twist = s.twist;
   }
 }
 
@@ -166,7 +173,7 @@ void RodModelTwistingForce::updateProperties()
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
-    m_twist[s.v2] = s.referenceTwist + rod().getEdgeTheta(s.e2) * (s.e2flip ? -1 : 1) - rod().getEdgeTheta(s.e1) * (s.e1flip ? -1 : 1);
+    s.twist = s.referenceTwist + rod().getEdgeTheta(s.e2) * (s.e2flip ? -1 : 1) - rod().getEdgeTheta(s.e1) * (s.e1flip ? -1 : 1);
   }
 }
 
@@ -175,8 +182,8 @@ void RodModelTwistingForce::computeReferenceStrain()
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
-    m_undeformed_twist[s.v2] = m_twist[s.v2];
-    m_reference_voronoi_length[s.v2] = s.voronoiLength;
+    s.undeformed_twist = s.twist;
+    s.reference_voronoi_length = s.voronoiLength;
   }
 }
 

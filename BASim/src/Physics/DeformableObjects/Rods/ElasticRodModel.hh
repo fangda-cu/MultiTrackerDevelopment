@@ -26,19 +26,35 @@ namespace BASim
   public:
     struct Stencil
     {
+      Stencil() : id(0), dofindices() { }
+      Stencil(const Stencil & s) : id(s.id), dofindices(s.dofindices) { }
+      
+      int id;
       IntArray dofindices;
     };
     
     // two common types of stencils (reusable by forces)
     struct EdgeStencil : Stencil  // one rod edge
     {
+      EdgeStencil() { }
+      EdgeStencil(const EdgeStencil & s) : Stencil(s), e(s.e), v1(s.v1), v2(s.v2) { copyData(s); }
+      
+      // stencil coverage
       EdgeHandle e;
       VertexHandle v1;
       VertexHandle v2;
+      
+      // per-stencil data (cached properties, updated by updateProperties() automatically)
+      
+      // copying per-stencil data (used by ElasticRodModel to propagate its computation to forces' stencils)
+      void copyData(const EdgeStencil & s) { }
     };
     
     struct JointStencil : Stencil // a pair of incident rod edges
-    {
+    {      
+      JointStencil() { }
+      JointStencil(const JointStencil & s) : Stencil(s), e1(s.e1), e2(s.e2), v1(s.v1), v2(s.v2), v3(s.v3), e1flip(s.e1flip), e2flip(s.e2flip) { copyData(s); }
+      
       // stencil coverage
       EdgeHandle e1;
       EdgeHandle e2;
@@ -52,6 +68,14 @@ namespace BASim
       Vec3d curvatureBinormal;
       Scalar referenceTwist;
       Scalar voronoiLength;
+      
+      // copying per-stencil data (used by ElasticRodModel to propagate its computation to forces' stencils)
+      void copyData(const JointStencil & s)
+      {
+        curvatureBinormal = s.curvatureBinormal;
+        referenceTwist = s.referenceTwist;
+        voronoiLength = s.voronoiLength;
+      }
     };
     
   public:

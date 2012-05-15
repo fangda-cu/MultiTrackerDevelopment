@@ -18,10 +18,26 @@ namespace BASim
     typedef Eigen::Matrix<Scalar, 11, 1> ElementForce;
     typedef Eigen::Matrix<Scalar, 11, 11> ElementJacobian;
     
-    typedef ElasticRodModel::JointStencil Stencil;
-    
+//    typedef ElasticRodModel::JointStencil Stencil;
+    struct Stencil : public ElasticRodModel::JointStencil
+    {
+      Stencil(const ElasticRodModel::JointStencil & s) : ElasticRodModel::JointStencil(s) { }
+      
+      // cached stiffness
+      Scalar stiffness;
+      Scalar viscous_stiffness;
+      
+      // reference strain
+      Scalar undeformed_twist;
+      Scalar damping_undeformed_twist;
+      Scalar reference_voronoi_length;
+      
+      // cached properties
+      Scalar twist;
+    };
+  
   public:
-    RodModelTwistingForce(ElasticRodModel & rod, std::vector<Stencil> & stencils, Scalar shear_modulus, Scalar shear_modulus_damping, Scalar timestep);
+    RodModelTwistingForce(ElasticRodModel & rod, const std::vector<ElasticRodModel::JointStencil> & stencils, Scalar shear_modulus, Scalar shear_modulus_damping, Scalar timestep);
     virtual ~RodModelTwistingForce();
     
   public:
@@ -50,22 +66,22 @@ namespace BASim
     ElementJacobian computeHessTwist(Stencil & s);
     
   protected:
-    std::vector<Stencil> & m_stencils;
+    std::vector<Stencil> m_stencils;
     
     Scalar m_shear_modulus;
     Scalar m_shear_modulus_damping;
     
-    // cached stiffnesses
-    VertexProperty<Scalar> m_stiffness;
-    VertexProperty<Scalar> m_viscous_stiffness;
-    
-    // reference strains
-    VertexProperty<Scalar> m_undeformed_twist;
-    VertexProperty<Scalar> m_damping_undeformed_twist;
-    VertexProperty<Scalar> m_reference_voronoi_length;
-    
-    // cached properties
-    VertexProperty<Scalar> m_twist;
+//    // cached stiffnesses
+//    VertexProperty<Scalar> m_stiffness;
+//    VertexProperty<Scalar> m_viscous_stiffness;
+//    
+//    // reference strains
+//    VertexProperty<Scalar> m_undeformed_twist;
+//    VertexProperty<Scalar> m_damping_undeformed_twist;
+//    VertexProperty<Scalar> m_reference_voronoi_length;
+//    
+//    // cached properties
+//    VertexProperty<Scalar> m_twist;
     
   };
   
