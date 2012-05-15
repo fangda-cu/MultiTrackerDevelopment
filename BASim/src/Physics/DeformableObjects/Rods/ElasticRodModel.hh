@@ -44,6 +44,8 @@ namespace BASim
       VertexHandle v1;
       VertexHandle v2;
       VertexHandle v3;
+      bool e1flip;
+      bool e2flip;
     };
     
   public:

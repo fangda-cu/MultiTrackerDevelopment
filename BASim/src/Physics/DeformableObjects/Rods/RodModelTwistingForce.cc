@@ -43,15 +43,21 @@ void RodModelTwistingForce::globalForce(VecXd & force)
   ElementForce localforce;
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
+    Stencil & s = m_stencils[i];
+    
     // non-viscous force
-    localForce(localforce, m_stencils[i], false);
-    for (size_t j = 0; j < m_stencils[i].dofindices.size(); j++)
-      force(m_stencils[i].dofindices[j]) += localforce(j);
+    localForce(localforce, s, false);
+    localforce(3) *= (s.e1flip ? -1 : 1);
+    localforce(7) *= (s.e2flip ? -1 : 1);
+    for (size_t j = 0; j < s.dofindices.size(); j++)
+      force(s.dofindices[j]) += localforce(j);
     
     // viscous force
-    localForce(localforce, m_stencils[i], true);
-    for (size_t j = 0; j < m_stencils[i].dofindices.size(); j++)
-      force(m_stencils[i].dofindices[j]) += localforce(j) / timeStep();
+    localForce(localforce, s, true);
+    localforce(3) *= (s.e1flip ? -1 : 1);
+    localforce(7) *= (s.e2flip ? -1 : 1);
+    for (size_t j = 0; j < s.dofindices.size(); j++)
+      force(s.dofindices[j]) += localforce(j) / timeStep();
   }
 }
 
@@ -60,13 +66,35 @@ void RodModelTwistingForce::globalJacobian(Scalar scale, MatrixBase & Jacobian)
   ElementJacobian localjacobian;
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
+    Stencil & s = m_stencils[i];
+    
     // non-viscous force
-    localJacobian(localjacobian, m_stencils[i], false);
-    Jacobian.add(m_stencils[i].dofindices, m_stencils[i].dofindices, scale * localjacobian);
+    localJacobian(localjacobian, s, false);
+    if (s.e1flip) 
+    {
+      localjacobian.row(3) *= -1;
+      localjacobian.col(3) *= -1;
+    }
+    if (s.e2flip)
+    {
+      localjacobian.row(7) *= -1;
+      localjacobian.col(7) *= -1;
+    }
+    Jacobian.add(s.dofindices, s.dofindices, scale * localjacobian);
     
     // viscous force
-    localJacobian(localjacobian, m_stencils[i], true);
-    Jacobian.add(m_stencils[i].dofindices, m_stencils[i].dofindices, scale / timeStep() * localjacobian);
+    localJacobian(localjacobian, s, true);
+    if (s.e1flip) 
+    {
+      localjacobian.row(3) *= -1;
+      localjacobian.col(3) *= -1;
+    }
+    if (s.e2flip)
+    {
+      localjacobian.row(7) *= -1;
+      localjacobian.col(7) *= -1;
+    }
+    Jacobian.add(s.dofindices, s.dofindices, scale / timeStep() * localjacobian);
   }
 }
 
@@ -138,7 +166,7 @@ void RodModelTwistingForce::updateProperties()
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
-    m_twist[s.v2] = rod().getReferenceTwist(s.v2) + rod().getEdgeTheta(s.e2) - rod().getEdgeTheta(s.e1);
+    m_twist[s.v2] = rod().getReferenceTwist(s.v2) + rod().getEdgeTheta(s.e2) * (s.e2flip ? -1 : 1) - rod().getEdgeTheta(s.e1) * (s.e1flip ? -1 : 1);
   }
 }
 
@@ -155,7 +183,7 @@ void RodModelTwistingForce::computeReferenceStrain()
 RodModelTwistingForce::ElementForce RodModelTwistingForce::computeGradTwist(Stencil & s)
 {
   ElementForce Dtwist = ElementForce::Zero();
-  const Vec3d & kb = rod().getCurvatureBinormal(s.v2);
+  const Vec3d kb = rod().getCurvatureBinormal(s.v2) * (s.e1flip ? -1 : 1) * (s.e2flip ? -1 : 1);
   Dtwist.segment<3> ( 0 ) = -0.5 / ( rod().getEdgeLength(s.e1) ) * kb;
   Dtwist.segment<3> ( 8 ) = 0.5 / ( rod().getEdgeLength(s.e2) ) * kb;
   Dtwist.segment<3> ( 4 ) = -( Dtwist.segment<3> ( 0 ) + Dtwist.segment<3> ( 8 ) );
@@ -169,11 +197,11 @@ RodModelTwistingForce::ElementJacobian RodModelTwistingForce::computeHessTwist(S
   ElementJacobian DDtwist;
   DDtwist.setZero();
 
-  const Vec3d& te = rod().getEdgeTangent(s.e1);
-  const Vec3d& tf = rod().getEdgeTangent(s.e2);
+  const Vec3d  te = rod().getEdgeTangent(s.e1) * (s.e1flip ? -1 : 1);
+  const Vec3d  tf = rod().getEdgeTangent(s.e2) * (s.e2flip ? -1 : 1);
   const Scalar norm_e = rod().getEdgeLength(s.e1);
   const Scalar norm_f = rod().getEdgeLength(s.e2);
-  const Vec3d& kb = m_rod.getCurvatureBinormal(s.v2);
+  const Vec3d  kb = m_rod.getCurvatureBinormal(s.v2) * (s.e1flip ? -1 : 1) * (s.e2flip ? -1 : 1);
   
   const Scalar chi = 1 + te.dot( tf );
   const Vec3d tilde_t = 1.0 / chi * ( te + tf );

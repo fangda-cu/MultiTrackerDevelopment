@@ -92,6 +92,23 @@ namespace BASim
           s.v3 = (s.v2 == v1 ? v2 : v1);
           assert((s.v3 == v1 && s.v2 == v2) || (s.v3 == v2 && s.v2 == v1));
           
+          // detect if the edges' intrinsic orientation (defined by the underlying mesh data structure) matches the stencil's direction
+          s.e1flip = (s.v1 == object->toVertex(s.e1));
+          s.e2flip = (s.v3 == object->fromVertex(s.e2));
+          
+          if (s.e1flip && s.e2flip)
+          {
+            // both edge misoriented, we should just flip the stencil itself
+            EdgeHandle e = s.e1;
+            s.e1 = s.e2;
+            s.e2 = e;
+            VertexHandle v = s.v1;
+            s.v1 = s.v3;
+            s.v3 = v;
+            s.e1flip = false;
+            s.e2flip = false;
+          }
+          
           m_joint_stencils.push_back(s);
         }
       }

@@ -45,15 +45,21 @@ void RodModelBendingForce::globalForce(VecXd & force)
   ElementForce localforce;
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
+    Stencil & s = m_stencils[i];
+    
     // non-viscous force
-    localForce(localforce, m_stencils[i], false);
-    for (size_t j = 0; j < m_stencils[i].dofindices.size(); j++)
-      force(m_stencils[i].dofindices[j]) += localforce(j);
+    localForce(localforce, s, false);
+    localforce(3) *= (s.e1flip ? -1 : 1);
+    localforce(7) *= (s.e2flip ? -1 : 1);
+    for (size_t j = 0; j < s.dofindices.size(); j++)
+      force(s.dofindices[j]) += localforce(j);
     
     // viscous force
-    localForce(localforce, m_stencils[i], true);
-    for (size_t j = 0; j < m_stencils[i].dofindices.size(); j++)
-      force(m_stencils[i].dofindices[j]) += localforce(j) / timeStep();
+    localForce(localforce, s, true);
+    localforce(3) *= (s.e1flip ? -1 : 1);
+    localforce(7) *= (s.e2flip ? -1 : 1);
+    for (size_t j = 0; j < s.dofindices.size(); j++)
+      force(s.dofindices[j]) += localforce(j) / timeStep();
   }
 }
 
@@ -62,13 +68,35 @@ void RodModelBendingForce::globalJacobian(Scalar scale, MatrixBase & Jacobian)
   ElementJacobian localjacobian;
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
+    Stencil & s = m_stencils[i];
+    
     // non-viscous force
-    localJacobian(localjacobian, m_stencils[i], false);
-    Jacobian.add(m_stencils[i].dofindices, m_stencils[i].dofindices, scale * localjacobian);
+    localJacobian(localjacobian, s, false);
+    if (s.e1flip) 
+    {
+      localjacobian.row(3) *= -1;
+      localjacobian.col(3) *= -1;
+    }
+    if (s.e2flip)
+    {
+      localjacobian.row(7) *= -1;
+      localjacobian.col(7) *= -1;
+    }
+    Jacobian.add(s.dofindices, s.dofindices, scale * localjacobian);
     
     // viscous force
-    localJacobian(localjacobian, m_stencils[i], true);
-    Jacobian.add(m_stencils[i].dofindices, m_stencils[i].dofindices, scale / timeStep() * localjacobian);
+    localJacobian(localjacobian, s, true);
+    if (s.e1flip) 
+    {
+      localjacobian.row(3) *= -1;
+      localjacobian.col(3) *= -1;
+    }
+    if (s.e2flip)
+    {
+      localjacobian.row(7) *= -1;
+      localjacobian.col(7) *= -1;
+    }
+    Jacobian.add(s.dofindices, s.dofindices, scale / timeStep() * localjacobian);
   }
 }
 
@@ -159,11 +187,11 @@ void RodModelBendingForce::updateProperties()
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
-    const Vec3d & kb = rod().getCurvatureBinormal(s.v2);
+    const Vec3d kb = rod().getCurvatureBinormal(s.v2) * (s.e1flip ? -1 : 1) * (s.e2flip ? -1 : 1);
     const Vec3d & m1e = rod().getMaterialDirector1(s.e1);
-    const Vec3d & m2e = rod().getMaterialDirector2(s.e1);
+    const Vec3d   m2e = rod().getMaterialDirector2(s.e1) * (s.e1flip ? -1 : 1);
     const Vec3d & m1f = rod().getMaterialDirector1(s.e2);
-    const Vec3d & m2f = rod().getMaterialDirector2(s.e2);
+    const Vec3d   m2f = rod().getMaterialDirector2(s.e2) * (s.e2flip ? -1 : 1);
     m_kappa[s.v2] = Vec2d(0.5 * kb.dot(m2e + m2f), -0.5 * kb.dot(m1e + m1f));
   }
 }
@@ -186,13 +214,13 @@ RodModelBendingForce::ElementBiForce RodModelBendingForce::computeGradKappa(Sten
   Scalar norm_e = rod().getEdgeLength(s.e1);
   Scalar norm_f = rod().getEdgeLength(s.e2);
   
-  const Vec3d& te = rod().getEdgeTangent(s.e1);
-  const Vec3d& tf = rod().getEdgeTangent(s.e2);
+  const Vec3d  te = rod().getEdgeTangent(s.e1) * (s.e1flip ? -1 : 1);
+  const Vec3d  tf = rod().getEdgeTangent(s.e2) * (s.e2flip ? -1 : 1);
   
   const Vec3d& d1e = rod().getMaterialDirector1(s.e1);
-  const Vec3d& d2e = rod().getMaterialDirector2(s.e1);
+  const Vec3d  d2e = rod().getMaterialDirector2(s.e1) * (s.e1flip ? -1 : 1);
   const Vec3d& d1f = rod().getMaterialDirector1(s.e2);
-  const Vec3d& d2f = rod().getMaterialDirector2(s.e2);
+  const Vec3d  d2f = rod().getMaterialDirector2(s.e2) * (s.e2flip ? -1 : 1);
   
   Scalar chi = 1.0 + te.dot(tf);
   Vec3d tilde_t = (te + tf) / chi;
@@ -215,7 +243,7 @@ RodModelBendingForce::ElementBiForce RodModelBendingForce::computeGradKappa(Sten
   gradKappa.block<3, 1> (4, 1) = Dkappa2De - Dkappa2Df;
   gradKappa.block<3, 1> (8, 1) = Dkappa2Df;
   
-  const Vec3d& kb = rod().getCurvatureBinormal(s.v2);
+  const Vec3d kb = rod().getCurvatureBinormal(s.v2) * (s.e1flip ? -1 : 1) * (s.e2flip ? -1 : 1);
   
   gradKappa(3, 0) = -0.5 * kb.dot(d1e);
   gradKappa(7, 0) = -0.5 * kb.dot(d1f);
@@ -240,13 +268,13 @@ RodModelBendingForce::ElementBiJacobian RodModelBendingForce::computeHessKappa(S
   const Scalar norm2_e = square(norm_e);
   const Scalar norm2_f = square(norm_f);
   
-  const Vec3d& te = rod().getEdgeTangent(s.e1);
-  const Vec3d& tf = rod().getEdgeTangent(s.e2);
+  const Vec3d  te = rod().getEdgeTangent(s.e1) * (s.e1flip ? -1 : 1);
+  const Vec3d  tf = rod().getEdgeTangent(s.e2) * (s.e2flip ? -1 : 1);
   
   const Vec3d& d1e = rod().getMaterialDirector1(s.e1);
-  const Vec3d& d2e = rod().getMaterialDirector2(s.e1);
+  const Vec3d  d2e = rod().getMaterialDirector2(s.e1) * (s.e1flip ? -1 : 1);
   const Vec3d& d1f = rod().getMaterialDirector1(s.e2);
-  const Vec3d& d2f = rod().getMaterialDirector2(s.e2);
+  const Vec3d  d2f = rod().getMaterialDirector2(s.e2) * (s.e2flip ? -1 : 1);
   
   const Scalar chi = 1.0 + te.dot(tf);
   const Vec3d tilde_t = (te + tf) / chi;
@@ -257,7 +285,7 @@ RodModelBendingForce::ElementBiJacobian RodModelBendingForce::computeHessKappa(S
   const Scalar kappa1 = kappa(0);
   const Scalar kappa2 = kappa(1);
   
-  const Vec3d& kb = rod().getCurvatureBinormal(s.v2);
+  const Vec3d  kb = rod().getCurvatureBinormal(s.v2) * (s.e1flip ? -1 : 1) * (s.e2flip ? -1 : 1);
   
   const Mat3d tt_o_tt = outerProd(tilde_t, tilde_t);
   const Mat3d tf_c_d2t_o_tt = outerProd(tf.cross(tilde_d2), tilde_t);
