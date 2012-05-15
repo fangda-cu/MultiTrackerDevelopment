@@ -99,7 +99,6 @@ private:
 
   mutable FaceProperty<MNPrecomputed> m_precomputed;
   mutable bool m_initialized;
-  mutable bool m_done_first_update;
 };
 
 

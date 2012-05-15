@@ -12,7 +12,7 @@ MNBendingForce::MNBendingForce(ElasticShell& shell, const std::string& name, Sca
 ElasticShellForce(shell, name), m_Youngs(Youngs), m_Poisson(Poisson), 
                                 m_Youngs_damp(Youngs_damping), m_Poisson_damp(Poisson_damping), 
                                 m_timestep(timestep), m_precomputed(&(shell.getDefoObj())), 
-                                m_initialized(false), m_done_first_update(false)
+                                m_initialized(false)
 {
   
 }
@@ -151,8 +151,6 @@ void MNBendingForce::update() {
     updateReferenceCoordinates(fh, deformed, &m_precomputed[fh]);
   }
   
-  m_done_first_update = true;
-
 }
 
 
@@ -481,37 +479,10 @@ void MNBendingForce::updateReferenceCoordinates(const FaceHandle& face, const st
   Real   A0;  
   Vector3d   nopp0[NumTriPoints]; 
 
-  if(!m_done_first_update) {
-    //assume zero xi values on the first pass, and just use the actual average normals
-    ComputeTriangleAttrib(p0,v0,t0,n0,A0);
-    ComputeFlapNormals(p0,q0,v0,nopp0);
-    ComputeEdgeFrameParams(v0,t0,nopp0,tau0,c0); 
+  ComputeTriangleAttrib(p0,v0,t0,n0,A0);
+  ComputeFlapNormals(p0,q0,v0,nopp0);
+  ComputeEdgeFrameParams(v0,t0,nopp0,tau0,c0); 
 
-    /*std::cout << "Taus: " << tau0[0] << "\n" << tau0[1] << "\n" << tau0[2] << std::endl;
-    std::cout << "Nbr normal: " << nopp0[0] << "\n" << nopp0[1] << "\n" << nopp0[2] << std::endl;*/
-  }
-  else { //TODO: Delete this. It is apparently unnecessary.
-    ComputeTriangleAttrib(p0,v0,t0,n0,A0);
-
-    //reconstruct the mid-edge normals from stored tau0 and current xi's. 
-    //Are we just to use the *current* edge vector v for this? Think so...
-    Vector3d avgNormal[NumTriPoints], actualNormal[NumTriPoints];
-    for(int i = 0; i < 3; ++i) {
-      //Use proper equations to recover the normal.
-      Vector3d unitT0 = dir(t0[i]);
-      Scalar psi = (pc->s[i]*s_deformed.xi[i] - dot(n0,tau0[i])) / dot(unitT0,tau0[i]);
-      actualNormal[i] = n0 + psi*t0[i];
-    }
-
-    //compute new tau's and c0's
-    ComputeFlapNormals(p0,q0,v0,nopp0);
-    ComputeEdgeFrameParams(v0,t0,nopp0,tau0,c0); 
-
-    //compute new xi's.
-    for(int i = 0; i < 3; ++i) {
-      s_deformed.xi[i] = pc->s[i] * dot(actualNormal[i], tau0[i]);
-    }
-  }
 
 
 }
