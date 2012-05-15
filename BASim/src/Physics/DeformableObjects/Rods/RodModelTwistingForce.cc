@@ -166,7 +166,7 @@ void RodModelTwistingForce::updateProperties()
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
-    m_twist[s.v2] = rod().getReferenceTwist(s.v2) + rod().getEdgeTheta(s.e2) * (s.e2flip ? -1 : 1) - rod().getEdgeTheta(s.e1) * (s.e1flip ? -1 : 1);
+    m_twist[s.v2] = s.referenceTwist + rod().getEdgeTheta(s.e2) * (s.e2flip ? -1 : 1) - rod().getEdgeTheta(s.e1) * (s.e1flip ? -1 : 1);
   }
 }
 
@@ -176,14 +176,14 @@ void RodModelTwistingForce::computeReferenceStrain()
   {
     Stencil & s = m_stencils[i];
     m_undeformed_twist[s.v2] = m_twist[s.v2];
-    m_reference_voronoi_length[s.v2] = rod().getVoronoiLength(s.v2);
+    m_reference_voronoi_length[s.v2] = s.voronoiLength;
   }
 }
 
 RodModelTwistingForce::ElementForce RodModelTwistingForce::computeGradTwist(Stencil & s)
 {
   ElementForce Dtwist = ElementForce::Zero();
-  const Vec3d kb = rod().getCurvatureBinormal(s.v2) * (s.e1flip ? -1 : 1) * (s.e2flip ? -1 : 1);
+  const Vec3d& kb = s.curvatureBinormal;
   Dtwist.segment<3> ( 0 ) = -0.5 / ( rod().getEdgeLength(s.e1) ) * kb;
   Dtwist.segment<3> ( 8 ) = 0.5 / ( rod().getEdgeLength(s.e2) ) * kb;
   Dtwist.segment<3> ( 4 ) = -( Dtwist.segment<3> ( 0 ) + Dtwist.segment<3> ( 8 ) );
@@ -201,7 +201,7 @@ RodModelTwistingForce::ElementJacobian RodModelTwistingForce::computeHessTwist(S
   const Vec3d  tf = rod().getEdgeTangent(s.e2) * (s.e2flip ? -1 : 1);
   const Scalar norm_e = rod().getEdgeLength(s.e1);
   const Scalar norm_f = rod().getEdgeLength(s.e2);
-  const Vec3d  kb = m_rod.getCurvatureBinormal(s.v2) * (s.e1flip ? -1 : 1) * (s.e2flip ? -1 : 1);
+  const Vec3d& kb = s.curvatureBinormal;
   
   const Scalar chi = 1 + te.dot( tf );
   const Vec3d tilde_t = 1.0 / chi * ( te + tf );

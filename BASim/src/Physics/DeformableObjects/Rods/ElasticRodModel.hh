@@ -39,6 +39,7 @@ namespace BASim
     
     struct JointStencil : Stencil // a pair of incident rod edges
     {
+      // stencil coverage
       EdgeHandle e1;
       EdgeHandle e2;
       VertexHandle v1;
@@ -46,6 +47,11 @@ namespace BASim
       VertexHandle v3;
       bool e1flip;
       bool e2flip;
+      
+      // per-stencil data (cached properties, updated by updateProperties() automatically)
+      Vec3d curvatureBinormal;
+      Scalar referenceTwist;
+      Scalar voronoiLength;
     };
     
   public:
@@ -129,12 +135,7 @@ namespace BASim
     Vec3d & getReferenceDirector2(const EdgeHandle & e) { return m_properties_reference_director2[e]; }
     Vec3d & getMaterialDirector1(const EdgeHandle & e) { return m_properties_material_director1[e]; }
     Vec3d & getMaterialDirector2(const EdgeHandle & e) { return m_properties_material_director2[e]; }
-    
-    // vertex properties
-    Scalar & getVoronoiLength(const VertexHandle & v) { return m_properties_voronoi_length[v]; }
-    Scalar & getReferenceTwist(const VertexHandle & v) { return m_properties_reference_twist[v]; }
-    Vec3d & getCurvatureBinormal(const VertexHandle & v) { return m_properties_curvature_binormal[v]; }
-    
+        
     // reference director 1 is the only derived property that needs initialization. this will only be used in setup().
     // if not specified, the reference directors will be generated randomly in setup().
     void setUndeformedReferenceDirector1(const EdgeProperty<Vec3d> & undeformed_reference_director1);
@@ -193,10 +194,6 @@ namespace BASim
     EdgeProperty<Vec3d>   m_properties_material_director1;
     EdgeProperty<Vec3d>   m_properties_material_director2;
     
-    VertexProperty<Scalar>  m_properties_voronoi_length;
-    VertexProperty<Scalar>  m_properties_reference_twist;
-    VertexProperty<Vec3d>   m_properties_curvature_binormal;    
-
     // initialization of the cached properties
     const EdgeProperty<Vec3d> * m_undeformed_reference_director1;
     

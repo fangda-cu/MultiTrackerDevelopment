@@ -187,7 +187,7 @@ void RodModelBendingForce::updateProperties()
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
-    const Vec3d kb = rod().getCurvatureBinormal(s.v2) * (s.e1flip ? -1 : 1) * (s.e2flip ? -1 : 1);
+    const Vec3d & kb = s.curvatureBinormal;
     const Vec3d & m1e = rod().getMaterialDirector1(s.e1);
     const Vec3d   m2e = rod().getMaterialDirector2(s.e1) * (s.e1flip ? -1 : 1);
     const Vec3d & m1f = rod().getMaterialDirector1(s.e2);
@@ -202,7 +202,7 @@ void RodModelBendingForce::computeReferenceStrain()
   {
     Stencil & s = m_stencils[i];
     m_undeformed_kappa[s.v2] = m_kappa[s.v2];
-    m_reference_voronoi_length[s.v2] = rod().getVoronoiLength(s.v2);
+    m_reference_voronoi_length[s.v2] = s.voronoiLength;
   }
 }
 
@@ -243,7 +243,7 @@ RodModelBendingForce::ElementBiForce RodModelBendingForce::computeGradKappa(Sten
   gradKappa.block<3, 1> (4, 1) = Dkappa2De - Dkappa2Df;
   gradKappa.block<3, 1> (8, 1) = Dkappa2Df;
   
-  const Vec3d kb = rod().getCurvatureBinormal(s.v2) * (s.e1flip ? -1 : 1) * (s.e2flip ? -1 : 1);
+  const Vec3d& kb = s.curvatureBinormal;
   
   gradKappa(3, 0) = -0.5 * kb.dot(d1e);
   gradKappa(7, 0) = -0.5 * kb.dot(d1f);
@@ -285,7 +285,7 @@ RodModelBendingForce::ElementBiJacobian RodModelBendingForce::computeHessKappa(S
   const Scalar kappa1 = kappa(0);
   const Scalar kappa2 = kappa(1);
   
-  const Vec3d  kb = rod().getCurvatureBinormal(s.v2) * (s.e1flip ? -1 : 1) * (s.e2flip ? -1 : 1);
+  const Vec3d& kb = s.curvatureBinormal;
   
   const Mat3d tt_o_tt = outerProd(tilde_t, tilde_t);
   const Mat3d tf_c_d2t_o_tt = outerProd(tf.cross(tilde_d2), tilde_t);
