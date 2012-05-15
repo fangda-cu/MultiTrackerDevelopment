@@ -4,7 +4,7 @@
 
 using namespace BASim;
 
-RodModelTwistingForce::RodModelTwistingForce(ElasticRodModel & rod, const std::vector<Stencil> & stencils, Scalar shear_modulus, Scalar shear_modulus_damping, Scalar timestep) :
+RodModelTwistingForce::RodModelTwistingForce(ElasticRodModel & rod, std::vector<Stencil> & stencils, Scalar shear_modulus, Scalar shear_modulus_damping, Scalar timestep) :
   RodModelForce(rod, timestep, "RodModelStretchingForce"),
   m_stencils(stencils),
   m_shear_modulus(shear_modulus),

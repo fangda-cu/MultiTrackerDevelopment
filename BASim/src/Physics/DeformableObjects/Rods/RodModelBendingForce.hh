@@ -23,7 +23,7 @@ namespace BASim
     typedef ElasticRodModel::JointStencil Stencil;
     
   public:
-    RodModelBendingForce(ElasticRodModel & rod, const std::vector<Stencil> & stencils, Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar timestep);
+    RodModelBendingForce(ElasticRodModel & rod, std::vector<Stencil> & stencils, Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar timestep);
     virtual ~RodModelBendingForce();
     
   public:
@@ -52,7 +52,7 @@ namespace BASim
     ElementBiJacobian computeHessKappa(Stencil & s);
     
   protected:
-    std::vector<Stencil> m_stencils;
+    std::vector<Stencil> & m_stencils;
     
     Scalar m_youngs_modulus;
     Scalar m_youngs_modulus_damping;
