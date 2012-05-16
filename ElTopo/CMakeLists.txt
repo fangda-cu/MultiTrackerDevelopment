@@ -14,5 +14,5 @@ append_files (Headers "h" ${Directories})
 append_files (Sources "cpp" ${Directories})
 
 add_library(ElTopo SHARED ${Headers} ${Sources})
-target_link_libraries (ElTopo ${DEFAULT_LIBRARIES})
+target_link_libraries (ElTopo ${DEFAULT_LIBRARIES} "-framework vecLib")
 

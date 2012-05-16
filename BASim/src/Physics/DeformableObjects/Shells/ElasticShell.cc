@@ -24,17 +24,13 @@ namespace BASim {
 ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep) : 
   PhysicalModel(*object), m_obj(object), 
     m_active_faces(shellFaces), 
-    m_undeformed_positions(object), 
     m_undef_xi(object),
-    m_damping_undeformed_positions(object), 
     m_damping_undef_xi(object),
     m_vertex_masses(object),
     m_edge_masses(object),
     m_thicknesses(object),
     m_volumes(object),
-    m_positions(object), 
     m_xi(object), 
-    m_velocities(object),
     m_xi_vel(object),
     m_density(1),
     m_collision_epsilon(1e-5),
@@ -106,30 +102,30 @@ void ElasticShell::setDensity(Scalar density) {
   m_density = density;
 }
 
-void ElasticShell::setVertexUndeformed( const VertexProperty<Vec3d>& undef )
-{
-  m_undeformed_positions = undef;
-}
+//void ElasticShell::setVertexUndeformed( const VertexProperty<Vec3d>& undef )
+//{
+//  m_undeformed_positions = undef;
+//}
 
 void ElasticShell::setEdgeUndeformed( const EdgeProperty<Scalar>& undef )
 {
   m_undef_xi = undef;
 }
 
-void ElasticShell::setVertexPositions( const VertexProperty<Vec3d>& positions )
-{
-  m_positions = positions;
-}
+//void ElasticShell::setVertexPositions( const VertexProperty<Vec3d>& positions )
+//{
+//  m_positions = positions;
+//}
 
 void ElasticShell::setEdgeXis( const EdgeProperty<Scalar>& positions )
 {
   m_xi = positions;
 }
 
-void ElasticShell::setVertexVelocities( const VertexProperty<Vec3d>& velocities) 
-{
-  m_velocities = velocities;
-}
+//void ElasticShell::setVertexVelocities( const VertexProperty<Vec3d>& velocities) 
+//{
+//  m_velocities = velocities;
+//}
 
 void ElasticShell::setEdgeVelocities(const EdgeProperty<Scalar>& velocities)
 {
@@ -206,15 +202,25 @@ Scalar ElasticShell::getArea(const FaceHandle& f, bool current) const  {
   VertexHandle v2_hnd = *fvit; ++fvit; assert(!fvit);
 
   //compute triangle areas
-  if(current) {
-    Vec3d v0 = m_positions[v1_hnd] - m_positions[v0_hnd];
-    Vec3d v1 = m_positions[v2_hnd] - m_positions[v0_hnd];
+  if(current) 
+  {
+    Vec3d pos0 = m_obj->getVertexPosition(v0_hnd);
+    Vec3d pos1 = m_obj->getVertexPosition(v1_hnd);
+    Vec3d pos2 = m_obj->getVertexPosition(v2_hnd);
+    
+    Vec3d v0 = pos1 - pos0;
+    Vec3d v1 = pos2 - pos0;
     Vec3d triVec = v0.cross(v1);
     return 0.5*triVec.norm();
   }
-  else {
-    Vec3d v0 = m_undeformed_positions[v1_hnd] - m_undeformed_positions[v0_hnd];
-    Vec3d v1 = m_undeformed_positions[v2_hnd] - m_undeformed_positions[v0_hnd];
+  else 
+  {
+    Vec3d pos0 = m_obj->getVertexUndeformedPosition(v0_hnd);
+    Vec3d pos1 = m_obj->getVertexUndeformedPosition(v1_hnd);
+    Vec3d pos2 = m_obj->getVertexUndeformedPosition(v2_hnd);
+    
+    Vec3d v0 = pos1 - pos0;
+    Vec3d v1 = pos2 - pos0;
     Vec3d triVec = v0.cross(v1);
     return 0.5*triVec.norm();
   }
@@ -241,8 +247,8 @@ void ElasticShell::computeMasses()
       VertexHandle v2_hnd = *fvit; ++fvit; assert(!fvit);
 
       //compute triangle areas
-      Vec3d v0 = m_positions[v1_hnd] - m_positions[v0_hnd];
-      Vec3d v1 = m_positions[v2_hnd] - m_positions[v0_hnd];
+      Vec3d v0 = getVertexPosition(v1_hnd) - getVertexPosition(v0_hnd);
+      Vec3d v1 = getVertexPosition(v2_hnd) - getVertexPosition(v0_hnd);
       Vec3d triVec = v0.cross(v1);
       Scalar area = 0.5*sqrt(triVec.dot(triVec)) / 3.0;
       Scalar contribution = m_thicknesses[f_hnd] * m_density * area;
@@ -267,6 +273,7 @@ void ElasticShell::computeMasses()
     }
   }
  
+  m_obj->updateVertexMasses();
 }
 
 bool ElasticShell::isVertexActive( const VertexHandle& v ) const
@@ -296,137 +303,58 @@ bool ElasticShell::isEdgeActive( const EdgeHandle& e) const {
 
 const Scalar& ElasticShell::getDof( const DofHandle& hnd ) const
 {
-  //they're all vertex Dofs for a shell
-  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType() == DofHandle::EDGE_DOF);
+  //they're all edge Dofs for a shell
+  assert(hnd.getType() == DofHandle::EDGE_DOF);
 
   //return reference to the appropriate position in the vector
-  if(hnd.getType() == DofHandle::VERTEX_DOF) {
-    const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
-    return const_cast<Vec3d&>(m_positions[vh])[hnd.getNum()];
-  }
-  else {
-    const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-    return const_cast<Scalar&>(m_xi[eh]);
-  }
+  const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
+  return const_cast<Scalar&>(m_xi[eh]);
 }
 
 void ElasticShell::setDof( const DofHandle& hnd, const Scalar& dof )
 {
   //they're all vertex Dofs for a shell
-  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType() == DofHandle::EDGE_DOF);
+  assert(hnd.getType() == DofHandle::EDGE_DOF);
 
-  if(hnd.getType() == DofHandle::VERTEX_DOF) {
-    const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
-    m_positions[vh][hnd.getNum()] = dof;
-  }
-  else {
-    const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-    m_xi[eh] = dof;
-  }
+  const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
+  m_xi[eh] = dof;
 }
 
 const Scalar& ElasticShell::getVel( const DofHandle& hnd ) const
 {
-  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType() == DofHandle::EDGE_DOF);
+  assert(hnd.getType() == DofHandle::EDGE_DOF);
 
   //return reference to the appropriate position in the vector
-  if(hnd.getType() == DofHandle::VERTEX_DOF) {
-    const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
-    return const_cast<Vec3d&>(m_velocities[vh])[hnd.getNum()];
-  }
-  else{
-    const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-    return const_cast<Scalar&>(m_xi_vel[eh]);
-  }
+  const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
+  return const_cast<Scalar&>(m_xi_vel[eh]);
 }
 
 void ElasticShell::setVel( const DofHandle& hnd, const Scalar& vel )
 {
-  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType() == DofHandle::EDGE_DOF);
+  assert(hnd.getType() == DofHandle::EDGE_DOF);
 
-  if(hnd.getType() == DofHandle::VERTEX_DOF) {
-    const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
-    m_velocities[vh][hnd.getNum()] = vel;
-  }
-  else{
-    const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-    m_xi_vel[eh] = vel;
-  }
+  const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
+  m_xi_vel[eh] = vel;
 }
 
 const Scalar& ElasticShell::getMass( const DofHandle& hnd ) const
 {
-  assert(hnd.getType() == DofHandle::VERTEX_DOF || hnd.getType() == DofHandle::EDGE_DOF);
+  assert(hnd.getType() == DofHandle::EDGE_DOF);
 
-  if(hnd.getType() == DofHandle::VERTEX_DOF) {
-    const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
-    return m_vertex_masses[vh];
-  }
-  else {
-    const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-    return m_edge_masses[eh];
-  }
+  const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
+  return m_edge_masses[eh];
 }
 
 void ElasticShell::getScriptedDofs( IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time ) const
 {
-  for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i) {
-    
-    int dofBase = getVertexDofBase(m_constrained_vertices[i]);
-    Vec3d pos = m_constraint_positions[i]->operator()(time);
-    dofIndices.push_back(dofBase); dofValues.push_back(pos[0]);
-    dofIndices.push_back(dofBase+1); dofValues.push_back(pos[1]);
-    dofIndices.push_back(dofBase+2); dofValues.push_back(pos[2]);
-  }
+  // position dof scripting is moved to PositionDofsModel. ElasticShell does not support edge dof scripting.
 }
-
-void ElasticShell::constrainVertex( const VertexHandle& v, const Vec3d& pos )
-{
-  m_constrained_vertices.push_back(v);
-  PositionConstraint* c = new FixedPositionConstraint(pos);
-  m_constraint_positions.push_back(c);
-}
-
-void ElasticShell::constrainVertex( const VertexHandle& v, PositionConstraint* c )
-{
-  m_constrained_vertices.push_back(v);
-  m_constraint_positions.push_back(c);
-}
-
-void ElasticShell::releaseVertex( const VertexHandle& v)
-{
- 
-  bool deletedVertex = true;
-  while(deletedVertex) {
-    deletedVertex = false;
-    //can only have one constraint or things get broken anyways(right?), so no need to search for multiple
-    int index = -1;
-    for(unsigned int i = 0; i < m_constraint_positions.size(); ++i) {
-      if(m_constrained_vertices[i] == v) {
-        index = i;
-        deletedVertex = true;
-        break;
-      }
-    }
-
-    //remove the constraint
-    if(index != -1) {
-      delete m_constraint_positions[index];
-      m_constraint_positions.erase(m_constraint_positions.begin()+index);
-      m_constrained_vertices.erase(m_constrained_vertices.begin()+index);
-    }
-  }
-  
-  
-}
-
 
 void ElasticShell::startStep(Scalar time, Scalar timestep)
 {
   std::cout << "Starting startStep\n";
 
   //update the damping "reference configuration" for computing viscous forces.
-  m_damping_undeformed_positions = m_positions;
   m_damping_undef_xi = m_xi;
 
   //tell the forces to update anything they need to update
@@ -457,12 +385,12 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
   for(VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit) {
     VertexHandle vh = *vit;
     Vec3d vert = getVertexPosition(vh);
-    Vec3d old_vert = m_damping_undeformed_positions[vh];
+    Vec3d old_vert = getVertexDampingUndeformed(vh);
     Scalar mass = getMass(vh);
 
     vert_new.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
     vert_old.push_back(ElTopo::Vec3d(old_vert[0], old_vert[1], old_vert[2]));
-    if(isConstrained(vh)) {
+    if(getDefoObj().isConstrained(vh)) {
       masses.push_back(numeric_limits<Scalar>::infinity());
     }
     else {
@@ -529,7 +457,7 @@ void ElasticShell::addSelfCollisionForces() {
   //update the broad phase structure with the current mesh data
   Scalar collision_distance = m_collision_proximity;
 
-  m_broad_phase.update_broad_phase_static(*m_obj, m_positions, collision_distance);
+  m_broad_phase.update_broad_phase_static(*m_obj, getVertexPositions(), collision_distance);
   
   //determine proximity of vertex triangle pairs and
   //add damped springs between them to handle new collisions
@@ -538,8 +466,8 @@ void ElasticShell::addSelfCollisionForces() {
   
   for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
     VertexHandle vh = *vit;
-    Vec3d vert_pos = m_positions[vh];
-    ElTopoCode::Vec3d vert_vel = ElTopoCode::toElTopo(m_velocities[vh]);
+    Vec3d vert_pos = getVertexPosition(vh);
+    ElTopoCode::Vec3d vert_vel = ElTopoCode::toElTopo(getVertexVelocity(vh));
     ElTopoCode::Vec3d vertex_position = ElTopoCode::toElTopo(vert_pos);
 
     //construct bound box for the vertex, and find all triangles near it
@@ -560,8 +488,8 @@ void ElasticShell::addSelfCollisionForces() {
       int fv = 0;
       bool goodSpring = true;
       for(FaceVertexIterator fvit = m_obj->fv_iter(f); fvit; ++fvit) {
-        face_verts[fv] = ElTopoCode::toElTopo(m_positions[*fvit]);
-        face_vels[fv] = ElTopoCode::toElTopo(m_velocities[*fvit]);
+        face_verts[fv] = ElTopoCode::toElTopo(getVertexPosition(*fvit));
+        face_vels[fv] = ElTopoCode::toElTopo(getVertexVelocity(*fvit));
         if(*fvit == vh)
           goodSpring = false;
         ++fv;
@@ -601,12 +529,12 @@ void ElasticShell::getSpringList(std::vector<Vec3d>& start, std::vector<Vec3d>& 
   
   m_repulsion_springs->getSpringLists(verts, faces, bary);
   for(unsigned int i = 0; i < verts.size(); ++i) {
-    start.push_back(m_positions[verts[i]]);
+    start.push_back(getVertexPosition(verts[i]));
     
     FaceVertexIterator fvit = m_obj->fv_iter(faces[i]);
-    Vec3d v0 = m_positions[*fvit];++fvit;
-    Vec3d v1 = m_positions[*fvit];++fvit;
-    Vec3d v2 = m_positions[*fvit];
+    Vec3d v0 = getVertexPosition(*fvit);++fvit;
+    Vec3d v1 = getVertexPosition(*fvit);++fvit;
+    Vec3d v2 = getVertexPosition(*fvit);
     Vec3d result = bary[i][0] * v0 + bary[i][1] * v1 + bary[i][2] * v2;
     end.push_back(result);
   }
@@ -656,6 +584,9 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 
   std::cout << "Vertex count: " << m_obj->nv() << std::endl;
 
+  if (m_obj->nf() == 0) // ElTopo crashes if given a mesh with zero triangles, which is possible for example when we're only testing rods.
+    return;
+  
   //El Topo collision processing.
   std::cout << "Resolving collisions\n";
   resolveCollisions(timestep);
@@ -668,14 +599,14 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     for(VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit) {
       Vec3d curPos = getVertexPosition(*(vit));
       if(curPos[1] < m_ground_height) {
-        if(!isConstrained(*vit)) {
+        if(!getDefoObj().isConstrained(*vit)) {
           //constrainVertex(*vit, curPos);
 
           //Sinking
           //constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, m_ground_velocity, 0), time));
 
           //Conveying
-          constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, 0, m_ground_velocity), time));
+          getDefoObj().constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, 0, m_ground_velocity), time));
         }
       }
     }
@@ -687,13 +618,13 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
       Vec3d curPos = getVertexPosition(*(vit));
       Vec3d offset = curPos - (m_sphere_position+m_sphere_velocity*time);
       if(offset.norm() < m_sphere_radius) {
-        if(!isConstrained(*vit)) {
+        if(!getDefoObj().isConstrained(*vit)) {
 
           //Sinking
           //constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, m_ground_velocity, 0), time));
 
           //Conveying
-          constrainVertex(*vit, new FixedVelocityConstraint(curPos, m_sphere_velocity, time));
+          getDefoObj().constrainVertex(*vit, new FixedVelocityConstraint(curPos, m_sphere_velocity, time));
         }
       }
     }
@@ -708,10 +639,10 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
       offset[2] = clamp(offset[2], 0.0, m_object_SDF.nk-1.6);
       Scalar dist_value = m_object_SDF((int)offset[0], (int)offset[1], (int)offset[2]);      
       if(dist_value < 0) {
-        if(!isConstrained(*vit)) {
+        if(!getDefoObj().isConstrained(*vit)) {
 
           //Fixed position
-          constrainVertex(*vit, curPos);
+          getDefoObj().constrainVertex(*vit, curPos);
           //constrainVertex(*vit, new FixedVelocityConstraint(curPos, m_sphere_velocity, time));
         }
       }
@@ -765,7 +696,6 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   //Update masses based on new areas/thicknesses
   computeMasses();
 
-
   std::cout << "Completed endStep\n";
 
 }
@@ -812,7 +742,7 @@ void ElasticShell::fracture() {
     Vec3d vert = getVertexPosition(vh);
     Scalar mass = getMass(vh);
     vert_data.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
-    if(isConstrained(vh))
+    if(getDefoObj().isConstrained(vh))
       masses.push_back(numeric_limits<Scalar>::infinity());
     else
       masses.push_back(mass);
@@ -976,9 +906,9 @@ bool ElasticShell::shouldFracture (const EdgeHandle & eh) const{
     
     //Ignore inflow edges
     if(isInflow(eh)) return false;
- 
-    //Ignore constrained edges
-    if ( isConstrained(m_obj->fromVertex(eh)) || isConstrained(m_obj->toVertex(eh))) return false;
+
+    //Ignore constrain edges
+    if ( getDefoObj().isConstrained(m_obj->fromVertex(eh)) || getDefoObj().isConstrained(m_obj->toVertex(eh))) return false;
 
     //Ignore boundary edges
     if ( m_obj->isBoundary(eh) ) return false;
@@ -1046,7 +976,7 @@ void ElasticShell::remesh()
     Vec3d vert = getVertexPosition(vh);
     Scalar mass = getMass(vh);
     vert_data.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
-    if(isConstrained(vh))
+    if(getDefoObj().isConstrained(vh))
       masses.push_back(numeric_limits<Scalar>::infinity());
     else
       masses.push_back(mass);
@@ -1237,85 +1167,6 @@ void ElasticShell::remesh()
 }
 
 
-
-bool ElasticShell::isConstrained(const VertexHandle& v) const {
-  for(unsigned int i = 0; i < m_constrained_vertices.size(); ++i)
-    if(m_constrained_vertices[i] == v)
-      return true;
-  return false;
-}
-
-/*
-bool ElasticShell::performSplit(const EdgeHandle& eh, VertexHandle& new_vert) {
-  
-  VertexHandle v0 = m_obj->fromVertex(eh);
-  VertexHandle v1 = m_obj->toVertex(eh);
-  assert(v0!=v1);
-  Vec3d p0 = getVertexPosition(v0);
-  Vec3d p1 = getVertexPosition(v1);
-  
-  Vec3d midpoint = 0.5f*(p0+p1);
-
-  std::vector<FaceHandle> oldFaces;
-  std::vector<Scalar> oldThicknesses;
-  for(EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit) {
-    FaceHandle f = *efit;
-    oldFaces.push_back(f);
-    oldThicknesses.push_back(getThickness(f));
-  }
-  
-  VertexHandle v2, v3;
-  getEdgeOppositeVertices(*m_obj, eh, v2, v3);
-
-  ElTopoCode::Vec3d midpoint_ET = ElTopoCode::toElTopo(midpoint);
-
-  //perform the actual split
-  std::vector<FaceHandle> newFaces;
-  VertexHandle v_new = splitEdge(*m_obj, eh, newFaces);
-
-  Vec3d velocity = 0.5f*(getVertexVelocity(v0) + getVertexVelocity(v1));
-  Vec3d undef = 0.5f*(getVertexUndeformed(v0) + getVertexUndeformed(v1));
-  setVertexVelocity(v_new, velocity);
-  setVertexPosition(v_new, midpoint);
-  setUndeformedVertexPosition(v_new, undef);
-
-  //set consistent volumes and thickness for new faces
-  assert(oldFaces.size() == newFaces.size()/2);
-  Scalar newVolume = 0;
-  for(unsigned int i = 0; i < oldFaces.size(); ++i) {
-    m_thicknesses[newFaces[i*2]] = oldThicknesses[i];
-    m_thicknesses[newFaces[i*2+1]] = oldThicknesses[i];
-    m_volumes[newFaces[i*2]] = oldThicknesses[i] * getArea(newFaces[i*2], true);
-    m_volumes[newFaces[i*2+1]] = oldThicknesses[i] * getArea(newFaces[i*2+1], true);
-  }
-
-  VertexFaceIterator vf_iter = m_obj->vf_iter(v_new);
-  for(;vf_iter; ++vf_iter)
-    setFaceActive(*vf_iter);
-
-  //add edges
-  VertexEdgeIterator ve_iter = m_obj->ve_iter(v_new);
-  for(; ve_iter; ++ve_iter) {
-    std::vector<ElTopoCode::Vec3d> edge_verts; 
-    EdgeVertexIterator ev_iter = m_obj->ev_iter(*ve_iter);
-    for(; ev_iter; ++ev_iter)
-      edge_verts.push_back(ElTopoCode::toElTopo(getVertexPosition(*ev_iter)));
-  }
-
-  //add tris
-  vf_iter = m_obj->vf_iter(v_new);
-  for(;vf_iter; ++vf_iter) {
-    std::vector<ElTopoCode::Vec3d> tri_verts; 
-    FaceVertexIterator fv_iter = m_obj->fv_iter(*vf_iter);
-    for(; fv_iter; ++fv_iter)
-      tri_verts.push_back(ElTopoCode::toElTopo(getVertexPosition(*fv_iter)));
-  }
-  
-  new_vert = v_new;
-  return true;
-}
-*/
-
 void ElasticShell::performSplitET(const EdgeHandle& eh, const Vec3d& midpoint, VertexHandle& new_vert) {
 
   VertexHandle v0 = m_obj->fromVertex(eh);
@@ -1481,7 +1332,6 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, EdgeHandle& newEdge) {
 }
 
 
-
 void ElasticShell::updateThickness() {
   FaceIterator fit = m_obj->faces_begin();
   for(;fit != m_obj->faces_end(); ++fit) {
@@ -1513,7 +1363,7 @@ void ElasticShell::deleteRegion() {
     Vec3d barycentre(0,0,0);
     for(FaceVertexIterator fvit = m_obj->fv_iter(fh); fvit; ++fvit) {
       VertexHandle vh = *fvit;
-      Vec3d pos = m_positions[vh];
+      Vec3d pos = getVertexPosition(vh);
       barycentre += pos;
 
     }
@@ -1553,7 +1403,7 @@ void ElasticShell::removeFace(FaceHandle& f) {
   //now remove the springs and constraints to any vertices deleted as a side effect
   for(int j = 0; j < 3; ++j) {
     if(!m_obj->vertexExists(faceVerts[j])) {
-      releaseVertex(faceVerts[j]);
+      getDefoObj().releaseVertex(faceVerts[j]);
       m_repulsion_springs->clearSprings(faceVerts[j]);
     }
   }
@@ -1567,8 +1417,8 @@ void ElasticShell::extendMesh(Scalar current_time) {
     VertexHandle vfrom = m_obj->fromVertex(edge0);
     VertexHandle vto = m_obj->toVertex(edge0);
     Vec3d startPos = m_inflow_positions[boundary][0];
-    Vec3d curPos = m_positions[vfrom];
-    Vec3d curPos2 = m_positions[vto];
+    Vec3d curPos = getVertexPosition(vfrom);
+    Vec3d curPos2 = getVertexPosition(vto);
     
     //look at aspect ratio of this triangle, and if it's too bad, skip it this time around
     Scalar baseLength = (curPos - curPos2).norm();
@@ -1604,7 +1454,7 @@ void ElasticShell::extendMesh(Scalar current_time) {
     std::vector<EdgeHandle> newList;
     for(unsigned int edge = 0; edge < m_inflow_boundaries[boundary].size(); ++edge) {
       
-      releaseVertex(prevLowerVert);
+      getDefoObj().releaseVertex(prevLowerVert);
 
       EdgeHandle eh1 = m_inflow_boundaries[boundary][edge];
       EdgeHandle eh2 = m_inflow_boundaries[boundary][(edge+1)%count];
@@ -1662,7 +1512,7 @@ void ElasticShell::extendMesh(Scalar current_time) {
       prevLowerVert = sharedVert;
       prevEdge = newEdge3;
     }
-    releaseVertex(prevLowerVert);
+    getDefoObj().releaseVertex(prevLowerVert);
     
 
     m_inflow_boundaries[boundary] = newList;
@@ -1672,9 +1522,9 @@ void ElasticShell::extendMesh(Scalar current_time) {
       setUndeformedVertexPosition(vertices[i], m_inflow_positions[boundary][i]);
       setVertexVelocity(vertices[i], m_inflow_velocities[boundary][i]);
       m_vertex_masses[vertices[i]] = 0;
-      m_damping_undeformed_positions[vertices[i]] = m_inflow_positions[boundary][i];
+      m_obj->setVertexDampingUndeformedPosition(vertices[i], m_inflow_positions[boundary][i]);
 
-      constrainVertex(vertices[i], new FixedVelocityConstraint(m_inflow_positions[boundary][i], m_inflow_velocities[boundary][i], current_time));
+      getDefoObj().constrainVertex(vertices[i], new FixedVelocityConstraint(m_inflow_positions[boundary][i], m_inflow_velocities[boundary][i], current_time));
     }
 
 
@@ -1690,6 +1540,8 @@ void ElasticShell::extendMesh(Scalar current_time) {
     }
 
   }
+  
+  computeMasses();
 
 }
 
@@ -1718,7 +1570,7 @@ void ElasticShell::setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3
     }
 
     Vec3d pos = getVertexPosition(otherVert);
-    constrainVertex(otherVert, new FixedVelocityConstraint(pos, vel, 0));
+    getDefoObj().constrainVertex(otherVert, new FixedVelocityConstraint(pos, vel, 0));
     posList.push_back(pos);
     velList.push_back(vel);
     
@@ -1729,7 +1581,7 @@ void ElasticShell::setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3
   VertexHandle wrapVert = getSharedVertex(*m_obj, edgeList[0], edgeList[edgeList.size()-1]);
   if(!wrapVert.isValid()) {
     Vec3d pos = getVertexPosition(prevVert);
-    constrainVertex(prevVert, new FixedVelocityConstraint(pos, vel, 0));
+    getDefoObj().constrainVertex(prevVert, new FixedVelocityConstraint(pos, vel, 0));
     posList.push_back(pos);
     velList.push_back(vel);
   } 

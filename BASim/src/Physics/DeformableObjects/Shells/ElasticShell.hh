@@ -14,7 +14,7 @@
 
 namespace BASim {
 
-const int ELASTIC_SHELL_DOFS_PER_VERTEX = 3; //nodal position vectors
+const int ELASTIC_SHELL_DOFS_PER_VERTEX = 0; //nodal position vectors
 const int ELASTIC_SHELL_DOFS_PER_EDGE = 1; //mid-edge normal bending DOFs (Grinspun et al. 2006)
 
 class DeformableObject;
@@ -66,37 +66,41 @@ public:
   }
   
   //All DOFs at once
-  void setVertexPositions(const VertexProperty<Vec3d>& positions);
-  void setVertexVelocities(const VertexProperty<Vec3d>& velocities);
-  void setVertexUndeformed(const VertexProperty<Vec3d>& undef);
+  // these methods should have be removed because position access is now provided by DeformableObject; but 
+  // too much code in other parts of the codebase need to change because they depend on this, so these
+  // methods are kept and implemented to redirect the calls
+  void setVertexPositions(const VertexProperty<Vec3d>& positions) { m_obj->setVertexPositions(positions); }
+  void setVertexVelocities(const VertexProperty<Vec3d>& velocities) { m_obj->setVertexVelocities(velocities); }
+  void setVertexUndeformed(const VertexProperty<Vec3d>& undef) { m_obj->setVertexUndeformedPositions(undef); }
   
   void setEdgeXis(const EdgeProperty<Scalar>& xi);
   void setEdgeUndeformed(const EdgeProperty<Scalar>& undef);
   void setEdgeVelocities(const EdgeProperty<Scalar>& vels);
   
   //Individual DOFs
-  Vec3d getVertexUndeformed(const VertexHandle& v) const { return m_undeformed_positions[v]; }
-  Vec3d getVertexPosition(const VertexHandle& v) const { return m_positions[v]; }
-  Vec3d getVertexVelocity(const VertexHandle& v) const { return m_velocities[v]; }
-  Vec3d getVertexDampingUndeformed(const VertexHandle& v) const { return m_damping_undeformed_positions[v]; }
+  Vec3d getVertexUndeformed(const VertexHandle& v) const { return m_obj->getVertexUndeformedPosition(v); }
+  Vec3d getVertexPosition(const VertexHandle& v) const { return m_obj->getVertexPosition(v); }
+  Vec3d getVertexVelocity(const VertexHandle& v) const { return m_obj->getVertexVelocity(v); }
+  Vec3d getVertexDampingUndeformed(const VertexHandle& v) const { return m_obj->getVertexDampingUndeformedPosition(v); }
 
-  const VertexProperty<Vec3d>& getVertexPositions() const{ return m_positions;}
+  const VertexProperty<Vec3d>& getVertexPositions() const{ return m_obj->getVertexPositions(); }
 
-  void setUndeformedVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_undeformed_positions[v] = pos; }
-  void setVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_positions[v] = pos; }
-  void setVertexVelocity(const VertexHandle& v, const Vec3d& vel) { m_velocities[v] = vel; }
+  void setUndeformedVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_obj->setVertexUndeformedPosition(v, pos); }
+  void setVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_obj->setVertexPosition(v, pos); }
+  void setVertexVelocity(const VertexHandle& v, const Vec3d& vel) { m_obj->setVertexVelocity(v, vel); }
 
   Scalar getEdgeUndeformedXi(const EdgeHandle& eh) const { return m_undef_xi[eh]; }
   Scalar getEdgeXi(const EdgeHandle& eh) const { return m_xi[eh]; }
   Scalar getEdgeVelocity(const EdgeHandle& eh) const { return m_xi_vel[eh]; }
   Scalar getDampingUndeformedXi(const EdgeHandle& eh) const { return m_damping_undef_xi[eh]; }
   
+  const VertexProperty<Scalar> & getVertexMasses() const { return m_vertex_masses; }
   void computeMasses();
 
   void setDensity(Scalar density);
   void setThickness(Scalar thickness);
 
-  Scalar getMass(const VertexHandle& v) const { return m_vertex_masses[v]; }
+  Scalar getMass(const VertexHandle& v) const { return m_obj->getVertexMass(v); }
   Scalar getMass(const EdgeHandle& e) const { return m_edge_masses[e]; }
   Scalar getThickness(const FaceHandle& f) const { return m_thicknesses[f]; }
   void setThickness(const FaceHandle& f, Scalar thick) { m_thicknesses[f] = thick; }
@@ -110,11 +114,6 @@ public:
   void getVertexNormals(VertexProperty<Vec3d> & vNormals) const;
   void getThickness(VertexProperty<Scalar> & vThickness) const;
 
-  void constrainVertex(const VertexHandle& v, const Vec3d& pos);
-  void constrainVertex(const VertexHandle& v, PositionConstraint* p); //time varying constraint
-  void releaseVertex(const VertexHandle& v);
-  bool isConstrained(const VertexHandle& v) const;
-  
   void addVertexPointSpring(const VertexHandle& v, const Vec3d& pos, Scalar stiffness, Scalar damping, Scalar length);
   void addVertexTriSpring(const FaceHandle& f, const VertexHandle& v, const Vec3d& pos, Scalar stiffness, Scalar damping, Scalar length);
 
@@ -171,13 +170,10 @@ protected:
   void addSelfCollisionForces();
 
   //Various shell data
-  VertexProperty<Vec3d> m_undeformed_positions;
   EdgeProperty<Scalar> m_undef_xi;
 
-  VertexProperty<Vec3d> m_positions;
   EdgeProperty<Scalar> m_xi;
 
-  VertexProperty<Vec3d> m_velocities;
   EdgeProperty<Scalar> m_xi_vel;
   
   VertexProperty<Scalar> m_vertex_masses;
@@ -185,7 +181,6 @@ protected:
   
   //"undeformed" configuration that is updated at each step to support Rayleigh damping/viscosity
   //This is also used as the "start of step" configuration for eltopo collision resolution
-  VertexProperty<Vec3d> m_damping_undeformed_positions; 
   EdgeProperty<Scalar> m_damping_undef_xi;
 
   FaceProperty<Scalar> m_thicknesses;
@@ -208,10 +203,6 @@ protected:
   ShellVertexPointSpringForce* m_vert_point_springs;
   ShellStickyRepulsionForce* m_repulsion_springs;
 
-  //Constraints 
-  std::vector<VertexHandle> m_constrained_vertices;
-  std::vector<PositionConstraint*> m_constraint_positions;
-  
   //To handle continually inflowing regions
   Scalar m_inflow_thickness;
   bool m_inflow;

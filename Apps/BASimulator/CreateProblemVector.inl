@@ -7,6 +7,7 @@
 //#include "Problems/PlantRootGrowth.hh"
 //#include "Problems/HandTest.hh"
 #include "Problems/ShellTest.hh"
+#include "Problems/RodShellTest.hh"
 //#include "Problems/SerializationTests.hh"
 
 #include "Problems/CollisionTestTwo.hh"
@@ -37,6 +38,7 @@ void CreateProblemVector()
   problems.push_back(new CollisionTestWeta());
   problems.push_back(new HairyBallWeta());
   problems.push_back(new ShellTest());
+  problems.push_back(new RodShellTest());
   #ifdef HAVE_PARDISO
   //problems.push_back(new MicrotuboliDNA());
   #endif

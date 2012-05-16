@@ -36,7 +36,8 @@ bool ShellStickyRepulsionForce::gatherDOFs(const FaceHandle& fh, const VertexHan
     const VertexHandle& facevert = *fv_it;
     deformed[i] = m_shell.getVertexPosition(facevert);
     undef_damp[i] = m_shell.getVertexDampingUndeformed(facevert);
-    int dofBase = m_shell.getVertexDofBase(facevert);
+////////////////////    int dofBase = m_shell.getVertexDofBase(facevert);
+    int dofBase = m_shell.getDefoObj().getPositionDofBase(facevert);
     indices[i*3] = dofBase;
     indices[i*3+1] = dofBase+1;
     indices[i*3+2] = dofBase+2;

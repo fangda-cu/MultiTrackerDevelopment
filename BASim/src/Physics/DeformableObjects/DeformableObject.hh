@@ -15,7 +15,7 @@
 namespace BASim {
 
 class MatrixBase;
-
+class PositionDofsModel;
 
 //A class to manage position constraints.
 class PositionConstraint {
@@ -69,15 +69,58 @@ public:
   virtual const Scalar& getMass(int i) const;
   //@}
 
+  // position dofs access (accessible by all models because position dofs are shared)
+  //All DOFS at once
+  const VertexProperty<Vec3d>& getVertexPositions() const;
+  const VertexProperty<Vec3d>& getVertexVelocities() const;
+  const VertexProperty<Vec3d>& getVertexUndeformedPositions() const;
+  const VertexProperty<Vec3d>& getVertexDampingUndeformedPositions() const;
+  
+  void setVertexPositions                 (const VertexProperty<Vec3d>& pos);
+  void setVertexVelocities                (const VertexProperty<Vec3d>& vel);
+  void setVertexUndeformedPositions       (const VertexProperty<Vec3d>& pos);
+  void setVertexDampingUndeformedPositions(const VertexProperty<Vec3d>& pos);
+  
+  //Individual DOFs
+  Vec3d getVertexPosition                 (const VertexHandle& v) const;
+  Vec3d getVertexVelocity                 (const VertexHandle& v) const;
+  Scalar getVertexMass                    (const VertexHandle& v) const;
+  Vec3d getVertexUndeformedPosition       (const VertexHandle& v) const;
+  Vec3d getVertexDampingUndeformedPosition(const VertexHandle& v) const;
+  
+  void setVertexPosition                  (const VertexHandle& v, const Vec3d& pos);
+  void setVertexVelocity                  (const VertexHandle& v, const Vec3d& vel);
+  void setVertexMass                      (const VertexHandle& v, Scalar m);
+  void setVertexUndeformedPosition        (const VertexHandle& v, const Vec3d& pos);
+  void setVertexDampingUndeformedPosition (const VertexHandle& v, const Vec3d& pos);
+  
+  void clearVertexMasses();
+  void accumulateVertexMasses(const VertexProperty<Scalar>& masses);  
+  void accumulateVertexMass(const VertexHandle&v, Scalar mass);
+  
+  void updateVertexMasses();  // call this whenever a model has recomputed its own mass and needs the total mass of the obj updated
+  
+  // Dof base indices for the position dofs
+  int getPositionDofBase(const VertexHandle& vh) const;
+  
   void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time) const;
+
+  // scripting on position dofs
+  void constrainVertex(const VertexHandle & v, const Vec3d & pos);
+  void constrainVertex(const VertexHandle & v, PositionConstraint * p); //time varying constraint
+  void releaseVertex(const VertexHandle & v);
+  bool isConstrained(const VertexHandle & v) const;
 
   void setTimeStep(Scalar dt);
   Scalar getTimeStep();
   void setTime(Scalar time);
   Scalar getTime();
 
-  void startStep() { for(unsigned int i = 0; i < m_models.size(); ++i) m_models[i]->startStep(m_time, m_dt); }
-  void endStep() { for(unsigned int i = 0; i < m_models.size(); ++i) m_models[i]->endStep(m_time, m_dt); }
+  void startStep();
+  void endStep();
+  
+  void startIteration();
+  void endIteration();
 
   void addModel(PhysicalModel* model);
   PhysicalModel* getModel(int i) const { assert(i < (int)m_models.size()); return m_models[i]; }
@@ -89,6 +132,7 @@ public:
 protected:
 
   std::vector<PhysicalModel*> m_models; ///< physical models layered on this object (each with its own forces)
+  PositionDofsModel * m_posdofsmodel; // note that this model is also in the m_models list
   Scalar m_dt;  ///< size of time step
   Scalar m_time; //current time 
 

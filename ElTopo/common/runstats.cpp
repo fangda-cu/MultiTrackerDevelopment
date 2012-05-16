@@ -13,6 +13,8 @@
 
 namespace ElTopo {
 
+ElTopo::RunStats g_stats;
+    
 // ------------------------------------------------------------------
 
 void RunStats::set_int( std::string name, int64_t value )

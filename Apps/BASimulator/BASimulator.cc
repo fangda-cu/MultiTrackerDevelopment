@@ -372,6 +372,8 @@ void display()
     if (g_dsp_sim_tm)
         renderBitmapString(5, (float)window_height - 40, 0.0, GLUT_BITMAP_HELVETICA_18, toString(current_problem->getTime()));
 
+    glPopMatrix();
+    glPopMatrix();
     glutSwapBuffers();
     glPopMatrix();
 }
@@ -937,7 +939,7 @@ void initializeOpenGL(int argc, char** argv)
 {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA);
-    glutInitWindowPosition(500, 500);
+    glutInitWindowPosition(100, 100);
     glutInitWindowSize(window_width, window_height);
     glutCreateWindow(argv[0]);
     glEnable( GL_DEPTH_TEST);
