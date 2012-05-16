@@ -130,7 +130,9 @@ sceneFunc rodshell_scenes[] =
   &RodShellTest::setupScene2,  // rod test: bent twisting
   &RodShellTest::setupScene3,  // simple rod shell test: scene 1 with a rod rib
   &RodShellTest::setupScene4,  // umbrella opening
-  &RodShellTest::setupScene5   // car sunshade folding
+  &RodShellTest::setupScene5,  // car sunshade folding
+  &RodShellTest::setupScene6   // shell compressed by rod
+
 };
 
 void RodShellTest::Setup()
@@ -855,6 +857,7 @@ void RodShellTest::setupScene4()
 
 void RodShellTest::setupScene5()
 {
+  // load an obj, hard coded path for now
 	std::vector<Vec3d> vertices;
 	std::vector<Vec3i> faces;
   std::ifstream objfile("assets/rodshelltest/tescircle400.obj");
@@ -902,7 +905,7 @@ void RodShellTest::setupScene5()
   EdgeProperty<Scalar> edgeAngle(obj);
   EdgeProperty<Scalar> edgeVel(obj);
   
-  // hexagonal pyramid umbrella, hard-coded for now
+  // vertex positions from obj file
   for (size_t i = 0; i < vertices.size(); i++)
   {
     VertexHandle h = obj->addVertex();
@@ -1001,3 +1004,139 @@ void RodShellTest::setupScene5()
   
 }
 
+void RodShellTest::setupScene6()
+{
+  //get params
+  Scalar width = GetScalarOpt("shell-width");
+  Scalar height = GetScalarOpt("shell-height");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
+
+  //build a hexagonal grid of vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> positions(obj);
+  VertexProperty<Vec3d> velocities(obj);
+  VertexProperty<Vec3d> undeformed(obj);
+  VertexProperty<Vec3d> rodundeformed(obj);
+  
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(obj);
+  EdgeProperty<Scalar> edgeAngle(obj);
+  EdgeProperty<Scalar> edgeVel(obj);
+  
+  for (int j = 0; j <= yresolution; j++)
+  {
+    for (int i = 0; i <= xresolution; i++)
+    {
+      VertexHandle h = obj->addVertex();
+      
+      Vec3d vert(width * (i - xresolution / 2) / xresolution, -height * j / yresolution, 0.000001 * rand() / RAND_MAX);
+      Vec3d rodundef = vert;
+      rodundef.x() *= 0.25;
+      
+      positions[h] = vert;
+      velocities[h] = Vec3d(0, 0, 0);
+      undeformed[h] = vert;
+      rodundeformed[h] = rodundef;
+      vertHandles.push_back(h);
+    }
+  }
+  
+  //build the faces in a 4-8 pattern
+  for(int i = 0; i < xresolution; ++i) 
+  {
+    for(int j = 0; j < yresolution; ++j) 
+    {
+      int tl = i + (xresolution+1)*j;
+      int tr = i+1 + (xresolution+1)*j;
+      int bl = i + (xresolution+1)*(j+1);
+      int br = i+1 + (xresolution+1)*(j+1);
+      
+      if((i+j)%2 == 0) 
+      {
+        obj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
+        obj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
+      } else 
+      {
+        obj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[bl]);
+        obj->addFace(vertHandles[bl], vertHandles[tr], vertHandles[br]);
+      }
+    }
+  }
+  
+  std::cout << "mesh nv = " << obj->nv() << " ne = " << obj->ne() << " nf = " << obj->nf() << std::endl;
+  
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(obj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = obj->faces_begin(); fIt != obj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+  
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(obj, shellFaces, m_timestep);
+  obj->addModel(shell);
+  
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+  
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+  
+  //Find highest vertex
+  VertexIterator vit = obj->vertices_begin();
+  Scalar highest = -10000;
+  for(;vit!= obj->vertices_end(); ++vit) {
+    Vec3d pos = shell->getVertexPosition(*vit);
+    if(pos[1] >= highest) {
+      highest = pos[1];
+    }
+  }
+  
+  //pin the left and right vertices
+  VertexHandle left = *(obj->vertices_begin());
+  VertexHandle right = left;
+  for (vit = obj->vertices_begin();vit!= obj->vertices_end(); ++vit) 
+  {
+    Vec3d pos = shell->getVertexPosition(*vit);
+    if(pos[1] >= highest - 1e-4)
+    {
+      static int a = 0;
+      
+      if (obj->getVertexPosition(*vit).x() < obj->getVertexPosition(left).x())
+        left = *vit;
+      if (obj->getVertexPosition(*vit).x() > obj->getVertexPosition(right).x())
+        right = *vit;
+      
+      if (a % 5 == 0)
+        obj->constrainVertex(*vit, new FixedVelocityConstraint(obj->getVertexPosition(*vit), -obj->getVertexPosition(*vit) * 0.05, 0));
+      a++;
+    }
+  }
+//  obj->constrainVertex(left, new FixedVelocityConstraint(obj->getVertexPosition(left), Vec3d(width * 0.02, 0, 0), 0));
+//  obj->constrainVertex(right, new FixedVelocityConstraint(obj->getVertexPosition(right), Vec3d(-width * 0.02, 0, 0), 0));
+  
+  // collect rod edges
+  std::vector<EdgeHandle> rodEdges;  
+  for (EdgeIterator i = obj->edges_begin(); i != obj->edges_end(); ++i)
+    if (obj->isBoundary(*i))
+      rodEdges.push_back(*i);
+  rodEdges.clear();
+  
+  // create a rod model
+  rod = new ElasticRodModel(obj, rodEdges, m_timestep);
+  obj->addModel(rod);
+  
+  // set init dofs for edges
+  EdgeProperty<Scalar> zeros(obj);
+  zeros.assign(0);
+  rod->setEdgeThetas(zeros);
+  rod->setEdgeThetaVelocities(zeros);
+  rod->setEdgeUndeformedThetas(zeros);
+  
+  rod->setUndeformedPositions(rodundeformed);
+  
+}
