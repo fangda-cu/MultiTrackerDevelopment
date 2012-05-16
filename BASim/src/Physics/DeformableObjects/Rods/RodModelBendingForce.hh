@@ -20,7 +20,6 @@ namespace BASim
     typedef Eigen::Matrix<Scalar, 11, 11> ElementJacobian;
     typedef std::pair<ElementJacobian, ElementJacobian> ElementBiJacobian;
 
-//    typedef ElasticRodModel::JointStencil Stencil;
     struct Stencil : public ElasticRodModel::JointStencil
     {
       Stencil(const ElasticRodModel::JointStencil & s) : ElasticRodModel::JointStencil(s) { }
@@ -72,18 +71,6 @@ namespace BASim
     
     Scalar m_youngs_modulus;
     Scalar m_youngs_modulus_damping;
-    
-//    // cached stiffnesses
-//    VertexProperty<Mat2d> m_stiffness;
-//    VertexProperty<Mat2d> m_viscous_stiffness;
-//    
-//    // reference strains
-//    VertexProperty<Vec2d> m_undeformed_kappa;
-//    VertexProperty<Vec2d> m_damping_undeformed_kappa;
-//    VertexProperty<Scalar> m_reference_voronoi_length;
-//    
-//    // cached properties
-//    VertexProperty<Vec2d> m_kappa;
     
   };
   

@@ -9,7 +9,6 @@
 
 #include "BASim/src/Physics/DeformableObjects/PhysicalModel.hh"
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
-//#include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
 
 namespace BASim 
 {
@@ -111,43 +110,32 @@ namespace BASim
     void startIteration(Scalar time, Scalar timestep);
     void endIteration(Scalar time, Scalar timestep);
     
-//    void setEdgeActive(const EdgeHandle & e)/////////////////////
+    const std::vector<RodModelForce *> & getForces() const { return m_forces; }
+    void addForce(RodModelForce * force) { assert(force); m_forces.push_back(force); }
     
-    const std::vector<RodModelForce *> & getForces() const { return m_forces; } /////////////////////
-    void addForce(RodModelForce * force) { assert(force); m_forces.push_back(force); }  /////////////////////
-    
-    /////////////////////
     void setEdgeThetas(const EdgeProperty<Scalar>& theta);
     void setEdgeThetaVelocities(const EdgeProperty<Scalar>& vels);
     void setEdgeUndeformedThetas(const EdgeProperty<Scalar>& undef);
 
-    /////////////////////
     Scalar getEdgeTheta(const EdgeHandle& eh) const { return m_theta[eh]; }
     Scalar getEdgeThetaVelocity(const EdgeHandle& eh) const { return m_theta_vel[eh]; }
     Scalar getEdgeUndeformedTheta(const EdgeHandle& eh) const { return m_undef_theta[eh]; }
     Scalar getEdgeDampingUndeformedTheta(const EdgeHandle& eh) const { return m_damping_undef_theta[eh]; }
     
     const VertexProperty<Scalar> & getVertexMasses() const { return m_vertex_masses; }  // inherited from PhysicalModel
-    void computeMasses();/////////////////////
+    void computeMasses();
     
     void setDensity(Scalar density);
-    void setRadii(Scalar ra, Scalar rb);/////////////////////
+    void setRadii(Scalar ra, Scalar rb);
     
     Scalar getMass(const VertexHandle& v) const { return getDefoObj().getVertexMass(v); }
     Scalar getMass(const EdgeHandle& e) const { return m_edge_masses[e]; }
     
-    Vec2d getRadii(const EdgeHandle& e) const { return m_radii[e]; } /////////////////////
-    void setRadii(const EdgeHandle& e, const Vec2d & r) { m_radii[e] = r; } /////////////////////
-    
-//    Scalar getThickness(const VertexHandle& vh) const;/////////////////////
-//    Scalar getMaxThickness () const;/////////////////////
-//    Scalar getMinThickness () const;/////////////////////
+    Vec2d getRadii(const EdgeHandle& e) const { return m_radii[e]; }
+    void setRadii(const EdgeHandle& e, const Vec2d & r) { m_radii[e] = r; }
 
-    Scalar getVolume(const EdgeHandle& e) const { return m_volumes[e]; }/////////////////////
-//    Scalar getArea(const FaceHandle& f, bool current = true) const;/////////////////////
+    Scalar getVolume(const EdgeHandle& e) const { return m_volumes[e]; }
     
-//    void getThickness(VertexProperty<Scalar> & vThickness) const;/////////////////////
-          
     // Cached properties, in support for the forces (similar to BASim)
     void updateProperties();
     
@@ -180,7 +168,7 @@ namespace BASim
     bool isConstrained(const EdgeHandle & e) const;
     
   protected:
-    void updateRadii();/////////////////////
+    void updateRadii();
             
     // list of stencils in the mesh that are part of the rod
     std::vector<EdgeStencil> m_edge_stencils;

@@ -9,13 +9,11 @@ namespace BASim
 {  
   ElasticRodModel::ElasticRodModel(DeformableObject * object, const std::vector<EdgeHandle> & rodedges, Scalar timestep) : 
   PhysicalModel(*object), 
-//  m_active_edges(rodedges),
   m_edge_stencils(),
   m_joint_stencils(),
   m_edge_active(object),
-//  m_active_faces(shellFaces), /////////////////////
-  m_theta(object), /////////////////////
-  m_theta_vel(object),/////////////////////
+  m_theta(object),
+  m_theta_vel(object),
   m_undef_theta(object),
   m_damping_undef_theta(object),
   m_vertex_masses(object),
@@ -237,7 +235,6 @@ namespace BASim
   
   void ElasticRodModel::computeForces(VecXd & force)
   {
-/////////////////////
     VecXd curr_force(force.size());
     for (size_t i = 0; i < m_forces.size(); i++) 
     {
@@ -249,34 +246,12 @@ namespace BASim
   
   void ElasticRodModel::computeJacobian(Scalar scale, MatrixBase & J)
   {
-/////////////////////
     for (size_t i = 0; i < m_forces.size(); i++)
       m_forces[i]->globalJacobian(scale, J);
   }
   
-/////////////////////
-//  const std::vector<ElasticShellForce*>& ElasticShell::getForces() const
-//  {
-//    return m_shell_forces;
-//  }
-  
-/////////////////////
-//  void ElasticShell::addForce( ElasticShellForce* force )
-//  {
-//    assert(force != NULL);
-//    
-//    m_shell_forces.push_back(force);
-//  }
-  
   void ElasticRodModel::setRadii(Scalar ra, Scalar rb)
   {
-/////////////////////
-//    for (FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit) 
-//    {
-//      m_thicknesses[*fit] = thickness;
-//      Scalar area = getArea(*fit, false);
-//      m_volumes[*fit] = thickness * area;
-//    }
     for (EdgeIterator i = getDefoObj().edges_begin(); i != getDefoObj().edges_end(); ++i)
     {
       m_radii[*i] = Vec2d(ra, rb);
@@ -304,87 +279,8 @@ namespace BASim
     m_undef_theta = undef;
   }  
 
-//  Scalar ElasticRodModel::getThickness(const VertexHandle& vh) const 
-//  {
-/////////////////////
-//    Scalar totalA = 0.0;
-//    Scalar w;
-//    Scalar total = 0.0;
-//    for (VertexFaceIterator vfit = m_obj->vf_iter(vh); vfit; ++vfit){
-//      w = getArea(*vfit);
-//      totalA += w;
-//      total += w*m_thicknesses[*vfit];
-//    }
-//    
-//    assert ( totalA > 0.);
-//    assert ( total > 0.);
-//    return total / totalA;
-//  }
-//  
-//  Scalar ElasticRodModel::getMaxThickness() const 
-//  {
-/////////////////////
-//    Scalar maxVal = -1000000;
-//    for( FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit ){
-//      if (m_thicknesses[*fit] > maxVal ) maxVal = m_thicknesses[*fit];
-//    }
-//    return maxVal;
-//  }
-//  
-//  Scalar ElasticRodModel::getMinThickness() const 
-//  {
-/////////////////////
-//    Scalar minVal = 1000000;
-//    for( FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit ){
-//      if (m_thicknesses[*fit] < minVal ) minVal = m_thicknesses[*fit];
-//    }
-//    return minVal;
-//  }
-//  
-//  void ElasticRodModel::getThickness(VertexProperty<Scalar> & vThickness) const
-//  {
-/////////////////////
-//    for ( VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit){
-//      vThickness[*vit] = getThickness(*vit);
-//    }
-//  }
-//  
-//  Scalar ElasticRodModel::getArea(const FaceHandle& f, bool current) const  
-//  {
-/////////////////////
-//    FaceVertexIterator fvit = m_obj->fv_iter(f);
-//    VertexHandle v0_hnd = *fvit; ++fvit; assert(fvit);
-//    VertexHandle v1_hnd = *fvit; ++fvit; assert(fvit);
-//    VertexHandle v2_hnd = *fvit; ++fvit; assert(!fvit);
-//    
-//    //compute triangle areas
-//    if(current) 
-//    {
-//      Vec3d pos0 = m_obj->getVertexPosition(v0_hnd);
-//      Vec3d pos1 = m_obj->getVertexPosition(v1_hnd);
-//      Vec3d pos2 = m_obj->getVertexPosition(v2_hnd);
-//      
-//      Vec3d v0 = pos1 - pos0;
-//      Vec3d v1 = pos2 - pos0;
-//      Vec3d triVec = v0.cross(v1);
-//      return 0.5*triVec.norm();
-//    }
-//    else 
-//    {
-//      Vec3d pos0 = m_obj->getVertexUndeformedPosition(v0_hnd);
-//      Vec3d pos1 = m_obj->getVertexUndeformedPosition(v1_hnd);
-//      Vec3d pos2 = m_obj->getVertexUndeformedPosition(v2_hnd);
-//      
-//      Vec3d v0 = pos1 - pos0;
-//      Vec3d v1 = pos2 - pos0;
-//      Vec3d triVec = v0.cross(v1);
-//      return 0.5*triVec.norm();
-//    }
-//  }
-  
   void ElasticRodModel::computeMasses()
   {
-/////////////////////
     //Compute vertex masses in a lumped mass way.
     
     m_vertex_masses.assign(0);
@@ -413,16 +309,16 @@ namespace BASim
     
     //return reference to the appropriate position in the vector
     const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-    return const_cast<Scalar&>(m_theta[eh]);/////////////////////
+    return const_cast<Scalar&>(m_theta[eh]);
   }
   
   void ElasticRodModel::setDof( const DofHandle& hnd, const Scalar& dof )
   {
-    //they're all vertex Dofs for a rod
+    //they're all edge Dofs for a rod
     assert(hnd.getType() == DofHandle::EDGE_DOF);
     
     const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-    m_theta[eh] = dof;/////////////////////
+    m_theta[eh] = dof;
   }
   
   const Scalar& ElasticRodModel::getVel( const DofHandle& hnd ) const
@@ -430,7 +326,7 @@ namespace BASim
     assert(hnd.getType() == DofHandle::EDGE_DOF);
     
     const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-    return const_cast<Scalar&>(m_theta_vel[eh]);/////////////////////
+    return const_cast<Scalar&>(m_theta_vel[eh]);
   }
   
   void ElasticRodModel::setVel( const DofHandle& hnd, const Scalar& vel )
@@ -438,7 +334,7 @@ namespace BASim
     assert(hnd.getType() == DofHandle::EDGE_DOF);
     
     const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-    m_theta_vel[eh] = vel;/////////////////////
+    m_theta_vel[eh] = vel;
   }
   
   const Scalar& ElasticRodModel::getMass( const DofHandle& hnd ) const
@@ -446,38 +342,24 @@ namespace BASim
     assert(hnd.getType() == DofHandle::EDGE_DOF);
     
     const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-    return m_edge_masses[eh];/////////////////////
+    return m_edge_masses[eh];
   }
   
   void ElasticRodModel::startStep(Scalar time, Scalar timestep)
   {
-    std::cout << "Starting startStep\n";
-
     // viscous update
     for (size_t i = 0; i < m_forces.size(); i++)
       m_forces[i]->updateViscousReferenceStrain();
     
     //update the damping "reference configuration" for computing viscous forces.
-    m_damping_undef_theta = m_theta;/////////////////////
+    m_damping_undef_theta = m_theta;
     
-    //tell the forces to update anything they need to update
-/////////////////////
-//    const std::vector<ElasticShellForce*>& forces = getForces();
-//    for(unsigned int i = 0; i < forces.size(); ++i)
-//      forces[i]->update();
-
-    std::cout << "Done startStep\n";
   }
     
   void ElasticRodModel::endStep(Scalar time, Scalar timestep) 
   {
-    std::cout << "Starting endStep.\n";
-//    bool do_relabel = false;/////////////////////
-    
-    std::cout << "Vertex count: " << getDefoObj().nv() << std::endl;
-    
     // adjust radii based on edge length changes
-    updateRadii();/////////////////////
+    updateRadii();
     
     // update masses based on new edge length/radii
     computeMasses();
@@ -485,8 +367,6 @@ namespace BASim
     // update stiffness, since radii have changed
     for (size_t i = 0; i < m_forces.size(); i++)
       m_forces[i]->updateStiffness();
-    
-    std::cout << "Completed endStep\n";
   }
 
   void ElasticRodModel::startIteration(Scalar time, Scalar timestep)
@@ -500,7 +380,6 @@ namespace BASim
     updateProperties();
   }
   
-  ////////////////////////////////////////
   void ElasticRodModel::updateRadii()
   {
     for (size_t i = 0; i < m_edge_stencils.size(); i++)

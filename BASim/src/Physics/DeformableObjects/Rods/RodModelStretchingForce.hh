@@ -18,7 +18,6 @@ namespace BASim
     typedef Eigen::Matrix<Scalar, 6, 1> ElementForce;
     typedef Eigen::Matrix<Scalar, 6, 6> ElementJacobian;
 
-//    typedef ElasticRodModel::EdgeStencil Stencil;
     struct Stencil : public ElasticRodModel::EdgeStencil
     {
       Stencil(const ElasticRodModel::EdgeStencil & s) : ElasticRodModel::EdgeStencil(s) { }
@@ -65,17 +64,6 @@ namespace BASim
     
     Scalar m_youngs_modulus;
     Scalar m_youngs_modulus_damping;
-    
-//    // cached stiffnesses
-//    EdgeProperty<Scalar> m_stiffness;
-//    EdgeProperty<Scalar> m_viscous_stiffness;
-//    
-//    // reference strains
-//    EdgeProperty<Scalar> m_undeformed_length;
-//    EdgeProperty<Scalar> m_damping_undeformed_length;
-//    
-//    // cached properties (none)
-//    
   };
   
 }
