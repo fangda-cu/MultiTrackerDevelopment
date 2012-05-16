@@ -75,7 +75,7 @@ bool MNBendingForce::gatherDOFs(const FaceHandle& fh,
     // Vertex opposite the edge in the central triangle
     VertexHandle ph; 
     getFaceThirdVertex(defo, fh, eh, ph);
-    int baseID = m_shell.getVertexDofBase(ph);
+    int baseID  = m_shell.getDefoObj().getPositionDofBase(ph);
     indices[v] = baseID;
     indices[v+1] = baseID+1;
     indices[v+2] = baseID+2;
@@ -89,7 +89,7 @@ bool MNBendingForce::gatherDOFs(const FaceHandle& fh,
     if(flapFace.isValid()) {
       VertexHandle qh; 
       getFaceThirdVertex(defo, flapFace, eh, qh);
-      int baseID = m_shell.getVertexDofBase(qh);
+      int baseID = m_shell.getDefoObj().getPositionDofBase(qh);
       fillVert(deformed, v+9, m_shell.getVertexPosition(qh));
       fillVert(undeformed, v+9, m_shell.getVertexUndeformed(qh));
       fillVert(undeformed_damp, v+9, m_shell.getVertexDampingUndeformed(qh));
