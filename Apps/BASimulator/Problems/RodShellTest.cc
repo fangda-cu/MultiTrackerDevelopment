@@ -320,30 +320,31 @@ void RodShellTest::AtEachTimestep()
   
   if (m_active_scene == 5)
   {
-    const Vec3d l_vel(1.0, 0, 0);
-    const Vec3d r_vel(-1.0, 0, 0);
+    const Vec3d l_vel(0.2, 0, 0);
+    const Vec3d r_vel(-0.2, 0, 0);
     const Scalar l_rot_rate = 0.0;
     const Scalar r_rot_rate = 1.0;
     const Scalar l_rot_max = M_PI;
     const Scalar r_rot_max = M_PI;
-    const Scalar l_twist_rate = 1.0;
-    const Scalar r_twist_rate = 0.5;
-    const Scalar l_twist_max = M_PI / 2;
-    const Scalar r_twist_max = M_PI / 2;
+    const Scalar l_twist_rate = 0.5;
+    const Scalar r_twist_rate = -0.5;
+    const Scalar l_twist_max = M_PI * 0.5;
+    const Scalar r_twist_max = -M_PI * 0.5;
     
     Vec3d l1 = obj->getVertexUndeformedPosition(m_s5_l1);
     Vec3d l2 = obj->getVertexUndeformedPosition(m_s5_l2);
     Vec3d r1 = obj->getVertexUndeformedPosition(m_s5_r1);
     Vec3d r2 = obj->getVertexUndeformedPosition(m_s5_r2);
 
-    Vec3d lc = (l1 + l2) / 2 + l_vel * std::min(m_time, 3.0);
-    Vec3d rc = (r1 + r2) / 2 + r_vel * std::min(m_time, 3.0);
+    Vec3d lc = (l1 + l2) / 2 + l_vel * std::min(m_time, 15.0);
+    Vec3d rc = (r1 + r2) / 2 + r_vel * std::min(m_time, 15.0);
     
     Scalar l_angle = (l_rot_rate >= 0 ? std::min(l_rot_max, l_rot_rate * m_time) : std::max(l_rot_max, l_rot_rate * m_time));
     Scalar r_angle = (r_rot_rate >= 0 ? std::min(r_rot_max, r_rot_rate * m_time) : std::max(r_rot_max, r_rot_rate * m_time));
     Mat3d l_rot, r_rot;
     l_rot << cos(l_angle), 0, sin(l_angle), 0, 1, 0, -sin(l_angle), 0, cos(l_angle);
-    r_rot << cos(r_angle), 0, sin(r_angle), 0, 1, 0, -sin(r_angle), 0, cos(r_angle);
+//    r_rot << cos(r_angle), 0, sin(r_angle), 0, 1, 0, -sin(r_angle), 0, cos(r_angle);
+    r_rot << 1, 0, 0, 0, cos(r_angle), sin(r_angle), 0, -sin(r_angle), cos(r_angle);
     
     obj->constrainVertex(m_s5_l1, lc + l_rot * (l1 - l2) / 2);
     obj->constrainVertex(m_s5_l2, lc + l_rot * (l2 - l1) / 2);
@@ -353,8 +354,8 @@ void RodShellTest::AtEachTimestep()
     Scalar l_twist = (l_twist_rate > 0 ? std::min(l_twist_max, l_twist_rate * m_time) : std::max(l_twist_max, l_twist_rate * m_time));
     Scalar r_twist = (r_twist_rate > 0 ? std::min(r_twist_max, r_twist_rate * m_time) : std::max(r_twist_max, r_twist_rate * m_time));
     
-//    rod->constrainEdge(m_s5_le, l_twist);
-//    rod->constrainEdge(m_s5_re, r_twist);
+    rod->constrainEdge(m_s5_le, l_twist);
+    rod->constrainEdge(m_s5_re, r_twist);
   }
 
 }
