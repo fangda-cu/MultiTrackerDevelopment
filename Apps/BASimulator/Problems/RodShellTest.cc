@@ -1030,7 +1030,7 @@ void RodShellTest::setupScene6()
     {
       VertexHandle h = obj->addVertex();
       
-      Vec3d vert(width * (i - xresolution / 2) / xresolution, -height * j / yresolution, 0.000001 * rand() / RAND_MAX);
+      Vec3d vert(width * (i - xresolution / 2) / xresolution, -height * j / yresolution, 0.01 * sin(i * M_PI / 2));
       Vec3d rodundef = vert;
       rodundef.x() *= 0.25;
       
@@ -1111,7 +1111,7 @@ void RodShellTest::setupScene6()
       if (obj->getVertexPosition(*vit).x() > obj->getVertexPosition(right).x())
         right = *vit;
       
-      if (a % 5 == 0)
+      if (a % 2 == 0)
         obj->constrainVertex(*vit, new FixedVelocityConstraint(obj->getVertexPosition(*vit), -obj->getVertexPosition(*vit) * 0.05, 0));
       a++;
     }
