@@ -280,7 +280,6 @@ void ShellRenderer::render()
      
     }
     glEnd();
-    std::cout << std::endl;
 
     // Render all faces
     glBegin(GL_TRIANGLES);

@@ -301,8 +301,12 @@ void RodShellTest::Setup()
   //////////////////////////////////////////////////////////////////////////
   m_world->addObject(obj);
   m_world->addController(stepper);
-  RenderBase* shellRender = new ShellRenderer(*shell, initial_thickness);
-  m_world->addRenderer(shellRender);
+  if (obj->nf() > 0)
+  {
+    // no shell render if no shell at all (for pure rod tests)
+    RenderBase* shellRender = new ShellRenderer(*shell, initial_thickness);
+    m_world->addRenderer(shellRender); 
+  }
   RenderBase* rodRender = new RodModelRenderer(*rod);
   m_world->addRenderer(rodRender);
   
