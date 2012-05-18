@@ -34,7 +34,8 @@ public:
   void setupScene3(); // simple rod shell test: scene 1 with a rod rib
   void setupScene4(); // umbrella opening
   void setupScene5(); // car sunshade folding
-  void setupScene6(); // shell compressed by rod
+  void setupScene6(); // shell contraction
+  void setupScene7(); // collapsible tunnel
   
 protected:
   void Setup();
