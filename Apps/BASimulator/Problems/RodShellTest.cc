@@ -17,6 +17,8 @@
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 #include "BASim/src/Physics/DeformableObjects/Rods/RodModelForce.hh"
 
+using namespace BASim;
+
 RodShellTest::RodShellTest() : 
   Problem("Rod Shell Test", "Rod shell integration tests"), 
   obj(NULL), 
@@ -359,6 +361,31 @@ void RodShellTest::AtEachTimestep()
     
     rod->constrainEdge(m_s5_le, l_twist);
     rod->constrainEdge(m_s5_re, r_twist);
+    
+  } else if (m_active_scene == 7)
+  {
+    const Scalar rot_rate = m_s7_rot_rate;
+    const Scalar rot_tmax = m_s7_tmax;
+    const Vec3d vel(0.0, 0.0, m_s7_vel);
+    const Scalar vel_tmax = m_s7_tmax;
+    
+    Scalar angle = std::min(rot_tmax, m_time) * rot_rate;
+    Mat3d lrot;
+    lrot << cos(angle), -sin(angle), 0, sin(angle), cos(angle), 0, 0, 0, 1;
+    Mat3d rrot;
+    rrot << cos(angle), sin(angle), 0, -sin(angle), cos(angle), 0, 0, 0, 1;
+    
+    Vec3d lcenter = Vec3d::Zero();
+    Vec3d rcenter = Vec3d::Zero();
+    for (size_t i = 0; i < m_s7_leftring.size(); i++)
+      lcenter += obj->getVertexUndeformedPosition(m_s7_leftring[i]) / m_s7_leftring.size();
+    for (size_t i = 0; i < m_s7_rightring.size(); i++)
+      rcenter += obj->getVertexUndeformedPosition(m_s7_rightring[i]) / m_s7_rightring.size();
+    
+    for (size_t i = 0; i < m_s7_leftring.size(); i++)
+      obj->constrainVertex(m_s7_leftring[i], lcenter + std::min(vel_tmax, m_time) * vel + lrot * (obj->getVertexUndeformedPosition(m_s7_leftring[i]) - lcenter));
+    for (size_t i = 0; i < m_s7_rightring.size(); i++)
+      obj->constrainVertex(m_s7_rightring[i], rcenter - std::min(vel_tmax, m_time) * vel + rrot * (obj->getVertexUndeformedPosition(m_s7_rightring[i]) - rcenter));
   }
 
 }
@@ -1097,7 +1124,7 @@ void RodShellTest::setupScene6()
     }
   }
   
-  //pin the left and right vertices
+  //pin the vertices on the top border
   VertexHandle left = *(obj->vertices_begin());
   VertexHandle right = left;
   for (vit = obj->vertices_begin();vit!= obj->vertices_end(); ++vit) 
@@ -1142,7 +1169,173 @@ void RodShellTest::setupScene6()
   
 }
 
+EdgeHandle edgeBetweenVertices(TopologicalObject & obj, VertexHandle & v1, VertexHandle v2)
+{
+  for (VertexEdgeIterator veit = obj.ve_iter(v1); veit; ++veit)
+  {
+    assert (obj.fromVertex(*veit) == v1 || obj.toVertex(*veit) == v1);
+    VertexHandle v_other = (obj.fromVertex(*veit) == v1 ? obj.toVertex(*veit) : obj.fromVertex(*veit));
+    assert (v_other != v1);
+    if (v_other == v2)
+      return *veit;
+  }
+  return EdgeHandle();
+}
+
 void RodShellTest::setupScene7()
+{
+  //get params
+  Scalar width = GetScalarOpt("shell-width");
+  Scalar height = GetScalarOpt("shell-height");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
+  
+  //build a hexagonal grid of vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> positions(obj);
+  VertexProperty<Vec3d> velocities(obj);
+  VertexProperty<Vec3d> undeformed(obj);
+  VertexProperty<Vec3d> rodundeformed(obj);
+  
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(obj);
+  EdgeProperty<Scalar> edgeAngle(obj);
+  EdgeProperty<Scalar> edgeVel(obj);
+  
+  for (int j = 0; j <= yresolution; j++)
+  {
+    for (int i = 0; i < xresolution; i++)
+    {
+      VertexHandle h = obj->addVertex();
+      
+      Scalar noise = 0.01;
+      Vec3d vert(width * cos(i * 2 * M_PI / xresolution) + width * noise * ((double)rand() / RAND_MAX - 0.5), 
+                 width * sin(i * 2 * M_PI / xresolution) + width * noise * ((double)rand() / RAND_MAX - 0.5), 
+                 height * (j - yresolution / 2) / yresolution);
+      Vec3d rodundef = vert;
+      
+      positions[h] = vert;
+      velocities[h] = Vec3d(0, 0, 0);
+      undeformed[h] = vert;
+      rodundeformed[h] = rodundef;
+      vertHandles.push_back(h);
+    }
+  }
+  
+  //build the faces in a 4-8 pattern
+  for(int i = 0; i < xresolution; ++i) 
+  {
+    for(int j = 0; j < yresolution; ++j) 
+    {
+      int tl = i + (xresolution)*j;
+      int tr = (i+1)%xresolution + (xresolution)*j;
+      int bl = i + (xresolution)*(j+1);
+      int br = (i+1)%xresolution + (xresolution)*(j+1);
+      
+      if((i+j)%2 == 0) 
+      {
+        obj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
+        obj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
+      } else 
+      {
+        obj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[bl]);
+        obj->addFace(vertHandles[bl], vertHandles[tr], vertHandles[br]);
+      }
+    }
+  }
+  
+  std::cout << "mesh nv = " << obj->nv() << " ne = " << obj->ne() << " nf = " << obj->nf() << std::endl;
+  
+  // compute the compressing parameters
+  m_s7_tmax = 20;
+  m_s7_vel = height / m_s7_tmax;
+  Scalar dydx = (height / yresolution) / (2 * M_PI * width / xresolution);
+  Scalar init_rot = yresolution * 2 * M_PI / xresolution;
+  m_s7_rot_rate = -init_rot * (sqrt(dydx * dydx + 1) - 1) / m_s7_tmax;
+  
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(obj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = obj->faces_begin(); fIt != obj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+  
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(obj, shellFaces, m_timestep);
+  obj->addModel(shell);
+  
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+  
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+  
+  // pin (and compress) the two rings on both ends
+  for (int i = 0; i < xresolution; i++)
+  {
+    int idx = i;
+//    obj->constrainVertex(vertHandles[idx], new FixedVelocityConstraint(obj->getVertexPosition(vertHandles[idx]), Vec3d(0, 0, height * 0.05), 0));
+//    obj->constrainVertex(vertHandles[idx], obj->getVertexPosition(vertHandles[idx]));
+    m_s7_leftring.push_back(vertHandles[idx]);
+    idx = i + yresolution * xresolution;
+//    obj->constrainVertex(vertHandles[idx], new FixedVelocityConstraint(obj->getVertexPosition(vertHandles[idx]), Vec3d(0, 0, -height * 0.05), 0));
+    m_s7_rightring.push_back(vertHandles[idx]);
+  }
+  
+  // collect rod edges
+  std::vector<EdgeHandle> rodEdges;  
+  for (int i = 0; i < xresolution; i++)
+  {
+    EdgeHandle e;
+    e = edgeBetweenVertices(*obj, vertHandles[i], vertHandles[(i + 1) % xresolution]);
+    assert (e.isValid());
+//    if (i == (xresolution - 1) % xresolution)
+      rodEdges.push_back(e);
+    
+    e = edgeBetweenVertices(*obj, vertHandles[i + yresolution * xresolution], vertHandles[(i + 1) % xresolution + yresolution * xresolution]);
+    assert (e.isValid());
+//    if (i == (yresolution) % xresolution)
+      rodEdges.push_back(e);
+  }
+  
+  for (int i = 0; i < yresolution; i++)
+  {
+    EdgeHandle e;
+    e = edgeBetweenVertices(*obj, vertHandles[i * xresolution + (i + 0) % xresolution], vertHandles[(i + 1) * xresolution + (i + 1) % xresolution]);
+    assert (e.isValid());
+    rodEdges.push_back(e);
+  }
+  
+  // create a rod model
+  rod = new ElasticRodModel(obj, rodEdges, m_timestep);
+  obj->addModel(rod);
+  
+  // set init dofs for edges
+  EdgeProperty<Scalar> zeros(obj);
+  zeros.assign(0);
+  rod->setEdgeThetas(zeros);
+  rod->setEdgeThetaVelocities(zeros);
+  rod->setEdgeUndeformedThetas(zeros);
+  
+  rod->setUndeformedPositions(rodundeformed);
+
+  EdgeProperty<Vec3d> undefref(obj);
+  for (size_t i = 0; i < rodEdges.size(); i++)
+  {
+    Vec3d v1 = obj->getVertexPosition(obj->fromVertex(rodEdges[i]));
+    Vec3d v2 = obj->getVertexPosition(obj->toVertex(rodEdges[i]));
+    Vec3d t = v2 - v1;
+    undefref[rodEdges[i]] = Vec3d(-t.y(), t.x(), 0);
+    undefref[rodEdges[i]].normalize();
+  }
+  rod->setUndeformedReferenceDirector1(undefref);
+  
+}
+
+void RodShellTest::setupScene8()
 {
   // load an obj, hard coded path for now
 	std::vector<Vec3d> vertices;
@@ -1158,13 +1351,17 @@ void RodShellTest::setupScene7()
 			{
 				Vec3d pos;
 				objfile >> pos.x() >> pos.y() >> pos.z();
-				vertices.push_back(pos);
+				vertices.push_back(pos / 50);
 			}
         break;
       case 'f':
 			{
 				Vec3i face;
-				objfile >> face.x() >> face.y() >> face.z();
+        Vec3i normals;
+        Vec3i texcoord;
+				objfile >> face.x(); objfile.ignore(1); objfile >> normals.x(); objfile.ignore(1); objfile >> texcoord.x();
+				objfile >> face.y(); objfile.ignore(1); objfile >> normals.y(); objfile.ignore(1); objfile >> texcoord.y();
+				objfile >> face.z(); objfile.ignore(1); objfile >> normals.z(); objfile.ignore(1); objfile >> texcoord.z();
         face.x()--;
         face.y()--;
         face.z()--;
@@ -1177,7 +1374,8 @@ void RodShellTest::setupScene7()
 	}
   
   objfile.close();
-
+  std::cout << "obj load: nv = " << vertices.size() << " nf = " << faces.size() << std::endl;
+  
   //get params
   Scalar width = GetScalarOpt("shell-width");
   Scalar height = GetScalarOpt("shell-height");

@@ -36,6 +36,7 @@ public:
   void setupScene5(); // car sunshade folding
   void setupScene6(); // shell contraction
   void setupScene7(); // collapsible tunnel
+  void setupScene8(); // bag
   
 protected:
   void Setup();
@@ -62,6 +63,13 @@ protected:
 
   EdgeHandle m_s5_le;
   EdgeHandle m_s5_re;
+
+  // scene 7:
+  std::vector<VertexHandle> m_s7_rightring;
+  std::vector<VertexHandle> m_s7_leftring;
+  Scalar m_s7_rot_rate;
+  Scalar m_s7_vel;
+  Scalar m_s7_tmax;
   
 };
 
