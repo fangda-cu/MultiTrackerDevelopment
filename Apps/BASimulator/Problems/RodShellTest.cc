@@ -395,6 +395,16 @@ void RodShellTest::AtEachTimestep()
     Vec3d v = obj->getVertexPosition(*i);
     std::cout << v.x() << " " << v.y() << " " << v.z() << std::endl;
   }
+  for (EdgeIterator i = obj->edges_begin(); i != obj->edges_end(); ++i)
+  {
+    if (rod->isEdgeActive(*i))
+    {
+      Vec3d r1 = rod->getReferenceDirector1(*i);
+      Vec3d r2 = rod->getReferenceDirector2(*i);
+      Scalar t = rod->getEdgeTheta(*i);
+      std::cout << r1.x() << " " << r1.y() << " " << r1.z() << " " << r2.z() << " " << r2.y() << " " << r2.z() << " " << t << std::endl;
+    }
+  }
 }
 
 void RodShellTest::setupScene1() 
@@ -1368,7 +1378,7 @@ void RodShellTest::setupScene8()
   EdgeProperty<Scalar> edgeVel(obj);
 
   // hard-coded init configuration file for now
-  std::ifstream initconfig_file("assets/rodshelltest/scene7_t9.0.txt");
+  std::ifstream initconfig_file("assets/rodshelltest/scene7_s_t7.65.txt");
   
   for (int j = 0; j <= yresolution; j++)
   {
@@ -1395,8 +1405,7 @@ void RodShellTest::setupScene8()
       vertHandles.push_back(h);
     }
   }
-  initconfig_file.close();
-  
+    
   //build the faces in a 4-8 pattern
   for(int i = 0; i < xresolution; ++i) 
   {
@@ -1486,7 +1495,15 @@ void RodShellTest::setupScene8()
     undefref[rodEdges[i]].normalize();
   }
   rod->setUndeformedReferenceDirector1(undefref);
-  
+ 
+  for (EdgeIterator i = obj->edges_begin(); i != obj->edges_end(); ++i)
+  {
+    if (rod->isEdgeActive(*i))
+    {
+      Vec3d t = obj->getVertexPosition(obj->toVertex(*i)) - obj->getVertexPosition(obj->fromVertex(*i));
+
+    }
+  }
 }
 
 void RodShellTest::setupScene9()
