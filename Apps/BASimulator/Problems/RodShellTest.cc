@@ -194,7 +194,7 @@ void RodShellTest::Setup()
   (*this.*rodshell_scenes[sceneChoice])();
   
   //compute the dof indexing for use in the diff_eq solver
-  obj->computeDofIndexing();
+//  obj->computeDofIndexing();
   
   //////////////////////////////////////////////////////////////////////////
   //
@@ -205,7 +205,7 @@ void RodShellTest::Setup()
   Scalar rod_Shear_modulus = GetScalarOpt("rod-Shear");
   Scalar rod_Youngs_damping = GetScalarOpt("rod-Youngs-damping");
   Scalar rod_Shear_damping = GetScalarOpt("rod-Shear-damping");
-  rod->setup(rod_Youngs_modulus, rod_Youngs_damping, rod_Shear_modulus, rod_Shear_damping, m_timestep);
+//  rod->setup(rod_Youngs_modulus, rod_Youngs_damping, rod_Shear_modulus, rod_Shear_damping, m_timestep);
 
   //////////////////////////////////////////////////////////////////////////
   //
@@ -402,7 +402,7 @@ void RodShellTest::AtEachTimestep()
       Vec3d r1 = rod->getReferenceDirector1(*i);
       Vec3d r2 = rod->getReferenceDirector2(*i);
       Scalar t = rod->getEdgeTheta(*i);
-      std::cout << r1.x() << " " << r1.y() << " " << r1.z() << " " << r2.z() << " " << r2.y() << " " << r2.z() << " " << t << std::endl;
+      std::cout << r1.x() << " " << r1.y() << " " << r1.z() << " " << r2.x() << " " << r2.y() << " " << r2.z() << " " << t << std::endl;
     }
   }
 }
@@ -1496,12 +1496,54 @@ void RodShellTest::setupScene8()
   }
   rod->setUndeformedReferenceDirector1(undefref);
  
+  obj->computeDofIndexing();
+
+  Scalar rod_Youngs_modulus = GetScalarOpt("rod-Youngs");
+  Scalar rod_Shear_modulus = GetScalarOpt("rod-Shear");
+  Scalar rod_Youngs_damping = GetScalarOpt("rod-Youngs-damping");
+  Scalar rod_Shear_damping = GetScalarOpt("rod-Shear-damping");
+  rod->setup(rod_Youngs_modulus, rod_Youngs_damping, rod_Shear_modulus, rod_Shear_damping, m_timestep);
+
+  EdgeProperty<Scalar> thetas(obj);
   for (EdgeIterator i = obj->edges_begin(); i != obj->edges_end(); ++i)
   {
     if (rod->isEdgeActive(*i))
     {
+      thetas[*i] = rod->getEdgeTheta(*i);
+    }
+  }
+  
+  for (EdgeIterator i = obj->edges_begin(); i != obj->edges_end(); ++i)
+  {
+    if (rod->isEdgeActive(*i))
+    {
+      std::cout << "active edge: " << i->idx() << std::endl;
+      
       Vec3d t = obj->getVertexPosition(obj->toVertex(*i)) - obj->getVertexPosition(obj->fromVertex(*i));
+      Vec3d init_r1, init_r2;
+      Scalar init_theta;
+      initconfig_file >> init_r1.x() >> init_r1.y() >> init_r1.z() >> init_r2.x() >> init_r2.y() >> init_r2.z() >> init_theta;
+      if (!approxEq(t.dot(init_r1), 0, 1e-4) || !approxEq(t.dot(init_r2), 0, 1e-4))
+        std::cout << "t = " << t << " init r1 = " << init_r1 << " init r2 = " << init_r2 << " dot1 = " << t.dot(init_r1) << " dot2 = " << t.dot(init_r2) << std::endl;
+      Vec3d r1 = rod->getReferenceDirector1(*i);
+      Vec3d r2 = rod->getReferenceDirector2(*i);
+      if (!approxEq(t.dot(r1), 0, 1e-4) || !approxEq(t.dot(r2), 0, 1e-4))
+        std::cout << "t = " << t << " r1 = " << r1 << " r2 = " << r2 << " dot1 = " << t.dot(r1) << " dot2 = " << t.dot(r2) << std::endl;
 
+      Scalar ca = cos(init_theta);
+      Scalar sa = sin(init_theta);
+      Vec3d m1 = ca * init_r1 + sa * init_r2;
+      Vec3d m2 = -sa * init_r1 + ca * init_r2;
+      
+      Scalar theta = signedAngle(r1, m1, t);
+      thetas[*i] = theta;
+      rod->setEdgeThetas(thetas);
+      rod->updateProperties();
+      Vec3d rodm1 = rod->getMaterialDirector1(*i);
+      Vec3d rodm2 = rod->getMaterialDirector2(*i);
+      if (!approxEq(rodm1.cross(m1).norm(), 0, 1e-6) || !approxEq(rodm2.cross(m2).norm(), 0, 1e-6))
+        std::cout << "m1 = " << m1 << " m2 = " << m2 << " rod m1 = " << rodm1 << " rod m2 = " << rodm2 << std::endl;
+      std::cout << "theta = " << theta << "/" << init_theta << std::endl;
     }
   }
 }
