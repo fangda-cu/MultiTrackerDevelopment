@@ -134,7 +134,8 @@ sceneFunc rodshell_scenes[] =
   &RodShellTest::setupScene4,  // umbrella opening
   &RodShellTest::setupScene5,  // car sunshade folding
   &RodShellTest::setupScene6,  // shell contraction
-  &RodShellTest::setupScene7   // collapsible tunnel
+  &RodShellTest::setupScene7,  // collapsible tunnel folding
+  &RodShellTest::setupScene8   // collapsible tunnel
 
 };
 
@@ -388,6 +389,12 @@ void RodShellTest::AtEachTimestep()
       obj->constrainVertex(m_s7_rightring[i], rcenter - std::min(vel_tmax, m_time) * vel + rrot * (obj->getVertexUndeformedPosition(m_s7_rightring[i]) - rcenter));
   }
 
+  std::cout << "====================================================" << std::endl;
+  for (VertexIterator i = obj->vertices_begin(); i != obj->vertices_end(); ++i)
+  {
+    Vec3d v = obj->getVertexPosition(*i);
+    std::cout << v.x() << " " << v.y() << " " << v.z() << std::endl;
+  }
 }
 
 void RodShellTest::setupScene1() 
@@ -1190,7 +1197,6 @@ void RodShellTest::setupScene7()
   int xresolution = GetIntOpt("shell-x-resolution");
   int yresolution = GetIntOpt("shell-y-resolution");
   
-  //build a hexagonal grid of vertices
   std::vector<VertexHandle> vertHandles;
   VertexProperty<Vec3d> positions(obj);
   VertexProperty<Vec3d> velocities(obj);
@@ -1336,6 +1342,154 @@ void RodShellTest::setupScene7()
 }
 
 void RodShellTest::setupScene8()
+{
+  //get params
+  Scalar width = GetScalarOpt("shell-width");
+  Scalar height = GetScalarOpt("shell-height");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
+  
+  // compute the compressing parameters
+  Scalar dy = height / yresolution;
+  Scalar dx = 2 * M_PI * width / xresolution;
+  Scalar undef_rot = yresolution * 2 * M_PI / xresolution;
+  Scalar init_len = 0.1;
+  Scalar extra_rot = -undef_rot * (sqrt(square(dx) + square(dy) - square(dy * init_len)) / dx - 1);
+  
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> positions(obj);
+  VertexProperty<Vec3d> velocities(obj);
+  VertexProperty<Vec3d> undeformed(obj);
+  VertexProperty<Vec3d> rodundeformed(obj);
+  
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(obj);
+  EdgeProperty<Scalar> edgeAngle(obj);
+  EdgeProperty<Scalar> edgeVel(obj);
+
+  // hard-coded init configuration file for now
+  std::ifstream initconfig_file("assets/rodshelltest/scene7_t9.0.txt");
+  
+  for (int j = 0; j <= yresolution; j++)
+  {
+    for (int i = 0; i < xresolution; i++)
+    {
+      VertexHandle h = obj->addVertex();
+      
+//      Vec3d vert(width * cos(i * 2 * M_PI / xresolution - j * extra_rot / yresolution), 
+//                 width * sin(i * 2 * M_PI / xresolution - j * extra_rot / yresolution), 
+//                 height * init_len * (j - yresolution / 2) / yresolution);
+      Vec3d vert;
+      initconfig_file >> vert.x() >> vert.y() >> vert.z();
+      
+      Vec3d undef(width * cos(i * 2 * M_PI / xresolution), 
+                 width * sin(i * 2 * M_PI / xresolution), 
+                 height * (j - yresolution / 2) / yresolution);
+      
+      Vec3d rodundef = undef;
+      
+      positions[h] = vert;
+      velocities[h] = Vec3d(0, 0, 0);
+      undeformed[h] = undef;
+      rodundeformed[h] = rodundef;
+      vertHandles.push_back(h);
+    }
+  }
+  initconfig_file.close();
+  
+  //build the faces in a 4-8 pattern
+  for(int i = 0; i < xresolution; ++i) 
+  {
+    for(int j = 0; j < yresolution; ++j) 
+    {
+      int tl = i + (xresolution)*j;
+      int tr = (i+1)%xresolution + (xresolution)*j;
+      int bl = i + (xresolution)*(j+1);
+      int br = (i+1)%xresolution + (xresolution)*(j+1);
+      
+      if((i+j)%2 == 0) 
+      {
+        obj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
+        obj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
+      } else 
+      {
+        obj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[bl]);
+        obj->addFace(vertHandles[bl], vertHandles[tr], vertHandles[br]);
+      }
+    }
+  }
+  
+  std::cout << "mesh nv = " << obj->nv() << " ne = " << obj->ne() << " nf = " << obj->nf() << std::endl;
+  
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(obj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = obj->faces_begin(); fIt != obj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+  
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(obj, shellFaces, m_timestep);
+  obj->addModel(shell);
+  
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+  
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+  
+  // collect rod edges
+  std::vector<EdgeHandle> rodEdges;  
+  for (int i = 0; i < xresolution; i++)
+  {
+    EdgeHandle e;
+    e = edgeBetweenVertices(*obj, vertHandles[i], vertHandles[(i + 1) % xresolution]);
+    assert (e.isValid());
+    rodEdges.push_back(e);
+    
+    e = edgeBetweenVertices(*obj, vertHandles[i + yresolution * xresolution], vertHandles[(i + 1) % xresolution + yresolution * xresolution]);
+    assert (e.isValid());
+    rodEdges.push_back(e);
+  }
+
+  for (int i = 0; i < yresolution; i++)
+  {
+    EdgeHandle e;
+    e = edgeBetweenVertices(*obj, vertHandles[i * xresolution + (i + 0) % xresolution], vertHandles[(i + 1) * xresolution + (i + 1) % xresolution]);
+    assert (e.isValid());
+    rodEdges.push_back(e);
+  }
+  
+  // create a rod model
+  rod = new ElasticRodModel(obj, rodEdges, m_timestep);
+  obj->addModel(rod);
+  
+  // set init dofs for edges
+  EdgeProperty<Scalar> zeros(obj);
+  zeros.assign(0);
+  rod->setEdgeThetas(zeros);
+  rod->setEdgeThetaVelocities(zeros);
+  rod->setEdgeUndeformedThetas(zeros);
+  
+  rod->setUndeformedPositions(rodundeformed);
+  
+  EdgeProperty<Vec3d> undefref(obj);
+  for (size_t i = 0; i < rodEdges.size(); i++)
+  {
+    Vec3d v1 = rodundeformed[obj->fromVertex(rodEdges[i])];
+    Vec3d v2 = rodundeformed[obj->toVertex(rodEdges[i])];
+    Vec3d t = v2 - v1;
+    undefref[rodEdges[i]] = Vec3d(-t.y(), t.x(), 0);
+    undefref[rodEdges[i]].normalize();
+  }
+  rod->setUndeformedReferenceDirector1(undefref);
+  
+}
+
+void RodShellTest::setupScene9()
 {
   // load an obj, hard coded path for now
 	std::vector<Vec3d> vertices;

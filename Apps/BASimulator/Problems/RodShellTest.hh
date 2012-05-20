@@ -35,8 +35,9 @@ public:
   void setupScene4(); // umbrella opening
   void setupScene5(); // car sunshade folding
   void setupScene6(); // shell contraction
-  void setupScene7(); // collapsible tunnel
-  void setupScene8(); // bag
+  void setupScene7(); // collapsible tunnel folding
+  void setupScene8(); // collapsible tunnel opening
+  void setupScene9(); // bag
   
 protected:
   void Setup();
