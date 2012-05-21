@@ -33,11 +33,14 @@ RodShellTest::RodShellTest() :
   //Choice of scene
   AddOption("rodshell-scene", "the scene to test", 1);
 
+  //Scene specific options
+  AddOption("s9-rod-border", "whether or nor to put rod edges on the border of the bag model (scene 9)", true);
+  AddOption("s9-ball-thickness", "thickness of the ball shell (scene 9)", 0.1f);
+  
   //Basic rod options
   AddOption("rod-radius-a", "major radius of the rod", 0.01);
   AddOption("rod-radius-b", "minor radius of the rod", 0.01);
   AddOption("rod-density", "volumetric density of the rod ", 1.0);
-  AddOption("rod-border", "whether or nor to put rod edges on the border of the bag model", true);
 
   //Properties for the thickness-dependent linear elasticity & viscosity
   AddOption("rod-Youngs", "the Young's modulus of the rod material", 0.0f);
@@ -395,10 +398,10 @@ void RodShellTest::AtEachTimestep()
     if (init)
     {
       init = false;
-      Scalar thickness = shell->getThickness(m_s9_ball_faces[0]);
+      Scalar thickness = GetScalarOpt("s9-ball-thickness");
       for (size_t i = 0; i < m_s9_ball_faces.size(); i++)
       {
-        shell->setThickness(m_s9_ball_faces[i], thickness * 10);
+        shell->setThickness(m_s9_ball_faces[i], thickness);
       }
     }
   }
@@ -1608,7 +1611,7 @@ void RodShellTest::setupScene9()
   Scalar height = GetScalarOpt("shell-height");
   int xresolution = GetIntOpt("shell-x-resolution");
   int yresolution = GetIntOpt("shell-y-resolution");
-  bool include_rod_border = GetBoolOpt("rod-border");
+  bool include_rod_border = GetBoolOpt("s9-rod-border");
   
   //build a hexagonal grid of vertices
   std::vector<VertexHandle> vertHandles;
