@@ -72,6 +72,9 @@ protected:
   Scalar m_s7_vel;
   Scalar m_s7_tmax;
   
+  // scene 9:
+  std::vector<FaceHandle> m_s9_ball_faces;
+  
 };
 
 

@@ -389,6 +389,18 @@ void RodShellTest::AtEachTimestep()
       obj->constrainVertex(m_s7_leftring[i], lcenter + std::min(vel_tmax, m_time) * vel + lrot * (obj->getVertexUndeformedPosition(m_s7_leftring[i]) - lcenter));
     for (size_t i = 0; i < m_s7_rightring.size(); i++)
       obj->constrainVertex(m_s7_rightring[i], rcenter - std::min(vel_tmax, m_time) * vel + rrot * (obj->getVertexUndeformedPosition(m_s7_rightring[i]) - rcenter));
+  } else if (m_active_scene == 9)
+  {
+    static bool init = true;
+    if (init)
+    {
+      init = false;
+      Scalar thickness = shell->getThickness(m_s9_ball_faces[0]);
+      for (size_t i = 0; i < m_s9_ball_faces.size(); i++)
+      {
+        shell->setThickness(m_s9_ball_faces[i], thickness * 10);
+      }
+    }
   }
 
   std::cout << "====================================================" << std::endl;
@@ -1624,7 +1636,30 @@ void RodShellTest::setupScene9()
     rodundeformed[h] = rodundef;
     vertHandles.push_back(h);
   }
-  
+  int nv = vertices.size();
+
+  // create K UV spheres of radius R with N tessellation (thin shell spheres, i.e. christmas balls)
+  int K = 1;
+  int N = 6;
+  Scalar R = 1.0;
+  Scalar D = 2.0;
+  for (int k = 0; k < K; k++)
+    for (int i = 0; i <= N; i++)
+      for (int j = 0; j < ((i == 0 || i == N) ? 1 : 2 * N); j++)
+      {
+        VertexHandle h = obj->addVertex();
+        Vec3d ballcenter = Vec3d(0, 15, -2) + Vec3d(1, 0, 0) * D * cos(k * 2 * M_PI / K) + Vec3d(0, 1, 0) * D * sin(k * 2 * M_PI / K);
+        Scalar theta = j * 2 * M_PI / 2 / N;
+        Scalar alpha = i * M_PI / N;
+        Vec3d vert = ballcenter + Vec3d(R * cos(theta) * sin(alpha), R * sin(theta) * sin(alpha), -R * cos(alpha));
+        
+        positions[h] = vert;
+        velocities[h] = Vec3d(0, 0, 0);
+        undeformed[h] = vert;
+        rodundeformed[h] = vert;
+        vertHandles.push_back(h);
+      }
+
   // connect the vertices into hexagonal mesh
   for (size_t i = 0; i < faces.size(); i++)
   {
@@ -1641,6 +1676,39 @@ void RodShellTest::setupScene9()
       obj->addFace(vertHandles[faces[i][0]], vertHandles[faces[i][1]], vertHandles[faces[i][2]]); 
     }
   }
+  
+  for (int k = 0; k < K; k++)
+    for (int i = 0; i < N; i++)
+      for (int j = 0; j < 2 * N; j++)
+      {
+        if (i == 0)
+        {
+          int v1 = nv + (2 * (N - 1) * N + 2) * k + 0;
+          int v2 = nv + (2 * (N - 1) * N + 2) * k + 1 + j;
+          int v3 = nv + (2 * (N - 1) * N + 2) * k + 1 + (j + 1) % (2 * N);
+          FaceHandle h = obj->addFace(vertHandles[v1], vertHandles[v2], vertHandles[v3]); 
+          m_s9_ball_faces.push_back(h);
+        } else if (i == N - 1)
+        {
+          int v1 = nv + (2 * (N - 1) * N + 2) * k + 1 + 2 * (N - 2) * N + j;
+          int v2 = nv + (2 * (N - 1) * N + 2) * k + 1 + 2 * (N - 1) * N;
+          int v3 = nv + (2 * (N - 1) * N + 2) * k + 1 + 2 * (N - 2) * N + (j + 1) % (2 * N);
+          FaceHandle h = obj->addFace(vertHandles[v1], vertHandles[v2], vertHandles[v3]); 
+          m_s9_ball_faces.push_back(h);
+        } else
+        {
+          int v1 = nv + (2 * (N - 1) * N + 2) * k + 1 + 2 * (i - 1) * N + j;
+          int v2 = nv + (2 * (N - 1) * N + 2) * k + 1 + 2 * i * N + j;
+          int v3 = nv + (2 * (N - 1) * N + 2) * k + 1 + 2 * (i - 1) * N + (j + 1) % (2 * N);
+          FaceHandle h = obj->addFace(vertHandles[v1], vertHandles[v2], vertHandles[v3]); 
+          m_s9_ball_faces.push_back(h);
+          v1 = nv + (2 * (N - 1) * N + 2) * k + 1 + 2 * (i - 1) * N + (j + 1) % (2 * N);
+          v2 = nv + (2 * (N - 1) * N + 2) * k + 1 + 2 * i * N + j;
+          v3 = nv + (2 * (N - 1) * N + 2) * k + 1 + 2 * i * N + (j + 1) % (2 * N);
+          h = obj->addFace(vertHandles[v1], vertHandles[v2], vertHandles[v3]); 
+          m_s9_ball_faces.push_back(h);
+        }
+      }
   
 //  std::map<EdgeHandle, int> edgevalence;
 //  for (int i = 0; i < faces.size(); i++)
@@ -1732,7 +1800,7 @@ void RodShellTest::setupScene9()
       if (*fvit != v1 && *fvit != v2) v2o = *fvit; ++fvit;
       assert(!fvit);
       assert(v2o.isValid());
-      if (obj->getVertexPosition(v1).z() == obj->getVertexPosition(v2).z() && obj->getVertexPosition(v1o).z() != obj->getVertexPosition(v2o).z())
+      if (v1.idx() < nv && obj->getVertexPosition(v1).z() == obj->getVertexPosition(v2).z() && obj->getVertexPosition(v1o).z() != obj->getVertexPosition(v2o).z())
       {
         if (include_rod_border)
           rodEdges.push_back(*i);

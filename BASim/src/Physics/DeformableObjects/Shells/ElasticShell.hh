@@ -103,7 +103,7 @@ public:
   Scalar getMass(const VertexHandle& v) const { return m_obj->getVertexMass(v); }
   Scalar getMass(const EdgeHandle& e) const { return m_edge_masses[e]; }
   Scalar getThickness(const FaceHandle& f) const { return m_thicknesses[f]; }
-  void setThickness(const FaceHandle& f, Scalar thick) { m_thicknesses[f] = thick; }
+  void setThickness(const FaceHandle& f, Scalar thick) { m_thicknesses[f] = thick; m_volumes[f] = getArea(f) * thick; }
   Scalar getThickness(const VertexHandle& vh) const;
   Scalar getMaxThickness () const;
   Scalar getMinThickness () const;

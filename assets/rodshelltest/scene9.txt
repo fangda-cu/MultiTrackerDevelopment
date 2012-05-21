@@ -6,7 +6,7 @@ rodshell-scene 9	# the scene to test
 rod-density 0.01	# volumetric density of the rod 
 rod-radius-a 0.5	# major radius of the rod
 rod-radius-b 0.5	# minor radius of the rod
-rod-border 0	# whether or not to put rod edges on the border in the bag model
+rod-border 1	# whether or not to put rod edges on the border in the bag model
 
 rod-Youngs 1000	# the Young's modulus of the rodl material
 rod-Youngs-damping 0	# the damping coefficient associated with the rod's Young's modulus
