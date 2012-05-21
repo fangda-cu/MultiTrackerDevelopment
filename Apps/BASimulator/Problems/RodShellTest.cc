@@ -37,6 +37,7 @@ RodShellTest::RodShellTest() :
   AddOption("rod-radius-a", "major radius of the rod", 0.01);
   AddOption("rod-radius-b", "minor radius of the rod", 0.01);
   AddOption("rod-density", "volumetric density of the rod ", 1.0);
+  AddOption("rod-border", "whether or nor to put rod edges on the border of the bag model", true);
 
   //Properties for the thickness-dependent linear elasticity & viscosity
   AddOption("rod-Youngs", "the Young's modulus of the rod material", 0.0f);
@@ -1554,7 +1555,7 @@ void RodShellTest::setupScene9()
   // load an obj, hard coded path for now
 	std::vector<Vec3d> vertices;
 	std::vector<Vec3i> faces;
-  std::ifstream objfile("assets/rodshelltest/bag3.obj");
+  std::ifstream objfile("assets/rodshelltest/bag4.obj");
   
 	char c;
 	while (objfile >> c)
@@ -1595,6 +1596,7 @@ void RodShellTest::setupScene9()
   Scalar height = GetScalarOpt("shell-height");
   int xresolution = GetIntOpt("shell-x-resolution");
   int yresolution = GetIntOpt("shell-y-resolution");
+  bool include_rod_border = GetBoolOpt("rod-border");
   
   //build a hexagonal grid of vertices
   std::vector<VertexHandle> vertHandles;
@@ -1634,16 +1636,9 @@ void RodShellTest::setupScene9()
       if (v1.z() == v2.z()) obj->addEdge(vertHandles[faces[i][0]], vertHandles[faces[i][1]]);
       if (v1.z() == v3.z()) obj->addEdge(vertHandles[faces[i][0]], vertHandles[faces[i][2]]);
       if (v2.z() == v3.z()) obj->addEdge(vertHandles[faces[i][1]], vertHandles[faces[i][2]]);
-//    } else if (v1.y() > 3)
-//    {
-//    
     } else
     {
-      static int count = 0;
       obj->addFace(vertHandles[faces[i][0]], vertHandles[faces[i][1]], vertHandles[faces[i][2]]); 
-      count++;
-      if (count > 1000000)
-        break;
     }
   }
   
@@ -1712,6 +1707,9 @@ void RodShellTest::setupScene9()
   std::vector<EdgeHandle> rodEdges;  
   for (EdgeIterator i = obj->edges_begin(); i != obj->edges_end(); ++i)
   {
+    if (obj->isBoundary(*i))
+      continue;
+        
     EdgeFaceIterator efit = obj->ef_iter(*i);
     if (efit)
     {
@@ -1736,7 +1734,8 @@ void RodShellTest::setupScene9()
       assert(v2o.isValid());
       if (obj->getVertexPosition(v1).z() == obj->getVertexPosition(v2).z() && obj->getVertexPosition(v1o).z() != obj->getVertexPosition(v2o).z())
       {
-        rodEdges.push_back(*i);
+        if (include_rod_border)
+          rodEdges.push_back(*i);
       }
     } else
     {
