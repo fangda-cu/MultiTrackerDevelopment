@@ -1631,12 +1631,19 @@ void RodShellTest::setupScene9()
     Vec3d v3 = positions[vertHandles[faces[i][2]]];
     if (v1.y() > 11.699 && v2.y() > 11.699 && v3.y() > 11.699)
     {
-//      if (v1.z() == v2.z()) obj->addEdge(vertHandles[faces[i][0]], vertHandles[faces[i][1]]);
-//      if (v1.z() == v3.z()) obj->addEdge(vertHandles[faces[i][0]], vertHandles[faces[i][2]]);
-//      if (v2.z() == v3.z()) obj->addEdge(vertHandles[faces[i][1]], vertHandles[faces[i][2]]);
+      if (v1.z() == v2.z()) obj->addEdge(vertHandles[faces[i][0]], vertHandles[faces[i][1]]);
+      if (v1.z() == v3.z()) obj->addEdge(vertHandles[faces[i][0]], vertHandles[faces[i][2]]);
+      if (v2.z() == v3.z()) obj->addEdge(vertHandles[faces[i][1]], vertHandles[faces[i][2]]);
+//    } else if (v1.y() > 3)
+//    {
+//    
     } else
     {
+      static int count = 0;
       obj->addFace(vertHandles[faces[i][0]], vertHandles[faces[i][1]], vertHandles[faces[i][2]]); 
+      count++;
+      if (count > 1000000)
+        break;
     }
   }
   
@@ -1737,7 +1744,6 @@ void RodShellTest::setupScene9()
     }
     
   }
-
     
   // create a rod model
   rod = new ElasticRodModel(obj, rodEdges, m_timestep);
@@ -1752,4 +1758,10 @@ void RodShellTest::setupScene9()
   
   rod->setUndeformedPositions(rodundeformed);
   
+  EdgeProperty<Vec3d> ref_dir(obj);
+  for (int i = 0; i < rodEdges.size(); i++)
+  {
+    ref_dir[rodEdges[i]] = Vec3d(0, 0, 1);
+  }
+  rod->setUndeformedReferenceDirector1(ref_dir);
 }
