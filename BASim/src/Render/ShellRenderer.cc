@@ -258,20 +258,20 @@ void ShellRenderer::render()
 
       //Draw edge avg normal vector
       //get adjacent faces
-      EdgeFaceIterator efit = m_shell.getDefoObj().ef_iter(eh);
-      Vec3d normal1 = faceNormals[*efit]; ++efit;
-      Vec3d normal2;
-      if(efit)
-        normal2 = faceNormals[*efit];
-      else
-        normal2 = normal1;
-
-      Vec3d avgNormal = 0.5*(normal1+normal2);
-      Scalar magnitude = avgNormal.norm();
-      avgNormal /= magnitude;
-
-      Vec3d midpoint = 0.5*(p0+p1);
-      Vec3d endpoint = midpoint + 0.5*avgNormal;
+//      EdgeFaceIterator efit = m_shell.getDefoObj().ef_iter(eh);
+//      Vec3d normal1 = faceNormals[*efit]; ++efit;
+//      Vec3d normal2;
+//      if(efit)
+//        normal2 = faceNormals[*efit];
+//      else
+//        normal2 = normal1;
+//
+//      Vec3d avgNormal = 0.5*(normal1+normal2);
+//      Scalar magnitude = avgNormal.norm();
+//      avgNormal /= magnitude;
+//
+//      Vec3d midpoint = 0.5*(p0+p1);
+//      Vec3d endpoint = midpoint + 0.5*avgNormal;
       /*OpenGL::color(Color(0,0,0));
       OpenGL::vertex(midpoint);
       OpenGL::vertex(endpoint);*/

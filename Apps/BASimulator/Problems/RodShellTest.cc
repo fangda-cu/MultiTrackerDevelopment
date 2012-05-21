@@ -1631,9 +1631,9 @@ void RodShellTest::setupScene9()
     Vec3d v3 = positions[vertHandles[faces[i][2]]];
     if (v1.y() > 11.699 && v2.y() > 11.699 && v3.y() > 11.699)
     {
-      if (v1.z() == v2.z()) obj->addEdge(vertHandles[faces[i][0]], vertHandles[faces[i][1]]);
-      if (v1.z() == v3.z()) obj->addEdge(vertHandles[faces[i][0]], vertHandles[faces[i][2]]);
-      if (v2.z() == v3.z()) obj->addEdge(vertHandles[faces[i][1]], vertHandles[faces[i][2]]);
+//      if (v1.z() == v2.z()) obj->addEdge(vertHandles[faces[i][0]], vertHandles[faces[i][1]]);
+//      if (v1.z() == v3.z()) obj->addEdge(vertHandles[faces[i][0]], vertHandles[faces[i][2]]);
+//      if (v2.z() == v3.z()) obj->addEdge(vertHandles[faces[i][1]], vertHandles[faces[i][2]]);
     } else
     {
       obj->addFace(vertHandles[faces[i][0]], vertHandles[faces[i][1]], vertHandles[faces[i][2]]); 
@@ -1704,10 +1704,41 @@ void RodShellTest::setupScene9()
   // collect rod edges
   std::vector<EdgeHandle> rodEdges;  
   for (EdgeIterator i = obj->edges_begin(); i != obj->edges_end(); ++i)
-    if (obj->isBoundary(*i))
+  {
+    EdgeFaceIterator efit = obj->ef_iter(*i);
+    if (efit)
+    {
+      FaceHandle f1 = *efit; ++efit;
+      FaceHandle f2 = *efit; ++efit;
+      assert(!efit);
+      VertexHandle v1 = obj->fromVertex(*i);
+      VertexHandle v2 = obj->toVertex(*i);
+      VertexHandle v1o, v2o;
+      FaceVertexIterator fvit;
+      fvit = obj->fv_iter(f1);
+      if (*fvit != v1 && *fvit != v2) v1o = *fvit; ++fvit;
+      if (*fvit != v1 && *fvit != v2) v1o = *fvit; ++fvit;
+      if (*fvit != v1 && *fvit != v2) v1o = *fvit; ++fvit;
+      assert(!fvit);
+      assert(v1o.isValid());
+      fvit = obj->fv_iter(f2);
+      if (*fvit != v1 && *fvit != v2) v2o = *fvit; ++fvit;
+      if (*fvit != v1 && *fvit != v2) v2o = *fvit; ++fvit;
+      if (*fvit != v1 && *fvit != v2) v2o = *fvit; ++fvit;
+      assert(!fvit);
+      assert(v2o.isValid());
+      if (obj->getVertexPosition(v1).z() == obj->getVertexPosition(v2).z() && obj->getVertexPosition(v1o).z() != obj->getVertexPosition(v2o).z())
+      {
+        rodEdges.push_back(*i);
+      }
+    } else
+    {
       rodEdges.push_back(*i);
-  rodEdges.clear();
-  
+    }
+    
+  }
+
+    
   // create a rod model
   rod = new ElasticRodModel(obj, rodEdges, m_timestep);
   obj->addModel(rod);
