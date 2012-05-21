@@ -9,9 +9,9 @@ rod-density 0.01	# volumetric density of the rod
 rod-radius-a 0.1	# major radius of the rod
 rod-radius-b 0.1	# minor radius of the rod
 
-rod-Youngs 1000	# the Young's modulus of the rodl material
+rod-Youngs 10000	# the Young's modulus of the rodl material
 rod-Youngs-damping 0	# the damping coefficient associated with the rod's Young's modulus
-rod-Shear 500	# the shear modulus of the rod material
+rod-Shear 5000	# the shear modulus of the rod material
 rod-Shear-damping 0.0	# the damping coefficient associated to the rod's shear modulus
 
 shell-x-resolution 12	# the number of segments along first dimension

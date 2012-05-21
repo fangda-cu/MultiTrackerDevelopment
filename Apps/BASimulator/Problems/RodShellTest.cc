@@ -1642,7 +1642,7 @@ void RodShellTest::setupScene9()
   int nv = vertices.size();
 
   // create K UV spheres of radius R with N tessellation (thin shell spheres, i.e. christmas balls)
-  int K = 1;
+  int K = 2;
   int N = 6;
   Scalar R = 1.0;
   Scalar D = 2.0;
@@ -1651,7 +1651,8 @@ void RodShellTest::setupScene9()
       for (int j = 0; j < ((i == 0 || i == N) ? 1 : 2 * N); j++)
       {
         VertexHandle h = obj->addVertex();
-        Vec3d ballcenter = Vec3d(0, 15, -2) + Vec3d(1, 0, 0) * D * cos(k * 2 * M_PI / K) + Vec3d(0, 1, 0) * D * sin(k * 2 * M_PI / K);
+        Scalar delta = k * 2 * M_PI / K + 0.2 * M_PI;
+        Vec3d ballcenter = Vec3d(0, 15, -2) + Vec3d(1, 0, 0) * D * cos(delta) + Vec3d(0, 1, 0) * D * sin(delta);
         Scalar theta = j * 2 * M_PI / 2 / N;
         Scalar alpha = i * M_PI / N;
         Vec3d vert = ballcenter + Vec3d(R * cos(theta) * sin(alpha), R * sin(theta) * sin(alpha), -R * cos(alpha));
