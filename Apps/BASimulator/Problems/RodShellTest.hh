@@ -37,7 +37,7 @@ public:
   void setupScene6(); // shell contraction
   void setupScene7(); // collapsible tunnel folding
   void setupScene8(); // collapsible tunnel opening
-  void setupScene9(); // bag
+  void setupScene9(); // balls in bag
   
 protected:
   void Setup();

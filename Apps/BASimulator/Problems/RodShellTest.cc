@@ -135,7 +135,8 @@ sceneFunc rodshell_scenes[] =
   &RodShellTest::setupScene5,  // car sunshade folding
   &RodShellTest::setupScene6,  // shell contraction
   &RodShellTest::setupScene7,  // collapsible tunnel folding
-  &RodShellTest::setupScene8   // collapsible tunnel
+  &RodShellTest::setupScene8,  // collapsible tunnel opening
+  &RodShellTest::setupScene9   // balls in bag
 
 };
 
@@ -194,7 +195,7 @@ void RodShellTest::Setup()
   (*this.*rodshell_scenes[sceneChoice])();
   
   //compute the dof indexing for use in the diff_eq solver
-//  obj->computeDofIndexing();
+  obj->computeDofIndexing();
   
   //////////////////////////////////////////////////////////////////////////
   //
@@ -205,7 +206,7 @@ void RodShellTest::Setup()
   Scalar rod_Shear_modulus = GetScalarOpt("rod-Shear");
   Scalar rod_Youngs_damping = GetScalarOpt("rod-Youngs-damping");
   Scalar rod_Shear_damping = GetScalarOpt("rod-Shear-damping");
-//  rod->setup(rod_Youngs_modulus, rod_Youngs_damping, rod_Shear_modulus, rod_Shear_damping, m_timestep);
+  rod->setup(rod_Youngs_modulus, rod_Youngs_damping, rod_Shear_modulus, rod_Shear_damping, m_timestep);
 
   //////////////////////////////////////////////////////////////////////////
   //
@@ -1625,8 +1626,41 @@ void RodShellTest::setupScene9()
   // connect the vertices into hexagonal mesh
   for (size_t i = 0; i < faces.size(); i++)
   {
-    obj->addFace(vertHandles[faces[i][0]], vertHandles[faces[i][1]], vertHandles[faces[i][2]]);
+    Vec3d v1 = positions[vertHandles[faces[i][0]]];
+    Vec3d v2 = positions[vertHandles[faces[i][1]]];
+    Vec3d v3 = positions[vertHandles[faces[i][2]]];
+    if (v1.y() > 11.699 && v2.y() > 11.699 && v3.y() > 11.699)
+    {
+      if (v1.z() == v2.z()) obj->addEdge(vertHandles[faces[i][0]], vertHandles[faces[i][1]]);
+      if (v1.z() == v3.z()) obj->addEdge(vertHandles[faces[i][0]], vertHandles[faces[i][2]]);
+      if (v2.z() == v3.z()) obj->addEdge(vertHandles[faces[i][1]], vertHandles[faces[i][2]]);
+    } else
+    {
+      obj->addFace(vertHandles[faces[i][0]], vertHandles[faces[i][1]], vertHandles[faces[i][2]]); 
+    }
   }
+  
+//  std::map<EdgeHandle, int> edgevalence;
+//  for (int i = 0; i < faces.size(); i++)
+//  {
+//    EdgeHandle e1 = edgeBetweenVertices(*obj, vertHandles[faces[i].x()], vertHandles[faces[i].y()]);
+//    EdgeHandle e2 = edgeBetweenVertices(*obj, vertHandles[faces[i].y()], vertHandles[faces[i].z()]);
+//    EdgeHandle e3 = edgeBetweenVertices(*obj, vertHandles[faces[i].z()], vertHandles[faces[i].x()]);
+//    int a;
+//    a = edgevalence[e1];
+//    edgevalence[e1] = a + 1;
+//    a = edgevalence[e2];
+//    edgevalence[e2] = a + 1;
+//    a = edgevalence[e3];
+//    edgevalence[e3] = a + 1;
+//  }
+//  std::vector<EdgeHandle> hv;
+//  for (std::map<EdgeHandle, int>::iterator i = edgevalence.begin(); i != edgevalence.end(); i++)
+//    if (i->second > 2)
+//      hv.push_back(i->first);
+//  assert(hv.size() == 2);
+//  std::cout << positions[obj->fromVertex(hv[0])] << " " << positions[obj->toVertex(hv[0])] << std::endl;
+//  std::cout << positions[obj->fromVertex(hv[1])] << " " << positions[obj->toVertex(hv[1])] << std::endl;
   
   std::cout << "mesh nv = " << obj->nv() << " ne = " << obj->ne() << " nf = " << obj->nf() << std::endl;
   
