@@ -38,7 +38,8 @@ public:
   void setupScene7(); // collapsible tunnel folding
   void setupScene8(); // collapsible tunnel opening
   void setupScene9(); // balls in bag
-  
+  void setupScene10();// Houdini exporter/loader test
+
 protected:
   void Setup();
   void AtEachTimestep();
@@ -76,7 +77,6 @@ protected:
   std::vector<FaceHandle> m_s9_ball_faces;
   
 };
-
 
 
 

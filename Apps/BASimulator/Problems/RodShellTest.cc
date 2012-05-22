@@ -19,6 +19,83 @@
 
 using namespace BASim;
 
+void load_obj(std::string file_location, std::vector<Vec3d>& vertices, std::vector<Vec3i>& faces) {
+
+  std::ifstream objfile(file_location.c_str());
+
+  char c;
+  while (objfile >> c)
+  {
+    switch (c)
+    {
+    case 'v':
+      {
+        Vec3d pos;
+        objfile >> pos.x() >> pos.y() >> pos.z();
+        vertices.push_back(pos / 50);
+      }
+      break;
+    case 'f':
+      {
+        Vec3i face;
+        Vec3i normals;
+        Vec3i texcoord;
+        objfile >> face.x(); objfile.ignore(1); objfile >> normals.x(); objfile.ignore(1); objfile >> texcoord.x();
+        objfile >> face.y(); objfile.ignore(1); objfile >> normals.y(); objfile.ignore(1); objfile >> texcoord.y();
+        objfile >> face.z(); objfile.ignore(1); objfile >> normals.z(); objfile.ignore(1); objfile >> texcoord.z();
+        face.x()--;
+        face.y()--;
+        face.z()--;
+        faces.push_back(face);
+      }
+      break;
+    case ' ':
+      break;
+    }
+  }
+  objfile.close();
+  std::cout << "obj load: nv = " << vertices.size() << " nf = " << faces.size() << std::endl;
+}
+
+
+void load_obj2(std::string file_location, std::vector<Vec3d>& vertices, std::vector<Vec3i>& faces) {
+
+  std::ifstream objfile(file_location.c_str());
+
+  char c;
+  while (objfile >> c)
+  {
+    switch (c)
+    {
+    case 'v':
+      {
+        Vec3d pos;
+        objfile >> pos.x() >> pos.y() >> pos.z();
+        vertices.push_back(pos / 50);
+      }
+      break;
+    case 'f':
+      {
+        Vec3i face;
+        Vec3i normals;
+        Vec3i texcoord;
+        objfile >> face.x();
+        objfile >> face.y();
+        objfile >> face.z();
+        face.x()--;
+        face.y()--;
+        face.z()--;
+        faces.push_back(face);
+      }
+      break;
+    case ' ':
+      break;
+    }
+  }
+  objfile.close();
+  std::cout << "obj load: nv = " << vertices.size() << " nf = " << faces.size() << std::endl;
+}
+
 RodShellTest::RodShellTest() : 
   Problem("Rod Shell Test", "Rod shell integration tests"), 
   obj(NULL), 
@@ -140,7 +217,8 @@ sceneFunc rodshell_scenes[] =
   &RodShellTest::setupScene6,  // shell contraction
   &RodShellTest::setupScene7,  // collapsible tunnel folding
   &RodShellTest::setupScene8,  // collapsible tunnel opening
-  &RodShellTest::setupScene9   // balls in bag
+  &RodShellTest::setupScene9,  // balls in bag
+  &RodShellTest::setupScene10  // Christopher's first Houdini export test
 
 };
 
@@ -407,6 +485,7 @@ void RodShellTest::AtEachTimestep()
   }
 
   std::cout << "====================================================" << std::endl;
+  /*
   for (VertexIterator i = obj->vertices_begin(); i != obj->vertices_end(); ++i)
   {
     Vec3d v = obj->getVertexPosition(*i);
@@ -422,6 +501,7 @@ void RodShellTest::AtEachTimestep()
       std::cout << r1.x() << " " << r1.y() << " " << r1.z() << " " << r2.x() << " " << r2.y() << " " << r2.z() << " " << t << std::endl;
     }
   }
+  */
 }
 
 void RodShellTest::setupScene1() 
@@ -922,34 +1002,7 @@ void RodShellTest::setupScene5()
   // load an obj, hard coded path for now
 	std::vector<Vec3d> vertices;
 	std::vector<Vec3i> faces;
-  std::ifstream objfile("assets/rodshelltest/tescircle400.obj");
-  
-	char c;
-	while (objfile >> c)
-	{
-		switch (c)
-		{
-      case 'v':
-			{
-				Vec3d pos;
-				objfile >> pos.x() >> pos.y() >> pos.z();
-				vertices.push_back(pos);
-			}
-        break;
-      case 'f':
-			{
-				Vec3i face;
-				objfile >> face.x() >> face.y() >> face.z();
-        face.x()--;
-        face.y()--;
-        face.z()--;
-				faces.push_back(face);
-			}
-        break;
-		}
-	}
-  
-  objfile.close();
+  load_obj("assets/rodshelltest/tescircle400.obj", vertices, faces);
   
   //get params
   Scalar width = GetScalarOpt("shell-width");
@@ -1568,44 +1621,10 @@ void RodShellTest::setupScene8()
 void RodShellTest::setupScene9()
 {
   // load an obj, hard coded path for now
-	std::vector<Vec3d> vertices;
-	std::vector<Vec3i> faces;
-  std::ifstream objfile("assets/rodshelltest/bag4.obj");
-  
-	char c;
-	while (objfile >> c)
-	{
-		switch (c)
-		{
-      case 'v':
-			{
-				Vec3d pos;
-				objfile >> pos.x() >> pos.y() >> pos.z();
-				vertices.push_back(pos / 50);
-			}
-        break;
-      case 'f':
-			{
-				Vec3i face;
-        Vec3i normals;
-        Vec3i texcoord;
-				objfile >> face.x(); objfile.ignore(1); objfile >> normals.x(); objfile.ignore(1); objfile >> texcoord.x();
-				objfile >> face.y(); objfile.ignore(1); objfile >> normals.y(); objfile.ignore(1); objfile >> texcoord.y();
-				objfile >> face.z(); objfile.ignore(1); objfile >> normals.z(); objfile.ignore(1); objfile >> texcoord.z();
-        face.x()--;
-        face.y()--;
-        face.z()--;
-				faces.push_back(face);
-			}
-        break;
-      case ' ':
-        break;
-		}
-	}
-  
-  objfile.close();
-  std::cout << "obj load: nv = " << vertices.size() << " nf = " << faces.size() << std::endl;
-  
+  std::vector<Vec3d> vertices;
+  std::vector<Vec3i> faces;
+  load_obj("assets/rodshelltest/bag4.obj", vertices, faces);
+
   //get params
   Scalar width = GetScalarOpt("shell-width");
   Scalar height = GetScalarOpt("shell-height");
@@ -1830,9 +1849,143 @@ void RodShellTest::setupScene9()
   rod->setUndeformedPositions(rodundeformed);
   
   EdgeProperty<Vec3d> ref_dir(obj);
+  for (unsigned int i = 0; i < rodEdges.size(); i++)
+  {
+    ref_dir[rodEdges[i]] = Vec3d(0, 0, 1);
+  }
+  rod->setUndeformedReferenceDirector1(ref_dir);
+}
+
+
+void RodShellTest::setupScene10()
+{
+  // load an obj, hard coded path for now
+  std::vector<Vec3d> vertices;
+  std::vector<Vec3i> faces;
+  load_obj2("../../assets/rodshelltest/scene10_data/shellgeom.obj", vertices, faces);
+
+  //load the rod vertices list
+  std::ifstream infile("../../assets/rodshelltest/scene10_data/rodvertices.txt");
+  std::vector<int> rod_vert_indices;
+  do 
+  {
+    int vertex_number;
+    infile >> vertex_number;
+    if(infile.eof()) break;
+    rod_vert_indices.push_back(vertex_number);
+  } while (!infile.eof());
+  
+  std::cout << "Rod verts:";
+  for(unsigned int i = 0; i < rod_vert_indices.size(); ++i)
+    std::cout << rod_vert_indices[i] << " ";
+  std::cout << std::endl;
+  
+  
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> positions(obj);
+  VertexProperty<Vec3d> velocities(obj);
+  VertexProperty<Vec3d> undeformed(obj);
+  VertexProperty<Vec3d> rodundeformed(obj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(obj);
+  EdgeProperty<Scalar> edgeAngle(obj);
+  EdgeProperty<Scalar> edgeVel(obj);
+
+  // vertex positions from obj file
+  for (size_t i = 0; i < vertices.size(); i++)
+  {
+    VertexHandle h = obj->addVertex();
+
+    Vec3d vert = vertices[i];
+    Vec3d rodundef = vert;
+
+    positions[h] = vert;
+    velocities[h] = Vec3d(0, 0, 0);
+    undeformed[h] = vert;
+    rodundeformed[h] = rodundef;
+    vertHandles.push_back(h);
+  }
+  int nv = vertices.size();
+
+
+  std::cout << "mesh nv = " << obj->nv() << " ne = " << obj->ne() << " nf = " << obj->nf() << std::endl;
+
+  for(int i = 0; i < faces.size(); ++i) {
+    
+    FaceHandle newFace = obj->addFace(vertHandles[faces[i][0]], vertHandles[faces[i][1]], vertHandles[faces[i][2]]);
+
+  }
+
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(obj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = obj->faces_begin(); fIt != obj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(obj, shellFaces, m_timestep);
+  obj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+  //Find highest vertex
+  VertexIterator vit = obj->vertices_begin();
+  Scalar highest = -10000;
+  for(;vit!= obj->vertices_end(); ++vit) {
+    Vec3d pos = shell->getVertexPosition(*vit);
+    if(pos[1] >= highest) {
+      highest = pos[1];
+    }
+  }
+
+  //Pin all verts at or near that height
+  for(vit = obj->vertices_begin();vit!= obj->vertices_end(); ++vit) {
+    Vec3d pos = shell->getVertexPosition(*vit);
+    if(pos[1] >= highest - 1e-4)
+      obj->constrainVertex(*vit, pos);
+  }
+
+  
+  // collect rod edges
+  std::vector<EdgeHandle> rodEdges;  
+  for (EdgeIterator i = obj->edges_begin(); i != obj->edges_end(); ++i)
+  {
+    VertexHandle v0 = obj->fromVertex(*i);
+    VertexHandle v1 = obj->toVertex(*i);
+    if(std::find(rod_vert_indices.begin(), rod_vert_indices.end(), v0.idx()) != rod_vert_indices.end() &&
+       std::find(rod_vert_indices.begin(), rod_vert_indices.end(), v1.idx()) != rod_vert_indices.end())
+       rodEdges.push_back(*i);
+
+  }
+  std::cout << "Rod edges? " << rodEdges.size() << std::endl;
+
+  // create a rod model
+  rod = new ElasticRodModel(obj, rodEdges, m_timestep);
+  obj->addModel(rod);
+
+  // set init dofs for edges
+  EdgeProperty<Scalar> zeros(obj);
+  zeros.assign(0);
+  rod->setEdgeThetas(zeros);
+  rod->setEdgeThetaVelocities(zeros);
+  rod->setEdgeUndeformedThetas(zeros);
+
+  rod->setUndeformedPositions(rodundeformed);
+
+  EdgeProperty<Vec3d> ref_dir(obj);
   for (int i = 0; i < rodEdges.size(); i++)
   {
     ref_dir[rodEdges[i]] = Vec3d(0, 0, 1);
   }
   rod->setUndeformedReferenceDirector1(ref_dir);
+  
 }

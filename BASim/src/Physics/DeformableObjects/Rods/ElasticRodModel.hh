@@ -100,7 +100,7 @@ namespace BASim
     int numTetDofs() const { return 0; }
     
     bool isVertexActive(const VertexHandle& v) const { return false; }
-    bool isEdgeActive(const EdgeHandle& e) const { return m_edge_active[e]; }
+    bool isEdgeActive(const EdgeHandle& e) const { return m_edge_active[e] == 1; }
     bool isFaceActive(const FaceHandle& f) const { return false; }
     bool isTetActive(const TetHandle& t) const { return false; }
     
