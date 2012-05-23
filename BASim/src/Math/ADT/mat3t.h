@@ -158,7 +158,7 @@ public:
     
     
       for (j = i + 1; j < 3; j++) {   /* Eliminate col i from row i+1..n. */
-      if(A(j,i) != 0) {
+      if(A(j,i) != F(0)) {
        V = A(j,i) / A(i,i);
        
        for (k = 0; k < 3; k++) {
@@ -171,7 +171,7 @@ public:
     }
    
     for (i = 2; i >= 0; i--) {             /* Back Substitution. */
-      if (A(i,i) == 0)
+      if (A(i,i) == F(0))
       return false;             /* Error. */
     
       for (j = 0; j < i; j++) {   /* Eliminate col i from row 1..i-1. */

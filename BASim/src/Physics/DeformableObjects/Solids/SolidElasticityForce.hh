@@ -13,7 +13,7 @@
 
 #include "BASim/src/Math/ADT/adreal.h"
 #include "BASim/src/Math/ADT/advec.h"
-
+#include "BASim/src/Math/ADT/mat3t.h"
 
 //A linear elastic solid deformation force
 

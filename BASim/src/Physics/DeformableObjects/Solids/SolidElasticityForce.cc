@@ -57,9 +57,12 @@ adreal<NumElasticityDof,DO_HESS,Real> ElasticEnergy(const SolidElasticityForce& 
   // typedefs to simplify code below
   typedef adreal<NumElasticityDof,DO_HESS,Real> adrealElast;
   typedef CVec3T<adrealElast> advecElast;
+  Mat3T<adrealElast> temp;
+  typedef Mat3T<adrealElast> admatElast;
 
   Vector3d* s_deformed = (Vector3d*)(&deformed[0]);
-  
+  Vector3d* s_undeformed = (Vector3d*)(&undeformed[0]);
+
   // indep variables
   advecElast   p[4]; // vertex positions
   set_independent( p[0], s_deformed[0], 0 );
@@ -67,9 +70,39 @@ adreal<NumElasticityDof,DO_HESS,Real> ElasticEnergy(const SolidElasticityForce& 
   set_independent( p[2], s_deformed[2], 6 );    
   set_independent( p[3], s_deformed[3], 9 );    
     
+  //dependent variable
   adrealElast e(0);
-  //TODO Fill in elastic force.
   
+  //Compute green strain, following Teran 2003 's formulation  ("Finite Volume Methods for the Simulation of Skeletal Muscle")
+  advecElast ds1 = p[1]-p[0];
+  advecElast ds2 = p[2]-p[0];
+  advecElast ds3 = p[3]-p[0];
+  
+  Vector3d dm1 = s_undeformed[1]-s_undeformed[0];
+  Vector3d dm2 = s_undeformed[2]-s_undeformed[0];
+  Vector3d dm3 = s_undeformed[3]-s_undeformed[0];
+
+  admatElast ds_mat(ds1[0], ds2[0], ds3[0],
+                    ds1[1], ds2[1], ds3[1],
+                    ds1[2], ds2[2], ds3[2]);
+  admatElast dm_mat(dm1[0], dm2[0], dm3[0],
+                             dm1[1], dm2[1], dm3[1],
+                             dm1[2], dm2[2], dm3[2]);
+  admatElast dm_inv = dm_mat.inverse();
+
+  // Compute deformation gradient
+  admatElast F = ds_mat * dm_inv;  
+
+  // Compute green strain
+  admatElast G = F.transpose()*F - admatElast::Identity(); 
+  
+  // Compute stress assuming linear elasticity
+  admatElast CG = adrealElast(2 * Youngs) * G + adrealElast(Poisson) * (G(0,0)+G(1,1)+G(2,2)) * admatElast::Identity();
+  
+  // Compute elastic potential energy: double contraction of stress:strain (hopefully this is equivalent) 
+  admatElast prodMat = G.transpose()*CG;
+  e = adrealElast(0.5)*(prodMat(0,0)+prodMat(1,1)+prodMat(2,2)); 
+
   return e;
 }
 

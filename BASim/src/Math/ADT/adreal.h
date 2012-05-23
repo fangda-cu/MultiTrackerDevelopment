@@ -9,7 +9,7 @@
 #include <float.h>
 
 
-// Defines automtic differentiation scalar
+// Defines automatic differentiation scalar
 // with forward computation of derivatives of order 1 or order 1 and 2
 // supports arithmetic operators +,-,*,/, unary minus, comparison operators ==, !=, <, >, <=, >=
 // assignment operators =, +=, -=, *-, /=
