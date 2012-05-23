@@ -18,9 +18,17 @@ public:
   static Mat3T Identity() {
     return Mat3T().setIdentity();
   }
+
+  static F doublecontraction(const Mat3T& A, const Mat3T& B) { 
+    F fn = 0; 
+    for(int i = 0; i < 9; i++) fn += A._m[i]*B._m[i]; 
+    return fn;
+  }
+
   Mat3T() { 
     setIdentity();
   }
+
   // create from elements
   Mat3T(F m00, F m01, F m02,
         F m10, F m11, F m12,
@@ -264,6 +272,10 @@ public:
    
   }
   
+  F trace() const {
+    return _m[0] + _m[4] + _m[8];
+  }
+
   // Frobenius norm, i.e. sqrt of the sum of the squares of the entries also defined as trace(M^2)
   F frobnorm() const { 
     F fn = 0; 

@@ -96,14 +96,21 @@ adreal<NumElasticityDof,DO_HESS,Real> ElasticEnergy(const SolidElasticityForce& 
   // Compute green strain
   admatElast G = F.transpose()*F - admatElast::Identity(); 
   
-  // Compute stress assuming linear elasticity
-  admatElast CG = adrealElast(2 * Youngs) * G + adrealElast(Poisson) * (G(0,0)+G(1,1)+G(2,2)) * admatElast::Identity();
-  
-  // Compute elastic potential energy: double contraction of stress:strain (hopefully this is equivalent) 
-  admatElast prodMat = G.transpose()*CG;
-  e = adrealElast(0.5)*(prodMat(0,0)+prodMat(1,1)+prodMat(2,2)); 
+  // Convert from Youngs+Poisson to lame coeffs
+  adrealElast intermediate = Youngs / (1.0+Poisson);
+  adrealElast lambda = intermediate * Poisson / (1.0 - 2.0*Poisson);
+  adrealElast mu = intermediate / 2.0;
 
-  return e;
+  //Compute stress using linear elasticity
+  admatElast CG = adrealElast(2.0 * mu) * G + adrealElast(lambda) * G.trace() * admatElast::Identity();
+  
+  // Compute elastic potential density: double contraction of stress:strain (expressed as trace of matrix product)
+  e = adrealElast(0.5)*admatElast::doublecontraction(CG, G); 
+  
+  // Scale by (rest) volume 
+  e *= fabs(dot(dm1, cross(dm2,dm3)))/6.0;
+  
+    return e;
 }
 
 Scalar SolidElasticityForce::globalEnergy() const
