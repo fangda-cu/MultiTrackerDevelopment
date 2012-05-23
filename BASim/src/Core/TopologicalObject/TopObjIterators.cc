@@ -590,4 +590,214 @@ namespace BASim {
     return m_idx < m_obj->m_EF.getNumEntriesInRow(m_hnd.idx());
   }
 
+
+  //* FaceTet iterator routines */
+
+  FaceTetIterator::FaceTetIterator() : m_obj(NULL), m_hnd(-1), m_idx(0) {}
+
+  FaceTetIterator::FaceTetIterator(const FaceTetIterator& ftit)
+    : m_obj(ftit.m_obj)
+    , m_hnd(ftit.m_hnd)
+    , m_idx(ftit.m_idx)
+  {}
+
+  FaceTetIterator::FaceTetIterator(const TopologicalObject* t, const FaceHandle& fh)
+    : m_obj(t)
+    , m_hnd(fh)
+    , m_idx(0)
+  {}
+
+  FaceTetIterator& FaceTetIterator::operator= (const FaceTetIterator& ftit)
+  {
+    m_obj = ftit.m_obj;
+    m_hnd = ftit.m_hnd;
+    m_idx = ftit.m_idx;
+    return *this;
+  }
+
+
+  bool FaceTetIterator::operator== (const FaceTetIterator& ftit) const
+  {
+    assert(m_obj);
+    return m_obj == ftit.m_obj
+      && m_hnd == ftit.m_hnd 
+      && m_idx == ftit.m_idx; 
+  }
+
+  bool FaceTetIterator::operator!= (const FaceTetIterator& ftit) const
+  {
+    return !(operator==(ftit));
+  }
+
+  FaceTetIterator& FaceTetIterator::operator++ ()
+  {
+    ++m_idx;
+    return *this;
+  }
+
+  FaceTetIterator& FaceTetIterator::operator-- ()
+  {
+    --m_idx;
+    return *this;
+  }
+
+  FaceTetIterator::value_type FaceTetIterator::operator* ()
+  {
+    assert(m_obj);
+    assert(m_obj->faceExists(m_hnd));
+
+    if(m_idx >= m_obj->m_FT.getNumEntriesInRow(m_hnd.idx()) || m_idx < 0)
+      return TetHandle(-1);
+    return TetHandle(m_obj->m_FT.getColByIndex(m_hnd.idx(), m_idx));
+  }
+
+
+  FaceTetIterator::operator bool() const
+  {
+    assert(m_obj);
+    assert(m_obj->faceExists(m_hnd));
+    return m_idx < m_obj->m_FT.getNumEntriesInRow(m_hnd.idx());
+  }
+
+  //* TetFace circulator routines */
+
+  TetFaceIterator::TetFaceIterator() : m_obj(NULL), m_hnd(-1), m_idx(0)  {}
+
+  TetFaceIterator::TetFaceIterator(const TetFaceIterator& tfit)
+    : m_obj(tfit.m_obj)
+    , m_hnd(tfit.m_hnd)
+    , m_idx(tfit.m_idx)
+  {}
+
+  TetFaceIterator::TetFaceIterator(const TopologicalObject* t, const TetHandle& th)
+    : m_obj(t)
+    , m_hnd(th)
+    , m_idx(0)
+  {
+    assert(m_obj);    
+    assert(m_obj->tetExists(th));
+  }
+
+  TetFaceIterator& TetFaceIterator::operator= (const TetFaceIterator& fvit)
+  {
+    m_obj = fvit.m_obj;
+    m_hnd = fvit.m_hnd;
+    m_idx = fvit.m_idx;
+    return *this;
+  }
+
+  bool TetFaceIterator::operator== (const TetFaceIterator& fvit) const
+  {
+    assert(m_obj);
+    assert(fvit.m_obj);
+
+    return ((m_obj == fvit.m_obj)
+      && (m_hnd == fvit.m_hnd) 
+      && (m_idx == fvit.m_idx));
+  }
+
+  bool  TetFaceIterator::operator!= (const TetFaceIterator& fvit) const
+  {
+    return !(operator==(fvit));
+  }
+
+  TetFaceIterator&  TetFaceIterator::operator++ ()
+  {
+    ++m_idx;
+    return *this;
+  }
+
+  TetFaceIterator&  TetFaceIterator::operator-- ()
+  {
+    --m_idx;
+    return *this;
+  }
+
+  TetFaceIterator::value_type TetFaceIterator::operator* ()
+  {
+    assert(m_obj);
+    assert(m_obj->tetExists(m_hnd));
+
+    if(m_idx < 0 || m_idx >= (int)m_obj->m_TF.getNumEntriesInRow(m_hnd.idx()))
+      return FaceHandle(-1);
+
+    return FaceHandle(m_obj->m_TF.getColByIndex(m_hnd.idx(), m_idx));
+  }
+
+
+  TetFaceIterator::operator bool() const
+  {
+    assert(m_obj);
+    return m_idx < (int)m_obj->m_TF.getNumEntriesInRow(m_hnd.idx());
+  }
+
+
+
+  //* TetVertex circulator routines */
+  
+  TetVertexIterator::TetVertexIterator() {
+}
+
+  TetVertexIterator::TetVertexIterator(const TetVertexIterator& tvit)
+    : m_obj(tvit.m_obj)
+    , m_th(tvit.m_th)
+  {}
+
+  TetVertexIterator::TetVertexIterator(const TopologicalObject* t, const TetHandle& th)
+    : m_obj(t), m_th(th)
+  {
+    //build the set of (unique) vertices
+    
+    for(TetFaceIterator tfit = m_obj->tf_iter(th); tfit; ++tfit)
+      for(FaceEdgeIterator feit = m_obj->fe_iter(*tfit); feit; ++feit)
+        for(EdgeVertexIterator evit = m_obj->ev_iter(*feit); evit; ++evit)
+          m_verts.insert(*evit);
+
+    //...and set up an iterator
+    m_viter = m_verts.begin();
+  }
+
+  TetVertexIterator& TetVertexIterator::operator= (const TetVertexIterator& tvit)
+  {
+    m_obj = tvit.m_obj;
+    m_th = tvit.m_th;
+    m_viter = tvit.m_viter;
+    return *this;
+  }
+
+  bool TetVertexIterator::operator== (const TetVertexIterator& tvit) const
+  {
+    return m_obj == tvit.m_obj && m_th == tvit.m_th && m_viter == tvit.m_viter;
+  }
+
+  bool TetVertexIterator::operator!= (const TetVertexIterator& tvit) const
+  {
+    return !(operator==(tvit));
+  }
+
+  TetVertexIterator& TetVertexIterator::operator++ ()
+  {
+    ++m_viter;
+    return *this;
+  }
+
+  TetVertexIterator& TetVertexIterator::operator-- ()
+  {
+    --m_viter;
+    return *this;
+  }
+
+  TetVertexIterator::value_type TetVertexIterator::operator* ()
+  {
+    return *m_viter;
+  }
+
+
+  TetVertexIterator::operator bool() const
+  {
+    assert(m_obj);
+    return m_viter != m_verts.end();
+  }
+  
+
 }

@@ -208,3 +208,26 @@ TopologicalObject::ef_iter(const EdgeHandle& eh) const
   return EdgeFaceIterator(this, eh);
 }
 
+inline FaceTetIterator
+  TopologicalObject::ft_iter(const FaceHandle& fh)
+{
+  return FaceTetIterator(this, fh);
+}
+
+inline const FaceTetIterator
+  TopologicalObject::ft_iter(const FaceHandle& fh) const
+{
+  return FaceTetIterator(this, fh);
+}
+
+inline TetFaceIterator
+  TopologicalObject::tf_iter(const TetHandle& th)
+{
+  return TetFaceIterator(this, th);
+}
+
+inline const TetFaceIterator
+  TopologicalObject::tf_iter(const TetHandle& th) const
+{
+  return TetFaceIterator(this, th);
+}

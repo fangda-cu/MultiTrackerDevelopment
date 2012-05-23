@@ -1911,7 +1911,7 @@ void RodShellTest::setupScene10()
 
   std::cout << "mesh nv = " << obj->nv() << " ne = " << obj->ne() << " nf = " << obj->nf() << std::endl;
 
-  for(int i = 0; i < faces.size(); ++i) {
+  for(unsigned int i = 0; i < faces.size(); ++i) {
     
     FaceHandle newFace = obj->addFace(vertHandles[faces[i][0]], vertHandles[faces[i][1]], vertHandles[faces[i][2]]);
 
@@ -1982,7 +1982,7 @@ void RodShellTest::setupScene10()
   rod->setUndeformedPositions(rodundeformed);
 
   EdgeProperty<Vec3d> ref_dir(obj);
-  for (int i = 0; i < rodEdges.size(); i++)
+  for (unsigned int i = 0; i < rodEdges.size(); i++)
   {
     ref_dir[rodEdges[i]] = Vec3d(0, 0, 1);
   }

@@ -15,6 +15,7 @@
 #include "BASim/src/Core/Definitions.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjHandles.hh"
 #include "BASim/src/Core/TopologicalObject/Topology.hh"
+#include <set>
 
 namespace BASim {
 
@@ -474,11 +475,7 @@ protected:
   FaceEdgeIterator m_feit;
   const TopologicalObject* m_obj;
   FaceHandle m_hnd;
-  /*
-  const TopologicalObject* m_obj;        ///< Pointer to topological object
-  FaceHandle m_hnd;     ///< Handle to face whose connectivity is being considered
-  size_t m_idx;          ///< Current index into topology information
-  */
+
 };
 
 /** Iterator over faces adjacent to a vertex */
@@ -548,6 +545,113 @@ protected:
   const TopologicalObject* m_obj; ///< Pointer to the topological object
   EdgeHandle m_hnd;               ///< Handle to the edge whose topology is being considered
   size_t m_idx;                   ///< Current index into topological information
+};
+
+
+/** Iterator over tets adjacent to a face */
+class FaceTetIterator
+{
+public:
+
+  typedef TetHandle                  value_type;
+  typedef value_type&                 reference;
+  typedef const value_type&           const_reference;
+  typedef value_type*                 pointer;
+  typedef const value_type*           const_pointer;
+
+  FaceTetIterator();
+  FaceTetIterator(const FaceTetIterator& efit);
+  FaceTetIterator(const TopologicalObject* t, const FaceHandle& fh);
+
+  FaceTetIterator& operator= (const FaceTetIterator& veit);
+
+  bool operator== (const FaceTetIterator& ftit) const;
+  bool operator!= (const FaceTetIterator& ftit) const;
+
+  FaceTetIterator& operator++ ();
+  FaceTetIterator& operator-- ();
+
+  value_type operator* ();
+
+  operator bool() const;
+
+protected:
+
+  const TopologicalObject* m_obj; ///< Pointer to the topological object
+  FaceHandle m_hnd;               ///< Handle to the edge whose topology is being considered
+  size_t m_idx;                   ///< Current index into topological information
+};
+
+
+//** Iterator over faces adjacent to a tet */
+class TetFaceIterator
+{
+public:
+
+  typedef FaceHandle                  value_type;
+  typedef value_type&                 reference;
+  typedef const value_type&           const_reference;
+  typedef value_type*                 pointer;
+  typedef const value_type*           const_pointer;
+
+  TetFaceIterator();
+  TetFaceIterator(const TetFaceIterator& evit);
+  TetFaceIterator(const TopologicalObject* t, const TetHandle& eh);
+
+  TetFaceIterator& operator= (const TetFaceIterator& evit);
+
+  bool operator== (const TetFaceIterator& evit) const;
+  bool operator!= (const TetFaceIterator& evit) const;
+
+  TetFaceIterator& operator++ ();
+  TetFaceIterator& operator-- ();
+
+  value_type operator* ();
+
+  operator bool() const;
+
+protected:
+
+  const TopologicalObject* m_obj; ///< Pointer to topological object
+  TetHandle m_hnd;               ///< Handle to tet whose connectivity is being considered
+  int m_idx;                    ///< Index in the iterator, to prevent infinite cycling
+};
+
+
+/** Iterator over vertices adjacent to a tet */
+
+class TetVertexIterator {
+public:
+
+  typedef VertexHandle               value_type;
+  typedef value_type&                 reference;
+  typedef const value_type&           const_reference;
+  typedef value_type*                 pointer;
+  typedef const value_type*           const_pointer;
+
+  TetVertexIterator();
+  TetVertexIterator(const TetVertexIterator& vfit);
+  TetVertexIterator(const TopologicalObject* t, const TetHandle& th);
+
+  TetVertexIterator& operator= (const TetVertexIterator& tvit);
+
+  bool operator== (const TetVertexIterator&) const;
+  bool operator!= (const TetVertexIterator& vfit) const;
+
+  TetVertexIterator& operator++ ();
+  TetVertexIterator& operator-- ();
+
+  value_type operator* ();
+
+  operator bool() const;
+
+protected:
+  const TopologicalObject* m_obj;
+  TetHandle m_th;
+
+  std::set<VertexHandle> m_verts;
+  std::set<VertexHandle>::iterator m_viter;
+
 };
 
 

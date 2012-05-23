@@ -32,7 +32,8 @@ public:
   
   friend class VertexVertexIterator; friend class VertexEdgeIterator; friend class VertexFaceIterator;
   friend class EdgeVertexIterator; friend class EdgeFaceIterator;
-  friend class FaceVertexIterator; friend class FaceEdgeIterator;
+  friend class FaceVertexIterator; friend class FaceEdgeIterator; friend class FaceTetIterator;
+  friend class TetFaceIterator; friend class TetVertexIterator;
   
   //allow properties to access object internals (for registering/unregistering themselves) 
   template<class T>
@@ -223,6 +224,12 @@ public:
   //FaceXXXIterators next...
   
   /** Iterator over edges adjacent to a face */
+  FaceTetIterator ft_iter(const FaceHandle& th);
+  /** Const version */
+  const FaceTetIterator ft_iter(const FaceHandle& th) const;
+
+
+  /** Iterator over edges adjacent to a face */
   FaceEdgeIterator fe_iter(const FaceHandle& fh);
   /** Const version */
   const FaceEdgeIterator fe_iter(const FaceHandle& fh) const;
@@ -231,6 +238,21 @@ public:
   FaceVertexIterator fv_iter(const FaceHandle& fh);
   /** Const version */
   const FaceVertexIterator fv_iter(const FaceHandle& fh) const;
+
+
+  //TetXXXIterators next...
+  
+  /** Iterator over vertices adjacent to a face */
+  TetFaceIterator tf_iter(const TetHandle& th);
+  /** Const version */
+  const TetFaceIterator tf_iter(const TetHandle& th) const;
+
+
+  /** Iterator over vertices adjacent to a face */
+  TetVertexIterator tv_iter(const TetHandle& th);
+  /** Const version */
+  const TetVertexIterator tv_iter(const TetHandle& th) const;
+
 
   //@}
 
