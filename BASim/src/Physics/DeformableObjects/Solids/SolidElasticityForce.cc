@@ -94,54 +94,24 @@ adreal<NumElasticityDof,DO_HESS,Real> ElasticEnergy(const SolidElasticityForce& 
 
   // Compute deformation gradient
   admatElast F = ds_mat * dm_inv;  
-  std::cout << "Deformation gradient:\n";
-  for(int i = 0; i < 3; ++i) {
-    for(int j = 0; j < 3; ++j) {
-      std::cout << F(i,j).value() << " ";
-    }
-    std::cout << std::endl;
-  }
-  std::cout << std::endl;
 
   // Compute green strain
   admatElast G = F.transpose()*F - admatElast::Identity(); 
   
-  std::cout << "Green strain:\n";
-  for(int i = 0; i < 3; ++i) {
-    for(int j = 0; j < 3; ++j) {
-      std::cout << G(i,j).value() << " ";
-    }
-    std::cout << std::endl;
-  }
-  std::cout << std::endl;
-
   // Convert from Youngs+Poisson to lame coeffs
   adrealElast intermediate = Youngs / (1.0+Poisson);
   adrealElast lambda = intermediate * Poisson / (1.0 - 2.0*Poisson);
   adrealElast mu = intermediate / 2.0;
-  std::cout << "Lame: " << lambda.value() << " " << mu.value() << std::endl;
+  
   //Compute stress using linear elasticity
   admatElast CG = adrealElast(2.0 * mu) * G + adrealElast(lambda) * G.trace() * admatElast::Identity();
   
-  std::cout << "Stress:\n";
-  for(int i = 0; i < 3; ++i) {
-    for(int j = 0; j < 3; ++j) {
-      std::cout << CG(i,j).value() << " ";
-    }
-    std::cout << std::endl;
-  }
-  std::cout << std::endl;
-
   // Compute elastic potential density: double contraction of stress:strain (expressed as trace of matrix product)
   e = adrealElast(0.5)*admatElast::doublecontraction(CG, G); 
   
-  std::cout << "Density: " << e.value();
-
   // Scale by (rest) volume 
   e *= fabs(dot(dm1, cross(dm2,dm3)))/6.0;
   
-  std::cout << "Scaled by volume: " << e.value();
-
   return e;
 }
 
@@ -156,8 +126,6 @@ Scalar SolidElasticityForce::globalEnergy() const
     const TetHandle& th = *tit;
     
     gatherDOFs(th, deformed, undeformed_damp, undeformed, indices);
-    
-    //determine the energy for this element
     energy += elementEnergy(deformed, undeformed, m_Youngs, m_Poisson);
   }
   return energy;
@@ -165,9 +133,6 @@ Scalar SolidElasticityForce::globalEnergy() const
 
 void SolidElasticityForce::globalForce( VecXd& force )  const
 {
-
-  Scalar totalEnergy = globalEnergy();
-  std::cout << totalEnergy << std::endl;
 
   std::vector<int> indices(12);
   std::vector<Vec3d> deformed(4), undeformed(4), undeformed_damp(4);
@@ -184,6 +149,7 @@ void SolidElasticityForce::globalForce( VecXd& force )  const
       elementForce(deformed, undeformed, m_Youngs, m_Poisson, localForce);
       for (unsigned int i = 0; i < indices.size(); ++i)
         force(indices[i]) += localForce(i);
+     
     }
     
     if(m_Youngs_damp != 0) {
@@ -213,6 +179,7 @@ void SolidElasticityForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) 
       elementJacobian(deformed, undeformed, m_Youngs, m_Poisson, localMatrix);
       Jacobian.add(indices, indices, scale * localMatrix);
     }
+
     if(m_Youngs_damp != 0) {
       elementJacobian(deformed, undeformed_damp, m_Youngs_damp, m_Poisson_damp, localMatrix);
       Jacobian.add(indices, indices, scale / m_timestep * localMatrix);
@@ -236,8 +203,6 @@ Scalar SolidElasticityForce::elementEnergy(const std::vector<Vec3d>& deformed, c
     undeformed_data[3*i] = undeformed[i][0];
     undeformed_data[3*i+1] = undeformed[i][1];
     undeformed_data[3*i+2] = undeformed[i][2];
-    std::cout << "Deformed: " << deformed_data[3*i] << " " << deformed_data[3*i+1] << " " << deformed_data[3*i+2] << std::endl;
-    std::cout << "Undeformed: " << undeformed_data[3*i] << " " << undeformed_data[3*i+1] << " " << undeformed_data[3*i+2] << std::endl;
   }
   
   adreal<NumElasticityDof,0,Real> e = ElasticEnergy<0>( *this, deformed_data, undeformed_data, Youngs, Poisson);
@@ -278,7 +243,6 @@ void SolidElasticityForce::elementJacobian(const std::vector<Vec3d>& deformed, c
 {
   assert(deformed.size() == 4);
 
-  Eigen::Matrix<Scalar,12,12> jac2;
   std::vector<Scalar> deformed_data(NumElasticityDof);
   std::vector<Scalar> undeformed_data(NumElasticityDof);
 
@@ -292,15 +256,13 @@ void SolidElasticityForce::elementJacobian(const std::vector<Vec3d>& deformed, c
     undeformed_data[3*i+2] = undeformed[i][2];
   }
 
-  jac2.setZero();
-
-  adreal<NumElasticityDof,1,Real> e = ElasticEnergy<1>(*this, deformed_data, undeformed_data, Youngs, Poisson);     
-  // insert in the element jacobian matrix
+  jac.setZero();
+adreal<NumElasticityDof,1,Real> e = ElasticEnergy<1>(*this, deformed_data, undeformed_data, Youngs, Poisson);     
   for( uint i = 0; i < NumElasticityDof; i++ )
   {
     for( uint j = 0; j < NumElasticityDof; j++ )
     {
-      jac2(i,j) = -e.hessian(i,j);
+      jac(i,j) = -e.hessian(i,j);
     }
   }
 
