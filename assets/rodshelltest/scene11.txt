@@ -1,4 +1,4 @@
-dt 0.01	# time-step size
+dt 0.05	# time-step size
 gravity 0 -1 0	# gravity
 
 rodshell-scene 11	# the scene to test
@@ -28,7 +28,7 @@ shell-Poisson 0.5	# the Poisson ratio of the shell material
 shell-Poisson-damping 0.5	# the damping coefficient associated to the shell's Poisson ratio
 
 
-solid-Youngs 0.01    # the Young's modulus of the solid material
+solid-Youngs 10    # the Young's modulus of the solid material
 solid-Youngs-damping 0	# the damping coefficient associated with the solid's Young's modulus
 solid-Poisson 0.25	# the Poisson ratio of the solid material
 solid-Poisson-damping 0.25 # the damping coefficient associated to the solid's Poisson ratio
