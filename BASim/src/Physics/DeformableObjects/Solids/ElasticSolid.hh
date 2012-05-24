@@ -13,7 +13,7 @@
 
 namespace BASim {
 
-const int ELASTIC_SOLID_DOFS_PER_VERTEX = 3; //nodal position vectors
+const int ELASTIC_SOLID_DOFS_PER_VERTEX = 0; //nodal position vectors are in PositionDofsModel
 
 class DeformableObject;
 class ElasticSolidForce;

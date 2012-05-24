@@ -40,7 +40,7 @@ bool SolidElasticityForce::gatherDOFs(const TetHandle& th, std::vector<Vec3d>& d
     deformed[i] = m_solid.getVertexPosition(vh);
     undeformed[i] = m_solid.getVertexUndeformed(vh);
     undeformed_damp[i] = m_solid.getVertexDampingUndeformed(vh);
-    int dofBase = m_solid.getVertexDofBase(vh);
+    int dofBase = m_solid.getDefoObj().getPositionDofBase(vh);
     indices[i*3] = dofBase;
     indices[i*3+1] = dofBase+1;
     indices[i*3+2] = dofBase+2;
@@ -110,7 +110,7 @@ adreal<NumElasticityDof,DO_HESS,Real> ElasticEnergy(const SolidElasticityForce& 
   e = adrealElast(0.5)*admatElast::doublecontraction(CG, G); 
   
   // Scale by (rest) volume 
-  e *= fabs(dot(dm1, cross(dm2,dm3)))/6.0;
+  e *= dot(dm1, cross(dm2,dm3))/6.0;
   
   return e;
 }
@@ -149,7 +149,6 @@ void SolidElasticityForce::globalForce( VecXd& force )  const
       elementForce(deformed, undeformed, m_Youngs, m_Poisson, localForce);
       for (unsigned int i = 0; i < indices.size(); ++i)
         force(indices[i]) += localForce(i);
-     
     }
     
     if(m_Youngs_damp != 0) {
@@ -159,7 +158,7 @@ void SolidElasticityForce::globalForce( VecXd& force )  const
     }
    
   }
-  
+ 
 }
 
 void SolidElasticityForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) const
@@ -257,7 +256,7 @@ void SolidElasticityForce::elementJacobian(const std::vector<Vec3d>& deformed, c
   }
 
   jac.setZero();
-adreal<NumElasticityDof,1,Real> e = ElasticEnergy<1>(*this, deformed_data, undeformed_data, Youngs, Poisson);     
+  adreal<NumElasticityDof,1,Real> e = ElasticEnergy<1>(*this, deformed_data, undeformed_data, Youngs, Poisson);     
   for( uint i = 0; i < NumElasticityDof; i++ )
   {
     for( uint j = 0; j < NumElasticityDof; j++ )
