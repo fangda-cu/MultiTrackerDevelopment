@@ -13,6 +13,7 @@
 
 #include "BASim/src/Physics/DeformableObjects/Shells/ElasticShell.hh"
 #include "BASim/src/Physics/DeformableObjects/Rods/ElasticRodModel.hh"
+#include "BASim/src/Physics/DeformableObjects/Solids/ElasticSolid.hh"
 #include "BASim/src/Physics/DeformableObjects/DefoObjTimeStepper.hh"
 
 /**
@@ -39,6 +40,7 @@ public:
   void setupScene8(); // collapsible tunnel opening
   void setupScene9(); // balls in bag
   void setupScene10();// Houdini exporter/loader test
+  void setupScene11();// Solid test scene
 
 protected:
   void Setup();
@@ -47,6 +49,7 @@ protected:
   DeformableObject * obj;
   ElasticRodModel * rod;
   ElasticShell * shell;
+  ElasticSolid * solid;
 
   DefoObjTimeStepper * stepper;
   

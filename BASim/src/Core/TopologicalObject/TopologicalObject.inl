@@ -231,3 +231,15 @@ inline const TetFaceIterator
 {
   return TetFaceIterator(this, th);
 }
+
+inline TetVertexIterator
+  TopologicalObject::tv_iter(const TetHandle& th)
+{
+  return TetVertexIterator(this, th);
+}
+
+inline const TetVertexIterator
+  TopologicalObject::tv_iter(const TetHandle& th) const
+{
+  return TetVertexIterator(this, th);
+}

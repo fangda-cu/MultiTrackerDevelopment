@@ -85,32 +85,64 @@ adreal<NumElasticityDof,DO_HESS,Real> ElasticEnergy(const SolidElasticityForce& 
   admatElast ds_mat(ds1[0], ds2[0], ds3[0],
                     ds1[1], ds2[1], ds3[1],
                     ds1[2], ds2[2], ds3[2]);
+
   admatElast dm_mat(dm1[0], dm2[0], dm3[0],
-                             dm1[1], dm2[1], dm3[1],
-                             dm1[2], dm2[2], dm3[2]);
+                    dm1[1], dm2[1], dm3[1],
+                    dm1[2], dm2[2], dm3[2]);
+  
   admatElast dm_inv = dm_mat.inverse();
 
   // Compute deformation gradient
   admatElast F = ds_mat * dm_inv;  
+  std::cout << "Deformation gradient:\n";
+  for(int i = 0; i < 3; ++i) {
+    for(int j = 0; j < 3; ++j) {
+      std::cout << F(i,j).value() << " ";
+    }
+    std::cout << std::endl;
+  }
+  std::cout << std::endl;
 
   // Compute green strain
   admatElast G = F.transpose()*F - admatElast::Identity(); 
   
+  std::cout << "Green strain:\n";
+  for(int i = 0; i < 3; ++i) {
+    for(int j = 0; j < 3; ++j) {
+      std::cout << G(i,j).value() << " ";
+    }
+    std::cout << std::endl;
+  }
+  std::cout << std::endl;
+
   // Convert from Youngs+Poisson to lame coeffs
   adrealElast intermediate = Youngs / (1.0+Poisson);
   adrealElast lambda = intermediate * Poisson / (1.0 - 2.0*Poisson);
   adrealElast mu = intermediate / 2.0;
-
+  std::cout << "Lame: " << lambda.value() << " " << mu.value() << std::endl;
   //Compute stress using linear elasticity
   admatElast CG = adrealElast(2.0 * mu) * G + adrealElast(lambda) * G.trace() * admatElast::Identity();
   
+  std::cout << "Stress:\n";
+  for(int i = 0; i < 3; ++i) {
+    for(int j = 0; j < 3; ++j) {
+      std::cout << CG(i,j).value() << " ";
+    }
+    std::cout << std::endl;
+  }
+  std::cout << std::endl;
+
   // Compute elastic potential density: double contraction of stress:strain (expressed as trace of matrix product)
   e = adrealElast(0.5)*admatElast::doublecontraction(CG, G); 
   
+  std::cout << "Density: " << e.value();
+
   // Scale by (rest) volume 
   e *= fabs(dot(dm1, cross(dm2,dm3)))/6.0;
   
-    return e;
+  std::cout << "Scaled by volume: " << e.value();
+
+  return e;
 }
 
 Scalar SolidElasticityForce::globalEnergy() const
@@ -133,6 +165,9 @@ Scalar SolidElasticityForce::globalEnergy() const
 
 void SolidElasticityForce::globalForce( VecXd& force )  const
 {
+
+  Scalar totalEnergy = globalEnergy();
+  std::cout << totalEnergy << std::endl;
 
   std::vector<int> indices(12);
   std::vector<Vec3d> deformed(4), undeformed(4), undeformed_damp(4);
@@ -201,8 +236,10 @@ Scalar SolidElasticityForce::elementEnergy(const std::vector<Vec3d>& deformed, c
     undeformed_data[3*i] = undeformed[i][0];
     undeformed_data[3*i+1] = undeformed[i][1];
     undeformed_data[3*i+2] = undeformed[i][2];
+    std::cout << "Deformed: " << deformed_data[3*i] << " " << deformed_data[3*i+1] << " " << deformed_data[3*i+2] << std::endl;
+    std::cout << "Undeformed: " << undeformed_data[3*i] << " " << undeformed_data[3*i+1] << " " << undeformed_data[3*i+2] << std::endl;
   }
-
+  
   adreal<NumElasticityDof,0,Real> e = ElasticEnergy<0>( *this, deformed_data, undeformed_data, Youngs, Poisson);
   Scalar energy = e.value();
 

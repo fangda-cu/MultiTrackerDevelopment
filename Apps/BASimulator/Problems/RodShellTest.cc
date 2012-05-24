@@ -16,6 +16,7 @@
 #include "BASim/src/Render/RodModelRenderer.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 #include "BASim/src/Physics/DeformableObjects/Rods/RodModelForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Solids/SolidElasticityForce.hh"
 
 using namespace BASim;
 
@@ -101,6 +102,7 @@ RodShellTest::RodShellTest() :
   obj(NULL), 
   rod(NULL), 
   shell(NULL), 
+  solid(NULL),
   stepper(NULL),
   m_active_scene(1),
   m_time(0)
@@ -184,6 +186,16 @@ RodShellTest::RodShellTest() :
   AddOption("shell-tearing-randomness", "percent of fracture edges that will actually tear apart", 1.0 );
   AddOption("shell-ring-velocity", "velocity in the x direction for the rings", 0.25);
   
+  //Basic solid options
+  AddOption("solid-density", "volumetric density of the solid", 1.0);
+
+  //Properties for three-dimensional solid linear elasticity & viscosity
+  AddOption("solid-Poisson", "the Poisson ratio of the solid material", 0.0f);
+  AddOption("solid-Youngs", "the Young's modulus of the solid material", 0.0f);
+  AddOption("solid-Poisson-damping", "the damping coefficient associated to the solid's Poisson ratio", 0.0f);
+  AddOption("solid-Youngs-damping", "the damping coefficient associated with the solid's Young's modulus", 0.0f);
+
+
   //Timestepper options
   AddOption("integrator", "type of integrator to use for the shell", "implicit");
   
@@ -201,6 +213,7 @@ RodShellTest::~RodShellTest()
   if (obj) delete obj;
   if (rod) delete rod;
   if (shell) delete shell;
+  if (solid) delete solid;
   if (stepper) delete stepper;
 }
 
@@ -218,7 +231,8 @@ sceneFunc rodshell_scenes[] =
   &RodShellTest::setupScene7,  // collapsible tunnel folding
   &RodShellTest::setupScene8,  // collapsible tunnel opening
   &RodShellTest::setupScene9,  // balls in bag
-  &RodShellTest::setupScene10  // Christopher's first Houdini export test
+  &RodShellTest::setupScene10,  // Christopher's first Houdini export test
+  &RodShellTest::setupScene11   // solid elasticity test
 
 };
 
@@ -256,6 +270,13 @@ void RodShellTest::Setup()
   Scalar cst_scale = GetScalarOpt("shell-stretching-factor");
   Scalar ds_scale = GetScalarOpt("shell-bending-factor");
   
+  Scalar solid_Youngs_modulus = GetScalarOpt("solid-Youngs");
+  Scalar solid_Poisson_ratio = GetScalarOpt("solid-Poisson");
+  Scalar solid_Youngs_damping = GetScalarOpt("solid-Youngs-damping");
+  Scalar solid_Poisson_damping = GetScalarOpt("solid-Poisson-damping");
+
+  Scalar solid_density = GetScalarOpt("solid-density");
+
   std::string integrator = GetStringOpt("integrator");
   
   Scalar timestep = getDt(); //Our Rayleigh damping model relies on knowing the timestep (folds it into the damping stiffness, as in Viscous Threads)
@@ -316,14 +337,32 @@ void RodShellTest::Setup()
   
   //////////////////////////////////////////////////////////////////////////
   //
+  // solid forces
+  //
+  //////////////////////////////////////////////////////////////////////////
+
+  if(solid_Youngs_modulus != 0 || solid_Youngs_damping != 0) {
+
+    //Linear elastic forces (Constant Strain tetrahedra, i.e. linear FEM)
+    solid->addForce(new SolidElasticityForce(*solid, "SolidElasticity", 
+      solid_Youngs_modulus, solid_Poisson_ratio, 
+      solid_Youngs_damping, solid_Poisson_damping, timestep));
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+  //
   // rod and shell mass
   //
   //////////////////////////////////////////////////////////////////////////
   shell->setThickness(shell_thickness);
   shell->setDensity(shell_density);
+  
   rod->setRadii(rod_radius_a, rod_radius_b);
   rod->setDensity(rod_density);
   
+  solid->setDensity(solid_density);
+  
+  solid->computeMasses();
   shell->computeMasses();
   rod->computeMasses();
   
@@ -1988,4 +2027,102 @@ void RodShellTest::setupScene10()
   }
   rod->setUndeformedReferenceDirector1(ref_dir);
   
+}
+
+void RodShellTest::setupScene11()
+{
+  // load an obj, hard coded path for now
+  std::vector<Vec3d> vertices;
+
+  // Create 4 vertices
+  vertices.push_back(Vec3d(0,0,0));
+  vertices.push_back(Vec3d(1,0,0));
+  vertices.push_back(Vec3d(0,1,0));
+  vertices.push_back(Vec3d(0,0,1));
+  
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> positions(obj);
+  VertexProperty<Vec3d> velocities(obj);
+  VertexProperty<Vec3d> undeformed(obj);
+  
+  // vertex positions from obj file
+  for (size_t i = 0; i < vertices.size(); i++)
+  {
+    VertexHandle h = obj->addVertex();
+
+    Vec3d vert = vertices[i];
+    positions[h] = vert;
+    if(i == 0)
+      positions[h] = Vec3d(-0.2, -0.2, -0.2);
+    velocities[h] = Vec3d(0, 0, 0);
+    undeformed[h] = vert;
+    vertHandles.push_back(h);
+  }
+  int nv = vertices.size();
+
+  FaceHandle face0 = obj->addFace(vertHandles[0], vertHandles[1], vertHandles[2]);
+  FaceHandle face1 = obj->addFace(vertHandles[0], vertHandles[3], vertHandles[1]);
+  FaceHandle face2 = obj->addFace(vertHandles[0], vertHandles[2], vertHandles[3]);
+  FaceHandle face3 = obj->addFace(vertHandles[1], vertHandles[3], vertHandles[2]);
+  
+  TetHandle tet = obj->addTet(face0, face1, face2, face3);
+
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  TetProperty<char> solidTets(obj); 
+  DeformableObject::tet_iter tIt;
+  for(tIt = obj->tets_begin(); tIt != obj->tets_end(); ++tIt)
+    solidTets[*tIt] = true;
+
+  //now create the physical model to hang on the mesh
+  solid = new ElasticSolid(obj, solidTets, m_timestep);
+  obj->addModel(solid);
+
+  //positions
+  solid->setVertexUndeformed(undeformed);
+  solid->setVertexPositions(positions);
+  solid->setVertexVelocities(velocities);
+
+  //Find highest vertex
+  VertexIterator vit = obj->vertices_begin();
+  Scalar highest = -10000;
+  for(;vit!= obj->vertices_end(); ++vit) {
+    Vec3d pos = solid->getVertexPosition(*vit);
+    if(pos[1] >= highest) {
+      highest = pos[1];
+    }
+  }
+
+  //Pin all verts at or near that height
+  for(vit = obj->vertices_begin();vit!= obj->vertices_end(); ++vit) {
+    Vec3d pos = solid->getVertexPosition(*vit);
+    if(pos[1] >= highest - 1e-4)
+      obj->constrainVertex(*vit, pos);
+  }
+
+
+  // create an empty rod model
+  rod = new ElasticRodModel(obj, std::vector<EdgeHandle>(), m_timestep);
+  obj->addModel(rod);
+
+  // set init dofs for edges
+  EdgeProperty<Scalar> zeros(obj);
+  zeros.assign(0);
+  rod->setEdgeThetas(zeros);
+  rod->setEdgeThetaVelocities(zeros);
+  rod->setEdgeUndeformedThetas(zeros);
+
+
+  // create an empty shell model
+  FaceProperty<char> shellFaces(obj); 
+  shellFaces.assign(false); // no face anyway  
+  shell = new ElasticShell(obj, shellFaces, m_timestep);
+  obj->addModel(shell);
+
+  // set init shell dofs for edges
+  shell->setEdgeXis(zeros);
+  shell->setEdgeVelocities(zeros);
+  shell->setEdgeUndeformed(zeros);
+ 
+
+
 }

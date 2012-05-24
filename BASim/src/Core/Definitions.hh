@@ -23,6 +23,7 @@ typedef Eigen::Matrix<int, Eigen::Dynamic, 1> IndexArray; ///< array storing ind
 typedef Eigen::Matrix<Scalar, 2, 1> Vec2d; ///< 2d scalar vector
 typedef Eigen::Matrix<Scalar, 3, 1> Vec3d; ///< 3d scalar vector
 typedef Eigen::Matrix<int, 3, 1> Vec3i; ///< 3d int vector
+typedef Eigen::Matrix<int, 4, 1> Vec4i; ///< 4d int vector
 typedef std::vector<Vec2d> Vec2dArray; ///< an array of 2d scalar vectors
 typedef std::vector<Vec3d> Vec3dArray; ///< an array of 3d scalar vectors
 
