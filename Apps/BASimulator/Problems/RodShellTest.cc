@@ -360,9 +360,12 @@ void RodShellTest::Setup()
   rod->setRadii(rod_radius_a, rod_radius_b);
   rod->setDensity(rod_density);
   
-  solid->setDensity(solid_density);
+  if(solid != 0) {
+    solid->setDensity(solid_density);
   
-  solid->computeMasses();
+    solid->computeMasses();
+  }
+
   shell->computeMasses();
   rod->computeMasses();
   
