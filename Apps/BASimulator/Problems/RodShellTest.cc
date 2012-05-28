@@ -2043,6 +2043,9 @@ void RodShellTest::setupScene11()
   vertices.push_back(Vec3d(0,1,0));
   vertices.push_back(Vec3d(0,0,1));
   
+  vertices.push_back(Vec3d(-1,0,0)); //shell vertex
+  vertices.push_back(Vec3d(-1, -1, 0)); //rod vertex
+
   std::vector<VertexHandle> vertHandles;
   VertexProperty<Vec3d> positions(obj);
   VertexProperty<Vec3d> velocities(obj);
@@ -2067,6 +2070,10 @@ void RodShellTest::setupScene11()
   FaceHandle face1 = obj->addFace(vertHandles[0], vertHandles[3], vertHandles[1]);
   FaceHandle face2 = obj->addFace(vertHandles[0], vertHandles[2], vertHandles[3]);
   FaceHandle face3 = obj->addFace(vertHandles[1], vertHandles[3], vertHandles[2]);
+  
+  FaceHandle face4 = obj->addFace(vertHandles[0], vertHandles[3], vertHandles[4]); //shell face
+
+  EdgeHandle edge = obj->addEdge(vertHandles[4], vertHandles[5]); //rod edge
   
   TetHandle tet = obj->addTet(face0, face1, face2, face3);
 
@@ -2104,7 +2111,9 @@ void RodShellTest::setupScene11()
 
 
   // create an empty rod model
-  rod = new ElasticRodModel(obj, std::vector<EdgeHandle>(), m_timestep);
+  std::vector<EdgeHandle> edges;
+  edges.push_back(edge);
+  rod = new ElasticRodModel(obj, edges, m_timestep);
   obj->addModel(rod);
 
   // set init dofs for edges
@@ -2118,6 +2127,7 @@ void RodShellTest::setupScene11()
   // create an empty shell model
   FaceProperty<char> shellFaces(obj); 
   shellFaces.assign(false); // no face anyway  
+  shellFaces[face4] = true;
   shell = new ElasticShell(obj, shellFaces, m_timestep);
   obj->addModel(shell);
 
