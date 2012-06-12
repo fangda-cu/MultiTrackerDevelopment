@@ -233,6 +233,18 @@ namespace BASim
     delete m_twisting_force;
   }
   
+  void ElasticRodModel::computeConservativeForcesEnergy(VecXd & force, Scalar& energy)
+  {
+    VecXd curr_force(force.size());
+    for (size_t i = 0; i < m_forces.size(); i++) 
+    {
+      curr_force.setZero();
+      m_forces[i]->globalForce(curr_force);
+      force += curr_force;
+      energy += m_forces[i]->globalEnergy();
+    }    
+  }
+
   void ElasticRodModel::computeForces(VecXd & force)
   {
     VecXd curr_force(force.size());

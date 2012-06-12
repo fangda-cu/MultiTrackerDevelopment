@@ -58,6 +58,8 @@ public:
   virtual void computeForces(VecXd& force) = 0;
   virtual void computeJacobian(Scalar scale, MatrixBase& J) = 0;
   
+  virtual void computeConservativeForcesEnergy(VecXd& f, Scalar& energy) = 0;
+
   //Accessors for DOFs, velocities, and masses
   virtual const Scalar& getDof(const DofHandle& hnd) const = 0;
   virtual void setDof(const DofHandle& hnd, const Scalar& dof) = 0;

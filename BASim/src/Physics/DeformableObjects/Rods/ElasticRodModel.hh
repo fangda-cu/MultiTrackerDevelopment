@@ -87,7 +87,8 @@ namespace BASim
     //*Inherited from PhysicalModel
     void computeForces(VecXd& force);
     void computeJacobian(Scalar scale, MatrixBase& J);
-    
+    void computeConservativeForcesEnergy(VecXd& f, Scalar& energy);
+
     const Scalar& getDof(const DofHandle& hnd) const;
     void setDof(const DofHandle& hnd, const Scalar& dof);
     const Scalar& getVel(const DofHandle& hnd) const;

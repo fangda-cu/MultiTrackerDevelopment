@@ -393,7 +393,6 @@ adreal<NumMNBendDof,DO_HESS,Real> MNEnergy(const MNBendingForce& mn, const std::
   if(!nbrValid0) w[0] = 0; 
   if(!nbrValid1) w[1] = 0;
   if(!nbrValid2) w[2] = 0; 
-
   
   adrealMN e(0);
   for(int i= 0; i < NumTriPoints; i++)

@@ -32,6 +32,20 @@ Scalar DeformableObject::getTime() {
   return m_dt;
 }
 
+void DeformableObject::computeConservativeForcesEnergy(VecXd& force, Scalar& energy) {
+  
+  std::vector<PhysicalModel*>::iterator model_it;
+  VecXd curForce(force.size());;
+  Scalar curEnergy = 0;
+  for(model_it = m_models.begin(); model_it != m_models.end(); ++model_it) {
+    curForce.setZero();
+    curEnergy = 0;
+    (*model_it)->computeConservativeForcesEnergy(curForce, curEnergy);
+    force += curForce;
+    energy += curEnergy;
+  }
+
+}
 
 void DeformableObject::computeForces(VecXd& force) {
   

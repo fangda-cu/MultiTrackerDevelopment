@@ -12,7 +12,7 @@ namespace BASim {
                                   Scalar Youngs, Scalar Poisson, 
                                   Scalar Youngs_damp, Scalar Poisson_damp, 
                                   Scalar timestep) : 
-    ElasticShellForce(shell, name), m_Youngs(Youngs), m_Poisson(Poisson), m_Youngs_damp(Youngs_damp), m_Poisson_damp(Poisson_damp), m_timestep(timestep), m_func(new LinearTransfer())
+    ElasticShellForce(shell, name), m_Youngs(Youngs), m_Poisson(Poisson), m_Youngs_damp(Youngs_damp), m_Poisson_damp(Poisson_damp), m_timestep(timestep), m_func(new UpTransfer()) //m_func(new LinearTransfer())
 {
   
 }
@@ -125,8 +125,10 @@ Scalar DSBendingForce::globalEnergy() const
     for(unsigned int i = 0; i < pairs.size(); ++i) {
       gatherDOFs(eh, pairs[i].first, pairs[i].second, undeformed, undeformed_damp, deformed, indices);
 
+      Scalar stiffness_coeff = m_Youngs * cube(getEdgeThickness(eh)) / (12 *(1-square(m_Poisson)));
+
       //determine the energy for this element
-      energy += elementEnergy(undeformed, deformed);
+      energy += stiffness_coeff*elementEnergy(undeformed, deformed);
     }
   }
 
@@ -158,7 +160,7 @@ void DSBendingForce::globalForce( VecXd& force ) const
       //over Poisson and Youngs.
       Scalar stiffness_coeff = m_Youngs * cube(getEdgeThickness(eh)) / (12 *(1-square(m_Poisson)));
       Scalar damping_coeff = m_Youngs_damp * cube(getEdgeThickness(eh)) / (12 *(1-square(m_Poisson_damp)));
-
+      
       //account for double-counted faces in the non-manifold case
       if(pairs.size() > 2) {
         stiffness_coeff /= 2;
@@ -172,14 +174,12 @@ void DSBendingForce::globalForce( VecXd& force ) const
           force(indices[i]) += stiffness_coeff * localForce(i);
       }
 
-      //////determine the (Rayleigh) damping / viscous forces for this element
+      //determine the (Rayleigh) damping / viscous forces for this element
       if(damping_coeff != 0) {
         elementForce(undeformed_damp, deformed, localForce);
-        
         Scalar scale_factor = damping_coeff / m_timestep;
-        for (unsigned int i = 0; i < indices.size(); ++i) {
+        for (unsigned int i = 0; i < indices.size(); ++i)
            force(indices[i]) += scale_factor * localForce(i);
-        }
       }
     }
   
@@ -223,17 +223,13 @@ void DSBendingForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) const
       //determine the forces for this element
       if(stiffness_coeff != 0) {
         elementJacobian(undeformed, deformed, localJacobian);
-        for (unsigned int i = 0; i < indices.size(); ++i)
-          for(unsigned int j = 0; j < indices.size(); ++j) 
-            Jacobian.add(indices[i],indices[j], scale * stiffness_coeff * localJacobian(i,j));
+        Jacobian.add(indices,indices, scale * stiffness_coeff * localJacobian);
       }
       
       if(damping_coeff != 0) {
         elementJacobian(undeformed_damp, deformed, localJacobian);
         Scalar scale_factor = scale * damping_coeff / m_timestep;
-        for (unsigned int i = 0; i < indices.size(); ++i)
-          for(unsigned int j = 0; j < indices.size(); ++j) 
-            Jacobian.add(indices[i],indices[j], scale_factor * localJacobian(i,j));
+        Jacobian.add(indices,indices, scale_factor * localJacobian);
       }
     }
 
@@ -279,7 +275,6 @@ static void computeEdgeLength(Scalar& e, const std::vector<Vec3d>& positions)
 
 }
 
-
 static void computeH(Scalar& h, const std::vector<Vec3d>& positions)
 {
   Vec3d p1 = positions[0], 
@@ -291,7 +286,7 @@ static void computeH(Scalar& h, const std::vector<Vec3d>& positions)
   Scalar A2 = 0.5 * len(cross(p2 - p1, q2 - p1));
   Scalar e;
   computeEdgeLength(e, positions);
-  h = 2.0 * (A1 + A2) / (3.0 * e);
+  h = (A1 + A2) / (3.0 * e);
 
 }
 
@@ -347,7 +342,6 @@ Scalar DSBendingForce::elementEnergy(const std::vector<Vec3d>& undeformed,
 
   //hard edge
   if (fabs(theta0) > 2*M_PI) strength = 1.0e-03;
-
   Scalar x = (f - f0);
   energy = e0 / h0 * x * x * strength;
   return energy;
@@ -389,7 +383,7 @@ void DSBendingForce::elementForce(const std::vector<Vec3d>& undeformed,
   ComputeDihedralAngleDerivatives(dp1, dp2, dq1, dq2, p1, p2, q1, q2);
 
   Scalar fp = m_func->computeFirstDerivative(theta);
-  
+
   for (int i = 0; i < 3; i++)
   {
     force[i] = -2 * e0 / h0 * x * fp * dp1[i] * strength;

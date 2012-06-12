@@ -53,7 +53,7 @@ protected:
     bool isConverged();
     bool examine_solution();
     bool position_solve();
-    void filterDeltaX();
+    //void filterDeltaX();
 
     ODE& m_diffEq;
 

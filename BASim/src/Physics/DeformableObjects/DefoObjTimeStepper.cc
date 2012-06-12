@@ -12,6 +12,10 @@ MatrixBase* DefoObjTimeStepper::createMatrix() const
   return newMat;
 }
 
-
+void DefoObjTimeStepper::evaluateConservativeForcesEnergy(VecXd& f, Scalar& energy)
+{
+  m_obj.computeConservativeForcesEnergy(f, energy);
+   
+}
 
 }

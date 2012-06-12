@@ -94,6 +94,7 @@ void CSTMembraneForce::globalForce( VecXd& force )  const
         force(indices[i]) += localForce(i);
     }
 
+
     ////determine the damping forces for this element
     if(m_Youngs_damp != 0) {
       elementForce(undeformed_damp, deformed, localForce, m_Youngs_damp, m_Poisson_damp, thickness);
@@ -136,7 +137,6 @@ void CSTMembraneForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) cons
   }
 }
 
-
 Scalar CSTMembraneForce::elementEnergy(const std::vector<Vec3d>& undeformed,
                                        const std::vector<Vec3d>& deformed,
                                       Scalar Young, Scalar Poisson, Scalar thickness) const
@@ -167,7 +167,7 @@ void CSTMembraneForce::elementForce(const std::vector<Vec3d>& undeformed,
                                   Eigen::Matrix<Scalar, 9, 1>& force,
                                   Scalar Young, Scalar Poisson, Scalar thickness) const
 {
-  
+ 
   force.setZero();
 
   Eigen::Matrix<Scalar, 3, 3> Tm;
@@ -283,11 +283,12 @@ CSTMembraneForce::computeHash(const std::vector<Vec3d>& undeformed, Eigen::Matri
   }
 
   //Dropping the 4th multiplication by A accounts for the fact that we are integrating the energy/force/etc
-  //over the area of the triangle. This makes the forces/energies/jacobians consistent as you refine the mesh.
+  //over the area of the triangle. This makes the forces/energies/Jacobians consistent as you refine the mesh.
   //The factors of 1/2 from the s terms (strain definition) have been folded in here as well.
 
   Tm1 = 1.0 / (128.0 * (A * A * A)) * Tm1;
   Tm2 = 1.0 / (64.0 * (A * A * A)) * Tm2;
+  
   Tm = (Youngs*thickness)/2/(1.0-Poisson*Poisson)*((1.0-Poisson)*Tm1 + Poisson*Tm2);
 
 }

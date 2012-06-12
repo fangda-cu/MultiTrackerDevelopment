@@ -15,6 +15,7 @@
 #include "BASim/src/Math/SymplecticEuler.hh"
 #include "BASim/src/Math/ImplicitEuler.hh"
 #include "BASim/src/Math/SymmetricImplicitEuler.hh"
+#include "BASim/src/Math/StaticSolver.hh"
 //#include "BASim/src/Math/StaticsSolver.hh"
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
 
@@ -101,6 +102,9 @@ public:
       m_diffEqSolver = new SymmetricImplicitEuler<DefoObjTimeStepper>(*this);
       //m_diffEqSolver = new BacktrackingImplicitEuler<RodTimeStepper>(*this);
     } 
+    else if (method == STATICS) {
+      m_diffEqSolver = new StaticSolver<DefoObjTimeStepper>(*this);
+    }
     else if (method == NONE)
     {
       m_diffEqSolver = NULL;
@@ -134,6 +138,8 @@ public:
       masses(i) = m_obj.getMass(i);
     }
   }
+
+  void evaluateConservativeForcesEnergy(VecXd& f, Scalar& energy);
 
   void setX( const VecXd& positions )
   {

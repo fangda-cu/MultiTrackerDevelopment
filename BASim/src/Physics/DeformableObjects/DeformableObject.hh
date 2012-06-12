@@ -59,6 +59,7 @@ public:
   //@{
   virtual void computeForces(VecXd& force);
   virtual void computeJacobian(Scalar scale, MatrixBase& J);
+  virtual void computeConservativeForcesEnergy(VecXd& f, Scalar& energy);
 
   virtual const Scalar& getDof(int i) const;
   virtual void setDof(int i, const Scalar& dof);

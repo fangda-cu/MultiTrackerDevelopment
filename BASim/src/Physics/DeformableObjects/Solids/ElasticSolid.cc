@@ -22,6 +22,21 @@ ElasticSolid::ElasticSolid(DeformableObject* object, const TetProperty<char>& so
 ElasticSolid::~ElasticSolid() {
 }
 
+
+void ElasticSolid::computeConservativeForcesEnergy( VecXd& force , Scalar& energy)
+{
+  const std::vector<ElasticSolidForce*>& forces = getForces();
+  std::vector<ElasticSolidForce*>::const_iterator fIt;
+
+  VecXd curr_force(force.size());
+  for (fIt = forces.begin(); fIt != forces.end(); ++fIt) {
+    curr_force.setZero();
+    (*fIt)->globalForce(curr_force);
+    energy += (*fIt)->globalEnergy();
+    force += curr_force;
+  }
+
+}
 void ElasticSolid::computeForces( VecXd& force )
 {
   const std::vector<ElasticSolidForce*>& forces = getForces();

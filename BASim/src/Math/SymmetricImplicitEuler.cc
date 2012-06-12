@@ -307,13 +307,14 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
 
             if (m_residual < .9 * previous_residual || converged)
             {
-                TraceStream(g_log, "") << "Succeeded (done).\n\n";
+                
+              TraceStream(g_log, "") << "Succeeded (done).\n\n";
                 break;
             }
             else if (i >= m_maxlsit)
             {
                //std::cout << "Exceeded max iterations.\n\n";
-              std::cout << "Inner solve exceed max iterations.\n";
+              std::cout << "Inner solve (line search) exceed max iterations.\n";
                 TraceStream(g_log, "")
                         << "Exceeded max iterations.\nSymmetricImplicitEuler::position_solve/line search: \033[31;1mWARNING IN IMPLICITEULER:\033[m Line search failed. Proceeding anyway.\n\n";
                 break;
@@ -335,10 +336,12 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
 
         // After the line search...
         ///////////////////////////////
-
+        
         // Check for convergence.
-        if (isConverged())
+        if (isConverged()) {
             break;
+        }
+
 
         // Check for exceeding limit on number of Newton iterations
         if (curit == m_maxit - 1)

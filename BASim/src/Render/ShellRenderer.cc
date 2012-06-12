@@ -316,15 +316,15 @@ void ShellRenderer::render()
     glEnd();
 
 
-    // Render all vertices
-//    glPointSize(5);
-//    glBegin(GL_POINTS);
-//    OpenGL::color(Color(0,0,0));
-//    for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) {
-//      Vec3d vertPos = m_shell.getVertexPosition(*vit); 
-//      OpenGL::vertex(vertPos);
-//    }
-//    glEnd();
+     //Render all vertices
+    glPointSize(5);
+    glBegin(GL_POINTS);
+    OpenGL::color(Color(0,0,0));
+    for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) {
+      Vec3d vertPos = m_shell.getVertexPosition(*vit); 
+      OpenGL::vertex(vertPos);
+    }
+    glEnd();
 
     glPointSize(10);
     OpenGL::color(Color(0,255,0));

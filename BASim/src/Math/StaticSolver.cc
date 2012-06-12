@@ -8,6 +8,7 @@
 #include "../Core/Definitions.hh"
 #include "StaticSolver.hh"
 #include "../Physics/ElasticRods/GroomingTimeStepper.hh"
+#include "../Physics/DeformableObjects/DefoObjTimeStepper.hh"
 
 namespace BASim
 {
@@ -56,11 +57,11 @@ StaticSolver<ODE>::~StaticSolver()
 template<typename ODE>
 bool StaticSolver<ODE>::execute()
 {
-    if ( !m_diffEq.getRod()->isInRestState() )
-        m_keepUpdating = true;
+    //if ( !m_diffEq.getRod()->isInRestState() )
+    //    m_keepUpdating = true;
 
-    if ( m_keepUpdating )
-        position_solve();
+    //if ( m_keepUpdating )
+    position_solve();
 
     // return false if the rod
     // is still being solved
@@ -107,7 +108,7 @@ void StaticSolver<ODE>::updatePositionBasedQuantities()
     // TraceStream(g_log, "") << "Staticsolver::computeResidual: evaluating PDot...\n";
     m_rhs.setZero();
     m_energy = 0;
-    m_diffEq.updateCachedQuantities();
+    //m_diffEq.updateCachedQuantities();
     m_diffEq.evaluateConservativeForcesEnergy( m_rhs, m_energy );
 
     // For prescribed (fixed) DOFS, overwrite heuristic initial guess
@@ -178,8 +179,8 @@ bool StaticSolver<ODE>::examine_solution()
 
     updatePositionBasedQuantities();
 
-    // std::cout << "Energy after = " << m_energy << '\n';
-    // std::cout << "Forces norm after = " << m_rhs.norm() << '\n';
+    std::cout << "Energy after = " << m_energy << '\n';
+    std::cout << "Forces norm after = " << m_rhs.norm() << '\n';
 
     // Update the Levenberg-Marquardt trust region size
     /////////////////////////////////////////////////////////////
@@ -192,12 +193,14 @@ bool StaticSolver<ODE>::examine_solution()
         // Leave lambda alone
         //  TraceStream(g_log, "StaticSolver::position_solve") << "prev / new energy = " << m_initEnergy << " / " << m_energy
         //           << "; new residual = " << m_l2norm << "; retaining step; converged! keeping same lambda = " << m_lambda << "\n";
+        std::cout << "Leave lambda alone.\n";
         m_keepUpdating = false;
         keepSolution = true;
     }
     // we've reached a point of lower energy
     else if ( m_energy <= m_initEnergy )
     {
+        std::cout << "Decrease lambda.\n";
         // Decrease lambda (= increase trust region size = decrease regularization)
         m_lambda
                 = funnyclipvalue( m_lambdamin, m_lambda * m_geardown / m_successcount, m_lambdamax );
@@ -209,6 +212,7 @@ bool StaticSolver<ODE>::examine_solution()
     }
     else
     {
+      std::cout << "Solver failed, discard the step.\n";
         // Solver failed
         /////////////////////////////////////////////////
         // discard the step
@@ -241,16 +245,16 @@ bool StaticSolver<ODE>::examine_solution()
 template<typename ODE>
 bool StaticSolver<ODE>::position_solve()
 {
-#pragma omp atomic
     ++solveCounter;
+    std::cout << "Launching position_solve()\n";
 
     START_TIMER("StaticSolver::newton_step/setup");
 
     // Chapter 0: Basic housekeeping
     ////////////////////////////////////////////////////
-
+    
     bool successful_solve = true;
-
+    m_diffEq.startStep();
     resize();
     setZero();
     m_diffEq.getScriptedDofs( m_fixed, m_desired ); // m_fixed are DOF indices, m_desired are corresponding desired values
@@ -285,8 +289,8 @@ bool StaticSolver<ODE>::position_solve()
     // save the initial energy
     m_initEnergy = m_energy;
 
-    //   std::cout << "Energy before = " << m_initEnergy << '\n';
-     // std::cout << "Forces norm before = " << m_rhs.norm() << '\n';
+       std::cout << "Energy before = " << m_initEnergy << '\n';
+      std::cout << "Forces norm before = " << m_rhs.norm() << '\n';
      // std::cout << m_rhs << '\n';
 
     STOP_TIMER("StaticSolver::position_solve/setup");
@@ -303,7 +307,7 @@ bool StaticSolver<ODE>::position_solve()
 
     // Set up LHS Matrix
     ////////////////////////
-
+    std::cout << "Set up the matrix.\n";
     // TODO: make the finalize() not virtual
 
     // The LHS is the minus the conservative force Jacobian
@@ -329,6 +333,8 @@ bool StaticSolver<ODE>::position_solve()
     m_A->finalize();
     assert( m_A->isApproxSymmetric( 1.0e-6 ) );
 
+    m_A->finalizeNonzeros();
+
     // Boundary conditions: Set the rows and columns corresponding to fixed degrees of freedom to 0
     m_A->zeroRows( m_fixed, 1.0 );
     m_A->finalize();
@@ -337,15 +343,17 @@ bool StaticSolver<ODE>::position_solve()
     m_A->finalize();
 
     // Finalize the nonzero structure before the linear solve (for sparse matrices only)
-    m_A->finalizeNonzeros();
+    
     STOP_TIMER("StaticSolver::position_solve/setup");
     assert( m_A->isApproxSymmetric( 1.0e-6 ) );
 
-    // std::cout << "Regularized and fixed Jacobian = " << *m_A << '\n';
+    //std::cout << "Regularized and fixed Jacobian = " << *m_A << '\n';
 
     // Solve the linear system for the Newton step m_deltaX
     //
     //////////////////////////////////////////////////////////////////
+    
+    std::cout << "Try to solve the system.\n";
 
     START_TIMER("StaticSolver::position_solve/solver");
     int status = m_solver->solve( m_deltaX, m_rhs );
@@ -358,28 +366,37 @@ bool StaticSolver<ODE>::position_solve()
 
     if ( status < 0 )
     {
+
+        //std::cout << "Solve failed!\n";
         m_failurecount++;
         // shrink trust region (increase regularization)
         m_lambda = funnyclipvalue( m_lambdamin, m_lambda * m_gearup * m_failurecount, m_lambdamax );
-        // std::cout << "Solver failed, increasing lambda to " << m_lambda << '\n';
+        std::cout << "Solver failed, increasing lambda to " << m_lambda << '\n';
 
         //  DebugStream(g_log, "StaticSolver::position_solve")
         //          << "\033[31;1mWARNING IN StaticSolver:\033[m Problem during linear solve detected. " << " new lambda = "
         //          << m_lambda << "\n";
 
         m_diffEq.set_q( m_x0 );
-        m_diffEq.updateCachedQuantities();
+        //m_diffEq.updateCachedQuantities();
 
         return false;
+    }
+    else {
+      std::cout << "Solve succeeded.\n";
     }
 
     // visualize pre-filtering velocities
     m_diffEq.set_qdot( m_deltaX ); // used to visualize increments (as velocities)
 
+
+    std::cout << "Examine solution!\n";
     bool done = examine_solution();
 
     if ( !done )
     {
+      
+      /*
         //  TraceStream(g_log, "StaticSolver::position_solve") << "filtering delta_X and trying again...\n";
         // std::cout << "Filtering...\n";
         filterDeltaX();
@@ -407,11 +424,14 @@ bool StaticSolver<ODE>::position_solve()
             m_diffEq.set_q( m_x0 );
             m_diffEq.updateCachedQuantities();
         }
+        */
+      std::cout << "Done got set to FALSE! Returning.\n";
     }
 
     return true;
 }
 
+/*
 template<typename ODE>
 void StaticSolver<ODE>::filterDeltaX() // this code assumes HAIR: the first two vertices are prescribed, the rest are free
 {
@@ -497,11 +517,15 @@ void StaticSolver<ODE>::filterDeltaX() // this code assumes HAIR: the first two 
 
     // DebugStream(g_log, "") << "Velocity Filter end: rod " << rodidx << " vertex 0 = " << m_xn.segment<3>(rodbase) << '\n';
 }
+*/
 
 // Static variable definition
 template<class ODE> int StaticSolver<ODE>::solveCounter = 0;
 
 // Explicit template instantiation.
 template class StaticSolver<GroomingTimeStepper> ;
+
+// Explicit template instantiation.
+template class StaticSolver<DefoObjTimeStepper> ;
 
 }

@@ -25,6 +25,7 @@ public:
   ~ElasticSolid();
 
   //*Inherited from PhysicalModel
+  void computeConservativeForcesEnergy(VecXd& f, Scalar& energy);
   void computeForces(VecXd& force);
   void computeJacobian(Scalar scale, MatrixBase& J);
   

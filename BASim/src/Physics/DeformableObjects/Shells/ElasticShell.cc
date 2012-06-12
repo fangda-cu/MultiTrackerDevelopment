@@ -52,6 +52,21 @@ ElasticShell::~ElasticShell() {
   delete m_repulsion_springs;
 }
 
+void ElasticShell::computeConservativeForcesEnergy( VecXd& force , Scalar& energy)
+{
+  const std::vector<ElasticShellForce*>& forces = getForces();
+  std::vector<ElasticShellForce*>::const_iterator fIt;
+  
+  VecXd curr_force(force.size());
+  for (fIt = forces.begin(); fIt != forces.end(); ++fIt) {
+    curr_force.setZero();
+    (*fIt)->globalForce(curr_force);
+    energy += (*fIt)->globalEnergy();
+    force += curr_force;
+  }
+
+}
+
 void ElasticShell::computeForces( VecXd& force )
 {
   const std::vector<ElasticShellForce*>& forces = getForces();

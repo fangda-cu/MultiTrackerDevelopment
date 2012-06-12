@@ -77,6 +77,8 @@ public:
         return m_has_solved;
     }
 
+    void startStep() {}
+
     bool HasSolved()
     {
         return m_has_solved;

@@ -20,6 +20,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVolumeForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/DrainingBubblePressureForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellBathForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Shells/ShellVerticalForce.hh"
 #include "BASim/src/Collisions/ElTopo/util.hh"
 
 //An ElTopo global variable.
@@ -162,7 +163,9 @@ sceneFunc scenes[] = {0,
                       &ShellTest::setupScene17, //a constant inflow hitting a solid boundary}
                       &ShellTest::setupScene18, //a sheet falling onto an object defined by a SDF
                       &ShellTest::setupScene19, //a sheet falling with a sphere going through
-                      &ShellTest::setupScene20_BendingTest} ; //a test case for Morley element bending
+                      &ShellTest::setupScene20_BendingTest,//a test case for Morley element bending
+                      &ShellTest::setupScene21_ScordelisLo
+                  } ; 
 
 Scalar bubbleThicknessFunction(Vec3d pos) {
   //NOTE: Assumes radius of 0.01;
@@ -258,10 +261,12 @@ void ShellTest::Setup()
       shell->addForce(new MNBendingForce(*shell, "MNBending", ds_scale*Youngs_modulus, Poisson_ratio, ds_scale*Youngs_damping, Poisson_damping, timestep));
 
   }
-
+  
 
   //Gravity force
   shell->addForce(new ShellGravityForce(*shell, "Gravity", gravity));
+
+  //shell->addForce(new ShellVerticalForce(*shell, "Load", gravity, 90));
 
   //Surface tension force
   if(surface_tension != 0)
@@ -294,6 +299,16 @@ void ShellTest::Setup()
 
   shell->computeMasses();
   
+  for(VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit) {
+    VertexHandle h = *vit;
+    if(h.idx() == 3)
+      shell->setVertexVelocity(h, Vec3d(0, -1, 0));   //stretched
+      //shell->setVertexPosition(h, Vec3d(0.1, 0, -0.05));   //stretched
+      //shell->setVertexPosition(h, Vec3d(0, -sqrt(0.02)/2, 0)); //bent
+    
+  }
+
+
   Scalar stiffness = GetScalarOpt("shell-collision-spring-stiffness");
   Scalar damping = GetScalarOpt("shell-collision-spring-damping");
   Scalar proximity = GetScalarOpt("shell-collision-proximity");
@@ -324,6 +339,8 @@ void ShellTest::Setup()
     stepper->setDiffEqSolver(DefoObjTimeStepper::SYMPL_EULER);
   else if(integrator == "implicit")
     stepper->setDiffEqSolver(DefoObjTimeStepper::IMPL_EULER);
+  else if(integrator == "statics")
+    stepper->setDiffEqSolver(DefoObjTimeStepper::STATICS);
   else {
     std::cout << "No valid integrator specified. Existing options are 'symplectic' and 'implicit'.\n";
     assert(false);
@@ -432,8 +449,32 @@ void ShellTest::AtEachTimestep()
       std::cout << "Velocity: " << velocity << std::endl;
       std::cout << "Expected velocity: " << expected_vel << std::endl;
     }
+
+    if(m_active_scene == 21) {
+      
+      //find the lowest vertex
+      VertexHandle low_vert = *(shellObj->vertices_begin());
+      Vec3d low_pos = shellObj->getVertexPosition(low_vert);
+      
+      for(VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit) {
+        VertexHandle vh = *vit;
+        Vec3d pos = shellObj->getVertexPosition(vh);
+        if(pos[1] < low_pos[1]) {
+          low_pos = pos;
+          low_vert = vh;
+        }
+      }
+      Vec3d original_pos = shellObj->getVertexUndeformedPosition(low_vert);
+      std::cout << "Lowest vertex is: " << low_vert.idx() << std::endl;
+      std::cout << "Vertical displacement: " << (original_pos[1] - low_pos[1]) << std::endl;
+
+    }
     std::cout << "Time: " << this->getTime() << std::endl; 
 
+    if(m_active_scene == 20 ) {
+      Vec3d pos = shellObj->getVertexPosition(VertexHandle(3));
+      std::cout << "Vertex position: " << pos << std::endl;
+    }
 }
 
 //vertical flat sheet
@@ -2532,43 +2573,34 @@ void ShellTest::setupScene20_BendingTest() {
   Vec3d start_vel(0,0,0);
 
   std::vector<Vec3d> test_vertices;
-  test_vertices.push_back(Vec3d(0,0,1));
-  test_vertices.push_back(Vec3d(0,0,-1));
-  test_vertices.push_back(Vec3d(-1,0,-1));
-  test_vertices.push_back(Vec3d(-1,0,1));
-  test_vertices.push_back(Vec3d(-1,0,-2));
-  test_vertices.push_back(Vec3d(-2,0,-2));
-  test_vertices.push_back(Vec3d(0,0,-2));
-  test_vertices.push_back(Vec3d(-2,0,0));
-
+  Vec3d offset(-0.05, 0, -0.05);
+  test_vertices.push_back(Vec3d(0,0,0)+offset);
+  test_vertices.push_back(Vec3d(0,0,0.1)+offset);
+  test_vertices.push_back(Vec3d(0.1,0,0.1)+offset);
+  test_vertices.push_back(Vec3d(0.1,0,0)+offset);
+  
+  //5,-10/rt(2), -5
+  std::cout << GetScalarOpt("gravity") << std::endl;
   for(unsigned int i = 0; i < test_vertices.size(); ++i) {
     VertexHandle h = shellObj->addVertex();
     vertHandles.push_back(h);
     positions[h] = test_vertices[i];
-    Scalar theta = M_PI/12;
-    Scalar ypos = sin(theta);
-    Scalar xpos = cos(theta);
-    //if(i == 0)
-    //  positions[h] = Vec3d(0, 1, 1);
-    //if(i == 4)
-    //  positions[h] = Vec3d(-1, -1, -2);
+  
 
     velocities[h] = start_vel;
     undeformed[h] = test_vertices[i];
+    //if(h.idx() == 3)
+      //positions[h] = Vec3d(0, -sqrt(0.02)/2, 0); //bent
+    //  positions[h] = Vec3d(0.1, 0, -0.05);   //stretched
   }
 
   
 
-
-
   std::vector<Vec3i> tris;
   tris.push_back(Vec3i(0,1,2));
-  //tris.push_back(Vec3i(0,2,3));
-  tris.push_back(Vec3i(1,4,2));
-  tris.push_back(Vec3i(2,4,5));
-  //tris.push_back(Vec3i(1,6,4));
-  //tris.push_back(Vec3i(3,2,5));
-  //tris.push_back(Vec3i(3,5,7));
+  tris.push_back(Vec3i(0,2,3));
+  
+  
   for(unsigned int i = 0; i < tris.size(); ++i) {
     shellObj->addFace(vertHandles[tris[i][0]], vertHandles[tris[i][1]], vertHandles[tris[i][2]]);
   }
@@ -2606,6 +2638,98 @@ void ShellTest::setupScene20_BendingTest() {
 
  /* pos = shell->getVertexPosition(vertHandles[4]);
   shell->constrainVertex(vertHandles[4], pos);*/
+
+}
+
+
+//partial cylindrical roof, a la Grinspun et al 2006 (and MacNeal & Harder 1985)
+void ShellTest::setupScene21_ScordelisLo() {
+
+  //build a partial cylinder grid of vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  Vec3d start_vel(0,0,0);
+  
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
+  Scalar radius = 25;
+  Scalar length = 50;
+  Scalar startAngle = -40; //40 degrees left of vertical
+  Scalar totalAngle = 80; //
+  
+  Scalar angleIncrement = totalAngle / (Scalar)xresolution;
+  
+  std::vector<Vec3d> vertices;
+  for(int i = 0; i <= xresolution; ++i) {
+    Scalar curAngle = startAngle + angleIncrement*(Scalar)i;
+    Scalar xpos = radius*sin(curAngle*M_PI/180);
+    Scalar ypos = radius*cos(curAngle*M_PI/180);
+    for(int j = 0; j <= yresolution; ++j) {
+      Scalar zpos = length * (Scalar)j / (Scalar)yresolution;
+      vertices.push_back(Vec3d(xpos,ypos,zpos));
+    }
+  }
+ 
+  for(unsigned int i = 0; i < vertices.size(); ++i) {
+    VertexHandle h = shellObj->addVertex();
+    vertHandles.push_back(h);
+    positions[h] = vertices[i];
+    velocities[h] = start_vel;
+    undeformed[h] = vertices[i];
+  }
+
+
+  std::vector<Vec3i> tris;
+  for(int i = 0; i < xresolution; ++i) {
+    for(int j = 0; j < yresolution; ++j) {
+      if((i+j)%2 == 0) {
+        shellObj->addFace(vertHandles[j + i*(yresolution+1)], vertHandles[j + 1 + i*(yresolution+1)], vertHandles[j + 1 + (i+1)*(yresolution+1)]);
+        shellObj->addFace(vertHandles[j + i*(yresolution+1)], vertHandles[j + 1 + (i+1)*(yresolution+1)], vertHandles[j + (i+1)*(yresolution+1)]);
+      }
+      else {
+        shellObj->addFace(vertHandles[j + i*(yresolution+1)], vertHandles[j + 1 + i*(yresolution+1)], vertHandles[j + (i+1)*(yresolution+1)]);
+        shellObj->addFace(vertHandles[j + (i+1)*(yresolution+1)], vertHandles[j + 1 + i*(yresolution+1)], vertHandles[j + 1 + (i+1)*(yresolution+1)]);
+      }
+    }
+  }
+
+  
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+  //constrain the endpoints of the roof
+  for(int i = 0; i <= xresolution; ++i) {
+    int j_start = 0;
+    int j_end = yresolution;
+    shell->getDefoObj().constrainVertex(vertHandles[j_start+i*(yresolution+1)], positions[vertHandles[j_start+i*(yresolution+1)]]);
+    shell->getDefoObj().constrainVertex(vertHandles[j_end  +i*(yresolution+1)], positions[vertHandles[j_end  +i*(yresolution+1)]]);
+  }
+ 
 
 }
 

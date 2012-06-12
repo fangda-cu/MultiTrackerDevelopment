@@ -63,6 +63,8 @@ public:
   void setupScene18(); //a constant inflow hitting a solid boundary
   void setupScene19(); //tearing ball flow
   void setupScene20_BendingTest(); //a Morley element bending test
+  void setupScene21_ScordelisLo(); //the Scordelis-Lo roof shell test
+
 };
 
 #endif // SHELLTEST_HH

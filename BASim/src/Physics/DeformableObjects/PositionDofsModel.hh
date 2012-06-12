@@ -56,6 +56,7 @@ namespace BASim
     //Functions to compute force and Jacobians for the specific model
     virtual void computeForces(VecXd& force) { }
     virtual void computeJacobian(Scalar scale, MatrixBase& J) { }
+    virtual void computeConservativeForcesEnergy(VecXd& f, Scalar& energy) { }
     
   public:
     //Accessors for DOFs, velocities, and masses
