@@ -19,7 +19,7 @@ Scalar ShellVerticalForce ::globalEnergy() const
     FaceHandle fh = *fit;
     Scalar area = m_shell.getArea(fh, false);
     Scalar totalForce = m_strength * area;
-    
+
     //find the barycentre
     Vec3d barycentre(0,0,0);
     for(FaceVertexIterator fvit = obj.fv_iter(fh); fvit; ++fvit) {
@@ -29,8 +29,9 @@ Scalar ShellVerticalForce ::globalEnergy() const
     barycentre /= 3;
     
     //add the resulting energy for the load.
-    energy += m_strength*barycentre.dot(vertical);
+    energy += totalForce*barycentre.dot(vertical);
   }
+  
   return energy;
 }
 
@@ -48,9 +49,9 @@ void ShellVerticalForce ::globalForce( VecXd& force ) const
     for(FaceVertexIterator fvit = obj.fv_iter(fh); fvit; ++fvit) {
       VertexHandle vh = *fvit;
       int dofIdx = m_shell.getDefoObj().getPositionDofBase(vh);
-      force[dofIdx]   += vertical[0] * m_strength / 3;
-      force[dofIdx+1] += vertical[1] * m_strength / 3;
-      force[dofIdx+2] += vertical[2] * m_strength / 3;
+      force[dofIdx]   += vertical[0] * totalForce / 3;
+      force[dofIdx+1] += vertical[1] * totalForce / 3;
+      force[dofIdx+2] += vertical[2] * totalForce / 3;
     }
   }
   
