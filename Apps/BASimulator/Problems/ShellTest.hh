@@ -64,6 +64,7 @@ public:
   void setupScene19(); //tearing ball flow
   void setupScene20_BendingTest(); //a Morley element bending test
   void setupScene21_ScordelisLo(); //the Scordelis-Lo roof shell test
+  void setupScene22_RectangularPlate(); //the loaded rectangular plate test
 
 };
 

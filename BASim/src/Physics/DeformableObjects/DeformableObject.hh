@@ -20,6 +20,9 @@ class PositionDofsModel;
 //A class to manage position constraints.
 class PositionConstraint {
 public:
+  bool xEnabled, yEnabled, zEnabled;
+  PositionConstraint(): xEnabled(true),yEnabled(true), zEnabled(true) {}
+
   virtual Vec3d operator()(Scalar time) = 0;
 };
 

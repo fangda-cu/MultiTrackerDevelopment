@@ -77,9 +77,18 @@ namespace BASim
     {  
       int dofBase = getVertexDofBase(m_constrained_vertices[i]);
       Vec3d pos = m_constraint_positions[i]->operator()(time);
-      dofIndices.push_back(dofBase); dofValues.push_back(pos[0]);
-      dofIndices.push_back(dofBase+1); dofValues.push_back(pos[1]);
-      dofIndices.push_back(dofBase+2); dofValues.push_back(pos[2]);
+      if(m_constraint_positions[i]->xEnabled) {
+        dofIndices.push_back(dofBase); 
+        dofValues.push_back(pos[0]);
+      }
+      if(m_constraint_positions[i]->yEnabled) {
+        dofIndices.push_back(dofBase+1); 
+        dofValues.push_back(pos[1]);
+      }
+      if(m_constraint_positions[i]->zEnabled) {
+        dofIndices.push_back(dofBase+2); 
+        dofValues.push_back(pos[2]);
+      }
     }
   }
 

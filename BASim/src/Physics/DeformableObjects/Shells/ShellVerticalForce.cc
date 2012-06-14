@@ -29,7 +29,7 @@ Scalar ShellVerticalForce ::globalEnergy() const
     barycentre /= 3;
     
     //add the resulting energy for the load.
-    energy += totalForce*barycentre.dot(vertical);
+    energy -= totalForce*barycentre.dot(vertical);
   }
   
   return energy;
