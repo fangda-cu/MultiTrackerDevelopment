@@ -389,10 +389,10 @@ adreal<NumMNBendDof,DO_HESS,Real> MNEnergy(const MNBendingForce& mn, const std::
   w[1] = (-dot(n,pc->tau0[1])  + Real(pc->s[1])*xi[1])*pc->c0[1];
   w[2] = (-dot(n,pc->tau0[2])  + Real(pc->s[2])*xi[2])*pc->c0[2];
 
-  
-  if(!nbrValid0) w[0] = 0; 
-  if(!nbrValid1) w[1] = 0;
-  if(!nbrValid2) w[2] = 0; 
+  //I think we can just let these be free
+  //if(!nbrValid0) w[0] = 0; 
+  //if(!nbrValid1) w[1] = 0;
+  //if(!nbrValid2) w[2] = 0; 
   
   adrealMN e(0);
   for(int i= 0; i < NumTriPoints; i++)
@@ -449,9 +449,10 @@ void MNBendingForce::computeRestConfigData( const FaceHandle& face, const std::v
   pc->w_undef[1] = (-dot(nu,tauu[1]) + Real(pc->s[1])*xi_undef[1])*cu[1];
   pc->w_undef[2] = (-dot(nu,tauu[2]) + Real(pc->s[2])*xi_undef[2])*cu[2];
 
-  if(!nbrValid0) pc->w_undef[0] = 0;
-  if(!nbrValid1) pc->w_undef[1] = 0;
-  if(!nbrValid2) pc->w_undef[2] = 0;
+  //I think we can just let these be free
+  //if(!nbrValid0) pc->w_undef[0] = 0;
+  //if(!nbrValid1) pc->w_undef[1] = 0;
+  //if(!nbrValid2) pc->w_undef[2] = 0;
   
   //Note that it would ordinarily be divided by area^2, but since we integrate over area to compute energy,
   //one of them goes away.

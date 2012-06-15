@@ -598,11 +598,13 @@ void ShellTest::setupScene1() {
       highest = pos[1];
     }
   }
+
   //Pin all verts at or near that height
   for(vit = shellObj->vertices_begin();vit!= shellObj->vertices_end(); ++vit) {
     Vec3d pos = shell->getVertexPosition(*vit);
     if(pos[1] >= highest - 1e-4)
       shell->getDefoObj().constrainVertex(*vit, pos);
+    
   }
 
 }
@@ -2722,12 +2724,10 @@ void ShellTest::setupScene21_ScordelisLo() {
   shell->setVertexPositions(positions);
   shell->setVertexVelocities(velocities);
 
-  //mid-edge normal variables
-  shell->setEdgeUndeformed(undefAngle);
-  shell->setEdgeXis(edgeAngle);
-  shell->setEdgeVelocities(edgeVel);
-
-  //set edge variables to their rest values (analytical normals for the cylinder)
+  
+  /*
+  //try to set edge variables to their rest values (analytical normals for the cylinder)
+  //doesn't seem to have any effect.
   FaceProperty<Vec3d> normals(shellObj);
   shell->getFaceNormals(normals);
   for(EdgeIterator eit = shellObj->edges_begin(); eit != shellObj->edges_end(); ++eit) {
@@ -2755,18 +2755,30 @@ void ShellTest::setupScene21_ScordelisLo() {
     estNormal.normalize();
     if((estNormal - trueNormal).norm() > 1e-5 && f1.isValid())
       std::cout << "Real normal: " << trueNormal << "\tNumeric normal: " << estNormal << std::endl;
+    if((estNormal - trueNormal).norm() > 1e-5 && !f1.isValid()) {
+      Vec3d tauVec = edgeVector.cross(estNormal);
+      undefAngle[eh] = -trueNormal.dot(tauVec);
+      edgeAngle[eh] = -trueNormal.dot(tauVec);
+      std::cout << "UNdef: " << undefAngle[eh];
+    }
   }
+  */
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
 
   //constrain the endpoints of the roof
   for(int i = 0; i <= xresolution; ++i) {
     int j_start = 0;
     int j_end = yresolution;
     PositionConstraint* pc = new FixedPositionConstraint(positions[vertHandles[j_start+i*(yresolution+1)]]);
-    pc->zEnabled = false; //turn off constrain in one axis
+    pc->zEnabled = false; //turn off constraint in one axis
     shell->getDefoObj().constrainVertex(vertHandles[j_start+i*(yresolution+1)], pc);
 
     PositionConstraint* pc2 = new FixedPositionConstraint(positions[vertHandles[j_end+i*(yresolution+1)]]);
-    pc2->zEnabled = false; //turn off constrain in one axis
+    pc2->zEnabled = false; //turn off constraint in one axis
     shell->getDefoObj().constrainVertex(vertHandles[j_end+i*(yresolution+1)], pc2);
   }
  

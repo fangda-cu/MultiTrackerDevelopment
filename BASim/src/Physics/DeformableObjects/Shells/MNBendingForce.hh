@@ -101,6 +101,8 @@ private:
 
   mutable FaceProperty<MNPrecomputed> m_precomputed;
   mutable bool m_initialized;
+
+
 };
 
 
