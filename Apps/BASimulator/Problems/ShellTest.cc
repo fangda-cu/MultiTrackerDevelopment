@@ -60,6 +60,9 @@ ShellTest::ShellTest()
   //Basic shell options
   AddOption("shell-thickness", "the (initial) thickness of the shell", 0.01);
   AddOption("shell-density", "volumetric density of the shell ", 1.0);
+  
+  AddOption("shell-update-thickness", "whether the shell thickness should be dynamically updated to maintain volume", true);
+  
 
   //Scene specific stuff (geometry, scene-specific forces, etc.)
   AddOption("shell-width", "the horizontal side length of the shell", 1.0);
@@ -102,6 +105,8 @@ ShellTest::ShellTest()
   AddOption("shell-ground-plane", "whether to add ground plane collision springs", false);
   AddOption("shell-ground-plane-height", "height of the ground plane", 0.0);
   AddOption("shell-ground-plane-velocity", "the rate at which particles colliding with the ground (bath) are pulled into it.", 0.0);
+
+  AddOption("el-topo-collisions", "whether to apply bridson/harmon-style CCD collision handling, via the El Topo library", true);
 
   AddOption("shell-collision-spring-stiffness", "stiffness coefficient of the collision springs", 0.0);
   AddOption("shell-collision-spring-damping", "damping coefficient of the collision springs", 0.0);
@@ -300,6 +305,12 @@ void ShellTest::Setup()
   int remeshing_its = GetIntOpt("shell-remeshing-iterations");
   shell->setRemeshing(remeshing, remeshing_res, remeshing_its);
   
+  bool eltopo_collisions = GetBoolOpt("shell-eltopo-collisions");
+  shell->setElTopoCollisions(eltopo_collisions);
+
+  bool thickness_evolution = GetBoolOpt("shell-update_thickness");
+  shell->setThicknessUpdating(thickness_evolution);
+
   //shell->remesh(remeshing_res);
 
   shell->computeMasses();

@@ -66,6 +66,14 @@ public:
     m_remeshing_iters = iterations;
   }
   
+  void setThicknessUpdating(bool enable) {
+    m_do_thickness_updates = enable;
+  }
+
+  void setElTopoCollisions(bool enable) {
+    m_do_eltopo_collisions = enable;
+  }
+
   //All DOFs at once
   // these methods should have be removed because position access is now provided by DeformableObject; but 
   // too much code in other parts of the codebase need to change because they depend on this, so these
@@ -191,6 +199,8 @@ protected:
   Scalar m_remesh_edge_length;
   int m_remeshing_iters;
 
+  bool m_do_thickness_updates;
+  bool m_do_eltopo_collisions;
   
   Scalar m_density;
 

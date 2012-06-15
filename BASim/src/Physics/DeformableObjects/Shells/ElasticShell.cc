@@ -38,7 +38,9 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
     m_repulsion_springs(NULL),
     m_sphere_collisions(false),
     m_object_collisions(false),
-    m_ground_collisions(false)
+    m_ground_collisions(false),
+    m_do_eltopo_collisions(false),
+    m_do_thickness_updates(true)
 {
   m_vert_point_springs = new ShellVertexPointSpringForce(*this, "VertPointSprings", timestep);
   m_repulsion_springs = new ShellStickyRepulsionForce(*this, "RepulsionSprings", timestep);
@@ -381,7 +383,7 @@ void ElasticShell::startStep(Scalar time, Scalar timestep)
 }
 
 void ElasticShell::resolveCollisions(Scalar timestep) {
-
+  std::cout << "Resolving collisions with El Topo\n";
   //Convert the data to the form required by El Topo!
   std::vector<ElTopo::Vec3d> vert_new, vert_old;
   std::vector<ElTopo::Vec3st> tri_data;
@@ -604,10 +606,10 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
 //  return;
   
   //El Topo collision processing.
-  std::cout << "Resolving collisions\n";
-  resolveCollisions(timestep);
-  std::cout << "Finished resolving collisions.\n";
-
+  
+  if(m_do_eltopo_collisions)
+    resolveCollisions(timestep);
+  
   //Ground plane penalty force.
   if(m_ground_collisions) {
 
@@ -671,7 +673,8 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   }
 
   //Adjust thicknesses based on area changes
-  updateThickness();
+  if(m_do_thickness_updates)
+    updateThickness();
 
   if(m_inflow) {
     extendMesh(time);
