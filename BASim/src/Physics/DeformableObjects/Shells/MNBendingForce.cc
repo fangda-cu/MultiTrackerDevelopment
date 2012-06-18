@@ -468,6 +468,7 @@ void MNBendingForce::computeRestConfigData( const FaceHandle& face, const std::v
   for(int i=0; i<9; i++ ) {
     pc->T[i] = (Youngs*h*h*h/12.0)/(1.0-Poisson*Poisson)*((1.0-Poisson)*Tc1[i] + Poisson*Tc2[i]);
   }
+  
    
 }
 

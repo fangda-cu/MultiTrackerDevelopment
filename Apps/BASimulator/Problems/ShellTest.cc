@@ -21,6 +21,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/DrainingBubblePressureForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellBathForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVerticalForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Shells/ShellPointForce.hh"
 #include "BASim/src/Collisions/ElTopo/util.hh"
 
 //An ElTopo global variable.
@@ -106,7 +107,7 @@ ShellTest::ShellTest()
   AddOption("shell-ground-plane-height", "height of the ground plane", 0.0);
   AddOption("shell-ground-plane-velocity", "the rate at which particles colliding with the ground (bath) are pulled into it.", 0.0);
 
-  AddOption("el-topo-collisions", "whether to apply bridson/harmon-style CCD collision handling, via the El Topo library", true);
+  AddOption("shell-eltopo-collisions", "whether to apply bridson/harmon-style CCD collision handling, via the El Topo library", true);
 
   AddOption("shell-collision-spring-stiffness", "stiffness coefficient of the collision springs", 0.0);
   AddOption("shell-collision-spring-damping", "damping coefficient of the collision springs", 0.0);
@@ -171,7 +172,8 @@ sceneFunc scenes[] = {0,
                       &ShellTest::setupScene19, //a sheet falling with a sphere going through
                       &ShellTest::setupScene20_BendingTest,//a test case for Morley element bending
                       &ShellTest::setupScene21_ScordelisLo, //Scordelis-Lo roof shell validation
-                      &ShellTest::setupScene22_RectangularPlate //Loaded rectangular plate validation
+                      &ShellTest::setupScene22_RectangularPlate, //Loaded rectangular plate validation
+                      &ShellTest::setupScene23
                   } ; 
 
 Scalar bubbleThicknessFunction(Vec3d pos) {
@@ -282,6 +284,59 @@ void ShellTest::Setup()
   if(surface_tension != 0)
     shell->addForce(new ShellSurfaceTensionForce(*shell, "Surface Tension", surface_tension));
 
+  if(sceneChoice == 23) {
+    std::vector<VertexHandle> verts;
+    std::vector<Vec3d> forces;
+
+    VertexHandle leftmost,rightmost,nearmost,farmost;
+    Vec3d leftest, rightest, nearest, farest;
+    leftmost = *(shellObj->vertices_begin());
+    rightmost = *(shellObj->vertices_begin());
+    nearmost = *(shellObj->vertices_begin());
+    farmost = *(shellObj->vertices_begin());
+    leftest = rightest = nearest = farest = shell->getVertexPosition(*(shellObj->vertices_begin()));
+
+    for(VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit) {
+      VertexHandle curVh = *vit;
+      Vec3d pos = shell->getVertexPosition(curVh);
+      if(pos[0] < leftest[0]) {
+        leftmost = curVh;
+        leftest = pos;
+      }
+      if(pos[0] > rightest[0]) {
+        rightmost = curVh;
+        rightest = pos;
+      }
+
+      if(pos[2] < nearest[2]) {
+        nearmost = curVh;
+        nearest = pos;
+      }
+      if(pos[2] > farest[2]) {
+        farmost = curVh;
+        farest = pos;
+      }
+
+    }
+    Scalar strength = 2;
+    forces.push_back(Vec3d(strength, 0, 0));
+    verts.push_back(leftmost);
+
+    forces.push_back(Vec3d(-strength, 0, 0));
+    verts.push_back(rightmost);
+
+    forces.push_back(Vec3d(0, 0, -strength));
+    verts.push_back(nearmost);
+
+    forces.push_back(Vec3d(0, 0, strength));
+    verts.push_back(farmost);
+
+    std::cout << "Left: " << leftmost.idx() << " Right: " << rightmost.idx() << " Near: " << nearmost.idx() << " Far: " << farmost.idx() << std::endl;
+
+    ElasticShellForce* force = new ShellPointForce(*shell, "PointForce", verts, forces);
+    shell->addForce(force);
+  }
+
   //and set its standard properties
   if(sceneChoice == 6) {
     //make the thickness vary for the bubble example
@@ -308,7 +363,7 @@ void ShellTest::Setup()
   bool eltopo_collisions = GetBoolOpt("shell-eltopo-collisions");
   shell->setElTopoCollisions(eltopo_collisions);
 
-  bool thickness_evolution = GetBoolOpt("shell-update_thickness");
+  bool thickness_evolution = GetBoolOpt("shell-update-thickness");
   shell->setThicknessUpdating(thickness_evolution);
 
   //shell->remesh(remeshing_res);
@@ -465,7 +520,13 @@ void ShellTest::AtEachTimestep()
       std::cout << "Velocity: " << velocity << std::endl;
       std::cout << "Expected velocity: " << expected_vel << std::endl;
     }
-
+    if(m_active_scene == 23) {
+      //consider vertex 25
+      VertexHandle vh(1);
+      Vec3d original = shell->getVertexUndeformed(vh);
+      Vec3d current = shell->getVertexPosition(vh);
+      std::cout << "Displacement: " << (original - current).norm() << std::endl;
+    }
     if(m_active_scene == 21 || m_active_scene == 22) {
       
       //find the lowest vertex
@@ -2693,6 +2754,7 @@ void ShellTest::setupScene21_ScordelisLo() {
     for(int j = 0; j <= yresolution; ++j) {
       Scalar zpos = length * (Scalar)j / (Scalar)yresolution;
       vertices.push_back(Vec3d(xpos,ypos,zpos));
+      
     }
   }
  
@@ -2890,6 +2952,141 @@ void ShellTest::setupScene22_RectangularPlate() {
     shell->getDefoObj().constrainVertex(vertHandles[j+i_end*(yresolution+1)], positions[vertHandles[j+i_end*(yresolution+1)]]);
   }
  
+
+}
+
+//spherical shell
+void ShellTest::setupScene23() {
+
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
+
+  //build a rectangular grid of vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  //create a sphere
+  int layers = yresolution;
+  int slices = xresolution;
+  Vec3d centre(0,0,0);
+  Scalar radius = 10.0;
+  Vec3d start_vel(0,0,0);
+ 
+  
+  //create top pole
+  VertexHandle topV = shellObj->addVertex();
+  positions[topV] = centre + Vec3d(0,radius,0);
+  velocities[topV] = start_vel;
+  undeformed[topV] = positions[topV];
+
+   //fill in the interior
+  std::vector< std::vector<VertexHandle> > vertList;
+  vertList.resize(layers-1);
+  for(int j = 0; j < layers-1; ++j) {
+    Scalar heightAngle = (j+1) * pi / (Scalar)layers / 2.0;
+    for(int i = 0; i < slices; ++i) {
+      Scalar rotAngle = 2*pi * (Scalar)i / (Scalar)slices;
+      Scalar zVal = radius*sin(heightAngle);
+      Scalar newRad = radius*cos(heightAngle);
+      Scalar xVal = newRad*cos(rotAngle);
+      Scalar yVal = newRad*sin(rotAngle);
+
+      VertexHandle vNew = shellObj->addVertex();
+      positions[vNew] = centre + Vec3d(xVal,zVal,yVal);
+      velocities[vNew] = start_vel;
+      undeformed[vNew] = positions[vNew];
+      vertList[j].push_back(vNew);
+    }
+  }
+
+  //construct faces
+  for(int j = 0; j < layers; ++j) {
+    for(int i = 0; i < slices; ++i) {
+      if(j == 0) {
+        //shellObj->addFace(botV, vertList[j][i], vertList[j][(i+1)%slices]);
+      }
+      else if(j == layers-1) {
+        shellObj->addFace(topV, vertList[j-1][(i+1)%slices], vertList[j-1][i]);
+      }
+      else {
+        if((i+j)%2 == 0) {
+          shellObj->addFace(vertList[j-1][i], vertList[j][i], vertList[j][(i+1)%slices]);
+          shellObj->addFace(vertList[j-1][i], vertList[j][(i+1)%slices], vertList[j-1][(i+1)%slices]);
+        }
+        else {
+          shellObj->addFace(vertList[j-1][i], vertList[j][i], vertList[j-1][(i+1)%slices]);
+          shellObj->addFace(vertList[j][i], vertList[j][(i+1)%slices], vertList[j-1][(i+1)%slices]);
+        }
+      }
+
+    }
+  }
+  
+
+  ////load a nicer sphere from disk
+  //ifstream infile("sphere1.obj");
+  //if(!infile)
+  //  std::cout << "Error loading file\n";
+  //std::string line;
+  //std::vector<VertexHandle> vertList;
+  //std::getline(infile, line);
+  //while(!infile.eof()) {
+  //  if(line.substr(0,1) == std::string("v")) {
+  //    std::stringstream data(line);
+  //    char c;
+  //    Vec3d point;
+  //    data >> c >> point[0] >> point[1] >> point[2];
+
+  //    VertexHandle vNew = shellObj->addVertex();
+  //    positions[vNew] = point;
+  //    velocities[vNew] = start_vel;
+  //    undeformed[vNew] = point;
+  //    vertList.push_back(vNew);
+  //  }
+  //  else {
+  //    std::stringstream data(line);
+  //    char c;
+  //    int v0,v1,v2;
+  //    data >> c >> v0 >> v1 >> v2;
+  //    shellObj->addFace(vertList[v0-1],vertList[v1-1],vertList[v2-1]);
+  //  }
+  //  std::getline(infile, line);
+  //}
+
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  for(EdgeIterator eit = shellObj->edges_begin(); eit != shellObj->edges_end(); ++eit) {
+    EdgeHandle edge = *eit;
+    undefAngle[edge] = 0;
+    edgeAngle[edge] = 0;
+  }
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+  
 
 }
 
