@@ -74,7 +74,8 @@ bool MNBendingForce::gatherDOFs(const FaceHandle& fh,
 
     // Vertex opposite the edge in the central triangle
     VertexHandle ph; 
-    getFaceThirdVertex(defo, fh, eh, ph);
+    bool success = getFaceThirdVertex(defo, fh, eh, ph);
+
     int baseID  = m_shell.getDefoObj().getPositionDofBase(ph);
     indices[v] = baseID;
     indices[v+1] = baseID+1;
@@ -149,6 +150,7 @@ void MNBendingForce::update() {
   std::vector<int> indices(NumMNBendDof);
 
   FaceIterator fit = defo.faces_begin();
+  int count = 0;
   for (;fit != defo.faces_end(); ++fit) {
     const FaceHandle& fh = *fit;
 
@@ -156,6 +158,7 @@ void MNBendingForce::update() {
     if(!valid) continue;
 
     updateReferenceCoordinates(fh, deformed, &m_precomputed[fh]);
+    ++count;
   }
   
 }
@@ -173,9 +176,9 @@ Scalar MNBendingForce::globalEnergy() const
   std::vector<int> indices(NumMNBendDof);
 
   FaceIterator fit = defo.faces_begin();
+  
   for (;fit != defo.faces_end(); ++fit) {
     const FaceHandle& fh = *fit;
-
     bool valid = gatherDOFs(fh, undeformed, undeformed_damp, deformed, indices);
     if(!valid) continue;
 
@@ -193,6 +196,8 @@ Scalar MNBendingForce::globalEnergy() const
 
 void MNBendingForce::globalForce( VecXd& force ) const
 {
+  Scalar energy = globalEnergy();
+  std::cout << "Bending energy: " << energy << std::endl;
 
   Eigen::Matrix<Scalar, NumMNBendDof, 1> localForce;
   std::vector<Scalar> undeformed(MNBendStencilSize), undeformed_damp(MNBendStencilSize), deformed(MNBendStencilSize);
@@ -339,7 +344,9 @@ void ComputeEdgeFrameParams(
   topp[0] = cross(nopp[0],v[0]);    topp[1] = cross(nopp[1],v[1]);    topp[2] = cross(nopp[2],v[2]); 
   tunit[0] = dir(t[0]);             tunit[1] = dir(t[1]);              tunit[2] = dir(t[2]); 
 
+  //We use normalized tau vectors here; the paper seems to use un-normalized, but in practice it doesn't matter, apparently.
   tau[0] = dir(t[0]-topp[0]); tau[1] = dir(t[1]-topp[1]); tau[2] = dir(t[2]-topp[2]);
+  //tau[0] = len(v[0])*dir(t[0]-topp[0]); tau[1] = len(v[1])*dir(t[1]-topp[1]); tau[2] = len(v[2])*dir(t[2]-topp[2]);
   
   c[0] = dot(tunit[0],tau[0]); assert(fabs(c[0]) > FLT_EPSILON); c[0] =   1.0/c[0];
   c[1] = dot(tunit[1],tau[1]); assert(fabs(c[1]) > FLT_EPSILON); c[1] =   1.0/c[1];
@@ -389,16 +396,78 @@ adreal<NumMNBendDof,DO_HESS,Real> MNEnergy(const MNBendingForce& mn, const std::
   w[1] = (-dot(n,pc->tau0[1])  + Real(pc->s[1])*xi[1])*pc->c0[1];
   w[2] = (-dot(n,pc->tau0[2])  + Real(pc->s[2])*xi[2])*pc->c0[2];
 
+
   //I think we can just let these be free
-  //if(!nbrValid0) w[0] = 0; 
-  //if(!nbrValid1) w[1] = 0;
-  //if(!nbrValid2) w[2] = 0; 
+  if(!nbrValid0) w[0] = 0; 
+  if(!nbrValid1) w[1] = 0;
+  if(!nbrValid2) w[2] = 0; 
   
   adrealMN e(0);
   for(int i= 0; i < NumTriPoints; i++)
-    for(int j= 0; j < NumTriPoints; j++)
+    for(int j= 0; j < NumTriPoints; j++) {
       e += (w[i]-pc->w_undef[i])*(w[j]-pc->w_undef[j])*pc->T[NumTriPoints*i+j];  
+      //e += (w[i])*(w[j])*pc->T[NumTriPoints*i+j];   //Just for testing the bending energy.
+    }
   e *= 0.5;    
+
+  //Compute the shape operator, take its trace.
+  //Scalar traceTotal = 0;
+  //for(int k = 0; k < 3; ++k) {
+  //  for(int i= 0; i < NumTriPoints; i++) {
+  //    traceTotal += w[k].value() / A.value() / len(v[k]).value() * t[k][i].value() * t[k][i].value();
+  //  }
+  //}
+  //std::cout << "Trace value:" << traceTotal << std::endl;
+  
+  //if(fabs(traceTotal-2) > 1e-3) {
+    //std::cout << "Bad value: " << traceTotal << std::endl;
+    
+    /*
+    std::cout << "Positions: ";
+    for(int i = 0; i < 9; ++i)
+      std::cout << deformed[i] << " ";
+    std::cout << std::endl;
+    std::cout << "Xis:";
+    std::cout << xi[0].value() << ", " << xi[1].value() << " " << xi[2].value() << std::endl;
+    std::cout << "FlapVerts: ";
+    for(int i = 9; i < 18; ++i)
+      std::cout << deformed[i] << " ";
+    std::cout << std::endl;
+  
+    std::cout << "V Vectors: ";
+  for(int i = 0; i < 3; ++i) {
+    std::cout << v[i][0].value() << " " << v[i][1].value() << ", " << v[i][2].value() << std::endl;
+  }
+  std::cout << std::endl;
+
+  std::cout << "T Vectors: ";
+  for(int i = 0; i < 3; ++i) {
+    std::cout << t[i][0].value() << " " << t[i][1].value() << ", " << t[i][2].value() << std::endl;
+  }
+  std::cout << std::endl;
+
+  std::cout << "Normal: ";
+  std::cout << n[0].value() << " " << n[1].value() << ", " << n[2].value() << std::endl;
+  std::cout << std::endl;
+
+    std::cout << "Area: " << A.value() << std::endl;
+
+    
+    std::cout << "S variables: " << Real(pc->s[0]) << " " << Real(pc->s[1]) << " " << Real(pc->s[2]) << std::endl;
+
+    std::cout << "Tau vectors: " << std::endl;
+    for(int i = 0; i < 3; ++i) {
+      std::cout << pc->tau0[i] << std::endl;
+    }
+
+    std::cout << std::endl;
+
+    std::cout << "C values: " << pc->c0[0] << " " << pc->c0[1] << " " << pc->c0[2] << std::endl;
+    std::cout << "W values:" << w[0].value() << " " << w[1].value() << " " << w[2].value() << std::endl;
+  
+    std::cout << std::endl << std::endl << std::endl;
+    */
+  //}
 
   return e;
 }
@@ -450,9 +519,9 @@ void MNBendingForce::computeRestConfigData( const FaceHandle& face, const std::v
   pc->w_undef[2] = (-dot(nu,tauu[2]) + Real(pc->s[2])*xi_undef[2])*cu[2];
 
   //I think we can just let these be free
-  //if(!nbrValid0) pc->w_undef[0] = 0;
-  //if(!nbrValid1) pc->w_undef[1] = 0;
-  //if(!nbrValid2) pc->w_undef[2] = 0;
+  if(!nbrValid0) pc->w_undef[0] = 0;
+  if(!nbrValid1) pc->w_undef[1] = 0;
+  if(!nbrValid2) pc->w_undef[2] = 0;
   
   //Note that it would ordinarily be divided by area^2, but since we integrate over area to compute energy,
   //one of them goes away.
@@ -494,7 +563,6 @@ void MNBendingForce::updateReferenceCoordinates(const FaceHandle& face, const st
   ComputeTriangleAttrib(p0,v0,t0,n0,A0);
   ComputeFlapNormals(p0,q0,v0,nopp0);
   ComputeEdgeFrameParams(v0,t0,nopp0,tau0,c0); 
-
 
 }
 
@@ -550,6 +618,26 @@ void MNBendingForce::elementJacobian(const std::vector<Scalar>& undeformed,
     }
   }
 
+
+}
+
+Scalar MNBendingForce::getXiValue(const EdgeHandle& eh, Vec3d trueNormal) {
+
+  // Grab the first face, and use its information, since it will be the owner by definition.
+  const DeformableObject& defo = m_shell.getDefoObj();
+  EdgeFaceIterator efiter = defo.ef_iter(eh);
+  FaceHandle f0 = *efiter;
+
+  //Figure out which edge we are looking at (in the numbering)
+  FaceEdgeIterator feiter = defo.fe_iter(f0);
+  int count = 0;
+  while(*feiter != eh) {
+    ++count;
+    ++feiter;
+  }
+  MNPrecomputed* pre = &m_precomputed[f0];
+  Vector3d trueN(trueNormal[0], trueNormal[1], trueNormal[2]);
+  return dot(trueN, pre->tau0[count]);
 
 }
 

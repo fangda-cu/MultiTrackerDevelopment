@@ -253,6 +253,7 @@ void ShellTest::Setup()
   shell->setThickness(thickness);
 
   //now add forces to the model
+  MNBendingForce* bender;
 
   //Stretching and bending forces
   if(Youngs_modulus != 0 || Youngs_damping != 0) {
@@ -266,8 +267,10 @@ void ShellTest::Setup()
       shell->addForce(new DSBendingForce(*shell, "DSBending", ds_scale*Youngs_modulus, Poisson_ratio, ds_scale*Youngs_damping, Poisson_damping, timestep));
 
     //Better bending model (Mid-Edge normals, a la Computing discrete shape operators on general meshes)
-    if(mn_bend)
-      shell->addForce(new MNBendingForce(*shell, "MNBending", ds_scale*Youngs_modulus, Poisson_ratio, ds_scale*Youngs_damping, Poisson_damping, timestep));
+    if(mn_bend) {
+      bender = new MNBendingForce(*shell, "MNBending", ds_scale*Youngs_modulus, Poisson_ratio, ds_scale*Youngs_damping, Poisson_damping, timestep);
+      shell->addForce(bender);
+    }
 
   }
 
@@ -335,6 +338,55 @@ void ShellTest::Setup()
 
     ElasticShellForce* force = new ShellPointForce(*shell, "PointForce", verts, forces);
     shell->addForce(force);
+
+    bender->initialize();
+    bender->update();
+    //Fix the mid-edge variables to match a true sphere
+    EdgeProperty<Scalar> edgeXis(shellObj);
+    for(EdgeIterator it = shellObj->edges_begin(); it != shellObj->edges_end(); ++it) {
+      EdgeHandle eh = *it;
+      VertexHandle v0 = shellObj->fromVertex(eh);
+      VertexHandle v1 = shellObj->toVertex(eh);
+      Vec3d pos0 = shell->getVertexUndeformed(v0);
+      Vec3d pos1 = shell->getVertexUndeformed(v1);
+      
+      //compute mid-edge reference vector
+      Vec3d midpoint = 0.5*(pos0+pos1);
+      Vec3d trueNormal = midpoint;
+      trueNormal.normalize();
+      Scalar xiVal = bender->getXiValue(eh, trueNormal);
+      edgeXis[eh] = xiVal;
+    }
+    shell->setEdgeUndeformed(edgeXis);
+    shell->setEdgeXis(edgeXis);
+    
+    bender->m_initialized = false; //now that we have mid-edge data set right, re-initialize things
+  }
+
+  if(sceneChoice == 3) {
+    std::cout << "Setting sphere vars\n";
+    bender->initialize();
+    bender->update();
+    //Fix the mid-edge variables to match a true sphere
+    EdgeProperty<Scalar> edgeXis(shellObj);
+    for(EdgeIterator it = shellObj->edges_begin(); it != shellObj->edges_end(); ++it) {
+      EdgeHandle eh = *it;
+      VertexHandle v0 = shellObj->fromVertex(eh);
+      VertexHandle v1 = shellObj->toVertex(eh);
+      Vec3d pos0 = shell->getVertexUndeformed(v0);
+      Vec3d pos1 = shell->getVertexUndeformed(v1);
+
+      //compute mid-edge reference vector
+      Vec3d midpoint = 0.5*(pos0+pos1);
+      Vec3d trueNormal = midpoint;
+      trueNormal.normalize();
+      Scalar xiVal = bender->getXiValue(eh, trueNormal);
+      edgeXis[eh] = xiVal;
+    }
+    shell->setEdgeUndeformed(edgeXis);
+    shell->setEdgeXis(edgeXis);
+
+    bender->m_initialized = false;
   }
 
   //and set its standard properties
@@ -476,6 +528,7 @@ void ShellTest::AtEachTimestep()
         ++current_obj_frame;
     }
 
+    /*
     if(m_active_scene == 3) {
       //Write out the data for the analytical example
 
@@ -520,6 +573,7 @@ void ShellTest::AtEachTimestep()
       std::cout << "Velocity: " << velocity << std::endl;
       std::cout << "Expected velocity: " << expected_vel << std::endl;
     }
+    */
     if(m_active_scene == 23) {
       //consider vertex 25
       VertexHandle vh(1);
@@ -831,7 +885,7 @@ void ShellTest::setupScene3() {
   Vec3d start_vel(0,0,0);
 
   
-  /*
+  
   //create top pole
   VertexHandle topV = shellObj->addVertex();
   positions[topV] = centre + Vec3d(0,0,radius);
@@ -845,6 +899,7 @@ void ShellTest::setupScene3() {
   undeformed[botV] = positions[botV];
 
   //fill in the interior
+  std::vector<std::vector<VertexHandle> > vertList;
   vertList.resize(layers-1);
   for(int j = 0; j < layers-1; ++j) {
     Scalar heightAngle = -pi/2 + (j+1) * pi/(Scalar)layers;
@@ -879,10 +934,10 @@ void ShellTest::setupScene3() {
 
     }
   }
-  */
-
+  
+  /*
   //load a nicer sphere from disk
-  ifstream infile("sphere1.obj");
+  ifstream infile("sphere7.obj");
   if(!infile)
     std::cout << "Error loading file\n";
   std::string line;
@@ -910,6 +965,7 @@ void ShellTest::setupScene3() {
     }
     std::getline(infile, line);
   }
+  */
 
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj); 
@@ -954,7 +1010,7 @@ void ShellTest::setupScene3() {
   Scalar pressureStrength = GetScalarOpt("shell-inflate-sphere-coeff");
   bool constPressure = GetBoolOpt("shell-inflate-sphere-const-pressure");
   //Scalar pressureStrength = 0.1;
-  shell->addForce(new ShellRadialForce(*shell, "Radial", Vec3d(0,0,0), pressureStrength, constPressure));
+  //shell->addForce(new ShellRadialForce(*shell, "Radial", Vec3d(0,0,0), pressureStrength, constPressure));
 
   //shell->addForce(new ShellVolumeForce(*shell, "Volume", 0.5));
 }
@@ -2985,12 +3041,15 @@ void ShellTest::setupScene23() {
   positions[topV] = centre + Vec3d(0,radius,0);
   velocities[topV] = start_vel;
   undeformed[topV] = positions[topV];
+  
+  //Scalar range = pi / 2.0;
+  Scalar range = pi / 2.0 - (18.0*pi/180.0);
 
    //fill in the interior
   std::vector< std::vector<VertexHandle> > vertList;
   vertList.resize(layers-1);
   for(int j = 0; j < layers-1; ++j) {
-    Scalar heightAngle = (j+1) * pi / (Scalar)layers / 2.0;
+    Scalar heightAngle = (j+1) * range / (Scalar)layers ;
     for(int i = 0; i < slices; ++i) {
       Scalar rotAngle = 2*pi * (Scalar)i / (Scalar)slices;
       Scalar zVal = radius*sin(heightAngle);
@@ -3013,7 +3072,7 @@ void ShellTest::setupScene23() {
         //shellObj->addFace(botV, vertList[j][i], vertList[j][(i+1)%slices]);
       }
       else if(j == layers-1) {
-        shellObj->addFace(topV, vertList[j-1][(i+1)%slices], vertList[j-1][i]);
+        //shellObj->addFace(topV, vertList[j-1][(i+1)%slices], vertList[j-1][i]);
       }
       else {
         if((i+j)%2 == 0) {
@@ -3030,35 +3089,6 @@ void ShellTest::setupScene23() {
   }
   
 
-  ////load a nicer sphere from disk
-  //ifstream infile("sphere1.obj");
-  //if(!infile)
-  //  std::cout << "Error loading file\n";
-  //std::string line;
-  //std::vector<VertexHandle> vertList;
-  //std::getline(infile, line);
-  //while(!infile.eof()) {
-  //  if(line.substr(0,1) == std::string("v")) {
-  //    std::stringstream data(line);
-  //    char c;
-  //    Vec3d point;
-  //    data >> c >> point[0] >> point[1] >> point[2];
-
-  //    VertexHandle vNew = shellObj->addVertex();
-  //    positions[vNew] = point;
-  //    velocities[vNew] = start_vel;
-  //    undeformed[vNew] = point;
-  //    vertList.push_back(vNew);
-  //  }
-  //  else {
-  //    std::stringstream data(line);
-  //    char c;
-  //    int v0,v1,v2;
-  //    data >> c >> v0 >> v1 >> v2;
-  //    shellObj->addFace(vertList[v0-1],vertList[v1-1],vertList[v2-1]);
-  //  }
-  //  std::getline(infile, line);
-  //}
 
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj); 

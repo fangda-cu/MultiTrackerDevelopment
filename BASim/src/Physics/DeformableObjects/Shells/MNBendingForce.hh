@@ -69,6 +69,9 @@ public:
   
   void initialize() const;
   void update();
+  Scalar getXiValue(const EdgeHandle& eh, Vec3d trueNormal);
+
+  mutable bool m_initialized;
 
 private:
 
@@ -95,12 +98,14 @@ private:
                 std::vector<Scalar>& deformed, 
                 std::vector<int>& indices ) const;
  
+  
+
   Scalar m_timestep;
   Scalar m_Youngs, m_Poisson;
   Scalar m_Youngs_damp, m_Poisson_damp;
 
   mutable FaceProperty<MNPrecomputed> m_precomputed;
-  mutable bool m_initialized;
+  
 
 
 };
