@@ -65,7 +65,8 @@ public:
   void setupScene20_BendingTest(); //a Morley element bending test
   void setupScene21_ScordelisLo(); //the Scordelis-Lo roof shell test
   void setupScene22_RectangularPlate(); //the loaded rectangular plate test
-  void setupScene23(); //pinched hemisphere test
+  void setupScene23_hemisphere(); //pinched hemisphere test
+  void setupScene24_bendingCylinder(); //a bending test using a cylinder
 };
 
 #endif // SHELLTEST_HH

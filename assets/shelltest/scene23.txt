@@ -33,8 +33,8 @@ shell-density 0.25	# volumetric density of the shell
 shell-thickness 0.04	# the thickness of the shell
 shell-height 1.0	# the vertical side length of the shell
 shell-width 1.0	# the horizontal side length of the shell
-shell-x-resolution 60	# the number of segments along the horizontal edge
-shell-y-resolution 40	# the number of segments along the vertical edge
+shell-x-resolution 64	# the number of segments along the horizontal edge
+shell-y-resolution 64	# the number of segments along the vertical edge
 
 iterations 100	# maximum number of iterations for the implicit method
 atol 1e-010	# absolute convergence tolerance

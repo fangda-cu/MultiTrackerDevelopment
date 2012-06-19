@@ -1,5 +1,5 @@
 /**
- * \file MicrotuboliDNA.cc
+ * \file MicrotubuliDNA.cc
  *
  * \author smith@cs.columbia.edu
  * \date 08/06/2010
@@ -7,10 +7,10 @@
 
 #ifdef HAVE_PARDISO
 
-#include "MicrotuboliDNA.hh"
+#include "MicrotubuliDNA.hh"
 
-MicrotuboliDNA::MicrotuboliDNA()
-: Problem("Microtuboli DNA", "Simulation of Microtuboli DNA")
+MicrotubuliDNA::MicrotubuliDNA()
+: Problem("Microtubuli DNA", "Simulation of Microtubuli DNA")
 , m_rods()
 , m_steppers()
 , m_multiple_stepper()
@@ -42,7 +42,7 @@ MicrotuboliDNA::MicrotuboliDNA()
   AddOption("hook-spring-rest-length", "rest length of Hook springs", 0.5);
 }
 
-MicrotuboliDNA::~MicrotuboliDNA()
+MicrotubuliDNA::~MicrotubuliDNA()
 {
   for( int i = 0; i < (int) m_rods.size(); ++i )
   {
@@ -67,7 +67,7 @@ MicrotuboliDNA::~MicrotuboliDNA()
 
 
 
-ElasticRod* MicrotuboliDNA::createRootedLowerRod( const Vec3d& rootlocation, const RodOptions& opts )
+ElasticRod* MicrotubuliDNA::createRootedLowerRod( const Vec3d& rootlocation, const RodOptions& opts )
 {
   double L = GetScalarOpt("rod-length");
   double dL = L/((double)(opts.numVertices-1));
@@ -98,7 +98,7 @@ ElasticRod* MicrotuboliDNA::createRootedLowerRod( const Vec3d& rootlocation, con
   return newrod;
 }
 
-ElasticRod* MicrotuboliDNA::createRootedUpperRod( const Vec3d& rootlocation, const RodOptions& opts )
+ElasticRod* MicrotubuliDNA::createRootedUpperRod( const Vec3d& rootlocation, const RodOptions& opts )
 {
   double L = GetScalarOpt("rod-length");
   double dL = L/((double)(opts.numVertices-1));
@@ -130,7 +130,7 @@ ElasticRod* MicrotuboliDNA::createRootedUpperRod( const Vec3d& rootlocation, con
 }
 
 
-void MicrotuboliDNA::Setup()
+void MicrotubuliDNA::Setup()
 {
   loadDynamicsProps();
   
@@ -182,7 +182,7 @@ void MicrotuboliDNA::Setup()
   for( size_t i = 0; i < m_rod_rod_springs.size(); ++i ) m_multiple_stepper->addRodRodExternalForce(m_rod_rod_springs[i]);
 }
 
-void MicrotuboliDNA::AtEachTimestep()
+void MicrotubuliDNA::AtEachTimestep()
 {
   VecXd force = VecXd::Zero(m_rods[0]->ndof());
   m_rods[0]->computeForces(force);

@@ -346,8 +346,7 @@ void ComputeEdgeFrameParams(
 
   //We use normalized tau vectors here; the paper seems to use un-normalized, but in practice it doesn't matter, apparently.
   tau[0] = dir(t[0]-topp[0]); tau[1] = dir(t[1]-topp[1]); tau[2] = dir(t[2]-topp[2]);
-  //tau[0] = len(v[0])*dir(t[0]-topp[0]); tau[1] = len(v[1])*dir(t[1]-topp[1]); tau[2] = len(v[2])*dir(t[2]-topp[2]);
-  
+
   c[0] = dot(tunit[0],tau[0]); assert(fabs(c[0]) > FLT_EPSILON); c[0] =   1.0/c[0];
   c[1] = dot(tunit[1],tau[1]); assert(fabs(c[1]) > FLT_EPSILON); c[1] =   1.0/c[1];
   c[2] = dot(tunit[2],tau[2]); assert(fabs(c[2]) > FLT_EPSILON); c[2] =   1.0/c[2];  
@@ -397,10 +396,10 @@ adreal<NumMNBendDof,DO_HESS,Real> MNEnergy(const MNBendingForce& mn, const std::
   w[2] = (-dot(n,pc->tau0[2])  + Real(pc->s[2])*xi[2])*pc->c0[2];
 
 
-  //I think we can just let these be free
-  if(!nbrValid0) w[0] = 0; 
-  if(!nbrValid1) w[1] = 0;
-  if(!nbrValid2) w[2] = 0; 
+  //I think we should just let these be free
+  //if(!nbrValid0) w[0] = 0; 
+  //if(!nbrValid1) w[1] = 0;
+  //if(!nbrValid2) w[2] = 0; 
   
   adrealMN e(0);
   for(int i= 0; i < NumTriPoints; i++)
@@ -410,14 +409,14 @@ adreal<NumMNBendDof,DO_HESS,Real> MNEnergy(const MNBendingForce& mn, const std::
     }
   e *= 0.5;    
 
-  //Compute the shape operator, take its trace.
-  //Scalar traceTotal = 0;
-  //for(int k = 0; k < 3; ++k) {
-  //  for(int i= 0; i < NumTriPoints; i++) {
-  //    traceTotal += w[k].value() / A.value() / len(v[k]).value() * t[k][i].value() * t[k][i].value();
-  //  }
-  //}
-  //std::cout << "Trace value:" << traceTotal << std::endl;
+  //////Compute the shape operator, take its trace.
+  Scalar traceTotal = 0;
+  for(int k = 0; k < 3; ++k) {
+    for(int i= 0; i < NumTriPoints; i++) {
+      traceTotal += w[k].value() / A.value() / len(v[k]).value() * t[k][i].value() * t[k][i].value();
+    }
+  }
+  std::cout << "Trace value:" << traceTotal << std::endl;
   
   //if(fabs(traceTotal-2) > 1e-3) {
     //std::cout << "Bad value: " << traceTotal << std::endl;
@@ -518,10 +517,10 @@ void MNBendingForce::computeRestConfigData( const FaceHandle& face, const std::v
   pc->w_undef[1] = (-dot(nu,tauu[1]) + Real(pc->s[1])*xi_undef[1])*cu[1];
   pc->w_undef[2] = (-dot(nu,tauu[2]) + Real(pc->s[2])*xi_undef[2])*cu[2];
 
-  //I think we can just let these be free
-  if(!nbrValid0) pc->w_undef[0] = 0;
+  //I think we should just let these be free 
+  /*if(!nbrValid0) pc->w_undef[0] = 0;
   if(!nbrValid1) pc->w_undef[1] = 0;
-  if(!nbrValid2) pc->w_undef[2] = 0;
+  if(!nbrValid2) pc->w_undef[2] = 0;*/
   
   //Note that it would ordinarily be divided by area^2, but since we integrate over area to compute energy,
   //one of them goes away.

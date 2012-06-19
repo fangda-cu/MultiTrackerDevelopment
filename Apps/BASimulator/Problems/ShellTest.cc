@@ -173,7 +173,8 @@ sceneFunc scenes[] = {0,
                       &ShellTest::setupScene20_BendingTest,//a test case for Morley element bending
                       &ShellTest::setupScene21_ScordelisLo, //Scordelis-Lo roof shell validation
                       &ShellTest::setupScene22_RectangularPlate, //Loaded rectangular plate validation
-                      &ShellTest::setupScene23
+                      &ShellTest::setupScene23_hemisphere, //pinched hemisphere test from MacNeal&harder (1985). Also grinspun2006
+                      &ShellTest::setupScene24_bendingCylinder
                   } ; 
 
 Scalar bubbleThicknessFunction(Vec3d pos) {
@@ -324,6 +325,10 @@ void ShellTest::Setup()
     Scalar strength = 2;
     forces.push_back(Vec3d(strength, 0, 0));
     verts.push_back(leftmost);
+    std::cout << "Leftmost: " << leftest << std::endl;
+    std::cout << "Rightmost: " << rightest << std::endl;
+    std::cout << "Farmost: " << farest << std::endl;
+    std::cout << "Nearmost: " << nearest << std::endl;
 
     forces.push_back(Vec3d(-strength, 0, 0));
     verts.push_back(rightmost);
@@ -388,6 +393,65 @@ void ShellTest::Setup()
 
     bender->m_initialized = false;
   }
+
+  if(sceneChoice == 21) {
+    std::cout << "Setting cylinder roof vars\n";
+    bender->initialize();
+    bender->update();
+    //Fix the mid-edge variables to match a true sphere
+    EdgeProperty<Scalar> edgeXis(shellObj);
+    for(EdgeIterator it = shellObj->edges_begin(); it != shellObj->edges_end(); ++it) {
+      EdgeHandle eh = *it;
+      VertexHandle v0 = shellObj->fromVertex(eh);
+      VertexHandle v1 = shellObj->toVertex(eh);
+      Vec3d pos0 = shell->getVertexUndeformed(v0);
+      Vec3d pos1 = shell->getVertexUndeformed(v1);
+
+      //compute mid-edge reference vector
+      Vec3d midpoint = 0.5*(pos0+pos1);
+      Vec3d trueNormal = midpoint;
+      trueNormal[2] = 0;
+      trueNormal.normalize();
+      Scalar xiVal = bender->getXiValue(eh, trueNormal);
+      edgeXis[eh] = xiVal;
+    }
+    shell->setEdgeUndeformed(edgeXis);
+    shell->setEdgeXis(edgeXis);
+
+    bender->m_initialized = false;
+  }
+
+  if(sceneChoice == 24) {
+    std::cout << "Setting cylinder vars\n";
+
+    //Need to call this to get the current tau vectors
+    bender->initialize();
+    bender->update();
+
+    //Fix the mid-edge variables to match the true cylinder
+    EdgeProperty<Scalar> edgeXis(shellObj);
+    for(EdgeIterator it = shellObj->edges_begin(); it != shellObj->edges_end(); ++it) {
+      EdgeHandle eh = *it;
+      VertexHandle v0 = shellObj->fromVertex(eh);
+      VertexHandle v1 = shellObj->toVertex(eh);
+      Vec3d pos0 = shell->getVertexPosition(v0);
+      Vec3d pos1 = shell->getVertexPosition(v1);
+
+      //compute mid-edge reference vector
+      Vec3d midpoint = 0.5*(pos0+pos1);
+      midpoint[2] = 0;
+      Vec3d trueNormal = midpoint;
+      trueNormal.normalize();
+      Scalar xiVal = bender->getXiValue(eh, trueNormal);
+      edgeXis[eh] = xiVal;
+    }
+    //shell->setEdgeUndeformed(edgeXis);
+    shell->setEdgeXis(edgeXis);
+
+    bender->m_initialized = false;
+  }
+
+
 
   //and set its standard properties
   if(sceneChoice == 6) {
@@ -3012,7 +3076,7 @@ void ShellTest::setupScene22_RectangularPlate() {
 }
 
 //spherical shell
-void ShellTest::setupScene23() {
+void ShellTest::setupScene23_hemisphere() {
 
   int xresolution = GetIntOpt("shell-x-resolution");
   int yresolution = GetIntOpt("shell-y-resolution");
@@ -3044,12 +3108,12 @@ void ShellTest::setupScene23() {
   
   //Scalar range = pi / 2.0;
   Scalar range = pi / 2.0 - (18.0*pi/180.0);
-
+  
    //fill in the interior
   std::vector< std::vector<VertexHandle> > vertList;
-  vertList.resize(layers-1);
-  for(int j = 0; j < layers-1; ++j) {
-    Scalar heightAngle = (j+1) * range / (Scalar)layers ;
+  vertList.resize(layers);
+  for(int j = 0; j < layers; ++j) {
+    Scalar heightAngle = j * range / (Scalar)layers;
     for(int i = 0; i < slices; ++i) {
       Scalar rotAngle = 2*pi * (Scalar)i / (Scalar)slices;
       Scalar zVal = radius*sin(heightAngle);
@@ -3066,12 +3130,9 @@ void ShellTest::setupScene23() {
   }
 
   //construct faces
-  for(int j = 0; j < layers; ++j) {
+  for(int j = 1; j <= layers; ++j) {
     for(int i = 0; i < slices; ++i) {
-      if(j == 0) {
-        //shellObj->addFace(botV, vertList[j][i], vertList[j][(i+1)%slices]);
-      }
-      else if(j == layers-1) {
+      if(j == layers) {
         //shellObj->addFace(topV, vertList[j-1][(i+1)%slices], vertList[j-1][i]);
       }
       else {
@@ -3120,5 +3181,119 @@ void ShellTest::setupScene23() {
 
 }
 
+void ShellTest::setupScene24_bendingCylinder() {
+  //cylinder with a flat rest configuration (or vice versa perhaps)
+
+  //build a partial cylinder grid of vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  Vec3d start_vel(0,0,0);
+  
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
+  Scalar radius = 1;
+  Scalar length = 10;
+  Scalar startAngle = 0; //40 degrees left of vertical
+  Scalar totalAngle = 360; //
+  
+  Scalar angleIncrement = totalAngle / (Scalar)xresolution;
+  Scalar lengthIncrement = (2*M_PI*radius) / (Scalar)xresolution;
+  
+  std::vector<Vec3d> vertices; //cylinder format
+  std::vector<Vec3d> vertices_flat; //flat formation
+  for(int i = 0; i <= xresolution; ++i) {
+    Scalar curAngle = startAngle + angleIncrement*(Scalar)i;
+    Scalar xpos = radius*sin(curAngle*M_PI/180);
+    Scalar ypos = radius*cos(curAngle*M_PI/180);
+    for(int j = 0; j <= yresolution; ++j) {
+      Scalar zpos = length * (Scalar)j / (Scalar)yresolution;
+      vertices.push_back(Vec3d(xpos,ypos,zpos));
+      vertices_flat.push_back(Vec3d(-M_PI*radius + lengthIncrement*i, -radius, zpos));
+    }
+  }
+ 
+  for(unsigned int i = 0; i < vertices.size(); ++i) {
+    VertexHandle h = shellObj->addVertex();
+    vertHandles.push_back(h);
+    positions[h] = vertices[i];
+    velocities[h] = start_vel;
+    undeformed[h] = vertices_flat[i];
+  }
+
+  std::vector<Vec3i> tris;
+  for(int i = 0; i < xresolution; ++i) {
+    for(int j = 0; j < yresolution; ++j) {
+      if((i+j)%2 == 0) {
+        shellObj->addFace(vertHandles[j + i*(yresolution+1)], vertHandles[j + 1 + i*(yresolution+1)], vertHandles[j + 1 + (i+1)*(yresolution+1)]);
+        shellObj->addFace(vertHandles[j + i*(yresolution+1)], vertHandles[j + 1 + (i+1)*(yresolution+1)], vertHandles[j + (i+1)*(yresolution+1)]);
+      }
+      else {
+        shellObj->addFace(vertHandles[j + i*(yresolution+1)], vertHandles[j + 1 + i*(yresolution+1)], vertHandles[j + (i+1)*(yresolution+1)]);
+        shellObj->addFace(vertHandles[j + (i+1)*(yresolution+1)], vertHandles[j + 1 + i*(yresolution+1)], vertHandles[j + 1 + (i+1)*(yresolution+1)]);
+      }
+    }
+  }
+
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  /*
+  //try to set edge variables to their rest values (analytical normals for the cylinder)
+  //doesn't seem to have any effect.
+  FaceProperty<Vec3d> normals(shellObj);
+  shell->getFaceNormals(normals);
+  for(EdgeIterator eit = shellObj->edges_begin(); eit != shellObj->edges_end(); ++eit) {
+    EdgeHandle eh = *eit;
+    VertexHandle v0 = shellObj->fromVertex(eh);
+    VertexHandle v1 = shellObj->toVertex(eh);
+    
+    EdgeFaceIterator efit = shellObj->ef_iter(eh);
+    FaceHandle f0 = *efit; ++efit;
+    FaceHandle f1;
+    if(efit)
+      f1 = *efit;
+
+    //Compute the midpoint
+    Vec3d pos0 = shell->getVertexPosition(v0);
+    Vec3d pos1 = shell->getVertexPosition(v1);
+    Vec3d midpoint = 0.5*(pos0+pos1);
+    
+    Vec3d trueNormal = midpoint;
+    trueNormal[2] = 0; //ignore z-axis
+    trueNormal.normalize();
+
+    Scalar xiVal = bender->getXiValue(eh, trueNormal);
+    edgeXis[eh] = xiVal;
+
+  }
+  */
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+
+}
 
 
