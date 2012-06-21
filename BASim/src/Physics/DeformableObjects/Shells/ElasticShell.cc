@@ -520,13 +520,50 @@ void ElasticShell::addSelfCollisionForces() {
       Scalar distance;
       ElTopoCode::Vec3d normal;
       check_point_triangle_proximity(vertex_position, face_verts[0], face_verts[1], face_verts[2], distance, barycoords[0], barycoords[1], barycoords[2], normal );
+      
       //if such a spring doesn't already exist, add it
       ElTopoCode::Vec3d faceNormal = cross(face_verts[1] - face_verts[0], face_verts[2] - face_verts[0]);
       normalize(faceNormal);
       ElTopoCode::Vec3d offset = vertex_position - (barycoords[0]*face_verts[0] + barycoords[1]*face_verts[1] + barycoords[2]*face_verts[2]);
       Scalar normalDist = dot(offset,faceNormal);
+      
+      
+
       if(distance < collision_distance) {
         
+        bool isNbrVert = false;
+        if(barycoords[0]< 1e-5 || barycoords[1] < 1e-5 || barycoords[2] < 1e-5) {
+          //the proposed connection point lies along an edge or at a vertex. This is troublesome, if any of the relevant edges
+          //neighbours the "colliding" vertex (it means that the spring we would add is in the plane of the mesh!)
+          int vertNum = 0;
+          for(FaceVertexIterator fvit = m_obj->fv_iter(f); fvit && !isNbrVert; ++fvit, ++vertNum) {
+            //grab the current vertex
+            VertexHandle testVert = *fvit;
+
+            //if it's not one of the zero values, check its neighbours for incidence
+            if(barycoords[vertNum] > 1e-5) {
+              for(VertexEdgeIterator veit = m_obj->ve_iter(testVert); veit; ++veit) {
+                EdgeHandle curEdge = *veit;
+                VertexHandle nbrVert;
+                VertexHandle fromVert = m_obj->fromVertex(curEdge);
+                if(fromVert == testVert)
+                  nbrVert = m_obj->toVertex(curEdge);
+                else
+                  nbrVert = fromVert;
+
+                if(nbrVert == vh) {
+                  isNbrVert = true;
+                  break;
+                }
+              }
+            }
+             //look at next vertex
+          }
+        }
+
+        if(isNbrVert) 
+          continue;
+
         //look at velocities of closest points to see if the geometry is approaching
         ElTopoCode::Vec3d close_point_vel = barycoords[0]*face_vels[0] + barycoords[1]*face_vels[1] + barycoords[2]*face_vels[2];
         ElTopoCode::Vec3d rel_vel = vert_vel - close_point_vel;
@@ -619,9 +656,11 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
       if(curPos[1] < m_ground_height) {
         if(!getDefoObj().isConstrained(*vit)) {
           //constrainVertex(*vit, curPos);
-
+          
           //Sinking
           //constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, m_ground_velocity, 0), time));
+
+          curPos[1] = m_ground_height ; //project constraint back to the ground plane. This might be a tad unsafe.
 
           //Conveying
           getDefoObj().constrainVertex(*vit, new FixedVelocityConstraint(curPos, Vec3d(0, 0, m_ground_velocity), time));
@@ -729,14 +768,14 @@ void ElasticShell::fracture() {
   construction_parameters.m_min_edge_length = 0.5*m_remesh_edge_length;
   construction_parameters.m_max_edge_length = 1.5*m_remesh_edge_length;
   construction_parameters.m_max_volume_change = numeric_limits<double>::max();   
-  construction_parameters.m_min_triangle_angle = 15;
-  construction_parameters.m_max_triangle_angle = 165;
+  construction_parameters.m_min_triangle_angle = 5;
+  construction_parameters.m_max_triangle_angle = 175;
   construction_parameters.m_verbose = false;
 
   construction_parameters.m_use_curvature_when_collapsing = false;
   construction_parameters.m_use_curvature_when_splitting = false;
   
-  construction_parameters.m_subdivision_scheme = new ElTopo::ButterflyScheme();
+  construction_parameters.m_subdivision_scheme = new ElTopo::MidpointScheme(); //ElTopo::ButterflyScheme();
 
   construction_parameters.m_allow_non_manifold = false;
   construction_parameters.m_collision_safety = true;

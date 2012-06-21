@@ -54,7 +54,7 @@ void ShellRadialForce::globalForce( VecXd& force ) const
 
   for(VertexIterator vit = obj.vertices_begin(); vit != obj.vertices_end(); ++vit) {
     VertexHandle& vh = *vit;
-    int dofIdx = m_shell.getVertexDofBase(vh);
+    int dofIdx = m_shell.getDefoObj().getPositionDofBase(vh);//getVertexDofBase(vh);
     
     //compute r^2
     Vec3d direction = m_shell.getVertexPosition(vh) - m_centre;

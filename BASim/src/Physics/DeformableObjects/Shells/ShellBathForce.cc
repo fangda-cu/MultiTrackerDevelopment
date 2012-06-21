@@ -27,9 +27,9 @@ void ShellBathForce::globalForce( VecXd& force ) const
     VertexHandle v1 = *fvit; ++fvit;
     VertexHandle v2 = *fvit;
 
-    int dofIdx0 = m_shell.getVertexDofBase(v0);
-    int dofIdx1 = m_shell.getVertexDofBase(v1);
-    int dofIdx2 = m_shell.getVertexDofBase(v2);
+    int dofIdx0 = m_shell.getDefoObj().getPositionDofBase(v0);
+    int dofIdx1 = m_shell.getDefoObj().getPositionDofBase(v1);
+    int dofIdx2 = m_shell.getDefoObj().getPositionDofBase(v2);
 
     Vec3d pos0 = m_shell.getVertexPosition(v0);
     Vec3d pos1 = m_shell.getVertexPosition(v1);
@@ -67,9 +67,9 @@ void ShellBathForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) const
     VertexHandle v1 = *fvit; ++fvit;
     VertexHandle v2 = *fvit;
 
-    int dofIdx0 = m_shell.getVertexDofBase(v0);
-    int dofIdx1 = m_shell.getVertexDofBase(v1);
-    int dofIdx2 = m_shell.getVertexDofBase(v2);
+    int dofIdx0 = m_shell.getDefoObj().getPositionDofBase(v0);
+    int dofIdx1 = m_shell.getDefoObj().getPositionDofBase(v1);
+    int dofIdx2 = m_shell.getDefoObj().getPositionDofBase(v2);
     
     std::vector<int> indices;
     indices.push_back(dofIdx0); indices.push_back(dofIdx0+1); indices.push_back(dofIdx0+2);

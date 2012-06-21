@@ -12,7 +12,7 @@ namespace BASim {
                                   Scalar Youngs, Scalar Poisson, 
                                   Scalar Youngs_damp, Scalar Poisson_damp, 
                                   Scalar timestep) : 
-    ElasticShellForce(shell, name), m_Youngs(Youngs), m_Poisson(Poisson), m_Youngs_damp(Youngs_damp), m_Poisson_damp(Poisson_damp), m_timestep(timestep), m_func(new UpTransfer()) //m_func(new LinearTransfer())
+    ElasticShellForce(shell, name), m_Youngs(Youngs), m_Poisson(Poisson), m_Youngs_damp(Youngs_damp), m_Poisson_damp(Poisson_damp), m_timestep(timestep), m_func(new LinearTransfer()) //m_func(new UpTransfer()) //
 {
   
 }
@@ -286,7 +286,7 @@ static void computeH(Scalar& h, const std::vector<Vec3d>& positions)
   Scalar A2 = 0.5 * len(cross(p2 - p1, q2 - p1));
   Scalar e;
   computeEdgeLength(e, positions);
-  h = (A1 + A2) / (3.0 * e);
+  h = 2*(A1 + A2) / (3.0 * e);
 
 }
 

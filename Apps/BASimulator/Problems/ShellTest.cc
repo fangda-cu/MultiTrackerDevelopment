@@ -80,7 +80,7 @@ ShellTest::ShellTest()
   AddOption("shell-bath-density", "the density of water fluid bath for sheared wrinkling test", 1.0);
 
   //Remeshing options
-  AddOption("shell-remeshing", "whether to perform remeshing", 0);
+  AddOption("shell-remeshing", "whether to perform remeshing", false);
   AddOption("shell-remeshing-resolution", "target edge-length", 0.1);
   AddOption("shell-remeshing-iterations", "number of remeshing iterations to run", 2);
 
@@ -471,7 +471,10 @@ void ShellTest::Setup()
 
   shell->setDensity(density);
   
-  bool remeshing = GetIntOpt("shell-remeshing") == 1?true:false;
+  bool remeshing = GetBoolOpt("shell-remeshing");
+  bool self = GetBoolOpt("shell-self-collision");
+  std::cout << "Remeshing: " << remeshing << std::endl;
+  std::cout << "Self: " << self << std::endl;
   Scalar remeshing_res = GetScalarOpt("shell-remeshing-resolution");
   int remeshing_its = GetIntOpt("shell-remeshing-iterations");
   shell->setRemeshing(remeshing, remeshing_res, remeshing_its);
@@ -485,16 +488,7 @@ void ShellTest::Setup()
   //shell->remesh(remeshing_res);
 
   shell->computeMasses();
-  
-  for(VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit) {
-    VertexHandle h = *vit;
-    if(h.idx() == 3)
-      shell->setVertexVelocity(h, Vec3d(0, -1, 0));   //stretched
-      //shell->setVertexPosition(h, Vec3d(0.1, 0, -0.05));   //stretched
-      //shell->setVertexPosition(h, Vec3d(0, -sqrt(0.02)/2, 0)); //bent
-    
-  }
-
+ 
 
   Scalar stiffness = GetScalarOpt("shell-collision-spring-stiffness");
   Scalar damping = GetScalarOpt("shell-collision-spring-damping");

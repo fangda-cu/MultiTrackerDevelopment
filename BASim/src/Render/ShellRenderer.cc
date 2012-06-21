@@ -296,7 +296,7 @@ void ShellRenderer::render()
 
       
       Scalar thickness = m_shell.getThickness(*fit);
-      int colorVal = (int) (255.0 * thickness/ 0.05); //rescale
+      int colorVal = (int) (255.0 * thickness/ 0.25); //rescale
       //int colorVal = (int) (255.0 * (thickness - 0.0025) / 0.0025); //test
       //colorVal = clamp(colorVal, 0, 255);
       colorVal = 255;
@@ -329,6 +329,7 @@ void ShellRenderer::render()
     glPointSize(10);
     OpenGL::color(Color(0,255,0));
     glBegin(GL_POINTS);
+    
     for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) {
       Vec3d vertPos = m_shell.getVertexPosition(*vit); 
       if(m_shell.getDefoObj().isConstrained(*vit)) {

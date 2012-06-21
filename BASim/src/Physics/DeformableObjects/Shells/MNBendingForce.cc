@@ -410,13 +410,13 @@ adreal<NumMNBendDof,DO_HESS,Real> MNEnergy(const MNBendingForce& mn, const std::
   e *= 0.5;    
 
   //////Compute the shape operator, take its trace.
-  Scalar traceTotal = 0;
+  /*Scalar traceTotal = 0;
   for(int k = 0; k < 3; ++k) {
     for(int i= 0; i < NumTriPoints; i++) {
       traceTotal += w[k].value() / A.value() / len(v[k]).value() * t[k][i].value() * t[k][i].value();
     }
   }
-  std::cout << "Trace value:" << traceTotal << std::endl;
+  std::cout << "Trace value:" << traceTotal << std::endl;*/
   
   //if(fabs(traceTotal-2) > 1e-3) {
     //std::cout << "Bad value: " << traceTotal << std::endl;

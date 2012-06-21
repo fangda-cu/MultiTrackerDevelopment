@@ -26,7 +26,7 @@ void DrainingBubblePressureForce::globalForce( VecXd& force ) const
   DeformableObject& obj = m_shell.getDefoObj();
   for(VertexIterator vit = obj.vertices_begin(); vit != obj.vertices_end(); ++vit) {
     VertexHandle& vh = *vit;
-    int dofIdx = m_shell.getVertexDofBase(vh);
+    int dofIdx = m_shell.getDefoObj().getPositionDofBase(vh);//getVertexDofBase(vh);
     Vec3d curNormal = normals[vh];
     
     force[dofIdx]   += m_current_pressure * curNormal[0];
