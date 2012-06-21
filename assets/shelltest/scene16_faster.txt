@@ -1,9 +1,10 @@
 #Enrobing process
+#This is the final version used for the video
 
-max-time 1800
+max-time 2000
 
 shell-scene 16
-dt 5	# time-step size
+dt 3	# time-step size
 
 gravity 0 -0.000981 0	# gravity
 
@@ -17,7 +18,7 @@ shell-Poisson-damping 0.5
 #Surface Tension
 shell-surface-tension 0.0
 
-shell-remeshing 1
+shell-remeshing true
 shell-remeshing-resolution 0.5
 shell-remeshing-iterations 1
 
