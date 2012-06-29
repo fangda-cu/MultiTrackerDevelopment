@@ -19,7 +19,7 @@ void ShellPointForce  ::globalForce( VecXd& force ) const
 {
   
   DeformableObject& obj = m_shell.getDefoObj();
-  for(int i= 0; i < m_forces.size(); ++i) {
+  for(unsigned int i= 0; i < m_forces.size(); ++i) {
     VertexHandle vh = m_vertices[i];
     int dofIdx = m_shell.getDefoObj().getPositionDofBase(vh);
     force[dofIdx]   += m_forces[i][0];

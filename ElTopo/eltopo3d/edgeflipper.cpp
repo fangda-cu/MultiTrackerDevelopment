@@ -16,6 +16,8 @@
 #include <surftrack.h>
 #include <trianglequality.h>
 
+#include <lapack_wrapper.h>
+
 // ---------------------------------------------------------
 //  Extern globals
 // ---------------------------------------------------------
@@ -419,6 +421,144 @@ bool EdgeFlipper::flip_edge( size_t edge,
     
 }
 
+void EdgeFlipper::getQuadric(size_t vertex, Mat33d& A) {
+
+    const NonDestructiveTriMesh& mesh = m_surf.m_mesh;
+    const std::vector<size_t>& incident_triangles = mesh.m_vertex_to_triangle_map[vertex];
+
+    std::vector< Vec3d > N;
+    std::vector< double > W;
+
+    for ( size_t i = 0; i < incident_triangles.size(); ++i )
+    {
+        size_t triangle_index = incident_triangles[i];
+        N.push_back( m_surf.get_triangle_normal(triangle_index) );
+        W.push_back( m_surf.get_triangle_area(triangle_index) );
+    }
+
+    zero(A);
+
+    // Compute A = N^T W N
+    // where N are normals and W are area weights.
+    for ( size_t i = 0; i < N.size(); ++i )
+    {
+        A(0,0) += N[i][0] * W[i] * N[i][0];
+        A(1,0) += N[i][1] * W[i] * N[i][0];
+        A(2,0) += N[i][2] * W[i] * N[i][0];
+
+        A(0,1) += N[i][0] * W[i] * N[i][1];
+        A(1,1) += N[i][1] * W[i] * N[i][1];
+        A(2,1) += N[i][2] * W[i] * N[i][1];
+
+        A(0,2) += N[i][0] * W[i] * N[i][2];
+        A(1,2) += N[i][1] * W[i] * N[i][2];
+        A(2,2) += N[i][2] * W[i] * N[i][2];
+    }
+}
+
+bool EdgeFlipper::is_delaunay_anisotropic( size_t edge, size_t tri0, size_t tri1, size_t third_vertex_0, size_t third_vertex_1 ) 
+{
+    //std::cout << "Checking Delaunay criteria.\n";
+    // Per Jiao et al. 2010, "4.3 Anisotropic edge flipping"
+    // section 4.3, Anisotropic edge flipping
+
+    //compute the quadric tensors at the four vertices
+    Mat33d mat0, mat1, mat2, mat3;
+    getQuadric(m_surf.m_mesh.m_edges[edge][0], mat0);
+    getQuadric(m_surf.m_mesh.m_edges[edge][1], mat1);
+    getQuadric(third_vertex_0, mat2);
+    getQuadric(third_vertex_1, mat3);
+    
+    //sum them to get a combined quadric tensor A for the patch
+    Mat33d A = mat0 + mat1 + mat2 + mat3;
+
+    //perform eigen decomposition to determine the eigen vectors/values
+    double eigenvalues[3];
+    double work[9];
+    int info = ~0, n = 3, lwork = 9;
+    LAPACK::get_eigen_decomposition( &n, A.a, &n, eigenvalues, work, &lwork, &info );   
+
+    //Note that this returns the eigenvalues in ascending order, as opposed to descending order described by Jiao et al.
+
+    //compute the metric tensor M_Q, with Q = Identity
+    Mat22d M( eigenvalues[1] / eigenvalues[2], 0, 0, eigenvalues[0] / eigenvalues[2]);
+
+    //clamp the eigenvalues for safety
+    M(0,0) = clamp(M(0,0), 0.005, 0.07);
+    M(1,1) = clamp(M(1,1), 0.005, 0.07);
+    
+    /*std::cout << "Eigen values: " << eigenvalues[0] << " " << eigenvalues[1] << " " << eigenvalues[2] << std::endl;
+    std::cout << "Eigenvectors: ";
+    std::cout << A.a[0] << ", " << A.a[1] << ", " << A.a[2] << std::endl;
+    std::cout << A.a[3] << ", " << A.a[4] << ", " << A.a[5] << std::endl;
+    std::cout << A.a[6] << ", " << A.a[7] << ", " << A.a[8] << std::endl;*/
+
+    //convert the relevant vertices from Cartesian coords into the coordinate system of the local frame (defined by the eigenvectors)
+    Mat33d conversion_matrix;
+    conversion_matrix = A;
+    
+    conversion_matrix = inverse(conversion_matrix);
+    Vec3d v0 = m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]);
+    Vec3d v1 = m_surf.get_position(m_surf.m_mesh.m_edges[edge][1]);
+    Vec3d v2 = m_surf.get_position(third_vertex_0);
+    Vec3d v3 = m_surf.get_position(third_vertex_1);
+    //std::cout << "Conversion matrix: " << conversion_matrix << std::endl;
+
+    Vec3d nv0 = conversion_matrix*v0;
+    Vec3d nv1 = conversion_matrix*v1;
+    Vec3d nv2 = conversion_matrix*v2;
+    Vec3d nv3 = conversion_matrix*v3;
+
+    //only bother looking at the 2D coordinates in the tangent plane
+    Vec2d n0_2d(nv0[0], nv0[1]);
+    Vec2d n1_2d(nv1[0], nv1[1]);
+    Vec2d n2_2d(nv2[0], nv2[1]);
+    Vec2d n3_2d(nv3[0], nv3[1]);
+
+  /*  std::cout << "Original Vertices:\n";
+    std::cout << v0 << std::endl;
+    std::cout << v1 << std::endl;
+    std::cout << v2 << std::endl;
+    std::cout << v3 << std::endl;*/
+
+  /*  std::cout << "Vertices:\n";
+    std::cout << nv0 << std::endl;
+    std::cout << nv1 << std::endl;
+    std::cout << nv2 << std::endl;
+    std::cout << nv3 << std::endl;*/
+
+   /* std::cout << "Projected vertices:\n";
+    std::cout << n0_2d << std::endl;
+    std::cout << n1_2d << std::endl;
+    std::cout << n2_2d << std::endl;
+    std::cout << n3_2d << std::endl;*/
+
+    ////warp the vertices into the normalized space to account for anisotropy, via M
+    n0_2d = M * n0_2d;
+    n1_2d = M * n1_2d;
+    n2_2d = M * n2_2d;
+    n3_2d = M * n3_2d;
+
+   /* std::cout << "Warped vertices:\n";
+    std::cout << n0_2d << std::endl;
+    std::cout << n1_2d << std::endl;
+    std::cout << n2_2d << std::endl;
+    std::cout << n3_2d << std::endl;*/
+
+    //check the Delaunay criterion (sum of opposite angles < 180) in the modified space
+    Vec2d off0 = n0_2d - n2_2d, off1 = n1_2d - n2_2d;
+    double angle0 = acos(dot(off0,off1) / mag(off0) / mag(off1));
+    
+    Vec2d off2 = n0_2d - n3_2d, off3 = n1_2d - n3_2d;
+    double angle1 = acos(dot(off2, off3) / mag(off2) / mag(off3));
+    
+    //std::cout << "Angle0: " << angle0 << std::endl;
+    //std::cout << "Angle1: " << angle1 << std::endl;
+    //std::cout << "Sum: " << (angle0+angle1) << std::endl;
+
+    return angle0 + angle1 < M_PI;
+
+}
 
 
 // --------------------------------------------------------
@@ -537,12 +677,20 @@ bool EdgeFlipper::flip_pass( )
             
             bool flipped = false;
             
+            
             double current_length = mag( xs[m_mesh.m_edges[i][1]] - xs[m_mesh.m_edges[i][0]] );        
             double potential_length = mag( xs[third_vertex_1] - xs[third_vertex_0] );     
             if ( potential_length < current_length - m_edge_flip_min_length_change )
             {
                 flipped = flip_edge( i, triangle_a, triangle_b, third_vertex_0, third_vertex_1 );            
             }
+            
+            //bool should_flip = !is_delaunay_anisotropic(i, triangle_a, triangle_b, third_vertex_0, third_vertex_1);
+            //
+            //if( should_flip ) {
+            //    //std::cout << "Requesting a flip\n";
+            //    flipped = flip_edge( i, triangle_a, triangle_b, third_vertex_0, third_vertex_1 );            
+            //}
             
             flip_occurred |= flipped;
         }

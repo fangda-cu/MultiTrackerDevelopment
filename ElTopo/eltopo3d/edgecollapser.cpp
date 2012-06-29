@@ -779,8 +779,13 @@ bool EdgeCollapser::edge_is_collapsible( size_t edge_index, double& current_leng
   if ( m_use_curvature )
   {
     double curvature_value = get_edge_curvature( m_surf, m_surf.m_mesh.m_edges[edge_index][0], m_surf.m_mesh.m_edges[edge_index][1] );
-    int circlesegs = 10;
+    
+    //Assume we want to discretize any circle with at least ten segments.
+    //Then give the curvature (i.e. inverse radius) the target edge length
+    //here should be computed as... 
+    int circlesegs = 20;
     double curvature_min_length = 2*M_PI / (double)circlesegs / curvature_value;
+    
     return current_length < curvature_min_length && current_length <= m_max_edge_length;
     
   }

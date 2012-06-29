@@ -11,7 +11,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ElasticShell.hh"
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
 #include "BASim/src/Math/Math.hh"
-
+#include "BASim/src/Physics/DeformableObjects/Shells/MNBendingForce.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 
 //ElTopo in order to test out the remeshing operations
@@ -234,7 +234,7 @@ void ShellRenderer::render()
     m_shell.getFaceNormals(faceNormals);
 
     // Render all edges
-    glLineWidth(1);
+    glLineWidth(2);
     glBegin(GL_LINES);
     OpenGL::color(Color(0,0,0));
     
@@ -255,27 +255,39 @@ void ShellRenderer::render()
       }
       OpenGL::vertex(p0);
       OpenGL::vertex(p1);
-
+      
       //Draw edge avg normal vector
       //get adjacent faces
-//      EdgeFaceIterator efit = m_shell.getDefoObj().ef_iter(eh);
-//      Vec3d normal1 = faceNormals[*efit]; ++efit;
-//      Vec3d normal2;
-//      if(efit)
-//        normal2 = faceNormals[*efit];
-//      else
-//        normal2 = normal1;
-//
-//      Vec3d avgNormal = 0.5*(normal1+normal2);
-//      Scalar magnitude = avgNormal.norm();
-//      avgNormal /= magnitude;
-//
-//      Vec3d midpoint = 0.5*(p0+p1);
-//      Vec3d endpoint = midpoint + 0.5*avgNormal;
-      /*OpenGL::color(Color(0,0,0));
-      OpenGL::vertex(midpoint);
-      OpenGL::vertex(endpoint);*/
+      EdgeFaceIterator efit = m_shell.getDefoObj().ef_iter(eh);
+      Vec3d normal1 = faceNormals[*efit]; ++efit;
+      Vec3d normal2;
+      if(efit)
+          normal2 = faceNormals[*efit];
+      else
+          normal2 = normal1;
 
+      Vec3d avgNormal = 0.5*(normal1+normal2);
+      Scalar magnitude = avgNormal.norm();
+      avgNormal /= magnitude;
+      
+      Vec3d midpoint = 0.5*(p0+p1);
+      Vec3d endpoint = midpoint + avgNormal*(p1-p0).norm();
+      OpenGL::color(Color(0,255,0));
+      OpenGL::vertex(midpoint);
+      OpenGL::vertex(endpoint);
+      
+      std::vector<ElasticShellForce*> forces = m_shell.getForces();
+      for(unsigned int f = 0; f < forces.size(); ++f) {
+          MNBendingForce* ptr_specific = dynamic_cast<MNBendingForce*>(forces[f]);
+          if( ptr_specific ){
+             Vec3d normalDir = ptr_specific->getEdgeNormal(eh);
+             midpoint = 0.5*(p0+p1);
+             endpoint = midpoint + normalDir * (p1-p0).norm();
+             OpenGL::color(Color(0,0,255));
+             OpenGL::vertex(midpoint);
+             OpenGL::vertex(endpoint);
+          }
+      }
       //Now work out what the mid-edge normal is, and render that.
      
     }
@@ -306,7 +318,7 @@ void ShellRenderer::render()
       for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit )
       {
         Vec3d pos = m_shell.getVertexPosition(*fvit);
-        //pos = pos - 0.05*(pos-barycentre);
+        pos = pos - 0.02*(pos-barycentre);
         OpenGL::vertex(pos);
         points[i] = pos;
         ++i;
@@ -317,24 +329,18 @@ void ShellRenderer::render()
 
 
      //Render all vertices
-    glPointSize(5);
-    glBegin(GL_POINTS);
-    OpenGL::color(Color(0,0,0));
-    for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) {
-      Vec3d vertPos = m_shell.getVertexPosition(*vit); 
-      OpenGL::vertex(vertPos);
-    }
-    glEnd();
-
-    glPointSize(10);
-    OpenGL::color(Color(0,255,0));
+    glPointSize(4);
     glBegin(GL_POINTS);
     
     for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) {
       Vec3d vertPos = m_shell.getVertexPosition(*vit); 
-      if(m_shell.getDefoObj().isConstrained(*vit)) {
-        OpenGL::vertex(vertPos);
+      if(!m_shell.getDefoObj().isConstrained(*vit)) {
+        OpenGL::color(Color(0,0,0));
       }
+      else {
+        OpenGL::color(Color(0,255,0));
+      }
+      OpenGL::vertex(vertPos);
     }
     glEnd();
     

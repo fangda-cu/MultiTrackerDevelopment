@@ -79,6 +79,7 @@ protected:
     Scalar m_l2norm;
 
     Scalar m_initEnergy;
+    Scalar m_initForceMag;
 };
 
 } // namespace BASim

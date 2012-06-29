@@ -60,6 +60,11 @@ public:
   const std::vector<ElasticShellForce*>& getForces() const;
   void addForce(ElasticShellForce* force);
 
+  void constrainEdgeXi(const EdgeHandle& eh, Scalar xiValue) {
+      constrainedEdges.push_back(eh);
+      constrainedXiValues.push_back(xiValue);
+  }
+
   void setRemeshing(bool enable, Scalar rez, int iterations) {
     m_do_remeshing = enable;
     m_remesh_edge_length = rez;
@@ -119,6 +124,7 @@ public:
   Scalar getVolume(const FaceHandle& f) const {return m_volumes[f]; }
   Scalar getArea(const FaceHandle& f, bool current = true) const;
 
+  Vec3d getFaceNormal(const FaceHandle& f);
   void getFaceNormals(FaceProperty<Vec3d> & fNormals) const;
   void getVertexNormals(VertexProperty<Vec3d> & vNormals) const;
   void getThickness(VertexProperty<Scalar> & vThickness) const;
@@ -202,6 +208,9 @@ protected:
   bool m_do_thickness_updates;
   bool m_do_eltopo_collisions;
   
+  std::vector<EdgeHandle> constrainedEdges;
+  std::vector<Scalar> constrainedXiValues;
+
   Scalar m_density;
 
   FaceProperty<char> m_active_faces; //list of faces to which this model is applied

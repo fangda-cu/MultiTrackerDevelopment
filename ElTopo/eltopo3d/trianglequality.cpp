@@ -318,6 +318,7 @@ double get_edge_curvature(const SurfTrack& surf,
 
   assert( vertex_a < surf.get_num_vertices() );
   assert( vertex_b < surf.get_num_vertices() );
+#undef USE_INV_MIN_RADIUS
 
 #ifdef USE_INV_MIN_RADIUS
   double curv_a = std::fabs( inv_min_radius_curvature( surf, vertex_a ) );
@@ -328,10 +329,10 @@ double get_edge_curvature(const SurfTrack& surf,
 #ifdef USE_INV_MIN_RADIUS
   double curv_b = std::fabs( inv_min_radius_curvature( surf, vertex_b ) );
 #else
-  double curv_b = unsigned_vertex_mean_curvature( vertex_b, m_surf );
+  double curv_b = unsigned_vertex_mean_curvature( vertex_b, surf );
 #endif
 
-  return 0.5 * ( curv_a + curv_b );
+  return max(curv_a, curv_b);//0.5 * ( curv_a + curv_b );
 
 }
 

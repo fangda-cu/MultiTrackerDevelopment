@@ -654,10 +654,39 @@ void ShellTest::AtEachTimestep()
         }
       }
       Vec3d original_pos = shellObj->getVertexUndeformedPosition(low_vert);
-      std::cout << "Lowest vertex is: " << low_vert.idx() << std::endl;
       std::cout << "Vertical displacement: " << (original_pos[1] - low_pos[1]) << std::endl;
-
     }
+
+    /*
+    if(m_active_scene == 21) {
+        //Verify symmetry:
+        for(VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit) {
+            VertexHandle v = *vit;
+            std::cout << "Index: " << v.idx() << " Position: " << shell->getVertexPosition(v) << std::endl;
+        }
+        int i_lim = 11; int j_lim = 11;
+        for(int i = 0; i < i_lim / 2; ++i) {
+            for(int j = 0; j < j_lim / 2; ++j) {
+                VertexHandle v_cur(i + j*j_lim);
+                VertexHandle v_flipJ(i + (j_lim-j-1) * j_lim);
+                VertexHandle v_flipI((i_lim-i-1) + j*j_lim);
+                std::cout << v_cur.idx() << " " << v_flipJ.idx() << " " << v_flipI.idx() << std::endl;
+                
+                Vec3d curPos = shell->getVertexPosition(v_cur);
+                Vec3d flipJPos = shell->getVertexPosition(v_flipJ);
+                Vec3d flipIPos = shell->getVertexPosition(v_flipI);
+
+                if(fabs(curPos[0] - flipIPos[0]) > 1e-5 || fabs(curPos[1] - flipIPos[1]) > 1e-5 || fabs(50 - curPos[2] - flipIPos[2]) > 1e-5)
+                    std::cout << "Mismatch: " << curPos << " " << flipIPos << std::endl;
+                
+                if(fabs(curPos[0] + flipJPos[0]) > 1e-5 || fabs(curPos[1] - flipJPos[1]) > 1e-5 || fabs(curPos[2] - flipJPos[2]) > 1e-5)
+                    std::cout << "Mismatch: " << curPos << " " << flipJPos << std::endl;
+            }
+        }
+        
+    }
+    */
+
     std::cout << "Time: " << this->getTime() << std::endl; 
 
     if(m_active_scene == 20 ) {
@@ -2191,7 +2220,7 @@ void ShellTest::setupScene16() {
   std::set<VertexHandle> topVerts;
   for(int j = 0; j <= yresolution; ++j) {
     for(int i = 0; i <= xresolution; ++i) {
-      Vec3d vert(i*dx, j*dy, 0.00001*sin(10000*(j*dy)));
+      Vec3d vert(i*dx, j*dy, 0.0001*sin(10000*(j*dy)));
       Vec3d undef = vert;
 
       VertexHandle h = shellObj->addVertex();
@@ -2968,6 +2997,17 @@ void ShellTest::setupScene21_ScordelisLo() {
     pc2->zEnabled = false; //turn off constraint in one axis
     shell->getDefoObj().constrainVertex(vertHandles[j_end+i*(yresolution+1)], pc2);
   }
+  
+  //Constrain the normals
+  //for(EdgeIterator eit = shellObj->edges_begin(); eit != shellObj->edges_end(); ++eit) {
+  //    EdgeHandle eh = *eit;
+  //    
+  //    VertexHandle v0 = shellObj->fromVertex(eh);
+  //    VertexHandle v1 = shellObj->toVertex(eh);
+  //    if(shellObj->isConstrained(v0) && shellObj->isConstrained(v1)) {
+  //         shell->constrainEdgeXi(eh, 0); 
+  //    }
+  //}
  
 
 }

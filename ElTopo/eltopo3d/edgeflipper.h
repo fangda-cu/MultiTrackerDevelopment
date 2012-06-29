@@ -16,7 +16,7 @@
 
 #include <cstddef>
 #include <vector>
-
+#include <mat.h>
 // ---------------------------------------------------------
 //  Forwards and typedefs
 // ---------------------------------------------------------
@@ -77,7 +77,14 @@ private:
     ///
     bool flip_edge( size_t edge, size_t tri0, size_t tri1, size_t third_vertex_0, size_t third_vertex_1 );
     
-    
+    /// Gather the quadric data for a given vertex
+    ///
+    void getQuadric(size_t vertex, Mat33d& A);
+
+    /// Check whether the edge meets the Delaunay criterion in the warped space (i.e. accounting for anisotropy)
+    ///
+    bool is_delaunay_anisotropic( size_t edge, size_t tri0, size_t tri1, size_t third_vertex_0, size_t third_vertex_1 );
+
 };
 
 }

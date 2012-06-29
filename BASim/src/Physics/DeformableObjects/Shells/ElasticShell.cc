@@ -177,6 +177,19 @@ Scalar ElasticShell::getMinThickness() const {
   }
   return minVal;
 }
+
+Vec3d ElasticShell::getFaceNormal(const FaceHandle& f) {
+    std::vector<Vec3d> v;
+    const DeformableObject& mesh = *m_obj;
+    for( FaceVertexIterator fvit = mesh.fv_iter(f); fvit; ++fvit )
+    {
+        v.push_back(getVertexPosition(*fvit));
+    }
+    Vec3d n = (v[1] - v[0]).cross(v[2]-v[0]);
+    n.normalize();
+    return n;
+}
+
 void ElasticShell::getFaceNormals(FaceProperty<Vec3d> & fNormals) const{
     const DeformableObject& mesh = *m_obj;
     for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit ){
@@ -190,6 +203,7 @@ void ElasticShell::getFaceNormals(FaceProperty<Vec3d> & fNormals) const{
         fNormals[*fit] = n;
     }
 }
+
 void ElasticShell::getVertexNormals(VertexProperty<Vec3d> & vNormals) const{
     FaceProperty<Vec3d> fNormals(& getDefoObj());
     getFaceNormals(fNormals);
@@ -364,7 +378,13 @@ const Scalar& ElasticShell::getMass( const DofHandle& hnd ) const
 
 void ElasticShell::getScriptedDofs( IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time ) const
 {
-  // position dof scripting is moved to PositionDofsModel. ElasticShell does not support edge dof scripting.
+    // position dof scripting is moved to PositionDofsModel.
+    
+    for(int i = 0; i < constrainedEdges.size(); ++i) {
+        int dofID = getEdgeDofBase(constrainedEdges[i]);
+        dofIndices.push_back(dofID);
+        dofValues.push_back(constrainedXiValues[i]);
+    }
 }
 
 void ElasticShell::startStep(Scalar time, Scalar timestep)
@@ -775,7 +795,7 @@ void ElasticShell::fracture() {
   construction_parameters.m_use_curvature_when_collapsing = false;
   construction_parameters.m_use_curvature_when_splitting = false;
   
-  construction_parameters.m_subdivision_scheme = new ElTopo::MidpointScheme(); //ElTopo::ButterflyScheme();
+  construction_parameters.m_subdivision_scheme = new ElTopo::ButterflyScheme();//ElTopo::MidpointScheme(); 
 
   construction_parameters.m_allow_non_manifold = false;
   construction_parameters.m_collision_safety = true;
@@ -1001,16 +1021,19 @@ void ElasticShell::remesh()
   construction_parameters.m_proximity_epsilon = m_collision_epsilon;
   construction_parameters.m_allow_vertex_movement = false;
   construction_parameters.m_min_edge_length = 0.5*m_remesh_edge_length;
-  construction_parameters.m_max_edge_length = 1.5*m_remesh_edge_length;
+  construction_parameters.m_max_edge_length = 2.0*m_remesh_edge_length;
   construction_parameters.m_max_volume_change = numeric_limits<double>::max();   
-  construction_parameters.m_min_triangle_angle = 5;
-  construction_parameters.m_max_triangle_angle = 175;
+  construction_parameters.m_min_triangle_angle = 15;
+  construction_parameters.m_max_triangle_angle = 165;
   construction_parameters.m_verbose = false;
   construction_parameters.m_allow_non_manifold = false;
   construction_parameters.m_collision_safety = true;
+  
+  construction_parameters.m_subdivision_scheme = new ElTopo::MidpointScheme();//ElTopo::ButterflyScheme();// 
+  //construction_parameters.m_subdivision_scheme = new ElTopo::ButterflyScheme();// ElTopo::MidpointScheme();//
 
-  construction_parameters.m_use_curvature_when_collapsing = false;
-  construction_parameters.m_use_curvature_when_splitting = false;
+  construction_parameters.m_use_curvature_when_collapsing = true;
+  construction_parameters.m_use_curvature_when_splitting = true;
   //construction_parameters.m_max_curvature_multiplier = 1000;
   //construction_parameters.m_min_curvature_multiplier = 1.0;
 

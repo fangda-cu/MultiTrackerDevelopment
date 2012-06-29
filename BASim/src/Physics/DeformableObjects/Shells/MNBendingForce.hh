@@ -69,7 +69,9 @@ public:
   
   void initialize() const;
   void update();
+
   Scalar getXiValue(const EdgeHandle& eh, Vec3d trueNormal);
+  Vec3d getEdgeNormal(const EdgeHandle& eh);
 
   mutable bool m_initialized;
 

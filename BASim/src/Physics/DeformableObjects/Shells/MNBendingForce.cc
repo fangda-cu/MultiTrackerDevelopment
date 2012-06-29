@@ -196,8 +196,8 @@ Scalar MNBendingForce::globalEnergy() const
 
 void MNBendingForce::globalForce( VecXd& force ) const
 {
-  Scalar energy = globalEnergy();
-  std::cout << "Bending energy: " << energy << std::endl;
+  //Scalar energy = globalEnergy();
+  //std::cout << "Bending energy: " << energy << std::endl;
 
   Eigen::Matrix<Scalar, NumMNBendDof, 1> localForce;
   std::vector<Scalar> undeformed(MNBendStencilSize), undeformed_damp(MNBendStencilSize), deformed(MNBendStencilSize);
@@ -617,6 +617,49 @@ void MNBendingForce::elementJacobian(const std::vector<Scalar>& undeformed,
     }
   }
 
+
+}
+
+Vec3d MNBendingForce::getEdgeNormal(const EdgeHandle& eh) {
+    
+    // Grab the first face, and use its information, since it will be the owner by definition.
+    const DeformableObject& defo = m_shell.getDefoObj();
+    EdgeFaceIterator efiter = defo.ef_iter(eh);
+    FaceHandle f0 = *efiter;
+    
+    FaceHandle f1;
+    if(efiter) {
+        ++efiter;
+        f1 = *efiter;
+    }
+    
+    //Work out the edge's average normal
+    Vec3d avgNormal = m_shell.getFaceNormal(f0);
+    if(f1.isValid()) {
+        avgNormal += m_shell.getFaceNormal(f1);
+        avgNormal /= 2;
+        avgNormal.normalize();
+    }
+        
+    //Figure out which edge we are looking at (in the numbering)
+    FaceEdgeIterator feiter = defo.fe_iter(f0);
+    int count = 0;
+    while(*feiter != eh) {
+        ++count;
+        ++feiter;
+    }
+    MNPrecomputed* pre = &m_precomputed[f0];
+    
+    //Now work out what the actual normal should be based on the Xi values
+    Scalar xi = m_shell.getEdgeXi(eh);
+    Scalar otherComponent = sqrt(1 - xi*xi); //find the vertical(normal) component of a unit vector that projects to xi on tau.
+    Vector3d tauCVec = pre->tau0[count];
+    Vec3d tau(tauCVec[0], tauCVec[1], tauCVec[2]);
+    
+    Vec3d normalVec = otherComponent * avgNormal + xi * tau;
+    normalVec.normalize(); //shouldn't actually be necessary
+
+    return normalVec;
 
 }
 
