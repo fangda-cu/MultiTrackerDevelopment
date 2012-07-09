@@ -1029,8 +1029,9 @@ void ElasticShell::remesh()
   construction_parameters.m_allow_non_manifold = false;
   construction_parameters.m_collision_safety = true;
   
-  construction_parameters.m_subdivision_scheme = new ElTopo::MidpointScheme();//ElTopo::ButterflyScheme();// 
-  //construction_parameters.m_subdivision_scheme = new ElTopo::QuadraticErrorMinScheme();// ElTopo::MidpointScheme();//
+  //construction_parameters.m_subdivision_scheme = new ElTopo::MidpointScheme();
+  construction_parameters.m_subdivision_scheme = new ElTopo::QuadraticErrorMinScheme();
+  //construction_parameters.m_subdivision_scheme = new ElTopo::ButterflyScheme();
 
   construction_parameters.m_use_curvature_when_collapsing = true;
   construction_parameters.m_use_curvature_when_splitting = true;

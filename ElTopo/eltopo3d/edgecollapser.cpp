@@ -787,12 +787,27 @@ bool EdgeCollapser::edge_is_collapsible( size_t edge_index, double& current_leng
     if(current_length > m_max_edge_length*0.5)
         return false;
 
+    //check all incident edges to see if any of them are super short, and if so, split this guy accordingly.
+    //this enforces slow grading of the mesh.
+    double min_nbr_len = current_length;
+    size_t vertex_a = m_surf.m_mesh.m_edges[edge_index][0];
+    size_t vertex_b = m_surf.m_mesh.m_edges[edge_index][1];
+    for(size_t edge_id = 0; edge_id < m_surf.m_mesh.m_vertex_to_edge_map[vertex_a].size(); ++edge_id) {
+        min_nbr_len = min(min_nbr_len, m_surf.get_edge_length(m_surf.m_mesh.m_vertex_to_edge_map[vertex_a][edge_id]));
+    }
+    for(size_t edge_id = 0; edge_id < m_surf.m_mesh.m_vertex_to_edge_map[vertex_b].size(); ++edge_id) {
+        min_nbr_len = min(min_nbr_len, m_surf.get_edge_length(m_surf.m_mesh.m_vertex_to_edge_map[vertex_b][edge_id]));
+    }
+
+    if(current_length < 3*min_nbr_len )
+        return false;
+
     double curvature_value = get_edge_curvature( m_surf, m_surf.m_mesh.m_edges[edge_index][0], m_surf.m_mesh.m_edges[edge_index][1] );
     
     //Assume we want to discretize any circle with at least ten segments.
     //Then give the curvature (i.e. inverse radius) the target edge length
     //here should be computed as... 
-    int circlesegs = 24;
+    int circlesegs = 32;
     double curvature_min_length = 2*M_PI / (double)circlesegs / max(curvature_value, 1e-8);
 
     //collapse if curvature dictates we should. 

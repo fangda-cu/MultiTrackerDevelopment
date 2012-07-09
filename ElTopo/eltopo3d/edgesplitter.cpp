@@ -648,18 +648,18 @@ bool EdgeSplitter::edge_length_needs_split(size_t edge_index) {
         if(edge_length > curvature_max_length)
             return true;
         
-        ////check all incident edges to see if any of them are super short, and if so, split this guy accordingly.
-        ////this enforces slow grading of the mesh.
-        //double min_nbr_len = edge_length;
-        //for(size_t edge_id = 0; edge_id < m_surf.m_mesh.m_vertex_to_edge_map[vertex_a].size(); ++edge_id) {
-        //    min_nbr_len = min(min_nbr_len, m_surf.get_edge_length(m_surf.m_mesh.m_vertex_to_edge_map[vertex_a][edge_id]));
-        //}
-        //for(size_t edge_id = 0; edge_id < m_surf.m_mesh.m_vertex_to_edge_map[vertex_b].size(); ++edge_id) {
-        //    min_nbr_len = min(min_nbr_len, m_surf.get_edge_length(m_surf.m_mesh.m_vertex_to_edge_map[vertex_b][edge_id]));
-        //}
-        //
-        //if(edge_length > min_nbr_len * 3)
-        //    return true;
+        //check all incident edges to see if any of them are super short, and if so, split this guy accordingly.
+        //this enforces slow grading of the mesh.
+        double min_nbr_len = edge_length;
+        for(size_t edge_id = 0; edge_id < m_surf.m_mesh.m_vertex_to_edge_map[vertex_a].size(); ++edge_id) {
+            min_nbr_len = min(min_nbr_len, m_surf.get_edge_length(m_surf.m_mesh.m_vertex_to_edge_map[vertex_a][edge_id]));
+        }
+        for(size_t edge_id = 0; edge_id < m_surf.m_mesh.m_vertex_to_edge_map[vertex_b].size(); ++edge_id) {
+            min_nbr_len = min(min_nbr_len, m_surf.get_edge_length(m_surf.m_mesh.m_vertex_to_edge_map[vertex_b][edge_id]));
+        }
+        
+        if(edge_length > min_nbr_len * 3)
+            return true;
               
     }
     else {
