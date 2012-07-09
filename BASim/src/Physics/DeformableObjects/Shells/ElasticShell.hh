@@ -65,9 +65,10 @@ public:
       constrainedXiValues.push_back(xiValue);
   }
 
-  void setRemeshing(bool enable, Scalar rez, int iterations) {
+  void setRemeshing(bool enable, Scalar min_rez, Scalar max_rez, int iterations) {
     m_do_remeshing = enable;
-    m_remesh_edge_length = rez;
+    m_remesh_edge_max_len = max_rez;
+    m_remesh_edge_min_len = min_rez;
     m_remeshing_iters = iterations;
   }
   
@@ -202,7 +203,8 @@ protected:
   FaceProperty<Scalar> m_volumes;
   
   bool m_do_remeshing;
-  Scalar m_remesh_edge_length;
+  Scalar m_remesh_edge_max_len;
+  Scalar m_remesh_edge_min_len;
   int m_remeshing_iters;
 
   bool m_do_thickness_updates;

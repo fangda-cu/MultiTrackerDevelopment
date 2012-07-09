@@ -380,7 +380,7 @@ void ElasticShell::getScriptedDofs( IntArray& dofIndices, std::vector<Scalar>& d
 {
     // position dof scripting is moved to PositionDofsModel.
     
-    for(int i = 0; i < constrainedEdges.size(); ++i) {
+    for(unsigned int i = 0; i < constrainedEdges.size(); ++i) {
         int dofID = getEdgeDofBase(constrainedEdges[i]);
         dofIndices.push_back(dofID);
         dofValues.push_back(constrainedXiValues[i]);
@@ -785,8 +785,8 @@ void ElasticShell::fracture() {
   ElTopo::SurfTrackInitializationParameters construction_parameters;
   construction_parameters.m_proximity_epsilon = m_collision_epsilon;
   construction_parameters.m_allow_vertex_movement = false;
-  construction_parameters.m_min_edge_length = 0.5*m_remesh_edge_length;
-  construction_parameters.m_max_edge_length = 1.5*m_remesh_edge_length;
+  construction_parameters.m_min_edge_length = m_remesh_edge_min_len;
+  construction_parameters.m_max_edge_length = m_remesh_edge_max_len;
   construction_parameters.m_max_volume_change = numeric_limits<double>::max();   
   construction_parameters.m_min_triangle_angle = 5;
   construction_parameters.m_max_triangle_angle = 175;
@@ -1020,8 +1020,8 @@ void ElasticShell::remesh()
   ElTopo::SurfTrackInitializationParameters construction_parameters;
   construction_parameters.m_proximity_epsilon = m_collision_epsilon;
   construction_parameters.m_allow_vertex_movement = false;
-  construction_parameters.m_min_edge_length = 0.5*m_remesh_edge_length;
-  construction_parameters.m_max_edge_length = 2.0*m_remesh_edge_length;
+  construction_parameters.m_min_edge_length = m_remesh_edge_min_len;
+  construction_parameters.m_max_edge_length = m_remesh_edge_max_len;
   construction_parameters.m_max_volume_change = numeric_limits<double>::max();   
   construction_parameters.m_min_triangle_angle = 15;
   construction_parameters.m_max_triangle_angle = 165;
@@ -1030,7 +1030,7 @@ void ElasticShell::remesh()
   construction_parameters.m_collision_safety = true;
   
   construction_parameters.m_subdivision_scheme = new ElTopo::MidpointScheme();//ElTopo::ButterflyScheme();// 
-  //construction_parameters.m_subdivision_scheme = new ElTopo::ButterflyScheme();// ElTopo::MidpointScheme();//
+  //construction_parameters.m_subdivision_scheme = new ElTopo::QuadraticErrorMinScheme();// ElTopo::MidpointScheme();//
 
   construction_parameters.m_use_curvature_when_collapsing = true;
   construction_parameters.m_use_curvature_when_splitting = true;
@@ -1115,7 +1115,6 @@ void ElasticShell::remesh()
     EdgeHandle eh = findEdge(mesh, v0, v1);
 
     if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_COLLAPSE) {
-      std::cout << "Collapse\n";
       Vec3d new_pos(event.m_vert_position[0], event.m_vert_position[1], event.m_vert_position[2]);
       VertexHandle dead_vert = reverse_vertmap[event.m_deleted_verts[0]];
       VertexHandle keep_vert = getEdgesOtherVertex(mesh, eh, dead_vert);

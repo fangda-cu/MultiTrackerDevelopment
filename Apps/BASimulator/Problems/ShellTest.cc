@@ -81,7 +81,9 @@ ShellTest::ShellTest()
 
   //Remeshing options
   AddOption("shell-remeshing", "whether to perform remeshing", false);
-  AddOption("shell-remeshing-resolution", "target edge-length", 0.1);
+  AddOption("shell-remeshing-resolution", "target edge-length", 0.0); //for backwards compatibility
+  AddOption("shell-remeshing-max-length", "upper bound on edge-length", 0.5);
+  AddOption("shell-remeshing-min-length", "lower bound on edge-length", 0.1);
   AddOption("shell-remeshing-iterations", "number of remeshing iterations to run", 2);
 
   //Area-based surface tension force
@@ -474,10 +476,18 @@ void ShellTest::Setup()
   bool remeshing = GetBoolOpt("shell-remeshing");
   bool self = GetBoolOpt("shell-self-collision");
   std::cout << "Remeshing: " << remeshing << std::endl;
-  std::cout << "Self: " << self << std::endl;
-  Scalar remeshing_res = GetScalarOpt("shell-remeshing-resolution");
+  Scalar remeshing_rez = GetScalarOpt("shell-remeshing-resolution");
+  Scalar remeshing_min, remeshing_max;
+  if(remeshing_rez == 0.0) {
+    remeshing_min = GetScalarOpt("shell-remeshing-min-length");
+    remeshing_max = GetScalarOpt("shell-remeshing-max-length");
+  }
+  else {
+      remeshing_min = 0.5*remeshing_rez;
+      remeshing_max = 1.5*remeshing_rez;
+  }
   int remeshing_its = GetIntOpt("shell-remeshing-iterations");
-  shell->setRemeshing(remeshing, remeshing_res, remeshing_its);
+  shell->setRemeshing(remeshing, remeshing_min, remeshing_max, remeshing_its);
   
   bool eltopo_collisions = GetBoolOpt("shell-eltopo-collisions");
   shell->setElTopoCollisions(eltopo_collisions);

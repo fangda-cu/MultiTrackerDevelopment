@@ -13,6 +13,7 @@
 #include "BASim/src/Math/Math.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/MNBendingForce.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
+#include "BASim/src/Render/Curvature.hh"
 
 //ElTopo in order to test out the remeshing operations
 #include "surftrack.h"
@@ -171,6 +172,10 @@ void ShellRenderer::render()
 
   if( m_mode == FLAT )
   {
+      /*glDisable(GL_LIGHTING);
+      MeshCurvature curvature(m_shell.getDefoObj(), m_shell.getVertexPositions());
+      curvature.renderCurvatureDirs();*/
+
     glEnable(GL_LIGHTING);
     //glEnable(GL_COLOR_MATERIAL);
 
@@ -256,6 +261,7 @@ void ShellRenderer::render()
       OpenGL::vertex(p0);
       OpenGL::vertex(p1);
       
+      /*
       //Draw edge avg normal vector
       //get adjacent faces
       EdgeFaceIterator efit = m_shell.getDefoObj().ef_iter(eh);
@@ -288,8 +294,7 @@ void ShellRenderer::render()
              OpenGL::vertex(endpoint);
           }
       }
-      //Now work out what the mid-edge normal is, and render that.
-     
+      */
     }
     glEnd();
 
@@ -318,7 +323,7 @@ void ShellRenderer::render()
       for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit )
       {
         Vec3d pos = m_shell.getVertexPosition(*fvit);
-        pos = pos - 0.02*(pos-barycentre);
+        //pos = pos - 0.02*(pos-barycentre);
         OpenGL::vertex(pos);
         points[i] = pos;
         ++i;
@@ -326,6 +331,11 @@ void ShellRenderer::render()
       
     }
     glEnd();
+    glColor3f(0.0, 0.0, 0.0);
+    std::cout << "Calling curvature\n";
+    MeshCurvature curvature(m_shell.getDefoObj(), m_shell.getVertexPositions());
+    curvature.renderCurvatureDirs();
+    std::cout << "Done curvature";
 
 
      //Render all vertices

@@ -671,7 +671,6 @@ void SurfTrack::improve_mesh( )
         // edge collapsing
         while ( m_collapser.collapse_pass() ) {}
         
-        
         // null-space smoothing
         if ( m_allow_vertex_movement )
         {

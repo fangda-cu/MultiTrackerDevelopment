@@ -10,7 +10,9 @@
 #include <trianglequality.h>
 #include <limits>
 #include <surftrack.h>
+#include <set>
 
+#include "lapack_wrapper.h"
 
 // ---------------------------------------------------------
 ///
@@ -223,6 +225,135 @@ double inv_min_radius_curvature( const SurfTrack& surf, size_t vertex )
     
 }
 
+
+// ---------------------------------------------------------
+///
+/// Compute curvature at a vertex using quadric fitting
+///
+// ---------------------------------------------------------
+
+double estimated_max_curvature(const SurfTrack& surf, size_t vertex) {
+    
+    Vec3d normal = surf.get_vertex_normal(vertex);
+
+    Vec3d seed(0,0,0);
+    if(abs(normal[0]) < 0.5)
+        seed[0] = 1.0;
+    else
+        seed[1] = 1.0;
+    Vec3d u = cross(normal, seed);
+    normalize(u);
+    Vec3d v = cross(normal, u);
+
+    std::set<size_t> twoneighbors;
+    twoneighbors.insert(vertex);
+    for(int i=0; i<2; i++)
+    {
+        std::set<size_t> toadd;
+        for(std::set<size_t>::iterator it = twoneighbors.begin(); it != twoneighbors.end(); ++it)
+        {
+            size_t curVert = *it;
+            const std::vector<size_t>& nbrEdges = surf.m_mesh.m_vertex_to_edge_map[curVert];
+            for(unsigned int nbrIdx = 0; nbrIdx < nbrEdges.size(); ++nbrIdx) 
+            {
+                size_t edge_id = nbrEdges[nbrIdx];
+                Vec2st edge = surf.m_mesh.m_edges[edge_id];
+                size_t fv = edge[0];
+                if(fv == curVert)
+                    toadd.insert(edge[1]);
+                else
+                    toadd.insert(fv);
+            }
+        }
+        for(std::set<size_t>::iterator it = toadd.begin(); it != toadd.end(); ++it)
+            twoneighbors.insert(*it);
+    }
+
+    
+    int numneighbors = twoneighbors.size();
+    if(numneighbors < 6)
+        return 0;
+
+    //a u^2 + b v^2 + c uv + d u + e v + f
+
+    std::vector<double> Mat(numneighbors*6);
+    std::vector<double> rhs(numneighbors);
+    Vec3d centpt = surf.get_position(vertex);
+    int row=0;
+    for(std::set<size_t>::iterator it = twoneighbors.begin(); it != twoneighbors.end(); ++it)
+    {
+        size_t curVert = *it;
+        Vec3d adjpt = surf.get_position(curVert);
+        Vec3d diff;
+        for(int i=0; i<3; i++)
+            diff[i] = adjpt[i]-centpt[i];
+        double uval = dot(diff,u);
+        double vval = dot(diff,v);
+        rhs[row] = dot(diff,normal);
+        /*Mat[row*numneighbors] = uval*uval;
+        Mat[row*numneighbors+1] = vval*vval;
+        Mat[row*numneighbors+2] = uval*vval;
+        Mat[row*numneighbors+3] = uval;
+        Mat[row*numneighbors+4] = vval;
+        Mat[row*numneighbors+5] = 1;*/
+        Mat[0*numneighbors + row] = uval*uval;
+        Mat[1*numneighbors + row] = vval*vval;
+        Mat[2*numneighbors + row] = uval*vval;
+        Mat[3*numneighbors + row] = uval;
+        Mat[4*numneighbors + row] = vval;
+        Mat[5*numneighbors + row] = 1;
+        row++;
+    }
+    assert(row == numneighbors);
+
+    int info;
+    LAPACK::simple_least_squares_svd(numneighbors, 6, 1, &Mat[0], numneighbors, &rhs[0], info);
+    std::vector<double> coeffs(6);
+    for(int id = 0; id < 6; ++id) coeffs[id] = rhs[id];
+  
+    double areaElt = sqrt(1+coeffs[3]*coeffs[3]+coeffs[4]*coeffs[4]);
+    Vec3d newnormal = (normal - coeffs[3]*u - coeffs[4]*v) / areaElt;
+
+    double E = 1 + coeffs[3]*coeffs[3];
+    double F = coeffs[3]*coeffs[4];
+    double G = 1 + coeffs[4]*coeffs[4];
+
+    //double fac = normal.dot(newnormal);
+    double L = 2*coeffs[0]/areaElt;
+    double M = coeffs[2]/areaElt;
+    double N = 2*coeffs[1]/areaElt;
+
+    double det = E*G-F*F;
+    if(abs(det) < 1e-6)
+        return 0;
+
+    Mat22d H(L, M, M, N);
+    
+    //El Topo stores things in column major rather than row major, I believe, hence the transposing
+    Mat33d U(u[0], v[0], normal[0], 
+        u[1], v[1], normal[1], 
+        u[2], v[2], normal[2]); 
+    U = U.transpose();
+
+    Mat32d J(1, 0, coeffs[3], 
+             0, 1, coeffs[4]);
+
+
+    J = U*J;
+    
+    Mat22d shapeOperator = 1/areaElt * inverse(J.transpose()*J) * H;
+
+    //now do an eigensolve on the shape operator to find the principal curvatures/directions
+    int n = 2, lwork = 10;
+    double eigenvalues[2];
+    double work[10];
+    LAPACK::get_eigen_decomposition( &n, shapeOperator.a, &n, eigenvalues, work, &lwork, &info ); 
+    double max_curvature = max(abs(eigenvalues[0]), abs(eigenvalues[1]));
+    
+    return max_curvature;
+    
+}
+
 // ---------------------------------------------------------
 ///
 /// Compute curvatures at all vertices using inv_min_radius_curvature.
@@ -318,16 +449,17 @@ double get_edge_curvature(const SurfTrack& surf,
 
   assert( vertex_a < surf.get_num_vertices() );
   assert( vertex_b < surf.get_num_vertices() );
-#undef USE_INV_MIN_RADIUS
 
 #ifdef USE_INV_MIN_RADIUS
-  double curv_a = std::fabs( inv_min_radius_curvature( surf, vertex_a ) );
+  double curv_a = estimated_max_curvature( surf, vertex_a );
+  //double curv_a = std::fabs( inv_min_radius_curvature( surf, vertex_a ) );
 #else
   double curv_a = unsigned_vertex_mean_curvature( vertex_a, surf );
 #endif
 
 #ifdef USE_INV_MIN_RADIUS
-  double curv_b = std::fabs( inv_min_radius_curvature( surf, vertex_b ) );
+  double curv_b = estimated_max_curvature( surf, vertex_b );
+  //double curv_b = std::fabs( inv_min_radius_curvature( surf, vertex_b ) );
 #else
   double curv_b = unsigned_vertex_mean_curvature( vertex_b, surf );
 #endif

@@ -66,6 +66,10 @@ double inv_min_radius_curvature( const SurfTrack& surf, size_t vertex );
 ///
 void compute_vertex_curvatures( const SurfTrack& surf, std::vector<double>& vertex_curvatures );
 
+/// Return the unsigned maximum principal curvature, computed by quadric fitting
+/// 
+double estimated_max_curvature(const SurfTrack& surf, size_t vertex);
+
 /// Determine the "mixed" voronoi and barycentric area of the vertex within the given triangle.
 ///
 double mixed_area( size_t vertex_index, size_t triangle_index, const SurfTrack& surf );

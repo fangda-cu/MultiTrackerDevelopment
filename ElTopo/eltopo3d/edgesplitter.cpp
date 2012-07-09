@@ -619,6 +619,59 @@ bool EdgeSplitter::split_edge( size_t edge )
 
 // --------------------------------------------------------
 ///
+/// Determine if an edge split is desirable
+///
+// --------------------------------------------------------
+
+
+bool EdgeSplitter::edge_length_needs_split(size_t edge_index) {
+    
+    double edge_length = m_surf.get_edge_length(edge_index);
+    size_t vertex_a = m_surf.m_mesh.m_edges[edge_index][0];
+    size_t vertex_b = m_surf.m_mesh.m_edges[edge_index][1];
+
+    if ( m_use_curvature )
+    {
+        //split if we're above the upper limit
+        if(edge_length > m_max_edge_length)
+            return true;
+
+        //don't split if splitting would take us below the lower limit
+        if(edge_length < 2*m_min_edge_length)
+            return false;
+
+        double curvature_value = get_edge_curvature( m_surf, vertex_a, vertex_b );
+        int circlesegs = 16;
+        double curvature_max_length = 2*M_PI / (double)circlesegs / max(curvature_value, 1e-8);
+        
+        //split if curvature dictates
+        if(edge_length > curvature_max_length)
+            return true;
+        
+        ////check all incident edges to see if any of them are super short, and if so, split this guy accordingly.
+        ////this enforces slow grading of the mesh.
+        //double min_nbr_len = edge_length;
+        //for(size_t edge_id = 0; edge_id < m_surf.m_mesh.m_vertex_to_edge_map[vertex_a].size(); ++edge_id) {
+        //    min_nbr_len = min(min_nbr_len, m_surf.get_edge_length(m_surf.m_mesh.m_vertex_to_edge_map[vertex_a][edge_id]));
+        //}
+        //for(size_t edge_id = 0; edge_id < m_surf.m_mesh.m_vertex_to_edge_map[vertex_b].size(); ++edge_id) {
+        //    min_nbr_len = min(min_nbr_len, m_surf.get_edge_length(m_surf.m_mesh.m_vertex_to_edge_map[vertex_b][edge_id]));
+        //}
+        //
+        //if(edge_length > min_nbr_len * 3)
+        //    return true;
+              
+    }
+    else {
+        return edge_length > m_max_edge_length;
+    }
+    
+    return false;
+
+}
+
+// --------------------------------------------------------
+///
 /// Determine if edge should be allowed to be split
 ///
 // --------------------------------------------------------
@@ -720,48 +773,9 @@ bool EdgeSplitter::split_pass()
     {    
         if ( !edge_is_splittable(i) ) { continue; }
         
-        size_t vertex_a = mesh.m_edges[i][0];
-        size_t vertex_b = mesh.m_edges[i][1];
-        
-        assert( vertex_a < m_surf.get_num_vertices() );
-        assert( vertex_b < m_surf.get_num_vertices() );
-        
-        double length;
-        
-        length = m_surf.get_edge_length(i);
-        if ( m_use_curvature )
-        {
-            //check if the local curvature dictates a split
-            double curvature_value = get_edge_curvature( m_surf, vertex_a, vertex_b );
-          
-            int circlesegs = 8;
-            double curvature_max_length = 2*M_PI / (double)circlesegs / curvature_value;
-          
-            if(length > curvature_max_length && length >= 2 * m_min_edge_length) {
-                sortable_edges_to_try.push_back( SortableEdge( i, length ) );
-            }
-
-            //check all incident edges to see if any of them are super short, and if so, split this guy accordingly.
-            //this enforces slow grading of the mesh.
-            double min_nbr_len = length;
-            for(size_t edge_id = 0; edge_id < m_surf.m_mesh.m_vertex_to_edge_map[vertex_a].size(); ++edge_id) {
-                min_nbr_len = min(min_nbr_len, m_surf.get_edge_length(m_surf.m_mesh.m_vertex_to_edge_map[vertex_a][edge_id]));
-            }
-            for(size_t edge_id = 0; edge_id < m_surf.m_mesh.m_vertex_to_edge_map[vertex_b].size(); ++edge_id) {
-                min_nbr_len = min(min_nbr_len, m_surf.get_edge_length(m_surf.m_mesh.m_vertex_to_edge_map[vertex_b][edge_id]));
-            }
-            if(length > min_nbr_len * 4)
-                sortable_edges_to_try.push_back( SortableEdge( i, length ) );
-
-        }
-        else
-        {
-            if ( length > m_max_edge_length )
-            {
-              sortable_edges_to_try.push_back( SortableEdge( i, length ) );
-            }
-        }
-        
+        bool should_split = edge_length_needs_split(i);
+        if(should_split)
+            sortable_edges_to_try.push_back( SortableEdge( i, m_surf.get_edge_length(i)) );
     }
     
     
@@ -783,50 +797,13 @@ bool EdgeSplitter::split_pass()
         
         if ( !edge_is_splittable(longest_edge) ) { continue; }
         
-        size_t vertex_a = mesh.m_edges[longest_edge][0];
-        size_t vertex_b = mesh.m_edges[longest_edge][1];
+        bool should_split = edge_length_needs_split(longest_edge);
         
-        // recompute edge length -- a prior split may have somehow fixed this edge already
-        double longest_edge_length = m_surf.get_edge_length(longest_edge);
-        
-        if ( m_use_curvature )
-        {
-          double curvature_value = get_edge_curvature( m_surf, vertex_a, vertex_b );
-          int circlesegs = 8;
-          double curvature_max_length = 2*M_PI / (double)circlesegs / curvature_value;
-          if(longest_edge_length > curvature_max_length && longest_edge_length >= 2 * m_min_edge_length) {
-            // perform the actual edge split
-            bool result = split_edge( longest_edge );         
+        if(should_split) {
+            bool result = split_edge(longest_edge);
             split_occurred |= result;
-          }
-          else {
-              //check all incident edges to see if any of them are super short, and if so, split this guy accordingly.
-              //this enforces slow grading of the mesh.
-              double min_nbr_len = longest_edge_length;
-              for(size_t edge_id = 0; edge_id < m_surf.m_mesh.m_vertex_to_edge_map[vertex_a].size(); ++edge_id) {
-                  min_nbr_len = min(min_nbr_len, m_surf.get_edge_length(m_surf.m_mesh.m_vertex_to_edge_map[vertex_a][edge_id]));
-              }
-              for(size_t edge_id = 0; edge_id < m_surf.m_mesh.m_vertex_to_edge_map[vertex_b].size(); ++edge_id) {
-                  min_nbr_len = min(min_nbr_len, m_surf.get_edge_length(m_surf.m_mesh.m_vertex_to_edge_map[vertex_b][edge_id]));
-              }
-              if(longest_edge_length > min_nbr_len * 4) {
-                  bool result = split_edge( longest_edge );         
-                    split_occurred |= result;
-              }
-          }
+        }
 
-        }
-        else
-        {
-            longest_edge_length = m_surf.get_edge_length(longest_edge);
-            if ( longest_edge_length > m_max_edge_length )
-            {
-              // perform the actual edge split
-              bool result = split_edge( longest_edge );         
-              split_occurred |= result;
-            }
-        }
-        
     }
     
     
