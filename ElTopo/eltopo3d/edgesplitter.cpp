@@ -405,7 +405,7 @@ bool EdgeSplitter::split_edge( size_t edge )
   Vec3d new_vertex_position = 0.5 * ( m_surf.get_position( vertex_a ) + m_surf.get_position( vertex_b ) );
   Vec3d new_vertex_smooth_position;
 
-  bool use_smooth_point = (incident_tris.size() == 2);
+  bool use_smooth_point = (incident_tris.size() == 2) || (incident_tris.size() == 1 && typeid(m_surf.m_subdivision_scheme) == typeid(ModifiedButterflyScheme));
 
   // generate the new midpoint according to the subdivision scheme, only if manifold and not on a boundary
   if(use_smooth_point)
@@ -426,7 +426,8 @@ bool EdgeSplitter::split_edge( size_t edge )
       incident_tris, 
       other_verts) );
     
-    if ( !use_smooth_point ) { g_stats.add_to_int( "EdgeSplitter:split_smooth_vertex_collisions", 1 ); }
+    if ( !use_smooth_point ) { 
+        g_stats.add_to_int( "EdgeSplitter:split_smooth_vertex_collisions", 1 ); }
   }
     
   

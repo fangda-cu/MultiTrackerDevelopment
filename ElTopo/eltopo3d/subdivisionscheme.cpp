@@ -255,6 +255,7 @@ ModifiedButterflyScheme::ModifiedButterflyScheme() {
         weights[K][K] = 1.0 - sum;
     }
 }
+
 void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const SurfTrack& surface, Vec3d& new_point )
 {
     const NonDestructiveTriMesh& mesh = surface.m_mesh;
@@ -271,9 +272,9 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
         int valence_p2 = mesh.m_vertex_to_edge_map[p2_index].size();
 
         if( (valence_p1 == 6 || mesh.m_is_boundary_vertex[p1_index]) && (valence_p2 == 6 || mesh.m_is_boundary_vertex[p2_index]) ) {
-            double alpha    = 1.0/2.0;
-            double beta     = 1.0/8.0;
-            double gamma    = -1.0/16.0;
+            const double alpha    = 1.0/2.0;
+            const double beta     = 1.0/8.0;
+            const double gamma    = -1.0/16.0;
 
             size_t tri0 = mesh.m_edge_to_triangle_map[edge_index][0];
             size_t tri1 = mesh.m_edge_to_triangle_map[edge_index][1];
@@ -290,11 +291,13 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
 
             for ( size_t i = 0; i < 4; ++i )
             {
-                const std::vector<size_t>& adj_tris = mesh.m_edge_to_triangle_map[ adj_edges[i] ];
-                if(mesh.m_is_boundary_edge[adj_edges[i]]) {
+                size_t cur_edge_ind = adj_edges[i];
+                Vec2st cur_edge = mesh.m_edges[cur_edge_ind];
+                const std::vector<size_t>& adj_tris = mesh.m_edge_to_triangle_map[ cur_edge_ind ];
+                if(mesh.m_is_boundary_edge[cur_edge_ind]) {
                     //create a vertex by reflection of the vertices in the adjacent triangle
-                    Vec2st cur_edge = mesh.m_edges[adj_edges[i]];
-                    size_t third_vert = mesh.get_third_vertex(adj_edges[i], adj_tris[0]);
+                    
+                    size_t third_vert = mesh.get_third_vertex(cur_edge_ind, adj_tris[0]);
                     Vec3d reflected_point = surface.get_position(cur_edge[0]) +
                                             surface.get_position(cur_edge[1]) - 
                                             surface.get_position(third_vert);
@@ -302,12 +305,10 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
                 }
                 else {
                     //grab the appropriate vertex
-                    Vec2st adj_edge = mesh.m_edges[adj_edges[i]];
                     Vec3st cur_tri = (adj_tris[0] == tri0 || adj_tris[0] == tri1) ? 
                         mesh.get_triangle( adj_tris[1] ) : 
                         mesh.get_triangle( adj_tris[0] );
-                    size_t vert = mesh.get_third_vertex( adj_edge[0], adj_edge[1], cur_tri );
-                    
+                    size_t vert = mesh.get_third_vertex( cur_edge[0], cur_edge[1], cur_tri );
                     surround_vert_sum += surface.get_position(vert);
                 }
             }
@@ -323,35 +324,43 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
                 size_t cur_vert_index = mesh.m_edges[edge_index][cur_vertex];
                 int cur_valence = mesh.m_vertex_to_edge_map[cur_vert_index].size();
                 
+                const std::vector<double>& local_weights = weights[cur_valence];
+
                 //if it's irregular and not a boundary vertex, process it
                 if(cur_valence != 6 && !mesh.m_is_boundary_vertex[cur_vert_index]) {
+                    
                     //walk around the surrounding vertices in order (using the triangle connectivity to figure out that ordering)
                     size_t cur_edge = edge_index;
                     const std::vector<size_t>& edge_map = mesh.m_edge_to_triangle_map[edge_index];
                     size_t last_tri = edge_map[0]; //picked arbitrarily to start us in one direction
+                    
                     for(int i = 0; i < cur_valence; ++i) {
                         Vec2st edge_data = mesh.m_edges[cur_edge];
                         size_t nbr_vert = edge_data[0] == cur_vert_index ? edge_data[1] : edge_data[0];
-                        new_point += weights[cur_valence][i] * surface.get_position(nbr_vert);
+                        new_point += local_weights[i] * surface.get_position(nbr_vert);
                     
                         //advance to next edge around the vertex, by grabbing the next tri
-                        size_t tri = mesh.m_edge_to_triangle_map[cur_edge][0] == last_tri ? 
-                            mesh.m_edge_to_triangle_map[cur_edge][1] : 
-                            mesh.m_edge_to_triangle_map[cur_edge][0];
-                        Vec3st tri_edges = mesh.m_triangle_to_edge_map[tri];
+                        const std::vector<size_t>& edge_to_tris = mesh.m_edge_to_triangle_map[cur_edge];
+                        size_t tri = edge_to_tris[0] == last_tri ? edge_to_tris[1] : edge_to_tris[0];
                         
+                        //find the edge of the new tri that shares the central vertex, but is not the same as the previous edge.
+                        Vec3st tri_edges = mesh.m_triangle_to_edge_map[tri];
                         size_t next_edge;
                         for(int j = 0; j < 3; ++j) {
                             size_t edge_candidate = tri_edges[j];
                             Vec2st edge_data = mesh.m_edges[edge_candidate];
-                            if(edge_candidate !=  cur_edge && (edge_data[0] == cur_vert_index || edge_data[1] == cur_vert_index))  {
+                            if(edge_candidate != cur_edge && (edge_data[0] == cur_vert_index || edge_data[1] == cur_vert_index))  {
                                 next_edge = edge_candidate;
                                 break;
                             }
                         }
+                        //advance
                         last_tri = tri;
                         cur_edge = next_edge;
                     }
+                    
+                    //add the central vertex too
+                    new_point += local_weights[cur_valence] * surface.get_position(cur_vert_index);
                     norm_factor += 1;
                 }
             }
@@ -359,6 +368,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
 
             //normalize (effectively averages the two if both vertices were irregular
             new_point /= norm_factor;
+            
         }
     }
     else { //use the 4 point boundary scheme
