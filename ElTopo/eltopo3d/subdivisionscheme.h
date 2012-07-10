@@ -96,6 +96,28 @@ public:
     
 };
 
+
+// --------------------------------------------------------
+///
+/// Modified Butterfly scheme: uses the method of Zorin et al. to generate a new vertex, for meshes with arbitrary topology
+///
+// --------------------------------------------------------
+
+class ModifiedButterflyScheme : public SubdivisionScheme
+{
+    
+public:  
+
+    ModifiedButterflyScheme();
+
+    /// Given an edge, compute the offset midpoint
+    ///
+    void generate_new_midpoint( size_t edge_index, const SurfTrack& surface, Vec3d& new_point );
+
+    std::vector<std::vector<double> > weights;
+};
+
+
 }
 
 #endif

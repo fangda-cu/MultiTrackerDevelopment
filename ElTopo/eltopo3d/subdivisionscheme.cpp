@@ -217,4 +217,176 @@ void QuadraticErrorMinScheme::generate_new_midpoint( size_t edge_index, const Su
     
 }
 
+// --------------------------------------------------------
+///
+/// Modified Butterfly scheme: uses the method of Zorin et al. to generate a new vertex, for meshes with arbitrary topology
+/// Modeled loosely after the implementation in OpenMesh.
+/// 
+// --------------------------------------------------------
+
+ModifiedButterflyScheme::ModifiedButterflyScheme() {
+    const int MAX_VALENCE = 30;
+    weights.resize(30);
+    
+    //special case: K==3, K==4
+    weights[3].resize(4);
+    weights[3][0] = 5.0/12.0;
+    weights[3][1] = -1.0/12.0;
+    weights[3][2] = -1.0/12.0;
+    weights[3][3] = 3.0/4.0;
+    
+    weights[4].resize(5);
+    weights[4][0] = 3.0/8.0;
+    weights[4][1] = 0;
+    weights[4][2] = -1.0/8.0;
+    weights[4][3] = 0;
+    weights[4][4] = 3.0/4.0;
+    
+    for(unsigned int K = 5; K <MAX_VALENCE; ++K) {
+        weights[K].resize(K+1);
+        // s(j) = ( 1/4 + cos(2*pi*j/K) + 1/2 * cos(4*pi*j/K) )/K
+        double invK  = 1.0/double(K);
+        double sum = 0;
+        for(unsigned int j=0; j<K; ++j)
+        {
+            weights[K][j] = (0.25 + cos(2.0*M_PI*j*invK) + 0.5*cos(4.0*M_PI*j*invK))*invK;
+            sum += weights[K][j];
+        }
+        weights[K][K] = 1.0 - sum;
+    }
+}
+void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const SurfTrack& surface, Vec3d& new_point )
+{
+    const NonDestructiveTriMesh& mesh = surface.m_mesh;
+    const std::vector<Vec3d>& positions = surface.get_positions();
+
+    size_t p1_index = mesh.m_edges[edge_index][0];
+    size_t p2_index = mesh.m_edges[edge_index][1];
+
+    new_point = Vec3d(0,0,0);
+
+    if(!mesh.m_is_boundary_edge[edge_index]) { 
+        
+        int valence_p1 = mesh.m_vertex_to_edge_map[p1_index].size();
+        int valence_p2 = mesh.m_vertex_to_edge_map[p2_index].size();
+
+        if( (valence_p1 == 6 || mesh.m_is_boundary_vertex[p1_index]) && (valence_p2 == 6 || mesh.m_is_boundary_vertex[p2_index]) ) {
+            double alpha    = 1.0/2.0;
+            double beta     = 1.0/8.0;
+            double gamma    = -1.0/16.0;
+
+            size_t tri0 = mesh.m_edge_to_triangle_map[edge_index][0];
+            size_t tri1 = mesh.m_edge_to_triangle_map[edge_index][1];
+
+            size_t p3_index = mesh.get_third_vertex( p1_index, p2_index, mesh.get_triangle(tri0) );
+            size_t p4_index = mesh.get_third_vertex( p1_index, p2_index, mesh.get_triangle(tri1) );
+
+            size_t adj_edges[4] = { mesh.get_edge_index( p1_index, p3_index ),
+                mesh.get_edge_index( p2_index, p3_index ),
+                mesh.get_edge_index( p1_index, p4_index ),
+                mesh.get_edge_index( p2_index, p4_index ) };
+
+            Vec3d surround_vert_sum(0,0,0);
+
+            for ( size_t i = 0; i < 4; ++i )
+            {
+                const std::vector<size_t>& adj_tris = mesh.m_edge_to_triangle_map[ adj_edges[i] ];
+                if(mesh.m_is_boundary_edge[adj_edges[i]]) {
+                    //create a vertex by reflection of the vertices in the adjacent triangle
+                    Vec2st cur_edge = mesh.m_edges[adj_edges[i]];
+                    size_t third_vert = mesh.get_third_vertex(adj_edges[i], adj_tris[0]);
+                    Vec3d reflected_point = surface.get_position(cur_edge[0]) +
+                                            surface.get_position(cur_edge[1]) - 
+                                            surface.get_position(third_vert);
+                    surround_vert_sum += reflected_point;
+                }
+                else {
+                    //grab the appropriate vertex
+                    Vec2st adj_edge = mesh.m_edges[adj_edges[i]];
+                    Vec3st cur_tri = (adj_tris[0] == tri0 || adj_tris[0] == tri1) ? 
+                        mesh.get_triangle( adj_tris[1] ) : 
+                        mesh.get_triangle( adj_tris[0] );
+                    size_t vert = mesh.get_third_vertex( adj_edge[0], adj_edge[1], cur_tri );
+                    
+                    surround_vert_sum += surface.get_position(vert);
+                }
+            }
+            new_point = alpha * (surface.get_position(p1_index) + surface.get_position(p2_index)) + 
+                        beta * (surface.get_position(p3_index) + surface.get_position(p4_index)) + 
+                        gamma * (surround_vert_sum);
+        }
+        else { //apply the irregular stencil
+            double norm_factor = 0.0;
+            
+            //consider each vertex of the main edge
+            for(int cur_vertex = 0; cur_vertex < 2; ++cur_vertex) {
+                size_t cur_vert_index = mesh.m_edges[edge_index][cur_vertex];
+                int cur_valence = mesh.m_vertex_to_edge_map[cur_vert_index].size();
+                
+                //if it's irregular and not a boundary vertex, process it
+                if(cur_valence != 6 && !mesh.m_is_boundary_vertex[cur_vert_index]) {
+                    //walk around the surrounding vertices in order (using the triangle connectivity to figure out that ordering)
+                    size_t cur_edge = edge_index;
+                    const std::vector<size_t>& edge_map = mesh.m_edge_to_triangle_map[edge_index];
+                    size_t last_tri = edge_map[0]; //picked arbitrarily to start us in one direction
+                    for(int i = 0; i < cur_valence; ++i) {
+                        Vec2st edge_data = mesh.m_edges[cur_edge];
+                        size_t nbr_vert = edge_data[0] == cur_vert_index ? edge_data[1] : edge_data[0];
+                        new_point += weights[cur_valence][i] * surface.get_position(nbr_vert);
+                    
+                        //advance to next edge around the vertex, by grabbing the next tri
+                        size_t tri = mesh.m_edge_to_triangle_map[cur_edge][0] == last_tri ? 
+                            mesh.m_edge_to_triangle_map[cur_edge][1] : 
+                            mesh.m_edge_to_triangle_map[cur_edge][0];
+                        Vec3st tri_edges = mesh.m_triangle_to_edge_map[tri];
+                        
+                        size_t next_edge;
+                        for(int j = 0; j < 3; ++j) {
+                            size_t edge_candidate = tri_edges[j];
+                            Vec2st edge_data = mesh.m_edges[edge_candidate];
+                            if(edge_candidate !=  cur_edge && (edge_data[0] == cur_vert_index || edge_data[1] == cur_vert_index))  {
+                                next_edge = edge_candidate;
+                                break;
+                            }
+                        }
+                        last_tri = tri;
+                        cur_edge = next_edge;
+                    }
+                    norm_factor += 1;
+                }
+            }
+            assert(norm_factor > 0);
+
+            //normalize (effectively averages the two if both vertices were irregular
+            new_point /= norm_factor;
+        }
+    }
+    else { //use the 4 point boundary scheme
+        new_point = 9.0 / 16.0 *(surface.get_position(p1_index) + surface.get_position(p2_index));
+        
+        //now need to find the subsequent and preceding vertices along the boundary
+        for(unsigned int i = 0; i < mesh.m_vertex_to_edge_map[p1_index].size(); ++i) {
+            size_t nbr_edge = mesh.m_vertex_to_edge_map[p1_index][i];
+            if(mesh.m_is_boundary_edge[nbr_edge]) {
+                //grab the other vertex
+                size_t other_vert = mesh.m_edges[nbr_edge][0] == p1_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
+                new_point += -1.0/16.0 * surface.get_position(other_vert);
+            }
+        }
+
+        for(unsigned int i = 0; i < mesh.m_vertex_to_edge_map[p2_index].size(); ++i) {
+            size_t nbr_edge = mesh.m_vertex_to_edge_map[p2_index][i];
+            if(mesh.m_is_boundary_edge[nbr_edge]) {
+                //grab the other vertex
+                size_t other_vert = mesh.m_edges[nbr_edge][0] == p2_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
+                new_point += -1.0/16.0 * surface.get_position(other_vert);
+            }
+        }
+
+    }
+   
+
+}
+
+
 }
