@@ -12,7 +12,10 @@ shell-MN-bending 1
 shell-bending-factor 1
 
 #Elastic Parameters
-shell-Youngs 432000000
+#Correct
+shell-Youngs 432000000 
+#Debug setting
+#shell-Youngs   43200000
 shell-Poisson 0.0
 shell-uniform-load 90
 
@@ -45,8 +48,8 @@ shell-density 1	# volumetric density of the shell
 shell-thickness 0.25	# the thickness of the shell
 shell-height 1.0	# the vertical side length of the shell
 shell-width 1.0	# the horizontal side length of the shell
-shell-y-resolution 20	# the number of segments along the vertical edge
-shell-x-resolution 20	# the number of segments along the horizontal edge
+shell-y-resolution 40	# the number of segments along the vertical edge
+shell-x-resolution 40	# the number of segments along the horizontal edge
 
 
 iterations 100	# maximum number of iterations for the implicit method

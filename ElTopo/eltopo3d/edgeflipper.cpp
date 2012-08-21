@@ -486,23 +486,16 @@ bool EdgeFlipper::is_delaunay_anisotropic( size_t edge, size_t tri0, size_t tri1
     //clamp the eigenvalues for safety
     M(0,0) = clamp(M(0,0), 0.005, 0.07);
     M(1,1) = clamp(M(1,1), 0.005, 0.07);
-    
-    /*std::cout << "Eigen values: " << eigenvalues[0] << " " << eigenvalues[1] << " " << eigenvalues[2] << std::endl;
-    std::cout << "Eigenvectors: ";
-    std::cout << A.a[0] << ", " << A.a[1] << ", " << A.a[2] << std::endl;
-    std::cout << A.a[3] << ", " << A.a[4] << ", " << A.a[5] << std::endl;
-    std::cout << A.a[6] << ", " << A.a[7] << ", " << A.a[8] << std::endl;*/
 
     //convert the relevant vertices from Cartesian coords into the coordinate system of the local frame (defined by the eigenvectors)
     Mat33d conversion_matrix;
-    conversion_matrix = A;
+    conversion_matrix = A; //note that A is now holding the eigenvectors, not the original quadric tensor.
     
     conversion_matrix = inverse(conversion_matrix);
     Vec3d v0 = m_surf.get_position(m_surf.m_mesh.m_edges[edge][0]);
     Vec3d v1 = m_surf.get_position(m_surf.m_mesh.m_edges[edge][1]);
     Vec3d v2 = m_surf.get_position(third_vertex_0);
     Vec3d v3 = m_surf.get_position(third_vertex_1);
-    //std::cout << "Conversion matrix: " << conversion_matrix << std::endl;
 
     Vec3d nv0 = conversion_matrix*v0;
     Vec3d nv1 = conversion_matrix*v1;
@@ -515,23 +508,6 @@ bool EdgeFlipper::is_delaunay_anisotropic( size_t edge, size_t tri0, size_t tri1
     Vec2d n2_2d(nv2[0], nv2[1]);
     Vec2d n3_2d(nv3[0], nv3[1]);
 
-  /*  std::cout << "Original Vertices:\n";
-    std::cout << v0 << std::endl;
-    std::cout << v1 << std::endl;
-    std::cout << v2 << std::endl;
-    std::cout << v3 << std::endl;*/
-
-  /*  std::cout << "Vertices:\n";
-    std::cout << nv0 << std::endl;
-    std::cout << nv1 << std::endl;
-    std::cout << nv2 << std::endl;
-    std::cout << nv3 << std::endl;*/
-
-   /* std::cout << "Projected vertices:\n";
-    std::cout << n0_2d << std::endl;
-    std::cout << n1_2d << std::endl;
-    std::cout << n2_2d << std::endl;
-    std::cout << n3_2d << std::endl;*/
 
     ////warp the vertices into the normalized space to account for anisotropy, via M
     n0_2d = M * n0_2d;
@@ -539,22 +515,12 @@ bool EdgeFlipper::is_delaunay_anisotropic( size_t edge, size_t tri0, size_t tri1
     n2_2d = M * n2_2d;
     n3_2d = M * n3_2d;
 
-   /* std::cout << "Warped vertices:\n";
-    std::cout << n0_2d << std::endl;
-    std::cout << n1_2d << std::endl;
-    std::cout << n2_2d << std::endl;
-    std::cout << n3_2d << std::endl;*/
-
     //check the Delaunay criterion (sum of opposite angles < 180) in the modified space
     Vec2d off0 = n0_2d - n2_2d, off1 = n1_2d - n2_2d;
     double angle0 = acos(dot(off0,off1) / mag(off0) / mag(off1));
     
     Vec2d off2 = n0_2d - n3_2d, off3 = n1_2d - n3_2d;
     double angle1 = acos(dot(off2, off3) / mag(off2) / mag(off3));
-    
-    //std::cout << "Angle0: " << angle0 << std::endl;
-    //std::cout << "Angle1: " << angle1 << std::endl;
-    //std::cout << "Sum: " << (angle0+angle1) << std::endl;
 
     return angle0 + angle1 < M_PI;
 

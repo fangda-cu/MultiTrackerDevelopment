@@ -74,6 +74,7 @@ public:
   Vec3d getEdgeNormal(const EdgeHandle& eh);
 
   mutable bool m_initialized;
+  //mutable bool m_reference_initialized;
 
 private:
 

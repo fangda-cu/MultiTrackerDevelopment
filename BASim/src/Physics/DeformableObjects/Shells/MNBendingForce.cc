@@ -15,7 +15,7 @@ MNBendingForce::MNBendingForce(ElasticShell& shell, const std::string& name, Sca
 ElasticShellForce(shell, name), m_Youngs(Youngs), m_Poisson(Poisson), 
                                 m_Youngs_damp(Youngs_damping), m_Poisson_damp(Poisson_damping), 
                                 m_timestep(timestep), m_precomputed(&(shell.getDefoObj())), 
-                                m_initialized(false)
+                                m_initialized(false)//, m_reference_initialized(false)
 {
   
 }
@@ -145,6 +145,9 @@ void MNBendingForce::update() {
   if(!m_initialized)
     initialize();
 
+  //if(m_reference_initialized)
+  //    return;
+
   DeformableObject& defo = m_shell.getDefoObj();
   std::vector<Scalar> undeformed(MNBendStencilSize), undeformed_damp(MNBendStencilSize), deformed(MNBendStencilSize);
   std::vector<int> indices(NumMNBendDof);
@@ -160,6 +163,8 @@ void MNBendingForce::update() {
     updateReferenceCoordinates(fh, deformed, &m_precomputed[fh]);
     ++count;
   }
+  
+  //m_reference_initialized = true;
   
 }
 
