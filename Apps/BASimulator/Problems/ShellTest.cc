@@ -16,7 +16,10 @@
 #include "BASim/src/Render/ShellRenderer.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellRadialForce.hh"
+
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellSurfaceTensionForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Shells/ShellLinearSurfaceTensionForce.hh"
+
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVolumeForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/DrainingBubblePressureForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellBathForce.hh"
@@ -176,7 +179,8 @@ sceneFunc scenes[] = {0,
                       &ShellTest::setupScene21_ScordelisLo, //Scordelis-Lo roof shell validation
                       &ShellTest::setupScene22_RectangularPlate, //Loaded rectangular plate validation
                       &ShellTest::setupScene23_hemisphere, //pinched hemisphere test from MacNeal&harder (1985). Also grinspun2006
-                      &ShellTest::setupScene24_bendingCylinder
+                      &ShellTest::setupScene24_bendingCylinder,
+                      &ShellTest::setupScene25_contractingSheet //a test of surface tension; square sheet contracting
                   } ; 
 
 Scalar bubbleThicknessFunction(Vec3d pos) {
@@ -287,8 +291,13 @@ void ShellTest::Setup()
   
 
   //Surface tension force
-  if(surface_tension != 0)
+  if(surface_tension != 0) {
+    //Viscous sheets-style surface tension
     shell->addForce(new ShellSurfaceTensionForce(*shell, "Surface Tension", surface_tension));
+    
+    //Experimental piecewise linear surface tension
+    //shell->addForce(new ShellLinearSurfaceTensionForce(*shell, "Surface Tension", surface_tension));
+  }
 
   if(sceneChoice == 23) {
     std::vector<VertexHandle> verts;
@@ -3340,4 +3349,92 @@ void ShellTest::setupScene24_bendingCylinder() {
 
 }
 
+//zero-gravity flat sheet contracting under pure surface tension
+void ShellTest::setupScene25_contractingSheet() {
+
+  //get params
+  Scalar width = GetScalarOpt("shell-width");
+  Scalar height = GetScalarOpt("shell-height");
+  int xresolution = GetIntOpt("shell-x-resolution");
+  int yresolution = GetIntOpt("shell-y-resolution");
+
+  Scalar dx = (Scalar)width / (Scalar)xresolution;
+  Scalar dy = (Scalar)height / (Scalar)yresolution;
+
+  //build a rectangular grid of vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+
+  Vec3d start_vel(0,0,0);
+
+  for(int j = 0; j <= yresolution; ++j) {
+    for(int i = 0; i <= xresolution; ++i) {
+      Vec3d vert(i*dx, 0, j*dy);//0.01*dx*sin(100*j*dy + 17*i*dx)); // 
+     /* if(j < 0.5*yresolution) {
+        int k = j;
+        int j_mod = (int)(0.5*yresolution);
+        vert(1) = j_mod*dx;
+        vert(2) = (k-j_mod)*dx;
+      }*/
+      Vec3d undef = vert;
+
+      VertexHandle h = shellObj->addVertex();
+
+      positions[h] = vert;
+      velocities[h] = start_vel;
+      undeformed[h] = undef;
+      vertHandles.push_back(h);
+    }
+  }
+
+
+  //build the faces in a 4-8 pattern
+  std::vector<Vec3i> tris;
+  for(int i = 0; i < xresolution; ++i) {
+    for(int j = 0; j < yresolution; ++j) {
+      int tl = i + (xresolution+1)*j;
+      int tr = i+1 + (xresolution+1)*j;
+      int bl = i + (xresolution+1)*(j+1);
+      int br = i+1 + (xresolution+1)*(j+1);
+
+      if((i+j)%2 == 0) {
+        shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
+        shellObj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
+      }
+      else {
+        shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[bl]);
+        shellObj->addFace(vertHandles[bl], vertHandles[tr], vertHandles[br]);
+      }
+    }
+  }
+
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shellObj->addModel(shell);
+
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+
+
+}
 

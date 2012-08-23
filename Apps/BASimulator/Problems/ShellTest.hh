@@ -67,6 +67,7 @@ public:
   void setupScene22_RectangularPlate(); //the loaded rectangular plate test
   void setupScene23_hemisphere(); //pinched hemisphere test
   void setupScene24_bendingCylinder(); //a bending test using a cylinder
+  void setupScene25_contractingSheet(); //a flat square sheet testing surface tension without gravity
 };
 
 #endif // SHELLTEST_HH

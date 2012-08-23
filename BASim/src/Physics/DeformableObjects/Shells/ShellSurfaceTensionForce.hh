@@ -59,4 +59,4 @@ protected:
 }
 
 
-#endif //CSTMEMBRANEFORCE_HH
+#endif //SHELLSURFACETENSIONFORCE_HH

@@ -34,7 +34,7 @@ bool ShellSurfaceTensionForce::gatherDOFs(const FaceHandle& fh, std::vector<Vec3
   for(;fv_it; ++fv_it) {
     const VertexHandle& vh = *fv_it;
     deformed[i] = m_shell.getVertexPosition(vh);
-    int dofBase = m_shell.getVertexDofBase(vh);
+    int dofBase = m_shell.getDefoObj().getPositionDofBase(vh);
     indices[i*3] = dofBase;
     indices[i*3+1] = dofBase+1;
     indices[i*3+2] = dofBase+2;
