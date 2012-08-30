@@ -107,12 +107,9 @@ adreal<NumLSTDof,DO_HESS,Real> LSTEnergy(const ShellLinearSurfaceTensionForce& m
     h2 += vol2 / A2;
   
   adrealST e(0);
-  if(vol2 != 0) { //both sides
-    e += surf_coeff * sqrt( 4.0/9.0*(A1+A2)*(A1+A2) + le*le*(h2-h1)*(h2-h1)/4.0 );
-  }
-  else {          //only one side
-    e += surf_coeff * sqrt( 4.0/9.0*A1*A1 + le*le*h1*h1/4.0 );
-  }
+  
+  e += surf_coeff * sqrt( 4.0/9.0*(A1+A2)*(A1+A2) + le*le*(h2-h1)*(h2-h1)/4.0 ); //mathematically derived
+  
 
   return e;
 }

@@ -1034,8 +1034,8 @@ void ElasticShell::remesh()
   //construction_parameters.m_subdivision_scheme = new ElTopo::ButterflyScheme();
   construction_parameters.m_subdivision_scheme = new ElTopo::ModifiedButterflyScheme();
 
-  construction_parameters.m_use_curvature_when_collapsing = true;
-  construction_parameters.m_use_curvature_when_splitting = true;
+  construction_parameters.m_use_curvature_when_collapsing = false;
+  construction_parameters.m_use_curvature_when_splitting = false;
   //construction_parameters.m_max_curvature_multiplier = 1000;
   //construction_parameters.m_min_curvature_multiplier = 1.0;
 

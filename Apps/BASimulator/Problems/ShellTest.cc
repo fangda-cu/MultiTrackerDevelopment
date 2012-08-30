@@ -19,6 +19,7 @@
 
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellSurfaceTensionForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellLinearSurfaceTensionForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Shells/ShellLinearSurfaceTensionForce2.hh"
 
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVolumeForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/DrainingBubblePressureForce.hh"
@@ -289,7 +290,6 @@ void ShellTest::Setup()
     shell->addForce(new ShellVerticalForce(*shell, "Load", Vec3d(0,-1,0), loadForce));
 
   
-
   //Surface tension force
   if(surface_tension != 0) {
     //Viscous sheets-style surface tension
@@ -297,6 +297,7 @@ void ShellTest::Setup()
     
     //Experimental piecewise linear surface tension
     //shell->addForce(new ShellLinearSurfaceTensionForce(*shell, "Surface Tension", surface_tension));
+    //shell->addForce(new ShellLinearSurfaceTensionForce2(*shell, "Surface Tension", surface_tension));
   }
 
   if(sceneChoice == 23) {
@@ -675,6 +676,7 @@ void ShellTest::AtEachTimestep()
       Vec3d original_pos = shellObj->getVertexUndeformedPosition(low_vert);
       std::cout << "Vertical displacement: " << (original_pos[1] - low_pos[1]) << std::endl;
     }
+
 
     /*
     if(m_active_scene == 21) {
@@ -3373,11 +3375,11 @@ void ShellTest::setupScene25_contractingSheet() {
   EdgeProperty<Scalar> edgeVel(shellObj);
 
   Vec3d start_vel(0,0,0);
-
   for(int j = 0; j <= yresolution; ++j) {
     for(int i = 0; i <= xresolution; ++i) {
-      Vec3d vert(i*dx, 0, j*dy);//0.01*dx*sin(100*j*dy + 17*i*dx)); // 
-     /* if(j < 0.5*yresolution) {
+      Vec3d vert(i*dx, 0, j*dy); //Flat sheet
+      //Vec3d vert(i*dx, 3*dx*sin(10*j*dy), j*dy); //undulating sheet
+      /*if(j < 0.5*yresolution) {
         int k = j;
         int j_mod = (int)(0.5*yresolution);
         vert(1) = j_mod*dx;
@@ -3412,9 +3414,11 @@ void ShellTest::setupScene25_contractingSheet() {
         shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[bl]);
         shellObj->addFace(vertHandles[bl], vertHandles[tr], vertHandles[br]);
       }
+
     }
   }
-
+  
+  
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj); 
   DeformableObject::face_iter fIt;

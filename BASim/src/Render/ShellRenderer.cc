@@ -129,7 +129,7 @@ void drawTri (const Vec3d& a, const Vec3d& b,const Vec3d& c,const Vec3d& n){
   glVertVec3d(c);
 }
 void drawStitch (const Vec3d& a, const Vec3d& b,const Vec3d& c,const Vec3d& d){
-  Vec3d n = (b-a).cross(d-a);
+  Vec3d n = (d-a).cross(b-a);
   n.normalize();
 
  drawTri(a, b, c, n);
@@ -235,6 +235,8 @@ void ShellRenderer::render()
 
 //      renderVelocity();
 
+    
+
     glDisable(GL_LIGHTING);
     DeformableObject& mesh = m_shell.getDefoObj();
 
@@ -243,6 +245,34 @@ void ShellRenderer::render()
 
     FaceProperty<Vec3d> faceNormals(&m_shell.getDefoObj());
     m_shell.getFaceNormals(faceNormals);
+
+    /*
+    //Find a particular vertex, and draw it BIG
+    //For scene 25, the shrinking sheet under surface tension
+    //We look for a point in the middle of an edge, and want
+    //to see how fast it moves as it retracts. (Taylor Culick speed.)
+    VertexHandle nearest(-1);
+    Scalar dist = 100;
+    for(VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit) {
+      Vec3d position = m_shell.getVertexPosition(*vit);
+      if(fabs(position[0] - 0.5) < 0.02) {
+        if(position[2] < dist) {
+          dist = position[2];
+          nearest = *vit;
+        }
+      }
+    }
+    Vec3d pos = m_shell.getVertexPosition(nearest);
+    glPointSize(10);
+    glBegin(GL_POINTS);
+    glVertex3f(pos[0], pos[1], pos[2]);
+    glEnd();
+    glPointSize(1);
+    std::ofstream toDisk("taylorculick.txt", ios::app);
+    toDisk << m_shell.getVertexVelocity(nearest)[2] << std::endl;
+    toDisk.close();
+    std::cout << "Speed: " << m_shell.getVertexVelocity(nearest) << std::endl;
+    */
 
     // Render all edges
     glLineWidth(2);
@@ -562,6 +592,10 @@ void ShellRenderer::render()
         }
       }
       */
+      
+     /* std::cout << "Face thickness: " << m_shell.getThickness(*fit) << std::endl;
+      std::cout << "Face area: " << m_shell.getArea(*fit) << std::endl;
+      std::cout << "Side length: " << (vs[1] - vs[0]).norm() << std::endl;*/
 
       drawThickTri(vs[0], vs[1], vs[2],
         ts[0], ts[1], ts[2],
