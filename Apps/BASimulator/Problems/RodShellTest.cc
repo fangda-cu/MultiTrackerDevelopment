@@ -874,8 +874,8 @@ void RodShellTest::setupScene3()
   if (highestedge.isValid())
   {
     std::cout << highestedge.idx() << std::endl;
-//    rod->constrainEdgeVel(highestedge, 0, 0.1, 0);
-    rod->constrainEdge(highestedge, 0);
+    rod->constrainEdgeVel(highestedge, 0, 0.1, 0);
+//    rod->constrainEdge(highestedge, 0);
   }
   
 }
