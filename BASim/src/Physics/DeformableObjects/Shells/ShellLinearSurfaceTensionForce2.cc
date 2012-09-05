@@ -113,89 +113,6 @@ bool ShellLinearSurfaceTensionForce2 ::gatherDOFs(const FaceHandle& fh,
   return true;
 }
 
-/*
-template <int DO_HESS>
-adreal<NumLST2Dof,DO_HESS,Real> LST2Energy(const ShellLinearSurfaceTensionForce2& mn, 
-                                         const std::vector<Scalar>& vertices_flat, 
-                                         const std::vector<Vec3i>& faces,
-                                         const std::vector<Scalar>& volumes,
-                                         const Vec3i& incidentFacesPerMainVertex,
-                                         Scalar surf_coeff) 
-{  
-
-  // typedefs to simplify code below
-  typedef adreal<NumLST2Dof,DO_HESS,Real> adrealST;
-  typedef CVec3T<adrealST> advecST;
-  
-  Vector3d* s_vertices = (Vector3d*)(&vertices_flat[0]);
-  
-  assert(vertices_flat.size()/3 < NumLST2VertsMax);
-  
-  // independent variables
-  advecST   p[NumLST2VertsMax]; // vertex positions 
-  for(unsigned int i = 0; i < vertices_flat.size()/3; ++i) {
-    set_independent( p[i], s_vertices[i], i*3 );
-  }
-
-  //compute face areas from vertex positions
-  adrealST faceAreas[3*NumLST2VertsMax];
-  advecST faceNormals[3*NumLST2VertsMax];
-  for(unsigned int i = 0; i < faces.size(); ++i) {
-    Vec3i faceData = faces[i];
-    faceAreas[i] = 0.5 * len(cross(p[faceData[1]] - p[faceData[0]], p[faceData[2]] - p[faceData[0]]));
-    
-    faceNormals[i] = cross(p[faceData[1]] - p[faceData[0]], p[faceData[2]] - p[faceData[0]]);
-    normalize(faceNormals[i]);
-  }
-
-  //work out averaged vertex thicknesses and normals
-  adrealST thicknesses[3];
-  advecST normals[3];
-  int startInd = 0; //ignore the first face since it's the central one
-  for(int vertexNumber = 0; vertexNumber < 3; ++vertexNumber) {
-    adrealST volAccum(0);
-    adrealST areaAccum(0);
-    advecST normalAccum;
-    if(incidentFacesPerMainVertex[vertexNumber] > 0) {
-      for(int faceNumber = 0; faceNumber < incidentFacesPerMainVertex[vertexNumber]; ++faceNumber) {
-        int curFace = startInd + faceNumber;
-        areaAccum += faceAreas[curFace];
-        volAccum += volumes[curFace];
-        normalAccum += faceAreas[curFace]*faceNormals[curFace];
-      }
-      thicknesses[vertexNumber] = volAccum / areaAccum;
-      normalize(normalAccum);
-      normals[vertexNumber] = normalAccum;
-    }
-    else {
-      thicknesses[vertexNumber] = 0;
-      normals[vertexNumber] = Vector3d(0,0,0);
-    }
-    startInd += incidentFacesPerMainVertex[vertexNumber];
-  }
-
-  //Compute main triangle's face normal
-  advecST normal = cross(p[1] - p[0], p[2] - p[0]);
-  normalize(normal);
-
-  //Compute effective offset positions for surface vertices based on thicknesses computed above
-  advecST vert[3];
-  for(int i = 0; i < 3; ++i)
-    vert[i] = p[i] + 0.5*thicknesses[i]*normal;//s[i];
-  
-  advecST vertb[3];
-  for(int i = 0; i < 3; ++i)
-    vertb[i] = p[i] - 0.5*thicknesses[i]*normal;//s[i];
-
-  adrealST e(0);
-  
-  //need to do both sides in order to ensure cancellation of spurious out of plane forces
-  e += 0.5*surf_coeff * len(cross(vert[1] - vert[0], vert[2] - vert[0])); 
-  e += 0.5*surf_coeff * len(cross(vertb[1] - vertb[0], vertb[2] - vertb[0])); 
-  
-  return e;
-}
-*/
 
 template <int DO_HESS>
 adreal<NumLST2Dof,DO_HESS,Real> LST2Energy(const ShellLinearSurfaceTensionForce2& mn, 
@@ -285,17 +202,16 @@ adreal<NumLST2Dof,DO_HESS,Real> LST2Energy(const ShellLinearSurfaceTensionForce2
   e += 0.5*surf_coeff * len(cross(vertb[0] - centreb, vertb[1] - centreb)); 
   e += 0.5*surf_coeff * len(cross(vertb[2] - centreb, vertb[0] - centreb)); */
 
-
   
   //boundary edge terms, if we want to use them
   /*if(isBoundaryVertex[0] && isBoundaryVertex[1]) {
-    e += surf_coeff * 0.5*(thicknesses[0]+thicknesses[1]) * len(p[0] - p[1]);
+  e += surf_coeff * 0.5*(thicknesses[0]+thicknesses[1]) * len(p[0] - p[1]);
   }
   if(isBoundaryVertex[2] && isBoundaryVertex[1]) {
-    e += surf_coeff * 0.5*(thicknesses[2]+thicknesses[1]) * len(p[2] - p[1]);
+  e += surf_coeff * 0.5*(thicknesses[2]+thicknesses[1]) * len(p[2] - p[1]);
   }
   if(isBoundaryVertex[2] && isBoundaryVertex[0]) {
-    e += surf_coeff * 0.5*(thicknesses[0]+thicknesses[2]) * len(p[2] - p[0]);
+  e += surf_coeff * 0.5*(thicknesses[0]+thicknesses[2]) * len(p[2] - p[0]);
   }*/
   
 
