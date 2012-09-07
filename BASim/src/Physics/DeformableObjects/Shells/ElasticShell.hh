@@ -92,6 +92,9 @@ public:
   void setEdgeUndeformed(const EdgeProperty<Scalar>& undef);
   void setEdgeVelocities(const EdgeProperty<Scalar>& vels);
   
+  void setFaceLabels(const FaceProperty<Vec2i>& labels);
+  Vec2i getFaceLabel(const FaceHandle& face) { return m_face_regions[face]; }
+
   //Individual DOFs
   Vec3d getVertexUndeformed(const VertexHandle& v) const { return m_obj->getVertexUndeformedPosition(v); }
   Vec3d getVertexPosition(const VertexHandle& v) const { return m_obj->getVertexPosition(v); }
@@ -217,6 +220,10 @@ protected:
 
   FaceProperty<char> m_active_faces; //list of faces to which this model is applied
   //Note: this should ideally use booleans, but std::vector<bool> doesn't support references, which we need. (vector<bool> isn't technically a container)
+
+  //For each face, a number used to identify distinct regions of the mesh
+  //This is used to implement per-region volume constraints.
+  FaceProperty<Vec2i> m_face_regions; 
 
   //The base object, and the list of forces
   DeformableObject* m_obj;

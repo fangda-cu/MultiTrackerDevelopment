@@ -579,6 +579,8 @@ bool EdgeFlipper::flip_pass( )
             if ( m_mesh.m_edges[i][0] == m_mesh.m_edges[i][1] )   { continue; }
             if ( m_mesh.m_edge_to_triangle_map[i].size() > 4 || m_mesh.m_edge_to_triangle_map[i].size() < 2 )   { continue; }
             
+            if ( m_mesh.m_edge_to_triangle_map[i].size() == 3) continue; //don't try flipping Y-junction non-manifold edges.
+
             //if ( m_mesh.m_is_boundary_vertex[ m_mesh.m_edges[i][0] ] || m_mesh.m_is_boundary_vertex[ m_mesh.m_edges[i][1] ] )  { continue; }  // skip boundary vertices
             //NOTE: This check disables flipping on edges where either endpoint is on the boundary.
             //For cloth/shell-like scenarios this is a problem

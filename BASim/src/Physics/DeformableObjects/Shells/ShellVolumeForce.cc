@@ -20,25 +20,48 @@ ShellVolumeForce::ShellVolumeForce(
   Scalar strength )
 : ElasticShellForce(shell, name), m_strength(strength)
 {
-  //Get the initial target volume
+  //Get the initial target volumes
   Scalar energy = 0;
   std::vector<int> indices(9);
   std::vector<Vec3d> deformed(3);
 
-  m_target_volume = 0;
-
+  int maxRegion = 0;
+  //count the regions
   FaceIterator fit = m_shell.getDefoObj().faces_begin();
-  Scalar volume = 0;
   for (;fit != m_shell.getDefoObj().faces_end(); ++fit) {
     const FaceHandle& fh = *fit;
 
+    Vec2i labels = m_shell.getFaceLabel(fh);
+    maxRegion = max(maxRegion, max(labels[0], labels[1]));
+  }
+
+  m_target_volumes.resize(maxRegion+1, 0);
+
+  fit = m_shell.getDefoObj().faces_begin();
+  for (;fit != m_shell.getDefoObj().faces_end(); ++fit) {
+    const FaceHandle& fh = *fit;
+
+    Vec2i labels = m_shell.getFaceLabel(fh);
     gatherDOFs(fh, deformed, indices);
 
-    Scalar thickness = m_shell.getThickness(fh);
-
     //determine the energy for this element
-    m_target_volume += elementEnergy(deformed);
+    
+    //inside face
+    if(labels[0] != -1)
+      m_target_volumes[labels[0]] -= elementEnergy(deformed);
+    
+    //outside face
+    if(labels[1] != -1)
+      m_target_volumes[labels[1]] += elementEnergy(deformed);
+
+    /*if(labels[0] == 0) {
+      m_target_volume -= elementEnergy(deformed);
+    }
+    else if(labels[1] == 0) {
+      m_target_volume += elementEnergy(deformed);
+    }*/
   }
+  
 }
 
 bool ShellVolumeForce::gatherDOFs(const FaceHandle& fh, std::vector<Vec3d>& deformed, std::vector<int>& indices) const {
@@ -101,20 +124,37 @@ Scalar ShellVolumeForce::globalEnergy() const
   if(m_strength == 0) return 0;
 
   FaceIterator fit = m_shell.getDefoObj().faces_begin();
-  Scalar volume = 0;
+  
+  std::vector<Scalar> volumes(m_target_volumes.size(), 0);
+
   for (;fit != m_shell.getDefoObj().faces_end(); ++fit) {
     const FaceHandle& fh = *fit;
     
     gatherDOFs(fh, deformed, indices);
+
+    Vec2i labels = m_shell.getFaceLabel(fh);
     
-    Scalar thickness = m_shell.getThickness(fh);
-    
+    if(labels[0] != -1)
+      volumes[labels[0]] -= elementEnergy(deformed);
+
+    if(labels[1] != -1)
+      volumes[labels[1]] += elementEnergy(deformed);
+
     //determine the energy for this element
-    volume += elementEnergy(deformed);
+    /*if(labels[0] == 0)
+      volume -= elementEnergy(deformed);
+    else if(labels[1] == 0) {
+      volume += elementEnergy(deformed);
+    }*/
   }
 
-  //return 0.5 * m_strength * sqr(volume - m_target_volume);
-  return 0.5 * m_strength * (volume - m_target_volume)*(volume - m_target_volume);
+  Scalar sum = 0;
+  for(unsigned int r = 0; r < volumes.size(); ++r)
+    sum += 0.5 * m_strength * (volumes[r] - m_target_volumes[r])*(volumes[r] - m_target_volumes[r]);
+  
+  return sum;
+
+  //return 0.5 * m_strength * (volume - m_target_volume)*(volume - m_target_volume);
 }
 
 void ShellVolumeForce::globalForce( VecXd& force )  const
@@ -124,23 +164,64 @@ void ShellVolumeForce::globalForce( VecXd& force )  const
   std::vector<Vec3d> deformed(3);
   Eigen::Matrix<Scalar, 9, 1> localForce;
   
-  Scalar volume = 0;
   if(m_strength == 0) return;
   
+  //compute current volumes first
+  std::vector<Scalar> volumes(m_target_volumes.size(), 0);
+
   FaceIterator fit = m_shell.getDefoObj().faces_begin();
+  for (;fit != m_shell.getDefoObj().faces_end(); ++fit) {
+    const FaceHandle& fh = *fit;
+
+    bool valid = gatherDOFs(fh, deformed, indices);
+    if(!valid) continue;
+
+    Vec2i labels = m_shell.getFaceLabel(fh);
+    
+    if(labels[0] != -1)
+      volumes[labels[0]] -= elementEnergy(deformed);
+    if(labels[1] != -1)
+      volumes[labels[1]] += elementEnergy(deformed);
+  }
+
+  //then compute forces, which relies on the volumes above
+
+  fit = m_shell.getDefoObj().faces_begin();
   for (;fit != m_shell.getDefoObj().faces_end(); ++fit) {
     const FaceHandle& fh = *fit;
    
     bool valid = gatherDOFs(fh, deformed, indices);
     if(!valid) continue;
     
-    volume += elementEnergy(deformed);
+    Vec2i labels = m_shell.getFaceLabel(fh);
+    
+    if(labels[0] != -1) {
+      elementForce(deformed, localForce);
+      for (unsigned int i = 0; i < indices.size(); ++i)
+        force(indices[i]) -= m_strength * (volumes[labels[0]] - m_target_volumes[labels[0]]) * localForce(i);
+    }
 
-    elementForce(deformed, localForce);
-    for (unsigned int i = 0; i < indices.size(); ++i)
-      force(indices[i]) += localForce(i);
+    if(labels[1] != -1) {
+      elementForce(deformed, localForce);
+      for (unsigned int i = 0; i < indices.size(); ++i)
+        force(indices[i]) += m_strength * (volumes[labels[1]] - m_target_volumes[labels[1]]) * localForce(i);
+    }
+    
+    /*if(labels[0] == 0) {
+      volume -= elementEnergy(deformed);
+      elementForce(deformed, localForce);
+      for (unsigned int i = 0; i < indices.size(); ++i)
+        force(indices[i]) -= localForce(i);
+    }
+    else if(labels[0] == 1) {
+      volume += elementEnergy(deformed);
+      elementForce(deformed, localForce);
+      for (unsigned int i = 0; i < indices.size(); ++i)
+        force(indices[i]) += localForce(i);
+    }*/
   }
-  force *= m_strength * (volume - m_target_volume);
+  
+  //force *= m_strength * (volume - m_target_volume);
   
 }
 
@@ -153,9 +234,7 @@ void ShellVolumeForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) cons
 
   if(m_strength == 0) return;
   
-  Scalar volume = 0;
-  
-  Scalar factor = m_strength * (volume - m_target_volume);
+   std::vector<Scalar> volumes(m_target_volumes.size(), 0);
 
   FaceIterator fit = m_shell.getDefoObj().faces_begin();
   for (;fit != m_shell.getDefoObj().faces_end(); ++fit) {
@@ -163,17 +242,42 @@ void ShellVolumeForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) cons
 
     bool valid = gatherDOFs(fh, deformed, indices);
     if(!valid) continue;
+
+    Vec2i labels = m_shell.getFaceLabel(fh);
     
-    volume += elementEnergy(deformed);
-    elementJacobian(deformed, localMatrix);
-    for (unsigned int i = 0; i < indices.size(); ++i)
-      for(unsigned int j = 0; j < indices.size(); ++j)
-        Jacobian.add(indices[i], indices[j], factor * scale * localMatrix(i,j));
+    if(labels[0] != -1)
+      volumes[labels[0]] -= elementEnergy(deformed);
+
+    if(labels[1] != -1)
+      volumes[labels[1]] += elementEnergy(deformed);
+  }
+
+  fit = m_shell.getDefoObj().faces_begin();
+  for (;fit != m_shell.getDefoObj().faces_end(); ++fit) {
+    const FaceHandle& fh = *fit;
+
+    bool valid = gatherDOFs(fh, deformed, indices);
+    if(!valid) continue;
+    
+    Vec2i labels = m_shell.getFaceLabel(fh);
+    if(labels[0] != -1) {
+      elementJacobian(deformed, localMatrix);
+      for (unsigned int i = 0; i < indices.size(); ++i)
+        for(unsigned int j = 0; j < indices.size(); ++j)
+          Jacobian.add(indices[i], indices[j], -m_strength*(volumes[labels[0]] - m_target_volumes[labels[0]]) * scale * localMatrix(i,j));
+    }
+
+    if(labels[1] != -1) {
+      elementJacobian(deformed, localMatrix);
+      for (unsigned int i = 0; i < indices.size(); ++i)
+        for(unsigned int j = 0; j < indices.size(); ++j)
+          Jacobian.add(indices[i], indices[j], +m_strength*(volumes[labels[1]] - m_target_volumes[labels[1]]) * scale * localMatrix(i,j));
+    }
 
   }
   
-  //TODO This Jacobian isn't quite right (lacks the second term), 
-  //I guess that makes it a Gauss-Newton approximation?
+  //TODO This Jacobian isn't quite right (lacks the second term).
+  //I guess that makes it a Gauss-Newton approximation.
  
   
 }

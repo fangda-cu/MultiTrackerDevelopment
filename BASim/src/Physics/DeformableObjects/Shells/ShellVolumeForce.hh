@@ -15,8 +15,7 @@
 #include "BASim/src/Math/ADT/advec.h"
 
 
-//A surface tension force based on minimizing surface energy, assuming piecewise constant
-//liquid thickness when computing the surface area (as a shallow triangular prism)
+//A force that maintains the volume of a closed region of shell.
 
 namespace BASim {
 
@@ -54,8 +53,7 @@ protected:
   void elementJacobian(const std::vector<Vec3d>& deformed, 
                        Eigen::Matrix<Scalar, 9, 9>& J) const;
   
-  Scalar m_target_volume;
-  Scalar m_cur_volume;
+  std::vector<Scalar> m_target_volumes;
   Vec3d m_ref_point;
   Scalar m_strength;
 

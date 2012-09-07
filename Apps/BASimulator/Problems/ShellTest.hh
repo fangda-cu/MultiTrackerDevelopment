@@ -68,6 +68,8 @@ public:
   void setupScene23_hemisphere(); //pinched hemisphere test
   void setupScene24_bendingCylinder(); //a bending test using a cylinder
   void setupScene25_contractingSheet(); //a flat square sheet testing surface tension without gravity
+  void setupScene26_doubleBubble(); //two connected cubes, to test non-manifold bubbles
+
 };
 
 #endif // SHELLTEST_HH

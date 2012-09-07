@@ -29,6 +29,7 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
     m_vertex_masses(object),
     m_edge_masses(object),
     m_thicknesses(object),
+    m_face_regions(object),
     m_volumes(object),
     m_xi(object), 
     m_xi_vel(object),
@@ -148,6 +149,11 @@ void ElasticShell::setEdgeVelocities(const EdgeProperty<Scalar>& velocities)
 {
   m_xi_vel = velocities;
 }
+
+void ElasticShell::setFaceLabels(const FaceProperty<Vec2i>& labels) {
+  m_face_regions = labels;
+}
+
 
 Scalar ElasticShell::getThickness(const VertexHandle& vh) const {
   Scalar totalA = 0.0;
@@ -797,7 +803,7 @@ void ElasticShell::fracture() {
   
   construction_parameters.m_subdivision_scheme = new ElTopo::ButterflyScheme();//ElTopo::MidpointScheme(); 
 
-  construction_parameters.m_allow_non_manifold = false;
+  construction_parameters.m_allow_non_manifold = true;
   construction_parameters.m_collision_safety = true;
 
   std::vector<ElTopo::Vec3d> vert_data;
@@ -1029,10 +1035,10 @@ void ElasticShell::remesh()
   construction_parameters.m_allow_non_manifold = false;
   construction_parameters.m_collision_safety = true;
   
-  //construction_parameters.m_subdivision_scheme = new ElTopo::MidpointScheme();
+  construction_parameters.m_subdivision_scheme = new ElTopo::MidpointScheme();
   //construction_parameters.m_subdivision_scheme = new ElTopo::QuadraticErrorMinScheme();
   //construction_parameters.m_subdivision_scheme = new ElTopo::ButterflyScheme();
-  construction_parameters.m_subdivision_scheme = new ElTopo::ModifiedButterflyScheme();
+  //construction_parameters.m_subdivision_scheme = new ElTopo::ModifiedButterflyScheme();
 
   construction_parameters.m_use_curvature_when_collapsing = false;
   construction_parameters.m_use_curvature_when_splitting = false;
@@ -1115,8 +1121,14 @@ void ElasticShell::remesh()
     VertexHandle v0 = reverse_vertmap[event.m_v0];
     VertexHandle v1 = reverse_vertmap[event.m_v1];
     EdgeHandle eh = findEdge(mesh, v0, v1);
+    
+    //if(m_obj->edgeIncidentFaces(eh) == 3) 
+    //  std::cout << "Non-manifold ";
+    
+    assert(eh.isValid()); //ensure the desired edge exists
 
     if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_COLLAPSE) {
+      //std::cout << "Collapse\n";
       Vec3d new_pos(event.m_vert_position[0], event.m_vert_position[1], event.m_vert_position[2]);
       VertexHandle dead_vert = reverse_vertmap[event.m_deleted_verts[0]];
       VertexHandle keep_vert = getEdgesOtherVertex(mesh, eh, dead_vert);
@@ -1150,8 +1162,10 @@ void ElasticShell::remesh()
           }
         }
 
-        if(!face_matched)
-          std::cout << "ERROR: Couldn't match the face.\n\n\n";
+        if(!face_matched) {
+          std::cout << "Vertex indices: " << v0.idx() << " " << v1.idx() << " " << v2.idx() << std::endl;
+          std::cout << "ERROR: Couldn't match the face - COLLAPSE.\n\n\n";
+        }
       }
     }
     else if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_SPLIT) {
@@ -1194,7 +1208,7 @@ void ElasticShell::remesh()
         }
         
         if(!face_matched)
-          std::cout << "ERROR: Couldn't match the face.\n\n\n";
+          std::cout << "ERROR: Couldn't match the face - SPLIT.\n\n\n";
       }
     }
     else if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_FLIP) {
@@ -1232,7 +1246,7 @@ void ElasticShell::remesh()
         }
 
         if(!face_matched)
-          std::cout << "ERROR: Couldn't match the face.\n\n\n";
+          std::cout << "ERROR: Couldn't match the face - FLIP.\n\n\n";
       }
       
     }
@@ -1259,10 +1273,12 @@ void ElasticShell::performSplitET(const EdgeHandle& eh, const Vec3d& midpoint, V
 
   std::vector<FaceHandle> oldFaces;
   std::vector<Scalar> oldThicknesses;
+  std::vector<Vec2i> oldRegions;
   for(EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit) {
     FaceHandle f = *efit;
     oldFaces.push_back(f);
     oldThicknesses.push_back(getThickness(f));
+    oldRegions.push_back(getFaceLabel(f));
   }
 
   VertexHandle v2, v3;
@@ -1294,10 +1310,17 @@ void ElasticShell::performSplitET(const EdgeHandle& eh, const Vec3d& midpoint, V
   
   //Old way, ignores vertex movement, assumes simple (true) midpoint
   for(unsigned int i = 0; i < oldFaces.size(); ++i) {
+    //copy thicknesses exactly
     m_thicknesses[newFaces[i*2]] = oldThicknesses[i];
     m_thicknesses[newFaces[i*2+1]] = oldThicknesses[i];
+    
+    //compute corresponding volumes
     m_volumes[newFaces[i*2]] = oldThicknesses[i] * getArea(newFaces[i*2], true);
     m_volumes[newFaces[i*2+1]] = oldThicknesses[i] * getArea(newFaces[i*2+1], true);
+    
+    //copy region labels
+    m_face_regions[newFaces[i*2]] = oldRegions[i];
+    m_face_regions[newFaces[i*2+1]] = oldRegions[i];
   }
 
   //Now update to reflect motion of the midpoint to the desired position
@@ -1338,7 +1361,9 @@ void ElasticShell::performCollapse(const EdgeHandle& eh, const VertexHandle& ver
 
   //do the collapse itself
   std::vector<EdgeHandle> deletedEdges;
-  m_obj->collapseEdge(eh, vert_to_remove, deletedEdges);
+  VertexHandle result = m_obj->collapseEdge(eh, vert_to_remove, deletedEdges);
+  if(!result.isValid())
+    std::cout << "Refused to perform edge collapse!\n";
 
   //determine 
   setVertexPosition(vert_to_keep, new_position);
@@ -1388,6 +1413,8 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, EdgeHandle& newEdge) {
     FaceHandle f0, f1;
     getEdgeFacePair(*m_obj, eh, f0, f1);
     Scalar totalVolume = m_volumes[f0] + m_volumes[f1];
+    
+    Vec2i oldLabels = m_face_regions[f0]; //assume f0 and f1 have the same labels, because if not this flip is nonsense
 
     //EdgeHandle newEdge(-1);
     newEdge = flipEdge(*m_obj, eh);
@@ -1409,6 +1436,9 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, EdgeHandle& newEdge) {
     m_thicknesses[f1new] = newThickness;
     m_volumes[f0new] = f0newArea*newThickness;
     m_volumes[f1new] = f1newArea*newThickness;
+    //keep previous labels
+    m_face_regions[f0new] = oldLabels;
+    m_face_regions[f1new] = oldLabels;
     
     return true;
 }
