@@ -17,6 +17,9 @@
 #include "BASim/src/Math/SymmetricImplicitEuler.hh"
 //#include "BASim/src/Math/StaticsSolver.hh"
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
+#include "BASim/src/Physics/DeformableObjects/Rods/ElasticRodModel.hh"
+#include "BASim/src/Physics/DeformableObjects/Shells/ElasticShell.hh"
+#include "BASim/src/Physics/DeformableObjects/Solids/ElasticSolid.hh"
 
 namespace BASim {
 
@@ -28,6 +31,37 @@ public:
 
   enum Method { SYMPL_EULER, IMPL_EULER, STATICS, NONE };
 
+  // the states for backing up during a newton solve trial (required by SymmetricImplicitEuler)
+  struct StateBackup
+  {
+    // Dofs:
+    VecXd dofs;
+    
+    // Rod specific:
+    struct RodStateBackup
+    {
+      // Ref twist is the only rod state that's updated in updateProperties() in an incremental way. All the other 
+      //  cached properties can be computed from the dofs.
+      std::vector<Scalar> reference_twists; // this is a per-joint-stencil quantity 
+    };
+    std::vector<RodStateBackup> rods;
+      
+    // Shell specific:
+    struct ShellStateBackup
+    {
+      // none
+    };
+    std::vector<ShellStateBackup> shells;
+
+    // Solid specific:
+    struct SolidStateBackup
+    {
+      // none
+    };
+    std::vector<SolidStateBackup> solids;
+    
+  };
+  
   DefoObjTimeStepper(DeformableObject& obj)
     : m_obj(obj)
     , m_method(NONE)
@@ -396,7 +430,27 @@ public:
   
   void backupResize()
   {
-    //m_backupstate.resize(m_rod);
+    m_statebackup.dofs.resize(ndof());
+    for (int i = 0; i < m_obj.numModels(); i++)
+    {
+      PhysicalModel * pm = m_obj.getModel(i);
+      if (dynamic_cast<ElasticRodModel *>(pm))
+      {
+        StateBackup::RodStateBackup rod;
+        rod.reference_twists.resize(dynamic_cast<ElasticRodModel *>(pm)->getJointStencils().size());
+        m_statebackup.rods.push_back(rod);
+      }
+      if (dynamic_cast<ElasticShell *>(pm))
+      {
+        StateBackup::ShellStateBackup shell;
+        m_statebackup.shells.push_back(shell);
+      }
+      if (dynamic_cast<ElasticSolid *>(pm))
+      {
+        StateBackup::SolidStateBackup solid;
+        m_statebackup.solids.push_back(solid);
+      }
+    }
   }
   
   void backupRestore()
@@ -415,6 +469,10 @@ protected:
   
   Method m_method;
   DiffEqSolver* m_diffEqSolver;
+  
+  // This state is not persistent across time steps. It is only used for restoring the dofs before each of the multiple
+  // Newton solver trials in SymmetricImplicitEuler.
+  StateBackup m_statebackup;
   
 };
 
