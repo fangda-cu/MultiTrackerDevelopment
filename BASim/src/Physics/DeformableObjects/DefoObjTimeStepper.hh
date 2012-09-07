@@ -36,6 +36,7 @@ public:
   {
     // Dofs:
     VecXd dofs;
+    VecXd dofdots;
     
     // Rod specific:
     struct RodStateBackup
@@ -425,42 +426,95 @@ public:
 
   void backup()
   {
-    //m_backupstate.backupRod(m_rod);
+    getX(m_statebackup.dofs);
+    getV(m_statebackup.dofdots);
+    
+    for (int i = 0; i < m_obj.numModels(); i++)
+    {
+      PhysicalModel * pm = m_obj.getModel(i);
+      
+      if (dynamic_cast<ElasticRodModel *>(pm))
+      {
+        ElasticRodModel * rod = dynamic_cast<ElasticRodModel *>(pm);
+        for (int j = 0; j < rod->getJointStencils().size(); j++)
+        {
+          m_statebackup.rods[i].reference_twists[j] = rod->getJointStencils()[j].referenceTwist;
+        }
+      }
+      if (dynamic_cast<ElasticShell *>(pm))
+      {
+        ElasticShell * shell = dynamic_cast<ElasticShell *>(pm);
+        // nothing to do
+      }
+      if (dynamic_cast<ElasticRodModel *>(pm))
+      {
+        ElasticSolid * solid = dynamic_cast<ElasticSolid *>(pm);
+        // nothing to do
+      }
+    }
   }
   
   void backupResize()
   {
     m_statebackup.dofs.resize(ndof());
+    m_statebackup.dofdots.resize(ndof());
+    
     for (int i = 0; i < m_obj.numModels(); i++)
     {
       PhysicalModel * pm = m_obj.getModel(i);
+      
+      StateBackup::RodStateBackup rod;
       if (dynamic_cast<ElasticRodModel *>(pm))
       {
-        StateBackup::RodStateBackup rod;
         rod.reference_twists.resize(dynamic_cast<ElasticRodModel *>(pm)->getJointStencils().size());
-        m_statebackup.rods.push_back(rod);
       }
-      if (dynamic_cast<ElasticShell *>(pm))
-      {
-        StateBackup::ShellStateBackup shell;
-        m_statebackup.shells.push_back(shell);
-      }
-      if (dynamic_cast<ElasticSolid *>(pm))
-      {
-        StateBackup::SolidStateBackup solid;
-        m_statebackup.solids.push_back(solid);
-      }
+      m_statebackup.rods.push_back(rod);
+
+      StateBackup::ShellStateBackup shell;
+      m_statebackup.shells.push_back(shell);
+
+      StateBackup::SolidStateBackup solid;
+      m_statebackup.solids.push_back(solid);
     }
   }
   
   void backupRestore()
   {
-    //m_backupstate.restoreRod(m_rod);
+    setX(m_statebackup.dofs);
+    setV(m_statebackup.dofdots);
+    
+    for (int i = 0; i < m_obj.numModels(); i++)
+    {
+      PhysicalModel * pm = m_obj.getModel(i);
+      
+      if (dynamic_cast<ElasticRodModel *>(pm))
+      {
+        ElasticRodModel * rod = dynamic_cast<ElasticRodModel *>(pm);
+        for (int j = 0; j < rod->getJointStencils().size(); j++)
+        {
+          rod->getJointStencils()[j].referenceTwist = m_statebackup.rods[i].reference_twists[j];
+        }
+      }
+      if (dynamic_cast<ElasticShell *>(pm))
+      {
+        ElasticShell * shell = dynamic_cast<ElasticShell *>(pm);
+        // nothing to do
+      }
+      if (dynamic_cast<ElasticRodModel *>(pm))
+      {
+        ElasticSolid * solid = dynamic_cast<ElasticSolid *>(pm);
+        // nothing to do
+      }
+    }
   }
   
   void backupClear()
   {
-    //m_backupstate.clear();
+    m_statebackup.dofs.resize(0);
+    m_statebackup.dofdots.resize(0);
+    m_statebackup.rods.clear();
+    m_statebackup.shells.clear();
+    m_statebackup.solids.clear();
   }
 
 protected:

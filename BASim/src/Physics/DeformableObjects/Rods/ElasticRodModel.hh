@@ -84,8 +84,8 @@ namespace BASim
     
     void setup(Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar shear_modulus, Scalar shear_modulus_damping, Scalar timestep);
     
-    const std::vector<EdgeStencil> getEdgeStencils() const { return m_edge_stencils; }
-    const std::vector<JointStencil> getJointStencils() const { return m_joint_stencils; }
+    std::vector<EdgeStencil> getEdgeStencils() const { return m_edge_stencils; }
+    std::vector<JointStencil> getJointStencils() const { return m_joint_stencils; }
     
     //*Inherited from PhysicalModel
     void computeForces(VecXd& force);
