@@ -4,7 +4,7 @@
 
 using namespace BASim;
 
-RodTwistShellFaceCouplingForce::RodTwistShellFaceCouplingForce(ElasticRodModel & rod, ElasticShell & shell, const std::vector<ElasticRodModel::EdgeStencil> & stencils, Scalar stiffness, Scalar stiffness_damp, Scalar timestep) :
+RodTwistShellFaceCouplingForce::RodTwistShellFaceCouplingForce(ElasticRodModel & rod, ElasticShell & shell, const std::vector<Stencil> & stencils, Scalar stiffness, Scalar stiffness_damp, Scalar timestep) :
   DefoObjForce(rod.getDefoObj(), timestep, "RodTwistShellFaceCouplingForce"),
   m_stencils(),
   m_stiffness(stiffness),
@@ -15,8 +15,8 @@ RodTwistShellFaceCouplingForce::RodTwistShellFaceCouplingForce(ElasticRodModel &
     Stencil s(stencils[i]);
     s.stiffness = 0;
     s.viscous_stiffness = 0;
-    s.undeformed_length = 0;
-    s.damping_undeformed_length = 0;
+    s.undeformed_a = 0;
+    s.damping_undeformed_a = 0;
     
     m_stencils.push_back(s);
   }
@@ -33,67 +33,66 @@ RodTwistShellFaceCouplingForce::~RodTwistShellFaceCouplingForce()
 }
 
 template <int DO_HESS>
-adreal<RodTwistShellFaceCouplingForce::NumDof,DO_HESS,Scalar> 
-RodTwistShellFaceCouplingForce::adEnergy(const RodTwistShellFaceCouplingForce & mn, const std::vector<Scalar> & deformed, const std::vector<Scalar> & undeformed) 
+adreal<RodTwistShellFaceCouplingForce::NumDof, DO_HESS, Scalar> 
+RodTwistShellFaceCouplingForce::adEnergy(const RodTwistShellFaceCouplingForce & mn, const std::vector<Scalar> & deformed, const std::vector<Scalar> & undeformed, Scalar stiffness) 
 {  
-  
   // typedefs to simplify code below
   typedef adreal<RodTwistShellFaceCouplingForce::NumDof,DO_HESS,Scalar> adrealElast;
   typedef CVec3T<adrealElast> advecElast;
   Mat3T<adrealElast> temp;
   typedef Mat3T<adrealElast> admatElast;
-//  
-//  Vector3d* s_deformed = (Vector3d*)(&deformed[0]);
-//  Vector3d* s_undeformed = (Vector3d*)(&undeformed[0]);
-//  
-//  // indep variables
-//  advecElast   p[4]; // vertex positions
-//  set_independent( p[0], s_deformed[0], 0 );
-//  set_independent( p[1], s_deformed[1], 3 );
-//  set_independent( p[2], s_deformed[2], 6 );    
-//  set_independent( p[3], s_deformed[3], 9 );    
-//  
-//  //dependent variable
+  
+  Vector3d* s_deformed = (Vector3d*)(&deformed[0]);
+  Vector3d* s_undeformed = (Vector3d*)(&undeformed[0]);
+  
+  // indep variables
+  advecElast   p[3]; // vertex positions
+  set_independent( p[0], s_deformed[0], 0 );
+  set_independent( p[1], s_deformed[1], 3 );
+  set_independent( p[2], s_deformed[2], 6 );    
+  set_independent( p[3], s_deformed[3], 9 );    
+  
+  //dependent variable
   adrealElast e(0);
-//  
-//  //Compute green strain, following Teran 2003 's formulation  ("Finite Volume Methods for the Simulation of Skeletal Muscle")
-//  advecElast ds1 = p[1]-p[0];
-//  advecElast ds2 = p[2]-p[0];
-//  advecElast ds3 = p[3]-p[0];
-//  
-//  Vector3d dm1 = s_undeformed[1]-s_undeformed[0];
-//  Vector3d dm2 = s_undeformed[2]-s_undeformed[0];
-//  Vector3d dm3 = s_undeformed[3]-s_undeformed[0];
-//  
-//  admatElast ds_mat(ds1[0], ds2[0], ds3[0],
-//                    ds1[1], ds2[1], ds3[1],
-//                    ds1[2], ds2[2], ds3[2]);
-//  
-//  admatElast dm_mat(dm1[0], dm2[0], dm3[0],
-//                    dm1[1], dm2[1], dm3[1],
-//                    dm1[2], dm2[2], dm3[2]);
-//  
-//  admatElast dm_inv = dm_mat.inverse();
-//  
-//  // Compute deformation gradient
-//  admatElast F = ds_mat * dm_inv;  
-//  
-//  // Compute green strain
-//  admatElast G = F.transpose()*F - admatElast::Identity(); 
-//  
-//  // Convert from Youngs+Poisson to lame coeffs
-//  adrealElast intermediate = Youngs / (1.0+Poisson);
-//  adrealElast lambda = intermediate * Poisson / (1.0 - 2.0*Poisson);
-//  adrealElast mu = intermediate / 2.0;
-//  
-//  //Compute stress using linear elasticity
-//  admatElast CG = adrealElast(2.0 * mu) * G + adrealElast(lambda) * G.trace() * admatElast::Identity();
-//  
-//  // Compute elastic potential density: double contraction of stress:strain (expressed as trace of matrix product)
-//  e = adrealElast(0.5)*admatElast::doublecontraction(CG, G); 
-//  
-//  // Scale by (rest) volume 
-//  e *= dot(dm1, cross(dm2,dm3))/6.0;
+  
+  //Compute green strain, following Teran 2003 's formulation  ("Finite Volume Methods for the Simulation of Skeletal Muscle")
+  advecElast ds1 = p[1]-p[0];
+  advecElast ds2 = p[2]-p[0];
+  advecElast ds3 = p[3]-p[0];
+  
+  Vector3d dm1 = s_undeformed[1]-s_undeformed[0];
+  Vector3d dm2 = s_undeformed[2]-s_undeformed[0];
+  Vector3d dm3 = s_undeformed[3]-s_undeformed[0];
+  
+  admatElast ds_mat(ds1[0], ds2[0], ds3[0],
+                    ds1[1], ds2[1], ds3[1],
+                    ds1[2], ds2[2], ds3[2]);
+  
+  admatElast dm_mat(dm1[0], dm2[0], dm3[0],
+                    dm1[1], dm2[1], dm3[1],
+                    dm1[2], dm2[2], dm3[2]);
+  
+  admatElast dm_inv = dm_mat.inverse();
+  
+  // Compute deformation gradient
+  admatElast F = ds_mat * dm_inv;  
+  
+  // Compute green strain
+  admatElast G = F.transpose()*F - admatElast::Identity(); 
+  
+  // Convert from Youngs+Poisson to lame coeffs
+  adrealElast intermediate = Youngs / (1.0+Poisson);
+  adrealElast lambda = intermediate * Poisson / (1.0 - 2.0*Poisson);
+  adrealElast mu = intermediate / 2.0;
+  
+  //Compute stress using linear elasticity
+  admatElast CG = adrealElast(2.0 * mu) * G + adrealElast(lambda) * G.trace() * admatElast::Identity();
+  
+  // Compute elastic potential density: double contraction of stress:strain (expressed as trace of matrix product)
+  e = adrealElast(0.5)*admatElast::doublecontraction(CG, G); 
+  
+  // Scale by (rest) volume 
+  e *= dot(dm1, cross(dm2,dm3))/6.0;
   
   return e;
 }
@@ -149,6 +148,8 @@ Scalar RodTwistShellFaceCouplingForce::localEnergy(Stencil & s, bool viscous)
 //  Scalar len = rod().getEdgeLength(s.e);
 //  
 //  return ks / 2.0 * square(len / reflen - 1.0) * reflen;
+  
+  
   return 0;
 }
 

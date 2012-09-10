@@ -22,30 +22,35 @@ namespace BASim
   class RodTwistShellFaceCouplingForce : public DefoObjForce
   {
   public:
-    typedef Eigen::Matrix<Scalar, 4, 1> ElementForce;
-    typedef Eigen::Matrix<Scalar, 4, 4> ElementJacobian;
+    const static int NumDof = 10;
 
-    const static int NumDof = 4;
+    typedef Eigen::Matrix<Scalar, NumDof, 1>      ElementForce;
+    typedef Eigen::Matrix<Scalar, NumDof, NumDof> ElementJacobian;
 
     typedef CVec3T<Scalar> Vector3d;
     
-    struct Stencil : public ElasticRodModel::EdgeStencil
+    struct Stencil
     {
-      Stencil(const ElasticRodModel::EdgeStencil & s) : ElasticRodModel::EdgeStencil(s) { }
+      Stencil() { }
+      Stencil(const Stencil & s) : e(s.e), v(s.v) { }
+      
+      // stencil coverage
+      EdgeHandle e;
+      VertexHandle v;
       
       // cached stiffness
       Scalar stiffness;
       Scalar viscous_stiffness;
       
       // reference strain
-      Scalar undeformed_length;
-      Scalar damping_undeformed_length;
+      Vec2d undeformed_a;
+      Vec2d damping_undeformed_a;
       
       // cached properties (none)
     };
 
   public:
-    RodTwistShellFaceCouplingForce(ElasticRodModel & rod, ElasticShell & shell, const std::vector<ElasticRodModel::EdgeStencil> & stencils, Scalar stiffness, Scalar stiffness_damp, Scalar timestep);
+    RodTwistShellFaceCouplingForce(ElasticRodModel & rod, ElasticShell & shell, const std::vector<Stencil> & stencils, Scalar stiffness, Scalar stiffness_damp, Scalar timestep);
     virtual ~RodTwistShellFaceCouplingForce();
 
   public:
@@ -65,7 +70,7 @@ namespace BASim
 
   protected:
     template <int DO_HESS>
-    adreal<NumDof, DO_HESS, Scalar> adEnergy(const RodTwistShellFaceCouplingForce & mn, const std::vector<Scalar> & deformed, const std::vector<Scalar> & undeformed);
+    adreal<NumDof, DO_HESS, Scalar> adEnergy(const RodTwistShellFaceCouplingForce & mn, const std::vector<Scalar> & deformed, const std::vector<Scalar> & undeformed, Scalar stiffness);
 
   protected:
     Scalar localEnergy(Stencil & s, bool viscous);
