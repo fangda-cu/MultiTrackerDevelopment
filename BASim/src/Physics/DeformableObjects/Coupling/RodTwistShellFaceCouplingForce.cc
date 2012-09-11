@@ -200,11 +200,12 @@ void RodTwistShellFaceCouplingForce::updateStiffness()
 
 void RodTwistShellFaceCouplingForce::updateViscousReferenceStrain()
 {
-//  for (size_t i = 0; i < m_stencils.size(); i++)
-//  {
-//    Stencil & s = m_stencils[i];
-//    s.damping_undeformed_length = rod().getEdgeLength(s.e);
-//  }
+  for (size_t i = 0; i < m_stencils.size(); i++)
+  {
+    Stencil & s = m_stencils[i];
+    Scalar delta;/////////
+    s.damping_undeformed_delta = delta;
+  }
 }
 
 void RodTwistShellFaceCouplingForce::updateProperties()
@@ -214,10 +215,11 @@ void RodTwistShellFaceCouplingForce::updateProperties()
 
 void RodTwistShellFaceCouplingForce::computeReferenceStrain()
 {
-//  for (size_t i = 0; i < m_stencils.size(); i++)
-//  {
-//    Stencil & s = m_stencils[i];
-//    s.undeformed_length = rod().getEdgeLength(s.e);
-//  }
+  for (size_t i = 0; i < m_stencils.size(); i++)
+  {
+    Stencil & s = m_stencils[i];
+    Scalar delta;//////////
+    s.undeformed_delta = delta;
+  }
 }
 
