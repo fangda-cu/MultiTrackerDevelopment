@@ -15,8 +15,8 @@ RodTwistShellFaceCouplingForce::RodTwistShellFaceCouplingForce(ElasticRodModel &
     Stencil s(stencils[i]);
     s.stiffness = 0;
     s.viscous_stiffness = 0;
-    s.undeformed_a = 0;
-    s.damping_undeformed_a = 0;
+    s.undeformed_delta = 0;
+    s.damping_undeformed_delta = 0;
     
     m_stencils.push_back(s);
   }
@@ -32,67 +32,44 @@ RodTwistShellFaceCouplingForce::~RodTwistShellFaceCouplingForce()
   
 }
 
+RodTwistShellFaceCouplingForce::Vector3d RodTwistShellFaceCouplingForce::vec2vector(const Vec3d & input)
+{
+  Vector3d output;
+  output.x() = input.x();
+  output.y() = input.y();
+  output.z() = input.z();
+  return output;
+}
+
 template <int DO_HESS>
 adreal<RodTwistShellFaceCouplingForce::NumDof, DO_HESS, Scalar> 
-RodTwistShellFaceCouplingForce::adEnergy(const RodTwistShellFaceCouplingForce & mn, const std::vector<Scalar> & deformed, const std::vector<Scalar> & undeformed, Scalar stiffness) 
+RodTwistShellFaceCouplingForce::adEnergy(const RodTwistShellFaceCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, Scalar theta, const Vec3d & ref1, const Vec3d & ref2, Scalar undeformed_delta, Scalar stiffness) 
 {  
   // typedefs to simplify code below
-  typedef adreal<RodTwistShellFaceCouplingForce::NumDof,DO_HESS,Scalar> adrealElast;
+  typedef adreal<RodTwistShellFaceCouplingForce::NumDof, DO_HESS, Scalar> adrealElast;
   typedef CVec3T<adrealElast> advecElast;
   Mat3T<adrealElast> temp;
   typedef Mat3T<adrealElast> admatElast;
+
+  Vector3d vA = vec2vector(A);
+  Vector3d vB = vec2vector(B);
+  Vector3d vC = vec2vector(C);
+  Vector3d vRef1 = vec2vector(ref1);
+  Vector3d vRef2 = vec2vector(ref2);
   
-  Vector3d* s_deformed = (Vector3d*)(&deformed[0]);
-  Vector3d* s_undeformed = (Vector3d*)(&undeformed[0]);
-  
-  // indep variables
-  advecElast   p[3]; // vertex positions
-  set_independent( p[0], s_deformed[0], 0 );
-  set_independent( p[1], s_deformed[1], 3 );
-  set_independent( p[2], s_deformed[2], 6 );    
-  set_independent( p[3], s_deformed[3], 9 );    
-  
-  //dependent variable
+  advecElast p[3];
+  adrealElast t;
+  set_independent(p[0], vA, 0);
+  set_independent(p[1], vB, 3);
+  set_independent(p[2], vC, 6);
+  t.set_independent(theta, 9);
+
   adrealElast e(0);
   
-  //Compute green strain, following Teran 2003 's formulation  ("Finite Volume Methods for the Simulation of Skeletal Muscle")
-  advecElast ds1 = p[1]-p[0];
-  advecElast ds2 = p[2]-p[0];
-  advecElast ds3 = p[3]-p[0];
+  adrealElast theta_deformed = atan2(dot(p[0] - p[1], vRef2), dot(p[0] - p[1], vRef1));
+  adrealElast delta = t - theta_deformed;
   
-  Vector3d dm1 = s_undeformed[1]-s_undeformed[0];
-  Vector3d dm2 = s_undeformed[2]-s_undeformed[0];
-  Vector3d dm3 = s_undeformed[3]-s_undeformed[0];
-  
-  admatElast ds_mat(ds1[0], ds2[0], ds3[0],
-                    ds1[1], ds2[1], ds3[1],
-                    ds1[2], ds2[2], ds3[2]);
-  
-  admatElast dm_mat(dm1[0], dm2[0], dm3[0],
-                    dm1[1], dm2[1], dm3[1],
-                    dm1[2], dm2[2], dm3[2]);
-  
-  admatElast dm_inv = dm_mat.inverse();
-  
-  // Compute deformation gradient
-  admatElast F = ds_mat * dm_inv;  
-  
-  // Compute green strain
-  admatElast G = F.transpose()*F - admatElast::Identity(); 
-  
-  // Convert from Youngs+Poisson to lame coeffs
-  adrealElast intermediate = Youngs / (1.0+Poisson);
-  adrealElast lambda = intermediate * Poisson / (1.0 - 2.0*Poisson);
-  adrealElast mu = intermediate / 2.0;
-  
-  //Compute stress using linear elasticity
-  admatElast CG = adrealElast(2.0 * mu) * G + adrealElast(lambda) * G.trace() * admatElast::Identity();
-  
-  // Compute elastic potential density: double contraction of stress:strain (expressed as trace of matrix product)
-  e = adrealElast(0.5)*admatElast::doublecontraction(CG, G); 
-  
-  // Scale by (rest) volume 
-  e *= dot(dm1, cross(dm2,dm3))/6.0;
+  e = stiffness * ((delta - undeformed_delta) * (delta - undeformed_delta));
   
   return e;
 }
@@ -100,44 +77,44 @@ RodTwistShellFaceCouplingForce::adEnergy(const RodTwistShellFaceCouplingForce & 
 Scalar RodTwistShellFaceCouplingForce::globalEnergy()
 {
   Scalar energy = 0;
-  for (size_t i = 0; i < m_stencils.size(); i++)
-  {
-    // energy only include non-viscous forces
-    energy += localEnergy(m_stencils[i], false);
-  }
+//  for (size_t i = 0; i < m_stencils.size(); i++)
+//  {
+//    // energy only include non-viscous forces
+//    energy += localEnergy(m_stencils[i], false);
+//  }
   return energy;
 }
 
 void RodTwistShellFaceCouplingForce::globalForce(VecXd & force)
 {
-  ElementForce localforce;
-  for (size_t i = 0; i < m_stencils.size(); i++)
-  {
-    // non-viscous force
-    localForce(localforce, m_stencils[i], false);
-    for (size_t j = 0; j < m_stencils[i].dofindices.size(); j++)
-      force(m_stencils[i].dofindices[j]) += localforce(j);
-    
-    // viscous force
-    localForce(localforce, m_stencils[i], true);
-    for (size_t j = 0; j < m_stencils[i].dofindices.size(); j++)
-      force(m_stencils[i].dofindices[j]) += localforce(j) / timeStep();
-  }
+//  ElementForce localforce;
+//  for (size_t i = 0; i < m_stencils.size(); i++)
+//  {
+//    // non-viscous force
+//    localForce(localforce, m_stencils[i], false);
+//    for (size_t j = 0; j < m_stencils[i].dofindices.size(); j++)
+//      force(m_stencils[i].dofindices[j]) += localforce(j);
+//    
+//    // viscous force
+//    localForce(localforce, m_stencils[i], true);
+//    for (size_t j = 0; j < m_stencils[i].dofindices.size(); j++)
+//      force(m_stencils[i].dofindices[j]) += localforce(j) / timeStep();
+//  }
 }
 
 void RodTwistShellFaceCouplingForce::globalJacobian(Scalar scale, MatrixBase & Jacobian)
 {
-  ElementJacobian localjacobian;
-  for (size_t i = 0; i < m_stencils.size(); i++)
-  {
-    // non-viscous force
-    localJacobian(localjacobian, m_stencils[i], false);
-    Jacobian.add(m_stencils[i].dofindices, m_stencils[i].dofindices, scale * localjacobian);
-    
-    // viscous force
-    localJacobian(localjacobian, m_stencils[i], true);
-    Jacobian.add(m_stencils[i].dofindices, m_stencils[i].dofindices, scale / timeStep() * localjacobian);
-  }
+//  ElementJacobian localjacobian;
+//  for (size_t i = 0; i < m_stencils.size(); i++)
+//  {
+//    // non-viscous force
+//    localJacobian(localjacobian, m_stencils[i], false);
+//    Jacobian.add(m_stencils[i].dofindices, m_stencils[i].dofindices, scale * localjacobian);
+//    
+//    // viscous force
+//    localJacobian(localjacobian, m_stencils[i], true);
+//    Jacobian.add(m_stencils[i].dofindices, m_stencils[i].dofindices, scale / timeStep() * localjacobian);
+//  }
 }
 
 Scalar RodTwistShellFaceCouplingForce::localEnergy(Stencil & s, bool viscous)
@@ -149,8 +126,19 @@ Scalar RodTwistShellFaceCouplingForce::localEnergy(Stencil & s, bool viscous)
 //  
 //  return ks / 2.0 * square(len / reflen - 1.0) * reflen;
   
+  Vec3d A = defoObj().getVertexPosition(s.v);
+  Vec3d B = defoObj().getVertexPosition(defoObj().fromVertex(s.e));
+  Vec3d C = defoObj().getVertexPosition(defoObj().toVertex(s.e));
+  Scalar theta = rod().getEdgeTheta(s.e);
   
-  return 0;
+  Vec3d & ref1 = rod().getReferenceDirector1(s.e);
+  Vec3d & ref2 = rod().getReferenceDirector2(s.e);
+  
+  adreal<NumDof, 0, Scalar> e = adEnergy<0>(*this, A, B, C, theta, ref1, ref2, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
+//  Scalar energy = e.value();
+  Scalar energy = 0 ;
+
+  return energy;
 }
 
 void RodTwistShellFaceCouplingForce::localForce(ElementForce & force, Stencil & s, bool viscous)

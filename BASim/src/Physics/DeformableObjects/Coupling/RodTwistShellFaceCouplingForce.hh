@@ -34,6 +34,8 @@ namespace BASim
       Stencil() { }
       Stencil(const Stencil & s) : e(s.e), v(s.v) { }
       
+      IntArray dofindices;
+
       // stencil coverage
       EdgeHandle e;
       VertexHandle v;
@@ -43,8 +45,8 @@ namespace BASim
       Scalar viscous_stiffness;
       
       // reference strain
-      Vec2d undeformed_a;
-      Vec2d damping_undeformed_a;
+      Scalar undeformed_delta;
+      Scalar damping_undeformed_delta;
       
       // cached properties (none)
     };
@@ -68,9 +70,16 @@ namespace BASim
     void globalForce(VecXd & force);
     void globalJacobian(Scalar scale, MatrixBase & Jacobian);
 
+  public:
+    ElasticRodModel & rod() { assert(m_rod); return *m_rod; }
+    ElasticShell & shell() { assert(m_shell); return *m_shell; }
+    
+    DeformableObject & defoObj() { assert(m_rod); return m_rod->getDefoObj(); }
+    
   protected:
     template <int DO_HESS>
-    adreal<NumDof, DO_HESS, Scalar> adEnergy(const RodTwistShellFaceCouplingForce & mn, const std::vector<Scalar> & deformed, const std::vector<Scalar> & undeformed, Scalar stiffness);
+//    adreal<NumDof, DO_HESS, Scalar> adEnergy(const RodTwistShellFaceCouplingForce & mn, const std::vector<Scalar> & deformed, const std::vector<Scalar> & undeformed, Scalar stiffness);
+    adreal<NumDof, DO_HESS, Scalar> adEnergy(const RodTwistShellFaceCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, Scalar theta, const Vec3d & ref1, const Vec3d & ref2, Scalar undeformed_delta, Scalar stiffness);
 
   protected:
     Scalar localEnergy(Stencil & s, bool viscous);
@@ -79,8 +88,13 @@ namespace BASim
 
     void computeReferenceStrain();
     
+    Vector3d vec2vector(const Vec3d & v);
+
   protected:
     std::vector<Stencil> m_stencils;
+    
+    ElasticRodModel * m_rod;
+    ElasticShell * m_shell;
     
     Scalar m_stiffness;
     Scalar m_stiffness_damp;
