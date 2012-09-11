@@ -41,7 +41,10 @@ extern "C" {
     struct ElTopoStaticOperationsOptions
     {
         /// whether to perform mesh maintenance
-        int m_perform_improvement;            
+        int m_perform_improvement; 
+
+        /// Whether to perform remeshing on mesh boundary edges (in the case of open surfaces, e.g. sheets)
+        bool m_remesh_boundaries;
         
         /// whether to allow merging and separation
         int m_allow_topology_changes;     

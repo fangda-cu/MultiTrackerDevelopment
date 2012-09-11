@@ -34,10 +34,11 @@ extern RunStats g_stats;
 ///
 // ---------------------------------------------------------
 
-EdgeSplitter::EdgeSplitter( SurfTrack& surf, bool use_curvature, double max_curvature_multiplier ) :
+EdgeSplitter::EdgeSplitter( SurfTrack& surf, bool use_curvature, bool remesh_boundaries, double max_curvature_multiplier ) :
 m_max_edge_length( UNINITIALIZED_DOUBLE ),
 m_min_edge_length( UNINITIALIZED_DOUBLE ),
 m_use_curvature( use_curvature ),
+m_remesh_boundaries( remesh_boundaries),
 m_max_curvature_multiplier( max_curvature_multiplier ),
 m_surf( surf )
 {}
@@ -683,6 +684,9 @@ bool EdgeSplitter::edge_is_splittable( size_t edge_index )
   // skip deleted and solid edges
   if ( m_surf.m_mesh.edge_is_deleted(edge_index) ) { return false; }
   if ( m_surf.edge_is_all_solid(edge_index) ) { return false; }
+
+  //if not remeshing boundary edges, skip those too
+  if ( !m_remesh_boundaries && m_surf.m_mesh.m_is_boundary_edge[edge_index]) { return false; }
 
   return true;
 

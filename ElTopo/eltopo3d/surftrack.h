@@ -138,6 +138,10 @@ struct SurfTrackInitializationParameters
     ///
     bool m_perform_improvement;
 
+    /// Whether to perform remeshing on mesh boundary edges (in the case of open surfaces, e.g. sheets)
+    ///
+    bool m_remesh_boundaries;
+
     /// Whether to be verbose in outputting data
     ///
     bool m_verbose;
@@ -497,6 +501,10 @@ public:
     /// Whether to perform adaptivity operations
     ///
     bool m_perform_improvement;
+
+    /// Whether to perform remeshing on mesh boundary edges (in the case of open surfaces, e.g. sheets)
+    ///
+    bool m_remesh_boundaries;
     
     /// When doing mesh optimization, whether to allow the vertices to move.  If set to false, we allow edge flipping, edge 
     /// splitting, and edge collapsing (where the edge is collapsed down to one of its endpoints).  If true, we do mesh smoothing,

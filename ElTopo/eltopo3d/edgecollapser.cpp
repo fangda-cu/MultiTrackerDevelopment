@@ -36,10 +36,11 @@ extern RunStats g_stats;
 ///
 // --------------------------------------------------------
 
-EdgeCollapser::EdgeCollapser( SurfTrack& surf, bool use_curvature, double min_curvature_multiplier ) :
+EdgeCollapser::EdgeCollapser( SurfTrack& surf, bool use_curvature, bool remesh_boundaries, double min_curvature_multiplier ) :
 m_min_edge_length( UNINITIALIZED_DOUBLE ),
 m_max_edge_length( UNINITIALIZED_DOUBLE ),
 m_use_curvature( use_curvature ),
+m_remesh_boundaries( remesh_boundaries ),
 m_min_curvature_multiplier( min_curvature_multiplier ),
 m_surf( surf )
 {}
@@ -404,11 +405,11 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   bool del_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_delete];
   bool edge_is_boundary = m_surf.m_mesh.m_is_boundary_edge[edge];
   
-  // don't collapse when both edges are on the boundary
-  // TODO In future should probably try to allow this, and
-  // watch out for the tricky non-manifold case where both 
-  // vertices are boundary, but edge is not.
-  assert(!keep_vert_is_boundary || !del_vert_is_boundary);
+  //either we're allowing remeshing of boundary edges, or this edge is not on the boundary.
+  assert(m_remesh_boundaries || !edge_is_boundary);
+  
+  // don't collapse when both verts are on the boundary and the edge is not, since this would create a nonmanifold/singular vertex
+  assert(edge_is_boundary || (!keep_vert_is_boundary || !del_vert_is_boundary));
   
   if ( m_surf.m_verbose ) { std::cout << "Collapsing edge.  Doomed vertex: " << vertex_to_delete << " --- Vertex to keep: " << vertex_to_keep << std::endl; }
 
@@ -478,6 +479,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
           if ( !is_on_inc_triangle )
           {
             // found a vertex adjacent to both edge vertices, which doesn't lie on the incident triangles
+
+            //
             if ( m_surf.m_verbose )
             {
               std::cout << " --- Edge Collapser: found a vertex adjacent to both edge vertices, which doesn't lie on the incident triangles " << std::endl;
@@ -712,8 +715,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   for ( size_t i=0; i < triangles_incident_to_vertex.size(); ++i )
   {
-    assert( triangles_incident_to_vertex[i] != triangles_incident_to_edge[0] );
-    assert( triangles_incident_to_vertex[i] != triangles_incident_to_edge[1] );
+    for(size_t local_ind = 0; local_ind < triangles_incident_to_edge.size(); ++local_ind) {
+      assert( triangles_incident_to_vertex[i] != triangles_incident_to_edge[local_ind] );
+    }
 
     Vec3st new_triangle = m_surf.m_mesh.get_triangle( triangles_incident_to_vertex[i] );
 
@@ -766,15 +770,18 @@ bool EdgeCollapser::edge_is_collapsible( size_t edge_index, double& current_leng
   // skip deleted and solid edges
   if ( m_surf.m_mesh.edge_is_deleted(edge_index) ) { return false; }
   if ( m_surf.edge_is_any_solid(edge_index) ) { return false; }
+  
+  //skip boundary edges if we're not remeshing those
+  if(!m_remesh_boundaries && m_surf.m_mesh.m_is_boundary_edge[edge_index]) { return false; }
 
-  //disallow boundary edges, or both vertices on the boundary
-  if ( m_surf.m_mesh.m_edge_to_triangle_map[edge_index].size() < 2 || 
-    m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[edge_index][0]] &&
-    m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[edge_index][1]] ) 
+  //this would introduce non-manifold ("singular") vertex (this is an internal edge joining two boundary vertices)
+  if ( m_surf.m_mesh.m_edge_to_triangle_map[edge_index].size() == 2 && 
+      m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[edge_index][0]] &&
+      m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[edge_index][1]] ) 
   {
     return false;
   }
-  
+
   current_length = m_surf.get_edge_length(edge_index);
   if ( m_use_curvature )
   {

@@ -47,7 +47,7 @@ public:
     
     /// Constructor
     ///
-    EdgeSplitter( SurfTrack& surf, bool use_curvature, double max_curvature_multiplier );
+   EdgeSplitter( SurfTrack& surf, bool use_curvature, bool remesh_boundaries, double max_curvature_multiplier );
     
     /// Split all long edges
     ///
@@ -74,6 +74,10 @@ public:
     /// The maximum curvature scaling allowed
     ///
     double m_max_curvature_multiplier;
+
+    /// Whether to perform remeshing on mesh boundary edges (in the case of open surfaces, e.g. sheets)
+    ///
+    bool m_remesh_boundaries;
         
 private:
     

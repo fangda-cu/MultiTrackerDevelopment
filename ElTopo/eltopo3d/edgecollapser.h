@@ -45,7 +45,7 @@ public:
     
     /// Edge collapser constructor.  Takes a SurfTrack object and curvature-adaptive parameters.
     ///
-    EdgeCollapser( SurfTrack& surf, bool use_curvature, double min_curvature_multiplier );
+    EdgeCollapser( SurfTrack& surf, bool use_curvature, bool remesh_boundaries, double min_curvature_multiplier );
 
     /// Collapse all short edges
     ///
@@ -64,6 +64,10 @@ public:
     ///
     bool m_use_curvature;
     
+    /// Whether to perform remeshing on mesh boundary edges (in the case of open surfaces, e.g. sheets)
+    ///
+    bool m_remesh_boundaries;
+
     /// The minimum curvature scaling allowed
     ///
     double m_min_curvature_multiplier;

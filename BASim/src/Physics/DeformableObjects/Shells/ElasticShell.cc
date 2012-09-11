@@ -804,6 +804,7 @@ void ElasticShell::fracture() {
   construction_parameters.m_subdivision_scheme = new ElTopo::ButterflyScheme();//ElTopo::MidpointScheme(); 
 
   construction_parameters.m_allow_non_manifold = true;
+  construction_parameters.m_remesh_boundaries = true;
   construction_parameters.m_collision_safety = true;
 
   std::vector<ElTopo::Vec3d> vert_data;
@@ -1034,7 +1035,7 @@ void ElasticShell::remesh()
   construction_parameters.m_verbose = false;
   construction_parameters.m_allow_non_manifold = false;
   construction_parameters.m_collision_safety = true;
-  
+  construction_parameters.m_remesh_boundaries = true;
   
   construction_parameters.m_subdivision_scheme = new ElTopo::MidpointScheme();
   //construction_parameters.m_subdivision_scheme = new ElTopo::QuadraticErrorMinScheme();

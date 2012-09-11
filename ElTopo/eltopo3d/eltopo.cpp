@@ -68,6 +68,7 @@ void el_topo_static_operations( const ElTopoMesh* inputs,
     construction_parameters.m_collision_safety = general_options->m_collision_safety;
     construction_parameters.m_allow_topology_changes = options->m_allow_topology_changes;
     construction_parameters.m_perform_improvement = options->m_perform_improvement;
+    construction_parameters.m_remesh_boundaries = options->m_remesh_boundaries;
     construction_parameters.m_subdivision_scheme = (ElTopo::SubdivisionScheme*) options->m_subdivision_scheme;
     construction_parameters.m_verbose = general_options->m_verbose;
     
