@@ -41,6 +41,7 @@ public:
   void setupScene9(); // balls in bag
   void setupScene10();// Houdini exporter/loader test
   void setupScene11();// Solid test scene
+  void setupScene12();// rod twist rod face coupling test
 
 protected:
   void Setup();
