@@ -91,10 +91,10 @@ namespace BASim
     Vector3d vec2vector(const Vec3d & v);
 
   protected:
-    std::vector<Stencil> m_stencils;
-    
     ElasticRodModel * m_rod;
     ElasticShell * m_shell;
+    
+    std::vector<Stencil> m_stencils;
     
     Scalar m_stiffness;
     Scalar m_stiffness_damp;

@@ -6,6 +6,8 @@ using namespace BASim;
 
 RodTwistShellFaceCouplingForce::RodTwistShellFaceCouplingForce(ElasticRodModel & rod, ElasticShell & shell, const std::vector<Stencil> & stencils, Scalar stiffness, Scalar stiffness_damp, Scalar timestep) :
   DefoObjForce(rod.getDefoObj(), timestep, "RodTwistShellFaceCouplingForce"),
+  m_rod(&rod),
+  m_shell(&shell),
   m_stencils(),
   m_stiffness(stiffness),
   m_stiffness_damp(stiffness_damp)
@@ -17,6 +19,22 @@ RodTwistShellFaceCouplingForce::RodTwistShellFaceCouplingForce(ElasticRodModel &
     s.viscous_stiffness = 0;
     s.undeformed_delta = 0;
     s.damping_undeformed_delta = 0;
+    
+    int dofbase = defoObj().getPositionDofBase(s.v);
+    s.dofindices[0] = dofbase;
+    s.dofindices[1] = dofbase + 1;
+    s.dofindices[2] = dofbase + 2;
+    dofbase = defoObj().getPositionDofBase(defoObj().fromVertex(s.e));
+    s.dofindices[3] = dofbase;
+    s.dofindices[4] = dofbase + 1;
+    s.dofindices[5] = dofbase + 2;
+    dofbase = defoObj().getPositionDofBase(defoObj().toVertex(s.e));
+    s.dofindices[6] = dofbase;
+    s.dofindices[7] = dofbase + 1;
+    s.dofindices[8] = dofbase + 2;
+    
+    dofbase = rod.getEdgeDofBase(s.e);
+    s.dofindices[9] = dofbase;
     
     m_stencils.push_back(s);
   }
@@ -77,55 +95,48 @@ RodTwistShellFaceCouplingForce::adEnergy(const RodTwistShellFaceCouplingForce & 
 Scalar RodTwistShellFaceCouplingForce::globalEnergy()
 {
   Scalar energy = 0;
-//  for (size_t i = 0; i < m_stencils.size(); i++)
-//  {
-//    // energy only include non-viscous forces
-//    energy += localEnergy(m_stencils[i], false);
-//  }
+  for (size_t i = 0; i < m_stencils.size(); i++)
+  {
+    // energy only include non-viscous forces
+    energy += localEnergy(m_stencils[i], false);
+  }
   return energy;
 }
 
 void RodTwistShellFaceCouplingForce::globalForce(VecXd & force)
 {
-//  ElementForce localforce;
-//  for (size_t i = 0; i < m_stencils.size(); i++)
-//  {
-//    // non-viscous force
-//    localForce(localforce, m_stencils[i], false);
-//    for (size_t j = 0; j < m_stencils[i].dofindices.size(); j++)
-//      force(m_stencils[i].dofindices[j]) += localforce(j);
-//    
-//    // viscous force
-//    localForce(localforce, m_stencils[i], true);
-//    for (size_t j = 0; j < m_stencils[i].dofindices.size(); j++)
-//      force(m_stencils[i].dofindices[j]) += localforce(j) / timeStep();
-//  }
+  ElementForce localforce;
+  for (size_t i = 0; i < m_stencils.size(); i++)
+  {
+    // non-viscous force
+    localForce(localforce, m_stencils[i], false);
+    for (size_t j = 0; j < m_stencils[i].dofindices.size(); j++)
+      force(m_stencils[i].dofindices[j]) += localforce(j);
+    
+    // viscous force
+    localForce(localforce, m_stencils[i], true);
+    for (size_t j = 0; j < m_stencils[i].dofindices.size(); j++)
+      force(m_stencils[i].dofindices[j]) += localforce(j) / timeStep();
+  }
 }
 
 void RodTwistShellFaceCouplingForce::globalJacobian(Scalar scale, MatrixBase & Jacobian)
 {
-//  ElementJacobian localjacobian;
-//  for (size_t i = 0; i < m_stencils.size(); i++)
-//  {
-//    // non-viscous force
-//    localJacobian(localjacobian, m_stencils[i], false);
-//    Jacobian.add(m_stencils[i].dofindices, m_stencils[i].dofindices, scale * localjacobian);
-//    
-//    // viscous force
-//    localJacobian(localjacobian, m_stencils[i], true);
-//    Jacobian.add(m_stencils[i].dofindices, m_stencils[i].dofindices, scale / timeStep() * localjacobian);
-//  }
+  ElementJacobian localjacobian;
+  for (size_t i = 0; i < m_stencils.size(); i++)
+  {
+    // non-viscous force
+    localJacobian(localjacobian, m_stencils[i], false);
+    Jacobian.add(m_stencils[i].dofindices, m_stencils[i].dofindices, scale * localjacobian);
+    
+    // viscous force
+    localJacobian(localjacobian, m_stencils[i], true);
+    Jacobian.add(m_stencils[i].dofindices, m_stencils[i].dofindices, scale / timeStep() * localjacobian);
+  }
 }
 
 Scalar RodTwistShellFaceCouplingForce::localEnergy(Stencil & s, bool viscous)
 {
-//  Scalar ks = (viscous ? s.viscous_stiffness : s.stiffness);
-//  
-//  Scalar reflen = (viscous ? s.damping_undeformed_length : s.undeformed_length);
-//  Scalar len = rod().getEdgeLength(s.e);
-//  
-//  return ks / 2.0 * square(len / reflen - 1.0) * reflen;
-  
   Vec3d A = defoObj().getVertexPosition(s.v);
   Vec3d B = defoObj().getVertexPosition(defoObj().fromVertex(s.e));
   Vec3d C = defoObj().getVertexPosition(defoObj().toVertex(s.e));
@@ -135,45 +146,44 @@ Scalar RodTwistShellFaceCouplingForce::localEnergy(Stencil & s, bool viscous)
   Vec3d & ref2 = rod().getReferenceDirector2(s.e);
   
   adreal<NumDof, 0, Scalar> e = adEnergy<0>(*this, A, B, C, theta, ref1, ref2, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
-//  Scalar energy = e.value();
-  Scalar energy = 0 ;
+  Scalar energy = e.value();
 
   return energy;
 }
 
 void RodTwistShellFaceCouplingForce::localForce(ElementForce & force, Stencil & s, bool viscous)
 {
-//  Scalar ks = (viscous ? s.viscous_stiffness : s.stiffness);
-//  
-//  Scalar reflen = (viscous ? s.damping_undeformed_length : s.undeformed_length);
-//  Scalar len = rod().getEdgeLength(s.e);
-//  Vec3d tangent = rod().getEdgeTangent(s.e);
-//  
-//  Vec3d f = ks * (len / reflen - 1.0) * tangent;
-//  force.segment<3> (0) = f;
-//  force.segment<3> (3) = -f;
+  Vec3d A = defoObj().getVertexPosition(s.v);
+  Vec3d B = defoObj().getVertexPosition(defoObj().fromVertex(s.e));
+  Vec3d C = defoObj().getVertexPosition(defoObj().toVertex(s.e));
+  Scalar theta = rod().getEdgeTheta(s.e);
+  
+  Vec3d & ref1 = rod().getReferenceDirector1(s.e);
+  Vec3d & ref2 = rod().getReferenceDirector2(s.e);
+  
+  adreal<NumDof, 0, Scalar> e = adEnergy<0>(*this, A, B, C, theta, ref1, ref2, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
+  for (int i = 0; i < NumDof; i++)
+  {
+    force[i] = -e.gradient(i);
+  }
 }
 
 void RodTwistShellFaceCouplingForce::localJacobian(ElementJacobian & jacobian, Stencil & s, bool viscous)
 {
-//  Scalar ks = (viscous ? s.viscous_stiffness : s.stiffness);
-//  
-//  Vec3d e = rod().getEdge(s.e);
-//  Scalar reflen = (viscous ? s.damping_undeformed_length : s.undeformed_length);
-//  Scalar len = rod().getEdgeLength(s.e);
-//  Mat3d M = ks * ((1.0 / reflen - 1.0 / len) * Mat3d::Identity() + 1.0 / len * outerProd(e, e) / square(len));
-//  
-//  //TODO: this is copied from RodStretchingForce::elemengJacobian(). can't this be implemented using blocks?
-//  for (int i = 0; i < 3; i++)
-//  {
-//    for (int j = 0; j < 3; j++)
-//    {
-//      jacobian(i, j) = jacobian(3 + i, 3 + j) = -M(i, j);
-//      jacobian(3 + i, j) = jacobian(i, 3 + j) = M(i, j);
-//    }
-//  }
-//  
-//  assert(isSymmetric(jacobian));
+  Vec3d A = defoObj().getVertexPosition(s.v);
+  Vec3d B = defoObj().getVertexPosition(defoObj().fromVertex(s.e));
+  Vec3d C = defoObj().getVertexPosition(defoObj().toVertex(s.e));
+  Scalar theta = rod().getEdgeTheta(s.e);
+  
+  Vec3d & ref1 = rod().getReferenceDirector1(s.e);
+  Vec3d & ref2 = rod().getReferenceDirector2(s.e);
+  
+  adreal<NumDof, 0, Scalar> e = adEnergy<0>(*this, A, B, C, theta, ref1, ref2, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
+  for (int i = 0; i < NumDof; i++)
+    for (int j = 0; j < NumDof; j++)
+    {
+      jacobian(i, j) = -e.hessian(i, j);
+    }
 }
 
 void RodTwistShellFaceCouplingForce::updateStiffness()
