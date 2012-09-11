@@ -524,12 +524,16 @@ void SurfTrack::trim_non_manifold( std::vector<size_t>& triangle_indices )
     {
         // check for edges incident on more than 2 triangles
         
-        for ( size_t i = 0; i < m_mesh.m_edge_to_triangle_map.size(); ++i )
+       // TODO: this test is no longer appropriate if we want to support multiple
+       // regions joined by non-manifold triple edges
+       // better to check for the kinds of degeneracies being removed in the code further down
+
+       /* for ( size_t i = 0; i < m_mesh.m_edge_to_triangle_map.size(); ++i )
         {
             if ( m_mesh.edge_is_deleted(i) ) { continue; }
             assert( m_mesh.m_edge_to_triangle_map[i].size() == 1 ||
                    m_mesh.m_edge_to_triangle_map[i].size() == 2 );
-        }
+        }*/
         
         triangle_indices.clear();
         return;

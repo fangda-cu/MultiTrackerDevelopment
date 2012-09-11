@@ -715,6 +715,29 @@ void ShellTest::AtEachTimestep()
       Vec3d pos = shellObj->getVertexPosition(VertexHandle(3));
       std::cout << "Vertex position: " << pos << std::endl;
     }
+
+     if(m_active_scene == 25) {
+       //For scene 25, the shrinking sheet under surface tension
+       //We look for a point in the middle of an edge, and want
+       //to see how fast it moves as it retracts. (Taylor Culick speed.)
+       VertexHandle nearest(-1);
+       Scalar dist = 100;
+       for(VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit) {
+         Vec3d position = shell->getVertexPosition(*vit);
+         if(fabs(position[0] - 0.5) < 0.02) {
+           if(position[2] < dist) {
+             dist = position[2];
+             nearest = *vit;
+           }
+         }
+       }
+       Vec3d pos = shell->getVertexPosition(nearest);
+       std::ofstream toDisk("taylorculick.txt", ios::app);
+       toDisk << shell->getVertexVelocity(nearest)[2] << std::endl;
+       toDisk.close();
+       std::cout << "Retraction speed: " << shell->getVertexVelocity(nearest) << std::endl;
+     }
+
 }
 
 //vertical flat sheet

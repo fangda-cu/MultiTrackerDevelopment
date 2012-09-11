@@ -246,33 +246,7 @@ void ShellRenderer::render()
     FaceProperty<Vec3d> faceNormals(&m_shell.getDefoObj());
     m_shell.getFaceNormals(faceNormals);
 
-    /*
-    //Find a particular vertex, and draw it BIG
-    //For scene 25, the shrinking sheet under surface tension
-    //We look for a point in the middle of an edge, and want
-    //to see how fast it moves as it retracts. (Taylor Culick speed.)
-    VertexHandle nearest(-1);
-    Scalar dist = 100;
-    for(VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit) {
-      Vec3d position = m_shell.getVertexPosition(*vit);
-      if(fabs(position[0] - 0.5) < 0.02) {
-        if(position[2] < dist) {
-          dist = position[2];
-          nearest = *vit;
-        }
-      }
-    }
-    Vec3d pos = m_shell.getVertexPosition(nearest);
-    glPointSize(10);
-    glBegin(GL_POINTS);
-    glVertex3f(pos[0], pos[1], pos[2]);
-    glEnd();
-    glPointSize(1);
-    std::ofstream toDisk("taylorculick.txt", ios::app);
-    toDisk << m_shell.getVertexVelocity(nearest)[2] << std::endl;
-    toDisk.close();
-    std::cout << "Speed: " << m_shell.getVertexVelocity(nearest) << std::endl;
-    */
+  
 
     // Render all edges
     glLineWidth(2);
@@ -334,6 +308,7 @@ void ShellRenderer::render()
     }
     glEnd();
 
+    
     // Render all faces
     glBegin(GL_TRIANGLES);
     for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
@@ -367,6 +342,7 @@ void ShellRenderer::render()
       
     }
     glEnd();
+    
     glColor3f(0.0, 0.0, 0.0);
     /*std::cout << "Calling curvature\n";
     MeshCurvature curvature(m_shell.getDefoObj(), m_shell.getVertexPositions());
@@ -386,6 +362,7 @@ void ShellRenderer::render()
       else {
         OpenGL::color(Color(0,255,0));
       }
+
       OpenGL::vertex(vertPos);
     }
     glEnd();
