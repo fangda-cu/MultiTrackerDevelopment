@@ -32,7 +32,6 @@ namespace BASim
     struct Stencil
     {
       Stencil() { }
-      Stencil(const Stencil & s) : e(s.e), v(s.v) { }
       
       IntArray dofindices;
 
