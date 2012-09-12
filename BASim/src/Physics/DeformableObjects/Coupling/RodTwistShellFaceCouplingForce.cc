@@ -179,7 +179,7 @@ void RodTwistShellFaceCouplingForce::localJacobian(ElementJacobian & jacobian, S
   Vec3d & ref1 = rod().getReferenceDirector1(s.e);
   Vec3d & ref2 = rod().getReferenceDirector2(s.e);
   
-  adreal<NumDof, 0, Scalar> e = adEnergy<0>(*this, A, B, C, theta, ref1, ref2, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, theta, ref1, ref2, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
   for (int i = 0; i < NumDof; i++)
     for (int j = 0; j < NumDof; j++)
     {
