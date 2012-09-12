@@ -80,6 +80,9 @@ protected:
   // scene 9:
   std::vector<FaceHandle> m_s9_ball_faces;
   
+  // scene 12:
+  std::vector<EdgeHandle> m_s12_rod_edges;
+  
 };
 
 

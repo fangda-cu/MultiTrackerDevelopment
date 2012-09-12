@@ -1,6 +1,7 @@
 
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
 #include "BASim/src/Physics/DeformableObjects/PositionDofsModel.hh"
+#include "BASim/src/Physics/DeformableObjects/DefoObjForce.hh"
 
 namespace BASim {
 
@@ -37,27 +38,44 @@ void DeformableObject::computeForces(VecXd& force) {
   
   std::vector<PhysicalModel*>::iterator model_it;
   VecXd curr_force(force.size());
-  for(model_it = m_models.begin(); model_it != m_models.end(); ++model_it) {
+  for(model_it = m_models.begin(); model_it != m_models.end(); ++model_it) 
+  {
     curr_force.setZero();
     (*model_it)->computeForces(curr_force);
     force += curr_force;
   }
 
+  for (size_t i = 0; i < m_miscForces.size(); i++)
+  {
+    curr_force.setZero();
+    m_miscForces[i]->globalForce(curr_force);
+    force += curr_force;
+  }
 }
 
 
 void DeformableObject::computeJacobian(Scalar scale, MatrixBase& J) {
 
   std::vector<PhysicalModel*>::iterator model_it;
-  for(model_it = m_models.begin(); model_it != m_models.end(); ++model_it) {
+  for(model_it = m_models.begin(); model_it != m_models.end(); ++model_it) 
+  {
     (*model_it)->computeJacobian(scale, J);
   }
 
+  for (size_t i = 0; i < m_miscForces.size(); i++)
+  {
+    m_miscForces[i]->globalJacobian(scale, J);
+  }
 }
 
 void DeformableObject::addModel( PhysicalModel* model )
 {
   m_models.push_back(model);
+}
+
+void DeformableObject::addForce(DefoObjForce * force)
+{
+  m_miscForces.push_back(force);
 }
 
 const Scalar& DeformableObject::getDof(int i) const {

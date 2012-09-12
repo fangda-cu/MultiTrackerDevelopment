@@ -12,6 +12,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/DSBendingForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/MNBendingForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellGravityForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Coupling/RodTwistShellFaceCouplingForce.hh"
 #include "BASim/src/Render/ShellRenderer.hh"
 #include "BASim/src/Render/RodModelRenderer.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
@@ -165,6 +166,10 @@ RodShellTest::RodShellTest() :
   AddOption("shell-MN-bending", "whether to apply Mid-edge Normal based bending (Morley elt)", false);
   AddOption("shell-stretching-factor", "extra scale factor to multiply stretching coefficient by", 1.0);
   AddOption("shell-bending-factor", "extra scale factor to multiple bending coefficient by", 1.0);
+  
+  //Coupleing forces
+  AddOption("rod-twist-shell-face-coupling-stiffness", "rod twist-shell face coupling force stiffness", 1.0);
+  AddOption("rod-twist-shell-face-coupling-stiffness-damping", "rod twist-shell face coupling force viscous stiffness", 1.0);
   
   //Collision options
   AddOption("shell-self-collision", "whether to add self-collision springs", false);
@@ -524,6 +529,39 @@ void RodShellTest::AtEachTimestep()
       {
         shell->setThickness(m_s9_ball_faces[i], thickness);
       }
+    }
+  } else if (m_active_scene == 12)
+  {
+    static bool init = true;
+    if (init)
+    {
+      init = false;
+      std::vector<RodTwistShellFaceCouplingForce::Stencil> stencils;
+      for (size_t i = 0; i < m_s12_rod_edges.size(); i++)
+      {
+        RodTwistShellFaceCouplingForce::Stencil s;
+        s.e = m_s12_rod_edges[i];
+        VertexHandle ev1 = obj->fromVertex(s.e);
+        VertexHandle ev2 = obj->toVertex(s.e);
+        EdgeFaceIterator efit = obj->ef_iter(s.e);
+        FaceHandle f = *efit; ++efit; assert(!efit);
+        FaceVertexIterator fvit = obj->fv_iter(f);
+        VertexHandle v1 = *fvit; ++fvit; assert(fvit);
+        VertexHandle v2 = *fvit; ++fvit; assert(fvit);
+        VertexHandle v3 = *fvit; ++fvit; assert(!fvit);
+        s.v = (ev1 == v1 ? (ev2 == v2 ? v3 : v2) : (ev1 == v2 ? (ev2 == v3 ? v1 : v3) : (ev2 == v1 ? v2 : v1)));
+        stencils.push_back(s);
+      }
+      
+//      for (size_t i = 0; i < m_s12_rod_edges.size(); i++)
+//      {
+//        RodTwistShellFaceCouplingForce::Stencil s = stencils[i];
+//        std::cout << "Stencil: " << obj->getVertexPosition(obj->fromVertex(s.e)) << "; " << obj->getVertexPosition(obj->toVertex(s.e)) << " => " << obj->getVertexPosition(s.v) << std::endl;
+//      }
+      
+      Scalar stiffness =          GetScalarOpt("rod-twist-shell-face-coupling-stiffness");
+      Scalar stiffness_damping =  GetScalarOpt("rod-twist-shell-face-coupling-stiffness-damping");
+      obj->addForce(new RodTwistShellFaceCouplingForce(*rod, *shell, stencils, stiffness, stiffness_damping, m_timestep));
     }
   }
 
@@ -2221,24 +2259,25 @@ void RodShellTest::setupScene12()
   //Find highest vertex
   VertexIterator vit = obj->vertices_begin();
   Scalar highest = -10000;
+  Scalar leftmost = 10000;
   for(;vit!= obj->vertices_end(); ++vit) {
     Vec3d pos = shell->getVertexPosition(*vit);
-    if(pos[1] >= highest) {
+    if(pos[1] >= highest)
       highest = pos[1];
-    }
+    if(pos[0] <= leftmost)
+      leftmost = pos[0];
   }
   
-  //Pin all verts at or near that height
-  for(vit = obj->vertices_begin();vit!= obj->vertices_end(); ++vit) {
-    Vec3d pos = shell->getVertexPosition(*vit);
-    if(pos[1] >= highest - 1e-4)
-      obj->constrainVertex(*vit, pos);
-  }
+  //Pin all verts at or near that height, on the left
+//  for(vit = obj->vertices_begin();vit!= obj->vertices_end(); ++vit) {
+//    Vec3d pos = shell->getVertexPosition(*vit);
+//    if(pos[1] >= highest - 1e-4)
+//      obj->constrainVertex(*vit, pos);
+//  }
   
-  // find vertical edges in the center
+  // find top edges
   std::vector<EdgeHandle> rodEdges;
-  EdgeHandle highestedge;
-  Scalar bw = 0.001;
+  EdgeHandle leftmostedge;
   for (EdgeIterator eit = obj->edges_begin(); eit != obj->edges_end(); ++eit)
   {
     EdgeVertexIterator evit = obj->ev_iter(*eit);
@@ -2247,18 +2286,21 @@ void RodShellTest::setupScene12()
     Vec3d pos1 = obj->getVertexPosition(v1);
     Vec3d pos2 = obj->getVertexPosition(v2);
     
-    if (pos1[0] >= width * (0.5 - bw) && pos1[0] <= width * (0.5 + bw) && pos2[0] >= width * (0.5 - bw) && pos2[0] <= width * (0.5 + bw))
+    if (pos2[1] >= highest - 1e-4 && pos1[1] >= highest - 1e-4)
     {
       rodEdges.push_back(*eit);
-      if (pos1[1] >= highest - 1e-4 || pos2[1] >= highest - 1e-4)
-      {
-        highestedge = *eit;
-      }
+      if (pos1[0] <= leftmost + 1e-4 || pos2[0] <= leftmost + 1e-4)
+        leftmostedge = *eit;
     }
-    
   }
   
   std::cout << "rod edge count = " << rodEdges.size() << std::endl;
+  
+  if (leftmostedge.isValid())
+  {
+    obj->constrainVertex(obj->fromVertex(leftmostedge), obj->getVertexPosition(obj->fromVertex(leftmostedge)));
+    obj->constrainVertex(obj->toVertex(leftmostedge),   obj->getVertexPosition(obj->toVertex(leftmostedge)));
+  }
   
   // create a rod model
   rod = new ElasticRodModel(obj, rodEdges, m_timestep);
@@ -2271,12 +2313,12 @@ void RodShellTest::setupScene12()
   rod->setEdgeThetaVelocities(zeros);
   rod->setEdgeUndeformedThetas(zeros);
   
-  if (highestedge.isValid())
+  if (leftmostedge.isValid())
   {
-    std::cout << highestedge.idx() << std::endl;
-    rod->constrainEdgeVel(highestedge, 0, 0.1, 0);
-    //    rod->constrainEdge(highestedge, 0);
+    std::cout << leftmostedge.idx() << std::endl;
+    rod->constrainEdgeVel(leftmostedge, 0, 0.1, 0);
   }
   
+  m_s12_rod_edges = rodEdges;
 }
 
