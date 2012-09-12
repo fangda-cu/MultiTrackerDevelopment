@@ -20,6 +20,7 @@ RodTwistShellFaceCouplingForce::RodTwistShellFaceCouplingForce(ElasticRodModel &
     s.undeformed_delta = 0;
     s.damping_undeformed_delta = 0;
     
+    s.dofindices.resize(NumDof);
     int dofbase = defoObj().getPositionDofBase(s.v);
     s.dofindices[0] = dofbase;
     s.dofindices[1] = dofbase + 1;

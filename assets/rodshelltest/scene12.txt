@@ -61,6 +61,6 @@ atol 1e-08	# absolute convergence tolerance
 inftol 1e-08	# infinity norm convergence tolerance
 rtol 1e-08	# relative convergence tolerance
 stol 1e-08	# convergence tolerance in terms of the norm of the change in the solution between steps
-integrator implicit	# type of integrator to use for the shell
+integrator symplectic	# type of integrator to use for the shell
 iterations 100	# maximum number of iterations for the implicit method
 
