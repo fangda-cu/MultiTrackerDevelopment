@@ -204,7 +204,7 @@ void RodTwistShellFaceCouplingForce::updateViscousReferenceStrain()
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
-    Scalar delta;/////////
+    Scalar delta = 0;/////////
     s.damping_undeformed_delta = delta;
   }
 }
@@ -219,7 +219,14 @@ void RodTwistShellFaceCouplingForce::computeReferenceStrain()
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
-    Scalar delta;//////////
+    
+    Vec3d A = defoObj().getVertexPosition(s.v);
+    Vec3d B = defoObj().getVertexPosition(defoObj().fromVertex(s.e));
+    Vec3d C = defoObj().getVertexPosition(defoObj().fromVertex(s.e));
+    Vec3d ref1 = rod().getReferenceDirector1(s.e);
+    Vec3d ref2 = rod().getReferenceDirector2(s.e);
+    Scalar theta = rod().getEdgeTheta(s.e);
+    Scalar delta = theta - atan2((A - B).dot(ref2), (A - B).dot(ref1));
     s.undeformed_delta = delta;
   }
 }

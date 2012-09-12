@@ -29,8 +29,8 @@ shell-CST-stretching true	# whether to apply constant-strain-triangle in-plane s
 shell-DS-bending true	# whether to apply "Discrete Shells" hinge-based bending
 shell-MN-bending false	# whether to apply Mid-edge Normal based bending (Morley elt)
 
-rod-twist-shell-face-coupling-stiffness 1 # rod twist-shell face coupling force stiffness
-rod-twist-shell-face-coupling-stiffness-damping 1 # rod twist-shell face coupling force viscous stiffness
+rod-twist-shell-face-coupling-stiffness 0 # rod twist-shell face coupling force stiffness
+rod-twist-shell-face-coupling-stiffness-damping 0 # rod twist-shell face coupling force viscous stiffness
 
 shell-bath-density 1	# the density of water fluid bath for sheared wrinkling test
 shell-bending-factor 1	# extra scale factor to multiple bending coefficient by
@@ -61,6 +61,6 @@ atol 1e-08	# absolute convergence tolerance
 inftol 1e-08	# infinity norm convergence tolerance
 rtol 1e-08	# relative convergence tolerance
 stol 1e-08	# convergence tolerance in terms of the norm of the change in the solution between steps
-integrator symplectic	# type of integrator to use for the shell
+integrator implicit	# type of integrator to use for the shell
 iterations 100	# maximum number of iterations for the implicit method
 
