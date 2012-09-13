@@ -96,10 +96,10 @@ RodTwistShellFaceCouplingForce::adEnergy(const RodTwistShellFaceCouplingForce & 
 
 //  e = stiffness * ((delta - undeformed_delta) * (delta - undeformed_delta));
   
-  adrealElast oldvec_x = cos(delta + theta);    // direction of the old delta, in ref frame
-  adrealElast oldvec_y = sin(delta + theta);
-  adrealElast newvec_x = dot(vA - vB, vRef1);   // projection of A-B into the frame plane, in ref frame
-  adrealElast newvec_y = dot(vA - vB, vRef2);
+  adrealElast oldvec_x = cos(delta + t);    // direction of the old delta, in ref frame
+  adrealElast oldvec_y = sin(delta + t);
+  adrealElast newvec_x = dot(p[0] - p[1], vRef1);   // projection of A-B into the frame plane, in ref frame
+  adrealElast newvec_y = dot(p[0] - p[1], vRef2);
   adrealElast newdelta = delta + atan2(oldvec_x * newvec_y - oldvec_y * newvec_x, oldvec_x * newvec_x + oldvec_y * newvec_y);
   
   e = stiffness * ((newdelta - undeformed_delta) * (newdelta - undeformed_delta));
