@@ -12,8 +12,8 @@ rod-Youngs-damping 0	# the damping coefficient associated with the rod's Young's
 rod-Shear 50	# the shear modulus of the rod material
 rod-Shear-damping 0	# the damping coefficient associated to the rod's shear modulus
 
-shell-x-resolution 4	# the number of segments along first dimension
-shell-y-resolution 4	# the number of segments along second dimension
+shell-x-resolution 2	# the number of segments along first dimension
+shell-y-resolution 2	# the number of segments along second dimension
 
 shell-width 1	# the horizontal side length of the shell
 shell-height 1	# the vertical side length of the shell
@@ -29,7 +29,7 @@ shell-CST-stretching true	# whether to apply constant-strain-triangle in-plane s
 shell-DS-bending true	# whether to apply "Discrete Shells" hinge-based bending
 shell-MN-bending false	# whether to apply Mid-edge Normal based bending (Morley elt)
 
-rod-twist-shell-face-coupling-stiffness 0 # rod twist-shell face coupling force stiffness
+rod-twist-shell-face-coupling-stiffness 1 # rod twist-shell face coupling force stiffness
 rod-twist-shell-face-coupling-stiffness-damping 0 # rod twist-shell face coupling force viscous stiffness
 
 shell-bath-density 1	# the density of water fluid bath for sheared wrinkling test
