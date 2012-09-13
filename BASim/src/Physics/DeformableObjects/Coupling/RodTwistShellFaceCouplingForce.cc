@@ -222,9 +222,9 @@ void RodTwistShellFaceCouplingForce::updateProperties()
     Vec3d md1 = rod().getMaterialDirector1(s.e);
     Vec3d md2 = rod().getMaterialDirector2(s.e);
     Vec3d t = rod().getEdgeTangent(s.e);
-    Vec3d oldvec = md1 * cos(s.delta) + md2 * sin(s.delta); // direction of the old delta
-    Vec3d newvec = (A - B).dot(md1) * md1 + (A - B).dot(md2) * md2; // projection of A-B into the frame plane
-    s.delta += signedAngle(oldvec, newvec, t);
+    Vec2d oldvec = Vec2d(cos(s.delta), sin(s.delta)); // direction of the old delta, in mat frame
+    Vec2d newvec = Vec2d((A - B).dot(md1), (A - B).dot(md2)); // projection of A-B into the frame plane, in mat frame
+    s.delta += atan2((oldvec.x() * newvec.y() - oldvec.y() * newvec.x()), oldvec.dot(newvec));
   }
 }
 
