@@ -47,7 +47,8 @@ namespace BASim
       Scalar undeformed_delta;
       Scalar damping_undeformed_delta;
       
-      // cached properties (none)
+      // cached properties
+      Scalar delta;
     };
 
   public:

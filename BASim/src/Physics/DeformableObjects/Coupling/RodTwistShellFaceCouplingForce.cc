@@ -37,6 +37,8 @@ RodTwistShellFaceCouplingForce::RodTwistShellFaceCouplingForce(ElasticRodModel &
     dofbase = rod.getEdgeDofBase(s.e);
     s.dofindices[9] = dofbase;
     
+    s.delta = 0;  // will be computed by updateProperties() below
+    
     m_stencils.push_back(s);
   }
 
@@ -204,17 +206,11 @@ void RodTwistShellFaceCouplingForce::updateViscousReferenceStrain()
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
-    Scalar delta = 0;/////////
-    s.damping_undeformed_delta = delta;
+    s.damping_undeformed_delta = s.delta;
   }
 }
 
 void RodTwistShellFaceCouplingForce::updateProperties()
-{
-  
-}
-
-void RodTwistShellFaceCouplingForce::computeReferenceStrain()
 {
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
@@ -226,8 +222,16 @@ void RodTwistShellFaceCouplingForce::computeReferenceStrain()
     Vec3d ref1 = rod().getReferenceDirector1(s.e);
     Vec3d ref2 = rod().getReferenceDirector2(s.e);
     Scalar theta = rod().getEdgeTheta(s.e);
-    Scalar delta = theta - atan2((A - B).dot(ref2), (A - B).dot(ref1));
-    s.undeformed_delta = delta;
+    s.delta = theta - atan2((A - B).dot(ref2), (A - B).dot(ref1));
+  }
+}
+
+void RodTwistShellFaceCouplingForce::computeReferenceStrain()
+{
+  for (size_t i = 0; i < m_stencils.size(); i++)
+  {
+    Stencil & s = m_stencils[i];
+    s.undeformed_delta = s.delta;
   }
 }
 
