@@ -64,7 +64,7 @@ RodTwistShellFaceCouplingForce::Vector3d RodTwistShellFaceCouplingForce::vec2vec
 
 template <int DO_HESS>
 adreal<RodTwistShellFaceCouplingForce::NumDof, DO_HESS, Scalar> 
-RodTwistShellFaceCouplingForce::adEnergy(const RodTwistShellFaceCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, Scalar theta, const Vec3d & ref1, const Vec3d & ref2, Scalar undeformed_delta, Scalar stiffness) 
+RodTwistShellFaceCouplingForce::adEnergy(const RodTwistShellFaceCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, Scalar theta, Scalar delta, const Vec3d & ref1, const Vec3d & ref2, Scalar undeformed_delta, Scalar stiffness) 
 {  
   // typedefs to simplify code below
   typedef adreal<RodTwistShellFaceCouplingForce::NumDof, DO_HESS, Scalar> adrealElast;
@@ -88,10 +88,20 @@ RodTwistShellFaceCouplingForce::adEnergy(const RodTwistShellFaceCouplingForce & 
   adrealElast e(0);
   
   adrealElast theta_deformed = atan2(dot(p[0] - p[1], vRef2), dot(p[0] - p[1], vRef1));
-  adrealElast delta = t - theta_deformed;
+//  adrealElast delta = theta_deformed - t;
   
-  e = stiffness * ((delta - undeformed_delta) * (delta - undeformed_delta));
+//  Vec2d oldvec = Vec2d(cos(delta + t), sin(delta + t)); // direction of the old delta, in mat frame
+//  Vec2d newvec = Vec2d((A - B).dot(md1), (A - B).dot(md2)); // projection of A-B into the frame plane, in mat frame
+//  delta += atan2((oldvec.x() * newvec.y() - oldvec.y() * newvec.x()), oldvec.dot(newvec));
+
+//  e = stiffness * ((delta - undeformed_delta) * (delta - undeformed_delta));
   
+  advecElast oldvec = advecElast(cos(delta + theta), sin(delta + theta), 0.0);    // direction of the old delta, in ref frame
+  advecElast newvec = advecElast(dot(vA - vB, vRef1), dot(vA - vB, vRef2), 0.0);  // projection of A-B into the frame plane, in ref frame
+  adrealElast newdelta = delta + atan2(oldvec.x() * newvec.y() - oldvec.y() * newvec.x(), oldvec.x() * newvec.x() + oldvec.y() * newvec.y());
+  
+  e = stiffness * ((newdelta - undeformed_delta) * (newdelta - undeformed_delta));
+
   return e;
 }
 
@@ -144,11 +154,12 @@ Scalar RodTwistShellFaceCouplingForce::localEnergy(Stencil & s, bool viscous)
   Vec3d B = defoObj().getVertexPosition(defoObj().fromVertex(s.e));
   Vec3d C = defoObj().getVertexPosition(defoObj().toVertex(s.e));
   Scalar theta = rod().getEdgeTheta(s.e);
+  Scalar delta = s.delta;
   
   Vec3d & ref1 = rod().getReferenceDirector1(s.e);
   Vec3d & ref2 = rod().getReferenceDirector2(s.e);
   
-  adreal<NumDof, 0, Scalar> e = adEnergy<0>(*this, A, B, C, theta, ref1, ref2, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 0, Scalar> e = adEnergy<0>(*this, A, B, C, theta, delta, ref1, ref2, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
   Scalar energy = e.value();
 
   return energy;
@@ -160,11 +171,12 @@ void RodTwistShellFaceCouplingForce::localForce(ElementForce & force, Stencil & 
   Vec3d B = defoObj().getVertexPosition(defoObj().fromVertex(s.e));
   Vec3d C = defoObj().getVertexPosition(defoObj().toVertex(s.e));
   Scalar theta = rod().getEdgeTheta(s.e);
+  Scalar delta = s.delta;
   
   Vec3d & ref1 = rod().getReferenceDirector1(s.e);
   Vec3d & ref2 = rod().getReferenceDirector2(s.e);
   
-  adreal<NumDof, 0, Scalar> e = adEnergy<0>(*this, A, B, C, theta, ref1, ref2, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 0, Scalar> e = adEnergy<0>(*this, A, B, C, theta, delta, ref1, ref2, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
   for (int i = 0; i < NumDof; i++)
   {
     force[i] = -e.gradient(i);
@@ -177,11 +189,12 @@ void RodTwistShellFaceCouplingForce::localJacobian(ElementJacobian & jacobian, S
   Vec3d B = defoObj().getVertexPosition(defoObj().fromVertex(s.e));
   Vec3d C = defoObj().getVertexPosition(defoObj().toVertex(s.e));
   Scalar theta = rod().getEdgeTheta(s.e);
+  Scalar delta = s.delta;
   
   Vec3d & ref1 = rod().getReferenceDirector1(s.e);
   Vec3d & ref2 = rod().getReferenceDirector2(s.e);
   
-  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, theta, ref1, ref2, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, theta, delta, ref1, ref2, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
   for (int i = 0; i < NumDof; i++)
     for (int j = 0; j < NumDof; j++)
     {
@@ -221,7 +234,6 @@ void RodTwistShellFaceCouplingForce::updateProperties()
     Vec3d C = defoObj().getVertexPosition(defoObj().fromVertex(s.e));
     Vec3d md1 = rod().getMaterialDirector1(s.e);
     Vec3d md2 = rod().getMaterialDirector2(s.e);
-    Vec3d t = rod().getEdgeTangent(s.e);
     Vec2d oldvec = Vec2d(cos(s.delta), sin(s.delta)); // direction of the old delta, in mat frame
     Vec2d newvec = Vec2d((A - B).dot(md1), (A - B).dot(md2)); // projection of A-B into the frame plane, in mat frame
     s.delta += atan2((oldvec.x() * newvec.y() - oldvec.y() * newvec.x()), oldvec.dot(newvec));

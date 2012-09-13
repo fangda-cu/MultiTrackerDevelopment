@@ -79,7 +79,7 @@ namespace BASim
   protected:
     template <int DO_HESS>
 //    adreal<NumDof, DO_HESS, Scalar> adEnergy(const RodTwistShellFaceCouplingForce & mn, const std::vector<Scalar> & deformed, const std::vector<Scalar> & undeformed, Scalar stiffness);
-    adreal<NumDof, DO_HESS, Scalar> adEnergy(const RodTwistShellFaceCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, Scalar theta, const Vec3d & ref1, const Vec3d & ref2, Scalar undeformed_delta, Scalar stiffness);
+    adreal<NumDof, DO_HESS, Scalar> adEnergy(const RodTwistShellFaceCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, Scalar theta, Scalar delta, const Vec3d & ref1, const Vec3d & ref2, Scalar undeformed_delta, Scalar stiffness);
 
   protected:
     Scalar localEnergy(Stencil & s, bool viscous);
