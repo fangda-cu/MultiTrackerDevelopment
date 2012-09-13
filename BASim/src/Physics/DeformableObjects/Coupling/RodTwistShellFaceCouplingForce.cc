@@ -219,10 +219,10 @@ void RodTwistShellFaceCouplingForce::updateProperties()
     Vec3d A = defoObj().getVertexPosition(s.v);
     Vec3d B = defoObj().getVertexPosition(defoObj().fromVertex(s.e));
     Vec3d C = defoObj().getVertexPosition(defoObj().fromVertex(s.e));
-    Vec3d ref1 = rod().getReferenceDirector1(s.e);
-    Vec3d ref2 = rod().getReferenceDirector2(s.e);
-    Scalar theta = rod().getEdgeTheta(s.e);
-    s.delta = theta - atan2((A - B).dot(ref2), (A - B).dot(ref1));
+    Vec3d md1 = rod().getMaterialDirector1(s.e);
+    Vec3d md2 = rod().getMaterialDirector2(s.e);
+    Vec3d t = rod().getEdgeTangent(s.e);
+    s.delta = atan2((A - B).dot(md2), (A - B).dot(md1));
   }
 }
 
