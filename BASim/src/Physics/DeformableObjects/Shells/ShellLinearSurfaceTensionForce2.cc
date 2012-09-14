@@ -153,17 +153,17 @@ adreal<NumLST2Dof,DO_HESS,Real> LST2Energy(const ShellLinearSurfaceTensionForce2
     adrealST volAccum(0);
     adrealST areaAccum(0);
     
-    if(isBoundaryVertex[vertexNumber] > 0) {
+    //if(isBoundaryVertex[vertexNumber] > 0) {
       for(int faceNumber = 0; faceNumber < incidentFacesPerMainVertex[vertexNumber]; ++faceNumber) {
         int curFace = startInd + faceNumber;
         areaAccum += faceAreas[curFace];
         volAccum += volumes[curFace];
       }
       thicknesses[vertexNumber] = volAccum / areaAccum;
-    }
+   /* }
     else {
       thicknesses[vertexNumber] = 0;
-    }
+    }*/
     startInd += incidentFacesPerMainVertex[vertexNumber];
   }
 
@@ -204,7 +204,7 @@ adreal<NumLST2Dof,DO_HESS,Real> LST2Energy(const ShellLinearSurfaceTensionForce2
 
   
   //boundary edge terms, if we want to use them
-  /*if(isBoundaryVertex[0] && isBoundaryVertex[1]) {
+  if(isBoundaryVertex[0] && isBoundaryVertex[1]) {
   e += surf_coeff * 0.5*(thicknesses[0]+thicknesses[1]) * len(p[0] - p[1]);
   }
   if(isBoundaryVertex[2] && isBoundaryVertex[1]) {
@@ -212,7 +212,7 @@ adreal<NumLST2Dof,DO_HESS,Real> LST2Energy(const ShellLinearSurfaceTensionForce2
   }
   if(isBoundaryVertex[2] && isBoundaryVertex[0]) {
   e += surf_coeff * 0.5*(thicknesses[0]+thicknesses[2]) * len(p[2] - p[0]);
-  }*/
+  }
   
 
   return e;

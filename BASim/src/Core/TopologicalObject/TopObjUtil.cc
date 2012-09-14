@@ -327,7 +327,8 @@ VertexHandle splitEdge(TopologicalObject& obj, const EdgeHandle& splitEdge, std:
 }
 
 
-EdgeHandle flipEdge(TopologicalObject& obj, const EdgeHandle& eh, const FaceHandle& fh, const FaceHandle& fh2) {
+EdgeHandle flipEdge(TopologicalObject& obj, const EdgeHandle& eh, const FaceHandle& fh, const FaceHandle& fh2,
+  FaceHandle& fNew1, FaceHandle& fNew2) {
   assert(obj.edgeExists(eh));
 
   VertexHandle from_vh, to_vh;
@@ -398,8 +399,8 @@ EdgeHandle flipEdge(TopologicalObject& obj, const EdgeHandle& eh, const FaceHand
     std::swap(e2,e3);
 
   //add in the new faces
-  obj.addFace(e1, e2, flippedEdge);
-  obj.addFace(e3, e0, flippedEdge);
+  fNew1 = obj.addFace(e1, e2, flippedEdge);
+  fNew2 = obj.addFace(e3, e0, flippedEdge);
 
   //Delete the old patch
   bool success = obj.deleteFace(fh, false);

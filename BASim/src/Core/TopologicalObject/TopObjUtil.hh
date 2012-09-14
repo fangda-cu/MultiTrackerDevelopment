@@ -27,7 +27,9 @@ VertexHandle splitEdge(TopologicalObject& obj, const EdgeHandle& h, std::vector<
 
 //Takes an edge with two adjacent faces comprising a quad, and replaces the edge with the other diagonal of the quad.
 //Handle non-manifold scenarios.
-EdgeHandle flipEdge(TopologicalObject& obj, const EdgeHandle& eh, const FaceHandle& f1, const FaceHandle& f2);
+EdgeHandle flipEdge(TopologicalObject& obj, const EdgeHandle& eh, 
+                    const FaceHandle& f1, const FaceHandle& f2, 
+                    FaceHandle& f1New, FaceHandle& f2New);
 
 bool getEdgeOppositeVertices(const TopologicalObject& obj, const EdgeHandle& eh, VertexHandle& v0, VertexHandle& v1);
 

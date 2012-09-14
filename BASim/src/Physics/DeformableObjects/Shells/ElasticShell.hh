@@ -187,7 +187,7 @@ protected:
   bool performFlip(const EdgeHandle& eh, const FaceHandle f0, const FaceHandle& f1, EdgeHandle& newEdge);
 
   void addSelfCollisionForces();
-
+  
   //Various shell data
   EdgeProperty<Scalar> m_undef_xi;
 

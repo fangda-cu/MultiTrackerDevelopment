@@ -1246,7 +1246,7 @@ void ElasticShell::remesh()
       FaceHandle f0 = reverse_trimap[event.m_deleted_tris[0]];
       FaceHandle f1 = reverse_trimap[event.m_deleted_tris[1]];
       EdgeHandle newEdge;
-      performFlip(eh, f0, f1, newEdge);
+      performFlip2(eh, f0, f1, newEdge);
       
       // Update faces
       for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
@@ -1438,37 +1438,116 @@ void ElasticShell::performCollapse(const EdgeHandle& eh, const VertexHandle& ver
 
 
 bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const FaceHandle& f1, EdgeHandle& newEdge) {
-      
-    //determine volume of the region being flipped
+
+  
+  VertexHandle v0 = m_obj->fromVertex(eh),
+               v1 = m_obj->toVertex(eh);
+  
+  VertexHandle v2, v3;
+  getFaceThirdVertex(*m_obj, f0, eh, v2);
+  getFaceThirdVertex(*m_obj, f1, eh, v3);
+
+  Vec3d x0 = getVertexPosition(v0),
+        x1 = getVertexPosition(v1),
+        x2 = getVertexPosition(v2),
+        x3 = getVertexPosition(v3);
+
+
+  Scalar edgeLen = (x0-x1).norm();
+
+  //Get the perpendicular heights of the two triangles.
+  Scalar height0 = getArea(f0) / edgeLen, 
+         height1 = getArea(f1) / edgeLen;
+  
+  //Find the perpendicular closest point of each opposite vertex to the edge being flipped.
+  Scalar s0 = (x1 - x0).dot(x2 - x0) / edgeLen;
+  Scalar s1 = (x1 - x0).dot(x3 - x0) / edgeLen;
+  
+  //areas of the resulting triangles.
+  Scalar areaNew0 = 0.5*(x2-x3).cross(x0-x3).norm();
+  Scalar areaNew1 = 0.5*(x2-x3).cross(x1-x3).norm();
+
+  Scalar thickNew0, thickNew1;
+  Scalar volNew0, volNew1;
+
+  if(s0 > 0 && s0 < 1 && s1 > 0 && s1 < 1) {
+    //Do split-based volume redistribution
+    //The idea is to find the split-point assuming it is on the straight geodesic line
+    //on the existing triangles between the two opposing vertices.
+    //This split point is used to conceptually subdivide the tris, and redistribute
+    //the volume to the new triangles. The goal is to more closely approximate the original
+    //thicknesses in the new geometry.
+
+    //Construct the closest points.
+    Vec3d cp0 = (1 - s0) * x0 + s0 * x1;
+    Vec3d cp1 = (1 - s1) * x0 + s1 * x1;
+
+    //By considering the similar triangles constructed from the triangle heights, we know
+    //where the hypothetical split point should be.
+    Scalar lerpFrac = height0 / (height0 + height1);
+    Vec3d splitPoint = (1 - lerpFrac) * cp0 +  lerpFrac * cp1;
+
+    //Compute 4 sub-areas based on the split point
+    Scalar area0 = 0.5*(x2 - x0).cross(splitPoint-x0).norm();
+    Scalar area1 = 0.5*(x2 - x1).cross(splitPoint-x1).norm();
+
+    Scalar area2 = 0.5*(x3 - x0).cross(splitPoint-x0).norm();
+    Scalar area3 = 0.5*(x3 - x1).cross(splitPoint-x1).norm();
+
+    //determine the volumes of each sub-area
+    Scalar vFrac0 = area0 / (area0+area1);
+    Scalar vol0 = vFrac0 * m_volumes[f0];
+    Scalar vol1 = (1-vFrac0) * m_volumes[f0];
+
+    Scalar vFrac1 = area2 / (area2+area3);
+    Scalar vol2 = vFrac1 * m_volumes[f1];
+    Scalar vol3 = (1-vFrac1) * m_volumes[f1];
+
+    //redistribute those volumes to the resulting triangles
+    volNew0 = vol0 + vol2;
+    volNew1 = vol1 + vol3;
+    
+    //now recover the thicknesses of those two triangles from their areas
+    thickNew0 = volNew0 / areaNew0; //associated to the "from" vertex, v0
+    thickNew1 = volNew1 / areaNew1; //associated to the "to" vertex, v1
+  }
+  else {
+    //do simpler, smeared averaging redistribution (splitting-based version doesn't make sense for certain geometries)
     Scalar totalVolume = m_volumes[f0] + m_volumes[f1];
-    
-    Vec2i oldLabels = m_face_regions[f0]; //assume f0 and f1 have the same labels, because if not this flip is nonsense
+    thickNew0 = thickNew1 = totalVolume / (areaNew0 + areaNew1);
+    volNew0 = thickNew0 * areaNew0;
+    volNew1 = thickNew1 * areaNew1;
+  }
 
-    newEdge = flipEdge2(*m_obj, eh, f0, f1);
-    if(!newEdge.isValid()) {//couldn't flip the edge, such an edge already existed
-      std::cout << "Edge flip failed for some reason...\n";
-      return false;
-    }
+  Vec2i oldLabels = m_face_regions[f0]; //assume f0 and f1 have the same labels, because if not this flip is nonsense anyway
+  assert(oldLabels == m_face_regions[f1]);
 
-    FaceHandle f0new, f1new;
-    getEdgeFacePair(*m_obj, newEdge, f0new, f1new);
-    setFaceActive(f0new);
-    setFaceActive(f1new);
+  FaceHandle f0new, f1new;
+  newEdge = flipEdge(*m_obj, eh, f0, f1, f0new, f1new);
+  if(!newEdge.isValid()) {
+    std::cout << "Edge flip failed for some reason...\n";
+    return false;
+  }
+  
+  setFaceActive(f0new);
+  setFaceActive(f1new);
 
-    //assign new thicknesses
-    Scalar f0newArea = getArea(f0new, true);
-    Scalar f1newArea = getArea(f1new, true);
-    Scalar newThickness = totalVolume / (f0newArea + f1newArea);
-    m_thicknesses[f0new] = newThickness;
-    m_thicknesses[f1new] = newThickness;
-    m_volumes[f0new] = f0newArea*newThickness;
-    m_volumes[f1new] = f1newArea*newThickness;
-    
-    //keep previous labels
-    m_face_regions[f0new] = oldLabels;
-    m_face_regions[f1new] = oldLabels;
-    
-    return true;
+  //make sure we are assigning thicknesses to the correct fact
+  VertexHandle testVert;
+  getFaceThirdVertex(*m_obj, f0new, newEdge, testVert);
+  if(testVert != v0)
+    swap(f0new, f1new);
+
+  m_thicknesses[f0new] = thickNew0;
+  m_thicknesses[f1new] = thickNew1;
+  m_volumes[f0new] = volNew0;
+  m_volumes[f1new] = volNew1;
+
+  //keep previous region labels
+  m_face_regions[f0new] = oldLabels;
+  m_face_regions[f1new] = oldLabels;
+
+  return true;
 }
 
 
