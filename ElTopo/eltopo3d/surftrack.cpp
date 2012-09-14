@@ -633,6 +633,11 @@ void SurfTrack::trim_non_manifold( std::vector<size_t>& triangle_indices )
                     
                     remove_triangle( other_triangle_index );
                     
+                    MeshUpdateEvent flap_delete(MeshUpdateEvent::FLAP_DELETE);
+                    flap_delete.m_deleted_tris.push_back(i);
+                    flap_delete.m_deleted_tris.push_back(other_triangle_index);
+                    m_mesh_change_history.push_back(flap_delete);
+
                     flap_found = true;
                     break;
                 }

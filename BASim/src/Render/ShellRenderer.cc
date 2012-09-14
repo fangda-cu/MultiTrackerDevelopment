@@ -356,7 +356,8 @@ void ShellRenderer::render()
     
     for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) {
       Vec3d vertPos = m_shell.getVertexPosition(*vit); 
-      if(!m_shell.getDefoObj().isConstrained(*vit)) {
+      VertexHandle vh = *vit;
+      if(!m_shell.getDefoObj().isConstrained(vh)) {
         OpenGL::color(Color(0,0,0));
       }
       else {

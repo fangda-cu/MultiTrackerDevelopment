@@ -1026,6 +1026,7 @@ void ElasticShell::remesh()
   //Set up a SurfTrack, run remeshing, render the new mesh
   ElTopo::SurfTrackInitializationParameters construction_parameters;
   construction_parameters.m_proximity_epsilon = m_collision_epsilon;
+  construction_parameters.m_merge_proximity_epsilon = 0.01;
   construction_parameters.m_allow_vertex_movement = false;
   construction_parameters.m_min_edge_length = m_remesh_edge_min_len;
   construction_parameters.m_max_edge_length = m_remesh_edge_max_len;
@@ -1033,14 +1034,15 @@ void ElasticShell::remesh()
   construction_parameters.m_min_triangle_angle = 15;
   construction_parameters.m_max_triangle_angle = 165;
   construction_parameters.m_verbose = false;
-  construction_parameters.m_allow_non_manifold = false;
+  construction_parameters.m_allow_non_manifold = true;
+  construction_parameters.m_allow_topology_changes = true;
   construction_parameters.m_collision_safety = true;
   construction_parameters.m_remesh_boundaries = true;
   
-  construction_parameters.m_subdivision_scheme = new ElTopo::MidpointScheme();
+  //construction_parameters.m_subdivision_scheme = new ElTopo::MidpointScheme();
   //construction_parameters.m_subdivision_scheme = new ElTopo::QuadraticErrorMinScheme();
   //construction_parameters.m_subdivision_scheme = new ElTopo::ButterflyScheme();
-  //construction_parameters.m_subdivision_scheme = new ElTopo::ModifiedButterflyScheme();
+  construction_parameters.m_subdivision_scheme = new ElTopo::ModifiedButterflyScheme();
 
   construction_parameters.m_use_curvature_when_collapsing = false;
   construction_parameters.m_use_curvature_when_splitting = false;
@@ -1115,21 +1117,32 @@ void ElasticShell::remesh()
   ElTopo::SurfTrack surface_tracker( vert_data, tri_data, masses, construction_parameters ); 
 
   surface_tracker.improve_mesh();
+  surface_tracker.topology_changes();
 
   std::cout << "Performing " << surface_tracker.m_mesh_change_history.size() << " Improvement Operations:\n";
   for(unsigned int j = 0; j < surface_tracker.m_mesh_change_history.size(); ++j) {
     ElTopo::MeshUpdateEvent event = surface_tracker.m_mesh_change_history[j];
     
-    VertexHandle v0 = reverse_vertmap[event.m_v0];
-    VertexHandle v1 = reverse_vertmap[event.m_v1];
-    EdgeHandle eh = findEdge(mesh, v0, v1);
-    
-    //if(m_obj->edgeIncidentFaces(eh) == 3) 
-    //  std::cout << "Non-manifold ";
-    
-    assert(eh.isValid()); //ensure the desired edge exists
+ 
+    if(event.m_type == ElTopo::MeshUpdateEvent::FLAP_DELETE) {
+      assert(event.m_deleted_tris.size() == 2);
+      for(unsigned int t = 0; t < event.m_deleted_tris.size(); ++t) {
+        int triNo = event.m_deleted_tris[t];
+        FaceHandle faceToDelete = reverse_trimap[triNo];
+        
+        assert(m_obj->faceExists(faceToDelete));
 
-    if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_COLLAPSE) {
+        m_obj->deleteFace(faceToDelete, true);
+        std::cout << "Deleted flap face\n";
+      }
+    }
+    else if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_COLLAPSE) {
+      VertexHandle v0 = reverse_vertmap[event.m_v0];
+      VertexHandle v1 = reverse_vertmap[event.m_v1];
+      EdgeHandle eh = findEdge(mesh, v0, v1);
+
+      assert(eh.isValid()); //ensure the desired edge exists
+
       //std::cout << "Collapse\n";
       Vec3d new_pos(event.m_vert_position[0], event.m_vert_position[1], event.m_vert_position[2]);
       VertexHandle dead_vert = reverse_vertmap[event.m_deleted_verts[0]];
@@ -1174,11 +1187,17 @@ void ElasticShell::remesh()
       //Identify the edge based on its endpoint vertices instead
       //std::cout << "Split\n";
 
+       VertexHandle v0 = reverse_vertmap[event.m_v0];
+       VertexHandle v1 = reverse_vertmap[event.m_v1];
+       EdgeHandle eh = findEdge(mesh, v0, v1);
+
+       assert(eh.isValid()); //ensure the desired edge exists
+
       VertexHandle new_vert;
       Vec3d new_pos(event.m_vert_position[0], event.m_vert_position[1], event.m_vert_position[2]);
       
       //Do the same split as El Topo
-      performSplitET(eh, new_pos, new_vert);
+      performSplit(eh, new_pos, new_vert);
       
       //now update the mapping between structures vertices
       vert_numbers[new_vert] = event.m_created_verts[0];
@@ -1217,9 +1236,17 @@ void ElasticShell::remesh()
       
       //std::cout << "Flip\n";
       //Do the same flip as El Topo
+      VertexHandle v0 = reverse_vertmap[event.m_v0];
+      VertexHandle v1 = reverse_vertmap[event.m_v1];
+      EdgeHandle eh = findEdge(mesh, v0, v1);
+
+      assert(eh.isValid()); //ensure the desired edge exists
+
+      assert(event.m_deleted_tris[i].size() == 2);
+      FaceHandle f0 = reverse_trimap[event.m_deleted_tris[0]];
+      FaceHandle f1 = reverse_trimap[event.m_deleted_tris[1]];
       EdgeHandle newEdge;
-      performFlip(eh, newEdge);
-      
+      performFlip(eh, f0, f1, newEdge);
       
       // Update faces
       for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
@@ -1265,7 +1292,7 @@ void ElasticShell::remesh()
 }
 
 
-void ElasticShell::performSplitET(const EdgeHandle& eh, const Vec3d& midpoint, VertexHandle& new_vert) {
+void ElasticShell::performSplit(const EdgeHandle& eh, const Vec3d& midpoint, VertexHandle& new_vert) {
 
   VertexHandle v0 = m_obj->fromVertex(eh);
   VertexHandle v1 = m_obj->toVertex(eh);
@@ -1409,22 +1436,20 @@ void ElasticShell::performCollapse(const EdgeHandle& eh, const VertexHandle& ver
   }
 }
 
-bool ElasticShell::performFlip(const EdgeHandle& eh, EdgeHandle& newEdge) {
+
+bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const FaceHandle& f1, EdgeHandle& newEdge) {
       
-  //determine volume of the region being flipped
-    FaceHandle f0, f1;
-    getEdgeFacePair(*m_obj, eh, f0, f1);
+    //determine volume of the region being flipped
     Scalar totalVolume = m_volumes[f0] + m_volumes[f1];
     
     Vec2i oldLabels = m_face_regions[f0]; //assume f0 and f1 have the same labels, because if not this flip is nonsense
 
-    //EdgeHandle newEdge(-1);
-    newEdge = flipEdge(*m_obj, eh);
+    newEdge = flipEdge2(*m_obj, eh, f0, f1);
     if(!newEdge.isValid()) {//couldn't flip the edge, such an edge already existed
       std::cout << "Edge flip failed for some reason...\n";
       return false;
     }
-  
+
     FaceHandle f0new, f1new;
     getEdgeFacePair(*m_obj, newEdge, f0new, f1new);
     setFaceActive(f0new);
@@ -1438,6 +1463,7 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, EdgeHandle& newEdge) {
     m_thicknesses[f1new] = newThickness;
     m_volumes[f0new] = f0newArea*newThickness;
     m_volumes[f1new] = f1newArea*newThickness;
+    
     //keep previous labels
     m_face_regions[f0new] = oldLabels;
     m_face_regions[f1new] = oldLabels;

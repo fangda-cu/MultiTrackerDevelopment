@@ -521,6 +521,12 @@ void idle()
             name << outputdirectory << "/frame" << std::setw(file_width) << current_frame << ".png";
 
             saveScreen(name.str());
+            
+            //save somewhere better for me...
+            std::stringstream name2;
+            name2 << std::setfill('0');
+            name2 << "c:\\output\\frame" << std::setw(file_width) << current_frame << ".png";
+            saveScreen(name2.str());
             std::cout << "Frame: " << current_frame << "   Time: " << current_problem->getTime() << "   Screencapture: "
                     << name.str() << std::endl;
             //}

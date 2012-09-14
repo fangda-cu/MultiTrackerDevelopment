@@ -237,7 +237,7 @@ bool MeshPincher::pull_apart_vertex( size_t vertex_index, const std::vector< Tri
     }
     
     if ( m_surf.m_verbose ) { std::cout << "pulled apart a vertex" << std::endl; }
-    
+
     return true;
 }
 

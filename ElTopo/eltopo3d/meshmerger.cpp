@@ -423,7 +423,6 @@ bool MeshMerger::merge_pass( )
                 
                 if (distance < m_surf.m_merge_proximity_epsilon)
                 {
-                    
                     if ( m_surf.m_verbose ) 
                     { 
                         std::cout << "proximity: " << distance << " / " << m_surf.m_merge_proximity_epsilon << std::endl; //proximities[i].distance << std::endl; 
@@ -440,7 +439,6 @@ bool MeshMerger::merge_pass( )
                         }
                         
                         merge_occurred = true;
-                        
                         g_stats.add_to_int( "merge_success", 1 );
                     }
                     else

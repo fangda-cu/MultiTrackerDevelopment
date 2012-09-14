@@ -182,10 +182,10 @@ protected:
   void resolveCollisions(Scalar timestep);
   void updateThickness();
 
-  void performSplitET(const EdgeHandle& eh, const Vec3d& newpos, VertexHandle& newVert);
+  void performSplit(const EdgeHandle& eh, const Vec3d& newpos, VertexHandle& newVert);
   void performCollapse(const EdgeHandle& eh, const VertexHandle& vert_to_remove, const VertexHandle& vert_to_keep, const Vec3d& new_position);
-  bool performFlip(const EdgeHandle& eh, EdgeHandle& newEdge);
-  
+  bool performFlip(const EdgeHandle& eh, const FaceHandle f0, const FaceHandle& f1, EdgeHandle& newEdge);
+
   void addSelfCollisionForces();
 
   //Various shell data

@@ -632,47 +632,8 @@ VertexHandle TopologicalObject::collapseEdge(const EdgeHandle& eh, const VertexH
   std::vector<int> facesToDelete(faceCount);
   for(int f = 0; f < faceCount; ++f) {
     unsigned int face_idx = m_EF.getColByIndex(eh.idx(), f);
-  
-    //visit the face's other edges
-    std::set<int> neighbourEdges;
-    for(unsigned int i = 0; i < m_FE.getNumEntriesInRow(face_idx); ++i) {
-      int edge_idx = m_FE.getColByIndex(face_idx, i);
-      if(edge_idx != eh.idx()) {
-
-        //walk over the other faces that this edge belongs to, checking for a shared edge amongst those faces.
-        //if the same edge appears twice (and not edge_idx), we know that we have a tet-like arrangement being
-        //collapsed into a single plane, which is no good.
-        for(unsigned int j = 0; j < m_EF.getNumEntriesInRow(edge_idx); ++j) {
-          unsigned int curFace = m_EF.getColByIndex(edge_idx, j);
-          
-          //if we see a shared edge that's not edge_idx, then the collapsing edge merges two faces
-          //and that's unacceptable.
-          if(curFace != face_idx) {
-            unsigned int loop_end4 = m_FE.getNumEntriesInRow(curFace);
-            for(unsigned int k = 0; k < loop_end4; ++k) {
-              int curEdge = m_FE.getColByIndex(curFace, k);
-              
-              if(curEdge == edge_idx) continue; //don't consider edge_idx
-
-              std::set<int>::iterator nbr = neighbourEdges.find(curEdge);
-              if(nbr != neighbourEdges.end()) {
-                std::cout << "Face merge fail case\n";
-                std::cout << "From: " << fromV.idx() << std::endl;
-                std::cout << "To: " << toV.idx() << std::endl;
-                return VertexHandle(-1); //there's a shared face/edge, don't collapse
-              }
-              else {
-                neighbourEdges.insert(curEdge);
-              }
-            }
-          }
-        }
-      }
-    }
-
     facesToDelete[f] = face_idx;
   }
-
   
   //delete the faces and then edge, leaving a hole to be stitched
   for(unsigned int i = 0; i < facesToDelete.size(); ++i) {

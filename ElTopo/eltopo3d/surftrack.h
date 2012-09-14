@@ -275,7 +275,10 @@ struct MeshUpdateEvent
     EDGE_SPLIT,
     EDGE_FLIP,
     EDGE_COLLAPSE,
-    EDGE_CUT,
+    EDGE_CUT,     //for fracturing/cutting
+    FLAP_DELETE,  //remove non-manifold flap
+    PINCH,        //separate singular vertex to allow topology change
+    MERGE,        //zipper two edges together
   };
 
   /// Constructors

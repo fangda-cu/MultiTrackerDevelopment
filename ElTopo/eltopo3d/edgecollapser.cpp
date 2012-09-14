@@ -537,7 +537,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   Vec3d vertex_new_position;
 
-#define USE_VERTEX_RANKS
+//#define USE_VERTEX_RANKS
 #ifdef USE_VERTEX_RANKS
 
   unsigned int keep_rank = m_surf.vertex_primary_space_rank( vertex_to_keep );
