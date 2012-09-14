@@ -326,26 +326,18 @@ VertexHandle splitEdge(TopologicalObject& obj, const EdgeHandle& splitEdge, std:
   return newVert;
 }
 
-EdgeHandle flipEdge(TopologicalObject& obj, const EdgeHandle& eh) {
+
+EdgeHandle flipEdge(TopologicalObject& obj, const EdgeHandle& eh, const FaceHandle& fh, const FaceHandle& fh2) {
   assert(obj.edgeExists(eh));
 
   VertexHandle from_vh, to_vh;
   from_vh = obj.fromVertex(eh);
   to_vh = obj.toVertex(eh);
 
-  assert(from_vh != to_vh);
-
-  //Just use the first two faces we hit.
-  EdgeFaceIterator ef_it = obj.ef_iter(eh);
-  if(!ef_it) return EdgeHandle(-1); //if there is no face at all, can't flip
-  const FaceHandle& fh = *ef_it;
-  ++ef_it;
-  if(!ef_it) return EdgeHandle(-1); //there is no 2nd face, we also can't flip
-  const FaceHandle& fh2 = *ef_it;
-  ++ef_it;
-  assert(fh != fh2); //we should never hit the same face
-  assert(!ef_it); //this edge should have no more faces. A non-manifold edge flip doesn't make sense.
-
+  assert(from_vh != to_vh); //the edge should not be degenerate
+  
+  assert(fh != fh2); //we shouldn't be trying to flip with the same face twice.
+  
   //find the 3rd vertex in the first face
   FaceVertexIterator fv_it = obj.fv_iter(fh);
   while((*fv_it == from_vh) || (*fv_it == to_vh)) ++fv_it;
@@ -355,19 +347,22 @@ EdgeHandle flipEdge(TopologicalObject& obj, const EdgeHandle& eh) {
   FaceVertexIterator fv_it2 = obj.fv_iter(fh2);
   while((*fv_it2 == from_vh) || (*fv_it2 == to_vh)) ++fv_it2;
   VertexHandle f2_vh = *fv_it2;
-  
+
   assert(f1_vh != f2_vh);
-  
+
   assert(from_vh != f1_vh);
   assert(from_vh != f2_vh);
   assert(to_vh != f1_vh);
   assert(to_vh != f2_vh);
 
-  //check for an edge already matching this description... and don't do the flip.
-  EdgeHandle edge = findEdge(obj, f1_vh, f2_vh);
-  if(edge.isValid()) return EdgeHandle(-1);
+  //check for an edge already matching this description, and possibly use it.
+  EdgeHandle existingEdge = findEdge(obj, f1_vh, f2_vh);
 
-  EdgeHandle newEdge = obj.addEdge(f1_vh, f2_vh);
+  EdgeHandle flippedEdge;
+  if(existingEdge.isValid())
+    flippedEdge = existingEdge;
+  else
+    flippedEdge = obj.addEdge(f1_vh, f2_vh);
 
   //grab all the current edges in proper order, starting from the shared face
   EdgeHandle e0 = obj.nextEdge(fh, eh);
@@ -380,21 +375,21 @@ EdgeHandle flipEdge(TopologicalObject& obj, const EdgeHandle& eh) {
   assert(e0 != e2);
   assert(e0 != e3);
   assert(e0 != eh);
-  assert(e0 != newEdge);
-  
+  assert(e0 != flippedEdge);
+
   assert(e1 != e2);
   assert(e1 != e3);
   assert(e1 != eh);
-  assert(e1 != newEdge);
+  assert(e1 != flippedEdge);
 
   assert(e2 != e3);
   assert(e2 != eh);
-  assert(e2 != newEdge);
+  assert(e2 != flippedEdge);
 
   assert(e3 != eh);
-  assert(e3 != newEdge);
+  assert(e3 != flippedEdge);
 
-  assert(eh != newEdge);
+  assert(eh != flippedEdge);
 
   //flip the edges of the second face so it matches the first face 
   //(if the original faces didn't sync, it doesn't matter, since there's no way to flip and maintain consistency)
@@ -403,8 +398,8 @@ EdgeHandle flipEdge(TopologicalObject& obj, const EdgeHandle& eh) {
     std::swap(e2,e3);
 
   //add in the new faces
-  obj.addFace(e1, e2, newEdge);
-  obj.addFace(e3, e0, newEdge);
+  obj.addFace(e1, e2, flippedEdge);
+  obj.addFace(e3, e0, flippedEdge);
 
   //Delete the old patch
   bool success = obj.deleteFace(fh, false);
@@ -413,9 +408,10 @@ EdgeHandle flipEdge(TopologicalObject& obj, const EdgeHandle& eh) {
   assert(success);
   success = obj.deleteEdge(eh, false);
   assert(success);
-  
-  return newEdge;
+
+  return flippedEdge;
 }
+
 
 //check if a vertex is on the boundary of a simplex mesh.
 //We define this by the fact that one of its' edges doesn't have
