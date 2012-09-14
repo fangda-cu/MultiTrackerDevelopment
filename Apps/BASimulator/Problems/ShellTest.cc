@@ -182,7 +182,8 @@ sceneFunc scenes[] = {0,
                       &ShellTest::setupScene23_hemisphere, //pinched hemisphere test from MacNeal&harder (1985). Also grinspun2006
                       &ShellTest::setupScene24_bendingCylinder,
                       &ShellTest::setupScene25_contractingSheet, //a test of surface tension; square sheet contracting
-                      &ShellTest::setupScene26_doubleBubble //double-cube with surface tension, for non-manifold bubbles
+                      &ShellTest::setupScene26_doubleBubble, //double-cube with surface tension, for non-manifold bubbles
+                      &ShellTest::setupScene27_catenoid //cylinder pinned on its end circles to induce catenoid pinchoff
                   } ; 
 
 Scalar bubbleThicknessFunction(Vec3d pos) {
@@ -3592,3 +3593,107 @@ void ShellTest::setupScene26_doubleBubble() {
 
 }
 
+//vertical cylinder for surface pinchoff test
+void ShellTest::setupScene27_catenoid() {
+
+   //get params
+   Scalar width = GetScalarOpt("shell-width");
+   Scalar height = GetScalarOpt("shell-height");
+   int xresolution = GetIntOpt("shell-x-resolution");
+   int yresolution = GetIntOpt("shell-y-resolution");
+
+   //Scalar dx = (Scalar)width / (Scalar)xresolution;
+   Scalar dy = (Scalar)height / (Scalar)yresolution;
+
+   //build a rectangular grid of vertices
+   std::vector<VertexHandle> vertHandles;
+   VertexProperty<Vec3d> undeformed(shellObj);
+   VertexProperty<Vec3d> positions(shellObj);
+   VertexProperty<Vec3d> velocities(shellObj);
+
+   //edge properties
+   EdgeProperty<Scalar> undefAngle(shellObj);
+   EdgeProperty<Scalar> edgeAngle(shellObj);
+   EdgeProperty<Scalar> edgeVel(shellObj);
+
+   Vec3d start_vel(0,0,0);
+   std::vector<VertexHandle> topVerts, botVerts;
+   for(int j = 0; j <= yresolution; ++j) {
+      for(int i = 0; i <= xresolution; ++i) {
+         Scalar circumference = width;
+         Scalar radius = circumference / 2 / pi;
+         Scalar angle = ((Scalar)i / (Scalar)(xresolution+1)) * 2 * pi;
+         Scalar xpos = radius * cos(angle);
+         Scalar zpos = radius * sin(angle);
+         Vec3d vert(xpos, -1 + j*dy, zpos);
+
+         Vec3d undef = vert;
+
+         VertexHandle h = shellObj->addVertex();
+
+         positions[h] = vert;
+         Vec3d temp = vert;
+         temp.normalize();
+         velocities[h] = start_vel;
+         undeformed[h] = undef;
+         
+         if(j == 0)
+            topVerts.push_back(h);
+         if(j == yresolution)
+            botVerts.push_back(h);
+         
+         vertHandles.push_back(h);
+      }
+   }
+
+   //build the faces
+   std::vector<Vec3i> tris;
+
+   for(int i = 0; i < xresolution+1; ++i) {
+      for(int j = 0; j < yresolution; ++j) {
+         int tl = i + (xresolution+1)*j;
+         int tr = (i+1)%(xresolution+1) + (xresolution+1)*j;
+         int bl = i + (xresolution+1)*(j+1);
+         int br = (i+1)%(xresolution+1) + (xresolution+1)*(j+1);
+
+         //Flowing up
+         shellObj->addFace(vertHandles[tl], vertHandles[br], vertHandles[tr]);
+         shellObj->addFace(vertHandles[tl], vertHandles[bl], vertHandles[br]);
+      }
+      //close the circle
+   }
+
+   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+   FaceProperty<char> shellFaces(shellObj); 
+   DeformableObject::face_iter fIt;
+   for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+      shellFaces[*fIt] = true;
+
+   //now create the physical model to hang on the mesh
+   shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+   shellObj->addModel(shell);
+
+   //positions
+   shell->setVertexUndeformed(undeformed);
+   shell->setVertexPositions(positions);
+   shell->setVertexVelocities(velocities);
+
+   //mid-edge normal variables
+   shell->setEdgeUndeformed(undefAngle);
+   shell->setEdgeXis(edgeAngle);
+   shell->setEdgeVelocities(edgeVel);
+
+
+   //Pin all verts at or near that height
+   for(int i = 0; i < topVerts.size(); ++i) {
+     VertexHandle vh = topVerts[i];
+     Vec3d pos = shell->getVertexPosition(vh);
+     shellObj->constrainVertex(vh, pos);
+
+     vh = botVerts[i];
+     pos = shell->getVertexPosition(vh);
+     shellObj->constrainVertex(vh, pos);
+   }
+
+ 
+}
