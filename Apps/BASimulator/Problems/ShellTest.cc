@@ -3685,7 +3685,7 @@ void ShellTest::setupScene27_catenoid() {
 
 
    //Pin all verts at or near that height
-   for(int i = 0; i < topVerts.size(); ++i) {
+   for(unsigned int i = 0; i < topVerts.size(); ++i) {
      VertexHandle vh = topVerts[i];
      Vec3d pos = shell->getVertexPosition(vh);
      shellObj->constrainVertex(vh, pos);

@@ -134,9 +134,10 @@ namespace BASim
     void accumulateMasses(const VertexProperty<Scalar> & masses);
     void accumulateMass(const VertexHandle & v, Scalar mass) { m_vertex_masses[v] += mass; }
 
-    // in compliance with the PhysicalModel interface, this method has to be implemented; but it's
+    // in compliance with the PhysicalModel interface, these methods have to be implemented; but are
     // actually useless here due to the special role of this model.
     virtual const VertexProperty<Scalar> & getVertexMasses() const { return m_vertex_masses; }
+    virtual const Scalar getModelVertexMass(const BASim::VertexHandle & vh) const { return m_vertex_masses[vh]; }
 
     // dof scripting interface inherited from PhysicalModel
     void getScriptedDofs(IntArray & dofIndices, std::vector<Scalar> & dofValues, Scalar time) const;

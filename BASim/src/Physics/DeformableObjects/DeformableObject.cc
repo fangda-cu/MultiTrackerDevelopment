@@ -132,6 +132,13 @@ void DeformableObject::clearVertexMasses() { m_posdofsmodel->clearMasses(); }
 void DeformableObject::accumulateVertexMasses(const VertexProperty<Scalar>& masses) { m_posdofsmodel->accumulateMasses(masses); }
 void DeformableObject::accumulateVertexMass(const VertexHandle& v, Scalar mass) { m_posdofsmodel->accumulateMass(v, mass); }
 
+void DeformableObject::updateVertexMass(const VertexHandle& vh)
+{
+  m_posdofsmodel->setMass(vh, 0);
+  for (size_t i = 0; i < m_models.size(); i++)
+    accumulateVertexMass(vh, m_models[i]->getModelVertexMass(vh));
+}
+
 void DeformableObject::updateVertexMasses()
 {
   clearVertexMasses();

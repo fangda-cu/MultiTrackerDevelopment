@@ -74,9 +74,10 @@ public:
   virtual void startIteration(Scalar time, Scalar timestep) { } // these two are not required (so that this addition does not break existing shell code)
   virtual void endIteration(Scalar time, Scalar timestep) { }
 
-  //Masses for the shared position DOFS
+  //Masses for the shared position DOFS (return the mass specific to that model, and we'll add them up in posdofsmodel)
   virtual const VertexProperty<Scalar> & getVertexMasses() const = 0;
-  
+  virtual const Scalar getModelVertexMass(const VertexHandle& vh) const = 0;
+
   //For constraining particular DOFs
   virtual void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time) const {};
 

@@ -77,6 +77,7 @@ public:
   void setVertexVelocity(const VertexHandle& v, const Vec3d& vel) { m_obj->setVertexVelocity(v, vel); }
 
   const VertexProperty<Scalar> & getVertexMasses() const { return m_vertex_masses; }
+  const Scalar getModelVertexMass(const VertexHandle& vh) const {return m_vertex_masses[vh]; }
   void computeMasses();
 
   void setDensity(Scalar density);

@@ -263,6 +263,18 @@ Scalar ElasticShell::getArea(const FaceHandle& f, bool current) const  {
   }
 }
 
+void ElasticShell::recomputeVertexMass(const VertexHandle& v) {
+  
+  //Compute vertex mass in a lumped fashion from incident faces.
+  Scalar volume = 0;
+  for (VertexFaceIterator vfit = m_obj->vf_iter(v); vfit; ++vfit) {
+    const FaceHandle& f = *vfit;
+    volume += getArea(f) * m_thicknesses[f] / 3.0;
+  }
+  m_vertex_masses[v] = volume * m_density;
+
+}
+
 void ElasticShell::computeMasses()
 {
   //Compute vertex masses in a lumped mass way.
@@ -1246,9 +1258,9 @@ void ElasticShell::remesh()
       FaceHandle f0 = reverse_trimap[event.m_deleted_tris[0]];
       FaceHandle f1 = reverse_trimap[event.m_deleted_tris[1]];
       EdgeHandle newEdge;
-      performFlip2(eh, f0, f1, newEdge);
+      performFlip(eh, f0, f1, newEdge);
       
-      // Update faces
+      // Update face indexing
       for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
         ElTopo::Vec3st new_face = event.m_created_tri_data[i];
 
@@ -1452,6 +1464,10 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const 
         x2 = getVertexPosition(v2),
         x3 = getVertexPosition(v3);
 
+  Scalar mass0 = getMass(v0);
+  Scalar mass1 = getMass(v1);
+  Scalar mass2 = getMass(v2);
+  Scalar mass3 = getMass(v3);
 
   Scalar edgeLen = (x0-x1).norm();
 
@@ -1525,7 +1541,7 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const 
   FaceHandle f0new, f1new;
   newEdge = flipEdge(*m_obj, eh, f0, f1, f0new, f1new);
   if(!newEdge.isValid()) {
-    std::cout << "Edge flip failed for some reason...\n";
+    std::cout << "\nERROR: Edge flip failed for some reason...\n\n";
     return false;
   }
   
@@ -1542,6 +1558,36 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const 
   m_thicknesses[f1new] = thickNew1;
   m_volumes[f0new] = volNew0;
   m_volumes[f1new] = volNew1;
+
+  //now adjust velocities to achieve momentum conservation
+  //get old momenta
+  Vec3d mom0 = mass0*getVertexVelocity(v0), 
+        mom1 = mass1*getVertexVelocity(v1), 
+        mom2 = mass2*getVertexVelocity(v2),
+        mom3 = mass3*getVertexVelocity(v3);
+  
+  //update the mass of the vertex in the shell
+  recomputeVertexMass(v0); 
+  recomputeVertexMass(v1); 
+  recomputeVertexMass(v2); 
+  recomputeVertexMass(v3);
+  
+  //call up to pos_dofs_model to recompute the full mass of the node (may include rods and such)
+  m_obj->updateVertexMass(v0);
+  m_obj->updateVertexMass(v1);
+  m_obj->updateVertexMass(v2);
+  m_obj->updateVertexMass(v3);
+
+  Scalar massNew0 = getMass(v0), 
+    massNew1 = getMass(v1), 
+    massNew2 = getMass(v2), 
+    massNew3 = getMass(v3);
+
+  //set new velocities accordingly
+  setVertexVelocity(v0, mom0 / massNew0);
+  setVertexVelocity(v1, mom1 / massNew1);
+  setVertexVelocity(v2, mom2 / massNew2);
+  setVertexVelocity(v3, mom3 / massNew3);
 
   //keep previous region labels
   m_face_regions[f0new] = oldLabels;

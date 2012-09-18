@@ -102,6 +102,7 @@ public:
   void accumulateVertexMasses(const VertexProperty<Scalar>& masses);  
   void accumulateVertexMass(const VertexHandle&v, Scalar mass);
   
+  void updateVertexMass(const VertexHandle& vh);
   void updateVertexMasses();  // call this whenever a model has recomputed its own mass and needs the total mass of the obj updated
   
   // Dof base indices for the position dofs

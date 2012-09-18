@@ -124,6 +124,8 @@ namespace BASim
     Scalar getEdgeDampingUndeformedTheta(const EdgeHandle& eh) const { return m_damping_undef_theta[eh]; }
     
     const VertexProperty<Scalar> & getVertexMasses() const { return m_vertex_masses; }  // inherited from PhysicalModel
+    const Scalar getModelVertexMass(const VertexHandle& vh) const { return m_vertex_masses[vh]; }
+
     void computeMasses();
     
     void setDensity(Scalar density);

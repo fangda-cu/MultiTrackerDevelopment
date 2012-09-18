@@ -113,6 +113,9 @@ public:
   Scalar getDampingUndeformedXi(const EdgeHandle& eh) const { return m_damping_undef_xi[eh]; }
   
   const VertexProperty<Scalar> & getVertexMasses() const { return m_vertex_masses; }
+  const Scalar getModelVertexMass(const VertexHandle& vh) const {return m_vertex_masses[vh]; }
+
+  void recomputeVertexMass(const VertexHandle& v);
   void computeMasses();
 
   void setDensity(Scalar density);
@@ -188,6 +191,7 @@ protected:
 
   void addSelfCollisionForces();
   
+
   //Various shell data
   EdgeProperty<Scalar> m_undef_xi;
 
