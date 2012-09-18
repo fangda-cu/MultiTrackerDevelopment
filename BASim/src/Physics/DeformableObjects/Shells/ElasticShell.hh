@@ -214,6 +214,8 @@ protected:
   Scalar m_remesh_edge_min_len;
   int m_remeshing_iters;
 
+  bool m_momentum_conserving_remesh;
+
   bool m_do_thickness_updates;
   bool m_do_eltopo_collisions;
   

@@ -41,7 +41,8 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
     m_object_collisions(false),
     m_ground_collisions(false),
     m_do_eltopo_collisions(false),
-    m_do_thickness_updates(true)
+    m_do_thickness_updates(true),
+    m_momentum_conserving_remesh(false)
 {
   m_vert_point_springs = new ShellVertexPointSpringForce(*this, "VertPointSprings", timestep);
   m_repulsion_springs = new ShellStickyRepulsionForce(*this, "RepulsionSprings", timestep);
@@ -1312,14 +1313,26 @@ void ElasticShell::performSplit(const EdgeHandle& eh, const Vec3d& midpoint, Ver
   Vec3d p0 = getVertexPosition(v0);
   Vec3d p1 = getVertexPosition(v1);
 
+  //store momenta
+  Vec3d mom0 = getVertexVelocity(v0) * getMass(v0);
+  Vec3d mom1 = getVertexVelocity(v1) * getMass(v1);
+  
   std::vector<FaceHandle> oldFaces;
   std::vector<Scalar> oldThicknesses;
   std::vector<Vec2i> oldRegions;
+  std::vector<Vec3d> momenta;
+  std::vector<VertexHandle> nbrVerts;
   for(EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit) {
     FaceHandle f = *efit;
     oldFaces.push_back(f);
     oldThicknesses.push_back(getThickness(f));
     oldRegions.push_back(getFaceLabel(f));
+
+    //store the momenta of the associated vertex
+    VertexHandle thirdVert;
+    getFaceThirdVertex(*m_obj, f, eh, thirdVert);
+    nbrVerts.push_back(thirdVert);
+    momenta.push_back(getVertexVelocity(thirdVert) * getMass(thirdVert));
   }
 
   VertexHandle v2, v3;
@@ -1373,6 +1386,33 @@ void ElasticShell::performSplit(const EdgeHandle& eh, const Vec3d& midpoint, Ver
     m_thicknesses[newFaces[i*2+1]] = m_volumes[newFaces[i*2+1]] / getArea(newFaces[i*2+1], true);
   }
 
+  if(m_momentum_conserving_remesh) {
+    //recompute and update the masses
+    recomputeVertexMass(v0);
+    m_obj->updateVertexMass(v0);
+    recomputeVertexMass(v1);
+    m_obj->updateVertexMass(v1);
+    for(unsigned int i = 0; i < nbrVerts.size(); ++i) {
+      recomputeVertexMass(nbrVerts[i]);
+      m_obj->updateVertexMass(nbrVerts[i]);
+    }
+
+    //Now adjust the velocity of the new vertex to reflect conservation of momentum
+    Vec3d momSumBefore = mom0 + mom1;
+    Vec3d momSumAfter = getMass(v0) * getVertexVelocity(v0) + getMass(v1) * getVertexVelocity(v1);
+    for(unsigned int i = 0; i < momenta.size(); ++i) {
+      momSumBefore += momenta[i];
+      momSumAfter += getMass(nbrVerts[i]) * getVertexVelocity(nbrVerts[i]);
+    }
+  
+    Vec3d momDif = momSumBefore - momSumAfter;
+  
+    //assign missing momentum to the new vertex, based on its mass
+    recomputeVertexMass(v_new);
+    m_obj->updateVertexMass(v_new);
+    setVertexVelocity(v_new, momDif / getMass(v_new));
+  }
+
   VertexFaceIterator vf_iter = m_obj->vf_iter(v_new);
   for(;vf_iter; ++vf_iter)
     setFaceActive(*vf_iter);
@@ -1393,6 +1433,28 @@ void ElasticShell::performCollapse(const EdgeHandle& eh, const VertexHandle& ver
   Vec3d p0 = getVertexPosition(vert_to_remove);
   Vec3d p1 = getVertexPosition(vert_to_keep);
 
+  //store momenta for later
+  Vec3d momKeep = getVertexVelocity(vert_to_keep) * getMass(vert_to_keep), 
+        momRemove = getVertexVelocity(vert_to_remove) * getMass(vert_to_remove);
+  
+  //get data for the surrounding nbr verts too
+  std::vector<VertexHandle> nbrs;
+  std::vector<Vec3d> nbrMoms;
+  if(m_momentum_conserving_remesh) {
+    for(EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit) {
+      FaceHandle fh = *efit;
+      VertexHandle thirdVert;
+      if(!getFaceThirdVertex(*m_obj, fh, eh, thirdVert))
+        std::cout << "Error, no 3rd vertex found.\n";
+
+      nbrs.push_back(thirdVert);
+      Vec3d mom = getVertexVelocity(thirdVert) * getMass(thirdVert);
+      nbrMoms.push_back(mom);
+    }
+  }
+
+  
+
   Vec3d dx(p1-p0);
   double m2 = dx.squaredNorm();
   Scalar s = clamp((p1-new_position).dot(dx)/m2, 0., 1.);
@@ -1403,15 +1465,14 @@ void ElasticShell::performCollapse(const EdgeHandle& eh, const VertexHandle& ver
   //do the collapse itself
   std::vector<EdgeHandle> deletedEdges;
   VertexHandle result = m_obj->collapseEdge(eh, vert_to_remove, deletedEdges);
-  if(!result.isValid())
-    std::cout << "Refused to perform edge collapse!\n";
+  if(!result.isValid()) {
+    std::cout << "\nError: Refused to perform edge collapse!\n\n";
+  }
 
-  //determine 
+  //determine new positions
   setVertexPosition(vert_to_keep, new_position);
-
-  setVertexVelocity(vert_to_keep, newVelocity);
   setUndeformedVertexPosition(vert_to_keep, newUndef);
-
+  setVertexVelocity(vert_to_keep, newVelocity);
   //increment the thickness of the nearby faces to account for the lost volume
 
   //sum up the total area increases in the faces
@@ -1446,6 +1507,29 @@ void ElasticShell::performCollapse(const EdgeHandle& eh, const VertexHandle& ver
       m_thicknesses[fh] = m_volumes[fh] / getArea(fh);
     }
   }
+
+  //Use the momenta to determine new velocities for the involved vertices
+  if(m_momentum_conserving_remesh) {
+    //First determine new masses.
+    recomputeVertexMass(vert_to_keep);
+    for(unsigned int i = 0; i < nbrs.size(); ++i)
+      recomputeVertexMass(nbrs[i]);
+  
+    //Update the vertex masses with the position dofs model
+    m_obj->updateVertexMass(vert_to_keep);
+    for(unsigned int i = 0; i < nbrs.size(); ++i)
+      m_obj->updateVertexMass(nbrs[i]);
+  
+    //Set new velocities accordingly, based on momentum
+    Scalar massNew0 = getMass(vert_to_keep);
+    setVertexVelocity(vert_to_keep, (momKeep + momRemove) / massNew0);
+  
+    for(unsigned int i = 0; i < nbrs.size(); ++i) {
+      Scalar newmass = getMass(nbrs[i]);
+      setVertexVelocity(nbrs[i], nbrMoms[i] / newmass);  
+    }
+  }
+
 }
 
 
@@ -1559,35 +1643,37 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const 
   m_volumes[f0new] = volNew0;
   m_volumes[f1new] = volNew1;
 
-  //now adjust velocities to achieve momentum conservation
-  //get old momenta
-  Vec3d mom0 = mass0*getVertexVelocity(v0), 
-        mom1 = mass1*getVertexVelocity(v1), 
-        mom2 = mass2*getVertexVelocity(v2),
-        mom3 = mass3*getVertexVelocity(v3);
+  if(m_momentum_conserving_remesh) {
+    //now adjust velocities to achieve momentum conservation
+    //get old momenta
+    Vec3d mom0 = mass0*getVertexVelocity(v0), 
+          mom1 = mass1*getVertexVelocity(v1), 
+          mom2 = mass2*getVertexVelocity(v2),
+          mom3 = mass3*getVertexVelocity(v3);
   
-  //update the mass of the vertex in the shell
-  recomputeVertexMass(v0); 
-  recomputeVertexMass(v1); 
-  recomputeVertexMass(v2); 
-  recomputeVertexMass(v3);
+    //update the mass of the vertex in the shell
+    recomputeVertexMass(v0); 
+    recomputeVertexMass(v1); 
+    recomputeVertexMass(v2); 
+    recomputeVertexMass(v3);
   
-  //call up to pos_dofs_model to recompute the full mass of the node (may include rods and such)
-  m_obj->updateVertexMass(v0);
-  m_obj->updateVertexMass(v1);
-  m_obj->updateVertexMass(v2);
-  m_obj->updateVertexMass(v3);
+    //call up to pos_dofs_model to recompute the full mass of the node (may include rods and such)
+    m_obj->updateVertexMass(v0);
+    m_obj->updateVertexMass(v1);
+    m_obj->updateVertexMass(v2);
+    m_obj->updateVertexMass(v3);
 
-  Scalar massNew0 = getMass(v0), 
-    massNew1 = getMass(v1), 
-    massNew2 = getMass(v2), 
-    massNew3 = getMass(v3);
+    Scalar massNew0 = getMass(v0), 
+      massNew1 = getMass(v1), 
+      massNew2 = getMass(v2), 
+      massNew3 = getMass(v3);
 
-  //set new velocities accordingly
-  setVertexVelocity(v0, mom0 / massNew0);
-  setVertexVelocity(v1, mom1 / massNew1);
-  setVertexVelocity(v2, mom2 / massNew2);
-  setVertexVelocity(v3, mom3 / massNew3);
+    //set new velocities accordingly
+    setVertexVelocity(v0, mom0 / massNew0);
+    setVertexVelocity(v1, mom1 / massNew1);
+    setVertexVelocity(v2, mom2 / massNew2);
+    setVertexVelocity(v3, mom3 / massNew3);
+  }
 
   //keep previous region labels
   m_face_regions[f0new] = oldLabels;
