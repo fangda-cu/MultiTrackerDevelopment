@@ -1554,14 +1554,14 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const 
   Scalar mass3 = getMass(v3);
 
   Scalar edgeLen = (x0-x1).norm();
-
+  Scalar edgeLen2 = edgeLen*edgeLen;
   //Get the perpendicular heights of the two triangles.
   Scalar height0 = getArea(f0) / edgeLen, 
          height1 = getArea(f1) / edgeLen;
   
   //Find the perpendicular closest point of each opposite vertex to the edge being flipped.
-  Scalar s0 = (x1 - x0).dot(x2 - x0) / edgeLen;
-  Scalar s1 = (x1 - x0).dot(x3 - x0) / edgeLen;
+  Scalar s0 = (x1 - x0).dot(x2 - x0) / edgeLen2;
+  Scalar s1 = (x1 - x0).dot(x3 - x0) / edgeLen2;
   
   //areas of the resulting triangles.
   Scalar areaNew0 = 0.5*(x2-x3).cross(x0-x3).norm();
