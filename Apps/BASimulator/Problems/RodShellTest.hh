@@ -41,8 +41,9 @@ public:
   void setupScene9(); // balls in bag
   void setupScene10();// Houdini exporter/loader test
   void setupScene11();// Solid test scene
-  void setupScene12();// rod twist rod face coupling test
-
+  void setupScene12();// rod twist shell face coupling test
+  void setupScene13();// rod twist solid tet coupling text
+  
 protected:
   void Setup();
   void AtEachTimestep();
@@ -82,6 +83,9 @@ protected:
   
   // scene 12:
   std::vector<EdgeHandle> m_s12_rod_edges;
+  
+  // scene 13:
+  std::vector<EdgeHandle> m_s13_rod_edges;
   
 };
 
