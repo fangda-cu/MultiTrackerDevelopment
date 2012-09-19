@@ -167,9 +167,11 @@ RodShellTest::RodShellTest() :
   AddOption("shell-stretching-factor", "extra scale factor to multiply stretching coefficient by", 1.0);
   AddOption("shell-bending-factor", "extra scale factor to multiple bending coefficient by", 1.0);
   
-  //Coupleing forces
+  //Coupling forces
   AddOption("rod-twist-shell-face-coupling-stiffness", "rod twist-shell face coupling force stiffness", 1.0);
-  AddOption("rod-twist-shell-face-coupling-stiffness-damping", "rod twist-shell face coupling force viscous stiffness", 1.0);
+  AddOption("rod-twist-shell-face-coupling-stiffness-damping", "rod twist-shell face coupling force viscous stiffness", 0.0);
+  AddOption("rod-twist-solid-tet-coupling-stiffness", "rod twist-solid tet coupling force stiffness", 1.0);
+  AddOption("rod-twist-solid-tet-coupling-stiffness-damping", "rod twist-solid tet coupling force viscous stiffness", 0.0);
   
   //Collision options
   AddOption("shell-self-collision", "whether to add self-collision springs", false);
@@ -2334,7 +2336,6 @@ void RodShellTest::setupScene13()
   Scalar dx = (Scalar)width / (Scalar)xresolution;
   Scalar dy = (Scalar)height / (Scalar)yresolution;
   
-  //build a rectangular grid of vertices
   std::vector<VertexHandle> vertHandles;
   VertexProperty<Vec3d> undeformed(obj);
   VertexProperty<Vec3d> positions(obj);
@@ -2347,79 +2348,140 @@ void RodShellTest::setupScene13()
   
   Vec3d start_vel(0,0,0);
   
-  for(int j = 0; j <= yresolution; ++j) {
-    for(int i = 0; i <= xresolution; ++i) {
-      Vec3d vert(i*dx, j*dy, 0);//0.01*dx*sin(100*j*dy + 17*i*dx));
-      if(j < 0.5*yresolution) {
-        int k = j;
-        int j_mod = (int)(0.5*yresolution);
-        vert(1) = j_mod*dx;
-        vert(2) = (k-j_mod)*dx;
-      }
-      Vec3d undef = vert;
-      
-      VertexHandle h = obj->addVertex();
-      
-      positions[h] = vert;
-      velocities[h] = start_vel;
-      undeformed[h] = undef;
-      vertHandles.push_back(h);
-    }
-  }
-  
-  //build the faces in a 4-8 pattern
-  std::vector<Vec3i> tris;
-  for(int i = 0; i < xresolution; ++i) {
-    for(int j = 0; j < yresolution; ++j) {
-      int tl = i + (xresolution+1)*j;
-      int tr = i+1 + (xresolution+1)*j;
-      int bl = i + (xresolution+1)*(j+1);
-      int br = i+1 + (xresolution+1)*(j+1);
-      
-      if((i+j)%2 == 0) {
-        obj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
-        obj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
-      }
-      else {
-        obj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[bl]);
-        obj->addFace(vertHandles[bl], vertHandles[tr], vertHandles[br]);
+  // pyramids
+  int n = xresolution;
+  Scalar d = dx * 1;
+  VertexHandle basep1;
+  VertexHandle basep2;
+  for (int i = 0; i < n; ++i)
+  {
+    for (int j = 0; j < n - i; ++j)
+    {
+      for (int k = 0; k < j + 1; ++k)
+      {
+        Vec3d vert(j * dx - k * dx * 0.5 + i * dx * 0.5 + d, i * dy, k * dx * 0.8660254 + i * dx * 0.2886751);
+        Vec3d undef = vert;
+        
+        VertexHandle h = obj->addVertex();
+        if (i == 0 && j == 0 && k == 0)
+          basep1 = h;
+        
+        positions[h] = vert;
+        velocities[h] = start_vel;
+        undeformed[h] = undef;
+        vertHandles.push_back(h);
       }
     }
   }
+  for (int i = 0; i < n; ++i)
+  {
+    for (int j = 0; j < n - i; ++j)
+    {
+      for (int k = 0; k < j + 1; ++k)
+      {
+        Vec3d vert(-(j * dx - k * dx * 0.5 + i * dx * 0.5 + d), i * dy, k * dx * 0.8660254 + i * dx * 0.2886751);
+        Vec3d undef = vert;
+        
+        VertexHandle h = obj->addVertex();
+        if (i == 0 && j == 0 && k == 0)
+          basep2 = h;
+        
+        positions[h] = vert;
+        velocities[h] = start_vel;
+        undeformed[h] = undef;
+        vertHandles.push_back(h);
+      }
+    }
+  }
+  Vec3d o(0, 0, 0);
+  VertexHandle origin = obj->addVertex();
+  positions[origin] = o;
+  velocities[origin] = start_vel;
+  undeformed[origin] = o;
+  vertHandles.push_back(origin);
+  obj->addEdge(basep1, origin);
+  obj->addEdge(basep2, origin);
   
+  FaceProperty<char> shellFaces(obj);
+  int base_i = 0;
+  for (int i = 0; i < n - 1; ++i)
+  {
+    int stride_i = (n - i) * (n - i + 1) / 2;
+    int base_j = 0;
+    for (int j = 0; j < n - i - 1; ++j)
+    {
+      int stride_j = j + 1;
+      int base_k = 0;
+      for (int k = 0; k < j + 1; ++k)
+      {
+        int stride_k = 1;
+        FaceHandle f1 = obj->addFace(vertHandles[base_i + base_j + base_k], vertHandles[base_i + base_j + base_k + stride_j + stride_k], vertHandles[base_i + base_j + base_k + stride_j]);
+        FaceHandle f2 = obj->addFace(vertHandles[base_i + base_j + base_k], vertHandles[base_i + base_j + base_k + stride_j], vertHandles[base_i + base_j + base_k + stride_i]);
+        FaceHandle f3 = obj->addFace(vertHandles[base_i + base_j + base_k], vertHandles[base_i + base_j + base_k + stride_i], vertHandles[base_i + base_j + base_k + stride_j + stride_k]);
+        FaceHandle f4 = obj->addFace(vertHandles[base_i + base_j + base_k + stride_j], vertHandles[base_i + base_j + base_k + stride_j + stride_k], vertHandles[base_i + base_j + base_k + stride_i]);
+        obj->addTet(f1, f2, f3, f4);
+        if (i == 0)
+        {
+          shellFaces[f1] = true;
+        }
+        base_k += stride_k;
+      }
+      base_j += stride_j;
+    }
+    base_i += stride_i;
+  }
+  base_i++;
+  for (int i = 0; i < n - 1; ++i)
+  {
+    int stride_i = (n - i) * (n - i + 1) / 2;
+    int base_j = 0;
+    for (int j = 0; j < n - i - 1; ++j)
+    {
+      int stride_j = j + 1;
+      int base_k = 0;
+      for (int k = 0; k < j + 1; ++k)
+      {
+        int stride_k = 1;
+        int base = base_i + base_j + base_k;
+        FaceHandle f1 = obj->addFace(vertHandles[base], vertHandles[base + stride_j + stride_k], vertHandles[base + stride_j]);
+        FaceHandle f2 = obj->addFace(vertHandles[base], vertHandles[base + stride_j], vertHandles[base + stride_i]);
+        FaceHandle f3 = obj->addFace(vertHandles[base], vertHandles[base + stride_i], vertHandles[base + stride_j + stride_k]);
+        FaceHandle f4 = obj->addFace(vertHandles[base + stride_j], vertHandles[base + stride_j + stride_k], vertHandles[base + stride_i]);
+        obj->addTet(f1, f2, f3, f4);
+        base_k += stride_k;
+      }
+      base_j += stride_j;
+    }
+    base_i += stride_i;
+  }
+
   std::cout << "resolution = " << xresolution << "x" << yresolution << std::endl;
   std::cout << "mesh nv = " << obj->nv() << " ne = " << obj->ne() << " nf = " << obj->nf() << std::endl;
   
-  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
-  FaceProperty<char> shellFaces(obj); 
-  DeformableObject::face_iter fIt;
-  for(fIt = obj->faces_begin(); fIt != obj->faces_end(); ++fIt)
-    shellFaces[*fIt] = true;
+  //create a tet property to flag which of the tets are part of the object. (All of them, in this case.)
+  TetProperty<char> solidTets(obj); 
+  DeformableObject::tet_iter tIt;
+  for (tIt = obj->tets_begin(); tIt != obj->tets_end(); ++tIt)
+    solidTets[*tIt] = true;
   
   //now create the physical model to hang on the mesh
+  solid = new ElasticSolid(obj, solidTets, m_timestep);
+  obj->addModel(solid);
   shell = new ElasticShell(obj, shellFaces, m_timestep);
   obj->addModel(shell);
   
   //positions
-  shell->setVertexUndeformed(undeformed);
-  shell->setVertexPositions(positions);
-  shell->setVertexVelocities(velocities);
+  solid->setVertexUndeformed(undeformed);
+  solid->setVertexPositions(positions);
+  solid->setVertexVelocities(velocities);
   
-  //mid-edge normal variables
-  shell->setEdgeUndeformed(undefAngle);
-  shell->setEdgeXis(edgeAngle);
-  shell->setEdgeVelocities(edgeVel);
-  
-  //Find highest vertex
+  //Find lowest vertex
   VertexIterator vit = obj->vertices_begin();
-  Scalar highest = -10000;
-  Scalar leftmost = 10000;
+  Scalar lowest = 10000;
   for(;vit!= obj->vertices_end(); ++vit) {
-    Vec3d pos = shell->getVertexPosition(*vit);
-    if(pos[1] >= highest)
-      highest = pos[1];
-    if(pos[0] <= leftmost)
-      leftmost = pos[0];
+    Vec3d pos = solid->getVertexPosition(*vit);
+    if(pos[1] <= lowest)
+      lowest = pos[1];
   }
   
   //Pin all verts at or near that height, on the left
@@ -2431,7 +2493,6 @@ void RodShellTest::setupScene13()
   
   // find top edges
   std::vector<EdgeHandle> rodEdges;
-  EdgeHandle leftmostedge;
   for (EdgeIterator eit = obj->edges_begin(); eit != obj->edges_end(); ++eit)
   {
     EdgeVertexIterator evit = obj->ev_iter(*eit);
@@ -2440,21 +2501,13 @@ void RodShellTest::setupScene13()
     Vec3d pos1 = obj->getVertexPosition(v1);
     Vec3d pos2 = obj->getVertexPosition(v2);
     
-    if (pos2[1] >= highest - 1e-4 && pos1[1] >= highest - 1e-4)
+    if (pos2[1] <= lowest + 1e-4 && pos1[1] <= lowest + 1e-4 && pos2[2] <= 1e-4 && pos1[2] <= 1e-4)
     {
       rodEdges.push_back(*eit);
-      if (pos1[0] <= leftmost + 1e-4 || pos2[0] <= leftmost + 1e-4)
-        leftmostedge = *eit;
     }
   }
   
   std::cout << "rod edge count = " << rodEdges.size() << std::endl;
-  
-  if (leftmostedge.isValid())
-  {
-    obj->constrainVertex(obj->fromVertex(leftmostedge), obj->getVertexPosition(obj->fromVertex(leftmostedge)));
-    obj->constrainVertex(obj->toVertex(leftmostedge),   obj->getVertexPosition(obj->toVertex(leftmostedge)));
-  }
   
   // create a rod model
   rod = new ElasticRodModel(obj, rodEdges, m_timestep);
@@ -2466,12 +2519,10 @@ void RodShellTest::setupScene13()
   rod->setEdgeThetas(zeros);
   rod->setEdgeThetaVelocities(zeros);
   rod->setEdgeUndeformedThetas(zeros);
-  
-  if (leftmostedge.isValid())
-  {
-    std::cout << leftmostedge.idx() << std::endl;
-    rod->constrainEdgeVel(leftmostedge, 0, 0.1, 0);
-  }
+
+  obj->constrainVertex(origin, obj->getVertexPosition(origin));
+  obj->constrainVertex(basep1, obj->getVertexPosition(basep1));
+  obj->constrainVertex(basep2, obj->getVertexPosition(basep2));
   
   m_s13_rod_edges = rodEdges;
 }
