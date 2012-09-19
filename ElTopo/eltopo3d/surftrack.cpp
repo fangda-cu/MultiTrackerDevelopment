@@ -69,7 +69,8 @@ m_use_curvature_when_splitting( false ),
 m_use_curvature_when_collapsing( false ),
 m_min_curvature_multiplier( 1.0 ),
 m_max_curvature_multiplier( 1.0 ),
-m_allow_vertex_movement( true ),
+m_allow_vertex_movement_during_collapse( true ),
+m_perform_smoothing( true ),
 m_edge_flip_min_length_change( 1e-8 ),
 m_merge_proximity_epsilon( 1e-5 ),
 m_subdivision_scheme(NULL),
@@ -124,7 +125,8 @@ m_allow_topology_changes( initial_parameters.m_allow_topology_changes ),
 m_allow_non_manifold( initial_parameters.m_allow_non_manifold ),
 m_perform_improvement( initial_parameters.m_perform_improvement ),
 m_remesh_boundaries( initial_parameters.m_remesh_boundaries),
-m_allow_vertex_movement( initial_parameters.m_allow_vertex_movement ),
+m_allow_vertex_movement_during_collapse( initial_parameters.m_allow_vertex_movement_during_collapse ),
+m_perform_smoothing( initial_parameters.m_perform_smoothing),
 m_vertex_change_history(),
 m_triangle_change_history(),
 m_defragged_triangle_map(),
@@ -668,27 +670,26 @@ void SurfTrack::improve_mesh( )
       //  std::cout << "Checking collisions before remeshing.\n";
       //  assert_mesh_is_intersection_free( false );
       //}
-
-      for(int loop = 0; loop < 3; ++loop) {
-        // edge splitting
-        //std::cout << "Split\n";
-        while ( m_splitter.split_pass() ) {}
+     
+      // edge splitting
+      //std::cout << "Split\n";
+      while ( m_splitter.split_pass() ) {}
         
-        //std::cout << "Flip\n";
-        // edge flipping
-        m_flipper.flip_pass();		
+      //std::cout << "Flip\n";
+      // edge flipping
+      m_flipper.flip_pass();		
 
-        //std::cout << "Collapse\n";
-        // edge collapsing
-        while ( m_collapser.collapse_pass() ) {}
+      //std::cout << "Collapse\n";
+      // edge collapsing
+      while ( m_collapser.collapse_pass() ) {}
         
-        // null-space smoothing
-        if ( m_allow_vertex_movement )
-        {
-            std::cout << "Smooth\n";
-            m_smoother.null_space_smoothing_pass( 1.0 );
-        }
+      // null-space smoothing
+      if ( m_perform_smoothing)
+      {
+          std::cout << "Smooth\n";
+          m_smoother.null_space_smoothing_pass( 1.0 );
       }
+
 
       if ( m_collision_safety )
       {

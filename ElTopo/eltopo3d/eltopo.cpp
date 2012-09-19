@@ -62,7 +62,8 @@ void el_topo_static_operations( const ElTopoMesh* inputs,
     construction_parameters.m_use_curvature_when_collapsing = options->m_use_curvature_when_collapsing;
     construction_parameters.m_min_curvature_multiplier = options->m_min_curvature_multiplier;
     construction_parameters.m_max_curvature_multiplier = options->m_max_curvature_multiplier;
-    construction_parameters.m_allow_vertex_movement = options->m_allow_vertex_movement;
+    construction_parameters.m_allow_vertex_movement_during_collapse = options->m_allow_vertex_movement_during_collapse;
+    construction_parameters.m_perform_smoothing = options->m_perform_smoothing;
     construction_parameters.m_edge_flip_min_length_change = options->m_edge_flip_min_length_change;   
     construction_parameters.m_merge_proximity_epsilon = options->m_merge_proximity_epsilon;
     construction_parameters.m_collision_safety = general_options->m_collision_safety;

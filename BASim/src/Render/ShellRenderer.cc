@@ -265,8 +265,9 @@ void ShellRenderer::render()
           OpenGL::color(Color(1.0, 1.0, 0.0));
       } else if (mesh.isBoundary(*eit)){
           OpenGL::color(Color(0.0, 1.0, 0.0));
-      } else{
-          OpenGL::color(Color(0,0,0));
+      }
+      else {
+        OpenGL::color(Color(0.0,0.0,0.0));
       }
       OpenGL::vertex(p0);
       OpenGL::vertex(p1);

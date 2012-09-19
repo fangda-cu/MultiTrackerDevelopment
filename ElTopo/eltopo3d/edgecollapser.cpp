@@ -537,7 +537,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   Vec3d vertex_new_position;
 
-//#define USE_VERTEX_RANKS
+#define USE_VERTEX_RANKS
 #ifdef USE_VERTEX_RANKS
 
   unsigned int keep_rank = m_surf.vertex_primary_space_rank( vertex_to_keep );
@@ -547,7 +547,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   if(keep_vert_is_boundary) keep_rank = 4;
   if(del_vert_is_boundary) delete_rank = 4;
 
-  if ( m_surf.m_allow_vertex_movement && !(keep_vert_is_boundary || del_vert_is_boundary) ) //don't move boundary vertices
+  if ( m_surf.m_allow_vertex_movement_during_collapse && !(keep_vert_is_boundary || del_vert_is_boundary) ) //don't move boundary vertices
   {      
     if ( keep_rank > delete_rank )
     {
@@ -621,7 +621,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       g_stats.add_to_int( "EdgeCollapser:collapse_volume_change", 1 );
 
       if ( m_surf.m_verbose ) { std::cout << "collapse_volume_change" << std::endl; }
-
       return false;
     }
 
@@ -634,7 +633,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       m_surf.set_newposition( vertex_to_delete, m_surf.get_position(vertex_to_delete) );
 
       if ( m_surf.m_verbose ) { std::cout << "normal_inversion" << std::endl; }
-
       return false;
     }
 
@@ -649,7 +647,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       if ( m_surf.m_verbose ) { std::cout << "bad_angle" << std::endl; }
 
       g_stats.add_to_int( "EdgeCollapser:collapse_bad_angle", 1 );
-
       return false;
 
     }
@@ -774,7 +771,7 @@ bool EdgeCollapser::edge_is_collapsible( size_t edge_index, double& current_leng
   //skip boundary edges if we're not remeshing those
   if(!m_remesh_boundaries && m_surf.m_mesh.m_is_boundary_edge[edge_index]) { return false; }
 
-  //this would introduce non-manifold ("singular") vertex (this is an internal edge joining two boundary vertices)
+  //this would introduce non-manifold ("singular") boundary vertex (this is an internal edge joining two boundary vertices)
   if ( m_surf.m_mesh.m_edge_to_triangle_map[edge_index].size() == 2 && 
       m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[edge_index][0]] &&
       m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[edge_index][1]] ) 

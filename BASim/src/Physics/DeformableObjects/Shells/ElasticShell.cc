@@ -408,7 +408,6 @@ void ElasticShell::getScriptedDofs( IntArray& dofIndices, std::vector<Scalar>& d
 
 void ElasticShell::startStep(Scalar time, Scalar timestep)
 {
-  std::cout << "Starting startStep\n";
 
   //update the damping "reference configuration" for computing viscous forces.
   m_damping_undef_xi = m_xi;
@@ -418,7 +417,7 @@ void ElasticShell::startStep(Scalar time, Scalar timestep)
   for(unsigned int i = 0; i < forces.size(); ++i) {
     forces[i]->update();
   }
-  std::cout << "Done startStep\n";
+  
 }
 
 void ElasticShell::resolveCollisions(Scalar timestep) {
@@ -768,7 +767,6 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   if(m_do_remeshing) {
     std::cout << "Remeshing\n";
     remesh();
-    std::cout << "Completed remeshing\n";
 
     //Relabel DOFs if necessary
     do_relabel = true;
@@ -786,7 +784,6 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   }
 
   if(do_relabel) {
-    std::cout << "Re-indexing\n";
     m_obj->computeDofIndexing();
   }
 
@@ -803,7 +800,8 @@ void ElasticShell::fracture() {
   //Set up a SurfTrack, run remeshing, render the new mesh
   ElTopo::SurfTrackInitializationParameters construction_parameters;
   construction_parameters.m_proximity_epsilon = m_collision_epsilon;
-  construction_parameters.m_allow_vertex_movement = false;
+  construction_parameters.m_allow_vertex_movement_during_collapse = true;
+  construction_parameters.m_perform_smoothing = false;
   construction_parameters.m_min_edge_length = m_remesh_edge_min_len;
   construction_parameters.m_max_edge_length = m_remesh_edge_max_len;
   construction_parameters.m_max_volume_change = numeric_limits<double>::max();   
@@ -1040,12 +1038,13 @@ void ElasticShell::remesh()
   ElTopo::SurfTrackInitializationParameters construction_parameters;
   construction_parameters.m_proximity_epsilon = m_collision_epsilon;
   construction_parameters.m_merge_proximity_epsilon = 0.01;
-  construction_parameters.m_allow_vertex_movement = false;
+  construction_parameters.m_allow_vertex_movement_during_collapse = true;
+  construction_parameters.m_perform_smoothing = false;
   construction_parameters.m_min_edge_length = m_remesh_edge_min_len;
   construction_parameters.m_max_edge_length = m_remesh_edge_max_len;
   construction_parameters.m_max_volume_change = numeric_limits<double>::max();   
-  construction_parameters.m_min_triangle_angle = 15;
-  construction_parameters.m_max_triangle_angle = 165;
+  construction_parameters.m_min_triangle_angle = 3;
+  construction_parameters.m_max_triangle_angle = 177;
   construction_parameters.m_verbose = false;
   construction_parameters.m_allow_non_manifold = true;
   construction_parameters.m_allow_topology_changes = true;
@@ -1128,9 +1127,10 @@ void ElasticShell::remesh()
 
   std::cout << "Calling surface improvement\n";
   ElTopo::SurfTrack surface_tracker( vert_data, tri_data, masses, construction_parameters ); 
-
-  surface_tracker.improve_mesh();
-  surface_tracker.topology_changes();
+  for(int i = 0; i < m_remeshing_iters; ++i) {
+    surface_tracker.improve_mesh();
+    surface_tracker.topology_changes();
+  }
 
   std::cout << "Performing " << surface_tracker.m_mesh_change_history.size() << " Improvement Operations:\n";
   for(unsigned int j = 0; j < surface_tracker.m_mesh_change_history.size(); ++j) {

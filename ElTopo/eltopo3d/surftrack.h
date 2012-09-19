@@ -106,9 +106,11 @@ struct SurfTrackInitializationParameters
     ///
     double m_max_curvature_multiplier;
     
-    /// Whether to allow vertices to move during improvement
-    ///
-    bool m_allow_vertex_movement;
+    /// boolean, whether to allow vertices to move during improvement
+    int m_allow_vertex_movement_during_collapse;
+
+    /// boolean, whether to allow vertices to move during improvement
+    int m_perform_smoothing;
     
     /// Minimum edge length improvement in order to flip an edge
     //
@@ -509,11 +511,12 @@ public:
     ///
     bool m_remesh_boundaries;
     
-    /// When doing mesh optimization, whether to allow the vertices to move.  If set to false, we allow edge flipping, edge 
-    /// splitting, and edge collapsing (where the edge is collapsed down to one of its endpoints).  If true, we do mesh smoothing,
-    /// as well as allowing a collapsed edge to collapse down to some point other than an endpoint.
-    ///
-    bool m_allow_vertex_movement;
+
+    /// boolean, whether to allow vertices to move during collapses (i.e. use points other than the endpoints)
+    int m_allow_vertex_movement_during_collapse;
+
+    /// boolean, whether to do null space smoothing on vertex positions
+    int m_perform_smoothing;
         
     /// History of vertex removal or addition events
     ///

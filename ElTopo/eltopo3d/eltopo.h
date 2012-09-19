@@ -79,8 +79,11 @@ extern "C" {
         /// clamp curvature scaling to these values
         double m_max_curvature_multiplier;
         
-        /// boolean, whether to allow vertices to move during improvement
-        int m_allow_vertex_movement;
+        /// boolean, whether to allow vertices to move during collapses
+        int m_allow_vertex_movement_during_collapse;
+
+        /// boolean, whether to perform vertex position smoothing
+        int m_perform_smoothing;
         
         /// Minimum edge length improvement in order to flip an edge
         double m_edge_flip_min_length_change;

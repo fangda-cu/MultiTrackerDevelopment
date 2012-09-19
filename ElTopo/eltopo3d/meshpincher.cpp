@@ -264,6 +264,8 @@ void MeshPincher::separate_singular_vertices()
             {
                 // TODO: Shouldn't need this.
                 m_surf.rebuild_continuous_broad_phase();
+                MeshUpdateEvent pinch(MeshUpdateEvent::PINCH);
+                m_surf.m_mesh_change_history.push_back(pinch);
             }
         }
     }

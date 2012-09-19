@@ -438,6 +438,10 @@ bool MeshMerger::merge_pass( )
                             std::cout << "zippered" << std::endl; 
                         }
                         
+                        //Record the event for posterity
+                        MeshUpdateEvent update(MeshUpdateEvent::MERGE);
+                        m_surf.m_mesh_change_history.push_back(update);
+
                         merge_occurred = true;
                         g_stats.add_to_int( "merge_success", 1 );
                     }

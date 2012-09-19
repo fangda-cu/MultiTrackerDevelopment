@@ -208,7 +208,7 @@ protected:
 
   FaceProperty<Scalar> m_thicknesses;
   FaceProperty<Scalar> m_volumes;
-  
+
   bool m_do_remeshing;
   Scalar m_remesh_edge_max_len;
   Scalar m_remesh_edge_min_len;

@@ -679,7 +679,6 @@ void ShellTest::AtEachTimestep()
       std::cout << "Vertical displacement: " << (original_pos[1] - low_pos[1]) << std::endl;
     }
 
-
     /*
     if(m_active_scene == 21) {
         //Verify symmetry:
