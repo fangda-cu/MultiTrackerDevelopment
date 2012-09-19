@@ -388,7 +388,7 @@ namespace BASim
   
   void ElasticRodModel::endIteration(Scalar time, Scalar timestep)
   {
-    // ElasticRod endIteration operation: upcate the derived properties
+    // ElasticRod endIteration operation: update the derived properties
     updateProperties();
   }
   
@@ -414,7 +414,7 @@ namespace BASim
       m_properties_edge[s.e] = obj.getVertexPosition(s.v2) - obj.getVertexPosition(s.v1);
     }      
     
-    // compoute reference directors (Time Parallel only; code from BASim::ElasticRod::computeTimeParallel())
+    // compute reference directors (Time Parallel only; code from BASim::ElasticRod::computeTimeParallel())
     for (size_t i = 0; i < m_edge_stencils.size(); i++)
     {
       EdgeStencil & s = m_edge_stencils[i];
