@@ -2349,7 +2349,7 @@ void RodShellTest::setupScene13()
   Vec3d start_vel(0,0,0);
   
   // pyramids
-  int n = xresolution;
+  int n = xresolution + 1;
   Scalar d = dx * 1;
   VertexHandle basep1;
   VertexHandle basep2;
@@ -2359,7 +2359,7 @@ void RodShellTest::setupScene13()
     {
       for (int k = 0; k < j + 1; ++k)
       {
-        Vec3d vert(j * dx - k * dx * 0.5 + i * dx * 0.5 + d, i * dy, k * dx * 0.8660254 + i * dx * 0.2886751);
+        Vec3d vert(j * dx - k * dx * 0.5 + i * dx * 0.5 + d, i * dy, -(k * dx * 0.8660254 + i * dx * 0.2886751));
         Vec3d undef = vert;
         
         VertexHandle h = obj->addVertex();
@@ -2501,7 +2501,7 @@ void RodShellTest::setupScene13()
     Vec3d pos1 = obj->getVertexPosition(v1);
     Vec3d pos2 = obj->getVertexPosition(v2);
     
-    if (pos2[1] <= lowest + 1e-4 && pos1[1] <= lowest + 1e-4 && pos2[2] <= 1e-4 && pos1[2] <= 1e-4)
+    if (pos2[1] <= lowest + 1e-4 && pos1[1] <= lowest + 1e-4 && pos2[2] <= 1e-4 && pos1[2] <= 1e-4 && pos2[2] >= -1e-4 && pos1[2] >= -1e-4)
     {
       rodEdges.push_back(*eit);
     }
