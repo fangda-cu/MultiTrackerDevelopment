@@ -12,8 +12,8 @@ rod-Youngs-damping 0	# the damping coefficient associated with the rod's Young's
 rod-Shear 500	# the shear modulus of the rod material
 rod-Shear-damping 0	# the damping coefficient associated to the rod's shear modulus
 
-shell-x-resolution 4	# the number of segments along first dimension
-shell-y-resolution 4	# the number of segments along second dimension
+shell-x-resolution 1	# the number of segments along first dimension
+shell-y-resolution 1	# the number of segments along second dimension
 
 shell-width 1	# the horizontal side length of the shell
 shell-height 1	# the vertical side length of the shell

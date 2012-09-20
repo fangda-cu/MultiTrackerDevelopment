@@ -13,6 +13,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/MNBendingForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellGravityForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Coupling/RodTwistShellFaceCouplingForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Coupling/RodTwistSolidTetCouplingForce.hh"
 #include "BASim/src/Render/ShellRenderer.hh"
 #include "BASim/src/Render/RodModelRenderer.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
@@ -556,18 +557,54 @@ void RodShellTest::AtEachTimestep()
         stencils.push_back(s);
       }
       
-//      for (size_t i = 0; i < m_s12_rod_edges.size(); i++)
-//      {
-//        RodTwistShellFaceCouplingForce::Stencil s = stencils[i];
-//        std::cout << "Stencil: " << obj->getVertexPosition(obj->fromVertex(s.e)) << "; " << obj->getVertexPosition(obj->toVertex(s.e)) << " => " << obj->getVertexPosition(s.v) << std::endl;
-//      }
-      
       Scalar stiffness =          GetScalarOpt("rod-twist-shell-face-coupling-stiffness");
       Scalar stiffness_damping =  GetScalarOpt("rod-twist-shell-face-coupling-stiffness-damping");
       obj->addForce(new RodTwistShellFaceCouplingForce(*rod, *shell, stencils, stiffness, stiffness_damping, m_timestep));
     }
+  } else if (m_active_scene == 13)
+  {
+    static bool init = true;
+    if (init)
+    {
+      init = false;
+      std::vector<RodTwistSolidTetCouplingForce::Stencil> stencils;
+      for (size_t i = 0; i < m_s13_rod_edges.size(); i++)
+      {
+        RodTwistSolidTetCouplingForce::Stencil s;
+        s.e = m_s13_rod_edges[i];
+        VertexHandle ev1 = obj->fromVertex(s.e);
+        VertexHandle ev2 = obj->toVertex(s.e);
+        EdgeFaceIterator efit = obj->ef_iter(s.e);
+        if (efit)
+        {
+          FaceHandle f = *efit; ++efit; assert(efit);
+          FaceVertexIterator fvit = obj->fv_iter(f);
+          VertexHandle v1 = *fvit; ++fvit; assert(fvit);
+          VertexHandle v2 = *fvit; ++fvit; assert(fvit);
+          VertexHandle v3 = *fvit; ++fvit; assert(!fvit);
+          s.v1 = (ev1 == v1 ? (ev2 == v2 ? v3 : v2) : (ev1 == v2 ? (ev2 == v3 ? v1 : v3) : (ev2 == v1 ? v2 : v1)));
+          
+          f = *efit; ++efit; assert(!efit);
+          FaceVertexIterator fvit2 = obj->fv_iter(f);
+          VertexHandle w1 = *fvit2; ++fvit2; assert(fvit2);
+          VertexHandle w2 = *fvit2; ++fvit2; assert(fvit2);
+          VertexHandle w3 = *fvit2; ++fvit2; assert(!fvit2);
+          s.v2 = (ev1 == w1 ? (ev2 == w2 ? w3 : w2) : (ev1 == w2 ? (ev2 == w3 ? w1 : w3) : (ev2 == w1 ? w2 : w1)));
+          
+          std::cout << "stencil " << ev1.idx() << " " << ev2.idx() << " " << s.v1.idx() << " " << s.v2.idx() << std::endl;
+          stencils.push_back(s);
+        } else
+        {
+          std::cout << "dedge " << ev1.idx() << " " << ev2.idx() << std::endl;
+        }
+      }
+      
+      Scalar stiffness =          GetScalarOpt("rod-twist-solid-tet-coupling-stiffness");
+      Scalar stiffness_damping =  GetScalarOpt("rod-twist-solid-tet-coupling-stiffness-damping");
+      obj->addForce(new RodTwistSolidTetCouplingForce(*rod, *solid, stencils, stiffness, stiffness_damping, m_timestep));
+    }
   }
-
+  
   std::cout << "====================================================" << std::endl;
   /*
   for (VertexIterator i = obj->vertices_begin(); i != obj->vertices_end(); ++i)
