@@ -4,8 +4,8 @@ gravity 0 -1 0	# gravity
 rodshell-scene 13	# the scene to test
 
 rod-density 1	# volumetric density of the rod 
-rod-radius-a 0.2	# major radius of the rod
-rod-radius-b 0.2	# minor radius of the rod
+rod-radius-a 0.5	# major radius of the rod
+rod-radius-b 0.5	# minor radius of the rod
 
 rod-Youngs 1000	# the Young's modulus of the rodl material
 rod-Youngs-damping 0	# the damping coefficient associated with the rod's Young's modulus

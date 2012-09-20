@@ -2387,7 +2387,7 @@ void RodShellTest::setupScene13()
   
   // pyramids
   int n = xresolution + 1;
-  Scalar d = dx * 1;
+  Scalar d = dx * 1.5;
   VertexHandle basep1;
   VertexHandle basep2;
   for (int i = 0; i < n; ++i)
@@ -2430,14 +2430,21 @@ void RodShellTest::setupScene13()
       }
     }
   }
-  Vec3d o(0, 0, 0);
-  VertexHandle origin = obj->addVertex();
-  positions[origin] = o;
-  velocities[origin] = start_vel;
-  undeformed[origin] = o;
-  vertHandles.push_back(origin);
-  obj->addEdge(basep1, origin);
-  obj->addEdge(basep2, origin);
+  Vec3d o1(dx * 0.5, 0, 0);
+  Vec3d o2(-dx * 0.5, 0, 0);
+  VertexHandle origin1 = obj->addVertex();
+  VertexHandle origin2 = obj->addVertex();
+  positions[origin1] = o1;
+  positions[origin2] = o2;
+  velocities[origin1] = start_vel;
+  velocities[origin2] = start_vel;
+  undeformed[origin1] = o1;
+  undeformed[origin2] = o2;
+  vertHandles.push_back(origin1);
+  vertHandles.push_back(origin2);
+  obj->addEdge(basep1, origin1);
+  obj->addEdge(basep2, origin2);
+  obj->addEdge(origin1, origin2);
   
   FaceProperty<char> shellFaces(obj);
   int base_i = 0;
@@ -2530,6 +2537,7 @@ void RodShellTest::setupScene13()
   
   // find top edges
   std::vector<EdgeHandle> rodEdges;
+  EdgeHandle originedge;
   for (EdgeIterator eit = obj->edges_begin(); eit != obj->edges_end(); ++eit)
   {
     EdgeVertexIterator evit = obj->ev_iter(*eit);
@@ -2541,6 +2549,10 @@ void RodShellTest::setupScene13()
     if (pos2[1] <= lowest + 1e-4 && pos1[1] <= lowest + 1e-4 && pos2[2] <= 1e-4 && pos1[2] <= 1e-4 && pos2[2] >= -1e-4 && pos1[2] >= -1e-4)
     {
       rodEdges.push_back(*eit);
+      if ((v1 == origin1 && v2 == origin2) || (v1 == origin2 && v2 == origin1))
+      {
+        originedge = *eit;
+      }
     }
   }
   
@@ -2557,9 +2569,15 @@ void RodShellTest::setupScene13()
   rod->setEdgeThetaVelocities(zeros);
   rod->setEdgeUndeformedThetas(zeros);
 
-  obj->constrainVertex(origin, obj->getVertexPosition(origin));
+  obj->constrainVertex(origin1, obj->getVertexPosition(origin1));
+  obj->constrainVertex(origin2, obj->getVertexPosition(origin2));
   obj->constrainVertex(basep1, obj->getVertexPosition(basep1));
   obj->constrainVertex(basep2, obj->getVertexPosition(basep2));
+  
+  if (originedge.isValid())
+  {
+    rod->constrainEdge(originedge, 0);
+  }
   
   m_s13_rod_edges = rodEdges;
 }
