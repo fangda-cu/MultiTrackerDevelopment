@@ -236,7 +236,7 @@ void RodTwistSolidTetCouplingForce::updateProperties()
     Vec3d A = defoObj().getVertexPosition(s.v1);
     Vec3d B = defoObj().getVertexPosition(s.v2);
     Vec3d C = defoObj().getVertexPosition(defoObj().fromVertex(s.e));
-    Vec3d D = defoObj().getVertexPosition(defoObj().fromVertex(s.e));
+    Vec3d D = defoObj().getVertexPosition(defoObj().toVertex(s.e));
     Vec3d md1 = rod().getMaterialDirector1(s.e);
     Vec3d md2 = rod().getMaterialDirector2(s.e);
     Vec2d oldvec = Vec2d(cos(s.delta), sin(s.delta)); // direction of the old delta, in mat frame
