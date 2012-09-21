@@ -6,7 +6,7 @@
 using namespace BASim;
 
 RodModelStraightSurfaceTensionForce  ::RodModelStraightSurfaceTensionForce  (ElasticRodModel & rod, const std::vector<ElasticRodModel::EdgeStencil> & stencils, Scalar surface_tension_coeff, Scalar timestep) :
-  RodModelForce(rod, timestep, "RodModelStraightSurfaceTensionForce  "),
+  RodModelForce(rod, timestep, "RodModelStraightSurfaceTensionForce"),
   m_stencils(),
   m_surface_tension_coeff(surface_tension_coeff)
 {
