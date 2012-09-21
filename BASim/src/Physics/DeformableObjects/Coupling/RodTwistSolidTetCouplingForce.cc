@@ -23,19 +23,19 @@ RodTwistSolidTetCouplingForce::RodTwistSolidTetCouplingForce(ElasticRodModel & r
     s.dofindices.resize(NumDof);
     
     int dofbase;
-    dofbase = defoObj().getPositionDofBase(defoObj().fromVertex(s.e));
+    dofbase = defoObj().getPositionDofBase(s.v1);
     s.dofindices[0] = dofbase;
     s.dofindices[1] = dofbase + 1;
     s.dofindices[2] = dofbase + 2;
-    dofbase = defoObj().getPositionDofBase(defoObj().toVertex(s.e));
+    dofbase = defoObj().getPositionDofBase(s.v2);
     s.dofindices[3] = dofbase;
     s.dofindices[4] = dofbase + 1;
     s.dofindices[5] = dofbase + 2;
-    dofbase = defoObj().getPositionDofBase(s.v1);
+    dofbase = defoObj().getPositionDofBase(defoObj().fromVertex(s.e));
     s.dofindices[6] = dofbase;
     s.dofindices[7] = dofbase + 1;
     s.dofindices[8] = dofbase + 2;
-    dofbase = defoObj().getPositionDofBase(s.v2);
+    dofbase = defoObj().getPositionDofBase(defoObj().toVertex(s.e));
     s.dofindices[9] = dofbase;
     s.dofindices[10] = dofbase + 1;
     s.dofindices[11] = dofbase + 2;
