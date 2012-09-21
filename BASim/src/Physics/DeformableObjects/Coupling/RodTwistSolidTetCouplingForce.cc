@@ -254,3 +254,25 @@ void RodTwistSolidTetCouplingForce::computeReferenceStrain()
   }
 }
 
+void RodTwistSolidTetCouplingForce::startStep(Scalar time, Scalar timestep)
+{
+  updateViscousReferenceStrain();
+}
+
+void RodTwistSolidTetCouplingForce::endStep(Scalar time, Scalar timestep)
+{
+  updateStiffness();
+}
+
+void RodTwistSolidTetCouplingForce::startIteration(Scalar time, Scalar timestep)
+{
+  
+}
+
+void RodTwistSolidTetCouplingForce::endIteration(Scalar time, Scalar timestep)
+{
+  updateProperties();
+}
+
+
+

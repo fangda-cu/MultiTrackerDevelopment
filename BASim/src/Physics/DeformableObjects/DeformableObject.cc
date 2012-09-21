@@ -255,24 +255,32 @@ void DeformableObject::startStep()
 { 
   for(unsigned int i = 0; i < m_models.size(); ++i) 
     m_models[i]->startStep(m_time, m_dt); 
+  for(unsigned int i = 0; i < m_miscForces.size(); ++i)
+    m_miscForces[i]->startStep(m_time, m_dt);
 }
 
 void DeformableObject::endStep() 
 { 
   for(unsigned int i = 0; i < m_models.size(); ++i) 
     m_models[i]->endStep(m_time, m_dt); 
+  for(unsigned int i = 0; i < m_miscForces.size(); ++i)
+    m_miscForces[i]->endStep(m_time, m_dt);
 }
 
 void DeformableObject::startIteration() 
 { 
   for(unsigned int i = 0; i < m_models.size(); ++i) 
     m_models[i]->startIteration(m_time, m_dt); 
+  for(unsigned int i = 0; i < m_miscForces.size(); ++i)
+    m_miscForces[i]->startIteration(m_time, m_dt);
 }
 
 void DeformableObject::endIteration() 
 { 
   for(unsigned int i = 0; i < m_models.size(); ++i) 
     m_models[i]->endIteration(m_time, m_dt); 
+  for(unsigned int i = 0; i < m_miscForces.size(); ++i)
+    m_miscForces[i]->endIteration(m_time, m_dt);
 }
 
 

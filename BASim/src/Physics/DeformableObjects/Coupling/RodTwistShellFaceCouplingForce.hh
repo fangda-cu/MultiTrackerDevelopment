@@ -66,6 +66,12 @@ namespace BASim
     void updateProperties();
     
   public:
+    void startStep(Scalar time, Scalar timestep);
+    void endStep(Scalar time, Scalar timestep);
+    void startIteration(Scalar time, Scalar timestep);
+    void endIteration(Scalar time, Scalar timestep);
+    
+  public:
     Scalar globalEnergy();
     void globalForce(VecXd & force);
     void globalJacobian(Scalar scale, MatrixBase & Jacobian);

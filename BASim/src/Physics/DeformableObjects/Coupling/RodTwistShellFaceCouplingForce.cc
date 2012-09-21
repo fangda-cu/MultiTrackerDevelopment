@@ -251,3 +251,24 @@ void RodTwistShellFaceCouplingForce::computeReferenceStrain()
   }
 }
 
+void RodTwistShellFaceCouplingForce::startStep(Scalar time, Scalar timestep)
+{
+  updateViscousReferenceStrain();
+}
+
+void RodTwistShellFaceCouplingForce::endStep(Scalar time, Scalar timestep)
+{
+  updateStiffness();
+}
+
+void RodTwistShellFaceCouplingForce::startIteration(Scalar time, Scalar timestep)
+{
+  
+}
+
+void RodTwistShellFaceCouplingForce::endIteration(Scalar time, Scalar timestep)
+{
+  updateProperties();
+}
+
+

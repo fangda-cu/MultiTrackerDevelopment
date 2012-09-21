@@ -37,6 +37,12 @@ public:
   virtual void updateProperties() { }              // called at every solver iteration (rod updateProperties()), updating cached properties
   
 public:
+  virtual void startStep(Scalar time, Scalar timestep) { }
+  virtual void endStep(Scalar time, Scalar timestep) { }
+  virtual void startIteration(Scalar time, Scalar timestep) { }
+  virtual void endIteration(Scalar time, Scalar timestep) { }
+
+public:
   DeformableObject & deformableObject() { return m_obj; }
   const DeformableObject & deformableObject() const { return m_obj; }
   
