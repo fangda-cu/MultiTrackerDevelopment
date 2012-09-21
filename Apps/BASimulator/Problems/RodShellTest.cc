@@ -2571,8 +2571,8 @@ void RodShellTest::setupScene13()
 
   obj->constrainVertex(origin1, obj->getVertexPosition(origin1));
   obj->constrainVertex(origin2, obj->getVertexPosition(origin2));
-  obj->constrainVertex(basep1, obj->getVertexPosition(basep1));
-  obj->constrainVertex(basep2, obj->getVertexPosition(basep2));
+//  obj->constrainVertex(basep1, obj->getVertexPosition(basep1));
+//  obj->constrainVertex(basep2, obj->getVertexPosition(basep2));
   
   if (originedge.isValid())
   {
