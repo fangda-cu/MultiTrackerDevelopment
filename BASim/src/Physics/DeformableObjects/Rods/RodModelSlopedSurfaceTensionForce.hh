@@ -16,8 +16,8 @@ namespace BASim
   class RodModelSlopedSurfaceTensionForce : public RodModelForce
   {
   public:
-    typedef Eigen::Matrix<Scalar, 9, 1> ElementForce;
-    typedef Eigen::Matrix<Scalar, 9, 9> ElementJacobian;
+    typedef Eigen::Matrix<Scalar, 12, 1> ElementForce;
+    typedef Eigen::Matrix<Scalar, 12, 12> ElementJacobian;
 
     struct Stencil : public ElasticRodModel::JointStencil
     {
@@ -26,7 +26,7 @@ namespace BASim
     };
 
   public:
-    RodModelSlopedSurfaceTensionForce   (ElasticRodModel & rod, const std::vector<ElasticRodModel::JointStencil> & stencils, Scalar surface_tension_coeff, Scalar timestep);
+    RodModelSlopedSurfaceTensionForce   (ElasticRodModel & rod, const std::vector<ElasticRodModel::JointStencil> & stencils, Scalar surface_tension_coeff);
     virtual ~RodModelSlopedSurfaceTensionForce   ();
 
   public:

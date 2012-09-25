@@ -5,8 +5,8 @@
 
 using namespace BASim;
 
-RodModelStraightSurfaceTensionForce  ::RodModelStraightSurfaceTensionForce  (ElasticRodModel & rod, const std::vector<ElasticRodModel::EdgeStencil> & stencils, Scalar surface_tension_coeff, Scalar timestep) :
-  RodModelForce(rod, timestep, "RodModelStraightSurfaceTensionForce"),
+RodModelStraightSurfaceTensionForce::RodModelStraightSurfaceTensionForce  (ElasticRodModel & rod, const std::vector<ElasticRodModel::EdgeStencil> & stencils, Scalar surface_tension_coeff) :
+  RodModelForce(rod, 0, "RodModelStraightSurfaceTensionForce"),
   m_stencils(),
   m_surface_tension_coeff(surface_tension_coeff)
 {
@@ -18,12 +18,12 @@ RodModelStraightSurfaceTensionForce  ::RodModelStraightSurfaceTensionForce  (Ela
 
 }
 
-RodModelStraightSurfaceTensionForce  ::~RodModelStraightSurfaceTensionForce  ()
+RodModelStraightSurfaceTensionForce::~RodModelStraightSurfaceTensionForce  ()
 {
   
 }
 
-Scalar RodModelStraightSurfaceTensionForce  ::globalEnergy()
+Scalar RodModelStraightSurfaceTensionForce::globalEnergy()
 {
   Scalar energy = 0;
   for (size_t i = 0; i < m_stencils.size(); i++)
@@ -33,7 +33,7 @@ Scalar RodModelStraightSurfaceTensionForce  ::globalEnergy()
   return energy;
 }
 
-void RodModelStraightSurfaceTensionForce  ::globalForce(VecXd & force)
+void RodModelStraightSurfaceTensionForce::globalForce(VecXd & force)
 {
   ElementForce localforce;
   for (size_t i = 0; i < m_stencils.size(); i++)
@@ -44,7 +44,7 @@ void RodModelStraightSurfaceTensionForce  ::globalForce(VecXd & force)
   }
 }
 
-void RodModelStraightSurfaceTensionForce  ::globalJacobian(Scalar scale, MatrixBase & Jacobian)
+void RodModelStraightSurfaceTensionForce::globalJacobian(Scalar scale, MatrixBase & Jacobian)
 {
   ElementJacobian localjacobian;
   for (size_t i = 0; i < m_stencils.size(); i++)
@@ -54,19 +54,19 @@ void RodModelStraightSurfaceTensionForce  ::globalJacobian(Scalar scale, MatrixB
   }
 }
 
-Scalar RodModelStraightSurfaceTensionForce  ::localEnergy(Stencil & s)
+Scalar RodModelStraightSurfaceTensionForce::localEnergy(Stencil & s)
 {
 
   Scalar len = rod().getEdgeLength(s.e);
   Vec2d radii = rod().getRadii(s.e);
   Scalar vol = rod().getVolume(s.e);
-
+  
   //assume radii are the same on each axis (i.e. an isotropic thread)
   //use the cylinder surface area formula: 2*pi*r*h, and simplify
   return m_surface_tension_coeff * 2 * sqrt(M_PI * vol * len);
 }
 
-void RodModelStraightSurfaceTensionForce ::localForce(ElementForce & force, Stencil & s)
+void RodModelStraightSurfaceTensionForce::localForce(ElementForce & force, Stencil & s)
 {
   Vec2d radii = rod().getRadii(s.e);
   Scalar len = rod().getEdgeLength(s.e);
@@ -78,7 +78,7 @@ void RodModelStraightSurfaceTensionForce ::localForce(ElementForce & force, Sten
   force.segment<3> (3) = -f;
 }
 
-void RodModelStraightSurfaceTensionForce  ::localJacobian(ElementJacobian & jacobian, Stencil & s)
+void RodModelStraightSurfaceTensionForce::localJacobian(ElementJacobian & jacobian, Stencil & s)
 {
   Vec2d radii = rod().getRadii(s.e);
   Scalar len = rod().getEdgeLength(s.e);
@@ -88,14 +88,14 @@ void RodModelStraightSurfaceTensionForce  ::localJacobian(ElementJacobian & jaco
   Mat3d M = sqrt(M_PI*vol) * ( 1.0 / pow(len, 1.5) * Mat3d::Identity() - 1.5 * outerProd(edgeVec, edgeVec) / pow(len, 3.5));
 
   //TODO: this is copied from RodStretchingForce::elementJacobian(). can't this be implemented using blocks?
-  for (int i = 0; i < 3; i++)
+  /*for (int i = 0; i < 3; i++)
   {
-    for (int j = 0; j < 3; j++)
-    {
-      jacobian(i, j) = jacobian(3 + i, 3 + j) = -M(i, j);
-      jacobian(3 + i, j) = jacobian(i, 3 + j) = M(i, j);
-    }
+  for (int j = 0; j < 3; j++)
+  {
+  jacobian(i, j) = jacobian(3 + i, 3 + j) = -M(i, j);
+  jacobian(3 + i, j) = jacobian(i, 3 + j) = M(i, j);
   }
+  }*/
   
   assert(isSymmetric(jacobian));
 }

@@ -17,6 +17,8 @@
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 #include "BASim/src/Physics/DeformableObjects/Rods/RodModelForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Solids/SolidElasticityForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Rods/RodModelStraightSurfaceTensionForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Rods/RodModelSlopedSurfaceTensionForce.hh"
 
 using namespace BASim;
 
@@ -127,6 +129,9 @@ RodShellTest::RodShellTest() :
   AddOption("rod-Youngs-damping", "the damping coefficient associated with the rod's Young's modulus", 0.0f);
   AddOption("rod-Shear-damping", "the damping coefficient associated to the rod's shear modulus", 0.0f);
 
+  //Surface tension for rods
+  AddOption("rod-surface-tension", "surface tension coefficient for the rod/thread model", 0.0f);
+
   //Basic shell options
   AddOption("shell-thickness", "the (initial) thickness of the shell", 0.01);
   AddOption("shell-density", "volumetric density of the shell ", 1.0);
@@ -234,8 +239,8 @@ sceneFunc rodshell_scenes[] =
   &RodShellTest::setupScene8,  // collapsible tunnel opening
   &RodShellTest::setupScene9,  // balls in bag
   &RodShellTest::setupScene10,  // Christopher's first Houdini export test
-  &RodShellTest::setupScene11   // solid elasticity test
-
+  &RodShellTest::setupScene11,  // solid elasticity test
+  &RodShellTest::setupScene12   // rod surface tension test
 };
 
 void RodShellTest::Setup()
@@ -299,6 +304,27 @@ void RodShellTest::Setup()
   //Call the appropriate scene setup function.
   (*this.*rodshell_scenes[sceneChoice])();
   
+  //Create a default rod model
+  if(rod == NULL) {
+    rod = new ElasticRodModel(obj, std::vector<EdgeHandle>(), m_timestep);
+    obj->addModel(rod);
+  }
+
+  //Create a default shell model
+  if(shell == NULL) {
+    FaceProperty<char> shellFaces(obj); 
+    shellFaces.assign(false); // no face anyway  
+    shell = new ElasticShell(obj, shellFaces, m_timestep);
+    obj->addModel(shell);
+  }
+
+  //Create a default solid model
+  if(solid == NULL) {
+    TetProperty<char> tetFaces(obj);
+    solid = new ElasticSolid(obj, tetFaces, m_timestep);
+    obj->addModel(solid);
+  }
+
   //compute the dof indexing for use in the diff_eq solver
   obj->computeDofIndexing();
   
@@ -312,6 +338,18 @@ void RodShellTest::Setup()
   Scalar rod_Youngs_damping = GetScalarOpt("rod-Youngs-damping");
   Scalar rod_Shear_damping = GetScalarOpt("rod-Shear-damping");
   rod->setup(rod_Youngs_modulus, rod_Youngs_damping, rod_Shear_modulus, rod_Shear_damping, m_timestep);
+  
+  Scalar rod_surface_tension = GetScalarOpt("rod-surface-tension");
+  if(rod_surface_tension != 0) {
+    std::vector<ElasticRodModel::EdgeStencil> edgeStencil;
+    rod->getEdgeStencils(edgeStencil);
+    //RodModelForce* st_force = new RodModelStraightSurfaceTensionForce(*rod, edgeStencil, rod_surface_tension);
+    
+    std::vector<ElasticRodModel::JointStencil> jointStencil;
+    rod->getJointStencils(jointStencil);
+    RodModelForce* st_force = new RodModelSlopedSurfaceTensionForce(*rod, jointStencil, rod_surface_tension);
+    rod->addForce(st_force);
+  }
 
   //////////////////////////////////////////////////////////////////////////
   //
@@ -334,6 +372,7 @@ void RodShellTest::Setup()
       shell->addForce(new MNBendingForce(*shell, "MNBending", shell_Youngs_modulus, shell_Poisson_ratio, shell_Youngs_damping, shell_Poisson_damping, timestep));
   }
   
+
   //Gravity force (handled by shell only, not rod because we only need one copy of the force)
   shell->addForce(new ShellGravityForce(*shell, "Gravity", gravity)); // TODO: move gravity force to the PositionDofsModel?
   
@@ -364,7 +403,6 @@ void RodShellTest::Setup()
   
   if(solid != 0) {
     solid->setDensity(solid_density);
-  
     solid->computeMasses();
   }
 
@@ -538,12 +576,14 @@ void RodShellTest::AtEachTimestep()
   }
 
   std::cout << "====================================================" << std::endl;
+  
   /*
   for (VertexIterator i = obj->vertices_begin(); i != obj->vertices_end(); ++i)
   {
     Vec3d v = obj->getVertexPosition(*i);
     std::cout << v.x() << " " << v.y() << " " << v.z() << std::endl;
   }
+  
   for (EdgeIterator i = obj->edges_begin(); i != obj->edges_end(); ++i)
   {
     if (rod->isEdgeActive(*i))
@@ -2147,6 +2187,70 @@ void RodShellTest::setupScene11()
   shell->setEdgeVelocities(zeros);
   shell->setEdgeUndeformed(zeros);
  
+
+
+}
+
+void RodShellTest::setupScene12()
+{
+
+  std::vector<Vec3d> vertices;
+
+  // Create 4 vertices for a rod/thread
+  vertices.push_back(Vec3d(0,0,0));
+  vertices.push_back(Vec3d(0,-1,0));
+  vertices.push_back(Vec3d(0,-2,0));
+  vertices.push_back(Vec3d(0,-3,0));
+  
+  /*vertices.push_back(Vec3d(0.25,-1,0));
+  vertices.push_back(Vec3d(0.35,-2,0));
+  vertices.push_back(Vec3d(0.3,-3,0));
+*/
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> positions(obj);
+  VertexProperty<Vec3d> velocities(obj);
+  VertexProperty<Vec3d> undeformed(obj);
+
+  for (size_t i = 0; i < vertices.size(); ++i)
+  {
+    VertexHandle h = obj->addVertex();
+
+    Vec3d vert = vertices[i];
+    positions[h] = vert;
+    velocities[h] = Vec3d(0, 0, 0);
+    undeformed[h] = vert;
+    vertHandles.push_back(h);
+  }
+  int nv = vertices.size();
+
+  obj->setVertexPositions(positions);
+  obj->setVertexVelocities(velocities);
+  obj->setVertexUndeformedPositions(undeformed);
+
+
+  //construct rod edges
+  std::vector<EdgeHandle> edges;
+
+  for(unsigned int i = 0; i < vertHandles.size()-1; ++i) {
+    EdgeHandle edge = obj->addEdge(vertHandles[i], vertHandles[i+1]); 
+    edges.push_back(edge);
+  }
+  
+  
+  // create a rod model
+  rod = new ElasticRodModel(obj, edges, m_timestep);
+  obj->addModel(rod);
+
+  // set init dofs for edges
+  EdgeProperty<Scalar> zeros(obj);
+  zeros.assign(0);
+  rod->setEdgeThetas(zeros);
+  rod->setEdgeThetaVelocities(zeros);
+  rod->setEdgeUndeformedThetas(zeros);
+
+  //Pin top vertex
+  Vec3d pos = obj->getVertexPosition(vertHandles[0]);
+  obj->constrainVertex(vertHandles[0], pos);
 
 
 }

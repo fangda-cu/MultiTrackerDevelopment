@@ -170,6 +170,8 @@ namespace BASim
     void releaseEdge(const EdgeHandle & e);
     bool isConstrained(const EdgeHandle & e) const;
     
+    void getEdgeStencils(std::vector<EdgeStencil>& stencils) { stencils = m_edge_stencils; }
+    void getJointStencils(std::vector<JointStencil>& stencils) { stencils = m_joint_stencils; }
   protected:
     void updateRadii();
             

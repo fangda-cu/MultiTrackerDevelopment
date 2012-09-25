@@ -14,8 +14,8 @@ typedef CVec3T<Real> Vector3d;
 
 using namespace BASim;
 
-RodModelSlopedSurfaceTensionForce::RodModelSlopedSurfaceTensionForce(ElasticRodModel & rod, const std::vector<ElasticRodModel::JointStencil> & stencils, Scalar surface_tension_coeff, Scalar timestep) :
-  RodModelForce(rod, timestep, "RodModelSlopedSurfaceTensionForce"),
+RodModelSlopedSurfaceTensionForce::RodModelSlopedSurfaceTensionForce(ElasticRodModel & rod, const std::vector<ElasticRodModel::JointStencil> & stencils, Scalar surface_tension_coeff) :
+  RodModelForce(rod, 0, "RodModelSlopedSurfaceTensionForce"),
   m_stencils(),
   m_surface_tension_coeff(surface_tension_coeff)
 {
@@ -95,18 +95,22 @@ adreal<9,DO_HESS,Real> STEnergy(const std::vector<Scalar>& deformed, const Vec2d
 
 Scalar RodModelSlopedSurfaceTensionForce::localEnergy(Stencil & s)
 {
-  
-  //length is half of each edge
-  Scalar len = 0.5*(rod().getEdgeLength(s.e1) + rod().getEdgeLength(s.e2)); 
-  
-  // we assume isotropic rods, so just take the average radius
-  Vec2d radii0 = rod().getRadii(s.e1);
-  Vec2d radii1 = rod().getRadii(s.e2);
-  Scalar R = 0.5*(radii0[0] + radii0[1]);
-  Scalar r = 0.5*(radii1[0] + radii1[1]);
+ 
+  Scalar vol0 = rod().getVolume(s.e1);
+  Scalar vol1 = rod().getVolume(s.e2);
+  Vec2d vols(vol0, vol1);
+  Vec3d x0 = rod().getDefoObj().getVertexPosition(s.v1);
+  Vec3d x1 = rod().getDefoObj().getVertexPosition(s.v2);
+  Vec3d x2 = rod().getDefoObj().getVertexPosition(s.v3);
 
-  //use the truncated cone surface area formula: pi*(R+r)*sqrt(l^2 + (R-r)^2)
-  return m_surface_tension_coeff * M_PI * (R + r) * sqrt(len*len + (R - r)*(R - r));
+  std::vector<Scalar> deformed_data(9);
+  deformed_data[0] = x0[0]; deformed_data[1] = x0[1];  deformed_data[2] = x0[2]; 
+  deformed_data[3] = x1[0]; deformed_data[4] = x1[1];  deformed_data[5] = x1[2]; 
+  deformed_data[6] = x2[0]; deformed_data[7] = x2[1];  deformed_data[8] = x2[2]; 
+
+  adreal<9,0,Real> e = STEnergy<0>(deformed_data, vols, m_surface_tension_coeff);     
+  
+  return e.value();
 }
 
 void RodModelSlopedSurfaceTensionForce::localForce(ElementForce & force, Stencil & s)
@@ -124,10 +128,10 @@ void RodModelSlopedSurfaceTensionForce::localForce(ElementForce & force, Stencil
   deformed_data[6] = x2[0]; deformed_data[7] = x2[1];  deformed_data[8] = x2[2]; 
 
   adreal<9,0,Real> e = STEnergy<0>(deformed_data, vols, m_surface_tension_coeff);     
-  for( uint i = 0; i < 9; i++ )
-  {
-    force[i] = -e.gradient(i);
-  }
+  for(int i = 0; i < 3; ++i)
+    for(int j = 0; j < 3; ++j)
+      force[i*4 + j] = -e.gradient(i*3 + j);
+    
 
 }
 
@@ -146,9 +150,19 @@ void RodModelSlopedSurfaceTensionForce::localJacobian(ElementJacobian & jacobian
   deformed_data[6] = x2[0]; deformed_data[7] = x2[1];  deformed_data[8] = x2[2]; 
 
   adreal<9,1,Real> e = STEnergy<1>(deformed_data, vols, m_surface_tension_coeff);     
-  for( uint i = 0; i < 9; i++ ) {
-    for( uint j = 0; j < 9; j++ ) {
-      jacobian(i,j) = -e.hessian(i,j);
+ 
+  //modify the indices to skip over every 4th one, since those are the 
+  for( uint i = 0; i < 3; i++) {
+    for( uint j = 0; j < 3; j++) {
+      uint indLeft0 = i*4+j;
+      uint indRight0 = i*3+j;
+      for(uint k = 0; k < 3; ++k) {
+        for(uint m = 0; m < 3; ++m) {
+          uint indLeft1 = k*4+m;
+          uint indRight1 = k*3+m;
+          jacobian(indLeft0,indLeft1) = -e.hessian(indRight0,indRight1);
+        }
+      }
     }
   }
 

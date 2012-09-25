@@ -25,7 +25,7 @@ namespace BASim
     };
 
   public:
-    RodModelStraightSurfaceTensionForce  (ElasticRodModel & rod, const std::vector<ElasticRodModel::EdgeStencil> & stencils, Scalar surface_tension_coeff, Scalar timestep);
+    RodModelStraightSurfaceTensionForce  (ElasticRodModel & rod, const std::vector<ElasticRodModel::EdgeStencil> & stencils, Scalar surface_tension_coeff);
     virtual ~RodModelStraightSurfaceTensionForce  ();
 
   public:

@@ -206,7 +206,7 @@ namespace BASim
       }
     }
 
-    // compute the derived properties, based on undeformed configuration and user sepcified undeformed reference directors
+    // compute the derived properties, based on undeformed configuration and user specified undeformed reference directors
     updateProperties();
     
     // set up the three internal forces
