@@ -85,17 +85,17 @@ void RodModelStraightSurfaceTensionForce::localJacobian(ElementJacobian & jacobi
   Vec3d edgeVec = rod().getEdge(s.e);
   Scalar vol = rod().getVolume(s.e);
 
-  Mat3d M = sqrt(M_PI*vol) * ( 1.0 / pow(len, 1.5) * Mat3d::Identity() - 1.5 * outerProd(edgeVec, edgeVec) / pow(len, 3.5));
+  Mat3d M = m_surface_tension_coeff * sqrt(M_PI*vol) * ( 1.0 / pow(len, 1.5) * Mat3d::Identity() - 1.5 * outerProd(edgeVec, edgeVec) / pow(len, 3.5));
 
   //TODO: this is copied from RodStretchingForce::elementJacobian(). can't this be implemented using blocks?
-  /*for (int i = 0; i < 3; i++)
+  for (int i = 0; i < 3; i++)
   {
-  for (int j = 0; j < 3; j++)
-  {
-  jacobian(i, j) = jacobian(3 + i, 3 + j) = -M(i, j);
-  jacobian(3 + i, j) = jacobian(i, 3 + j) = M(i, j);
+    for (int j = 0; j < 3; j++)
+    {
+      jacobian(i, j) = jacobian(3 + i, 3 + j) = -M(i, j);
+      jacobian(3 + i, j) = jacobian(i, 3 + j) = M(i, j);
+    }
   }
-  }*/
   
   assert(isSymmetric(jacobian));
 }

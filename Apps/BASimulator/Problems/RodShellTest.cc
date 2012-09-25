@@ -343,11 +343,11 @@ void RodShellTest::Setup()
   if(rod_surface_tension != 0) {
     std::vector<ElasticRodModel::EdgeStencil> edgeStencil;
     rod->getEdgeStencils(edgeStencil);
-    //RodModelForce* st_force = new RodModelStraightSurfaceTensionForce(*rod, edgeStencil, rod_surface_tension);
+    RodModelForce* st_force = new RodModelStraightSurfaceTensionForce(*rod, edgeStencil, rod_surface_tension);
     
-    std::vector<ElasticRodModel::JointStencil> jointStencil;
+    /*std::vector<ElasticRodModel::JointStencil> jointStencil;
     rod->getJointStencils(jointStencil);
-    RodModelForce* st_force = new RodModelSlopedSurfaceTensionForce(*rod, jointStencil, rod_surface_tension);
+    RodModelForce* st_force = new RodModelSlopedSurfaceTensionForce(*rod, jointStencil, rod_surface_tension);*/
     rod->addForce(st_force);
   }
 
