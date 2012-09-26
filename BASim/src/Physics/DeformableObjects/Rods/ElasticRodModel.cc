@@ -11,6 +11,7 @@ namespace BASim
   PhysicalModel(*object), 
   m_edge_stencils(),
   m_joint_stencils(),
+  m_triedge_stencils(),
   m_edge_active(object),
   m_theta(object),
   m_theta_vel(object),
@@ -120,6 +121,41 @@ namespace BASim
         }
       }
     }
+
+    for (size_t i = 0; i < rodedges.size(); i++)
+    {
+
+      // each rod edge forms an edge stencil
+      ThreeEdgeStencil s;
+      s.id = m_triedge_stencils.size();
+
+      s.e1 = rodedges[i];
+
+      EdgeVertexIterator evit = object->ev_iter(s.e1);
+      s.v1 = *evit; ++evit;
+      s.v2 = *evit; ++evit;
+      assert(!evit);
+
+      VertexEdgeIterator veit = object->ve_iter(s.v1);
+      if(*veit == s.e1) ++veit;
+      s.e0 = *veit;
+
+      VertexEdgeIterator veit2 = object->ve_iter(s.v2);
+      if(*veit2 == s.e1) ++veit2;
+      s.e2 = *veit2;
+
+      EdgeVertexIterator evit2 = object->ev_iter(s.e0);
+      if(*evit2 == s.v1) ++evit2;
+      s.v0 = *evit2;
+
+      EdgeVertexIterator evit3 = object->ev_iter(s.e2);
+      if(*evit3 == s.v2) ++evit3;
+      s.v3 = *evit3;
+
+      m_triedge_stencils.push_back(s);      
+    }
+
+    
   }
   
   void ElasticRodModel::setUndeformedReferenceDirector1(const EdgeProperty<Vec3d> & undeformed_reference_director1)
@@ -172,6 +208,37 @@ namespace BASim
       
       s.dofindices[3] = getEdgeDofBase(s.e1);
       s.dofindices[7] = getEdgeDofBase(s.e2);      
+    }
+
+    // collect the dof indices info in the stencils. this can't be done in constructor because dof indexing hasn't been computed then
+    for (size_t i = 0; i < m_triedge_stencils.size(); i++)
+    {
+      ThreeEdgeStencil & s = m_triedge_stencils[i];
+
+      s.dofindices.resize(12);
+      int dofbase;
+      if(s.e0.isValid()) {
+        dofbase= getDefoObj().getPositionDofBase(s.v0);
+        s.dofindices[0] = dofbase;
+        s.dofindices[1] = dofbase + 1;
+        s.dofindices[2] = dofbase + 2;
+      }
+      
+      dofbase = getDefoObj().getPositionDofBase(s.v1);
+      s.dofindices[3] = dofbase;
+      s.dofindices[4] = dofbase + 1;
+      s.dofindices[5] = dofbase + 2;
+      dofbase = getDefoObj().getPositionDofBase(s.v2);
+      s.dofindices[6] = dofbase;
+      s.dofindices[7] = dofbase + 1;
+      s.dofindices[8] = dofbase + 2;
+      
+      if(s.e2.isValid()) {
+        dofbase = getDefoObj().getPositionDofBase(s.v3);
+        s.dofindices[9] = dofbase;
+        s.dofindices[10] = dofbase + 1;
+        s.dofindices[11] = dofbase + 2;
+      }
     }
     
     // swap in the undeformed configuration as current configuration, because rod force initialization code assumes this

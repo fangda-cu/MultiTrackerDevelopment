@@ -12,7 +12,7 @@ rod-Youngs-damping 1	# the damping coefficient associated with the rod's Young's
 rod-Shear 0	# the shear modulus of the rod material
 rod-Shear-damping 0.0	# the damping coefficient associated to the rod's shear modulus
 
-rod-surface-tension 0.01  # surface tension coefficient for the rod/thread model
+rod-surface-tension 0.05  # surface tension coefficient for the rod/thread model
 
 shell-x-resolution 12	# the number of segments along first dimension
 shell-y-resolution 24	# the number of segments along second dimension

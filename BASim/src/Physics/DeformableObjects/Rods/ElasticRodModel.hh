@@ -76,6 +76,22 @@ namespace BASim
         voronoiLength = s.voronoiLength;
       }
     };
+
+    struct ThreeEdgeStencil : Stencil  // one rod edge with its two neighbours
+    {
+      ThreeEdgeStencil() { }
+      ThreeEdgeStencil(const ThreeEdgeStencil & s) : Stencil(s), e0(s.e0), e1(s.e1), e2(s.e2), 
+                                                                 v0(s.v0), v1(s.v1), v2(s.v2), v3(s.v3) { copyData(s); }
+
+      // stencil coverage
+      EdgeHandle e0, e1, e2;
+      VertexHandle v0, v1, v2, v3;
+      
+      // per-stencil data (cached properties, updated by updateProperties() automatically)
+
+      // copying per-stencil data (used by ElasticRodModel to propagate its computation to forces' stencils)
+      void copyData(const ThreeEdgeStencil & s) { }
+    };
     
   public:
     ElasticRodModel(DeformableObject* object, const std::vector<EdgeHandle> & rodedges, Scalar timestep); ////////////////
@@ -172,13 +188,16 @@ namespace BASim
     
     void getEdgeStencils(std::vector<EdgeStencil>& stencils) { stencils = m_edge_stencils; }
     void getJointStencils(std::vector<JointStencil>& stencils) { stencils = m_joint_stencils; }
+    void getThreeEdgeStencils(std::vector<ThreeEdgeStencil>& stencils) { stencils = m_triedge_stencils; }
+
   protected:
     void updateRadii();
             
     // list of stencils in the mesh that are part of the rod
     std::vector<EdgeStencil> m_edge_stencils;
     std::vector<JointStencil> m_joint_stencils;
-    
+    std::vector<ThreeEdgeStencil> m_triedge_stencils;
+
     // active flag for each edge, used for isEdgeActive() query which is required by defo obj's dof indexing
     EdgeProperty<char> m_edge_active;
     

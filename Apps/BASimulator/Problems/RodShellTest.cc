@@ -19,6 +19,7 @@
 #include "BASim/src/Physics/DeformableObjects/Solids/SolidElasticityForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Rods/RodModelStraightSurfaceTensionForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Rods/RodModelSlopedSurfaceTensionForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Rods/RodModelSlopedSurfaceTensionForce2.hh"
 
 using namespace BASim;
 
@@ -341,13 +342,19 @@ void RodShellTest::Setup()
   
   Scalar rod_surface_tension = GetScalarOpt("rod-surface-tension");
   if(rod_surface_tension != 0) {
-    std::vector<ElasticRodModel::EdgeStencil> edgeStencil;
+    
+    /*std::vector<ElasticRodModel::EdgeStencil> edgeStencil;
     rod->getEdgeStencils(edgeStencil);
-    RodModelForce* st_force = new RodModelStraightSurfaceTensionForce(*rod, edgeStencil, rod_surface_tension);
+    RodModelForce* st_force = new RodModelStraightSurfaceTensionForce(*rod, edgeStencil, rod_surface_tension);*/
     
     /*std::vector<ElasticRodModel::JointStencil> jointStencil;
     rod->getJointStencils(jointStencil);
     RodModelForce* st_force = new RodModelSlopedSurfaceTensionForce(*rod, jointStencil, rod_surface_tension);*/
+
+    std::vector<ElasticRodModel::ThreeEdgeStencil> stencil;
+    rod->getThreeEdgeStencils(stencil);
+    RodModelForce* st_force = new RodModelSlopedSurfaceTensionForce2(*rod, stencil, rod_surface_tension);
+
     rod->addForce(st_force);
   }
 
