@@ -85,28 +85,30 @@ adreal<12,DO_HESS,Real> STEnergy(const std::vector<Scalar>& deformed, const Vec3
 
   adrealST len0, len2;
   adrealST rad0, rad2;
+  
+  adrealST radEnd0, radEnd1;
   if(prevExists) {
     len0 = len(p[1] - p[0]);
     rad0 = sqrt(volumes[0] / len0 / M_PI);
+    radEnd0 = 0.5*(rad0+rad1);
   }
   else {
     len0 = 0;
     rad0 = 0;
+    radEnd0 = rad1;
   }
   
   if(nextExists) {
     len2 = len(p[3] - p[2]);
     rad2 = sqrt(volumes[2] / len2 / M_PI);
+    radEnd1 = 0.5*(rad1+rad2);
   }
   else {
+    radEnd1 = rad1;
     len2 = 0;
     rad2 = 0;
   }
-  
-  //apply length-weighted averaging to get approximate vertex radii
-  adrealST radEnd0 = (len0*rad0+len1*rad1) / (len0 + len1);
-  adrealST radEnd1 = (len1*rad1+len2*rad2) / (len1 + len2);
-  
+ 
   //use the truncated cone formula
   adrealST e(0);
   e += surf_coeff * M_PI * (radEnd0 + radEnd1) * sqrt(len1*len1 + (radEnd0-radEnd1)*(radEnd0-radEnd1));

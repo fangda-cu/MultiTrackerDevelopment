@@ -44,6 +44,10 @@ namespace BASim
     Scalar localEnergy(Stencil & s);
     void localForce(ElementForce & force, Stencil & s);
     void localJacobian(ElementJacobian & jacobian, Stencil & s);
+
+    Scalar localEndEnergy(VertexHandle& vh);
+    void localEndForce(VertexHandle& vh, VertexHandle& vh2, ElementForce & force);
+    void localEndJacobian(VertexHandle& vh, VertexHandle& vh2, ElementJacobian & jacobian);
     
   protected:
     std::vector<Stencil> m_stencils;

@@ -347,13 +347,13 @@ void RodShellTest::Setup()
     rod->getEdgeStencils(edgeStencil);
     RodModelForce* st_force = new RodModelStraightSurfaceTensionForce(*rod, edgeStencil, rod_surface_tension);*/
     
-    /*std::vector<ElasticRodModel::JointStencil> jointStencil;
+    std::vector<ElasticRodModel::JointStencil> jointStencil;
     rod->getJointStencils(jointStencil);
-    RodModelForce* st_force = new RodModelSlopedSurfaceTensionForce(*rod, jointStencil, rod_surface_tension);*/
+    RodModelForce* st_force = new RodModelSlopedSurfaceTensionForce(*rod, jointStencil, rod_surface_tension);
 
-    std::vector<ElasticRodModel::ThreeEdgeStencil> stencil;
+    /*std::vector<ElasticRodModel::ThreeEdgeStencil> stencil;
     rod->getThreeEdgeStencils(stencil);
-    RodModelForce* st_force = new RodModelSlopedSurfaceTensionForce2(*rod, stencil, rod_surface_tension);
+    RodModelForce* st_force = new RodModelSlopedSurfaceTensionForce2(*rod, stencil, rod_surface_tension);*/
 
     rod->addForce(st_force);
   }
@@ -2208,7 +2208,14 @@ void RodShellTest::setupScene12()
   vertices.push_back(Vec3d(0,-1,0));
   vertices.push_back(Vec3d(0,-2,0));
   vertices.push_back(Vec3d(0,-3,0));
-  
+  vertices.push_back(Vec3d(0,-4,0));
+  vertices.push_back(Vec3d(0,-5,0));
+  vertices.push_back(Vec3d(0,-6,0));
+  vertices.push_back(Vec3d(0,-7,0));
+  vertices.push_back(Vec3d(0,-8,0));
+  vertices.push_back(Vec3d(0,-9,0));
+  vertices.push_back(Vec3d(0,-10,0));
+
   /*vertices.push_back(Vec3d(0.25,-1,0));
   vertices.push_back(Vec3d(0.35,-2,0));
   vertices.push_back(Vec3d(0.3,-3,0));
