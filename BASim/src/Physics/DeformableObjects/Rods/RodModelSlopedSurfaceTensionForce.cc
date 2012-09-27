@@ -40,12 +40,11 @@ Scalar RodModelSlopedSurfaceTensionForce::globalEnergy()
     energy += localEnergy(m_stencils[i]);
   }
 
-  //add endpoint energies
+  //Add endpoint energies
   DeformableObject& obj = rod().getDefoObj();
   for(VertexIterator vit = obj.vertices_begin(); vit != obj.vertices_end(); ++vit) {
     VertexHandle vh = *vit;
     if(obj.vertexIncidentEdges(vh) == 1) {
-      //figure out appropriate dof indices
       energy += localEndEnergy(vh);
     }
   }
@@ -68,10 +67,8 @@ void RodModelSlopedSurfaceTensionForce::globalForce(VecXd & force)
   for(VertexIterator vit = obj.vertices_begin(); vit != obj.vertices_end(); ++vit) {
     VertexHandle vh = *vit;
     if(obj.vertexIncidentEdges(vh) == 1) {
-      std::cout << "Processing end force\n";
-      //figure out appropriate dof indices
       
-      //get the other vertex
+      //determine the other vertex
       VertexEdgeIterator vit = obj.ve_iter(vh);
       EdgeHandle edge = *vit;
       EdgeVertexIterator evit = obj.ev_iter(edge);
@@ -79,6 +76,7 @@ void RodModelSlopedSurfaceTensionForce::globalForce(VecXd & force)
       VertexHandle other_vh = *evit;
       assert(other_vh.isValid());
 
+      //figure out appropriate dof indices
       IntArray dofindices(6);
       dofindices[0] = obj.getPositionDofBase(vh);
       dofindices[1] = dofindices[0]+1;
@@ -108,8 +106,7 @@ void RodModelSlopedSurfaceTensionForce::globalJacobian(Scalar scale, MatrixBase 
   for(VertexIterator vit = obj.vertices_begin(); vit != obj.vertices_end(); ++vit) {
     VertexHandle vh = *vit;
     if(obj.vertexIncidentEdges(vh) == 1) {
-      //figure out appropriate dof indices
-
+  
       //get the other vertex
       VertexEdgeIterator vit = obj.ve_iter(vh);
       EdgeHandle edge = *vit;
@@ -118,6 +115,7 @@ void RodModelSlopedSurfaceTensionForce::globalJacobian(Scalar scale, MatrixBase 
       VertexHandle other_vh = *evit;
       assert(other_vh.isValid());
 
+      //figure out appropriate dof indices
       IntArray dofindices(6);
       dofindices[0] = obj.getPositionDofBase(vh);
       dofindices[1] = dofindices[0]+1;
