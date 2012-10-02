@@ -71,10 +71,8 @@ std::vector<VertexHandle> RodShellJointCouplingForce::getVertices(const Stencil 
   VertexHandle vf1 = *fvit; ++fvit; assert(fvit);
   VertexHandle vf2 = *fvit; ++fvit; assert(fvit);
   VertexHandle vf3 = *fvit; ++fvit; assert(!fvit);
-  if (ve1 == vf1 || ve1 == vf2 || ve1 == vf3) 
-    vh[0] = ve1, vh[3] = ve2;
-  else
-    vh[0] = ve2, vh[3] = ve1;
+  if (ve1 == vf1 || ve1 == vf2 || ve1 == vf3) vh[0] = ve1, vh[3] = ve2;
+  if (ve2 == vf1 || ve2 == vf2 || ve2 == vf3) vh[0] = ve2, vh[3] = ve1;
   if (vh[0] == vf1) vh[1] = vf2, vh[2] = vf3;
   if (vh[0] == vf2) vh[1] = vf3, vh[2] = vf1;
   if (vh[0] == vf3) vh[1] = vf1, vh[2] = vf2;

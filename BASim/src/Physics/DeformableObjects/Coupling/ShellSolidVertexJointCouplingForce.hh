@@ -1,12 +1,12 @@
 /**
- * \file ShellSolidJointCouplingForce.h
+ * \file ShellSolidVertexJointCouplingForce.h
  *
  * \author fang@cs.columbia.edu
  * \date 10/01/2012
  */
 
-#ifndef SHELLSOLIDJOINTCOUPLINGFORCE_HH
-#define SHELLSOLIDJOINTCOUPLINGFORCE_HH
+#ifndef SHELLSOLIDVERTEXJOINTCOUPLINGFORCE_HH
+#define SHELLSOLIDVERTEXJOINTCOUPLINGFORCE_HH
 
 #include "BASim/src/Physics/DeformableObjects/DefoObjForce.hh"
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
@@ -20,10 +20,10 @@
 
 namespace BASim 
 {
-  class ShellSolidJointCouplingForce : public DefoObjForce
+  class ShellSolidVertexJointCouplingForce : public DefoObjForce
   {
   public:
-    const static int NumDof = 13;
+    const static int NumDof = 18;
 
     typedef Eigen::Matrix<Scalar, NumDof, 1>      ElementForce;
     typedef Eigen::Matrix<Scalar, NumDof, NumDof> ElementJacobian;
@@ -37,8 +37,8 @@ namespace BASim
       IntArray dofindices;
 
       // stencil coverage
-      EdgeHandle e;
-      FaceHandle f;
+      FaceHandle f; // shell face AEF
+      TetHandle t;  // solid tet ABCD
       
       // cached stiffness
       Scalar stiffness;
@@ -47,17 +47,20 @@ namespace BASim
       // reference strain
       Vec3d undeformed_AB;
       Vec3d undeformed_AC;
+      Vec3d undeformed_AD;
       Vec3d damping_undeformed_AB;
       Vec3d damping_undeformed_AC;
+      Vec3d damping_undeformed_AD;
       
       // cached properties
-      Vec3d AB;  // shell face edge AB in rod's material frame
-      Vec3d AC;  // shell face edge AC in rod's material frame
+      Vec3d AB;  // solid tet edge AB in shell's frame
+      Vec3d AC;  // solid tet edge AC in shell's frame
+      Vec3d AD;  // solid tet edge AD in shell's frame
     };
 
   public:
-    ShellSolidJointCouplingForce(ElasticRodModel & rod, ElasticShell & shell, const std::vector<Stencil> & stencils, Scalar stiffness, Scalar stiffness_damp, Scalar timestep);
-    virtual ~ShellSolidJointCouplingForce();
+    ShellSolidVertexJointCouplingForce(ElasticShell & shell, ElasticSolid & solid, const std::vector<Stencil> & stencils, Scalar stiffness, Scalar stiffness_damp, Scalar timestep);
+    virtual ~ShellSolidVertexJointCouplingForce();
 
   public:
     void addStencil(Stencil & s) { m_stencils.push_back(s); }
@@ -81,14 +84,14 @@ namespace BASim
     void globalJacobian(Scalar scale, MatrixBase & Jacobian);
 
   public:
-    ElasticRodModel & rod() { assert(m_rod); return *m_rod; }
     ElasticShell & shell() { assert(m_shell); return *m_shell; }
+    ElasticSolid & solid() { assert(m_solid); return *m_solid; }
     
     DeformableObject & defoObj() { assert(m_rod); return m_rod->getDefoObj(); }
     
   protected:
     template <int DO_HESS>
-    adreal<NumDof, DO_HESS, Scalar> adEnergy(const RodShellJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, Scalar theta, const Vec3d & ref1, const Vec3d & ref2, const Vec3d & AB, const Vec3d & AC, const Vec3d & undeformed_AB, const Vec3d & undeformed_AC, Scalar stiffness);
+    adreal<NumDof, DO_HESS, Scalar> adEnergy(const ShellSolidVertexJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, const Vec3d & E, const Vec3d & F, const Vec3d & undeformed_AB, const Vec3d & undeformed_AC, const Vec3d & undeformed_AD, Scalar stiffness);
 
   protected:
     Scalar localEnergy(Stencil & s, bool viscous);
@@ -101,8 +104,8 @@ namespace BASim
     std::vector<VertexHandle> getVertices(const Stencil & s);
     
   protected:
-    ElasticRodModel * m_rod;
     ElasticShell * m_shell;
+    ElasticSolid * m_solid;
     
     std::vector<Stencil> m_stencils;
     
@@ -113,4 +116,4 @@ namespace BASim
 }
 
 
-#endif // RODSHELLJOINTCOUPLINGFORCE_HH
+#endif // SHELLSOLIDVERTEXJOINTCOUPLINGFORCE_HH

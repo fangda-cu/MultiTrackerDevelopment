@@ -79,14 +79,12 @@ std::vector<VertexHandle> RodSolidJointCouplingForce::getVertices(const Stencil 
   VertexHandle vt2 = *tvit; ++tvit; assert(tvit);
   VertexHandle vt3 = *tvit; ++tvit; assert(tvit);
   VertexHandle vt4 = *tvit; ++tvit; assert(!tvit);
-  if (ve1 == vt1 || ve1 == vt2 || ve1 == vt3 || ve1 == vt4) 
-    vh[0] = ve1, vh[3] = ve2;
-  else
-    vh[0] = ve2, vh[3] = ve1;
-  if (vh[0] == vt1) vh[1] = vt2, vh[2] = vt3;
-  if (vh[0] == vt2) vh[1] = vt3, vh[2] = vt4;
-  if (vh[0] == vt3) vh[1] = vt4, vh[2] = vt1;
-  if (vh[0] == vt4) vh[1] = vt1, vh[2] = vt2;
+  if (ve1 == vt1 || ve1 == vt2 || ve1 == vt3 || ve1 == vt4) vh[0] = ve1, vh[4] = ve2;
+  if (ve2 == vt1 || ve2 == vt2 || ve2 == vt3 || ve2 == vt4) vh[0] = ve2, vh[4] = ve1;
+  if (vh[0] == vt1) vh[1] = vt2, vh[2] = vt3, vh[3] = vt4;
+  if (vh[0] == vt2) vh[1] = vt3, vh[2] = vt4, vh[3] = vt1;
+  if (vh[0] == vt3) vh[1] = vt4, vh[2] = vt1, vh[3] = vt2;
+  if (vh[0] == vt4) vh[1] = vt1, vh[2] = vt2, vh[3] = vt3;
   return vh;
 }
 
@@ -121,7 +119,7 @@ RodSolidJointCouplingForce::adEnergy(const RodSolidJointCouplingForce & mn, cons
   Vector3d vUndeformedAC = vec2vector(undeformed_AC);
   Vector3d vUndeformedAD = vec2vector(undeformed_AD);
 
-  advecElast p[4];
+  advecElast p[5];
   adrealElast t;
   set_independent(p[0], vA, 0);
   set_independent(p[1], vB, 3);

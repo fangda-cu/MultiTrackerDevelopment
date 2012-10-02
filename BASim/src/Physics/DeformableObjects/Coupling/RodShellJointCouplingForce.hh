@@ -36,8 +36,8 @@ namespace BASim
       IntArray dofindices;
 
       // stencil coverage
-      EdgeHandle e;
-      FaceHandle f;
+      EdgeHandle e;   // rod edge AD
+      FaceHandle f;   // shell face ABC
       
       // cached stiffness
       Scalar stiffness;

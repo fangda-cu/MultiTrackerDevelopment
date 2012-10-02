@@ -37,8 +37,8 @@ namespace BASim
       IntArray dofindices;
 
       // stencil coverage
-      EdgeHandle e;
-      TetHandle t;
+      EdgeHandle e; // rod edge AE
+      TetHandle t;  // solid tet ABCD
       
       // cached stiffness
       Scalar stiffness;
@@ -53,9 +53,9 @@ namespace BASim
       Vec3d damping_undeformed_AD;
       
       // cached properties
-      Vec3d AB;  // shell face edge AB in rod's material frame
-      Vec3d AC;  // shell face edge AC in rod's material frame
-      Vec3d AD;  // shell face edge AD in rod's material frame
+      Vec3d AB;  // solid tet edge AB in rod's material frame
+      Vec3d AC;  // solid tet edge AC in rod's material frame
+      Vec3d AD;  // solid tet edge AD in rod's material frame
     };
 
   public:
