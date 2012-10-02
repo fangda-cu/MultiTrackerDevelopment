@@ -619,7 +619,7 @@ void RodShellTest::AtEachTimestep()
       rodshell_stencil.f = m_s14_shell_faces[0];
       rodshell_stencils.push_back(rodshell_stencil);
       Scalar stiffness =          GetScalarOpt("rod-shell-vertex-joint-coupling-stiffness");
-      Scalar stiffness_damping =  GetScalarOpt("rod-shell-vertexjoint-coupling-stiffness-damping");
+      Scalar stiffness_damping =  GetScalarOpt("rod-shell-vertex-joint-coupling-stiffness-damping");
       obj->addForce(new RodShellVertexJointCouplingForce(*rod, *shell, rodshell_stencils, stiffness, stiffness_damping, m_timestep));
     }
   }
