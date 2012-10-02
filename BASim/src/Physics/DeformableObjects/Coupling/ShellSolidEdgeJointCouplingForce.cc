@@ -115,11 +115,11 @@ ShellSolidEdgeJointCouplingForce::adEnergy(const ShellSolidEdgeJointCouplingForc
 
   adrealElast e(0);
 
-  advecElast vAB = (p[1] - p[0]).normalized();
+  advecElast vAB = (p[1] - p[0]); vAB /= len(vAB);
   advecElast vM = (p[0] + p[1]) * 0.5;
   advecElast vP = (p[2] + p[3]) * 0.5;
-  advecElast vME = normalized((p[4] - vM) - (p[4] - vM).dot(vAB) * vAB);
-  advecElast vMP = normalized((vP - vM) - (vP - vM).dot(vAB) * vAB);
+  advecElast vME = ((p[4] - vM) - dot(p[4] - vM, vAB) * vAB);  vME /= len(vME);
+  advecElast vMP = ((vP - vM) - dot(vP - vM, vAB) * vAB);  vMP /= len(vMP);
   advecElast vMErot = vME * cos(delta) + cross(vAB, vME) * sin(delta);
   adrealElast newdelta = delta + atan2(dot(cross(vMErot, vMP), vAB), dot(vMErot, vMP));
   
@@ -180,7 +180,7 @@ Scalar ShellSolidEdgeJointCouplingForce::localEnergy(Stencil & s, bool viscous)
   Vec3d D = defoObj().getVertexPosition(vh[3]);
   Vec3d E = defoObj().getVertexPosition(vh[4]);
   
-  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, s.delta, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
   Scalar energy = e.value();
 
   return energy;
@@ -195,7 +195,7 @@ void ShellSolidEdgeJointCouplingForce::localForce(ElementForce & force, Stencil 
   Vec3d D = defoObj().getVertexPosition(vh[3]);
   Vec3d E = defoObj().getVertexPosition(vh[4]);
   
-  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, s.delta, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
   for (int i = 0; i < NumDof; i++)
   {
     force[i] = -e.gradient(i);
@@ -211,7 +211,7 @@ void ShellSolidEdgeJointCouplingForce::localJacobian(ElementJacobian & jacobian,
   Vec3d D = defoObj().getVertexPosition(vh[3]);
   Vec3d E = defoObj().getVertexPosition(vh[4]);
   
-  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, s.delta, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
   for (int i = 0; i < NumDof; i++)
     for (int j = 0; j < NumDof; j++)
     {

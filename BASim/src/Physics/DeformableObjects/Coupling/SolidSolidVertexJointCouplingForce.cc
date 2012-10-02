@@ -16,12 +16,8 @@ SolidSolidVertexJointCouplingForce::SolidSolidVertexJointCouplingForce(ElasticSo
     Stencil s(stencils[i]);
     s.stiffness = 0;
     s.viscous_stiffness = 0;
-    s.undeformed_AB.setZero();
-    s.undeformed_AC.setZero();
-    s.undeformed_AD.setZero();
-    s.damping_undeformed_AB.setZero();
-    s.damping_undeformed_AC.setZero();
-    s.damping_undeformed_AD.setZero();
+    s.undeformed_AP.setZero();
+    s.damping_undeformed_AP.setZero();
     
     std::vector<VertexHandle> vh = getVertices(s);
     s.dofindices.resize(NumDof);
@@ -54,9 +50,7 @@ SolidSolidVertexJointCouplingForce::SolidSolidVertexJointCouplingForce(ElasticSo
     s.dofindices[19] = dofbase + 1;
     s.dofindices[20] = dofbase + 2;
         
-    s.AB.setZero();  // will be computed by updateProperties() below
-    s.AC.setZero();
-    s.AD.setZero();
+    s.AP.setZero();  // will be computed by updateProperties() below
     
     m_stencils.push_back(s);
   }
@@ -107,7 +101,7 @@ SolidSolidVertexJointCouplingForce::Vector3d SolidSolidVertexJointCouplingForce:
 
 template <int DO_HESS>
 adreal<SolidSolidVertexJointCouplingForce::NumDof, DO_HESS, Scalar> 
-SolidSolidVertexJointCouplingForce::adEnergy(const SolidSolidVertexJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, const Vec3d & E, const Vec3d & F, const Vec3d & G, const Vec3d & undeformed_AB, const Vec3d & undeformed_AC, const Vec3d & undeformed_AD, Scalar stiffness) 
+SolidSolidVertexJointCouplingForce::adEnergy(const SolidSolidVertexJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, const Vec3d & E, const Vec3d & F, const Vec3d & G, const Vec3d & undeformed_AP, Scalar stiffness) 
 {  
   // typedefs to simplify code below
   typedef adreal<SolidSolidVertexJointCouplingForce::NumDof, DO_HESS, Scalar> adrealElast;
@@ -122,9 +116,7 @@ SolidSolidVertexJointCouplingForce::adEnergy(const SolidSolidVertexJointCoupling
   Vector3d vE = vec2vector(E);
   Vector3d vF = vec2vector(F);
   Vector3d vG = vec2vector(G);
-  Vector3d vUndeformedAB = vec2vector(undeformed_AB);
-  Vector3d vUndeformedAC = vec2vector(undeformed_AC);
-  Vector3d vUndeformedAD = vec2vector(undeformed_AD);
+  Vector3d vUndeformedAP = vec2vector(undeformed_AP);
 
   advecElast p[7];
   set_independent(p[0], vA, 0);
@@ -137,15 +129,14 @@ SolidSolidVertexJointCouplingForce::adEnergy(const SolidSolidVertexJointCoupling
 
   adrealElast e(0);
   
-  advecElast md1 = normalized(p[4] + p[5] - p[0] * 2);
-  advecElast md2 = normalized(p[4] - p[5] - dot(p[4] - p[5], md1) * md1);
+  advecElast md1 = (p[4] + p[5] - p[0] * 2.0);  md1 /= len(md1);
+  advecElast md2 = (p[4] - p[5] - dot(p[4] - p[5], md1) * md1); md2 /= len(md2);
   advecElast md3 = cross(md1, md2);
-  
-  advecElast vAB = advecElast(dot(p[1] - p[0], md1), dot(p[1] - p[0], md2), dot(p[1] - p[0], md3));
-  advecElast vAC = advecElast(dot(p[2] - p[0], md1), dot(p[2] - p[0], md2), dot(p[2] - p[0], md3));
-  advecElast vAD = advecElast(dot(p[3] - p[0], md1), dot(p[3] - p[0], md2), dot(p[3] - p[0], md3));
 
-  e = stiffness * (dot(vAB - vUndeformedAB, vAB - vUndeformedAB) + dot(vAC - vUndeformedAC, vAC - vUndeformedAC) + dot(vAD - vUndeformedAD, vAD - vUndeformedAD));
+  advecElast vP = (p[1] + p[2] + p[3]) * (1.0 / 3);
+  advecElast vAP = advecElast(dot(vP - p[0], md1), dot(vP - p[0], md2), dot(vP - p[0], md3));
+
+  e = stiffness * dot(vAP - vUndeformedAP, vAP - vUndeformedAP);
 
   return e;
 }
@@ -204,7 +195,7 @@ Scalar SolidSolidVertexJointCouplingForce::localEnergy(Stencil & s, bool viscous
   Vec3d F = defoObj().getVertexPosition(vh[5]);
   Vec3d G = defoObj().getVertexPosition(vh[6]);
   
-  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, F, G, (viscous ? s.damping_undeformed_AB : s.undeformed_AB), (viscous ? s.damping_undeformed_AC : s.undeformed_AC), (viscous ? s.damping_undeformed_AD : s.undeformed_AD), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, F, G, (viscous ? s.damping_undeformed_AP : s.undeformed_AP), (viscous ? m_stiffness_damp : m_stiffness));
   Scalar energy = e.value();
 
   return energy;
@@ -221,7 +212,7 @@ void SolidSolidVertexJointCouplingForce::localForce(ElementForce & force, Stenci
   Vec3d F = defoObj().getVertexPosition(vh[5]);
   Vec3d G = defoObj().getVertexPosition(vh[6]);
   
-  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, F, G, (viscous ? s.damping_undeformed_AB : s.undeformed_AB), (viscous ? s.damping_undeformed_AC : s.undeformed_AC), (viscous ? s.damping_undeformed_AD : s.undeformed_AD), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, F, G, (viscous ? s.damping_undeformed_AP : s.undeformed_AP), (viscous ? m_stiffness_damp : m_stiffness));
   for (int i = 0; i < NumDof; i++)
   {
     force[i] = -e.gradient(i);
@@ -239,7 +230,7 @@ void SolidSolidVertexJointCouplingForce::localJacobian(ElementJacobian & jacobia
   Vec3d F = defoObj().getVertexPosition(vh[5]);
   Vec3d G = defoObj().getVertexPosition(vh[6]);
   
-  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, F, G, (viscous ? s.damping_undeformed_AB : s.undeformed_AB), (viscous ? s.damping_undeformed_AC : s.undeformed_AC), (viscous ? s.damping_undeformed_AD : s.undeformed_AD), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, F, G, (viscous ? s.damping_undeformed_AP : s.undeformed_AP), (viscous ? m_stiffness_damp : m_stiffness));
   for (int i = 0; i < NumDof; i++)
     for (int j = 0; j < NumDof; j++)
     {
@@ -264,9 +255,7 @@ void SolidSolidVertexJointCouplingForce::updateViscousReferenceStrain()
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
-    s.damping_undeformed_AB = s.AB;
-    s.damping_undeformed_AC = s.AC;
-    s.damping_undeformed_AD = s.AD;
+    s.damping_undeformed_AP = s.AP;
   }
 }
 
@@ -287,12 +276,8 @@ void SolidSolidVertexJointCouplingForce::updateProperties()
     Vec3d md1 = (E + F - A * 3).normalized();
     Vec3d md2 = (E - F - (E - F).dot(md1) * md1).normalized();
     Vec3d md3 = md1.cross(md2);
-    Vec3d AB = B - A;
-    Vec3d AC = C - A;
-    Vec3d AD = D - A;
-    s.AB = Vec3d(AB.dot(md1), AB.dot(md2), AB.dot(md3));
-    s.AC = Vec3d(AC.dot(md1), AC.dot(md2), AC.dot(md3));
-    s.AD = Vec3d(AD.dot(md1), AD.dot(md2), AD.dot(md3));
+    Vec3d AP = (B + C + D) / 3 - A;
+    s.AP = Vec3d(AP.dot(md1), AP.dot(md2), AP.dot(md3));
   }
 }
 
@@ -301,9 +286,7 @@ void SolidSolidVertexJointCouplingForce::computeReferenceStrain()
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
-    s.undeformed_AB = s.AB;
-    s.undeformed_AC = s.AC;
-    s.undeformed_AD = s.AD;
+    s.undeformed_AP = s.AP;
   }
 }
 
