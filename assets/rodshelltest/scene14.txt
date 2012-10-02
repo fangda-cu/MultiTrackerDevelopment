@@ -31,12 +31,23 @@ shell-MN-bending false	# whether to apply Mid-edge Normal based bending (Morley 
 
 rod-twist-shell-face-coupling-stiffness 1.0 # rod twist-shell face coupling force stiffness
 rod-twist-shell-face-coupling-stiffness-damping 0 # rod twist-shell face coupling force viscous stiffness
-
 rod-twist-solid-tet-coupling-stiffness 1.0 # rod twist-solid tet coupling force stiffness
 rod-twist-solid-tet-coupling-stiffness-damping 0 # rod twist-solid tet coupling force viscous stiffness
 
-rod-shell-joint-coupling-stiffness 1.0 # rod shell joint coupling force stiffness
-rod-shell-joint-coupling-stiffness-damping 0 # rod shell joint coupling force viscous stiffness
+rod-shell-vertex-joint-coupling-stiffness 1.0 # rod shell vertex joint coupling force stiffness
+rod-shell-vertex-joint-coupling-stiffness-damping 0 # rod shell vertex joint coupling force viscous stiffness
+rod-solid-vertex-joint-coupling-stiffness 1.0 # rod solid vertex joint coupling force stiffness
+rod-solid-vertex-joint-coupling-stiffness-damping 0 # rod solid vertex joint coupling force viscous stiffness
+shell-shell-vertex-joint-coupling-stiffness 1.0 # shell shell vertex joint coupling force stiffness
+shell-shell-vertex-joint-coupling-stiffness-damping 0 # shell shell vertex joint coupling force viscous stiffness
+shell-solid-vertex-joint-coupling-stiffness 1.0 # shell solid vertex joint coupling force stiffness
+shell-solid-vertex-joint-coupling-stiffness-damping 0 # shell solid vertex joint coupling force viscous stiffness
+shell-solid-edge-joint-coupling-stiffness 1.0 # shell solid edge joint coupling force stiffness
+shell-solid-edge-joint-coupling-stiffness-damping 0 # shell solid edge joint coupling force viscous stiffness
+solid-solid-vertex-joint-coupling-stiffness 1.0 # solid solid vertex joint coupling force stiffness
+solid-solid-vertex-joint-coupling-stiffness-damping 0 # solid solid vertex joint coupling force viscous stiffness
+solid-solid-edge-joint-coupling-stiffness 1.0 # solid solid edge joint coupling force stiffness
+solid-solid-edge-joint-coupling-stiffness-damping 0 # solid solid edge joint coupling force viscous stiffness
 
 solid-Youngs 0    # the Young's modulus of the solid material
 solid-Youngs-damping 0	# the damping coefficient associated with the solid's Young's modulus
