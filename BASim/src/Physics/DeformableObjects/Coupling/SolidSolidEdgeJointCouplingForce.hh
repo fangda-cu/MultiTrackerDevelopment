@@ -1,12 +1,12 @@
 /**
- * \file ShellSolidEdgeJointCouplingForce.h
+ * \file SolidSolidEdgeJointCouplingForce.h
  *
  * \author fang@cs.columbia.edu
- * \date 10/01/2012
+ * \date 10/02/2012
  */
 
-#ifndef ShellSolidEdgeJointCouplingForce_HH
-#define ShellSolidEdgeJointCouplingForce_HH
+#ifndef SolidSolidEdgeJointCouplingForce_HH
+#define SolidSolidEdgeJointCouplingForce_HH
 
 #include "BASim/src/Physics/DeformableObjects/DefoObjForce.hh"
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
@@ -20,10 +20,10 @@
 
 namespace BASim 
 {
-  class ShellSolidEdgeJointCouplingForce : public DefoObjForce
+  class SolidSolidEdgeJointCouplingForce : public DefoObjForce
   {
   public:
-    const static int NumDof = 15;
+    const static int NumDof = 18;
 
     typedef Eigen::Matrix<Scalar, NumDof, 1>      ElementForce;
     typedef Eigen::Matrix<Scalar, NumDof, NumDof> ElementJacobian;
@@ -37,8 +37,8 @@ namespace BASim
       IntArray dofindices;
 
       // stencil coverage
-      FaceHandle f; // shell face ABE
-      TetHandle t;  // solid tet ABCD
+      TetHandle t1; // solid tet ABEF
+      TetHandle t2; // solid tet ABCD
       
       // cached stiffness
       Scalar stiffness;
@@ -49,12 +49,12 @@ namespace BASim
       Scalar damping_undeformed_delta;
       
       // cached properties
-      Scalar delta;  // angle from ME and MP in the cross section plane of AB, where M = (A+B)/2, P = (C+D)/2
+      Scalar delta;  // angle from MQ to MP, in the cross section plane of AB, where M = (A+B)/2, P = (C+D)/2, Q = (E+F)/2
     };
 
   public:
-    ShellSolidEdgeJointCouplingForce(ElasticShell & shell, ElasticSolid & solid, const std::vector<Stencil> & stencils, Scalar stiffness, Scalar stiffness_damp, Scalar timestep);
-    virtual ~ShellSolidEdgeJointCouplingForce();
+    SolidSolidEdgeJointCouplingForce(ElasticSolid & solid, const std::vector<Stencil> & stencils, Scalar stiffness, Scalar stiffness_damp, Scalar timestep);
+    virtual ~SolidSolidEdgeJointCouplingForce();
 
   public:
     void addStencil(Stencil & s) { m_stencils.push_back(s); }
@@ -78,14 +78,13 @@ namespace BASim
     void globalJacobian(Scalar scale, MatrixBase & Jacobian);
 
   public:
-    ElasticShell & shell() { assert(m_shell); return *m_shell; }
     ElasticSolid & solid() { assert(m_solid); return *m_solid; }
     
-    DeformableObject & defoObj() { assert(m_shell); return m_shell->getDefoObj(); }
+    DeformableObject & defoObj() { assert(m_solid); return m_solid->getDefoObj(); }
     
   protected:
     template <int DO_HESS>
-    adreal<NumDof, DO_HESS, Scalar> adEnergy(const ShellSolidEdgeJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, const Vec3d & E, Scalar delta, Scalar undeformed_delta, Scalar stiffness);
+    adreal<NumDof, DO_HESS, Scalar> adEnergy(const SolidSolidEdgeJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, const Vec3d & E, const Vec3d & F, Scalar delta, Scalar undeformed_delta, Scalar stiffness);
 
   protected:
     Scalar localEnergy(Stencil & s, bool viscous);
@@ -98,7 +97,6 @@ namespace BASim
     std::vector<VertexHandle> getVertices(const Stencil & s);
     
   protected:
-    ElasticShell * m_shell;
     ElasticSolid * m_solid;
     
     std::vector<Stencil> m_stencils;
@@ -110,4 +108,4 @@ namespace BASim
 }
 
 
-#endif // ShellSolidEdgeJointCouplingForce_HH
+#endif // SolidSolidEdgeJointCouplingForce_HH
