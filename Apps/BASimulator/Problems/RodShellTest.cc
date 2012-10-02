@@ -14,6 +14,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellGravityForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Coupling/RodTwistShellFaceCouplingForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Coupling/RodTwistSolidTetCouplingForce.hh"
+#include "BASim/src/Physics/DeformableObjects/Coupling/RodShellJointCouplingForce.hh"
 #include "BASim/src/Render/ShellRenderer.hh"
 #include "BASim/src/Render/RodModelRenderer.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
@@ -173,6 +174,8 @@ RodShellTest::RodShellTest() :
   AddOption("rod-twist-shell-face-coupling-stiffness-damping", "rod twist-shell face coupling force viscous stiffness", 0.0);
   AddOption("rod-twist-solid-tet-coupling-stiffness", "rod twist-solid tet coupling force stiffness", 1.0);
   AddOption("rod-twist-solid-tet-coupling-stiffness-damping", "rod twist-solid tet coupling force viscous stiffness", 0.0);
+  AddOption("rod-shell-joint-coupling-stiffness", "rod shell joint coupling force stiffness", 1.0);
+  AddOption("rod-shell-joint-coupling-stiffness-damping", "rod shell joint coupling force viscous stiffness", 0.0);
   
   //Collision options
   AddOption("shell-self-collision", "whether to add self-collision springs", false);
@@ -242,7 +245,8 @@ sceneFunc rodshell_scenes[] =
   &RodShellTest::setupScene10,  // Christopher's first Houdini export test
   &RodShellTest::setupScene11,  // solid elasticity test
   &RodShellTest::setupScene12,  // rod twist shell face coupling test
-  &RodShellTest::setupScene13   // rod twist solid tet coupling test
+  &RodShellTest::setupScene13,  // rod twist solid tet coupling test
+  &RodShellTest::setupScene14   // rod shell joint coupling test
 
 };
 
@@ -602,6 +606,21 @@ void RodShellTest::AtEachTimestep()
       Scalar stiffness =          GetScalarOpt("rod-twist-solid-tet-coupling-stiffness");
       Scalar stiffness_damping =  GetScalarOpt("rod-twist-solid-tet-coupling-stiffness-damping");
       obj->addForce(new RodTwistSolidTetCouplingForce(*rod, *solid, stencils, stiffness, stiffness_damping, m_timestep));
+    }
+  } else if (m_active_scene == 14)
+  {
+    static bool init = true;
+    if (init)
+    {
+      init = false;
+      std::vector<RodShellJointCouplingForce::Stencil> rodshell_stencils;
+      RodShellJointCouplingForce::Stencil rodshell_stencil;
+      rodshell_stencil.e = m_s14_rod_edges[1];
+      rodshell_stencil.f = m_s14_shell_faces[0];
+      rodshell_stencils.push_back(rodshell_stencil);
+      Scalar stiffness =          GetScalarOpt("rod-shell-joint-coupling-stiffness");
+      Scalar stiffness_damping =  GetScalarOpt("rod-shell-joint-coupling-stiffness-damping");
+      obj->addForce(new RodShellJointCouplingForce(*rod, *shell, rodshell_stencils, stiffness, stiffness_damping, m_timestep));
     }
   }
   
@@ -2580,5 +2599,81 @@ void RodShellTest::setupScene13()
   }
   
   m_s13_rod_edges = rodEdges;
+}
+
+void RodShellTest::setupScene14() 
+{
+  //get params
+  Scalar width = GetScalarOpt("shell-width");
+  Scalar dx = width;
+  
+  //build a rectangular grid of vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(obj);
+  VertexProperty<Vec3d> positions(obj);
+  VertexProperty<Vec3d> velocities(obj);
+  
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(obj);
+  EdgeProperty<Scalar> edgeAngle(obj);
+  EdgeProperty<Scalar> edgeVel(obj);
+  
+  Vec3d start_vel(0,0,0);
+  VertexHandle h;
+  Vec3d vert;
+  
+  vert = Vec3d(0, 0, 0);
+  h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
+  vert = Vec3d(dx, 0, 0);
+  h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
+  vert = Vec3d(2 * dx, 0, 0);
+  h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
+  vert = Vec3d(3 * dx, dx * 0.3, -dx * 0.5);
+  h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
+  vert = Vec3d(3 * dx, dx * 0.3, dx * 0.5);
+  h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
+
+  FaceHandle fh = obj->addFace(vertHandles[2], vertHandles[3], vertHandles[4]);
+  EdgeHandle eh1 = obj->addEdge(vertHandles[0], vertHandles[1]);
+  EdgeHandle eh2 = obj->addEdge(vertHandles[1], vertHandles[2]);
+  
+  FaceProperty<char> shellFaces(obj);
+  shellFaces[fh] = true;
+  std::vector<EdgeHandle> rodEdges;
+  rodEdges.push_back(eh1);
+  rodEdges.push_back(eh2);
+  
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(obj, shellFaces, m_timestep);
+  obj->addModel(shell);
+  
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+  
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+    
+  // create a rod model
+  rod = new ElasticRodModel(obj, rodEdges, m_timestep);
+  obj->addModel(rod);
+  
+  // set init dofs for edges
+  EdgeProperty<Scalar> zeros(obj);
+  zeros.assign(0);
+  rod->setEdgeThetas(zeros);
+  rod->setEdgeThetaVelocities(zeros);
+  rod->setEdgeUndeformedThetas(zeros);
+
+  obj->constrainVertex(vertHandles[0], obj->getVertexPosition(vertHandles[0]));
+  obj->constrainVertex(vertHandles[1], obj->getVertexPosition(vertHandles[1]));
+  rod->constrainEdge(eh1, 0);
+
+  m_s14_vertices = vertHandles;
+  m_s14_shell_faces.push_back(fh);
+  m_s14_rod_edges = rodEdges;
 }
 

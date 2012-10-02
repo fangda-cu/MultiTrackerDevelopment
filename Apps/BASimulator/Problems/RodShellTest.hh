@@ -42,7 +42,8 @@ public:
   void setupScene10();// Houdini exporter/loader test
   void setupScene11();// Solid test scene
   void setupScene12();// rod twist shell face coupling test
-  void setupScene13();// rod twist solid tet coupling text
+  void setupScene13();// rod twist solid tet coupling test
+  void setupScene14();// non manifold coupling between rod shell and solid
   
 protected:
   void Setup();
@@ -86,7 +87,11 @@ protected:
   
   // scene 13:
   std::vector<EdgeHandle> m_s13_rod_edges;
-  
+
+  // scene 14:
+  std::vector<VertexHandle> m_s14_vertices;
+  std::vector<FaceHandle> m_s14_shell_faces;
+  std::vector<EdgeHandle> m_s14_rod_edges;
 };
 
 
