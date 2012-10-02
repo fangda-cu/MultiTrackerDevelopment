@@ -146,12 +146,14 @@ namespace BASim
     
     void setDensity(Scalar density);
     void setRadii(Scalar ra, Scalar rb);
-    
+    void setRadii(const EdgeProperty<Vec2d>& radii);
+
     Scalar getMass(const VertexHandle& v) const { return getDefoObj().getVertexMass(v); }
     Scalar getMass(const EdgeHandle& e) const { return m_edge_masses[e]; }
     
     Vec2d getRadii(const EdgeHandle& e) const { return m_radii[e]; }
     void setRadii(const EdgeHandle& e, const Vec2d & r) { m_radii[e] = r;  m_volumes[e] = M_PI * r[0] * r[1] * getEdgeLength(e); }
+    
 
     Scalar getVolume(const EdgeHandle& e) const { return m_volumes[e]; }
     

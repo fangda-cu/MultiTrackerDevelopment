@@ -337,6 +337,18 @@ namespace BASim
       m_volumes[*i] = M_PI * ra * rb * getEdgeLength(*i);
     }
   }
+
+  void ElasticRodModel::setRadii(const EdgeProperty<Vec2d>& radii)
+  {
+    for (EdgeIterator i = getDefoObj().edges_begin(); i != getDefoObj().edges_end(); ++i)
+    {
+      if(isEdgeActive(*i)) {
+        Vec2d rad = radii[*i];
+        m_radii[*i] = rad;
+        m_volumes[*i] = M_PI * rad[0] * rad[1] * getEdgeLength(*i);
+      }
+    }
+  }
   
   void ElasticRodModel::setDensity(Scalar density) 
   {

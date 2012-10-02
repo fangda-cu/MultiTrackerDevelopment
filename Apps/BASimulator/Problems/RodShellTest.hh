@@ -59,6 +59,12 @@ protected:
   int m_active_scene;
   Scalar m_time;
 
+  //This lets us choose between:
+  //  1) Setting the radii uniformly as usual (default); or 
+  //  2) Setting irregular radii specifically in the scene setup functions, using m_radii_list
+  bool m_rod_radii_assigned;
+  EdgeProperty<Vec2d>* m_radii_list;
+
   ////////////////////////
   // scene specific data
   // scene 5:

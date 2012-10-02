@@ -108,7 +108,9 @@ RodShellTest::RodShellTest() :
   solid(NULL),
   stepper(NULL),
   m_active_scene(1),
-  m_time(0)
+  m_time(0),
+  m_rod_radii_assigned(false),
+  m_shell_thickness_assigned(false)
 {
   addDynamicsProps();
   
@@ -328,17 +330,20 @@ void RodShellTest::Setup()
 
   //compute the dof indexing for use in the diff_eq solver
   obj->computeDofIndexing();
-  
+ 
   //////////////////////////////////////////////////////////////////////////
   //
   // rod forces
   //
   //////////////////////////////////////////////////////////////////////////
+
+ 
   Scalar rod_Youngs_modulus = GetScalarOpt("rod-Youngs");
   Scalar rod_Shear_modulus = GetScalarOpt("rod-Shear");
   Scalar rod_Youngs_damping = GetScalarOpt("rod-Youngs-damping");
   Scalar rod_Shear_damping = GetScalarOpt("rod-Shear-damping");
   rod->setup(rod_Youngs_modulus, rod_Youngs_damping, rod_Shear_modulus, rod_Shear_damping, m_timestep);
+
   
   Scalar rod_surface_tension = GetScalarOpt("rod-surface-tension");
   if(rod_surface_tension != 0) {
@@ -374,7 +379,7 @@ void RodShellTest::Setup()
     if(ds_bend)
       shell->addForce(new DSBendingForce(*shell, "DSBending", ds_scale*shell_Youngs_modulus, shell_Poisson_ratio, ds_scale*shell_Youngs_damping, shell_Poisson_damping, timestep));
     
-    //Better bending model, not currently functional.
+    //Better bending model, not fully validated.
     if(mn_bend)
       shell->addForce(new MNBendingForce(*shell, "MNBending", shell_Youngs_modulus, shell_Poisson_ratio, shell_Youngs_damping, shell_Poisson_damping, timestep));
   }
@@ -399,23 +404,26 @@ void RodShellTest::Setup()
 
   //////////////////////////////////////////////////////////////////////////
   //
-  // rod and shell mass
+  // rod/shell/solid mass computations
   //
   //////////////////////////////////////////////////////////////////////////
-  shell->setThickness(shell_thickness);
-  shell->setDensity(shell_density);
   
-  rod->setRadii(rod_radius_a, rod_radius_b);
-  rod->setDensity(rod_density);
-  
-  if(solid != 0) {
-    solid->setDensity(solid_density);
-    solid->computeMasses();
-  }
+  //assign radii (either the specified uniform values, or whatever was laid out in the scene setup function)
+  if(!m_rod_radii_assigned)
+    rod->setRadii(rod_radius_a, rod_radius_b);
+  else
+    rod->setRadii(*m_radii_list);
 
-  shell->computeMasses();
-  rod->computeMasses();
+  shell->setThickness(shell_thickness);
+
+  rod->setDensity(rod_density);
+  shell->setDensity(shell_density);
+  solid->setDensity(solid_density);
   
+  rod->computeMasses();
+  shell->computeMasses();
+  solid->computeMasses();
+
   for (size_t i = 0; i < rod->getForces().size(); i++)
     rod->getForces()[i]->updateStiffness();
   
@@ -2252,9 +2260,22 @@ void RodShellTest::setupScene12()
   rod->setEdgeThetaVelocities(zeros);
   rod->setEdgeUndeformedThetas(zeros);
 
+  m_radii_list = new EdgeProperty<Vec2d>(obj);
+  //set rod dimensions
+  Scalar offset = 0;
+  Scalar increment = 0.1;
+  for(EdgeIterator eit = obj->edges_begin(); eit != obj->edges_end(); ++eit) {
+    Scalar rad = 0.1 + 0.07 * sin(offset);
+    Vec2d radius(rad, rad);
+    (*m_radii_list)[*eit] = radius;
+    
+    offset += increment;
+  }
+  m_rod_radii_assigned = true;
+
   //Pin top vertex
   //Vec3d pos = obj->getVertexPosition(vertHandles[0]);
   //obj->constrainVertex(vertHandles[0], pos);
-
-
+  
+  
 }
