@@ -16,8 +16,10 @@ ShellShellVertexJointCouplingForce::ShellShellVertexJointCouplingForce(ElasticSh
     Stencil s(stencils[i]);
 //    s.stiffness = 0;
 //    s.viscous_stiffness = 0;
-    s.undeformed_AP.setZero();
-    s.damping_undeformed_AP.setZero();
+    s.undeformed_AB.setZero();
+    s.undeformed_AC.setZero();
+    s.damping_undeformed_AB.setZero();
+    s.damping_undeformed_AC.setZero();
     
     std::vector<VertexHandle> vh = getVertices(s);
     s.dofindices.resize(NumDof);
@@ -42,7 +44,8 @@ ShellShellVertexJointCouplingForce::ShellShellVertexJointCouplingForce(ElasticSh
     s.dofindices[13] = dofbase + 1;
     s.dofindices[14] = dofbase + 2;
         
-    s.AP.setZero();  // will be computed by updateProperties() below
+    s.AB.setZero();  // will be computed by updateProperties() below
+    s.AC.setZero();
     
     m_stencils.push_back(s);
   }
@@ -89,7 +92,7 @@ ShellShellVertexJointCouplingForce::Vector3d ShellShellVertexJointCouplingForce:
 
 template <int DO_HESS>
 adreal<ShellShellVertexJointCouplingForce::NumDof, DO_HESS, Scalar> 
-ShellShellVertexJointCouplingForce::adEnergy(const ShellShellVertexJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, const Vec3d & E, const Vec3d & undeformed_AP, Scalar stiffness) 
+ShellShellVertexJointCouplingForce::adEnergy(const ShellShellVertexJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, const Vec3d & E, const Vec3d & undeformed_AB, const Vec3d & undeformed_AC, Scalar stiffness) 
 {  
   // typedefs to simplify code below
   typedef adreal<ShellShellVertexJointCouplingForce::NumDof, DO_HESS, Scalar> adrealElast;
@@ -102,9 +105,10 @@ ShellShellVertexJointCouplingForce::adEnergy(const ShellShellVertexJointCoupling
   Vector3d vC = vec2vector(C);
   Vector3d vD = vec2vector(D);
   Vector3d vE = vec2vector(E);
-  Vector3d vUndeformedAP = vec2vector(undeformed_AP);
+  Vector3d vUndeformedAB = vec2vector(undeformed_AB);
+  Vector3d vUndeformedAC = vec2vector(undeformed_AC);
 
-  advecElast p[5];
+  advecElast p[6];
   set_independent(p[0], vA, 0);
   set_independent(p[1], vB, 3);
   set_independent(p[2], vC, 6);
@@ -113,14 +117,14 @@ ShellShellVertexJointCouplingForce::adEnergy(const ShellShellVertexJointCoupling
 
   adrealElast e(0);
   
-  advecElast md1 = (p[3] + p[4] - p[0] * 2.0);  md1 /= len(md1);
+  advecElast md1 = (p[3] + p[4] - p[0] * 2.0); md1 /= len(md1);
   advecElast md2 = (p[3] - p[4] - dot(p[3] - p[4], md1) * md1); md2 /= len(md2);
   advecElast md3 = cross(md1, md2);
   
-  advecElast vP = (p[1] + p[2]) * 0.5;
-  advecElast vAP = advecElast(dot(vP - p[0], md1), dot(vP - p[0], md2), dot(vP - p[0], md3));
+  advecElast vAB = advecElast(dot(p[1] - p[0], md1), dot(p[1] - p[0], md2), dot(p[1] - p[0], md3));
+  advecElast vAC = advecElast(dot(p[2] - p[0], md1), dot(p[2] - p[0], md2), dot(p[2] - p[0], md3));
 
-  e = stiffness * dot(vAP - vUndeformedAP, vAP - vUndeformedAP);
+  e = stiffness * (dot(vAB - vUndeformedAB, vAB - vUndeformedAB) + dot(vAC - vUndeformedAC, vAC - vUndeformedAC));
 
   return e;
 }
@@ -177,7 +181,7 @@ Scalar ShellShellVertexJointCouplingForce::localEnergy(Stencil & s, bool viscous
   Vec3d D = defoObj().getVertexPosition(vh[3]);
   Vec3d E = defoObj().getVertexPosition(vh[4]);
   
-  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, (viscous ? s.damping_undeformed_AP : s.undeformed_AP), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, (viscous ? s.damping_undeformed_AB : s.undeformed_AB), (viscous ? s.damping_undeformed_AC : s.undeformed_AC), (viscous ? m_stiffness_damp : m_stiffness));
   Scalar energy = e.value();
 
   return energy;
@@ -192,7 +196,7 @@ void ShellShellVertexJointCouplingForce::localForce(ElementForce & force, Stenci
   Vec3d D = defoObj().getVertexPosition(vh[3]);
   Vec3d E = defoObj().getVertexPosition(vh[4]);
   
-  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, (viscous ? s.damping_undeformed_AP : s.undeformed_AP), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, (viscous ? s.damping_undeformed_AB : s.undeformed_AB), (viscous ? s.damping_undeformed_AC : s.undeformed_AC), (viscous ? m_stiffness_damp : m_stiffness));
   for (int i = 0; i < NumDof; i++)
   {
     force[i] = -e.gradient(i);
@@ -208,7 +212,7 @@ void ShellShellVertexJointCouplingForce::localJacobian(ElementJacobian & jacobia
   Vec3d D = defoObj().getVertexPosition(vh[3]);
   Vec3d E = defoObj().getVertexPosition(vh[4]);
   
-  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, (viscous ? s.damping_undeformed_AP : s.undeformed_AP), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, (viscous ? s.damping_undeformed_AB : s.undeformed_AB), (viscous ? s.damping_undeformed_AC : s.undeformed_AC), (viscous ? m_stiffness_damp : m_stiffness));
   for (int i = 0; i < NumDof; i++)
     for (int j = 0; j < NumDof; j++)
     {
@@ -226,7 +230,8 @@ void ShellShellVertexJointCouplingForce::updateViscousReferenceStrain()
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
-    s.damping_undeformed_AP = s.AP;
+    s.damping_undeformed_AB = s.AB;
+    s.damping_undeformed_AC = s.AC;
   }
 }
 
@@ -245,8 +250,10 @@ void ShellShellVertexJointCouplingForce::updateProperties()
     Vec3d md1 = (D + E - A * 2).normalized();
     Vec3d md2 = (D - E - (D - E).dot(md1) * md1).normalized();
     Vec3d md3 = md1.cross(md2);
-    Vec3d AP = (B + C) * 0.5 - A;
-    s.AP = Vec3d(AP.dot(md1), AP.dot(md2), AP.dot(md3));
+    Vec3d AB = B - A;
+    Vec3d AC = C - A;
+    s.AB = Vec3d(AB.dot(md1), AB.dot(md2), AB.dot(md3));
+    s.AC = Vec3d(AC.dot(md1), AC.dot(md2), AC.dot(md3));
   }
 }
 
@@ -255,7 +262,8 @@ void ShellShellVertexJointCouplingForce::computeReferenceStrain()
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
-    s.undeformed_AP = s.AP;
+    s.undeformed_AB = s.AB;
+    s.undeformed_AC = s.AC;
   }
 }
 

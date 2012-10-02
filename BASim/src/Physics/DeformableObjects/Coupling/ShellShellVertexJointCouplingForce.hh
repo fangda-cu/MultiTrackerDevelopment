@@ -45,11 +45,14 @@ namespace BASim
 //      Scalar viscous_stiffness;
       
       // reference strain
-      Vec3d undeformed_AP;
-      Vec3d damping_undeformed_AP;
+      Vec3d undeformed_AB;
+      Vec3d undeformed_AC;
+      Vec3d damping_undeformed_AB;
+      Vec3d damping_undeformed_AC;
       
       // cached properties
-      Vec3d AP;  // f1 axis AP (P = midpoint of edge BC) in f2 frame
+      Vec3d AB;  // f1 edge AB in f2 frame
+      Vec3d AC;  // f1 edge AC in f2's frame
     };
 
   public:
@@ -84,7 +87,7 @@ namespace BASim
     
   protected:
     template <int DO_HESS>
-    adreal<NumDof, DO_HESS, Scalar> adEnergy(const ShellShellVertexJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, const Vec3d & E, const Vec3d & undeformed_AP, Scalar stiffness);
+    adreal<NumDof, DO_HESS, Scalar> adEnergy(const ShellShellVertexJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, const Vec3d & E, const Vec3d & undeformed_AB, const Vec3d & undeformed_AC, Scalar stiffness);
 
   protected:
     Scalar localEnergy(Stencil & s, bool viscous);

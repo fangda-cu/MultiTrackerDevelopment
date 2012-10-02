@@ -118,8 +118,8 @@ ShellSolidEdgeJointCouplingForce::adEnergy(const ShellSolidEdgeJointCouplingForc
   advecElast vAB = (p[1] - p[0]); vAB /= len(vAB);
   advecElast vM = (p[0] + p[1]) * 0.5;
   advecElast vP = (p[2] + p[3]) * 0.5;
-  advecElast vME = ((p[4] - vM) - dot(p[4] - vM, vAB) * vAB);  vME /= len(vME);
-  advecElast vMP = ((vP - vM) - dot(vP - vM, vAB) * vAB);  vMP /= len(vMP);
+  advecElast vME = ((p[4] - vM) - dot(p[4] - vM, vAB) * vAB); vME /= len(vME);
+  advecElast vMP = ((vP - vM) - dot(vP - vM, vAB) * vAB); vMP /= len(vMP);
   advecElast vMErot = vME * cos(delta) + cross(vAB, vME) * sin(delta);
   adrealElast newdelta = delta + atan2(dot(cross(vMErot, vMP), vAB), dot(vMErot, vMP));
   
