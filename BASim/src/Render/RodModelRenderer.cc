@@ -80,7 +80,26 @@ namespace BASim
       }
     }        
     glEnd();
-    
+
+    /*
+    glPointSize(10);
+    glBegin(GL_POINTS);
+    OpenGL::color(Color(255, 0, 0));
+    for (EdgeIterator eit = obj.edges_begin(); eit != obj.edges_end(); ++eit)
+    {
+      if (m_rod.isEdgeActive(*eit))
+      {
+        EdgeVertexIterator evit = m_rod.getDefoObj().ev_iter( *eit );
+        Vec3d v1 = m_rod.getDefoObj().getVertexPosition(*evit); ++evit;
+        Vec3d v2 = m_rod.getDefoObj().getVertexPosition(*evit); ++evit;
+
+        OpenGL::vertex(v1);
+        OpenGL::vertex(v2);      
+      }
+    }        
+    glEnd();
+    */
+
     // render material frames
     glLineWidth(1);
     glBegin(GL_LINES);
@@ -163,6 +182,10 @@ namespace BASim
         Vec3d n12 = vmd2[v1] / edge_count[v1];  // v1 is incident to an active count so edge_count[v1] can't be zero
         Vec3d n21 = vmd1[v2] / edge_count[v2];
         Vec3d n22 = vmd2[v2] / edge_count[v2];
+
+        //Assuming edge radius drops to zero at end points, e.g. for liquid surface tension.
+        if(edge_count[v1] == 1) { n11 *= 0; n12 *= 0; }
+        if(edge_count[v2] == 1) { n21 *= 0; n22 *= 0; }
 
         // render a (possibly twisted) prism
         for (int i = 0; i < N; i++)

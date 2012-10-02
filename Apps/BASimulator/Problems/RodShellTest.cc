@@ -2203,23 +2203,13 @@ void RodShellTest::setupScene12()
 
   std::vector<Vec3d> vertices;
 
-  // Create 4 vertices for a rod/thread
-  vertices.push_back(Vec3d(0,0,0));
-  vertices.push_back(Vec3d(0,-1,0));
-  vertices.push_back(Vec3d(0,-2,0));
-  vertices.push_back(Vec3d(0,-3,0));
-  vertices.push_back(Vec3d(0,-4,0));
-  vertices.push_back(Vec3d(0,-5,0));
-  vertices.push_back(Vec3d(0,-6,0));
-  vertices.push_back(Vec3d(0,-7,0));
-  vertices.push_back(Vec3d(0,-8,0));
-  vertices.push_back(Vec3d(0,-9,0));
-  vertices.push_back(Vec3d(0,-10,0));
-
-  /*vertices.push_back(Vec3d(0.25,-1,0));
-  vertices.push_back(Vec3d(0.35,-2,0));
-  vertices.push_back(Vec3d(0.3,-3,0));
-*/
+  // Create vertices for a rod/thread
+  int divisions = 100;
+  float length = 10;
+  for(int i = 0; i <= divisions; ++i) {
+    vertices.push_back(Vec3d(0, -length*i / (float)divisions, 0));
+  }
+  
   std::vector<VertexHandle> vertHandles;
   VertexProperty<Vec3d> positions(obj);
   VertexProperty<Vec3d> velocities(obj);
@@ -2263,8 +2253,8 @@ void RodShellTest::setupScene12()
   rod->setEdgeUndeformedThetas(zeros);
 
   //Pin top vertex
-  Vec3d pos = obj->getVertexPosition(vertHandles[0]);
-  obj->constrainVertex(vertHandles[0], pos);
+  //Vec3d pos = obj->getVertexPosition(vertHandles[0]);
+  //obj->constrainVertex(vertHandles[0], pos);
 
 
 }

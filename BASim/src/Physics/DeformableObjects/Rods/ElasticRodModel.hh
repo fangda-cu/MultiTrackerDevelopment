@@ -116,7 +116,7 @@ namespace BASim
     int numFaceDofs() const { return 0; }
     int numTetDofs() const { return 0; }
     
-    bool isVertexActive(const VertexHandle& v) const { return false; }
+    bool isVertexActive(const VertexHandle& v) const { return false; } //TODO: Should return true if any incident edges are active
     bool isEdgeActive(const EdgeHandle& e) const { return m_edge_active[e] == 1; }
     bool isFaceActive(const FaceHandle& f) const { return false; }
     bool isTetActive(const TetHandle& t) const { return false; }
@@ -151,7 +151,7 @@ namespace BASim
     Scalar getMass(const EdgeHandle& e) const { return m_edge_masses[e]; }
     
     Vec2d getRadii(const EdgeHandle& e) const { return m_radii[e]; }
-    void setRadii(const EdgeHandle& e, const Vec2d & r) { m_radii[e] = r; }
+    void setRadii(const EdgeHandle& e, const Vec2d & r) { m_radii[e] = r;  m_volumes[e] = M_PI * r[0] * r[1] * getEdgeLength(e); }
 
     Scalar getVolume(const EdgeHandle& e) const { return m_volumes[e]; }
     

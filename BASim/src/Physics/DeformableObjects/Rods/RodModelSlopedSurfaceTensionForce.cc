@@ -310,11 +310,6 @@ void RodModelSlopedSurfaceTensionForce::localEndForce(VertexHandle& vh, VertexHa
   deformed_data[4] = position2[1];
   deformed_data[5] = position2[2];
   
-  std::cout << "Vertex data:";
-  for(int i = 0; i < 6; ++i) std::cout << deformed_data[i] << " ";
-  std::cout << std::endl;
-  std::cout << "Volume: " << vol << std::endl;
-
   adreal<6,0,Real> e = EndSTEnergy<0>(deformed_data, vol, m_surface_tension_coeff);     
 
   for(int i = 0; i < 6; ++i)
