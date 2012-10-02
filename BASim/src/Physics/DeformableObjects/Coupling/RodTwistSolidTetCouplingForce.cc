@@ -97,8 +97,8 @@ RodTwistSolidTetCouplingForce::adEnergy(const RodTwistSolidTetCouplingForce & mn
   
   adrealElast oldvec_x = cos(delta + t);    // direction of the old delta, in ref frame
   adrealElast oldvec_y = sin(delta + t);
-  adrealElast newvec_x = dot((p[0] + p[1]) * 0.5 - p[2], vRef1);   // projection of A-B into the frame plane, in ref frame
-  adrealElast newvec_y = dot((p[0] + p[1]) * 0.5 - p[2], vRef2);
+  adrealElast newvec_x = dot((p[0] + p[1]) * 0.5 - (p[2] + p[3]) * 0.5, vRef1);   // projection of A-B into the frame plane, in ref frame
+  adrealElast newvec_y = dot((p[0] + p[1]) * 0.5 - (p[2] + p[3]) * 0.5, vRef2);
   adrealElast newdelta = delta + atan2(oldvec_x * newvec_y - oldvec_y * newvec_x, oldvec_x * newvec_x + oldvec_y * newvec_y);
   
   e = stiffness * ((newdelta - undeformed_delta) * (newdelta - undeformed_delta));
@@ -240,7 +240,7 @@ void RodTwistSolidTetCouplingForce::updateProperties()
     Vec3d md1 = rod().getMaterialDirector1(s.e);
     Vec3d md2 = rod().getMaterialDirector2(s.e);
     Vec2d oldvec = Vec2d(cos(s.delta), sin(s.delta)); // direction of the old delta, in mat frame
-    Vec2d newvec = Vec2d(((A + B) * 0.5 - C).dot(md1), ((A + B) * 0.5 - C).dot(md2)); // projection of A-B into the frame plane, in mat frame
+    Vec2d newvec = Vec2d(((A + B) * 0.5 - (C + D) * 0.5).dot(md1), ((A + B) * 0.5 - (C + D) * 0.5).dot(md2)); // projection of A-B into the frame plane, in mat frame
     s.delta += atan2((oldvec.x() * newvec.y() - oldvec.y() * newvec.x()), oldvec.dot(newvec));
   }
 }

@@ -87,19 +87,10 @@ RodTwistShellFaceCouplingForce::adEnergy(const RodTwistShellFaceCouplingForce & 
 
   adrealElast e(0);
   
-  adrealElast theta_deformed = atan2(dot(p[0] - p[1], vRef2), dot(p[0] - p[1], vRef1));
-//  adrealElast delta = theta_deformed - t;
-  
-//  Vec2d oldvec = Vec2d(cos(delta + t), sin(delta + t)); // direction of the old delta, in mat frame
-//  Vec2d newvec = Vec2d((A - B).dot(md1), (A - B).dot(md2)); // projection of A-B into the frame plane, in mat frame
-//  delta += atan2((oldvec.x() * newvec.y() - oldvec.y() * newvec.x()), oldvec.dot(newvec));
-
-//  e = stiffness * ((delta - undeformed_delta) * (delta - undeformed_delta));
-  
   adrealElast oldvec_x = cos(delta + t);    // direction of the old delta, in ref frame
   adrealElast oldvec_y = sin(delta + t);
-  adrealElast newvec_x = dot(p[0] - p[1], vRef1);   // projection of A-B into the frame plane, in ref frame
-  adrealElast newvec_y = dot(p[0] - p[1], vRef2);
+  adrealElast newvec_x = dot(p[0] - (p[1] + p[2]) * 0.5, vRef1);   // projection of AM into the frame plane, in ref frame, where M = (B+C)/2
+  adrealElast newvec_y = dot(p[0] - (p[1] + p[2]) * 0.5, vRef2);
   adrealElast newdelta = delta + atan2(oldvec_x * newvec_y - oldvec_y * newvec_x, oldvec_x * newvec_x + oldvec_y * newvec_y);
   
   e = stiffness * ((newdelta - undeformed_delta) * (newdelta - undeformed_delta));
@@ -237,7 +228,7 @@ void RodTwistShellFaceCouplingForce::updateProperties()
     Vec3d md1 = rod().getMaterialDirector1(s.e);
     Vec3d md2 = rod().getMaterialDirector2(s.e);
     Vec2d oldvec = Vec2d(cos(s.delta), sin(s.delta)); // direction of the old delta, in mat frame
-    Vec2d newvec = Vec2d((A - B).dot(md1), (A - B).dot(md2)); // projection of A-B into the frame plane, in mat frame
+    Vec2d newvec = Vec2d((A - (B + C) * 0.5).dot(md1), (A - (B + C) * 0.5).dot(md2)); // projection of A-B into the frame plane, in mat frame
     s.delta += atan2((oldvec.x() * newvec.y() - oldvec.y() * newvec.x()), oldvec.dot(newvec));
   }
 }
