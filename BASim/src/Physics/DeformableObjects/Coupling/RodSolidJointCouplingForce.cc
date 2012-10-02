@@ -1,13 +1,13 @@
-#include "RodShellJointCouplingForce.hh"
+#include "RodSolidJointCouplingForce.hh"
 #include "BASim/src/Math/MatrixBase.hh"
 #include "BASim/src/Math/Math.hh"
 
 using namespace BASim;
 
-RodShellJointCouplingForce::RodShellJointCouplingForce(ElasticRodModel & rod, ElasticShell & shell, const std::vector<Stencil> & stencils, Scalar stiffness, Scalar stiffness_damp, Scalar timestep) :
-  DefoObjForce(rod.getDefoObj(), timestep, "RodShellJointCouplingForce"),
+RodSolidJointCouplingForce::RodSolidJointCouplingForce(ElasticRodModel & rod, ElasticSolid & solid, const std::vector<Stencil> & stencils, Scalar stiffness, Scalar stiffness_damp, Scalar timestep) :
+  DefoObjForce(rod.getDefoObj(), timestep, "RodSolidJointCouplingForce"),
   m_rod(&rod),
-  m_shell(&shell),
+  m_solid(&solid),
   m_stencils(),
   m_stiffness(stiffness),
   m_stiffness_damp(stiffness_damp)
@@ -19,8 +19,10 @@ RodShellJointCouplingForce::RodShellJointCouplingForce(ElasticRodModel & rod, El
     s.viscous_stiffness = 0;
     s.undeformed_AB.setZero();
     s.undeformed_AC.setZero();
+    s.undeformed_AD.setZero();
     s.damping_undeformed_AB.setZero();
     s.damping_undeformed_AC.setZero();
+    s.damping_undeformed_AD.setZero();
     
     std::vector<VertexHandle> vh = getVertices(s);
     s.dofindices.resize(NumDof);
@@ -40,12 +42,17 @@ RodShellJointCouplingForce::RodShellJointCouplingForce(ElasticRodModel & rod, El
     s.dofindices[9] = dofbase;
     s.dofindices[10] = dofbase + 1;
     s.dofindices[11] = dofbase + 2;
+    dofbase = defoObj().getPositionDofBase(vh[4]);
+    s.dofindices[12] = dofbase;
+    s.dofindices[13] = dofbase + 1;
+    s.dofindices[14] = dofbase + 2;
     
     dofbase = rod.getEdgeDofBase(s.e);
-    s.dofindices[12] = dofbase;
+    s.dofindices[15] = dofbase;
     
     s.AB.setZero();  // will be computed by updateProperties() below
     s.AC.setZero();
+    s.AD.setZero();
     
     m_stencils.push_back(s);
   }
@@ -56,32 +63,34 @@ RodShellJointCouplingForce::RodShellJointCouplingForce(ElasticRodModel & rod, El
   computeReferenceStrain();
 }
 
-RodShellJointCouplingForce::~RodShellJointCouplingForce()
+RodSolidJointCouplingForce::~RodSolidJointCouplingForce()
 {
   
 }
 
-std::vector<VertexHandle> RodShellJointCouplingForce::getVertices(const Stencil & s)
+std::vector<VertexHandle> RodSolidJointCouplingForce::getVertices(const Stencil & s)
 {
   std::vector<VertexHandle> vh(4);
   EdgeVertexIterator evit = defoObj().ev_iter(s.e);
   VertexHandle ve1 = *evit; ++evit; assert(evit);
   VertexHandle ve2 = *evit; ++evit; assert(!evit);
-  FaceVertexIterator fvit = defoObj().fv_iter(s.f);
-  VertexHandle vf1 = *fvit; ++fvit; assert(fvit);
-  VertexHandle vf2 = *fvit; ++fvit; assert(fvit);
-  VertexHandle vf3 = *fvit; ++fvit; assert(!fvit);
-  if (ve1 == vf1 || ve1 == vf2 || ve1 == vf3) 
+  TetVertexIterator tvit = defoObj().tv_iter(s.t);
+  VertexHandle vt1 = *tvit; ++tvit; assert(tvit);
+  VertexHandle vt2 = *tvit; ++tvit; assert(tvit);
+  VertexHandle vt3 = *tvit; ++tvit; assert(tvit);
+  VertexHandle vt4 = *tvit; ++tvit; assert(!tvit);
+  if (ve1 == vt1 || ve1 == vt2 || ve1 == vt3 || ve1 == vt4) 
     vh[0] = ve1, vh[3] = ve2;
   else
     vh[0] = ve2, vh[3] = ve1;
-  if (vh[0] == vf1) vh[1] = vf2, vh[2] = vf3;
-  if (vh[0] == vf2) vh[1] = vf3, vh[2] = vf1;
-  if (vh[0] == vf3) vh[1] = vf1, vh[2] = vf2;
+  if (vh[0] == vt1) vh[1] = vt2, vh[2] = vt3;
+  if (vh[0] == vt2) vh[1] = vt3, vh[2] = vt4;
+  if (vh[0] == vt3) vh[1] = vt4, vh[2] = vt1;
+  if (vh[0] == vt4) vh[1] = vt1, vh[2] = vt2;
   return vh;
 }
 
-RodShellJointCouplingForce::Vector3d RodShellJointCouplingForce::vec2vector(const Vec3d & input)
+RodSolidJointCouplingForce::Vector3d RodSolidJointCouplingForce::vec2vector(const Vec3d & input)
 {
   Vector3d output;
   output.x() = input.x();
@@ -91,11 +100,11 @@ RodShellJointCouplingForce::Vector3d RodShellJointCouplingForce::vec2vector(cons
 }
 
 template <int DO_HESS>
-adreal<RodShellJointCouplingForce::NumDof, DO_HESS, Scalar> 
-RodShellJointCouplingForce::adEnergy(const RodShellJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, Scalar theta, const Vec3d & ref1, const Vec3d & ref2, const Vec3d & undeformed_AB, const Vec3d & undeformed_AC, Scalar stiffness) 
+adreal<RodSolidJointCouplingForce::NumDof, DO_HESS, Scalar> 
+RodSolidJointCouplingForce::adEnergy(const RodSolidJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, const Vec3d & E, Scalar theta, const Vec3d & ref1, const Vec3d & ref2, const Vec3d & undeformed_AB, const Vec3d & undeformed_AC, const Vec3d & undeformed_AD, Scalar stiffness) 
 {  
   // typedefs to simplify code below
-  typedef adreal<RodShellJointCouplingForce::NumDof, DO_HESS, Scalar> adrealElast;
+  typedef adreal<RodSolidJointCouplingForce::NumDof, DO_HESS, Scalar> adrealElast;
   typedef CVec3T<adrealElast> advecElast;
   Mat3T<adrealElast> temp;
   typedef Mat3T<adrealElast> admatElast;
@@ -104,11 +113,13 @@ RodShellJointCouplingForce::adEnergy(const RodShellJointCouplingForce & mn, cons
   Vector3d vB = vec2vector(B);
   Vector3d vC = vec2vector(C);
   Vector3d vD = vec2vector(D);
+  Vector3d vE = vec2vector(E);
   Vector3d vRef1 = vec2vector(ref1);
   Vector3d vRef2 = vec2vector(ref2);
   Vector3d vRef3 = vec2vector(ref1.cross(ref2));
   Vector3d vUndeformedAB = vec2vector(undeformed_AB);
   Vector3d vUndeformedAC = vec2vector(undeformed_AC);
+  Vector3d vUndeformedAD = vec2vector(undeformed_AD);
 
   advecElast p[4];
   adrealElast t;
@@ -116,7 +127,8 @@ RodShellJointCouplingForce::adEnergy(const RodShellJointCouplingForce & mn, cons
   set_independent(p[1], vB, 3);
   set_independent(p[2], vC, 6);
   set_independent(p[3], vD, 9);
-  t.set_independent(theta, 12);
+  set_independent(p[4], vE, 12);
+  t.set_independent(theta, 15);
 
   adrealElast e(0);
   
@@ -126,13 +138,14 @@ RodShellJointCouplingForce::adEnergy(const RodShellJointCouplingForce & mn, cons
   
   advecElast vAB = advecElast(dot(p[1] - p[0], md1), dot(p[1] - p[0], md2), dot(p[1] - p[0], md3));
   advecElast vAC = advecElast(dot(p[2] - p[0], md1), dot(p[2] - p[0], md2), dot(p[2] - p[0], md3));
+  advecElast vAD = advecElast(dot(p[3] - p[0], md1), dot(p[3] - p[0], md2), dot(p[3] - p[0], md3));
 
-  e = stiffness * (dot(vAB - vUndeformedAB, vAB - vUndeformedAB) + dot(vAC - vUndeformedAC, vAC - vUndeformedAC));
+  e = stiffness * (dot(vAB - vUndeformedAB, vAB - vUndeformedAB) + dot(vAC - vUndeformedAC, vAC - vUndeformedAC) + dot(vAD - vUndeformedAD, vAD - vUndeformedAD));
 
   return e;
 }
 
-Scalar RodShellJointCouplingForce::globalEnergy()
+Scalar RodSolidJointCouplingForce::globalEnergy()
 {
   Scalar energy = 0;
   for (size_t i = 0; i < m_stencils.size(); i++)
@@ -143,7 +156,7 @@ Scalar RodShellJointCouplingForce::globalEnergy()
   return energy;
 }
 
-void RodShellJointCouplingForce::globalForce(VecXd & force)
+void RodSolidJointCouplingForce::globalForce(VecXd & force)
 {
   ElementForce localforce;
   for (size_t i = 0; i < m_stencils.size(); i++)
@@ -160,7 +173,7 @@ void RodShellJointCouplingForce::globalForce(VecXd & force)
   }
 }
 
-void RodShellJointCouplingForce::globalJacobian(Scalar scale, MatrixBase & Jacobian)
+void RodSolidJointCouplingForce::globalJacobian(Scalar scale, MatrixBase & Jacobian)
 {
   ElementJacobian localjacobian;
   for (size_t i = 0; i < m_stencils.size(); i++)
@@ -175,56 +188,59 @@ void RodShellJointCouplingForce::globalJacobian(Scalar scale, MatrixBase & Jacob
   }
 }
 
-Scalar RodShellJointCouplingForce::localEnergy(Stencil & s, bool viscous)
+Scalar RodSolidJointCouplingForce::localEnergy(Stencil & s, bool viscous)
 {
   std::vector<VertexHandle> vh = getVertices(s);
   Vec3d A = defoObj().getVertexPosition(vh[0]);
   Vec3d B = defoObj().getVertexPosition(vh[1]);
   Vec3d C = defoObj().getVertexPosition(vh[2]);
   Vec3d D = defoObj().getVertexPosition(vh[3]);
+  Vec3d E = defoObj().getVertexPosition(vh[4]);
   Scalar theta = rod().getEdgeTheta(s.e);
   
   Vec3d & ref1 = rod().getReferenceDirector1(s.e);
   Vec3d & ref2 = rod().getReferenceDirector2(s.e);
   
-  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, theta, ref1, ref2, (viscous ? s.damping_undeformed_AB : s.undeformed_AB), (viscous ? s.damping_undeformed_AC : s.undeformed_AC), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, theta, ref1, ref2, (viscous ? s.damping_undeformed_AB : s.undeformed_AB), (viscous ? s.damping_undeformed_AC : s.undeformed_AC), (viscous ? s.damping_undeformed_AD : s.undeformed_AD), (viscous ? m_stiffness_damp : m_stiffness));
   Scalar energy = e.value();
 
   return energy;
 }
 
-void RodShellJointCouplingForce::localForce(ElementForce & force, Stencil & s, bool viscous)
+void RodSolidJointCouplingForce::localForce(ElementForce & force, Stencil & s, bool viscous)
 {
   std::vector<VertexHandle> vh = getVertices(s);
   Vec3d A = defoObj().getVertexPosition(vh[0]);
   Vec3d B = defoObj().getVertexPosition(vh[1]);
   Vec3d C = defoObj().getVertexPosition(vh[2]);
   Vec3d D = defoObj().getVertexPosition(vh[3]);
+  Vec3d E = defoObj().getVertexPosition(vh[4]);
   Scalar theta = rod().getEdgeTheta(s.e);
   
   Vec3d & ref1 = rod().getReferenceDirector1(s.e);
   Vec3d & ref2 = rod().getReferenceDirector2(s.e);
   
-  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, theta, ref1, ref2, (viscous ? s.damping_undeformed_AB : s.undeformed_AB), (viscous ? s.damping_undeformed_AC : s.undeformed_AC), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, theta, ref1, ref2, (viscous ? s.damping_undeformed_AB : s.undeformed_AB), (viscous ? s.damping_undeformed_AC : s.undeformed_AC), (viscous ? s.damping_undeformed_AD : s.undeformed_AD), (viscous ? m_stiffness_damp : m_stiffness));
   for (int i = 0; i < NumDof; i++)
   {
     force[i] = -e.gradient(i);
   }
 }
 
-void RodShellJointCouplingForce::localJacobian(ElementJacobian & jacobian, Stencil & s, bool viscous)
+void RodSolidJointCouplingForce::localJacobian(ElementJacobian & jacobian, Stencil & s, bool viscous)
 {
   std::vector<VertexHandle> vh = getVertices(s);
   Vec3d A = defoObj().getVertexPosition(vh[0]);
   Vec3d B = defoObj().getVertexPosition(vh[1]);
   Vec3d C = defoObj().getVertexPosition(vh[2]);
   Vec3d D = defoObj().getVertexPosition(vh[3]);
+  Vec3d E = defoObj().getVertexPosition(vh[4]);
   Scalar theta = rod().getEdgeTheta(s.e);
   
   Vec3d & ref1 = rod().getReferenceDirector1(s.e);
   Vec3d & ref2 = rod().getReferenceDirector2(s.e);
   
-  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, theta, ref1, ref2, (viscous ? s.damping_undeformed_AB : s.undeformed_AB), (viscous ? s.damping_undeformed_AC : s.undeformed_AC), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, theta, ref1, ref2, (viscous ? s.damping_undeformed_AB : s.undeformed_AB), (viscous ? s.damping_undeformed_AC : s.undeformed_AC), (viscous ? s.damping_undeformed_AD : s.undeformed_AD), (viscous ? m_stiffness_damp : m_stiffness));
   for (int i = 0; i < NumDof; i++)
     for (int j = 0; j < NumDof; j++)
     {
@@ -232,7 +248,7 @@ void RodShellJointCouplingForce::localJacobian(ElementJacobian & jacobian, Stenc
     }
 }
 
-void RodShellJointCouplingForce::updateStiffness()
+void RodSolidJointCouplingForce::updateStiffness()
 {
 //  for (size_t i = 0; i < m_stencils.size(); i++)
 //  {
@@ -244,17 +260,18 @@ void RodShellJointCouplingForce::updateStiffness()
 //  }
 }
 
-void RodShellJointCouplingForce::updateViscousReferenceStrain()
+void RodSolidJointCouplingForce::updateViscousReferenceStrain()
 {
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
     s.damping_undeformed_AB = s.AB;
     s.damping_undeformed_AC = s.AC;
+    s.damping_undeformed_AD = s.AD;
   }
 }
 
-void RodShellJointCouplingForce::updateProperties()
+void RodSolidJointCouplingForce::updateProperties()
 {
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
@@ -265,42 +282,46 @@ void RodShellJointCouplingForce::updateProperties()
     Vec3d B = defoObj().getVertexPosition(vh[1]);
     Vec3d C = defoObj().getVertexPosition(vh[2]);
     Vec3d D = defoObj().getVertexPosition(vh[3]);
+    Vec3d E = defoObj().getVertexPosition(vh[4]);
     Vec3d md1 = rod().getMaterialDirector1(s.e);
     Vec3d md2 = rod().getMaterialDirector2(s.e);
     Vec3d md3 = rod().getEdgeTangent(s.e);
     Vec3d AB = B - A;
     Vec3d AC = C - A;
+    Vec3d AD = D - A;
     s.AB = Vec3d(AB.dot(md1), AB.dot(md2), AB.dot(md3));
     s.AC = Vec3d(AC.dot(md1), AC.dot(md2), AC.dot(md3));
+    s.AD = Vec3d(AD.dot(md1), AD.dot(md2), AD.dot(md3));
   }
 }
 
-void RodShellJointCouplingForce::computeReferenceStrain()
+void RodSolidJointCouplingForce::computeReferenceStrain()
 {
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
     Stencil & s = m_stencils[i];
     s.undeformed_AB = s.AB;
     s.undeformed_AC = s.AC;
+    s.undeformed_AD = s.AD;
   }
 }
 
-void RodShellJointCouplingForce::startStep(Scalar time, Scalar timestep)
+void RodSolidJointCouplingForce::startStep(Scalar time, Scalar timestep)
 {
   updateViscousReferenceStrain();
 }
 
-void RodShellJointCouplingForce::endStep(Scalar time, Scalar timestep)
+void RodSolidJointCouplingForce::endStep(Scalar time, Scalar timestep)
 {
   updateStiffness();
 }
 
-void RodShellJointCouplingForce::startIteration(Scalar time, Scalar timestep)
+void RodSolidJointCouplingForce::startIteration(Scalar time, Scalar timestep)
 {
   
 }
 
-void RodShellJointCouplingForce::endIteration(Scalar time, Scalar timestep)
+void RodSolidJointCouplingForce::endIteration(Scalar time, Scalar timestep)
 {
   updateProperties();
 }

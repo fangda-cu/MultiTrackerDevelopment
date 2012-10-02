@@ -36,10 +36,10 @@ RodShellJointCouplingForce::RodShellJointCouplingForce(ElasticRodModel & rod, El
     s.dofindices[6] = dofbase;
     s.dofindices[7] = dofbase + 1;
     s.dofindices[8] = dofbase + 2;
-    dofbase = defoObj().getPositionDofBase(vh[3]);
+    dofbase = defoObj().getPositionDofBase(vh[2]);
     s.dofindices[9] = dofbase;
     s.dofindices[10] = dofbase + 1;
-    s.dofindices[11] = dofbase + 2;
+    s.dofindices[111] = dofbase + 2;
     
     dofbase = rod.getEdgeDofBase(s.e);
     s.dofindices[12] = dofbase;
@@ -92,7 +92,7 @@ RodShellJointCouplingForce::Vector3d RodShellJointCouplingForce::vec2vector(cons
 
 template <int DO_HESS>
 adreal<RodShellJointCouplingForce::NumDof, DO_HESS, Scalar> 
-RodShellJointCouplingForce::adEnergy(const RodShellJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, Scalar theta, const Vec3d & ref1, const Vec3d & ref2, const Vec3d & undeformed_AB, const Vec3d & undeformed_AC, Scalar stiffness) 
+RodShellJointCouplingForce::adEnergy(const RodShellJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, Scalar theta, const Vec3d & ref1, const Vec3d & ref2, const Vec3d & AB, const Vec3d & AC, const Vec3d & undeformed_AB, const Vec3d & undeformed_AC, Scalar stiffness) 
 {  
   // typedefs to simplify code below
   typedef adreal<RodShellJointCouplingForce::NumDof, DO_HESS, Scalar> adrealElast;
@@ -183,11 +183,13 @@ Scalar RodShellJointCouplingForce::localEnergy(Stencil & s, bool viscous)
   Vec3d C = defoObj().getVertexPosition(vh[2]);
   Vec3d D = defoObj().getVertexPosition(vh[3]);
   Scalar theta = rod().getEdgeTheta(s.e);
+  Vec3d & AB = s.AB;
+  Vec3d & AC = s.AC;
   
   Vec3d & ref1 = rod().getReferenceDirector1(s.e);
   Vec3d & ref2 = rod().getReferenceDirector2(s.e);
   
-  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, theta, ref1, ref2, (viscous ? s.damping_undeformed_AB : s.undeformed_AB), (viscous ? s.damping_undeformed_AC : s.undeformed_AC), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, theta, ref1, ref2, AB, AC, (viscous ? s.damping_undeformed_AB : s.undeformed_AB), (viscous ? s.damping_undeformed_AC : s.undeformed_AC), (viscous ? m_stiffness_damp : m_stiffness));
   Scalar energy = e.value();
 
   return energy;
@@ -201,11 +203,13 @@ void RodShellJointCouplingForce::localForce(ElementForce & force, Stencil & s, b
   Vec3d C = defoObj().getVertexPosition(vh[2]);
   Vec3d D = defoObj().getVertexPosition(vh[3]);
   Scalar theta = rod().getEdgeTheta(s.e);
+  Vec3d & AB = s.AB;
+  Vec3d & AC = s.AC;
   
   Vec3d & ref1 = rod().getReferenceDirector1(s.e);
   Vec3d & ref2 = rod().getReferenceDirector2(s.e);
   
-  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, theta, ref1, ref2, (viscous ? s.damping_undeformed_AB : s.undeformed_AB), (viscous ? s.damping_undeformed_AC : s.undeformed_AC), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, theta, ref1, ref2, AB, AC, (viscous ? s.damping_undeformed_AB : s.undeformed_AB), (viscous ? s.damping_undeformed_AC : s.undeformed_AC), (viscous ? m_stiffness_damp : m_stiffness));
   for (int i = 0; i < NumDof; i++)
   {
     force[i] = -e.gradient(i);
@@ -220,11 +224,13 @@ void RodShellJointCouplingForce::localJacobian(ElementJacobian & jacobian, Stenc
   Vec3d C = defoObj().getVertexPosition(vh[2]);
   Vec3d D = defoObj().getVertexPosition(vh[3]);
   Scalar theta = rod().getEdgeTheta(s.e);
+  Vec3d & AB = s.AB;
+  Vec3d & AC = s.AC;
   
   Vec3d & ref1 = rod().getReferenceDirector1(s.e);
   Vec3d & ref2 = rod().getReferenceDirector2(s.e);
   
-  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, theta, ref1, ref2, (viscous ? s.damping_undeformed_AB : s.undeformed_AB), (viscous ? s.damping_undeformed_AC : s.undeformed_AC), (viscous ? m_stiffness_damp : m_stiffness));
+  adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, theta, ref1, ref2, AB, AC, (viscous ? s.damping_undeformed_AB : s.undeformed_AB), (viscous ? s.damping_undeformed_AC : s.undeformed_AC), (viscous ? m_stiffness_damp : m_stiffness));
   for (int i = 0; i < NumDof; i++)
     for (int j = 0; j < NumDof; j++)
     {

@@ -1,17 +1,18 @@
 /**
- * \file RodShellJointCouplingForce.h
+ * \file ShellSolidJointCouplingForce.h
  *
  * \author fang@cs.columbia.edu
  * \date 10/01/2012
  */
 
-#ifndef RODSHELLJOINTCOUPLINGFORCE_HH
-#define RODSHELLJOINTCOUPLINGFORCE_HH
+#ifndef SHELLSOLIDJOINTCOUPLINGFORCE_HH
+#define SHELLSOLIDJOINTCOUPLINGFORCE_HH
 
 #include "BASim/src/Physics/DeformableObjects/DefoObjForce.hh"
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
 #include "BASim/src/Physics/DeformableObjects/Rods/ElasticRodModel.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ElasticShell.hh"
+#include "BASim/src/Physics/DeformableObjects/Solids/ElasticSolid.hh"
 
 #include "BASim/src/Math/ADT/adreal.h"
 #include "BASim/src/Math/ADT/advec.h"
@@ -19,7 +20,7 @@
 
 namespace BASim 
 {
-  class RodShellJointCouplingForce : public DefoObjForce
+  class ShellSolidJointCouplingForce : public DefoObjForce
   {
   public:
     const static int NumDof = 13;
@@ -55,8 +56,8 @@ namespace BASim
     };
 
   public:
-    RodShellJointCouplingForce(ElasticRodModel & rod, ElasticShell & shell, const std::vector<Stencil> & stencils, Scalar stiffness, Scalar stiffness_damp, Scalar timestep);
-    virtual ~RodShellJointCouplingForce();
+    ShellSolidJointCouplingForce(ElasticRodModel & rod, ElasticShell & shell, const std::vector<Stencil> & stencils, Scalar stiffness, Scalar stiffness_damp, Scalar timestep);
+    virtual ~ShellSolidJointCouplingForce();
 
   public:
     void addStencil(Stencil & s) { m_stencils.push_back(s); }
@@ -87,7 +88,7 @@ namespace BASim
     
   protected:
     template <int DO_HESS>
-    adreal<NumDof, DO_HESS, Scalar> adEnergy(const RodShellJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, Scalar theta, const Vec3d & ref1, const Vec3d & ref2, const Vec3d & undeformed_AB, const Vec3d & undeformed_AC, Scalar stiffness);
+    adreal<NumDof, DO_HESS, Scalar> adEnergy(const RodShellJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, Scalar theta, const Vec3d & ref1, const Vec3d & ref2, const Vec3d & AB, const Vec3d & AC, const Vec3d & undeformed_AB, const Vec3d & undeformed_AC, Scalar stiffness);
 
   protected:
     Scalar localEnergy(Stencil & s, bool viscous);
