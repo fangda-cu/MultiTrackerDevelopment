@@ -1,12 +1,12 @@
 /**
- * \file RodSolidJointCouplingForce.h
+ * \file RodSolidVertexJointCouplingForce.h
  *
  * \author fang@cs.columbia.edu
  * \date 10/01/2012
  */
 
-#ifndef RODSOLIDJOINTCOUPLINGFORCE_HH
-#define RODSOLIDJOINTCOUPLINGFORCE_HH
+#ifndef RodSolidVertexJointCouplingForce_HH
+#define RodSolidVertexJointCouplingForce_HH
 
 #include "BASim/src/Physics/DeformableObjects/DefoObjForce.hh"
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
@@ -20,7 +20,7 @@
 
 namespace BASim 
 {
-  class RodSolidJointCouplingForce : public DefoObjForce
+  class RodSolidVertexJointCouplingForce : public DefoObjForce
   {
   public:
     const static int NumDof = 16;
@@ -59,8 +59,8 @@ namespace BASim
     };
 
   public:
-    RodSolidJointCouplingForce(ElasticRodModel & rod, ElasticSolid & solid, const std::vector<Stencil> & stencils, Scalar stiffness, Scalar stiffness_damp, Scalar timestep);
-    virtual ~RodSolidJointCouplingForce();
+    RodSolidVertexJointCouplingForce(ElasticRodModel & rod, ElasticSolid & solid, const std::vector<Stencil> & stencils, Scalar stiffness, Scalar stiffness_damp, Scalar timestep);
+    virtual ~RodSolidVertexJointCouplingForce();
 
   public:
     void addStencil(Stencil & s) { m_stencils.push_back(s); }
@@ -91,7 +91,7 @@ namespace BASim
     
   protected:
     template <int DO_HESS>
-    adreal<NumDof, DO_HESS, Scalar> adEnergy(const RodSolidJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, const Vec3d & E, Scalar theta, const Vec3d & ref1, const Vec3d & ref2, const Vec3d & undeformed_AB, const Vec3d & undeformed_AC, const Vec3d & undeformed_AD, Scalar stiffness);
+    adreal<NumDof, DO_HESS, Scalar> adEnergy(const RodSolidVertexJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, const Vec3d & E, Scalar theta, const Vec3d & ref1, const Vec3d & ref2, const Vec3d & undeformed_AB, const Vec3d & undeformed_AC, const Vec3d & undeformed_AD, Scalar stiffness);
 
   protected:
     Scalar localEnergy(Stencil & s, bool viscous);

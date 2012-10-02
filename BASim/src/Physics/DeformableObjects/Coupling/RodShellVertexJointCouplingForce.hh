@@ -1,12 +1,12 @@
 /**
- * \file RodShellJointCouplingForce.h
+ * \file RodShellVertexJointCouplingForce.h
  *
  * \author fang@cs.columbia.edu
  * \date 10/01/2012
  */
 
-#ifndef RODSHELLJOINTCOUPLINGFORCE_HH
-#define RODSHELLJOINTCOUPLINGFORCE_HH
+#ifndef RODSHELLVERTEXJOINTCOUPLINGFORCE_HH
+#define RODSHELLVERTEXJOINTCOUPLINGFORCE_HH
 
 #include "BASim/src/Physics/DeformableObjects/DefoObjForce.hh"
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
@@ -19,7 +19,7 @@
 
 namespace BASim 
 {
-  class RodShellJointCouplingForce : public DefoObjForce
+  class RodShellVertexJointCouplingForce : public DefoObjForce
   {
   public:
     const static int NumDof = 13;
@@ -55,8 +55,8 @@ namespace BASim
     };
 
   public:
-    RodShellJointCouplingForce(ElasticRodModel & rod, ElasticShell & shell, const std::vector<Stencil> & stencils, Scalar stiffness, Scalar stiffness_damp, Scalar timestep);
-    virtual ~RodShellJointCouplingForce();
+    RodShellVertexJointCouplingForce(ElasticRodModel & rod, ElasticShell & shell, const std::vector<Stencil> & stencils, Scalar stiffness, Scalar stiffness_damp, Scalar timestep);
+    virtual ~RodShellVertexJointCouplingForce();
 
   public:
     void addStencil(Stencil & s) { m_stencils.push_back(s); }
@@ -87,7 +87,7 @@ namespace BASim
     
   protected:
     template <int DO_HESS>
-    adreal<NumDof, DO_HESS, Scalar> adEnergy(const RodShellJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, Scalar theta, const Vec3d & ref1, const Vec3d & ref2, const Vec3d & undeformed_AB, const Vec3d & undeformed_AC, Scalar stiffness);
+    adreal<NumDof, DO_HESS, Scalar> adEnergy(const RodShellVertexJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, Scalar theta, const Vec3d & ref1, const Vec3d & ref2, const Vec3d & undeformed_AB, const Vec3d & undeformed_AC, Scalar stiffness);
 
   protected:
     Scalar localEnergy(Stencil & s, bool viscous);
@@ -112,4 +112,4 @@ namespace BASim
 }
 
 
-#endif // RODSHELLJOINTCOUPLINGFORCE_HH
+#endif // RODSHELLVERTEXJOINTCOUPLINGFORCE_HH
