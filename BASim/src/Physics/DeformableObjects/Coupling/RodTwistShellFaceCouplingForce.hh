@@ -39,9 +39,9 @@ namespace BASim
       EdgeHandle e;
       VertexHandle v;
       
-      // cached stiffness
-      Scalar stiffness;
-      Scalar viscous_stiffness;
+//      // cached stiffness
+//      Scalar stiffness;
+//      Scalar viscous_stiffness;
       
       // reference strain
       Scalar undeformed_delta;

@@ -39,9 +39,9 @@ namespace BASim
       EdgeHandle e;   // rod edge AD
       FaceHandle f;   // shell face ABC
       
-      // cached stiffness
-      Scalar stiffness;
-      Scalar viscous_stiffness;
+//      // cached stiffness
+//      Scalar stiffness;
+//      Scalar viscous_stiffness;
       
       // reference strain
       Vec3d undeformed_AP;

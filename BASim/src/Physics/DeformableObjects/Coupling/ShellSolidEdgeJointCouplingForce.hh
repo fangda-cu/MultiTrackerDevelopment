@@ -40,9 +40,9 @@ namespace BASim
       FaceHandle f; // shell face ABE
       TetHandle t;  // solid tet ABCD
       
-      // cached stiffness
-      Scalar stiffness;
-      Scalar viscous_stiffness;
+//      // cached stiffness
+//      Scalar stiffness;
+//      Scalar viscous_stiffness;
       
       // reference strain
       Scalar undeformed_delta;

@@ -41,9 +41,9 @@ namespace BASim
       VertexHandle v1;
       VertexHandle v2;
       
-      // cached stiffness
-      Scalar stiffness;
-      Scalar viscous_stiffness;
+//      // cached stiffness
+//      Scalar stiffness;
+//      Scalar viscous_stiffness;
       
       // reference strain
       Scalar undeformed_delta;

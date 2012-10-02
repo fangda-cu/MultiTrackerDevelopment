@@ -15,8 +15,8 @@ RodShellVertexJointCouplingForce::RodShellVertexJointCouplingForce(ElasticRodMod
   for (size_t i = 0; i < stencils.size(); i++)
   {
     Stencil s(stencils[i]);
-    s.stiffness = 0;
-    s.viscous_stiffness = 0;
+//    s.stiffness = 0;
+//    s.viscous_stiffness = 0;
     s.undeformed_AP.setZero();
     s.damping_undeformed_AP.setZero();
     
@@ -228,14 +228,7 @@ void RodShellVertexJointCouplingForce::localJacobian(ElementJacobian & jacobian,
 
 void RodShellVertexJointCouplingForce::updateStiffness()
 {
-//  for (size_t i = 0; i < m_stencils.size(); i++)
-//  {
-//    Stencil & s = m_stencils[i];
-//    Vec2d r = rod().getRadii(s.e);
-//    Scalar cross_section = M_PI * r(0) * r(1);
-//    s.stiffness = m_youngs_modulus * cross_section;
-//    s.viscous_stiffness = m_youngs_modulus_damping * cross_section;
-//  }
+
 }
 
 void RodShellVertexJointCouplingForce::updateViscousReferenceStrain()

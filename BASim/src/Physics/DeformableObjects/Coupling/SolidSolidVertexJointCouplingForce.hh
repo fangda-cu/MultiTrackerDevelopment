@@ -40,9 +40,9 @@ namespace BASim
       TetHandle t1; // solid tet AEFG
       TetHandle t2; // solid tet ABCD
       
-      // cached stiffness
-      Scalar stiffness;
-      Scalar viscous_stiffness;
+//      // cached stiffness
+//      Scalar stiffness;
+//      Scalar viscous_stiffness;
       
       // reference strain
       Vec3d undeformed_AP;
