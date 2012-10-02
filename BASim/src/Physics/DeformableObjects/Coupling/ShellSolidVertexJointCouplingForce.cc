@@ -71,7 +71,7 @@ ShellSolidVertexJointCouplingForce::~ShellSolidVertexJointCouplingForce()
 
 std::vector<VertexHandle> ShellSolidVertexJointCouplingForce::getVertices(const Stencil & s)
 {
-  std::vector<VertexHandle> vh(4);
+  std::vector<VertexHandle> vh(6);
   FaceVertexIterator fvit = defoObj().fv_iter(s.f);
   VertexHandle vf1 = *fvit; ++fvit; assert(fvit);
   VertexHandle vf2 = *fvit; ++fvit; assert(fvit);
@@ -256,6 +256,7 @@ void ShellSolidVertexJointCouplingForce::updateViscousReferenceStrain()
     Stencil & s = m_stencils[i];
     s.damping_undeformed_AB = s.AB;
     s.damping_undeformed_AC = s.AC;
+    s.damping_undeformed_AD = s.AD;
   }
 }
 
@@ -273,7 +274,7 @@ void ShellSolidVertexJointCouplingForce::updateProperties()
     Vec3d E = defoObj().getVertexPosition(vh[4]);
     Vec3d F = defoObj().getVertexPosition(vh[5]);
     Vec3d md1 = (E + F - A * 2).normalized();
-    Vec3d md2 = ((E - F) - (E - F).dot(md1) * md1).normalized();
+    Vec3d md2 = (E - F - (E - F).dot(md1) * md1).normalized();
     Vec3d md3 = md1.cross(md2);
     Vec3d AB = B - A;
     Vec3d AC = C - A;
@@ -291,6 +292,7 @@ void ShellSolidVertexJointCouplingForce::computeReferenceStrain()
     Stencil & s = m_stencils[i];
     s.undeformed_AB = s.AB;
     s.undeformed_AC = s.AC;
+    s.undeformed_AD = s.AD;
   }
 }
 
