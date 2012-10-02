@@ -649,15 +649,15 @@ void RodShellTest::AtEachTimestep()
 
       std::vector<RodShellVertexJointCouplingForce::Stencil> rsv_stencils;
       RodShellVertexJointCouplingForce::Stencil rsvs;
-      rsvs.e = m_s14_rod_edges[1];
-      rsvs.f = m_s14_shell_faces[0];
+      rsvs.e = m_s14_edges[1];
+      rsvs.f = m_s14_faces[0];
       rsv_stencils.push_back(rsvs);
       obj->addForce(new RodShellVertexJointCouplingForce(*rod, *shell, rsv_stencils, rsv_stiffness, rsv_stiffness_damping, m_timestep));
       
       std::vector<ShellShellVertexJointCouplingForce::Stencil> ssv_stencils;
       ShellShellVertexJointCouplingForce::Stencil ssvs;
-      ssvs.f1 = m_s14_shell_faces[0];
-      ssvs.f2 = m_s14_shell_faces[1];
+      ssvs.f1 = m_s14_faces[0];
+      ssvs.f2 = m_s14_faces[1];
       ssv_stencils.push_back(ssvs);
       obj->addForce(new ShellShellVertexJointCouplingForce(*shell, ssv_stencils, ssv_stiffness, ssv_stiffness_damping, m_timestep));
       
@@ -2676,20 +2676,46 @@ void RodShellTest::setupScene14()
   h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
   vert = Vec3d(3.5 * dx, dx * 0.3, -dx * 0.5);
   h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
-  
-  std::vector<FaceHandle> shellFaces;
-  std::vector<EdgeHandle> rodEdges;
+  vert = Vec3d(3 * dx, dx * 0.3, -dx * 1.5);
+  h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
+  vert = Vec3d(4 * dx, dx * 0.3, -dx * 1.5);
+  h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
+  vert = Vec3d(3.5 * dx, dx * 1.0, -dx * 1.0);
+  h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
 
-  shellFaces.push_back(obj->addFace(vertHandles[2], vertHandles[3], vertHandles[4]));
-  shellFaces.push_back(obj->addFace(vertHandles[4], vertHandles[5], vertHandles[6]));
-  rodEdges.push_back(obj->addEdge(vertHandles[0], vertHandles[1]));
-  rodEdges.push_back(obj->addEdge(vertHandles[1], vertHandles[2]));
+  std::vector<EdgeHandle> edges;
+  std::vector<FaceHandle> faces;
+  std::vector<TetHandle> tets;
+
+  edges.push_back(obj->addEdge(vertHandles[0], vertHandles[1]));
+  edges.push_back(obj->addEdge(vertHandles[1], vertHandles[2]));
   
-  FaceProperty<char> sf(obj);
-  for (size_t i = 0; i < shellFaces.size(); i++) sf[shellFaces[i]] = true;
+  faces.push_back(obj->addFace(vertHandles[2], vertHandles[3], vertHandles[4]));
+  faces.push_back(obj->addFace(vertHandles[4], vertHandles[5], vertHandles[6]));
   
-  //now create the physical model to hang on the mesh
-  shell = new ElasticShell(obj, sf, m_timestep);
+  faces.push_back(obj->addFace(vertHandles[6], vertHandles[8], vertHandles[7]));
+  faces.push_back(obj->addFace(vertHandles[6], vertHandles[9], vertHandles[8]));
+  faces.push_back(obj->addFace(vertHandles[6], vertHandles[7], vertHandles[9]));
+  faces.push_back(obj->addFace(vertHandles[7], vertHandles[8], vertHandles[9]));
+  tets.push_back(obj->addTet(faces[2], faces[3], faces[4], faces[5]));
+  
+  FaceProperty<char> shellFaces(obj);
+  shellFaces[faces[0]] = true;
+  shellFaces[faces[1]] = true;
+  TetProperty<char> solidTets(obj);
+  solidTets[tets[0]] = true;
+  
+  // create a solid model
+  solid = new ElasticSolid(obj, solidTets, m_timestep);
+  obj->addModel(solid);
+  
+  //positions
+  solid->setVertexUndeformed(undeformed);
+  solid->setVertexPositions(positions);
+  solid->setVertexVelocities(velocities);
+
+  // create a shell model
+  shell = new ElasticShell(obj, shellFaces, m_timestep);
   obj->addModel(shell);
   
   //positions
@@ -2703,7 +2729,7 @@ void RodShellTest::setupScene14()
   shell->setEdgeVelocities(edgeVel);
     
   // create a rod model
-  rod = new ElasticRodModel(obj, rodEdges, m_timestep);
+  rod = new ElasticRodModel(obj, edges, m_timestep);
   obj->addModel(rod);
   
   // set init dofs for edges
@@ -2715,10 +2741,11 @@ void RodShellTest::setupScene14()
 
   obj->constrainVertex(vertHandles[0], obj->getVertexPosition(vertHandles[0]));
   obj->constrainVertex(vertHandles[1], obj->getVertexPosition(vertHandles[1]));
-  rod->constrainEdge(rodEdges[0], 0);
+  rod->constrainEdge(edges[0], 0);
 
   m_s14_vertices = vertHandles;
-  m_s14_shell_faces = shellFaces;;
-  m_s14_rod_edges = rodEdges;
+  m_s14_edges = edges;
+  m_s14_faces = faces;
+  m_s14_tets = tets;
 }
 

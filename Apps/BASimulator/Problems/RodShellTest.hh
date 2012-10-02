@@ -90,8 +90,9 @@ protected:
 
   // scene 14:
   std::vector<VertexHandle> m_s14_vertices;
-  std::vector<FaceHandle> m_s14_shell_faces;
-  std::vector<EdgeHandle> m_s14_rod_edges;
+  std::vector<EdgeHandle> m_s14_edges;
+  std::vector<FaceHandle> m_s14_faces;
+  std::vector<TetHandle> m_s14_tets;
 };
 
 
