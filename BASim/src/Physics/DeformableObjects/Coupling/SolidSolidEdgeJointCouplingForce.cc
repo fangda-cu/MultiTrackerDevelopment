@@ -70,11 +70,11 @@ std::vector<VertexHandle> SolidSolidEdgeJointCouplingForce::getVertices(const St
   VertexHandle vt12 = *tvit; ++tvit; assert(tvit);
   VertexHandle vt13 = *tvit; ++tvit; assert(tvit);
   VertexHandle vt14 = *tvit; ++tvit; assert(!tvit);
-  tvit = defoObj().tv_iter(s.t2);
-  VertexHandle vt21 = *tvit; ++tvit; assert(tvit);
-  VertexHandle vt22 = *tvit; ++tvit; assert(tvit);
-  VertexHandle vt23 = *tvit; ++tvit; assert(tvit);
-  VertexHandle vt24 = *tvit; ++tvit; assert(!tvit);
+  TetVertexIterator tvit2 = defoObj().tv_iter(s.t2);
+  VertexHandle vt21 = *tvit2; ++tvit2; assert(tvit2);
+  VertexHandle vt22 = *tvit2; ++tvit2; assert(tvit2);
+  VertexHandle vt23 = *tvit2; ++tvit2; assert(tvit2);
+  VertexHandle vt24 = *tvit2; ++tvit2; assert(!tvit2);
   if (vt11 == vt21 || vt11 == vt22 || vt11 == vt23 || vt11 == vt24) vh[0] = vt11, vh[4] = vt12, vh[5] = vt13, vh[6] = vt14;
   if (vt12 == vt21 || vt12 == vt22 || vt12 == vt23 || vt12 == vt24) vh[0] = vt12, vh[4] = vt13, vh[5] = vt14, vh[6] = vt11;
   if (vt13 == vt21 || vt13 == vt22 || vt13 == vt23 || vt13 == vt24) vh[0] = vt13, vh[4] = vt14, vh[5] = vt11, vh[6] = vt12;
