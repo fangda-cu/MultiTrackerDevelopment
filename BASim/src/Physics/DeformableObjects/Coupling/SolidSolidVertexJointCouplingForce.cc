@@ -81,6 +81,7 @@ std::vector<VertexHandle> SolidSolidVertexJointCouplingForce::getVertices(const 
   VertexHandle vt13 = *tvit; ++tvit; assert(tvit);
   VertexHandle vt14 = *tvit; ++tvit; assert(!tvit);
   tvit = defoObj().tv_iter(s.t2);
+  
   VertexHandle vt21 = *tvit; ++tvit; assert(tvit);
   VertexHandle vt22 = *tvit; ++tvit; assert(tvit);
   VertexHandle vt23 = *tvit; ++tvit; assert(tvit);
