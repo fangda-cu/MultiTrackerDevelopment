@@ -13,7 +13,7 @@ namespace BASim
 {
 
   PositionDofsModel::~PositionDofsModel() {
-    for(int i = 0; i < m_position_forces.size(); ++i) {
+    for(unsigned int i = 0; i < m_position_forces.size(); ++i) {
       delete m_position_forces[i];
     }
   }

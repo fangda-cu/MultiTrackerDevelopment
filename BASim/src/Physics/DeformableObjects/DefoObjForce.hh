@@ -1,8 +1,8 @@
 /**
  * \file DefoObjForce.h
  *
- * \author batty@cs.columbia.edu
- * \date 12/04/2011
+ * \author fang@cs.columbia.edu
+ * \date 09/07/2012
  */
 
 #ifndef DEFOOBJFORCE_H
@@ -12,27 +12,52 @@
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
 #include "BASim/src/Physics/DeformableObjects/PositionDofsModel.hh"
 
-namespace BASim {
+namespace BASim 
+{
 
-/** Base class for a force that acts on topological objects. */
+// Force that acts on one or multiple models
 class DefoObjForce
 {
 public:
-
-  DefoObjForce(PositionDofsModel& model, const std::string& name = "DefoObjForce"): m_name(name), m_model(model) {}
-  virtual ~DefoObjForce() {}
+  DefoObjForce(DeformableObject & obj, Scalar timestep, const std::string & name = "DefoObjForce") :
+    m_obj(obj),
+    m_name(name),
+    m_timestep(timestep)
+  { }
+  virtual ~DefoObjForce() { }
 
   virtual std::string getName() const { return m_name; }
+  
+public:
+  virtual Scalar globalEnergy() = 0;
+  virtual void globalForce(VecXd & force) = 0;
+  virtual void globalJacobian(Scalar scale, MatrixBase & Jacobian) = 0;
 
-  virtual Scalar globalEnergy() const = 0;
-  virtual void globalForce(VecXd& force) const = 0;
-  virtual void globalJacobian(Scalar scale, MatrixBase& Jacobian) const = 0;
- 
+public:
+  virtual void updateStiffness() { }               // called whenever rod radii change, or time step changes (for viscous stiffness)
+  virtual void updateViscousReferenceStrain() { }  // called at the beginning of every time step
+  virtual void updateProperties() { }              // called at every solver iteration (rod updateProperties()), updating cached properties
+  
+public:
+  virtual void startStep(Scalar time, Scalar timestep) { }
+  virtual void endStep(Scalar time, Scalar timestep) { }
+  virtual void startIteration(Scalar time, Scalar timestep) { }
+  virtual void endIteration(Scalar time, Scalar timestep) { }
+
+public:
+  DeformableObject & deformableObject() { return m_obj; }
+  const DeformableObject & deformableObject() const { return m_obj; }
+  
+  Scalar & timeStep() { return m_timestep; }
+  const Scalar & timeStep() const { return m_timestep; }
+  
 protected:
-
+  DeformableObject & m_obj;
   std::string m_name;
 
-  PositionDofsModel& m_model;
+  Scalar m_timestep;  // this is needed for computing viscous forces' stiffnesses
+  
+
 };
 
 

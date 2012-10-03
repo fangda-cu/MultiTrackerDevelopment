@@ -284,8 +284,7 @@ void ShellTest::Setup()
   }
 
   //Gravity force
-  PositionDofsModel* model = (PositionDofsModel*) shellObj->getModel(0); //the first model is always the positiondofsmodel
-  model->addForce(new GravityForce(*model, "Gravity", gravity)); 
+  shellObj->addForce(new GravityForce(*shellObj, timestep, "Gravity", gravity)); 
 
   Scalar loadForce = GetScalarOpt("shell-uniform-load");
   if(loadForce != 0)

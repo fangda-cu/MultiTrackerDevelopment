@@ -144,15 +144,18 @@ namespace BASim
       if(*veit2 == s.e1) ++veit2;
       s.e2 = *veit2;
 
-      EdgeVertexIterator evit2 = object->ev_iter(s.e0);
-      if(*evit2 == s.v1) ++evit2;
-      s.v0 = *evit2;
+      if (s.e0.isValid() && s.e2.isValid())
+      {
+        EdgeVertexIterator evit2 = object->ev_iter(s.e0);
+        if(*evit2 == s.v1) ++evit2;
+        s.v0 = *evit2;
 
-      EdgeVertexIterator evit3 = object->ev_iter(s.e2);
-      if(*evit3 == s.v2) ++evit3;
-      s.v3 = *evit3;
+        EdgeVertexIterator evit3 = object->ev_iter(s.e2);
+        if(*evit3 == s.v2) ++evit3;
+        s.v3 = *evit3;
 
-      m_triedge_stencils.push_back(s);      
+        m_triedge_stencils.push_back(s);      
+      }
     }
 
     

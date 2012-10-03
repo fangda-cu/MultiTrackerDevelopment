@@ -28,6 +28,16 @@ template <typename T> inline T clamp( const T& scalar, const T& min, const T& ma
   return scalar;
 }
 
+  
+// FD 9/11/2012
+/** Returns the square of the input value. */
+template <typename T> inline T sqr(const T& x) { return x * x; }
+
+/** Returns the cube of the input value. */
+template <typename T> inline T cub(const T& x) { return x * x * x; }
+// /FD 9/11/2012
+  
+
 /** The Kronecker delta function. Returns 1 if \p i = \p j and 0
     otherwise. */
 inline int KroneckerDelta(int i, int j)

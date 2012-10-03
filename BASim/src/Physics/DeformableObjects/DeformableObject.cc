@@ -1,6 +1,7 @@
 
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
 #include "BASim/src/Physics/DeformableObjects/PositionDofsModel.hh"
+#include "BASim/src/Physics/DeformableObjects/DefoObjForce.hh"
 
 namespace BASim {
 
@@ -15,7 +16,7 @@ DeformableObject::~DeformableObject()
 {
   
   //this deletion includes the posdofmodel
-  for(int i = 0; i < m_models.size(); ++i)
+  for(unsigned int i = 0; i < m_models.size(); ++i)
     delete m_models[i];
 }
 
@@ -54,27 +55,44 @@ void DeformableObject::computeForces(VecXd& force) {
   
   std::vector<PhysicalModel*>::iterator model_it;
   VecXd curr_force(force.size());
-  for(model_it = m_models.begin(); model_it != m_models.end(); ++model_it) {
+  for(model_it = m_models.begin(); model_it != m_models.end(); ++model_it) 
+  {
     curr_force.setZero();
     (*model_it)->computeForces(curr_force);
     force += curr_force;
   }
 
+  for (size_t i = 0; i < m_miscForces.size(); i++)
+  {
+    curr_force.setZero();
+    m_miscForces[i]->globalForce(curr_force);
+    force += curr_force;
+  }
 }
 
 
 void DeformableObject::computeJacobian(Scalar scale, MatrixBase& J) {
 
   std::vector<PhysicalModel*>::iterator model_it;
-  for(model_it = m_models.begin(); model_it != m_models.end(); ++model_it) {
+  for(model_it = m_models.begin(); model_it != m_models.end(); ++model_it) 
+  {
     (*model_it)->computeJacobian(scale, J);
   }
 
+  for (size_t i = 0; i < m_miscForces.size(); i++)
+  {
+    m_miscForces[i]->globalJacobian(scale, J);
+  }
 }
 
 void DeformableObject::addModel( PhysicalModel* model )
 {
   m_models.push_back(model);
+}
+
+void DeformableObject::addForce(DefoObjForce * force)
+{
+  m_miscForces.push_back(force);
 }
 
 const Scalar& DeformableObject::getDof(int i) const {
@@ -261,24 +279,32 @@ void DeformableObject::startStep()
 { 
   for(unsigned int i = 0; i < m_models.size(); ++i) 
     m_models[i]->startStep(m_time, m_dt); 
+  for(unsigned int i = 0; i < m_miscForces.size(); ++i)
+    m_miscForces[i]->startStep(m_time, m_dt);
 }
 
 void DeformableObject::endStep() 
 { 
   for(unsigned int i = 0; i < m_models.size(); ++i) 
     m_models[i]->endStep(m_time, m_dt); 
+  for(unsigned int i = 0; i < m_miscForces.size(); ++i)
+    m_miscForces[i]->endStep(m_time, m_dt);
 }
 
 void DeformableObject::startIteration() 
 { 
   for(unsigned int i = 0; i < m_models.size(); ++i) 
     m_models[i]->startIteration(m_time, m_dt); 
+  for(unsigned int i = 0; i < m_miscForces.size(); ++i)
+    m_miscForces[i]->startIteration(m_time, m_dt);
 }
 
 void DeformableObject::endIteration() 
 { 
   for(unsigned int i = 0; i < m_models.size(); ++i) 
     m_models[i]->endIteration(m_time, m_dt); 
+  for(unsigned int i = 0; i < m_miscForces.size(); ++i)
+    m_miscForces[i]->endIteration(m_time, m_dt);
 }
 
 

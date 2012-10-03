@@ -1,44 +1,44 @@
 #include "BASim/src/Physics/DeformableObjects/GravityForce.hh"
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjIterators.hh"
+#include "BASim/src/Physics/DeformableObjects/DefoObjForce.hh"
 
 namespace BASim {
 
-GravityForce::GravityForce( PositionDofsModel& obj, const std::string& name, const Vec3d& gravity_vector ) : 
-    DefoObjForce(obj, name), m_gravity(gravity_vector)
+GravityForce::GravityForce( DeformableObject& obj, Scalar timestep, const std::string& name, const Vec3d& gravity_vector ) : 
+    DefoObjForce(obj, timestep, name), m_gravity(gravity_vector)
 {
 
 }
 
-Scalar GravityForce::globalEnergy() const
+Scalar GravityForce::globalEnergy() 
 {
   Scalar energy = 0;
-  DeformableObject& obj = m_model.getDefoObj();
-  for(VertexIterator vit = obj.vertices_begin(); vit != obj.vertices_end(); ++vit) {
+  
+  for(VertexIterator vit = m_obj.vertices_begin(); vit != m_obj.vertices_end(); ++vit) {
     VertexHandle& vh = *vit;
-    int dofIdx = obj.getPositionDofBase(vh);
-    Vec3d pos = obj.getVertexPosition(vh);
-    energy -= m_model.getMass(vh)*m_gravity.dot(pos);
+    int dofIdx = m_obj.getPositionDofBase(vh);
+    Vec3d pos = m_obj.getVertexPosition(vh);
+    energy -= m_obj.getVertexMass(vh)*m_gravity.dot(pos);
   }
   return energy;
 }
 
-void GravityForce::globalForce( VecXd& force ) const
+void GravityForce::globalForce( VecXd& force ) 
 {
   
-  DeformableObject& obj = m_model.getDefoObj();
-  for(VertexIterator vit = obj.vertices_begin(); vit != obj.vertices_end(); ++vit) {
+  for(VertexIterator vit = m_obj.vertices_begin(); vit != m_obj.vertices_end(); ++vit) {
     VertexHandle& vh = *vit;
-    int dofIdx = obj.getPositionDofBase(vh);
-    force[dofIdx] += m_gravity[0] * m_model.getMass(vh);
-    force[dofIdx+1] += m_gravity[1] * m_model.getMass(vh);
-    force[dofIdx+2] += m_gravity[2] * m_model.getMass(vh);
+    int dofIdx = m_obj.getPositionDofBase(vh);
+    force[dofIdx] += m_gravity[0] * m_obj.getVertexMass(vh);
+    force[dofIdx+1] += m_gravity[1] * m_obj.getVertexMass(vh);
+    force[dofIdx+2] += m_gravity[2] * m_obj.getVertexMass(vh);
     
   }
   
 }
 
-void GravityForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) const
+void GravityForce::globalJacobian( Scalar scale, MatrixBase& Jacobian )
 {
   //Jacobian is constant zero
   return;

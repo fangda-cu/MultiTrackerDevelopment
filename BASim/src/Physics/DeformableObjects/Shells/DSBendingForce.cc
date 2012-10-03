@@ -310,17 +310,17 @@ static void computeConstant(Scalar& c, const std::vector<Vec3d>& positions)
 
 Scalar DSBendingForce::getEdgeThickness(const EdgeHandle& eh) const {
   EdgeFaceIterator efit = m_shell.getDefoObj().ef_iter(eh);
-  Scalar thickness = 0;
-  int count = 0;
+  Scalar thicknessSum = 0;
+  Scalar totalArea = 0;
   for(;efit; ++efit) {
     FaceHandle fh = *efit;
-    thickness += m_shell.getThickness(fh);
-    ++count;
+    Scalar area = m_shell.getArea(fh); 
+    thicknessSum += area * m_shell.getThickness(fh);
+    totalArea += area;
   }
-  assert(count == 2);
-  thickness /= 2.0; //Thickness is just the average of incident face thicknesses.
   
-  return thickness;
+  //Edge thickness is just the area-weighted average of incident face thicknesses. Let's say.
+  return thicknessSum / totalArea;
 }
 
 Scalar DSBendingForce::elementEnergy(const std::vector<Vec3d>& undeformed,

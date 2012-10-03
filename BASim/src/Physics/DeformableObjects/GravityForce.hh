@@ -16,14 +16,12 @@ class GravityForce : public DefoObjForce {
 
 public:
 
-  GravityForce (PositionDofsModel& shell, const std::string& name = "GravityForce", const Vec3d& gravityVector = Vec3d(0,-9.81,0));
+  GravityForce (DeformableObject& obj, Scalar timestep, const std::string& name = "GravityForce", const Vec3d& gravityVector = Vec3d(0,-9.81,0));
   virtual ~GravityForce () {}
 
-  
-
-  Scalar globalEnergy() const;
-  void globalForce(VecXd& force) const;
-  void globalJacobian(Scalar scale, MatrixBase& Jacobian) const;
+  Scalar globalEnergy() ;
+  void globalForce(VecXd& force) ;
+  void globalJacobian(Scalar scale, MatrixBase& Jacobian) ;
 
 protected:
 
