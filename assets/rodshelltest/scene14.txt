@@ -53,7 +53,7 @@ solid-Youngs 100    # the Young's modulus of the solid material
 solid-Youngs-damping 0	# the damping coefficient associated with the solid's Young's modulus
 solid-Poisson 0.25	# the Poisson ratio of the solid material
 solid-Poisson-damping 0.25 # the damping coefficient associated to the solid's Poisson ratio
-solid-density 1 #the density of the solid
+solid-density 0.2 #the density of the solid
 
 shell-bath-density 1	# the density of water fluid bath for sheared wrinkling test
 shell-bending-factor 1	# extra scale factor to multiple bending coefficient by
