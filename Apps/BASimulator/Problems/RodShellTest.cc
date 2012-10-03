@@ -268,14 +268,12 @@ sceneFunc rodshell_scenes[] =
   &RodShellTest::setupScene7,  // collapsible tunnel folding
   &RodShellTest::setupScene8,  // collapsible tunnel opening
   &RodShellTest::setupScene9,  // balls in bag
-  &RodShellTest::setupScene10,  // Christopher's first Houdini export test
-  &RodShellTest::setupScene11,  // solid elasticity test
-  &RodShellTest::setupScene12   // rod surface tension test
-  &RodShellTest::setupScene13,  // rod twist shell face coupling test
-  &RodShellTest::setupScene14,  // rod twist solid tet coupling test
-  &RodShellTest::setupScene15   // rod shell joint coupling test
-
->>>>>>> Inter-Dimension-Coupling
+  &RodShellTest::setupScene10, // Christopher's first Houdini export test
+  &RodShellTest::setupScene11, // solid elasticity test
+  &RodShellTest::setupScene12, // rod surface tension test
+  &RodShellTest::setupScene13, // rod twist shell face coupling test
+  &RodShellTest::setupScene14, // rod twist solid tet coupling test
+  &RodShellTest::setupScene15  // rod shell joint coupling test
 };
 
 void RodShellTest::Setup()
