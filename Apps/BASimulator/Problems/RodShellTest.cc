@@ -652,9 +652,6 @@ void RodShellTest::AtEachTimestep()
       rsvs.e = m_s14_edges[1];
       rsvs.f = m_s14_faces[0];
       rsv_stencils.push_back(rsvs);
-      rsvs.e = m_s14_edges[2];
-      rsvs.f = m_s14_faces[10];
-      rsv_stencils.push_back(rsvs);
       obj->addForce(new RodShellVertexJointCouplingForce(*rod, *shell, rsv_stencils, rsv_stiffness, rsv_stiffness_damping, m_timestep));
       
       std::vector<ShellShellVertexJointCouplingForce::Stencil> ssv_stencils;
@@ -677,20 +674,6 @@ void RodShellTest::AtEachTimestep()
       ddvs.t2 = m_s14_tets[1];
       ddv_stencils.push_back(ddvs);
       obj->addForce(new SolidSolidVertexJointCouplingForce(*solid, ddv_stencils, ddv_stiffness, ddv_stiffness_damping, m_timestep));
-      
-      std::vector<ShellSolidEdgeJointCouplingForce::Stencil> sde_stencils;
-      ShellSolidEdgeJointCouplingForce::Stencil sdes;
-      sdes.f = m_s14_faces[10];
-      sdes.t = m_s14_tets[2];
-      sde_stencils.push_back(sdes);
-      obj->addForce(new ShellSolidEdgeJointCouplingForce(*shell, *solid, sde_stencils, sde_stiffness, sde_stiffness_damping, m_timestep));
-      
-      std::vector<SolidSolidEdgeJointCouplingForce::Stencil> dde_stencils;
-      SolidSolidEdgeJointCouplingForce::Stencil ddes;
-      ddes.t1 = m_s14_tets[2];
-      ddes.t2 = m_s14_tets[3];
-      dde_stencils.push_back(ddes);
-      obj->addForce(new SolidSolidEdgeJointCouplingForce(*solid, dde_stencils, dde_stiffness, dde_stiffness_damping, m_timestep));
       
     }
   }
@@ -2719,20 +2702,6 @@ void RodShellTest::setupScene14()
   h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
   vert = Vec3d(3.5 * dx, dx * 1.7, -dx * 0.5);// vertex 12
   h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
-  vert = Vec3d(-dx, 0, 0);                    // vertex 13
-  h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
-  vert = Vec3d(-2 * dx, dx * 0.5, dx * 0.5);  // vertex 14
-  h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
-  vert = Vec3d(-2 * dx, dx * 0.5, -dx * 0.5); // vertex 15
-  h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
-  vert = Vec3d(-3 * dx, dx * 0.5, dx * 0.5);  // vertex 16
-  h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
-  vert = Vec3d(-2 * dx, dx * 1.5, dx * 0.5);  // vertex 17
-  h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
-  vert = Vec3d(-2.5 * dx, dx * 0.0, dx * 1.5);// vertex 18
-  h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
-  vert = Vec3d(-2.5 * dx, dx * 1.0, dx * 1.5);// vertex 19
-  h = obj->addVertex(); positions[h] = vert;  velocities[h] = start_vel;  undeformed[h] = vert;   vertHandles.push_back(h);
 
   std::vector<EdgeHandle> edges;
   std::vector<FaceHandle> faces;
@@ -2740,7 +2709,6 @@ void RodShellTest::setupScene14()
 
   edges.push_back(obj->addEdge(vertHandles[0], vertHandles[1]));
   edges.push_back(obj->addEdge(vertHandles[1], vertHandles[2]));
-  edges.push_back(obj->addEdge(vertHandles[0], vertHandles[13]));
   
   faces.push_back(obj->addFace(vertHandles[2], vertHandles[3], vertHandles[4]));
   faces.push_back(obj->addFace(vertHandles[4], vertHandles[5], vertHandles[6]));
@@ -2756,28 +2724,12 @@ void RodShellTest::setupScene14()
   faces.push_back(obj->addFace(vertHandles[10], vertHandles[12], vertHandles[11]));
   tets.push_back(obj->addTet(faces[6], faces[7], faces[8], faces[9]));
 
-  faces.push_back(obj->addFace(vertHandles[13], vertHandles[14], vertHandles[15]));
-
-  faces.push_back(obj->addFace(vertHandles[14], vertHandles[15], vertHandles[16]));
-  faces.push_back(obj->addFace(vertHandles[14], vertHandles[16], vertHandles[17]));
-  faces.push_back(obj->addFace(vertHandles[14], vertHandles[17], vertHandles[15]));
-  faces.push_back(obj->addFace(vertHandles[16], vertHandles[15], vertHandles[17]));
-  tets.push_back(obj->addTet(faces[11], faces[12], faces[13], faces[14]));
-  faces.push_back(obj->addFace(vertHandles[14], vertHandles[16], vertHandles[18]));
-  faces.push_back(obj->addFace(vertHandles[14], vertHandles[18], vertHandles[19]));
-  faces.push_back(obj->addFace(vertHandles[14], vertHandles[19], vertHandles[16]));
-  faces.push_back(obj->addFace(vertHandles[18], vertHandles[16], vertHandles[19]));
-  tets.push_back(obj->addTet(faces[15], faces[16], faces[17], faces[18]));
-
   FaceProperty<char> shellFaces(obj);
   shellFaces[faces[0]] = true;
   shellFaces[faces[1]] = true;
-  shellFaces[faces[10]] = true;
   TetProperty<char> solidTets(obj);
   solidTets[tets[0]] = true;
   solidTets[tets[1]] = true;
-  solidTets[tets[2]] = true;
-  solidTets[tets[3]] = true;
   
   // create a solid model
   solid = new ElasticSolid(obj, solidTets, m_timestep);
