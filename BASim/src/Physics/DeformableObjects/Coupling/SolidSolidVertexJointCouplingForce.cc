@@ -277,7 +277,7 @@ void SolidSolidVertexJointCouplingForce::updateProperties()
     Vec3d E = defoObj().getVertexPosition(vh[4]);
     Vec3d F = defoObj().getVertexPosition(vh[5]);
     Vec3d G = defoObj().getVertexPosition(vh[6]);
-    Vec3d md1 = (E + F - A * 3).normalized();
+    Vec3d md1 = (E + F - A * 2).normalized();
     Vec3d md2 = (E - F - (E - F).dot(md1) * md1).normalized();
     Vec3d md3 = md1.cross(md2);
     Vec3d AB = B - A;
