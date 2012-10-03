@@ -89,9 +89,10 @@ void DSBendingForce::gatherDOFs(const EdgeHandle& eh,
 void DSBendingForce::getEdgeFacePairs(EdgeHandle eh, std::vector< std::pair<FaceHandle,FaceHandle> >& facePairs) const {
   DeformableObject& defo = m_shell.getDefoObj();
 
-  std::vector<FaceHandle> faces;;
+  std::vector<FaceHandle> faces;
   for(EdgeFaceIterator efit = defo.ef_iter(eh); efit; ++efit) {
-    faces.push_back(*efit);
+    if(m_shell.isFaceActive(*efit)) //skip faces that aren't shell faces!
+      faces.push_back(*efit);
   }
   
   for(unsigned int i = 0; i < faces.size(); ++i) {
