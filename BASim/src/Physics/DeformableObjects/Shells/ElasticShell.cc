@@ -1255,7 +1255,6 @@ void ElasticShell::remesh()
 
       assert(eh.isValid()); //ensure the desired edge exists
 
-      assert(event.m_deleted_tris[i].size() == 2);
       FaceHandle f0 = reverse_trimap[event.m_deleted_tris[0]];
       FaceHandle f1 = reverse_trimap[event.m_deleted_tris[1]];
       EdgeHandle newEdge;
