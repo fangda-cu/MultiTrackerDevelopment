@@ -197,7 +197,6 @@ Scalar SolidSolidEdgeJointCouplingForce::localEnergy(Stencil & s, bool viscous)
   Vec3d D = defoObj().getVertexPosition(vh[3]);
   Vec3d E = defoObj().getVertexPosition(vh[4]);
   Vec3d F = defoObj().getVertexPosition(vh[5]);
-  Vec3d G = defoObj().getVertexPosition(vh[6]);
   
   adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, F, s.delta, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
   Scalar energy = e.value();
@@ -214,7 +213,6 @@ void SolidSolidEdgeJointCouplingForce::localForce(ElementForce & force, Stencil 
   Vec3d D = defoObj().getVertexPosition(vh[3]);
   Vec3d E = defoObj().getVertexPosition(vh[4]);
   Vec3d F = defoObj().getVertexPosition(vh[5]);
-  Vec3d G = defoObj().getVertexPosition(vh[6]);
   
   adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, F, s.delta, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
   for (int i = 0; i < NumDof; i++)
@@ -232,7 +230,6 @@ void SolidSolidEdgeJointCouplingForce::localJacobian(ElementJacobian & jacobian,
   Vec3d D = defoObj().getVertexPosition(vh[3]);
   Vec3d E = defoObj().getVertexPosition(vh[4]);
   Vec3d F = defoObj().getVertexPosition(vh[5]);
-  Vec3d G = defoObj().getVertexPosition(vh[6]);
   
   adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, F, s.delta, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
   for (int i = 0; i < NumDof; i++)
