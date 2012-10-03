@@ -16,6 +16,7 @@ namespace BASim {
 
 class MatrixBase;
 class PositionDofsModel;
+class DefoObjForce;
 
 //A class to manage position constraints.
 class PositionConstraint {
@@ -134,6 +135,8 @@ public:
   //Sets up the mapping from a linear list of DOFs to whatever internal DOFs that the associated models have requested.
   void computeDofIndexing();
 
+  void addForce(DefoObjForce * force);
+  
 protected:
 
   std::vector<PhysicalModel*> m_models; ///< physical models layered on this object (each with its own forces)
@@ -144,6 +147,8 @@ protected:
   std::vector<int> m_dofModels; //for each dof, which model does it belong to 
   std::vector<DofHandle> m_dofHandles; //for each dof, the information to look it up in the model (handle, type, DOF number).
 
+  std::vector<DefoObjForce *> m_miscForces;
+  
 };
 
 } // namespace BASim

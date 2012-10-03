@@ -1,0 +1,89 @@
+dt 0.05	# time-step size
+gravity 0 -1 0	# gravity
+
+rodshell-scene 15	# the scene to test
+
+rod-density 1	# volumetric density of the rod 
+rod-radius-a 0.3	# major radius of the rod
+rod-radius-b 0.3	# minor radius of the rod
+
+rod-Youngs 400	# the Young's modulus of the rodl material
+rod-Youngs-damping 0	# the damping coefficient associated with the rod's Young's modulus
+rod-Shear 200	# the shear modulus of the rod material
+rod-Shear-damping 0	# the damping coefficient associated to the rod's shear modulus
+
+shell-x-resolution 1	# the number of segments along first dimension
+shell-y-resolution 1	# the number of segments along second dimension
+
+shell-width 1	# the horizontal side length of the shell
+shell-height 1	# the vertical side length of the shell
+shell-density 0.1	# volumetric density of the shell 
+shell-thickness 0.2	# the (initial) thickness of the shell
+
+shell-Youngs 100.0	# the Young's modulus of the shell material
+shell-Youngs-damping 0.0	# the damping coefficient associated with the shell's Young's modulus
+shell-Poisson 0.5	# the Poisson ratio of the shell material
+shell-Poisson-damping 0.0	# the damping coefficient associated to the shell's Poisson ratio
+
+shell-CST-stretching true	# whether to apply constant-strain-triangle in-plane stretching
+shell-DS-bending true	# whether to apply "Discrete Shells" hinge-based bending
+shell-MN-bending false	# whether to apply Mid-edge Normal based bending (Morley elt)
+
+rod-twist-shell-face-coupling-stiffness 1.0 # rod twist-shell face coupling force stiffness
+rod-twist-shell-face-coupling-stiffness-damping 0 # rod twist-shell face coupling force viscous stiffness
+rod-twist-solid-tet-coupling-stiffness 1.0 # rod twist-solid tet coupling force stiffness
+rod-twist-solid-tet-coupling-stiffness-damping 0 # rod twist-solid tet coupling force viscous stiffness
+
+rod-shell-vertex-joint-coupling-stiffness 1.0 # rod shell vertex joint coupling force stiffness
+rod-shell-vertex-joint-coupling-stiffness-damping 0 # rod shell vertex joint coupling force viscous stiffness
+rod-solid-vertex-joint-coupling-stiffness 1.0 # rod solid vertex joint coupling force stiffness
+rod-solid-vertex-joint-coupling-stiffness-damping 0 # rod solid vertex joint coupling force viscous stiffness
+shell-shell-vertex-joint-coupling-stiffness 1.0 # shell shell vertex joint coupling force stiffness
+shell-shell-vertex-joint-coupling-stiffness-damping 0 # shell shell vertex joint coupling force viscous stiffness
+shell-solid-vertex-joint-coupling-stiffness 1.0 # shell solid vertex joint coupling force stiffness
+shell-solid-vertex-joint-coupling-stiffness-damping 0 # shell solid vertex joint coupling force viscous stiffness
+shell-solid-edge-joint-coupling-stiffness 1.0 # shell solid edge joint coupling force stiffness
+shell-solid-edge-joint-coupling-stiffness-damping 0 # shell solid edge joint coupling force viscous stiffness
+solid-solid-vertex-joint-coupling-stiffness 1.0 # solid solid vertex joint coupling force stiffness
+solid-solid-vertex-joint-coupling-stiffness-damping 0 # solid solid vertex joint coupling force viscous stiffness
+solid-solid-edge-joint-coupling-stiffness 1.0 # solid solid edge joint coupling force stiffness
+solid-solid-edge-joint-coupling-stiffness-damping 0 # solid solid edge joint coupling force viscous stiffness
+
+solid-Youngs 100    # the Young's modulus of the solid material
+solid-Youngs-damping 0	# the damping coefficient associated with the solid's Young's modulus
+solid-Poisson 0.25	# the Poisson ratio of the solid material
+solid-Poisson-damping 0.25 # the damping coefficient associated to the solid's Poisson ratio
+solid-density 0.2 #the density of the solid
+
+shell-bath-density 1	# the density of water fluid bath for sheared wrinkling test
+shell-bending-factor 1	# extra scale factor to multiple bending coefficient by
+shell-collision-object-file 	# source SDF for object collision
+shell-collision-object-offset 0 0 0	# translation of the object
+shell-collision-proximity 0.05	# the collision spring rest length and distance at which to add springs
+shell-collision-spring-damping 0	# damping coefficient of the collision springs
+shell-collision-spring-stiffness 0.2	# stiffness coefficient of the collision springs
+shell-ground-plane false	# whether to add ground plane collision springs
+shell-ground-plane-height -0.5	# height of the ground plane
+shell-ground-plane-velocity 0	# the rate at which particles colliding with the ground (bath) are pulled into it.
+shell-inflate-sphere-coeff 0	# coefficient for inflating sphere
+shell-inflate-sphere-const-pressure false	# whether to use constant pressure version
+shell-initial-velocity -0.1	# starting velocity in the y direction
+shell-remeshing 0	# whether to perform remeshing
+shell-remeshing-iterations 2	# number of remeshing iterations to run
+shell-remeshing-resolution 0.1	# target edge-length
+shell-ring-velocity 0.25	# velocity in the x direction for the rings
+shell-rotation-rate 0	# the rate at which inner cylinder rotates for sheared wrinkling test
+shell-self-collision false	# whether to add self-collision springs
+shell-stretching-factor 1	# extra scale factor to multiply stretching coefficient by
+shell-surface-tension 0	# surface tension coefficient of the shell
+shell-tearing false	# whether to add tearing to the model
+shell-tearing-randomness 1	# percent of fracture edges that will actually tear apart
+shell-tearing-threshold 0	# the thickness threshold to use for tearing
+
+atol 1e-08	# absolute convergence tolerance
+inftol 1e-08	# infinity norm convergence tolerance
+rtol 1e-08	# relative convergence tolerance
+stol 1e-08	# convergence tolerance in terms of the norm of the change in the solution between steps
+integrator implicit	# type of integrator to use for the shell
+iterations 100	# maximum number of iterations for the implicit method
+
