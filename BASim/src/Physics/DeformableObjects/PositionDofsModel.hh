@@ -12,8 +12,12 @@
 #include "BASim/src/Physics/DeformableObjects/PhysicalModel.hh"
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
 
+
+
 namespace BASim 
 {
+
+  class DefoObjForce;
   //
   // This is a dummy model without any forces. Its sole purpose is to carry
   // vertex position Dofs, which are shared between common models.
@@ -54,8 +58,8 @@ namespace BASim
 
   public:
     //Functions to compute force and Jacobians for the specific model
-    virtual void computeForces(VecXd& force) { }
-    virtual void computeJacobian(Scalar scale, MatrixBase& J) { }
+    virtual void computeForces(VecXd& force);
+    virtual void computeJacobian(Scalar scale, MatrixBase& J);
     virtual void computeConservativeForcesEnergy(VecXd& f, Scalar& energy) { }
     
   public:
@@ -148,6 +152,8 @@ namespace BASim
     void releaseVertex(const VertexHandle & v);
     bool isConstrained(const VertexHandle & v) const;
     
+    void addForce(DefoObjForce* force) { m_position_forces.push_back(force); }
+
   public:
     virtual void startStep(Scalar time, Scalar timestep);
     virtual void endStep(Scalar time, Scalar timestep);
@@ -164,8 +170,10 @@ namespace BASim
 
     // Position dof constraints 
     std::vector<VertexHandle> m_constrained_vertices;
-    std::vector<PositionConstraint *> m_constraint_positions;    
+    std::vector<PositionConstraint*> m_constraint_positions;    
 
+    // Generic position dof forces (gravity, etc)
+    std::vector<DefoObjForce*> m_position_forces;
   };
   
 }

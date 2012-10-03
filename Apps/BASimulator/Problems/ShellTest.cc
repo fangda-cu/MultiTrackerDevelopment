@@ -12,11 +12,10 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/CSTMembraneForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/DSBendingForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/MNBendingForce.hh"
-#include "BASim/src/Physics/DeformableObjects/Shells/ShellGravityForce.hh"
 #include "BASim/src/Render/ShellRenderer.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellRadialForce.hh"
-
+#include "BASim/src/Physics/DeformableObjects/GravityForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellSurfaceTensionForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellLinearSurfaceTensionForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellLinearSurfaceTensionForce2.hh"
@@ -285,7 +284,8 @@ void ShellTest::Setup()
   }
 
   //Gravity force
-  shell->addForce(new ShellGravityForce(*shell, "Gravity", gravity));
+  PositionDofsModel* model = (PositionDofsModel*) shellObj->getModel(0); //the first model is always the positiondofsmodel
+  model->addForce(new GravityForce(*model, "Gravity", gravity)); 
 
   Scalar loadForce = GetScalarOpt("shell-uniform-load");
   if(loadForce != 0)

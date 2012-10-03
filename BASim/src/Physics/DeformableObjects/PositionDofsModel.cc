@@ -7,6 +7,7 @@
 //
 
 #include "BASim/src/Physics/DeformableObjects/PositionDofsModel.hh"
+#include "BASim/src/Physics/DeformableObjects/DefoObjForce.hh"
 
 namespace BASim
 {
@@ -92,4 +93,26 @@ namespace BASim
     }
   }
 
+  void PositionDofsModel::computeForces(VecXd& force) {
+    const std::vector<DefoObjForce*>& forces = m_position_forces;
+    std::vector<DefoObjForce*>::const_iterator fIt;
+
+    VecXd curr_force(force.size());
+    for (fIt = forces.begin(); fIt != forces.end(); ++fIt) {
+      curr_force.setZero();
+      (*fIt)->globalForce(curr_force);
+
+      force += curr_force;
+    }
+  }
+
+  void PositionDofsModel::computeJacobian(Scalar scale, MatrixBase& J) {
+    
+    const std::vector<DefoObjForce*>& forces = m_position_forces;
+    std::vector<DefoObjForce*>::const_iterator fIt;
+
+    for (fIt = forces.begin(); fIt != forces.end(); ++fIt)
+      (*fIt)->globalJacobian(scale, J);
+    
+  }
 }

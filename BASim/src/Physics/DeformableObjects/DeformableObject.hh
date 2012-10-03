@@ -133,7 +133,7 @@ public:
 
   //Sets up the mapping from a linear list of DOFs to whatever internal DOFs that the associated models have requested.
   void computeDofIndexing();
-
+  
 protected:
 
   std::vector<PhysicalModel*> m_models; ///< physical models layered on this object (each with its own forces)

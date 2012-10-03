@@ -11,7 +11,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/CSTMembraneForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/DSBendingForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/MNBendingForce.hh"
-#include "BASim/src/Physics/DeformableObjects/Shells/ShellGravityForce.hh"
+#include "BASim/src/Physics/DeformableObjects/GravityForce.hh"
 #include "BASim/src/Render/ShellRenderer.hh"
 #include "BASim/src/Render/RodModelRenderer.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
@@ -109,8 +109,7 @@ RodShellTest::RodShellTest() :
   stepper(NULL),
   m_active_scene(1),
   m_time(0),
-  m_rod_radii_assigned(false),
-  m_shell_thickness_assigned(false)
+  m_rod_radii_assigned(false)
 {
   addDynamicsProps();
   
@@ -330,7 +329,16 @@ void RodShellTest::Setup()
 
   //compute the dof indexing for use in the diff_eq solver
   obj->computeDofIndexing();
- 
+
+  //////////////////////////////////////////////////////////////////////////
+  //
+  // generic forces
+  //
+  //////////////////////////////////////////////////////////////////////////
+
+  PositionDofsModel* model = (PositionDofsModel*) obj->getModel(0); //the first model is always the positiondofsmodel
+  model->addForce(new GravityForce(*model, "Gravity", gravity)); 
+
   //////////////////////////////////////////////////////////////////////////
   //
   // rod forces
@@ -383,10 +391,7 @@ void RodShellTest::Setup()
     if(mn_bend)
       shell->addForce(new MNBendingForce(*shell, "MNBending", shell_Youngs_modulus, shell_Poisson_ratio, shell_Youngs_damping, shell_Poisson_damping, timestep));
   }
-  
 
-  //Gravity force (handled by shell only, not rod because we only need one copy of the force)
-  shell->addForce(new ShellGravityForce(*shell, "Gravity", gravity)); // TODO: move gravity force to the PositionDofsModel?
   
   //////////////////////////////////////////////////////////////////////////
   //
@@ -2212,7 +2217,7 @@ void RodShellTest::setupScene12()
   std::vector<Vec3d> vertices;
 
   // Create vertices for a rod/thread
-  int divisions = 100;
+  int divisions = 20;
   float length = 10;
   for(int i = 0; i <= divisions; ++i) {
     vertices.push_back(Vec3d(0, -length*i / (float)divisions, 0));
@@ -2274,8 +2279,8 @@ void RodShellTest::setupScene12()
   m_rod_radii_assigned = true;
 
   //Pin top vertex
-  //Vec3d pos = obj->getVertexPosition(vertHandles[0]);
-  //obj->constrainVertex(vertHandles[0], pos);
+ /* Vec3d pos = obj->getVertexPosition(vertHandles[0]);
+  obj->constrainVertex(vertHandles[0], pos);*/
   
   
 }
