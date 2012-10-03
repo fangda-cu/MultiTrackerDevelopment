@@ -94,17 +94,12 @@ void DSBendingForce::getEdgeFacePairs(EdgeHandle eh, std::vector< std::pair<Face
     faces.push_back(*efit);
   }
   
-  if(faces.size() == 2)
-    facePairs.push_back(std::make_pair(faces[0], faces[1])); //just one pair
-  else if(faces.size() == 3) {
-    facePairs.push_back(std::make_pair(faces[0], faces[1])); //all pairs
-    facePairs.push_back(std::make_pair(faces[0], faces[2]));
-    facePairs.push_back(std::make_pair(faces[1], faces[2]));
+  for(unsigned int i = 0; i < faces.size(); ++i) {
+    for(unsigned int j = i+1; j < faces.size(); ++j) {
+      facePairs.push_back(std::make_pair(faces[i], faces[j]));
+    }
   }
-  else if(faces.size() >= 4) {
-    std::cerr << "Non-manifold edges with > 3 faces not yet supported.\n";
-    //TODO Need to work out which faces are closest to each other.
-  }
+
 
 }
 
@@ -161,11 +156,11 @@ void DSBendingForce::globalForce( VecXd& force ) const
       Scalar stiffness_coeff = m_Youngs * cube(getEdgeThickness(eh)) / (12 *(1-square(m_Poisson)));
       Scalar damping_coeff = m_Youngs_damp * cube(getEdgeThickness(eh)) / (12 *(1-square(m_Poisson_damp)));
       
-      //account for double-counted faces in the non-manifold case
-      if(pairs.size() > 2) {
-        stiffness_coeff /= 2;
-        damping_coeff /= 2;
-      }
+      ////account for double-counted faces in the non-manifold case?
+      //if(pairs.size() > 2) {
+      //  stiffness_coeff /= 2;
+      //  damping_coeff /= 2;
+      //}
 
       //determine the elastic forces for this element
       if(stiffness_coeff != 0) {
@@ -214,11 +209,11 @@ void DSBendingForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) const
       Scalar stiffness_coeff = m_Youngs * cube(getEdgeThickness(eh)) / (12 *(1-square(m_Poisson)));
       Scalar damping_coeff = m_Youngs_damp * cube(getEdgeThickness(eh)) / (12 *(1-square(m_Poisson_damp)));
 
-      //account for double-counted faces in the non-manifold case
-      if(pairs.size() > 2) {
-        stiffness_coeff /= 2;
-        damping_coeff /= 2;
-      }
+      ////account for double-counted faces in the non-manifold case?
+      //if(pairs.size() > 2) {
+      //  stiffness_coeff /= 2;
+      //  damping_coeff /= 2;
+      //}
 
       //determine the forces for this element
       if(stiffness_coeff != 0) {
