@@ -649,7 +649,7 @@ void RodShellTest::AtEachTimestep()
       for (size_t i = 0; i < m_s14_rod_edges.size(); i++)
       {
         RodTwistSolidTetCouplingForce::Stencil s;
-        s.e = m_s13_rod_edges[i];
+        s.e = m_s14_rod_edges[i];
         VertexHandle ev1 = obj->fromVertex(s.e);
         VertexHandle ev2 = obj->toVertex(s.e);
         EdgeFaceIterator efit = obj->ef_iter(s.e);
