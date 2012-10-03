@@ -116,6 +116,8 @@ bool g_ply_dump = false;
 
 void cleanup()
 {
+  paused = true;
+    std::cout << "Running cleanup on exit.\n";
     Timer::report();
     Timer::deleteAllTimers();
 
@@ -147,6 +149,8 @@ void cleanup()
 #ifdef HAVE_PETSC
     PetscUtils::finalizePetsc();
 #endif // HAVE_PETSC
+    
+    exit(0);
 }
 
 void SetLighting()
@@ -613,6 +617,7 @@ void menu(int id)
     switch (id)
     {
     case 'q':
+        paused = true;
         exit(0);
         break;
 

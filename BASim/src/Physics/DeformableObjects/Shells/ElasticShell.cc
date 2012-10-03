@@ -54,6 +54,8 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
 ElasticShell::~ElasticShell() {
   delete m_vert_point_springs;
   delete m_repulsion_springs;
+  for(unsigned int i = 0; i < m_shell_forces.size(); ++i)
+    delete m_shell_forces[i];
 }
 
 void ElasticShell::computeConservativeForcesEnergy( VecXd& force , Scalar& energy)

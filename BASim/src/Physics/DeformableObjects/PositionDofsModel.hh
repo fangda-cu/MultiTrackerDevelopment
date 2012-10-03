@@ -19,8 +19,9 @@ namespace BASim
 
   class DefoObjForce;
   //
-  // This is a dummy model without any forces. Its sole purpose is to carry
+  // This is a default model that stores position data. Its sole purpose is to carry
   // vertex position Dofs, which are shared between common models.
+  // It also supports generic external forces that apply only to vertex positions, such as gravity.
   //
   // The deformable object is specifically aware of this model and will
   // query it when asked for position Dofs.
@@ -41,6 +42,8 @@ namespace BASim
       m_undeformed_positions(obj),
       m_damping_undeformed_positions(obj)
     { }
+      
+    virtual ~PositionDofsModel();
 
   public:
     //The number of DOF's of each type that the object needs.

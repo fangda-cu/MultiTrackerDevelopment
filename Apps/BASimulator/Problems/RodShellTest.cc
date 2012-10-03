@@ -220,9 +220,8 @@ RodShellTest::RodShellTest() :
 RodShellTest::~RodShellTest()
 {
   if (obj) delete obj;
-  if (rod) delete rod;
-  if (shell) delete shell;
-  if (solid) delete solid;
+  //The models assigned to obj are deleted by the object's constructor. (rod, shell, solid, etc.)
+  
   if (stepper) delete stepper;
 }
 
@@ -416,8 +415,10 @@ void RodShellTest::Setup()
   //assign radii (either the specified uniform values, or whatever was laid out in the scene setup function)
   if(!m_rod_radii_assigned)
     rod->setRadii(rod_radius_a, rod_radius_b);
-  else
+  else {
     rod->setRadii(*m_radii_list);
+    delete m_radii_list;
+  }
 
   shell->setThickness(shell_thickness);
 

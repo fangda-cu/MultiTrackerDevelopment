@@ -13,7 +13,10 @@ DeformableObject::DeformableObject() :
 
 DeformableObject::~DeformableObject()
 {
-  if (m_posdofsmodel) delete m_posdofsmodel;
+  
+  //this deletion includes the posdofmodel
+  for(int i = 0; i < m_models.size(); ++i)
+    delete m_models[i];
 }
 
 

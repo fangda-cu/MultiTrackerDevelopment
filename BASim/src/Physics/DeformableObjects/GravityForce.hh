@@ -1,8 +1,8 @@
 /**
- * \file DSBendingForce.hh
+ * \file GravityForce.hh
  *
  * \author batty@cs.columbia.edu
- * \date April 18, 2011
+ * \date Oct 3, 2012
  */
 
 #ifndef GRAVITYFORCE_H
