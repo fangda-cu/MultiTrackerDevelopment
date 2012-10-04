@@ -21,7 +21,7 @@ class CSTMembraneForce : public ElasticShellForce {
 public:
 
   CSTMembraneForce(ElasticShell& shell, const std::string& name = "CSTMembraneForceNew", Scalar Youngs = 0, Scalar Poisson = 0, Scalar Youngs_damping = 0, Scalar Poisson_damping = 0, Scalar timestep = 1);
-  virtual ~CSTMembraneForce() {}
+  virtual ~CSTMembraneForce() { }
 
   std::string getName() const;
 

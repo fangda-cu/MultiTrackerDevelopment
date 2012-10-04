@@ -18,6 +18,7 @@ DeformableObject::~DeformableObject()
   //this deletion includes the posdofmodel
   for(unsigned int i = 0; i < m_models.size(); ++i)
     delete m_models[i];
+ 
 }
 
 
