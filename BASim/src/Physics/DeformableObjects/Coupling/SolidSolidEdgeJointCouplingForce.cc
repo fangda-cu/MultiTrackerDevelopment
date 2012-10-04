@@ -75,14 +75,23 @@ std::vector<VertexHandle> SolidSolidEdgeJointCouplingForce::getVertices(const St
   VertexHandle vt22 = *tvit2; ++tvit2; assert(tvit2);
   VertexHandle vt23 = *tvit2; ++tvit2; assert(tvit2);
   VertexHandle vt24 = *tvit2; ++tvit2; assert(!tvit2);
-  if (vt11 == vt21 || vt11 == vt22 || vt11 == vt23 || vt11 == vt24) vh[0] = vt11, vh[4] = vt12, vh[5] = vt13, vh[6] = vt14;
-  if (vt12 == vt21 || vt12 == vt22 || vt12 == vt23 || vt12 == vt24) vh[0] = vt12, vh[4] = vt13, vh[5] = vt14, vh[6] = vt11;
-  if (vt13 == vt21 || vt13 == vt22 || vt13 == vt23 || vt13 == vt24) vh[0] = vt13, vh[4] = vt14, vh[5] = vt11, vh[6] = vt12;
-  if (vt14 == vt21 || vt14 == vt22 || vt14 == vt23 || vt14 == vt24) vh[0] = vt14, vh[4] = vt11, vh[5] = vt12, vh[6] = vt13;
-  if (vh[0] == vt21) vh[1] = vt22, vh[2] = vt23, vh[3] = vt24;
-  if (vh[0] == vt22) vh[1] = vt23, vh[2] = vt24, vh[3] = vt21;
-  if (vh[0] == vt23) vh[1] = vt24, vh[2] = vt21, vh[3] = vt22;
-  if (vh[0] == vt24) vh[1] = vt21, vh[2] = vt22, vh[3] = vt23;
+  // TODO: clean up this ugly code. Maybe do this once upon stencil construction.
+  if (vt11 == vt21 || vt11 == vt22 || vt11 == vt23 || vt11 == vt24) vh[1] = vh[0], vh[0] = vt11;
+  if (vt12 == vt21 || vt12 == vt22 || vt12 == vt23 || vt12 == vt24) vh[1] = vh[0], vh[0] = vt12;
+  if (vt13 == vt21 || vt13 == vt22 || vt13 == vt23 || vt13 == vt24) vh[1] = vh[0], vh[0] = vt13;
+  if (vt14 == vt21 || vt14 == vt22 || vt14 == vt23 || vt14 == vt24) vh[1] = vh[0], vh[0] = vt14;
+  if ((vh[0] == vt11 && vh[1] == vt12) || (vh[0] == vt12 && vh[1] == vt11)) vh[4] = vt13, vh[5] = vt14;
+  if ((vh[0] == vt11 && vh[1] == vt13) || (vh[0] == vt13 && vh[1] == vt11)) vh[4] = vt12, vh[5] = vt14;
+  if ((vh[0] == vt11 && vh[1] == vt14) || (vh[0] == vt14 && vh[1] == vt11)) vh[4] = vt12, vh[5] = vt13;
+  if ((vh[0] == vt12 && vh[1] == vt13) || (vh[0] == vt13 && vh[1] == vt12)) vh[4] = vt11, vh[5] = vt14;
+  if ((vh[0] == vt12 && vh[1] == vt14) || (vh[0] == vt14 && vh[1] == vt12)) vh[4] = vt11, vh[5] = vt13;
+  if ((vh[0] == vt13 && vh[1] == vt14) || (vh[0] == vt14 && vh[1] == vt13)) vh[4] = vt11, vh[5] = vt12;
+  if ((vh[0] == vt21 && vh[1] == vt22) || (vh[0] == vt22 && vh[1] == vt21)) vh[2] = vt23, vh[3] = vt24;
+  if ((vh[0] == vt21 && vh[1] == vt23) || (vh[0] == vt23 && vh[1] == vt21)) vh[2] = vt22, vh[3] = vt24;
+  if ((vh[0] == vt21 && vh[1] == vt24) || (vh[0] == vt24 && vh[1] == vt21)) vh[2] = vt22, vh[3] = vt23;
+  if ((vh[0] == vt22 && vh[1] == vt23) || (vh[0] == vt23 && vh[1] == vt22)) vh[2] = vt21, vh[3] = vt24;
+  if ((vh[0] == vt22 && vh[1] == vt24) || (vh[0] == vt24 && vh[1] == vt22)) vh[2] = vt21, vh[3] = vt23;
+  if ((vh[0] == vt23 && vh[1] == vt24) || (vh[0] == vt24 && vh[1] == vt23)) vh[2] = vt21, vh[3] = vt22;
   return vh;
 }
 
@@ -188,7 +197,6 @@ Scalar SolidSolidEdgeJointCouplingForce::localEnergy(Stencil & s, bool viscous)
   Vec3d D = defoObj().getVertexPosition(vh[3]);
   Vec3d E = defoObj().getVertexPosition(vh[4]);
   Vec3d F = defoObj().getVertexPosition(vh[5]);
-  Vec3d G = defoObj().getVertexPosition(vh[6]);
   
   adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, F, s.delta, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
   Scalar energy = e.value();
@@ -205,7 +213,6 @@ void SolidSolidEdgeJointCouplingForce::localForce(ElementForce & force, Stencil 
   Vec3d D = defoObj().getVertexPosition(vh[3]);
   Vec3d E = defoObj().getVertexPosition(vh[4]);
   Vec3d F = defoObj().getVertexPosition(vh[5]);
-  Vec3d G = defoObj().getVertexPosition(vh[6]);
   
   adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, F, s.delta, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
   for (int i = 0; i < NumDof; i++)
@@ -223,7 +230,6 @@ void SolidSolidEdgeJointCouplingForce::localJacobian(ElementJacobian & jacobian,
   Vec3d D = defoObj().getVertexPosition(vh[3]);
   Vec3d E = defoObj().getVertexPosition(vh[4]);
   Vec3d F = defoObj().getVertexPosition(vh[5]);
-  Vec3d G = defoObj().getVertexPosition(vh[6]);
   
   adreal<NumDof, 1, Scalar> e = adEnergy<1>(*this, A, B, C, D, E, F, s.delta, (viscous ? s.damping_undeformed_delta : s.undeformed_delta), (viscous ? m_stiffness_damp : m_stiffness));
   for (int i = 0; i < NumDof; i++)

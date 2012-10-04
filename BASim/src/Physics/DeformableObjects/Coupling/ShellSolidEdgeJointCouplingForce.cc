@@ -71,13 +71,15 @@ std::vector<VertexHandle> ShellSolidEdgeJointCouplingForce::getVertices(const St
   VertexHandle vt2 = *tvit; ++tvit; assert(tvit);
   VertexHandle vt3 = *tvit; ++tvit; assert(tvit);
   VertexHandle vt4 = *tvit; ++tvit; assert(!tvit);
-  if (vf1 == vt1 || vf1 == vt2 || vf1 == vt3 || vf1 == vt4) vh[0] = vf1, vh[4] = vf2, vh[5] = vf3;
-  if (vf2 == vt1 || vf2 == vt2 || vf2 == vt3 || vf2 == vt4) vh[0] = vf2, vh[4] = vf3, vh[5] = vf1;
-  if (vf3 == vt1 || vf3 == vt2 || vf3 == vt3 || vf3 == vt4) vh[0] = vf3, vh[4] = vf1, vh[5] = vf2;
-  if (vh[0] == vt1) vh[1] = vt2, vh[2] = vt3, vh[3] = vt4;
-  if (vh[0] == vt2) vh[1] = vt3, vh[2] = vt4, vh[3] = vt1;
-  if (vh[0] == vt3) vh[1] = vt4, vh[2] = vt1, vh[3] = vt2;
-  if (vh[0] == vt4) vh[1] = vt1, vh[2] = vt2, vh[3] = vt3;
+  if (vf1 == vt1 || vf1 == vt2 || vf1 == vt3 || vf1 == vt4) std::swap(vf1, vf3);
+  if (vf1 == vt1 || vf1 == vt2 || vf1 == vt3 || vf2 == vt4) std::swap(vf1, vf2);
+  vh[0] = vf2; vh[1] = vf3; vh[4] = vf1;
+  if ((vh[0] == vt1 && vh[1] == vt2) || (vh[0] == vt2 && vh[1] == vt1)) vh[2] = vt3, vh[3] = vt4;
+  if ((vh[0] == vt1 && vh[1] == vt3) || (vh[0] == vt3 && vh[1] == vt1)) vh[2] = vt2, vh[3] = vt4;
+  if ((vh[0] == vt1 && vh[1] == vt4) || (vh[0] == vt4 && vh[1] == vt1)) vh[2] = vt2, vh[3] = vt3;
+  if ((vh[0] == vt2 && vh[1] == vt3) || (vh[0] == vt3 && vh[1] == vt2)) vh[2] = vt1, vh[3] = vt4;
+  if ((vh[0] == vt2 && vh[1] == vt4) || (vh[0] == vt4 && vh[1] == vt2)) vh[2] = vt1, vh[3] = vt3;
+  if ((vh[0] == vt3 && vh[1] == vt4) || (vh[0] == vt4 && vh[1] == vt3)) vh[2] = vt1, vh[3] = vt2;
   return vh;
 }
 

@@ -21,6 +21,7 @@ set (Directories
   Physics/DeformableObjects/Shells
   Physics/DeformableObjects/Rods
   Physics/DeformableObjects/Solids
+  Physics/DeformableObjects/Coupling
   Render
   Util
   Threads
