@@ -198,6 +198,7 @@ namespace BASim
     void getThreeEdgeStencils(std::vector<ThreeEdgeStencil>& stencils) { stencils = m_triedge_stencils; }
 
     void buildStencils();
+    void assignStencilDofs();
 
   protected:
     void updateRadii();

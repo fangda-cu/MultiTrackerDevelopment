@@ -61,76 +61,11 @@ namespace BASim
   
   void ElasticRodModel::setup(Scalar youngs, Scalar youngs_damping, Scalar shear, Scalar shear_damping, Scalar timestep)
   {    
+    
+    assignStencilDofs();
+
     DeformableObject & obj = getDefoObj();
 
-    // collect the dof indices info in the stencils. this can't be done in constructor because dof indexing hasn't been computed then
-    for (size_t i = 0; i < m_edge_stencils.size(); i++)
-    {
-      EdgeStencil & s = m_edge_stencils[i];
-
-      s.dofindices.resize(6);
-      int dofbase = getDefoObj().getPositionDofBase(s.v1);
-      s.dofindices[0] = dofbase;
-      s.dofindices[1] = dofbase + 1;
-      s.dofindices[2] = dofbase + 2;
-      dofbase = getDefoObj().getPositionDofBase(s.v2);
-      s.dofindices[3] = dofbase;
-      s.dofindices[4] = dofbase + 1;
-      s.dofindices[5] = dofbase + 2;
-    }
-
-    for (size_t i = 0; i < m_joint_stencils.size(); i++)
-    {
-      JointStencil & s = m_joint_stencils[i];
-      
-      s.dofindices.resize(11);
-      int dofbase = getDefoObj().getPositionDofBase(s.v1);
-      s.dofindices[0] = dofbase;
-      s.dofindices[1] = dofbase + 1;
-      s.dofindices[2] = dofbase + 2;
-      dofbase = getDefoObj().getPositionDofBase(s.v2);
-      s.dofindices[4] = dofbase;
-      s.dofindices[5] = dofbase + 1;
-      s.dofindices[6] = dofbase + 2;
-      dofbase = getDefoObj().getPositionDofBase(s.v3);
-      s.dofindices[8] = dofbase;
-      s.dofindices[9] = dofbase + 1;
-      s.dofindices[10] = dofbase + 2;
-      
-      s.dofindices[3] = getEdgeDofBase(s.e1);
-      s.dofindices[7] = getEdgeDofBase(s.e2);      
-    }
-
-    for (size_t i = 0; i < m_triedge_stencils.size(); i++)
-    {
-      ThreeEdgeStencil & s = m_triedge_stencils[i];
-
-      s.dofindices.resize(12);
-      int dofbase;
-      if(s.e0.isValid()) {
-        dofbase= getDefoObj().getPositionDofBase(s.v0);
-        s.dofindices[0] = dofbase;
-        s.dofindices[1] = dofbase + 1;
-        s.dofindices[2] = dofbase + 2;
-      }
-      
-      dofbase = getDefoObj().getPositionDofBase(s.v1);
-      s.dofindices[3] = dofbase;
-      s.dofindices[4] = dofbase + 1;
-      s.dofindices[5] = dofbase + 2;
-      dofbase = getDefoObj().getPositionDofBase(s.v2);
-      s.dofindices[6] = dofbase;
-      s.dofindices[7] = dofbase + 1;
-      s.dofindices[8] = dofbase + 2;
-      
-      if(s.e2.isValid()) {
-        dofbase = getDefoObj().getPositionDofBase(s.v3);
-        s.dofindices[9] = dofbase;
-        s.dofindices[10] = dofbase + 1;
-        s.dofindices[11] = dofbase + 2;
-      }
-    }
-    
     // swap in the undeformed configuration as current configuration, because rod force initialization code assumes this
     VertexProperty<Vec3d> current_position_copy(obj.getVertexPositions());
     if (m_undeformed_positions)
@@ -569,11 +504,24 @@ namespace BASim
       }
     }
     
+    //construct the stencil set from scratch
+    buildStencils();
+
+    //rebuild the dof indices as a result
+    obj.computeDofIndexing();
+
+    //next we need to set the dof indices in all the stencils...
+    assignStencilDofs();
+
+    //then we need to update the undeformed configurations used by the various forces...
+    //then call to the forces to get them to do their own updating (resetting the undeformed states, and so on)
+
+
     //now recompute the various derived quantities
     updateProperties();
     updateRadii();
 
-    obj.computeDofIndexing();
+    
 
   }
 
@@ -652,7 +600,6 @@ namespace BASim
     m_edge_active[new_eh1] = 1;
 
     //now what?
-
     
   }
 
@@ -665,8 +612,6 @@ namespace BASim
     
     std::vector<EdgeHandle> rodedges;
 
-    //for (size_t i = 0; i < rodedges.size(); i++)
-    //{
     int count = 0;
     for(EdgeIterator eit = object.edges_begin(); eit != object.edges_end(); ++eit) {
       EdgeHandle eh = *eit;
@@ -788,6 +733,78 @@ namespace BASim
         s.v3 = *evit3;
 
         m_triedge_stencils.push_back(s);      
+      }
+    }
+  }
+
+  void ElasticRodModel::assignStencilDofs() {
+    DeformableObject & obj = getDefoObj();
+
+    // collect the dof indices info in the stencils. this can't be done in constructor because dof indexing hasn't been computed then
+    for (size_t i = 0; i < m_edge_stencils.size(); i++)
+    {
+      EdgeStencil & s = m_edge_stencils[i];
+
+      s.dofindices.resize(6);
+      int dofbase = getDefoObj().getPositionDofBase(s.v1);
+      s.dofindices[0] = dofbase;
+      s.dofindices[1] = dofbase + 1;
+      s.dofindices[2] = dofbase + 2;
+      dofbase = getDefoObj().getPositionDofBase(s.v2);
+      s.dofindices[3] = dofbase;
+      s.dofindices[4] = dofbase + 1;
+      s.dofindices[5] = dofbase + 2;
+    }
+
+    for (size_t i = 0; i < m_joint_stencils.size(); i++)
+    {
+      JointStencil & s = m_joint_stencils[i];
+
+      s.dofindices.resize(11);
+      int dofbase = getDefoObj().getPositionDofBase(s.v1);
+      s.dofindices[0] = dofbase;
+      s.dofindices[1] = dofbase + 1;
+      s.dofindices[2] = dofbase + 2;
+      dofbase = getDefoObj().getPositionDofBase(s.v2);
+      s.dofindices[4] = dofbase;
+      s.dofindices[5] = dofbase + 1;
+      s.dofindices[6] = dofbase + 2;
+      dofbase = getDefoObj().getPositionDofBase(s.v3);
+      s.dofindices[8] = dofbase;
+      s.dofindices[9] = dofbase + 1;
+      s.dofindices[10] = dofbase + 2;
+
+      s.dofindices[3] = getEdgeDofBase(s.e1);
+      s.dofindices[7] = getEdgeDofBase(s.e2);      
+    }
+
+    for (size_t i = 0; i < m_triedge_stencils.size(); i++)
+    {
+      ThreeEdgeStencil & s = m_triedge_stencils[i];
+
+      s.dofindices.resize(12);
+      int dofbase;
+      if(s.e0.isValid()) {
+        dofbase= getDefoObj().getPositionDofBase(s.v0);
+        s.dofindices[0] = dofbase;
+        s.dofindices[1] = dofbase + 1;
+        s.dofindices[2] = dofbase + 2;
+      }
+
+      dofbase = getDefoObj().getPositionDofBase(s.v1);
+      s.dofindices[3] = dofbase;
+      s.dofindices[4] = dofbase + 1;
+      s.dofindices[5] = dofbase + 2;
+      dofbase = getDefoObj().getPositionDofBase(s.v2);
+      s.dofindices[6] = dofbase;
+      s.dofindices[7] = dofbase + 1;
+      s.dofindices[8] = dofbase + 2;
+
+      if(s.e2.isValid()) {
+        dofbase = getDefoObj().getPositionDofBase(s.v3);
+        s.dofindices[9] = dofbase;
+        s.dofindices[10] = dofbase + 1;
+        s.dofindices[11] = dofbase + 2;
       }
     }
   }
