@@ -510,7 +510,7 @@ namespace BASim {
   VertexFaceIterator::value_type VertexFaceIterator::operator* ()
   {
     assert(m_obj);
-    if(m_idx >= m_obj->m_nbrsVF.getNumEntriesInRow(m_hnd.idx()))
+    if(m_idx < 0 || m_idx >= m_obj->m_nbrsVF.getNumEntriesInRow(m_hnd.idx()))
       return FaceHandle(-1);
     return FaceHandle(m_obj->m_nbrsVF.getColByIndex(m_hnd.idx(), m_idx));
   }

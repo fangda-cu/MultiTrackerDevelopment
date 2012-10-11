@@ -99,7 +99,9 @@ namespace BASim
     ~ElasticRodModel();
     
     void setup(Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar shear_modulus, Scalar shear_modulus_damping, Scalar timestep);
-    
+    void remesh(Scalar min_length, Scalar max_length);
+    void subdivideEdge(EdgeHandle& eh);
+
     std::vector<EdgeStencil> getEdgeStencils() const { return m_edge_stencils; }
     std::vector<JointStencil> getJointStencils() const { return m_joint_stencils; }
     
@@ -194,6 +196,8 @@ namespace BASim
     void getEdgeStencils(std::vector<EdgeStencil>& stencils) { stencils = m_edge_stencils; }
     void getJointStencils(std::vector<JointStencil>& stencils) { stencils = m_joint_stencils; }
     void getThreeEdgeStencils(std::vector<ThreeEdgeStencil>& stencils) { stencils = m_triedge_stencils; }
+
+    void buildStencils();
 
   protected:
     void updateRadii();

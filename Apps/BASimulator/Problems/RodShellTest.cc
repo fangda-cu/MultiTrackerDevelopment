@@ -509,6 +509,14 @@ void RodShellTest::Setup()
   
   //////////////////////////////////////////////////////////////////////////
   //
+  // experimental rod remeshing section
+  //
+  //////////////////////////////////////////////////////////////////////////
+
+  //rod->remesh(0.1, 1.05);
+
+  //////////////////////////////////////////////////////////////////////////
+  //
   // create time stepper
   //
   //////////////////////////////////////////////////////////////////////////
@@ -2386,7 +2394,7 @@ void RodShellTest::setupScene12()
   std::vector<Vec3d> vertices;
 
   // Create vertices for a rod/thread
-  int divisions = 20;
+  int divisions = 5;
   float length = 10;
   for(int i = 0; i <= divisions; ++i) {
     vertices.push_back(Vec3d(0, -length*i / (float)divisions, 0));

@@ -117,7 +117,7 @@ bool g_ply_dump = false;
 void cleanup()
 {
   paused = true;
-    std::cout << "Running cleanup on exit.\n";
+    
     Timer::report();
     Timer::deleteAllTimers();
 
