@@ -34,7 +34,8 @@ namespace BASim
     virtual void updateStiffness() { }               // called whenever rod radii change, or time step changes (for viscous stiffness)
     virtual void updateViscousReferenceStrain() { }  // called at the beginning of every time step
     virtual void updateProperties() { }              // called at every solver iteration (rod updateProperties()), updating cached properties
-    
+    virtual void updateAfterRemesh() { }             // called after remeshing to correct stencils and reference configs
+
   public:
     ElasticRodModel & rod() { return m_rod; }
     const ElasticRodModel & rod() const { return m_rod; }

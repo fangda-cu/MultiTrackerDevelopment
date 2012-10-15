@@ -404,16 +404,16 @@ namespace BASim
     for (size_t i = 0; i < m_edge_stencils.size(); i++)
     {
       EdgeStencil & s = m_edge_stencils[i];
-      if (m_stretching_force)
+      if (m_stretching_force && m_stretching_force->stencils().size() == m_edge_stencils.size())
         m_stretching_force->stencils()[s.id].copyData(s);
     }
     
     for (size_t i = 0; i < m_joint_stencils.size(); i++)
     {
       JointStencil & s = m_joint_stencils[i];
-      if (m_bending_force)
+      if (m_bending_force && m_bending_force->stencils().size() == m_joint_stencils.size())
         m_bending_force->stencils()[s.id].copyData(s);
-      if (m_twisting_force)
+      if (m_twisting_force && m_twisting_force->stencils().size() == m_joint_stencils.size())
         m_twisting_force->stencils()[s.id].copyData(s);
     }
     
@@ -477,10 +477,12 @@ namespace BASim
 
   void ElasticRodModel::remesh( Scalar min_length, Scalar max_length )
   {
+    DeformableObject& obj = getDefoObj();
+
     //look at each edge.
     //if it's too long, split it
     //if it's too short, collapse with shorter neighbour
-    DeformableObject& obj = getDefoObj();
+    
     std::vector<EdgeHandle> edges_to_split;
     for(EdgeIterator eit = obj.edges_begin(); eit != obj.edges_end(); ++eit) {
       EdgeHandle eh = *eit;
@@ -503,7 +505,7 @@ namespace BASim
         subdivideEdge(eh);
       }
     }
-    
+
     //construct the stencil set from scratch
     buildStencils();
 
@@ -513,15 +515,35 @@ namespace BASim
     //next we need to set the dof indices in all the stencils...
     assignStencilDofs();
 
-    //then we need to update the undeformed configurations used by the various forces...
-    //then call to the forces to get them to do their own updating (resetting the undeformed states, and so on)
+    //then we need to update the undeformed configurations used by the various forces:
+    
+    // swap in the undeformed configuration as current configuration, because rod force initialization code assumes this
+    VertexProperty<Vec3d> current_position_copy(obj.getVertexPositions());
+    obj.setVertexPositions(obj.getVertexUndeformedPositions()); //(remeshing here assumes that rod undeformed positions are same as object ones)
+    EdgeProperty<Scalar> current_theta_copy(m_theta);
+    m_theta = m_undef_theta;
+    
+    //compute rod properties based on undeformed state.
+    updateProperties();
+    
+    //adjust rod forces for possibly modified undeformed state!
+    if(m_bending_force)
+      m_bending_force->updateAfterRemesh();
+    if(m_stretching_force)
+      m_stretching_force->updateAfterRemesh();
+    if(m_twisting_force)
+      m_twisting_force->updateAfterRemesh();
+
+    //reload current configuration
+    obj.setVertexPositions(current_position_copy);
+    m_theta = current_theta_copy;
 
 
     //now recompute the various derived quantities
     updateProperties();
-    updateRadii();
-
     
+    //and recompute masses based on new allocations of radius/volume
+    computeMasses();
 
   }
 
@@ -585,21 +607,20 @@ namespace BASim
 
     m_volumes[new_eh0] = 0.5 * getVolume(eh);
     m_volumes[new_eh1] = 0.5 * getVolume(eh);
-    // we'll adjust radii with updateRadii later
+    
+    m_radii[new_eh0] = getRadii(eh);
+    m_radii[new_eh1] = getRadii(eh);
     
     //copy over the reference directors
     m_properties_reference_director1[new_eh0] = m_properties_reference_director1[eh];
     m_properties_reference_director1[new_eh1] = m_properties_reference_director1[eh];
 
-    
     // eliminate the old edge
     obj.deleteEdge(eh, false);
 
     // activate the new edges
     m_edge_active[new_eh0] = 1;
     m_edge_active[new_eh1] = 1;
-
-    //now what?
     
   }
 

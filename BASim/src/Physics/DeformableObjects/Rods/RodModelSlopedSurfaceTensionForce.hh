@@ -24,20 +24,14 @@ namespace BASim
     typedef Eigen::Matrix<Scalar, 12, 1> ElementForce;
     typedef Eigen::Matrix<Scalar, 12, 12> ElementJacobian;
 
-    struct Stencil : public ElasticRodModel::JointStencil
-    {
-      Stencil(const ElasticRodModel::JointStencil & s) : ElasticRodModel::JointStencil(s) { }
-      
-    };
-
   public:
-    RodModelSlopedSurfaceTensionForce   (ElasticRodModel & rod, const std::vector<ElasticRodModel::JointStencil> & stencils, Scalar surface_tension_coeff);
+    RodModelSlopedSurfaceTensionForce   (ElasticRodModel & rod, Scalar surface_tension_coeff);
     virtual ~RodModelSlopedSurfaceTensionForce   ();
 
   public:
-    void addStencil(Stencil & s) { m_stencils.push_back(s); }
-    std::vector<Stencil> & stencils() { return m_stencils; }
-    const std::vector<Stencil> & stencils() const { return m_stencils; }
+    //void addStencil(Stencil & s) { m_stencils.push_back(s); }
+    //std::vector<Stencil> & stencils() { return m_stencils; }
+    //const std::vector<Stencil> & stencils() const { return m_stencils; }
     
   public:
    
@@ -47,9 +41,9 @@ namespace BASim
 
   protected:
     //For interior vertices.
-    Scalar localEnergy(Stencil & s);
-    void localForce(ElementForce & force, Stencil & s);
-    void localJacobian(ElementJacobian & jacobian, Stencil & s);
+    Scalar localEnergy(const ElasticRodModel::JointStencil & s);
+    void localForce(ElementForce & force, const ElasticRodModel::JointStencil & s);
+    void localJacobian(ElementJacobian & jacobian, const ElasticRodModel::JointStencil & s);
 
     //For end vertices.
     Scalar localEndEnergy(VertexHandle& vh);
@@ -57,7 +51,7 @@ namespace BASim
     void localEndJacobian(VertexHandle& vh, VertexHandle& vh2, ElementJacobian & jacobian);
     
   protected:
-    std::vector<Stencil> m_stencils;
+    //std::vector<Stencil> m_stencils;
     Scalar m_surface_tension_coeff;
   };
   

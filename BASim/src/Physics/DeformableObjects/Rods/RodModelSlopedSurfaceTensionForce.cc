@@ -14,16 +14,10 @@ typedef CVec3T<Real> Vector3d;
 
 using namespace BASim;
 
-RodModelSlopedSurfaceTensionForce::RodModelSlopedSurfaceTensionForce(ElasticRodModel & rod, const std::vector<ElasticRodModel::JointStencil> & stencils, Scalar surface_tension_coeff) :
+RodModelSlopedSurfaceTensionForce::RodModelSlopedSurfaceTensionForce(ElasticRodModel & rod, Scalar surface_tension_coeff) :
   RodModelForce(rod, 0, "RodModelSlopedSurfaceTensionForce"),
-  m_stencils(),
   m_surface_tension_coeff(surface_tension_coeff)
 {
-  for (size_t i = 0; i < stencils.size(); i++)
-  {
-    Stencil s(stencils[i]);
-    m_stencils.push_back(s);
-  }
 
 }
 
@@ -35,9 +29,10 @@ RodModelSlopedSurfaceTensionForce::~RodModelSlopedSurfaceTensionForce  ()
 Scalar RodModelSlopedSurfaceTensionForce::globalEnergy()
 {
   Scalar energy = 0;
-  for (size_t i = 0; i < m_stencils.size(); i++)
+  const std::vector<ElasticRodModel::JointStencil> stencils = m_rod.getJointStencils();
+  for (size_t i = 0; i < stencils.size(); i++)
   {
-    energy += localEnergy(m_stencils[i]);
+    energy += localEnergy(stencils[i]);
   }
 
   //Add endpoint energies
@@ -55,12 +50,15 @@ Scalar RodModelSlopedSurfaceTensionForce::globalEnergy()
 void RodModelSlopedSurfaceTensionForce::globalForce(VecXd & force)
 {
   ElementForce localforce;
-  for (size_t i = 0; i < m_stencils.size(); i++)
+  const std::vector<ElasticRodModel::JointStencil> stencils = m_rod.getJointStencils();
+  for (size_t i = 0; i < stencils.size(); i++)
   {
-    localForce(localforce, m_stencils[i]);
-    for (size_t j = 0; j < m_stencils[i].dofindices.size(); j++)
-      force(m_stencils[i].dofindices[j]) += localforce(j);
+    localForce(localforce, stencils[i]);
+    for (size_t j = 0; j < stencils[i].dofindices.size(); j++)
+      force(stencils[i].dofindices[j]) += localforce(j);
   }
+
+  
 
   //add endpoint force
   DeformableObject& obj = rod().getDefoObj();
@@ -90,15 +88,17 @@ void RodModelSlopedSurfaceTensionForce::globalForce(VecXd & force)
         force(dofindices[i]) += localforce(i);
     }
   }
+
 }
 
 void RodModelSlopedSurfaceTensionForce::globalJacobian(Scalar scale, MatrixBase & Jacobian)
 {
   ElementJacobian localjacobian;
-  for (size_t i = 0; i < m_stencils.size(); i++)
+  const std::vector<ElasticRodModel::JointStencil> stencils = m_rod.getJointStencils();
+  for (size_t i = 0; i < stencils.size(); i++)
   {
-    localJacobian(localjacobian, m_stencils[i]);
-    Jacobian.add(m_stencils[i].dofindices, m_stencils[i].dofindices, scale * localjacobian);
+    localJacobian(localjacobian, stencils[i]);
+    Jacobian.add(stencils[i].dofindices, stencils[i].dofindices, scale * localjacobian);
   }
 
   //add endpoint energies
@@ -185,7 +185,7 @@ adreal<6,DO_HESS,Real> EndSTEnergy(const std::vector<Scalar>& deformed, const Sc
 }
 
 
-Scalar RodModelSlopedSurfaceTensionForce::localEnergy(Stencil & s)
+Scalar RodModelSlopedSurfaceTensionForce::localEnergy(const ElasticRodModel::JointStencil & s)
 {
  
   Scalar vol0 = rod().getVolume(s.e1);
@@ -205,7 +205,7 @@ Scalar RodModelSlopedSurfaceTensionForce::localEnergy(Stencil & s)
   return e.value();
 }
 
-void RodModelSlopedSurfaceTensionForce::localForce(ElementForce & force, Stencil & s)
+void RodModelSlopedSurfaceTensionForce::localForce(ElementForce & force, const ElasticRodModel::JointStencil & s)
 {
   Scalar vol0 = rod().getVolume(s.e1);
   Scalar vol1 = rod().getVolume(s.e2);
@@ -227,7 +227,7 @@ void RodModelSlopedSurfaceTensionForce::localForce(ElementForce & force, Stencil
 
 }
 
-void RodModelSlopedSurfaceTensionForce::localJacobian(ElementJacobian & jacobian, Stencil & s)
+void RodModelSlopedSurfaceTensionForce::localJacobian(ElementJacobian & jacobian, const ElasticRodModel::JointStencil & s)
 {
   Scalar vol0 = rod().getVolume(s.e1);
   Scalar vol1 = rod().getVolume(s.e2);

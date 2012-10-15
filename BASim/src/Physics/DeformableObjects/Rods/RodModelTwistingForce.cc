@@ -177,6 +177,27 @@ void RodModelTwistingForce::updateProperties()
   }
 }
 
+void RodModelTwistingForce::updateAfterRemesh()
+{
+  
+  const std::vector<ElasticRodModel::JointStencil>& stencils = m_rod.getJointStencils();
+  size_t stencilcount = stencils.size();
+  if(m_stencils.size() != stencilcount) {
+    m_stencils.clear();
+    for(size_t i = 0; i < stencilcount; ++i) {
+      Stencil stencil(stencils[i]);
+      stencil.copyData(stencils[i]);
+      m_stencils.push_back(stencil);
+    }
+  }
+
+  updateProperties();
+  updateStiffness();
+  updateViscousReferenceStrain();
+  computeReferenceStrain();
+
+}
+
 void RodModelTwistingForce::computeReferenceStrain()
 {
   for (size_t i = 0; i < m_stencils.size(); i++)

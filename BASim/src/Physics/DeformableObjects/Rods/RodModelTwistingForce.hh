@@ -48,7 +48,8 @@ namespace BASim
     void updateStiffness();
     void updateViscousReferenceStrain();
     void updateProperties();
-    
+    void updateAfterRemesh();
+
   public:
     Scalar globalEnergy();
     void globalForce(VecXd & force);

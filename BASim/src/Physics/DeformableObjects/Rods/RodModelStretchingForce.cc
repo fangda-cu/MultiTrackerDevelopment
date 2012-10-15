@@ -21,7 +21,6 @@ RodModelStretchingForce::RodModelStretchingForce(ElasticRodModel & rod, const st
     
     m_stencils.push_back(s);
   }
-
   updateProperties();
   updateStiffness();
   updateViscousReferenceStrain();
@@ -145,6 +144,28 @@ void RodModelStretchingForce::updateViscousReferenceStrain()
 void RodModelStretchingForce::updateProperties()
 {
   
+}
+
+void RodModelStretchingForce::updateAfterRemesh() 
+{
+  //adjust stencil size if necessary
+  const std::vector<ElasticRodModel::EdgeStencil>& stencils = m_rod.getEdgeStencils();
+  size_t stencilcount = stencils.size();
+  if(m_stencils.size() != stencilcount) {
+    m_stencils.clear();
+    for(size_t i = 0; i < stencilcount; ++i) {
+      Stencil stencil(stencils[i]);
+      stencil.copyData(stencils[i]);
+      m_stencils.push_back(stencil);
+    }
+  }
+
+  //adjust all the cached data 
+  updateProperties();
+  updateStiffness();
+  updateViscousReferenceStrain();
+  computeReferenceStrain();
+
 }
 
 void RodModelStretchingForce::computeReferenceStrain()
