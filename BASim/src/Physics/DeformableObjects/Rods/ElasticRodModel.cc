@@ -481,7 +481,7 @@ namespace BASim
 
     //look at each edge.
     //if it's too long, split it
-    //if it's too short, collapse with shorter neighbour
+    //if it's too short, collapse together with shorter neighbour
     
     std::vector<EdgeHandle> edges_to_split;
     for(EdgeIterator eit = obj.edges_begin(); eit != obj.edges_end(); ++eit) {
@@ -491,18 +491,29 @@ namespace BASim
         continue;
 
       Scalar len = getEdgeLength(eh);
-      if(len > max_length) {
+      if(len > max_length || len < min_length) {
         edges_to_split.push_back(eh);
-        std::cout << "Adding " << eh.idx() << " to the split list.\n";
       }
     }
     
 
     for(unsigned int i = 0; i < edges_to_split.size(); ++i) {
       EdgeHandle eh = edges_to_split[i];
-      Scalar len = getEdgeLength(eh);
+      
+      //the edge has been deleted
+      if(!obj.edgeExists(eh)) 
+        continue;
+      assert(eh.isValid());
+
+      //compute edge length *from scratch* in case anything has changed due to remeshing
+      VertexHandle vh0 = obj.fromVertex(eh); VertexHandle vh1 = obj.toVertex(eh);
+      Scalar len = (obj.getVertexPosition(vh0) - obj.getVertexPosition(vh1)).norm();
+      
       if(len > max_length) {
         subdivideEdge(eh);
+      }
+      else if(len < min_length) {
+        collapseEdge(eh);
       }
     }
 
@@ -622,6 +633,122 @@ namespace BASim
     m_edge_active[new_eh0] = 1;
     m_edge_active[new_eh1] = 1;
     
+  }
+
+  void ElasticRodModel::collapseEdge(EdgeHandle& eh) {
+    assert(m_edge_active[eh]);
+
+    DeformableObject& obj = getDefoObj();
+    assert(obj.edgeExists(eh));
+    
+    // Get the relevant vertices
+    VertexHandle from_vh = obj.fromVertex(eh);
+    VertexHandle to_vh = obj.toVertex(eh);
+
+    // Get both adjacent edges, and pick the shorter one to work with
+    EdgeHandle from_eh, to_eh;
+    VertexEdgeIterator veit = obj.ve_iter(from_vh);
+    while(veit && *veit == eh)
+      ++veit;
+    from_eh = *veit; 
+
+    veit = obj.ve_iter(to_vh);
+    while(veit && *veit == eh)
+      ++veit;
+    to_eh = *veit;
+
+    VertexHandle centre_vh, nbr_vh0, nbr_vh1; //the stencil at/around the vertex to be removed
+
+    // Check if both nbr edges are valid, and if so, pick the shorter one.
+    bool from_valid = obj.edgeExists(from_eh) && obj.vertexIncidentEdges(from_vh) == 2;
+    bool to_valid = obj.edgeExists(to_eh) && obj.vertexIncidentEdges(to_vh) == 2;
+    
+    EdgeHandle partner_eh;
+    bool choseLeft;
+    if(from_valid && to_valid) { //pick the shorter one
+      Scalar from_len = getEdgeLengthFromVertices(from_eh);
+      Scalar to_len = getEdgeLengthFromVertices(to_eh);
+      if(from_len < to_len) {
+        choseLeft = true;
+        partner_eh = from_eh;
+        centre_vh = from_vh;
+        nbr_vh0 = to_vh;
+      }
+      else {
+        choseLeft = false;
+        partner_eh = to_eh;
+        centre_vh = to_vh;
+        nbr_vh0 = from_vh;
+      }
+    }
+    else if(from_valid) {
+      choseLeft = true;
+      partner_eh = from_eh;
+      centre_vh = from_vh;
+      nbr_vh0 = to_vh;
+    }
+    else if(to_valid) {
+      choseLeft = false;
+      partner_eh = to_eh;
+      centre_vh = to_vh;
+      nbr_vh0 = from_vh;
+    }
+   
+    // Get the nbr vertex in the partner edge
+    EdgeVertexIterator evit = obj.ev_iter(partner_eh);
+    while(evit && *evit == centre_vh)
+      ++evit;
+    nbr_vh1 = *evit;
+    assert(nbr_vh1.isValid());
+    
+    //create the new edge
+    EdgeHandle new_edge = !choseLeft ? obj.addEdge(nbr_vh0, nbr_vh1) : obj.addEdge(nbr_vh1, nbr_vh0);
+    
+    // Simply delete the middle vertex (for now...), and perform averaging for the edge variables
+    
+    // TODO: Work out what new velocities of adjacent vertices should be by preserving linear momentum
+    
+
+    //
+    Scalar theta = 0.5*(m_theta[eh] + m_theta[partner_eh]);
+    Scalar theta_vel = 0.5*(m_theta_vel[eh] + m_theta_vel[partner_eh]);
+    Scalar theta_undef = 0.5*(m_undef_theta[eh] + m_undef_theta[partner_eh]);
+    Scalar theta_undef_damp = 0.5*(m_damping_undef_theta[eh] + m_damping_undef_theta[partner_eh]);
+    
+    m_theta[new_edge] = theta;
+    m_theta_vel[new_edge] = theta_vel;
+    m_undef_theta[new_edge] = theta_undef;
+    m_damping_undef_theta[new_edge] = theta_undef_damp;
+
+    m_volumes[new_edge] = m_volumes[eh] + m_volumes[partner_eh];
+
+    //Find a new set of radii that preserves the volume...
+    Scalar edgeLen = (obj.getVertexPosition(nbr_vh0) - obj.getVertexPosition(nbr_vh1)).norm();
+    Scalar avgRad = sqrt(m_volumes[new_edge] / M_PI / edgeLen);
+    
+    //...and the ratio between radii on each axis.
+    Vec2d rad0 = m_radii[eh]; 
+    Vec2d rad1 = m_radii[partner_eh];
+    Vec2d radHalf = 0.5*(rad0+rad1); 
+    Scalar ratio = radHalf[0] / radHalf[1];
+    m_radii[new_edge] = Vec2d(avgRad * sqrt(ratio), avgRad/sqrt(ratio));
+    //m_radii[new_edge] = Vec2d(avgRad, avgRad);
+    
+
+    //what to do with reference directors? average them?
+    m_properties_reference_director1[new_edge] = m_properties_reference_director1[eh];
+    
+    // eliminate the old connectivity data
+    bool success = obj.deleteEdge(eh, false);
+    assert(success);
+    success = obj.deleteEdge(partner_eh, false);
+    assert(success);
+    success = obj.deleteVertex(centre_vh);
+    assert(success);
+
+    // activate the new edges
+    m_edge_active[new_edge] = 1;
+
   }
 
   void ElasticRodModel::buildStencils( )

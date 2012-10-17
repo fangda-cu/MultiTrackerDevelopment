@@ -100,7 +100,9 @@ namespace BASim
     
     void setup(Scalar youngs_modulus, Scalar youngs_modulus_damping, Scalar shear_modulus, Scalar shear_modulus_damping, Scalar timestep);
     void remesh(Scalar min_length, Scalar max_length);
+    
     void subdivideEdge(EdgeHandle& eh);
+    void collapseEdge(EdgeHandle& eh);
 
     std::vector<EdgeStencil> getEdgeStencils() const { return m_edge_stencils; }
     std::vector<JointStencil> getJointStencils() const { return m_joint_stencils; }
@@ -174,6 +176,12 @@ namespace BASim
     Vec3d & getMaterialDirector1(const EdgeHandle & e) { return m_properties_material_director1[e]; }
     Vec3d & getMaterialDirector2(const EdgeHandle & e) { return m_properties_material_director2[e]; }
         
+    Scalar getEdgeLengthFromVertices(const EdgeHandle & e) { 
+      VertexHandle vh0 = getDefoObj().fromVertex(e);
+      VertexHandle vh1 = getDefoObj().toVertex(e);
+      return (getDefoObj().getVertexPosition(vh0) - getDefoObj().getVertexPosition(vh1)).norm();
+    }
+
     // reference director 1 is the only derived property that needs initialization. this will only be used in setup().
     // if not specified, the reference directors will be generated randomly in setup().
     void setUndeformedReferenceDirector1(const EdgeProperty<Vec3d> & undeformed_reference_director1);

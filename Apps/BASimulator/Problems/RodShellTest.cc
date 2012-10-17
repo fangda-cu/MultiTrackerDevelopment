@@ -771,7 +771,7 @@ void RodShellTest::AtEachTimestep()
   }
 
   if(m_active_scene == 12)
-    rod->remesh(0.1, 0.7);
+    rod->remesh(0.2, 0.5);
   
   std::cout << "====================================================" << std::endl;
   
@@ -2395,8 +2395,8 @@ void RodShellTest::setupScene12()
   std::vector<Vec3d> vertices;
 
   // Create vertices for a rod/thread
-  int divisions = 23;
-  float length = 13;
+  int divisions = 20;
+  float length = 10;
   for(int i = 0; i <= divisions; ++i) {
     vertices.push_back(Vec3d(0, -length*i / (float)divisions, 0));
   }
