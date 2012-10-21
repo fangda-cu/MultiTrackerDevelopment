@@ -128,7 +128,9 @@ RodSolidVertexJointCouplingForce::adEnergy(const RodSolidVertexJointCouplingForc
   advecElast m11 = vRef1 * cos(t) + vRef2 * sin(t);
   advecElast m12 = -vRef1 * sin(t) + vRef2 * cos(t);
   Vector3d m13 = vRef3;
-  
+  if (ref1.cross(ref2).dot(A - D) < 0) // align the rod direction with AP
+    m11 = -m11, m12 = -m12, m13 = -m13;
+
   advecElast vAP = ((p[1] + p[2] + p[3]) - p[0] * 3.0);  vAP /= len(vAP);
   
   advecElast m23 = vAP;
@@ -291,6 +293,8 @@ void RodSolidVertexJointCouplingForce::updateProperties()
     Vec3d m11 = rod().getMaterialDirector1(s.e);
     Vec3d m12 = rod().getMaterialDirector2(s.e);
     Vec3d m13 = rod().getEdgeTangent(s.e);
+    if (m13.dot(A - D) < 0) // align the rod orientation with AP
+      m11 = -m11, m12 = -m12, m13 = -m13;
     Vec3d AP = ((B + C + D) - A * 3).normalized();
     s.AP = Vec3d(AP.dot(m11), AP.dot(m12), AP.dot(m13));
     Vec3d m23 = AP;
