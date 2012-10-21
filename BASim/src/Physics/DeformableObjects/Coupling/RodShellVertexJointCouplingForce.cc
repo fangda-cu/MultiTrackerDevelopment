@@ -145,7 +145,7 @@ RodShellVertexJointCouplingForce::adEnergy(const RodShellVertexJointCouplingForc
   adrealElast newdelta = delta + atan2(dot(cross(m21r_in_m1, m11), m13), dot(m21r_in_m1, m11));
   advecElast vAPm = advecElast(dot(vAP, m11), dot(vAP, m12), dot(vAP, m13));
 
-  e = stiffness * (dot(vAP - vUndeformedAP, vAP - vUndeformedAP) + sqr(newdelta - undeformed_delta));
+  e = stiffness * (dot(vAPm - vUndeformedAP, vAPm - vUndeformedAP) + sqr(newdelta - undeformed_delta));
 
   return e;
 }
