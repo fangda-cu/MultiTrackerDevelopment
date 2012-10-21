@@ -85,7 +85,9 @@ VertexHandle TopologicalObject::addVertex()
   }
 
   m_nv += 1;
-  
+
+  m_validVF = false;
+
   return VertexHandle(new_index);
 }
 
@@ -339,6 +341,8 @@ bool TopologicalObject::deleteVertex(const VertexHandle& vertex)
 
   //adjust the vertex count
   m_nv -= 1;
+  
+  m_validVF = false;
 
   return true;
 }

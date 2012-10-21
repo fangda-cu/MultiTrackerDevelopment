@@ -390,9 +390,7 @@ void RodShellTest::Setup()
     rod->getEdgeStencils(edgeStencil);
     RodModelForce* st_force = new RodModelStraightSurfaceTensionForce(*rod, edgeStencil, rod_surface_tension);*/
     
-    std::vector<ElasticRodModel::JointStencil> jointStencil;
-    rod->getJointStencils(jointStencil);
-    RodModelForce* st_force = new RodModelSlopedSurfaceTensionForce(*rod, jointStencil, rod_surface_tension);
+    RodModelForce* st_force = new RodModelSlopedSurfaceTensionForce(*rod, rod_surface_tension);
 
     /*std::vector<ElasticRodModel::ThreeEdgeStencil> stencil;
     rod->getThreeEdgeStencils(stencil);
@@ -507,6 +505,14 @@ void RodShellTest::Setup()
   //for(int i = 0; i < 3; ++i)
   //  shell->remesh(remeshing_res);
   
+  //////////////////////////////////////////////////////////////////////////
+  //
+  // experimental rod remeshing section
+  //
+  //////////////////////////////////////////////////////////////////////////
+
+  //rod->remesh(0.1, 1.05);
+
   //////////////////////////////////////////////////////////////////////////
   //
   // create time stepper
@@ -763,6 +769,9 @@ void RodShellTest::AtEachTimestep()
       
     }
   }
+
+  if(m_active_scene == 12)
+    rod->remesh(0.2, 0.5);
   
   std::cout << "====================================================" << std::endl;
   
@@ -2438,9 +2447,9 @@ void RodShellTest::setupScene12()
   m_radii_list = new EdgeProperty<Vec2d>(obj);
   //set rod dimensions
   Scalar offset = 0;
-  Scalar increment = 0.1;
+  Scalar increment = 0.5;
   for(EdgeIterator eit = obj->edges_begin(); eit != obj->edges_end(); ++eit) {
-    Scalar rad = 0.1 + 0.07 * sin(offset);
+    Scalar rad = 0.8 + 0.3 * sin(offset);
     Vec2d radius(rad, rad);
     (*m_radii_list)[*eit] = radius;
     

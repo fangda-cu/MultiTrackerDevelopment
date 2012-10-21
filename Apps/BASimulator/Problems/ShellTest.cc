@@ -148,7 +148,7 @@ ShellTest::ShellTest()
 ShellTest::~ShellTest()
 {
   if (shellObj != NULL) delete shellObj;
-  if (shell != NULL) delete shell;
+  //the shell is deleted by the obj destructor
   if (stepper != NULL) delete stepper;
 }
 

@@ -81,7 +81,7 @@ namespace BASim
     }        
     glEnd();
 
-    /*
+    
     glPointSize(10);
     glBegin(GL_POINTS);
     OpenGL::color(Color(255, 0, 0));
@@ -98,7 +98,7 @@ namespace BASim
       }
     }        
     glEnd();
-    */
+    
 
     // render material frames
     glLineWidth(1);

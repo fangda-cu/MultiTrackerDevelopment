@@ -41,7 +41,7 @@ Scalar RodModelBendingForce::globalEnergy()
   Scalar energy = 0;
   for (size_t i = 0; i < m_stencils.size(); i++)
   {
-    // energy only include non-viscous forces
+    // energy only includes non-viscous forces
     energy += localEnergy(m_stencils[i], false);
   }
   return energy;
@@ -201,6 +201,27 @@ void RodModelBendingForce::updateProperties()
     const Vec3d   m2f = rod().getMaterialDirector2(s.e2) * (s.e2flip ? -1 : 1);
     s.kappa = Vec2d(0.5 * kb.dot(m2e + m2f), -0.5 * kb.dot(m1e + m1f));
   }
+}
+
+void RodModelBendingForce::updateAfterRemesh()
+{
+  
+  const std::vector<ElasticRodModel::JointStencil>& stencils = m_rod.getJointStencils();
+  size_t stencilcount = stencils.size();
+  if(m_stencils.size() != stencilcount) {
+    m_stencils.clear();
+    for(size_t i = 0; i < stencilcount; ++i) {
+      Stencil stencil(stencils[i]);
+      stencil.copyData(stencils[i]);
+      m_stencils.push_back(stencil);
+    }
+  }
+
+  updateProperties();
+  updateStiffness();
+  updateViscousReferenceStrain();
+  computeReferenceStrain();
+
 }
 
 void RodModelBendingForce::computeReferenceStrain()
