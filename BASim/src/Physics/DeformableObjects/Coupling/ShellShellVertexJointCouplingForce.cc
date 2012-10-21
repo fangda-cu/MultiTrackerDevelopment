@@ -116,10 +116,10 @@ ShellShellVertexJointCouplingForce::adEnergy(const ShellShellVertexJointCoupling
 
   adrealElast e(0);
   
-  advecElast vAQ = ((p[3] + p[4]) - p[0] * 2.0);  vAQ /= len(vAQ);
+  advecElast vQA = (p[0] * 2.0 - (p[3] + p[4]));  vQA /= len(vQA);
 
-  advecElast m13 = vAQ;
-  advecElast m11 = ((p[4] - p[3]) - dot(p[4] - p[3], vAQ) * vAQ); m11 /= len(m11);
+  advecElast m13 = vQA;
+  advecElast m11 = ((p[4] - p[3]) - dot(p[4] - p[3], vQA) * vQA); m11 /= len(m11);
   advecElast m12 = cross(m13, m11);
   
   advecElast vAP = ((p[1] + p[2]) - p[0] * 2.0);  vAP /= len(vAP);
@@ -269,9 +269,9 @@ void ShellShellVertexJointCouplingForce::updateProperties()
     Vec3d C = defoObj().getVertexPosition(vh[2]);
     Vec3d D = defoObj().getVertexPosition(vh[3]);
     Vec3d E = defoObj().getVertexPosition(vh[4]);    
-    Vec3d AQ = ((D + E) - A * 2).normalized();
-    Vec3d m13 = AQ;
-    Vec3d m11 = ((E - D) - (E - D).dot(AQ) * AQ).normalized();
+    Vec3d QA = (A * 2 - (D + E)).normalized();
+    Vec3d m13 = QA;
+    Vec3d m11 = ((E - D) - (E - D).dot(QA) * QA).normalized();
     Vec3d m12 = m13.cross(m11);
     Vec3d AP = ((B + C) - A * 2).normalized();
     s.AP = Vec3d(AP.dot(m11), AP.dot(m12), AP.dot(m13));
