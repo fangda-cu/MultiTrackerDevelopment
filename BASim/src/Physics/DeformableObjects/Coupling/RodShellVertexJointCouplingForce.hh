@@ -44,14 +44,14 @@ namespace BASim
 //      Scalar viscous_stiffness;
       
       // reference strain
-      Vec3d undeformed_AB;
-      Vec3d undeformed_AC;
-      Vec3d damping_undeformed_AB;
-      Vec3d damping_undeformed_AC;
+      Vec3d undeformed_AP;
+      Scalar undeformed_delta;
+      Vec3d damping_undeformed_AP;
+      Scalar damping_undeformed_delta;
       
       // cached properties
-      Vec3d AB;  // shell face edge AB in rod's material frame
-      Vec3d AC;  // shell face edge AC in rod's material frame
+      Vec3d AP;  // normalized shell axis AP in rod's material frame (P = (B+C)/2)
+      Scalar delta;  // shell's rotation about AP
     };
 
   public:
@@ -87,7 +87,7 @@ namespace BASim
     
   protected:
     template <int DO_HESS>
-    adreal<NumDof, DO_HESS, Scalar> adEnergy(const RodShellVertexJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, Scalar theta, const Vec3d & ref1, const Vec3d & ref2, const Vec3d & undeformed_AB, const Vec3d & undeformed_AC, Scalar stiffness);
+    adreal<NumDof, DO_HESS, Scalar> adEnergy(const RodShellVertexJointCouplingForce & mn, const Vec3d & A, const Vec3d & B, const Vec3d & C, const Vec3d & D, Scalar delta, Scalar theta, const Vec3d & ref1, const Vec3d & ref2, const Vec3d & undeformed_AP, Scalar undeformed_delta, Scalar stiffness);
 
   protected:
     Scalar localEnergy(Stencil & s, bool viscous);
