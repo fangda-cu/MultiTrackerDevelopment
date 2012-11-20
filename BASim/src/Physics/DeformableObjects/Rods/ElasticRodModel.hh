@@ -208,6 +208,9 @@ namespace BASim
     void buildStencils();
     void assignStencilDofs();
 
+    void setInflow(VertexHandle& vh, Vec3d velocity, Scalar radius);
+    void extendMesh(Scalar currentTime);
+
   protected:
     void updateRadii();
             
@@ -261,6 +264,12 @@ namespace BASim
     std::vector<std::pair<EdgeHandle, Scalar> > m_edge_constraints;
     std::vector<std::pair<EdgeHandle, Vec3d> > m_edge_vel_constraints;
     
+    // mesh inflow data. 
+    bool m_inflow_active;
+    VertexHandle m_inflow_vertex;
+    Scalar m_inflow_radius;
+    Vec3d m_inflow_position, m_inflow_velocity;
+
   };
   
 }
