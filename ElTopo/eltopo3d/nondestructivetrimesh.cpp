@@ -554,7 +554,8 @@ void NonDestructiveTriMesh::update_connectivity( )
     
     for ( size_t e = 0; e < m_edge_to_triangle_map.size(); ++e )
     {
-        if ( m_edge_to_triangle_map[e].size() % 2 == 0 )
+        //if ( m_edge_to_triangle_map[e].size() % 2 == 0 )
+        if ( m_edge_to_triangle_map[e].size() != 1 )
         {
             m_is_boundary_edge[e] = false;
         }

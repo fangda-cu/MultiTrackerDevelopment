@@ -400,7 +400,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   size_t vertex_to_keep = m_surf.m_mesh.m_edges[edge][0];
   size_t vertex_to_delete = m_surf.m_mesh.m_edges[edge][1];
-
+  
   bool keep_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_keep];
   bool del_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_delete];
   bool edge_is_boundary = m_surf.m_mesh.m_is_boundary_edge[edge];
@@ -408,8 +408,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   //either we're allowing remeshing of boundary edges, or this edge is not on the boundary.
   assert(m_remesh_boundaries || !edge_is_boundary);
   
-  // don't collapse when both verts are on the boundary and the edge is not, since this would create a nonmanifold/singular vertex
-  assert(edge_is_boundary || (!keep_vert_is_boundary || !del_vert_is_boundary));
+  // *don't* collapse when both verts are on the boundary and the edge is not, since this would create a nonmanifold/singular vertex
+  assert( ((keep_vert_is_boundary && del_vert_is_boundary) && !edge_is_boundary) == false);
+  //assert(edge_is_boundary || !(keep_vert_is_boundary && del_vert_is_boundary));
   
   if ( m_surf.m_verbose ) { std::cout << "Collapsing edge.  Doomed vertex: " << vertex_to_delete << " --- Vertex to keep: " << vertex_to_keep << std::endl; }
 
