@@ -13,7 +13,7 @@
 #include "Problems/CollisionTestTwo.hh"
 #include "Problems/CollisionTestWeta.hh"
 #include "Problems/HairyBallWeta.hh"
-#include "Problems/DoubleBubble.hh"
+#include "Problems/DoubleBubbleTest.hh"
 
 #ifdef HAVE_PARDISO
 //#include "Problems/MicrotuboliDNA.hh"

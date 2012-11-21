@@ -701,127 +701,126 @@ void DoubleBubbleTest::AtEachTimestep()
 
 //vertical flat sheet
 void DoubleBubbleTest::setupScene1() {
-
-  //get params
-  Scalar width = GetScalarOpt("shell-width");
-  Scalar height = GetScalarOpt("shell-height");
-  int xresolution = GetIntOpt("shell-x-resolution");
-  int yresolution = GetIntOpt("shell-y-resolution");
-
-  Scalar dx = (Scalar)width / (Scalar)xresolution;
-  Scalar dy = (Scalar)height / (Scalar)yresolution;
-
-  //build a rectangular grid of vertices
+  
+  Vec3d start_vel(0,0,0);
+  
+  //vertices
   std::vector<VertexHandle> vertHandles;
   VertexProperty<Vec3d> undeformed(shellObj);
   VertexProperty<Vec3d> positions(shellObj);
   VertexProperty<Vec3d> velocities(shellObj);
-
+  
   //edge properties
   EdgeProperty<Scalar> undefAngle(shellObj);
   EdgeProperty<Scalar> edgeAngle(shellObj);
   EdgeProperty<Scalar> edgeVel(shellObj);
-
-  Vec3d start_vel(0,0,0);
   
-  for(int j = 0; j <= yresolution; ++j) {
-    for(int i = 0; i <= xresolution; ++i) {
-      Vec3d vert(i*dx, j*dy, 0);//0.01*dx*sin(100*j*dy + 17*i*dx)); // 
-      if(j < 0.5*yresolution) {
-        int k = j;
-        int j_mod = (int)(0.5*yresolution);
-        vert(1) = j_mod*dx;
-        vert(2) = (k-j_mod)*dx;
-      }
-      Vec3d undef = vert;
-
-      VertexHandle h = shellObj->addVertex();
-
-      positions[h] = vert;
-      velocities[h] = start_vel;
-      undeformed[h] = undef;
-      vertHandles.push_back(h);
-    }
+  //create a cube
+  std::vector<VertexHandle> vertList;
+  
+  for(int i = 0; i < 12; ++i) {
+    vertList.push_back(shellObj->addVertex());
+    velocities[vertList[i]] = start_vel;
   }
-
-
-  //build the faces in a 4-8 pattern
-  std::vector<Vec3i> tris;
-  for(int i = 0; i < xresolution; ++i) {
-    for(int j = 0; j < yresolution; ++j) {
-      int tl = i + (xresolution+1)*j;
-      int tr = i+1 + (xresolution+1)*j;
-      int bl = i + (xresolution+1)*(j+1);
-      int br = i+1 + (xresolution+1)*(j+1);
-
-      if((i+j)%2 == 0) {
-        shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[br]);
-        shellObj->addFace(vertHandles[tl], vertHandles[br], vertHandles[bl]);
-      }
-      else {
-        shellObj->addFace(vertHandles[tl], vertHandles[tr], vertHandles[bl]);
-        shellObj->addFace(vertHandles[bl], vertHandles[tr], vertHandles[br]);
-      }
-    }
+  
+  //create positions
+  positions[vertList[0]] = Vec3d(0,0,0);
+  positions[vertList[1]] = Vec3d(0,0,1);
+  positions[vertList[2]] = Vec3d(0,1,0);
+  positions[vertList[3]] = Vec3d(0,1,1);
+  
+  positions[vertList[4]] = Vec3d(1,0,0);
+  positions[vertList[5]] = Vec3d(1,0,1);
+  positions[vertList[6]] = Vec3d(1,1,0);
+  positions[vertList[7]] = Vec3d(1,1,1);
+  
+  positions[vertList[8]] = Vec3d(2,0,0);
+  positions[vertList[9]] = Vec3d(2,0,1);
+  positions[vertList[10]] = Vec3d(2,1,0);
+  positions[vertList[11]] = Vec3d(2,1,1);
+  
+  
+  for(int i = 0; i < 8; ++i) {
+    undeformed[vertList[i]] = positions[vertList[i]];
   }
-
+  
+  std::vector<FaceHandle> faceList;
+  
+  //first cube
+  faceList.push_back(shellObj->addFace(vertList[0], vertList[2], vertList[4]));
+  faceList.push_back(shellObj->addFace(vertList[6], vertList[4], vertList[2]));
+  
+  faceList.push_back(shellObj->addFace(vertList[7], vertList[6], vertList[3]));
+  faceList.push_back(shellObj->addFace(vertList[3], vertList[6], vertList[2]));
+  
+  faceList.push_back(shellObj->addFace(vertList[3], vertList[2], vertList[1]));
+  faceList.push_back(shellObj->addFace(vertList[1], vertList[2], vertList[0]));
+  
+  faceList.push_back(shellObj->addFace(vertList[0], vertList[4], vertList[5]));
+  faceList.push_back(shellObj->addFace(vertList[0], vertList[5], vertList[1]));
+  
+  faceList.push_back(shellObj->addFace(vertList[7], vertList[3], vertList[1]));
+  faceList.push_back(shellObj->addFace(vertList[5], vertList[7], vertList[1]));
+  
+  //shared
+  faceList.push_back(shellObj->addFace(vertList[4], vertList[6], vertList[5]));
+  faceList.push_back(shellObj->addFace(vertList[5], vertList[6], vertList[7]));
+  
+  //second cube
+  faceList.push_back(shellObj->addFace(vertList[4], vertList[6], vertList[10]));
+  faceList.push_back(shellObj->addFace(vertList[4], vertList[10], vertList[8]));
+  
+  faceList.push_back(shellObj->addFace(vertList[6], vertList[7], vertList[11]));
+  faceList.push_back(shellObj->addFace(vertList[6], vertList[11], vertList[10]));
+  
+  faceList.push_back(shellObj->addFace(vertList[8], vertList[10], vertList[9]));
+  faceList.push_back(shellObj->addFace(vertList[10], vertList[11], vertList[9]));
+  
+  faceList.push_back(shellObj->addFace(vertList[4], vertList[8], vertList[5]));
+  faceList.push_back(shellObj->addFace(vertList[5], vertList[8], vertList[9]));
+  
+  faceList.push_back(shellObj->addFace(vertList[9], vertList[11], vertList[7]));
+  faceList.push_back(shellObj->addFace(vertList[9], vertList[7], vertList[5]));
+  
+  FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles
+  
+  //cube 1
+  for(int i = 0; i < 10; ++i)
+    faceLabels[faceList[i]] = Vec2i(0,-1);
+  
+  //cube 2
+  for(int i = 12; i < 22; ++i)
+    faceLabels[faceList[i]] = Vec2i(1, -1);
+  
+  //connector faces
+  faceLabels[faceList[10]] = Vec2i(0, 1);
+  faceLabels[faceList[11]] = Vec2i(0, 1);
+  
+  
+  
+  
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj); 
   DeformableObject::face_iter fIt;
   for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
     shellFaces[*fIt] = true;
-
+  
   //now create the physical model to hang on the mesh
   shell = new ElasticShell(shellObj, shellFaces, m_timestep);
   shellObj->addModel(shell);
-
+  
   //positions
   shell->setVertexUndeformed(undeformed);
   shell->setVertexPositions(positions);
   shell->setVertexVelocities(velocities);
-
+  
   //mid-edge normal variables
   shell->setEdgeUndeformed(undefAngle);
   shell->setEdgeXis(edgeAngle);
   shell->setEdgeVelocities(edgeVel);
-
-
-
-  ////find the top left and right corners for adding a constraint
-  //VertexIterator vit = shellObj->vertices_begin();
-  //Vec3d maxPos(-100,-100,-100), minPos(100,100,100);
-  //VertexHandle minH, maxH;
-  //for(;vit!= shellObj->vertices_end(); ++vit) {
-  //  Vec3d pos = shell->getVertexPosition(*vit);
-  //  if(pos[0] <= minPos[0]) {
-  //    minH = *vit;
-  //    minPos = pos;
-  //  }
-  //  if(pos[0] >= maxPos[0]) {
-  //    maxH = *vit;
-  //    maxPos = pos;
-  //  }
-  //}
-  //shell->constrainVertex(minH, minPos);
-  //shell->constrainVertex(maxH, maxPos);
-
-
-  //Find highest vertex
-  VertexIterator vit = shellObj->vertices_begin();
-  Scalar highest = -10000;
-  for(;vit!= shellObj->vertices_end(); ++vit) {
-    Vec3d pos = shell->getVertexPosition(*vit);
-    if(pos[1] >= highest) {
-      highest = pos[1];
-    }
-  }
-
-  //Pin all verts at or near that height
-  for(vit = shellObj->vertices_begin();vit!= shellObj->vertices_end(); ++vit) {
-    Vec3d pos = shell->getVertexPosition(*vit);
-    if(pos[1] >= highest - 1e-4)
-      shell->getDefoObj().constrainVertex(*vit, pos);
-    
-  }
-
+  
+  shell->setFaceLabels(faceLabels);
+  
+  shell->addForce(new ShellVolumeForce(*shell, "Volume", 1000));
+  
 }

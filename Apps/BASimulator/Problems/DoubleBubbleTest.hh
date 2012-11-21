@@ -28,9 +28,9 @@ protected:
   void Setup();
   void AtEachTimestep();
 
-  DeformableObject* shellObj;
-  ElasticShell* shell;
-  DefoObjTimeStepper* stepper;
+  DeformableObject * shellObj;
+  ElasticShell * shell;
+  DefoObjTimeStepper * stepper;
 
   Scalar m_timestep;
   Scalar m_initial_thickness;
