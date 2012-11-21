@@ -37,7 +37,10 @@ protected:
   int m_active_scene;
 
 public:
-  void setupScene1(); // spherical bubble equilibrium test
+  void setupScene1(); // copied shell test 26: double bubble
+  void setupScene2(); // spherical bubble equilibrium test
+
+  
 
 };
 
