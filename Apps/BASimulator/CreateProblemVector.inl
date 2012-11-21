@@ -13,6 +13,7 @@
 #include "Problems/CollisionTestTwo.hh"
 #include "Problems/CollisionTestWeta.hh"
 #include "Problems/HairyBallWeta.hh"
+#include "Problems/DoubleBubble.hh"
 
 #ifdef HAVE_PARDISO
 //#include "Problems/MicrotuboliDNA.hh"
@@ -39,6 +40,8 @@ void CreateProblemVector()
   problems.push_back(new HairyBallWeta());
   problems.push_back(new ShellTest());
   problems.push_back(new RodShellTest());
+  problems.push_back(new DoubleBubbleTest());
+  
   #ifdef HAVE_PARDISO
   //problems.push_back(new MicrotuboliDNA());
   #endif
