@@ -2449,7 +2449,7 @@ void RodShellTest::setupScene12()
   Scalar offset = 0;
   Scalar increment = 0.5;
   for(EdgeIterator eit = obj->edges_begin(); eit != obj->edges_end(); ++eit) {
-    Scalar rad = 0.8 + 0.3 * sin(offset);
+    Scalar rad = 0.8;// + 0.3 * sin(offset);
     Vec2d radius(rad, rad);
     (*m_radii_list)[*eit] = radius;
     
@@ -2457,11 +2457,17 @@ void RodShellTest::setupScene12()
   }
   m_rod_radii_assigned = true;
 
-  //Pin top vertex
- /* Vec3d pos = obj->getVertexPosition(vertHandles[0]);
-  obj->constrainVertex(vertHandles[0], pos);*/
+  //Pin top two vertices
+  /*Vec3d pos = obj->getVertexPosition(vertHandles[0]);
+  obj->constrainVertex(vertHandles[0], pos);
+  pos = obj->getVertexPosition(vertHandles[01]);
+  obj->constrainVertex(vertHandles[1], pos);*/
   
+  Vec3d pos = obj->getVertexPosition(vertHandles[0]);
+  obj->constrainVertex(vertHandles[0], new FixedVelocityConstraint(pos, Vec3d(0,-1,0), 0));
   
+
+
 }
 
 

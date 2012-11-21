@@ -14,7 +14,7 @@ shell-CST-stretching 1
 shell-DS-bending 1
 
 #Viscous Parameters
-shell-Youngs-damping 0.025
+shell-Youngs-damping 0.1
 shell-Poisson-damping 0.5
 
 #Surface Tension

@@ -708,6 +708,32 @@ namespace BASim
     
     // TODO: Work out what new velocities of adjacent vertices should be by preserving linear momentum
     
+    // This momentum must be distributed to the neighbours
+    Vec3d centre_mom = getMass(centre_vh) * obj.getVertexVelocity(centre_vh);
+    Vec3d old_mom_nbr0 = getMass(nbr_vh0) * obj.getVertexVelocity(nbr_vh0);
+    Vec3d old_mom_nbr1 = getMass(nbr_vh1) * obj.getVertexVelocity(nbr_vh1);
+
+    Scalar alpha = 0.5; //TODO: Replace with some better mass/length proportional value
+
+    Scalar new_edge_mass = (m_volumes[eh] + m_volumes[partner_eh]) * m_density;
+    Scalar old_edge_mass0 = m_volumes[eh] * m_density;
+    Scalar old_edge_mass1 = m_volumes[partner_eh] * m_density;
+
+    // Compute new masses by: old vertex mass + newseg - oldseg;
+    Scalar new_mass_nbr0 = getMass(nbr_vh0) + new_edge_mass / 2 - old_edge_mass0 / 2; 
+    Scalar new_mass_nbr1 = getMass(nbr_vh1) + new_edge_mass / 2 - old_edge_mass1 / 2;
+
+    // Distribute momentum
+    Vec3d new_mom_nbr0 = old_mom_nbr0 + alpha * centre_mom;
+    Vec3d new_mom_nbr1 = old_mom_nbr1 + (1-alpha) * centre_mom;
+
+    // Assign appropriate new velocities
+    obj.setVertexVelocity(nbr_vh0, new_mom_nbr0 / new_mass_nbr0);
+    obj.setVertexVelocity(nbr_vh1, new_mom_nbr1 / new_mass_nbr1);
+    
+    // Incrementally update the masses while we're at it...
+    obj.setVertexMass(nbr_vh0, new_mass_nbr0);
+    obj.setVertexMass(nbr_vh1, new_mass_nbr1);
 
     //
     Scalar theta = 0.5*(m_theta[eh] + m_theta[partner_eh]);
@@ -955,6 +981,40 @@ namespace BASim
         s.dofindices[11] = dofbase + 2;
       }
     }
+  }
+
+  void ElasticRodModel::setInflow(VertexHandle& vh, Vec3d velocity, Scalar radius) {
+     m_inflow_velocity = velocity;
+     m_inflow_radius = radius;
+     m_inflow_vertex = vh;
+     m_inflow_active = true;
+     
+     //store the position
+     Vec3d pos = getDefoObj().getVertexPosition(vh);
+     m_inflow_position = pos;
+
+     //assign a constraint velocity
+     getDefoObj().constrainVertex(vh, new FixedVelocityConstraint(pos, velocity, 0));
+  }
+
+  void ElasticRodModel::extendMesh(Scalar current_time) {
+     //create a new vertex
+     DeformableObject& defo = getDefoObj();
+     VertexHandle newVert = defo.addVertex();
+     EdgeHandle newEdge = defo.addEdge(newVert, m_inflow_vertex);
+     
+     //change the inflow vertex
+     m_inflow_vertex = newVert;
+
+     //set vertex position, edge length, etc.
+     defo.setVertexPosition(newVert, m_inflow_position);
+     defo.setVertexVelocity(newVert, m_inflow_velocity);
+     setRadii(newEdge, Vec2d(m_inflow_radius,m_inflow_radius));
+
+     getDefoObj().constrainVertex(newVert, new FixedVelocityConstraint(m_inflow_position, m_inflow_velocity, current_time));
+     
+     //TODO: Update all properties for the new guys!
+     
   }
 
 } //namespace BASim

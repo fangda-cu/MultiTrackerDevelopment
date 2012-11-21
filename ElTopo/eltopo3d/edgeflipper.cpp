@@ -308,7 +308,6 @@ bool EdgeFlipper::flip_edge( size_t edge,
     {
         if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: area too small" << std::endl;    }
         g_stats.add_to_int( "EdgeFlipper:edge_flip_new_area_too_small", 1 );
-        std::cout << "Flip - Too small triangle\n";
         return false;
     }
     
@@ -316,7 +315,6 @@ bool EdgeFlipper::flip_edge( size_t edge,
     {
         if ( m_surf.m_verbose ) {std::cout << "edge flip rejected: area too small" << std::endl; }
         g_stats.add_to_int( "EdgeFlipper:edge_flip_new_area_too_small", 1 );
-        std::cout << "Flip - Too small triangle\n";
         return false;
     }
     
@@ -333,7 +331,6 @@ bool EdgeFlipper::flip_edge( size_t edge,
     {
         if ( m_surf.m_verbose ) {std::cout << "edge flip rejected: area change too great" << std::endl; }
         g_stats.add_to_int( "EdgeFlipper:edge_flip_area_change_too_large", 1 );  
-        std::cout << "Flip - Too great change in area\n";
         return false;
     }
     
@@ -344,7 +341,6 @@ bool EdgeFlipper::flip_edge( size_t edge,
     {
         if ( m_surf.m_verbose ) {std::cout << "edge flip rejected: vertices not on smooth patch" << std::endl;  }
         g_stats.add_to_int( "EdgeFlipper:edge_flip_not_smooth", 1 );  
-        std::cout << "Flip - Not smooth\n";
         return false;
     }        
     
@@ -359,7 +355,6 @@ bool EdgeFlipper::flip_edge( size_t edge,
     if ( rad2deg(min_angle) < m_surf.m_min_triangle_angle )
     {
         g_stats.add_to_int( "EdgeFlipper:edge_flip_bad_angle", 1 );
-        std::cout << "Flip - Causes small angle\n";
         return false;
     }
     
@@ -369,7 +364,6 @@ bool EdgeFlipper::flip_edge( size_t edge,
     if ( rad2deg(max_angle) > m_surf.m_max_triangle_angle )
     {
         g_stats.add_to_int( "EdgeFlipper:edge_flip_bad_angle", 1 );
-        std::cout << "Flip - Causes large angle\n";
         return false;
     }
     
