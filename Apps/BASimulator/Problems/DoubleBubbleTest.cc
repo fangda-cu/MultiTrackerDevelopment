@@ -434,7 +434,7 @@ void DoubleBubbleTest::setupScene1() {
   positions[vertList[11]] = Vec3d(2,1,1);
   
   
-  for(int i = 0; i < 8; ++i) {
+  for(int i = 0; i < 12; ++i) {
     undeformed[vertList[i]] = positions[vertList[i]];
   }
   
@@ -606,6 +606,7 @@ void DoubleBubbleTest::setupScene2()
 
 void DoubleBubbleTest::setupScene3() 
 {
+  
   Vec3d start_vel(0,0,0);
   
   //vertices
@@ -622,7 +623,7 @@ void DoubleBubbleTest::setupScene3()
   //create a cube
   std::vector<VertexHandle> vertList;
   
-  for(int i = 0; i < 8; ++i) 
+  for (int i = 0; i < 16; ++i) 
   {
     vertList.push_back(shellObj->addVertex());
     velocities[vertList[i]] = start_vel;
@@ -639,11 +640,22 @@ void DoubleBubbleTest::setupScene3()
   positions[vertList[6]] = Vec3d(1,1,0);
   positions[vertList[7]] = Vec3d(1,1,1);
   
-  for(int i = 0; i < 8; ++i)
+  positions[vertList[8]] = Vec3d(1.1,0,0);
+  positions[vertList[9]] = Vec3d(1.1,0,1);
+  positions[vertList[10]] = Vec3d(1.1,1,0);
+  positions[vertList[11]] = Vec3d(1.1,1,1);
+  
+  positions[vertList[12]] = Vec3d(2.1,0,0);
+  positions[vertList[13]] = Vec3d(2.1,0,1);
+  positions[vertList[14]] = Vec3d(2.1,1,0);
+  positions[vertList[15]] = Vec3d(2.1,1,1);
+    
+  for (int i = 0; i < 16; ++i)
     undeformed[vertList[i]] = positions[vertList[i]];
   
   std::vector<FaceHandle> faceList;
   
+  //first cube
   faceList.push_back(shellObj->addFace(vertList[0], vertList[2], vertList[4]));
   faceList.push_back(shellObj->addFace(vertList[6], vertList[4], vertList[2]));
   
@@ -662,14 +674,39 @@ void DoubleBubbleTest::setupScene3()
   faceList.push_back(shellObj->addFace(vertList[4], vertList[6], vertList[5]));
   faceList.push_back(shellObj->addFace(vertList[5], vertList[6], vertList[7]));
   
-  FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles  
-  for(int i = 0; i < 12; ++i)
-    faceLabels[faceList[i]] = Vec2i(0,-1);
+  //second cube
+  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[10], vertList[12]));
+  faceList.push_back(shellObj->addFace(vertList[14], vertList[12], vertList[10]));
+  
+  faceList.push_back(shellObj->addFace(vertList[15], vertList[14], vertList[11]));
+  faceList.push_back(shellObj->addFace(vertList[11], vertList[14], vertList[10]));
+  
+  faceList.push_back(shellObj->addFace(vertList[11], vertList[10], vertList[ 9]));
+  faceList.push_back(shellObj->addFace(vertList[ 9], vertList[10], vertList[ 8]));
+  
+  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[12], vertList[13]));
+  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[13], vertList[ 9]));
+  
+  faceList.push_back(shellObj->addFace(vertList[15], vertList[11], vertList[ 9]));
+  faceList.push_back(shellObj->addFace(vertList[13], vertList[15], vertList[ 9]));
+  
+  faceList.push_back(shellObj->addFace(vertList[12], vertList[14], vertList[13]));
+  faceList.push_back(shellObj->addFace(vertList[13], vertList[14], vertList[15]));
+  
+  FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles
+  
+  //cube 1
+  for (int i = 0; i < 12; ++i)
+    faceLabels[faceList[i]] = Vec2i(0, -1);
+  
+  //cube 2
+  for (int i = 12; i < 24; ++i)
+    faceLabels[faceList[i]] = Vec2i(1, -1);
   
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj); 
   DeformableObject::face_iter fIt;
-  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+  for (fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
     shellFaces[*fIt] = true;
   
   //now create the physical model to hang on the mesh
