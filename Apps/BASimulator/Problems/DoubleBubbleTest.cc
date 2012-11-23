@@ -289,7 +289,9 @@ void DoubleBubbleTest::Setup()
   bool thickness_evolution = GetBoolOpt("shell-update-thickness");
   shell->setThicknessUpdating(thickness_evolution);
 
-  shell->remesh();  
+  shell->remesh();
+  
+  shell->addForce(new ShellVolumeForce(*shell, "Volume", 1000));
 
   shell->computeMasses();
  
@@ -513,8 +515,6 @@ void DoubleBubbleTest::setupScene1()
   
   shell->setFaceLabels(faceLabels);
   
-  shell->addForce(new ShellVolumeForce(*shell, "Volume", 1000));
-  
 }
 
 void DoubleBubbleTest::setupScene2() 
@@ -600,8 +600,6 @@ void DoubleBubbleTest::setupScene2()
   shell->setEdgeVelocities(edgeVel);
   
   shell->setFaceLabels(faceLabels);
-  
-  shell->addForce(new ShellVolumeForce(*shell, "Volume", 1000));
   
 }
 
@@ -725,7 +723,5 @@ void DoubleBubbleTest::setupScene3()
   
   shell->setFaceLabels(faceLabels);
 
-  shell->addForce(new ShellVolumeForce(*shell, "Volume", 1000));
-  
 }
 
