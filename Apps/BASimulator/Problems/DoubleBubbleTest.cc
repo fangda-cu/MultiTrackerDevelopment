@@ -289,7 +289,7 @@ void DoubleBubbleTest::Setup()
   bool thickness_evolution = GetBoolOpt("shell-update-thickness");
   shell->setThicknessUpdating(thickness_evolution);
 
-  //shell->remesh(remeshing_res);
+  shell->remesh();  
 
   shell->computeMasses();
  
