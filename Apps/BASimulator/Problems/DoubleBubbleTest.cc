@@ -394,7 +394,8 @@ void DoubleBubbleTest::AtEachTimestep()
 
 }
 
-void DoubleBubbleTest::setupScene1() {
+void DoubleBubbleTest::setupScene1() 
+{
   
   Vec3d start_vel(0,0,0);
   
@@ -606,7 +607,6 @@ void DoubleBubbleTest::setupScene2()
 
 void DoubleBubbleTest::setupScene3() 
 {
-  
   Vec3d start_vel(0,0,0);
   
   //vertices
@@ -724,7 +724,8 @@ void DoubleBubbleTest::setupScene3()
   shell->setEdgeVelocities(edgeVel);
   
   shell->setFaceLabels(faceLabels);
-  
+
   shell->addForce(new ShellVolumeForce(*shell, "Volume", 1000));
   
 }
+

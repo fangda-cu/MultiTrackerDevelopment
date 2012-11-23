@@ -21,7 +21,7 @@ shell-Poisson-damping 0.5
 shell-surface-tension 4
 
 shell-remeshing 1
-shell-remeshing-resolution 0.15
+shell-remeshing-resolution 0.4
 shell-remeshing-iterations 1
 
 integrator implicit	# type of integrator to use for the shell
