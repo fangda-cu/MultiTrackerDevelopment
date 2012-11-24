@@ -297,6 +297,9 @@ struct MeshUpdateEvent
   
   // Another identifying vertex, needed for internal cuts
   size_t m_v2; 
+    
+  // A fourth vertex needed only for zippering
+  size_t m_v3;
 
   /// The index of the triangles involved. 
   ///

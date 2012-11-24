@@ -1295,7 +1295,7 @@ void ElasticShell::remesh()
       
     }
     else {
-      std::cout << "ERROR: unknown remeshing operation";
+      std::cout << "ERROR: unknown remeshing operation: " << event.m_type << std::endl;
     }
     
     //kill the reverse map elements for the deleted faces, since no longer valid.

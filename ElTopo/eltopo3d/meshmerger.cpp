@@ -330,22 +330,31 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
     // Add the new triangles
     //
     
+    std::vector<size_t> created_triangles;
     size_t new_index = m_surf.add_triangle( new_triangles[0] );
     m_surf.m_dirty_triangles.push_back( new_index );
+    created_triangles.push_back(new_index);
     new_index = m_surf.add_triangle( new_triangles[1] );
     m_surf.m_dirty_triangles.push_back( new_index );
+    created_triangles.push_back(new_index);
     new_index = m_surf.add_triangle( new_triangles[2] );
     m_surf.m_dirty_triangles.push_back( new_index );
+    created_triangles.push_back(new_index);
     new_index = m_surf.add_triangle( new_triangles[3] );
     m_surf.m_dirty_triangles.push_back( new_index );
+    created_triangles.push_back(new_index);
     new_index = m_surf.add_triangle( new_triangles[4] );
     m_surf.m_dirty_triangles.push_back( new_index );
+    created_triangles.push_back(new_index);
     new_index = m_surf.add_triangle( new_triangles[5] );
     m_surf.m_dirty_triangles.push_back( new_index );
+    created_triangles.push_back(new_index);
     new_index = m_surf.add_triangle( new_triangles[6] );
     m_surf.m_dirty_triangles.push_back( new_index );
+    created_triangles.push_back(new_index);
     new_index = m_surf.add_triangle( new_triangles[7] );
     m_surf.m_dirty_triangles.push_back( new_index );
+    created_triangles.push_back(new_index);
     
     //
     // Remove the old triangles
@@ -355,6 +364,17 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
     m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][0] );
     m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] );
     m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] );
+    
+    //Record the event for posterity
+    MeshUpdateEvent update(MeshUpdateEvent::MERGE);
+    update.m_v0 = m_surf.m_mesh.m_edges[edge_index_a][0];
+    update.m_v1 = m_surf.m_mesh.m_edges[edge_index_a][1];
+    update.m_v2 = m_surf.m_mesh.m_edges[edge_index_b][0];
+    update.m_v3 = m_surf.m_mesh.m_edges[edge_index_b][1];
+    update.m_deleted_tris = deleted_triangles;
+    update.m_created_tris = created_triangles;
+    update.m_created_tri_data = new_triangles;
+    m_surf.m_mesh_change_history.push_back(update);
     
     return true;
     
@@ -438,10 +458,6 @@ bool MeshMerger::merge_pass( )
                             std::cout << "zippered" << std::endl; 
                         }
                         
-                        //Record the event for posterity
-                        MeshUpdateEvent update(MeshUpdateEvent::MERGE);
-                        m_surf.m_mesh_change_history.push_back(update);
-
                         merge_occurred = true;
                         g_stats.add_to_int( "merge_success", 1 );
                     }
