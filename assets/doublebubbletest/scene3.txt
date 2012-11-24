@@ -38,3 +38,6 @@ atol 1e-008	# absolute convergence tolerance
 rtol 1e-008	# relative convergence tolerance
 atol 1e-008	# absolute convergence tolerance
 stol 1e-008	# convergence tolerance in terms of the norm of the change in the solution between steps
+
+shell-collision-epsilon 1e-05	# the distance tolerance for El Topo to flag a collision
+shell-collision-proximity 0	# the collision spring rest length and distance at which to add springs

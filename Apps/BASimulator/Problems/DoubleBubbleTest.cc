@@ -605,7 +605,7 @@ void DoubleBubbleTest::setupScene2()
 
 void DoubleBubbleTest::setupScene3() 
 {
-  Vec3d start_vel(0,0,0);
+  Vec3d start_vel(2,0,0);
   
   //vertices
   std::vector<VertexHandle> vertHandles;
@@ -624,29 +624,32 @@ void DoubleBubbleTest::setupScene3()
   for (int i = 0; i < 16; ++i) 
   {
     vertList.push_back(shellObj->addVertex());
-    velocities[vertList[i]] = start_vel;
+    if (i < 8)
+      velocities[vertList[i]] = start_vel;
+    else
+      velocities[vertList[i]] = -start_vel;
   }
   
   //create positions
-  positions[vertList[0]] = Vec3d(0,0,0);
-  positions[vertList[1]] = Vec3d(0,0,1);
-  positions[vertList[2]] = Vec3d(0,1,0);
-  positions[vertList[3]] = Vec3d(0,1,1);
+  positions[vertList[0]] = Vec3d(-2,0,0);
+  positions[vertList[1]] = Vec3d(-2,0,1);
+  positions[vertList[2]] = Vec3d(-2,1,0);
+  positions[vertList[3]] = Vec3d(-2,1,1);
   
-  positions[vertList[4]] = Vec3d(1,0,0);
-  positions[vertList[5]] = Vec3d(1,0,1);
-  positions[vertList[6]] = Vec3d(1,1,0);
-  positions[vertList[7]] = Vec3d(1,1,1);
+  positions[vertList[4]] = Vec3d(-1,0,0);
+  positions[vertList[5]] = Vec3d(-1,0,1);
+  positions[vertList[6]] = Vec3d(-1,1,0);
+  positions[vertList[7]] = Vec3d(-1,1,1);
   
-  positions[vertList[8]] = Vec3d(1.1,0,0);
-  positions[vertList[9]] = Vec3d(1.1,0,1);
-  positions[vertList[10]] = Vec3d(1.1,1,0);
-  positions[vertList[11]] = Vec3d(1.1,1,1);
+  positions[vertList[8]] = Vec3d(1,0,0);
+  positions[vertList[9]] = Vec3d(1,0,1);
+  positions[vertList[10]] = Vec3d(1,1,0);
+  positions[vertList[11]] = Vec3d(1,1,1);
   
-  positions[vertList[12]] = Vec3d(2.1,0,0);
-  positions[vertList[13]] = Vec3d(2.1,0,1);
-  positions[vertList[14]] = Vec3d(2.1,1,0);
-  positions[vertList[15]] = Vec3d(2.1,1,1);
+  positions[vertList[12]] = Vec3d(2,0,0);
+  positions[vertList[13]] = Vec3d(2,0,1);
+  positions[vertList[14]] = Vec3d(2,1,0);
+  positions[vertList[15]] = Vec3d(2,1,1);
     
   for (int i = 0; i < 16; ++i)
     undeformed[vertList[i]] = positions[vertList[i]];
