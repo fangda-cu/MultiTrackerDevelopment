@@ -1303,7 +1303,7 @@ void ElasticShell::remesh()
       
       assert(e0.isValid());
       assert(e1.isValid());
-      
+
       std::vector<FaceHandle> deleted;
       for (size_t i = 0; i < event.m_deleted_tris.size(); i++)
         deleted.push_back(reverse_trimap[event.m_deleted_tris[i]]);

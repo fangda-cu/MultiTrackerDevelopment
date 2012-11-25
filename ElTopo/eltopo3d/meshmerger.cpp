@@ -310,6 +310,12 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
 //    deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] );
 //    deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][1] );   
     
+    // record the vertices involved
+    size_t v0 = m_surf.m_mesh.m_edges[edge_index_a][0];
+    size_t v1 = m_surf.m_mesh.m_edges[edge_index_a][1];
+    size_t v2 = m_surf.m_mesh.m_edges[edge_index_b][0];
+    size_t v3 = m_surf.m_mesh.m_edges[edge_index_b][1];
+    
     //
     // Check the new triangles for collision safety, ignoring the triangles which will be deleted
     //
@@ -367,10 +373,10 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
     
     //Record the event for posterity
     MeshUpdateEvent update(MeshUpdateEvent::MERGE);
-    update.m_v0 = m_surf.m_mesh.m_edges[edge_index_a][0];
-    update.m_v1 = m_surf.m_mesh.m_edges[edge_index_a][1];
-    update.m_v2 = m_surf.m_mesh.m_edges[edge_index_b][0];
-    update.m_v3 = m_surf.m_mesh.m_edges[edge_index_b][1];
+    update.m_v0 = v0;
+    update.m_v1 = v1;
+    update.m_v2 = v2;
+    update.m_v3 = v3;
     update.m_deleted_tris = deleted_triangles;
     update.m_created_tris = created_triangles;
     update.m_created_tri_data = new_triangles;
