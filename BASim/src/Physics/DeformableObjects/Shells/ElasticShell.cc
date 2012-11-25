@@ -1323,7 +1323,7 @@ void ElasticShell::remesh()
       performZippering(e0, e1, deleted, tocreate, created);
       
       assert(created.size() == tocreate.size());
-      assert(created.size() == event.created_tris.size());
+      assert(created.size() == event.m_created_tris.size());
       if (deleted.size() < created.size())
         reverse_trimap.resize(reverse_trimap.size() + created.size() - deleted.size());
       
