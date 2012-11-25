@@ -474,43 +474,46 @@ void ShellRenderer::render()
     glEnd();
     
     // render face labels
-    glBegin(GL_LINES);
-    for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
+    if (false)
     {
-      FaceHandle f = *fit;
-      Vec2i regions = m_shell.getFaceLabel(f);
-      FaceVertexIterator fvit = mesh.fv_iter(f); assert(fvit);
-      Vec3d p0 = m_shell.getVertexPosition(*fvit);  ++fvit;   assert(fvit);
-      Vec3d p1 = m_shell.getVertexPosition(*fvit);  ++fvit;   assert(fvit);
-      Vec3d p2 = m_shell.getVertexPosition(*fvit);  ++fvit;   assert(!fvit);
-      
-      Vec3d c = (p0 + p1 + p2) / 3;
-      Vec3d n = (p1 - p0).cross(p2 - p0).normalized();
-      
-      if (regions.x() == 0)
-        glColor4f(1, 0, 0, 1);
-      else if (regions.x() == 1)
-        glColor4f(0, 0, 1, 1);
-      else if (regions.x() == -1)
-        glColor4f(0, 0, 0, 1);
-      else
-        glColor4f(1, 0, 1, 1);
-      OpenGL::vertex(c);
-      OpenGL::vertex(Vec3d(c - n * 0.05));
-      
-      if (regions.y() == 0)
-        glColor4f(1, 0, 0, 1);
-      else if (regions.y() == 1)
-        glColor4f(0, 0, 1, 1);
-      else if (regions.y() == -1)
-        glColor4f(0, 0, 0, 1);
-      else
-        glColor4f(1, 0, 1, 1);
-      OpenGL::vertex(c);
-      OpenGL::vertex(Vec3d(c + n * 0.05));
+      glBegin(GL_LINES);
+      for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
+      {
+        FaceHandle f = *fit;
+        Vec2i regions = m_shell.getFaceLabel(f);
+        FaceVertexIterator fvit = mesh.fv_iter(f); assert(fvit);
+        Vec3d p0 = m_shell.getVertexPosition(*fvit);  ++fvit;   assert(fvit);
+        Vec3d p1 = m_shell.getVertexPosition(*fvit);  ++fvit;   assert(fvit);
+        Vec3d p2 = m_shell.getVertexPosition(*fvit);  ++fvit;   assert(!fvit);
+        
+        Vec3d c = (p0 + p1 + p2) / 3;
+        Vec3d n = (p1 - p0).cross(p2 - p0).normalized();
+        
+        if (regions.x() == 0)
+          glColor4f(1, 0, 0, 1);
+        else if (regions.x() == 1)
+          glColor4f(0, 0, 1, 1);
+        else if (regions.x() == -1)
+          glColor4f(0, 0, 0, 1);
+        else
+          glColor4f(1, 0, 1, 1);
+        OpenGL::vertex(c);
+        OpenGL::vertex(Vec3d(c - n * 0.05));
+        
+        if (regions.y() == 0)
+          glColor4f(1, 0, 0, 1);
+        else if (regions.y() == 1)
+          glColor4f(0, 0, 1, 1);
+        else if (regions.y() == -1)
+          glColor4f(0, 0, 0, 1);
+        else
+          glColor4f(1, 0, 1, 1);
+        OpenGL::vertex(c);
+        OpenGL::vertex(Vec3d(c + n * 0.05));
+      }
+      glEnd();
     }
-    glEnd();
-
+    
     // render back to front semi transparent
     float mv[16];
     glGetFloatv(GL_MODELVIEW_MATRIX, mv);
