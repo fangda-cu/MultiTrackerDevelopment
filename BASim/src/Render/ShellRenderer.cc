@@ -171,6 +171,14 @@ ShellRenderer::ShellRenderer( ElasticShell& shell, const Scalar thickness )
 }
 
 
+class FaceComp
+{
+public:
+  bool operator() (const std::pair<FaceHandle, Scalar> & f1, const std::pair<FaceHandle, Scalar> & f2) const 
+  {
+    return f1.second < f2.second;
+  }
+};
 
 void ShellRenderer::render()
 {
@@ -310,11 +318,14 @@ void ShellRenderer::render()
     glEnd();
 
     
-    // Render all faces
-    glBegin(GL_TRIANGLES);
+    // render back to front semi transparent
+    float mv[16];
+    glGetFloatv(GL_MODELVIEW_MATRIX, mv);
+    Vec3d view_vec(mv[2], mv[6], mv[10]);  // assuming ModelView matrix contains only translation, rotation and uniform scaling
+    
+    std::vector<std::pair<FaceHandle, Scalar> > sorted_faces;
     for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
     {
-    
       Vec3d barycentre;
       for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit )
       {
@@ -322,27 +333,62 @@ void ShellRenderer::render()
         barycentre += pos;
       }
       barycentre /= 3.0;
-
       
-      Scalar thickness = m_shell.getThickness(*fit);
-      int colorVal = (int) (255.0 * thickness/ 0.25); //rescale
-      //int colorVal = (int) (255.0 * (thickness - 0.0025) / 0.0025); //test
-      //colorVal = clamp(colorVal, 0, 255);
-      colorVal = 255;
-      OpenGL::color(Color(colorVal,0,0));
-      std::vector<Vec3d> points(3);
-      int i = 0;
-      for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit )
+      Scalar depth = barycentre.dot(view_vec);
+      sorted_faces.push_back(std::pair<FaceHandle, Scalar>(*fit, depth));
+    }
+    
+    FaceComp fc;
+    std::sort(sorted_faces.begin(), sorted_faces.end(), fc);
+    
+    // Render all faces
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBegin(GL_TRIANGLES);
+    
+//    for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
+//    {
+//      
+//      Vec3d barycentre;
+//      for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit )
+//      {
+//        Vec3d pos = m_shell.getVertexPosition(*fvit);
+//        barycentre += pos;
+//      }
+//      barycentre /= 3.0;
+//      
+//      
+//      Scalar thickness = m_shell.getThickness(*fit);
+//      int colorVal = (int) (255.0 * thickness/ 0.25); //rescale
+//      //int colorVal = (int) (255.0 * (thickness - 0.0025) / 0.0025); //test
+//      //colorVal = clamp(colorVal, 0, 255);
+//      colorVal = 255;
+//      OpenGL::color(Color(colorVal,0,0, 128));
+//      std::vector<Vec3d> points(3);
+//      int i = 0;
+//      for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit )
+//      {
+//        Vec3d pos = m_shell.getVertexPosition(*fvit);
+//        //pos = pos - 0.02*(pos-barycentre);
+//        OpenGL::vertex(pos);
+//        points[i] = pos;
+//        ++i;
+//      }      
+//      
+//    }
+    
+    for (size_t i = 0; i < sorted_faces.size(); i++)
+    {
+      OpenGL::color(Color(255,0,0,64));
+      for( FaceVertexIterator fvit = mesh.fv_iter(sorted_faces[i].first); fvit; ++fvit )
       {
         Vec3d pos = m_shell.getVertexPosition(*fvit);
-        //pos = pos - 0.02*(pos-barycentre);
         OpenGL::vertex(pos);
-        points[i] = pos;
-        ++i;
       }      
-      
     }
+    
     glEnd();
+    glDisable(GL_BLEND);
     
     glColor3f(0.0, 0.0, 0.0);
     /*std::cout << "Calling curvature\n";
