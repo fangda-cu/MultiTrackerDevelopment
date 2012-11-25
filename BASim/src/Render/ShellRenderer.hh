@@ -18,7 +18,7 @@ namespace BASim {
   {
   public:
   
-    enum DrawMode { NONE, DBG, FLAT, VOLUMETRIC };
+    enum DrawMode { NONE, DBG, DBG_BUBBLE, FLAT, VOLUMETRIC };
 
     ShellRenderer( ElasticShell& shell, const Scalar thickness = 1.0 );
     
