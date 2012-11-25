@@ -1294,6 +1294,46 @@ void ElasticShell::remesh()
       }
       
     }
+    else if(event.m_type == ElTopo::MeshUpdateEvent::MERGE) {
+      
+      // std::cout << "Merge\n";
+      //Do the same zippering as El Topo
+      EdgeHandle e0 = findEdge(mesh, reverse_vertmap[event.m_v0], reverse_vertmap[event.m_v1]);
+      EdgeHandle e1 = findEdge(mesh, reverse_vertmap[event.m_v2], reverse_vertmap[event.m_v3]);
+      
+      assert(e0.isValid());
+      assert(e1.isValid());
+      
+      std::vector<FaceHandle> deleted;
+      for (size_t i = 0; i < event.m_deleted_tris.size(); i++)
+        deleted.push_back(reverse_trimap[event.m_deleted_tris[i]]);
+      
+      std::vector<std::vector<VertexHandle> > tocreate;
+      for (size_t i = 0; i < event.m_created_tri_data.size(); i++)
+      {
+        std::vector<VertexHandle> tri;
+        tri.push_back(reverse_vertmap[event.m_created_tri_data[i][0]]);
+        tri.push_back(reverse_vertmap[event.m_created_tri_data[i][1]]);
+        tri.push_back(reverse_vertmap[event.m_created_tri_data[i][2]]);
+        tocreate.push_back(tri);
+      }
+      
+      std::vector<FaceHandle> created;
+      
+      performZippering(e0, e1, deleted, tocreate, created);
+      
+      assert(created.size() == tocreate.size());
+      assert(created.size() == event.created_tris.size());
+      if (deleted.size() < created.size())
+        reverse_trimap.resize(reverse_trimap.size() + created.size() - deleted.size());
+      
+      for (size_t i = 0; i < created.size(); i++)
+      {
+        reverse_trimap[event.m_created_tris[i]] = created[i];
+        face_numbers[created[i]] = event.m_created_tris[i];
+      }
+      
+    }
     else {
       std::cout << "ERROR: unknown remeshing operation: " << event.m_type << std::endl;
     }
@@ -1683,6 +1723,65 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const 
 
   return true;
 }
+  
+void ElasticShell::performZippering(EdgeHandle e0, EdgeHandle e1, const std::vector<FaceHandle> & faces_deleted, const std::vector<std::vector<VertexHandle> > & faces_to_create, std::vector<FaceHandle> & faces_created)
+{
+  assert(faces_deleted.size() == 2);
+  
+  VertexHandle v00 = m_obj->fromVertex(e0);
+  VertexHandle v01 = m_obj->toVertex(e0);
+  VertexHandle v10 = m_obj->fromVertex(e1);
+  VertexHandle v11 = m_obj->toVertex(e1);
+
+  EdgeFaceIterator efit0 = m_obj->ef_iter(e0);  assert(efit0);
+  FaceHandle f00 = *efit0;  ++efit0;  assert(efit0);
+  FaceHandle f01 = *efit0;  ++efit0;  assert(!efit0);
+  EdgeFaceIterator efit1 = m_obj->ef_iter(e1);  assert(efit1);
+  FaceHandle f10 = *efit1;  ++efit1;  assert(efit1);
+  FaceHandle f11 = *efit1;  ++efit1;  assert(!efit1);
+
+  VertexHandle v02, v03;
+  getFaceThirdVertex(*m_obj, f00, e0, v02);
+  getFaceThirdVertex(*m_obj, f01, e0, v03);
+  VertexHandle v12, v13;
+  getFaceThirdVertex(*m_obj, f10, e1, v12);
+  getFaceThirdVertex(*m_obj, f11, e1, v13);
+
+  Vec3d x00 = getVertexPosition(v00);
+  Vec3d x01 = getVertexPosition(v01);
+  Vec3d x02 = getVertexPosition(v02);
+  Vec3d x03 = getVertexPosition(v03);
+  Vec3d x10 = getVertexPosition(v10);
+  Vec3d x11 = getVertexPosition(v11);
+  Vec3d x12 = getVertexPosition(v12);
+  Vec3d x13 = getVertexPosition(v13);
+  
+  Scalar mass00 = getMass(v00);
+  Scalar mass01 = getMass(v01);
+  Scalar mass02 = getMass(v02);
+  Scalar mass03 = getMass(v03);
+  Scalar mass10 = getMass(v10);
+  Scalar mass11 = getMass(v11);
+  Scalar mass12 = getMass(v12);
+  Scalar mass13 = getMass(v13);
+
+  // no change to vertex mass/velocity for now; this doesn't conserve volume or momentum
+  for (size_t i = 0; i < faces_deleted.size(); i++)
+  {
+    bool success = m_obj->deleteFace(faces_deleted[i], false);
+    assert(success);
+  }
+  bool success = m_obj->deleteEdge(e0, false);
+  assert(success);
+  
+  for (size_t i = 0; i < faces_to_create.size(); i++)
+  {
+    FaceHandle f = m_obj->addFace(faces_to_create[i][0], faces_to_create[i][1], faces_to_create[i][2]);
+    assert(f.isValid());
+    faces_created.push_back(f);
+  }
+}
+
 
 
 void ElasticShell::updateThickness() {
