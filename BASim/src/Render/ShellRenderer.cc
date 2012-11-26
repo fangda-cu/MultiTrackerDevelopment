@@ -540,6 +540,7 @@ void ShellRenderer::render()
     // Render all faces
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
     glBegin(GL_TRIANGLES);
     
     for (size_t i = 0; i < sorted_faces.size(); i++)
@@ -554,6 +555,7 @@ void ShellRenderer::render()
     
     glEnd();
     glDisable(GL_BLEND);
+    glDepthMask(GL_TRUE);
     
     glColor3f(0.0, 0.0, 0.0);
     /*std::cout << "Calling curvature\n";
