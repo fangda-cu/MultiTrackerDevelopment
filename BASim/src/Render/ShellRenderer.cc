@@ -160,7 +160,7 @@ void drawThickTri(const Vec3d& v0, const Vec3d& v1, const Vec3d& v2,
 }
 
 void ShellRenderer::cycleMode() { 
-   m_mode = (ShellRenderer::DrawMode) ((m_mode + 1) % 5);
+   m_mode = (ShellRenderer::DrawMode) ((m_mode + 1) % 6);
 }
 
 ShellRenderer::ShellRenderer( ElasticShell& shell, const Scalar thickness )
@@ -179,6 +179,43 @@ public:
     return f1.second < f2.second;
   }
 };
+  
+bool junction(const DeformableObject & mesh, EdgeHandle e)
+{
+  int ne = 0;
+  for ( EdgeFaceIterator efit = mesh.ef_iter(e); efit; ++efit)
+    ne++;
+  return ne > 2;
+}
+  
+bool junctionNeighbor(const DeformableObject & mesh, VertexHandle v)
+{
+  for ( VertexEdgeIterator veit = mesh.ve_iter(v); veit; ++veit)
+    if (junction(mesh, *veit))
+      return true;
+  
+  return false;
+}
+
+bool junctionNeighbor(const DeformableObject & mesh, EdgeHandle e)
+{
+  if (junctionNeighbor(mesh, mesh.fromVertex(e)))
+    return true;
+  
+  if (junctionNeighbor(mesh, mesh.toVertex(e)))
+    return true;
+  
+  return false;
+}
+
+bool junctionNeighbor(const DeformableObject & mesh, FaceHandle f)
+{
+  for ( FaceEdgeIterator feit = mesh.fe_iter(f); feit; ++feit)
+    if (junctionNeighbor(mesh, *feit))
+      return true;
+
+  return false;
+}
 
 void ShellRenderer::render()
 {
@@ -434,7 +471,7 @@ void ShellRenderer::render()
     glEnable(GL_LIGHTING);
 
   }
-  else if( m_mode == DBG_BUBBLE )
+  else if( m_mode == DBG_BUBBLE || m_mode == DBG_JUNCTION )
   {
 //      renderVelocity();
     
@@ -455,6 +492,11 @@ void ShellRenderer::render()
     for( EdgeIterator eit = mesh.edges_begin(); eit != mesh.edges_end(); ++eit )
     {
       EdgeHandle eh = *eit;
+      
+      if (m_mode == DBG_JUNCTION)
+        if (!junctionNeighbor(mesh, eh))
+          continue;
+      
       Vec3d p0 = m_shell.getVertexPosition(mesh.fromVertex(*eit));
       Vec3d p1 = m_shell.getVertexPosition(mesh.toVertex(*eit));
       Vec3d dir = (p1-p0);
@@ -468,6 +510,11 @@ void ShellRenderer::render()
       else {
         OpenGL::color(Color(0.0,0.0,0.0));
       }
+      
+      if (m_mode == DBG_JUNCTION)
+        if (junction(mesh, eh))
+          OpenGL::color(Color(0.5, 1.0, 0.0));
+      
       OpenGL::vertex(p0);
       OpenGL::vertex(p1);      
     }
@@ -480,6 +527,11 @@ void ShellRenderer::render()
       for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
       {
         FaceHandle f = *fit;
+        
+        if (m_mode == DBG_JUNCTION)
+          if (!junctionNeighbor(mesh, f))
+            continue;
+        
         Vec2i regions = m_shell.getFaceLabel(f);
         FaceVertexIterator fvit = mesh.fv_iter(f); assert(fvit);
         Vec3d p0 = m_shell.getVertexPosition(*fvit);  ++fvit;   assert(fvit);
@@ -526,6 +578,10 @@ void ShellRenderer::render()
     std::vector<std::pair<FaceHandle, Scalar> > sorted_faces;
     for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
     {
+      if (m_mode == DBG_JUNCTION)
+        if (!junctionNeighbor(mesh, *fit))
+          continue;
+      
       Vec3d barycentre;
       for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit )
       {
@@ -581,9 +637,15 @@ void ShellRenderer::render()
     glPointSize(4);
     glBegin(GL_POINTS);
     
-    for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) {
+    for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) 
+    {
       Vec3d vertPos = m_shell.getVertexPosition(*vit); 
       VertexHandle vh = *vit;
+      
+      if (m_mode == DBG_JUNCTION)
+        if (!junctionNeighbor(mesh, vh))
+          continue;
+      
       if(!m_shell.getDefoObj().isConstrained(vh)) {
         OpenGL::color(Color(0,0,0));
       }
