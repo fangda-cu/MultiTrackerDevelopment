@@ -844,7 +844,7 @@ void DoubleBubbleTest::setupScene4()
   
   centers.push_back(Vec3d(-1, 0, 0));
   centers.push_back(Vec3d(1, 0, 0));
-  centers.push_back(Vec3d(0, 3, 0));
+//  centers.push_back(Vec3d(0, 3, 0));
   
   center_velocities.push_back(Vec3d(1, 0.5, 0));
   center_velocities.push_back(Vec3d(-1, 0.5, 0));
