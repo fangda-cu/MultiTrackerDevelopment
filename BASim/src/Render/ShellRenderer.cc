@@ -474,7 +474,7 @@ void ShellRenderer::render()
     glEnd();
     
     // render face labels
-    if (false)
+    if (true)
     {
       glBegin(GL_LINES);
       for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
@@ -493,23 +493,27 @@ void ShellRenderer::render()
           glColor4f(1, 0, 0, 1);
         else if (regions.x() == 1)
           glColor4f(0, 0, 1, 1);
-        else if (regions.x() == -1)
-          glColor4f(0, 0, 0, 1);
-        else
+        else if (regions.x() == 2)
           glColor4f(1, 0, 1, 1);
-        OpenGL::vertex(c);
-        OpenGL::vertex(Vec3d(c - n * 0.05));
+        
+        if (regions.x() >= 0)
+        {
+          OpenGL::vertex(c);
+          OpenGL::vertex(Vec3d(c - n * 0.05));
+        }
         
         if (regions.y() == 0)
           glColor4f(1, 0, 0, 1);
         else if (regions.y() == 1)
           glColor4f(0, 0, 1, 1);
-        else if (regions.y() == -1)
-          glColor4f(0, 0, 0, 1);
-        else
+        else if (regions.y() == 2)
           glColor4f(1, 0, 1, 1);
-        OpenGL::vertex(c);
-        OpenGL::vertex(Vec3d(c + n * 0.05));
+        
+        if (regions.y() >= 0)
+        {
+          OpenGL::vertex(c);
+          OpenGL::vertex(Vec3d(c + n * 0.05));
+        }
       }
       glEnd();
     }
@@ -545,10 +549,19 @@ void ShellRenderer::render()
     
     for (size_t i = 0; i < sorted_faces.size(); i++)
     {
+      Vec3d barycentre;
+      for( FaceVertexIterator fvit = mesh.fv_iter(sorted_faces[i].first); fvit; ++fvit )
+      {
+        Vec3d pos = m_shell.getVertexPosition(*fvit);
+        barycentre += pos;
+      }
+      barycentre /= 3.0;
+
       OpenGL::color(Color(255,0,0,64));
       for( FaceVertexIterator fvit = mesh.fv_iter(sorted_faces[i].first); fvit; ++fvit )
       {
         Vec3d pos = m_shell.getVertexPosition(*fvit);
+        pos += (barycentre - pos) * 0.1;
         OpenGL::vertex(pos);
       }      
     }
