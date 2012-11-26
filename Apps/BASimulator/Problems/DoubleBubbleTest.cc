@@ -394,6 +394,112 @@ void DoubleBubbleTest::AtEachTimestep()
 
     std::cout << "Time: " << this->getTime() << std::endl; 
 
+  if (m_active_scene == 3)
+  {
+    std::vector<Vec3d> pos_b0;  // bubble 0 vertices
+    std::vector<Vec3d> pos_b1;  // bubble 1 vertices
+    std::vector<Vec3d> pos_interface; // interface wall vertices
+    
+    for (FaceIterator fit = shellObj->faces_begin(); fit != shellObj->faces_end(); ++fit)
+    {
+      FaceHandle f = *fit;
+      FaceVertexIterator fvit = shellObj->fv_iter(f); assert(fvit);
+      Vec3d pos0 = shell->getVertexPosition(*fvit); ++fvit; assert(fvit);
+      Vec3d pos1 = shell->getVertexPosition(*fvit); ++fvit; assert(fvit);
+      Vec3d pos2 = shell->getVertexPosition(*fvit); ++fvit; assert(!fvit);
+      
+      Vec2i label = shell->getFaceLabel(f);
+      if (label.x() != -1 && label.y() != -1)
+      {
+        pos_interface.push_back(pos0);
+        pos_interface.push_back(pos1);
+        pos_interface.push_back(pos2);
+      } else if (label.x() == 1 || label.y() == 1)
+      {
+        pos_b1.push_back(pos0);
+        pos_b1.push_back(pos1);
+        pos_b1.push_back(pos2);
+      } else if (label.x() == 0 || label.y() == 0)
+      {
+        pos_b0.push_back(pos0);
+        pos_b0.push_back(pos1);
+        pos_b0.push_back(pos2);
+      }
+    }
+    
+    Vec3d b0mean = Vec3d::Zero(), b1mean = Vec3d::Zero();
+    for (size_t i = 0; i < pos_b0.size(); i++) b0mean += pos_b0[i]; b0mean /= pos_b0.size();
+    for (size_t i = 0; i < pos_b1.size(); i++) b1mean += pos_b1[i]; b1mean /= pos_b1.size();
+    
+    std::cout << "bubble 0: " << pos_b0.size() << " " << b0mean << std::endl;
+    std::cout << "bubble 1: " << pos_b1.size() << " " << b1mean << std::endl;
+    
+    // estimate satisfaction of Plateau's law
+    // 1. least square fitting of the sphere centers
+    Mat4d A;
+    VecXd b(4);
+    A.setZero();
+    b.setZero();
+    for (size_t i = 0; i < pos_b0.size(); i++)
+    {
+      A(0, 0) += 8 * pos_b0[i].x() * pos_b0[i].x();
+      A(0, 1) += 8 * pos_b0[i].y() * pos_b0[i].x();
+      A(0, 2) += 8 * pos_b0[i].z() * pos_b0[i].x();
+      A(0, 3) += -4 * pos_b0[i].x();
+      A(1, 0) += 8 * pos_b0[i].x() * pos_b0[i].y();
+      A(1, 1) += 8 * pos_b0[i].y() * pos_b0[i].y();
+      A(1, 2) += 8 * pos_b0[i].z() * pos_b0[i].y();
+      A(1, 3) += -4 * pos_b0[i].y();
+      A(2, 0) += 8 * pos_b0[i].x() * pos_b0[i].z();
+      A(2, 1) += 8 * pos_b0[i].y() * pos_b0[i].z();
+      A(2, 2) += 8 * pos_b0[i].z() * pos_b0[i].z();
+      A(2, 3) += -4 * pos_b0[i].z();
+      A(3, 0) += -4 * pos_b0[i].x();
+      A(3, 1) += -4 * pos_b0[i].y();
+      A(3, 2) += -4 * pos_b0[i].z();
+      A(3, 3) += 2;
+      
+      b(0) += 4 * pos_b0[i].squaredNorm() * pos_b0[i].x();
+      b(1) += 4 * pos_b0[i].squaredNorm() * pos_b0[i].y();
+      b(2) += 4 * pos_b0[i].squaredNorm() * pos_b0[i].z();
+      b(3) += -2 * pos_b0[i].squaredNorm();
+    }
+    
+    VecXd x = A.fullPivLu().solve(b);
+    Scalar r = sqrt(x.segment<3>(0).dot(x.segment<3>(0)) - x.w());
+    std::cout << "Sphere fitting for bubble 0: center = " << x.segment<3>(0).transpose() << " radius = " << r << std::endl;
+    
+    A.setZero();
+    b.setZero();
+    for (size_t i = 0; i < pos_b1.size(); i++)
+    {
+      A(0, 0) += 8 * pos_b1[i].x() * pos_b1[i].x();
+      A(0, 1) += 8 * pos_b1[i].y() * pos_b1[i].x();
+      A(0, 2) += 8 * pos_b1[i].z() * pos_b1[i].x();
+      A(0, 3) += -4 * pos_b1[i].x();
+      A(1, 0) += 8 * pos_b1[i].x() * pos_b1[i].y();
+      A(1, 1) += 8 * pos_b1[i].y() * pos_b1[i].y();
+      A(1, 2) += 8 * pos_b1[i].z() * pos_b1[i].y();
+      A(1, 3) += -4 * pos_b1[i].y();
+      A(2, 0) += 8 * pos_b1[i].x() * pos_b1[i].z();
+      A(2, 1) += 8 * pos_b1[i].y() * pos_b1[i].z();
+      A(2, 2) += 8 * pos_b1[i].z() * pos_b1[i].z();
+      A(2, 3) += -4 * pos_b1[i].z();
+      A(3, 0) += -4 * pos_b1[i].x();
+      A(3, 1) += -4 * pos_b1[i].y();
+      A(3, 2) += -4 * pos_b1[i].z();
+      A(3, 3) += 2;
+      
+      b(0) += 4 * pos_b1[i].squaredNorm() * pos_b1[i].x();
+      b(1) += 4 * pos_b1[i].squaredNorm() * pos_b1[i].y();
+      b(2) += 4 * pos_b1[i].squaredNorm() * pos_b1[i].z();
+      b(3) += -2 * pos_b1[i].squaredNorm();
+    }
+    
+    x = A.fullPivLu().solve(b);
+    r = sqrt(x.segment<3>(0).dot(x.segment<3>(0)) - x.w());
+    std::cout << "Sphere fitting for bubble 1: center = " << x.segment<3>(0).transpose() << " radius = " << r << std::endl;
+  }
 }
 
 void DoubleBubbleTest::setupScene1() 
