@@ -40,7 +40,7 @@ public:
   void setupScene1(); // copied shell test 26: double bubble
   void setupScene2(); // spherical bubble equilibrium test
   void setupScene3(); // double bubble collision
-  
+  void setupScene4(); // n bubble collision
 
 };
 
