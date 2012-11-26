@@ -36,6 +36,8 @@ protected:
   Scalar m_initial_thickness;
   int m_active_scene;
 
+  int m_s4_nbubble;
+  
 public:
   void setupScene1(); // copied shell test 26: double bubble
   void setupScene2(); // spherical bubble equilibrium test

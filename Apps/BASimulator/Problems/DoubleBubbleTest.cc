@@ -358,6 +358,26 @@ void DoubleBubbleTest::Setup()
 
 }
 
+class VertexHandleComp
+{
+public:
+  bool operator() (const VertexHandle & v1, const VertexHandle & v2) const 
+  { 
+    return v1.idx() < v2.idx(); 
+  }
+};
+
+class Vec3dComp
+{
+public:
+  bool operator() (const Vec3d & v1, const Vec3d & v2) const 
+  { 
+    return v1.x() < v2.x() || 
+          (v1.x() == v2.x() && v1.y() < v2.y()) || 
+          (v1.x() == v2.x() && v1.y() == v2.y() && v1.z() < v2.z());
+  }
+};
+
 void DoubleBubbleTest::AtEachTimestep()
 {
   
@@ -395,111 +415,79 @@ void DoubleBubbleTest::AtEachTimestep()
 
     std::cout << "Time: " << this->getTime() << std::endl; 
 
-  if (m_active_scene == 3)
+  if (m_active_scene == 4)
   {
-    std::vector<Vec3d> pos_b0;  // bubble 0 vertices
-    std::vector<Vec3d> pos_b1;  // bubble 1 vertices
-    std::vector<Vec3d> pos_interface; // interface wall vertices
-    
+    std::vector<std::set<Vec3d, Vec3dComp> > pos;               // bubble i vertex positions
+    std::vector<std::set<VertexHandle, VertexHandleComp> > vts; // bubble i vertices
+    pos.resize(m_s4_nbubble);
+    vts.resize(m_s4_nbubble);
+
     for (FaceIterator fit = shellObj->faces_begin(); fit != shellObj->faces_end(); ++fit)
     {
       FaceHandle f = *fit;
       FaceVertexIterator fvit = shellObj->fv_iter(f); assert(fvit);
-      Vec3d pos0 = shell->getVertexPosition(*fvit); ++fvit; assert(fvit);
-      Vec3d pos1 = shell->getVertexPosition(*fvit); ++fvit; assert(fvit);
-      Vec3d pos2 = shell->getVertexPosition(*fvit); ++fvit; assert(!fvit);
+      Vec3d pos0 = shell->getVertexPosition(*fvit); VertexHandle v0 = *fvit; ++fvit; assert(fvit);
+      Vec3d pos1 = shell->getVertexPosition(*fvit); VertexHandle v1 = *fvit; ++fvit; assert(fvit);
+      Vec3d pos2 = shell->getVertexPosition(*fvit); VertexHandle v2 = *fvit; ++fvit; assert(!fvit);
       
       Vec2i label = shell->getFaceLabel(f);
-      if (label.x() != -1 && label.y() != -1)
+      for (int i = 0; i < m_s4_nbubble; i++)
       {
-        pos_interface.push_back(pos0);
-        pos_interface.push_back(pos1);
-        pos_interface.push_back(pos2);
-      } else if (label.x() == 1 || label.y() == 1)
-      {
-        pos_b1.push_back(pos0);
-        pos_b1.push_back(pos1);
-        pos_b1.push_back(pos2);
-      } else if (label.x() == 0 || label.y() == 0)
-      {
-        pos_b0.push_back(pos0);
-        pos_b0.push_back(pos1);
-        pos_b0.push_back(pos2);
+        if ((label.x() == i && label.y() == -1) || (label.y() == i && label.x() == -1))
+        {
+          pos[i].insert(pos0);
+          pos[i].insert(pos1);
+          pos[i].insert(pos2);
+          vts[i].insert(v0);
+          vts[i].insert(v1);
+          vts[i].insert(v2);
+        }
       }
     }
     
-    Vec3d b0mean = Vec3d::Zero(), b1mean = Vec3d::Zero();
-    for (size_t i = 0; i < pos_b0.size(); i++) b0mean += pos_b0[i]; b0mean /= pos_b0.size();
-    for (size_t i = 0; i < pos_b1.size(); i++) b1mean += pos_b1[i]; b1mean /= pos_b1.size();
-    
-    std::cout << "bubble 0: " << pos_b0.size() << " " << b0mean << std::endl;
-    std::cout << "bubble 1: " << pos_b1.size() << " " << b1mean << std::endl;
-    
-    // estimate satisfaction of Plateau's law
-    // 1. least square fitting of the sphere centers
-    Mat4d A;
-    VecXd b(4);
-    A.setZero();
-    b.setZero();
-    for (size_t i = 0; i < pos_b0.size(); i++)
+    for (int j = 0; j < m_s4_nbubble; j++)
     {
-      A(0, 0) += 8 * pos_b0[i].x() * pos_b0[i].x();
-      A(0, 1) += 8 * pos_b0[i].y() * pos_b0[i].x();
-      A(0, 2) += 8 * pos_b0[i].z() * pos_b0[i].x();
-      A(0, 3) += -4 * pos_b0[i].x();
-      A(1, 0) += 8 * pos_b0[i].x() * pos_b0[i].y();
-      A(1, 1) += 8 * pos_b0[i].y() * pos_b0[i].y();
-      A(1, 2) += 8 * pos_b0[i].z() * pos_b0[i].y();
-      A(1, 3) += -4 * pos_b0[i].y();
-      A(2, 0) += 8 * pos_b0[i].x() * pos_b0[i].z();
-      A(2, 1) += 8 * pos_b0[i].y() * pos_b0[i].z();
-      A(2, 2) += 8 * pos_b0[i].z() * pos_b0[i].z();
-      A(2, 3) += -4 * pos_b0[i].z();
-      A(3, 0) += -4 * pos_b0[i].x();
-      A(3, 1) += -4 * pos_b0[i].y();
-      A(3, 2) += -4 * pos_b0[i].z();
-      A(3, 3) += 2;
+      // least square fitting of the sphere centers
+      Mat4d A;
+      VecXd b(4);
+      A.setZero();
+      b.setZero();
+      for (std::set<Vec3d>::iterator i = pos[j].begin(); i != pos[j].end(); i++)
+      {
+        A(0, 0) +=  8 * (*i).x() * (*i).x();
+        A(0, 1) +=  8 * (*i).y() * (*i).x();
+        A(0, 2) +=  8 * (*i).z() * (*i).x();
+        A(0, 3) += -4 * (*i).x();
+        A(1, 0) +=  8 * (*i).x() * (*i).y();
+        A(1, 1) +=  8 * (*i).y() * (*i).y();
+        A(1, 2) +=  8 * (*i).z() * (*i).y();
+        A(1, 3) += -4 * (*i).y();
+        A(2, 0) +=  8 * (*i).x() * (*i).z();
+        A(2, 1) +=  8 * (*i).y() * (*i).z();
+        A(2, 2) +=  8 * (*i).z() * (*i).z();
+        A(2, 3) += -4 * (*i).z();
+        A(3, 0) += -4 * (*i).x();
+        A(3, 1) += -4 * (*i).y();
+        A(3, 2) += -4 * (*i).z();
+        A(3, 3) +=  2;
+        
+        b(0) +=  4 * (*i).squaredNorm() * (*i).x();
+        b(1) +=  4 * (*i).squaredNorm() * (*i).y();
+        b(2) +=  4 * (*i).squaredNorm() * (*i).z();
+        b(3) += -2 * (*i).squaredNorm();
+      }
       
-      b(0) += 4 * pos_b0[i].squaredNorm() * pos_b0[i].x();
-      b(1) += 4 * pos_b0[i].squaredNorm() * pos_b0[i].y();
-      b(2) += 4 * pos_b0[i].squaredNorm() * pos_b0[i].z();
-      b(3) += -2 * pos_b0[i].squaredNorm();
-    }
-    
-    VecXd x = A.fullPivLu().solve(b);
-    Scalar r = sqrt(x.segment<3>(0).dot(x.segment<3>(0)) - x.w());
-    std::cout << "Sphere fitting for bubble 0: center = " << x.segment<3>(0).transpose() << " radius = " << r << std::endl;
-    
-    A.setZero();
-    b.setZero();
-    for (size_t i = 0; i < pos_b1.size(); i++)
-    {
-      A(0, 0) += 8 * pos_b1[i].x() * pos_b1[i].x();
-      A(0, 1) += 8 * pos_b1[i].y() * pos_b1[i].x();
-      A(0, 2) += 8 * pos_b1[i].z() * pos_b1[i].x();
-      A(0, 3) += -4 * pos_b1[i].x();
-      A(1, 0) += 8 * pos_b1[i].x() * pos_b1[i].y();
-      A(1, 1) += 8 * pos_b1[i].y() * pos_b1[i].y();
-      A(1, 2) += 8 * pos_b1[i].z() * pos_b1[i].y();
-      A(1, 3) += -4 * pos_b1[i].y();
-      A(2, 0) += 8 * pos_b1[i].x() * pos_b1[i].z();
-      A(2, 1) += 8 * pos_b1[i].y() * pos_b1[i].z();
-      A(2, 2) += 8 * pos_b1[i].z() * pos_b1[i].z();
-      A(2, 3) += -4 * pos_b1[i].z();
-      A(3, 0) += -4 * pos_b1[i].x();
-      A(3, 1) += -4 * pos_b1[i].y();
-      A(3, 2) += -4 * pos_b1[i].z();
-      A(3, 3) += 2;
+      VecXd x = A.fullPivLu().solve(b);
+      Scalar r = sqrt(x.segment<3>(0).dot(x.segment<3>(0)) - x.w());
       
-      b(0) += 4 * pos_b1[i].squaredNorm() * pos_b1[i].x();
-      b(1) += 4 * pos_b1[i].squaredNorm() * pos_b1[i].y();
-      b(2) += 4 * pos_b1[i].squaredNorm() * pos_b1[i].z();
-      b(3) += -2 * pos_b1[i].squaredNorm();
+      Vec3d v;
+      v.setZero();
+      for (std::set<VertexHandle>::iterator i = vts[j].begin(); i != vts[j].end(); i++)
+        v += shell->getVertexVelocity(*i);
+      v /= vts[j].size();
+      
+      std::cout << "Bubble " << j << " (" << pos[j].size() << ") : center = " << x.segment<3>(0).transpose() << " radius = " << r << " average velocity = " << v << std::endl;
     }
-    
-    x = A.fullPivLu().solve(b);
-    r = sqrt(x.segment<3>(0).dot(x.segment<3>(0)) - x.w());
-    std::cout << "Sphere fitting for bubble 1: center = " << x.segment<3>(0).transpose() << " radius = " << r << std::endl;
   }
 }
 
@@ -942,5 +930,8 @@ void DoubleBubbleTest::setupScene4()
   shell->setEdgeVelocities(edgeVel);
   
   shell->setFaceLabels(faceLabels);
+  
+  // persistent variables
+  m_s4_nbubble = nbubble;
   
 }
