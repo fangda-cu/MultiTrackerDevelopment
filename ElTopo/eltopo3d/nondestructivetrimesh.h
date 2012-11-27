@@ -72,6 +72,23 @@ public:
     ///
     inline size_t num_triangles() const;
     
+    ////////////////////////////////////////////////////////////
+    // FD 20121126
+    //
+    // Return a const reference to the set of all triangle labels
+    //
+    inline const std::vector<Vec2i>& get_triangle_labels() const;
+    
+    // Return a const reference to the label of the specified triangle
+    //
+    inline const Vec2i& get_triangle_label( size_t index ) const;
+    
+    // Set the label of the specified triangle
+    //
+    inline void set_triangle_label( size_t index, const Vec2i& label );
+  
+    ////////////////////////////////////////////////////////////
+
     /// Clear all mesh information
     ///
     void clear();
@@ -192,6 +209,15 @@ public:
     ///
     void test_connectivity() const;
     
+    ////////////////////////////////////////////////////////////
+    // FD 20121126
+    //
+    // Check the consistency of the triangle labels
+    //
+    void test_labels() const;
+    
+    ////////////////////////////////////////////////////////////
+
     // 
     // Data members
     //
@@ -223,6 +249,15 @@ public:
     /// Edges around triangles (given a triangle, which 3 edges does it contain)
     ///
     std::vector<Vec3st> m_triangle_to_edge_map; 
+    
+    ////////////////////////////////////////////////////////////
+    // FD 20121126
+    //
+    // Face labels, for the multiphase extension
+    //
+    std::vector<Vec2i> m_triangle_labels;
+    
+    ////////////////////////////////////////////////////////////
     
     
 private:
@@ -423,6 +458,16 @@ inline size_t NonDestructiveTriMesh::get_third_vertex( size_t edge_index, size_t
 inline void NonDestructiveTriMesh::replace_all_triangles( const std::vector<Vec3st>& new_tris )
 {
     m_tris = new_tris;
+    
+    ////////////////////////////////////////////////////////////
+    // FD 20121126
+    //
+    // resize the face label data
+    //
+    m_triangle_labels.resize(m_tris.size(), Vec2i(-1, -1));
+    
+    ////////////////////////////////////////////////////////////
+
     update_connectivity( );
 }
 
@@ -691,6 +736,32 @@ inline bool NonDestructiveTriMesh::triangles_are_adjacent( size_t triangle_a, si
 {
     return ( get_common_edge( triangle_a, triangle_b ) != (size_t) ~0 );
 }
+
+////////////////////////////////////////////////////////////
+// FD 20121126
+//
+// Return a const reference to the set of all triangle labels
+//
+inline const std::vector<Vec2i>& NonDestructiveTriMesh::get_triangle_labels() const
+{
+    return m_triangle_labels;
+}
+
+// Return a const reference to the specified triangle
+//
+inline const Vec2i& NonDestructiveTriMesh::get_triangle_label( size_t index ) const
+{
+    return m_triangle_labels[index];
+}
+
+// Return a reference to the specified triangle
+//
+inline void NonDestructiveTriMesh::set_triangle_label( size_t index, const Vec2i& label )
+{
+    m_triangle_labels[index] = label;
+}
+  
+////////////////////////////////////////////////////////////
 
 }
 

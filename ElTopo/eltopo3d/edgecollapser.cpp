@@ -409,8 +409,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   assert(m_remesh_boundaries || !edge_is_boundary);
   
   // *don't* collapse when both verts are on the boundary and the edge is not, since this would create a nonmanifold/singular vertex
-  assert( ((keep_vert_is_boundary && del_vert_is_boundary) && !edge_is_boundary) == false);
-  //assert(edge_is_boundary || !(keep_vert_is_boundary && del_vert_is_boundary));
+  //assert( ((keep_vert_is_boundary && del_vert_is_boundary) && !edge_is_boundary) == false);   // these two asserts are equivalent
+  assert(edge_is_boundary || !(keep_vert_is_boundary && del_vert_is_boundary));
   
   if ( m_surf.m_verbose ) { std::cout << "Collapsing edge.  Doomed vertex: " << vertex_to_delete << " --- Vertex to keep: " << vertex_to_keep << std::endl; }
 
@@ -505,7 +505,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     const std::vector< size_t >& r_triangles_incident_to_edge = m_surf.m_mesh.m_edge_to_triangle_map[edge];
 
     // Do not collapse edge on a degenerate tet or degenerate triangle
-    for ( size_t i=0; i < r_triangles_incident_to_edge.size(); ++i )
+    for ( size_t i=0; i < r_triangles_incident_to_edge.size(); ++i )    // FD 20121126: Why can such deg tet/tri exist at all? trim_non_manifold() is called after every collapse_edge().
     {
       const Vec3st& triangle_i = m_surf.m_mesh.get_triangle( r_triangles_incident_to_edge[i] );
 
@@ -728,6 +728,15 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     size_t new_triangle_index = m_surf.add_triangle( new_triangle );
     collapse.m_created_tris.push_back( new_triangle_index );
     collapse.m_created_tri_data.push_back(new_triangle);
+    
+    ////////////////////////////////////////////////////////////
+    // FD 20121126
+    //
+    // the old label carries over to the new triangle
+    //
+    m_surf.m_mesh.set_triangle_label(new_triangle_index, m_surf.m_mesh.get_triangle_label(triangles_incident_to_vertex[i]));
+    
+    ////////////////////////////////////////////////////////////
 
     m_surf.m_dirty_triangles.push_back( new_triangle_index );
   }

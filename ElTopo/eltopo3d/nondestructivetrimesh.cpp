@@ -47,6 +47,16 @@ const unsigned int i_plus_one_mod_three[3] = {1,2,0};
 void NonDestructiveTriMesh::clear()
 {
     m_tris.clear();
+
+    ////////////////////////////////////////////////////////////
+    // FD 20121126
+    //
+    // clear the face label data
+    //
+    m_triangle_labels.clear();
+    
+    ////////////////////////////////////////////////////////////
+
     clear_connectivity();
 }
 
@@ -142,6 +152,17 @@ size_t NonDestructiveTriMesh::nondestructive_add_triangle( const Vec3st& tri )
     size_t idx = m_tris.size();
     m_tris.push_back(tri);
     m_triangle_to_edge_map.resize(idx+1);
+    
+    ////////////////////////////////////////////////////////////
+    // FD 20121126
+    //
+    // create a placeholder face label (this is not made a 
+    //  function argument because we want to minimize changes
+    //  to El Topo)
+    //
+    m_triangle_labels.push_back(Vec2i(-1, -1));
+    
+    ////////////////////////////////////////////////////////////
     
     for(unsigned int i = 0; i < 3; i++)
     {
@@ -468,6 +489,23 @@ void NonDestructiveTriMesh::clear_deleted_triangles( std::vector<Vec2st>* defrag
     
     replace_all_triangles( new_tris );
     
+    ////////////////////////////////////////////////////////////
+    // FD 20121126
+    //
+    // replace the face label data
+    //
+    std::vector<Vec2i> new_labels;
+    new_labels.reserve(new_tris.size());
+    
+    for (size_t i = 0; i < defragged_triangle_map->size(); i++)
+    {
+        new_labels[defragged_triangle_map->at(i)[1]] = m_triangle_labels[defragged_triangle_map->at(i)[0]];
+    }
+    
+    m_triangle_labels = new_labels;
+    
+    ////////////////////////////////////////////////////////////
+
 }
 
 
@@ -702,6 +740,20 @@ void NonDestructiveTriMesh::test_connectivity() const
     }
     
 }
+    
+////////////////////////////////////////////////////////////
+// FD 20121126
+//
+// Check the consistency of the triangle labels
+//
+void NonDestructiveTriMesh::test_labels() const
+{
+    // todo
+    
+}
+
+////////////////////////////////////////////////////////////
+
 
 }
 
