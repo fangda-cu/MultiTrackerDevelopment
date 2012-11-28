@@ -732,7 +732,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     ////////////////////////////////////////////////////////////
     // FD 20121126
     //
-    // the old label carries over to the new triangle
+    // the old label carries over to the new triangle.
+    // no need to test for orientation because the new triangle
+    // generation code above does not change orientation.
     //
     m_surf.m_mesh.set_triangle_label(new_triangle_index, m_surf.m_mesh.get_triangle_label(triangles_incident_to_vertex[i]));
     

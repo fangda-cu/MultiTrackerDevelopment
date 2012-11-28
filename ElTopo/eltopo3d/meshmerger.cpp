@@ -307,7 +307,7 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
     std::vector<size_t> deleted_triangles;
     deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][0] );
     deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][1] );
-//    deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] );
+//    deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] ); // for bubbles: Y junction retaining the separating wall
 //    deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][1] );   
     
     // record the vertices involved
@@ -368,7 +368,7 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
     
     m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][0] );
     m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][0] );
-//    m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] );
+//    m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] ); // for bubbles: Y junction retaining the separating wall
 //    m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] );
     
     //Record the event for posterity

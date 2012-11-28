@@ -589,6 +589,7 @@ bool EdgeSplitter::split_edge( size_t edge )
   // FD 20121126
   //
   // the old label carries over to the new triangle
+  // 
   //
   Vec2i old_label = m_surf.m_mesh.get_triangle_label(incident_tris[0]);
   for (size_t i = 0; i < incident_tris.size(); i++)
