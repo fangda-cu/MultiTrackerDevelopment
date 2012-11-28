@@ -282,6 +282,15 @@ bool MeshCutter::perform_pull_apart(const std::vector<size_t>& boundary_verts, c
   std::vector< Vec3st > triangles_to_add;
   std::vector< size_t > vertices_added;
 
+  ////////////////////////////////////////////////////////////
+  // FD 20121126
+  //
+  // store the face labels for the new triangles
+  //
+  std::vector<Vec2i> triangle_labels;
+  
+  ////////////////////////////////////////////////////////////
+
   std::vector<size_t> dup_verts;
   std::vector< std::set<size_t> > surrounding_vert_sets;
 
@@ -324,6 +333,15 @@ bool MeshCutter::perform_pull_apart(const std::vector<size_t>& boundary_verts, c
 
       triangles_to_add.push_back( new_triangle );
       triangles_to_delete.push_back( connected_components[i][t] ); 
+      
+      ////////////////////////////////////////////////////////////
+      // FD 20121126
+      //
+      // store the face labels for the new triangles
+      //
+      triangle_labels.push_back(m_surf.m_mesh.get_triangle_label(connected_components[i][t]));
+      
+      ////////////////////////////////////////////////////////////
     }
 
     for(size_t bv = 0; bv < boundary_verts.size(); ++bv) {
@@ -429,10 +447,28 @@ bool MeshCutter::perform_pull_apart(const std::vector<size_t>& boundary_verts, c
 
   // all new triangles check out okay for collision safety. Add them to the data structure.
 
+  ////////////////////////////////////////////////////////////
+  // FD 20121126
+  //
+  // assert the integrity of the data structures
+  //
+  assert(triangles_to_add.size() == triangle_labels.size());
+  
+  ////////////////////////////////////////////////////////////
+  
   for ( size_t i = 0; i < triangles_to_add.size(); ++i )
   {
     size_t new_tri = m_surf.add_triangle( triangles_to_add[i] );
 
+    ////////////////////////////////////////////////////////////
+    // FD 20121126
+    //
+    // write the labels for the new triangles
+    //
+    m_surf.m_mesh.set_triangle_label(new_tri, triangle_labels[i]);
+    
+    ////////////////////////////////////////////////////////////
+    
     history.m_created_tris.push_back(new_tri);
     history.m_created_tri_data.push_back(triangles_to_add[i]);
   }
