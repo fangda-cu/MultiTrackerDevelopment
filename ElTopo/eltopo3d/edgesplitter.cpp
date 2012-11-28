@@ -498,7 +498,7 @@ bool EdgeSplitter::split_edge( size_t edge )
 
       g_stats.add_to_int( "EdgeSplitter:split_midpoint_collisions", 1 );
 
-      if ( m_surf.m_verbose )  { std::cout << "Even mid-point subdivision introduces collision.  Backing out." << std::endl; }
+      if ( m_surf.m_verbose )  { std::cout << "Even mid-point subdivision introduces collision.  Backing out." << std::endl; }  // FD 20121126: Why does the paper say this can't happen (section 3.5.1)?
       return false;
     }
   }
@@ -585,6 +585,19 @@ bool EdgeSplitter::split_edge( size_t edge )
     created_tri_data.push_back(newtri1);
   }
 
+  ////////////////////////////////////////////////////////////
+  // FD 20121126
+  //
+  // the old label carries over to the new triangle
+  //
+  Vec2i old_label = m_surf.m_mesh.get_triangle_label(incident_tris[0]);
+  for (size_t i = 0; i < incident_tris.size(); i++)
+  {
+    assert(old_label == m_surf.m_mesh.get_triangle_label(incident_tris[i]));
+  }
+  
+  ////////////////////////////////////////////////////////////
+
   // Delete the parent triangles
   for(size_t i = 0; i < incident_tris.size(); ++i) {
     m_surf.remove_triangle( incident_tris[i] );
@@ -595,6 +608,15 @@ bool EdgeSplitter::split_edge( size_t edge )
   for(size_t i = 0; i < created_tri_data.size(); ++i) {
     //add the triangle
     size_t newtri0_id = m_surf.add_triangle( created_tri_data[i] );
+    
+    ////////////////////////////////////////////////////////////
+    // FD 20121126
+    //
+    // the old label carries over to the new triangle
+    //
+    m_surf.m_mesh.set_triangle_label(newtri0_id, old_label);
+    
+    ////////////////////////////////////////////////////////////
     
     //record the data created
     created_tris.push_back(newtri0_id);

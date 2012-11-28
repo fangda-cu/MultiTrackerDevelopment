@@ -378,6 +378,16 @@ bool EdgeFlipper::flip_edge( size_t edge,
     Vec3st old_tri0 = m_mesh.get_triangle(tri0);
     Vec3st old_tri1 = m_mesh.get_triangle(tri1);
     
+    ////////////////////////////////////////////////////////////
+    // FD 20121126
+    //
+    // the old label carries over to the new triangle
+    //
+    Vec2i old_label = m_surf.m_mesh.get_triangle_label(tri0);
+    assert(old_label == m_surf.m_mesh.get_triangle_label(tri1));
+    
+    ////////////////////////////////////////////////////////////
+    
     m_surf.remove_triangle( tri0 );
     m_surf.remove_triangle( tri1 );
     flip.m_deleted_tris.push_back(tri0);
@@ -389,6 +399,16 @@ bool EdgeFlipper::flip_edge( size_t edge,
     flip.m_created_tris.push_back(new_triangle_index_1);
     flip.m_created_tri_data.push_back(new_triangle0);
     flip.m_created_tri_data.push_back(new_triangle1);
+    
+    ////////////////////////////////////////////////////////////
+    // FD 20121126
+    //
+    // the old label carries over to the new triangle
+    //
+    m_surf.m_mesh.set_triangle_label(new_triangle_index_0, old_label);
+    m_surf.m_mesh.set_triangle_label(new_triangle_index_1, old_label);
+    
+    ////////////////////////////////////////////////////////////
     
     if ( m_surf.m_collision_safety )
     {
@@ -593,7 +613,7 @@ bool EdgeFlipper::flip_pass( )
                 assert (    m_mesh.oriented( m_mesh.m_edges[i][0], m_mesh.m_edges[i][1], m_mesh.get_triangle(triangle_a) ) 
                         != m_mesh.oriented( m_mesh.m_edges[i][0], m_mesh.m_edges[i][1], m_mesh.get_triangle(triangle_b) ) );
             }
-            else if ( m_mesh.m_edge_to_triangle_map[i].size() == 4 )
+            else if ( m_mesh.m_edge_to_triangle_map[i].size() == 4 )  // FD 20121126: Why is flipping allowed in this case?
             {           
                 triangle_a = m_mesh.m_edge_to_triangle_map[i][0];
                 
