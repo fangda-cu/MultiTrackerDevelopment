@@ -310,6 +310,16 @@ struct MeshUpdateEvent
   ///
   std::vector<Vec3st> m_created_tri_data;
   
+  ////////////////////////////////////////////////////////////
+  // FD 20121126
+  //
+  
+  /// The label data of the new triangles
+  ///
+  std::vector<Vec2i> m_created_tri_labels;
+
+  ////////////////////////////////////////////////////////////
+
   /// The indices of the vertices involved. 
   ///
   std::vector<size_t> m_deleted_verts;

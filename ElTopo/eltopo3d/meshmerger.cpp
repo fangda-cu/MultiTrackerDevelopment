@@ -370,8 +370,8 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
     std::vector<size_t> deleted_triangles;
     deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][0] );
     deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][1] );
-//    deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] ); // for bubbles: Y junction retaining the separating wall
-//    deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][1] );   
+    deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] );
+    deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][1] );   
     
     // record the vertices involved
     size_t v0 = m_surf.m_mesh.m_edges[edge_index_a][0];
@@ -405,13 +405,18 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
     
     size_t triangle_a_0 = m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][0];
     size_t triangle_a_1 = m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][1];
-    size_t triangle_b_0 = m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0];
+    size_t triangle_b_0 = m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0];    // for bubbles: we'll create these faces again, with different labels
     size_t triangle_b_1 = m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][1];
     
     Vec2i label_a_0 = m_surf.m_mesh.get_triangle_label(triangle_a_0);
     Vec2i label_a_1 = m_surf.m_mesh.get_triangle_label(triangle_a_1);
     Vec2i label_b_0 = m_surf.m_mesh.get_triangle_label(triangle_b_0);
     Vec2i label_b_1 = m_surf.m_mesh.get_triangle_label(triangle_b_1);
+    
+    assert(label_a_0[0] != label_a_0[1]);
+    assert(label_a_1[0] != label_a_1[1]);
+    assert(label_b_0[0] != label_b_0[1]);
+    assert(label_b_1[0] != label_b_1[1]);
     
     if (m_surf.m_mesh.oriented(v0, v1, m_surf.m_mesh.get_triangle(triangle_a_0)) == m_surf.m_mesh.oriented(v1, v0, m_surf.m_mesh.get_triangle(triangle_a_1)))
     {
@@ -460,38 +465,68 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
         // shouldn't happen
         assert(!"Face label inconsistency detected.");
     }
-
-    ////////////////////////////////////////////////////////////
-
+    
+    Vec2i label_tunnel =  (region_0 == label_a_0[0] ? Vec2i(region_2, region_0) : Vec2i(region_0, region_2));
+    Vec2i label_new_b_0 = (region_1 == label_b_0[0] ? Vec2i(region_1, region_0) : Vec2i(region_0, region_1));
+    Vec2i label_new_b_1 = (region_1 == label_b_1[0] ? Vec2i(region_1, region_0) : Vec2i(region_0, region_1));
+    
+    Vec3st tri_b_0 = m_surf.m_mesh.get_triangle(triangle_b_0);
+    Vec3st tri_b_1 = m_surf.m_mesh.get_triangle(triangle_b_1);
+    
+    std::vector<Vec2i> created_triangle_labels;
+    
     //
     // Add the new triangles
     //
     
     std::vector<size_t> created_triangles;
     size_t new_index = m_surf.add_triangle( new_triangles[0] );
+    m_surf.m_mesh.set_triangle_label(new_index, label_tunnel);
     m_surf.m_dirty_triangles.push_back( new_index );
     created_triangles.push_back(new_index);
+    created_triangle_labels.push_back(label_tunnel);
+    
     new_index = m_surf.add_triangle( new_triangles[1] );
+    m_surf.m_mesh.set_triangle_label(new_index, label_tunnel);
     m_surf.m_dirty_triangles.push_back( new_index );
     created_triangles.push_back(new_index);
+    created_triangle_labels.push_back(label_tunnel);
+    
     new_index = m_surf.add_triangle( new_triangles[2] );
+    m_surf.m_mesh.set_triangle_label(new_index, label_tunnel);
     m_surf.m_dirty_triangles.push_back( new_index );
     created_triangles.push_back(new_index);
+    created_triangle_labels.push_back(label_tunnel);
+    
     new_index = m_surf.add_triangle( new_triangles[3] );
+    m_surf.m_mesh.set_triangle_label(new_index, label_tunnel);
     m_surf.m_dirty_triangles.push_back( new_index );
     created_triangles.push_back(new_index);
+    created_triangle_labels.push_back(label_tunnel);
+    
     new_index = m_surf.add_triangle( new_triangles[4] );
+    m_surf.m_mesh.set_triangle_label(new_index, label_tunnel);
     m_surf.m_dirty_triangles.push_back( new_index );
     created_triangles.push_back(new_index);
+    created_triangle_labels.push_back(label_tunnel);
+    
     new_index = m_surf.add_triangle( new_triangles[5] );
+    m_surf.m_mesh.set_triangle_label(new_index, label_tunnel);
     m_surf.m_dirty_triangles.push_back( new_index );
     created_triangles.push_back(new_index);
+    created_triangle_labels.push_back(label_tunnel);
+    
     new_index = m_surf.add_triangle( new_triangles[6] );
+    m_surf.m_mesh.set_triangle_label(new_index, label_tunnel);
     m_surf.m_dirty_triangles.push_back( new_index );
     created_triangles.push_back(new_index);
+    created_triangle_labels.push_back(label_tunnel);
+    
     new_index = m_surf.add_triangle( new_triangles[7] );
+    m_surf.m_mesh.set_triangle_label(new_index, label_tunnel);
     m_surf.m_dirty_triangles.push_back( new_index );
     created_triangles.push_back(new_index);
+    created_triangle_labels.push_back(label_tunnel);
     
     //
     // Remove the old triangles
@@ -499,8 +534,24 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
     
     m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][0] );
     m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][0] );
-//    m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] ); // for bubbles: Y junction retaining the separating wall
-//    m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] );
+    m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] );
+    m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] );
+    
+    //
+    // Add the interface back
+    //
+    
+    new_index = m_surf.add_triangle(tri_b_0);
+    m_surf.m_mesh.set_triangle_label(new_index, label_new_b_0);
+    m_surf.m_dirty_triangles.push_back(new_index);
+    created_triangles.push_back(new_index);
+    created_triangle_labels.push_back(label_new_b_0);
+    
+    new_index = m_surf.add_triangle(tri_b_1);
+    m_surf.m_mesh.set_triangle_label(new_index, label_new_b_1);
+    m_surf.m_dirty_triangles.push_back(new_index);
+    created_triangles.push_back(new_index);
+    created_triangle_labels.push_back(label_new_b_1);
     
     //Record the event for posterity
     MeshUpdateEvent update(MeshUpdateEvent::MERGE);
@@ -511,8 +562,11 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
     update.m_deleted_tris = deleted_triangles;
     update.m_created_tris = created_triangles;
     update.m_created_tri_data = new_triangles;
+    update.m_created_tri_labels = created_triangle_labels;
     m_surf.m_mesh_change_history.push_back(update);
     
+    ////////////////////////////////////////////////////////////
+
     return true;
     
 }

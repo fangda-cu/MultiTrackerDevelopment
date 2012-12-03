@@ -468,6 +468,9 @@ bool EdgeFlipper::flip_edge( size_t edge,
     //
     m_surf.m_mesh.set_triangle_label(new_triangle_index_0, new_label_0);
     m_surf.m_mesh.set_triangle_label(new_triangle_index_1, new_label_1);
+  
+    flip.m_created_tri_labels.push_back(new_label_0);
+    flip.m_created_tri_labels.push_back(new_label_1);
     
     ////////////////////////////////////////////////////////////
     

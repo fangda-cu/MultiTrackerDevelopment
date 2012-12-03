@@ -673,6 +673,15 @@ bool EdgeSplitter::split_edge( size_t edge )
   split.m_created_tris = created_tris;
   split.m_created_tri_data = created_tri_data;
   
+  ////////////////////////////////////////////////////////////
+  // FD 20121126
+  //
+  // record the labels of the created triangles in the event
+  //
+  split.m_created_tri_labels = created_tri_label;
+  
+  ////////////////////////////////////////////////////////////
+  
   m_surf.m_mesh_change_history.push_back(split);
 
   return true;

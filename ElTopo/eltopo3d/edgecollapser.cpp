@@ -744,7 +744,10 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     // no need to test for orientation because the new triangle
     // generation code above does not change orientation.
     //
-    m_surf.m_mesh.set_triangle_label(new_triangle_index, m_surf.m_mesh.get_triangle_label(triangles_incident_to_vertex[i]));
+    Vec2i label = m_surf.m_mesh.get_triangle_label(triangles_incident_to_vertex[i]);
+    
+    m_surf.m_mesh.set_triangle_label(new_triangle_index, label);
+    collapse.m_created_tri_labels.push_back(label);
     
     ////////////////////////////////////////////////////////////
 
