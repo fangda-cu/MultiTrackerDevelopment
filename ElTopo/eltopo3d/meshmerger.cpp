@@ -544,12 +544,14 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
     new_index = m_surf.add_triangle(tri_b_0);
     m_surf.m_mesh.set_triangle_label(new_index, label_new_b_0);
     m_surf.m_dirty_triangles.push_back(new_index);
+    new_triangles.push_back(tri_b_0);
     created_triangles.push_back(new_index);
     created_triangle_labels.push_back(label_new_b_0);
     
     new_index = m_surf.add_triangle(tri_b_1);
     m_surf.m_mesh.set_triangle_label(new_index, label_new_b_1);
     m_surf.m_dirty_triangles.push_back(new_index);
+    new_triangles.push_back(tri_b_1);
     created_triangles.push_back(new_index);
     created_triangle_labels.push_back(label_new_b_1);
     
