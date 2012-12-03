@@ -450,7 +450,13 @@ bool EdgeSplitter::split_edge( size_t edge )
     Vec3d tri0_normal = m_surf.get_triangle_normal( tri0 );
     Vec3d tri1_normal = m_surf.get_triangle_normal( tri1 );
 
-    if ( dot( tri0_normal, tri1_normal ) >= 0.0 )
+    ////////////////////////////////////////////////////////////
+    // FD 20121126
+    // 
+    //  need to consider the case where tri0 and tri1 have opposite orientation
+    //
+    
+    if ( dot( tri0_normal, tri1_normal ) >= 0.0 && mesh.oriented(vertex_a, vertex_b, mesh.get_triangle(tri0)) == mesh.oriented(vertex_b, vertex_a, mesh.get_triangle(tri1)) )
     {
       Vec3d new_normal = triangle_normal( m_surf.get_position(vertex_a), new_vertex_smooth_position, m_surf.get_position(vertex_c) );
       if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) < 0.0 )
@@ -472,7 +478,32 @@ bool EdgeSplitter::split_edge( size_t edge )
       {
         use_smooth_point = false;
       }         
+    } else if ( dot( tri0_normal, tri1_normal ) <= 0.0 && mesh.oriented(vertex_a, vertex_b, mesh.get_triangle(tri0)) != mesh.oriented(vertex_b, vertex_a, mesh.get_triangle(tri1)) )
+    {
+      Vec3d new_normal = triangle_normal( m_surf.get_position(vertex_a), new_vertex_smooth_position, m_surf.get_position(vertex_c) );
+      if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) > 0.0 )
+      {
+          use_smooth_point = false;
+      }
+      new_normal = triangle_normal( m_surf.get_position(vertex_c), new_vertex_smooth_position, m_surf.get_position(vertex_b) );
+      if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) > 0.0 )
+      {
+          use_smooth_point = false;
+      }         
+      new_normal = triangle_normal( m_surf.get_position(vertex_d), m_surf.get_position(vertex_b), new_vertex_smooth_position );
+      if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) > 0.0 )
+      {
+          use_smooth_point = false;
+      }         
+      new_normal = triangle_normal( m_surf.get_position(vertex_d), new_vertex_smooth_position, m_surf.get_position(vertex_a) );
+      if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) > 0.0 )
+      {
+          use_smooth_point = false;
+      }         
     }
+    
+    ////////////////////////////////////////////////////////////
+
   }
 
   // --------------
@@ -569,6 +600,15 @@ bool EdgeSplitter::split_edge( size_t edge )
   
   if ( m_surf.m_verbose ) { std::cout << "new vertex: " << vertex_e << std::endl; }
 
+  ////////////////////////////////////////////////////////////
+  // FD 20121126
+  //
+  // determine the labels of the new triangles
+  // 
+  std::vector<Vec2i> created_tri_label;
+
+  ////////////////////////////////////////////////////////////
+  
   // Create new triangles with proper orientations (match their parents)
   std::vector<Vec3st> created_tri_data;
   for(size_t i = 0; i < other_verts.size(); ++i) {
@@ -583,21 +623,19 @@ bool EdgeSplitter::split_edge( size_t edge )
     }
     created_tri_data.push_back(newtri0);
     created_tri_data.push_back(newtri1);
-  }
+    
+    ////////////////////////////////////////////////////////////
+    // FD 20121126
+    //
+    // the old label carries over to the new triangle
+    // 
+    Vec2i old_label = m_surf.m_mesh.get_triangle_label(incident_tris[i]);
+    created_tri_label.push_back(old_label);
+    created_tri_label.push_back(old_label);
 
-  ////////////////////////////////////////////////////////////
-  // FD 20121126
-  //
-  // the old label carries over to the new triangle
-  // 
-  //
-  Vec2i old_label = m_surf.m_mesh.get_triangle_label(incident_tris[0]);
-  for (size_t i = 0; i < incident_tris.size(); i++)
-  {
-    assert(old_label == m_surf.m_mesh.get_triangle_label(incident_tris[i]));
+    ////////////////////////////////////////////////////////////
+    
   }
-  
-  ////////////////////////////////////////////////////////////
 
   // Delete the parent triangles
   for(size_t i = 0; i < incident_tris.size(); ++i) {
@@ -615,7 +653,7 @@ bool EdgeSplitter::split_edge( size_t edge )
     //
     // the old label carries over to the new triangle
     //
-    m_surf.m_mesh.set_triangle_label(newtri0_id, old_label);
+    m_surf.m_mesh.set_triangle_label(newtri0_id, created_tri_label[i]);
     
     ////////////////////////////////////////////////////////////
     

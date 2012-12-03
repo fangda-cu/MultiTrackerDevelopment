@@ -222,23 +222,32 @@ bool EdgeFlipper::flip_edge( size_t edge,
     
     // --------------
     
+    ////////////////////////////////////////////////////////////
+    // FD 20121126
+    // 
+    //  need to consider the case where tri0 and tri1 have opposite orientation
+    //
+    
     // Create the new triangles
     // new edge winding order == winding order of old triangle0 == winding order of new triangle0
     
     size_t new_triangle_third_vertex_0, new_triangle_third_vertex_1;
     if ( m_mesh.oriented( m_mesh.m_edges[edge][0], m_mesh.m_edges[edge][1], m_mesh.get_triangle(tri0) ) ) 
     {
-		assert( m_mesh.oriented( m_mesh.m_edges[edge][1], m_mesh.m_edges[edge][0], m_mesh.get_triangle(tri1) ) );
+		//assert( m_mesh.oriented( m_mesh.m_edges[edge][1], m_mesh.m_edges[edge][0], m_mesh.get_triangle(tri1) ) );
         new_triangle_third_vertex_0 = m_mesh.m_edges[edge][1];
         new_triangle_third_vertex_1 = m_mesh.m_edges[edge][0];
     }
     else
     {
-		assert( m_mesh.oriented( m_mesh.m_edges[edge][0], m_mesh.m_edges[edge][1], m_mesh.get_triangle(tri1) ) );
-		assert( m_mesh.oriented( m_mesh.m_edges[edge][1], m_mesh.m_edges[edge][0], m_mesh.get_triangle(tri0) ) );
+		//assert( m_mesh.oriented( m_mesh.m_edges[edge][0], m_mesh.m_edges[edge][1], m_mesh.get_triangle(tri1) ) );
+		//assert( m_mesh.oriented( m_mesh.m_edges[edge][1], m_mesh.m_edges[edge][0], m_mesh.get_triangle(tri0) ) );
         new_triangle_third_vertex_0 = m_mesh.m_edges[edge][0];
         new_triangle_third_vertex_1 = m_mesh.m_edges[edge][1];
     }
+    
+    new_triangle_third_vertex_0 = m_mesh.m_edges[edge][0];
+    new_triangle_third_vertex_1 = m_mesh.m_edges[edge][1];
     
     Vec3st new_triangle0( new_edge[0], new_edge[1], new_triangle_third_vertex_0 );
     Vec3st new_triangle1( new_edge[1], new_edge[0], new_triangle_third_vertex_1 );
@@ -252,7 +261,9 @@ bool EdgeFlipper::flip_edge( size_t edge,
     // --------------
     
     // if both triangle normals agree before flipping, make sure they agree after flipping
-    if ( dot( m_surf.get_triangle_normal(tri0), m_surf.get_triangle_normal(tri1) ) > 0.0 ) 
+    if ( dot( m_surf.get_triangle_normal(tri0), m_surf.get_triangle_normal(tri1) ) > 0.0 && 
+         m_mesh.oriented(m_mesh.m_edges[edge][0], m_mesh.m_edges[edge][1], m_mesh.get_triangle(tri0)) ==
+         m_mesh.oriented(m_mesh.m_edges[edge][1], m_mesh.m_edges[edge][0], m_mesh.get_triangle(tri1)) )
     {
         if ( dot( m_surf.get_triangle_normal(new_triangle0), m_surf.get_triangle_normal(new_triangle1) ) < 0.0 )
         {
@@ -288,8 +299,48 @@ bool EdgeFlipper::flip_edge( size_t edge,
             g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 ); 
             return false;
         }
+    } else if (dot(m_surf.get_triangle_normal(tri0), m_surf.get_triangle_normal(tri1)) < 0.0 && 
+               m_mesh.oriented(m_mesh.m_edges[edge][0], m_mesh.m_edges[edge][1], m_mesh.get_triangle(tri0)) !=
+               m_mesh.oriented(m_mesh.m_edges[edge][1], m_mesh.m_edges[edge][0], m_mesh.get_triangle(tri1)))
+    {
+        if ( dot( m_surf.get_triangle_normal(new_triangle0), m_surf.get_triangle_normal(new_triangle1) ) < 0.0 )
+        {
+            if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
+            g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );
+            return false;
+        }
+        
+        if ( dot( m_surf.get_triangle_normal(new_triangle0), m_surf.get_triangle_normal(tri0) ) < 0.0 )
+        {
+            if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
+            g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );  
+            return false;
+        }
+        
+        if ( dot( m_surf.get_triangle_normal(new_triangle1), m_surf.get_triangle_normal(tri1) ) > 0.0 )
+        {
+            if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
+            g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );   
+            return false;
+        }
+        
+        if ( dot( m_surf.get_triangle_normal(new_triangle0), m_surf.get_triangle_normal(tri1) ) > 0.0 )
+        {
+            if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
+            g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 );
+            return false;
+        }
+        
+        if ( dot( m_surf.get_triangle_normal(new_triangle1), m_surf.get_triangle_normal(tri0) ) < 0.0 )
+        {
+            if ( m_surf.m_verbose ) { std::cout << "edge flip rejected: normal inversion" << std::endl; }
+            g_stats.add_to_int( "EdgeFlipper:edge_flip_normal_inversion", 1 ); 
+            return false;
+        }
     }
     
+    ////////////////////////////////////////////////////////////
+        
     // --------------
     
     // Prevent intersection
@@ -383,8 +434,18 @@ bool EdgeFlipper::flip_edge( size_t edge,
     //
     // the old label carries over to the new triangle
     //
-    Vec2i old_label = m_surf.m_mesh.get_triangle_label(tri0);
-    assert(old_label == m_surf.m_mesh.get_triangle_label(tri1));
+    Vec2i old_label_0 = m_surf.m_mesh.get_triangle_label(tri0);
+    Vec2i old_label_1 = m_surf.m_mesh.get_triangle_label(tri1);
+    
+    // the new_triangle_third_vertex_0/1 are chosen so that new_triangle0 always has the same orientation with tri0
+    // also new_triangle0 always has the same orientation with new_triangle1
+    Vec2i new_label_0 = old_label_0;
+    Vec2i new_label_1;
+    if (m_mesh.oriented(m_mesh.m_edges[edge][0], m_mesh.m_edges[edge][1], m_mesh.get_triangle(tri0)) == 
+        m_mesh.oriented(m_mesh.m_edges[edge][1], m_mesh.m_edges[edge][0], m_mesh.get_triangle(tri1)))
+        new_label_1 = old_label_1;
+    else
+        new_label_1 = Vec2i(old_label_1[1], old_label_1[0]);    
     
     ////////////////////////////////////////////////////////////
     
@@ -405,8 +466,8 @@ bool EdgeFlipper::flip_edge( size_t edge,
     //
     // the old label carries over to the new triangle
     //
-    m_surf.m_mesh.set_triangle_label(new_triangle_index_0, old_label);
-    m_surf.m_mesh.set_triangle_label(new_triangle_index_1, old_label);
+    m_surf.m_mesh.set_triangle_label(new_triangle_index_0, new_label_0);
+    m_surf.m_mesh.set_triangle_label(new_triangle_index_1, new_label_1);
     
     ////////////////////////////////////////////////////////////
     
@@ -610,11 +671,29 @@ bool EdgeFlipper::flip_pass( )
             {    
                 triangle_a = m_mesh.m_edge_to_triangle_map[i][0];
                 triangle_b = m_mesh.m_edge_to_triangle_map[i][1];         
-                assert (    m_mesh.oriented( m_mesh.m_edges[i][0], m_mesh.m_edges[i][1], m_mesh.get_triangle(triangle_a) ) 
-                        != m_mesh.oriented( m_mesh.m_edges[i][0], m_mesh.m_edges[i][1], m_mesh.get_triangle(triangle_b) ) );
+                
+                ////////////////////////////////////////////////////////////
+                // FD 20121126
+                // 
+                //  need to consider the case where triangle_a and triangle_b have opposite orientation
+                
+//                assert (    m_mesh.oriented( m_mesh.m_edges[i][0], m_mesh.m_edges[i][1], m_mesh.get_triangle(triangle_a) ) 
+//                        != m_mesh.oriented( m_mesh.m_edges[i][0], m_mesh.m_edges[i][1], m_mesh.get_triangle(triangle_b) ) );
+                
+                ////////////////////////////////////////////////////////////
             }
             else if ( m_mesh.m_edge_to_triangle_map[i].size() == 4 )  // FD 20121126: Why is flipping allowed in this case?
-            {           
+            {
+                ////////////////////////////////////////////////////////////
+                // FD 20121126
+                //
+                // non manifold edge: disable flipping
+                // 
+                //
+                continue;
+                
+                ////////////////////////////////////////////////////////////
+
                 triangle_a = m_mesh.m_edge_to_triangle_map[i][0];
                 
                 // Find first triangle with orientation opposite triangle_a's orientation

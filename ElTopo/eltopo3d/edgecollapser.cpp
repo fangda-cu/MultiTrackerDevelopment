@@ -239,6 +239,14 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
         
         Vec3d new_normal;
         
+        ////////////////////////////////////////////////////////////
+        // FD 20121126
+        //
+        //  the new triangle always has the same orientation as the
+        //  old triangle so no change is needed
+        //
+        ////////////////////////////////////////////////////////////
+        
         double new_area;
         if ( current_triangle[0] == source_vertex || current_triangle[0] == destination_vertex )
         { 
