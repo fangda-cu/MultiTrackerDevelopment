@@ -455,6 +455,10 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
         region_0 = label_a[0];
         region_1 = label_b[0];
         region_2 = label_a[1];
+    } else
+    {
+        // shouldn't happen
+        assert(!"Face label inconsistency detected.");
     }
 
     ////////////////////////////////////////////////////////////

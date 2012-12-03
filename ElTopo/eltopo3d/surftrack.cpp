@@ -531,13 +531,16 @@ void SurfTrack::trim_non_manifold( std::vector<size_t>& triangle_indices )
        // TODO: this test is no longer appropriate if we want to support multiple
        // regions joined by non-manifold triple edges
        // better to check for the kinds of degeneracies being removed in the code further down
+        
+        // FD 20121126: no need to disable this check. The check is still appropriate for 
+        // m_allow_non_manifold = false, it's just outside our domain
 
-       /* for ( size_t i = 0; i < m_mesh.m_edge_to_triangle_map.size(); ++i )
+        for ( size_t i = 0; i < m_mesh.m_edge_to_triangle_map.size(); ++i )
         {
             if ( m_mesh.edge_is_deleted(i) ) { continue; }
             assert( m_mesh.m_edge_to_triangle_map[i].size() == 1 ||
                    m_mesh.m_edge_to_triangle_map[i].size() == 2 );
-        }*/
+        }
         
         triangle_indices.clear();
         return;
@@ -612,33 +615,101 @@ void SurfTrack::trim_non_manifold( std::vector<size_t>& triangle_indices )
                         assert(0);
                     }
                     
+                    ////////////////////////////////////////////////////////////
+                    // FD 20121126
+                    //
+                    //  handle the case of inconsistent triangle orientations
+                    //
+                    
+                    Vec2i current_label = m_mesh.get_triangle_label(i);
+                    Vec2i other_label = m_mesh.get_triangle_label(other_triangle_index);
+                    
+//                    size_t common_edge = tri_edges[e];
+//                    if ( m_mesh.oriented( m_mesh.m_edges[common_edge][0], m_mesh.m_edges[common_edge][1], current_triangle ) == 
+//                        m_mesh.oriented( m_mesh.m_edges[common_edge][0], m_mesh.m_edges[common_edge][1], other_triangle ) )
+//                    {
+//                        continue;
+//                    }
+                    
                     size_t common_edge = tri_edges[e];
-                    if ( m_mesh.oriented( m_mesh.m_edges[common_edge][0], m_mesh.m_edges[common_edge][1], current_triangle ) == 
-                        m_mesh.oriented( m_mesh.m_edges[common_edge][0], m_mesh.m_edges[common_edge][1], other_triangle ) )
+                    bool orientation = (m_mesh.oriented(m_mesh.m_edges[common_edge][0], m_mesh.m_edges[common_edge][1], current_triangle) == 
+                                        m_mesh.oriented(m_mesh.m_edges[common_edge][0], m_mesh.m_edges[common_edge][1], other_triangle));
+                    
+                    int region_0;   // region behind surface a
+                    int region_1;   // region behind surface b
+                    int region_2;   // region between the two surfaces
+                    
+                    if (current_label[0] == other_label[0])
                     {
-                        continue;
+                        region_0 = current_label[1];
+                        region_1 = other_label  [1];
+                        region_2 = current_label[0];
+                        assert(!orientation);    // two triangles should have opposite orientation
+                    } else if (current_label[1] == other_label[0])
+                    {
+                        region_0 = current_label[0];
+                        region_1 = other_label  [1];
+                        region_2 = current_label[1];
+                        assert(orientation);    // two triangles should have same orientation
+                    } else if (current_label[0] == other_label[1])
+                    {
+                        region_0 = current_label[1];
+                        region_1 = other_label  [0];
+                        region_2 = current_label[0];
+                        assert(orientation);    // two triangles should have same orientation
+                    } else if (current_label[1] == other_label[1])
+                    {
+                        region_0 = current_label[0];
+                        region_1 = other_label  [0];
+                        region_2 = current_label[1];
+                        assert(!orientation);    // two triangles should have opposite orientation
+                    } else
+                    {
+                        // shouldn't happen
+                        assert(!"Face label inconsistency detected.");
+                    }
+
+                    std::vector<size_t> to_delete;
+                    if (region_0 == region_1)
+                    {
+                        // Two parts of the same region meeting upon removal of the region in between.
+                        // This entire flap pair should be removed to open a window connecting both sides.
+                        
+                        to_delete.push_back(i);
+                        to_delete.push_back(other_triangle_index);
+                        
+                    } else
+                    {
+                        // Three different regions. After the region in between is removed, there should
+                        // be an interface remaining to separate the two regions on two sides
+                        
+                        to_delete.push_back(other_triangle_index);
+                        
+                        if (current_label[0] == region_0)
+                            m_mesh.set_triangle_label(i, Vec2i(region_0, region_2));
+                        else
+                            m_mesh.set_triangle_label(i, Vec2i(region_2, region_0));
+                        
                     }
                     
                     // the dangling vertex will be safely removed by the vertex cleanup function
                     
-                    // delete the triangle
+                    // delete the triangles
                     
                     if ( m_verbose )
                     {
                         std::cout << "flap: triangles << " << i << " [" << current_triangle << 
                         "] and " << edge_tris[t] << " [" << other_triangle << "]" << std::endl;
                     }
-                    
-                    remove_triangle( i );
-                    
-                    // delete its opposite
-                    
-                    remove_triangle( other_triangle_index );
+
+                    for (size_t k = 0; k < to_delete.size(); k++)
+                        remove_triangle(to_delete[k]);
                     
                     MeshUpdateEvent flap_delete(MeshUpdateEvent::FLAP_DELETE);
-                    flap_delete.m_deleted_tris.push_back(i);
-                    flap_delete.m_deleted_tris.push_back(other_triangle_index);
+                    flap_delete.m_deleted_tris = to_delete;
                     m_mesh_change_history.push_back(flap_delete);
+
+                    ////////////////////////////////////////////////////////////
 
                     flap_found = true;
                     break;
