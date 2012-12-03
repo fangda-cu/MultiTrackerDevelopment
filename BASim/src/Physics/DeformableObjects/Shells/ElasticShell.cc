@@ -1148,7 +1148,7 @@ void ElasticShell::remesh()
     
  
     if(event.m_type == ElTopo::MeshUpdateEvent::FLAP_DELETE) {
-      assert(event.m_deleted_tris.size() == 2);
+      //assert(event.m_deleted_tris.size() == 2);
       for(unsigned int t = 0; t < event.m_deleted_tris.size(); ++t) {
         int triNo = event.m_deleted_tris[t];
         FaceHandle faceToDelete = reverse_trimap[triNo];
@@ -1351,6 +1351,7 @@ void ElasticShell::remesh()
       
       std::vector<Vec2i> labelstocreate;
       assert(event.m_created_tri_labels.size() == event.m_created_tri_data.size());
+      assert(event.m_created_tris.size() == event.m_created_tri_data.size());
       for (size_t i = 0; i < event.m_created_tri_labels.size(); i++)
       {
         labelstocreate.push_back(Vec2i(event.m_created_tri_labels[i][0], event.m_created_tri_labels[i][1]));
