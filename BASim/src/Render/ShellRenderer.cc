@@ -547,12 +547,11 @@ void ShellRenderer::render()
           glColor4f(0, 0, 1, 1);
         else if (regions.x() == 2)
           glColor4f(1, 0, 1, 1);
+        else if (regions.x() < 0)
+          glColor4f(0, 0, 0, 1.0);
         
-        if (regions.x() >= 0)
-        {
-          OpenGL::vertex(c);
-          OpenGL::vertex(Vec3d(c - n * 0.05));
-        }
+        OpenGL::vertex(c);
+        OpenGL::vertex(Vec3d(c - n * 0.05));
         
         if (regions.y() == 0)
           glColor4f(1, 0, 0, 1);
@@ -560,12 +559,11 @@ void ShellRenderer::render()
           glColor4f(0, 0, 1, 1);
         else if (regions.y() == 2)
           glColor4f(1, 0, 1, 1);
+        else if (regions.y() < 0)
+          glColor4f(0, 0, 0, 1.0);
         
-        if (regions.y() >= 0)
-        {
-          OpenGL::vertex(c);
-          OpenGL::vertex(Vec3d(c + n * 0.05));
-        }
+        OpenGL::vertex(c);
+        OpenGL::vertex(Vec3d(c + n * 0.05));
       }
       glEnd();
     }
