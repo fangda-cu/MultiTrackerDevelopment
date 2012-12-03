@@ -96,57 +96,77 @@ bool MeshMerger::get_zipper_triangles( size_t edge_index_a, size_t edge_index_b,
     third_vertices[0] = m_surf.m_mesh.get_third_vertex( zipper_vertices[0], zipper_vertices[2], inc_tri_a0 );
     third_vertices[1] = m_surf.m_mesh.get_third_vertex( zipper_vertices[0], zipper_vertices[2], inc_tri_a1 );
     
-    if ( m_surf.m_mesh.oriented(zipper_vertices[0], zipper_vertices[2], inc_tri_a0 ) ) 
-    {
-        zipper_vertices[1] = third_vertices[0];
-        zipper_vertices[3] = third_vertices[1];
-    } 
-    else if ( m_surf.m_mesh.oriented(zipper_vertices[0], zipper_vertices[2], inc_tri_a1) ) 
-    {
-        zipper_vertices[3] = third_vertices[0];
-        zipper_vertices[1] = third_vertices[1];
-    } 
-    else 
-    {
-        // Should not happen
-        std::cout << "Orientation check failed" << std::endl;
-        assert( false );
-    }
+    ////////////////////////////////////////////////////////////
+    // FD 20121126
+    //
+    //  handle the case of inconsistent triangle orientations
+    //
+    //  Here we don't check for orientation consistency or
+    //  reorder vertices based on orientation. We just let the
+    //  new triangles orientate consistently with the old 
+    //  triangle_a_0 and let zipper_edges assign region labels
+    //  accordingly.
+    //
+
+//    if ( m_surf.m_mesh.oriented(zipper_vertices[0], zipper_vertices[2], inc_tri_a0 ) ) 
+//    {
+//        zipper_vertices[1] = third_vertices[0];
+//        zipper_vertices[3] = third_vertices[1];
+//    } 
+//    else if ( m_surf.m_mesh.oriented(zipper_vertices[0], zipper_vertices[2], inc_tri_a1) ) 
+//    {
+//        zipper_vertices[3] = third_vertices[0];
+//        zipper_vertices[1] = third_vertices[1];
+//    } 
+//    else 
+//    {
+//        // Should not happen
+//        std::cout << "Orientation check failed" << std::endl;
+//        assert( false );
+//    }
+    
+    zipper_vertices[1] = third_vertices[0];
+    zipper_vertices[3] = third_vertices[1];
     
     const std::vector<size_t>& incident_triangles_b = m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b];
     
     assert( incident_triangles_b.size() == 2 );       // should be checked before calling this function
     
-    assert( edge_index_b < m_surf.m_mesh.m_edges.size() );
+    //assert( edge_index_b < m_surf.m_mesh.m_edges.size() );
     
-    const Vec2st& ce = m_surf.m_mesh.m_edges[edge_index_b];
-    const std::vector<size_t>& et = m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b];
+    //const Vec2st& ce = m_surf.m_mesh.m_edges[edge_index_b];
+    //const std::vector<size_t>& et = m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b];
     
     const Vec3st& inc_tri_b0 = m_surf.m_mesh.get_triangle( incident_triangles_b[0] );
     const Vec3st& inc_tri_b1 = m_surf.m_mesh.get_triangle( incident_triangles_b[1] );
     
-    third_vertices[0] = m_surf.m_mesh.get_third_vertex( ce[0], ce[1], m_surf.m_mesh.get_triangle( et[0] ) );
+    //third_vertices[0] = m_surf.m_mesh.get_third_vertex( ce[0], ce[1], m_surf.m_mesh.get_triangle( et[0] ) );
     
     third_vertices[0] = m_surf.m_mesh.get_third_vertex( zipper_vertices[4], zipper_vertices[6], inc_tri_b0 );
     third_vertices[1] = m_surf.m_mesh.get_third_vertex( zipper_vertices[4], zipper_vertices[6], inc_tri_b1 );   
     
-    if ( m_surf.m_mesh.oriented(zipper_vertices[4], zipper_vertices[6], inc_tri_b0) ) 
-    {
-        zipper_vertices[5] = third_vertices[0];
-        zipper_vertices[7] = third_vertices[1];
-    } 
-    else if ( m_surf.m_mesh.oriented(zipper_vertices[4], zipper_vertices[6], inc_tri_b1) ) 
-    {
-        zipper_vertices[7] = third_vertices[0];
-        zipper_vertices[5] = third_vertices[1];
-    } 
-    else 
-    {
-        // Should not happen
-        std::cout << "Orientation check failed" << std::endl;
-        assert( false );
-    }
+//    if ( m_surf.m_mesh.oriented(zipper_vertices[4], zipper_vertices[6], inc_tri_b0) ) 
+//    {
+//        zipper_vertices[5] = third_vertices[0];
+//        zipper_vertices[7] = third_vertices[1];
+//    } 
+//    else if ( m_surf.m_mesh.oriented(zipper_vertices[4], zipper_vertices[6], inc_tri_b1) ) 
+//    {
+//        zipper_vertices[7] = third_vertices[0];
+//        zipper_vertices[5] = third_vertices[1];
+//    } 
+//    else 
+//    {
+//        // Should not happen
+//        std::cout << "Orientation check failed" << std::endl;
+//        assert( false );
+//    }
     
+    zipper_vertices[5] = third_vertices[0];
+    zipper_vertices[7] = third_vertices[1];
+    
+    ////////////////////////////////////////////////////////////
+
     // Check for degenerate case
     for ( unsigned int i = 0; i < 8; ++i) 
     {
@@ -182,17 +202,60 @@ bool MeshMerger::get_zipper_triangles( size_t edge_index_a, size_t edge_index_b,
     // Twist so that vertices 0 and 4 are the pair closest together
     twist_vertices( zipper_vertices );
     
+    ////////////////////////////////////////////////////////////
+    // FD 20121126
+    //
+    //  since we don't rely on consistent triangle orientation, 
+    //  there needs to be a check for the orientation of the two
+    //  rings of vertices
+    
+    double d15 = mag(m_surf.get_position(zipper_vertices[1]) - m_surf.get_position(zipper_vertices[5]));
+    double d35 = mag(m_surf.get_position(zipper_vertices[3]) - m_surf.get_position(zipper_vertices[5]));
+    double d17 = mag(m_surf.get_position(zipper_vertices[1]) - m_surf.get_position(zipper_vertices[7]));
+    double d37 = mag(m_surf.get_position(zipper_vertices[3]) - m_surf.get_position(zipper_vertices[7]));
+    
+    if (d15 + d37 > d17 + d35)
+    {
+        std::swap(zipper_vertices[5], zipper_vertices[7]);
+    }
+    
     // now we can use a closed formula to construct zippering triangles
     
-    output_triangles[0] = Vec3st( zipper_vertices[0], zipper_vertices[4], zipper_vertices[1] );  // a e b
-    output_triangles[1] = Vec3st( zipper_vertices[1], zipper_vertices[4], zipper_vertices[7] );  // b e h
-    output_triangles[2] = Vec3st( zipper_vertices[1], zipper_vertices[7], zipper_vertices[2] );  // b h c
-    output_triangles[3] = Vec3st( zipper_vertices[2], zipper_vertices[7], zipper_vertices[6] );  // c h g
-    output_triangles[4] = Vec3st( zipper_vertices[2], zipper_vertices[6], zipper_vertices[3] );  // c g d
-    output_triangles[5] = Vec3st( zipper_vertices[3], zipper_vertices[6], zipper_vertices[5] );  // d g f
-    output_triangles[6] = Vec3st( zipper_vertices[3], zipper_vertices[5], zipper_vertices[0] );  // d f a
-    output_triangles[7] = Vec3st( zipper_vertices[0], zipper_vertices[5], zipper_vertices[4] );  // a f e
+//    output_triangles[0] = Vec3st( zipper_vertices[0], zipper_vertices[4], zipper_vertices[1] );  // a e b
+//    output_triangles[1] = Vec3st( zipper_vertices[1], zipper_vertices[4], zipper_vertices[7] );  // b e h
+//    output_triangles[2] = Vec3st( zipper_vertices[1], zipper_vertices[7], zipper_vertices[2] );  // b h c
+//    output_triangles[3] = Vec3st( zipper_vertices[2], zipper_vertices[7], zipper_vertices[6] );  // c h g
+//    output_triangles[4] = Vec3st( zipper_vertices[2], zipper_vertices[6], zipper_vertices[3] );  // c g d
+//    output_triangles[5] = Vec3st( zipper_vertices[3], zipper_vertices[6], zipper_vertices[5] );  // d g f
+//    output_triangles[6] = Vec3st( zipper_vertices[3], zipper_vertices[5], zipper_vertices[0] );  // d f a
+//    output_triangles[7] = Vec3st( zipper_vertices[0], zipper_vertices[5], zipper_vertices[4] );  // a f e
     
+    // after twist_vertices(), zipper_vertices[0] and [2] are no longer edge_a but their orientation
+    // does not change.
+    if (m_surf.m_mesh.oriented(edge_a[0], edge_a[1], inc_tri_a0))
+    {
+        output_triangles[0] = Vec3st(zipper_vertices[0], zipper_vertices[1], zipper_vertices[4]);
+        output_triangles[1] = Vec3st(zipper_vertices[4], zipper_vertices[1], zipper_vertices[5]);
+        output_triangles[2] = Vec3st(zipper_vertices[1], zipper_vertices[2], zipper_vertices[5]);
+        output_triangles[3] = Vec3st(zipper_vertices[5], zipper_vertices[2], zipper_vertices[6]);
+        output_triangles[4] = Vec3st(zipper_vertices[2], zipper_vertices[3], zipper_vertices[6]);
+        output_triangles[5] = Vec3st(zipper_vertices[6], zipper_vertices[3], zipper_vertices[7]);
+        output_triangles[6] = Vec3st(zipper_vertices[3], zipper_vertices[0], zipper_vertices[7]);
+        output_triangles[7] = Vec3st(zipper_vertices[7], zipper_vertices[0], zipper_vertices[4]);        
+    } else
+    {
+        output_triangles[0] = Vec3st(zipper_vertices[0], zipper_vertices[4], zipper_vertices[1]);
+        output_triangles[1] = Vec3st(zipper_vertices[1], zipper_vertices[4], zipper_vertices[5]);
+        output_triangles[2] = Vec3st(zipper_vertices[1], zipper_vertices[5], zipper_vertices[2]);
+        output_triangles[3] = Vec3st(zipper_vertices[2], zipper_vertices[5], zipper_vertices[6]);
+        output_triangles[4] = Vec3st(zipper_vertices[2], zipper_vertices[6], zipper_vertices[3]);
+        output_triangles[5] = Vec3st(zipper_vertices[3], zipper_vertices[6], zipper_vertices[7]);
+        output_triangles[6] = Vec3st(zipper_vertices[3], zipper_vertices[7], zipper_vertices[0]);
+        output_triangles[7] = Vec3st(zipper_vertices[0], zipper_vertices[7], zipper_vertices[4]);        
+    }
+    
+    ////////////////////////////////////////////////////////////
+
     return true;
 }
 
@@ -331,7 +394,71 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
     }
     
     m_surf.m_verbose = saved_verbose;
+
+    ////////////////////////////////////////////////////////////
+    // FD 20121126
+    //
+    // the old label carries over to the new triangle
+    //
+    Vec2st edge_a = m_surf.m_mesh.m_edges[edge_index_a];
+    Vec2st edge_b = m_surf.m_mesh.m_edges[edge_index_b];
     
+    size_t triangle_a_0 = m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][0];
+    size_t triangle_a_1 = m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][1];
+    size_t triangle_b_0 = m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0];
+    size_t triangle_b_1 = m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][1];
+    
+    Vec2i label_a_0 = m_surf.m_mesh.get_triangle_label(triangle_a_0);
+    Vec2i label_a_1 = m_surf.m_mesh.get_triangle_label(triangle_a_1);
+    Vec2i label_b_0 = m_surf.m_mesh.get_triangle_label(triangle_b_0);
+    Vec2i label_b_1 = m_surf.m_mesh.get_triangle_label(triangle_b_1);
+    
+    if (m_surf.m_mesh.oriented(v0, v1, m_surf.m_mesh.get_triangle(triangle_a_0)) == m_surf.m_mesh.oriented(v1, v0, m_surf.m_mesh.get_triangle(triangle_a_1)))
+    {
+        assert(label_a_0 == label_a_1);
+    } else
+    {
+        assert(label_a_0[0] == label_a_1[1] && label_a_0[1] == label_a_1[0]);
+    }    
+    if (m_surf.m_mesh.oriented(v2, v3, m_surf.m_mesh.get_triangle(triangle_b_0)) == m_surf.m_mesh.oriented(v3, v2, m_surf.m_mesh.get_triangle(triangle_b_1)))
+    {
+        assert(label_b_0 == label_b_1);
+    } else
+    {
+        assert(label_b_0[0] == label_b_1[1] && label_b_0[1] == label_b_1[0]);
+    }
+    
+    Vec2i label_a = label_a_0;
+    Vec2i label_b = label_b_0;
+
+    int region_0;   // region behind surface a
+    int region_1;   // region behind surface b
+    int region_2;   // region between the two surfaces
+    
+    if (label_a[0] == label_b[0])
+    {
+        region_0 = label_a[1];
+        region_1 = label_b[1];
+        region_2 = label_a[0];
+    } else if (label_a[1] == label_b[0])
+    {
+        region_0 = label_a[0];
+        region_1 = label_b[1];
+        region_2 = label_a[1];
+    } else if (label_a[0] == label_b[1])
+    {
+        region_0 = label_a[1];
+        region_1 = label_b[0];
+        region_2 = label_a[0];
+    } else if (label_a[1] == label_b[1])
+    {
+        region_0 = label_a[0];
+        region_1 = label_b[0];
+        region_2 = label_a[1];
+    }
+
+    ////////////////////////////////////////////////////////////
+
     //
     // Add the new triangles
     //
