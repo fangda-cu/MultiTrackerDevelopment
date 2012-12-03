@@ -1132,7 +1132,7 @@ void ElasticShell::remesh()
 
   std::cout << "Calling surface improvement\n";
   ElTopo::SurfTrack surface_tracker( vert_data, tri_data, masses, construction_parameters ); 
-  for (size_t i = 0; i < faces.size(); i++)
+  for (size_t i = 0; i < reverse_trimap.size(); i++)
   {
     surface_tracker.m_mesh.set_triangle_label(i, tri_labels[i]);
   }
