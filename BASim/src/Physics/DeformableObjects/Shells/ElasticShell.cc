@@ -1349,9 +1349,16 @@ void ElasticShell::remesh()
         tocreate.push_back(tri);
       }
       
+      std::vector<Vec2i> labelstocreate;
+      assert(event.m_created_tri_labels.size() == event.m_created_tri_data.size());
+      for (size_t i = 0; i < event.m_created_tri_labels.size(); i++)
+      {
+        labelstocreate.push_back(Vec2i(event.m_created_tri_labels[i][0], event.m_created_tri_labels[i][1]));
+      }
+      
       std::vector<FaceHandle> created;
       
-      performZippering(e0, e1, deleted, tocreate, created);
+      performZippering(e0, e1, deleted, tocreate, labelstocreate, created);
       
       assert(created.size() == tocreate.size());
       assert(created.size() == event.m_created_tris.size());
@@ -1762,9 +1769,9 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const 
   return true;
 }
   
-void ElasticShell::performZippering(EdgeHandle e0, EdgeHandle e1, const std::vector<FaceHandle> & faces_deleted, const std::vector<std::vector<VertexHandle> > & faces_to_create, std::vector<FaceHandle> & faces_created)
+void ElasticShell::performZippering(EdgeHandle e0, EdgeHandle e1, const std::vector<FaceHandle> & faces_deleted, const std::vector<std::vector<VertexHandle> > & faces_to_create, const std::vector<Vec2i> & face_labels_to_create, std::vector<FaceHandle> & faces_created)
 {
-  assert(faces_deleted.size() == 2);
+  assert(faces_deleted.size() == 4);
   
   VertexHandle v00 = m_obj->fromVertex(e0);
   VertexHandle v01 = m_obj->toVertex(e0);
@@ -1778,8 +1785,9 @@ void ElasticShell::performZippering(EdgeHandle e0, EdgeHandle e1, const std::vec
   FaceHandle f10 = *efit1;  ++efit1;  assert(efit1);
   FaceHandle f11 = *efit1;  ++efit1;  assert(!efit1);
 
-  // the deleted faces are f00 and f01
+  // the deleted faces
   assert((f00 == faces_deleted[0] && f01 == faces_deleted[1]) || (f00 == faces_deleted[1] && f01 == faces_deleted[0]));
+  assert((f10 == faces_deleted[2] && f11 == faces_deleted[3]) || (f10 == faces_deleted[3] && f11 == faces_deleted[2]));
   
   VertexHandle v02, v03;
   getFaceThirdVertex(*m_obj, f00, e0, v02);
@@ -1797,75 +1805,15 @@ void ElasticShell::performZippering(EdgeHandle e0, EdgeHandle e1, const std::vec
   Vec3d x12 = getVertexPosition(v12);
   Vec3d x13 = getVertexPosition(v13);
   
-  Scalar mass00 = getMass(v00);
-  Scalar mass01 = getMass(v01);
-  Scalar mass02 = getMass(v02);
-  Scalar mass03 = getMass(v03);
-  Scalar mass10 = getMass(v10);
-  Scalar mass11 = getMass(v11);
-  Scalar mass12 = getMass(v12);
-  Scalar mass13 = getMass(v13);
-
-  Vec2i label0 = m_face_regions[f00];
-  assert(label0 == m_face_regions[f01]);
-  Vec2i label1 = m_face_regions[f10];
-  assert(label1 == m_face_regions[f11]);
-  assert(label0.x() != label0.y());
-  assert(label1.x() != label1.y());
-  int region0 = -2, region1 = -2, region2 = -2;
-  if (label0.x() == label1.x())
-  {
-    region0 = label0.y();
-    region1 = label1.y();
-    region2 = label0.x();
-  } else if (label0.x() == label1.y())
-  {
-    region0 = label0.y();
-    region1 = label1.x();
-    region2 = label0.x();
-  } else if (label0.y() == label1.x())
-  {
-    region0 = label0.x();
-    region1 = label1.y();
-    region2 = label0.y();
-  } else if (label0.y() == label1.y())
-  {
-    region0 = label0.x();
-    region1 = label1.x();
-    region2 = label0.y();
-  } else
-  {
-    assert(false);  // Error: the two surfaces coming into contact don't share one region
-  }
-  
   // no change to vertex mass/velocity for now; this doesn't conserve volume or momentum
+  assert(faces_to_create.size() == face_labels_to_create.size());
   for (size_t i = 0; i < faces_to_create.size(); i++)
   {
     FaceHandle f = m_obj->addFace(faces_to_create[i][0], faces_to_create[i][1], faces_to_create[i][2]);
     assert(f.isValid());
     faces_created.push_back(f);
 
-    int orientation = 1;
-    EdgeHandle e;
-    if ((e = getSharedEdge(*m_obj, f, f00)).isValid())
-    {
-      orientation *= (m_obj->getRelativeOrientation(f, e) != m_obj->getRelativeOrientation(f00, e) ? 1 : -1); // opposite relative orientation means the two faces are orientated
-      orientation *= (region0 == label0.x() ? -1 : 1);
-    } else if ((e = getSharedEdge(*m_obj, f, f01)).isValid())
-    {
-      orientation *= (m_obj->getRelativeOrientation(f, e) != m_obj->getRelativeOrientation(f01, e) ? 1 : -1); // opposite relative orientation means the two faces are orientated
-      orientation *= (region0 == label0.x() ? -1 : 1);
-    } else if ((e = getSharedEdge(*m_obj, f, f10)).isValid())
-    {
-      orientation *= (m_obj->getRelativeOrientation(f, e) != m_obj->getRelativeOrientation(f10, e) ? 1 : -1); // opposite relative orientation means the two faces are orientated
-      orientation *= (region1 == label1.x() ? -1 : 1);
-    } else if ((e = getSharedEdge(*m_obj, f, f11)).isValid())
-    {
-      orientation *= (m_obj->getRelativeOrientation(f, e) != m_obj->getRelativeOrientation(f11, e) ? 1 : -1); // opposite relative orientation means the two faces are orientated
-      orientation *= (region1 == label1.x() ? -1 : 1);
-    }
-    
-    m_face_regions[f] = (orientation > 0 ? Vec2i(region0, region2) : Vec2i(region2, region0));
+    m_face_regions[f] = Vec2i(face_labels_to_create[i]);
   }
 
   for (size_t i = 0; i < faces_deleted.size(); i++)
@@ -1875,12 +1823,7 @@ void ElasticShell::performZippering(EdgeHandle e0, EdgeHandle e1, const std::vec
   }
   bool success = m_obj->deleteEdge(e0, false);
   assert(success);
-  
-  assert(f10.isValid());
-  assert(f11.isValid());
-  m_face_regions[f10] = (region1 == label1.x() ? Vec2i(region1, region0) : Vec2i(region0, region1));
-  m_face_regions[f11] = (region1 == label1.x() ? Vec2i(region1, region0) : Vec2i(region0, region1));
-  
+    
 }
 
 
