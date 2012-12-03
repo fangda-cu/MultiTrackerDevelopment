@@ -1741,7 +1741,7 @@ void ElasticShell::performZippering(EdgeHandle e0, EdgeHandle e1, const std::vec
   FaceHandle f11 = *efit1;  ++efit1;  assert(!efit1);
 
   // the deleted faces are f00 and f01
-  assert((f00 == faces_deleted[0] && f01 == faces_delete[1]) || (f00 == faces_deleted[1] && f01 == faces_delete[0]));
+  assert((f00 == faces_deleted[0] && f01 == faces_deleted[1]) || (f00 == faces_deleted[1] && f01 == faces_deleted[0]));
   
   VertexHandle v02, v03;
   getFaceThirdVertex(*m_obj, f00, e0, v02);
