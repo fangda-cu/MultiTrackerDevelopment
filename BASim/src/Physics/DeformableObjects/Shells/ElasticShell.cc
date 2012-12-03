@@ -1066,6 +1066,7 @@ void ElasticShell::remesh()
 
   std::vector<ElTopo::Vec3d> vert_data;
   std::vector<ElTopo::Vec3st> tri_data;
+  std::vector<ElTopo::Vec2i> tri_labels;
   std::vector<Scalar> masses;
 
   DeformableObject& mesh = getDefoObj();
@@ -1106,6 +1107,7 @@ void ElasticShell::remesh()
       ++i;
     }
     tri_data.push_back(tri);
+    tri_labels.push_back(ElTopo::Vec2i(m_face_regions[fh].x(), m_face_regions[fh].y()));
     face_numbers[fh] = id;
     reverse_trimap.push_back(fh);
     ++id;
@@ -1130,6 +1132,11 @@ void ElasticShell::remesh()
 
   std::cout << "Calling surface improvement\n";
   ElTopo::SurfTrack surface_tracker( vert_data, tri_data, masses, construction_parameters ); 
+  for (size_t i = 0; i < faces.size(); i++)
+  {
+    surface_tracker.m_mesh.set_triangle_label(i, tri_labels[i]);
+  }
+  
   for(int i = 0; i < m_remeshing_iters; ++i) {
     surface_tracker.improve_mesh();
     surface_tracker.topology_changes();
@@ -1196,8 +1203,17 @@ void ElasticShell::remesh()
         if(!face_matched) {
           std::cout << "Vertex indices: " << v0.idx() << " " << v1.idx() << " " << v2.idx() << std::endl;
           std::cout << "ERROR: Couldn't match the face - COLLAPSE.\n\n\n";
+          assert(0);
         }
       }
+      
+      // explicitly assign the labels from El Topo (help debugging El Topo's labeling operations)
+      for (unsigned int i = 0; i < event.m_created_tris.size(); i++)
+      {
+        m_face_regions[reverse_trimap[event.m_created_tris[i]]].x() = event.m_created_tri_labels[i][0];
+        m_face_regions[reverse_trimap[event.m_created_tris[i]]].y() = event.m_created_tri_labels[i][1];
+      }
+
     }
     else if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_SPLIT) {
       //Identify the edge based on its endpoint vertices instead
@@ -1247,6 +1263,14 @@ void ElasticShell::remesh()
         if(!face_matched)
           std::cout << "ERROR: Couldn't match the face - SPLIT.\n\n\n";
       }
+      
+      // explicitly assign the labels from El Topo (help debugging El Topo's labeling operations)
+      for (unsigned int i = 0; i < event.m_created_tris.size(); i++)
+      {
+        m_face_regions[reverse_trimap[event.m_created_tris[i]]].x() = event.m_created_tri_labels[i][0];
+        m_face_regions[reverse_trimap[event.m_created_tris[i]]].y() = event.m_created_tri_labels[i][1];
+      }
+      
     }
     else if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_FLIP) {
       
@@ -1293,6 +1317,13 @@ void ElasticShell::remesh()
           std::cout << "ERROR: Couldn't match the face - FLIP.\n\n\n";
       }
       
+      // explicitly assign the labels from El Topo (help debugging El Topo's labeling operations)
+      for (unsigned int i = 0; i < event.m_created_tris.size(); i++)
+      {
+        m_face_regions[reverse_trimap[event.m_created_tris[i]]].x() = event.m_created_tri_labels[i][0];
+        m_face_regions[reverse_trimap[event.m_created_tris[i]]].y() = event.m_created_tri_labels[i][1];
+      }
+      
     }
     else if(event.m_type == ElTopo::MeshUpdateEvent::MERGE) {
       
@@ -1331,6 +1362,13 @@ void ElasticShell::remesh()
       {
         reverse_trimap[event.m_created_tris[i]] = created[i];
         face_numbers[created[i]] = event.m_created_tris[i];
+      }
+      
+      // explicitly assign the labels from El Topo (help debugging El Topo's labeling operations)
+      for (unsigned int i = 0; i < event.m_created_tris.size(); i++)
+      {
+        m_face_regions[reverse_trimap[event.m_created_tris[i]]].x() = event.m_created_tri_labels[i][0];
+        m_face_regions[reverse_trimap[event.m_created_tris[i]]].y() = event.m_created_tri_labels[i][1];
       }
       
     }
@@ -1510,7 +1548,7 @@ void ElasticShell::performCollapse(const EdgeHandle& eh, const VertexHandle& ver
   if(!result.isValid()) {
     std::cout << "\nError: Refused to perform edge collapse!\n\n";
   }
-
+  
   //determine new positions
   setVertexPosition(vert_to_keep, new_position);
   setUndeformedVertexPosition(vert_to_keep, newUndef);
