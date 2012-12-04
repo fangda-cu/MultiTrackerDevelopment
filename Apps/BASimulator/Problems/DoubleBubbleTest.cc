@@ -842,13 +842,19 @@ void DoubleBubbleTest::setupScene4()
   std::vector<Vec3d> centers;
   std::vector<Vec3d> center_velocities;
   
-  centers.push_back(Vec3d(-1, 0, 0));
-  centers.push_back(Vec3d(1, 0, 0));
-  centers.push_back(Vec3d(0, 3, 0));
+  centers.push_back(Vec3d(-1.5,  0,  0));
+  centers.push_back(Vec3d( 1.5,  0,  0));
+  centers.push_back(Vec3d( 0, -1.5,  0));
+  centers.push_back(Vec3d( 0,  1.5,  0));
+  centers.push_back(Vec3d( 0,  0, -1.5));
+  centers.push_back(Vec3d( 0,  0,  1.5));
   
-  center_velocities.push_back(Vec3d(0.5, 0.5, 0));
-  center_velocities.push_back(Vec3d(-1, 0.5, 0));
-  center_velocities.push_back(Vec3d(0, -2, 0));
+  center_velocities.push_back(Vec3d( 1,  0,  0));
+  center_velocities.push_back(Vec3d(-1,  0,  0));
+  center_velocities.push_back(Vec3d( 0,  1,  0));
+  center_velocities.push_back(Vec3d( 0, -1,  0));
+  center_velocities.push_back(Vec3d( 0,  0,  1));
+  center_velocities.push_back(Vec3d( 0,  0, -1));
   
   int nbubble = centers.size();
 

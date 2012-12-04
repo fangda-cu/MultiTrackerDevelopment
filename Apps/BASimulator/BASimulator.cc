@@ -488,7 +488,7 @@ void idle()
         int frame = (int)floor(current_problem->getTime() / current_problem->getDt() + 0.5);
         //if( floor(current_problem->getTime()/frame_period) >= current_frame )
     
-        if (frame % steps_per_frame == 0 && last_frame_num != frame)
+        if (frame % steps_per_frame == 0 && last_frame_num != frame && frame % 20 == 0)
         {
             last_frame_num = frame;
             std::cout << outputdirectory << std::endl;
@@ -526,6 +526,7 @@ void idle()
 
             saveScreen(name.str());
             
+#ifdef _MSC_VER
             //save somewhere better for me...
             std::stringstream name2;
             name2 << std::setfill('0');
@@ -534,6 +535,7 @@ void idle()
             std::cout << "Frame: " << current_frame << "   Time: " << current_problem->getTime() << "   Screencapture: "
                     << name.str() << std::endl;
             //}
+#endif
 
             ++current_frame;
         }
