@@ -1423,8 +1423,8 @@ void ElasticShell::performSplit(const EdgeHandle& eh, const Vec3d& midpoint, Ver
     momenta.push_back(getVertexVelocity(thirdVert) * getMass(thirdVert));
   }
 
-  VertexHandle v2, v3;
-  getEdgeOppositeVertices(*m_obj, eh, v2, v3);
+//  VertexHandle v2, v3;
+//  getEdgeOppositeVertices(*m_obj, eh, v2, v3);/////////////
 
   ElTopoCode::Vec3d midpoint_ET = ElTopoCode::toElTopo(midpoint);
 
