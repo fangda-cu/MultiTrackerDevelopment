@@ -317,6 +317,10 @@ struct MeshUpdateEvent
   /// The label data of the new triangles
   ///
   std::vector<Vec2i> m_created_tri_labels;
+  
+  /// Dirty triangles whose labels have been changed
+  ///
+  std::vector<std::pair<size_t, Vec2i> > m_dirty_tris;
 
   ////////////////////////////////////////////////////////////
 

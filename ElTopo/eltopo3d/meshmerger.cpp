@@ -370,8 +370,8 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
     std::vector<size_t> deleted_triangles;
     deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][0] );
     deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][1] );
-    deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] );
-    deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][1] );   
+//    deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] );    // for bubbles: leave this interface intact
+//    deleted_triangles.push_back( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][1] );   
     
     // record the vertices involved
     size_t v0 = m_surf.m_mesh.m_edges[edge_index_a][0];
@@ -405,7 +405,7 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
     
     size_t triangle_a_0 = m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][0];
     size_t triangle_a_1 = m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][1];
-    size_t triangle_b_0 = m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0];    // for bubbles: we'll create these faces again, with different labels
+    size_t triangle_b_0 = m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0];
     size_t triangle_b_1 = m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][1];
     
     Vec2i label_a_0 = m_surf.m_mesh.get_triangle_label(triangle_a_0);
@@ -534,26 +534,29 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
     
     m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][0] );
     m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_a][0] );
-    m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] );
-    m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] );
+//    m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] );
+//    m_surf.remove_triangle( m_surf.m_mesh.m_edge_to_triangle_map[edge_index_b][0] );
+  
+    m_surf.m_mesh.set_triangle_label(triangle_b_0, label_new_b_0);
+    m_surf.m_mesh.set_triangle_label(triangle_b_1, label_new_b_1);
     
-    //
-    // Add the interface back
-    //
-    
-    new_index = m_surf.add_triangle(tri_b_0);
-    m_surf.m_mesh.set_triangle_label(new_index, label_new_b_0);
-    m_surf.m_dirty_triangles.push_back(new_index);
-    new_triangles.push_back(tri_b_0);
-    created_triangles.push_back(new_index);
-    created_triangle_labels.push_back(label_new_b_0);
-    
-    new_index = m_surf.add_triangle(tri_b_1);
-    m_surf.m_mesh.set_triangle_label(new_index, label_new_b_1);
-    m_surf.m_dirty_triangles.push_back(new_index);
-    new_triangles.push_back(tri_b_1);
-    created_triangles.push_back(new_index);
-    created_triangle_labels.push_back(label_new_b_1);
+//    //
+//    // Add the interface back
+//    //
+//    
+//    new_index = m_surf.add_triangle(tri_b_0);
+//    m_surf.m_mesh.set_triangle_label(new_index, label_new_b_0);
+//    m_surf.m_dirty_triangles.push_back(new_index);
+//    new_triangles.push_back(tri_b_0);
+//    created_triangles.push_back(new_index);
+//    created_triangle_labels.push_back(label_new_b_0);
+//    
+//    new_index = m_surf.add_triangle(tri_b_1);
+//    m_surf.m_mesh.set_triangle_label(new_index, label_new_b_1);
+//    m_surf.m_dirty_triangles.push_back(new_index);
+//    new_triangles.push_back(tri_b_1);
+//    created_triangles.push_back(new_index);
+//    created_triangle_labels.push_back(label_new_b_1);
     
     //Record the event for posterity
     MeshUpdateEvent update(MeshUpdateEvent::MERGE);
@@ -565,6 +568,8 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
     update.m_created_tris = created_triangles;
     update.m_created_tri_data = new_triangles;
     update.m_created_tri_labels = created_triangle_labels;
+    update.m_dirty_tris.push_back(std::pair<size_t, Vec2i>(triangle_b_0, label_new_b_0));
+    update.m_dirty_tris.push_back(std::pair<size_t, Vec2i>(triangle_b_1, label_new_b_1));
     m_surf.m_mesh_change_history.push_back(update);
     
     ////////////////////////////////////////////////////////////

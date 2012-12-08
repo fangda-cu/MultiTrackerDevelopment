@@ -670,6 +670,7 @@ void SurfTrack::trim_non_manifold( std::vector<size_t>& triangle_indices )
                     }
 
                     std::vector<size_t> to_delete;
+                    std::vector<std::pair<size_t, Vec2i> > dirty;
                     if (region_0 == region_1)
                     {
                         // Two parts of the same region meeting upon removal of the region in between.
@@ -689,7 +690,8 @@ void SurfTrack::trim_non_manifold( std::vector<size_t>& triangle_indices )
                             m_mesh.set_triangle_label(i, Vec2i(region_0, region_2));
                         else
                             m_mesh.set_triangle_label(i, Vec2i(region_2, region_0));
-                        
+                    
+                        dirty.push_back(std::pair<size_t, Vec2i>(i, m_mesh.get_triangle_label(i)));
                     }
                     
                     // the dangling vertex will be safely removed by the vertex cleanup function
@@ -707,6 +709,7 @@ void SurfTrack::trim_non_manifold( std::vector<size_t>& triangle_indices )
                     
                     MeshUpdateEvent flap_delete(MeshUpdateEvent::FLAP_DELETE);
                     flap_delete.m_deleted_tris = to_delete;
+                    flap_delete.m_dirty_tris = dirty;
                     m_mesh_change_history.push_back(flap_delete);
 
                     ////////////////////////////////////////////////////////////

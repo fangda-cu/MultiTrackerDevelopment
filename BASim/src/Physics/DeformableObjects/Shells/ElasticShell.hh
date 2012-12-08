@@ -188,7 +188,7 @@ protected:
   void performSplit(const EdgeHandle& eh, const Vec3d& newpos, VertexHandle& newVert);
   void performCollapse(const EdgeHandle& eh, const VertexHandle& vert_to_remove, const VertexHandle& vert_to_keep, const Vec3d& new_position);
   bool performFlip(const EdgeHandle& eh, const FaceHandle f0, const FaceHandle& f1, EdgeHandle& newEdge);
-  void performZippering(EdgeHandle e0, EdgeHandle e1, const std::vector<FaceHandle> & faces_deleted, const std::vector<std::vector<VertexHandle> > & faces_to_create, const std::vector<Vec2i> & face_labels_to_create, std::vector<FaceHandle> & face_created);
+  void performZippering(EdgeHandle e0, EdgeHandle e1, const std::vector<FaceHandle> & faces_deleted, const std::vector<std::vector<VertexHandle> > & faces_to_create, const std::vector<Vec2i> & face_labels_to_create, const std::vector<std::pair<FaceHandle, Vec2i> > & face_labels_to_change, std::vector<FaceHandle> & face_created);
   
   void addSelfCollisionForces();
   

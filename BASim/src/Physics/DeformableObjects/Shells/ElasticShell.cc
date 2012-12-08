@@ -1158,6 +1158,11 @@ void ElasticShell::remesh()
         m_obj->deleteFace(faceToDelete, true);
         std::cout << "Deleted flap face\n";
       }
+      
+      for (size_t i = 0; i < event.m_dirty_tris.size(); i++)
+      {
+        m_face_regions[reverse_trimap[event.m_dirty_tris[i].first]] = Vec2i(event.m_dirty_tris[i].second[0], event.m_dirty_tris[i].second[1]);
+      }
     }
     else if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_COLLAPSE) {
       VertexHandle v0 = reverse_vertmap[event.m_v0];
@@ -1357,9 +1362,15 @@ void ElasticShell::remesh()
         labelstocreate.push_back(Vec2i(event.m_created_tri_labels[i][0], event.m_created_tri_labels[i][1]));
       }
       
+      std::vector<std::pair<FaceHandle, Vec2i> > labelstochange;
+      for (size_t i = 0; i < event.m_dirty_tris.size(); i++)
+      {
+        labelstochange.push_back(std::pair<FaceHandle, Vec2i>(reverse_trimap[event.m_dirty_tris[i].first], Vec2i(event.m_dirty_tris[i].second[0], event.m_dirty_tris[i].second[1])));
+      }
+      
       std::vector<FaceHandle> created;
       
-      performZippering(e0, e1, deleted, tocreate, labelstocreate, created);
+      performZippering(e0, e1, deleted, tocreate, labelstocreate, labelstochange, created);
       
       assert(created.size() == tocreate.size());
       assert(created.size() == event.m_created_tris.size());
@@ -1770,9 +1781,9 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const 
   return true;
 }
   
-void ElasticShell::performZippering(EdgeHandle e0, EdgeHandle e1, const std::vector<FaceHandle> & faces_deleted, const std::vector<std::vector<VertexHandle> > & faces_to_create, const std::vector<Vec2i> & face_labels_to_create, std::vector<FaceHandle> & faces_created)
+void ElasticShell::performZippering(EdgeHandle e0, EdgeHandle e1, const std::vector<FaceHandle> & faces_deleted, const std::vector<std::vector<VertexHandle> > & faces_to_create, const std::vector<Vec2i> & face_labels_to_create, const std::vector<std::pair<FaceHandle, Vec2i> > & face_labels_to_change, std::vector<FaceHandle> & faces_created)
 {
-  assert(faces_deleted.size() == 4);
+  assert(faces_deleted.size() == 2);
   
   VertexHandle v00 = m_obj->fromVertex(e0);
   VertexHandle v01 = m_obj->toVertex(e0);
@@ -1788,7 +1799,8 @@ void ElasticShell::performZippering(EdgeHandle e0, EdgeHandle e1, const std::vec
 
   // the deleted faces
   assert((f00 == faces_deleted[0] && f01 == faces_deleted[1]) || (f00 == faces_deleted[1] && f01 == faces_deleted[0]));
-  assert((f10 == faces_deleted[2] && f11 == faces_deleted[3]) || (f10 == faces_deleted[3] && f11 == faces_deleted[2]));
+//  assert((f10 == faces_deleted[2] && f11 == faces_deleted[3]) || (f10 == faces_deleted[3] && f11 == faces_deleted[2]));
+  assert((f10 != faces_deleted[2] && f10 != faces_deleted[3]) || (f11 != faces_deleted[3] && f11 != faces_deleted[2]));
   
   VertexHandle v02, v03;
   getFaceThirdVertex(*m_obj, f00, e0, v02);
@@ -1805,6 +1817,11 @@ void ElasticShell::performZippering(EdgeHandle e0, EdgeHandle e1, const std::vec
   Vec3d x11 = getVertexPosition(v11);
   Vec3d x12 = getVertexPosition(v12);
   Vec3d x13 = getVertexPosition(v13);
+  
+  for (size_t i = 0; i < face_labels_to_change.size(); i++)
+  {
+    m_face_regions[face_labels_to_change[i].first] = face_labels_to_change[i].second;
+  }
   
   // no change to vertex mass/velocity for now; this doesn't conserve volume or momentum
   assert(faces_to_create.size() == face_labels_to_create.size());
