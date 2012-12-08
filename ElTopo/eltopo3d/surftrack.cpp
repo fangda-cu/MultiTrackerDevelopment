@@ -687,9 +687,9 @@ void SurfTrack::trim_non_manifold( std::vector<size_t>& triangle_indices )
                         to_delete.push_back(other_triangle_index);
                         
                         if (current_label[0] == region_0)
-                            m_mesh.set_triangle_label(i, Vec2i(region_0, region_2));
+                            m_mesh.set_triangle_label(i, Vec2i(region_0, region_1));
                         else
-                            m_mesh.set_triangle_label(i, Vec2i(region_2, region_0));
+                            m_mesh.set_triangle_label(i, Vec2i(region_1, region_0));
                     
                         dirty.push_back(std::pair<size_t, Vec2i>(i, m_mesh.get_triangle_label(i)));
                     }
