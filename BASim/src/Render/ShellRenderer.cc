@@ -167,6 +167,8 @@ ShellRenderer::ShellRenderer( ElasticShell& shell, const Scalar thickness )
 : m_shell(shell)
 , m_mode(DBG_MULTIPHASE)
 , m_refthickness( 2*thickness)
+, m_nregion(0)
+, m_solid_boundary_visible(true)
 {
 }
 
@@ -243,6 +245,10 @@ void ShellRenderer::keyboard(unsigned char key, int x, int y)
         allinvisible = false;
     for (size_t i = 0; i < m_region_visible.size(); i++)
       m_region_visible[i] = allinvisible;
+    glutPostRedisplay();
+  } else if (key == 'b' || key == 'B')
+  {
+    m_solid_boundary_visible = !m_solid_boundary_visible;
     glutPostRedisplay();
   }
   
@@ -775,13 +781,29 @@ void ShellRenderer::render()
     for( EdgeIterator eit = mesh.edges_begin(); eit != mesh.edges_end(); ++eit )
     {
       EdgeHandle eh = *eit;
-      
-      if (m_mode == DBG_JUNCTION)
-        if (!junctionNeighbor(mesh, eh))
-          continue;
-      
       Vec3d p0 = m_shell.getVertexPosition(mesh.fromVertex(*eit));
       Vec3d p1 = m_shell.getVertexPosition(mesh.toVertex(*eit));
+
+      if (!m_solid_boundary_visible)
+      {
+        bool visible = false;
+        for (EdgeFaceIterator efit = mesh.ef_iter(eh); efit; ++efit)
+        {
+          Vec2i labels = m_shell.getFaceLabel(*efit);
+          if (labels.x() >= 0 && labels.y() >= 0)
+            visible = true;
+        }
+
+        bool xb = ((p0.x() < 1e-4 && p1.x() < 1e-4) || (p0.x() > 1 - 1e-4 && p1.x() > 1 - 1e-4));
+        bool yb = ((p0.y() < 1e-4 && p1.y() < 1e-4) || (p0.y() > 1 - 1e-4 && p1.y() > 1 - 1e-4));
+        bool zb = ((p0.z() < 1e-4 && p1.z() < 1e-4) || (p0.z() > 1 - 1e-4 && p1.z() > 1 - 1e-4));
+        
+        bool cubeedge = ((xb && yb) || (xb && zb) || (yb && zb));
+        
+        if (!visible && !cubeedge)
+          continue;
+      }
+      
       Vec3d dir = (p1-p0);
       //p0 = p0 + 0.05*dir;
       //p1 = p1 - 0.05*dir;
@@ -887,10 +909,9 @@ void ShellRenderer::render()
     glGetFloatv(GL_MODELVIEW_MATRIX, mv);
     Vec3d view_vec(mv[2], mv[6], mv[10]);  // assuming ModelView matrix contains only translation, rotation and uniform scaling
     
-    std::cout << "n region = " << m_nregion << std::endl;
     for (size_t i = 0; i < m_region_visible.size(); i++)
       std::cout << "region " << i << " " << (m_region_visible[i] ? "visible" : "invisible") << std::endl;
-    std::cout << "current region = " << m_current_region << std::endl;
+    std::cout << "current region = " << m_current_region << "/" << m_nregion << std::endl;
     
     std::vector<std::pair<FaceHandle, Scalar> > sorted_faces;
     for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
@@ -931,6 +952,10 @@ void ShellRenderer::render()
       barycentre /= 3.0;
       
       Vec2i regions = m_shell.getFaceLabel(sorted_faces[i].first);
+      if (!m_solid_boundary_visible)
+        if (regions.x() < 0 || regions.y() < 0)
+          continue;
+      
       Vec3d color0 = labelcolors[regions.x() + 1];
       Vec3d color1 = labelcolors[regions.y() + 1];
       Vec3d color_combined = Vec3d::Zero();
@@ -981,11 +1006,21 @@ void ShellRenderer::render()
     {
       Vec3d vertPos = m_shell.getVertexPosition(*vit); 
       VertexHandle vh = *vit;
-      
-      if (m_mode == DBG_JUNCTION)
-        if (!junctionNeighbor(mesh, vh))
+
+      if (!m_solid_boundary_visible)
+      {
+        bool visible = false;
+        for (VertexFaceIterator vfit = mesh.vf_iter(vh); vfit; ++vfit)
+        {
+          Vec2i labels = m_shell.getFaceLabel(*vfit);
+          if (labels.x() >= 0 && labels.y() >= 0)
+            visible = true;
+        }
+        
+        if (!visible)
           continue;
-      
+      }
+            
       if(!m_shell.getDefoObj().isConstrained(vh)) {
         OpenGL::color(Color(0,0,0));
       }

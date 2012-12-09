@@ -38,10 +38,13 @@ namespace BASim {
     ElasticShell& m_shell;
     DrawMode m_mode;
     const Scalar m_refthickness;
+    
+    // multiphase mode
     int m_current_region;
     int m_nregion;
     std::vector<bool> m_region_visible;
-    
+    bool m_solid_boundary_visible;
+
   };
   
 } // namespace BASim
