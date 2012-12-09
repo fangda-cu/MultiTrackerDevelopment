@@ -369,17 +369,17 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
     TraceStream(g_log, "") << "SymmetricImplicitEuler::position_solve: completed " << curit + 1 << " Newton iterations."
             << '\n';
 
-    m_diffEq.endStep();
-
 #ifndef NDEBUG      // Ensure that fixed DOFs are at their desired values
-    if (successful_solve)
-    {
-        VecXd xf(m_diffEq.ndof());
-        m_diffEq.getX(xf);
-        for (int i = 0; i < (int) m_fixed.size(); ++i)
-            assert(approxEq(m_desired[i], xf(m_fixed[i]), 1.0e-6));
-    }
+  if (successful_solve)
+  {
+    VecXd xf(m_diffEq.ndof());
+    m_diffEq.getX(xf);
+    for (int i = 0; i < (int) m_fixed.size(); ++i)
+      assert(approxEq(m_desired[i], xf(m_fixed[i]), 1.0e-6));
+  }
 #endif
+  
+    m_diffEq.endStep();
 
     return true;
 }
