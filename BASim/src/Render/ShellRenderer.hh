@@ -18,7 +18,7 @@ namespace BASim {
   {
   public:
   
-    enum DrawMode { NONE, DBG, DBG_BUBBLE, DBG_JUNCTION, FLAT, VOLUMETRIC };
+    enum DrawMode { NONE, DBG, DBG_BUBBLE, DBG_JUNCTION, DBG_MULTIPHASE, FLAT, VOLUMETRIC };
 
     ShellRenderer( ElasticShell& shell, const Scalar thickness = 1.0 );
     
@@ -32,10 +32,16 @@ namespace BASim {
     virtual Vec3d calculateObjectCenter();
     virtual Scalar calculateObjectBoundingRadius(const Vec3d& center);
     
+    void keyboard(unsigned char key, int x, int y);
+    
   protected:
     ElasticShell& m_shell;
     DrawMode m_mode;
     const Scalar m_refthickness;
+    int m_current_region;
+    int m_nregion;
+    std::vector<bool> m_region_visible;
+    
   };
   
 } // namespace BASim

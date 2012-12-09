@@ -56,6 +56,8 @@ public:
 
   virtual void cycleMode() {}
 
+  virtual void keyboard(unsigned char key, int x, int y) {}
+
 protected:
 
   void setNormalArray();

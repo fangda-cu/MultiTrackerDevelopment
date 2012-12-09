@@ -609,9 +609,11 @@ void motion(int x, int y)
     glutPostRedisplay();
 }
 
-void keyboard(unsigned char key, int, int)
+void keyboard(unsigned char key, int x, int y)
 {
     menu(key);
+  for (int i = 0; i < (int) renderable_objects.size(); ++i)
+    renderable_objects[i]->keyboard(key, x, y);
 }
 
 void menu(int id)
