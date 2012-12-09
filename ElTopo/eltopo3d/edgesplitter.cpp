@@ -753,7 +753,7 @@ bool EdgeSplitter::edge_is_splittable( size_t edge_index )
 
   // skip deleted and solid edges
   if ( m_surf.m_mesh.edge_is_deleted(edge_index) ) { return false; }
-  if ( m_surf.edge_is_all_solid(edge_index) ) { return false; }
+//  if ( m_surf.edge_is_all_solid(edge_index) ) { return false; }
 
   //if not remeshing boundary edges, skip those too
   if ( !m_remesh_boundaries && m_surf.m_mesh.m_is_boundary_edge[edge_index]) { return false; }

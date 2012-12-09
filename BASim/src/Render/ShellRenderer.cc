@@ -768,7 +768,7 @@ void ShellRenderer::render()
     m_shell.getFaceNormals(faceNormals);
     
     // Render all edges
-    glLineWidth(2);
+    glLineWidth(1);
     glBegin(GL_LINES);
     OpenGL::color(Color(0,0,0));
     
