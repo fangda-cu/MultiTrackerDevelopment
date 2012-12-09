@@ -1103,4 +1103,13 @@ void DoubleBubbleTest::setupScene5()
   
   shell->setFaceLabels(faceLabels);
   
+  shellObj->constrainVertex(vertList[0], shell->getVertexPosition(vertList[0]));
+  shellObj->constrainVertex(vertList[1], shell->getVertexPosition(vertList[1]));
+  shellObj->constrainVertex(vertList[2], shell->getVertexPosition(vertList[2]));
+  shellObj->constrainVertex(vertList[3], shell->getVertexPosition(vertList[3]));
+  shellObj->constrainVertex(vertList[4], shell->getVertexPosition(vertList[4]));
+  shellObj->constrainVertex(vertList[5], shell->getVertexPosition(vertList[5]));
+  shellObj->constrainVertex(vertList[6], shell->getVertexPosition(vertList[6]));
+  shellObj->constrainVertex(vertList[7], shell->getVertexPosition(vertList[7]));
+  
 }
