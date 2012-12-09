@@ -957,7 +957,7 @@ void ShellRenderer::render()
       for( FaceVertexIterator fvit = mesh.fv_iter(sorted_faces[i].first); fvit; ++fvit )
       {
         Vec3d pos = m_shell.getVertexPosition(*fvit);
-        pos += (barycentre - pos) * 0.1;
+//        pos += (barycentre - pos) * 0.1;
         OpenGL::vertex(pos);
       }      
     }
