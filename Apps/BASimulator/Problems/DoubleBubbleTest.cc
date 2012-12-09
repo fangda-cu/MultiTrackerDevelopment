@@ -491,23 +491,11 @@ void DoubleBubbleTest::AtEachTimestep()
     }
   } else if (m_active_scene == 5)
   {
-    for (FaceIterator fit = shellObj->faces_begin(); fit != shellObj->faces_end(); ++fit)
-    {
-      FaceHandle f = *fit;
-      
-      FaceVertexIterator fvit = shellObj->fv_iter(f); assert(fvit);
-      VertexHandle v0 = *fvit; ++fvit; assert(fvit);
-      VertexHandle v1 = *fvit; ++fvit; assert(fvit);
-      VertexHandle v2 = *fvit; ++fvit; assert(!fvit);
-      
-      
-      
-    }
+    shellObj->releaseAllVertices();
     
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
       VertexHandle v = *vit;
-      shellObj->releaseVertex(v);
       
       bool boundary = false;
       for (VertexFaceIterator vfit = shellObj->vf_iter(v); vfit; ++vfit)

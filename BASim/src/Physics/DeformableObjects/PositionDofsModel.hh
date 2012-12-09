@@ -153,6 +153,7 @@ namespace BASim
     void constrainVertex(const VertexHandle & v, const Vec3d & pos);
     void constrainVertex(const VertexHandle & v, PositionConstraint * p); //time varying constraint
     void releaseVertex(const VertexHandle & v);
+    void releaseAllVertices();
     bool isConstrained(const VertexHandle & v) const;
     
     void addForce(DefoObjForce* force) { m_position_forces.push_back(force); }

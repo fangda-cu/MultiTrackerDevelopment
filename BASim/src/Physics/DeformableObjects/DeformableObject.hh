@@ -124,6 +124,7 @@ public:
   void constrainVertex(const VertexHandle & v, const Vec3d & pos);
   void constrainVertex(const VertexHandle & v, PositionConstraint * p); //time varying constraint
   void releaseVertex(const VertexHandle & v);
+  void releaseAllVertices();
   bool isConstrained(const VertexHandle & v) const;
 
   void setTimeStep(Scalar dt);

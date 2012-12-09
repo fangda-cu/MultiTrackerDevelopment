@@ -174,6 +174,7 @@ int DeformableObject::getPositionDofBase(const VertexHandle& vh) const { return 
   void DeformableObject::constrainVertex(const VertexHandle & v, const Vec3d & pos) { m_posdofsmodel->constrainVertex(v, pos); }
   void DeformableObject::constrainVertex(const VertexHandle & v, PositionConstraint * p) { m_posdofsmodel->constrainVertex(v, p); }
   void DeformableObject::releaseVertex(const VertexHandle & v) { m_posdofsmodel->releaseVertex(v); }
+  void DeformableObject::releaseAllVertices() { m_posdofsmodel->releaseAllVertices(); }
   bool DeformableObject::isConstrained(const VertexHandle & v) const { return m_posdofsmodel->isConstrained(v); }
 
 void DeformableObject::computeDofIndexing()

@@ -70,6 +70,15 @@ namespace BASim
       }
     }
   }
+
+  void PositionDofsModel::releaseAllVertices()
+  {
+    assert(m_constrained_vertices.size() == m_constraint_positions.size());
+    for (size_t i = 0; i < m_constraint_positions.size(); i++)
+      delete m_constraint_positions[i];
+    m_constrained_vertices.clear();
+    m_constraint_positions.clear();
+  }
   
   bool PositionDofsModel::isConstrained(const VertexHandle & v) const 
   {
