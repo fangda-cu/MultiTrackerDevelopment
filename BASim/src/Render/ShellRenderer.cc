@@ -606,7 +606,7 @@ void ShellRenderer::render()
         Vec3d c = (p0 + p1 + p2) / 3;
         Vec3d n = (p1 - p0).cross(p2 - p0).normalized();
 
-        Vec3d color0 = labelcolors[regions.x() + 1];
+        Vec3d color0 = labelcolors[std::max(0, regions.x() + 1)];
         glColor3f(color0.x(), color0.y(), color0.z());
         
         if (regions.x() >= 0)
@@ -615,7 +615,7 @@ void ShellRenderer::render()
           OpenGL::vertex(Vec3d(c - n * 0.05));
         }
         
-        Vec3d color1 = labelcolors[regions.y() + 1];
+        Vec3d color1 = labelcolors[std::max(0, regions.y() + 1)];
         glColor3f(color1.x(), color1.y(), color1.z());
                 
         if (regions.y() >= 0)
@@ -861,7 +861,7 @@ void ShellRenderer::render()
         Vec3d c = (p0 + p1 + p2) / 3;
         Vec3d n = (p1 - p0).cross(p2 - p0).normalized();
         
-        Vec3d color0 = labelcolors[regions.x() + 1];
+        Vec3d color0 = labelcolors[std::max(0, regions.x() + 1)];
         glColor3f(color0.x(), color0.y(), color0.z());
         
         if (regions.x() >= 0)
@@ -870,7 +870,7 @@ void ShellRenderer::render()
           OpenGL::vertex(Vec3d(c - n * 0.05));
         }
         
-        Vec3d color1 = labelcolors[regions.y() + 1];
+        Vec3d color1 = labelcolors[std::max(0, regions.y() + 1)];
         glColor3f(color1.x(), color1.y(), color1.z());
         
         if (regions.y() >= 0)

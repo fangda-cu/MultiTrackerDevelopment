@@ -35,6 +35,15 @@ public:
   Vec3d operator()(Scalar time){return m_position;}
 
 };
+  
+class PartialPositionConstraint : public PositionConstraint {
+  Vec3d m_position;
+  
+public:
+  PartialPositionConstraint(const Vec3d& pos, bool x, bool y, bool z) { m_position = pos; xEnabled = x; yEnabled = y; zEnabled = z; }
+  Vec3d operator()(Scalar time){return m_position;}
+  
+};
 
 class FixedVelocityConstraint : public PositionConstraint {
   Vec3d m_initial_position;

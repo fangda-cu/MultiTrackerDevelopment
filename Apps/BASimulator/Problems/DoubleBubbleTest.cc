@@ -489,6 +489,77 @@ void DoubleBubbleTest::AtEachTimestep()
       
       std::cout << "Bubble " << j << " (" << pos[j].size() << ") : center = " << x.segment<3>(0).transpose() << " radius = " << r << " average velocity = " << v << std::endl;
     }
+  } else if (m_active_scene == 5)
+  {
+    for (FaceIterator fit = shellObj->faces_begin(); fit != shellObj->faces_end(); ++fit)
+    {
+      FaceHandle f = *fit;
+      
+      FaceVertexIterator fvit = shellObj->fv_iter(f); assert(fvit);
+      VertexHandle v0 = *fvit; ++fvit; assert(fvit);
+      VertexHandle v1 = *fvit; ++fvit; assert(fvit);
+      VertexHandle v2 = *fvit; ++fvit; assert(!fvit);
+      
+      
+      
+    }
+    
+    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+    {
+      VertexHandle v = *vit;
+      shellObj->releaseVertex(v);
+      
+      bool boundary = false;
+      for (VertexFaceIterator vfit = shellObj->vf_iter(v); vfit; ++vfit)
+      {
+        FaceHandle f = *vfit;
+        Vec2i labels = shell->getFaceLabel(f);
+        if (labels.x() < 0 || labels.y() < 0)
+          boundary = true;
+      }
+      
+      Vec3d pos = shell->getVertexPosition(v);
+      if (boundary)
+      {
+        bool x = false;
+        bool y = false;
+        bool z = false;
+        if (pos.x() < 1e-4)
+        {
+          pos.x() = 0;
+          x = true;
+        }
+        if (pos.x() > 1 - 1e-4)
+        {
+          pos.x() = 1;
+          x = true;
+        }
+        if (pos.y() < 1e-4)
+        {
+          pos.y() = 0;
+          y = true;
+        }
+        if (pos.y() > 1 - 1e-4)
+        {
+          pos.y() = 1;
+          y = true;
+        }
+        if (pos.z() < 1e-4)
+        {
+          pos.z() = 0;
+          z = true;
+        }
+        if (pos.z() > 1 - 1e-4)
+        {
+          pos.z() = 1;
+          z = true;
+        }
+        
+        assert(x || y || z);
+        PositionConstraint * pc = new PartialPositionConstraint(pos, x, y, z);
+        shellObj->constrainVertex(v, pc);
+      }
+    }
   }
 }
 
