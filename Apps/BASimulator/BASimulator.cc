@@ -488,7 +488,7 @@ void idle()
         int frame = (int)floor(current_problem->getTime() / current_problem->getDt() + 0.5);
         //if( floor(current_problem->getTime()/frame_period) >= current_frame )
     
-        if (frame % steps_per_frame == 0 && last_frame_num != frame && frame % 20 == 0)
+        if (frame % steps_per_frame == 0 && last_frame_num != frame && frame % 1 == 0)
         {
             last_frame_num = frame;
             std::cout << outputdirectory << std::endl;
