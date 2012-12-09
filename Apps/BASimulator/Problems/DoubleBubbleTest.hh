@@ -43,6 +43,7 @@ public:
   void setupScene2(); // spherical bubble equilibrium test
   void setupScene3(); // double bubble collision
   void setupScene4(); // n bubble collision
+  void setupScene5(); // VIIM multiphase cube test
 
 };
 

@@ -164,6 +164,7 @@ sceneFunc db_scenes[] =
   &DoubleBubbleTest::setupScene2,
   &DoubleBubbleTest::setupScene3,
   &DoubleBubbleTest::setupScene4,
+  &DoubleBubbleTest::setupScene5,
 };
 
 Scalar db_bubbleThicknessFunction(Vec3d pos) {
@@ -290,7 +291,7 @@ void DoubleBubbleTest::Setup()
   bool thickness_evolution = GetBoolOpt("shell-update-thickness");
   shell->setThicknessUpdating(thickness_evolution);
 
-  shell->remesh();
+//  shell->remesh();
   
   shell->addForce(new ShellVolumeForce(*shell, "Volume", 1000));
 
@@ -958,5 +959,142 @@ void DoubleBubbleTest::setupScene4()
   
   // persistent variables
   m_s4_nbubble = nbubble;
+  
+}
+
+void DoubleBubbleTest::setupScene5()
+{
+  //vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+  
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+  
+  //create a cube
+  std::vector<VertexHandle> vertList;
+  
+  for(int i = 0; i < 20; ++i) 
+  {
+    vertList.push_back(shellObj->addVertex());
+    velocities[vertList[i]] = Vec3d(0,0,0);
+  }
+  
+  //create positions
+  positions[vertList[ 0]] = Vec3d(0,0,0);
+  positions[vertList[ 1]] = Vec3d(0,0,1);
+  positions[vertList[ 2]] = Vec3d(0,1,0);
+  positions[vertList[ 3]] = Vec3d(0,1,1);
+  
+  positions[vertList[ 4]] = Vec3d(1,0,0);
+  positions[vertList[ 5]] = Vec3d(1,0,1);
+  positions[vertList[ 6]] = Vec3d(1,1,0);
+  positions[vertList[ 7]] = Vec3d(1,1,1);
+  
+  positions[vertList[ 8]] = Vec3d(0.3,0,0);
+  positions[vertList[ 9]] = Vec3d(0.3,0,1);
+  positions[vertList[10]] = Vec3d(0.3,1,0);
+  positions[vertList[11]] = Vec3d(0.3,1,1);
+  
+  positions[vertList[12]] = Vec3d(0.3,0.3,0);
+  positions[vertList[13]] = Vec3d(0.3,0.3,1);
+  positions[vertList[14]] = Vec3d(1,0.3,0);
+  positions[vertList[15]] = Vec3d(1,0.3,1);
+  
+  positions[vertList[16]] = Vec3d(0.3,0.3,0.5);
+  positions[vertList[17]] = Vec3d(0.3,1,0.5);
+  positions[vertList[18]] = Vec3d(1,0.3,0.5);
+  positions[vertList[19]] = Vec3d(1,1,0.5);
+  
+  for(int i = 0; i < 20; ++i)
+    undeformed[vertList[i]] = positions[vertList[i]];
+  
+  std::vector<FaceHandle> faceList;
+  
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[12], vertList[ 8]));
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 2], vertList[12]));
+  faceList.push_back(shellObj->addFace(vertList[ 2], vertList[10], vertList[12]));
+  faceList.push_back(shellObj->addFace(vertList[12], vertList[10], vertList[14]));
+  faceList.push_back(shellObj->addFace(vertList[ 6], vertList[14], vertList[10]));
+  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[12], vertList[ 4]));
+  faceList.push_back(shellObj->addFace(vertList[14], vertList[ 4], vertList[12]));
+  
+  faceList.push_back(shellObj->addFace(vertList[11], vertList[17], vertList[ 3]));
+  faceList.push_back(shellObj->addFace(vertList[17], vertList[ 2], vertList[ 3]));
+  faceList.push_back(shellObj->addFace(vertList[17], vertList[10], vertList[ 2]));
+  faceList.push_back(shellObj->addFace(vertList[ 7], vertList[19], vertList[11]));
+  faceList.push_back(shellObj->addFace(vertList[17], vertList[11], vertList[19]));
+  faceList.push_back(shellObj->addFace(vertList[19], vertList[ 6], vertList[17]));
+  faceList.push_back(shellObj->addFace(vertList[10], vertList[17], vertList[ 6]));
+  
+  faceList.push_back(shellObj->addFace(vertList[11], vertList[ 3], vertList[13]));
+  faceList.push_back(shellObj->addFace(vertList[ 3], vertList[ 1], vertList[13]));
+  faceList.push_back(shellObj->addFace(vertList[ 9], vertList[13], vertList[ 1]));  
+  faceList.push_back(shellObj->addFace(vertList[11], vertList[13], vertList[ 7]));
+  faceList.push_back(shellObj->addFace(vertList[15], vertList[ 7], vertList[13]));
+  faceList.push_back(shellObj->addFace(vertList[13], vertList[ 9], vertList[15]));
+  faceList.push_back(shellObj->addFace(vertList[ 5], vertList[15], vertList[9]));
+  
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 8], vertList[ 1]));
+  faceList.push_back(shellObj->addFace(vertList[ 9], vertList[ 1], vertList[ 8]));
+  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[ 4], vertList[ 9]));
+  faceList.push_back(shellObj->addFace(vertList[ 5], vertList[ 9], vertList[ 4]));
+  
+  faceList.push_back(shellObj->addFace(vertList[ 3], vertList[ 2], vertList[ 1]));
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 1], vertList[ 2]));
+  
+  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[14], vertList[18]));
+  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[18], vertList[ 5]));
+  faceList.push_back(shellObj->addFace(vertList[18], vertList[15], vertList[ 5]));
+  faceList.push_back(shellObj->addFace(vertList[14], vertList[ 6], vertList[18]));
+  faceList.push_back(shellObj->addFace(vertList[19], vertList[18], vertList[ 6]));
+  faceList.push_back(shellObj->addFace(vertList[18], vertList[19], vertList[15]));
+  faceList.push_back(shellObj->addFace(vertList[ 7], vertList[15], vertList[19]));
+  
+  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[12], vertList[16]));
+  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[16], vertList[ 9]));
+  faceList.push_back(shellObj->addFace(vertList[13], vertList[ 9], vertList[16]));
+  faceList.push_back(shellObj->addFace(vertList[12], vertList[10], vertList[16]));
+  faceList.push_back(shellObj->addFace(vertList[17], vertList[16], vertList[10]));
+  faceList.push_back(shellObj->addFace(vertList[16], vertList[17], vertList[13]));
+  faceList.push_back(shellObj->addFace(vertList[11], vertList[13], vertList[17]));
+  
+  faceList.push_back(shellObj->addFace(vertList[18], vertList[14], vertList[16]));
+  faceList.push_back(shellObj->addFace(vertList[12], vertList[16], vertList[14]));
+  faceList.push_back(shellObj->addFace(vertList[15], vertList[18], vertList[13]));
+  faceList.push_back(shellObj->addFace(vertList[16], vertList[13], vertList[18]));
+  
+  faceList.push_back(shellObj->addFace(vertList[17], vertList[16], vertList[19]));
+  faceList.push_back(shellObj->addFace(vertList[18], vertList[19], vertList[16]));
+  
+  FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles  
+  for(int i = 0; i < 47; ++i)
+    faceLabels[faceList[i]] = Vec2i(0,-1);
+  
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+  
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shellObj->addModel(shell);
+  
+  //positions
+  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+  
+  //mid-edge normal variables
+  shell->setEdgeUndeformed(undefAngle);
+  shell->setEdgeXis(edgeAngle);
+  shell->setEdgeVelocities(edgeVel);
+  
+  shell->setFaceLabels(faceLabels);
   
 }
