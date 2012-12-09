@@ -789,7 +789,7 @@ bool EdgeCollapser::edge_is_collapsible( size_t edge_index, double& current_leng
 
   // skip deleted and solid edges
   if ( m_surf.m_mesh.edge_is_deleted(edge_index) ) { return false; }
-  if ( m_surf.edge_is_any_solid(edge_index) ) { return false; }
+//  if ( m_surf.edge_is_any_solid(edge_index) ) { return false; }
   
   //skip boundary edges if we're not remeshing those
   if(!m_remesh_boundaries && m_surf.m_mesh.m_is_boundary_edge[edge_index]) { return false; }
