@@ -225,16 +225,20 @@ void ShellRenderer::keyboard(unsigned char key, int x, int y)
   {
     m_current_region = (m_current_region + 1) % m_nregion;
     glutPostRedisplay();
+    std::cout << "current region = " << m_current_region << "/" << m_nregion << std::endl;
   } else if (key == '-' || key == '_')
   {
     m_current_region = (m_current_region + m_nregion - 1) % m_nregion;
     glutPostRedisplay();
+    std::cout << "current region = " << m_current_region << "/" << m_nregion << std::endl;
   } else if (key == 'l' || key == 'L')
   {
     while ((int)m_region_visible.size() < m_nregion)
       m_region_visible.push_back(true);    
     m_region_visible[m_current_region] = !m_region_visible[m_current_region];
     glutPostRedisplay();
+    for (size_t i = 0; i < m_region_visible.size(); i++)
+      std::cout << "region " << i << " " << (m_region_visible[i] ? "visible" : "invisible") << std::endl;
   } else if (key == 'h' || key == 'H')
   {
     while ((int)m_region_visible.size() < m_nregion)
@@ -908,10 +912,6 @@ void ShellRenderer::render()
     float mv[16];
     glGetFloatv(GL_MODELVIEW_MATRIX, mv);
     Vec3d view_vec(mv[2], mv[6], mv[10]);  // assuming ModelView matrix contains only translation, rotation and uniform scaling
-    
-    for (size_t i = 0; i < m_region_visible.size(); i++)
-      std::cout << "region " << i << " " << (m_region_visible[i] ? "visible" : "invisible") << std::endl;
-    std::cout << "current region = " << m_current_region << "/" << m_nregion << std::endl;
     
     std::vector<std::pair<FaceHandle, Scalar> > sorted_faces;
     for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
