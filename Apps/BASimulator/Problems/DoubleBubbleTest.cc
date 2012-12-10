@@ -27,6 +27,8 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellPointForce.hh"
 #include "BASim/src/Collisions/ElTopo/util.hh"
 
+#include "DelaunayTriangulator.hh"
+
 //An ElTopo global variable.
 #include "runstats.h"
 
@@ -292,7 +294,7 @@ void DoubleBubbleTest::Setup()
   bool thickness_evolution = GetBoolOpt("shell-update-thickness");
   shell->setThicknessUpdating(thickness_evolution);
 
-  shell->remesh();
+//  shell->remesh();
   
   shell->addForce(new ShellVolumeForce(*shell, "Volume", 1000));
 
@@ -1187,111 +1189,43 @@ void DoubleBubbleTest::setupScene6()
   EdgeProperty<Scalar> edgeAngle(shellObj);
   EdgeProperty<Scalar> edgeVel(shellObj);
   
+  //generate voronoi sites
+  int nsite = 10;
+  std::vector<Vec3d> sites;
+  for (int i = 0; i < nsite; i++)
+    sites.push_back(Vec3d((Scalar)rand() / RAND_MAX, (Scalar)rand() / RAND_MAX, (Scalar)rand() / RAND_MAX));
+ 
   //create a cube
   std::vector<VertexHandle> vertList;
   
-  for(int i = 0; i < 20; ++i) 
-  {
+  for (int i = 0; i < 4; i++)
     vertList.push_back(shellObj->addVertex());
-    velocities[vertList[i]] = Vec3d(0,0,0);
-  }
   
-  //create positions
-  positions[vertList[ 0]] = Vec3d(0,0,0);
-  positions[vertList[ 1]] = Vec3d(0,0,1);
-  positions[vertList[ 2]] = Vec3d(0,1,0);
-  positions[vertList[ 3]] = Vec3d(0,1,1);
-  
-  positions[vertList[ 4]] = Vec3d(1,0,0);
-  positions[vertList[ 5]] = Vec3d(1,0,1);
-  positions[vertList[ 6]] = Vec3d(1,1,0);
-  positions[vertList[ 7]] = Vec3d(1,1,1);
-  
-  positions[vertList[ 8]] = Vec3d(0.3,0,0);
-  positions[vertList[ 9]] = Vec3d(0.3,0,1);
-  positions[vertList[10]] = Vec3d(0.3,1,0);
-  positions[vertList[11]] = Vec3d(0.3,1,1);
-  
-  positions[vertList[12]] = Vec3d(0.3,0.3,0);
-  positions[vertList[13]] = Vec3d(0.3,0.3,1);
-  positions[vertList[14]] = Vec3d(1,0.3,0);
-  positions[vertList[15]] = Vec3d(1,0.3,1);
-  
-  positions[vertList[16]] = Vec3d(0.3,0.3,0.5);
-  positions[vertList[17]] = Vec3d(0.3,1,0.5);
-  positions[vertList[18]] = Vec3d(1,0.3,0.5);
-  positions[vertList[19]] = Vec3d(1,1,0.5);
-  
-  for(int i = 0; i < 20; ++i)
-    undeformed[vertList[i]] = positions[vertList[i]];
+  positions[vertList[0]] = Vec3d(0,0,0);
+  positions[vertList[1]] = Vec3d(3,0,0);
+  positions[vertList[2]] = Vec3d(0,3,0);
+  positions[vertList[3]] = Vec3d(0,0,3);
   
   std::vector<FaceHandle> faceList;
-  FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles  
+  faceList.push_back(shellObj->addFace(vertList[0], vertList[1], vertList[2])); // 0  // z = 0
+  faceList.push_back(shellObj->addFace(vertList[0], vertList[1], vertList[3])); // 1  // y = 0
+  faceList.push_back(shellObj->addFace(vertList[0], vertList[2], vertList[3])); // 2  // x = 0
+  faceList.push_back(shellObj->addFace(vertList[1], vertList[2], vertList[3])); // 3  // x+y+z
   
-  // face with z = 0
-  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[12], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 2], vertList[12]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 2], vertList[10], vertList[12]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[12], vertList[10], vertList[14]));  faceLabels[faceList.back()] = Vec2i(3,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 6], vertList[14], vertList[10]));  faceLabels[faceList.back()] = Vec2i(3,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[12], vertList[ 4]));  faceLabels[faceList.back()] = Vec2i(1,-1);
-  faceList.push_back(shellObj->addFace(vertList[14], vertList[ 4], vertList[12]));  faceLabels[faceList.back()] = Vec2i(1,-1);
+  std::vector<TetHandle> tetList;
+  tetList.push_back(shellObj->addTet(faceList[0], faceList[1], faceList[2], faceList[3]));  
   
-  // face with y = 1
-  faceList.push_back(shellObj->addFace(vertList[11], vertList[17], vertList[ 3]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[17], vertList[ 2], vertList[ 3]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[17], vertList[10], vertList[ 2]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 7], vertList[19], vertList[11]));  faceLabels[faceList.back()] = Vec2i(2,-1);
-  faceList.push_back(shellObj->addFace(vertList[17], vertList[11], vertList[19]));  faceLabels[faceList.back()] = Vec2i(2,-1);
-  faceList.push_back(shellObj->addFace(vertList[19], vertList[ 6], vertList[17]));  faceLabels[faceList.back()] = Vec2i(3,-1);
-  faceList.push_back(shellObj->addFace(vertList[10], vertList[17], vertList[ 6]));  faceLabels[faceList.back()] = Vec2i(3,-1);
+  DelaunayTriangulator::DelaunayTriangulator dt(shellObj, positions);
   
-  // face with z = 1
-  faceList.push_back(shellObj->addFace(vertList[11], vertList[ 3], vertList[13]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 3], vertList[ 1], vertList[13]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 9], vertList[13], vertList[ 1]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[11], vertList[13], vertList[ 7]));  faceLabels[faceList.back()] = Vec2i(2,-1);
-  faceList.push_back(shellObj->addFace(vertList[15], vertList[ 7], vertList[13]));  faceLabels[faceList.back()] = Vec2i(2,-1);
-  faceList.push_back(shellObj->addFace(vertList[13], vertList[ 9], vertList[15]));  faceLabels[faceList.back()] = Vec2i(1,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 5], vertList[15], vertList[ 9]));  faceLabels[faceList.back()] = Vec2i(1,-1);
-  
-  // face with y = 0
-  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 8], vertList[ 1]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 9], vertList[ 1], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[ 4], vertList[ 9]));  faceLabels[faceList.back()] = Vec2i(1,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 5], vertList[ 9], vertList[ 4]));  faceLabels[faceList.back()] = Vec2i(1,-1);
-  
-  // face with x = 0
-  faceList.push_back(shellObj->addFace(vertList[ 3], vertList[ 2], vertList[ 1]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 1], vertList[ 2]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  
-  // face with x = 1
-  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[14], vertList[18]));  faceLabels[faceList.back()] = Vec2i(1,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[18], vertList[ 5]));  faceLabels[faceList.back()] = Vec2i(1,-1);
-  faceList.push_back(shellObj->addFace(vertList[18], vertList[15], vertList[ 5]));  faceLabels[faceList.back()] = Vec2i(1,-1);
-  faceList.push_back(shellObj->addFace(vertList[14], vertList[ 6], vertList[18]));  faceLabels[faceList.back()] = Vec2i(3,-1);
-  faceList.push_back(shellObj->addFace(vertList[19], vertList[18], vertList[ 6]));  faceLabels[faceList.back()] = Vec2i(3,-1);
-  faceList.push_back(shellObj->addFace(vertList[18], vertList[19], vertList[15]));  faceLabels[faceList.back()] = Vec2i(2,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 7], vertList[15], vertList[19]));  faceLabels[faceList.back()] = Vec2i(2,-1);
-  
-  // face with x = 0.3
-  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[12], vertList[16]));  faceLabels[faceList.back()] = Vec2i(0,1);
-  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[16], vertList[ 9]));  faceLabels[faceList.back()] = Vec2i(0,1);
-  faceList.push_back(shellObj->addFace(vertList[13], vertList[ 9], vertList[16]));  faceLabels[faceList.back()] = Vec2i(0,1);
-  faceList.push_back(shellObj->addFace(vertList[12], vertList[10], vertList[16]));  faceLabels[faceList.back()] = Vec2i(0,3);
-  faceList.push_back(shellObj->addFace(vertList[17], vertList[16], vertList[10]));  faceLabels[faceList.back()] = Vec2i(0,3);
-  faceList.push_back(shellObj->addFace(vertList[16], vertList[17], vertList[13]));  faceLabels[faceList.back()] = Vec2i(0,2);
-  faceList.push_back(shellObj->addFace(vertList[11], vertList[13], vertList[17]));  faceLabels[faceList.back()] = Vec2i(0,2);
-  
-  // face with y = 0.3
-  faceList.push_back(shellObj->addFace(vertList[18], vertList[14], vertList[16]));  faceLabels[faceList.back()] = Vec2i(1,3);
-  faceList.push_back(shellObj->addFace(vertList[12], vertList[16], vertList[14]));  faceLabels[faceList.back()] = Vec2i(1,3);
-  faceList.push_back(shellObj->addFace(vertList[15], vertList[18], vertList[13]));  faceLabels[faceList.back()] = Vec2i(1,2);
-  faceList.push_back(shellObj->addFace(vertList[16], vertList[13], vertList[18]));  faceLabels[faceList.back()] = Vec2i(1,2);
-  
-  // face with z = 0.5
-  faceList.push_back(shellObj->addFace(vertList[17], vertList[16], vertList[19]));  faceLabels[faceList.back()] = Vec2i(3,2);
-  faceList.push_back(shellObj->addFace(vertList[18], vertList[19], vertList[16]));  faceLabels[faceList.back()] = Vec2i(3,2);
+  for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+    std::cout << "vert " << (*vit).idx() << ": " << positions[*vit] << std::endl;
+  for (TetIterator tit = shellObj->tets_begin(); tit != shellObj->tets_end(); ++tit)
+  {
+    std::cout << "tet " << (*tit).idx() << ": ";
+    for (TetVertexIterator tvit = shellObj->tv_iter(*tit); tvit; ++tvit)
+      std::cout << (*tvit).idx() << " ";
+    std::cout << std::endl;
+  }  
   
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj); 
@@ -1313,15 +1247,7 @@ void DoubleBubbleTest::setupScene6()
   shell->setEdgeXis(edgeAngle);
   shell->setEdgeVelocities(edgeVel);
   
-  shell->setFaceLabels(faceLabels);
+//  shell->setFaceLabels(faceLabels);
   
-  shellObj->constrainVertex(vertList[0], shell->getVertexPosition(vertList[0]));
-  shellObj->constrainVertex(vertList[1], shell->getVertexPosition(vertList[1]));
-  shellObj->constrainVertex(vertList[2], shell->getVertexPosition(vertList[2]));
-  shellObj->constrainVertex(vertList[3], shell->getVertexPosition(vertList[3]));
-  shellObj->constrainVertex(vertList[4], shell->getVertexPosition(vertList[4]));
-  shellObj->constrainVertex(vertList[5], shell->getVertexPosition(vertList[5]));
-  shellObj->constrainVertex(vertList[6], shell->getVertexPosition(vertList[6]));
-  shellObj->constrainVertex(vertList[7], shell->getVertexPosition(vertList[7]));
-  
+ 
 }

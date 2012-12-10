@@ -11,11 +11,13 @@
 namespace DelaunayTriangulator
 {
 
-  DelaunayTriangulator::DelaunayTriangulator(Mesh * mesh) :
+  DelaunayTriangulator::DelaunayTriangulator(Mesh * mesh, VertexProperty<Vec3d> & positions) :
     m_mesh(mesh),
     m_positions(mesh)
   {
     assert(checkDelaunay());
+    
+    m_positions = positions;
   }
 
   bool DelaunayTriangulator::insertVertex(Vec3d & v)

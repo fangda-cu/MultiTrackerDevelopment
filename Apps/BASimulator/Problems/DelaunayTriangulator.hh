@@ -27,7 +27,7 @@ namespace DelaunayTriangulator
   class DelaunayTriangulator
   {
   public:
-    DelaunayTriangulator(Mesh * mesh);
+    DelaunayTriangulator(Mesh * mesh, VertexProperty<Vec3d> & positions);
     
   public:
     bool insertVertex(Vec3d & v);
