@@ -42,6 +42,16 @@ FaceHandle getEdgeOtherFace(const TopologicalObject& obj, const EdgeHandle& eh, 
   return FaceHandle(-1);
 }
 
+TetHandle  getFaceOtherTet (const TopologicalObject& obj, const FaceHandle& fh, const TetHandle& th) {
+  FaceTetIterator ftit = obj.ft_iter(fh);
+  for(; ftit; ++ftit) {
+    TetHandle cur = *ftit;
+    if(cur != th)
+      return cur;
+  }
+  return TetHandle(-1);
+}
+
 bool getEdgeFacePair(const TopologicalObject& obj, const EdgeHandle& eh, FaceHandle& f0, FaceHandle& f1) {
 
   EdgeFaceIterator ef_it = obj.ef_iter(eh);
@@ -463,6 +473,23 @@ bool getFaceThirdVertex(const TopologicalObject& obj, const FaceHandle& fh, cons
    return false;
 }
 
+bool getTetFourthVertex(const TopologicalObject& obj, const TetHandle& th, const FaceHandle&fh, VertexHandle& vertex) {
+  
+  FaceVertexIterator fvit = obj.fv_iter(fh); assert(fvit);
+  VertexHandle v0 = *fvit; ++fvit; assert(fvit);
+  VertexHandle v1 = *fvit; ++fvit; assert(fvit);
+  VertexHandle v2 = *fvit; ++fvit; assert(!fvit);
+  
+  //assumes face fh if one of the faces of tet th
+  for(TetVertexIterator tvit = obj.tv_iter(th); tvit; ++tvit) {
+    if(*tvit != v0 && *tvit != v1 && *tvit != v2) {
+      vertex = *tvit;
+      return true;
+    }
+  }
+  return false;
+}
+
 void sanityCheckTopology(TopologicalObject& obj) {
   
   for(EdgeIterator e_it = obj.edges_begin(); e_it != obj.edges_end(); ++e_it) {
@@ -533,6 +560,54 @@ EdgeHandle findEdge( const TopologicalObject& obj, const VertexHandle& v0, const
   return EdgeHandle(-1);
 }
 
+FaceHandle findFace( const TopologicalObject& obj, const VertexHandle& v0, const VertexHandle& v1, const VertexHandle& v2 )
+{
+  std::set<VertexHandle> verts;
+  verts.insert(v0);
+  verts.insert(v1);
+  verts.insert(v2);
+  assert(verts.size() == 3);
+  for (VertexFaceIterator vfit = obj.vf_iter(v0); vfit; ++vfit)
+  {
+    FaceVertexIterator fvit = obj.fv_iter(*vfit); assert(fvit);
+    if (verts.find(*fvit) == verts.end()) continue;
+    ++fvit; assert(fvit);
+    if (verts.find(*fvit) == verts.end()) continue;
+    ++fvit; assert(fvit);
+    if (verts.find(*fvit) == verts.end()) continue;
+    ++fvit; assert(!fvit);
+    return *vfit;
+  }
+  return FaceHandle();
+}
+  
+TetHandle  findTet ( const TopologicalObject& obj, const VertexHandle& v0, const VertexHandle& v1, const VertexHandle& v2, const VertexHandle& v3 )
+{
+  std::set<VertexHandle> verts;
+  verts.insert(v0);
+  verts.insert(v1);
+  verts.insert(v2);
+  verts.insert(v3);
+  assert(verts.size() == 4);
+  for (VertexFaceIterator vfit = obj.vf_iter(v0); vfit; ++vfit)
+  {
+    for (FaceTetIterator ftit = obj.ft_iter(*vfit); ftit; ++ftit)
+    {
+      TetVertexIterator tvit = obj.tv_iter(*ftit); assert(tvit);
+      if (verts.find(*tvit) == verts.end()) continue;
+      ++tvit; assert(tvit);
+      if (verts.find(*tvit) == verts.end()) continue;
+      ++tvit; assert(tvit);
+      if (verts.find(*tvit) == verts.end()) continue;
+      ++tvit; assert(tvit);
+      if (verts.find(*tvit) == verts.end()) continue;
+      ++tvit; assert(!tvit);
+      return *ftit;
+    }
+  }
+  return TetHandle();
+}
+
 bool isFaceMatch(const TopologicalObject& obj, const FaceHandle& fh, const VertexHandle& v0, const VertexHandle& v1, const VertexHandle& v2) {
   //This could probably be done more optimally internally to TopologicalObject
   std::vector<VertexHandle> src_vh;
@@ -548,5 +623,37 @@ bool isFaceMatch(const TopologicalObject& obj, const FaceHandle& fh, const Verte
   
   return face_vh[0] == src_vh[0] && face_vh[1] == src_vh[1] && face_vh[2] == src_vh[2];
 }
+  
+bool faceContainsVertex(const TopologicalObject & obj, const FaceHandle & fh, const VertexHandle & vh)
+{
+  for (FaceVertexIterator fvit = obj.fv_iter(fh); fvit; ++fvit)
+    if (vh == *fvit)
+      return true;
+  return false;
+}
+  
+bool tetContainsVertex(const TopologicalObject & obj, const TetHandle & th, const VertexHandle & vh)
+{
+  for (TetVertexIterator tvit = obj.tv_iter(th); tvit; ++tvit)
+    if (vh == *tvit)
+      return true;
+  return false;
+}
 
+FaceHandle getVertexOppositeFaceInTet(const TopologicalObject & obj, const TetHandle & th, const VertexHandle & vh)
+{
+  for (TetFaceIterator tfit = obj.tf_iter(th); tfit; ++tfit)
+  {
+    FaceVertexIterator fvit = obj.fv_iter(*tfit); assert(fvit);
+    VertexHandle v0 = *fvit; ++fvit; assert(fvit);
+    VertexHandle v1 = *fvit; ++fvit; assert(fvit);
+    VertexHandle v2 = *fvit; ++fvit; assert(!fvit);
+    
+    if (v0 != vh && v1 != vh && v2 != vh)
+      return *tfit;
+  }
+  
+  return FaceHandle();
+}
+  
 }

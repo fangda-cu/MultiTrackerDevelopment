@@ -34,12 +34,16 @@ EdgeHandle flipEdge(TopologicalObject& obj, const EdgeHandle& eh,
 bool getEdgeOppositeVertices(const TopologicalObject& obj, const EdgeHandle& eh, VertexHandle& v0, VertexHandle& v1);
 
 bool getFaceThirdVertex(const TopologicalObject& obj, const FaceHandle& fh, const EdgeHandle&eh, VertexHandle& vertex);
+bool getTetFourthVertex(const TopologicalObject& obj, const TetHandle & th, const FaceHandle&fh, VertexHandle& vertex);
+  
+FaceHandle getVertexOppositeFaceInTet(const TopologicalObject & obj, const TetHandle & th, const VertexHandle & vh);
 
 bool isVertexOnBoundary(TopologicalObject& obj, VertexHandle& v);
 
 void sanityCheckTopology(TopologicalObject& obj);
 
 FaceHandle getEdgeOtherFace(const TopologicalObject& obj, const EdgeHandle& eh, const FaceHandle& fh);
+TetHandle  getFaceOtherTet (const TopologicalObject& obj, const FaceHandle& fh, const TetHandle& th);
 
 EdgeHandle findEdge( const TopologicalObject& obj, const VertexHandle& v0, const VertexHandle& v1 );
 //bool faceExists(const EdgeHandle& e0, const EdgeHandle& e1, const EdgeHandle& e2)
@@ -63,7 +67,13 @@ void addNextSide(TopologicalObject & obj, const FaceHandle &f, const EdgeHandle 
         std::vector<FaceHandle> & oldFaces, std::vector<FaceHandle> &newFaces);
 
 bool isFaceMatch(const TopologicalObject& obj, const FaceHandle& fh, const VertexHandle& v0, const VertexHandle& v1, const VertexHandle& v2);
+bool faceContainsVertex(const TopologicalObject & obj, const FaceHandle & fh, const VertexHandle & vh);
+bool tetContainsVertex (const TopologicalObject & obj, const TetHandle & th,  const VertexHandle & vh);
 
+FaceHandle findFace( const TopologicalObject& obj, const VertexHandle& v0, const VertexHandle& v1, const VertexHandle& v2 );
+TetHandle  findTet ( const TopologicalObject& obj, const VertexHandle& v0, const VertexHandle& v1, const VertexHandle& v2, const VertexHandle& v3 );
+
+  
 } //namespace BASim 
 
 #endif //TOPOBJUTIl_H
