@@ -295,7 +295,7 @@ namespace DelaunayTriangulator
     
     typedef Eigen::Matrix<Scalar, 5, 5> Mat5d;
     
-    Mat4d mat = Mat4d::Ones();
+    Mat5d mat = Mat5d::Ones();
     mat.block<1, 3>(0, 0) = a;  mat(0, 3) = a.squaredNorm();
     mat.block<1, 3>(1, 0) = b;  mat(1, 3) = b.squaredNorm();
     mat.block<1, 3>(2, 0) = c;  mat(2, 3) = c.squaredNorm();
