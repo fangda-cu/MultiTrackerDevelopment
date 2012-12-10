@@ -114,7 +114,8 @@ namespace DelaunayTriangulator
       VertexHandle c = *fvit; ++fvit; assert(!fvit);
       
       TetHandle taua = getFaceOtherTet(*m_mesh, abc, tau);
-      assert(taua.isValid());
+      if (!taua.isValid())
+        continue;
       
       VertexHandle d;
       getTetFourthVertex(*m_mesh, taua, abc, d);
