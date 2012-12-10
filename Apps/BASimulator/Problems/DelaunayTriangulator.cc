@@ -121,7 +121,7 @@ namespace DelaunayTriangulator
       getTetFourthVertex(*m_mesh, taua, abc, d);
       assert(d.isValid());
       
-      if (predicateInSphere(a, b, c, p, d))
+      if (predicateInSphere(a, b, c, p, d) < 0)
       {
         // local non-delaunay, need flpping
         // algorithm in figure 12 of Ledoux paper        
