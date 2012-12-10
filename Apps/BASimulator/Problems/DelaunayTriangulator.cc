@@ -189,8 +189,10 @@ namespace DelaunayTriangulator
     FaceHandle bcd = getVertexOppositeFaceInTet(*m_mesh, abcd, a);
     FaceHandle acd = getVertexOppositeFaceInTet(*m_mesh, abcd, b);
     
-    m_mesh->deleteTet(pabc, true);
-    m_mesh->deleteTet(abcd, true);
+    m_mesh->deleteTet(pabc, false);
+    m_mesh->deleteTet(abcd, false);
+    
+    m_mesh->deleteFace(abc, false);
     
     FaceHandle pda = m_mesh->addFace(p, d, a);
     FaceHandle pdb = m_mesh->addFace(p, d, b);
@@ -238,9 +240,13 @@ namespace DelaunayTriangulator
     FaceHandle pad = getVertexOppositeFaceInTet(*m_mesh, pabd, b);
     FaceHandle pbd = getVertexOppositeFaceInTet(*m_mesh, pabd, a);
     
-    m_mesh->deleteTet(pabc, true);
-    m_mesh->deleteTet(abcd, true);
-    m_mesh->deleteTet(pabd, true);
+    m_mesh->deleteTet(pabc, false);
+    m_mesh->deleteTet(abcd, false);
+    m_mesh->deleteTet(pabd, false);
+    
+    m_mesh->deleteFace(abc, false);
+    m_mesh->deleteFace(pab, false);
+    m_mesh->deleteFace(abd, false);
     
     FaceHandle pcd = m_mesh->addFace(p, c, d);
     
