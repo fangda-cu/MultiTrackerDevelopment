@@ -450,19 +450,23 @@ namespace DelaunayTriangulator
       if (vd_face_incomplete)
         continue;
       
-      assert(dt_faces.size() >= 1);
+      assert(dt_faces.size() >= 3);
 
-      std::set<VertexHandle> vd_verts_set;
-      for (size_t i = 0; i < dt_faces.size(); i++)
+      std::vector<VertexHandle> vd_verts;
+      EdgeHandle vd_edge_0 = dt_face_2_vd_edge[dt_faces[0]];
+      EdgeHandle vd_edge_1 = dt_face_2_vd_edge[dt_faces[1]];
+      VertexHandle vd_vert_0 = getSharedVertex(*tomesh, vd_edge_0, vd_edge_1);
+      vd_verts.push_back(vd_vert_0);
+      for (size_t i = 1; i < dt_faces.size(); i++)
       {
         EdgeHandle vd_edge = dt_face_2_vd_edge[dt_faces[i]];
-        vd_verts_set.insert(tomesh->fromVertex(vd_edge));
-        vd_verts_set.insert(tomesh->toVertex(vd_edge));
+        VertexHandle v0 = tomesh->fromVertex(vd_edge);
+        VertexHandle v1 = tomesh->toVertex(vd_edge);
+        if (v0 == vd_verts.back())
+          vd_verts.push_back(v1);
+        else
+          vd_verts.push_back(v0);
       }
-      assert(vd_verts_set.size() == dt_faces.size());
-      
-      std::vector<VertexHandle> vd_verts;
-      vd_verts.assign(vd_verts_set.begin(), vd_verts_set.end());
       
       std::vector<FaceHandle> vd_faces;
       VertexHandle v0 = vd_verts[0];
