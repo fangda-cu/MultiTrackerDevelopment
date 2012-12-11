@@ -40,7 +40,7 @@ namespace DelaunayTriangulator
     
     bool checkDelaunay();
     
-    bool extractVoronoiDiagram(Mesh * tomesh);
+    bool extractVoronoiDiagram(Mesh * tomesh, VertexProperty<Vec3d> & pos);
     
   public:
     static Scalar predicateOriented(const Vec3d & a, const Vec3d & b, const Vec3d & c, const Vec3d & p);

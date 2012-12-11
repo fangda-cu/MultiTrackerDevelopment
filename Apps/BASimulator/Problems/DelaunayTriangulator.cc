@@ -160,6 +160,7 @@ namespace DelaunayTriangulator
             pabd = findTet(*m_mesh, p, a, c, d);
           if (oabc * oabp < 0)
             pabd = findTet(*m_mesh, p, a, b, d);
+          // ignore the cases where two are both negative
 
           if (pabd.isValid())
           {
@@ -293,7 +294,7 @@ namespace DelaunayTriangulator
     return true;
   }
 
-  bool DelaunayTriangulator::extractVoronoiDiagram(Mesh * tomesh)
+  bool DelaunayTriangulator::extractVoronoiDiagram(Mesh * tomesh, VertexProperty<Vec3d> & pos)
   {
     
   }

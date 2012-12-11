@@ -1196,32 +1196,43 @@ void DoubleBubbleTest::setupScene6()
   for (int i = 0; i < nsite; i++)
     sites.push_back(Vec3d((Scalar)rand() / RAND_MAX, (Scalar)rand() / RAND_MAX, (Scalar)rand() / RAND_MAX));
  
-  //create a cube
-  std::vector<VertexHandle> vertList;
+  //create an initial tet that contains the entire range [0, 1]^3
+  TopologicalObject dtmesh;
+  VertexProperty<Vec3d> dtpositions(&dtmesh);
+  std::vector<VertexHandle> dtvertList;
   
   for (int i = 0; i < 4; i++)
-    vertList.push_back(shellObj->addVertex());
+    dtvertList.push_back(dtmesh.addVertex());
   
-  positions[vertList[0]] = Vec3d(0,0,0);
-  positions[vertList[1]] = Vec3d(3,0,0);
-  positions[vertList[2]] = Vec3d(0,3,0);
-  positions[vertList[3]] = Vec3d(0,0,3);
+  dtpositions[dtvertList[0]] = Vec3d(0,0,0);
+  dtpositions[dtvertList[1]] = Vec3d(3,0,0);
+  dtpositions[dtvertList[2]] = Vec3d(0,3,0);
+  dtpositions[dtvertList[3]] = Vec3d(0,0,3);
   
-  std::vector<FaceHandle> faceList;
-  faceList.push_back(shellObj->addFace(vertList[0], vertList[1], vertList[2])); // 0  // z = 0
-  faceList.push_back(shellObj->addFace(vertList[0], vertList[1], vertList[3])); // 1  // y = 0
-  faceList.push_back(shellObj->addFace(vertList[0], vertList[2], vertList[3])); // 2  // x = 0
-  faceList.push_back(shellObj->addFace(vertList[1], vertList[2], vertList[3])); // 3  // x+y+z
+  std::vector<FaceHandle> dtfaceList;
+  dtfaceList.push_back(dtmesh.addFace(dtvertList[0], dtvertList[1], dtvertList[2])); // 0  // z = 0
+  dtfaceList.push_back(dtmesh.addFace(dtvertList[0], dtvertList[1], dtvertList[3])); // 1  // y = 0
+  dtfaceList.push_back(dtmesh.addFace(dtvertList[0], dtvertList[2], dtvertList[3])); // 2  // x = 0
+  dtfaceList.push_back(dtmesh.addFace(dtvertList[1], dtvertList[2], dtvertList[3])); // 3  // x+y+z
   
-  std::vector<TetHandle> tetList;
-  tetList.push_back(shellObj->addTet(faceList[0], faceList[1], faceList[2], faceList[3]));  
+  std::vector<TetHandle> dttetList;
+  dttetList.push_back(dtmesh.addTet(dtfaceList[0], dtfaceList[1], dtfaceList[2], dtfaceList[3]));  
   
-  DelaunayTriangulator::DelaunayTriangulator dt(shellObj, positions);
+  DelaunayTriangulator::DelaunayTriangulator dt(&dtmesh, dtpositions);
   
   for (int i = 0; i < nsite; i++)
     dt.insertVertex(sites[i]);
-
-  positions = dt.positions();
+  dtpositions = dt.positions();
+  
+  dt.extractVoronoiDiagram(shellObj, positions);
+  
+  for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+  {
+    undeformed[*vit] = positions[*vit];
+    velocities[*vit] = Vec3d(0, 0, 0);
+  }
+  
+  // still need face labels
   
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj); 
