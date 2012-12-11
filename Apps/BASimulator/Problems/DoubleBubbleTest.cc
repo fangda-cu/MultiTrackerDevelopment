@@ -1224,7 +1224,7 @@ void DoubleBubbleTest::setupScene6()
     dt.insertVertex(sites[i]);
   dtpositions = dt.positions();
   
-  dt.extractVoronoiDiagram(shellObj, positions);
+  dt.extractVoronoiDiagram(shellObj, positions, Vec3d(0, 0, 0), Vec3d(1, 1, 1));
   
   for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
   {

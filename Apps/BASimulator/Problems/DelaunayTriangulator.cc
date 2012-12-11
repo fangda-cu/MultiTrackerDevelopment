@@ -294,20 +294,56 @@ namespace DelaunayTriangulator
     return true;
   }
 
-  bool DelaunayTriangulator::extractVoronoiDiagram(Mesh * tomesh, VertexProperty<Vec3d> & vdpos)
+  bool DelaunayTriangulator::extractVoronoiDiagram(Mesh * tomesh, VertexProperty<Vec3d> & vdpos, const Vec3d & bbmin, const Vec3d & bbmax)
   {
-//    // vertex in dt = region in vd
-//    for (VertexIterator vit = m_mesh->vertices_begin(); vit != m_mesh->vertices_end(); ++vit)
-//    {
-//      VertexHandle vh = tomesh->addVertex();
-//      vdpos[vh] = pos(*vit);
-//    }
-//    
-//    for (EdgeIterator eit = m_mesh->edges_begin(); eit != m_mesh->edges_end(); ++eit)
-//    {
-//      EdgeHandle eh = tomesh->addEdge(m_mesh->fromVertex(*eit), m_mesh->toVertex(*eit));
-//    }
+    // vertex in dt = region in vd
+    if (false)
+    {
+      for (VertexIterator vit = m_mesh->vertices_begin(); vit != m_mesh->vertices_end(); ++vit)
+      {
+        VertexHandle vh = tomesh->addVertex();
+        vdpos[vh] = pos(*vit);
+      }
+      
+      for (EdgeIterator eit = m_mesh->edges_begin(); eit != m_mesh->edges_end(); ++eit)
+      {
+        EdgeHandle eh = tomesh->addEdge(m_mesh->fromVertex(*eit), m_mesh->toVertex(*eit));
+      }
+    }
     
+    if (true)
+    {
+      std::cout << "DT mesh" << std::endl;
+      for (EdgeIterator it = m_mesh->edges_begin(); it != m_mesh->edges_end(); ++it)
+      {
+        std::cout << "edge " << (*it).idx() << ": " << m_mesh->fromVertex(*it).idx() << " " << m_mesh->toVertex(*it).idx() << " ";
+        int count = 0;
+        for (EdgeFaceIterator efit = m_mesh->ef_iter(*it); efit; ++efit)
+          count++;
+        std::cout << "face count = " << count << std::endl;
+      }
+      for (FaceIterator it = m_mesh->faces_begin(); it != m_mesh->faces_end(); ++it)
+      {
+        std::cout << "face " << (*it).idx() << ": vertices: ";
+        for (FaceVertexIterator fvit = m_mesh->fv_iter(*it); fvit; ++fvit)
+          std::cout << (*fvit).idx() << " ";
+        std::cout << " edges: ";
+        for (FaceEdgeIterator feit = m_mesh->fe_iter(*it); feit; ++feit)
+          std::cout << (*feit).idx() << " ";
+        std::cout << std::endl;
+      }
+      for (TetIterator it = m_mesh->tets_begin(); it != m_mesh->tets_end(); ++it)
+      {
+        std::cout << "tet " << (*it).idx() << ": vertices: ";
+        for (TetVertexIterator tvit = m_mesh->tv_iter(*it); tvit; ++tvit)
+          std::cout << (*tvit).idx() << " ";
+        std::cout << " faces: ";
+        for (TetFaceIterator tfit = m_mesh->tf_iter(*it); tfit; ++tfit)
+          std::cout << (*tfit).idx() << " ";
+        std::cout << std::endl;
+      }
+    }
+        
     // tet in dt = vertex in vd
     TetProperty<VertexHandle> dt_tet_2_vd_vert(m_mesh);
     VertexProperty<TetHandle> vd_vert_2_dt_tet(tomesh);    
@@ -382,6 +418,45 @@ namespace DelaunayTriangulator
         dt_face_2_vd_edge[*fit] = eh;
         vd_edge_2_dt_face[eh] = *fit;
       }
+    }
+    
+    // edge in dt = face (polygon) in vd
+    EdgeProperty<std::vector<FaceHandle> > dt_edge_2_vd_face(m_mesh);
+    FaceProperty<EdgeHandle> vd_face_2_dt_edge(tomesh); // this is not injective
+    for (EdgeIterator eit = m_mesh->edges_begin(); eit != m_mesh->edges_end(); ++eit)
+    {
+//      std::cout << "edge: " << (*eit).idx() << std::endl;
+      
+      std::vector<FaceHandle> dt_faces;
+      bool vd_face_incomplete = false;
+      for (EdgeFaceIterator efit = m_mesh->ef_iter(*eit); efit; ++efit) 
+      {
+        dt_faces.push_back(*efit);
+        if (!dt_face_2_vd_edge[*efit].isValid())
+          vd_face_incomplete = true;
+//        std::cout << "  face: " << (*efit).idx() << " vd edge: " << dt_face_2_vd_edge[*efit].idx() << std::endl;
+      }
+      
+      if (vd_face_incomplete)
+        continue;
+      
+      assert(dt_faces.size() >= 1);
+      
+      std::vector<FaceHandle> vd_faces;
+      VertexHandle v0 = tomesh->fromVertex(dt_face_2_vd_edge[dt_faces[0]]);
+      for (size_t i = 1; i < dt_faces.size() - 1; i++)
+      {
+        EdgeHandle vd_edge = dt_face_2_vd_edge[dt_faces[i]];
+        VertexHandle v1 = tomesh->fromVertex(vd_edge);
+        VertexHandle v2 = tomesh->toVertex(vd_edge);
+        
+        FaceHandle fh = tomesh->addFace(v0, v1, v2);
+        
+        vd_faces.push_back(fh);
+        vd_face_2_dt_edge[fh] = *eit;
+      }
+      
+      dt_edge_2_vd_face[*eit] = vd_faces;
     }
     
     return true;
