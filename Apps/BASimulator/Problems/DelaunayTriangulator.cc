@@ -161,6 +161,8 @@ namespace DelaunayTriangulator
       }
     }
     
+    assert(checkDelaunay());
+    
     return true;
   }
       
