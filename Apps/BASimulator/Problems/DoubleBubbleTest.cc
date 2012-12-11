@@ -1191,6 +1191,7 @@ void DoubleBubbleTest::setupScene6()
   
   //generate voronoi sites
   int nsite = 10;
+  srand(0);
   std::vector<Vec3d> sites;
   for (int i = 0; i < nsite; i++)
     sites.push_back(Vec3d((Scalar)rand() / RAND_MAX, (Scalar)rand() / RAND_MAX, (Scalar)rand() / RAND_MAX));
