@@ -294,9 +294,97 @@ namespace DelaunayTriangulator
     return true;
   }
 
-  bool DelaunayTriangulator::extractVoronoiDiagram(Mesh * tomesh, VertexProperty<Vec3d> & pos)
+  bool DelaunayTriangulator::extractVoronoiDiagram(Mesh * tomesh, VertexProperty<Vec3d> & vdpos)
   {
+//    // vertex in dt = region in vd
+//    for (VertexIterator vit = m_mesh->vertices_begin(); vit != m_mesh->vertices_end(); ++vit)
+//    {
+//      VertexHandle vh = tomesh->addVertex();
+//      vdpos[vh] = pos(*vit);
+//    }
+//    
+//    for (EdgeIterator eit = m_mesh->edges_begin(); eit != m_mesh->edges_end(); ++eit)
+//    {
+//      EdgeHandle eh = tomesh->addEdge(m_mesh->fromVertex(*eit), m_mesh->toVertex(*eit));
+//    }
     
+    // tet in dt = vertex in vd
+    TetProperty<VertexHandle> dt_tet_2_vd_vert(m_mesh);
+    VertexProperty<TetHandle> vd_vert_2_dt_tet(tomesh);    
+    for (TetIterator tit = m_mesh->tets_begin(); tit != m_mesh->tets_end(); ++tit)
+    {
+      TetVertexIterator tvit = m_mesh->tv_iter(*tit); assert(tvit);
+      VertexHandle a = *tvit; ++tvit; assert(tvit);
+      VertexHandle b = *tvit; ++tvit; assert(tvit);
+      VertexHandle c = *tvit; ++tvit; assert(tvit);
+      VertexHandle d = *tvit; ++tvit; assert(!tvit);
+      
+      // find the circumcenter of tet abcd
+      //  reference:
+      //    http://people.sc.fsu.edu/~jburkardt/presentations/cg_lab_tetrahedrons.pdf
+      Vec3d circumcenter;
+      Eigen::Matrix<Scalar, 4, 5> mat;
+      mat.setZero();
+      mat.block<1, 3>(0, 1) = pos(a);
+      mat.block<1, 3>(1, 1) = pos(b);
+      mat.block<1, 3>(2, 1) = pos(c);
+      mat.block<1, 3>(3, 1) = pos(d);
+      mat(0, 0) = pos(a).squaredNorm();
+      mat(1, 0) = pos(b).squaredNorm();
+      mat(2, 0) = pos(c).squaredNorm();
+      mat(3, 0) = pos(d).squaredNorm();
+      mat.col(4).setOnes();
+      
+      Scalar alpha = mat.block<4, 4>(0, 1).determinant();
+      Mat4d Dx, Dy, Dz;
+      Dx.col(0) = mat.col(0);
+      Dx.col(1) = mat.col(2);
+      Dx.col(2) = mat.col(3);
+      Dx.col(3) = mat.col(4);
+      Dy.col(0) = mat.col(0);
+      Dy.col(1) = mat.col(3);
+      Dy.col(2) = mat.col(1);
+      Dy.col(3) = mat.col(4);
+      Dz.col(0) = mat.col(0);
+      Dz.col(1) = mat.col(1);
+      Dz.col(2) = mat.col(2);
+      Dz.col(3) = mat.col(4);
+      
+      circumcenter = Vec3d(Dx.determinant(), Dy.determinant(), Dz.determinant()) / (2 * alpha);
+//      std::cout << "a = " << pos(a) << "\nb = " << pos(b) << "\nc = " << pos(c) << "\nd = " << pos(d) << std::endl;
+//      std::cout << "circumcenter for tet " << (*tit).idx() << " = " << circumcenter << " alpha = " << alpha << std::endl;
+      
+      VertexHandle vh = tomesh->addVertex();
+      vdpos[vh] = circumcenter;
+      
+      dt_tet_2_vd_vert[*tit] = vh;
+      vd_vert_2_dt_tet[vh] = *tit;
+    }
+    
+    // face in dt = edge in vd
+    FaceProperty<EdgeHandle> dt_face_2_vd_edge(m_mesh);
+    EdgeProperty<FaceHandle> vd_edge_2_dt_face(tomesh);
+    for (FaceIterator fit = m_mesh->faces_begin(); fit != m_mesh->faces_end(); ++fit)
+    {
+      std::vector<TetHandle> tets;
+      for (FaceTetIterator ftit = m_mesh->ft_iter(*fit); ftit; ++ftit)
+        tets.push_back(*ftit);
+      
+      assert(tets.size() == 1 || tets.size() == 2);
+      
+      if (tets.size() == 2)
+      {
+        VertexHandle v0 = dt_tet_2_vd_vert[tets[0]];
+        VertexHandle v1 = dt_tet_2_vd_vert[tets[1]];
+        
+        EdgeHandle eh = tomesh->addEdge(v0, v1);
+        
+        dt_face_2_vd_edge[*fit] = eh;
+        vd_edge_2_dt_face[eh] = *fit;
+      }
+    }
+    
+    return true;
   }
 
   Scalar DelaunayTriangulator::predicateOriented(const Vec3d & a, const Vec3d & b, const Vec3d & c, const Vec3d & p)

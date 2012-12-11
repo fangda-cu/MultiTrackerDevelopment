@@ -1190,8 +1190,8 @@ void DoubleBubbleTest::setupScene6()
   EdgeProperty<Scalar> edgeVel(shellObj);
   
   //generate voronoi sites
-  int nsite = 10;
-  srand(0);
+  int nsite = 5;
+  srand(1000000);
   std::vector<Vec3d> sites;
   for (int i = 0; i < nsite; i++)
     sites.push_back(Vec3d((Scalar)rand() / RAND_MAX, (Scalar)rand() / RAND_MAX, (Scalar)rand() / RAND_MAX));
@@ -1204,10 +1204,10 @@ void DoubleBubbleTest::setupScene6()
   for (int i = 0; i < 4; i++)
     dtvertList.push_back(dtmesh.addVertex());
   
-  dtpositions[dtvertList[0]] = Vec3d(0,0,0);
-  dtpositions[dtvertList[1]] = Vec3d(3,0,0);
-  dtpositions[dtvertList[2]] = Vec3d(0,3,0);
-  dtpositions[dtvertList[3]] = Vec3d(0,0,3);
+  dtpositions[dtvertList[0]] = Vec3d(-1,-1,-1);
+  dtpositions[dtvertList[1]] = Vec3d(4,0,0);
+  dtpositions[dtvertList[2]] = Vec3d(0,4,0);
+  dtpositions[dtvertList[3]] = Vec3d(0,0,4);
   
   std::vector<FaceHandle> dtfaceList;
   dtfaceList.push_back(dtmesh.addFace(dtvertList[0], dtvertList[1], dtvertList[2])); // 0  // z = 0
