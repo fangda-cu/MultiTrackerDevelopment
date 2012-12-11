@@ -522,20 +522,20 @@ namespace DelaunayTriangulator
       {
         std::cout << "vertex " << (*it).idx() << ": " << vdpos[*it] << std::endl;
       }
-      for (FaceIterator it = tomesh->faces_begin(); it != tomesh->faces_end(); ++it)
+      for (EdgeIterator it = tomesh->edges_begin(); it != tomesh->edges_end(); ++it)
       {
-        std::cout << "face " << (*it).idx() << ": vertices: ";
-        for (FaceVertexIterator fvit = tomesh->fv_iter(*it); fvit; ++fvit)
-          std::cout << (*fvit).idx() << " ";
+        std::cout << "edge " << (*it).idx() << ": vertices: ";
+        for (EdgeVertexIterator evit = tomesh->ev_iter(*it); evit; ++evit)
+          std::cout << (*evit).idx() << " ";
         std::cout << std::endl;
       }
-//      for (EdgeIterator it = m_mesh->edges_begin(); it != m_mesh->edges_end(); ++it)
-//      {
-//        std::cout << "polygon " << (*it).idx() << ": faces: ";
-//        for (size_t i = 0; i < dt_edge_2_vd_faces[*it].size(); i++)
-//          std::cout << dt_edge_2_vd_faces[*it][i].idx() << " ";
-//        std::cout << std::endl;
-//      }
+      for (EdgeIterator it = m_mesh->edges_begin(); it != m_mesh->edges_end(); ++it)
+      {
+        std::cout << "polygon " << (*it).idx() << ": edges: ";
+        for (size_t i = 0; i < dt_edge_2_vd_face_edges[*it].size(); i++)
+          std::cout << dt_edge_2_vd_face_edges[*it][i].idx() << " ";
+        std::cout << std::endl;
+      }
     }
     
     /////////////////////////////////////////////////////////////////////////////////////////
@@ -569,57 +569,7 @@ namespace DelaunayTriangulator
         }
       }
     }
-    
-//    EdgeProperty<int> first_intersection(tomesh);
-//    for (EdgeIterator eit = tomesh->edges_begin(); eit != tomesh->edges_end(); ++eit)
-//    {
-//      VertexHandle v0 = tomesh->fromVertex(*eit);
-//      VertexHandle v1 = tomesh->toVertex(*eit);
-//      
-//      Vec3d x0 = vdpos[v0];
-//      Vec3d x1 = vdpos[v1];
-//      
-//      bool inside0 = (x0.x() > bbmin.x() && x0.x() < bbmax.x() && x0.y() > bbmin.y() && x0.y() < bbmax.y() && x0.z() > bbmin.z() && x0.z() < bbmax.z());
-//      bool inside1 = (x1.x() > bbmin.x() && x1.x() < bbmax.x() && x1.y() > bbmin.y() && x1.y() < bbmax.y() && x1.z() > bbmin.z() && x1.z() < bbmax.z());
-//      if (inside0 != inside1)
-//      {
-//        // this edge intersects the bounding box walls - find the intersection
-//        if (inside1)
-//        {
-//          std::swap(v0, v1);
-//          std::swap(x0, x1);
-//          std::swap(inside0, inside1);
-//        }
-//        assert(inside0);
-//        assert(!inside1);
-//        
-//        Scalar d[6];
-//        d[0] = (bbmin.x() - x0.x()) / (x1.x() - x0.x());
-//        d[1] = (bbmin.y() - x0.y()) / (x1.y() - x0.y());
-//        d[2] = (bbmin.z() - x0.z()) / (x1.z() - x0.z());
-//        d[3] = (bbmax.x() - x0.x()) / (x1.x() - x0.x());
-//        d[4] = (bbmax.y() - x0.y()) / (x1.y() - x0.y());
-//        d[5] = (bbmax.z() - x0.z()) / (x1.z() - x0.z());
-//        
-//        // add an intersection vertex for the intersection between this edge and each bounding box wall (if they intersect).
-//        // also find the first intersection going from the interior endpoint x0
-//        Scalar firstd = std::numeric_limits<Scalar>::infinity();
-//        int firstdi = -1;
-//        for (int i = 0; i < 6; i++)
-//        {
-//          if (d[i] >= 0 && d[i] <= 1 && d[i] < firstd)
-//          {
-//            firstd = d[i];
-//            firstdi = i;
-//          }
-//        }
-//        assert(firstd >= 0 && firstd <= 1);
-//        assert(firstdi >= 0);
-//        
-//        first_intersection[*eit] = firstdi;
-//      }
-//    }
-    
+        
     // reshape every voronoi cell
     VertexProperty<std::vector<std::pair<EdgeHandle, EdgeHandle> > > vd_cell_clipping_new_polygon(m_mesh);
     
@@ -745,21 +695,6 @@ namespace DelaunayTriangulator
               for (size_t i = 0; i < tets_to_delete.size(); i++)
                 m_mesh->deleteTet(tets_to_delete[i], true);
             }
-            
-//            std::vector<FaceHandle> faces_to_delete;
-//            for (EdgeFaceIterator efit = m_mesh->ef_iter(polygon); efit; ++efit)
-//              faces_to_delete.push_back(*efit);
-//            for (size_t i = 0; i < faces_to_delete.size(); i++)
-//              m_mesh->deleteFace(faces_to_delete[i], false);
-//            
-//            VertexHandle v0 = m_mesh->fromVertex(polygon);
-//            VertexHandle v1 = m_mesh->toVertex(polygon);
-//            
-//            m_mesh->deleteEdge(polygon, false);
-//            if (m_mesh->vertexIncidentEdges(v0) == 0)
-//              m_mesh->deleteVertex(v0);
-//            if (m_mesh->vertexIncidentEdges(v1) == 0)
-//              m_mesh->deleteVertex(v1);
             
             // delete it from dual graph (vd)
             for (size_t i = 0; i < dt_edge_2_vd_face_edges[polygon].size(); i++)
