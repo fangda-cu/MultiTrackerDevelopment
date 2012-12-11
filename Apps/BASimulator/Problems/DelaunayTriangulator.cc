@@ -133,7 +133,7 @@ namespace DelaunayTriangulator
         assert(t == t);
         
 //        bool inside = predicateInTetrahedron(Vec3d(0, 0, 0), pos(a), pos(b), pos(c), pos(p) + (pos(d) - pos(p)) * t);
-        Vec3d o = Vec3d(0, 0, 0);
+        Vec3d o = cabc + nabc;
         Vec3d proj = pos(p) + (pos(d) - pos(p)) * t;
         Scalar oabc = predicateOriented(o, pos(a), pos(b), pos(c));
         Scalar opbc = predicateOriented(o, proj, pos(b), pos(c));
