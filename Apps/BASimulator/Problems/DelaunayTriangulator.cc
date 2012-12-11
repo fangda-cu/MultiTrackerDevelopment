@@ -451,7 +451,7 @@ namespace DelaunayTriangulator
       }
       
       if (vd_face_incomplete)
-        continue;
+        continue; // this vd polygon is semi-infinite
       
       assert(dt_faces.size() >= 3);
       
@@ -511,6 +511,7 @@ namespace DelaunayTriangulator
       
 //      dt_edge_2_vd_faces[*eit] = vd_faces;
       dt_edge_2_vd_face_verts[*eit] = vd_verts;
+      dt_edge_2_vd_face_edges[*eit] = vd_edges;
     }
 
     // debugging output
@@ -543,6 +544,9 @@ namespace DelaunayTriangulator
     assert(bbmin.x() < bbmax.x());
     assert(bbmin.y() < bbmax.y());
     assert(bbmin.z() < bbmax.z());
+    
+    // create a common vertes to shoot edges to from any voronoi cell that gets clipped, and thus needs a new polygon face generated to seal the hole
+    VertexHandle common_vh = m_mesh->addVertex();
     
     // find the intersection points of all vd edges with bounding box walls
     EdgeProperty<VertexHandle> * intersections_with_walls[6];
@@ -617,10 +621,7 @@ namespace DelaunayTriangulator
 //    }
     
     // reshape every voronoi cell
-    EdgeProperty<std::vector<VertexHandle> > dt_edge_2_vd_face_verts_new(m_mesh);
-    dt_edge_2_vd_face_verts_new = dt_edge_2_vd_face_verts;
-    EdgeProperty<std::vector<EdgeHandle> >   dt_edge_2_vd_face_edges_new(m_mesh);
-    dt_edge_2_vd_face_edges_new = dt_edge_2_vd_face_edges;
+    VertexProperty<std::vector<std::pair<EdgeHandle, EdgeHandle> > > vd_cell_clipping_new_polygon(m_mesh);
     
     // intersection of the polyhedron's interior with the halfspace of one of the walls of the bounding box
     // making use of the convexity of both voronoi cells and the bounding box
@@ -629,22 +630,16 @@ namespace DelaunayTriangulator
       Vec3d hsnormal = Vec3d((wall % 3 == 0 ? 1.0 : 0.0), (wall % 3 == 1 ? 1.0 : 0.0), (wall % 3 == 2 ? 1.0 : 0.0)) * (wall < 3 ? 1 : -1);
       Scalar hsposition = hsnormal.dot(wall < 3 ? bbmin : bbmax);
       
-      // intersect with one halfspace
-      
-      // this type represents a vd edge that is cut by a bounding box wall.
-      // the first edge is an edge in dt representing the vd polygon
-      // the other two edges are the two vd edges in the vd polygon that are cut by the wall
-      typedef Eigen::Matrix<EdgeHandle, 3, 1> EdgeHandle3;
-      std::vector<EdgeHandle3> open_intersected_edges;
-
-      // find all the polygons that intersect the wall
-      EdgeHandle intersected_polygon;         // edge in dt
-      EdgeHandle intersected_polygon_edge_0;  // edges in vd
-      EdgeHandle intersected_polygon_edge_1;
+      // intersect with one halfspace      
+      // iterate through all polygons, clip the ones intersecting the wall, and delete the ones outside the wall
       for (EdgeIterator eit = m_mesh->edges_begin(); eit != m_mesh->edges_end(); ++eit)
       {
-        EdgeHandle polygon = *eit;
+        EdgeHandle polygon = *eit;  // edge in dt
+        if (dt_edge_2_vd_face_edges[polygon].size() == 0)
+          continue; // semi-infinite polygon
         
+        EdgeHandle edge0;           // edge in vd
+        EdgeHandle edge1;           // edge in vd
         bool intersection_found = false;
         for (size_t i = 0; i < dt_edge_2_vd_face_edges[polygon].size(); i++)
         {
@@ -657,125 +652,198 @@ namespace DelaunayTriangulator
           {
             // edge vd_edge intersects this wall of the bounding box
             intersection_found = true;
-            intersected_polygon = polygon;
-            
-            if (intersected_polygon_edge_0.isValid() && intersected_polygon_edge_1.isValid())
+            if (edge0.isValid() && edge1.isValid())
               assert(!"More than two edges of a Voronoi polygon face intersecting this bounding box wall.");
-            else if (intersected_polygon_edge_0.isValid())
-              intersected_polygon_edge_1 = vd_edge;
+            else if (edge0.isValid())
+              edge1 = vd_edge;
             else
-              intersected_polygon_edge_0 = vd_edge;
+              edge0 = vd_edge;
           }
         }
         
         if (intersection_found)
-          open_intersected_edges.push_back(EdgeHandle3(intersected_polygon, intersected_polygon_edge_0, intersected_polygon_edge_1));
-      }
-      
-      // a search that traces the loop of intersection between voronoi cell surface and bounding box walls, processing the clipping of polygons along the way
-      EdgeProperty<bool> visited(m_mesh);
-      visited.assign(false);
-      
-      while (open_intersected_edges.size() > 0)
-      {
-        EdgeHandle3 current = open_intersected_edges.back();
-        open_intersected_edges.pop_back();
-        
-        EdgeHandle polygon = current.x();
-        EdgeHandle edge0 = current.y();
-        EdgeHandle edge1 = current.y();
-        
-        if (visited[polygon])
-          continue;
-        
-        // clip the current polygon with the wall
-        std::vector<EdgeHandle> new_polygon_edges;
-        for (size_t i = 0; i < dt_edge_2_vd_face_edges[polygon].size(); i++)
         {
-          EdgeHandle eh = dt_edge_2_vd_face_edges[polygon][i];
-          
-          VertexHandle v0 = tomesh->fromVertex(eh);
-          VertexHandle v1 = tomesh->toVertex(eh);
-          
-          Vec3d x0 = vdpos[v0];
-          Vec3d x1 = vdpos[v1];
-          
-          if (eh == edge0 || eh == edge1)
+          // clip the current polygon with the wall
+          std::vector<EdgeHandle> new_polygon_edges;
+          for (size_t i = 0; i < dt_edge_2_vd_face_edges[polygon].size(); i++)
           {
-            VertexHandle vintersection = (*intersections_with_walls[wall])[eh];
-            assert(vintersection.isValid());
+            EdgeHandle eh = dt_edge_2_vd_face_edges[polygon][i];
             
-            assert((x0.dot(hsnormal) - hsposition) * (x1.dot(hsnormal) - hsposition) < 0);
-
-            if (x0.dot(hsnormal) < hsposition)
+            VertexHandle v0 = tomesh->fromVertex(eh);
+            VertexHandle v1 = tomesh->toVertex(eh);
+            
+            Vec3d x0 = vdpos[v0];
+            Vec3d x1 = vdpos[v1];
+            
+            if (eh == edge0 || eh == edge1)
             {
-              // make sure v0 is inside, and v1 is outside
-              std::swap(v0, v1);
-              std::swap(x0, x1);
-            }
-            
-            EdgeHandle newedge = tomesh->addEdge(v0, vintersection);
-            new_polygon_edges.push_back(newedge);
-            
-          } else
-          {
-            assert((x0.dot(hsnormal) - hsposition) * (x1.dot(hsnormal) - hsposition) > 0);
-            
-            if (x0.dot(hsnormal) > hsposition)
-            {
-              assert(x1.dot(hsnormal) > hsposition);
+              VertexHandle vintersection = (*intersections_with_walls[wall])[eh];
+              assert(vintersection.isValid());
               
-              // entire edge is inside the halfspace - it's good
-              new_polygon_edges.push_back(eh);
-            }
-          }
-        }
-        
-        EdgeHandle newboundaryedge = tomesh->addEdge((*intersections_with_walls[wall])[edge0], (*intersections_with_walls[wall])[edge1]);
-        new_polygon_edges.push_back(newboundaryedge);
-        
-        dt_edge_2_vd_face_edges_new[polygon] = new_polygon_edges;
-        visited[polygon] = true;
-        
-        // find the polygons incident to these cut edges, because they are also cut by this wall
-        std::vector<EdgeHandle> next_polygons;
-        for (FaceEdgeIterator feit = m_mesh->fe_iter(vd_edge_2_dt_face[edge0]); feit; ++feit)
-          if (!visited[*feit])
-            next_polygons.push_back(*feit);
-        for (FaceEdgeIterator feit = m_mesh->fe_iter(vd_edge_2_dt_face[edge1]); feit; ++feit)
-          if (!visited[*feit])
-            next_polygons.push_back(*feit);
-        
-        for (size_t i = 0; i < next_polygons.size(); i++)
-        {
-          EdgeHandle next_polygon = next_polygons[i];
-          EdgeHandle next_edge_0;
-          EdgeHandle next_edge_1;
-          
-          for (size_t j = 0; j < dt_edge_2_vd_face_edges[next_polygon].size(); j++)
-          {
-            EdgeHandle vd_edge = dt_edge_2_vd_face_edges[next_polygon][j];
-            
-            Vec3d x0 = vdpos[tomesh->fromVertex(vd_edge)];
-            Vec3d x1 = vdpos[tomesh->toVertex(vd_edge)];
-            
-            if ((x0.dot(hsnormal) - hsposition) * (x1.dot(hsnormal) - hsposition) < 0)
+              assert((x0.dot(hsnormal) - hsposition) * (x1.dot(hsnormal) - hsposition) < 0);
+
+              if (x0.dot(hsnormal) < hsposition)
+              {
+                // make sure v0 is inside, and v1 is outside
+                std::swap(v0, v1);
+                std::swap(x0, x1);
+              }
+              
+              // create a new edge to the intersection point
+              EdgeHandle newedge = tomesh->addEdge(v0, vintersection);
+              new_polygon_edges.push_back(newedge);
+              
+              // delete the old edge
+              tomesh->deleteEdge(eh, true);
+              
+            } else
             {
-              // edge vd_edge intersects this wall of the bounding box
-              if (next_edge_0.isValid() && next_edge_1.isValid())
-                assert(!"More than two edges of a Voronoi polygon face intersecting this bounding box wall.");
-              else if (next_edge_0.isValid())
-                next_edge_1 = vd_edge;
-              else
-                next_edge_0 = vd_edge;
+              assert((x0.dot(hsnormal) - hsposition) * (x1.dot(hsnormal) - hsposition) > 0);
+              
+              if (x0.dot(hsnormal) > hsposition)
+              {
+                assert(x1.dot(hsnormal) > hsposition);
+                
+                // entire edge is inside the halfspace - it's good
+                new_polygon_edges.push_back(eh);
+              } else
+              {
+                assert(x1.dot(hsnormal) < hsposition);
+                
+                // entire edge is outside the halfspace - need to delete it
+                tomesh->deleteEdge(eh, true);                
+              }
             }
           }
-          assert(next_edge_0.isValid());
-          assert(next_edge_1.isValid());
           
-          open_intersected_edges.push_back(EdgeHandle3(next_polygon, next_edge_0, next_edge_1));
+          EdgeHandle newboundaryedge = tomesh->addEdge((*intersections_with_walls[wall])[edge0], (*intersections_with_walls[wall])[edge1]);
+          EdgeHandle polygon_of_newboundaryedge = polygon;
+          
+          new_polygon_edges.push_back(newboundaryedge);
+          dt_edge_2_vd_face_edges[polygon] = new_polygon_edges;
+          
+          vd_cell_clipping_new_polygon[m_mesh->fromVertex(polygon)].push_back(std::pair<EdgeHandle, EdgeHandle>(newboundaryedge, polygon_of_newboundaryedge));
+          vd_cell_clipping_new_polygon[m_mesh->toVertex(polygon)  ].push_back(std::pair<EdgeHandle, EdgeHandle>(newboundaryedge, polygon_of_newboundaryedge));
+          
+        } else
+        {
+          assert(dt_edge_2_vd_face_edges[polygon].size() > 0);
+          VertexHandle v0 = tomesh->fromVertex(dt_edge_2_vd_face_edges[polygon][0]);
+          Vec3d x0 = vdpos[v0];
+          
+          if (x0.x() < bbmin.x() || x0.x() >= bbmax.x() || x0.y() < bbmin.y() || x0.y() > bbmax.y() || x0.z() < bbmin.z() || x0.z() > bbmax.z())
+          {
+            // this vertex is out of the halfspace. this means the entire polygon must be too, since it doesn't intersect the plane.
+            // need to delete this polygon
+            
+            // delete it from primal graph (dt)
+            for (EdgeFaceIterator efit = m_mesh->ef_iter(polygon); efit; ++efit)
+            {
+              std::vector<TetHandle> tets_to_delete;
+              for (FaceTetIterator ftit = m_mesh->ft_iter(*efit); ftit; ++ftit)
+                tets_to_delete.push_back(*ftit);
+              for (size_t i = 0; i < tets_to_delete.size(); i++)
+                m_mesh->deleteTet(tets_to_delete[i], true);
+            }
+            
+//            std::vector<FaceHandle> faces_to_delete;
+//            for (EdgeFaceIterator efit = m_mesh->ef_iter(polygon); efit; ++efit)
+//              faces_to_delete.push_back(*efit);
+//            for (size_t i = 0; i < faces_to_delete.size(); i++)
+//              m_mesh->deleteFace(faces_to_delete[i], false);
+//            
+//            VertexHandle v0 = m_mesh->fromVertex(polygon);
+//            VertexHandle v1 = m_mesh->toVertex(polygon);
+//            
+//            m_mesh->deleteEdge(polygon, false);
+//            if (m_mesh->vertexIncidentEdges(v0) == 0)
+//              m_mesh->deleteVertex(v0);
+//            if (m_mesh->vertexIncidentEdges(v1) == 0)
+//              m_mesh->deleteVertex(v1);
+            
+            // delete it from dual graph (vd)
+            for (size_t i = 0; i < dt_edge_2_vd_face_edges[polygon].size(); i++)
+              tomesh->deleteEdge(dt_edge_2_vd_face_edges[polygon][i], true);
+            
+          }
+          
         }
+        
       }
+      
+      // modify both primal (dt) and dual (vd) to reflect the clipping
+      for (VertexIterator vit = m_mesh->vertices_begin(); vit != m_mesh->vertices_end(); ++vit)
+      {
+        VertexHandle cell = *vit;
+        
+        if (vd_cell_clipping_new_polygon[cell].size() > 0)
+        {
+          // this cell has been subject to clipping, i.e. this dt vertex needs a new edge to seal the hole
+          EdgeHandle new_polygon = m_mesh->addEdge(cell, common_vh);  // edge in dt
+
+          std::set<VertexHandle> vd_verts;
+          for (size_t i = 0; i < vd_cell_clipping_new_polygon[cell].size(); i++)
+          {
+            EdgeHandle new_vd_edge =      vd_cell_clipping_new_polygon[cell][i].first;   // edge in vd
+            EdgeHandle adjacent_polygon = vd_cell_clipping_new_polygon[cell][i].second;  // edge in dt
+            
+            assert(m_mesh->fromVertex(adjacent_polygon) == cell || m_mesh->toVertex(adjacent_polygon) == cell);
+            
+            VertexHandle adjacent_cell = getEdgesOtherVertex(*m_mesh, adjacent_polygon, cell);
+            EdgeHandle new_edge_to_adjacent_polygon = m_mesh->addEdge(adjacent_cell, common_vh);
+            FaceHandle new_dt_face = m_mesh->addFace(new_polygon, adjacent_polygon, new_edge_to_adjacent_polygon);
+            
+            dt_edge_2_vd_face_edges[new_polygon].push_back(new_vd_edge);
+            dt_edge_2_vd_face_edges[new_edge_to_adjacent_polygon].clear();  // this polygon is semi infinite
+            dt_face_2_vd_edge[new_dt_face] = new_vd_edge;
+            vd_edge_2_dt_face[new_vd_edge] = new_dt_face;
+            
+            vd_verts.insert(tomesh->fromVertex(new_vd_edge));
+            vd_verts.insert(tomesh->toVertex(new_vd_edge));
+          }
+          
+          // create the tets in dt
+          for (std::set<VertexHandle>::iterator i = vd_verts.begin(); i != vd_verts.end(); i++)
+          {
+            VertexHandle vh = *i;
+            EdgeHandle existing_edge;
+            EdgeHandle new_vd_edge_0;
+            EdgeHandle new_vd_edge_1;
+            for (VertexEdgeIterator veit = m_mesh->ve_iter(vh); veit; ++veit)
+            {
+              if (faceContainsVertex(*tomesh, vd_edge_2_dt_face[*veit], common_vh))
+              {
+                if (new_vd_edge_0.isValid() && new_vd_edge_1.isValid())
+                  assert(!"Error");
+                else if (new_vd_edge_0.isValid())
+                  new_vd_edge_1 = *veit;
+                else
+                  new_vd_edge_0 = *veit;
+              } else
+              {
+                existing_edge = *veit;
+              }
+            }
+            
+            assert(existing_edge.isValid());
+            assert(new_vd_edge_0.isValid());
+            assert(new_vd_edge_1.isValid());
+            
+            EdgeHandle edge_between_adjacent_cells = getVertexOppositeEdgeInFace(*m_mesh, vd_edge_2_dt_face[existing_edge], cell);
+            FaceHandle new_dt_face_to_common_vh = m_mesh->addFace(common_vh, m_mesh->fromVertex(edge_between_adjacent_cells), m_mesh->toVertex(edge_between_adjacent_cells));
+            TetHandle new_dt_tet = m_mesh->addTet(vd_edge_2_dt_face[existing_edge], vd_edge_2_dt_face[new_vd_edge_0], vd_edge_2_dt_face[new_vd_edge_1], new_dt_face_to_common_vh);
+            
+            dt_face_2_vd_edge[new_dt_face_to_common_vh] = EdgeHandle(); // this edge is semi infinite
+            dt_tet_2_vd_vert[new_dt_tet] = vh;
+            vd_vert_2_dt_tet[vh] = new_dt_tet;
+            
+          }
+          
+          vd_cell_clipping_new_polygon[cell].clear();
+          
+        }
+        
+      }      
       
     }
     

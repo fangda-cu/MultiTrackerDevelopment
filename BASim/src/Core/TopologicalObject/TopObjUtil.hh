@@ -37,7 +37,8 @@ bool getFaceThirdVertex(const TopologicalObject& obj, const FaceHandle& fh, cons
 bool getTetFourthVertex(const TopologicalObject& obj, const TetHandle & th, const FaceHandle&fh, VertexHandle& vertex);
   
 FaceHandle getVertexOppositeFaceInTet(const TopologicalObject & obj, const TetHandle & th, const VertexHandle & vh);
-
+EdgeHandle getVertexOppositeEdgeInFace(const TopologicalObject & obj, const FaceHandle & fh, const VertexHandle & vh);
+  
 bool isVertexOnBoundary(TopologicalObject& obj, VertexHandle& v);
 
 void sanityCheckTopology(TopologicalObject& obj);

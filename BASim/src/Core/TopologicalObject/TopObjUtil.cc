@@ -655,5 +655,14 @@ FaceHandle getVertexOppositeFaceInTet(const TopologicalObject & obj, const TetHa
   
   return FaceHandle();
 }
+
+EdgeHandle getVertexOppositeEdgeInFace(const TopologicalObject & obj, const FaceHandle & fh, const VertexHandle & vh)
+{
+  for (FaceEdgeIterator feit = obj.fe_iter(fh); feit; ++feit)
+    if (obj.fromVertex(*feit) != vh && obj.toVertex(*feit) != vh)
+      return *feit;
   
+  return EdgeHandle();
+}
+
 }
