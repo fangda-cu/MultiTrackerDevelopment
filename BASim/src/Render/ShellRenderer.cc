@@ -965,13 +965,13 @@ void ShellRenderer::render()
       {
         color_combined += color0;
         visible_count++;
-        alpha += 0.25;
+        alpha += 0.05;
       }
       if (regions.y() >= 0 && m_region_visible[regions.y()])
       {
         color_combined += color1;
         visible_count++;
-        alpha += 0.25;
+        alpha += 0.05;
       }
       if (visible_count == 0)
         color_combined = Vec3d(0.0,0.0,0.0);
