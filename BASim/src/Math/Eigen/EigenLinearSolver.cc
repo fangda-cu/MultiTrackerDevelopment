@@ -17,7 +17,7 @@ namespace BASim {
    {
       const Eigen::SparseMatrix<Scalar>& matrix = smart_cast<EigenSparseMatrix&>(m_A).getEigenMatrix();
 
-      Eigen::SimplicialLDLt< Eigen::SparseMatrix<Scalar> > llt_of_A;
+      Eigen::SimplicialLDLT< Eigen::SparseMatrix<Scalar> > llt_of_A;
       llt_of_A.compute(matrix);
 
       if(llt_of_A.info() != Eigen::Success) {

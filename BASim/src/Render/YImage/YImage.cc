@@ -3,6 +3,7 @@
 #include <iostream>
 #include <png.h>
 #include <boost/static_assert.hpp>
+#include <zlib.h>
 
 // for: #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 // we use this to determine the pixel format on the fly

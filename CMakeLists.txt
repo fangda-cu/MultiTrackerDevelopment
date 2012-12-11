@@ -91,7 +91,7 @@ endif ( USE_PETSC )
 find_package (Threads REQUIRED)
 set (DEFAULT_LIBRARIES ${DEFAULT_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
-find_package (Boost COMPONENTS thread REQUIRED)
+find_package (Boost COMPONENTS system thread REQUIRED)
 include_directories (${Boost_INCLUDE_DIRS})
 #message(STATUS ${Boost_INCLUDE_DIRS})
 #message(STATUS ${Boost_LIBRARIES})
