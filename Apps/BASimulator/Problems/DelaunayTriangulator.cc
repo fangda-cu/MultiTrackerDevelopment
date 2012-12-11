@@ -451,14 +451,25 @@ namespace DelaunayTriangulator
         continue;
       
       assert(dt_faces.size() >= 1);
-      
-      std::vector<FaceHandle> vd_faces;
-      VertexHandle v0 = tomesh->fromVertex(dt_face_2_vd_edge[dt_faces[0]]);
-      for (size_t i = 1; i < dt_faces.size() - 1; i++)
+
+      std::set<VertexHandle> vd_verts_set;
+      for (size_t i = 0; i < dt_faces.size(); i++)
       {
         EdgeHandle vd_edge = dt_face_2_vd_edge[dt_faces[i]];
-        VertexHandle v1 = tomesh->fromVertex(vd_edge);
-        VertexHandle v2 = tomesh->toVertex(vd_edge);
+        vd_verts_set.insert(tomesh->fromVertex(vd_edge));
+        vd_verts_set.insert(tomesh->toVertex(vd_edge));
+      }
+      assert(vd_verts_set.size() == dt_faces.size());
+      
+      std::vector<VertexHandle> vd_verts;
+      vd_verts.assign(vd_verts_set.begin(), vd_verts_set.end());
+      
+      std::vector<FaceHandle> vd_faces;
+      VertexHandle v0 = vd_verts[0];
+      for (size_t i = 1; i < dt_faces.size() - 1; i++)
+      {
+        VertexHandle v1 = vd_verts[i];
+        VertexHandle v2 = vd_verts[i + 1];
         
         std::cout << "adding face " << v0.idx() << " " << v1.idx() << " " << v2.idx() << std::endl;
         FaceHandle fh = tomesh->addFace(v0, v1, v2);
