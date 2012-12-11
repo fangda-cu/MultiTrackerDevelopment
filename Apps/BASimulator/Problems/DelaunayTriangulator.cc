@@ -451,23 +451,43 @@ namespace DelaunayTriangulator
         continue;
       
       assert(dt_faces.size() >= 3);
-
-      std::vector<VertexHandle> vd_verts;
-      EdgeHandle vd_edge_0 = dt_face_2_vd_edge[dt_faces[0]];
-      EdgeHandle vd_edge_1 = dt_face_2_vd_edge[dt_faces[1]];
-      VertexHandle vd_vert_0 = getSharedVertex(*tomesh, vd_edge_0, vd_edge_1);
-      vd_verts.push_back(vd_vert_0);
-      for (size_t i = 1; i < dt_faces.size(); i++)
-      {
-        EdgeHandle vd_edge = dt_face_2_vd_edge[dt_faces[i]];
-        VertexHandle v0 = tomesh->fromVertex(vd_edge);
-        VertexHandle v1 = tomesh->toVertex(vd_edge);
-        if (v0 == vd_verts.back())
-          vd_verts.push_back(v1);
-        else
-          vd_verts.push_back(v0);
-      }
       
+      // reorder edges to form a ring
+      std::vector<VertexHandle> vd_verts;
+      EdgeHandle vd_e0 = dt_face_2_vd_edge[dt_faces[0]];
+      VertexHandle vd_v0 = tomesh->fromVertex(vd_e0);
+      vd_verts.push_back(vd_v0);
+      EdgeHandle vd_e = vd_e0;
+      VertexHandle vd_v = tomesh->toVertex(vd_e0);
+      while (vd_v != vd_v0)
+      {
+        vd_verts.push_back(vd_v);
+        
+        size_t i = 0;
+        for (i = 0; i < dt_faces.size(); i++)
+        {
+          EdgeHandle eh = dt_face_2_vd_edge[dt_faces[i]];
+          if (eh == vd_e)
+            continue;
+          
+          if (tomesh->fromVertex(eh) == vd_v)
+          {
+            vd_v = tomesh->toVertex(eh);
+            vd_e = eh;
+            break;
+          }
+          if (tomesh->toVertex(eh) == vd_v)
+          {
+            vd_v = tomesh->fromVertex(eh);
+            vd_e = eh;
+            break;
+          }
+        }
+        assert(i < dt_faces.size());
+      }
+      assert(vd_verts.size() == dt_faces.size());
+      
+      // create faces
       std::vector<FaceHandle> vd_faces;
       VertexHandle v0 = vd_verts[0];
       for (size_t i = 1; i < dt_faces.size() - 1; i++)
