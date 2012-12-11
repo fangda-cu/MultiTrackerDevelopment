@@ -1217,6 +1217,9 @@ void DoubleBubbleTest::setupScene6()
   
   DelaunayTriangulator::DelaunayTriangulator dt(shellObj, positions);
   
+  for (int i = 0; i < nsite; i++)
+    dt.insertVertex(sites[i]);
+  
   for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     std::cout << "vert " << (*vit).idx() << ": " << positions[*vit] << std::endl;
   for (TetIterator tit = shellObj->tets_begin(); tit != shellObj->tets_end(); ++tit)
