@@ -301,7 +301,7 @@ namespace DelaunayTriangulator
   bool DelaunayTriangulator::extractVoronoiDiagram(Mesh * tomesh, VertexProperty<Vec3d> & vdpos, const Vec3d & bbmin, const Vec3d & bbmax)
   {
     // vertex in dt = region in vd
-    if (false)
+    if (true)
     {
       for (VertexIterator vit = m_mesh->vertices_begin(); vit != m_mesh->vertices_end(); ++vit)
       {
@@ -424,12 +424,18 @@ namespace DelaunayTriangulator
       }
     }
     
+    std::cout << "vd edges" << std::endl;
+    for (EdgeIterator eit = tomesh->edges_begin(); eit != tomesh->edges_end(); ++eit)
+    {
+      std::cout << "edge " << (*eit).idx() << ": " << tomesh->fromVertex(*eit).idx() << " " << tomesh->toVertex(*eit).idx() << std::endl;
+    }
+    
     // edge in dt = face (polygon) in vd
     EdgeProperty<std::vector<FaceHandle> > dt_edge_2_vd_face(m_mesh);
     FaceProperty<EdgeHandle> vd_face_2_dt_edge(tomesh); // this is not injective
     for (EdgeIterator eit = m_mesh->edges_begin(); eit != m_mesh->edges_end(); ++eit)
     {
-//      std::cout << "edge: " << (*eit).idx() << std::endl;
+      std::cout << "edge: " << (*eit).idx() << std::endl;
       
       std::vector<FaceHandle> dt_faces;
       bool vd_face_incomplete = false;
@@ -438,7 +444,7 @@ namespace DelaunayTriangulator
         dt_faces.push_back(*efit);
         if (!dt_face_2_vd_edge[*efit].isValid())
           vd_face_incomplete = true;
-//        std::cout << "  face: " << (*efit).idx() << " vd edge: " << dt_face_2_vd_edge[*efit].idx() << std::endl;
+        std::cout << "  face: " << (*efit).idx() << " vd edge: " << dt_face_2_vd_edge[*efit].idx() << std::endl;
       }
       
       if (vd_face_incomplete)
@@ -454,6 +460,7 @@ namespace DelaunayTriangulator
         VertexHandle v1 = tomesh->fromVertex(vd_edge);
         VertexHandle v2 = tomesh->toVertex(vd_edge);
         
+        std::cout << "adding face " << v0.idx() << " " << v1.idx() << " " << v2.idx() << std::endl;
         FaceHandle fh = tomesh->addFace(v0, v1, v2);
         
         vd_faces.push_back(fh);

@@ -1190,7 +1190,7 @@ void DoubleBubbleTest::setupScene6()
   EdgeProperty<Scalar> edgeVel(shellObj);
   
   //generate voronoi sites
-  int nsite = 5;
+  int nsite = 1;
   srand(1000000);
   std::vector<Vec3d> sites;
   for (int i = 0; i < nsite; i++)
