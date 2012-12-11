@@ -132,7 +132,15 @@ namespace DelaunayTriangulator
         Scalar t = (cabc - pos(p)).dot(nabc) / (pos(d) - pos(p)).dot(nabc);
         assert(t == t);
         
-        bool inside = predicateInTetrahedron(Vec3d(0, 0, 0), pos(a), pos(b), pos(c), pos(p) + (pos(d) - pos(p)) * t);
+//        bool inside = predicateInTetrahedron(Vec3d(0, 0, 0), pos(a), pos(b), pos(c), pos(p) + (pos(d) - pos(p)) * t);
+        Vec3d o = Vec3d(0, 0, 0);
+        Vec3d proj = pos(p) + (pos(d) - pos(p)) * t;
+        Scalar oabc = predicateOriented(o, pos(a), pos(b), pos(c));
+        Scalar opbc = predicateOriented(o, proj, pos(b), pos(c));
+        Scalar oapc = predicateOriented(o, pos(a), proj, pos(c));
+        Scalar oabp = predicateOriented(o, pos(a), pos(b), proj);
+        
+        bool inside = (oabc * opbc >= 0 && oabc * oapc >= 0 && oabc * oabp >= 0);
         
         // ignore the degenerate cases
         if (inside)
@@ -145,7 +153,14 @@ namespace DelaunayTriangulator
           stack.push_back(pbcd);
         } else
         {
-          TetHandle pabd = findTet(*m_mesh, p, a, b, d);
+          TetHandle pabd;
+          if (oabc * opbc < 0)
+            pabd = findTet(*m_mesh, p, b, c, d);
+          if (oabc * oapc < 0)
+            pabd = findTet(*m_mesh, p, a, c, d);
+          if (oabc * oabp < 0)
+            pabd = findTet(*m_mesh, p, a, b, d);
+
           if (pabd.isValid())
           {
             // flip32
