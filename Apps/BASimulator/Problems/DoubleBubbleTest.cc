@@ -1220,16 +1220,8 @@ void DoubleBubbleTest::setupScene6()
   
   for (int i = 0; i < nsite; i++)
     dt.insertVertex(sites[i]);
-  
-  for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
-    std::cout << "vert " << (*vit).idx() << ": " << positions[*vit] << std::endl;
-  for (TetIterator tit = shellObj->tets_begin(); tit != shellObj->tets_end(); ++tit)
-  {
-    std::cout << "tet " << (*tit).idx() << ": ";
-    for (TetVertexIterator tvit = shellObj->tv_iter(*tit); tvit; ++tvit)
-      std::cout << (*tvit).idx() << " ";
-    std::cout << std::endl;
-  }  
+
+  positions = dt.positions();
   
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj); 

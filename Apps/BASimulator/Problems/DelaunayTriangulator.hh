@@ -30,6 +30,10 @@ namespace DelaunayTriangulator
     DelaunayTriangulator(Mesh * mesh, VertexProperty<Vec3d> & positions);
     
   public:
+    Mesh * mesh() { return m_mesh; }
+    VertexProperty<Vec3d> & positions() { return m_positions; }
+    
+  public:
     bool insertVertex(Vec3d & v);
     void flip23(TetHandle pabc, TetHandle abcd, FaceHandle abc, TetHandle & pabd, TetHandle & pacd, TetHandle & pbcd);
     void flip32(TetHandle pabc, TetHandle abcd, TetHandle pabd, FaceHandle abc, TetHandle & pacd, TetHandle & pbcd);
