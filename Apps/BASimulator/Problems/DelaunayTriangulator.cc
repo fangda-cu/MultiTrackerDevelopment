@@ -928,6 +928,9 @@ namespace DelaunayTriangulator
     int next_id = 0;
     for (VertexIterator vit = m_mesh->vertices_begin(); vit != m_mesh->vertices_end(); ++vit)
     {
+      if (!cell_closed[*vit])
+        continue;
+      
       int cell_label = next_id++;
       
       // compute the centroid of the cell
