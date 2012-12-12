@@ -169,6 +169,7 @@ ShellRenderer::ShellRenderer( ElasticShell& shell, const Scalar thickness )
 , m_refthickness( 2*thickness)
 , m_nregion(0)
 , m_solid_boundary_visible(true)
+, m_current_region(0)
 {
 }
 
@@ -777,58 +778,6 @@ void ShellRenderer::render()
     FaceProperty<Vec3d> faceNormals(&m_shell.getDefoObj());
     m_shell.getFaceNormals(faceNormals);
     
-    // Render all edges
-    glLineWidth(1);
-    glBegin(GL_LINES);
-    OpenGL::color(Color(0,0,0));
-    
-    for( EdgeIterator eit = mesh.edges_begin(); eit != mesh.edges_end(); ++eit )
-    {
-      EdgeHandle eh = *eit;
-      Vec3d p0 = m_shell.getVertexPosition(mesh.fromVertex(*eit));
-      Vec3d p1 = m_shell.getVertexPosition(mesh.toVertex(*eit));
-
-      if (!m_solid_boundary_visible)
-      {
-        bool visible = false;
-        for (EdgeFaceIterator efit = mesh.ef_iter(eh); efit; ++efit)
-        {
-          Vec2i labels = m_shell.getFaceLabel(*efit);
-          if (labels.x() >= 0 && labels.y() >= 0)
-            visible = true;
-        }
-
-        bool xb = ((p0.x() < 1e-4 && p1.x() < 1e-4) || (p0.x() > 1 - 1e-4 && p1.x() > 1 - 1e-4));
-        bool yb = ((p0.y() < 1e-4 && p1.y() < 1e-4) || (p0.y() > 1 - 1e-4 && p1.y() > 1 - 1e-4));
-        bool zb = ((p0.z() < 1e-4 && p1.z() < 1e-4) || (p0.z() > 1 - 1e-4 && p1.z() > 1 - 1e-4));
-        
-        bool cubeedge = ((xb && yb) || (xb && zb) || (yb && zb));
-        
-        if (!visible && !cubeedge)
-          continue;
-      }
-      
-      Vec3d dir = (p1-p0);
-      //p0 = p0 + 0.05*dir;
-      //p1 = p1 - 0.05*dir;
-      if ( m_shell.shouldFracture(*eit) ){
-        OpenGL::color(Color(1.0, 1.0, 0.0));
-      } else if (mesh.isBoundary(*eit)){
-        OpenGL::color(Color(0.0, 1.0, 0.0));
-      }
-      else {
-        OpenGL::color(Color(0.0,0.0,0.0));
-      }
-      
-      if (m_mode == DBG_JUNCTION)
-        if (junction(mesh, eh))
-          OpenGL::color(Color(0.5, 1.0, 0.0));
-      
-      OpenGL::vertex(p0);
-      OpenGL::vertex(p1);      
-    }
-    glEnd();
-    
     // stats on total number of labels
     int maxlabel = -1;
     for (FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit)
@@ -845,6 +794,51 @@ void ShellRenderer::render()
     while (m_region_visible.size() < m_nregion)
       m_region_visible.push_back(true);
     
+    // Render all edges
+    glLineWidth(1);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
+    glBegin(GL_LINES);
+    OpenGL::color(Color(0,0,0,255));
+    
+    for( EdgeIterator eit = mesh.edges_begin(); eit != mesh.edges_end(); ++eit )
+    {
+      EdgeHandle eh = *eit;
+      Vec3d p0 = m_shell.getVertexPosition(mesh.fromVertex(*eit));
+      Vec3d p1 = m_shell.getVertexPosition(mesh.toVertex(*eit));
+
+      bool visible = false;
+      for (EdgeFaceIterator efit = mesh.ef_iter(eh); efit; ++efit)
+      {
+        Vec2i labels = m_shell.getFaceLabel(*efit);
+        if (m_solid_boundary_visible)
+        {
+          if ((labels.x() >= 0 && m_region_visible[labels.x()]) || (labels.y() >= 0 && m_region_visible[labels.y()]))
+            visible = true;
+        } else
+        {
+          if (labels.x() >= 0 && labels.y() >= 0 && (m_region_visible[labels.x()] || m_region_visible[labels.y()]))
+            visible = true;
+        }
+      }
+
+      bool xb = ((p0.x() < 1e-4 && p1.x() < 1e-4) || (p0.x() > 1 - 1e-4 && p1.x() > 1 - 1e-4));
+      bool yb = ((p0.y() < 1e-4 && p1.y() < 1e-4) || (p0.y() > 1 - 1e-4 && p1.y() > 1 - 1e-4));
+      bool zb = ((p0.z() < 1e-4 && p1.z() < 1e-4) || (p0.z() > 1 - 1e-4 && p1.z() > 1 - 1e-4));
+      
+      bool cubeedge = ((xb && yb) || (xb && zb) || (yb && zb));
+      
+      if (!visible && !cubeedge)
+        continue;
+      
+      OpenGL::vertex(p0);
+      OpenGL::vertex(p1);      
+    }
+    glEnd();
+    glDisable(GL_BLEND);
+    glDepthMask(GL_TRUE);
+
     // generate a list of colors for all the labels present
     std::vector<Vec3d> labelcolors;
     labelcolors.push_back(Vec3d(0, 0, 0));
@@ -873,10 +867,6 @@ void ShellRenderer::render()
       for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
       {
         FaceHandle f = *fit;
-        
-        if (m_mode == DBG_JUNCTION)
-          if (!junctionNeighbor(mesh, f))
-            continue;
         
         Vec2i regions = m_shell.getFaceLabel(f);
         FaceVertexIterator fvit = mesh.fv_iter(f); assert(fvit);
@@ -916,10 +906,6 @@ void ShellRenderer::render()
     std::vector<std::pair<FaceHandle, Scalar> > sorted_faces;
     for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
     {
-      if (m_mode == DBG_JUNCTION)
-        if (!junctionNeighbor(mesh, *fit))
-          continue;
-      
       Vec3d barycentre;
       for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit )
       {
@@ -959,19 +945,19 @@ void ShellRenderer::render()
       Vec3d color0 = labelcolors[regions.x() + 1];
       Vec3d color1 = labelcolors[regions.y() + 1];
       Vec3d color_combined = Vec3d::Zero();
-      Scalar alpha = 0.05;
+      Scalar alpha = 0.02;
       int visible_count = 0;
       if (regions.x() >= 0 && m_region_visible[regions.x()])
       {
         color_combined += color0;
         visible_count++;
-        alpha += 0.05;
+        alpha += 0.1;
       }
       if (regions.y() >= 0 && m_region_visible[regions.y()])
       {
         color_combined += color1;
         visible_count++;
-        alpha += 0.05;
+        alpha += 0.1;
       }
       if (visible_count == 0)
         color_combined = Vec3d(0.0,0.0,0.0);
@@ -1007,19 +993,23 @@ void ShellRenderer::render()
       Vec3d vertPos = m_shell.getVertexPosition(*vit); 
       VertexHandle vh = *vit;
 
-      if (!m_solid_boundary_visible)
+      bool visible = false;
+      for (VertexFaceIterator vfit = mesh.vf_iter(vh); vfit; ++vfit)
       {
-        bool visible = false;
-        for (VertexFaceIterator vfit = mesh.vf_iter(vh); vfit; ++vfit)
+        Vec2i labels = m_shell.getFaceLabel(*vfit);
+        if (m_solid_boundary_visible)
         {
-          Vec2i labels = m_shell.getFaceLabel(*vfit);
-          if (labels.x() >= 0 && labels.y() >= 0)
+          if ((labels.x() >= 0 && m_region_visible[labels.x()]) || (labels.y() >= 0 && m_region_visible[labels.y()]))
+            visible = true;
+        } else
+        {
+          if (labels.x() >= 0 && labels.y() >= 0 && (m_region_visible[labels.x()] || m_region_visible[labels.y()]))
             visible = true;
         }
-        
-        if (!visible)
-          continue;
       }
+      
+      if (!visible)
+        continue;
             
       if(!m_shell.getDefoObj().isConstrained(vh)) {
         OpenGL::color(Color(0,0,0));
