@@ -811,8 +811,93 @@ namespace DelaunayTriangulator
       
     }
 
+    /////////////////////////////////////////////////////////////////////////////////////////
+    // Triangulation of voronoi polygon faces
+    
+    // triangulate the vd polygonal faces
+    EdgeProperty<std::vector<FaceHandle> > dt_edge_2_vd_faces(m_mesh);
+    FaceProperty<EdgeHandle> vd_face_2_dt_edge(tomesh); // this is not injective
+    for (EdgeIterator eit = m_mesh->edges_begin(); eit != m_mesh->edges_end(); ++eit)
+    {
+      EdgeHandle polygon = *eit;
+      
+      if (dt_edge_2_vd_face_edges[polygon].size() == 0)
+        continue;
+      
+      // reorder edges (vertices) to form a ring
+      std::vector<VertexHandle> vd_verts;
+      EdgeHandle vd_e0 = dt_edge_2_vd_face_edges[polygon][0];
+      VertexHandle vd_v0 = tomesh->fromVertex(vd_e0);
+      vd_verts.push_back(vd_v0);
+      EdgeHandle vd_e = vd_e0;
+      VertexHandle vd_v = tomesh->toVertex(vd_e0);
+      while (vd_v != vd_v0)
+      {
+        vd_verts.push_back(vd_v);
+        
+        size_t i = 0;
+        for (i = 0; i < dt_edge_2_vd_face_edges[polygon].size(); i++)
+        {
+          // search in the polygon for the next edge to grow the ring
+          EdgeHandle eh = dt_edge_2_vd_face_edges[polygon][i];
+          if (eh == vd_e)
+            continue;
+          
+          if (tomesh->fromVertex(eh) == vd_v)
+          {
+            vd_v = tomesh->toVertex(eh);
+            vd_e = eh;
+            break;
+          }
+          if (tomesh->toVertex(eh) == vd_v)
+          {
+            vd_v = tomesh->fromVertex(eh);
+            vd_e = eh;
+            break;
+          }
+        }
+        assert(i < dt_edge_2_vd_face_edges[polygon].size());
+      }
+      assert(vd_verts.size() == dt_edge_2_vd_face_edges[polygon].size());
+            
+      // create faces
+      std::vector<FaceHandle> vd_faces;
+      VertexHandle v0 = vd_verts[0];
+      for (size_t i = 1; i < vd_verts.size() - 1; i++)
+      {
+        VertexHandle v1 = vd_verts[i];
+        VertexHandle v2 = vd_verts[i + 1];
+        
+        FaceHandle fh = tomesh->addFace(v0, v1, v2);
+        
+        vd_faces.push_back(fh);
+        vd_face_2_dt_edge[fh] = *eit;
+      }
+      
+      dt_edge_2_vd_faces[*eit] = vd_faces;
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////
+    // Prune orphan primitives
+    std::vector<EdgeHandle> edges_to_delete;
+    for (EdgeIterator eit = tomesh->edges_begin(); eit != tomesh->edges_end(); ++eit)
+      if (tomesh->edgeIncidentFaces(*eit) == 0)
+        edges_to_delete.push_back(*eit);
+    
+    for (size_t i = 0; i < edges_to_delete.size(); i++)
+      tomesh->deleteEdge(edges_to_delete[i], false);
+    
+    std::vector<VertexHandle> vertices_to_delete;
+    for (VertexIterator vit = tomesh->vertices_begin(); vit != tomesh->vertices_end(); ++vit)
+      if (tomesh->vertexIncidentEdges(*vit) == 0)
+        vertices_to_delete.push_back(*vit);
+    
+    for (size_t i = 0; i < vertices_to_delete.size(); i++)
+      tomesh->deleteVertex(vertices_to_delete[i]);
+
 //    outputDT();
 //    outputVD(tomesh, vdpos, dt_edge_2_vd_face_edges);
+    
 
     return true;
   }
