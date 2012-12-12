@@ -300,25 +300,6 @@ namespace DelaunayTriangulator
 
   bool DelaunayTriangulator::extractVoronoiDiagram(Mesh * tomesh, VertexProperty<Vec3d> & vdpos, const Vec3d & bbmin, const Vec3d & bbmax)
   {
-    // vertex in dt = region in vd
-    if (false)
-    {
-      for (VertexIterator vit = m_mesh->vertices_begin(); vit != m_mesh->vertices_end(); ++vit)
-      {
-        VertexHandle vh = tomesh->addVertex();
-        vdpos[vh] = pos(*vit);
-      }
-      
-      for (EdgeIterator eit = m_mesh->edges_begin(); eit != m_mesh->edges_end(); ++eit)
-      {
-        EdgeHandle eh = tomesh->addEdge(m_mesh->fromVertex(*eit), m_mesh->toVertex(*eit));
-      }
-    }
-    
-    // debugging output
-    if (true)
-      outputDT();
-    
     /////////////////////////////////////////////////////////////////////////////////////////
     // Extract an unbounded Voronoi Diagram
     
@@ -829,9 +810,9 @@ namespace DelaunayTriangulator
       }      
       
     }
-    
-    outputDT();
-    outputVD(tomesh, vdpos, dt_edge_2_vd_face_edges);
+
+//    outputDT();
+//    outputVD(tomesh, vdpos, dt_edge_2_vd_face_edges);
 
     return true;
   }
