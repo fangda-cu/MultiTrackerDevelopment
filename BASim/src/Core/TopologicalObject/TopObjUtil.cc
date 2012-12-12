@@ -581,6 +581,27 @@ FaceHandle findFace( const TopologicalObject& obj, const VertexHandle& v0, const
   return FaceHandle();
 }
   
+FaceHandle findFace( const TopologicalObject& obj, const EdgeHandle& e0,   const EdgeHandle& e1,   const EdgeHandle& e2 )
+{
+  std::set<EdgeHandle> edges;
+  edges.insert(e0);
+  edges.insert(e1);
+  edges.insert(e2);
+  assert(edges.size() == 3);
+  for (EdgeFaceIterator efit = obj.ef_iter(e0); efit; ++efit)
+  {
+    FaceEdgeIterator feit = obj.fe_iter(*efit); assert(feit);
+    if (edges.find(*feit) == edges.end()) continue;
+    ++feit; assert(feit);
+    if (edges.find(*feit) == edges.end()) continue;
+    ++feit; assert(feit);
+    if (edges.find(*feit) == edges.end()) continue;
+    ++feit; assert(!feit);
+    return *efit;
+  }
+  return FaceHandle();
+}
+
 TetHandle  findTet ( const TopologicalObject& obj, const VertexHandle& v0, const VertexHandle& v1, const VertexHandle& v2, const VertexHandle& v3 )
 {
   std::set<VertexHandle> verts;
@@ -608,6 +629,30 @@ TetHandle  findTet ( const TopologicalObject& obj, const VertexHandle& v0, const
   return TetHandle();
 }
 
+TetHandle  findTet ( const TopologicalObject& obj, const FaceHandle& f0,   const FaceHandle& f1,   const FaceHandle& f2,   const FaceHandle& f3 )
+{
+  std::set<FaceHandle> faces;
+  faces.insert(f0);
+  faces.insert(f1);
+  faces.insert(f2);
+  faces.insert(f3);
+  assert(faces.size() == 4);
+  for (FaceTetIterator ftit = obj.ft_iter(f0); ftit; ++ftit)
+  {
+    TetFaceIterator tfit = obj.tf_iter(*ftit); assert(tfit);
+    if (faces.find(*tfit) == faces.end()) continue;
+    ++tfit; assert(tfit);
+    if (faces.find(*tfit) == faces.end()) continue;
+    ++tfit; assert(tfit);
+    if (faces.find(*tfit) == faces.end()) continue;
+    ++tfit; assert(tfit);
+    if (faces.find(*tfit) == faces.end()) continue;
+    ++tfit; assert(!tfit);
+    return *ftit;
+  }
+  return TetHandle();
+}
+
 bool isFaceMatch(const TopologicalObject& obj, const FaceHandle& fh, const VertexHandle& v0, const VertexHandle& v1, const VertexHandle& v2) {
   //This could probably be done more optimally internally to TopologicalObject
   std::vector<VertexHandle> src_vh;
@@ -631,7 +676,15 @@ bool faceContainsVertex(const TopologicalObject & obj, const FaceHandle & fh, co
       return true;
   return false;
 }
-  
+
+bool faceContainsEdge(const TopologicalObject & obj, const FaceHandle & fh, const EdgeHandle & eh)
+{
+  for (FaceEdgeIterator feit = obj.fe_iter(fh); feit; ++feit)
+    if (eh == *feit)
+      return true;
+  return false;
+}
+
 bool tetContainsVertex(const TopologicalObject & obj, const TetHandle & th, const VertexHandle & vh)
 {
   for (TetVertexIterator tvit = obj.tv_iter(th); tvit; ++tvit)

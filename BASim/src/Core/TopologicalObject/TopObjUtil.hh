@@ -69,10 +69,13 @@ void addNextSide(TopologicalObject & obj, const FaceHandle &f, const EdgeHandle 
 
 bool isFaceMatch(const TopologicalObject& obj, const FaceHandle& fh, const VertexHandle& v0, const VertexHandle& v1, const VertexHandle& v2);
 bool faceContainsVertex(const TopologicalObject & obj, const FaceHandle & fh, const VertexHandle & vh);
+bool faceContainsEdge  (const TopologicalObject & obj, const FaceHandle & fh, const EdgeHandle & eh);
 bool tetContainsVertex (const TopologicalObject & obj, const TetHandle & th,  const VertexHandle & vh);
 
 FaceHandle findFace( const TopologicalObject& obj, const VertexHandle& v0, const VertexHandle& v1, const VertexHandle& v2 );
+FaceHandle findFace( const TopologicalObject& obj, const EdgeHandle& e0,   const EdgeHandle& e1,   const EdgeHandle& e2 );
 TetHandle  findTet ( const TopologicalObject& obj, const VertexHandle& v0, const VertexHandle& v1, const VertexHandle& v2, const VertexHandle& v3 );
+TetHandle  findTet ( const TopologicalObject& obj, const FaceHandle& f0,   const FaceHandle& f1,   const FaceHandle& f2,   const FaceHandle& f3 );
 
   
 } //namespace BASim 

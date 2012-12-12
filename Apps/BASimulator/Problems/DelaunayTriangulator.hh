@@ -57,6 +57,9 @@ namespace DelaunayTriangulator
     const Vec3d & pos(VertexHandle v) const { return m_positions[v]; }
     
   protected:
+    void outputVD(Mesh * tomesh, VertexProperty<Vec3d> & vdpos, EdgeProperty<std::vector<EdgeHandle> > & dt_edge_2_vd_face_edges);
+    void outputDT();
+    
     Mesh * m_mesh;
     VertexProperty<Vec3d> m_positions;
     

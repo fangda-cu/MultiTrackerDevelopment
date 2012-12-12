@@ -317,37 +317,7 @@ namespace DelaunayTriangulator
     
     // debugging output
     if (true)
-    {
-      std::cout << "DT mesh" << std::endl;
-      for (EdgeIterator it = m_mesh->edges_begin(); it != m_mesh->edges_end(); ++it)
-      {
-        std::cout << "edge " << (*it).idx() << ": " << m_mesh->fromVertex(*it).idx() << " " << m_mesh->toVertex(*it).idx() << " ";
-        int count = 0;
-        for (EdgeFaceIterator efit = m_mesh->ef_iter(*it); efit; ++efit)
-          count++;
-        std::cout << "face count = " << count << std::endl;
-      }
-      for (FaceIterator it = m_mesh->faces_begin(); it != m_mesh->faces_end(); ++it)
-      {
-        std::cout << "face " << (*it).idx() << ": vertices: ";
-        for (FaceVertexIterator fvit = m_mesh->fv_iter(*it); fvit; ++fvit)
-          std::cout << (*fvit).idx() << " ";
-        std::cout << " edges: ";
-        for (FaceEdgeIterator feit = m_mesh->fe_iter(*it); feit; ++feit)
-          std::cout << (*feit).idx() << " ";
-        std::cout << std::endl;
-      }
-      for (TetIterator it = m_mesh->tets_begin(); it != m_mesh->tets_end(); ++it)
-      {
-        std::cout << "tet " << (*it).idx() << ": vertices: ";
-        for (TetVertexIterator tvit = m_mesh->tv_iter(*it); tvit; ++tvit)
-          std::cout << (*tvit).idx() << " ";
-        std::cout << " faces: ";
-        for (TetFaceIterator tfit = m_mesh->tf_iter(*it); tfit; ++tfit)
-          std::cout << (*tfit).idx() << " ";
-        std::cout << std::endl;
-      }
-    }
+      outputDT();
     
     /////////////////////////////////////////////////////////////////////////////////////////
     // Extract an unbounded Voronoi Diagram
@@ -439,6 +409,8 @@ namespace DelaunayTriangulator
     EdgeProperty<std::vector<VertexHandle> > dt_edge_2_vd_face_verts(m_mesh);
     EdgeProperty<std::vector<EdgeHandle> >   dt_edge_2_vd_face_edges(m_mesh);
 //    FaceProperty<EdgeHandle> vd_face_2_dt_edge(tomesh); // this is not injective
+    VertexProperty<char> cell_closed(m_mesh);
+    cell_closed.assign(true);
     for (EdgeIterator eit = m_mesh->edges_begin(); eit != m_mesh->edges_end(); ++eit)
     {
       std::vector<FaceHandle> dt_faces;
@@ -451,7 +423,12 @@ namespace DelaunayTriangulator
       }
       
       if (vd_face_incomplete)
+      {
+        cell_closed[m_mesh->fromVertex(*eit)] = false;
+        cell_closed[m_mesh->toVertex(*eit)] = false;
+        
         continue; // this vd polygon is semi-infinite
+      }
       
       assert(dt_faces.size() >= 3);
       
@@ -514,30 +491,6 @@ namespace DelaunayTriangulator
       dt_edge_2_vd_face_edges[*eit] = vd_edges;
     }
 
-    // debugging output
-    if (true)
-    {
-      std::cout << "VD mesh" << std::endl;
-      for (VertexIterator it = tomesh->vertices_begin(); it != tomesh->vertices_end(); ++it)
-      {
-        std::cout << "vertex " << (*it).idx() << ": " << vdpos[*it] << std::endl;
-      }
-      for (EdgeIterator it = tomesh->edges_begin(); it != tomesh->edges_end(); ++it)
-      {
-        std::cout << "edge " << (*it).idx() << ": vertices: ";
-        for (EdgeVertexIterator evit = tomesh->ev_iter(*it); evit; ++evit)
-          std::cout << (*evit).idx() << " ";
-        std::cout << std::endl;
-      }
-      for (EdgeIterator it = m_mesh->edges_begin(); it != m_mesh->edges_end(); ++it)
-      {
-        std::cout << "polygon " << (*it).idx() << ": edges: ";
-        for (size_t i = 0; i < dt_edge_2_vd_face_edges[*it].size(); i++)
-          std::cout << dt_edge_2_vd_face_edges[*it][i].idx() << " ";
-        std::cout << std::endl;
-      }
-    }
-    
     /////////////////////////////////////////////////////////////////////////////////////////
     // Clip by bounding box
     
@@ -545,17 +498,21 @@ namespace DelaunayTriangulator
     assert(bbmin.y() < bbmax.y());
     assert(bbmin.z() < bbmax.z());
     
-    // create a common vertes to shoot edges to from any voronoi cell that gets clipped, and thus needs a new polygon face generated to seal the hole
-    VertexHandle common_vh = m_mesh->addVertex();
+    // reshape every voronoi cell
+    VertexProperty<std::vector<std::pair<EdgeHandle, EdgeHandle> > > vd_cell_clipping_new_polygon(m_mesh);
     
-    // find the intersection points of all vd edges with bounding box walls
-    EdgeProperty<VertexHandle> * intersections_with_walls[6];
+    // intersection of the polyhedron's interior with the halfspace of one of the walls of the bounding box
+    // making use of the convexity of both voronoi cells and the bounding box
     for (int wall = 0; wall < 6; wall++)
     {
-      intersections_with_walls[wall] = new EdgeProperty<VertexHandle>(tomesh);
+      // create a common vertes to shoot edges to from any voronoi cell that gets clipped, and thus needs a new polygon face generated to seal the hole
+      VertexHandle common_vh = m_mesh->addVertex();
+      
       Vec3d hsnormal = Vec3d((wall % 3 == 0 ? 1.0 : 0.0), (wall % 3 == 1 ? 1.0 : 0.0), (wall % 3 == 2 ? 1.0 : 0.0)) * (wall < 3 ? 1 : -1);
       Scalar hsposition = hsnormal.dot(wall < 3 ? bbmin : bbmax);
       
+      // find the intersection points of all vd edges with this bounding box wall
+      EdgeProperty<VertexHandle> intersections_with_walls(tomesh);      
       for (EdgeIterator eit = tomesh->edges_begin(); eit != tomesh->edges_end(); ++eit)
       {
         Vec3d x0 = vdpos[tomesh->fromVertex(*eit)];
@@ -564,27 +521,17 @@ namespace DelaunayTriangulator
         if ((x0.dot(hsnormal) - hsposition) * (x1.dot(hsnormal) - hsposition) < 0)
         {
           VertexHandle intersectionvertex = tomesh->addVertex();
-          (*intersections_with_walls[wall])[*eit] = intersectionvertex;
+          intersections_with_walls[*eit] = intersectionvertex;
           vdpos[intersectionvertex] = x0 + (hsposition - x0.dot(hsnormal)) / (x1 - x0).dot(hsnormal) * (x1 - x0);
         }
       }
-    }
-        
-    // reshape every voronoi cell
-    VertexProperty<std::vector<std::pair<EdgeHandle, EdgeHandle> > > vd_cell_clipping_new_polygon(m_mesh);
-    
-    // intersection of the polyhedron's interior with the halfspace of one of the walls of the bounding box
-    // making use of the convexity of both voronoi cells and the bounding box
-    for (int wall = 0; wall < 6; wall++)
-    {
-      Vec3d hsnormal = Vec3d((wall % 3 == 0 ? 1.0 : 0.0), (wall % 3 == 1 ? 1.0 : 0.0), (wall % 3 == 2 ? 1.0 : 0.0)) * (wall < 3 ? 1 : -1);
-      Scalar hsposition = hsnormal.dot(wall < 3 ? bbmin : bbmax);
-      
+
       // intersect with one halfspace      
       // iterate through all polygons, clip the ones intersecting the wall, and delete the ones outside the wall
       for (EdgeIterator eit = m_mesh->edges_begin(); eit != m_mesh->edges_end(); ++eit)
       {
         EdgeHandle polygon = *eit;  // edge in dt
+        
         if (dt_edge_2_vd_face_edges[polygon].size() == 0)
           continue; // semi-infinite polygon
         
@@ -615,9 +562,10 @@ namespace DelaunayTriangulator
         {
           // clip the current polygon with the wall
           std::vector<EdgeHandle> new_polygon_edges;
-          for (size_t i = 0; i < dt_edge_2_vd_face_edges[polygon].size(); i++)
+          std::vector<EdgeHandle> edges_to_examine = dt_edge_2_vd_face_edges[polygon];
+          for (size_t i = 0; i < edges_to_examine.size(); i++)
           {
-            EdgeHandle eh = dt_edge_2_vd_face_edges[polygon][i];
+            EdgeHandle eh = edges_to_examine[i];
             
             VertexHandle v0 = tomesh->fromVertex(eh);
             VertexHandle v1 = tomesh->toVertex(eh);
@@ -627,7 +575,7 @@ namespace DelaunayTriangulator
             
             if (eh == edge0 || eh == edge1)
             {
-              VertexHandle vintersection = (*intersections_with_walls[wall])[eh];
+              VertexHandle vintersection = intersections_with_walls[eh];
               assert(vintersection.isValid());
               
               assert((x0.dot(hsnormal) - hsposition) * (x1.dot(hsnormal) - hsposition) < 0);
@@ -640,11 +588,77 @@ namespace DelaunayTriangulator
               }
               
               // create a new edge to the intersection point
-              EdgeHandle newedge = tomesh->addEdge(v0, vintersection);
+              EdgeHandle newedge = findEdge(*tomesh, v0, vintersection);
+              if (!newedge.isValid())
+                newedge = tomesh->addEdge(v0, vintersection);
               new_polygon_edges.push_back(newedge);
+              vd_edge_2_dt_face[newedge] = FaceHandle();
               
-              // delete the old edge
-              tomesh->deleteEdge(eh, true);
+              // remove this edge from the current polygon
+              std::vector<EdgeHandle> & edges = dt_edge_2_vd_face_edges[polygon];
+              edges.erase(std::remove(edges.begin(), edges.end(), eh), edges.end());
+              
+              // check to see if the edge is present in any other polygon. if not, delete it, and update primal graph accordingly for the new edge.
+              bool edge_in_use = false;
+              for (FaceEdgeIterator feit = m_mesh->fe_iter(vd_edge_2_dt_face[eh]); feit; ++feit)
+              {
+                std::vector<EdgeHandle> & edges = dt_edge_2_vd_face_edges[*feit];
+                if (std::find(edges.begin(), edges.end(), eh) != edges.end())
+                {
+                  edge_in_use = true;
+                  break;
+                }
+              }
+              
+              if (!edge_in_use)
+              {
+                // record the old edge's environment - it will become the environment of the new edge
+                FaceHandle old_face = vd_edge_2_dt_face[eh];
+                std::vector<std::pair<std::vector<FaceHandle>, VertexHandle> > tets_to_create;
+                for (FaceTetIterator ftit = m_mesh->ft_iter(old_face); ftit; ++ftit)
+                {
+                  std::vector<FaceHandle> old_tet_faces;
+                  for (TetFaceIterator tfit = m_mesh->tf_iter(*ftit); tfit; ++tfit)
+                    old_tet_faces.push_back(*tfit);
+                  old_tet_faces.erase(std::remove(old_tet_faces.begin(), old_tet_faces.end(), old_face), old_tet_faces.end());
+                  assert(old_tet_faces.size() == 3);
+                  
+                  tets_to_create.push_back(std::pair<std::vector<FaceHandle>, VertexHandle>(old_tet_faces, dt_tet_2_vd_vert[*ftit]));
+                }
+                
+                std::vector<EdgeHandle> face_to_create;
+                for (FaceEdgeIterator feit = m_mesh->fe_iter(old_face); feit; ++feit)
+                  face_to_create.push_back(*feit);
+                
+                // delete old edge from primal (dt)
+                std::vector<TetHandle> tets_to_delete;
+                for (FaceTetIterator ftit = m_mesh->ft_iter(old_face); ftit; ++ftit)
+                  tets_to_delete.push_back(*ftit);
+                for (size_t i = 0; i < tets_to_delete.size(); i++)
+                  m_mesh->deleteTet(tets_to_delete[i], false);
+                
+                m_mesh->deleteFace(old_face, false);
+
+                // delete old edge from dual (vd)
+                tomesh->deleteEdge(eh, true);
+                
+                // update primal (dt) for the new edge
+                assert(face_to_create.size() == 3);
+                FaceHandle new_dt_face = m_mesh->addFace(face_to_create[0], face_to_create[1], face_to_create[2]);
+                
+                dt_face_2_vd_edge[new_dt_face] = newedge;
+                vd_edge_2_dt_face[newedge] = new_dt_face;
+                
+                for (size_t i = 0; i < tets_to_create.size(); i++)
+                {
+                  assert(tets_to_create[i].first.size() == 3);
+                  TetHandle new_dt_tet = m_mesh->addTet(tets_to_create[i].first[0], tets_to_create[i].first[1], tets_to_create[i].first[2], new_dt_face);
+                  
+                  dt_tet_2_vd_vert[new_dt_tet] = tets_to_create[i].second;
+                  vd_vert_2_dt_tet[tets_to_create[i].second] = new_dt_tet;
+                }
+                
+              }
               
             } else
             {
@@ -660,17 +674,23 @@ namespace DelaunayTriangulator
               {
                 assert(x1.dot(hsnormal) < hsposition);
                 
-                // entire edge is outside the halfspace - need to delete it
+                // entire edge is outside the halfspace - need to delete it (removing it from its incident polygons too)
+                for (FaceEdgeIterator feit = m_mesh->fe_iter(vd_edge_2_dt_face[eh]); feit; ++feit)
+                {
+                  std::vector<EdgeHandle> & edges = dt_edge_2_vd_face_edges[*feit];
+                  edges.erase(std::remove(edges.begin(), edges.end(), eh), edges.end());
+                }
                 tomesh->deleteEdge(eh, true);                
               }
             }
           }
           
-          EdgeHandle newboundaryedge = tomesh->addEdge((*intersections_with_walls[wall])[edge0], (*intersections_with_walls[wall])[edge1]);
+          EdgeHandle newboundaryedge = tomesh->addEdge(intersections_with_walls[edge0], intersections_with_walls[edge1]); // the corresponding primal face will be created later
           EdgeHandle polygon_of_newboundaryedge = polygon;
           
           new_polygon_edges.push_back(newboundaryedge);
           dt_edge_2_vd_face_edges[polygon] = new_polygon_edges;
+          vd_edge_2_dt_face[newboundaryedge] = FaceHandle();
           
           vd_cell_clipping_new_polygon[m_mesh->fromVertex(polygon)].push_back(std::pair<EdgeHandle, EdgeHandle>(newboundaryedge, polygon_of_newboundaryedge));
           vd_cell_clipping_new_polygon[m_mesh->toVertex(polygon)  ].push_back(std::pair<EdgeHandle, EdgeHandle>(newboundaryedge, polygon_of_newboundaryedge));
@@ -681,24 +701,38 @@ namespace DelaunayTriangulator
           VertexHandle v0 = tomesh->fromVertex(dt_edge_2_vd_face_edges[polygon][0]);
           Vec3d x0 = vdpos[v0];
           
-          if (x0.x() < bbmin.x() || x0.x() >= bbmax.x() || x0.y() < bbmin.y() || x0.y() > bbmax.y() || x0.z() < bbmin.z() || x0.z() > bbmax.z())
+          if (x0.dot(hsnormal) < hsposition)
           {
             // this vertex is out of the halfspace. this means the entire polygon must be too, since it doesn't intersect the plane.
             // need to delete this polygon
             
-            // delete it from primal graph (dt)
-            for (EdgeFaceIterator efit = m_mesh->ef_iter(polygon); efit; ++efit)
+            // delete it from dual graph (vd)
+            std::vector<EdgeHandle> edges_to_delete = dt_edge_2_vd_face_edges[polygon]; // make a copy because dt_edge_2_vd_face_edges may be changed during deletion
+            for (size_t i = 0; i < edges_to_delete.size(); i++)
             {
-              std::vector<TetHandle> tets_to_delete;
-              for (FaceTetIterator ftit = m_mesh->ft_iter(*efit); ftit; ++ftit)
-                tets_to_delete.push_back(*ftit);
-              for (size_t i = 0; i < tets_to_delete.size(); i++)
-                m_mesh->deleteTet(tets_to_delete[i], true);
+              EdgeHandle eh = edges_to_delete[i];  
+              for (FaceEdgeIterator feit = m_mesh->fe_iter(vd_edge_2_dt_face[eh]); feit; ++feit)
+              {
+                std::vector<EdgeHandle> & edges = dt_edge_2_vd_face_edges[*feit];
+                edges.erase(std::remove(edges.begin(), edges.end(), eh), edges.end());
+              }
+              tomesh->deleteEdge(eh, true);
             }
             
-            // delete it from dual graph (vd)
-            for (size_t i = 0; i < dt_edge_2_vd_face_edges[polygon].size(); i++)
-              tomesh->deleteEdge(dt_edge_2_vd_face_edges[polygon][i], true);
+            // delete it from primal graph (dt)
+            std::vector<TetHandle> tets_to_delete;
+            for (EdgeFaceIterator efit = m_mesh->ef_iter(polygon); efit; ++efit)
+              for (FaceTetIterator ftit = m_mesh->ft_iter(*efit); ftit; ++ftit)
+                tets_to_delete.push_back(*ftit);
+            for (size_t i = 0; i < tets_to_delete.size(); i++)
+              if (m_mesh->tetExists(tets_to_delete[i]))
+                m_mesh->deleteTet(tets_to_delete[i], false);
+            
+            std::vector<FaceHandle> faces_to_delete;
+            for (EdgeFaceIterator efit = m_mesh->ef_iter(polygon); efit; ++efit)
+              faces_to_delete.push_back(*efit);
+            for (size_t i = 0; i < faces_to_delete.size(); i++)
+              m_mesh->deleteFace(faces_to_delete[i], true);
             
           }
           
@@ -711,25 +745,32 @@ namespace DelaunayTriangulator
       {
         VertexHandle cell = *vit;
         
+        if (!cell_closed[cell])
+          continue;
+        
         if (vd_cell_clipping_new_polygon[cell].size() > 0)
         {
           // this cell has been subject to clipping, i.e. this dt vertex needs a new edge to seal the hole
-          EdgeHandle new_polygon = m_mesh->addEdge(cell, common_vh);  // edge in dt
+          EdgeHandle new_polygon = findEdge(*m_mesh, cell, common_vh);
+          if (!new_polygon.isValid())
+            new_polygon = m_mesh->addEdge(cell, common_vh);  // edge in dt
+          dt_edge_2_vd_face_edges[new_polygon].clear();
 
           std::set<VertexHandle> vd_verts;
           for (size_t i = 0; i < vd_cell_clipping_new_polygon[cell].size(); i++)
           {
             EdgeHandle new_vd_edge =      vd_cell_clipping_new_polygon[cell][i].first;   // edge in vd
             EdgeHandle adjacent_polygon = vd_cell_clipping_new_polygon[cell][i].second;  // edge in dt
-            
+
             assert(m_mesh->fromVertex(adjacent_polygon) == cell || m_mesh->toVertex(adjacent_polygon) == cell);
             
             VertexHandle adjacent_cell = getEdgesOtherVertex(*m_mesh, adjacent_polygon, cell);
-            EdgeHandle new_edge_to_adjacent_polygon = m_mesh->addEdge(adjacent_cell, common_vh);
-            FaceHandle new_dt_face = m_mesh->addFace(new_polygon, adjacent_polygon, new_edge_to_adjacent_polygon);
+                        
+            FaceHandle new_dt_face = findFace(*m_mesh, cell, adjacent_cell, common_vh);
+            if (!new_dt_face.isValid())
+              new_dt_face = m_mesh->addFace(cell, adjacent_cell, common_vh);
             
             dt_edge_2_vd_face_edges[new_polygon].push_back(new_vd_edge);
-            dt_edge_2_vd_face_edges[new_edge_to_adjacent_polygon].clear();  // this polygon is semi infinite
             dt_face_2_vd_edge[new_dt_face] = new_vd_edge;
             vd_edge_2_dt_face[new_vd_edge] = new_dt_face;
             
@@ -741,12 +782,16 @@ namespace DelaunayTriangulator
           for (std::set<VertexHandle>::iterator i = vd_verts.begin(); i != vd_verts.end(); i++)
           {
             VertexHandle vh = *i;
+            
             EdgeHandle existing_edge;
             EdgeHandle new_vd_edge_0;
             EdgeHandle new_vd_edge_1;
-            for (VertexEdgeIterator veit = m_mesh->ve_iter(vh); veit; ++veit)
+            for (VertexEdgeIterator veit = tomesh->ve_iter(vh); veit; ++veit)
             {
-              if (faceContainsVertex(*tomesh, vd_edge_2_dt_face[*veit], common_vh))
+              if (!vd_edge_2_dt_face[*veit].isValid())
+                continue;
+              
+              if (faceContainsVertex(*m_mesh, vd_edge_2_dt_face[*veit], common_vh) && faceContainsVertex(*m_mesh, vd_edge_2_dt_face[*veit], cell))
               {
                 if (new_vd_edge_0.isValid() && new_vd_edge_1.isValid())
                   assert(!"Error");
@@ -754,7 +799,7 @@ namespace DelaunayTriangulator
                   new_vd_edge_1 = *veit;
                 else
                   new_vd_edge_0 = *veit;
-              } else
+              } else if (faceContainsVertex(*m_mesh, vd_edge_2_dt_face[*veit], cell))
               {
                 existing_edge = *veit;
               }
@@ -766,7 +811,10 @@ namespace DelaunayTriangulator
             
             EdgeHandle edge_between_adjacent_cells = getVertexOppositeEdgeInFace(*m_mesh, vd_edge_2_dt_face[existing_edge], cell);
             FaceHandle new_dt_face_to_common_vh = m_mesh->addFace(common_vh, m_mesh->fromVertex(edge_between_adjacent_cells), m_mesh->toVertex(edge_between_adjacent_cells));
-            TetHandle new_dt_tet = m_mesh->addTet(vd_edge_2_dt_face[existing_edge], vd_edge_2_dt_face[new_vd_edge_0], vd_edge_2_dt_face[new_vd_edge_1], new_dt_face_to_common_vh);
+            
+            TetHandle new_dt_tet = findTet(*m_mesh, vd_edge_2_dt_face[existing_edge], vd_edge_2_dt_face[new_vd_edge_0], vd_edge_2_dt_face[new_vd_edge_1], new_dt_face_to_common_vh); 
+            if (!new_dt_tet.isValid())
+              new_dt_tet = m_mesh->addTet(vd_edge_2_dt_face[existing_edge], vd_edge_2_dt_face[new_vd_edge_0], vd_edge_2_dt_face[new_vd_edge_1], new_dt_face_to_common_vh);
             
             dt_face_2_vd_edge[new_dt_face_to_common_vh] = EdgeHandle(); // this edge is semi infinite
             dt_tet_2_vd_vert[new_dt_tet] = vh;
@@ -782,7 +830,8 @@ namespace DelaunayTriangulator
       
     }
     
-    
+    outputDT();
+    outputVD(tomesh, vdpos, dt_edge_2_vd_face_edges);
 
     return true;
   }
@@ -848,5 +897,62 @@ namespace DelaunayTriangulator
   {
     return predicateInTetrahedron(pos(a), pos(b), pos(c), pos(d), pos(p));
   }
+ 
+  void DelaunayTriangulator::outputVD(Mesh * tomesh, VertexProperty<Vec3d> & vdpos, EdgeProperty<std::vector<EdgeHandle> > & dt_edge_2_vd_face_edges)
+  {
+    std::cout << "VD mesh" << std::endl;
+    for (VertexIterator it = tomesh->vertices_begin(); it != tomesh->vertices_end(); ++it)
+    {
+      if (tomesh->vertexIncidentEdges(*it) > 0)
+        std::cout << "vertex " << (*it).idx() << ": " << vdpos[*it] << std::endl;
+    }
+    for (EdgeIterator it = tomesh->edges_begin(); it != tomesh->edges_end(); ++it)
+    {
+      std::cout << "edge " << (*it).idx() << ": vertices: ";
+      for (EdgeVertexIterator evit = tomesh->ev_iter(*it); evit; ++evit)
+        std::cout << (*evit).idx() << " ";
+      std::cout << std::endl;
+    }
+    for (EdgeIterator it = m_mesh->edges_begin(); it != m_mesh->edges_end(); ++it)
+    {
+      std::cout << "polygon " << (*it).idx() << ": edges: ";
+      for (size_t i = 0; i < dt_edge_2_vd_face_edges[*it].size(); i++)
+        std::cout << dt_edge_2_vd_face_edges[*it][i].idx() << " ";
+      std::cout << std::endl;
+    }
+  }
   
+  void DelaunayTriangulator::outputDT()
+  {
+    std::cout << "DT mesh" << std::endl;
+    for (EdgeIterator it = m_mesh->edges_begin(); it != m_mesh->edges_end(); ++it)
+    {
+      std::cout << "edge " << (*it).idx() << ": " << m_mesh->fromVertex(*it).idx() << " " << m_mesh->toVertex(*it).idx() << " ";
+      int count = 0;
+      for (EdgeFaceIterator efit = m_mesh->ef_iter(*it); efit; ++efit)
+        count++;
+      std::cout << "face count = " << count << std::endl;
+    }
+    for (FaceIterator it = m_mesh->faces_begin(); it != m_mesh->faces_end(); ++it)
+    {
+      std::cout << "face " << (*it).idx() << ": vertices: ";
+      for (FaceVertexIterator fvit = m_mesh->fv_iter(*it); fvit; ++fvit)
+        std::cout << (*fvit).idx() << " ";
+      std::cout << " edges: ";
+      for (FaceEdgeIterator feit = m_mesh->fe_iter(*it); feit; ++feit)
+        std::cout << (*feit).idx() << " ";
+      std::cout << std::endl;
+    }
+    for (TetIterator it = m_mesh->tets_begin(); it != m_mesh->tets_end(); ++it)
+    {
+      std::cout << "tet " << (*it).idx() << ": vertices: ";
+      for (TetVertexIterator tvit = m_mesh->tv_iter(*it); tvit; ++tvit)
+        std::cout << (*tvit).idx() << " ";
+      std::cout << " faces: ";
+      for (TetFaceIterator tfit = m_mesh->tf_iter(*it); tfit; ++tfit)
+        std::cout << (*tfit).idx() << " ";
+      std::cout << std::endl;
+    }
+  }
+
 }
