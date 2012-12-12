@@ -897,7 +897,7 @@ namespace DelaunayTriangulator
     
     std::vector<FaceHandle> dt_faces_to_delete;
     for (FaceIterator fit = m_mesh->faces_begin(); fit != m_mesh->faces_end(); ++fit)
-      if (tomesh->faceIncidentTets(*fit) == 0)
+      if (m_mesh->faceIncidentTets(*fit) == 0)
         dt_faces_to_delete.push_back(*fit);
     
     for (size_t i = 0; i < dt_faces_to_delete.size(); i++)
@@ -905,7 +905,7 @@ namespace DelaunayTriangulator
     
     std::vector<EdgeHandle> dt_edges_to_delete;
     for (EdgeIterator eit = m_mesh->edges_begin(); eit != m_mesh->edges_end(); ++eit)
-      if (tomesh->edgeIncidentFaces(*eit) == 0)
+      if (m_mesh->edgeIncidentFaces(*eit) == 0)
         dt_edges_to_delete.push_back(*eit);
     
     for (size_t i = 0; i < dt_edges_to_delete.size(); i++)
@@ -913,7 +913,7 @@ namespace DelaunayTriangulator
     
     std::vector<VertexHandle> dt_vertices_to_delete;
     for (VertexIterator vit = m_mesh->vertices_begin(); vit != m_mesh->vertices_end(); ++vit)
-      if (tomesh->vertexIncidentEdges(*vit) == 0)
+      if (m_mesh->vertexIncidentEdges(*vit) == 0)
         dt_vertices_to_delete.push_back(*vit);
     
     for (size_t i = 0; i < dt_vertices_to_delete.size(); i++)
