@@ -1223,8 +1223,9 @@ void DoubleBubbleTest::setupScene6()
   for (int i = 0; i < nsite; i++)
     dt.insertVertex(sites[i]);
   dtpositions = dt.positions();
-  
-  dt.extractVoronoiDiagram(shellObj, positions, Vec3d(0, 0, 0), Vec3d(1, 1, 1));
+
+  FaceProperty<Vec2i> faceLabels(shellObj);
+  dt.extractVoronoiDiagram(shellObj, positions, faceLabels, Vec3d(0, 0, 0), Vec3d(1, 1, 1));
   
   for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
   {
@@ -1254,7 +1255,7 @@ void DoubleBubbleTest::setupScene6()
   shell->setEdgeXis(edgeAngle);
   shell->setEdgeVelocities(edgeVel);
   
-//  shell->setFaceLabels(faceLabels);
+  shell->setFaceLabels(faceLabels);
   
  
 }

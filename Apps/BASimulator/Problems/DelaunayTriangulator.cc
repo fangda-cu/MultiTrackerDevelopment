@@ -298,7 +298,7 @@ namespace DelaunayTriangulator
     return true;
   }
 
-  bool DelaunayTriangulator::extractVoronoiDiagram(Mesh * tomesh, VertexProperty<Vec3d> & vdpos, const Vec3d & bbmin, const Vec3d & bbmax)
+  bool DelaunayTriangulator::extractVoronoiDiagram(Mesh * tomesh, VertexProperty<Vec3d> & vdpos, FaceProperty<Vec2i> & labels, const Vec3d & bbmin, const Vec3d & bbmax)
   {
     /////////////////////////////////////////////////////////////////////////////////////////
     // Extract an unbounded Voronoi Diagram
@@ -879,24 +879,104 @@ namespace DelaunayTriangulator
 
     /////////////////////////////////////////////////////////////////////////////////////////
     // Prune orphan primitives
-    std::vector<EdgeHandle> edges_to_delete;
+    std::vector<EdgeHandle> vd_edges_to_delete;
     for (EdgeIterator eit = tomesh->edges_begin(); eit != tomesh->edges_end(); ++eit)
       if (tomesh->edgeIncidentFaces(*eit) == 0)
-        edges_to_delete.push_back(*eit);
+        vd_edges_to_delete.push_back(*eit);
     
-    for (size_t i = 0; i < edges_to_delete.size(); i++)
-      tomesh->deleteEdge(edges_to_delete[i], false);
+    for (size_t i = 0; i < vd_edges_to_delete.size(); i++)
+      tomesh->deleteEdge(vd_edges_to_delete[i], false);
     
-    std::vector<VertexHandle> vertices_to_delete;
+    std::vector<VertexHandle> vd_vertices_to_delete;
     for (VertexIterator vit = tomesh->vertices_begin(); vit != tomesh->vertices_end(); ++vit)
       if (tomesh->vertexIncidentEdges(*vit) == 0)
-        vertices_to_delete.push_back(*vit);
+        vd_vertices_to_delete.push_back(*vit);
     
-    for (size_t i = 0; i < vertices_to_delete.size(); i++)
-      tomesh->deleteVertex(vertices_to_delete[i]);
-
+    for (size_t i = 0; i < vd_vertices_to_delete.size(); i++)
+      tomesh->deleteVertex(vd_vertices_to_delete[i]);
+    
+    std::vector<FaceHandle> dt_faces_to_delete;
+    for (FaceIterator fit = m_mesh->faces_begin(); fit != m_mesh->faces_end(); ++fit)
+      if (tomesh->faceIncidentTets(*fit) == 0)
+        dt_faces_to_delete.push_back(*fit);
+    
+    for (size_t i = 0; i < dt_faces_to_delete.size(); i++)
+      m_mesh->deleteFace(dt_faces_to_delete[i], false);
+    
+    std::vector<EdgeHandle> dt_edges_to_delete;
+    for (EdgeIterator eit = m_mesh->edges_begin(); eit != m_mesh->edges_end(); ++eit)
+      if (tomesh->edgeIncidentFaces(*eit) == 0)
+        dt_edges_to_delete.push_back(*eit);
+    
+    for (size_t i = 0; i < dt_edges_to_delete.size(); i++)
+      m_mesh->deleteEdge(dt_edges_to_delete[i], false);
+    
+    std::vector<VertexHandle> dt_vertices_to_delete;
+    for (VertexIterator vit = m_mesh->vertices_begin(); vit != m_mesh->vertices_end(); ++vit)
+      if (tomesh->vertexIncidentEdges(*vit) == 0)
+        dt_vertices_to_delete.push_back(*vit);
+    
+    for (size_t i = 0; i < dt_vertices_to_delete.size(); i++)
+      m_mesh->deleteVertex(dt_vertices_to_delete[i]);
+    
 //    outputDT();
 //    outputVD(tomesh, vdpos, dt_edge_2_vd_face_edges);
+    
+    /////////////////////////////////////////////////////////////////////////////////////////
+    // Assign face labels
+    labels.assign(Vec2i(-1, -1));
+    int next_id = 0;
+    for (VertexIterator vit = m_mesh->vertices_begin(); vit != m_mesh->vertices_end(); ++vit)
+    {
+      int cell_label = next_id++;
+      
+      // compute the centroid of the cell
+      Vec3d centroid = Vec3d::Zero();
+      int vcount = 0;
+      
+      for (VertexFaceIterator vfit = m_mesh->vf_iter(*vit); vfit; ++vfit)
+      {
+        EdgeHandle vd_eh = dt_face_2_vd_edge[*vfit];  // each vertex will be counted twice, no problem.
+        centroid += vdpos[tomesh->fromVertex(vd_eh)];
+        centroid += vdpos[tomesh->toVertex(vd_eh)];
+        vcount += 2;
+      }
+      assert(vcount > 0);
+      centroid /= vcount;
+
+      // assign labels depending on the orientation of the faces
+      for (VertexEdgeIterator veit = m_mesh->ve_iter(*vit); veit; ++veit)
+      {
+        EdgeHandle polygon = *veit;
+        
+        for (size_t i = 0; i < dt_edge_2_vd_faces[polygon].size(); i++)
+        {
+          FaceHandle vd_face = dt_edge_2_vd_faces[polygon][i];
+          
+          FaceVertexIterator fvit = tomesh->fv_iter(vd_face); assert(fvit);
+          VertexHandle v0 = *fvit; ++fvit; assert(fvit);
+          VertexHandle v1 = *fvit; ++fvit; assert(fvit);
+          VertexHandle v2 = *fvit; ++fvit; assert(!fvit);
+          
+          Vec3d x0 = vdpos[v0];
+          Vec3d x1 = vdpos[v1];
+          Vec3d x2 = vdpos[v2];
+          
+          if (predicateOriented(centroid, x0, x1, x2) > 0)
+          {
+            // centroid is on the positive side of the face: label of this cell should go to the second component of the face label
+            labels[vd_face].y() = cell_label;
+            
+          } else
+          {
+            labels[vd_face].x() = cell_label;
+          }
+        }
+      }
+      
+    }
+    
+
     
 
     return true;
