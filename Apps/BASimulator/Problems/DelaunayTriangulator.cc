@@ -937,12 +937,14 @@ namespace DelaunayTriangulator
       Vec3d centroid = Vec3d::Zero();
       int vcount = 0;
       
-      for (VertexFaceIterator vfit = m_mesh->vf_iter(*vit); vfit; ++vfit)
+      for (VertexEdgeIterator veit = m_mesh->ve_iter(*vit); veit; ++veit)
       {
-        EdgeHandle vd_eh = dt_face_2_vd_edge[*vfit];  // each vertex will be counted twice, no problem.
-        centroid += vdpos[tomesh->fromVertex(vd_eh)];
-        centroid += vdpos[tomesh->toVertex(vd_eh)];
-        vcount += 2;
+        for (size_t i = 0; i < dt_edge_2_vd_face_edges[*veit].size(); i++)
+        {
+          centroid += vdpos[tomesh->fromVertex(dt_edge_2_vd_face_edges[*veit][i])]; // each vertex counted 6 times, no problem
+          centroid += vdpos[tomesh->toVertex  (dt_edge_2_vd_face_edges[*veit][i])];
+          vcount += 2;
+        }
       }
       assert(vcount > 0);
       centroid /= vcount;
