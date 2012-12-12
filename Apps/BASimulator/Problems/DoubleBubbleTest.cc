@@ -492,7 +492,7 @@ void DoubleBubbleTest::AtEachTimestep()
       
       std::cout << "Bubble " << j << " (" << pos[j].size() << ") : center = " << x.segment<3>(0).transpose() << " radius = " << r << " average velocity = " << v << std::endl;
     }
-  } else if (m_active_scene == 5)
+  } else if (m_active_scene == 5 || m_active_scene == 6)
   {
     shellObj->releaseAllVertices();
     
@@ -1232,8 +1232,6 @@ void DoubleBubbleTest::setupScene6()
     undeformed[*vit] = positions[*vit];
     velocities[*vit] = Vec3d(0, 0, 0);
   }
-  
-  // still need face labels
   
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj); 
