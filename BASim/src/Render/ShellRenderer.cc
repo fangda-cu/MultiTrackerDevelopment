@@ -800,7 +800,7 @@ void ShellRenderer::render()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_FALSE);
     glBegin(GL_LINES);
-    OpenGL::color(Color(0,0,0,255));
+    OpenGL::color(Color(0.0, 0.0, 0.0, 0.3));
     
     for( EdgeIterator eit = mesh.edges_begin(); eit != mesh.edges_end(); ++eit )
     {
@@ -951,13 +951,13 @@ void ShellRenderer::render()
       {
         color_combined += color0;
         visible_count++;
-        alpha += 0.1;
+        alpha += 0.3;
       }
       if (regions.y() >= 0 && m_region_visible[regions.y()])
       {
         color_combined += color1;
         visible_count++;
-        alpha += 0.1;
+        alpha += 0.3;
       }
       if (visible_count == 0)
         color_combined = Vec3d(0.0,0.0,0.0);
@@ -988,6 +988,7 @@ void ShellRenderer::render()
     glPointSize(4);
     glBegin(GL_POINTS);
     
+    if (false)
     for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) 
     {
       Vec3d vertPos = m_shell.getVertexPosition(*vit); 
