@@ -494,6 +494,27 @@ void DoubleBubbleTest::AtEachTimestep()
     }
   } else if (m_active_scene == 5 || m_active_scene == 6)
   {
+    Scalar minz = 1;
+    VertexHandle minzv;
+    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+    {
+      bool foi = false;
+      for (VertexFaceIterator vfit = shellObj->vf_iter(*vit); vfit; ++vfit)
+      {
+        Vec2i label = shell->getFaceLabel(*vfit);
+        if (label.x() == 6 || label.y() == 6)
+          foi = true;
+      }
+      if (foi)
+        if (shell->getVertexPosition(*vit).z() < minz)
+        {
+          minz = shell->getVertexPosition(*vit).z();
+          minzv = *vit;
+        }
+    }
+    
+    std::cout << "min z = " << minz << " vertex = " << minzv.idx() << std::endl;
+    
     shellObj->releaseAllVertices();
     
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
