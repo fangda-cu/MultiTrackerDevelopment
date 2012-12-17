@@ -173,7 +173,7 @@ void YImage::setAllAlpha( unsigned char alpha )
 static void
 user_write_data(png_structp png_ptr, png_bytep data, png_size_t length)
 {
-  voidp write_io_ptr = png_get_io_ptr(png_ptr);
+  png_voidp write_io_ptr = png_get_io_ptr(png_ptr);
   size_t count = 0;
   count = fwrite((unsigned char*) data, length, 1, (FILE*) write_io_ptr);
   if (count != 1) std::cerr << "Error occurred writing to file." << std::endl;
@@ -181,14 +181,14 @@ user_write_data(png_structp png_ptr, png_bytep data, png_size_t length)
 
 static void user_flush_data(png_structp png_ptr)
 {
-  voidp write_io_ptr = png_get_io_ptr(png_ptr);
+  png_voidp write_io_ptr = png_get_io_ptr(png_ptr);
   fflush((FILE*) write_io_ptr);
 }
 
 static void
 user_read_data(png_structp png_ptr, png_bytep data, png_size_t length)
 {
-  voidp read_io_ptr = png_get_io_ptr(png_ptr);
+  png_voidp read_io_ptr = png_get_io_ptr(png_ptr);
   size_t count = 0;
   count = fread((unsigned char*) data, length, 1, (FILE*) read_io_ptr);
   if (count != 1) std::cerr << "Error occurred reading from file." << std::endl;
