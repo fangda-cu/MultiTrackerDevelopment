@@ -15,7 +15,7 @@
 namespace BASim {
 
 const int ELASTIC_SHELL_DOFS_PER_VERTEX = 0; //nodal position vectors
-const int ELASTIC_SHELL_DOFS_PER_EDGE = 1; //mid-edge normal bending DOFs (Grinspun et al. 2006)
+const int ELASTIC_SHELL_DOFS_PER_EDGE = 0; //mid-edge normal bending DOFs (Grinspun et al. 2006)
 
 class DeformableObject;
 class ElasticShellForce;
@@ -60,10 +60,10 @@ public:
   const std::vector<ElasticShellForce*>& getForces() const;
   void addForce(ElasticShellForce* force);
 
-  void constrainEdgeXi(const EdgeHandle& eh, Scalar xiValue) {
-      constrainedEdges.push_back(eh);
-      constrainedXiValues.push_back(xiValue);
-  }
+//  void constrainEdgeXi(const EdgeHandle& eh, Scalar xiValue) {
+//      constrainedEdges.push_back(eh);
+//      constrainedXiValues.push_back(xiValue);
+//  }
 
   void setRemeshing(bool enable, Scalar min_rez, Scalar max_rez, int iterations) {
     m_do_remeshing = enable;
@@ -72,9 +72,9 @@ public:
     m_remeshing_iters = iterations;
   }
   
-  void setThicknessUpdating(bool enable) {
-    m_do_thickness_updates = enable;
-  }
+//  void setThicknessUpdating(bool enable) {
+//    m_do_thickness_updates = enable;
+//  }
 
   void setElTopoCollisions(bool enable) {
     m_do_eltopo_collisions = enable;
@@ -86,55 +86,55 @@ public:
   // methods are kept and implemented to redirect the calls
   void setVertexPositions(const VertexProperty<Vec3d>& positions) { m_obj->setVertexPositions(positions); }
   void setVertexVelocities(const VertexProperty<Vec3d>& velocities) { m_obj->setVertexVelocities(velocities); }
-  void setVertexUndeformed(const VertexProperty<Vec3d>& undef) { m_obj->setVertexUndeformedPositions(undef); }
+//  void setVertexUndeformed(const VertexProperty<Vec3d>& undef) { m_obj->setVertexUndeformedPositions(undef); }
   
-  void setEdgeXis(const EdgeProperty<Scalar>& xi);
-  void setEdgeUndeformed(const EdgeProperty<Scalar>& undef);
-  void setEdgeVelocities(const EdgeProperty<Scalar>& vels);
+//  void setEdgeXis(const EdgeProperty<Scalar>& xi);
+//  void setEdgeUndeformed(const EdgeProperty<Scalar>& undef);
+//  void setEdgeVelocities(const EdgeProperty<Scalar>& vels);
   
   void setFaceLabels(const FaceProperty<Vec2i>& labels);
   Vec2i getFaceLabel(const FaceHandle& face) { return m_face_regions[face]; }
 
   //Individual DOFs
-  Vec3d getVertexUndeformed(const VertexHandle& v) const { return m_obj->getVertexUndeformedPosition(v); }
+//  Vec3d getVertexUndeformed(const VertexHandle& v) const { return m_obj->getVertexUndeformedPosition(v); }
   Vec3d getVertexPosition(const VertexHandle& v) const { return m_obj->getVertexPosition(v); }
   Vec3d getVertexVelocity(const VertexHandle& v) const { return m_obj->getVertexVelocity(v); }
   Vec3d getVertexDampingUndeformed(const VertexHandle& v) const { return m_obj->getVertexDampingUndeformedPosition(v); }
 
   const VertexProperty<Vec3d>& getVertexPositions() const{ return m_obj->getVertexPositions(); }
 
-  void setUndeformedVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_obj->setVertexUndeformedPosition(v, pos); }
+//  void setUndeformedVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_obj->setVertexUndeformedPosition(v, pos); }
   void setVertexPosition(const VertexHandle& v, const Vec3d& pos) { m_obj->setVertexPosition(v, pos); }
   void setVertexVelocity(const VertexHandle& v, const Vec3d& vel) { m_obj->setVertexVelocity(v, vel); }
 
-  Scalar getEdgeUndeformedXi(const EdgeHandle& eh) const { return m_undef_xi[eh]; }
-  Scalar getEdgeXi(const EdgeHandle& eh) const { return m_xi[eh]; }
-  Scalar getEdgeVelocity(const EdgeHandle& eh) const { return m_xi_vel[eh]; }
-  Scalar getDampingUndeformedXi(const EdgeHandle& eh) const { return m_damping_undef_xi[eh]; }
+//  Scalar getEdgeUndeformedXi(const EdgeHandle& eh) const { return m_undef_xi[eh]; }
+//  Scalar getEdgeXi(const EdgeHandle& eh) const { return m_xi[eh]; }
+//  Scalar getEdgeVelocity(const EdgeHandle& eh) const { return m_xi_vel[eh]; }
+//  Scalar getDampingUndeformedXi(const EdgeHandle& eh) const { return m_damping_undef_xi[eh]; }
   
-  const VertexProperty<Scalar> & getVertexMasses() const { return m_vertex_masses; }
-  const Scalar getModelVertexMass(const VertexHandle& vh) const {return m_vertex_masses[vh]; }
+//  const VertexProperty<Scalar> & getVertexMasses() const { return m_vertex_masses; }
+//  const Scalar getModelVertexMass(const VertexHandle& vh) const {return m_vertex_masses[vh]; }
 
-  void recomputeVertexMass(const VertexHandle& v);
-  void computeMasses();
+//  void recomputeVertexMass(const VertexHandle& v);
+//  void computeMasses();
 
-  void setDensity(Scalar density);
-  void setThickness(Scalar thickness);
+//  void setDensity(Scalar density);
+//  void setThickness(Scalar thickness);
 
-  Scalar getMass(const VertexHandle& v) const { return m_obj->getVertexMass(v); }
-  Scalar getMass(const EdgeHandle& e) const { return m_edge_masses[e]; }
-  Scalar getThickness(const FaceHandle& f) const { return m_thicknesses[f]; }
-  void setThickness(const FaceHandle& f, Scalar thick) { m_thicknesses[f] = thick; m_volumes[f] = getArea(f) * thick; }
-  Scalar getThickness(const VertexHandle& vh) const;
-  Scalar getMaxThickness () const;
-  Scalar getMinThickness () const;
-  Scalar getVolume(const FaceHandle& f) const {return m_volumes[f]; }
+//  Scalar getMass(const VertexHandle& v) const { return m_obj->getVertexMass(v); }
+//  Scalar getMass(const EdgeHandle& e) const { return m_edge_masses[e]; }
+//  Scalar getThickness(const FaceHandle& f) const { return m_thicknesses[f]; }
+//  void setThickness(const FaceHandle& f, Scalar thick) { m_thicknesses[f] = thick; m_volumes[f] = getArea(f) * thick; }
+//  Scalar getThickness(const VertexHandle& vh) const;
+//  Scalar getMaxThickness () const;
+//  Scalar getMinThickness () const;
+//  Scalar getVolume(const FaceHandle& f) const {return m_volumes[f]; }
   Scalar getArea(const FaceHandle& f, bool current = true) const;
 
   Vec3d getFaceNormal(const FaceHandle& f);
   void getFaceNormals(FaceProperty<Vec3d> & fNormals) const;
   void getVertexNormals(VertexProperty<Vec3d> & vNormals) const;
-  void getThickness(VertexProperty<Scalar> & vThickness) const;
+//  void getThickness(VertexProperty<Scalar> & vThickness) const;
 
   void addVertexPointSpring(const VertexHandle& v, const Vec3d& pos, Scalar stiffness, Scalar damping, Scalar length);
   void addVertexTriSpring(const FaceHandle& f, const VertexHandle& v, const Vec3d& pos, Scalar stiffness, Scalar damping, Scalar length);
@@ -194,36 +194,36 @@ protected:
   
 
   //Various shell data
-  EdgeProperty<Scalar> m_undef_xi;
-
-  EdgeProperty<Scalar> m_xi;
-
-  EdgeProperty<Scalar> m_xi_vel;
-  
-  VertexProperty<Scalar> m_vertex_masses;
-  EdgeProperty<Scalar> m_edge_masses;
+//  EdgeProperty<Scalar> m_undef_xi;
+//
+//  EdgeProperty<Scalar> m_xi;
+//
+//  EdgeProperty<Scalar> m_xi_vel;
+//  
+//  VertexProperty<Scalar> m_vertex_masses;
+//  EdgeProperty<Scalar> m_edge_masses;
   
   //"undeformed" configuration that is updated at each step to support Rayleigh damping/viscosity
   //This is also used as the "start of step" configuration for eltopo collision resolution
-  EdgeProperty<Scalar> m_damping_undef_xi;
+//  EdgeProperty<Scalar> m_damping_undef_xi;
 
-  FaceProperty<Scalar> m_thicknesses;
-  FaceProperty<Scalar> m_volumes;
+//  FaceProperty<Scalar> m_thicknesses;
+//  FaceProperty<Scalar> m_volumes;
 
   bool m_do_remeshing;
   Scalar m_remesh_edge_max_len;
   Scalar m_remesh_edge_min_len;
   int m_remeshing_iters;
 
-  bool m_momentum_conserving_remesh;
+//  bool m_momentum_conserving_remesh;
 
-  bool m_do_thickness_updates;
+//  bool m_do_thickness_updates;
   bool m_do_eltopo_collisions;
   
-  std::vector<EdgeHandle> constrainedEdges;
-  std::vector<Scalar> constrainedXiValues;
+//  std::vector<EdgeHandle> constrainedEdges;
+//  std::vector<Scalar> constrainedXiValues;
 
-  Scalar m_density;
+//  Scalar m_density;
 
   FaceProperty<char> m_active_faces; //list of faces to which this model is applied
   //Note: this should ideally use booleans, but std::vector<bool> doesn't support references, which we need. (vector<bool> isn't technically a container)

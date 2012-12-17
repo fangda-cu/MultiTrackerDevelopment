@@ -108,7 +108,8 @@ void ObjWriter::write( std::ofstream & of, const ElasticShell & shell )
 
     shell.getFaceNormals( faceNormals );
     shell.getVertexNormals( vertexNormals );
-    shell.getThickness( vertThickness );
+//    shell.getThickness( vertThickness );
+    vertThickness.assign(0.01);
 
     VertexProperty<int> vhIndices( &shell.getDefoObj() );
     VertexProperty<Vec3d> vertPositions( &defObj );

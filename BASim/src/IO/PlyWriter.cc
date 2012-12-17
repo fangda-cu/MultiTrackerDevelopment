@@ -62,7 +62,8 @@ void PlyWriter::write(const std::string & filename, const ElasticShell & mesh)
         const Vec3d v = mesh.getVertexPosition(*vit);
         of << v.x() << " " << v.y() << " " << v.z();
         //Now the thickness
-        of << " " << mesh.getThickness(*vit) << std::endl;
+//        of << " " << mesh.getThickness(*vit) << std::endl;
+        of << " " << 0.01 << std::endl;
         indices[*vit] = current++;
     }
     //write face data
