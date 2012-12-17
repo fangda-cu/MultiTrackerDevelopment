@@ -163,10 +163,10 @@ void ShellRenderer::cycleMode() {
    m_mode = (ShellRenderer::DrawMode) ((m_mode + 1) % 7);
 }
 
-ShellRenderer::ShellRenderer( ElasticShell& shell, const Scalar thickness )
+ShellRenderer::ShellRenderer( ElasticShell& shell )
 : m_shell(shell)
 , m_mode(DBG_MULTIPHASE)
-, m_refthickness( 2*thickness)
+//, m_refthickness( 2*thickness)
 , m_nregion(0)
 , m_solid_boundary_visible(true)
 , m_current_region(0)
@@ -1145,98 +1145,98 @@ void ShellRenderer::render()
          glDisable(GL_LIGHTING);
 
   }*/
-  else if (m_mode == VOLUMETRIC){
+  else if (m_mode == SMOOTH){
 
-    DeformableObject& mesh = m_shell.getDefoObj();
-
-    glEnable(GL_LIGHTING);
-
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    GLfloat blue[] = {0.8f,0.8f,0.8f,1.0f};
-    glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE, blue);
-
-    FaceProperty<Vec3d> faceNormals (&m_shell.getDefoObj());
-    VertexProperty<Vec3d> vertexNormals(&m_shell.getDefoObj());
-
-    m_shell.getFaceNormals(faceNormals);
-    m_shell.getVertexNormals(vertexNormals);
-
-    // Render all faces
-    glBegin(GL_TRIANGLES);
-    for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
-    {
-      Vec3dArray vs;
-      Vec3dArray ns;
-      ScalarArray ts;
-
-      for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit)
-      {
-        vs.push_back(m_shell.getVertexPosition(*fvit));
-        ns.push_back(vertexNormals[*fvit]);
-        
-        //determine if this is an edge vertex
-        bool insideVert = true;
-        for(VertexEdgeIterator veit = mesh.ve_iter(*fvit); veit; ++veit) {
-          EdgeHandle eh = *veit;
-          if(mesh.edgeIncidentFaces(eh) != 2)
-            insideVert = false;
-        }
-        if(insideVert)
-          ts.push_back(m_shell.getThickness(*fvit));
-        else
-          ts.push_back(0);
-
-      }
-
-      /*
-      for (FaceEdgeIterator feit = mesh.fe_iter(*fit); feit; ++feit){
-        
-        if (mesh.edgeIncidentFaces(*feit)==1){ //it is a boundary
-          Vec3d n = faceNormals[*fit];
-
-          int orient = mesh.getRelativeOrientation(*fit, *feit);
-
-          Vec3d from, to;
-          Scalar thickFrom, thickTo;
-          if (orient == 1){
-            from = m_shell.getVertexPosition(mesh.fromVertex(*feit));
-            to = m_shell.getVertexPosition(mesh.toVertex(*feit));
-            thickFrom = m_shell.getThickness(mesh.fromVertex(*feit));
-            thickTo = m_shell.getThickness(mesh.toVertex(*feit));
-          } else {
-            to = m_shell.getVertexPosition(mesh.fromVertex(*feit));
-            from  = m_shell.getVertexPosition(mesh.toVertex(*feit));
-            thickTo = m_shell.getThickness(mesh.fromVertex(*feit));
-            thickFrom = m_shell.getThickness(mesh.toVertex(*feit));
-          }
-
-          drawStitch(from - n * thickFrom / 2.0, from + n * thickFrom / 2.0,
-            to + n * thickTo / 2.0, to - n * thickTo/ 2.0);
-        }
-      }
-      */
-      
-     /* std::cout << "Face thickness: " << m_shell.getThickness(*fit) << std::endl;
-      std::cout << "Face area: " << m_shell.getArea(*fit) << std::endl;
-      std::cout << "Side length: " << (vs[1] - vs[0]).norm() << std::endl;*/
-
-      drawThickTri(vs[0], vs[1], vs[2],
-        ts[0], ts[1], ts[2],
-        ns[0], ns[1], ns[2],
-        faceNormals[*fit]);
-
-    }
-    //         for( EdgeIterator eit = mesh.edges_begin(); eit != mesh.edges_end(); ++eit )
-    //         {
-    //           Vec3d p0 = m_shell.getVertexPosition(mesh.fromVertex(*eit));
-    //           Vec3d p1 = m_shell.getVertexPosition(mesh.toVertex(*eit));
-    //           glutDirectedArrow(p0, p1, (p1-p0).norm()*0.1);
-    //
-    //
-    //         }
-    glEnd();
-
-    glDisable(GL_LIGHTING);
+//    DeformableObject& mesh = m_shell.getDefoObj();
+//
+//    glEnable(GL_LIGHTING);
+//
+//    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+//    GLfloat blue[] = {0.8f,0.8f,0.8f,1.0f};
+//    glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE, blue);
+//
+//    FaceProperty<Vec3d> faceNormals (&m_shell.getDefoObj());
+//    VertexProperty<Vec3d> vertexNormals(&m_shell.getDefoObj());
+//
+//    m_shell.getFaceNormals(faceNormals);
+//    m_shell.getVertexNormals(vertexNormals);
+//
+//    // Render all faces
+//    glBegin(GL_TRIANGLES);
+//    for( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
+//    {
+//      Vec3dArray vs;
+//      Vec3dArray ns;
+//      ScalarArray ts;
+//
+//      for( FaceVertexIterator fvit = mesh.fv_iter(*fit); fvit; ++fvit)
+//      {
+//        vs.push_back(m_shell.getVertexPosition(*fvit));
+//        ns.push_back(vertexNormals[*fvit]);
+//        
+//        //determine if this is an edge vertex
+//        bool insideVert = true;
+//        for(VertexEdgeIterator veit = mesh.ve_iter(*fvit); veit; ++veit) {
+//          EdgeHandle eh = *veit;
+//          if(mesh.edgeIncidentFaces(eh) != 2)
+//            insideVert = false;
+//        }
+//        if(insideVert)
+//          ts.push_back(m_shell.getThickness(*fvit));
+//        else
+//          ts.push_back(0);
+//
+//      }
+//
+//      /*
+//      for (FaceEdgeIterator feit = mesh.fe_iter(*fit); feit; ++feit){
+//        
+//        if (mesh.edgeIncidentFaces(*feit)==1){ //it is a boundary
+//          Vec3d n = faceNormals[*fit];
+//
+//          int orient = mesh.getRelativeOrientation(*fit, *feit);
+//
+//          Vec3d from, to;
+//          Scalar thickFrom, thickTo;
+//          if (orient == 1){
+//            from = m_shell.getVertexPosition(mesh.fromVertex(*feit));
+//            to = m_shell.getVertexPosition(mesh.toVertex(*feit));
+//            thickFrom = m_shell.getThickness(mesh.fromVertex(*feit));
+//            thickTo = m_shell.getThickness(mesh.toVertex(*feit));
+//          } else {
+//            to = m_shell.getVertexPosition(mesh.fromVertex(*feit));
+//            from  = m_shell.getVertexPosition(mesh.toVertex(*feit));
+//            thickTo = m_shell.getThickness(mesh.fromVertex(*feit));
+//            thickFrom = m_shell.getThickness(mesh.toVertex(*feit));
+//          }
+//
+//          drawStitch(from - n * thickFrom / 2.0, from + n * thickFrom / 2.0,
+//            to + n * thickTo / 2.0, to - n * thickTo/ 2.0);
+//        }
+//      }
+//      */
+//      
+//     /* std::cout << "Face thickness: " << m_shell.getThickness(*fit) << std::endl;
+//      std::cout << "Face area: " << m_shell.getArea(*fit) << std::endl;
+//      std::cout << "Side length: " << (vs[1] - vs[0]).norm() << std::endl;*/
+//
+//      drawThickTri(vs[0], vs[1], vs[2],
+//        ts[0], ts[1], ts[2],
+//        ns[0], ns[1], ns[2],
+//        faceNormals[*fit]);
+//
+//    }
+//    //         for( EdgeIterator eit = mesh.edges_begin(); eit != mesh.edges_end(); ++eit )
+//    //         {
+//    //           Vec3d p0 = m_shell.getVertexPosition(mesh.fromVertex(*eit));
+//    //           Vec3d p1 = m_shell.getVertexPosition(mesh.toVertex(*eit));
+//    //           glutDirectedArrow(p0, p1, (p1-p0).norm()*0.1);
+//    //
+//    //
+//    //         }
+//    glEnd();
+//
+//    glDisable(GL_LIGHTING);
 
   }
   glPopMatrix();

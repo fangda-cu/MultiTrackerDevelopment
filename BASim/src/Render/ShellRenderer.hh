@@ -18,9 +18,9 @@ namespace BASim {
   {
   public:
   
-    enum DrawMode { NONE, DBG, DBG_BUBBLE, DBG_JUNCTION, DBG_MULTIPHASE, FLAT, VOLUMETRIC };
+    enum DrawMode { NONE, DBG, DBG_BUBBLE, DBG_JUNCTION, DBG_MULTIPHASE, FLAT, SMOOTH };
 
-    ShellRenderer( ElasticShell& shell, const Scalar thickness = 1.0 );
+    ShellRenderer( ElasticShell& shell );
     
     void render();
     void renderEdges();
@@ -37,7 +37,7 @@ namespace BASim {
   protected:
     ElasticShell& m_shell;
     DrawMode m_mode;
-    const Scalar m_refthickness;
+//    const Scalar m_refthickness;
     
     // multiphase mode
     int m_current_region;

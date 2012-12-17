@@ -544,7 +544,7 @@ void RodShellTest::Setup()
   if (obj->nf() > 0)
   {
     // no shell render if no shell at all (for pure rod tests)
-    RenderBase* shellRender = new ShellRenderer(*shell, initial_thickness);
+    RenderBase* shellRender = new ShellRenderer(*shell);
     m_world->addRenderer(shellRender); 
   }
   RenderBase* rodRender = new RodModelRenderer(*rod);
