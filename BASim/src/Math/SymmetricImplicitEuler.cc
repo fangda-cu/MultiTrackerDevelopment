@@ -215,7 +215,9 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
         // Update the RHS for the fixed DOFs
         // TODO: Note, this really should be done at the end of the Newton iteration, since it was already done once in Chapter 1
         for (int i = 0; i < (int) m_fixed.size(); ++i)
+        {
             m_rhs(m_fixed[i]) = m_dt * v0(m_fixed[i]) - m_deltaX(m_fixed[i]);
+        }
 
         // Set up LHS Matrix
         ////////////////////////
@@ -223,20 +225,32 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
         // TODO: make the finalize() not virtual
 
         
-        // Consider LHS arising from potential forces (function of position)
-        // m_A = -h^2*dF/dx
-        m_diffEq.evaluatePDotDX(-m_dt * m_dt, *m_A); // NB m_A is set to zero at construction time and at the end of this loop.
+//        // Consider LHS arising from potential forces (function of position)
+//        // m_A = -h^2*dF/dx
+//        m_diffEq.evaluatePDotDX(-m_dt * m_dt, *m_A); // NB m_A is set to zero at construction time and at the end of this loop.
+      
+        // FD 20121217: First order physics here
+        // m_A = -h*dF/dx
+        m_diffEq.evaluatePDotDX(-m_dt, *m_A); // NB m_A is set to zero at construction time and at the end of this loop.
         m_A->finalize();
 
-        // Consider LHS arising from dissipative forces (function of velocity)
-        // m_A = -h*dF/dv -h^2*dF/dx
-        m_diffEq.evaluatePDotDV(-m_dt, *m_A);
-        m_A->finalize();
+        // FD 20121217: No velocity dependency
+//        // Consider LHS arising from dissipative forces (function of velocity)
+//        // m_A = -h*dF/dv -h^2*dF/dx
+//        m_diffEq.evaluatePDotDV(-m_dt, *m_A);
+//        m_A->finalize();
 
-        // Consider inertial contribution from mass matrix
-        // m_A = M -h*dF/dv -h^2*dF/dx
+//        // Consider inertial contribution from mass matrix
+//        // m_A = M -h*dF/dv -h^2*dF/dx
+//        for (int i = 0; i < m_ndof; ++i) {
+//            m_A->add(i, i, m_mass(i));
+//        }
+//        m_A->finalize();
+
+        // FD 20121217: No mass
+        // m_A = I - h*dF/dx
         for (int i = 0; i < m_ndof; ++i) {
-            m_A->add(i, i, m_mass(i));
+            m_A->add(i, i, 1);
         }
         m_A->finalize();
 

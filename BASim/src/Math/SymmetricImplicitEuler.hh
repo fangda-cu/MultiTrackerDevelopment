@@ -87,11 +87,16 @@ public:
         TraceStream(g_log, "") << "SymmetricImplicitEuler::computeResidual: evaluating PDot...\n";
         m_rhs.setZero();
         m_diffEq.evaluatePDot(m_rhs);
-        m_rhs *= m_dt * m_dt;
+      
+        // FD 20121217: First order physics
+//        m_rhs *= m_dt * m_dt;
+        m_rhs *= m_dt;
 
         // lhs == M*deltaV == M*(deltax-h*v_n)
-        m_rhs.array() -= m_mass.array() * (m_deltaX - m_dt * v0).array();
-
+//        m_rhs.array() -= m_mass.array() * (m_deltaX - m_dt * v0).array();
+        // FD 20121217: No mass
+        m_rhs -= m_deltaX;
+      
         for (int i = 0; i < (int) m_fixed.size(); ++i)
             m_rhs(m_fixed[i]) = 0.0;
 
