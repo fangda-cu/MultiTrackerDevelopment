@@ -22,9 +22,9 @@
 #else
 #include "BASim/src/Core/Property.hh"
 #include "BASim/src/Core/ObjectBase.hh"
-#include "BASim/src/Physics/ElasticRods/RodStretchingForce.hh"
-#include "BASim/src/Physics/ElasticRods/RodTwistingForceSym.hh"
-#include "BASim/src/Physics/ElasticRods/RodBendingForceSym.hh"
+//#include "BASim/src/Physics/ElasticRods/RodStretchingForce.hh"
+//#include "BASim/src/Physics/ElasticRods/RodTwistingForceSym.hh"
+//#include "BASim/src/Physics/ElasticRods/RodBendingForceSym.hh"
 #include "BASim/src/IO/SerializationUtils.hh"
 #endif
 

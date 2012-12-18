@@ -130,10 +130,10 @@ Scalar ShellLinearSurfaceTensionForce ::globalEnergy() const
     bool valid = gatherDOFs(eh, deformed, f1, f2, indices);
     if(!valid) continue;
     
-    if(f2.isValid())
-      energy += elementEnergy(deformed, m_shell.getVolume(f1), m_shell.getVolume(f2));
-    else
-      energy += elementEnergy(deformed, m_shell.getVolume(f1), 0);
+//    if(f2.isValid())
+//      energy += elementEnergy(deformed, m_shell.getVolume(f1), m_shell.getVolume(f2));
+//    else
+//      energy += elementEnergy(deformed, m_shell.getVolume(f1), 0);
 
   }
   return energy;
@@ -156,10 +156,10 @@ void ShellLinearSurfaceTensionForce::globalForce( VecXd& force )  const
     bool valid = gatherDOFs(eh, deformed, f1, f2, indices);
     if(!valid) continue;
 
-    if(f2.isValid())
-      elementForce(deformed, m_shell.getVolume(f1), m_shell.getVolume(f2), localForce);
-    else 
-      elementForce(deformed, m_shell.getVolume(f1), 0, localForce);
+//    if(f2.isValid())
+//      elementForce(deformed, m_shell.getVolume(f1), m_shell.getVolume(f2), localForce);
+//    else 
+//      elementForce(deformed, m_shell.getVolume(f1), 0, localForce);
 
     for (int i = 0; i < (f2.isValid()?12:9); ++i)
       force(indices[i]) += localForce(i);
@@ -184,10 +184,10 @@ void ShellLinearSurfaceTensionForce ::globalJacobian( Scalar scale, MatrixBase& 
     bool valid = gatherDOFs(eh, deformed, f1, f2, indices);
     if(!valid) continue;
 
-    if(f2.isValid())
-      elementJacobian(deformed, m_shell.getVolume(f1), m_shell.getVolume(f2), localMatrix);
-    else
-      elementJacobian(deformed, m_shell.getVolume(f1), 0, localMatrix);
+//    if(f2.isValid())
+//      elementJacobian(deformed, m_shell.getVolume(f1), m_shell.getVolume(f2), localMatrix);
+//    else
+//      elementJacobian(deformed, m_shell.getVolume(f1), 0, localMatrix);
 
     for (int i = 0; i < (f2.isValid()?12:9); ++i)
       for(int j = 0; j < (f2.isValid()?12:9); ++j)

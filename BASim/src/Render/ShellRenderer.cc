@@ -11,7 +11,7 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ElasticShell.hh"
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
 #include "BASim/src/Math/Math.hh"
-#include "BASim/src/Physics/DeformableObjects/Shells/MNBendingForce.hh"
+//#include "BASim/src/Physics/DeformableObjects/Shells/MNBendingForce.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 #include "BASim/src/Render/Curvature.hh"
 
@@ -416,11 +416,11 @@ void ShellRenderer::render()
       barycentre /= 3.0;
       
       
-      Scalar thickness = m_shell.getThickness(*fit);
-      int colorVal = (int) (255.0 * thickness/ 0.25); //rescale
+//      Scalar thickness = m_shell.getThickness(*fit);
+//      int colorVal = (int) (255.0 * thickness/ 0.25); //rescale
       //int colorVal = (int) (255.0 * (thickness - 0.0025) / 0.0025); //test
       //colorVal = clamp(colorVal, 0, 255);
-      colorVal = 255;
+      int colorVal = 255;
       OpenGL::color(Color(colorVal,0,0, 128));
       std::vector<Vec3d> points(3);
       int i = 0;

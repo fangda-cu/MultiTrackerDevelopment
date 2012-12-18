@@ -28,7 +28,7 @@
 #include <weta/Wfigaro/Physics/ElasticRods/RodGravity.hh>
 #else
 #include <BASim/BASim>
-#include "BASim/src/Physics/ElasticRods/MultipleRodTimeStepper.hh"
+//#include "BASim/src/Physics/ElasticRods/MultipleRodTimeStepper.hh"
 #include "BASim/src/IO/ObjectSerializer.hh"
 #endif
 
@@ -97,10 +97,10 @@ public:
   void setGravity(const Vec3d& gravity);
 
   void addRodOptions();
-  void getRodOptions(RodOptions& opts);
+//  void getRodOptions(RodOptions& opts);
   void addRodTimeStepperOptions();
-  RodTimeStepper* getRodTimeStepper(ElasticRod& rod);
-  MultipleRodTimeStepper* getMultipleRodTimeStepper();
+//  RodTimeStepper* getRodTimeStepper(ElasticRod& rod);
+//  MultipleRodTimeStepper* getMultipleRodTimeStepper();
 
   std::queue<double>& getBreakpoints() { return m_sim_breakpoints; }
   void insertBreakpoint( double t ) { m_sim_breakpoints.push(t); }

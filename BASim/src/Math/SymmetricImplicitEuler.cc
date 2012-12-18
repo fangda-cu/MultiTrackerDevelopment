@@ -8,8 +8,8 @@
 typedef double Scalar;
 #include <string>
 #include "SymmetricImplicitEuler.hh"
-#include "../Physics/ElasticRods/MultipleRodTimeStepper.hh"
-#include "../Physics/ElasticRods/RodTimeStepper.hh"
+//#include "../Physics/ElasticRods/MultipleRodTimeStepper.hh"
+//#include "../Physics/ElasticRods/RodTimeStepper.hh"
 #include "../Physics/DeformableObjects/DefoObjTimeStepper.hh"
 //#include "../Math/DummyMatrix.hh"
 #include "Math.hh"
@@ -444,42 +444,42 @@ void SymmetricImplicitEuler<ODE>::resize()
 }
 
 // Initial guess based on rigid motion of the first two vertices, assuming their distance remains constant.
-template<>
-bool SymmetricImplicitEuler<RodTimeStepper>::generateInitialIterate0(VecXd& dx)
-{
-    const Vec3d p0 = x0.segment<3> (0);
-    const Vec3d p1 = x0.segment<3> (4);
-    const Vec3d w0 = v0.segment<3> (0);
-    const Vec3d w1 = v0.segment<3> (4);
-    const Vec3d q0 = p0 + m_dt * w0;
-    const Vec3d q1 = p1 + m_dt * w1;
-
-    const double cosAngle = (p1 - p0).dot(q1 - q0) / ((p1 - p0).norm() * (q1 - q0).norm());
-    const double angle = cosAngle >= 1.0 ? 0.0 : cosAngle <= -1.0 ? M_PI : acos(cosAngle);
-    assert(!isnan(angle));
-
-    Vec3d normal = (p1 - p0).cross(w1 - w0);
-    const double normalNorm = normal.norm();
-    if (normalNorm < std::numeric_limits<double>::epsilon())
-        normal = Vec3d(1, 0, 0); // The rotation is either identity or central symmetry, any axis will do...
-    else
-        normal = normal / normalNorm;
-    assert(approxEq(normal.norm(), 1.0));
-    // DebugStream(g_log, "") << "Initial guess by rigid motion: p0 = " << p0 << " q0 = " << q0 << " w0 = " << w0 << " p1 = "
-    //         << p1 << " q1 = " << q1 << " w1 = " << w1 << " normal = " << normal << " angle = " << angle << '\n';
-
-    // Set initial vertex coordinates by rigid motion and initial twist angles to zero. TODO: surely there is a better way than explicitly computing the rotation matrix!
-    const Eigen::AngleAxis<double> rotation(angle, normal);
-    for (int i = 0; i < m_ndof - 3; i += 4)
-    {
-        dx.segment<3> (i) = RigidMotion(x0.segment<3> (i), p0, rotation, w0, m_dt);
-        // DebugStream(g_log, "") << "Predicted vertex " << i / 4 << " = " << x0.segment<3> (i) + dx.segment<3> (i) << '\n';
-        dx(i + 3) = 0;
-    }
-    dx.segment<3> (m_ndof - 3) = RigidMotion(x0.segment<3> (m_ndof - 3), p0, rotation, w0, m_dt);
-
-    return true;
-}
+//template<>
+//bool SymmetricImplicitEuler<RodTimeStepper>::generateInitialIterate0(VecXd& dx)
+//{
+//    const Vec3d p0 = x0.segment<3> (0);
+//    const Vec3d p1 = x0.segment<3> (4);
+//    const Vec3d w0 = v0.segment<3> (0);
+//    const Vec3d w1 = v0.segment<3> (4);
+//    const Vec3d q0 = p0 + m_dt * w0;
+//    const Vec3d q1 = p1 + m_dt * w1;
+//
+//    const double cosAngle = (p1 - p0).dot(q1 - q0) / ((p1 - p0).norm() * (q1 - q0).norm());
+//    const double angle = cosAngle >= 1.0 ? 0.0 : cosAngle <= -1.0 ? M_PI : acos(cosAngle);
+//    assert(!isnan(angle));
+//
+//    Vec3d normal = (p1 - p0).cross(w1 - w0);
+//    const double normalNorm = normal.norm();
+//    if (normalNorm < std::numeric_limits<double>::epsilon())
+//        normal = Vec3d(1, 0, 0); // The rotation is either identity or central symmetry, any axis will do...
+//    else
+//        normal = normal / normalNorm;
+//    assert(approxEq(normal.norm(), 1.0));
+//    // DebugStream(g_log, "") << "Initial guess by rigid motion: p0 = " << p0 << " q0 = " << q0 << " w0 = " << w0 << " p1 = "
+//    //         << p1 << " q1 = " << q1 << " w1 = " << w1 << " normal = " << normal << " angle = " << angle << '\n';
+//
+//    // Set initial vertex coordinates by rigid motion and initial twist angles to zero. TODO: surely there is a better way than explicitly computing the rotation matrix!
+//    const Eigen::AngleAxis<double> rotation(angle, normal);
+//    for (int i = 0; i < m_ndof - 3; i += 4)
+//    {
+//        dx.segment<3> (i) = RigidMotion(x0.segment<3> (i), p0, rotation, w0, m_dt);
+//        // DebugStream(g_log, "") << "Predicted vertex " << i / 4 << " = " << x0.segment<3> (i) + dx.segment<3> (i) << '\n';
+//        dx(i + 3) = 0;
+//    }
+//    dx.segment<3> (m_ndof - 3) = RigidMotion(x0.segment<3> (m_ndof - 3), p0, rotation, w0, m_dt);
+//
+//    return true;
+//}
 
 // Initial guess for deformable object
 template<>
@@ -500,8 +500,8 @@ bool SymmetricImplicitEuler<ODE>::generateInitialIterate0(VecXd& dx)
 }
 
 // Explicit template instantiations
-template class SymmetricImplicitEuler<RodTimeStepper> ;
-template class SymmetricImplicitEuler<MultipleRodTimeStepper> ;
+//template class SymmetricImplicitEuler<RodTimeStepper> ;
+//template class SymmetricImplicitEuler<MultipleRodTimeStepper> ;
 template class SymmetricImplicitEuler<DefoObjTimeStepper> ;
 
 }

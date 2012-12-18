@@ -16,7 +16,7 @@
 #include "src/Render/ViewController.hh"
 #include "src/Render/RenderUtils.hh"
 #include "src/Render/RenderBase.hh"
-#include "src/Render/RodRenderer.hh"
+//#include "src/Render/RodRenderer.hh"
 #include "src/Render/Scene.hh"
 
 #ifdef HAVE_PNG

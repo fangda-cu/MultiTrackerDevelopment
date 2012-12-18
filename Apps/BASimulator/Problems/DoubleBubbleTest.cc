@@ -9,9 +9,9 @@
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ElasticShell.hh"
 #include "BASim/src/Physics/DeformableObjects/DefoObjTimeStepper.hh"
-#include "BASim/src/Physics/DeformableObjects/Shells/CSTMembraneForce.hh"
-#include "BASim/src/Physics/DeformableObjects/Shells/DSBendingForce.hh"
-#include "BASim/src/Physics/DeformableObjects/Shells/MNBendingForce.hh"
+//#include "BASim/src/Physics/DeformableObjects/Shells/CSTMembraneForce.hh"
+//#include "BASim/src/Physics/DeformableObjects/Shells/DSBendingForce.hh"
+//#include "BASim/src/Physics/DeformableObjects/Shells/MNBendingForce.hh"
 #include "BASim/src/Render/ShellRenderer.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellRadialForce.hh"
@@ -291,8 +291,8 @@ void DoubleBubbleTest::Setup()
   bool eltopo_collisions = GetBoolOpt("shell-eltopo-collisions");
   shell->setElTopoCollisions(eltopo_collisions);
 
-  bool thickness_evolution = GetBoolOpt("shell-update-thickness");
-  shell->setThicknessUpdating(thickness_evolution);
+//  bool thickness_evolution = GetBoolOpt("shell-update-thickness");
+//  shell->setThicknessUpdating(thickness_evolution);
 
   Scalar vf_stiffness = GetScalarOpt("volume-force-stiffness");
   if (vf_stiffness > 0)
@@ -1175,14 +1175,14 @@ void DoubleBubbleTest::setupScene5()
   shellObj->addModel(shell);
   
   //positions
-  shell->setVertexUndeformed(undeformed);
+//  shell->setVertexUndeformed(undeformed);
   shell->setVertexPositions(positions);
   shell->setVertexVelocities(velocities);
   
   //mid-edge normal variables
-  shell->setEdgeUndeformed(undefAngle);
-  shell->setEdgeXis(edgeAngle);
-  shell->setEdgeVelocities(edgeVel);
+//  shell->setEdgeUndeformed(undefAngle);
+//  shell->setEdgeXis(edgeAngle);
+//  shell->setEdgeVelocities(edgeVel);
   
   shell->setFaceLabels(faceLabels);
   
@@ -1265,14 +1265,14 @@ void DoubleBubbleTest::setupScene6()
   shellObj->addModel(shell);
   
   //positions
-  shell->setVertexUndeformed(undeformed);
+//  shell->setVertexUndeformed(undeformed);
   shell->setVertexPositions(positions);
   shell->setVertexVelocities(velocities);
   
   //mid-edge normal variables
-  shell->setEdgeUndeformed(undefAngle);
-  shell->setEdgeXis(edgeAngle);
-  shell->setEdgeVelocities(edgeVel);
+//  shell->setEdgeUndeformed(undefAngle);
+//  shell->setEdgeXis(edgeAngle);
+//  shell->setEdgeVelocities(edgeVel);
   
   shell->setFaceLabels(faceLabels);
   

@@ -38,7 +38,7 @@
 #include "src/Math/TimeSteppingBase.hh"
 #include "src/Math/SymplecticEuler.hh"
 #include "src/Math/ImplicitEuler.hh"
-#include "src/Math/StaticSolver.hh"
+//#include "src/Math/StaticSolver.hh"
 
 #endif // BASIM_MATH
 

@@ -73,7 +73,7 @@ ViewController controller;
 
 // Renderable objects include RodRenderers and TriangleMeshRenderers.
 std::vector<RenderBase*> renderable_objects;
-std::vector<RodRenderer*> rod_renderers;
+//std::vector<RodRenderer*> rod_renderers;
 std::vector<TriangleMeshRenderer*> triangle_mesh_renderers;
 
 bool render = true;
@@ -654,48 +654,48 @@ void menu(int id)
         }
         break;
 
-    case '1':
-    {
-        for (int i = 0; i < (int) rod_renderers.size(); ++i)
-        {
-            bool& b = rod_renderers[i]->drawMaterial();
-            b = !b;
-        }
-        glutPostRedisplay();
-        break;
-    }
-
-    case '2':
-    {
-        for (int i = 0; i < (int) rod_renderers.size(); ++i)
-        {
-            bool& b = rod_renderers[i]->drawReference();
-            b = !b;
-        }
-        glutPostRedisplay();
-        break;
-    }
-
-    case 'v':
-    {
-        for (int i = 0; i < (int) rod_renderers.size(); ++i)
-        {
-            bool& bv = rod_renderers[i]->drawVelocity();
-            bool& br = rod_renderers[i]->drawResponse();
-
-            if (bv)
-            {
-                bv = false;
-                br = true;
-            }
-            else if (br)
-                br = false;
-            else
-                bv = true;
-        }
-        glutPostRedisplay();
-        break;
-    }
+//    case '1':
+//    {
+//        for (int i = 0; i < (int) rod_renderers.size(); ++i)
+//        {
+//            bool& b = rod_renderers[i]->drawMaterial();
+//            b = !b;
+//        }
+//        glutPostRedisplay();
+//        break;
+//    }
+//
+//    case '2':
+//    {
+//        for (int i = 0; i < (int) rod_renderers.size(); ++i)
+//        {
+//            bool& b = rod_renderers[i]->drawReference();
+//            b = !b;
+//        }
+//        glutPostRedisplay();
+//        break;
+//    }
+//
+//    case 'v':
+//    {
+//        for (int i = 0; i < (int) rod_renderers.size(); ++i)
+//        {
+//            bool& bv = rod_renderers[i]->drawVelocity();
+//            bool& br = rod_renderers[i]->drawResponse();
+//
+//            if (bv)
+//            {
+//                bv = false;
+//                br = true;
+//            }
+//            else if (br)
+//                br = false;
+//            else
+//                bv = true;
+//        }
+//        glutPostRedisplay();
+//        break;
+//    }
 
     case 'm':
     {
@@ -719,27 +719,27 @@ void menu(int id)
         break;
     }
 
-    case 'r':
-    {
-        for (int i = 0; i < (int) rod_renderers.size(); ++i)
-        {
-            bool& b = rod_renderers[i]->scaleToRadius();
-            b = !b;
-        }
-        glutPostRedisplay();
-        break;
-    }
-
-    case 'a':
-    {
-        for (int i = 0; i < (int) rod_renderers.size(); ++i)
-        {
-            bool& b = rod_renderers[i]->drawArrows();
-            b = !b;
-        }
-        glutPostRedisplay();
-        break;
-    }
+//    case 'r':
+//    {
+//        for (int i = 0; i < (int) rod_renderers.size(); ++i)
+//        {
+//            bool& b = rod_renderers[i]->scaleToRadius();
+//            b = !b;
+//        }
+//        glutPostRedisplay();
+//        break;
+//    }
+//
+//    case 'a':
+//    {
+//        for (int i = 0; i < (int) rod_renderers.size(); ++i)
+//        {
+//            bool& b = rod_renderers[i]->drawArrows();
+//            b = !b;
+//        }
+//        glutPostRedisplay();
+//        break;
+//    }
 
     case 's':
         saveScreen("screen.png");

@@ -58,7 +58,7 @@ bool ShellLinearSurfaceTensionForce2 ::gatherDOFs(const FaceHandle& fh,
     ++i;
   }
   faces.push_back(centreFace);
-  volumes.push_back(m_shell.getVolume(fh));
+//  volumes.push_back(m_shell.getVolume(fh));
   
   
   //now get the vertices for all the other faces
@@ -81,7 +81,7 @@ bool ShellLinearSurfaceTensionForce2 ::gatherDOFs(const FaceHandle& fh,
     for(; vfit; ++vfit) { //look at the faces incident on the particular vertex
       ++incidentFacesPerVertex[vertNum];
       FaceHandle fh2 = *vfit;
-      volumes.push_back(m_shell.getVolume(fh2));
+//      volumes.push_back(m_shell.getVolume(fh2));
       FaceVertexIterator fvit2 = m_shell.getDefoObj().fv_iter(fh2);
       Vec3i curFace;
       int inner_ind = 0;

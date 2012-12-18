@@ -15,12 +15,12 @@
 #include "BASim/src/Math/SymplecticEuler.hh"
 #include "BASim/src/Math/ImplicitEuler.hh"
 #include "BASim/src/Math/SymmetricImplicitEuler.hh"
-#include "BASim/src/Math/StaticSolver.hh"
+//#include "BASim/src/Math/StaticSolver.hh"
 //#include "BASim/src/Math/StaticsSolver.hh"
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
-#include "BASim/src/Physics/DeformableObjects/Rods/ElasticRodModel.hh"
+//#include "BASim/src/Physics/DeformableObjects/Rods/ElasticRodModel.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ElasticShell.hh"
-#include "BASim/src/Physics/DeformableObjects/Solids/ElasticSolid.hh"
+//#include "BASim/src/Physics/DeformableObjects/Solids/ElasticSolid.hh"
 
 namespace BASim {
 
@@ -138,7 +138,8 @@ public:
       //m_diffEqSolver = new BacktrackingImplicitEuler<RodTimeStepper>(*this);
     } 
     else if (method == STATICS) {
-      m_diffEqSolver = new StaticSolver<DefoObjTimeStepper>(*this);
+//      m_diffEqSolver = new StaticSolver<DefoObjTimeStepper>(*this);
+      m_diffEqSolver = NULL;
     }
     else if (method == NONE)
     {
@@ -439,24 +440,24 @@ public:
     {
       PhysicalModel * pm = m_obj.getModel(i);
       
-      if (dynamic_cast<ElasticRodModel *>(pm))
-      {
-        ElasticRodModel * rod = dynamic_cast<ElasticRodModel *>(pm);
-        for (unsigned int j = 0; j < rod->getJointStencils().size(); j++)
-        {
-          m_statebackup.rods[i].reference_twists[j] = rod->getJointStencils()[j].referenceTwist;
-        }
-      }
+//      if (dynamic_cast<ElasticRodModel *>(pm))
+//      {
+//        ElasticRodModel * rod = dynamic_cast<ElasticRodModel *>(pm);
+//        for (unsigned int j = 0; j < rod->getJointStencils().size(); j++)
+//        {
+//          m_statebackup.rods[i].reference_twists[j] = rod->getJointStencils()[j].referenceTwist;
+//        }
+//      }
       if (dynamic_cast<ElasticShell *>(pm))
       {
         ElasticShell * shell = dynamic_cast<ElasticShell *>(pm);
         // nothing to do
       }
-      if (dynamic_cast<ElasticRodModel *>(pm))
-      {
-        ElasticSolid * solid = dynamic_cast<ElasticSolid *>(pm);
-        // nothing to do
-      }
+//      if (dynamic_cast<ElasticRodModel *>(pm))
+//      {
+//        ElasticSolid * solid = dynamic_cast<ElasticSolid *>(pm);
+//        // nothing to do
+//      }
     }
   }
   
@@ -469,18 +470,18 @@ public:
     {
       PhysicalModel * pm = m_obj.getModel(i);
       
-      StateBackup::RodStateBackup rod;
-      if (dynamic_cast<ElasticRodModel *>(pm))
-      {
-        rod.reference_twists.resize(dynamic_cast<ElasticRodModel *>(pm)->getJointStencils().size());
-      }
-      m_statebackup.rods.push_back(rod);
+//      StateBackup::RodStateBackup rod;
+//      if (dynamic_cast<ElasticRodModel *>(pm))
+//      {
+//        rod.reference_twists.resize(dynamic_cast<ElasticRodModel *>(pm)->getJointStencils().size());
+//      }
+//      m_statebackup.rods.push_back(rod);
 
       StateBackup::ShellStateBackup shell;
       m_statebackup.shells.push_back(shell);
 
-      StateBackup::SolidStateBackup solid;
-      m_statebackup.solids.push_back(solid);
+//      StateBackup::SolidStateBackup solid;
+//      m_statebackup.solids.push_back(solid);
     }
   }
   
@@ -493,24 +494,24 @@ public:
     {
       PhysicalModel * pm = m_obj.getModel(i);
       
-      if (dynamic_cast<ElasticRodModel *>(pm))
-      {
-        ElasticRodModel * rod = dynamic_cast<ElasticRodModel *>(pm);
-        for (unsigned int j = 0; j < rod->getJointStencils().size(); j++)
-        {
-          rod->getJointStencils()[j].referenceTwist = m_statebackup.rods[i].reference_twists[j];
-        }
-      }
+//      if (dynamic_cast<ElasticRodModel *>(pm))
+//      {
+//        ElasticRodModel * rod = dynamic_cast<ElasticRodModel *>(pm);
+//        for (unsigned int j = 0; j < rod->getJointStencils().size(); j++)
+//        {
+//          rod->getJointStencils()[j].referenceTwist = m_statebackup.rods[i].reference_twists[j];
+//        }
+//      }
       if (dynamic_cast<ElasticShell *>(pm))
       {
         ElasticShell * shell = dynamic_cast<ElasticShell *>(pm);
         // nothing to do
       }
-      if (dynamic_cast<ElasticRodModel *>(pm))
-      {
-        ElasticSolid * solid = dynamic_cast<ElasticSolid *>(pm);
-        // nothing to do
-      }
+//      if (dynamic_cast<ElasticRodModel *>(pm))
+//      {
+//        ElasticSolid * solid = dynamic_cast<ElasticSolid *>(pm);
+//        // nothing to do
+//      }
     }
   }
   

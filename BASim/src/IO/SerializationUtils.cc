@@ -163,130 +163,130 @@ void serializePropertyID( std::ofstream& of, const PropertyID& id )
 
 //////////////////////////
 // Force Functions
-BASim::ForceID getForceID( RodForce* rforce )
-{
-  if( dynamic_cast<RodStretchingForce*>(rforce) )
-  {
-    if( !rforce->viscous() ) return RODSTRETCHINGFORCE;
-    else return RODSTRETCHINGFORCEVISCOUS;
-  }
-  else if( dynamic_cast<RodTwistingForceSym*>(rforce) )
-  {
-    if( !rforce->viscous() ) return RODTWISTINGFORCESYM;
-    else return RODTWISTINGFORCESYMVISCOUS;
-  }
-  else if( dynamic_cast<RodBendingForceSym*>(rforce) )
-  {
-    if( !rforce->viscous() ) return RODBENDINGFORCESYM;
-    else return RODBENDINGFORCESYMVISCOUS;
-  }
-  
-  std::cerr << "INVALID FORCE TYPE" << std::endl;
-  exit(1);
-  return RODSTRETCHINGFORCE;
-}
+//BASim::ForceID getForceID( RodForce* rforce )
+//{
+//  if( dynamic_cast<RodStretchingForce*>(rforce) )
+//  {
+//    if( !rforce->viscous() ) return RODSTRETCHINGFORCE;
+//    else return RODSTRETCHINGFORCEVISCOUS;
+//  }
+//  else if( dynamic_cast<RodTwistingForceSym*>(rforce) )
+//  {
+//    if( !rforce->viscous() ) return RODTWISTINGFORCESYM;
+//    else return RODTWISTINGFORCESYMVISCOUS;
+//  }
+//  else if( dynamic_cast<RodBendingForceSym*>(rforce) )
+//  {
+//    if( !rforce->viscous() ) return RODBENDINGFORCESYM;
+//    else return RODBENDINGFORCESYMVISCOUS;
+//  }
+//  
+//  std::cerr << "INVALID FORCE TYPE" << std::endl;
+//  exit(1);
+//  return RODSTRETCHINGFORCE;
+//}
+//
+//RodForce* getRodForce( const ForceID& fid, ElasticRod* erod )
+//{
+//  switch (fid) 
+//  {
+//    case RODSTRETCHINGFORCE:
+//    {
+//      return new RodStretchingForce(*erod,false,false);
+//      break;
+//    }
+//    case RODSTRETCHINGFORCEVISCOUS:
+//    {
+//      return new RodStretchingForce(*erod,true,false);
+//      break;
+//    }
+//    case RODTWISTINGFORCESYM:
+//    {
+//      return new RodTwistingForceSym(*erod,false,false);
+//      break;
+//    }
+//    case RODTWISTINGFORCESYMVISCOUS:
+//    {
+//      return new RodTwistingForceSym(*erod,true,false);
+//      break;
+//    }
+//    case RODBENDINGFORCESYM:
+//    {
+//      return new RodBendingForceSym(*erod,false,false);
+//      break;
+//    }
+//    case RODBENDINGFORCESYMVISCOUS:
+//    {
+//      return new RodBendingForceSym(*erod,true,false);
+//      break;
+//    }
+//    default:
+//    {
+//      std::cerr << "INVALID FORCE TYPE" << std::endl;
+//      exit(1);
+//      break;
+//    }
+//  }
+//  
+//  std::cerr << "INVALID FORCE TYPE" << std::endl;
+//  exit(1);
+//  return NULL;
+//}
 
-RodForce* getRodForce( const ForceID& fid, ElasticRod* erod )
-{
-  switch (fid) 
-  {
-    case RODSTRETCHINGFORCE:
-    {
-      return new RodStretchingForce(*erod,false,false);
-      break;
-    }
-    case RODSTRETCHINGFORCEVISCOUS:
-    {
-      return new RodStretchingForce(*erod,true,false);
-      break;
-    }
-    case RODTWISTINGFORCESYM:
-    {
-      return new RodTwistingForceSym(*erod,false,false);
-      break;
-    }
-    case RODTWISTINGFORCESYMVISCOUS:
-    {
-      return new RodTwistingForceSym(*erod,true,false);
-      break;
-    }
-    case RODBENDINGFORCESYM:
-    {
-      return new RodBendingForceSym(*erod,false,false);
-      break;
-    }
-    case RODBENDINGFORCESYMVISCOUS:
-    {
-      return new RodBendingForceSym(*erod,true,false);
-      break;
-    }
-    default:
-    {
-      std::cerr << "INVALID FORCE TYPE" << std::endl;
-      exit(1);
-      break;
-    }
-  }
-  
-  std::cerr << "INVALID FORCE TYPE" << std::endl;
-  exit(1);
-  return NULL;
-}
-
-void serializeElasticRodRodForces( std::ofstream& of, const ElasticRod::RodForces& val )
-{
-  assert( of.is_open() );
-  
-  int sze = val.size();
-  serializeVal(of,sze);
-  
-  for( size_t i = 0; i < val.size(); ++i )
-  {
-    ForceID fid = getForceID(val[i]);
-    of.write((char*)&fid,sizeof(ForceID));
-  }
-}
-
-void loadElasticRodRodForce( std::ifstream& ifs,  ElasticRod::RodForces& val, ElasticRod* erod )
-{
-  assert( ifs.is_open() );
-  assert( erod != NULL );
-  
-  int sze = -1;
-  loadVal(ifs,sze);
-  assert( sze >= 0 );
-  
-  val.resize(sze);
-  for( int i = 0; i < sze; ++i )
-  {
-    ForceID fid;
-    ifs.read((char*)&fid,sizeof(ForceID));
-    RodForce* newforce = getRodForce(fid,erod);
-    assert( newforce != NULL );
-    val[i] = newforce;
-  }
-  assert( (int) val.size() == sze );
-}
-
-void serializeProperty( std::ofstream& of, Property<ElasticRod::RodForces>* prop )
-{
-  for( size_t i = 0; i < prop->size(); ++i ) serializeElasticRodRodForces(of, (*prop)[i]);
-}
-
-void loadProperty( std::ifstream& ifs, Property<ElasticRod::RodForces>* prop, ElasticRod* erod )
-{
-  assert( ifs.is_open() );
-  
-  for( size_t i = 0; i < prop->size(); ++i )
-  {
-    ElasticRod::RodForces newval;
-    loadElasticRodRodForce(ifs,newval,erod);
-    #ifdef DEBUG
-      for( size_t j = 0; j < newval.size(); ++j ) assert( newval[j] != NULL );
-    #endif
-    (*prop)[i] = newval;
-  }
-}
+//void serializeElasticRodRodForces( std::ofstream& of, const ElasticRod::RodForces& val )
+//{
+//  assert( of.is_open() );
+//  
+//  int sze = val.size();
+//  serializeVal(of,sze);
+//  
+//  for( size_t i = 0; i < val.size(); ++i )
+//  {
+//    ForceID fid = getForceID(val[i]);
+//    of.write((char*)&fid,sizeof(ForceID));
+//  }
+//}
+//
+//void loadElasticRodRodForce( std::ifstream& ifs,  ElasticRod::RodForces& val, ElasticRod* erod )
+//{
+//  assert( ifs.is_open() );
+//  assert( erod != NULL );
+//  
+//  int sze = -1;
+//  loadVal(ifs,sze);
+//  assert( sze >= 0 );
+//  
+//  val.resize(sze);
+//  for( int i = 0; i < sze; ++i )
+//  {
+//    ForceID fid;
+//    ifs.read((char*)&fid,sizeof(ForceID));
+//    RodForce* newforce = getRodForce(fid,erod);
+//    assert( newforce != NULL );
+//    val[i] = newforce;
+//  }
+//  assert( (int) val.size() == sze );
+//}
+//
+//void serializeProperty( std::ofstream& of, Property<ElasticRod::RodForces>* prop )
+//{
+//  for( size_t i = 0; i < prop->size(); ++i ) serializeElasticRodRodForces(of, (*prop)[i]);
+//}
+//
+//void loadProperty( std::ifstream& ifs, Property<ElasticRod::RodForces>* prop, ElasticRod* erod )
+//{
+//  assert( ifs.is_open() );
+//  
+//  for( size_t i = 0; i < prop->size(); ++i )
+//  {
+//    ElasticRod::RodForces newval;
+//    loadElasticRodRodForce(ifs,newval,erod);
+//    #ifdef DEBUG
+//      for( size_t j = 0; j < newval.size(); ++j ) assert( newval[j] != NULL );
+//    #endif
+//    (*prop)[i] = newval;
+//  }
+//}
   
 //////////////////////////
 // Bool Functions
@@ -323,74 +323,74 @@ void loadProperty( std::ifstream& ifs, Property<bool>* prop )
 //////////////////////////
 // ElasticRodRefFrame Functions
 
-void serializeElasticRodRefFrameType( std::ofstream& of, const ElasticRod::RefFrameType& val )
-{
-  assert( of.is_open() );
-  of.write((char*)&val,sizeof(ElasticRod::RefFrameType));
-}
-
-void loadElasticRodRefFrameType( std::ifstream& ifs, ElasticRod::RefFrameType& val )
-{
-  assert( ifs.is_open() );
-  ifs.read((char*)&val,sizeof(ElasticRod::RefFrameType));
-}  
-  
-void serializeProperty( std::ofstream& of, Property<ElasticRod::RefFrameType>* prop )
-{
-  for( size_t i = 0; i < prop->size(); ++i ) serializeElasticRodRefFrameType(of, (*prop)[i]);
-}
-
-void loadProperty( std::ifstream& ifs, Property<ElasticRod::RefFrameType>* prop )
-{
-  assert( ifs.is_open() );
-  for( size_t i = 0; i < prop->size(); ++i )
-  {
-    ElasticRod::RefFrameType newval;
-    loadElasticRodRefFrameType(ifs,newval);
-    (*prop)[i] = newval;
-  }
-}
+//void serializeElasticRodRefFrameType( std::ofstream& of, const ElasticRod::RefFrameType& val )
+//{
+//  assert( of.is_open() );
+//  of.write((char*)&val,sizeof(ElasticRod::RefFrameType));
+//}
+//
+//void loadElasticRodRefFrameType( std::ifstream& ifs, ElasticRod::RefFrameType& val )
+//{
+//  assert( ifs.is_open() );
+//  ifs.read((char*)&val,sizeof(ElasticRod::RefFrameType));
+//}  
+//  
+//void serializeProperty( std::ofstream& of, Property<ElasticRod::RefFrameType>* prop )
+//{
+//  for( size_t i = 0; i < prop->size(); ++i ) serializeElasticRodRefFrameType(of, (*prop)[i]);
+//}
+//
+//void loadProperty( std::ifstream& ifs, Property<ElasticRod::RefFrameType>* prop )
+//{
+//  assert( ifs.is_open() );
+//  for( size_t i = 0; i < prop->size(); ++i )
+//  {
+//    ElasticRod::RefFrameType newval;
+//    loadElasticRodRefFrameType(ifs,newval);
+//    (*prop)[i] = newval;
+//  }
+//}
 
 //////////////////////////
 // RodBoundaryConditionBCList Functions
-void serializeRodBoundaryConditionBCList( std::ofstream& of, const RodBoundaryCondition::BCList& val )
-{
-  assert( of.is_open() );
-  
-  int sze = val.size();
-  serializeVal(of,sze);
-  
-  for( size_t i = 0; i < val.size(); ++i ) serializeVal(of,val[i]);
-}
-
-void loadRodBoundaryConditionBCList( std::ifstream& ifs, RodBoundaryCondition::BCList& val )
-{
-  assert( ifs.is_open() );
-
-  int sze = -1;
-  loadVal(ifs,sze);
-  assert( sze >= 0 );
-
-  val.resize(sze);
-  for( int i = 0; i < sze; ++i ) loadVal(ifs,val[i]);
-}
-  
-void serializeProperty( std::ofstream& of, Property<RodBoundaryCondition::BCList>* prop )
-{
-  for( size_t i = 0; i < prop->size(); ++i ) serializeRodBoundaryConditionBCList(of, (*prop)[i]);
-}
-
-void loadProperty( std::ifstream& ifs, Property<RodBoundaryCondition::BCList>* prop )
-{
-  assert( ifs.is_open() );
-  
-  for( size_t i = 0; i < prop->size(); ++i )
-  {
-    RodBoundaryCondition::BCList newval;
-    loadRodBoundaryConditionBCList(ifs,newval);
-    (*prop)[i] = newval;
-  }
-}  
+//void serializeRodBoundaryConditionBCList( std::ofstream& of, const RodBoundaryCondition::BCList& val )
+//{
+//  assert( of.is_open() );
+//  
+//  int sze = val.size();
+//  serializeVal(of,sze);
+//  
+//  for( size_t i = 0; i < val.size(); ++i ) serializeVal(of,val[i]);
+//}
+//
+//void loadRodBoundaryConditionBCList( std::ifstream& ifs, RodBoundaryCondition::BCList& val )
+//{
+//  assert( ifs.is_open() );
+//
+//  int sze = -1;
+//  loadVal(ifs,sze);
+//  assert( sze >= 0 );
+//
+//  val.resize(sze);
+//  for( int i = 0; i < sze; ++i ) loadVal(ifs,val[i]);
+//}
+//  
+//void serializeProperty( std::ofstream& of, Property<RodBoundaryCondition::BCList>* prop )
+//{
+//  for( size_t i = 0; i < prop->size(); ++i ) serializeRodBoundaryConditionBCList(of, (*prop)[i]);
+//}
+//
+//void loadProperty( std::ifstream& ifs, Property<RodBoundaryCondition::BCList>* prop )
+//{
+//  assert( ifs.is_open() );
+//  
+//  for( size_t i = 0; i < prop->size(); ++i )
+//  {
+//    RodBoundaryCondition::BCList newval;
+//    loadRodBoundaryConditionBCList(ifs,newval);
+//    (*prop)[i] = newval;
+//  }
+//}  
 
 //////////////////////////
 // DofHandleType Functions
@@ -1262,13 +1262,14 @@ void serializeProperty( std::ofstream& of, PropertyBase* prop )
   serializeString(of,prop->name());
   
   // Save the property itself
-  if( dynamic_cast<Property<ElasticRod::RodForces>*>(prop) )
-  {
-    serializePropertyID(of,ELASTICRODRODFORCES);
-    Property<ElasticRod::RodForces>* chldprp = dynamic_cast<Property<ElasticRod::RodForces>*>(prop);
-    serializeProperty( of, chldprp ); 
-  }    
-  else if( dynamic_cast<Property<int>*>(prop) )
+//  if( dynamic_cast<Property<ElasticRod::RodForces>*>(prop) )
+//  {
+//    serializePropertyID(of,ELASTICRODRODFORCES);
+//    Property<ElasticRod::RodForces>* chldprp = dynamic_cast<Property<ElasticRod::RodForces>*>(prop);
+//    serializeProperty( of, chldprp ); 
+//  }    
+//  else 
+  if( dynamic_cast<Property<int>*>(prop) )
   {
     serializePropertyID(of,INT);
     Property<int>* chldprp = dynamic_cast<Property<int>*>(prop);
@@ -1286,18 +1287,18 @@ void serializeProperty( std::ofstream& of, PropertyBase* prop )
     Property<Scalar>* chldprp = dynamic_cast<Property<Scalar>*>(prop);
     serializeProperty( of, chldprp );
   }
-  else if( dynamic_cast<Property<ElasticRod::RefFrameType>*>(prop) )
-  {
-    serializePropertyID(of,ELASTICRODREFFRAMETYPE);
-    Property<ElasticRod::RefFrameType>* chldprp = dynamic_cast<Property<ElasticRod::RefFrameType>*>(prop);
-    serializeProperty( of, chldprp );
-  }      
-  else if( dynamic_cast<Property<RodBoundaryCondition::BCList>*>(prop) )
-  {
-    serializePropertyID(of,RODBOUNDARYCONDITIONBCLIST);
-    Property<RodBoundaryCondition::BCList>* chldprp = dynamic_cast<Property<RodBoundaryCondition::BCList>*>(prop);
-    serializeProperty( of, chldprp );
-  }
+//  else if( dynamic_cast<Property<ElasticRod::RefFrameType>*>(prop) )
+//  {
+//    serializePropertyID(of,ELASTICRODREFFRAMETYPE);
+//    Property<ElasticRod::RefFrameType>* chldprp = dynamic_cast<Property<ElasticRod::RefFrameType>*>(prop);
+//    serializeProperty( of, chldprp );
+//  }      
+//  else if( dynamic_cast<Property<RodBoundaryCondition::BCList>*>(prop) )
+//  {
+//    serializePropertyID(of,RODBOUNDARYCONDITIONBCLIST);
+//    Property<RodBoundaryCondition::BCList>* chldprp = dynamic_cast<Property<RodBoundaryCondition::BCList>*>(prop);
+//    serializeProperty( of, chldprp );
+//  }
   else if( dynamic_cast<Property<DOFMap>*>(prop) )
   {
     serializePropertyID(of,DOFMAP);
@@ -1405,35 +1406,35 @@ void loadProperty( std::ifstream& ifs, PropertyBase** prop, ObjectBase* topobj, 
   
   switch (pid) 
   {
-    case ELASTICRODRODFORCES:
-    {
-      ElasticRod* erod = dynamic_cast<ElasticRod*>(topobj);
-      if( !erod ) 
-      {
-        std::cerr << "\033[31;1mERROR IN TOPOLOGICALOBJECTSERIALIZER:\033[m Attempt to load non-rod object into a rod. Exiting." << std::endl;
-        exit(1);
-      }
-      
-      Property<ElasticRod::RodForces>* newprop = new Property<ElasticRod::RodForces>(propertyname);
-      newprop->resize(propsize);
-      BASim::loadProperty(ifs, newprop, erod);
-      *prop = newprop;
-      if( print_loaded )
-      {
-        std::cout << "   ELASTICRODRODFORCES" << " : " << propsize << " : " << propertyname << std::endl;
-        for( size_t i = 0; i < newprop->size(); ++i )
-        {
-          std::cout << "      ";
-          for( size_t j = 0; j < (*newprop)[i].size(); ++j )
-          {
-            assert( (*newprop)[i][j] != NULL );
-            std::cout << (*newprop)[i][j]->getName() << " ";
-          }
-          std::cout << std::endl;
-        }
-      }
-      break;
-    }        
+//    case ELASTICRODRODFORCES:
+//    {
+//      ElasticRod* erod = dynamic_cast<ElasticRod*>(topobj);
+//      if( !erod ) 
+//      {
+//        std::cerr << "\033[31;1mERROR IN TOPOLOGICALOBJECTSERIALIZER:\033[m Attempt to load non-rod object into a rod. Exiting." << std::endl;
+//        exit(1);
+//      }
+//      
+//      Property<ElasticRod::RodForces>* newprop = new Property<ElasticRod::RodForces>(propertyname);
+//      newprop->resize(propsize);
+//      BASim::loadProperty(ifs, newprop, erod);
+//      *prop = newprop;
+//      if( print_loaded )
+//      {
+//        std::cout << "   ELASTICRODRODFORCES" << " : " << propsize << " : " << propertyname << std::endl;
+//        for( size_t i = 0; i < newprop->size(); ++i )
+//        {
+//          std::cout << "      ";
+//          for( size_t j = 0; j < (*newprop)[i].size(); ++j )
+//          {
+//            assert( (*newprop)[i][j] != NULL );
+//            std::cout << (*newprop)[i][j]->getName() << " ";
+//          }
+//          std::cout << std::endl;
+//        }
+//      }
+//      break;
+//    }        
     case INT:
     {
       Property<int>* newprop = new Property<int>(propertyname);
@@ -1473,32 +1474,32 @@ void loadProperty( std::ifstream& ifs, PropertyBase** prop, ObjectBase* topobj, 
       }
       break;
     }
-    case ELASTICRODREFFRAMETYPE:
-    {
-      Property<ElasticRod::RefFrameType>* newprop = new Property<ElasticRod::RefFrameType>(propertyname);
-      newprop->resize(propsize);
-      BASim::loadProperty(ifs, newprop);
-      *prop = newprop;        
-      if( print_loaded )
-      {
-        std::cout << "   ELASTICRODREFFRAMETYPE" << " : " << propsize << " : " << propertyname << std::endl;
-        for( size_t i = 0; i < newprop->size(); ++i ) std::cout << "     " << (*newprop)[i] << " "; std::cout << std::endl;
-      }
-      break;
-    }
-    case RODBOUNDARYCONDITIONBCLIST:
-    {
-      Property<RodBoundaryCondition::BCList>* newprop = new Property<RodBoundaryCondition::BCList>(propertyname);
-      newprop->resize(propsize);
-      BASim::loadProperty(ifs, newprop);
-      *prop = newprop;
-      if( print_loaded )
-      {
-        std::cout << "   RODBOUNDARYCONDITIONBCLIST" << " : " << propsize << " : " << propertyname << std::endl;
-        for( size_t i = 0; i < newprop->size(); ++i ) for( int j = 0; j < (int) (*newprop)[i].size(); ++j ) std::cout << "     " << (*newprop)[i][j] << " "; std::cout << std::endl;
-      }
-      break;
-    }
+//    case ELASTICRODREFFRAMETYPE:
+//    {
+//      Property<ElasticRod::RefFrameType>* newprop = new Property<ElasticRod::RefFrameType>(propertyname);
+//      newprop->resize(propsize);
+//      BASim::loadProperty(ifs, newprop);
+//      *prop = newprop;        
+//      if( print_loaded )
+//      {
+//        std::cout << "   ELASTICRODREFFRAMETYPE" << " : " << propsize << " : " << propertyname << std::endl;
+//        for( size_t i = 0; i < newprop->size(); ++i ) std::cout << "     " << (*newprop)[i] << " "; std::cout << std::endl;
+//      }
+//      break;
+//    }
+//    case RODBOUNDARYCONDITIONBCLIST:
+//    {
+//      Property<RodBoundaryCondition::BCList>* newprop = new Property<RodBoundaryCondition::BCList>(propertyname);
+//      newprop->resize(propsize);
+//      BASim::loadProperty(ifs, newprop);
+//      *prop = newprop;
+//      if( print_loaded )
+//      {
+//        std::cout << "   RODBOUNDARYCONDITIONBCLIST" << " : " << propsize << " : " << propertyname << std::endl;
+//        for( size_t i = 0; i < newprop->size(); ++i ) for( int j = 0; j < (int) (*newprop)[i].size(); ++j ) std::cout << "     " << (*newprop)[i][j] << " "; std::cout << std::endl;
+//      }
+//      break;
+//    }
     case DOFMAP:
     {
       Property<DOFMap>* newprop = new Property<DOFMap>(propertyname);

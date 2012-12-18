@@ -4,7 +4,7 @@
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
 #include "BASim/src/Core/TopologicalObject/TopObjUtil.hh"
 #include "BASim/src/Collisions/ElTopo/ccd_wrapper.hh"
-#include "BASim/src/Physics/DeformableObjects/Shells/CSTMembraneForce.hh"
+//#include "BASim/src/Physics/DeformableObjects/Shells/CSTMembraneForce.hh"
 #include "BASim/src/Math/Math.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVertexPointSpringForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellStickyRepulsionForce.hh"
@@ -1090,7 +1090,8 @@ void ElasticShell::remesh()
   for(VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit) {
     VertexHandle vh = *vit;
     Vec3d vert = getVertexPosition(vh);
-    Scalar mass = getMass(vh);
+//    Scalar mass = getMass(vh);
+    Scalar mass = 1;
     vert_data.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
     if(getDefoObj().isConstrained(vh))
       masses.push_back(numeric_limits<Scalar>::infinity());
@@ -1420,8 +1421,8 @@ void ElasticShell::performSplit(const EdgeHandle& eh, const Vec3d& midpoint, Ver
   Vec3d p1 = getVertexPosition(v1);
 
   //store momenta
-  Vec3d mom0 = getVertexVelocity(v0) * getMass(v0);
-  Vec3d mom1 = getVertexVelocity(v1) * getMass(v1);
+//  Vec3d mom0 = getVertexVelocity(v0) * getMass(v0);
+//  Vec3d mom1 = getVertexVelocity(v1) * getMass(v1);
   
   std::vector<FaceHandle> oldFaces;
   std::vector<Scalar> oldThicknesses;
@@ -1431,14 +1432,14 @@ void ElasticShell::performSplit(const EdgeHandle& eh, const Vec3d& midpoint, Ver
   for(EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit) {
     FaceHandle f = *efit;
     oldFaces.push_back(f);
-    oldThicknesses.push_back(getThickness(f));
+//    oldThicknesses.push_back(getThickness(f));
     oldRegions.push_back(getFaceLabel(f));
 
     //store the momenta of the associated vertex
     VertexHandle thirdVert;
     getFaceThirdVertex(*m_obj, f, eh, thirdVert);
     nbrVerts.push_back(thirdVert);
-    momenta.push_back(getVertexVelocity(thirdVert) * getMass(thirdVert));
+//    momenta.push_back(getVertexVelocity(thirdVert) * getMass(thirdVert));
   }
 
 //  VertexHandle v2, v3;
@@ -1458,9 +1459,9 @@ void ElasticShell::performSplit(const EdgeHandle& eh, const Vec3d& midpoint, Ver
   Scalar s = clamp((p1-midpoint).dot(dx)/m2, 0., 1.);
   
   Vec3d velocity = s*getVertexVelocity(v0) + (1-s)*getVertexVelocity(v1);
-  Vec3d undef = s*getVertexUndeformed(v0) + (1-s)*getVertexUndeformed(v1);
+//  Vec3d undef = s*getVertexUndeformed(v0) + (1-s)*getVertexUndeformed(v1);
   setVertexVelocity(v_new, velocity);
-  setUndeformedVertexPosition(v_new, undef);
+//  setUndeformedVertexPosition(v_new, undef);
 
   //initially set to the exact midpoint for simplicity
   setVertexPosition(v_new, simple_midpoint);
@@ -1471,12 +1472,12 @@ void ElasticShell::performSplit(const EdgeHandle& eh, const Vec3d& midpoint, Ver
   //Old way, ignores vertex movement, assumes simple (true) midpoint
   for(unsigned int i = 0; i < oldFaces.size(); ++i) {
     //copy thicknesses exactly
-    m_thicknesses[newFaces[i*2]] = oldThicknesses[i];
-    m_thicknesses[newFaces[i*2+1]] = oldThicknesses[i];
+//    m_thicknesses[newFaces[i*2]] = oldThicknesses[i];
+//    m_thicknesses[newFaces[i*2+1]] = oldThicknesses[i];
     
     //compute corresponding volumes
-    m_volumes[newFaces[i*2]] = oldThicknesses[i] * getArea(newFaces[i*2], true);
-    m_volumes[newFaces[i*2+1]] = oldThicknesses[i] * getArea(newFaces[i*2+1], true);
+//    m_volumes[newFaces[i*2]] = oldThicknesses[i] * getArea(newFaces[i*2], true);
+//    m_volumes[newFaces[i*2+1]] = oldThicknesses[i] * getArea(newFaces[i*2+1], true);
     
     //copy region labels
     m_face_regions[newFaces[i*2]] = oldRegions[i];
@@ -1488,36 +1489,36 @@ void ElasticShell::performSplit(const EdgeHandle& eh, const Vec3d& midpoint, Ver
 
   //Volumes haven't changed, but thicknesses have due to area change.
   for(unsigned int i = 0; i < oldFaces.size(); ++i) {
-    m_thicknesses[newFaces[i*2]] = m_volumes[newFaces[i*2]] / getArea(newFaces[i*2], true);
-    m_thicknesses[newFaces[i*2+1]] = m_volumes[newFaces[i*2+1]] / getArea(newFaces[i*2+1], true);
+//    m_thicknesses[newFaces[i*2]] = m_volumes[newFaces[i*2]] / getArea(newFaces[i*2], true);
+//    m_thicknesses[newFaces[i*2+1]] = m_volumes[newFaces[i*2+1]] / getArea(newFaces[i*2+1], true);
   }
 
-  if(m_momentum_conserving_remesh) {
-    //recompute and update the masses
-    recomputeVertexMass(v0);
-    m_obj->updateVertexMass(v0);
-    recomputeVertexMass(v1);
-    m_obj->updateVertexMass(v1);
-    for(unsigned int i = 0; i < nbrVerts.size(); ++i) {
-      recomputeVertexMass(nbrVerts[i]);
-      m_obj->updateVertexMass(nbrVerts[i]);
-    }
-
-    //Now adjust the velocity of the new vertex to reflect conservation of momentum
-    Vec3d momSumBefore = mom0 + mom1;
-    Vec3d momSumAfter = getMass(v0) * getVertexVelocity(v0) + getMass(v1) * getVertexVelocity(v1);
-    for(unsigned int i = 0; i < momenta.size(); ++i) {
-      momSumBefore += momenta[i];
-      momSumAfter += getMass(nbrVerts[i]) * getVertexVelocity(nbrVerts[i]);
-    }
-  
-    Vec3d momDif = momSumBefore - momSumAfter;
-  
-    //assign missing momentum to the new vertex, based on its mass
-    recomputeVertexMass(v_new);
-    m_obj->updateVertexMass(v_new);
-    setVertexVelocity(v_new, momDif / getMass(v_new));
-  }
+//  if(m_momentum_conserving_remesh) {
+//    //recompute and update the masses
+//    recomputeVertexMass(v0);
+//    m_obj->updateVertexMass(v0);
+//    recomputeVertexMass(v1);
+//    m_obj->updateVertexMass(v1);
+//    for(unsigned int i = 0; i < nbrVerts.size(); ++i) {
+//      recomputeVertexMass(nbrVerts[i]);
+//      m_obj->updateVertexMass(nbrVerts[i]);
+//    }
+//
+//    //Now adjust the velocity of the new vertex to reflect conservation of momentum
+//    Vec3d momSumBefore = mom0 + mom1;
+//    Vec3d momSumAfter = getMass(v0) * getVertexVelocity(v0) + getMass(v1) * getVertexVelocity(v1);
+//    for(unsigned int i = 0; i < momenta.size(); ++i) {
+//      momSumBefore += momenta[i];
+//      momSumAfter += getMass(nbrVerts[i]) * getVertexVelocity(nbrVerts[i]);
+//    }
+//  
+//    Vec3d momDif = momSumBefore - momSumAfter;
+//  
+//    //assign missing momentum to the new vertex, based on its mass
+//    recomputeVertexMass(v_new);
+//    m_obj->updateVertexMass(v_new);
+//    setVertexVelocity(v_new, momDif / getMass(v_new));
+//  }
 
   VertexFaceIterator vf_iter = m_obj->vf_iter(v_new);
   for(;vf_iter; ++vf_iter)
@@ -1530,9 +1531,9 @@ void ElasticShell::performCollapse(const EdgeHandle& eh, const VertexHandle& ver
   
   //determine area of collapsing faces
   EdgeFaceIterator efit = m_obj->ef_iter(eh);
-  Scalar totalVolumeLoss = 0;
-  for(;efit; ++efit)
-    totalVolumeLoss += getVolume(*efit);
+//  Scalar totalVolumeLoss = 0;
+//  for(;efit; ++efit)
+//    totalVolumeLoss += getVolume(*efit);
 
   //use the new position to determine how to lerp the vertex data.
   
@@ -1540,24 +1541,24 @@ void ElasticShell::performCollapse(const EdgeHandle& eh, const VertexHandle& ver
   Vec3d p1 = getVertexPosition(vert_to_keep);
 
   //store momenta for later
-  Vec3d momKeep = getVertexVelocity(vert_to_keep) * getMass(vert_to_keep), 
-        momRemove = getVertexVelocity(vert_to_remove) * getMass(vert_to_remove);
+//  Vec3d momKeep = getVertexVelocity(vert_to_keep) * getMass(vert_to_keep), 
+//        momRemove = getVertexVelocity(vert_to_remove) * getMass(vert_to_remove);
   
   //get data for the surrounding nbr verts too
-  std::vector<VertexHandle> nbrs;
-  std::vector<Vec3d> nbrMoms;
-  if(m_momentum_conserving_remesh) {
-    for(EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit) {
-      FaceHandle fh = *efit;
-      VertexHandle thirdVert;
-      if(!getFaceThirdVertex(*m_obj, fh, eh, thirdVert))
-        std::cout << "Error, no 3rd vertex found.\n";
-
-      nbrs.push_back(thirdVert);
-      Vec3d mom = getVertexVelocity(thirdVert) * getMass(thirdVert);
-      nbrMoms.push_back(mom);
-    }
-  }
+//  std::vector<VertexHandle> nbrs;
+//  std::vector<Vec3d> nbrMoms;
+//  if(m_momentum_conserving_remesh) {
+//    for(EdgeFaceIterator efit = m_obj->ef_iter(eh); efit; ++efit) {
+//      FaceHandle fh = *efit;
+//      VertexHandle thirdVert;
+//      if(!getFaceThirdVertex(*m_obj, fh, eh, thirdVert))
+//        std::cout << "Error, no 3rd vertex found.\n";
+//
+//      nbrs.push_back(thirdVert);
+//      Vec3d mom = getVertexVelocity(thirdVert) * getMass(thirdVert);
+//      nbrMoms.push_back(mom);
+//    }
+//  }
 
   
 
@@ -1566,7 +1567,7 @@ void ElasticShell::performCollapse(const EdgeHandle& eh, const VertexHandle& ver
   Scalar s = clamp((p1-new_position).dot(dx)/m2, 0., 1.);
 
   Vec3d newVelocity = s*getVertexVelocity(vert_to_remove) + (1-s)*getVertexVelocity(vert_to_keep);
-  Vec3d newUndef = s*getVertexUndeformed(vert_to_remove) + (1-s)*getVertexUndeformed(vert_to_keep);
+//  Vec3d newUndef = s*getVertexUndeformed(vert_to_remove) + (1-s)*getVertexUndeformed(vert_to_keep);
 
   //do the collapse itself
   std::vector<EdgeHandle> deletedEdges;
@@ -1577,64 +1578,64 @@ void ElasticShell::performCollapse(const EdgeHandle& eh, const VertexHandle& ver
   
   //determine new positions
   setVertexPosition(vert_to_keep, new_position);
-  setUndeformedVertexPosition(vert_to_keep, newUndef);
+//  setUndeformedVertexPosition(vert_to_keep, newUndef);
   setVertexVelocity(vert_to_keep, newVelocity);
   //increment the thickness of the nearby faces to account for the lost volume
 
   //sum up the total area increases in the faces
-  VertexFaceIterator vfit = m_obj->vf_iter(vert_to_keep);
-  Scalar totalNewArea = 0;
-  for(;vfit; ++vfit) {
-    FaceHandle fh = *vfit;
-    totalNewArea += std::max(0.0, getArea(fh, true) - m_volumes[fh] / m_thicknesses[fh]); //only consider increases
-  }
+//  VertexFaceIterator vfit = m_obj->vf_iter(vert_to_keep);
+//  Scalar totalNewArea = 0;
+//  for(;vfit; ++vfit) {
+//    FaceHandle fh = *vfit;
+//    totalNewArea += std::max(0.0, getArea(fh, true) - m_volumes[fh] / m_thicknesses[fh]); //only consider increases
+//  }
 
   //add the volume losses in the surrounding faces
-  vfit = m_obj->vf_iter(vert_to_keep);
-  for(;vfit; ++vfit) {
-    FaceHandle fh = *vfit;
-    Scalar areaLoss = m_volumes[fh] / m_thicknesses[fh] - getArea(fh, true);
-    if(areaLoss > 0) {
-      totalVolumeLoss += areaLoss * m_thicknesses[fh];
-    }
-  }
+//  vfit = m_obj->vf_iter(vert_to_keep);
+//  for(;vfit; ++vfit) {
+//    FaceHandle fh = *vfit;
+//    Scalar areaLoss = m_volumes[fh] / m_thicknesses[fh] - getArea(fh, true);
+//    if(areaLoss > 0) {
+//      totalVolumeLoss += areaLoss * m_thicknesses[fh];
+//    }
+//  }
 
-  vfit = m_obj->vf_iter(vert_to_keep);
-  for(;vfit; ++vfit) {
-    FaceHandle fh = *vfit;
-    Scalar newArea = getArea(fh) - m_volumes[fh] / m_thicknesses[fh];
-    if(newArea <= 0) { //face lost area
-      //keep the old thickness, assign the new volume according to the adjusted smaller area
-      m_volumes[fh] = getArea(fh)*m_thicknesses[fh];
-    }
-    else { //face gained area
-      //distribute this expanding face some of the volume
-      m_volumes[fh] += (newArea / totalNewArea) * totalVolumeLoss; //allocate extra volume proportional to area increases
-      m_thicknesses[fh] = m_volumes[fh] / getArea(fh);
-    }
-  }
+//  vfit = m_obj->vf_iter(vert_to_keep);
+//  for(;vfit; ++vfit) {
+//    FaceHandle fh = *vfit;
+//    Scalar newArea = getArea(fh) - m_volumes[fh] / m_thicknesses[fh];
+//    if(newArea <= 0) { //face lost area
+//      //keep the old thickness, assign the new volume according to the adjusted smaller area
+//      m_volumes[fh] = getArea(fh)*m_thicknesses[fh];
+//    }
+//    else { //face gained area
+//      //distribute this expanding face some of the volume
+//      m_volumes[fh] += (newArea / totalNewArea) * totalVolumeLoss; //allocate extra volume proportional to area increases
+//      m_thicknesses[fh] = m_volumes[fh] / getArea(fh);
+//    }
+//  }
 
   //Use the momenta to determine new velocities for the involved vertices
-  if(m_momentum_conserving_remesh) {
-    //First determine new masses.
-    recomputeVertexMass(vert_to_keep);
-    for(unsigned int i = 0; i < nbrs.size(); ++i)
-      recomputeVertexMass(nbrs[i]);
-  
-    //Update the vertex masses with the position dofs model
-    m_obj->updateVertexMass(vert_to_keep);
-    for(unsigned int i = 0; i < nbrs.size(); ++i)
-      m_obj->updateVertexMass(nbrs[i]);
-  
-    //Set new velocities accordingly, based on momentum
-    Scalar massNew0 = getMass(vert_to_keep);
-    setVertexVelocity(vert_to_keep, (momKeep + momRemove) / massNew0);
-  
-    for(unsigned int i = 0; i < nbrs.size(); ++i) {
-      Scalar newmass = getMass(nbrs[i]);
-      setVertexVelocity(nbrs[i], nbrMoms[i] / newmass);  
-    }
-  }
+//  if(m_momentum_conserving_remesh) {
+//    //First determine new masses.
+//    recomputeVertexMass(vert_to_keep);
+//    for(unsigned int i = 0; i < nbrs.size(); ++i)
+//      recomputeVertexMass(nbrs[i]);
+//  
+//    //Update the vertex masses with the position dofs model
+//    m_obj->updateVertexMass(vert_to_keep);
+//    for(unsigned int i = 0; i < nbrs.size(); ++i)
+//      m_obj->updateVertexMass(nbrs[i]);
+//  
+//    //Set new velocities accordingly, based on momentum
+//    Scalar massNew0 = getMass(vert_to_keep);
+//    setVertexVelocity(vert_to_keep, (momKeep + momRemove) / massNew0);
+//  
+//    for(unsigned int i = 0; i < nbrs.size(); ++i) {
+//      Scalar newmass = getMass(nbrs[i]);
+//      setVertexVelocity(nbrs[i], nbrMoms[i] / newmass);  
+//    }
+//  }
 
 }
 
@@ -1654,10 +1655,10 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const 
         x2 = getVertexPosition(v2),
         x3 = getVertexPosition(v3);
 
-  Scalar mass0 = getMass(v0);
-  Scalar mass1 = getMass(v1);
-  Scalar mass2 = getMass(v2);
-  Scalar mass3 = getMass(v3);
+//  Scalar mass0 = getMass(v0);
+//  Scalar mass1 = getMass(v1);
+//  Scalar mass2 = getMass(v2);
+//  Scalar mass3 = getMass(v3);
 
   Scalar edgeLen = (x0-x1).norm();
   Scalar edgeLen2 = edgeLen*edgeLen;
@@ -1702,27 +1703,27 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const 
 
     //determine the volumes of each sub-area
     Scalar vFrac0 = area0 / (area0+area1);
-    Scalar vol0 = vFrac0 * m_volumes[f0];
-    Scalar vol1 = (1-vFrac0) * m_volumes[f0];
+//    Scalar vol0 = vFrac0 * m_volumes[f0];
+//    Scalar vol1 = (1-vFrac0) * m_volumes[f0];
 
     Scalar vFrac1 = area2 / (area2+area3);
-    Scalar vol2 = vFrac1 * m_volumes[f1];
-    Scalar vol3 = (1-vFrac1) * m_volumes[f1];
+//    Scalar vol2 = vFrac1 * m_volumes[f1];
+//    Scalar vol3 = (1-vFrac1) * m_volumes[f1];
 
     //redistribute those volumes to the resulting triangles
-    volNew0 = vol0 + vol2;
-    volNew1 = vol1 + vol3;
+//    volNew0 = vol0 + vol2;
+//    volNew1 = vol1 + vol3;
     
     //now recover the thicknesses of those two triangles from their areas
-    thickNew0 = volNew0 / areaNew0; //associated to the "from" vertex, v0
-    thickNew1 = volNew1 / areaNew1; //associated to the "to" vertex, v1
+//    thickNew0 = volNew0 / areaNew0; //associated to the "from" vertex, v0
+//    thickNew1 = volNew1 / areaNew1; //associated to the "to" vertex, v1
   }
   else {
     //do simpler, smeared averaging redistribution (splitting-based version doesn't make sense for certain geometries)
-    Scalar totalVolume = m_volumes[f0] + m_volumes[f1];
-    thickNew0 = thickNew1 = totalVolume / (areaNew0 + areaNew1);
-    volNew0 = thickNew0 * areaNew0;
-    volNew1 = thickNew1 * areaNew1;
+//    Scalar totalVolume = m_volumes[f0] + m_volumes[f1];
+//    thickNew0 = thickNew1 = totalVolume / (areaNew0 + areaNew1);
+//    volNew0 = thickNew0 * areaNew0;
+//    volNew1 = thickNew1 * areaNew1;
   }
 
   Vec2i oldLabels = m_face_regions[f0]; //assume f0 and f1 have the same labels, because if not this flip is nonsense anyway
@@ -1744,42 +1745,42 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const 
   if(testVert != v0)
     swap(f0new, f1new);
 
-  m_thicknesses[f0new] = thickNew0;
-  m_thicknesses[f1new] = thickNew1;
-  m_volumes[f0new] = volNew0;
-  m_volumes[f1new] = volNew1;
+//  m_thicknesses[f0new] = thickNew0;
+//  m_thicknesses[f1new] = thickNew1;
+//  m_volumes[f0new] = volNew0;
+//  m_volumes[f1new] = volNew1;
 
-  if(m_momentum_conserving_remesh) {
-    //now adjust velocities to achieve momentum conservation
-    //get old momenta
-    Vec3d mom0 = mass0*getVertexVelocity(v0), 
-          mom1 = mass1*getVertexVelocity(v1), 
-          mom2 = mass2*getVertexVelocity(v2),
-          mom3 = mass3*getVertexVelocity(v3);
-  
-    //update the mass of the vertex in the shell
-    recomputeVertexMass(v0); 
-    recomputeVertexMass(v1); 
-    recomputeVertexMass(v2); 
-    recomputeVertexMass(v3);
-  
-    //call up to pos_dofs_model to recompute the full mass of the node (may include rods and such)
-    m_obj->updateVertexMass(v0);
-    m_obj->updateVertexMass(v1);
-    m_obj->updateVertexMass(v2);
-    m_obj->updateVertexMass(v3);
-
-    Scalar massNew0 = getMass(v0), 
-      massNew1 = getMass(v1), 
-      massNew2 = getMass(v2), 
-      massNew3 = getMass(v3);
-
-    //set new velocities accordingly
-    setVertexVelocity(v0, mom0 / massNew0);
-    setVertexVelocity(v1, mom1 / massNew1);
-    setVertexVelocity(v2, mom2 / massNew2);
-    setVertexVelocity(v3, mom3 / massNew3);
-  }
+//  if(m_momentum_conserving_remesh) {
+//    //now adjust velocities to achieve momentum conservation
+//    //get old momenta
+//    Vec3d mom0 = mass0*getVertexVelocity(v0), 
+//          mom1 = mass1*getVertexVelocity(v1), 
+//          mom2 = mass2*getVertexVelocity(v2),
+//          mom3 = mass3*getVertexVelocity(v3);
+//  
+//    //update the mass of the vertex in the shell
+//    recomputeVertexMass(v0); 
+//    recomputeVertexMass(v1); 
+//    recomputeVertexMass(v2); 
+//    recomputeVertexMass(v3);
+//  
+//    //call up to pos_dofs_model to recompute the full mass of the node (may include rods and such)
+//    m_obj->updateVertexMass(v0);
+//    m_obj->updateVertexMass(v1);
+//    m_obj->updateVertexMass(v2);
+//    m_obj->updateVertexMass(v3);
+//
+//    Scalar massNew0 = getMass(v0), 
+//      massNew1 = getMass(v1), 
+//      massNew2 = getMass(v2), 
+//      massNew3 = getMass(v3);
+//
+//    //set new velocities accordingly
+//    setVertexVelocity(v0, mom0 / massNew0);
+//    setVertexVelocity(v1, mom1 / massNew1);
+//    setVertexVelocity(v2, mom2 / massNew2);
+//    setVertexVelocity(v3, mom3 / massNew3);
+//  }
 
   //keep previous region labels
   m_face_regions[f0new] = oldLabels;
@@ -1868,8 +1869,8 @@ void ElasticShell::updateThickness() {
     Scalar area = 0.5f*(v0.cross(v1)).norm();
 
     //figure out new thickness from previous volume, and update it
-    Scalar newThickness = m_volumes[f] / area;
-    m_thicknesses[f] = newThickness;
+//    Scalar newThickness = m_volumes[f] / area;
+//    m_thicknesses[f] = newThickness;
   }
 
 }
@@ -2040,9 +2041,9 @@ void ElasticShell::extendMesh(Scalar current_time) {
 
     for(unsigned int i = 0; i < vertices.size(); ++i) {
       setVertexPosition(vertices[i], m_inflow_positions[boundary][i]);
-      setUndeformedVertexPosition(vertices[i], m_inflow_positions[boundary][i]);
+//      setUndeformedVertexPosition(vertices[i], m_inflow_positions[boundary][i]);
       setVertexVelocity(vertices[i], m_inflow_velocities[boundary][i]);
-      m_vertex_masses[vertices[i]] = 0;
+//      m_vertex_masses[vertices[i]] = 0;
       m_obj->setVertexDampingUndeformedPosition(vertices[i], m_inflow_positions[boundary][i]);
 
       getDefoObj().constrainVertex(vertices[i], new FixedVelocityConstraint(m_inflow_positions[boundary][i], m_inflow_velocities[boundary][i], current_time));
@@ -2050,19 +2051,19 @@ void ElasticShell::extendMesh(Scalar current_time) {
 
 
     for(unsigned int i = 0; i < faces.size(); ++i) {
-      m_thicknesses[faces[i]] = m_inflow_thickness;
-      m_volumes[faces[i]] = 0;
-      m_volumes[faces[i]] = getArea(faces[i])*m_inflow_thickness;
+//      m_thicknesses[faces[i]] = m_inflow_thickness;
+//      m_volumes[faces[i]] = 0;
+//      m_volumes[faces[i]] = getArea(faces[i])*m_inflow_thickness;
       FaceVertexIterator fvit = m_obj->fv_iter(faces[i]);
       for(;fvit;++fvit) {
         VertexHandle vh = *fvit;
-        m_vertex_masses[vh] += m_volumes[faces[i]] * m_density / 3.0;
+//        m_vertex_masses[vh] += m_volumes[faces[i]] * m_density / 3.0;
       }
     }
 
   }
   
-  computeMasses();
+//  computeMasses();
 
 }
 

@@ -24,10 +24,10 @@
 #else
 #include "BASim/src/Core/Property.hh"
 #include "BASim/src/Core/Option.hh"
-#include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
-#include "BASim/src/Physics/ElasticRods/RodStretchingForce.hh"
-#include "BASim/src/Physics/ElasticRods/RodTwistingForceSym.hh"
-#include "BASim/src/Physics/ElasticRods/RodBendingForceSym.hh"
+//#include "BASim/src/Physics/ElasticRods/ElasticRod.hh"
+//#include "BASim/src/Physics/ElasticRods/RodStretchingForce.hh"
+//#include "BASim/src/Physics/ElasticRods/RodTwistingForceSym.hh"
+//#include "BASim/src/Physics/ElasticRods/RodBendingForceSym.hh"
 #endif
 
 #include <queue>
@@ -98,14 +98,14 @@ void serializePropertyID( std::ofstream& of, const PropertyID& id );
 
 //////////////////////////
 // Force Functions
-ForceID getForceID( RodForce* rforce );
-RodForce* getRodForce( const ForceID& fid, ElasticRod* erod );
-
-void serializeElasticRodRodForces( std::ofstream& of, const ElasticRod::RodForces& val );
-void loadElasticRodRodForce( std::ifstream& ifs,  ElasticRod::RodForces& val, ElasticRod* erod );
-
-void serializeProperty( std::ofstream& of, Property<ElasticRod::RodForces>* prop );
-void loadProperty( std::ifstream& ifs, Property<ElasticRod::RodForces>* prop, ElasticRod* erod );
+//ForceID getForceID( RodForce* rforce );
+//RodForce* getRodForce( const ForceID& fid, ElasticRod* erod );
+//
+//void serializeElasticRodRodForces( std::ofstream& of, const ElasticRod::RodForces& val );
+//void loadElasticRodRodForce( std::ifstream& ifs,  ElasticRod::RodForces& val, ElasticRod* erod );
+//
+//void serializeProperty( std::ofstream& of, Property<ElasticRod::RodForces>* prop );
+//void loadProperty( std::ifstream& ifs, Property<ElasticRod::RodForces>* prop, ElasticRod* erod );
   
 //////////////////////////
 // Bool Functions
@@ -117,19 +117,19 @@ void loadProperty( std::ifstream& ifs, Property<bool>* prop );
   
 //////////////////////////
 // ElasticRodRefFrame Functions
-void serializeElasticRodRefFrameType( std::ofstream& of, const ElasticRod::RefFrameType& val );  
-void loadElasticRodRefFrameType( std::ifstream& ifs, ElasticRod::RefFrameType& val );
-  
-void serializeProperty( std::ofstream& of, Property<ElasticRod::RefFrameType>* prop );
-void loadProperty( std::ifstream& ifs, Property<ElasticRod::RefFrameType>* prop );
-  
-//////////////////////////
-// RodBoundaryConditionBCList Functions
-void serializeRodBoundaryConditionBCList( std::ofstream& of, const RodBoundaryCondition::BCList& val );
-void loadRodBoundaryConditionBCList( std::ifstream& ifs, RodBoundaryCondition::BCList& val );
-
-void serializeProperty( std::ofstream& of, Property<RodBoundaryCondition::BCList>* prop );
-void loadProperty( std::ifstream& ifs, Property<RodBoundaryCondition::BCList>* prop );
+//void serializeElasticRodRefFrameType( std::ofstream& of, const ElasticRod::RefFrameType& val );  
+//void loadElasticRodRefFrameType( std::ifstream& ifs, ElasticRod::RefFrameType& val );
+//  
+//void serializeProperty( std::ofstream& of, Property<ElasticRod::RefFrameType>* prop );
+//void loadProperty( std::ifstream& ifs, Property<ElasticRod::RefFrameType>* prop );
+//  
+////////////////////////////
+//// RodBoundaryConditionBCList Functions
+//void serializeRodBoundaryConditionBCList( std::ofstream& of, const RodBoundaryCondition::BCList& val );
+//void loadRodBoundaryConditionBCList( std::ifstream& ifs, RodBoundaryCondition::BCList& val );
+//
+//void serializeProperty( std::ofstream& of, Property<RodBoundaryCondition::BCList>* prop );
+//void loadProperty( std::ifstream& ifs, Property<RodBoundaryCondition::BCList>* prop );
 
 //////////////////////////
 // DofHandleType Functions

@@ -65,31 +65,32 @@ public:
       ObjectBase* objptr = *it;
 
       // Elastic rods
-      if( typeid(*objptr)==typeid(AnisotropicRod) )
-      {
-        ElasticRod* rod = dynamic_cast<ElasticRod*>(objptr);
-        if (rod == NULL) continue;
-
-        // Create a node in the xml hieararchy
-        std::stringstream name;
-        name << std::setfill('0');
-        name << "rod" << std::setw(10) << num_rods << ".txt";
-        
-        rapidxml::xml_node<>* child = doc.allocate_node(rapidxml::node_element, "externalobject");
-        child->append_attribute(doc.allocate_attribute("type", "rod"));
-        child->append_attribute(doc.allocate_attribute("file",doc.allocate_string(name.str().c_str())));
-        root->append_node(child);
-        
-        // Write the file containing the rod
-        std::stringstream filename;
-        filename << std::setfill('0');
-        filename << outputdirectory << "/rod" << std::setw(10) << num_rods << ".txt";
-        outputRod( *rod, filename.str() );
-        
-        ++num_rods;
-      }
+//      if( typeid(*objptr)==typeid(AnisotropicRod) )
+//      {
+//        ElasticRod* rod = dynamic_cast<ElasticRod*>(objptr);
+//        if (rod == NULL) continue;
+//
+//        // Create a node in the xml hieararchy
+//        std::stringstream name;
+//        name << std::setfill('0');
+//        name << "rod" << std::setw(10) << num_rods << ".txt";
+//        
+//        rapidxml::xml_node<>* child = doc.allocate_node(rapidxml::node_element, "externalobject");
+//        child->append_attribute(doc.allocate_attribute("type", "rod"));
+//        child->append_attribute(doc.allocate_attribute("file",doc.allocate_string(name.str().c_str())));
+//        root->append_node(child);
+//        
+//        // Write the file containing the rod
+//        std::stringstream filename;
+//        filename << std::setfill('0');
+//        filename << outputdirectory << "/rod" << std::setw(10) << num_rods << ".txt";
+//        outputRod( *rod, filename.str() );
+//        
+//        ++num_rods;
+//      }
+//      else 
       // Obj meshes
-      else if( typeid(*objptr)==typeid(TriangleMesh) )
+      if( typeid(*objptr)==typeid(TriangleMesh) )
       {
         TriangleMesh* triobj = dynamic_cast<TriangleMesh*>(objptr);
         if( triobj == NULL ) continue;
@@ -139,57 +140,57 @@ public:
     }
   }
   
-  void outputRod( const ElasticRod& rod, const std::string& filename )
-  {
-    std::ofstream rodoutput(filename.c_str());
-    
-    if( rodoutput.is_open() )
-    {
-      ////////////////////////////////
-      // Output the number of vertices
-      rodoutput << "numverts " << rod.nv() << std::endl << std::endl;
-
-      /////////////////////////////////////////////////////////
-      // Output the radii. Assumes constant across rod, for now
-      rodoutput << "radiusScale " << rod.getRadiusScale() << std::endl;
-      rodoutput << "radiusA " << rod.radiusA(0) << std::endl;
-      rodoutput << "radiusB " << rod.radiusB(0) << std::endl << std::endl;
-      
-      
-      ////////////////////////////////////
-      // Output the deformed configuration
-      rodoutput << "vertices" << std::endl;
-      for( int i = 0; i < rod.nv(); ++i )
-      {
-        rodoutput << "   " << rod.getVertex(i).x() << " " << rod.getVertex(i).y() << " " << rod.getVertex(i).z() << std::endl;
-      }
-      rodoutput << "endvertices" << std::endl << std::endl;
-
-      ////////////////////////////////////
-      // Output the vertex  configuration
-      rodoutput << "vertexvelocities" << std::endl;
-      for( int i = 0; i < rod.nv(); ++i )
-      {
-        rodoutput << "   " << rod.getVelocity(i).x() << " " << rod.getVelocity(i).y() << " " << rod.getVelocity(i).z() << std::endl;
-      }
-      rodoutput << "endvertexvelocities" << std::endl << std::endl;
-
-      ////////////////////////////
-      // Output the material frame
-      rodoutput << "material1" << std::endl;
-      for( int i = 0; i < rod.ne(); ++i )
-      {
-        rodoutput << "   " << rod.getMaterial1(i).x() << " " << rod.getMaterial1(i).y() << " " << rod.getMaterial1(i).z() << std::endl;
-      }
-      rodoutput << "endmaterial1" << std::endl << std::endl;
-      
-      rodoutput.close();
-    }
-    else
-    {
-      std::cout << "\033[31;1mWARNING IN XMLSceneOutputter:\033[m Failed to open text rod file for output." << std::endl;
-    }
-  }
+//  void outputRod( const ElasticRod& rod, const std::string& filename )
+//  {
+//    std::ofstream rodoutput(filename.c_str());
+//    
+//    if( rodoutput.is_open() )
+//    {
+//      ////////////////////////////////
+//      // Output the number of vertices
+//      rodoutput << "numverts " << rod.nv() << std::endl << std::endl;
+//
+//      /////////////////////////////////////////////////////////
+//      // Output the radii. Assumes constant across rod, for now
+//      rodoutput << "radiusScale " << rod.getRadiusScale() << std::endl;
+//      rodoutput << "radiusA " << rod.radiusA(0) << std::endl;
+//      rodoutput << "radiusB " << rod.radiusB(0) << std::endl << std::endl;
+//      
+//      
+//      ////////////////////////////////////
+//      // Output the deformed configuration
+//      rodoutput << "vertices" << std::endl;
+//      for( int i = 0; i < rod.nv(); ++i )
+//      {
+//        rodoutput << "   " << rod.getVertex(i).x() << " " << rod.getVertex(i).y() << " " << rod.getVertex(i).z() << std::endl;
+//      }
+//      rodoutput << "endvertices" << std::endl << std::endl;
+//
+//      ////////////////////////////////////
+//      // Output the vertex  configuration
+//      rodoutput << "vertexvelocities" << std::endl;
+//      for( int i = 0; i < rod.nv(); ++i )
+//      {
+//        rodoutput << "   " << rod.getVelocity(i).x() << " " << rod.getVelocity(i).y() << " " << rod.getVelocity(i).z() << std::endl;
+//      }
+//      rodoutput << "endvertexvelocities" << std::endl << std::endl;
+//
+//      ////////////////////////////
+//      // Output the material frame
+//      rodoutput << "material1" << std::endl;
+//      for( int i = 0; i < rod.ne(); ++i )
+//      {
+//        rodoutput << "   " << rod.getMaterial1(i).x() << " " << rod.getMaterial1(i).y() << " " << rod.getMaterial1(i).z() << std::endl;
+//      }
+//      rodoutput << "endmaterial1" << std::endl << std::endl;
+//      
+//      rodoutput.close();
+//    }
+//    else
+//    {
+//      std::cout << "\033[31;1mWARNING IN XMLSceneOutputter:\033[m Failed to open text rod file for output." << std::endl;
+//    }
+//  }
   
   void outputObj( const TriangleMesh& trimesh, const std::string& filename )
   {

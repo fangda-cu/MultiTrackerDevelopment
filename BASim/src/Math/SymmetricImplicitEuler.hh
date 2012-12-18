@@ -13,7 +13,7 @@
 #include "LinearSolverBase.hh"
 #include "SolverUtils.hh"
 #include "../Core/Timer.hh"
-#include "../Physics/ElasticRods/MinimalRodStateBackup.hh"
+//#include "../Physics/ElasticRods/MinimalRodStateBackup.hh"
 #include "../Core/StatTracker.hh"
 #include "../Util/TextLog.hh"
 

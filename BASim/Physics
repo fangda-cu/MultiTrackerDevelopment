@@ -4,42 +4,42 @@
 #include "Core"
 #include "Math"
 
-#include "src/Physics/ElasticRods/Stencil.hh"
+//#include "src/Physics/ElasticRods/Stencil.hh"
 
 #include "src/Physics/DegreeOfFreedom.hh"
 #include "src/Physics/PhysObject.hh"
-#include "src/Physics/ElasticRods/ElasticRod.hh"
-#include "src/Physics/ElasticRods/AnisotropicRod.hh"
-#include "src/Physics/ElasticRods/ViscousRod.hh"
-
-#include "src/Physics/ElasticRods/EdgeStencil.hh"
-#include "src/Physics/ElasticRods/VertexStencil.hh"
-
-#include "src/Physics/ElasticRods/RodForce.hh"
-#include "src/Physics/ElasticRods/RodStretchingForce.hh"
-#include "src/Physics/ElasticRods/RodTwistingForce.hh"
-#include "src/Physics/ElasticRods/RodTwistingForceSym.hh"
-#include "src/Physics/ElasticRods/RodAnisoBending.hh"
-#include "src/Physics/ElasticRods/RodBendingForce.hh"
-#include "src/Physics/ElasticRods/RodBendingForceSym.hh"
-#include "src/Physics/ElasticRods/RodAnisoForce.hh"
-
-#include "src/Physics/ElasticRods/RodUtils.hh"
-
-#include "src/Physics/ElasticRods/RodExternalForce.hh"
-#include "src/Physics/ElasticRods/RodGravity.hh"
-#include "src/Physics/ElasticRods/RodMassDamping.hh"
-
-#include "src/Physics/ElasticRods/RodRodExternalForce.hh"
-
-#include "src/Physics/ElasticRods/RodBoundaryCondition.hh"
-#include "src/Physics/ElasticRods/RodTimeStepper.hh"
-//#include "src/Physics/ElasticRods/RodCollisionTimeStepper.hh"
-#include "src/Physics/ElasticRods/MultipleRodTimeStepper.hh"
-
-#include "src/Physics/ElasticRods/RodReverseSolver.hh"
-
-#include "src/Physics/ElasticRods/RodTube.hh"
+//#include "src/Physics/ElasticRods/ElasticRod.hh"
+//#include "src/Physics/ElasticRods/AnisotropicRod.hh"
+//#include "src/Physics/ElasticRods/ViscousRod.hh"
+//
+//#include "src/Physics/ElasticRods/EdgeStencil.hh"
+//#include "src/Physics/ElasticRods/VertexStencil.hh"
+//
+//#include "src/Physics/ElasticRods/RodForce.hh"
+//#include "src/Physics/ElasticRods/RodStretchingForce.hh"
+//#include "src/Physics/ElasticRods/RodTwistingForce.hh"
+//#include "src/Physics/ElasticRods/RodTwistingForceSym.hh"
+//#include "src/Physics/ElasticRods/RodAnisoBending.hh"
+//#include "src/Physics/ElasticRods/RodBendingForce.hh"
+//#include "src/Physics/ElasticRods/RodBendingForceSym.hh"
+//#include "src/Physics/ElasticRods/RodAnisoForce.hh"
+//
+//#include "src/Physics/ElasticRods/RodUtils.hh"
+//
+//#include "src/Physics/ElasticRods/RodExternalForce.hh"
+//#include "src/Physics/ElasticRods/RodGravity.hh"
+//#include "src/Physics/ElasticRods/RodMassDamping.hh"
+//
+//#include "src/Physics/ElasticRods/RodRodExternalForce.hh"
+//
+//#include "src/Physics/ElasticRods/RodBoundaryCondition.hh"
+//#include "src/Physics/ElasticRods/RodTimeStepper.hh"
+////#include "src/Physics/ElasticRods/RodCollisionTimeStepper.hh"
+//#include "src/Physics/ElasticRods/MultipleRodTimeStepper.hh"
+//
+//#include "src/Physics/ElasticRods/RodReverseSolver.hh"
+//
+//#include "src/Physics/ElasticRods/RodTube.hh"
 
 #include "src/Physics/World.hh"
 
