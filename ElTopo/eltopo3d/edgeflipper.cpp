@@ -718,9 +718,9 @@ bool EdgeFlipper::flip_pass( )
                 assert(0);
             }
             
-//            //don't flip if one of the faces is all solid
-//            if(m_surf.triangle_is_all_solid(triangle_a) || m_surf.triangle_is_all_solid(triangle_b))
-//              continue;
+            //don't flip if one of the faces is all solid
+            if(m_surf.triangle_is_all_solid(triangle_a) || m_surf.triangle_is_all_solid(triangle_b))
+              continue;
 
             // Don't flip edge on a degenerate triangle
             const Vec3st& tri_a = m_mesh.get_triangle( triangle_a );
