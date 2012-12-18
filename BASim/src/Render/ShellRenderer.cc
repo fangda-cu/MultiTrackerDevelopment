@@ -437,6 +437,38 @@ void ShellRenderer::render()
     
     glEnd();
     
+    // render bounding box
+    glLineWidth(1);
+    glColor3f(0.5, 0.5, 0.5);
+    glBegin(GL_LINES);
+    glVertex3f(0.0, 0.0, 0.0);
+    glVertex3f(0.0, 0.0, 1.0);
+    glVertex3f(1.0, 0.0, 0.0);
+    glVertex3f(1.0, 0.0, 1.0);
+    glVertex3f(0.0, 1.0, 0.0);
+    glVertex3f(0.0, 1.0, 1.0);
+    glVertex3f(1.0, 1.0, 0.0);
+    glVertex3f(1.0, 1.0, 1.0);
+    
+    glVertex3f(0.0, 0.0, 0.0);
+    glVertex3f(1.0, 0.0, 0.0);
+    glVertex3f(1.0, 0.0, 0.0);
+    glVertex3f(1.0, 1.0, 0.0);
+    glVertex3f(1.0, 1.0, 0.0);
+    glVertex3f(0.0, 1.0, 0.0);
+    glVertex3f(0.0, 1.0, 0.0);
+    glVertex3f(0.0, 0.0, 0.0);
+    
+    glVertex3f(0.0, 0.0, 1.0);
+    glVertex3f(1.0, 0.0, 1.0);
+    glVertex3f(1.0, 0.0, 1.0);
+    glVertex3f(1.0, 1.0, 1.0);
+    glVertex3f(1.0, 1.0, 1.0);
+    glVertex3f(0.0, 1.0, 1.0);
+    glVertex3f(0.0, 1.0, 1.0);
+    glVertex3f(0.0, 0.0, 1.0);
+    glEnd();
+
     glColor3f(0.0, 0.0, 0.0);
     /*std::cout << "Calling curvature\n";
     MeshCurvature curvature(m_shell.getDefoObj(), m_shell.getVertexPositions());
@@ -699,6 +731,38 @@ void ShellRenderer::render()
     glDisable(GL_BLEND);
     glDepthMask(GL_TRUE);
     
+    // render bounding box
+    glLineWidth(1);
+    glColor3f(0.5, 0.5, 0.5);
+    glBegin(GL_LINES);
+    glVertex3f(0.0, 0.0, 0.0);
+    glVertex3f(0.0, 0.0, 1.0);
+    glVertex3f(1.0, 0.0, 0.0);
+    glVertex3f(1.0, 0.0, 1.0);
+    glVertex3f(0.0, 1.0, 0.0);
+    glVertex3f(0.0, 1.0, 1.0);
+    glVertex3f(1.0, 1.0, 0.0);
+    glVertex3f(1.0, 1.0, 1.0);
+    
+    glVertex3f(0.0, 0.0, 0.0);
+    glVertex3f(1.0, 0.0, 0.0);
+    glVertex3f(1.0, 0.0, 0.0);
+    glVertex3f(1.0, 1.0, 0.0);
+    glVertex3f(1.0, 1.0, 0.0);
+    glVertex3f(0.0, 1.0, 0.0);
+    glVertex3f(0.0, 1.0, 0.0);
+    glVertex3f(0.0, 0.0, 0.0);
+    
+    glVertex3f(0.0, 0.0, 1.0);
+    glVertex3f(1.0, 0.0, 1.0);
+    glVertex3f(1.0, 0.0, 1.0);
+    glVertex3f(1.0, 1.0, 1.0);
+    glVertex3f(1.0, 1.0, 1.0);
+    glVertex3f(0.0, 1.0, 1.0);
+    glVertex3f(0.0, 1.0, 1.0);
+    glVertex3f(0.0, 0.0, 1.0);
+    glEnd();
+
     glColor3f(0.0, 0.0, 0.0);
     /*std::cout << "Calling curvature\n";
      MeshCurvature curvature(m_shell.getDefoObj(), m_shell.getVertexPositions());
@@ -981,14 +1045,45 @@ void ShellRenderer::render()
     glDisable(GL_BLEND);
     glDepthMask(GL_TRUE);
     
-    glColor3f(0.0, 0.0, 0.0);
     /*std::cout << "Calling curvature\n";
      MeshCurvature curvature(m_shell.getDefoObj(), m_shell.getVertexPositions());
      curvature.renderCurvatureDirs();
      std::cout << "Done curvature";*/
     
+    // render bounding box
+    glLineWidth(1);
+    glColor3f(0.5, 0.5, 0.5);
+    glBegin(GL_LINES);
+    glVertex3f(0.0, 0.0, 0.0);
+    glVertex3f(0.0, 0.0, 1.0);
+    glVertex3f(1.0, 0.0, 0.0);
+    glVertex3f(1.0, 0.0, 1.0);
+    glVertex3f(0.0, 1.0, 0.0);
+    glVertex3f(0.0, 1.0, 1.0);
+    glVertex3f(1.0, 1.0, 0.0);
+    glVertex3f(1.0, 1.0, 1.0);
+    
+    glVertex3f(0.0, 0.0, 0.0);
+    glVertex3f(1.0, 0.0, 0.0);
+    glVertex3f(1.0, 0.0, 0.0);
+    glVertex3f(1.0, 1.0, 0.0);
+    glVertex3f(1.0, 1.0, 0.0);
+    glVertex3f(0.0, 1.0, 0.0);
+    glVertex3f(0.0, 1.0, 0.0);
+    glVertex3f(0.0, 0.0, 0.0);
+
+    glVertex3f(0.0, 0.0, 1.0);
+    glVertex3f(1.0, 0.0, 1.0);
+    glVertex3f(1.0, 0.0, 1.0);
+    glVertex3f(1.0, 1.0, 1.0);
+    glVertex3f(1.0, 1.0, 1.0);
+    glVertex3f(0.0, 1.0, 1.0);
+    glVertex3f(0.0, 1.0, 1.0);
+    glVertex3f(0.0, 0.0, 1.0);
+    glEnd();
     
     //Render all vertices
+    glColor3f(0.0, 0.0, 0.0);
     glPointSize(4);
     glBegin(GL_POINTS);
     
