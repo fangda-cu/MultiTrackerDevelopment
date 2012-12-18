@@ -708,6 +708,27 @@ bool EdgeSplitter::edge_length_needs_split(size_t edge_index) {
     double edge_length = m_surf.get_edge_length(edge_index);
     size_t vertex_a = m_surf.m_mesh.m_edges[edge_index][0];
     size_t vertex_b = m_surf.m_mesh.m_edges[edge_index][1];
+      
+    ////////////////////////////////////////////////////////////
+    // FD 20121218
+    //
+    //  split thin triangles
+    bool split_thin_triangles = true;
+    if ( split_thin_triangles )
+    {
+        double thin_triangle_area_threshold = edge_length * edge_length / 2 * 0.1;
+        std::vector<size_t> incident_tris = m_surf.m_mesh.m_edge_to_triangle_map[edge_index];
+        for(size_t i = 0; i < incident_tris.size(); ++i) 
+        {
+            double tri_area = m_surf.get_triangle_area(incident_tris[i]);
+            
+            // Splitting degenerate (< m_min_triangle_area) triangles causes problems, so only split
+            // triangles with area between m_min_triangle_area and thin_triangle_area_threshold
+            if (tri_area >= m_surf.m_min_triangle_area && tri_area < thin_triangle_area_threshold)
+                return true;
+        }        
+    }
+    ////////////////////////////////////////////////////////////
 
     if ( m_use_curvature )
     {
