@@ -37,7 +37,7 @@ public:
   void setDof(const DofHandle& hnd, const Scalar& dof);
   const Scalar& getVel(const DofHandle& hnd) const;
   void setVel(const DofHandle& hnd, const Scalar& vel);
-  const Scalar& getMass(const DofHandle& hnd) const;
+//  const Scalar& getMass(const DofHandle& hnd) const;
  
   int numVertexDofs() const { return ELASTIC_SHELL_DOFS_PER_VERTEX; }
   int numEdgeDofs() const { return ELASTIC_SHELL_DOFS_PER_EDGE; }

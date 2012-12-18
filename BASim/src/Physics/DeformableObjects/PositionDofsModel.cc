@@ -28,11 +28,11 @@ namespace BASim
     
   }
   
-  void PositionDofsModel::accumulateMasses(const VertexProperty<Scalar> &masses)
-  { 
-    for (VertexIterator i = getDefoObj().vertices_begin(); i != getDefoObj().vertices_end(); ++i) 
-      m_vertex_masses[*i] += masses[*i]; 
-  }
+//  void PositionDofsModel::accumulateMasses(const VertexProperty<Scalar> &masses)
+//  { 
+//    for (VertexIterator i = getDefoObj().vertices_begin(); i != getDefoObj().vertices_end(); ++i) 
+//      m_vertex_masses[*i] += masses[*i]; 
+//  }
 
   void PositionDofsModel::constrainVertex(const VertexHandle & v, const Vec3d& pos)
   {

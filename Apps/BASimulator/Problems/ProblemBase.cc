@@ -276,147 +276,147 @@ void Problem::setGravity(const Vec3d& gravity)
   m_world->property(m_gravity) = gravity;
 }
 
-void Problem::addRodOptions()
-{
-  RodOptions opts;
-  AddOption("nv", "number of vertices in the rod", opts.numVertices);
-  AddOption("density", "volumetric density of the rod", opts.density);
-  AddOption("youngs-modulus", "Young's modulus for the rod", opts.YoungsModulus);
-  AddOption("shear-modulus", "Shear modulus for the rod", opts.ShearModulus);
-  AddOption("viscosity", "Dynamic viscosity for the rod", opts.viscosity);
-  AddOption("major-radius", "radius of major axis of cross-section", opts.radiusA);
-  AddOption("minor-radius", "radius of minor axis of cross-section", opts.radiusB);
-  AddOption("radius-scale", "scaling for rendering and collisions", opts.radiusScale);
-  AddOption("reference-frame", "type of reference frame to use (time/space)",
-            opts.refFrame == ElasticRod::TimeParallel ? "time" : "space");
-  AddOption("quasistatic", "update material frame quasistatically", opts.quasistatic);
-}
+//void Problem::addRodOptions()
+//{
+//  RodOptions opts;
+//  AddOption("nv", "number of vertices in the rod", opts.numVertices);
+//  AddOption("density", "volumetric density of the rod", opts.density);
+//  AddOption("youngs-modulus", "Young's modulus for the rod", opts.YoungsModulus);
+//  AddOption("shear-modulus", "Shear modulus for the rod", opts.ShearModulus);
+//  AddOption("viscosity", "Dynamic viscosity for the rod", opts.viscosity);
+//  AddOption("major-radius", "radius of major axis of cross-section", opts.radiusA);
+//  AddOption("minor-radius", "radius of minor axis of cross-section", opts.radiusB);
+//  AddOption("radius-scale", "scaling for rendering and collisions", opts.radiusScale);
+//  AddOption("reference-frame", "type of reference frame to use (time/space)",
+//            opts.refFrame == ElasticRod::TimeParallel ? "time" : "space");
+//  AddOption("quasistatic", "update material frame quasistatically", opts.quasistatic);
+//}
+//
+//void Problem::getRodOptions(RodOptions& opts)
+//{
+//  opts.numVertices = GetIntOpt("nv");
+//  opts.density = GetScalarOpt("density");
+//  opts.YoungsModulus = GetScalarOpt("youngs-modulus");
+//  opts.ShearModulus = GetScalarOpt("shear-modulus");
+//  opts.viscosity = GetScalarOpt("viscosity");
+//  opts.radiusA = GetScalarOpt("major-radius");
+//  opts.radiusB = GetScalarOpt("minor-radius");
+//  opts.radiusScale = GetScalarOpt("radius-scale");
+//  string& frame = GetStringOpt("reference-frame");
+//  if (frame == "time") opts.refFrame = ElasticRod::TimeParallel;
+//  else if (frame == "space") opts.refFrame = ElasticRod::SpaceParallel;
+//  else {
+//    cerr << "Unknown reference frame type " << frame << ". Using default"
+//         << endl;
+//  }
+//  opts.quasistatic = GetBoolOpt("quasistatic");
+//}
 
-void Problem::getRodOptions(RodOptions& opts)
-{
-  opts.numVertices = GetIntOpt("nv");
-  opts.density = GetScalarOpt("density");
-  opts.YoungsModulus = GetScalarOpt("youngs-modulus");
-  opts.ShearModulus = GetScalarOpt("shear-modulus");
-  opts.viscosity = GetScalarOpt("viscosity");
-  opts.radiusA = GetScalarOpt("major-radius");
-  opts.radiusB = GetScalarOpt("minor-radius");
-  opts.radiusScale = GetScalarOpt("radius-scale");
-  string& frame = GetStringOpt("reference-frame");
-  if (frame == "time") opts.refFrame = ElasticRod::TimeParallel;
-  else if (frame == "space") opts.refFrame = ElasticRod::SpaceParallel;
-  else {
-    cerr << "Unknown reference frame type " << frame << ". Using default"
-         << endl;
-  }
-  opts.quasistatic = GetBoolOpt("quasistatic");
-}
-
-void Problem::addRodTimeStepperOptions()
-{
-  AddOption("mass-damping", "mass damping for the rod", 0.0);
-  AddOption("integrator", "type of integrator to use for the rod", "implicit");
-  AddOption("iterations", "maximum number of iterations for implicit method",
-            (int) 50);
-  AddOption("atol", "absolute convergence tolerance of L2 norm", 1e-8);
-  AddOption("rtol", "relative convergence tolerance of L2 norm", 1e-8);
-  AddOption("stol", "convergence tolerance in terms of the L2 norm of the change in the solution between steps", 1e-8);
-  AddOption("inftol", "infinity norm convergence tolerance", 1e-8);
-  AddOption("velocity-solve", "solve for velocity increments in implicit Euler (if false, the solve is for position increments)", false);
-}
-
-RodTimeStepper* Problem::getRodTimeStepper(ElasticRod& rod)
-{
-  RodTimeStepper* stepper = new RodTimeStepper(rod);
-
-  string& integrator = GetStringOpt("integrator");
-  if (integrator == "symplectic") {
-    stepper->setDiffEqSolver(RodTimeStepper::SYMPL_EULER);
-
-  } else if (integrator == "implicit") {
-    stepper->setDiffEqSolver(RodTimeStepper::IMPL_EULER);
-
-  } else if (integrator == "statics") {
-    stepper->setDiffEqSolver(RodTimeStepper::STATICS);
-
-  } else {
-    cerr << "Unknown integrator " << integrator
-         << ". Using default instead." << endl;
-  }
-
-  stepper->setTimeStep(getDt());
-
-  Scalar massDamping = GetScalarOpt("mass-damping");
-  if (massDamping != 0) {
-    stepper->addExternalForce(new RodMassDamping(massDamping));
-  }
-
-  if (getGravity().norm() > 0) {
-    stepper->addExternalForce(new RodGravity(getGravity()));
-  }
-
-  stepper->setMaxIterations(GetIntOpt("iterations"));
-  stepper->set_stol(GetScalarOpt("stol"));
-  stepper->set_atol(GetScalarOpt("atol"));
-  stepper->set_rtol(GetScalarOpt("rtol"));
-  stepper->set_inftol(GetScalarOpt("inftol"));
-
-//   cout << "stol " << stepper->get_stol() << endl
-//        << "atol " << stepper->get_atol() << endl
-//        << "rtol " << stepper->get_rtol() << endl
-//        << "inftol " << stepper->get_inftol() << endl
-//        << "maxit " << stepper->getMaxIterations() << endl;
-
-  return stepper;
-}
-
-MultipleRodTimeStepper* Problem::getMultipleRodTimeStepper()
-{
-  MultipleRodTimeStepper* stepper = new MultipleRodTimeStepper();
-
-  string& integrator = GetStringOpt("integrator");
-
-  if (integrator == "symplectic") {
-    stepper->setDiffEqSolver(MultipleRodTimeStepper::SYMPL_EULER);
-  } 
-  if (integrator == "implicit")
-  {
-    stepper->setDiffEqSolver(MultipleRodTimeStepper::IMPL_EULER);
-  } 
-  else 
-  {
-    cerr << "Unknown integrator " << integrator
-    << ". Using default instead." << endl;
-  }
-  //else if (integrator == "statics") {
-  //  stepper->setDiffEqSolver(RodTimeStepper::STATICS);
-  //} 
-  
-  stepper->setTimeStep(getDt());
-  
-  Scalar massDamping = GetScalarOpt("mass-damping");
-  if (massDamping != 0) {
-    stepper->addExternalForce(new RodMassDamping(massDamping));
-  }
-  
-  if (getGravity().norm() > 0) {
-    stepper->addExternalForce(new RodGravity(getGravity()));
-  }
-  
-  stepper->setMaxIterations(GetIntOpt("iterations"));
-  stepper->set_stol(GetScalarOpt("stol"));
-  stepper->set_atol(GetScalarOpt("atol"));
-  stepper->set_rtol(GetScalarOpt("rtol"));
-  stepper->set_inftol(GetScalarOpt("inftol"));
-  
-  //   cout << "stol " << stepper->get_stol() << endl
-  //        << "atol " << stepper->get_atol() << endl
-  //        << "rtol " << stepper->get_rtol() << endl
-  //        << "inftol " << stepper->get_inftol() << endl
-  //        << "maxit " << stepper->getMaxIterations() << endl;
-  
-  return stepper;  
-}
+//void Problem::addRodTimeStepperOptions()
+//{
+//  AddOption("mass-damping", "mass damping for the rod", 0.0);
+//  AddOption("integrator", "type of integrator to use for the rod", "implicit");
+//  AddOption("iterations", "maximum number of iterations for implicit method",
+//            (int) 50);
+//  AddOption("atol", "absolute convergence tolerance of L2 norm", 1e-8);
+//  AddOption("rtol", "relative convergence tolerance of L2 norm", 1e-8);
+//  AddOption("stol", "convergence tolerance in terms of the L2 norm of the change in the solution between steps", 1e-8);
+//  AddOption("inftol", "infinity norm convergence tolerance", 1e-8);
+//  AddOption("velocity-solve", "solve for velocity increments in implicit Euler (if false, the solve is for position increments)", false);
+//}
+//
+//RodTimeStepper* Problem::getRodTimeStepper(ElasticRod& rod)
+//{
+//  RodTimeStepper* stepper = new RodTimeStepper(rod);
+//
+//  string& integrator = GetStringOpt("integrator");
+//  if (integrator == "symplectic") {
+//    stepper->setDiffEqSolver(RodTimeStepper::SYMPL_EULER);
+//
+//  } else if (integrator == "implicit") {
+//    stepper->setDiffEqSolver(RodTimeStepper::IMPL_EULER);
+//
+//  } else if (integrator == "statics") {
+//    stepper->setDiffEqSolver(RodTimeStepper::STATICS);
+//
+//  } else {
+//    cerr << "Unknown integrator " << integrator
+//         << ". Using default instead." << endl;
+//  }
+//
+//  stepper->setTimeStep(getDt());
+//
+//  Scalar massDamping = GetScalarOpt("mass-damping");
+//  if (massDamping != 0) {
+//    stepper->addExternalForce(new RodMassDamping(massDamping));
+//  }
+//
+//  if (getGravity().norm() > 0) {
+//    stepper->addExternalForce(new RodGravity(getGravity()));
+//  }
+//
+//  stepper->setMaxIterations(GetIntOpt("iterations"));
+//  stepper->set_stol(GetScalarOpt("stol"));
+//  stepper->set_atol(GetScalarOpt("atol"));
+//  stepper->set_rtol(GetScalarOpt("rtol"));
+//  stepper->set_inftol(GetScalarOpt("inftol"));
+//
+////   cout << "stol " << stepper->get_stol() << endl
+////        << "atol " << stepper->get_atol() << endl
+////        << "rtol " << stepper->get_rtol() << endl
+////        << "inftol " << stepper->get_inftol() << endl
+////        << "maxit " << stepper->getMaxIterations() << endl;
+//
+//  return stepper;
+//}
+//
+//MultipleRodTimeStepper* Problem::getMultipleRodTimeStepper()
+//{
+//  MultipleRodTimeStepper* stepper = new MultipleRodTimeStepper();
+//
+//  string& integrator = GetStringOpt("integrator");
+//
+//  if (integrator == "symplectic") {
+//    stepper->setDiffEqSolver(MultipleRodTimeStepper::SYMPL_EULER);
+//  } 
+//  if (integrator == "implicit")
+//  {
+//    stepper->setDiffEqSolver(MultipleRodTimeStepper::IMPL_EULER);
+//  } 
+//  else 
+//  {
+//    cerr << "Unknown integrator " << integrator
+//    << ". Using default instead." << endl;
+//  }
+//  //else if (integrator == "statics") {
+//  //  stepper->setDiffEqSolver(RodTimeStepper::STATICS);
+//  //} 
+//  
+//  stepper->setTimeStep(getDt());
+//  
+//  Scalar massDamping = GetScalarOpt("mass-damping");
+//  if (massDamping != 0) {
+//    stepper->addExternalForce(new RodMassDamping(massDamping));
+//  }
+//  
+//  if (getGravity().norm() > 0) {
+//    stepper->addExternalForce(new RodGravity(getGravity()));
+//  }
+//  
+//  stepper->setMaxIterations(GetIntOpt("iterations"));
+//  stepper->set_stol(GetScalarOpt("stol"));
+//  stepper->set_atol(GetScalarOpt("atol"));
+//  stepper->set_rtol(GetScalarOpt("rtol"));
+//  stepper->set_inftol(GetScalarOpt("inftol"));
+//  
+//  //   cout << "stol " << stepper->get_stol() << endl
+//  //        << "atol " << stepper->get_atol() << endl
+//  //        << "rtol " << stepper->get_rtol() << endl
+//  //        << "inftol " << stepper->get_inftol() << endl
+//  //        << "maxit " << stepper->getMaxIterations() << endl;
+//  
+//  return stepper;  
+//}
 
 
 

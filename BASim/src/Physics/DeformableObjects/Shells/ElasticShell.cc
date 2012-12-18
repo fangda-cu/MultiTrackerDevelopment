@@ -243,7 +243,8 @@ Scalar ElasticShell::getArea(const FaceHandle& f, bool current) const  {
   VertexHandle v2_hnd = *fvit; ++fvit; assert(!fvit);
 
   //compute triangle areas
-  if(current) 
+//  if(current) 
+  assert(current);
   {
     Vec3d pos0 = m_obj->getVertexPosition(v0_hnd);
     Vec3d pos1 = m_obj->getVertexPosition(v1_hnd);
@@ -254,17 +255,17 @@ Scalar ElasticShell::getArea(const FaceHandle& f, bool current) const  {
     Vec3d triVec = v0.cross(v1);
     return 0.5*triVec.norm();
   }
-  else 
-  {
-    Vec3d pos0 = m_obj->getVertexUndeformedPosition(v0_hnd);
-    Vec3d pos1 = m_obj->getVertexUndeformedPosition(v1_hnd);
-    Vec3d pos2 = m_obj->getVertexUndeformedPosition(v2_hnd);
-    
-    Vec3d v0 = pos1 - pos0;
-    Vec3d v1 = pos2 - pos0;
-    Vec3d triVec = v0.cross(v1);
-    return 0.5*triVec.norm();
-  }
+//  else 
+//  {
+//    Vec3d pos0 = m_obj->getVertexUndeformedPosition(v0_hnd);
+//    Vec3d pos1 = m_obj->getVertexUndeformedPosition(v1_hnd);
+//    Vec3d pos2 = m_obj->getVertexUndeformedPosition(v2_hnd);
+//    
+//    Vec3d v0 = pos1 - pos0;
+//    Vec3d v1 = pos2 - pos0;
+//    Vec3d triVec = v0.cross(v1);
+//    return 0.5*triVec.norm();
+//  }
 }
 
 //void ElasticShell::recomputeVertexMass(const VertexHandle& v) {
@@ -394,14 +395,14 @@ void ElasticShell::setVel( const DofHandle& hnd, const Scalar& vel )
 //  m_xi_vel[eh] = vel;
 }
 
-const Scalar& ElasticShell::getMass( const DofHandle& hnd ) const
-{
-  assert("No dof");
-//  assert(hnd.getType() == DofHandle::EDGE_DOF);
-//
-//  const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-//  return m_edge_masses[eh];
-}
+//const Scalar& ElasticShell::getMass( const DofHandle& hnd ) const
+//{
+//  assert("No dof");
+////  assert(hnd.getType() == DofHandle::EDGE_DOF);
+////
+////  const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
+////  return m_edge_masses[eh];
+//}
 
 void ElasticShell::getScriptedDofs( IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time ) const
 {

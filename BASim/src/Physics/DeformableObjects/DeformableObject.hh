@@ -80,7 +80,7 @@ public:
   virtual const Scalar& getVel(int i) const;
   virtual void setVel(int i, const Scalar& vel);
 
-  virtual const Scalar& getMass(int i) const;
+  virtual const Scalar& getMass(int i) const { static Scalar m = 1; return m; }
   //@}
 
   // position dofs access (accessible by all models because position dofs are shared)
@@ -92,28 +92,28 @@ public:
   
   void setVertexPositions                 (const VertexProperty<Vec3d>& pos);
   void setVertexVelocities                (const VertexProperty<Vec3d>& vel);
-  void setVertexUndeformedPositions       (const VertexProperty<Vec3d>& pos);
+//  void setVertexUndeformedPositions       (const VertexProperty<Vec3d>& pos);
   void setVertexDampingUndeformedPositions(const VertexProperty<Vec3d>& pos);
   
   //Individual DOFs
   Vec3d getVertexPosition                 (const VertexHandle& v) const;
   Vec3d getVertexVelocity                 (const VertexHandle& v) const;
-  Scalar getVertexMass                    (const VertexHandle& v) const;
-  Vec3d getVertexUndeformedPosition       (const VertexHandle& v) const;
+//  Scalar getVertexMass                    (const VertexHandle& v) const;
+//  Vec3d getVertexUndeformedPosition       (const VertexHandle& v) const;
   Vec3d getVertexDampingUndeformedPosition(const VertexHandle& v) const;
   
   void setVertexPosition                  (const VertexHandle& v, const Vec3d& pos);
   void setVertexVelocity                  (const VertexHandle& v, const Vec3d& vel);
-  void setVertexMass                      (const VertexHandle& v, Scalar m);
-  void setVertexUndeformedPosition        (const VertexHandle& v, const Vec3d& pos);
+//  void setVertexMass                      (const VertexHandle& v, Scalar m);
+//  void setVertexUndeformedPosition        (const VertexHandle& v, const Vec3d& pos);
   void setVertexDampingUndeformedPosition (const VertexHandle& v, const Vec3d& pos);
   
-  void clearVertexMasses();
-  void accumulateVertexMasses(const VertexProperty<Scalar>& masses);  
-  void accumulateVertexMass(const VertexHandle&v, Scalar mass);
+//  void clearVertexMasses();
+//  void accumulateVertexMasses(const VertexProperty<Scalar>& masses);  
+//  void accumulateVertexMass(const VertexHandle&v, Scalar mass);
   
-  void updateVertexMass(const VertexHandle& vh);
-  void updateVertexMasses();  // call this whenever a model has recomputed its own mass and needs the total mass of the obj updated
+//  void updateVertexMass(const VertexHandle& vh);
+//  void updateVertexMasses();  // call this whenever a model has recomputed its own mass and needs the total mass of the obj updated
   
   // Dof base indices for the position dofs
   int getPositionDofBase(const VertexHandle& vh) const;

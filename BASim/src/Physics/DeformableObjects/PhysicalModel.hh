@@ -67,7 +67,7 @@ public:
   virtual const Scalar& getVel(const DofHandle& hnd) const = 0;
   virtual void setVel(const DofHandle& hnd, const Scalar& vel) = 0;
 
-  virtual const Scalar& getMass(const DofHandle& hnd) const = 0;
+//  virtual const Scalar& getMass(const DofHandle& hnd) const = 0;
   
   virtual void startStep(Scalar time, Scalar timestep) = 0;
   virtual void endStep(Scalar time, Scalar timestep) = 0;
@@ -75,8 +75,8 @@ public:
   virtual void endIteration(Scalar time, Scalar timestep) { }
 
   //Masses for the shared position DOFS (return the mass specific to that model, and we'll add them up in posdofsmodel)
-  virtual const VertexProperty<Scalar> & getVertexMasses() const = 0;
-  virtual const Scalar getModelVertexMass(const VertexHandle& vh) const = 0;
+//  virtual const VertexProperty<Scalar> & getVertexMasses() const = 0;
+//  virtual const Scalar getModelVertexMass(const VertexHandle& vh) const = 0;
 
   //For constraining particular DOFs
   virtual void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time) const {};

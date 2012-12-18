@@ -19,7 +19,9 @@ Scalar GravityForce::globalEnergy()
     VertexHandle& vh = *vit;
     int dofIdx = m_obj.getPositionDofBase(vh);
     Vec3d pos = m_obj.getVertexPosition(vh);
-    energy -= m_obj.getVertexMass(vh)*m_gravity.dot(pos);
+//    Scalar m = m_obj.getVertexMass(vh);
+    Scalar m = 1;
+    energy -= m*m_gravity.dot(pos);
   }
   return energy;
 }
@@ -30,9 +32,11 @@ void GravityForce::globalForce( VecXd& force )
   for(VertexIterator vit = m_obj.vertices_begin(); vit != m_obj.vertices_end(); ++vit) {
     VertexHandle& vh = *vit;
     int dofIdx = m_obj.getPositionDofBase(vh);
-    force[dofIdx] += m_gravity[0] * m_obj.getVertexMass(vh);
-    force[dofIdx+1] += m_gravity[1] * m_obj.getVertexMass(vh);
-    force[dofIdx+2] += m_gravity[2] * m_obj.getVertexMass(vh);
+//    Scalar m = m_obj.getVertexMass(vh);
+    Scalar m = 1;
+    force[dofIdx] += m_gravity[0] * m;
+    force[dofIdx+1] += m_gravity[1] * m;
+    force[dofIdx+2] += m_gravity[2] * m;
     
   }
   

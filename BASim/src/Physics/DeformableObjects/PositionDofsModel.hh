@@ -38,8 +38,8 @@ namespace BASim
       PhysicalModel(*obj), 
       m_positions(obj), 
       m_velocities(obj), 
-      m_vertex_masses(obj), 
-      m_undeformed_positions(obj),
+//      m_vertex_masses(obj), 
+//      m_undeformed_positions(obj),
       m_damping_undeformed_positions(obj)
     { }
       
@@ -95,56 +95,56 @@ namespace BASim
       m_velocities[vh][hnd.getNum()] = vel;
     }
     
-    virtual const Scalar& getMass(const DofHandle& hnd) const
-    {
-      assert(hnd.getType() == DofHandle::VERTEX_DOF);
-      const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
-      return m_vertex_masses[vh];
-    }
-    
-    virtual void setMass(const DofHandle& hnd, const Scalar& mass)
-    {
-      assert(hnd.getType() == DofHandle::VERTEX_DOF);
-      const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
-      m_vertex_masses[vh] = mass;
-    }
+//    virtual const Scalar& getMass(const DofHandle& hnd) const
+//    {
+//      assert(hnd.getType() == DofHandle::VERTEX_DOF);
+//      const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
+//      return m_vertex_masses[vh];
+//    }
+//    
+//    virtual void setMass(const DofHandle& hnd, const Scalar& mass)
+//    {
+//      assert(hnd.getType() == DofHandle::VERTEX_DOF);
+//      const VertexHandle& vh = static_cast<const VertexHandle&>(hnd.getHandle());
+//      m_vertex_masses[vh] = mass;
+//    }
     
   public:
     // Accessors based on VertexHandle
     //All DOFS at once
     const VertexProperty<Vec3d>& getPositions() const                   { return m_positions; }
     const VertexProperty<Vec3d>& getVelocities() const                  { return m_velocities; }
-    const VertexProperty<Vec3d>& getUndeformedPositions() const         { return m_undeformed_positions; }
+//    const VertexProperty<Vec3d>& getUndeformedPositions() const         { return m_undeformed_positions; }
     const VertexProperty<Vec3d>& getDampingUndeformedPositions() const  { return m_damping_undeformed_positions; }
     
     void setPositions                 (const VertexProperty<Vec3d>& pos) { m_positions = pos; }
     void setVelocities                (const VertexProperty<Vec3d>& vel) { m_velocities = vel; }
-    void setUndeformedPositions       (const VertexProperty<Vec3d>& pos) { m_undeformed_positions = pos; }
+//    void setUndeformedPositions       (const VertexProperty<Vec3d>& pos) { m_undeformed_positions = pos; }
     void setDampingUndeformedPositions(const VertexProperty<Vec3d>& pos) { m_damping_undeformed_positions = pos; }
     
     //Individual DOFs
     Vec3d getPosition                 (const VertexHandle& v) const { return m_positions[v]; }
     Vec3d getVelocity                 (const VertexHandle& v) const { return m_velocities[v]; }
-    Scalar getMass                    (const VertexHandle& v) const { return m_vertex_masses[v]; }
-    Vec3d getUndeformedPosition       (const VertexHandle& v) const { return m_undeformed_positions[v]; }
+//    Scalar getMass                    (const VertexHandle& v) const { return m_vertex_masses[v]; }
+//    Vec3d getUndeformedPosition       (const VertexHandle& v) const { return m_undeformed_positions[v]; }
     Vec3d getDampingUndeformedPosition(const VertexHandle& v) const { return m_damping_undeformed_positions[v]; }
     
     void setPosition                  (const VertexHandle& v, const Vec3d& pos) { m_positions[v] = pos; }
     void setVelocity                  (const VertexHandle& v, const Vec3d& vel) { m_velocities[v] = vel; }
-    void setMass                      (const VertexHandle& v, Scalar m)         { m_vertex_masses[v] = m; }
-    void setUndeformedPosition        (const VertexHandle& v, const Vec3d& pos) { m_undeformed_positions[v] = pos; }
+//    void setMass                      (const VertexHandle& v, Scalar m)         { m_vertex_masses[v] = m; }
+//    void setUndeformedPosition        (const VertexHandle& v, const Vec3d& pos) { m_undeformed_positions[v] = pos; }
     void setDampingUndeformedPosition (const VertexHandle& v, const Vec3d& pos) { m_damping_undeformed_positions[v] = pos; }
     
     // Masses computation
     // Masses are computed by summing the masses computed by all models
-    void clearMasses() { m_vertex_masses.assign(0); }
-    void accumulateMasses(const VertexProperty<Scalar> & masses);
-    void accumulateMass(const VertexHandle & v, Scalar mass) { m_vertex_masses[v] += mass; }
+//    void clearMasses() { m_vertex_masses.assign(0); }
+//    void accumulateMasses(const VertexProperty<Scalar> & masses);
+//    void accumulateMass(const VertexHandle & v, Scalar mass) { m_vertex_masses[v] += mass; }
 
     // in compliance with the PhysicalModel interface, these methods have to be implemented; but are
     // actually useless here due to the special role of this model.
-    virtual const VertexProperty<Scalar> & getVertexMasses() const { return m_vertex_masses; }
-    virtual const Scalar getModelVertexMass(const BASim::VertexHandle & vh) const { return m_vertex_masses[vh]; }
+//    virtual const VertexProperty<Scalar> & getVertexMasses() const { return m_vertex_masses; }
+//    virtual const Scalar getModelVertexMass(const BASim::VertexHandle & vh) const { return m_vertex_masses[vh]; }
 
     // dof scripting interface inherited from PhysicalModel
     void getScriptedDofs(IntArray & dofIndices, std::vector<Scalar> & dofValues, Scalar time) const;
@@ -166,10 +166,10 @@ namespace BASim
     // Dof, Dof dot, and Dof mass
     VertexProperty<Vec3d> m_positions;
     VertexProperty<Vec3d> m_velocities;
-    VertexProperty<Scalar> m_vertex_masses;
+//    VertexProperty<Scalar> m_vertex_masses;
     
     // Dof bar
-    VertexProperty<Vec3d> m_undeformed_positions;
+//    VertexProperty<Vec3d> m_undeformed_positions;
     VertexProperty<Vec3d> m_damping_undeformed_positions; 
 
     // Position dof constraints 
