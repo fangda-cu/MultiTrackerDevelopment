@@ -54,7 +54,7 @@ public:
   virtual Vec3d calculateObjectCenter() = 0;
   virtual Scalar calculateObjectBoundingRadius(const Vec3d& center) = 0;
 
-  virtual void cycleMode() {}
+  virtual void cycleMode(int inc = 1) {}
 
   virtual void keyboard(unsigned char key, int x, int y) {}
 

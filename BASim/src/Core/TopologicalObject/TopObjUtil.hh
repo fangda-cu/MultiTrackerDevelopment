@@ -77,6 +77,9 @@ FaceHandle findFace( const TopologicalObject& obj, const EdgeHandle& e0,   const
 TetHandle  findTet ( const TopologicalObject& obj, const VertexHandle& v0, const VertexHandle& v1, const VertexHandle& v2, const VertexHandle& v3 );
 TetHandle  findTet ( const TopologicalObject& obj, const FaceHandle& f0,   const FaceHandle& f1,   const FaceHandle& f2,   const FaceHandle& f3 );
 
+bool isVertexManifold(const TopologicalObject & obj, const VertexHandle & v);
+bool isEdgeManifold(const TopologicalObject & obj, const EdgeHandle & e);
+bool isFaceManifold(const TopologicalObject & obj, const FaceHandle & f);
   
 } //namespace BASim 
 

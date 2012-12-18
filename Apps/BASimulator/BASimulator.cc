@@ -698,27 +698,23 @@ void menu(int id)
 //    }
 
     case 'm':
-    {
-       
-       for(unsigned int i = 0; i < renderable_objects.size(); ++i)
-          renderable_objects[i]->cycleMode();
+    {       
+        for(unsigned int i = 0; i < renderable_objects.size(); ++i)
+            renderable_objects[i]->cycleMode(1);
 
-       //for (int i = 0; i < (int) rod_renderers.size(); ++i)
-       // {
-       //     RodRenderer::DrawMode mode = rod_renderers[i]->getMode();
-       //     mode = (RodRenderer::DrawMode) ((mode + 1) % RodRenderer::NONE);
-       //     rod_renderers[i]->setMode(mode);
-       // }
-       // for (int i = 0; i < (int) triangle_mesh_renderers.size(); ++i)
-       // {
-       //     TriangleMeshRenderer::DrawMode mode = triangle_mesh_renderers[i]->getMode();
-       //     mode = (TriangleMeshRenderer::DrawMode) ((mode + 1) % TriangleMeshRenderer::NONE);
-       //     triangle_mesh_renderers[i]->setMode(mode);
-       // }
         glutPostRedisplay();
         break;
     }
 
+    case 'M':
+    {       
+        for(unsigned int i = 0; i < renderable_objects.size(); ++i)
+            renderable_objects[i]->cycleMode(-1);
+      
+        glutPostRedisplay();
+        break;
+    }
+        
 //    case 'r':
 //    {
 //        for (int i = 0; i < (int) rod_renderers.size(); ++i)

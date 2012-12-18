@@ -718,4 +718,55 @@ EdgeHandle getVertexOppositeEdgeInFace(const TopologicalObject & obj, const Face
   return EdgeHandle();
 }
 
+bool isVertexManifold(const TopologicalObject & obj, const VertexHandle & v)
+{
+  if (obj.nf() == 0)  // top dimension = 1, manifold = 1d manifold
+  {
+    return obj.vertexIncidentEdges(v) == 2 || obj.vertexIncidentEdges(v) == 1;
+    
+  } else  // top dimension = 2/3
+  {
+    if (obj.vertexIncidentEdges(v) == 0)
+      return false;
+    
+    int ebcount = 0;
+    for (VertexEdgeIterator veit = obj.ve_iter(v); veit; ++veit)
+    {
+      if (!isEdgeManifold(obj, *veit))
+        return false;
+      if (obj.edgeIncidentFaces(*veit) == 1)
+        ebcount++;    // edge boundary
+    }
+    return ebcount == 2 || ebcount == 0;    
+  }
+}
+
+bool isEdgeManifold(const TopologicalObject & obj, const EdgeHandle & e)
+{
+  if (obj.nt() == 0)  // top dimension = 2, manifold = 2d manifold
+  {
+    return obj.edgeIncidentFaces(e) == 2 || obj.edgeIncidentFaces(e) == 1;
+    
+  } else  // top dimension = 3, manifold = 3d manifold
+  {
+    if (obj.edgeIncidentFaces(e) == 0)
+      return false;
+    
+    int fbcount = 0;
+    for (EdgeFaceIterator efit = obj.ef_iter(e); efit; ++efit)
+    {
+      if (!isFaceManifold(obj, *efit))
+        return false;
+      if (obj.faceIncidentTets(*efit) == 1)
+        fbcount++;    // face boundary
+    }
+    return fbcount == 2 || fbcount == 0;
+  }
+}
+
+bool isFaceManifold(const TopologicalObject & obj, const FaceHandle & f)
+{
+  return obj.faceIncidentTets(f) == 2 || obj.faceIncidentTets(f) == 1;
+}
+
 }
