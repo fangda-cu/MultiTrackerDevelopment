@@ -494,45 +494,97 @@ void DoubleBubbleTest::AtEachTimestep()
 //    }
 //  } else if (m_active_scene == 5 || m_active_scene == 6)
   {
-    Scalar minz = 1;
-    VertexHandle minzv;
-    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
-    {
-      bool foi = false;
-      for (VertexFaceIterator vfit = shellObj->vf_iter(*vit); vfit; ++vfit)
-      {
-        Vec2i label = shell->getFaceLabel(*vfit);
-        if (label.x() == 6 || label.y() == 6)
-          foi = true;
-      }
-      if (foi)
-        if (shell->getVertexPosition(*vit).z() < minz)
-        {
-          minz = shell->getVertexPosition(*vit).z();
-          minzv = *vit;
-        }
-    }
-    
-    std::cout << "min z = " << minz << " vertex = " << minzv.idx() << std::endl;
-    
-    shellObj->releaseAllVertices();
+//    Scalar minz = 1;
+//    VertexHandle minzv;
+//    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+//    {
+//      bool foi = false;
+//      for (VertexFaceIterator vfit = shellObj->vf_iter(*vit); vfit; ++vfit)
+//      {
+//        Vec2i label = shell->getFaceLabel(*vfit);
+//        if (label.x() == 6 || label.y() == 6)
+//          foi = true;
+//      }
+//      if (foi)
+//        if (shell->getVertexPosition(*vit).z() < minz)
+//        {
+//          minz = shell->getVertexPosition(*vit).z();
+//          minzv = *vit;
+//        }
+//    }
+//    
+//    std::cout << "min z = " << minz << " vertex = " << minzv.idx() << std::endl;
+//    
+//    shellObj->releaseAllVertices();
+//    
+//    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+//    {
+//      VertexHandle v = *vit;
+//      
+//      bool boundary = false;
+//      for (VertexFaceIterator vfit = shellObj->vf_iter(v); vfit; ++vfit)
+//      {
+//        FaceHandle f = *vfit;
+//        Vec2i labels = shell->getFaceLabel(f);
+//        if (labels.x() < 0 || labels.y() < 0)
+//          boundary = true;
+//      }
+//      
+//      Vec3d pos = shell->getVertexPosition(v);
+//      if (boundary)
+//      {
+//        bool x = false;
+//        bool y = false;
+//        bool z = false;
+//        if (pos.x() < 1e-4)
+//        {
+//          pos.x() = 0;
+//          x = true;
+//        }
+//        if (pos.x() > 1 - 1e-4)
+//        {
+//          pos.x() = 1;
+//          x = true;
+//        }
+//        if (pos.y() < 1e-4)
+//        {
+//          pos.y() = 0;
+//          y = true;
+//        }
+//        if (pos.y() > 1 - 1e-4)
+//        {
+//          pos.y() = 1;
+//          y = true;
+//        }
+//        if (pos.z() < 1e-4)
+//        {
+//          pos.z() = 0;
+//          z = true;
+//        }
+//        if (pos.z() > 1 - 1e-4)
+//        {
+//          pos.z() = 1;
+//          z = true;
+//        }
+//        
+//        assert(x || y || z);
+//        PositionConstraint * pc = new PartialPositionConstraint(pos, x, y, z);
+//        shellObj->constrainVertex(v, pc);
+//      }
+//    }
     
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
       VertexHandle v = *vit;
       
       bool boundary = false;
-      for (VertexFaceIterator vfit = shellObj->vf_iter(v); vfit; ++vfit)
-      {
-        FaceHandle f = *vfit;
-        Vec2i labels = shell->getFaceLabel(f);
-        if (labels.x() < 0 || labels.y() < 0)
+      for (VertexEdgeIterator veit = shellObj->ve_iter(v); veit; ++veit)
+        if (shellObj->edgeIncidentFaces(*veit) == 1)
           boundary = true;
-      }
       
-      Vec3d pos = shell->getVertexPosition(v);
       if (boundary)
-      {
+      {        
+        Vec3d pos = shell->getVertexPosition(v);
         bool x = false;
         bool y = false;
         bool z = false;
@@ -566,12 +618,13 @@ void DoubleBubbleTest::AtEachTimestep()
           pos.z() = 1;
           z = true;
         }
-        
+
         assert(x || y || z);
         PositionConstraint * pc = new PartialPositionConstraint(pos, x, y, z);
         shellObj->constrainVertex(v, pc);
-      }
+      }      
     }
+    
   }
 }
 
@@ -1099,51 +1152,51 @@ void DoubleBubbleTest::setupScene5()
   std::vector<FaceHandle> faceList;
   FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles  
 
-  // face with z = 0
-  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[12], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 2], vertList[12]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 2], vertList[10], vertList[12]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[12], vertList[10], vertList[14]));  faceLabels[faceList.back()] = Vec2i(3,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 6], vertList[14], vertList[10]));  faceLabels[faceList.back()] = Vec2i(3,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[12], vertList[ 4]));  faceLabels[faceList.back()] = Vec2i(1,-1);
-  faceList.push_back(shellObj->addFace(vertList[14], vertList[ 4], vertList[12]));  faceLabels[faceList.back()] = Vec2i(1,-1);
+//  // face with z = 0
+//  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[12], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(0,-1);
+//  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 2], vertList[12]));  faceLabels[faceList.back()] = Vec2i(0,-1);
+//  faceList.push_back(shellObj->addFace(vertList[ 2], vertList[10], vertList[12]));  faceLabels[faceList.back()] = Vec2i(0,-1);
+//  faceList.push_back(shellObj->addFace(vertList[12], vertList[10], vertList[14]));  faceLabels[faceList.back()] = Vec2i(3,-1);
+//  faceList.push_back(shellObj->addFace(vertList[ 6], vertList[14], vertList[10]));  faceLabels[faceList.back()] = Vec2i(3,-1);
+//  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[12], vertList[ 4]));  faceLabels[faceList.back()] = Vec2i(1,-1);
+//  faceList.push_back(shellObj->addFace(vertList[14], vertList[ 4], vertList[12]));  faceLabels[faceList.back()] = Vec2i(1,-1);
   
-  // face with y = 1
-  faceList.push_back(shellObj->addFace(vertList[11], vertList[17], vertList[ 3]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[17], vertList[ 2], vertList[ 3]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[17], vertList[10], vertList[ 2]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 7], vertList[19], vertList[11]));  faceLabels[faceList.back()] = Vec2i(2,-1);
-  faceList.push_back(shellObj->addFace(vertList[17], vertList[11], vertList[19]));  faceLabels[faceList.back()] = Vec2i(2,-1);
-  faceList.push_back(shellObj->addFace(vertList[19], vertList[ 6], vertList[17]));  faceLabels[faceList.back()] = Vec2i(3,-1);
-  faceList.push_back(shellObj->addFace(vertList[10], vertList[17], vertList[ 6]));  faceLabels[faceList.back()] = Vec2i(3,-1);
+//  // face with y = 1
+//  faceList.push_back(shellObj->addFace(vertList[11], vertList[17], vertList[ 3]));  faceLabels[faceList.back()] = Vec2i(0,-1);
+//  faceList.push_back(shellObj->addFace(vertList[17], vertList[ 2], vertList[ 3]));  faceLabels[faceList.back()] = Vec2i(0,-1);
+//  faceList.push_back(shellObj->addFace(vertList[17], vertList[10], vertList[ 2]));  faceLabels[faceList.back()] = Vec2i(0,-1);
+//  faceList.push_back(shellObj->addFace(vertList[ 7], vertList[19], vertList[11]));  faceLabels[faceList.back()] = Vec2i(2,-1);
+//  faceList.push_back(shellObj->addFace(vertList[17], vertList[11], vertList[19]));  faceLabels[faceList.back()] = Vec2i(2,-1);
+//  faceList.push_back(shellObj->addFace(vertList[19], vertList[ 6], vertList[17]));  faceLabels[faceList.back()] = Vec2i(3,-1);
+//  faceList.push_back(shellObj->addFace(vertList[10], vertList[17], vertList[ 6]));  faceLabels[faceList.back()] = Vec2i(3,-1);
   
-  // face with z = 1
-  faceList.push_back(shellObj->addFace(vertList[11], vertList[ 3], vertList[13]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 3], vertList[ 1], vertList[13]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 9], vertList[13], vertList[ 1]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[11], vertList[13], vertList[ 7]));  faceLabels[faceList.back()] = Vec2i(2,-1);
-  faceList.push_back(shellObj->addFace(vertList[15], vertList[ 7], vertList[13]));  faceLabels[faceList.back()] = Vec2i(2,-1);
-  faceList.push_back(shellObj->addFace(vertList[13], vertList[ 9], vertList[15]));  faceLabels[faceList.back()] = Vec2i(1,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 5], vertList[15], vertList[ 9]));  faceLabels[faceList.back()] = Vec2i(1,-1);
+//  // face with z = 1
+//  faceList.push_back(shellObj->addFace(vertList[11], vertList[ 3], vertList[13]));  faceLabels[faceList.back()] = Vec2i(0,-1);
+//  faceList.push_back(shellObj->addFace(vertList[ 3], vertList[ 1], vertList[13]));  faceLabels[faceList.back()] = Vec2i(0,-1);
+//  faceList.push_back(shellObj->addFace(vertList[ 9], vertList[13], vertList[ 1]));  faceLabels[faceList.back()] = Vec2i(0,-1);
+//  faceList.push_back(shellObj->addFace(vertList[11], vertList[13], vertList[ 7]));  faceLabels[faceList.back()] = Vec2i(2,-1);
+//  faceList.push_back(shellObj->addFace(vertList[15], vertList[ 7], vertList[13]));  faceLabels[faceList.back()] = Vec2i(2,-1);
+//  faceList.push_back(shellObj->addFace(vertList[13], vertList[ 9], vertList[15]));  faceLabels[faceList.back()] = Vec2i(1,-1);
+//  faceList.push_back(shellObj->addFace(vertList[ 5], vertList[15], vertList[ 9]));  faceLabels[faceList.back()] = Vec2i(1,-1);
   
-  // face with y = 0
-  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 8], vertList[ 1]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 9], vertList[ 1], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[ 4], vertList[ 9]));  faceLabels[faceList.back()] = Vec2i(1,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 5], vertList[ 9], vertList[ 4]));  faceLabels[faceList.back()] = Vec2i(1,-1);
+//  // face with y = 0
+//  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 8], vertList[ 1]));  faceLabels[faceList.back()] = Vec2i(0,-1);
+//  faceList.push_back(shellObj->addFace(vertList[ 9], vertList[ 1], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(0,-1);
+//  faceList.push_back(shellObj->addFace(vertList[ 8], vertList[ 4], vertList[ 9]));  faceLabels[faceList.back()] = Vec2i(1,-1);
+//  faceList.push_back(shellObj->addFace(vertList[ 5], vertList[ 9], vertList[ 4]));  faceLabels[faceList.back()] = Vec2i(1,-1);
   
-  // face with x = 0
-  faceList.push_back(shellObj->addFace(vertList[ 3], vertList[ 2], vertList[ 1]));  faceLabels[faceList.back()] = Vec2i(0,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 1], vertList[ 2]));  faceLabels[faceList.back()] = Vec2i(0,-1);
+//  // face with x = 0
+//  faceList.push_back(shellObj->addFace(vertList[ 3], vertList[ 2], vertList[ 1]));  faceLabels[faceList.back()] = Vec2i(0,-1);
+//  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 1], vertList[ 2]));  faceLabels[faceList.back()] = Vec2i(0,-1);
   
-  // face with x = 1
-  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[14], vertList[18]));  faceLabels[faceList.back()] = Vec2i(1,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[18], vertList[ 5]));  faceLabels[faceList.back()] = Vec2i(1,-1);
-  faceList.push_back(shellObj->addFace(vertList[18], vertList[15], vertList[ 5]));  faceLabels[faceList.back()] = Vec2i(1,-1);
-  faceList.push_back(shellObj->addFace(vertList[14], vertList[ 6], vertList[18]));  faceLabels[faceList.back()] = Vec2i(3,-1);
-  faceList.push_back(shellObj->addFace(vertList[19], vertList[18], vertList[ 6]));  faceLabels[faceList.back()] = Vec2i(3,-1);
-  faceList.push_back(shellObj->addFace(vertList[18], vertList[19], vertList[15]));  faceLabels[faceList.back()] = Vec2i(2,-1);
-  faceList.push_back(shellObj->addFace(vertList[ 7], vertList[15], vertList[19]));  faceLabels[faceList.back()] = Vec2i(2,-1);
+//  // face with x = 1
+//  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[14], vertList[18]));  faceLabels[faceList.back()] = Vec2i(1,-1);
+//  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[18], vertList[ 5]));  faceLabels[faceList.back()] = Vec2i(1,-1);
+//  faceList.push_back(shellObj->addFace(vertList[18], vertList[15], vertList[ 5]));  faceLabels[faceList.back()] = Vec2i(1,-1);
+//  faceList.push_back(shellObj->addFace(vertList[14], vertList[ 6], vertList[18]));  faceLabels[faceList.back()] = Vec2i(3,-1);
+//  faceList.push_back(shellObj->addFace(vertList[19], vertList[18], vertList[ 6]));  faceLabels[faceList.back()] = Vec2i(3,-1);
+//  faceList.push_back(shellObj->addFace(vertList[18], vertList[19], vertList[15]));  faceLabels[faceList.back()] = Vec2i(2,-1);
+//  faceList.push_back(shellObj->addFace(vertList[ 7], vertList[15], vertList[19]));  faceLabels[faceList.back()] = Vec2i(2,-1);
   
   // face with x = 0.3
   faceList.push_back(shellObj->addFace(vertList[ 8], vertList[12], vertList[16]));  faceLabels[faceList.back()] = Vec2i(0,1);
