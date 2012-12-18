@@ -1,7 +1,7 @@
 #double bubble cubes for surface tension
 
 shell-scene 1
-dt 0.0005	# time-step size
+dt 0.01	# time-step size
 
 gravity 0 0 0	# gravity
 
@@ -19,9 +19,10 @@ shell-Poisson-damping 0.5
 
 #Surface Tension
 shell-surface-tension 4
+volume-force-stiffness 0
 
 shell-remeshing 1
-shell-remeshing-resolution 0.15
+shell-remeshing-resolution 0.2
 shell-remeshing-iterations 1
 
 integrator implicit	# type of integrator to use for the shell
@@ -38,3 +39,6 @@ atol 1e-008	# absolute convergence tolerance
 rtol 1e-008	# relative convergence tolerance
 atol 1e-008	# absolute convergence tolerance
 stol 1e-008	# convergence tolerance in terms of the norm of the change in the solution between steps
+
+shell-collision-epsilon 1e-05	# the distance tolerance for El Topo to flag a collision
+shell-collision-proximity 0	# the collision spring rest length and distance at which to add springs
