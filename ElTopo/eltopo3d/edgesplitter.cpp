@@ -407,6 +407,13 @@ bool EdgeSplitter::split_edge( size_t edge )
   Vec3d new_vertex_smooth_position;
 
   bool use_smooth_point = (incident_tris.size() == 2) || (incident_tris.size() == 1 && typeid(m_surf.m_subdivision_scheme) == typeid(ModifiedButterflyScheme));
+  
+  /////////////////////////////////////////
+  // FD 20121218
+  //
+  if (m_surf.edge_is_all_solid(edge)) use_smooth_point = false; // all-solid edge cannot change shape
+  
+  /////////////////////////////////////////
 
   // generate the new midpoint according to the subdivision scheme, only if manifold and not on a boundary
   if(use_smooth_point)
