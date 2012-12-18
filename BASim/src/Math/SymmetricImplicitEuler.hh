@@ -155,29 +155,29 @@ protected:
 
     void generateInitialIterate1(VecXd& dx)
     {
-        dx = m_dt * v0; // explicit inertial step
+        dx.setZero(); // zero motion
     }
 
-    void generateInitialIterate2(VecXd& dx)
-    {
-        TraceStream(g_log, "") << "Initial guess = initial position\n";
-        dx.setZero(); // zero motion (not moving)
-    }
-
-    void generateInitialIterate3(VecXd& dx)
-    {
-        dx = 0.5 * m_dt * v0; // midway through explicit inertial step
-    }
-
-    void generateInitialIterate4(VecXd& dx)
-    {
-        dx = 1.5 * m_dt * v0; // 150% of explicit intertial step
-    }
-
-    void generateInitialIterate5(VecXd& dx)
-    {
-        dx = 2.0 * m_dt * v0; // 200% of explicit intertial step
-    }
+//    void generateInitialIterate2(VecXd& dx)
+//    {
+//        TraceStream(g_log, "") << "Initial guess = initial position\n";
+//        dx.setZero(); // zero motion (not moving)
+//    }
+//
+//    void generateInitialIterate3(VecXd& dx)
+//    {
+//        dx = 0.5 * m_dt * v0; // midway through explicit inertial step
+//    }
+//
+//    void generateInitialIterate4(VecXd& dx)
+//    {
+//        dx = 1.5 * m_dt * v0; // 150% of explicit intertial step
+//    }
+//
+//    void generateInitialIterate5(VecXd& dx)
+//    {
+//        dx = 2.0 * m_dt * v0; // 200% of explicit intertial step
+//    }
 
     bool position_solve(int guess_to_use); // Implementation moved to SymmetricImplicitEuler.cc to save compilation time
 

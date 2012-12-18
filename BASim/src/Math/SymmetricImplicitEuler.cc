@@ -27,7 +27,7 @@ bool SymmetricImplicitEuler<ODE>::execute()
     m_diffEq.backupResize();
     m_diffEq.backup();
     STOP_TIMER("SymmetricImplicitEuler::execute/backup");
-    for (int guess = 0; guess <= 5; ++guess)
+    for (int guess = 0; guess <= 1; ++guess)
     {
         if (position_solve(guess))
         {
@@ -47,6 +47,7 @@ bool SymmetricImplicitEuler<ODE>::execute()
     
     // Falling back to rigid motion if solver failed, so at least the rod doesn't mess up collision detection for this time step
     generateInitialIterate0(m_deltaX);
+  
     // Force the scripted vertices to their place. NB: if the first two vertices are inextensibly scripted this shouldn't be necessary.
     for (unsigned int i = 0; i < m_fixed.size(); ++i)
     {
@@ -54,6 +55,7 @@ bool SymmetricImplicitEuler<ODE>::execute()
         m_deltaX(dof) = m_desired[i] - x0(dof); // set desired position
     }
     m_diffEq.set_q(x0 + m_deltaX);
+    m_diffEq.set_qdot(m_deltaX / m_dt);
 
     START_TIMER("SymmetricImplicitEuler::execute/backup");
     m_diffEq.backupClear();
@@ -119,35 +121,34 @@ bool SymmetricImplicitEuler<ODE>::position_solve(int guess_to_use)
     {
     case 0:
     {
-        if (!generateInitialIterate0(m_deltaX))
-            return false;
+        generateInitialIterate1(m_deltaX);
         break;
     }
     case 1:
     {
-        generateInitialIterate1(m_deltaX);
+        generateInitialIterate0(m_deltaX);
         break;
     }
-    case 2:
-    {
-        generateInitialIterate2(m_deltaX);
-        break;
-    }
-    case 3:
-    {
-        generateInitialIterate3(m_deltaX);
-        break;
-    }
-    case 4:
-    {
-        generateInitialIterate4(m_deltaX);
-        break;
-    }
-    case 5:
-    {
-        generateInitialIterate5(m_deltaX);
-        break;
-    }
+//    case 2:
+//    {
+//        generateInitialIterate2(m_deltaX);
+//        break;
+//    }
+//    case 3:
+//    {
+//        generateInitialIterate3(m_deltaX);
+//        break;
+//    }
+//    case 4:
+//    {
+//        generateInitialIterate4(m_deltaX);
+//        break;
+//    }
+//    case 5:
+//    {
+//        generateInitialIterate5(m_deltaX);
+//        break;
+//    }
     default:
     {
         ErrorStream(g_log, "") << "\033[31;1mERROR IN IMPLICITEULER:\033[m Invalid initial iterate requested, exiting." << '\n';
