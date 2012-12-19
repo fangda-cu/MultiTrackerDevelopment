@@ -572,6 +572,8 @@ void DoubleBubbleTest::AtEachTimestep()
 //        shellObj->constrainVertex(v, pc);
 //      }
 //    }
+
+    shellObj->releaseAllVertices();
     
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
