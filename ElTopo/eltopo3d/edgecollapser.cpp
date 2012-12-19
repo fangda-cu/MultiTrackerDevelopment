@@ -617,6 +617,13 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 //        return false;
 //    }
 
+    if ( delete_rank > keep_rank )
+    {
+      swap(vertex_to_keep, vertex_to_delete);
+      swap(keep_rank, delete_rank);
+      swap(del_vert_is_boundary, keep_vert_is_boundary);
+    }
+    
     if (keep_rank == delete_rank)
     {
       // same rank, or both boundary: compare max edge valence 
@@ -642,16 +649,67 @@ bool EdgeCollapser::collapse_edge( size_t edge )
         swap(keep_rank, delete_rank);
         swap(del_vert_is_boundary, keep_vert_is_boundary);
       }
+      
+      std::cout << "ev = " << keep_max_edge_valence << " " << delete_max_edge_valence << std::endl;
+      
+      if (keep_max_edge_valence == delete_max_edge_valence && keep_vert_is_boundary && del_vert_is_boundary)
+      {
+        // same rank and same edge valence on boundary: prefer to keep the vertex with sharper boundary turning angle
+        double keep_min_turning_angle = -1;
+        double delete_min_turning_angle = -1;
+        
+        std::vector<size_t> keep_boundary_edges;
+        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_keep].size(); i++)
+          keep_boundary_edges.push_back(m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_keep][i]);
+        for (size_t i = 0; i < keep_boundary_edges.size(); i++)
+          for (size_t j = i + 1; j < keep_boundary_edges.size(); j++)
+          {
+            Vec3d e0 = m_surf.get_position(m_surf.m_mesh.m_edges[keep_boundary_edges[i]][0]) - m_surf.get_position(m_surf.m_mesh.m_edges[keep_boundary_edges[i]][1]);
+            if (m_surf.m_mesh.m_edges[keep_boundary_edges[i]][0] == vertex_to_keep)
+              e0 = -e0;
+            Vec3d e1 = m_surf.get_position(m_surf.m_mesh.m_edges[keep_boundary_edges[j]][0]) - m_surf.get_position(m_surf.m_mesh.m_edges[keep_boundary_edges[j]][1]);
+            if (m_surf.m_mesh.m_edges[keep_boundary_edges[j]][0] == vertex_to_keep)
+              e1 = -e1;
+            
+            double turning_angle = acos(dot(normalized(e0), normalized(e1)));
+            if (keep_min_turning_angle < 0 || turning_angle < keep_min_turning_angle)
+              keep_min_turning_angle = turning_angle;
+          }
+
+        std::vector<size_t> delete_boundary_edges;
+        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_delete].size(); i++)
+          delete_boundary_edges.push_back(m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_delete][i]);
+        for (size_t i = 0; i < delete_boundary_edges.size(); i++)
+          for (size_t j = i + 1; j < delete_boundary_edges.size(); j++)
+          {
+            Vec3d e0 = m_surf.get_position(m_surf.m_mesh.m_edges[delete_boundary_edges[i]][0]) - m_surf.get_position(m_surf.m_mesh.m_edges[delete_boundary_edges[i]][1]);
+            if (m_surf.m_mesh.m_edges[delete_boundary_edges[i]][0] == vertex_to_delete)
+              e0 = -e0;
+            Vec3d e1 = m_surf.get_position(m_surf.m_mesh.m_edges[delete_boundary_edges[j]][0]) - m_surf.get_position(m_surf.m_mesh.m_edges[delete_boundary_edges[j]][1]);
+            if (m_surf.m_mesh.m_edges[delete_boundary_edges[j]][0] == vertex_to_delete)
+              e1 = -e1;
+            
+            double turning_angle = acos(dot(normalized(e0), normalized(e1)));
+            if (delete_min_turning_angle < 0 || turning_angle < delete_min_turning_angle)
+              delete_min_turning_angle = turning_angle;
+          }
+        
+        if (keep_min_turning_angle > delete_min_turning_angle)
+        {
+          swap(vertex_to_keep, vertex_to_delete);
+          swap(keep_max_edge_valence, delete_max_edge_valence);
+          swap(keep_min_turning_angle, delete_min_turning_angle);
+          swap(keep_rank, delete_rank);
+          swap(del_vert_is_boundary, keep_vert_is_boundary);
+        }
+        
+        std::cout << "ta = " << keep_min_turning_angle << " " << delete_min_turning_angle << std::endl;
+        
+      }
+      
     }
     
     ///////////////////////////////////////////////////////////////////////
-    
-    if ( delete_rank > keep_rank )
-    {
-      swap(vertex_to_keep, vertex_to_delete);
-      swap(keep_rank, delete_rank);
-      swap(del_vert_is_boundary, keep_vert_is_boundary);
-    }
     
     vertex_new_position = m_surf.get_position(vertex_to_keep);
   }
