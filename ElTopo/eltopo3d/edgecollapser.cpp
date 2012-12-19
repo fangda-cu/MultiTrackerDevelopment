@@ -599,20 +599,60 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   {
     // Not allowed to move the vertex tangential to the surface during improve
 
-    if( keep_rank > 1 && del_vert_is_boundary || 
-      keep_vert_is_boundary && delete_rank > 1) {
-        //don't do collapses between feature points and boundaries
-        if ( m_surf.m_verbose ) { std::cout << "collapse between a feature point and a boundary point disallowed" << std::endl; }
-        return false;
-    }
+    ///////////////////////////////////////////////////////////////////////
+    // FD 20121218
+    //
+    // This test, combined with the fact that boundary vertices always 
+    // have rank 4, effectively disables collapsing a boundary edge, 
+    // regardless of what m_remesh_boundaries is set to.
+    //
+    // For our simulation purpose, extremely short edges simply cannot be
+    // allowed. It still needs to be collapsed even though it means loss
+    // of feature.
+    //
+//    if( keep_rank > 1 && del_vert_is_boundary || 
+//      keep_vert_is_boundary && delete_rank > 1) {
+//        //don't do collapses between feature points and boundaries
+//        if ( m_surf.m_verbose ) { std::cout << "collapse between a feature point and a boundary point disallowed" << std::endl; }
+//        return false;
+//    }
 
+    if (keep_rank == delete_rank)
+    {
+      // same rank, or both boundary: compare max edge valence 
+      size_t keep_max_edge_valence = 0;
+      size_t delete_max_edge_valence = 0;
+      for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_keep].size(); i++)
+      {
+        size_t edge_valence = m_surf.m_mesh.m_edge_to_triangle_map[m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_keep][i]].size();
+        if (edge_valence > keep_max_edge_valence)
+          keep_max_edge_valence = edge_valence;
+      }
+      for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_delete].size(); i++)
+      {
+        size_t edge_valence = m_surf.m_mesh.m_edge_to_triangle_map[m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_delete][i]].size();
+        if (edge_valence > delete_max_edge_valence)
+          delete_max_edge_valence = edge_valence;
+      }
+      
+      if (keep_max_edge_valence < delete_max_edge_valence)
+      {
+        swap(vertex_to_keep, vertex_to_delete);
+        swap(keep_max_edge_valence, delete_max_edge_valence);
+        swap(keep_rank, delete_rank);
+        swap(del_vert_is_boundary, keep_vert_is_boundary);
+      }
+    }
+    
+    ///////////////////////////////////////////////////////////////////////
+    
     if ( delete_rank > keep_rank )
     {
       swap(vertex_to_keep, vertex_to_delete);
       swap(keep_rank, delete_rank);
       swap(del_vert_is_boundary, keep_vert_is_boundary);
     }
-
+    
     vertex_new_position = m_surf.get_position(vertex_to_keep);
   }
 
