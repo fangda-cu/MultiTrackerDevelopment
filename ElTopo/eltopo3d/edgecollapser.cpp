@@ -356,11 +356,23 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
     {
         const Vec3st& tri = m_surf.m_mesh.get_triangle( moving_triangles[i] );
         
+        ///////////////////////////////////////////////////////////////////////
+        // FD 20121218
+        //
+        //  This is a bug in El Topo? This check always includes the two
+        //  triangles that are incident to the edge being collapsed (both
+        //  source_vertex and destination_vertex are in the triangle), and
+        //  for these triangles min_triangle_angle may return nan or a very
+        //  small (virtually zero) value. Random.
+        //
+        int count = 0;
+        
         Vec3d a = m_surf.get_position( tri[0] );
         
         if ( tri[0] == source_vertex || tri[0] == destination_vertex )
         {
             a = vertex_new_position;
+            count++;
         }
         
         Vec3d b = m_surf.get_position( tri[1] );
@@ -368,6 +380,7 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
         if ( tri[1] == source_vertex || tri[1] == destination_vertex )
         {
             b = vertex_new_position;
+            count++;
         }
         
         Vec3d c = m_surf.get_position( tri[2] );
@@ -375,7 +388,13 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
         if ( tri[2] == source_vertex || tri[2] == destination_vertex )
         {
             c = vertex_new_position;
+            count++;
         }
+        
+        if (count == 2)
+            continue;
+        
+        ///////////////////////////////////////////////////////////////////////
         
         double min_angle = min_triangle_angle( a, b, c );
         
