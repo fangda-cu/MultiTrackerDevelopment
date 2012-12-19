@@ -616,43 +616,75 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 //        if ( m_surf.m_verbose ) { std::cout << "collapse between a feature point and a boundary point disallowed" << std::endl; }
 //        return false;
 //    }
-
-    if (keep_rank == delete_rank)
-    {
-      // same rank, or both boundary: compare max edge valence 
-      size_t keep_max_edge_valence = 0;
-      size_t delete_max_edge_valence = 0;
-      for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_keep].size(); i++)
-      {
-        size_t edge_valence = m_surf.m_mesh.m_edge_to_triangle_map[m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_keep][i]].size();
-        if (edge_valence > keep_max_edge_valence)
-          keep_max_edge_valence = edge_valence;
-      }
-      for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_delete].size(); i++)
-      {
-        size_t edge_valence = m_surf.m_mesh.m_edge_to_triangle_map[m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_delete][i]].size();
-        if (edge_valence > delete_max_edge_valence)
-          delete_max_edge_valence = edge_valence;
-      }
-      
-      if (keep_max_edge_valence < delete_max_edge_valence)
-      {
-        swap(vertex_to_keep, vertex_to_delete);
-        swap(keep_max_edge_valence, delete_max_edge_valence);
-        swap(keep_rank, delete_rank);
-        swap(del_vert_is_boundary, keep_vert_is_boundary);
-      }
-    }
     
-    ///////////////////////////////////////////////////////////////////////
+    // TODO: abstract this away from El Topo?
+    // detect vertices attached to the bounding box walls
+    int keep_attachment_count = 0;
+    int delete_attachment_count = 0;
+    Vec3d keep_pos = m_surf.get_position(vertex_to_keep);
+    Vec3d delete_pos = m_surf.get_position(vertex_to_delete);
     
-    if ( delete_rank > keep_rank )
+    if (keep_pos[0] < 0 + 1e-6)  keep_attachment_count++;
+    if (keep_pos[1] < 0 + 1e-6)  keep_attachment_count++;
+    if (keep_pos[2] < 0 + 1e-6)  keep_attachment_count++;
+    if (keep_pos[0] > 1 - 1e-6)  keep_attachment_count++;
+    if (keep_pos[1] > 1 - 1e-6)  keep_attachment_count++;
+    if (keep_pos[2] > 1 - 1e-6)  keep_attachment_count++;
+    if (delete_pos[0] < 0 + 1e-6)  delete_attachment_count++;
+    if (delete_pos[1] < 0 + 1e-6)  delete_attachment_count++;
+    if (delete_pos[2] < 0 + 1e-6)  delete_attachment_count++;
+    if (delete_pos[0] > 1 - 1e-6)  delete_attachment_count++;
+    if (delete_pos[1] > 1 - 1e-6)  delete_attachment_count++;
+    if (delete_pos[2] > 1 - 1e-6)  delete_attachment_count++;
+    
+    if (keep_attachment_count < delete_attachment_count)
     {
       swap(vertex_to_keep, vertex_to_delete);
+      swap(keep_attachment_count, delete_attachment_count);
       swap(keep_rank, delete_rank);
       swap(del_vert_is_boundary, keep_vert_is_boundary);
     }
     
+    if (keep_attachment_count == delete_attachment_count)
+    {
+      if (keep_rank < delete_rank)
+      {
+        swap(vertex_to_keep, vertex_to_delete);
+        swap(keep_attachment_count, delete_attachment_count);
+        swap(keep_rank, delete_rank);
+        swap(del_vert_is_boundary, keep_vert_is_boundary);
+      }
+      
+      if (keep_rank == delete_rank)
+      {
+        // same rank, or both boundary: compare max edge valence 
+        size_t keep_max_edge_valence = 0;
+        size_t delete_max_edge_valence = 0;
+        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_keep].size(); i++)
+        {
+          size_t edge_valence = m_surf.m_mesh.m_edge_to_triangle_map[m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_keep][i]].size();
+          if (edge_valence > keep_max_edge_valence)
+            keep_max_edge_valence = edge_valence;
+        }
+        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_delete].size(); i++)
+        {
+          size_t edge_valence = m_surf.m_mesh.m_edge_to_triangle_map[m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_delete][i]].size();
+          if (edge_valence > delete_max_edge_valence)
+            delete_max_edge_valence = edge_valence;
+        }
+        
+        if (keep_max_edge_valence < delete_max_edge_valence)
+        {
+          swap(vertex_to_keep, vertex_to_delete);
+          swap(keep_max_edge_valence, delete_max_edge_valence);
+          swap(keep_rank, delete_rank);
+          swap(del_vert_is_boundary, keep_vert_is_boundary);
+        }
+      }
+    }
+    
+    ///////////////////////////////////////////////////////////////////////
+        
     vertex_new_position = m_surf.get_position(vertex_to_keep);
   }
 
