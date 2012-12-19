@@ -40,7 +40,7 @@ protected:
   
 public:
   void setupScene1(); // VIIM test: single film in cube
-//  void setupScene2(); // spherical bubble equilibrium test
+  void setupScene2(); // T1 transition
 //  void setupScene3(); // double bubble collision
 //  void setupScene4(); // n bubble collision
   void setupScene5(); // VIIM figure 5
