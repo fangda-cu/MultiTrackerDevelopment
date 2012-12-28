@@ -148,6 +148,8 @@ namespace DelaunayTriangulator
           // flip23
           TetHandle pabd, pacd, pbcd;
           flip23(tau, taua, abc, pabd, pacd, pbcd);
+          stack.erase(std::remove(stack.begin(), stack.end(), tau),  stack.end());
+          stack.erase(std::remove(stack.begin(), stack.end(), taua), stack.end());
           stack.push_back(pabd);
           stack.push_back(pacd);
           stack.push_back(pbcd);
@@ -167,6 +169,9 @@ namespace DelaunayTriangulator
             // flip32
             TetHandle pacd, pbcd;
             flip32(tau, taua, pabd, abc, pacd, pbcd);
+            stack.erase(std::remove(stack.begin(), stack.end(), tau),  stack.end());
+            stack.erase(std::remove(stack.begin(), stack.end(), taua), stack.end());
+            stack.erase(std::remove(stack.begin(), stack.end(), pabd), stack.end());
             stack.push_back(pacd);
             stack.push_back(pbcd);
           } else
