@@ -20,7 +20,6 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellLinearSurfaceTensionForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellLinearSurfaceTensionForce2.hh"
 
-#include "BASim/src/Physics/DeformableObjects/Shells/ShellVolumeForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/DrainingBubblePressureForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellBathForce.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVerticalForce.hh"
@@ -225,10 +224,12 @@ void DoubleBubbleTest::Setup()
 
   //Create the base deformable object (mesh)
   shellObj = new DeformableObject();
-
+  
   //Call the appropriate scene setup function.
   (*this.*db_scenes[sceneChoice])();
 
+  shell->getVertexConstraintLabels().assign(0);
+  
 //  shell->setThickness(thickness); /////////////////////////
 
   //now add forces to the model
@@ -295,9 +296,9 @@ void DoubleBubbleTest::Setup()
 //  shell->setThicknessUpdating(thickness_evolution);
 
   Scalar vf_stiffness = GetScalarOpt("volume-force-stiffness");
-  if (vf_stiffness > 0)
-    shell->addForce(new ShellVolumeForce(*shell, "Volume", vf_stiffness));
-
+  svf = new ShellVolumeForce(*shell, "Volume", vf_stiffness);
+  shell->addForce(svf);
+  
 //  shell->computeMasses(); /////////////////////////////
  
 
@@ -359,6 +360,7 @@ void DoubleBubbleTest::Setup()
     mkdir(outputdirectory.c_str(), 0755);
 #endif
   }
+  
 
 }
 
@@ -384,6 +386,13 @@ public:
 
 void DoubleBubbleTest::AtEachTimestep()
 {
+//  for (size_t i = 0; i < triangulation_added_faces.size(); i++)
+//    shellObj->deleteFace(triangulation_added_faces[i], false);
+//  for (size_t i = 0; i < triangulation_added_edges.size(); i++)
+//    shellObj->deleteEdge(triangulation_added_edges[i], false);
+//  for (size_t i = 0; i < triangulation_added_vertices.size(); i++)
+//    shellObj->deleteVertex(triangulation_added_vertices[i]);
+
   
     
   //dump PLY files if needed
@@ -574,11 +583,12 @@ void DoubleBubbleTest::AtEachTimestep()
 //    }
 
     shellObj->releaseAllVertices();
+    shell->getVertexConstraintLabels().assign(0);
     
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
       VertexHandle v = *vit;
-      
+
       bool boundary = false;
       for (VertexEdgeIterator veit = shellObj->ve_iter(v); veit; ++veit)
         if (shellObj->edgeIncidentFaces(*veit) == 1)
@@ -587,6 +597,7 @@ void DoubleBubbleTest::AtEachTimestep()
       if (boundary)
       {        
         Vec3d pos = shell->getVertexPosition(v);
+        int constraint = 0;
         bool x = false;
         bool y = false;
         bool z = false;
@@ -594,40 +605,55 @@ void DoubleBubbleTest::AtEachTimestep()
         {
           pos.x() = 0;
           x = true;
+          constraint |= (1 << 0);
         }
         if (pos.x() > 1 - 1e-4)
         {
           pos.x() = 1;
           x = true;
+          constraint |= (1 << 3);
         }
         if (pos.y() < 1e-4)
         {
           pos.y() = 0;
           y = true;
+          constraint |= (1 << 1);
         }
         if (pos.y() > 1 - 1e-4)
         {
           pos.y() = 1;
           y = true;
+          constraint |= (1 << 4);
         }
         if (pos.z() < 1e-4)
         {
           pos.z() = 0;
           z = true;
+          constraint |= (1 << 2);
         }
         if (pos.z() > 1 - 1e-4)
         {
           pos.z() = 1;
           z = true;
+          constraint |= (1 << 5);
         }
 
         assert(x || y || z);
         PositionConstraint * pc = new PartialPositionConstraint(pos, x, y, z);
         shellObj->constrainVertex(v, pc);
-      }      
+        shell->getVertexConstraintLabel(v) = constraint;
+      }
     }
     
   }
+}
+
+void DoubleBubbleTest::AfterStep()
+{
+//  triangulation_added_vertices.clear();
+//  triangulation_added_edges.clear();
+//  triangulation_added_faces.clear();
+//  svf->triangulateBBWalls(triangulation_added_vertices, triangulation_added_edges, triangulation_added_faces);
 }
 
 void DoubleBubbleTest::setupScene1() 
@@ -657,6 +683,10 @@ void DoubleBubbleTest::setupScene1()
   positions[vertList[ 1]] = Vec3d(0.3,1,1);
   positions[vertList[ 2]] = Vec3d(1,0.3,0);
   positions[vertList[ 3]] = Vec3d(1,0.3,1);
+//  positions[vertList[ 0]] = Vec3d(0.5,1,0);
+//  positions[vertList[ 1]] = Vec3d(0.5,1,1);
+//  positions[vertList[ 2]] = Vec3d(0.5,0,0);
+//  positions[vertList[ 3]] = Vec3d(0.5,0,1);
   
   for(int i = 0; i < 4; ++i)
     undeformed[vertList[i]] = positions[vertList[i]];

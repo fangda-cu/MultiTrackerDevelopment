@@ -117,6 +117,7 @@ public:
   
   // Dof base indices for the position dofs
   int getPositionDofBase(const VertexHandle& vh) const;
+  void setPositionDofBase(const VertexHandle& vh, int dof);
   
   void getScriptedDofs(IntArray& dofIndices, std::vector<Scalar>& dofValues, Scalar time) const;
 

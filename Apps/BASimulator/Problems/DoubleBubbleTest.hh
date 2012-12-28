@@ -13,7 +13,7 @@
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ElasticShell.hh"
 #include "BASim/src/Physics/DeformableObjects/DefoObjTimeStepper.hh"
-
+#include "BASim/src/Physics/DeformableObjects/Shells/ShellVolumeForce.hh"
 
 class DoubleBubbleTest : public Problem
 {
@@ -27,7 +27,8 @@ public:
 protected:
   void Setup();
   void AtEachTimestep();
-
+  void AfterStep();
+  
   DeformableObject * shellObj;
   ElasticShell * shell;
   DefoObjTimeStepper * stepper;
@@ -37,6 +38,11 @@ protected:
   int m_active_scene;
 
 //  int m_s4_nbubble;
+  
+  std::vector<VertexHandle> triangulation_added_vertices;
+  std::vector<EdgeHandle>   triangulation_added_edges;
+  std::vector<FaceHandle>   triangulation_added_faces;
+  ShellVolumeForce * svf;
   
 public:
   void setupScene1(); // VIIM test: single film in cube

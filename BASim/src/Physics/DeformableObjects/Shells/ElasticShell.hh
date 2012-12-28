@@ -92,9 +92,14 @@ public:
 //  void setEdgeUndeformed(const EdgeProperty<Scalar>& undef);
 //  void setEdgeVelocities(const EdgeProperty<Scalar>& vels);
   
-  void setFaceLabels(const FaceProperty<Vec2i>& labels);
-  Vec2i getFaceLabel(const FaceHandle& face) { return m_face_regions[face]; }
-
+  void setFaceLabels(const FaceProperty<Vec2i>& labels) { m_face_regions = labels; }
+  Vec2i getFaceLabel(const FaceHandle& face) const { return m_face_regions[face]; }
+  void setFaceLabel(const FaceHandle & face, const Vec2i & label) { m_face_regions[face] = label; }
+  
+  void setVertexConstraintLabel(const VertexProperty<int> & labels) { m_vertex_constraint_labels = labels; }
+  VertexProperty<int> & getVertexConstraintLabels() { return m_vertex_constraint_labels; }
+  int & getVertexConstraintLabel(const VertexHandle & vertex) { return m_vertex_constraint_labels[vertex]; }
+  
   //Individual DOFs
 //  Vec3d getVertexUndeformed(const VertexHandle& v) const { return m_obj->getVertexUndeformedPosition(v); }
   Vec3d getVertexPosition(const VertexHandle& v) const { return m_obj->getVertexPosition(v); }
@@ -231,6 +236,7 @@ protected:
   //For each face, a number used to identify distinct regions of the mesh
   //This is used to implement per-region volume constraints.
   FaceProperty<Vec2i> m_face_regions; 
+  VertexProperty<int> m_vertex_constraint_labels;
 
   //The base object, and the list of forces
   DeformableObject* m_obj;

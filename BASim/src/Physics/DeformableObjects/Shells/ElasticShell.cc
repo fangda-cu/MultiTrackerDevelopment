@@ -30,6 +30,7 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
 //    m_edge_masses(object),
 //    m_thicknesses(object),
     m_face_regions(object),
+    m_vertex_constraint_labels(object),
 //    m_volumes(object),
 //    m_xi(object), 
 //    m_xi_vel(object),
@@ -153,11 +154,6 @@ void ElasticShell::addForce( ElasticShellForce* force )
 //{
 //  m_xi_vel = velocities;
 //}
-
-void ElasticShell::setFaceLabels(const FaceProperty<Vec2i>& labels) {
-  m_face_regions = labels;
-}
-
 
 //Scalar ElasticShell::getThickness(const VertexHandle& vh) const {
 //  Scalar totalA = 0.0;
@@ -781,6 +777,8 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
     //Relabel DOFs if necessary
     do_relabel = true;
   }
+  
+  std::cout << "nv = " << getDefoObj().nv() << " ne = " << getDefoObj().ne() << " nf = " << getDefoObj().nf() << " nt = " << getDefoObj().nt() << std::endl;
 
   static int only_twice = 0;
 
@@ -1154,6 +1152,7 @@ void ElasticShell::remesh()
   std::cout << "Performing " << surface_tracker.m_mesh_change_history.size() << " Improvement Operations:\n";
   for(unsigned int j = 0; j < surface_tracker.m_mesh_change_history.size(); ++j) {
     ElTopo::MeshUpdateEvent event = surface_tracker.m_mesh_change_history[j];
+    std::cout << "Event type = " << event.m_type << std::endl;
     
  
     if(event.m_type == ElTopo::MeshUpdateEvent::FLAP_DELETE) {

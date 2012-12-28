@@ -171,11 +171,14 @@ void Problem::BaseFinalize()
 void Problem::BaseAtEachTimestep()
 {
   AtEachTimestep();
+  
   m_world->execute();
 
   if (m_dynamicsProps) {
     setTime(getTime() + getDt());
   }
+  
+  AfterStep();
 }
 
 void Problem::PrintOptions(ostream& os)

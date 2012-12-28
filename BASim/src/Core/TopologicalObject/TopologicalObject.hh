@@ -16,6 +16,7 @@
 #include "BASim/src/Core/TopologicalObject/Topology.hh"
 #include "BASim/src/Core/TopologicalObject/IncidenceMatrix.hh"
 #include "BASim/src/Core/Definitions.hh"
+#include <queue>
 namespace BASim {
 
 class TopObjPropertyBase;
@@ -350,7 +351,7 @@ protected:
 
   //Pools of empty rows/columns in the above matrices, to efficiently add
   //data in previously deleted slots.
-  std::vector<unsigned int> m_deadVerts, m_deadEdges, m_deadFaces, m_deadTets;
+  std::deque<unsigned int> m_deadVerts, m_deadEdges, m_deadFaces, m_deadTets;
   
   //flags to indicate whether derived data is currently valid, or needs recomputing
   mutable bool m_validVF;

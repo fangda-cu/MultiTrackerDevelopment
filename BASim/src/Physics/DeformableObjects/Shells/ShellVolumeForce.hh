@@ -44,7 +44,7 @@ public:
   void update();
 
 protected:
-
+public:
   bool gatherDOFs(const FaceHandle& fh, std::vector<Vec3d>& deformed, std::vector<int>& indices) const;
 
   Scalar elementEnergy(const std::vector<Vec3d>& deformed) const;
@@ -52,6 +52,9 @@ protected:
                     Eigen::Matrix<Scalar, 9, 1>& force) const;
   void elementJacobian(const std::vector<Vec3d>& deformed, 
                        Eigen::Matrix<Scalar, 9, 9>& J) const;
+  
+  void triangulateBBWalls(std::vector<VertexHandle> & new_vertices, std::vector<EdgeHandle> & new_edges, std::vector<FaceHandle> & new_faces) const;
+  int onBBWall(const Vec3d & pos) const;
   
   std::vector<Scalar> m_target_volumes;
   Vec3d m_ref_point;

@@ -169,6 +169,7 @@ void DeformableObject::setVertexDampingUndeformedPosition (const VertexHandle& v
 //}
   
 int DeformableObject::getPositionDofBase(const VertexHandle& vh) const { return m_posdofsmodel->getVertexDofBase(vh); }
+void DeformableObject::setPositionDofBase(const VertexHandle& vh, int dof) { m_posdofsmodel->setVertexDofBase(vh, dof); }
 
   // scripting on position dofs
   void DeformableObject::constrainVertex(const VertexHandle & v, const Vec3d & pos) { m_posdofsmodel->constrainVertex(v, pos); }

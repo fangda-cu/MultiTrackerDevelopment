@@ -337,7 +337,7 @@ bool TopologicalObject::deleteVertex(const VertexHandle& vertex)
 
   //set the vertex to inactive
   m_V[vertex.idx()] = false;
-  m_deadVerts.push_back(vertex.idx());
+  m_deadVerts.push_front(vertex.idx());
 
   //adjust the vertex count
   m_nv -= 1;
@@ -370,7 +370,7 @@ bool TopologicalObject::deleteEdge(const EdgeHandle& edge, bool recurse)
 
   //...and delete the row
   m_EV.zeroRow(edge.idx());
-  m_deadEdges.push_back(edge.idx());
+  m_deadEdges.push_front(edge.idx());
 
   //adjust the edge count
   m_ne -= 1;
@@ -401,7 +401,7 @@ bool TopologicalObject::deleteFace(const FaceHandle& face, bool recurse)
 
   //...and delete the row
   m_FE.zeroRow(face.idx());
-  m_deadFaces.push_back(face.idx());
+  m_deadFaces.push_front(face.idx());
 
   //adjust the face count
   m_nf -= 1;
@@ -433,7 +433,7 @@ bool TopologicalObject::deleteTet(const tet_handle& tet, bool recurse) {
 
   //...and delete the row
   m_TF.zeroRow(tet.idx());
-  m_deadTets.push_back(tet.idx());
+  m_deadTets.push_front(tet.idx());
 
   //adjust the tet count
   m_nt -= 1;
@@ -765,10 +765,15 @@ void TopologicalObject::serializeStructure(std::ofstream& of, const TopologicalO
    IncidenceMatrix::serialize(of, obj.m_FE);
    IncidenceMatrix::serialize(of, obj.m_TF);
    
-   serializeVectorUint(of, obj.m_deadVerts);
-   serializeVectorUint(of, obj.m_deadEdges);
-   serializeVectorUint(of, obj.m_deadFaces);
-   serializeVectorUint(of, obj.m_deadTets);
+  std::vector<unsigned int> dead;
+  dead.assign(obj.m_deadVerts.begin(), obj.m_deadVerts.end());
+  serializeVectorUint(of, dead);
+  dead.assign(obj.m_deadEdges.begin(), obj.m_deadEdges.end());
+  serializeVectorUint(of, dead);
+  dead.assign(obj.m_deadFaces.begin(), obj.m_deadFaces.end());
+  serializeVectorUint(of, dead);
+  dead.assign(obj.m_deadTets.begin(), obj.m_deadTets.end());
+  serializeVectorUint(of, dead);
    
 }
 
@@ -786,10 +791,15 @@ void TopologicalObject::loadStructure(std::ifstream& ifs, TopologicalObject& obj
    IncidenceMatrix::load(ifs, obj.m_FE);
    IncidenceMatrix::load(ifs, obj.m_TF);
 
-   loadVectorUint(ifs, obj.m_deadVerts);
-   loadVectorUint(ifs, obj.m_deadEdges);
-   loadVectorUint(ifs, obj.m_deadFaces);
-   loadVectorUint(ifs, obj.m_deadTets);
+  std::vector<unsigned int> dead;
+  loadVectorUint(ifs, dead);
+  obj.m_deadVerts.assign(dead.begin(), dead.end());
+  loadVectorUint(ifs, dead);
+  obj.m_deadEdges.assign(dead.begin(), dead.end());
+  loadVectorUint(ifs, dead);
+  obj.m_deadFaces.assign(dead.begin(), dead.end());
+  loadVectorUint(ifs, dead);
+  obj.m_deadTets.assign(dead.begin(), dead.end());
 
 }
 
