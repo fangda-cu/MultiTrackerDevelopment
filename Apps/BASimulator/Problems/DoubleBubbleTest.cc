@@ -992,7 +992,7 @@ void DoubleBubbleTest::setupScene6()
   EdgeProperty<Scalar> edgeVel(shellObj);
   
   //generate voronoi sites
-  int nsite = 10;
+  int nsite = 4;
   srand(1000000);
   std::vector<Vec3d> sites;
   for (int i = 0; i < nsite; i++)
@@ -1034,6 +1034,34 @@ void DoubleBubbleTest::setupScene6()
     undeformed[*vit] = positions[*vit];
     velocities[*vit] = Vec3d(0, 0, 0);
   }
+  
+//  // remove the bounding box wall faces
+//  // first find the eight BB corners
+//  std::vector<VertexHandle> bb_corners;
+//  for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+//  {
+//    int wallcount = 0;
+//    Vec3d pos = positions[*vit];
+//    if (pos.x() < 1e-6) wallcount++;
+//    if (pos.y() < 1e-6) wallcount++;
+//    if (pos.z() < 1e-6) wallcount++;
+//    if (pos.x() > 1 - 1e-6) wallcount++;
+//    if (pos.y() > 1 - 1e-6) wallcount++;
+//    if (pos.z() > 1 - 1e-6) wallcount++;
+//    
+//    if (wallcount == 3)
+//      bb_corners.push_back(*vit);
+//  }
+//  assert(bb_corners.size() == 8);
+//  
+//  // then remove all the faces incident to the BB corners
+//  std::vector<FaceHandle> faces_to_remove;
+//  for (size_t i = 0; i < bb_corners.size(); i++)
+//    for (VertexFaceIterator vfit = shellObj->vf_iter(bb_corners[i]); vfit; ++vfit)
+//      faces_to_remove.push_back(*vfit);
+//  
+//  for (size_t i = 0; i < faces_to_remove.size(); i++)
+//    shellObj->deleteFace(faces_to_remove[i], true);
   
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj); 
