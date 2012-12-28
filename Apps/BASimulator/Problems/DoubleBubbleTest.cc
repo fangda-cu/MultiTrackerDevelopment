@@ -296,8 +296,11 @@ void DoubleBubbleTest::Setup()
 //  shell->setThicknessUpdating(thickness_evolution);
 
   Scalar vf_stiffness = GetScalarOpt("volume-force-stiffness");
-  svf = new ShellVolumeForce(*shell, "Volume", vf_stiffness);
-  shell->addForce(svf);
+  if (vf_stiffness > 0)
+  {
+    svf = new ShellVolumeForce(*shell, "Volume", vf_stiffness);
+    shell->addForce(svf);
+  }
   
 //  shell->computeMasses(); /////////////////////////////
  
@@ -992,7 +995,7 @@ void DoubleBubbleTest::setupScene6()
   EdgeProperty<Scalar> edgeVel(shellObj);
   
   //generate voronoi sites
-  int nsite = 4;
+  int nsite = 1;
   srand(1000000);
   std::vector<Vec3d> sites;
   for (int i = 0; i < nsite; i++)
