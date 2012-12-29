@@ -44,6 +44,8 @@ protected:
   std::vector<FaceHandle>   triangulation_added_faces;
   ShellVolumeForce * svf;
   
+  int onBBWall(const Vec3d & pos) const;
+  
 public:
   void setupScene1(); // VIIM test: single film in cube
   void setupScene2(); // T1 transition

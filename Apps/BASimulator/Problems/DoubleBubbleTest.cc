@@ -186,6 +186,25 @@ sceneFunc db_scenes[] =
 //
 //}
 
+int DoubleBubbleTest::onBBWall(const Vec3d & pos) const
+{
+  int walls = 0;
+  if (pos.x() < 0 + 1e-6)
+    walls |= (1 << 0);
+  if (pos.y() < 0 + 1e-6)
+    walls |= (1 << 1);
+  if (pos.z() < 0 + 1e-6)
+    walls |= (1 << 2);
+  if (pos.x() > 1 - 1e-6)
+    walls |= (1 << 3);
+  if (pos.y() > 1 - 1e-6)
+    walls |= (1 << 4);
+  if (pos.z() > 1 - 1e-6)
+    walls |= (1 << 5);
+  
+  return walls;
+}
+
 void DoubleBubbleTest::Setup()
 {
 
@@ -1039,29 +1058,21 @@ void DoubleBubbleTest::setupScene6()
   }
   
   // remove the bounding box wall faces
-  // first find the eight BB corners
-  std::vector<VertexHandle> bb_corners;
-  for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
-  {
-    int wallcount = 0;
-    Vec3d pos = positions[*vit];
-    if (pos.x() < 1e-6) wallcount++;
-    if (pos.y() < 1e-6) wallcount++;
-    if (pos.z() < 1e-6) wallcount++;
-    if (pos.x() > 1 - 1e-6) wallcount++;
-    if (pos.y() > 1 - 1e-6) wallcount++;
-    if (pos.z() > 1 - 1e-6) wallcount++;
-    
-    if (wallcount == 3)
-      bb_corners.push_back(*vit);
-  }
-  assert(bb_corners.size() == 8);
-  
-  // then remove all the faces incident to the BB corners
   std::vector<FaceHandle> faces_to_remove;
-  for (size_t i = 0; i < bb_corners.size(); i++)
-    for (VertexFaceIterator vfit = shellObj->vf_iter(bb_corners[i]); vfit; ++vfit)
-      faces_to_remove.push_back(*vfit);
+  for (FaceIterator fit = shellObj->faces_begin(); fit != shellObj->faces_end(); ++fit)
+  {
+    FaceVertexIterator fvit = shellObj->fv_iter(*fit); assert(fvit);
+    VertexHandle v0 = *fvit; ++fvit; assert(fvit);
+    VertexHandle v1 = *fvit; ++fvit; assert(fvit);
+    VertexHandle v2 = *fvit; ++fvit; assert(!fvit);
+    
+    int wall0 = onBBWall(positions[v0]);
+    int wall1 = onBBWall(positions[v1]);
+    int wall2 = onBBWall(positions[v2]);
+    
+    if (wall0 & wall1 & wall2)
+      faces_to_remove.push_back(*fit);
+  }
   
   for (size_t i = 0; i < faces_to_remove.size(); i++)
     shellObj->deleteFace(faces_to_remove[i], true);
