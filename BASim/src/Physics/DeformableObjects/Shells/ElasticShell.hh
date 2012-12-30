@@ -280,6 +280,12 @@ protected:
   Scalar m_object_dx;
 
   ElTopoCode::BroadPhaseGrid m_broad_phase;
+  
+  //Index mappings between us and El Topo, used in remesh()
+  VertexProperty<int> vert_numbers;
+  FaceProperty<int> face_numbers;
+  std::vector<VertexHandle> reverse_vertmap;
+  std::vector<FaceHandle> reverse_trimap;
 
   //Fracture properties
   bool m_tearing;

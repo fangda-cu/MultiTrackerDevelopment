@@ -41,9 +41,11 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
     m_sphere_collisions(false),
     m_object_collisions(false),
     m_ground_collisions(false),
-    m_do_eltopo_collisions(false)
+    m_do_eltopo_collisions(false),
 //    m_do_thickness_updates(true),
-//    m_momentum_conserving_remesh(false)
+//    m_momentum_conserving_remesh(false),
+    vert_numbers(object),
+    face_numbers(object)
 {
   m_vert_point_springs = new ShellVertexPointSpringForce(*this, "VertPointSprings", timestep);
   m_repulsion_springs = new ShellStickyRepulsionForce(*this, "RepulsionSprings", timestep);
@@ -1077,12 +1079,17 @@ void ElasticShell::remesh()
   std::vector<Scalar> masses;
 
   DeformableObject& mesh = getDefoObj();
-
-  //Index mappings between us and El Topo
-  VertexProperty<int> vert_numbers(&mesh);
-  FaceProperty<int> face_numbers(&mesh);
-  std::vector<VertexHandle> reverse_vertmap;
-  std::vector<FaceHandle> reverse_trimap;
+  
+  reverse_vertmap.clear();
+  reverse_vertmap.reserve(m_obj->nv());
+  reverse_trimap.clear();
+  reverse_trimap.reserve(m_obj->nt());  
+  
+  vert_data.reserve(m_obj->nv());
+  tri_data.reserve(m_obj->nt());
+  tri_labels.reserve(m_obj->nt());
+  vert_const_labels.reserve(m_obj->nv());
+  masses.reserve(m_obj->nv());
 
   //walk through vertices, create linear list, store numbering
   int id = 0;
@@ -1416,7 +1423,92 @@ void ElasticShell::remesh()
 
 bool ElasticShell::generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos)
 {
+  assert(reverse_vertmap.size() == m_obj->nv());
+  assert(reverse_trimap.size() == m_obj->nt());
+  assert(v0 < m_obj->nv());
+  assert(v1 < m_obj->nv());
+  
+  VertexHandle vh0 = reverse_vertmap[v0];
+  VertexHandle vh1 = reverse_vertmap[v1];
+  
+  ElTopo::Vec3d x0 = st.get_position(v0);
+  ElTopo::Vec3d x1 = st.get_position(v1);
+  
+  int label0 = getVertexConstraintLabel(vh0);
+  int label1 = getVertexConstraintLabel(vh1);
+  
+  if (label0 == label1)
+  {
+    // on the same wall(s), prefer the one with higher max edge valence
+    int maxedgevalence0 = 0;
+    int maxedgevalence1 = 0;
+    for (VertexEdgeIterator veit = m_obj->ve_iter(vh0); veit; ++veit)
+      if (m_obj->edgeIncidentFaces(*veit) > maxedgevalence0)
+        maxedgevalence0 = m_obj->edgeIncidentFaces(*veit);
+    for (VertexEdgeIterator veit = m_obj->ve_iter(vh1); veit; ++veit)
+      if (m_obj->edgeIncidentFaces(*veit) > maxedgevalence1)
+        maxedgevalence1 = m_obj->edgeIncidentFaces(*veit);
+    
+    if (maxedgevalence0 == maxedgevalence1) // same max edge valence, use their midpoint
+      pos = (x0 + x1) / 2;
+    else if (maxedgevalence0 < maxedgevalence1)
+      pos = x1;
+    else
+      pos = x0;
 
+    return true;
+    
+  } else if ((label0 & ~label1) == 0)
+  {
+    // label0 is a proper subset of label1 (since label0 != label1)
+    pos = x1;
+    
+    return true;
+    
+  } else if ((label1 & ~label0) == 0)
+  {
+    // label1 is a proper subset of label0
+    pos = x0;
+    
+    return true;
+    
+  } else
+  {
+    // label0 and label1 are not subset of each other
+    int newlabel = label0 | label1;
+    assert(label0 != newlabel); // not subset of each other
+    assert(label1 != newlabel);
+    
+    assert(!((label0 & (1 << 0)) != 0 && (label0 & (1 << 3)) != 0)); // can't have conflicting constraints in label0 and label1 already
+    assert(!((label0 & (1 << 1)) != 0 && (label0 & (1 << 4)) != 0));
+    assert(!((label0 & (1 << 2)) != 0 && (label0 & (1 << 5)) != 0));
+    assert(!((label1 & (1 << 0)) != 0 && (label1 & (1 << 3)) != 0));
+    assert(!((label1 & (1 << 1)) != 0 && (label1 & (1 << 4)) != 0));
+    assert(!((label1 & (1 << 2)) != 0 && (label1 & (1 << 5)) != 0));
+    
+    bool conflict = false;
+    if ((newlabel & (1 << 0)) != 0 && (newlabel & (1 << 3)) != 0) conflict = true;
+    if ((newlabel & (1 << 1)) != 0 && (newlabel & (1 << 4)) != 0) conflict = true;
+    if ((newlabel & (1 << 2)) != 0 && (newlabel & (1 << 5)) != 0) conflict = true;
+    
+    if (conflict)
+    {
+      // the two vertices are on opposite walls (conflicting constraints). Can't collapse this edge (which shouldn't have become a collapse candidate in the first place)
+      return false;
+    }
+    
+    pos = (x0 + x1) / 2;
+    if (newlabel & (1 << 0))  pos[0] = 0;    // project the midpoint onto the constraint manifold (BB walls)
+    if (newlabel & (1 << 1))  pos[1] = 0;
+    if (newlabel & (1 << 2))  pos[2] = 0;
+    if (newlabel & (1 << 3))  pos[0] = 1;
+    if (newlabel & (1 << 4))  pos[1] = 1;
+    if (newlabel & (1 << 5))  pos[2] = 1;
+    
+    return true;
+  }
+  
+  return false;
 }
 
 void ElasticShell::performSplit(const EdgeHandle& eh, const Vec3d& midpoint, VertexHandle& new_vert) {
