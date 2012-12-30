@@ -960,14 +960,21 @@ bool EdgeCollapser::edge_is_collapsible( size_t edge_index, double& current_leng
   //skip boundary edges if we're not remeshing those
   if(!m_remesh_boundaries && m_surf.m_mesh.m_is_boundary_edge[edge_index]) { return false; }
 
-  //this would introduce non-manifold ("singular") boundary vertex (this is an internal edge joining two boundary vertices)
-  if ( m_surf.m_mesh.m_edge_to_triangle_map[edge_index].size() == 2 && 
-      m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[edge_index][0]] &&
-      m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[edge_index][1]] ) 
-  {
-    return false;
-  }
-
+  ///////////////////////////////////////////////////////////////////////
+  // FD 20121229
+  //
+  // this should be allowed, in order to simulate pinching of films
+  
+//  //this would introduce non-manifold ("singular") boundary vertex (this is an internal edge joining two boundary vertices)
+//  if ( m_surf.m_mesh.m_edge_to_triangle_map[edge_index].size() == 2 && 
+//      m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[edge_index][0]] &&
+//      m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[edge_index][1]] ) 
+//  {
+//    return false;
+//  }
+  
+  ///////////////////////////////////////////////////////////////////////
+  
   current_length = m_surf.get_edge_length(edge_index);
   if ( m_use_curvature )
   {
