@@ -41,11 +41,9 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
     m_sphere_collisions(false),
     m_object_collisions(false),
     m_ground_collisions(false),
-    m_do_eltopo_collisions(false),
+    m_do_eltopo_collisions(false)
 //    m_do_thickness_updates(true),
-//    m_momentum_conserving_remesh(false),
-    vert_numbers(object),
-    face_numbers(object)
+//    m_momentum_conserving_remesh(false)
 {
   m_vert_point_springs = new ShellVertexPointSpringForce(*this, "VertPointSprings", timestep);
   m_repulsion_springs = new ShellStickyRepulsionForce(*this, "RepulsionSprings", timestep);
@@ -1080,9 +1078,13 @@ void ElasticShell::remesh()
 
   DeformableObject& mesh = getDefoObj();
   
-  reverse_vertmap.clear();
+  //Index mappings between us and El Topo, used in remesh()
+  VertexProperty<int> vert_numbers(&mesh);
+  FaceProperty<int> face_numbers(&mesh);
+  std::vector<VertexHandle> reverse_vertmap;
+  std::vector<FaceHandle> reverse_trimap;
+  
   reverse_vertmap.reserve(m_obj->nv());
-  reverse_trimap.clear();
   reverse_trimap.reserve(m_obj->nt());  
   
   vert_data.reserve(m_obj->nv());
@@ -1421,33 +1423,44 @@ void ElasticShell::remesh()
   
 }
 
+int ElasticShell::onBBWall(const Vec3d & pos) const
+{
+  int walls = 0;
+  if (pos.x() < 0 + 1e-6)
+    walls |= (1 << 0);
+  if (pos.y() < 0 + 1e-6)
+    walls |= (1 << 1);
+  if (pos.z() < 0 + 1e-6)
+    walls |= (1 << 2);
+  if (pos.x() > 1 - 1e-6)
+    walls |= (1 << 3);
+  if (pos.y() > 1 - 1e-6)
+    walls |= (1 << 4);
+  if (pos.z() > 1 - 1e-6)
+    walls |= (1 << 5);
+  
+  return walls;
+}
+
 bool ElasticShell::generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos)
 {
-  assert(reverse_vertmap.size() == m_obj->nv());
-  assert(reverse_trimap.size() == m_obj->nt());
-  assert(v0 < m_obj->nv());
-  assert(v1 < m_obj->nv());
-  
-  VertexHandle vh0 = reverse_vertmap[v0];
-  VertexHandle vh1 = reverse_vertmap[v1];
-  
   ElTopo::Vec3d x0 = st.get_position(v0);
   ElTopo::Vec3d x1 = st.get_position(v1);
   
-  int label0 = getVertexConstraintLabel(vh0);
-  int label1 = getVertexConstraintLabel(vh1);
+  int label0 = onBBWall(Vec3d(x0[0], x0[1], x0[2]));
+  int label1 = onBBWall(Vec3d(x1[0], x1[1], x1[2]));
   
   if (label0 == label1)
   {
     // on the same wall(s), prefer the one with higher max edge valence
-    int maxedgevalence0 = 0;
-    int maxedgevalence1 = 0;
-    for (VertexEdgeIterator veit = m_obj->ve_iter(vh0); veit; ++veit)
-      if (m_obj->edgeIncidentFaces(*veit) > maxedgevalence0)
-        maxedgevalence0 = m_obj->edgeIncidentFaces(*veit);
-    for (VertexEdgeIterator veit = m_obj->ve_iter(vh1); veit; ++veit)
-      if (m_obj->edgeIncidentFaces(*veit) > maxedgevalence1)
-        maxedgevalence1 = m_obj->edgeIncidentFaces(*veit);
+    size_t maxedgevalence0 = 0;
+    size_t maxedgevalence1 = 0;
+    for (size_t i = 0; i < st.m_mesh.m_vertex_to_edge_map[v0].size(); i++)
+      if (st.m_mesh.m_edge_to_triangle_map[st.m_mesh.m_vertex_to_edge_map[v0][i]].size() > maxedgevalence0)
+        maxedgevalence0 = st.m_mesh.m_edge_to_triangle_map[st.m_mesh.m_vertex_to_edge_map[v0][i]].size();
+    for (size_t i = 0; i < st.m_mesh.m_vertex_to_edge_map[v1].size(); i++)
+      if (st.m_mesh.m_edge_to_triangle_map[st.m_mesh.m_vertex_to_edge_map[v1][i]].size() > maxedgevalence1)
+        maxedgevalence1 = st.m_mesh.m_edge_to_triangle_map[st.m_mesh.m_vertex_to_edge_map[v1][i]].size();
     
     if (maxedgevalence0 == maxedgevalence1) // same max edge valence, use their midpoint
       pos = (x0 + x1) / 2;
