@@ -972,7 +972,7 @@ namespace DelaunayTriangulator
           Vec3d x1 = vdpos[v1];
           Vec3d x2 = vdpos[v2];
           
-          if (predicateOriented(centroid, x0, x1, x2) > 0)
+          if (predicateOriented(x0, x1, x2, centroid) > 0)
           {
             // centroid is on the positive side of the face: label of this cell should go to the second component of the face label
             labels[vd_face].y() = cell_label;
