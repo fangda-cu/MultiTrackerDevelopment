@@ -534,6 +534,21 @@ public:
 
     /// boolean, whether to do null space smoothing on vertex positions
     int m_perform_smoothing;
+    
+    
+    ///////////////////////////////////////////////////////////////////////
+    // FD 20121229
+    
+    class ConstrainedVerticesCollapsingCallback
+    {
+    public:
+        virtual bool generate_collapsed_position(SurfTrack & st, size_t v0, size_t v1, Vec3d & pos) = 0;
+        
+    };
+    
+    ConstrainedVerticesCollapsingCallback * m_constrained_vertices_collapsing_callback;
+
+    ///////////////////////////////////////////////////////////////////////
         
     /// History of vertex removal or addition events
     ///

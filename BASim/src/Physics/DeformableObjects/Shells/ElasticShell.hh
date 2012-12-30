@@ -11,6 +11,7 @@
 #include "BASim/src/Core/TopologicalObject/TopObjProperty.hh"
 #include "BASim/src/Collisions/ElTopo/broadphasegrid.hh"
 #include "BASim/src/Physics/DeformableObjects/DeformableObject.hh"
+#include "surftrack.h"
 
 namespace BASim {
 
@@ -22,7 +23,7 @@ class ElasticShellForce;
 class ShellVertexPointSpringForce;
 class ShellStickyRepulsionForce;
 
-class ElasticShell : public PhysicalModel {
+class ElasticShell : public PhysicalModel, public ElTopo::SurfTrack::ConstrainedVerticesCollapsingCallback {
 
 public:
   ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep);
@@ -155,6 +156,7 @@ public:
   void setDeletionBox(const Vec3d& lowerBound, const Vec3d& upperBound);
 
   void remesh();
+  bool generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos);  // SurfTrack::ConstrainedVerticesCollapsingCallback method
 
   void extendMesh(Scalar current_time);
   void deleteRegion();

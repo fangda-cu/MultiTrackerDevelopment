@@ -86,9 +86,26 @@ public:
     // Set the label of the specified triangle
     //
     inline void set_triangle_label( size_t index, const Vec2i& label );
-  
+    
     ////////////////////////////////////////////////////////////
-
+    
+    ////////////////////////////////////////////////////////////
+    // FD 20121229
+    //
+    // Return a const reference to the set of all vertex constraint labels
+    //
+    inline const std::vector<bool>& get_vertex_constraint_labels() const;
+    
+    // Return the constraint label to a specified vertex
+    //
+    inline bool get_vertex_constraint_label( size_t index ) const;
+    
+    // Set the constraint label of a specified vertex
+    //
+    inline void set_vertex_constraint_label( size_t index, bool label );
+    
+    ////////////////////////////////////////////////////////////
+    
     /// Clear all mesh information
     ///
     void clear();
@@ -259,6 +276,14 @@ public:
     
     ////////////////////////////////////////////////////////////
     
+    ////////////////////////////////////////////////////////////
+    // FD 20121229
+    //
+    // Vertex constraint label
+    //
+    std::vector<bool> m_vertex_constraint_labels;
+    
+    ////////////////////////////////////////////////////////////
     
 private:
     
@@ -754,13 +779,39 @@ inline const Vec2i& NonDestructiveTriMesh::get_triangle_label( size_t index ) co
     return m_triangle_labels[index];
 }
 
-// Return a reference to the specified triangle
+// Set the label of the specified triangle
 //
 inline void NonDestructiveTriMesh::set_triangle_label( size_t index, const Vec2i& label )
 {
     m_triangle_labels[index] = label;
 }
   
+////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////
+// FD 20121229
+//
+// Return a const reference to the set of all vertex constraint labels
+//
+inline const std::vector<bool>& NonDestructiveTriMesh::get_vertex_constraint_labels() const
+{
+    return m_vertex_constraint_labels;
+}
+
+// Return the constraint label of a specified vertex
+//
+inline bool NonDestructiveTriMesh::get_vertex_constraint_label( size_t index ) const
+{
+    return m_vertex_constraint_labels[index];
+}
+
+// Set the constraint label of a specified vertex
+//
+inline void NonDestructiveTriMesh::set_vertex_constraint_label( size_t index, bool label )
+{
+    m_vertex_constraint_labels[index] = label;
+}
+
 ////////////////////////////////////////////////////////////
 
 }

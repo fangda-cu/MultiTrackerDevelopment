@@ -435,9 +435,16 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   //either we're allowing remeshing of boundary edges, or this edge is not on the boundary.
   assert(m_remesh_boundaries || !edge_is_boundary);
   
-  // *don't* collapse when both verts are on the boundary and the edge is not, since this would create a nonmanifold/singular vertex
-  //assert( ((keep_vert_is_boundary && del_vert_is_boundary) && !edge_is_boundary) == false);   // these two asserts are equivalent
-  assert(edge_is_boundary || !(keep_vert_is_boundary && del_vert_is_boundary));
+  ///////////////////////////////////////////////////////////////////////
+  // FD 20121229
+  //
+  // this should be allowed, in order to simulate pinching of films
+
+//  // *don't* collapse when both verts are on the boundary and the edge is not, since this would create a nonmanifold/singular vertex
+//  //assert( ((keep_vert_is_boundary && del_vert_is_boundary) && !edge_is_boundary) == false);   // these two asserts are equivalent
+//  assert(edge_is_boundary || !(keep_vert_is_boundary && del_vert_is_boundary));
+    
+  ///////////////////////////////////////////////////////////////////////
   
   if ( m_surf.m_verbose ) { std::cout << "Collapsing edge.  Doomed vertex: " << vertex_to_delete << " --- Vertex to keep: " << vertex_to_keep << std::endl; }
 
@@ -571,12 +578,24 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   unsigned int keep_rank = m_surf.vertex_primary_space_rank( vertex_to_keep );
   unsigned int delete_rank = m_surf.vertex_primary_space_rank( vertex_to_delete );
   
-  //boundary vertices supersede all other feature points
-  if(keep_vert_is_boundary) keep_rank = 4;
-  if(del_vert_is_boundary) delete_rank = 4;
+  ///////////////////////////////////////////////////////////////////////
+  // FD 20121229
+  //
 
-  if ( m_surf.m_allow_vertex_movement_during_collapse && !(keep_vert_is_boundary || del_vert_is_boundary) ) //don't move boundary vertices
-  {      
+  // boundary vertices have precedence
+  if (keep_vert_is_boundary) keep_rank = 4;
+  if (del_vert_is_boundary) delete_rank = 4;
+  
+  // constraint vertices have higher precedence
+  bool keep_vert_is_constrained =   m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep);
+  bool delete_vert_is_constrained = m_surf.m_mesh.get_vertex_constraint_label(vertex_to_delete);
+  
+  if (keep_vert_is_constrained)   keep_rank = 5;
+  if (delete_vert_is_constrained) delete_rank = 5;
+
+  // Handle different cases of constrained, boundary and interior vertices
+  if (m_surf.m_allow_vertex_movement_during_collapse && !(keep_vert_is_boundary || del_vert_is_boundary) && !(keep_vert_is_constrained || delete_vert_is_constrained))
+  {
     if ( keep_rank > delete_rank )
     {
       vertex_new_position = m_surf.get_position(vertex_to_keep);
@@ -586,7 +605,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       size_t tmp = vertex_to_delete;
       vertex_to_delete = vertex_to_keep;
       vertex_to_keep = tmp;
-
+      
       vertex_new_position = m_surf.get_position(vertex_to_keep);
     }
     else
@@ -594,100 +613,156 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       // ranks are equal
       m_surf.m_subdivision_scheme->generate_new_midpoint( edge, m_surf, vertex_new_position );
     }
-  }
-  else
+  } else if (keep_vert_is_constrained || delete_vert_is_constrained)
   {
-    // Not allowed to move the vertex tangential to the surface during improve
+    assert(m_surf.m_constrained_vertices_collapsing_callback);
 
-    ///////////////////////////////////////////////////////////////////////
-    // FD 20121218
-    //
-    // This test, combined with the fact that boundary vertices always 
-    // have rank 4, effectively disables collapsing a boundary edge, 
-    // regardless of what m_remesh_boundaries is set to.
-    //
-    // For our simulation purpose, extremely short edges simply cannot be
-    // allowed. It still needs to be collapsed even though it means loss
-    // of feature.
-    //
-//    if( keep_rank > 1 && del_vert_is_boundary || 
-//      keep_vert_is_boundary && delete_rank > 1) {
-//        //don't do collapses between feature points and boundaries
-//        if ( m_surf.m_verbose ) { std::cout << "collapse between a feature point and a boundary point disallowed" << std::endl; }
-//        return false;
-//    }
-    
-    // TODO: abstract this away from El Topo?
-    // detect vertices attached to the bounding box walls
-    int keep_attachment_count = 0;
-    int delete_attachment_count = 0;
-    Vec3d keep_pos = m_surf.get_position(vertex_to_keep);
-    Vec3d delete_pos = m_surf.get_position(vertex_to_delete);
-    
-    if (keep_pos[0] < 0 + 1e-6)  keep_attachment_count++;
-    if (keep_pos[1] < 0 + 1e-6)  keep_attachment_count++;
-    if (keep_pos[2] < 0 + 1e-6)  keep_attachment_count++;
-    if (keep_pos[0] > 1 - 1e-6)  keep_attachment_count++;
-    if (keep_pos[1] > 1 - 1e-6)  keep_attachment_count++;
-    if (keep_pos[2] > 1 - 1e-6)  keep_attachment_count++;
-    if (delete_pos[0] < 0 + 1e-6)  delete_attachment_count++;
-    if (delete_pos[1] < 0 + 1e-6)  delete_attachment_count++;
-    if (delete_pos[2] < 0 + 1e-6)  delete_attachment_count++;
-    if (delete_pos[0] > 1 - 1e-6)  delete_attachment_count++;
-    if (delete_pos[1] > 1 - 1e-6)  delete_attachment_count++;
-    if (delete_pos[2] > 1 - 1e-6)  delete_attachment_count++;
-    
-    if (keep_attachment_count < delete_attachment_count)
+    Vec3d newpos;
+    if (!m_surf.m_constrained_vertices_collapsing_callback->generate_collapsed_position(m_surf, vertex_to_keep, vertex_to_delete, newpos))
     {
-      swap(vertex_to_keep, vertex_to_delete);
-      swap(keep_attachment_count, delete_attachment_count);
-      swap(keep_rank, delete_rank);
-      swap(del_vert_is_boundary, keep_vert_is_boundary);
+      // the callback decides this edge should not be collapsed
+      return false;
     }
     
-    if (keep_attachment_count == delete_attachment_count)
+    vertex_new_position = newpos;
+  } else if (keep_vert_is_boundary || del_vert_is_boundary)
+  {
+    if (!keep_vert_is_boundary)
     {
-      if (keep_rank < delete_rank)
-      {
-        swap(vertex_to_keep, vertex_to_delete);
-        swap(keep_attachment_count, delete_attachment_count);
-        swap(keep_rank, delete_rank);
-        swap(del_vert_is_boundary, keep_vert_is_boundary);
-      }
-      
-      if (keep_rank == delete_rank)
-      {
-        // same rank, or both boundary: compare max edge valence 
-        size_t keep_max_edge_valence = 0;
-        size_t delete_max_edge_valence = 0;
-        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_keep].size(); i++)
-        {
-          size_t edge_valence = m_surf.m_mesh.m_edge_to_triangle_map[m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_keep][i]].size();
-          if (edge_valence > keep_max_edge_valence)
-            keep_max_edge_valence = edge_valence;
-        }
-        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_delete].size(); i++)
-        {
-          size_t edge_valence = m_surf.m_mesh.m_edge_to_triangle_map[m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_delete][i]].size();
-          if (edge_valence > delete_max_edge_valence)
-            delete_max_edge_valence = edge_valence;
-        }
-        
-        if (keep_max_edge_valence < delete_max_edge_valence)
-        {
-          swap(vertex_to_keep, vertex_to_delete);
-          swap(keep_max_edge_valence, delete_max_edge_valence);
-          swap(keep_rank, delete_rank);
-          swap(del_vert_is_boundary, keep_vert_is_boundary);
-        }
-      }
+      std::swap(keep_vert_is_boundary, del_vert_is_boundary);
+      std::swap(vertex_to_keep, vertex_to_delete);
+      std::swap(keep_rank, delete_rank);
     }
     
-    ///////////////////////////////////////////////////////////////////////
-        
+    vertex_new_position = m_surf.get_position(vertex_to_keep);
+  } else  // m_surf.m_allow_vertex_movement_during_collapse == false
+  {
+    if (keep_rank < delete_rank)
+    {
+      std::swap(vertex_to_keep, vertex_to_delete);
+      std::swap(keep_rank, delete_rank);
+    }
+    
     vertex_new_position = m_surf.get_position(vertex_to_keep);
   }
 
+  
+//  if ( m_surf.m_allow_vertex_movement_during_collapse && !(keep_vert_is_boundary || del_vert_is_boundary) ) //don't move boundary vertices
+//  {      
+//    if ( keep_rank > delete_rank )
+//    {
+//      vertex_new_position = m_surf.get_position(vertex_to_keep);
+//    }
+//    else if ( delete_rank > keep_rank )
+//    {
+//      size_t tmp = vertex_to_delete;
+//      vertex_to_delete = vertex_to_keep;
+//      vertex_to_keep = tmp;
+//
+//      vertex_new_position = m_surf.get_position(vertex_to_keep);
+//    }
+//    else
+//    {
+//      // ranks are equal
+//      m_surf.m_subdivision_scheme->generate_new_midpoint( edge, m_surf, vertex_new_position );
+//    }
+//  }
+//  else
+//  {
+//    // Not allowed to move the vertex tangential to the surface during improve
+//
+//    ///////////////////////////////////////////////////////////////////////
+//    // FD 20121218
+//    //
+//    // This test, combined with the fact that boundary vertices always 
+//    // have rank 4, effectively disables collapsing a boundary edge, 
+//    // regardless of what m_remesh_boundaries is set to.
+//    //
+//    // For our simulation purpose, extremely short edges simply cannot be
+//    // allowed. It still needs to be collapsed even though it means loss
+//    // of feature.
+//    //
+////    if( keep_rank > 1 && del_vert_is_boundary || 
+////      keep_vert_is_boundary && delete_rank > 1) {
+////        //don't do collapses between feature points and boundaries
+////        if ( m_surf.m_verbose ) { std::cout << "collapse between a feature point and a boundary point disallowed" << std::endl; }
+////        return false;
+////    }
+//    
+//    // TODO: abstract this away from El Topo?
+//    // detect vertices attached to the bounding box walls
+//    int keep_attachment_count = 0;
+//    int delete_attachment_count = 0;
+//    Vec3d keep_pos = m_surf.get_position(vertex_to_keep);
+//    Vec3d delete_pos = m_surf.get_position(vertex_to_delete);
+//    
+//    if (keep_pos[0] < 0 + 1e-6)  keep_attachment_count++;
+//    if (keep_pos[1] < 0 + 1e-6)  keep_attachment_count++;
+//    if (keep_pos[2] < 0 + 1e-6)  keep_attachment_count++;
+//    if (keep_pos[0] > 1 - 1e-6)  keep_attachment_count++;
+//    if (keep_pos[1] > 1 - 1e-6)  keep_attachment_count++;
+//    if (keep_pos[2] > 1 - 1e-6)  keep_attachment_count++;
+//    if (delete_pos[0] < 0 + 1e-6)  delete_attachment_count++;
+//    if (delete_pos[1] < 0 + 1e-6)  delete_attachment_count++;
+//    if (delete_pos[2] < 0 + 1e-6)  delete_attachment_count++;
+//    if (delete_pos[0] > 1 - 1e-6)  delete_attachment_count++;
+//    if (delete_pos[1] > 1 - 1e-6)  delete_attachment_count++;
+//    if (delete_pos[2] > 1 - 1e-6)  delete_attachment_count++;
+//    
+//    if (keep_attachment_count < delete_attachment_count)
+//    {
+//      swap(vertex_to_keep, vertex_to_delete);
+//      swap(keep_attachment_count, delete_attachment_count);
+//      swap(keep_rank, delete_rank);
+//      swap(del_vert_is_boundary, keep_vert_is_boundary);
+//    }
+//    
+//    if (keep_attachment_count == delete_attachment_count)
+//    {
+//      if (keep_rank < delete_rank)
+//      {
+//        swap(vertex_to_keep, vertex_to_delete);
+//        swap(keep_attachment_count, delete_attachment_count);
+//        swap(keep_rank, delete_rank);
+//        swap(del_vert_is_boundary, keep_vert_is_boundary);
+//      }
+//      
+//      if (keep_rank == delete_rank)
+//      {
+//        // same rank, or both boundary: compare max edge valence 
+//        size_t keep_max_edge_valence = 0;
+//        size_t delete_max_edge_valence = 0;
+//        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_keep].size(); i++)
+//        {
+//          size_t edge_valence = m_surf.m_mesh.m_edge_to_triangle_map[m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_keep][i]].size();
+//          if (edge_valence > keep_max_edge_valence)
+//            keep_max_edge_valence = edge_valence;
+//        }
+//        for (size_t i = 0; i < m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_delete].size(); i++)
+//        {
+//          size_t edge_valence = m_surf.m_mesh.m_edge_to_triangle_map[m_surf.m_mesh.m_vertex_to_edge_map[vertex_to_delete][i]].size();
+//          if (edge_valence > delete_max_edge_valence)
+//            delete_max_edge_valence = edge_valence;
+//        }
+//        
+//        if (keep_max_edge_valence < delete_max_edge_valence)
+//        {
+//          swap(vertex_to_keep, vertex_to_delete);
+//          swap(keep_max_edge_valence, delete_max_edge_valence);
+//          swap(keep_rank, delete_rank);
+//          swap(del_vert_is_boundary, keep_vert_is_boundary);
+//        }
+//      }
+//    }
+//    
+//    ///////////////////////////////////////////////////////////////////////
+//        
+//    vertex_new_position = m_surf.get_position(vertex_to_keep);
+//
+//  }
+
+  ///////////////////////////////////////////////////////////////////////
+  
 #else
 
   m_surf.m_subdivision_scheme->generate_new_midpoint( edge, m_surf, vertex_new_position );
