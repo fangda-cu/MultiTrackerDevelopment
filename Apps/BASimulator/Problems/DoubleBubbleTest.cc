@@ -611,56 +611,50 @@ void DoubleBubbleTest::AtEachTimestep()
     {
       VertexHandle v = *vit;
 
-      bool boundary = false;
-      for (VertexEdgeIterator veit = shellObj->ve_iter(v); veit; ++veit)
-        if (shellObj->edgeIncidentFaces(*veit) == 1)
-          boundary = true;
-      
-      if (boundary)
-      {        
-        Vec3d pos = shell->getVertexPosition(v);
-        int constraint = 0;
-        bool x = false;
-        bool y = false;
-        bool z = false;
-        if (pos.x() < 1e-4)
-        {
-          pos.x() = 0;
-          x = true;
-          constraint |= (1 << 0);
-        }
-        if (pos.x() > 1 - 1e-4)
-        {
-          pos.x() = 1;
-          x = true;
-          constraint |= (1 << 3);
-        }
-        if (pos.y() < 1e-4)
-        {
-          pos.y() = 0;
-          y = true;
-          constraint |= (1 << 1);
-        }
-        if (pos.y() > 1 - 1e-4)
-        {
-          pos.y() = 1;
-          y = true;
-          constraint |= (1 << 4);
-        }
-        if (pos.z() < 1e-4)
-        {
-          pos.z() = 0;
-          z = true;
-          constraint |= (1 << 2);
-        }
-        if (pos.z() > 1 - 1e-4)
-        {
-          pos.z() = 1;
-          z = true;
-          constraint |= (1 << 5);
-        }
+      Vec3d pos = shell->getVertexPosition(v);
+      int constraint = 0;
+      bool x = false;
+      bool y = false;
+      bool z = false;
+      if (pos.x() < 1e-4)
+      {
+        pos.x() = 0;
+        x = true;
+        constraint |= (1 << 0);
+      }
+      if (pos.x() > 1 - 1e-4)
+      {
+        pos.x() = 1;
+        x = true;
+        constraint |= (1 << 3);
+      }
+      if (pos.y() < 1e-4)
+      {
+        pos.y() = 0;
+        y = true;
+        constraint |= (1 << 1);
+      }
+      if (pos.y() > 1 - 1e-4)
+      {
+        pos.y() = 1;
+        y = true;
+        constraint |= (1 << 4);
+      }
+      if (pos.z() < 1e-4)
+      {
+        pos.z() = 0;
+        z = true;
+        constraint |= (1 << 2);
+      }
+      if (pos.z() > 1 - 1e-4)
+      {
+        pos.z() = 1;
+        z = true;
+        constraint |= (1 << 5);
+      }
 
-        assert(x || y || z);
+      if (x || y || z)
+      {
         PositionConstraint * pc = new PartialPositionConstraint(pos, x, y, z);
         shellObj->constrainVertex(v, pc);
         shell->getVertexConstraintLabel(v) = constraint;
