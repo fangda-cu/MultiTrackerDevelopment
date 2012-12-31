@@ -811,33 +811,33 @@ void ShellVolumeForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) cons
       volumes[labels[1]] -= elementEnergy(deformed);
   }
   
-  //compute the total gradient of volume
-  std::vector<VecXd> tgv(m_target_volumes.size(), VecXd::Zero(obj.ndof()));
-  
-  fit = m_shell.getDefoObj().faces_begin();
-  for (;fit != m_shell.getDefoObj().faces_end(); ++fit) {
-    const FaceHandle& fh = *fit;
-    
-    bool valid = gatherDOFs(fh, deformed, indices);
-//    if(!valid) continue;
-    
-    Vec2i labels = m_shell.getFaceLabel(fh);
-    
-    elementForce(deformed, localForce);
-    
-    if(labels[0] != -1) {
-      for (unsigned int i = 0; i < indices.size(); ++i)
-        if (indices[i] >= 0)
-          tgv[labels[0]](indices[i]) += localForce(i);
-    }
-    
-    if(labels[1] != -1) {
-      for (unsigned int i = 0; i < indices.size(); ++i)
-        if (indices[i] >= 0)
-          tgv[labels[1]](indices[i]) -= localForce(i);
-    }
-    
-  }
+//  //compute the total gradient of volume
+//  std::vector<VecXd> tgv(m_target_volumes.size(), VecXd::Zero(obj.ndof()));
+//  
+//  fit = m_shell.getDefoObj().faces_begin();
+//  for (;fit != m_shell.getDefoObj().faces_end(); ++fit) {
+//    const FaceHandle& fh = *fit;
+//    
+//    bool valid = gatherDOFs(fh, deformed, indices);
+////    if(!valid) continue;
+//    
+//    Vec2i labels = m_shell.getFaceLabel(fh);
+//    
+//    elementForce(deformed, localForce);
+//    
+//    if(labels[0] != -1) {
+//      for (unsigned int i = 0; i < indices.size(); ++i)
+//        if (indices[i] >= 0)
+//          tgv[labels[0]](indices[i]) += localForce(i);
+//    }
+//    
+//    if(labels[1] != -1) {
+//      for (unsigned int i = 0; i < indices.size(); ++i)
+//        if (indices[i] >= 0)
+//          tgv[labels[1]](indices[i]) -= localForce(i);
+//    }
+//    
+//  }
 
   //compute force jacobians, which relies on the volumes above
   fit = m_shell.getDefoObj().faces_begin();
@@ -865,10 +865,10 @@ void ShellVolumeForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) cons
         for(unsigned int j = 0; j < indices.size(); ++j)
           if (indices[i] >= 0 && indices[j] >= 0)
             Jacobian.add(indices[i], indices[j], +m_strength * scale * ((volumes[labels[0]] - m_target_volumes[labels[0]]) * localMatrix(i,j)));
-      for (unsigned int i = 0; i < indices.size(); ++i)
-        for (int j = 0; j < obj.ndof(); ++j)
-          if (indices[i] >= 0)
-            Jacobian.add(indices[i], j, -m_strength * scale * tgv[labels[0]][j] * localForce[i]);
+//      for (unsigned int i = 0; i < indices.size(); ++i)
+//        for (int j = 0; j < obj.ndof(); ++j)
+//          if (indices[i] >= 0)
+//            Jacobian.add(indices[i], j, -m_strength * scale * tgv[labels[0]][j] * localForce[i]);
     }
 
     if(labels[1] != -1) {
@@ -876,10 +876,10 @@ void ShellVolumeForce::globalJacobian( Scalar scale, MatrixBase& Jacobian ) cons
         for(unsigned int j = 0; j < indices.size(); ++j)
           if (indices[i] >= 0 && indices[j] >= 0)
             Jacobian.add(indices[i], indices[j], -m_strength * scale * ((volumes[labels[1]] - m_target_volumes[labels[1]]) * localMatrix(i,j)));
-      for (unsigned int i = 0; i < indices.size(); ++i)
-        for (int j = 0; j < obj.ndof(); ++j)
-          if (indices[i] >= 0)
-            Jacobian.add(indices[i], j, +m_strength * scale * tgv[labels[1]][j] * localForce[i]);
+//      for (unsigned int i = 0; i < indices.size(); ++i)
+//        for (int j = 0; j < obj.ndof(); ++j)
+//          if (indices[i] >= 0)
+//            Jacobian.add(indices[i], j, +m_strength * scale * tgv[labels[1]][j] * localForce[i]);
     }
     
   }  
