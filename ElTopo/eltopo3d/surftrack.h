@@ -90,6 +90,15 @@ struct SurfTrackInitializationParameters
     ///
     double m_max_triangle_angle;   
     
+    ///////////////////////////////////////////////////////////////////////
+    // FD 20121229
+    //
+    /// Largest interior angle at a triangle vertex allowed before large-angle split pass kicks in
+    ///
+    double m_large_triangle_angle_to_split;
+    
+    ///////////////////////////////////////////////////////////////////////
+
     /// Whether to scale by curvature when computing edge lengths, in order to refine high-curvature regions
     ///
     bool m_use_curvature_when_splitting;
@@ -499,6 +508,15 @@ public:
     /// Don't create triangles with angles greater than this.  If angles greater than this do exist, try to remove them.
     ///
     double m_max_triangle_angle;
+    
+    ///////////////////////////////////////////////////////////////////////
+    // FD 20121229
+    //
+    /// Split triangles with angles greater than this.
+    ///
+    double m_large_triangle_angle_to_split;
+    
+    ///////////////////////////////////////////////////////////////////////
     
     /// Interpolation scheme, determines edge midpoint location
     ///

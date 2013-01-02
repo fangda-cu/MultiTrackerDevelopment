@@ -807,7 +807,7 @@ bool EdgeSplitter::large_angle_split_pass()
 
       // if an angle is above the max threshold, split the edge
 
-      if ( angle0 > m_surf.m_max_triangle_angle )
+      if ( angle0 > m_surf.m_large_triangle_angle_to_split )
       {
         if (!edge_is_splittable(e))
           continue;
