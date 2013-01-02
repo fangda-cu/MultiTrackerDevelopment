@@ -790,6 +790,8 @@ bool EdgeSplitter::large_angle_split_pass()
     const Vec2st& edge = m_surf.m_mesh.m_edges[e];      
     const Vec3d& edge_point0 = m_surf.get_position( edge[0] );
     const Vec3d& edge_point1 = m_surf.get_position( edge[1] );
+    
+    double edge_length = m_surf.get_edge_length(e);
 
     // get triangles incident to the edge
     std::vector<size_t> incident_tris = mesh.m_edge_to_triangle_map[e];
@@ -811,7 +813,21 @@ bool EdgeSplitter::large_angle_split_pass()
       {
         if (!edge_is_splittable(e))
           continue;
-
+        
+        ///////////////////////////////////////////////////////////////////////
+        // FD 20121229
+        //
+        // This test ensures the resulting triangles of this split will not have
+        // an even larger interior angle. The test essentially checks the critical
+        // condition where the resulting triangle corresponding to the larger one
+        // of the two edges around the original large angle is similar to the
+        // original triangle, thus they have the same large interior angle.
+        
+        if (mag(edge_point0 - opposite_point0) > 0.7071 * edge_length || mag(edge_point1 - opposite_point0) > 0.7071 * edge_length)
+          continue;
+        
+        ///////////////////////////////////////////////////////////////////////
+        
         bool result = split_edge( e );
 
         if ( result )
