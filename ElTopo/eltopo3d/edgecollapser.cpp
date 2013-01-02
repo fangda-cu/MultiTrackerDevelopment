@@ -436,6 +436,24 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   assert(m_remesh_boundaries || !edge_is_boundary);
   
   ///////////////////////////////////////////////////////////////////////
+  // FD 20130102
+  //
+  // do not collapse the edge if the two vertices are moving apart
+  
+  Vec3d edge_vec =     m_surf.get_position(vertex_to_keep) -    m_surf.get_position(vertex_to_delete);
+  Vec3d new_edge_vec = m_surf.get_newposition(vertex_to_keep) - m_surf.get_newposition(vertex_to_delete);
+
+  Vec3d relative_velocity = new_edge_vec - edge_vec;
+  if (dot(relative_velocity, edge_vec) > 0)
+  {
+    if (m_surf.m_verbose)
+      std::cout << "The endpoints are moving apart. No need to collapse." << std::endl;
+    return false;
+  }
+  
+  ///////////////////////////////////////////////////////////////////////
+
+  ///////////////////////////////////////////////////////////////////////
   // FD 20121229
   //
   // this should be allowed, in order to simulate pinching of films
