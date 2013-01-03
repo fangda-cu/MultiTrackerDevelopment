@@ -1852,6 +1852,78 @@ void ElasticShell::performT1Transition()
   
 Vec2i ElasticShell::cutXJunction(EdgeHandle e) const
 {
+  // for now use the angles to decide cut direction
+  assert(m_obj->edgeIncidentFaces(e) == 4);
+  
+  VertexHandle v0 = m_obj->fromVertex(e);
+  VertexHandle v1 = m_obj->toVertex(e);
+  
+  Vec3d x0 = getVertexPosition(v0);
+  Vec3d x1 = getVertexPosition(v1);
+  
+  // find all the regions around this X junctions, in order
+  std::vector<int> regions;
+  EdgeFaceIterator efit = m_obj->ef_iter(e); assert(efit);
+  regions.push_back(getFaceLabel(*efit).x());
+  regions.push_back(getFaceLabel(*efit).y());
+  while (true)
+  {
+    size_t s = regions.size();
+    for (EdgeFaceIterator efit = m_obj->ef_iter(e); efit; ++efit)
+    {
+      Vec2i label = getFaceLabel(*efit);
+      if (label.x() == regions.back() && label.y() != *(regions.rbegin() + 1))
+        regions.push_back(label.x());
+      if (label.y() == regions.back() && label.x() != *(regions.rbegin() + 1))
+        regions.push_back(label.y());
+    }
+    assert(s == regions.size() || s + 1 == regions.size());
+    if (s == regions.size())
+      break;
+  }
+  assert(regions.size() == 4);
+
+  // create an arbitrary 2D frame in the cross section plane of the edge e
+  Vec3d t = x1 - x0;
+  t.normalize();
+  Vec3d u = (fabs(t.x()) <= fabs(t.y()) && fabs(t.x()) <= fabs(t.z()) ? Vec3d(0, t.z(), -t.y()) : (fabs(t.y()) <= fabs(t.z()) ? Vec3d(-t.z(), 0, t.x()) : Vec3d(t.y(), -t.x(), 0)));
+  u.normalize();
+  Vec3d v = t.cross(u);
+  v.normalize();
+  
+  // compute the angle of each region
+  std::vector<Scalar> regionangles;
+  for (size_t i = 0; i < regions.size(); i++)
+  {
+    std::vector<FaceHandle> regionfaces;
+    for (EdgeFaceIterator efit = m_obj->ef_iter(e); efit; ++efit)
+    {
+      Vec2i label = getFaceLabel(*efit);
+      if (label.x() == regions[i] || label.y() == regions[i])
+        regionfaces.push_back(*efit);
+    }
+    assert(regionfaces.size() == 2);
+    
+    VertexHandle v20;
+    getFaceThirdVertex(*m_obj, regionfaces[0], e, v20);
+    VertexHandle v21;
+    getFaceThirdVertex(*m_obj, regionfaces[1], e, v21);
+    
+    Vec3d x20 = getVertexPosition(v20);
+    Vec3d x21 = getVertexPosition(v21);
+    
+    Vec2d p20 = Vec2d((x20 - x0).dot(u), (x20 - x0).dot(v));
+    Vec2d p21 = Vec2d((x21 - x0).dot(u), (x21 - x0).dot(v));
+    
+    regionangles.push_back(fabs(atan2(p21.y(), p21.x()) - atan2(p20.y(), p20.x())));
+  }
+  
+  // pick the pair of opposing regions with larger summed angles
+  if (regionangles[0] + regionangles[2] > regionangles[1] + regionangles[3])
+    return Vec2i(regions[0], regions[2]);
+  else
+    return Vec2i(regions[1], regions[3]);
+  
   // if the X junction should not be cut, return (-1, -1).
   return Vec2i(-1, -1);
 }
