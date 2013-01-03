@@ -1444,11 +1444,15 @@ void ElasticShell::performT1Transition()
 
   // sort the X-junction edges into connected groups with the same cut
   std::vector<std::pair<std::vector<EdgeHandle>, Vec2i> > xjgroups; // each element is a list of consecutive x junction edges, along with the id of the two regions that should end up adjacent after pull-apart
+  std::vector<int> groupid(xjunctions.size());
+  for (size_t i = 0; i < xjunctions.size(); i++)
+    groupid[i] = i;
+  
   for (size_t i = 0; i < xjunctions.size(); i++)
   {
     Vec2i cut = cutXJunction(xjunctions[i]);
-    bool found_group = false;
-    for (size_t j = 0; j < xjgroups.size() && !found_group; j++)
+    std::vector<size_t> found_groups;
+    for (size_t j = 0; j < xjgroups.size(); j++)
     {
       if (cut != xjgroups[j].second)
         continue;
@@ -1458,14 +1462,26 @@ void ElasticShell::performT1Transition()
         if (getSharedVertex(*m_obj, xjunctions[i], xjgroups[j].first[k]).isValid())
         {
           xjgroups[j].first.push_back(xjunctions[i]);
-          found_group = true;
+          found_groups.push_back(j);
           break;
         }
       }
     }
     
-    if (!found_group)
+    if (found_groups.size() == 0)
+    {
+      // new group
       xjgroups.push_back(std::pair<std::vector<EdgeHandle>, Vec2i>(std::vector<EdgeHandle>(1, xjunctions[i]), cut));
+    } else
+    {
+      // joining all the groups in found_groups together
+      std::vector<EdgeHandle> newgroup;
+      for (size_t j = 0; j < found_groups.size(); j++)
+        newgroup.insert(newgroup.end(), xjgroups[found_groups[j]].first.begin(), xjgroups[found_groups[j]].first.end());
+      for (size_t j = 0; j < found_groups.size(); j++)
+        xjgroups.erase(xjgroups.begin() + found_groups[j]);
+      xjgroups.push_back(std::pair<std::vector<EdgeHandle>, Vec2i>(newgroup, cut));
+    }
   }
   
   // process the groups one after another
