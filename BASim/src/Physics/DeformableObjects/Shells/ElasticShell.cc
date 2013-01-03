@@ -1902,7 +1902,7 @@ Vec2i ElasticShell::cutXJunction(EdgeHandle e) const
   t.normalize();
   Vec3d u = (fabs(t.x()) <= fabs(t.y()) && fabs(t.x()) <= fabs(t.z()) ? Vec3d(0, t.z(), -t.y()) : (fabs(t.y()) <= fabs(t.z()) ? Vec3d(-t.z(), 0, t.x()) : Vec3d(t.y(), -t.x(), 0)));
   u.normalize();
-  Vec3d v = t.cross(u);
+  Vec3d v = u.cross(t);
   v.normalize();
   
   // compute the angle of each region
