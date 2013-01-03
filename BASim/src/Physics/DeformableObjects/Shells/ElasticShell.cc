@@ -1861,11 +1861,19 @@ Vec2i ElasticShell::cutXJunction(EdgeHandle e) const
   Vec3d x0 = getVertexPosition(v0);
   Vec3d x1 = getVertexPosition(v1);
   
-  // find all the regions around this X junctions, in order
+  // find all the regions around this X junction edge e, in CCW order when looking down the edge
   std::vector<int> regions;
   EdgeFaceIterator efit = m_obj->ef_iter(e); assert(efit);
-  regions.push_back(getFaceLabel(*efit).x());
-  regions.push_back(getFaceLabel(*efit).y());
+  if (m_obj->getRelativeOrientation(*efit, e) > 0)
+  {
+    regions.push_back(getFaceLabel(*efit).y());
+    regions.push_back(getFaceLabel(*efit).x());
+  } else
+  {
+    regions.push_back(getFaceLabel(*efit).x());
+    regions.push_back(getFaceLabel(*efit).y());
+  }
+  
   while (true)
   {
     size_t s = regions.size();
@@ -1910,6 +1918,10 @@ Vec2i ElasticShell::cutXJunction(EdgeHandle e) const
     }
     assert(regionfaces.size() == 2);
     
+    Vec2i label = getFaceLabel(regionfaces[0]);
+    if ((label.x() == regions[i] ? label.y() : label.x()) == regions[(i + 1) % 4])
+      std::swap(regionfaces[0], regionfaces[1]);  // this ensures CCW ordering of the two faces
+    
     VertexHandle v20;
     getFaceThirdVertex(*m_obj, regionfaces[0], e, v20);
     VertexHandle v21;
@@ -1921,7 +1933,13 @@ Vec2i ElasticShell::cutXJunction(EdgeHandle e) const
     Vec2d p20 = Vec2d((x20 - x0).dot(u), (x20 - x0).dot(v));
     Vec2d p21 = Vec2d((x21 - x0).dot(u), (x21 - x0).dot(v));
     
-    regionangles.push_back(fabs(atan2(p21.y(), p21.x()) - atan2(p20.y(), p20.x())));
+    Scalar theta0 = atan2(p20.y(), p20.x());
+    Scalar theta1 = atan2(p21.y(), p21.x());
+    
+    while (theta0 > theta1)
+      theta1 += M_PI * 2;
+    
+    regionangles.push_back(theta1 - theta0);
   }
   
   std::cout << "region angles: " << regionangles[0] << " " << regionangles[1] << " " << regionangles[2] << " " << regionangles[3] << std::endl;
