@@ -1872,12 +1872,12 @@ Vec2i ElasticShell::cutXJunction(EdgeHandle e) const
     for (EdgeFaceIterator efit = m_obj->ef_iter(e); efit; ++efit)
     {
       Vec2i label = getFaceLabel(*efit);
-      if (label.x() == regions.back() && label.y() != *(regions.rbegin() + 1))
+      if (label.x() == regions.back() && label.y() != *(regions.rbegin() + 1) && label.y() != regions.front())
       {
         regions.push_back(label.y());
         break;
       }
-      if (label.y() == regions.back() && label.x() != *(regions.rbegin() + 1))
+      if (label.y() == regions.back() && label.x() != *(regions.rbegin() + 1) && label.x() != regions.front())
       {
         regions.push_back(label.x());
         break;
@@ -1923,6 +1923,8 @@ Vec2i ElasticShell::cutXJunction(EdgeHandle e) const
     
     regionangles.push_back(fabs(atan2(p21.y(), p21.x()) - atan2(p20.y(), p20.x())));
   }
+  
+  std::cout << "region angles: " << regionangles[0] << " " << regionangles[1] << " " << regionangles[2] << " " << regionangles[3] << std::endl;
   
   // pick the pair of opposing regions with larger summed angles
   if (regionangles[0] + regionangles[2] > regionangles[1] + regionangles[3])
