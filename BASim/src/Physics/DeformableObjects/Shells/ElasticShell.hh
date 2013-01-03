@@ -201,6 +201,9 @@ protected:
   
   int onBBWall(const Vec3d & pos) const;
   
+  void performT1Transition();
+  Vec2i cutXJunction(EdgeHandle e) const;
+  
 
   //Various shell data
 //  EdgeProperty<Scalar> m_undef_xi;
