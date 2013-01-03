@@ -1962,9 +1962,9 @@ Vec2i ElasticShell::cutXJunction(EdgeHandle e) const
   
   // pick the pair of opposing regions with larger summed angles
   if (regionangles[0] + regionangles[2] > regionangles[1] + regionangles[3])
-    return Vec2i(regions[0], regions[2]);
+    return regions[0] < regions[2] ? Vec2i(regions[0], regions[2]) : Vec2i(regions[2], regions[0]); // order the two regions with ascending region label
   else
-    return Vec2i(regions[1], regions[3]);
+    return regions[1] < regions[3] ? Vec2i(regions[1], regions[3]) : Vec2i(regions[3], regions[1]);  
   
   // if the X junction should not be cut, return (-1, -1).
   return Vec2i(-1, -1);
