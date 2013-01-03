@@ -1873,9 +1873,15 @@ Vec2i ElasticShell::cutXJunction(EdgeHandle e) const
     {
       Vec2i label = getFaceLabel(*efit);
       if (label.x() == regions.back() && label.y() != *(regions.rbegin() + 1))
-        regions.push_back(label.x());
-      if (label.y() == regions.back() && label.x() != *(regions.rbegin() + 1))
+      {
         regions.push_back(label.y());
+        break;
+      }
+      if (label.y() == regions.back() && label.x() != *(regions.rbegin() + 1))
+      {
+        regions.push_back(label.x());
+        break;
+      }
     }
     assert(s == regions.size() || s + 1 == regions.size());
     if (s == regions.size())
