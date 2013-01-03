@@ -1615,8 +1615,11 @@ void ElasticShell::performT1Transition()
       }
       size_t ne = ordered_edges.size();
       
-      // TODO: handle the closed loop case
-      assert(!getSharedVertex(*m_obj, ordered_edges.front(), ordered_edges.back()).isValid());
+      // TODO: handle the closed loop case. for now, assert the edges do not form a closed loop.
+      if (ne == 2)
+        assert(ordered_edges.front() != ordered_edges.back());
+      else
+        assert(!getSharedVertex(*m_obj, ordered_edges.front(), ordered_edges.back()).isValid());
              
       // duplicate the interior vertices, and compute their desired pull-apart positions
       std::vector<VertexHandle> upper_junctions(ne + 1);
