@@ -1422,6 +1422,11 @@ void ElasticShell::remesh()
     }
   }
 
+  static int framecounter = 0;
+  framecounter++;
+  if (framecounter == 16 || framecounter == 18)
+    return;
+  
   performT1Transition();
 }
   
@@ -1645,6 +1650,7 @@ void ElasticShell::performT1Transition()
       int lower_region = -1;
       
       std::vector<Vec3d> pull_apart_offsets(ne - 1);
+      std::vector<int> edge_oriented(ne);
       
       for (size_t j = 0; j < ne - 1; j++)
       {
@@ -1656,6 +1662,9 @@ void ElasticShell::performT1Transition()
         
         VertexHandle v0 = getEdgesOtherVertex(*m_obj, edge0, v);
         VertexHandle v1 = getEdgesOtherVertex(*m_obj, edge1, v);
+        
+        edge_oriented[j]     = m_obj->getRelativeOrientation(edge0, v);
+        edge_oriented[j + 1] = -m_obj->getRelativeOrientation(edge0, v);
         
         VertexHandle nv0 = m_obj->addVertex();
         VertexHandle nv1 = m_obj->addVertex();
@@ -1768,9 +1777,9 @@ void ElasticShell::performT1Transition()
           VertexHandle v0 = ((label.x() == upper_region || label.y() == upper_region) ? upper_junctions[j + 0] : lower_junctions[j + 0]);
           VertexHandle v1 = ((label.x() == upper_region || label.y() == upper_region) ? upper_junctions[j + 1] : lower_junctions[j + 1]);
           
-          if (m_obj->getRelativeOrientation(*efit, edge) > 0)
+          if ((m_obj->getRelativeOrientation(*efit, edge) * edge_oriented[j] > 0))
             faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(v0, v1, v2));
-          else
+          else  
             faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(v1, v0, v2));
           face_labels_to_create.push_back(label);
           
@@ -1808,6 +1817,14 @@ void ElasticShell::performT1Transition()
             faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(nv, v2, v1));
           face_labels_to_create.push_back(label);
           
+        }
+        
+        for (VertexEdgeIterator veit = m_obj->ve_iter(v); veit; ++veit)
+        {
+          if (*veit == edge0 || *veit == edge1)
+            continue;
+          
+          edges_to_delete.push_back(*veit);
         }
         
       }
