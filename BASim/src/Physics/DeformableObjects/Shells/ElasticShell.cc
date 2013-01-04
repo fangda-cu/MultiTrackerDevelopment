@@ -1836,14 +1836,14 @@ void ElasticShell::performT1Transition()
         FaceHandle wall0, wall1;
         if (j == 0)
         {
-          wall0 = m_obj->addFace(upper_junctions[j], upper_junctions[j + 1], lower_junctions[j + 1]);
+          wall0 = m_obj->addFace(upper_junctions[j], lower_junctions[j + 1], upper_junctions[j + 1]);
         } else if (j == ne - 1)
         {
-          wall0 = m_obj->addFace(lower_junctions[j], upper_junctions[j], upper_junctions[j + 1]);
+          wall0 = m_obj->addFace(upper_junctions[j], lower_junctions[j], upper_junctions[j + 1]);
         } else
         {
-          wall0 = m_obj->addFace(upper_junctions[j], upper_junctions[j + 1], lower_junctions[j + 1]);
-          wall1 = m_obj->addFace(lower_junctions[j], upper_junctions[j], upper_junctions[j + 1]);
+          wall0 = m_obj->addFace(upper_junctions[j], lower_junctions[j + 1], upper_junctions[j + 1]);
+          wall1 = m_obj->addFace(upper_junctions[j], lower_junctions[j], upper_junctions[j + 1]);
         }
 
         setFaceLabel(wall0, cut);
