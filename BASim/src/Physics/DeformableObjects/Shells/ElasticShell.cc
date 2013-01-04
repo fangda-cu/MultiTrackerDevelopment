@@ -1757,6 +1757,8 @@ void ElasticShell::performT1Transition()
       std::vector<EdgeHandle> edges_to_delete;
       std::vector<Eigen::Matrix<VertexHandle, 2, 1> > edges_to_create;
       
+      std::vector<VertexHandle> vertices_to_delete;
+      
       // update the faces incident to the X-junction edges
       for (size_t j = 0; j < ne; j++)
       {
@@ -1794,6 +1796,8 @@ void ElasticShell::performT1Transition()
         
         VertexHandle v = getSharedVertex(*m_obj, edge0, edge1);
         assert(v.isValid());
+        
+        vertices_to_delete.push_back(v);
         
         for (VertexFaceIterator vfit = m_obj->vf_iter(v); vfit; ++vfit)
         {
@@ -1835,6 +1839,9 @@ void ElasticShell::performT1Transition()
       
       for (size_t j = 0; j < edges_to_delete.size(); j++)
         m_obj->deleteEdge(edges_to_delete[j], false);
+      
+      for (size_t j = 0; j < vertices_to_delete.size(); j++)
+        m_obj->deleteVertex(vertices_to_delete[j]);
       
       // triangulate with the new vertices
       for (size_t j = 0; j < edges_to_create.size(); j++)
