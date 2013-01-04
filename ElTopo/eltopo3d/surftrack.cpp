@@ -290,16 +290,25 @@ size_t SurfTrack::add_vertex( const Vec3d& new_vertex_position, double new_verte
 {
     size_t new_vertex_index = m_mesh.nondestructive_add_vertex( );
     
+    ////////////////////////////////////////////////////////////
+    // FD 20130102
+  
     if( new_vertex_index > get_num_vertices() - 1 )
     {
         pm_positions.resize( new_vertex_index  + 1 );
         pm_newpositions.resize( new_vertex_index  + 1 );
         m_masses.resize( new_vertex_index  + 1 );
+      
+        pm_velocities.resize( new_vertex_index + 1 );
     }
     
     pm_positions[new_vertex_index] = new_vertex_position;
     pm_newpositions[new_vertex_index] = new_vertex_position;
     m_masses[new_vertex_index] = new_vertex_mass;
+  
+    pm_velocities[new_vertex_index] = Vec3d(0);
+  
+    ////////////////////////////////////////////////////////////
     
     if ( m_collision_safety )
     {

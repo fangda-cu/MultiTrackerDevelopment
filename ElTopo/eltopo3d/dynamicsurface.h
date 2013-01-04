@@ -379,7 +379,16 @@ public:
     ///
     inline void set_all_newpositions( size_t n, const double* xs );
     
+    ///////////////////////////////////////////////////////////////////////
+    // FD 20130102
     
+    // Vertex velocity, for remeshing only, not for collisions
+    inline void set_all_remesh_velocities( const std::vector<Vec3d> & v );
+  
+    inline Vec3d get_remesh_velocity( size_t n );
+    
+    ///////////////////////////////////////////////////////////////////////
+
     //
     // Data members
     //
@@ -426,6 +435,14 @@ protected:
     ///
     std::vector<Vec3d> pm_positions, pm_newpositions;
     
+    ///////////////////////////////////////////////////////////////////////
+    // FD 20130102
+
+    // Vertex velocity, for remeshing only, not for collision
+    std::vector<Vec3d> pm_velocities;
+    
+    ///////////////////////////////////////////////////////////////////////
+
     /// Temporary velocities field
     ///
     std::vector<Vec3d> m_velocities;
@@ -1007,6 +1024,22 @@ inline const std::vector<Vec3d>& DynamicSurface::get_newpositions( ) const
     return pm_newpositions;
 }
 
+///////////////////////////////////////////////////////////////////////
+// FD 20130102
+
+// Vertex velocity, for remeshing only, not for collisions
+inline void DynamicSurface::set_all_remesh_velocities( const std::vector<Vec3d> & v )
+{
+  pm_velocities = v;
+}
+
+inline Vec3d DynamicSurface::get_remesh_velocity( size_t n )
+{
+  assert( n < pm_velocities.size() );
+  return pm_velocities[n];
+}
+
+///////////////////////////////////////////////////////////////////////
 
 // --------------------------------------------------------
 ///

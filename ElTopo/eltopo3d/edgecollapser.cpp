@@ -440,11 +440,10 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   //
   // do not collapse the edge if the two vertices are moving apart
   
-  Vec3d edge_vec =     m_surf.get_position(vertex_to_keep) -    m_surf.get_position(vertex_to_delete);
-  Vec3d new_edge_vec = m_surf.get_newposition(vertex_to_keep) - m_surf.get_newposition(vertex_to_delete);
-
-  Vec3d relative_velocity = new_edge_vec - edge_vec;
-  if (dot(relative_velocity, edge_vec) > 0)
+  Vec3d edge_vec = m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete);
+  Vec3d rel_vel = m_surf.get_remesh_velocity(vertex_to_keep) - m_surf.get_remesh_velocity(vertex_to_delete);
+  
+  if (dot(rel_vel, edge_vec) > 0)
   {
     if (m_surf.m_verbose)
       std::cout << "The endpoints are moving apart. No need to collapse." << std::endl;
