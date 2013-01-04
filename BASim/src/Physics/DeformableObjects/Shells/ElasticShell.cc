@@ -1424,7 +1424,7 @@ void ElasticShell::remesh()
 
   static int framecounter = 0;
   framecounter++;
-  if (framecounter == 16 || framecounter == 18)
+  if (framecounter == 16 || framecounter == 18 || framecounter == 19)
     return;
   
   performT1Transition();
@@ -1664,7 +1664,7 @@ void ElasticShell::performT1Transition()
         VertexHandle v1 = getEdgesOtherVertex(*m_obj, edge1, v);
         
         edge_oriented[j]     = m_obj->getRelativeOrientation(edge0, v);
-        edge_oriented[j + 1] = -m_obj->getRelativeOrientation(edge0, v);
+        edge_oriented[j + 1] = -m_obj->getRelativeOrientation(edge1, v);
         
         VertexHandle nv0 = m_obj->addVertex();
         VertexHandle nv1 = m_obj->addVertex();
@@ -1859,8 +1859,8 @@ void ElasticShell::performT1Transition()
           wall0 = m_obj->addFace(upper_junctions[j], lower_junctions[j], upper_junctions[j + 1]);
         } else
         {
-          wall0 = m_obj->addFace(upper_junctions[j], lower_junctions[j + 1], upper_junctions[j + 1]);
-          wall1 = m_obj->addFace(upper_junctions[j], lower_junctions[j], upper_junctions[j + 1]);
+          wall0 = m_obj->addFace(upper_junctions[j], lower_junctions[j], upper_junctions[j + 1]);
+          wall1 = m_obj->addFace(lower_junctions[j + 1], upper_junctions[j + 1], lower_junctions[j]);
         }
 
         setFaceLabel(wall0, cut);
