@@ -1424,7 +1424,7 @@ void ElasticShell::remesh()
 
   static int framecounter = 0;
   framecounter++;
-  if (framecounter == 16 || framecounter == 18 || framecounter == 19)
+  if (framecounter == 16 || framecounter == 18 || framecounter == 19 || framecounter == 21)
     return;
   
   performT1Transition();
@@ -1593,8 +1593,8 @@ void ElasticShell::performT1Transition()
         setFaceLabel(nf, face_labels_to_create[j]);
       }
       
-      FaceHandle wall0 = m_obj->addFace(v0, nv0, nv1);
-      FaceHandle wall1 = m_obj->addFace(nv1, nv0, v1);
+      FaceHandle wall0 = m_obj->addFace(v0, nv1, nv0);
+      FaceHandle wall1 = m_obj->addFace(nv0, nv1, v1);
       
       setFaceLabel(wall0, cut);
       setFaceLabel(wall1, cut);
