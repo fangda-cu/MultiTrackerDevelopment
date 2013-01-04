@@ -1855,7 +1855,7 @@ void ElasticShell::performT1Transition()
       for (size_t j = 0; j < ne - 1; j++)
       {
         VertexHandle nv0 = upper_junctions[j + 1];
-        VertexHandle nv1 = upper_junctions[j + 1];
+        VertexHandle nv1 = lower_junctions[j + 1];
         m_obj->setVertexPosition(nv0, m_obj->getVertexPosition(nv0) + pull_apart_offsets[j] * 0.1);
         m_obj->setVertexPosition(nv1, m_obj->getVertexPosition(nv1) - pull_apart_offsets[j] * 0.1);
       }   
