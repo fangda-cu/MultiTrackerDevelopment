@@ -1432,6 +1432,8 @@ void ElasticShell::remesh()
     return;
   
   performT1Transition();
+  
+  pullXJunctionVertices();
 }
   
 void ElasticShell::performT1Transition()
@@ -1892,6 +1894,64 @@ void ElasticShell::performT1Transition()
   }
   
   
+}
+  
+void ElasticShell::pullXJunctionVertices()
+{
+  // Pull apart the X-junciton vertices
+  for (VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit)
+  {
+    std::set<int> vertex_regions_set;
+    for (VertexFaceIterator vfit = m_obj->vf_iter(*vit); vfit; ++vfit)
+    {
+      Vec2i label = getFaceLabel(*vfit);
+      vertex_regions_set.insert(label.x());
+      vertex_regions_set.insert(label.y());
+    }
+    
+    std::vector<int> vertex_regions;
+    vertex_regions.assign(vertex_regions_set.begin(), vertex_regions_set.end());
+    
+    // we only care about vertices with four incident regions (not interior vertices on plateau borders)
+    if (vertex_regions_set.size() != 4)
+      continue;
+    
+    std::vector<int> region_neighbor_counts;
+    for (int i = 0; i < 4; i++)
+    {
+      std::set<int> region_neighbors;
+      for (VertexFaceIterator vfit = m_obj->vf_iter(*vit); vfit; ++vfit)
+      {
+        Vec2i label = getFaceLabel(*vfit);
+        if (label.x() == vertex_regions[i] || label.y() == vertex_regions[i])
+          region_neighbors.insert(label.x() == vertex_regions[i] ? label.y() : label.x());        
+      }
+
+      region_neighbor_counts.push_back(region_neighbors.size());
+    }
+    
+    std::sort(region_neighbor_counts.begin(), region_neighbor_counts.end());
+    
+    if (region_neighbor_counts[0] == 3 && region_neighbor_counts[1] == 3 && region_neighbor_counts[2] == 3 && region_neighbor_counts[3] == 3)
+    {
+      // A usual intersection of four plateau borders
+      continue;
+    } else if (region_neighbor_counts[0] == 2 && region_neighbor_counts[1] == 2 && region_neighbor_counts[2] == 3 && region_neighbor_counts[3] == 3)
+    {
+      // X-junction vertices
+      
+    
+    } else if (region_neighbor_counts[0] == 2 && region_neighbor_counts[1] == 2 && region_neighbor_counts[2] == 2 && region_neighbor_counts[3] == 2)
+    {
+      // this is an interior vertex lying on an X-junction edge, this shouldn't be possible because performT1Transition() should have been called.
+      assert(!"Unresolved X-junction edge");
+    } else
+    {
+      // what are the other cases?
+      assert(!"Unknown case");
+    }
+    
+  }
 }
   
 Vec2i ElasticShell::cutXJunction(EdgeHandle e) const

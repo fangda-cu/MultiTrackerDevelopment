@@ -202,6 +202,7 @@ protected:
   int onBBWall(const Vec3d & pos) const;
   
   void performT1Transition();
+  void pullXJunctionVertices();
   Vec2i cutXJunction(EdgeHandle e) const;
   
 
