@@ -2087,8 +2087,8 @@ void ElasticShell::pullXJunctionVertices()
     mean_edge_length /= edge_count;
     
     Vec3d pull_apart_offset = (centroidB - centroidA).normalized() * mean_edge_length;
-    setVertexPosition(a, getVertexPosition(a) + pull_apart_offset * 0.1);
-    setVertexPosition(b, getVertexPosition(b) - pull_apart_offset * 0.1);
+    setVertexPosition(a, getVertexPosition(a) - pull_apart_offset * 0.1);
+    setVertexPosition(b, getVertexPosition(b) + pull_apart_offset * 0.1);
 
     // assign region types
     std::vector<int> region_types(nregion, 0);
