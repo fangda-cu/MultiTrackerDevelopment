@@ -2048,7 +2048,7 @@ void ElasticShell::pullXJunctionVertices()
     {
       EdgeHandle other_edge = getVertexOppositeEdgeInFace(*m_obj, *vfit, xj);
       VertexHandle v0 = m_obj->fromVertex(other_edge);
-      VertexHandle v1 = m_obj->fromVertex(other_edge);
+      VertexHandle v1 = m_obj->toVertex(other_edge);
       
       Vec3d x0 = getVertexPosition(v0);
       Vec3d x1 = getVertexPosition(v1);
@@ -2120,7 +2120,7 @@ void ElasticShell::pullXJunctionVertices()
 
       EdgeHandle other_edge = getVertexOppositeEdgeInFace(*m_obj, *vfit, xj);
       VertexHandle v0 = m_obj->fromVertex(other_edge);
-      VertexHandle v1 = m_obj->fromVertex(other_edge);
+      VertexHandle v1 = m_obj->toVertex(other_edge);
 
       Vec2i label = getFaceLabel(*vfit);
       if ((label.x() == A && (region_types[label.y()] == 2 || region_types[label.y()] == 1)) ||
