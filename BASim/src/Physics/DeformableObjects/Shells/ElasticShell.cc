@@ -2017,7 +2017,7 @@ void ElasticShell::pullXJunctionVertices()
     int B = -1;
     for (size_t i = 0; i < vertex_regions.size(); i++)
     {
-      for (size_t j = 0; j < vertex_regions.size(); j++)
+      for (size_t j = i + 1; j < vertex_regions.size(); j++)
       {
         if (region_graph(vertex_regions[i], vertex_regions[j]) == 0)
         {
