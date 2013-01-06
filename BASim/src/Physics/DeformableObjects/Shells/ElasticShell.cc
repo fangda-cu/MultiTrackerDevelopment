@@ -1054,7 +1054,7 @@ void ElasticShell::remesh()
   construction_parameters.m_max_volume_change = numeric_limits<double>::max();   
   construction_parameters.m_min_triangle_angle = 3;
   construction_parameters.m_max_triangle_angle = 177;
-  construction_parameters.m_large_triangle_angle_to_split = 150;
+  construction_parameters.m_large_triangle_angle_to_split = 170;
   construction_parameters.m_verbose = false;
   construction_parameters.m_allow_non_manifold = true;
   construction_parameters.m_allow_topology_changes = true;
