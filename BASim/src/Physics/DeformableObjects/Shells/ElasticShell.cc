@@ -2089,6 +2089,11 @@ void ElasticShell::pullXJunctionVertices()
     Vec3d pull_apart_offset = (centroidB - centroidA).normalized() * mean_edge_length;
     setVertexPosition(a, getVertexPosition(a) - pull_apart_offset * 0.1);
     setVertexPosition(b, getVertexPosition(b) + pull_apart_offset * 0.1);
+    
+    // enforce constraints
+    int original_constraints = onBBWall(getVertexPosition(xj));
+    setVertexPosition(a, enforceBBWallConstraint(getVertexPosition(a), original_constraints));
+    setVertexPosition(b, enforceBBWallConstraint(getVertexPosition(b), original_constraints));
 
     // assign region types
     std::vector<int> region_types(nregion, 0);
@@ -2365,6 +2370,25 @@ int ElasticShell::onBBWall(const Vec3d & pos) const
     walls |= (1 << 5);
   
   return walls;
+}
+  
+Vec3d ElasticShell::enforceBBWallConstraint(const Vec3d & input, int constraints) const
+{
+  Vec3d output = input;
+  if (constraints & (1 << 0))
+    output.x() = 0;
+  if (constraints & (1 << 1))
+    output.y() = 0;
+  if (constraints & (1 << 2))
+    output.z() = 0;
+  if (constraints & (1 << 3))
+    output.x() = 1;
+  if (constraints & (1 << 4))
+    output.y() = 1;
+  if (constraints & (1 << 5))
+    output.z() = 1;
+  
+  return output;
 }
 
 bool ElasticShell::generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos)

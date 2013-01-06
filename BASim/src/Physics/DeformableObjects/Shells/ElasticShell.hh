@@ -200,6 +200,7 @@ protected:
   void addSelfCollisionForces();
   
   int onBBWall(const Vec3d & pos) const;
+  Vec3d enforceBBWallConstraint(const Vec3d & input, int constraints) const;
   
   void performT1Transition();
   void pullXJunctionVertices();
