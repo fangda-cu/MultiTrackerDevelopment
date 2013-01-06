@@ -355,7 +355,7 @@ bool EdgeSplitter::split_edge_pseudo_motion_introduces_intersection( const Vec3d
 ///
 // --------------------------------------------------------
 
-bool EdgeSplitter::split_edge( size_t edge )
+bool EdgeSplitter::split_edge( size_t edge, bool specify_split_position, Vec3d * pos )
 {   
 
   g_stats.add_to_int( "EdgeSplitter:edge_split_attempts", 1 );
@@ -543,6 +543,13 @@ bool EdgeSplitter::split_edge( size_t edge )
   else
   {
     if ( m_surf.m_verbose ) { std::cout << "using smooth subdivision" << std::endl; }
+  }
+  
+  if (specify_split_position)
+  {
+    if (m_surf.m_verbose) { std::cout << "Using specified split position" << std::endl; }
+    assert(pos);
+    new_vertex_smooth_position = *pos;
   }
 
 
@@ -817,18 +824,26 @@ bool EdgeSplitter::large_angle_split_pass()
         ///////////////////////////////////////////////////////////////////////
         // FD 20121229
         //
-        // This test ensures the resulting triangles of this split will not have
-        // an even larger interior angle. The test essentially checks the critical
-        // condition where the resulting triangle corresponding to the larger one
-        // of the two edges around the original large angle is similar to the
-        // original triangle, thus they have the same large interior angle.
-        
-        if (mag(edge_point0 - opposite_point0) > 0.7071 * edge_length || mag(edge_point1 - opposite_point0) > 0.7071 * edge_length)
-          continue;
+//        // This test ensures the resulting triangles of this split will not have
+//        // an even larger interior angle. The test essentially checks the critical
+//        // condition where the resulting triangle corresponding to the larger one
+//        // of the two edges around the original large angle is similar to the
+//        // original triangle, thus they have the same large interior angle.
+//        
+//        if (mag(edge_point0 - opposite_point0) > 0.7071 * edge_length || mag(edge_point1 - opposite_point0) > 0.7071 * edge_length)
+//          continue;
         
         ///////////////////////////////////////////////////////////////////////
         
-        bool result = split_edge( e );
+        ///////////////////////////////////////////////////////////////////////
+        // FD 20130106
+
+        Vec3d ev = edge_point1 - edge_point0;
+        Vec3d split_pos = dot(opposite_point0 - edge_point0, ev) / dot(ev, ev) * ev + edge_point0;
+        
+        bool result = split_edge( e, true, &split_pos ); // use the projection of opposite_point0 onto the edge as the split point
+
+        ///////////////////////////////////////////////////////////////////////
 
         if ( result )
         {
