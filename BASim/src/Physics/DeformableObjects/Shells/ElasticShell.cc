@@ -1899,10 +1899,39 @@ void ElasticShell::performT1Transition()
 void ElasticShell::pullXJunctionVertices()
 {
   // Pull apart the X-junciton vertices
-  for (VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit)
+  // In fact this function attempts to make the region adjacency graph complete on ever vertex in the mesh (see explanation below), or in
+  //  other words, so that every region incident to a vertex is adjacent to every other region on that vertex through a face. No two regions
+  //  can be adjacent only through a vertex.
+
+  // find the region count
+  int max_region = -1;
+  for (FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit)
   {
+    Vec2i label = getFaceLabel(*fit);
+    assert(label.x() >= 0);
+    assert(label.y() >= 0);
+    if (label.x() > max_region) max_region = label.x();
+    if (label.y() > max_region) max_region = label.y();
+  }
+  int nregion = max_region + 1;
+  
+  // this is the incident matrix for a region graph. not every col/row need to be filled for a particular vertex becuase the vertex may not be incident to all regions.
+  Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> region_graph(nregion, nregion);
+  region_graph.setZero();
+
+  // prepare an initial list of unprocessed vertices
+  std::vector<VertexHandle> vertices_to_process;
+  for (VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit)
+    vertices_to_process.push_back(*vit);
+  
+  // process the vertices one after another
+  while (vertices_to_process.size() > 0)
+  {
+    VertexHandle xj = vertices_to_process.back();
+    vertices_to_process.pop_back();
+    
     std::set<int> vertex_regions_set;
-    for (VertexFaceIterator vfit = m_obj->vf_iter(*vit); vfit; ++vfit)
+    for (VertexFaceIterator vfit = m_obj->vf_iter(xj); vfit; ++vfit)
     {
       Vec2i label = getFaceLabel(*vfit);
       vertex_regions_set.insert(label.x());
@@ -1912,44 +1941,401 @@ void ElasticShell::pullXJunctionVertices()
     std::vector<int> vertex_regions;
     vertex_regions.assign(vertex_regions_set.begin(), vertex_regions_set.end());
     
-    // we only care about vertices with four incident regions (not interior vertices on plateau borders)
-    if (vertex_regions_set.size() != 4)
+    // cull away the interior vertices of plateau borders (which are the majority)
+    if (vertex_regions_set.size() < 4)
       continue;
     
-    std::vector<int> region_neighbor_counts;
-    for (int i = 0; i < 4; i++)
+    //
+    // Pull apart strategy: in order to cope with various configurations (such as a region-valence-5 vertex being a triple junction, or
+    //  junctions on the BB walls), the following strategy is adopted:
+    //
+    // The regions incident on the vertex form a graph, with each region being a node and an edge exists between two regions iff the two
+    //  regions share a triangle face in the mesh. The objective at the end of this processing, is to make sure this graph is complete for
+    //  every vertex. For example the original region-valence-4 X-junction vertex (the "hourglass" junction) forms a graph like this:
+    //
+    //  A o--o B
+    //    | /|
+    //    |/ |
+    //  C o--o D
+    //
+    //  where the edge between node A and D (the two bulbs of the hourglass) is missing because the two regions only meet at one vertex
+    //  (the hourglass neck).
+    //
+    // The processing here makes an incomplete graph complete by pulling apart vertices. If two nodes (e.g. A and D in the figure above)
+    //  do not share an edge, it means the center vertex is the only interface between the two regions, and it needs to be pulled apart.
+    //  Region A and D each keep one of the two duplicates of the vertex. If a region has edges with both regions A and D, such as region
+    //  C and B, will contain both duplicates (the region's shape is turned from a cone into a flat screwdriver's tip). Now look at the
+    //  resulting graphs for the two duplicate vertices. For the duplicate that goes with region A, region D is no longer incident and
+    //  thus removed from the graph:
+    //
+    //  A o--o B
+    //    | /
+    //    |/
+    //  C o
+    //
+    //  and this is now a complete graph. Similarly the graph for the duplicate that goes with region D will not have node A, and it is 
+    //  complete too. Of course in more complex scenarios the graphs may not directly become complete immediately after we process one
+    //  missing edge. We will visit the two resulting vertices again as if they are a regular vertex that may need to be pulled apart too.
+    //
+    // The algorith pseudocode is as following:
+    //
+    //  Pop a vertex from the stack of vertices to be processed, construct a graph of region adjacency
+    //  If the graph is already complete, skip this vertex
+    //  Pick an arbitrary pair of unconnected nodes A and B from the graph (there may be more than one pair)
+    //  Pull apart the vertex into two (a and b, corresponding to region A and B respectively), initialized to have the same coordinates and then pulled apart
+    //  For each region C
+    //    If C is connected to both A and B, label C as type 1
+    //    If C is connected to A but not B, label C as type 2
+    //    If C is connected to B but not A, label C as type 3
+    //    If C is not connected to either A or B, label C as type 4
+    //  For each face incident to the center vertex in the original mesh
+    //    If it's incident to region A on one side, and a type 2 region on the other, update it to use vertex a
+    //    If it's incident to region B on one side, and a type 3 region on the other, update it to use vertex b
+    //    If it's incident to region A or B on one side, and a type 1 region on the other, update it to use vertex a or b corresponding to the incident region 
+    //    If it's incident to two type 1 regions, update it to a quad using both a and b
+    //    If it's incident to a type 4 region on either side, update it to use vertex a (this is arbitrary. another pull apart needs to happen here, and it will happen when we go on to visit a in the following iteration)
+    //    All the other cases are impossible.
+    //  Push vertex a and b on the stack to be visited next.
+    //
+    // Notes: 
+    //  There is one more case in the general setting: region A and B are adjacent through only an edge. However this is not possible
+    //  in our workflow because performT1Transition() should have been called resolving all X-junction edges. (TODO: what if 
+    //  performT1Transition() fails due to collision?)
+    //
+    
+    // construct the region graph
+    region_graph.setZero();
+    for (VertexFaceIterator vfit = m_obj->vf_iter(xj); vfit; ++vfit)
     {
-      std::set<int> region_neighbors;
-      for (VertexFaceIterator vfit = m_obj->vf_iter(*vit); vfit; ++vfit)
+      Vec2i label = getFaceLabel(*vfit);
+      region_graph(label.x(), label.y()) = 1;
+      region_graph(label.y(), label.x()) = 1;
+    }
+
+    // find a missing edge
+    int A = -1;
+    int B = -1;
+    for (size_t i = 0; i < vertex_regions.size(); i++)
+    {
+      for (size_t j = 0; j < vertex_regions.size(); j++)
+      {
+        if (region_graph(vertex_regions[i], vertex_regions[j]) == 0)
+        {
+          A = vertex_regions[i];
+          B = vertex_regions[j];
+          break;
+        }
+      }
+    }
+    
+    // skip the vertex if the graph is complete already
+    if (A < 0)
+      continue;
+    
+    // pull apart
+    VertexHandle a = m_obj->addVertex();
+    VertexHandle b = m_obj->addVertex();
+    
+    // set the position/velocity of new vertices
+    setVertexPosition(a, getVertexPosition(xj));
+    setVertexVelocity(a, Vec3d(0, 0, 0));
+    setVertexPosition(b, getVertexPosition(xj));
+    setVertexVelocity(b, Vec3d(0, 0, 0));
+    
+    std::vector<Vec3d> vertsA;
+    std::vector<Vec3d> vertsB;
+    for (VertexFaceIterator vfit = m_obj->vf_iter(xj); vfit; ++vfit)
+    {
+      EdgeHandle other_edge = getVertexOppositeEdgeInFace(*m_obj, *vfit, xj);
+      VertexHandle v0 = m_obj->fromVertex(other_edge);
+      VertexHandle v1 = m_obj->fromVertex(other_edge);
+      
+      Vec3d x0 = getVertexPosition(v0);
+      Vec3d x1 = getVertexPosition(v1);
+
+      Vec2i label = getFaceLabel(*vfit);      
+      if (label.x() == A || label.y() == A)
+      {
+        vertsA.push_back(x0);
+        vertsA.push_back(x1);
+      } else if (label.x() == B || label.y() == B)
+      {
+        vertsB.push_back(x0);
+        vertsB.push_back(x1);
+      }
+    }
+    assert(vertsA.size() > 0);
+    assert(vertsB.size() > 0);
+    
+    Vec3d centroidA(0, 0, 0);
+    Vec3d centroidB(0, 0, 0);
+    for (size_t i = 0; i < vertsA.size(); i++) 
+      centroidA += vertsA[i];
+    centroidA /= vertsA.size();
+    for (size_t i = 0; i < vertsB.size(); i++) 
+      centroidB += vertsB[i];
+    centroidB /= vertsB.size();
+    
+    Scalar mean_edge_length = 0;
+    int edge_count = 0;
+    for (VertexEdgeIterator veit = m_obj->ve_iter(xj); veit; ++veit)
+    {
+      mean_edge_length += (getVertexPosition(m_obj->toVertex(*veit)) - getVertexPosition(m_obj->fromVertex(*veit))).norm();
+      edge_count++;
+    }
+    assert(edge_count > 0);
+    mean_edge_length /= edge_count;
+    
+    Vec3d pull_apart_offset = (centroidB - centroidA).normalized() * mean_edge_length;
+    setVertexPosition(a, getVertexPosition(a) + pull_apart_offset * 0.1);
+    setVertexPosition(b, getVertexPosition(b) - pull_apart_offset * 0.1);
+
+    // assign region types
+    std::vector<int> region_types(nregion, 0);
+    for (size_t i = 0; i < vertex_regions.size(); i++)
+    {
+      int region = vertex_regions[i];
+      if (region == A || region == B)
+        region_types[region] = 0;
+      else if (region_graph(region, A) && region_graph(region, B))
+        region_types[region] = 1;
+      else if (region_graph(region, A))
+        region_types[region] = 2;
+      else if (region_graph(region, B))
+        region_types[region] = 3;
+      else
+        region_types[region] = 4;
+    }
+    
+    // update the faces
+    std::vector<FaceHandle> faces_to_delete;
+    std::vector<Eigen::Matrix<VertexHandle, 3, 1> > faces_to_create;
+    std::vector<Vec2i> face_labels_to_create;
+    
+    std::vector<EdgeHandle> edges_to_delete;
+    
+    for (VertexFaceIterator vfit = m_obj->vf_iter(xj); vfit; ++vfit)
+    {
+      faces_to_delete.push_back(*vfit);
+
+      EdgeHandle other_edge = getVertexOppositeEdgeInFace(*m_obj, *vfit, xj);
+      VertexHandle v0 = m_obj->fromVertex(other_edge);
+      VertexHandle v1 = m_obj->fromVertex(other_edge);
+
+      Vec2i label = getFaceLabel(*vfit);
+      if ((label.x() == A && (region_types[label.y()] == 2 || region_types[label.y()] == 1)) ||
+          (label.y() == A && (region_types[label.x()] == 2 || region_types[label.x()] == 1)))
+      {
+        if (m_obj->getRelativeOrientation(*vfit, other_edge) > 0)
+          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v0, v1));
+        else
+          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v1, v0));
+        face_labels_to_create.push_back(label);
+        
+      } else if ((label.x() == B && (region_types[label.y()] == 3 || region_types[label.y()] == 1)) ||
+                 (label.y() == B && (region_types[label.x()] == 3 || region_types[label.x()] == 1)))
+      {
+        if (m_obj->getRelativeOrientation(*vfit, other_edge) > 0)
+          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(b, v0, v1));
+        else
+          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(b, v1, v0));
+        face_labels_to_create.push_back(label);
+        
+      } else if (region_types[label.x()] == 1 && region_types[label.y()] == 1)
+      {
+        // find out which one out of xj-v0 and xj-v1 is next to region A, to decide whether the diagonal of the quad triangulation should be a-v1/b-v0 or a-v0/b-v1
+        EdgeHandle e = findEdge(*m_obj, xj, v0);
+        assert(e.isValid());
+        
+        bool adjA = false;
+        bool adjB = false;
+        for (EdgeFaceIterator efit = m_obj->ef_iter(e); efit; ++efit)
+        {
+          Vec2i label = getFaceLabel(*efit);
+          if (label.x() == A || label.y() == A)
+            adjA = true;
+          if (label.x() == B || label.y() == B)
+            adjB = true;
+        }
+        assert(adjA || adjB);
+        assert(!adjA || !adjB);
+
+        if (m_obj->getRelativeOrientation(*vfit, other_edge) > 0)
+        {
+          if (adjA)
+          {
+            faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v0, v1));
+            faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v1, b));
+          } else
+          {
+            faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v0, v1));
+            faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v0, b));
+          }
+        } else
+        {
+          if (adjA)
+          {
+            faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v1, v0));
+            faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, b, v1));
+          } else
+          {
+            faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v1, v0));
+            faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, b, v0));
+          }
+        }
+        face_labels_to_create.push_back(label);
+        face_labels_to_create.push_back(label);
+        
+      } else if (region_types[label.x()] == 4 || region_types[label.y()] == 4)
+      {
+        // use vertex a (arbitrary)
+        if (m_obj->getRelativeOrientation(*vfit, other_edge) > 0)
+          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v0, v1));
+        else
+          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v1, v0));
+        face_labels_to_create.push_back(label);
+        
+      } else
+      {
+        assert(!"Unknown case");
+      }
+      
+    }
+    
+    for (VertexEdgeIterator veit = m_obj->ve_iter(xj); veit; ++veit)
+    {
+      edges_to_delete.push_back(*veit);
+    }
+    
+    // apply the deleteion/addition
+    for (size_t i = 0; i < faces_to_delete.size(); i++)
+      m_obj->deleteFace(faces_to_delete[i], false);
+    for (size_t i = 0; i < edges_to_delete.size(); i++)
+      m_obj->deleteEdge(edges_to_delete[i], false);
+    m_obj->deleteVertex(xj);
+    
+    assert(faces_to_create.size() == face_labels_to_create.size());
+    for (size_t i = 0; i < faces_to_create.size(); i++)
+    {
+      FaceHandle nf = m_obj->addFace(faces_to_create[i].x(), faces_to_create[i].y(), faces_to_create[i].z());
+      setFaceLabel(nf, face_labels_to_create[i]);
+    }
+        
+    // mark the two new vertices a and b as dirty
+    vertices_to_process.push_back(a);
+    vertices_to_process.push_back(b);
+    
+  }
+  
+  
+  
+  
+  
+  
+  
+  // Pull apart the X-junciton vertices
+  for (VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit)
+  {
+    VertexHandle xj = *vit;
+    
+    std::set<int> vertex_regions_set;
+    for (VertexFaceIterator vfit = m_obj->vf_iter(xj); vfit; ++vfit)
+    {
+      Vec2i label = getFaceLabel(*vfit);
+      vertex_regions_set.insert(label.x());
+      vertex_regions_set.insert(label.y());
+    }
+    
+    std::vector<int> vertex_regions;
+    vertex_regions.assign(vertex_regions_set.begin(), vertex_regions_set.end());
+    
+    // cull away the interior vertices of plateau borders (which are the majority)
+    if (vertex_regions_set.size() < 4)
+      continue;
+    
+    // pull apart strategy: in order to cope with various configurations (such as a region-valence-5 vertex being a triple junction, or
+    //  junctions on the BB walls), the following strategy is adopted:
+    // initially each region has its own duplicate of the junction vertex. then for each pair of regions sharing a triangle face, their
+    //  corresponding vertex duplicates must be merged. if in the end only one vertex duplicate remains, then no pull apart needs to happen.
+    // this strategy essentially separate all the regions incident to this vertex into connected components, where connectivity is defined
+    //  by adjacency through a face.
+    std::vector<std::vector<int> > region_connected_components;
+    while (vertex_regions.size() > 0)
+    {
+      std::set<int> cc;
+      cc.insert(vertex_regions.front());
+      for (VertexFaceIterator vfit = m_obj->vf_iter(xj); vfit; ++vfit)
       {
         Vec2i label = getFaceLabel(*vfit);
-        if (label.x() == vertex_regions[i] || label.y() == vertex_regions[i])
-          region_neighbors.insert(label.x() == vertex_regions[i] ? label.y() : label.x());        
+        if (label.x() == vertex_regions.front() || label.y() == vertex_regions.front())
+          cc.insert(label.x() == vertex_regions.front() ? label.y() : label.x());
       }
-
-      region_neighbor_counts.push_back(region_neighbors.size());
-    }
-    
-    std::sort(region_neighbor_counts.begin(), region_neighbor_counts.end());
-    
-    if (region_neighbor_counts[0] == 3 && region_neighbor_counts[1] == 3 && region_neighbor_counts[2] == 3 && region_neighbor_counts[3] == 3)
-    {
-      // A usual intersection of four plateau borders
-      continue;
-    } else if (region_neighbor_counts[0] == 2 && region_neighbor_counts[1] == 2 && region_neighbor_counts[2] == 3 && region_neighbor_counts[3] == 3)
-    {
-      // X-junction vertices
       
-    
-    } else if (region_neighbor_counts[0] == 2 && region_neighbor_counts[1] == 2 && region_neighbor_counts[2] == 2 && region_neighbor_counts[3] == 2)
-    {
-      // this is an interior vertex lying on an X-junction edge, this shouldn't be possible because performT1Transition() should have been called.
-      assert(!"Unresolved X-junction edge");
-    } else
-    {
-      // what are the other cases?
-      assert(!"Unknown case");
+      region_connected_components.push_back(std::vector<int>(cc.begin(), cc.end()));
+      for (std::set<int>::iterator i = cc.begin(); i != cc.end(); i++)
+        vertex_regions.erase(std::remove(vertex_regions.begin(), vertex_regions.end(), *i), vertex_regions.end());
     }
+    
+    std::vector<FaceHandle> faces_to_delete;
+    std::vector<Eigen::Matrix<VertexHandle, 3, 1> > faces_to_create;
+    std::vector<Vec2i> face_labels_to_create;
+    
+    std::vector<VertexHandle> vertices_to_delete;
+    
+    if (region_connected_components.size() > 1)
+    {
+      // more than one connected components, need to create duplicates of the vertex
+      for (size_t i = 0; i < region_connected_components.size(); i++)
+      {
+        std::vector<int> & cc = region_connected_components[i];
+        
+        VertexHandle vh = m_obj->addVertex();
+        for (VertexFaceIterator vfit = m_obj->vf_iter(xj); vfit; ++vfit)
+        {
+          Vec2i label = getFaceLabel(*vfit);
+
+        }
+        
+      }
+      
+      
+    }
+    
+    
+//    std::vector<int> region_neighbor_counts;
+//    for (int i = 0; i < 4; i++)
+//    {
+//      std::set<int> region_neighbors;
+//      for (VertexFaceIterator vfit = m_obj->vf_iter(*vit); vfit; ++vfit)
+//      {
+//        Vec2i label = getFaceLabel(*vfit);
+//        if (label.x() == vertex_regions[i] || label.y() == vertex_regions[i])
+//          region_neighbors.insert(label.x() == vertex_regions[i] ? label.y() : label.x());        
+//      }
+//
+//      region_neighbor_counts.push_back(region_neighbors.size());
+//    }
+//    
+//    std::sort(region_neighbor_counts.begin(), region_neighbor_counts.end());
+//    
+//    if (region_neighbor_counts[0] == 3 && region_neighbor_counts[1] == 3 && region_neighbor_counts[2] == 3 && region_neighbor_counts[3] == 3)
+//    {
+//      // A usual intersection of four plateau borders
+//      continue;
+//    } else if (region_neighbor_counts[0] == 2 && region_neighbor_counts[1] == 2 && region_neighbor_counts[2] == 3 && region_neighbor_counts[3] == 3)
+//    {
+//      // X-junction vertices
+//      
+//    
+//    } else if (region_neighbor_counts[0] == 2 && region_neighbor_counts[1] == 2 && region_neighbor_counts[2] == 2 && region_neighbor_counts[3] == 2)
+//    {
+//      // this is an interior vertex lying on an X-junction edge, this shouldn't be possible because performT1Transition() should have been called.
+//      assert(!"Unresolved X-junction edge");
+//    } else
+//    {
+//      // what are the other cases?
+//      assert(!"Unknown case");
+//    }
     
   }
 }
