@@ -2184,9 +2184,17 @@ void ElasticShell::pullXJunctionVertices()
           faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, b, v0));
           face_labels_to_create.push_back(label);
           face_labels_to_create.push_back(label);
-        } else if (v0adjA || v1adjA)
+        } else if (v0adjA)
         {
           faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v0, v1));
+          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v1, b));
+          face_labels_to_create.push_back(label);
+          face_labels_to_create.push_back(label);
+        } else if (v1adjA)
+        {
+          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v0, v1));
+          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, b, v0));
+          face_labels_to_create.push_back(label);
           face_labels_to_create.push_back(label);
         } else if (v0adjB || v1adjB)
         {
