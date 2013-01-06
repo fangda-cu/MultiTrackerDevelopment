@@ -1989,12 +1989,9 @@ void ElasticShell::pullXJunctionVertices()
     //    If C is connected to B but not A, label C as type 3
     //    If C is not connected to either A or B, label C as type 4
     //  For each face incident to the center vertex in the original mesh
-    //    If it's incident to region A on one side, and a type 2 region on the other, update it to use vertex a
-    //    If it's incident to region B on one side, and a type 3 region on the other, update it to use vertex b
-    //    If it's incident to region A or B on one side, and a type 1 region on the other, update it to use vertex a or b corresponding to the incident region 
-    //    If it's incident to two type 1 regions, update it use a or b or update it into a quad using both a and b, depending on whether the face is adjacent to region A or B or both
-    //    If it's incident to a type 4 region on either side, update it to use vertex a (this is arbitrary. another pull apart needs to happen here, and it will happen when we go on to visit a in the following iteration)
-    //    All the other cases are impossible.
+    //    If it is incident to region A, update it to use vertex a
+    //    If it is incident to region B, update it to use vertex b
+    //    Otherwise, if it is touching region A through an edge, it will be updated into a quad spanning both vertex a and b, otherwise, update it to use vertex b
     //  Push vertex a and b on the stack to be visited next.
     //
     // Notes: 
@@ -2131,19 +2128,17 @@ void ElasticShell::pullXJunctionVertices()
         std::swap(v0, v1);
 
       Vec2i label = getFaceLabel(*vfit);
-      if ((label.x() == A && (region_types[label.y()] == 2 || region_types[label.y()] == 1)) ||
-          (label.y() == A && (region_types[label.x()] == 2 || region_types[label.x()] == 1)))
+      if (label.x() == A || label.y() == A)
       {
         faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v0, v1));
         face_labels_to_create.push_back(label);
         
-      } else if ((label.x() == B && (region_types[label.y()] == 3 || region_types[label.y()] == 1)) ||
-                 (label.y() == B && (region_types[label.x()] == 3 || region_types[label.x()] == 1)))
+      } else if (label.x() == B || label.y() == B)
       {
         faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(b, v0, v1));
         face_labels_to_create.push_back(label);
         
-      } else if (region_types[label.x()] == 1 && region_types[label.y()] == 1)
+      } else
       {
         // find out which one out of xj-v0 and xj-v1 is next to region A and to region B (or neither), in order to determine triangulation
         EdgeHandle ev0 = findEdge(*m_obj, xj, v0);
@@ -2152,44 +2147,23 @@ void ElasticShell::pullXJunctionVertices()
         assert(ev1.isValid());
         
         bool v0adjA = false;
-        bool v0adjB = false;
         bool v1adjA = false;
-        bool v1adjB = false;
         for (EdgeFaceIterator efit = m_obj->ef_iter(ev0); efit; ++efit)
         {
           Vec2i label = getFaceLabel(*efit);
           if (label.x() == A || label.y() == A)
             v0adjA = true;
-          if (label.x() == B || label.y() == B)
-            v0adjB = true;
         }
         for (EdgeFaceIterator efit = m_obj->ef_iter(ev1); efit; ++efit)
         {
           Vec2i label = getFaceLabel(*efit);
           if (label.x() == A || label.y() == A)
             v1adjA = true;
-          if (label.x() == B || label.y() == B)
-            v1adjB = true;
         }
         
-        assert(!v0adjA || !v0adjB);
-        assert(!v1adjA || !v1adjB);        
         assert(!v0adjA || !v1adjA);
-        assert(!v0adjB || !v1adjB);
         
-        if (v0adjA && v1adjB)
-        {
-          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v0, v1));
-          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v1, b));
-          face_labels_to_create.push_back(label);
-          face_labels_to_create.push_back(label);
-        } else if (v0adjB && v1adjA)
-        {
-          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v0, v1));
-          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, b, v0));
-          face_labels_to_create.push_back(label);
-          face_labels_to_create.push_back(label);
-        } else if (v0adjA)
+        if (v0adjA)
         {
           faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v0, v1));
           faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v1, b));
@@ -2201,24 +2175,12 @@ void ElasticShell::pullXJunctionVertices()
           faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, b, v0));
           face_labels_to_create.push_back(label);
           face_labels_to_create.push_back(label);
-        } else if (v0adjB || v1adjB)
+        } else
         {
           faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(b, v0, v1));
           face_labels_to_create.push_back(label);
-        } else
-        {
-          assert(!"Type 1-Type 1 triangulation: Unknown case");
         }
 
-      } else if (region_types[label.x()] == 4 || region_types[label.y()] == 4)
-      {
-        // use vertex a (arbitrary)
-        faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v0, v1));
-        face_labels_to_create.push_back(label);
-        
-      } else
-      {
-        assert(!"X junction vertex pull apart: Unknown case");
       }
       
     }
