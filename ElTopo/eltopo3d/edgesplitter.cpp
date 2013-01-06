@@ -537,7 +537,8 @@ bool EdgeSplitter::split_edge( size_t edge, bool specify_split_position, Vec3d *
       g_stats.add_to_int( "EdgeSplitter:split_midpoint_collisions", 1 );
 
       if ( m_surf.m_verbose )  { std::cout << "Even mid-point subdivision introduces collision.  Backing out." << std::endl; }  // FD 20121126: Why does the paper say this can't happen (section 3.5.1)?
-      return false;
+      if (!specify_split_position)
+        return false;
     }
   }
   else
@@ -572,7 +573,8 @@ bool EdgeSplitter::split_edge( size_t edge, bool specify_split_position, Vec3d *
   if ( rad2deg(min_new_angle) < m_surf.m_min_triangle_angle )
   {
     g_stats.add_to_int( "EdgeSplitter:edge_split_small_angle", 1 );
-    return false;
+    if (!specify_split_position)
+      return false;
   }
 
   double max_current_angle = 0;
@@ -598,7 +600,8 @@ bool EdgeSplitter::split_edge( size_t edge, bool specify_split_position, Vec3d *
     if ( rad2deg(max_new_angle) < rad2deg(max_current_angle) )
     {
       g_stats.add_to_int( "EdgeSplitter:edge_split_large_angle", 1 );      
-      return false;
+      if (!specify_split_position)
+        return false;
     }
   }
 
