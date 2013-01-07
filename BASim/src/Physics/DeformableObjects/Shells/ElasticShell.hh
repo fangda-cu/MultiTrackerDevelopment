@@ -203,8 +203,10 @@ protected:
   Vec3d enforceBBWallConstraint(const Vec3d & input, int constraints) const;
   
   void performT1Transition();
+  Vec2i cutXJunctionEdge(EdgeHandle e) const;
+  
   void pullXJunctionVertices();
-  Vec2i cutXJunction(EdgeHandle e) const;
+  bool shouldPullVertexApart(VertexHandle xj, int A, int B, Vec3d & pull_apart_direction) const;
   
 
   //Various shell data

@@ -1461,7 +1461,7 @@ void ElasticShell::performT1Transition()
   
   for (size_t i = 0; i < xjunctions.size(); i++)
   {
-    Vec2i cut = cutXJunction(xjunctions[i]);
+    Vec2i cut = cutXJunctionEdge(xjunctions[i]);
     std::vector<size_t> found_groups;
     for (size_t j = 0; j < xjgroups.size(); j++)
     {
@@ -1901,7 +1901,7 @@ void ElasticShell::pullXJunctionVertices()
   // Pull apart the X-junciton vertices
   // In fact this function attempts to make the region adjacency graph complete on ever vertex in the mesh (see explanation below), or in
   //  other words, so that every region incident to a vertex is adjacent to every other region on that vertex through a face. No two regions
-  //  can be adjacent only through a vertex.
+  //  can be adjacent only through a vertex, as long as the surface tension force at the vertex is tensile instead of compressive.
 
   // find the region count
   int max_region = -1;
@@ -1995,9 +1995,12 @@ void ElasticShell::pullXJunctionVertices()
     //  Push vertex a and b on the stack to be visited next.
     //
     // Notes: 
-    //  There is one more case in the general setting: region A and B are adjacent through only an edge. However this is not possible
-    //  in our workflow because performT1Transition() should have been called resolving all X-junction edges. (TODO: what if 
-    //  performT1Transition() fails due to collision?)
+    //  The algorithm above assumes that region A and B must always be connected by triangle fans, with one end of the fan touching region
+    //  A and the other touching B. Pulling apart the vertex makes this a stripe, thus at least one of the triangles in the fan need to be
+    //  turned into a quad. The algorithm picks the head of the fan triangle sequence (the one touching A) for this task. In the general
+    //  setting, there is one more possibility: region A and B are adjacent through only an edge. However this is not possible in our
+    //  workflow because performT1Transition() should have been called resolving all X-junction edges. (TODO: what if performT1Transition()
+    //  fails due to collision?)
     //
     
     // construct the region graph
@@ -2012,15 +2015,19 @@ void ElasticShell::pullXJunctionVertices()
     // find a missing edge
     int A = -1;
     int B = -1;
+    Vec3d pull_apart_direction;
     for (size_t i = 0; i < vertex_regions.size(); i++)
     {
       for (size_t j = i + 1; j < vertex_regions.size(); j++)
       {
         if (region_graph(vertex_regions[i], vertex_regions[j]) == 0)
         {
-          A = vertex_regions[i];
-          B = vertex_regions[j];
-          break;
+          if (shouldPullVertexApart(xj, vertex_regions[i], vertex_regions[j], pull_apart_direction))
+          {
+            A = vertex_regions[i];
+            B = vertex_regions[j];
+            break;
+          }
         }
       }
     }
@@ -2039,40 +2046,6 @@ void ElasticShell::pullXJunctionVertices()
     setVertexPosition(b, getVertexPosition(xj));
     setVertexVelocity(b, Vec3d(0, 0, 0));
     
-    std::vector<Vec3d> vertsA;
-    std::vector<Vec3d> vertsB;
-    for (VertexFaceIterator vfit = m_obj->vf_iter(xj); vfit; ++vfit)
-    {
-      EdgeHandle other_edge = getVertexOppositeEdgeInFace(*m_obj, *vfit, xj);
-      VertexHandle v0 = m_obj->fromVertex(other_edge);
-      VertexHandle v1 = m_obj->toVertex(other_edge);
-      
-      Vec3d x0 = getVertexPosition(v0);
-      Vec3d x1 = getVertexPosition(v1);
-
-      Vec2i label = getFaceLabel(*vfit);      
-      if (label.x() == A || label.y() == A)
-      {
-        vertsA.push_back(x0);
-        vertsA.push_back(x1);
-      } else if (label.x() == B || label.y() == B)
-      {
-        vertsB.push_back(x0);
-        vertsB.push_back(x1);
-      }
-    }
-    assert(vertsA.size() > 0);
-    assert(vertsB.size() > 0);
-    
-    Vec3d centroidA(0, 0, 0);
-    Vec3d centroidB(0, 0, 0);
-    for (size_t i = 0; i < vertsA.size(); i++) 
-      centroidA += vertsA[i];
-    centroidA /= vertsA.size();
-    for (size_t i = 0; i < vertsB.size(); i++) 
-      centroidB += vertsB[i];
-    centroidB /= vertsB.size();
-    
     Scalar mean_edge_length = 0;
     int edge_count = 0;
     for (VertexEdgeIterator veit = m_obj->ve_iter(xj); veit; ++veit)
@@ -2083,33 +2056,16 @@ void ElasticShell::pullXJunctionVertices()
     assert(edge_count > 0);
     mean_edge_length /= edge_count;
     
-    Vec3d pull_apart_offset = (centroidB - centroidA).normalized() * mean_edge_length;
-    setVertexPosition(a, getVertexPosition(a) - pull_apart_offset * 0.1);
-    setVertexPosition(b, getVertexPosition(b) + pull_apart_offset * 0.1);
+    Vec3d pull_apart_offset = pull_apart_direction * mean_edge_length;
+    setVertexPosition(a, getVertexPosition(a) + pull_apart_offset * 0.1);
+    setVertexPosition(b, getVertexPosition(b) - pull_apart_offset * 0.1);
     
     // enforce constraints
     int original_constraints = onBBWall(getVertexPosition(xj));
     setVertexPosition(a, enforceBBWallConstraint(getVertexPosition(a), original_constraints));
     setVertexPosition(b, enforceBBWallConstraint(getVertexPosition(b), original_constraints));
 
-    // assign region types
-    std::vector<int> region_types(nregion, 0);
-    for (size_t i = 0; i < vertex_regions.size(); i++)
-    {
-      int region = vertex_regions[i];
-      if (region == A || region == B)
-        region_types[region] = 0;
-      else if (region_graph(region, A) && region_graph(region, B))
-        region_types[region] = 1;
-      else if (region_graph(region, A))
-        region_types[region] = 2;
-      else if (region_graph(region, B))
-        region_types[region] = 3;
-      else
-        region_types[region] = 4;
-    }
-    
-    // update the faces
+    // update the face connectivities
     std::vector<FaceHandle> faces_to_delete;
     std::vector<Eigen::Matrix<VertexHandle, 3, 1> > faces_to_create;
     std::vector<Vec2i> face_labels_to_create;
@@ -2210,8 +2166,114 @@ void ElasticShell::pullXJunctionVertices()
     
   }
 }
+bool ElasticShell::shouldPullVertexApart(VertexHandle xj, int A, int B, Vec3d & pull_apart_direction) const
+{
+  // compute surface tension pulling force to see if this vertex pair needs to be pulled open.
+  std::vector<Vec3d> vertsA;
+  std::vector<Vec3d> vertsB;
+  for (VertexFaceIterator vfit = m_obj->vf_iter(xj); vfit; ++vfit)
+  {
+    EdgeHandle other_edge = getVertexOppositeEdgeInFace(*m_obj, *vfit, xj);
+    VertexHandle v0 = m_obj->fromVertex(other_edge);
+    VertexHandle v1 = m_obj->toVertex(other_edge);
+    
+    Vec3d x0 = getVertexPosition(v0);
+    Vec3d x1 = getVertexPosition(v1);
+    
+    Vec2i label = getFaceLabel(*vfit);      
+    if (label.x() == A || label.y() == A)
+    {
+      vertsA.push_back(x0);
+      vertsA.push_back(x1);
+    } else if (label.x() == B || label.y() == B)
+    {
+      vertsB.push_back(x0);
+      vertsB.push_back(x1);
+    }
+  }
+  assert(vertsA.size() > 0);
+  assert(vertsB.size() > 0);
   
-Vec2i ElasticShell::cutXJunction(EdgeHandle e) const
+  Vec3d centroidA(0, 0, 0);
+  Vec3d centroidB(0, 0, 0);
+  for (size_t i = 0; i < vertsA.size(); i++) 
+    centroidA += vertsA[i];
+  centroidA /= vertsA.size();
+  for (size_t i = 0; i < vertsB.size(); i++) 
+    centroidB += vertsB[i];
+  centroidB /= vertsB.size();
+  
+  pull_apart_direction = (centroidA - centroidB).normalized();
+  
+  Vec3d xxj = getVertexPosition(xj);
+  Vec3d force_a = Vec3d::Zero();
+  Vec3d force_b = Vec3d::Zero();
+  for (VertexFaceIterator vfit = m_obj->vf_iter(xj); vfit; ++vfit)
+  {
+    EdgeHandle other_edge = getVertexOppositeEdgeInFace(*m_obj, *vfit, xj);
+    VertexHandle v0 = m_obj->fromVertex(other_edge);
+    VertexHandle v1 = m_obj->toVertex(other_edge);
+    
+    Vec3d x0 = getVertexPosition(v0);
+    Vec3d x1 = getVertexPosition(v1);
+    
+    Vec3d foot = (xxj - x0).dot(x1 - x0) / (x1 - x0).squaredNorm() * (x1 - x0) + x0;
+    Vec3d force = (foot - xxj).normalized() * (x1 - x0).norm();
+    
+    Vec2i label = getFaceLabel(*vfit);      
+    if (label.x() == A || label.y() == A)
+    {
+      force_a += force;
+    } else if (label.x() == B || label.y() == B)
+    {
+      force_b += force;
+    } else
+    {
+      EdgeHandle ev0 = findEdge(*m_obj, xj, v0);
+      EdgeHandle ev1 = findEdge(*m_obj, xj, v1);
+      assert(ev0.isValid());
+      assert(ev1.isValid());
+      
+      bool v0adjA = false;
+      bool v1adjA = false;
+      for (EdgeFaceIterator efit = m_obj->ef_iter(ev0); efit; ++efit)
+      {
+        Vec2i label = getFaceLabel(*efit);
+        if (label.x() == A || label.y() == A)
+          v0adjA = true;
+      }
+      for (EdgeFaceIterator efit = m_obj->ef_iter(ev1); efit; ++efit)
+      {
+        Vec2i label = getFaceLabel(*efit);
+        if (label.x() == A || label.y() == A)
+          v1adjA = true;
+      }
+      
+      assert(!v0adjA || !v1adjA);
+      
+      if (v0adjA)
+      {
+        force_a += force;
+        force_a += -pull_apart_direction * (x1 - xxj).norm();
+        force_b += pull_apart_direction * (x1 - xxj).norm();
+      } else if (v1adjA)
+      {
+        force_a += force;
+        force_a += -pull_apart_direction * (x0 - xxj).norm();
+        force_b += pull_apart_direction * (x0 - xxj).norm();
+      } else
+      {
+        force_b += force;
+      }
+    }
+  }
+  
+  Scalar tensile_force = (force_a - force_b).dot(pull_apart_direction);
+  
+  return tensile_force > 0;
+}
+
+Vec2i ElasticShell::cutXJunctionEdge(EdgeHandle e) const
 {
   // for now use the angles to decide cut direction
   assert(m_obj->edgeIncidentFaces(e) == 4);
