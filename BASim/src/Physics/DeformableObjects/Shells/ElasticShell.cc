@@ -2171,6 +2171,8 @@ void ElasticShell::pullXJunctionVertices()
           else
             newlabel = Vec2i(l0.x(), l0.y() == l1.x() ? l1.y() : l1.x());
           
+          face_labels_to_create[i] = newlabel;
+          
           faces_to_create.erase(faces_to_create.begin() + j);
           face_labels_to_create.erase(face_labels_to_create.begin() + j);
           break;
