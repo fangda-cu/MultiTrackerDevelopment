@@ -612,6 +612,15 @@ bool EdgeSplitter::split_edge( size_t edge, bool specify_split_position, Vec3d *
   double new_vertex_mass = 0.5 * ( m_surf.m_masses[ vertex_a ] + m_surf.m_masses[ vertex_b ] );
   size_t vertex_e = m_surf.add_vertex( new_vertex_smooth_position, new_vertex_mass );
 
+  ///////////////////////////////////////////////////////////////////////
+  // FD 20121229
+  //
+  // update the constraint label of the new vertex
+  
+  mesh.set_vertex_constraint_label(vertex_e, mesh.get_vertex_constraint_label(vertex_a) && mesh.get_vertex_constraint_label(vertex_b));
+  
+  ///////////////////////////////////////////////////////////////////////
+
   // Add to change history
   m_surf.m_vertex_change_history.push_back( VertexUpdateEvent( VertexUpdateEvent::VERTEX_ADD, vertex_e, Vec2st( vertex_a, vertex_b) ) );
   
