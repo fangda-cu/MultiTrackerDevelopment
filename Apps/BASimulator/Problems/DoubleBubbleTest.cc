@@ -343,8 +343,7 @@ void DoubleBubbleTest::Setup()
 //  tearingRand = clamp(tearingRand, 0.0, 1.0);
   shell->setTearing(tearing, tearingThres, tearingRand);
 
-  //for(int i = 0; i < 3; ++i)
-  //  shell->remesh(remeshing_res);
+//  shell->remesh();
     
   //compute the dof indexing for use in the diff_eq solver
   shellObj->computeDofIndexing();
@@ -1009,7 +1008,7 @@ void DoubleBubbleTest::setupScene6()
   
   //generate voronoi sites
   int nsite = 10;
-  srand(1000000);
+  srand(100000);
   std::vector<Vec3d> sites;
   for (int i = 0; i < nsite; i++)
     sites.push_back(Vec3d((Scalar)rand() / RAND_MAX, (Scalar)rand() / RAND_MAX, (Scalar)rand() / RAND_MAX));
