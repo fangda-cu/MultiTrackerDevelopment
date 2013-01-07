@@ -212,6 +212,15 @@ size_t NonDestructiveTriMesh::nondestructive_add_vertex( )
     assert( m_vertex_to_edge_map.size() == m_vertex_to_triangle_map.size() );
     assert( m_vertex_to_edge_map.size() == m_is_boundary_vertex.size() );
     
+    ////////////////////////////////////////////////////////////
+    // FD 20130102
+  
+    assert(m_vertex_constraint_labels.size() == m_vertex_to_edge_map.size());
+  
+    m_vertex_constraint_labels.push_back(0);
+  
+    ////////////////////////////////////////////////////////////
+
     m_vertex_to_edge_map.resize( m_vertex_to_edge_map.size() + 1 );
     m_vertex_to_triangle_map.resize( m_vertex_to_triangle_map.size() + 1 );
     m_is_boundary_vertex.resize( m_is_boundary_vertex.size() + 1 );
