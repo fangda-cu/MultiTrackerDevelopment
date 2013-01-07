@@ -2146,6 +2146,38 @@ void ElasticShell::pullXJunctionVertices()
       edges_to_delete.push_back(*veit);
     }
     
+    // prune flap triangles
+    for (size_t i = 0; i < faces_to_create.size(); i++)
+    {
+      for (size_t j = i + 1; j < faces_to_create.size(); j++)
+      {
+        Eigen::Matrix<VertexHandle, 3, 1> & f0 = faces_to_create[i];
+        Eigen::Matrix<VertexHandle, 3, 1> & f1 = faces_to_create[j];
+        
+        if ((f0.x() == f1.x() || f0.x() == f1.y() || f0.x() == f1.z()) &&
+            (f0.y() == f1.x() || f0.y() == f1.y() || f0.y() == f1.z()) &&
+            (f0.z() == f1.x() || f0.z() == f1.y() || f0.z() == f1.z()))
+        {
+          // f0 and f1 have the same vertices
+          
+          Vec2i l0 = face_labels_to_create[i];
+          Vec2i l1 = face_labels_to_create[j];
+          
+          assert(l0.x() == l1.x() || l0.x() == l1.y() || l0.y() == l1.x() || l0.y() == l1.y());
+          
+          Vec2i newlabel; // newlabel has the same orientation with l0
+          if (l0.x() == l1.x() || l0.x() == l1.y())
+            newlabel = Vec2i(l0.x() == l1.x() ? l1.y() : l1.x(), l0.y());
+          else
+            newlabel = Vec2i(l0.x(), l0.y() == l1.x() ? l1.y() : l1.x());
+          
+          faces_to_create.erase(faces_to_create.begin() + j);
+          face_labels_to_create.erase(face_labels_to_create.begin() + j);
+          break;
+        }
+      }
+    }
+    
     // apply the deleteion/addition
     for (size_t i = 0; i < faces_to_delete.size(); i++)
       m_obj->deleteFace(faces_to_delete[i], false);
