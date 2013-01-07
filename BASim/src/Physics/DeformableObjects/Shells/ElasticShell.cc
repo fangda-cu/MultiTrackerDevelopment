@@ -1075,7 +1075,7 @@ void ElasticShell::remesh()
   std::vector<ElTopo::Vec3d> vert_vel;
   std::vector<ElTopo::Vec3st> tri_data;
   std::vector<ElTopo::Vec2i> tri_labels;
-  std::vector<bool> vert_const_labels;
+  std::vector<int> vert_const_labels;
   std::vector<Scalar> masses;
 
   DeformableObject& mesh = getDefoObj();
@@ -1109,7 +1109,7 @@ void ElasticShell::remesh()
       masses.push_back(numeric_limits<Scalar>::infinity());
     else
       masses.push_back(mass);
-    vert_const_labels.push_back(getVertexConstraintLabel(vh) != 0);
+    vert_const_labels.push_back(getVertexConstraintLabel(vh));
     vert_numbers[vh] = id;
     reverse_vertmap.push_back(vh);
 

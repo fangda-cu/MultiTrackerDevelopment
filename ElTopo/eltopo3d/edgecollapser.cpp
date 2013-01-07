@@ -604,8 +604,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   if (del_vert_is_boundary) delete_rank = 4;
   
   // constraint vertices have higher precedence
-  bool keep_vert_is_constrained =   m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep);
-  bool delete_vert_is_constrained = m_surf.m_mesh.get_vertex_constraint_label(vertex_to_delete);
+  bool keep_vert_is_constrained =   (m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep) != 0);
+  bool delete_vert_is_constrained = (m_surf.m_mesh.get_vertex_constraint_label(vertex_to_delete) != 0);
+  int new_vert_constraint_label = (m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep) | m_surf.m_mesh.get_vertex_constraint_label(vertex_to_delete));
   
   if (keep_vert_is_constrained)   keep_rank = 5;
   if (delete_vert_is_constrained) delete_rank = 5;
@@ -880,6 +881,13 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   m_surf.set_position( vertex_to_keep, vertex_new_position );
   m_surf.set_newposition( vertex_to_keep, vertex_new_position );
 
+  ///////////////////////////////////////////////////////////////////////
+  // FD 20121229
+  //
+  // update the vertex constraint label
+  m_surf.m_mesh.set_vertex_constraint_label(vertex_to_keep, new_vert_constraint_label);
+  
+  ///////////////////////////////////////////////////////////////////////
 
   // Copy this vector, don't take a reference, as deleting will change the original
   std::vector< size_t > triangles_incident_to_edge = m_surf.m_mesh.m_edge_to_triangle_map[edge];

@@ -617,7 +617,7 @@ bool EdgeSplitter::split_edge( size_t edge, bool specify_split_position, Vec3d *
   //
   // update the constraint label of the new vertex
   
-  mesh.set_vertex_constraint_label(vertex_e, mesh.get_vertex_constraint_label(vertex_a) && mesh.get_vertex_constraint_label(vertex_b));
+  mesh.set_vertex_constraint_label(vertex_e, mesh.get_vertex_constraint_label(vertex_a) & mesh.get_vertex_constraint_label(vertex_b));
   
   ///////////////////////////////////////////////////////////////////////
 
