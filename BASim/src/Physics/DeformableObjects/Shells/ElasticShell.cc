@@ -1445,10 +1445,10 @@ void ElasticShell::remesh()
   
   
   
-  static int framecounter = 0;
-  framecounter++;
-  if (framecounter == 16 || framecounter == 18 || framecounter == 19 || framecounter == 21)
-    return;
+//  static int framecounter = 0;
+//  framecounter++;
+//  if (framecounter == 16 || framecounter == 18 || framecounter == 19 || framecounter == 21)
+//    return;
   
   performT1Transition();
   
@@ -2417,8 +2417,6 @@ Vec2i ElasticShell::cutXJunctionEdge(EdgeHandle e) const
     
     regionangles.push_back(theta1 - theta0);
   }
-  
-  std::cout << "region angles: " << regionangles[0] << " " << regionangles[1] << " " << regionangles[2] << " " << regionangles[3] << std::endl;
   
   // pick the pair of opposing regions with larger summed angles
   if (regionangles[0] + regionangles[2] > regionangles[1] + regionangles[3])
