@@ -668,7 +668,7 @@ void ShellRenderer::render()
         if (regions.x() >= 0)
         {
           OpenGL::vertex(c);
-          OpenGL::vertex(Vec3d(c - n * 0.05));
+          OpenGL::vertex(Vec3d(c - n * 0.01));
         }
         
         Vec3d color1 = labelcolors[std::max(0, regions.y() + 1)];
@@ -677,7 +677,7 @@ void ShellRenderer::render()
         if (regions.y() >= 0)
         {
           OpenGL::vertex(c);
-          OpenGL::vertex(Vec3d(c + n * 0.05));          
+          OpenGL::vertex(Vec3d(c + n * 0.01));          
         }
       }
       glEnd();
