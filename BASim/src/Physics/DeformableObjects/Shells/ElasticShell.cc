@@ -1426,6 +1426,25 @@ void ElasticShell::remesh()
     }
   }
 
+  // remove all dangling edges and vertices
+  std::vector<EdgeHandle> edges_to_delete;
+  for (EdgeIterator eit = m_obj->edges_begin(); eit != m_obj->edges_end(); ++eit)
+    if (m_obj->edgeIncidentFaces(*eit) == 0)
+      edges_to_delete.push_back(*eit);
+  
+  for (size_t i = 0; i < edges_to_delete.size(); i++)
+    m_obj->deleteEdge(edges_to_delete[i], false);
+  
+  std::vector<VertexHandle> vertices_to_delete;
+  for (VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit)
+    if (m_obj->vertexIncidentEdges(*vit) == 0)
+      vertices_to_delete.push_back(*vit);
+  
+  for (size_t i = 0; i < vertices_to_delete.size(); i++)
+    m_obj->deleteVertex(vertices_to_delete[i]);
+  
+  
+  
   static int framecounter = 0;
   framecounter++;
   if (framecounter == 16 || framecounter == 18 || framecounter == 19 || framecounter == 21)
