@@ -1447,7 +1447,8 @@ void ElasticShell::remesh()
   
 //  static int framecounter = 0;
 //  framecounter++;
-//  if (framecounter == 16 || framecounter == 18 || framecounter == 19 || framecounter == 21)
+//  std::cout << "framecounter = " << framecounter << std::endl;
+//  if (framecounter == 47)
 //    return;
   
   performT1Transition();
