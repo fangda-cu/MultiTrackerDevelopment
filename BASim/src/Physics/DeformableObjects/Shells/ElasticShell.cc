@@ -20,7 +20,7 @@
 #include <numeric>
 
 namespace BASim {
-
+  
 ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep) : 
   PhysicalModel(*object), m_obj(object), 
     m_active_faces(shellFaces), 
@@ -1474,14 +1474,14 @@ void ElasticShell::performT1Transition()
       xjunctions.push_back(*eit);
 
   // sort the X-junction edges into connected groups with the same cut
-  std::vector<std::pair<std::vector<EdgeHandle>, Vec2i> > xjgroups; // each element is a list of consecutive x junction edges, along with the id of the two regions that should end up adjacent after pull-apart
+  std::vector<std::pair<std::vector<EdgeHandle>, Mat2i> > xjgroups; // each element is a list of consecutive x junction edges, along with the id of the two regions that should end up adjacent after pull-apart, and the id of the other two regions
   std::vector<int> groupid(xjunctions.size());
   for (size_t i = 0; i < xjunctions.size(); i++)
     groupid[i] = i;
   
   for (size_t i = 0; i < xjunctions.size(); i++)
   {
-    Vec2i cut = cutXJunctionEdge(xjunctions[i]);
+    Mat2i cut = cutXJunctionEdge(xjunctions[i]);
     std::vector<size_t> found_groups;
     for (size_t j = 0; j < xjgroups.size(); j++)
     {
@@ -1502,7 +1502,7 @@ void ElasticShell::performT1Transition()
     if (found_groups.size() == 0)
     {
       // new group
-      xjgroups.push_back(std::pair<std::vector<EdgeHandle>, Vec2i>(std::vector<EdgeHandle>(1, xjunctions[i]), cut));
+      xjgroups.push_back(std::pair<std::vector<EdgeHandle>, Mat2i>(std::vector<EdgeHandle>(1, xjunctions[i]), cut));
     } else
     {
       // joining all the groups in found_groups together
@@ -1511,7 +1511,7 @@ void ElasticShell::performT1Transition()
         newgroup.insert(newgroup.end(), xjgroups[found_groups[j]].first.begin(), xjgroups[found_groups[j]].first.end());
       for (size_t j = 0; j < found_groups.size(); j++)
         xjgroups.erase(xjgroups.begin() + found_groups[j]);
-      xjgroups.push_back(std::pair<std::vector<EdgeHandle>, Vec2i>(newgroup, cut));
+      xjgroups.push_back(std::pair<std::vector<EdgeHandle>, Mat2i>(newgroup, cut));
     }
   }
   
@@ -1523,7 +1523,8 @@ void ElasticShell::performT1Transition()
     {
       // if a group has only one edge, split the edge in half and pull the midpoint vertex apart.
       EdgeHandle edge = xjgroups[i].first.front();
-      Vec2i cut = xjgroups[i].second;
+      Mat2i cut_regions = xjgroups[i].second;
+      Vec2i cut = cut_regions.col(0);
       
       VertexHandle v0 = m_obj->fromVertex(edge);
       VertexHandle v1 = m_obj->toVertex(edge);
@@ -1635,7 +1636,8 @@ void ElasticShell::performT1Transition()
       // if a group has at least two edges forming a polyline (this line should have no branching but could be a closed loop), pull the interior vertices apart.
       assert(xjgroups[i].first.size() > 1);
       
-      Vec2i cut = xjgroups[i].second;
+      Mat2i cut_regions = xjgroups[i].second;
+      Vec2i cut = cut_regions.col(0);
       
       // sort the edges into an ordered polyline
       std::deque<EdgeHandle> ordered_edges;
@@ -2322,7 +2324,7 @@ bool ElasticShell::shouldPullVertexApart(VertexHandle xj, int A, int B, Vec3d & 
   return tensile_force > 0;
 }
 
-Vec2i ElasticShell::cutXJunctionEdge(EdgeHandle e) const
+Mat2i ElasticShell::cutXJunctionEdge(EdgeHandle e) const
 {
   // for now use the angles to decide cut direction
   assert(m_obj->edgeIncidentFaces(e) == 4);
@@ -2415,13 +2417,21 @@ Vec2i ElasticShell::cutXJunctionEdge(EdgeHandle e) const
   }
   
   // pick the pair of opposing regions with larger summed angles
+  Vec2i pair0 = regions[0] < regions[2] ? Vec2i(regions[0], regions[2]) : Vec2i(regions[2], regions[0]); // order the two regions with ascending region label
+  Vec2i pair1 = regions[1] < regions[3] ? Vec2i(regions[1], regions[3]) : Vec2i(regions[3], regions[1]);  
+  Mat2i ret;
   if (regionangles[0] + regionangles[2] > regionangles[1] + regionangles[3])
-    return regions[0] < regions[2] ? Vec2i(regions[0], regions[2]) : Vec2i(regions[2], regions[0]); // order the two regions with ascending region label
-  else
-    return regions[1] < regions[3] ? Vec2i(regions[1], regions[3]) : Vec2i(regions[3], regions[1]);  
+  {
+    ret.col(0) = pair0; // cut regions
+    ret.col(1) = pair1; // the other two regions
+  } else
+  {
+    ret.col(0) = pair1;
+    ret.col(1) = pair0;
+  }
   
   // if the X junction should not be cut, return (-1, -1).
-  return Vec2i(-1, -1);
+  return ret;
 }
 
 int ElasticShell::onBBWall(const Vec3d & pos) const

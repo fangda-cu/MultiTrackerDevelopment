@@ -15,6 +15,8 @@
 
 namespace BASim {
 
+typedef Eigen::Matrix<int, 2, 2> Mat2i;
+  
 const int ELASTIC_SHELL_DOFS_PER_VERTEX = 0; //nodal position vectors
 const int ELASTIC_SHELL_DOFS_PER_EDGE = 0; //mid-edge normal bending DOFs (Grinspun et al. 2006)
 
@@ -203,7 +205,7 @@ protected:
   Vec3d enforceBBWallConstraint(const Vec3d & input, int constraints) const;
   
   void performT1Transition();
-  Vec2i cutXJunctionEdge(EdgeHandle e) const;
+  Mat2i cutXJunctionEdge(EdgeHandle e) const;
   
   void pullXJunctionVertices();
   bool shouldPullVertexApart(VertexHandle xj, int A, int B, Vec3d & pull_apart_direction) const;
