@@ -192,12 +192,12 @@ public:
   }
 };
   
-bool junction(const DeformableObject & mesh, EdgeHandle e)
+int junction(const DeformableObject & mesh, EdgeHandle e)
 {
   int ne = 0;
   for ( EdgeFaceIterator efit = mesh.ef_iter(e); efit; ++efit)
     ne++;
-  return ne > 2;
+  return ne;
 }
   
 bool junctionNeighbor(const DeformableObject & mesh, VertexHandle v)
@@ -599,8 +599,15 @@ void ShellRenderer::render()
       }
       
       if (m_mode == DBG_JUNCTION)
-        if (junction(mesh, eh))
+      {
+        int ne = junction(mesh, eh);
+        if (ne == 3)
           OpenGL::color(Color(0.5, 1.0, 0.0));
+        else if (ne == 4)
+          OpenGL::color(Color(0.3, 0.8, 0.9));
+        else if (ne > 4)
+          OpenGL::color(Color(0.2, 0.3, 1.0));
+      }
       
       OpenGL::vertex(p0);
       OpenGL::vertex(p1);      
