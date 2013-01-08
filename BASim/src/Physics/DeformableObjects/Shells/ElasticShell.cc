@@ -1996,17 +1996,12 @@ void ElasticShell::pullXJunctionVertices()
     //  complete too. Of course in more complex scenarios the graphs may not directly become complete immediately after we process one
     //  missing edge. We will visit the two resulting vertices again as if they are a regular vertex that may need to be pulled apart too.
     //
-    // The algorith pseudocode is as following:
+    // The algorithm pseudocode is as following:
     //
     //  Pop a vertex from the stack of vertices to be processed, construct a graph of region adjacency
     //  If the graph is already complete, skip this vertex
     //  Pick an arbitrary pair of unconnected nodes A and B from the graph (there may be more than one pair)
     //  Pull apart the vertex into two (a and b, corresponding to region A and B respectively), initialized to have the same coordinates and then pulled apart
-    //  For each region C
-    //    If C is connected to both A and B, label C as type 1
-    //    If C is connected to A but not B, label C as type 2
-    //    If C is connected to B but not A, label C as type 3
-    //    If C is not connected to either A or B, label C as type 4
     //  For each face incident to the center vertex in the original mesh
     //    If it is incident to region A, update it to use vertex a
     //    If it is incident to region B, update it to use vertex b
