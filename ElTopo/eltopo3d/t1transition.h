@@ -62,6 +62,9 @@ public:
     ///
     Mat2i cut_x_junction_edge(size_t e);
 
+    /// Decide whether to cut an X-junction vertex between two given regions
+    ///
+    bool should_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pull_apart_direction);
     
     /// Whether or not to remesh the boundary
     ///

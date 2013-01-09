@@ -8,6 +8,7 @@
 // ---------------------------------------------------------
 
 #include <queue>
+#include <set>
 
 #include <t1transition.h>
 #include <broadphase.h>
@@ -227,6 +228,8 @@ bool T1Transition::pop_edges()
             
             m_surf.set_position(nv0, m_surf.get_newposition(nv0));
             m_surf.set_position(nv1, m_surf.get_newposition(nv1));
+            
+            pop_occurred = true;
             
         } else
         {
@@ -536,7 +539,9 @@ bool T1Transition::pop_edges()
                 
                 m_surf.set_position(nv0, m_surf.get_newposition(nv0));
                 m_surf.set_position(nv1, m_surf.get_newposition(nv1));
-            }   
+            }
+            
+            pop_occurred = true;
             
         }
         
@@ -560,11 +565,335 @@ bool T1Transition::pop_vertices()
     NonDestructiveTriMesh & mesh = m_surf.m_mesh;
     bool pop_occurred = false;
     
+    // Pull apart the X-junciton vertices
+    // In fact this function attempts to make the region adjacency graph complete on ever vertex in the mesh (see explanation below), or in
+    //  other words, so that every region incident to a vertex is adjacent to every other region on that vertex through a face. No two regions
+    //  can be adjacent only through a vertex, as long as the surface tension force at the vertex is tensile instead of compressive.
     
+    // find the region count
+    int max_region = -1;
+    for (size_t i = 0; i < mesh.nt(); i++)
+    {
+        Vec2i label = mesh.get_triangle_label(i);
+        assert(label[0] >= 0);
+        assert(label[1] >= 0);
+        if (label[0] > max_region) max_region = label[0];
+        if (label[-1] > max_region) max_region = label[1];
+    }
+    int nregion = max_region + 1;
+    
+    // this is the incident matrix for a region graph. not every col/row need to be filled for a particular vertex becuase the vertex may not be incident to all regions.
+    std::vector<std::vector<int> > region_graph(nregion, std::vector<int>(nregion, 0));
+    
+    // prepare an initial list of unprocessed vertices
+    std::vector<size_t> vertices_to_process;
+    for (size_t i = 0; i < mesh.nv(); i++)
+        vertices_to_process.push_back(i);
+    
+    // process the vertices one after another
+    while (vertices_to_process.size() > 0)
+    {
+        size_t xj = vertices_to_process.back();
+        vertices_to_process.pop_back();
+        
+        std::set<int> vertex_regions_set;
+        for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[xj].size(); i++)
+        {
+            Vec2i label = mesh.get_triangle_label(mesh.m_vertex_to_triangle_map[xj][i]);
+            vertex_regions_set.insert(label[0]);
+            vertex_regions_set.insert(label[1]);
+        }
+        
+        std::vector<int> vertex_regions;
+        vertex_regions.assign(vertex_regions_set.begin(), vertex_regions_set.end());
+        
+        // cull away the interior vertices of plateau borders (which are the majority)
+        if (vertex_regions_set.size() < 4)
+            continue;
+        
+        //
+        // Pull apart strategy: in order to cope with various configurations (such as a region-valence-5 vertex being a triple junction, or
+        //  junctions on the BB walls), the following strategy is adopted:
+        //
+        // The regions incident on the vertex form a graph, with each region being a node and an edge exists between two regions iff the two
+        //  regions share a triangle face in the mesh. The objective at the end of this processing, is to make sure this graph is complete for
+        //  every vertex. For example the original region-valence-4 X-junction vertex (the "hourglass" junction) forms a graph like this:
+        //
+        //  A o--o B
+        //    | /|
+        //    |/ |
+        //  C o--o D
+        //
+        //  where the edge between node A and D (the two bulbs of the hourglass) is missing because the two regions only meet at one vertex
+        //  (the hourglass neck).
+        //
+        // The processing here makes an incomplete graph complete by pulling apart vertices. If two nodes (e.g. A and D in the figure above)
+        //  do not share an edge, it means the center vertex is the only interface between the two regions, and it needs to be pulled apart.
+        //  Region A and D each keep one of the two duplicates of the vertex. If a region has edges with both regions A and D, such as region
+        //  C and B, will contain both duplicates (the region's shape is turned from a cone into a flat screwdriver's tip). Now look at the
+        //  resulting graphs for the two duplicate vertices. For the duplicate that goes with region A, region D is no longer incident and
+        //  thus removed from the graph:
+        //
+        //  A o--o B
+        //    | /
+        //    |/
+        //  C o
+        //
+        //  and this is now a complete graph. Similarly the graph for the duplicate that goes with region D will not have node A, and it is 
+        //  complete too. Of course in more complex scenarios the graphs may not directly become complete immediately after we process one
+        //  missing edge. We will visit the two resulting vertices again as if they are a regular vertex that may need to be pulled apart too.
+        //
+        // The algorithm pseudocode is as following:
+        //
+        //  Pop a vertex from the stack of vertices to be processed, construct a graph of region adjacency
+        //  If the graph is already complete, skip this vertex
+        //  Pick an arbitrary pair of unconnected nodes A and B from the graph (there may be more than one pair)
+        //  Pull apart the vertex into two (a and b, corresponding to region A and B respectively), initialized to have the same coordinates and then pulled apart
+        //  For each face incident to the center vertex in the original mesh
+        //    If it is incident to region A, update it to use vertex a
+        //    If it is incident to region B, update it to use vertex b
+        //    Otherwise, if it is touching region A through an edge, it will be updated into a quad spanning both vertex a and b, otherwise, update it to use vertex b
+        //  Push vertex a and b on the stack to be visited next.
+        //
+        // Notes: 
+        //  The algorithm above assumes that region A and B must always be connected by triangle fans, with one end of the fan touching region
+        //  A and the other touching B. Pulling apart the vertex makes this a stripe, thus at least one of the triangles in the fan need to be
+        //  turned into a quad. The algorithm picks the head of the fan triangle sequence (the one touching A) for this task. In the general
+        //  setting, there is one more possibility: region A and B are adjacent through only an edge. However this is not possible in our
+        //  workflow because performT1Transition() should have been called resolving all X-junction edges. (TODO: what if performT1Transition()
+        //  fails due to collision?)
+        //
+        
+        // construct the region graph
+        region_graph.assign(nregion, std::vector<int>(nregion, 0));
+        for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[xj].size(); i++)
+        {
+            Vec2i label = mesh.get_triangle_label(mesh.m_vertex_to_triangle_map[xj][i]);
+            region_graph[label[0]][label[1]] = 1;
+            region_graph[label[1]][label[0]] = 1;
+        }
+        
+        // find a missing edge
+        int A = -1;
+        int B = -1;
+        Vec3d pull_apart_direction;
+        for (size_t i = 0; i < vertex_regions.size(); i++)
+        {
+            for (size_t j = i + 1; j < vertex_regions.size(); j++)
+            {
+                if (region_graph[vertex_regions[i]][vertex_regions[j]] == 0)
+                {
+                    if (should_pull_vertex_apart(xj, vertex_regions[i], vertex_regions[j], pull_apart_direction))
+                    {
+                        A = vertex_regions[i];
+                        B = vertex_regions[j];
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // skip the vertex if the graph is complete already
+        if (A < 0)
+            continue;
+        
+        // pull apart
+        size_t a = mesh.nondestructive_add_vertex();
+        size_t b = mesh.nondestructive_add_vertex();
+        
+        // set the position/velocity of new vertices
+        m_surf.set_newposition(a, m_surf.get_position(xj));
+        m_surf.set_newposition(b, m_surf.get_position(xj));
+        m_surf.set_remesh_velocity(a, m_surf.get_remesh_velocity(xj));
+        m_surf.set_remesh_velocity(b, m_surf.get_remesh_velocity(xj));
+        
+        double mean_edge_length = 0;
+        int edge_count = 0;
+        for (size_t i = 0; i < mesh.m_vertex_to_edge_map[xj].size(); i++)
+        {
+            size_t v0 = mesh.m_edges[mesh.m_vertex_to_edge_map[xj][i]][0];
+            size_t v1 = mesh.m_edges[mesh.m_vertex_to_edge_map[xj][i]][1];
+            mean_edge_length += mag(m_surf.get_position(v1) - m_surf.get_position(v0));
+            edge_count++;
+        }
+        assert(edge_count > 0);
+        mean_edge_length /= edge_count;
+        
+        Vec3d pull_apart_offset = pull_apart_direction * mean_edge_length;
+        m_surf.set_newposition(a, m_surf.get_newposition(a) + pull_apart_offset * 0.1);
+        m_surf.set_newposition(b, m_surf.get_newposition(b) - pull_apart_offset * 0.1);
+        
+        // enforce constraints
+        //&&&&
+//        int original_constraints = onBBWall(getVertexPosition(xj));
+//        setVertexPosition(a, enforceBBWallConstraint(getVertexPosition(a), original_constraints));
+//        setVertexPosition(b, enforceBBWallConstraint(getVertexPosition(b), original_constraints));
+        
+        m_surf.set_position(a, m_surf.get_newposition(a));
+        m_surf.set_position(b, m_surf.get_newposition(b));
+        
+        // update the face connectivities
+        std::vector<size_t> faces_to_delete;
+        std::vector<Vec3st> faces_to_create;
+        std::vector<Vec2i> face_labels_to_create;
+        
+        std::vector<size_t> edges_to_delete;
+        
+        for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[xj].size(); i++)
+        {
+            size_t triangle = mesh.m_vertex_to_triangle_map[xj][i];
+            
+            faces_to_delete.push_back(triangle);
+            
+            // find the edge in triangle triangle that's opposite to vertex xj
+            size_t l = 0;
+            size_t edge0 = static_cast<size_t>(~0);
+            size_t edge1 = static_cast<size_t>(~0);
+            size_t edge2 = static_cast<size_t>(~0);
+            for (l = 0; l < 3; l++)
+            {
+                size_t e = mesh.m_triangle_to_edge_map[triangle][l];
+                if (mesh.m_edges[e][0] == xj)
+                    edge0 = e;
+                else if (mesh.m_edges[e][1] == xj)
+                    edge1 = e;
+                else
+                    edge2 = e;
+            }
+            assert(edge0 < mesh.ne());
+            assert(edge1 < mesh.ne());
+            assert(edge2 < mesh.ne());
+            size_t v0 = mesh.m_edges[edge2][0];
+            size_t v1 = mesh.m_edges[edge2][1];
+            
+            assert(v0 == mesh.m_edges[edge0][1]);
+            assert(v1 == mesh.m_edges[edge1][0]);
+            
+            if (!mesh.oriented(v0, v1, mesh.get_triangle(triangle)))
+                std::swap(v0, v1);
+            
+            Vec2i label = mesh.get_triangle_label(triangle);
+            if (label[0] == A || label[1] == A)
+            {
+                faces_to_create.push_back(Vec3st(a, v0, v1));
+                face_labels_to_create.push_back(label);
+                
+            } else if (label[0] == B || label[1] == B)
+            {
+                faces_to_create.push_back(Vec3st(b, v0, v1));
+                face_labels_to_create.push_back(label);
+                
+            } else
+            {
+                // find out which one out of xj-v0 and xj-v1 is next to region A and to region B (or neither), in order to determine triangulation
+                size_t ev0 = edge0;
+                size_t ev1 = edge1;
+                
+                bool v0adjA = false;
+                bool v1adjA = false;
+                for (size_t j = 0; j < mesh.m_edge_to_triangle_map[ev0].size(); j++)
+                {
+                    Vec2i label = mesh.get_triangle_label(mesh.m_edge_to_triangle_map[ev0][j]);
+                    if (label[0] == A || label[1] == A)
+                        v0adjA = true;
+                }
+                for (size_t j = 0; j < mesh.m_edge_to_triangle_map[ev1].size(); j++)
+                {
+                    Vec2i label = mesh.get_triangle_label(mesh.m_edge_to_triangle_map[ev1][j]);
+                    if (label[0] == A || label[1] == A)
+                        v1adjA = true;
+                }
+                
+                assert(!v0adjA || !v1adjA);
+                
+                if (v0adjA)
+                {
+                    faces_to_create.push_back(Vec3st(a, v0, v1));
+                    faces_to_create.push_back(Vec3st(a, v1, b));
+                    face_labels_to_create.push_back(label);
+                    face_labels_to_create.push_back(label);
+                } else if (v1adjA)
+                {
+                    faces_to_create.push_back(Vec3st(a, v0, v1));
+                    faces_to_create.push_back(Vec3st(a, b, v0));
+                    face_labels_to_create.push_back(label);
+                    face_labels_to_create.push_back(label);
+                } else
+                {
+                    faces_to_create.push_back(Vec3st(b, v0, v1));
+                    face_labels_to_create.push_back(label);
+                }
+                
+            }
+            
+        }
+        
+        for (size_t i = 0; i < mesh.m_vertex_to_edge_map[xj].size(); i++)
+        {
+            edges_to_delete.push_back(mesh.m_vertex_to_edge_map[xj][i]);
+        }
+        
+        // prune flap triangles
+        for (size_t i = 0; i < faces_to_create.size(); i++)
+        {
+            for (size_t j = i + 1; j < faces_to_create.size(); j++)
+            {
+                Vec3st & f0 = faces_to_create[i];
+                Vec3st & f1 = faces_to_create[j];
+                
+                if (mesh.triangle_has_these_verts(f0, f1))
+                {
+                    // f0 and f1 have the same vertices
+                    
+                    Vec2i l0 = face_labels_to_create[i];
+                    Vec2i l1 = face_labels_to_create[j];
+                    
+                    assert(l0[0] == l1[0] || l0[0] == l1[1] || l0[1] == l1[0] || l0[1] == l1[1]);
+                    
+                    Vec2i newlabel; // newlabel has the same orientation with l0
+                    if (l0[0] == l1[0] || l0[0] == l1[1])
+                        newlabel = Vec2i(l0[0] == l1[0] ? l1[1] : l1[0], l0[1]);
+                    else
+                        newlabel = Vec2i(l0[0], l0[1] == l1[0] ? l1[1] : l1[0]);
+                    
+                    face_labels_to_create[i] = newlabel;
+                    
+                    faces_to_create.erase(faces_to_create.begin() + j);
+                    face_labels_to_create.erase(face_labels_to_create.begin() + j);
+                    break;
+                }
+            }
+        }
+        
+        // apply the deleteion/addition
+        for (size_t i = 0; i < faces_to_delete.size(); i++)
+            mesh.nondestructive_remove_triangle(faces_to_delete[i]);
+
+        //&&&& recursive deletion
+//        for (size_t i = 0; i < edges_to_delete.size(); i++)
+//            m_obj->deleteEdge(edges_to_delete[i], false);
+//        m_obj->deleteVertex(xj);
+        
+        assert(faces_to_create.size() == face_labels_to_create.size());
+        for (size_t i = 0; i < faces_to_create.size(); i++)
+        {
+            size_t nf = mesh.nondestructive_add_triangle(faces_to_create[i]);
+            mesh.set_triangle_label(nf, face_labels_to_create[i]);
+        }
+        
+        // mark the two new vertices a and b as dirty
+        vertices_to_process.push_back(a);
+        vertices_to_process.push_back(b);
+        
+        pop_occurred = true;
+        
+    }
     
     return pop_occurred;
 }
 
+    
+    
 // --------------------------------------------------------
 ///
 /// Decide the cut direction on an X-junction edge
@@ -573,10 +902,265 @@ bool T1Transition::pop_vertices()
     
 Mat2i T1Transition::cut_x_junction_edge(size_t e)
 {
-    Mat2i cut;
-    return cut;
-}
+    NonDestructiveTriMesh & mesh = m_surf.m_mesh;
+
+    // for now use the angles to decide cut direction
+    assert(mesh.m_edge_to_triangle_map[e].size() == 4);
     
+    size_t v0 = mesh.m_edges[e][0];
+    size_t v1 = mesh.m_edges[e][1];
+    
+    Vec3d x0 = m_surf.get_position(v0);
+    Vec3d x1 = m_surf.get_position(v1);
+    
+    // find all the regions around this X junction edge e, in CCW order when looking down the edge
+    std::vector<int> regions;
+    size_t tmp = mesh.m_edge_to_triangle_map[e][0];
+    if (mesh.oriented(v0, v1, mesh.get_triangle(tmp)) > 0)
+    {
+        regions.push_back(mesh.get_triangle_label(tmp)[1]);
+        regions.push_back(mesh.get_triangle_label(tmp)[0]);
+    } else
+    {
+        regions.push_back(mesh.get_triangle_label(tmp)[0]);
+        regions.push_back(mesh.get_triangle_label(tmp)[1]);
+    }
+    
+    while (true)
+    {
+        size_t s = regions.size();
+        for (size_t i = 0; i < mesh.m_edge_to_triangle_map[e].size(); i++)
+        {
+            Vec2i label = mesh.get_triangle_label(mesh.m_edge_to_triangle_map[e][i]);
+            if (label[0] == regions.back() && label[1] != *(regions.rbegin() + 1) && label[1] != regions.front())
+            {
+                regions.push_back(label[1]);
+                break;
+            }
+            if (label[1] == regions.back() && label[0] != *(regions.rbegin() + 1) && label[0] != regions.front())
+            {
+                regions.push_back(label[0]);
+                break;
+            }
+        }
+        assert(s == regions.size() || s + 1 == regions.size());
+        if (s == regions.size())
+            break;
+    }
+    assert(regions.size() == 4);
+    
+    // create an arbitrary 2D frame in the cross section plane of the edge e
+    Vec3d t = x1 - x0;
+    t /= mag(t);
+    Vec3d u = (::fabs(t[0]) <= ::fabs(t[1]) && ::fabs(t[0]) <= ::fabs(t[2]) ? Vec3d(0, t[2], -t[1]) : (::fabs(t[1]) <= ::fabs(t[2]) ? Vec3d(-t[2], 0, t[0]) : Vec3d(t[1], -t[0], 0)));
+    u /= mag(u);
+    Vec3d v = cross(u, t);
+    v /= mag(v);
+    
+    // compute the angle of each region
+    std::vector<double> regionangles;
+    for (size_t i = 0; i < regions.size(); i++)
+    {
+        std::vector<size_t> regionfaces;
+        for (size_t j = 0; j < mesh.m_edge_to_triangle_map[e].size(); j++)
+        {
+            Vec2i label = mesh.get_triangle_label(mesh.m_edge_to_triangle_map[e][j]);
+            if (label[0] == regions[i] || label[1] == regions[i])
+                regionfaces.push_back(mesh.m_edge_to_triangle_map[e][j]);
+        }
+        assert(regionfaces.size() == 2);
+        
+        Vec2i label = mesh.get_triangle_label(regionfaces[0]);
+        if ((label[0] == regions[i] ? label[1] : label[0]) == regions[(i + 1) % 4])
+            std::swap(regionfaces[0], regionfaces[1]);  // this ensures CCW ordering of the two faces
+        
+        size_t v20 = mesh.get_third_vertex(e, regionfaces[0]);
+        size_t v21 = mesh.get_third_vertex(e, regionfaces[1]);
+        
+        Vec3d x20 = m_surf.get_position(v20);
+        Vec3d x21 = m_surf.get_position(v21);
+        
+        Vec2d p20 = Vec2d(dot(x20 - x0, u), dot(x20 - x0, v));
+        Vec2d p21 = Vec2d(dot(x21 - x0, u), dot(x21 - x0, v));
+        
+        double theta0 = atan2(p20[1], p20[0]);
+        double theta1 = atan2(p21[1], p21[0]);
+        
+        while (theta0 > theta1)
+            theta1 += M_PI * 2;
+        
+        regionangles.push_back(theta1 - theta0);
+    }
+    
+    // pick the pair of opposing regions with larger summed angles
+    Vec2i pair0 = regions[0] < regions[2] ? Vec2i(regions[0], regions[2]) : Vec2i(regions[2], regions[0]); // order the two regions with ascending region label
+    Vec2i pair1 = regions[1] < regions[3] ? Vec2i(regions[1], regions[3]) : Vec2i(regions[3], regions[1]);  
+    Mat2i ret;
+    if (regionangles[0] + regionangles[2] > regionangles[1] + regionangles[3])
+    {
+        ret[0] = pair0; // cut regions
+        ret[1] = pair1; // the other two regions
+    } else
+    {
+        ret[0] = pair1;
+        ret[1] = pair0;
+    }
+    
+    // if the X junction should not be cut, return (-1, -1).
+    return ret;
+}
+
+    
+    
+// --------------------------------------------------------
+///
+/// Decide whether to cut an X-junction vertex between two given regions
+///
+// --------------------------------------------------------
+
+bool T1Transition::should_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pull_apart_direction)
+{
+    NonDestructiveTriMesh & mesh = m_surf.m_mesh;
+
+    // compute surface tension pulling force to see if this vertex pair needs to be pulled open.
+    std::vector<Vec3d> vertsA;
+    std::vector<Vec3d> vertsB;
+    for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[xj].size(); i++)
+    {
+        size_t triangle = mesh.m_vertex_to_triangle_map[xj][i];
+        
+        // find the edge in triangle triangle that's opposite to vertex xj
+        size_t l = 0;
+        size_t other_edge = static_cast<size_t>(~0);
+        for (l = 0; l < 3; l++)
+        {
+            if (mesh.m_edges[mesh.m_triangle_to_edge_map[triangle][l]][0] != xj &&
+                mesh.m_edges[mesh.m_triangle_to_edge_map[triangle][l]][1] != xj)
+                other_edge = mesh.m_triangle_to_edge_map[triangle][l];
+        }
+        assert(other_edge < mesh.ne());
+        size_t v0 = mesh.m_edges[other_edge][0];
+        size_t v1 = mesh.m_edges[other_edge][1];
+        
+        Vec3d x0 = m_surf.get_position(v0);
+        Vec3d x1 = m_surf.get_position(v1);
+        
+        Vec2i label = mesh.get_triangle_label(triangle);
+        if (label[0] == A || label[1] == A)
+        {
+            vertsA.push_back(x0);
+            vertsA.push_back(x1);
+        } else if (label[0] == B || label[1] == B)
+        {
+            vertsB.push_back(x0);
+            vertsB.push_back(x1);
+        }
+    }
+    assert(vertsA.size() > 0);
+    assert(vertsB.size() > 0);
+    
+    Vec3d centroidA(0, 0, 0);
+    Vec3d centroidB(0, 0, 0);
+    for (size_t i = 0; i < vertsA.size(); i++) 
+        centroidA += vertsA[i];
+    centroidA /= vertsA.size();
+    for (size_t i = 0; i < vertsB.size(); i++) 
+        centroidB += vertsB[i];
+    centroidB /= vertsB.size();
+    
+    pull_apart_direction = (centroidA - centroidB);
+    pull_apart_direction /= mag(pull_apart_direction);
+    
+    Vec3d xxj = m_surf.get_position(xj);
+    Vec3d force_a(0);
+    Vec3d force_b(0);
+    for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[xj].size(); i++)
+    {
+        size_t triangle = mesh.m_vertex_to_triangle_map[xj][i];
+        
+        // find the edge in triangle triangle that's opposite to vertex xj
+        size_t l = 0;
+        size_t edge0 = static_cast<size_t>(~0);
+        size_t edge1 = static_cast<size_t>(~0);
+        size_t edge2 = static_cast<size_t>(~0);
+        for (l = 0; l < 3; l++)
+        {
+            size_t e = mesh.m_triangle_to_edge_map[triangle][l];
+            if (mesh.m_edges[e][0] == xj)
+                edge0 = e;
+            else if (mesh.m_edges[e][1] == xj)
+                edge1 = e;
+            else
+                edge2 = e;
+        }
+        assert(edge0 < mesh.ne());
+        assert(edge1 < mesh.ne());
+        assert(edge2 < mesh.ne());
+        size_t v0 = mesh.m_edges[edge2][0];
+        size_t v1 = mesh.m_edges[edge2][1];
+        
+        assert(v0 == mesh.m_edges[edge0][1]);
+        assert(v1 == mesh.m_edges[edge1][0]);
+        
+        Vec3d x0 = m_surf.get_position(v0);
+        Vec3d x1 = m_surf.get_position(v1);
+        
+        Vec3d foot = dot(xxj - x0, x1 - x0) / dot(x1 - x0, x1 - x0) * (x1 - x0) + x0;
+        Vec3d force = (foot - xxj);
+        force /= mag(force);
+        force *= mag(x1 - x0);
+        
+        Vec2i label = mesh.get_triangle_label(triangle);
+        if (label[0] == A || label[1] == A)
+        {
+            force_a += force;
+        } else if (label[0] == B || label[1] == B)
+        {
+            force_b += force;
+        } else
+        {
+            size_t ev0 = edge0;
+            size_t ev1 = edge1;
+            
+            bool v0adjA = false;
+            bool v1adjA = false;
+            for (size_t j = 0; j < mesh.m_edge_to_triangle_map[ev0].size(); j++)
+            {
+                Vec2i label = mesh.get_triangle_label(mesh.m_edge_to_triangle_map[ev0][j]);
+                if (label[0] == A || label[1] == A)
+                    v0adjA = true;
+            }
+            for (size_t j = 0; j < mesh.m_edge_to_triangle_map[ev1].size(); j++)
+            {
+                Vec2i label = mesh.get_triangle_label(mesh.m_edge_to_triangle_map[ev0][j]);
+                if (label[0] == A || label[1] == A)
+                    v1adjA = true;
+            }
+            
+            assert(!v0adjA || !v1adjA);
+            
+            if (v0adjA)
+            {
+                force_a += force;
+                force_a += -pull_apart_direction * mag(x1 - xxj);
+                force_b += pull_apart_direction * mag(x1 - xxj);
+            } else if (v1adjA)
+            {
+                force_a += force;
+                force_a += -pull_apart_direction * mag(x0 - xxj);
+                force_b += pull_apart_direction * mag(x0 - xxj);
+            } else
+            {
+                force_b += force;
+            }
+        }
+    }
+    
+    double tensile_force = dot(force_a - force_b, pull_apart_direction);
+    
+    return tensile_force > 0;
+}
+
 
 
 }
