@@ -291,6 +291,17 @@ struct MeshUpdateEvent
     FLAP_DELETE,  //remove non-manifold flap
     PINCH,        //separate singular vertex to allow topology change
     MERGE,        //zipper two edges together
+      
+    ////////////////////////////////////////////////////////////
+    // FD 20130109
+    //
+    // T1 transition events
+    
+    EDGE_POP,
+    VERTEX_POP,
+    
+    ////////////////////////////////////////////////////////////
+
   };
 
   /// Constructors

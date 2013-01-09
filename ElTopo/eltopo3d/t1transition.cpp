@@ -157,6 +157,11 @@ bool T1Transition::pop_edges()
             std::vector<size_t> faces_to_delete;
             std::vector<Vec3st> faces_to_create;
             std::vector<Vec2i> face_labels_to_create;
+            std::vector<size_t> faces_created;
+            
+            std::vector<size_t> verts_to_delete;
+            std::vector<Vec3d> verts_to_create;
+            std::vector<size_t> verts_created;
             
             std::vector<Vec3d> upper_neighbors;
             std::vector<Vec3d> lower_neighbors;
@@ -186,6 +191,14 @@ bool T1Transition::pop_edges()
                 ((label[0] == upper_region || label[1] == upper_region) ? upper_neighbors : lower_neighbors).push_back(m_surf.get_position(v2));
             }
             
+            // walls
+            faces_to_create.push_back(Vec3st(v0, nv1, nv0));
+            faces_to_create.push_back(Vec3st(nv0, nv1, v1));
+            
+            face_labels_to_create.push_back(cut);
+            face_labels_to_create.push_back(cut);
+            
+            // compute desired positions for new vertices
             Vec3d upper_neighbors_mean(0, 0, 0);
             for (size_t j = 0; j < upper_neighbors.size(); j++)
                 upper_neighbors_mean += upper_neighbors[j];
@@ -196,6 +209,10 @@ bool T1Transition::pop_edges()
                 lower_neighbors_mean += lower_neighbors[j];
             lower_neighbors_mean /= lower_neighbors.size();
             
+            Vec3d wall_breadth = (upper_neighbors_mean - lower_neighbors_mean);
+            wall_breadth /= mag(wall_breadth);
+            wall_breadth *= mag(m_surf.get_position(v1) - m_surf.get_position(v0));
+
             // apply the deletion
             for (size_t j = 0; j < faces_to_delete.size(); j++)
                 mesh.nondestructive_remove_triangle(faces_to_delete[j]);    //&&&& recursive deletion
@@ -214,24 +231,34 @@ bool T1Transition::pop_edges()
             {
                 size_t nf = mesh.nondestructive_add_triangle(faces_to_create[j]);
                 mesh.set_triangle_label(nf, face_labels_to_create[j]);
+                faces_created.push_back(nf);
             }
             
-            size_t wall0 = mesh.nondestructive_add_triangle(Vec3st(v0, nv1, nv0));
-            size_t wall1 = mesh.nondestructive_add_triangle(Vec3st(nv0, nv1, v1));
-
-            mesh.set_triangle_label(wall0, cut);
-            mesh.set_triangle_label(wall1, cut);
-            
-            // pull the two new vertices (nv0, nv1) apart (before this the two vertices have the same position)
-            Vec3d wall_breadth = (upper_neighbors_mean - lower_neighbors_mean);
-            wall_breadth /= mag(wall_breadth);
-            wall_breadth *= mag(m_surf.get_position(v1) - m_surf.get_position(v0));
+            //pull the two new vertices (nv0, nv1) apart (before this the two vertices have the same position)
             m_surf.set_newposition(nv0, m_surf.get_newposition(nv0) + wall_breadth * 0.1);
             m_surf.set_newposition(nv1, m_surf.get_newposition(nv1) - wall_breadth * 0.1);
             
             m_surf.set_position(nv0, m_surf.get_newposition(nv0));
             m_surf.set_position(nv1, m_surf.get_newposition(nv1));
             
+            // vertex deletion/creation logging
+            verts_to_create.push_back(m_surf.get_newposition(nv0));
+            verts_to_create.push_back(m_surf.get_newposition(nv1));
+            
+            verts_created.push_back(nv0);
+            verts_created.push_back(nv1);
+            
+            // Add to new history log
+            MeshUpdateEvent edgepop(MeshUpdateEvent::EDGE_POP);
+            edgepop.m_deleted_tris = faces_to_delete;
+            edgepop.m_created_tris = faces_created;
+            edgepop.m_created_tri_data = faces_to_create;
+            edgepop.m_created_tri_labels = face_labels_to_create;
+            edgepop.m_deleted_verts = verts_to_delete;
+            edgepop.m_created_verts = verts_created;
+            edgepop.m_created_vert_data = verts_to_create;
+            m_surf.m_mesh_change_history.push_back(edgepop);
+
             pop_occurred = true;
             
         } else
@@ -388,19 +415,20 @@ bool T1Transition::pop_edges()
             std::vector<size_t> faces_to_delete;
             std::vector<Vec3st> faces_to_create;
             std::vector<Vec2i> face_labels_to_create;
+            std::vector<size_t> faces_created;
             
-            std::vector<size_t> edges_to_delete;
-            std::vector<Vec2st> edges_to_create;
-            
-            std::vector<size_t> vertices_to_delete;
+            std::vector<size_t> verts_to_delete;
+            std::vector<Vec3d> verts_to_create;
+            std::vector<size_t> verts_created;
             
             // update the faces incident to the X-junction edges
             for (size_t j = 0; j < ne; j++)
             {
                 size_t edge = ordered_edges[j];
-                edges_to_delete.push_back(edge);
-                edges_to_create.push_back(Vec2st(upper_junctions[j + 0], upper_junctions[j + 1]));
-                edges_to_create.push_back(Vec2st(lower_junctions[j + 0], lower_junctions[j + 1]));
+                //&&&&
+//                edges_to_delete.push_back(edge);
+//                edges_to_create.push_back(Vec2st(upper_junctions[j + 0], upper_junctions[j + 1]));
+//                edges_to_create.push_back(Vec2st(lower_junctions[j + 0], lower_junctions[j + 1]));
                 
                 for (size_t k = 0; k < mesh.m_edge_to_triangle_map[edge].size(); k++)
                 {
@@ -433,7 +461,7 @@ bool T1Transition::pop_edges()
                 size_t v = mesh.get_common_vertex(edge0, edge1);
                 assert(v < mesh.nv());
                 
-                vertices_to_delete.push_back(v);
+                verts_to_delete.push_back(v);
                 
                 for (size_t k = 0; k < mesh.m_vertex_to_triangle_map[v].size(); k++)
                 {
@@ -483,6 +511,25 @@ bool T1Transition::pop_edges()
                 
             }
             
+            // triangulate the new interface between cut.x() and cut.y()
+            for (size_t j = 0; j < ne; j++)
+            {
+                if (j == 0)
+                {
+                    faces_to_create.push_back(Vec3st(upper_junctions[j], lower_junctions[j + 1], upper_junctions[j + 1]));
+                } else if (j == ne - 1)
+                {
+                    faces_to_create.push_back(Vec3st(upper_junctions[j], lower_junctions[j], upper_junctions[j + 1]));
+                } else
+                {
+                    faces_to_create.push_back(Vec3st(upper_junctions[j], lower_junctions[j], upper_junctions[j + 1]));
+                    faces_to_create.push_back(Vec3st(lower_junctions[j + 1], upper_junctions[j + 1], lower_junctions[j]));
+                }
+                face_labels_to_create.push_back(cut);
+                if (j != 0 && j != ne - 1)
+                    face_labels_to_create.push_back(cut);
+            }
+
             // apply the deletion
             for (size_t j = 0; j < faces_to_delete.size(); j++)
                 mesh.nondestructive_remove_triangle(faces_to_delete[j]);    //&&&& recursive deletion
@@ -504,27 +551,7 @@ bool T1Transition::pop_edges()
             {
                 size_t nf = mesh.nondestructive_add_triangle(faces_to_create[j]);
                 mesh.set_triangle_label(nf, face_labels_to_create[j]);
-            }
-            
-            // triangulate the new interface between cut.x() and cut.y()
-            for (size_t j = 0; j < ne; j++)
-            {
-                size_t wall0, wall1;
-                if (j == 0)
-                {
-                    wall0 = mesh.nondestructive_add_triangle(Vec3st(upper_junctions[j], lower_junctions[j + 1], upper_junctions[j + 1]));
-                } else if (j == ne - 1)
-                {
-                    wall0 = mesh.nondestructive_add_triangle(Vec3st(upper_junctions[j], lower_junctions[j], upper_junctions[j + 1]));
-                } else
-                {
-                    wall0 = mesh.nondestructive_add_triangle(Vec3st(upper_junctions[j], lower_junctions[j], upper_junctions[j + 1]));
-                    wall1 = mesh.nondestructive_add_triangle(Vec3st(lower_junctions[j + 1], upper_junctions[j + 1], lower_junctions[j]));
-                }
-
-                mesh.set_triangle_label(wall0, cut);
-                if (j != 0 && j != ne - 1)
-                    mesh.set_triangle_label(wall1, cut);
+                faces_created.push_back(nf);
             }
             
             // pull the two new vertices (nv0, nv1) apart (before this the two vertices have the same position)
@@ -540,12 +567,36 @@ bool T1Transition::pop_edges()
                 m_surf.set_position(nv1, m_surf.get_newposition(nv1));
             }
             
+            // vertex deletion/creation logging
+            for (size_t j = 0; j < ne - 1; j++)
+            {
+                size_t nv0 = upper_junctions[j + 1];
+                size_t nv1 = lower_junctions[j + 1];
+                
+                verts_to_create.push_back(m_surf.get_newposition(nv0));
+                verts_to_create.push_back(m_surf.get_newposition(nv1));
+            
+                verts_created.push_back(nv0);
+                verts_created.push_back(nv1);
+            }
+            
+            // Add to new history log
+            MeshUpdateEvent edgepop(MeshUpdateEvent::EDGE_POP);
+            edgepop.m_deleted_tris = faces_to_delete;
+            edgepop.m_created_tris = faces_created;
+            edgepop.m_created_tri_data = faces_to_create;
+            edgepop.m_created_tri_labels = face_labels_to_create;
+            edgepop.m_deleted_verts = verts_to_delete;
+            edgepop.m_created_verts = verts_created;
+            edgepop.m_created_vert_data = verts_to_create;
+            m_surf.m_mesh_change_history.push_back(edgepop);
+            
             pop_occurred = true;
             
         }
         
     }
-    
+
     return pop_occurred;
 }
 
