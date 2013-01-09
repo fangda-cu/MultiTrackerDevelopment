@@ -80,7 +80,7 @@ bool T1Transition::pop_edges()
             
             for (size_t k = 0; k < xjgroups[j].first.size(); k++)
             {
-                if (mesh.get_common_vertex(xjunctions[i], xjgroups[i].first[k]) < mesh.nv())
+                if (mesh.get_common_vertex(xjunctions[i], xjgroups[j].first[k]) < mesh.nv())
                 {
                     xjgroups[j].first.push_back(xjunctions[i]);
                     found_groups.push_back(j);
