@@ -18,6 +18,7 @@
 #include <meshpincher.h>
 #include <meshsmoother.h>
 #include <meshcutter.h>
+#include <t1transition.h>
 
 // ---------------------------------------------------------
 //  Forwards and typedefs
@@ -472,6 +473,15 @@ public:
     /// Surface cutting (tearing) operation object
     ///
     MeshCutter m_cutter;
+    
+    ////////////////////////////////////////////////////////////
+    // FD 20130109
+    
+    /// T1 transition operation object
+    ///
+    T1Transition m_t1transition;
+
+    ////////////////////////////////////////////////////////////
 
     /// Collision epsilon to use during mesh improvement operations
     ///

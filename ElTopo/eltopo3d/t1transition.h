@@ -66,7 +66,7 @@ public:
     ///
     bool should_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pull_apart_direction);
     
-    /// Whether or not to remesh the boundary
+    /// Whether or not to remesh the boundary (currently no effect)
     ///
     bool m_remesh_boundaries;
     

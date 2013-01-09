@@ -110,6 +110,7 @@ m_smoother( *this ),
 m_merger( *this ),
 m_pincher( *this ),
 m_cutter( *this ),
+m_t1transition( *this, initial_parameters.m_remesh_boundaries ),
 m_improve_collision_epsilon( initial_parameters.m_improve_collision_epsilon ),
 m_edge_flip_min_length_change( initial_parameters.m_edge_flip_min_length_change ),
 m_max_volume_change( UNINITIALIZED_DOUBLE ),   
@@ -789,6 +790,14 @@ void SurfTrack::improve_mesh( )
           m_smoother.null_space_smoothing_pass( 1.0 );
       }
 
+      ////////////////////////////////////////////////////////////
+      // FD 20130109
+
+      m_t1transition.pop_edges();
+
+      m_t1transition.pop_vertices();
+
+      ////////////////////////////////////////////////////////////
 
       if ( m_collision_safety )
       {

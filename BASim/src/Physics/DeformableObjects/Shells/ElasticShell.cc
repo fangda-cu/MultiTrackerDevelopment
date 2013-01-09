@@ -1451,9 +1451,10 @@ void ElasticShell::remesh()
 //  if (framecounter == 47)
 //    return;
   
-  performT1Transition();
+//  performT1Transition();
   
-  pullXJunctionVertices();
+//  pullXJunctionVertices();
+    
 }
   
 void ElasticShell::performT1Transition()
