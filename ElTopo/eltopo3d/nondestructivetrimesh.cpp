@@ -269,6 +269,13 @@ void NonDestructiveTriMesh::set_num_vertices( size_t num_vertices )
         assert( m_vertex_to_triangle_map.size() == m_vertex_to_edge_map.size() );
         assert( m_vertex_to_triangle_map.size() == m_is_boundary_vertex.size() );
         
+        ////////////////////////////////////////////////////////////
+        // FD 20130102
+        
+        assert(m_vertex_constraint_labels.size() == m_vertex_to_edge_map.size());
+        
+        ////////////////////////////////////////////////////////////
+        
         for ( size_t i = num_vertices; i < m_vertex_to_triangle_map.size(); ++i )
         {
             assert( vertex_is_deleted(i) );
@@ -280,6 +287,14 @@ void NonDestructiveTriMesh::set_num_vertices( size_t num_vertices )
     m_vertex_to_edge_map.resize( num_vertices );
     m_vertex_to_triangle_map.resize( num_vertices );
     m_is_boundary_vertex.resize( num_vertices );
+
+    ////////////////////////////////////////////////////////////
+    // FD 20130102
+    
+    m_vertex_constraint_labels.resize( num_vertices );
+    
+    ////////////////////////////////////////////////////////////
+    
     test_connectivity();
     
 }
