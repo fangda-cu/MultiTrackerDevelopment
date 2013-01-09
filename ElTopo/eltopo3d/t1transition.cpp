@@ -753,21 +753,28 @@ bool T1Transition::pop_vertices()
             for (l = 0; l < 3; l++)
             {
                 size_t e = mesh.m_triangle_to_edge_map[triangle][l];
-                if (mesh.m_edges[e][0] == xj)
-                    edge0 = e;
-                else if (mesh.m_edges[e][1] == xj)
-                    edge1 = e;
-                else
+                if (mesh.m_edges[e][0] != xj && mesh.m_edges[e][1] != xj)
                     edge2 = e;
             }
-            assert(edge0 < mesh.ne());
-            assert(edge1 < mesh.ne());
             assert(edge2 < mesh.ne());
             size_t v0 = mesh.m_edges[edge2][0];
             size_t v1 = mesh.m_edges[edge2][1];
             
-            assert(v0 == mesh.m_edges[edge0][1]);
-            assert(v1 == mesh.m_edges[edge1][0]);
+            for (l = 0; l < 3; l++)
+            {
+                size_t e = mesh.m_triangle_to_edge_map[triangle][l];
+                if ((mesh.m_edges[e][0] == xj && mesh.m_edges[e][1] == v0) ||
+                    (mesh.m_edges[e][1] == xj && mesh.m_edges[e][0] == v0))
+                    edge0 = e;
+                else if ((mesh.m_edges[e][0] == xj && mesh.m_edges[e][1] == v1) ||
+                         (mesh.m_edges[e][1] == xj && mesh.m_edges[e][0] == v1))
+                    edge1 = e;
+            }
+            assert(edge0 < mesh.ne());
+            assert(edge1 < mesh.ne());
+            
+            assert(v0 == mesh.m_edges[edge0][0] || v0 == mesh.m_edges[edge0][1]);
+            assert(v1 == mesh.m_edges[edge1][0] || v1 == mesh.m_edges[edge1][1]);
             
             if (!mesh.oriented(v0, v1, mesh.get_triangle(triangle)))
                 std::swap(v0, v1);
@@ -1086,21 +1093,28 @@ bool T1Transition::should_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pul
         for (l = 0; l < 3; l++)
         {
             size_t e = mesh.m_triangle_to_edge_map[triangle][l];
-            if (mesh.m_edges[e][0] == xj)
-                edge0 = e;
-            else if (mesh.m_edges[e][1] == xj)
-                edge1 = e;
-            else
+            if (mesh.m_edges[e][0] != xj && mesh.m_edges[e][1] != xj)
                 edge2 = e;
         }
-        assert(edge0 < mesh.ne());
-        assert(edge1 < mesh.ne());
         assert(edge2 < mesh.ne());
         size_t v0 = mesh.m_edges[edge2][0];
         size_t v1 = mesh.m_edges[edge2][1];
         
-        assert(v0 == mesh.m_edges[edge0][1]);
-        assert(v1 == mesh.m_edges[edge1][0]);
+        for (l = 0; l < 3; l++)
+        {
+            size_t e = mesh.m_triangle_to_edge_map[triangle][l];
+            if ((mesh.m_edges[e][0] == xj && mesh.m_edges[e][1] == v0) ||
+                (mesh.m_edges[e][1] == xj && mesh.m_edges[e][0] == v0))
+                edge0 = e;
+            else if ((mesh.m_edges[e][0] == xj && mesh.m_edges[e][1] == v1) ||
+                     (mesh.m_edges[e][1] == xj && mesh.m_edges[e][0] == v1))
+                edge1 = e;
+        }
+        assert(edge0 < mesh.ne());
+        assert(edge1 < mesh.ne());
+        
+        assert(v0 == mesh.m_edges[edge0][0] || v0 == mesh.m_edges[edge0][1]);
+        assert(v1 == mesh.m_edges[edge1][0] || v1 == mesh.m_edges[edge1][1]);
         
         Vec3d x0 = m_surf.get_position(v0);
         Vec3d x1 = m_surf.get_position(v1);
