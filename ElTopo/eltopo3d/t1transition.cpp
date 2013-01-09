@@ -119,8 +119,8 @@ bool T1Transition::pop_edges()
             size_t v0 = mesh.m_edges[edge][0];
             size_t v1 = mesh.m_edges[edge][1];
             
-            size_t nv0 = mesh.nondestructive_add_vertex();
-            size_t nv1 = mesh.nondestructive_add_vertex();
+            size_t nv0 = m_surf.add_vertex(m_surf.get_position(v0), m_surf.m_masses[v0]);
+            size_t nv1 = m_surf.add_vertex(m_surf.get_position(v0), m_surf.m_masses[v0]);
             
             m_surf.set_newposition(nv0, (m_surf.get_position(v0) + m_surf.get_position(v1)) / 2);  // the two new vertices will be pulled apart later
             m_surf.set_newposition(nv1, (m_surf.get_position(v0) + m_surf.get_position(v1)) / 2);
@@ -294,8 +294,8 @@ bool T1Transition::pop_edges()
                 edge_oriented[j]     = (v == mesh.m_edges[edge0][1]);
                 edge_oriented[j + 1] = (v == mesh.m_edges[edge1][0]);
                 
-                size_t nv0 = mesh.nondestructive_add_vertex();
-                size_t nv1 = mesh.nondestructive_add_vertex();
+                size_t nv0 = m_surf.add_vertex(m_surf.get_position(v), m_surf.m_masses[v]);
+                size_t nv1 = m_surf.add_vertex(m_surf.get_position(v), m_surf.m_masses[v]);
                 
                 m_surf.set_newposition(nv0, m_surf.get_position(v));  // the two new vertices will be pulled apart later
                 m_surf.set_newposition(nv1, m_surf.get_position(v));
@@ -698,8 +698,8 @@ bool T1Transition::pop_vertices()
             continue;
         
         // pull apart
-        size_t a = mesh.nondestructive_add_vertex();
-        size_t b = mesh.nondestructive_add_vertex();
+        size_t a = m_surf.add_vertex(m_surf.get_position(xj), m_surf.m_masses[xj]);
+        size_t b = m_surf.add_vertex(m_surf.get_position(xj), m_surf.m_masses[xj]);
         
         // set the position/velocity of new vertices
         m_surf.set_newposition(a, m_surf.get_position(xj));
