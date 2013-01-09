@@ -1,0 +1,43 @@
+sim_dx 0.2
+surface_dx 0.1
+
+dent 
+(
+   dent_min [0.4353 0.4353 0.4353]
+   dent_max [4.6233 1.39756 4.6233]
+   dent_center [2.5293 1.39756 2.5293]
+   dent_radius 0.6376
+   dent_magnitude 0.09375
+)
+
+output_path /Users/tyson/scratch/dent-adaptive
+
+min_edge_length_fraction 0.5
+max_edge_length_fraction 1.5
+max_volume_change_fraction 0.0005
+merge_proximity_fraction 0.02
+repulsion_proximity_fraction 0.001
+perform_improvement 1
+allow_topology_changes 1
+collision_safety 1
+
+free_surface 1
+remesh 1
+seed_at_solid 0
+allow_solid_overlap 1
+volume_correction 1
+surface_tension_coefficient 0.0
+gravity_force [0.0 -1.0 0.0]
+
+interpolation_scheme improved
+
+//camera_target [2.5 -0.14 0.0]
+//camera_distance 8.3
+//camera_heading 0.0
+//camera_pitch -0.55
+
+camera_target [2.5136 -0.466507 0.0]
+camera_distance 7.58902
+camera_heading 0.0
+camera_pitch -0.55
+

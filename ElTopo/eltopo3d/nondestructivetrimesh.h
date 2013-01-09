@@ -285,11 +285,12 @@ public:
     
     ////////////////////////////////////////////////////////////
     
-private:
-    
     /// List of triangles: the fundamental data
     ///
     std::vector<Vec3st> m_tris;
+
+private:
+    
     
     /// Add an edge to the list of edges.  Return the index of the new edge.
     ///

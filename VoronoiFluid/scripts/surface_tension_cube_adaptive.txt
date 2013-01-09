@@ -1,0 +1,37 @@
+
+sim_dx 0.5
+surface_dx 0.25
+
+box 
+( 
+    box_min [1.8 1.8 1.8] 
+    box_max [3.2 3.2 3.2]
+    box_dx 0.14
+)
+
+output_path /Users/tyson/Desktop/talk/surface_tension_cube_adaptive
+
+min_edge_length_fraction 0.5
+max_edge_length_fraction 1.5
+max_volume_change_fraction 0.0005
+merge_proximity_fraction 0.02
+repulsion_proximity_fraction 0.001
+perform_improvement 1
+allow_topology_changes 1
+collision_safety 1
+
+free_surface 1
+remesh 1
+seed_at_solid 1
+allow_solid_overlap 0
+volume_correction 1
+surface_tension_coefficient 0.001
+gravity_force [0.0 0.0 0.0]
+
+interpolation_scheme improved
+
+camera_target [2.5 0.8 0.0]
+camera_distance 7.4
+camera_heading 0.0
+camera_pitch -0.55
+

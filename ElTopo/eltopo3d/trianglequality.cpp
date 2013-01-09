@@ -307,7 +307,9 @@ double estimated_max_curvature(const SurfTrack& surf, size_t vertex) {
     assert(row == numneighbors);
 
     int info;
-    LAPACK::simple_least_squares_svd(numneighbors, 6, 1, &Mat[0], numneighbors, &rhs[0], info);
+    int rank;
+    double rcond = 0;
+    LAPACK::simple_least_squares_svd(numneighbors, 6, 1, &Mat[0], numneighbors, &rhs[0], info, rcond, rank);
     std::vector<double> coeffs(6);
     for(int id = 0; id < 6; ++id) coeffs[id] = rhs[id];
   

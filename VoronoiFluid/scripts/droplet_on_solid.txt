@@ -1,0 +1,53 @@
+
+output_path /Users/tyson/scratch/work/
+
+sim_dx 0.25
+surface_dx 0.1
+
+sphere
+(
+    sphere_center [1.5293 1.5293 1.5293]
+    sphere_radius 0.3
+)
+
+min_edge_length_fraction 0.4
+max_edge_length_fraction 1.3
+max_volume_change_fraction 0.01
+
+merge_proximity_fraction 0.001
+repulsion_proximity_fraction 0.002
+
+perform_improvement 1
+allow_topology_changes 1
+collision_safety 1
+
+null_space_smoothing 0
+
+free_surface 1
+remesh 1
+seed_at_solid 1
+allow_solid_overlap 0
+volume_correction 1
+surface_tension_coefficient 0.0
+gravity_force [0.0 -1.0 0.0]
+
+air_sample_rejection_threshold 0.1
+tetgen_max_radius_edge_ratio 1.75
+interpolation_scheme generalized
+
+simulation_domain
+(
+   min [0.0 0.0 0.0]
+   max [5.0 5.0 5.0]
+)
+
+solid_domain
+(
+   min [0.9353 0.9353 0.9353]
+   max [4.1233 4.0 4.1233]
+)
+
+camera_target [2.6 0.23 0.0]
+camera_distance 9.0
+camera_heading 0.0
+camera_pitch -0.529

@@ -1,0 +1,54 @@
+
+sim_dx 0.5
+surface_dx 0.25
+
+frame_rate 30.0
+num_surface_substeps 2 
+
+output_path c:\output
+
+sphere
+(
+    sphere_center [2.5 2.5 2.5]
+    sphere_radius 1.0
+)
+
+min_edge_length_fraction 0.7
+max_edge_length_fraction 1.4
+max_volume_change_fraction 0.0005
+merge_proximity_fraction 0.0005
+repulsion_proximity_fraction 0.001
+perform_improvement 1
+allow_topology_changes 1
+collision_safety 1
+
+null_space_smoothing 1
+
+free_surface 1
+remesh 1
+seed_at_solid 1
+allow_solid_overlap 0
+volume_correction 1
+surface_tension_coefficient 0.0
+gravity_force [0.0 -1.0 0.0]
+
+air_sample_rejection_threshold 0.1
+tetgen_max_radius_edge_ratio 2.00
+interpolation_scheme barycentric
+
+simulation_domain
+(
+   min [0.0 0.0 0.0]
+   max [5.0 5.0 5.0]
+)
+
+solid_domain
+(
+   min [0.9353 0.9353 0.9353]
+   max [4.1233 4.1233 4.1233]
+)
+
+camera_target [2.5 -0.14 0.0]
+camera_distance 8.3
+camera_heading 0.0
+camera_pitch -0.55

@@ -18,7 +18,7 @@
 
 namespace ElTopo {
 
-extern const double G_EIGENVALUE_RANK_RATIO;    // in surftrack.cpp
+extern double G_EIGENVALUE_RANK_RATIO;    // in surftrack.cpp
 
 }
 

@@ -24,14 +24,14 @@ namespace LAPACK{
     void get_eigen_decomposition( int *n, double *a, int* /*lda*/, double *eigenvalues, double *work, int *lwork, int *info );
     int svd( int* m, int* n, double* a, int* lda, double *s, double *u, int* ldu, double* vt, int *ldvt, double *work, int* lwork, int* iwork, int* info );
     int least_squares_svd( int* m, int* n, int* nrhs,  double* a, int* lda,  double* rhs_sol, int* ldb,  double* s, double* rcond, int* rank, double* work, int* lwork, int* iwork, int *info );
-    void simple_least_squares_svd( int m, int n, int nrhs, double* a, int lda, double* rhs_sol, int& info );
-    void solve_least_squares(char trans, int m, int n, int nrhs, double*a, int lda, double*b, int ldb, int& info );
+    void simple_least_squares_svd( int m, int n, int nrhs, double* a, int lda, double* rhs_sol, int& info, double rcond, int& rank );
+    void solve_least_squares(char trans, int m, int n, int nrhs, double*a, int lda, double*b, int ldb, int& info, double rcond, int& rank);
     
     // ---------------------------------------------------------
     //  Inline function definitions --- common for all platforms
     // ---------------------------------------------------------
     
-    inline void simple_least_squares_svd( int m, int n, int nrhs, double* a, int lda, double* rhs_sol, int& info )
+    inline void simple_least_squares_svd( int m, int n, int nrhs, double* a, int lda, double* rhs_sol, int& info, double rcond, int& rank )
     {
         int lapack_m = m;
         int lapack_n = n;
@@ -39,8 +39,6 @@ namespace LAPACK{
         int lapack_lda = lda;   
         int lapack_ldb = max( lapack_m, lapack_n );
         double* s = new double[ min(lapack_m, lapack_n) ];
-        double rcond = -1.0;
-        int rank;   
         double optimal_work_size;
         int lwork = -1;
         int nlvl = 26;
@@ -98,9 +96,9 @@ namespace LAPACK{
         
     }
     
-    inline void solve_least_squares(char, int m, int n, int nrhs, double*a, int lda, double*b, int, int& info ) 
+    inline void solve_least_squares(char, int m, int n, int nrhs, double*a, int lda, double*b, int, int& info, double rcond, int& rank ) 
     {
-        simple_least_squares_svd( m, n, nrhs, a, lda, b, info );
+        simple_least_squares_svd( m, n, nrhs, a, lda, b, info, rcond, rank );
     }
     
     // end of platform-independent code
