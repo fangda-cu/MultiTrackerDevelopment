@@ -100,6 +100,7 @@ bool T1Transition::pop_edges()
                 newgroup.insert(newgroup.end(), xjgroups[found_groups[j]].first.begin(), xjgroups[found_groups[j]].first.end());
             newgroup.push_back(xjunctions[i]);
             
+            std::sort(found_groups.rbegin(), found_groups.rend());
             for (size_t j = 0; j < found_groups.size(); j++)
                 xjgroups.erase(xjgroups.begin() + found_groups[j]);
             
