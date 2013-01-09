@@ -1475,10 +1475,7 @@ void ElasticShell::performT1Transition()
 
   // sort the X-junction edges into connected groups with the same cut
   std::vector<std::pair<std::vector<EdgeHandle>, Mat2i> > xjgroups; // each element is a list of consecutive x junction edges, along with the id of the two regions that should end up adjacent after pull-apart, and the id of the other two regions
-  std::vector<int> groupid(xjunctions.size());
-  for (size_t i = 0; i < xjunctions.size(); i++)
-    groupid[i] = i;
-  
+
   for (size_t i = 0; i < xjunctions.size(); i++)
   {
     Mat2i cut = cutXJunctionEdge(xjunctions[i]);
