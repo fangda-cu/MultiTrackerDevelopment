@@ -202,6 +202,19 @@ public:
     ///
     inline static size_t index_in_triangle( const Vec3st& tri, size_t v, Vec2ui& other_two );
     
+    ////////////////////////////////////////////////////////////
+    // FD 20130109
+    //
+    /// Query triangle-vertex incidence
+    ///
+    inline static bool triangle_contains_vertex( const Vec3st & tri, size_t v );
+    
+    /// Query triangle-edge incidence
+    ///
+    inline static bool triangle_contains_edge( const Vec3st & tri, const Vec2st & e );
+    
+    ////////////////////////////////////////////////////////////
+    
     /// Return the edge incident on two triangles.  Returns ~0 if triangles are not adjacent.
     ///
     inline size_t get_common_edge( size_t triangle_a, size_t triangle_b );
@@ -825,6 +838,26 @@ inline void NonDestructiveTriMesh::set_vertex_constraint_label( size_t index, in
 }
 
 ////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////
+// FD 20130109
+//
+/// Query triangle-vertex incidence
+///
+inline bool NonDestructiveTriMesh::triangle_contains_vertex( const Vec3st & tri, size_t v )
+{
+    return tri[0] == v || tri[1] == v || tri[2] == v;
+}
+
+/// Query triangle-edge incidence
+///
+inline bool NonDestructiveTriMesh::triangle_contains_edge( const Vec3st & tri, const Vec2st & e )
+{
+    return triangle_contains_vertex(tri, e[0]) && triangle_contains_vertex(tri, e[1]);
+}
+
+////////////////////////////////////////////////////////////
+    
 
 }
 

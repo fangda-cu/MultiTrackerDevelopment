@@ -437,12 +437,8 @@ bool T1Transition::pop_edges()
                     size_t triangle = mesh.m_vertex_to_triangle_map[v][k];
                     
                     // skip if the triangle contains edge0 or edge1
-                    Vec2ui dummy;
-                    if (mesh.index_in_triangle(mesh.get_triangle(triangle), mesh.m_edges[edge0][0], dummy) < 3 &&
-                        mesh.index_in_triangle(mesh.get_triangle(triangle), mesh.m_edges[edge0][1], dummy) < 3)
-                        continue;
-                    if (mesh.index_in_triangle(mesh.get_triangle(triangle), mesh.m_edges[edge1][0], dummy) < 3 &&
-                        mesh.index_in_triangle(mesh.get_triangle(triangle), mesh.m_edges[edge1][1], dummy) < 3)
+                    if (mesh.triangle_contains_edge(mesh.get_triangle(triangle), mesh.m_edges[edge0]) ||
+                        mesh.triangle_contains_edge(mesh.get_triangle(triangle), mesh.m_edges[edge1]))
                         continue;
                     
                     faces_to_delete.push_back(triangle);
