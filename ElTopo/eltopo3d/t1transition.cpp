@@ -1142,7 +1142,7 @@ bool T1Transition::should_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pul
             }
             for (size_t j = 0; j < mesh.m_edge_to_triangle_map[ev1].size(); j++)
             {
-                Vec2i label = mesh.get_triangle_label(mesh.m_edge_to_triangle_map[ev0][j]);
+                Vec2i label = mesh.get_triangle_label(mesh.m_edge_to_triangle_map[ev1][j]);
                 if (label[0] == A || label[1] == A)
                     v1adjA = true;
             }
