@@ -24,10 +24,12 @@
 namespace ElTopo {
 
 class SurfTrack;
-template<unsigned int N, class T> struct Vec;
-typedef Vec<3,double> Vec3d;
-typedef Vec<2,size_t> Vec2st;
-typedef Vec<3,size_t> Vec3st;
+template <unsigned int N, class T> struct Vec;
+typedef Vec<3, double> Vec3d;
+typedef Vec<2, size_t> Vec2st;
+typedef Vec<3, size_t> Vec3st;
+typedef Vec<2, int>    Vec2i;
+typedef Vec<2, Vec2i>  Mat2i;
 
 // ---------------------------------------------------------
 //  Class definitions
@@ -55,6 +57,11 @@ public:
     /// Perform vertex popping (second step of T1 transition)
     ///
     bool pop_vertices();
+    
+    /// Decide the cut direction on an X-junction edge
+    ///
+    Mat2i cut_x_junction_edge(size_t e);
+
     
     /// Whether or not to remesh the boundary
     ///

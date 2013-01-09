@@ -162,6 +162,18 @@ public:
     ///
     void set_num_vertices( size_t num_vertices );
     
+    /// Query vertex count
+    ///
+    size_t nv();
+    
+    /// Query edge count
+    ///
+    size_t ne();
+    
+    /// Query triangle count
+    ///
+    size_t nt();
+        
     /// Given two vertices on a triangle, return the third vertex
     ///
     inline size_t get_third_vertex( size_t vertex0, size_t vertex1, const Vec3st& triangle ) const;

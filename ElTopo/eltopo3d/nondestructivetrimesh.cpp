@@ -285,6 +285,40 @@ void NonDestructiveTriMesh::set_num_vertices( size_t num_vertices )
 }
 
 
+// ---------------------------------------------------------
+///
+/// Query primitive counts
+///
+// ---------------------------------------------------------
+    
+size_t NonDestructiveTriMesh::nv()
+{
+    assert(m_vertex_to_triangle_map.size() == m_vertex_to_edge_map.size());
+    assert(m_vertex_to_triangle_map.size() == m_is_boundary_vertex.size());
+    assert(m_vertex_to_triangle_map.size() == m_vertex_constraint_labels.size());
+    
+    return m_vertex_to_triangle_map.size();
+}
+
+
+size_t NonDestructiveTriMesh::ne()
+{
+    assert(m_edges.size() == m_edge_to_triangle_map.size());
+    
+    return m_edges.size();
+}
+
+
+size_t NonDestructiveTriMesh::nt()
+{
+    assert(m_tris.size() == m_triangle_to_edge_map.size());
+    assert(m_tris.size() == m_triangle_labels.size());
+    
+    return m_tris.size();
+}
+    
+    
+    
 // --------------------------------------------------------
 ///
 /// Add an edge to the list.  Return the index of the new edge.
