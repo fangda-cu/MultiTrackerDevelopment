@@ -82,7 +82,6 @@ bool T1Transition::pop_edges()
             {
                 if (mesh.get_common_vertex(xjunctions[i], xjgroups[j].first[k]) < mesh.nv())
                 {
-                    xjgroups[j].first.push_back(xjunctions[i]);
                     found_groups.push_back(j);
                     break;
                 }
@@ -99,8 +98,11 @@ bool T1Transition::pop_edges()
             std::vector<size_t> newgroup;
             for (size_t j = 0; j < found_groups.size(); j++)
                 newgroup.insert(newgroup.end(), xjgroups[found_groups[j]].first.begin(), xjgroups[found_groups[j]].first.end());
+            newgroup.push_back(xjunctions[i]);
+            
             for (size_t j = 0; j < found_groups.size(); j++)
                 xjgroups.erase(xjgroups.begin() + found_groups[j]);
+            
             xjgroups.push_back(std::pair<std::vector<size_t>, Mat2i>(newgroup, cut));
         }
     }
