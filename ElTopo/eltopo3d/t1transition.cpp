@@ -578,7 +578,7 @@ bool T1Transition::pop_vertices()
         assert(label[0] >= 0);
         assert(label[1] >= 0);
         if (label[0] > max_region) max_region = label[0];
-        if (label[-1] > max_region) max_region = label[1];
+        if (label[1] > max_region) max_region = label[1];
     }
     int nregion = max_region + 1;
     
