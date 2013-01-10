@@ -810,7 +810,21 @@ bool T1Transition::pop_vertices()
         mean_edge_length /= edge_count;
         
         Vec3d pull_apart_offset = pull_apart_direction * mean_edge_length;
+        
+        // compute the desired destination positions, enforcing constraints
+        bool xj_constraint = m_surf.m_mesh.get_vertex_constraint_label(xj);
+        Vec3d a_desired_position = m_surf.get_newposition(a) + pull_apart_offset * 0.1;
+        Vec3d b_desired_position = m_surf.get_newposition(b) - pull_apart_offset * 0.1;
 
+        if (xj_constraint)
+        {
+            assert(m_surf.m_constrained_vertices_callback);            
+            m_surf.m_constrained_vertices_callback->generate_vertex_popped_positions(m_surf, xj, A, B, a_desired_position, b_desired_position);
+        }
+        
+        mesh.set_vertex_constraint_label(a, xj_constraint);
+        mesh.set_vertex_constraint_label(b, xj_constraint);
+        
         // update the face connectivities
         std::vector<size_t> faces_to_delete;
         std::vector<Vec3st> faces_to_create;
@@ -983,27 +997,11 @@ bool T1Transition::pop_vertices()
         vertices_to_process.push_back(b);
         
         // set the vertices new positions
-        m_surf.set_newposition(a, m_surf.get_newposition(a) + pull_apart_offset * 0.1);
-        m_surf.set_newposition(b, m_surf.get_newposition(b) - pull_apart_offset * 0.1);
-
-        // enforce constraints
-        bool xj_constraint = m_surf.m_mesh.get_vertex_constraint_label(xj);
-        if (xj_constraint)
-        {
-            assert(m_surf.m_constrained_vertices_callback);
-            
-            Vec3d pos_a = m_surf.get_newposition(a);
-            Vec3d pos_b = m_surf.get_newposition(b);
-            m_surf.m_constrained_vertices_callback->generate_vertex_popped_positions(m_surf, xj, A, B, pos_a, pos_b);
-            m_surf.set_newposition(a, pos_a);
-            m_surf.set_newposition(b, pos_b);
-        }
+        m_surf.set_newposition(a, a_desired_position);
+        m_surf.set_newposition(b, b_desired_position);
         
         m_surf.set_position(a, m_surf.get_newposition(a));
         m_surf.set_position(b, m_surf.get_newposition(b));
-        
-        mesh.set_vertex_constraint_label(a, xj_constraint);
-        mesh.set_vertex_constraint_label(b, xj_constraint);
         
         // vertex deletion/creation logging
         verts_to_delete.push_back(xj);
