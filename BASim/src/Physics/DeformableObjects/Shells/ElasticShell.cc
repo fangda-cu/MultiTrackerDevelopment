@@ -1415,6 +1415,29 @@ void ElasticShell::remesh()
         m_face_regions[reverse_trimap[event.m_created_tris[i]]].y() = event.m_created_tri_labels[i][1];
       }
       
+    } 
+    else if (event.m_type == ElTopo::MeshUpdateEvent::EDGE_POP) {
+
+      for (size_t i = 0; i < event.m_deleted_tris.size(); i++)
+        m_obj->deleteFace(reverse_trimap[event.m_deleted_tris[i]], true);
+      
+      for (size_t i = 0; i < event.m_created_vert_data.size(); i++)
+      {
+        VertexHandle nv = m_obj->addVertex();
+        setVertexPosition(nv, Vec3d(event.m_created_vert_data[i][0], event.m_created_vert_data[i][1], event.m_created_vert_data[i][2]));
+        reverse_vertmap[event.m_created_verts[i]] = nv;
+        vert_numbers[nv] = event.m_created_verts[i];
+      }
+      
+      for (size_t i = 0; i < event.m_created_tri_data.size(); i++)
+      {
+        ElTopo::Vec3st & f = event.m_created_tri_data[i];
+        FaceHandle nf = m_obj->addFace(reverse_vertmap[f[0]], reverse_vertmap[f[1]], reverse_vertmap[f[2]]);
+        setFaceLabel(nf, Vec2i(event.m_created_tri_labels[i][0], event.m_created_tri_labels[i][1]));
+        reverse_trimap[event.m_created_tris[i]] = nf;
+        face_numbers[nf] = event.m_created_tris[i];
+      }
+      
     }
     else {
       std::cout << "ERROR: unknown remeshing operation: " << event.m_type << std::endl;
