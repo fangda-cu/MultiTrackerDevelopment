@@ -406,8 +406,38 @@ bool EdgeSplitter::split_edge( size_t edge, bool specify_split_position, Vec3d *
   Vec3d new_vertex_position = 0.5 * ( m_surf.get_position( vertex_a ) + m_surf.get_position( vertex_b ) );
   Vec3d new_vertex_smooth_position;
 
+  ///////////////////////////////////////////////////////////////////////
+  // FD 20120109
+  //
+  // If endpoints are constrained, as the callback for a final position
+  // instead of using midpoint. This is filled into new_vertex_position 
+  // instead of new_vertex_smooth_position, so that if this position fails
+  // the collision detection, splitting will not fall back to using the
+  // midpoint, but return false.
+  
   bool use_smooth_point = (incident_tris.size() == 2) || (incident_tris.size() == 1 && typeid(m_surf.m_subdivision_scheme) == typeid(ModifiedButterflyScheme));
   
+  bool keep_vert_is_constrained =   m_surf.m_mesh.get_vertex_constraint_label(vertex_a);
+  bool delete_vert_is_constrained = m_surf.m_mesh.get_vertex_constraint_label(vertex_b);
+  
+  bool new_vert_constraint_label = false;
+  if (keep_vert_is_constrained || delete_vert_is_constrained)
+  {
+    use_smooth_point = false;
+    
+    assert(m_surf.m_constrained_vertices_callback);
+    if (!m_surf.m_constrained_vertices_callback->generate_splitted_position(m_surf, vertex_a, vertex_b, new_vertex_position))
+    {
+      if (m_surf.m_verbose)
+        std::cout << "Constraint callback vetoed splitting" << std::endl;
+      return false;
+    }
+    
+    m_surf.m_constrained_vertices_callback->generate_splitted_constraint_label(m_surf, vertex_a, vertex_b, m_surf.m_mesh.get_vertex_constraint_label(vertex_a), m_surf.m_mesh.get_vertex_constraint_label(vertex_b));
+  }
+  
+  /////////////////////////////////////////
+
   /////////////////////////////////////////
   // FD 20121218
   //
@@ -617,7 +647,7 @@ bool EdgeSplitter::split_edge( size_t edge, bool specify_split_position, Vec3d *
   //
   // update the constraint label of the new vertex
   
-  mesh.set_vertex_constraint_label(vertex_e, mesh.get_vertex_constraint_label(vertex_a) & mesh.get_vertex_constraint_label(vertex_b));
+  mesh.set_vertex_constraint_label(vertex_e, new_vert_constraint_label);
   
   ///////////////////////////////////////////////////////////////////////
 

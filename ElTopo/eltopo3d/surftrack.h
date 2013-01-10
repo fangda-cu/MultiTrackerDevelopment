@@ -595,7 +595,7 @@ public:
         
     };
     
-    ConstrainedVerticesCallback * m_constrained_vertices_collapsing_callback;
+    ConstrainedVerticesCallback * m_constrained_vertices_callback;
 
     ///////////////////////////////////////////////////////////////////////
         

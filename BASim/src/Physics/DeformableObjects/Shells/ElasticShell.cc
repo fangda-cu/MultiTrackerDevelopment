@@ -1075,7 +1075,7 @@ void ElasticShell::remesh()
   std::vector<ElTopo::Vec3d> vert_vel;
   std::vector<ElTopo::Vec3st> tri_data;
   std::vector<ElTopo::Vec2i> tri_labels;
-  std::vector<int> vert_const_labels;
+  std::vector<bool> vert_const_labels;
   std::vector<Scalar> masses;
 
   DeformableObject& mesh = getDefoObj();
@@ -1109,7 +1109,7 @@ void ElasticShell::remesh()
       masses.push_back(numeric_limits<Scalar>::infinity());
     else
       masses.push_back(mass);
-    vert_const_labels.push_back(getVertexConstraintLabel(vh));
+    vert_const_labels.push_back(getVertexConstraintLabel(vh) != 0);
     vert_numbers[vh] = id;
     reverse_vertmap.push_back(vh);
 
@@ -1153,7 +1153,7 @@ void ElasticShell::remesh()
 
   std::cout << "Calling surface improvement\n";
   ElTopo::SurfTrack surface_tracker( vert_data, tri_data, masses, construction_parameters ); 
-  surface_tracker.m_constrained_vertices_collapsing_callback = this;
+  surface_tracker.m_constrained_vertices_callback = this;
   surface_tracker.m_mesh.m_vertex_constraint_labels = vert_const_labels;
   surface_tracker.set_all_remesh_velocities(vert_vel);
   for (size_t i = 0; i < reverse_trimap.size(); i++)

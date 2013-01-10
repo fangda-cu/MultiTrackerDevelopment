@@ -604,9 +604,14 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   if (del_vert_is_boundary) delete_rank = 4;
   
   // constraint vertices have higher precedence
-  bool keep_vert_is_constrained =   (m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep) != 0);
-  bool delete_vert_is_constrained = (m_surf.m_mesh.get_vertex_constraint_label(vertex_to_delete) != 0);
-  int new_vert_constraint_label = (m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep) | m_surf.m_mesh.get_vertex_constraint_label(vertex_to_delete));
+  bool keep_vert_is_constrained =   m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep);
+  bool delete_vert_is_constrained = m_surf.m_mesh.get_vertex_constraint_label(vertex_to_delete);
+  bool new_vert_constraint_label = false;
+  if (keep_vert_is_constrained || delete_vert_is_constrained)
+  {
+    assert(m_surf.m_constrained_vertices_callback);
+    m_surf.m_constrained_vertices_callback->generate_collapsed_constraint_label(m_surf, vertex_to_keep, vertex_to_delete, m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep), m_surf.m_mesh.get_vertex_constraint_label(vertex_to_delete));
+  }
   
   if (keep_vert_is_constrained)   keep_rank = 5;
   if (delete_vert_is_constrained) delete_rank = 5;
@@ -633,12 +638,14 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     }
   } else if (keep_vert_is_constrained || delete_vert_is_constrained)
   {
-    assert(m_surf.m_constrained_vertices_collapsing_callback);
+    assert(m_surf.m_constrained_vertices_callback);
 
-    Vec3d newpos;
-    if (!m_surf.m_constrained_vertices_collapsing_callback->generate_collapsed_position(m_surf, vertex_to_keep, vertex_to_delete, newpos))
+    Vec3d newpos = (m_surf.get_position(vertex_to_keep) + m_surf.get_position(vertex_to_delete)) / 2;
+    if (!m_surf.m_constrained_vertices_callback->generate_collapsed_position(m_surf, vertex_to_keep, vertex_to_delete, newpos))
     {
       // the callback decides this edge should not be collapsed
+      if (m_surf.m_verbose)
+        std::cout << "Constraint callback vetoed collapsing." << std::endl;
       return false;
     }
     
