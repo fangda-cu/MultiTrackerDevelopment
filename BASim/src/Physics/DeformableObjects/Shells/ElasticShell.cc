@@ -1356,14 +1356,18 @@ void ElasticShell::remesh()
           faceContainsVertex(*m_obj, nf0, reverse_vertmap[event.m_created_tri_data[0][1]]) &&
           faceContainsVertex(*m_obj, nf0, reverse_vertmap[event.m_created_tri_data[0][2]]))
       {
+        if (event.m_created_tris[0] >= reverse_trimap.size()) reverse_trimap.resize(event.m_created_tris[0] + 1);
         reverse_trimap[event.m_created_tris[0]] = nf0;
         face_numbers[nf0] = event.m_created_tris[0];
+        if (event.m_created_tris[1] >= reverse_trimap.size()) reverse_trimap.resize(event.m_created_tris[1] + 1);
         reverse_trimap[event.m_created_tris[1]] = nf1;
         face_numbers[nf1] = event.m_created_tris[1];
       } else
       {
+        if (event.m_created_tris[0] >= reverse_trimap.size()) reverse_trimap.resize(event.m_created_tris[0] + 1);
         reverse_trimap[event.m_created_tris[0]] = nf1;
         face_numbers[nf1] = event.m_created_tris[0];
+        if (event.m_created_tris[1] >= reverse_trimap.size()) reverse_trimap.resize(event.m_created_tris[1] + 1);
         reverse_trimap[event.m_created_tris[1]] = nf0;
         face_numbers[nf0] = event.m_created_tris[1];
       }
