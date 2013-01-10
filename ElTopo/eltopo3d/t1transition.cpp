@@ -232,7 +232,7 @@ bool T1Transition::pop_edges()
 
             // apply the deletion
             for (size_t j = 0; j < faces_to_delete.size(); j++)
-                mesh.nondestructive_remove_triangle(faces_to_delete[j]);    //&&&& recursive deletion
+                m_surf.remove_triangle(faces_to_delete[j]);    //&&&& recursive deletion
             
 //            m_obj->deleteEdge(edge, false);   //&&&&
             
@@ -566,7 +566,7 @@ bool T1Transition::pop_edges()
 
             // apply the deletion
             for (size_t j = 0; j < faces_to_delete.size(); j++)
-                mesh.nondestructive_remove_triangle(faces_to_delete[j]);    //&&&& recursive deletion
+                m_surf.remove_triangle(faces_to_delete[j]);    //&&&& recursive deletion
   
             //&&&&
 //            for (size_t j = 0; j < edges_to_delete.size(); j++)
@@ -977,7 +977,7 @@ bool T1Transition::pop_vertices()
         
         // apply the deleteion/addition
         for (size_t i = 0; i < faces_to_delete.size(); i++)
-            mesh.nondestructive_remove_triangle(faces_to_delete[i]);
+            m_surf.remove_triangle(faces_to_delete[i]);
 
         //&&&& recursive deletion
 //        for (size_t i = 0; i < edges_to_delete.size(); i++)
