@@ -148,8 +148,8 @@ bool T1Transition::pop_edges()
                 (!mesh.oriented(v0, v1, mesh.get_triangle(region0faces[0])) && label0[0] == cut[0]))
             {
                 std::swap(upper_region, lower_region);
-                assert((mesh.oriented(v0, v1, mesh.get_triangle(region0faces[1])) && label1[0] == cut[0]) ||
-                       (mesh.oriented(v0, v1, mesh.get_triangle(region0faces[1])) && label1[1] == cut[0]));
+                assert(( mesh.oriented(v0, v1, mesh.get_triangle(region0faces[1])) && label1[0] == cut[0]) ||
+                       (!mesh.oriented(v0, v1, mesh.get_triangle(region0faces[1])) && label1[1] == cut[0]));
             }                
             assert(upper_region >= 0);
             assert(lower_region >= 0);
