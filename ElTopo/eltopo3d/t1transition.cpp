@@ -166,6 +166,9 @@ bool T1Transition::pop_edges()
             std::vector<Vec3d> upper_neighbors;
             std::vector<Vec3d> lower_neighbors;
             
+            Vec3d upper_desired_position;
+            Vec3d lower_desired_position;
+            
             for (size_t j = 0; j < mesh.m_edge_to_triangle_map[edge].size(); j++)
             {
                 size_t triangle = mesh.m_edge_to_triangle_map[edge][j];
@@ -213,6 +216,20 @@ bool T1Transition::pop_edges()
             wall_breadth /= mag(wall_breadth);
             wall_breadth *= mag(m_surf.get_position(v1) - m_surf.get_position(v0));
 
+            // compute the desired destination positions, enforcing constraints
+            bool original_constraint = mesh.get_vertex_constraint_label(v0) && mesh.get_vertex_constraint_label(v1);
+            upper_desired_position = m_surf.get_newposition(nv0) + wall_breadth * 0.1;
+            lower_desired_position = m_surf.get_newposition(nv0) - wall_breadth * 0.1;
+            
+            if (original_constraint)
+            {
+                assert(m_surf.m_constrained_vertices_callback);
+                m_surf.m_constrained_vertices_callback->generate_edge_popped_positions(m_surf, v0, cut, upper_desired_position, lower_desired_position);
+            }
+            
+            mesh.set_vertex_constraint_label(nv0, original_constraint);
+            mesh.set_vertex_constraint_label(nv1, original_constraint);
+
             // apply the deletion
             for (size_t j = 0; j < faces_to_delete.size(); j++)
                 mesh.nondestructive_remove_triangle(faces_to_delete[j]);    //&&&& recursive deletion
@@ -235,27 +252,11 @@ bool T1Transition::pop_edges()
             }
             
             //pull the two new vertices (nv0, nv1) apart (before this the two vertices have the same position)
-            m_surf.set_newposition(nv0, m_surf.get_newposition(nv0) + wall_breadth * 0.1);
-            m_surf.set_newposition(nv1, m_surf.get_newposition(nv1) - wall_breadth * 0.1);
-            
-            // enforce constraints
-            bool original_constraint = mesh.get_vertex_constraint_label(v0) && mesh.get_vertex_constraint_label(v1);
-            if (original_constraint)
-            {
-                assert(m_surf.m_constrained_vertices_callback);
-                
-                Vec3d pos_upper = m_surf.get_newposition(nv0);
-                Vec3d pos_lower = m_surf.get_newposition(nv1);
-                m_surf.m_constrained_vertices_callback->generate_edge_popped_positions(m_surf, v0, cut, pos_upper, pos_lower);
-                m_surf.set_newposition(nv0, pos_upper);
-                m_surf.set_newposition(nv1, pos_lower);
-            }
+            m_surf.set_newposition(nv0, upper_desired_position);
+            m_surf.set_newposition(nv1, lower_desired_position);
             
             m_surf.set_position(nv0, m_surf.get_newposition(nv0));
             m_surf.set_position(nv1, m_surf.get_newposition(nv1));
-            
-            mesh.set_vertex_constraint_label(nv0, original_constraint);
-            mesh.set_vertex_constraint_label(nv1, original_constraint);
             
             // vertex deletion/creation logging
             verts_to_create.push_back(m_surf.get_newposition(nv0));
@@ -319,6 +320,8 @@ bool T1Transition::pop_edges()
             // duplicate the interior vertices, and compute their desired pull-apart positions
             std::vector<size_t> upper_junctions(ne + 1);
             std::vector<size_t> lower_junctions(ne + 1);
+            std::vector<Vec3d> upper_junction_desired_positions(ne + 1);
+            std::vector<Vec3d> lower_junction_desired_positions(ne + 1);
             
             int upper_region = -1;
             int lower_region = -1;
@@ -426,6 +429,21 @@ bool T1Transition::pop_edges()
                 pull_apart_offsets[j] = (upper_vertices_mean - lower_vertices_mean);
                 pull_apart_offsets[j] /= mag(pull_apart_offsets[j]);
                 pull_apart_offsets[j] *= mag(m_surf.get_position(v1) - m_surf.get_position(v0));
+                
+                // compute the desired destination positions for nv0 and nv1, enforcing constraints
+                bool original_constraint = m_surf.m_mesh.get_vertex_constraint_label(v);
+                upper_junction_desired_positions[j + 1] = m_surf.get_newposition(nv0) + pull_apart_offsets[j] * 0.1;
+                lower_junction_desired_positions[j + 1] = m_surf.get_newposition(nv1) - pull_apart_offsets[j] * 0.1;
+                
+                if (original_constraint)
+                {
+                    assert(m_surf.m_constrained_vertices_callback);
+                    m_surf.m_constrained_vertices_callback->generate_edge_popped_positions(m_surf, v, cut, upper_junction_desired_positions[j + 1], lower_junction_desired_positions[j + 1]);
+                }
+                
+                mesh.set_vertex_constraint_label(nv0, original_constraint);
+                mesh.set_vertex_constraint_label(nv1, original_constraint);
+
             }
             
             std::vector<size_t> faces_to_delete;
@@ -582,27 +600,11 @@ bool T1Transition::pop_edges()
                 size_t nv0 = upper_junctions[j + 1];
                 size_t nv1 = lower_junctions[j + 1];
                 
-                m_surf.set_newposition(nv0, m_surf.get_newposition(nv0) + pull_apart_offsets[j] * 0.1);
-                m_surf.set_newposition(nv1, m_surf.get_newposition(nv1) - pull_apart_offsets[j] * 0.1);
-                
-                // enforce constraints
-                bool original_constraint = m_surf.m_mesh.get_vertex_constraint_label(v);
-                if (original_constraint)
-                {
-                    assert(m_surf.m_constrained_vertices_callback);
-                    
-                    Vec3d pos_upper = m_surf.get_newposition(nv0);
-                    Vec3d pos_lower = m_surf.get_newposition(nv1);
-                    m_surf.m_constrained_vertices_callback->generate_edge_popped_positions(m_surf, v, cut, pos_upper, pos_lower);
-                    m_surf.set_newposition(nv0, pos_upper);
-                    m_surf.set_newposition(nv1, pos_lower);
-                }
+                m_surf.set_newposition(nv0, upper_junction_desired_positions[j + 1]);
+                m_surf.set_newposition(nv1, lower_junction_desired_positions[j + 1]);
                 
                 m_surf.set_position(nv0, m_surf.get_newposition(nv0));
-                m_surf.set_position(nv1, m_surf.get_newposition(nv1));
-                
-                mesh.set_vertex_constraint_label(nv0, original_constraint);
-                mesh.set_vertex_constraint_label(nv1, original_constraint);
+                m_surf.set_position(nv1, m_surf.get_newposition(nv1));                
             }
             
             // vertex deletion/creation logging
