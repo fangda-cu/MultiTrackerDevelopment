@@ -456,7 +456,7 @@ inline Vec<N,T> fabs(const Vec<N,T> &a)
 { 
     Vec<N,T> result;
     for(unsigned int i=0; i<N; ++i)
-        result.v[i]=(T)fabs(a.v[i]);
+        result.v[i]=(T)std::abs(a.v[i]);
     return result; 
 }
 

@@ -151,6 +151,10 @@ public:
     ///
     inline Vec3d get_vertex_normal( size_t vertex ) const;
     
+    /// Get an estimate for the surface normal at the specified vertex. Computed using angleweighted pseudonormal
+    ///
+    inline Vec3d get_vertex_normal_angleweighted( size_t vertex ) const;
+
     /// Compute all vertex normals, using an unweighted average of incident triangle normals.
     ///
     void get_all_vertex_normals( std::vector<Vec3d>& normals ) const;
@@ -224,6 +228,10 @@ public:
     ///
     unsigned int vertex_primary_space_rank( size_t v ) const;
     
+    /// Determine which region the point is inside by raycasting and looking at the normal
+    /// of the first intersection, and comparing that with the triangle's labeling
+    int get_region_containing_point( const Vec3d& p);
+    int test_region_via_ray_and_normal(const Vec3d& p, const Vec3d& ray_end);
 
     //
     // Broad phase collision detector
@@ -607,6 +615,49 @@ inline Vec3d DynamicSurface::get_vertex_normal( size_t vertex ) const
     
     return normal;
 }
+
+
+// --------------------------------------------------------
+///
+/// Compute surface normal at the specified vertex (angle-weighted pseudo-normal).
+///
+// --------------------------------------------------------
+
+inline Vec3d DynamicSurface::get_vertex_normal_angleweighted( unsigned int vertex_index ) const
+{
+   const std::vector<unsigned int>& inc_tris = m_mesh.m_vertex_to_triangle_map[vertex_index];
+
+   Vec3d normal_sum(0,0,0);
+
+   for ( unsigned int i = 0; i < inc_tris.size(); ++i )
+   {
+      const Vec3ui& curr_tri = m_mesh.m_tris[inc_tris[i]];
+
+      if ( curr_tri[0] == curr_tri[1] ) { continue; }
+
+      Vec2ui other_two;
+
+      NonDestructiveTriMesh::index_in_triangle( curr_tri, vertex_index, other_two );
+
+      unsigned int verti = curr_tri[other_two[0]];
+      unsigned int vertnext = curr_tri[other_two[1]];
+
+      Vec3d vi = get_position(verti) - get_position(vertex_index);
+      Vec3d vnext = get_position(vertnext) - get_position(vertex_index);
+
+      double dotproduct = dot(vi,vnext);
+      double angle = acos(dotproduct);
+      Vec3d normal = cross(vi,vnext);
+      normalize(normal);
+
+      normal_sum += angle*normal;
+   }
+
+   normalize(normal_sum);
+
+   return normal_sum;
+}
+
 
 // --------------------------------------------------------
 ///

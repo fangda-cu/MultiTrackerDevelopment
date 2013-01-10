@@ -40,7 +40,7 @@
 // ---------------------------------------------------------
 namespace ElTopo {
 
-const double G_EIGENVALUE_RANK_RATIO = 0.03;
+double G_EIGENVALUE_RANK_RATIO = 0.03;
 
 extern RunStats g_stats;
 

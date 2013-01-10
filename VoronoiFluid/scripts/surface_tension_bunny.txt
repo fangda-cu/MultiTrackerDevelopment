@@ -1,0 +1,59 @@
+
+sim_dx 0.5
+surface_dx 0.125
+
+frame_rate 30.0
+num_surface_substeps 2
+
+output_path /Users/tyson/scratch/bunny-angleweighted
+
+trimesh
+(
+   scale 0.02
+   vec_offset [3.0 2.5 0.3]
+   filepath /Users/tyson/projects/tbrochu/voronoifluid3d/scripts/bunny_smooth.obj
+)
+
+min_edge_length_fraction 0.75
+max_edge_length_fraction 1.25
+max_volume_change_fraction 0.001
+merge_proximity_fraction 0.02
+repulsion_proximity_fraction 0.001
+perform_improvement 1
+allow_topology_changes 0
+collision_safety 1
+
+null_space_smoothing 1 
+eigenvalue_rank_ratio 1.0
+
+subdivision_scheme butterfly
+
+free_surface 1
+remesh 1
+seed_at_solid 1
+allow_solid_overlap 0
+volume_correction 1
+surface_tension_coefficient 0.0001
+gravity_force [0.0 0.0 0.0]
+
+tetgen_max_radius_edge_ratio 1.75
+interpolation_scheme generalized
+
+
+simulation_domain
+(
+   min [0 0 0]
+   max [5 5 5]
+)
+
+solid_domain
+(
+   min [0.5 0.5 0.5]
+   max [4.5 4.5 4.5]
+)
+
+camera_target [2.5 0.8 0.0]
+camera_distance 7.4
+camera_heading 0.0
+camera_pitch -0.55
+

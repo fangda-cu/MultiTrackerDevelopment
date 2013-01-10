@@ -457,6 +457,98 @@ unsigned int DynamicSurface::vertex_primary_space_rank( size_t v ) const
     
 }
 
+// ---------------------------------------------------------
+///
+/// Determine whether a point is inside the volume defined by the surface.
+/// Uses raycasting to find the first intersection, and then the triangle normal
+/// is used to determine inside/outside. (This can readily be extended to the multi-material case.)
+///
+// ---------------------------------------------------------
+int DynamicSurface::test_region_via_ray_and_normal(const Vec3d& p, const Vec3d& ray_end) {
+
+   std::vector<double> hit_ss;
+   std::vector<unsigned int> hit_tris;
+   get_triangle_intersections(p, ray_end, hit_ss, hit_tris);
+   int first_hit = -1;
+   double near_dist = 1;
+   for(unsigned int i = 0; i < hit_ss.size(); ++i) {
+      if(hit_ss[i] < near_dist && !m_mesh.triangle_is_deleted(hit_tris[i])) {
+         first_hit = i;
+         near_dist = hit_ss[i];
+      }
+   }
+
+   if(hit_tris.size() == 0) return 0; //assume no hits means outside (region 0).
+
+   // get the normal of this triangle, check it's orientation relative to the ray
+   const Vec3ui& t = m_mesh.m_tris[ hit_tris[first_hit] ];
+   const Vec3d& v0 = pm_positions[ t[0] ];
+   const Vec3d& v1 = pm_positions[ t[1] ];
+   const Vec3d& v2 = pm_positions[ t[2] ];     
+   Vec3d tri_normal = -cross(v2-v0, v1-v0);
+
+   Vec2i labels = m_mesh.get_triangle_label(hit_tris[first_hit]);
+   if(dot(tri_normal, ray_end-p) > 0)
+      return labels[1];
+   else
+      return labels[0];
+}
+
+
+int DynamicSurface::get_region_containing_point( const Vec3d& p )
+{
+
+   //
+   // The point is inside if the dot product between the normal of the first
+   // triangle intersection and the ray direction is positive.
+   // We use voting (for the moment) to enhance robustness, in the absence of a geometrically
+   // exact test.
+   std::map<int,int> region_counts;
+   unsigned int inside_votes = 0;
+
+   // shoot a ray in the positive-x direction
+   Vec3d ray_end( p + Vec3d( 1e+3, 1, 0 ) );
+   int region = test_region_via_ray_and_normal(p, ray_end);
+   region_counts[region]++;
+
+   // negative x
+   ray_end = p - Vec3d( 1e+3, 0, 1 );
+   region = test_region_via_ray_and_normal(p, ray_end);
+   region_counts[region]++;
+
+   // positive y
+   ray_end = p + Vec3d( 1, 1e+3, 0 );
+   region = test_region_via_ray_and_normal(p, ray_end);
+   region_counts[region]++;
+
+   // negative y
+   ray_end = p - Vec3d( 0, 1e+3, 1 );
+   region = test_region_via_ray_and_normal(p, ray_end);
+   region_counts[region]++;
+
+   // positive z
+   ray_end = p + Vec3d( 0, 1, 1e+3 );
+   region = test_region_via_ray_and_normal(p, ray_end);
+   region_counts[region]++;
+
+   //// negative z //disabled to save a bit of time.
+   //ray_end = p - Vec3d( 1, 0, 1e+3 );
+   //region = test_region_via_ray_and_normal(p, ray_end);
+   //region_counts[region]++;
+
+   int max_val = 0;
+   int max_ind = 0;
+   std::map<int,int>::iterator it = region_counts.begin();
+   for(;it != region_counts.end(); ++it) {
+      if(it->second > max_val) {
+         max_ind = it->first;
+         max_val = it->second;
+      }
+   }
+
+   return max_ind;
+
+}
 
 // ---------------------------------------------------------
 ///
