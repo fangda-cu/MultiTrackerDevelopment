@@ -246,7 +246,7 @@ bool T1Transition::pop_edges()
             assert(faces_to_create.size() == face_labels_to_create.size());
             for (size_t j = 0; j < faces_to_create.size(); j++)
             {
-                size_t nf = mesh.nondestructive_add_triangle(faces_to_create[j]);
+                size_t nf = m_surf.add_triangle(faces_to_create[j]);
                 mesh.set_triangle_label(nf, face_labels_to_create[j]);
                 faces_created.push_back(nf);
             }
@@ -583,7 +583,7 @@ bool T1Transition::pop_edges()
             assert(faces_to_create.size() == face_labels_to_create.size());
             for (size_t j = 0; j < faces_to_create.size(); j++)
             {
-                size_t nf = mesh.nondestructive_add_triangle(faces_to_create[j]);
+                size_t nf = m_surf.add_triangle(faces_to_create[j]);
                 mesh.set_triangle_label(nf, face_labels_to_create[j]);
                 faces_created.push_back(nf);
             }
@@ -987,7 +987,7 @@ bool T1Transition::pop_vertices()
         assert(faces_to_create.size() == face_labels_to_create.size());
         for (size_t i = 0; i < faces_to_create.size(); i++)
         {
-            size_t nf = mesh.nondestructive_add_triangle(faces_to_create[i]);
+            size_t nf = m_surf.add_triangle(faces_to_create[i]);
             mesh.set_triangle_label(nf, face_labels_to_create[i]);
             faces_created.push_back(nf);
         }
