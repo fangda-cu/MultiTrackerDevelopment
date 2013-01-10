@@ -822,7 +822,10 @@ bool T1Transition::pop_vertices()
             assert(v1 == mesh.m_edges[edge1][0] || v1 == mesh.m_edges[edge1][1]);
             
             if (!mesh.oriented(v0, v1, mesh.get_triangle(triangle)))
+            {
                 std::swap(v0, v1);
+                std::swap(edge0, edge1);
+            }
             
             Vec2i label = mesh.get_triangle_label(triangle);
             if (label[0] == A || label[1] == A)
