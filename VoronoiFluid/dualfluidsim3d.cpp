@@ -53,9 +53,9 @@ DualFluidSim3D::DualFluidSim3D( const std::vector<Vec3d>& surface_vertices,
 {
   mesh = new TetMesh(); 
   surface_tracker = new SurfTrack( surface_vertices, surface_triangles, surface_vertex_masses, initial_parameters );
-   surface_tracker->improve_mesh();
-   surface_tracker->improve_mesh();
-   surface_tracker->improve_mesh();
+  /*surface_tracker->improve_mesh();
+  surface_tracker->improve_mesh();
+  surface_tracker->improve_mesh();*/
 }
 
 
