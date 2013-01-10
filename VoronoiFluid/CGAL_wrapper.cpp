@@ -82,7 +82,7 @@ void compute_regular_CGAL(const std::vector<Vec2f>& points, const std::vector<fl
       
       tris.push_back(myFace);
       Regular_triangulation::Point p = T.dual(fit);
-      Vec2f circumcentre(p[0], p[1]);
+      Vec2f circumcentre((float)p[0], (float)p[1]);
       weighted_circumcentres.push_back(circumcentre);
    }
 

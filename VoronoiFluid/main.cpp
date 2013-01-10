@@ -789,14 +789,14 @@ void snap_to_solid_splash( Vec3d& v )
 
 void snap_to_solid( Vec3d& v )
 {   
-   float min_dist = 1e30;
+   float min_dist = 1e30f;
    unsigned int min_wall_index = ~0;
    
    for ( unsigned int dim = 0; dim < 3; ++dim )
    {
       if ( fabs( v[dim] - BOX_DOMAIN_LOW[dim] ) < min_dist ) 
       {
-         min_dist = fabs( v[dim] - BOX_DOMAIN_LOW[dim] );
+         min_dist = (float)fabs( v[dim] - BOX_DOMAIN_LOW[dim] );
          min_wall_index = dim;
       }   
    }
@@ -805,7 +805,7 @@ void snap_to_solid( Vec3d& v )
    {
       if ( fabs( v[dim] - BOX_DOMAIN_HIGH[dim] ) < min_dist ) 
       {
-         min_dist = fabs( v[dim] - BOX_DOMAIN_HIGH[dim] );
+         min_dist = (float)fabs( v[dim] - BOX_DOMAIN_HIGH[dim] );
          min_wall_index = 3 + dim;
       }   
    }
@@ -1721,7 +1721,7 @@ void parse_script( const char* filename )
    
    
     std::vector<Vec3f> input_xs;
-    SampleSeeder::generate_bcc_points( DOMAIN_LOW, DOMAIN_HIGH, mesh_dx, input_xs );   
+    SampleSeeder::generate_bcc_points( DOMAIN_LOW, DOMAIN_HIGH, (float)mesh_dx, input_xs );   
       
     Triangulation cgal_T;
     //Use CGAL Delaunay mesher
@@ -1741,7 +1741,7 @@ void parse_script( const char* filename )
       //also go through and set the triangle surface labels to be various
       //left of centre, outside is 0, inside is 1
       //right of centre, outside is 0, inside is 2
-      for(int i = 0; i < g_dual_sim->surface_tracker->m_mesh.m_tris.size(); ++i) {
+      for(unsigned int i = 0; i < g_dual_sim->surface_tracker->m_mesh.m_tris.size(); ++i) {
          Vec3d centre = g_dual_sim->surface_tracker->get_triangle_barycenter(i);
 
          Vec2i label;
@@ -1764,7 +1764,7 @@ void parse_script( const char* filename )
    g_dual_sim->domain_high = DOMAIN_HIGH;
    g_dual_sim->solid_low = BOX_DOMAIN_LOW;
    g_dual_sim->solid_high = BOX_DOMAIN_HIGH;   
-   g_dual_sim->characteristic_distance = mesh_dx;
+   g_dual_sim->characteristic_distance = (float)mesh_dx;
    
    // sim data members
    g_dual_sim->initialize();
@@ -1774,7 +1774,7 @@ void parse_script( const char* filename )
    g_dual_sim->allow_solid_overlap = ( allow_solid_overlap != 0 );
    g_dual_sim->initial_volume = g_dual_sim->surface_tracker->get_volume();
    g_dual_sim->volume_correction = ( volume_correction != 0 );
-   g_dual_sim->surface_tension_coefficient = surface_tension_coefficient;
+   g_dual_sim->surface_tension_coefficient = (float)surface_tension_coefficient;
    g_dual_sim->gravity = Vec3f( gravity_force );
 
    int interpolation_scheme_by_int;
@@ -1874,17 +1874,17 @@ void parse_script( const char* filename )
    
    if ( tree.get_number( "camera_distance", camera_distance ) )
    {
-      cam->dist = camera_distance;
+      cam->dist = (float)camera_distance;
    }
    
    if ( tree.get_number( "camera_heading", camera_heading ) )
    {
-      cam->heading = camera_heading;
+      cam->heading = (float)camera_heading;
    }
    
    if ( tree.get_number( "camera_pitch", camera_pitch ) )
    {
-      cam->pitch = camera_pitch;
+      cam->pitch = (float)camera_pitch;
    }
    
 }

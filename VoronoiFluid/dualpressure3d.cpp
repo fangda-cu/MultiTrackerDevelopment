@@ -55,7 +55,7 @@ float get_surface_curvature(TetMesh& mesh, DynamicSurface& surface, std::vector<
       
    }
    
-   return mean_curvature;
+   return (float)mean_curvature;
 }
 
 std::vector<double> pressure_solve_multi( TetMesh& mesh, 
@@ -133,7 +133,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
       // Check if the Voronoi cell is entirely in the solid, and if so, skip processing it.
       const std::vector<unsigned int>& incident_faces = mesh.vert_to_edge_map[i];
       bool empty = true;
-      for(int j = 0; j < incident_faces.size(); ++j) 
+      for(unsigned int j = 0; j < incident_faces.size(); ++j) 
       {
          int face_index = incident_faces[j];
          if(solid_weights[face_index] > 1e-8)
@@ -144,7 +144,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
 
       float diagonal_sum = 0;
       float self_phi = liquid_phi[i];
-      for(int j = 0; j < incident_faces.size(); ++j) 
+      for(unsigned int j = 0; j < incident_faces.size(); ++j) 
       {
          // Consider the Voronoi cell on the other side of the current face
          int face_index = incident_faces[j];
@@ -187,7 +187,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
                   int higher_index = lower_index == i ? neighbour_index : i;
                   face_curvatures[face_index] = get_surface_curvature(mesh, surface, vertex_curvatures, lower_index, higher_index);
                   
-                  float sign_flip = (lower_index == i? 1 : -1);
+                  float sign_flip = (lower_index == i? 1.0f : -1.0f);
                   rhs[i] += sign_flip * solid_weights[face_index] * mesh.voronoi_face_areas[face_index] * surface_tension_coeff * face_curvatures[face_index] / dist / face_density;
                }
             }
@@ -313,7 +313,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
                   //Make sure we incorporate surface tension in the proper direction as before.
                   int lower_index = region0 < region1? verts[0] : verts[1];
                
-                  float sign_flip = (lower_index == verts[0] ? 1 : -1);
+                  float sign_flip = (lower_index == verts[0] ? 1.0f : -1.0f);
                   p0 += sign_flip * surface_tension_coeff * face_curvatures[i];
                }
             }

@@ -14,7 +14,11 @@
 #include "wallclocktime.h"
 #include "CGAL_wrapper.h"
 
+
+
 using namespace ElTopo;
+
+
 
 // always handy
 template<unsigned int M, unsigned int N, class T>
@@ -1348,7 +1352,7 @@ void DualFluidSim3D::correct_volume( )
    for ( unsigned int i = 0; i < surface_tracker->get_num_vertices(); ++i )
    {
       if( surface_tracker->m_mesh.m_vertex_to_edge_map[i].size() == 0 ) { continue; }
-      if( surface_tracker->m_masses[i] > 1.5 ) { continue; }
+      if( surface_tracker->m_masses[i] > 1.5 ) { continue; } //TODO: Use El Topo's actual constraint mechanism instead?
       
       Vec3d n = surface_tracker->get_vertex_normal( i );
       
@@ -1425,6 +1429,15 @@ void DualFluidSim3D::advance_surface( float dt )
    
    // El Topo: static operations
    
+   surface_tracker->m_constrained_vertices_collapsing_callback = &cb;
+   std::vector<int> vert_const_labels(surface_tracker->get_num_vertices(), 0);
+   surface_tracker->m_mesh.m_vertex_constraint_labels = vert_const_labels;
+   std::vector<Vec3d> vert_vel(surface_tracker->get_num_vertices());
+   for(unsigned int i = 0; i < vert_vel.size(); ++i) {
+      vert_vel[i] = Vec3d((*get_velocity)(Vec3f(surface_tracker->get_position(i))));
+   }
+   surface_tracker->set_all_remesh_velocities(vert_vel);
+   
    surface_tracker->improve_mesh();
    
    surface_tracker->topology_changes();
@@ -1445,15 +1458,15 @@ void DualFluidSim3D::advance_surface( float dt )
       float vertex_solid_phi = solid_box_phi( box_centre, box_extents, new_position );
       
       // mark vertices against the solid wall
-      if ( vertex_solid_phi > -1e-4 )
+      if ( vertex_solid_phi > -1e-4 ) //TODO Make this somehow a tunable parameter or something...
       {
-         surface_tracker->m_masses[i] = 2.0;
+         surface_tracker->m_masses[i] = 2.0; //TODO use constraint mechanism instead?
       }
       
       if ( !allow_solid_overlap )
       {
          // snap to solid
-         if ( surface_tracker->m_masses[i] > 1.0 )
+         if ( surface_tracker->m_masses[i] > 1.0 ) //TODO use constraint mechanism instead?
          {
             new_position -= vertex_solid_phi * solid_box_gradient( box_centre, box_extents, new_position );
             static const float snap_distance = 1e-4f;
@@ -1934,7 +1947,7 @@ void DualFluidSim3D::compute_liquid_phi( )
    }
 
    int baseline = 0;
-   for(int i = 0; i < region_IDs.size(); ++i) {
+   for(unsigned int i = 0; i < region_IDs.size(); ++i) {
       if(region_IDs[i] == 1)
          baseline++;
    }

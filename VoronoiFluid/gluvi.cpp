@@ -510,7 +510,7 @@ void DynamicText::display( int x, int y )
    glColor3f( color[0], color[1], color[2] );
    
    glRasterPos2i(x+1, y-height+3);
-   for(int i=0; i < text.size(); ++i)
+   for(unsigned int i=0; i < text.size(); ++i)
       glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, text[i]);   
 }
    

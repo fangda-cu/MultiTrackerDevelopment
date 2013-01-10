@@ -201,7 +201,7 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
    
    //try adding samples at tri barycenters to break up regularity and avoid slivers.
    bool parity = false;
-   for(int i = 0; i < surface.m_mesh.m_tris.size(); ++i) {
+   for(unsigned int i = 0; i < surface.m_mesh.m_tris.size(); ++i) {
       if(surface.m_mesh.triangle_is_deleted(i)) 
          continue;
       Vec3d new_sample(0,0,0);

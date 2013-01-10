@@ -551,10 +551,10 @@ static bool segment_tetrahedron_intersection(const Vec3d& x0, const Vec3d& xnew0
         
         bary[0]=0;
         bary[1]=1;
-        bary[2]=end1/(double)(end1+end2+end3+end4);
-        bary[3]=end2/(double)(end1+end2+end3+end4);
-        bary[4]=end3/(double)(end1+end2+end3+end4);
-        bary[5]=end4/(double)(end1+end2+end3+end4);
+        bary[2]=(double)end1/(double)(end1+end2+end3+end4);
+        bary[3]=(double)end2/(double)(end1+end2+end3+end4);
+        bary[4]=(double)end3/(double)(end1+end2+end3+end4);
+        bary[5]=(double)end4/(double)(end1+end2+end3+end4);
         if(!(end1==end2 && end1==end3)
            && segment_triangle_intersection(x0, xnew0, x1, end1, x2, end2, x3, end3, o[5], verbose )) { if ( verbose ) { std::cout << "1" << std::endl; } return true; }
         if(!(end1==end2 && end1==end4)
@@ -718,12 +718,12 @@ static bool triangle_triangle_intersection(const Vec3d& x0, bool end0,
         // what do we do for bary here?
         // probably best to do something smart, but since degeneracies should be rare and not too
         // important to handle exactly, just assume equal barycentric coordinates at the end of the time step
-        bary[0]=end0/(double)(end0+end1+end2);
-        bary[1]=end1/(double)(end0+end1+end2);
-        bary[2]=end2/(double)(end0+end1+end2);
-        bary[3]=end3/(double)(end3+end4+end5);
-        bary[4]=end4/(double)(end3+end4+end5);
-        bary[5]=end5/(double)(end3+end4+end5);
+        bary[0]=(double)end0/(double)(end0+end1+end2); // I added the double cast on top for sanity 
+        bary[1]=(double)end1/(double)(end0+end1+end2); // (and to silence warnings). Hopefully it doesn't break things.
+        bary[2]=(double)end2/(double)(end0+end1+end2); // - Christopher
+        bary[3]=(double)end3/(double)(end3+end4+end5);
+        bary[4]=(double)end4/(double)(end3+end4+end5);
+        bary[5]=(double)end5/(double)(end3+end4+end5);
         if(!end0 && end1 && segment_triangle_intersection(x0, x1, x3, end3, x4, end4, x5, end5, o[2])) return true;
         if(end0 && !end1 && segment_triangle_intersection(x1, x0, x3, end3, x4, end4, x5, end5, o[2])) return true;
         if(!end0 && end2 && segment_triangle_intersection(x0, x2, x3, end3, x4, end4, x5, end5, o[1])) return true;
