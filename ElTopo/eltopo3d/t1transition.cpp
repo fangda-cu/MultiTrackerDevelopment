@@ -770,24 +770,19 @@ bool T1Transition::pop_vertices()
         mean_edge_length /= edge_count;
         
         Vec3d pull_apart_offset = pull_apart_direction * mean_edge_length;
-        m_surf.set_newposition(a, m_surf.get_newposition(a) + pull_apart_offset * 0.1);
-        m_surf.set_newposition(b, m_surf.get_newposition(b) - pull_apart_offset * 0.1);
-        
-        // enforce constraints
-        //&&&&
-//        int original_constraints = onBBWall(getVertexPosition(xj));
-//        setVertexPosition(a, enforceBBWallConstraint(getVertexPosition(a), original_constraints));
-//        setVertexPosition(b, enforceBBWallConstraint(getVertexPosition(b), original_constraints));
-        
-        m_surf.set_position(a, m_surf.get_newposition(a));
-        m_surf.set_position(b, m_surf.get_newposition(b));
-        
+
         // update the face connectivities
         std::vector<size_t> faces_to_delete;
         std::vector<Vec3st> faces_to_create;
         std::vector<Vec2i> face_labels_to_create;
+        std::vector<size_t> faces_created;
         
-        std::vector<size_t> edges_to_delete;
+        std::vector<size_t> verts_to_delete;
+        std::vector<Vec3d> verts_to_create;
+        std::vector<size_t> verts_created;
+        
+        //&&&&
+//        std::vector<size_t> edges_to_delete;
         
         for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[xj].size(); i++)
         {
@@ -884,11 +879,12 @@ bool T1Transition::pop_vertices()
             }
             
         }
-        
-        for (size_t i = 0; i < mesh.m_vertex_to_edge_map[xj].size(); i++)
-        {
-            edges_to_delete.push_back(mesh.m_vertex_to_edge_map[xj][i]);
-        }
+
+        //&&&& recursive deletion
+//        for (size_t i = 0; i < mesh.m_vertex_to_edge_map[xj].size(); i++)
+//        {
+//            edges_to_delete.push_back(mesh.m_vertex_to_edge_map[xj][i]);
+//        }
         
         // prune flap triangles
         for (size_t i = 0; i < faces_to_create.size(); i++)
@@ -936,11 +932,45 @@ bool T1Transition::pop_vertices()
         {
             size_t nf = mesh.nondestructive_add_triangle(faces_to_create[i]);
             mesh.set_triangle_label(nf, face_labels_to_create[i]);
+            faces_created.push_back(nf);
         }
         
         // mark the two new vertices a and b as dirty
         vertices_to_process.push_back(a);
         vertices_to_process.push_back(b);
+        
+        // set the vertices new positions
+        m_surf.set_newposition(a, m_surf.get_newposition(a) + pull_apart_offset * 0.1);
+        m_surf.set_newposition(b, m_surf.get_newposition(b) - pull_apart_offset * 0.1);
+
+        // enforce constraints
+//&&&&
+//        int original_constraints = onBBWall(getVertexPosition(xj));
+//        setVertexPosition(a, enforceBBWallConstraint(getVertexPosition(a), original_constraints));
+//        setVertexPosition(b, enforceBBWallConstraint(getVertexPosition(b), original_constraints));
+        
+        m_surf.set_position(a, m_surf.get_newposition(a));
+        m_surf.set_position(b, m_surf.get_newposition(b));
+        
+        // vertex deletion/creation logging
+        verts_to_delete.push_back(xj);
+        
+        verts_to_create.push_back(m_surf.get_newposition(a));
+        verts_to_create.push_back(m_surf.get_newposition(b));
+        
+        verts_created.push_back(a);
+        verts_created.push_back(b);
+
+        // Add to new history log
+        MeshUpdateEvent edgepop(MeshUpdateEvent::EDGE_POP);
+        edgepop.m_deleted_tris = faces_to_delete;
+        edgepop.m_created_tris = faces_created;
+        edgepop.m_created_tri_data = faces_to_create;
+        edgepop.m_created_tri_labels = face_labels_to_create;
+        edgepop.m_deleted_verts = verts_to_delete;
+        edgepop.m_created_verts = verts_created;
+        edgepop.m_created_vert_data = verts_to_create;
+        m_surf.m_mesh_change_history.push_back(edgepop);
         
         pop_occurred = true;
         
