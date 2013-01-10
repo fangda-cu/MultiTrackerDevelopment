@@ -1266,7 +1266,7 @@ void ElasticShell::remesh()
       if(reverse_vertmap.size() <= event.m_created_verts[0]) 
         reverse_vertmap.resize(event.m_created_verts[0]+1, VertexHandle(-1));
       reverse_vertmap[event.m_created_verts[0]] = new_vert; //the vertex will always be added at the end by El Topo
-      
+
       // Update faces
       for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
         ElTopo::Vec3st new_face = event.m_created_tri_data[i];
@@ -1315,37 +1315,59 @@ void ElasticShell::remesh()
       FaceHandle f0 = reverse_trimap[event.m_deleted_tris[0]];
       FaceHandle f1 = reverse_trimap[event.m_deleted_tris[1]];
       EdgeHandle newEdge;
-      performFlip(eh, f0, f1, newEdge);
+      FaceHandle nf0;
+      FaceHandle nf1;
+      performFlip(eh, f0, f1, nf0, nf1, newEdge);
+      
+      // This code assumes no two triangles in the mesh share the same three vertices, but this is not enforced in 
+      //  TopologicalObject::addFace(), and it can actually happen (which is why ElTopo has this flap deletion operation)
+//      // Update face indexing
+//      for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
+//        ElTopo::Vec3st new_face = event.m_created_tri_data[i];
+//
+//        //determine handles in our indexing
+//        VertexHandle v0 = reverse_vertmap[new_face[0]];
+//        VertexHandle v1 = reverse_vertmap[new_face[1]];
+//        VertexHandle v2 = reverse_vertmap[new_face[2]];
+//        assert(v0.isValid() && v1.isValid() && v2.isValid());
+//
+//        bool face_matched = false;
+//        for(EdgeFaceIterator efit = mesh.ef_iter(newEdge); efit; ++efit) {
+//
+//          FaceHandle face_candidate = *efit;
+//          if(isFaceMatch(mesh, face_candidate, v0, v1, v2)) {
+//
+//            if(reverse_trimap.size() <= event.m_created_tris[i]) 
+//              reverse_trimap.resize(event.m_created_tris[i]+1);
+//
+//            reverse_trimap[event.m_created_tris[i]] = face_candidate;
+//            face_numbers[face_candidate] = event.m_created_tris[i];
+//            face_matched = true;
+//            break;
+//          }
+//        }
+//
+//        if(!face_matched)
+//          std::cout << "ERROR: Couldn't match the face - FLIP.\n\n\n";
+//      }
       
       // Update face indexing
-      for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
-        ElTopo::Vec3st new_face = event.m_created_tri_data[i];
-
-        //determine handles in our indexing
-        VertexHandle v0 = reverse_vertmap[new_face[0]];
-        VertexHandle v1 = reverse_vertmap[new_face[1]];
-        VertexHandle v2 = reverse_vertmap[new_face[2]];
-        assert(v0.isValid() && v1.isValid() && v2.isValid());
-
-        bool face_matched = false;
-        for(EdgeFaceIterator efit = mesh.ef_iter(newEdge); efit; ++efit) {
-
-          FaceHandle face_candidate = *efit;
-          if(isFaceMatch(mesh, face_candidate, v0, v1, v2)) {
-
-            if(reverse_trimap.size() <= event.m_created_tris[i]) 
-              reverse_trimap.resize(event.m_created_tris[i]+1);
-
-            reverse_trimap[event.m_created_tris[i]] = face_candidate;
-            face_numbers[face_candidate] = event.m_created_tris[i];
-            face_matched = true;
-            break;
-          }
-        }
-
-        if(!face_matched)
-          std::cout << "ERROR: Couldn't match the face - FLIP.\n\n\n";
+      if (faceContainsVertex(*m_obj, nf0, reverse_vertmap[event.m_created_tri_data[0][0]]) &&
+          faceContainsVertex(*m_obj, nf0, reverse_vertmap[event.m_created_tri_data[0][1]]) &&
+          faceContainsVertex(*m_obj, nf0, reverse_vertmap[event.m_created_tri_data[0][2]]))
+      {
+        reverse_trimap[event.m_created_tris[0]] = nf0;
+        face_numbers[nf0] = event.m_created_tris[0];
+        reverse_trimap[event.m_created_tris[1]] = nf1;
+        face_numbers[nf1] = event.m_created_tris[1];
+      } else
+      {
+        reverse_trimap[event.m_created_tris[0]] = nf1;
+        face_numbers[nf1] = event.m_created_tris[0];
+        reverse_trimap[event.m_created_tris[1]] = nf0;
+        face_numbers[nf0] = event.m_created_tris[1];
       }
+      
       
       // explicitly assign the labels from El Topo (help debugging El Topo's labeling operations)
       for (unsigned int i = 0; i < event.m_created_tris.size(); i++)
@@ -2803,7 +2825,7 @@ void ElasticShell::performCollapse(const EdgeHandle& eh, const VertexHandle& ver
 }
 
 
-bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const FaceHandle& f1, EdgeHandle& newEdge) {
+bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const FaceHandle& f1, FaceHandle & new_f0, FaceHandle & new_f1, EdgeHandle& newEdge) {
 
   
   VertexHandle v0 = m_obj->fromVertex(eh),
@@ -2949,6 +2971,9 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const 
   m_face_regions[f0new] = oldLabels;
   m_face_regions[f1new] = oldLabels;
 
+  new_f0 = f0new;
+  new_f1 = f1new;
+  
   return true;
 }
   
