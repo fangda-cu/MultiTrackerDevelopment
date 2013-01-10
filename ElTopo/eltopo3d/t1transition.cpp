@@ -965,7 +965,7 @@ bool T1Transition::pop_vertices()
         verts_created.push_back(b);
 
         // Add to new history log
-        MeshUpdateEvent edgepop(MeshUpdateEvent::EDGE_POP);
+        MeshUpdateEvent edgepop(MeshUpdateEvent::VERTEX_POP);
         edgepop.m_deleted_tris = faces_to_delete;
         edgepop.m_created_tris = faces_created;
         edgepop.m_created_tri_data = faces_to_create;
