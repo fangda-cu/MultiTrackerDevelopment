@@ -467,7 +467,7 @@ unsigned int DynamicSurface::vertex_primary_space_rank( size_t v ) const
 int DynamicSurface::test_region_via_ray_and_normal(const Vec3d& p, const Vec3d& ray_end) {
 
    std::vector<double> hit_ss;
-   std::vector<unsigned int> hit_tris;
+   std::vector<size_t> hit_tris;
    get_triangle_intersections(p, ray_end, hit_ss, hit_tris);
    int first_hit = -1;
    double near_dist = 1;
@@ -481,7 +481,7 @@ int DynamicSurface::test_region_via_ray_and_normal(const Vec3d& p, const Vec3d& 
    if(hit_tris.size() == 0) return 0; //assume no hits means outside (region 0).
 
    // get the normal of this triangle, check it's orientation relative to the ray
-   const Vec3ui& t = m_mesh.m_tris[ hit_tris[first_hit] ];
+   const Vec3st& t = m_mesh.m_tris[ hit_tris[first_hit] ];
    const Vec3d& v0 = pm_positions[ t[0] ];
    const Vec3d& v1 = pm_positions[ t[1] ];
    const Vec3d& v2 = pm_positions[ t[2] ];     

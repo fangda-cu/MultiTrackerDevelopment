@@ -623,19 +623,19 @@ inline Vec3d DynamicSurface::get_vertex_normal( size_t vertex ) const
 ///
 // --------------------------------------------------------
 
-inline Vec3d DynamicSurface::get_vertex_normal_angleweighted( unsigned int vertex_index ) const
+inline Vec3d DynamicSurface::get_vertex_normal_angleweighted( size_t vertex_index ) const
 {
-   const std::vector<unsigned int>& inc_tris = m_mesh.m_vertex_to_triangle_map[vertex_index];
+   const std::vector<size_t>& inc_tris = m_mesh.m_vertex_to_triangle_map[vertex_index];
 
    Vec3d normal_sum(0,0,0);
 
-   for ( unsigned int i = 0; i < inc_tris.size(); ++i )
+   for ( size_t i = 0; i < inc_tris.size(); ++i )
    {
-      const Vec3ui& curr_tri = m_mesh.m_tris[inc_tris[i]];
+      const Vec3st& curr_tri = m_mesh.m_tris[inc_tris[i]];
 
       if ( curr_tri[0] == curr_tri[1] ) { continue; }
 
-      Vec2ui other_two;
+      Vec2st other_two;
 
       NonDestructiveTriMesh::index_in_triangle( curr_tri, vertex_index, other_two );
 
@@ -677,7 +677,7 @@ inline Vec3d DynamicSurface::get_vertex_normal_max( size_t vertex_index ) const
         
         if ( curr_tri[0] == curr_tri[1] ) { continue; }
         
-        Vec2ui other_two;
+        Vec2st other_two;
         NonDestructiveTriMesh::index_in_triangle( curr_tri, vertex_index, other_two );
         
         size_t verti = curr_tri[other_two[0]];
