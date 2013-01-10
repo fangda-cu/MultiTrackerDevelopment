@@ -229,7 +229,7 @@ bool T1Transition::pop_edges()
             
             mesh.set_vertex_constraint_label(nv0, original_constraint);
             mesh.set_vertex_constraint_label(nv1, original_constraint);
-
+            
             // apply the deletion
             for (size_t j = 0; j < faces_to_delete.size(); j++)
                 m_surf.remove_triangle(faces_to_delete[j]);    //&&&& recursive deletion
@@ -1306,6 +1306,12 @@ bool T1Transition::should_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pul
     return tensile_force > 0;
 }
 
+bool T1Transition::pulling_vertex_apart_introduces_collision(size_t v, const Vec3d & oldpos, const Vec3d & newpos0, const Vec3d & newpos1)
+{
+    
+    return true;
+}
 
+    
 
 }

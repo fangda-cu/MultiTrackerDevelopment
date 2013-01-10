@@ -66,6 +66,11 @@ public:
     ///
     bool should_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pull_apart_direction);
     
+    /// Collision safety
+    ///
+    bool pulling_vertex_apart_introduces_collision(size_t v, const Vec3d & oldpos, const Vec3d & newpos0, const Vec3d & newpos1);
+    
+
     /// Whether or not to remesh the boundary (currently no effect)
     ///
     bool m_remesh_boundaries;
