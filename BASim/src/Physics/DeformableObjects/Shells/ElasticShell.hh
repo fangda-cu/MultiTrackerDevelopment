@@ -25,7 +25,7 @@ class ElasticShellForce;
 class ShellVertexPointSpringForce;
 class ShellStickyRepulsionForce;
 
-class ElasticShell : public PhysicalModel, public ElTopo::SurfTrack::ConstrainedVerticesCollapsingCallback {
+class ElasticShell : public PhysicalModel, public ElTopo::SurfTrack::ConstrainedVerticesCallback {
 
 public:
   ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep);
@@ -158,7 +158,14 @@ public:
   void setDeletionBox(const Vec3d& lowerBound, const Vec3d& upperBound);
 
   void remesh();
-  bool generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos);  // SurfTrack::ConstrainedVerticesCollapsingCallback method
+  
+  // SurfTrack::ConstrainedVerticesCollapsingCallback method  
+  bool generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos);
+  bool generate_splitted_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos);
+  bool generate_collapsed_constraint_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1);
+  bool generate_splitted_constraint_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1);
+  bool generate_edge_popped_positions(ElTopo::SurfTrack & st, size_t oldv, const ElTopo::Vec2i & cut, ElTopo::Vec3d & pos_upper, ElTopo::Vec3d & pos_lower);
+  bool generate_vertex_popped_positions(ElTopo::SurfTrack & st, size_t oldv, int A, int B, ElTopo::Vec3d & pos_a, ElTopo::Vec3d & pos_b);
 
   void extendMesh(Scalar current_time);
   void deleteRegion();

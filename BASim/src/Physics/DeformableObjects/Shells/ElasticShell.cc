@@ -2597,6 +2597,60 @@ bool ElasticShell::generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0
   return false;
 }
 
+bool ElasticShell::generate_splitted_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos)
+{
+  pos = (st.get_position(v0) + st.get_position(v1)) / 2;
+  
+  return true;
+}
+
+bool ElasticShell::generate_collapsed_constraint_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1)
+{
+  return (label0 || label1);  // if either endpoint is constrained, the collapsed point shold be constrained. more specifically it should be on all the walls any of the two endpoints is on (implemented in generate_collapsed_position())
+}
+
+bool ElasticShell::generate_splitted_constraint_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1)
+{
+  ElTopo::Vec3d x0 = st.get_position(v0);
+  ElTopo::Vec3d x1 = st.get_position(v1);
+  
+  int constraint0 = onBBWall(Vec3d(x0[0], x0[1], x0[2]));
+  int constraint1 = onBBWall(Vec3d(x1[0], x1[1], x1[2]));
+  
+  assert((constraint0 != 0) == label0);
+  assert((constraint1 != 0) == label1);
+  
+  return (constraint0 & constraint1) != 0;  // the splitting midpoint has a positive constraint label only if the two endpoints are on a same wall (sharing a bit in their constraint bitfield representation)
+}
+
+bool ElasticShell::generate_edge_popped_positions(ElTopo::SurfTrack & st, size_t oldv, const ElTopo::Vec2i & cut, ElTopo::Vec3d & pos_upper, ElTopo::Vec3d & pos_lower)
+{
+  ElTopo::Vec3d original_pos = st.get_position(oldv);
+  int original_constraint = onBBWall(Vec3d(original_pos[0], original_pos[1], original_pos[2]));
+  
+  Vec3d new_pos_upper = enforceBBWallConstraint(Vec3d(pos_upper[0], pos_upper[1], pos_upper[2]), original_constraint);
+  Vec3d new_pos_lower = enforceBBWallConstraint(Vec3d(pos_lower[0], pos_lower[1], pos_lower[2]), original_constraint);
+  
+  pos_upper = ElTopo::Vec3d(new_pos_upper.x(), new_pos_upper.y(), new_pos_upper.z());
+  pos_lower = ElTopo::Vec3d(new_pos_lower.x(), new_pos_lower.y(), new_pos_lower.z());
+  
+  return true;
+}
+
+bool ElasticShell::generate_vertex_popped_positions(ElTopo::SurfTrack & st, size_t oldv, int A, int B, ElTopo::Vec3d & pos_a, ElTopo::Vec3d & pos_b)
+{
+  ElTopo::Vec3d original_pos = st.get_position(oldv);
+  int original_constraint = onBBWall(Vec3d(original_pos[0], original_pos[1], original_pos[2]));
+  
+  Vec3d new_pos_a = enforceBBWallConstraint(Vec3d(pos_a[0], pos_a[1], pos_a[2]), original_constraint);
+  Vec3d new_pos_b = enforceBBWallConstraint(Vec3d(pos_b[0], pos_b[1], pos_b[2]), original_constraint);
+  
+  pos_a = ElTopo::Vec3d(new_pos_a.x(), new_pos_a.y(), new_pos_a.z());
+  pos_b = ElTopo::Vec3d(new_pos_b.x(), new_pos_b.y(), new_pos_b.z());
+  
+  return true;
+}
+
 void ElasticShell::performSplit(const EdgeHandle& eh, const Vec3d& midpoint, VertexHandle& new_vert) {
 
   VertexHandle v0 = m_obj->fromVertex(eh);
