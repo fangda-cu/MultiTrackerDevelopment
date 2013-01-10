@@ -610,7 +610,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   if (keep_vert_is_constrained || delete_vert_is_constrained)
   {
     assert(m_surf.m_constrained_vertices_callback);
-    m_surf.m_constrained_vertices_callback->generate_collapsed_constraint_label(m_surf, vertex_to_keep, vertex_to_delete, m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep), m_surf.m_mesh.get_vertex_constraint_label(vertex_to_delete));
+    new_vert_constraint_label = m_surf.m_constrained_vertices_callback->generate_collapsed_constraint_label(m_surf, vertex_to_keep, vertex_to_delete, m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep), m_surf.m_mesh.get_vertex_constraint_label(vertex_to_delete));
   }
   
   if (keep_vert_is_constrained)   keep_rank = 5;

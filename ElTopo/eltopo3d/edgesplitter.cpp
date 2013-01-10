@@ -433,7 +433,7 @@ bool EdgeSplitter::split_edge( size_t edge, bool specify_split_position, Vec3d *
       return false;
     }
     
-    m_surf.m_constrained_vertices_callback->generate_splitted_constraint_label(m_surf, vertex_a, vertex_b, m_surf.m_mesh.get_vertex_constraint_label(vertex_a), m_surf.m_mesh.get_vertex_constraint_label(vertex_b));
+    new_vert_constraint_label = m_surf.m_constrained_vertices_callback->generate_splitted_constraint_label(m_surf, vertex_a, vertex_b, m_surf.m_mesh.get_vertex_constraint_label(vertex_a), m_surf.m_mesh.get_vertex_constraint_label(vertex_b));
   }
   
   /////////////////////////////////////////
