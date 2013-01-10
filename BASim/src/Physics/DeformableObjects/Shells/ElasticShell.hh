@@ -25,7 +25,7 @@ class ElasticShellForce;
 class ShellVertexPointSpringForce;
 class ShellStickyRepulsionForce;
 
-class ElasticShell : public PhysicalModel, public ElTopo::SurfTrack::ConstrainedVerticesCollapsingCallback {
+class ElasticShell : public PhysicalModel, public ElTopo::SurfTrack::ConstrainedVerticesCallback {
 
 public:
   ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep);
@@ -158,7 +158,14 @@ public:
   void setDeletionBox(const Vec3d& lowerBound, const Vec3d& upperBound);
 
   void remesh();
-  bool generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos);  // SurfTrack::ConstrainedVerticesCollapsingCallback method
+  
+  // SurfTrack::ConstrainedVerticesCollapsingCallback method  
+  bool generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos);
+  bool generate_splitted_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos);
+  bool generate_collapsed_constraint_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1);
+  bool generate_splitted_constraint_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1);
+  bool generate_edge_popped_positions(ElTopo::SurfTrack & st, size_t oldv, const ElTopo::Vec2i & cut, ElTopo::Vec3d & pos_upper, ElTopo::Vec3d & pos_lower);
+  bool generate_vertex_popped_positions(ElTopo::SurfTrack & st, size_t oldv, int A, int B, ElTopo::Vec3d & pos_a, ElTopo::Vec3d & pos_b);
 
   void extendMesh(Scalar current_time);
   void deleteRegion();
@@ -196,7 +203,7 @@ protected:
 
   void performSplit(const EdgeHandle& eh, const Vec3d& newpos, VertexHandle& newVert);
   void performCollapse(const EdgeHandle& eh, const VertexHandle& vert_to_remove, const VertexHandle& vert_to_keep, const Vec3d& new_position);
-  bool performFlip(const EdgeHandle& eh, const FaceHandle f0, const FaceHandle& f1, EdgeHandle& newEdge);
+  bool performFlip(const EdgeHandle& eh, const FaceHandle f0, const FaceHandle& f1, FaceHandle & new_f0, FaceHandle & new_f1, EdgeHandle& newEdge);
   void performZippering(EdgeHandle e0, EdgeHandle e1, const std::vector<FaceHandle> & faces_deleted, const std::vector<std::vector<VertexHandle> > & faces_to_create, const std::vector<Vec2i> & face_labels_to_create, const std::vector<std::pair<FaceHandle, Vec2i> > & face_labels_to_change, std::vector<FaceHandle> & face_created);
   
   void addSelfCollisionForces();

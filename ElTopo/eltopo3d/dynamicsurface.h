@@ -395,6 +395,8 @@ public:
   
     inline Vec3d get_remesh_velocity( size_t n );
     
+    inline void set_remesh_velocity( size_t n, const Vec3d & v );
+    
     ///////////////////////////////////////////////////////////////////////
 
     //
@@ -1088,6 +1090,12 @@ inline Vec3d DynamicSurface::get_remesh_velocity( size_t n )
 {
   assert( n < pm_velocities.size() );
   return pm_velocities[n];
+}
+
+inline void DynamicSurface::set_remesh_velocity( size_t n, const Vec3d & v )
+{
+    assert( n < pm_velocities.size() );
+    pm_velocities[n] = v;
 }
 
 ///////////////////////////////////////////////////////////////////////

@@ -18,6 +18,7 @@
 #include <meshpincher.h>
 #include <meshsmoother.h>
 #include <meshcutter.h>
+#include <t1transition.h>
 
 // ---------------------------------------------------------
 //  Forwards and typedefs
@@ -290,6 +291,17 @@ struct MeshUpdateEvent
     FLAP_DELETE,  //remove non-manifold flap
     PINCH,        //separate singular vertex to allow topology change
     MERGE,        //zipper two edges together
+      
+    ////////////////////////////////////////////////////////////
+    // FD 20130109
+    //
+    // T1 transition events
+    
+    EDGE_POP,
+    VERTEX_POP,
+    
+    ////////////////////////////////////////////////////////////
+
   };
 
   /// Constructors
@@ -472,6 +484,15 @@ public:
     /// Surface cutting (tearing) operation object
     ///
     MeshCutter m_cutter;
+    
+    ////////////////////////////////////////////////////////////
+    // FD 20130109
+    
+    /// T1 transition operation object
+    ///
+    T1Transition m_t1transition;
+
+    ////////////////////////////////////////////////////////////
 
     /// Collision epsilon to use during mesh improvement operations
     ///
@@ -557,14 +578,24 @@ public:
     ///////////////////////////////////////////////////////////////////////
     // FD 20121229
     
-    class ConstrainedVerticesCollapsingCallback
+    class ConstrainedVerticesCallback
     {
     public:
         virtual bool generate_collapsed_position(SurfTrack & st, size_t v0, size_t v1, Vec3d & pos) = 0;
         
+        virtual bool generate_splitted_position(SurfTrack & st, size_t v0, size_t v1, Vec3d & pos) = 0;
+        
+        virtual bool generate_collapsed_constraint_label(SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1) = 0;
+        
+        virtual bool generate_splitted_constraint_label(SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1) = 0;
+        
+        virtual bool generate_edge_popped_positions(SurfTrack & st, size_t oldv, const Vec2i & cut, Vec3d & pos_upper, Vec3d & pos_lower) = 0;
+        
+        virtual bool generate_vertex_popped_positions(SurfTrack & st, size_t oldv, int A, int B, Vec3d & pos_a, Vec3d & pos_b) = 0;
+        
     };
     
-    ConstrainedVerticesCollapsingCallback * m_constrained_vertices_collapsing_callback;
+    ConstrainedVerticesCallback * m_constrained_vertices_callback;
 
     ///////////////////////////////////////////////////////////////////////
         

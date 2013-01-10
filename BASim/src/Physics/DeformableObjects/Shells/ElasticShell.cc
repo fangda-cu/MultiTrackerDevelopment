@@ -1075,7 +1075,7 @@ void ElasticShell::remesh()
   std::vector<ElTopo::Vec3d> vert_vel;
   std::vector<ElTopo::Vec3st> tri_data;
   std::vector<ElTopo::Vec2i> tri_labels;
-  std::vector<int> vert_const_labels;
+  std::vector<bool> vert_const_labels;
   std::vector<Scalar> masses;
 
   DeformableObject& mesh = getDefoObj();
@@ -1109,7 +1109,7 @@ void ElasticShell::remesh()
       masses.push_back(numeric_limits<Scalar>::infinity());
     else
       masses.push_back(mass);
-    vert_const_labels.push_back(getVertexConstraintLabel(vh));
+    vert_const_labels.push_back(getVertexConstraintLabel(vh) != 0);
     vert_numbers[vh] = id;
     reverse_vertmap.push_back(vh);
 
@@ -1153,7 +1153,7 @@ void ElasticShell::remesh()
 
   std::cout << "Calling surface improvement\n";
   ElTopo::SurfTrack surface_tracker( vert_data, tri_data, masses, construction_parameters ); 
-  surface_tracker.m_constrained_vertices_collapsing_callback = this;
+  surface_tracker.m_constrained_vertices_callback = this;
   surface_tracker.m_mesh.m_vertex_constraint_labels = vert_const_labels;
   surface_tracker.set_all_remesh_velocities(vert_vel);
   for (size_t i = 0; i < reverse_trimap.size(); i++)
@@ -1266,7 +1266,7 @@ void ElasticShell::remesh()
       if(reverse_vertmap.size() <= event.m_created_verts[0]) 
         reverse_vertmap.resize(event.m_created_verts[0]+1, VertexHandle(-1));
       reverse_vertmap[event.m_created_verts[0]] = new_vert; //the vertex will always be added at the end by El Topo
-      
+
       // Update faces
       for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
         ElTopo::Vec3st new_face = event.m_created_tri_data[i];
@@ -1315,37 +1315,59 @@ void ElasticShell::remesh()
       FaceHandle f0 = reverse_trimap[event.m_deleted_tris[0]];
       FaceHandle f1 = reverse_trimap[event.m_deleted_tris[1]];
       EdgeHandle newEdge;
-      performFlip(eh, f0, f1, newEdge);
+      FaceHandle nf0;
+      FaceHandle nf1;
+      performFlip(eh, f0, f1, nf0, nf1, newEdge);
+      
+      // This code assumes no two triangles in the mesh share the same three vertices, but this is not enforced in 
+      //  TopologicalObject::addFace(), and it can actually happen (which is why ElTopo has this flap deletion operation)
+//      // Update face indexing
+//      for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
+//        ElTopo::Vec3st new_face = event.m_created_tri_data[i];
+//
+//        //determine handles in our indexing
+//        VertexHandle v0 = reverse_vertmap[new_face[0]];
+//        VertexHandle v1 = reverse_vertmap[new_face[1]];
+//        VertexHandle v2 = reverse_vertmap[new_face[2]];
+//        assert(v0.isValid() && v1.isValid() && v2.isValid());
+//
+//        bool face_matched = false;
+//        for(EdgeFaceIterator efit = mesh.ef_iter(newEdge); efit; ++efit) {
+//
+//          FaceHandle face_candidate = *efit;
+//          if(isFaceMatch(mesh, face_candidate, v0, v1, v2)) {
+//
+//            if(reverse_trimap.size() <= event.m_created_tris[i]) 
+//              reverse_trimap.resize(event.m_created_tris[i]+1);
+//
+//            reverse_trimap[event.m_created_tris[i]] = face_candidate;
+//            face_numbers[face_candidate] = event.m_created_tris[i];
+//            face_matched = true;
+//            break;
+//          }
+//        }
+//
+//        if(!face_matched)
+//          std::cout << "ERROR: Couldn't match the face - FLIP.\n\n\n";
+//      }
       
       // Update face indexing
-      for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
-        ElTopo::Vec3st new_face = event.m_created_tri_data[i];
-
-        //determine handles in our indexing
-        VertexHandle v0 = reverse_vertmap[new_face[0]];
-        VertexHandle v1 = reverse_vertmap[new_face[1]];
-        VertexHandle v2 = reverse_vertmap[new_face[2]];
-        assert(v0.isValid() && v1.isValid() && v2.isValid());
-
-        bool face_matched = false;
-        for(EdgeFaceIterator efit = mesh.ef_iter(newEdge); efit; ++efit) {
-
-          FaceHandle face_candidate = *efit;
-          if(isFaceMatch(mesh, face_candidate, v0, v1, v2)) {
-
-            if(reverse_trimap.size() <= event.m_created_tris[i]) 
-              reverse_trimap.resize(event.m_created_tris[i]+1);
-
-            reverse_trimap[event.m_created_tris[i]] = face_candidate;
-            face_numbers[face_candidate] = event.m_created_tris[i];
-            face_matched = true;
-            break;
-          }
-        }
-
-        if(!face_matched)
-          std::cout << "ERROR: Couldn't match the face - FLIP.\n\n\n";
+      if (faceContainsVertex(*m_obj, nf0, reverse_vertmap[event.m_created_tri_data[0][0]]) &&
+          faceContainsVertex(*m_obj, nf0, reverse_vertmap[event.m_created_tri_data[0][1]]) &&
+          faceContainsVertex(*m_obj, nf0, reverse_vertmap[event.m_created_tri_data[0][2]]))
+      {
+        reverse_trimap[event.m_created_tris[0]] = nf0;
+        face_numbers[nf0] = event.m_created_tris[0];
+        reverse_trimap[event.m_created_tris[1]] = nf1;
+        face_numbers[nf1] = event.m_created_tris[1];
+      } else
+      {
+        reverse_trimap[event.m_created_tris[0]] = nf1;
+        face_numbers[nf1] = event.m_created_tris[0];
+        reverse_trimap[event.m_created_tris[1]] = nf0;
+        face_numbers[nf0] = event.m_created_tris[1];
       }
+      
       
       // explicitly assign the labels from El Topo (help debugging El Topo's labeling operations)
       for (unsigned int i = 0; i < event.m_created_tris.size(); i++)
@@ -1415,6 +1437,29 @@ void ElasticShell::remesh()
         m_face_regions[reverse_trimap[event.m_created_tris[i]]].y() = event.m_created_tri_labels[i][1];
       }
       
+    } 
+    else if (event.m_type == ElTopo::MeshUpdateEvent::EDGE_POP || event.m_type == ElTopo::MeshUpdateEvent::VERTEX_POP) {
+
+      for (size_t i = 0; i < event.m_deleted_tris.size(); i++)
+        m_obj->deleteFace(reverse_trimap[event.m_deleted_tris[i]], true);
+      
+      for (size_t i = 0; i < event.m_created_vert_data.size(); i++)
+      {
+        VertexHandle nv = m_obj->addVertex();
+        setVertexPosition(nv, Vec3d(event.m_created_vert_data[i][0], event.m_created_vert_data[i][1], event.m_created_vert_data[i][2]));
+        reverse_vertmap[event.m_created_verts[i]] = nv;
+        vert_numbers[nv] = event.m_created_verts[i];
+      }
+      
+      for (size_t i = 0; i < event.m_created_tri_data.size(); i++)
+      {
+        ElTopo::Vec3st & f = event.m_created_tri_data[i];
+        FaceHandle nf = m_obj->addFace(reverse_vertmap[f[0]], reverse_vertmap[f[1]], reverse_vertmap[f[2]]);
+        setFaceLabel(nf, Vec2i(event.m_created_tri_labels[i][0], event.m_created_tri_labels[i][1]));
+        reverse_trimap[event.m_created_tris[i]] = nf;
+        face_numbers[nf] = event.m_created_tris[i];
+      }
+      
     }
     else {
       std::cout << "ERROR: unknown remeshing operation: " << event.m_type << std::endl;
@@ -1451,9 +1496,10 @@ void ElasticShell::remesh()
 //  if (framecounter == 47)
 //    return;
   
-  performT1Transition();
+//  performT1Transition();
   
-  pullXJunctionVertices();
+//  pullXJunctionVertices();
+    
 }
   
 void ElasticShell::performT1Transition()
@@ -1475,10 +1521,7 @@ void ElasticShell::performT1Transition()
 
   // sort the X-junction edges into connected groups with the same cut
   std::vector<std::pair<std::vector<EdgeHandle>, Mat2i> > xjgroups; // each element is a list of consecutive x junction edges, along with the id of the two regions that should end up adjacent after pull-apart, and the id of the other two regions
-  std::vector<int> groupid(xjunctions.size());
-  for (size_t i = 0; i < xjunctions.size(); i++)
-    groupid[i] = i;
-  
+
   for (size_t i = 0; i < xjunctions.size(); i++)
   {
     Mat2i cut = cutXJunctionEdge(xjunctions[i]);
@@ -2554,6 +2597,60 @@ bool ElasticShell::generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0
   return false;
 }
 
+bool ElasticShell::generate_splitted_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos)
+{
+  pos = (st.get_position(v0) + st.get_position(v1)) / 2;
+  
+  return true;
+}
+
+bool ElasticShell::generate_collapsed_constraint_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1)
+{
+  return (label0 || label1);  // if either endpoint is constrained, the collapsed point shold be constrained. more specifically it should be on all the walls any of the two endpoints is on (implemented in generate_collapsed_position())
+}
+
+bool ElasticShell::generate_splitted_constraint_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1)
+{
+  ElTopo::Vec3d x0 = st.get_position(v0);
+  ElTopo::Vec3d x1 = st.get_position(v1);
+  
+  int constraint0 = onBBWall(Vec3d(x0[0], x0[1], x0[2]));
+  int constraint1 = onBBWall(Vec3d(x1[0], x1[1], x1[2]));
+  
+  assert((constraint0 != 0) == label0);
+  assert((constraint1 != 0) == label1);
+  
+  return (constraint0 & constraint1) != 0;  // the splitting midpoint has a positive constraint label only if the two endpoints are on a same wall (sharing a bit in their constraint bitfield representation)
+}
+
+bool ElasticShell::generate_edge_popped_positions(ElTopo::SurfTrack & st, size_t oldv, const ElTopo::Vec2i & cut, ElTopo::Vec3d & pos_upper, ElTopo::Vec3d & pos_lower)
+{
+  ElTopo::Vec3d original_pos = st.get_position(oldv);
+  int original_constraint = onBBWall(Vec3d(original_pos[0], original_pos[1], original_pos[2]));
+  
+  Vec3d new_pos_upper = enforceBBWallConstraint(Vec3d(pos_upper[0], pos_upper[1], pos_upper[2]), original_constraint);
+  Vec3d new_pos_lower = enforceBBWallConstraint(Vec3d(pos_lower[0], pos_lower[1], pos_lower[2]), original_constraint);
+  
+  pos_upper = ElTopo::Vec3d(new_pos_upper.x(), new_pos_upper.y(), new_pos_upper.z());
+  pos_lower = ElTopo::Vec3d(new_pos_lower.x(), new_pos_lower.y(), new_pos_lower.z());
+  
+  return true;
+}
+
+bool ElasticShell::generate_vertex_popped_positions(ElTopo::SurfTrack & st, size_t oldv, int A, int B, ElTopo::Vec3d & pos_a, ElTopo::Vec3d & pos_b)
+{
+  ElTopo::Vec3d original_pos = st.get_position(oldv);
+  int original_constraint = onBBWall(Vec3d(original_pos[0], original_pos[1], original_pos[2]));
+  
+  Vec3d new_pos_a = enforceBBWallConstraint(Vec3d(pos_a[0], pos_a[1], pos_a[2]), original_constraint);
+  Vec3d new_pos_b = enforceBBWallConstraint(Vec3d(pos_b[0], pos_b[1], pos_b[2]), original_constraint);
+  
+  pos_a = ElTopo::Vec3d(new_pos_a.x(), new_pos_a.y(), new_pos_a.z());
+  pos_b = ElTopo::Vec3d(new_pos_b.x(), new_pos_b.y(), new_pos_b.z());
+  
+  return true;
+}
+
 void ElasticShell::performSplit(const EdgeHandle& eh, const Vec3d& midpoint, VertexHandle& new_vert) {
 
   VertexHandle v0 = m_obj->fromVertex(eh);
@@ -2782,7 +2879,7 @@ void ElasticShell::performCollapse(const EdgeHandle& eh, const VertexHandle& ver
 }
 
 
-bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const FaceHandle& f1, EdgeHandle& newEdge) {
+bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const FaceHandle& f1, FaceHandle & new_f0, FaceHandle & new_f1, EdgeHandle& newEdge) {
 
   
   VertexHandle v0 = m_obj->fromVertex(eh),
@@ -2928,6 +3025,9 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const 
   m_face_regions[f0new] = oldLabels;
   m_face_regions[f1new] = oldLabels;
 
+  new_f0 = f0new;
+  new_f1 = f1new;
+  
   return true;
 }
   

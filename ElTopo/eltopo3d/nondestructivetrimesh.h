@@ -94,15 +94,15 @@ public:
     //
     // Return a const reference to the set of all vertex constraint labels
     //
-    inline const std::vector<int>& get_vertex_constraint_labels() const;
+    inline const std::vector<bool> & get_vertex_constraint_labels() const;
     
     // Return the constraint label to a specified vertex
     //
-    inline int get_vertex_constraint_label( size_t index ) const;
+    inline bool get_vertex_constraint_label( size_t index ) const;
     
     // Set the constraint label of a specified vertex
     //
-    inline void set_vertex_constraint_label( size_t index, int label );
+    inline void set_vertex_constraint_label( size_t index, bool label );
     
     ////////////////////////////////////////////////////////////
     
@@ -162,6 +162,18 @@ public:
     ///
     void set_num_vertices( size_t num_vertices );
     
+    /// Query vertex count
+    ///
+    size_t nv();
+    
+    /// Query edge count
+    ///
+    size_t ne();
+    
+    /// Query triangle count
+    ///
+    size_t nt();
+        
     /// Given two vertices on a triangle, return the third vertex
     ///
     inline size_t get_third_vertex( size_t vertex0, size_t vertex1, const Vec3st& triangle ) const;
@@ -189,6 +201,19 @@ public:
     /// Return which vertex in tri matches v.  Also returns the other two vertices in tri.
     ///
     inline static size_t index_in_triangle( const Vec3st& tri, size_t v, Vec2ui& other_two );
+    
+    ////////////////////////////////////////////////////////////
+    // FD 20130109
+    //
+    /// Query triangle-vertex incidence
+    ///
+    inline static bool triangle_contains_vertex( const Vec3st & tri, size_t v );
+    
+    /// Query triangle-edge incidence
+    ///
+    inline static bool triangle_contains_edge( const Vec3st & tri, const Vec2st & e );
+    
+    ////////////////////////////////////////////////////////////
     
     /// Return the edge incident on two triangles.  Returns ~0 if triangles are not adjacent.
     ///
@@ -281,7 +306,7 @@ public:
     //
     // Vertex constraint label
     //
-    std::vector<int> m_vertex_constraint_labels;
+    std::vector<bool> m_vertex_constraint_labels;
     
     ////////////////////////////////////////////////////////////
     
@@ -794,26 +819,46 @@ inline void NonDestructiveTriMesh::set_triangle_label( size_t index, const Vec2i
 //
 // Return a const reference to the set of all vertex constraint labels
 //
-inline const std::vector<int>& NonDestructiveTriMesh::get_vertex_constraint_labels() const
+inline const std::vector<bool> & NonDestructiveTriMesh::get_vertex_constraint_labels() const
 {
     return m_vertex_constraint_labels;
 }
 
 // Return the constraint label of a specified vertex
 //
-inline int NonDestructiveTriMesh::get_vertex_constraint_label( size_t index ) const
+inline bool NonDestructiveTriMesh::get_vertex_constraint_label( size_t index ) const
 {
     return m_vertex_constraint_labels[index];
 }
 
 // Set the constraint label of a specified vertex
 //
-inline void NonDestructiveTriMesh::set_vertex_constraint_label( size_t index, int label )
+inline void NonDestructiveTriMesh::set_vertex_constraint_label( size_t index, bool label )
 {
     m_vertex_constraint_labels[index] = label;
 }
 
 ////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////
+// FD 20130109
+//
+/// Query triangle-vertex incidence
+///
+inline bool NonDestructiveTriMesh::triangle_contains_vertex( const Vec3st & tri, size_t v )
+{
+    return tri[0] == v || tri[1] == v || tri[2] == v;
+}
+
+/// Query triangle-edge incidence
+///
+inline bool NonDestructiveTriMesh::triangle_contains_edge( const Vec3st & tri, const Vec2st & e )
+{
+    return triangle_contains_vertex(tri, e[0]) && triangle_contains_vertex(tri, e[1]);
+}
+
+////////////////////////////////////////////////////////////
+    
 
 }
 
