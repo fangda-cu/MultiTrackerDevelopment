@@ -1353,6 +1353,20 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
             if (m_mesh.m_vertex_to_triangle_map[overlapping_vertices[i]].empty()) 
                 continue; 
             
+            // exclude vertices incident to tris
+            bool incident = false;
+            for (size_t j = 0; j < tris.size(); j++)
+                if (m_mesh.get_triangle(tris[j])[0] == overlapping_vertices[i] ||
+                    m_mesh.get_triangle(tris[j])[1] == overlapping_vertices[i] ||
+                    m_mesh.get_triangle(tris[j])[2] == overlapping_vertices[i])
+                {
+                    incident = true;
+                    break;
+                }
+            
+            if (incident)
+                continue;
+            
             const Vec3d & vert = m_surf.get_position(overlapping_vertices[i]);
             
             for (size_t j = 0; j < tris.size(); j++)
