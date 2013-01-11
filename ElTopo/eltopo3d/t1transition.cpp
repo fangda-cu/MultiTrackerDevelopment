@@ -854,6 +854,49 @@ bool T1Transition::pop_vertices()
             }
             
         }
+        
+        // need to consider the X-junction edge case too, because the edge popping may not be complete due to collision
+        for (size_t i = 0; i < mesh.m_vertex_to_edge_map[xj].size(); i++)
+        {
+            size_t edge = mesh.m_vertex_to_edge_map[xj][i];
+            size_t v2 = (mesh.m_edges[edge][0] == xj ? mesh.m_edges[edge][1] : mesh.m_edges[edge][0]);
+            
+            bool adjA = false;
+            bool adjB = false;
+            int upper_region = -1;  // the region on the top when looking down the edge from xj to v2, with region B on the right
+            int lower_region = -1;
+            for (size_t j = 0; j < mesh.m_edge_to_triangle_map[edge].size(); j++)
+            {
+                size_t triangle = mesh.m_edge_to_triangle_map[edge][j];
+                bool oriented = mesh.oriented(xj, v2, mesh.get_triangle(triangle));
+                
+                Vec2i label = mesh.get_triangle_label(triangle);
+                if (label[0] == A || label[1] == A)
+                    adjA = true;
+                if (label[0] == B || label[1] == B)
+                    adjB = true;
+                if ((label[0] == B &&  oriented) ||
+                    (label[1] == B && !oriented))
+                {
+                    lower_region = (label[0] == B ? label[1] : label[0]);
+                }
+                if ((label[0] == B && !oriented) ||
+                    (label[1] == B &&  oriented))
+                {
+                    upper_region = (label[0] == B ? label[1] : label[0]);
+                }
+                
+            }
+            
+            if (adjA && adjB)
+            {
+                // this is an X-junction edge. pulling vertex xj apart creates a new face here.
+                assert(upper_region >= 0);
+                assert(lower_region >= 0);
+                faces_to_create.push_back(Vec3st(a, b, v2));
+                face_labels_to_create.push_back(Vec2i(lower_region, upper_region));
+            }
+        }
 
         // prune flap triangles
         // TODO: make use of ElTopo's flap triangle pruning: SurfTrack::trim_non_manifold(). Just need to maintain the m_dirty_triangles list.
