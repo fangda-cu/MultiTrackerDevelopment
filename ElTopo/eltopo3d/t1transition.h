@@ -81,20 +81,15 @@ private:
     ///
     struct InteriorStencil;    
     
+    /// Collision safety helper functions
+    /// Move one vertex and test for collision
+    ///
+    bool vertex_pseudo_motion_introduces_collision(size_t v, const Vec3d & oldpos, const Vec3d & newpos);
+    
     /// The mesh this object operates on
     /// 
     SurfTrack & m_surf;   
     
-//    /// Determine if the pseudo-trajectories of the new vertices have a collision with the existing mesh.
-//    ///
-//    bool t1_transition_pseudo_motion_introduces_intersection(const Vec3d& new_vertex_position, 
-//                                                             const Vec3d& new_vertex_smooth_position, 
-//                                                             size_t edge,
-//                                                             size_t vertex_a,
-//                                                             size_t vertex_b,
-//                                                             std::vector<size_t>& tris, 
-//                                                             std::vector<size_t>& verts);
-
 };
 
 }

@@ -1216,10 +1216,179 @@ bool T1Transition::should_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pul
 
 bool T1Transition::pulling_vertex_apart_introduces_collision(size_t v, const Vec3d & oldpos, const Vec3d & newpos0, const Vec3d & newpos1)
 {
+    bool collision0 = vertex_pseudo_motion_introduces_collision(v, oldpos, newpos0);
+    bool collision1 = vertex_pseudo_motion_introduces_collision(v, oldpos, newpos1);
     
-    return true;
+    return collision0 || collision1;
 }
-
+    
+bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec3d & oldpos, const Vec3d & newpos)
+{
+    // code adapted from EdgeSplitter::split_edge_pseudo_motion_introduces_intersection()
+    if (!m_surf.m_collision_safety)
+    {
+        return false;
+    }
+    
+    NonDestructiveTriMesh & m_mesh = m_surf.m_mesh;
+    
+    const std::vector<Vec3d> & x = m_surf.get_positions();
+    
+    std::vector<size_t> & tris = m_surf.m_mesh.m_vertex_to_triangle_map[v];
+    std::vector<size_t> & edges = m_surf.m_mesh.m_vertex_to_edge_map[v];
+    std::vector<size_t> edge_other_endpoints(edges.size());
+    
+    for (size_t i = 0; i < edges.size(); i++)
+        edge_other_endpoints[i] = (m_mesh.m_edges[edges[i]][0] == v ? m_mesh.m_edges[edges[i]][1] : m_mesh.m_edges[edges[i]][0]);
+    
+    // 
+    // new point vs all triangles
+    // 
+    
+    {
+        
+        Vec3d aabb_low, aabb_high;
+        minmax( oldpos, newpos, aabb_low, aabb_high );
+        
+        aabb_low -= m_surf.m_aabb_padding * Vec3d(1,1,1);
+        aabb_high += m_surf.m_aabb_padding * Vec3d(1,1,1);
+        
+        std::vector<size_t> overlapping_triangles;
+        m_surf.m_broad_phase->get_potential_triangle_collisions( aabb_low, aabb_high, true, true, overlapping_triangles );
+        
+        for ( size_t i = 0; i < overlapping_triangles.size(); ++i )
+        {
+            
+            // Exclude all incident triangles from the check
+            bool overlap = false;
+            for(size_t j = 0; j < tris.size(); ++j) {
+                if(overlapping_triangles[i] == tris[j]) {
+                    overlap = true;
+                    break;
+                }
+            }
+            
+            if( overlap )  
+                continue;
+            
+            size_t triangle_vertex_0 = m_mesh.get_triangle( overlapping_triangles[i] )[0];
+            size_t triangle_vertex_1 = m_mesh.get_triangle( overlapping_triangles[i] )[1];
+            size_t triangle_vertex_2 = m_mesh.get_triangle( overlapping_triangles[i] )[2];
+            
+            double t_zero_distance;
+            
+            check_point_triangle_proximity( oldpos, x[triangle_vertex_0], x[triangle_vertex_1], x[triangle_vertex_2], t_zero_distance );
+            
+            size_t dummy_index = m_surf.get_num_vertices();
+            
+            if ( t_zero_distance < m_surf.m_improve_collision_epsilon )
+            {
+                return true;
+            }
+            
+            Vec3st t = sort_triangle( Vec3st( triangle_vertex_0, triangle_vertex_1, triangle_vertex_2 ) );  // FD 20130111: why sort the triangle here?
+            
+            if ( point_triangle_collision( oldpos, newpos, dummy_index, x[t[0]], x[t[0]], t[0], x[t[1]], x[t[1]], t[1], x[t[2]], x[t[2]], t[2] ) )
+            {
+                return true;
+            }
+        }
+        
+    }
+    
+    //
+    // new edges vs all edges
+    //
+    
+    {
+        
+        Vec3d edge_aabb_low, edge_aabb_high;
+        
+        // do one big query into the broad phase for all new edges
+        minmax( oldpos, newpos, edge_aabb_low, edge_aabb_high );
+        for(size_t i = 0; i < edge_other_endpoints.size(); ++i)
+            update_minmax(m_surf.get_position(edge_other_endpoints[i]), edge_aabb_low, edge_aabb_high);
+        
+        edge_aabb_low -= m_surf.m_aabb_padding * Vec3d(1,1,1);
+        edge_aabb_high += m_surf.m_aabb_padding * Vec3d(1,1,1);
+        
+        std::vector<size_t> overlapping_edges;
+        m_surf.m_broad_phase->get_potential_edge_collisions( edge_aabb_low, edge_aabb_high, true, true, overlapping_edges );
+        
+        for ( size_t i = 0; i < overlapping_edges.size(); ++i )
+        {
+            if ( m_mesh.m_edges[ overlapping_edges[i] ][0] == m_mesh.m_edges[ overlapping_edges[i] ][1] ) { continue; }
+            
+            for ( size_t j = 0; j < edges.size(); j++ )
+            {
+                size_t n = edge_other_endpoints[j];
+                size_t e0 = m_mesh.m_edges[j][0];
+                size_t e1 = m_mesh.m_edges[j][1];
+                if (segment_segment_collision(x[n], x[n], n, oldpos, newpos, v, x[e0], x[e0], e0, x[e1], x[e1], e1))
+                    return true;
+            }
+        }      
+    }
+    
+    //
+    // new triangles vs all points
+    //
+    
+    {
+        Vec3d triangle_aabb_low, triangle_aabb_high;
+        
+        // do one big query into the broad phase for all new triangles
+        minmax( oldpos, newpos, triangle_aabb_low, triangle_aabb_high );
+        for(size_t i = 0; i < edge_other_endpoints.size(); ++i)
+            update_minmax(m_surf.get_position(edge_other_endpoints[i]), triangle_aabb_low, triangle_aabb_high);
+        
+        triangle_aabb_low -= m_surf.m_aabb_padding * Vec3d(1,1,1);
+        triangle_aabb_high += m_surf.m_aabb_padding * Vec3d(1,1,1);
+        
+        std::vector<size_t> overlapping_vertices;
+        m_surf.m_broad_phase->get_potential_vertex_collisions( triangle_aabb_low, triangle_aabb_high, true, true, overlapping_vertices );
+        
+        size_t dummy_e = m_surf.get_num_vertices();
+        
+        std::vector< Vec3st > triangle_indices;
+        
+//        //TODO Hopefully order is irrelevant here...
+//        for( size_t i = 0; i < verts.size(); ++i) {
+//            triangle_indices.push_back( Vec3st( vertex_a, dummy_e, verts[i] ) );    // triangle aec      
+//            triangle_indices.push_back( Vec3st( verts[i], dummy_e, vertex_b ) );    // triangle ceb      
+//        }
+        
+        for ( size_t i = 0; i < overlapping_vertices.size(); ++i )
+        {
+            if ( m_mesh.m_vertex_to_triangle_map[overlapping_vertices[i]].empty() ) 
+            { 
+                continue; 
+            }
+            
+            size_t overlapping_vert_index = overlapping_vertices[i];
+            const Vec3d& vert = m_surf.get_position(overlapping_vert_index);
+            
+            for (size_t j = 0; j < tris.size(); j++)
+            {
+                size_t a = m_mesh.get_triangle(tris[j])[0];
+                size_t b = m_mesh.get_triangle(tris[j])[1];
+                size_t c = m_mesh.get_triangle(tris[j])[2];
+                
+                Vec3d oldxa = (a == v ? oldpos : x[a]);
+                Vec3d newxa = (a == v ? newpos : x[a]);
+                Vec3d oldxb = (b == v ? oldpos : x[b]);
+                Vec3d newxb = (b == v ? newpos : x[b]);
+                Vec3d oldxc = (c == v ? oldpos : x[c]);
+                Vec3d newxc = (c == v ? newpos : x[c]);
+                
+                if (point_triangle_collision(vert, vert, overlapping_vert_index, oldxa, newxa, a, oldxb, newxb, b, oldxc, newxc, c))
+                    return true;
+            }
+        }
+    }
+    
+    return false;
+}
     
 
 }
