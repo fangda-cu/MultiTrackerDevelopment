@@ -1451,6 +1451,7 @@ void ElasticShell::remesh()
       {
         VertexHandle nv = m_obj->addVertex();
         setVertexPosition(nv, Vec3d(event.m_created_vert_data[i][0], event.m_created_vert_data[i][1], event.m_created_vert_data[i][2]));
+        if (event.m_created_verts[i] >= reverse_vertmap.size()) reverse_vertmap.resize(event.m_created_verts[i] + 1);
         reverse_vertmap[event.m_created_verts[i]] = nv;
         vert_numbers[nv] = event.m_created_verts[i];
       }
@@ -1460,6 +1461,7 @@ void ElasticShell::remesh()
         ElTopo::Vec3st & f = event.m_created_tri_data[i];
         FaceHandle nf = m_obj->addFace(reverse_vertmap[f[0]], reverse_vertmap[f[1]], reverse_vertmap[f[2]]);
         setFaceLabel(nf, Vec2i(event.m_created_tri_labels[i][0], event.m_created_tri_labels[i][1]));
+        if (event.m_created_tris[i] >= reverse_trimap.size()) reverse_trimap.resize(event.m_created_tris[i] + 1);
         reverse_trimap[event.m_created_tris[i]] = nf;
         face_numbers[nf] = event.m_created_tris[i];
       }
