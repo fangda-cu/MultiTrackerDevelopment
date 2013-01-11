@@ -614,7 +614,7 @@ void SurfTrack::trim_non_manifold( std::vector<size_t>& triangle_indices )
                     ((current_triangle[1] == other_triangle[0]) || (current_triangle[1] == other_triangle[1]) || (current_triangle[1] == other_triangle[2])) &&
                     ((current_triangle[2] == other_triangle[0]) || (current_triangle[2] == other_triangle[1]) || (current_triangle[2] == other_triangle[2])) ) 
                 {
-                    std::cout << "Found a flap\n";
+                    
                     if ( false == m_allow_topology_changes )
                     {
                         std::cout << "flap found while topology changes disallowed" << std::endl;
@@ -632,23 +632,10 @@ void SurfTrack::trim_non_manifold( std::vector<size_t>& triangle_indices )
                     Vec2i current_label = m_mesh.get_triangle_label(i);
                     Vec2i other_label = m_mesh.get_triangle_label(other_triangle_index);
 
-                    std::cout << "Current label: " << current_label << std::endl;
-                    std::cout << "Other label: " << other_label << std::endl;
-
-//                    size_t common_edge = tri_edges[e];
-//                    if ( m_mesh.oriented( m_mesh.m_edges[common_edge][0], m_mesh.m_edges[common_edge][1], current_triangle ) == 
-//                        m_mesh.oriented( m_mesh.m_edges[common_edge][0], m_mesh.m_edges[common_edge][1], other_triangle ) )
-//                    {
-//                        continue;
-//                    }
-                    
                     size_t common_edge = tri_edges[e];
                     bool orientation = (m_mesh.oriented(m_mesh.m_edges[common_edge][0], m_mesh.m_edges[common_edge][1], current_triangle) == 
                                         m_mesh.oriented(m_mesh.m_edges[common_edge][0], m_mesh.m_edges[common_edge][1], other_triangle));
-                    std::cout << "Common edge: " << m_mesh.m_edges[common_edge] << std::endl;
-                    std::cout << "Tri one: " << current_triangle << std::endl;
-                    std::cout << "Tri two: " << other_triangle << std::endl;
-                    std::cout << "Orientation result: " << orientation << std::endl;
+
                     int region_0;   // region behind surface a
                     int region_1;   // region behind surface b
                     int region_2;   // region between the two surfaces

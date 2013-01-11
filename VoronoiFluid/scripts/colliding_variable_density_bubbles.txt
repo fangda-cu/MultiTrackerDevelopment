@@ -33,7 +33,7 @@ free_surface 1
 remesh 1
 seed_at_solid 1
 allow_solid_overlap 0
-volume_correction 1
+volume_correction 0
 surface_tension_coefficient 0.0
 gravity_force [-1.0 0.0 0.0]
 

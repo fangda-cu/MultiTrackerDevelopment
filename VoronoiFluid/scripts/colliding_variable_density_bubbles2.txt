@@ -26,7 +26,7 @@ air_sample_rejection_threshold 0.0001
 tetgen_max_radius_edge_ratio 1.75
 
 null_space_smoothing 1 
-eigenvalue_rank_ratio 1.0
+eigenvalue_rank_ratio 0.03
 subdivision_scheme midpoint
 
 free_surface 1

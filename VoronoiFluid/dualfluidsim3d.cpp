@@ -1486,7 +1486,8 @@ void DualFluidSim3D::advance_surface( float dt )
    
    if ( volume_correction )
    {
-      correct_volume( );
+      //TODO Make volume correction work with multiphase mesh.
+      //correct_volume( );
    }
    
    write_binary_file_with_newpositions( surface_tracker->m_mesh, 
