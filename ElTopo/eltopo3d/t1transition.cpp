@@ -891,6 +891,7 @@ bool T1Transition::pop_vertices()
             if (adjA && adjB)
             {
                 // this is an X-junction edge. pulling vertex xj apart creates a new face here.
+                std::cout << "Unresolved X-junction edge encountered." << std::endl;
                 assert(upper_region >= 0);
                 assert(lower_region >= 0);
                 faces_to_create.push_back(Vec3st(a, b, v2));
@@ -1321,8 +1322,8 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
             
             if (point_triangle_collision(oldpos, newpos, v, x[a], x[a], a, x[b], x[b], b, x[c], x[c], c))
             {
-                if (m_surf.m_verbose)
-                    std::cout << "point triangle: with triangle " << overlapping_triangles[i] << std::endl;
+//                if (m_surf.m_verbose)
+                    std::cout << "Popping collision: point triangle: with triangle " << overlapping_triangles[i] << std::endl;
                 return true;
             }
         }
@@ -1368,8 +1369,8 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
                 size_t e1 = m_mesh.m_edges[overlapping_edges[i]][1];
                 if (segment_segment_collision(x[n], x[n], n, oldpos, newpos, v, x[e0], x[e0], e0, x[e1], x[e1], e1))
                 {
-                    if (m_surf.m_verbose)
-                        std::cout << "edge edge: edge other vertex = " << edge_other_endpoints[j] << " edge = " << overlapping_edges[i] << std::endl;
+//                    if (m_surf.m_verbose)
+                        std::cout << "Popping collision: edge edge: edge other vertex = " << edge_other_endpoints[j] << " edge = " << overlapping_edges[i] << std::endl;
                     return true;
                 }
             }
@@ -1428,8 +1429,8 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
                 
                 if (point_triangle_collision(vert, vert, overlapping_vertices[i], oldxa, newxa, a, oldxb, newxb, b, oldxc, newxc, c))
                 {
-                    if (m_surf.m_verbose)
-                        std::cout << "triangle point: with triangle " << tris[j] << " with vertex " << overlapping_vertices[i] << std::endl;
+//                    if (m_surf.m_verbose)
+                        std::cout << "Popping collision: triangle point: with triangle " << tris[j] << " with vertex " << overlapping_vertices[i] << std::endl;
                     return true;
                 }
             }
