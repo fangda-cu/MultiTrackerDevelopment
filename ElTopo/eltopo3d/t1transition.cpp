@@ -1368,7 +1368,19 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
                 size_t n = edge_other_endpoints[j];
                 size_t e0 = m_mesh.m_edges[overlapping_edges[i]][0];
                 size_t e1 = m_mesh.m_edges[overlapping_edges[i]][1];
-                if (segment_segment_collision(x[n], x[n], n, oldpos, newpos, v, x[e0], x[e0], e0, x[e1], x[e1], e1))
+                if (e0 > e1)
+                    std::swap(e0, e1);
+                
+                double t_zero_distance;
+                check_edge_edge_proximity(oldpos, x[n], x[e0], x[e1], t_zero_distance);
+                if (t_zero_distance < m_surf.m_improve_collision_epsilon)
+                    return true;
+
+                bool collision = (n < v ?
+                                  segment_segment_collision(x[n], x[n], n, oldpos, newpos, v, x[e0], x[e0], e0, x[e1], x[e1], e1) :
+                                  segment_segment_collision(oldpos, newpos, v, x[n], x[n], n, x[e0], x[e0], e0, x[e1], x[e1], e1));
+                
+                if (collision)
                 {
 //                    if (m_surf.m_verbose)
                         std::cout << "Popping collision: edge edge: edge other vertex = " << edge_other_endpoints[j] << " edge = " << overlapping_edges[i] << std::endl;
@@ -1427,6 +1439,11 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
                 Vec3d newxb = (b == v ? newpos : x[b]);
                 Vec3d oldxc = (c == v ? oldpos : x[c]);
                 Vec3d newxc = (c == v ? newpos : x[c]);
+                
+                double t_zero_distance;
+                check_point_triangle_proximity(vert, oldxa, oldxb, oldxc, t_zero_distance);
+                if (t_zero_distance < m_surf.m_improve_collision_epsilon)
+                    return true;
                 
                 if (point_triangle_collision(vert, vert, overlapping_vertices[i], oldxa, newxa, a, oldxb, newxb, b, oldxc, newxc, c))
                 {
