@@ -1321,8 +1321,8 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
             for (size_t j = 0; j < edges.size(); j++)
             {
                 size_t n = edge_other_endpoints[j];
-                size_t e0 = m_mesh.m_edges[j][0];
-                size_t e1 = m_mesh.m_edges[j][1];
+                size_t e0 = m_mesh.m_edges[overlapping_edges[i]][0];
+                size_t e1 = m_mesh.m_edges[overlapping_edges[i]][1];
                 if (segment_segment_collision(x[n], x[n], n, oldpos, newpos, v, x[e0], x[e0], e0, x[e1], x[e1], e1))
                 {
                     if (m_surf.m_verbose)
