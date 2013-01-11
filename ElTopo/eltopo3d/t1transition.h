@@ -57,7 +57,7 @@ public:
     /// Perform vertex popping (second step of T1 transition)
     ///
     bool pop_vertices();
-    
+
     /// Decide the cut direction on an X-junction edge
     ///
     Mat2i cut_x_junction_edge(size_t e);
@@ -76,6 +76,10 @@ public:
     bool m_remesh_boundaries;
     
 private:
+    
+    /// Helper data structures
+    ///
+    struct InteriorStencil;    
     
     /// The mesh this object operates on
     /// 
