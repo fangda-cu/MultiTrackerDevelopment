@@ -234,6 +234,8 @@ bool T1Transition::pop_edges()
             size_t v = mesh.get_common_vertex(edge0, edge1);
             if (v >= mesh.nv())
                 continue;   // this can only hapen when j == ne - 1, and the edges don't form a loop
+            if (ne == 2 && j == 1)
+                continue;   // this is a special cases where v is valid but the group is not a loop
             
             size_t v0 = (v == mesh.m_edges[edge0][0] ? mesh.m_edges[edge0][1] : mesh.m_edges[edge0][0]);
             size_t v1 = (v == mesh.m_edges[edge1][0] ? mesh.m_edges[edge1][1] : mesh.m_edges[edge1][0]);
@@ -364,8 +366,7 @@ bool T1Transition::pop_edges()
             if (pulling_vertex_apart_introduces_collision(v, original_position, upper_junction_desired_positions, lower_junction_desired_positions))
             {
                 if (m_surf.m_verbose)
-                    std::cout << "Pulling vertex " << v << " apart introduces collision." << std::endl;
-                
+                    std::cout << "Pulling vertex " << v << " apart introduces collision." << std::endl;                
             } else
             {
                 size_t nv0 = m_surf.add_vertex(upper_junction_desired_positions, m_surf.m_masses[v]);
