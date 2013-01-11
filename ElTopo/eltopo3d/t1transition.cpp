@@ -366,7 +366,23 @@ bool T1Transition::pop_edges()
             if (pulling_vertex_apart_introduces_collision(v, original_position, upper_junction_desired_positions, lower_junction_desired_positions))
             {
                 if (m_surf.m_verbose)
-                    std::cout << "Pulling vertex " << v << " apart introduces collision." << std::endl;                
+                    std::cout << "Pulling vertex " << v << " apart introduces collision." << std::endl;
+                
+                // Vertex v is deleted and created again here. this is because El Topo face deletion 
+                // has no "non-recursive" option. Retriangulation around v may require deleting all the
+                // triangles around v (even if v is not pulled apart), which will inevitably remove v
+                // itself. 
+                size_t nv = m_surf.add_vertex(original_position, m_surf.m_masses[v]);
+                
+                m_surf.set_remesh_velocity(nv, m_surf.get_remesh_velocity(v));
+                mesh.set_vertex_constraint_label(nv, original_constraint);
+                
+                junctions[is.vertex_indices[1]][0] = nv;
+                junctions[is.vertex_indices[1]][1] = nv;
+                
+                verts_to_delete.push_back(v);
+                verts_created.push_back(nv);
+                verts_to_create.push_back(original_position);
             } else
             {
                 size_t nv0 = m_surf.add_vertex(upper_junction_desired_positions, m_surf.m_masses[v]);
