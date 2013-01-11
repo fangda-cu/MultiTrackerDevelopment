@@ -463,7 +463,8 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
     } else
     {
         // shouldn't happen
-        assert(!"Face label inconsistency detected.");
+       region_0 = region_1 = region_2 = -1; 
+       assert(!"Face label inconsistency detected.");
     }
     
     Vec2i label_tunnel =  (region_0 == label_a_0[0] ? Vec2i(region_2, region_0) : Vec2i(region_0, region_2));

@@ -266,7 +266,7 @@ public:
 
 void display()
 {
-
+   
    if ( g_display_status_text )
    {
       pthread_mutex_lock( &thread_is_running_mutex );
@@ -310,6 +310,7 @@ void display()
       status_text_widget->set_color( 1.0f, 1.0f, 1.0f );
       status_text_widget->text = "";
    }
+   
    
    /*
    // identify and draw some slivery tets
@@ -383,18 +384,18 @@ void display()
          {
             if ( g_draw_liquid_phi )
             {
-               /*
-               if ( g_renderable_liquid_phi[i] < 0.0f )
-               {
-                  glColor3f(0,0,1);
-                  glVertex3fv( g_renderable_tet_mesh->vertices[i].v );
-               }
-               else
-               {
-                  glColor3f(1,0,0);
-                  glVertex3fv( g_renderable_tet_mesh->vertices[i].v );
-               }
-               */
+               
+               //if ( g_renderable_liquid_phi[i] < 0.0f )
+               //{
+               //   glColor3f(0,0,1);
+               //   glVertex3fv( g_renderable_tet_mesh->vertices[i].v );
+               //}
+               //else
+               //{
+               //   glColor3f(1,0,0);
+               //   glVertex3fv( g_renderable_tet_mesh->vertices[i].v );
+               //}
+               
                Vec3f color(0,0,0);
                //std::cout << "Region id = " << g_dual_sim->region_IDs[i] << std::endl;
                if(g_renderable_region_IDs[i] < 0 || g_renderable_region_IDs[i] > 2)
@@ -567,7 +568,7 @@ void display()
    if(g_draw_domain_box ) 
    {
       glColor3f(0.5,0.5,0.5);
-      draw_box( g_dual_sim->domain_low, g_dual_sim->domain_high );
+      //draw_box( g_dual_sim->domain_low, g_dual_sim->domain_high );
    }
 
    // clipping plane
@@ -672,15 +673,19 @@ void display()
       {
          int t = sorted_faces[i].first;
          const Vec3ui& tri = g_renderable_triangles[t];
-         
-         if(g_renderable_labels[t] == Vec2i(0,1) || g_renderable_labels[t] == Vec2i(1,0))
-            Gluvi::set_generic_material(1, 0, 0, GL_FRONT_AND_BACK);   
-         else if(g_renderable_labels[t] == Vec2i(0,2) || g_renderable_labels[t] == Vec2i(2,0))
-            Gluvi::set_generic_material(0, 1, 0, GL_FRONT_AND_BACK);   
-         else if(g_renderable_labels[t] == Vec2i(1,2) || g_renderable_labels[t] == Vec2i(2,1))
-            Gluvi::set_generic_material(0, 0, 1, GL_FRONT_AND_BACK);   
-         else
-            std::cout << "unrecognize combo\n";
+
+         Vec3st test = sort_triangle(tri);
+         if(test[0] == 51 && test[1] == 221 && test[2] == 572) {
+            Gluvi::set_generic_material(0, 0, 0, GL_FRONT_AND_BACK);
+         }
+         else {
+            if(g_renderable_labels[t] == Vec2i(0,1) || g_renderable_labels[t] == Vec2i(1,0))
+               Gluvi::set_generic_material(1, 0, 0, GL_FRONT_AND_BACK);   
+            else if(g_renderable_labels[t] == Vec2i(0,2) || g_renderable_labels[t] == Vec2i(2,0))
+               Gluvi::set_generic_material(0, 1, 0, GL_FRONT_AND_BACK);   
+            else if(g_renderable_labels[t] == Vec2i(1,2) || g_renderable_labels[t] == Vec2i(2,1))
+               Gluvi::set_generic_material(0, 0, 1, GL_FRONT_AND_BACK);   
+         }
 
          //float curvValue = fabs(g_renderable_vertex_curvatures[tri[0]]);
          //if(g_renderable_vertex_curvatures[tri[0]] < 0) {
@@ -737,6 +742,18 @@ void display()
             const Vec2ui& edge = g_renderable_edges[i];
             glVertex3dv( g_renderable_vertices[edge[0]].v );
             glVertex3dv( g_renderable_vertices[edge[1]].v );
+         }
+         glEnd();
+
+         glPointSize(6);
+         glColor3f(1,1,0);
+         glBegin(GL_POINTS);
+         if(g_renderable_vertices.size() > 572) {
+            glVertex3dv(g_renderable_vertices[51].v);
+         //if(g_renderable_vertices.size() > 221) 
+            glVertex3dv(g_renderable_vertices[221].v);
+         //if(g_renderable_vertices.size() > 572) 
+            glVertex3dv(g_renderable_vertices[572].v);
          }
          glEnd();
       }
@@ -1394,7 +1411,7 @@ void advance_frame_done()
    update_renderable_objects();
 
    ++g_frame;
-   if ( g_frame > 1000 ) { exit(0); }
+   if ( g_frame > 10000 ) { exit(0); }
 
 }
 

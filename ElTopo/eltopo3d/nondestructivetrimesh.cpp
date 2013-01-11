@@ -553,7 +553,7 @@ void NonDestructiveTriMesh::clear_deleted_triangles( std::vector<Vec2st>* defrag
     // replace the face label data
     //
     std::vector<Vec2i> new_labels;
-    new_labels.reserve(new_tris.size());
+    new_labels.resize(new_tris.size());
     
     for (size_t i = 0; i < defragged_triangle_map->size(); i++)
     {

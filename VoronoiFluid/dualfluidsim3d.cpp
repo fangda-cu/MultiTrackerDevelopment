@@ -1429,8 +1429,7 @@ void DualFluidSim3D::advance_surface( float dt )
    
    // El Topo: static operations
    
-   surface_tracker->m_constrained_vertices_collapsing_callback = &cb;
-   std::vector<int> vert_const_labels(surface_tracker->get_num_vertices(), 0);
+   std::vector<bool> vert_const_labels(surface_tracker->get_num_vertices(), 0);
    surface_tracker->m_mesh.m_vertex_constraint_labels = vert_const_labels;
    std::vector<Vec3d> vert_vel(surface_tracker->get_num_vertices());
    for(unsigned int i = 0; i < vert_vel.size(); ++i) {
@@ -1498,7 +1497,7 @@ void DualFluidSim3D::advance_surface( float dt )
                                         "/Users/tyson/scratch/pre-integration.bin" );
    double actual_dt;
    surface_tracker->integrate( dt, actual_dt );
-   
+   delete get_velocity;
 }
 
 

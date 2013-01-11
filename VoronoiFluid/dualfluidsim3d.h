@@ -15,11 +15,6 @@ class VelocityFunctor3D;
 ///
 // ---------------------------------------------------------
 
-class MyCallBack : public ElTopo::SurfTrack::ConstrainedVerticesCollapsingCallback {
-   bool generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos) {
-      return false;
-   }
-};
 
 class DualFluidSim3D
 {
@@ -33,8 +28,6 @@ public:
    
    ~DualFluidSim3D();
    
-   MyCallBack cb;
-
 private:
    DualFluidSim3D();
    DualFluidSim3D( const DualFluidSim3D& );
