@@ -257,8 +257,8 @@ bool T1Transition::pop_edges()
             vertices[is.vertex_indices[1]] = is.vertices[1];
             vertices[is.vertex_indices[2]] = is.vertices[2];
             
-            edge_oriented[is.edge_indices[0]] = (vertices[is.vertex_indices[1] == mesh.m_edges[is.edges[0]][1]]);
-            edge_oriented[is.edge_indices[1]] = (vertices[is.vertex_indices[1] == mesh.m_edges[is.edges[1]][0]]);
+            edge_oriented[is.edge_indices[0]] = (vertices[is.vertex_indices[1]] == mesh.m_edges[is.edges[0]][1]);
+            edge_oriented[is.edge_indices[1]] = (vertices[is.vertex_indices[1]] == mesh.m_edges[is.edges[1]][0]);
         }
         
         std::vector<Vec2st> junctions(ne + 1);  // Vec2st are the upper junction and lower junction (newly created vertices, or old vertices if can't (collision) or no need (boundary) to pull apart) respectively
