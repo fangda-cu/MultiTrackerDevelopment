@@ -890,12 +890,13 @@ bool T1Transition::pop_vertices()
             
             if (adjA && adjB)
             {
-                // this is an X-junction edge. pulling vertex xj apart creates a new face here.
-                std::cout << "Unresolved X-junction edge encountered." << std::endl;
-                assert(upper_region >= 0);
-                assert(lower_region >= 0);
-                faces_to_create.push_back(Vec3st(a, b, v2));
-                face_labels_to_create.push_back(Vec2i(lower_region, upper_region));
+                if (upper_region >= 0 && lower_region >= 0) // if this is not true, then the neighborhood around this edge is not complete, which can oly happen on the boundary.
+                {
+                    // this is an X-junction edge. pulling vertex xj apart creates a new face here.
+                    std::cout << "Unresolved X-junction edge encountered." << std::endl;
+                    faces_to_create.push_back(Vec3st(a, b, v2));
+                    face_labels_to_create.push_back(Vec2i(lower_region, upper_region));
+                }
             }
         }
 
