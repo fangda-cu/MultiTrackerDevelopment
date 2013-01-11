@@ -1319,6 +1319,15 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
         {
             if ( m_mesh.m_edges[ overlapping_edges[i] ][0] == m_mesh.m_edges[ overlapping_edges[i] ][1] ) { continue; }
             
+            // exclude edges that are adjacent to v's incident edges
+            bool adjacent = false;
+            for (size_t j = 0; j < edges.size(); j++)
+                if (m_mesh.get_common_vertex(edges[j], overlapping_edges[i]) < m_mesh.nv())
+                    adjacent = true;
+            
+            if (adjacent)
+                continue;
+            
             for ( size_t j = 0; j < edges.size(); j++ )
             {
                 size_t n = edge_other_endpoints[j];
