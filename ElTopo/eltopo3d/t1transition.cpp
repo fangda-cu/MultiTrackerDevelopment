@@ -366,7 +366,7 @@ bool T1Transition::pop_edges()
             if (pulling_vertex_apart_introduces_collision(v, original_position, upper_junction_desired_positions, lower_junction_desired_positions))
             {
                 if (m_surf.m_verbose)
-                    std::cout << "Pulling vertex " << v << " apart introduces collision." << std::endl;
+                    std::cout << "Edge popping: Pulling vertex " << v << " apart introduces collision." << std::endl;
                 
                 // Vertex v is deleted and created again here. this is because El Topo face deletion 
                 // has no "non-recursive" option. Retriangulation around v may require deleting all the
@@ -688,15 +688,17 @@ bool T1Transition::pop_vertices()
         if (A < 0)
             continue;
         
-        // pull apart
-        size_t a = m_surf.add_vertex(m_surf.get_position(xj), m_surf.m_masses[xj]);
-        size_t b = m_surf.add_vertex(m_surf.get_position(xj), m_surf.m_masses[xj]);
+        std::vector<size_t> faces_to_delete;
+        std::vector<Vec3st> faces_to_create;
+        std::vector<Vec2i> face_labels_to_create;
+        std::vector<size_t> faces_created;
         
-        // set the position/velocity of new vertices
-        m_surf.set_newposition(a, m_surf.get_position(xj));
-        m_surf.set_newposition(b, m_surf.get_position(xj));
-        m_surf.set_remesh_velocity(a, m_surf.get_remesh_velocity(xj));
-        m_surf.set_remesh_velocity(b, m_surf.get_remesh_velocity(xj));
+        std::vector<size_t> verts_to_delete;
+        std::vector<Vec3d> verts_to_create;
+        std::vector<size_t> verts_created;
+        
+        bool original_constraint = m_surf.m_mesh.get_vertex_constraint_label(xj);
+        Vec3d original_position = m_surf.get_position(xj);
         
         double mean_edge_length = 0;
         int edge_count = 0;
@@ -713,32 +715,47 @@ bool T1Transition::pop_vertices()
         Vec3d pull_apart_offset = pull_apart_direction * mean_edge_length;
         
         // compute the desired destination positions, enforcing constraints
-        bool xj_constraint = m_surf.m_mesh.get_vertex_constraint_label(xj);
-        Vec3d a_desired_position = m_surf.get_newposition(a) + pull_apart_offset * 0.1;
-        Vec3d b_desired_position = m_surf.get_newposition(b) - pull_apart_offset * 0.1;
+        Vec3d a_desired_position = original_position + pull_apart_offset * 0.1;
+        Vec3d b_desired_position = original_position - pull_apart_offset * 0.1;
+        size_t a = static_cast<size_t>(~0);
+        size_t b = static_cast<size_t>(~0);
 
-        if (xj_constraint)
+        if (original_constraint)
         {
             assert(m_surf.m_constrained_vertices_callback);            
             m_surf.m_constrained_vertices_callback->generate_vertex_popped_positions(m_surf, xj, A, B, a_desired_position, b_desired_position);
         }
         
-        mesh.set_vertex_constraint_label(a, xj_constraint);
-        mesh.set_vertex_constraint_label(b, xj_constraint);
+        // collision test
+        if (pulling_vertex_apart_introduces_collision(xj, original_position, a_desired_position, b_desired_position))
+        {
+            if (m_surf.m_verbose)
+                std::cout << "Vertex popping: Pulling vertex " << xj << " apart introduces collision." << std::endl;
+            
+            continue;
+            
+        } else
+        {
+            // pull apart
+            a = m_surf.add_vertex(original_position, m_surf.m_masses[xj]);
+            b = m_surf.add_vertex(original_position, m_surf.m_masses[xj]);
+            
+            m_surf.set_remesh_velocity(a, m_surf.get_remesh_velocity(xj));
+            m_surf.set_remesh_velocity(b, m_surf.get_remesh_velocity(xj));
+            mesh.set_vertex_constraint_label(a, original_constraint);
+            mesh.set_vertex_constraint_label(b, original_constraint);
+            
+            verts_to_delete.push_back(xj);
+            verts_created.push_back(a);
+            verts_created.push_back(b);
+            verts_to_create.push_back(a_desired_position);
+            verts_to_create.push_back(b_desired_position);
+        }
+        
+        assert(a < mesh.nv());
+        assert(b < mesh.nv());
         
         // update the face connectivities
-        std::vector<size_t> faces_to_delete;
-        std::vector<Vec3st> faces_to_create;
-        std::vector<Vec2i> face_labels_to_create;
-        std::vector<size_t> faces_created;
-        
-        std::vector<size_t> verts_to_delete;
-        std::vector<Vec3d> verts_to_create;
-        std::vector<size_t> verts_created;
-        
-        //&&&&
-//        std::vector<size_t> edges_to_delete;
-        
         for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[xj].size(); i++)
         {
             size_t triangle = mesh.m_vertex_to_triangle_map[xj][i];
@@ -838,13 +855,8 @@ bool T1Transition::pop_vertices()
             
         }
 
-        //&&&& recursive deletion
-//        for (size_t i = 0; i < mesh.m_vertex_to_edge_map[xj].size(); i++)
-//        {
-//            edges_to_delete.push_back(mesh.m_vertex_to_edge_map[xj][i]);
-//        }
-        
         // prune flap triangles
+        // TODO: make use of ElTopo's flap triangle pruning: SurfTrack::trim_non_manifold(). Just need to maintain the m_dirty_triangles list.
         for (size_t i = 0; i < faces_to_create.size(); i++)
         {
             for (size_t j = i + 1; j < faces_to_create.size(); j++)
@@ -880,11 +892,6 @@ bool T1Transition::pop_vertices()
         for (size_t i = 0; i < faces_to_delete.size(); i++)
             m_surf.remove_triangle(faces_to_delete[i]);
 
-        //&&&& recursive deletion
-//        for (size_t i = 0; i < edges_to_delete.size(); i++)
-//            m_obj->deleteEdge(edges_to_delete[i], false);
-//        m_obj->deleteVertex(xj);
-        
         assert(faces_to_create.size() == face_labels_to_create.size());
         for (size_t i = 0; i < faces_to_create.size(); i++)
         {
