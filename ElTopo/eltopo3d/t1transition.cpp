@@ -1299,16 +1299,10 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
         
         for (size_t i = 0; i < overlapping_triangles.size(); i++)
         {
-            // Exclude all incident triangles from the check
-            bool overlap = false;
-            for (size_t j = 0; j < tris.size(); j++)
-                if (overlapping_triangles[i] == tris[j])
-                {
-                    overlap = true;
-                    break;
-                }
-            
-            if (overlap)
+            // exclude incident triangles
+            if (m_mesh.get_triangle(overlapping_triangles[i])[0] == v ||
+                m_mesh.get_triangle(overlapping_triangles[i])[1] == v ||
+                m_mesh.get_triangle(overlapping_triangles[i])[2] == v)
                 continue;
             
             Vec3st sorted_triangle = sort_triangle(m_mesh.get_triangle(overlapping_triangles[i]));
@@ -1351,20 +1345,12 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
             if (m_mesh.m_edges[overlapping_edges[i]][0] == m_mesh.m_edges[overlapping_edges[i]][1] )
                 continue;
             
-            // exclude edges that are adjacent to v's incident edges
-            bool adjacent = false;
-            for (size_t j = 0; j < edges.size(); j++)
-                if (m_mesh.get_common_vertex(edges[j], overlapping_edges[i]) < m_mesh.nv())
-                {
-                    adjacent = true;
-                    break;
-                }
-            
-            if (adjacent)
-                continue;
-            
             for (size_t j = 0; j < edges.size(); j++)
             {
+                // exclude adjacent edges
+                if (m_mesh.get_common_vertex(edges[j], overlapping_edges[i]) < m_mesh.nv())
+                    continue;
+                
                 size_t n = edge_other_endpoints[j];
                 size_t e0 = m_mesh.m_edges[overlapping_edges[i]][0];
                 size_t e1 = m_mesh.m_edges[overlapping_edges[i]][1];
@@ -1410,24 +1396,16 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
             if (m_mesh.m_vertex_to_triangle_map[overlapping_vertices[i]].empty()) 
                 continue; 
             
-            // exclude vertices incident to tris
-            bool incident = false;
-            for (size_t j = 0; j < tris.size(); j++)
-                if (m_mesh.get_triangle(tris[j])[0] == overlapping_vertices[i] ||
-                    m_mesh.get_triangle(tris[j])[1] == overlapping_vertices[i] ||
-                    m_mesh.get_triangle(tris[j])[2] == overlapping_vertices[i])
-                {
-                    incident = true;
-                    break;
-                }
-            
-            if (incident)
-                continue;
-            
             const Vec3d & vert = m_surf.get_position(overlapping_vertices[i]);
             
             for (size_t j = 0; j < tris.size(); j++)
             {
+                // exclude incident triangles
+                if (m_mesh.get_triangle(tris[j])[0] == overlapping_vertices[i] ||
+                    m_mesh.get_triangle(tris[j])[1] == overlapping_vertices[i] ||
+                    m_mesh.get_triangle(tris[j])[2] == overlapping_vertices[i])
+                    continue;
+                
                 Vec3st sorted_triangle = sort_triangle(m_mesh.get_triangle(tris[j]));
                 size_t a = sorted_triangle[0];
                 size_t b = sorted_triangle[1];
