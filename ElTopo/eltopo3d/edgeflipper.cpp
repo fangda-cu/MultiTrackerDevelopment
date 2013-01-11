@@ -209,6 +209,7 @@ bool EdgeFlipper::flip_edge( size_t edge,
             }
         }
     }
+
     
     // --------------
     
@@ -230,25 +231,22 @@ bool EdgeFlipper::flip_edge( size_t edge,
     
     // Create the new triangles
     // new edge winding order == winding order of old triangle0 == winding order of new triangle0
+    // then we make the second new triangle match that, and set labels appropriately.
     
     size_t new_triangle_third_vertex_0, new_triangle_third_vertex_1;
     if ( m_mesh.oriented( m_mesh.m_edges[edge][0], m_mesh.m_edges[edge][1], m_mesh.get_triangle(tri0) ) ) 
     {
-		//assert( m_mesh.oriented( m_mesh.m_edges[edge][1], m_mesh.m_edges[edge][0], m_mesh.get_triangle(tri1) ) );
         new_triangle_third_vertex_0 = m_mesh.m_edges[edge][1];
         new_triangle_third_vertex_1 = m_mesh.m_edges[edge][0];
     }
     else
     {
-		//assert( m_mesh.oriented( m_mesh.m_edges[edge][0], m_mesh.m_edges[edge][1], m_mesh.get_triangle(tri1) ) );
-		//assert( m_mesh.oriented( m_mesh.m_edges[edge][1], m_mesh.m_edges[edge][0], m_mesh.get_triangle(tri0) ) );
         new_triangle_third_vertex_0 = m_mesh.m_edges[edge][0];
         new_triangle_third_vertex_1 = m_mesh.m_edges[edge][1];
     }
+ 
     
-    new_triangle_third_vertex_0 = m_mesh.m_edges[edge][0];
-    new_triangle_third_vertex_1 = m_mesh.m_edges[edge][1];
-    
+    //the new patch has orientations that match each other, for simplicity.
     Vec3st new_triangle0( new_edge[0], new_edge[1], new_triangle_third_vertex_0 );
     Vec3st new_triangle1( new_edge[1], new_edge[0], new_triangle_third_vertex_1 );
     
@@ -432,20 +430,20 @@ bool EdgeFlipper::flip_edge( size_t edge,
     ////////////////////////////////////////////////////////////
     // FD 20121126
     //
-    // the old label carries over to the new triangle
-    //
+    // the old label0 carries over to the new triangle0
+    // since we kept its orientation (vertex winding order)-CB
+
     Vec2i old_label_0 = m_surf.m_mesh.get_triangle_label(tri0);
-    Vec2i old_label_1 = m_surf.m_mesh.get_triangle_label(tri1);
-    
-    // the new_triangle_third_vertex_0/1 are chosen so that new_triangle0 always has the same orientation with tri0
-    // also new_triangle0 always has the same orientation with new_triangle1
     Vec2i new_label_0 = old_label_0;
+
+    // new_triangle1 has consistent triangle orientation as new_triangle0, 
+    // by construction so just set labels to match.
     Vec2i new_label_1;
-    if (m_mesh.oriented(m_mesh.m_edges[edge][0], m_mesh.m_edges[edge][1], m_mesh.get_triangle(tri0)) == 
-        m_mesh.oriented(m_mesh.m_edges[edge][1], m_mesh.m_edges[edge][0], m_mesh.get_triangle(tri1)))
-        new_label_1 = old_label_1;
-    else
-        new_label_1 = Vec2i(old_label_1[1], old_label_1[0]);    
+    new_label_1 = old_label_0;
+    
+    assert(m_mesh.oriented(new_edge[0], new_edge[1], new_triangle0) != 
+           m_mesh.oriented(new_edge[0], new_edge[1], new_triangle1));
+    
     
     ////////////////////////////////////////////////////////////
     

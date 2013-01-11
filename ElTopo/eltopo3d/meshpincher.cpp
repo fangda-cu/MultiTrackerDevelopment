@@ -262,8 +262,9 @@ void MeshPincher::separate_singular_vertices()
             bool pinched = pull_apart_vertex( i, connected_components );
             if ( pinched )
             {
-                // TODO: Shouldn't need this.
+               // TODO: Shouldn't need this (I believe this was Tyson's claim)
                 m_surf.rebuild_continuous_broad_phase();
+
                 MeshUpdateEvent pinch(MeshUpdateEvent::PINCH);
                 m_surf.m_mesh_change_history.push_back(pinch);
             }

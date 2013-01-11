@@ -607,6 +607,7 @@ void SurfTrack::trim_non_manifold( std::vector<size_t>& triangle_indices )
                 size_t other_triangle_index = edge_tris[t];
                 const Vec3st& other_triangle = m_mesh.get_triangle( other_triangle_index );
                 
+                //(just tests if the tri has repeated vertices)
                 if(m_mesh.triangle_is_deleted(other_triangle_index)) continue;
                 
                 if ( ((current_triangle[0] == other_triangle[0]) || (current_triangle[0] == other_triangle[1]) || (current_triangle[0] == other_triangle[2])) &&
@@ -787,7 +788,6 @@ void SurfTrack::improve_mesh( )
       // null-space smoothing
       if ( m_perform_smoothing)
       {
-          std::cout << "Smooth\n";
           m_smoother.null_space_smoothing_pass( 1.0 );
       }
 

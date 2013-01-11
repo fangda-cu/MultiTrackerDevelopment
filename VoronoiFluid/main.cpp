@@ -675,18 +675,14 @@ void display()
          const Vec3ui& tri = g_renderable_triangles[t];
 
          Vec3st test = sort_triangle(tri);
-         if(test[0] == 51 && test[1] == 221 && test[2] == 572) {
-            Gluvi::set_generic_material(0, 0, 0, GL_FRONT_AND_BACK);
-         }
-         else {
-            if(g_renderable_labels[t] == Vec2i(0,1) || g_renderable_labels[t] == Vec2i(1,0))
-               Gluvi::set_generic_material(1, 0, 0, GL_FRONT_AND_BACK);   
-            else if(g_renderable_labels[t] == Vec2i(0,2) || g_renderable_labels[t] == Vec2i(2,0))
-               Gluvi::set_generic_material(0, 1, 0, GL_FRONT_AND_BACK);   
-            else if(g_renderable_labels[t] == Vec2i(1,2) || g_renderable_labels[t] == Vec2i(2,1))
-               Gluvi::set_generic_material(0, 0, 1, GL_FRONT_AND_BACK);   
-         }
-
+       
+         if(g_renderable_labels[t] == Vec2i(0,1) || g_renderable_labels[t] == Vec2i(1,0))
+            Gluvi::set_generic_material(1, 0, 0, GL_FRONT_AND_BACK);   
+         else if(g_renderable_labels[t] == Vec2i(0,2) || g_renderable_labels[t] == Vec2i(2,0))
+            Gluvi::set_generic_material(0, 1, 0, GL_FRONT_AND_BACK);   
+         else if(g_renderable_labels[t] == Vec2i(1,2) || g_renderable_labels[t] == Vec2i(2,1))
+            Gluvi::set_generic_material(0, 0, 1, GL_FRONT_AND_BACK);   
+       
          //float curvValue = fabs(g_renderable_vertex_curvatures[tri[0]]);
          //if(g_renderable_vertex_curvatures[tri[0]] < 0) {
          //   Gluvi::set_generic_material(curvValue / divisor, 0, 0, GL_FRONT);   
@@ -745,17 +741,6 @@ void display()
          }
          glEnd();
 
-         glPointSize(6);
-         glColor3f(1,1,0);
-         glBegin(GL_POINTS);
-         if(g_renderable_vertices.size() > 572) {
-            glVertex3dv(g_renderable_vertices[51].v);
-         //if(g_renderable_vertices.size() > 221) 
-            glVertex3dv(g_renderable_vertices[221].v);
-         //if(g_renderable_vertices.size() > 572) 
-            glVertex3dv(g_renderable_vertices[572].v);
-         }
-         glEnd();
       }
       
 #endif

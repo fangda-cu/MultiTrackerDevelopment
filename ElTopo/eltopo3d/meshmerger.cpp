@@ -574,7 +574,7 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
     m_surf.m_mesh_change_history.push_back(update);
     
     ////////////////////////////////////////////////////////////
-
+    
     return true;
     
 }
@@ -649,7 +649,6 @@ bool MeshMerger::merge_pass( )
                     
                     if ( zipper_edges( i, proximal_edge_index ) )
                     {
-                        
                         m_surf.trim_non_manifold( m_surf.m_dirty_triangles );
                         
                         if ( m_surf.m_verbose ) 

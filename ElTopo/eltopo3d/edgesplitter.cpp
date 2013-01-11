@@ -737,7 +737,7 @@ bool EdgeSplitter::split_edge( size_t edge, bool specify_split_position, Vec3d *
   split.m_created_tri_labels = created_tri_label;
   
   ////////////////////////////////////////////////////////////
-  
+
   m_surf.m_mesh_change_history.push_back(split);
 
   return true;
