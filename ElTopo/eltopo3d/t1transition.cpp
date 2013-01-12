@@ -1372,7 +1372,7 @@ bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec
     
     for (size_t i = 0; i < edges.size(); i++)
     {
-        const Vec2st & e = mesh.m_edges[i];
+        const Vec2st & e = mesh.m_edges[edges[i]];
         assert(e[0] == v || e[1] == v);
     }
     
