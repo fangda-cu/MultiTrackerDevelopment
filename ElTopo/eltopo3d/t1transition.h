@@ -86,6 +86,10 @@ private:
     ///
     bool vertex_pseudo_motion_introduces_collision(size_t v, const Vec3d & oldpos, const Vec3d & newpos);
     
+    /// Move one vertex and test for collision, using only the specified subset of incident edges and triangles (ignoring the rest if any)
+    ///
+    bool vertex_pseudo_motion_introduces_collision(size_t v, const Vec3d & oldpos, const Vec3d & newpos, const std::vector<size_t> & tris, const std::vector<size_t> & edges);
+    
     /// The mesh this object operates on
     /// 
     SurfTrack & m_surf;   
