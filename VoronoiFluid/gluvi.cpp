@@ -966,9 +966,9 @@ void set_generic_lights(void)
 void set_generic_material(float r, float g, float b, GLenum face)
 {
    GLfloat ambient[4], diffuse[4], specular[4];
-   ambient[0]=0.1f*r+0.03f; ambient[1]=0.1f*g+0.03f; ambient[2]=0.1f*b+0.03f; ambient[3]=0.25f;
-   diffuse[0]=0.7f*r;      diffuse[1]=0.7f*g;      diffuse[2]=0.7f*b;      diffuse[3]=0.25f;
-   specular[0]=0.1f*r+0.1f; specular[1]=0.1f*g+0.1f; specular[2]=0.1f*b+0.1f; specular[3]=0.25f;
+   ambient[0]=0.1f*r+0.03f; ambient[1]=0.1f*g+0.03f; ambient[2]=0.1f*b+0.03f; ambient[3]=0.4f;
+   diffuse[0]=0.7f*r;      diffuse[1]=0.7f*g;      diffuse[2]=0.7f*b;      diffuse[3]=0.4f;
+   specular[0]=0.1f*r+0.1f; specular[1]=0.1f*g+0.1f; specular[2]=0.1f*b+0.1f; specular[3]=0.4f;
    glMaterialfv(face, GL_AMBIENT, ambient);
    glMaterialfv(face, GL_DIFFUSE, diffuse);
    glMaterialfv(face, GL_SPECULAR, specular);

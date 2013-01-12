@@ -3,8 +3,8 @@
 //  meshpincher.cpp
 //  Tyson Brochu 2011
 //  
-//  Identifies "singular vertices", defined as having more than one connected triangle neighbourhoods, and
-//  splits the mesh surface at these vertices.
+//  Identifies "singular vertices", defined as having more than one connected triangle neighbourhood, and
+//  splits the mesh surface at these vertices. This also works for multiphase too, subject to label copying.
 //
 // ---------------------------------------------------------
 
@@ -91,6 +91,7 @@ bool MeshPincher::pull_apart_vertex( size_t vertex_index, const std::vector< Tri
     
     TriangleSet triangles_to_delete;
     std::vector< Vec3st > triangles_to_add;
+    std::vector< Vec2i > triangle_labels_to_add;
     std::vector< size_t > vertices_added;
     
     // for each connected component except the last one, create a duplicate vertex
@@ -107,7 +108,8 @@ bool MeshPincher::pull_apart_vertex( size_t vertex_index, const std::vector< Tri
         for ( size_t t = 0; t < connected_components[i].size(); ++t ) 
         {
             // create a new triangle with 2 vertices the same, and one vertex set to the new duplicate vertex
-            Vec3st new_triangle = m_surf.m_mesh.get_triangle( connected_components[i][t] ); 
+           size_t old_tri_ind = connected_components[i][t]; 
+           Vec3st new_triangle = m_surf.m_mesh.get_triangle( old_tri_ind ); 
             
             for ( unsigned short v = 0; v < 3; ++v ) 
             {
@@ -122,7 +124,8 @@ bool MeshPincher::pull_apart_vertex( size_t vertex_index, const std::vector< Tri
             }
             
             triangles_to_add.push_back( new_triangle );
-            triangles_to_delete.push_back( connected_components[i][t] ); 
+            triangle_labels_to_add.push_back( m_surf.m_mesh.get_triangle_label(old_tri_ind) );
+            triangles_to_delete.push_back( old_tri_ind ); 
         }
         
         // compute the centroid    
@@ -222,7 +225,8 @@ bool MeshPincher::pull_apart_vertex( size_t vertex_index, const std::vector< Tri
     
     for ( size_t i = 0; i < triangles_to_add.size(); ++i )
     {
-        m_surf.add_triangle( triangles_to_add[i] );
+        size_t new_tri_ind = m_surf.add_triangle( triangles_to_add[i] );
+        m_surf.m_mesh.set_triangle_label( new_tri_ind, triangle_labels_to_add[i] );
     }
     
     for ( size_t i = 0; i < triangles_to_delete.size(); ++i )

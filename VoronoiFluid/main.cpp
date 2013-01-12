@@ -666,56 +666,89 @@ void display()
       glDepthMask(GL_FALSE);
       glDisable(GL_CULL_FACE);
       glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-      glEnable(GL_BLEND);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      bool label_based_front_and_back_labeling = false;
+      if(!label_based_front_and_back_labeling) {
+         glEnable(GL_BLEND);
+         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+         glEnable(GL_LIGHTING);
+      }
+      else {
+         glDisable(GL_LIGHTING);
+      }
+      
       glBegin( GL_TRIANGLES );
       for ( unsigned int i = 0; i < sorted_faces.size(); ++i )
       {
          int t = sorted_faces[i].first;
          const Vec3ui& tri = g_renderable_triangles[t];
 
+         Vec3d v0 = g_renderable_vertices[tri[0]];
+         Vec3d v1 = g_renderable_vertices[tri[1]];
+         Vec3d v2 = g_renderable_vertices[tri[2]];
+         Vec3d normal = cross(v1-v0,v2-v0);
+
          Vec3st test = sort_triangle(tri);
-       
-         if(g_renderable_labels[t] == Vec2i(0,1) || g_renderable_labels[t] == Vec2i(1,0))
-            Gluvi::set_generic_material(1, 0, 0, GL_FRONT_AND_BACK);   
-         else if(g_renderable_labels[t] == Vec2i(0,2) || g_renderable_labels[t] == Vec2i(2,0))
-            Gluvi::set_generic_material(0, 1, 0, GL_FRONT_AND_BACK);   
-         else if(g_renderable_labels[t] == Vec2i(1,2) || g_renderable_labels[t] == Vec2i(2,1))
-            Gluvi::set_generic_material(0, 0, 1, GL_FRONT_AND_BACK);   
-       
-         //float curvValue = fabs(g_renderable_vertex_curvatures[tri[0]]);
-         //if(g_renderable_vertex_curvatures[tri[0]] < 0) {
-         //   Gluvi::set_generic_material(curvValue / divisor, 0, 0, GL_FRONT);   
-         //}
-         //else {
-         //   Gluvi::set_generic_material(0, 0, curvValue / divisor, GL_FRONT);   
-         //}
-         glNormal3dv( g_renderable_vertex_normals[tri[0]].v );
-         glVertex3dv( g_renderable_vertices[tri[0]].v );
          
-         //curvValue = fabs(g_renderable_vertex_curvatures[tri[1]]);
-         //if(g_renderable_vertex_curvatures[tri[0]] < 0) {
-         //   Gluvi::set_generic_material(curvValue / divisor, 0, 0, GL_FRONT);   
-         //}
-         //else {
-         //   Gluvi::set_generic_material(0, 0, curvValue / divisor, GL_FRONT);   
-         //}
+         
+         if(label_based_front_and_back_labeling) {
+            int label_no = -1;
+            bool positive = dot(normal,view_vec) > 0;
+            if(positive) {
+               label_no = g_renderable_labels[t][0];
+            }
+            else {
+               label_no = g_renderable_labels[t][1];
+            }
 
-         
-         glNormal3dv( g_renderable_vertex_normals[tri[1]].v );
-         glVertex3dv( g_renderable_vertices[tri[1]].v );
-         
-         
-         //curvValue = fabs(g_renderable_vertex_curvatures[tri[2]]);
-         //if(g_renderable_vertex_curvatures[tri[2]] < 0) {
-         //   Gluvi::set_generic_material(curvValue / divisor, 0, 0, GL_FRONT);   
-         //}
-         //else {
-         //   Gluvi::set_generic_material(0, 0, curvValue / divisor, GL_FRONT);   
-         //}
-         glNormal3dv( g_renderable_vertex_normals[tri[2]].v );
-         glVertex3dv( g_renderable_vertices[tri[2]].v );
+            if(label_no == 0)
+               glColor3f(1,0,0);
+               //Gluvi::set_generic_material(1, 0, 0, GL_FRONT_AND_BACK);   
+            else if(label_no == 1)
+               glColor3f(0,1,0);
+               //Gluvi::set_generic_material(0, 1, 0, GL_FRONT_AND_BACK);   
+            else if(label_no == 2)
+               glColor3f(0,0,1);
+               //Gluvi::set_generic_material(0, 0, 1, GL_FRONT_AND_BACK);   
+            else
+               Gluvi::set_generic_material(0, 0, 0, GL_FRONT_AND_BACK);
+       
+            if(positive) {
+               glNormal3dv(g_renderable_vertex_normals[tri[0]].v);
+               glVertex3dv( g_renderable_vertices[tri[0]].v );
+               glNormal3dv(g_renderable_vertex_normals[tri[1]].v);
+               glVertex3dv( g_renderable_vertices[tri[1]].v );
+               glNormal3dv(g_renderable_vertex_normals[tri[2]].v);
+               glVertex3dv( g_renderable_vertices[tri[2]].v );
+            }
+            else {
+               glNormal3dv(g_renderable_vertex_normals[tri[0]].v);
+               glVertex3dv( g_renderable_vertices[tri[0]].v );
+               glNormal3dv(g_renderable_vertex_normals[tri[2]].v);
+               glVertex3dv( g_renderable_vertices[tri[2]].v );
+               glNormal3dv(g_renderable_vertex_normals[tri[1]].v);
+               glVertex3dv( g_renderable_vertices[tri[1]].v );
+            }
+         }  
+         else {
 
+            if(g_renderable_labels[t] == Vec2i(1,2) || g_renderable_labels[t] == Vec2i(2,1))
+               Gluvi::set_generic_material(1, 0, 0, GL_FRONT_AND_BACK);   
+            else if(g_renderable_labels[t] == Vec2i(1,0) || g_renderable_labels[t] == Vec2i(0,1))
+               Gluvi::set_generic_material(0, 1, 0, GL_FRONT_AND_BACK);   
+            else if(g_renderable_labels[t] == Vec2i(2,0) || g_renderable_labels[t] == Vec2i(0,2))
+               Gluvi::set_generic_material(0, 0, 1, GL_FRONT_AND_BACK);
+            else
+               Gluvi::set_generic_material(0, 0, 0, GL_FRONT_AND_BACK);
+
+            glNormal3dv(g_renderable_vertex_normals[tri[0]].v);
+            glVertex3dv( g_renderable_vertices[tri[0]].v );
+            glNormal3dv(g_renderable_vertex_normals[tri[1]].v);
+            glVertex3dv( g_renderable_vertices[tri[1]].v );
+            glNormal3dv(g_renderable_vertex_normals[tri[2]].v);
+            glVertex3dv( g_renderable_vertices[tri[2]].v );
+         }
+       
+         
       }
       glEnd();
       

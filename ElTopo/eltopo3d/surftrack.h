@@ -420,6 +420,10 @@ public:
     ///
     void defrag_mesh();
 
+    /// Check for labels with -1 as their value, or the same label on both sides.
+    /// 
+    void assert_no_bad_labels();
+
     //
     // Main operations
     //

@@ -130,10 +130,16 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
          if ( !free_surface ) { continue; }
       }
       
+      std::vector<Vec3d> ray_dirs;
+
       const Vec3d& ray_origin = surface.get_position(i);
       //const Vec3d normal = surface.get_vertex_normal_angleweighted(i);
       const Vec3d normal = surface.get_vertex_normal(i);
       
+      ray_dirs.push_back(normal);
+      ray_dirs.push_back(-normal);
+      //TODO Extend to support per-region vertex normals! for multiphase.
+
       if ( mag(normal) == 0.0 ) { continue; }
       
       //
@@ -144,8 +150,9 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
       const std::vector<unsigned int>& incident_triangles = surface.m_mesh.m_vertex_to_triangle_map[i];
       
       for ( int sign = -1; sign < 2; sign += 2 )
+      //for(size_t i = 0; i < ray_dirs.size(); ++i)
       {      
-         const Vec3d ray_end = ray_origin + (double)(sign) * desired_dx * normal;
+         const Vec3d ray_end = ray_origin + (double)sign * desired_dx * normal;
          
          std::vector<double> hit_ss;
          std::vector<unsigned int> hit_triangles; 
@@ -173,6 +180,11 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
          
          //std::cout << "desired_dx: " << desired_dx << ", min_hit: " << min_hit << std::endl;
          
+         //Vec3f new_sample = Vec3f( ray_origin + 0.5 * min_hit * normal );
+         //TODO Possibly reject really close samples in free-surface situations
+         //to better encourage merging.
+
+         
          Vec3f new_sample;
          if ( sign < 0.0 )
          {
@@ -189,6 +201,7 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
                
             new_sample = Vec3f( ray_origin + 0.25 * min_hit * normal );
          }
+         
                   
          assert( new_sample[0] == new_sample[0] );
          assert( new_sample[1] == new_sample[1] );

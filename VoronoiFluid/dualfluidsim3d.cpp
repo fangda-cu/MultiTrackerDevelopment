@@ -1436,11 +1436,15 @@ void DualFluidSim3D::advance_surface( float dt )
       vert_vel[i] = Vec3d((*get_velocity)(Vec3f(surface_tracker->get_position(i))));
    }
    surface_tracker->set_all_remesh_velocities(vert_vel);
+   surface_tracker->assert_no_bad_labels();
    
+   std::cout << "Improve mesh\n";
    surface_tracker->improve_mesh();
+   surface_tracker->assert_no_bad_labels();
    
+   std::cout << "Change topology\n";
    surface_tracker->topology_changes();
-      
+   surface_tracker->assert_no_bad_labels();
       
    // El Topo: surface advection
 
@@ -1498,6 +1502,7 @@ void DualFluidSim3D::advance_surface( float dt )
                                         "/Users/tyson/scratch/pre-integration.bin" );
    double actual_dt;
    surface_tracker->integrate( dt, actual_dt );
+   surface_tracker->assert_no_bad_labels();
    delete get_velocity;
 }
 
@@ -1889,7 +1894,6 @@ void DualFluidSim3D::compute_liquid_phi( )
  
    //For points that are near the boundary (i.e. belong to a boundary tet)
    //we'll use raycasting on each one.
-   int zone1_verts = 0;
    region_IDs.assign(liquid_phi.size(), -1);
    int bvert_count = 0;
    for ( unsigned int i = 0; i < liquid_phi.size(); ++i )
@@ -1902,8 +1906,6 @@ void DualFluidSim3D::compute_liquid_phi( )
          bvert_count++;
          const Vec3f& x = mesh->vertices[i];   
          region_IDs[i] = surface_tracker->get_region_containing_point( Vec3d(x) );
-         if(region_IDs[i] == 1)
-            zone1_verts++;
       }
 
    }
@@ -1921,6 +1923,8 @@ void DualFluidSim3D::compute_liquid_phi( )
       const Vec3f& x = mesh->vertices[i];
       int group_ID = surface_tracker->get_region_containing_point( Vec3d(x) );
       
+      assert(group_ID != -1);
+
       std::queue<unsigned int> points_to_process;
       points_to_process.push(i);
       std::cout << "Processing interior region " << group_ID << std::endl;
