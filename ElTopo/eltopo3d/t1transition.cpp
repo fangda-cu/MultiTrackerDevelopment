@@ -648,33 +648,64 @@ bool T1Transition::pop_vertices()
         }
         
         // collision test
-        if (pulling_vertex_apart_introduces_collision(xj, original_position, a_desired_position, b_desired_position))
+        // sort the incident faces and edges into those that go with nv0, and those that go with nv1 (the two groups are not necessarily disjoint)
+        std::vector<size_t> A_faces;
+        std::vector<size_t> A_edges;
+        
+        for (size_t j = 0; j < mesh.m_vertex_to_triangle_map[xj].size(); j++)
         {
-            if (m_surf.m_verbose)
-                std::cout << "Vertex popping: Pulling vertex " << xj << " apart introduces collision." << std::endl;
+            size_t triangle = mesh.m_vertex_to_triangle_map[xj][j];
             
-            continue;
-            
-        } else
-        {
-            // pull apart
-            a = m_surf.add_vertex(original_position, m_surf.m_masses[xj]);
-            b = m_surf.add_vertex(original_position, m_surf.m_masses[xj]);
-            
-            m_surf.set_remesh_velocity(a, m_surf.get_remesh_velocity(xj));
-            m_surf.set_remesh_velocity(b, m_surf.get_remesh_velocity(xj));
-            mesh.set_vertex_constraint_label(a, original_constraint);
-            mesh.set_vertex_constraint_label(b, original_constraint);
-            
-            verts_to_delete.push_back(xj);
-            verts_created.push_back(a);
-            verts_created.push_back(b);
-            verts_to_create.push_back(a_desired_position);
-            verts_to_create.push_back(b_desired_position);
+            Vec2i label = mesh.get_triangle_label(triangle);
+            if (label[0] == A || label[1] == A)
+                A_faces.push_back(triangle);
         }
         
-        assert(a < mesh.nv());
-        assert(b < mesh.nv());
+        for (size_t j = 0; j < mesh.m_vertex_to_edge_map[xj].size(); j++)
+        {
+            size_t edge = mesh.m_vertex_to_edge_map[xj][j];
+            
+            bool adjA = false;
+            for (size_t k = 0; k < mesh.m_edge_to_triangle_map[edge].size(); k++)
+            {
+                Vec2i label = mesh.get_triangle_label(mesh.m_edge_to_triangle_map[edge][k]);
+                if (label[0] == A || label[1] == A)
+                    adjA = true;
+            }
+            
+            if (adjA)
+                A_edges.push_back(edge);
+        }
+        
+        if (vertex_pseudo_motion_introduces_collision(xj, original_position, b_desired_position))
+        {
+            if (m_surf.m_verbose)
+                std::cout << "Vertex popping: pulling vertex " << xj << " apart introduces collision." << std::endl;
+            continue;
+        }
+        
+        m_surf.set_position(xj, b_desired_position);
+        if (vertex_pseudo_motion_introduces_collision(xj, b_desired_position, a_desired_position, A_faces, A_edges))
+        {
+            if (m_surf.m_verbose)
+                std::cout << "Vertex popping: pulling vertex " << xj << " apart introduces collision." << std::endl;
+            continue;
+        }
+        
+        // pull apart
+        a = m_surf.add_vertex(original_position, m_surf.m_masses[xj]);
+        b = m_surf.add_vertex(original_position, m_surf.m_masses[xj]);
+        
+        m_surf.set_remesh_velocity(a, m_surf.get_remesh_velocity(xj));
+        m_surf.set_remesh_velocity(b, m_surf.get_remesh_velocity(xj));
+        mesh.set_vertex_constraint_label(a, original_constraint);
+        mesh.set_vertex_constraint_label(b, original_constraint);
+        
+        verts_to_delete.push_back(xj);
+        verts_created.push_back(a);
+        verts_created.push_back(b);
+        verts_to_create.push_back(a_desired_position);
+        verts_to_create.push_back(b_desired_position);
         
         // update the face connectivities
         for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[xj].size(); i++)
