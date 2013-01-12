@@ -520,8 +520,10 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
    update.m_created_tris = created_triangles;
    update.m_created_tri_data = new_triangles;
    update.m_created_tri_labels = created_triangle_labels;
-   update.m_dirty_tris.push_back(std::pair<size_t, Vec2i>(triangle_b_0, label_new_b_0));
-   update.m_dirty_tris.push_back(std::pair<size_t, Vec2i>(triangle_b_1, label_new_b_1));
+   if(region_0 != region_1) { //account for relabeling of retained film
+      update.m_dirty_tris.push_back(std::pair<size_t, Vec2i>(triangle_b_0, label_new_b_0));
+      update.m_dirty_tris.push_back(std::pair<size_t, Vec2i>(triangle_b_1, label_new_b_1));
+   }
    m_surf.m_mesh_change_history.push_back(update);
 
    ////////////////////////////////////////////////////////////
