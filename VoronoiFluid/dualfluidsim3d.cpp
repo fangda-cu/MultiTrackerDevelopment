@@ -80,8 +80,8 @@ void DualFluidSim3D::initialize()
    
    densities.resize(3);
    densities[0] = 1;
-   densities[1] = 2;
-   densities[2] = 0.5;
+   densities[1] = 1.4f;
+   densities[2] = 0.6f;
 
    tet_edge_velocities.resize( mesh->edges.size(), 0.0f );
    tet_vertex_velocities.resize( mesh->vertices.size(), Vec3f(0.0f) );
