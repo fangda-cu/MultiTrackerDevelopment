@@ -1103,22 +1103,6 @@ bool T1Transition::pop_vertices()
         vertices_to_process.push_back(a);
         vertices_to_process.push_back(b);
         
-        // set the vertices new positions
-        m_surf.set_newposition(a, a_desired_position);
-        m_surf.set_newposition(b, b_desired_position);
-        
-        m_surf.set_position(a, m_surf.get_newposition(a));
-        m_surf.set_position(b, m_surf.get_newposition(b));
-        
-        // vertex deletion/creation logging
-        verts_to_delete.push_back(xj);
-        
-        verts_to_create.push_back(m_surf.get_newposition(a));
-        verts_to_create.push_back(m_surf.get_newposition(b));
-        
-        verts_created.push_back(a);
-        verts_created.push_back(b);
-
         // Add to new history log
         MeshUpdateEvent edgepop(MeshUpdateEvent::VERTEX_POP);
         edgepop.m_deleted_tris = faces_to_delete;
