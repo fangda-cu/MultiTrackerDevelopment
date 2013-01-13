@@ -1445,7 +1445,10 @@ void ElasticShell::remesh()
     else if (event.m_type == ElTopo::MeshUpdateEvent::EDGE_POP || event.m_type == ElTopo::MeshUpdateEvent::VERTEX_POP) {
 
       for (size_t i = 0; i < event.m_deleted_tris.size(); i++)
+      {
+        face_numbers[reverse_trimap[event.m_deleted_tris[i]]] = -1;
         m_obj->deleteFace(reverse_trimap[event.m_deleted_tris[i]], false);
+      }
       
       for (size_t i = 0; i < event.m_created_vert_data.size(); i++)
       {
@@ -1475,6 +1478,11 @@ void ElasticShell::remesh()
     for(size_t i = 0; i < event.m_deleted_tris.size(); ++i) {
       reverse_trimap[event.m_deleted_tris[i]] = FaceHandle(-1);
     }
+
+    for(size_t i = 0; i < event.m_deleted_verts.size(); ++i) {
+      reverse_vertmap[event.m_deleted_verts[i]] = VertexHandle(-1);
+    }
+
   }
 
   // remove all dangling edges and vertices
@@ -1492,7 +1500,11 @@ void ElasticShell::remesh()
       vertices_to_delete.push_back(*vit);
   
   for (size_t i = 0; i < vertices_to_delete.size(); i++)
+  {
+    reverse_vertmap[vert_numbers[vertices_to_delete[i]]] = VertexHandle();
+    vert_numbers[vertices_to_delete[i]] = -1;
     m_obj->deleteVertex(vertices_to_delete[i]);
+  }
   
   
   
