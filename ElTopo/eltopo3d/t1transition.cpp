@@ -895,8 +895,8 @@ bool T1Transition::pop_vertices()
         }        
         
         // pull apart
-        a = m_surf.add_vertex(original_position, m_surf.m_masses[xj]);
-        b = m_surf.add_vertex(original_position, m_surf.m_masses[xj]);
+        a = m_surf.add_vertex(a_desired_position, m_surf.m_masses[xj]);
+        b = m_surf.add_vertex(b_desired_position, m_surf.m_masses[xj]);
         
         m_surf.set_remesh_velocity(a, m_surf.get_remesh_velocity(xj));
         m_surf.set_remesh_velocity(b, m_surf.get_remesh_velocity(xj));
