@@ -182,13 +182,11 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
                if(surface_tension_coeff > 0) {
                   // Estimate the mean curvature at the crossing point, and use it to incorporate surface tension on the RHS.
                   
-                  //Always orient the ray from lower region ID to higher one for consistency
-                  int lower_index = region_ID < nbr_region_ID? i : neighbour_index;
-                  int higher_index = lower_index == i ? neighbour_index : i;
-                  face_curvatures[face_index] = get_surface_curvature(mesh, surface, vertex_curvatures, lower_index, higher_index);
+                  face_curvatures[face_index] = get_surface_curvature(mesh, surface, vertex_curvatures, i, neighbour_index);
+                  //TODO May need to flip the curvature sign depending on region labeling
+                  //TODO Need to compute curvature from the perspective of a particular region.
                   
-                  float sign_flip = (lower_index == i? 1.0f : -1.0f);
-                  rhs[i] += sign_flip * solid_weights[face_index] * mesh.voronoi_face_areas[face_index] * surface_tension_coeff * face_curvatures[face_index] / dist / face_density;
+                  rhs[i] += solid_weights[face_index] * mesh.voronoi_face_areas[face_index] * surface_tension_coeff * face_curvatures[face_index] / dist / face_density;
                }
             }
 
@@ -310,10 +308,11 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
 
                //Increment one of the pressures to account for surface tension pressure jump.
                if(surface_tension_coeff > 0) {
-                  //Make sure we incorporate surface tension in the proper direction as before.
+                  //Make sure we incorporate surface tension in the proper direction
+                  //depending on the direction we're doing the gradient.
                   int lower_index = region0 < region1? verts[0] : verts[1];
                
-                  float sign_flip = (lower_index == verts[0] ? 1.0f : -1.0f);
+                  float sign_flip = lower_index == verts[0] ? 1.0f : -1.0f;
                   p0 += sign_flip * surface_tension_coeff * face_curvatures[i];
                }
             }

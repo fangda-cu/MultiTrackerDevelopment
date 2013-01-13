@@ -214,7 +214,6 @@ size_t NonDestructiveTriMesh::nondestructive_add_vertex( )
     
     ////////////////////////////////////////////////////////////
     // FD 20130102
-  
     assert(m_vertex_constraint_labels.size() == m_vertex_to_edge_map.size());
   
     m_vertex_constraint_labels.push_back(0);
@@ -609,7 +608,7 @@ void NonDestructiveTriMesh::update_connectivity( )
     m_vertex_to_triangle_map.resize(nv);
     m_vertex_to_edge_map.resize(nv);
     m_triangle_to_edge_map.resize(m_tris.size());
-    
+
     for(size_t i = 0; i < m_tris.size(); i++)
     {
         Vec3st& t = m_tris[i];

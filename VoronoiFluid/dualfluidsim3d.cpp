@@ -79,9 +79,9 @@ void DualFluidSim3D::initialize()
    //extrapolate_liquid_phi_into_solid();
    
    densities.resize(3);
-   densities[0] = 0;
+   densities[0] = 0.1;
    densities[1] = 1.0f;
-   densities[2] = 0.6f;
+   densities[2] = 1.0f;
 
    tet_edge_velocities.resize( mesh->edges.size(), 0.0f );
    tet_vertex_velocities.resize( mesh->vertices.size(), Vec3f(0.0f) );
