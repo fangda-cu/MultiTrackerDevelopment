@@ -79,8 +79,8 @@ void DualFluidSim3D::initialize()
    //extrapolate_liquid_phi_into_solid();
    
    densities.resize(3);
-   densities[0] = 1;
-   densities[1] = 1.4f;
+   densities[0] = 0;
+   densities[1] = 1.0f;
    densities[2] = 0.6f;
 
    tet_edge_velocities.resize( mesh->edges.size(), 0.0f );
@@ -1429,7 +1429,7 @@ void DualFluidSim3D::advance_surface( float dt )
    
    // El Topo: static operations
    
-   std::vector<bool> vert_const_labels(surface_tracker->get_num_vertices(), 0);
+   std::vector<bool> vert_const_labels(surface_tracker->m_mesh.m_vertex_to_edge_map.size(), 0);
    surface_tracker->m_mesh.m_vertex_constraint_labels = vert_const_labels;
    std::vector<Vec3d> vert_vel(surface_tracker->get_num_vertices());
    for(unsigned int i = 0; i < vert_vel.size(); ++i) {
