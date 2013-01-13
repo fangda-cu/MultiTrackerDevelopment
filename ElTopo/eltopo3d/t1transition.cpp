@@ -301,6 +301,7 @@ bool T1Transition::pop_edges()
                 upper_edges.push_back(edge);
         }
         
+        // move v to lower_junction_desired_position
         if (vertex_pseudo_motion_introduces_collision(v, original_position, lower_junction_desired_position))
         {
             if (m_surf.m_verbose)
@@ -308,6 +309,7 @@ bool T1Transition::pop_edges()
             continue;
         }
         
+        // move the upper junction from v to upper_junction_desired_position
         m_surf.set_position(v, lower_junction_desired_position);
         if (vertex_pseudo_motion_introduces_collision(v, lower_junction_desired_position, upper_junction_desired_position, upper_faces, upper_edges))
         {
@@ -315,6 +317,106 @@ bool T1Transition::pop_edges()
                 std::cout << "Edge popping: collision introduced." << std::endl;
             continue;
         }
+        
+        // check intersection in the final configuration
+        const std::vector<Vec3d> & x = m_surf.get_positions();
+        bool collision = false;
+        
+        // point-tet
+        for (size_t j = 0; j < upper_faces.size(); j++)
+        {
+            Vec3st t = mesh.get_triangle(upper_faces[j]);
+            
+            Vec3d low, high;
+            minmax(x[t[0]], x[t[1]], x[t[2]], upper_junction_desired_position, low, high);
+
+            std::vector<size_t> overlapping_vertices;
+            m_surf.m_broad_phase->get_potential_vertex_collisions(low, high, true, true, overlapping_vertices);
+            
+            for (size_t k = 0; k < overlapping_vertices.size(); k++) 
+            { 
+                size_t ov = overlapping_vertices[k];
+                if (ov == t[0] || ov == t[2] || ov == t[1])
+                    continue;
+                
+                if (point_tetrahedron_intersection(x[ov], ov, x[t[0]], t[0], x[t[1]], t[1], x[t[2]], t[2], upper_junction_desired_position, mesh.nv()))
+                    collision = true;
+            }
+        }
+        
+        // edge-triangle
+        for (size_t j = 0; j < upper_faces.size(); j++)
+        {
+            Vec3st t = mesh.get_triangle(upper_faces[j]);
+            if (t[1] == v) std::swap(t[0], t[1]);
+            if (t[2] == v) std::swap(t[0], t[2]);
+            
+            Vec3d low, high;
+            minmax(x[t[1]], x[t[2]], upper_junction_desired_position, low, high);
+            
+            std::vector<size_t> overlapping_edges;
+            m_surf.m_broad_phase->get_potential_edge_collisions(low, high, true, true, overlapping_edges);
+            
+            for (size_t k = 0; k < overlapping_edges.size(); k++) 
+            { 
+                const Vec2st & e = mesh.m_edges[overlapping_edges[k]];
+                if (e[0] == t[1] || e[1] == t[1] || e[0] == t[2] || e[1] == t[2])
+                    continue;
+                
+                bool incident = false;
+                for (size_t l = 0; l < upper_edges.size(); l++)
+                    if (upper_edges[l] == overlapping_edges[k])
+                    {
+                        incident = true;
+                        break;
+                    }
+                if (incident)
+                    continue;
+                
+                if (segment_triangle_intersection(x[e[0]], e[0], x[e[1]], e[1], x[t[1]], t[1], x[t[2]], t[2], upper_junction_desired_position, mesh.nv(), true))
+                    collision = true;
+            }
+        }
+        
+        // triangle-edge
+        for (size_t j = 0; j < upper_edges.size(); j++)
+        {
+            Vec2st e = mesh.m_edges[upper_edges[j]];
+            if (e[1] == v) std::swap(e[0], e[1]);
+            
+            Vec3d low, high;
+            minmax(x[e[1]], upper_junction_desired_position, low, high);
+            
+            std::vector<size_t> overlapping_triangles;
+            m_surf.m_broad_phase->get_potential_triangle_collisions(low, high, true, true, overlapping_triangles);
+            
+            for (size_t k = 0; k < overlapping_triangles.size(); k++)
+            {
+                const Vec3st & t = mesh.get_triangle(overlapping_triangles[k]);
+                if (e[1] == t[0] || e[1] == t[1] || e[1] == t[2])
+                    continue;
+                
+                bool incident = false;
+                for (size_t l = 0; l < upper_faces.size(); l++)
+                    if (upper_faces[l] == overlapping_triangles[k])
+                    {
+                        incident = true;
+                        break;
+                    }
+                if (incident)
+                    continue;
+                
+                if (segment_triangle_intersection(x[e[1]], e[1], upper_junction_desired_position, mesh.nv(), x[t[0]], t[0], x[t[1]], t[1], x[t[2]], t[2], true))
+                    collision = true;
+            }
+        }
+                
+        if (collision)
+        {
+            if (m_surf.m_verbose)
+                std::cout << "Edge popping: collision introduced." << std::endl;
+            continue;
+        }        
         
         // collision test give green light. pull apart the interior vertex
         size_t nv0 = m_surf.add_vertex(upper_junction_desired_position, m_surf.m_masses[v]);
