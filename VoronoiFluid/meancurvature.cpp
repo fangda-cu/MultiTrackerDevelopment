@@ -160,7 +160,9 @@ void MeanCurvatureDriver::vertex_mean_curvature_normal( unsigned int vertex_inde
       
       if ( surf.m_mesh.m_edge_to_triangle_map[e].size() != 2 )
       {
-         // TODO: properly handle more than 2 incident triangles
+         // Non-manifold case
+         out = Vec3d(0,0,0);
+         return;
       }
       
       unsigned int tri0 = surf.m_mesh.m_edge_to_triangle_map[e][0];

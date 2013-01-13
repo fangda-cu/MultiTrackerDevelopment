@@ -80,7 +80,19 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
    
       vertex_curvatures.resize(surface.get_num_vertices());
       for(unsigned int i = 0; i < surface.get_num_vertices(); ++i) {
-         Vec3d surf_normal = surface.get_vertex_normal_angleweighted(i);
+         //figure out which labels are involved in this vertex.
+         //we assume the geometry is manifold so just want two regions, properly oriented.
+         if(surface.m_mesh.m_vertex_to_triangle_map[i].size() < 1) {
+            continue;
+         }
+         int one_tri = surface.m_mesh.m_vertex_to_triangle_map[i][0];
+         
+         Vec2i labels = surface.m_mesh.get_triangle_label(one_tri);
+         
+         //use the normal associated to the lower index region, as a rule,
+         //in order to get the sign. (the mean curvature estimator doesn't care about orientation).
+         Vec3d surf_normal = surface.get_vertex_normal_angleweighted_by_label(i, std::min(labels[0],labels[1]));
+         //Vec3d surf_normal = surface.get_vertex_normal_angleweighted(i);
 
          Vec3d curvatureNormal;
          MeanCurvatureDriver::vertex_mean_curvature_normal(i, surface, curvatureNormal);
@@ -183,10 +195,12 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
                   // Estimate the mean curvature at the crossing point, and use it to incorporate surface tension on the RHS.
                   
                   face_curvatures[face_index] = get_surface_curvature(mesh, surface, vertex_curvatures, i, neighbour_index);
-                  //TODO May need to flip the curvature sign depending on region labeling
-                  //TODO Need to compute curvature from the perspective of a particular region.
+                  //Curvature is computed assuming inside is the lower region index
+                  //To determine the curvature wrt. the centre region, we check if
+                  //the centre region IS the lower of the two signs. If no, we flip the sign.
                   
-                  rhs[i] += solid_weights[face_index] * mesh.voronoi_face_areas[face_index] * surface_tension_coeff * face_curvatures[face_index] / dist / face_density;
+                  double sign = region_ID < nbr_region_ID ? 1 : -1;
+                  rhs[i] += sign * solid_weights[face_index] * mesh.voronoi_face_areas[face_index] * surface_tension_coeff * face_curvatures[face_index] / dist / face_density;
                }
             }
 
@@ -313,7 +327,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
                   int lower_index = region0 < region1? verts[0] : verts[1];
                
                   float sign_flip = lower_index == verts[0] ? 1.0f : -1.0f;
-                  p0 += sign_flip * surface_tension_coeff * face_curvatures[i];
+                  p0 -= sign_flip * surface_tension_coeff * face_curvatures[i];
                }
             }
             else { // It's all one fluid so do nothing special.

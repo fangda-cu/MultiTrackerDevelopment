@@ -1827,9 +1827,21 @@ void parse_script( const char* filename )
             label = Vec2i(0,1);
          }
          else {
-            label = Vec2i(0,2);
+            label = Vec2i(2,0); 
+
+            //flip the triangles to test if reverse orientation works too.
+            Vec3st tri = g_dual_sim->surface_tracker->m_mesh.m_tris[i];
+            std::swap(tri[1], tri[2]);
+            g_dual_sim->surface_tracker->m_mesh.m_tris[i] = tri;
          }
          g_dual_sim->surface_tracker->m_mesh.set_triangle_label(i, label);
+
+         //screw with the initial shape to test surface tension
+      }
+      for(size_t i = 0; i < g_dual_sim->surface_tracker->get_num_vertices(); ++i) {
+         Vec3d v = g_dual_sim->surface_tracker->get_position(i);
+         v[2] *= 1.3;
+         g_dual_sim->surface_tracker->set_position(i, v);
       }
 
    }
