@@ -794,6 +794,106 @@ bool T1Transition::pop_vertices()
             continue;
         }
         
+        // check intersection in the final configuration
+        const std::vector<Vec3d> & x = m_surf.get_positions();
+        bool collision = false;
+        
+        // point-tet
+        for (size_t j = 0; j < A_faces.size(); j++)
+        {
+            Vec3st t = mesh.get_triangle(A_faces[j]);
+            
+            Vec3d low, high;
+            minmax(x[t[0]], x[t[1]], x[t[2]], a_desired_position, low, high);
+            
+            std::vector<size_t> overlapping_vertices;
+            m_surf.m_broad_phase->get_potential_vertex_collisions(low, high, true, true, overlapping_vertices);
+            
+            for (size_t k = 0; k < overlapping_vertices.size(); k++) 
+            { 
+                size_t ov = overlapping_vertices[k];
+                if (ov == t[0] || ov == t[2] || ov == t[1])
+                    continue;
+                
+                if (point_tetrahedron_intersection(x[ov], ov, x[t[0]], t[0], x[t[1]], t[1], x[t[2]], t[2], a_desired_position, mesh.nv()))
+                    collision = true;
+            }
+        }
+        
+        // edge-triangle
+        for (size_t j = 0; j < A_faces.size(); j++)
+        {
+            Vec3st t = mesh.get_triangle(A_faces[j]);
+            if (t[1] == xj) std::swap(t[0], t[1]);
+            if (t[2] == xj) std::swap(t[0], t[2]);
+            
+            Vec3d low, high;
+            minmax(x[t[1]], x[t[2]], a_desired_position, low, high);
+            
+            std::vector<size_t> overlapping_edges;
+            m_surf.m_broad_phase->get_potential_edge_collisions(low, high, true, true, overlapping_edges);
+            
+            for (size_t k = 0; k < overlapping_edges.size(); k++) 
+            { 
+                const Vec2st & e = mesh.m_edges[overlapping_edges[k]];
+                if (e[0] == t[1] || e[1] == t[1] || e[0] == t[2] || e[1] == t[2])
+                    continue;
+                
+                bool incident = false;
+                for (size_t l = 0; l < A_edges.size(); l++)
+                    if (A_edges[l] == overlapping_edges[k])
+                    {
+                        incident = true;
+                        break;
+                    }
+                if (incident)
+                    continue;
+                
+                if (segment_triangle_intersection(x[e[0]], e[0], x[e[1]], e[1], x[t[1]], t[1], x[t[2]], t[2], a_desired_position, mesh.nv(), true))
+                    collision = true;
+            }
+        }
+        
+        // triangle-edge
+        for (size_t j = 0; j < A_edges.size(); j++)
+        {
+            Vec2st e = mesh.m_edges[A_edges[j]];
+            if (e[1] == xj) std::swap(e[0], e[1]);
+            
+            Vec3d low, high;
+            minmax(x[e[1]], a_desired_position, low, high);
+            
+            std::vector<size_t> overlapping_triangles;
+            m_surf.m_broad_phase->get_potential_triangle_collisions(low, high, true, true, overlapping_triangles);
+            
+            for (size_t k = 0; k < overlapping_triangles.size(); k++)
+            {
+                const Vec3st & t = mesh.get_triangle(overlapping_triangles[k]);
+                if (e[1] == t[0] || e[1] == t[1] || e[1] == t[2])
+                    continue;
+                
+                bool incident = false;
+                for (size_t l = 0; l < A_faces.size(); l++)
+                    if (A_faces[l] == overlapping_triangles[k])
+                    {
+                        incident = true;
+                        break;
+                    }
+                if (incident)
+                    continue;
+                
+                if (segment_triangle_intersection(x[e[1]], e[1], a_desired_position, mesh.nv(), x[t[0]], t[0], x[t[1]], t[1], x[t[2]], t[2], true))
+                    collision = true;
+            }
+        }
+        
+        if (collision)
+        {
+            if (m_surf.m_verbose)
+                std::cout << "Edge popping: collision introduced." << std::endl;
+            continue;
+        }        
+        
         // pull apart
         a = m_surf.add_vertex(original_position, m_surf.m_masses[xj]);
         b = m_surf.add_vertex(original_position, m_surf.m_masses[xj]);

@@ -792,9 +792,14 @@ void SurfTrack::improve_mesh( )
 
       ////////////////////////////////////////////////////////////
       // FD 20130109
+        
+        static int fc = 0;
+        fc++;
+        std::cout << "fc = " << fc << std::endl;
 
       m_t1transition.pop_edges();
 
+//        if (fc != 20)
       m_t1transition.pop_vertices();
 
       ////////////////////////////////////////////////////////////
