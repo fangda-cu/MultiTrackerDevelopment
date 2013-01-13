@@ -66,6 +66,7 @@ void ButterflyScheme::generate_new_midpoint( size_t edge_index, const SurfTrack&
 	size_t p2_index = mesh.m_edges[edge_index][1];
 	
   assert(mesh.m_edge_to_triangle_map[edge_index].size() == 2);
+  //Butterfly doesn't support non-manifold scenarios yet. Try midpoint.
 
     size_t tri0 = mesh.m_edge_to_triangle_map[edge_index][0];
     size_t tri1 = mesh.m_edge_to_triangle_map[edge_index][1];

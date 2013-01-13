@@ -58,20 +58,20 @@ void el_topo_static_operations( const ElTopoMesh* inputs,
     construction_parameters.m_max_volume_change = options->m_max_volume_change;   
     construction_parameters.m_min_triangle_angle = options->m_min_triangle_angle;
     construction_parameters.m_max_triangle_angle = options->m_max_triangle_angle;
-    construction_parameters.m_use_curvature_when_splitting = options->m_use_curvature_when_splitting;
-    construction_parameters.m_use_curvature_when_collapsing = options->m_use_curvature_when_collapsing;
+    construction_parameters.m_use_curvature_when_splitting = options->m_use_curvature_when_splitting != 0;
+    construction_parameters.m_use_curvature_when_collapsing = options->m_use_curvature_when_collapsing != 0;
     construction_parameters.m_min_curvature_multiplier = options->m_min_curvature_multiplier;
     construction_parameters.m_max_curvature_multiplier = options->m_max_curvature_multiplier;
     construction_parameters.m_allow_vertex_movement_during_collapse = options->m_allow_vertex_movement_during_collapse;
     construction_parameters.m_perform_smoothing = options->m_perform_smoothing;
     construction_parameters.m_edge_flip_min_length_change = options->m_edge_flip_min_length_change;   
     construction_parameters.m_merge_proximity_epsilon = options->m_merge_proximity_epsilon;
-    construction_parameters.m_collision_safety = general_options->m_collision_safety;
-    construction_parameters.m_allow_topology_changes = options->m_allow_topology_changes;
-    construction_parameters.m_perform_improvement = options->m_perform_improvement;
+    construction_parameters.m_collision_safety = general_options->m_collision_safety != 0;
+    construction_parameters.m_allow_topology_changes = options->m_allow_topology_changes != 0;
+    construction_parameters.m_perform_improvement = options->m_perform_improvement != 0;
     construction_parameters.m_remesh_boundaries = options->m_remesh_boundaries;
     construction_parameters.m_subdivision_scheme = (ElTopo::SubdivisionScheme*) options->m_subdivision_scheme;
-    construction_parameters.m_verbose = general_options->m_verbose;
+    construction_parameters.m_verbose = general_options->m_verbose != 0;
     
     ElTopo::SurfTrack surface_tracker( vs, ts, masses, construction_parameters ); 
     
@@ -226,7 +226,7 @@ void el_topo_integrate( const ElTopoMesh* inputs,
     //
     
     // build a DynamicSurface
-    ElTopo::DynamicSurface dynamic_surface( vs, ts, masses, general_options->m_proximity_epsilon, options->m_friction_coefficient, general_options->m_collision_safety );
+    ElTopo::DynamicSurface dynamic_surface( vs, ts, masses, general_options->m_proximity_epsilon, options->m_friction_coefficient, general_options->m_collision_safety != 0 );
     
     dynamic_surface.set_all_newpositions( inputs->num_vertices, in_vertex_new_locations );
     

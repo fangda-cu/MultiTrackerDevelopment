@@ -972,7 +972,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   // Store the history
   m_surf.m_mesh_change_history.push_back(collapse);
-
   return true;
 }
 

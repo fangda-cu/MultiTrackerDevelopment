@@ -437,7 +437,10 @@ static bool read_int(const char *s, int &value, bool &leading_slash, int &positi
             return true;
       }
    }
+
+#ifndef _MSC_VER //this yields an annoying warning on VC++, so strip it.
    return true; // should never get here, but keeps compiler happy
+#endif
 }
 
 

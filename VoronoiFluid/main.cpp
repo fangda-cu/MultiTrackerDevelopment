@@ -44,6 +44,8 @@ std::vector<Vec3ui> g_renderable_triangles;
 std::vector<Vec2ui> g_renderable_edges;
 TetMesh* g_renderable_tet_mesh;
 std::vector<float> g_renderable_liquid_phi;
+std::vector<int> g_renderable_region_IDs;
+std::vector<Vec2i> g_renderable_labels;
 
 Gluvi::Target3D* cam; 
 Gluvi::DynamicText* status_text_widget;
@@ -172,10 +174,13 @@ void update_renderable_objects()
    g_dual_sim->surface_tracker->get_all_vertex_normals(g_renderable_vertex_normals);
    g_renderable_triangles = g_dual_sim->surface_tracker->m_mesh.m_tris;
    g_renderable_edges = g_dual_sim->surface_tracker->m_mesh.m_edges;
+   if(g_renderable_tet_mesh != NULL)
+      delete g_renderable_tet_mesh;
    g_renderable_tet_mesh = new TetMesh(*g_dual_sim->mesh); //make a copy for safe visualization
       
    g_renderable_liquid_phi = g_dual_sim->liquid_phi;
-   
+   g_renderable_region_IDs = g_dual_sim->region_IDs;
+   g_renderable_labels = g_dual_sim->surface_tracker->m_mesh.m_triangle_labels;
    /*
 
    std::vector<float> vertexCurvatures(g_renderable_vertices.size());
@@ -247,12 +252,21 @@ void draw_box( const Vec3f& lo, const Vec3f& hi )
        
 
 
+class FaceComp
+{
+public:
+   bool operator() (const std::pair<int, double> & f1, const std::pair<int, double> & f2) const 
+   {
+      return f1.second < f2.second;
+   }
+};
+
 
 // ---------------------------------------------------------
 
 void display()
 {
-
+   
    if ( g_display_status_text )
    {
       pthread_mutex_lock( &thread_is_running_mutex );
@@ -296,6 +310,7 @@ void display()
       status_text_widget->set_color( 1.0f, 1.0f, 1.0f );
       status_text_widget->text = "";
    }
+   
    
    /*
    // identify and draw some slivery tets
@@ -369,24 +384,24 @@ void display()
          {
             if ( g_draw_liquid_phi )
             {
-               /*
-               if ( g_renderable_liquid_phi[i] < 0.0f )
-               {
-                  glColor3f(0,0,1);
-                  glVertex3fv( g_renderable_tet_mesh->vertices[i].v );
-               }
-               else
-               {
-                  glColor3f(1,0,0);
-                  glVertex3fv( g_renderable_tet_mesh->vertices[i].v );
-               }
-               */
+               
+               //if ( g_renderable_liquid_phi[i] < 0.0f )
+               //{
+               //   glColor3f(0,0,1);
+               //   glVertex3fv( g_renderable_tet_mesh->vertices[i].v );
+               //}
+               //else
+               //{
+               //   glColor3f(1,0,0);
+               //   glVertex3fv( g_renderable_tet_mesh->vertices[i].v );
+               //}
+               
                Vec3f color(0,0,0);
                //std::cout << "Region id = " << g_dual_sim->region_IDs[i] << std::endl;
-               if(g_dual_sim->region_IDs[i] < 0 || g_dual_sim->region_IDs[i] > 2)
+               if(g_renderable_region_IDs[i] < 0 || g_renderable_region_IDs[i] > 2)
                   color = Vec3f(1,1,0);
                else
-                  color[g_dual_sim->region_IDs[i]] = 1;
+                  color[g_renderable_region_IDs[i]] = 1;
                glColor3fv(color.v);
                glVertex3fv( g_renderable_tet_mesh->vertices[i].v );
 
@@ -497,6 +512,7 @@ void display()
          {
             if ( g_renderable_tet_mesh->vertices[i][2] < clipping_plane_distance ) 
             {
+               //TODO Get a renderable copy of the velocities
                //glVertex3fv(g_renderable_tet_mesh->vertices[i].v);
                //glVertex3fv((g_renderable_tet_mesh->vertices[i] + 0.1f*g_dual_sim->tet_vertex_velocities[i]).v);
             }
@@ -508,10 +524,12 @@ void display()
       glBegin(GL_LINES);
       for(unsigned int i = 0; i < g_renderable_tet_mesh->voronoi_face_centroids.size(); ++i) 
       {
+         
          // if( )       // check if voronoi full face velocity is valid
          {
             if ( g_renderable_tet_mesh->voronoi_face_centroids[i][2] < clipping_plane_distance ) 
             {
+               //TODO Get a renderable copy of the velocities
                //glVertex3fv(g_renderable_tet_mesh->voronoi_face_centroids[i].v);
                //glVertex3fv((g_renderable_tet_mesh->voronoi_face_centroids[i] + 0.1*g_dual_sim->full_voronoi_face_velocities).v);
             }
@@ -527,8 +545,9 @@ void display()
          {
             if ( g_renderable_tet_mesh->tet_circumcentres[i][2] < clipping_plane_distance ) 
             {
-               glVertex3fv(g_renderable_tet_mesh->tet_circumcentres[i].v);
-               glVertex3fv((g_renderable_tet_mesh->tet_circumcentres[i] + 0.1f*g_dual_sim->voronoi_vertex_velocities[i]).v);
+               //TODO Get a renderable copy of the velocities
+               //glVertex3fv(g_renderable_tet_mesh->tet_circumcentres[i].v);
+               //glVertex3fv((g_renderable_tet_mesh->tet_circumcentres[i] + 0.1f*g_dual_sim->voronoi_vertex_velocities[i]).v);
             }
          }
       }
@@ -549,7 +568,7 @@ void display()
    if(g_draw_domain_box ) 
    {
       glColor3f(0.5,0.5,0.5);
-      draw_box( g_dual_sim->domain_low, g_dual_sim->domain_high );
+      //draw_box( g_dual_sim->domain_low, g_dual_sim->domain_high );
    }
 
    // clipping plane
@@ -624,54 +643,112 @@ void display()
          glPolygonOffset(1.0f, 1.0f);      //  allow the wireframe to show through
       }      
       
-     
-      //float divisor = 11;
+      float mv[16];
+      glGetFloatv(GL_MODELVIEW_MATRIX, mv);
+      Vec3d view_vec(mv[2], mv[6], mv[10]);  // assuming ModelView matrix contains only translation, rotation and uniform scaling
+
+      std::vector< std::pair<int,double> > sorted_faces;
+      for ( unsigned int i = 0; i < g_renderable_triangles.size(); ++i ) {
+         Vec3st tri = g_renderable_triangles[i];
+         Vec3d sum(0,0,0);
+         for(int j = 0; j < 3; ++j)
+            sum += g_renderable_vertices[tri[j]];
+
+         sum /= 3;
+         double depth = dot(sum,view_vec);
+         sorted_faces.push_back(std::make_pair(i, depth));
+      }
+      
+      FaceComp fc;
+      std::sort(sorted_faces.begin(), sorted_faces.end(), fc);
+      
+      float divisor = 11;
+      glDepthMask(GL_FALSE);
+      glDisable(GL_CULL_FACE);
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+      bool label_based_front_and_back_labeling = false;
+      if(!label_based_front_and_back_labeling) {
+         glEnable(GL_BLEND);
+         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+         glEnable(GL_LIGHTING);
+      }
+      else {
+         glDisable(GL_LIGHTING);
+      }
+      
       glBegin( GL_TRIANGLES );
-      for ( unsigned int i = 0; i < g_renderable_triangles.size(); ++i )
+      for ( unsigned int i = 0; i < sorted_faces.size(); ++i )
       {
-         const Vec3ui& tri = g_renderable_triangles[i];
+         int t = sorted_faces[i].first;
+         const Vec3ui& tri = g_renderable_triangles[t];
+
+         Vec3d v0 = g_renderable_vertices[tri[0]];
+         Vec3d v1 = g_renderable_vertices[tri[1]];
+         Vec3d v2 = g_renderable_vertices[tri[2]];
+         Vec3d normal = cross(v1-v0,v2-v0);
+
+         Vec3st test = sort_triangle(tri);
          
-         if(g_dual_sim->surface_tracker->m_mesh.get_triangle_label(i)[1] == 1)
-            Gluvi::set_generic_material(1, 0, 0, GL_FRONT);   
-         else if(g_dual_sim->surface_tracker->m_mesh.get_triangle_label(i)[1] == 2)
-            Gluvi::set_generic_material(0, 0, 1, GL_FRONT);   
-         else
-            Gluvi::set_generic_material(0, 1, 0, GL_FRONT);   
+         
+         if(label_based_front_and_back_labeling) {
+            int label_no = -1;
+            bool positive = dot(normal,view_vec) > 0;
+            if(positive) {
+               label_no = g_renderable_labels[t][0];
+            }
+            else {
+               label_no = g_renderable_labels[t][1];
+            }
 
-
-        /* float curvValue = fabs(g_renderable_vertex_curvatures[tri[0]]);
-         if(g_renderable_vertex_curvatures[tri[0]] < 0) {
-            Gluvi::set_generic_material(curvValue / divisor, 0, 0, GL_FRONT);   
-         }
+            if(label_no == 0)
+               glColor3f(1,0,0);
+               //Gluvi::set_generic_material(1, 0, 0, GL_FRONT_AND_BACK);   
+            else if(label_no == 1)
+               glColor3f(0,1,0);
+               //Gluvi::set_generic_material(0, 1, 0, GL_FRONT_AND_BACK);   
+            else if(label_no == 2)
+               glColor3f(0,0,1);
+               //Gluvi::set_generic_material(0, 0, 1, GL_FRONT_AND_BACK);   
+            else
+               Gluvi::set_generic_material(0, 0, 0, GL_FRONT_AND_BACK);
+       
+            if(positive) {
+               glNormal3dv(g_renderable_vertex_normals[tri[0]].v);
+               glVertex3dv( g_renderable_vertices[tri[0]].v );
+               glNormal3dv(g_renderable_vertex_normals[tri[1]].v);
+               glVertex3dv( g_renderable_vertices[tri[1]].v );
+               glNormal3dv(g_renderable_vertex_normals[tri[2]].v);
+               glVertex3dv( g_renderable_vertices[tri[2]].v );
+            }
+            else {
+               glNormal3dv(g_renderable_vertex_normals[tri[0]].v);
+               glVertex3dv( g_renderable_vertices[tri[0]].v );
+               glNormal3dv(g_renderable_vertex_normals[tri[2]].v);
+               glVertex3dv( g_renderable_vertices[tri[2]].v );
+               glNormal3dv(g_renderable_vertex_normals[tri[1]].v);
+               glVertex3dv( g_renderable_vertices[tri[1]].v );
+            }
+         }  
          else {
-            Gluvi::set_generic_material(0, 0, curvValue / divisor, GL_FRONT);   
-         }*/
-         glNormal3dv( g_renderable_vertex_normals[tri[0]].v );
-         glVertex3dv( g_renderable_vertices[tri[0]].v );
-         
-       /*  curvValue = fabs(g_renderable_vertex_curvatures[tri[1]]);
-         if(g_renderable_vertex_curvatures[tri[0]] < 0) {
-            Gluvi::set_generic_material(curvValue / divisor, 0, 0, GL_FRONT);   
-         }
-         else {
-            Gluvi::set_generic_material(0, 0, curvValue / divisor, GL_FRONT);   
-         }*/
 
-         
-         glNormal3dv( g_renderable_vertex_normals[tri[1]].v );
-         glVertex3dv( g_renderable_vertices[tri[1]].v );
-         
-         
-        /* curvValue = fabs(g_renderable_vertex_curvatures[tri[2]]);
-         if(g_renderable_vertex_curvatures[tri[2]] < 0) {
-            Gluvi::set_generic_material(curvValue / divisor, 0, 0, GL_FRONT);   
-         }
-         else {
-            Gluvi::set_generic_material(0, 0, curvValue / divisor, GL_FRONT);   
-         }*/
-         glNormal3dv( g_renderable_vertex_normals[tri[2]].v );
-         glVertex3dv( g_renderable_vertices[tri[2]].v );
+            if(g_renderable_labels[t] == Vec2i(1,2) || g_renderable_labels[t] == Vec2i(2,1))
+               Gluvi::set_generic_material(1, 0, 0, GL_FRONT_AND_BACK);   
+            else if(g_renderable_labels[t] == Vec2i(1,0) || g_renderable_labels[t] == Vec2i(0,1))
+               Gluvi::set_generic_material(0, 1, 0, GL_FRONT_AND_BACK);   
+            else if(g_renderable_labels[t] == Vec2i(2,0) || g_renderable_labels[t] == Vec2i(0,2))
+               Gluvi::set_generic_material(0, 0, 1, GL_FRONT_AND_BACK);
+            else
+               Gluvi::set_generic_material(0, 0, 0, GL_FRONT_AND_BACK);
 
+            glNormal3dv(g_renderable_vertex_normals[tri[0]].v);
+            glVertex3dv( g_renderable_vertices[tri[0]].v );
+            glNormal3dv(g_renderable_vertex_normals[tri[1]].v);
+            glVertex3dv( g_renderable_vertices[tri[1]].v );
+            glNormal3dv(g_renderable_vertex_normals[tri[2]].v);
+            glVertex3dv( g_renderable_vertices[tri[2]].v );
+         }
+       
+         
       }
       glEnd();
       
@@ -696,6 +773,7 @@ void display()
             glVertex3dv( g_renderable_vertices[edge[1]].v );
          }
          glEnd();
+
       }
       
 #endif
@@ -789,14 +867,14 @@ void snap_to_solid_splash( Vec3d& v )
 
 void snap_to_solid( Vec3d& v )
 {   
-   float min_dist = 1e30;
+   float min_dist = 1e30f;
    unsigned int min_wall_index = ~0;
    
    for ( unsigned int dim = 0; dim < 3; ++dim )
    {
       if ( fabs( v[dim] - BOX_DOMAIN_LOW[dim] ) < min_dist ) 
       {
-         min_dist = fabs( v[dim] - BOX_DOMAIN_LOW[dim] );
+         min_dist = (float)fabs( v[dim] - BOX_DOMAIN_LOW[dim] );
          min_wall_index = dim;
       }   
    }
@@ -805,7 +883,7 @@ void snap_to_solid( Vec3d& v )
    {
       if ( fabs( v[dim] - BOX_DOMAIN_HIGH[dim] ) < min_dist ) 
       {
-         min_dist = fabs( v[dim] - BOX_DOMAIN_HIGH[dim] );
+         min_dist = (float)fabs( v[dim] - BOX_DOMAIN_HIGH[dim] );
          min_wall_index = 3 + dim;
       }   
    }
@@ -1351,7 +1429,7 @@ void advance_frame_done()
    update_renderable_objects();
 
    ++g_frame;
-   if ( g_frame > 1000 ) { exit(0); }
+   if ( g_frame > 10000 ) { exit(0); }
 
 }
 
@@ -1721,7 +1799,7 @@ void parse_script( const char* filename )
    
    
     std::vector<Vec3f> input_xs;
-    SampleSeeder::generate_bcc_points( DOMAIN_LOW, DOMAIN_HIGH, mesh_dx, input_xs );   
+    SampleSeeder::generate_bcc_points( DOMAIN_LOW, DOMAIN_HIGH, (float)mesh_dx, input_xs );   
       
     Triangulation cgal_T;
     //Use CGAL Delaunay mesher
@@ -1741,7 +1819,7 @@ void parse_script( const char* filename )
       //also go through and set the triangle surface labels to be various
       //left of centre, outside is 0, inside is 1
       //right of centre, outside is 0, inside is 2
-      for(int i = 0; i < g_dual_sim->surface_tracker->m_mesh.m_tris.size(); ++i) {
+      for(unsigned int i = 0; i < g_dual_sim->surface_tracker->m_mesh.m_tris.size(); ++i) {
          Vec3d centre = g_dual_sim->surface_tracker->get_triangle_barycenter(i);
 
          Vec2i label;
@@ -1764,7 +1842,7 @@ void parse_script( const char* filename )
    g_dual_sim->domain_high = DOMAIN_HIGH;
    g_dual_sim->solid_low = BOX_DOMAIN_LOW;
    g_dual_sim->solid_high = BOX_DOMAIN_HIGH;   
-   g_dual_sim->characteristic_distance = mesh_dx;
+   g_dual_sim->characteristic_distance = (float)mesh_dx;
    
    // sim data members
    g_dual_sim->initialize();
@@ -1774,7 +1852,7 @@ void parse_script( const char* filename )
    g_dual_sim->allow_solid_overlap = ( allow_solid_overlap != 0 );
    g_dual_sim->initial_volume = g_dual_sim->surface_tracker->get_volume();
    g_dual_sim->volume_correction = ( volume_correction != 0 );
-   g_dual_sim->surface_tension_coefficient = surface_tension_coefficient;
+   g_dual_sim->surface_tension_coefficient = (float)surface_tension_coefficient;
    g_dual_sim->gravity = Vec3f( gravity_force );
 
    int interpolation_scheme_by_int;
@@ -1874,17 +1952,17 @@ void parse_script( const char* filename )
    
    if ( tree.get_number( "camera_distance", camera_distance ) )
    {
-      cam->dist = camera_distance;
+      cam->dist = (float)camera_distance;
    }
    
    if ( tree.get_number( "camera_heading", camera_heading ) )
    {
-      cam->heading = camera_heading;
+      cam->heading = (float)camera_heading;
    }
    
    if ( tree.get_number( "camera_pitch", camera_pitch ) )
    {
-      cam->pitch = camera_pitch;
+      cam->pitch = (float)camera_pitch;
    }
    
 }
@@ -1897,11 +1975,11 @@ int main( int argc, char** argv )
 
    set_time_base();
      
-//   Gluvi::winwidth = 800;
-//   Gluvi::winheight = 600;
+   Gluvi::winwidth = 800;
+   Gluvi::winheight = 600;
 
-   Gluvi::winwidth = 1920;
-   Gluvi::winheight = 1080;
+   /*Gluvi::winwidth = 1920;
+   Gluvi::winheight = 1080;*/
 
    Gluvi::init( "Voronoi Sim 3D", &argc, argv );    
    Gluvi::camera = new Gluvi::Target3D( );

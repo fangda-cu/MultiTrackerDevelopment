@@ -14,7 +14,11 @@
 #include "wallclocktime.h"
 #include "CGAL_wrapper.h"
 
+
+
 using namespace ElTopo;
+
+
 
 // always handy
 template<unsigned int M, unsigned int N, class T>
@@ -49,9 +53,9 @@ DualFluidSim3D::DualFluidSim3D( const std::vector<Vec3d>& surface_vertices,
 {
   mesh = new TetMesh(); 
   surface_tracker = new SurfTrack( surface_vertices, surface_triangles, surface_vertex_masses, initial_parameters );
-   surface_tracker->improve_mesh();
-   surface_tracker->improve_mesh();
-   surface_tracker->improve_mesh();
+  /*surface_tracker->improve_mesh();
+  surface_tracker->improve_mesh();
+  surface_tracker->improve_mesh();*/
 }
 
 
@@ -76,8 +80,8 @@ void DualFluidSim3D::initialize()
    
    densities.resize(3);
    densities[0] = 1;
-   densities[1] = 2;
-   densities[2] = 0.5;
+   densities[1] = 1.4f;
+   densities[2] = 0.6f;
 
    tet_edge_velocities.resize( mesh->edges.size(), 0.0f );
    tet_vertex_velocities.resize( mesh->vertices.size(), Vec3f(0.0f) );
@@ -1348,7 +1352,7 @@ void DualFluidSim3D::correct_volume( )
    for ( unsigned int i = 0; i < surface_tracker->get_num_vertices(); ++i )
    {
       if( surface_tracker->m_mesh.m_vertex_to_edge_map[i].size() == 0 ) { continue; }
-      if( surface_tracker->m_masses[i] > 1.5 ) { continue; }
+      if( surface_tracker->m_masses[i] > 1.5 ) { continue; } //TODO: Use El Topo's actual constraint mechanism instead?
       
       Vec3d n = surface_tracker->get_vertex_normal( i );
       
@@ -1425,10 +1429,22 @@ void DualFluidSim3D::advance_surface( float dt )
    
    // El Topo: static operations
    
-   surface_tracker->improve_mesh();
+   std::vector<bool> vert_const_labels(surface_tracker->get_num_vertices(), 0);
+   surface_tracker->m_mesh.m_vertex_constraint_labels = vert_const_labels;
+   std::vector<Vec3d> vert_vel(surface_tracker->get_num_vertices());
+   for(unsigned int i = 0; i < vert_vel.size(); ++i) {
+      vert_vel[i] = Vec3d((*get_velocity)(Vec3f(surface_tracker->get_position(i))));
+   }
+   surface_tracker->set_all_remesh_velocities(vert_vel);
+   surface_tracker->assert_no_bad_labels();
    
+   std::cout << "Improve mesh\n";
+   surface_tracker->improve_mesh();
+   surface_tracker->assert_no_bad_labels();
+   
+   std::cout << "Change topology\n";
    surface_tracker->topology_changes();
-      
+   surface_tracker->assert_no_bad_labels();
       
    // El Topo: surface advection
 
@@ -1445,15 +1461,15 @@ void DualFluidSim3D::advance_surface( float dt )
       float vertex_solid_phi = solid_box_phi( box_centre, box_extents, new_position );
       
       // mark vertices against the solid wall
-      if ( vertex_solid_phi > -1e-4 )
+      if ( vertex_solid_phi > -1e-4 ) //TODO Make this somehow a tunable parameter or something...
       {
-         surface_tracker->m_masses[i] = 2.0;
+         surface_tracker->m_masses[i] = 2.0; //TODO use constraint mechanism instead?
       }
       
       if ( !allow_solid_overlap )
       {
          // snap to solid
-         if ( surface_tracker->m_masses[i] > 1.0 )
+         if ( surface_tracker->m_masses[i] > 1.0 ) //TODO use constraint mechanism instead?
          {
             new_position -= vertex_solid_phi * solid_box_gradient( box_centre, box_extents, new_position );
             static const float snap_distance = 1e-4f;
@@ -1474,7 +1490,8 @@ void DualFluidSim3D::advance_surface( float dt )
    
    if ( volume_correction )
    {
-      correct_volume( );
+      //TODO Make volume correction work with multiphase mesh.
+      //correct_volume( );
    }
    
    write_binary_file_with_newpositions( surface_tracker->m_mesh, 
@@ -1485,7 +1502,8 @@ void DualFluidSim3D::advance_surface( float dt )
                                         "/Users/tyson/scratch/pre-integration.bin" );
    double actual_dt;
    surface_tracker->integrate( dt, actual_dt );
-   
+   surface_tracker->assert_no_bad_labels();
+   delete get_velocity;
 }
 
 
@@ -1876,7 +1894,6 @@ void DualFluidSim3D::compute_liquid_phi( )
  
    //For points that are near the boundary (i.e. belong to a boundary tet)
    //we'll use raycasting on each one.
-   int zone1_verts = 0;
    region_IDs.assign(liquid_phi.size(), -1);
    int bvert_count = 0;
    for ( unsigned int i = 0; i < liquid_phi.size(); ++i )
@@ -1889,8 +1906,6 @@ void DualFluidSim3D::compute_liquid_phi( )
          bvert_count++;
          const Vec3f& x = mesh->vertices[i];   
          region_IDs[i] = surface_tracker->get_region_containing_point( Vec3d(x) );
-         if(region_IDs[i] == 1)
-            zone1_verts++;
       }
 
    }
@@ -1908,6 +1923,8 @@ void DualFluidSim3D::compute_liquid_phi( )
       const Vec3f& x = mesh->vertices[i];
       int group_ID = surface_tracker->get_region_containing_point( Vec3d(x) );
       
+      assert(group_ID != -1);
+
       std::queue<unsigned int> points_to_process;
       points_to_process.push(i);
       std::cout << "Processing interior region " << group_ID << std::endl;
@@ -1934,7 +1951,7 @@ void DualFluidSim3D::compute_liquid_phi( )
    }
 
    int baseline = 0;
-   for(int i = 0; i < region_IDs.size(); ++i) {
+   for(unsigned int i = 0; i < region_IDs.size(); ++i) {
       if(region_IDs[i] == 1)
          baseline++;
    }

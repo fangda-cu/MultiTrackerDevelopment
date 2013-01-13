@@ -1145,7 +1145,7 @@ Mat2i T1Transition::cut_x_junction_edge(size_t e)
     // find all the regions around this X junction edge e, in CCW order when looking down the edge
     std::vector<int> regions;
     size_t tmp = mesh.m_edge_to_triangle_map[e][0];
-    if (mesh.oriented(v0, v1, mesh.get_triangle(tmp)) > 0)
+    if (mesh.oriented(v0, v1, mesh.get_triangle(tmp)))
     {
         regions.push_back(mesh.get_triangle_label(tmp)[1]);
         regions.push_back(mesh.get_triangle_label(tmp)[0]);

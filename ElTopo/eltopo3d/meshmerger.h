@@ -99,7 +99,7 @@ private:
     
     /// Create a set of triangles to add to perform the zippering operation
     ///
-    bool get_zipper_triangles( size_t edge_index_0, size_t edge_index_1, std::vector<Vec3st>& output_triangles );
+    bool get_zipper_triangles( size_t edge_index_a, size_t edge_index_b, std::vector<Vec3st>& output_triangles, int& shared_label );
     
     /// Check whether the introduction of the new zippering triangles causes a collision 
     ///
@@ -108,7 +108,7 @@ private:
     /// Attempt to merge between two edges
     ///    
     bool zipper_edges( size_t edge_index_a, size_t edge_index_b );
-    
+   
 };
 
 }

@@ -155,6 +155,10 @@ public:
     ///
     inline Vec3d get_vertex_normal_angleweighted( size_t vertex ) const;
 
+    /// Get an estimate for the surface normal at the specified vertex. Computed using angleweighted pseudonormal
+    ///
+    inline Vec3d get_vertex_normal_angleweighted_by_label( size_t vertex, int label ) const;
+
     /// Compute all vertex normals, using an unweighted average of incident triangle normals.
     ///
     void get_all_vertex_normals( std::vector<Vec3d>& normals ) const;
@@ -616,10 +620,58 @@ inline Vec3d DynamicSurface::get_vertex_normal( size_t vertex ) const
     return normal;
 }
 
+// --------------------------------------------------------
+///
+/// Compute surface normal at the specified vertex (angle-weighted pseudo-normal) per region.
+///
+// --------------------------------------------------------
+
+inline Vec3d DynamicSurface::get_vertex_normal_angleweighted_by_label( unsigned int vertex_index, int label ) const
+{
+   const std::vector<unsigned int>& inc_tris = m_mesh.m_vertex_to_triangle_map[vertex_index];
+
+   Vec3d normal_sum(0,0,0);
+
+   for ( unsigned int i = 0; i < inc_tris.size(); ++i )
+   {
+      const Vec3ui& curr_tri = m_mesh.m_tris[inc_tris[i]];
+      
+      Vec2i tri_label = m_mesh.get_triangle_label(inc_tris[i]);
+      if(tri_label[0] != label && tri_label[1] != label) continue; //no matching label, skip it.
+
+      if ( curr_tri[0] == curr_tri[1] ) { continue; }
+
+      Vec2ui other_two;
+
+      NonDestructiveTriMesh::index_in_triangle( curr_tri, vertex_index, other_two );
+
+      unsigned int verti = curr_tri[other_two[0]];
+      unsigned int vertnext = curr_tri[other_two[1]];
+
+      Vec3d vi = get_position(verti) - get_position(vertex_index);
+      Vec3d vnext = get_position(vertnext) - get_position(vertex_index);
+      normalize(vi);
+      normalize(vnext);
+
+      double dotproduct = dot(vi,vnext);
+      double angle = acos(dotproduct);
+      Vec3d normal = cross(vi,vnext);
+      normalize(normal);
+
+      if(tri_label[0] == label) normal *= -1; //flip the normal in the case of label being on the reverse.
+
+      normal_sum += angle*normal;
+   }
+
+   normalize(normal_sum);
+
+   return normal_sum;
+}
 
 // --------------------------------------------------------
 ///
 /// Compute surface normal at the specified vertex (angle-weighted pseudo-normal).
+/// 
 ///
 // --------------------------------------------------------
 
@@ -633,7 +685,7 @@ inline Vec3d DynamicSurface::get_vertex_normal_angleweighted( size_t vertex_inde
    {
       const Vec3st& curr_tri = m_mesh.m_tris[inc_tris[i]];
 
-      if ( curr_tri[0] == curr_tri[1] ) { continue; }
+      if ( curr_tri[0] == curr_tri[1] ) { continue; } //testing for flaps?
 
       Vec2st other_two;
 
@@ -644,6 +696,8 @@ inline Vec3d DynamicSurface::get_vertex_normal_angleweighted( size_t vertex_inde
 
       Vec3d vi = get_position(verti) - get_position(vertex_index);
       Vec3d vnext = get_position(vertnext) - get_position(vertex_index);
+      normalize(vi);
+      normalize(vnext);
 
       double dotproduct = dot(vi,vnext);
       double angle = acos(dotproduct);
@@ -657,7 +711,6 @@ inline Vec3d DynamicSurface::get_vertex_normal_angleweighted( size_t vertex_inde
 
    return normal_sum;
 }
-
 
 // --------------------------------------------------------
 ///
