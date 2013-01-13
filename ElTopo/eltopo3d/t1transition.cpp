@@ -1087,7 +1087,7 @@ bool T1Transition::pop_vertices()
             }
         }
         
-        // apply the deleteion/addition
+        // apply the deletion/addition
         assert(faces_to_create.size() == face_labels_to_create.size());
         for (size_t i = 0; i < faces_to_create.size(); i++)
         {
@@ -1104,15 +1104,15 @@ bool T1Transition::pop_vertices()
         vertices_to_process.push_back(b);
         
         // Add to new history log
-        MeshUpdateEvent edgepop(MeshUpdateEvent::VERTEX_POP);
-        edgepop.m_deleted_tris = faces_to_delete;
-        edgepop.m_created_tris = faces_created;
-        edgepop.m_created_tri_data = faces_to_create;
-        edgepop.m_created_tri_labels = face_labels_to_create;
-        edgepop.m_deleted_verts = verts_to_delete;
-        edgepop.m_created_verts = verts_created;
-        edgepop.m_created_vert_data = verts_to_create;
-        m_surf.m_mesh_change_history.push_back(edgepop);
+        MeshUpdateEvent vertpop(MeshUpdateEvent::VERTEX_POP);
+        vertpop.m_deleted_tris = faces_to_delete;
+        vertpop.m_created_tris = faces_created;
+        vertpop.m_created_tri_data = faces_to_create;
+        vertpop.m_created_tri_labels = face_labels_to_create;
+        vertpop.m_deleted_verts = verts_to_delete;
+        vertpop.m_created_verts = verts_created;
+        vertpop.m_created_vert_data = verts_to_create;
+        m_surf.m_mesh_change_history.push_back(vertpop);
         
         pop_occurred = true;
         
