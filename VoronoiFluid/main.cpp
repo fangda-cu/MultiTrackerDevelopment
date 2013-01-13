@@ -1833,6 +1833,12 @@ void parse_script( const char* filename )
       }
 
    }
+   else {
+      for(unsigned int i = 0; i < g_dual_sim->surface_tracker->m_mesh.m_tris.size(); ++i) {
+         Vec2i label = Vec2i(0,1);
+         g_dual_sim->surface_tracker->m_mesh.set_triangle_label(i, label);
+      }
+   }
    
    g_dual_sim->free_surface = free_surface?true:false;
    g_dual_sim->mesh->initialize( tets, xs, cgal_T );

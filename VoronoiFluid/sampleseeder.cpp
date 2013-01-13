@@ -209,7 +209,7 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
    }
    
    std::vector<Vec3f> surf_samples;
-   
+   /*
    //try adding samples at tri barycenters to break up regularity and avoid slivers.
    bool parity = false;
    for(unsigned int i = 0; i < surface.m_mesh.m_tris.size(); ++i) {
@@ -227,7 +227,7 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
 
       bool accepted = add_unique( Vec3f(new_sample), samples, samples );
    }
-
+   */
 
    std::cout << "number of samples rejected: " << num_rejections << std::endl;
    std::cout << "seed time: " << get_time_in_seconds() - start_time << std::endl;
