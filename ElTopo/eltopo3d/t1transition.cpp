@@ -536,9 +536,6 @@ bool T1Transition::pop_edges()
         }
         
         // apply the deletion/creation
-        for (size_t j = 0; j < faces_to_delete.size(); j++)
-            m_surf.remove_triangle(faces_to_delete[j]);
-        
         assert(faces_to_create.size() == face_labels_to_create.size());
         for (size_t j = 0; j < faces_to_create.size(); j++)
         {
@@ -546,6 +543,9 @@ bool T1Transition::pop_edges()
             mesh.set_triangle_label(nf, face_labels_to_create[j]);
             faces_created.push_back(nf);
         }
+        
+        for (size_t j = 0; j < faces_to_delete.size(); j++)
+            m_surf.remove_triangle(faces_to_delete[j]);
         
         // Add to new history log
         MeshUpdateEvent edgepop(MeshUpdateEvent::EDGE_POP);
@@ -1088,9 +1088,6 @@ bool T1Transition::pop_vertices()
         }
         
         // apply the deleteion/addition
-        for (size_t i = 0; i < faces_to_delete.size(); i++)
-            m_surf.remove_triangle(faces_to_delete[i]);
-
         assert(faces_to_create.size() == face_labels_to_create.size());
         for (size_t i = 0; i < faces_to_create.size(); i++)
         {
@@ -1098,6 +1095,9 @@ bool T1Transition::pop_vertices()
             mesh.set_triangle_label(nf, face_labels_to_create[i]);
             faces_created.push_back(nf);
         }
+        
+        for (size_t i = 0; i < faces_to_delete.size(); i++)
+            m_surf.remove_triangle(faces_to_delete[i]);
         
         // mark the two new vertices a and b as dirty
         vertices_to_process.push_back(a);

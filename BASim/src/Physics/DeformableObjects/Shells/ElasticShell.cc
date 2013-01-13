@@ -1445,7 +1445,7 @@ void ElasticShell::remesh()
     else if (event.m_type == ElTopo::MeshUpdateEvent::EDGE_POP || event.m_type == ElTopo::MeshUpdateEvent::VERTEX_POP) {
 
       for (size_t i = 0; i < event.m_deleted_tris.size(); i++)
-        m_obj->deleteFace(reverse_trimap[event.m_deleted_tris[i]], true);
+        m_obj->deleteFace(reverse_trimap[event.m_deleted_tris[i]], false);
       
       for (size_t i = 0; i < event.m_created_vert_data.size(); i++)
       {
