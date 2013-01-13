@@ -199,6 +199,7 @@ typedef Vec<6,short>          Vec6s;
 typedef Vec<6,unsigned short> Vec6us;
 typedef Vec<6,char>           Vec6c;
 typedef Vec<6,unsigned char>  Vec6uc;
+typedef Vec<6,size_t>         Vec6st;
 
 
 template<unsigned int N, class T>

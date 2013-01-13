@@ -62,20 +62,20 @@ MeanCurvatureDriver::MeanCurvatureDriver( double in_curvature_multiplier,
 
 double MeanCurvatureDriver::mixed_area( unsigned int vertex_index, unsigned int triangle_index, const DynamicSurface& surf )
 {
-   const Vec3ui& tri = surf.m_mesh.get_triangle(triangle_index);
+   const Vec3st& tri = surf.m_mesh.get_triangle(triangle_index);
 
-   Vec2ui opposite_edge;
+   Vec2st opposite_edge;
    if ( vertex_index == tri[0] )
    {
-      opposite_edge = Vec2ui( tri[1], tri[2] );
+      opposite_edge = Vec2st( tri[1], tri[2] );
    }
    else if ( vertex_index == tri[1] )
    {
-      opposite_edge = Vec2ui( tri[2], tri[0] );
+      opposite_edge = Vec2st( tri[2], tri[0] );
    }
    else
    {
-      opposite_edge = Vec2ui( tri[0], tri[1] );
+      opposite_edge = Vec2st( tri[0], tri[1] );
    }
       
    const Vec3d& a = surf.get_position(vertex_index);
@@ -144,7 +144,7 @@ void MeanCurvatureDriver::vertex_mean_curvature_normal( unsigned int vertex_inde
    for ( unsigned int i = 0; i < surf.m_mesh.m_vertex_to_edge_map[vertex_index].size(); ++i )
    {
       unsigned int e = surf.m_mesh.m_vertex_to_edge_map[vertex_index][i];
-      const Vec2ui& curr_edge = surf.m_mesh.m_edges[e];
+      const Vec2st& curr_edge = surf.m_mesh.m_edges[e];
       Vec3d edge_vector;
       if ( curr_edge[0] == vertex_index )
       {

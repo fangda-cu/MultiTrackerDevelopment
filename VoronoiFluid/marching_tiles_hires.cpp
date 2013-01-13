@@ -286,19 +286,19 @@ contour_tet(const Vec3i& x0, const Vec3i& x1, const Vec3i& x2, const Vec3i& x3, 
             if(p3<0){
                return; // no contour here
             }else // p3>=0
-               tri.push_back(Vec3ui(find_edge_cross(x0,x3,p0,p3),
+               tri.push_back(Vec3st(find_edge_cross(x0,x3,p0,p3),
                                    find_edge_cross(x1,x3,p1,p3),
                                    find_edge_cross(x2,x3,p2,p3)));
          }else{ // p2>=0
             if(p3<0)
-               tri.push_back(Vec3ui(find_edge_cross(x0,x2,p0,p2),
+               tri.push_back(Vec3st(find_edge_cross(x0,x2,p0,p2),
                                    find_edge_cross(x3,x2,p3,p2),
                                    find_edge_cross(x1,x2,p1,p2)));
             else{ // p3>=0
-               tri.push_back(Vec3ui(find_edge_cross(x0,x3,p0,p3),
+               tri.push_back(Vec3st(find_edge_cross(x0,x3,p0,p3),
                                    find_edge_cross(x1,x3,p1,p3),
                                    find_edge_cross(x0,x2,p0,p2)));
-               tri.push_back(Vec3ui(find_edge_cross(x1,x3,p1,p3),
+               tri.push_back(Vec3st(find_edge_cross(x1,x3,p1,p3),
                                    find_edge_cross(x1,x2,p1,p2),
                                    find_edge_cross(x0,x2,p0,p2)));
             }
@@ -306,27 +306,27 @@ contour_tet(const Vec3i& x0, const Vec3i& x1, const Vec3i& x2, const Vec3i& x3, 
       }else{ // p1>=0
          if(p2<0){
             if(p3<0)
-               tri.push_back(Vec3ui(find_edge_cross(x0,x1,p0,p1),
+               tri.push_back(Vec3st(find_edge_cross(x0,x1,p0,p1),
                                    find_edge_cross(x2,x1,p2,p1),
                                    find_edge_cross(x3,x1,p3,p1)));
             else{ // p3>=0
-               tri.push_back(Vec3ui(find_edge_cross(x0,x3,p0,p3),
+               tri.push_back(Vec3st(find_edge_cross(x0,x3,p0,p3),
                                    find_edge_cross(x0,x1,p0,p1),
                                    find_edge_cross(x2,x3,p2,p3)));
-               tri.push_back(Vec3ui(find_edge_cross(x0,x1,p0,p1),
+               tri.push_back(Vec3st(find_edge_cross(x0,x1,p0,p1),
                                    find_edge_cross(x2,x1,p2,p1),
                                    find_edge_cross(x2,x3,p2,p3)));
             }
          }else{ // p2>=0
             if(p3<0){
-               tri.push_back(Vec3ui(find_edge_cross(x0,x1,p0,p1),
+               tri.push_back(Vec3st(find_edge_cross(x0,x1,p0,p1),
                                    find_edge_cross(x0,x2,p0,p2),
                                    find_edge_cross(x3,x2,p3,p2)));
-               tri.push_back(Vec3ui(find_edge_cross(x0,x1,p0,p1),
+               tri.push_back(Vec3st(find_edge_cross(x0,x1,p0,p1),
                                    find_edge_cross(x3,x2,p3,p2),
                                    find_edge_cross(x3,x1,p3,p1)));
             }else // p3>=_0
-               tri.push_back(Vec3ui(find_edge_cross(x0,x1,p0,p1),
+               tri.push_back(Vec3st(find_edge_cross(x0,x1,p0,p1),
                                    find_edge_cross(x0,x2,p0,p2),
                                    find_edge_cross(x0,x3,p0,p3)));
          }
@@ -335,46 +335,46 @@ contour_tet(const Vec3i& x0, const Vec3i& x1, const Vec3i& x2, const Vec3i& x3, 
       if(p1<0){
          if(p2<0){
             if(p3<0)
-               tri.push_back(Vec3ui(find_edge_cross(x0,x1,p0,p1),
+               tri.push_back(Vec3st(find_edge_cross(x0,x1,p0,p1),
                                    find_edge_cross(x0,x3,p0,p3),
                                    find_edge_cross(x0,x2,p0,p2)));
             else{ // p3>=0
-               tri.push_back(Vec3ui(find_edge_cross(x0,x1,p0,p1),
+               tri.push_back(Vec3st(find_edge_cross(x0,x1,p0,p1),
                                    find_edge_cross(x3,x1,p3,p1),
                                    find_edge_cross(x3,x2,p3,p2)));
-               tri.push_back(Vec3ui(find_edge_cross(x3,x2,p3,p2),
+               tri.push_back(Vec3st(find_edge_cross(x3,x2,p3,p2),
                                    find_edge_cross(x0,x2,p0,p2),
                                    find_edge_cross(x0,x1,p0,p1)));
             }
          }else{ // p2>=0
             if(p3<0){
-               tri.push_back(Vec3ui(find_edge_cross(x0,x1,p0,p1),
+               tri.push_back(Vec3st(find_edge_cross(x0,x1,p0,p1),
                                    find_edge_cross(x0,x3,p0,p3),
                                    find_edge_cross(x3,x2,p3,p2)));
-               tri.push_back(Vec3ui(find_edge_cross(x0,x1,p0,p1),
+               tri.push_back(Vec3st(find_edge_cross(x0,x1,p0,p1),
                                    find_edge_cross(x3,x2,p3,p2),
                                    find_edge_cross(x2,x1,p2,p1)));
             }else // p3>=0
-               tri.push_back(Vec3ui(find_edge_cross(x1,x0,p1,p0),
+               tri.push_back(Vec3st(find_edge_cross(x1,x0,p1,p0),
                                    find_edge_cross(x1,x3,p1,p3),
                                    find_edge_cross(x1,x2,p1,p2)));
          }
       }else{ // p1>=0
          if(p2<0){
             if(p3<0){
-               tri.push_back(Vec3ui(find_edge_cross(x1,x3,p1,p3),
+               tri.push_back(Vec3st(find_edge_cross(x1,x3,p1,p3),
                                    find_edge_cross(x0,x3,p0,p3),
                                    find_edge_cross(x0,x2,p0,p2)));
-               tri.push_back(Vec3ui(find_edge_cross(x1,x3,p1,p3),
+               tri.push_back(Vec3st(find_edge_cross(x1,x3,p1,p3),
                                    find_edge_cross(x0,x2,p0,p2),
                                    find_edge_cross(x1,x2,p1,p2)));
             }else // p3>=0
-               tri.push_back(Vec3ui(find_edge_cross(x0,x2,p0,p2),
+               tri.push_back(Vec3st(find_edge_cross(x0,x2,p0,p2),
                                    find_edge_cross(x1,x2,p1,p2),
                                    find_edge_cross(x3,x2,p3,p2)));
          }else{ // p2>=0
             if(p3<0)
-               tri.push_back(Vec3ui(find_edge_cross(x0,x3,p0,p3),
+               tri.push_back(Vec3st(find_edge_cross(x0,x3,p0,p3),
                                    find_edge_cross(x2,x3,p2,p3),
                                    find_edge_cross(x1,x3,p1,p3)));
             else{ // p3>=0

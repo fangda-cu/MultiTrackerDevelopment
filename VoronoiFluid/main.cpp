@@ -40,8 +40,8 @@ std::vector<Vec3d> g_renderable_vertices;
 std::vector<Vec3d> g_renderable_vertex_normals;
 std::vector<float> g_renderable_vertex_curvatures;
 
-std::vector<Vec3ui> g_renderable_triangles;
-std::vector<Vec2ui> g_renderable_edges;
+std::vector<Vec3st> g_renderable_triangles;
+std::vector<Vec2st> g_renderable_edges;
 TetMesh* g_renderable_tet_mesh;
 std::vector<float> g_renderable_liquid_phi;
 std::vector<int> g_renderable_region_IDs;
@@ -353,7 +353,7 @@ void display()
       int i = bad_tets[t];
       if(g_renderable_tet_mesh->tets.size() <= i) continue;
 
-      Vec6ui edgelist = g_renderable_tet_mesh->tet_to_edge_map[i];
+      Vec6st edgelist = g_renderable_tet_mesh->tet_to_edge_map[i];
       for(int edge = 0; edge < 6; ++edge) {
          Vec2st edge_data = g_renderable_tet_mesh->edges[edgelist[edge]];
             
@@ -680,7 +680,7 @@ void display()
       for ( unsigned int i = 0; i < sorted_faces.size(); ++i )
       {
          int t = sorted_faces[i].first;
-         const Vec3ui& tri = g_renderable_triangles[t];
+         const Vec3st& tri = g_renderable_triangles[t];
 
          Vec3d v0 = g_renderable_vertices[tri[0]];
          Vec3d v1 = g_renderable_vertices[tri[1]];
@@ -768,7 +768,7 @@ void display()
          glBegin( GL_LINES );
          for ( unsigned int i = 0; i < g_renderable_edges.size(); ++i )
          {
-            const Vec2ui& edge = g_renderable_edges[i];
+            const Vec2st& edge = g_renderable_edges[i];
             glVertex3dv( g_renderable_vertices[edge[0]].v );
             glVertex3dv( g_renderable_vertices[edge[1]].v );
          }
@@ -911,10 +911,10 @@ void load_and_process_splash( char* filename )
    bool ok = read_binary_file( mesh, x, masses, t, filename );
    assert(ok);
    
-   std::vector<Vec3ui> tris;
+   std::vector<Vec3st> tris;
    for ( unsigned int i = 0; i < mesh.m_tris.size(); ++i )
    {
-      const Vec3ui& tri = mesh.m_tris[i];
+      const Vec3st& tri = mesh.m_tris[i];
 //      if ( masses[tri[0]] < 1.5 && masses[tri[1]] < 1.5 && masses[tri[2]] < 1.5 )
       {
          tris.push_back( tri );
@@ -993,10 +993,10 @@ void load_and_process_mesh( char* filename )
 //      }
 //   }
    
-   std::vector<Vec3ui> tris;
+   std::vector<Vec3st> tris;
    for ( unsigned int i = 0; i < mesh.m_tris.size(); ++i )
    {
-      const Vec3ui& tri = mesh.m_tris[i];
+      const Vec3st& tri = mesh.m_tris[i];
       if ( masses[tri[0]] < 1.5 && masses[tri[1]] < 1.5 && masses[tri[2]] < 1.5 )
       {
          tris.push_back( tri );
@@ -1065,7 +1065,7 @@ void load_mesh( )
    
    bool ok = read_binary_file_with_newpositions( mesh, x, masses, new_x, dt, "/Users/tyson/scratch/pre-integration.bin" );
    
-   std::vector<Vec3ui> tris = mesh.m_tris;
+   std::vector<Vec3st> tris = mesh.m_tris;
    
    assert(ok);
    
@@ -1246,7 +1246,7 @@ void restore_frame( unsigned int frame )
 #else
    sprintf( elefile, "%s/tetmesh%04d.ele", "/var/tmp", frame );
 #endif   
-   std::vector<Vec4ui> tets;
+   std::vector<Vec4st> tets;
    load_ele_file( elefile, tets );
    
    char nodefile[256];
@@ -1520,7 +1520,7 @@ void parse_script( const char* filename )
    assert( tree.get_number( "surface_dx", surface_dx ) );
    
    std::vector<Vec3d> surface_vertices(0);
-   std::vector<Vec3ui> surface_triangles(0);
+   std::vector<Vec3st> surface_triangles(0);
       
    const ParseTree* box_branch = tree.get_branch( "box" );
    if ( box_branch != NULL )
@@ -1529,14 +1529,14 @@ void parse_script( const char* filename )
       box_branch->get_vec3d( "box_min", box_min );
       box_branch->get_vec3d( "box_max", box_max );
       double box_dx;
-      Vec3ui resolution;
+      Vec3st resolution;
       if ( box_branch->get_number( "box_dx", box_dx ) )
       {
-         resolution = Vec3ui((box_max - box_min) / box_dx);
+         resolution = Vec3st((box_max - box_min) / box_dx);
       }
       else
       {
-         resolution = Vec3ui((box_max - box_min) / surface_dx);
+         resolution = Vec3st((box_max - box_min) / surface_dx);
       }
       resolution[0] = max( (unsigned int)1, resolution[0] );
       resolution[1] = max( (unsigned int)1, resolution[1] );
@@ -1597,14 +1597,14 @@ void parse_script( const char* filename )
       dented_box_branch->get_vec3d( "dent_min", dent_min );
       dented_box_branch->get_vec3d( "dent_max", dent_max );
       double box_dx;
-      Vec3ui resolution;
+      Vec3st resolution;
       if ( dented_box_branch->get_number( "dent_dx", box_dx ) )
       {
-         resolution = Vec3ui((dent_max - dent_min) / box_dx);
+         resolution = Vec3st((dent_max - dent_min) / box_dx);
       }
       else
       {
-         resolution = Vec3ui((dent_max - dent_min) / surface_dx);
+         resolution = Vec3st((dent_max - dent_min) / surface_dx);
       }
       resolution[0] = max( (unsigned int)1, resolution[0] );
       resolution[1] = max( (unsigned int)1, resolution[1] );
@@ -1794,7 +1794,7 @@ void parse_script( const char* filename )
    
    g_dual_sim = new DualFluidSim3D( surface_vertices, surface_triangles, surface_masses, surf_track_params );
    
-   std::vector<Vec4ui> tets;
+   std::vector<Vec4st> tets;
    std::vector<Vec3f> xs;
    
    

@@ -6,7 +6,7 @@
 using namespace ElTopo;
 // ---------------------------------------------------------
 
-bool load_ele_file( const char* ele_file_name, std::vector<Vec4ui>& tets )
+bool load_ele_file( const char* ele_file_name, std::vector<Vec4st>& tets )
 {
    std::ifstream ele_file;
    ele_file.open( ele_file_name );
@@ -40,7 +40,7 @@ bool load_ele_file( const char* ele_file_name, std::vector<Vec4ui>& tets )
       assert( index == i + 1 );
       int a, b, c, d;
       ele_file >> a >> b >> c >> d;
-      tets.push_back( Vec4ui(a,b,c,d) - Vec4ui(1) );
+      tets.push_back( Vec4st(a,b,c,d) - Vec4st(1) );
    }
    
    return true;
@@ -48,7 +48,7 @@ bool load_ele_file( const char* ele_file_name, std::vector<Vec4ui>& tets )
 
 // ---------------------------------------------------------
 
-bool write_ele_file( const char* ele_file_name, std::vector<Vec4ui>& tets )
+bool write_ele_file( const char* ele_file_name, std::vector<Vec4st>& tets )
 {
    std::ofstream ele_file;
    ele_file.open( ele_file_name );

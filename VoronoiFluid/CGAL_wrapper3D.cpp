@@ -10,12 +10,12 @@
 
 using namespace ElTopo;
 
-void compute_delaunay_CGAL(const std::vector<Vec3f>& points, std::vector<Vec4ui>& tets) {
+void compute_delaunay_CGAL(const std::vector<Vec3f>& points, std::vector<Vec4st>& tets) {
   Triangulation T;
   compute_delaunay_CGAL(points, tets, T);
 }
 
-void compute_delaunay_CGAL(const std::vector<Vec3f>& points, std::vector<Vec4ui>& tets, Triangulation& T) {
+void compute_delaunay_CGAL(const std::vector<Vec3f>& points, std::vector<Vec4st>& tets, Triangulation& T) {
    //construct point list in CGAL format
   T.clear();
   std::map<Vertex_handle, int> vert_handles;
@@ -40,7 +40,7 @@ void compute_delaunay_CGAL(const std::vector<Vec3f>& points, std::vector<Vec4ui>
       if(vc == T.infinite_vertex()) continue;
       if(vd == T.infinite_vertex()) continue;
 
-      Vec4ui myTet(vert_handles[va], vert_handles[vb], vert_handles[vc], vert_handles[vd]);
+      Vec4st myTet(vert_handles[va], vert_handles[vb], vert_handles[vc], vert_handles[vd]);
       
       cit->info() = tets.size(); //store the tet's index
       tets.push_back(myTet);

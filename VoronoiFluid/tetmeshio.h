@@ -3,8 +3,8 @@
 
 #include <vec.h>
 
-bool load_ele_file( const char* ele_file_name, std::vector<ElTopo::Vec4ui>& tets );
-bool write_ele_file( const char* ele_file_name, std::vector<ElTopo::Vec4ui>& tets );
+bool load_ele_file( const char* ele_file_name, std::vector<ElTopo::Vec4st>& tets );
+bool write_ele_file( const char* ele_file_name, std::vector<ElTopo::Vec4st>& tets );
 bool load_node_file( const char* node_file_name, std::vector<ElTopo::Vec3f>& xs );
 bool write_node_file( const char* node_file_name, std::vector<ElTopo::Vec3f>& xs );
 

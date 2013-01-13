@@ -31,7 +31,7 @@
 using namespace ElTopo;
 
 void create_circle( std::vector<Vec3d>& verts, 
-                    std::vector<Vec3ui>& tris, 
+                    std::vector<Vec3st>& tris, 
                     std::vector<double>& masses,
                     const Vec3d& centre,
                     double radius,
@@ -67,14 +67,14 @@ void create_circle( std::vector<Vec3d>& verts,
               ( dist( verts[b], centre ) < radius ) &&
               ( dist( verts[d], centre ) < radius ) )
          {
-            tris.push_back( Vec3ui( a, b, d ) );
+            tris.push_back( Vec3st( a, b, d ) );
          }
 
          if ( ( dist( verts[b], centre ) < radius ) &&
               ( dist( verts[c], centre ) < radius ) &&
               ( dist( verts[d], centre ) < radius ) )            
          {
-            tris.push_back( Vec3ui( b, c, d ) );
+            tris.push_back( Vec3st( b, c, d ) );
          }
       }
    }
@@ -112,7 +112,7 @@ void create_circle( std::vector<Vec3d>& verts,
 // ---------------------------------------------------------
 
 void create_sheet( std::vector<Vec3d>& verts, 
-                   std::vector<Vec3ui>& tris, 
+                   std::vector<Vec3st>& tris, 
                    const Vec3d& low_corner, 
                    const Vec3d& plane_normal, 
                    double dx, 
@@ -161,8 +161,8 @@ void create_sheet( std::vector<Vec3d>& verts,
       for(unsigned int j = 0; j < nx-1; j++)
       {
          unsigned int idx = i*(nx)+j;
-         tris.push_back(Vec3ui(idx, idx+(nx), idx+1));
-         tris.push_back(Vec3ui(idx+1, idx+(nx), idx+(nx)+1));
+         tris.push_back(Vec3st(idx, idx+(nx), idx+1));
+         tris.push_back(Vec3st(idx+1, idx+(nx), idx+(nx)+1));
       }
    }
 }
@@ -176,7 +176,7 @@ void create_sheet( std::vector<Vec3d>& verts,
 
 void merge_vertices( unsigned int a,   // delete
                      unsigned int b,   // keep
-                     std::vector<Vec3ui>& tris )
+                     std::vector<Vec3st>& tris )
 {
    for ( unsigned int i = 0; i < tris.size(); ++i )
    {
@@ -195,9 +195,9 @@ void merge_vertices( unsigned int a,   // delete
 
 void create_cube( const Vec3d& cube_low,
                   const Vec3d& cube_high,
-                  const Vec3ui& resolution,
+                  const Vec3st& resolution,
                   std::vector<Vec3d>& verts, 
-                  std::vector<Vec3ui>& tris )
+                  std::vector<Vec3st>& tris )
 {
 
    //
@@ -219,8 +219,8 @@ void create_cube( const Vec3d& cube_low,
       if ( j < nj && k < nk )
       {
          unsigned int idx = offset + j*(nk+1) + k;
-         tris.push_back(Vec3ui(idx+nk+1, idx, idx+1));
-         tris.push_back(Vec3ui(idx+nk+1, idx+1, idx+nk+2));
+         tris.push_back(Vec3st(idx+nk+1, idx, idx+1));
+         tris.push_back(Vec3st(idx+nk+1, idx+1, idx+nk+2));
       }
    }
    
@@ -232,8 +232,8 @@ void create_cube( const Vec3d& cube_low,
       if ( j < nj && k < nk )
       {
          unsigned int idx = offset + j*(nk+1) + k;
-         tris.push_back(Vec3ui(idx,   idx+nk+1, idx+1));
-         tris.push_back(Vec3ui(idx+1, idx+nk+1, idx+nk+2));
+         tris.push_back(Vec3st(idx,   idx+nk+1, idx+1));
+         tris.push_back(Vec3st(idx+1, idx+nk+1, idx+nk+2));
       }
    }
    
@@ -245,8 +245,8 @@ void create_cube( const Vec3d& cube_low,
       if ( i < ni && k < nk )
       {
          unsigned int idx = offset + i*(nk+1) + k;
-         tris.push_back(Vec3ui(idx,   idx+nk+1, idx+1));
-         tris.push_back(Vec3ui(idx+1, idx+nk+1, idx+nk+2));
+         tris.push_back(Vec3st(idx,   idx+nk+1, idx+1));
+         tris.push_back(Vec3st(idx+1, idx+nk+1, idx+nk+2));
       }
    }
    
@@ -258,8 +258,8 @@ void create_cube( const Vec3d& cube_low,
       if ( i < ni && k < nk )
       {
          unsigned int idx = offset + i*(nk+1) + k;
-         tris.push_back(Vec3ui(idx+nk+1, idx, idx+1));
-         tris.push_back(Vec3ui(idx+nk+1, idx+1, idx+nk+2));
+         tris.push_back(Vec3st(idx+nk+1, idx, idx+1));
+         tris.push_back(Vec3st(idx+nk+1, idx+1, idx+nk+2));
       }
    }
    
@@ -271,8 +271,8 @@ void create_cube( const Vec3d& cube_low,
       if ( i < ni && j < nj )
       {
          unsigned int idx = offset + i*(nj+1) + j;
-         tris.push_back(Vec3ui(idx+nj+1, idx, idx+1));
-         tris.push_back(Vec3ui(idx+nj+1, idx+1, idx+nj+2));
+         tris.push_back(Vec3st(idx+nj+1, idx, idx+1));
+         tris.push_back(Vec3st(idx+nj+1, idx+1, idx+nj+2));
       }
    }
    
@@ -284,8 +284,8 @@ void create_cube( const Vec3d& cube_low,
       if ( i < ni && j < nj )
       {
          unsigned int idx = offset + i*(nj+1) + j;
-         tris.push_back(Vec3ui(idx, idx+nj+1, idx+1));
-         tris.push_back(Vec3ui(idx+1, idx+nj+1, idx+nj+2));
+         tris.push_back(Vec3st(idx, idx+nj+1, idx+1));
+         tris.push_back(Vec3st(idx+1, idx+nj+1, idx+nj+2));
       }
    }
    
@@ -317,7 +317,7 @@ void create_sphere( const Vec3d& sphere_centre,
                     double sphere_radius,
                     double dx,
                     std::vector<Vec3d>& verts, 
-                    std::vector<Vec3ui>& tris )
+                    std::vector<Vec3st>& tris )
 {
 
    const Vec3d domain_low = sphere_centre - Vec3d(sphere_radius + 3*dx);
@@ -335,7 +335,7 @@ void create_sphere( const Vec3d& sphere_centre,
       new_verts[i] = marching_tiles.x[i];
    }
 
-   std::vector<Vec3ui> new_tris( marching_tiles.tri.size() );
+   std::vector<Vec3st> new_tris( marching_tiles.tri.size() );
    for ( unsigned int i = 0; i < new_tris.size(); ++i )
    {
       new_tris[i] = marching_tiles.tri[i];
@@ -343,7 +343,7 @@ void create_sphere( const Vec3d& sphere_centre,
    
    project_to_exact_sphere( new_verts, sphere_centre, sphere_radius );
    
-   Vec3ui offset( verts.size() );
+   Vec3st offset( verts.size() );
    for ( unsigned int i = 0; i < new_verts.size(); ++i )
    {
       verts.push_back( new_verts[i] );

@@ -31,7 +31,7 @@ class SurfTrack;
 /// Create a circular, open surface
 ///
 void create_circle( std::vector<ElTopo::Vec3d>& verts, 
-                    std::vector<ElTopo::Vec3ui>& tris,
+                    std::vector<ElTopo::Vec3st>& tris,
                     std::vector<double>& masses,
                     const ElTopo::Vec3d& centre,
                     double radius,
@@ -40,7 +40,7 @@ void create_circle( std::vector<ElTopo::Vec3d>& verts,
 /// Create a vertical or horizontal, triangulated sheet.
 ///
 void create_sheet( std::vector<ElTopo::Vec3d>& verts, 
-                   std::vector<ElTopo::Vec3ui>& tris, 
+                   std::vector<ElTopo::Vec3st>& tris, 
                    const ElTopo::Vec3d& low_corner, 
                    const ElTopo::Vec3d& plane_normal, 
                    double width, 
@@ -50,7 +50,7 @@ void create_sheet( std::vector<ElTopo::Vec3d>& verts,
 /// Create a vertical or horizontal, triangulated sheet, curved like a curtain
 ///
 void create_curved_sheet( std::vector<ElTopo::Vec3d>& verts, 
-                          std::vector<ElTopo::Vec3ui>& tris, 
+                          std::vector<ElTopo::Vec3st>& tris, 
                           const ElTopo::Vec3d& low_corner, 
                           const ElTopo::Vec3d& plane_normal, 
                           double width, 
@@ -60,9 +60,9 @@ void create_curved_sheet( std::vector<ElTopo::Vec3d>& verts,
 ///
 void create_cube( const ElTopo::Vec3d& cube_low,
                   const ElTopo::Vec3d& cube_high,
-                  const ElTopo::Vec3ui& resolution,
+                  const ElTopo::Vec3st& resolution,
                   std::vector<ElTopo::Vec3d>& verts, 
-                  std::vector<ElTopo::Vec3ui>& tris );
+                  std::vector<ElTopo::Vec3st>& tris );
 
 
 /// 
@@ -71,7 +71,7 @@ void create_sphere( const ElTopo::Vec3d& sphere_centre,
                     double sphere_radius,
                     double dx,
                     std::vector<ElTopo::Vec3d>& verts, 
-                    std::vector<ElTopo::Vec3ui>& tris );
+                    std::vector<ElTopo::Vec3st>& tris );
 
 
 

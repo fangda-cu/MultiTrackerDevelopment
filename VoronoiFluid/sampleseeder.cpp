@@ -45,7 +45,7 @@ static inline bool add_unique( const Vec3f& x, const std::vector<Vec3f>& check_a
 
 void SampleSeeder::generate_bcc_points( const Vec3f& domain_low, const Vec3f& domain_high, float dx, std::vector<Vec3f>& xs )
 {
-   Vec3ui n = Vec3ui( (domain_high - domain_low) / dx ) + Vec3ui(1);
+   Vec3st n = Vec3st( (domain_high - domain_low) / dx ) + Vec3st(1);
 
    std::vector<Vec3f> new_points;
    
@@ -56,7 +56,7 @@ void SampleSeeder::generate_bcc_points( const Vec3f& domain_low, const Vec3f& do
       {
          for ( unsigned int k = 0; k < n[2]; ++k )
          {
-            add_unique( domain_low + dx * Vec3f(Vec3ui(i,j,k)), xs, new_points );
+            add_unique( domain_low + dx * Vec3f(Vec3st(i,j,k)), xs, new_points );
          }
       }
    }
@@ -68,7 +68,7 @@ void SampleSeeder::generate_bcc_points( const Vec3f& domain_low, const Vec3f& do
       {
          for ( unsigned int k = 0; k < n[2]-1; ++k )
          {
-            add_unique( domain_low + Vec3f(0.5f*dx) + dx * Vec3f(Vec3ui(i,j,k)), xs, new_points );
+            add_unique( domain_low + Vec3f(0.5f*dx) + dx * Vec3f(Vec3st(i,j,k)), xs, new_points );
          }
       }
    }
@@ -216,7 +216,7 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
       if(surface.m_mesh.triangle_is_deleted(i)) 
          continue;
       Vec3d new_sample(0,0,0);
-      Vec3ui tri = surface.m_mesh.m_tris[i];
+      Vec3st tri = surface.m_mesh.m_tris[i];
       for(int j = 0; j < 3; ++j)
          new_sample += surface.get_position(tri[j]);
       new_sample /= 3;

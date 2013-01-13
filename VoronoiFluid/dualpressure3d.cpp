@@ -36,14 +36,14 @@ float get_surface_curvature(TetMesh& mesh, DynamicSurface& surface, std::vector<
    Vec3d ray_origin = (Vec3d)mesh.vertices[i];
    Vec3d ray_end = (Vec3d)mesh.vertices[neighbour_index];
    std::vector<double> hit_ss;
-   std::vector<unsigned int> hit_triangles; 
+   std::vector<size_t> hit_triangles; 
    surface.get_triangle_intersections( ray_origin, ray_end, hit_ss, hit_triangles );
 
    //estimate the mean curvature at the crossing point, and use it to dictate the surface tension force.
    double mean_curvature = 0;
 
    if(hit_triangles.size() > 0) {
-      Vec3ui tri = surface.m_mesh.m_tris[hit_triangles[0]];
+      Vec3st tri = surface.m_mesh.m_tris[hit_triangles[0]];
       Vec3d cross_point = lerp(ray_origin, ray_end, hit_ss[0]);
       Vec3d v0 = surface.get_position(tri[0]);
       Vec3d v1 = surface.get_position(tri[1]);
@@ -255,7 +255,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
    // Consider each face in the mesh, and the two cells on either side.
    for(unsigned int i = 0; i < mesh.edges.size(); ++i) 
    {
-      Vec2ui verts = mesh.edges[i]; // Already ordered correctly for the next step
+      Vec2st verts = mesh.edges[i]; // Already ordered correctly for the next step
 
       if(solid_weights[i] > 0) 
       {

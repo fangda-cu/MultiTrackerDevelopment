@@ -7,7 +7,7 @@
 
 struct MarchingTilesHiRes
 {
-   ElTopo::Array1<ElTopo::Vec3ui> tri;
+   ElTopo::Array1<ElTopo::Vec3st> tri;
    ElTopo::Array1<ElTopo::Vec3d> x;
    ElTopo::Array1<ElTopo::Vec3d> normal;
    ElTopo::Vec3d origin;

@@ -19,11 +19,11 @@ public:
    
    // tet vertices are in positive-volume orientation order
    // tets are unordered in the vector
-   std::vector<ElTopo::Vec4ui> tets;
+   std::vector<ElTopo::Vec4st> tets;
 
    // tris and edges have their vertices sorted and then are stored in lexicographical order in their vectors
-   std::vector<ElTopo::Vec3ui> tris;
-   std::vector<ElTopo::Vec2ui> edges;
+   std::vector<ElTopo::Vec3st> tris;
+   std::vector<ElTopo::Vec2st> edges;
    
    std::vector<ElTopo::Vec3f> vertices;
    
@@ -31,9 +31,9 @@ public:
    // incidence relationships
    //
    
-   std::vector<ElTopo::Vec4ui> tet_to_tri_map; 
-   std::vector<ElTopo::Vec6ui> tet_to_edge_map;
-   std::vector<ElTopo::Vec3ui> tri_to_edge_map;   
+   std::vector<ElTopo::Vec4st> tet_to_tri_map; 
+   std::vector<ElTopo::Vec6st> tet_to_edge_map;
+   std::vector<ElTopo::Vec3st> tri_to_edge_map;   
    std::vector<bool> closed_tet_neighbourhood;     // whether the tets around this edge form a closed neighbourhood
    std::vector< std::vector<unsigned int> > edge_to_tet_map;   
    std::vector< std::vector<unsigned int> > vert_to_edge_map;
@@ -77,9 +77,9 @@ public:
    void add_tri( unsigned int a, unsigned int b, unsigned int c );
    void add_edge( unsigned int a, unsigned int b );
    
-   void initialize( const std::vector<ElTopo::Vec4ui>& new_tets, const std::vector<ElTopo::Vec3f>& new_vertices, const Triangulation & T );
+   void initialize( const std::vector<ElTopo::Vec4st>& new_tets, const std::vector<ElTopo::Vec3f>& new_vertices, const Triangulation & T );
    
-   void build_simplices( const std::vector<ElTopo::Vec4ui>& new_tets, const std::vector<ElTopo::Vec3f>& new_vertices );
+   void build_simplices( const std::vector<ElTopo::Vec4st>& new_tets, const std::vector<ElTopo::Vec3f>& new_vertices );
    
    void sort_edge_to_tet_map();
    void build_incidences();
@@ -230,7 +230,7 @@ inline int TetMesh::get_containing_voronoi( const ElTopo::Vec3f& point )
 //
 // ---------------------------------------------------------
 
-inline bool same_oriented_triangle( const ElTopo::Vec3ui& tri_a, const ElTopo::Vec3ui& tri_b )
+inline bool same_oriented_triangle( const ElTopo::Vec3st& tri_a, const ElTopo::Vec3st& tri_b )
 {
    if ( tri_a[0] == tri_b[0] && tri_a[1] == tri_b[1] && tri_a[2] == tri_b[2] ) { return true; }
    if ( tri_a[0] == tri_b[1] && tri_a[1] == tri_b[2] && tri_a[2] == tri_b[0] ) { return true; }
@@ -244,19 +244,19 @@ inline bool same_oriented_triangle( const ElTopo::Vec3ui& tri_a, const ElTopo::V
 //
 // ---------------------------------------------------------
 
-inline bool same_orientation( const ElTopo::Vec4ui& tet, const ElTopo::Vec3ui& tri )
+inline bool same_orientation( const ElTopo::Vec4st& tet, const ElTopo::Vec3st& tri )
 {
    
-   ElTopo::Vec3ui face( tet[0], tet[1], tet[2] );
+   ElTopo::Vec3st face( tet[0], tet[1], tet[2] );
    if ( same_oriented_triangle( face, tri ) ) { return true; }
 
-   face = ElTopo::Vec3ui( tet[1], tet[2], tet[3] );
+   face = ElTopo::Vec3st( tet[1], tet[2], tet[3] );
    if ( same_oriented_triangle( face, tri ) ) { return true; }
 
-   face = ElTopo::Vec3ui( tet[2], tet[3], tet[0] );
+   face = ElTopo::Vec3st( tet[2], tet[3], tet[0] );
    if ( same_oriented_triangle( face, tri ) ) { return true; }
 
-   face = ElTopo::Vec3ui( tet[0], tet[1], tet[3] );
+   face = ElTopo::Vec3st( tet[0], tet[1], tet[3] );
    if ( same_oriented_triangle( face, tri ) ) { return true; }
 
    return false;
@@ -268,7 +268,7 @@ inline bool same_orientation( const ElTopo::Vec4ui& tet, const ElTopo::Vec3ui& t
 //
 // ---------------------------------------------------------
 
-inline bool tets_are_adjacent( const ElTopo::Vec4ui& tet_a, const ElTopo::Vec4ui& tet_b )
+inline bool tets_are_adjacent( const ElTopo::Vec4st& tet_a, const ElTopo::Vec4st& tet_b )
 {
    unsigned int num_shared_vertices = 0;
    
