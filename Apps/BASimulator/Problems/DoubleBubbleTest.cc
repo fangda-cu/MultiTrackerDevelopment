@@ -1049,14 +1049,14 @@ void DoubleBubbleTest::setupScene7()
   Vec3d c = Vec3d(0.4, 0.6, 0.6);
   vertList.push_back(shellObj->addVertex());
   positions[vertList.back()] = Vec3d(c - Vec3d(0, 0, r));
-  for (int j = 0; j < N; j++)
+  for (int j = 0; j < N - 1; j++)
   {
     for (int i = 0; i < N * 2; i++)
     {
       vertList.push_back(shellObj->addVertex());
       
       Scalar theta = (Scalar)i * 2 * M_PI / (N * 2);
-      Scalar alpha = (Scalar)(j + 1) * M_PI / (N + 1) - M_PI / 2;
+      Scalar alpha = (Scalar)(j + 1) * M_PI / N - M_PI / 2;
       positions[vertList.back()] = c + r * Vec3d(cos(alpha) * cos(theta), cos(alpha) * sin(theta), sin(alpha));
     }
   }
@@ -1074,50 +1074,250 @@ void DoubleBubbleTest::setupScene7()
   std::vector<FaceHandle> faceList;
   FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles  
 
-  for (int j = 0; j <= N; j++)
+  int Nsplit = 8;
+  if (Nsplit == 2)
   {
-    for (int i = 0; i < N * 2; i++)
+    for (int j = 0; j < N; j++)
     {
-      int v0, v1, v2;
-      v0 = (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
-      v1 = (j == 0 ? 0 : 2 * N * (j - 1) + (i + 1) % (N * 2) + 1);
-      v2 = (j == N ? 2 * N * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
-      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      for (int i = 0; i < N * 2; i++)
       {
-        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
-        faceLabels[faceList.back()] = Vec2i((i < N ? 1 : 2), 0);
+        int v0, v1, v2;
+        v0 = (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
+        v1 = (j == 0 ? 0 : 2 * N * (j - 1) + (i + 1) % (N * 2) + 1);
+        v2 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
+        if (!(v0 == v1 || v0 == v2 || v1 == v2))
+        {
+          faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+          faceLabels[faceList.back()] = Vec2i((i < N ? 1 : 2), 0);
+        }
+        
+        v0 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
+        v1 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + i + 1);
+        v2 = (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
+        if (!(v0 == v1 || v0 == v2 || v1 == v2))
+        {
+          faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+          faceLabels[faceList.back()] = Vec2i((i < N ? 1 : 2), 0);
+        }
       }
-      
-      v0 = (j == N ? 2 * N * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
-      v1 = (j == N ? 2 * N * N + 1 : 2 * N * j + i + 1);
-      v2 = (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
-      if (!(v0 == v1 || v0 == v2 || v1 == v2))
-      {
-        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
-        faceLabels[faceList.back()] = Vec2i((i < N ? 1 : 2), 0);
-      }
-    }
-  }
-  
-  for (int j = 0; j <= N; j++)
-  {
-    int v0, v1, v2;
-    v0 = (j == 0 ? 0 : 2 * N * (j - 1) + 0 + 1);
-    v1 = 2 * N * N + 2;
-    v2 = (j == N ? 2 * N * N + 1 : 2 * N * j + 0 + 1);
-    if (!(v0 == v1 || v0 == v2 || v1 == v2))
-    {
-      faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
-      faceLabels[faceList.back()] = Vec2i(2, 1);
     }
     
-    v0 = (j == 0 ? 0 : 2 * N * (j - 1) + N + 1);
-    v1 = 2 * N * N + 2;
-    v2 = (j == N ? 2 * N * N + 1 : 2 * N * j + N + 1);
-    if (!(v0 == v1 || v0 == v2 || v1 == v2))
+    for (int j = 0; j < N; j++)
     {
-      faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
-      faceLabels[faceList.back()] = Vec2i(1, 2);
+      int v0, v1, v2;
+      v0 = (j == 0 ? 0 : 2 * N * (j - 1) + 0 + 1);
+      v1 = 2 * (N - 1) * N + 2;
+      v2 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + 0 + 1);
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(2, 1);
+      }
+      
+      v0 = (j == 0 ? 0 : 2 * N * (j - 1) + N + 1);
+      v1 = 2 * (N - 1) * N + 2;
+      v2 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + N + 1);
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(1, 2);
+      }
+    }
+    
+  } else if (Nsplit == 4)
+  {
+    for (int j = 0; j < N; j++)
+    {
+      for (int i = 0; i < N * 2; i++)
+      {
+        int l;
+        if (i < N / 2) l = 1;
+        else if (i < N) l = 3;
+        else if (i < N * 3 / 2) l = 4;
+        else l = 2;
+        
+        int v0, v1, v2;
+        v0 = (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
+        v1 = (j == 0 ? 0 : 2 * N * (j - 1) + (i + 1) % (N * 2) + 1);
+        v2 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
+        if (!(v0 == v1 || v0 == v2 || v1 == v2))
+        {
+          faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+          faceLabels[faceList.back()] = Vec2i(l, 0);
+        }
+        
+        v0 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
+        v1 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + i + 1);
+        v2 = (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
+        if (!(v0 == v1 || v0 == v2 || v1 == v2))
+        {
+          faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+          faceLabels[faceList.back()] = Vec2i(l, 0);
+        }
+      }
+    }
+    
+    for (int j = 0; j < N; j++)
+    {
+      int v0, v1, v2;
+      v0 = (j == 0 ? 0 : 2 * N * (j - 1) + 0 + 1);
+      v1 = 2 * (N - 1) * N + 2;
+      v2 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + 0 + 1);
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(2, 1);
+      }
+      
+      v0 = (j == 0 ? 0 : 2 * N * (j - 1) + N + 1);
+      v1 = 2 * (N - 1) * N + 2;
+      v2 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + N + 1);
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(3, 4);
+      }
+
+      v0 = (j == 0 ? 0 : 2 * N * (j - 1) + N / 2 + 1);
+      v1 = 2 * (N - 1) * N + 2;
+      v2 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + N / 2 + 1);
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(1, 3);
+      }
+
+      v0 = (j == 0 ? 0 : 2 * N * (j - 1) + N * 3 / 2+ 1);
+      v1 = 2 * (N - 1) * N + 2;
+      v2 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + N * 3 / 2+ 1);
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(4, 2);
+      }
+    }
+    
+  } else if (Nsplit == 8)
+  {
+    for (int j = 0; j < N; j++)
+    {
+      for (int i = 0; i < N * 2; i++)
+      {
+        int l;
+        if (i < N / 2) l = 1;
+        else if (i < N) l = 3;
+        else if (i < N * 3 / 2) l = 4;
+        else l = 2;
+        
+        if (j < N / 2) l += 4;
+        
+        int v0, v1, v2;
+        v0 = (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
+        v1 = (j == 0 ? 0 : 2 * N * (j - 1) + (i + 1) % (N * 2) + 1);
+        v2 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
+        if (!(v0 == v1 || v0 == v2 || v1 == v2))
+        {
+          faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+          faceLabels[faceList.back()] = Vec2i(l, 0);
+        }
+        
+        v0 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
+        v1 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + i + 1);
+        v2 = (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
+        if (!(v0 == v1 || v0 == v2 || v1 == v2))
+        {
+          faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+          faceLabels[faceList.back()] = Vec2i(l, 0);
+        }
+      }
+    }
+    
+    for (int j = 0; j < N; j++)
+    {
+      int la = (j < N / 2 ? 4 : 0);
+      
+      int v0, v1, v2;
+      v0 = (j == 0 ? 0 : 2 * N * (j - 1) + 0 + 1);
+      v1 = 2 * (N - 1) * N + 2;
+      v2 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + 0 + 1);
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(2 + la, 1 + la);
+      }
+      
+      v0 = (j == 0 ? 0 : 2 * N * (j - 1) + N + 1);
+      v1 = 2 * (N - 1) * N + 2;
+      v2 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + N + 1);
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(3 + la, 4 + la);
+      }
+      
+      v0 = (j == 0 ? 0 : 2 * N * (j - 1) + N / 2 + 1);
+      v1 = 2 * (N - 1) * N + 2;
+      v2 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + N / 2 + 1);
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(1 + la, 3 + la);
+      }
+      
+      v0 = (j == 0 ? 0 : 2 * N * (j - 1) + N * 3 / 2+ 1);
+      v1 = 2 * (N - 1) * N + 2;
+      v2 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + N * 3 / 2+ 1);
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(4 + la, 2 + la);
+      }
+    }
+    
+    for (int i = 0; i < N * 2; i++)
+    {
+      int l;
+      if (i < N / 2) l = 1;
+      else if (i < N) l = 3;
+      else if (i < N * 3 / 2) l = 4;
+      else l = 2;
+      
+      int v0, v1, v2;
+      v0 = 2 * N * (N / 2 - 1) + i + 1;
+      v1 = 2 * (N - 1) * N + 2;
+      v2 = 2 * N * (N / 2 - 1) + (i + 1) % (N * 2) + 1;
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(l, l + 4);
+      }
+    }
+    
+  } else  // default: Nsplit = 1
+  {
+    for (int j = 0; j <= N; j++)
+    {
+      for (int i = 0; i < N * 2; i++)
+      {
+        int v0, v1, v2;
+        v0 = (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
+        v1 = (j == 0 ? 0 : 2 * N * (j - 1) + (i + 1) % (N * 2) + 1);
+        v2 = (j == N ? 2 * N * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
+        if (!(v0 == v1 || v0 == v2 || v1 == v2))
+        {
+          faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+          faceLabels[faceList.back()] = Vec2i(1, 0);
+        }
+        
+        v0 = (j == N ? 2 * N * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
+        v1 = (j == N ? 2 * N * N + 1 : 2 * N * j + i + 1);
+        v2 = (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
+        if (!(v0 == v1 || v0 == v2 || v1 == v2))
+        {
+          faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+          faceLabels[faceList.back()] = Vec2i(1, 0);
+        }
+      }
     }
   }
   
