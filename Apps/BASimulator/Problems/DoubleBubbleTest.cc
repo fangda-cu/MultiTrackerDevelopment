@@ -1045,8 +1045,8 @@ void DoubleBubbleTest::setupScene7()
   std::vector<VertexHandle> vertList;
   
   int N = GetIntOpt("shell-x-resolution");
-  Scalar r = 0.2;
-  Vec3d c = Vec3d(0.5, 0.7, 0.5);
+  Scalar r = 0.1;
+  Vec3d c = Vec3d(0.4, 0.6, 0.6);
   vertList.push_back(shellObj->addVertex());
   positions[vertList.back()] = Vec3d(c - Vec3d(0, 0, r));
   for (int j = 0; j < N; j++)
