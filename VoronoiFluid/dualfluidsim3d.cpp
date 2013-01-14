@@ -79,7 +79,7 @@ void DualFluidSim3D::initialize()
    //extrapolate_liquid_phi_into_solid();
    
    densities.resize(3);
-   densities[0] = 0.1;
+   densities[0] = 0;
    densities[1] = 1.0f;
    densities[2] = 1.0f;
 
@@ -1438,11 +1438,9 @@ void DualFluidSim3D::advance_surface( float dt )
    surface_tracker->set_all_remesh_velocities(vert_vel);
    surface_tracker->assert_no_bad_labels();
    
-   std::cout << "Improve mesh\n";
    surface_tracker->improve_mesh();
    surface_tracker->assert_no_bad_labels();
    
-   std::cout << "Change topology\n";
    surface_tracker->topology_changes();
    surface_tracker->assert_no_bad_labels();
       
