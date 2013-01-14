@@ -22,7 +22,7 @@ typedef Triangulation2D::Point          Point2D;
 
 using namespace ElTopo;
 
-void compute_delaunay_CGAL(const std::vector<Vec2f>& points, std::vector<Vec3ui>& tris) {
+void compute_delaunay_CGAL(const std::vector<Vec2f>& points, std::vector<Vec3st>& tris) {
    //construct point list in CGAL format
    Triangulation2D T;
    std::map<Vertex_handle2D, int> vert_handles;
@@ -44,7 +44,7 @@ void compute_delaunay_CGAL(const std::vector<Vec2f>& points, std::vector<Vec3ui>
       if(vb == T.infinite_vertex()) continue;
       if(vc == T.infinite_vertex()) continue;
 
-      Vec3ui myFace(vert_handles[va], vert_handles[vb], vert_handles[vc]);
+      Vec3st myFace(vert_handles[va], vert_handles[vb], vert_handles[vc]);
       
       tris.push_back(myFace);
    }
@@ -54,7 +54,7 @@ void compute_delaunay_CGAL(const std::vector<Vec2f>& points, std::vector<Vec3ui>
 typedef CGAL::Regular_triangulation_filtered_traits_2<K>  Traits;
 typedef CGAL::Regular_triangulation_2<Traits> Regular_triangulation;
 
-void compute_regular_CGAL(const std::vector<Vec2f>& points, const std::vector<float>& weights, std::vector<Vec3ui>& tris, std::vector<Vec2f>& weighted_circumcentres) {
+void compute_regular_CGAL(const std::vector<Vec2f>& points, const std::vector<float>& weights, std::vector<Vec3st>& tris, std::vector<Vec2f>& weighted_circumcentres) {
    
    //construct point list in CGAL format
    Regular_triangulation T;
@@ -78,7 +78,7 @@ void compute_regular_CGAL(const std::vector<Vec2f>& points, const std::vector<fl
       if(vb == T.infinite_vertex()) continue;
       if(vc == T.infinite_vertex()) continue;
       
-      Vec3ui myFace(vert_handles[va], vert_handles[vb], vert_handles[vc]);
+      Vec3st myFace(vert_handles[va], vert_handles[vb], vert_handles[vc]);
       
       tris.push_back(myFace);
       Regular_triangulation::Point p = T.dual(fit);

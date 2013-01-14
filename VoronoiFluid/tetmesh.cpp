@@ -20,7 +20,7 @@ static void sort_three( unsigned int& a, unsigned int& b, unsigned int& c )
 // ---------------------------------------------------------
 
 
-static bool edge_less( const Vec2ui& edge_a, const Vec2ui& edge_b )
+static bool edge_less( const Vec2st& edge_a, const Vec2st& edge_b )
 {
    if ( edge_a[0] < edge_b[0] ) { return true; }
    if ( edge_a[0] > edge_b[0] ) { return false; }
@@ -31,7 +31,7 @@ static bool edge_less( const Vec2ui& edge_a, const Vec2ui& edge_b )
 
 // ---------------------------------------------------------
 
-static bool tri_less( const Vec3ui& tri_a, const Vec3ui& tri_b )
+static bool tri_less( const Vec3st& tri_a, const Vec3st& tri_b )
 {
    if ( tri_a[0] < tri_b[0] ) { return true; }
    if ( tri_a[0] > tri_b[0] ) { return false; }
@@ -70,7 +70,7 @@ static float convex_polygon_area( const std::vector<Vec3f>& polygon_vertices )
 
 // ---------------------------------------------------------
 
-static bool tet_contains_edge( const Vec4ui& tet, const Vec2ui& edge )
+static bool tet_contains_edge( const Vec4st& tet, const Vec2st& edge )
 {
    if (   ( tet[0] == edge[0] || tet[1] == edge[0] || tet[2] == edge[0] || tet[3] == edge[0] ) 
        && ( tet[0] == edge[1] || tet[1] == edge[1] || tet[2] == edge[1] || tet[3] == edge[1] ) )
@@ -87,7 +87,7 @@ void TetMesh::add_tri( unsigned int a, unsigned int b, unsigned int c )
    assert( a != b && b != c && a != c );
    sort_three( a, b, c );
    assert( a < b && b < c );
-   tris.push_back( Vec3ui(a,b,c) );
+   tris.push_back( Vec3st(a,b,c) );
 }
 
 // ---------------------------------------------------------
@@ -97,12 +97,12 @@ void TetMesh::add_edge( unsigned int a, unsigned int b )
    assert( a != b );
    if ( a > b ) { swap( a, b ); }
    assert( a < b );
-   edges.push_back( Vec2ui(a, b) );
+   edges.push_back( Vec2st(a, b) );
 }
 
 // ---------------------------------------------------------
 
-void TetMesh::initialize( const std::vector<Vec4ui>& new_tets, const std::vector<Vec3f>& new_vertices, const Triangulation& T )
+void TetMesh::initialize( const std::vector<Vec4st>& new_tets, const std::vector<Vec3f>& new_vertices, const Triangulation& T )
 {
 
    cgal_T = T;
@@ -131,7 +131,7 @@ void TetMesh::initialize( const std::vector<Vec4ui>& new_tets, const std::vector
 
 // ---------------------------------------------------------
 
-void TetMesh::build_simplices( const std::vector<Vec4ui>& new_tets, const std::vector<Vec3f>& new_vertices )
+void TetMesh::build_simplices( const std::vector<Vec4st>& new_tets, const std::vector<Vec3f>& new_vertices )
 {
    
    //
@@ -160,11 +160,11 @@ void TetMesh::build_simplices( const std::vector<Vec4ui>& new_tets, const std::v
             std::cout << "volABDC: " << tet_signed_volume( vertices[a], vertices[b], vertices[d], vertices[c] ) << std::endl;
          }
          
-         tets.push_back( Vec4ui(a,b,c,d) );
+         tets.push_back( Vec4st(a,b,c,d) );
       }
       else
       {
-         tets.push_back( Vec4ui(a,b,d,c) );
+         tets.push_back( Vec4st(a,b,d,c) );
       }
    }
    
@@ -239,11 +239,11 @@ void TetMesh::sort_edge_to_tet_map()
          // find a tet adjacent to the last tet in sorted_incident_tets
          
          bool found = false;
-         const Vec4ui& tet_b = tets[sorted_incident_tets.back()];
+         const Vec4st& tet_b = tets[sorted_incident_tets.back()];
          
          for ( unsigned int i = 0; i < incident_tets.size(); ++i )
          {
-            const Vec4ui& tet_a = tets[incident_tets[i]]; 
+            const Vec4st& tet_a = tets[incident_tets[i]]; 
             if ( tets_are_adjacent( tet_a, tet_b ) )
             {
                sorted_incident_tets.push_back( incident_tets[i] );
@@ -292,7 +292,7 @@ void TetMesh::build_incidences()
    vert_to_edge_map.resize( vertices.size() );
    for ( unsigned int i = 0; i < edges.size(); ++i )
    {
-      const Vec2ui& e = edges[i];
+      const Vec2st& e = edges[i];
       vert_to_edge_map[e[0]].push_back(i);
       vert_to_edge_map[e[1]].push_back(i);
    }
@@ -302,7 +302,7 @@ void TetMesh::build_incidences()
    vert_to_tri_map.resize( vertices.size() );
    for ( unsigned int i = 0; i < tris.size(); ++i )
    {
-      const Vec3ui& t = tris[i];
+      const Vec3st& t = tris[i];
       vert_to_tri_map[t[0]].push_back(i);
       vert_to_tri_map[t[1]].push_back(i);
       vert_to_tri_map[t[2]].push_back(i);      
@@ -313,7 +313,7 @@ void TetMesh::build_incidences()
    vert_to_tet_map.resize( vertices.size() );
    for ( unsigned int i = 0; i < tets.size(); ++i )
    {
-      const Vec4ui& t = tets[i];
+      const Vec4st& t = tets[i];
       vert_to_tet_map[t[0]].push_back(i);
       vert_to_tet_map[t[1]].push_back(i);
       vert_to_tet_map[t[2]].push_back(i);      
@@ -326,11 +326,11 @@ void TetMesh::build_incidences()
    
    for ( unsigned int i = 0; i < tets.size(); ++i )
    {
-      const Vec4ui& t = tets[i];
-      Vec3ui tet_faces[4] = { Vec3ui( t[0], t[1], t[2] ),
-                              Vec3ui( t[0], t[1], t[3] ),
-                              Vec3ui( t[0], t[2], t[3] ),
-                              Vec3ui( t[1], t[2], t[3] ) };
+      const Vec4st& t = tets[i];
+      Vec3st tet_faces[4] = { Vec3st( t[0], t[1], t[2] ),
+                              Vec3st( t[0], t[1], t[3] ),
+                              Vec3st( t[0], t[2], t[3] ),
+                              Vec3st( t[1], t[2], t[3] ) };
       
       for ( unsigned int j = 0; j < 4; ++j )
       {
@@ -343,7 +343,7 @@ void TetMesh::build_incidences()
          unsigned int triangle_index = (unsigned int) ~0;
          for ( unsigned int t = 0; t < incident_tris.size(); ++t )
          {
-            if ( tris[incident_tris[t]] == Vec3ui(a,b,c) )
+            if ( tris[incident_tris[t]] == Vec3st(a,b,c) )
             {
                triangle_index = incident_tris[t];
             }
@@ -362,13 +362,13 @@ void TetMesh::build_incidences()
    edge_to_tet_map.resize(edges.size());
    for ( unsigned int i = 0; i < tets.size(); ++i )
    {
-      const Vec4ui& t = tets[i];
-      Vec2ui tet_edges[6] = { Vec2ui(t[0], t[1]),
-                              Vec2ui(t[1], t[2]),
-                              Vec2ui(t[2], t[3]),
-                              Vec2ui(t[3], t[0]),
-                              Vec2ui(t[0], t[2]),
-                              Vec2ui(t[1], t[3]) };
+      const Vec4st& t = tets[i];
+      Vec2st tet_edges[6] = { Vec2st(t[0], t[1]),
+                              Vec2st(t[1], t[2]),
+                              Vec2st(t[2], t[3]),
+                              Vec2st(t[3], t[0]),
+                              Vec2st(t[0], t[2]),
+                              Vec2st(t[1], t[3]) };
    
       for ( unsigned int j = 0; j < 6; ++j )
       {
@@ -402,12 +402,12 @@ void TetMesh::build_incidences()
    
    // tris -> edges
    tri_to_edge_map.clear();
-   tri_to_edge_map.resize( tris.size(), Vec3ui(~0, ~0, ~0) );
+   tri_to_edge_map.resize( tris.size(), Vec3st(~0, ~0, ~0) );
    for ( unsigned int i = 0; i < tris.size(); ++i )
    {
-      Vec2ui tri_edges[3] = { Vec2ui( tris[i][0], tris[i][1] ),
-                              Vec2ui( tris[i][1], tris[i][2] ),
-                              Vec2ui( tris[i][0], tris[i][2] ) };
+      Vec2st tri_edges[3] = { Vec2st( tris[i][0], tris[i][1] ),
+                              Vec2st( tris[i][1], tris[i][2] ),
+                              Vec2st( tris[i][0], tris[i][2] ) };
       
       for ( unsigned int j = 0; j < 3; ++j )
       {
@@ -575,7 +575,7 @@ void TetMesh::build_acceleration_grid()
    assert( max_x[1] > min_x[1] );
    assert( max_x[2] > min_x[2] );   
    
-   Vec3ui n_ijk = (Vec3ui)((max_x - min_x) / average_edge_length);
+   Vec3st n_ijk = (Vec3st)((max_x - min_x) / average_edge_length);
 
    // build and populate the grid
 
@@ -713,7 +713,7 @@ bool TetMesh::verify()
       for ( unsigned int j = 0; j < 4; ++j )
       {
          unsigned int triangle_index = tet_to_tri_map[i][j];
-         const Vec3ui& tri = tris[ triangle_index ];
+         const Vec3st& tri = tris[ triangle_index ];
          assert( tri[0] == tets[i][0] || tri[0] == tets[i][1] || tri[0] == tets[i][2] || tri[0] == tets[i][3] );
          assert( tri[1] == tets[i][0] || tri[1] == tets[i][1] || tri[1] == tets[i][2] || tri[1] == tets[i][3] );
          assert( tri[2] == tets[i][0] || tri[2] == tets[i][1] || tri[2] == tets[i][2] || tri[2] == tets[i][3] );
@@ -746,7 +746,7 @@ bool TetMesh::verify()
       for ( unsigned int j = 0; j < 6; ++j )
       {
          unsigned int edge_index = tet_to_edge_map[i][j];
-         const Vec2ui& edge = edges[ edge_index ];
+         const Vec2st& edge = edges[ edge_index ];
          assert( edge[0] == tets[i][0] || edge[0] == tets[i][1] || edge[0] == tets[i][2] || edge[0] == tets[i][3] );
          assert( edge[1] == tets[i][0] || edge[1] == tets[i][1] || edge[1] == tets[i][2] || edge[1] == tets[i][3] );
          

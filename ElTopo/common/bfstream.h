@@ -8,11 +8,11 @@
 
 #ifdef __BIG_ENDIAN__
 #ifdef __LITTLE_ENDIAN__
-#error Cannot be both big and little endian
+//#error Cannot be both big and little endian
 #endif
 #else
 #ifndef __LITTLE_ENDIAN__
-#error Need to define either big or little endian
+//#error Need to define either big or little endian
 #endif
 #endif
 

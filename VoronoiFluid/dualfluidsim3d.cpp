@@ -47,7 +47,7 @@ static bool least_squares( Mat<M,N,T>&matrix, Vec<M,T>&rhs ) {
 // ---------------------------------------------------------
 
 DualFluidSim3D::DualFluidSim3D( const std::vector<Vec3d>& surface_vertices, 
-                                const std::vector<Vec3ui>& surface_triangles, 
+                                const std::vector<Vec3st>& surface_triangles, 
                                 const std::vector<double>& surface_vertex_masses,
                                 const SurfTrackInitializationParameters& initial_parameters )
 {
@@ -201,7 +201,7 @@ Vec3f DualFluidSim3D::get_velocity_from_tet_vertices( const Vec3f& point )
       return Vec3f(0.0f); 
    }
 
-   const Vec4ui& tet = mesh->tets[tet_index];
+   const Vec4st& tet = mesh->tets[tet_index];
    const Vec3f& a = mesh->vertices[tet[0]];
    const Vec3f& b = mesh->vertices[tet[1]];
    const Vec3f& c = mesh->vertices[tet[2]];
@@ -421,10 +421,10 @@ Vec3f DualFluidSim3D::get_velocity_from_tet_edges( const Vec3f& point )
    int tet_index = mesh->get_containing_tet( point );
    
    if ( tet_index < 0 ) { return Vec3f(0.0f); }
-   const Vec4ui& tet = mesh->tets[tet_index];
+   const Vec4st& tet = mesh->tets[tet_index];
    Vec4f bary = tet_barycentric_weights( point, mesh->vertices[tet[0]], mesh->vertices[tet[1]], mesh->vertices[tet[2]], mesh->vertices[tet[3]] );
    
-   const Vec6ui& tet_edges = mesh->tet_to_edge_map[tet_index];
+   const Vec6st& tet_edges = mesh->tet_to_edge_map[tet_index];
 
    // for each vertex, which triangle is its opposite (in the tet_to_tri_map)
    unsigned int opposite_triangles[4] = { 3, 2, 1, 0 };
@@ -458,7 +458,7 @@ Vec3f DualFluidSim3D::get_velocity_from_tet_edges( const Vec3f& point )
       {
          unsigned int tri_in_tet = opposite_triangles[a_in_tet];
          unsigned int opp_triangle_a = mesh->tet_to_tri_map[tet_index][tri_in_tet];
-         const Vec3ui& tri = mesh->tris[opp_triangle_a];
+         const Vec3st& tri = mesh->tris[opp_triangle_a];
          assert( tri[0] != a && tri[1] != a && tri[2] != a );         
          float sign = same_orientation( tet, tri ) ? -1.0f : 1.0f;
          if ( tri_in_tet % 2 == 0 ) { sign *= -1.0f; }
@@ -471,7 +471,7 @@ Vec3f DualFluidSim3D::get_velocity_from_tet_edges( const Vec3f& point )
       {
          unsigned int tri_in_tet = opposite_triangles[b_in_tet];
          unsigned int opp_triangle_b = mesh->tet_to_tri_map[tet_index][tri_in_tet];
-         const Vec3ui& tri = mesh->tris[opp_triangle_b];
+         const Vec3st& tri = mesh->tris[opp_triangle_b];
          assert( tri[0] != b && tri[1] != b && tri[2] != b );
          float sign = same_orientation( tet, tri ) ? -1.0f : 1.0f;
          if ( tri_in_tet % 2 == 0 ) { sign *= -1.0f; }
@@ -669,7 +669,7 @@ void DualFluidSim3D::tet_edge_to_circumcentre_velocities( )
    for(unsigned int i = 0; i < mesh->tets.size(); ++i) 
    {
       //if any of the four vertices (voronoi sites/pressure samples) are liquid, then go ahead
-      Vec4ui nbr_voronoi_cells = mesh->tets[i];
+      Vec4st nbr_voronoi_cells = mesh->tets[i];
       int liquid_nbr_count = 0;
       for(int ind = 0; ind < 4; ++ind) {
          //liquid_nbr_count += (liquid_phi[nbr_voronoi_cells[ind]] < 0? 1: 0);
@@ -684,7 +684,7 @@ void DualFluidSim3D::tet_edge_to_circumcentre_velocities( )
          continue;
       }
       
-      Vec6ui& incident_faces = mesh->tet_to_edge_map[i];
+      Vec6st& incident_faces = mesh->tet_to_edge_map[i];
       int num_incident_faces = 6;
       
       float max_component = 0;
@@ -707,7 +707,7 @@ void DualFluidSim3D::tet_edge_to_circumcentre_velocities( )
          Vec3f normal = mesh->tet_edge_vectors[faceID];
          
          //check if the edge is bordering on liquid, and if not, skip it
-         Vec2ui nbrVertexIDs = mesh->edges[faceID];
+         Vec2st nbrVertexIDs = mesh->edges[faceID];
          //if(liquid_phi[nbrVertexIDs[0]] >= 0 && liquid_phi[nbrVertexIDs[1]] >= 0)
          if(!is_liquid(nbrVertexIDs[0]) && !is_liquid(nbrVertexIDs[1]))
           continue;
@@ -775,7 +775,7 @@ void DualFluidSim3D::tet_edge_to_circumcentre_velocities( )
                Vec3f normal = mesh->tet_edge_vectors[faceID];
                
                //check if the edge is bordering on liquid, and if not, skip it
-               Vec2ui nbrVertexIDs = mesh->edges[faceID];
+               Vec2st nbrVertexIDs = mesh->edges[faceID];
                if(!is_liquid(nbrVertexIDs[0]) && !is_liquid(nbrVertexIDs[1])) {
                   std::cout << "Skipping because both ends are not liquid\n";
                   continue;
@@ -850,7 +850,7 @@ void DualFluidSim3D::construct_full_voronoi_face_velocities() {
       }
          
       //check if valid, ie. one of the two adjacent cells is liquid
-      Vec2ui edge_nbrs = mesh->edges[i];
+      Vec2st edge_nbrs = mesh->edges[i];
       //if(liquid_phi[edge_nbrs[0]] >= 0 && liquid_phi[edge_nbrs[1]] >= 0) {
       if(!is_liquid(edge_nbrs[0]) && !is_liquid(edge_nbrs[1])) {
          full_voronoi_face_velocities[i] = Vec3f(0,0,0);
@@ -991,7 +991,7 @@ void DualFluidSim3D::extrapolate_tet_vertex_velocities()
          
          for( unsigned int j = 0; j < incident_edges.size(); ++j) 
          {
-            const Vec2ui& edge = mesh->edges[incident_edges[j]];
+            const Vec2st& edge = mesh->edges[incident_edges[j]];
             if ( edge[0] == edge[1] ) { continue; }
 
             unsigned int neighbour = ( edge[0] == i ? edge[1] : edge[0] );
@@ -1102,8 +1102,8 @@ void DualFluidSim3D::extrapolate_all_velocities()
          if(voronoi_vertex_velocity_is_valid[i]) 
             continue;
          
-         Vec6ui incident_faces = mesh->tet_to_edge_map[i];
-         Vec4ui incident_verts = mesh->tets[i];
+         Vec6st incident_faces = mesh->tet_to_edge_map[i];
+         Vec4st incident_verts = mesh->tets[i];
 
          Vec3f new_velocity_sum(0,0,0);
          int valid_nbrs = 0;
@@ -1135,7 +1135,7 @@ void DualFluidSim3D::extrapolate_all_velocities()
          if(full_voronoi_face_velocity_is_valid[i])
             continue;
          
-         Vec2ui incident_verts = mesh->edges[i];
+         Vec2st incident_verts = mesh->edges[i];
          const std::vector<unsigned int>& incident_tets = mesh->edge_to_tet_map[i];
          
          Vec3f new_velocity_sum(0,0,0);
@@ -1230,7 +1230,7 @@ void DualFluidSim3D::extrapolate_tet_edge_velocities()
    
    for(unsigned int i = 0; i < mesh->edges.size(); ++i) 
    {
-      Vec2ui verts = mesh->edges[i];
+      Vec2st verts = mesh->edges[i];
       
       if( solid_weights[i] > 0 ) 
       {
@@ -1255,7 +1255,7 @@ void DualFluidSim3D::extrapolate_tet_edge_velocities()
    {      
       if ( edge_is_valid[i] ) { continue; }
       
-      Vec2ui verts = mesh->edges[i];
+      Vec2st verts = mesh->edges[i];
       
       // take the average of the velocities at the end points, if either one is valid
       
@@ -1525,7 +1525,7 @@ void DualFluidSim3D::remesh_and_advect_semilagrangian( float dt )
      
    // get delaunay mesh
    
-   std::vector<Vec4ui> tets;
+   std::vector<Vec4st> tets;
    std::vector<Vec3f> xs;
 
    
@@ -1674,7 +1674,7 @@ void DualFluidSim3D::add_thermal_buoyancy( float dt )
       int tet_index = mesh->get_containing_tet( markers[i] );
       if ( tet_index < 0 ) { continue; }
       
-      const Vec6ui& es = mesh->tet_to_edge_map[tet_index];
+      const Vec6st& es = mesh->tet_to_edge_map[tet_index];
       
       for ( unsigned int e = 0; e < 6; ++e )
       {
@@ -1831,7 +1831,7 @@ void DualFluidSim3D::compute_liquid_phi( )
             is_on_boundary_tet[tet_vertex] = 1;
 
             if ( liquid_phi[tet_vertex] < 1e+30 ) { continue; }          
-            unsigned int triangle;
+            size_t triangle;
             double dist = surface_tracker->distance_to_surface( Vec3d(mesh->vertices[tet_vertex]), triangle );
             
             if ( dist > 1e+10 ) { continue; }
@@ -2028,12 +2028,12 @@ void DualFluidSim3D::extrapolate_liquid_phi_into_solid( )
          {            
             // fire a ray, see if it goes through a "solid" triangle
             std::vector<double> hit_ss;
-            std::vector<unsigned int> hit_triangles;
+            std::vector<size_t> hit_triangles;
             surface_tracker->get_triangle_intersections( Vec3d(phi_location), Vec3d(non_solid_sample), hit_ss, hit_triangles );
             
             for ( unsigned int t = 0; t < hit_triangles.size(); ++t )
             {
-               const Vec3ui& tri = surface_tracker->m_mesh.m_tris[ hit_triangles[t] ];
+               const Vec3st& tri = surface_tracker->m_mesh.m_tris[ hit_triangles[t] ];
                if (   surface_tracker->m_masses[tri[0]] > 1.5 
                    && surface_tracker->m_masses[tri[1]] > 1.5 
                    && surface_tracker->m_masses[tri[2]] > 1.5 )

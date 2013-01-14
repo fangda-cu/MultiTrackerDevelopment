@@ -1356,14 +1356,18 @@ void ElasticShell::remesh()
           faceContainsVertex(*m_obj, nf0, reverse_vertmap[event.m_created_tri_data[0][1]]) &&
           faceContainsVertex(*m_obj, nf0, reverse_vertmap[event.m_created_tri_data[0][2]]))
       {
+        if (event.m_created_tris[0] >= reverse_trimap.size()) reverse_trimap.resize(event.m_created_tris[0] + 1);
         reverse_trimap[event.m_created_tris[0]] = nf0;
         face_numbers[nf0] = event.m_created_tris[0];
+        if (event.m_created_tris[1] >= reverse_trimap.size()) reverse_trimap.resize(event.m_created_tris[1] + 1);
         reverse_trimap[event.m_created_tris[1]] = nf1;
         face_numbers[nf1] = event.m_created_tris[1];
       } else
       {
+        if (event.m_created_tris[0] >= reverse_trimap.size()) reverse_trimap.resize(event.m_created_tris[0] + 1);
         reverse_trimap[event.m_created_tris[0]] = nf1;
         face_numbers[nf1] = event.m_created_tris[0];
+        if (event.m_created_tris[1] >= reverse_trimap.size()) reverse_trimap.resize(event.m_created_tris[1] + 1);
         reverse_trimap[event.m_created_tris[1]] = nf0;
         face_numbers[nf0] = event.m_created_tris[1];
       }
@@ -1441,12 +1445,16 @@ void ElasticShell::remesh()
     else if (event.m_type == ElTopo::MeshUpdateEvent::EDGE_POP || event.m_type == ElTopo::MeshUpdateEvent::VERTEX_POP) {
 
       for (size_t i = 0; i < event.m_deleted_tris.size(); i++)
-        m_obj->deleteFace(reverse_trimap[event.m_deleted_tris[i]], true);
+      {
+        face_numbers[reverse_trimap[event.m_deleted_tris[i]]] = -1;
+        m_obj->deleteFace(reverse_trimap[event.m_deleted_tris[i]], false);
+      }
       
       for (size_t i = 0; i < event.m_created_vert_data.size(); i++)
       {
         VertexHandle nv = m_obj->addVertex();
         setVertexPosition(nv, Vec3d(event.m_created_vert_data[i][0], event.m_created_vert_data[i][1], event.m_created_vert_data[i][2]));
+        if (event.m_created_verts[i] >= reverse_vertmap.size()) reverse_vertmap.resize(event.m_created_verts[i] + 1);
         reverse_vertmap[event.m_created_verts[i]] = nv;
         vert_numbers[nv] = event.m_created_verts[i];
       }
@@ -1456,6 +1464,7 @@ void ElasticShell::remesh()
         ElTopo::Vec3st & f = event.m_created_tri_data[i];
         FaceHandle nf = m_obj->addFace(reverse_vertmap[f[0]], reverse_vertmap[f[1]], reverse_vertmap[f[2]]);
         setFaceLabel(nf, Vec2i(event.m_created_tri_labels[i][0], event.m_created_tri_labels[i][1]));
+        if (event.m_created_tris[i] >= reverse_trimap.size()) reverse_trimap.resize(event.m_created_tris[i] + 1);
         reverse_trimap[event.m_created_tris[i]] = nf;
         face_numbers[nf] = event.m_created_tris[i];
       }
@@ -1469,6 +1478,11 @@ void ElasticShell::remesh()
     for(size_t i = 0; i < event.m_deleted_tris.size(); ++i) {
       reverse_trimap[event.m_deleted_tris[i]] = FaceHandle(-1);
     }
+
+    for(size_t i = 0; i < event.m_deleted_verts.size(); ++i) {
+      reverse_vertmap[event.m_deleted_verts[i]] = VertexHandle(-1);
+    }
+
   }
 
   // remove all dangling edges and vertices
@@ -1486,7 +1500,11 @@ void ElasticShell::remesh()
       vertices_to_delete.push_back(*vit);
   
   for (size_t i = 0; i < vertices_to_delete.size(); i++)
+  {
+    reverse_vertmap[vert_numbers[vertices_to_delete[i]]] = VertexHandle();
+    vert_numbers[vertices_to_delete[i]] = -1;
     m_obj->deleteVertex(vertices_to_delete[i]);
+  }
   
   
   

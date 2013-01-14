@@ -81,7 +81,7 @@ bool EdgeSplitter::split_edge_edge_collision( size_t neighbour_index,
     if ( segment_segment_collision(x[ neighbour_index ], x[ neighbour_index ], neighbour_index,
                                    new_vertex_position, new_vertex_smooth_position, dummy_index,
                                    x[ edge_vertex_0 ], x[ edge_vertex_0 ], edge_vertex_0,
-                                   x[ edge_vertex_1 ], x[ edge_vertex_1 ], edge_vertex_1 ) )
+                                   x[ edge_vertex_1 ], x[ edge_vertex_1 ], edge_vertex_1 ) )    // FD 20130113: Why don't use get_newpositions() for the edge? Is it okay to assume the edge vertices don't move? If operations like collapsing has been performed around this edge, its vertices may have moved (newposition != position).
         
     {      
         return true;

@@ -8,6 +8,8 @@
 #include "util.h"
 #include <assert.h>
 
+using namespace ElTopo;
+
 template<class T>
 struct SparseMatrix
 {

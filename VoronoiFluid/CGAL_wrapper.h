@@ -22,12 +22,12 @@ typedef Triangulation::Point          Point;
 typedef Triangulation::Locate_type    Locate_type;
 typedef Triangulation::Cell_handle    Cell_handle;
 
-void compute_delaunay_CGAL(const std::vector<ElTopo::Vec2f>& points, std::vector<ElTopo::Vec3ui>& tris);
+void compute_delaunay_CGAL(const std::vector<ElTopo::Vec2f>& points, std::vector<ElTopo::Vec3st>& tris);
 
-void compute_delaunay_CGAL(const std::vector<ElTopo::Vec3f>& points, std::vector<ElTopo::Vec4ui>& tets);
-void compute_delaunay_CGAL(const std::vector<ElTopo::Vec3f>& points, std::vector<ElTopo::Vec4ui>& tets, Triangulation& T);
+void compute_delaunay_CGAL(const std::vector<ElTopo::Vec3f>& points, std::vector<ElTopo::Vec4st>& tets);
+void compute_delaunay_CGAL(const std::vector<ElTopo::Vec3f>& points, std::vector<ElTopo::Vec4st>& tets, Triangulation& T);
 
 
-void compute_regular_CGAL(const std::vector<ElTopo::Vec2f>& points, const std::vector<float>& weights, std::vector<ElTopo::Vec3ui>& tris, std::vector<ElTopo::Vec2f>& circums);
+void compute_regular_CGAL(const std::vector<ElTopo::Vec2f>& points, const std::vector<float>& weights, std::vector<ElTopo::Vec3st>& tris, std::vector<ElTopo::Vec2f>& circums);
 
 #endif

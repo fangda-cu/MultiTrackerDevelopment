@@ -22,7 +22,7 @@ class DualFluidSim3D
 public:
    
    DualFluidSim3D( const std::vector<ElTopo::Vec3d>& surface_vertices, 
-                   const std::vector<ElTopo::Vec3ui>& surface_triangles, 
+                   const std::vector<ElTopo::Vec3st>& surface_triangles, 
                    const std::vector<double>& surface_vertex_masses,
                    const ElTopo::SurfTrackInitializationParameters& initial_parameters );
    
@@ -88,7 +88,7 @@ public:
    void add_thermal_buoyancy( float dt );
    void add_local_force( float dt );
 
-   float get_distance_to_surface_triangle( unsigned int triangle_index, const ElTopo::Vec3f& point );
+   float get_distance_to_surface_triangle( size_t triangle_index, const ElTopo::Vec3f& point );
 
    
    //
@@ -319,11 +319,11 @@ inline void DualFluidSim3D::trace_rk2( const ElTopo::Vec3f& start, ElTopo::Vec3f
 ///
 // ---------------------------------------------------------
 
-inline float DualFluidSim3D::get_distance_to_surface_triangle( unsigned int triangle_index, const ElTopo::Vec3f& point )
+inline float DualFluidSim3D::get_distance_to_surface_triangle( size_t triangle_index, const ElTopo::Vec3f& point )
 {
    double dist;
    //unsigned int dummy_index = surface_tracker->get_num_vertices();
-   const ElTopo::Vec3ui& tri = surface_tracker->m_mesh.m_tris[triangle_index];
+   const ElTopo::Vec3st& tri = surface_tracker->m_mesh.m_tris[triangle_index];
    
    ElTopo::check_point_triangle_proximity(ElTopo::Vec3d(point), 
       ElTopo::Vec3d(surface_tracker->get_position(tri[0])),

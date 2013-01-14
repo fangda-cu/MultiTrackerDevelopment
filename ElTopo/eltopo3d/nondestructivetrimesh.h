@@ -200,7 +200,7 @@ public:
     
     /// Return which vertex in tri matches v.  Also returns the other two vertices in tri.
     ///
-    inline static size_t index_in_triangle( const Vec3st& tri, size_t v, Vec2ui& other_two );
+    inline static size_t index_in_triangle( const Vec3st& tri, size_t v, Vec2st& other_two );
     
     ////////////////////////////////////////////////////////////
     // FD 20130109
@@ -569,7 +569,7 @@ inline bool NonDestructiveTriMesh::triangle_has_these_verts( const Vec3st& tri, 
 ///
 // --------------------------------------------------------
 
-inline size_t NonDestructiveTriMesh::index_in_triangle( const Vec3st& tri, size_t v, Vec2ui& other_two )
+inline size_t NonDestructiveTriMesh::index_in_triangle( const Vec3st& tri, size_t v, Vec2st& other_two )
 {
     if ( v == tri[0] )
     {
@@ -594,8 +594,8 @@ inline size_t NonDestructiveTriMesh::index_in_triangle( const Vec3st& tri, size_
     
     assert(0);
     
-    other_two[0] = static_cast<unsigned int>(~0);
-    other_two[1] = static_cast<unsigned int>(~0);
+    other_two[0] = static_cast<size_t>(~0);
+    other_two[1] = static_cast<size_t>(~0);
     return static_cast<size_t>(~0);
 }
 

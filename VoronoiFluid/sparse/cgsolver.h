@@ -11,6 +11,7 @@
 #define MODIFIED
 //#define DEBUG_MATLAB_DUMP
 
+using namespace ElTopo;
 
 template <class T>
 class CGSolver {

@@ -782,7 +782,7 @@ void SurfTrack::improve_mesh( )
 
       ////////////////////////////////////////////////////////////
       // FD 20130109
-
+        
       //m_t1transition.pop_edges();
 
       //m_t1transition.pop_vertices();

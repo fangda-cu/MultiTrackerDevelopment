@@ -203,7 +203,7 @@ int junction(const DeformableObject & mesh, EdgeHandle e)
 bool junctionNeighbor(const DeformableObject & mesh, VertexHandle v)
 {
   for ( VertexEdgeIterator veit = mesh.ve_iter(v); veit; ++veit)
-    if (junction(mesh, *veit))
+    if (junction(mesh, *veit) > 2)
       return true;
   
   return false;

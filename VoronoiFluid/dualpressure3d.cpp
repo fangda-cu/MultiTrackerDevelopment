@@ -7,6 +7,7 @@
 #include "meancurvature.h"
 #include "dynamicsurface.h"
 #include <fstream>
+#include "util.h"
 
 using namespace ElTopo;
 
@@ -40,14 +41,14 @@ Vec3d get_surface_curvature_vector(TetMesh& mesh, DynamicSurface& surface, std::
    Vec3d ray_origin = (Vec3d)mesh.vertices[i];
    Vec3d ray_end = (Vec3d)mesh.vertices[neighbour_index];
    std::vector<double> hit_ss;
-   std::vector<unsigned int> hit_triangles; 
+   std::vector<size_t> hit_triangles; 
    surface.get_triangle_intersections( ray_origin, ray_end, hit_ss, hit_triangles );
 
    //estimate the mean curvature at the crossing point, and use it to dictate the surface tension force.
    Vec3d mean_curvature(0,0,0);
 
    if(hit_triangles.size() > 0) {
-      Vec3ui tri = surface.m_mesh.m_tris[hit_triangles[0]];
+      Vec3st tri = surface.m_mesh.m_tris[hit_triangles[0]];
       Vec3d cross_point = lerp(ray_origin, ray_end, hit_ss[0]);
       Vec3d v0 = surface.get_position(tri[0]);
       Vec3d v1 = surface.get_position(tri[1]);
@@ -195,7 +196,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
          {
             // Free surface case, so use ghost fluid boundary condition
             float face_density = densities[region_ID]; //Use the interior density.
-            float theta = max( theta_clamp, abs(self_phi) / (abs(self_phi) + abs(neighbour_phi))); //Determine the interface position
+            float theta = max( theta_clamp, std::abs(self_phi) / (std::abs(self_phi) + std::abs(neighbour_phi))); //Determine the interface position
             
             // Increment the diagonal entry accordingly.
             diagonal_sum += solid_weights[face_index] * mesh.voronoi_face_areas[face_index] / dist / theta / face_density;
@@ -258,7 +259,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
    // Consider each face in the mesh, and the two cells on either side.
    for(unsigned int i = 0; i < mesh.edges.size(); ++i) 
    {
-      Vec2ui verts = mesh.edges[i]; // Already ordered correctly for the next step
+      Vec2st verts = mesh.edges[i]; // Already ordered correctly for the next step
 
       if(solid_weights[i] > 0) 
       {
@@ -290,7 +291,6 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
          {
             p0 = 0;
             if(surface_tension_coeff > 0) {
-               //p0 = surface_tension_coeff * face_curvatures[i]; //Use the stored curvature from before.
                
                Vec3d curvature_normal = get_surface_curvature_vector(mesh, surface, vertex_curvature_vectors, verts[0], verts[1]);
 
@@ -301,14 +301,13 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
 
                p0 += sign_value * curvature_value * surface_tension_coeff;
             }
-            theta = max(theta_clamp, abs(phi1) / (abs(phi1) + abs(phi0)));
+            theta = max(theta_clamp, std::abs(phi1) / (std::abs(phi1) + std::abs(phi0)));
             face_density = densities[region1];
          }
          else if(isFS1) 
          {
             p1 = 0;
             if(surface_tension_coeff > 0) {
-               //p1 = surface_tension_coeff * face_curvatures[i]; //Use the stored curvature from before.
                
                Vec3d curvature_normal = get_surface_curvature_vector(mesh, surface, vertex_curvature_vectors, verts[0], verts[1]);
 
@@ -320,7 +319,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
                p0 += sign_value * curvature_value * surface_tension_coeff;
             
             }
-            theta = max(theta_clamp, abs(phi0) / (abs(phi0) + abs(phi1)));
+            theta = max(theta_clamp, std::abs(phi0) / (std::abs(phi0) + std::abs(phi1)));
             face_density = densities[region0];
          }
          else { // Neither side is a free surface.

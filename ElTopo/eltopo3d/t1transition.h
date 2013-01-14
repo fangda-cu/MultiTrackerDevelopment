@@ -57,7 +57,7 @@ public:
     /// Perform vertex popping (second step of T1 transition)
     ///
     bool pop_vertices();
-    
+
     /// Decide the cut direction on an X-junction edge
     ///
     Mat2i cut_x_junction_edge(size_t e);
@@ -66,26 +66,34 @@ public:
     ///
     bool should_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pull_apart_direction);
     
+    /// Collision safety
+    ///
+    bool pulling_vertex_apart_introduces_collision(size_t v, const Vec3d & oldpos, const Vec3d & newpos0, const Vec3d & newpos1);
+    
+
     /// Whether or not to remesh the boundary (currently no effect)
     ///
     bool m_remesh_boundaries;
     
 private:
     
+    /// Helper data structures
+    ///
+    struct InteriorStencil;    
+    
+    /// Collision safety helper functions
+    /// Move one vertex and test for collision
+    ///
+    bool vertex_pseudo_motion_introduces_collision(size_t v, const Vec3d & oldpos, const Vec3d & newpos);
+    
+    /// Move one vertex and test for collision, using only the specified subset of incident edges and triangles (ignoring the rest if any)
+    ///
+    bool vertex_pseudo_motion_introduces_collision(size_t v, const Vec3d & oldpos, const Vec3d & newpos, const std::vector<size_t> & tris, const std::vector<size_t> & edges);
+    
     /// The mesh this object operates on
     /// 
     SurfTrack & m_surf;   
     
-//    /// Determine if the pseudo-trajectories of the new vertices have a collision with the existing mesh.
-//    ///
-//    bool t1_transition_pseudo_motion_introduces_intersection(const Vec3d& new_vertex_position, 
-//                                                             const Vec3d& new_vertex_smooth_position, 
-//                                                             size_t edge,
-//                                                             size_t vertex_a,
-//                                                             size_t vertex_b,
-//                                                             std::vector<size_t>& tris, 
-//                                                             std::vector<size_t>& verts);
-
 };
 
 }

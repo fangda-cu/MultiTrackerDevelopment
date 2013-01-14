@@ -24,8 +24,18 @@
 // ---------------------------------------------------------
 
 namespace ElTopo {
-
+    
 extern RunStats g_stats;
+
+struct T1Transition::InteriorStencil
+{
+    Vec3st vertices;
+    Vec3st vertex_indices;
+    Vec2st edges;
+    Vec2st edge_indices;
+};
+
+    
 
 // ---------------------------------------------------------
 // Member function definitions
@@ -66,575 +76,491 @@ bool T1Transition::pop_edges()
         if (mesh.m_edge_to_triangle_map[i].size() == 4)
             xjunctions.push_back(i);
     
-    // sort the X-junction edges into connected groups with the same cut
-    std::vector<std::pair<std::vector<size_t>, Mat2i> > xjgroups;   // each element is a list of consecutive x junction edges, along with the id of the two regions that should end up adjacent after pull-apart, and the id of the other two regions
-
+    // arrange the X-junction edges into groups of two consecutive X-junction edges with the same cut as much as possible. 
+    // unpaired edge will be popped by splitting in the middle first. pairing them as much as possible helps reducing unnecessary splitting.
+    std::vector<std::pair<Vec2st, Mat2i> > xjgroups;    // each element is a pair of x-junction edges, along with the id of the two regions that would end up adjacent after pull-apart, and the id of the other two regions
     for (size_t i = 0; i < xjunctions.size(); i++)
     {
         Mat2i cut = cut_x_junction_edge(xjunctions[i]);
-        std::vector<size_t> found_groups;
+        bool paired = false;
         for (size_t j = 0; j < xjgroups.size(); j++)
         {
-            if (cut != xjgroups[j].second)
+            if (cut != xjgroups[j].second)  // different cut, or different surrounding environment
                 continue;
             
-            for (size_t k = 0; k < xjgroups[j].first.size(); k++)
+            if (xjgroups[j].first[1] < mesh.ne())   // this pair is already completed
+                continue;
+            
+            assert(xjgroups[j].first[0] < mesh.ne());
+            if (mesh.get_common_vertex(xjunctions[i], xjgroups[j].first[0]) < mesh.nv())
             {
-                if (mesh.get_common_vertex(xjunctions[i], xjgroups[j].first[k]) < mesh.nv())
-                {
-                    found_groups.push_back(j);
-                    break;
-                }
+                // put this edge into this group
+                paired = true;
+                xjgroups[j].first[1] = xjunctions[i];
             }
         }
         
-        if (found_groups.size() == 0)
-        {
-            // new group
-            xjgroups.push_back(std::pair<std::vector<size_t>, Mat2i>(std::vector<size_t>(1, xjunctions[i]), cut));
-        } else
-        {
-            // joining all the groups in found_groups together
-            std::vector<size_t> newgroup;
-            for (size_t j = 0; j < found_groups.size(); j++)
-                newgroup.insert(newgroup.end(), xjgroups[found_groups[j]].first.begin(), xjgroups[found_groups[j]].first.end());
-            newgroup.push_back(xjunctions[i]);
-            
-            std::sort(found_groups.rbegin(), found_groups.rend());
-            for (size_t j = 0; j < found_groups.size(); j++)
-                xjgroups.erase(xjgroups.begin() + found_groups[j]);
-            
-            xjgroups.push_back(std::pair<std::vector<size_t>, Mat2i>(newgroup, cut));
-        }
+        if (!paired)    // new group
+            xjgroups.push_back(std::pair<Vec2st, Mat2i>(Vec2st(xjunctions[i], static_cast<size_t>(~0)), cut));
     }
     
     // process the groups one after another
     for (size_t i = 0; i < xjgroups.size(); i++)
     {
-        // TODO: merge the following two cases into one codepath
-        if (xjgroups[i].first.size() == 1)
+        if (xjgroups[i].first[1] >= mesh.ne())
         {
-            // if a group has only one edge, split the edge in half and pull the midpoint vertex apart.
-            size_t edge = xjgroups[i].first.front();
-            Mat2i cut_regions = xjgroups[i].second;
-            Vec2i cut = cut_regions[0];
+            // if a group has only one edge, split the edge in half to create two consecutive edges
+            // the use of midpoint should be automatically collision safe (same assumtion in EdgeSplitter)
+            size_t edge = xjgroups[i].first[0];
             
             size_t v0 = mesh.m_edges[edge][0];
             size_t v1 = mesh.m_edges[edge][1];
             
-            size_t nv0 = m_surf.add_vertex(m_surf.get_position(v0), m_surf.m_masses[v0]);
-            size_t nv1 = m_surf.add_vertex(m_surf.get_position(v0), m_surf.m_masses[v0]);
-            
-            m_surf.set_newposition(nv0, (m_surf.get_position(v0) + m_surf.get_position(v1)) / 2);  // the two new vertices will be pulled apart later
-            m_surf.set_newposition(nv1, (m_surf.get_position(v0) + m_surf.get_position(v1)) / 2);
-            m_surf.set_remesh_velocity(nv0, (m_surf.get_remesh_velocity(v0) + m_surf.get_remesh_velocity(v1)) / 2);
-            m_surf.set_remesh_velocity(nv1, (m_surf.get_remesh_velocity(v0) + m_surf.get_remesh_velocity(v1)) / 2);
-            
-            int upper_region = -1;  // upper means the region is on the top when looking down the edge "edge", with region cut.x() on the left and cut.y() on the right.
-            int lower_region = -1;
-            std::vector<size_t> region0faces;
-            for (size_t j = 0; j < mesh.m_edge_to_triangle_map[edge].size(); j++)
-                if (mesh.get_triangle_label(mesh.m_edge_to_triangle_map[edge][j])[0] == cut[0] ||
-                    mesh.get_triangle_label(mesh.m_edge_to_triangle_map[edge][j])[1] == cut[0])
-                    region0faces.push_back(mesh.m_edge_to_triangle_map[edge][j]);
-            assert(region0faces.size() == 2);
-            
-            Vec2i label0 = mesh.get_triangle_label(region0faces[0]);
-            upper_region = (label0[0] == cut[0] ? label0[1] : label0[0]);
-            Vec2i label1 = mesh.get_triangle_label(region0faces[1]);
-            lower_region = (label1[0] == cut[0] ? label1[1] : label1[0]);
-            
-            if (( mesh.oriented(v0, v1, mesh.get_triangle(region0faces[0])) && label0[1] == cut[0]) ||
-                (!mesh.oriented(v0, v1, mesh.get_triangle(region0faces[0])) && label0[0] == cut[0]))
-            {
-                std::swap(upper_region, lower_region);
-                assert(( mesh.oriented(v0, v1, mesh.get_triangle(region0faces[1])) && label1[0] == cut[0]) ||
-                       (!mesh.oriented(v0, v1, mesh.get_triangle(region0faces[1])) && label1[1] == cut[0]));
-            }                
-            assert(upper_region >= 0);
-            assert(lower_region >= 0);
+            size_t midpoint = m_surf.add_vertex(0.5 * (m_surf.get_position(v0) + m_surf.get_position(v1)), 0.5 * (m_surf.m_masses[v0] + m_surf.m_masses[v1]));
             
             std::vector<size_t> faces_to_delete;
             std::vector<Vec3st> faces_to_create;
             std::vector<Vec2i> face_labels_to_create;
             std::vector<size_t> faces_created;
             
-            std::vector<size_t> verts_to_delete;
-            std::vector<Vec3d> verts_to_create;
-            std::vector<size_t> verts_created;
-            
-            std::vector<Vec3d> upper_neighbors;
-            std::vector<Vec3d> lower_neighbors;
-            
             for (size_t j = 0; j < mesh.m_edge_to_triangle_map[edge].size(); j++)
             {
                 size_t triangle = mesh.m_edge_to_triangle_map[edge][j];
+                size_t third_vertex = mesh.get_third_vertex(v0, v1, mesh.get_triangle(triangle));
+                
+                faces_to_delete.push_back(triangle);
+                
+                Vec2i label = mesh.get_triangle_label(triangle);
+                if (mesh.oriented(v0, v1, mesh.get_triangle(triangle)))
+                {
+                    faces_to_create.push_back(Vec3st(v0, midpoint, third_vertex));
+                    faces_to_create.push_back(Vec3st(midpoint, v1, third_vertex));
+                } else
+                {
+                    faces_to_create.push_back(Vec3st(v1, midpoint, third_vertex));
+                    faces_to_create.push_back(Vec3st(midpoint, v0, third_vertex));
+                }
+                face_labels_to_create.push_back(label);
+                face_labels_to_create.push_back(label);
+            }
+            
+            // apply the changes
+            for (size_t j = 0; j < faces_to_delete.size(); j++)
+                m_surf.remove_triangle(faces_to_delete[j]);
+            
+            assert(faces_to_create.size() == face_labels_to_create.size());
+            for (size_t j = 0; j < faces_to_create.size(); j++)
+            {
+                size_t nf = m_surf.add_triangle(faces_to_create[j]);
+                mesh.set_triangle_label(nf, face_labels_to_create[j]);
+                faces_created.push_back(nf);
+            }
+            
+            // update the group
+            xjgroups[i].first[0] = mesh.get_edge_index(v0, midpoint);
+            xjgroups[i].first[1] = mesh.get_edge_index(midpoint, v1);
+            
+            // add a history item
+            MeshUpdateEvent split(MeshUpdateEvent::EDGE_SPLIT);
+            split.m_v0 = v0;
+            split.m_v1 = v1;
+            split.m_vert_position = m_surf.get_newposition(midpoint);
+            split.m_created_verts.push_back(midpoint);
+            split.m_created_vert_data.push_back(split.m_vert_position);
+            split.m_deleted_tris = faces_to_delete;
+            split.m_created_tris = faces_created;
+            split.m_created_tri_data = faces_to_create;
+            split.m_created_tri_labels = face_labels_to_create;
+            
+            m_surf.m_mesh_change_history.push_back(split);
+        }
+        
+        // now the group has exactly two edges. we try to pull apart the interior vertex, ensuring collision safety
+        Mat2i cut_regions = xjgroups[i].second;
+        Vec2i cut = cut_regions[0];        
+        
+        size_t edge0 = xjgroups[i].first[0];
+        size_t edge1 = xjgroups[i].first[1];
+        assert(edge0 < mesh.ne());
+        assert(edge1 < mesh.ne());
+        assert(edge0 != edge1);
+        
+        size_t v = mesh.get_common_vertex(edge0, edge1);
+        assert(v < mesh.nv());
+        
+        size_t v0 = (v == mesh.m_edges[edge0][0] ? mesh.m_edges[edge0][1] : mesh.m_edges[edge0][0]);
+        size_t v1 = (v == mesh.m_edges[edge1][0] ? mesh.m_edges[edge1][1] : mesh.m_edges[edge1][0]);
+        assert(v0 != v1);
+        
+        bool edge0_oriented = (v == mesh.m_edges[edge0][1]);
+        bool edge1_oriented = (v == mesh.m_edges[edge1][0]);
+
+        bool original_constraint = m_surf.m_mesh.get_vertex_constraint_label(v);
+        Vec3d original_position = m_surf.get_position(v);
+        
+        int upper_region = -1;  // upper means the region is on the top when looking from vertex v0 to vertex v (may or may not be the direction of edge0), with region cut.x() on the left and cut.y() on the right.
+        int lower_region = -1;
+        std::vector<size_t> region0faces;
+        for (size_t k = 0; k < mesh.m_edge_to_triangle_map[edge0].size(); k++)
+            if (mesh.get_triangle_label(mesh.m_edge_to_triangle_map[edge0][k])[0] == cut[0] ||
+                mesh.get_triangle_label(mesh.m_edge_to_triangle_map[edge0][k])[1] == cut[0])
+                region0faces.push_back(mesh.m_edge_to_triangle_map[edge0][k]);
+        assert(region0faces.size() == 2);
+        
+        Vec2i label0 = mesh.get_triangle_label(region0faces[0]);
+        upper_region = (label0[0] == cut[0] ? label0[1] : label0[0]);
+        Vec2i label1 = mesh.get_triangle_label(region0faces[1]);
+        lower_region = (label1[0] == cut[0] ? label1[1] : label1[0]);
+        
+        if (( mesh.oriented(v0, v, mesh.get_triangle(region0faces[0])) && label0[1] == cut[0]) ||
+            (!mesh.oriented(v0, v, mesh.get_triangle(region0faces[0])) && label0[0] == cut[0]))
+        {
+            std::swap(upper_region, lower_region);
+            assert(( mesh.oriented(v0, v, mesh.get_triangle(region0faces[1])) && label1[0] == cut[0]) ||
+                   (!mesh.oriented(v0, v, mesh.get_triangle(region0faces[1])) && label1[1] == cut[0]));
+        }
+        assert(upper_region >= 0);
+        assert(lower_region >= 0);
+        
+        std::vector<Vec3d> upper_vertices;
+        std::vector<Vec3d> lower_vertices;
+        
+        for (size_t k = 0; k < mesh.m_edge_to_triangle_map[edge0].size(); k++)
+        {
+            size_t triangle = mesh.m_edge_to_triangle_map[edge0][k];
+            size_t v2 = mesh.get_third_vertex(edge0, triangle);
+            
+            Vec2i label = mesh.get_triangle_label(triangle);
+            assert(label[0] == upper_region || label[1] == upper_region || label[0] == lower_region || label[1] == lower_region);
+            ((label[0] == upper_region || label[1] == upper_region) ? upper_vertices : lower_vertices).push_back(m_surf.get_position(v2));
+        }
+        
+        for (size_t k = 0; k < mesh.m_edge_to_triangle_map[edge1].size(); k++)
+        {
+            size_t triangle = mesh.m_edge_to_triangle_map[edge1][k];
+            size_t v2 = mesh.get_third_vertex(edge1, triangle);
+            
+            Vec2i label = mesh.get_triangle_label(triangle);
+            assert(label[0] == upper_region || label[1] == upper_region || label[0] == lower_region || label[1] == lower_region);
+            ((label[0] == upper_region || label[1] == upper_region) ? upper_vertices : lower_vertices).push_back(m_surf.get_position(v2));
+        }
+        
+        Vec3d upper_vertices_mean(0, 0, 0);
+        for (size_t i = 0; i < upper_vertices.size(); i++)
+            upper_vertices_mean += upper_vertices[i];
+        upper_vertices_mean /= upper_vertices.size();
+        
+        Vec3d lower_vertices_mean(0, 0, 0);
+        for (size_t i = 0; i < lower_vertices.size(); i++)
+            lower_vertices_mean += lower_vertices[i];
+        lower_vertices_mean /= lower_vertices.size();
+        
+        Vec3d pull_apart_offset = (upper_vertices_mean - lower_vertices_mean);
+        pull_apart_offset /= mag(pull_apart_offset);
+        pull_apart_offset *= mag(m_surf.get_position(v1) - m_surf.get_position(v0));
+        
+        // compute the desired destination positions for the new vertices
+        Vec3d upper_junction_desired_position = original_position + pull_apart_offset * 0.1;
+        Vec3d lower_junction_desired_position = original_position - pull_apart_offset * 0.1;
+        
+        // enforce constraints
+        if (original_constraint)
+        {
+            assert(m_surf.m_constrained_vertices_callback);
+            m_surf.m_constrained_vertices_callback->generate_edge_popped_positions(m_surf, v, cut, upper_junction_desired_position, lower_junction_desired_position);
+        }
+        
+        // collision test
+        // sort the incident faces and edges into those that go with nv0, and those that go with nv1 (the two groups are not necessarily disjoint)
+        std::vector<size_t> upper_faces;
+        std::vector<size_t> upper_edges;
+        
+        for (size_t j = 0; j < mesh.m_vertex_to_triangle_map[v].size(); j++)
+        {
+            size_t triangle = mesh.m_vertex_to_triangle_map[v][j];
+            
+            Vec2i label = mesh.get_triangle_label(triangle);
+            assert(label[0] == upper_region || label[1] == upper_region || label[0] == lower_region || label[1] == lower_region);
+            if (label[0] == upper_region || label[1] == upper_region)
+                upper_faces.push_back(triangle);
+        }
+        
+        for (size_t j = 0; j < mesh.m_vertex_to_edge_map[v].size(); j++)
+        {
+            size_t edge = mesh.m_vertex_to_edge_map[v][j];
+            
+            bool upper = false;
+            for (size_t k = 0; k < mesh.m_edge_to_triangle_map[edge].size(); k++)
+            {
+                Vec2i label = mesh.get_triangle_label(mesh.m_edge_to_triangle_map[edge][k]);
+                if (label[0] == upper_region || label[1] == upper_region)
+                    upper = true;
+            }
+            
+            if (upper)
+                upper_edges.push_back(edge);
+        }
+        
+        // move v to lower_junction_desired_position
+        if (vertex_pseudo_motion_introduces_collision(v, original_position, lower_junction_desired_position))
+        {
+            if (m_surf.m_verbose)
+                std::cout << "Edge popping: collision introduced." << std::endl;
+            continue;
+        }
+        
+        // move the upper junction from v to upper_junction_desired_position
+        m_surf.set_position(v, lower_junction_desired_position);
+        if (vertex_pseudo_motion_introduces_collision(v, lower_junction_desired_position, upper_junction_desired_position, upper_faces, upper_edges))
+        {
+            if (m_surf.m_verbose)
+                std::cout << "Edge popping: collision introduced." << std::endl;
+            continue;
+        }
+        
+        // check intersection in the final configuration
+        const std::vector<Vec3d> & x = m_surf.get_positions();
+        bool collision = false;
+        
+        // point-tet
+        for (size_t j = 0; j < upper_faces.size(); j++)
+        {
+            Vec3st t = mesh.get_triangle(upper_faces[j]);
+            
+            Vec3d low, high;
+            minmax(x[t[0]], x[t[1]], x[t[2]], upper_junction_desired_position, low, high);
+
+            std::vector<size_t> overlapping_vertices;
+            m_surf.m_broad_phase->get_potential_vertex_collisions(low, high, true, true, overlapping_vertices);
+            
+            for (size_t k = 0; k < overlapping_vertices.size(); k++) 
+            { 
+                size_t ov = overlapping_vertices[k];
+                if (ov == t[0] || ov == t[2] || ov == t[1])
+                    continue;
+                
+                if (point_tetrahedron_intersection(x[ov], ov, x[t[0]], t[0], x[t[1]], t[1], x[t[2]], t[2], upper_junction_desired_position, mesh.nv()))
+                    collision = true;
+            }
+        }
+        
+        // edge-triangle
+        for (size_t j = 0; j < upper_faces.size(); j++)
+        {
+            Vec3st t = mesh.get_triangle(upper_faces[j]);
+            if (t[1] == v) std::swap(t[0], t[1]);
+            if (t[2] == v) std::swap(t[0], t[2]);
+            
+            Vec3d low, high;
+            minmax(x[t[1]], x[t[2]], upper_junction_desired_position, low, high);
+            
+            std::vector<size_t> overlapping_edges;
+            m_surf.m_broad_phase->get_potential_edge_collisions(low, high, true, true, overlapping_edges);
+            
+            for (size_t k = 0; k < overlapping_edges.size(); k++) 
+            { 
+                const Vec2st & e = mesh.m_edges[overlapping_edges[k]];
+                if (e[0] == t[1] || e[1] == t[1] || e[0] == t[2] || e[1] == t[2])
+                    continue;
+                
+                bool incident = false;
+                for (size_t l = 0; l < upper_edges.size(); l++)
+                    if (upper_edges[l] == overlapping_edges[k])
+                    {
+                        incident = true;
+                        break;
+                    }
+                if (incident)
+                    continue;
+                
+                if (segment_triangle_intersection(x[e[0]], e[0], x[e[1]], e[1], x[t[1]], t[1], x[t[2]], t[2], upper_junction_desired_position, mesh.nv(), true))
+                    collision = true;
+            }
+        }
+        
+        // triangle-edge
+        for (size_t j = 0; j < upper_edges.size(); j++)
+        {
+            Vec2st e = mesh.m_edges[upper_edges[j]];
+            if (e[1] == v) std::swap(e[0], e[1]);
+            
+            Vec3d low, high;
+            minmax(x[e[1]], upper_junction_desired_position, low, high);
+            
+            std::vector<size_t> overlapping_triangles;
+            m_surf.m_broad_phase->get_potential_triangle_collisions(low, high, true, true, overlapping_triangles);
+            
+            for (size_t k = 0; k < overlapping_triangles.size(); k++)
+            {
+                const Vec3st & t = mesh.get_triangle(overlapping_triangles[k]);
+                if (e[1] == t[0] || e[1] == t[1] || e[1] == t[2])
+                    continue;
+                
+                bool incident = false;
+                for (size_t l = 0; l < upper_faces.size(); l++)
+                    if (upper_faces[l] == overlapping_triangles[k])
+                    {
+                        incident = true;
+                        break;
+                    }
+                if (incident)
+                    continue;
+                
+                if (segment_triangle_intersection(x[e[1]], e[1], upper_junction_desired_position, mesh.nv(), x[t[0]], t[0], x[t[1]], t[1], x[t[2]], t[2], true))
+                    collision = true;
+            }
+        }
+                
+        if (collision)
+        {
+            if (m_surf.m_verbose)
+                std::cout << "Edge popping: collision introduced." << std::endl;
+            continue;
+        }        
+        
+        // collision test give green light. pull apart the interior vertex
+        size_t nv0 = m_surf.add_vertex(upper_junction_desired_position, m_surf.m_masses[v]);
+        size_t nv1 = m_surf.add_vertex(lower_junction_desired_position, m_surf.m_masses[v]);
+        
+        m_surf.set_remesh_velocity(nv0, m_surf.get_remesh_velocity(v));
+        m_surf.set_remesh_velocity(nv1, m_surf.get_remesh_velocity(v));
+        mesh.set_vertex_constraint_label(nv0, original_constraint);
+        mesh.set_vertex_constraint_label(nv1, original_constraint);
+        
+        std::vector<size_t> verts_to_delete;
+        std::vector<Vec3d> verts_to_create;
+        std::vector<size_t> verts_created;
+        
+        verts_to_delete.push_back(v);
+        verts_created.push_back(nv0);
+        verts_created.push_back(nv1);
+        verts_to_create.push_back(upper_junction_desired_position);
+        verts_to_create.push_back(lower_junction_desired_position);
+        
+        // retriangulate around the pull-apart regions
+        std::vector<size_t> faces_to_delete;
+        std::vector<Vec3st> faces_to_create;
+        std::vector<Vec2i> face_labels_to_create;
+        std::vector<size_t> faces_created;
+        
+        // first, update the faces incident to the X-junction edges
+        for (size_t j = 0; j < 2; j++)
+        {
+            size_t edge = (j == 0 ? edge0 : edge1);
+            bool edge_oriented = (j == 0 ? edge0_oriented : edge1_oriented);
+            
+            for (size_t k = 0; k < mesh.m_edge_to_triangle_map[edge].size(); k++)
+            {
+                size_t triangle = mesh.m_edge_to_triangle_map[edge][k];
                 faces_to_delete.push_back(triangle);
                 
                 size_t v2 = mesh.get_third_vertex(edge, triangle);
                 
                 Vec2i label = mesh.get_triangle_label(triangle);
                 assert(label[0] == upper_region || label[1] == upper_region || label[0] == lower_region || label[1] == lower_region);
-                size_t nv = ((label[0] == upper_region || label[1] == upper_region) ? nv0 : nv1); // nv0 for upper region faces, nv1 for lower region faces
                 
-                if (mesh.oriented(v0, v1, mesh.get_triangle(triangle)))
-                {
-                    faces_to_create.push_back(Vec3st(v0, nv, v2));
-                    faces_to_create.push_back(Vec3st(nv, v1, v2));
-                } else {
-                    faces_to_create.push_back(Vec3st(nv, v0, v2));
-                    faces_to_create.push_back(Vec3st(v1, nv, v2));
-                }
+                size_t ev0 = (j == 0 ? v0 : ((label[0] == upper_region || label[1] == upper_region) ? nv0 : nv1));
+                size_t ev1 = (j == 1 ? v1 : ((label[0] == upper_region || label[1] == upper_region) ? nv0 : nv1));
+                
+                if (mesh.oriented(mesh.m_edges[edge][0], mesh.m_edges[edge][1], mesh.get_triangle(triangle)) == edge_oriented)
+                    faces_to_create.push_back(Vec3st(ev0, ev1, v2));
+                else
+                    faces_to_create.push_back(Vec3st(ev1, ev0, v2));
                 face_labels_to_create.push_back(label);
-                face_labels_to_create.push_back(label);
-                
-                ((label[0] == upper_region || label[1] == upper_region) ? upper_neighbors : lower_neighbors).push_back(m_surf.get_position(v2));
             }
-            
-            // walls
-            faces_to_create.push_back(Vec3st(v0, nv1, nv0));
-            faces_to_create.push_back(Vec3st(nv0, nv1, v1));
-            
-            face_labels_to_create.push_back(cut);
-            face_labels_to_create.push_back(cut);
-            
-            // compute desired positions for new vertices
-            Vec3d upper_neighbors_mean(0, 0, 0);
-            for (size_t j = 0; j < upper_neighbors.size(); j++)
-                upper_neighbors_mean += upper_neighbors[j];
-            upper_neighbors_mean /= upper_neighbors.size();
-            
-            Vec3d lower_neighbors_mean(0, 0, 0);
-            for (size_t j = 0; j < lower_neighbors.size(); j++)
-                lower_neighbors_mean += lower_neighbors[j];
-            lower_neighbors_mean /= lower_neighbors.size();
-            
-            Vec3d wall_breadth = (upper_neighbors_mean - lower_neighbors_mean);
-            wall_breadth /= mag(wall_breadth);
-            wall_breadth *= mag(m_surf.get_position(v1) - m_surf.get_position(v0));
-
-            // apply the deletion
-            for (size_t j = 0; j < faces_to_delete.size(); j++)
-                mesh.nondestructive_remove_triangle(faces_to_delete[j]);    //&&&& recursive deletion
-            
-//            m_obj->deleteEdge(edge, false);   //&&&&
-            
-//            // triangulate with the new vertices  //&&&&
-//            m_obj->addEdge(v0, nv0);
-//            m_obj->addEdge(nv0, v1);
-//            m_obj->addEdge(v0, nv1);
-//            m_obj->addEdge(nv1, v1);
-//            m_obj->addEdge(nv0, nv1);
-            
-            assert(faces_to_create.size() == face_labels_to_create.size());
-            for (size_t j = 0; j < faces_to_create.size(); j++)
-            {
-                size_t nf = mesh.nondestructive_add_triangle(faces_to_create[j]);
-                mesh.set_triangle_label(nf, face_labels_to_create[j]);
-                faces_created.push_back(nf);
-            }
-            
-            //pull the two new vertices (nv0, nv1) apart (before this the two vertices have the same position)
-            m_surf.set_newposition(nv0, m_surf.get_newposition(nv0) + wall_breadth * 0.1);
-            m_surf.set_newposition(nv1, m_surf.get_newposition(nv1) - wall_breadth * 0.1);
-            
-            // enforce constraints
-            bool original_constraint = mesh.get_vertex_constraint_label(v0) && mesh.get_vertex_constraint_label(v1);
-            if (original_constraint)
-            {
-                assert(m_surf.m_constrained_vertices_callback);
-                
-                Vec3d pos_upper = m_surf.get_newposition(nv0);
-                Vec3d pos_lower = m_surf.get_newposition(nv1);
-                m_surf.m_constrained_vertices_callback->generate_edge_popped_positions(m_surf, v0, cut, pos_upper, pos_lower);
-                m_surf.set_newposition(nv0, pos_upper);
-                m_surf.set_newposition(nv1, pos_lower);
-            }
-            
-            m_surf.set_position(nv0, m_surf.get_newposition(nv0));
-            m_surf.set_position(nv1, m_surf.get_newposition(nv1));
-            
-            mesh.set_vertex_constraint_label(nv0, original_constraint);
-            mesh.set_vertex_constraint_label(nv1, original_constraint);
-            
-            // vertex deletion/creation logging
-            verts_to_create.push_back(m_surf.get_newposition(nv0));
-            verts_to_create.push_back(m_surf.get_newposition(nv1));
-            
-            verts_created.push_back(nv0);
-            verts_created.push_back(nv1);
-            
-            // Add to new history log
-            MeshUpdateEvent edgepop(MeshUpdateEvent::EDGE_POP);
-            edgepop.m_deleted_tris = faces_to_delete;
-            edgepop.m_created_tris = faces_created;
-            edgepop.m_created_tri_data = faces_to_create;
-            edgepop.m_created_tri_labels = face_labels_to_create;
-            edgepop.m_deleted_verts = verts_to_delete;
-            edgepop.m_created_verts = verts_created;
-            edgepop.m_created_vert_data = verts_to_create;
-            m_surf.m_mesh_change_history.push_back(edgepop);
-
-            pop_occurred = true;
-            
-        } else
+        }     
+        
+        // second, update the faces incident only to the interior vertex v but not to any X-junction edge
+        for (size_t k = 0; k < mesh.m_vertex_to_triangle_map[v].size(); k++)
         {
-            // if a group has at least two edges forming a polyline (this line should have no branching but could be a closed loop), pull the interior vertices apart.
-            assert(xjgroups[i].first.size() > 1);
+            size_t triangle = mesh.m_vertex_to_triangle_map[v][k];
             
-            Mat2i cut_regions = xjgroups[i].second;
-            Vec2i cut = cut_regions[0];
+            // skip if the triangle contains edge0 or edge1
+            if (mesh.triangle_contains_edge(mesh.get_triangle(triangle), mesh.m_edges[edge0]) ||
+                mesh.triangle_contains_edge(mesh.get_triangle(triangle), mesh.m_edges[edge1]))
+                continue;
             
-            // sort the edges into an ordered polyline
-            std::deque<size_t> ordered_edges;
-            ordered_edges.push_back(xjgroups[i].first.back());
-            xjgroups[i].first.pop_back();
-            while (xjgroups[i].first.size() > 0)
+            faces_to_delete.push_back(triangle);
+            
+            // find the edge in triangle triangle that's opposite to vertex v
+            size_t l = 0;
+            size_t edge2 = static_cast<size_t>(~0);
+            for (l = 0; l < 3; l++)
             {
-                size_t s = xjgroups[i].first.size();
-                for (size_t j = 0; j < xjgroups[i].first.size(); j++)
-                {
-                    if (mesh.get_common_vertex(ordered_edges.back(), xjgroups[i].first[j]) < mesh.nv())
-                    {
-                        ordered_edges.push_back(xjgroups[i].first[j]);
-                        xjgroups[i].first.erase(xjgroups[i].first.begin() + j);
-                        break;
-                    } else if (mesh.get_common_vertex(ordered_edges.front(), xjgroups[i].first[j]) < mesh.nv())
-                    {
-                        ordered_edges.push_front(xjgroups[i].first[j]);
-                        xjgroups[i].first.erase(xjgroups[i].first.begin() + j);
-                        break;
-                    }
-                }
-                assert(xjgroups[i].first.size() < s);
+                if (mesh.m_edges[mesh.m_triangle_to_edge_map[triangle][l]][0] != v &&
+                    mesh.m_edges[mesh.m_triangle_to_edge_map[triangle][l]][1] != v)
+                    edge2 = mesh.m_triangle_to_edge_map[triangle][l];
             }
-            size_t ne = ordered_edges.size();
+            assert(edge2 < mesh.ne());
+            size_t v1 = mesh.m_edges[edge2][0];
+            size_t v2 = mesh.m_edges[edge2][1];
             
-            // TODO: handle the closed loop case. for now, assert the edges do not form a closed loop.
-            if (ne == 2)
-                assert(ordered_edges.front() != ordered_edges.back());
+            Vec2i label = mesh.get_triangle_label(triangle);
+            assert(label[0] == upper_region || label[1] == upper_region || label[0] == lower_region || label[1] == lower_region);
+            
+            size_t nv = ((label[0] == upper_region || label[1] == upper_region) ? nv0 : nv1);
+            
+            if (mesh.oriented(v1, v2, mesh.get_triangle(triangle)))
+                faces_to_create.push_back(Vec3st(nv, v1, v2));
             else
-                assert(mesh.get_common_vertex(ordered_edges.front(), ordered_edges.back()) >= mesh.nv());
-            
-            // duplicate the interior vertices, and compute their desired pull-apart positions
-            std::vector<size_t> upper_junctions(ne + 1);
-            std::vector<size_t> lower_junctions(ne + 1);
-            
-            int upper_region = -1;
-            int lower_region = -1;
-            
-            std::vector<Vec3d> pull_apart_offsets(ne - 1);
-            std::vector<bool> edge_oriented(ne);
-            
-            for (size_t j = 0; j < ne - 1; j++)
-            {
-                size_t edge0 = ordered_edges[j];
-                size_t edge1 = ordered_edges[(j + 1) % ne];
-                
-                size_t v = mesh.get_common_vertex(edge0, edge1);
-                assert(v < mesh.nv());
-                
-                size_t v0 = (v == mesh.m_edges[edge0][0] ? mesh.m_edges[edge0][1] : mesh.m_edges[edge0][0]);
-                size_t v1 = (v == mesh.m_edges[edge1][0] ? mesh.m_edges[edge1][1] : mesh.m_edges[edge1][0]);
-                
-                edge_oriented[j]     = (v == mesh.m_edges[edge0][1]);
-                edge_oriented[j + 1] = (v == mesh.m_edges[edge1][0]);
-                
-                size_t nv0 = m_surf.add_vertex(m_surf.get_position(v), m_surf.m_masses[v]);
-                size_t nv1 = m_surf.add_vertex(m_surf.get_position(v), m_surf.m_masses[v]);
-                
-                m_surf.set_newposition(nv0, m_surf.get_position(v));  // the two new vertices will be pulled apart later
-                m_surf.set_newposition(nv1, m_surf.get_position(v));
-                m_surf.set_remesh_velocity(nv0, m_surf.get_remesh_velocity(v));
-                m_surf.set_remesh_velocity(nv1, m_surf.get_remesh_velocity(v));
-                
-                upper_junctions[j + 1] = nv0;
-                lower_junctions[j + 1] = nv1;
-                if (j == 0)
-                {
-                    upper_junctions[0] = v0;
-                    lower_junctions[0] = v0;
-                }
-                if (j == ne - 2)
-                {
-                    upper_junctions[ne] = v1;
-                    lower_junctions[ne] = v1;
-                }
-                
-                int edge_upper_region = -1;  // upper means the region is on the top when looking from vertex v0 to vertex v (may or may not be the direction of edge0), with region cut.x() on the left and cut.y() on the right.
-                int edge_lower_region = -1;
-                std::vector<size_t> region0faces;
-                for (size_t k = 0; k < mesh.m_edge_to_triangle_map[edge0].size(); k++)
-                    if (mesh.get_triangle_label(mesh.m_edge_to_triangle_map[edge0][k])[0] == cut[0] ||
-                        mesh.get_triangle_label(mesh.m_edge_to_triangle_map[edge0][k])[1] == cut[0])
-                        region0faces.push_back(mesh.m_edge_to_triangle_map[edge0][k]);
-                assert(region0faces.size() == 2);
-                
-                Vec2i label0 = mesh.get_triangle_label(region0faces[0]);
-                edge_upper_region = (label0[0] == cut[0] ? label0[1] : label0[0]);
-                Vec2i label1 = mesh.get_triangle_label(region0faces[1]);
-                edge_lower_region = (label1[0] == cut[0] ? label1[1] : label1[0]);
-                
-                if (( mesh.oriented(v0, v, mesh.get_triangle(region0faces[0])) && label0[1] == cut[0]) ||
-                    (!mesh.oriented(v0, v, mesh.get_triangle(region0faces[0])) && label0[0] == cut[0]))
-                {
-                    std::swap(edge_upper_region, edge_lower_region);
-                    assert(( mesh.oriented(v0, v, mesh.get_triangle(region0faces[1])) && label1[0] == cut[0]) ||
-                           (!mesh.oriented(v0, v, mesh.get_triangle(region0faces[1])) && label1[1] == cut[0]));
-                }
-                assert(edge_upper_region >= 0);
-                assert(edge_lower_region >= 0);
-                
-                assert(upper_region < 0 || upper_region == edge_upper_region);
-                upper_region = edge_upper_region;
-                assert(lower_region < 0 || lower_region == edge_lower_region);
-                lower_region = edge_lower_region;
-                
-                std::vector<Vec3d> upper_vertices;
-                std::vector<Vec3d> lower_vertices;
-                
-                for (size_t k = 0; k < mesh.m_edge_to_triangle_map[edge0].size(); k++)
-                {
-                    size_t triangle = mesh.m_edge_to_triangle_map[edge0][k];
-                    size_t v2 = mesh.get_third_vertex(edge0, triangle);
-                    
-                    Vec2i label = mesh.get_triangle_label(triangle);
-                    assert(label[0] == upper_region || label[1] == upper_region || label[0] == lower_region || label[1] == lower_region);
-                    ((label[0] == upper_region || label[1] == upper_region) ? upper_vertices : lower_vertices).push_back(m_surf.get_position(v2));
-                }
-                
-                for (size_t k = 0; k < mesh.m_edge_to_triangle_map[edge1].size(); k++)
-                {
-                    size_t triangle = mesh.m_edge_to_triangle_map[edge1][k];
-                    size_t v2 = mesh.get_third_vertex(edge1, triangle);
-                    
-                    Vec2i label = mesh.get_triangle_label(triangle);
-                    assert(label[0] == upper_region || label[1] == upper_region || label[0] == lower_region || label[1] == lower_region);
-                    ((label[0] == upper_region || label[1] == upper_region) ? upper_vertices : lower_vertices).push_back(m_surf.get_position(v2));
-                }
-                
-                Vec3d upper_vertices_mean(0, 0, 0);
-                for (size_t i = 0; i < upper_vertices.size(); i++)
-                    upper_vertices_mean += upper_vertices[i];
-                upper_vertices_mean /= upper_vertices.size();
-                
-                Vec3d lower_vertices_mean(0, 0, 0);
-                for (size_t i = 0; i < lower_vertices.size(); i++)
-                    lower_vertices_mean += lower_vertices[i];
-                lower_vertices_mean /= lower_vertices.size();
-                
-                pull_apart_offsets[j] = (upper_vertices_mean - lower_vertices_mean);
-                pull_apart_offsets[j] /= mag(pull_apart_offsets[j]);
-                pull_apart_offsets[j] *= mag(m_surf.get_position(v1) - m_surf.get_position(v0));
-            }
-            
-            std::vector<size_t> faces_to_delete;
-            std::vector<Vec3st> faces_to_create;
-            std::vector<Vec2i> face_labels_to_create;
-            std::vector<size_t> faces_created;
-            
-            std::vector<size_t> verts_to_delete;
-            std::vector<Vec3d> verts_to_create;
-            std::vector<size_t> verts_created;
-            
-            // update the faces incident to the X-junction edges
-            for (size_t j = 0; j < ne; j++)
-            {
-                size_t edge = ordered_edges[j];
-                //&&&&
-//                edges_to_delete.push_back(edge);
-//                edges_to_create.push_back(Vec2st(upper_junctions[j + 0], upper_junctions[j + 1]));
-//                edges_to_create.push_back(Vec2st(lower_junctions[j + 0], lower_junctions[j + 1]));
-                
-                for (size_t k = 0; k < mesh.m_edge_to_triangle_map[edge].size(); k++)
-                {
-                    size_t triangle = mesh.m_edge_to_triangle_map[edge][k];
-                    faces_to_delete.push_back(triangle);
-                    
-                    size_t v2 = mesh.get_third_vertex(edge, triangle);
-                    
-                    Vec2i label = mesh.get_triangle_label(triangle);
-                    assert(label[0] == upper_region || label[1] == upper_region || label[0] == lower_region || label[1] == lower_region);
-                    
-                    size_t v0 = ((label[0] == upper_region || label[1] == upper_region) ? upper_junctions[j + 0] : lower_junctions[j + 0]);
-                    size_t v1 = ((label[0] == upper_region || label[1] == upper_region) ? upper_junctions[j + 1] : lower_junctions[j + 1]);
-                    
-                    if (mesh.oriented(mesh.m_edges[edge][0], mesh.m_edges[edge][1], mesh.get_triangle(triangle)) == edge_oriented[j])
-                        faces_to_create.push_back(Vec3st(v0, v1, v2));
-                    else
-                        faces_to_create.push_back(Vec3st(v1, v0, v2));
-                    face_labels_to_create.push_back(label);
-                    
-                }
-            }     
-            
-            // update the faces incident only to the interior vertices but not to any X-junction edge
-            for (size_t j = 0; j < ne - 1; j++)
-            {
-                size_t edge0 = ordered_edges[j];
-                size_t edge1 = ordered_edges[(j + 1) % ne];
-                
-                size_t v = mesh.get_common_vertex(edge0, edge1);
-                assert(v < mesh.nv());
-                
-                verts_to_delete.push_back(v);
-                
-                for (size_t k = 0; k < mesh.m_vertex_to_triangle_map[v].size(); k++)
-                {
-                    size_t triangle = mesh.m_vertex_to_triangle_map[v][k];
-                    
-                    // skip if the triangle contains edge0 or edge1
-                    if (mesh.triangle_contains_edge(mesh.get_triangle(triangle), mesh.m_edges[edge0]) ||
-                        mesh.triangle_contains_edge(mesh.get_triangle(triangle), mesh.m_edges[edge1]))
-                        continue;
-                    
-                    faces_to_delete.push_back(triangle);
-                    
-                    // find the edge in triangle triangle that's opposite to vertex v
-                    size_t l = 0;
-                    size_t edge2 = static_cast<size_t>(~0);
-                    for (l = 0; l < 3; l++)
-                    {
-                        if (mesh.m_edges[mesh.m_triangle_to_edge_map[triangle][l]][0] != v &&
-                            mesh.m_edges[mesh.m_triangle_to_edge_map[triangle][l]][1] != v)
-                            edge2 = mesh.m_triangle_to_edge_map[triangle][l];
-                    }
-                    assert(edge2 < mesh.ne());
-                    size_t v1 = mesh.m_edges[edge2][0];
-                    size_t v2 = mesh.m_edges[edge2][1];
-                    
-                    Vec2i label = mesh.get_triangle_label(triangle);
-                    assert(label[0] == upper_region || label[1] == upper_region || label[0] == lower_region || label[1] == lower_region);
-                    
-                    size_t nv = ((label[0] == upper_region || label[1] == upper_region) ? upper_junctions[j + 1] : lower_junctions[j + 1]);
-                    
-                    if (mesh.oriented(v1, v2, mesh.get_triangle(triangle)))
-                        faces_to_create.push_back(Vec3st(nv, v1, v2));
-                    else
-                        faces_to_create.push_back(Vec3st(nv, v2, v1));
-                    face_labels_to_create.push_back(label);
-                    
-                }
-
-                //&&&& recursive deletion
-//                for (VertexEdgeIterator veit = m_obj->ve_iter(v); veit; ++veit)
-//                {
-//                    if (*veit == edge0 || *veit == edge1)
-//                        continue;
-//                    
-//                    edges_to_delete.push_back(*veit);
-//                }
-                
-            }
-            
-            // triangulate the new interface between cut.x() and cut.y()
-            for (size_t j = 0; j < ne; j++)
-            {
-                if (j == 0)
-                {
-                    faces_to_create.push_back(Vec3st(upper_junctions[j], lower_junctions[j + 1], upper_junctions[j + 1]));
-                } else if (j == ne - 1)
-                {
-                    faces_to_create.push_back(Vec3st(upper_junctions[j], lower_junctions[j], upper_junctions[j + 1]));
-                } else
-                {
-                    faces_to_create.push_back(Vec3st(upper_junctions[j], lower_junctions[j], upper_junctions[j + 1]));
-                    faces_to_create.push_back(Vec3st(lower_junctions[j + 1], upper_junctions[j + 1], lower_junctions[j]));
-                }
-                face_labels_to_create.push_back(cut);
-                if (j != 0 && j != ne - 1)
-                    face_labels_to_create.push_back(cut);
-            }
-
-            // apply the deletion
-            for (size_t j = 0; j < faces_to_delete.size(); j++)
-                mesh.nondestructive_remove_triangle(faces_to_delete[j]);    //&&&& recursive deletion
-  
-            //&&&&
-//            for (size_t j = 0; j < edges_to_delete.size(); j++)
-//                m_obj->deleteEdge(edges_to_delete[j], false);
-//            
-//            for (size_t j = 0; j < vertices_to_delete.size(); j++)
-//                m_obj->deleteVertex(vertices_to_delete[j]);
-            
-            // triangulate with the new vertices
-            //&&&&
-//            for (size_t j = 0; j < edges_to_create.size(); j++)
-//                m_obj->addEdge(edges_to_create[j].x(), edges_to_create[j].y());
-            
-            assert(faces_to_create.size() == face_labels_to_create.size());
-            for (size_t j = 0; j < faces_to_create.size(); j++)
-            {
-                size_t nf = mesh.nondestructive_add_triangle(faces_to_create[j]);
-                mesh.set_triangle_label(nf, face_labels_to_create[j]);
-                faces_created.push_back(nf);
-            }
-            
-            // pull the two new vertices (nv0, nv1) apart (before this the two vertices have the same position)
-            for (size_t j = 0; j < ne - 1; j++)
-            {
-                size_t edge0 = ordered_edges[j];
-                size_t edge1 = ordered_edges[(j + 1) % ne];
-                
-                size_t v = mesh.get_common_vertex(edge0, edge1);
-                assert(v < mesh.nv());
-
-                size_t nv0 = upper_junctions[j + 1];
-                size_t nv1 = lower_junctions[j + 1];
-                
-                m_surf.set_newposition(nv0, m_surf.get_newposition(nv0) + pull_apart_offsets[j] * 0.1);
-                m_surf.set_newposition(nv1, m_surf.get_newposition(nv1) - pull_apart_offsets[j] * 0.1);
-                
-                // enforce constraints
-                bool original_constraint = m_surf.m_mesh.get_vertex_constraint_label(v);
-                if (original_constraint)
-                {
-                    assert(m_surf.m_constrained_vertices_callback);
-                    
-                    Vec3d pos_upper = m_surf.get_newposition(nv0);
-                    Vec3d pos_lower = m_surf.get_newposition(nv1);
-                    m_surf.m_constrained_vertices_callback->generate_edge_popped_positions(m_surf, v, cut, pos_upper, pos_lower);
-                    m_surf.set_newposition(nv0, pos_upper);
-                    m_surf.set_newposition(nv1, pos_lower);
-                }
-                
-                m_surf.set_position(nv0, m_surf.get_newposition(nv0));
-                m_surf.set_position(nv1, m_surf.get_newposition(nv1));
-                
-                mesh.set_vertex_constraint_label(nv0, original_constraint);
-                mesh.set_vertex_constraint_label(nv1, original_constraint);
-            }
-            
-            // vertex deletion/creation logging
-            for (size_t j = 0; j < ne - 1; j++)
-            {
-                size_t nv0 = upper_junctions[j + 1];
-                size_t nv1 = lower_junctions[j + 1];
-                
-                verts_to_create.push_back(m_surf.get_newposition(nv0));
-                verts_to_create.push_back(m_surf.get_newposition(nv1));
-            
-                verts_created.push_back(nv0);
-                verts_created.push_back(nv1);
-            }
-            
-            // Add to new history log
-            MeshUpdateEvent edgepop(MeshUpdateEvent::EDGE_POP);
-            edgepop.m_deleted_tris = faces_to_delete;
-            edgepop.m_created_tris = faces_created;
-            edgepop.m_created_tri_data = faces_to_create;
-            edgepop.m_created_tri_labels = face_labels_to_create;
-            edgepop.m_deleted_verts = verts_to_delete;
-            edgepop.m_created_verts = verts_created;
-            edgepop.m_created_vert_data = verts_to_create;
-            m_surf.m_mesh_change_history.push_back(edgepop);
-            
-            pop_occurred = true;
-            
+                faces_to_create.push_back(Vec3st(nv, v2, v1));
+            face_labels_to_create.push_back(label);
         }
         
+        // triangulate the new interface in the middle
+        for (size_t j = 0; j < 2; j++)
+        {
+            Vec2st left_junction  = (j == 0 ? Vec2st(v0, v0) : Vec2st(nv0, nv1));
+            Vec2st right_junction = (j == 1 ? Vec2st(v1, v1) : Vec2st(nv0, nv1));
+            if (left_junction[0] != left_junction[1] && right_junction[0] != right_junction[1])
+            {
+                // quad
+                faces_to_create.push_back(Vec3st(left_junction[0],  left_junction[1],  right_junction[0]));
+                faces_to_create.push_back(Vec3st(right_junction[1], right_junction[0], left_junction[1] ));
+                face_labels_to_create.push_back(cut);
+                face_labels_to_create.push_back(cut);
+            } else if (left_junction[0] != left_junction[1])
+            {
+                // triangle, pointing to the right
+                faces_to_create.push_back(Vec3st(left_junction[0],  left_junction[1],  right_junction[0]));
+                face_labels_to_create.push_back(cut);
+            } else if (right_junction[0] != right_junction[1])
+            {
+                // triangle, pointing to the left
+                faces_to_create.push_back(Vec3st(left_junction[0],  right_junction[1], right_junction[0]));
+                face_labels_to_create.push_back(cut);
+            } else
+            {
+                // no hole to begin with, nothing to do
+            }
+        }
+        
+        // apply the deletion/creation
+        assert(faces_to_create.size() == face_labels_to_create.size());
+        for (size_t j = 0; j < faces_to_create.size(); j++)
+        {
+            size_t nf = m_surf.add_triangle(faces_to_create[j]);
+            mesh.set_triangle_label(nf, face_labels_to_create[j]);
+            faces_created.push_back(nf);
+        }
+        
+        for (size_t j = 0; j < faces_to_delete.size(); j++)
+            m_surf.remove_triangle(faces_to_delete[j]);
+        
+        // Add to new history log
+        MeshUpdateEvent edgepop(MeshUpdateEvent::EDGE_POP);
+        edgepop.m_deleted_tris = faces_to_delete;
+        edgepop.m_created_tris = faces_created;
+        edgepop.m_created_tri_data = faces_to_create;
+        edgepop.m_created_tri_labels = face_labels_to_create;
+        edgepop.m_deleted_verts = verts_to_delete;
+        edgepop.m_created_verts = verts_created;
+        edgepop.m_created_vert_data = verts_to_create;
+        m_surf.m_mesh_change_history.push_back(edgepop);
+        
+        pop_occurred = true;
     }
-
+    
     return pop_occurred;
 }
 
@@ -785,15 +711,17 @@ bool T1Transition::pop_vertices()
         if (A < 0)
             continue;
         
-        // pull apart
-        size_t a = m_surf.add_vertex(m_surf.get_position(xj), m_surf.m_masses[xj]);
-        size_t b = m_surf.add_vertex(m_surf.get_position(xj), m_surf.m_masses[xj]);
+        std::vector<size_t> faces_to_delete;
+        std::vector<Vec3st> faces_to_create;
+        std::vector<Vec2i> face_labels_to_create;
+        std::vector<size_t> faces_created;
         
-        // set the position/velocity of new vertices
-        m_surf.set_newposition(a, m_surf.get_position(xj));
-        m_surf.set_newposition(b, m_surf.get_position(xj));
-        m_surf.set_remesh_velocity(a, m_surf.get_remesh_velocity(xj));
-        m_surf.set_remesh_velocity(b, m_surf.get_remesh_velocity(xj));
+        std::vector<size_t> verts_to_delete;
+        std::vector<Vec3d> verts_to_create;
+        std::vector<size_t> verts_created;
+        
+        bool original_constraint = m_surf.m_mesh.get_vertex_constraint_label(xj);
+        Vec3d original_position = m_surf.get_position(xj);
         
         double mean_edge_length = 0;
         int edge_count = 0;
@@ -808,20 +736,180 @@ bool T1Transition::pop_vertices()
         mean_edge_length /= edge_count;
         
         Vec3d pull_apart_offset = pull_apart_direction * mean_edge_length;
+        
+        // compute the desired destination positions, enforcing constraints
+        Vec3d a_desired_position = original_position + pull_apart_offset * 0.1;
+        Vec3d b_desired_position = original_position - pull_apart_offset * 0.1;
+        size_t a = static_cast<size_t>(~0);
+        size_t b = static_cast<size_t>(~0);
 
+        if (original_constraint)
+        {
+            assert(m_surf.m_constrained_vertices_callback);            
+            m_surf.m_constrained_vertices_callback->generate_vertex_popped_positions(m_surf, xj, A, B, a_desired_position, b_desired_position);
+        }
+        
+        // collision test
+        // sort the incident faces and edges into those that go with nv0, and those that go with nv1 (the two groups are not necessarily disjoint)
+        std::vector<size_t> A_faces;
+        std::vector<size_t> A_edges;
+        
+        for (size_t j = 0; j < mesh.m_vertex_to_triangle_map[xj].size(); j++)
+        {
+            size_t triangle = mesh.m_vertex_to_triangle_map[xj][j];
+            
+            Vec2i label = mesh.get_triangle_label(triangle);
+            if (label[0] == A || label[1] == A)
+                A_faces.push_back(triangle);
+        }
+        
+        for (size_t j = 0; j < mesh.m_vertex_to_edge_map[xj].size(); j++)
+        {
+            size_t edge = mesh.m_vertex_to_edge_map[xj][j];
+            
+            bool adjA = false;
+            for (size_t k = 0; k < mesh.m_edge_to_triangle_map[edge].size(); k++)
+            {
+                Vec2i label = mesh.get_triangle_label(mesh.m_edge_to_triangle_map[edge][k]);
+                if (label[0] == A || label[1] == A)
+                    adjA = true;
+            }
+            
+            if (adjA)
+                A_edges.push_back(edge);
+        }
+        
+        if (vertex_pseudo_motion_introduces_collision(xj, original_position, b_desired_position))
+        {
+            if (m_surf.m_verbose)
+                std::cout << "Vertex popping: pulling vertex " << xj << " apart introduces collision." << std::endl;
+            continue;
+        }
+        
+        m_surf.set_position(xj, b_desired_position);
+        if (vertex_pseudo_motion_introduces_collision(xj, b_desired_position, a_desired_position, A_faces, A_edges))
+        {
+            if (m_surf.m_verbose)
+                std::cout << "Vertex popping: pulling vertex " << xj << " apart introduces collision." << std::endl;
+            continue;
+        }
+        
+        // check intersection in the final configuration
+        const std::vector<Vec3d> & x = m_surf.get_positions();
+        bool collision = false;
+        
+        // point-tet
+        for (size_t j = 0; j < A_faces.size(); j++)
+        {
+            Vec3st t = mesh.get_triangle(A_faces[j]);
+            
+            Vec3d low, high;
+            minmax(x[t[0]], x[t[1]], x[t[2]], a_desired_position, low, high);
+            
+            std::vector<size_t> overlapping_vertices;
+            m_surf.m_broad_phase->get_potential_vertex_collisions(low, high, true, true, overlapping_vertices);
+            
+            for (size_t k = 0; k < overlapping_vertices.size(); k++) 
+            { 
+                size_t ov = overlapping_vertices[k];
+                if (ov == t[0] || ov == t[2] || ov == t[1])
+                    continue;
+                
+                if (point_tetrahedron_intersection(x[ov], ov, x[t[0]], t[0], x[t[1]], t[1], x[t[2]], t[2], a_desired_position, mesh.nv()))
+                    collision = true;
+            }
+        }
+        
+        // edge-triangle
+        for (size_t j = 0; j < A_faces.size(); j++)
+        {
+            Vec3st t = mesh.get_triangle(A_faces[j]);
+            if (t[1] == xj) std::swap(t[0], t[1]);
+            if (t[2] == xj) std::swap(t[0], t[2]);
+            
+            Vec3d low, high;
+            minmax(x[t[1]], x[t[2]], a_desired_position, low, high);
+            
+            std::vector<size_t> overlapping_edges;
+            m_surf.m_broad_phase->get_potential_edge_collisions(low, high, true, true, overlapping_edges);
+            
+            for (size_t k = 0; k < overlapping_edges.size(); k++) 
+            { 
+                const Vec2st & e = mesh.m_edges[overlapping_edges[k]];
+                if (e[0] == t[1] || e[1] == t[1] || e[0] == t[2] || e[1] == t[2])
+                    continue;
+                
+                bool incident = false;
+                for (size_t l = 0; l < A_edges.size(); l++)
+                    if (A_edges[l] == overlapping_edges[k])
+                    {
+                        incident = true;
+                        break;
+                    }
+                if (incident)
+                    continue;
+                
+                if (segment_triangle_intersection(x[e[0]], e[0], x[e[1]], e[1], x[t[1]], t[1], x[t[2]], t[2], a_desired_position, mesh.nv(), true))
+                    collision = true;
+            }
+        }
+        
+        // triangle-edge
+        for (size_t j = 0; j < A_edges.size(); j++)
+        {
+            Vec2st e = mesh.m_edges[A_edges[j]];
+            if (e[1] == xj) std::swap(e[0], e[1]);
+            
+            Vec3d low, high;
+            minmax(x[e[1]], a_desired_position, low, high);
+            
+            std::vector<size_t> overlapping_triangles;
+            m_surf.m_broad_phase->get_potential_triangle_collisions(low, high, true, true, overlapping_triangles);
+            
+            for (size_t k = 0; k < overlapping_triangles.size(); k++)
+            {
+                const Vec3st & t = mesh.get_triangle(overlapping_triangles[k]);
+                if (e[1] == t[0] || e[1] == t[1] || e[1] == t[2])
+                    continue;
+                
+                bool incident = false;
+                for (size_t l = 0; l < A_faces.size(); l++)
+                    if (A_faces[l] == overlapping_triangles[k])
+                    {
+                        incident = true;
+                        break;
+                    }
+                if (incident)
+                    continue;
+                
+                if (segment_triangle_intersection(x[e[1]], e[1], a_desired_position, mesh.nv(), x[t[0]], t[0], x[t[1]], t[1], x[t[2]], t[2], true))
+                    collision = true;
+            }
+        }
+        
+        if (collision)
+        {
+            if (m_surf.m_verbose)
+                std::cout << "Edge popping: collision introduced." << std::endl;
+            continue;
+        }        
+        
+        // pull apart
+        a = m_surf.add_vertex(a_desired_position, m_surf.m_masses[xj]);
+        b = m_surf.add_vertex(b_desired_position, m_surf.m_masses[xj]);
+        
+        m_surf.set_remesh_velocity(a, m_surf.get_remesh_velocity(xj));
+        m_surf.set_remesh_velocity(b, m_surf.get_remesh_velocity(xj));
+        mesh.set_vertex_constraint_label(a, original_constraint);
+        mesh.set_vertex_constraint_label(b, original_constraint);
+        
+        verts_to_delete.push_back(xj);
+        verts_created.push_back(a);
+        verts_created.push_back(b);
+        verts_to_create.push_back(a_desired_position);
+        verts_to_create.push_back(b_desired_position);
+        
         // update the face connectivities
-        std::vector<size_t> faces_to_delete;
-        std::vector<Vec3st> faces_to_create;
-        std::vector<Vec2i> face_labels_to_create;
-        std::vector<size_t> faces_created;
-        
-        std::vector<size_t> verts_to_delete;
-        std::vector<Vec3d> verts_to_create;
-        std::vector<size_t> verts_created;
-        
-        //&&&&
-//        std::vector<size_t> edges_to_delete;
-        
         for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[xj].size(); i++)
         {
             size_t triangle = mesh.m_vertex_to_triangle_map[xj][i];
@@ -920,14 +1008,54 @@ bool T1Transition::pop_vertices()
             }
             
         }
-
-        //&&&& recursive deletion
-//        for (size_t i = 0; i < mesh.m_vertex_to_edge_map[xj].size(); i++)
-//        {
-//            edges_to_delete.push_back(mesh.m_vertex_to_edge_map[xj][i]);
-//        }
         
+        // need to consider the X-junction edge case too, because the edge popping may not be complete due to collision
+        for (size_t i = 0; i < mesh.m_vertex_to_edge_map[xj].size(); i++)
+        {
+            size_t edge = mesh.m_vertex_to_edge_map[xj][i];
+            size_t v2 = (mesh.m_edges[edge][0] == xj ? mesh.m_edges[edge][1] : mesh.m_edges[edge][0]);
+            
+            bool adjA = false;
+            bool adjB = false;
+            int upper_region = -1;  // the region on the top when looking down the edge from xj to v2, with region B on the right
+            int lower_region = -1;
+            for (size_t j = 0; j < mesh.m_edge_to_triangle_map[edge].size(); j++)
+            {
+                size_t triangle = mesh.m_edge_to_triangle_map[edge][j];
+                bool oriented = mesh.oriented(xj, v2, mesh.get_triangle(triangle));
+                
+                Vec2i label = mesh.get_triangle_label(triangle);
+                if (label[0] == A || label[1] == A)
+                    adjA = true;
+                if (label[0] == B || label[1] == B)
+                    adjB = true;
+                if ((label[0] == B &&  oriented) ||
+                    (label[1] == B && !oriented))
+                {
+                    lower_region = (label[0] == B ? label[1] : label[0]);
+                }
+                if ((label[0] == B && !oriented) ||
+                    (label[1] == B &&  oriented))
+                {
+                    upper_region = (label[0] == B ? label[1] : label[0]);
+                }
+                
+            }
+            
+            if (adjA && adjB)
+            {
+                if (upper_region >= 0 && lower_region >= 0) // if this is not true, then the neighborhood around this edge is not complete, which can oly happen on the boundary.
+                {
+                    // this is an X-junction edge. pulling vertex xj apart creates a new face here.
+                    std::cout << "Unresolved X-junction edge encountered." << std::endl;
+                    faces_to_create.push_back(Vec3st(a, b, v2));
+                    face_labels_to_create.push_back(Vec2i(lower_region, upper_region));
+                }
+            }
+        }
+
         // prune flap triangles
+        // TODO: make use of ElTopo's flap triangle pruning: SurfTrack::trim_non_manifold(). Just need to maintain the m_dirty_triangles list.
         for (size_t i = 0; i < faces_to_create.size(); i++)
         {
             for (size_t j = i + 1; j < faces_to_create.size(); j++)
@@ -959,69 +1087,32 @@ bool T1Transition::pop_vertices()
             }
         }
         
-        // apply the deleteion/addition
-        for (size_t i = 0; i < faces_to_delete.size(); i++)
-            mesh.nondestructive_remove_triangle(faces_to_delete[i]);
-
-        //&&&& recursive deletion
-//        for (size_t i = 0; i < edges_to_delete.size(); i++)
-//            m_obj->deleteEdge(edges_to_delete[i], false);
-//        m_obj->deleteVertex(xj);
-        
+        // apply the deletion/addition
         assert(faces_to_create.size() == face_labels_to_create.size());
         for (size_t i = 0; i < faces_to_create.size(); i++)
         {
-            size_t nf = mesh.nondestructive_add_triangle(faces_to_create[i]);
+            size_t nf = m_surf.add_triangle(faces_to_create[i]);
             mesh.set_triangle_label(nf, face_labels_to_create[i]);
             faces_created.push_back(nf);
         }
+        
+        for (size_t i = 0; i < faces_to_delete.size(); i++)
+            m_surf.remove_triangle(faces_to_delete[i]);
         
         // mark the two new vertices a and b as dirty
         vertices_to_process.push_back(a);
         vertices_to_process.push_back(b);
         
-        // set the vertices new positions
-        m_surf.set_newposition(a, m_surf.get_newposition(a) + pull_apart_offset * 0.1);
-        m_surf.set_newposition(b, m_surf.get_newposition(b) - pull_apart_offset * 0.1);
-
-        // enforce constraints
-        bool xj_constraint = m_surf.m_mesh.get_vertex_constraint_label(xj);
-        if (xj_constraint)
-        {
-            assert(m_surf.m_constrained_vertices_callback);
-            
-            Vec3d pos_a = m_surf.get_newposition(a);
-            Vec3d pos_b = m_surf.get_newposition(b);
-            m_surf.m_constrained_vertices_callback->generate_vertex_popped_positions(m_surf, xj, A, B, pos_a, pos_b);
-            m_surf.set_newposition(a, pos_a);
-            m_surf.set_newposition(b, pos_b);
-        }
-        
-        m_surf.set_position(a, m_surf.get_newposition(a));
-        m_surf.set_position(b, m_surf.get_newposition(b));
-        
-        mesh.set_vertex_constraint_label(a, xj_constraint);
-        mesh.set_vertex_constraint_label(b, xj_constraint);
-        
-        // vertex deletion/creation logging
-        verts_to_delete.push_back(xj);
-        
-        verts_to_create.push_back(m_surf.get_newposition(a));
-        verts_to_create.push_back(m_surf.get_newposition(b));
-        
-        verts_created.push_back(a);
-        verts_created.push_back(b);
-
         // Add to new history log
-        MeshUpdateEvent edgepop(MeshUpdateEvent::VERTEX_POP);
-        edgepop.m_deleted_tris = faces_to_delete;
-        edgepop.m_created_tris = faces_created;
-        edgepop.m_created_tri_data = faces_to_create;
-        edgepop.m_created_tri_labels = face_labels_to_create;
-        edgepop.m_deleted_verts = verts_to_delete;
-        edgepop.m_created_verts = verts_created;
-        edgepop.m_created_vert_data = verts_to_create;
-        m_surf.m_mesh_change_history.push_back(edgepop);
+        MeshUpdateEvent vertpop(MeshUpdateEvent::VERTEX_POP);
+        vertpop.m_deleted_tris = faces_to_delete;
+        vertpop.m_created_tris = faces_created;
+        vertpop.m_created_tri_data = faces_to_create;
+        vertpop.m_created_tri_labels = face_labels_to_create;
+        vertpop.m_deleted_verts = verts_to_delete;
+        vertpop.m_created_verts = verts_created;
+        vertpop.m_created_vert_data = verts_to_create;
+        m_surf.m_mesh_change_history.push_back(vertpop);
         
         pop_occurred = true;
         
@@ -1306,6 +1397,375 @@ bool T1Transition::should_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pul
     return tensile_force > 0;
 }
 
+bool T1Transition::pulling_vertex_apart_introduces_collision(size_t v, const Vec3d & oldpos, const Vec3d & newpos0, const Vec3d & newpos1)
+{
+    bool collision0 = vertex_pseudo_motion_introduces_collision(v, oldpos, newpos0);
+    bool collision1 = vertex_pseudo_motion_introduces_collision(v, oldpos, newpos1);
+    
+    return collision0 || collision1;
+}
+    
+bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec3d & oldpos, const Vec3d & newpos)
+{
+    // code adapted from EdgeSplitter::split_edge_pseudo_motion_introduces_intersection()
+    
+    if (!m_surf.m_collision_safety)
+        return false;
+    
+    NonDestructiveTriMesh & m_mesh = m_surf.m_mesh;
+    
+    const std::vector<Vec3d> & x = m_surf.get_positions();
+    
+    std::vector<size_t> & tris = m_surf.m_mesh.m_vertex_to_triangle_map[v];
+    std::vector<size_t> & edges = m_surf.m_mesh.m_vertex_to_edge_map[v];
+    std::vector<size_t> edge_other_endpoints(edges.size());
+    
+    for (size_t i = 0; i < edges.size(); i++)
+        edge_other_endpoints[i] = (m_mesh.m_edges[edges[i]][0] == v ? m_mesh.m_edges[edges[i]][1] : m_mesh.m_edges[edges[i]][0]);
+    
+    // new point vs all triangles
+    {
+        
+        Vec3d aabb_low, aabb_high;
+        minmax(oldpos, newpos, aabb_low, aabb_high);
+        
+        aabb_low  -= m_surf.m_aabb_padding * Vec3d(1,1,1);
+        aabb_high += m_surf.m_aabb_padding * Vec3d(1,1,1);
+        
+        std::vector<size_t> overlapping_triangles;
+        m_surf.m_broad_phase->get_potential_triangle_collisions(aabb_low, aabb_high, true, true, overlapping_triangles);
+        
+        for (size_t i = 0; i < overlapping_triangles.size(); i++)
+        {
+            // exclude incident triangles
+            if (m_mesh.get_triangle(overlapping_triangles[i])[0] == v ||
+                m_mesh.get_triangle(overlapping_triangles[i])[1] == v ||
+                m_mesh.get_triangle(overlapping_triangles[i])[2] == v)
+                continue;
+            
+            Vec3st sorted_triangle = sort_triangle(m_mesh.get_triangle(overlapping_triangles[i]));
+            size_t a = sorted_triangle[0];
+            size_t b = sorted_triangle[1];
+            size_t c = sorted_triangle[2];
+            
+            double t_zero_distance;
+            check_point_triangle_proximity(oldpos, x[a], x[b], x[c], t_zero_distance);
+            if (t_zero_distance < m_surf.m_improve_collision_epsilon)
+                return true;
+            
+            if (point_triangle_collision(oldpos, newpos, v, x[a], x[a], a, x[b], x[b], b, x[c], x[c], c))
+            {
+//                if (m_surf.m_verbose)
+                    std::cout << "Popping collision: point triangle: with triangle " << overlapping_triangles[i] << std::endl;
+                return true;
+            }
+        }
+        
+    }
+    
+    // new edges vs all edges
+    {
+        Vec3d edge_aabb_low, edge_aabb_high;
+        
+        // do one big query into the broad phase for all new edges
+        minmax(oldpos, newpos, edge_aabb_low, edge_aabb_high);
+        for (size_t i = 0; i < edge_other_endpoints.size(); ++i)
+            update_minmax(m_surf.get_position(edge_other_endpoints[i]), edge_aabb_low, edge_aabb_high);
+        
+        edge_aabb_low  -= m_surf.m_aabb_padding * Vec3d(1,1,1);
+        edge_aabb_high += m_surf.m_aabb_padding * Vec3d(1,1,1);
+        
+        std::vector<size_t> overlapping_edges;
+        m_surf.m_broad_phase->get_potential_edge_collisions(edge_aabb_low, edge_aabb_high, true, true, overlapping_edges);
+        
+        for (size_t i = 0; i < overlapping_edges.size(); i++)
+        {
+            if (m_mesh.m_edges[overlapping_edges[i]][0] == m_mesh.m_edges[overlapping_edges[i]][1])
+                continue;
+            
+            for (size_t j = 0; j < edges.size(); j++)
+            {
+                // exclude adjacent edges
+                if (m_mesh.get_common_vertex(edges[j], overlapping_edges[i]) < m_mesh.nv())
+                    continue;
+                
+                size_t n = edge_other_endpoints[j];
+                size_t e0 = m_mesh.m_edges[overlapping_edges[i]][0];
+                size_t e1 = m_mesh.m_edges[overlapping_edges[i]][1];
+                if (e0 > e1)
+                    std::swap(e0, e1);
+                
+                double t_zero_distance;
+                check_edge_edge_proximity(oldpos, x[n], x[e0], x[e1], t_zero_distance);
+                if (t_zero_distance < m_surf.m_improve_collision_epsilon)
+                    return true;
 
+                bool collision = (n < v ?
+                                  segment_segment_collision(x[n], x[n], n, oldpos, newpos, v, x[e0], x[e0], e0, x[e1], x[e1], e1) :
+                                  segment_segment_collision(oldpos, newpos, v, x[n], x[n], n, x[e0], x[e0], e0, x[e1], x[e1], e1));
+                
+                if (collision)
+                {
+//                    if (m_surf.m_verbose)
+                        std::cout << "Popping collision: edge edge: edge other vertex = " << edge_other_endpoints[j] << " edge = " << overlapping_edges[i] << std::endl;
+                    return true;
+                }
+            }
+        }      
+    }
+    
+    // new triangles vs all points
+    {
+        Vec3d triangle_aabb_low, triangle_aabb_high;
+        
+        // do one big query into the broad phase for all new triangles
+        minmax(oldpos, newpos, triangle_aabb_low, triangle_aabb_high);
+        for (size_t i = 0; i < edge_other_endpoints.size(); ++i)
+            update_minmax(m_surf.get_position(edge_other_endpoints[i]), triangle_aabb_low, triangle_aabb_high);
+        
+        triangle_aabb_low  -= m_surf.m_aabb_padding * Vec3d(1,1,1);
+        triangle_aabb_high += m_surf.m_aabb_padding * Vec3d(1,1,1);
+        
+        std::vector<size_t> overlapping_vertices;
+        m_surf.m_broad_phase->get_potential_vertex_collisions(triangle_aabb_low, triangle_aabb_high, true, true, overlapping_vertices);
+        
+        for (size_t i = 0; i < overlapping_vertices.size(); i++)
+        {
+            if (m_mesh.m_vertex_to_triangle_map[overlapping_vertices[i]].empty()) 
+                continue; 
+            
+            const Vec3d & vert = m_surf.get_position(overlapping_vertices[i]);
+            
+            for (size_t j = 0; j < tris.size(); j++)
+            {
+                // exclude incident triangles
+                if (m_mesh.get_triangle(tris[j])[0] == overlapping_vertices[i] ||
+                    m_mesh.get_triangle(tris[j])[1] == overlapping_vertices[i] ||
+                    m_mesh.get_triangle(tris[j])[2] == overlapping_vertices[i])
+                    continue;
+                
+                Vec3st sorted_triangle = sort_triangle(m_mesh.get_triangle(tris[j]));
+                size_t a = sorted_triangle[0];
+                size_t b = sorted_triangle[1];
+                size_t c = sorted_triangle[2];                
+                
+                Vec3d oldxa = (a == v ? oldpos : x[a]);
+                Vec3d newxa = (a == v ? newpos : x[a]);
+                Vec3d oldxb = (b == v ? oldpos : x[b]);
+                Vec3d newxb = (b == v ? newpos : x[b]);
+                Vec3d oldxc = (c == v ? oldpos : x[c]);
+                Vec3d newxc = (c == v ? newpos : x[c]);
+                
+                double t_zero_distance;
+                check_point_triangle_proximity(vert, oldxa, oldxb, oldxc, t_zero_distance);
+                if (t_zero_distance < m_surf.m_improve_collision_epsilon)
+                    return true;
+                
+                if (point_triangle_collision(vert, vert, overlapping_vertices[i], oldxa, newxa, a, oldxb, newxb, b, oldxc, newxc, c))
+                {
+//                    if (m_surf.m_verbose)
+                        std::cout << "Popping collision: triangle point: with triangle " << tris[j] << " with vertex " << overlapping_vertices[i] << std::endl;
+                    return true;
+                }
+            }
+        }
+    }
+    
+    return false;
+}
+    
+bool T1Transition::vertex_pseudo_motion_introduces_collision(size_t v, const Vec3d & oldpos, const Vec3d & newpos, const std::vector<size_t> & tris, const std::vector<size_t> & edges)
+{
+    NonDestructiveTriMesh & mesh = m_surf.m_mesh;
+    
+    const std::vector<Vec3d> & x = m_surf.get_positions();
+    
+    // sanity check: all tris triangles and all edges edges are actually incident to v
+    for (size_t i = 0; i < tris.size(); i++)
+    {
+        const Vec3st & t = mesh.get_triangle(tris[i]);
+        assert(t[0] == v || t[1] == v || t[2] == v);
+    }
+    
+    for (size_t i = 0; i < edges.size(); i++)
+    {
+        const Vec2st & e = mesh.m_edges[edges[i]];
+        assert(e[0] == v || e[1] == v);
+    }
+    
+    // new point vs all triangles
+    {
+        Vec3d aabb_low, aabb_high;
+        minmax(oldpos, newpos, aabb_low, aabb_high);
+        
+        aabb_low  -= m_surf.m_aabb_padding * Vec3d(1,1,1);
+        aabb_high += m_surf.m_aabb_padding * Vec3d(1,1,1);
+        
+        std::vector<size_t> overlapping_triangles;
+        m_surf.m_broad_phase->get_potential_triangle_collisions(aabb_low, aabb_high, true, true, overlapping_triangles);
+        
+        for (size_t i = 0; i < overlapping_triangles.size(); i++)
+        {
+            const Vec3st & t = mesh.get_triangle(overlapping_triangles[i]);
+            
+            // exclude incident triangles
+            if (t[0] == v || t[1] == v || t[2] == v)
+                continue;
+            
+            Vec3st sorted_triangle = sort_triangle(t);
+            size_t a = sorted_triangle[0];
+            size_t b = sorted_triangle[1];
+            size_t c = sorted_triangle[2];
+            
+            double t_zero_distance;
+            check_point_triangle_proximity(oldpos, x[a], x[b], x[c], t_zero_distance);
+            if (t_zero_distance < m_surf.m_improve_collision_epsilon)
+                return true;
+            
+            if (point_triangle_collision(oldpos, newpos, v, x[a], x[a], a, x[b], x[b], b, x[c], x[c], c))
+            {
+//                if (m_surf.m_verbose)
+                    std::cout << "Popping collision: point triangle: with triangle " << overlapping_triangles[i] << std::endl;
+                return true;
+            }
+        }
+        
+    }
+    
+    // new edges vs all edges
+    {
+        Vec3d edge_aabb_low, edge_aabb_high;
+        
+        // do one big query into the broad phase for all new edges
+        minmax(oldpos, newpos, edge_aabb_low, edge_aabb_high);
+        for (size_t i = 0; i < edges.size(); ++i)
+        {
+            size_t other_endpoint = (mesh.m_edges[edges[i]][0] == v ? mesh.m_edges[edges[i]][1] : mesh.m_edges[edges[i]][0]);
+            update_minmax(m_surf.get_position(other_endpoint), edge_aabb_low, edge_aabb_high);
+        }
+        
+        edge_aabb_low  -= m_surf.m_aabb_padding * Vec3d(1,1,1);
+        edge_aabb_high += m_surf.m_aabb_padding * Vec3d(1,1,1);
+        
+        std::vector<size_t> overlapping_edges;
+        m_surf.m_broad_phase->get_potential_edge_collisions(edge_aabb_low, edge_aabb_high, true, true, overlapping_edges);
+        
+        for (size_t i = 0; i < overlapping_edges.size(); i++)
+        {
+            const Vec2st & e = mesh.m_edges[overlapping_edges[i]];
+            
+            if (e[0] == e[1])
+                continue;
+            
+            for (size_t j = 0; j < edges.size(); j++)
+            {
+                // exclude adjacent edges
+                if (mesh.get_common_vertex(edges[j], overlapping_edges[i]) < mesh.nv())
+                    continue;
+                
+                size_t n = (mesh.m_edges[edges[j]][0] == v ? mesh.m_edges[edges[j]][1] : mesh.m_edges[edges[j]][0]);
+                size_t e0 = e[0];
+                size_t e1 = e[1];
+                if (e0 > e1)
+                    std::swap(e0, e1);
+                
+                double t_zero_distance;
+                check_edge_edge_proximity(oldpos, x[n], x[e0], x[e1], t_zero_distance);
+                if (t_zero_distance < m_surf.m_improve_collision_epsilon)
+                    return true;
+                
+                bool collision = (n < v ?
+                                  segment_segment_collision(x[n], x[n], n, oldpos, newpos, v, x[e0], x[e0], e0, x[e1], x[e1], e1) :
+                                  segment_segment_collision(oldpos, newpos, v, x[n], x[n], n, x[e0], x[e0], e0, x[e1], x[e1], e1));
+                
+                if (collision)
+                {
+//                    if (m_surf.m_verbose)
+                        std::cout << "Popping collision: edge edge: edge other vertex = " << n << " edge = " << overlapping_edges[i] << std::endl;
+                    return true;
+                }
+            }
+        }      
+    }
+    
+    // new triangles vs all points
+    {
+        Vec3d triangle_aabb_low, triangle_aabb_high;
+        
+        // do one big query into the broad phase for all new triangles
+        minmax(oldpos, newpos, triangle_aabb_low, triangle_aabb_high);
+        for (size_t i = 0; i < tris.size(); ++i)
+        {
+            const Vec3st & t = mesh.get_triangle(tris[i]);
+            Vec2st other_vertices;
+            if (t[0] == v)
+                other_vertices = Vec2st(t[1], t[2]);
+            else if (t[1] == v)
+                other_vertices = Vec2st(t[2], t[0]);
+            else if (t[2] == v)
+                other_vertices = Vec2st(t[0], t[1]);
+            else
+                assert(!"triangle in tris does not contain vertex v");
+            update_minmax(m_surf.get_position(other_vertices[0]), triangle_aabb_low, triangle_aabb_high);
+            update_minmax(m_surf.get_position(other_vertices[1]), triangle_aabb_low, triangle_aabb_high);
+        }
+        
+        triangle_aabb_low  -= m_surf.m_aabb_padding * Vec3d(1,1,1);
+        triangle_aabb_high += m_surf.m_aabb_padding * Vec3d(1,1,1);
+        
+        std::vector<size_t> overlapping_vertices;
+        m_surf.m_broad_phase->get_potential_vertex_collisions(triangle_aabb_low, triangle_aabb_high, true, true, overlapping_vertices);
+        
+        for (size_t i = 0; i < overlapping_vertices.size(); i++)
+        {
+            size_t & ov = overlapping_vertices[i];
+            
+            if (mesh.m_vertex_to_triangle_map[ov].empty()) 
+                continue; 
+            
+            const Vec3d & vert = m_surf.get_position(ov);
+            
+            for (size_t j = 0; j < tris.size(); j++)
+            {
+                const Vec3st & t = mesh.get_triangle(tris[j]);
+                
+                // exclude incident triangles
+                if (t[0] == ov || t[1] == ov || t[2] == ov)
+                    continue;
+                
+                Vec3st sorted_triangle = sort_triangle(t);
+                size_t a = sorted_triangle[0];
+                size_t b = sorted_triangle[1];
+                size_t c = sorted_triangle[2];
+                
+                Vec3d oldxa = (a == v ? oldpos : x[a]);
+                Vec3d newxa = (a == v ? newpos : x[a]);
+                Vec3d oldxb = (b == v ? oldpos : x[b]);
+                Vec3d newxb = (b == v ? newpos : x[b]);
+                Vec3d oldxc = (c == v ? oldpos : x[c]);
+                Vec3d newxc = (c == v ? newpos : x[c]);
+                
+                double t_zero_distance;
+                check_point_triangle_proximity(vert, oldxa, oldxb, oldxc, t_zero_distance);
+                if (t_zero_distance < m_surf.m_improve_collision_epsilon)
+                    return true;
+                
+                if (point_triangle_collision(vert, vert, overlapping_vertices[i], oldxa, newxa, a, oldxb, newxb, b, oldxc, newxc, c))
+                {
+//                    if (m_surf.m_verbose)
+                        std::cout << "Popping collision: triangle point: with triangle " << tris[j] << " with vertex " << ov << std::endl;
+                    return true;
+                }
+            }
+        }
+    }
+    
+    return false;
+    
+    
+    
+}
+
+    
 
 }

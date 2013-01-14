@@ -516,7 +516,7 @@ bool read_objfile(NonDestructiveTriMesh &mesh, std::vector<Vec3d> &x, const char
             if(line[1]==' '){
                read_face_list(line+2, vertex_list);
                for(int j=0; j<(int)vertex_list.size()-2; ++j)
-                  mesh.m_tris.push_back(Vec3ui(vertex_list[0], vertex_list[j+1], vertex_list[j+2]));
+                  mesh.m_tris.push_back(Vec3st(vertex_list[0], vertex_list[j+1], vertex_list[j+2]));
             }
             break;
       }
