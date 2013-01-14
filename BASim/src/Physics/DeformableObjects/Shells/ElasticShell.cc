@@ -21,7 +21,7 @@
 
 namespace BASim {
   
-ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep) : 
+ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep, SteppingCallback * stepping_callback) : 
   PhysicalModel(*object), m_obj(object), 
     m_active_faces(shellFaces), 
 //    m_undef_xi(object),
@@ -41,9 +41,10 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
     m_sphere_collisions(false),
     m_object_collisions(false),
     m_ground_collisions(false),
-    m_do_eltopo_collisions(false)
+    m_do_eltopo_collisions(false),
 //    m_do_thickness_updates(true),
 //    m_momentum_conserving_remesh(false)
+    m_stepping_callback(stepping_callback)
 {
   m_vert_point_springs = new ShellVertexPointSpringForce(*this, "VertPointSprings", timestep);
   m_repulsion_springs = new ShellStickyRepulsionForce(*this, "RepulsionSprings", timestep);
@@ -423,6 +424,7 @@ void ElasticShell::startStep(Scalar time, Scalar timestep)
     forces[i]->update();
   }
   
+  
 }
 
 void ElasticShell::resolveCollisions(Scalar timestep) {
@@ -677,6 +679,9 @@ void ElasticShell::setSelfCollision(bool enabled) {
 
 void ElasticShell::endStep(Scalar time, Scalar timestep) {
 
+  if (m_stepping_callback)
+    m_stepping_callback->beforeEndStep();
+  
   std::cout << "Starting endStep.\n";
   bool do_relabel = false;
 

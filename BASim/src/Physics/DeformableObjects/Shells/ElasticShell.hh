@@ -28,7 +28,15 @@ class ShellStickyRepulsionForce;
 class ElasticShell : public PhysicalModel, public ElTopo::SurfTrack::ConstrainedVerticesCallback {
 
 public:
-  ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep);
+  class SteppingCallback
+  {
+  public:
+    virtual void beforeEndStep() = 0;
+    
+  };
+  
+public:
+  ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep, SteppingCallback * stepping_callback = NULL);
   ~ElasticShell();
 
   //*Inherited from PhysicalModel
@@ -303,6 +311,10 @@ protected:
   bool m_tearing;
   Scalar m_tear_thres;
   Scalar m_tear_rand;
+  
+  // stepping callback
+  SteppingCallback * m_stepping_callback;
+  
 };
 
 }

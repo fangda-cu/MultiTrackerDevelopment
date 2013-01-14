@@ -15,7 +15,7 @@
 #include "BASim/src/Physics/DeformableObjects/DefoObjTimeStepper.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVolumeForce.hh"
 
-class DoubleBubbleTest : public Problem
+class DoubleBubbleTest : public Problem, public ElasticShell::SteppingCallback
 {
 public:
   DoubleBubbleTest();
@@ -24,6 +24,8 @@ public:
   virtual void serialize( std::ofstream& of ) { assert(!"Not implemented"); }
   virtual void resumeFromfile( std::ifstream& ifs ) { assert(!"Not implemented"); }
 
+  void beforeEndStep();
+  
 protected:
   void Setup();
   void AtEachTimestep();

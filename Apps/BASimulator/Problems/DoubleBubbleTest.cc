@@ -510,6 +510,46 @@ void DoubleBubbleTest::AtEachTimestep()
     }
     
   }
+  
+}
+void DoubleBubbleTest::beforeEndStep()
+{
+  //
+  //  RK4 integration of the Enright velocity field
+  //  code adapted from El Topo's Enright driver:
+  //    https://github.com/tysonbrochu/eltopo/blob/master/talpa/drivers/enrightdriver.h
+  //
+  
+  Scalar dt = getDt();
+  Scalar current_t = getTime();
+  
+  for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+  {
+    Vec3d v;
+    Vec3d x = shell->getVertexPosition(*vit);
+    
+    // RK4
+    // -----------
+    // k1 = dt * f( t, x );
+    s7_enright_velocity(current_t, x, v);
+    Vec3d k1 = dt * v;
+    
+    // k2 = dt * f( t + 0.5*dt, x + 0.5*k1 );
+    s7_enright_velocity(current_t + 0.5*dt, x + 0.5 * k1, v);
+    Vec3d k2 = dt * v;
+    
+    // k3 = dt * f( t + 0.5*dt, x + 0.5*k2 );
+    s7_enright_velocity(current_t + 0.5*dt, x + 0.5 * k2, v);
+    Vec3d k3 = dt * v;
+    
+    // k4 = dt * f( t + dt, x + k3 );
+    s7_enright_velocity(current_t + dt, x + k3, v);
+    Vec3d k4 = dt * v;
+    
+    v = (1./6. * (k1 + k4) + 1./3. * (k2 + k3)) / dt;
+    shell->setVertexVelocity(*vit, v);
+    shell->setVertexPosition(*vit, x + v * dt);
+  }  
 }
 
 void DoubleBubbleTest::s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out)
@@ -536,45 +576,6 @@ void DoubleBubbleTest::AfterStep()
 //  triangulation_added_faces.clear();
 //  svf->triangulateBBWalls(triangulation_added_vertices, triangulation_added_edges, triangulation_added_faces);
   
-  if (m_active_scene == 7)
-  {
-    //
-    //  RK4 integration of the Enright velocity field
-    //  code adapted from El Topo's Enright driver:
-    //    https://github.com/tysonbrochu/eltopo/blob/master/talpa/drivers/enrightdriver.h
-    //
-
-    Scalar dt = getDt();
-    Scalar current_t = getTime();
-    
-    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
-    {
-      Vec3d v;
-      Vec3d x = shell->getVertexPosition(*vit);
-      
-      // RK4
-      // -----------
-      // k1 = dt * f( t, x );
-      s7_enright_velocity(current_t, x, v);
-      Vec3d k1 = dt * v;
-      
-      // k2 = dt * f( t + 0.5*dt, x + 0.5*k1 );
-      s7_enright_velocity(current_t + 0.5*dt, x + 0.5 * k1, v);
-      Vec3d k2 = dt * v;
-      
-      // k3 = dt * f( t + 0.5*dt, x + 0.5*k2 );
-      s7_enright_velocity(current_t + 0.5*dt, x + 0.5 * k2, v);
-      Vec3d k3 = dt * v;
-      
-      // k4 = dt * f( t + dt, x + k3 );
-      s7_enright_velocity(current_t + dt, x + k3, v);
-      Vec3d k4 = dt * v;
-      
-      v = (1./6. * (k1 + k4) + 1./3. * (k2 + k3)) / dt;
-      shell->setVertexVelocity(*vit, v);
-      shell->setVertexPosition(*vit, x + v * dt);
-    }
-  }  
 }
 
 void DoubleBubbleTest::setupScene1() 
@@ -1076,7 +1077,7 @@ void DoubleBubbleTest::setupScene7()
     shellFaces[*fIt] = true;
   
   //now create the physical model to hang on the mesh
-  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
   shellObj->addModel(shell);
   
   //positions
