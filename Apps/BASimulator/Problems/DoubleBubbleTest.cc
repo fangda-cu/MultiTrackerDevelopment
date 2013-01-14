@@ -1062,6 +1062,8 @@ void DoubleBubbleTest::setupScene7()
   }
   vertList.push_back(shellObj->addVertex());
   positions[vertList.back()] = Vec3d(c + Vec3d(0, 0, r));
+  vertList.push_back(shellObj->addVertex());
+  positions[vertList.back()] = Vec3d(c + Vec3d(0, 0, 0));
   
   for (int i = 0; i < shellObj->nv(); ++i)
   {
@@ -1083,7 +1085,7 @@ void DoubleBubbleTest::setupScene7()
       if (!(v0 == v1 || v0 == v2 || v1 == v2))
       {
         faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
-        faceLabels[faceList.back()] = Vec2i(1, 0);
+        faceLabels[faceList.back()] = Vec2i((i < N ? 1 : 2), 0);
       }
       
       v0 = (j == N ? 2 * N * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
@@ -1092,8 +1094,30 @@ void DoubleBubbleTest::setupScene7()
       if (!(v0 == v1 || v0 == v2 || v1 == v2))
       {
         faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
-        faceLabels[faceList.back()] = Vec2i(1, 0);
+        faceLabels[faceList.back()] = Vec2i((i < N ? 1 : 2), 0);
       }
+    }
+  }
+  
+  for (int j = 0; j <= N; j++)
+  {
+    int v0, v1, v2;
+    v0 = (j == 0 ? 0 : 2 * N * (j - 1) + 0 + 1);
+    v1 = 2 * N * N + 2;
+    v2 = (j == N ? 2 * N * N + 1 : 2 * N * j + 0 + 1);
+    if (!(v0 == v1 || v0 == v2 || v1 == v2))
+    {
+      faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+      faceLabels[faceList.back()] = Vec2i(2, 1);
+    }
+    
+    v0 = (j == 0 ? 0 : 2 * N * (j - 1) + N + 1);
+    v1 = 2 * N * N + 2;
+    v2 = (j == N ? 2 * N * N + 1 : 2 * N * j + N + 1);
+    if (!(v0 == v1 || v0 == v2 || v1 == v2))
+    {
+      faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+      faceLabels[faceList.back()] = Vec2i(1, 2);
     }
   }
   
