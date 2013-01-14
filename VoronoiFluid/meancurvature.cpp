@@ -216,6 +216,72 @@ void MeanCurvatureDriver::vertex_mean_curvature_normal( unsigned int vertex_inde
 
 // ---------------------------------------------------------
 ///
+/// Compute mean curvature times normal at a vertex and return the sum of weights used (for computing the time step restriction)
+///
+// ---------------------------------------------------------
+
+void MeanCurvatureDriver::vertex_mean_curvature_normal_nonmanifold( unsigned int vertex_index, const DynamicSurface& surf, Vec3d& out )
+{
+   Vec3d mean_curvature_normal( 0, 0, 0 );
+   double weight_sum = 0;
+
+   for ( unsigned int i = 0; i < surf.m_mesh.m_vertex_to_triangle_map[vertex_index].size(); ++i )
+   {
+      size_t t = surf.m_mesh.m_vertex_to_triangle_map[vertex_index][i];
+      const Vec3st curr_tri = surf.m_mesh.m_tris[t];
+
+      int ind = 0;
+      while(curr_tri[ind] == vertex_index) ++ind;
+      int vert0 = curr_tri[ind]; ++ind;
+      while(curr_tri[ind] == vertex_index) ++ind;
+      int vert1 = curr_tri[ind];
+      assert(ind < 3);
+      
+      Vec3d edge0 = surf.get_position(vert0) - surf.get_position(vertex_index);
+      Vec3d edge1 = surf.get_position(vert1) - surf.get_position(vertex_index);
+      Vec3d edge2 = surf.get_position(vert1) - surf.get_position(vert0);
+     
+      Vec3d v00 = -edge0;
+      Vec3d v10 = edge2;
+
+      double cross_0 = mag( cross( v00, v10 ) );
+      if ( cross_0 >= 1e-10 )
+      {
+         double cot_0 = dot(v00, v10) / cross_0;
+
+         mean_curvature_normal += cot_0 * edge1;
+         weight_sum += cot_0;
+      }
+      
+      Vec3d v01 = -edge1;
+      Vec3d v11 = -edge2;
+
+      double cross_1 = mag( cross( v01, v11 ) );
+      if ( cross_1 >= 1e-10 )
+      {
+         double cot_1 = dot(v01, v11) / cross_1;
+
+         mean_curvature_normal += cot_1 * edge0;   
+         weight_sum += cot_1;
+      }
+      
+   }
+
+   double vertex_area = 0.0;
+   for ( unsigned int i = 0; i < surf.m_mesh.m_vertex_to_triangle_map[vertex_index].size(); ++i )
+   {
+      vertex_area += mixed_area( vertex_index, surf.m_mesh.m_vertex_to_triangle_map[vertex_index][i], surf );
+   }
+
+   double coeff = 1.0 / (2.0 * vertex_area);
+
+   weight_sum *= coeff; //I am not sure where this normalization factor comes from - Christopher (Tyson wrote the original code)
+
+   out = coeff * mean_curvature_normal;
+
+}
+// ---------------------------------------------------------
+///
 /// Set velocities on each mesh vertex
 ///
 // ---------------------------------------------------------

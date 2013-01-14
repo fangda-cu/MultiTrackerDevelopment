@@ -60,6 +60,10 @@ public:
    ///
    static void vertex_mean_curvature_normal( unsigned int vertex_index, const ElTopo::DynamicSurface& surf, ElTopo::Vec3d& out, double& weight_sum );
    
+   /// Compute mean curvature times normal at a vertex, using per-triangle approach that supports non-manifoldness
+   ///
+   static void vertex_mean_curvature_normal_nonmanifold( unsigned int vertex_index, const ElTopo::DynamicSurface& surf, ElTopo::Vec3d& out );
+
    /// Set velocities on each mesh vertex
    ///
    void set_surface_velocity( const ElTopo::DynamicSurface& surf, std::vector<ElTopo::Vec3d>& out_velocity, double current_t, double& adaptive_dt );
@@ -75,7 +79,8 @@ public:
    /// Compute and output both L1 and L_inf errors
    ///
    void compute_error( const ElTopo::DynamicSurface& surf, double current_t );
-   
+  
+
    /// Speed of motion
    ///
    double curvature_multiplier;
