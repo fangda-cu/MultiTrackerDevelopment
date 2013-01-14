@@ -57,7 +57,9 @@ public:
   void setupScene7(); // Enright test with a sphere
   void setupScene8(); // Zalesak test 
   
-  
+
+  void s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out);
+
 
 };
 
