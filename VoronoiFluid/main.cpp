@@ -16,9 +16,8 @@
 
 #include <subdivisionscheme.h>
 
-//#include "mesh3dwrapper.h"
 
-#ifndef WIN32
+#ifndef _MSC_VER
 #include <sys/stat.h>
 #endif
 
@@ -100,7 +99,7 @@ double g_svd_rcond = 0.2;
 
 #ifdef __APPLE__   
 char g_path[256] = "/Users/tyson/scratch/voronoi3d";
-#elif defined WIN32
+#elif defined _MSC_VER
 char g_path[256] = "C:/output";
 #else
 char g_path[256] = "/var/tmp";
@@ -181,36 +180,7 @@ void update_renderable_objects()
    g_renderable_liquid_phi = g_dual_sim->liquid_phi;
    g_renderable_region_IDs = g_dual_sim->region_IDs;
    g_renderable_labels = g_dual_sim->surface_tracker->m_mesh.m_triangle_labels;
-   /*
 
-   std::vector<float> vertexCurvatures(g_renderable_vertices.size());
-   for(unsigned int i = 0; i < g_renderable_vertices.size(); ++i) {
-      //Vec3d surf_normal = g_renderable_vertex_normals[i];
-
-      //Vec3d curvatureNormal;
-      //MeanCurvatureDriver::vertex_mean_curvature_normal(i, *(g_dual_sim->surface_tracker), curvatureNormal);
-      //vertexCurvatures[i] = -(float)mag(curvatureNormal) * (dot(surf_normal,curvatureNormal) > 0?1:-1);
-      
-      Vec3d meanCurvatureNormal;
-      MeanCurvatureDriver::vertex_mean_curvature_normal(i, *(g_dual_sim->surface_tracker), meanCurvatureNormal);
-      Vec3d surfaceNormal = meanCurvatureNormal;
-      normalize(surfaceNormal);
-      float curvatureValue = dot(meanCurvatureNormal,surfaceNormal);
-      vertexCurvatures[i] = curvatureValue;
-   }
-
-   g_renderable_vertex_curvatures = vertexCurvatures;
-
-   g_vertex_rank.clear();
-   g_vertex_rank.resize( g_dual_sim->surface_tracker->m_positions.size(), 0 );
-   g_vertex_primary_eigenvectors.resize( g_dual_sim->surface_tracker->m_positions.size(), Vec3d(0,0,0) );
-   for ( unsigned int i = 0; i < g_dual_sim->surface_tracker->m_positions.size(); ++i )
-   {
-      Vec3d eigenvectors[3];
-      g_vertex_rank[i] = g_dual_sim->surface_tracker->classify_vertex( i, eigenvectors );
-      g_vertex_primary_eigenvectors[i] = eigenvectors[2];
-   }
-   */
    
    // release mutex
    pthread_mutex_unlock( &sim_mutex );   
@@ -1224,7 +1194,7 @@ void restore_frame( unsigned int frame )
    
 #ifdef __APPLE__   
    sprintf( binfile, "%s/surface%04d.bin", "/Users/tyson/scratch/voronoi3d", frame );
-#elif defined WIN32
+#elif defined _MSC_VER
    sprintf( binfile, "%s/surface%04d.bin", "C:/output", frame );
 #else
    sprintf( binfile, "%s/surface%04d.bin", "/var/tmp", frame );
@@ -1248,7 +1218,7 @@ void restore_frame( unsigned int frame )
    char elefile[256];
 #ifdef __APPLE__   
    sprintf( elefile, "%s/tetmesh%04d.ele", "/Users/tyson/scratch/voronoi3d", frame );
-#elif defined WIN32
+#elif defined _MSC_VER
    sprintf( elefile, "%s/tetmesh%04d.ele", "C:/output", frame );
 #else
    sprintf( elefile, "%s/tetmesh%04d.ele", "/var/tmp", frame );
@@ -1259,7 +1229,7 @@ void restore_frame( unsigned int frame )
    char nodefile[256];
 #ifdef __APPLE__   
    sprintf( nodefile, "%s/tetmesh%04d.node", "/Users/tyson/scratch/voronoi3d", frame );
-#elif defined WIN32
+#elif defined _MSC_VER
    sprintf( nodefile, "%s/tetmesh%04d.node", "C:/output", frame );
 #else
    sprintf( nodefile, "%s/tetmesh%04d.node", "/var/tmp", frame );
@@ -1274,7 +1244,7 @@ void restore_frame( unsigned int frame )
    char velocityfile[256];
 #ifdef __APPLE__   
    sprintf( velocityfile, "%s/velocities%04d.bin", "/Users/tyson/scratch/voronoi3d", frame );
-#elif defined WIN32
+#elif defined _MSC_VER
    sprintf( velocityfile, "%s/velocities%04d.bin", "C:/output", frame );
 #else
    sprintf( velocityfile, "%s/velocities%04d.bin", "/var/tmp", frame );
@@ -2050,7 +2020,7 @@ int main( int argc, char** argv )
    
    std::cout << "output path: " << g_path << std::endl;
 
-#ifndef WIN32
+#ifndef _MSC_VER
    
    // see if the output path exists, and if not, create it
    struct stat st;

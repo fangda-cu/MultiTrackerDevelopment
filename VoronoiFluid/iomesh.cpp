@@ -378,7 +378,7 @@ bool write_objfile(const NonDestructiveTriMesh &mesh, const std::vector<Vec3d> &
 {
    va_list ap;
    va_start(ap, filename_format);
-#ifdef WIN32
+#ifdef _MSC_VER
    int len=_vscprintf(filename_format, ap) +1;// _vscprintf doesn't count terminating '\0'
    char *filename=new char[len];
    vsprintf(filename, filename_format, ap);
@@ -389,7 +389,7 @@ bool write_objfile(const NonDestructiveTriMesh &mesh, const std::vector<Vec3d> &
    std::cout << "Writing " << filename << std::endl;
    
    std::ofstream output(filename, std::ofstream::binary);
-#ifdef WIN32
+#ifdef _MSC_VER
    delete [] filename;
 #else
    std::free(filename);
@@ -476,7 +476,7 @@ bool read_objfile(NonDestructiveTriMesh &mesh, std::vector<Vec3d> &x, const char
    va_list ap;
    va_start(ap, filename_format);
 
-#ifdef WIN32
+#ifdef _MSC_VER
    int len=_vscprintf(filename_format, ap) +1;// _vscprintf doesn't count // terminating '\0'
    char *filename=new char[len];
    vsprintf(filename, filename_format, ap);
@@ -487,7 +487,7 @@ bool read_objfile(NonDestructiveTriMesh &mesh, std::vector<Vec3d> &x, const char
 
    std::ifstream input(filename, std::ifstream::binary);
 
-#ifdef WIN32
+#ifdef _MSC_VER
    delete [] filename;
 #else
    std::free(filename);
@@ -535,7 +535,7 @@ bool write_ribfile(const NonDestructiveTriMesh &mesh, const std::vector<float> &
    va_list ap;
    va_start(ap, filename_format);
    
-#ifdef WIN32
+#ifdef _MSC_VER
    int len=_vscprintf(filename_format, ap) +1;// _vscprintf doesn't count // terminating '\0'
    char *filename=new char[len];
    vsprintf(filename, filename_format, ap);
@@ -545,7 +545,7 @@ bool write_ribfile(const NonDestructiveTriMesh &mesh, const std::vector<float> &
 #endif
    
    std::ofstream output(filename, std::ofstream::binary);
-#ifdef WIN32
+#ifdef _MSC_VER
    delete [] filename;
 #else
    std::free(filename);
@@ -632,7 +632,7 @@ bool output_shadow_rib( Gluvi::Target3D& light, const std::vector<Vec3d>& positi
    va_list ap;
    va_start(ap, filename_format);
    
-#ifdef WIN32
+#ifdef _MSC_VER
    int len=_vscprintf(filename_format, ap) +1;// _vscprintf doesn't count // terminating '\0'
    char *filename=new char[len];
    vsprintf(filename, filename_format, ap);
@@ -651,7 +651,7 @@ bool output_shadow_rib( Gluvi::Target3D& light, const std::vector<Vec3d>& positi
       return false;
    }
    
-#ifdef WIN32
+#ifdef _MSC_VER
    len=_vscprintf("track%04d_shadow.tiff", ap) +1;// _vscprintf doesn't count // terminating '\0'
    delete[] filename;
    filename=new char[len];
@@ -661,7 +661,7 @@ bool output_shadow_rib( Gluvi::Target3D& light, const std::vector<Vec3d>& positi
 #endif
 
    
-#ifdef WIN32
+#ifdef _MSC_VER
    delete [] filename;
 #else
    std::free(filename);
@@ -729,7 +729,7 @@ bool output_rib( const std::vector<Vec3d>& positions, const NonDestructiveTriMes
    va_list ap;
    va_start(ap, filename_format);
    
-#ifdef WIN32
+#ifdef _MSC_VER
    int len=_vscprintf(filename_format, ap) +1;// _vscprintf doesn't count // terminating '\0'
    char *filename=new char[len];
    vsprintf(filename, filename_format, ap);
@@ -750,7 +750,7 @@ bool output_rib( const std::vector<Vec3d>& positions, const NonDestructiveTriMes
    }
    
    // first line: what image file this RIB file should produce
-#ifdef WIN32
+#ifdef _MSC_VER
    len=_vscprintf("track%04d.tiff", ap) +1;// _vscprintf doesn't count // terminating '\0'
    delete[] filename;
    filename=new char[len];
@@ -761,7 +761,7 @@ bool output_rib( const std::vector<Vec3d>& positions, const NonDestructiveTriMes
    
 
    char *shadow_filename;
-#ifdef WIN32
+#ifdef _MSC_VER
    len=_vscprintf("track%04d_shadow.tiff", ap) +1;// _vscprintf doesn't count // terminating '\0'
    shadow_filename=new char[len];
    vsprintf(shadow_filename, "track%04d_shadow.tiff", ap);
@@ -876,7 +876,7 @@ bool write_pbrtfile(const NonDestructiveTriMesh &mesh, const std::vector<float> 
 {
    va_list ap;
    va_start(ap, filename_format);
-#ifdef WIN32
+#ifdef _MSC_VER
    int len=_vscprintf(filename_format, ap) +1;// _vscprintf doesn't count // terminating '\0'
    char *filename=new char[len];
    vsprintf(filename, filename_format, ap);
@@ -886,7 +886,7 @@ bool write_pbrtfile(const NonDestructiveTriMesh &mesh, const std::vector<float> 
 #endif
    std::ofstream output(filename, std::ofstream::binary);
    
-#ifdef WIN32
+#ifdef _MSC_VER
    delete [] filename;
 #else
    std::free(filename);
