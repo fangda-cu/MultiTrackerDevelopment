@@ -1212,6 +1212,8 @@ void ElasticShell::remesh()
     }
     FaceHandle f = m_obj->addFace(reverse_vertmap[tri[0]], reverse_vertmap[tri[1]], reverse_vertmap[tri[2]]);
     setFaceLabel(f, Vec2i(surface_tracker.m_mesh.get_triangle_label(i)[0], surface_tracker.m_mesh.get_triangle_label(i)[1]));
+    m_active_faces[f] = 1;
+    
     face_numbers[f] = i;
     reverse_trimap[i] = f;
   }
