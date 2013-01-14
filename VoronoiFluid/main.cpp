@@ -71,7 +71,7 @@ bool g_draw_valid_tet_vertices = false;
 bool g_draw_velocities = false;
 bool g_display_status_text = true;
 
-//timestepping
+//Time stepping
 bool g_running = false;
 bool g_advance_single_frame = false;
 bool g_rendering_sequence = false;
@@ -82,10 +82,6 @@ extern double g_air_sample_rejection_threshold;
 
 int g_num_surface_substeps = 1;
 double g_frame_rate = 30.0;
-
-
-// TEMP
-bool g_null_space_smoothing = true;
 
 
 Vec3f DOMAIN_LOW(0,0,0);
@@ -103,9 +99,6 @@ char g_path[256] = "C:/output";
 char g_path[256] = "/var/tmp";
 #endif
 
-// TEMP:
-std::vector<unsigned int> g_vertex_rank;
-std::vector<Vec3d> g_vertex_primary_eigenvectors;
 
 
 pthread_mutex_t thread_is_running_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -219,7 +212,7 @@ void draw_box( const Vec3f& lo, const Vec3f& hi )
 }
        
 
-
+//For sorting faces in depth order, to do transparent rendering.
 class FaceComp
 {
 public:
@@ -234,8 +227,7 @@ public:
 
 void display()
 {
-   
-   
+      
 
    if ( g_display_status_text )
    {
@@ -360,19 +352,8 @@ void display()
             if ( g_draw_liquid_phi )
             {
                
-               //if ( g_renderable_liquid_phi[i] < 0.0f )
-               //{
-               //   glColor3f(0,0,1);
-               //   glVertex3fv( g_renderable_tet_mesh->vertices[i].v );
-               //}
-               //else
-               //{
-               //   glColor3f(1,0,0);
-               //   glVertex3fv( g_renderable_tet_mesh->vertices[i].v );
-               //}
                
                Vec3f color(0,0,0);
-               //std::cout << "Region id = " << g_dual_sim->region_IDs[i] << std::endl;
                if(g_renderable_region_IDs[i] < 0 || g_renderable_region_IDs[i] > 2)
                   color = Vec3f(1,1,0);
                else
@@ -1174,7 +1155,7 @@ void keyboard(unsigned char key, int, int )
 
       case ' ':
          g_running = !g_running;
-         std::cout << (g_running ? "Start running requested." : "Stop running requested.") << std::endl;
+         std::cout << (g_running ? "Request to start running." : "Request to stop running.") << std::endl;
          break;
    }
    
@@ -1348,7 +1329,6 @@ void* advance_frame_async( void* nothing )
 {   
 
    // do work
-   //std::cout << "worker thread running" << std::endl;
    
    pthread_mutex_lock( &sim_mutex );   
 
@@ -1709,11 +1689,6 @@ void parse_script( const char* filename )
    std::vector<double> surface_masses( surface_vertices.size(), 1.0 );
 
 
-   // TEMP
-   int nss = 1;
-   tree.get_int( "null_space_smoothing", nss );   
-   g_null_space_smoothing = ( nss != 0 );
-
    double eigenvalue_rank_ratio;
    if ( tree.get_number( "eigenvalue_rank_ratio", eigenvalue_rank_ratio ) )
    {
@@ -1781,9 +1756,6 @@ void parse_script( const char* filename )
     compute_delaunay_CGAL(input_xs, tets, cgal_T);
     xs = input_xs;
 
-    //Use TetGen Delaunay mesher
-    //TetGen::delaunay_mesh( input_xs, xs, tets );
-   
    int sphere_velocity_field = 0;
 
    tree.get_int( "sphere_velocity_field", sphere_velocity_field);
@@ -1971,9 +1943,6 @@ int main( int argc, char** argv )
      
    Gluvi::winwidth = 800;
    Gluvi::winheight = 600;
-
-   /*Gluvi::winwidth = 1920;
-   Gluvi::winheight = 1080;*/
 
    Gluvi::init( "Voronoi Sim 3D", &argc, argv );    
    Gluvi::camera = new Gluvi::Target3D( );
