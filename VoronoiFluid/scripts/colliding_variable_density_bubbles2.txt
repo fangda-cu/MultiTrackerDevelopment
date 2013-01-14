@@ -1,7 +1,7 @@
 
-frame_rate 30.0
-sim_dx 0.6
-surface_dx 0.4
+frame_rate 10.0
+sim_dx 0.3
+surface_dx 0.15
 
 
 trimesh
