@@ -7,6 +7,7 @@
 #include "meancurvature.h"
 #include "dynamicsurface.h"
 #include <fstream>
+#include "util.h"
 
 using namespace ElTopo;
 
@@ -200,7 +201,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
          {
             // Free surface case, so use ghost fluid boundary condition
             float face_density = densities[region_ID]; //Use the interior density.
-            float theta = max( theta_clamp, abs(self_phi) / (abs(self_phi) + abs(neighbour_phi))); //Determine the interface position
+            float theta = max( theta_clamp, std::abs(self_phi) / (std::abs(self_phi) + std::abs(neighbour_phi))); //Determine the interface position
             
             // Increment the diagonal entry accordingly.
             diagonal_sum += solid_weights[face_index] * mesh.voronoi_face_areas[face_index] / dist / theta / face_density;
@@ -288,7 +289,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
             p0 = 0;
             if(surface_tension_coeff > 0)
                p0 = surface_tension_coeff * face_curvatures[i]; //Use the stored curvature from before.
-            theta = max(theta_clamp, abs(phi1) / (abs(phi1) + abs(phi0)));
+            theta = max(theta_clamp, std::abs(phi1) / (std::abs(phi1) + std::abs(phi0)));
             face_density = densities[region1];
          }
          else if(isFS1) 
@@ -296,7 +297,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
             p1 = 0;
             if(surface_tension_coeff > 0)
                p1 = surface_tension_coeff * face_curvatures[i]; //Use the stored curvature from before.
-            theta = max(theta_clamp, abs(phi0) / (abs(phi0) + abs(phi1)));
+            theta = max(theta_clamp, std::abs(phi0) / (std::abs(phi0) + std::abs(phi1)));
             face_density = densities[region0];
          }
          else { // Neither side is a free surface.

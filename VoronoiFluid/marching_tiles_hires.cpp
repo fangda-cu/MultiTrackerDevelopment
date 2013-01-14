@@ -112,7 +112,7 @@ improve_mesh(void)
    // first get adjacency information
    std::vector<Array1ui> nbr(x.size());
    for(unsigned int t=0; t<tri.size(); ++t){
-      unsigned int p, q, r; assign(tri[t], p, q, r);
+      size_t p, q, r; assign(tri[t], p, q, r);
       nbr[p].add_unique(q);
       nbr[p].add_unique(r);
       nbr[q].add_unique(p);

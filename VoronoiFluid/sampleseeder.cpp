@@ -115,7 +115,7 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
          bool free_surface = ( surface.m_masses[i] < 1.5 );
          if ( !free_surface )
          {
-            const std::vector<unsigned int>& incident_edges = surface.m_mesh.m_vertex_to_edge_map[i];
+            const std::vector<size_t>& incident_edges = surface.m_mesh.m_vertex_to_edge_map[i];
             for ( unsigned int j = 0; j < incident_edges.size(); ++j )
             {
                unsigned int neighbour = surface.m_mesh.m_edges[ incident_edges[j] ][0];
@@ -155,7 +155,7 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
       //
       
       // ignore incident triangles
-      const std::vector<unsigned int>& incident_triangles = surface.m_mesh.m_vertex_to_triangle_map[i];
+      const std::vector<size_t>& incident_triangles = surface.m_mesh.m_vertex_to_triangle_map[i];
       
       for(size_t i = 0; i < ray_dirs.size(); ++i)
       {      
@@ -166,7 +166,7 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
          const Vec3d ray_end = ray_origin + desired_dx * normal;
 
          std::vector<double> hit_ss;
-         std::vector<unsigned int> hit_triangles; 
+         std::vector<size_t> hit_triangles; 
          
          surface.get_triangle_intersections( ray_origin, ray_end, hit_ss, hit_triangles );
          

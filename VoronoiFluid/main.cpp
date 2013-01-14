@@ -1538,9 +1538,9 @@ void parse_script( const char* filename )
       {
          resolution = Vec3st((box_max - box_min) / surface_dx);
       }
-      resolution[0] = max( (unsigned int)1, resolution[0] );
-      resolution[1] = max( (unsigned int)1, resolution[1] );
-      resolution[2] = max( (unsigned int)1, resolution[2] );
+      resolution[0] = max( (size_t)1, resolution[0] );
+      resolution[1] = max( (size_t)1, resolution[1] );
+      resolution[2] = max( (size_t)1, resolution[2] );
       std::cout << "box_min: " << box_min << std::endl;
       std::cout << "box_max: " << box_max << std::endl;
       std::cout << "resolution: " << resolution << std::endl;
@@ -1606,9 +1606,9 @@ void parse_script( const char* filename )
       {
          resolution = Vec3st((dent_max - dent_min) / surface_dx);
       }
-      resolution[0] = max( (unsigned int)1, resolution[0] );
-      resolution[1] = max( (unsigned int)1, resolution[1] );
-      resolution[2] = max( (unsigned int)1, resolution[2] );
+      resolution[0] = max( (size_t)1, resolution[0] );
+      resolution[1] = max( (size_t)1, resolution[1] );
+      resolution[2] = max( (size_t)1, resolution[2] );
          
       create_cube( dent_min, dent_max, resolution, surface_vertices, surface_triangles );
       
