@@ -576,6 +576,33 @@ void DoubleBubbleTest::AfterStep()
 //  triangulation_added_faces.clear();
 //  svf->triangulateBBWalls(triangulation_added_vertices, triangulation_added_edges, triangulation_added_faces);
   
+  if (m_active_scene == 7)
+  {
+    Scalar vol = 0;
+    static Scalar init_vol = -1;
+    
+    Vec3d c = Vec3d(0, 0, 0);    
+    for (FaceIterator fit = shellObj->faces_begin(); fit != shellObj->faces_end(); ++fit)
+    {
+      FaceVertexIterator fvit = shellObj->fv_iter(*fit); assert(fvit);
+      Vec3d x0 = shell->getVertexPosition(*fvit); ++fvit; assert(fvit);
+      Vec3d x1 = shell->getVertexPosition(*fvit); ++fvit; assert(fvit);
+      Vec3d x2 = shell->getVertexPosition(*fvit); ++fvit; assert(!fvit);
+      
+      Vec2i label = shell->getFaceLabel(*fit);
+      if (label.y() == 0)
+        vol += (x0 - c).cross(x1 - c).dot(x2 - c);
+      else
+        vol -= (x0 - c).cross(x1 - c).dot(x2 - c);
+    }
+    vol /= 6;
+    
+    if (init_vol < 0)
+      init_vol = vol;
+    
+    std::cout << "volume = " << vol << " error = " << fabs(vol - init_vol) * 100 / init_vol << "%" << std::endl;
+    
+  }
 }
 
 void DoubleBubbleTest::setupScene1() 
@@ -1018,8 +1045,8 @@ void DoubleBubbleTest::setupScene7()
   std::vector<VertexHandle> vertList;
   
   int N = GetIntOpt("shell-x-resolution");
-  Scalar r = 0.4;
-  Vec3d c = Vec3d(0.5, 0.5, 0.5);
+  Scalar r = 0.2;
+  Vec3d c = Vec3d(0.5, 0.7, 0.5);
   vertList.push_back(shellObj->addVertex());
   positions[vertList.back()] = Vec3d(c - Vec3d(0, 0, r));
   for (int j = 0; j < N; j++)
