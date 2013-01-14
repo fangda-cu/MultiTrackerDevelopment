@@ -1,7 +1,5 @@
-
 #include "parser.h"
-
-#include <bfstream.h>
+#include "bfstream.h"
 #include "dualfluidsim3d.h"
 #include "geometryinit.h"
 #include "geometryutils.h"
@@ -13,8 +11,7 @@
 #include "tetmesh.h"
 #include "tetmeshio.h"
 #include "wallclocktime.h"
-
-#include <subdivisionscheme.h>
+#include "subdivisionscheme.h"
 
 
 #ifndef _MSC_VER
@@ -38,7 +35,6 @@ DualFluidSim3D* g_dual_sim = NULL;
 std::vector<Vec3d> g_renderable_vertices;
 std::vector<Vec3d> g_renderable_vertex_normals;
 std::vector<float> g_renderable_vertex_curvatures;
-
 std::vector<Vec3st> g_renderable_triangles;
 std::vector<Vec2st> g_renderable_edges;
 TetMesh* g_renderable_tet_mesh;
@@ -56,6 +52,7 @@ float g_default_cam_pitch;
 
 float clipping_plane_distance = 2.5f;
 
+//Rendering options
 bool g_draw_tet_vertices = false;
 bool g_draw_tet_edges = false;
 bool g_draw_tet_faces = false;
@@ -74,6 +71,7 @@ bool g_draw_valid_tet_vertices = false;
 bool g_draw_velocities = false;
 bool g_display_status_text = true;
 
+//timestepping
 bool g_running = false;
 bool g_advance_single_frame = false;
 bool g_rendering_sequence = false;
@@ -1176,7 +1174,7 @@ void keyboard(unsigned char key, int, int )
 
       case ' ':
          g_running = !g_running;
-         std::cout << (g_running ? "start" : "stop") << std::endl;
+         std::cout << (g_running ? "Start running requested." : "Stop running requested.") << std::endl;
          break;
    }
    
@@ -1350,7 +1348,7 @@ void* advance_frame_async( void* nothing )
 {   
 
    // do work
-   std::cout << "worker thread running" << std::endl;
+   //std::cout << "worker thread running" << std::endl;
    
    pthread_mutex_lock( &sim_mutex );   
 
@@ -1469,11 +1467,11 @@ void parse_script( const char* filename )
    std::ifstream filestream( filename );
    if ( !filestream.good() )
    {
-      std::cout << "Could not open script file" << std::endl;
+      std::cout << "Could not open script file." << std::endl;
       exit(1);
    }
    
-   std::cout << "opening file: " << filename << std::endl;
+   std::cout << "Opening file: " << filename << std::endl;
    
    ParseTree tree;
    parse_stream( filestream, tree );
@@ -1558,13 +1556,13 @@ void parse_script( const char* filename )
       
       NonDestructiveTriMesh trimesh;
       
-      printf("Reading file\n");
+      printf("Reading file...\n");
       read_objfile(trimesh, surface_vertices, meshpath.c_str());
       for(unsigned int i = 0; i < surface_vertices.size(); ++i) {
          surface_vertices[i] = surface_vertices[i]*scale + offset;
       }
       surface_triangles = trimesh.m_tris;
-      printf("loaded file %s", meshpath.c_str());
+      printf("Loaded file %s\n", meshpath.c_str());
    }
    
    const ParseTree* dented_box_branch = tree.get_branch( "dent" );
@@ -2018,7 +2016,7 @@ int main( int argc, char** argv )
    status_text_widget = new Gluvi::DynamicText( "Ready" );
    Gluvi::root.list.push_back( status_text_widget );
    
-   std::cout << "output path: " << g_path << std::endl;
+   std::cout << "Output path: " << g_path << std::endl;
 
 #ifndef _MSC_VER
    

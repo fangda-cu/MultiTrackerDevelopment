@@ -640,7 +640,7 @@ void DualFluidSim3D::tet_edge_to_vertex_velocities( )
       max_velocity = max( max_velocity, mag( tet_vertex_velocities[i] ) );
    }
    
-   std::cout << " %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% max vertex velocity: " << max_velocity << std::endl;
+   std::cout << "Max tet vertex velocity: " << max_velocity << std::endl;
    
    
 }
@@ -819,7 +819,7 @@ void DualFluidSim3D::tet_edge_to_circumcentre_velocities( )
       max_velocity = max( max_velocity, mag( voronoi_vertex_velocities[i] ) );
    }
    
-   std::cout << " %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% max voronoi vertex velocity: " << max_velocity << std::endl;
+   std::cout << "Max Voronoi vertex velocity: " << max_velocity << std::endl;
    
    
 }
@@ -1517,7 +1517,7 @@ void DualFluidSim3D::remesh_and_advect_semilagrangian( float dt )
    double start_time = get_time_in_seconds();
    
    std::vector<Vec3f> input_xs;
-   
+   std::cout << "Generating adaptive sample points.\n";
    // Surface-adaptive points
    SampleSeeder::generate_adaptive_points( *surface_tracker, 0.5 * characteristic_distance, input_xs );
       
@@ -1528,11 +1528,9 @@ void DualFluidSim3D::remesh_and_advect_semilagrangian( float dt )
    std::vector<Vec4st> tets;
    std::vector<Vec3f> xs;
 
-   
+   std::cout << "Generating BCC sample points.\n";
     SampleSeeder::generate_bcc_points( domain_low, domain_high, characteristic_distance, input_xs );
       
-    std::cout << "num total pressure samples: " << input_xs.size() << std::endl;
-
     Triangulation cgal_T;
     //Use CGAL Delaunay mesher
     compute_delaunay_CGAL(input_xs, tets, cgal_T);
@@ -1557,19 +1555,19 @@ void DualFluidSim3D::remesh_and_advect_semilagrangian( float dt )
    switch( interpolation_scheme )
    {
       case WHITNEY:
-         std::cout << "Whitney-style interpolation\n";
+         std::cout << "Applying Whitney-style interpolation\n";
          get_velocity = new WhitneyEdgeVelocityFunctor( *this );
          break;
       case IMPROVED_BARYCENTRIC:
-         std::cout << "Improved barycentric interpolation\n";
+         std::cout << "Apply improved barycentric interpolation\n";
          get_velocity = new SharperBarycentricVelocityFunctor( *this);
          break;
       case GENERALIZED_BARYCENTRIC:
-         std::cout << "Generalized barycentric interpolation\n";
+         std::cout << "Applying generalized barycentric interpolation\n";
          get_velocity = new GeneralizedBarycentricVelocityFunctor( *this);
          break;
       case BARYCENTRIC:
-         std::cout << "Basic barycentric interpolation\n";
+         std::cout << "Applying basic barycentric interpolation\n";
          get_velocity = new BarycentricTetVelocityFunctor( *this );
          break;
       default:
@@ -1771,8 +1769,7 @@ void DualFluidSim3D::add_forces( float dt )
 ///
 // ---------------------------------------------------------
 
-unsigned int num_distance_to_surface_calls;
-unsigned int num_broadphase_queries;
+
 unsigned int num_point_triangle_tests;
 
 void DualFluidSim3D::compute_liquid_phi( )
@@ -1807,10 +1804,6 @@ void DualFluidSim3D::compute_liquid_phi( )
    // first compute nearest-triangle in a band around the surface
    
    std::vector<unsigned int> vertex_band;
-
-   num_distance_to_surface_calls = 0;
-   num_broadphase_queries = 0;
-   num_point_triangle_tests = 0;
    
    for ( unsigned int i = 0; i < surface_tracker->m_mesh.m_tris.size(); ++i )
    {
@@ -1845,10 +1838,6 @@ void DualFluidSim3D::compute_liquid_phi( )
    }
       
    double narrow_band_end = get_time_in_seconds();
-
-   std::cout << "num_distance_to_surface_calls: " << num_distance_to_surface_calls << std::endl;
-   std::cout << "avg number of broadphase queries per call: " << num_broadphase_queries / (double) num_distance_to_surface_calls << std::endl;
-   std::cout << "avg number of point-triangle distance tests per call: " << num_point_triangle_tests / (double) num_distance_to_surface_calls << std::endl;
    
    // now propagate 
    
@@ -1887,8 +1876,8 @@ void DualFluidSim3D::compute_liquid_phi( )
    
    double extrapolate_end = get_time_in_seconds();
    
-   std::cout << "redistancing: time to compute narrow band phi: " << narrow_band_end - redistance_start << std::endl;
-   std::cout << "redistancing: time to extrapolate phi: " << extrapolate_end - narrow_band_end << std::endl;
+   std::cout << "Redistancing: Time to compute narrow band phi: " << narrow_band_end - redistance_start << std::endl;
+   std::cout << "Redistancing: Time to extrapolate phi: " << extrapolate_end - narrow_band_end << std::endl;
  
    //For points that are near the boundary (i.e. belong to a boundary tet)
    //we'll use raycasting on each one.
@@ -1907,7 +1896,8 @@ void DualFluidSim3D::compute_liquid_phi( )
       }
 
    }
-   std::cout << "Boundary verts: " << bvert_count << " out of " << liquid_phi.size() << std::endl;
+
+   //std::cout << "Near boundary vertices: " << bvert_count << " out of " << liquid_phi.size() << " total vertices.\n" << std::endl;
 
    //The remaining points away from the interface can be set by flood filling
    //from just a single check.
@@ -1925,7 +1915,7 @@ void DualFluidSim3D::compute_liquid_phi( )
 
       std::queue<unsigned int> points_to_process;
       points_to_process.push(i);
-      std::cout << "Processing interior region " << group_ID << std::endl;
+      //std::cout << "Processing interior region " << group_ID << std::endl;
       //flood fill neighboring non-boundary points, setting them to this region ID.
       while(points_to_process.size() != 0) {
          unsigned int cur_point = points_to_process.front();
@@ -1948,13 +1938,6 @@ void DualFluidSim3D::compute_liquid_phi( )
 
    }
 
-   int baseline = 0;
-   for(unsigned int i = 0; i < region_IDs.size(); ++i) {
-      if(region_IDs[i] == 1)
-         baseline++;
-   }
-   std::cout << "Preprocessed " << baseline << " out of " << baseline << std::endl;
- 
    /*
    //Verify with explicit raycasting for all points.
    for ( unsigned int i = 0; i < liquid_phi.size(); ++i )
@@ -1968,7 +1951,7 @@ void DualFluidSim3D::compute_liquid_phi( )
 
    double set_sign_end = get_time_in_seconds();
    
-   std::cout << "redistancing: time to set region labels: " << set_sign_end - extrapolate_end << std::endl;
+   std::cout << "Redistancing: Time to set region labels: " << set_sign_end - extrapolate_end << std::endl;
    
 
    assert(liquid_phi.size() == region_IDs.size());
@@ -2144,9 +2127,6 @@ float DualFluidSim3D::max_velocity( )
 }
 
 
-extern unsigned int g_num_pit_tests;
-extern unsigned int g_num_pit_hits;
-
 
 // ---------------------------------------------------------
 ///
@@ -2176,47 +2156,45 @@ void DualFluidSim3D::advance( float dt, unsigned int num_surface_substeps )
       //in a logical way.
 
       // Transfer and extrapolate velocity
-      std::cout << "---------------------- Voronoi Fluid Sim: First time step: Computing liquid phi ----------------------" << std::endl;
+      std::cout << "---------------------- Voronoi Fluid Sim: First time step: Computing signed distance and region labels" << std::endl;
       compute_liquid_phi();
       
       if ( !allow_solid_overlap )
       {
-         std::cout << "---------------------- Voronoi Fluid Sim: First time step: Extrapolating liquid phi ----------------------" << std::endl;
+         std::cout << "---------------------- Voronoi Fluid Sim: First time step: Extrapolating liquid phi" << std::endl;
          extrapolate_liquid_phi_into_solid();
       }
 
-      std::cout << "---------------------- Voronoi Fluid Sim: First time step: Pressure solve ----------------------" << std::endl;
+      std::cout << "---------------------- Voronoi Fluid Sim: First time step: Pressure solve" << std::endl;
       solve_pressure();
 
 
-      std::cout << "---------------------- Voronoi Fluid Sim: First time step: Reconstructing and extrapolating velocities ----------------------" << std::endl;
+      std::cout << "---------------------- Voronoi Fluid Sim: First time step: Reconstructing and extrapolating velocities " << std::endl;
       reconstruct_and_extrapolate_velocities();     
       
    }
    
    first_call = false;
    
-   g_num_pit_tests = 0;
-   g_num_pit_hits = 0;
-      
+   int step_count = 0;
    while ( accum_t < dt - 1e-5 )
    {
       float sub_dt = dt - accum_t;
       sub_dt = min( sub_dt, get_cfl_limit() );
    
       std::cout << std::endl << std::endl << std::endl << std::endl << std::endl;
-      std::cout << "---------------------- Beginning Voronoi Fluid Sim iteration------------------ \n";
+      std::cout << "---------------------- Beginning Voronoi Fluid Sim iteration\n";
       
-      std::cout << "Taking substep of length: " << sub_dt << " (" << 100 * (sub_dt / dt) << "% of a frame.)" << std::endl;
-      std::cout << "Currently at sub-frame time: " << accum_t << " which is " << 100 * (accum_t / dt) << "% through the frame." << std::endl;
+      std::cout << "Taking substep of length: " << sub_dt << " (i.e. " << 100 * (sub_dt / dt) << "% of the frame.)" << std::endl;
+      std::cout << "Currently stepping from: " << 100 * (accum_t / dt) << "% to " << 100 * (accum_t + sub_dt) / dt << "% of the way through the frame." << std::endl;
 
-      std::cout << std::endl << std::endl << std::endl;
-
+      std::cout << std::endl << std::endl;      
+      
       // Advect surface
-      std::cout << "---------------------- Voronoi Fluid Sim: Advancing fluid surface ----------------------" << std::endl;
+      std::cout << "---------------------- Voronoi Fluid Sim: Advancing fluid surface" << std::endl;
       double start_time = get_time_in_seconds();
       
-      std::cout << " %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% max velocity: " << max_velocity() << std::endl;
+      std::cout << "Max face velocity: " << max_velocity() << std::endl;
       
 
       double surface_dt = sub_dt / (double) num_surface_substeps;
@@ -2227,65 +2205,67 @@ void DualFluidSim3D::advance( float dt, unsigned int num_surface_substeps )
          
       double end_time = get_time_in_seconds();
       surface_tracking_time += ( end_time - start_time );
+      
       // Remesh
-
       if ( should_remesh )
       {
-         std::cout << "---------------------- Voronoi Fluid Sim: Remeshing and semi-lagrangian advection ----------------------" << std::endl;
+         std::cout << "---------------------- Voronoi Fluid Sim: Remeshing and semi-lagrangian advection" << std::endl;
          remesh_and_advect_semilagrangian( sub_dt );
       }
       else
       {
-         std::cout << "---------------------- Voronoi Fluid Sim: Semi-lagrangian advection ----------------------" << std::endl;
+         std::cout << "---------------------- Voronoi Fluid Sim: Semi-Lagrangian advection " << std::endl;
          semi_lagrangian_advection( sub_dt );
       }
       
-      std::cout << " %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% max velocity: " << max_velocity() << std::endl;
+      std::cout << "Max face velocity: " << max_velocity() << std::endl;
 
-      std::cout << "---------------------- Voronoi Fluid Sim: Computing liquid phi ----------------------" << std::endl;
+      std::cout << "---------------------- Voronoi Fluid Sim: Computing distance field and region labels" << std::endl;
       start_time = get_time_in_seconds();
       compute_liquid_phi();
       end_time = get_time_in_seconds();
       redistancing_time += ( end_time - start_time );
 
-      std::cout << "---------------------- Voronoi Fluid Sim: Adding forces ----------------------" << std::endl;
+      std::cout << "---------------------- Voronoi Fluid Sim: Adding forces " << std::endl;
       start_time = get_time_in_seconds();
       add_forces( sub_dt );
       end_time = get_time_in_seconds();
       add_force_time += ( end_time - start_time );
-      std::cout << " %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% max velocity: " << max_velocity() << std::endl;
+      std::cout << "Max face velocity: " << max_velocity() << std::endl;
 
       if ( !allow_solid_overlap )
       {
-         std::cout << "---------------------- Voronoi Fluid Sim: Extrapolating liquid phi ----------------------" << std::endl;
+         std::cout << "---------------------- Voronoi Fluid Sim: Extrapolating liquid phi " << std::endl;
          start_time = get_time_in_seconds();
          extrapolate_liquid_phi_into_solid();
          end_time = get_time_in_seconds();
          redistancing_time += ( end_time - start_time );
       }
             
-      std::cout << "---------------------- Voronoi Fluid Sim: Pressure solve ----------------------" << std::endl;
+      std::cout << "---------------------- Voronoi Fluid Sim: Pressure solve" << std::endl;
       start_time = get_time_in_seconds();
       solve_pressure();
       end_time = get_time_in_seconds();
       pressure_solve_time += ( end_time - start_time );
       
-      std::cout << " %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% max velocity: " << max_velocity() << std::endl;
+      std::cout << "Max face velocity: " << max_velocity() << std::endl;
       
       // Transfer and extrapolate velocity
-      std::cout << "---------------------- Voronoi Fluid Sim: Reconstructing and extrapolating velocities ----------------------" << std::endl;
+      std::cout << "---------------------- Voronoi Fluid Sim: Reconstructing and extrapolating velocities " << std::endl;
       start_time = get_time_in_seconds();
       reconstruct_and_extrapolate_velocities();
       end_time = get_time_in_seconds();
       reconstruct_and_extrapolate_time += ( end_time - start_time );
       
       accum_t += sub_dt;
+      ++step_count;
       
    }
    
    double frame_end_time = get_time_in_seconds();
    double frame_time = frame_end_time - frame_start_time;
-   std::cout << "---------------------- Voronoi Fluid Sim: Total frame time: " <<  frame_time << "  ----------------------" << std::endl;
+   std::cout <<
+   std::cout << "---------------------- Voronoi Fluid Sim: Frame took " <<  frame_time << " with " << step_count << " sub-steps." << std::endl;
 
    
    // track average execution time vs number of tets
@@ -2297,7 +2277,8 @@ void DualFluidSim3D::advance( float dt, unsigned int num_surface_substeps )
    static double total_redistancing_time = 0.0;
    static double total_pressure_solve_time = 0.0;
    static double total_simulation_time = 0.0;
-   
+   static int total_substeps = 0;
+
    ++num_calls;
    total_num_tets += mesh->tets.size();
    total_reconstruct_and_extrapolate_time += reconstruct_and_extrapolate_time;
@@ -2306,12 +2287,14 @@ void DualFluidSim3D::advance( float dt, unsigned int num_surface_substeps )
    total_redistancing_time += redistancing_time;
    total_pressure_solve_time += pressure_solve_time;
    total_simulation_time += frame_time;
+   total_substeps += step_count;
    
+
    unsigned int average_num_tets = total_num_tets / num_calls;
    
    std::cout << "====================== Voronoi Fluid Sim Timings ======================" << std::endl;
    std::cout << "   Average number of tetrahedra: " <<  average_num_tets << std::endl;
-   std::cout << "   Average sim time: " <<  total_simulation_time / (double)num_calls << std::endl;
+   std::cout << "   Average frame time: " <<  total_simulation_time / (double)num_calls << std::endl;
    std::cout << "   Average reconstruct_and_extrapolate_time: " <<  total_reconstruct_and_extrapolate_time / (double)num_calls << std::endl;
    std::cout << "   Average surface_tracking_time: " <<  total_surface_tracking_time / (double)num_calls << std::endl;
    std::cout << "   Average remeshing time: " << total_remesh_time / (double)num_calls << std::endl;
@@ -2319,12 +2302,14 @@ void DualFluidSim3D::advance( float dt, unsigned int num_surface_substeps )
    std::cout << "   Average add_force_time: " <<  total_add_force_time / (double)num_calls << std::endl;
    std::cout << "   Average redistancing_time: " <<  total_redistancing_time / (double)num_calls << std::endl;
    std::cout << "   Average pressure_solve_time: " <<  total_pressure_solve_time / (double)num_calls << std::endl;
+   std::cout << "   Average number of sub-steps per frame: " << (double)total_substeps / (double)num_calls << std::endl;
+   std::cout << "   Total number of sub-steps: " << total_substeps << std::endl;
+   std::cout << "   Total number of frames: " << num_calls << std::endl;
    std::cout << "=======================================================================" << std::endl;
 
-   std::cout << "---------------------- Voronoi Fluid Sim: Number point-in-tet hits/tests: " <<  g_num_pit_hits << " / " << g_num_pit_tests << " ----------------------" << std::endl;   
-   
+  
    // Just for visualization.  Take this out to optimize.
-   reconstruct_and_extrapolate_velocities();
+   //reconstruct_and_extrapolate_velocities();
    
 }
 

@@ -43,7 +43,6 @@ public:
    
    void compute_solids();
    
-   
    //
    // helpers for the main fluid sim steps
    //

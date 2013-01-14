@@ -115,8 +115,6 @@ public:
 ///
 // ---------------------------------------------------------
 
-extern unsigned int g_num_pit_tests;
-extern unsigned int g_num_pit_hits;
 
 inline int TetMesh::get_containing_tet( const ElTopo::Vec3f& point )
 {

@@ -107,19 +107,19 @@ void TetMesh::initialize( const std::vector<Vec4st>& new_tets, const std::vector
 
    cgal_T = T;
 
-   std::cout << "building simplices..." << std::endl;
+   std::cout << "Constructing simplices..." << std::endl;
    
    build_simplices( new_tets, new_vertices );
    
-   std::cout << "building incidence maps..." << std::endl;
+   std::cout << "Constructing incidence maps..." << std::endl;
    
    build_incidences();
    
-   std::cout << "building cached geometry information..." << std::endl;
+   std::cout << "Constructing cached geometry information..." << std::endl;
    
    build_cached_geometry();
    
-   std::cout << "building acceleration grid..." << std::endl;
+   std::cout << "Building acceleration grid for tetrahedra..." << std::endl;
    
    build_acceleration_grid();
    
@@ -625,7 +625,6 @@ void TetMesh::build_acceleration_grid()
       }
       
    }
-   printf("Completed building the regular acceleration grid.\n");
 
 }
 

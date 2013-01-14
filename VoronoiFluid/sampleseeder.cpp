@@ -102,8 +102,6 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
 {
    
    
-   std::cout << "g_air_sample_rejection_threshold: " << g_air_sample_rejection_threshold << std::endl;
-   
    
    double start_time = get_time_in_seconds();
    
@@ -216,7 +214,7 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
       }
    }
    
-   std::vector<Vec3f> surf_samples;
+   
    /*
    //try adding samples at tri barycenters to break up regularity and avoid slivers.
    bool parity = false;
@@ -237,8 +235,9 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
    }
    */
 
-   std::cout << "number of samples rejected: " << num_rejections << std::endl;
-   std::cout << "seed time: " << get_time_in_seconds() - start_time << std::endl;
+   std::cout << "Number of samples rejected: " << num_rejections << std::endl;
+   std::cout << "Number of samples placed: " << samples.size() << std::endl;
+   std::cout << "Seed placement time: " << get_time_in_seconds() - start_time << std::endl;
    
 }
 
