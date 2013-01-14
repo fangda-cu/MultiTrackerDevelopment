@@ -267,6 +267,8 @@ public:
 void display()
 {
    
+   
+
    if ( g_display_status_text )
    {
       pthread_mutex_lock( &thread_is_running_mutex );
@@ -311,6 +313,11 @@ void display()
       status_text_widget->text = "";
    }
    
+   ////Stop out early to skip rendering.
+   //{
+   //   glutTimerFunc( 0, advance_frame, 0);
+   //}
+   //return;
    
    /*
    // identify and draw some slivery tets
@@ -1838,6 +1845,7 @@ void parse_script( const char* filename )
 
          //screw with the initial shape to test surface tension
       }
+      //Stretch to test surface tension
       for(size_t i = 0; i < g_dual_sim->surface_tracker->get_num_vertices(); ++i) {
          Vec3d v = g_dual_sim->surface_tracker->get_position(i);
          v[2] *= 1.3;

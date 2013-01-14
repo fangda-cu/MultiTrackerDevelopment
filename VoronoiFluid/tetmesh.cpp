@@ -626,45 +626,6 @@ void TetMesh::build_acceleration_grid()
       
    }
    printf("Completed building the regular acceleration grid.\n");
-   //build the acceleration structure for voronoi cells
-   accel_grid_voronoi.clear();
-   accel_grid_voronoi.resize(accel_ni, accel_nj, accel_nk);
-   for ( unsigned int v = 0; v < vertices.size(); ++v )
-   {
-      const std::vector<unsigned int> incident_tets = vert_to_tet_map[v];
-
-      Vec3f aabb_low = tet_circumcentres[incident_tets[0]];
-      Vec3f aabb_high = tet_circumcentres[incident_tets[0]];
-      for(unsigned int i = 1; i < incident_tets.size(); ++i) {
-         aabb_low = min_union(aabb_low, tet_circumcentres[incident_tets[i]]);
-         aabb_high = max_union(aabb_high, tet_circumcentres[incident_tets[i]]);
-      }
-
-      //use the bound box to determine a range of cells to look at
-      int i_lower = (int)((aabb_low[0] - accel_origin[0])/accel_dx-1);
-      int j_lower = (int)((aabb_low[1] - accel_origin[1])/accel_dx-1);
-      int k_lower = (int)((aabb_low[2] - accel_origin[2])/accel_dx-1);
-      
-      int i_upper = (int)((aabb_high[0] - accel_origin[0])/accel_dx+1);
-      int j_upper = (int)((aabb_high[1] - accel_origin[1])/accel_dx+1);
-      int k_upper = (int)((aabb_high[2] - accel_origin[2])/accel_dx+1);
-
-      for(int i = i_lower; i < i_upper; ++i) 
-      {
-         if(i < 0 || i >= (int)accel_ni) continue;
-         for(int j = j_lower; j < j_upper; ++j) 
-         {
-            if(j < 0 || j >= (int)accel_nj) continue;
-            for(int k = k_lower; k < k_upper; ++k) 
-            {
-               if(k < 0 || k >= (int)accel_nk) continue;
-               accel_grid_voronoi(i,j,k).push_back(v);
-            }
-         }
-      }
-      
-   }
-   printf("Completed building the voronoi acceleration grid.\n");
 
 }
 

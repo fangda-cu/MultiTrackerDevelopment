@@ -79,7 +79,7 @@ void DualFluidSim3D::initialize()
    //extrapolate_liquid_phi_into_solid();
    
    densities.resize(3);
-   densities[0] = 0;
+   densities[0] = 1.0;
    densities[1] = 1.0f;
    densities[2] = 1.0f;
 

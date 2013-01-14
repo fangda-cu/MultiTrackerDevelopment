@@ -45,10 +45,13 @@ static inline bool add_unique( const Vec3f& x, const std::vector<Vec3f>& check_a
 
 void SampleSeeder::generate_bcc_points( const Vec3f& domain_low, const Vec3f& domain_high, float dx, std::vector<Vec3f>& xs )
 {
+   //We perturb slightly away from a perfectly regular lattice to avoid
+   //degeneracy/coplanarity tests in remeshing, which slows everything down.
+   
    Vec3ui n = Vec3ui( (domain_high - domain_low) / dx ) + Vec3ui(1);
 
    std::vector<Vec3f> new_points;
-   
+   static int seedy = 0;
    // regular grid: cell corners
    for ( unsigned int i = 0; i < n[0]; ++i )
    {
@@ -56,7 +59,9 @@ void SampleSeeder::generate_bcc_points( const Vec3f& domain_low, const Vec3f& do
       {
          for ( unsigned int k = 0; k < n[2]; ++k )
          {
-            add_unique( domain_low + dx * Vec3f(Vec3ui(i,j,k)), xs, new_points );
+            Vec3f point = domain_low + dx * Vec3f(Vec3ui(i,j,k));
+            point += 0.01f*dx*Vec3f(randhashf(++seedy, 0, 1), randhashf(++seedy, 0, 1), randhashf(++seedy, 0, 1));
+            add_unique( point, xs, new_points );
          }
       }
    }
@@ -68,7 +73,9 @@ void SampleSeeder::generate_bcc_points( const Vec3f& domain_low, const Vec3f& do
       {
          for ( unsigned int k = 0; k < n[2]-1; ++k )
          {
-            add_unique( domain_low + Vec3f(0.5f*dx) + dx * Vec3f(Vec3ui(i,j,k)), xs, new_points );
+            Vec3f point = domain_low + Vec3f(0.5f*dx) + dx * Vec3f(Vec3ui(i,j,k));
+            point += 0.01f*dx*Vec3f(randhashf(++seedy, 0, 1), randhashf(++seedy, 0, 1), randhashf(++seedy, 0, 1));
+            add_unique( point, xs, new_points );
          }
       }
    }

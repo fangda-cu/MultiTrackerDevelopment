@@ -17,12 +17,11 @@ void compute_delaunay_CGAL(const std::vector<Vec3f>& points, std::vector<Vec4ui>
 
 void compute_delaunay_CGAL(const std::vector<Vec3f>& points, std::vector<Vec4ui>& tets, Triangulation& T) {
    //construct point list in CGAL format
-  T.clear();
-  std::map<Vertex_handle, int> vert_handles;
+   T.clear();
    for(unsigned int i = 0; i < points.size(); ++i) {
       Point p(points[i][0], points[i][1], points[i][2]);
       Vertex_handle vh = T.insert(p);
-      vert_handles[vh] = i;
+      vh->info() = i;
    }
    
    //iterate over all tris now
@@ -40,11 +39,11 @@ void compute_delaunay_CGAL(const std::vector<Vec3f>& points, std::vector<Vec4ui>
       if(vc == T.infinite_vertex()) continue;
       if(vd == T.infinite_vertex()) continue;
 
-      Vec4ui myTet(vert_handles[va], vert_handles[vb], vert_handles[vc], vert_handles[vd]);
+      Vec4ui myTet(va->info(), vb->info(), vc->info(), vd->info());
       
       cit->info() = tets.size(); //store the tet's index
       tets.push_back(myTet);
    }
-   
+
 
 }
