@@ -53,6 +53,10 @@ public:
 //  void setupScene4(); // n bubble collision
   void setupScene5(); // VIIM figure 5
   void setupScene6(); // VIIM multiphase cube test
+    
+  void setupScene7(); // Enright test with a sphere
+  void setupScene8(); // Zalesak test 
+  
   
 
 };

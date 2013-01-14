@@ -169,6 +169,8 @@ sceneFunc db_scenes[] =
   0, //  &DoubleBubbleTest::setupScene4,
   &DoubleBubbleTest::setupScene5,
   &DoubleBubbleTest::setupScene6,
+  &DoubleBubbleTest::setupScene7,
+  &DoubleBubbleTest::setupScene8,
 };
 
 //Scalar db_bubbleThicknessFunction(Vec3d pos) {
@@ -1094,3 +1096,96 @@ void DoubleBubbleTest::setupScene6()
   
  
 }
+
+void DoubleBubbleTest::setupScene7()
+{
+  //vertices
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+  
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+  
+  //create a sphere
+  std::vector<VertexHandle> vertList;
+  
+  int N = 12;
+  Scalar r = 0.4;
+  Vec3d c = Vec3d(0.5, 0.5, 0.5);
+  vertList.push_back(shellObj->addVertex());
+  positions[vertList.back()] = Vec3d(c - Vec3d(0, 0, r));
+  for (int j = 0; j < N; j++)
+  {
+    for (int i = 0; i < N; i++)
+    {
+      vertList.push_back(shellObj->addVertex());
+      
+      Scalar theta = (Scalar)i * 2 * M_PI / N;
+      Scalar alpha = (Scalar)(j + 1) * M_PI / (N + 1) - M_PI / 2;
+      positions[vertList.back()] = c + r * Vec3d(cos(alpha) * cos(theta), cos(alpha) * sin(theta), sin(alpha));
+    }
+  }
+  vertList.push_back(shellObj->addVertex());
+  positions[vertList.back()] = Vec3d(c + Vec3d(0, 0, r));
+  
+  for (int i = 0; i < shellObj->nv(); ++i)
+  {
+    velocities[vertList[i]] = Vec3d(0, 0, 0);
+    undeformed[vertList[i]] = positions[vertList[i]];
+  }
+  
+  std::vector<FaceHandle> faceList;
+  FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles  
+
+  for (int j = 0; j <= N; j++)
+  {
+    for (int i = 0; i < N; i++)
+    {
+      int v0, v1, v2;
+      v0 = (j == 0 ? 0 : N * (j - 1) + i + 1);
+      v1 = (j == 0 ? 0 : N * (j - 1) + (i + 1) % N + 1);
+      v2 = (j == N ? N * N + 1 : N * j + (i + 1) % N + 1);
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(1, 0);
+      }
+      
+      v0 = (j == N ? N * N + 1 : N * j + (i + 1) % N + 1);
+      v1 = (j == N ? N * N + 1 : N * j + i + 1);
+      v2 = (j == 0 ? 0 : N * (j - 1) + i + 1);
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(1, 0);
+      }
+    }
+  }
+  
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+  
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shellObj->addModel(shell);
+  
+  //positions
+  //  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+  
+  shell->setFaceLabels(faceLabels);
+}
+
+void DoubleBubbleTest::setupScene8()
+{
+  
+}
+
+
