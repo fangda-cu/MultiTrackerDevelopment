@@ -1389,13 +1389,13 @@ bool T1Transition::should_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pul
             if (v0adjA)
             {
                 force_a += force;
-                force_a += -pull_apart_direction * mag(x1 - xxj);
-                force_b += pull_apart_direction * mag(x1 - xxj);
+                force_a += -pull_apart_direction * mag(cross(x1 - xxj, pull_apart_direction));
+                force_b += pull_apart_direction * mag(cross(x1 - xxj, pull_apart_direction));
             } else if (v1adjA)
             {
                 force_a += force;
-                force_a += -pull_apart_direction * mag(x0 - xxj);
-                force_b += pull_apart_direction * mag(x0 - xxj);
+                force_a += -pull_apart_direction * mag(cross(x0 - xxj, pull_apart_direction));
+                force_b += pull_apart_direction * mag(cross(x0 - xxj, pull_apart_direction));
             } else
             {
                 force_b += force;
@@ -1442,8 +1442,8 @@ bool T1Transition::should_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pul
             if (upper_region >= 0 && lower_region >= 0) // if this is not true, then the neighborhood around this edge is not complete, which can oly happen on the boundary.
             {
                 // this is an X-junction edge. pulling vertex xj apart creates a new face here.
-                force_a += -pull_apart_direction * mag(x2 - xxj);
-                force_b += pull_apart_direction * mag(x2 - xxj);
+                force_a += -pull_apart_direction * mag(cross(x2 - xxj, pull_apart_direction));
+                force_b += pull_apart_direction * mag(cross(x2 - xxj, pull_apart_direction));
             }
         }
     }
