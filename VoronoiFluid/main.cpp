@@ -31,6 +31,8 @@ using namespace ElTopo;
 // Global fluid sim object
 DualFluidSim3D* g_dual_sim = NULL;
 
+std::vector<int> recording_regions;
+
 // Buffers for rendering (sim data is copied into these buffers after each frame is computed)
 std::vector<Vec3d> g_renderable_vertices;
 std::vector<Vec3d> g_renderable_vertex_normals;
@@ -1302,6 +1304,18 @@ void file_output( unsigned int frame )
                       0.0,
                       binfile );
    
+   
+   for(size_t i = 0; i < recording_regions.size(); ++i) {
+      int label = recording_regions[i];
+      char objfile[256];
+      sprintf( objfile, "%s/surface_label%02d_%04d.obj", g_path, label, frame );
+      bool write_success = write_objfile_per_region(g_dual_sim->surface_tracker->m_mesh, 
+         g_dual_sim->surface_tracker->get_positions(),
+         label,
+         objfile);
+      std::cout << "Finished region #" << label << ".\n";
+   }
+
 //   char elefile[256];
 //   sprintf( elefile, "%s/tetmesh%04d.ele", g_path, frame );
    //write_ele_file( elefile, g_dual_sim->mesh.tets );
@@ -1477,7 +1491,7 @@ void parse_script( const char* filename )
    
    std::vector< std::pair<int, double> > region_densities;
    region_densities.push_back(std::make_pair(domain_label, domain_density));
-
+   recording_regions.clear();
    std::vector<const ParseTree*> region_branches = tree.get_multi_branch("region");
    for(size_t i = 0; i < region_branches.size(); ++i) {
       const ParseTree* region = region_branches[i];
@@ -1487,6 +1501,10 @@ void parse_script( const char* filename )
       region->get_number("density", region_density);
       region_densities.push_back(std::make_pair(region_ID, region_density));
       std::cout << "Region #" << region_ID << " has density " << region_density << std::endl;
+      int record = 1;
+      region->get_int("output", record);
+      if(record)
+         recording_regions.push_back(region_ID);
    }
    
    //
