@@ -156,6 +156,14 @@ void ObjWriter::write( std::ofstream & of, const ElasticShell & shell )
     }
 
     ObjWriter::write( of, vertPositions, defObj );
+    
+    // write the face labels
+    for (FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit)
+    {
+        Vec2i label = shell.getFaceLabel(*fit);
+        of << "fl " << label.x() << " " << label.y() << std::endl;
+    }
+    
     for ( FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit )
     {
         //Now the stitch faces located on the boundaries of the mesh
