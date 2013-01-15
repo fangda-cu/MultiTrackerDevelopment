@@ -1403,6 +1403,51 @@ bool T1Transition::should_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pul
         }
     }
     
+    // need to consider the X-junction edge case too, because the edge popping may not be complete due to collision
+    for (size_t i = 0; i < mesh.m_vertex_to_edge_map[xj].size(); i++)
+    {
+        size_t edge = mesh.m_vertex_to_edge_map[xj][i];
+        size_t v2 = (mesh.m_edges[edge][0] == xj ? mesh.m_edges[edge][1] : mesh.m_edges[edge][0]);
+        Vec3d x2 = m_surf.get_position(v2);
+
+        bool adjA = false;
+        bool adjB = false;
+        int upper_region = -1;  // the region on the top when looking down the edge from xj to v2, with region B on the right
+        int lower_region = -1;
+        for (size_t j = 0; j < mesh.m_edge_to_triangle_map[edge].size(); j++)
+        {
+            size_t triangle = mesh.m_edge_to_triangle_map[edge][j];
+            bool oriented = mesh.oriented(xj, v2, mesh.get_triangle(triangle));
+            
+            Vec2i label = mesh.get_triangle_label(triangle);
+            if (label[0] == A || label[1] == A)
+                adjA = true;
+            if (label[0] == B || label[1] == B)
+                adjB = true;
+            if ((label[0] == B &&  oriented) ||
+                (label[1] == B && !oriented))
+            {
+                lower_region = (label[0] == B ? label[1] : label[0]);
+            }
+            if ((label[0] == B && !oriented) ||
+                (label[1] == B &&  oriented))
+            {
+                upper_region = (label[0] == B ? label[1] : label[0]);
+            }
+            
+        }
+        
+        if (adjA && adjB)
+        {
+            if (upper_region >= 0 && lower_region >= 0) // if this is not true, then the neighborhood around this edge is not complete, which can oly happen on the boundary.
+            {
+                // this is an X-junction edge. pulling vertex xj apart creates a new face here.
+                force_a += -pull_apart_direction * mag(x2 - xxj);
+                force_b += pull_apart_direction * mag(x2 - xxj);
+            }
+        }
+    }
+    
     double tensile_force = dot(force_a - force_b, pull_apart_direction);
     
     return tensile_force > 0;
