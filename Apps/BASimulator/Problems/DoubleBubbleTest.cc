@@ -1089,7 +1089,7 @@ void DoubleBubbleTest::setupScene7()
   std::vector<FaceHandle> faceList;
   FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles  
 
-  int Nsplit = 1;
+  int Nsplit = 8;
   if (Nsplit == 2)
   {
     for (int j = 0; j < N; j++)
