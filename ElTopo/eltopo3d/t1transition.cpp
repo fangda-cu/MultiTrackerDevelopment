@@ -754,15 +754,6 @@ bool T1Transition::pop_vertices()
         std::vector<size_t> A_faces;
         std::vector<size_t> A_edges;
         
-        for (size_t j = 0; j < mesh.m_vertex_to_triangle_map[xj].size(); j++)
-        {
-            size_t triangle = mesh.m_vertex_to_triangle_map[xj][j];
-            
-            Vec2i label = mesh.get_triangle_label(triangle);
-            if (label[0] == A || label[1] == A)
-                A_faces.push_back(triangle);
-        }
-        
         for (size_t j = 0; j < mesh.m_vertex_to_edge_map[xj].size(); j++)
         {
             size_t edge = mesh.m_vertex_to_edge_map[xj][j];
@@ -778,6 +769,26 @@ bool T1Transition::pop_vertices()
             if (adjA)
                 A_edges.push_back(edge);
         }
+        
+        std::vector<size_t> A_edges_append;
+        for (size_t j = 0; j < A_edges.size(); j++)
+        {
+            for (size_t k = 0; k < mesh.m_edge_to_triangle_map[A_edges[j]].size(); k++)
+            {
+                size_t triangle = mesh.m_edge_to_triangle_map[A_edges[j]][k];
+                A_faces.push_back(triangle);
+                
+                Vec2i label = mesh.get_triangle_label(triangle);
+                if (label[0] != A && label[1] != A)
+                {
+                    size_t tv = mesh.get_third_vertex(A_edges[j], mesh.get_triangle(triangle));
+                    size_t tve = mesh.get_edge_index(tv, xj);
+                    assert(tve < mesh.ne());
+                    A_edges_append.push_back(tve);
+                }
+            }
+        }
+        A_edges.insert(A_edges.end(), A_edges_append.begin(), A_edges_append.end());
         
         if (vertex_pseudo_motion_introduces_collision(xj, original_position, b_desired_position))
         {
