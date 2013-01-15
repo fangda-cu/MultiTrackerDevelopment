@@ -1227,12 +1227,14 @@ void ElasticShell::remesh()
   }
 
   
-//  std::cout << "Performing " << surface_tracker.m_mesh_change_history.size() << " Improvement Operations:\n";
-//  for(unsigned int j = 0; j < surface_tracker.m_mesh_change_history.size(); ++j) {
-//    ElTopo::MeshUpdateEvent event = surface_tracker.m_mesh_change_history[j];
-//    std::cout << "Event type = " << event.m_type << std::endl;
-//    
-// 
+  std::cout << "El Topo performed " << surface_tracker.m_mesh_change_history.size() << " improvement operations:\n";
+  for(unsigned int j = 0; j < surface_tracker.m_mesh_change_history.size(); ++j) 
+  {
+    ElTopo::MeshUpdateEvent event = surface_tracker.m_mesh_change_history[j];
+    std::cout << "Event type = " << event.m_type << std::endl;
+  }
+    
+ 
 //    if(event.m_type == ElTopo::MeshUpdateEvent::FLAP_DELETE) {
 //      //assert(event.m_deleted_tris.size() == 2);
 //      for(unsigned int t = 0; t < event.m_deleted_tris.size(); ++t) {
