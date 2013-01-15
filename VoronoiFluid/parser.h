@@ -9,11 +9,12 @@
 
 struct ParseTree
 {
-   std::map<std::string, ParseTree> branches;
+   std::multimap<std::string, ParseTree> branches;
    std::map<std::string, double> numbers;
    std::map<std::string, std::string> strings;
    std::map<std::string, ElTopo::Array1d> vectors;
 
+   std::vector<const ParseTree*> get_multi_branch(const std::string& name) const;
    const ParseTree* get_branch(const std::string& name) const;
    bool get_number(const std::string& name, double& result) const;
    bool get_int(const std::string& name, int& result) const;

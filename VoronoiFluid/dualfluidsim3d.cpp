@@ -48,11 +48,14 @@ static bool least_squares( Mat<M,N,T>&matrix, Vec<M,T>&rhs ) {
 
 DualFluidSim3D::DualFluidSim3D( const std::vector<Vec3d>& surface_vertices, 
                                 const std::vector<Vec3st>& surface_triangles, 
+                                const std::vector<Vec2i>& surface_labels, 
                                 const std::vector<double>& surface_vertex_masses,
-                                const SurfTrackInitializationParameters& initial_parameters )
+                                const SurfTrackInitializationParameters& initial_parameters,
+                                const std::vector<float>& region_densities)
 {
   mesh = new TetMesh(); 
-  surface_tracker = new SurfTrack( surface_vertices, surface_triangles, surface_vertex_masses, initial_parameters );
+  densities = region_densities;
+  surface_tracker = new SurfTrack( surface_vertices, surface_triangles, surface_labels, surface_vertex_masses, initial_parameters );
   /*surface_tracker->improve_mesh();
   surface_tracker->improve_mesh();
   surface_tracker->improve_mesh();*/
@@ -78,11 +81,6 @@ void DualFluidSim3D::initialize()
    compute_liquid_phi();
    //extrapolate_liquid_phi_into_solid();
    
-   densities.resize(3);
-   densities[0] = 1.0;
-   densities[1] = 1.0f;
-   densities[2] = 1.0f;
-
    tet_edge_velocities.resize( mesh->edges.size(), 0.0f );
    tet_vertex_velocities.resize( mesh->vertices.size(), Vec3f(0.0f) );
    tet_vertex_velocity_is_valid.resize( mesh->vertices.size(), false );
@@ -1536,9 +1534,6 @@ void DualFluidSim3D::remesh_and_advect_semilagrangian( float dt )
     compute_delaunay_CGAL(input_xs, tets, cgal_T);
     xs = input_xs;
       
-    //Use TetGen Delaunay mesher
-    //TetGen::delaunay_mesh( input_xs, xs, tets );
-   
    // create a new mesh
    TetMesh* new_mesh = new TetMesh;
    new_mesh->initialize( tets, xs, cgal_T );

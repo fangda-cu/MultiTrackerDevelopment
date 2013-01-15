@@ -62,7 +62,9 @@ void create_cube( const ElTopo::Vec3d& cube_low,
                   const ElTopo::Vec3d& cube_high,
                   const ElTopo::Vec3st& resolution,
                   std::vector<ElTopo::Vec3d>& verts, 
-                  std::vector<ElTopo::Vec3st>& tris );
+                  std::vector<ElTopo::Vec3st>& tris,
+                  std::vector<ElTopo::Vec2i>& labels,
+                  ElTopo::Vec2i label);
 
 
 /// 
@@ -71,7 +73,9 @@ void create_sphere( const ElTopo::Vec3d& sphere_centre,
                     double sphere_radius,
                     double dx,
                     std::vector<ElTopo::Vec3d>& verts, 
-                    std::vector<ElTopo::Vec3st>& tris );
+                    std::vector<ElTopo::Vec3st>& tris,
+                    std::vector<ElTopo::Vec2i>& labels,
+                    ElTopo::Vec2i label);
 
 
 

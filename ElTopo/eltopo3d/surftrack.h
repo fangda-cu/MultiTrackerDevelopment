@@ -375,7 +375,8 @@ public:
     /// Create a SurfTrack object from a set of vertices and triangles using the specified parameters
     ///
     SurfTrack(const std::vector<Vec3d>& vs, 
-              const std::vector<Vec3st>& ts, 
+              const std::vector<Vec3st>& ts,
+              const std::vector<Vec2i>& labels,
               const std::vector<double>& masses,
               const SurfTrackInitializationParameters& initial_parameters );
     

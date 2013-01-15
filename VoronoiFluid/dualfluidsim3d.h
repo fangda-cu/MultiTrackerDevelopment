@@ -23,8 +23,10 @@ public:
    
    DualFluidSim3D( const std::vector<ElTopo::Vec3d>& surface_vertices, 
                    const std::vector<ElTopo::Vec3st>& surface_triangles, 
+                   const std::vector<ElTopo::Vec2i>& surface_labels,
                    const std::vector<double>& surface_vertex_masses,
-                   const ElTopo::SurfTrackInitializationParameters& initial_parameters );
+                   const ElTopo::SurfTrackInitializationParameters& initial_parameters,
+                   const std::vector<float>& region_densities);
    
    ~DualFluidSim3D();
    

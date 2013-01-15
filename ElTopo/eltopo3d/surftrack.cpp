@@ -92,11 +92,13 @@ m_verbose(false)
 
 SurfTrack::SurfTrack( const std::vector<Vec3d>& vs, 
                      const std::vector<Vec3st>& ts, 
+                     const std::vector<Vec2i>& labels,
                      const std::vector<double>& masses,
                      const SurfTrackInitializationParameters& initial_parameters ) :
 
 DynamicSurface( vs, 
                ts,
+               labels,
                masses,
                initial_parameters.m_proximity_epsilon, 
                initial_parameters.m_friction_coefficient,

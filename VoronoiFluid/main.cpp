@@ -886,7 +886,8 @@ void load_and_process_splash( char* filename )
    surf_track_params.m_collision_safety = true;
    surf_track_params.m_allow_topology_changes = false;
    
-   SurfTrack test_surface( x, tris, masses, surf_track_params );
+   std::vector<Vec2i> labels(tris.size(), Vec2i(1,0));
+   SurfTrack test_surface( x, tris, labels, masses, surf_track_params );
    
    // find boundary of the open surface
    for ( unsigned int i = 0; i < test_surface.get_num_vertices(); ++i )
@@ -968,7 +969,8 @@ void load_and_process_mesh( char* filename )
    surf_track_params.m_collision_safety = true;
    surf_track_params.m_allow_topology_changes = false;
    
-   SurfTrack test_surface( x, tris, masses, surf_track_params );
+   std::vector<Vec2i> labels(tris.size(), Vec2i(1,0));
+   SurfTrack test_surface( x, tris, labels, masses, surf_track_params );
    
    // find boundary of the open surface
    for ( unsigned int i = 0; i < test_surface.m_mesh.m_edges.size(); ++i )
@@ -1034,7 +1036,8 @@ void load_mesh( )
    surf_track_params.m_collision_safety = true;
    surf_track_params.m_allow_topology_changes = false;
    
-   SurfTrack test_surface( x, tris, masses, surf_track_params );
+   std::vector<Vec2i> labels(tris.size(), Vec2i(1,0));
+   SurfTrack test_surface( x, tris, labels, masses, surf_track_params );
    
    pthread_mutex_lock( &sim_mutex );   
    
@@ -1467,16 +1470,37 @@ void parse_script( const char* filename )
       strncpy( g_path, output_path.c_str(), output_path.length() + 1);
    }
    
+   //Multiphase or free surface choice
+   double domain_density = 0.0; //default to free surface (density of 0, label of 0)
+   int domain_label = 0;
+   tree.get_int( "domain_label", domain_label);
+   
+   std::vector< std::pair<int, double> > region_densities;
+   region_densities.push_back(std::make_pair(domain_label, domain_density));
+
+   std::vector<const ParseTree*> region_branches = tree.get_multi_branch("region");
+   for(size_t i = 0; i < region_branches.size(); ++i) {
+      const ParseTree* region = region_branches[i];
+      int region_ID;
+      region->get_int("label", region_ID);
+      double region_density;
+      region->get_number("density", region_density);
+      region_densities.push_back(std::make_pair(region_ID, region_density));
+      std::cout << "Region #" << region_ID << " has density " << region_density << std::endl;
+   }
+   
    //
    // Surface geometry
    //
    
    double surface_dx;
-   assert( tree.get_number( "surface_dx", surface_dx ) );
+   bool sdx_found = tree.get_number( "surface_dx", surface_dx );
+   assert( sdx_found );
    
    std::vector<Vec3d> surface_vertices(0);
    std::vector<Vec3st> surface_triangles(0);
-      
+   std::vector<Vec2i> surface_labels(0);
+   
    const ParseTree* box_branch = tree.get_branch( "box" );
    if ( box_branch != NULL )
    {
@@ -1499,12 +1523,22 @@ void parse_script( const char* filename )
       std::cout << "box_min: " << box_min << std::endl;
       std::cout << "box_max: " << box_max << std::endl;
       std::cout << "resolution: " << resolution << std::endl;
-      create_cube( box_min, box_max, resolution, surface_vertices, surface_triangles );
+      
+      int in_label = 1, out_label = domain_label;
+      box_branch->get_int( "in_label", in_label);
+      box_branch->get_int( "out_label", out_label);
+
+      Vec2i label(out_label, in_label);
+
+      create_cube( box_min, box_max, resolution, surface_vertices, surface_triangles, surface_labels, label );
    }
 
-   const ParseTree* sphere_branch = tree.get_branch( "sphere" );
-   if ( sphere_branch != NULL )
-   {
+   std::vector<const ParseTree*> sphere_branches = tree.get_multi_branch("sphere");
+   //const ParseTree* sphere_branch = tree.get_branch( "sphere" );
+   std::vector<const ParseTree*>::iterator it = sphere_branches.begin();
+   for(; it != sphere_branches.end(); ++it) {
+      const ParseTree* sphere_branch = *it;
+
       Vec3d sphere_center;
       sphere_branch->get_vec3d( "sphere_center", sphere_center );
       double sphere_radius;
@@ -1515,13 +1549,22 @@ void parse_script( const char* filename )
       {
          dx = surface_dx;
       }
+         
+      int in_label = 1, out_label = domain_label;
+      sphere_branch->get_int( "in_label", in_label);
+      sphere_branch->get_int( "out_label", out_label);
+      
+      Vec2i label(out_label, in_label);
 
-      create_sphere( sphere_center, sphere_radius, dx, surface_vertices, surface_triangles );
+      create_sphere( sphere_center, sphere_radius, dx, surface_vertices, surface_triangles, surface_labels, label);
+      std::cout << "Processed sphere with label:"  << label << "\n";
    }
 
-   const ParseTree* trimesh_branch = tree.get_branch( "trimesh" );
-   if ( trimesh_branch != NULL )
-   {
+   
+   std::vector<const ParseTree*> trimeshes = tree.get_multi_branch("trimesh");
+   for(size_t i = 0; i < trimeshes.size(); ++i) {
+      const ParseTree* trimesh_branch = trimeshes[i];
+      
       printf("Found trimesh branch\n");
       Vec3d offset;
       trimesh_branch->get_vec3d("vec_offset", offset);
@@ -1533,9 +1576,13 @@ void parse_script( const char* filename )
       std::string meshpath;
       trimesh_branch->get_string("filepath", meshpath);
       printf("Got path %s\n", meshpath.c_str());
-      
+
+      int in_label = 1, out_label = domain_label;
+      trimesh_branch->get_int( "in_label", in_label);
+      trimesh_branch->get_int( "out_label", out_label);
+
       NonDestructiveTriMesh trimesh;
-      
+
       printf("Reading file...\n");
       read_objfile(trimesh, surface_vertices, meshpath.c_str());
       for(unsigned int i = 0; i < surface_vertices.size(); ++i) {
@@ -1543,6 +1590,7 @@ void parse_script( const char* filename )
       }
       surface_triangles = trimesh.m_tris;
       printf("Loaded file %s\n", meshpath.c_str());
+
    }
    
    const ParseTree* dented_box_branch = tree.get_branch( "dent" );
@@ -1565,7 +1613,11 @@ void parse_script( const char* filename )
       resolution[1] = max( (size_t)1, resolution[1] );
       resolution[2] = max( (size_t)1, resolution[2] );
          
-      create_cube( dent_min, dent_max, resolution, surface_vertices, surface_triangles );
+      int in_label = 1, out_label = domain_label;
+      dented_box_branch->get_int( "in_label", in_label);
+      dented_box_branch->get_int( "out_label", out_label);
+      Vec2i label(in_label, out_label);
+      create_cube( dent_min, dent_max, resolution, surface_vertices, surface_triangles, surface_labels, label );
       
       Vec3d dent_center;
       double dent_radius, dent_magnitude;      
@@ -1739,11 +1791,20 @@ void parse_script( const char* filename )
       BOX_DOMAIN_LOW = Vec3f(sim_min);
       BOX_DOMAIN_HIGH = Vec3f(sim_max);
    }
+
+   std::vector<float> densities;
+   int max_label = 0;
+   for(size_t i = 0; i < region_densities.size(); ++i)
+      max_label = max(max_label, region_densities[i].first);
+   densities.resize(max_label+1);
+   for(size_t i = 0; i < region_densities.size(); ++i) {
+      densities[region_densities[i].first] = (float)region_densities[i].second;
+   }
    
    pthread_mutex_lock( &sim_mutex ); 
    
-   g_dual_sim = new DualFluidSim3D( surface_vertices, surface_triangles, surface_masses, surf_track_params );
-   
+   g_dual_sim = new DualFluidSim3D( surface_vertices, surface_triangles, surface_labels, surface_masses, surf_track_params, densities );
+
    std::vector<Vec4st> tets;
    std::vector<Vec3f> xs;
    
@@ -1752,7 +1813,7 @@ void parse_script( const char* filename )
     SampleSeeder::generate_bcc_points( DOMAIN_LOW, DOMAIN_HIGH, (float)mesh_dx, input_xs );   
       
     Triangulation cgal_T;
-    //Use CGAL Delaunay mesher
+    //Use CGAL for Delaunay meshing
     compute_delaunay_CGAL(input_xs, tets, cgal_T);
     xs = input_xs;
 
@@ -1793,12 +1854,7 @@ void parse_script( const char* filename )
       }
 
    }
-   else {
-      for(unsigned int i = 0; i < g_dual_sim->surface_tracker->m_mesh.m_tris.size(); ++i) {
-         Vec2i label = Vec2i(0,1);
-         g_dual_sim->surface_tracker->m_mesh.set_triangle_label(i, label);
-      }
-   }
+   
    
    g_dual_sim->free_surface = free_surface?true:false;
    g_dual_sim->mesh->initialize( tets, xs, cgal_T );
