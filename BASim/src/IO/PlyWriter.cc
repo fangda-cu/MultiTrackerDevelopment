@@ -51,6 +51,7 @@ void PlyWriter::write(const std::string & filename, const ElasticShell & mesh)
 
     of << "element face " << mesh.getDefoObj().nf() << std::endl;
     of << "property list int int vertex_index" << std::endl;
+    of << "property list int int label" << std::endl;
     of << "end_header" << std::endl;
 
     DeformableObject & dobj = mesh.getDefoObj();
@@ -77,6 +78,7 @@ void PlyWriter::write(const std::string & filename, const ElasticShell & mesh)
             of << " ";
             of << indices[*fvit];
         }
+        of << " " << 2 << " " << mesh.getFaceLabel(*fit).x() << " " << mesh.getFaceLabel(*fit).y();
         of << std::endl;
     }
 
