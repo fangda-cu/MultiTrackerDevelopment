@@ -1047,6 +1047,14 @@ bool ElasticShell::shouldFracture (const EdgeHandle & eh) const{
 
 void ElasticShell::remesh()
 {
+  // prune orphan edges and vertices
+  for (EdgeIterator eit = m_obj->edges_begin(); eit != m_obj->edges_end(); ++eit)
+    if (m_obj->edgeIncidentFaces(*eit) == 0)
+      m_obj->deleteEdge(*eit, true);
+  
+  for (VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit)
+    if (m_obj->vertexIncidentEdges(*vit) == 0)
+      m_obj->deleteVertex(*vit);
 
   //Set up a SurfTrack, run remeshing, render the new mesh
   ElTopo::SurfTrackInitializationParameters construction_parameters;
