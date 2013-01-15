@@ -578,8 +578,16 @@ void DoubleBubbleTest::AfterStep()
   
   if (m_active_scene == 7)
   {
-    Scalar vol = 0;
-    static Scalar init_vol = -1;
+    int nregion = 0;
+    for (FaceIterator fit = shellObj->faces_begin(); fit != shellObj->faces_end(); ++fit)
+    {
+      Vec2i label = shell->getFaceLabel(*fit);
+      if (label.x() + 1 > nregion) nregion = label.x() + 1;
+      if (label.y() + 1 > nregion) nregion = label.y() + 1;
+    }
+    
+    std::vector<Scalar> vol(nregion, 0);
+    static std::vector<Scalar> init_vol(nregion, -1);
     
     Vec3d c = Vec3d(0, 0, 0);    
     for (FaceIterator fit = shellObj->faces_begin(); fit != shellObj->faces_end(); ++fit)
@@ -590,17 +598,24 @@ void DoubleBubbleTest::AfterStep()
       Vec3d x2 = shell->getVertexPosition(*fvit); ++fvit; assert(!fvit);
       
       Vec2i label = shell->getFaceLabel(*fit);
-      if (label.y() == 0)
-        vol += (x0 - c).cross(x1 - c).dot(x2 - c);
-      else
-        vol -= (x0 - c).cross(x1 - c).dot(x2 - c);
+      vol[label.x()] += (x0 - c).cross(x1 - c).dot(x2 - c);
+      vol[label.y()] -= (x0 - c).cross(x1 - c).dot(x2 - c);
     }
-    vol /= 6;
     
-    if (init_vol < 0)
-      init_vol = vol;
-    
-    std::cout << "volume = " << vol << " error = " << fabs(vol - init_vol) * 100 / init_vol << "%" << std::endl;
+    for (int i = 0; i < nregion; i++)
+    {
+      vol[i] /= 6;
+      if (i == 0)
+        vol[i] = -vol[i]; // this is used to compute total area
+      
+      if (init_vol[i] < 0)
+        init_vol[i] = vol[i];
+      
+      if (i == 0)
+        std::cout << "Total volume = " << vol[i] << " error = " << fabs(vol[i] - init_vol[i]) * 100 / init_vol[i] << "%" << std::endl;
+      else
+        std::cout << "Region " << i << ": volume = " << vol[i] << " error = " << fabs(vol[i] - init_vol[i]) * 100 / init_vol[i] << "%" << std::endl;
+    }
     
   }
 }
