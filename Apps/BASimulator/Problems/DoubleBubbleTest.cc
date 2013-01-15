@@ -1089,7 +1089,7 @@ void DoubleBubbleTest::setupScene7()
   std::vector<FaceHandle> faceList;
   FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles  
 
-  int Nsplit = 8;
+  int Nsplit = 1;
   if (Nsplit == 2)
   {
     for (int j = 0; j < N; j++)
@@ -1310,22 +1310,22 @@ void DoubleBubbleTest::setupScene7()
     
   } else  // default: Nsplit = 1
   {
-    for (int j = 0; j <= N; j++)
+    for (int j = 0; j < N; j++)
     {
       for (int i = 0; i < N * 2; i++)
       {
         int v0, v1, v2;
         v0 = (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
         v1 = (j == 0 ? 0 : 2 * N * (j - 1) + (i + 1) % (N * 2) + 1);
-        v2 = (j == N ? 2 * N * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
+        v2 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
         if (!(v0 == v1 || v0 == v2 || v1 == v2))
         {
           faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
           faceLabels[faceList.back()] = Vec2i(1, 0);
         }
         
-        v0 = (j == N ? 2 * N * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
-        v1 = (j == N ? 2 * N * N + 1 : 2 * N * j + i + 1);
+        v0 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
+        v1 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + i + 1);
         v2 = (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
         if (!(v0 == v1 || v0 == v2 || v1 == v2))
         {
