@@ -47,7 +47,8 @@ protected:
   ShellVolumeForce * svf;
   
   int onBBWall(const Vec3d & pos) const;
-  
+  void updateBBWallConstraints();
+    
 public:
   void setupScene1(); // VIIM test: single film in cube
   void setupScene2(); // T1 transition

@@ -345,7 +345,9 @@ void DoubleBubbleTest::Setup()
 //  tearingRand = clamp(tearingRand, 0.0, 1.0);
   shell->setTearing(tearing, tearingThres, tearingRand);
 
-//  shell->remesh();
+  updateBBWallConstraints();
+  shell->remesh();
+  updateBBWallConstraints();
     
   //compute the dof indexing for use in the diff_eq solver
   shellObj->computeDofIndexing();
@@ -450,68 +452,71 @@ void DoubleBubbleTest::AtEachTimestep()
 
     std::cout << "Time: " << this->getTime() << std::endl; 
 
-  {
+    updateBBWallConstraints();
+}
 
+void DoubleBubbleTest::updateBBWallConstraints()
+{
+    
     shellObj->releaseAllVertices();
     shell->getVertexConstraintLabels().assign(0);
     
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
-      VertexHandle v = *vit;
-
-      Vec3d pos = shell->getVertexPosition(v);
-      int constraint = 0;
-      bool x = false;
-      bool y = false;
-      bool z = false;
-      if (pos.x() < 1e-4)
-      {
-        pos.x() = 0;
-        x = true;
-        constraint |= (1 << 0);
-      }
-      if (pos.x() > 1 - 1e-4)
-      {
-        pos.x() = 1;
-        x = true;
-        constraint |= (1 << 3);
-      }
-      if (pos.y() < 1e-4)
-      {
-        pos.y() = 0;
-        y = true;
-        constraint |= (1 << 1);
-      }
-      if (pos.y() > 1 - 1e-4)
-      {
-        pos.y() = 1;
-        y = true;
-        constraint |= (1 << 4);
-      }
-      if (pos.z() < 1e-4)
-      {
-        pos.z() = 0;
-        z = true;
-        constraint |= (1 << 2);
-      }
-      if (pos.z() > 1 - 1e-4)
-      {
-        pos.z() = 1;
-        z = true;
-        constraint |= (1 << 5);
-      }
-
-      if (x || y || z)
-      {
-        PositionConstraint * pc = new PartialPositionConstraint(pos, x, y, z);
-        shellObj->constrainVertex(v, pc);
-        shell->getVertexConstraintLabel(v) = constraint;
-      }
+        VertexHandle v = *vit;
+        
+        Vec3d pos = shell->getVertexPosition(v);
+        int constraint = 0;
+        bool x = false;
+        bool y = false;
+        bool z = false;
+        if (pos.x() < 1e-4)
+        {
+            pos.x() = 0;
+            x = true;
+            constraint |= (1 << 0);
+        }
+        if (pos.x() > 1 - 1e-4)
+        {
+            pos.x() = 1;
+            x = true;
+            constraint |= (1 << 3);
+        }
+        if (pos.y() < 1e-4)
+        {
+            pos.y() = 0;
+            y = true;
+            constraint |= (1 << 1);
+        }
+        if (pos.y() > 1 - 1e-4)
+        {
+            pos.y() = 1;
+            y = true;
+            constraint |= (1 << 4);
+        }
+        if (pos.z() < 1e-4)
+        {
+            pos.z() = 0;
+            z = true;
+            constraint |= (1 << 2);
+        }
+        if (pos.z() > 1 - 1e-4)
+        {
+            pos.z() = 1;
+            z = true;
+            constraint |= (1 << 5);
+        }
+        
+        if (x || y || z)
+        {
+            PositionConstraint * pc = new PartialPositionConstraint(pos, x, y, z);
+            shellObj->constrainVertex(v, pc);
+            shell->getVertexConstraintLabel(v) = constraint;
+        }
     }
     
-  }
-  
 }
+
 void DoubleBubbleTest::beforeEndStep()
 {
   //
@@ -956,8 +961,8 @@ void DoubleBubbleTest::setupScene6()
   EdgeProperty<Scalar> edgeVel(shellObj);
   
   //generate voronoi sites
-  int nsite = 10;
-  srand(100000);
+  int nsite = GetIntOpt("shell-x-resolution");
+  srand(GetIntOpt("shell-y-resolution"));
   std::vector<Vec3d> sites;
   for (int i = 0; i < nsite; i++)
     sites.push_back(Vec3d((Scalar)rand() / RAND_MAX, (Scalar)rand() / RAND_MAX, (Scalar)rand() / RAND_MAX));
