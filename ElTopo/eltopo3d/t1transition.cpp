@@ -666,16 +666,25 @@ bool T1Transition::pop_vertices()
         //  For each face incident to the center vertex in the original mesh
         //    If it is incident to region A, update it to use vertex a
         //    If it is incident to region B, update it to use vertex b
-        //    Otherwise, if it is touching region A through an edge, it will be updated into a quad spanning both vertex a and b, otherwise, update it to use vertex b
+        //    Otherwise, update it to use vertex b
+        //  For each edge incident to the center vertex in the original mesh, and incident to any face with A label
+        //    Create a new triangle with both a and b
         //  Push vertex a and b on the stack to be visited next.
         //
-        // Notes: 
-        //  The algorithm above assumes that region A and B must always be connected by triangle fans, with one end of the fan touching region
-        //  A and the other touching B. Pulling apart the vertex makes this a stripe, thus at least one of the triangles in the fan need to be
-        //  turned into a quad. The algorithm picks the head of the fan triangle sequence (the one touching A) for this task. In the general
-        //  setting, there is one more possibility: region A and B are adjacent through only an edge. However this is not possible in our
-        //  workflow because performT1Transition() should have been called resolving all X-junction edges. (TODO: what if performT1Transition()
-        //  fails due to collision?)
+        // The first loop essentially pulls region A from everything else around the vertex, leaving a ring of blank around the vertex. Then
+        //  the next loop fills the blank. Note that this algorithm works even in presence of unresolved X-junction edges, if any (due to 
+        //  collision etc). Another interpretation is: region A and region B remain intact; all the other triangles (incident to neither A
+        //  nor B) form a number of triangle fans, which may share edges/triangles between them. There are a number of "head" edges, which 
+        //  are located at the head of the fans from region A to region B. These edges are the edges incident to region A. The second loop 
+        //  basically sweeps these head edges into a triangles (from a to b).
+        //
+        // Collision test is performed before the operation to ensure collision safety. First the center vertex is moved to the position of 
+        //  new vertex b without changing connectivity. Collision is checked for this motion. Then vertex a is separated from vertex b, 
+        //  bringing all region A faces along with it. Collision is checked for this motion, using only region A faces as incident faces and
+        //  region A edges as incident edges. This CCD only detects the collision of this motion against the rest of the mesh, excluding all
+        //  faces/edges connected to both a and b (b faces/edges are excluded too because initially a and b coincide). Then an instantaneous 
+        //  intersection test is perform that finds intersections in the final configuration.
+        //  
         //
         
         // construct the region graph
@@ -754,6 +763,15 @@ bool T1Transition::pop_vertices()
         std::vector<size_t> A_faces;
         std::vector<size_t> A_edges;
         
+        for (size_t j = 0; j < mesh.m_vertex_to_triangle_map[xj].size(); j++)
+        {
+            size_t triangle = mesh.m_vertex_to_triangle_map[xj][j];
+            
+            Vec2i label = mesh.get_triangle_label(triangle);
+            if (label[0] == A || label[1] == A)
+                A_faces.push_back(triangle);
+        }
+        
         for (size_t j = 0; j < mesh.m_vertex_to_edge_map[xj].size(); j++)
         {
             size_t edge = mesh.m_vertex_to_edge_map[xj][j];
@@ -769,26 +787,6 @@ bool T1Transition::pop_vertices()
             if (adjA)
                 A_edges.push_back(edge);
         }
-        
-        std::vector<size_t> A_edges_append;
-        for (size_t j = 0; j < A_edges.size(); j++)
-        {
-            for (size_t k = 0; k < mesh.m_edge_to_triangle_map[A_edges[j]].size(); k++)
-            {
-                size_t triangle = mesh.m_edge_to_triangle_map[A_edges[j]][k];
-                A_faces.push_back(triangle);
-                
-                Vec2i label = mesh.get_triangle_label(triangle);
-                if (label[0] != A && label[1] != A)
-                {
-                    size_t tv = mesh.get_third_vertex(A_edges[j], mesh.get_triangle(triangle));
-                    size_t tve = mesh.get_edge_index(tv, xj);
-                    assert(tve < mesh.ne());
-                    A_edges_append.push_back(tve);
-                }
-            }
-        }
-        A_edges.insert(A_edges.end(), A_edges_append.begin(), A_edges_append.end());
         
         if (vertex_pseudo_motion_introduces_collision(xj, original_position, b_desired_position))
         {
@@ -929,8 +927,6 @@ bool T1Transition::pop_vertices()
             
             // find the edge in triangle triangle that's opposite to vertex xj
             size_t l = 0;
-            size_t edge0 = static_cast<size_t>(~0);
-            size_t edge1 = static_cast<size_t>(~0);
             size_t edge2 = static_cast<size_t>(~0);
             for (l = 0; l < 3; l++)
             {
@@ -942,92 +938,27 @@ bool T1Transition::pop_vertices()
             size_t v0 = mesh.m_edges[edge2][0];
             size_t v1 = mesh.m_edges[edge2][1];
             
-            for (l = 0; l < 3; l++)
-            {
-                size_t e = mesh.m_triangle_to_edge_map[triangle][l];
-                if ((mesh.m_edges[e][0] == xj && mesh.m_edges[e][1] == v0) ||
-                    (mesh.m_edges[e][1] == xj && mesh.m_edges[e][0] == v0))
-                    edge0 = e;
-                else if ((mesh.m_edges[e][0] == xj && mesh.m_edges[e][1] == v1) ||
-                         (mesh.m_edges[e][1] == xj && mesh.m_edges[e][0] == v1))
-                    edge1 = e;
-            }
-            assert(edge0 < mesh.ne());
-            assert(edge1 < mesh.ne());
-            
-            assert(v0 == mesh.m_edges[edge0][0] || v0 == mesh.m_edges[edge0][1]);
-            assert(v1 == mesh.m_edges[edge1][0] || v1 == mesh.m_edges[edge1][1]);
-            
             if (!mesh.oriented(v0, v1, mesh.get_triangle(triangle)))
-            {
                 std::swap(v0, v1);
-                std::swap(edge0, edge1);
-            }
             
             Vec2i label = mesh.get_triangle_label(triangle);
             if (label[0] == A || label[1] == A)
             {
                 faces_to_create.push_back(Vec3st(a, v0, v1));
                 face_labels_to_create.push_back(label);
-                
-            } else if (label[0] == B || label[1] == B)
-            {
-                faces_to_create.push_back(Vec3st(b, v0, v1));
-                face_labels_to_create.push_back(label);
-                
             } else
             {
-                // find out which one out of xj-v0 and xj-v1 is next to region A and to region B (or neither), in order to determine triangulation
-                size_t ev0 = edge0;
-                size_t ev1 = edge1;
-                
-                bool v0adjA = false;
-                bool v1adjA = false;
-                for (size_t j = 0; j < mesh.m_edge_to_triangle_map[ev0].size(); j++)
-                {
-                    Vec2i label = mesh.get_triangle_label(mesh.m_edge_to_triangle_map[ev0][j]);
-                    if (label[0] == A || label[1] == A)
-                        v0adjA = true;
-                }
-                for (size_t j = 0; j < mesh.m_edge_to_triangle_map[ev1].size(); j++)
-                {
-                    Vec2i label = mesh.get_triangle_label(mesh.m_edge_to_triangle_map[ev1][j]);
-                    if (label[0] == A || label[1] == A)
-                        v1adjA = true;
-                }
-                
-                assert(!v0adjA || !v1adjA);
-                
-                if (v0adjA)
-                {
-                    faces_to_create.push_back(Vec3st(a, v0, v1));
-                    faces_to_create.push_back(Vec3st(a, v1, b));
-                    face_labels_to_create.push_back(label);
-                    face_labels_to_create.push_back(label);
-                } else if (v1adjA)
-                {
-                    faces_to_create.push_back(Vec3st(a, v0, v1));
-                    faces_to_create.push_back(Vec3st(a, b, v0));
-                    face_labels_to_create.push_back(label);
-                    face_labels_to_create.push_back(label);
-                } else
-                {
-                    faces_to_create.push_back(Vec3st(b, v0, v1));
-                    face_labels_to_create.push_back(label);
-                }
-                
+                faces_to_create.push_back(Vec3st(b, v0, v1));
+                face_labels_to_create.push_back(label);                
             }
-            
         }
         
-        // need to consider the X-junction edge case too, because the edge popping may not be complete due to collision
-        for (size_t i = 0; i < mesh.m_vertex_to_edge_map[xj].size(); i++)
+        // sweep A region edges
+        for (size_t i = 0; i < A_edges.size(); i++)
         {
-            size_t edge = mesh.m_vertex_to_edge_map[xj][i];
+            size_t edge = A_edges[i];
             size_t v2 = (mesh.m_edges[edge][0] == xj ? mesh.m_edges[edge][1] : mesh.m_edges[edge][0]);
             
-            bool adjA = false;
-            bool adjB = false;
             int upper_region = -1;  // the region on the top when looking down the edge from xj to v2, with region B on the right
             int lower_region = -1;
             for (size_t j = 0; j < mesh.m_edge_to_triangle_map[edge].size(); j++)
@@ -1036,67 +967,65 @@ bool T1Transition::pop_vertices()
                 bool oriented = mesh.oriented(xj, v2, mesh.get_triangle(triangle));
                 
                 Vec2i label = mesh.get_triangle_label(triangle);
-                if (label[0] == A || label[1] == A)
-                    adjA = true;
-                if (label[0] == B || label[1] == B)
-                    adjB = true;
-                if ((label[0] == B &&  oriented) ||
-                    (label[1] == B && !oriented))
-                {
-                    lower_region = (label[0] == B ? label[1] : label[0]);
-                }
-                if ((label[0] == B && !oriented) ||
-                    (label[1] == B &&  oriented))
-                {
-                    upper_region = (label[0] == B ? label[1] : label[0]);
-                }
                 
+                if ((label[0] == A &&  oriented) ||
+                    (label[1] == A && !oriented))
+                {
+                    upper_region = (label[0] == A ? label[1] : label[0]);
+                }
+                if ((label[0] == A && !oriented) ||
+                    (label[1] == A &&  oriented))
+                {
+                    lower_region = (label[0] == A ? label[1] : label[0]);
+                }
             }
             
-            if (adjA && adjB)
+            if (upper_region >= 0 && lower_region >= 0) // if this is not true, then the neighborhood around this edge is not complete, which can oly happen on the boundary.
             {
-                if (upper_region >= 0 && lower_region >= 0) // if this is not true, then the neighborhood around this edge is not complete, which can oly happen on the boundary.
+                if (upper_region == lower_region)
                 {
-                    // this is an X-junction edge. pulling vertex xj apart creates a new face here.
-                    std::cout << "Unresolved X-junction edge encountered." << std::endl;
+                    // this means either this edge is just a manifold edge between region A faces (thus pulling apart xj doesn't affect this edge), or it is an X junction edge with the same region above and below (pulling this edge apart creates a tunnel connecting them)
+                    // in either case, no triangle should be created.
+                } else
+                {
                     faces_to_create.push_back(Vec3st(a, b, v2));
                     face_labels_to_create.push_back(Vec2i(lower_region, upper_region));
                 }
             }
         }
 
-        // prune flap triangles
-        // TODO: make use of ElTopo's flap triangle pruning: SurfTrack::trim_non_manifold(). Just need to maintain the m_dirty_triangles list.
-        for (size_t i = 0; i < faces_to_create.size(); i++)
-        {
-            for (size_t j = i + 1; j < faces_to_create.size(); j++)
-            {
-                Vec3st & f0 = faces_to_create[i];
-                Vec3st & f1 = faces_to_create[j];
-                
-                if (mesh.triangle_has_these_verts(f0, f1))
-                {
-                    // f0 and f1 have the same vertices
-                    
-                    Vec2i l0 = face_labels_to_create[i];
-                    Vec2i l1 = face_labels_to_create[j];
-                    
-                    assert(l0[0] == l1[0] || l0[0] == l1[1] || l0[1] == l1[0] || l0[1] == l1[1]);
-                    
-                    Vec2i newlabel; // newlabel has the same orientation with l0
-                    if (l0[0] == l1[0] || l0[0] == l1[1])
-                        newlabel = Vec2i(l0[0] == l1[0] ? l1[1] : l1[0], l0[1]);
-                    else
-                        newlabel = Vec2i(l0[0], l0[1] == l1[0] ? l1[1] : l1[0]);
-                    
-                    face_labels_to_create[i] = newlabel;
-                    
-                    faces_to_create.erase(faces_to_create.begin() + j);
-                    face_labels_to_create.erase(face_labels_to_create.begin() + j);
-                    break;
-                }
-            }
-        }
+//        // prune flap triangles
+//        // TODO: make use of ElTopo's flap triangle pruning: SurfTrack::trim_non_manifold(). Just need to maintain the m_dirty_triangles list.
+//        for (size_t i = 0; i < faces_to_create.size(); i++)
+//        {
+//            for (size_t j = i + 1; j < faces_to_create.size(); j++)
+//            {
+//                Vec3st & f0 = faces_to_create[i];
+//                Vec3st & f1 = faces_to_create[j];
+//                
+//                if (mesh.triangle_has_these_verts(f0, f1))
+//                {
+//                    // f0 and f1 have the same vertices
+//                    
+//                    Vec2i l0 = face_labels_to_create[i];
+//                    Vec2i l1 = face_labels_to_create[j];
+//                    
+//                    assert(l0[0] == l1[0] || l0[0] == l1[1] || l0[1] == l1[0] || l0[1] == l1[1]);
+//                    
+//                    Vec2i newlabel; // newlabel has the same orientation with l0
+//                    if (l0[0] == l1[0] || l0[0] == l1[1])
+//                        newlabel = Vec2i(l0[0] == l1[0] ? l1[1] : l1[0], l0[1]);
+//                    else
+//                        newlabel = Vec2i(l0[0], l0[1] == l1[0] ? l1[1] : l1[0]);
+//                    
+//                    face_labels_to_create[i] = newlabel;
+//                    
+//                    faces_to_create.erase(faces_to_create.begin() + j);
+//                    face_labels_to_create.erase(face_labels_to_create.begin() + j);
+//                    break;
+//                }
+//            }
+//        }
         
         // apply the deletion/addition
         assert(faces_to_create.size() == face_labels_to_create.size());
