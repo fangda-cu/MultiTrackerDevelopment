@@ -537,21 +537,21 @@ void DoubleBubbleTest::beforeEndStep()
     // -----------
     // k1 = dt * f( t, x );
     s7_enright_velocity(current_t, x, v);
-    Vec3d k1 = dt * v;
+    Vec3d k1 = v;
     
     // k2 = dt * f( t + 0.5*dt, x + 0.5*k1 );
-    s7_enright_velocity(current_t + 0.5*dt, x + 0.5 * k1, v);
-    Vec3d k2 = dt * v;
+    s7_enright_velocity(current_t + 0.5 * dt, x + 0.5 * dt * k1, v);
+    Vec3d k2 = v;
     
     // k3 = dt * f( t + 0.5*dt, x + 0.5*k2 );
-    s7_enright_velocity(current_t + 0.5*dt, x + 0.5 * k2, v);
-    Vec3d k3 = dt * v;
+    s7_enright_velocity(current_t + 0.5 * dt, x + 0.5 * dt * k2, v);
+    Vec3d k3 = v;
     
     // k4 = dt * f( t + dt, x + k3 );
-    s7_enright_velocity(current_t + dt, x + k3, v);
-    Vec3d k4 = dt * v;
+    s7_enright_velocity(current_t + dt, x + dt * k3, v);
+    Vec3d k4 = v;
     
-    v = (1./6. * (k1 + k4) + 1./3. * (k2 + k3)) / dt;
+    v = (1./6. * (k1 + k4) + 1./3. * (k2 + k3));
     shell->setVertexVelocity(*vit, v);
     shell->setVertexPosition(*vit, x + v * dt);
   }  
