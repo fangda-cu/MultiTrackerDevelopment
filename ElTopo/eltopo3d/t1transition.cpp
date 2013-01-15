@@ -1137,137 +1137,41 @@ bool T1Transition::should_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pul
     Vec3d xxj = m_surf.get_position(xj);
     Vec3d force_a(0);
     Vec3d force_b(0);
-    for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[xj].size(); i++)
+    
+    std::vector<size_t> faces_to_delete;
+    std::vector<Vec3st> faces_to_create;
+    std::vector<Vec2i> face_labels_to_create;
+    
+    size_t a = mesh.nv() + 1;   // placeholder vertices
+    size_t b = mesh.nv() + 2;
+    triangulate_popped_vertex(xj, A, B, a, b, faces_to_delete, faces_to_create, face_labels_to_create);
+    
+    for (size_t i = 0; i < faces_to_create.size(); i++)
     {
-        size_t triangle = mesh.m_vertex_to_triangle_map[xj][i];
+        Vec3st t = sort_triangle(faces_to_create[i]);
         
-        // find the edge in triangle triangle that's opposite to vertex xj
-        size_t l = 0;
-        size_t edge0 = static_cast<size_t>(~0);
-        size_t edge1 = static_cast<size_t>(~0);
-        size_t edge2 = static_cast<size_t>(~0);
-        for (l = 0; l < 3; l++)
+        assert(t[0] < mesh.nv());
+        assert(t[2] >= mesh.nv());
+        if (t[1] < mesh.nv())
         {
-            size_t e = mesh.m_triangle_to_edge_map[triangle][l];
-            if (mesh.m_edges[e][0] != xj && mesh.m_edges[e][1] != xj)
-                edge2 = e;
-        }
-        assert(edge2 < mesh.ne());
-        size_t v0 = mesh.m_edges[edge2][0];
-        size_t v1 = mesh.m_edges[edge2][1];
-        
-        for (l = 0; l < 3; l++)
-        {
-            size_t e = mesh.m_triangle_to_edge_map[triangle][l];
-            if ((mesh.m_edges[e][0] == xj && mesh.m_edges[e][1] == v0) ||
-                (mesh.m_edges[e][1] == xj && mesh.m_edges[e][0] == v0))
-                edge0 = e;
-            else if ((mesh.m_edges[e][0] == xj && mesh.m_edges[e][1] == v1) ||
-                     (mesh.m_edges[e][1] == xj && mesh.m_edges[e][0] == v1))
-                edge1 = e;
-        }
-        assert(edge0 < mesh.ne());
-        assert(edge1 < mesh.ne());
-        
-        assert(v0 == mesh.m_edges[edge0][0] || v0 == mesh.m_edges[edge0][1]);
-        assert(v1 == mesh.m_edges[edge1][0] || v1 == mesh.m_edges[edge1][1]);
-        
-        Vec3d x0 = m_surf.get_position(v0);
-        Vec3d x1 = m_surf.get_position(v1);
-        
-        Vec3d foot = dot(xxj - x0, x1 - x0) / dot(x1 - x0, x1 - x0) * (x1 - x0) + x0;
-        Vec3d force = (foot - xxj);
-        force /= mag(force);
-        force *= mag(x1 - x0);
-        
-        Vec2i label = mesh.get_triangle_label(triangle);
-        if (label[0] == A || label[1] == A)
-        {
-            force_a += force;
-        } else if (label[0] == B || label[1] == B)
-        {
-            force_b += force;
+            // a regular triangle containing only either a or b, not both -- this triangle is not degenerate, so we can use the area gradient
+            Vec3d x0 = (t[0] > mesh.nv() ? xxj : m_surf.get_position(t[0]));
+            Vec3d x1 = (t[1] > mesh.nv() ? xxj : m_surf.get_position(t[1]));
+            
+            Vec3d foot = dot(xxj - x0, x1 - x0) / dot(x1 - x0, x1 - x0) * (x1 - x0) + x0;
+            Vec3d force = (foot - xxj); // the surface tension force, i.e. area gradient
+            force /= mag(force);
+            force *= mag(x1 - x0);
+            
+            if (t[2] == a)
+                force_a += force;
+            if (t[2] == b)
+                force_b += force;
         } else
         {
-            size_t ev0 = edge0;
-            size_t ev1 = edge1;
-            
-            bool v0adjA = false;
-            bool v1adjA = false;
-            for (size_t j = 0; j < mesh.m_edge_to_triangle_map[ev0].size(); j++)
-            {
-                Vec2i label = mesh.get_triangle_label(mesh.m_edge_to_triangle_map[ev0][j]);
-                if (label[0] == A || label[1] == A)
-                    v0adjA = true;
-            }
-            for (size_t j = 0; j < mesh.m_edge_to_triangle_map[ev1].size(); j++)
-            {
-                Vec2i label = mesh.get_triangle_label(mesh.m_edge_to_triangle_map[ev1][j]);
-                if (label[0] == A || label[1] == A)
-                    v1adjA = true;
-            }
-            
-            assert(!v0adjA || !v1adjA);
-            
-            if (v0adjA)
-            {
-                force_a += force;
-                force_a += -pull_apart_direction * mag(cross(x1 - xxj, pull_apart_direction));
-                force_b += pull_apart_direction * mag(cross(x1 - xxj, pull_apart_direction));
-            } else if (v1adjA)
-            {
-                force_a += force;
-                force_a += -pull_apart_direction * mag(cross(x0 - xxj, pull_apart_direction));
-                force_b += pull_apart_direction * mag(cross(x0 - xxj, pull_apart_direction));
-            } else
-            {
-                force_b += force;
-            }
-        }
-    }
-    
-    // need to consider the X-junction edge case too, because the edge popping may not be complete due to collision
-    for (size_t i = 0; i < mesh.m_vertex_to_edge_map[xj].size(); i++)
-    {
-        size_t edge = mesh.m_vertex_to_edge_map[xj][i];
-        size_t v2 = (mesh.m_edges[edge][0] == xj ? mesh.m_edges[edge][1] : mesh.m_edges[edge][0]);
-        Vec3d x2 = m_surf.get_position(v2);
-
-        bool adjA = false;
-        bool adjB = false;
-        int upper_region = -1;  // the region on the top when looking down the edge from xj to v2, with region B on the right
-        int lower_region = -1;
-        for (size_t j = 0; j < mesh.m_edge_to_triangle_map[edge].size(); j++)
-        {
-            size_t triangle = mesh.m_edge_to_triangle_map[edge][j];
-            bool oriented = mesh.oriented(xj, v2, mesh.get_triangle(triangle));
-            
-            Vec2i label = mesh.get_triangle_label(triangle);
-            if (label[0] == A || label[1] == A)
-                adjA = true;
-            if (label[0] == B || label[1] == B)
-                adjB = true;
-            if ((label[0] == B &&  oriented) ||
-                (label[1] == B && !oriented))
-            {
-                lower_region = (label[0] == B ? label[1] : label[0]);
-            }
-            if ((label[0] == B && !oriented) ||
-                (label[1] == B &&  oriented))
-            {
-                upper_region = (label[0] == B ? label[1] : label[0]);
-            }
-            
-        }
-        
-        if (adjA && adjB)
-        {
-            if (upper_region >= 0 && lower_region >= 0) // if this is not true, then the neighborhood around this edge is not complete, which can oly happen on the boundary.
-            {
-                // this is an X-junction edge. pulling vertex xj apart creates a new face here.
-                force_a += -pull_apart_direction * mag(cross(x2 - xxj, pull_apart_direction));
-                force_b += pull_apart_direction * mag(cross(x2 - xxj, pull_apart_direction));
-            }
+            // a triangle that contains both a and b -- this triangle is degenerate. we must pretent a and b are moved apart infinitesimally along pull_apart_direction
+            force_a += -pull_apart_direction * mag(cross(m_surf.get_position(t[0]) - xxj, pull_apart_direction));
+            force_b += pull_apart_direction * mag(cross(m_surf.get_position(t[0]) - xxj, pull_apart_direction));
         }
     }
     
