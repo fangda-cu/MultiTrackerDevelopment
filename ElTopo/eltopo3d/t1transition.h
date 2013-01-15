@@ -90,6 +90,10 @@ private:
     ///
     bool vertex_pseudo_motion_introduces_collision(size_t v, const Vec3d & oldpos, const Vec3d & newpos, const std::vector<size_t> & tris, const std::vector<size_t> & edges);
     
+    /// Vertex popping helper function: generate the new triangulation after pulling a vertex apart
+    ///
+    void triangulate_popped_vertex(size_t xj, int A, int B, size_t a, size_t b, std::vector<size_t> & faces_to_delete, std::vector<Vec3st> & faces_to_create, std::vector<Vec2i> & face_labels_to_create);
+    
     /// The mesh this object operates on
     /// 
     SurfTrack & m_surf;   
