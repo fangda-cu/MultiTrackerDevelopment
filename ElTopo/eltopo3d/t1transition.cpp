@@ -691,9 +691,9 @@ bool T1Transition::pop_vertices()
         int A = -1;
         int B = -1;
         Vec3d pull_apart_direction;
-        for (size_t i = 0; i < vertex_regions.size(); i++)
+        for (size_t i = 0; i < vertex_regions.size() && A < 0; i++)
         {
-            for (size_t j = i + 1; j < vertex_regions.size(); j++)
+            for (size_t j = i + 1; j < vertex_regions.size() && A < 0; j++)
             {
                 if (region_graph[vertex_regions[i]][vertex_regions[j]] == 0)
                 {
