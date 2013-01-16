@@ -467,8 +467,8 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
           rregion1 = (obj.fromVertex(tailedge) == v ? wall_edge_labels[tailedge].y() : wall_edge_labels[tailedge].x());
         }
 
-        assert(!(lregion0 >= 0 && rregion0 >= 0 && lregion0 != rregion0));
-        assert(!(lregion1 >= 0 && rregion1 >= 0 && lregion1 != rregion1));
+//        assert(!(lregion0 >= 0 && rregion0 >= 0 && lregion0 != rregion0));
+//        assert(!(lregion1 >= 0 && rregion1 >= 0 && lregion1 != rregion1));
 
         if (lregion0 >= 0)
           edge_labels[l] = lregion0;
