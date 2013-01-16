@@ -626,8 +626,34 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
         m_shell.setFaceLabel(new_faces.back(), sign > 0 ? Vec2i(wall_edge_labels[e].x(), -1) : Vec2i(-1, wall_edge_labels[e].x()));
       } else
       {
-        // an edge within the wall
-        m_shell.setFaceLabel(new_faces.back(), Vec2i(wall_edge_labels[e].y(), wall_edge_labels[e].x()));
+        int onwalls = onBBWall(m_shell.getVertexPosition(obj.fromVertex(e))) & onBBWall(m_shell.getVertexPosition(obj.toVertex(e)));
+        if (onwalls == (1 << i))
+        {
+          // an edge within the wall
+          m_shell.setFaceLabel(new_faces.back(), Vec2i(wall_edge_labels[e].y(), wall_edge_labels[e].x()));
+        } else
+        {
+          // an edge within an BB edge
+          for (int k = 0; k < 12; k++)
+          {
+            VertexHandle corner0 = corners[bb_edges[k].x()];
+            VertexHandle corner1 = corners[bb_edges[k].y()];
+            int wall0 = bb_edges[k].z();
+            int wall1 = bb_edges[k].w();
+            
+            if (onwalls == ((1 << wall0) | (1 << wall1)))
+            {
+              assert(wall0 == i || wall1 == i);
+              assert(wall0 != wall1);
+              if ((m_shell.getVertexPosition(obj.toVertex(e)) - m_shell.getVertexPosition(obj.fromVertex(e))).dot(m_shell.getVertexPosition(corner1) - m_shell.getVertexPosition(corner0)) > 0)
+                m_shell.setFaceLabel(new_faces.back(), (wall0 == i ? Vec2i(wall_edge_labels[e].y(), -1) : Vec2i(-1, wall_edge_labels[e].x())));
+              else
+                m_shell.setFaceLabel(new_faces.back(), (wall1 == i ? Vec2i(wall_edge_labels[e].y(), -1) : Vec2i(-1, wall_edge_labels[e].x())));
+            }
+
+          }
+          
+        }
       }
     }
   }
