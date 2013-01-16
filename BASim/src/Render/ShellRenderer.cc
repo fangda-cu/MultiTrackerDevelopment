@@ -679,6 +679,10 @@ void ShellRenderer::render()
             continue;
         
         Vec2i regions = m_shell.getFaceLabel(f);
+        if ((regions.x() < 0 || !m_region_visible[regions.x()]) &&
+            (regions.y() < 0 || !m_region_visible[regions.y()]))
+          continue;
+        
         FaceVertexIterator fvit = mesh.fv_iter(f); assert(fvit);
         Vec3d p0 = m_shell.getVertexPosition(*fvit);  ++fvit;   assert(fvit);
         Vec3d p1 = m_shell.getVertexPosition(*fvit);  ++fvit;   assert(fvit);
@@ -693,7 +697,7 @@ void ShellRenderer::render()
         if (regions.x() >= 0)
         {
           OpenGL::vertex(c);
-          OpenGL::vertex(Vec3d(c - n * 0.01));
+          OpenGL::vertex(Vec3d(c - n * 0.02));
         }
         
         Vec3d color1 = labelcolors[std::max(0, regions.y() + 1)];
@@ -702,7 +706,7 @@ void ShellRenderer::render()
         if (regions.y() >= 0)
         {
           OpenGL::vertex(c);
-          OpenGL::vertex(Vec3d(c + n * 0.01));          
+          OpenGL::vertex(Vec3d(c + n * 0.02));          
         }
       }
       glEnd();
