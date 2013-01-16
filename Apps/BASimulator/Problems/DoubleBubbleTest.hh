@@ -63,6 +63,7 @@ public:
 
   void s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out);
 
+  int m_nregion;
 
 };
 

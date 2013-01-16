@@ -27,6 +27,7 @@
 #include "BASim/src/Collisions/ElTopo/util.hh"
 
 #include "DelaunayTriangulator.hh"
+#include "ElTopo/eltopo3d/iomesh.h"
 
 //An ElTopo global variable.
 #include "runstats.h"
@@ -349,6 +350,19 @@ void DoubleBubbleTest::Setup()
   shell->remesh(true);
   updateBBWallConstraints();
     
+  // count total number of regions
+  int max_region = 0;
+  for (FaceIterator fit = shellObj->faces_begin(); fit != shellObj->faces_end(); ++fit)
+  {
+    Vec2i label = shell->getFaceLabel(*fit);
+    if (label.x() > max_region)
+      max_region = label.x();
+    if (label.y() > max_region)
+      max_region = label.y();
+  }
+    
+  m_nregion = max_region + 1;
+    
   //compute the dof indexing for use in the diff_eq solver
   shellObj->computeDofIndexing();
 
@@ -435,17 +449,88 @@ void DoubleBubbleTest::AtEachTimestep()
     }
     //Dump OBJ files if needed
     //Start OBJ file stuff
-    if ( g_obj_dump ){
+    if ( g_obj_dump )
+    {
+        // convert BASim mesh to ElTopo mesh (code copied from ElasticShell::remesh())
+        std::vector<ElTopo::Vec3d> vert_data;
+        std::vector<ElTopo::Vec3d> vert_vel;
+        std::vector<ElTopo::Vec3st> tri_data;
+        std::vector<ElTopo::Vec2i> tri_labels;
+        std::vector<bool> vert_const_labels;
+        std::vector<Scalar> masses;
+        
+        DeformableObject& mesh = *shellObj;
+        
+        //Index mappings between us and El Topo, used in remesh()
+        VertexProperty<int> vert_numbers(&mesh);
+        FaceProperty<int> face_numbers(&mesh);
+        std::vector<VertexHandle> reverse_vertmap;
+        std::vector<FaceHandle> reverse_trimap;
+        
+        reverse_vertmap.reserve(shellObj->nv());
+        reverse_trimap.reserve(shellObj->nt());  
+        
+        vert_data.reserve(shellObj->nv());
+        tri_data.reserve(shellObj->nt());
+        tri_labels.reserve(shellObj->nt());
+        vert_const_labels.reserve(shellObj->nv());
+        masses.reserve(shellObj->nv());
+        
+        //walk through vertices, create linear list, store numbering
+        int id = 0;
+        for(VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit) {
+            VertexHandle vh = *vit;
+            Vec3d vert = shell->getVertexPosition(vh);
+            Scalar mass = 1;
+            vert_data.push_back(ElTopo::Vec3d(vert[0], vert[1], vert[2]));
+            Vec3d vel = shell->getVertexVelocity(vh);
+            vert_vel.push_back(ElTopo::Vec3d(vel[0], vel[1], vel[2]));
+            if(shellObj->isConstrained(vh))
+                masses.push_back(numeric_limits<Scalar>::infinity());
+            else
+                masses.push_back(mass);
+            vert_const_labels.push_back(shell->getVertexConstraintLabel(vh) != 0);
+            vert_numbers[vh] = id;
+            reverse_vertmap.push_back(vh);
+            
+            ++id;
+        }
+        
+        //walk through tris, creating linear list, using the vertex numbering assigned above
+        id = 0;
+        for(FaceIterator fit = mesh.faces_begin(); fit != mesh.faces_end(); ++fit) {
+            FaceHandle fh = *fit;
+            ElTopo::Vec3st tri;
+            int i = 0;
+            for(FaceVertexIterator fvit = mesh.fv_iter(fh); fvit; ++fvit) {
+                VertexHandle vh = *fvit;
+                tri[i] = vert_numbers[vh];
+                ++i;
+            }
+            tri_data.push_back(tri);
+            tri_labels.push_back(ElTopo::Vec2i(shell->getFaceLabel(fh).x(), shell->getFaceLabel(fh).y()));
+            face_numbers[fh] = id;
+            reverse_trimap.push_back(fh);
+            ++id;
+        }
+        
+        ElTopo::SurfTrackInitializationParameters construction_parameters;
+        ElTopo::SurfTrack surface_tracker( vert_data, tri_data, tri_labels, masses, construction_parameters ); 
+        surface_tracker.m_constrained_vertices_callback = shell;
+        surface_tracker.m_mesh.m_vertex_constraint_labels = vert_const_labels;
+        surface_tracker.set_all_remesh_velocities(vert_vel);
+        
+        for (int i = 0; i < m_nregion; i++)
+        {
+            std::stringstream name;
+            int file_width = 20;
 
-        std::stringstream name;
-        int file_width = 20;
+            name << std::setfill('0');
+            name << outputdirectory << "/" << "region" << std::setw(4) << i << "_frame" << std::setw(file_width) << db_current_obj_frame << ".OBJ";
 
-        name << std::setfill('0');
-        name << outputdirectory << "/frame" << std::setw(file_width) << db_current_obj_frame << ".OBJ";
-
-        ObjWriter::write(name.str(), *shell);
-        std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: "
-                            << name.str() << std::endl;
+            write_objfile_per_region(surface_tracker.m_mesh, surface_tracker.get_positions(), i, name.str().c_str());
+            std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+        }
 
         ++db_current_obj_frame;
     }
