@@ -592,7 +592,7 @@ void ShellRenderer::render()
       if ( m_shell.shouldFracture(*eit) ){
         OpenGL::color(Color(1.0, 1.0, 0.0));
       } else if (mesh.isBoundary(*eit)){
-        OpenGL::color(Color(0.0, 1.0, 0.0));
+        OpenGL::color(Color(1.0, 0.5, 0.0));
       }
       else {
         OpenGL::color(Color(0.0,0.0,0.0));
