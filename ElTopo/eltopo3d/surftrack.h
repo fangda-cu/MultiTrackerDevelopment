@@ -62,6 +62,10 @@ struct SurfTrackInitializationParameters
     ///
     bool m_t1_transition_enabled;
     
+    /// The velocity field callback
+    ///
+    T1Transition::VelocityFieldCallback * m_velocity_field_callback;
+    
     /// Collision epsilon to use during mesh improvement operations (i.e. if any mesh elements are closer than this, the operation is 
     /// aborted).  NOTE: This should be greater than collision_epsilon, to prevent improvement operations from moving elements into 
     /// a collision configuration.
