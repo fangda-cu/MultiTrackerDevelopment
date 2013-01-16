@@ -415,8 +415,8 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
         {
           EdgeHandle headedge = wall_edges[wall0][head];
           EdgeHandle tailedge = wall_edges[wall0][tail];
-          lregion0 = (obj.fromVertex(headedge) == v ? wall_edge_labels[headedge].y() : wall_edge_labels[headedge].x());
-          lregion1 = (obj.fromVertex(tailedge) == v ? wall_edge_labels[tailedge].x() : wall_edge_labels[tailedge].y());
+          lregion1 = (obj.fromVertex(headedge) == v ? wall_edge_labels[headedge].x() : wall_edge_labels[headedge].y());
+          lregion0 = (obj.fromVertex(tailedge) == v ? wall_edge_labels[tailedge].y() : wall_edge_labels[tailedge].x());
         }
         
         if (verbose) std::cout << "right wall: " << std::endl;
@@ -446,6 +446,7 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
           
           if (b)
           {
+            std::cout << "e = " << e << std::endl;
             if (head < 0 || e.cross(head_vec).dot(wall_normals[wall1]) < 0)
             {
               head = j;
@@ -463,8 +464,8 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
         {
           EdgeHandle headedge = wall_edges[wall1][head];
           EdgeHandle tailedge = wall_edges[wall1][tail];
-          rregion0 = (obj.fromVertex(headedge) == v ? wall_edge_labels[headedge].x() : wall_edge_labels[headedge].y());
-          rregion1 = (obj.fromVertex(tailedge) == v ? wall_edge_labels[tailedge].y() : wall_edge_labels[tailedge].x());
+          rregion1 = (obj.fromVertex(headedge) == v ? wall_edge_labels[headedge].y() : wall_edge_labels[headedge].x());
+          rregion0 = (obj.fromVertex(tailedge) == v ? wall_edge_labels[tailedge].x() : wall_edge_labels[tailedge].y());
         }
 
 //        assert(!(lregion0 >= 0 && rregion0 >= 0 && lregion0 != rregion0));
