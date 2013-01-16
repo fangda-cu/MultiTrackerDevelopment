@@ -573,6 +573,9 @@ void ShellRenderer::render()
     
     // Render all edges
     glLineWidth(2);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
     glBegin(GL_LINES);
     OpenGL::color(Color(0,0,0));
     
@@ -590,29 +593,44 @@ void ShellRenderer::render()
       //p0 = p0 + 0.05*dir;
       //p1 = p1 - 0.05*dir;
       if ( m_shell.shouldFracture(*eit) ){
-        OpenGL::color(Color(1.0, 1.0, 0.0));
+        OpenGL::color(Color(1.0, 1.0, 0.0, 1.0));
       } else if (mesh.isBoundary(*eit)){
-        OpenGL::color(Color(0.0, 1.0, 0.0));
+        OpenGL::color(Color(0.0, 1.0, 0.0, 1.0));
       }
       else {
-        OpenGL::color(Color(0.0,0.0,0.0));
+        OpenGL::color(Color(0.0,0.0,0.0, 1.0));
       }
       
       if (m_mode == DBG_JUNCTION)
       {
         int ne = junction(mesh, eh);
         if (ne == 3)
-          OpenGL::color(Color(1.0, 0.0, 1.0));
+          OpenGL::color(Color(1.0, 0.0, 1.0, 1.0));
         else if (ne == 4)
-          OpenGL::color(Color(0.3, 0.8, 0.9));
+          OpenGL::color(Color(0.3, 0.8, 0.9, 1.0));
         else if (ne > 4)
-          OpenGL::color(Color(0.2, 0.3, 1.0));
+          OpenGL::color(Color(0.2, 0.3, 1.0, 1.0));
       }
+      
+      bool visible = false;
+      for (EdgeFaceIterator efit = mesh.ef_iter(*eit); efit; ++efit)
+      {
+        Vec2i label = m_shell.getFaceLabel(*efit);
+        if (label.x() >= 0 && m_region_visible[label.x()])
+          visible = true;
+        if (label.y() >= 0 && m_region_visible[label.y()])
+          visible = true;
+      }
+      
+      if (!visible)
+        OpenGL::color(Color(0.0, 0.0, 0.0, 0.1));
       
       OpenGL::vertex(p0);
       OpenGL::vertex(p1);      
     }
     glEnd();
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
     
     // stats on total number of labels
     int maxlabel = -1;
