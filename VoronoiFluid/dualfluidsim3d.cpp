@@ -1200,7 +1200,7 @@ float DualFluidSim3D::get_cfl_limit()
 
    if ( surface_tension_coefficient != 0 )
    {
-      // Not the real CFL condition for surface tension, but it doesn't seem to blow up...
+      // How do we choose a stable timestep here.
       
       return 0.33f*characteristic_distance / max_vel;
    }
@@ -2071,6 +2071,9 @@ void DualFluidSim3D::test_interpolation( float dt )
    while ( accum_t < dt - 1e-5 )
    {
       float sub_dt = dt - accum_t;
+      if(sub_dt > 0.5f*dt && sub_dt < 0.99f*dt) { //try to smooth it out; if we are taking more than half a step, just clamp to half a step
+         sub_dt = 0.5f*(dt - accum_t);
+      }
       sub_dt = min( sub_dt, get_cfl_limit() );
       
       std::cout << "---------------------- Voronoi Fluid Sim: ";

@@ -215,25 +215,25 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
    }
    
    
-   /*
-   //try adding samples at tri barycenters to break up regularity and avoid slivers.
-   bool parity = false;
-   for(unsigned int i = 0; i < surface.m_mesh.m_tris.size(); ++i) {
-      if(surface.m_mesh.triangle_is_deleted(i)) 
-         continue;
-      Vec3d new_sample(0,0,0);
-      Vec3st tri = surface.m_mesh.m_tris[i];
-      for(int j = 0; j < 3; ++j)
-         new_sample += surface.get_position(tri[j]);
-      new_sample /= 3;
-      
-      //nudge it in or out slightly just to make the point's region less ambiguous
-      new_sample += 0.01*desired_dx * surface.get_triangle_normal(i) * (parity?1:-1);
-      parity=!parity;
+   
+   ////try adding samples at tri barycenters to break up regularity and avoid slivers.
+   //bool parity = false;
+   //for(unsigned int i = 0; i < surface.m_mesh.m_tris.size(); ++i) {
+   //   if(surface.m_mesh.triangle_is_deleted(i)) 
+   //      continue;
+   //   Vec3d new_sample(0,0,0);
+   //   Vec3st tri = surface.m_mesh.m_tris[i];
+   //   for(int j = 0; j < 3; ++j)
+   //      new_sample += surface.get_position(tri[j]);
+   //   new_sample /= 3;
+   //   
+   //   //nudge it in or out slightly just to make the point's region less ambiguous
+   //   new_sample += 0.01*desired_dx * surface.get_triangle_normal(i) * (parity?1:-1);
+   //   parity=!parity;
 
-      bool accepted = add_unique( Vec3f(new_sample), samples, samples );
-   }
-   */
+   //   bool accepted = add_unique( Vec3f(new_sample), samples, samples );
+   //}
+   
 
    std::cout << "Number of samples rejected: " << num_rejections << std::endl;
    std::cout << "Number of samples placed: " << samples.size() << std::endl;

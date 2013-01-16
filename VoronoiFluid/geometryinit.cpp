@@ -333,6 +333,7 @@ void create_sphere( const Vec3d& sphere_centre,
                     std::vector<Vec3d>& verts, 
                     std::vector<Vec3st>& tris,
                     std::vector<Vec2i>& labels,
+                    Vec3d scaling,
                     Vec2i label)
 {
 
@@ -348,7 +349,9 @@ void create_sphere( const Vec3d& sphere_centre,
    std::vector<Vec3d> new_verts( marching_tiles.x.size() );
    for ( unsigned int i = 0; i < new_verts.size(); ++i )
    {
-      new_verts[i] = marching_tiles.x[i];
+      Vec3d point = marching_tiles.x[i];
+      
+      new_verts[i] = point;
    }
 
    std::vector<Vec3st> new_tris( marching_tiles.tri.size() );
@@ -364,7 +367,9 @@ void create_sphere( const Vec3d& sphere_centre,
    Vec3st offset( verts.size() );
    for ( unsigned int i = 0; i < new_verts.size(); ++i )
    {
-      verts.push_back( new_verts[i] );
+      Vec3d point = new_verts[i];
+      point[0] *= scaling[0]; point[1] *= scaling[1]; point[2] *= scaling[2];
+      verts.push_back( point );
    }
    
    for ( unsigned int i = 0; i < new_tris.size(); ++i )

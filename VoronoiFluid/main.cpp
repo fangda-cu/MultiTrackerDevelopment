@@ -526,7 +526,7 @@ void display()
    if(g_draw_domain_box ) 
    {
       glColor3f(0.5,0.5,0.5);
-      //draw_box( g_dual_sim->domain_low, g_dual_sim->domain_high );
+      draw_box( DOMAIN_LOW, DOMAIN_HIGH);
    }
 
    // clipping plane
@@ -1562,6 +1562,9 @@ void parse_script( const char* filename )
       double sphere_radius;
       sphere_branch->get_number( "sphere_radius", sphere_radius );
 
+      Vec3d sphere_scale(1,1,1);
+      sphere_branch->get_vec3d( "sphere_scale", sphere_scale );
+
       double dx;
       if ( !sphere_branch->get_number( "sphere_dx", dx ) )
       {
@@ -1574,7 +1577,7 @@ void parse_script( const char* filename )
       
       Vec2i label(out_label, in_label);
 
-      create_sphere( sphere_center, sphere_radius, dx, surface_vertices, surface_triangles, surface_labels, label);
+      create_sphere( sphere_center, sphere_radius, dx, surface_vertices, surface_triangles, surface_labels, sphere_scale, label);
       std::cout << "Processed sphere with label:"  << label << "\n";
    }
 
@@ -1607,6 +1610,7 @@ void parse_script( const char* filename )
          surface_vertices[i] = surface_vertices[i]*scale + offset;
       }
       surface_triangles = trimesh.m_tris;
+      surface_labels.resize(surface_triangles.size());
       printf("Loaded file %s\n", meshpath.c_str());
 
    }

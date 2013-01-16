@@ -1,7 +1,29 @@
 
-frame_rate 10.0
+frame_rate 24.0
 sim_dx 0.3
 surface_dx 0.15
+
+
+region
+(
+    label 0
+    density 1.0
+    output 0
+)
+
+region
+(
+    label 1
+    density 1.0
+    output 1
+)
+
+region
+(
+    label 2
+    density 1.0
+    output 1
+)
 
 
 trimesh
@@ -9,6 +31,7 @@ trimesh
    scale 0.8
    vec_offset [1.7 2.5 2.5]
    filepath "C:\\Users\\Christopher Batty\\Documents\\Research\\Projects\\VoronoiFluid3D_new\\scripts\\twospheres.obj"
+   region 1
 )
 sphere_velocity_field 1
 

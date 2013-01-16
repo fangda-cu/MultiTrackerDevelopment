@@ -75,6 +75,7 @@ void create_sphere( const ElTopo::Vec3d& sphere_centre,
                     std::vector<ElTopo::Vec3d>& verts, 
                     std::vector<ElTopo::Vec3st>& tris,
                     std::vector<ElTopo::Vec2i>& labels,
+                    ElTopo::Vec3d scale,
                     ElTopo::Vec2i label);
 
 
