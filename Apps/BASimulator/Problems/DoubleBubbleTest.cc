@@ -520,6 +520,23 @@ void DoubleBubbleTest::AtEachTimestep()
         }
         
         ElTopo::SurfTrackInitializationParameters construction_parameters;
+        construction_parameters.m_proximity_epsilon = 1e-10;
+        construction_parameters.m_merge_proximity_epsilon = 1e-10;
+        construction_parameters.m_allow_vertex_movement_during_collapse = true;
+        construction_parameters.m_perform_smoothing = false;
+        construction_parameters.m_min_edge_length = 0.00001;
+        construction_parameters.m_max_edge_length = 1000;
+        construction_parameters.m_max_volume_change = numeric_limits<double>::max();   
+        construction_parameters.m_min_triangle_angle = 3;
+        construction_parameters.m_max_triangle_angle = 177;
+        construction_parameters.m_large_triangle_angle_to_split = 160;
+        construction_parameters.m_verbose = false;
+        construction_parameters.m_allow_non_manifold = true;
+        construction_parameters.m_allow_topology_changes = true;
+        construction_parameters.m_collision_safety = true;
+        construction_parameters.m_remesh_boundaries = true;
+        construction_parameters.m_t1_transition_enabled = false;
+        
         ElTopo::SurfTrack surface_tracker( vert_data, tri_data, tri_labels, masses, construction_parameters ); 
         surface_tracker.m_constrained_vertices_callback = shell;
         surface_tracker.m_mesh.m_vertex_constraint_labels = vert_const_labels;
