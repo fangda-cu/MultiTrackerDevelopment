@@ -47,8 +47,9 @@ struct T1Transition::InteriorStencil
 ///
 // ---------------------------------------------------------
 
-T1Transition::T1Transition(SurfTrack & surf, bool remesh_boundaries) :
+T1Transition::T1Transition(SurfTrack & surf, VelocityFieldCallback * vfc, bool remesh_boundaries) :
     m_remesh_boundaries(remesh_boundaries),
+    m_velocity_field_callback(vfc),
     m_surf(surf)
 {
 
@@ -719,9 +720,14 @@ bool T1Transition::pop_vertices()
                 if (region_graph[A][B] == 0)
                 {
                     Vec3d pull_apart_direction;
-                    double tensile_force = try_pull_vertex_apart(xj, A, B, pull_apart_direction);
-                    if (tensile_force > 0)
-                        candidate_pairs.push_back(std::pair<double, std::pair<Vec2i, Vec3d> >(tensile_force, std::pair<Vec2i, Vec3d>(Vec2i(A, B), pull_apart_direction)));
+                    double pull_apart_tendency = 0;
+                    if (m_velocity_field_callback)
+                        pull_apart_tendency = try_pull_vertex_apart_using_velocity_field(xj, A, B, pull_apart_direction);
+                    else
+                        pull_apart_tendency = try_pull_vertex_apart_using_surface_tension(xj, A, B, pull_apart_direction);
+                    
+                    if (pull_apart_tendency > 0)
+                        candidate_pairs.push_back(std::pair<double, std::pair<Vec2i, Vec3d> >(pull_apart_tendency, std::pair<Vec2i, Vec3d>(Vec2i(A, B), pull_apart_direction)));
                 }
             }
         }
@@ -1111,7 +1117,7 @@ Mat2i T1Transition::cut_x_junction_edge(size_t e)
 ///
 // --------------------------------------------------------
 
-double T1Transition::try_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pull_apart_direction)
+double T1Transition::try_pull_vertex_apart_using_surface_tension(size_t xj, int A, int B, Vec3d & pull_apart_direction)
 {
     NonDestructiveTriMesh & mesh = m_surf.m_mesh;
 
@@ -1208,6 +1214,80 @@ double T1Transition::try_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pull
     double tensile_force = dot(force_a - force_b, pull_apart_direction);
     
     return tensile_force;
+}
+    
+// --------------------------------------------------------
+///
+/// Decide whether to cut an X-junction vertex between two given regions
+///
+// --------------------------------------------------------
+
+double T1Transition::try_pull_vertex_apart_using_velocity_field(size_t xj, int A, int B, Vec3d & pull_apart_direction)
+{
+    NonDestructiveTriMesh & mesh = m_surf.m_mesh;
+    
+    // compute surface tension pulling force to see if this vertex pair needs to be pulled open.
+    std::vector<Vec3d> vertsA;
+    std::vector<Vec3d> vertsB;
+    for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[xj].size(); i++)
+    {
+        size_t triangle = mesh.m_vertex_to_triangle_map[xj][i];
+        
+        // find the edge in triangle triangle that's opposite to vertex xj
+        size_t l = 0;
+        size_t other_edge = static_cast<size_t>(~0);
+        for (l = 0; l < 3; l++)
+        {
+            if (mesh.m_edges[mesh.m_triangle_to_edge_map[triangle][l]][0] != xj &&
+                mesh.m_edges[mesh.m_triangle_to_edge_map[triangle][l]][1] != xj)
+                other_edge = mesh.m_triangle_to_edge_map[triangle][l];
+        }
+        assert(other_edge < mesh.ne());
+        size_t v0 = mesh.m_edges[other_edge][0];
+        size_t v1 = mesh.m_edges[other_edge][1];
+        
+        Vec3d x0 = m_surf.get_position(v0);
+        Vec3d x1 = m_surf.get_position(v1);
+        
+        Vec2i label = mesh.get_triangle_label(triangle);
+        if (label[0] == A || label[1] == A)
+        {
+            vertsA.push_back(x0);
+            vertsA.push_back(x1);
+        } else if (label[0] == B || label[1] == B)
+        {
+            vertsB.push_back(x0);
+            vertsB.push_back(x1);
+        }
+    }
+    assert(vertsA.size() > 0);
+    assert(vertsB.size() > 0);
+    
+    Vec3d centroidA(0, 0, 0);
+    Vec3d centroidB(0, 0, 0);
+    for (size_t i = 0; i < vertsA.size(); i++) 
+        centroidA += vertsA[i];
+    centroidA /= vertsA.size();
+    for (size_t i = 0; i < vertsB.size(); i++) 
+        centroidB += vertsB[i];
+    centroidB /= vertsB.size();
+    
+    pull_apart_direction = (centroidA - centroidB);
+    pull_apart_direction /= mag(pull_apart_direction);
+    
+    assert(m_velocity_field_callback);
+    
+    Vec3d xxj = m_surf.get_position(xj);
+    Vec3d x_a = xxj + pull_apart_direction * m_velocity_field_callback->velocityDifferencingDx();
+    Vec3d x_b = xxj - pull_apart_direction * m_velocity_field_callback->velocityDifferencingDx();
+    
+//    Vec3d vxj = m_velocity_field_callback->sampleVelocity(xxj);
+    Vec3d v_a = m_velocity_field_callback->sampleVelocity(x_a);
+    Vec3d v_b = m_velocity_field_callback->sampleVelocity(x_b);
+    
+    double divergence = dot(v_a - v_b, pull_apart_direction);
+    
+    return divergence;
 }
     
 void T1Transition::triangulate_popped_vertex(size_t xj, int A, int B, size_t a, size_t b, std::vector<size_t> & faces_to_delete, std::vector<Vec3st> & faces_to_create, std::vector<Vec2i> & face_labels_to_create)
