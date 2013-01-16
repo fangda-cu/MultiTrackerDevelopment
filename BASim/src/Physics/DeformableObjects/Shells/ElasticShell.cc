@@ -485,7 +485,7 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
 
   // build a DynamicSurface
   Scalar friction_coeff = 0;
-  ElTopo::DynamicSurface dynamic_surface( vert_old, tri_data, masses, m_collision_epsilon, friction_coeff, true, false );
+  ElTopo::DynamicSurface dynamic_surface( vert_old, tri_data, std::vector<ElTopo::Vec2i>(tri_data.size(), ElTopo::Vec2i(0, 0)), masses, m_collision_epsilon, friction_coeff, true, false );
 
   dynamic_surface.set_all_newpositions( vert_new );
 
@@ -894,8 +894,7 @@ void ElasticShell::fracture() {
     }
   }
 
-  
-  ElTopo::SurfTrack surface_tracker( vert_data, tri_data, masses, construction_parameters ); 
+    ElTopo::SurfTrack surface_tracker( vert_data, tri_data, std::vector<ElTopo::Vec2i>(tri_data.size(), ElTopo::Vec2i(0, 0)), masses, construction_parameters ); 
 
   std::vector< std::pair<size_t,size_t> > edges_to_cut;
   for(EdgeIterator it = mesh.edges_begin(); it != mesh.edges_end(); ++it) {
@@ -1165,14 +1164,10 @@ void ElasticShell::remesh(bool initial)
   }
 
   std::cout << "Calling surface improvement\n";
-  ElTopo::SurfTrack surface_tracker( vert_data, tri_data, masses, construction_parameters ); 
+  ElTopo::SurfTrack surface_tracker( vert_data, tri_data, tri_labels, masses, construction_parameters ); 
   surface_tracker.m_constrained_vertices_callback = this;
   surface_tracker.m_mesh.m_vertex_constraint_labels = vert_const_labels;
   surface_tracker.set_all_remesh_velocities(vert_vel);
-  for (size_t i = 0; i < reverse_trimap.size(); i++)
-  {
-    surface_tracker.m_mesh.set_triangle_label(i, tri_labels[i]);
-  }
   
   for(int i = 0; i < m_remeshing_iters; ++i) {
     surface_tracker.improve_mesh();
