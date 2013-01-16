@@ -519,12 +519,12 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
       
       if (edge_labels.front() >= 0)
       {
-        assert(corner_labels[bb_edges[i].x()] <= 0 || corner_labels[bb_edges[i].x()] == edge_labels.front());
+//        assert(corner_labels[bb_edges[i].x()] <= 0 || corner_labels[bb_edges[i].x()] == edge_labels.front());
         corner_labels[bb_edges[i].x()] = edge_labels.front();
       }
       if (edge_labels.back() >= 0)
       {
-        assert(corner_labels[bb_edges[i].y()] <= 0 || corner_labels[bb_edges[i].y()] == edge_labels.back());
+//        assert(corner_labels[bb_edges[i].y()] <= 0 || corner_labels[bb_edges[i].y()] == edge_labels.back());
         corner_labels[bb_edges[i].y()] = edge_labels.back();
       }
     }
@@ -564,7 +564,7 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
           if (wall_edge_labels[*veit].x() >= 0)
           {
             assert(wall_edge_labels[*veit].x() == wall_edge_labels[*veit].y());
-            assert(corner_labels[j] == wall_edge_labels[*veit].x());
+//            assert(corner_labels[j] == wall_edge_labels[*veit].x());
           } else
           {
             wall_edge_labels[*veit].x() = wall_edge_labels[*veit].y() = corner_labels[j];
