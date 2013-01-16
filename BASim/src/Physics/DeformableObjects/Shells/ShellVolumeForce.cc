@@ -237,31 +237,41 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
     int walls1 = onBBWall(m_shell.getVertexPosition(obj.toVertex(*eit)));
     if (walls0 & walls1)
     {
-      Vec2i edge_label(-1, -1);
-      rcounts.setZero(nregion);
+      Vec3d x0 = m_shell.getVertexPosition(obj.fromVertex(*eit));
+      Vec3d x1 = m_shell.getVertexPosition(obj.toVertex(*eit));
+
+      FaceHandle head;
+      FaceHandle tail;
+      Vec3d head_n;
+      Vec3d tail_n;
       for (EdgeFaceIterator efit = obj.ef_iter(*eit); efit; ++efit)
       {
-        Vec2i label = m_shell.getFaceLabel(*efit);
-        assert(label.x() >= 0 && label.y() >= 0);
-        rcounts[label.x()] += obj.getRelativeOrientation(*efit, *eit);
-        rcounts[label.y()] -= obj.getRelativeOrientation(*efit, *eit);
-      }
-      
-      for (int i = 0; i < nregion; i++)
-      {
-        if (rcounts[i] == 1)
+        Vec3d n;
+        
+        VertexHandle other_vertex;
+        getFaceThirdVertex(obj, *efit, *eit, other_vertex);
+        Vec3d other_x = m_shell.getVertexPosition(other_vertex);
+        
+        n = (x0 - other_x).cross(x1 - other_x);
+        
+        if (!head.isValid() || n.cross(head_n).dot(x1 - x0) > 0)
         {
-          assert(edge_label.x() == -1);
-          edge_label.x() = i; // x component is the region label on the right of the edge
-        } else if (rcounts[i] == -1)
+          head = *efit;
+          head_n = n;
+        }
+        if (!tail.isValid() || n.cross(head_n).dot(x1 - x0) < 0)
         {
-          assert(edge_label.y() == -1);
-          edge_label.y() = i; // y component is the region label on the left of the edge
-        } else
-        {
-          assert(rcounts[i] == 0);
+          tail = *efit;
+          tail_n = n;
         }
       }
+      
+      assert(head.isValid());
+      assert(tail.isValid());
+      
+      Vec2i edge_label(-1, -1); // x = the region on the right; y = the region on the left
+      edge_label.y() = (obj.getRelativeOrientation(head, *eit) > 0 ? m_shell.getFaceLabel(head).y() : m_shell.getFaceLabel(head).x());
+      edge_label.x() = (obj.getRelativeOrientation(tail, *eit) > 0 ? m_shell.getFaceLabel(head).x() : m_shell.getFaceLabel(head).y());
       
       assert(edge_label.x() >= 0 && edge_label.y() >= 0);
       
