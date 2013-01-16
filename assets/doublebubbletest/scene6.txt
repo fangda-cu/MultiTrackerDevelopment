@@ -25,6 +25,9 @@ shell-remeshing 1
 shell-remeshing-resolution 0.2
 shell-remeshing-iterations 1
 
+smooth-subdivision-scheme 0
+t1-transition-enabled 1
+
 integrator implicit	# type of integrator to use for the shell
 
 shell-density 0.1	# volumetric density of the shell 
