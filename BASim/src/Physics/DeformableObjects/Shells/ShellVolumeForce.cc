@@ -403,7 +403,7 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
               head = j;
               head_vec = e;
             }
-            if (tail < 0 || e.cross(head_vec).dot(wall_normals[wall0]) < 0)
+            if (tail < 0 || e.cross(tail_vec).dot(wall_normals[wall0]) < 0)
             {
               tail = j;
               tail_vec = e;
@@ -451,7 +451,7 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
               head = j;
               head_vec = e;
             }
-            if (tail < 0 || e.cross(head_vec).dot(wall_normals[wall1]) > 0)
+            if (tail < 0 || e.cross(tail_vec).dot(wall_normals[wall1]) > 0)
             {
               tail = j;
               tail_vec = e;
