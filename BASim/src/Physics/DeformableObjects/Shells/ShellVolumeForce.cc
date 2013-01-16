@@ -192,7 +192,7 @@ int ShellVolumeForce::onBBWall(const Vec3d & pos) const
   
 void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertices, std::vector<EdgeHandle> & new_edges, std::vector<FaceHandle> & new_faces) const
 {
-  bool verbose = false;
+  bool verbose = true;
   
   if (verbose) std::cout << "=========================================================================" << std::endl;
   
@@ -316,6 +316,14 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
   bb_edges[10].x() = 5;  bb_edges[10].y() = 7;  bb_edges[10].z() = 5;   bb_edges[10].w() = 3; // BB edge: vertices 5, 7
   bb_edges[11].x() = 6;  bb_edges[11].y() = 7;  bb_edges[11].z() = 4;   bb_edges[11].w() = 5; // BB edge: vertices 6, 7
   
+  std::vector<Vec3d> wall_normals(6);
+  wall_normals[0] = Vec3d(-1, 0, 0);
+  wall_normals[1] = Vec3d(0, -1, 0);
+  wall_normals[2] = Vec3d(0, 0, -1);
+  wall_normals[3] = Vec3d(1, 0, 0);
+  wall_normals[4] = Vec3d(0, 1, 0);
+  wall_normals[5] = Vec3d(0, 0, 1);
+  
   // first find the boundary vertices lying on BB edges
   std::vector<std::vector<VertexHandle> > edge_verts(12);
   for (VertexIterator vit = obj.vertices_begin(); vit != obj.vertices_end(); ++vit)
@@ -362,86 +370,99 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
       {
         VertexHandle & v = evs[l].first;
 
+        if (verbose) std::cout << "left wall: " << std::endl;
         int lregion0 = -1;
         int lregion1 = -1;
-        
-        if (verbose) std::cout << "left wall: " << std::endl;
-        rcounts.setZero(nregion);
-        for (size_t j = 0; j < wall_edges[wall0].size(); j++)  // look at the wall on the left of this edge
+        int head = -1;
+        int tail = -1;
+        Vec3d head_vec, tail_vec;
+        for (size_t j = 0; j < wall_edges[wall0].size(); j++)
         {
+          Vec3d e;
+          bool b = false;
           if (obj.fromVertex(wall_edges[wall0][j]) == v)
           {
             if (~onBBWall(m_shell.getVertexPosition(obj.toVertex(wall_edges[wall0][j]))) & edge_mask) // this vertex is not also on this edge
             {
-              rcounts[wall_edge_labels[wall_edges[wall0][j]].y()]++;  // the label on the left of this edge
-              rcounts[wall_edge_labels[wall_edges[wall0][j]].x()]--;  // the label on the right of this edge
+              e = m_shell.getVertexPosition(obj.toVertex(wall_edges[wall0][j])) - m_shell.getVertexPosition(obj.fromVertex(wall_edges[wall0][j]));
+              b = true;
             }
           } else if (obj.toVertex(wall_edges[wall0][j]) == v)
           {
             if (~onBBWall(m_shell.getVertexPosition(obj.fromVertex(wall_edges[wall0][j]))) & edge_mask) // this vertex is not also on this edge
             {
-              rcounts[wall_edge_labels[wall_edges[wall0][j]].x()]++;  // the label on the right of this edge
-              rcounts[wall_edge_labels[wall_edges[wall0][j]].y()]--;  // the label on the left of this edge
+              e = m_shell.getVertexPosition(obj.fromVertex(wall_edges[wall0][j])) - m_shell.getVertexPosition(obj.toVertex(wall_edges[wall0][j]));
+              b = true;
+            }
+          }
+          
+          if (b)
+          {
+            if (head < 0 || e.cross(head_vec).dot(wall_normals[wall0]) > 0)
+            {
+              head = j;
+              head_vec = e;
+            }
+            if (tail < 0 || e.cross(head_vec).dot(wall_normals[wall0]) < 0)
+            {
+              tail = j;
+              tail_vec = e;
             }
           }
         }
         
-        for (int j = 0; j < nregion; j++)
+        if (head >= 0 && tail >= 0)
         {
-          if (rcounts[j] == 1)
-          {
-            assert(lregion0 < 0);
-            lregion0 = j;
-          } else if (rcounts[j] == -1)
-          {
-            assert(lregion1 < 0);
-            lregion1 = j;
-          } else
-          {
-            assert(rcounts[j] == 0);
-          }
+          lregion0 = wall_edge_labels[wall_edges[wall0][head]].x(); // the label on the right of this edge
+          lregion1 = wall_edge_labels[wall_edges[wall0][tail]].y(); // the label on the left of this edge
         }
-
-        int rregion0 = -1;
-        int rregion1 = -1;
         
         if (verbose) std::cout << "right wall: " << std::endl;
-        rcounts.setZero(nregion);
-        for (size_t j = 0; j < wall_edges[wall1].size(); j++)  // look at the wall on the right of this edge
+        int rregion0 = -1;
+        int rregion1 = -1;
+        head = -1;
+        tail = -1;        
+        for (size_t j = 0; j < wall_edges[wall1].size(); j++)
         {
+          Vec3d e;
+          bool b = false;
           if (obj.fromVertex(wall_edges[wall1][j]) == v)
           {
             if (~onBBWall(m_shell.getVertexPosition(obj.toVertex(wall_edges[wall1][j]))) & edge_mask) // this vertex is not also on this edge
             {
-              rcounts[wall_edge_labels[wall_edges[wall1][j]].x()]++;  // the label on the right of this edge
-              rcounts[wall_edge_labels[wall_edges[wall1][j]].y()]--;  // the label on the left of this edge
+              e = m_shell.getVertexPosition(obj.toVertex(wall_edges[wall1][j])) - m_shell.getVertexPosition(obj.fromVertex(wall_edges[wall1][j]));
+              b = true;
             }
           } else if (obj.toVertex(wall_edges[wall1][j]) == v)
           {
             if (~onBBWall(m_shell.getVertexPosition(obj.fromVertex(wall_edges[wall1][j]))) & edge_mask) // this vertex is not also on this edge
             {
-              rcounts[wall_edge_labels[wall_edges[wall1][j]].y()]++;  // the label on the left of this edge
-              rcounts[wall_edge_labels[wall_edges[wall1][j]].x()]--;  // the label on the right of this edge
+              e = m_shell.getVertexPosition(obj.fromVertex(wall_edges[wall1][j])) - m_shell.getVertexPosition(obj.toVertex(wall_edges[wall1][j]));
+              b = true;
+            }
+          }
+          
+          if (b)
+          {
+            if (head < 0 || e.cross(head_vec).dot(wall_normals[wall1]) < 0)
+            {
+              head = j;
+              head_vec = e;
+            }
+            if (tail < 0 || e.cross(head_vec).dot(wall_normals[wall1]) > 0)
+            {
+              tail = j;
+              tail_vec = e;
             }
           }
         }
         
-        for (int j = 0; j < nregion; j++)
+        if (head >= 0 && tail >= 0)
         {
-          if (rcounts[j] == 1)
-          {
-            assert(rregion0 < 0);
-            rregion0 = j;
-          } else if (rcounts[j] == -1)
-          {
-            assert(rregion1 < 0);
-            rregion1 = j;
-          } else
-          {
-            assert(rcounts[j] == 0);
-          }
+          rregion0 = wall_edge_labels[wall_edges[wall0][head]].y(); // the label on the left of this edge
+          rregion1 = wall_edge_labels[wall_edges[wall0][tail]].x(); // the label on the right of this edge
         }
-        
+
         assert(!(lregion0 >= 0 && rregion0 >= 0 && lregion0 != rregion0));
         assert(!(lregion1 >= 0 && rregion1 >= 0 && lregion1 != rregion1));
 
