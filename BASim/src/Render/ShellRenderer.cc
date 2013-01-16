@@ -735,6 +735,14 @@ void ShellRenderer::render()
 
       Scalar alpha = 0.25;
       OpenGL::color(Color(1.0,0.0,0.0,alpha));
+
+      Vec2i regions = m_shell.getFaceLabel(sorted_faces[i].first);
+      if (((regions.x() >= 0 && !m_region_visible[regions.x()]) || regions.x() < 0) &&
+          ((regions.y() >= 0 && !m_region_visible[regions.y()]) || regions.y() < 0))
+      {
+        OpenGL::color(Color(0.0, 0.0, 0.0, 0.02));
+      }
+      
       for( FaceVertexIterator fvit = mesh.fv_iter(sorted_faces[i].first); fvit; ++fvit )
       {
         Vec3d pos = m_shell.getVertexPosition(*fvit);
