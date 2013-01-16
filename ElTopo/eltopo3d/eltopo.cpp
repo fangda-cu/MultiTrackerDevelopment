@@ -73,7 +73,8 @@ void el_topo_static_operations( const ElTopoMesh* inputs,
     construction_parameters.m_subdivision_scheme = (ElTopo::SubdivisionScheme*) options->m_subdivision_scheme;
     construction_parameters.m_verbose = general_options->m_verbose != 0;
     
-    ElTopo::SurfTrack surface_tracker( vs, ts, masses, construction_parameters ); 
+    std::vector<ElTopo::Vec2i> labels(ts.size(), ElTopo::Vec2i(1,0));
+    ElTopo::SurfTrack surface_tracker( vs, ts, labels, masses, construction_parameters ); 
     
     surface_tracker.improve_mesh();
     
@@ -226,7 +227,8 @@ void el_topo_integrate( const ElTopoMesh* inputs,
     //
     
     // build a DynamicSurface
-    ElTopo::DynamicSurface dynamic_surface( vs, ts, masses, general_options->m_proximity_epsilon, options->m_friction_coefficient, general_options->m_collision_safety != 0 );
+    std::vector<ElTopo::Vec2i> labels(ts.size(), ElTopo::Vec2i(1,0));
+    ElTopo::DynamicSurface dynamic_surface( vs, ts, labels, masses, general_options->m_proximity_epsilon, options->m_friction_coefficient, general_options->m_collision_safety != 0 );
     
     dynamic_surface.set_all_newpositions( inputs->num_vertices, in_vertex_new_locations );
     

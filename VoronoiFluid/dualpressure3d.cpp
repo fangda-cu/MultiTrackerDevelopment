@@ -11,6 +11,9 @@
 
 using namespace ElTopo;
 
+//TODO Unify surface tension computation cases, since free surface and multiphase cases are similar.
+//TODO Store the mean curvatures computed for the faces, to avoid a second round of raycasting.
+
 void get_bary_coords(const Vec3d point, const Vec3d& x1, const Vec3d& x2, const Vec3d& x3, Vec3d& coords) {
    //Swiped from Robert's collision queries code.
 
@@ -31,8 +34,9 @@ void get_bary_coords(const Vec3d point, const Vec3d& x1, const Vec3d& x2, const 
    coords = Vec3d(s1,s2,s3);
 }
 
-float get_surface_curvature(TetMesh& mesh, DynamicSurface& surface, std::vector<double>& vertex_curvatures, int i, int neighbour_index) {
-   
+
+Vec3d get_surface_curvature_vector(TetMesh& mesh, DynamicSurface& surface, std::vector<Vec3d>& vertex_curvature_vectors, int i, int neighbour_index) {
+
    //cast a ray from the interior pressure sample to the exterior one, to determine the crossing point
    Vec3d ray_origin = (Vec3d)mesh.vertices[i];
    Vec3d ray_end = (Vec3d)mesh.vertices[neighbour_index];
@@ -41,7 +45,7 @@ float get_surface_curvature(TetMesh& mesh, DynamicSurface& surface, std::vector<
    surface.get_triangle_intersections( ray_origin, ray_end, hit_ss, hit_triangles );
 
    //estimate the mean curvature at the crossing point, and use it to dictate the surface tension force.
-   double mean_curvature = 0;
+   Vec3d mean_curvature(0,0,0);
 
    if(hit_triangles.size() > 0) {
       Vec3st tri = surface.m_mesh.m_tris[hit_triangles[0]];
@@ -52,20 +56,22 @@ float get_surface_curvature(TetMesh& mesh, DynamicSurface& surface, std::vector<
       Vec3d coords;
       get_bary_coords(cross_point, v0,v1,v2, coords);
 
-      mean_curvature = coords[0] * vertex_curvatures[tri[0]] + coords[1] * vertex_curvatures[tri[1]] + coords[2] * vertex_curvatures[tri[2]];
-      
+      mean_curvature = coords[0] * vertex_curvature_vectors[tri[0]]
+                     + coords[1] * vertex_curvature_vectors[tri[1]] 
+                     + coords[2] * vertex_curvature_vectors[tri[2]];
+
    }
-   
-   return (float)mean_curvature;
+
+   return mean_curvature;
 }
 
 std::vector<double> pressure_solve_multi( TetMesh& mesh, 
    DynamicSurface& surface,
    float surface_tension_coeff,
    std::vector<float>& face_velocities,             // tangential to tet edges / normal to voronoi faces
-   const std::vector<float>& solid_weights,         // on the voronoi faces (face fractions for solid boundary conditions)
-   const std::vector<float>& liquid_phi,            // on the voronoi sites (distance field, treated as unsigned)
-   const std::vector<int>& regions,                 // on the voronoi sites (region ID's, to distinguish where interfaces are)
+   const std::vector<float>& solid_weights,         // on the Voronoi faces (face fractions for solid boundary conditions)
+   const std::vector<float>& liquid_phi,            // on the Voronoi sites (distance field, treated as unsigned)
+   const std::vector<int>& regions,                 // on the Voronoi sites (region ID's, to distinguish where interfaces are)
    const std::vector<float>& densities)             // one per region ID  (zero implies a free surface region)
 {
 
@@ -73,37 +79,25 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
    assert(regions.size() == liquid_phi.size());
    assert(face_velocities.size() == solid_weights.size());
 
-   std::vector<double> vertex_curvatures; //Per vertex surface mesh curvature estimates
    std::vector<double> face_curvatures;   //Saved curvatures at each interface crossing point, to avoid rayshooting twice.
 
-   // Pre-compute vertex mean curvatures on the surface mesh
+   std::vector<Vec3d> vertex_curvature_vectors; //per vertex mean curvature vectors
+
+   // Precompute vertex mean curvature normals on the surface mesh
    if(surface_tension_coeff > 0) {
-   
-      vertex_curvatures.resize(surface.get_num_vertices());
+      vertex_curvature_vectors.resize(surface.get_num_vertices());
+      
       for(unsigned int i = 0; i < surface.get_num_vertices(); ++i) {
-         Vec3d surf_normal = surface.get_vertex_normal_angleweighted(i);
-
-         Vec3d curvatureNormal;
-         MeanCurvatureDriver::vertex_mean_curvature_normal(i, surface, curvatureNormal);
-
-         vertex_curvatures[i] = -(float)mag(curvatureNormal) * (dot(surf_normal,curvatureNormal) > 0?1:-1);
-      }
-
-      // Smooth the curvatures a bit
-      for(int pass = 0; pass < 0; ++pass) {
-
-         std::vector<double> temp_curvatures(surface.get_num_vertices());
-
-         for(unsigned int i = 0; i < surface.get_num_vertices(); ++i) {
-            double sum = 0;
-            for(unsigned int edge = 0; edge < surface.m_mesh.m_vertex_to_edge_map[i].size(); ++edge) {
-               int edgeID = surface.m_mesh.m_vertex_to_edge_map[i][edge];
-               int otherVert = surface.m_mesh.m_edges[edgeID][0] == i? surface.m_mesh.m_edges[edgeID][1] : surface.m_mesh.m_edges[edgeID][0];
-               sum += vertex_curvatures[otherVert];
-            }
-            temp_curvatures[i] = 0.5f * vertex_curvatures[i] + 0.5f * sum / (double)surface.m_mesh.m_vertex_to_edge_map[i].size();
+         //figure out which labels are involved in this vertex.
+         //we assume the geometry is manifold so just want two regions, properly oriented.
+         if(surface.m_mesh.m_vertex_to_triangle_map[i].size() < 1) {
+            continue;
          }
-         vertex_curvatures = temp_curvatures;
+         
+         Vec3d curvatureNormal;
+         MeanCurvatureDriver::vertex_mean_curvature_normal_nonmanifold(i, surface, curvatureNormal);
+         
+         vertex_curvature_vectors[i] = curvatureNormal;
       }
 
       // Create space to store the computed curvatures at interface crossings
@@ -182,14 +176,15 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
 
                if(surface_tension_coeff > 0) {
                   // Estimate the mean curvature at the crossing point, and use it to incorporate surface tension on the RHS.
+               
+                  Vec3d curvature_normal = get_surface_curvature_vector(mesh, surface, vertex_curvature_vectors, i, neighbour_index);
                   
-                  //Always orient the ray from lower region ID to higher one for consistency
-                  int lower_index = region_ID < nbr_region_ID? i : neighbour_index;
-                  int higher_index = lower_index == i ? neighbour_index : i;
-                  face_curvatures[face_index] = get_surface_curvature(mesh, surface, vertex_curvatures, lower_index, higher_index);
+                  Vec3f outward_vector = mesh.vertices[neighbour_index] - mesh.vertices[i];
+                  double curvature_value = mag(curvature_normal);
+                  double sign_value = dot((Vec3f)curvature_normal, outward_vector) > 0 ? +1 : -1;
                   
-                  float sign_flip = (lower_index == i? 1.0f : -1.0f);
-                  rhs[i] += sign_flip * solid_weights[face_index] * mesh.voronoi_face_areas[face_index] * surface_tension_coeff * face_curvatures[face_index] / dist / face_density;
+                  rhs[i] -= sign_value * curvature_value * solid_weights[face_index] 
+                            * mesh.voronoi_face_areas[face_index] *  surface_tension_coeff  / dist / face_density;
                }
             }
 
@@ -209,8 +204,16 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
             // Add surface tension
             if(surface_tension_coeff > 0) {
                // Estimate the mean curvature at the crossing point, and use it to incorporate surface tension on the RHS.
-               face_curvatures[face_index] = get_surface_curvature(mesh, surface, vertex_curvatures, i, neighbour_index);
-               rhs[i] += solid_weights[face_index] * mesh.voronoi_face_areas[face_index] * surface_tension_coeff * face_curvatures[face_index] / dist / theta / face_density;
+               
+               Vec3d curvature_normal = get_surface_curvature_vector(mesh, surface, vertex_curvature_vectors, i, neighbour_index);
+
+               Vec3f outward_vector = mesh.vertices[neighbour_index] - mesh.vertices[i];
+               double curvature_value = mag(curvature_normal);
+               double sign_value = dot((Vec3f)curvature_normal, outward_vector) > 0 ? +1 : -1;
+
+               rhs[i] -= sign_value * curvature_value * solid_weights[face_index] 
+                         * mesh.voronoi_face_areas[face_index] *  surface_tension_coeff  / dist / theta / face_density;
+            
             }
          }
 
@@ -287,16 +290,35 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
          if(isFS0) 
          {
             p0 = 0;
-            if(surface_tension_coeff > 0)
-               p0 = surface_tension_coeff * face_curvatures[i]; //Use the stored curvature from before.
+            if(surface_tension_coeff > 0) {
+               
+               Vec3d curvature_normal = get_surface_curvature_vector(mesh, surface, vertex_curvature_vectors, verts[0], verts[1]);
+
+               Vec3f outward_vector = mesh.vertices[verts[1]] - mesh.vertices[verts[0]];
+               double curvature_value = mag(curvature_normal);
+
+               double sign_value = dot((Vec3f)curvature_normal, outward_vector) > 0 ? +1 : -1;
+
+               p0 += sign_value * curvature_value * surface_tension_coeff;
+            }
             theta = max(theta_clamp, std::abs(phi1) / (std::abs(phi1) + std::abs(phi0)));
             face_density = densities[region1];
          }
          else if(isFS1) 
          {
             p1 = 0;
-            if(surface_tension_coeff > 0)
-               p1 = surface_tension_coeff * face_curvatures[i]; //Use the stored curvature from before.
+            if(surface_tension_coeff > 0) {
+               
+               Vec3d curvature_normal = get_surface_curvature_vector(mesh, surface, vertex_curvature_vectors, verts[0], verts[1]);
+
+               Vec3f outward_vector = mesh.vertices[verts[1]] - mesh.vertices[verts[0]];
+               double curvature_value = mag(curvature_normal);
+
+               double sign_value = dot((Vec3f)curvature_normal, outward_vector) > 0 ? +1 : -1;
+
+               p0 += sign_value * curvature_value * surface_tension_coeff;
+            
+            }
             theta = max(theta_clamp, std::abs(phi0) / (std::abs(phi0) + std::abs(phi1)));
             face_density = densities[region0];
          }
@@ -311,11 +333,18 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
 
                //Increment one of the pressures to account for surface tension pressure jump.
                if(surface_tension_coeff > 0) {
-                  //Make sure we incorporate surface tension in the proper direction as before.
-                  int lower_index = region0 < region1? verts[0] : verts[1];
-               
-                  float sign_flip = (lower_index == verts[0] ? 1.0f : -1.0f);
-                  p0 += sign_flip * surface_tension_coeff * face_curvatures[i];
+                  //Make sure we incorporate surface tension in the proper direction
+                  //depending on the direction we're doing the gradient.
+                
+                  Vec3d curvature_normal = get_surface_curvature_vector(mesh, surface, vertex_curvature_vectors, verts[0], verts[1]);
+
+                  Vec3f outward_vector = mesh.vertices[verts[1]] - mesh.vertices[verts[0]];
+                  double curvature_value = mag(curvature_normal);
+                  
+                  double sign_value = dot((Vec3f)curvature_normal, outward_vector) > 0 ? +1 : -1;
+                  
+                  p0 += sign_value * curvature_value * surface_tension_coeff;
+
                }
             }
             else { // It's all one fluid so do nothing special.

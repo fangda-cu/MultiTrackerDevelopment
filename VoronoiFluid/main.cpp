@@ -1,7 +1,5 @@
-
 #include "parser.h"
-
-#include <bfstream.h>
+#include "bfstream.h"
 #include "dualfluidsim3d.h"
 #include "geometryinit.h"
 #include "geometryutils.h"
@@ -13,12 +11,10 @@
 #include "tetmesh.h"
 #include "tetmeshio.h"
 #include "wallclocktime.h"
+#include "subdivisionscheme.h"
 
-#include <subdivisionscheme.h>
 
-//#include "mesh3dwrapper.h"
-
-#ifndef WIN32
+#ifndef _MSC_VER
 #include <sys/stat.h>
 #endif
 
@@ -35,11 +31,12 @@ using namespace ElTopo;
 // Global fluid sim object
 DualFluidSim3D* g_dual_sim = NULL;
 
+std::vector<int> recording_regions;
+
 // Buffers for rendering (sim data is copied into these buffers after each frame is computed)
 std::vector<Vec3d> g_renderable_vertices;
 std::vector<Vec3d> g_renderable_vertex_normals;
 std::vector<float> g_renderable_vertex_curvatures;
-
 std::vector<Vec3st> g_renderable_triangles;
 std::vector<Vec2st> g_renderable_edges;
 TetMesh* g_renderable_tet_mesh;
@@ -57,6 +54,7 @@ float g_default_cam_pitch;
 
 float clipping_plane_distance = 2.5f;
 
+//Rendering options
 bool g_draw_tet_vertices = false;
 bool g_draw_tet_edges = false;
 bool g_draw_tet_faces = false;
@@ -75,6 +73,7 @@ bool g_draw_valid_tet_vertices = false;
 bool g_draw_velocities = false;
 bool g_display_status_text = true;
 
+//Time stepping
 bool g_running = false;
 bool g_advance_single_frame = false;
 bool g_rendering_sequence = false;
@@ -87,10 +86,6 @@ int g_num_surface_substeps = 1;
 double g_frame_rate = 30.0;
 
 
-// TEMP
-bool g_null_space_smoothing = true;
-
-
 Vec3f DOMAIN_LOW(0,0,0);
 Vec3f DOMAIN_HIGH(5,5,5);
 Vec3f BOX_DOMAIN_LOW( 0.9353f );
@@ -100,15 +95,12 @@ double g_svd_rcond = 0.2;
 
 #ifdef __APPLE__   
 char g_path[256] = "/Users/tyson/scratch/voronoi3d";
-#elif defined WIN32
+#elif defined _MSC_VER
 char g_path[256] = "C:/output";
 #else
 char g_path[256] = "/var/tmp";
 #endif
 
-// TEMP:
-std::vector<unsigned int> g_vertex_rank;
-std::vector<Vec3d> g_vertex_primary_eigenvectors;
 
 
 pthread_mutex_t thread_is_running_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -181,36 +173,7 @@ void update_renderable_objects()
    g_renderable_liquid_phi = g_dual_sim->liquid_phi;
    g_renderable_region_IDs = g_dual_sim->region_IDs;
    g_renderable_labels = g_dual_sim->surface_tracker->m_mesh.m_triangle_labels;
-   /*
 
-   std::vector<float> vertexCurvatures(g_renderable_vertices.size());
-   for(unsigned int i = 0; i < g_renderable_vertices.size(); ++i) {
-      //Vec3d surf_normal = g_renderable_vertex_normals[i];
-
-      //Vec3d curvatureNormal;
-      //MeanCurvatureDriver::vertex_mean_curvature_normal(i, *(g_dual_sim->surface_tracker), curvatureNormal);
-      //vertexCurvatures[i] = -(float)mag(curvatureNormal) * (dot(surf_normal,curvatureNormal) > 0?1:-1);
-      
-      Vec3d meanCurvatureNormal;
-      MeanCurvatureDriver::vertex_mean_curvature_normal(i, *(g_dual_sim->surface_tracker), meanCurvatureNormal);
-      Vec3d surfaceNormal = meanCurvatureNormal;
-      normalize(surfaceNormal);
-      float curvatureValue = dot(meanCurvatureNormal,surfaceNormal);
-      vertexCurvatures[i] = curvatureValue;
-   }
-
-   g_renderable_vertex_curvatures = vertexCurvatures;
-
-   g_vertex_rank.clear();
-   g_vertex_rank.resize( g_dual_sim->surface_tracker->m_positions.size(), 0 );
-   g_vertex_primary_eigenvectors.resize( g_dual_sim->surface_tracker->m_positions.size(), Vec3d(0,0,0) );
-   for ( unsigned int i = 0; i < g_dual_sim->surface_tracker->m_positions.size(); ++i )
-   {
-      Vec3d eigenvectors[3];
-      g_vertex_rank[i] = g_dual_sim->surface_tracker->classify_vertex( i, eigenvectors );
-      g_vertex_primary_eigenvectors[i] = eigenvectors[2];
-   }
-   */
    
    // release mutex
    pthread_mutex_unlock( &sim_mutex );   
@@ -251,7 +214,7 @@ void draw_box( const Vec3f& lo, const Vec3f& hi )
 }
        
 
-
+//For sorting faces in depth order, to do transparent rendering.
 class FaceComp
 {
 public:
@@ -266,7 +229,8 @@ public:
 
 void display()
 {
-   
+      
+
    if ( g_display_status_text )
    {
       pthread_mutex_lock( &thread_is_running_mutex );
@@ -311,6 +275,11 @@ void display()
       status_text_widget->text = "";
    }
    
+   ////Stop out early to skip rendering.
+   //{
+   //   glutTimerFunc( 0, advance_frame, 0);
+   //}
+   //return;
    
    /*
    // identify and draw some slivery tets
@@ -385,19 +354,8 @@ void display()
             if ( g_draw_liquid_phi )
             {
                
-               //if ( g_renderable_liquid_phi[i] < 0.0f )
-               //{
-               //   glColor3f(0,0,1);
-               //   glVertex3fv( g_renderable_tet_mesh->vertices[i].v );
-               //}
-               //else
-               //{
-               //   glColor3f(1,0,0);
-               //   glVertex3fv( g_renderable_tet_mesh->vertices[i].v );
-               //}
                
                Vec3f color(0,0,0);
-               //std::cout << "Region id = " << g_dual_sim->region_IDs[i] << std::endl;
                if(g_renderable_region_IDs[i] < 0 || g_renderable_region_IDs[i] > 2)
                   color = Vec3f(1,1,0);
                else
@@ -930,7 +888,8 @@ void load_and_process_splash( char* filename )
    surf_track_params.m_collision_safety = true;
    surf_track_params.m_allow_topology_changes = false;
    
-   SurfTrack test_surface( x, tris, masses, surf_track_params );
+   std::vector<Vec2i> labels(tris.size(), Vec2i(1,0));
+   SurfTrack test_surface( x, tris, labels, masses, surf_track_params );
    
    // find boundary of the open surface
    for ( unsigned int i = 0; i < test_surface.get_num_vertices(); ++i )
@@ -1012,7 +971,8 @@ void load_and_process_mesh( char* filename )
    surf_track_params.m_collision_safety = true;
    surf_track_params.m_allow_topology_changes = false;
    
-   SurfTrack test_surface( x, tris, masses, surf_track_params );
+   std::vector<Vec2i> labels(tris.size(), Vec2i(1,0));
+   SurfTrack test_surface( x, tris, labels, masses, surf_track_params );
    
    // find boundary of the open surface
    for ( unsigned int i = 0; i < test_surface.m_mesh.m_edges.size(); ++i )
@@ -1078,7 +1038,8 @@ void load_mesh( )
    surf_track_params.m_collision_safety = true;
    surf_track_params.m_allow_topology_changes = false;
    
-   SurfTrack test_surface( x, tris, masses, surf_track_params );
+   std::vector<Vec2i> labels(tris.size(), Vec2i(1,0));
+   SurfTrack test_surface( x, tris, labels, masses, surf_track_params );
    
    pthread_mutex_lock( &sim_mutex );   
    
@@ -1199,7 +1160,7 @@ void keyboard(unsigned char key, int, int )
 
       case ' ':
          g_running = !g_running;
-         std::cout << (g_running ? "start" : "stop") << std::endl;
+         std::cout << (g_running ? "Request to start running." : "Request to stop running.") << std::endl;
          break;
    }
    
@@ -1217,7 +1178,7 @@ void restore_frame( unsigned int frame )
    
 #ifdef __APPLE__   
    sprintf( binfile, "%s/surface%04d.bin", "/Users/tyson/scratch/voronoi3d", frame );
-#elif defined WIN32
+#elif defined _MSC_VER
    sprintf( binfile, "%s/surface%04d.bin", "C:/output", frame );
 #else
    sprintf( binfile, "%s/surface%04d.bin", "/var/tmp", frame );
@@ -1241,7 +1202,7 @@ void restore_frame( unsigned int frame )
    char elefile[256];
 #ifdef __APPLE__   
    sprintf( elefile, "%s/tetmesh%04d.ele", "/Users/tyson/scratch/voronoi3d", frame );
-#elif defined WIN32
+#elif defined _MSC_VER
    sprintf( elefile, "%s/tetmesh%04d.ele", "C:/output", frame );
 #else
    sprintf( elefile, "%s/tetmesh%04d.ele", "/var/tmp", frame );
@@ -1252,7 +1213,7 @@ void restore_frame( unsigned int frame )
    char nodefile[256];
 #ifdef __APPLE__   
    sprintf( nodefile, "%s/tetmesh%04d.node", "/Users/tyson/scratch/voronoi3d", frame );
-#elif defined WIN32
+#elif defined _MSC_VER
    sprintf( nodefile, "%s/tetmesh%04d.node", "C:/output", frame );
 #else
    sprintf( nodefile, "%s/tetmesh%04d.node", "/var/tmp", frame );
@@ -1267,7 +1228,7 @@ void restore_frame( unsigned int frame )
    char velocityfile[256];
 #ifdef __APPLE__   
    sprintf( velocityfile, "%s/velocities%04d.bin", "/Users/tyson/scratch/voronoi3d", frame );
-#elif defined WIN32
+#elif defined _MSC_VER
    sprintf( velocityfile, "%s/velocities%04d.bin", "C:/output", frame );
 #else
    sprintf( velocityfile, "%s/velocities%04d.bin", "/var/tmp", frame );
@@ -1343,6 +1304,18 @@ void file_output( unsigned int frame )
                       0.0,
                       binfile );
    
+   
+   for(size_t i = 0; i < recording_regions.size(); ++i) {
+      int label = recording_regions[i];
+      char objfile[256];
+      sprintf( objfile, "%s/surface_label%02d_%04d.obj", g_path, label, frame );
+      bool write_success = write_objfile_per_region(g_dual_sim->surface_tracker->m_mesh, 
+         g_dual_sim->surface_tracker->get_positions(),
+         label,
+         objfile);
+      std::cout << "Finished region #" << label << ".\n";
+   }
+
 //   char elefile[256];
 //   sprintf( elefile, "%s/tetmesh%04d.ele", g_path, frame );
    //write_ele_file( elefile, g_dual_sim->mesh.tets );
@@ -1373,7 +1346,6 @@ void* advance_frame_async( void* nothing )
 {   
 
    // do work
-   std::cout << "worker thread running" << std::endl;
    
    pthread_mutex_lock( &sim_mutex );   
 
@@ -1492,11 +1464,11 @@ void parse_script( const char* filename )
    std::ifstream filestream( filename );
    if ( !filestream.good() )
    {
-      std::cout << "Could not open script file" << std::endl;
+      std::cout << "Could not open script file." << std::endl;
       exit(1);
    }
    
-   std::cout << "opening file: " << filename << std::endl;
+   std::cout << "Opening file: " << filename << std::endl;
    
    ParseTree tree;
    parse_stream( filestream, tree );
@@ -1512,16 +1484,41 @@ void parse_script( const char* filename )
       strncpy( g_path, output_path.c_str(), output_path.length() + 1);
    }
    
+   //Multiphase or free surface choice
+   double domain_density = 0.0; //default to free surface (density of 0, label of 0)
+   int domain_label = 0;
+   tree.get_int( "domain_label", domain_label);
+   
+   std::vector< std::pair<int, double> > region_densities;
+   region_densities.push_back(std::make_pair(domain_label, domain_density));
+   recording_regions.clear();
+   std::vector<const ParseTree*> region_branches = tree.get_multi_branch("region");
+   for(size_t i = 0; i < region_branches.size(); ++i) {
+      const ParseTree* region = region_branches[i];
+      int region_ID;
+      region->get_int("label", region_ID);
+      double region_density;
+      region->get_number("density", region_density);
+      region_densities.push_back(std::make_pair(region_ID, region_density));
+      std::cout << "Region #" << region_ID << " has density " << region_density << std::endl;
+      int record = 1;
+      region->get_int("output", record);
+      if(record)
+         recording_regions.push_back(region_ID);
+   }
+   
    //
    // Surface geometry
    //
    
    double surface_dx;
-   assert( tree.get_number( "surface_dx", surface_dx ) );
+   bool sdx_found = tree.get_number( "surface_dx", surface_dx );
+   assert( sdx_found );
    
    std::vector<Vec3d> surface_vertices(0);
    std::vector<Vec3st> surface_triangles(0);
-      
+   std::vector<Vec2i> surface_labels(0);
+   
    const ParseTree* box_branch = tree.get_branch( "box" );
    if ( box_branch != NULL )
    {
@@ -1544,12 +1541,22 @@ void parse_script( const char* filename )
       std::cout << "box_min: " << box_min << std::endl;
       std::cout << "box_max: " << box_max << std::endl;
       std::cout << "resolution: " << resolution << std::endl;
-      create_cube( box_min, box_max, resolution, surface_vertices, surface_triangles );
+      
+      int in_label = 1, out_label = domain_label;
+      box_branch->get_int( "in_label", in_label);
+      box_branch->get_int( "out_label", out_label);
+
+      Vec2i label(out_label, in_label);
+
+      create_cube( box_min, box_max, resolution, surface_vertices, surface_triangles, surface_labels, label );
    }
 
-   const ParseTree* sphere_branch = tree.get_branch( "sphere" );
-   if ( sphere_branch != NULL )
-   {
+   std::vector<const ParseTree*> sphere_branches = tree.get_multi_branch("sphere");
+   //const ParseTree* sphere_branch = tree.get_branch( "sphere" );
+   std::vector<const ParseTree*>::iterator it = sphere_branches.begin();
+   for(; it != sphere_branches.end(); ++it) {
+      const ParseTree* sphere_branch = *it;
+
       Vec3d sphere_center;
       sphere_branch->get_vec3d( "sphere_center", sphere_center );
       double sphere_radius;
@@ -1560,13 +1567,22 @@ void parse_script( const char* filename )
       {
          dx = surface_dx;
       }
+         
+      int in_label = 1, out_label = domain_label;
+      sphere_branch->get_int( "in_label", in_label);
+      sphere_branch->get_int( "out_label", out_label);
+      
+      Vec2i label(out_label, in_label);
 
-      create_sphere( sphere_center, sphere_radius, dx, surface_vertices, surface_triangles );
+      create_sphere( sphere_center, sphere_radius, dx, surface_vertices, surface_triangles, surface_labels, label);
+      std::cout << "Processed sphere with label:"  << label << "\n";
    }
 
-   const ParseTree* trimesh_branch = tree.get_branch( "trimesh" );
-   if ( trimesh_branch != NULL )
-   {
+   
+   std::vector<const ParseTree*> trimeshes = tree.get_multi_branch("trimesh");
+   for(size_t i = 0; i < trimeshes.size(); ++i) {
+      const ParseTree* trimesh_branch = trimeshes[i];
+      
       printf("Found trimesh branch\n");
       Vec3d offset;
       trimesh_branch->get_vec3d("vec_offset", offset);
@@ -1578,16 +1594,21 @@ void parse_script( const char* filename )
       std::string meshpath;
       trimesh_branch->get_string("filepath", meshpath);
       printf("Got path %s\n", meshpath.c_str());
-      
+
+      int in_label = 1, out_label = domain_label;
+      trimesh_branch->get_int( "in_label", in_label);
+      trimesh_branch->get_int( "out_label", out_label);
+
       NonDestructiveTriMesh trimesh;
-      
-      printf("Reading file\n");
+
+      printf("Reading file...\n");
       read_objfile(trimesh, surface_vertices, meshpath.c_str());
       for(unsigned int i = 0; i < surface_vertices.size(); ++i) {
          surface_vertices[i] = surface_vertices[i]*scale + offset;
       }
       surface_triangles = trimesh.m_tris;
-      printf("loaded file %s", meshpath.c_str());
+      printf("Loaded file %s\n", meshpath.c_str());
+
    }
    
    const ParseTree* dented_box_branch = tree.get_branch( "dent" );
@@ -1610,7 +1631,11 @@ void parse_script( const char* filename )
       resolution[1] = max( (size_t)1, resolution[1] );
       resolution[2] = max( (size_t)1, resolution[2] );
          
-      create_cube( dent_min, dent_max, resolution, surface_vertices, surface_triangles );
+      int in_label = 1, out_label = domain_label;
+      dented_box_branch->get_int( "in_label", in_label);
+      dented_box_branch->get_int( "out_label", out_label);
+      Vec2i label(in_label, out_label);
+      create_cube( dent_min, dent_max, resolution, surface_vertices, surface_triangles, surface_labels, label );
       
       Vec3d dent_center;
       double dent_radius, dent_magnitude;      
@@ -1734,11 +1759,6 @@ void parse_script( const char* filename )
    std::vector<double> surface_masses( surface_vertices.size(), 1.0 );
 
 
-   // TEMP
-   int nss = 1;
-   tree.get_int( "null_space_smoothing", nss );   
-   g_null_space_smoothing = ( nss != 0 );
-
    double eigenvalue_rank_ratio;
    if ( tree.get_number( "eigenvalue_rank_ratio", eigenvalue_rank_ratio ) )
    {
@@ -1789,11 +1809,20 @@ void parse_script( const char* filename )
       BOX_DOMAIN_LOW = Vec3f(sim_min);
       BOX_DOMAIN_HIGH = Vec3f(sim_max);
    }
+
+   std::vector<float> densities;
+   int max_label = 0;
+   for(size_t i = 0; i < region_densities.size(); ++i)
+      max_label = max(max_label, region_densities[i].first);
+   densities.resize(max_label+1);
+   for(size_t i = 0; i < region_densities.size(); ++i) {
+      densities[region_densities[i].first] = (float)region_densities[i].second;
+   }
    
    pthread_mutex_lock( &sim_mutex ); 
    
-   g_dual_sim = new DualFluidSim3D( surface_vertices, surface_triangles, surface_masses, surf_track_params );
-   
+   g_dual_sim = new DualFluidSim3D( surface_vertices, surface_triangles, surface_labels, surface_masses, surf_track_params, densities );
+
    std::vector<Vec4st> tets;
    std::vector<Vec3f> xs;
    
@@ -1802,13 +1831,10 @@ void parse_script( const char* filename )
     SampleSeeder::generate_bcc_points( DOMAIN_LOW, DOMAIN_HIGH, (float)mesh_dx, input_xs );   
       
     Triangulation cgal_T;
-    //Use CGAL Delaunay mesher
+    //Use CGAL for Delaunay meshing
     compute_delaunay_CGAL(input_xs, tets, cgal_T);
     xs = input_xs;
 
-    //Use TetGen Delaunay mesher
-    //TetGen::delaunay_mesh( input_xs, xs, tets );
-   
    int sphere_velocity_field = 0;
 
    tree.get_int( "sphere_velocity_field", sphere_velocity_field);
@@ -1827,12 +1853,26 @@ void parse_script( const char* filename )
             label = Vec2i(0,1);
          }
          else {
-            label = Vec2i(0,2);
+            label = Vec2i(2,0); 
+
+            //flip the triangles to test if reverse orientation works too.
+            Vec3st tri = g_dual_sim->surface_tracker->m_mesh.m_tris[i];
+            std::swap(tri[1], tri[2]);
+            g_dual_sim->surface_tracker->m_mesh.m_tris[i] = tri;
          }
          g_dual_sim->surface_tracker->m_mesh.set_triangle_label(i, label);
+
+         //screw with the initial shape to test surface tension
+      }
+      //Stretch to test surface tension
+      for(size_t i = 0; i < g_dual_sim->surface_tracker->get_num_vertices(); ++i) {
+         Vec3d v = g_dual_sim->surface_tracker->get_position(i);
+         v[2] *= 1.3;
+         g_dual_sim->surface_tracker->set_position(i, v);
       }
 
    }
+   
    
    g_dual_sim->free_surface = free_surface?true:false;
    g_dual_sim->mesh->initialize( tets, xs, cgal_T );
@@ -1978,9 +2018,6 @@ int main( int argc, char** argv )
    Gluvi::winwidth = 800;
    Gluvi::winheight = 600;
 
-   /*Gluvi::winwidth = 1920;
-   Gluvi::winheight = 1080;*/
-
    Gluvi::init( "Voronoi Sim 3D", &argc, argv );    
    Gluvi::camera = new Gluvi::Target3D( );
    cam = (Gluvi::Target3D*) (Gluvi::camera);
@@ -2022,9 +2059,9 @@ int main( int argc, char** argv )
    status_text_widget = new Gluvi::DynamicText( "Ready" );
    Gluvi::root.list.push_back( status_text_widget );
    
-   std::cout << "output path: " << g_path << std::endl;
+   std::cout << "Output path: " << g_path << std::endl;
 
-#ifndef WIN32
+#ifndef _MSC_VER
    
    // see if the output path exists, and if not, create it
    struct stat st;

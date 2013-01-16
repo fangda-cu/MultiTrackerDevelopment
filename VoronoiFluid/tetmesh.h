@@ -63,13 +63,9 @@ public:
    ElTopo::Vec3f accel_origin;
    unsigned int accel_ni, accel_nj, accel_nk;
    
-   //secondary acceleration grid, storing voronoi cells rather than tets
-   ElTopo::Array3< std::vector<int> > accel_grid_voronoi;
-   
    //CGAL tet structure for optimal point location in the Delaunay mesh
    Triangulation cgal_T;
    Cell_handle last_cell; //a hint for where to start from - let's see if this is helpful
-
    //
    // initialization functions
    //
@@ -97,13 +93,15 @@ public:
    inline int get_containing_tet( const ElTopo::Vec3f& point );
    inline int get_containing_voronoi( const ElTopo::Vec3f& point );
 
-   void get_overlapping_tets( const ElTopo::Vec3f& aabb_low, const ElTopo::Vec3f& aabb_high, std::vector<int>& query_results );
-   
    void get_closed_tet_neighbourhood( unsigned int edge_index, std::vector<unsigned int>& sorted_incident_tets );
    
    float compute_voronoi_face_area( unsigned int edge_index );
    ElTopo::Vec3f compute_voronoi_face_centroid( unsigned int edge_index );
-      
+   
+   //TODO If we can convert the next function to use CGAL's acceleration structure instead
+   //we can eliminate the other acceleration grid.
+   void get_overlapping_tets( const ElTopo::Vec3f& aabb_low, const ElTopo::Vec3f& aabb_high, std::vector<int>& query_results );
+
 };
 
 
@@ -117,8 +115,6 @@ public:
 ///
 // ---------------------------------------------------------
 
-extern unsigned int g_num_pit_tests;
-extern unsigned int g_num_pit_hits;
 
 inline int TetMesh::get_containing_tet( const ElTopo::Vec3f& point )
 {
@@ -128,56 +124,8 @@ inline int TetMesh::get_containing_tet( const ElTopo::Vec3f& point )
    last_cell = c;
 
    return c->info();
-   
   
-   /*
-
-   Vec3i cell = Vec3i(( point - accel_origin ) / accel_dx);
-   
-   if (   cell[0] >= acceleration_grid.ni 
-       || cell[1] >= acceleration_grid.nj 
-       || cell[2] >= acceleration_grid.nk
-       || cell[0] < 0
-       || cell[1] < 0
-       || cell[2] < 0 )
-   {
-      return -1;
-   }
-   
-   const std::vector<int>& results = acceleration_grid( cell[0], cell[1], cell[2] );
-   
-   for(unsigned int i = 0; i < results.size(); ++i )
-   {
-      int tet_index = results[i];
-      
-      const Vec3f& a = vertices[ tets[tet_index][0] ];
-      const Vec3f& b = vertices[ tets[tet_index][1] ];
-      const Vec3f& c = vertices[ tets[tet_index][2] ];
-      const Vec3f& d = vertices[ tets[tet_index][3] ];
-      
-      Vec3f aabb_low, aabb_high;
-      minmax( a, b, c, d, aabb_low, aabb_high );
-      
-      if (    point[0] < aabb_low[0] 
-           || point[1] < aabb_low[1] 
-           || point[2] < aabb_low[2] 
-           || point[0] > aabb_high[0] 
-           || point[1] > aabb_high[1] 
-           || point[2] > aabb_high[2] )
-      {
-         continue;
-      }
-      
-      ++g_num_pit_tests;
-      if ( point_in_tet( point, a, b, c, d, 1e-7f ) )
-      {
-         ++g_num_pit_hits;
-         return tet_index;
-      }
-   }
-   
-   return -1;
-   */
+  
 }
 
 
@@ -190,37 +138,13 @@ inline int TetMesh::get_containing_tet( const ElTopo::Vec3f& point )
 inline int TetMesh::get_containing_voronoi( const ElTopo::Vec3f& point )
 {
    
-   ElTopo::Vec3i cell = ElTopo::Vec3i(( point - accel_origin ) / accel_dx);
-   
-   if (   cell[0] >= acceleration_grid.ni 
-       || cell[1] >= acceleration_grid.nj 
-       || cell[2] >= acceleration_grid.nk
-       || cell[0] < 0
-       || cell[1] < 0
-       || cell[2] < 0 )
-   {
-      return -1;
-   }
-   
-   const std::vector<int>& results = accel_grid_voronoi( cell[0], cell[1], cell[2] );
-   
-   //we know it's in the particular voronoi cell associated with the closest Delaunay vertex
 
-   double closest_vert_dist_squared = 1e30;
-   int closest_vert_index = -1;
-   for(unsigned int i = 0; i < results.size(); ++i )
-   {
-      int voronoi_vert_index = results[i];
-      double distance_squared = ElTopo::dist2(vertices[voronoi_vert_index], point);
-      if(distance_squared < closest_vert_dist_squared) {
-         closest_vert_index = voronoi_vert_index;
-         closest_vert_dist_squared = distance_squared;
-      }
-      
-   }
-      
-   return closest_vert_index;
-   
+   Point p(point[0], point[1], point[2]);
+   Vertex_handle vh = cgal_T.nearest_vertex(p, last_cell);
+   last_cell = vh->cell();
+   return vh->info();
+  
+
 }
 
 

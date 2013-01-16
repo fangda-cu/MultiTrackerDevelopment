@@ -78,13 +78,15 @@ public:
     
     /// Create a DynamicSurface object from the specified vertices, triangles, and vertex masses.
     ///
+
     DynamicSurface( const std::vector<Vec3d>& vs, 
-                   const std::vector<Vec3st>& ts, 
-                   const std::vector<double>& masses,
-                   double in_proximity_epsilon = 1e-4,
-                   double in_friction_coefficient = 0.0,
-                   bool in_collision_safety = true,
-                   bool in_verbose = false );
+       const std::vector<Vec3st>& ts, 
+       const std::vector<Vec2i>& labels,
+       const std::vector<double>& masses,
+       double in_proximity_epsilon = 1e-4,
+       double in_friction_coefficient = 0.0,
+       bool in_collision_safety = true,
+       bool in_verbose = false );
     
     /// Destructor
     /// 

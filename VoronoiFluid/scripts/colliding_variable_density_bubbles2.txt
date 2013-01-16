@@ -1,7 +1,7 @@
 
 frame_rate 10.0
-sim_dx 0.5
-surface_dx 0.4
+sim_dx 0.3
+surface_dx 0.15
 
 
 trimesh
@@ -34,8 +34,8 @@ remesh 1
 seed_at_solid 1
 allow_solid_overlap 0
 volume_correction 1
-surface_tension_coefficient 0.0
-gravity_force [-1.0 0.0 0.0]
+surface_tension_coefficient 0.01
+gravity_force [0.0 0.0 0.0]
 
 num_surface_substeps 3
 

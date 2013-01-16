@@ -1,16 +1,46 @@
 
-sim_dx 0.5
-surface_dx 0.25
+sim_dx 0.4
+surface_dx 0.2
 
 frame_rate 10.0
 num_surface_substeps 2 
 
 output_path c:\output
 
+domain_label 0
+
+region
+(
+    label 0
+    density 0.0
+    record 1
+)
+
+region
+(
+    label 1
+    density 2.0
+)
+
+region
+(
+    label 2
+    density 0.5
+)
+
 sphere
 (
-    sphere_center [2.5 2.5 2.5]
-    sphere_radius 1.0
+    sphere_center [2.0 2.0 2.0]
+    sphere_radius 0.7
+    in_label 1
+    out_label 0
+)
+sphere
+(
+    sphere_center [3.0 3.0 3.0]
+    sphere_radius 0.7
+    in_label 2
+    out_label 0
 )
 
 min_edge_length_fraction 0.7
@@ -31,9 +61,8 @@ allow_solid_overlap 0
 volume_correction 1
 surface_tension_coefficient 0.0
 gravity_force [0.0 -1.0 0.0]
-eigenvalue_rank_ratio 1.0
+eigenvalue_rank_ratio 0.03
 air_sample_rejection_threshold 0.1
-tetgen_max_radius_edge_ratio 2.00
 interpolation_scheme barycentric
 
 simulation_domain

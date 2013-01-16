@@ -45,10 +45,14 @@ static inline bool add_unique( const Vec3f& x, const std::vector<Vec3f>& check_a
 
 void SampleSeeder::generate_bcc_points( const Vec3f& domain_low, const Vec3f& domain_high, float dx, std::vector<Vec3f>& xs )
 {
+
+   //We perturb slightly away from a perfectly regular lattice to avoid
+   //degeneracy/coplanarity tests in remeshing, which slows everything down.
+   
    Vec3st n = Vec3st( (domain_high - domain_low) / dx ) + Vec3st(1);
 
    std::vector<Vec3f> new_points;
-   
+   static int seedy = 0;
    // regular grid: cell corners
    for ( unsigned int i = 0; i < n[0]; ++i )
    {
@@ -56,7 +60,9 @@ void SampleSeeder::generate_bcc_points( const Vec3f& domain_low, const Vec3f& do
       {
          for ( unsigned int k = 0; k < n[2]; ++k )
          {
-            add_unique( domain_low + dx * Vec3f(Vec3st(i,j,k)), xs, new_points );
+            Vec3f point = domain_low + dx * Vec3f(Vec3st(i,j,k));
+            point += 0.01f*dx*Vec3f(randhashf(++seedy, 0, 1), randhashf(++seedy, 0, 1), randhashf(++seedy, 0, 1));
+            add_unique( point, xs, new_points );
          }
       }
    }
@@ -68,7 +74,9 @@ void SampleSeeder::generate_bcc_points( const Vec3f& domain_low, const Vec3f& do
       {
          for ( unsigned int k = 0; k < n[2]-1; ++k )
          {
-            add_unique( domain_low + Vec3f(0.5f*dx) + dx * Vec3f(Vec3st(i,j,k)), xs, new_points );
+            Vec3f point = domain_low + Vec3f(0.5f*dx) + dx * Vec3f(Vec3st(i,j,k));
+            point += 0.01f*dx*Vec3f(randhashf(++seedy, 0, 1), randhashf(++seedy, 0, 1), randhashf(++seedy, 0, 1));
+            add_unique( point, xs, new_points );
          }
       }
    }
@@ -93,8 +101,6 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
                                              std::vector<Vec3f>& samples )
 {
    
-   
-   std::cout << "g_air_sample_rejection_threshold: " << g_air_sample_rejection_threshold << std::endl;
    
    
    double start_time = get_time_in_seconds();
@@ -208,8 +214,8 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
       }
    }
    
-   std::vector<Vec3f> surf_samples;
    
+   /*
    //try adding samples at tri barycenters to break up regularity and avoid slivers.
    bool parity = false;
    for(unsigned int i = 0; i < surface.m_mesh.m_tris.size(); ++i) {
@@ -227,10 +233,11 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
 
       bool accepted = add_unique( Vec3f(new_sample), samples, samples );
    }
+   */
 
-
-   std::cout << "number of samples rejected: " << num_rejections << std::endl;
-   std::cout << "seed time: " << get_time_in_seconds() - start_time << std::endl;
+   std::cout << "Number of samples rejected: " << num_rejections << std::endl;
+   std::cout << "Number of samples placed: " << samples.size() << std::endl;
+   std::cout << "Seed placement time: " << get_time_in_seconds() - start_time << std::endl;
    
 }
 

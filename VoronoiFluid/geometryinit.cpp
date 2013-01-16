@@ -197,11 +197,13 @@ void create_cube( const Vec3d& cube_low,
                   const Vec3d& cube_high,
                   const Vec3st& resolution,
                   std::vector<Vec3d>& verts, 
-                  std::vector<Vec3st>& tris )
+                  std::vector<Vec3st>& tris,
+                  std::vector<Vec2i>& labels,
+                  Vec2i label)
 {
 
    //
-   // Create each face seperately, then merge vertices.
+   // Create each face separately, then merge vertices.
    //
    
    unsigned int ni = resolution[0], nj = resolution[1], nk = resolution[2];
@@ -221,6 +223,8 @@ void create_cube( const Vec3d& cube_low,
          unsigned int idx = offset + j*(nk+1) + k;
          tris.push_back(Vec3st(idx+nk+1, idx, idx+1));
          tris.push_back(Vec3st(idx+nk+1, idx+1, idx+nk+2));
+         labels.push_back(label);
+         labels.push_back(label);
       }
    }
    
@@ -234,6 +238,8 @@ void create_cube( const Vec3d& cube_low,
          unsigned int idx = offset + j*(nk+1) + k;
          tris.push_back(Vec3st(idx,   idx+nk+1, idx+1));
          tris.push_back(Vec3st(idx+1, idx+nk+1, idx+nk+2));
+         labels.push_back(label);
+         labels.push_back(label);
       }
    }
    
@@ -247,6 +253,8 @@ void create_cube( const Vec3d& cube_low,
          unsigned int idx = offset + i*(nk+1) + k;
          tris.push_back(Vec3st(idx,   idx+nk+1, idx+1));
          tris.push_back(Vec3st(idx+1, idx+nk+1, idx+nk+2));
+         labels.push_back(label);
+         labels.push_back(label);
       }
    }
    
@@ -260,6 +268,8 @@ void create_cube( const Vec3d& cube_low,
          unsigned int idx = offset + i*(nk+1) + k;
          tris.push_back(Vec3st(idx+nk+1, idx, idx+1));
          tris.push_back(Vec3st(idx+nk+1, idx+1, idx+nk+2));
+         labels.push_back(label);
+         labels.push_back(label);
       }
    }
    
@@ -273,6 +283,8 @@ void create_cube( const Vec3d& cube_low,
          unsigned int idx = offset + i*(nj+1) + j;
          tris.push_back(Vec3st(idx+nj+1, idx, idx+1));
          tris.push_back(Vec3st(idx+nj+1, idx+1, idx+nj+2));
+         labels.push_back(label);
+         labels.push_back(label);
       }
    }
    
@@ -286,6 +298,8 @@ void create_cube( const Vec3d& cube_low,
          unsigned int idx = offset + i*(nj+1) + j;
          tris.push_back(Vec3st(idx, idx+nj+1, idx+1));
          tris.push_back(Vec3st(idx+1, idx+nj+1, idx+nj+2));
+         labels.push_back(label);
+         labels.push_back(label);
       }
    }
    
@@ -317,7 +331,9 @@ void create_sphere( const Vec3d& sphere_centre,
                     double sphere_radius,
                     double dx,
                     std::vector<Vec3d>& verts, 
-                    std::vector<Vec3st>& tris )
+                    std::vector<Vec3st>& tris,
+                    std::vector<Vec2i>& labels,
+                    Vec2i label)
 {
 
    const Vec3d domain_low = sphere_centre - Vec3d(sphere_radius + 3*dx);
@@ -336,9 +352,11 @@ void create_sphere( const Vec3d& sphere_centre,
    }
 
    std::vector<Vec3st> new_tris( marching_tiles.tri.size() );
+   std::vector<Vec2i> new_labels( marching_tiles.tri.size() );
    for ( unsigned int i = 0; i < new_tris.size(); ++i )
    {
       new_tris[i] = marching_tiles.tri[i];
+      new_labels[i] = label;
    }
    
    project_to_exact_sphere( new_verts, sphere_centre, sphere_radius );
@@ -352,6 +370,7 @@ void create_sphere( const Vec3d& sphere_centre,
    for ( unsigned int i = 0; i < new_tris.size(); ++i )
    {
       tris.push_back( new_tris[i] + offset );
+      labels.push_back( new_labels[i] );
    }
    
 }

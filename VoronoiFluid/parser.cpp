@@ -1,10 +1,25 @@
 #include "parser.h"
 #include "lexer.h"
 
+std::vector<const ParseTree*> ParseTree::
+   get_multi_branch(const std::string& name) const
+{
+   std::pair <std::multimap<std::string,ParseTree>::const_iterator, std::multimap<std::string,ParseTree>::const_iterator> ret;
+   std::vector<const ParseTree*> all_branches;
+
+   ret = branches.equal_range(name);
+   for (std::multimap<std::string,ParseTree>::const_iterator it=ret.first; it!=ret.second; ++it) {
+      all_branches.push_back(&(it->second));
+   }
+
+   return all_branches;
+   
+}
+
 const ParseTree* ParseTree::
 get_branch(const std::string& name) const
 {
-   std::map<std::string,ParseTree>::const_iterator p=branches.find(name);
+   std::multimap<std::string,ParseTree>::const_iterator p=branches.find(name);
    if(p==branches.end()) return 0;
    else return &p->second;
 }
@@ -99,7 +114,7 @@ static void write_tree(std::ostream& out, const ParseTree& tree, int indentation
       out<<"]"<<std::endl;
    }
 
-   std::map<std::string,ParseTree>::const_iterator b;
+   std::multimap<std::string,ParseTree>::const_iterator b;
    for(b=tree.branches.begin(); b!=tree.branches.end(); ++b){
       out<<indent_string<<b->first<<" ="<<std::endl;
       write_tree(out, b->second, indentation+3);
@@ -155,13 +170,13 @@ static bool recursive_parse(Lexer& lexer, ParseTree& tree, bool root_level)
             return false;
          case TOKEN_IDENTIFIER: case TOKEN_STRING:
             name=token.string_value;
-            if(tree.branches.find(name)!=tree.branches.end()
+            /*if(tree.branches.find(name)!=tree.branches.end()
             || tree.numbers.find(name)!=tree.numbers.end()
             || tree.strings.find(name)!=tree.strings.end()
             || tree.vectors.find(name)!=tree.vectors.end()){
-               std::cerr<<"Parse error: name ["<<name<<"] appears multiple times in record"<<std::endl;
-               return false;
-            }
+            std::cerr<<"Parse error: name ["<<name<<"] appears multiple times in record"<<std::endl;
+            return false;
+            }*/
             break;
          case TOKEN_RIGHT_PAREN:
             if(root_level){
@@ -192,6 +207,7 @@ static bool recursive_parse(Lexer& lexer, ParseTree& tree, bool root_level)
             {
                ParseTree subtree;
                if(!recursive_parse(lexer, subtree, false)) return false;
+               std::cout << "Pushing subtree branch: " << name << std::endl;
                tree.branches.insert(std::make_pair(name, subtree));
             }
             break;

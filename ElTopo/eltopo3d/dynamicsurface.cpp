@@ -58,6 +58,7 @@ extern RunStats g_stats;
 
 DynamicSurface::DynamicSurface( const std::vector<Vec3d>& vertex_positions, 
                                const std::vector<Vec3st>& triangles,
+                               const std::vector<Vec2i>& labels,
                                const std::vector<double>& masses,
                                double in_proximity_epsilon,
                                double in_friction_coefficient,
@@ -90,6 +91,10 @@ m_velocities(0)
     m_mesh.set_num_vertices( get_num_vertices() );   
     m_mesh.replace_all_triangles( triangles );
     
+    assert(triangles.size() == labels.size());
+
+    m_mesh.m_triangle_labels = labels;
+
     // Some compilers worry about using "this" in the initialization list, so initialize it here
     m_collision_pipeline = new CollisionPipeline( *this, *m_broad_phase, in_friction_coefficient );
     
