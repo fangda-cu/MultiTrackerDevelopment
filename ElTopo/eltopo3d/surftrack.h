@@ -58,6 +58,10 @@ struct SurfTrackInitializationParameters
     ///
     double m_min_triangle_area;
     
+    /// Whether to enable T1 transition operations
+    ///
+    bool m_t1_transition_enabled;
+    
     /// Collision epsilon to use during mesh improvement operations (i.e. if any mesh elements are closer than this, the operation is 
     /// aborted).  NOTE: This should be greater than collision_epsilon, to prevent improvement operations from moving elements into 
     /// a collision configuration.
@@ -497,6 +501,10 @@ public:
     /// T1 transition operation object
     ///
     T1Transition m_t1transition;
+    
+    /// An option to indicate whether T1 transition operations are enabled
+    ///
+    bool m_t1_transition_enabled;
 
     ////////////////////////////////////////////////////////////
 
