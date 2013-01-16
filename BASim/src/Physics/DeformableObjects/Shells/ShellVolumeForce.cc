@@ -233,12 +233,10 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
   
   for (EdgeIterator eit = obj.edges_begin(); eit != obj.edges_end(); ++eit)
   {
-    if (obj.isBoundary(*eit))
+    int walls0 = onBBWall(m_shell.getVertexPosition(obj.fromVertex(*eit)));
+    int walls1 = onBBWall(m_shell.getVertexPosition(obj.toVertex(*eit)));
+    if (walls0 & walls1)
     {
-      int walls0 = onBBWall(m_shell.getVertexPosition(obj.fromVertex(*eit)));
-      int walls1 = onBBWall(m_shell.getVertexPosition(obj.toVertex(*eit)));
-      assert(walls0 & walls1);
-      
       Vec2i edge_label(-1, -1);
       rcounts.setZero(nregion);
       for (EdgeFaceIterator efit = obj.ef_iter(*eit); efit; ++efit)
