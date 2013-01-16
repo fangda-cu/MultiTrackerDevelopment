@@ -429,12 +429,12 @@ public:
 
 void DoubleBubbleTest::AtEachTimestep()
 {
-//  for (size_t i = 0; i < triangulation_added_faces.size(); i++)
-//    shellObj->deleteFace(triangulation_added_faces[i], false);
-//  for (size_t i = 0; i < triangulation_added_edges.size(); i++)
-//    shellObj->deleteEdge(triangulation_added_edges[i], false);
-//  for (size_t i = 0; i < triangulation_added_vertices.size(); i++)
-//    shellObj->deleteVertex(triangulation_added_vertices[i]);
+  for (size_t i = 0; i < triangulation_added_faces.size(); i++)
+    shellObj->deleteFace(triangulation_added_faces[i], false);
+  for (size_t i = 0; i < triangulation_added_edges.size(); i++)
+    shellObj->deleteEdge(triangulation_added_edges[i], false);
+  for (size_t i = 0; i < triangulation_added_vertices.size(); i++)
+    shellObj->deleteVertex(triangulation_added_vertices[i]);
 
   
     
@@ -689,10 +689,10 @@ void DoubleBubbleTest::s7_enright_velocity(double t, const Vec3d & pos, Vec3d & 
 
 void DoubleBubbleTest::AfterStep()
 {
-//  triangulation_added_vertices.clear();
-//  triangulation_added_edges.clear();
-//  triangulation_added_faces.clear();
-//  svf->triangulateBBWalls(triangulation_added_vertices, triangulation_added_edges, triangulation_added_faces);
+  triangulation_added_vertices.clear();
+  triangulation_added_edges.clear();
+  triangulation_added_faces.clear();
+  svf->triangulateBBWalls(triangulation_added_vertices, triangulation_added_edges, triangulation_added_faces);
   
   if (m_active_scene == 7)
   {
