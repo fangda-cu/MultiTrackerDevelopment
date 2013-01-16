@@ -749,7 +749,7 @@ inline size_t NonDestructiveTriMesh::get_common_edge( size_t triangle_a, size_t 
         }      
     }
     
-    return static_cast<unsigned int>(~0);
+    return static_cast<size_t>(~0);
 }
 
 // --------------------------------------------------------
@@ -774,7 +774,7 @@ inline size_t NonDestructiveTriMesh::get_common_vertex( size_t edge_a, size_t ed
     }      
   }
 
-  return static_cast<unsigned int>(~0);
+  return static_cast<size_t>(~0);
 }
 
 // --------------------------------------------------------

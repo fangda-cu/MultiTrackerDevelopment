@@ -58,6 +58,7 @@ SurfTrackInitializationParameters::SurfTrackInitializationParameters() :
 m_proximity_epsilon( 1e-4 ),
 m_friction_coefficient( 0.0 ),
 m_min_triangle_area( 1e-7 ),
+m_t1_transition_enabled( false ),
 m_improve_collision_epsilon( 2e-6 ),
 m_use_fraction( false ),
 m_min_edge_length( UNINITIALIZED_DOUBLE ),     // <- Don't allow instantiation without setting these parameters
@@ -112,7 +113,8 @@ m_smoother( *this ),
 m_merger( *this ),
 m_pincher( *this ),
 m_cutter( *this ),
-m_t1transition( *this, initial_parameters.m_remesh_boundaries ),
+m_t1transition( *this, NULL, initial_parameters.m_remesh_boundaries ),
+m_t1_transition_enabled( initial_parameters.m_t1_transition_enabled ),
 m_improve_collision_epsilon( initial_parameters.m_improve_collision_epsilon ),
 m_edge_flip_min_length_change( initial_parameters.m_edge_flip_min_length_change ),
 m_max_volume_change( UNINITIALIZED_DOUBLE ),   
@@ -784,10 +786,11 @@ void SurfTrack::improve_mesh( )
 
       ////////////////////////////////////////////////////////////
       // FD 20130109
-        
-      //m_t1transition.pop_edges();
 
-      //m_t1transition.pop_vertices();
+      if (m_t1_transition_enabled)
+      {
+        m_t1transition.pop_vertices();
+      }
 
       ////////////////////////////////////////////////////////////
       

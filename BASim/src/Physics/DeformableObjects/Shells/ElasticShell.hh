@@ -28,7 +28,15 @@ class ShellStickyRepulsionForce;
 class ElasticShell : public PhysicalModel, public ElTopo::SurfTrack::ConstrainedVerticesCallback {
 
 public:
-  ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep);
+  class SteppingCallback
+  {
+  public:
+    virtual void beforeEndStep() = 0;
+    
+  };
+  
+public:
+  ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep, SteppingCallback * stepping_callback = NULL);
   ~ElasticShell();
 
   //*Inherited from PhysicalModel
@@ -157,7 +165,7 @@ public:
   void setInflowSection(std::vector<EdgeHandle> edgeList, const Vec3d& vel, Scalar thickness);
   void setDeletionBox(const Vec3d& lowerBound, const Vec3d& upperBound);
 
-  void remesh();
+  void remesh(bool initial = false);
   
   // SurfTrack::ConstrainedVerticesCollapsingCallback method  
   bool generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos);
@@ -193,6 +201,8 @@ public:
     radius = m_sphere_radius;
   }
 
+    bool m_remesh_t1transition;
+    bool m_remesh_smooth_subdivision;
 
 protected:
 
@@ -211,11 +221,11 @@ protected:
   int onBBWall(const Vec3d & pos) const;
   Vec3d enforceBBWallConstraint(const Vec3d & input, int constraints) const;
   
-  void performT1Transition();
-  Mat2i cutXJunctionEdge(EdgeHandle e) const;
-  
-  void pullXJunctionVertices();
-  bool shouldPullVertexApart(VertexHandle xj, int A, int B, Vec3d & pull_apart_direction) const;
+//  void performT1Transition();
+//  Mat2i cutXJunctionEdge(EdgeHandle e) const;
+//  
+//  void pullXJunctionVertices();
+//  bool shouldPullVertexApart(VertexHandle xj, int A, int B, Vec3d & pull_apart_direction) const;
   
 
   //Various shell data
@@ -303,6 +313,10 @@ protected:
   bool m_tearing;
   Scalar m_tear_thres;
   Scalar m_tear_rand;
+  
+  // stepping callback
+  SteppingCallback * m_stepping_callback;
+  
 };
 
 }

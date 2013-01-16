@@ -21,7 +21,7 @@
 
 namespace BASim {
   
-ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep) : 
+ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& shellFaces, Scalar timestep, SteppingCallback * stepping_callback) : 
   PhysicalModel(*object), m_obj(object), 
     m_active_faces(shellFaces), 
 //    m_undef_xi(object),
@@ -41,9 +41,10 @@ ElasticShell::ElasticShell(DeformableObject* object, const FaceProperty<char>& s
     m_sphere_collisions(false),
     m_object_collisions(false),
     m_ground_collisions(false),
-    m_do_eltopo_collisions(false)
+    m_do_eltopo_collisions(false),
 //    m_do_thickness_updates(true),
 //    m_momentum_conserving_remesh(false)
+    m_stepping_callback(stepping_callback)
 {
   m_vert_point_springs = new ShellVertexPointSpringForce(*this, "VertPointSprings", timestep);
   m_repulsion_springs = new ShellStickyRepulsionForce(*this, "RepulsionSprings", timestep);
@@ -423,6 +424,7 @@ void ElasticShell::startStep(Scalar time, Scalar timestep)
     forces[i]->update();
   }
   
+  
 }
 
 void ElasticShell::resolveCollisions(Scalar timestep) {
@@ -483,7 +485,7 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
 
   // build a DynamicSurface
   Scalar friction_coeff = 0;
-  ElTopo::DynamicSurface dynamic_surface( vert_old, tri_data, masses, m_collision_epsilon, friction_coeff, true, false );
+  ElTopo::DynamicSurface dynamic_surface( vert_old, tri_data, std::vector<ElTopo::Vec2i>(tri_data.size(), ElTopo::Vec2i(0, 0)), masses, m_collision_epsilon, friction_coeff, true, false );
 
   dynamic_surface.set_all_newpositions( vert_new );
 
@@ -677,6 +679,9 @@ void ElasticShell::setSelfCollision(bool enabled) {
 
 void ElasticShell::endStep(Scalar time, Scalar timestep) {
 
+  if (m_stepping_callback)
+    m_stepping_callback->beforeEndStep();
+  
   std::cout << "Starting endStep.\n";
   bool do_relabel = false;
 
@@ -889,8 +894,7 @@ void ElasticShell::fracture() {
     }
   }
 
-  
-  ElTopo::SurfTrack surface_tracker( vert_data, tri_data, masses, construction_parameters ); 
+    ElTopo::SurfTrack surface_tracker( vert_data, tri_data, std::vector<ElTopo::Vec2i>(tri_data.size(), ElTopo::Vec2i(0, 0)), masses, construction_parameters ); 
 
   std::vector< std::pair<size_t,size_t> > edges_to_cut;
   for(EdgeIterator it = mesh.edges_begin(); it != mesh.edges_end(); ++it) {
@@ -1040,28 +1044,39 @@ bool ElasticShell::shouldFracture (const EdgeHandle & eh) const{
 }
 
 
-void ElasticShell::remesh()
+void ElasticShell::remesh(bool initial)
 {
+  // prune orphan edges and vertices
+  for (EdgeIterator eit = m_obj->edges_begin(); eit != m_obj->edges_end(); ++eit)
+    if (m_obj->edgeIncidentFaces(*eit) == 0)
+      m_obj->deleteEdge(*eit, true);
+  
+  for (VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit)
+    if (m_obj->vertexIncidentEdges(*vit) == 0)
+      m_obj->deleteVertex(*vit);
 
   //Set up a SurfTrack, run remeshing, render the new mesh
   ElTopo::SurfTrackInitializationParameters construction_parameters;
   construction_parameters.m_proximity_epsilon = m_collision_epsilon;
-  construction_parameters.m_merge_proximity_epsilon = 0.01;
+  construction_parameters.m_merge_proximity_epsilon = 0.00001;
   construction_parameters.m_allow_vertex_movement_during_collapse = true;
   construction_parameters.m_perform_smoothing = false;
   construction_parameters.m_min_edge_length = m_remesh_edge_min_len;
   construction_parameters.m_max_edge_length = m_remesh_edge_max_len;
   construction_parameters.m_max_volume_change = numeric_limits<double>::max();   
-  construction_parameters.m_min_triangle_angle = 3;
-  construction_parameters.m_max_triangle_angle = 177;
+  construction_parameters.m_min_triangle_angle = initial ? 0 : 3;
+  construction_parameters.m_max_triangle_angle = initial ? 180 : 177;
   construction_parameters.m_large_triangle_angle_to_split = 160;
   construction_parameters.m_verbose = false;
   construction_parameters.m_allow_non_manifold = true;
   construction_parameters.m_allow_topology_changes = true;
   construction_parameters.m_collision_safety = true;
   construction_parameters.m_remesh_boundaries = true;
+  construction_parameters.m_t1_transition_enabled = m_remesh_t1transition;
   
-  construction_parameters.m_subdivision_scheme = new ElTopo::MidpointScheme();
+    ElTopo::SubdivisionScheme * mb = new ElTopo::ModifiedButterflyScheme();
+    ElTopo::SubdivisionScheme * mp = new ElTopo::MidpointScheme();
+    construction_parameters.m_subdivision_scheme = (m_remesh_smooth_subdivision ? mb : mp);
   //construction_parameters.m_subdivision_scheme = new ElTopo::QuadraticErrorMinScheme();
   //construction_parameters.m_subdivision_scheme = new ElTopo::ButterflyScheme();
   //construction_parameters.m_subdivision_scheme = new ElTopo::ModifiedButterflyScheme();
@@ -1152,1347 +1167,71 @@ void ElasticShell::remesh()
   }
 
   std::cout << "Calling surface improvement\n";
-  ElTopo::SurfTrack surface_tracker( vert_data, tri_data, masses, construction_parameters ); 
+  ElTopo::SurfTrack surface_tracker( vert_data, tri_data, tri_labels, masses, construction_parameters ); 
   surface_tracker.m_constrained_vertices_callback = this;
   surface_tracker.m_mesh.m_vertex_constraint_labels = vert_const_labels;
   surface_tracker.set_all_remesh_velocities(vert_vel);
-  for (size_t i = 0; i < reverse_trimap.size(); i++)
-  {
-    surface_tracker.m_mesh.set_triangle_label(i, tri_labels[i]);
-  }
   
   for(int i = 0; i < m_remeshing_iters; ++i) {
     surface_tracker.improve_mesh();
     surface_tracker.topology_changes();
   }
+  
+  // copy ElTopo mesh back, instead of repeating the operation history incrementally.
+  // this is possible because ElasticShell doesn't keep any other information that ElTopo doesn't have
+  
+  for (FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit)
+    m_obj->deleteFace(*fit, true);
 
-  std::cout << "Performing " << surface_tracker.m_mesh_change_history.size() << " Improvement Operations:\n";
-  for(unsigned int j = 0; j < surface_tracker.m_mesh_change_history.size(); ++j) {
+  assert(m_obj->nv() == 0);
+  assert(m_obj->ne() == 0);
+  assert(m_obj->nf() == 0);
+  
+  reverse_vertmap.resize(surface_tracker.m_mesh.nv());
+  reverse_trimap.resize(surface_tracker.m_mesh.nt());
+  
+  for (size_t i = 0; i < surface_tracker.m_mesh.nv(); i++)
+  {
+    if (surface_tracker.m_mesh.m_vertex_to_edge_map[i].size() == 0 ||
+        surface_tracker.m_mesh.m_vertex_to_triangle_map[i].size() == 0)
+    {
+      // dead vertex
+      reverse_vertmap[i] = VertexHandle();
+      continue;
+    }
+    VertexHandle v = m_obj->addVertex();
+    ElTopo::Vec3d x = surface_tracker.get_newposition(i);
+    setVertexPosition(v, Vec3d(x[0], x[1], x[2]));
+    setVertexVelocity(v, Vec3d(0, 0, 0));
+    vert_numbers[v] = i;
+    reverse_vertmap[i] = v;
+  }
+  
+  for (size_t i = 0; i < surface_tracker.m_mesh.nt(); i++)
+  {
+    ElTopo::Vec3st tri = surface_tracker.m_mesh.get_triangle(i);
+    if (tri[0] == tri[1] || tri[0] == tri[2] || tri[1] == tri[2])
+    {
+      // dead face
+      reverse_trimap[i] = FaceHandle();
+      continue; 
+    }
+    FaceHandle f = m_obj->addFace(reverse_vertmap[tri[0]], reverse_vertmap[tri[1]], reverse_vertmap[tri[2]]);
+    setFaceLabel(f, Vec2i(surface_tracker.m_mesh.get_triangle_label(i)[0], surface_tracker.m_mesh.get_triangle_label(i)[1]));
+    m_active_faces[f] = 1;
+    
+    face_numbers[f] = i;
+    reverse_trimap[i] = f;
+  }
+
+  
+  std::cout << "El Topo performed " << surface_tracker.m_mesh_change_history.size() << " improvement operations:\n";
+  for(unsigned int j = 0; j < surface_tracker.m_mesh_change_history.size(); ++j) 
+  {
     ElTopo::MeshUpdateEvent event = surface_tracker.m_mesh_change_history[j];
     std::cout << "Event type = " << event.m_type << std::endl;
-    
- 
-    if(event.m_type == ElTopo::MeshUpdateEvent::FLAP_DELETE) {
-      //assert(event.m_deleted_tris.size() == 2);
-      for(unsigned int t = 0; t < event.m_deleted_tris.size(); ++t) {
-        int triNo = event.m_deleted_tris[t];
-        FaceHandle faceToDelete = reverse_trimap[triNo];
-        
-        assert(m_obj->faceExists(faceToDelete));
-
-        m_obj->deleteFace(faceToDelete, true);
-        std::cout << "Deleted flap face\n";
-      }
-      
-      for (size_t i = 0; i < event.m_dirty_tris.size(); i++)
-      {
-        m_face_regions[reverse_trimap[event.m_dirty_tris[i].first]] = Vec2i(event.m_dirty_tris[i].second[0], event.m_dirty_tris[i].second[1]);
-      }
-    }
-    else if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_COLLAPSE) {
-      VertexHandle v0 = reverse_vertmap[event.m_v0];
-      VertexHandle v1 = reverse_vertmap[event.m_v1];
-      EdgeHandle eh = findEdge(mesh, v0, v1);
-
-      assert(eh.isValid()); //ensure the desired edge exists
-
-      //std::cout << "Collapse\n";
-      Vec3d new_pos(event.m_vert_position[0], event.m_vert_position[1], event.m_vert_position[2]);
-      VertexHandle dead_vert = reverse_vertmap[event.m_deleted_verts[0]];
-      VertexHandle keep_vert = getEdgesOtherVertex(mesh, eh, dead_vert);
-      int kept_vert_ET_id = vert_numbers[keep_vert];
-
-      performCollapse(eh, dead_vert, keep_vert, new_pos);
-
-      // Delete the vertex
-      reverse_vertmap[event.m_deleted_verts[0]] = VertexHandle(-1); //mark vert as invalid
-      
-      // Update faces
-      for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
-        ElTopo::Vec3st new_face = event.m_created_tri_data[i];
-
-        //determine handles in our indexing
-        VertexHandle v0 = reverse_vertmap[new_face[0]];
-        VertexHandle v1 = reverse_vertmap[new_face[1]];
-        VertexHandle v2 = reverse_vertmap[new_face[2]];
-        assert(v0.isValid() && v1.isValid() && v2.isValid());
-        
-        bool face_matched = false;
-        for(VertexFaceIterator vfit = mesh.vf_iter(keep_vert); vfit; ++vfit) {
-          FaceHandle face_candidate = *vfit;
-          if(isFaceMatch(mesh, face_candidate, v0, v1, v2)) {
-            if(reverse_trimap.size() <= event.m_created_tris[i]) 
-              reverse_trimap.resize(event.m_created_tris[i]+1);
-            reverse_trimap[event.m_created_tris[i]] = face_candidate;
-            face_numbers[face_candidate] = event.m_created_tris[i];
-            face_matched = true;
-            break;
-          }
-        }
-
-        if(!face_matched) {
-          std::cout << "Vertex indices: " << v0.idx() << " " << v1.idx() << " " << v2.idx() << std::endl;
-          std::cout << "ERROR: Couldn't match the face - COLLAPSE.\n\n\n";
-          assert(0);
-        }
-      }
-      
-      // explicitly assign the labels from El Topo (help debugging El Topo's labeling operations)
-      for (unsigned int i = 0; i < event.m_created_tris.size(); i++)
-      {
-        m_face_regions[reverse_trimap[event.m_created_tris[i]]].x() = event.m_created_tri_labels[i][0];
-        m_face_regions[reverse_trimap[event.m_created_tris[i]]].y() = event.m_created_tri_labels[i][1];
-      }
-
-    }
-    else if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_SPLIT) {
-      //Identify the edge based on its endpoint vertices instead
-      //std::cout << "Split\n";
-
-       VertexHandle v0 = reverse_vertmap[event.m_v0];
-       VertexHandle v1 = reverse_vertmap[event.m_v1];
-       EdgeHandle eh = findEdge(mesh, v0, v1);
-
-       assert(eh.isValid()); //ensure the desired edge exists
-
-      VertexHandle new_vert;
-      Vec3d new_pos(event.m_vert_position[0], event.m_vert_position[1], event.m_vert_position[2]);
-      
-      //Do the same split as El Topo
-      performSplit(eh, new_pos, new_vert);
-      
-      //now update the mapping between structures vertices
-      vert_numbers[new_vert] = event.m_created_verts[0];
-      if(reverse_vertmap.size() <= event.m_created_verts[0]) 
-        reverse_vertmap.resize(event.m_created_verts[0]+1, VertexHandle(-1));
-      reverse_vertmap[event.m_created_verts[0]] = new_vert; //the vertex will always be added at the end by El Topo
-
-      // Update faces
-      for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
-        ElTopo::Vec3st new_face = event.m_created_tri_data[i];
-        
-        //determine handles in our indexing
-        VertexHandle v0 = reverse_vertmap[new_face[0]];
-        VertexHandle v1 = reverse_vertmap[new_face[1]];
-        VertexHandle v2 = reverse_vertmap[new_face[2]];
-        assert(v0.isValid() && v1.isValid() && v2.isValid());
-
-        bool face_matched = false;
-        for(VertexFaceIterator vfit = mesh.vf_iter(new_vert); vfit; ++vfit) {
-          FaceHandle face_candidate = *vfit;
-          if(isFaceMatch(mesh, face_candidate, v0, v1, v2)) {
-            if(reverse_trimap.size() <= event.m_created_tris[i]) 
-              reverse_trimap.resize(event.m_created_tris[i]+1);
-            reverse_trimap[event.m_created_tris[i]] = face_candidate;
-            face_numbers[face_candidate] = event.m_created_tris[i];
-            face_matched = true;
-            break;
-          }
-        }
-        
-        if(!face_matched)
-          std::cout << "ERROR: Couldn't match the face - SPLIT.\n\n\n";
-      }
-      
-      // explicitly assign the labels from El Topo (help debugging El Topo's labeling operations)
-      for (unsigned int i = 0; i < event.m_created_tris.size(); i++)
-      {
-        m_face_regions[reverse_trimap[event.m_created_tris[i]]].x() = event.m_created_tri_labels[i][0];
-        m_face_regions[reverse_trimap[event.m_created_tris[i]]].y() = event.m_created_tri_labels[i][1];
-      }
-      
-    }
-    else if(event.m_type == ElTopo::MeshUpdateEvent::EDGE_FLIP) {
-      
-      //std::cout << "Flip\n";
-      //Do the same flip as El Topo
-      VertexHandle v0 = reverse_vertmap[event.m_v0];
-      VertexHandle v1 = reverse_vertmap[event.m_v1];
-      EdgeHandle eh = findEdge(mesh, v0, v1);
-
-      assert(eh.isValid()); //ensure the desired edge exists
-
-      FaceHandle f0 = reverse_trimap[event.m_deleted_tris[0]];
-      FaceHandle f1 = reverse_trimap[event.m_deleted_tris[1]];
-      EdgeHandle newEdge;
-      FaceHandle nf0;
-      FaceHandle nf1;
-      performFlip(eh, f0, f1, nf0, nf1, newEdge);
-      
-      // This code assumes no two triangles in the mesh share the same three vertices, but this is not enforced in 
-      //  TopologicalObject::addFace(), and it can actually happen (which is why ElTopo has this flap deletion operation)
-//      // Update face indexing
-//      for(unsigned int i = 0; i < event.m_created_tri_data.size(); ++i) {
-//        ElTopo::Vec3st new_face = event.m_created_tri_data[i];
-//
-//        //determine handles in our indexing
-//        VertexHandle v0 = reverse_vertmap[new_face[0]];
-//        VertexHandle v1 = reverse_vertmap[new_face[1]];
-//        VertexHandle v2 = reverse_vertmap[new_face[2]];
-//        assert(v0.isValid() && v1.isValid() && v2.isValid());
-//
-//        bool face_matched = false;
-//        for(EdgeFaceIterator efit = mesh.ef_iter(newEdge); efit; ++efit) {
-//
-//          FaceHandle face_candidate = *efit;
-//          if(isFaceMatch(mesh, face_candidate, v0, v1, v2)) {
-//
-//            if(reverse_trimap.size() <= event.m_created_tris[i]) 
-//              reverse_trimap.resize(event.m_created_tris[i]+1);
-//
-//            reverse_trimap[event.m_created_tris[i]] = face_candidate;
-//            face_numbers[face_candidate] = event.m_created_tris[i];
-//            face_matched = true;
-//            break;
-//          }
-//        }
-//
-//        if(!face_matched)
-//          std::cout << "ERROR: Couldn't match the face - FLIP.\n\n\n";
-//      }
-      
-      // Update face indexing
-      if (faceContainsVertex(*m_obj, nf0, reverse_vertmap[event.m_created_tri_data[0][0]]) &&
-          faceContainsVertex(*m_obj, nf0, reverse_vertmap[event.m_created_tri_data[0][1]]) &&
-          faceContainsVertex(*m_obj, nf0, reverse_vertmap[event.m_created_tri_data[0][2]]))
-      {
-        if (event.m_created_tris[0] >= reverse_trimap.size()) reverse_trimap.resize(event.m_created_tris[0] + 1);
-        reverse_trimap[event.m_created_tris[0]] = nf0;
-        face_numbers[nf0] = event.m_created_tris[0];
-        if (event.m_created_tris[1] >= reverse_trimap.size()) reverse_trimap.resize(event.m_created_tris[1] + 1);
-        reverse_trimap[event.m_created_tris[1]] = nf1;
-        face_numbers[nf1] = event.m_created_tris[1];
-      } else
-      {
-        if (event.m_created_tris[0] >= reverse_trimap.size()) reverse_trimap.resize(event.m_created_tris[0] + 1);
-        reverse_trimap[event.m_created_tris[0]] = nf1;
-        face_numbers[nf1] = event.m_created_tris[0];
-        if (event.m_created_tris[1] >= reverse_trimap.size()) reverse_trimap.resize(event.m_created_tris[1] + 1);
-        reverse_trimap[event.m_created_tris[1]] = nf0;
-        face_numbers[nf0] = event.m_created_tris[1];
-      }
-      
-      
-      // explicitly assign the labels from El Topo (help debugging El Topo's labeling operations)
-      for (unsigned int i = 0; i < event.m_created_tris.size(); i++)
-      {
-        m_face_regions[reverse_trimap[event.m_created_tris[i]]].x() = event.m_created_tri_labels[i][0];
-        m_face_regions[reverse_trimap[event.m_created_tris[i]]].y() = event.m_created_tri_labels[i][1];
-      }
-      
-    }
-    else if(event.m_type == ElTopo::MeshUpdateEvent::MERGE) {
-      
-      // std::cout << "Merge\n";
-      //Do the same zippering as El Topo
-      EdgeHandle e0 = findEdge(mesh, reverse_vertmap[event.m_v0], reverse_vertmap[event.m_v1]);
-      EdgeHandle e1 = findEdge(mesh, reverse_vertmap[event.m_v2], reverse_vertmap[event.m_v3]);
-      
-      assert(e0.isValid());
-      assert(e1.isValid());
-
-      std::vector<FaceHandle> deleted;
-      for (size_t i = 0; i < event.m_deleted_tris.size(); i++)
-        deleted.push_back(reverse_trimap[event.m_deleted_tris[i]]);
-      
-      std::vector<std::vector<VertexHandle> > tocreate;
-      for (size_t i = 0; i < event.m_created_tri_data.size(); i++)
-      {
-        std::vector<VertexHandle> tri;
-        tri.push_back(reverse_vertmap[event.m_created_tri_data[i][0]]);
-        tri.push_back(reverse_vertmap[event.m_created_tri_data[i][1]]);
-        tri.push_back(reverse_vertmap[event.m_created_tri_data[i][2]]);
-        tocreate.push_back(tri);
-      }
-      
-      std::vector<Vec2i> labelstocreate;
-      assert(event.m_created_tri_labels.size() == event.m_created_tri_data.size());
-      assert(event.m_created_tris.size() == event.m_created_tri_data.size());
-      for (size_t i = 0; i < event.m_created_tri_labels.size(); i++)
-      {
-        labelstocreate.push_back(Vec2i(event.m_created_tri_labels[i][0], event.m_created_tri_labels[i][1]));
-      }
-      
-      std::vector<std::pair<FaceHandle, Vec2i> > labelstochange;
-      for (size_t i = 0; i < event.m_dirty_tris.size(); i++)
-      {
-        labelstochange.push_back(std::pair<FaceHandle, Vec2i>(reverse_trimap[event.m_dirty_tris[i].first], Vec2i(event.m_dirty_tris[i].second[0], event.m_dirty_tris[i].second[1])));
-      }
-      
-      std::vector<FaceHandle> created;
-      
-      performZippering(e0, e1, deleted, tocreate, labelstocreate, labelstochange, created);
-      
-      assert(created.size() == tocreate.size());
-      assert(created.size() == event.m_created_tris.size());
-      if (deleted.size() < created.size())
-        reverse_trimap.resize(reverse_trimap.size() + created.size() - deleted.size());
-      
-      for (size_t i = 0; i < created.size(); i++)
-      {
-        reverse_trimap[event.m_created_tris[i]] = created[i];
-        face_numbers[created[i]] = event.m_created_tris[i];
-      }
-      
-      // explicitly assign the labels from El Topo (help debugging El Topo's labeling operations)
-      for (unsigned int i = 0; i < event.m_created_tris.size(); i++)
-      {
-        m_face_regions[reverse_trimap[event.m_created_tris[i]]].x() = event.m_created_tri_labels[i][0];
-        m_face_regions[reverse_trimap[event.m_created_tris[i]]].y() = event.m_created_tri_labels[i][1];
-      }
-      
-    } 
-    else if (event.m_type == ElTopo::MeshUpdateEvent::EDGE_POP || event.m_type == ElTopo::MeshUpdateEvent::VERTEX_POP) {
-
-      for (size_t i = 0; i < event.m_deleted_tris.size(); i++)
-      {
-        face_numbers[reverse_trimap[event.m_deleted_tris[i]]] = -1;
-        m_obj->deleteFace(reverse_trimap[event.m_deleted_tris[i]], false);
-      }
-      
-      for (size_t i = 0; i < event.m_created_vert_data.size(); i++)
-      {
-        VertexHandle nv = m_obj->addVertex();
-        setVertexPosition(nv, Vec3d(event.m_created_vert_data[i][0], event.m_created_vert_data[i][1], event.m_created_vert_data[i][2]));
-        if (event.m_created_verts[i] >= reverse_vertmap.size()) reverse_vertmap.resize(event.m_created_verts[i] + 1);
-        reverse_vertmap[event.m_created_verts[i]] = nv;
-        vert_numbers[nv] = event.m_created_verts[i];
-      }
-      
-      for (size_t i = 0; i < event.m_created_tri_data.size(); i++)
-      {
-        ElTopo::Vec3st & f = event.m_created_tri_data[i];
-        FaceHandle nf = m_obj->addFace(reverse_vertmap[f[0]], reverse_vertmap[f[1]], reverse_vertmap[f[2]]);
-        setFaceLabel(nf, Vec2i(event.m_created_tri_labels[i][0], event.m_created_tri_labels[i][1]));
-        if (event.m_created_tris[i] >= reverse_trimap.size()) reverse_trimap.resize(event.m_created_tris[i] + 1);
-        reverse_trimap[event.m_created_tris[i]] = nf;
-        face_numbers[nf] = event.m_created_tris[i];
-      }
-      
-    }
-    else {
-      std::cout << "ERROR: unknown remeshing operation: " << event.m_type << std::endl;
-    }
-    
-    //kill the reverse map elements for the deleted faces, since no longer valid.
-    for(size_t i = 0; i < event.m_deleted_tris.size(); ++i) {
-      reverse_trimap[event.m_deleted_tris[i]] = FaceHandle(-1);
-    }
-
-    for(size_t i = 0; i < event.m_deleted_verts.size(); ++i) {
-      reverse_vertmap[event.m_deleted_verts[i]] = VertexHandle(-1);
-    }
-
   }
-
-  // remove all dangling edges and vertices
-  std::vector<EdgeHandle> edges_to_delete;
-  for (EdgeIterator eit = m_obj->edges_begin(); eit != m_obj->edges_end(); ++eit)
-    if (m_obj->edgeIncidentFaces(*eit) == 0)
-      edges_to_delete.push_back(*eit);
-  
-  for (size_t i = 0; i < edges_to_delete.size(); i++)
-    m_obj->deleteEdge(edges_to_delete[i], false);
-  
-  std::vector<VertexHandle> vertices_to_delete;
-  for (VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit)
-    if (m_obj->vertexIncidentEdges(*vit) == 0)
-      vertices_to_delete.push_back(*vit);
-  
-  for (size_t i = 0; i < vertices_to_delete.size(); i++)
-  {
-    reverse_vertmap[vert_numbers[vertices_to_delete[i]]] = VertexHandle();
-    vert_numbers[vertices_to_delete[i]] = -1;
-    m_obj->deleteVertex(vertices_to_delete[i]);
-  }
-  
-  
-  
-//  static int framecounter = 0;
-//  framecounter++;
-//  std::cout << "framecounter = " << framecounter << std::endl;
-//  if (framecounter == 47)
-//    return;
-  
-//  performT1Transition();
-  
-//  pullXJunctionVertices();
-    
-}
-  
-void ElasticShell::performT1Transition()
-{
-  //
-  // T1 transition step
-  //
-  //  Find all the X-junction edges, decide the cut direction, and perform pull-apart as documented here:
-  //    http://fangda.wordpress.com/2013/01/01/resolving-the-x-junction/
-  //
-  //  This step doesn't involve El Topo.
-  
-  // find all the X-junction edges (higher valence junctions are not considered. hopefully they are rare.)
-  // TODO: robustly handle higher valence junctions
-  std::vector<EdgeHandle> xjunctions;
-  for (EdgeIterator eit = m_obj->edges_begin(); eit != m_obj->edges_end(); ++eit)
-    if (m_obj->edgeIncidentFaces(*eit) == 4)
-      xjunctions.push_back(*eit);
-
-  // sort the X-junction edges into connected groups with the same cut
-  std::vector<std::pair<std::vector<EdgeHandle>, Mat2i> > xjgroups; // each element is a list of consecutive x junction edges, along with the id of the two regions that should end up adjacent after pull-apart, and the id of the other two regions
-
-  for (size_t i = 0; i < xjunctions.size(); i++)
-  {
-    Mat2i cut = cutXJunctionEdge(xjunctions[i]);
-    std::vector<size_t> found_groups;
-    for (size_t j = 0; j < xjgroups.size(); j++)
-    {
-      if (cut != xjgroups[j].second)
-        continue;
-
-      for (size_t k = 0; k < xjgroups[j].first.size(); k++)
-      {
-        if (getSharedVertex(*m_obj, xjunctions[i], xjgroups[j].first[k]).isValid())
-        {
-          xjgroups[j].first.push_back(xjunctions[i]);
-          found_groups.push_back(j);
-          break;
-        }
-      }
-    }
-    
-    if (found_groups.size() == 0)
-    {
-      // new group
-      xjgroups.push_back(std::pair<std::vector<EdgeHandle>, Mat2i>(std::vector<EdgeHandle>(1, xjunctions[i]), cut));
-    } else
-    {
-      // joining all the groups in found_groups together
-      std::vector<EdgeHandle> newgroup;
-      for (size_t j = 0; j < found_groups.size(); j++)
-        newgroup.insert(newgroup.end(), xjgroups[found_groups[j]].first.begin(), xjgroups[found_groups[j]].first.end());
-      for (size_t j = 0; j < found_groups.size(); j++)
-        xjgroups.erase(xjgroups.begin() + found_groups[j]);
-      xjgroups.push_back(std::pair<std::vector<EdgeHandle>, Mat2i>(newgroup, cut));
-    }
-  }
-  
-  // process the groups one after another
-  for (size_t i = 0; i < xjgroups.size(); i++)
-  {
-    // TODO: merge the following two cases into one codepath
-    if (xjgroups[i].first.size() == 1)
-    {
-      // if a group has only one edge, split the edge in half and pull the midpoint vertex apart.
-      EdgeHandle edge = xjgroups[i].first.front();
-      Mat2i cut_regions = xjgroups[i].second;
-      Vec2i cut = cut_regions.col(0);
-      
-      VertexHandle v0 = m_obj->fromVertex(edge);
-      VertexHandle v1 = m_obj->toVertex(edge);
-      
-      VertexHandle nv0 = m_obj->addVertex();
-      VertexHandle nv1 = m_obj->addVertex();
-      setVertexPosition(nv0, (getVertexPosition(v0) + getVertexPosition(v1)) / 2);  // the two new vertices will be pulled apart later
-      setVertexPosition(nv1, (getVertexPosition(v0) + getVertexPosition(v1)) / 2);
-      setVertexVelocity(nv0, (getVertexVelocity(v0) + getVertexVelocity(v1)) / 2);
-      setVertexVelocity(nv1, (getVertexVelocity(v0) + getVertexVelocity(v1)) / 2);
-
-      int upper_region = -1;  // upper means the region is on the top when looking down the edge "edge", with region cut.x() on the left and cut.y() on the right.
-      int lower_region = -1;
-      std::vector<FaceHandle> region0faces;
-      for (EdgeFaceIterator efit = m_obj->ef_iter(edge); efit; ++efit)
-        if (getFaceLabel(*efit).x() == cut.x() || getFaceLabel(*efit).y() == cut.x())
-          region0faces.push_back(*efit);
-      assert(region0faces.size() == 2);
-      
-      Vec2i label0 = getFaceLabel(region0faces[0]);
-      upper_region = (label0.x() == cut.x() ? label0.y() : label0.x());
-      Vec2i label1 = getFaceLabel(region0faces[1]);
-      lower_region = (label1.x() == cut.x() ? label1.y() : label1.x());
-      
-      if ((m_obj->getRelativeOrientation(region0faces[0], edge) > 0 && label0.y() == cut.x()) ||
-          (m_obj->getRelativeOrientation(region0faces[0], edge) < 0 && label0.x() == cut.x()))
-      {
-        std::swap(upper_region, lower_region);
-        assert((m_obj->getRelativeOrientation(region0faces[1], edge) > 0 && label1.x() == cut.x()) || 
-               (m_obj->getRelativeOrientation(region0faces[1], edge) < 0 && label1.y() == cut.x()));
-      }
-      assert(upper_region >= 0);
-      assert(lower_region >= 0);
-
-      std::vector<FaceHandle> faces_to_delete;
-      std::vector<Eigen::Matrix<VertexHandle, 3, 1> > faces_to_create;
-      std::vector<Vec2i> face_labels_to_create;
-      
-      std::vector<Vec3d> upper_neighbors;
-      std::vector<Vec3d> lower_neighbors;
-      
-      for (EdgeFaceIterator efit = m_obj->ef_iter(edge); efit; ++efit)
-      {
-        faces_to_delete.push_back(*efit);
-        VertexHandle v2;
-        bool b = getFaceThirdVertex(*m_obj, *efit, edge, v2); assert(b);
         
-        Vec2i label = getFaceLabel(*efit);
-        assert(label.x() == upper_region || label.y() == upper_region || label.x() == lower_region || label.y() == lower_region);
-        VertexHandle nv = ((label.x() == upper_region || label.y() == upper_region) ? nv0 : nv1); // nv0 for upper region faces, nv1 for lower region faces
-        
-        if (m_obj->getRelativeOrientation(*efit, edge) > 0)
-        {
-          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(v0, nv, v2));
-          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(nv, v1, v2));
-        } else {
-          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(nv, v0, v2));
-          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(v1, nv, v2));
-        }
-        face_labels_to_create.push_back(label);
-        face_labels_to_create.push_back(label);
-        
-        ((label.x() == upper_region || label.y() == upper_region) ? upper_neighbors : lower_neighbors).push_back(getVertexPosition(v2));
-      }
-      
-      Vec3d upper_neighbors_mean(0, 0, 0);
-      for (size_t i = 0; i < upper_neighbors.size(); i++)
-        upper_neighbors_mean += upper_neighbors[i];
-      upper_neighbors_mean /= upper_neighbors.size();
-      
-      Vec3d lower_neighbors_mean(0, 0, 0);
-      for (size_t i = 0; i < lower_neighbors.size(); i++)
-        lower_neighbors_mean += lower_neighbors[i];
-      lower_neighbors_mean /= lower_neighbors.size();
-      
-      // apply the deletion
-      for (size_t j = 0; j < faces_to_delete.size(); j++)
-        m_obj->deleteFace(faces_to_delete[j], false);
-      
-      m_obj->deleteEdge(edge, false);
-      
-      // triangulate with the new vertices
-      m_obj->addEdge(v0, nv0);
-      m_obj->addEdge(nv0, v1);
-      m_obj->addEdge(v0, nv1);
-      m_obj->addEdge(nv1, v1);
-      m_obj->addEdge(nv0, nv1);
-      
-      assert(faces_to_create.size() == face_labels_to_create.size());
-      for (size_t j = 0; j < faces_to_create.size(); j++)
-      {
-        FaceHandle nf = m_obj->addFace(faces_to_create[j].x(), faces_to_create[j].y(), faces_to_create[j].z());
-        setFaceLabel(nf, face_labels_to_create[j]);
-      }
-      
-      FaceHandle wall0 = m_obj->addFace(v0, nv1, nv0);
-      FaceHandle wall1 = m_obj->addFace(nv0, nv1, v1);
-      
-      setFaceLabel(wall0, cut);
-      setFaceLabel(wall1, cut);
-      
-      // pull the two new vertices (nv0, nv1) apart (before this the two vertices have the same position)
-      Vec3d wall_breadth = (upper_neighbors_mean - lower_neighbors_mean).normalized() * (getVertexPosition(v1) - getVertexPosition(v0)).norm();
-      m_obj->setVertexPosition(nv0, m_obj->getVertexPosition(nv0) + wall_breadth * 0.1);
-      m_obj->setVertexPosition(nv1, m_obj->getVertexPosition(nv1) - wall_breadth * 0.1);
-      
-    } else
-    {
-      // if a group has at least two edges forming a polyline (this line should have no branching but could be a closed loop), pull the interior vertices apart.
-      assert(xjgroups[i].first.size() > 1);
-      
-      Mat2i cut_regions = xjgroups[i].second;
-      Vec2i cut = cut_regions.col(0);
-      
-      // sort the edges into an ordered polyline
-      std::deque<EdgeHandle> ordered_edges;
-      ordered_edges.push_back(xjgroups[i].first.back());
-      xjgroups[i].first.pop_back();
-      while (xjgroups[i].first.size() > 0)
-      {
-        size_t s = xjgroups[i].first.size();
-        for (size_t j = 0; j < xjgroups[i].first.size(); j++)
-        {
-          if (getSharedVertex(*m_obj, ordered_edges.back(), xjgroups[i].first[j]).isValid())
-          {
-            ordered_edges.push_back(xjgroups[i].first[j]);
-            xjgroups[i].first.erase(xjgroups[i].first.begin() + j);
-            break;
-          } else if (getSharedVertex(*m_obj, ordered_edges.front(), xjgroups[i].first[j]).isValid())
-          {
-            ordered_edges.push_front(xjgroups[i].first[j]);
-            xjgroups[i].first.erase(xjgroups[i].first.begin() + j);
-            break;
-          }
-        }
-        assert(xjgroups[i].first.size() < s);
-      }
-      size_t ne = ordered_edges.size();
-      
-      // TODO: handle the closed loop case. for now, assert the edges do not form a closed loop.
-      if (ne == 2)
-        assert(ordered_edges.front() != ordered_edges.back());
-      else
-        assert(!getSharedVertex(*m_obj, ordered_edges.front(), ordered_edges.back()).isValid());
-             
-      // duplicate the interior vertices, and compute their desired pull-apart positions
-      std::vector<VertexHandle> upper_junctions(ne + 1);
-      std::vector<VertexHandle> lower_junctions(ne + 1);
-      
-      int upper_region = -1;
-      int lower_region = -1;
-      
-      std::vector<Vec3d> pull_apart_offsets(ne - 1);
-      std::vector<int> edge_oriented(ne);
-      
-      for (size_t j = 0; j < ne - 1; j++)
-      {
-        EdgeHandle edge0 = ordered_edges[j];
-        EdgeHandle edge1 = ordered_edges[(j + 1) % ne];
-
-        VertexHandle v = getSharedVertex(*m_obj, edge0, edge1);
-        assert(v.isValid());
-        
-        VertexHandle v0 = getEdgesOtherVertex(*m_obj, edge0, v);
-        VertexHandle v1 = getEdgesOtherVertex(*m_obj, edge1, v);
-        
-        edge_oriented[j]     = m_obj->getRelativeOrientation(edge0, v);
-        edge_oriented[j + 1] = -m_obj->getRelativeOrientation(edge1, v);
-        
-        VertexHandle nv0 = m_obj->addVertex();
-        VertexHandle nv1 = m_obj->addVertex();
-        setVertexPosition(nv0, getVertexPosition(v));  // the two new vertices will be pulled apart later
-        setVertexPosition(nv1, getVertexPosition(v));
-        setVertexVelocity(nv0, getVertexVelocity(v));
-        setVertexVelocity(nv1, getVertexVelocity(v));
-        
-        upper_junctions[j + 1] = nv0;
-        lower_junctions[j + 1] = nv1;
-        if (j == 0)
-        {
-          upper_junctions[0] = v0;
-          lower_junctions[0] = v0;
-        }
-        if (j == ne - 2)
-        {
-          upper_junctions[ne] = v1;
-          lower_junctions[ne] = v1;
-        }
-        
-        int edge_upper_region = -1;  // upper means the region is on the top when looking from vertex v0 to vertex v (may or may not be the direction of edge0), with region cut.x() on the left and cut.y() on the right.
-        int edge_lower_region = -1;
-        std::vector<FaceHandle> region0faces;
-        for (EdgeFaceIterator efit = m_obj->ef_iter(edge0); efit; ++efit)
-          if (getFaceLabel(*efit).x() == cut.x() || getFaceLabel(*efit).y() == cut.x())
-            region0faces.push_back(*efit);
-        assert(region0faces.size() == 2);
-        
-        Vec2i label0 = getFaceLabel(region0faces[0]);
-        edge_upper_region = (label0.x() == cut.x() ? label0.y() : label0.x());
-        Vec2i label1 = getFaceLabel(region0faces[1]);
-        edge_lower_region = (label1.x() == cut.x() ? label1.y() : label1.x());
-        
-        if ((m_obj->getRelativeOrientation(region0faces[0], edge0) * m_obj->getRelativeOrientation(edge0, v) > 0 && label0.y() == cut.x()) || 
-            (m_obj->getRelativeOrientation(region0faces[0], edge0) * m_obj->getRelativeOrientation(edge0, v) < 0 && label0.x() == cut.x()))
-        {
-          std::swap(edge_upper_region, edge_lower_region);
-          assert((m_obj->getRelativeOrientation(region0faces[1], edge0) * m_obj->getRelativeOrientation(edge0, v) > 0 && label1.x() == cut.x()) || 
-                 (m_obj->getRelativeOrientation(region0faces[1], edge0) * m_obj->getRelativeOrientation(edge0, v) < 0 && label1.y() == cut.x()));
-        }
-        assert(edge_upper_region >= 0);
-        assert(edge_lower_region >= 0);
-        
-        assert(upper_region < 0 || upper_region == edge_upper_region);
-        upper_region = edge_upper_region;
-        assert(lower_region < 0 || lower_region == edge_lower_region);
-        lower_region = edge_lower_region;
-        
-        std::vector<Vec3d> upper_vertices;
-        std::vector<Vec3d> lower_vertices;
-        
-        for (EdgeFaceIterator efit = m_obj->ef_iter(edge0); efit; ++efit)
-        {
-          VertexHandle v2;
-          bool b = getFaceThirdVertex(*m_obj, *efit, edge0, v2);  assert(b);
-          
-          Vec2i label = getFaceLabel(*efit);          
-          assert(label.x() == upper_region || label.y() == upper_region || label.x() == lower_region || label.y() == lower_region);
-          ((label.x() == upper_region || label.y() == upper_region) ? upper_vertices : lower_vertices).push_back(getVertexPosition(v2));
-        }
-        
-        for (EdgeFaceIterator efit = m_obj->ef_iter(edge1); efit; ++efit)
-        {
-          VertexHandle v2;
-          bool b = getFaceThirdVertex(*m_obj, *efit, edge1, v2);  assert(b);
-          
-          Vec2i label = getFaceLabel(*efit);          
-          assert(label.x() == upper_region || label.y() == upper_region || label.x() == lower_region || label.y() == lower_region);
-          ((label.x() == upper_region || label.y() == upper_region) ? upper_vertices : lower_vertices).push_back(getVertexPosition(v2));
-        }
-        
-        Vec3d upper_vertices_mean(0, 0, 0);
-        for (size_t i = 0; i < upper_vertices.size(); i++)
-          upper_vertices_mean += upper_vertices[i];
-        upper_vertices_mean /= upper_vertices.size();
-        
-        Vec3d lower_vertices_mean(0, 0, 0);
-        for (size_t i = 0; i < lower_vertices.size(); i++)
-          lower_vertices_mean += lower_vertices[i];
-        lower_vertices_mean /= lower_vertices.size();
-        
-        pull_apart_offsets[j] = (upper_vertices_mean - lower_vertices_mean).normalized() * (getVertexPosition(v1) - getVertexPosition(v0)).norm();
-      }
-      
-      std::vector<FaceHandle> faces_to_delete;
-      std::vector<Eigen::Matrix<VertexHandle, 3, 1> > faces_to_create;
-      std::vector<Vec2i> face_labels_to_create;
-      
-      std::vector<EdgeHandle> edges_to_delete;
-      std::vector<Eigen::Matrix<VertexHandle, 2, 1> > edges_to_create;
-      
-      std::vector<VertexHandle> vertices_to_delete;
-      
-      // update the faces incident to the X-junction edges
-      for (size_t j = 0; j < ne; j++)
-      {
-        EdgeHandle edge = ordered_edges[j];
-        edges_to_delete.push_back(edge);
-        edges_to_create.push_back(Eigen::Matrix<VertexHandle, 2, 1>(upper_junctions[j + 0], upper_junctions[j + 1]));
-        edges_to_create.push_back(Eigen::Matrix<VertexHandle, 2, 1>(lower_junctions[j + 0], lower_junctions[j + 1]));
-        
-        for (EdgeFaceIterator efit = m_obj->ef_iter(edge); efit; ++efit)
-        {
-          faces_to_delete.push_back(*efit);
-          VertexHandle v2;
-          bool b = getFaceThirdVertex(*m_obj, *efit, edge, v2); assert(b);
-          
-          Vec2i label = getFaceLabel(*efit);
-          assert(label.x() == upper_region || label.y() == upper_region || label.x() == lower_region || label.y() == lower_region);
-          
-          VertexHandle v0 = ((label.x() == upper_region || label.y() == upper_region) ? upper_junctions[j + 0] : lower_junctions[j + 0]);
-          VertexHandle v1 = ((label.x() == upper_region || label.y() == upper_region) ? upper_junctions[j + 1] : lower_junctions[j + 1]);
-          
-          if ((m_obj->getRelativeOrientation(*efit, edge) * edge_oriented[j] > 0))
-            faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(v0, v1, v2));
-          else  
-            faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(v1, v0, v2));
-          face_labels_to_create.push_back(label);
-          
-        }
-      }     
-      
-      // update the faces incident only to the interior vertices but not to any X-junction edge
-      for (size_t j = 0; j < ne - 1; j++)
-      {
-        EdgeHandle edge0 = ordered_edges[j];
-        EdgeHandle edge1 = ordered_edges[(j + 1) % ne];
-        
-        VertexHandle v = getSharedVertex(*m_obj, edge0, edge1);
-        assert(v.isValid());
-        
-        vertices_to_delete.push_back(v);
-        
-        for (VertexFaceIterator vfit = m_obj->vf_iter(v); vfit; ++vfit)
-        {
-          if (faceContainsEdge(*m_obj, *vfit, edge0) || faceContainsEdge(*m_obj, *vfit, edge1))
-            continue;
-          
-          faces_to_delete.push_back(*vfit);
-          EdgeHandle edge2 = getVertexOppositeEdgeInFace(*m_obj, *vfit, v);
-          assert(edge2.isValid());
-          VertexHandle v1 = m_obj->fromVertex(edge2);
-          VertexHandle v2 = m_obj->toVertex(edge2);
-          
-          Vec2i label = getFaceLabel(*vfit);
-          assert(label.x() == upper_region || label.y() == upper_region || label.x() == lower_region || label.y() == lower_region);
-          
-          VertexHandle nv = ((label.x() == upper_region || label.y() == upper_region) ? upper_junctions[j + 1] : lower_junctions[j + 1]);
-          
-          if (m_obj->getRelativeOrientation(*vfit, edge2) > 0)
-            faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(nv, v1, v2));
-          else
-            faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(nv, v2, v1));
-          face_labels_to_create.push_back(label);
-          
-        }
-        
-        for (VertexEdgeIterator veit = m_obj->ve_iter(v); veit; ++veit)
-        {
-          if (*veit == edge0 || *veit == edge1)
-            continue;
-          
-          edges_to_delete.push_back(*veit);
-        }
-        
-      }
-      
-      // apply the deletion
-      for (size_t j = 0; j < faces_to_delete.size(); j++)
-        m_obj->deleteFace(faces_to_delete[j], false);
-      
-      for (size_t j = 0; j < edges_to_delete.size(); j++)
-        m_obj->deleteEdge(edges_to_delete[j], false);
-      
-      for (size_t j = 0; j < vertices_to_delete.size(); j++)
-        m_obj->deleteVertex(vertices_to_delete[j]);
-      
-      // triangulate with the new vertices
-      for (size_t j = 0; j < edges_to_create.size(); j++)
-        m_obj->addEdge(edges_to_create[j].x(), edges_to_create[j].y());
-      
-      assert(faces_to_create.size() == face_labels_to_create.size());
-      for (size_t j = 0; j < faces_to_create.size(); j++)
-      {
-        FaceHandle nf = m_obj->addFace(faces_to_create[j].x(), faces_to_create[j].y(), faces_to_create[j].z());
-        setFaceLabel(nf, face_labels_to_create[j]);
-      }
-      
-      // triangulate the new interface between cut.x() and cut.y()
-      for (size_t j = 0; j < ne; j++)
-      {
-        FaceHandle wall0, wall1;
-        if (j == 0)
-        {
-          wall0 = m_obj->addFace(upper_junctions[j], lower_junctions[j + 1], upper_junctions[j + 1]);
-        } else if (j == ne - 1)
-        {
-          wall0 = m_obj->addFace(upper_junctions[j], lower_junctions[j], upper_junctions[j + 1]);
-        } else
-        {
-          wall0 = m_obj->addFace(upper_junctions[j], lower_junctions[j], upper_junctions[j + 1]);
-          wall1 = m_obj->addFace(lower_junctions[j + 1], upper_junctions[j + 1], lower_junctions[j]);
-        }
-
-        setFaceLabel(wall0, cut);
-        if (wall1.isValid())
-          setFaceLabel(wall1, cut);
-      }
-
-      // pull the two new vertices (nv0, nv1) apart (before this the two vertices have the same position)
-      for (size_t j = 0; j < ne - 1; j++)
-      {
-        VertexHandle nv0 = upper_junctions[j + 1];
-        VertexHandle nv1 = lower_junctions[j + 1];
-        m_obj->setVertexPosition(nv0, m_obj->getVertexPosition(nv0) + pull_apart_offsets[j] * 0.1);
-        m_obj->setVertexPosition(nv1, m_obj->getVertexPosition(nv1) - pull_apart_offsets[j] * 0.1);
-      }   
-           
-    }
-  }
-  
-  
-}
-  
-void ElasticShell::pullXJunctionVertices()
-{
-  // Pull apart the X-junciton vertices
-  // In fact this function attempts to make the region adjacency graph complete on ever vertex in the mesh (see explanation below), or in
-  //  other words, so that every region incident to a vertex is adjacent to every other region on that vertex through a face. No two regions
-  //  can be adjacent only through a vertex, as long as the surface tension force at the vertex is tensile instead of compressive.
-
-  // find the region count
-  int max_region = -1;
-  for (FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit)
-  {
-    Vec2i label = getFaceLabel(*fit);
-    assert(label.x() >= 0);
-    assert(label.y() >= 0);
-    if (label.x() > max_region) max_region = label.x();
-    if (label.y() > max_region) max_region = label.y();
-  }
-  int nregion = max_region + 1;
-  
-  // this is the incident matrix for a region graph. not every col/row need to be filled for a particular vertex becuase the vertex may not be incident to all regions.
-  Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> region_graph(nregion, nregion);
-  region_graph.setZero();
-
-  // prepare an initial list of unprocessed vertices
-  std::vector<VertexHandle> vertices_to_process;
-  for (VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit)
-    vertices_to_process.push_back(*vit);
-  
-  // process the vertices one after another
-  while (vertices_to_process.size() > 0)
-  {
-    VertexHandle xj = vertices_to_process.back();
-    vertices_to_process.pop_back();
-    
-    std::set<int> vertex_regions_set;
-    for (VertexFaceIterator vfit = m_obj->vf_iter(xj); vfit; ++vfit)
-    {
-      Vec2i label = getFaceLabel(*vfit);
-      vertex_regions_set.insert(label.x());
-      vertex_regions_set.insert(label.y());
-    }
-    
-    std::vector<int> vertex_regions;
-    vertex_regions.assign(vertex_regions_set.begin(), vertex_regions_set.end());
-    
-    // cull away the interior vertices of plateau borders (which are the majority)
-    if (vertex_regions_set.size() < 4)
-      continue;
-    
-    //
-    // Pull apart strategy: in order to cope with various configurations (such as a region-valence-5 vertex being a triple junction, or
-    //  junctions on the BB walls), the following strategy is adopted:
-    //
-    // The regions incident on the vertex form a graph, with each region being a node and an edge exists between two regions iff the two
-    //  regions share a triangle face in the mesh. The objective at the end of this processing, is to make sure this graph is complete for
-    //  every vertex. For example the original region-valence-4 X-junction vertex (the "hourglass" junction) forms a graph like this:
-    //
-    //  A o--o B
-    //    | /|
-    //    |/ |
-    //  C o--o D
-    //
-    //  where the edge between node A and D (the two bulbs of the hourglass) is missing because the two regions only meet at one vertex
-    //  (the hourglass neck).
-    //
-    // The processing here makes an incomplete graph complete by pulling apart vertices. If two nodes (e.g. A and D in the figure above)
-    //  do not share an edge, it means the center vertex is the only interface between the two regions, and it needs to be pulled apart.
-    //  Region A and D each keep one of the two duplicates of the vertex. If a region has edges with both regions A and D, such as region
-    //  C and B, will contain both duplicates (the region's shape is turned from a cone into a flat screwdriver's tip). Now look at the
-    //  resulting graphs for the two duplicate vertices. For the duplicate that goes with region A, region D is no longer incident and
-    //  thus removed from the graph:
-    //
-    //  A o--o B
-    //    | /
-    //    |/
-    //  C o
-    //
-    //  and this is now a complete graph. Similarly the graph for the duplicate that goes with region D will not have node A, and it is 
-    //  complete too. Of course in more complex scenarios the graphs may not directly become complete immediately after we process one
-    //  missing edge. We will visit the two resulting vertices again as if they are a regular vertex that may need to be pulled apart too.
-    //
-    // The algorithm pseudocode is as following:
-    //
-    //  Pop a vertex from the stack of vertices to be processed, construct a graph of region adjacency
-    //  If the graph is already complete, skip this vertex
-    //  Pick an arbitrary pair of unconnected nodes A and B from the graph (there may be more than one pair)
-    //  Pull apart the vertex into two (a and b, corresponding to region A and B respectively), initialized to have the same coordinates and then pulled apart
-    //  For each face incident to the center vertex in the original mesh
-    //    If it is incident to region A, update it to use vertex a
-    //    If it is incident to region B, update it to use vertex b
-    //    Otherwise, if it is touching region A through an edge, it will be updated into a quad spanning both vertex a and b, otherwise, update it to use vertex b
-    //  Push vertex a and b on the stack to be visited next.
-    //
-    // Notes: 
-    //  The algorithm above assumes that region A and B must always be connected by triangle fans, with one end of the fan touching region
-    //  A and the other touching B. Pulling apart the vertex makes this a stripe, thus at least one of the triangles in the fan need to be
-    //  turned into a quad. The algorithm picks the head of the fan triangle sequence (the one touching A) for this task. In the general
-    //  setting, there is one more possibility: region A and B are adjacent through only an edge. However this is not possible in our
-    //  workflow because performT1Transition() should have been called resolving all X-junction edges. (TODO: what if performT1Transition()
-    //  fails due to collision?)
-    //
-    
-    // construct the region graph
-    region_graph.setZero();
-    for (VertexFaceIterator vfit = m_obj->vf_iter(xj); vfit; ++vfit)
-    {
-      Vec2i label = getFaceLabel(*vfit);
-      region_graph(label.x(), label.y()) = 1;
-      region_graph(label.y(), label.x()) = 1;
-    }
-
-    // find a missing edge
-    int A = -1;
-    int B = -1;
-    Vec3d pull_apart_direction;
-    for (size_t i = 0; i < vertex_regions.size(); i++)
-    {
-      for (size_t j = i + 1; j < vertex_regions.size(); j++)
-      {
-        if (region_graph(vertex_regions[i], vertex_regions[j]) == 0)
-        {
-          if (shouldPullVertexApart(xj, vertex_regions[i], vertex_regions[j], pull_apart_direction))
-          {
-            A = vertex_regions[i];
-            B = vertex_regions[j];
-            break;
-          }
-        }
-      }
-    }
-    
-    // skip the vertex if the graph is complete already
-    if (A < 0)
-      continue;
-    
-    // pull apart
-    VertexHandle a = m_obj->addVertex();
-    VertexHandle b = m_obj->addVertex();
-    
-    // set the position/velocity of new vertices
-    setVertexPosition(a, getVertexPosition(xj));
-    setVertexVelocity(a, Vec3d(0, 0, 0));
-    setVertexPosition(b, getVertexPosition(xj));
-    setVertexVelocity(b, Vec3d(0, 0, 0));
-    
-    Scalar mean_edge_length = 0;
-    int edge_count = 0;
-    for (VertexEdgeIterator veit = m_obj->ve_iter(xj); veit; ++veit)
-    {
-      mean_edge_length += (getVertexPosition(m_obj->toVertex(*veit)) - getVertexPosition(m_obj->fromVertex(*veit))).norm();
-      edge_count++;
-    }
-    assert(edge_count > 0);
-    mean_edge_length /= edge_count;
-    
-    Vec3d pull_apart_offset = pull_apart_direction * mean_edge_length;
-    setVertexPosition(a, getVertexPosition(a) + pull_apart_offset * 0.1);
-    setVertexPosition(b, getVertexPosition(b) - pull_apart_offset * 0.1);
-    
-    // enforce constraints
-    int original_constraints = onBBWall(getVertexPosition(xj));
-    setVertexPosition(a, enforceBBWallConstraint(getVertexPosition(a), original_constraints));
-    setVertexPosition(b, enforceBBWallConstraint(getVertexPosition(b), original_constraints));
-
-    // update the face connectivities
-    std::vector<FaceHandle> faces_to_delete;
-    std::vector<Eigen::Matrix<VertexHandle, 3, 1> > faces_to_create;
-    std::vector<Vec2i> face_labels_to_create;
-    
-    std::vector<EdgeHandle> edges_to_delete;
-    
-    for (VertexFaceIterator vfit = m_obj->vf_iter(xj); vfit; ++vfit)
-    {
-      faces_to_delete.push_back(*vfit);
-
-      EdgeHandle other_edge = getVertexOppositeEdgeInFace(*m_obj, *vfit, xj);
-      VertexHandle v0 = m_obj->fromVertex(other_edge);
-      VertexHandle v1 = m_obj->toVertex(other_edge);
-
-      if (m_obj->getRelativeOrientation(*vfit, other_edge) < 0)
-        std::swap(v0, v1);
-
-      Vec2i label = getFaceLabel(*vfit);
-      if (label.x() == A || label.y() == A)
-      {
-        faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v0, v1));
-        face_labels_to_create.push_back(label);
-        
-      } else if (label.x() == B || label.y() == B)
-      {
-        faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(b, v0, v1));
-        face_labels_to_create.push_back(label);
-        
-      } else
-      {
-        // find out which one out of xj-v0 and xj-v1 is next to region A and to region B (or neither), in order to determine triangulation
-        EdgeHandle ev0 = findEdge(*m_obj, xj, v0);
-        EdgeHandle ev1 = findEdge(*m_obj, xj, v1);
-        assert(ev0.isValid());
-        assert(ev1.isValid());
-        
-        bool v0adjA = false;
-        bool v1adjA = false;
-        for (EdgeFaceIterator efit = m_obj->ef_iter(ev0); efit; ++efit)
-        {
-          Vec2i label = getFaceLabel(*efit);
-          if (label.x() == A || label.y() == A)
-            v0adjA = true;
-        }
-        for (EdgeFaceIterator efit = m_obj->ef_iter(ev1); efit; ++efit)
-        {
-          Vec2i label = getFaceLabel(*efit);
-          if (label.x() == A || label.y() == A)
-            v1adjA = true;
-        }
-        
-        assert(!v0adjA || !v1adjA);
-        
-        if (v0adjA)
-        {
-          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v0, v1));
-          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v1, b));
-          face_labels_to_create.push_back(label);
-          face_labels_to_create.push_back(label);
-        } else if (v1adjA)
-        {
-          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, v0, v1));
-          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(a, b, v0));
-          face_labels_to_create.push_back(label);
-          face_labels_to_create.push_back(label);
-        } else
-        {
-          faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(b, v0, v1));
-          face_labels_to_create.push_back(label);
-        }
-
-      }
-      
-    }
-    
-    for (VertexEdgeIterator veit = m_obj->ve_iter(xj); veit; ++veit)
-    {
-      edges_to_delete.push_back(*veit);
-    }
-    
-    // prune flap triangles
-    for (size_t i = 0; i < faces_to_create.size(); i++)
-    {
-      for (size_t j = i + 1; j < faces_to_create.size(); j++)
-      {
-        Eigen::Matrix<VertexHandle, 3, 1> & f0 = faces_to_create[i];
-        Eigen::Matrix<VertexHandle, 3, 1> & f1 = faces_to_create[j];
-        
-        if ((f0.x() == f1.x() || f0.x() == f1.y() || f0.x() == f1.z()) &&
-            (f0.y() == f1.x() || f0.y() == f1.y() || f0.y() == f1.z()) &&
-            (f0.z() == f1.x() || f0.z() == f1.y() || f0.z() == f1.z()))
-        {
-          // f0 and f1 have the same vertices
-          
-          Vec2i l0 = face_labels_to_create[i];
-          Vec2i l1 = face_labels_to_create[j];
-          
-          assert(l0.x() == l1.x() || l0.x() == l1.y() || l0.y() == l1.x() || l0.y() == l1.y());
-          
-          Vec2i newlabel; // newlabel has the same orientation with l0
-          if (l0.x() == l1.x() || l0.x() == l1.y())
-            newlabel = Vec2i(l0.x() == l1.x() ? l1.y() : l1.x(), l0.y());
-          else
-            newlabel = Vec2i(l0.x(), l0.y() == l1.x() ? l1.y() : l1.x());
-          
-          face_labels_to_create[i] = newlabel;
-          
-          faces_to_create.erase(faces_to_create.begin() + j);
-          face_labels_to_create.erase(face_labels_to_create.begin() + j);
-          break;
-        }
-      }
-    }
-    
-    // apply the deleteion/addition
-    for (size_t i = 0; i < faces_to_delete.size(); i++)
-      m_obj->deleteFace(faces_to_delete[i], false);
-    for (size_t i = 0; i < edges_to_delete.size(); i++)
-      m_obj->deleteEdge(edges_to_delete[i], false);
-    m_obj->deleteVertex(xj);
-    
-    assert(faces_to_create.size() == face_labels_to_create.size());
-    for (size_t i = 0; i < faces_to_create.size(); i++)
-    {
-      FaceHandle nf = m_obj->addFace(faces_to_create[i].x(), faces_to_create[i].y(), faces_to_create[i].z());
-      setFaceLabel(nf, face_labels_to_create[i]);
-    }
-        
-    // mark the two new vertices a and b as dirty
-    vertices_to_process.push_back(a);
-    vertices_to_process.push_back(b);
-    
-  }
-}
-bool ElasticShell::shouldPullVertexApart(VertexHandle xj, int A, int B, Vec3d & pull_apart_direction) const
-{
-  // compute surface tension pulling force to see if this vertex pair needs to be pulled open.
-  std::vector<Vec3d> vertsA;
-  std::vector<Vec3d> vertsB;
-  for (VertexFaceIterator vfit = m_obj->vf_iter(xj); vfit; ++vfit)
-  {
-    EdgeHandle other_edge = getVertexOppositeEdgeInFace(*m_obj, *vfit, xj);
-    VertexHandle v0 = m_obj->fromVertex(other_edge);
-    VertexHandle v1 = m_obj->toVertex(other_edge);
-    
-    Vec3d x0 = getVertexPosition(v0);
-    Vec3d x1 = getVertexPosition(v1);
-    
-    Vec2i label = getFaceLabel(*vfit);      
-    if (label.x() == A || label.y() == A)
-    {
-      vertsA.push_back(x0);
-      vertsA.push_back(x1);
-    } else if (label.x() == B || label.y() == B)
-    {
-      vertsB.push_back(x0);
-      vertsB.push_back(x1);
-    }
-  }
-  assert(vertsA.size() > 0);
-  assert(vertsB.size() > 0);
-  
-  Vec3d centroidA(0, 0, 0);
-  Vec3d centroidB(0, 0, 0);
-  for (size_t i = 0; i < vertsA.size(); i++) 
-    centroidA += vertsA[i];
-  centroidA /= vertsA.size();
-  for (size_t i = 0; i < vertsB.size(); i++) 
-    centroidB += vertsB[i];
-  centroidB /= vertsB.size();
-  
-  pull_apart_direction = (centroidA - centroidB).normalized();
-  
-  Vec3d xxj = getVertexPosition(xj);
-  Vec3d force_a = Vec3d::Zero();
-  Vec3d force_b = Vec3d::Zero();
-  for (VertexFaceIterator vfit = m_obj->vf_iter(xj); vfit; ++vfit)
-  {
-    EdgeHandle other_edge = getVertexOppositeEdgeInFace(*m_obj, *vfit, xj);
-    VertexHandle v0 = m_obj->fromVertex(other_edge);
-    VertexHandle v1 = m_obj->toVertex(other_edge);
-    
-    Vec3d x0 = getVertexPosition(v0);
-    Vec3d x1 = getVertexPosition(v1);
-    
-    Vec3d foot = (xxj - x0).dot(x1 - x0) / (x1 - x0).squaredNorm() * (x1 - x0) + x0;
-    Vec3d force = (foot - xxj).normalized() * (x1 - x0).norm();
-    
-    Vec2i label = getFaceLabel(*vfit);      
-    if (label.x() == A || label.y() == A)
-    {
-      force_a += force;
-    } else if (label.x() == B || label.y() == B)
-    {
-      force_b += force;
-    } else
-    {
-      EdgeHandle ev0 = findEdge(*m_obj, xj, v0);
-      EdgeHandle ev1 = findEdge(*m_obj, xj, v1);
-      assert(ev0.isValid());
-      assert(ev1.isValid());
-      
-      bool v0adjA = false;
-      bool v1adjA = false;
-      for (EdgeFaceIterator efit = m_obj->ef_iter(ev0); efit; ++efit)
-      {
-        Vec2i label = getFaceLabel(*efit);
-        if (label.x() == A || label.y() == A)
-          v0adjA = true;
-      }
-      for (EdgeFaceIterator efit = m_obj->ef_iter(ev1); efit; ++efit)
-      {
-        Vec2i label = getFaceLabel(*efit);
-        if (label.x() == A || label.y() == A)
-          v1adjA = true;
-      }
-      
-      assert(!v0adjA || !v1adjA);
-      
-      if (v0adjA)
-      {
-        force_a += force;
-        force_a += -pull_apart_direction * (x1 - xxj).norm();
-        force_b += pull_apart_direction * (x1 - xxj).norm();
-      } else if (v1adjA)
-      {
-        force_a += force;
-        force_a += -pull_apart_direction * (x0 - xxj).norm();
-        force_b += pull_apart_direction * (x0 - xxj).norm();
-      } else
-      {
-        force_b += force;
-      }
-    }
-  }
-  
-  Scalar tensile_force = (force_a - force_b).dot(pull_apart_direction);
-  
-  return tensile_force > 0;
-}
-
-Mat2i ElasticShell::cutXJunctionEdge(EdgeHandle e) const
-{
-  // for now use the angles to decide cut direction
-  assert(m_obj->edgeIncidentFaces(e) == 4);
-  
-  VertexHandle v0 = m_obj->fromVertex(e);
-  VertexHandle v1 = m_obj->toVertex(e);
-  
-  Vec3d x0 = getVertexPosition(v0);
-  Vec3d x1 = getVertexPosition(v1);
-  
-  // find all the regions around this X junction edge e, in CCW order when looking down the edge
-  std::vector<int> regions;
-  EdgeFaceIterator efit = m_obj->ef_iter(e); assert(efit);
-  if (m_obj->getRelativeOrientation(*efit, e) > 0)
-  {
-    regions.push_back(getFaceLabel(*efit).y());
-    regions.push_back(getFaceLabel(*efit).x());
-  } else
-  {
-    regions.push_back(getFaceLabel(*efit).x());
-    regions.push_back(getFaceLabel(*efit).y());
-  }
-  
-  while (true)
-  {
-    size_t s = regions.size();
-    for (EdgeFaceIterator efit = m_obj->ef_iter(e); efit; ++efit)
-    {
-      Vec2i label = getFaceLabel(*efit);
-      if (label.x() == regions.back() && label.y() != *(regions.rbegin() + 1) && label.y() != regions.front())
-      {
-        regions.push_back(label.y());
-        break;
-      }
-      if (label.y() == regions.back() && label.x() != *(regions.rbegin() + 1) && label.x() != regions.front())
-      {
-        regions.push_back(label.x());
-        break;
-      }
-    }
-    assert(s == regions.size() || s + 1 == regions.size());
-    if (s == regions.size())
-      break;
-  }
-  assert(regions.size() == 4);
-
-  // create an arbitrary 2D frame in the cross section plane of the edge e
-  Vec3d t = x1 - x0;
-  t.normalize();
-  Vec3d u = (fabs(t.x()) <= fabs(t.y()) && fabs(t.x()) <= fabs(t.z()) ? Vec3d(0, t.z(), -t.y()) : (fabs(t.y()) <= fabs(t.z()) ? Vec3d(-t.z(), 0, t.x()) : Vec3d(t.y(), -t.x(), 0)));
-  u.normalize();
-  Vec3d v = u.cross(t);
-  v.normalize();
-  
-  // compute the angle of each region
-  std::vector<Scalar> regionangles;
-  for (size_t i = 0; i < regions.size(); i++)
-  {
-    std::vector<FaceHandle> regionfaces;
-    for (EdgeFaceIterator efit = m_obj->ef_iter(e); efit; ++efit)
-    {
-      Vec2i label = getFaceLabel(*efit);
-      if (label.x() == regions[i] || label.y() == regions[i])
-        regionfaces.push_back(*efit);
-    }
-    assert(regionfaces.size() == 2);
-    
-    Vec2i label = getFaceLabel(regionfaces[0]);
-    if ((label.x() == regions[i] ? label.y() : label.x()) == regions[(i + 1) % 4])
-      std::swap(regionfaces[0], regionfaces[1]);  // this ensures CCW ordering of the two faces
-    
-    VertexHandle v20;
-    getFaceThirdVertex(*m_obj, regionfaces[0], e, v20);
-    VertexHandle v21;
-    getFaceThirdVertex(*m_obj, regionfaces[1], e, v21);
-    
-    Vec3d x20 = getVertexPosition(v20);
-    Vec3d x21 = getVertexPosition(v21);
-    
-    Vec2d p20 = Vec2d((x20 - x0).dot(u), (x20 - x0).dot(v));
-    Vec2d p21 = Vec2d((x21 - x0).dot(u), (x21 - x0).dot(v));
-    
-    Scalar theta0 = atan2(p20.y(), p20.x());
-    Scalar theta1 = atan2(p21.y(), p21.x());
-    
-    while (theta0 > theta1)
-      theta1 += M_PI * 2;
-    
-    regionangles.push_back(theta1 - theta0);
-  }
-  
-  // pick the pair of opposing regions with larger summed angles
-  Vec2i pair0 = regions[0] < regions[2] ? Vec2i(regions[0], regions[2]) : Vec2i(regions[2], regions[0]); // order the two regions with ascending region label
-  Vec2i pair1 = regions[1] < regions[3] ? Vec2i(regions[1], regions[3]) : Vec2i(regions[3], regions[1]);  
-  Mat2i ret;
-  if (regionangles[0] + regionangles[2] > regionangles[1] + regionangles[3])
-  {
-    ret.col(0) = pair0; // cut regions
-    ret.col(1) = pair1; // the other two regions
-  } else
-  {
-    ret.col(0) = pair1;
-    ret.col(1) = pair0;
-  }
-  
-  // if the X junction should not be cut, return (-1, -1).
-  return ret;
 }
 
 int ElasticShell::onBBWall(const Vec3d & pos) const

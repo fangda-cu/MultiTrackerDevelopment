@@ -1,6 +1,6 @@
 #double bubble cubes for surface tension
 
-shell-scene 2
+shell-scene 5
 dt 0.01	# time-step size
 
 gravity 0 0 0	# gravity

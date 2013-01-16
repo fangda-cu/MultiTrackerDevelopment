@@ -15,7 +15,7 @@
 #include "BASim/src/Physics/DeformableObjects/DefoObjTimeStepper.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVolumeForce.hh"
 
-class DoubleBubbleTest : public Problem
+class DoubleBubbleTest : public Problem, public ElasticShell::SteppingCallback
 {
 public:
   DoubleBubbleTest();
@@ -24,6 +24,8 @@ public:
   virtual void serialize( std::ofstream& of ) { assert(!"Not implemented"); }
   virtual void resumeFromfile( std::ifstream& ifs ) { assert(!"Not implemented"); }
 
+  void beforeEndStep();
+  
 protected:
   void Setup();
   void AtEachTimestep();
@@ -45,7 +47,8 @@ protected:
   ShellVolumeForce * svf;
   
   int onBBWall(const Vec3d & pos) const;
-  
+  void updateBBWallConstraints();
+    
 public:
   void setupScene1(); // VIIM test: single film in cube
   void setupScene2(); // T1 transition
@@ -53,7 +56,14 @@ public:
 //  void setupScene4(); // n bubble collision
   void setupScene5(); // VIIM figure 5
   void setupScene6(); // VIIM multiphase cube test
+    
+  void setupScene7(); // Enright test with a sphere
+  void setupScene8(); // Zalesak test 
   
+
+  void s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out);
+
+  int m_nregion;
 
 };
 
