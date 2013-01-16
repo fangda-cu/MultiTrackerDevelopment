@@ -1072,9 +1072,11 @@ void ElasticShell::remesh(bool initial)
   construction_parameters.m_allow_topology_changes = true;
   construction_parameters.m_collision_safety = true;
   construction_parameters.m_remesh_boundaries = true;
-  construction_parameters.m_t1_transition_enabled = false;
+  construction_parameters.m_t1_transition_enabled = m_remesh_t1transition;
   
-  construction_parameters.m_subdivision_scheme = new ElTopo::MidpointScheme();
+    ElTopo::SubdivisionScheme * mb = new ElTopo::ModifiedButterflyScheme();
+    ElTopo::SubdivisionScheme * mp = new ElTopo::MidpointScheme();
+    construction_parameters.m_subdivision_scheme = (m_remesh_smooth_subdivision ? mb : mp);
   //construction_parameters.m_subdivision_scheme = new ElTopo::QuadraticErrorMinScheme();
   //construction_parameters.m_subdivision_scheme = new ElTopo::ButterflyScheme();
   //construction_parameters.m_subdivision_scheme = new ElTopo::ModifiedButterflyScheme();

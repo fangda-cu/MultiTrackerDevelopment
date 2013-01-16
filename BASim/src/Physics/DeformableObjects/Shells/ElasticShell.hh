@@ -201,6 +201,8 @@ public:
     radius = m_sphere_radius;
   }
 
+    bool m_remesh_t1transition;
+    bool m_remesh_smooth_subdivision;
 
 protected:
 

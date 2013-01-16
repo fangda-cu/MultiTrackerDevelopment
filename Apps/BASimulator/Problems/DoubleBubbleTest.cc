@@ -71,7 +71,6 @@ DoubleBubbleTest::DoubleBubbleTest() :
   
   AddOption("shell-update-thickness", "whether the shell thickness should be dynamically updated to maintain volume", true);
   
-
   //Scene specific stuff (geometry, scene-specific forces, etc.)
   AddOption("shell-width", "the horizontal side length of the shell", 1.0);
   AddOption("shell-height", "the vertical side length of the shell", 1.0);
@@ -93,6 +92,9 @@ DoubleBubbleTest::DoubleBubbleTest() :
   AddOption("shell-remeshing-min-length", "lower bound on edge-length", 0.1);
   AddOption("shell-remeshing-iterations", "number of remeshing iterations to run", 2);
 
+  AddOption("t1-transition-enabled", "whether T1 transition operations are enabled", false);
+  AddOption("smooth-subdivision-scheme", "whether or not to use the Modified Butterfly subdivision scheme (default is false, i.e. midpoint subdivision)", false);
+    
   //Area-based surface tension force
   AddOption("shell-surface-tension", "surface tension coefficient of the shell", 0.0);
   
@@ -325,6 +327,9 @@ void DoubleBubbleTest::Setup()
   }
   
 //  shell->computeMasses(); /////////////////////////////
+    
+  shell->m_remesh_smooth_subdivision = GetBoolOpt("smooth-subdivision-scheme");
+  shell->m_remesh_t1transition = GetBoolOpt("t1-transition-enabled");
  
 
   Scalar stiffness = GetScalarOpt("shell-collision-spring-stiffness");
