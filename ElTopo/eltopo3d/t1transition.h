@@ -62,9 +62,9 @@ public:
     ///
     Mat2i cut_x_junction_edge(size_t e);
 
-    /// Decide whether to cut an X-junction vertex between two given regions
+    /// Attempt a cut on a junction between two given regions, returning the tensile force (tendency of the two resulting vertices moving apart; positive tensile force indicates the cut can happen)
     ///
-    bool should_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pull_apart_direction);
+    double try_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pull_apart_direction);
     
     /// Collision safety
     ///
