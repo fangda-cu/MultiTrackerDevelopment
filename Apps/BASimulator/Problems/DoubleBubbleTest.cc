@@ -551,10 +551,8 @@ void DoubleBubbleTest::AtEachTimestep()
         for (int i = 0; i < m_nregion; i++)
         {
             std::stringstream name;
-            int file_width = 20;
-
             name << std::setfill('0');
-            name << outputdirectory << "/" << "region" << std::setw(4) << i << "_frame" << std::setw(file_width) << db_current_obj_frame << ".OBJ";
+            name << outputdirectory << "/" << "region" << std::setw(4) << i << "_frame" << std::setw(6) << db_current_obj_frame << ".OBJ";
 
             write_objfile_per_region(surface_tracker.m_mesh, surface_tracker.get_positions(), i, name.str().c_str());
             std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
