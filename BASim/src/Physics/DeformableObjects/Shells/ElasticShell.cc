@@ -1045,7 +1045,7 @@ bool ElasticShell::shouldFracture (const EdgeHandle & eh) const{
 }
 
 
-void ElasticShell::remesh()
+void ElasticShell::remesh(bool initial)
 {
   // prune orphan edges and vertices
   for (EdgeIterator eit = m_obj->edges_begin(); eit != m_obj->edges_end(); ++eit)
@@ -1065,8 +1065,8 @@ void ElasticShell::remesh()
   construction_parameters.m_min_edge_length = m_remesh_edge_min_len;
   construction_parameters.m_max_edge_length = m_remesh_edge_max_len;
   construction_parameters.m_max_volume_change = numeric_limits<double>::max();   
-  construction_parameters.m_min_triangle_angle = 3;
-  construction_parameters.m_max_triangle_angle = 177;
+  construction_parameters.m_min_triangle_angle = initial ? 0 : 3;
+  construction_parameters.m_max_triangle_angle = initial ? 180 : 177;
   construction_parameters.m_large_triangle_angle_to_split = 160;
   construction_parameters.m_verbose = false;
   construction_parameters.m_allow_non_manifold = true;

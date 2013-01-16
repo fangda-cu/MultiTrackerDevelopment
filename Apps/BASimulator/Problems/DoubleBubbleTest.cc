@@ -346,7 +346,7 @@ void DoubleBubbleTest::Setup()
   shell->setTearing(tearing, tearingThres, tearingRand);
 
   updateBBWallConstraints();
-  shell->remesh();
+  shell->remesh(true);
   updateBBWallConstraints();
     
   //compute the dof indexing for use in the diff_eq solver
