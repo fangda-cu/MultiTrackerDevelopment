@@ -812,6 +812,8 @@ bool T1Transition::pop_vertices()
             for (size_t k = 0; k < overlapping_vertices.size(); k++) 
             { 
                 size_t ov = overlapping_vertices[k];
+                if (mesh.m_vertex_to_triangle_map[ov].size() == 0)
+                    continue;
                 if (ov == t[0] || ov == t[2] || ov == t[1])
                     continue;
                 
@@ -836,6 +838,8 @@ bool T1Transition::pop_vertices()
             for (size_t k = 0; k < overlapping_edges.size(); k++) 
             { 
                 const Vec2st & e = mesh.m_edges[overlapping_edges[k]];
+                if (e[0] == e[1])
+                    continue;
                 if (e[0] == t[1] || e[1] == t[1] || e[0] == t[2] || e[1] == t[2])
                     continue;
                 
@@ -869,6 +873,8 @@ bool T1Transition::pop_vertices()
             for (size_t k = 0; k < overlapping_triangles.size(); k++)
             {
                 const Vec3st & t = mesh.get_triangle(overlapping_triangles[k]);
+                if (t[0] == t[1] || t[0] == t[2] || t[1] == t[2])
+                    continue;
                 if (e[1] == t[0] || e[1] == t[1] || e[1] == t[2])
                     continue;
                 
