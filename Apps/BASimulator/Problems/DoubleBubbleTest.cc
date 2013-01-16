@@ -525,6 +525,12 @@ void DoubleBubbleTest::AtEachTimestep()
         surface_tracker.m_mesh.m_vertex_constraint_labels = vert_const_labels;
         surface_tracker.set_all_remesh_velocities(vert_vel);
         
+#ifdef _MSC_VER
+        _mkdir(outputdirectory.c_str());
+#else
+        mkdir(outputdirectory.c_str(), 0755);
+#endif
+
         for (int i = 0; i < m_nregion; i++)
         {
             std::stringstream name;
