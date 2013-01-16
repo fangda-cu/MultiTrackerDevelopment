@@ -896,7 +896,7 @@ bool T1Transition::pop_vertices()
         if (collision)
         {
             if (m_surf.m_verbose)
-                std::cout << "Edge popping: collision introduced." << std::endl;
+                std::cout << "Vertex popping: collision introduced." << std::endl;
             continue;
         }        
         
@@ -1279,39 +1279,6 @@ void T1Transition::triangulate_popped_vertex(size_t xj, int A, int B, size_t a, 
             }
         }
     }
-    
-//    // prune flap triangles
-//    // TODO: make use of ElTopo's flap triangle pruning: SurfTrack::trim_non_manifold(). Just need to maintain the m_dirty_triangles list.
-//    for (size_t i = 0; i < faces_to_create.size(); i++)
-//    {
-//        for (size_t j = i + 1; j < faces_to_create.size(); j++)
-//        {
-//            Vec3st & f0 = faces_to_create[i];
-//            Vec3st & f1 = faces_to_create[j];
-//            
-//            if (mesh.triangle_has_these_verts(f0, f1))
-//            {
-//                // f0 and f1 have the same vertices
-//                
-//                Vec2i l0 = face_labels_to_create[i];
-//                Vec2i l1 = face_labels_to_create[j];
-//                
-//                assert(l0[0] == l1[0] || l0[0] == l1[1] || l0[1] == l1[0] || l0[1] == l1[1]);
-//                
-//                Vec2i newlabel; // newlabel has the same orientation with l0
-//                if (l0[0] == l1[0] || l0[0] == l1[1])
-//                    newlabel = Vec2i(l0[0] == l1[0] ? l1[1] : l1[0], l0[1]);
-//                else
-//                    newlabel = Vec2i(l0[0], l0[1] == l1[0] ? l1[1] : l1[0]);
-//                
-//                face_labels_to_create[i] = newlabel;
-//                
-//                faces_to_create.erase(faces_to_create.begin() + j);
-//                face_labels_to_create.erase(face_labels_to_create.begin() + j);
-//                break;
-//            }
-//        }
-//    }
 
 }
 

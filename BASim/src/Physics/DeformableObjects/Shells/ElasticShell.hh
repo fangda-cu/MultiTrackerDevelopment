@@ -219,11 +219,11 @@ protected:
   int onBBWall(const Vec3d & pos) const;
   Vec3d enforceBBWallConstraint(const Vec3d & input, int constraints) const;
   
-  void performT1Transition();
-  Mat2i cutXJunctionEdge(EdgeHandle e) const;
-  
-  void pullXJunctionVertices();
-  bool shouldPullVertexApart(VertexHandle xj, int A, int B, Vec3d & pull_apart_direction) const;
+//  void performT1Transition();
+//  Mat2i cutXJunctionEdge(EdgeHandle e) const;
+//  
+//  void pullXJunctionVertices();
+//  bool shouldPullVertexApart(VertexHandle xj, int A, int B, Vec3d & pull_apart_direction) const;
   
 
   //Various shell data
