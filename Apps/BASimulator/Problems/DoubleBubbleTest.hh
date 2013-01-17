@@ -54,11 +54,11 @@ public:
   void setupScene2(); // T1 transition
 //  void setupScene3(); // double bubble collision
 //  void setupScene4(); // n bubble collision
-  void setupScene5(); // VIIM figure 5
-  void setupScene6(); // VIIM multiphase cube test
+  void setupScene5(); // VIIM figure 17
+  void setupScene6(); // VIIM multiphase cube test (figure 24)
     
   void setupScene7(); // Enright test with a sphere
-  void setupScene8(); // Zalesak test 
+  void setupScene8(); // Reauleux tetrahedron test VIIM figure 18
   
 
   void s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out);
