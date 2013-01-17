@@ -55,6 +55,7 @@ bool read_binary_file_with_newpositions( ElTopo::NonDestructiveTriMesh &mesh, st
 bool write_objfile(const ElTopo::NonDestructiveTriMesh &mesh, const std::vector<ElTopo::Vec3d> &x, const char *filename_format, ...);
 bool read_objfile(ElTopo::NonDestructiveTriMesh &mesh, std::vector<ElTopo::Vec3d> &x, const char *filename_format, ...);
 bool write_objfile_per_region(const ElTopo::NonDestructiveTriMesh &mesh, const std::vector<ElTopo::Vec3d> &x, int label, const char *filename_format, ...);
+bool write_objfile_per_region_pair(const ElTopo::NonDestructiveTriMesh &mesh, const std::vector<ElTopo::Vec3d> &x, ElTopo::Vec2i label, const char *filename_format, ...);
 // ---------------------------------------------------------
 //
 // Write mesh in Renderman RIB format (geometry only)
