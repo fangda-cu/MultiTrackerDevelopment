@@ -14,7 +14,7 @@
 #include <subdivisionscheme.h>
 #include <surftrack.h>
 #include <trianglequality.h>
-
+#include <typeinfo>
 
 // ---------------------------------------------------------
 //  Extern globals
