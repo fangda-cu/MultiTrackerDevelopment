@@ -1,8 +1,8 @@
 
 #include "dualpressure3d.h"
 
-#include "cgsolver.h"
-#include "sparsematrix.h"
+#include "sparse/cgsolver.h"
+#include "sparse/sparsematrix.h"
 #include "tetmesh.h"
 #include "meancurvature.h"
 #include "dynamicsurface.h"

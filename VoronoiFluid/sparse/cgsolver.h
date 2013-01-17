@@ -2,9 +2,9 @@
 #define CGSOLVER_H
 
 #include <fstream>
-#include "sparse/sparsematrix.h"
-#include "sparse/sparseilu.h"
-#include "sparse/sparsemilu.h"
+#include "sparsematrix.h"
+#include "sparseilu.h"
+#include "sparsemilu.h"
 #include "wallclocktime.h"
 #include "vector_math.h"
 
