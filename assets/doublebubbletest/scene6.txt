@@ -21,6 +21,8 @@ shell-Poisson-damping 0.5
 shell-surface-tension 4
 volume-force-stiffness 0
 
+volume-targeting 0
+
 shell-remeshing 1
 shell-remeshing-resolution 0.2
 shell-remeshing-iterations 1

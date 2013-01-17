@@ -81,6 +81,8 @@ DoubleBubbleTest::DoubleBubbleTest() :
   AddOption("shell-inflate-sphere-coeff", "coefficient for inflating sphere", 0.0);
   AddOption("shell-inflate-sphere-const-pressure", "whether to use constant pressure version", false);
   
+  AddOption("volume-targeting", "whether to set the desired volume of each region to equal", false);
+    
   //sheared wrinkling parameters
   AddOption("shell-rotation-rate", "the rate at which inner cylinder rotates for sheared wrinkling test", 0.0);
   AddOption("shell-bath-density", "the density of water fluid bath for sheared wrinkling test", 1.0);
@@ -324,6 +326,11 @@ void DoubleBubbleTest::Setup()
   {
     svf = new ShellVolumeForce(*shell, "Volume", vf_stiffness);
     shell->addForce(svf);
+      
+    if (GetBoolOpt("volume-targeting"))
+    {
+      svf->m_target_volumes.assign(svf->m_target_volumes.size(), 1.0 / svf->m_target_volumes.size());
+    }
   }
   
 //  shell->computeMasses(); /////////////////////////////
