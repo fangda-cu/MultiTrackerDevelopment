@@ -43,12 +43,25 @@ typedef Vec<2, Vec2i>  Mat2i;
 
 class T1Transition
 {
+public:
+    
+    /// Callback to provide the velocity field
+    ///
+    class VelocityFieldCallback
+    {
+    public:
+        virtual Vec3d sampleVelocity(Vec3d & pos) = 0;
+        
+        virtual double velocityDifferencingDx() = 0;
+        
+    };
+    
     
 public:
     
     /// Constructor
     ///
-    T1Transition(SurfTrack & surf, bool remesh_boundaries);
+    T1Transition(SurfTrack & surf, VelocityFieldCallback * vfc, bool remesh_boundaries);
     
     /// Perform edge popping (first step of T1 transition)
     ///
@@ -64,7 +77,11 @@ public:
 
     /// Attempt a cut on a junction between two given regions, returning the tensile force (tendency of the two resulting vertices moving apart; positive tensile force indicates the cut can happen)
     ///
-    double try_pull_vertex_apart(size_t xj, int A, int B, Vec3d & pull_apart_direction);
+    double try_pull_vertex_apart_using_surface_tension(size_t xj, int A, int B, Vec3d & pull_apart_direction);
+    
+    /// Attempt a cut on a junction between two given regions, returning the velocity divergence along the pull apart direction
+    ///
+    double try_pull_vertex_apart_using_velocity_field(size_t xj, int A, int B, Vec3d & pull_apart_direction);
     
     /// Collision safety
     ///
@@ -74,6 +91,7 @@ public:
     /// Whether or not to remesh the boundary (currently no effect)
     ///
     bool m_remesh_boundaries;
+  
     
 private:
     
@@ -97,6 +115,9 @@ private:
     /// The mesh this object operates on
     /// 
     SurfTrack & m_surf;   
+    
+    /// Velocity field callback
+    VelocityFieldCallback * m_velocity_field_callback;
     
 };
 
