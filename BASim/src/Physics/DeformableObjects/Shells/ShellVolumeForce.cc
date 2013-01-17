@@ -725,6 +725,11 @@ Scalar ShellVolumeForce::globalEnergy() const
     if(labels[1] != -1)
       volumes[labels[1]] -= elementEnergy(deformed);    
   }
+  
+  for (size_t i = 0; i < volumes.size(); i++)
+  {
+    std::cout << "region " << i << ": volume = " << volumes[i] << " target = " << m_target_volumes[i] << std::endl;
+  }
 
   Scalar sum = 0;
   for(unsigned int r = 0; r < volumes.size(); ++r)

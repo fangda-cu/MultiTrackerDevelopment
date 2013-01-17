@@ -443,6 +443,7 @@ void DoubleBubbleTest::AtEachTimestep()
 //  for (size_t i = 0; i < triangulation_added_vertices.size(); i++)
 //    shellObj->deleteVertex(triangulation_added_vertices[i]);
 
+  svf->globalEnergy();
   
     
   //dump PLY files if needed
