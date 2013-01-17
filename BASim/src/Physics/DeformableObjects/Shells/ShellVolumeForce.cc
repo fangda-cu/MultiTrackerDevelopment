@@ -211,7 +211,6 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
          
   std::vector<std::vector<EdgeHandle> > wall_edges(6);
   EdgeProperty<Vec2i> wall_edge_labels(&obj);
-  std::vector<VertexHandle> corners;
   
   // count how many regions there are
   int max_label = 0;
@@ -324,6 +323,7 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
   }
   
   // temporarily add vertices and edges in order to triangulate BB walls
+  std::vector<VertexHandle> corners;
   corners.push_back(obj.addVertex()); m_shell.setVertexPosition(corners.back(), Vec3d(0, 0, 0));
   corners.push_back(obj.addVertex()); m_shell.setVertexPosition(corners.back(), Vec3d(1, 0, 0));
   corners.push_back(obj.addVertex()); m_shell.setVertexPosition(corners.back(), Vec3d(0, 1, 0));
