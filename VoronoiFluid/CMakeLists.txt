@@ -13,5 +13,5 @@ include_directories (${GLUT_INCLUDE_DIR})
 include_directories (${EIGEN_INCLUDE_DIR})
 
 add_executable (VoronoiFluid ${Headers} ${Templates} ${Sources})
-target_link_libraries (ElTopo ${CGAL_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_glut_LIBRARY})
+target_link_libraries (VoronoiFluid ${CGAL_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_glut_LIBRARY})
 

@@ -162,3 +162,5 @@ if (BUILD_APPS)
 endif (BUILD_APPS)
 
 add_subdirectory (doc)
+
+add_subdirectory (VoronoiFluid)
