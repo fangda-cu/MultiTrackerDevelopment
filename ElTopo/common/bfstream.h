@@ -6,17 +6,23 @@
 #include <cstdlib>
 #include <fstream>
 
-#ifdef __BIG_ENDIAN__
-#ifdef __LITTLE_ENDIAN__
-//#error Cannot be both big and little endian
-#endif
+#if defined(__BIG_ENDIAN__) && defined(__LITTLE_ENDIAN__)
+#if __BIG_ENDIAN__
+#undef __LITTLE_ENDIAN__
 #else
-#ifndef __LITTLE_ENDIAN__
-//#error Need to define either big or little endian
+#undef __BIG_ENDIAN__
 #endif
 #endif
 
-#undef __BIG_ENDIAN__
+#ifdef __BIG_ENDIAN__
+#ifdef __LITTLE_ENDIAN__
+#error Cannot be both big and little endian
+#endif
+#else
+#ifndef __LITTLE_ENDIAN__
+#error Need to define either big or little endian
+#endif
+#endif
 
 
 //=================================================================================
