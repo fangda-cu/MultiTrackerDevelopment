@@ -170,7 +170,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
                // Different region - multiphase case of ghost fluid method.
                // Compute the interpolated interface position from unsigned distances and
                // use it to interpolate density (per e.g. [Boyd/Bridson 2011] or Losasso [2006])
-               float interface_theta = abs(self_phi) / (abs(self_phi) + abs(neighbour_phi)); 
+               float interface_theta = std::abs(self_phi) / (std::abs(self_phi) + std::abs(neighbour_phi)); 
                interface_theta = clamp(interface_theta, 0.01f, 0.99f);
                face_density = interface_theta  * densities[region_ID] + (1-interface_theta)*densities[nbr_region_ID];
 
@@ -190,7 +190,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
 
             // Add diagonal and off-diagonal entries.
             matrix.add_to_element(i, neighbour_index, -solid_weights[face_index] * mesh.voronoi_face_areas[face_index] / dist / face_density);
-            diagonal_sum += abs(-solid_weights[face_index] * mesh.voronoi_face_areas[face_index] / dist / face_density);      
+            diagonal_sum += std::abs(-solid_weights[face_index] * mesh.voronoi_face_areas[face_index] / dist / face_density);      
          }
          else  
          {
@@ -327,7 +327,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
 
             if(region0 != region1) { // There's an interface between the two regions
                //Multiphase ghost fluid again, compute the interpolated density.
-               float interface_theta = abs(phi0) / (abs(phi0) + abs(phi1));
+                float interface_theta = std::abs(phi0) / (std::abs(phi0) + std::abs(phi1));
                interface_theta = clamp(interface_theta, 0.01f, 0.99f);
                face_density = interface_theta  * densities[region0] + (1-interface_theta )*densities[region1];
 

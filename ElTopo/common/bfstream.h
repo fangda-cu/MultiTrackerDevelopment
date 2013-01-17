@@ -16,6 +16,9 @@
 #endif
 #endif
 
+#undef __BIG_ENDIAN__
+
+
 //=================================================================================
 template<class T> inline void swap_endianity(T &x)
 {
