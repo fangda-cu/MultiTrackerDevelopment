@@ -556,7 +556,18 @@ void DoubleBubbleTest::AtEachTimestep()
         mkdir(outputdirectory.c_str(), 0755);
 #endif
 
-        if (false)
+        int RENDER_METHOD = 0;
+        if (RENDER_METHOD == 0)
+        {
+            // dump one OBJ for the entire mesh
+            std::stringstream name;
+            name << std::setfill('0');
+            name << outputdirectory << "/" << "mesh_frame" << std::setw(6) << db_current_obj_frame << ".OBJ";
+            
+            write_objfile(surface_tracker.m_mesh, surface_tracker.get_positions(), name.str().c_str());
+            std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+            
+        } else if (RENDER_METHOD == 1)
         {
             // dump one OBJ per region
             for (int i = 0; i < m_nregion; i++)
@@ -568,7 +579,7 @@ void DoubleBubbleTest::AtEachTimestep()
                 write_objfile_per_region(surface_tracker.m_mesh, surface_tracker.get_positions(), i, name.str().c_str());
                 std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
             }
-        } else
+        } else 
         {
             // dump one OBJ per region pair
             for (int i = 0; i < m_nregion; i++)
