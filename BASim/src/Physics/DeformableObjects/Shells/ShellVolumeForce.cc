@@ -192,7 +192,7 @@ int ShellVolumeForce::onBBWall(const Vec3d & pos) const
   
 void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertices, std::vector<EdgeHandle> & new_edges, std::vector<FaceHandle> & new_faces) const
 {
-  bool verbose = true;
+  bool verbose = false;
   
   if (verbose) std::cout << "=========================================================================" << std::endl;
   
@@ -472,7 +472,7 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
           
           if (b)
           {
-            std::cout << "e = " << e << std::endl;
+//            std::cout << "e = " << e << std::endl;
             if (head < 0 || e.cross(head_vec).dot(wall_normals[wall1]) < 0)
             {
               head = j;
