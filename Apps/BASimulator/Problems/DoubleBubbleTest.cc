@@ -58,7 +58,8 @@ DoubleBubbleTest::DoubleBubbleTest() :
   Problem("Double Bubble Test", "Various bubble dynamics tests"), 
   shell(NULL), 
   shellObj(NULL), 
-  stepper(NULL)
+  stepper(NULL),
+  svf(NULL)
 {
   addDynamicsProps();
   
@@ -323,6 +324,7 @@ void DoubleBubbleTest::Setup()
 //  shell->setThicknessUpdating(thickness_evolution);
 
   Scalar vf_stiffness = GetScalarOpt("volume-force-stiffness");
+  svf = NULL;
   if (vf_stiffness > 0)
   {
     svf = new ShellVolumeForce(*shell, "Volume", vf_stiffness);
@@ -444,7 +446,8 @@ void DoubleBubbleTest::AtEachTimestep()
 //  for (size_t i = 0; i < triangulation_added_vertices.size(); i++)
 //    shellObj->deleteVertex(triangulation_added_vertices[i]);
 
-  svf->globalEnergy();
+  if (svf)
+    svf->globalEnergy();
   
     
   //dump PLY files if needed
