@@ -1475,7 +1475,7 @@ void DualFluidSim3D::advance_surface( float dt )
             if ( fabs( v[2] - solid_low[2] ) < snap_distance ) { new_position[2] = solid_low[2]; }
             if ( fabs( v[0] - solid_high[0] ) < snap_distance ) { new_position[0] = solid_high[0]; }
             if ( fabs( v[1] - solid_high[1] ) < snap_distance ) { new_position[1] = solid_high[1]; }
-            if ( fabs( v[2] - solid_high[2] ) < snap_distance ) { new_position[2] = solid_high[2]; }      
+            if ( fabs( v[2] - solid_high[2] ) < snap_distance ) { new_position[2] = solid_high[2]; }    
          }
       }
       new_positions[i] = Vec3d(new_position);
@@ -2071,9 +2071,6 @@ void DualFluidSim3D::test_interpolation( float dt )
    while ( accum_t < dt - 1e-5 )
    {
       float sub_dt = dt - accum_t;
-      if(sub_dt > 0.5f*dt && sub_dt < 0.99f*dt) { //try to smooth it out; if we are taking more than half a step, just clamp to half a step
-         sub_dt = 0.5f*(dt - accum_t);
-      }
       sub_dt = min( sub_dt, get_cfl_limit() );
       
       std::cout << "---------------------- Voronoi Fluid Sim: ";
@@ -2179,7 +2176,10 @@ void DualFluidSim3D::advance( float dt, unsigned int num_surface_substeps )
    {
       float sub_dt = dt - accum_t;
       sub_dt = min( sub_dt, get_cfl_limit() );
-   
+      
+      if(sub_dt > 0.5f*dt && accum_t + sub_dt < 0.99f*dt) //try to smooth out the step length if it's more than a frame length
+         sub_dt = 0.5f*dt;
+
       std::cout << std::endl << std::endl << std::endl << std::endl << std::endl;
       std::cout << "---------------------- Beginning Voronoi Fluid Sim iteration\n";
       

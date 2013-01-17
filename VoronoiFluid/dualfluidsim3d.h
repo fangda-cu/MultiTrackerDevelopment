@@ -4,6 +4,8 @@
 
 #include <ccd_wrapper.h>
 #include <surftrack.h>
+#include <t1transition.h>
+
 #include "tetmesh.h"
 #include "collisionqueries.h"
 
@@ -16,7 +18,7 @@ class VelocityFunctor3D;
 // ---------------------------------------------------------
 
 
-class DualFluidSim3D
+class DualFluidSim3D : ElTopo::T1Transition::VelocityFieldCallback
 {
    
 public:
@@ -120,6 +122,21 @@ public:
      //return liquid_phi[vert_index] < 0;
      return densities[region_IDs[vert_index]] != 0;
    }
+
+   //////////////////////////////////////////////////////////////////////////
+   // Functions needed to implement T1Transitions
+
+    public:
+       ElTopo::Vec3d sampleVelocity(ElTopo::Vec3d & pos) {
+          return (ElTopo::Vec3d)get_sharper_barycentric_velocity(ElTopo::Vec3f(pos));
+       }
+
+       double velocityDifferencingDx() {
+          //Used by El Topo to estimate velocity gradients
+          //Should be larger than whatever we have set  as El Topo's collision distance.
+          //So we'll use a figure slightly bigger for simplicity.
+          return 1.5*surface_tracker->m_improve_collision_epsilon;
+       }
 
    //
    // data members

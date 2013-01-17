@@ -1752,6 +1752,8 @@ void parse_script( const char* filename )
    surf_track_params.m_perform_improvement = (perform_improvement != 0);
    surf_track_params.m_allow_topology_changes = (topology_changes != 0);
    surf_track_params.m_collision_safety = (collision_safety != 0);   
+   surf_track_params.m_t1_transition_enabled = true;
+   surf_track_params.m_velocity_field_callback = 0;
 
    if ( strcmp( subdivision_scheme.c_str(), "butterfly" ) == 0 )
    {
