@@ -227,6 +227,14 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
   
   int nregion = max_label + 1;
   
+  std::vector<Vec3d> wall_normals(6);
+  wall_normals[0] = Vec3d(-1, 0, 0);
+  wall_normals[1] = Vec3d(0, -1, 0);
+  wall_normals[2] = Vec3d(0, 0, -1);
+  wall_normals[3] = Vec3d(1, 0, 0);
+  wall_normals[4] = Vec3d(0, 1, 0);
+  wall_normals[5] = Vec3d(0, 0, 1);
+  
   // sort the film boundary edges to six walls
   wall_edge_labels.assign(Vec2i(-1, -1));
   Eigen::Matrix<int, Eigen::Dynamic, 1> rcounts;
@@ -240,7 +248,7 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
       Vec3d x0 = m_shell.getVertexPosition(obj.fromVertex(*eit));
       Vec3d x1 = m_shell.getVertexPosition(obj.toVertex(*eit));
 
-      FaceHandle head;
+      FaceHandle head;  // head is the leftmost face when looking down the edge from x0 to x1, with the interior of the BB below
       FaceHandle tail;
       Vec3d head_n;
       Vec3d tail_n;
@@ -254,24 +262,42 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
         
         n = (x0 - other_x).cross(x1 - other_x);
         
-        if (!head.isValid() || n.cross(head_n).dot(x1 - x0) > 0)
+        if (!head.isValid() || n.cross(head_n).dot(x1 - x0) < 0)
         {
           head = *efit;
           head_n = n;
         }
-        if (!tail.isValid() || n.cross(head_n).dot(x1 - x0) < 0)
+        if (!tail.isValid() || n.cross(tail_n).dot(x1 - x0) > 0)
         {
           tail = *efit;
           tail_n = n;
         }
+        
+        if (head.isValid() && tail.isValid() && head == tail && n.cross(head_n).dot(x1 - x0) == 0 && n.dot(head_n) < 0)
+        {
+          tail = *efit;
+          tail_n = n;
+          int wall = -1;
+          for (int i = 0; i < 6; i++)
+            if ((walls0 & walls1) == (1 << i))
+            {
+              assert(wall < 0); // this entire case can only happen inside a BB wall, not along a BB edge
+              wall = i;
+            }
+          if (wall_normals[wall].cross(head_n).dot(x1 - x0) < 0)
+          {
+            std::swap(head, tail);
+            std::swap(head_n, tail_n);
+          }
+        }
       }
-      
+        
       assert(head.isValid());
       assert(tail.isValid());
       
       Vec2i edge_label(-1, -1); // x = the region on the right; y = the region on the left
       edge_label.y() = (obj.getRelativeOrientation(head, *eit) > 0 ? m_shell.getFaceLabel(head).y() : m_shell.getFaceLabel(head).x());
-      edge_label.x() = (obj.getRelativeOrientation(tail, *eit) > 0 ? m_shell.getFaceLabel(head).x() : m_shell.getFaceLabel(head).y());
+      edge_label.x() = (obj.getRelativeOrientation(tail, *eit) > 0 ? m_shell.getFaceLabel(tail).x() : m_shell.getFaceLabel(tail).y());
       
       assert(edge_label.x() >= 0 && edge_label.y() >= 0);
       
@@ -323,14 +349,6 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
   bb_edges[ 9].x() = 4;  bb_edges[ 9].y() = 7;  bb_edges[ 9].z() = 3;   bb_edges[ 9].w() = 4; // BB edge: vertices 4, 7
   bb_edges[10].x() = 5;  bb_edges[10].y() = 7;  bb_edges[10].z() = 5;   bb_edges[10].w() = 3; // BB edge: vertices 5, 7
   bb_edges[11].x() = 6;  bb_edges[11].y() = 7;  bb_edges[11].z() = 4;   bb_edges[11].w() = 5; // BB edge: vertices 6, 7
-  
-  std::vector<Vec3d> wall_normals(6);
-  wall_normals[0] = Vec3d(-1, 0, 0);
-  wall_normals[1] = Vec3d(0, -1, 0);
-  wall_normals[2] = Vec3d(0, 0, -1);
-  wall_normals[3] = Vec3d(1, 0, 0);
-  wall_normals[4] = Vec3d(0, 1, 0);
-  wall_normals[5] = Vec3d(0, 0, 1);
   
   // first find the boundary vertices lying on BB edges
   std::vector<std::vector<VertexHandle> > edge_verts(12);
