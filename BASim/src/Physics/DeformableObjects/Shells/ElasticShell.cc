@@ -489,11 +489,6 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
 
   dynamic_surface.set_all_newpositions( vert_new );
   
-  for (size_t i = 0; i < dynamic_surface.m_mesh.nv(); i++)
-  {
-    std::cout << "vertex " << i << " (" << dynamic_surface.get_position(i) << ") => (" << dynamic_surface.get_newposition(i) << ") mass = " << dynamic_surface.m_masses[i] << std::endl;
-  }
-
   // advance by dt
   double actual_dt;
   dynamic_surface.integrate( timestep, actual_dt );
