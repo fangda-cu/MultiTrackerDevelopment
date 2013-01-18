@@ -684,33 +684,78 @@ void DoubleBubbleTest::beforeEndStep()
   Scalar dt = getDt();
   Scalar current_t = getTime();
   
-  for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+  if (m_active_scene == 7)
   {
-    Vec3d v;
-    Vec3d x = shell->getVertexPosition(*vit);
+    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+    {
+      Vec3d v;
+      Vec3d x = shell->getVertexPosition(*vit);
+      
+      // RK4
+      // -----------
+      // k1 = dt * f( t, x );
+      s7_enright_velocity(current_t, x, v);
+      Vec3d k1 = v;
+      
+      // k2 = dt * f( t + 0.5*dt, x + 0.5*k1 );
+      s7_enright_velocity(current_t + 0.5 * dt, x + 0.5 * dt * k1, v);
+      Vec3d k2 = v;
+      
+      // k3 = dt * f( t + 0.5*dt, x + 0.5*k2 );
+      s7_enright_velocity(current_t + 0.5 * dt, x + 0.5 * dt * k2, v);
+      Vec3d k3 = v;
+      
+      // k4 = dt * f( t + dt, x + k3 );
+      s7_enright_velocity(current_t + dt, x + dt * k3, v);
+      Vec3d k4 = v;
+      
+      v = (1./6. * (k1 + k4) + 1./3. * (k2 + k3));
+      shell->setVertexVelocity(*vit, v);
+      shell->setVertexPosition(*vit, x + v * dt);
+    }  
+  } else if (m_active_scene == 9)
+  {
+    VertexProperty<Vec3d> velocities(shellObj);
     
-    // RK4
-    // -----------
-    // k1 = dt * f( t, x );
-    s7_enright_velocity(current_t, x, v);
-    Vec3d k1 = v;
+    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+    {
+      if (shellObj->vertexIncidentEdges(*vit) == 0) 
+      { 
+        velocities[*vit] = Vec3d(0, 0, 0);
+        continue;
+      }
+      
+      Vec3d normal(0, 0, 0);
+      double sum_areas = 0.0;
+      for (VertexFaceIterator vfit = shellObj->vf_iter(*vit); vfit; ++vfit)
+      {
+        FaceVertexIterator fvit = shellObj->fv_iter(*vfit); assert(fvit);
+        Vec3d x0 = shell->getVertexPosition(*fvit); ++fvit; assert(fvit);
+        Vec3d x1 = shell->getVertexPosition(*fvit); ++fvit; assert(fvit);
+        Vec3d x2 = shell->getVertexPosition(*fvit); ++fvit; assert(!fvit);
+        
+        double area = (x1 - x0).cross(x2 - x0).norm() / 2;
+        normal += (x1 - x0).cross(x2 - x0).normalized() * area;
+        sum_areas += area;
+      }
+      normal.normalize();
+      
+      double speed = 0.1;
+      double switch_speed = (current_t >= 1.0) ? -speed : speed;
+      velocities[*vit] = switch_speed * normal;
+    }
     
-    // k2 = dt * f( t + 0.5*dt, x + 0.5*k1 );
-    s7_enright_velocity(current_t + 0.5 * dt, x + 0.5 * dt * k1, v);
-    Vec3d k2 = v;
+//    double capped_dt = MeshSmoother::compute_max_timestep_quadratic_solve( surf.m_mesh.get_triangles(), surf.get_positions(), displacements, false );
     
-    // k3 = dt * f( t + 0.5*dt, x + 0.5*k2 );
-    s7_enright_velocity(current_t + 0.5 * dt, x + 0.5 * dt * k2, v);
-    Vec3d k3 = v;
+//    adaptive_dt = min( adaptive_dt, capped_dt );
     
-    // k4 = dt * f( t + dt, x + k3 );
-    s7_enright_velocity(current_t + dt, x + dt * k3, v);
-    Vec3d k4 = v;
+    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+    {
+      shell->setVertexVelocity(*vit, velocities[*vit]);
+      shell->setVertexPosition(*vit, shell->getVertexPosition(*vit) + velocities[*vit] * dt);
+    }
     
-    v = (1./6. * (k1 + k4) + 1./3. * (k2 + k3));
-    shell->setVertexVelocity(*vit, v);
-    shell->setVertexPosition(*vit, x + v * dt);
-  }  
+  }
 }
 
 void DoubleBubbleTest::s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out)
@@ -767,7 +812,7 @@ void DoubleBubbleTest::AfterStep()
     {
       vol[i] /= 6;
       if (i == 0)
-        vol[i] = -vol[i]; // this is used to compute total area
+        vol[i] = -vol[i]; // this is used to compute total volume
       
       if (init_vol[i] < 0)
         init_vol[i] = vol[i];
@@ -1943,7 +1988,7 @@ void DoubleBubbleTest::setupScene9()
       if (!(v0 == v1 || v0 == v2 || v1 == v2))
       {
         faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
-        faceLabels[faceList.back()] = Vec2i(1, 0);
+        faceLabels[faceList.back()] = Vec2i(2, 0);
       }
       
       v0 = offset + (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
@@ -1952,7 +1997,7 @@ void DoubleBubbleTest::setupScene9()
       if (!(v0 == v1 || v0 == v2 || v1 == v2))
       {
         faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
-        faceLabels[faceList.back()] = Vec2i(1, 0);
+        faceLabels[faceList.back()] = Vec2i(2, 0);
       }
     }
   }
