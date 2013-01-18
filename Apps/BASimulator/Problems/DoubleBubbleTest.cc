@@ -361,9 +361,9 @@ void DoubleBubbleTest::Setup()
 //  tearingRand = clamp(tearingRand, 0.0, 1.0);
   shell->setTearing(tearing, tearingThres, tearingRand);
 
-  updateBBWallConstraints();
-  shell->remesh(true);
-  updateBBWallConstraints();
+//  updateBBWallConstraints();
+//  shell->remesh(true);
+//  updateBBWallConstraints();
     
   // count total number of regions
   int max_region = 0;
@@ -1589,7 +1589,7 @@ void DoubleBubbleTest::setupScene8()
             for (int j = 1; j < i; j++)
             {
                 vertList.push_back(shellObj->addVertex());
-                positions[vertList.back()] = xc + (xa - xc) * i / res + (xb - xc) * j / res; 
+                positions[vertList.back()] = xc * (i - j) / res + xa * (res - i) / res + xb * j / res; 
             }
         }
         
@@ -1634,9 +1634,9 @@ void DoubleBubbleTest::setupScene8()
             for (int j = 0; j <= i; j++)
             {
                 Vec3d x0, x1, x2;
-                x0 = xc + (xa - xc) * i / res + (xb - xc) * j / res; 
-                x1 = xc + (xa - xc) * (i + 1) / res + (xb - xc) * j / res; 
-                x2 = xc + (xa - xc) * (i + 1) / res + (xb - xc) * (j + 1) / res; 
+                x0 = xc * (i - j) / res + xa * (res - i) / res + xb * j / res; 
+                x1 = xc * (i + 1 - j) / res + xa * (res - i - 1) / res + xb * j / res; 
+                x2 = xc * (i - j) / res + xa * (res - i - 1) / res + xb * (j + 1) / res; 
                 
                 size_t v0, v1, v2;
                 for (v0 = 0; v0 < vertList.size(); v0++)
@@ -1653,11 +1653,37 @@ void DoubleBubbleTest::setupScene8()
                 assert(v2 < vertList.size());
                 
                 faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
-                
                 faceLabels[faceList.back()] = label;
             }
         }
         
+        for (int i = 1; i < res; i++)
+        {
+            for (int j = 0; j < i; j++)
+            {
+                Vec3d x0, x1, x2;
+                x0 = xc * (i - j) / res + xa * (res - i) / res + xb * j / res; 
+                x1 = xc * (i - j) / res + xa * (res - i - 1) / res + xb * (j + 1) / res; 
+                x2 = xc * (i - j - 1) / res + xa * (res - i) / res + xb * (j + 1) / res; 
+                
+                size_t v0, v1, v2;
+                for (v0 = 0; v0 < vertList.size(); v0++)
+                    if ((x0 - positions[vertList[v0]]).squaredNorm() < 1e-6)
+                        break;
+                assert(v0 < vertList.size());
+                for (v1 = 0; v1 < vertList.size(); v1++)
+                    if ((x1 - positions[vertList[v1]]).squaredNorm() < 1e-6)
+                        break;
+                assert(v1 < vertList.size());
+                for (v2 = 0; v2 < vertList.size(); v2++)
+                    if ((x2 - positions[vertList[v2]]).squaredNorm() < 1e-6)
+                        break;
+                assert(v2 < vertList.size());
+                
+                faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+                faceLabels[faceList.back()] = label;
+            }
+        }
     }
     
     //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
