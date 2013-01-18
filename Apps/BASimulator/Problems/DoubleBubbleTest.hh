@@ -59,6 +59,7 @@ public:
     
   void setupScene7(); // Enright test with a sphere
   void setupScene8(); // Reauleux tetrahedron test VIIM figure 18
+  void setupScene9(); // Normal motion VIIM figure 20
   
 
   void s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out);
