@@ -715,8 +715,14 @@ void DoubleBubbleTest::beforeEndStep()
     }  
   } else if (m_active_scene == 9)
   {
-    VertexProperty<Vec3d> velocities(shellObj);
+    static Scalar speeds[3][3] = 
+    {
+      { 0, -1, -1 },
+      { 1, 0, 0 },
+      { 1, 0, 0 }
+    };
     
+    VertexProperty<Vec3d> velocities(shellObj);
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
       if (shellObj->vertexIncidentEdges(*vit) == 0) 
@@ -734,15 +740,16 @@ void DoubleBubbleTest::beforeEndStep()
         Vec3d x1 = shell->getVertexPosition(*fvit); ++fvit; assert(fvit);
         Vec3d x2 = shell->getVertexPosition(*fvit); ++fvit; assert(!fvit);
         
+        Vec2i label = shell->getFaceLabel(*vfit);
+        
         double area = (x1 - x0).cross(x2 - x0).norm() / 2;
-        normal += (x1 - x0).cross(x2 - x0).normalized() * area;
+        normal += (x1 - x0).cross(x2 - x0).normalized() * area * speeds[label.x()][label.y()];
         sum_areas += area;
       }
       normal.normalize();
       
       double speed = 0.1;
-      double switch_speed = (current_t >= 1.0) ? -speed : speed;
-      velocities[*vit] = switch_speed * normal;
+      velocities[*vit] = speed * normal;
     }
     
 //    double capped_dt = MeshSmoother::compute_max_timestep_quadratic_solve( surf.m_mesh.get_triangles(), surf.get_positions(), displacements, false );

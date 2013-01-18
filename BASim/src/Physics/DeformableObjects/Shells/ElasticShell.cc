@@ -1058,7 +1058,7 @@ void ElasticShell::remesh(bool initial)
   //Set up a SurfTrack, run remeshing, render the new mesh
   ElTopo::SurfTrackInitializationParameters construction_parameters;
   construction_parameters.m_proximity_epsilon = m_collision_epsilon;
-  construction_parameters.m_merge_proximity_epsilon = 0.00001;
+  construction_parameters.m_merge_proximity_epsilon = 0.001;
   construction_parameters.m_allow_vertex_movement_during_collapse = true;
   construction_parameters.m_perform_smoothing = false;
   construction_parameters.m_min_edge_length = m_remesh_edge_min_len;
