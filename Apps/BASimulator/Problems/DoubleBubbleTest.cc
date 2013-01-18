@@ -1535,7 +1535,7 @@ void DoubleBubbleTest::setupScene8()
         vertList.push_back(shellObj->addVertex());
     
     //create positions
-    Scalar size = 0.5;
+    Scalar size = GetScalarOpt("shell-width");
     Vec3d center(0.5, 0.5, 0.5);
     Scalar d = 0.1464466094;
     positions[vertList[ 0]] = Vec3d(0, 0, 0.5);
