@@ -64,6 +64,8 @@ public:
   
 
   void s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out);
+  
+  void createIcoSphere(DeformableObject & mesh, Vec3d & center, Scalar r, int subdivision, std::vector<VertexHandle> & vertList, std::vector<FaceHandle> & faceList, VertexProperty<Vec3d> & positions);
 
   int m_nregion;
 

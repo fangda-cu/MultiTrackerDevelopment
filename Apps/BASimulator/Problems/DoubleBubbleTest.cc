@@ -1912,7 +1912,7 @@ void DoubleBubbleTest::setupScene8()
   
 }
 
-void createIcoSphere(DeformableObject & mesh, Vec3d & center, Scalar r, int subdivision, std::vector<VertexHandle> & vertList, std::vector<FaceHandle> & faceList, VertexProperty<Vec3d> & positions)
+void DoubleBubbleTest::createIcoSphere(DeformableObject & mesh, Vec3d & center, Scalar r, int subdivision, std::vector<VertexHandle> & vertList, std::vector<FaceHandle> & faceList, VertexProperty<Vec3d> & positions)
 {
   vertList.clear();
   faceList.clear();
@@ -2061,7 +2061,7 @@ void DoubleBubbleTest::setupScene9()
   
   vs.clear();
   fs.clear();
-  createIcoSphere(*shellObj, c1, r, 3, vs, fs, positions);
+  createIcoSphere(*shellObj, c1, r, N, vs, fs, positions);
   for (size_t i = 0; i < fs.size(); i++)
     faceLabels[fs[i]] = Vec2i(1, 0);
   vertList.insert(vertList.end(), vs.begin(), vs.end());
@@ -2069,7 +2069,7 @@ void DoubleBubbleTest::setupScene9()
   
   vs.clear();
   fs.clear();
-  createIcoSphere(*shellObj, c2, r, 3, vs, fs, positions);
+  createIcoSphere(*shellObj, c2, r, N, vs, fs, positions);
   for (size_t i = 0; i < fs.size(); i++)
     faceLabels[fs[i]] = Vec2i(2, 0);
   vertList.insert(vertList.end(), vs.begin(), vs.end());
