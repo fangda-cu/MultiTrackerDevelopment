@@ -748,7 +748,8 @@ void DoubleBubbleTest::beforeEndStep()
         normal += (x1 - x0).cross(x2 - x0).normalized() * area * speeds[label.x()][label.y()];
         sum_areas += area;
       }
-      normal.normalize();
+      if (normal.norm() > 0)
+        normal.normalize();
       
       double speed = 0.1;
       velocities[*vit] = speed * normal;

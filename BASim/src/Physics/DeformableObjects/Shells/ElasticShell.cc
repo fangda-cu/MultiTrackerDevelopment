@@ -488,6 +488,11 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
   ElTopo::DynamicSurface dynamic_surface( vert_old, tri_data, std::vector<ElTopo::Vec2i>(tri_data.size(), ElTopo::Vec2i(0, 0)), masses, m_collision_epsilon, friction_coeff, true, false );
 
   dynamic_surface.set_all_newpositions( vert_new );
+  
+  for (size_t i = 0; i < dynamic_surface.m_mesh.nv(); i++)
+  {
+    std::cout << "vertex " << i << " (" << dynamic_surface.get_position(i) << ") => (" << dynamic_surface.get_newposition(i) << ") mass = " << dynamic_surface.m_masses[i] << std::endl;
+  }
 
   // advance by dt
   double actual_dt;
