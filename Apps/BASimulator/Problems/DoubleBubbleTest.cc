@@ -363,9 +363,9 @@ void DoubleBubbleTest::Setup()
 //  tearingRand = clamp(tearingRand, 0.0, 1.0);
   shell->setTearing(tearing, tearingThres, tearingRand);
 
-//  updateBBWallConstraints();
-//  shell->remesh(true);
-//  updateBBWallConstraints();
+  updateBBWallConstraints();
+  shell->remesh(true);
+  updateBBWallConstraints();
     
   // count total number of regions
   int max_region = 0;
