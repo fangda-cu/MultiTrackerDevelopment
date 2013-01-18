@@ -114,6 +114,7 @@ bool MeshMerger::get_zipper_triangles( size_t edge_index_a, size_t edge_index_b,
       shared_label = inc_tri_a0_label[1];
    }
    else {
+      return false;
       assert(false && "No matching regions among merge label candidates.");
    }
 
