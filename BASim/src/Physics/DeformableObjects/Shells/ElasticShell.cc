@@ -1051,9 +1051,9 @@ void ElasticShell::remesh(bool initial)
     if (m_obj->edgeIncidentFaces(*eit) == 0)
       m_obj->deleteEdge(*eit, true);
   
-//  for (VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit)
-//    if (m_obj->vertexIncidentEdges(*vit) == 0)
-//      m_obj->deleteVertex(*vit);
+  for (VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit)
+    if (m_obj->vertexIncidentEdges(*vit) == 0)
+      m_obj->deleteVertex(*vit);
 
   //Set up a SurfTrack, run remeshing, render the new mesh
   ElTopo::SurfTrackInitializationParameters construction_parameters;
