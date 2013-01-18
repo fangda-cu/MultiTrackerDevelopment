@@ -613,6 +613,8 @@ void DoubleBubbleTest::AtEachTimestep()
 
 void DoubleBubbleTest::updateBBWallConstraints()
 {
+    if (m_active_scene == 9)
+      return;
     
     shellObj->releaseAllVertices();
     shell->getVertexConstraintLabels().assign(0);
