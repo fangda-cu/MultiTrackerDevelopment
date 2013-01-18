@@ -1532,10 +1532,7 @@ void DoubleBubbleTest::setupScene8()
     
     int nv = 8;
     for(int i = 0; i < nv; ++i) 
-    {
         vertList.push_back(shellObj->addVertex());
-        velocities[vertList[i]] = Vec3d(0,0,0);
-    }
     
     //create positions
     Scalar d = 0.1464466094;
@@ -1548,9 +1545,63 @@ void DoubleBubbleTest::setupScene8()
     positions[vertList[ 6]] = Vec3d(1 - d, 0.5, 0);
     positions[vertList[ 7]] = Vec3d(1, 0.5, 0);
     
-    for(int i = 0; i < shellObj->nv(); ++i)
-        undeformed[vertList[i]] = positions[vertList[i]];
+    VertexHandle tet_corners[4];
+    tet_corners[0] = vertList[1];
+    tet_corners[1] = vertList[2];
+    tet_corners[2] = vertList[5];
+    tet_corners[3] = vertList[6];
     
+    int res = GetIntOpt("shell-x-resolution");
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = i + 1; j < 4; j++)
+        {
+            VertexHandle a = tet_corners[i];
+            VertexHandle b = tet_corners[j];
+            Vec3d xa = positions[a];
+            Vec3d xb = positions[b];
+            
+            // res - 1 vertices created
+            for (int k = 1; k < res; k++)
+            {
+                vertList.push_back(shellObj->addVertex());
+                positions[vertList.back()] = xa + (xb - xa) * k / res;
+            }
+        }
+    }
+
+    for (int f = 0; f < 4; f++)
+    {
+        VertexHandle a, b, c, d;
+        a = tet_corners[(f + 0) % 4];
+        b = tet_corners[(f + 1) % 4];
+        c = tet_corners[(f + 2) % 4];
+        d = tet_corners[(f + 3) % 4];
+        Vec3d xa, xb, xc, xd;
+        xa = positions[a];
+        xb = positions[b];
+        xc = positions[c];
+        xd = positions[d];
+        
+        // (res - 1) * (res - 2) vertices created
+        for (int i = 2; i < res; i++)
+        {
+            for (int j = 1; j < i; j++)
+            {
+                vertList.push_back(shellObj->addVertex());
+                positions[vertList.back()] = xc + (xa - xc) * i / res + (xb - xc) * j / res; 
+            }
+        }
+        
+        
+    }
+    
+    for(int i = 0; i < shellObj->nv(); ++i)
+    {
+        undeformed[vertList[i]] = positions[vertList[i]];
+        velocities[vertList[i]] = Vec3d(0, 0, 0);
+    }
+
     std::vector<FaceHandle> faceList;
     FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles  
     
@@ -1558,6 +1609,56 @@ void DoubleBubbleTest::setupScene8()
     faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 2], vertList[ 3]));  faceLabels[faceList.back()] = Vec2i(1, 0);
     faceList.push_back(shellObj->addFace(vertList[ 4], vertList[ 5], vertList[ 6]));  faceLabels[faceList.back()] = Vec2i(3, 2);
     faceList.push_back(shellObj->addFace(vertList[ 4], vertList[ 6], vertList[ 7]));  faceLabels[faceList.back()] = Vec2i(3, 2);
+    
+    Vec3d center(0.5, 0.5, 0.5);
+    int regions[4] = { 0, 3, 2, 1 };
+    
+    for (int f = 0; f < 4; f++)
+    {
+        VertexHandle a, b, c, d;
+        a = tet_corners[(f + 0) % 4];
+        b = tet_corners[(f + 1) % 4];
+        c = tet_corners[(f + 2) % 4];
+        d = tet_corners[(f + 3) % 4];
+        Vec3d xa, xb, xc, xd;
+        xa = positions[a];
+        xb = positions[b];
+        xc = positions[c];
+        xd = positions[d];
+        
+        bool oriented = ((xa - center).cross(xb - center).dot(xc - center) > 0);
+        Vec2i label = (oriented ? Vec2i(regions[f], 4) : Vec2i(4, regions[f]));
+
+        for (int i = 0; i < res; i++)
+        {
+            for (int j = 0; j <= i; j++)
+            {
+                Vec3d x0, x1, x2;
+                x0 = xc + (xa - xc) * i / res + (xb - xc) * j / res; 
+                x1 = xc + (xa - xc) * (i + 1) / res + (xb - xc) * j / res; 
+                x2 = xc + (xa - xc) * (i + 1) / res + (xb - xc) * (j + 1) / res; 
+                
+                size_t v0, v1, v2;
+                for (v0 = 0; v0 < vertList.size(); v0++)
+                    if ((x0 - positions[vertList[v0]]).squaredNorm() < 1e-6)
+                        break;
+                assert(v0 < vertList.size());
+                for (v1 = 0; v1 < vertList.size(); v1++)
+                    if ((x1 - positions[vertList[v1]]).squaredNorm() < 1e-6)
+                        break;
+                assert(v1 < vertList.size());
+                for (v2 = 0; v2 < vertList.size(); v2++)
+                    if ((x2 - positions[vertList[v2]]).squaredNorm() < 1e-6)
+                        break;
+                assert(v2 < vertList.size());
+                
+                faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+                
+                faceLabels[faceList.back()] = label;
+            }
+        }
+        
+    }
     
     //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
     FaceProperty<char> shellFaces(shellObj); 
