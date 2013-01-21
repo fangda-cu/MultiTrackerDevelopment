@@ -114,7 +114,9 @@ bool MeshMerger::get_zipper_triangles( size_t edge_index_a, size_t edge_index_b,
       shared_label = inc_tri_a0_label[1];
    }
    else {
-      assert(false && "No matching regions among merge label candidates.");
+      //Note: this case can happen if a triangle comes close to another triangle, when the two are also separated
+      //by yet ANOTHER interface. Collision detection would cull it, but lets kill it here instead.
+      return false;
    }
 
    //get the other two vertices comprising the first patch
