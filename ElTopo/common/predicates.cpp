@@ -446,9 +446,9 @@ static Vec3d get_normal(const Vec3d& u, const Vec3d& v)
     m=mag(c);
     if(m) return c/m;
     // really degenerate case: u and v are both zero vectors; pick a random unit-length vector
-    c[0]=random()%2 ? -0.577350269189626 : 0.577350269189626;
-    c[1]=random()%2 ? -0.577350269189626 : 0.577350269189626;
-    c[2]=random()%2 ? -0.577350269189626 : 0.577350269189626;
+    c[0]=(random()%2 ? -0.577350269189626 : 0.577350269189626);
+    c[1]=(random()%2 ? -0.577350269189626 : 0.577350269189626);
+    c[2]=(random()%2 ? -0.577350269189626 : 0.577350269189626);
     return c;
 }
 

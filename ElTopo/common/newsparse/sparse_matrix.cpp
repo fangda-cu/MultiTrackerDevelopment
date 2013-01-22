@@ -74,12 +74,14 @@ void SparseMatrixDynamicCSR::
 apply(const double *x, double *y) const
 {
     assert(x && y);
-    for(int i=0; i<m; ++i){
-        double d=0;
-        const DynamicSparseVector &r=row[i];
-        for(DynamicSparseVector::const_iterator p=r.begin(); p!=r.end(); ++p)
-            d+=p->value*x[p->index];
-        y[i]=d;
+    if(x!= NULL && y != NULL) {
+       for(int i=0; i<m; ++i){
+           double d=0;
+           const DynamicSparseVector &r=row[i];
+           for(DynamicSparseVector::const_iterator p=r.begin(); p!=r.end(); ++p)
+               d+=p->value*x[p->index];
+           y[i]=d;
+       }
     }
 }
 
@@ -87,12 +89,14 @@ void SparseMatrixDynamicCSR::
 apply_and_subtract(const double *x, const double *y, double *z) const
 {
     assert(x && y && z);
-    for(int i=0; i<m; ++i){
-        double d=0;
-        const DynamicSparseVector &r=row[i];
-        for(DynamicSparseVector::const_iterator p=r.begin(); p!=r.end(); ++p)
-            d+=p->value*x[p->index];
-        z[i]=y[i]-d;
+    if(x!= NULL && y != NULL && z != NULL) {
+       for(int i=0; i<m; ++i){
+          double d=0;
+          const DynamicSparseVector &r=row[i];
+          for(DynamicSparseVector::const_iterator p=r.begin(); p!=r.end(); ++p)
+             d+=p->value*x[p->index];
+          z[i]=y[i]-d;
+       }
     }
 }
 
@@ -100,12 +104,14 @@ void SparseMatrixDynamicCSR::
 apply_transpose(const double *x, double *y) const
 {
     assert(x && y);
-    BLAS::set_zero(n, y);
-    for(int i=0; i<m; ++i){
-        const DynamicSparseVector &r=row[i];
-        double xi=x[i];
-        for(DynamicSparseVector::const_iterator p=r.begin(); p!=r.end(); ++p)
-            y[p->index]+=p->value*xi;
+    if(x!= NULL && y != NULL) {
+       BLAS::set_zero(n, y);
+       for(int i=0; i<m; ++i){
+          const DynamicSparseVector &r=row[i];
+          double xi=x[i];
+          for(DynamicSparseVector::const_iterator p=r.begin(); p!=r.end(); ++p)
+             y[p->index]+=p->value*xi;
+       }
     }
 }
 
@@ -113,12 +119,14 @@ void SparseMatrixDynamicCSR::
 apply_transpose_and_subtract(const double *x, const double *y, double *z) const
 {
     assert(x && y && z);
-    if(y!=z) BLAS::copy(n, y, z);
-    for(int i=0; i<m; ++i){
-        const DynamicSparseVector &r=row[i];
-        double xi=x[i];
-        for(DynamicSparseVector::const_iterator p=r.begin(); p!=r.end(); ++p)
-            z[p->index]-=p->value*xi;
+    if(x!= NULL && y != NULL && z != NULL) {
+       if(y!=z) BLAS::copy(n, y, z);
+       for(int i=0; i<m; ++i){
+          const DynamicSparseVector &r=row[i];
+          double xi=x[i];
+          for(DynamicSparseVector::const_iterator p=r.begin(); p!=r.end(); ++p)
+             z[p->index]-=p->value*xi;
+       }
     }
 }
 
@@ -211,10 +219,12 @@ void SparseMatrixStaticCSR::
 apply_and_subtract(const double *x, const double *y, double *z) const
 {
     assert(x && y && z);
-    for(int i=0, k=rowstart[0]; i<m; ++i){
-        double d=0;
-        for(; k<rowstart[i+1]; ++k) d+=value[k]*x[colindex[k]];
-        z[i]=y[i]-d;
+    if(x!= NULL && y != NULL && z != NULL) {
+       for(int i=0, k=rowstart[0]; i<m; ++i){
+          double d=0;
+          for(; k<rowstart[i+1]; ++k) d+=value[k]*x[colindex[k]];
+          z[i]=y[i]-d;
+       }
     }
 }
 
@@ -223,10 +233,12 @@ void SparseMatrixStaticCSR::
 apply_transpose_and_subtract(const double *x, const double *y, double *z) const
 {
     assert(x && y && z);
-    if(y!=z) BLAS::copy(n, y, z);
-    for(int i=0, k=rowstart[0]; i<m; ++i){
-        double xi=x[i];
-        for(; k<rowstart[i+1]; ++k) z[colindex[k]]-=value[k]*xi;
+    if(x != NULL && y != NULL && z != NULL) {
+       if(y!=z) BLAS::copy(n, y, z);
+       for(int i=0, k=rowstart[0]; i<m; ++i){
+           double xi=x[i];
+           for(; k<rowstart[i+1]; ++k) z[colindex[k]]-=value[k]*xi;
+       }
     }
 }
 

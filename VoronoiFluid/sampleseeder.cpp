@@ -163,9 +163,9 @@ void SampleSeeder::generate_adaptive_points( const SurfTrack& surface,
       // ignore incident triangles
       const std::vector<size_t>& incident_triangles = surface.m_mesh.m_vertex_to_triangle_map[i];
       
-      for(size_t i = 0; i < ray_dirs.size(); ++i)
+      for(size_t i_in = 0; i_in < ray_dirs.size(); ++i_in)
       {      
-         Vec3d normal = ray_dirs[i];
+         Vec3d normal = ray_dirs[i_in];
          
          if ( mag(normal) == 0.0 ) { continue; }
 

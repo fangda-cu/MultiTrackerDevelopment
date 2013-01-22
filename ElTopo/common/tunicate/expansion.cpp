@@ -1,14 +1,12 @@
 // Released into the public-domain by Robert Bridson, 2009.
+// Modified by Tyson Brochu, 2011.
 
 #include <expansion.h>
 
-#include <bitset>
 #include <cassert>
 #include <cmath>
-#include "fenv_include.h"
 #include <iostream>
-#include <string.h>
-
+#include "commonoptions.h"
 
 namespace {
     
@@ -269,7 +267,7 @@ void compress( const expansion& e, expansion& h )
     size_t bottom = e.v.size() - 1;
     double q = e.v[bottom];
     
-    for ( int i = e.v.size() - 2; i >= 0; --i )
+    for ( ssize_t i = e.v.size() - 2; i >= 0; --i )
     {
         double new_q, small_q;
         fast_two_sum( q, e.v[i], new_q, small_q );
@@ -342,7 +340,6 @@ bool divide( const expansion& x, const expansion& y, expansion& q )
         {
             assert ( !is_zero(y) );
             std::cout << "underflow, s == 0" << std::endl;
-            std::cout << "r: "; print_full( r );
             std::cout << "divisor: " << divisor << std::endl;
             return false;         
         }
@@ -438,88 +435,6 @@ void print_full( const expansion& e )
     std::cout << std::endl;   
 }
 
-
-//==============================================================================
-
-static void print_binary_byte( unsigned char x )
-{
-    char b[9];
-    b[0] = '\0';
-    unsigned char z;
-    for (z = 128; z > 0; z >>= 1)
-    {
-        strcat(b, ((x & z) == z) ? "1" : "0");
-    }
-    
-    std::cout << b;
-}
-
-
-//==============================================================================
-
-
-union udouble {
-    double d;
-    unsigned long u;
-};
-
-
-long get_exponent( double x )
-{
-    
-    udouble ux;
-    ux.d = x;
-    std::bitset<64> bits((unsigned long long)(ux.u));
-    
-    assert ( sizeof(unsigned long) == 8 );
-    assert ( sizeof(double) == 8 );    // required by IEEE 754 thank you very much
-    
-    // grab the 11 exponent bits
-    
-    std::bitset<64> exponent_bits( 0 );
-    
-    for ( int i = 0; i < 11; ++i )
-    {
-        int src_bit = 62 - i;
-        exponent_bits[10-i] = bits[src_bit];
-    }
-    
-    return exponent_bits.to_ulong() - 1023;
-}
-
-
-//==============================================================================
-
-void print_binary( const expansion& e )
-{
-    
-    if ( e.v.size() == 0 ) { std::cout << "0" << std::endl; }
-    
-    for ( unsigned int j = 0; j < e.v.size(); ++j )
-    {
-        std::cout << e.v[j] << ": ";
-        
-        udouble un;
-        un.d = e.v[j];
-        std::cout << std::hex << un.u << " " << std::endl;
-        //printf( "%x ", un.u );
-        
-        double ej = e.v[j];
-        const unsigned char* c = reinterpret_cast<const unsigned char*> ( &ej );
-        
-        for ( int i = sizeof(double) - 1; i >= 0; --i )
-            //for ( int i = 0; i < sizeof(double); ++i )
-        {
-            //printf( "%d ", c[i] );
-            //printf( "%2x ", c[i] );
-            print_binary_byte( c[i] ); std::cout << " ";
-        }
-        
-        std::cout << std::endl;   
-    }
-    
-    
-}
 
 
 

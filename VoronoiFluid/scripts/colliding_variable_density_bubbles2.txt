@@ -1,7 +1,7 @@
 
 frame_rate 24.0
-sim_dx 0.3
-surface_dx 0.15
+sim_dx 0.6
+surface_dx 0.3
 
 
 region

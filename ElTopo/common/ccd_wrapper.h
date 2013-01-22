@@ -1,3 +1,4 @@
+
 // ---------------------------------------------------------
 //
 //  ccd_wrapper.h
@@ -11,11 +12,9 @@
 #ifndef CCD_WRAPPER_H
 #define CCD_WRAPPER_H
 
-
 #include <vec.h>
 
 namespace ElTopo {
-
 // --------------------------------------------------------------------------------------------------
 // 2D continuous collision detection
 // --------------------------------------------------------------------------------------------------
@@ -28,7 +27,7 @@ bool point_segment_collision(const Vec2d& x0, const Vec2d& xnew0, size_t index0,
 bool point_segment_collision(const Vec2d& x0, const Vec2d& xnew0, size_t index0,
                              const Vec2d& x1, const Vec2d& xnew1, size_t index1,
                              const Vec2d& x2, const Vec2d& xnew2, size_t index2,
-                             double& edge_alpha, Vec2d& normal, double& time, double& rel_disp);
+                             double& edge_alpha, Vec2d& normal, double& rel_disp);
 
 // --------------------------------------------------------------------------------------------------
 // 2D static intersection detection

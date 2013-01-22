@@ -3,7 +3,7 @@
 
 // Released into the public domain by Robert Bridson, 2009.
 
-#ifdef __cplusplus
+#ifdef __cplusplus   
 extern "C" {
 #endif
     

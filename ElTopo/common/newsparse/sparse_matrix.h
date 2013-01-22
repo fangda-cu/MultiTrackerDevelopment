@@ -81,11 +81,13 @@ struct SparseMatrixStaticCSR: public LinearOperator
 inline void SparseMatrixStaticCSR::
 apply(const double *x, double *y) const
 {
-    assert(x && y);
-    for(int i=0, k=rowstart[0]; i<m; ++i){
-        double d=0;
-        for(; k<rowstart[i+1]; ++k) d+=value[k]*x[colindex[k]];
-        y[i]=d;
+    assert(x != NULL && y != NULL);
+    if(x != NULL && y != NULL) {
+       for(int i=0, k=rowstart[0]; i<m; ++i){
+           double d=0;
+           for(; k<rowstart[i+1]; ++k) d+=value[k]*x[colindex[k]];
+           y[i]=d;
+       }
     }
 }
 
@@ -93,10 +95,12 @@ inline void SparseMatrixStaticCSR::
 apply_transpose(const double *x, double *y) const
 {
     assert(x && y);
-    BLAS::set_zero(n, y);
-    for(int i=0, k=rowstart[0]; i<m; ++i){
-        double xi=x[i];
-        for(; k<rowstart[i+1]; ++k) y[colindex[k]]+=value[k]*xi;
+    if(x != NULL && y != NULL) {
+       BLAS::set_zero(n, y);
+       for(int i=0, k=rowstart[0]; i<m; ++i){
+           double xi=x[i];
+           for(; k<rowstart[i+1]; ++k) y[colindex[k]]+=value[k]*xi;
+       }
     }
 }
 

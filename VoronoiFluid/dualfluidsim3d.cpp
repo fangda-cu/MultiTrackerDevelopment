@@ -716,7 +716,7 @@ void DualFluidSim3D::tet_edge_to_circumcentre_velocities( )
             N(c, 1) = normal[1];
             N(c, 2) = normal[2];
             z[c] = cur_edge_velocity;
-            max_component = max(max_component, (float)fabs(cur_edge_velocity));
+            max_component = max(max_component, (float)std::fabs(cur_edge_velocity));
             ++c;
          }
       }
@@ -749,7 +749,7 @@ void DualFluidSim3D::tet_edge_to_circumcentre_velocities( )
          Vec3f new_velocity = Vec3f( (float)z[0], (float)z[1], (float)z[2] );
          
          float max_expected = sqrt(3*sqr(max_component));
-         if(mag(new_velocity) > 5*max_expected) {
+         if(mag(new_velocity) > 5*max_expected || new_velocity[0] != new_velocity[0]) {
             printf("\n\n\n***Warning: BAD VELOCITY***\nMax expected velocity magnitude: %f\nConstructed velocity: %f\n", max_expected, mag(new_velocity));
             std::cout << "Offending tetrahedron: " << i << std::endl;
             std::cout << "Final computed velocity: " << new_velocity << std::endl;
@@ -794,9 +794,12 @@ void DualFluidSim3D::tet_edge_to_circumcentre_velocities( )
                }
             }         
          }
-         
+         //std::cout << "New velo: " << new_velocity << std::endl;
          voronoi_vertex_velocity_is_valid[i] = true;
          voronoi_vertex_velocities[i] = new_velocity;
+         if(new_velocity[0] != new_velocity[0]) {
+            std::cout << "Velocity: " << voronoi_vertex_velocities[i] << std::endl;
+         }
       }
       else 
       {
@@ -1420,6 +1423,11 @@ void DualFluidSim3D::advance_surface( float dt )
    }
    
    // markers
+   if(get_velocity == NULL) {
+      std::cout << "Velocity functor not defined!\n";
+      exit(-1);
+   }
+
    for ( unsigned int i = 0; i < markers.size(); ++i )
    {
       trace_rk2( markers[i], markers[i], dt, *get_velocity );
@@ -1535,7 +1543,7 @@ void DualFluidSim3D::remesh_and_advect_semilagrangian( float dt )
     xs = input_xs;
       
    // create a new mesh
-   TetMesh* new_mesh = new TetMesh;
+   TetMesh* new_mesh = new TetMesh();
    new_mesh->initialize( tets, xs, cgal_T );
    
    // transfer velocity from current mesh to new mesh
@@ -1575,6 +1583,10 @@ void DualFluidSim3D::remesh_and_advect_semilagrangian( float dt )
    {
 
       Vec3f previous_location;
+      if(get_velocity == NULL) {
+         std::cout << "Velocity functor not defined!\n";
+         exit(-1);
+      }
       trace_rk2( new_mesh->tet_edge_midpoints[i], previous_location, -dt, *get_velocity );
       
       Vec3f previous_velocity = (*get_velocity)( previous_location );
@@ -1637,6 +1649,10 @@ void DualFluidSim3D::semi_lagrangian_advection( float dt )
    for ( unsigned int i = 0; i < mesh->tet_edge_midpoints.size(); ++i )
    {
       Vec3f previous_location;
+      if(get_velocity == NULL) {
+         std::cout << "Velocity functor not defined!\n";
+         exit(-1);
+      }
       trace_rk2( mesh->tet_edge_midpoints[i], previous_location, -dt, *get_velocity );
       
       Vec3f previous_velocity = (*get_velocity)( previous_location );
@@ -2047,7 +2063,7 @@ void DualFluidSim3D::solve_pressure()
 
 // ---------------------------------------------------------
 
-
+/*
 void DualFluidSim3D::test_interpolation( float dt ) 
 {
    
@@ -2106,7 +2122,7 @@ void DualFluidSim3D::test_interpolation( float dt )
    reconstruct_and_extrapolate_velocities();
    
 }
-
+*/
 
 // ---------------------------------------------------------
 
@@ -2116,7 +2132,9 @@ float DualFluidSim3D::max_velocity( )
    float max_vel = -1.0f;
    for ( unsigned int i = 0; i < tet_edge_velocities.size(); ++i )
    {
-      max_vel = max( max_vel, (float)fabs( tet_edge_velocities[i] ) );
+      if(_isnan(tet_edge_velocities[i]) || !_finite(tet_edge_velocities[i])) 
+         std::cout << "Found bad one while iterating!\n";
+      max_vel = max( max_vel, (float)std::fabs( tet_edge_velocities[i] ) );
    }
    return max_vel;
 }
@@ -2163,6 +2181,13 @@ void DualFluidSim3D::advance( float dt, unsigned int num_surface_substeps )
       std::cout << "---------------------- Voronoi Fluid Sim: First time step: Pressure solve" << std::endl;
       solve_pressure();
 
+      std::cout << "Max face velocity: " << max_velocity() << std::endl;
+
+      for(size_t i = 0; i < mesh->edges.size(); ++i) {
+         if(tet_edge_velocities[i] != tet_edge_velocities[i]) {
+            std::cout << "Bad velocity after pressure solve: " << tet_edge_velocities[i] << std::endl;
+         }
+      }
 
       std::cout << "---------------------- Voronoi Fluid Sim: First time step: Reconstructing and extrapolating velocities " << std::endl;
       reconstruct_and_extrapolate_velocities();     
@@ -2248,6 +2273,12 @@ void DualFluidSim3D::advance( float dt, unsigned int num_surface_substeps )
       
       std::cout << "Max face velocity: " << max_velocity() << std::endl;
       
+      for(size_t i = 0; i < mesh->edges.size(); ++i) {
+         if(tet_edge_velocities[i] != tet_edge_velocities[i]) {
+            std::cout << "Bad velocity after pressure solve: " << tet_edge_velocities[i] << std::endl;
+         }
+      }
+
       // Transfer and extrapolate velocity
       std::cout << "---------------------- Voronoi Fluid Sim: Reconstructing and extrapolating velocities " << std::endl;
       start_time = get_time_in_seconds();

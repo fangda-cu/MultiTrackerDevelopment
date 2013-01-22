@@ -17,6 +17,12 @@
 const double UNINITIALIZED_DOUBLE = 0x0F;
 const double BIG_DOUBLE = 1e30;
 
+#ifdef _MSC_VER
+#include "BaseTsd.h"
+typedef SSIZE_T ssize_t;
+#endif
+
+const size_t UNINITIALIZED_SIZE_T = static_cast<size_t> (~0);
 
 #endif
 

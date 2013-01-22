@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <tunicate.h>
+#include <cstdlib>
 
 //==============================================================================
 // Note: it is assumed all arguments are nonzero (have a sign).
@@ -26,6 +27,10 @@ sos_simplex_intersection1d(int k,
 {
     assert(1<=k && k<=2);
     assert(alpha0 && alpha1 && alpha2);
+    
+    if(alpha0 == NULL || alpha1 == NULL || alpha2 == NULL) //prevent null pointer warning
+       return -1;
+
     double sum;
     switch(k){
         case 1: // point vs. segment

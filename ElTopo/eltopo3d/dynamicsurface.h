@@ -305,7 +305,8 @@ public:
     void get_triangle_intersections(const Vec3d& segment_point_a, 
                                     const Vec3d& segment_point_b,
                                     std::vector<double>& hit_ss,
-                                    std::vector<size_t>& hit_triangles ) const;
+                                    std::vector<size_t>& hit_triangles,
+                                    bool verbose = false) const;
     
     /// Count the number of triangles intersected by the given segment.
     ///

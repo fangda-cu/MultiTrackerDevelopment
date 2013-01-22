@@ -294,7 +294,8 @@ void DynamicSurface::get_all_vertex_normals( std::vector<Vec3d>& normals ) const
 void DynamicSurface::get_triangle_intersections( const Vec3d& segment_point_a, 
                                                 const Vec3d& segment_point_b,
                                                 std::vector<double>& hit_ss,
-                                                std::vector<size_t>& hit_triangles ) const
+                                                std::vector<size_t>& hit_triangles,
+                                                bool verbose ) const
 {
     Vec3d aabb_low, aabb_high;
     minmax( segment_point_a, segment_point_b, aabb_low, aabb_high );
@@ -306,8 +307,9 @@ void DynamicSurface::get_triangle_intersections( const Vec3d& segment_point_a,
     {
         const Vec3st& tri = m_mesh.get_triangle( overlapping_triangles[i] );
         
-        Vec3st t = sort_triangle( tri );
-        assert( t[0] < t[1] && t[0] < t[2] && t[1] < t[2] );
+        Vec3st t = tri;
+        //Vec3st t = sort_triangle( tri );
+        //assert( t[0] < t[1] && t[0] < t[2] && t[1] < t[2] );
         
         const Vec3d& v0 = get_position( t[0] );
         const Vec3d& v1 = get_position( t[1] );
@@ -325,7 +327,7 @@ void DynamicSurface::get_triangle_intersections( const Vec3d& segment_point_a,
                                                  v1, t[1],
                                                  v2, t[2],
                                                  sa, sb, bary1, bary2, bary3,
-                                                 false, false );
+                                                 false, verbose );
         
         if ( hit )
         {
@@ -358,8 +360,9 @@ size_t DynamicSurface::get_number_of_triangle_intersections( const Vec3d& segmen
     {
         const Vec3st& tri = m_mesh.get_triangle( overlapping_triangles[i] );
         
-        Vec3st t = sort_triangle( tri );
-        assert( t[0] < t[1] && t[0] < t[2] && t[1] < t[2] );
+        Vec3st t = tri;
+        //Vec3st t = sort_triangle( tri );
+        //assert( t[0] < t[1] && t[0] < t[2] && t[1] < t[2] );
         
         const Vec3d& v0 = get_position( t[0] );
         const Vec3d& v1 = get_position( t[1] );
@@ -474,16 +477,18 @@ int DynamicSurface::test_region_via_ray_and_normal(const Vec3d& p, const Vec3d& 
    std::vector<double> hit_ss;
    std::vector<size_t> hit_tris;
    get_triangle_intersections(p, ray_end, hit_ss, hit_tris);
-   int first_hit = -1;
-   double near_dist = 1;
+   int first_hit = 0;
+   double near_dist = 2; //result is between 0 and 1.
+   bool good_hit = false;
    for(unsigned int i = 0; i < hit_ss.size(); ++i) {
       if(hit_ss[i] < near_dist && !m_mesh.triangle_is_deleted(hit_tris[i])) {
          first_hit = i;
          near_dist = hit_ss[i];
+         good_hit = true;
       }
    }
 
-   if(hit_tris.size() == 0) return 0; //assume no hits means outside (region 0).
+   if(!good_hit) return 0; //assume no hits means outside (region 0).
 
    // get the normal of this triangle, check it's orientation relative to the ray
    const Vec3st& t = m_mesh.m_tris[ hit_tris[first_hit] ];
