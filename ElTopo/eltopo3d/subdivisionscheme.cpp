@@ -65,8 +65,8 @@ void ButterflyScheme::generate_new_midpoint( size_t edge_index, const SurfTrack&
     size_t p1_index = mesh.m_edges[edge_index][0];
 	size_t p2_index = mesh.m_edges[edge_index][1];
 	
-  assert(mesh.m_edge_to_triangle_map[edge_index].size() == 2);
-  //Butterfly doesn't support non-manifold scenarios yet. Try midpoint.
+   //Butterfly doesn't support non-manifold scenarios, really.  We revert to midpoint below.
+   //Better to straight-up use midpoint, or go with modified butterfly.
 
     size_t tri0 = mesh.m_edge_to_triangle_map[edge_index][0];
     size_t tri1 = mesh.m_edge_to_triangle_map[edge_index][1];
@@ -86,7 +86,7 @@ void ButterflyScheme::generate_new_midpoint( size_t edge_index, const SurfTrack&
 		const std::vector<size_t>& adj_tris = mesh.m_edge_to_triangle_map[ adj_edges[i] ];
 		if ( adj_tris.size() != 2 )
 		{
-            // abort
+            // abort! revert to midpoint here.
 			new_point = 0.5 * ( positions[ p1_index ] + positions[ p2_index ] );
             return;
 		}
@@ -226,8 +226,8 @@ void QuadraticErrorMinScheme::generate_new_midpoint( size_t edge_index, const Su
 // --------------------------------------------------------
 
 ModifiedButterflyScheme::ModifiedButterflyScheme() {
-    const int MAX_VALENCE = 30;
-    weights.resize(30);
+    const int MAX_VALENCE = 100; //precompute up to valence of 100 for good measure.
+    weights.resize(100);
     
     //special case: K==3, K==4
     weights[3].resize(4);
@@ -266,13 +266,20 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
     size_t p2_index = mesh.m_edges[edge_index][1];
 
     new_point = Vec3d(0,0,0);
+    Vec2st edge_data = mesh.m_edges[edge_index];
 
-    if(!mesh.m_is_boundary_edge[edge_index]) { 
+    //require internal edge and not a triple-junction for standard subdivision
+    if(!mesh.m_is_boundary_edge[edge_index] && !mesh.is_edge_nonmanifold(edge_index)) { 
         
         int valence_p1 = mesh.m_vertex_to_edge_map[p1_index].size();
         int valence_p2 = mesh.m_vertex_to_edge_map[p2_index].size();
 
-        if( (valence_p1 == 6 || mesh.m_is_boundary_vertex[p1_index]) && (valence_p2 == 6 || mesh.m_is_boundary_vertex[p2_index]) ) {
+        //TODO: Watch out for case where the valence is 6, but is nonmanifold and consists 
+        //of two distinct neighborhoods -> should probably be treated as irregular.
+
+        if(   (valence_p1 == 6 || mesh.m_is_boundary_vertex[p1_index] || mesh.is_vertex_incident_on_nonmanifold_edge(p1_index)) 
+           && (valence_p2 == 6 || mesh.m_is_boundary_vertex[p2_index] || mesh.is_vertex_incident_on_nonmanifold_edge(p2_index)) ) {
+            
             const double alpha    = 1.0/2.0;
             const double beta     = 1.0/8.0;
             const double gamma    = -1.0/16.0;
@@ -295,10 +302,15 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
                 size_t cur_edge_ind = adj_edges[i];
                 Vec2st cur_edge = mesh.m_edges[cur_edge_ind];
                 const std::vector<size_t>& adj_tris = mesh.m_edge_to_triangle_map[ cur_edge_ind ];
-                if(mesh.m_is_boundary_edge[cur_edge_ind]) {
+                if(mesh.m_is_boundary_edge[cur_edge_ind] || mesh.is_edge_nonmanifold(cur_edge_ind)) {
                     //create a vertex by reflection of the vertices in the adjacent triangle
+                   
+                   //for the non-manifold case, make sure the tri we grab is one of the original edge wings
+                    int which_tri = 0;
+                    while(!mesh.triangle_contains_edge(mesh.m_tris[adj_tris[which_tri]], edge_data))
+                       ++which_tri;
                     
-                    size_t third_vert = mesh.get_third_vertex(cur_edge_ind, adj_tris[0]);
+                    size_t third_vert = mesh.get_third_vertex(cur_edge_ind, adj_tris[which_tri]);
                     Vec3d reflected_point = surface.get_position(cur_edge[0]) +
                                             surface.get_position(cur_edge[1]) - 
                                             surface.get_position(third_vert);
@@ -313,11 +325,16 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
                     surround_vert_sum += surface.get_position(vert);
                 }
             }
+            //Note: this implements the w=0 case from the paper, which avoids the need for the
+            //9th and 10th vertices (i.e. the outer ones labeled "d" in figure 3).
             new_point = alpha * (surface.get_position(p1_index) + surface.get_position(p2_index)) + 
                         beta * (surface.get_position(p3_index) + surface.get_position(p4_index)) + 
                         gamma * (surround_vert_sum);
         }
-        else { //apply the irregular stencil
+        else { //both vertices are either: (a) not 6-valence or (b) not incident on boundary/nonmanifold edges
+           //i.e. both vertices are manifold, not on the boundary, and have irregular valences
+
+           //apply the irregular stencil
             double norm_factor = 0.0;
             
             //consider each vertex of the main edge
@@ -327,8 +344,8 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
                 
                 const std::vector<double>& local_weights = weights[cur_valence];
 
-                //if it's irregular and not a boundary vertex, process it
-                if(cur_valence != 6 && !mesh.m_is_boundary_vertex[cur_vert_index]) {
+                //if it's irregular and not a boundary vertex or a non-manifold vertex, process it
+                if(cur_valence != 6 && !mesh.m_is_boundary_vertex[cur_vert_index] && !mesh.is_vertex_incident_on_nonmanifold_edge(cur_vert_index)) {
                     
                     //walk around the surrounding vertices in order (using the triangle connectivity to figure out that ordering)
                     size_t cur_edge = edge_index;
@@ -358,11 +375,18 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
                         //advance
                         last_tri = tri;
                         cur_edge = next_edge;
+                        
+                        assert(!mesh.is_edge_nonmanifold(cur_edge)); //none of the edges we're on should be non-manifold
+                        assert(!mesh.m_is_boundary_edge[cur_edge]); //none of the edges we're on should be boundaries
                     }
                     
                     //add the central vertex too
                     new_point += local_weights[cur_valence] * surface.get_position(cur_vert_index);
                     norm_factor += 1;
+                }
+                else {
+                   //This case is fine. If one is (irregular and not boundary) and one is (regular or boundary),
+                   //we apply only the stencil of that side (the irregular side).
                 }
             }
             assert(norm_factor > 0);
@@ -372,12 +396,59 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
             
         }
     }
-    else { //use the 4 point boundary scheme
+    else if(mesh.is_edge_nonmanifold(edge_index)) {
+       //non-manifold edge - treat as a curve if possible.
+       
+       //find the next and previous non-manifold edges, fit a curve, and away you go.
+       //if this is not just a single smooth curve (i.e. there are > 2 non-manifold edges come out of the
+       //adjacent vertex) do midpoint subdivision instead.
+
+       //now need to find the subsequent non-manifold edge. if there is more than one, fail out.
+       bool found_next_nmf = false;
+       for(unsigned int i = 0; i < mesh.m_vertex_to_edge_map[p1_index].size(); ++i) {
+          size_t nbr_edge = mesh.m_vertex_to_edge_map[p1_index][i];
+          if(nbr_edge == edge_index) continue;
+          if(mesh.is_edge_nonmanifold(nbr_edge)) {
+             if(!found_next_nmf) {
+                //grab the other vertex
+                size_t other_vert = mesh.m_edges[nbr_edge][0] == p1_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
+                new_point += -1.0/16.0 * surface.get_position(other_vert);
+                found_next_nmf = true;
+             }
+             else {
+                //already found a next nmf-edge, so fail back to midpoint.
+                new_point = 0.5*(surface.get_position(p1_index) + surface.get_position(p2_index));
+                return;
+             }
+          }
+       }
+
+       found_next_nmf = false;
+       for(unsigned int i = 0; i < mesh.m_vertex_to_edge_map[p2_index].size(); ++i) {
+          size_t nbr_edge = mesh.m_vertex_to_edge_map[p2_index][i];
+          if(nbr_edge == edge_index) continue;
+          if(mesh.is_edge_nonmanifold(nbr_edge)){
+             if(!found_next_nmf) {//grab the other vertex
+                size_t other_vert = mesh.m_edges[nbr_edge][0] == p2_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
+                new_point += -1.0/16.0 * surface.get_position(other_vert);
+                found_next_nmf = true;
+             }
+             else {
+                //already found a next nmf-edge, so fail back to midpoint.
+                new_point = 0.5*(surface.get_position(p1_index) + surface.get_position(p2_index));
+                return;
+             }
+          }
+       }
+
+    }
+    else if(mesh.m_is_boundary_edge[edge_index]) { //use the 4 point boundary scheme
         new_point = 9.0 / 16.0 *(surface.get_position(p1_index) + surface.get_position(p2_index));
         
         //now need to find the subsequent and preceding vertices along the boundary
         for(unsigned int i = 0; i < mesh.m_vertex_to_edge_map[p1_index].size(); ++i) {
             size_t nbr_edge = mesh.m_vertex_to_edge_map[p1_index][i];
+            if(nbr_edge == edge_index) continue;
             if(mesh.m_is_boundary_edge[nbr_edge]) {
                 //grab the other vertex
                 size_t other_vert = mesh.m_edges[nbr_edge][0] == p1_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
@@ -387,6 +458,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
 
         for(unsigned int i = 0; i < mesh.m_vertex_to_edge_map[p2_index].size(); ++i) {
             size_t nbr_edge = mesh.m_vertex_to_edge_map[p2_index][i];
+            if(nbr_edge == edge_index) continue;
             if(mesh.m_is_boundary_edge[nbr_edge]) {
                 //grab the other vertex
                 size_t other_vert = mesh.m_edges[nbr_edge][0] == p2_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];

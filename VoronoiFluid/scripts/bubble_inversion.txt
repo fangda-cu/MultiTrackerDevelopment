@@ -68,6 +68,7 @@ gravity_force [0.0 -1.0 0.0]
 eigenvalue_rank_ratio 0.03
 air_sample_rejection_threshold 0.1
 interpolation_scheme improved
+subdivision_scheme modified_butterfly
 
 simulation_domain
 (

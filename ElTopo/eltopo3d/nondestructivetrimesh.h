@@ -20,7 +20,8 @@
 #include <options.h>
 #include <vector>
 #include <vec.h>
-
+#include <set>
+#include <queue>
 
 // ---------------------------------------------------------
 //  Non-member function declarations
@@ -202,6 +203,20 @@ public:
     ///
     inline static size_t index_in_triangle( const Vec3st& tri, size_t v, Vec2st& other_two );
     
+    /// Check if the vertex is on a non-manifold edge.
+    /// Need to test if there are disconnected neighbourhoods, as in mesh pinching, 
+    /// or any non-manifold edges incident. (This is untested so far.)
+    ///
+    inline bool is_vertex_nonmanifold(size_t v) const;
+
+    /// Self-explanatory.
+    inline bool is_vertex_incident_on_nonmanifold_edge(size_t v) const;
+
+    /// Check if the edge is non-manifold.
+    /// 
+    inline bool is_edge_nonmanifold(size_t e) const { return m_edge_to_triangle_map[e].size() > 2; }
+
+
     ////////////////////////////////////////////////////////////
     // FD 20130109
     //
@@ -324,7 +339,7 @@ private:
     /// Mark an edge as deleted, update connectivity
     ///
     void nondestructive_remove_edge( size_t edge_index );
-    
+ 
 };
 
 
@@ -499,6 +514,76 @@ inline size_t NonDestructiveTriMesh::get_third_vertex( size_t edge_index, size_t
     return get_third_vertex( m_edges[edge_index][0], m_edges[edge_index][1], m_tris[triangle_index] );
 }
 
+
+// ---------------------------------------------------------
+///
+/// Check if a vertex has non-manifold incident edges.
+///
+// ---------------------------------------------------------
+
+inline bool NonDestructiveTriMesh::is_vertex_incident_on_nonmanifold_edge(size_t v) const {
+   for(size_t i = 0; i < m_vertex_to_edge_map[v].size(); ++i) {
+      int edge = m_vertex_to_edge_map[v][i];
+      if(is_edge_nonmanifold(edge)) 
+         return true;
+   }
+   return false;
+}
+
+// ---------------------------------------------------------
+///
+/// Check if a vertex is non-manifold. This means that 
+/// it has a non-manifold edge coming in, or its local 
+/// neighborhood (defined by triangle neighbor relationships)
+/// consists of more than one component.  
+// ---------------------------------------------------------
+
+inline bool NonDestructiveTriMesh::is_vertex_nonmanifold(size_t v) const {
+   for(size_t i = 0; i < m_vertex_to_edge_map[v].size(); ++i) {
+      int edge = m_vertex_to_edge_map[v][i];
+      if(is_edge_nonmanifold(edge)) 
+         return true;
+   }
+
+   assert(false && "The code below has not been tested.\n"); //
+
+   //TODO: Verify this code works as intended!
+
+   //Handle case of true singular / non-manifold vertex, belonging to
+   //two distinct neighborhoods (as would be pinched in the mesh pinching step)
+   if(m_vertex_to_triangle_map[v].size() > 0) {
+      int start_tri = m_vertex_to_triangle_map[v][0];
+      std::set<int> visited_tris;
+      
+      std::queue<int> tris_to_visit;
+      tris_to_visit.push(start_tri);
+      //flood the neighborhood from one starting tri, and see if we cover all the incident triangles.
+      while(tris_to_visit.size() > 0) {
+         int cur_tri = tris_to_visit.front();
+         tris_to_visit.pop();
+         visited_tris.insert(cur_tri);
+         //now queue up all the tris here
+         for(int i = 0; i < 3; ++i) {
+            int next_edge = m_triangle_to_edge_map[cur_tri][i];
+            
+            //should only be 2 entries, due to above edge-manifoldness check
+            for(size_t j = 0; j < m_edge_to_triangle_map[next_edge].size(); ++j) { 
+               int nbr_tri = m_edge_to_triangle_map[next_edge][j];
+               if(nbr_tri == cur_tri) continue; //don't loop back
+               if(visited_tris.find(nbr_tri) != visited_tris.end()) //don't revisit
+                  tris_to_visit.push(nbr_tri);
+            }
+         }
+      }
+      
+      //if we visited the whole 'hood, then these should now be the same size
+      return visited_tris.size() == m_vertex_to_triangle_map.size(); 
+   }
+   else {
+      return false;
+   }
+   
+}
 
 // ---------------------------------------------------------
 ///

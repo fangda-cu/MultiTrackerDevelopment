@@ -476,14 +476,16 @@ int DynamicSurface::test_region_via_ray_and_normal(const Vec3d& p, const Vec3d& 
    get_triangle_intersections(p, ray_end, hit_ss, hit_tris);
    int first_hit = -1;
    double near_dist = 1;
+   bool good_hit = false;
    for(unsigned int i = 0; i < hit_ss.size(); ++i) {
       if(hit_ss[i] < near_dist && !m_mesh.triangle_is_deleted(hit_tris[i])) {
          first_hit = i;
          near_dist = hit_ss[i];
+         good_hit = true;
       }
    }
 
-   if(hit_tris.size() == 0) return 0; //assume no hits means outside (region 0).
+   if(!good_hit) return 0; //assume no hits means outside (region 0).
 
    // get the normal of this triangle, check it's orientation relative to the ray
    const Vec3st& t = m_mesh.m_tris[ hit_tris[first_hit] ];

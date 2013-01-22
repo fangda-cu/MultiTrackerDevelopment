@@ -50,7 +50,7 @@ tetgen_max_radius_edge_ratio 1.75
 
 null_space_smoothing 1 
 eigenvalue_rank_ratio 0.03
-subdivision_scheme midpoint
+subdivision_scheme modified_butterfly
 
 free_surface 1
 remesh 1

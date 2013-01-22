@@ -1761,6 +1761,12 @@ void parse_script( const char* filename )
       
       surf_track_params.m_subdivision_scheme = new ButterflyScheme();
    }
+   if ( strcmp( subdivision_scheme.c_str(), "modified_butterfly" ) == 0 )
+   {
+      std::cout << "using modified butterfly subdivision"  << std::endl;
+
+      surf_track_params.m_subdivision_scheme = new ModifiedButterflyScheme();
+   }
    
    std::vector<double> surface_masses( surface_vertices.size(), 1.0 );
 
