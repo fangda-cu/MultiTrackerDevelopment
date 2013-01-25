@@ -29,6 +29,10 @@ public:
   void turnOnRecording() { m_recording = true; }
   void turnOffRecording() { m_recording = false; }
   
+public:
+  static void writeSurfTrack(std::ostream & os, ElTopo::SurfTrack & st);
+  static void readSurfTrack(std::istream & is, ElTopo::SurfTrack & st);
+  
 protected:
   std::string m_recording_name;
   int m_current_frame;  // frame number
@@ -48,8 +52,8 @@ public:
   DoubleBubbleTest();
   virtual ~DoubleBubbleTest();
 
-  virtual void serialize( std::ofstream& of ) { assert(!"Not implemented"); }
-  virtual void resumeFromfile( std::ifstream& ifs ) { assert(!"Not implemented"); }
+  virtual void serialize( std::ofstream& of );
+  virtual void resumeFromfile( std::ifstream& ifs );
 
   void beforeEndStep();
   
@@ -76,6 +80,9 @@ protected:
   int onBBWall(const Vec3d & pos) const;
   void updateBBWallConstraints();
     
+  ElTopo::SurfTrack * mesh2surftrack();
+  void surftrack2mesh(ElTopo::SurfTrack & st);
+  
 public:
   void setupScene1(); // VIIM test: single film in cube
   void setupScene2(); // T1 transition
