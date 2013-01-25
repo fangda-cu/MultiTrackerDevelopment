@@ -53,6 +53,47 @@ extern bool g_ply_dump;
 int db_current_ply_frame = 0;
 
 extern std::string outputdirectory;
+Recording g_recording;
+
+void Recording::recordSurfTrack(ElTopo::SurfTrack & st)
+{
+  if (!m_of.is_open())
+  {
+    std::stringstream filename;
+    filename << m_recording_name << "_" << m_current_frame << ".rec";
+    m_of.open(filename.str().c_str(), "w");
+    
+  }
+  
+  m_of.write((char *)&m_current_step, sizeof (m_current_step));
+  
+  size_t n;
+  n = st.m_mesh.nv();
+  m_of.write((char *)&n, sizeof (size_t));
+  for (size_t i = 0; i < n; i++)
+  {
+    ElTopo::Vec3d x = st.get_position(i);
+    m_of.write(&(x[0]), sizeof (x[0]));
+    m_of.write(&(x[1]), sizeof (x[1]));
+    m_of.write(&(x[2]), sizeof (x[2]));
+  }
+  
+  n = st.m_mesh.nf();
+  m_of.write(char *)&n, sizeof (size_t));
+  for (size_t i = 0; i < n; i++)
+  {
+    ElTopo::Vec3st t = st.m_mesh.get_triangle(t);
+    m_of.write(&(t[0]), sizeof (t[0]));
+    m_of.write(&(t[1]), sizeof (t[1]));
+    m_of.write(&(t[2]), sizeof (t[2]));
+    
+    ElTopo::Vec2i l = st.get_triangle_label(t);
+    m_of.write(&(l[0]), sizeof (l[0]));
+    m_of.write(&(l[1]), sizeof (l[1]));
+  }
+  
+  m_current_step++;
+}
 
 DoubleBubbleTest::DoubleBubbleTest() : 
   Problem("Double Bubble Test", "Various bubble dynamics tests"), 
@@ -155,6 +196,7 @@ DoubleBubbleTest::DoubleBubbleTest() :
   AddOption("generate-OBJ", "Generate an OBJ file at each timestep", g_obj_dump);
   AddOption("generate-PLY", "Generate a PLY file at each timestep", g_ply_dump);
   AddOption("obj-mode", "0 = one OBJ for entire mesh; 1 = one OBJ per region; 2 = one OBJ per region pair", 0);
+  AddOption("record", "Generate a recording", false);
 
 
 }

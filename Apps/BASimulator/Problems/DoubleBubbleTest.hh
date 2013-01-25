@@ -14,6 +14,33 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ElasticShell.hh"
 #include "BASim/src/Physics/DeformableObjects/DefoObjTimeStepper.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVolumeForce.hh"
+#include "ElTopo/eltopo3d/surftrack.h"
+
+class Recording
+{
+public:
+  Recording() : m_recording_name("rec"), m_current_frame(0), m_current_step(0), m_recording(false) { }
+  
+  void setRecordingName(const std::string & name) { m_recording_name = name; }
+  void setCurrentFrame(int frame) { m_current_frame = frame; }
+  
+  void recordSurfTrack(ElTopo::SurfTrack & st);
+  
+  void turnOnRecording() { m_recording = true; }
+  void turnOffRecording() { m_recording = false; }
+  
+protected:
+  std::string m_recording_name;
+  int m_current_frame;  // frame number
+  int m_current_step;   // step number within the frame
+  
+  bool m_recording;
+  
+  std::ofstream m_of;
+  std::ifstream m_if;
+};
+
+extern Recording g_recording;
 
 class DoubleBubbleTest : public Problem, public ElasticShell::SteppingCallback
 {
