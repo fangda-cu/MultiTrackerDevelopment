@@ -170,9 +170,31 @@ void Recording::recordSurfTrack(ElTopo::SurfTrack & st)
   }
   
   m_of.write((char *)&m_current_step, sizeof (m_current_step));
+  writeSurfTrack(m_of, st);
   
   m_current_step++;
 }
+
+void Recording::loadRecording(ElTopo::SurfTrack & st)
+{
+  if (!isPlaybackOn())
+    return;
+  
+  if (!m_if.is_open())
+  {
+    std::stringstream filename;
+    filename << m_recording_name << "_" << m_current_frame << ".rec";
+    m_if.open(filename.str().c_str());
+  }
+  
+  m_if.read((char *)&m_current_step, sizeof (m_current_step));
+  readSurfTrack(m_if, st);
+
+  m_if.peek();
+  if (m_if.eof())
+    m_if.close();
+}
+
 
 DoubleBubbleTest::DoubleBubbleTest() : 
   Problem("Double Bubble Test", "Various bubble dynamics tests"), 
@@ -276,7 +298,8 @@ DoubleBubbleTest::DoubleBubbleTest() :
   AddOption("generate-PLY", "Generate a PLY file at each timestep", g_ply_dump);
   AddOption("obj-mode", "0 = one OBJ for entire mesh; 1 = one OBJ per region; 2 = one OBJ per region pair", 0);
   AddOption("record", "Generate a recording", false);
-
+  AddOption("playback", "Playback a recording", false);
+  AddOption("playback-path", "The path to the recording to playback", "");
 
 }
 
@@ -537,8 +560,24 @@ void DoubleBubbleTest::Setup()
   
   if (GetBoolOpt("record"))
   {
+    assert(!GetBoolOpt("playback"));
+    
     g_recording.turnOnRecording();
     g_recording.setRecordingName(outputdirectory + "/rec");
+  }
+  
+  if (GetBoolOpt("playback"))
+  {
+    assert(!g_obj_dump);
+    assert(!g_ply_dump);
+    assert(!g_recording.isRecording());
+
+    g_recording.turnOnPlayback();
+    
+    std::string playback_path = GetStringOpt("playback-path");
+    assert(playback_path != "");
+    
+    g_recording.setRecordingName(playback_path + "/rec");
   }
   
   if (g_obj_dump || g_ply_dump || g_recording.isRecording()){
@@ -809,11 +848,20 @@ void DoubleBubbleTest::AtEachTimestep()
     updateBBWallConstraints();
   
     g_recording.setCurrentFrame((int)(this->getTime() / this->getDt() + 0.5));
+  
     if (g_recording.isRecording())
     {
         ElTopo::SurfTrack * st = mesh2surftrack();
         g_recording.recordSurfTrack(*st);
         delete st;
+    }
+
+    if (g_recording.isPlaybackOn())
+    {
+      ElTopo::SurfTrack * st = mesh2surftrack();
+      g_recording.loadRecording(*st);
+      surftrack2mesh(*st);
+      delete st;
     }
   
 }
@@ -2484,4 +2532,38 @@ void DoubleBubbleTest::resumeFromfile( std::ifstream& ifs )
   delete (st);
 }
 
+void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
+{
+  if (g_recording.isPlaybackOn())
+  {
+    if (k == '[' || k == '{')
+    {
+      int f = g_recording.currentFrame();
+      g_recording.setCurrentFrame(f - 1);
+    
+      ElTopo::SurfTrack * st = mesh2surftrack();
+      g_recording.loadRecording(*st);
+      surftrack2mesh(*st);
+      delete st;
+
+    } else if (k == ']' || k == '}')
+    {
+      int f = g_recording.currentFrame();
+      g_recording.setCurrentFrame(f + 1);
+      
+      ElTopo::SurfTrack * st = mesh2surftrack();
+      g_recording.loadRecording(*st);
+      surftrack2mesh(*st);
+      delete st;
+      
+    } else if (k == '\\' || k == '|')
+    {
+      ElTopo::SurfTrack * st = mesh2surftrack();
+      g_recording.loadRecording(*st);
+      surftrack2mesh(*st);
+      delete st;
+    }
+    
+  }
+}
 

@@ -22,13 +22,21 @@ public:
   Recording() : m_recording_name("rec"), m_current_frame(0), m_current_step(0), m_recording(false) { }
   
   void setRecordingName(const std::string & name) { m_recording_name = name; }
-  void setCurrentFrame(int frame) { m_current_frame = frame; m_of.close(); m_if.close(); }
+  const std::string & recordingName() const { return m_recording_name; }
+  
+  void setCurrentFrame(int frame) { m_current_frame = frame; m_current_step = 0; m_of.close(); m_if.close(); }
+  int currentFrame() const { return m_current_frame; }
   
   void recordSurfTrack(ElTopo::SurfTrack & st);
+  void loadRecording(ElTopo::SurfTrack & st);
   
-  void turnOnRecording() { m_recording = true; }
+  void turnOnRecording() { m_recording = true; m_playback = false; }
   void turnOffRecording() { m_recording = false; }
   bool isRecording() const { return m_recording; }
+  
+  void turnOnPlayback() { m_playback = true; m_recording = false; }
+  void turnOffPlayback() { m_playback = false; }
+  bool isPlaybackOn() const { return m_playback; }
   
 public:
   static void writeSurfTrack(std::ostream & os, ElTopo::SurfTrack & st);
@@ -40,6 +48,7 @@ protected:
   int m_current_step;   // step number within the frame
   
   bool m_recording;
+  bool m_playback;
   
   std::ofstream m_of;
   std::ifstream m_if;
@@ -62,6 +71,9 @@ protected:
   void Setup();
   void AtEachTimestep();
   void AfterStep();
+  
+  void keyboard(unsigned char k, int x, int y);
+
   
   DeformableObject * shellObj;
   ElasticShell * shell;
