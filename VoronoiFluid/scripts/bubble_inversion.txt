@@ -50,7 +50,7 @@ sphere
 min_edge_length_fraction 0.7
 max_edge_length_fraction 1.4
 max_volume_change_fraction 0.001
-merge_proximity_fraction 0.1
+merge_proximity_fraction 0.3
 repulsion_proximity_fraction 0.001
 perform_improvement 1
 allow_topology_changes 1

@@ -222,6 +222,7 @@ void QuadraticErrorMinScheme::generate_new_midpoint( size_t edge_index, const Su
 ///
 /// Modified Butterfly scheme: uses the method of Zorin et al. to generate a new vertex, for meshes with arbitrary topology
 /// Modeled loosely after the implementation in OpenMesh.
+/// Extended to treat non-manifold edges as boundary edges.
 /// 
 // --------------------------------------------------------
 

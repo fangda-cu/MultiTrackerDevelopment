@@ -19,6 +19,7 @@
 #include <meshsmoother.h>
 #include <meshcutter.h>
 #include <t1transition.h>
+#include <meshsnapper.h>
 
 // ---------------------------------------------------------
 //  Forwards and typedefs
@@ -176,27 +177,61 @@ struct SurfTrackInitializationParameters
 
 struct SortableEdge
 {    
+   /// Constructor
+   ///
+   SortableEdge( size_t i, double edge_len ) : 
+m_edge_index(i), 
+   m_length(edge_len) 
+{}
+
+/// Comparison operator for sorting
+///
+bool operator<( const SortableEdge& other ) const
+{
+   return (this->m_length < other.m_length);
+}
+
+/// The index of the edge
+///
+size_t m_edge_index;
+
+/// The stored length
+///
+double m_length;
+
+};
+
+
+// ---------------------------------------------------------
+///
+/// Used to build a list of edges sorted in order of increasing length.
+/// 
+// ---------------------------------------------------------
+
+struct SortablePair
+{    
     /// Constructor
     ///
-    SortableEdge( size_t ei, double el ) : 
-    m_edge_index(ei), 
-    m_edge_length(el) 
+    SortablePair( size_t i, size_t j, double sep_dist ) : 
+    m_vertex0(i), 
+    m_vertex1(j), 
+    m_length(sep_dist) 
     {}
     
     /// Comparison operator for sorting
     ///
-    bool operator<( const SortableEdge& other ) const
+    bool operator<( const SortablePair& other ) const
     {
-        return (this->m_edge_length < other.m_edge_length);
+        return (this->m_length < other.m_length);
     }
     
-    /// The index of the edge
+    /// The index of the verts
     ///
-    size_t m_edge_index;
+    size_t m_vertex0, m_vertex1;
     
-    /// The stored edge length
+    /// The stored length
     ///
-    double m_edge_length;
+    double m_length;
 
 };
 
@@ -299,6 +334,8 @@ struct MeshUpdateEvent
     FLAP_DELETE,  //remove non-manifold flap
     PINCH,        //separate singular vertex to allow topology change
     MERGE,        //zipper two edges together
+    SNAP,         //combine two disjoint vertices into one
+    FACE_SPLIT,   //subdivide a triangle into 3 triangles
       
     ////////////////////////////////////////////////////////////
     // FD 20130109
@@ -499,6 +536,11 @@ public:
     ///
     MeshCutter m_cutter;
     
+
+    /// Mesh snapping
+    ///
+    MeshSnapper m_snapper;
+
     ////////////////////////////////////////////////////////////
     // FD 20130109
     

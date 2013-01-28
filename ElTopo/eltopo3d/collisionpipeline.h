@@ -168,7 +168,8 @@ private:
     
     friend class DynamicSurface;
     friend class EdgeCollapser;
-    
+    friend class MeshSnapper;
+
     /// Apply a collision implulse between two edges
     /// 
     void apply_edge_edge_impulse( const Collision& collision, double impulse_magnitude, double dt );

@@ -1439,8 +1439,8 @@ void DualFluidSim3D::advance_surface( float dt )
    surface_tracker->improve_mesh();
    surface_tracker->assert_no_bad_labels();
    
-   surface_tracker->topology_changes();
-   surface_tracker->assert_no_bad_labels();
+   //surface_tracker->topology_changes();
+   //surface_tracker->assert_no_bad_labels();
       
    // El Topo: surface advection
 

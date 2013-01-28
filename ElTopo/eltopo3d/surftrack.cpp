@@ -110,6 +110,7 @@ DynamicSurface( vs,
 m_collapser( *this, initial_parameters.m_use_curvature_when_collapsing, initial_parameters.m_remesh_boundaries, initial_parameters.m_min_curvature_multiplier ),
 m_splitter( *this, initial_parameters.m_use_curvature_when_splitting, initial_parameters.m_remesh_boundaries, initial_parameters.m_max_curvature_multiplier ),
 m_flipper( *this, initial_parameters.m_edge_flip_min_length_change ),
+m_snapper(*this),
 m_smoother( *this ),
 m_merger( *this ),
 m_pincher( *this ),
@@ -792,6 +793,9 @@ void SurfTrack::improve_mesh( )
       {
         m_t1transition.pop_vertices();
       }
+
+      m_snapper.snap_pass();
+
 
       ////////////////////////////////////////////////////////////
       

@@ -648,6 +648,7 @@ inline bool NonDestructiveTriMesh::triangle_has_these_verts( const Vec3st& tri, 
     return false;
 }
 
+
 // --------------------------------------------------------
 ///
 /// Return true if the given triangle is made up of the given vertices

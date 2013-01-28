@@ -39,6 +39,7 @@ std::vector<Vec3d> g_renderable_vertex_normals;
 std::vector<float> g_renderable_vertex_curvatures;
 std::vector<Vec3st> g_renderable_triangles;
 std::vector<Vec2st> g_renderable_edges;
+std::vector<bool> g_is_vertex_dead;
 TetMesh* g_renderable_tet_mesh;
 std::vector<float> g_renderable_liquid_phi;
 std::vector<int> g_renderable_region_IDs;
@@ -163,6 +164,11 @@ void update_renderable_objects()
    pthread_mutex_lock( &sim_mutex );   
    
    g_renderable_vertices = g_dual_sim->surface_tracker->get_positions();
+   g_is_vertex_dead.resize(g_renderable_vertices.size());
+   for(int i = 0; i < g_is_vertex_dead.size(); ++i) {
+      g_is_vertex_dead[i] = g_dual_sim->surface_tracker->m_mesh.vertex_is_deleted(i);
+   }
+
    g_dual_sim->surface_tracker->get_all_vertex_normals(g_renderable_vertex_normals);
    g_renderable_triangles = g_dual_sim->surface_tracker->m_mesh.m_tris;
    g_renderable_edges = g_dual_sim->surface_tracker->m_mesh.m_edges;
@@ -731,6 +737,43 @@ void display()
             glVertex3dv( g_renderable_vertices[edge[1]].v );
          }
          glEnd();
+
+         //Draw close vertex pairs
+         for( size_t i = 0; i <  g_renderable_vertices.size(); i++ )
+         {    
+            if(g_is_vertex_dead[i]) continue;
+            /*const std::vector<size_t>& edge_list = g_dual_sim->surface_tracker->m_mesh.m_vertex_to_edge_map[i];
+            std::vector<size_t> nbr_verts;
+
+
+            for(size_t q = 0; q < edge_list.size(); ++q) {
+            size_t edge = edge_list[q];
+            if(g_dual_sim->surface_tracker->m_mesh.edge_is_deleted(edge)) continue;
+
+            Vec2st edge_data = g_dual_sim->surface_tracker->m_mesh.m_edges[edge];   
+            size_t other_vert = edge_data[0] == i? edge_data[1] : edge_data[0];
+            nbr_verts.push_back(other_vert);
+            }*/
+
+            for(size_t j = i+1; j < g_renderable_vertices.size(); ++j)  {
+
+               if(g_is_vertex_dead[j]) continue;
+               //check if this is a neighbour vertex, and if so, skip it.
+               //if(std::find(nbr_verts.begin(), nbr_verts.end(), j) != nbr_verts.end()) continue;
+
+               double cur_len;
+               cur_len = mag(g_renderable_vertices[i] - g_renderable_vertices[j]);
+
+               if(cur_len < g_dual_sim->surface_tracker->m_merge_proximity_epsilon) {
+                  glPointSize(6);
+                  glBegin(GL_POINTS);
+                  glVertex3dv(g_renderable_vertices[i].v);
+                  glVertex3dv(g_renderable_vertices[j].v);
+                  glEnd();
+               }
+            }
+         }
+      
 
       }
       
@@ -1752,7 +1795,7 @@ void parse_script( const char* filename )
    surf_track_params.m_perform_improvement = (perform_improvement != 0);
    surf_track_params.m_allow_topology_changes = (topology_changes != 0);
    surf_track_params.m_collision_safety = (collision_safety != 0);   
-   surf_track_params.m_t1_transition_enabled = true;
+   surf_track_params.m_t1_transition_enabled = false;
    surf_track_params.m_velocity_field_callback = 0;
 
    if ( strcmp( subdivision_scheme.c_str(), "butterfly" ) == 0 )
