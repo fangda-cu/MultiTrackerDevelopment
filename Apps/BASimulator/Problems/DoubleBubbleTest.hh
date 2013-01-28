@@ -22,12 +22,13 @@ public:
   Recording() : m_recording_name("rec"), m_current_frame(0), m_current_step(0), m_recording(false) { }
   
   void setRecordingName(const std::string & name) { m_recording_name = name; }
-  void setCurrentFrame(int frame) { m_current_frame = frame; }
+  void setCurrentFrame(int frame) { m_current_frame = frame; m_of.close(); m_if.close(); }
   
   void recordSurfTrack(ElTopo::SurfTrack & st);
   
   void turnOnRecording() { m_recording = true; }
   void turnOffRecording() { m_recording = false; }
+  bool isRecording() const { return m_recording; }
   
 public:
   static void writeSurfTrack(std::ostream & os, ElTopo::SurfTrack & st);

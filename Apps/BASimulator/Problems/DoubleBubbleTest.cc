@@ -114,23 +114,23 @@ void Recording::readSurfTrack(std::istream & is, ElTopo::SurfTrack & st)
     is.read((char *)&(x[2]), sizeof (x[2]));
     st.set_position(i, x);
     
-    is.read((char *)&(x[0]), sizeof (x[0]));
-    is.read((char *)&(x[1]), sizeof (x[1]));
-    is.read((char *)&(x[2]), sizeof (x[2]));
-    st.set_newposition(i, x);
-    
-    is.read((char *)&(x[0]), sizeof (x[0]));
-    is.read((char *)&(x[1]), sizeof (x[1]));
-    is.read((char *)&(x[2]), sizeof (x[2]));
-    st.set_remesh_velocity(i, x);
-    
-    double mass;
-    is.read((char *)&mass, sizeof (mass));
-    st.m_masses[i] = mass;
-    
-    bool cl;
-    is.read((char *)&cl, sizeof (cl));
-    st.m_mesh.m_vertex_constraint_labels[i] = cl;
+//    is.read((char *)&(x[0]), sizeof (x[0]));
+//    is.read((char *)&(x[1]), sizeof (x[1]));
+//    is.read((char *)&(x[2]), sizeof (x[2]));
+//    st.set_newposition(i, x);
+//    
+//    is.read((char *)&(x[0]), sizeof (x[0]));
+//    is.read((char *)&(x[1]), sizeof (x[1]));
+//    is.read((char *)&(x[2]), sizeof (x[2]));
+//    st.set_remesh_velocity(i, x);
+//    
+//    double mass;
+//    is.read((char *)&mass, sizeof (mass));
+//    st.m_masses[i] = mass;
+//    
+//    bool cl;
+//    is.read((char *)&cl, sizeof (cl));
+//    st.m_mesh.m_vertex_constraint_labels[i] = cl;
   }
   
   n = st.m_mesh.nt();
@@ -159,6 +159,9 @@ void Recording::readSurfTrack(std::istream & is, ElTopo::SurfTrack & st)
 
 void Recording::recordSurfTrack(ElTopo::SurfTrack & st)
 {
+  if (!isRecording())
+    return;
+  
   if (!m_of.is_open())
   {
     std::stringstream filename;
@@ -531,8 +534,14 @@ void DoubleBubbleTest::Setup()
   
   g_obj_dump = GetBoolOpt("generate-OBJ");
   g_ply_dump = GetBoolOpt("generate-PLY");
-
-  if (g_obj_dump || g_ply_dump){
+  
+  if (GetBoolOpt("record"))
+  {
+    g_recording.turnOnRecording();
+    g_recording.setRecordingName(outputdirectory + "/rec");
+  }
+  
+  if (g_obj_dump || g_ply_dump || g_recording.isRecording()){
 #ifdef _MSC_VER
     _mkdir(outputdirectory.c_str());
 #else
@@ -798,6 +807,15 @@ void DoubleBubbleTest::AtEachTimestep()
     std::cout << "Time: " << this->getTime() << std::endl; 
 
     updateBBWallConstraints();
+  
+    g_recording.setCurrentFrame((int)(this->getTime() / this->getDt() + 0.5));
+    if (g_recording.isRecording())
+    {
+        ElTopo::SurfTrack * st = mesh2surftrack();
+        g_recording.recordSurfTrack(*st);
+        delete st;
+    }
+  
 }
 
 void DoubleBubbleTest::updateBBWallConstraints()
