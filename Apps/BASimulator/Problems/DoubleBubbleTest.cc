@@ -201,6 +201,12 @@ void Recording::loadRecording(ElTopo::SurfTrack & st)
     std::stringstream filename;
     filename << m_recording_name << "_" << m_current_frame << ".rec";
     m_if.open(filename.str().c_str());
+    
+    if (!m_if.is_open())
+    {
+      std::cout << "Requested recording frame not found!" << std::endl;
+      return;
+    }
   }
   
   m_if.read((char *)&m_current_step, sizeof (m_current_step));
@@ -209,6 +215,8 @@ void Recording::loadRecording(ElTopo::SurfTrack & st)
   m_if.peek();
   if (m_if.eof())
     m_if.close();
+  
+  std::cout << "Loaded recording: step " << m_current_step << " of frame " << m_current_frame << std::endl;
 }
 
 
@@ -2561,6 +2569,9 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
       g_recording.loadRecording(*st);
       surftrack2mesh(*st);
       delete st;
+      
+      setTime(getDt() * (f - 1));
+      glutPostRedisplay();
 
     } else if (k == ']' || k == '}')
     {
@@ -2572,12 +2583,16 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
       surftrack2mesh(*st);
       delete st;
       
+      setTime(getDt() * (f + 1));
+      glutPostRedisplay();
+      
     } else if (k == '\\' || k == '|')
     {
       ElTopo::SurfTrack * st = mesh2surftrack();
       g_recording.loadRecording(*st);
       surftrack2mesh(*st);
       delete st;
+      
     }
     
   }
