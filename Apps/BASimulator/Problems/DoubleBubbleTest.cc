@@ -102,17 +102,25 @@ void Recording::writeSurfTrack(std::ostream & os, ElTopo::SurfTrack & st)
 
 void Recording::readSurfTrack(std::istream & is, ElTopo::SurfTrack & st)
 {
+  // clear the mesh
+  for (size_t i = 0; i < st.m_mesh.nt(); i++)
+    st.remove_triangle(i);
+  
+  for (size_t i = 0; i < st.m_mesh.nv(); i++)
+    st.remove_vertex(i);
+  
   size_t n;
   n = st.m_mesh.nv();
   is.read((char *)&n, sizeof (size_t));
   st.m_mesh.set_num_vertices(n);
+  std::vector<ElTopo::Vec3d> pos(n);
   for (size_t i = 0; i < n; i++)
   {
     ElTopo::Vec3d x;
     is.read((char *)&(x[0]), sizeof (x[0]));
     is.read((char *)&(x[1]), sizeof (x[1]));
     is.read((char *)&(x[2]), sizeof (x[2]));
-    st.set_position(i, x);
+    pos[i] = x;
     
 //    is.read((char *)&(x[0]), sizeof (x[0]));
 //    is.read((char *)&(x[1]), sizeof (x[1]));
@@ -132,6 +140,14 @@ void Recording::readSurfTrack(std::istream & is, ElTopo::SurfTrack & st)
 //    is.read((char *)&cl, sizeof (cl));
 //    st.m_mesh.m_vertex_constraint_labels[i] = cl;
   }
+  
+  st.m_masses.resize(n);
+  for (size_t i = 0; i < n; i++)
+    st.m_masses[i] = 1;
+  
+  st.set_all_positions(pos);
+  st.set_all_newpositions(pos);  
+  st.set_all_remesh_velocities(std::vector<ElTopo::Vec3d>(n, ElTopo::Vec3d(0)));
   
   n = st.m_mesh.nt();
   is.read((char *)&n, sizeof (size_t));

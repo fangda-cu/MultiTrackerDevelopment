@@ -441,8 +441,8 @@ public:
     ///
     double m_aabb_padding;
     
-protected:
-    
+public:
+  
     friend class CollisionPipeline;
     friend class ImpactZoneSolver;
     friend class MeshSmoother;
