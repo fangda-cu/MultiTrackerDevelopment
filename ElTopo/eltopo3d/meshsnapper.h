@@ -17,6 +17,9 @@
 #include <cstddef>
 #include <vector>
 
+#include "facesplitter.h"
+#include "edgesplitter.h"
+
 // ---------------------------------------------------------
 //  Forwards and typedefs
 // ---------------------------------------------------------
@@ -24,6 +27,8 @@
 namespace ElTopo {
 
 class SurfTrack;
+class FaceSplitter;
+class EdgeSplitter;
 template<unsigned int N, class T> struct Vec;
 typedef Vec<3,double> Vec3d;
 typedef Vec<3,size_t> Vec3st;
@@ -55,10 +60,18 @@ public:
 private:
     
     friend class SurfTrack;
-    
+    friend class FaceSplitter;
+    friend class EdgeSplitter;
+
     /// The mesh this object operates on
     /// 
     SurfTrack& m_surf;
+
+    /// The mesh this object operates on
+    /// 
+    FaceSplitter m_facesplitter;
+    EdgeSplitter m_edgesplitter;
+
 
     /// Get all triangles which are incident on either involved vertex.
     ///
@@ -79,36 +92,34 @@ private:
                                                           size_t destination_vertex, 
                                                           const Vec3d& vertex_new_position );
     
-    /*
-    /// Determine if the snap operation would invert the normal of any incident triangles.
-    ///
-    bool snap_edge_introduces_normal_inversion( size_t source_vertex, 
-                                                   size_t destination_vertex, 
-                                                   size_t edge_index, 
-                                                   const Vec3d& vertex_new_position );
+   
     
-    /// Determine whether snapping will introduce an unacceptable change in volume.
+    /// Determine if the vertex pair should be allowed to snap
     ///
-    bool snap_edge_introduces_volume_change( size_t source_vertex, 
-                                                size_t edge_index, 
-                                                const Vec3d& vertex_new_position );   
-    
-    /// Returns true if the snap collapse would introduce a triangle with a min or max angle outside of the specified min or max.
+    bool vert_pair_is_snappable( size_t vert0, size_t vert1, double& cur_length );
+   
+    /// Determine if the edge pair should be allowed to snap 
     ///
-    bool snap_edge_introduces_bad_angle( size_t source_vertex, 
-                                            size_t destination_vertex, 
-                                            const Vec3d& vertex_new_position );
-    */
+    bool edge_pair_is_snappable( size_t vert0, size_t vert1, double& cur_length );
+
+    /// Determine if the face-vertex pair should be allowed to snap 
+    ///
+    bool face_vertex_pair_is_snappable( size_t vert0, size_t vert1, double& cur_length );
+
+
+
+    /// Perform a split-n-merge operation on a face-vert pair
+    ///
+    bool snap_face_vertex_pair(size_t face, size_t vert);
+
+    /// Perform a split-n-merge operation on an edge-edge pair
+    ///
+    bool snap_edge_pair(size_t edge0, size_t edge1);
 
     /// Snap a vertex pair by moving both to their average point
     ///
     bool snap_vertex_pair( size_t vert0, size_t vert1);
-    
-    /// Determine if the edge should be allowed to collapse
-    ///
-    bool vert_pair_is_snappable( size_t vert0, size_t vert1, double& cur_length );
-    
-    
+
 };
 
 }

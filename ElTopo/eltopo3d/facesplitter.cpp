@@ -342,7 +342,7 @@ bool FaceSplitter::split_face_pseudo_motion_introduces_intersection( const Vec3d
 ///
 // --------------------------------------------------------
 
-bool FaceSplitter::split_face( size_t face )
+bool FaceSplitter::split_face( size_t face, size_t& result_vertex, bool specify_point, Vec3d const * goal_point )
 {   
 
   g_stats.add_to_int( "FaceSplitter:face_split_attempts", 1 );
@@ -368,15 +368,13 @@ bool FaceSplitter::split_face( size_t face )
 
   // --------------
 
-  // get face midpoint 
-  // don't bother with smooth subdivision for now, since we're probably going to be 
-  // using this primarily for merging, which will move the vertex anyhow
+  // get face midpoint as default split point.
   Vec3d new_vertex_position =  (1.0/3.0) * ( m_surf.get_position( vertex_a ) + 
                                              m_surf.get_position( vertex_b )  +
                                              m_surf.get_position( vertex_c ) );
   
   //TODO Consider adding some kind of smooth subdivision, in case the desired merge
-  //fails to go through.
+  //fails to go through. E.g. "interpolatory sqrt(3) subdivision"
 
   //TODO Treat partially constrained triangles more carefully.
   
@@ -390,21 +388,26 @@ bool FaceSplitter::split_face( size_t face )
   // --------------
 
    Vec3d new_vertex_smooth_position = new_vertex_position;
+   bool point_okay = false;
+   if(specify_point) {
+      point_okay = ! ( split_face_pseudo_motion_introduces_intersection( new_vertex_position, *goal_point, face) );
 
-   
-   if ( split_face_pseudo_motion_introduces_intersection( new_vertex_position, new_vertex_smooth_position, face) )
-   {
-
-      g_stats.add_to_int( "FaceSplitter:split_midpoint_collisions", 1 );
-
-      if ( m_surf.m_verbose )  { 
-         std::cout << "Even mid-point subdivision introduces collision.  Backing out." << std::endl; 
-      }  // FD 20121126: Why does the paper say this can't happen (section 3.5.1)?
-      
-      return false;
+      if ( point_okay )
+         new_vertex_smooth_position = *goal_point;
    }
-  
- 
+   
+   if(!point_okay) { //try the default barycenter point instead.
+      if ( !split_face_pseudo_motion_introduces_intersection( new_vertex_position, new_vertex_smooth_position, face) )
+      {
+         g_stats.add_to_int( "FaceSplitter:split_midpoint_collisions", 1 );
+
+         if ( m_surf.m_verbose )  { 
+            std::cout << "Even mid-point subdivision introduces collision.  Backing out." << std::endl; 
+         }  // FD 20121126: Why does the paper say this can't happen (section 3.5.1)?
+      
+         return false;
+      }
+   }
 
   // --------------
   
@@ -470,6 +473,9 @@ bool FaceSplitter::split_face( size_t face )
   
 
   m_surf.m_mesh_change_history.push_back(facesplit);
+
+  //return output vertex
+  result_vertex = vertex_d;
 
   return true;
 

@@ -550,10 +550,7 @@ bool MeshMerger::merge_pass( )
     //
     
     bool merge_occurred = false;
-    
-    // sorted by proximity so we merge closest pairs first
-    std::vector<SortableEdgeEdgeProximity> proximities;
-    
+        
     for(size_t i = 0; i < m_surf.m_mesh.m_edges.size(); i++)
     {
         const Vec2st& e0 = m_surf.m_mesh.m_edges[i];

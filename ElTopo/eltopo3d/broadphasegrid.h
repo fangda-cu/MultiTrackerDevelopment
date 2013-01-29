@@ -385,7 +385,7 @@ inline void BroadPhaseGrid::get_potential_triangle_collisions( const Vec3d& aabb
     {
         m_solid_triangle_grid.find_overlapping_elements( aabb_low, aabb_high, overlapping_triangles );
     }
-    
+
     if ( return_dynamic )
     {
         m_dynamic_triangle_grid.find_overlapping_elements( aabb_low, aabb_high, overlapping_triangles );

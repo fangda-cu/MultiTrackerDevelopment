@@ -35,8 +35,7 @@ typedef Vec<3,size_t> Vec3st;
 
 // ---------------------------------------------------------
 ///
-/// Edge splitter object.  Splits "long" edges by introducing a new vertex at the midpoint, optionally offsetting for curvature 
-/// preservation.
+/// Face splitter object.  Splits a face into three triangles via a new vertex in the middle of it.
 ///
 // ---------------------------------------------------------
 
@@ -76,6 +75,7 @@ private:
     bool split_face_pseudo_motion_introduces_intersection( const Vec3d& new_vertex_position, 
       const Vec3d& new_vertex_smooth_position, size_t face);
      
+public:
 
     /// Determine if face should be allowed to be split
     ///    
@@ -83,7 +83,7 @@ private:
     
     /// Split an face, using the barycenter point
     ///
-    bool split_face( size_t face );
+    bool split_face( size_t face, size_t& result_vert, bool specify_point = false, Vec3d const * subd_point = 0);
     
 };
 

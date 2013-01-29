@@ -110,17 +110,18 @@ private:
       std::vector<size_t>& tris, 
       std::vector<size_t>& verts);
 
-    /// Determine if edge should be allowed to be split
-    ///    
-    bool edge_is_splittable( size_t edge_index );
-    
     /// Determine if the edge's length is such that a split is desired
     ///
     bool edge_length_needs_split(size_t edge_index);
 
+public:
+    /// Determine if edge should be allowed to be split
+    ///    
+    bool edge_is_splittable( size_t edge_index );
+    
     /// Split an edge, using subdivision_scheme to determine the new vertex location, if safe to do so.
     ///
-    bool split_edge( size_t edge, bool specify_split_position = false, Vec3d * pos = NULL );
+    bool split_edge( size_t edge, size_t& result_vert, bool specify_split_position = false, Vec3d const * pos = 0);
     
 };
 

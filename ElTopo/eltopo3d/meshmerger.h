@@ -33,40 +33,6 @@ typedef Vec<3,size_t> Vec3st;
 
 // ---------------------------------------------------------
 ///
-/// Pair of proximal edges, sortable by distance.  Used to build a list of edge pairs in ascending order of proximity, so we can 
-/// handle them from nearest to farthest.
-///
-// ---------------------------------------------------------
-
-struct SortableEdgeEdgeProximity
-{
-    /// Constructor
-    /// 
-    SortableEdgeEdgeProximity( size_t a, size_t b, double d ) :
-    edge_a( a ),
-    edge_b( b ),
-    distance( d )
-    {}
-    
-    /// Edges indices
-    ///
-    size_t edge_a, edge_b;
-    
-    /// Distance between the two edges
-    /// 
-    double distance;
-    
-    /// Comparison operator for this class, compares edge-edge distance for each pair
-    /// 
-    bool operator<( const SortableEdgeEdgeProximity& other ) const
-    {
-        return distance < other.distance;
-    }
-    
-};
-
-// ---------------------------------------------------------
-///
 /// Mesh merger object.  Sweeps over all pairs of edges, attempting to merge the surface when nearby edges are found.
 ///
 // ---------------------------------------------------------

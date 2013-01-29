@@ -165,7 +165,7 @@ void update_renderable_objects()
    
    g_renderable_vertices = g_dual_sim->surface_tracker->get_positions();
    g_is_vertex_dead.resize(g_renderable_vertices.size());
-   for(int i = 0; i < g_is_vertex_dead.size(); ++i) {
+   for(size_t i = 0; i < g_is_vertex_dead.size(); ++i) {
       g_is_vertex_dead[i] = g_dual_sim->surface_tracker->m_mesh.vertex_is_deleted(i);
    }
 

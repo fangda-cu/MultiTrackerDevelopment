@@ -235,6 +235,44 @@ struct SortablePair
 
 };
 
+// ---------------------------------------------------------
+///
+/// Used to build a sorted list of proximity data
+/// 
+// ---------------------------------------------------------
+
+struct SortableProximity
+{    
+   /// Constructor
+   ///
+   SortableProximity( size_t face, size_t vertex, double sep_dist, bool isFaceVert ) : 
+      m_index0(face),
+      m_index1(vertex), 
+      m_length(sep_dist),
+      m_face_vert_proximity(isFaceVert)
+   {
+   }
+
+   /// Comparison operator for sorting
+   ///
+   bool operator<( const SortableProximity& other ) const
+   {
+      return (this->m_length < other.m_length);
+   }
+
+   /// The indices of the relevant geometry
+   ///
+   size_t m_index0, m_index1;
+
+   /// Whether it's an edge-edge or a face-vertex proximity
+
+   bool m_face_vert_proximity;
+
+   /// The stored length
+   ///
+   double m_length;
+
+};
 
 // ---------------------------------------------------------
 ///
@@ -643,7 +681,7 @@ public:
     public:
         virtual bool generate_collapsed_position(SurfTrack & st, size_t v0, size_t v1, Vec3d & pos) = 0;
         
-        virtual bool generate_splitted_position(SurfTrack & st, size_t v0, size_t v1, Vec3d & pos) = 0;
+        virtual bool generate_split_position(SurfTrack & st, size_t v0, size_t v1, Vec3d & pos) = 0;
         
         virtual bool generate_collapsed_constraint_label(SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1) = 0;
         

@@ -355,7 +355,7 @@ bool EdgeSplitter::split_edge_pseudo_motion_introduces_intersection( const Vec3d
 ///
 // --------------------------------------------------------
 
-bool EdgeSplitter::split_edge( size_t edge, bool specify_split_position, Vec3d * pos )
+bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool specify_split_position, Vec3d const * pos )
 {   
 
   g_stats.add_to_int( "EdgeSplitter:edge_split_attempts", 1 );
@@ -415,8 +415,13 @@ bool EdgeSplitter::split_edge( size_t edge, bool specify_split_position, Vec3d *
   // the collision detection, splitting will not fall back to using the
   // midpoint, but return false.
   
-  bool use_smooth_point = (incident_tris.size() == 2) || (incident_tris.size() == 1 && typeid(m_surf.m_subdivision_scheme) == typeid(ModifiedButterflyScheme));
+  bool use_smooth_point = (incident_tris.size() == 2) || 
+                          (incident_tris.size() == 1 && typeid(m_surf.m_subdivision_scheme) == typeid(ModifiedButterflyScheme));
   
+  //if the user has provided a new position, use it instead of the subdivision data
+  if(specify_split_position)
+     use_smooth_point = false;
+
   bool keep_vert_is_constrained =   m_surf.m_mesh.get_vertex_constraint_label(vertex_a);
   bool delete_vert_is_constrained = m_surf.m_mesh.get_vertex_constraint_label(vertex_b);
   
@@ -426,7 +431,7 @@ bool EdgeSplitter::split_edge( size_t edge, bool specify_split_position, Vec3d *
     use_smooth_point = false;
     
     assert(m_surf.m_constrained_vertices_callback);
-    if (!m_surf.m_constrained_vertices_callback->generate_splitted_position(m_surf, vertex_a, vertex_b, new_vertex_position))
+    if (!m_surf.m_constrained_vertices_callback->generate_split_position(m_surf, vertex_a, vertex_b, new_vertex_position))
     {
       if (m_surf.m_verbose)
         std::cout << "Constraint callback vetoed splitting" << std::endl;
@@ -445,7 +450,7 @@ bool EdgeSplitter::split_edge( size_t edge, bool specify_split_position, Vec3d *
   
   /////////////////////////////////////////
 
-  // generate the new midpoint according to the subdivision scheme, only if manifold and not on a boundary
+  // generate the new midpoint according to the subdivision scheme
   if(use_smooth_point)
     m_surf.m_subdivision_scheme->generate_new_midpoint( edge, m_surf, new_vertex_smooth_position );
   else
@@ -578,9 +583,20 @@ bool EdgeSplitter::split_edge( size_t edge, bool specify_split_position, Vec3d *
   
   if (specify_split_position)
   {
-    if (m_surf.m_verbose) { std::cout << "Using specified split position" << std::endl; }
-    assert(pos);
-    new_vertex_smooth_position = *pos;
+    if (m_surf.m_verbose) { std::cout << "Attempting to use specified split position" << std::endl; }
+    
+    bool specified_pos_safe = !split_edge_pseudo_motion_introduces_intersection( new_vertex_position, 
+       *pos, 
+       edge, 
+       vertex_a, 
+       vertex_b, 
+       incident_tris, 
+       other_verts );
+
+    if(specified_pos_safe)
+      new_vertex_smooth_position = *pos;
+    else
+       return false;
   }
 
 
@@ -739,6 +755,8 @@ bool EdgeSplitter::split_edge( size_t edge, bool specify_split_position, Vec3d *
   ////////////////////////////////////////////////////////////
 
   m_surf.m_mesh_change_history.push_back(split);
+  
+  result_vert = vertex_e;
 
   return true;
 
@@ -883,7 +901,8 @@ bool EdgeSplitter::large_angle_split_pass()
         Vec3d ev = edge_point1 - edge_point0;
         Vec3d split_pos = dot(opposite_point0 - edge_point0, ev) / dot(ev, ev) * ev + edge_point0;
         
-        bool result = split_edge( e, true, &split_pos ); // use the projection of opposite_point0 onto the edge as the split point
+        size_t result_vert;
+        bool result = split_edge( e, result_vert, true, &split_pos ); // use the projection of opposite_point0 onto the edge as the split point
 
         ///////////////////////////////////////////////////////////////////////
 
@@ -957,7 +976,8 @@ bool EdgeSplitter::split_pass()
         bool should_split = edge_length_needs_split(longest_edge);
         
         if(should_split) {
-            bool result = split_edge(longest_edge);
+           size_t result_vert;
+            bool result = split_edge(longest_edge, result_vert);
             split_occurred |= result;
         }
 
