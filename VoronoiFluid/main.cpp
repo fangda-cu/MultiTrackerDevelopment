@@ -755,23 +755,23 @@ void display()
             nbr_verts.push_back(other_vert);
             }*/
 
-            for(size_t j = i+1; j < g_renderable_vertices.size(); ++j)  {
+            //for(size_t j = i+1; j < g_renderable_vertices.size(); ++j)  {
 
-               if(g_is_vertex_dead[j]) continue;
-               //check if this is a neighbour vertex, and if so, skip it.
-               //if(std::find(nbr_verts.begin(), nbr_verts.end(), j) != nbr_verts.end()) continue;
+            //   if(g_is_vertex_dead[j]) continue;
+            //   //check if this is a neighbour vertex, and if so, skip it.
+            //   //if(std::find(nbr_verts.begin(), nbr_verts.end(), j) != nbr_verts.end()) continue;
 
-               double cur_len;
-               cur_len = mag(g_renderable_vertices[i] - g_renderable_vertices[j]);
+            //   double cur_len;
+            //   cur_len = mag(g_renderable_vertices[i] - g_renderable_vertices[j]);
 
-               if(cur_len < g_dual_sim->surface_tracker->m_merge_proximity_epsilon) {
-                  glPointSize(6);
-                  glBegin(GL_POINTS);
-                  glVertex3dv(g_renderable_vertices[i].v);
-                  glVertex3dv(g_renderable_vertices[j].v);
-                  glEnd();
-               }
-            }
+            //   if(cur_len < g_dual_sim->surface_tracker->m_merge_proximity_epsilon) {
+            //      glPointSize(6);
+            //      glBegin(GL_POINTS);
+            //      glVertex3dv(g_renderable_vertices[i].v);
+            //      glVertex3dv(g_renderable_vertices[j].v);
+            //      glEnd();
+            //   }
+            //}
          }
       
 

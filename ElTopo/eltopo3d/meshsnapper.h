@@ -96,7 +96,7 @@ private:
     
     /// Determine if the vertex pair should be allowed to snap
     ///
-    bool vert_pair_is_snappable( size_t vert0, size_t vert1, double& cur_length );
+    bool vert_pair_is_snappable( size_t vert0, size_t vert1 );
    
     /// Determine if the edge pair should be allowed to snap 
     ///
