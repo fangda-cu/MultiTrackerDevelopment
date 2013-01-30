@@ -409,7 +409,7 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool specify_sp
   ///////////////////////////////////////////////////////////////////////
   // FD 20120109
   //
-  // If endpoints are constrained, as the callback for a final position
+  // If endpoints are constrained, use the callback for a final position
   // instead of using midpoint. This is filled into new_vertex_position 
   // instead of new_vertex_smooth_position, so that if this position fails
   // the collision detection, splitting will not fall back to using the

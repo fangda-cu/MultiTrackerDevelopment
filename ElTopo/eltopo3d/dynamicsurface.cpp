@@ -566,11 +566,12 @@ int DynamicSurface::get_region_containing_point( const Vec3d& p )
 void DynamicSurface::integrate( double desired_dt, double& actual_dt )
 {     
     
-    //if ( m_collision_safety )
-    //{
-    //  std::cout << "Checking collisions before integration.\n";
-    //  assert_mesh_is_intersection_free( false );
-    //}
+    if ( m_collision_safety )
+    {
+      std::cout << "Checking collisions before integration.\n";
+      assert_mesh_is_intersection_free( false );
+      std::cout << "All clear.\n";
+    }
 
     static const bool DEGEN_DOES_NOT_COUNT = false;   
     static const bool USE_NEW_POSITIONS = true;

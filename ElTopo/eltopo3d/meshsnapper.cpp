@@ -42,7 +42,8 @@ extern RunStats g_stats;
 MeshSnapper::MeshSnapper( SurfTrack& surf ) :
    m_surf( surf ), 
    m_edgesplitter(surf, false, false, 0), 
-   m_facesplitter(surf)
+   m_facesplitter(surf),
+   m_snap_threshold(0.05)
 {}
 
 
@@ -539,46 +540,40 @@ bool MeshSnapper::snap_edge_pair( size_t edge0, size_t edge1)
    
    //Check if we're fairly close to an end vertex; if so just use the vertex directly for snapping.
    //otherwise, do a split to create a new point which will then be snapped.
-   double snap_threshold = 0.05;
-   
+      
    size_t snapping_vert0;
-   if(s0 < snap_threshold) {
+   if(s0 < m_snap_threshold) {
       snapping_vert0 = edge_data0[0];
    }
-   else if(s0 > 1 - snap_threshold) {
+   else if(s0 > 1 - m_snap_threshold) {
       snapping_vert0 = edge_data0[1];
    }
    else {
       size_t split_result;
       
-      std::cout << "Attempting to edge split.\n";
       if(m_edgesplitter.edge_is_splittable(edge0) || !m_edgesplitter.split_edge(edge0, split_result, true, &midpoint0))
          return false;
-
       snapping_vert0 = split_result;
    }
 
    size_t snapping_vert1;
-   if(s2 < snap_threshold) {
+   if(s2 < m_snap_threshold) {
       snapping_vert1 = edge_data1[0];
    }
-   else if(s2 > 1 - snap_threshold) {
+   else if(s2 > 1 - m_snap_threshold) {
       snapping_vert1 = edge_data1[1];
    }
    else {
       size_t split_result;
 
-      std::cout << "Attempting to edge split.\n";
       if(m_edgesplitter.edge_is_splittable(edge1) || !m_edgesplitter.split_edge(edge1, split_result, true, &midpoint1))
          return false;
 
       snapping_vert1 = split_result;
    }
    
-   std::cout << "Attempting to snap vertex pair.\n";
-
    bool success = vert_pair_is_snappable(snapping_vert0, snapping_vert1) && snap_vertex_pair(snapping_vert0, snapping_vert1);
-   
+
    return success;
 }
 
@@ -615,7 +610,7 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
    Vec3d normal;
    Vec3st face_data = m_surf.m_mesh.m_tris[face];
    double dist;
-
+   
    const Vec3d& v_pos = m_surf.get_position(vertex);
    const Vec3d& t0_pos = m_surf.get_position(face_data[0]);
    const Vec3d& t1_pos = m_surf.get_position(face_data[1]);
@@ -627,18 +622,15 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
       t0_pos, t1_pos, t2_pos,
       dist, s0, s1, s2, normal );
 
-   std::cout << "Barycentric coords: " << s0 << " " << s1 << " " << s2 << ".\n";
-
    //Depending on the barycentric coordinates, either snap to one of the face vertices,
    //split an edge and snap to it, or split the face and snap to it.
 
-   double snap_threshold = 0.05;
    size_t snapping_vertex;
-   if(s0 < snap_threshold) {
-      if(s1 < snap_threshold) {
+   if(s0 < m_snap_threshold) {
+      if(s1 < m_snap_threshold) {
          snapping_vertex = face_data[2];
       }
-      else if(s2 < snap_threshold) {
+      else if(s2 < m_snap_threshold) {
          snapping_vertex = face_data[1];
       }
       else {
@@ -648,15 +640,14 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
        double edge_frac = s1 / (s1+s2);
        Vec3d split_point = edge_frac * t1_pos + (1-edge_frac) * t2_pos;
        
-       std::cout << "Attempting to edge split.\n";
        if(!m_edgesplitter.edge_is_splittable(edge_to_split) || !m_edgesplitter.split_edge(edge_to_split, result_vertex, true, &split_point))
          return false;
-       
+
        snapping_vertex = result_vertex;
       }
    }
-   else if(s1 < snap_threshold) {
-      if(s2 < snap_threshold) {
+   else if(s1 < m_snap_threshold) {
+      if(s2 < m_snap_threshold) {
          snapping_vertex = face_data[0];
       }
       else {
@@ -665,22 +656,21 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
 
          double edge_frac = s0 / (s0+s2);
          Vec3d split_point = edge_frac * t0_pos + (1-edge_frac) * t2_pos;
-
-         std::cout << "Attempting to edge split.\n";
+         
          if(!m_edgesplitter.edge_is_splittable(edge_to_split) || !m_edgesplitter.split_edge(edge_to_split, result_vertex, true, &split_point))
             return false;
-
+         
          snapping_vertex = result_vertex;
       }
    }
-   else if(s2 < snap_threshold) {
+   else if(s2 < m_snap_threshold) {
       size_t result_vertex;
       size_t edge_to_split = m_surf.m_mesh.get_edge_index(face_data[0], face_data[1]);
       
       double edge_frac = s0 / (s0+s1);
       Vec3d split_point = edge_frac * t0_pos + (1-edge_frac) * t1_pos;
 
-      std::cout << "Attempting to edge split.\n";
+      
       if(!m_edgesplitter.edge_is_splittable(edge_to_split) || !m_edgesplitter.split_edge(edge_to_split, result_vertex, true, &split_point))
          return false;
       
@@ -691,14 +681,12 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
       Vec3d split_point = s0*t0_pos + s1*t1_pos + s2*t2_pos;
       
       //try to split the face, and if it fails, drop out.
-      std::cout << "Attempting to split face.\n";
       if(!m_facesplitter.face_is_splittable(face) || !m_facesplitter.split_face(face, result_vertex, true, &split_point))
          return false;
 
       snapping_vertex = result_vertex;
    }
 
-   std::cout << "Attempting to snap resulting vertex pair.\n";
    bool success = vert_pair_is_snappable(snapping_vertex, vertex) && snap_vertex_pair(snapping_vertex, vertex);
    
    return success;
@@ -766,8 +754,7 @@ bool MeshSnapper::edge_pair_is_snappable( size_t edge0, size_t edge1, double& cu
    if(m_surf.m_mesh.edge_is_deleted(edge0) || m_surf.m_mesh.edge_is_deleted(edge1) ) 
       return false;
    
-   //always use the lower numbered edge, to avoid duplication
-   if(edge0 >= edge1)
+   if(edge0 == edge1) 
       return false;
 
    //edges shouldn't share a vertex
@@ -776,6 +763,56 @@ bool MeshSnapper::edge_pair_is_snappable( size_t edge0, size_t edge1, double& cu
    if(edge_data0[0] == edge_data1[0] || edge_data0[0] == edge_data1[1] ||
       edge_data0[1] == edge_data1[0] || edge_data0[1] == edge_data1[1] ) 
       return false;
+
+   //check if the edges are on two triangles sharing an edge, and if so
+   //require that the faces be at less than 90 degrees to continue.
+
+   //check all triangles incident on the first edge
+   for(int i = 0; i < 2; ++i) {
+      size_t v0 = edge_data0[i];
+      for(int j = 0; j < 2; ++j) {
+         size_t v1 = edge_data1[j];
+         size_t edge_index = m_surf.m_mesh.get_edge_index(v0, v1);
+         if(edge_index != m_surf.m_mesh.m_edges.size()) {
+            //now find the two relevant triangles 
+            size_t tri0, tri1;
+            bool found0 = false, found1 = false;
+            for(size_t k = 0; k < m_surf.m_mesh.m_edge_to_triangle_map[edge_index].size(); ++k) {
+               size_t cur_tri = m_surf.m_mesh.m_edge_to_triangle_map[edge_index][k];
+               Vec3st tri_data = m_surf.m_mesh.m_tris[cur_tri];
+               if(m_surf.m_mesh.triangle_contains_edge(tri_data, edge_data0)) {
+                  tri0 = cur_tri;
+                  found0 = true;
+               }
+               if(m_surf.m_mesh.triangle_contains_edge(tri_data, edge_data1)) {
+                  tri1 = cur_tri;
+                  found1 = true;
+               }
+            }
+            
+            //they shared an edge but we couldn't find a potentially offending triangle pair 
+            if(!found0 || !found1) continue;
+
+            //get the data
+            Vec3st tri0_data = m_surf.m_mesh.m_tris[tri0];
+            Vec3st tri1_data = m_surf.m_mesh.m_tris[tri1];
+            
+            //and their normals
+            Vec3d normal0 = m_surf.get_triangle_normal(tri0);
+            Vec3d normal1 = m_surf.get_triangle_normal(tri1);
+
+            //if the tris are _not_ oriented consistently, flip the normal to make the comparison valid.
+            Vec2st shared_edge_data = m_surf.m_mesh.m_edges[edge_index];
+            if(m_surf.m_mesh.oriented(shared_edge_data[0], shared_edge_data[1], tri0_data) !=
+               m_surf.m_mesh.oriented(shared_edge_data[1], shared_edge_data[0], tri1_data))
+               normal1 = -normal1;
+
+            if(dot(normal0, normal1) > 0) //if normals match, don't do it. 
+               return false;
+         }
+      }
+   }
+
 
    //TODO extend to handle constraints, solids, and boundaries
 
@@ -788,7 +825,33 @@ bool MeshSnapper::edge_pair_is_snappable( size_t edge0, size_t edge1, double& cu
       m_surf.get_position(edge_data1[1]), 
       current_length, s0, s2, normal );
 
-   return current_length < m_surf.m_merge_proximity_epsilon;  
+   if(current_length < m_surf.m_merge_proximity_epsilon) {
+      
+      //check for "dimensional drop-down" cases which would lead to snapping two vertices that already share an edge.
+      if(s0 < m_snap_threshold) {
+         if(s2 < m_snap_threshold) {
+            if(m_surf.m_mesh.get_edge_index(edge_data0[0], edge_data1[0]) != m_surf.m_mesh.m_edges.size())
+               return false;
+         }
+         else if(s2 > 1-m_snap_threshold) {
+            if(m_surf.m_mesh.get_edge_index(edge_data0[0], edge_data1[1]) != m_surf.m_mesh.m_edges.size())
+               return false;
+         }
+      }
+      else if(s0 > 1-m_snap_threshold) {
+         if(s2 < m_snap_threshold) {
+            if(m_surf.m_mesh.get_edge_index(edge_data0[1], edge_data1[0]) != m_surf.m_mesh.m_edges.size())
+               return false;
+         }
+         else if(s2 > 1-m_snap_threshold) {
+            if(m_surf.m_mesh.get_edge_index(edge_data0[1], edge_data1[1]) != m_surf.m_mesh.m_edges.size())
+               return false;
+         }
+      }
+      return true;
+   }
+   else
+      return false;  
    
 }
 
@@ -811,6 +874,32 @@ bool MeshSnapper::face_vertex_pair_is_snappable( size_t face, size_t vertex, dou
    if(m_surf.m_mesh.triangle_contains_vertex(face_data, vertex))
       return false;
    
+   //check if the vertex is contained in a face adjacent to the one it's merging with.
+   //if so, require that the angle between the faces be less than 90 degrees.
+   Vec3d tri_normal = m_surf.get_triangle_normal(face);
+   for(int i = 0; i < 3; ++i) {
+      size_t edge = m_surf.m_mesh.m_triangle_to_edge_map[face][i];
+      for(size_t j = 0; j < m_surf.m_mesh.m_edge_to_triangle_map[edge].size(); ++j) {
+         size_t other_tri = m_surf.m_mesh.m_edge_to_triangle_map[edge][j];
+         if(other_tri == face) continue;
+         Vec3st other_tri_data = m_surf.m_mesh.m_tris[other_tri];
+         if(m_surf.m_mesh.triangle_contains_vertex(other_tri_data, vertex)) {
+            //check the angle between the faces
+            Vec3d other_normal = m_surf.get_triangle_normal(other_tri);
+
+            //if the tris are _not_ oriented consistently, flip the normal to make the comparison valid.
+            if(m_surf.m_mesh.oriented(m_surf.m_mesh.m_edges[edge][0], m_surf.m_mesh.m_edges[edge][1], face_data) !=
+               m_surf.m_mesh.oriented(m_surf.m_mesh.m_edges[edge][1], m_surf.m_mesh.m_edges[edge][0], other_tri_data)) {
+               other_normal = -other_normal;
+            }
+
+            if(dot(other_normal, tri_normal) > 0) {
+               return false;
+            }
+         }
+      }
+   }
+
    //TODO extend to handle constraints, solids, and boundaries
 
    double s0, s1, s2;
@@ -822,7 +911,26 @@ bool MeshSnapper::face_vertex_pair_is_snappable( size_t face, size_t vertex, dou
       m_surf.get_position(face_data[2]), 
       current_length, s0, s1, s2, normal );
 
-   return current_length < m_surf.m_merge_proximity_epsilon;  
+   if(current_length < m_surf.m_merge_proximity_epsilon) {
+
+      //anticipate the case where we would drop down to vertex snapping
+      //but there is already a connecting edge. Should be an edge collapse, not a snap.
+      if(s1 < m_snap_threshold && s2 < m_snap_threshold && 
+         m_surf.m_mesh.get_edge_index(face_data[0], vertex) != m_surf.m_mesh.m_edges.size())
+         return false;
+
+      if(s0 < m_snap_threshold && s2 < m_snap_threshold && 
+         m_surf.m_mesh.get_edge_index(face_data[1], vertex) != m_surf.m_mesh.m_edges.size())
+         return false;
+
+      if(s0 < m_snap_threshold && s2 < m_snap_threshold &&
+         m_surf.m_mesh.get_edge_index(face_data[2], vertex) != m_surf.m_mesh.m_edges.size())
+         return false;
+
+      return true;
+   }
+   else
+      return false;
 
 }
 
@@ -885,11 +993,13 @@ bool MeshSnapper::snap_pass()
       std::vector<size_t> overlapping_edges;
       m_surf.m_broad_phase->get_potential_edge_collisions(vmin, vmax, false, true, overlapping_edges);
 
-      const Vec2st& edge_data0 = m_surf.m_mesh.m_edges[edge0];
-
       for(size_t ind = 0; ind < overlapping_edges.size(); ++ind) {
          size_t edge1 = overlapping_edges[ind];
          
+         //always use the lower numbered edge, to avoid duplicates
+         if(edge0 >= edge1)
+            continue;
+
          double len;
          if (edge_pair_is_snappable(edge0, edge1, len))
          {
@@ -908,45 +1018,45 @@ bool MeshSnapper::snap_pass()
 
    std::sort( sortable_pairs_to_try.begin(), sortable_pairs_to_try.end() );
 
-   //if ( m_surf.m_verbose )
-   //{
+   if ( m_surf.m_verbose )
+   {
       std::cout << sortable_pairs_to_try.size() << " candidate pairs sorted" << std::endl;
-   //}
+   }
 
    //
    // attempt to split and snap each pair in the sorted list
    //
 
+   m_surf.assert_mesh_is_intersection_free(false);
+
    for ( size_t si = 0; si < sortable_pairs_to_try.size(); ++si )
    {
-      std::cout << "\n\nConsidering pair " << si << " with proximity " << sortable_pairs_to_try[si].m_length << std::endl; 
       size_t ind0 = sortable_pairs_to_try[si].m_index0;
       size_t ind1 = sortable_pairs_to_try[si].m_index1;
-      std::cout << "Data " << ind0 << " and " << ind1 << std::endl; 
       
       bool result = false;
       bool attempted = false;
       if(sortable_pairs_to_try[si].m_face_vert_proximity) {
+
          //perform face-vertex split-n-snap
          size_t face = ind0;
          size_t vertex = ind1;
          
          double cur_len;
          if(face_vertex_pair_is_snappable(face, vertex, cur_len)) {
-            std::cout << "Attempting face-vertex snap.\n";
             result = snap_face_vertex_pair(face, vertex);
             attempted = true;
          }
 
       }
       else {
+         
          //perform edge-edge split-n-snap
          size_t edge0 = ind0;
          size_t edge1 = ind1;
 
          double cur_len;
          if(edge_pair_is_snappable(edge0, edge1, cur_len)) {
-            std::cout << "Attempting edge-edge snap.\n";
             result = snap_edge_pair(edge0, edge1);
             attempted = true;
          }
@@ -954,15 +1064,15 @@ bool MeshSnapper::snap_pass()
       
       if ( result )
       { 
-         std::cout << "Snapping succeeded. Cleaning up.\n\n\n";
          // clean up degenerate triangles and tets
-         m_surf.trim_non_manifold( m_surf.m_dirty_triangles );            
+         m_surf.trim_non_manifold( m_surf.m_dirty_triangles );  
+         return true;
       }
       else if(attempted) {
-         std::cout << "Snapping failed.\n";
+         //Snapping attempted and failed
       }
       else {
-         std::cout << "Pair no longer snappable.\n";
+         //Snapping not attempted because the situation changed.
       }
       
 

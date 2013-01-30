@@ -56,9 +56,9 @@ DualFluidSim3D::DualFluidSim3D( const std::vector<Vec3d>& surface_vertices,
   mesh = new TetMesh(); 
   densities = region_densities;
   surface_tracker = new SurfTrack( surface_vertices, surface_triangles, surface_labels, surface_vertex_masses, initial_parameters );
-  /*surface_tracker->improve_mesh();
-  surface_tracker->improve_mesh();
-  surface_tracker->improve_mesh();*/
+  //surface_tracker->improve_mesh();
+  //surface_tracker->improve_mesh();
+  //surface_tracker->improve_mesh();
 }
 
 
@@ -1437,6 +1437,9 @@ void DualFluidSim3D::advance_surface( float dt )
    surface_tracker->assert_no_bad_labels();
    
    surface_tracker->improve_mesh();
+   //surface_tracker->snap_mesh();
+   //surface_tracker->improve_mesh();
+   
    surface_tracker->assert_no_bad_labels();
    
    //surface_tracker->topology_changes();
