@@ -58,7 +58,8 @@ DoubleBubbleTest::DoubleBubbleTest() :
   Problem("Double Bubble Test", "Various bubble dynamics tests"), 
   shell(NULL), 
   shellObj(NULL), 
-  stepper(NULL)
+  stepper(NULL),
+  svf(NULL)
 {
   addDynamicsProps();
   
@@ -81,6 +82,8 @@ DoubleBubbleTest::DoubleBubbleTest() :
   AddOption("shell-inflate-sphere-coeff", "coefficient for inflating sphere", 0.0);
   AddOption("shell-inflate-sphere-const-pressure", "whether to use constant pressure version", false);
   
+  AddOption("volume-targeting", "whether to set the desired volume of each region to equal", false);
+    
   //sheared wrinkling parameters
   AddOption("shell-rotation-rate", "the rate at which inner cylinder rotates for sheared wrinkling test", 0.0);
   AddOption("shell-bath-density", "the density of water fluid bath for sheared wrinkling test", 1.0);
@@ -91,6 +94,8 @@ DoubleBubbleTest::DoubleBubbleTest() :
   AddOption("shell-remeshing-max-length", "upper bound on edge-length", 0.5);
   AddOption("shell-remeshing-min-length", "lower bound on edge-length", 0.1);
   AddOption("shell-remeshing-iterations", "number of remeshing iterations to run", 2);
+  
+  AddOption("shell-init-remesh", "whether or not to run a remeshing pass before simulation starts", false);
 
   AddOption("t1-transition-enabled", "whether T1 transition operations are enabled", false);
   AddOption("smooth-subdivision-scheme", "whether or not to use the Modified Butterfly subdivision scheme (default is false, i.e. midpoint subdivision)", false);
@@ -149,6 +154,7 @@ DoubleBubbleTest::DoubleBubbleTest() :
   //OBJ file dump
   AddOption("generate-OBJ", "Generate an OBJ file at each timestep", g_obj_dump);
   AddOption("generate-PLY", "Generate a PLY file at each timestep", g_ply_dump);
+  AddOption("obj-mode", "0 = one OBJ for entire mesh; 1 = one OBJ per region; 2 = one OBJ per region pair", 0);
 
 
 }
@@ -174,6 +180,8 @@ sceneFunc db_scenes[] =
   &DoubleBubbleTest::setupScene6,
   &DoubleBubbleTest::setupScene7,
   &DoubleBubbleTest::setupScene8,
+  &DoubleBubbleTest::setupScene9,
+  &DoubleBubbleTest::setupScene10,
 };
 
 //Scalar db_bubbleThicknessFunction(Vec3d pos) {
@@ -320,10 +328,16 @@ void DoubleBubbleTest::Setup()
 //  shell->setThicknessUpdating(thickness_evolution);
 
   Scalar vf_stiffness = GetScalarOpt("volume-force-stiffness");
+  svf = NULL;
   if (vf_stiffness > 0)
   {
     svf = new ShellVolumeForce(*shell, "Volume", vf_stiffness);
     shell->addForce(svf);
+      
+    if (GetBoolOpt("volume-targeting"))
+    {
+      svf->m_target_volumes.assign(svf->m_target_volumes.size(), 1.0 / svf->m_target_volumes.size());
+    }
   }
   
 //  shell->computeMasses(); /////////////////////////////
@@ -351,9 +365,12 @@ void DoubleBubbleTest::Setup()
 //  tearingRand = clamp(tearingRand, 0.0, 1.0);
   shell->setTearing(tearing, tearingThres, tearingRand);
 
-  updateBBWallConstraints();
-  shell->remesh(true);
-  updateBBWallConstraints();
+  if (GetBoolOpt("shell-init-remesh"))
+  {
+    updateBBWallConstraints();
+    shell->remesh(true);
+    updateBBWallConstraints();
+  }
     
   // count total number of regions
   int max_region = 0;
@@ -429,13 +446,15 @@ public:
 
 void DoubleBubbleTest::AtEachTimestep()
 {
-  for (size_t i = 0; i < triangulation_added_faces.size(); i++)
-    shellObj->deleteFace(triangulation_added_faces[i], false);
-  for (size_t i = 0; i < triangulation_added_edges.size(); i++)
-    shellObj->deleteEdge(triangulation_added_edges[i], false);
-  for (size_t i = 0; i < triangulation_added_vertices.size(); i++)
-    shellObj->deleteVertex(triangulation_added_vertices[i]);
+//  for (size_t i = 0; i < triangulation_added_faces.size(); i++)
+//    shellObj->deleteFace(triangulation_added_faces[i], false);
+//  for (size_t i = 0; i < triangulation_added_edges.size(); i++)
+//    shellObj->deleteEdge(triangulation_added_edges[i], false);
+//  for (size_t i = 0; i < triangulation_added_vertices.size(); i++)
+//    shellObj->deleteVertex(triangulation_added_vertices[i]);
 
+  if (svf)
+    svf->globalEnergy();
   
     
   //dump PLY files if needed
@@ -548,14 +567,46 @@ void DoubleBubbleTest::AtEachTimestep()
         mkdir(outputdirectory.c_str(), 0755);
 #endif
 
-        for (int i = 0; i < m_nregion; i++)
+        int RENDER_METHOD = GetIntOpt("obj-mode");
+        if (RENDER_METHOD == 0)
         {
+            // dump one OBJ for the entire mesh
             std::stringstream name;
             name << std::setfill('0');
-            name << outputdirectory << "/" << "region" << std::setw(4) << i << "_frame" << std::setw(6) << db_current_obj_frame << ".OBJ";
-
-            write_objfile_per_region(surface_tracker.m_mesh, surface_tracker.get_positions(), i, name.str().c_str());
+            name << outputdirectory << "/" << "mesh_frame" << std::setw(6) << db_current_obj_frame << ".OBJ";
+            
+            write_objfile(surface_tracker.m_mesh, surface_tracker.get_positions(), name.str().c_str());
             std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+            
+        } else if (RENDER_METHOD == 1)
+        {
+            // dump one OBJ per region
+            for (int i = 0; i < m_nregion; i++)
+            {
+                std::stringstream name;
+                name << std::setfill('0');
+                name << outputdirectory << "/" << "region" << std::setw(4) << i << "_frame" << std::setw(6) << db_current_obj_frame << ".OBJ";
+
+                write_objfile_per_region(surface_tracker.m_mesh, surface_tracker.get_positions(), i, name.str().c_str());
+                std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+            }
+        } else 
+        {
+            // dump one OBJ per region pair
+            for (int i = 0; i < m_nregion; i++)
+            {
+                for (int j = i + 1; j < m_nregion; j++)
+                {
+                    std::stringstream name;
+                    name << std::setfill('0');
+                    name << outputdirectory << "/" << "label_" << std::setw(4) << i << "_" << std::setw(4) << j << "_frame" << std::setw(6) << db_current_obj_frame << ".OBJ";
+                    
+                    write_objfile_per_region_pair(surface_tracker.m_mesh, surface_tracker.get_positions(), ElTopo::Vec2i(i, j), name.str().c_str());
+                    std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+                }
+                
+            }
+            
         }
 
         ++db_current_obj_frame;
@@ -568,6 +619,8 @@ void DoubleBubbleTest::AtEachTimestep()
 
 void DoubleBubbleTest::updateBBWallConstraints()
 {
+    if (m_active_scene == 9)
+      return;
     
     shellObj->releaseAllVertices();
     shell->getVertexConstraintLabels().assign(0);
@@ -639,33 +692,96 @@ void DoubleBubbleTest::beforeEndStep()
   Scalar dt = getDt();
   Scalar current_t = getTime();
   
-  for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+  if (m_active_scene == 7)
   {
-    Vec3d v;
-    Vec3d x = shell->getVertexPosition(*vit);
+    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+    {
+      Vec3d v;
+      Vec3d x = shell->getVertexPosition(*vit);
+      
+      // RK4
+      // -----------
+      // k1 = dt * f( t, x );
+      s7_enright_velocity(current_t, x, v);
+      Vec3d k1 = v;
+      
+      // k2 = dt * f( t + 0.5*dt, x + 0.5*k1 );
+      s7_enright_velocity(current_t + 0.5 * dt, x + 0.5 * dt * k1, v);
+      Vec3d k2 = v;
+      
+      // k3 = dt * f( t + 0.5*dt, x + 0.5*k2 );
+      s7_enright_velocity(current_t + 0.5 * dt, x + 0.5 * dt * k2, v);
+      Vec3d k3 = v;
+      
+      // k4 = dt * f( t + dt, x + k3 );
+      s7_enright_velocity(current_t + dt, x + dt * k3, v);
+      Vec3d k4 = v;
+      
+      v = (1./6. * (k1 + k4) + 1./3. * (k2 + k3));
+      shell->setVertexVelocity(*vit, v);
+      shell->setVertexPosition(*vit, x + v * dt);
+    }  
+  } else if (m_active_scene == 9 || m_active_scene == 10)
+  {
+    static Scalar speeds_scene9[3][3] = 
+    {
+      { 0, -1, -1 },
+      { 1, 0, 0 },
+      { 1, 0, 0 }
+    };
     
-    // RK4
-    // -----------
-    // k1 = dt * f( t, x );
-    s7_enright_velocity(current_t, x, v);
-    Vec3d k1 = v;
+    static Scalar speeds_scene10[3][3] = 
+    {
+      { 0, -1, 1 },
+      { 1, 0, -2 },
+      { -1, 2, 0 }
+    };
     
-    // k2 = dt * f( t + 0.5*dt, x + 0.5*k1 );
-    s7_enright_velocity(current_t + 0.5 * dt, x + 0.5 * dt * k1, v);
-    Vec3d k2 = v;
+    Scalar speeds[3][3];
+    memcpy(speeds, m_active_scene == 9 ? speeds_scene9 : speeds_scene10, sizeof (Scalar) * 9);
     
-    // k3 = dt * f( t + 0.5*dt, x + 0.5*k2 );
-    s7_enright_velocity(current_t + 0.5 * dt, x + 0.5 * dt * k2, v);
-    Vec3d k3 = v;
+    VertexProperty<Vec3d> velocities(shellObj);
+    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+    {
+      if (shellObj->vertexIncidentEdges(*vit) == 0) 
+      { 
+        velocities[*vit] = Vec3d(0, 0, 0);
+        continue;
+      }
+      
+      Vec3d normal(0, 0, 0);
+      double sum_areas = 0.0;
+      for (VertexFaceIterator vfit = shellObj->vf_iter(*vit); vfit; ++vfit)
+      {
+        FaceVertexIterator fvit = shellObj->fv_iter(*vfit); assert(fvit);
+        Vec3d x0 = shell->getVertexPosition(*fvit); ++fvit; assert(fvit);
+        Vec3d x1 = shell->getVertexPosition(*fvit); ++fvit; assert(fvit);
+        Vec3d x2 = shell->getVertexPosition(*fvit); ++fvit; assert(!fvit);
+        
+        Vec2i label = shell->getFaceLabel(*vfit);
+        
+        double area = (x1 - x0).cross(x2 - x0).norm() / 2;
+        normal += (x1 - x0).cross(x2 - x0).normalized() * area * speeds[label.x()][label.y()];
+        sum_areas += area;
+      }
+      if (normal.norm() > 0)
+        normal.normalize();
+      
+      double speed = 0.1;
+      velocities[*vit] = speed * normal;
+    }
     
-    // k4 = dt * f( t + dt, x + k3 );
-    s7_enright_velocity(current_t + dt, x + dt * k3, v);
-    Vec3d k4 = v;
+//    double capped_dt = MeshSmoother::compute_max_timestep_quadratic_solve( surf.m_mesh.get_triangles(), surf.get_positions(), displacements, false );
     
-    v = (1./6. * (k1 + k4) + 1./3. * (k2 + k3));
-    shell->setVertexVelocity(*vit, v);
-    shell->setVertexPosition(*vit, x + v * dt);
-  }  
+//    adaptive_dt = min( adaptive_dt, capped_dt );
+    
+    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+    {
+      shell->setVertexVelocity(*vit, velocities[*vit]);
+      shell->setVertexPosition(*vit, shell->getVertexPosition(*vit) + velocities[*vit] * dt);
+    }
+    
+  }
 }
 
 void DoubleBubbleTest::s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out)
@@ -687,10 +803,10 @@ void DoubleBubbleTest::s7_enright_velocity(double t, const Vec3d & pos, Vec3d & 
 
 void DoubleBubbleTest::AfterStep()
 {
-  triangulation_added_vertices.clear();
-  triangulation_added_edges.clear();
-  triangulation_added_faces.clear();
-  svf->triangulateBBWalls(triangulation_added_vertices, triangulation_added_edges, triangulation_added_faces);
+//  triangulation_added_vertices.clear();
+//  triangulation_added_edges.clear();
+//  triangulation_added_faces.clear();
+//  svf->triangulateBBWalls(triangulation_added_vertices, triangulation_added_edges, triangulation_added_faces);
   
   if (m_active_scene == 7)
   {
@@ -722,7 +838,7 @@ void DoubleBubbleTest::AfterStep()
     {
       vol[i] /= 6;
       if (i == 0)
-        vol[i] = -vol[i]; // this is used to compute total area
+        vol[i] = -vol[i]; // this is used to compute total volume
       
       if (init_vol[i] < 0)
         init_vol[i] = vol[i];
@@ -1472,7 +1588,685 @@ void DoubleBubbleTest::setupScene7()
 
 void DoubleBubbleTest::setupScene8()
 {
+    //vertices
+    std::vector<VertexHandle> vertHandles;
+    VertexProperty<Vec3d> undeformed(shellObj);
+    VertexProperty<Vec3d> positions(shellObj);
+    VertexProperty<Vec3d> velocities(shellObj);
+    
+    //edge properties
+    EdgeProperty<Scalar> undefAngle(shellObj);
+    EdgeProperty<Scalar> edgeAngle(shellObj);
+    EdgeProperty<Scalar> edgeVel(shellObj);
+    
+    //create a cube
+    std::vector<VertexHandle> vertList;
+    
+    int nv = 16;
+    for(int i = 0; i < nv; ++i) 
+        vertList.push_back(shellObj->addVertex());
+    
+    //create positions
+    Scalar size = GetScalarOpt("shell-width");
+    Vec3d center(0.5, 0.5, 0.5);
+    Scalar d = 0.1464466094;
+    positions[vertList[ 0]] = Vec3d(0, 0, 0.5);
+    positions[vertList[ 1]] = Vec3d(d, 0, 0.5);
+    positions[vertList[ 2]] = Vec3d(d, 0, 0.5) * size + center * (1 - size);
+    positions[vertList[ 3]] = Vec3d(d, 1, 0.5) * size + center * (1 - size);
+    positions[vertList[ 4]] = Vec3d(d, 1, 0.5);
+    positions[vertList[ 5]] = Vec3d(0, 1, 0.5);
+    
+    positions[vertList[ 6]] = Vec3d(1, 0.5, 1);
+    positions[vertList[ 7]] = Vec3d(1 - d, 0.5, 1);
+    positions[vertList[ 8]] = Vec3d(1 - d, 0.5, 1) * size + center * (1 - size);
+    positions[vertList[ 9]] = Vec3d(1 - d, 0.5, 0) * size + center * (1 - size);
+    positions[vertList[10]] = Vec3d(1 - d, 0.5, 0);
+    positions[vertList[11]] = Vec3d(1, 0.5, 0);
+    
+    positions[vertList[12]] = Vec3d(0.5, 0, 1);
+    positions[vertList[13]] = Vec3d(0.5, 1, 1);
+    positions[vertList[14]] = Vec3d(0.5, 1, 0);
+    positions[vertList[15]] = Vec3d(0.5, 0, 0);
+    
+    int tet_corners[4];
+    tet_corners[0] = 2;
+    tet_corners[1] = 3;
+    tet_corners[2] = 8;
+    tet_corners[3] = 9;
+    
+    int res = GetIntOpt("shell-x-resolution");
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = i + 1; j < 4; j++)
+        {
+            VertexHandle a = vertList[tet_corners[i]];
+            VertexHandle b = vertList[tet_corners[j]];
+            Vec3d xa = positions[a];
+            Vec3d xb = positions[b];
+            
+            // res - 1 vertices created
+            for (int k = 1; k < res; k++)
+            {
+                vertList.push_back(shellObj->addVertex());
+                positions[vertList.back()] = xa + (xb - xa) * k / res;
+            }
+        }
+    }
+
+    for (int f = 0; f < 4; f++)
+    {
+        VertexHandle a, b, c, d;
+        a = vertList[tet_corners[(f + 0) % 4]];
+        b = vertList[tet_corners[(f + 1) % 4]];
+        c = vertList[tet_corners[(f + 2) % 4]];
+        d = vertList[tet_corners[(f + 3) % 4]];
+        Vec3d xa, xb, xc, xd;
+        xa = positions[a];
+        xb = positions[b];
+        xc = positions[c];
+        xd = positions[d];
+        
+        // (res - 1) * (res - 2) vertices created
+        for (int i = 2; i < res; i++)
+        {
+            for (int j = 1; j < i; j++)
+            {
+                vertList.push_back(shellObj->addVertex());
+                positions[vertList.back()] = xc * (i - j) / res + xa * (res - i) / res + xb * j / res; 
+            }
+        }
+    }
+    
+    for(int i = 0; i < shellObj->nv(); ++i)
+    {
+        undeformed[vertList[i]] = positions[vertList[i]];
+        velocities[vertList[i]] = Vec3d(0, 0, 0);
+    }
+
+    std::vector<FaceHandle> faceList;
+    FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles  
+    
+    int regions[4] = { 0, 3, 2, 1 };    
+    for (int f = 0; f < 4; f++)
+    {
+        VertexHandle a, b, c, d;
+        a = vertList[tet_corners[(f + 0) % 4]];
+        b = vertList[tet_corners[(f + 1) % 4]];
+        c = vertList[tet_corners[(f + 2) % 4]];
+        d = vertList[tet_corners[(f + 3) % 4]];
+        Vec3d xa, xb, xc, xd;
+        xa = positions[a];
+        xb = positions[b];
+        xc = positions[c];
+        xd = positions[d];
+        
+        bool oriented = ((xa - center).cross(xb - center).dot(xc - center) > 0);
+        Vec2i label = (oriented ? Vec2i(regions[f], 4) : Vec2i(4, regions[f]));
+
+        for (int i = 0; i < res; i++)
+        {
+            for (int j = 0; j <= i; j++)
+            {
+                Vec3d x0, x1, x2;
+                x0 = xc * (i - j) / res + xa * (res - i) / res + xb * j / res; 
+                x1 = xc * (i + 1 - j) / res + xa * (res - i - 1) / res + xb * j / res; 
+                x2 = xc * (i - j) / res + xa * (res - i - 1) / res + xb * (j + 1) / res; 
+                
+                size_t v0, v1, v2;
+                for (v0 = 0; v0 < vertList.size(); v0++)
+                    if ((x0 - positions[vertList[v0]]).squaredNorm() < 1e-6)
+                        break;
+                assert(v0 < vertList.size());
+                for (v1 = 0; v1 < vertList.size(); v1++)
+                    if ((x1 - positions[vertList[v1]]).squaredNorm() < 1e-6)
+                        break;
+                assert(v1 < vertList.size());
+                for (v2 = 0; v2 < vertList.size(); v2++)
+                    if ((x2 - positions[vertList[v2]]).squaredNorm() < 1e-6)
+                        break;
+                assert(v2 < vertList.size());
+                
+                faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+                faceLabels[faceList.back()] = label;
+            }
+        }
+        
+        for (int i = 1; i < res; i++)
+        {
+            for (int j = 0; j < i; j++)
+            {
+                Vec3d x0, x1, x2;
+                x0 = xc * (i - j) / res + xa * (res - i) / res + xb * j / res; 
+                x1 = xc * (i - j) / res + xa * (res - i - 1) / res + xb * (j + 1) / res; 
+                x2 = xc * (i - j - 1) / res + xa * (res - i) / res + xb * (j + 1) / res; 
+                
+                size_t v0, v1, v2;
+                for (v0 = 0; v0 < vertList.size(); v0++)
+                    if ((x0 - positions[vertList[v0]]).squaredNorm() < 1e-6)
+                        break;
+                assert(v0 < vertList.size());
+                for (v1 = 0; v1 < vertList.size(); v1++)
+                    if ((x1 - positions[vertList[v1]]).squaredNorm() < 1e-6)
+                        break;
+                assert(v1 < vertList.size());
+                for (v2 = 0; v2 < vertList.size(); v2++)
+                    if ((x2 - positions[vertList[v2]]).squaredNorm() < 1e-6)
+                        break;
+                assert(v2 < vertList.size());
+                
+                faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+                faceLabels[faceList.back()] = label;
+            }
+        }
+    }
+    
+    faceList.push_back(shellObj->addFace(vertList[0], vertList[1], vertList[2])); faceLabels[faceList.back()] = Vec2i(1, 0);
+    faceList.push_back(shellObj->addFace(vertList[3], vertList[4], vertList[5])); faceLabels[faceList.back()] = Vec2i(1, 0);
+    faceList.push_back(shellObj->addFace(vertList[6], vertList[7], vertList[8])); faceLabels[faceList.back()] = Vec2i(3, 2);
+    faceList.push_back(shellObj->addFace(vertList[9], vertList[10], vertList[11])); faceLabels[faceList.back()] = Vec2i(3, 2);
+
+    faceList.push_back(shellObj->addFace(vertList[5], vertList[0], vertList[nv + (res - 1) * 0 + res / 2 - 1])); faceLabels[faceList.back()] = Vec2i(1, 0);
+    faceList.push_back(shellObj->addFace(vertList[11], vertList[6], vertList[nv + (res - 1) * 5 + res / 2 - 1])); faceLabels[faceList.back()] = Vec2i(3, 2);
+    
+    faceList.push_back(shellObj->addFace(vertList[1], vertList[2], vertList[12])); faceLabels[faceList.back()] = Vec2i(0, 2);
+    faceList.push_back(shellObj->addFace(vertList[12], vertList[8], vertList[7])); faceLabels[faceList.back()] = Vec2i(0, 2);
+    faceList.push_back(shellObj->addFace(vertList[4], vertList[3], vertList[13])); faceLabels[faceList.back()] = Vec2i(3, 0);
+    faceList.push_back(shellObj->addFace(vertList[13], vertList[8], vertList[7])); faceLabels[faceList.back()] = Vec2i(3, 0);
+    faceList.push_back(shellObj->addFace(vertList[1], vertList[2], vertList[15])); faceLabels[faceList.back()] = Vec2i(2, 1);
+    faceList.push_back(shellObj->addFace(vertList[15], vertList[9], vertList[10])); faceLabels[faceList.back()] = Vec2i(2, 1);
+    faceList.push_back(shellObj->addFace(vertList[4], vertList[3], vertList[14])); faceLabels[faceList.back()] = Vec2i(1, 3);
+    faceList.push_back(shellObj->addFace(vertList[14], vertList[9], vertList[10])); faceLabels[faceList.back()] = Vec2i(1, 3);
+    
+    for (int i = 0; i < res; i++)
+    {
+        int v0, v1, v2;
+        v0 = (i < res / 2 ? 0 : 5);
+        v1 = (i == 0       ? tet_corners[0] : (nv + (res - 1) * 0 + i - 1));
+        v2 = (i == res - 1 ? tet_corners[1] : (nv + (res - 1) * 0 + i));        
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(1, 0);
+        
+        v0 = (i < res / 2 ? 6 : 11);
+        v1 = (i == 0       ? tet_corners[2] : (nv + (res - 1) * 5 + i - 1));
+        v2 = (i == res - 1 ? tet_corners[3] : (nv + (res - 1) * 5 + i));        
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(3, 2);
+        
+        v0 = 12;
+        v1 = (i == 0       ? tet_corners[0] : (nv + (res - 1) * 1 + i - 1));
+        v2 = (i == res - 1 ? tet_corners[2] : (nv + (res - 1) * 1 + i));        
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(0, 2);
+        
+        v0 = 13;
+        v1 = (i == 0       ? tet_corners[1] : (nv + (res - 1) * 3 + i - 1));
+        v2 = (i == res - 1 ? tet_corners[2] : (nv + (res - 1) * 3 + i));        
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(3, 0);
+        
+        v0 = 14;
+        v1 = (i == 0       ? tet_corners[1] : (nv + (res - 1) * 4 + i - 1));
+        v2 = (i == res - 1 ? tet_corners[3] : (nv + (res - 1) * 4 + i));        
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(1, 3);
+        
+        v0 = 15;
+        v1 = (i == 0       ? tet_corners[0] : (nv + (res - 1) * 2 + i - 1));
+        v2 = (i == res - 1 ? tet_corners[3] : (nv + (res - 1) * 2 + i));        
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(2, 1);
+    }
+    
+    // push the vertices outside, inflating the tet
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = i + 1; j < 4; j++)
+        {
+            VertexHandle a = vertList[tet_corners[i]];
+            VertexHandle b = vertList[tet_corners[j]];
+            Vec3d xa = positions[a];
+            Vec3d xb = positions[b];
+            
+            VertexHandle c;
+            VertexHandle d;
+            for (int k = 0; k < 4; k++)
+            {
+                if (k != i && k != j)
+                {
+                    if (!c.isValid())
+                        c = vertList[tet_corners[k]];
+                    else
+                        d = vertList[tet_corners[k]];
+                }
+            }
+            Vec3d xc = positions[c];
+            Vec3d xd = positions[d];
+            
+            // res - 1 vertices created
+            for (int k = 1; k < res; k++)
+            {
+                Vec3d x = xa + (xb - xa) * k / res;
+                
+                size_t v0;
+                for (v0 = 0; v0 < vertList.size(); v0++)
+                    if ((x - positions[vertList[v0]]).squaredNorm() < 1e-6)
+                        break;
+                assert(v0 < vertList.size());
+                
+                positions[vertList[v0]] = (xc + xd) / 2 + (x - (xc + xd) / 2).normalized() * (xa - (xc + xd) / 2).norm();
+            }
+        }
+    }
+    
+    for (int f = 0; f < 4; f++)
+    {
+        VertexHandle a, b, c, d;
+        a = vertList[tet_corners[(f + 0) % 4]];
+        b = vertList[tet_corners[(f + 1) % 4]];
+        c = vertList[tet_corners[(f + 2) % 4]];
+        d = vertList[tet_corners[(f + 3) % 4]];
+        Vec3d xa, xb, xc, xd;
+        xa = positions[a];
+        xb = positions[b];
+        xc = positions[c];
+        xd = positions[d];
+        
+        // (res - 1) * (res - 2) vertices created
+        for (int i = 2; i < res; i++)
+        {
+            for (int j = 1; j < i; j++)
+            {
+                Vec3d x = xc * (i - j) / res + xa * (res - i) / res + xb * j / res; 
+                
+                size_t v0;
+                for (v0 = 0; v0 < vertList.size(); v0++)
+                    if ((x - positions[vertList[v0]]).squaredNorm() < 1e-6)
+                        break;
+                assert(v0 < vertList.size());
+                
+                positions[vertList[v0]] = xd + (x - xd).normalized() * (xa - xd).norm();
+            }
+        }
+    }
+    
+
+    
+    //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+    FaceProperty<char> shellFaces(shellObj); 
+    DeformableObject::face_iter fIt;
+    for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+        shellFaces[*fIt] = true;
+    
+    //now create the physical model to hang on the mesh
+    shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+    shellObj->addModel(shell);
+    
+    //positions
+//  shell->setVertexUndeformed(undeformed);
+    shell->setVertexPositions(positions);
+    shell->setVertexVelocities(velocities);
+    
+    shell->setFaceLabels(faceLabels);
+    
   
 }
+
+void DoubleBubbleTest::createIcoSphere(DeformableObject & mesh, Vec3d & center, Scalar r, int subdivision, std::vector<VertexHandle> & vertList, std::vector<FaceHandle> & faceList, VertexProperty<Vec3d> & positions)
+{
+  vertList.clear();
+  faceList.clear();
+  
+  DeformableObject obj;
+  VertexProperty<Vec3d> pos(&obj);
+  
+  // create icosahedron
+  for (int i = 0; i < 12; i++)
+    vertList.push_back(obj.addVertex());
+  
+  Scalar phi = (1 + sqrt(5)) / 2;
+  Scalar len = Vec3d(0, 1, phi).norm();
+  pos[*(vertList.rbegin() +  0)] = center + r * Vec3d(0,  1,  phi) / len; 
+  pos[*(vertList.rbegin() +  1)] = center + r * Vec3d(0, -1,  phi) / len; 
+  pos[*(vertList.rbegin() +  2)] = center + r * Vec3d(0,  1, -phi) / len; 
+  pos[*(vertList.rbegin() +  3)] = center + r * Vec3d(0, -1, -phi) / len; 
+  pos[*(vertList.rbegin() +  4)] = center + r * Vec3d( 1,  phi, 0) / len; 
+  pos[*(vertList.rbegin() +  5)] = center + r * Vec3d(-1,  phi, 0) / len; 
+  pos[*(vertList.rbegin() +  6)] = center + r * Vec3d( 1, -phi, 0) / len; 
+  pos[*(vertList.rbegin() +  7)] = center + r * Vec3d(-1, -phi, 0) / len; 
+  pos[*(vertList.rbegin() +  8)] = center + r * Vec3d( phi, 0,  1) / len; 
+  pos[*(vertList.rbegin() +  9)] = center + r * Vec3d( phi, 0, -1) / len; 
+  pos[*(vertList.rbegin() + 10)] = center + r * Vec3d(-phi, 0,  1) / len; 
+  pos[*(vertList.rbegin() + 11)] = center + r * Vec3d(-phi, 0, -1) / len;
+  
+  faceList.push_back(obj.addFace(*(vertList.rbegin() +  0), *(vertList.rbegin() +  1), *(vertList.rbegin() +  8)));
+  faceList.push_back(obj.addFace(*(vertList.rbegin() +  1), *(vertList.rbegin() +  0), *(vertList.rbegin() + 10)));
+  faceList.push_back(obj.addFace(*(vertList.rbegin() +  2), *(vertList.rbegin() +  3), *(vertList.rbegin() + 11)));
+  faceList.push_back(obj.addFace(*(vertList.rbegin() +  3), *(vertList.rbegin() +  2), *(vertList.rbegin() +  9)));
+  
+  faceList.push_back(obj.addFace(*(vertList.rbegin() +  4), *(vertList.rbegin() +  5), *(vertList.rbegin() +  0)));
+  faceList.push_back(obj.addFace(*(vertList.rbegin() +  5), *(vertList.rbegin() +  4), *(vertList.rbegin() +  2)));
+  faceList.push_back(obj.addFace(*(vertList.rbegin() +  6), *(vertList.rbegin() +  7), *(vertList.rbegin() +  3)));
+  faceList.push_back(obj.addFace(*(vertList.rbegin() +  7), *(vertList.rbegin() +  6), *(vertList.rbegin() +  1)));
+  
+  faceList.push_back(obj.addFace(*(vertList.rbegin() +  8), *(vertList.rbegin() +  9), *(vertList.rbegin() +  4)));
+  faceList.push_back(obj.addFace(*(vertList.rbegin() +  9), *(vertList.rbegin() +  8), *(vertList.rbegin() +  6)));
+  faceList.push_back(obj.addFace(*(vertList.rbegin() + 10), *(vertList.rbegin() + 11), *(vertList.rbegin() +  7)));
+  faceList.push_back(obj.addFace(*(vertList.rbegin() + 11), *(vertList.rbegin() + 10), *(vertList.rbegin() +  5)));
+  
+  faceList.push_back(obj.addFace(*(vertList.rbegin() +  0), *(vertList.rbegin() +  8), *(vertList.rbegin() +  4)));
+  faceList.push_back(obj.addFace(*(vertList.rbegin() +  1), *(vertList.rbegin() +  6), *(vertList.rbegin() +  8)));
+  faceList.push_back(obj.addFace(*(vertList.rbegin() +  0), *(vertList.rbegin() +  5), *(vertList.rbegin() + 10)));
+  faceList.push_back(obj.addFace(*(vertList.rbegin() +  1), *(vertList.rbegin() + 10), *(vertList.rbegin() +  7)));
+  
+  faceList.push_back(obj.addFace(*(vertList.rbegin() + 11), *(vertList.rbegin() +  3), *(vertList.rbegin() +  7)));
+  faceList.push_back(obj.addFace(*(vertList.rbegin() +  5), *(vertList.rbegin() +  2), *(vertList.rbegin() + 11)));
+  faceList.push_back(obj.addFace(*(vertList.rbegin() +  6), *(vertList.rbegin() +  3), *(vertList.rbegin() +  9)));
+  faceList.push_back(obj.addFace(*(vertList.rbegin() +  9), *(vertList.rbegin() +  2), *(vertList.rbegin() +  4)));
+  
+  for (int i = 0; i < subdivision; i++)
+  {
+    std::vector<Eigen::Matrix<VertexHandle, 3, 1> > faces_to_create;
+    EdgeProperty<VertexHandle> midpoints(&obj);
+    
+    for (EdgeIterator eit = obj.edges_begin(); eit != obj.edges_end(); ++eit)
+    {
+      VertexHandle vh = obj.addVertex();
+      vertList.push_back(vh);
+      midpoints[*eit] = vh;
+      pos[vh] = center + r * ((pos[obj.fromVertex(*eit)] + pos[obj.toVertex(*eit)]) / 2 - center).normalized();
+    }
+    
+    for (FaceIterator fit = obj.faces_begin(); fit != obj.faces_end(); ++fit)
+    {
+      FaceVertexIterator fvit = obj.fv_iter(*fit); assert(fvit);
+      VertexHandle v0 = *fvit; ++fvit; assert(fvit);
+      VertexHandle v1 = *fvit; ++fvit; assert(fvit);
+      VertexHandle v2 = *fvit; ++fvit; assert(!fvit);
+      
+      EdgeHandle e01 = findEdge(obj, v0, v1); assert(e01.isValid());
+      EdgeHandle e12 = findEdge(obj, v1, v2); assert(e12.isValid());
+      EdgeHandle e20 = findEdge(obj, v2, v0); assert(e20.isValid());
+
+      VertexHandle m01 = midpoints[e01]; assert(m01.isValid());
+      VertexHandle m12 = midpoints[e12]; assert(m12.isValid());
+      VertexHandle m20 = midpoints[e20]; assert(m20.isValid());
+      
+      faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(v0, m01, m20));
+      faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(v1, m12, m01));
+      faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(v2, m20, m12));
+      faces_to_create.push_back(Eigen::Matrix<VertexHandle, 3, 1>(m01, m12, m20));
+      
+    }
+
+    std::vector<FaceHandle> faces_created;
+    for (size_t j = 0; j < faces_to_create.size(); j++)
+      faces_created.push_back(obj.addFace(faces_to_create[j].x(), faces_to_create[j].y(), faces_to_create[j].z()));
+
+    for (size_t j = 0; j < faceList.size(); j++)
+      obj.deleteFace(faceList[j], true);
+
+    faceList = faces_created;
+    
+  }
+  
+  vertList.clear();
+  faceList.clear();
+  
+  VertexProperty<VertexHandle> vert_map(&obj);
+  for (VertexIterator vit = obj.vertices_begin(); vit != obj.vertices_end(); ++vit)
+  {
+    vertList.push_back(mesh.addVertex());
+    positions[vertList.back()] = pos[*vit];
+    vert_map[*vit] = vertList.back();
+  }
+  
+  for (FaceIterator fit = obj.faces_begin(); fit != obj.faces_end(); ++fit)
+  {
+    FaceVertexIterator fvit = obj.fv_iter(*fit); assert(fvit);
+    VertexHandle v0 = *fvit; ++fvit; assert(fvit);
+    VertexHandle v1 = *fvit; ++fvit; assert(fvit);
+    VertexHandle v2 = *fvit; ++fvit; assert(!fvit);
+    
+    faceList.push_back(mesh.addFace(vert_map[v0], vert_map[v1], vert_map[v2]));
+  }
+  
+}
+
+void DoubleBubbleTest::setupScene9() 
+{
+  //vertices
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+  
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+  
+  //create a sphere
+  std::vector<VertexHandle> vertList;
+  
+  int N = GetIntOpt("shell-x-resolution");
+  Scalar separate = GetScalarOpt("shell-width");
+  Scalar r = GetScalarOpt("shell-height");
+  Vec3d c1 = Vec3d(0.5 - separate, 0.5, 0.5);
+  Vec3d c2 = Vec3d(0.5 + separate, 0.5, 0.5);
+  
+  std::vector<FaceHandle> faceList;
+  FaceProperty<Vec2i> faceLabels(shellObj);  
+  std::vector<VertexHandle> vs;
+  std::vector<FaceHandle> fs;
+  
+  vs.clear();
+  fs.clear();
+  createIcoSphere(*shellObj, c1, r, N, vs, fs, positions);
+  for (size_t i = 0; i < fs.size(); i++)
+    faceLabels[fs[i]] = Vec2i(1, 0);
+  vertList.insert(vertList.end(), vs.begin(), vs.end());
+  faceList.insert(faceList.end(), fs.begin(), fs.end());
+  
+  vs.clear();
+  fs.clear();
+  createIcoSphere(*shellObj, c2, r, N, vs, fs, positions);
+  for (size_t i = 0; i < fs.size(); i++)
+    faceLabels[fs[i]] = Vec2i(2, 0);
+  vertList.insert(vertList.end(), vs.begin(), vs.end());
+  faceList.insert(faceList.end(), fs.begin(), fs.end());
+  
+  velocities.assign(Vec3d(0, 0, 0));
+  undeformed = positions;
+  
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+  
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
+  shellObj->addModel(shell);
+  
+  //positions
+  //  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+  
+  shell->setFaceLabels(faceLabels);
+
+}
+
+void DoubleBubbleTest::setupScene10() 
+{
+  //vertices
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+  
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+  
+  //create a sphere
+  std::vector<VertexHandle> vertList;
+  
+  int N = GetIntOpt("shell-x-resolution");
+  Scalar r = GetScalarOpt("shell-height");
+  Vec3d c1 = Vec3d(0.5, 0.5, 0.5 - r * 0.707);
+  vertList.push_back(shellObj->addVertex());
+  positions[vertList.back()] = Vec3d(c1 + Vec3d(0, 0, r));
+  for (int j = 0; j < N - 1; j++)
+  {
+    for (int i = 0; i < N * 2; i++)
+    {
+      vertList.push_back(shellObj->addVertex());
+      
+      Scalar theta = (Scalar)i * 2 * M_PI / (N * 2);
+      Scalar alpha = (Scalar)(j + 1) * M_PI / N - M_PI / 2;
+      positions[vertList.back()] = c1 + r * Vec3d(cos(alpha) * cos(theta), cos(alpha) * sin(theta), -sin(alpha));
+    }
+  }
+  vertList.push_back(shellObj->addVertex());
+  positions[vertList.back()] = Vec3d(c1 - Vec3d(0, 0, r));
+  vertList.push_back(shellObj->addVertex());
+  positions[vertList.back()] = Vec3d(0.5, 0.5, 0.5);
+  
+  Vec3d c2 = Vec3d(0.5, 0.5, 0.5 + r * 0.707);
+  vertList.push_back(shellObj->addVertex());
+  positions[vertList.back()] = Vec3d(c2 - Vec3d(0, 0, r));
+  for (int j = 0; j < N - 1; j++)
+  {
+    for (int i = 0; i < N * 2; i++)
+    {
+      vertList.push_back(shellObj->addVertex());
+      
+      Scalar theta = (Scalar)i * 2 * M_PI / (N * 2);
+      Scalar alpha = (Scalar)(j + 1) * M_PI / N - M_PI / 2;
+      positions[vertList.back()] = c2 + r * Vec3d(cos(alpha) * cos(theta), cos(alpha) * sin(theta), sin(alpha));
+    }
+  }
+  vertList.push_back(shellObj->addVertex());
+  positions[vertList.back()] = Vec3d(c2 + Vec3d(0, 0, r));
+  
+  for (int i = 0; i < shellObj->nv(); ++i)
+  {
+    velocities[vertList[i]] = Vec3d(0, 0, 0);
+    undeformed[vertList[i]] = positions[vertList[i]];
+  }
+  
+  std::vector<FaceHandle> faceList;
+  FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles  
+  
+  for (int j = N / 4; j < N; j++)
+  {
+    for (int i = 0; i < N * 2; i++)
+    {
+      int v0, v1, v2;
+      v0 = (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
+      v1 = (j == 0 ? 0 : 2 * N * (j - 1) + (i + 1) % (N * 2) + 1);
+      v2 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(0, 1);
+      }
+      
+      v0 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
+      v1 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + i + 1);
+      v2 = (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(0, 1);
+      }
+    }
+  }
+  
+  int offset = 2 * N * (N - 1) + 3;
+  for (int j = N / 4 + 1; j < N; j++)
+  {
+    for (int i = 0; i < N * 2; i++)
+    {
+      int v0, v1, v2;
+      v0 = offset + (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
+      v1 = offset + (j == 0 ? 0 : 2 * N * (j - 1) + (i + 1) % (N * 2) + 1);
+      v2 = offset + (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(2, 0);
+      }
+      
+      v0 = offset + (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
+      v1 = offset + (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + i + 1);
+      v2 = offset + (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+        faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+        faceLabels[faceList.back()] = Vec2i(2, 0);
+      }
+    }
+  }
+  
+  for (int i = 0; i < N * 2; i++)
+  {
+    int v0, v1, v2;
+    v0 = 2 * N * (N / 4 - 1) + i + 1;
+    v1 = 2 * N * (N / 4 - 1) + (i + 1) % (N * 2) + 1;
+    v2 = offset + 2 * N * (N / 4) + (i + 1) % (N * 2) + 1;
+    if (!(v0 == v1 || v0 == v2 || v1 == v2))
+    {
+      faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+      faceLabels[faceList.back()] = Vec2i(2, 0);
+    }
+    
+    v0 = offset + 2 * N * (N / 4) + (i + 1) % (N * 2) + 1;
+    v1 = offset + 2 * N * (N / 4) + i + 1;
+    v2 = 2 * N * (N / 4 - 1) + i + 1;
+    if (!(v0 == v1 || v0 == v2 || v1 == v2))
+    {
+      faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+      faceLabels[faceList.back()] = Vec2i(2, 0);
+    }
+  }
+  
+  for (int i = 0; i < N * 2; i++)
+  {
+    int v0, v1, v2;
+    v0 = 2 * N * (N / 4 - 1) + i + 1;
+    v1 = 2 * (N - 1) * N + 2;
+    v2 = 2 * N * (N / 4 - 1) + (i + 1) % (N * 2) + 1;
+    if (!(v0 == v1 || v0 == v2 || v1 == v2))
+    {
+      faceList.push_back(shellObj->addFace(vertList[v0], vertList[v1], vertList[v2]));
+      faceLabels[faceList.back()] = Vec2i(2, 1);
+    }
+  }
+  
+  for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+    if (shellObj->vertexIncidentEdges(*vit) == 0)
+      shellObj->deleteVertex(*vit);
+  
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+  
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
+  shellObj->addModel(shell);
+  
+  //positions
+  //  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+  
+  shell->setFaceLabels(faceLabels);
+  
+}
+
 
 
