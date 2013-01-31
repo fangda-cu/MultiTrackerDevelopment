@@ -360,7 +360,11 @@ const Scalar& ElasticShell::getDof( const DofHandle& hnd ) const
 //
 //  //return reference to the appropriate position in the vector
 //  const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-//  return const_cast<Scalar&>(m_xi[eh]);
+  
+  //Just to satisfy my compiler - CB
+  Scalar dummy;
+  return const_cast<Scalar&>(dummy);
+  
 }
 
 void ElasticShell::setDof( const DofHandle& hnd, const Scalar& dof )
@@ -380,7 +384,10 @@ const Scalar& ElasticShell::getVel( const DofHandle& hnd ) const
 //
 //  //return reference to the appropriate position in the vector
 //  const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
-//  return const_cast<Scalar&>(m_xi_vel[eh]);
+  
+  //Just to satisfy my compiler - CB
+  Scalar dummy;
+  return const_cast<Scalar&>(dummy);
 }
 
 void ElasticShell::setVel( const DofHandle& hnd, const Scalar& vel )
@@ -1175,7 +1182,8 @@ void ElasticShell::remesh(bool initial)
   
   for(int i = 0; i < m_remeshing_iters; ++i) {
     surface_tracker.improve_mesh();
-    surface_tracker.topology_changes();
+    //surface_tracker.topology_changes();
+    surface_tracker.snap_mesh();
   }
   
   // copy ElTopo mesh back, instead of repeating the operation history incrementally.
@@ -1355,7 +1363,7 @@ bool ElasticShell::generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0
   return false;
 }
 
-bool ElasticShell::generate_splitted_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos)
+bool ElasticShell::generate_split_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos)
 {
   pos = (st.get_position(v0) + st.get_position(v1)) / 2;
   

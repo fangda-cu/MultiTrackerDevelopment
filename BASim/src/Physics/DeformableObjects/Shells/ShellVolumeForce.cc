@@ -316,7 +316,7 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
   {
     std::cout << "Wall edges: " << std::endl;
     for (int i = 0; i < 6; i++)
-      for (int j = 0; j < wall_edges[i].size(); j++)
+      for (size_t j = 0; j < wall_edges[i].size(); j++)
         std::cout << "i = " << i << " j = " << j << " edge: " << obj.fromVertex(wall_edges[i][j]).idx() << " - " << obj.toVertex(wall_edges[i][j]).idx() << " label: " << wall_edge_labels[wall_edges[i][j]] << std::endl;
     
     std::cout << "nv = " << obj.nv() << " ne = " << obj.ne() << " nf = " << obj.nf() << " nt = " << obj.nt() << std::endl;

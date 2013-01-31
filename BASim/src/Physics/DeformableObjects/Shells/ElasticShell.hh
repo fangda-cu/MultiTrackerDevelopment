@@ -169,7 +169,7 @@ public:
   
   // SurfTrack::ConstrainedVerticesCollapsingCallback method  
   bool generate_collapsed_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos);
-  bool generate_splitted_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos);
+  bool generate_split_position(ElTopo::SurfTrack & st, size_t v0, size_t v1, ElTopo::Vec3d & pos);
   bool generate_collapsed_constraint_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1);
   bool generate_splitted_constraint_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1);
   bool generate_edge_popped_positions(ElTopo::SurfTrack & st, size_t oldv, const ElTopo::Vec2i & cut, ElTopo::Vec3d & pos_upper, ElTopo::Vec3d & pos_lower);

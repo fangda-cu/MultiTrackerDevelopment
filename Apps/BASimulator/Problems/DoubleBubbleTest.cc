@@ -1924,7 +1924,7 @@ void DoubleBubbleTest::createIcoSphere(DeformableObject & mesh, Vec3d & center, 
   for (int i = 0; i < 12; i++)
     vertList.push_back(obj.addVertex());
   
-  Scalar phi = (1 + sqrt(5)) / 2;
+  Scalar phi = (1.0 + sqrt(5.0)) / 2.0;
   Scalar len = Vec3d(0, 1, phi).norm();
   pos[*(vertList.rbegin() +  0)] = center + r * Vec3d(0,  1,  phi) / len; 
   pos[*(vertList.rbegin() +  1)] = center + r * Vec3d(0, -1,  phi) / len; 

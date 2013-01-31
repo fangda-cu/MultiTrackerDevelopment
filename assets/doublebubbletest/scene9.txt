@@ -32,7 +32,7 @@ shell-density 0.1	# volumetric density of the shell
 shell-thickness 0.1	# the thickness of the shell
 shell-height 0.2	# the vertical side length of the shell
 shell-width 0.25	# the horizontal side length of the shell
-shell-x-resolution 12	# the number of segments along the horizontal edge
+shell-x-resolution 2	# the number of segments along the horizontal edge
 shell-y-resolution 60	# the number of segments along the vertical edge
 
 iterations 100	# maximum number of iterations for the implicit method
