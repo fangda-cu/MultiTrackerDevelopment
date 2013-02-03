@@ -192,7 +192,7 @@ int ShellVolumeForce::onBBWall(const Vec3d & pos) const
   
 void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertices, std::vector<EdgeHandle> & new_edges, std::vector<FaceHandle> & new_faces) const
 {
-  bool verbose = true;
+  bool verbose = false;
   
   if (verbose) std::cout << "=========================================================================" << std::endl;
   
@@ -211,7 +211,6 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
          
   std::vector<std::vector<EdgeHandle> > wall_edges(6);
   EdgeProperty<Vec2i> wall_edge_labels(&obj);
-  std::vector<VertexHandle> corners;
   
   // count how many regions there are
   int max_label = 0;
@@ -227,43 +226,77 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
   
   int nregion = max_label + 1;
   
+  std::vector<Vec3d> wall_normals(6);
+  wall_normals[0] = Vec3d(-1, 0, 0);
+  wall_normals[1] = Vec3d(0, -1, 0);
+  wall_normals[2] = Vec3d(0, 0, -1);
+  wall_normals[3] = Vec3d(1, 0, 0);
+  wall_normals[4] = Vec3d(0, 1, 0);
+  wall_normals[5] = Vec3d(0, 0, 1);
+  
   // sort the film boundary edges to six walls
   wall_edge_labels.assign(Vec2i(-1, -1));
   Eigen::Matrix<int, Eigen::Dynamic, 1> rcounts;
   
   for (EdgeIterator eit = obj.edges_begin(); eit != obj.edges_end(); ++eit)
   {
-    if (obj.isBoundary(*eit))
+    int walls0 = onBBWall(m_shell.getVertexPosition(obj.fromVertex(*eit)));
+    int walls1 = onBBWall(m_shell.getVertexPosition(obj.toVertex(*eit)));
+    if (walls0 & walls1)
     {
-      int walls0 = onBBWall(m_shell.getVertexPosition(obj.fromVertex(*eit)));
-      int walls1 = onBBWall(m_shell.getVertexPosition(obj.toVertex(*eit)));
-      assert(walls0 & walls1);
-      
-      Vec2i edge_label(-1, -1);
-      rcounts.setZero(nregion);
+      Vec3d x0 = m_shell.getVertexPosition(obj.fromVertex(*eit));
+      Vec3d x1 = m_shell.getVertexPosition(obj.toVertex(*eit));
+
+      FaceHandle head;  // head is the leftmost face when looking down the edge from x0 to x1, with the interior of the BB below
+      FaceHandle tail;
+      Vec3d head_n;
+      Vec3d tail_n;
       for (EdgeFaceIterator efit = obj.ef_iter(*eit); efit; ++efit)
       {
-        Vec2i label = m_shell.getFaceLabel(*efit);
-        assert(label.x() >= 0 && label.y() >= 0);
-        rcounts[label.x()] += obj.getRelativeOrientation(*efit, *eit);
-        rcounts[label.y()] -= obj.getRelativeOrientation(*efit, *eit);
-      }
-      
-      for (int i = 0; i < nregion; i++)
-      {
-        if (rcounts[i] == 1)
+        Vec3d n;
+        
+        VertexHandle other_vertex;
+        getFaceThirdVertex(obj, *efit, *eit, other_vertex);
+        Vec3d other_x = m_shell.getVertexPosition(other_vertex);
+        
+        n = (x0 - other_x).cross(x1 - other_x);
+        
+        if (!head.isValid() || n.cross(head_n).dot(x1 - x0) < 0)
         {
-          assert(edge_label.x() == -1);
-          edge_label.x() = i; // x component is the region label on the right of the edge
-        } else if (rcounts[i] == -1)
+          head = *efit;
+          head_n = n;
+        }
+        if (!tail.isValid() || n.cross(tail_n).dot(x1 - x0) > 0)
         {
-          assert(edge_label.y() == -1);
-          edge_label.y() = i; // y component is the region label on the left of the edge
-        } else
+          tail = *efit;
+          tail_n = n;
+        }
+        
+        if (head.isValid() && tail.isValid() && head == tail && n.cross(head_n).dot(x1 - x0) == 0 && n.dot(head_n) < 0)
         {
-          assert(rcounts[i] == 0);
+          tail = *efit;
+          tail_n = n;
+          int wall = -1;
+          for (int i = 0; i < 6; i++)
+            if ((walls0 & walls1) == (1 << i))
+            {
+              assert(wall < 0); // this entire case can only happen inside a BB wall, not along a BB edge
+              wall = i;
+            }
+          if (wall_normals[wall].cross(head_n).dot(x1 - x0) < 0)
+          {
+            std::swap(head, tail);
+            std::swap(head_n, tail_n);
+          }
         }
       }
+        
+      assert(head.isValid());
+      assert(tail.isValid());
+      
+      Vec2i edge_label(-1, -1); // x = the region on the right; y = the region on the left
+      edge_label.y() = (obj.getRelativeOrientation(head, *eit) > 0 ? m_shell.getFaceLabel(head).y() : m_shell.getFaceLabel(head).x());
+      edge_label.x() = (obj.getRelativeOrientation(tail, *eit) > 0 ? m_shell.getFaceLabel(tail).x() : m_shell.getFaceLabel(tail).y());
       
       assert(edge_label.x() >= 0 && edge_label.y() >= 0);
       
@@ -290,6 +323,7 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
   }
   
   // temporarily add vertices and edges in order to triangulate BB walls
+  std::vector<VertexHandle> corners;
   corners.push_back(obj.addVertex()); m_shell.setVertexPosition(corners.back(), Vec3d(0, 0, 0));
   corners.push_back(obj.addVertex()); m_shell.setVertexPosition(corners.back(), Vec3d(1, 0, 0));
   corners.push_back(obj.addVertex()); m_shell.setVertexPosition(corners.back(), Vec3d(0, 1, 0));
@@ -315,14 +349,6 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
   bb_edges[ 9].x() = 4;  bb_edges[ 9].y() = 7;  bb_edges[ 9].z() = 3;   bb_edges[ 9].w() = 4; // BB edge: vertices 4, 7
   bb_edges[10].x() = 5;  bb_edges[10].y() = 7;  bb_edges[10].z() = 5;   bb_edges[10].w() = 3; // BB edge: vertices 5, 7
   bb_edges[11].x() = 6;  bb_edges[11].y() = 7;  bb_edges[11].z() = 4;   bb_edges[11].w() = 5; // BB edge: vertices 6, 7
-  
-  std::vector<Vec3d> wall_normals(6);
-  wall_normals[0] = Vec3d(-1, 0, 0);
-  wall_normals[1] = Vec3d(0, -1, 0);
-  wall_normals[2] = Vec3d(0, 0, -1);
-  wall_normals[3] = Vec3d(1, 0, 0);
-  wall_normals[4] = Vec3d(0, 1, 0);
-  wall_normals[5] = Vec3d(0, 0, 1);
   
   // first find the boundary vertices lying on BB edges
   std::vector<std::vector<VertexHandle> > edge_verts(12);
@@ -403,7 +429,7 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
               head = j;
               head_vec = e;
             }
-            if (tail < 0 || e.cross(head_vec).dot(wall_normals[wall0]) < 0)
+            if (tail < 0 || e.cross(tail_vec).dot(wall_normals[wall0]) < 0)
             {
               tail = j;
               tail_vec = e;
@@ -415,8 +441,8 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
         {
           EdgeHandle headedge = wall_edges[wall0][head];
           EdgeHandle tailedge = wall_edges[wall0][tail];
-          lregion0 = (obj.fromVertex(headedge) == v ? wall_edge_labels[headedge].x() : wall_edge_labels[headedge].y());
-          lregion1 = (obj.fromVertex(tailedge) == v ? wall_edge_labels[tailedge].y() : wall_edge_labels[tailedge].x());
+          lregion1 = (obj.fromVertex(headedge) == v ? wall_edge_labels[headedge].x() : wall_edge_labels[headedge].y());
+          lregion0 = (obj.fromVertex(tailedge) == v ? wall_edge_labels[tailedge].y() : wall_edge_labels[tailedge].x());
         }
         
         if (verbose) std::cout << "right wall: " << std::endl;
@@ -446,12 +472,13 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
           
           if (b)
           {
+//            std::cout << "e = " << e << std::endl;
             if (head < 0 || e.cross(head_vec).dot(wall_normals[wall1]) < 0)
             {
               head = j;
               head_vec = e;
             }
-            if (tail < 0 || e.cross(head_vec).dot(wall_normals[wall1]) > 0)
+            if (tail < 0 || e.cross(tail_vec).dot(wall_normals[wall1]) > 0)
             {
               tail = j;
               tail_vec = e;
@@ -463,12 +490,12 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
         {
           EdgeHandle headedge = wall_edges[wall1][head];
           EdgeHandle tailedge = wall_edges[wall1][tail];
-          rregion0 = (obj.fromVertex(headedge) == v ? wall_edge_labels[headedge].y() : wall_edge_labels[headedge].x());
-          rregion1 = (obj.fromVertex(tailedge) == v ? wall_edge_labels[tailedge].x() : wall_edge_labels[tailedge].y());
+          rregion1 = (obj.fromVertex(headedge) == v ? wall_edge_labels[headedge].y() : wall_edge_labels[headedge].x());
+          rregion0 = (obj.fromVertex(tailedge) == v ? wall_edge_labels[tailedge].x() : wall_edge_labels[tailedge].y());
         }
 
-        assert(!(lregion0 >= 0 && rregion0 >= 0 && lregion0 != rregion0));
-        assert(!(lregion1 >= 0 && rregion1 >= 0 && lregion1 != rregion1));
+//        assert(!(lregion0 >= 0 && rregion0 >= 0 && lregion0 != rregion0));
+//        assert(!(lregion1 >= 0 && rregion1 >= 0 && lregion1 != rregion1));
 
         if (lregion0 >= 0)
           edge_labels[l] = lregion0;
@@ -518,12 +545,12 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
       
       if (edge_labels.front() >= 0)
       {
-        assert(corner_labels[bb_edges[i].x()] <= 0 || corner_labels[bb_edges[i].x()] == edge_labels.front());
+//        assert(corner_labels[bb_edges[i].x()] <= 0 || corner_labels[bb_edges[i].x()] == edge_labels.front());
         corner_labels[bb_edges[i].x()] = edge_labels.front();
       }
       if (edge_labels.back() >= 0)
       {
-        assert(corner_labels[bb_edges[i].y()] <= 0 || corner_labels[bb_edges[i].y()] == edge_labels.back());
+//        assert(corner_labels[bb_edges[i].y()] <= 0 || corner_labels[bb_edges[i].y()] == edge_labels.back());
         corner_labels[bb_edges[i].y()] = edge_labels.back();
       }
     }
@@ -563,7 +590,7 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
           if (wall_edge_labels[*veit].x() >= 0)
           {
             assert(wall_edge_labels[*veit].x() == wall_edge_labels[*veit].y());
-            assert(corner_labels[j] == wall_edge_labels[*veit].x());
+//            assert(corner_labels[j] == wall_edge_labels[*veit].x());
           } else
           {
             wall_edge_labels[*veit].x() = wall_edge_labels[*veit].y() = corner_labels[j];
@@ -617,19 +644,38 @@ void ShellVolumeForce::triangulateBBWalls(std::vector<VertexHandle> & new_vertic
       pos[0] = obj.getVertexPosition(wall_pivot);
       pos[1] = obj.getVertexPosition(obj.fromVertex(e));
       pos[2] = obj.getVertexPosition(obj.toVertex(e));
-            
-      if (wall_edge_labels[e].x() == wall_edge_labels[e].y())
-      {
-        // this is an edge along an edge of BB
-        // therefore, the following signed volume cannot be zero
-        int sign = ((pos[0] - m_ref_point).cross(pos[1] - m_ref_point).dot(pos[2] - m_ref_point) > 0 ? 1 : -1);        
-        m_shell.setFaceLabel(new_faces.back(), sign > 0 ? Vec2i(wall_edge_labels[e].x(), -1) : Vec2i(-1, wall_edge_labels[e].x()));
-      } else
+      
+      int onwalls = onBBWall(m_shell.getVertexPosition(obj.fromVertex(e))) & onBBWall(m_shell.getVertexPosition(obj.toVertex(e)));
+      if (onwalls == (1 << i))
       {
         // an edge within the wall
         m_shell.setFaceLabel(new_faces.back(), Vec2i(wall_edge_labels[e].y(), wall_edge_labels[e].x()));
+      } else
+      {
+        // an edge within an BB edge
+        for (int k = 0; k < 12; k++)
+        {
+          VertexHandle corner0 = corners[bb_edges[k].x()];
+          VertexHandle corner1 = corners[bb_edges[k].y()];
+          int wall0 = bb_edges[k].z();
+          int wall1 = bb_edges[k].w();
+          
+          if (onwalls == ((1 << wall0) | (1 << wall1)))
+          {
+            assert(wall0 == i || wall1 == i);
+            assert(wall0 != wall1);
+            if ((m_shell.getVertexPosition(obj.toVertex(e)) - m_shell.getVertexPosition(obj.fromVertex(e))).dot(m_shell.getVertexPosition(corner1) - m_shell.getVertexPosition(corner0)) > 0)
+              m_shell.setFaceLabel(new_faces.back(), (wall0 == i ? Vec2i(wall_edge_labels[e].y(), -1) : Vec2i(-1, wall_edge_labels[e].x())));
+            else
+              m_shell.setFaceLabel(new_faces.back(), (wall1 == i ? Vec2i(wall_edge_labels[e].y(), -1) : Vec2i(-1, wall_edge_labels[e].x())));
+          }
+          
+        }
+        
       }
+      
     }
+    
   }
   
   new_vertices.reserve(corners.size() + wall_pivots.size());
@@ -678,6 +724,11 @@ Scalar ShellVolumeForce::globalEnergy() const
     
     if(labels[1] != -1)
       volumes[labels[1]] -= elementEnergy(deformed);    
+  }
+  
+  for (size_t i = 0; i < volumes.size(); i++)
+  {
+    std::cout << "region " << i << ": volume = " << volumes[i] << " target = " << m_target_volumes[i] << std::endl;
   }
 
   Scalar sum = 0;

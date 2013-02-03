@@ -1,6 +1,6 @@
 #double bubble cubes for surface tension
 
-shell-scene 6
+shell-scene 8
 dt 0.01	# time-step size
 
 gravity 0 0 0	# gravity
@@ -21,8 +21,6 @@ shell-Poisson-damping 0.5
 shell-surface-tension 4
 volume-force-stiffness 0
 
-volume-targeting 0
-
 shell-remeshing 1
 shell-remeshing-resolution 0.2
 shell-remeshing-iterations 1
@@ -35,8 +33,8 @@ integrator implicit	# type of integrator to use for the shell
 shell-density 0.1	# volumetric density of the shell 
 shell-thickness 0.1	# the thickness of the shell
 shell-height 3.0	# the vertical side length of the shell
-shell-width 0.15	# the horizontal side length of the shell
-shell-x-resolution 20	# the number of segments along the horizontal edge
+shell-width 0.8	# the horizontal side length of the shell
+shell-x-resolution 8	# the number of segments along the horizontal edge
 shell-y-resolution 60	# the number of segments along the vertical edge
 
 iterations 100	# maximum number of iterations for the implicit method
