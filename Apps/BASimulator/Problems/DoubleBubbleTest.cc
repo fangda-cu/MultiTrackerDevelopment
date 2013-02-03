@@ -182,6 +182,7 @@ sceneFunc db_scenes[] =
   &DoubleBubbleTest::setupScene8,
   &DoubleBubbleTest::setupScene9,
   &DoubleBubbleTest::setupScene10,
+  &DoubleBubbleTest::setupScene11,
 };
 
 //Scalar db_bubbleThicknessFunction(Vec3d pos) {
@@ -721,7 +722,7 @@ void DoubleBubbleTest::beforeEndStep()
       shell->setVertexVelocity(*vit, v);
       shell->setVertexPosition(*vit, x + v * dt);
     }  
-  } else if (m_active_scene == 9 || m_active_scene == 10)
+  } else if (m_active_scene == 9 || m_active_scene == 10 || m_active_scene == 11)
   {
     static Scalar speeds_scene9[3][3] = 
     {
@@ -738,7 +739,7 @@ void DoubleBubbleTest::beforeEndStep()
     };
     
     Scalar speeds[3][3];
-    memcpy(speeds, m_active_scene == 9 ? speeds_scene9 : speeds_scene10, sizeof (Scalar) * 9);
+    memcpy(speeds, m_active_scene == 9 || m_active_scene == 11 ? speeds_scene9 : speeds_scene10, sizeof (Scalar) * 9);
     
     VertexProperty<Vec3d> velocities(shellObj);
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
@@ -748,6 +749,8 @@ void DoubleBubbleTest::beforeEndStep()
         velocities[*vit] = Vec3d(0, 0, 0);
         continue;
       }
+      
+      //      std::cout << "vertex (" << shell->getVertexPosition(*vit) << "):" << std::endl;
       
       Vec3d normal(0, 0, 0);
       double sum_areas = 0.0;
@@ -763,6 +766,9 @@ void DoubleBubbleTest::beforeEndStep()
         double area = (x1 - x0).cross(x2 - x0).norm() / 2;
         normal += (x1 - x0).cross(x2 - x0).normalized() * area * speeds[label.x()][label.y()];
         sum_areas += area;
+        
+        //        std::cout << "face: label = " << label << " area = " << area << " normal = " << (x1 - x0).cross(x2 - x0).normalized() << " speed = " << speeds[label.x()][label.y()] << std::endl;
+        //        std::cout << "  total normal = " << normal << std::endl;
       }
       if (normal.norm() > 0)
         normal.normalize();
@@ -771,16 +777,28 @@ void DoubleBubbleTest::beforeEndStep()
       velocities[*vit] = speed * normal;
     }
     
-//    double capped_dt = MeshSmoother::compute_max_timestep_quadratic_solve( surf.m_mesh.get_triangles(), surf.get_positions(), displacements, false );
+    //    double capped_dt = MeshSmoother::compute_max_timestep_quadratic_solve( surf.m_mesh.get_triangles(), surf.get_positions(), displacements, false );
     
-//    adaptive_dt = min( adaptive_dt, capped_dt );
+    //    adaptive_dt = min( adaptive_dt, capped_dt );
     
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
+      std::cout << "vertex " << shell->getVertexPosition(*vit) << " has velocity " << velocities[*vit] << std::endl;
       shell->setVertexVelocity(*vit, velocities[*vit]);
       shell->setVertexPosition(*vit, shell->getVertexPosition(*vit) + velocities[*vit] * dt);
     }
-    
+  } else if (m_active_scene == 11)
+  {
+    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+    {
+      Vec3d v;
+      if (shell->getVertexPosition(*vit).y() > 0.55 || shell->getVertexPosition(*vit).y() < 0.45)
+        v = Vec3d(-1, 0, 0);
+      else
+        v = Vec3d(0, 0, 0);
+      v *= 0.1;
+      shell->setVertexPosition(*vit, shell->getVertexPosition(*vit) + v * dt);
+    }
   }
 }
 
@@ -2270,3 +2288,68 @@ void DoubleBubbleTest::setupScene10()
 
 
 
+void DoubleBubbleTest::setupScene11() 
+{
+  //vertices
+  std::vector<VertexHandle> vertHandles;
+  VertexProperty<Vec3d> undeformed(shellObj);
+  VertexProperty<Vec3d> positions(shellObj);
+  VertexProperty<Vec3d> velocities(shellObj);
+  
+  //edge properties
+  EdgeProperty<Scalar> undefAngle(shellObj);
+  EdgeProperty<Scalar> edgeAngle(shellObj);
+  EdgeProperty<Scalar> edgeVel(shellObj);
+  
+  //create a cube
+  std::vector<VertexHandle> vertList;
+  
+  for(int i = 0; i < 5; ++i) 
+  {
+    vertList.push_back(shellObj->addVertex());
+    velocities[vertList[i]] = Vec3d(0,0,0);
+  }
+  
+  //create positions
+  positions[vertList[ 0]] = Vec3d(0.55,0.71,0.5);
+  positions[vertList[ 1]] = Vec3d(0.65,0.5,0.3);
+  positions[vertList[ 2]] = Vec3d(0.55,0.3,0.5);
+  positions[vertList[ 3]] = Vec3d(0.65,0.5,0.7);
+  positions[vertList[ 4]] = Vec3d(0.45,0.5,0.5);
+  
+  for(int i = 0; i < 5; ++i)
+    undeformed[vertList[i]] = positions[vertList[i]];
+  
+  std::vector<FaceHandle> faceList;
+  FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles  
+  
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 1], vertList[ 4]));  faceLabels[faceList.back()] = Vec2i(0,1);
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 4], vertList[ 3]));  faceLabels[faceList.back()] = Vec2i(0,1);
+  faceList.push_back(shellObj->addFace(vertList[ 3], vertList[ 2], vertList[ 0]));  faceLabels[faceList.back()] = Vec2i(0,2);
+  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 1], vertList[ 2]));  faceLabels[faceList.back()] = Vec2i(2,0);
+  faceList.push_back(shellObj->addFace(vertList[ 3], vertList[ 2], vertList[ 4]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[ 2], vertList[ 1]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  
+  //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
+  FaceProperty<char> shellFaces(shellObj); 
+  DeformableObject::face_iter fIt;
+  for(fIt = shellObj->faces_begin(); fIt != shellObj->faces_end(); ++fIt)
+    shellFaces[*fIt] = true;
+  
+  //now create the physical model to hang on the mesh
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
+  shellObj->addModel(shell);
+  
+  //positions
+  //  shell->setVertexUndeformed(undeformed);
+  shell->setVertexPositions(positions);
+  shell->setVertexVelocities(velocities);
+  
+  //mid-edge normal variables
+  //  shell->setEdgeUndeformed(undefAngle);
+  //  shell->setEdgeXis(edgeAngle);
+  //  shell->setEdgeVelocities(edgeVel);
+  
+  shell->setFaceLabels(faceLabels);
+  
+}
