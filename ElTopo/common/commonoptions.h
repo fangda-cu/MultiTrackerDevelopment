@@ -10,6 +10,8 @@
 #ifndef COMMONOPTIONS_H
 #define COMMONOPTIONS_H
 
+#include <iostream>
+
 // ---------------------------------------------------------
 // Global constants
 // ---------------------------------------------------------

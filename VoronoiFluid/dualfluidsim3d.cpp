@@ -2132,7 +2132,7 @@ float DualFluidSim3D::max_velocity( )
    float max_vel = -1.0f;
    for ( unsigned int i = 0; i < tet_edge_velocities.size(); ++i )
    {
-      if(_isnan(tet_edge_velocities[i]) || !_finite(tet_edge_velocities[i])) 
+      if(std::isnan(tet_edge_velocities[i]) || !std::isfinite(tet_edge_velocities[i])) 
          std::cout << "Found bad one while iterating!\n";
       max_vel = max( max_vel, (float)std::fabs( tet_edge_velocities[i] ) );
    }

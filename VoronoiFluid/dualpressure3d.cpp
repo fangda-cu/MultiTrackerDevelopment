@@ -65,7 +65,7 @@ Vec3d get_surface_curvature_vector(TetMesh& mesh, DynamicSurface& surface, std::
                      + coords[1] * vertex_curvature_vectors[tri[1]] 
                      + coords[2] * vertex_curvature_vectors[tri[2]];
      
-      if(_isnan(mean_curvature[0]) || !_finite(mean_curvature[0])) {
+      if(std::isnan(mean_curvature[0]) || !std::isfinite(mean_curvature[0])) {
 
          //hit_ss.clear();
          //hit_triangles.clear();
@@ -91,7 +91,7 @@ Vec3d get_surface_curvature_vector(TetMesh& mesh, DynamicSurface& surface, std::
          std::cout << "val1 " << vertex_curvature_vectors[tri[1]] << std::endl;
          std::cout << "val2 " << vertex_curvature_vectors[tri[2]] << std::endl;
       }
-      assert ( !_isnan(mean_curvature[0]) && _finite(mean_curvature[0]) );
+      assert ( !std::isnan(mean_curvature[0]) && std::isfinite(mean_curvature[0]) );
 
      
    }
@@ -228,7 +228,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
                                std::cout << "dist : " << dist << std::endl;
                                std::cout << "face_density: " << face_density << std::endl;
                             }
-                            assert ( !_isnan(rhs[i]) && _finite(rhs[i]) );
+                            assert ( !std::isnan(rhs[i]) && std::isfinite(rhs[i]) );
                }
             }
 
@@ -274,7 +274,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
             std::cout << "FaceVel: " << face_velocities[face_index] << std::endl;
             std::cout << "VorArea: " << mesh.voronoi_face_areas[face_index] << std::endl;
          }
-         assert ( !_isnan(rhs[i]) && _finite(rhs[i]) );
+         assert ( !std::isnan(rhs[i]) && std::isfinite(rhs[i]) );
          
 
       }
@@ -351,7 +351,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
                double sign_value = dot((Vec3f)curvature_normal, outward_vector) > 0 ? +1 : -1;
 
                p0 += sign_value * curvature_value * surface_tension_coeff;
-               assert ( !_isnan(p0) && _finite(p0) );
+               assert ( !std::isnan(p0) && std::isfinite(p0) );
             }
             theta = max(theta_clamp, std::fabs(phi1) / (std::fabs(phi1) + std::fabs(phi0)));
             face_density = densities[region1];
@@ -369,7 +369,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
                double sign_value = dot((Vec3f)curvature_normal, outward_vector) > 0 ? +1 : -1;
 
                p0 += sign_value * curvature_value * surface_tension_coeff;
-               assert ( !_isnan(p0) && _finite(p0) );
+               assert ( !std::isnan(p0) && std::isfinite(p0) );
             
             }
             theta = max(theta_clamp, std::fabs(phi0) / (std::fabs(phi0) + std::fabs(phi1)));
@@ -397,7 +397,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
                   double sign_value = dot((Vec3f)curvature_normal, outward_vector) > 0 ? +1 : -1;
                   
                   p0 += sign_value * curvature_value * surface_tension_coeff;
-                  assert ( !_isnan(p0) && _finite(p0) );
+                  assert ( !std::isnan(p0) && std::isfinite(p0) );
                }
             }
             else { // It's all one fluid so do nothing special.
@@ -424,7 +424,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
    }
 
    for(size_t i = 0; i < face_velocities.size(); ++i) {
-      if( _isnan(face_velocities[i]) || !_finite(face_velocities[i]) )
+      if( std::isnan(face_velocities[i]) || !std::isfinite(face_velocities[i]) )
          std::cout << "Face: " << i << " velocity: " << face_velocities[i] << std::endl;
    }
 
