@@ -2315,10 +2315,10 @@ void DoubleBubbleTest::setupScene11()
   faceList.push_back(shellObj->addFace(vertList[ 2], vertList[ 3], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(0, 1);
   faceList.push_back(shellObj->addFace(vertList[ 3], vertList[ 0], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(0, 1);
   
-  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[ 5], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(0, 2);
-  faceList.push_back(shellObj->addFace(vertList[ 5], vertList[ 6], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(0, 2);
-  faceList.push_back(shellObj->addFace(vertList[ 6], vertList[ 7], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(0, 2);
-  faceList.push_back(shellObj->addFace(vertList[ 7], vertList[ 4], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(0, 2);
+  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[ 5], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(2, 0);
+  faceList.push_back(shellObj->addFace(vertList[ 5], vertList[ 6], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(2, 0);
+  faceList.push_back(shellObj->addFace(vertList[ 6], vertList[ 7], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(2, 0);
+  faceList.push_back(shellObj->addFace(vertList[ 7], vertList[ 4], vertList[ 8]));  faceLabels[faceList.back()] = Vec2i(2, 0);
   
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj); 
