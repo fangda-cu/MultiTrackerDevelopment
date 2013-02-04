@@ -63,6 +63,7 @@ public:
   void setupScene10(); // Normal motion with cyclic speed relation VIIM figure 21
   void setupScene11();  // toomah debugging
 
+  void setupScene12();  // MCF example demonstrating pinching
 
   void s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out);
   
