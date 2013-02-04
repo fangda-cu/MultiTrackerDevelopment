@@ -845,7 +845,7 @@ void SurfTrack::topology_changes( )
     {
         merge_occurred = m_merger.merge_pass();
 
-        m_pincher.separate_singular_vertices();
+//        m_pincher.separate_singular_vertices();
 
         if ( m_collision_safety )
         {
