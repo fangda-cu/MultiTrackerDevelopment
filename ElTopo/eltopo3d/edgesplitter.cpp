@@ -354,7 +354,7 @@ bool EdgeSplitter::split_edge_pseudo_motion_introduces_intersection( const Vec3d
 ///
 // --------------------------------------------------------
 
-bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad_angles, bool specify_split_position, Vec3d const * pos )
+bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad_angles, bool use_specified_point, Vec3d const * pos )
 {   
 
   g_stats.add_to_int( "EdgeSplitter:edge_split_attempts", 1 );
@@ -380,16 +380,13 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   
 
   // --------------
-
   // convert each incident triangle abc into a pair of triangles aec, ebc
 
   size_t vertex_a = mesh.m_edges[edge][0];
   size_t vertex_b = mesh.m_edges[edge][1];
-  
 
   // Collect the incident verts
   std::vector<size_t> other_verts;
-  
   for(size_t i = 0; i < incident_tris.size(); ++i) {
     size_t cur_tri = incident_tris[i];
     Vec3st tri_data = mesh.get_triangle(cur_tri);
@@ -398,223 +395,216 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   
 
   // --------------
+  // set up point data for the various options
 
-  // get edge midpoint and the point on the smooth surface
-
-  Vec3d new_vertex_position = 0.5 * ( m_surf.get_position( vertex_a ) + m_surf.get_position( vertex_b ) );
+  Vec3d new_vertex_average_position = 0.5 * ( m_surf.get_position( vertex_a ) + m_surf.get_position( vertex_b ) );
   Vec3d new_vertex_smooth_position;
+  Vec3d new_vertex_constrained_position;
+  Vec3d new_vertex_specified_position = use_specified_point? *pos : Vec3d(0,0,0);
+  
+  Vec3d new_vertex_proposed_final_position;
+  
+  // Track which one we decide on.
+  // Smooth point will fall back to midpoint, whereas specified and constrained points simply fail out.
+  bool use_smooth_point;
+  bool use_average_point;
+  bool use_constrained_point;
 
-  ///////////////////////////////////////////////////////////////////////
-  // FD 20120109
-  //
-  // If endpoints are constrained, use the callback for a final position
-  // instead of using midpoint. This is filled into new_vertex_position 
-  // instead of new_vertex_smooth_position, so that if this position fails
-  // the collision detection, splitting will not fall back to using the
-  // midpoint, but return false.
-  
-  //use the subdivision scheme if we're manifold, or our scheme supports non-manifold-ness
-  bool use_smooth_point = (incident_tris.size() == 2) || 
-                          (typeid(m_surf.m_subdivision_scheme) == typeid(ModifiedButterflyScheme));
-  
-  //if the user has provided a new position, use it instead of the subdivision scheme
-  if(specify_split_position)
-     use_smooth_point = false;
-
-  bool keep_vert_is_constrained =   m_surf.m_mesh.get_vertex_constraint_label(vertex_a);
-  bool delete_vert_is_constrained = m_surf.m_mesh.get_vertex_constraint_label(vertex_b);
-  
   bool new_vert_constraint_label = false;
-  if (keep_vert_is_constrained || delete_vert_is_constrained)
+
+  // Try to decide what point to use
+  if(use_specified_point) { 
+     // Use the specified if one is provided as input. 
+     
+     use_smooth_point = false;
+     use_average_point = false;
+     use_constrained_point = false;
+     
+     new_vertex_proposed_final_position = *pos;
+  }
+  else if (m_surf.m_mesh.get_vertex_constraint_label(vertex_a) || m_surf.m_mesh.get_vertex_constraint_label(vertex_b))
   {
-    use_smooth_point = false;
-    
-    assert(m_surf.m_constrained_vertices_callback);
-    if (!m_surf.m_constrained_vertices_callback->generate_split_position(m_surf, vertex_a, vertex_b, new_vertex_position))
-    {
-      if (m_surf.m_verbose)
-        std::cout << "Constraint callback vetoed splitting" << std::endl;
-      return false;
-    }
-    
-    new_vert_constraint_label = m_surf.m_constrained_vertices_callback->generate_split_constraint_label(m_surf, vertex_a, vertex_b, m_surf.m_mesh.get_vertex_constraint_label(vertex_a), m_surf.m_mesh.get_vertex_constraint_label(vertex_b));
+     // Use the constraint callbacks if the edge has constraints
+     
+     use_constrained_point = true;
+     use_smooth_point = false;
+     use_average_point = false;
+     use_specified_point = false;
+
+     assert(m_surf.m_constrained_vertices_callback);
+     if (!m_surf.m_constrained_vertices_callback->generate_split_position(m_surf, vertex_a, vertex_b, new_vertex_constrained_position))
+     {
+        if (m_surf.m_verbose) std::cout << "Constraint callback vetoed splitting" << std::endl;
+        return false;
+     }
+     new_vert_constraint_label = m_surf.m_constrained_vertices_callback->generate_split_constraint_label(m_surf, vertex_a, vertex_b, m_surf.m_mesh.get_vertex_constraint_label(vertex_a), m_surf.m_mesh.get_vertex_constraint_label(vertex_b));
+  }
+  else if( incident_tris.size() == 2 || typeid(m_surf.m_subdivision_scheme) == typeid(ModifiedButterflyScheme)) {
+     // Use smooth subdivision if the geometry and subd scheme will allow us
+     use_smooth_point = true;
+     use_average_point = false;
+     use_constrained_point = false;
+
+     m_surf.m_subdivision_scheme->generate_new_midpoint( edge, m_surf, new_vertex_smooth_position );
+  }
+  else {
+     //otherwise, we'll just use the average/midpoint of the edge.
+     use_smooth_point = false;
+     use_constrained_point = false;
+     use_average_point = true;
   }
   
 
-  if (m_surf.edge_is_all_solid(edge)) use_smooth_point = false; // all-solid edge cannot change shape
-  
-  /////////////////////////////////////////
-
-  // generate the new point according to the subdivision scheme
-  if(use_smooth_point)
-    m_surf.m_subdivision_scheme->generate_new_midpoint( edge, m_surf, new_vertex_smooth_position );
-  else
-    new_vertex_smooth_position = new_vertex_position;
-
-  // --------------
-
-  // check if the generated point introduces an intersection
+  // If we have chosen smooth subd, it may introduce intersections or normal flips, 
+  // and if so we will fall back to midpoint
   if(use_smooth_point) {
     
-    use_smooth_point = use_smooth_point && ! ( split_edge_pseudo_motion_introduces_intersection( new_vertex_position, 
+    use_smooth_point = !split_edge_pseudo_motion_introduces_intersection( new_vertex_average_position, 
       new_vertex_smooth_position, 
       edge, 
       vertex_a, 
       vertex_b, 
       incident_tris, 
-      other_verts) );
+      other_verts);
     
     if ( !use_smooth_point ) { 
         g_stats.add_to_int( "EdgeSplitter:split_smooth_vertex_collisions", 1 ); }
-  }
-    
 
-
-  // --------------
-
-  // check normal inversion. if it occurs, try to revert to midpoint splitting.
-
-  if ( use_smooth_point )
-  {
-    size_t tri0 = incident_tris[0];
-    size_t tri1 = incident_tris[1];
-    size_t vertex_c = other_verts[0];
-    size_t vertex_d = other_verts[1];
-
-    // ensure we're using the right triangle orientations (consistent with old splitting code)
-    if ( !mesh.oriented( vertex_a, vertex_b, mesh.get_triangle(tri0) ) )
-      swap(vertex_c, vertex_d);
-
-    Vec3d tri0_normal = m_surf.get_triangle_normal( tri0 );
-    Vec3d tri1_normal = m_surf.get_triangle_normal( tri1 );
-
-    // 
-    //  note: we consider the case where tri0 and tri1 have opposite orientation
-    //
-    
-    if ( dot( tri0_normal, tri1_normal ) >= 0.0 && mesh.oriented(vertex_a, vertex_b, mesh.get_triangle(tri0)) == mesh.oriented(vertex_b, vertex_a, mesh.get_triangle(tri1)) )
+    //only check normals if we passed collision-safety
+    if ( use_smooth_point )
     {
-      Vec3d new_normal = triangle_normal( m_surf.get_position(vertex_a), new_vertex_smooth_position, m_surf.get_position(vertex_c) );
-      if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) < 0.0 )
-      {
-        use_smooth_point = false;
-      }
-      new_normal = triangle_normal( m_surf.get_position(vertex_c), new_vertex_smooth_position, m_surf.get_position(vertex_b) );
-      if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) < 0.0 )
-      {
-        use_smooth_point = false;
-      }         
-      new_normal = triangle_normal( m_surf.get_position(vertex_d), m_surf.get_position(vertex_b), new_vertex_smooth_position );
-      if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) < 0.0 )
-      {
-        use_smooth_point = false;
-      }         
-      new_normal = triangle_normal( m_surf.get_position(vertex_d), new_vertex_smooth_position, m_surf.get_position(vertex_a) );
-      if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) < 0.0 )
-      {
-        use_smooth_point = false;
-      }         
-    } else if ( dot( tri0_normal, tri1_normal ) <= 0.0 && mesh.oriented(vertex_a, vertex_b, mesh.get_triangle(tri0)) != mesh.oriented(vertex_b, vertex_a, mesh.get_triangle(tri1)) )
-    {
-      Vec3d new_normal = triangle_normal( m_surf.get_position(vertex_a), new_vertex_smooth_position, m_surf.get_position(vertex_c) );
-      if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) > 0.0 )
-      {
-          use_smooth_point = false;
-      }
-      new_normal = triangle_normal( m_surf.get_position(vertex_c), new_vertex_smooth_position, m_surf.get_position(vertex_b) );
-      if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) > 0.0 )
-      {
-          use_smooth_point = false;
-      }         
-      new_normal = triangle_normal( m_surf.get_position(vertex_d), m_surf.get_position(vertex_b), new_vertex_smooth_position );
-      if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) > 0.0 )
-      {
-          use_smooth_point = false;
-      }         
-      new_normal = triangle_normal( m_surf.get_position(vertex_d), new_vertex_smooth_position, m_surf.get_position(vertex_a) );
-      if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) > 0.0 )
-      {
-          use_smooth_point = false;
-      }         
+       size_t tri0 = incident_tris[0];
+       size_t tri1 = incident_tris[1];
+       size_t vertex_c = other_verts[0];
+       size_t vertex_d = other_verts[1];
+
+       // ensure we're using the right triangle orientations (consistent with old splitting code)
+       if ( !mesh.oriented( vertex_a, vertex_b, mesh.get_triangle(tri0) ) )
+          swap(vertex_c, vertex_d);
+
+       Vec3d tri0_normal = m_surf.get_triangle_normal( tri0 );
+       Vec3d tri1_normal = m_surf.get_triangle_normal( tri1 );
+
+       // 
+       //  note: we consider the case where tri0 and tri1 have opposite orientation
+       //
+
+       if ( dot( tri0_normal, tri1_normal ) >= 0.0 && mesh.oriented(vertex_a, vertex_b, mesh.get_triangle(tri0)) == mesh.oriented(vertex_b, vertex_a, mesh.get_triangle(tri1)) )
+       {
+          Vec3d new_normal = triangle_normal( m_surf.get_position(vertex_a), new_vertex_smooth_position, m_surf.get_position(vertex_c) );
+          if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) < 0.0 )
+          {
+             use_smooth_point = false;
+          }
+          new_normal = triangle_normal( m_surf.get_position(vertex_c), new_vertex_smooth_position, m_surf.get_position(vertex_b) );
+          if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) < 0.0 )
+          {
+             use_smooth_point = false;
+          }         
+          new_normal = triangle_normal( m_surf.get_position(vertex_d), m_surf.get_position(vertex_b), new_vertex_smooth_position );
+          if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) < 0.0 )
+          {
+             use_smooth_point = false;
+          }         
+          new_normal = triangle_normal( m_surf.get_position(vertex_d), new_vertex_smooth_position, m_surf.get_position(vertex_a) );
+          if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) < 0.0 )
+          {
+             use_smooth_point = false;
+          }         
+       } else if ( dot( tri0_normal, tri1_normal ) <= 0.0 && mesh.oriented(vertex_a, vertex_b, mesh.get_triangle(tri0)) != mesh.oriented(vertex_b, vertex_a, mesh.get_triangle(tri1)) )
+       {
+          Vec3d new_normal = triangle_normal( m_surf.get_position(vertex_a), new_vertex_smooth_position, m_surf.get_position(vertex_c) );
+          if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) > 0.0 )
+          {
+             use_smooth_point = false;
+          }
+          new_normal = triangle_normal( m_surf.get_position(vertex_c), new_vertex_smooth_position, m_surf.get_position(vertex_b) );
+          if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) > 0.0 )
+          {
+             use_smooth_point = false;
+          }         
+          new_normal = triangle_normal( m_surf.get_position(vertex_d), m_surf.get_position(vertex_b), new_vertex_smooth_position );
+          if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) > 0.0 )
+          {
+             use_smooth_point = false;
+          }         
+          new_normal = triangle_normal( m_surf.get_position(vertex_d), new_vertex_smooth_position, m_surf.get_position(vertex_a) );
+          if ( dot( new_normal, tri0_normal ) < 0.0 || dot( new_normal, tri1_normal ) > 0.0 )
+          {
+             use_smooth_point = false;
+          }         
+       }
+
     }
-    
-    ////////////////////////////////////////////////////////////
 
+    //if we've now decided not to use the smooth point, switch to average/mid-point
+    use_average_point = !use_smooth_point;
+    
   }
 
-  // --------------
+  //at this stage, if smooth is successful, we can simply go ahead with the smooth subdivision point - we're safe.
+  if(use_smooth_point) {
+     new_vertex_proposed_final_position = new_vertex_smooth_position;
+  }
+  else {
+     //otherwise, we're going with either average point, specified point, or constrained point.
+     //we choose its vertex, and check it for safety.
+     if(use_constrained_point)
+        new_vertex_proposed_final_position = new_vertex_constrained_position;
+     else if(use_specified_point)
+        new_vertex_proposed_final_position = new_vertex_specified_position;
+     else if(use_average_point)
+        new_vertex_proposed_final_position = new_vertex_average_position;
+     else {
+        assert(false); //not allowed to get here
+     }
 
-  // if the new point introduces an intersection, try using the edge midpoint
+     //now check the proposed final position for collision safety.
+     //if this fails, we simply drop out - there's nowhere else to go.
+     if ( m_surf.m_verbose ) { std::cout << "checking proposed final point for safety" << std::endl; }
 
-  if ( use_smooth_point == false )
-  {
+     if ( split_edge_pseudo_motion_introduces_intersection( new_vertex_average_position, 
+        new_vertex_proposed_final_position, 
+        edge, 
+        vertex_a, 
+        vertex_b, 
+        incident_tris, 
+        other_verts ) )
+     {
 
-    if ( m_surf.m_verbose ) { std::cout << "not using smooth subdivision" << std::endl; }
+        g_stats.add_to_int( "EdgeSplitter:split_final_collisions", 1 );
+        if ( m_surf.m_verbose )  { std::cout << "Final proposed point introduces collision.  Backing out." << std::endl; }  // FD 20121126: Why does the paper say this can't happen (section 3.5.1)?
 
-    new_vertex_smooth_position = new_vertex_position;
-
-    if ( split_edge_pseudo_motion_introduces_intersection( new_vertex_position, 
-      new_vertex_smooth_position, 
-      edge, 
-      vertex_a, 
-      vertex_b, 
-      incident_tris, 
-      other_verts ) )
-    {
-
-      g_stats.add_to_int( "EdgeSplitter:split_midpoint_collisions", 1 );
-
-      if ( m_surf.m_verbose )  { std::cout << "Even mid-point subdivision introduces collision.  Backing out." << std::endl; }  // FD 20121126: Why does the paper say this can't happen (section 3.5.1)?
-      
-      //if we did not specify the split point, and that point introduced collisions, fail. Otherwise, keep going.
-      if (!specify_split_position)
         return false;
-    }
-  }
-  else
-  {
-    if ( m_surf.m_verbose ) { std::cout << "using smooth subdivision" << std::endl; }
+     }
+
   }
   
-  if (specify_split_position)
-  {
-    if (m_surf.m_verbose) { std::cout << "Attempting to use specified split position" << std::endl; }
-    
-    bool specified_pos_safe = !split_edge_pseudo_motion_introduces_intersection( new_vertex_position, 
-       *pos, 
-       edge, 
-       vertex_a, 
-       vertex_b, 
-       incident_tris, 
-       other_verts );
+  // --------------
 
-    if(specified_pos_safe)
-      new_vertex_smooth_position = *pos;
-    else
-       return false;
-  }
+  //At this stage, we have chosen the point we want to stick with and it is collision-safe.
+  //now we need to do some final checks, and then proceed.
 
-
+  //Don't allow splitting to create edges shorter than half the minimum.
+  
   const Vec3d& va = m_surf.get_position(vertex_a);
   const Vec3d& vb = m_surf.get_position(vertex_b);
-  if(mag(new_vertex_smooth_position-va) < 0.5*m_surf.m_min_edge_length ||
-     mag(new_vertex_smooth_position-vb) < 0.5*m_surf.m_min_edge_length)
+  if(mag(new_vertex_proposed_final_position-va) < 0.5*m_surf.m_min_edge_length ||
+     mag(new_vertex_proposed_final_position-vb) < 0.5*m_surf.m_min_edge_length)
      return false;
 
   // --------------
 
   // Check angles on new triangles
 
-  //const Vec3d& va = m_surf.get_position( vertex_a );
-  //const Vec3d& vb = m_surf.get_position( vertex_b );
   std::vector<Vec3d> other_vert_pos;
   for(size_t i = 0; i < other_verts.size(); ++i)
     other_vert_pos.push_back(m_surf.get_position(other_verts[i]));
 
   double min_new_angle = 2*M_PI;
   for(size_t i = 0; i < other_vert_pos.size(); ++i) {
-    min_new_angle = min( min_new_angle, min_triangle_angle( va, new_vertex_smooth_position, other_vert_pos[i] ) );
-    min_new_angle = min( min_new_angle, min_triangle_angle( vb, new_vertex_smooth_position, other_vert_pos[i] ) );
+    min_new_angle = min( min_new_angle, min_triangle_angle( va, new_vertex_proposed_final_position, other_vert_pos[i] ) );
+    min_new_angle = min( min_new_angle, min_triangle_angle( vb, new_vertex_proposed_final_position, other_vert_pos[i] ) );
   }
   
   if ( !ignore_bad_angles && rad2deg(min_new_angle) < m_surf.m_min_triangle_angle )
@@ -631,19 +621,18 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   double max_new_angle = 0;
   
   for(size_t i = 0; i < other_vert_pos.size(); ++i) {
-    max_new_angle = max( max_new_angle, max_triangle_angle( va, new_vertex_smooth_position, other_vert_pos[i] ) );
-    max_new_angle = max( max_new_angle, max_triangle_angle( vb, new_vertex_smooth_position, other_vert_pos[i] ) );
+    max_new_angle = max( max_new_angle, max_triangle_angle( va, new_vertex_proposed_final_position, other_vert_pos[i] ) );
+    max_new_angle = max( max_new_angle, max_triangle_angle( vb, new_vertex_proposed_final_position, other_vert_pos[i] ) );
   }
 
   // if new angle is greater than the allowed angle, and doesn't 
   // improve the current max angle, prevent the split
 
-  if ( rad2deg(max_new_angle) > m_surf.m_max_triangle_angle )
+  if ( !ignore_bad_angles && rad2deg(max_new_angle) > m_surf.m_max_triangle_angle )
   {
 
     // if new triangle improves a large angle, allow it
-
-    if ( !ignore_bad_angles && rad2deg(max_new_angle) < rad2deg(max_current_angle) )
+    if ( rad2deg(max_new_angle) < rad2deg(max_current_angle) )
     {
       g_stats.add_to_int( "EdgeSplitter:edge_split_large_angle", 1 );      
       return false;
@@ -655,31 +644,22 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   // Do the actual splitting
 
   double new_vertex_mass = 0.5 * ( m_surf.m_masses[ vertex_a ] + m_surf.m_masses[ vertex_b ] );
-  size_t vertex_e = m_surf.add_vertex( new_vertex_smooth_position, new_vertex_mass );
+  size_t vertex_e = m_surf.add_vertex( new_vertex_proposed_final_position, new_vertex_mass );
 
-  ///////////////////////////////////////////////////////////////////////
-  // FD 20121229
-  //
-  // update the constraint label of the new vertex
+  // Update the constraint label of the new vertex
   
   mesh.set_vertex_constraint_label(vertex_e, new_vert_constraint_label);
   
-  ///////////////////////////////////////////////////////////////////////
-
   // Add to change history
   m_surf.m_vertex_change_history.push_back( VertexUpdateEvent( VertexUpdateEvent::VERTEX_ADD, vertex_e, Vec2st( vertex_a, vertex_b) ) );
   
   if ( m_surf.m_verbose ) { std::cout << "new vertex: " << vertex_e << std::endl; }
 
-  ////////////////////////////////////////////////////////////
-  // FD 20121126
-  //
-  // determine the labels of the new triangles
+
+  // Determine the labels of the new triangles
   // 
   std::vector<Vec2i> created_tri_label;
 
-  ////////////////////////////////////////////////////////////
-  
   // Create new triangles with proper orientations (match their parents)
   std::vector<Vec3st> created_tri_data;
   for(size_t i = 0; i < other_verts.size(); ++i) {
@@ -695,17 +675,12 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
     created_tri_data.push_back(newtri0);
     created_tri_data.push_back(newtri1);
     
-    ////////////////////////////////////////////////////////////
-    // FD 20121126
-    //
     // the old label carries over to the new triangle
     // 
     Vec2i old_label = m_surf.m_mesh.get_triangle_label(incident_tris[i]);
     created_tri_label.push_back(old_label);
     created_tri_label.push_back(old_label);
 
-    ////////////////////////////////////////////////////////////
-    
   }
 
   // Delete the parent triangles
@@ -716,17 +691,10 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   // Now actually add the triangles to the mesh
   std::vector<size_t> created_tris;
   for(size_t i = 0; i < created_tri_data.size(); ++i) {
-    //add the triangle
+
+    //add the triangle, with the same old label
     size_t newtri0_id = m_surf.add_triangle( created_tri_data[i] );
-    
-    ////////////////////////////////////////////////////////////
-    // FD 20121126
-    //
-    // the old label carries over to the new triangle
-    //
     m_surf.m_mesh.set_triangle_label(newtri0_id, created_tri_label[i]);
-    
-    ////////////////////////////////////////////////////////////
     
     //record the data created
     created_tris.push_back(newtri0_id);
@@ -737,24 +705,19 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   MeshUpdateEvent split(MeshUpdateEvent::EDGE_SPLIT);
   split.m_v0 = vertex_a;
   split.m_v1 = vertex_b;
-  split.m_vert_position = new_vertex_smooth_position;
+  split.m_vert_position = new_vertex_proposed_final_position;
   split.m_created_verts.push_back(vertex_e);
   for(size_t i = 0; i < incident_tris.size(); ++i)
     split.m_deleted_tris.push_back(incident_tris[i]);
   split.m_created_tris = created_tris;
   split.m_created_tri_data = created_tri_data;
-  
-  ////////////////////////////////////////////////////////////
-  // FD 20121126
-  //
-  // record the labels of the created triangles in the event
-  //
   split.m_created_tri_labels = created_tri_label;
+  
+  m_surf.m_mesh_change_history.push_back(split);
   
   ////////////////////////////////////////////////////////////
 
-  m_surf.m_mesh_change_history.push_back(split);
-  
+  //store the resulting vertex as output.
   result_vert = vertex_e;
 
   return true;
