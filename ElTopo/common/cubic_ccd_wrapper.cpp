@@ -1037,7 +1037,7 @@ bool segment_triangle_intersection(const Vec3d& x0, size_t ,
                                    bool degenerate_counts_as_intersection,
                                    bool verbose )
 {
-    double bary[5];
+    double bary[5] = {0,0,0,0,0};
     return check_edge_triangle_intersection( x0, x1, x2, x3, x4, 
                                              bary[0], bary[1], bary[2], bary[3], bary[4],
                                              g_collision_epsilon, degenerate_counts_as_intersection, verbose );

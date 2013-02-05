@@ -7,8 +7,8 @@
 //
 namespace ElTopo {
 
-//#define USE_CUBIC_SOLVER_CCD
-#define USE_ROOT_PARITY_CCD
+#define USE_CUBIC_SOLVER_CCD
+//#define USE_ROOT_PARITY_CCD
 
 }
 #endif

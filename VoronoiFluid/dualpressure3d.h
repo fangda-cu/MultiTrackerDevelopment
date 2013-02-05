@@ -8,6 +8,20 @@ namespace ElTopo{
 class DynamicSurface;
 }
 
+#ifdef _MSC_VER
+//work-around for portability
+namespace std
+{
+   inline bool isnan(double d) {
+      return _isnan(d) != 0;
+   }
+   inline bool isfinite(double d) {
+      return _finite(d) != 0;
+   }
+}
+
+#endif
+
 //single phase flow
 std::vector<double> pressure_solve_voronoi( TetMesh& mesh, 
                                             ElTopo::DynamicSurface& surface,

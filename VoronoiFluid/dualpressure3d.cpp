@@ -11,6 +11,7 @@
 
 using namespace ElTopo;
 
+
 //TODO Unify surface tension computation cases, since free surface and multiphase cases are similar.
 //TODO Store the mean curvatures computed for the faces, to avoid a second round of raycasting.
 

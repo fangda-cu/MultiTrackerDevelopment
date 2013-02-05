@@ -796,7 +796,7 @@ void DoubleBubbleTest::beforeEndStep()
     
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
-      std::cout << "vertex " << shell->getVertexPosition(*vit) << " has velocity " << velocities[*vit] << std::endl;
+      //std::cout << "vertex " << shell->getVertexPosition(*vit) << " has velocity " << velocities[*vit] << std::endl;
       shell->setVertexVelocity(*vit, velocities[*vit]);
       shell->setVertexPosition(*vit, shell->getVertexPosition(*vit) + velocities[*vit] * dt);
     }

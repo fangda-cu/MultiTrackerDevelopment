@@ -347,7 +347,7 @@ bool segment_triangle_intersection(const Vec3d& x0, size_t /*index0*/,
                                    bool /*verbose*/ )
 {
     double bary[5];
-    return simplex_intersection3d( 2, x0.v, x1.v, x2.v, x3.v, x4.v, &bary[0], &bary[1], &bary[2], &bary[3], &bary[4] );
+    return simplex_intersection3d( 2, x0.v, x1.v, x2.v, x3.v, x4.v, &bary[0], &bary[1], &bary[2], &bary[3], &bary[4] ) != 0;
 }
 
 bool segment_triangle_intersection(const Vec3d& x0, size_t /*index0*/,
@@ -359,7 +359,7 @@ bool segment_triangle_intersection(const Vec3d& x0, size_t /*index0*/,
                                    bool /*degenerate_counts_as_intersection*/,
                                    bool /*verbose*/ )
 {
-    return simplex_intersection3d( 2, x0.v, x1.v, x2.v, x3.v, x4.v, &bary0, &bary1, &bary2, &bary3, &bary4 );
+    return simplex_intersection3d( 2, x0.v, x1.v, x2.v, x3.v, x4.v, &bary0, &bary1, &bary2, &bary3, &bary4 ) != 0;
 }
 
 // x0 is the point and x1-x2-x3-x4 is the tetrahedron. Order is irrelevant.
@@ -370,7 +370,7 @@ bool point_tetrahedron_intersection(const Vec3d& x0, size_t /*index0*/,
                                     const Vec3d& x4, size_t /*index4*/)
 {
     double bary[5];
-    return simplex_intersection3d( 1, x0.v, x1.v, x2.v, x3.v, x4.v, &bary[0], &bary[1], &bary[2], &bary[3], &bary[4] );
+    return simplex_intersection3d( 1, x0.v, x1.v, x2.v, x3.v, x4.v, &bary[0], &bary[1], &bary[2], &bary[3], &bary[4] ) != 0;
 }
 
 }

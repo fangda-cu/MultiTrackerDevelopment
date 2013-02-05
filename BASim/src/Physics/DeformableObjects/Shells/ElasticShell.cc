@@ -362,6 +362,9 @@ const Scalar& ElasticShell::getDof( const DofHandle& hnd ) const
 //  const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
   
   //Just to satisfy my compiler - CB
+#ifdef _MSC_VER
+#pragma warning( disable : 4172 )
+#endif
   Scalar dummy;
   return const_cast<Scalar&>(dummy);
   
@@ -386,6 +389,10 @@ const Scalar& ElasticShell::getVel( const DofHandle& hnd ) const
 //  const EdgeHandle& eh = static_cast<const EdgeHandle&>(hnd.getHandle());
   
   //Just to satisfy my compiler - CB
+#ifdef _MSC_VER
+#pragma warning( disable : 4172 )
+#endif
+
   Scalar dummy;
   return const_cast<Scalar&>(dummy);
 }
@@ -1680,8 +1687,8 @@ bool ElasticShell::performFlip(const EdgeHandle& eh, const FaceHandle f0, const 
   Scalar areaNew0 = 0.5*(x2-x3).cross(x0-x3).norm();
   Scalar areaNew1 = 0.5*(x2-x3).cross(x1-x3).norm();
 
-  Scalar thickNew0, thickNew1;
-  Scalar volNew0, volNew1;
+  /*Scalar thickNew0, thickNew1;
+  Scalar volNew0, volNew1;*/
 
   if(s0 > 0 && s0 < 1 && s1 > 0 && s1 < 1) {
     //Do split-based volume redistribution
