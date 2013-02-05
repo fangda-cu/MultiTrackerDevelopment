@@ -4,7 +4,7 @@
 //  Christopher Batty 2013
 //  
 //  Functions supporting the "vertex snap" operation: merging nearby vertices.
-//  The opposite of a pinch operation.
+//  The opposite of a pinch operation. This was adapted from the edge collapse code.
 //
 // ---------------------------------------------------------
 
@@ -49,7 +49,7 @@ MeshSnapper::MeshSnapper( SurfTrack& surf ) :
 
 // --------------------------------------------------------
 ///
-/// Get all triangles which are incident on either edge end vertex.
+/// Get all triangles which are incident on either vertex.
 ///
 // --------------------------------------------------------
 
@@ -186,57 +186,6 @@ bool MeshSnapper::snap_pseudo_motion_introduces_collision( size_t source_vertex,
 
 }
 
-/*
-// --------------------------------------------------------
-///
-/// Determine whether the operation will introduce an unacceptable change in volume...
-///
-// --------------------------------------------------------
-
-bool MeshSnapper::collapse_edge_introduces_volume_change( size_t source_vertex, 
-size_t edge_index, 
-const Vec3d& vertex_new_position )
-{
-//
-// If any incident triangle has a tiny area, collapse the edge without regard to volume change
-//
-
-const std::vector<size_t>& inc_tris = m_surf.m_mesh.m_edge_to_triangle_map[edge_index];
-
-for ( size_t i = 0; i < inc_tris.size(); ++i )
-{
-if ( m_surf.get_triangle_area( inc_tris[i] ) < m_surf.m_min_triangle_area )
-{
-return false;
-}
-}
-
-//
-// Check volume change
-//
-
-const std::vector< size_t >& triangles_incident_to_vertex = m_surf.m_mesh.m_vertex_to_triangle_map[source_vertex];
-double volume_change = 0;
-
-for ( size_t i = 0; i < triangles_incident_to_vertex.size(); ++i )
-{
-const Vec3st& inc_tri = m_surf.m_mesh.get_triangle( triangles_incident_to_vertex[i] );
-volume_change += signed_volume( vertex_new_position, m_surf.get_position(inc_tri[0]), m_surf.get_position(inc_tri[1]), m_surf.get_position(inc_tri[2]) );
-}
-
-if ( std::fabs(volume_change) > m_surf.m_max_volume_change )
-{
-if ( m_surf.m_verbose ) { std::cout << "collapse edge introduces volume change"  << std::endl; }
-return true;
-}
-
-return false;
-
-}
-*/
-
-
-
 // --------------------------------------------------------
 ///
 /// Snap a pair of vertices by moving the source vertex to the destination vertex
@@ -251,86 +200,26 @@ bool MeshSnapper::snap_vertex_pair( size_t vertex_to_keep, size_t vertex_to_dele
    bool keep_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_keep];
    bool del_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_delete];
 
-   //either we're allowing remeshing of boundary edges, or this edge is not on the boundary.
    //TODO Figure out how to deal with boundaries here.
-
-   ///////////////////////////////////////////////////////////////////////
-   // FD 20130102
-   //
-   // do not snap if the two vertices are moving apart
-
-   /*
-   Vec3d edge_vec = m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete);
-   Vec3d rel_vel = m_surf.get_remesh_velocity(vertex_to_keep) - m_surf.get_remesh_velocity(vertex_to_delete);
-
-   if (dot(rel_vel, edge_vec) > 0)
-   {
-      if (m_surf.m_verbose)
-         std::cout << "The vertices are moving apart. No need to snap." << std::endl;
-      return false;
+   
+   if ( m_surf.m_verbose ) { 
+      std::cout << "Snapping vertices.  Doomed vertex: " << vertex_to_delete 
+                << " --- Vertex to keep: " << vertex_to_keep << std::endl; 
    }
-   */
-
-   ///////////////////////////////////////////////////////////////////////
-
-   ///////////////////////////////////////////////////////////////////////
-   // FD 20121229
-   //
-   // this should be allowed, in order to simulate pinching of films
-
-   //  // *don't* collapse when both verts are on the boundary and the edge is not, since this would create a nonmanifold/singular vertex
-   //  //assert( ((keep_vert_is_boundary && del_vert_is_boundary) && !edge_is_boundary) == false);   // these two asserts are equivalent
-   //  assert(edge_is_boundary || !(keep_vert_is_boundary && del_vert_is_boundary));
-
-   ///////////////////////////////////////////////////////////////////////
-
-   if ( m_surf.m_verbose ) { std::cout << "Snapping vertices.  Doomed vertex: " << vertex_to_delete << " --- Vertex to keep: " << vertex_to_keep << std::endl; }
   
-
    // --------------
-
-   {
-      /*
-      const std::vector< size_t >& r_triangles_incident_to_edge = m_surf.m_mesh.m_edge_to_triangle_map[edge];
-
-      // Do not collapse edge on a degenerate tet or degenerate triangle
-      for ( size_t i=0; i < r_triangles_incident_to_edge.size(); ++i )    // FD 20121126: Why can such deg tet/tri exist at all? trim_non_manifold() is called after every collapse_edge().
-      {
-         const Vec3st& triangle_i = m_surf.m_mesh.get_triangle( r_triangles_incident_to_edge[i] );
-
-         if ( triangle_i[0] == triangle_i[1] || triangle_i[1] == triangle_i[2] || triangle_i[2] == triangle_i[0] )
-         {
-            if ( m_surf.m_verbose ) { std::cout << "duplicate vertices on triangle" << std::endl; }
-            return false;
-         }
-
-         for ( size_t j=i+1; j < r_triangles_incident_to_edge.size(); ++j )
-         {
-            const Vec3st& triangle_j = m_surf.m_mesh.get_triangle( r_triangles_incident_to_edge[j] );
-
-            if ( NonDestructiveTriMesh::triangle_has_these_verts( triangle_i, triangle_j ) )            
-            {
-               if ( m_surf.m_verbose ) { std::cout << "two triangles share vertices" << std::endl; }
-               g_stats.add_to_int( "MeshSnapper:collapse_degen_tet", 1 );
-               return false;
-            }
-         }
-      }
-      */
-   }
-
-
-   // --------------
-   // decide on new vertex position
-   // for now, we'll just take the average of the two points to be snapped.
+   // decide on new vertex position: just take the average of the two points to be snapped.
 
    Vec3d vertex_new_position = 0.5*(m_surf.get_position(vertex_to_delete) + m_surf.get_position(vertex_to_keep));
 
-   if ( m_surf.m_verbose ) { std::cout << "Collapsing edge.  Doomed vertex: " << vertex_to_delete << " --- Vertex to keep: " << vertex_to_keep << std::endl; }
+   if ( m_surf.m_verbose ) { 
+      std::cout << "Snapping vertex pair.  Doomed vertex: " << vertex_to_delete 
+                << " --- Vertex to keep: " << vertex_to_keep << std::endl; 
+   }
 
    // --------------
 
-   // Check vertex pseudo motion for collisions and volume change
+   // Check vertex pseudo motion for collisions
 
    if ( mag ( m_surf.get_position(vertex_to_delete) - m_surf.get_position(vertex_to_keep) ) > 0 )
    {
@@ -338,49 +227,6 @@ bool MeshSnapper::snap_vertex_pair( size_t vertex_to_keep, size_t vertex_to_dele
       // Change source vertex predicted position to superimpose onto destination vertex
       m_surf.set_newposition( vertex_to_keep, vertex_new_position );
       m_surf.set_newposition( vertex_to_delete, vertex_new_position );
-
-      /*
-      bool volume_change = collapse_edge_introduces_volume_change( vertex_to_delete, edge, vertex_new_position );
-
-      if ( volume_change )
-      {
-         // Restore saved positions which were changed by the function we just called.
-         m_surf.set_newposition( vertex_to_keep, m_surf.get_position(vertex_to_keep) );
-         m_surf.set_newposition( vertex_to_delete, m_surf.get_position(vertex_to_delete) );
-
-         g_stats.add_to_int( "MeshSnapper:collapse_volume_change", 1 );
-
-         if ( m_surf.m_verbose ) { std::cout << "collapse_volume_change" << std::endl; }
-         return false;
-      }
-
-      bool normal_inversion = collapse_edge_introduces_normal_inversion(  vertex_to_delete, vertex_to_keep, edge, vertex_new_position );
-
-      if ( normal_inversion )
-      {
-         // Restore saved positions which were changed by the function we just called.
-         m_surf.set_newposition( vertex_to_keep, m_surf.get_position(vertex_to_keep) );
-         m_surf.set_newposition( vertex_to_delete, m_surf.get_position(vertex_to_delete) );
-
-         if ( m_surf.m_verbose ) { std::cout << "normal_inversion" << std::endl; }
-         return false;
-      }
-
-      bool bad_angle = collapse_edge_introduces_bad_angle( vertex_to_delete, vertex_to_keep, vertex_new_position );
-
-      if ( bad_angle )
-      {
-         // Restore saved positions which were changed by the function we just called.
-         m_surf.set_newposition( vertex_to_keep, m_surf.get_position(vertex_to_keep) );
-         m_surf.set_newposition( vertex_to_delete, m_surf.get_position(vertex_to_delete) );
-
-         if ( m_surf.m_verbose ) { std::cout << "bad_angle" << std::endl; }
-
-         g_stats.add_to_int( "MeshSnapper:collapse_bad_angle", 1 );
-         return false;
-
-      }
-      */
 
       bool collision = false;
 
@@ -503,24 +349,8 @@ bool MeshSnapper::snap_edge_pair( size_t edge0, size_t edge1)
    assert(m_surf.m_allow_non_manifold);
 
    //TODO Figure out how to deal with boundaries here.
-
-   // TODO Check relative velocities
-   // do not snap if the two edges are moving apart
-   /*
-   Vec3d edge_vec = m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete);
-   Vec3d rel_vel = m_surf.get_remesh_velocity(vertex_to_keep) - m_surf.get_remesh_velocity(vertex_to_delete);
-
-   if (dot(rel_vel, edge_vec) > 0)
-   {
-      if (m_surf.m_verbose)
-         std::cout << "The vertices are moving apart. No need to snap." << std::endl;
-      return false;
-   }
-   */
-   ///////////////////////////////////////////////////////////////////////
-
-
-   //if ( m_surf.m_verbose ) { std::cout << "Snapping edges.  Doomed vertex: " << vertex_to_delete << " --- Vertex to keep: " << vertex_to_keep << std::endl; }
+   //TODO Check relative velocities or CCD test.
+   
    double distance, s0, s2;
    Vec3d normal;
    const Vec2st& edge_data0 = m_surf.m_mesh.m_edges[edge0];
@@ -572,6 +402,7 @@ bool MeshSnapper::snap_edge_pair( size_t edge0, size_t edge1)
       snapping_vert1 = split_result;
    }
    
+   //finally, if the splitting succeeds and we have a good vertex pair, try to snap them.
    bool success = vert_pair_is_snappable(snapping_vert0, snapping_vert1) && snap_vertex_pair(snapping_vert0, snapping_vert1);
 
    return success;
@@ -589,23 +420,8 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
    assert(m_surf.m_allow_non_manifold);
 
    //TODO Figure out how to deal with boundaries here.
-
-   // TODO Check relative velocities
-   // do not snap if the vertex and face are separating
-   /*
-   Vec3d edge_vec = m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete);
-   Vec3d rel_vel = m_surf.get_remesh_velocity(vertex_to_keep) - m_surf.get_remesh_velocity(vertex_to_delete);
-
-   if (dot(rel_vel, edge_vec) > 0)
-   {
-      if (m_surf.m_verbose)
-         std::cout << "The vertices are moving apart. No need to snap." << std::endl;
-      return false;
-   }
-   */
-   ///////////////////////////////////////////////////////////////////////
-
-
+   //TODO Check relative velocities or CCD test.
+ 
    double s0, s1, s2;
    Vec3d normal;
    Vec3st face_data = m_surf.m_mesh.m_tris[face];
@@ -616,8 +432,7 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
    const Vec3d& t1_pos = m_surf.get_position(face_data[1]);
    const Vec3d& t2_pos = m_surf.get_position(face_data[2]);
 
-   //determine the distance, and 
-   //barycentric coords of the closest point
+   //determine the distance, and barycentric coordinates of the closest point
    check_point_triangle_proximity(v_pos, 
       t0_pos, t1_pos, t2_pos,
       dist, s0, s1, s2, normal );
@@ -680,13 +495,13 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
       size_t result_vertex;
       Vec3d split_point = s0*t0_pos + s1*t1_pos + s2*t2_pos;
       
-      //try to split the face, and if it fails, drop out.
       if(!m_facesplitter.face_is_splittable(face) || !m_facesplitter.split_face(face, result_vertex, true, &split_point))
          return false;
 
       snapping_vertex = result_vertex;
    }
 
+   //finally, if the splitting succeeds and we have a good vertex pair, try to snap them.
    bool success = vert_pair_is_snappable(snapping_vertex, vertex) && snap_vertex_pair(snapping_vertex, vertex);
    
    return success;
@@ -705,39 +520,15 @@ bool MeshSnapper::vert_pair_is_snappable( size_t vert0, size_t vert1 )
    if(m_surf.m_mesh.vertex_is_deleted(vert0) || m_surf.m_mesh.vertex_is_deleted(vert1) ) 
       return false;
 
-   //shouldn't be calling this on a duplicate vert
+   //shouldn't be calling this on duplicate vertices
    assert(vert0 != vert1);
 
-   //Check if there is an edge connecting the two verts - if so, we can't do the snap
+   //Check if there is an edge connecting the two vertices - if so, we can't do the snap
    size_t edge_id = m_surf.m_mesh.get_edge_index(vert0, vert1);
    if(edge_id != m_surf.m_mesh.m_edges.size())
       return false;
 
-   
-   //  if ( m_surf.edge_is_any_solid(edge_index) ) { return false; }
-
-   //skip boundary edges if we're not remeshing those
-   //if(!m_remesh_boundaries && m_surf.m_mesh.m_is_boundary_edge[edge_index]) { return false; }
-
-   ///////////////////////////////////////////////////////////////////////
-   // FD 20121229
-   //
-   // this should be allowed, in order to simulate pinching of films
-
-   //  //this would introduce non-manifold ("singular") boundary vertex (this is an internal edge joining two boundary vertices)
-   //  if ( m_surf.m_mesh.m_edge_to_triangle_map[edge_index].size() == 2 && 
-   //      m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[edge_index][0]] &&
-   //      m_surf.m_mesh.m_is_boundary_vertex[m_surf.m_mesh.m_edges[edge_index][1]] ) 
-   //  {
-   //    return false;
-   //  }
-
-   ///////////////////////////////////////////////////////////////////////
-
-   //current_length = mag(m_surf.get_position(vert0) - m_surf.get_position(vert1));
-   
-   return true; //current_length < m_surf.m_merge_proximity_epsilon;  
-   
+   return true; 
 
 }
 
@@ -754,9 +545,10 @@ bool MeshSnapper::edge_pair_is_snappable( size_t edge0, size_t edge1, double& cu
    if(m_surf.m_mesh.edge_is_deleted(edge0) || m_surf.m_mesh.edge_is_deleted(edge1) ) 
       return false;
    
+   //skip duplicate edges
    if(edge0 == edge1) 
       return false;
-
+   
    //edges shouldn't share a vertex
    const Vec2st& edge_data0 = m_surf.m_mesh.m_edges[edge0];
    const Vec2st& edge_data1 = m_surf.m_mesh.m_edges[edge1];
@@ -766,6 +558,7 @@ bool MeshSnapper::edge_pair_is_snappable( size_t edge0, size_t edge1, double& cu
 
    //check if the edges are on two triangles sharing an edge, and if so
    //require that the faces be at less than 90 degrees to continue.
+   //(otherwise, we're essentially snapping triangle to be degenerate/zero area in its plane.)
 
    //check all triangles incident on the first edge
    for(int i = 0; i < 2; ++i) {
@@ -869,7 +662,7 @@ bool MeshSnapper::face_vertex_pair_is_snappable( size_t face, size_t vertex, dou
    if(m_surf.m_mesh.triangle_is_deleted(face) || m_surf.m_mesh.vertex_is_deleted(vertex) ) 
       return false;
 
-   //face shouldn't contain the vertex
+   //face shouldn't contain the vertex to be snapped
    const Vec3st& face_data = m_surf.m_mesh.m_tris[face];
    if(m_surf.m_mesh.triangle_contains_vertex(face_data, vertex))
       return false;
@@ -914,7 +707,7 @@ bool MeshSnapper::face_vertex_pair_is_snappable( size_t face, size_t vertex, dou
    if(current_length < m_surf.m_merge_proximity_epsilon) {
 
       //anticipate the case where we would drop down to vertex snapping
-      //but there is already a connecting edge. Should be an edge collapse, not a snap.
+      //but there is already a connecting edge. That should be an edge collapse, not a snap.
       if(s1 < m_snap_threshold && s2 < m_snap_threshold && 
          m_surf.m_mesh.get_edge_index(face_data[0], vertex) != m_surf.m_mesh.m_edges.size())
          return false;
@@ -1013,8 +806,9 @@ bool MeshSnapper::snap_pass()
    //
    // sort in ascending order by distance (prefer to merge nearby geometry first)
    //
+
    // TODO: can we update the local geometry after merges to find newly formed proximities
-   // and then using a priority queue, make sure to test them immediately if they're closer?
+   // and then using a priority queue, make sure to test them immediately if new ones are closer?
 
    std::sort( sortable_pairs_to_try.begin(), sortable_pairs_to_try.end() );
 
@@ -1037,7 +831,6 @@ bool MeshSnapper::snap_pass()
       bool result = false;
       bool attempted = false;
       if(sortable_pairs_to_try[si].m_face_vert_proximity) {
-         //std::cout << "Attempting face-vert snapping.\n";
          
          //perform face-vertex split-n-snap
          size_t face = ind0;
@@ -1051,7 +844,6 @@ bool MeshSnapper::snap_pass()
 
       }
       else {
-         //std::cout << "Attempting edge snapping.\n";
          //perform edge-edge split-n-snap
          size_t edge0 = ind0;
          size_t edge1 = ind1;
@@ -1065,7 +857,6 @@ bool MeshSnapper::snap_pass()
       
       if ( result )
       { 
-         //std::cout << "Snap succeeded.\n";
          // clean up degenerate triangles and tets
          m_surf.trim_non_manifold( m_surf.m_dirty_triangles );  
       }
@@ -1078,7 +869,6 @@ bool MeshSnapper::snap_pass()
          //Snapping not attempted because the situation changed.
       }
       
-
       snap_occurred |= result;
       
    }

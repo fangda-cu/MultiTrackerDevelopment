@@ -68,7 +68,7 @@ private:
     SurfTrack& m_surf;
 
     /// Snap threshold (how close to a vertex/edge to revert to lower dimensional element snapping
-    ///
+    /// This examines the barycentric coordinates of a closest point, and if below this threshold, snaps to a vertex or edge.
     double m_snap_threshold;
     
     /// The mesh this object operates on
