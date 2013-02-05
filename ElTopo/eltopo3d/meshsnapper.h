@@ -70,7 +70,7 @@ private:
     /// Snap threshold (how close to a vertex/edge to revert to lower dimensional element snapping
     ///
     double m_snap_threshold;
-
+    
     /// The mesh this object operates on
     /// 
     FaceSplitter m_facesplitter;

@@ -1065,7 +1065,7 @@ void ElasticShell::remesh(bool initial)
   //Set up a SurfTrack, run remeshing, render the new mesh
   ElTopo::SurfTrackInitializationParameters construction_parameters;
   construction_parameters.m_proximity_epsilon = m_collision_epsilon;
-  construction_parameters.m_merge_proximity_epsilon = 0.001;
+  construction_parameters.m_merge_proximity_epsilon = 0.2*m_remesh_edge_min_len;
   construction_parameters.m_allow_vertex_movement_during_collapse = true;
   construction_parameters.m_perform_smoothing = false;
   construction_parameters.m_min_edge_length = m_remesh_edge_min_len;
@@ -1074,6 +1074,7 @@ void ElasticShell::remesh(bool initial)
   construction_parameters.m_min_triangle_angle = initial ? 0 : 3;
   construction_parameters.m_max_triangle_angle = initial ? 180 : 177;
   construction_parameters.m_large_triangle_angle_to_split = 160;
+  construction_parameters.m_min_triangle_area = 0.1*m_remesh_edge_min_len*m_remesh_edge_min_len;
   construction_parameters.m_verbose = false;
   construction_parameters.m_allow_non_manifold = true;
   construction_parameters.m_allow_topology_changes = true;
@@ -1175,15 +1176,15 @@ void ElasticShell::remesh(bool initial)
   }
 
   std::cout << "Calling surface improvement\n";
+  
   ElTopo::SurfTrack surface_tracker( vert_data, tri_data, tri_labels, masses, construction_parameters ); 
   surface_tracker.m_constrained_vertices_callback = this;
   surface_tracker.m_mesh.m_vertex_constraint_labels = vert_const_labels;
   surface_tracker.set_all_remesh_velocities(vert_vel);
   
   for(int i = 0; i < m_remeshing_iters; ++i) {
+    surface_tracker.topology_changes();
     surface_tracker.improve_mesh();
-    //surface_tracker.topology_changes();
-    surface_tracker.snap_mesh();
   }
   
   // copy ElTopo mesh back, instead of repeating the operation history incrementally.
@@ -1238,7 +1239,7 @@ void ElasticShell::remesh(bool initial)
   for(unsigned int j = 0; j < surface_tracker.m_mesh_change_history.size(); ++j) 
   {
     ElTopo::MeshUpdateEvent event = surface_tracker.m_mesh_change_history[j];
-    std::cout << "Event type = " << event.m_type << std::endl;
+    //std::cout << "Event type = " << event.m_type << std::endl;
   }
         
 }

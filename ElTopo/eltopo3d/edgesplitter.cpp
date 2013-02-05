@@ -473,7 +473,8 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool specify_sp
         g_stats.add_to_int( "EdgeSplitter:split_smooth_vertex_collisions", 1 ); }
   }
     
-  
+
+
   // --------------
 
   // check normal inversion
@@ -600,12 +601,18 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool specify_sp
   }
 
 
+  const Vec3d& va = m_surf.get_position(vertex_a);
+  const Vec3d& vb = m_surf.get_position(vertex_b);
+  if(mag(new_vertex_smooth_position-va) < 0.5*m_surf.m_min_edge_length ||
+     mag(new_vertex_smooth_position-vb) < 0.5*m_surf.m_min_edge_length)
+     return false;
+
   // --------------
 
   // Check angles on new triangles
 
-  const Vec3d& va = m_surf.get_position( vertex_a );
-  const Vec3d& vb = m_surf.get_position( vertex_b );
+  //const Vec3d& va = m_surf.get_position( vertex_a );
+  //const Vec3d& vb = m_surf.get_position( vertex_b );
   std::vector<Vec3d> other_vert_pos;
   for(size_t i = 0; i < other_verts.size(); ++i)
     other_vert_pos.push_back(m_surf.get_position(other_verts[i]));
@@ -619,7 +626,7 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool specify_sp
   if ( rad2deg(min_new_angle) < m_surf.m_min_triangle_angle )
   {
     g_stats.add_to_int( "EdgeSplitter:edge_split_small_angle", 1 );
-    if (!specify_split_position)
+    //if (!specify_split_position)
       return false;
   }
 
@@ -646,7 +653,7 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool specify_sp
     if ( rad2deg(max_new_angle) < rad2deg(max_current_angle) )
     {
       g_stats.add_to_int( "EdgeSplitter:edge_split_large_angle", 1 );      
-      if (!specify_split_position)
+      //if (!specify_split_position)
         return false;
     }
   }
@@ -831,6 +838,9 @@ bool EdgeSplitter::edge_is_splittable( size_t edge_index )
 
   //if not remeshing boundary edges, skip those too
   if ( !m_remesh_boundaries && m_surf.m_mesh.m_is_boundary_edge[edge_index]) { return false; }
+
+  if(m_surf.get_edge_length(edge_index) < m_surf.m_min_edge_length)
+     return false;
 
   return true;
 

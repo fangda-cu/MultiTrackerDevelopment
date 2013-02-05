@@ -751,6 +751,9 @@ void DoubleBubbleTest::beforeEndStep()
       
       Vec3d normal(0, 0, 0);
       double sum_areas = 0.0;
+      bool label0 = false;
+      bool label1 = false;
+      bool label2 = false;
       for (VertexFaceIterator vfit = shellObj->vf_iter(*vit); vfit; ++vfit)
       {
         FaceVertexIterator fvit = shellObj->fv_iter(*vfit); assert(fvit);
@@ -763,10 +766,17 @@ void DoubleBubbleTest::beforeEndStep()
         double area = (x1 - x0).cross(x2 - x0).norm() / 2;
         normal += (x1 - x0).cross(x2 - x0).normalized() * area * speeds[label.x()][label.y()];
         sum_areas += area;
+
+        if(label.x() == 0 || label.y() == 0) label0 = true;
+        if(label.x() == 1 || label.y() == 1) label1 = true;
+        if(label.x() == 2 || label.y() == 2) label2 = true;
       }
       if (normal.norm() > 0)
         normal.normalize();
       
+      //if we're on the 3-way border, zero it out.
+      //if(label0 && label1 && label2) normal = Vec3d(0,0,0);
+
       double speed = 0.1;
       velocities[*vit] = speed * normal;
     }
@@ -2051,8 +2061,8 @@ void DoubleBubbleTest::setupScene9()
   int N = GetIntOpt("shell-x-resolution");
   Scalar separate = GetScalarOpt("shell-width");
   Scalar r = GetScalarOpt("shell-height");
-  Vec3d c1 = Vec3d(0.5 - separate, 0.5, 0.5);
-  Vec3d c2 = Vec3d(0.5 + separate, 0.5, 0.5);
+  Vec3d c1 = Vec3d(0.49 - separate, 0.51, 0.509765);
+  Vec3d c2 = Vec3d(0.55 + separate, 0.53, 0.46876);
   
   std::vector<FaceHandle> faceList;
   FaceProperty<Vec2i> faceLabels(shellObj);  

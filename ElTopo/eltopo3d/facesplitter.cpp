@@ -381,6 +381,53 @@ bool FaceSplitter::split_face( size_t face, size_t& result_vertex, bool specify_
   if (m_surf.triangle_is_all_solid(face)) return false; 
   
   
+
+  // Check angles on new triangles
+
+  const Vec3d& va = m_surf.get_position( vertex_a );
+  const Vec3d& vb = m_surf.get_position( vertex_b );
+  const Vec3d& vc = m_surf.get_position( vertex_c );
+
+  double min_new_angle = 2*M_PI;
+  min_new_angle = min( min_new_angle, min_triangle_angle( va, vb, new_vertex_position ) );
+  min_new_angle = min( min_new_angle, min_triangle_angle( vb, vc, new_vertex_position ) );
+  min_new_angle = min( min_new_angle, min_triangle_angle( vc, va, new_vertex_position ) );
+  
+  if ( rad2deg(min_new_angle) < m_surf.m_min_triangle_angle )
+  {
+     g_stats.add_to_int( "FaceSplitter:face_split_small_angle", 1 );
+     return false;
+  }
+  
+  double max_current_angle = max_triangle_angle(va, vb, vc);
+
+  double max_new_angle = 0;
+  max_new_angle = min( max_new_angle, max_triangle_angle( va, vb, new_vertex_position ) );
+  max_new_angle = min( max_new_angle, max_triangle_angle( vb, vc, new_vertex_position ) );
+  max_new_angle = min( max_new_angle, max_triangle_angle( vc, va, new_vertex_position ) );
+
+  // if new angle is greater than the allowed angle, and doesn't 
+  // improve the current max angle, prevent the split
+
+  if ( rad2deg(max_new_angle) > m_surf.m_max_triangle_angle )
+  {
+
+     // if new triangle improves a large angle, allow it
+     if ( rad2deg(max_new_angle) < rad2deg(max_current_angle) )
+     {
+        g_stats.add_to_int( "EdgeSplitter:edge_split_large_angle", 1 );      
+        return false;
+     }
+  }
+
+  //Check that we do not introduce (very) short edges
+
+  if(mag(va - new_vertex_position) < 0.5*m_surf.m_min_edge_length ||
+     mag(vb - new_vertex_position) < 0.5*m_surf.m_min_edge_length ||
+     mag(vc - new_vertex_position) < 0.5*m_surf.m_min_edge_length)
+     return false;
+
+
   // --------------
 
   // check if the generated point introduces an intersection

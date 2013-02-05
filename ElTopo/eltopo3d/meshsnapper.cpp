@@ -43,7 +43,7 @@ MeshSnapper::MeshSnapper( SurfTrack& surf ) :
    m_surf( surf ), 
    m_edgesplitter(surf, false, false, 0), 
    m_facesplitter(surf),
-   m_snap_threshold(0.05)
+   m_snap_threshold(0.3)
 {}
 
 
@@ -551,7 +551,7 @@ bool MeshSnapper::snap_edge_pair( size_t edge0, size_t edge1)
    else {
       size_t split_result;
       
-      if(m_edgesplitter.edge_is_splittable(edge0) || !m_edgesplitter.split_edge(edge0, split_result, true, &midpoint0))
+      if(!m_edgesplitter.edge_is_splittable(edge0) || !m_edgesplitter.split_edge(edge0, split_result, true, &midpoint0))
          return false;
       snapping_vert0 = split_result;
    }
@@ -566,7 +566,7 @@ bool MeshSnapper::snap_edge_pair( size_t edge0, size_t edge1)
    else {
       size_t split_result;
 
-      if(m_edgesplitter.edge_is_splittable(edge1) || !m_edgesplitter.split_edge(edge1, split_result, true, &midpoint1))
+      if(!m_edgesplitter.edge_is_splittable(edge1) || !m_edgesplitter.split_edge(edge1, split_result, true, &midpoint1))
          return false;
 
       snapping_vert1 = split_result;
@@ -1037,7 +1037,8 @@ bool MeshSnapper::snap_pass()
       bool result = false;
       bool attempted = false;
       if(sortable_pairs_to_try[si].m_face_vert_proximity) {
-
+         //std::cout << "Attempting face-vert snapping.\n";
+         
          //perform face-vertex split-n-snap
          size_t face = ind0;
          size_t vertex = ind1;
@@ -1050,7 +1051,7 @@ bool MeshSnapper::snap_pass()
 
       }
       else {
-         
+         //std::cout << "Attempting edge snapping.\n";
          //perform edge-edge split-n-snap
          size_t edge0 = ind0;
          size_t edge1 = ind1;
@@ -1064,14 +1065,16 @@ bool MeshSnapper::snap_pass()
       
       if ( result )
       { 
+         //std::cout << "Snap succeeded.\n";
          // clean up degenerate triangles and tets
          m_surf.trim_non_manifold( m_surf.m_dirty_triangles );  
-         return true;
       }
       else if(attempted) {
          //Snapping attempted and failed
+         //std::cout << "Snap failed.\n";
       }
       else {
+         //std::cout << "Snap not attempted.\n";
          //Snapping not attempted because the situation changed.
       }
       
@@ -1079,7 +1082,8 @@ bool MeshSnapper::snap_pass()
       snap_occurred |= result;
       
    }
-
+   
+   
    return snap_occurred;
 
 }
