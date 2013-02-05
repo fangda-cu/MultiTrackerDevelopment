@@ -92,6 +92,10 @@ m_verbose(false)
 ///
 // ---------------------------------------------------------
 
+#ifdef _MSC_VER
+#pragma warning( disable : 4355 )
+#endif
+
 SurfTrack::SurfTrack( const std::vector<Vec3d>& vs, 
                      const std::vector<Vec3st>& ts, 
                      const std::vector<Vec2i>& labels,

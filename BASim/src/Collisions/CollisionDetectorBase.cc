@@ -88,6 +88,10 @@ bool CollisionDetectorBase::appendCollision(const TopologicalElement* elem_a, co
     const YAEdge* edge_b = dynamic_cast<const YAEdge*> (elem_b);
     const YATriangle* triangle_b = dynamic_cast<const YATriangle*> (elem_b);
 
+#ifdef _MSC_VER
+#pragma warning( disable : 4344 )
+#endif
+
     switch (m_collision_filter)
     // Pending full templatization of the class
     {
@@ -165,7 +169,9 @@ bool CollisionDetectorBase::appendCollision(const YAEdge* edge, const YATriangle
     YAEdge edge_2(triangle->first(), triangle->second());
     YAEdge edge_1(triangle->third(), triangle->first());
     YAEdge edge_0(triangle->second(), triangle->third());
-
+#ifdef _MSC_VER
+#pragma warning( disable : 4344 )
+#endif
     bool ee0 = appendCollision<CF> (edge, &edge_0);
     bool ee1 = appendCollision<CF> (edge, &edge_1);
     bool ee2 = appendCollision<CF> (edge, &edge_2);

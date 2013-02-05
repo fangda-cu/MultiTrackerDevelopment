@@ -76,7 +76,7 @@ bool FaceSplitter::split_edge_edge_collision( size_t neighbour_index,
     if ( segment_segment_collision(x[ neighbour_index ], x[ neighbour_index ], neighbour_index,
                                    new_vertex_position, new_vertex_smooth_position, dummy_index,
                                    x[ edge_vertex_0 ], x[ edge_vertex_0 ], edge_vertex_0,
-                                   x[ edge_vertex_1 ], x[ edge_vertex_1 ], edge_vertex_1 ) )    // FD 20130113: Why don't use get_newpositions() for the edge? Is it okay to assume the edge vertices don't move? If operations like collapsing has been performed around this edge, its vertices may have moved (newposition != position).
+                                   x[ edge_vertex_1 ], x[ edge_vertex_1 ], edge_vertex_1 ) )  
         
     {      
         return true;
@@ -89,7 +89,7 @@ bool FaceSplitter::split_edge_edge_collision( size_t neighbour_index,
 
 // ---------------------------------------------------------
 ///
-/// Determine if the new vertex introduced by the edge split has a collision along its pseudo-trajectory.
+/// Determine if the new vertex introduced by the face split has a collision along its pseudo-trajectory.
 ///
 // ---------------------------------------------------------
 
@@ -373,15 +373,13 @@ bool FaceSplitter::split_face( size_t face, size_t& result_vertex, bool specify_
                                              m_surf.get_position( vertex_b )  +
                                              m_surf.get_position( vertex_c ) );
   
-  //TODO Consider adding some kind of smooth subdivision, in case the desired merge
-  //fails to go through. E.g. "interpolatory sqrt(3) subdivision"
+  //TODO Consider adding some kind of smooth subdivision, e.g. "interpolatory sqrt(3) subdivision"
 
   //TODO Treat partially constrained triangles more carefully.
   
   if (m_surf.triangle_is_all_solid(face)) return false; 
   
   
-
   // Check angles on new triangles
 
   const Vec3d& va = m_surf.get_position( vertex_a );
@@ -450,7 +448,7 @@ bool FaceSplitter::split_face( size_t face, size_t& result_vertex, bool specify_
 
          if ( m_surf.m_verbose )  { 
             std::cout << "Even mid-point subdivision introduces collision.  Backing out." << std::endl; 
-         }  // FD 20121126: Why does the paper say this can't happen (section 3.5.1)?
+         } 
       
          return false;
       }
@@ -468,7 +466,6 @@ bool FaceSplitter::split_face( size_t face, size_t& result_vertex, bool specify_
 
  
   //TODO Fix constraint handling all around.
-
   //mesh.set_vertex_constraint_label(vertex_e, new_vert_constraint_label);
   
  
@@ -541,11 +538,8 @@ bool FaceSplitter::face_is_splittable( size_t face_index )
   // skip deleted and solid edges
   if ( m_surf.m_mesh.triangle_is_deleted(face_index) ) { return false; }
 
-  //  if ( m_surf.edge_is_all_solid(edge_index) ) { return false; }
-
-  //if not remeshing boundary edges, skip those too
-  //if ( !m_remesh_boundaries && m_surf.m_mesh.m_is_boundary_edge[edge_index]) { return false; }
-
+  //TODO handle solids and boundaries
+  
   return true;
 
 }

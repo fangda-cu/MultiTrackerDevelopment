@@ -77,11 +77,11 @@ private:
      
 public:
 
-    /// Determine if face should be allowed to be split
+    /// Determine if the face should be allowed to be split
     ///    
     bool face_is_splittable( size_t face_index );
     
-    /// Split an face, using the barycenter point
+    /// Split a face, using the barycenter point or the provided location.
     ///
     bool split_face( size_t face, size_t& result_vert, bool specify_point = false, Vec3d const * subd_point = 0);
     

@@ -657,14 +657,14 @@ void ShellRenderer::render()
         float t = (float)i / (maxlabel == 0 ? 1 : maxlabel);
         if (t < 0.5)
         {
-          r = 1 - t * 1.5;
-          g = t * 1.5;
+          r = 1 - t * 1.5f;
+          g = t * 1.5f;
           b = 0;
         } else
         {
           r = 0;
-          g = 1 - (t - 0.5) * 1.5;
-          b = (t - 0.5) * 1.5;
+          g = 1 - (t - 0.5f) * 1.5f;
+          b = (t - 0.5f) * 1.5f;
         }
         labelcolors.push_back(Vec3d(r, g, b));
       }
@@ -692,7 +692,7 @@ void ShellRenderer::render()
         Vec3d n = (p1 - p0).cross(p2 - p0).normalized();
 
         Vec3d color0 = labelcolors[std::max(0, regions.x() + 1)];
-        glColor3f(color0.x(), color0.y(), color0.z());
+        glColor3d(color0.x(), color0.y(), color0.z());
         
         if (regions.x() >= 0)
         {
@@ -701,7 +701,7 @@ void ShellRenderer::render()
         }
         
         Vec3d color1 = labelcolors[std::max(0, regions.y() + 1)];
-        glColor3f(color1.x(), color1.y(), color1.z());
+        glColor3d(color1.x(), color1.y(), color1.z());
                 
         if (regions.y() >= 0)
         {
@@ -905,7 +905,7 @@ void ShellRenderer::render()
     }
     m_nregion = maxlabel + 1;
     
-    while (m_region_visible.size() < m_nregion)
+    while (m_region_visible.size() < (size_t)m_nregion)
       m_region_visible.push_back(true);
     
     // Render all edges
@@ -962,14 +962,14 @@ void ShellRenderer::render()
       float t = (float)i / (maxlabel == 0 ? 1 : maxlabel);
       if (t < 0.5)
       {
-        r = 1 - t * 1.5;
-        g = t * 1.5;
+        r = 1 - t * 1.5f;
+        g = t * 1.5f;
         b = 0;
       } else
       {
         r = 0;
-        g = 1 - (t - 0.5) * 1.5;
-        b = (t - 0.5) * 1.5;
+        g = 1 - (t - 0.5f) * 1.5f;
+        b = (t - 0.5f) * 1.5f;
       }
       labelcolors.push_back(Vec3d(r, g, b));
     }
@@ -992,7 +992,7 @@ void ShellRenderer::render()
         Vec3d n = (p1 - p0).cross(p2 - p0).normalized();
         
         Vec3d color0 = labelcolors[std::max(0, regions.x() + 1)];
-        glColor3f(color0.x(), color0.y(), color0.z());
+        glColor3d(color0.x(), color0.y(), color0.z());
         
         if (regions.x() >= 0)
         {
@@ -1001,7 +1001,7 @@ void ShellRenderer::render()
         }
         
         Vec3d color1 = labelcolors[std::max(0, regions.y() + 1)];
-        glColor3f(color1.x(), color1.y(), color1.z());
+        glColor3d(color1.x(), color1.y(), color1.z());
         
         if (regions.y() >= 0)
         {
