@@ -1114,7 +1114,7 @@ bool EdgeCollapser::collapse_pass()
           if ( result )
           { 
             // clean up degenerate triangles and tets
-            m_surf.trim_non_manifold( m_surf.m_dirty_triangles );            
+            m_surf.trim_degeneracies( m_surf.m_dirty_triangles );            
           }
 
           collapse_occurred |= result;

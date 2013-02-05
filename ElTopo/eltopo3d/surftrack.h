@@ -518,7 +518,7 @@ public:
     void improve_mesh( );
     
 
-    /// Run edge-edge merging
+    /// Run split'n'snap merging and t1-transition processing
     ///
     void topology_changes( );
     
@@ -533,11 +533,11 @@ public:
     
     /// Check for and delete flaps and zero-area triangles among the given triangle indices, then separate singular vertices.
     ///
-    void trim_non_manifold( std::vector<size_t>& triangle_indices );
+    void trim_degeneracies( std::vector<size_t>& triangle_indices );
     
     /// Check for and delete flaps and zero-area triangles among *all* triangles, then separate singular vertices.
     ///
-    inline void trim_non_manifold();
+    inline void trim_degeneracies();
     
     /// Fire an assert if any degenerate triangles or tets (flaps) are found.
     /// 
@@ -559,7 +559,7 @@ public:
     ///
     EdgeFlipper m_flipper;
     
-    /// NULL-space surface smoothing
+    /// Null-space surface smoothing
     /// 
     MeshSmoother m_smoother;
     
@@ -575,14 +575,10 @@ public:
     ///
     MeshCutter m_cutter;
     
-
     /// Mesh snapping
     ///
     MeshSnapper m_snapper;
 
-    ////////////////////////////////////////////////////////////
-    // FD 20130109
-    
     /// T1 transition operation object
     ///
     T1Transition m_t1transition;
@@ -629,14 +625,10 @@ public:
     ///
     double m_max_triangle_angle;
     
-    ///////////////////////////////////////////////////////////////////////
-    // FD 20121229
-    //
+
     /// Split triangles with angles greater than this.
     ///
     double m_large_triangle_angle_to_split;
-    
-    ///////////////////////////////////////////////////////////////////////
     
     /// Interpolation scheme, determines edge midpoint location
     ///
@@ -665,7 +657,6 @@ public:
     /// Whether to perform remeshing on mesh boundary edges (in the case of open surfaces, e.g. sheets)
     ///
     bool m_remesh_boundaries;
-    
 
     /// boolean, whether to allow vertices to move during collapses (i.e. use points other than the endpoints)
     int m_allow_vertex_movement_during_collapse;
@@ -732,7 +723,7 @@ public:
 ///
 // ---------------------------------------------------------
 
-inline void SurfTrack::trim_non_manifold()
+inline void SurfTrack::trim_degeneracies()
 {
     
     std::vector<size_t> triangle_indices;
@@ -742,7 +733,7 @@ inline void SurfTrack::trim_non_manifold()
         triangle_indices[i] = i;
     }
     
-    trim_non_manifold( triangle_indices );
+    trim_degeneracies( triangle_indices );
 }
 
 }

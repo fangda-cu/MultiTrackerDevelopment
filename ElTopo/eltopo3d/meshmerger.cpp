@@ -593,7 +593,7 @@ bool MeshMerger::merge_pass( )
 
                     if ( zipper_edges( i, proximal_edge_index ) )
                     {
-                        m_surf.trim_non_manifold( m_surf.m_dirty_triangles );
+                        m_surf.trim_degeneracies( m_surf.m_dirty_triangles );
                         
                         if ( m_surf.m_verbose ) 
                         { 

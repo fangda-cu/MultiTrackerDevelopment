@@ -761,7 +761,7 @@ bool EdgeFlipper::flip_pass( )
     
     if ( flip_occurred_ever )
     {
-        m_surf.trim_non_manifold( m_surf.m_dirty_triangles );
+        m_surf.trim_degeneracies( m_surf.m_dirty_triangles );
     }
     
     return flip_occurred_ever;

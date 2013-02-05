@@ -301,9 +301,6 @@ size_t SurfTrack::add_vertex( const Vec3d& new_vertex_position, double new_verte
 {
     size_t new_vertex_index = m_mesh.nondestructive_add_vertex( );
     
-    ////////////////////////////////////////////////////////////
-    // FD 20130102
-  
     if( new_vertex_index > get_num_vertices() - 1 )
     {
         pm_positions.resize( new_vertex_index  + 1 );
@@ -538,11 +535,11 @@ void SurfTrack::assert_no_degenerate_triangles( )
 
 // --------------------------------------------------------
 ///
-/// Delete flaps and zero-area triangles.  Then separate singular vertices.
+/// Delete flaps and zero-area triangles.
 ///
 // --------------------------------------------------------
 
-void SurfTrack::trim_non_manifold( std::vector<size_t>& triangle_indices )
+void SurfTrack::trim_degeneracies( std::vector<size_t>& triangle_indices )
 {   
     
     // If we're not allowing non-manifold, assert we don't have any
@@ -791,8 +788,6 @@ void SurfTrack::improve_mesh( )
           m_smoother.null_space_smoothing_pass( 1.0 );
       }
 
-     
-     
 
       ////////////////////////////////////////////////////////////
       
@@ -835,35 +830,29 @@ void SurfTrack::cut_mesh( const std::vector< std::pair<size_t,size_t> >& edges)
 
 void SurfTrack::topology_changes( )
 {
-    
-    if ( false == m_allow_topology_changes )
-    {
-        return;
-    }
-    
-    bool merge_occurred = true;
-    //while ( merge_occurred )
-    //{
-        //merge_occurred = m_merger.merge_pass(); //OLD MERGING CODE
-        merge_occurred = m_snapper.snap_pass();   //NEW MERGING CODE
 
-        if (m_t1_transition_enabled)
-        {
-           m_t1transition.pop_vertices();
-        
-        }
+   if ( false == m_allow_topology_changes )
+   {
+      return;
+   }
 
-//        m_pincher.separate_singular_vertices();
+   //bool merge_occurred = merge_occurred = m_merger.merge_pass(); //OLD MERGING CODE
+   bool merge_occurred = m_snapper.snap_pass();   //NEW MERGING CODE
+   
+   if(merge_occurred) //always try to clean up, since merging can produce poor geometry.
+      improve_mesh();
 
-        if ( m_collision_safety )
-        {
-            assert_mesh_is_intersection_free( false );
-        }
-    //} 
+   if (m_t1_transition_enabled)
+   {
+      m_t1transition.pop_vertices();
 
-        if(merge_occurred) //always try to clean up, since merging can produce pretty bad geometry.
-           improve_mesh();
-    
+   }
+
+   if ( m_collision_safety )
+   {
+      assert_mesh_is_intersection_free( false );
+   }
+
 }
 
 void SurfTrack::assert_no_bad_labels()
