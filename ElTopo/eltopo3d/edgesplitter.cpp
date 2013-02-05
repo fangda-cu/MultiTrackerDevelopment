@@ -355,7 +355,7 @@ bool EdgeSplitter::split_edge_pseudo_motion_introduces_intersection( const Vec3d
 ///
 // --------------------------------------------------------
 
-bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool specify_split_position, Vec3d const * pos )
+bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad_angles, bool specify_split_position, Vec3d const * pos )
 {   
 
   g_stats.add_to_int( "EdgeSplitter:edge_split_attempts", 1 );
@@ -623,11 +623,10 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool specify_sp
     min_new_angle = min( min_new_angle, min_triangle_angle( vb, new_vertex_smooth_position, other_vert_pos[i] ) );
   }
   
-  if ( rad2deg(min_new_angle) < m_surf.m_min_triangle_angle )
+  if ( !ignore_bad_angles && rad2deg(min_new_angle) < m_surf.m_min_triangle_angle )
   {
     g_stats.add_to_int( "EdgeSplitter:edge_split_small_angle", 1 );
-    //if (!specify_split_position)
-      return false;
+    return false;
   }
 
   double max_current_angle = 0;
@@ -650,11 +649,10 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool specify_sp
 
     // if new triangle improves a large angle, allow it
 
-    if ( rad2deg(max_new_angle) < rad2deg(max_current_angle) )
+    if ( !ignore_bad_angles && rad2deg(max_new_angle) < rad2deg(max_current_angle) )
     {
       g_stats.add_to_int( "EdgeSplitter:edge_split_large_angle", 1 );      
-      //if (!specify_split_position)
-        return false;
+      return false;
     }
   }
 
@@ -912,7 +910,7 @@ bool EdgeSplitter::large_angle_split_pass()
         Vec3d split_pos = dot(opposite_point0 - edge_point0, ev) / dot(ev, ev) * ev + edge_point0;
         
         size_t result_vert;
-        bool result = split_edge( e, result_vert, true, &split_pos ); // use the projection of opposite_point0 onto the edge as the split point
+        bool result = split_edge( e, result_vert, true, true, &split_pos ); // use the projection of opposite_point0 onto the edge as the split point
 
         ///////////////////////////////////////////////////////////////////////
 

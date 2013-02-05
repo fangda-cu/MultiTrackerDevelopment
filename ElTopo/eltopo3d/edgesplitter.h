@@ -121,7 +121,7 @@ public:
     
     /// Split an edge, using subdivision_scheme to determine the new vertex location, if safe to do so.
     ///
-    bool split_edge( size_t edge, size_t& result_vert, bool specify_split_position = false, Vec3d const * pos = 0);
+    bool split_edge( size_t edge, size_t& result_vert, bool ignore_bad_angles = false, bool specify_split_position = false, Vec3d const * pos = 0);
     
 };
 

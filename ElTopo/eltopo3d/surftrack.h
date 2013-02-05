@@ -518,10 +518,6 @@ public:
     void improve_mesh( );
     
 
-    /// Snap mesh 
-    ///
-    void snap_mesh( );
-
     /// Run edge-edge merging
     ///
     void topology_changes( );

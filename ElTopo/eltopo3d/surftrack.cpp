@@ -802,10 +802,6 @@ void SurfTrack::improve_mesh( )
     
 }
 
-void SurfTrack::snap_mesh() {
-    m_snapper.snap_pass();
-}
-
 void SurfTrack::cut_mesh( const std::vector< std::pair<size_t,size_t> >& edges)
 {     
 

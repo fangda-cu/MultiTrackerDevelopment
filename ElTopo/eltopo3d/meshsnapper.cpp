@@ -551,7 +551,7 @@ bool MeshSnapper::snap_edge_pair( size_t edge0, size_t edge1)
    else {
       size_t split_result;
       
-      if(!m_edgesplitter.edge_is_splittable(edge0) || !m_edgesplitter.split_edge(edge0, split_result, true, &midpoint0))
+      if(!m_edgesplitter.edge_is_splittable(edge0) || !m_edgesplitter.split_edge(edge0, split_result, false, true, &midpoint0))
          return false;
       snapping_vert0 = split_result;
    }
@@ -566,7 +566,7 @@ bool MeshSnapper::snap_edge_pair( size_t edge0, size_t edge1)
    else {
       size_t split_result;
 
-      if(!m_edgesplitter.edge_is_splittable(edge1) || !m_edgesplitter.split_edge(edge1, split_result, true, &midpoint1))
+      if(!m_edgesplitter.edge_is_splittable(edge1) || !m_edgesplitter.split_edge(edge1, split_result, false, true, &midpoint1))
          return false;
 
       snapping_vert1 = split_result;
@@ -640,7 +640,7 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
        double edge_frac = s1 / (s1+s2);
        Vec3d split_point = edge_frac * t1_pos + (1-edge_frac) * t2_pos;
        
-       if(!m_edgesplitter.edge_is_splittable(edge_to_split) || !m_edgesplitter.split_edge(edge_to_split, result_vertex, true, &split_point))
+       if(!m_edgesplitter.edge_is_splittable(edge_to_split) || !m_edgesplitter.split_edge(edge_to_split, result_vertex, false, true, &split_point))
          return false;
 
        snapping_vertex = result_vertex;
@@ -657,7 +657,7 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
          double edge_frac = s0 / (s0+s2);
          Vec3d split_point = edge_frac * t0_pos + (1-edge_frac) * t2_pos;
          
-         if(!m_edgesplitter.edge_is_splittable(edge_to_split) || !m_edgesplitter.split_edge(edge_to_split, result_vertex, true, &split_point))
+         if(!m_edgesplitter.edge_is_splittable(edge_to_split) || !m_edgesplitter.split_edge(edge_to_split, result_vertex, false, true, &split_point))
             return false;
          
          snapping_vertex = result_vertex;
@@ -671,7 +671,7 @@ bool MeshSnapper::snap_face_vertex_pair( size_t face, size_t vertex)
       Vec3d split_point = edge_frac * t0_pos + (1-edge_frac) * t1_pos;
 
       
-      if(!m_edgesplitter.edge_is_splittable(edge_to_split) || !m_edgesplitter.split_edge(edge_to_split, result_vertex, true, &split_point))
+      if(!m_edgesplitter.edge_is_splittable(edge_to_split) || !m_edgesplitter.split_edge(edge_to_split, result_vertex, false, true, &split_point))
          return false;
       
       snapping_vertex = result_vertex;
