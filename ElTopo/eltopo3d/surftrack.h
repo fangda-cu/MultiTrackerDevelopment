@@ -686,7 +686,7 @@ public:
         
         virtual bool generate_collapsed_constraint_label(SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1) = 0;
         
-        virtual bool generate_splitted_constraint_label(SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1) = 0;
+        virtual bool generate_split_constraint_label(SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1) = 0;
         
         virtual bool generate_edge_popped_positions(SurfTrack & st, size_t oldv, const Vec2i & cut, Vec3d & pos_upper, Vec3d & pos_lower) = 0;
         

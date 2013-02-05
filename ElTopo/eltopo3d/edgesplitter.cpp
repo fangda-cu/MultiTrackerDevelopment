@@ -310,7 +310,6 @@ bool EdgeSplitter::split_edge_pseudo_motion_introduces_intersection( const Vec3d
 
     std::vector< Vec3st > triangle_indices;
 
-    //TODO Hopefully order is irrelevant here...
     for( size_t i = 0; i < verts.size(); ++i) {
       triangle_indices.push_back( Vec3st( vertex_a, dummy_e, verts[i] ) );    // triangle aec      
       triangle_indices.push_back( Vec3st( verts[i], dummy_e, vertex_b ) );    // triangle ceb      
@@ -396,8 +395,7 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
     Vec3st tri_data = mesh.get_triangle(cur_tri);
     other_verts.push_back(mesh.get_third_vertex(vertex_a, vertex_b, tri_data));
   }
-
-
+  
 
   // --------------
 
@@ -415,10 +413,11 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   // the collision detection, splitting will not fall back to using the
   // midpoint, but return false.
   
+  //use the subdivision scheme if we're manifold, or our scheme supports non-manifold-ness
   bool use_smooth_point = (incident_tris.size() == 2) || 
-                          (incident_tris.size() == 1 && typeid(m_surf.m_subdivision_scheme) == typeid(ModifiedButterflyScheme));
+                          (typeid(m_surf.m_subdivision_scheme) == typeid(ModifiedButterflyScheme));
   
-  //if the user has provided a new position, use it instead of the subdivision data
+  //if the user has provided a new position, use it instead of the subdivision scheme
   if(specify_split_position)
      use_smooth_point = false;
 
@@ -438,19 +437,15 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
       return false;
     }
     
-    new_vert_constraint_label = m_surf.m_constrained_vertices_callback->generate_splitted_constraint_label(m_surf, vertex_a, vertex_b, m_surf.m_mesh.get_vertex_constraint_label(vertex_a), m_surf.m_mesh.get_vertex_constraint_label(vertex_b));
+    new_vert_constraint_label = m_surf.m_constrained_vertices_callback->generate_split_constraint_label(m_surf, vertex_a, vertex_b, m_surf.m_mesh.get_vertex_constraint_label(vertex_a), m_surf.m_mesh.get_vertex_constraint_label(vertex_b));
   }
   
-  /////////////////////////////////////////
 
-  /////////////////////////////////////////
-  // FD 20121218
-  //
   if (m_surf.edge_is_all_solid(edge)) use_smooth_point = false; // all-solid edge cannot change shape
   
   /////////////////////////////////////////
 
-  // generate the new midpoint according to the subdivision scheme
+  // generate the new point according to the subdivision scheme
   if(use_smooth_point)
     m_surf.m_subdivision_scheme->generate_new_midpoint( edge, m_surf, new_vertex_smooth_position );
   else
@@ -477,7 +472,7 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
 
   // --------------
 
-  // check normal inversion
+  // check normal inversion. if it occurs, try to revert to midpoint splitting.
 
   if ( use_smooth_point )
   {
@@ -493,10 +488,8 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
     Vec3d tri0_normal = m_surf.get_triangle_normal( tri0 );
     Vec3d tri1_normal = m_surf.get_triangle_normal( tri1 );
 
-    ////////////////////////////////////////////////////////////
-    // FD 20121126
     // 
-    //  need to consider the case where tri0 and tri1 have opposite orientation
+    //  note: we consider the case where tri0 and tri1 have opposite orientation
     //
     
     if ( dot( tri0_normal, tri1_normal ) >= 0.0 && mesh.oriented(vertex_a, vertex_b, mesh.get_triangle(tri0)) == mesh.oriented(vertex_b, vertex_a, mesh.get_triangle(tri1)) )
@@ -552,7 +545,6 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   // --------------
 
   // if the new point introduces an intersection, try using the edge midpoint
-  
 
   if ( use_smooth_point == false )
   {
@@ -573,6 +565,8 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
       g_stats.add_to_int( "EdgeSplitter:split_midpoint_collisions", 1 );
 
       if ( m_surf.m_verbose )  { std::cout << "Even mid-point subdivision introduces collision.  Backing out." << std::endl; }  // FD 20121126: Why does the paper say this can't happen (section 3.5.1)?
+      
+      //if we did not specify the split point, and that point introduced collisions, fail. Otherwise, keep going.
       if (!specify_split_position)
         return false;
     }

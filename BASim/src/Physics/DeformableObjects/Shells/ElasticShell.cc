@@ -1383,7 +1383,7 @@ bool ElasticShell::generate_collapsed_constraint_label(ElTopo::SurfTrack & st, s
   return (label0 || label1);  // if either endpoint is constrained, the collapsed point shold be constrained. more specifically it should be on all the walls any of the two endpoints is on (implemented in generate_collapsed_position())
 }
 
-bool ElasticShell::generate_splitted_constraint_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1)
+bool ElasticShell::generate_split_constraint_label(ElTopo::SurfTrack & st, size_t v0, size_t v1, bool label0, bool label1)
 {
   ElTopo::Vec3d x0 = st.get_position(v0);
   ElTopo::Vec3d x1 = st.get_position(v1);
