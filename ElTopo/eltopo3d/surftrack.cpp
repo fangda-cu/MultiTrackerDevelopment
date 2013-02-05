@@ -843,8 +843,8 @@ void SurfTrack::topology_changes( )
     bool merge_occurred = true;
     //while ( merge_occurred )
     //{
-        merge_occurred = m_merger.merge_pass(); //OLD MERGING CODE
-        //merge_occurred = m_snapper.snap_pass();   //NEW MERGING CODE
+        //merge_occurred = m_merger.merge_pass(); //OLD MERGING CODE
+        merge_occurred = m_snapper.snap_pass();   //NEW MERGING CODE
 
         if (m_t1_transition_enabled)
         {
@@ -858,7 +858,10 @@ void SurfTrack::topology_changes( )
         {
             assert_mesh_is_intersection_free( false );
         }
-    //}      
+    //} 
+
+        if(merge_occurred) //always try to clean up, since merging can produce pretty bad geometry.
+           improve_mesh();
     
 }
 
