@@ -852,7 +852,7 @@ void SurfTrack::topology_changes( )
         
         }
 
-        m_pincher.separate_singular_vertices();
+//        m_pincher.separate_singular_vertices();
 
         if ( m_collision_safety )
         {

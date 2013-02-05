@@ -635,7 +635,7 @@ bool T1Transition::pop_vertices()
         vertex_regions.assign(vertex_regions_set.begin(), vertex_regions_set.end());
         
         // cull away the interior vertices of plateau borders (which are the majority)
-        if (vertex_regions_set.size() < 4)
+        if (vertex_regions_set.size() < 3)
             continue;
         
         //
