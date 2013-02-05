@@ -786,14 +786,7 @@ void SurfTrack::improve_mesh( )
           m_smoother.null_space_smoothing_pass( 1.0 );
       }
 
-      ////////////////////////////////////////////////////////////
-      // FD 20130109
-
-      if (m_t1_transition_enabled)
-      {
-        m_t1transition.pop_vertices();
-      }
-
+     
      
 
       ////////////////////////////////////////////////////////////
@@ -848,9 +841,16 @@ void SurfTrack::topology_changes( )
     }
     
     bool merge_occurred = true;
-    while ( merge_occurred )
-    {
-        merge_occurred = m_merger.merge_pass();
+    //while ( merge_occurred )
+    //{
+        merge_occurred = m_merger.merge_pass(); //OLD MERGING CODE
+        //merge_occurred = m_snapper.snap_pass();   //NEW MERGING CODE
+
+        if (m_t1_transition_enabled)
+        {
+           m_t1transition.pop_vertices();
+        
+        }
 
         m_pincher.separate_singular_vertices();
 
@@ -858,7 +858,7 @@ void SurfTrack::topology_changes( )
         {
             assert_mesh_is_intersection_free( false );
         }
-    }      
+    //}      
     
 }
 
