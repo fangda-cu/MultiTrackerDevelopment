@@ -1649,8 +1649,8 @@ void parse_script( const char* filename )
 
       printf("Reading file...\n");
       read_objfile(trimesh, surface_vertices, meshpath.c_str());
-      for(unsigned int i = 0; i < surface_vertices.size(); ++i) {
-         surface_vertices[i] = surface_vertices[i]*scale + offset;
+      for(unsigned int i_in = 0; i_in < surface_vertices.size(); ++i_in) {
+         surface_vertices[i_in] = surface_vertices[i_in]*scale + offset;
       }
       surface_triangles = trimesh.m_tris;
       surface_labels.resize(surface_triangles.size());
@@ -1743,11 +1743,11 @@ void parse_script( const char* filename )
          assert( current_phi.nj == union_phi.nj );
          assert( current_phi.nk == union_phi.nk );
          
-         for ( int i = 0; i < union_phi.ni; ++i )
+         for ( int i_in = 0; i_in < union_phi.ni; ++i_in )
             for ( int j = 0; j < union_phi.nj; ++j )
                for ( int k = 0; k < union_phi.nk; ++k )
                {
-                  union_phi(i,j,k) = min( union_phi(i,j,k), current_phi(i,j,k) );
+                  union_phi(i_in,j,k) = min( union_phi(i_in,j,k), current_phi(i_in,j,k) );
                }
       }
       

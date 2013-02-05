@@ -247,8 +247,8 @@ bool T1Transition::pop_edges()
         }
         
         Vec3d upper_vertices_mean(0, 0, 0);
-        for (size_t i = 0; i < upper_vertices.size(); i++)
-            upper_vertices_mean += upper_vertices[i];
+        for (size_t i_local = 0; i_local < upper_vertices.size(); i_local++)
+            upper_vertices_mean += upper_vertices[i_local];
         upper_vertices_mean /= upper_vertices.size();
         
         Vec3d lower_vertices_mean(0, 0, 0);
@@ -493,18 +493,18 @@ bool T1Transition::pop_edges()
                     edge2 = mesh.m_triangle_to_edge_map[triangle][l];
             }
             assert(edge2 < mesh.ne());
-            size_t v1 = mesh.m_edges[edge2][0];
-            size_t v2 = mesh.m_edges[edge2][1];
+            size_t v1_local = mesh.m_edges[edge2][0]; //this guy was conflicting with v1 in the outer loop.
+            size_t v2_local = mesh.m_edges[edge2][1];
             
             Vec2i label = mesh.get_triangle_label(triangle);
             assert(label[0] == upper_region || label[1] == upper_region || label[0] == lower_region || label[1] == lower_region);
             
             size_t nv = ((label[0] == upper_region || label[1] == upper_region) ? nv0 : nv1);
             
-            if (mesh.oriented(v1, v2, mesh.get_triangle(triangle)))
-                faces_to_create.push_back(Vec3st(nv, v1, v2));
+            if (mesh.oriented(v1_local, v2_local, mesh.get_triangle(triangle)))
+                faces_to_create.push_back(Vec3st(nv, v1_local, v2_local));
             else
-                faces_to_create.push_back(Vec3st(nv, v2, v1));
+                faces_to_create.push_back(Vec3st(nv, v2_local, v1_local));
             face_labels_to_create.push_back(label);
         }
         

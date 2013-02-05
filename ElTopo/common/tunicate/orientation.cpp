@@ -1,32 +1,20 @@
 // Released into the public domain by Robert Bridson, 2009.
 
 #include <cassert>
+#include <fenv_include.h>
 #include <cmath>
 #include <limits>
 #include <tunicate.h>
 #include <expansion.h>
 #include <neg.h>
-#include "fenv_include.h"
-#include <iostream>
-#include <cstdio>
-
-void
-interval_orientation4d(const double* x0,
-                       const double* x1,
-                       const double* x2,
-                       const double* x3,
-                       const double* x4,
-                       double* lower,
-                       double* upper);
-
-
 
 //==============================================================================
 double
 orientation1d(const double* x0,
               const double* x1)
 {
-    assert(x0 && x1);
+    assert(x0 != NULL && x1 != NULL);
+
     return x0[0]-x1[0];
 }
 
@@ -167,12 +155,17 @@ interval_orientation3d(const double* x0,
     *lower=simple_orientation3d(x0, x1, x2, x3);
     fesetround(FE_UPWARD);
     *upper=simple_orientation3d(x0, x1, x2, x3);
-    if(!(*lower<=*upper)) {
-      printf("Lower: %0.20e Upper: %0.20e\n", *lower, *upper);
-      printf("Input: %0.20e %0.20e %0.20e %0.20e\n", x0, x1, x2, x3);
-      //unsigned int result = _controlfp(0, 0);
-      //printf("0x%.4x ", result);
-    }
+#ifdef _MSC_VER
+    assert( !_isnan(*lower) );
+    assert( !_isnan(*upper) );
+    assert( _finite(*lower) );
+    assert( _finite(*upper) );
+#else
+    assert( !std::isnan(*lower) );
+    assert( !std::isnan(*upper) );
+    assert( !std::isinf(*lower) );
+    assert( !std::isinf(*upper) );
+#endif
     assert(*lower<=*upper);
 }
 
@@ -336,7 +329,7 @@ orientation_time3d(const double* x0, int time0,
 }
 
 //==============================================================================
-void
+static void
 interval_orientation4d(const double* x0,
                        const double* x1,
                        const double* x2,

@@ -42,26 +42,59 @@ Vec3d get_surface_curvature_vector(TetMesh& mesh, DynamicSurface& surface, std::
    Vec3d ray_end = (Vec3d)mesh.vertices[neighbour_index];
    std::vector<double> hit_ss;
    std::vector<size_t> hit_triangles; 
-   surface.get_triangle_intersections( ray_origin, ray_end, hit_ss, hit_triangles );
-
+   
+   surface.get_triangle_intersections( ray_origin, ray_end, hit_ss, hit_triangles, false );
+   
    //estimate the mean curvature at the crossing point, and use it to dictate the surface tension force.
    Vec3d mean_curvature(0,0,0);
 
    if(hit_triangles.size() > 0) {
+     
+
       Vec3st tri = surface.m_mesh.m_tris[hit_triangles[0]];
       Vec3d cross_point = lerp(ray_origin, ray_end, hit_ss[0]);
+      
       Vec3d v0 = surface.get_position(tri[0]);
       Vec3d v1 = surface.get_position(tri[1]);
       Vec3d v2 = surface.get_position(tri[2]);
+
       Vec3d coords;
       get_bary_coords(cross_point, v0,v1,v2, coords);
 
       mean_curvature = coords[0] * vertex_curvature_vectors[tri[0]]
                      + coords[1] * vertex_curvature_vectors[tri[1]] 
                      + coords[2] * vertex_curvature_vectors[tri[2]];
+     
+      if(std::isnan(mean_curvature[0]) || !std::isfinite(mean_curvature[0])) {
 
+         //hit_ss.clear();
+         //hit_triangles.clear();
+         //std::cout << "Calling dangerous function again:\n";
+         //surface.get_triangle_intersections( ray_origin, ray_end, hit_ss, hit_triangles, true );
+         
+         std::cout << "\n\n\nHitss: " << hit_ss[0] << std::endl;
+         std::cout << "Hit count: " << hit_triangles.size() << " and " << hit_ss.size() << std::endl;
+         std::cout << "Cross point: " << cross_point << std::endl;
+         std::cout << "ray_start : " << ray_origin << std::endl;
+         std::cout << "ray_end : " << ray_end << std::endl;
+         std::cout << "hit_ss[0] : " << hit_ss[0] << std::endl;
+
+
+         
+         std::cout << "V0: " << v0 << std::endl;
+         std::cout << "V1: " << v1 << std::endl;
+         std::cout << "V2: " << v2 << std::endl;
+         
+         std::cout << "curv " << mean_curvature << std::endl;
+         std::cout << "bary " << coords << std::endl;
+         std::cout << "val0 " << vertex_curvature_vectors[tri[0]] << std::endl;
+         std::cout << "val1 " << vertex_curvature_vectors[tri[1]] << std::endl;
+         std::cout << "val2 " << vertex_curvature_vectors[tri[2]] << std::endl;
+      }
+      assert ( !std::isnan(mean_curvature[0]) && std::isfinite(mean_curvature[0]) );
+
+     
    }
-
    return mean_curvature;
 }
 
@@ -170,7 +203,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
                // Different region - multiphase case of ghost fluid method.
                // Compute the interpolated interface position from unsigned distances and
                // use it to interpolate density (per e.g. [Boyd/Bridson 2011] or Losasso [2006])
-               float interface_theta = std::abs(self_phi) / (std::abs(self_phi) + std::abs(neighbour_phi)); 
+               float interface_theta = std::fabs(self_phi) / (std::fabs(self_phi) + std::fabs(neighbour_phi)); 
                interface_theta = clamp(interface_theta, 0.01f, 0.99f);
                face_density = interface_theta  * densities[region_ID] + (1-interface_theta)*densities[nbr_region_ID];
 
@@ -185,18 +218,29 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
                   
                   rhs[i] -= sign_value * curvature_value * solid_weights[face_index] 
                             * mesh.voronoi_face_areas[face_index] *  surface_tension_coeff  / dist / face_density;
+                            if(rhs[i] != rhs[i]) {
+                               std::cout << "Failed comparison: " << rhs[i] << std::endl;
+                               std::cout << "Sign: " << sign_value << std::endl;
+                               std::cout << "Solidweight: " << solid_weights[face_index] << std::endl;
+                               std::cout << "FaceVel: " << face_velocities[face_index] << std::endl;
+                               std::cout << "VorArea: " << mesh.voronoi_face_areas[face_index] << std::endl;
+                               std::cout << "Curvture: " << curvature_value << std::endl;
+                               std::cout << "dist : " << dist << std::endl;
+                               std::cout << "face_density: " << face_density << std::endl;
+                            }
+                            assert ( !std::isnan(rhs[i]) && std::isfinite(rhs[i]) );
                }
             }
 
             // Add diagonal and off-diagonal entries.
             matrix.add_to_element(i, neighbour_index, -solid_weights[face_index] * mesh.voronoi_face_areas[face_index] / dist / face_density);
-            diagonal_sum += std::abs(-solid_weights[face_index] * mesh.voronoi_face_areas[face_index] / dist / face_density);      
+            diagonal_sum += std::fabs(-solid_weights[face_index] * mesh.voronoi_face_areas[face_index] / dist / face_density);      
          }
          else  
          {
             // Free surface case, so use ghost fluid boundary condition
             float face_density = densities[region_ID]; //Use the interior density.
-            float theta = max( theta_clamp, std::abs(self_phi) / (std::abs(self_phi) + std::abs(neighbour_phi))); //Determine the interface position
+            float theta = max( theta_clamp, std::fabs(self_phi) / (std::fabs(self_phi) + std::fabs(neighbour_phi))); //Determine the interface position
             
             // Increment the diagonal entry accordingly.
             diagonal_sum += solid_weights[face_index] * mesh.voronoi_face_areas[face_index] / dist / theta / face_density;
@@ -213,7 +257,6 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
 
                rhs[i] -= sign_value * curvature_value * solid_weights[face_index] 
                          * mesh.voronoi_face_areas[face_index] *  surface_tension_coeff  / dist / theta / face_density;
-            
             }
          }
 
@@ -224,7 +267,15 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
          rhs[i] -= solid_weights[face_index] * face_velocities[face_index] * sign * mesh.voronoi_face_areas[face_index];
 
          // Debugging check for good measure.
-         assert ( rhs[i] == rhs[i] );
+         if(rhs[i] != rhs[i]) {
+            std::cout << "Failed comparison: " << rhs[i] << std::endl;
+            std::cout << "Sign: " << sign << std::endl;
+            std::cout << "Solidweight: " << solid_weights[face_index] << std::endl;
+            std::cout << "FaceVel: " << face_velocities[face_index] << std::endl;
+            std::cout << "VorArea: " << mesh.voronoi_face_areas[face_index] << std::endl;
+         }
+         assert ( !std::isnan(rhs[i]) && std::isfinite(rhs[i]) );
+         
 
       }
 
@@ -300,8 +351,9 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
                double sign_value = dot((Vec3f)curvature_normal, outward_vector) > 0 ? +1 : -1;
 
                p0 += sign_value * curvature_value * surface_tension_coeff;
+               assert ( !std::isnan(p0) && std::isfinite(p0) );
             }
-            theta = max(theta_clamp, std::abs(phi1) / (std::abs(phi1) + std::abs(phi0)));
+            theta = max(theta_clamp, std::fabs(phi1) / (std::fabs(phi1) + std::fabs(phi0)));
             face_density = densities[region1];
          }
          else if(isFS1) 
@@ -317,9 +369,10 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
                double sign_value = dot((Vec3f)curvature_normal, outward_vector) > 0 ? +1 : -1;
 
                p0 += sign_value * curvature_value * surface_tension_coeff;
+               assert ( !std::isnan(p0) && std::isfinite(p0) );
             
             }
-            theta = max(theta_clamp, std::abs(phi0) / (std::abs(phi0) + std::abs(phi1)));
+            theta = max(theta_clamp, std::fabs(phi0) / (std::fabs(phi0) + std::fabs(phi1)));
             face_density = densities[region0];
          }
          else { // Neither side is a free surface.
@@ -327,7 +380,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
 
             if(region0 != region1) { // There's an interface between the two regions
                //Multiphase ghost fluid again, compute the interpolated density.
-                float interface_theta = std::abs(phi0) / (std::abs(phi0) + std::abs(phi1));
+                float interface_theta = std::fabs(phi0) / (std::fabs(phi0) + std::fabs(phi1));
                interface_theta = clamp(interface_theta, 0.01f, 0.99f);
                face_density = interface_theta  * densities[region0] + (1-interface_theta )*densities[region1];
 
@@ -344,7 +397,7 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
                   double sign_value = dot((Vec3f)curvature_normal, outward_vector) > 0 ? +1 : -1;
                   
                   p0 += sign_value * curvature_value * surface_tension_coeff;
-
+                  assert ( !std::isnan(p0) && std::isfinite(p0) );
                }
             }
             else { // It's all one fluid so do nothing special.
@@ -358,13 +411,21 @@ std::vector<double> pressure_solve_multi( TetMesh& mesh,
          dist = max( dist, 1e-7f );
 
          // Compute and subtract the discrete gradient.
-         face_velocities[i] -= (float)(p1 - p0) / dist /  theta / face_density; 
+         face_velocities[i] -= (float)(p1 - p0) / dist /  theta / face_density;
+         
+         // Make sure we came out with a valid velocity.
+         assert(face_velocities[i] == face_velocities[i]);
       }
       else 
       {  
          // Just set this to zero for safety -> Will be overwritten by extrapolation.
          face_velocities[i] = 0.0f;
       }
+   }
+
+   for(size_t i = 0; i < face_velocities.size(); ++i) {
+      if( std::isnan(face_velocities[i]) || !std::isfinite(face_velocities[i]) )
+         std::cout << "Face: " << i << " velocity: " << face_velocities[i] << std::endl;
    }
 
    return pressure;

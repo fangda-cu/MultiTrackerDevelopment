@@ -554,6 +554,8 @@ void NonDestructiveTriMesh::clear_deleted_triangles( std::vector<Vec2st>* defrag
     std::vector<Vec2i> new_labels;
     new_labels.resize(new_tris.size());
     
+    assert(defragged_triangle_map != NULL);
+
     for (size_t i = 0; i < defragged_triangle_map->size(); i++)
     {
         new_labels[defragged_triangle_map->at(i)[1]] = m_triangle_labels[defragged_triangle_map->at(i)[0]];

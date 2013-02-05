@@ -350,7 +350,7 @@ double estimated_max_curvature(const SurfTrack& surf, size_t vertex) {
     double eigenvalues[2];
     double work[10];
     LAPACK::get_eigen_decomposition( &n, shapeOperator.a, &n, eigenvalues, work, &lwork, &info ); 
-    double max_curvature = max(abs(eigenvalues[0]), abs(eigenvalues[1]));
+    double max_curvature = max(std::fabs(eigenvalues[0]), std::fabs(eigenvalues[1]));
     
     return max_curvature;
     

@@ -23,7 +23,11 @@ simplex_intersection1d(int k,
                        double* alpha2)
 {
     assert(1<=k && k<=2);
-    assert(alpha0 && alpha1 && alpha2);
+    assert(alpha0 != NULL && alpha1 != NULL && alpha2!= NULL );
+    
+    if(alpha0 == NULL || alpha1 == NULL || alpha2 == NULL) //prevent null pointer warning
+       return -1;
+    
     if(k==1){
         if(x1[0]<x2[0]){
             if(x0[0]<x1[0]) return 0;
@@ -949,4 +953,3 @@ simplex_intersection4d(int k,
             return -1; // should never get here
     }
 }
-

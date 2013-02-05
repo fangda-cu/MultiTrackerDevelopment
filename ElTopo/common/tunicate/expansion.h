@@ -2,16 +2,15 @@
 #define EXPANSION_H
 
 // Released into the public-domain by Robert Bridson, 2009.
+// Modified by Tyson Brochu, 2011.
 // Simple functions for manipulating multiprecision floating-point
 // expansions, with simplicity favoured over speed.
 
-#include <cstddef>
+#include <commonoptions.h>
 #include <vector>
 
-// The basic type is a vector of *increasing* and *nonoverlapping* doubles,
-// apart from allowed zeroes anywhere.
-//typedef std::vector<double> expansion;
-
+// The basic type is essentially a vector of *increasing* and 
+// *nonoverlapping* doubles, apart from allowed zeroes anywhere.
 
 class expansion;
 
@@ -84,10 +83,6 @@ bool equals( const expansion& a, const expansion& b );
 void
 print_full( const expansion& e );
 
-void print_binary( const expansion& e );
-
-long get_exponent( double x );
-
 
 // ----------------------------------------------------
 
@@ -101,10 +96,6 @@ public:
     expansion()
     : v(0)
     {}
-    
-    //   explicit expansion( std::size_t n )
-    //   : std::vector<double>(n)
-    //   {}
     
     explicit expansion( double val )
     : v(1, val)

@@ -1,7 +1,7 @@
 
 frame_rate 10.0
-sim_dx 0.4
-surface_dx 0.4
+sim_dx 0.25
+surface_dx 0.25
 
 
 trimesh
@@ -27,13 +27,13 @@ tetgen_max_radius_edge_ratio 1.75
 
 null_space_smoothing 1 
 eigenvalue_rank_ratio 1.0
-subdivision_scheme midpoint
+subdivision_scheme butterfly
 
 free_surface 1
 remesh 1
 seed_at_solid 1
 allow_solid_overlap 0
-volume_correction 0
+volume_correction 1
 surface_tension_coefficient 0.0
 gravity_force [-1.0 0.0 0.0]
 

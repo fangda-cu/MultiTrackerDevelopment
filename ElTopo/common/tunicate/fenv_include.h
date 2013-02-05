@@ -26,6 +26,10 @@ inline void fesetround(unsigned int choice) {
   _controlfp(choice, _MCW_RC);
 }
 
+inline int fegetround() {
+   unsigned int answer = _controlfp(0, _MCW_RC);
+   return (int)answer;
+}
 #endif
 
 #endif

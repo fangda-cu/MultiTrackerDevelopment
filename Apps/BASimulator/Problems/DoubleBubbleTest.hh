@@ -61,8 +61,9 @@ public:
   void setupScene8(); // Reauleux tetrahedron test VIIM figure 18
   void setupScene9(); // Normal motion VIIM figure 20
   void setupScene10(); // Normal motion with cyclic speed relation VIIM figure 21
-  
-  void setupScene11();  // MCF example demonstrating pinching
+  void setupScene11();  // toomah debugging
+
+  void setupScene12();  // MCF example demonstrating pinching
 
   void s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out);
   

@@ -154,6 +154,11 @@ void el_topo_static_operations( const ElTopoMesh* inputs,
     outputs->num_triangles = ElTopo::to_int(surface_tracker.m_mesh.num_triangles());
     outputs->triangles = (int*) malloc( 3 * (outputs->num_triangles) * sizeof(int) );
     
+    if(outputs->triangles == NULL || outputs->vertex_masses == NULL || outputs->vertex_locations == NULL) {
+       std::cout << "Null pointer error.\n";
+       exit(-1);
+    }
+
     for ( int i = 0; i < outputs->num_triangles; ++i )
     {
         const ElTopo::Vec3st& curr_tri = surface_tracker.m_mesh.get_triangle(i); 
@@ -247,6 +252,10 @@ void el_topo_integrate( const ElTopoMesh* inputs,
     //
     
     *out_vertex_locations = (double*) malloc( 3 * inputs->num_vertices * sizeof(double) );
+    if(*out_vertex_locations == NULL) {
+       std::cout << "Null ptr error.\n";
+       exit(-1);
+    }
     for ( int i = 0; i < inputs->num_vertices; ++i )
     {
         const ElTopo::Vec3d& pos = dynamic_surface.get_position(i);

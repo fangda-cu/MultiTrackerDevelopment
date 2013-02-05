@@ -20,7 +20,7 @@
 // Global externs
 // ---------------------------------------------------------
 
-extern bool tunicate_verbose;   
+
 extern bool simplex_verbose;
 
 
@@ -1343,7 +1343,6 @@ void CollisionPipeline::detect_collisions( size_t edge_index,
     double s0, s1, s2, s3, rel_disp;
     Vec3d normal;
     
-    tunicate_verbose = true;
     
     simplex_verbose = true;
     
@@ -1437,7 +1436,7 @@ void CollisionPipeline::detect_collisions( size_t edge_index,
     }
     
     
-    tunicate_verbose = false;
+    
     simplex_verbose = false;
     
     // ------
