@@ -235,10 +235,10 @@ SurfTrack::~SurfTrack()
 ///
 // ---------------------------------------------------------
 
-size_t SurfTrack::add_triangle( const Vec3st& t )
+size_t SurfTrack::add_triangle( const Vec3st& t, const Vec2i& label )
 {
-    size_t new_triangle_index = m_mesh.nondestructive_add_triangle( t );
-    
+    size_t new_triangle_index = m_mesh.nondestructive_add_triangle( t, label );
+
     assert( t[0] < get_num_vertices() );
     assert( t[1] < get_num_vertices() );
     assert( t[2] < get_num_vertices() );
@@ -416,14 +416,15 @@ void SurfTrack::defrag_mesh( )
                 for ( size_t t = 0; t < inc_tris.size(); ++t )
                 {
                     Vec3st triangle = m_mesh.get_triangle( inc_tris[t] );
-                    
+                    Vec2i tri_label = m_mesh.get_triangle_label(inc_tris[t]);
+
                     assert( triangle[0] == i || triangle[1] == i || triangle[2] == i );
                     if ( triangle[0] == i ) { triangle[0] = j; }
                     if ( triangle[1] == i ) { triangle[1] = j; }
                     if ( triangle[2] == i ) { triangle[2] = j; }        
                     
                     remove_triangle(inc_tris[t]);       // mark the triangle deleted
-                    add_triangle(triangle);             // add the updated triangle
+                    add_triangle(triangle, tri_label);  // add the updated triangle
                 }
                 
                 ++j;

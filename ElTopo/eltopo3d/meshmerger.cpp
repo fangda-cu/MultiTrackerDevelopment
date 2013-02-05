@@ -444,50 +444,43 @@ bool MeshMerger::zipper_edges( size_t edge_index_a, size_t edge_index_b )
    //
 
    std::vector<size_t> created_triangles;
-   size_t new_index = m_surf.add_triangle( new_triangles[0] );
-   m_surf.m_mesh.set_triangle_label(new_index, label_tunnel);
+   size_t new_index = m_surf.add_triangle( new_triangles[0], label_tunnel );
+   
    m_surf.m_dirty_triangles.push_back( new_index );
    created_triangles.push_back(new_index);
    created_triangle_labels.push_back(label_tunnel);
 
-   new_index = m_surf.add_triangle( new_triangles[1] );
-   m_surf.m_mesh.set_triangle_label(new_index, label_tunnel);
+   new_index = m_surf.add_triangle( new_triangles[1], label_tunnel );
    m_surf.m_dirty_triangles.push_back( new_index );
    created_triangles.push_back(new_index);
    created_triangle_labels.push_back(label_tunnel);
 
-   new_index = m_surf.add_triangle( new_triangles[2] );
-   m_surf.m_mesh.set_triangle_label(new_index, label_tunnel);
+   new_index = m_surf.add_triangle( new_triangles[2], label_tunnel );
    m_surf.m_dirty_triangles.push_back( new_index );
    created_triangles.push_back(new_index);
    created_triangle_labels.push_back(label_tunnel);
 
-   new_index = m_surf.add_triangle( new_triangles[3] );
-   m_surf.m_mesh.set_triangle_label(new_index, label_tunnel);
+   new_index = m_surf.add_triangle( new_triangles[3], label_tunnel );
    m_surf.m_dirty_triangles.push_back( new_index );
    created_triangles.push_back(new_index);
    created_triangle_labels.push_back(label_tunnel);
 
-   new_index = m_surf.add_triangle( new_triangles[4] );
-   m_surf.m_mesh.set_triangle_label(new_index, label_tunnel);
+   new_index = m_surf.add_triangle( new_triangles[4], label_tunnel );
    m_surf.m_dirty_triangles.push_back( new_index );
    created_triangles.push_back(new_index);
    created_triangle_labels.push_back(label_tunnel);
 
-   new_index = m_surf.add_triangle( new_triangles[5] );
-   m_surf.m_mesh.set_triangle_label(new_index, label_tunnel);
+   new_index = m_surf.add_triangle( new_triangles[5], label_tunnel );
    m_surf.m_dirty_triangles.push_back( new_index );
    created_triangles.push_back(new_index);
    created_triangle_labels.push_back(label_tunnel);
 
-   new_index = m_surf.add_triangle( new_triangles[6] );
-   m_surf.m_mesh.set_triangle_label(new_index, label_tunnel);
+   new_index = m_surf.add_triangle( new_triangles[6], label_tunnel );
    m_surf.m_dirty_triangles.push_back( new_index );
    created_triangles.push_back(new_index);
    created_triangle_labels.push_back(label_tunnel);
 
-   new_index = m_surf.add_triangle( new_triangles[7] );
-   m_surf.m_mesh.set_triangle_label(new_index, label_tunnel);
+   new_index = m_surf.add_triangle( new_triangles[7], label_tunnel );
    m_surf.m_dirty_triangles.push_back( new_index );
    created_triangles.push_back(new_index);
    created_triangle_labels.push_back(label_tunnel);

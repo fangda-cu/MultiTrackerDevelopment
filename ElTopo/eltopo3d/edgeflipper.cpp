@@ -452,21 +452,14 @@ bool EdgeFlipper::flip_edge( size_t edge,
     flip.m_deleted_tris.push_back(tri0);
     flip.m_deleted_tris.push_back(tri1);
     
-    size_t new_triangle_index_0 = m_surf.add_triangle( new_triangle0 );
-    size_t new_triangle_index_1 = m_surf.add_triangle( new_triangle1 );
+    // the old label carries over to the new triangle
+    size_t new_triangle_index_0 = m_surf.add_triangle( new_triangle0, new_label_0 );
+    size_t new_triangle_index_1 = m_surf.add_triangle( new_triangle1, new_label_1 );
     flip.m_created_tris.push_back(new_triangle_index_0);
     flip.m_created_tris.push_back(new_triangle_index_1);
     flip.m_created_tri_data.push_back(new_triangle0);
     flip.m_created_tri_data.push_back(new_triangle1);
-    
-    ////////////////////////////////////////////////////////////
-    // FD 20121126
-    //
-    // the old label carries over to the new triangle
-    //
-    m_surf.m_mesh.set_triangle_label(new_triangle_index_0, new_label_0);
-    m_surf.m_mesh.set_triangle_label(new_triangle_index_1, new_label_1);
-  
+   
     flip.m_created_tri_labels.push_back(new_label_0);
     flip.m_created_tri_labels.push_back(new_label_1);
     

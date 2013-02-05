@@ -458,16 +458,7 @@ bool MeshCutter::perform_pull_apart(const std::vector<size_t>& boundary_verts, c
   
   for ( size_t i = 0; i < triangles_to_add.size(); ++i )
   {
-    size_t new_tri = m_surf.add_triangle( triangles_to_add[i] );
-
-    ////////////////////////////////////////////////////////////
-    // FD 20121126
-    //
-    // write the labels for the new triangles
-    //
-    m_surf.m_mesh.set_triangle_label(new_tri, triangle_labels[i]);
-    
-    ////////////////////////////////////////////////////////////
+    size_t new_tri = m_surf.add_triangle( triangles_to_add[i], triangle_labels[i] );
     
     history.m_created_tris.push_back(new_tri);
     history.m_created_tri_data.push_back(triangles_to_add[i]);

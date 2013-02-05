@@ -499,8 +499,7 @@ bool FaceSplitter::split_face( size_t face, size_t& result_vertex, bool specify_
   std::vector<size_t> created_tris;
   for(size_t i = 0; i < created_tri_data.size(); ++i) {
     //add the triangle
-    size_t newtri0_id = m_surf.add_triangle( created_tri_data[i] );
-    m_surf.m_mesh.set_triangle_label(newtri0_id, created_tri_label[i]);
+    size_t newtri0_id = m_surf.add_triangle( created_tri_data[i], created_tri_label[i] );
     
     //record the data created
     created_tris.push_back(newtri0_id);

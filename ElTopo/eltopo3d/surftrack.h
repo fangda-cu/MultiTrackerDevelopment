@@ -487,7 +487,7 @@ public:
     
     /// Add a triangle to the surface.  Update the underlying TriMesh and acceleration grid. 
     ///
-    size_t add_triangle(const Vec3st& t);
+    size_t add_triangle(const Vec3st& t, const Vec2i& label);
     
     /// Remove a triangle from the surface.  Update the underlying TriMesh and acceleration grid. 
     ///

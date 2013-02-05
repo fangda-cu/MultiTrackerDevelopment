@@ -225,8 +225,7 @@ bool MeshPincher::pull_apart_vertex( size_t vertex_index, const std::vector< Tri
     
     for ( size_t i = 0; i < triangles_to_add.size(); ++i )
     {
-        size_t new_tri_ind = m_surf.add_triangle( triangles_to_add[i] );
-        m_surf.m_mesh.set_triangle_label( new_tri_ind, triangle_labels_to_add[i] );
+        size_t new_tri_ind = m_surf.add_triangle( triangles_to_add[i], triangle_labels_to_add[i] );
     }
     
     for ( size_t i = 0; i < triangles_to_delete.size(); ++i )

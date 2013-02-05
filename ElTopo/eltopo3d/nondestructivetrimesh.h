@@ -141,7 +141,7 @@ public:
     
     /// Add a triangle to the tris structure, update connectivity
     ///
-    size_t nondestructive_add_triangle(const Vec3st& tri);
+    size_t nondestructive_add_triangle(const Vec3st& tri, const Vec2i& label);
     
     /// Mark a triangle as deleted without actually changing the data structures
     ///

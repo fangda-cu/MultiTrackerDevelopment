@@ -931,20 +931,15 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
     if ( m_surf.m_verbose ) { std::cout << "adding updated triangle: " << new_triangle << std::endl; }
 
-    size_t new_triangle_index = m_surf.add_triangle( new_triangle );
-    collapse.m_created_tris.push_back( new_triangle_index );
-    collapse.m_created_tri_data.push_back(new_triangle);
-    
-    ////////////////////////////////////////////////////////////
-    // FD 20121126
-    //
     // the old label carries over to the new triangle.
     // no need to test for orientation because the new triangle
     // generation code above does not change orientation.
     //
     Vec2i label = m_surf.m_mesh.get_triangle_label(triangles_incident_to_vertex[i]);
-    
-    m_surf.m_mesh.set_triangle_label(new_triangle_index, label);
+
+    size_t new_triangle_index = m_surf.add_triangle( new_triangle, label );
+    collapse.m_created_tris.push_back( new_triangle_index );
+    collapse.m_created_tri_data.push_back(new_triangle);
     collapse.m_created_tri_labels.push_back(label);
     
     ////////////////////////////////////////////////////////////

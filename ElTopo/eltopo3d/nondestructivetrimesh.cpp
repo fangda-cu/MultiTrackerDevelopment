@@ -143,7 +143,7 @@ void NonDestructiveTriMesh::nondestructive_remove_triangle(size_t tri)
 ///
 // --------------------------------------------------------
 
-size_t NonDestructiveTriMesh::nondestructive_add_triangle( const Vec3st& tri )
+size_t NonDestructiveTriMesh::nondestructive_add_triangle( const Vec3st& tri, const Vec2i& label )
 {
     assert( tri[0] < m_vertex_to_edge_map.size() );
     assert( tri[1] < m_vertex_to_edge_map.size() );
@@ -160,7 +160,7 @@ size_t NonDestructiveTriMesh::nondestructive_add_triangle( const Vec3st& tri )
     //  function argument because we want to minimize changes
     //  to El Topo)
     //
-    m_triangle_labels.push_back(Vec2i(-1, -1));
+    m_triangle_labels.push_back(label);
     
     ////////////////////////////////////////////////////////////
     

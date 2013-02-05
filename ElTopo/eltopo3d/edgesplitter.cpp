@@ -693,8 +693,7 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   for(size_t i = 0; i < created_tri_data.size(); ++i) {
 
     //add the triangle, with the same old label
-    size_t newtri0_id = m_surf.add_triangle( created_tri_data[i] );
-    m_surf.m_mesh.set_triangle_label(newtri0_id, created_tri_label[i]);
+    size_t newtri0_id = m_surf.add_triangle( created_tri_data[i], created_tri_label[i] );
     
     //record the data created
     created_tris.push_back(newtri0_id);
