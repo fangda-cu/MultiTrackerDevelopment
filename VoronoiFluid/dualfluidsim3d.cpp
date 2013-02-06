@@ -1445,14 +1445,13 @@ void DualFluidSim3D::advance_surface( float dt )
    surface_tracker->assert_no_bad_labels();
    
    surface_tracker->improve_mesh();
-   //surface_tracker->snap_mesh();
-   //surface_tracker->improve_mesh();
+   surface_tracker->topology_changes();
    
    surface_tracker->assert_no_bad_labels();
-   
-   //surface_tracker->topology_changes();
-   //surface_tracker->assert_no_bad_labels();
       
+
+   surface_tracker->assert_no_bad_labels();
+
    // El Topo: surface advection
 
    Vec3f box_centre = 0.5f * ( solid_low + solid_high );

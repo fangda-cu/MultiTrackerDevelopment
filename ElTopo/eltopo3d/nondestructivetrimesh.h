@@ -216,10 +216,6 @@ public:
     /// 
     inline bool is_edge_nonmanifold(size_t e) const { return m_edge_to_triangle_map[e].size() > 2; }
 
-
-    ////////////////////////////////////////////////////////////
-    // FD 20130109
-    //
     /// Query triangle-vertex incidence
     ///
     inline static bool triangle_contains_vertex( const Vec3st & tri, size_t v );
@@ -307,23 +303,13 @@ public:
     ///
     std::vector<Vec3st> m_triangle_to_edge_map; 
     
-    ////////////////////////////////////////////////////////////
-    // FD 20121126
-    //
     // Face labels, for the multiphase extension
     //
     std::vector<Vec2i> m_triangle_labels;
     
-    ////////////////////////////////////////////////////////////
-    
-    ////////////////////////////////////////////////////////////
-    // FD 20121229
-    //
     // Vertex constraint label
     //
     std::vector<bool> m_vertex_constraint_labels;
-    
-    ////////////////////////////////////////////////////////////
     
     /// List of triangles: the fundamental data
     ///
