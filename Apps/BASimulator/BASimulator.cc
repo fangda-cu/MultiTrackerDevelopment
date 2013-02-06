@@ -1294,6 +1294,8 @@ int main(int argc, char** argv)
 #ifdef HAVE_PETSC
     PetscUtils::initializePetsc(&argc, &argv);
 #endif // HAVE_PETSC
+   
+
     // Generate a directory name with the date and time
     time(&g_rawtime);
     g_timeinfo = localtime(&g_rawtime);
@@ -1301,6 +1303,7 @@ int main(int argc, char** argv)
     std::cout << "Output dir: " << outputdirectory << std::endl;
     CreateProblemVector();
     atexit(cleanup);
+    
     if (parseCommandLine(argc, argv) < 0)
         return -1;
 
