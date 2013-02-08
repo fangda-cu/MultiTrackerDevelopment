@@ -11,11 +11,11 @@
 #include <cstdlib>
 #include <ctime>
 
-namespace ElTopo {
-
 #ifndef M_PI
 const double M_PI = 3.1415926535897932384626433832795;
 #endif
+
+namespace ElTopo {
 
 #ifdef _MSC_VER
 #undef min

@@ -14,6 +14,9 @@ using namespace ElTopo;
 
 namespace Gluvi{
 
+
+   bool taking_screenshot = false;
+
 Target3D::
 Target3D(float target_[3], float dist_, float heading_, float pitch_, float fovy_, float near_clip_factor_, float far_clip_factor_)
    : dist(dist_), heading(heading_), pitch(pitch_),

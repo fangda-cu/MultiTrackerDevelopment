@@ -695,7 +695,7 @@ void DoubleBubbleTest::beforeEndStep()
   Scalar current_t = getTime();
   
   if (m_active_scene == 7)
-  {
+  { //Enright test
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
       Vec3d v;
@@ -723,7 +723,8 @@ void DoubleBubbleTest::beforeEndStep()
       shell->setVertexVelocity(*vit, v);
       shell->setVertexPosition(*vit, x + v * dt);
     }  
-  } else if (m_active_scene == 9 || m_active_scene == 10 || m_active_scene == 11)
+  }  //normal flow examples
+  else if (m_active_scene == 9 || m_active_scene == 10 || m_active_scene == 11)
   {
     static Scalar speeds_scene9[3][3] = 
     {
@@ -831,6 +832,8 @@ void DoubleBubbleTest::s7_enright_velocity(double t, const Vec3d & pos, Vec3d & 
   
   out *= sin(M_PI * t * 2 / 3);    // modulate with a period of 3
 }
+
+
 
 void DoubleBubbleTest::AfterStep()
 {

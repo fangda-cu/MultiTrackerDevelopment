@@ -19,15 +19,15 @@ struct ParseTree
     std::map<std::string, ParseTree> branches;
     std::map<std::string, double> numbers;
     std::map<std::string, std::string> strings;
-    std::map<std::string, Array1d> vectors;
+    std::map<std::string, ElTopo::Array1d> vectors;
     
     const ParseTree* get_branch(const std::string& name) const;
     bool get_number(const std::string& name, double& result) const;
     bool get_int(const std::string& name, int& result) const;
     bool get_string(const std::string& name, std::string& result) const;
-    const Array1d* get_vector(const std::string& name) const;
-    bool get_vec2d(const std::string& name, Vec2d& v) const;
-    bool get_vec3d(const std::string& name, Vec3d& v) const;
+    const ElTopo::Array1d* get_vector(const std::string& name) const;
+    bool get_vec2d(const std::string& name, ElTopo::Vec2d& v) const;
+    bool get_vec3d(const std::string& name, ElTopo::Vec3d& v) const;
     
     bool remove_first_matching_branch( const std::string& name );
     
