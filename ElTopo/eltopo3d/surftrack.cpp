@@ -212,6 +212,8 @@ m_defragged_vertex_map()
         m_allow_non_manifold = false;
     }
     
+    assert_no_bad_labels();
+
 }
 
 // ---------------------------------------------------------
@@ -858,6 +860,9 @@ void SurfTrack::topology_changes( )
 void SurfTrack::assert_no_bad_labels()
 {
    for(size_t i = 0; i < m_mesh.m_triangle_labels.size(); ++i) {
+      if(m_mesh.triangle_is_deleted(i)) //skip dead tris.
+         continue;
+
       Vec2i label = m_mesh.get_triangle_label(i);
       assert(label[0] != -1 && "Uninitialized label");
       assert(label[1] != -1 && "Uninitialized label");

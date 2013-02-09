@@ -87,13 +87,12 @@ m_velocities(0)
     {
         m_masses.resize( get_num_vertices(), 1.0 );
     }
-    
-    m_mesh.set_num_vertices( get_num_vertices() );   
-    m_mesh.replace_all_triangles( triangles );
-    
+
     assert(triangles.size() == labels.size());
 
-    m_mesh.m_triangle_labels = labels;
+    m_mesh.set_num_vertices( get_num_vertices() );   
+    m_mesh.replace_all_triangles( triangles, labels );
+    
 
     // Some compilers worry about using "this" in the initialization list, so initialize it here
     m_collision_pipeline = new CollisionPipeline( *this, *m_broad_phase, in_friction_coefficient );

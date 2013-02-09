@@ -43,6 +43,8 @@
 #include <vector>
 #include <queue>
 
+#include <direct.h>
+
 // common
 #include <array2.h>
 #include <ccd_wrapper.h>
@@ -1050,8 +1052,9 @@ namespace {
             
             if ( dt == 0.0 ) { dt = 1.0; }
             
+            std::vector<Vec2i> dummy_labels(tris.size(), Vec2i(0,1));
             g_surf->m_mesh.clear();
-            g_surf->m_mesh.replace_all_triangles( tris );
+            g_surf->m_mesh.replace_all_triangles( tris, dummy_labels );
             g_surf->defrag_mesh();      
             
             std::cout << "integrating" << std::endl;
@@ -1481,8 +1484,9 @@ namespace {
         std::cout << "Output path: " << g_output_path << std::endl;
         
         char mkdir_command[1024];
-        sprintf( mkdir_command, "mkdir -p %s", g_output_path );
-        system(mkdir_command);
+        sprintf( mkdir_command, "mkdir %s", g_output_path );
+        //system(mkdir_command);
+        _mkdir(g_output_path);
                 
     }
     
@@ -1546,6 +1550,9 @@ namespace {
         std::vector<Vec2i> labels(script_init.triangles.size(), Vec2i(0,1));
         g_surf = new SurfTrack( script_init.vertices, script_init.triangles, labels, script_init.masses, script_init.surf_track_params );   
         
+        std::vector<Vec3d> remesh_vels(script_init.vertices.size(), Vec3d(0,0,0));
+        g_surf->set_all_remesh_velocities(remesh_vels);
+
         g_surf->defrag_mesh();
         
         // init driver

@@ -132,7 +132,9 @@ void NonDestructiveTriMesh::nondestructive_remove_triangle(size_t tri)
     
     // Clear t, marking it as deleted
     t[0] = t[1] = t[2] = 0;
-    
+
+    // Mark the labels as invalid, for good measure.
+    m_triangle_labels[tri] = Vec2i(-1,-1);
     
 }
 
@@ -519,8 +521,10 @@ void NonDestructiveTriMesh::clear_deleted_triangles( std::vector<Vec2st>* defrag
 {  
     
     std::vector<Vec3st> new_tris;
+    std::vector<Vec2i> new_labels;
     new_tris.reserve( m_tris.size() );
-    
+    new_labels.reserve( m_triangle_labels.size() );
+
     if ( defragged_triangle_map != NULL )
     {
         for ( size_t i = 0; i < m_tris.size(); ++i )
@@ -528,6 +532,7 @@ void NonDestructiveTriMesh::clear_deleted_triangles( std::vector<Vec2st>* defrag
             if ( !triangle_is_deleted(i) ) 
             {
                 new_tris.push_back( m_tris[i] );
+                new_labels.push_back( m_triangle_labels[i] );
                 Vec2st map_entry(i, new_tris.size()-1);
                 defragged_triangle_map->push_back( map_entry );
             }
@@ -540,31 +545,13 @@ void NonDestructiveTriMesh::clear_deleted_triangles( std::vector<Vec2st>* defrag
             if ( !triangle_is_deleted(i) ) 
             {
                 new_tris.push_back( m_tris[i] );
+                new_labels.push_back( m_triangle_labels[i] );
             }
         }      
     }
     
-    replace_all_triangles( new_tris );
-    
-    ////////////////////////////////////////////////////////////
-    // FD 20121126
-    //
-    // replace the face label data
-    //
-    std::vector<Vec2i> new_labels;
-    new_labels.resize(new_tris.size());
-    
-    assert(defragged_triangle_map != NULL);
-
-    for (size_t i = 0; i < defragged_triangle_map->size(); i++)
-    {
-        new_labels[defragged_triangle_map->at(i)[1]] = m_triangle_labels[defragged_triangle_map->at(i)[0]];
-    }
-    
-    m_triangle_labels = new_labels;
-    
-    ////////////////////////////////////////////////////////////
-
+    replace_all_triangles( new_tris, new_labels );
+   
 }
 
 

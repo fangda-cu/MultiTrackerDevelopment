@@ -157,7 +157,7 @@ public:
     
     /// Set the stored set of triangles to the specified set.
     ///
-    void replace_all_triangles( const std::vector<Vec3st>& new_tris );
+    void replace_all_triangles( const std::vector<Vec3st>& new_tris, const std::vector<Vec2i>& new_labels );
 
     /// Update the number of vertices in the mesh.
     ///
@@ -577,19 +577,11 @@ inline bool NonDestructiveTriMesh::is_vertex_nonmanifold(size_t v) const {
 ///
 // ---------------------------------------------------------
 
-inline void NonDestructiveTriMesh::replace_all_triangles( const std::vector<Vec3st>& new_tris )
+inline void NonDestructiveTriMesh::replace_all_triangles( const std::vector<Vec3st>& new_tris, const std::vector<Vec2i>& new_labels )
 {
     m_tris = new_tris;
+    m_triangle_labels = new_labels;
     
-    ////////////////////////////////////////////////////////////
-    // FD 20121126
-    //
-    // resize the face label data
-    //
-    m_triangle_labels.resize(m_tris.size(), Vec2i(-1, -1));
-    
-    ////////////////////////////////////////////////////////////
-
     update_connectivity( );
 }
 
