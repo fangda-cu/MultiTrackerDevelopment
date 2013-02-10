@@ -2135,7 +2135,7 @@ int main( int argc, char** argv )
    char script_copy[256];
    snprintf( script_copy, 256, "%s/script.txt", g_path );
    char command[256];
-   snprintf( command, 256, "cp %s %s", script_filename, script_copy );
+   snprintf( command, 256, "cp \"%s\" \"%s\"", script_filename, script_copy );
 
    int ok = system( command );
 

@@ -708,10 +708,11 @@ namespace {
             std::cout << "\n\n\n ---------------------------- " << std::endl;
             std::cout << "output path: " << g_output_path << std::endl;
             
-            char mkdir_command[1024];
-            sprintf( mkdir_command, "mkdir -p %s", g_output_path );
-            system(mkdir_command);
-            
+            //char mkdir_command[1024];
+            //sprintf( mkdir_command, "mkdir -p %s", g_output_path );
+            //system(mkdir_command);
+            _mkdir(g_output_path);
+
             run_simulation();
             
             std::cout << "\n -------------- sim done -------------- \n\n\n" << std::endl;
@@ -1512,6 +1513,9 @@ namespace {
         
         if ( script_init.output_path_is_relative )
         {
+           std::cout << "Base path: " << g_base_output_path << std::endl;
+           std::cout << "Relative path: " << script_init.output_path.c_str() << std::endl;
+
             snprintf( g_output_path, 256, "%s/%s", g_base_output_path, script_init.output_path.c_str() );
         }
         else
@@ -1651,8 +1655,11 @@ int main(int argc, char **argv)
     snprintf( script_copy_filename, 256, "%s/aaa-script.txt", g_output_path );
     
     char command[1024];
-    sprintf( command, "cp %s %s", script_filename, script_copy_filename );
-    system(command);
+    sprintf( command, "cp \"%s\" \"%s\"", script_filename, script_copy_filename );
+    printf("Command is: cp \"%s\" \"%s\"", script_filename, script_copy_filename);
+    bool ok = system(command) != 0;
+    if(!ok)
+       printf("System call failed\n");
     
     srand( 1 );
     
