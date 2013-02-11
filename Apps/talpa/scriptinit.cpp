@@ -101,13 +101,33 @@ void ScriptInit::parse_surftrack_parameters( const ParseTree& surftrack_branch )
 void ScriptInit::parse_faceoff( const ParseTree& faceoff_sim_branch )
 {
     double speed;
-    faceoff_sim_branch.get_number( "speed", speed );
-    std::vector<std::vector<double>> speed_matrix(2, std::vector<double>(2, 0));
-    speed_matrix[0][0] = 0;
-    speed_matrix[1][1] = 0;
 
-    speed_matrix[0][1] = speed;
-    speed_matrix[1][0] = -speed;
+    std::vector<std::vector<double>> speed_matrix(region_count, std::vector<double>(region_count, 0));
+    if(faceoff_sim_branch.get_number( "speed", speed ) ) {
+       speed_matrix[0][0] = 0;
+       speed_matrix[1][1] = 0;
+
+       speed_matrix[0][1] = speed;
+       speed_matrix[1][0] = -speed;
+    }
+    else {
+      
+      const Array1d* data = faceoff_sim_branch.get_vector( "speedvector");
+      if(data->size() != region_count * region_count)
+         std::cout << "Error: speed matrix must have length equal to region_count^2\n";
+      for(int i = 0; i < region_count; ++i) {
+         for(int j = 0; j < region_count; ++j) {
+            speed_matrix[i][j] = data->at(i + j*region_count);
+         }
+      }
+      
+      for(int i = 0; i < region_count; ++i) {
+         assert(speed_matrix[i][i] == 0);
+      }
+      //could also check that the matrix is skew-symmetric (opposing values across the diagonal are negative to each other)
+
+    }
+    
     driver = new FaceOffMultiDriver( speed_matrix, Vec3d( -0.25, 0.0, 0.0 ), Vec3d( 0.25, 0.0, 0.0 ), 0.4, 0.2 );
 }
 
@@ -300,15 +320,17 @@ void ScriptInit::parse_sphere( const ParseTree& sphere_branch )
     int is_solid = 0;
     sphere_branch.get_int( "is_solid", is_solid );
     
-    int in_label, out_label;
+    int in_label = 0, out_label = 1; //default to the usual thing.
     sphere_branch.get_int( "in_label", in_label );
-    sphere_branch.get_int( "in_label", out_label );
+    sphere_branch.get_int( "out_label", out_label );
 
     std::vector<Vec3d> sphere_vertices;
     std::vector<Vec3st> sphere_triangles;
-    
+    std::vector<Vec2i> sphere_labels;
+
     create_sphere( sphere_center, sphere_radius, dx, sphere_vertices, sphere_triangles );
-    
+    sphere_labels.resize( sphere_triangles.size(), Vec2i(in_label, out_label) );
+
     std::vector<Vec3d> sphere_velocities( sphere_vertices.size(), Vec3d(0) );
     
     std::vector<double> sphere_masses;
@@ -321,7 +343,7 @@ void ScriptInit::parse_sphere( const ParseTree& sphere_branch )
         sphere_masses.resize( sphere_vertices.size(), std::numeric_limits<double>::infinity() );         
     }
     
-    append_mesh( triangles, vertices, labels, masses, sphere_triangles, sphere_vertices, sphere_masses );
+    append_mesh( triangles, vertices, labels, masses, sphere_triangles, sphere_vertices, sphere_labels, sphere_masses );
 }
 
 // ---------------------------------------------------------
@@ -408,7 +430,7 @@ void ScriptInit::parse_script( const char* filename )
     
     curr_t_specified = tree.get_number( "curr_t", curr_t );
     
-    
+    tree.get_int( "region_count", region_count);
     //
     // File output
     //

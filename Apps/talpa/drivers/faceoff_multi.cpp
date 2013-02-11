@@ -36,6 +36,20 @@
 
 using namespace ElTopo;
 
+#ifdef _MSC_VER
+//work-around for portability
+namespace std
+{
+   inline bool isnan(double d) {
+      return _isnan(d) != 0;
+   }
+   inline bool isfinite(double d) {
+      return _finite(d) != 0;
+   }
+}
+
+#endif
+
 // ---------------------------------------------------------
 ///
 /// Get the eigen decomposition of a 3x3 matrix and return results in descending order of eigenvalue magnitude
@@ -239,10 +253,14 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
             triangle_normals.push_back( surf.get_triangle_normal( i ) );
             triangle_centroids.push_back( (surf.get_position(tris[i][0]) + surf.get_position(tris[i][1]) + surf.get_position(tris[i][2])) / 3 );
             label = surf.m_mesh.get_triangle_label(i);
+
             triangle_labels.push_back( label );
         }
         
-        double switch_speed = speed_matrix[label[0]][label[1]];//(current_t >= 1.0) ? -speed : speed;
+        double switch_speed = 0;
+        if(label[0] >= 0 && label[1] >= 0)
+           switch_speed = speed_matrix[label[0]][label[1]];//(current_t >= 1.0) ? -speed : speed;
+
         triangle_plane_distances.push_back( adaptive_dt * switch_speed );
     }
     
@@ -261,6 +279,7 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
         }
     }
     
+
     //
     // Primary space displacement
     //
@@ -270,11 +289,15 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
         Vec3d normal_dispacement;
         intersection_point( triangle_normals, triangle_plane_distances, triangle_areas, mesh.m_vertex_to_triangle_map[p], normal_dispacement );
         displacements[p] += normal_dispacement;
-        
         //
         // Entropy solution
         //
         
+        if(mag(normal_dispacement) <= 1e-8) //the surface is not moving
+        {
+           continue;
+        }
+
         if ( surf.m_mesh.m_vertex_to_triangle_map[p].empty() )
         {
             continue;
@@ -330,9 +353,9 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
         double length = sum_mu_l / sum_mu;
         
         displacements[p] = length * normal_dispacement / mag(normal_dispacement);
-        
     }
     
+
     double beta = MeshSmoother::compute_max_timestep_quadratic_solve( surf.m_mesh.get_triangles(), surf.get_positions(), displacements, false );
     
     adaptive_dt *= beta;
@@ -340,9 +363,9 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
     for(size_t i = 0; i < surf.get_num_vertices(); i++)
     {
         new_positions[i] = surf.get_position(i) + beta * displacements[i];
+        assert(!std::isnan(new_positions[i][0]) && !std::isnan(new_positions[i][1]) && !std::isnan(new_positions[i][2]));
     }
-    
-    
+
 }
 
 

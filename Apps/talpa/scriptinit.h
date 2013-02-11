@@ -30,6 +30,7 @@ public:
     end_sim_t( UNINITIALIZED_DOUBLE ),
     curr_t_specified(false),
     curr_t(0.0),
+    region_count(2), 
     vertices(),
     triangles(),
     labels(),
@@ -85,7 +86,8 @@ public:
     
     bool curr_t_specified;
     double curr_t;
-        
+    
+
     // Surface geometry
     // --------
     
@@ -93,7 +95,8 @@ public:
     std::vector<ElTopo::Vec3st> triangles;
     std::vector<ElTopo::Vec2i> labels;
     std::vector<double> masses;
-    
+
+    int region_count;
 
     // SurfTrack
     // --------
