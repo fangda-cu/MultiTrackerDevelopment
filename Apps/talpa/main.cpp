@@ -1551,8 +1551,8 @@ namespace {
         
         
         // init SurfTrack
-        std::vector<Vec2i> labels(script_init.triangles.size(), Vec2i(0,1));
-        g_surf = new SurfTrack( script_init.vertices, script_init.triangles, labels, script_init.masses, script_init.surf_track_params );   
+        //std::vector<Vec2i> labels(script_init.triangles.size(), Vec2i(0,1));
+        g_surf = new SurfTrack( script_init.vertices, script_init.triangles, script_init.labels, script_init.masses, script_init.surf_track_params );   
         
         std::vector<Vec3d> remesh_vels(script_init.vertices.size(), Vec3d(0,0,0));
         g_surf->set_all_remesh_velocities(remesh_vels);
@@ -1657,7 +1657,7 @@ int main(int argc, char **argv)
     char command[1024];
     sprintf( command, "cp \"%s\" \"%s\"", script_filename, script_copy_filename );
     printf("Command is: cp \"%s\" \"%s\"", script_filename, script_copy_filename);
-    bool ok = system(command) != 0;
+    bool ok = system(command) == 0;
     if(!ok)
        printf("System call failed\n");
     

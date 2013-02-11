@@ -29,10 +29,20 @@ class SurfTrack;
 
 void append_mesh( std::vector<ElTopo::Vec3st>& tris, 
                  std::vector<ElTopo::Vec3d>& verts,
+                 std::vector<ElTopo::Vec2i>& labels,
                  std::vector<double>& masses,
                  const std::vector<ElTopo::Vec3st>& new_tris, 
                  const std::vector<ElTopo::Vec3d>& new_verts,
                  const std::vector<double>& new_masses );
+
+void append_mesh( std::vector<ElTopo::Vec3st>& tris, 
+   std::vector<ElTopo::Vec3d>& verts,
+   std::vector<ElTopo::Vec2i>& labels,
+   std::vector<double>& masses,
+   const std::vector<ElTopo::Vec3st>& new_tris, 
+   const std::vector<ElTopo::Vec3d>& new_verts,
+   const std::vector<ElTopo::Vec2i>& new_labels,
+   const std::vector<double>& new_masses );
 
 void contour_phi( const ElTopo::Vec3d& domain_low, double domain_dx, ElTopo::Array3d& phi, std::vector<ElTopo::Vec3st>& tris, std::vector<ElTopo::Vec3d>& verts );
 

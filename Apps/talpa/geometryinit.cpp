@@ -34,6 +34,7 @@ using namespace ElTopo;
 
 void append_mesh( std::vector<Vec3st>& tris, 
                  std::vector<Vec3d>& verts,
+                 std::vector<Vec2i>& labels,
                  std::vector<double>& masses,
                  const std::vector<Vec3st>& new_tris, 
                  const std::vector<Vec3d>& new_verts,
@@ -49,6 +50,7 @@ void append_mesh( std::vector<Vec3st>& tris,
     for ( size_t i = 0; i < new_tris.size(); ++i )
     {
         tris.push_back( new_tris[i] + Vec3st(old_num_verts) );
+        labels.push_back( Vec2i(0,1) );
     }
     
     for ( size_t i = 0; i < new_masses.size(); ++i )
@@ -58,6 +60,34 @@ void append_mesh( std::vector<Vec3st>& tris,
     
 }
 
+void append_mesh( std::vector<Vec3st>& tris, 
+   std::vector<Vec3d>& verts,
+   std::vector<Vec2i>& labels,
+   std::vector<double>& masses,
+   const std::vector<Vec3st>& new_tris, 
+   const std::vector<Vec3d>& new_verts,
+   const std::vector<Vec2i>& new_labels,
+   const std::vector<double>& new_masses )
+{
+   size_t old_num_verts = verts.size();
+
+   for ( size_t i = 0; i < new_verts.size(); ++i )
+   {
+      verts.push_back( new_verts[i] );
+   }
+
+   for ( size_t i = 0; i < new_tris.size(); ++i )
+   {
+      tris.push_back( new_tris[i] + Vec3st(old_num_verts) );
+      labels.push_back( new_labels[i] );
+   }
+
+   for ( size_t i = 0; i < new_masses.size(); ++i )
+   {
+      masses.push_back( new_masses[i] );
+   }
+
+}
 
 // ---------------------------------------------------------
 ///

@@ -11,7 +11,7 @@
 // Includes
 // ---------------------------------------------------------
 
-#include "faceoff.h"
+#include "faceoff_multi.h"
 
 #include "../geometryinit.h"
 
@@ -76,7 +76,7 @@ namespace {
 // Member function definitions
 // ---------------------------------------------------------
 
-void FaceOffDriver::initialize( const SurfTrack& )
+void FaceOffMultiDriver::initialize( const SurfTrack& )
 {
 }
 
@@ -86,7 +86,7 @@ void FaceOffDriver::initialize( const SurfTrack& )
 ///
 // ---------------------------------------------------------
 
-void FaceOffDriver::compute_quadric_metric_tensor( const std::vector<Vec3d>& triangle_normals, 
+void FaceOffMultiDriver::compute_quadric_metric_tensor( const std::vector<Vec3d>& triangle_normals, 
                                                   const std::vector<double>& triangle_areas, 
                                                   const std::vector<size_t>& incident_triangles,
                                                   Mat33d& quadric_metric_tensor ) 
@@ -139,7 +139,7 @@ void FaceOffDriver::compute_quadric_metric_tensor( const std::vector<Vec3d>& tri
 ///
 // ---------------------------------------------------------
 
-void FaceOffDriver::intersection_point( const std::vector<Vec3d>& triangle_normals, 
+void FaceOffMultiDriver::intersection_point( const std::vector<Vec3d>& triangle_normals, 
                                        const std::vector<double>& triangle_plane_distances,
                                        const std::vector<double>& triangle_areas, 
                                        const std::vector<size_t>& incident_triangles,
@@ -204,7 +204,7 @@ void FaceOffDriver::intersection_point( const std::vector<Vec3d>& triangle_norma
 ///
 // ---------------------------------------------------------
 
-void FaceOffDriver::set_predicted_vertex_positions( const SurfTrack& surf, 
+void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf, 
                                                    std::vector<Vec3d>& new_positions, 
                                                    double current_t, 
                                                    double& adaptive_dt )
@@ -218,24 +218,31 @@ void FaceOffDriver::set_predicted_vertex_positions( const SurfTrack& surf,
     triangle_centroids.reserve(mesh.num_triangles());
     std::vector<double> triangle_plane_distances;
     triangle_plane_distances.reserve(mesh.num_triangles());
-    
+    std::vector<Vec2i> triangle_labels;
+    triangle_labels.reserve(mesh.num_triangles());
+
     const std::vector<Vec3st>& tris = mesh.get_triangles();
     for ( size_t i = 0; i < tris.size(); ++i )
     {
+        Vec2i label;
         if ( tris[i][0] == tris[i][1] )
         {
             triangle_areas.push_back( 0 );
             triangle_normals.push_back( Vec3d(0,0,0) );
             triangle_centroids.push_back( Vec3d(0,0,0) );
+            label = Vec2i(-1,-1);
+            triangle_labels.push_back(label);
         }
         else
         {
             triangle_areas.push_back( surf.get_triangle_area( i ) );
             triangle_normals.push_back( surf.get_triangle_normal( i ) );
             triangle_centroids.push_back( (surf.get_position(tris[i][0]) + surf.get_position(tris[i][1]) + surf.get_position(tris[i][2])) / 3 );
+            label = surf.m_mesh.get_triangle_label(i);
+            triangle_labels.push_back( label );
         }
         
-        double switch_speed = (current_t >= 1.0) ? -speed : speed;
+        double switch_speed = speed_matrix[label[0]][label[1]];//(current_t >= 1.0) ? -speed : speed;
         triangle_plane_distances.push_back( adaptive_dt * switch_speed );
     }
     
@@ -345,7 +352,7 @@ void FaceOffDriver::set_predicted_vertex_positions( const SurfTrack& surf,
 ///
 // ---------------------------------------------------------
 
-double FaceOffDriver::compute_l1_error( const SurfTrack& surf )
+double FaceOffMultiDriver::compute_l1_error( const SurfTrack& surf )
 {
     
     double total_error = 0.0;
@@ -385,7 +392,7 @@ double FaceOffDriver::compute_l1_error( const SurfTrack& surf )
 ///
 // ---------------------------------------------------------
 
-double FaceOffDriver::compute_inf_error( const SurfTrack& surf )
+double FaceOffMultiDriver::compute_inf_error( const SurfTrack& surf )
 {
     
     double max_error = -1.0;
@@ -416,7 +423,7 @@ double FaceOffDriver::compute_inf_error( const SurfTrack& surf )
 namespace ElTopo {
    extern RunStats g_stats;   
 }
-void FaceOffDriver::compute_error( const SurfTrack& surf, double current_t )
+void FaceOffMultiDriver::compute_error( const SurfTrack& surf, double current_t )
 {
     double inf_error = compute_inf_error(surf);
     double l1_error = compute_l1_error(surf);   

@@ -3,7 +3,7 @@
 //  ScriptInit.cpp
 //  Tyson Brochu 2011
 //
-//  Parse a script text file to initialize the simulation and mesh obects.
+//  Parse a script text file to initialize the simulation and mesh objects.
 //
 // ---------------------------------------------------------
 
@@ -11,7 +11,7 @@
 #include "scriptinit.h"
 
 #include "drivers/enrightdriver.h"
-#include "drivers/faceoff.h"
+#include "drivers/faceoff_multi.h"
 #include <fstream>
 #include "geometryinit.h"
 #include <iomesh.h>
@@ -79,6 +79,9 @@ void ScriptInit::parse_surftrack_parameters( const ParseTree& surftrack_branch )
     {
         surf_track_params.m_subdivision_scheme = new ButterflyScheme();
     }
+    else if( strcmp(subdivision_scheme.c_str(), "modified" ) == 0 || strcmp(subdivision_scheme.c_str(), "modified_butterfly" ) == 0) {
+       surf_track_params.m_subdivision_scheme = new ModifiedButterflyScheme();
+    }
     else
     {
         surf_track_params.m_subdivision_scheme = new MidpointScheme();
@@ -95,11 +98,17 @@ void ScriptInit::parse_surftrack_parameters( const ParseTree& surftrack_branch )
 
 // ---------------------------------------------------------
 
-void ScriptInit::parse_faceoff( const ParseTree& faceoeff_sim_branch )
+void ScriptInit::parse_faceoff( const ParseTree& faceoff_sim_branch )
 {
     double speed;
-    faceoeff_sim_branch.get_number( "speed", speed );
-    driver = new FaceOffDriver( speed, Vec3d( -0.25, 0.0, 0.0 ), Vec3d( 0.25, 0.0, 0.0 ), 0.4, 0.2 );
+    faceoff_sim_branch.get_number( "speed", speed );
+    std::vector<std::vector<double>> speed_matrix(2, std::vector<double>(2, 0));
+    speed_matrix[0][0] = 0;
+    speed_matrix[1][1] = 0;
+
+    speed_matrix[0][1] = speed;
+    speed_matrix[1][0] = -speed;
+    driver = new FaceOffMultiDriver( speed_matrix, Vec3d( -0.25, 0.0, 0.0 ), Vec3d( 0.25, 0.0, 0.0 ), 0.4, 0.2 );
 }
 
 // ---------------------------------------------------------
@@ -218,7 +227,7 @@ void ScriptInit::parse_sheet( const ParseTree& sheet_branch )
         sheet_masses.resize( sheet_verts.size(), 1.0 );
     }
     
-    append_mesh( triangles, vertices, masses, sheet_tris, sheet_verts, sheet_masses );
+    append_mesh( triangles, vertices, labels, masses, sheet_tris, sheet_verts, sheet_masses );
     
 }
 
@@ -272,7 +281,7 @@ void ScriptInit::parse_curved_sheet( const ParseTree& sheet_branch )
     
     std::vector<double> sheet_masses( sheet_verts.size(), 1.0 );
     
-    append_mesh( triangles, vertices, masses, sheet_tris, sheet_verts, sheet_masses );
+    append_mesh( triangles, vertices, labels, masses, sheet_tris, sheet_verts, sheet_masses );
     
 }
 
@@ -291,6 +300,10 @@ void ScriptInit::parse_sphere( const ParseTree& sphere_branch )
     int is_solid = 0;
     sphere_branch.get_int( "is_solid", is_solid );
     
+    int in_label, out_label;
+    sphere_branch.get_int( "in_label", in_label );
+    sphere_branch.get_int( "in_label", out_label );
+
     std::vector<Vec3d> sphere_vertices;
     std::vector<Vec3st> sphere_triangles;
     
@@ -308,7 +321,7 @@ void ScriptInit::parse_sphere( const ParseTree& sphere_branch )
         sphere_masses.resize( sphere_vertices.size(), std::numeric_limits<double>::infinity() );         
     }
     
-    append_mesh( triangles, vertices, masses, sphere_triangles, sphere_vertices, sphere_masses );
+    append_mesh( triangles, vertices, labels, masses, sphere_triangles, sphere_vertices, sphere_masses );
 }
 
 // ---------------------------------------------------------
@@ -344,7 +357,7 @@ void ScriptInit::parse_dumbbell( const ParseTree& dumbbell_branch )
     
     std::vector<double> new_masses( new_verts.size(), 1.0 );
     std::vector<Vec3d> new_velocities( new_verts.size(), Vec3d(0,0,0) );
-    append_mesh( triangles, vertices, masses, new_tris, new_verts, new_masses );
+    append_mesh( triangles, vertices, labels, masses, new_tris, new_verts, new_masses );
 }
 
 
@@ -529,7 +542,7 @@ void ScriptInit::parse_script( const char* filename )
             }
         }
                 
-        append_mesh( triangles, vertices, masses, trimesh.get_triangles(), input_vertices, in_masses );        
+        append_mesh( triangles, vertices, labels, masses, trimesh.get_triangles(), input_vertices, in_masses );        
         
         printf("loaded file %s", meshpath.c_str());
     }
@@ -575,7 +588,7 @@ void ScriptInit::parse_script( const char* filename )
             obj_masses.resize( obj_vertices.size(), 1.0 );
         }
                 
-        append_mesh( triangles, vertices, masses, obj_triangles, obj_vertices, obj_masses );
+        append_mesh( triangles, vertices, labels, masses, obj_triangles, obj_vertices, obj_masses );
     }
     
     //
@@ -590,10 +603,10 @@ void ScriptInit::parse_script( const char* filename )
     // Mesh drivers
     //
     
-    const ParseTree* faceoeff_sim_branch = tree.get_branch( "faceoff_simulation" );
-    if ( faceoeff_sim_branch != NULL )
+    const ParseTree* faceoff_sim_branch = tree.get_branch( "faceoff_simulation" );
+    if ( faceoff_sim_branch != NULL )
     {
-        parse_faceoff( *faceoeff_sim_branch );
+        parse_faceoff( *faceoff_sim_branch );
     }
     
     const ParseTree* normal_sim_branch = tree.get_branch( "normal_simulation" );

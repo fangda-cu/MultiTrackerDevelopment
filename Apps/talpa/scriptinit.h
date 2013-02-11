@@ -32,6 +32,7 @@ public:
     curr_t(0.0),
     vertices(),
     triangles(),
+    labels(),
     masses(),
     surf_track_params(),
     driver( NULL ),
@@ -90,6 +91,7 @@ public:
     
     std::vector<ElTopo::Vec3d> vertices;
     std::vector<ElTopo::Vec3st> triangles;
+    std::vector<ElTopo::Vec2i> labels;
     std::vector<double> masses;
     
 
