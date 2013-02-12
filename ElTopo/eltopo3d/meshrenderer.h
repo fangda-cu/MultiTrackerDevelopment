@@ -45,7 +45,7 @@ public:
     render_edges( true ),
     render_fill_triangles( true ),
     render_vertex_rank( false ),
-    smooth_shading( true ),
+    smooth_shading( false ),
     two_sided( true )
     {}
     
@@ -78,7 +78,10 @@ public:
     void render(const std::vector<Vec3d>& xs,
                 const std::vector<Vec3d>& normals,
                 const std::vector<Vec3st>& triangles,
-                const std::vector<Vec2st>& edges );
+                const std::vector<Vec3d>& tri_normals,
+                const std::vector<Vec2st>& edges,
+                const std::vector<int>& ranks,
+                const std::vector<bool>& edge_manifold );
     
     
 };
