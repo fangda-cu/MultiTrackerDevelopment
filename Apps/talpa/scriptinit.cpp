@@ -102,7 +102,7 @@ void ScriptInit::parse_faceoff( const ParseTree& faceoff_sim_branch )
 {
     double speed;
 
-    std::vector<std::vector<double>> speed_matrix(region_count, std::vector<double>(region_count, 0));
+    std::vector<std::vector<double> > speed_matrix(region_count, std::vector<double>(region_count, 0));
     if(faceoff_sim_branch.get_number( "speed", speed ) ) {
        speed_matrix[0][0] = 0;
        speed_matrix[1][1] = 0;

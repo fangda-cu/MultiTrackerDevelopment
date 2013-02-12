@@ -43,7 +43,11 @@
 #include <vector>
 #include <queue>
 
+#ifdef _MSC_VER
 #include <direct.h>
+#else
+#include <sys/stat.h>
+#endif
 
 // common
 #include <array2.h>
@@ -711,7 +715,11 @@ namespace {
             //char mkdir_command[1024];
             //sprintf( mkdir_command, "mkdir -p %s", g_output_path );
             //system(mkdir_command);
+#ifdef _MSC_VER
             _mkdir(g_output_path);
+#else
+            mkdir(g_output_path, 777);
+#endif
 
             run_simulation();
             
@@ -1382,7 +1390,7 @@ namespace {
         //
         // Render the mesh
         //
-                
+        
         mesh_renderer.render(renderable_vertices, 
                              renderable_vertex_normals,
                              renderable_non_solid_triangles,
@@ -1487,7 +1495,11 @@ namespace {
         char mkdir_command[1024];
         sprintf( mkdir_command, "mkdir %s", g_output_path );
         //system(mkdir_command);
+#ifdef _MSC_VER
         _mkdir(g_output_path);
+#else
+        mkdir(g_output_path, 777);
+#endif
                 
     }
     
