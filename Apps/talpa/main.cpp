@@ -147,6 +147,7 @@ std::vector<Vec3st> renderable_non_solid_triangles;
 std::vector<Vec2st> renderable_edges;
 std::vector<int> renderable_ranks;
 std::vector<bool> renderable_edge_manifolds;
+std::vector<Vec2i> renderable_labels;
 
 
 // Local to main.cpp
@@ -778,6 +779,7 @@ namespace {
         renderable_tri_normals.clear();
         renderable_solid_triangles.clear();
         renderable_non_solid_triangles.clear();
+        renderable_labels.clear();
         for ( size_t i = 0; i < mesh_triangles.size(); ++i )
         {
             if ( g_surf->triangle_is_all_solid(i) )
@@ -788,6 +790,7 @@ namespace {
             {
                 renderable_non_solid_triangles.push_back( mesh_triangles[i] );
                 renderable_tri_normals.push_back( g_surf->get_triangle_normal(i));
+                renderable_labels.push_back(g_surf->m_mesh.get_triangle_label(i));
             }
         }
         
@@ -975,6 +978,11 @@ namespace {
         if ( key == 'v' )
         {
             mesh_renderer.render_vertex_rank = !mesh_renderer.render_vertex_rank;
+        }
+        
+        if ( key == 'l' )
+        {
+            mesh_renderer.render_face_labels = !mesh_renderer.render_face_labels;
         }
         
         
@@ -1438,7 +1446,8 @@ namespace {
                              renderable_tri_normals,
                              renderable_edges,
                              renderable_ranks,
-                             renderable_edge_manifolds);
+                             renderable_edge_manifolds,
+                             renderable_labels);
         
         //
         // Render the simulation

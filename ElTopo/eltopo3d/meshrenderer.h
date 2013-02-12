@@ -47,7 +47,8 @@ public:
     render_vertex_rank( false ),
     smooth_shading( false ),
     two_sided( true ),
-    render_nonmanifold_curve(true)
+    render_nonmanifold_curve(true),
+    render_face_labels(false)
     {}
     
     /// Whether to show mesh edges (wireframe)
@@ -74,6 +75,10 @@ public:
     ///    
     bool render_nonmanifold_curve;
     
+    /// Render the face labels
+    ///    
+    bool render_face_labels;
+    
     /// Display the surface in OpenGL using the current options settings
     ///
     void render( const DynamicSurface& surface );
@@ -86,7 +91,8 @@ public:
                 const std::vector<Vec3d>& tri_normals,
                 const std::vector<Vec2st>& edges,
                 const std::vector<int>& ranks,
-                const std::vector<bool>& edge_manifold );
+                const std::vector<bool>& edge_manifold,
+                const std::vector<Vec2i>& labels);
     
     
 };
