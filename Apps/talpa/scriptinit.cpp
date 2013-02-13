@@ -394,6 +394,152 @@ void ScriptInit::parse_sphere( const ParseTree& sphere_branch )
 
 // ---------------------------------------------------------
 
+void ScriptInit::parse_doublebubble( const ParseTree& bubble_branch )
+{
+   
+   //create attached two-bubble scenario, ported from Fang's BASim code.
+
+   std::vector<Vec3d> bubble_vertices;
+   std::vector<Vec3st> bubble_triangles;
+   std::vector<Vec2i> bubble_labels;
+   
+   int N = 20;
+   double r = 2.0;
+
+   Vec3d c1 = Vec3d(0.5, 0.5, 0.5 - r * 0.707);
+   
+   
+   bubble_vertices.push_back(Vec3d(c1 + Vec3d(0, 0, r)));
+
+   for (int j = 0; j < N - 1; j++)
+   {
+      for (int i = 0; i < N * 2; i++)
+      {
+         
+         double theta = (double)i * 2 * M_PI / (N * 2);
+         double alpha = (double)(j + 1) * M_PI / N - M_PI / 2;
+         bubble_vertices.push_back(c1 + r * Vec3d(cos(alpha) * cos(theta), cos(alpha) * sin(theta), -sin(alpha)));
+      }
+   }
+
+   bubble_vertices.push_back(Vec3d(c1 - Vec3d(0, 0, r)));
+   bubble_vertices.push_back(Vec3d(0.5, 0.5, 0.5));
+
+   Vec3d c2 = Vec3d(0.5, 0.5, 0.5 + r * 0.707);
+   
+   bubble_vertices.push_back(Vec3d(c2 - Vec3d(0, 0, r)));
+   for (int j = 0; j < N - 1; j++)
+   {
+      for (int i = 0; i < N * 2; i++)
+      {
+         double theta = (double)i * 2 * M_PI / (N * 2);
+         double alpha = (double)(j + 1) * M_PI / N - M_PI / 2;
+         bubble_vertices.push_back(c2 + r * Vec3d(cos(alpha) * cos(theta), cos(alpha) * sin(theta), sin(alpha)));
+      }
+   }
+   bubble_vertices.push_back( Vec3d(c2 + Vec3d(0, 0, r)));
+
+   
+   
+   for (int j = N / 4; j < N; j++)
+   {
+      for (int i = 0; i < N * 2; i++)
+      {
+         int v0, v1, v2;
+         v0 = (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
+         v1 = (j == 0 ? 0 : 2 * N * (j - 1) + (i + 1) % (N * 2) + 1);
+         v2 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
+         if (!(v0 == v1 || v0 == v2 || v1 == v2))
+         {
+            bubble_triangles.push_back(Vec3st(v0,v1,v2));
+            bubble_labels.push_back(Vec2i(0, 1));
+         }
+
+         v0 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
+         v1 = (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + i + 1);
+         v2 = (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
+         if (!(v0 == v1 || v0 == v2 || v1 == v2))
+         {
+            bubble_triangles.push_back(Vec3st(v0,v1,v2));
+            bubble_labels.push_back(Vec2i(0, 1));
+         }
+      }
+   }
+
+   int offset = 2 * N * (N - 1) + 3;
+   for (int j = N / 4 + 1; j < N; j++)
+   {
+      for (int i = 0; i < N * 2; i++)
+      {
+         int v0, v1, v2;
+         v0 = offset + (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
+         v1 = offset + (j == 0 ? 0 : 2 * N * (j - 1) + (i + 1) % (N * 2) + 1);
+         v2 = offset + (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
+         if (!(v0 == v1 || v0 == v2 || v1 == v2))
+         {
+            bubble_triangles.push_back(Vec3st(v0,v1,v2));
+            bubble_labels.push_back(Vec2i(2, 0));
+         }
+
+         v0 = offset + (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + (i + 1) % (N * 2) + 1);
+         v1 = offset + (j == N - 1 ? 2 * (N - 1) * N + 1 : 2 * N * j + i + 1);
+         v2 = offset + (j == 0 ? 0 : 2 * N * (j - 1) + i + 1);
+         if (!(v0 == v1 || v0 == v2 || v1 == v2))
+         {
+            bubble_triangles.push_back(Vec3st(v0,v1,v2));
+            bubble_labels.push_back(Vec2i(2, 0));
+         }
+      }
+   }
+
+   for (int i = 0; i < N * 2; i++)
+   {
+      int v0, v1, v2;
+      v0 = 2 * N * (N / 4 - 1) + i + 1;
+      v1 = 2 * N * (N / 4 - 1) + (i + 1) % (N * 2) + 1;
+      v2 = offset + 2 * N * (N / 4) + (i + 1) % (N * 2) + 1;
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+         bubble_triangles.push_back(Vec3st(v0,v1,v2));
+         bubble_labels.push_back(Vec2i(2, 0));
+      }
+
+      v0 = offset + 2 * N * (N / 4) + (i + 1) % (N * 2) + 1;
+      v1 = offset + 2 * N * (N / 4) + i + 1;
+      v2 = 2 * N * (N / 4 - 1) + i + 1;
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+         bubble_triangles.push_back(Vec3st(v0,v1,v2));
+         bubble_labels.push_back(Vec2i(2, 0));
+      }
+   }
+
+   for (int i = 0; i < N * 2; i++)
+   {
+      int v0, v1, v2;
+      v0 = 2 * N * (N / 4 - 1) + i + 1;
+      v1 = 2 * (N - 1) * N + 2;
+      v2 = 2 * N * (N / 4 - 1) + (i + 1) % (N * 2) + 1;
+      if (!(v0 == v1 || v0 == v2 || v1 == v2))
+      {
+         bubble_triangles.push_back(Vec3st(v0,v1,v2));
+         bubble_labels.push_back(Vec2i(2, 1));
+      }
+   }
+
+   /*for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+      if (shellObj->vertexIncidentEdges(*vit) == 0)
+         shellObj->deleteVertex(*vit);*/
+
+   std::vector<double> bubble_masses;
+   bubble_masses.resize( bubble_vertices.size(), 1.0 );
+   
+   append_mesh( triangles, vertices, labels, masses, bubble_triangles, bubble_vertices, bubble_labels, bubble_masses );
+}
+
+// ---------------------------------------------------------
+
+
 
 void ScriptInit::parse_dumbbell( const ParseTree& dumbbell_branch )
 {
@@ -554,6 +700,13 @@ void ScriptInit::parse_script( const char* filename )
             snprintf( sphere_name, 256, "sphere%d", sphere_n );
             sphere_branch = tree.get_branch( sphere_name );
         }
+    }
+
+    {
+      const ParseTree * bubble_branch = tree.get_branch("doublebubble");
+      if(bubble_branch != NULL)
+         parse_doublebubble( *bubble_branch );
+      
     }
     
     
