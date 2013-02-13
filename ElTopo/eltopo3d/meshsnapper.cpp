@@ -368,10 +368,10 @@ bool MeshSnapper::snap_edge_pair( size_t edge0, size_t edge1)
    //otherwise, do a split to create a new point which will then be snapped.
       
    size_t snapping_vert0;
-   if(s0 < m_edge_threshold) {
+   if(s0 > 1 - m_edge_threshold) {
       snapping_vert0 = edge_data0[0];
    }
-   else if(s0 > 1 - m_edge_threshold) {
+   else if(s0 < m_edge_threshold) {
       snapping_vert0 = edge_data0[1];
    }
    else {
@@ -383,10 +383,10 @@ bool MeshSnapper::snap_edge_pair( size_t edge0, size_t edge1)
    }
 
    size_t snapping_vert1;
-   if(s2 < m_edge_threshold) {
+   if(s2 > 1 - m_edge_threshold) {
       snapping_vert1 = edge_data1[0];
    }
-   else if(s2 > 1 - m_edge_threshold) {
+   else if(s2 < m_edge_threshold) {
       snapping_vert1 = edge_data1[1];
    }
    else {
@@ -617,22 +617,22 @@ bool MeshSnapper::edge_pair_is_snappable( size_t edge0, size_t edge1, double& cu
    if(current_length < m_surf.m_merge_proximity_epsilon) {
       
       //check for "dimensional drop-down" cases which would lead to snapping two vertices that already share an edge.
-      if(s0 < m_edge_threshold) {
-         if(s2 < m_edge_threshold) {
+      if(s0 > 1 - m_edge_threshold) {
+         if(s2 > 1 - m_edge_threshold) {
             if(m_surf.m_mesh.get_edge_index(edge_data0[0], edge_data1[0]) != m_surf.m_mesh.m_edges.size())
                return false;
          }
-         else if(s2 > 1-m_edge_threshold) {
+         else if(s2 < m_edge_threshold) {
             if(m_surf.m_mesh.get_edge_index(edge_data0[0], edge_data1[1]) != m_surf.m_mesh.m_edges.size())
                return false;
          }
       }
-      else if(s0 > 1-m_edge_threshold) {
-         if(s2 < m_edge_threshold) {
+      else if(s0 < m_edge_threshold) {
+         if(s2 > 1 - m_edge_threshold) {
             if(m_surf.m_mesh.get_edge_index(edge_data0[1], edge_data1[0]) != m_surf.m_mesh.m_edges.size())
                return false;
          }
-         else if(s2 > 1-m_edge_threshold) {
+         else if(s2 < m_edge_threshold) {
             if(m_surf.m_mesh.get_edge_index(edge_data0[1], edge_data1[1]) != m_surf.m_mesh.m_edges.size())
                return false;
          }
@@ -712,7 +712,7 @@ bool MeshSnapper::face_vertex_pair_is_snappable( size_t face, size_t vertex, dou
          m_surf.m_mesh.get_edge_index(face_data[1], vertex) != m_surf.m_mesh.m_edges.size())
          return false;
 
-      if(s0 < m_face_threshold && s2 < m_face_threshold &&
+      if(s0 < m_face_threshold && s1 < m_face_threshold &&
          m_surf.m_mesh.get_edge_index(face_data[2], vertex) != m_surf.m_mesh.m_edges.size())
          return false;
 
