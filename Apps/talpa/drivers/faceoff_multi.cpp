@@ -270,8 +270,8 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
            switch_speed = speed_matrix[label[0]][label[1]];
         
         //flip the direction after some time
-        if(current_t >= 1.0) 
-           switch_speed = -switch_speed;
+       /* if(current_t >= 1.0) 
+           switch_speed = -switch_speed;*/
 
         triangle_plane_distances.push_back( adaptive_dt * switch_speed );
     }

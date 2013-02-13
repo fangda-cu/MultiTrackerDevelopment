@@ -679,6 +679,58 @@ bool read_objfile(NonDestructiveTriMesh &mesh, std::vector<Vec3d> &x, const char
    return true;
 }
 
+bool read_objfile(std::vector<Vec3st> &tris, std::vector<Vec3d> &x, const char *filename_format, ...)
+{
+   va_list ap;
+   va_start(ap, filename_format);
+
+#ifdef _MSC_VER
+   int len=_vscprintf(filename_format, ap) +1;// _vscprintf doesn't count // terminating '\0'
+   char *filename=new char[len];
+   vsprintf(filename, filename_format, ap);
+#else
+   char *filename;
+   vasprintf(&filename, filename_format, ap);
+#endif
+
+   std::ifstream input(filename, std::ifstream::binary);
+
+#ifdef _MSC_VER
+   delete [] filename;
+#else
+   std::free(filename);
+#endif
+
+   va_end(ap);
+
+   if(!input.good()) return false;
+
+   x.clear();
+   tris.clear();
+
+   char line[LINESIZE];
+   std::vector<int> vertex_list;
+   while(input.good()){
+      input.getline(line, LINESIZE);
+      switch(line[0]){
+      case 'v': // vertex data
+         if(line[1]==' '){
+            Vec3d new_vertex;
+            std::sscanf(line+2, "%lf %lf %lf", &new_vertex[0], &new_vertex[1], &new_vertex[2]);
+            x.push_back(new_vertex);
+         }
+         break;
+      case 'f': // face data
+         if(line[1]==' '){
+            read_face_list(line+2, vertex_list);
+            for(int j=0; j<(int)vertex_list.size()-2; ++j)
+               tris.push_back(Vec3st(vertex_list[0], vertex_list[j+1], vertex_list[j+2]));
+         }
+         break;
+      }
+   }
+   return true;
+}
 // ---------------------------------------------------------
 ///
 /// Write mesh in Renderman RIB format.

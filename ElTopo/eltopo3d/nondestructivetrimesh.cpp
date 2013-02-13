@@ -273,7 +273,7 @@ void NonDestructiveTriMesh::set_num_vertices( size_t num_vertices )
         ////////////////////////////////////////////////////////////
         // FD 20130102
         
-        assert(m_vertex_constraint_labels.size() == m_vertex_to_edge_map.size());
+        //assert(m_vertex_constraint_labels.size() == m_vertex_to_edge_map.size());
         
         ////////////////////////////////////////////////////////////
         
