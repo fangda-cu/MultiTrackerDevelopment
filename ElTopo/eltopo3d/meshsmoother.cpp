@@ -191,7 +191,7 @@ double MeshSmoother::compute_max_timestep_quadratic_solve( const std::vector<Vec
 
 // --------------------------------------------------------
 ///
-/// Find a new vertex location using NULL-space smoothing
+/// Find a new vertex location using Null-space smoothing
 ///
 // --------------------------------------------------------
 
@@ -213,7 +213,7 @@ void MeshSmoother::null_space_smooth_vertex( size_t v,
     const std::vector<size_t>& edges = mesh.m_vertex_to_edge_map[v];
     for ( size_t j = 0; j < edges.size(); ++j )
     {
-        if ( mesh.m_edge_to_triangle_map[ edges[j] ].size() == 1 )
+        if ( mesh.m_edge_to_triangle_map[ edges[j] ].size() == 1 ) //boundary edge
         {
             displacement = Vec3d(0,0,0);
             return;
@@ -222,97 +222,139 @@ void MeshSmoother::null_space_smooth_vertex( size_t v,
     
     const std::vector<size_t>& incident_triangles = mesh.m_vertex_to_triangle_map[v];
     
-    std::vector< Vec3d > N;
-    std::vector< double > W;
-    
-    for ( size_t i = 0; i < incident_triangles.size(); ++i )
-    {
-        size_t triangle_index = incident_triangles[i];
-        N.push_back( triangle_normals[triangle_index] );
-        W.push_back( triangle_areas[triangle_index] );
+    std::set<int> labelset;
+    for(size_t i = 0; i < incident_triangles.size(); ++i) {
+       Vec2i label = mesh.get_triangle_label(incident_triangles[i]);
+       labelset.insert(label[0]);
+       labelset.insert(label[1]);
     }
-    
-    Mat33d A(0,0,0,0,0,0,0,0,0);
-    
-    // Ax = b from N^TWni = N^TWd
-    for ( size_t i = 0; i < N.size(); ++i )
-    {
-        A(0,0) += N[i][0] * W[i] * N[i][0];
-        A(1,0) += N[i][1] * W[i] * N[i][0];
-        A(2,0) += N[i][2] * W[i] * N[i][0];
-        
-        A(0,1) += N[i][0] * W[i] * N[i][1];
-        A(1,1) += N[i][1] * W[i] * N[i][1];
-        A(2,1) += N[i][2] * W[i] * N[i][1];
-        
-        A(0,2) += N[i][0] * W[i] * N[i][2];
-        A(1,2) += N[i][1] * W[i] * N[i][2];
-        A(2,2) += N[i][2] * W[i] * N[i][2];
+
+    if(labelset.size() == 2) {
+       //usual case
+       unsigned int rank;
+       displacement = get_smoothing_displacement(v, incident_triangles, triangle_areas, triangle_normals, triangle_centroids, rank);
     }
-    
-    // get eigen decomposition
-    double eigenvalues[3];
-    double work[9];
-    int info = ~0, n = 3, lwork = 9;
-    LAPACK::get_eigen_decomposition( &n, A.a, &n, eigenvalues, work, &lwork, &info );      
-    
-    if ( info != 0 )
-    {
-        std::cout << "Eigen decomposition failed" << std::endl;
-        std::cout << "number of incident_triangles: " << incident_triangles.size() << std::endl;
-        for ( size_t i = 0; i < incident_triangles.size(); ++i )
-        {
-            size_t triangle_index = incident_triangles[i];
+    else {
+       //iterate through sets, return result of one with highest rank
+       unsigned int max_rank = 0;
+       
+       for(std::set<int>::iterator it = labelset.begin(); it != labelset.end(); ++it) {
+          int cur_label = *it;
+          std::vector<size_t> tri_set;
+          for(size_t i = 0; i < incident_triangles.size(); ++i) {
+             Vec2i label = mesh.get_triangle_label(incident_triangles[i]);
+             if(label[0] == cur_label || label[1] == cur_label)
+                tri_set.push_back(incident_triangles[i]);
+          }
+          unsigned int rank;
+          Vec3d cur_disp = get_smoothing_displacement(v, tri_set, triangle_areas, triangle_normals, triangle_centroids, rank);
+          if(rank > max_rank) {
+             max_rank = rank;
+             displacement = cur_disp;
+          }
+       }
+    }
+
+   
+}
+
+Vec3d MeshSmoother::get_smoothing_displacement( size_t v, 
+   const std::vector<size_t>& triangles,
+   const std::vector<double>& triangle_areas, 
+   const std::vector<Vec3d>& triangle_normals, 
+   const std::vector<Vec3d>& triangle_centroids, 
+   unsigned int& rank) const {
+      
+      std::vector< Vec3d > N;
+      std::vector< double > W;
+
+      for ( size_t i = 0; i < triangles.size(); ++i )
+      {
+         size_t triangle_index = triangles[i];
+         N.push_back( triangle_normals[triangle_index] );
+         W.push_back( triangle_areas[triangle_index] );
+      }
+
+      Mat33d A(0,0,0,0,0,0,0,0,0);
+
+      // Ax = b from N^TWni = N^TWd
+      for ( size_t i = 0; i < N.size(); ++i )
+      {
+         A(0,0) += N[i][0] * W[i] * N[i][0];
+         A(1,0) += N[i][1] * W[i] * N[i][0];
+         A(2,0) += N[i][2] * W[i] * N[i][0];
+
+         A(0,1) += N[i][0] * W[i] * N[i][1];
+         A(1,1) += N[i][1] * W[i] * N[i][1];
+         A(2,1) += N[i][2] * W[i] * N[i][1];
+
+         A(0,2) += N[i][0] * W[i] * N[i][2];
+         A(1,2) += N[i][1] * W[i] * N[i][2];
+         A(2,2) += N[i][2] * W[i] * N[i][2];
+      }
+
+      // get eigen decomposition
+      double eigenvalues[3];
+      double work[9];
+      int info = ~0, n = 3, lwork = 9;
+      LAPACK::get_eigen_decomposition( &n, A.a, &n, eigenvalues, work, &lwork, &info );      
+
+      if ( info != 0 )
+      {
+         std::cout << "Eigen decomposition failed" << std::endl;
+         std::cout << "number of incident_triangles: " << triangles.size() << std::endl;
+         for ( size_t i = 0; i < triangles.size(); ++i )
+         {
+            size_t triangle_index = triangles[i];
             std::cout << "triangle: " << m_surf.m_mesh.get_triangle(triangle_index) << std::endl;
             std::cout << "normal: " << triangle_normals[triangle_index] << std::endl;
             std::cout << "area: " << triangle_areas[triangle_index] << std::endl;
-        }
-        
-        assert(0);
-    }
-    
-    // compute basis for null space
-    std::vector<Vec3d> T;
-    for ( unsigned int i = 0; i < 3; ++i )
-    {
-        if ( eigenvalues[i] < G_EIGENVALUE_RANK_RATIO * eigenvalues[2] )
-        {
+         }
+
+         assert(0);
+      }
+
+      // compute basis for null space
+      std::vector<Vec3d> T;
+      unsigned int rank = 0;
+      for ( unsigned int i = 0; i < 3; ++i )
+      {
+         if ( eigenvalues[i] < G_EIGENVALUE_RANK_RATIO * eigenvalues[2] )
+         {
             T.push_back( Vec3d( A(0,i), A(1,i), A(2,i) ) );
-        }
-    }
-    
-    //   Mat33d null_space_projection( 1,0,0, 0,1,0, 0,0,1 );
-    
-    Mat33d null_space_projection(0,0,0,0,0,0,0,0,0);
-    for ( unsigned int row = 0; row < 3; ++row )
-    {
-        for ( unsigned int col = 0; col < 3; ++col )
-        {
+            ++rank;
+         }
+      }
+
+
+      Mat33d null_space_projection(0,0,0,0,0,0,0,0,0);
+      for ( unsigned int row = 0; row < 3; ++row )
+      {
+         for ( unsigned int col = 0; col < 3; ++col )
+         {
             for ( size_t i = 0; i < T.size(); ++i )
             {
-                null_space_projection(row, col) += T[i][row] * T[i][col];
+               null_space_projection(row, col) += T[i][row] * T[i][col];
             }
-        }  
-    }
-    
-    Vec3d t(0,0,0);      // displacement
-    double sum_areas = 0;
-    
-    for ( size_t i = 0; i < incident_triangles.size(); ++i )
-    {
-        double area = triangle_areas[incident_triangles[i]];
-        sum_areas += area;
-        Vec3d c = triangle_centroids[incident_triangles[i]] - m_surf.get_position(v);
-        t += area * c;
-    }
-    
-    t = null_space_projection * t;
-    t /= sum_areas;
-    
-    displacement = t;
+         }  
+      }
+
+      Vec3d t(0,0,0);      // displacement
+      double sum_areas = 0;
+
+      for ( size_t i = 0; i < triangles.size(); ++i )
+      {
+         double area = triangle_areas[triangles[i]];
+         sum_areas += area;
+         Vec3d c = triangle_centroids[triangles[i]] - m_surf.get_position(v);
+         t += area * c;
+      }
+
+      t = null_space_projection * t;
+      t /= sum_areas;
+
+      return t;
 }
-
-
 
 // --------------------------------------------------------
 ///

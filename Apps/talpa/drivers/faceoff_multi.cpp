@@ -267,7 +267,11 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
         
         double switch_speed = 0;
         if(label[0] >= 0 && label[1] >= 0)
-           switch_speed = speed_matrix[label[0]][label[1]];//(current_t >= 1.0) ? -speed : speed;
+           switch_speed = speed_matrix[label[0]][label[1]];
+        
+        //flip the direction after some time
+        if(current_t >= 1.0) 
+           switch_speed = -switch_speed;
 
         triangle_plane_distances.push_back( adaptive_dt * switch_speed );
     }
@@ -341,16 +345,18 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
                 edge_vector = surf.get_position(tri[0]) - surf.get_position(tri[1]);
             }
             
-            Vec3d s = cross( triangle_normals[triangle_index], edge_vector );   // orthogonal to normal and edge opposite vertex
-            
+            Vec3d effective_normal = triangle_normals[triangle_index];
+
+            Vec3d s = cross( effective_normal , edge_vector );   // orthogonal to normal and edge opposite vertex
+
             bool contracting = dot( s, displacements[p] ) >= 0.0;
             
-            double cos_theta = dot( triangle_normals[triangle_index], normal_dispacement ) / mag(normal_dispacement);
+            double cos_theta = dot( effective_normal, normal_dispacement ) / mag(normal_dispacement);
             
             double mu = triangle_areas[triangle_index];
             if ( contracting )
             {
-                mu *= cos_theta * cos_theta;
+                //mu *= cos_theta * cos_theta;
             }
             
             double li = fabs( triangle_plane_distances[triangle_index] ); 

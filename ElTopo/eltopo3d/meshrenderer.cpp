@@ -67,7 +67,7 @@ void MeshRenderer::render( const DynamicSurface& surface )
     
     if ( render_vertex_rank )
     {
-        glPointSize(5);
+        glPointSize(10);
         glBegin(GL_POINTS);
         
         for ( size_t v = 0; v < surface.get_num_vertices(); ++v )
@@ -173,7 +173,7 @@ void MeshRenderer::render( const DynamicSurface& surface )
         
         glEnd();
         
-        
+       
         if ( render_edges )
         {
             glDisable(GL_POLYGON_OFFSET_FILL);
@@ -219,6 +219,11 @@ void MeshRenderer::render(const std::vector<Vec3d>& xs,
             const Vec2st& edge = edges[e];
             const Vec3d& vtx0 = xs[edge[0]];
             const Vec3d& vtx1 = xs[edge[1]];
+            /*if(!edge_manifold[e]) {
+               glColor3d(1,0,0);
+               glVertex3dv( vtx0.v );
+               glVertex3dv( vtx1.v );
+           }*/
             if(!edge_manifold[e])
                glColor3d(1,0,0);
             else
@@ -228,6 +233,26 @@ void MeshRenderer::render(const std::vector<Vec3d>& xs,
         }
         glEnd(); 
     }
+
+    //glLineWidth(3);
+    //glColor3f(0,0,1);
+    //glBegin(GL_LINES);
+    //for(size_t i = 0; i < triangles.size(); i++)
+    //{
+    //   const Vec3st& tri = triangles[i];
+
+    //   const Vec3d& v0 = xs[tri[0]];
+    //   const Vec3d& v1 = xs[tri[1]];
+    //   const Vec3d& v2 = xs[tri[2]];
+    //   Vec3d avg = 0.3333*(v0+v1+v2);
+    //   Vec3d normal = cross(v1-v0, v2-v0);
+    //   normalize(normal);
+
+    //   glVertex3dv(avg.v);
+    //   glVertex3dv((avg - 0.01*normal).v);
+
+    //}
+    //glEnd();
     
     //
     // vertices
@@ -235,7 +260,7 @@ void MeshRenderer::render(const std::vector<Vec3d>& xs,
     
     if ( render_vertex_rank )
     {
-        glPointSize(5);
+        glPointSize(10);
         glBegin(GL_POINTS);
         for ( size_t v = 0; v < xs.size(); ++v )
         {

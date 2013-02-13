@@ -72,6 +72,14 @@ public:
     
 private:
     
+   //Helper function for computing smoothing for a subset of incident triangles
+   Vec3d get_smoothing_displacement( size_t v, 
+      const std::vector<size_t>& triangles,
+      const std::vector<double>& triangle_areas, 
+      const std::vector<Vec3d>& triangle_normals, 
+      const std::vector<Vec3d>& triangle_centroids, 
+      unsigned int& rank) const;
+
     /// The mesh this object operates on
     /// 
     SurfTrack& m_surf;
