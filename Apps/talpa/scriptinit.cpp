@@ -307,6 +307,52 @@ void ScriptInit::parse_curved_sheet( const ParseTree& sheet_branch )
 
 // ---------------------------------------------------------
 
+void ScriptInit::parse_objfile( const ParseTree& obj_branch) {
+   std::string meshpath;
+   obj_branch.get_string("filepath", meshpath);
+   printf("Got path: %s\n", meshpath.c_str());
+
+   NonDestructiveTriMesh trimesh;
+
+   printf("Reading file\n");
+
+   std::vector<Vec3d> obj_vertices;
+
+   std::vector<Vec3st> obj_triangles;
+   read_objfile( obj_triangles, obj_vertices, meshpath.c_str() );
+
+   Vec3d translate;
+   if ( obj_branch.get_vec3d("translate", translate) )
+   {
+      for ( size_t i = 0; i < obj_vertices.size(); ++i )
+      {
+         obj_vertices[i] += translate;
+      }
+   }
+
+   std::vector<double> obj_masses(0);
+   int is_solid = 0;
+   obj_branch.get_int( "is_solid", is_solid );
+
+   if ( is_solid )
+   {
+      obj_masses.resize( obj_vertices.size(), std::numeric_limits<double>::infinity() );
+   }
+   else
+   {
+      obj_masses.resize( obj_vertices.size(), 1.0 );
+   }
+
+   int in_label = 0, out_label = 1; //default to the usual thing.
+   obj_branch.get_int( "in_label", in_label );
+   obj_branch.get_int( "out_label", out_label );
+   std::vector<Vec2i> obj_labels(obj_triangles.size(), Vec2i(in_label, out_label));
+   std::cout << "read mesh with " << triangles.size() << " triangles and " << vertices.size() << " vertices.\n";
+   append_mesh( triangles, vertices, labels, masses, obj_triangles, obj_vertices, obj_labels, obj_masses );
+}
+
+// ---------------------------------------------------------
+
 void ScriptInit::parse_sphere( const ParseTree& sphere_branch )
 {
     Vec3d sphere_center;
@@ -538,6 +584,7 @@ void ScriptInit::parse_script( const char* filename )
         
         std::vector<Vec3d> input_vertices;
         std::vector<double> in_masses;
+        
         read_binary_file( trimesh, input_vertices, in_masses, curr_t, meshpath.c_str() );
         curr_t_specified = true;
         
@@ -569,50 +616,23 @@ void ScriptInit::parse_script( const char* filename )
         printf("loaded file %s", meshpath.c_str());
     }
     
-    
-    const ParseTree* obj_branch = tree.get_branch( "objfile" );
-    if ( obj_branch != NULL )
     {
+       unsigned int obj_n = 0;   
+       char obj_name[256];
+       snprintf( obj_name, 256, "objfile%d", obj_n );
+       const ParseTree* obj_branch = tree.get_branch( obj_name );
+
+       while ( obj_branch != NULL )
+       {
         printf("Found obj branch\n");
-        
-        std::string meshpath;
-        obj_branch->get_string("filepath", meshpath);
-        printf("Got path: %s\n", meshpath.c_str());
-        
-        NonDestructiveTriMesh trimesh;
-        
-        printf("Reading file\n");
-        
-        std::vector<Vec3d> obj_vertices;
-        read_objfile( trimesh, obj_vertices, meshpath.c_str() );
-        
-        std::vector<Vec3st> obj_triangles = trimesh.get_triangles();
-        
-        Vec3d translate;
-        if ( obj_branch->get_vec3d("translate", translate) )
-        {
-            for ( size_t i = 0; i < obj_vertices.size(); ++i )
-            {
-                obj_vertices[i] += translate;
-            }
-        }
-        
-        std::vector<double> obj_masses(0);
-        int is_solid = 0;
-        obj_branch->get_int( "is_solid", is_solid );
-        
-        if ( is_solid )
-        {
-            obj_masses.resize( obj_vertices.size(), std::numeric_limits<double>::infinity() );
-        }
-        else
-        {
-            obj_masses.resize( obj_vertices.size(), 1.0 );
-        }
-                
-        append_mesh( triangles, vertices, labels, masses, obj_triangles, obj_vertices, obj_masses );
-    }
+        parse_objfile( *obj_branch );
+          obj_branch = NULL;
+          ++obj_n;
+          snprintf( obj_name, 256, "objfile%d", obj_n );
+          obj_branch = tree.get_branch( obj_name );
+       }
     
+    }
     //
     // SurfTrack parameters
     //

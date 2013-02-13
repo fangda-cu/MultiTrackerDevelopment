@@ -400,68 +400,98 @@ size_t DynamicSurface::get_number_of_triangle_intersections( const Vec3d& segmen
 
 unsigned int DynamicSurface::vertex_primary_space_rank( size_t v ) const
 {     
-    if ( m_mesh.m_vertex_to_triangle_map[v].empty() )     { return 0; }
-    
-    const std::vector<size_t>& incident_triangles = m_mesh.m_vertex_to_triangle_map[v];
-    
-    
-    Mat33d A(0,0,0,0,0,0,0,0,0);
-    
-    for ( size_t i = 0; i < incident_triangles.size(); ++i )
-    {
-        size_t triangle_index = incident_triangles[i];
-        Vec3d normal = get_triangle_normal(triangle_index);
-        double w = get_triangle_area(triangle_index);
-        
-        A(0,0) += normal[0] * w * normal[0];
-        A(1,0) += normal[1] * w * normal[0];
-        A(2,0) += normal[2] * w * normal[0];
-        
-        A(0,1) += normal[0] * w * normal[1];
-        A(1,1) += normal[1] * w * normal[1];
-        A(2,1) += normal[2] * w * normal[1];
-        
-        A(0,2) += normal[0] * w * normal[2];
-        A(1,2) += normal[1] * w * normal[2];
-        A(2,2) += normal[2] * w * normal[2];
-    }
-    
-    // get eigen decomposition
-    double eigenvalues[3];
-    double work[9];
-    int info = ~0, n = 3, lwork = 9;
-    LAPACK::get_eigen_decomposition( &n, A.a, &n, eigenvalues, work, &lwork, &info );
-    
-    if ( info != 0 )
-    {
-        if ( m_verbose )
-        {
-            std::cout << "Eigen decomp failed.  Incident triangles: " << std::endl;
-            for ( size_t i = 0; i < incident_triangles.size(); ++i )
-            {
-                size_t triangle_index = incident_triangles[i];
-                Vec3d normal = get_triangle_normal(triangle_index);
-                double w = get_triangle_area(triangle_index);
-                
-                std::cout << "normal: ( " << normal << " )    ";  
-                std::cout << "area: " << w << std::endl;
-            }
-        }
-        return 4;
-    }
-    
-    // compute rank of primary space
-    unsigned int rank = 0;
-    for ( unsigned int i = 0; i < 3; ++i )
-    {
-        if ( eigenvalues[i] > G_EIGENVALUE_RANK_RATIO * eigenvalues[2] )
-        {
-            ++rank;
-        }
-    }
-    
-    return rank;
-    
+   if ( m_mesh.m_vertex_to_triangle_map[v].empty() )     { return 0; }
+
+   const std::vector<size_t>& incident_triangles = m_mesh.m_vertex_to_triangle_map[v];
+   
+   //Check how many labels we have
+   std::set<int> labelset;
+   for(size_t i = 0; i < incident_triangles.size(); ++i) {
+      Vec2i label = m_mesh.get_triangle_label(incident_triangles[i]);
+      labelset.insert(label[0]);
+      labelset.insert(label[1]);
+   }
+   
+   //If manifold, just do the easy/cheap case.
+   if(labelset.size() <= 2) 
+      return compute_rank_from_triangles(incident_triangles);
+   
+   //Otherwise, visit each set of triangles separately
+   unsigned int max_rank = 0;
+   for(std::set<int>::iterator it = labelset.begin(); it != labelset.end(); ++it) {
+      int cur_label = *it;
+
+      //collect all the triangles with the relevant label
+      std::vector<size_t> cur_tri_set;
+      for(size_t i = 0; i < incident_triangles.size(); ++i) {
+         Vec2i label = m_mesh.get_triangle_label(incident_triangles[i]);
+         if(label[0] == cur_label || label[1] == cur_label)
+            cur_tri_set.push_back(incident_triangles[i]);
+      }
+
+      unsigned int rank = compute_rank_from_triangles(cur_tri_set);
+      max_rank = max(rank, max_rank);
+   }
+
+   return max_rank;
+}
+
+unsigned int DynamicSurface::compute_rank_from_triangles(const std::vector<size_t>& triangles) const {
+   Mat33d A(0,0,0,0,0,0,0,0,0);
+
+   for ( size_t i = 0; i < triangles.size(); ++i )
+   {
+      size_t triangle_index = triangles[i];
+      Vec3d normal = get_triangle_normal(triangle_index);
+      double w = get_triangle_area(triangle_index);
+
+      A(0,0) += normal[0] * w * normal[0];
+      A(1,0) += normal[1] * w * normal[0];
+      A(2,0) += normal[2] * w * normal[0];
+
+      A(0,1) += normal[0] * w * normal[1];
+      A(1,1) += normal[1] * w * normal[1];
+      A(2,1) += normal[2] * w * normal[1];
+
+      A(0,2) += normal[0] * w * normal[2];
+      A(1,2) += normal[1] * w * normal[2];
+      A(2,2) += normal[2] * w * normal[2];
+   }
+
+   // get eigen decomposition
+   double eigenvalues[3];
+   double work[9];
+   int info = ~0, n = 3, lwork = 9;
+   LAPACK::get_eigen_decomposition( &n, A.a, &n, eigenvalues, work, &lwork, &info );
+
+   if ( info != 0 )
+   {
+      if ( m_verbose )
+      {
+         std::cout << "Eigen decomposition failed.  Incident triangles: " << std::endl;
+         for ( size_t i = 0; i < triangles.size(); ++i )
+         {
+            size_t triangle_index = triangles[i];
+            Vec3d normal = get_triangle_normal(triangle_index);
+            double w = get_triangle_area(triangle_index);
+
+            std::cout << "normal: ( " << normal << " )    ";  
+            std::cout << "area: " << w << std::endl;
+         }
+      }
+      return 4;
+   }
+
+   // compute rank of primary space
+   unsigned int rank = 0;
+   for ( unsigned int i = 0; i < 3; ++i )
+   {
+      if ( eigenvalues[i] > G_EIGENVALUE_RANK_RATIO * eigenvalues[2] )
+      {
+         ++rank;
+      }
+   }
+   return rank;
 }
 
 // ---------------------------------------------------------

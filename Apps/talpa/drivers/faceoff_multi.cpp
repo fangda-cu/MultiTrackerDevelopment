@@ -156,6 +156,7 @@ void FaceOffMultiDriver::compute_quadric_metric_tensor( const std::vector<Vec3d>
 void FaceOffMultiDriver::intersection_point( const std::vector<Vec3d>& triangle_normals, 
                                        const std::vector<double>& triangle_plane_distances,
                                        const std::vector<double>& triangle_areas, 
+                                       const std::vector<Vec2i>& triangles_labels,
                                        const std::vector<size_t>& incident_triangles,
                                        Vec3d& out )
 {
@@ -163,10 +164,17 @@ void FaceOffMultiDriver::intersection_point( const std::vector<Vec3d>& triangle_
     std::vector< Vec3d > N;
     std::vector< double > W;
     std::vector< double > d;
-    
+    std::vector<size_t> reduced_tris;
+
     for ( size_t i = 0; i < incident_triangles.size(); ++i )
     {
         size_t triangle_index = incident_triangles[i];
+        reduced_tris.push_back(triangle_index);
+
+        Vec2i label = triangles_labels[i]; //don't process if it's not a growing face
+        if(label[0] != 0 && label[1] != 0)
+           continue;
+
         N.push_back( triangle_normals[triangle_index] );
         W.push_back( triangle_areas[triangle_index] );
         d.push_back( triangle_plane_distances[triangle_index] );
@@ -175,7 +183,7 @@ void FaceOffMultiDriver::intersection_point( const std::vector<Vec3d>& triangle_
     Mat33d A(0,0,0,0,0,0,0,0,0);
     Vec3d b(0,0,0);
     
-    compute_quadric_metric_tensor( triangle_normals, triangle_areas, incident_triangles, A );
+    compute_quadric_metric_tensor( triangle_normals, triangle_areas, reduced_tris, A );
     
     for ( size_t i = 0; i < N.size(); ++i )
     {
@@ -259,7 +267,11 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
         
         double switch_speed = 0;
         if(label[0] >= 0 && label[1] >= 0)
-           switch_speed = speed_matrix[label[0]][label[1]];//(current_t >= 1.0) ? -speed : speed;
+           switch_speed = speed_matrix[label[0]][label[1]];
+        
+        //flip the direction after some time
+       /* if(current_t >= 1.0) 
+           switch_speed = -switch_speed;*/
 
         triangle_plane_distances.push_back( adaptive_dt * switch_speed );
     }
@@ -287,7 +299,7 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
     for ( size_t p = 0; p < surf.get_num_vertices(); ++p )
     {
         Vec3d normal_dispacement;
-        intersection_point( triangle_normals, triangle_plane_distances, triangle_areas, mesh.m_vertex_to_triangle_map[p], normal_dispacement );
+        intersection_point( triangle_normals, triangle_plane_distances, triangle_areas, triangle_labels, mesh.m_vertex_to_triangle_map[p], normal_dispacement );
         displacements[p] += normal_dispacement;
         //
         // Entropy solution
@@ -306,10 +318,16 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
         double sum_mu_l = 0, sum_mu = 0;
         
         const std::vector<size_t>& incident_triangles = mesh.m_vertex_to_triangle_map[p];
-        
-        for ( size_t j = 0; j < incident_triangles.size(); ++j )
+        std::vector<size_t> manifold_tris;
+        for(size_t j = 0; j < incident_triangles.size(); ++j) {
+           Vec2i labels = triangle_labels[incident_triangles[j]];
+           if(labels[0] != 0 && labels[1] != 0) continue;
+           manifold_tris.push_back(incident_triangles[j]);
+        }
+
+        for ( size_t j = 0; j < manifold_tris.size(); ++j )
         {
-            size_t triangle_index = incident_triangles[j];
+            size_t triangle_index = manifold_tris[j];
             
             const Vec3st& tri = surf.m_mesh.get_triangle( triangle_index );
             
@@ -327,16 +345,18 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
                 edge_vector = surf.get_position(tri[0]) - surf.get_position(tri[1]);
             }
             
-            Vec3d s = cross( triangle_normals[triangle_index], edge_vector );   // orthogonal to normal and edge opposite vertex
-            
+            Vec3d effective_normal = triangle_normals[triangle_index];
+
+            Vec3d s = cross( effective_normal , edge_vector );   // orthogonal to normal and edge opposite vertex
+
             bool contracting = dot( s, displacements[p] ) >= 0.0;
             
-            double cos_theta = dot( triangle_normals[triangle_index], normal_dispacement ) / mag(normal_dispacement);
+            double cos_theta = dot( effective_normal, normal_dispacement ) / mag(normal_dispacement);
             
             double mu = triangle_areas[triangle_index];
             if ( contracting )
             {
-                mu *= cos_theta * cos_theta;
+                //mu *= cos_theta * cos_theta;
             }
             
             double li = fabs( triangle_plane_distances[triangle_index] ); 

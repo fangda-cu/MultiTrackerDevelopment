@@ -234,6 +234,10 @@ public:
     ///
     unsigned int vertex_primary_space_rank( size_t v ) const;
     
+    //unsigned int vertex_primary_space_rank_nonmanifold( size_t v ) const;
+
+    unsigned int compute_rank_from_triangles(const std::vector<size_t>& tris) const;
+
     /// Determine which region the point is inside by raycasting and looking at the normal
     /// of the first intersection, and comparing that with the triangle's labeling
     int get_region_containing_point( const Vec3d& p);

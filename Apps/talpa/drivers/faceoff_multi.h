@@ -74,6 +74,7 @@ public:
     void intersection_point( const std::vector<ElTopo::Vec3d>& triangle_normals, 
                             const std::vector<double>& triangle_plane_distances,
                             const std::vector<double>& triangle_areas, 
+                            const std::vector<ElTopo::Vec2i>& triangle_labels, 
                             const std::vector<size_t>& incident_triangles,
                             ElTopo::Vec3d& out);
     

@@ -137,9 +137,12 @@ SurfTrack* g_surf = NULL;        // The dynamic surface
 
 std::vector<Vec3d> renderable_vertices;
 std::vector<Vec3d> renderable_vertex_normals;
+std::vector<Vec3d> renderable_tri_normals;
 std::vector<Vec3st> renderable_solid_triangles;
 std::vector<Vec3st> renderable_non_solid_triangles;
 std::vector<Vec2st> renderable_edges;
+std::vector<int> renderable_ranks;
+std::vector<bool> renderable_edge_manifolds;
 
 
 // Local to main.cpp
@@ -747,9 +750,13 @@ namespace {
 #endif
         
         renderable_vertices = g_surf->get_positions();
-        
+        renderable_ranks.resize(renderable_vertices.size());
+        for(size_t i = 0; i < renderable_ranks.size(); ++i)
+           renderable_ranks[i] = g_surf->vertex_primary_space_rank(i);
+
         const std::vector<Vec3st>& mesh_triangles = g_surf->m_mesh.get_triangles();
         
+        renderable_tri_normals.clear();
         renderable_solid_triangles.clear();
         renderable_non_solid_triangles.clear();
         for ( size_t i = 0; i < mesh_triangles.size(); ++i )
@@ -761,18 +768,22 @@ namespace {
             else
             {
                 renderable_non_solid_triangles.push_back( mesh_triangles[i] );
+                renderable_tri_normals.push_back( g_surf->get_triangle_normal(i));
             }
         }
         
         renderable_edges.clear();
+        renderable_edge_manifolds.clear();
         for ( size_t i = 0; i < g_surf->m_mesh.m_edges.size(); ++i )
         {
             renderable_edges.push_back( g_surf->m_mesh.m_edges[i] );
+            renderable_edge_manifolds.push_back(g_surf->m_mesh.m_edge_to_triangle_map[i].size() == 2);
         }
         
         // compute vertex normals
         g_surf->get_all_vertex_normals( renderable_vertex_normals );
         
+
         // get cached driver visualizer
         driver_renderer = driver->get_renderer();
         
@@ -1394,7 +1405,10 @@ namespace {
         mesh_renderer.render(renderable_vertices, 
                              renderable_vertex_normals,
                              renderable_non_solid_triangles,
-                             renderable_edges );
+                             renderable_tri_normals,
+                             renderable_edges,
+                             renderable_ranks,
+                             renderable_edge_manifolds);
         
         //
         // Render the simulation

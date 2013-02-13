@@ -594,10 +594,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   unsigned int keep_rank = m_surf.vertex_primary_space_rank( vertex_to_keep );
   unsigned int delete_rank = m_surf.vertex_primary_space_rank( vertex_to_delete );
-  
-  ///////////////////////////////////////////////////////////////////////
-  // FD 20121229
-  //
 
   // boundary vertices have precedence
   if (keep_vert_is_boundary) keep_rank = 4;
