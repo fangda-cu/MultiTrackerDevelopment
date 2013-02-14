@@ -298,6 +298,15 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
     
     for ( size_t p = 0; p < surf.get_num_vertices(); ++p )
     {
+        //if it's a non-manifold vertex, don't move it.
+       std::set<int> labelset;
+       for(size_t i = 0; i < mesh.m_vertex_to_triangle_map[p].size(); ++i) {
+          size_t tri = mesh.m_vertex_to_triangle_map[p][i];
+          labelset.insert(mesh.get_triangle_label(tri)[0]);
+          labelset.insert(mesh.get_triangle_label(tri)[1]);
+       }
+       if(labelset.size() > 2) continue;
+
         Vec3d normal_displacement;
         intersection_point( triangle_normals, triangle_plane_distances, triangle_areas, triangle_labels, mesh.m_vertex_to_triangle_map[p], normal_displacement );
         
@@ -321,7 +330,7 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
         std::vector<size_t> manifold_tris;
         for(size_t j = 0; j < incident_triangles.size(); ++j) {
            Vec2i labels = triangle_labels[incident_triangles[j]];
-           if(labels[0] != 0 && labels[1] != 0) continue;
+           //if(labels[0] != 0 && labels[1] != 0) continue; //TODO Enable this for static merged interface case.
            manifold_tris.push_back(incident_triangles[j]);
         }
 
@@ -347,13 +356,15 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
             
             Vec3d tri_normal = triangle_normals[triangle_index];
 
-            Vec3d s = cross( tri_normal , edge_vector );   // orthogonal to normal and edge opposite vertex
+            Vec3d s = cross( tri_normal, edge_vector );   // orthogonal to normal and edge opposite vertex
 
             Vec3d total_displacement_estimate = displacements[p] + normal_displacement;
             bool contracting = dot( s, total_displacement_estimate) >= 0.0; //why use the total displacement here? why not just normal?
             
             double cos_theta = dot( tri_normal, normal_displacement ) / mag(normal_displacement);
             
+            assert(!std::isnan(cos_theta));
+
             double mu = triangle_areas[triangle_index];
             if ( contracting )
             {
@@ -373,7 +384,7 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
         }
         
         double length = sum_mu_l / sum_mu;
-        
+
         //add the normal displacement to the tangential one we already have
         displacements[p] += length * normal_displacement / mag(normal_displacement);
     }

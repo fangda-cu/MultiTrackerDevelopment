@@ -1,22 +1,25 @@
 
-relative_output_path sisc/faceoffmulti-2
+relative_output_path faceoffthreeway
 
 frame_dt 0.005
 sim_dt 0.005
-end_sim_t 2.0
+end_sim_t 5.0
 
-region_count 2
+region_count 3
 
 faceoff_simulation
 (
-   speedvector [0 2 -2 0]
+   speedvector 
+   [0 1 -1 
+   -1 0 1 
+   1 -1 0]
 )
 
 surftrack_parameters
 (
    use_fraction 1
-   min_edge_length 0.5
-   max_edge_length 1.5
+   min_edge_length 0.25
+   max_edge_length 0.75
    max_volume_change 0.1
    min_curvature_multiplier 1.0
    max_curvature_multiplier 1.0
