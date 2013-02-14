@@ -56,7 +56,7 @@ public:
     
     /// Initialise the driver with the surface at t = 0.  Default does nothing
     ///
-    virtual void initialize( const ElTopo::SurfTrack& ) {}
+    virtual void initialize( ElTopo::SurfTrack& ) {}
     
     /// Draw something with OpenGL.  Default does nothing.
     ///

@@ -619,13 +619,11 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   // Handle different cases of constrained, boundary and interior vertices
   if (m_surf.m_allow_vertex_movement_during_collapse && !(keep_vert_is_boundary || del_vert_is_boundary) && !(keep_vert_is_constrained || delete_vert_is_constrained))
   {
-    
-     //prefer to keep non-manifold vertices, but if both are non-manifold or both manifold, check the ranks
-      if ( !keep_vert_is_manifold && delete_vert_is_manifold )
+      if ( keep_rank > delete_rank )
       {
          vertex_new_position = m_surf.get_position(vertex_to_keep);
       }
-      else if ( keep_vert_is_manifold && !delete_vert_is_manifold)
+      else if ( delete_rank > keep_rank )
       {
          size_t tmp = vertex_to_delete;
          vertex_to_delete = vertex_to_keep;
@@ -633,26 +631,25 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
          vertex_new_position = m_surf.get_position(vertex_to_keep);
       }
-      else {
-         if ( keep_rank > delete_rank )
-         {
+      else
+      {
+         //same ranks, but one is non-manifold; may as well prefer to keep non-manifold points.
+         if(keep_vert_is_manifold) {
             vertex_new_position = m_surf.get_position(vertex_to_keep);
          }
-         else if ( delete_rank > keep_rank )
-         {
+         else if(delete_vert_is_manifold) {
             size_t tmp = vertex_to_delete;
             vertex_to_delete = vertex_to_keep;
             vertex_to_keep = tmp;
 
             vertex_new_position = m_surf.get_position(vertex_to_keep);
          }
-         else
-         {
+         else {
             // ranks are equal and manifoldness matches too
             m_surf.m_subdivision_scheme->generate_new_midpoint( edge, m_surf, vertex_new_position );
          }
       }
-   
+     
   } else if (keep_vert_is_constrained || delete_vert_is_constrained)
   {
     assert(m_surf.m_constrained_vertices_callback);

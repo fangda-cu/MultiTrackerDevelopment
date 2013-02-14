@@ -1,19 +1,16 @@
 
-relative_output_path faceoffthreeway
+relative_output_path sisc/faceoffmulti-2
 
 frame_dt 0.005
 sim_dt 0.005
-end_sim_t 5.0
+end_sim_t 2.0
 
 region_count 3
 
 faceoff_simulation
 (
-   speedvector  [0 1 -1 
-		      -1 0 1 
-                       1 -1 0]
-   nmf_stationary 1
-   
+   speedvector [0 0.2 0.2 -0.2 0 0 -0.2 0 0]
+   expanding_surface 0
 )
 
 surftrack_parameters
@@ -33,12 +30,35 @@ surftrack_parameters
    subdivision_scheme modified
 )
 
-doublebubble
+sphere0
 ( 
-
+   sphere_center [-0.25 0 0] 
+   sphere_radius 0.2
+   sphere_dx 0.07072
+   in_label 1
+   out_label 0
+   is_solid 0 
 )
 
+sphere1
+( 
+   sphere_center [0.25 0 0] 
+   sphere_radius 0.2
+   sphere_dx 0.07072
+   in_label 2
+   out_label 0
+   is_solid 0 
+)
 
+sphere2
+( 
+   sphere_center [-0.25 0.5 0] 
+   sphere_radius 0.2
+   sphere_dx 0.07072
+   in_label 1
+   out_label 0
+   is_solid 0 
+)
 
 
 camera

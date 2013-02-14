@@ -90,8 +90,11 @@ namespace {
 // Member function definitions
 // ---------------------------------------------------------
 
-void FaceOffMultiDriver::initialize( const SurfTrack& )
+void FaceOffMultiDriver::initialize( SurfTrack& s)
 {
+   //tell the smoother only to smooth the specified region in non-manifold cases
+   //value of -1 implies smooth with respect to all regions at once.
+   s.m_smoother.set_nonmanifold_smoothing_region(expanding_surface);
 }
 
 // ---------------------------------------------------------
@@ -270,14 +273,14 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
            switch_speed = speed_matrix[label[0]][label[1]];
         
         //flip the direction after some time
-       /* if(current_t >= 1.0) 
-           switch_speed = -switch_speed;*/
+        if(current_t >= 1.0) 
+           switch_speed = -switch_speed;
 
         triangle_plane_distances.push_back( adaptive_dt * switch_speed );
     }
     
     std::vector<Vec3d> displacements;
-    displacements.resize( surf.get_num_vertices() );
+    displacements.resize( surf.get_num_vertices(), Vec3d(0,0,0) );
     
     //
     // Null space smoothing - to get tangential component
@@ -298,15 +301,19 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
     
     for ( size_t p = 0; p < surf.get_num_vertices(); ++p )
     {
-        //if it's a non-manifold vertex, don't move it.
-       std::set<int> labelset;
-       for(size_t i = 0; i < mesh.m_vertex_to_triangle_map[p].size(); ++i) {
-          size_t tri = mesh.m_vertex_to_triangle_map[p][i];
-          labelset.insert(mesh.get_triangle_label(tri)[0]);
-          labelset.insert(mesh.get_triangle_label(tri)[1]);
-       }
-       if(labelset.size() > 2) continue;
 
+       if(nonmanifold_stationary) {
+          //if it's a non-manifold vertex, and we're holding those stationary
+          //don't move it. e.g. for the curling sphere example.
+          std::set<int> labelset;
+          for(size_t i = 0; i < mesh.m_vertex_to_triangle_map[p].size(); ++i) {
+             size_t tri = mesh.m_vertex_to_triangle_map[p][i];
+             Vec2i label = mesh.get_triangle_label(tri);
+             labelset.insert(label[0]);
+             labelset.insert(label[1]);
+          }
+          if(labelset.size() > 2) continue;
+       }
         Vec3d normal_displacement;
         intersection_point( triangle_normals, triangle_plane_distances, triangle_areas, triangle_labels, mesh.m_vertex_to_triangle_map[p], normal_displacement );
         
@@ -330,7 +337,10 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
         std::vector<size_t> manifold_tris;
         for(size_t j = 0; j < incident_triangles.size(); ++j) {
            Vec2i labels = triangle_labels[incident_triangles[j]];
-           //if(labels[0] != 0 && labels[1] != 0) continue; //TODO Enable this for static merged interface case.
+
+           if(expanding_surface != -1) {
+              if(labels[0] != expanding_surface && labels[1] != expanding_surface) continue;
+           }
            manifold_tris.push_back(incident_triangles[j]);
         }
 

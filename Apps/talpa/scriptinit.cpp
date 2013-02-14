@@ -103,7 +103,7 @@ void ScriptInit::parse_faceoff( const ParseTree& faceoff_sim_branch )
     double speed;
 
     std::vector<std::vector<double>> speed_matrix(region_count, std::vector<double>(region_count, 0));
-    if(faceoff_sim_branch.get_number( "speed", speed ) ) {
+    if(faceoff_sim_branch.get_number( "speed", speed ) ) { //default two-material case.
        speed_matrix[0][0] = 0;
        speed_matrix[1][1] = 0;
 
@@ -128,7 +128,20 @@ void ScriptInit::parse_faceoff( const ParseTree& faceoff_sim_branch )
 
     }
     
-    driver = new FaceOffMultiDriver( speed_matrix, Vec3d( -0.25, 0.0, 0.0 ), Vec3d( 0.25, 0.0, 0.0 ), 0.4, 0.2 );
+    //check if non-manifold curve should be stationary, for curling up spheres example
+    int nmf_stationary = 0;
+    bool either_specified = faceoff_sim_branch.get_int("nmf_stationary", nmf_stationary);
+
+    //check which is the expanding surface for offsetting in the case where the intersection curve is moving
+    int expanding_surf = -1;
+    either_specified = either_specified || faceoff_sim_branch.get_int("expanding_surface", expanding_surf);
+    if(!either_specified) {
+       std::cout << "Must specify either stationary curve or one expanding surface.\n";
+       exit(0);
+    }
+    
+    driver = new FaceOffMultiDriver( speed_matrix, Vec3d( -0.25, 0.0, 0.0 ), Vec3d( 0.25, 0.0, 0.0 ), 0.4, 0.2, expanding_surf, nmf_stationary == 1 );
+    
 }
 
 // ---------------------------------------------------------

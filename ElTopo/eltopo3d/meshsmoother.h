@@ -48,7 +48,8 @@ public:
     /// Constructor
     ///
     MeshSmoother( SurfTrack& surf ) :
-    m_surf( surf )
+    m_surf( surf ),
+    m_nonmanifold_smoothing_region(-1)
     {}
     
     /// NULL-space smoothing of all vertices
@@ -70,6 +71,11 @@ public:
                                   const std::vector<Vec3d>& triangle_centroids, 
                                   Vec3d& displacement ) const;      
     
+    /// Set it to smooth only a particular surface at non-manifold joints. 
+    /// This is useful for the normal flow non-manifold offsetting special case of a stationary internal surface.
+    ///
+    void set_nonmanifold_smoothing_region(int region) { m_nonmanifold_smoothing_region = region; }
+
 private:
     
    //Helper function for computing smoothing for a subset of incident triangles
@@ -84,6 +90,11 @@ private:
     /// 
     SurfTrack& m_surf;
     
+    ///
+    ///
+    int m_nonmanifold_smoothing_region;
+
+
 };
 
 }

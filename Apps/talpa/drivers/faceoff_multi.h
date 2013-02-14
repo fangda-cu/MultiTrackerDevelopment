@@ -52,15 +52,17 @@ public:
     
     /// Constructor 
     /// 
-    FaceOffMultiDriver( const std::vector< std::vector<double> >& in_speeds, const ElTopo::Vec3d& in_sphere_a_centre, const ElTopo::Vec3d& in_sphere_b_centre, double in_max_radius, double in_interior_radius ) : 
+    FaceOffMultiDriver( const std::vector< std::vector<double> >& in_speeds, const ElTopo::Vec3d& in_sphere_a_centre, const ElTopo::Vec3d& in_sphere_b_centre, double in_max_radius, double in_interior_radius, int outer_surf, bool nmf_stationary ) : 
     speed_matrix(in_speeds) ,
     sphere_a_centre(in_sphere_a_centre),
     sphere_b_centre(in_sphere_b_centre),   
     max_radius(in_max_radius),
-    interior_radius(in_interior_radius)
+    interior_radius(in_interior_radius),
+    expanding_surface(outer_surf),
+    nonmanifold_stationary(nmf_stationary)
     {}
     
-    void initialize( const ElTopo::SurfTrack& );
+    void initialize( ElTopo::SurfTrack& );
     
     /// Get the quadric metric tensor at a vertex from the given incident triangles
     ///   
@@ -109,8 +111,14 @@ public:
     double max_radius;         
     
     /// difference between maximum radius and final radius
-    double interior_radius;    
-    
+    double interior_radius; 
+
+    /// (outer) surface region to use for offsetting and null-space smoothing (i.e. for handling non-manifold cases)
+    int expanding_surface;
+
+    /// turn on if the non-manifold vertices are not to move (e.g. in curling sphere example)
+    bool nonmanifold_stationary;
+
 };
 
 
