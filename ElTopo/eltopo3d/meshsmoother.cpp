@@ -316,7 +316,7 @@ Vec3d MeshSmoother::get_smoothing_displacement( size_t v,
 
       // compute basis for null space
       std::vector<Vec3d> T;
-      unsigned int rank = 0;
+      rank = 0;
       for ( unsigned int i = 0; i < 3; ++i )
       {
          if ( eigenvalues[i] < G_EIGENVALUE_RANK_RATIO * eigenvalues[2] )
