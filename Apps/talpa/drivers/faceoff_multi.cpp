@@ -280,7 +280,7 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
     displacements.resize( surf.get_num_vertices() );
     
     //
-    // Null space smoothing
+    // Null space smoothing - to get tangential component
     //
     
     {
@@ -293,19 +293,19 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
     
 
     //
-    // Primary space displacement
+    // Primary space displacement - to get normal component
     //
     
     for ( size_t p = 0; p < surf.get_num_vertices(); ++p )
     {
-        Vec3d normal_dispacement;
-        intersection_point( triangle_normals, triangle_plane_distances, triangle_areas, triangle_labels, mesh.m_vertex_to_triangle_map[p], normal_dispacement );
-        displacements[p] += normal_dispacement;
+        Vec3d normal_displacement;
+        intersection_point( triangle_normals, triangle_plane_distances, triangle_areas, triangle_labels, mesh.m_vertex_to_triangle_map[p], normal_displacement );
+        
         //
         // Entropy solution
         //
         
-        if(mag(normal_dispacement) <= 1e-8) //the surface is not moving
+        if(mag(normal_displacement) <= 1e-8) //the surface is not moving
         {
            continue;
         }
@@ -345,17 +345,19 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
                 edge_vector = surf.get_position(tri[0]) - surf.get_position(tri[1]);
             }
             
-            Vec3d effective_normal = triangle_normals[triangle_index];
+            Vec3d tri_normal = triangle_normals[triangle_index];
 
-            Vec3d s = cross( effective_normal , edge_vector );   // orthogonal to normal and edge opposite vertex
+            Vec3d s = cross( tri_normal , edge_vector );   // orthogonal to normal and edge opposite vertex
 
-            bool contracting = dot( s, displacements[p] ) >= 0.0;
+            Vec3d total_displacement_estimate = displacements[p] + normal_displacement;
+            bool contracting = dot( s, total_displacement_estimate) >= 0.0; //why use the total displacement here? why not just normal?
             
-            double cos_theta = dot( effective_normal, normal_dispacement ) / mag(normal_dispacement);
+            double cos_theta = dot( tri_normal, normal_displacement ) / mag(normal_displacement);
             
             double mu = triangle_areas[triangle_index];
             if ( contracting )
             {
+                //this weighting from Jiao seems to make things worse! So I've turned it off. -CB
                 //mu *= cos_theta * cos_theta;
             }
             
@@ -372,10 +374,11 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
         
         double length = sum_mu_l / sum_mu;
         
-        displacements[p] = length * normal_dispacement / mag(normal_dispacement);
+        //add the normal displacement to the tangential one we already have
+        displacements[p] += length * normal_displacement / mag(normal_displacement);
     }
     
-
+    //compute timestep that will avoid self intersection and mesh folding
     double beta = MeshSmoother::compute_max_timestep_quadratic_solve( surf.m_mesh.get_triangles(), surf.get_positions(), displacements, false );
     
     adaptive_dt *= beta;
