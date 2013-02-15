@@ -128,9 +128,23 @@ void ScriptInit::parse_faceoff( const ParseTree& faceoff_sim_branch )
 
     }
     
+    double reverse_time = 0; //ignored if it is not set
+    bool do_reverse = faceoff_sim_branch.get_number("reverse_time", reverse_time);
+    if(do_reverse)
+       std::cout << "Motion reversal time set to: " << reverse_time << std::endl;
+
+
     //check if non-manifold curve should be stationary, for curling up spheres example
     int nmf_stationary = 0;
     bool either_specified = faceoff_sim_branch.get_int("nmf_stationary", nmf_stationary);
+    if(either_specified)
+       std::cout << "Non-manifold curve is set to stationary, as in two-sphere cyclical invasion test.\n";
+
+    int smooth_w_all = 1; //default to null-space smoothing based on all branches at non-manifold
+    faceoff_sim_branch.get_int("smooth_using_all", smooth_w_all);
+    bool smooth_using_all = (smooth_w_all == 1);
+    if(!smooth_using_all)
+       std::cout << "Performing null-space smoothing only on data from the expanding surface at non-manifold vertices.\n";
 
     //check which is the expanding surface for offsetting in the case where the intersection curve is moving
     int expanding_surf = -1;
@@ -139,8 +153,16 @@ void ScriptInit::parse_faceoff( const ParseTree& faceoff_sim_branch )
        std::cout << "Must specify either stationary curve or one expanding surface.\n";
        exit(0);
     }
-    
-    driver = new FaceOffMultiDriver( speed_matrix, Vec3d( -0.25, 0.0, 0.0 ), Vec3d( 0.25, 0.0, 0.0 ), 0.4, 0.2, expanding_surf, nmf_stationary == 1 );
+    if(expanding_surf != -1)
+       std::cout << "Region " << expanding_surf << " is set to be expanded into.";
+
+    FaceOffMultiDriver* d = new FaceOffMultiDriver( speed_matrix, expanding_surf, nmf_stationary == 1, smooth_using_all );
+    if(do_reverse) d->set_reversing(reverse_time);
+
+    //set solution data for the original normal flow tests.
+    d->set_solution_data(Vec3d( -0.25, 0.0, 0.0 ), Vec3d( 0.25, 0.0, 0.0 ), 0.4, 0.2);
+
+    driver = d;
     
 }
 

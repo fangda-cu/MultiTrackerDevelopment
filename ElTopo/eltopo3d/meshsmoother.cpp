@@ -228,7 +228,7 @@ void MeshSmoother::null_space_smooth_vertex( size_t v,
        labelset.insert(label[0]);
        labelset.insert(label[1]);
     }
-
+    
     if(labelset.size() == 2 || m_nonmanifold_smoothing_region == -1) {
        //usual case
        unsigned int rank;

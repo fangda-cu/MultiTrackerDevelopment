@@ -11,6 +11,8 @@ faceoff_simulation
 (
    speedvector [0 0.2 0.2 -0.2 0 0 -0.2 0 0]
    expanding_surface 0
+   smooth_using_all 0
+   reverse_time 1.0
 )
 
 surftrack_parameters

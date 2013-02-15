@@ -52,18 +52,29 @@ public:
     
     /// Constructor 
     /// 
-    FaceOffMultiDriver( const std::vector< std::vector<double> >& in_speeds, const ElTopo::Vec3d& in_sphere_a_centre, const ElTopo::Vec3d& in_sphere_b_centre, double in_max_radius, double in_interior_radius, int outer_surf, bool nmf_stationary ) : 
+    FaceOffMultiDriver( const std::vector< std::vector<double> >& in_speeds, int outer_surf, bool nmf_stationary, bool smooth_w_all ) : 
     speed_matrix(in_speeds) ,
-    sphere_a_centre(in_sphere_a_centre),
-    sphere_b_centre(in_sphere_b_centre),   
-    max_radius(in_max_radius),
-    interior_radius(in_interior_radius),
     expanding_surface(outer_surf),
-    nonmanifold_stationary(nmf_stationary)
+    nonmanifold_stationary(nmf_stationary),
+    do_reverse(false),
+    smooth_based_on_exterior(!smooth_w_all)
     {}
     
     void initialize( ElTopo::SurfTrack& );
-    
+    void update( ElTopo::SurfTrack&, double curr_time );
+
+    void set_reversing(double at_time) {
+       do_reverse = true;
+       reverse_time = at_time;
+    }
+
+    void set_solution_data(const ElTopo::Vec3d& in_sphere_a_centre, const ElTopo::Vec3d& in_sphere_b_centre, double in_max_radius, double in_interior_radius) {
+       sphere_a_centre = in_sphere_a_centre;
+       sphere_b_centre = in_sphere_b_centre;
+       max_radius      = in_max_radius;
+       interior_radius = in_interior_radius;
+    }
+
     /// Get the quadric metric tensor at a vertex from the given incident triangles
     ///   
     void compute_quadric_metric_tensor( const std::vector<ElTopo::Vec3d>& triangle_normals, 
@@ -100,6 +111,10 @@ public:
     double speed;
     std::vector< std::vector<double> > speed_matrix; //dictate speeds based on pairwise labels
     
+    /// a fixed time at which to switch directions for testing purposes
+    double reverse_time;
+    bool do_reverse;
+
     //
     // The following members are used to compute the analytic solution
     //
@@ -112,6 +127,14 @@ public:
     
     /// difference between maximum radius and final radius
     double interior_radius; 
+
+    //
+    // The following members are used to dictate
+    //
+    
+    /// this flag dictates whether to use null-space smoothing on the interior branch of non-manifold junctions
+    /// for shrinking, we do want to null-space smooth considering the interior branch, for expanding we don't.
+    bool smooth_based_on_exterior;
 
     /// (outer) surface region to use for offsetting and null-space smoothing (i.e. for handling non-manifold cases)
     int expanding_surface;

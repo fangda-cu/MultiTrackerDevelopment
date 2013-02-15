@@ -58,6 +58,11 @@ public:
     ///
     virtual void initialize( ElTopo::SurfTrack& ) {}
     
+    /// Update the driver with the surface at some later point.  Default does nothing
+    /// At the moment this is just used to change the behavior of null-space smoothing
+    /// when we switch directions for normal flow using face offsetting in non-manifold cases.
+    virtual void update( ElTopo::SurfTrack&, double curr_time ) {}
+
     /// Draw something with OpenGL.  Default does nothing.
     ///
     virtual void display() {}

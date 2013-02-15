@@ -500,7 +500,7 @@ namespace {
                 g_stats.add_per_frame_double( "frame_defrag_time", frame_stepper->get_frame(), post_defrag_time - pre_defrag_time );
                 
                 // Update driver
-                
+                driver->update(*g_surf, sim->m_curr_t);
                 driver->update_simulation_elements( *g_surf );
                 
             }

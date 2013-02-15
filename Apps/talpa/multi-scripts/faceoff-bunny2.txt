@@ -10,6 +10,8 @@ region_count 3
 faceoff_simulation
 (
    speedvector [0 2 2 -2 0 0 -2 0 0]
+   expanding_surface 0
+   smooth_using_all 0
 )
 
 surftrack_parameters
