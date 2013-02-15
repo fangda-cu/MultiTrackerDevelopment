@@ -601,6 +601,11 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   for(size_t i = 0; i < other_verts.size(); ++i)
     other_vert_pos.push_back(m_surf.get_position(other_verts[i]));
 
+  double min_current_angle = 0;
+  for(size_t i = 0; i < incident_tris.size(); ++i) {
+     min_current_angle = min( min_current_angle, min_triangle_angle( va, vb, other_vert_pos[i] ) );
+  }
+
   double min_new_angle = 2*M_PI;
   for(size_t i = 0; i < other_vert_pos.size(); ++i) {
     min_new_angle = min( min_new_angle, min_triangle_angle( va, new_vertex_proposed_final_position, other_vert_pos[i] ) );
@@ -609,8 +614,11 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   
   if ( !ignore_bad_angles && rad2deg(min_new_angle) < m_surf.m_min_triangle_angle )
   {
-    g_stats.add_to_int( "EdgeSplitter:edge_split_small_angle", 1 );
-    return false;
+     //only cancel if it actively makes things worse!
+    if(min_new_angle < min_current_angle) {
+       g_stats.add_to_int( "EdgeSplitter:edge_split_small_angle", 1 );
+      return false;
+    }
   }
 
   double max_current_angle = 0;

@@ -1,25 +1,27 @@
 
-relative_output_path sisc/faceoffmulti-2
+relative_output_path faceofftwosphere
 
 frame_dt 0.005
 sim_dt 0.005
-end_sim_t 2.0
+end_sim_t 5.0
 
-region_count 2
+region_count 3
 
 faceoff_simulation
 (
-   speedvector [0 2 -2 0]
+   speedvector  [0 -1 -1 
+		      1 0 0 
+		      1 0 0]
    expanding_surface 0
-   smooth_using_all 0
    reverse_time 1.0
+   smooth_using_all 1
 )
 
 surftrack_parameters
 (
    use_fraction 1
-   min_edge_length 0.5
-   max_edge_length 1.5
+   min_edge_length 0.25
+   max_edge_length 0.75
    max_volume_change 0.1
    min_curvature_multiplier 1.0
    max_curvature_multiplier 1.0
@@ -32,13 +34,9 @@ surftrack_parameters
    subdivision_scheme modified
 )
 
-objfile
+doublebubble
 ( 
-   filepath "C:\\Users\\Christopher Batty\\Documents\\Research\\Columbia\\Fang\\MeanCurvatureFlow\\assets\\doublebubbletest\\low_bunny.obj"
-   translate [0 0 0] 
-   in_label 1
-   out_label 0
-   is_solid 0 
+
 )
 
 

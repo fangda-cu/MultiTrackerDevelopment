@@ -228,31 +228,24 @@ void MeshSmoother::null_space_smooth_vertex( size_t v,
        labelset.insert(label[0]);
        labelset.insert(label[1]);
     }
-
-    if(labelset.size() == 2) {
+    
+    if(labelset.size() == 2 || m_nonmanifold_smoothing_region == -1) {
        //usual case
        unsigned int rank;
        displacement = get_smoothing_displacement(v, incident_triangles, triangle_areas, triangle_normals, triangle_centroids, rank);
     }
     else {
-       //iterate through sets, return result of one with highest rank
-       unsigned int max_rank = 0;
+      
+      //choose only the specific region/surface to smooth in the non-manifold case.
+      std::vector<size_t> tri_set;
+      for(size_t i = 0; i < incident_triangles.size(); ++i) {
+         Vec2i label = mesh.get_triangle_label(incident_triangles[i]);
+         if(label[0] == m_nonmanifold_smoothing_region || label[1] == m_nonmanifold_smoothing_region)
+            tri_set.push_back(incident_triangles[i]);
+      }
+      unsigned int rank = 0;
+      displacement = get_smoothing_displacement(v, tri_set, triangle_areas, triangle_normals, triangle_centroids, rank);
        
-       for(std::set<int>::iterator it = labelset.begin(); it != labelset.end(); ++it) {
-          int cur_label = *it;
-          std::vector<size_t> tri_set;
-          for(size_t i = 0; i < incident_triangles.size(); ++i) {
-             Vec2i label = mesh.get_triangle_label(incident_triangles[i]);
-             if(label[0] == cur_label || label[1] == cur_label)
-                tri_set.push_back(incident_triangles[i]);
-          }
-          unsigned int rank;
-          Vec3d cur_disp = get_smoothing_displacement(v, tri_set, triangle_areas, triangle_normals, triangle_centroids, rank);
-          if(rank > max_rank) {
-             max_rank = rank;
-             displacement = cur_disp;
-          }
-       }
     }
 
    

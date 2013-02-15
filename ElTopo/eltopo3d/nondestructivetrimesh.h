@@ -325,7 +325,9 @@ private:
     /// Mark an edge as deleted, update connectivity
     ///
     void nondestructive_remove_edge( size_t edge_index );
- 
+    
+    
+
 };
 
 
@@ -530,7 +532,10 @@ inline bool NonDestructiveTriMesh::is_vertex_nonmanifold(size_t v) const {
       if(is_edge_nonmanifold(edge)) 
          return true;
    }
+   
+   return false;
 
+   /*
    assert(false && "The code below has not been tested.\n"); //
 
    //TODO: Verify this code works as intended!
@@ -568,7 +573,7 @@ inline bool NonDestructiveTriMesh::is_vertex_nonmanifold(size_t v) const {
    else {
       return false;
    }
-   
+   */
 }
 
 // ---------------------------------------------------------

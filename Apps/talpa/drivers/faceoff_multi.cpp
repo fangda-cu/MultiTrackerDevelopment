@@ -90,8 +90,40 @@ namespace {
 // Member function definitions
 // ---------------------------------------------------------
 
-void FaceOffMultiDriver::initialize( const SurfTrack& )
+void FaceOffMultiDriver::initialize( SurfTrack& s)
 {
+   //tell the smoother only to smooth the specified region in non-manifold cases
+   //value of -1 implies smooth with respect to all regions at once.
+   
+   if(smooth_based_on_exterior) {
+      s.m_smoother.set_nonmanifold_smoothing_region(expanding_surface); //"expanding"
+   }
+   else {
+      s.m_smoother.set_nonmanifold_smoothing_region(-1);                //"shrinking"
+   }
+}
+void FaceOffMultiDriver::update( SurfTrack& s, double current_time)
+{
+   //tell the smoother only to smooth the specified region in non-manifold cases
+   //value of -1 implies smooth with respect to all regions at once.
+   
+   int smoothing_choice;
+   if(smooth_based_on_exterior) {
+       smoothing_choice = expanding_surface; //"expanding"
+   }
+   else {
+      smoothing_choice = -1;  //"shrinking"
+   }
+   
+   //if we're past the reversal time, flip the smoothing choice too.
+   if(do_reverse && current_time > reverse_time) {
+      if(smooth_based_on_exterior)
+         smoothing_choice = -1;
+      else
+         smoothing_choice = expanding_surface;
+   }
+   
+   s.m_smoother.set_nonmanifold_smoothing_region(smoothing_choice);
 }
 
 // ---------------------------------------------------------
@@ -172,7 +204,7 @@ void FaceOffMultiDriver::intersection_point( const std::vector<Vec3d>& triangle_
         reduced_tris.push_back(triangle_index);
 
         Vec2i label = triangles_labels[i]; //don't process if it's not a growing face
-        if(label[0] != 0 && label[1] != 0)
+        if(label[0] != expanding_surface && label[1] != expanding_surface)
            continue;
 
         N.push_back( triangle_normals[triangle_index] );
@@ -268,16 +300,17 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
         double switch_speed = 0;
         if(label[0] >= 0 && label[1] >= 0)
            switch_speed = speed_matrix[label[0]][label[1]];
-        
-        //flip the direction after some time
-       /* if(current_t >= 1.0) 
-           switch_speed = -switch_speed;*/
+
+        //flip the direction after the desired time
+        if(do_reverse && current_t >= reverse_time) {
+           switch_speed = -switch_speed;
+        }
 
         triangle_plane_distances.push_back( adaptive_dt * switch_speed );
     }
     
     std::vector<Vec3d> displacements;
-    displacements.resize( surf.get_num_vertices() );
+    displacements.resize( surf.get_num_vertices(), Vec3d(0,0,0) );
     
     //
     // Null space smoothing - to get tangential component
@@ -298,6 +331,19 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
     
     for ( size_t p = 0; p < surf.get_num_vertices(); ++p )
     {
+
+       if(nonmanifold_stationary) {
+          //if it's a non-manifold vertex, and we're holding those stationary
+          //don't move it. e.g. for the curling sphere example.
+          std::set<int> labelset;
+          for(size_t i = 0; i < mesh.m_vertex_to_triangle_map[p].size(); ++i) {
+             size_t tri = mesh.m_vertex_to_triangle_map[p][i];
+             Vec2i label = mesh.get_triangle_label(tri);
+             labelset.insert(label[0]);
+             labelset.insert(label[1]);
+          }
+          if(labelset.size() > 2) continue;
+       }
         Vec3d normal_displacement;
         intersection_point( triangle_normals, triangle_plane_distances, triangle_areas, triangle_labels, mesh.m_vertex_to_triangle_map[p], normal_displacement );
         
@@ -321,7 +367,11 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
         std::vector<size_t> manifold_tris;
         for(size_t j = 0; j < incident_triangles.size(); ++j) {
            Vec2i labels = triangle_labels[incident_triangles[j]];
-           if(labels[0] != 0 && labels[1] != 0) continue;
+
+           if(expanding_surface != -1) {
+              if(labels[0] != expanding_surface && labels[1] != expanding_surface) 
+                 continue;
+           }
            manifold_tris.push_back(incident_triangles[j]);
         }
 
@@ -347,13 +397,15 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
             
             Vec3d tri_normal = triangle_normals[triangle_index];
 
-            Vec3d s = cross( tri_normal , edge_vector );   // orthogonal to normal and edge opposite vertex
+            Vec3d s = cross( tri_normal, edge_vector );   // orthogonal to normal and edge opposite vertex
 
             Vec3d total_displacement_estimate = displacements[p] + normal_displacement;
             bool contracting = dot( s, total_displacement_estimate) >= 0.0; //why use the total displacement here? why not just normal?
             
             double cos_theta = dot( tri_normal, normal_displacement ) / mag(normal_displacement);
             
+            assert(!std::isnan(cos_theta));
+
             double mu = triangle_areas[triangle_index];
             if ( contracting )
             {
@@ -373,7 +425,7 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
         }
         
         double length = sum_mu_l / sum_mu;
-        
+
         //add the normal displacement to the tangential one we already have
         displacements[p] += length * normal_displacement / mag(normal_displacement);
     }
