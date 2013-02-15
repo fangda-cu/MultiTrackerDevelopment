@@ -72,6 +72,10 @@ public:
     ///
     double m_min_curvature_multiplier;
     
+    /// The region label to consider when computing ranks
+    /// (default = -1, means consider all regions.)
+    int m_rank_region;
+
 private:
     
     friend class SurfTrack;

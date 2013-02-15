@@ -928,6 +928,17 @@ namespace {
         {
             mesh_renderer.render_edges = !mesh_renderer.render_edges;
         }
+
+        if ( key == 'f' )
+        {
+           mesh_renderer.smooth_shading = !mesh_renderer.smooth_shading;
+        }
+
+
+        if ( key == 'm' )
+        {
+           mesh_renderer.render_nonmanifold_curve = !mesh_renderer.render_nonmanifold_curve;
+        }
         
         if ( key == 't' )
         {

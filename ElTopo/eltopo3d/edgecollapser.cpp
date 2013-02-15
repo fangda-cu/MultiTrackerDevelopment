@@ -42,6 +42,7 @@ m_max_edge_length( UNINITIALIZED_DOUBLE ),
 m_use_curvature( use_curvature ),
 m_remesh_boundaries( remesh_boundaries ),
 m_min_curvature_multiplier( min_curvature_multiplier ),
+m_rank_region(-1),
 m_surf( surf )
 {}
 
@@ -592,8 +593,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 #define USE_VERTEX_RANKS
 #ifdef USE_VERTEX_RANKS
 
-  unsigned int keep_rank = m_surf.vertex_primary_space_rank( vertex_to_keep );
-  unsigned int delete_rank = m_surf.vertex_primary_space_rank( vertex_to_delete );
+  unsigned int keep_rank = m_surf.vertex_primary_space_rank( vertex_to_keep, m_rank_region );
+  unsigned int delete_rank = m_surf.vertex_primary_space_rank( vertex_to_delete, m_rank_region);
 
   // boundary vertices have precedence
   if (keep_vert_is_boundary) keep_rank = 4;

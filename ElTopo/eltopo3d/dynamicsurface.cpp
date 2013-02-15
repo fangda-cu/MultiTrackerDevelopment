@@ -398,7 +398,7 @@ size_t DynamicSurface::get_number_of_triangle_intersections( const Vec3d& segmen
 ///
 // ---------------------------------------------------------
 
-unsigned int DynamicSurface::vertex_primary_space_rank( size_t v ) const
+unsigned int DynamicSurface::vertex_primary_space_rank( size_t v, int region ) const
 {     
    if ( m_mesh.m_vertex_to_triangle_map[v].empty() )     { return 0; }
 
@@ -413,27 +413,42 @@ unsigned int DynamicSurface::vertex_primary_space_rank( size_t v ) const
    }
    
    //If manifold, just do the easy/cheap case.
-   if(labelset.size() <= 2) 
+   if(labelset.size() <= 2) {
       return compute_rank_from_triangles(incident_triangles);
-   
-   //Otherwise, visit each set of triangles separately
-   unsigned int max_rank = 0;
-   for(std::set<int>::iterator it = labelset.begin(); it != labelset.end(); ++it) {
-      int cur_label = *it;
+   }
+   else if(region != -1) {
+      //if requesting rank for just a specific manifold component...
 
       //collect all the triangles with the relevant label
       std::vector<size_t> cur_tri_set;
       for(size_t i = 0; i < incident_triangles.size(); ++i) {
          Vec2i label = m_mesh.get_triangle_label(incident_triangles[i]);
-         if(label[0] == cur_label || label[1] == cur_label)
+         if(label[0] == region || label[1] == region)
             cur_tri_set.push_back(incident_triangles[i]);
       }
-
-      unsigned int rank = compute_rank_from_triangles(cur_tri_set);
-      max_rank = max(rank, max_rank);
+      return compute_rank_from_triangles(cur_tri_set);
    }
+   else {
+      //Otherwise, visit each set of the manifold regions separately, take the max. 
+      //This seems to work somewhat better than doing all at once in the non-manifold case.
+      unsigned int max_rank = 0;
+      for(std::set<int>::iterator it = labelset.begin(); it != labelset.end(); ++it) {
+         int cur_label = *it;
 
-   return max_rank;
+         //collect all the triangles with the relevant label
+         std::vector<size_t> cur_tri_set;
+         for(size_t i = 0; i < incident_triangles.size(); ++i) {
+            Vec2i label = m_mesh.get_triangle_label(incident_triangles[i]);
+            if(label[0] == cur_label || label[1] == cur_label)
+               cur_tri_set.push_back(incident_triangles[i]);
+         }
+
+         unsigned int rank = compute_rank_from_triangles(cur_tri_set);
+         max_rank = max(rank, max_rank);
+      }
+   
+      return max_rank;
+   }
 }
 
 unsigned int DynamicSurface::compute_rank_from_triangles(const std::vector<size_t>& triangles) const {

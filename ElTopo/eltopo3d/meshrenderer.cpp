@@ -119,7 +119,7 @@ void MeshRenderer::render( const DynamicSurface& surface )
         glColor3d(1,1,1);
         }*/
         
-        if ( render_edges )
+        if ( render_edges || render_nonmanifold_curve)
         {
             glEnable(GL_POLYGON_OFFSET_FILL);
             glPolygonOffset(1.0f, 1.0f);      //  allow the wireframe to show through
@@ -174,7 +174,7 @@ void MeshRenderer::render( const DynamicSurface& surface )
         glEnd();
         
        
-        if ( render_edges )
+        if ( render_edges || render_nonmanifold_curve)
         {
             glDisable(GL_POLYGON_OFFSET_FILL);
         }
@@ -219,13 +219,8 @@ void MeshRenderer::render(const std::vector<Vec3d>& xs,
             const Vec2st& edge = edges[e];
             const Vec3d& vtx0 = xs[edge[0]];
             const Vec3d& vtx1 = xs[edge[1]];
-           // if(!edge_manifold[e]) {
-           //    glColor3d(1,0,0);
-           //    glVertex3dv( vtx0.v );
-           //    glVertex3dv( vtx1.v );
-           //}
 
-            if(!edge_manifold[e])
+            if(render_nonmanifold_curve && !edge_manifold[e])
                glColor3d(1,0,0);
             else
                glColor3f(0,0,0);
@@ -233,6 +228,27 @@ void MeshRenderer::render(const std::vector<Vec3d>& xs,
             glVertex3dv( vtx1.v );
         }
         glEnd(); 
+    }
+
+    if ( render_nonmanifold_curve )
+    {
+       glLineWidth(2);
+       glColor3f( 0.0f, 0.0f, 0.0f );
+       glBegin(GL_LINES);
+       for(size_t e = 0; e < edges.size(); e++)
+       {
+          const Vec2st& edge = edges[e];
+          const Vec3d& vtx0 = xs[edge[0]];
+          const Vec3d& vtx1 = xs[edge[1]];
+           if(!edge_manifold[e]) {
+              glColor3d(1,0,0);
+              glVertex3dv( vtx0.v );
+              glVertex3dv( vtx1.v );
+          }
+
+         
+       }
+       glEnd(); 
     }
 
     //glLineWidth(3);
@@ -306,7 +322,7 @@ void MeshRenderer::render(const std::vector<Vec3d>& xs,
             glColor3d(1,1,1);
         }*/
         
-        if ( render_edges )
+        if ( render_edges || render_nonmanifold_curve)
         {
             glEnable(GL_POLYGON_OFFSET_FILL);
             glPolygonOffset(1.0f, 1.0f);      //  allow the wireframe to show through
@@ -343,7 +359,7 @@ void MeshRenderer::render(const std::vector<Vec3d>& xs,
         }
         glEnd();
         
-        if ( render_edges )
+        if ( render_edges || render_nonmanifold_curve)
         {
             glDisable(GL_POLYGON_OFFSET_FILL);
         }
