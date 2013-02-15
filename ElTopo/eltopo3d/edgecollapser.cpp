@@ -619,38 +619,61 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   // Handle different cases of constrained, boundary and interior vertices
   if (m_surf.m_allow_vertex_movement_during_collapse && !(keep_vert_is_boundary || del_vert_is_boundary) && !(keep_vert_is_constrained || delete_vert_is_constrained))
   {
-      if ( keep_rank > delete_rank )
-      {
-         vertex_new_position = m_surf.get_position(vertex_to_keep);
-      }
-      else if ( delete_rank > keep_rank )
-      {
-         size_t tmp = vertex_to_delete;
-         vertex_to_delete = vertex_to_keep;
-         vertex_to_keep = tmp;
-
-         vertex_new_position = m_surf.get_position(vertex_to_keep);
-      }
-      else
-      {
-         //same ranks, but one is non-manifold; may as well prefer to keep non-manifold points.
-         if(keep_vert_is_manifold) {
+     //Ranks dominate (i.e. use ranks to decide collapsing first, and if they match then use nonmanifoldness to decide).
+     //-> This is particularly important for outward normal flow: it snaps the non-manifold curve back onto the 
+     //feature curve produced at merge points. (Other scenarios might(?) work better with nonmanifoldness dominating; so I've left
+     //the option in the code for now - Christopher Batty.)
+      bool ranks_dominate = true; 
+      if(ranks_dominate) {
+         if ( keep_rank > delete_rank ) {
             vertex_new_position = m_surf.get_position(vertex_to_keep);
          }
-         else if(delete_vert_is_manifold) {
-            size_t tmp = vertex_to_delete;
-            vertex_to_delete = vertex_to_keep;
-            vertex_to_keep = tmp;
-
+         else if ( delete_rank > keep_rank ) {
+            std::swap(vertex_to_keep, vertex_to_delete);
             vertex_new_position = m_surf.get_position(vertex_to_keep);
          }
-         else {
-            // ranks are equal and manifoldness matches too
-            m_surf.m_subdivision_scheme->generate_new_midpoint( edge, m_surf, vertex_new_position );
+         else
+         {
+            //same ranks, but one is non-manifold; may as well prefer to keep non-manifold points.
+            if(!keep_vert_is_manifold && delete_vert_is_manifold) {
+               vertex_new_position = m_surf.get_position(vertex_to_keep);
+            }
+            else if(!delete_vert_is_manifold && keep_vert_is_manifold) {
+               std::swap(vertex_to_keep, vertex_to_delete);
+               vertex_new_position = m_surf.get_position(vertex_to_keep);
+            }
+            else {
+               // ranks are equal and manifoldness matches too
+               m_surf.m_subdivision_scheme->generate_new_midpoint( edge, m_surf, vertex_new_position );
+            }
          }
+      }
+      else {
+        //Manifoldness dominates
+        if(!keep_vert_is_manifold && delete_vert_is_manifold) {
+           vertex_new_position = m_surf.get_position(vertex_to_keep);
+        }
+        else if(!delete_vert_is_manifold && keep_vert_is_manifold) {
+           std::swap(vertex_to_keep, vertex_to_delete);
+           vertex_new_position = m_surf.get_position(vertex_to_keep);
+        }
+        else {
+           if ( keep_rank > delete_rank ) {
+              vertex_new_position = m_surf.get_position(vertex_to_keep);
+           }
+           else if ( delete_rank > keep_rank ) {
+              std::swap(vertex_to_keep, vertex_to_delete);
+              vertex_new_position = m_surf.get_position(vertex_to_keep);
+           }
+           else {
+              // ranks are equal and manifoldness matches too
+              m_surf.m_subdivision_scheme->generate_new_midpoint( edge, m_surf, vertex_new_position );
+           }
+        }
       }
      
-  } else if (keep_vert_is_constrained || delete_vert_is_constrained)
+  } 
+  else if (keep_vert_is_constrained || delete_vert_is_constrained)
   {
     assert(m_surf.m_constrained_vertices_callback);
 

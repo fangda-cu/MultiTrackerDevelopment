@@ -100,9 +100,7 @@ struct SurfTrackInitializationParameters
     ///
     double m_max_triangle_angle;   
     
-    ///////////////////////////////////////////////////////////////////////
-    // FD 20121229
-    //
+
     /// Largest interior angle at a triangle vertex allowed before large-angle split pass kicks in
     ///
     double m_large_triangle_angle_to_split;
