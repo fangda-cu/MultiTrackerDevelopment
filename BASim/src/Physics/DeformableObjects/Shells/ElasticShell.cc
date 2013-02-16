@@ -1251,7 +1251,55 @@ void ElasticShell::remesh(bool initial)
     ElTopo::MeshUpdateEvent event = surface_tracker.m_mesh_change_history[j];
     //std::cout << "Event type = " << event.m_type << std::endl;
   }
+
+    double minangle = M_PI;
+    double maxangle = 0;
+    
+    double minedge = 10;
+    double maxedge = 0;
+    
+    for (size_t i = 0; i < surface_tracker.m_mesh.nt(); i++)
+    {
+        if (surface_tracker.m_mesh.get_triangle(i)[0] == surface_tracker.m_mesh.get_triangle(i)[1] && surface_tracker.m_mesh.get_triangle(i)[0] == surface_tracker.m_mesh.get_triangle(i)[2])
+            continue;
         
+        ElTopo::Vec3d v0 = surface_tracker.get_position(surface_tracker.m_mesh.get_triangle(i)[0]);
+        ElTopo::Vec3d v1 = surface_tracker.get_position(surface_tracker.m_mesh.get_triangle(i)[1]);
+        ElTopo::Vec3d v2 = surface_tracker.get_position(surface_tracker.m_mesh.get_triangle(i)[2]);
+        
+        ElTopo::Vec3d x0, x1, x2;
+        double angle;
+        
+        x0 = v0; x1 = v1; x2 = v2;
+        angle = acos((dot(x1 - x0, x1 - x0) + dot(x2 - x0, x2 - x0) - dot(x2 - x1, x2 - x1)) / 2 / mag(x1 - x0) / mag(x2 - x0));
+        if (angle > maxangle) maxangle = angle;
+        if (angle < minangle) minangle = angle;
+        
+        x0 = v1; x1 = v2; x2 = v0;
+        angle = acos((dot(x1 - x0, x1 - x0) + dot(x2 - x0, x2 - x0) - dot(x2 - x1, x2 - x1)) / 2 / mag(x1 - x0) / mag(x2 - x0));
+        if (angle > maxangle) maxangle = angle;
+        if (angle < minangle) minangle = angle;
+        
+        x0 = v2; x1 = v0; x2 = v1;
+        angle = acos((dot(x1 - x0, x1 - x0) + dot(x2 - x0, x2 - x0) - dot(x2 - x1, x2 - x1)) / 2 / mag(x1 - x0) / mag(x2 - x0));
+        if (angle > maxangle) maxangle = angle;
+        if (angle < minangle) minangle = angle;
+        
+        double e0 = mag(v2 - v1);
+        double e1 = mag(v2 - v0);
+        double e2 = mag(v1 - v0);
+        
+        if (e0 > maxedge) maxedge = e0;
+        if (e0 < minedge) minedge = e0;
+        if (e1 > maxedge) maxedge = e1;
+        if (e1 < minedge) minedge = e1;
+        if (e2 > maxedge) maxedge = e2;
+        if (e2 < minedge) minedge = e2;
+    }
+    
+    std::cout << "minangle = " << minangle * 180 / M_PI << " maxangle = " << maxangle * 180 / M_PI << " minedge = " << minedge << " maxedge = " << maxedge << std::endl;
+    
+    
 }
 
 int ElasticShell::onBBWall(const Vec3d & pos) const
