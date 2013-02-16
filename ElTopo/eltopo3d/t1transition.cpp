@@ -599,6 +599,8 @@ bool T1Transition::pop_vertices()
     int max_region = -1;
     for (size_t i = 0; i < mesh.nt(); i++)
     {
+        if (mesh.get_triangle(i)[0] == mesh.get_triangle(i)[1] && mesh.get_triangle(i)[0] == mesh.get_triangle(i)[2])
+            continue;
         Vec2i label = mesh.get_triangle_label(i);
         assert(label[0] >= 0);
         assert(label[1] >= 0);
