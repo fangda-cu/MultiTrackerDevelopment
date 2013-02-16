@@ -600,6 +600,13 @@ void ShellRenderer::render()
       else {
         OpenGL::color(Color(0.0,0.0,0.0, 1.0));
       }
+        
+        if ((p0 - p1).norm() <= 0.1)
+        {
+            glLineWidth(5);
+            glColor4f(0.0, 0.5, 1.0, 1.0);
+            glLineWidth(2);
+        }
       
       if (m_mode == DBG_JUNCTION)
       {
