@@ -1079,7 +1079,7 @@ void ElasticShell::remesh(bool initial)
   for (VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit)
     if (m_obj->vertexIncidentEdges(*vit) == 0)
       m_obj->deleteVertex(*vit);
-
+    
   //Set up a SurfTrack, run remeshing, render the new mesh
   ElTopo::SurfTrackInitializationParameters construction_parameters;
   construction_parameters.m_proximity_epsilon = m_collision_epsilon;
@@ -1202,6 +1202,30 @@ void ElasticShell::remesh(bool initial)
     
     for (size_t i = 0; i < vert_data.size(); i++)
         std::cout << "vertex " << i << ": " << vert_data[i] << std::endl;
+    
+    //remove faces that are completely within a BB wall (equivalent to a flap face if BB walls are triangulated). these faces result in collision handling difficulties when they collide within BB walls.
+    for (size_t i = 0; i < surface_tracker.m_mesh.nt(); i++)
+    {
+        ElTopo::Vec3st tri = surface_tracker.m_mesh.get_triangle(i);
+        if (tri[0] == tri[1] && tri[0] == tri[2])
+            continue;
+        
+        ElTopo::Vec3d v0 = surface_tracker.get_position(tri[0]);
+        ElTopo::Vec3d v1 = surface_tracker.get_position(tri[1]);
+        ElTopo::Vec3d v2 = surface_tracker.get_position(tri[2]);
+        
+        Vec3d x0(v0[0], v0[1], v0[2]);
+        Vec3d x1(v1[0], v1[1], v1[2]);
+        Vec3d x2(v2[0], v2[1], v2[2]);
+        
+        int onwall0 = onBBWall(x0);
+        int onwall1 = onBBWall(x1);
+        int onwall2 = onBBWall(x2);
+        if ((onwall0 & onwall1 & onwall2) != 0)
+        {
+            surface_tracker.remove_triangle(i);
+        }
+    }
   
   for(int i = 0; i < m_remeshing_iters; ++i) {
     surface_tracker.topology_changes();
