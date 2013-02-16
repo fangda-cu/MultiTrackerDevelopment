@@ -136,6 +136,8 @@ void CollisionPipeline::apply_impulse( const Vec4d& alphas,
     if ( i > 100.0 / dt )
     {
         std::cout << "big impulse: " << i << std::endl;
+        if (i == std::numeric_limits<double>::infinity())
+            return;
     }
     
     Vec3d pre_relative_velocity = s0*v0 + s1*v1 + s2*v2 + s3*v3;
@@ -146,6 +148,11 @@ void CollisionPipeline::apply_impulse( const Vec4d& alphas,
     v1 += i*s1*inv_m1 * normal;
     v2 += i*s2*inv_m2 * normal;
     v3 += i*s3*inv_m3 * normal;
+    
+    if (i > 100.0 / dt)
+    {
+        std::cout << "v0 = " << v0 << " v1 = " << v1 << " v2 = " << v2 << " v3 = " << v3 << std::endl;
+    }
     
     //
     // Friction
