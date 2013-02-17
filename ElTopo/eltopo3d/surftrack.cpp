@@ -846,8 +846,12 @@ void SurfTrack::topology_changes( )
 
    if (m_t1_transition_enabled)
    {
+       m_verbose = true;
+       
       m_t1transition.pop_vertices();
-
+       
+       m_verbose = false;
+       
    }
 
    if ( m_collision_safety )
