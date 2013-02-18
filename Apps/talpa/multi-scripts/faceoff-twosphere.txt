@@ -1,15 +1,18 @@
 
-relative_output_path sisc/faceoffmulti-2
+relative_output_path faceofftwosphere
 
 frame_dt 0.005
 sim_dt 0.005
-end_sim_t 2.0
+end_sim_t 8.0
 
 region_count 3
 
 faceoff_simulation
 (
    speedvector [0 0.2 0.2 -0.2 0 0 -0.2 0 0  ]
+   expanding_surface 0
+   reverse_time 1.0
+   smooth_using_all 0
 )
 
 surftrack_parameters

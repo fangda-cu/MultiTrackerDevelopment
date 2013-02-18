@@ -139,6 +139,7 @@ void ScriptInit::parse_faceoff( const ParseTree& faceoff_sim_branch )
     bool either_specified = faceoff_sim_branch.get_int("nmf_stationary", nmf_stationary);
     if(either_specified)
        std::cout << "Non-manifold curve is set to stationary, as in two-sphere cyclical invasion test.\n";
+    std::cout << "NMF: " << nmf_stationary << std::endl;
 
     int smooth_w_all = 1; //default to null-space smoothing based on all branches at non-manifold
     faceoff_sim_branch.get_int("smooth_using_all", smooth_w_all);

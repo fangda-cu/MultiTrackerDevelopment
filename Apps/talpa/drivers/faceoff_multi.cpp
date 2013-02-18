@@ -208,8 +208,10 @@ void FaceOffMultiDriver::intersection_point( const std::vector<Vec3d>& triangle_
         reduced_tris.push_back(triangle_index);
 
         Vec2i label = triangles_labels[i]; //don't process if it's not a growing face
-        if(label[0] != expanding_surface && label[1] != expanding_surface)
-           continue;
+        if(expanding_surface != -1) {
+           if(label[0] != expanding_surface && label[1] != expanding_surface)
+              continue;
+        }
 
         N.push_back( triangle_normals[triangle_index] );
         W.push_back( triangle_areas[triangle_index] );
@@ -332,7 +334,6 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
     //
     // Primary space displacement - to get normal component
     //
-    
     for ( size_t p = 0; p < surf.get_num_vertices(); ++p )
     {
 

@@ -3,7 +3,7 @@ relative_output_path faceofftwosphere
 
 frame_dt 0.005
 sim_dt 0.005
-end_sim_t 5.0
+end_sim_t 6.0
 
 region_count 3
 
