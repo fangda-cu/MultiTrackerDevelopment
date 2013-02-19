@@ -1003,6 +1003,8 @@ bool T1Transition::pop_vertices()
             
             for (size_t i = 0; i < faces_to_delete.size(); i++)
                 m_surf.remove_triangle(faces_to_delete[i]);
+          
+            m_surf.remove_vertex(xj);
             
             // mark the two new vertices a and b as dirty
             vertices_to_process.push_back(a);
