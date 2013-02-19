@@ -1,5 +1,5 @@
 
-relative_output_path sisc/faceoffmulti-2
+relative_output_path faceoffmanysphere
 
 frame_dt 0.005
 sim_dt 0.005
@@ -10,6 +10,9 @@ region_count 4
 faceoff_simulation
 (
    speedvector [0 0.2 0.2 0.2 -0.2 0 0 0 -0.2 0 0 0 -0.2 0 0 0]
+   expanding_surface 0
+   smooth_using_all 0
+   reverse_time 1.0
 )
 
 surftrack_parameters
@@ -32,7 +35,7 @@ surftrack_parameters
 sphere0
 ( 
    sphere_center [-0.25 0 0] 
-   sphere_radius 0.2
+   sphere_radius 0.23
    sphere_dx 0.07072
    in_label 1
    out_label 0
@@ -44,7 +47,7 @@ sphere1
    sphere_center [0.25 0 0] 
    sphere_radius 0.2
    sphere_dx 0.07072
-   in_label 1
+   in_label 2
    out_label 0
    is_solid 0 
 )
@@ -52,9 +55,9 @@ sphere1
 sphere2
 ( 
    sphere_center [-0.25 0.5 0] 
-   sphere_radius 0.2
+   sphere_radius 0.17
    sphere_dx 0.07072
-   in_label 2
+   in_label 1
    out_label 0
    is_solid 0 
 )
@@ -62,12 +65,23 @@ sphere2
 sphere3
 ( 
    sphere_center [0.25 0.5 0] 
-   sphere_radius 0.2
+   sphere_radius 0.25
    sphere_dx 0.07072
    in_label 3
    out_label 0
    is_solid 0 
 )
+
+sphere4
+( 
+   sphere_center [0.0 0.25 -.4] 
+   sphere_radius 0.25
+   sphere_dx 0.07072
+   in_label 3
+   out_label 0
+   is_solid 0 
+)
+
 
 camera
 (
