@@ -1284,7 +1284,7 @@ void ElasticShell::remesh(bool initial)
   for(unsigned int j = 0; j < surface_tracker.m_mesh_change_history.size(); ++j) 
   {
     ElTopo::MeshUpdateEvent event = surface_tracker.m_mesh_change_history[j];
-    //std::cout << "Event type = " << event.m_type << std::endl;
+    std::cout << "Event type = " << event.m_type << std::endl;
   }
 
     double minangle = M_PI;
