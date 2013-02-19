@@ -223,13 +223,16 @@ void MeshSmoother::null_space_smooth_vertex( size_t v,
     const std::vector<size_t>& incident_triangles = mesh.m_vertex_to_triangle_map[v];
     
     std::set<int> labelset;
+    bool found_smoothing_region = false;
     for(size_t i = 0; i < incident_triangles.size(); ++i) {
        Vec2i label = mesh.get_triangle_label(incident_triangles[i]);
        labelset.insert(label[0]);
        labelset.insert(label[1]);
+       if(label[0] == m_nonmanifold_smoothing_region || label[1] == m_nonmanifold_smoothing_region)
+          found_smoothing_region = true;
     }
     
-    if(labelset.size() == 2 || m_nonmanifold_smoothing_region == -1) {
+    if(labelset.size() == 2 || m_nonmanifold_smoothing_region == -1 || !found_smoothing_region) {
        //usual case
        unsigned int rank;
        displacement = get_smoothing_displacement(v, incident_triangles, triangle_areas, triangle_normals, triangle_centroids, rank);
@@ -243,6 +246,7 @@ void MeshSmoother::null_space_smooth_vertex( size_t v,
          if(label[0] == m_nonmanifold_smoothing_region || label[1] == m_nonmanifold_smoothing_region)
             tri_set.push_back(incident_triangles[i]);
       }
+      assert(tri_set.size() > 0);
       unsigned int rank = 0;
       displacement = get_smoothing_displacement(v, tri_set, triangle_areas, triangle_normals, triangle_centroids, rank);
        
