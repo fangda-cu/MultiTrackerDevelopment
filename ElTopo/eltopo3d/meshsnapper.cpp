@@ -92,6 +92,87 @@ void MeshSnapper::get_moving_edges( size_t source_vertex,
 
 // --------------------------------------------------------
 ///
+/// Determine if the edge collapse operation would invert the normal of any incident triangles.
+///
+// --------------------------------------------------------
+
+bool MeshSnapper::snap_introduces_normal_inversion( size_t source_vertex, 
+   size_t destination_vertex, 
+   const Vec3d& vertex_new_position )
+{
+
+   // Get the set of triangles which move because of this motion
+   std::vector<size_t> moving_triangles;
+   for ( size_t i = 0; i < m_surf.m_mesh.m_vertex_to_triangle_map[source_vertex].size(); ++i )
+   {
+      moving_triangles.push_back( m_surf.m_mesh.m_vertex_to_triangle_map[source_vertex][i] );
+   }
+   for ( size_t i = 0; i < m_surf.m_mesh.m_vertex_to_triangle_map[destination_vertex].size(); ++i )
+   {
+      moving_triangles.push_back( m_surf.m_mesh.m_vertex_to_triangle_map[destination_vertex][i] );
+   }
+
+   //
+   // check for normal inversion
+   //
+
+   for ( size_t i = 0; i < moving_triangles.size(); ++i )
+   { 
+
+      const Vec3st& current_triangle = m_surf.m_mesh.get_triangle( moving_triangles[i] );
+      Vec3d old_normal = m_surf.get_triangle_normal( current_triangle );
+
+      Vec3d new_normal;
+
+      //  the new triangle always has the same orientation as the
+      //  old triangle so no change is needed
+
+      double new_area;
+      if ( current_triangle[0] == source_vertex || current_triangle[0] == destination_vertex )
+      { 
+         new_normal = triangle_normal( vertex_new_position, m_surf.get_position(current_triangle[1]), m_surf.get_position(current_triangle[2]) ); 
+         new_area = triangle_area( vertex_new_position, m_surf.get_position(current_triangle[1]), m_surf.get_position(current_triangle[2]) ); 
+      }
+      else if ( current_triangle[1] == source_vertex || current_triangle[1] == destination_vertex ) 
+      { 
+         new_normal = triangle_normal( m_surf.get_position(current_triangle[0]), vertex_new_position, m_surf.get_position(current_triangle[2]) ); 
+         new_area = triangle_area( m_surf.get_position(current_triangle[0]), vertex_new_position, m_surf.get_position(current_triangle[2]) ); 
+      }
+      else 
+      { 
+         assert( current_triangle[2] == source_vertex || current_triangle[2] == destination_vertex ); 
+         new_normal = triangle_normal( m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1]), vertex_new_position );
+         new_area = triangle_area( m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1]), vertex_new_position );
+      }      
+
+      if ( dot( new_normal, old_normal ) < 1e-5 )
+      {
+         if ( m_surf.m_verbose ) { std::cout << "collapse edge introduces normal inversion" << std::endl; }
+
+         g_stats.add_to_int( "MeshSnapper:collapse_normal_inversion", 1 );
+
+         return true;
+      } 
+
+      if ( new_area < m_surf.m_min_triangle_area )
+      {
+         if ( m_surf.m_verbose ) { std::cout << "collapse edge introduces tiny triangle area" << std::endl; }
+
+         g_stats.add_to_int( "MeshSnapper:collapse_degenerate_triangle", 1 );
+
+         return true;
+      } 
+
+   }
+
+   return false;
+
+}
+
+
+
+// --------------------------------------------------------
+///
 /// Check the "pseudo motion" introduced by snapping vertices for collision
 ///
 // --------------------------------------------------------
@@ -228,6 +309,18 @@ bool MeshSnapper::snap_vertex_pair( size_t vertex_to_keep, size_t vertex_to_dele
       // Change source vertex predicted position to superimpose onto destination vertex
       m_surf.set_newposition( vertex_to_keep, vertex_new_position );
       m_surf.set_newposition( vertex_to_delete, vertex_new_position );
+
+      bool normal_inversion = snap_introduces_normal_inversion(  vertex_to_delete, vertex_to_keep, vertex_new_position );
+
+      if ( normal_inversion )
+      {
+         // Restore saved positions which were changed by the function we just called.
+         m_surf.set_newposition( vertex_to_keep, m_surf.get_position(vertex_to_keep) );
+         m_surf.set_newposition( vertex_to_delete, m_surf.get_position(vertex_to_delete) );
+
+         if ( m_surf.m_verbose ) { std::cout << "normal_inversion" << std::endl; }
+         return false;
+      }
 
       bool collision = false;
 

@@ -90,6 +90,12 @@ private:
                           size_t destination_vertex, 
                           std::vector<size_t>& moving_edges );
     
+    /// Determine if the edge collapse operation would invert the normal of any incident triangles.
+    ///
+    bool snap_introduces_normal_inversion( size_t source_vertex, 
+       size_t destination_vertex, 
+       const Vec3d& vertex_new_position );
+
     /// Check the "pseudo motion" introduced by snapping for collision
     ///
     bool snap_pseudo_motion_introduces_collision( size_t source_vertex, 
