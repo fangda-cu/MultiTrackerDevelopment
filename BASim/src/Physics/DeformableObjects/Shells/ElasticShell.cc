@@ -1230,6 +1230,7 @@ void ElasticShell::remesh(bool initial)
   for(int i = 0; i < m_remeshing_iters; ++i) {
     surface_tracker.topology_changes();
     surface_tracker.improve_mesh();
+    surface_tracker.m_t1transition.pop_vertices();
   }
   
   // copy ElTopo mesh back, instead of repeating the operation history incrementally.
