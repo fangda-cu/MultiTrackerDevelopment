@@ -1093,7 +1093,7 @@ void ElasticShell::remesh(bool initial)
   construction_parameters.m_min_triangle_angle = initial ? 0 : 3;
   construction_parameters.m_max_triangle_angle = initial ? 180 : 177;
   construction_parameters.m_large_triangle_angle_to_split = 160;
-  construction_parameters.m_min_triangle_area = 1e-10 * 0.1*m_remesh_edge_min_len*m_remesh_edge_min_len;
+  construction_parameters.m_min_triangle_area = 0.1*m_remesh_edge_min_len*m_remesh_edge_min_len;
   construction_parameters.m_verbose = false;
   construction_parameters.m_allow_non_manifold = true;
   construction_parameters.m_allow_topology_changes = true;

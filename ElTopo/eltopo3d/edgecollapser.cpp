@@ -279,7 +279,7 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
             return true;
         } 
         
-        if ( new_area < m_surf.m_min_triangle_area )
+        if ( new_area < m_surf.m_min_triangle_area * 1e-10 && false)
         {
             if ( m_surf.m_verbose ) { std::cout << "collapse edge introduces tiny triangle area" << std::endl; }
             
