@@ -503,10 +503,10 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
 
   dynamic_surface.set_all_newpositions( vert_new );
     
-    for (size_t i = 0; i < vert_old.size(); i++)
-        std::cout << "old vertex " << i << ": " << vert_old[i] << std::endl;
-    for (size_t i = 0; i < vert_new.size(); i++)
-        std::cout << "new vertex " << i << ": " << vert_new[i] << std::endl;
+//    for (size_t i = 0; i < vert_old.size(); i++)
+//        std::cout << "old vertex " << i << ": " << vert_old[i] << std::endl;
+//    for (size_t i = 0; i < vert_new.size(); i++)
+//        std::cout << "new vertex " << i << ": " << vert_new[i] << std::endl;
   
   // advance by dt
   double actual_dt;
@@ -698,11 +698,11 @@ void ElasticShell::setSelfCollision(bool enabled) {
 
 void ElasticShell::endStep(Scalar time, Scalar timestep) {
     
-    for (VertexIterator v = m_obj->vertices_begin(); v != m_obj->vertices_end(); ++v)
-    {
-        assert(getVertexPosition(*v) == getVertexPosition(*v));
-        std::cout << "vertex " << (*v).idx() << ": " << getVertexPosition(*v) << std::endl;
-    }
+//    for (VertexIterator v = m_obj->vertices_begin(); v != m_obj->vertices_end(); ++v)
+//    {
+//        assert(getVertexPosition(*v) == getVertexPosition(*v));
+//        std::cout << "vertex " << (*v).idx() << ": " << getVertexPosition(*v) << std::endl;
+//    }
 
   if (m_stepping_callback)
     m_stepping_callback->beforeEndStep();
@@ -1344,15 +1344,15 @@ void ElasticShell::remesh(bool initial)
     Vec3d x1 = getVertexPosition(*fvit); ++fvit; assert(fvit);
     Vec3d x2 = getVertexPosition(*fvit); ++fvit; assert(!fvit);
     
-    if (x0.y() == 0 || x1.y() == 0 || x2.y() == 0)
-      std::cout << "face: " << x0 << " " << x1 << " " << x2 << std::endl;
+//    if (x0.y() == 0 || x1.y() == 0 || x2.y() == 0)
+//      std::cout << "face: " << x0 << " " << x1 << " " << x2 << std::endl;
     
     int w0 = onBBWall(x0);
     int w1 = onBBWall(x1);
     int w2 = onBBWall(x2);
     if (((w0 & w1) & w2) != 0)
     {
-      std::cout << "face: " << x0 << " " << x1 << " " << x2 << std::endl;
+//      std::cout << "face: " << x0 << " " << x1 << " " << x2 << std::endl;
       m_obj->deleteFace(*fit, false);
     }
   }
