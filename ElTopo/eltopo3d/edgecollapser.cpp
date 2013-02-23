@@ -275,7 +275,7 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
             if ( m_surf.m_verbose ) { std::cout << "collapse edge introduces normal inversion" << std::endl; }
             
             g_stats.add_to_int( "EdgeCollapser:collapse_normal_inversion", 1 );
-            
+          std::cout << "!!!!!! normal inv" << std::endl;
             return true;
         } 
         
@@ -284,7 +284,7 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
             if ( m_surf.m_verbose ) { std::cout << "collapse edge introduces tiny triangle area" << std::endl; }
             
             g_stats.add_to_int( "EdgeCollapser:collapse_degenerate_triangle", 1 );
-            
+          std::cout << "!!!!!! degen triangle" << std::endl;
             return true;
         } 
         
