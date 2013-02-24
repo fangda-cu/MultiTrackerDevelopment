@@ -14,6 +14,47 @@
 #include "BASim/src/Physics/DeformableObjects/Shells/ElasticShell.hh"
 #include "BASim/src/Physics/DeformableObjects/DefoObjTimeStepper.hh"
 #include "BASim/src/Physics/DeformableObjects/Shells/ShellVolumeForce.hh"
+#include "ElTopo/eltopo3d/surftrack.h"
+
+class Recording
+{
+public:
+  Recording() : m_recording_name("rec"), m_current_frame(0), m_current_step(0), m_recording(false) { }
+  
+  void setRecordingName(const std::string & name) { m_recording_name = name; }
+  const std::string & recordingName() const { return m_recording_name; }
+  
+  void setCurrentFrame(int frame) { m_current_frame = frame; m_current_step = 0; m_of.close(); m_if.close(); }
+  int currentFrame() const { return m_current_frame; }
+  
+  void recordSurfTrack(ElTopo::SurfTrack & st);
+  void loadRecording(ElTopo::SurfTrack & st);
+  
+  void turnOnRecording() { m_recording = true; m_playback = false; }
+  void turnOffRecording() { m_recording = false; }
+  bool isRecording() const { return m_recording; }
+  
+  void turnOnPlayback() { m_playback = true; m_recording = false; }
+  void turnOffPlayback() { m_playback = false; }
+  bool isPlaybackOn() const { return m_playback; }
+  
+public:
+  static void writeSurfTrack(std::ostream & os, ElTopo::SurfTrack & st);
+  static void readSurfTrack(std::istream & is, ElTopo::SurfTrack & st);
+  
+protected:
+  std::string m_recording_name;
+  int m_current_frame;  // frame number
+  int m_current_step;   // step number within the frame
+  
+  bool m_recording;
+  bool m_playback;
+  
+  std::ofstream m_of;
+  std::ifstream m_if;
+};
+
+extern Recording g_recording;
 
 class DoubleBubbleTest : public Problem, public ElasticShell::SteppingCallback
 {
@@ -21,8 +62,8 @@ public:
   DoubleBubbleTest();
   virtual ~DoubleBubbleTest();
 
-  virtual void serialize( std::ofstream& of ) { assert(!"Not implemented"); }
-  virtual void resumeFromfile( std::ifstream& ifs ) { assert(!"Not implemented"); }
+  virtual void serialize( std::ofstream& of );
+  virtual void resumeFromfile( std::ifstream& ifs );
 
   void beforeEndStep();
   
@@ -30,6 +71,9 @@ protected:
   void Setup();
   void AtEachTimestep();
   void AfterStep();
+  
+  void keyboard(unsigned char k, int x, int y);
+
   
   DeformableObject * shellObj;
   ElasticShell * shell;
@@ -49,6 +93,9 @@ protected:
   int onBBWall(const Vec3d & pos) const;
   void updateBBWallConstraints();
     
+  ElTopo::SurfTrack * mesh2surftrack();
+  void surftrack2mesh(ElTopo::SurfTrack & st);
+  
 public:
   void setupScene1(); // VIIM test: single film in cube
   void setupScene2(); // T1 transition
