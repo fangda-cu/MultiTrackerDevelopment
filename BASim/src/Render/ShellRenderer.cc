@@ -697,6 +697,8 @@ void ShellRenderer::render()
         
         Vec3d c = (p0 + p1 + p2) / 3;
         Vec3d n = (p1 - p0).cross(p2 - p0).normalized();
+          
+        Scalar mean_edge_length = ((p0 - p1).norm() + (p1 - p2).norm() + (p2 - p0).norm()) / 3;
 
         Vec3d color0 = labelcolors[std::max(0, regions.x() + 1)];
         glColor3d(color0.x(), color0.y(), color0.z());
@@ -704,7 +706,7 @@ void ShellRenderer::render()
         if (regions.x() >= 0)
         {
           OpenGL::vertex(c);
-          OpenGL::vertex(Vec3d(c - n * 0.02));
+          OpenGL::vertex(Vec3d(c - n * mean_edge_length * 0.1));
         }
         
         Vec3d color1 = labelcolors[std::max(0, regions.y() + 1)];
@@ -713,7 +715,7 @@ void ShellRenderer::render()
         if (regions.y() >= 0)
         {
           OpenGL::vertex(c);
-          OpenGL::vertex(Vec3d(c + n * 0.02));          
+          OpenGL::vertex(Vec3d(c + n * mean_edge_length * 0.1));          
         }
       }
       glEnd();
