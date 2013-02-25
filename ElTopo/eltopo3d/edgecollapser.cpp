@@ -219,6 +219,17 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
     {
         moving_triangles.push_back( m_surf.m_mesh.m_vertex_to_triangle_map[destination_vertex][i] );
     }
+  
+    double min_triangle_area = -1;
+    for (size_t i = 0; i < moving_triangles.size(); i++)
+    {
+        Vec3st current_triangle = m_surf.m_mesh.get_triangle(moving_triangles[i]);
+        double area = triangle_area(m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1]), m_surf.get_position(current_triangle[2]));
+        if (min_triangle_area < 0 || area < min_triangle_area)
+            min_triangle_area = area;
+    }
+    assert(min_triangle_area > 0);
+    min_triangle_area = std::min(min_triangle_area, m_surf.m_min_triangle_area);
     
     //
     // check for normal inversion
@@ -280,7 +291,7 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
             return true;
         } 
         
-        if ( new_area < m_surf.m_min_triangle_area )
+        if ( new_area < min_triangle_area )
         {
             if ( m_surf.m_verbose ) { std::cout << "collapse edge introduces tiny triangle area" << std::endl; }
             
@@ -358,6 +369,28 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
     std::vector<size_t> moving_triangles;
     get_moving_triangles( source_vertex, destination_vertex,  moving_triangles );
     
+    double min_tri_angle = -1;
+    double max_tri_angle = -1;
+    for ( size_t i = 0; i < moving_triangles.size(); ++i )
+    {
+        const Vec3st& tri = m_surf.m_mesh.get_triangle( moving_triangles[i] );
+        double mina = min_triangle_angle(m_surf.get_position(tri[0]), m_surf.get_position(tri[1]), m_surf.get_position(tri[2]));
+        double maxa = max_triangle_angle(m_surf.get_position(tri[0]), m_surf.get_position(tri[1]), m_surf.get_position(tri[2]));
+        assert(mina > 0);
+        assert(maxa > mina);
+        assert(M_PI > maxa);
+        if (min_tri_angle < 0 || mina < min_tri_angle)
+            min_tri_angle = mina;
+        if (max_tri_angle < 0 || maxa > max_tri_angle)
+            max_tri_angle = maxa;
+    }
+    assert(min_tri_angle > 0);
+    assert(max_tri_angle > min_tri_angle);
+    assert(M_PI > max_tri_angle);
+    
+    min_tri_angle = std::min(min_tri_angle, m_surf.m_min_triangle_angle);
+    max_tri_angle = std::max(max_tri_angle, m_surf.m_max_triangle_angle);
+    
     for ( size_t i = 0; i < moving_triangles.size(); ++i )
     {
         const Vec3st& tri = m_surf.m_mesh.get_triangle( moving_triangles[i] );
@@ -404,14 +437,14 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
         
         double min_angle = min_triangle_angle( a, b, c );
         
-        if ( rad2deg(min_angle) < m_surf.m_min_triangle_angle )
+        if ( rad2deg(min_angle) < min_tri_angle )
         {
             return true;
         }
         
         double max_angle = max_triangle_angle( a, b, c );
         
-        if ( rad2deg(max_angle) > m_surf.m_max_triangle_angle )
+        if ( rad2deg(max_angle) > max_tri_angle )
         {
             return true;
         }
