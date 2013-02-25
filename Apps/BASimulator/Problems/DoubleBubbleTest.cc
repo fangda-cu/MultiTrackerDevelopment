@@ -148,6 +148,12 @@ void Recording::readSurfTrack(std::istream & is, ElTopo::SurfTrack & st)
   st.set_all_positions(pos);
   st.set_all_newpositions(pos);  
   st.set_all_remesh_velocities(std::vector<ElTopo::Vec3d>(n, ElTopo::Vec3d(0)));
+  st.m_mesh.m_vertex_constraint_labels.resize(n);
+  for (size_t i = 0; i < n; i++)
+    st.m_mesh.set_vertex_constraint_label(i, false);
+  
+//  std::cout << "nv: " << pos.size() << " " << st.pm_velocities.size() << " " << st.m_mesh.m_vertex_constraint_labels.size() << " " << st.m_mesh.m_vertex_to_triangle_map.size() << std::endl;
+//  std::cout << "nv: " << st.m_mesh.nv() << std::endl;
   
   n = st.m_mesh.nt();
   is.read((char *)&n, sizeof (size_t));
@@ -170,7 +176,17 @@ void Recording::readSurfTrack(std::istream & is, ElTopo::SurfTrack & st)
   st.m_mesh.replace_all_triangles(tris, labels);
 //  for (size_t i = 0; i < n; i++)
 //    st.m_mesh.set_triangle_label(i, labels[i]);
+  
+  size_t nv = st.m_mesh.m_vertex_to_triangle_map.size();
+  st.pm_positions.resize(nv);
+  st.pm_newpositions.resize(nv);
+  st.pm_velocities.resize(nv);
+  st.m_velocities.resize(nv);
+  st.m_mesh.m_vertex_constraint_labels.resize(nv);
 
+//  std::cout << "nv: " << pos.size() << " " << st.pm_velocities.size() << " " << st.m_mesh.m_vertex_constraint_labels.size() << " " << st.m_mesh.m_vertex_to_triangle_map.size() << std::endl;
+//  std::cout << "nv: " << st.m_mesh.nv() << std::endl;
+  
 }
 
 void Recording::recordSurfTrack(const ElTopo::SurfTrack & st)
@@ -735,6 +751,9 @@ ElTopo::SurfTrack * DoubleBubbleTest::mesh2surftrack()
 
 void DoubleBubbleTest::surftrack2mesh(const ElTopo::SurfTrack & surface_tracker)
 {
+//  std::cout << "nv 3: " << surface_tracker.pm_positions.size() << " " << surface_tracker.pm_velocities.size() << " " << surface_tracker.m_mesh.m_vertex_constraint_labels.size() << " " << surface_tracker.m_mesh.m_vertex_to_triangle_map.size() << std::endl;
+//  std::cout << "nv 3: " << surface_tracker.m_mesh.nv() << std::endl;
+  
   for (FaceIterator fit = shellObj->faces_begin(); fit != shellObj->faces_end(); ++fit)
     shellObj->deleteFace(*fit, true);
   
@@ -2704,6 +2723,10 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
     {
       ElTopo::SurfTrack * st = mesh2surftrack();
       g_recording.loadRecording(*st);
+      
+//      std::cout << "nv 2: " << st->pm_positions.size() << " " << st->pm_velocities.size() << " " << st->m_mesh.m_vertex_constraint_labels.size() << " " << st->m_mesh.m_vertex_to_triangle_map.size() << std::endl;
+//      std::cout << "nv 2: " << st->m_mesh.nv() << std::endl;
+      
       surftrack2mesh(*st);
       delete st;
       
