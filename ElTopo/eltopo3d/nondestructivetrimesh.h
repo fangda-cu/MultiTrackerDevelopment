@@ -165,15 +165,15 @@ public:
     
     /// Query vertex count
     ///
-    size_t nv();
+    size_t nv() const;
     
     /// Query edge count
     ///
-    size_t ne();
+    size_t ne() const;
     
     /// Query triangle count
     ///
-    size_t nt();
+    size_t nt() const;
         
     /// Given two vertices on a triangle, return the third vertex
     ///

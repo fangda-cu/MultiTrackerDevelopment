@@ -143,7 +143,9 @@ m_perform_smoothing( initial_parameters.m_perform_smoothing),
 m_vertex_change_history(),
 m_triangle_change_history(),
 m_defragged_triangle_map(),
-m_defragged_vertex_map()
+m_defragged_vertex_map(),
+m_constrained_vertices_callback(NULL),
+m_mesheventcallback(NULL)
 {
     
     if ( m_verbose )

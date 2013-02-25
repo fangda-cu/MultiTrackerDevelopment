@@ -25,6 +25,7 @@
 namespace ElTopo {
 
 extern RunStats g_stats;
+  
 
 // ---------------------------------------------------------
 // Member function definitions
@@ -1172,6 +1173,9 @@ bool EdgeCollapser::collapse_pass()
           { 
             // clean up degenerate triangles and tets
             m_surf.trim_degeneracies( m_surf.m_dirty_triangles );            
+            
+              if (m_surf.m_mesheventcallback)
+                  m_surf.m_mesheventcallback->collapse(m_surf, e);
           }
 
           collapse_occurred |= result;

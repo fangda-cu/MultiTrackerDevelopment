@@ -27,7 +27,7 @@ public:
   void setCurrentFrame(int frame) { m_current_frame = frame; m_current_step = 0; m_of.close(); m_if.close(); }
   int currentFrame() const { return m_current_frame; }
   
-  void recordSurfTrack(ElTopo::SurfTrack & st);
+  void recordSurfTrack(const ElTopo::SurfTrack & st);
   void loadRecording(ElTopo::SurfTrack & st);
   
   void turnOnRecording() { m_recording = true; m_playback = false; }
@@ -39,7 +39,7 @@ public:
   bool isPlaybackOn() const { return m_playback; }
   
 public:
-  static void writeSurfTrack(std::ostream & os, ElTopo::SurfTrack & st);
+  static void writeSurfTrack(std::ostream & os, const ElTopo::SurfTrack & st);
   static void readSurfTrack(std::istream & is, ElTopo::SurfTrack & st);
   
 protected:
@@ -56,7 +56,7 @@ protected:
 
 extern Recording g_recording;
 
-class DoubleBubbleTest : public Problem, public ElasticShell::SteppingCallback
+class DoubleBubbleTest : public Problem, public ElasticShell::SteppingCallback, public ElTopo::SurfTrack::MeshEventCallback
 {
 public:
   DoubleBubbleTest();
@@ -94,8 +94,11 @@ protected:
   void updateBBWallConstraints();
     
   ElTopo::SurfTrack * mesh2surftrack();
-  void surftrack2mesh(ElTopo::SurfTrack & st);
+  void surftrack2mesh(const ElTopo::SurfTrack & st);
   
+    // callback
+    void collapse(const ElTopo::SurfTrack & st, size_t e);
+    
 public:
   void setupScene1(); // VIIM test: single film in cube
   void setupScene2(); // T1 transition

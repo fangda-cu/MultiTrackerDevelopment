@@ -450,7 +450,6 @@ struct MeshUpdateEvent
 
 class SurfTrack : public DynamicSurface
 {
-    
 public:
     
     /// Create a SurfTrack object from a set of vertices and triangles using the specified parameters
@@ -662,6 +661,19 @@ public:
     /// boolean, whether to do null space smoothing on vertex positions
     int m_perform_smoothing;
     
+    
+    /// Mesh update event callback
+    ///
+    class MeshEventCallback
+    {
+    public:
+        virtual void collapse(const SurfTrack & st, size_t e) { }
+        virtual void split(const SurfTrack & st, size_t e) { }
+        virtual void flip(const SurfTrack & st, size_t e) { }
+        
+    };
+    
+    MeshEventCallback * m_mesheventcallback;
     
     ///////////////////////////////////////////////////////////////////////
     // FD 20121229

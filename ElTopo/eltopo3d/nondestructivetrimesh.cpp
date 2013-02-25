@@ -307,7 +307,7 @@ void NonDestructiveTriMesh::set_num_vertices( size_t num_vertices )
 ///
 // ---------------------------------------------------------
     
-size_t NonDestructiveTriMesh::nv()
+size_t NonDestructiveTriMesh::nv() const
 {
     assert(m_vertex_to_triangle_map.size() == m_vertex_to_edge_map.size());
     assert(m_vertex_to_triangle_map.size() == m_is_boundary_vertex.size());
@@ -317,7 +317,7 @@ size_t NonDestructiveTriMesh::nv()
 }
 
 
-size_t NonDestructiveTriMesh::ne()
+size_t NonDestructiveTriMesh::ne() const
 {
     assert(m_edges.size() == m_edge_to_triangle_map.size());
     
@@ -325,7 +325,7 @@ size_t NonDestructiveTriMesh::ne()
 }
 
 
-size_t NonDestructiveTriMesh::nt()
+size_t NonDestructiveTriMesh::nt() const
 {
     assert(m_tris.size() == m_triangle_to_edge_map.size());
     assert(m_tris.size() == m_triangle_labels.size());

@@ -55,7 +55,7 @@ int db_current_ply_frame = 0;
 extern std::string outputdirectory;
 Recording g_recording;
 
-void Recording::writeSurfTrack(std::ostream & os, ElTopo::SurfTrack & st)
+void Recording::writeSurfTrack(std::ostream & os, const ElTopo::SurfTrack & st)
 {
   size_t n;
   n = st.m_mesh.nv();
@@ -173,7 +173,7 @@ void Recording::readSurfTrack(std::istream & is, ElTopo::SurfTrack & st)
 
 }
 
-void Recording::recordSurfTrack(ElTopo::SurfTrack & st)
+void Recording::recordSurfTrack(const ElTopo::SurfTrack & st)
 {
   if (!isRecording())
     return;
@@ -727,7 +727,7 @@ ElTopo::SurfTrack * DoubleBubbleTest::mesh2surftrack()
   return st;
 }
 
-void DoubleBubbleTest::surftrack2mesh(ElTopo::SurfTrack & surface_tracker)
+void DoubleBubbleTest::surftrack2mesh(const ElTopo::SurfTrack & surface_tracker)
 {
   for (FaceIterator fit = shellObj->faces_begin(); fit != shellObj->faces_end(); ++fit)
     shellObj->deleteFace(*fit, true);
@@ -2770,4 +2770,9 @@ void DoubleBubbleTest::setupScene12()
   
   shell->setFaceLabels(faceLabels);
   
+}
+
+void DoubleBubbleTest::collapse(const ElTopo::SurfTrack & st, size_t e)
+{
+    g_recording.recordSurfTrack(st);
 }
