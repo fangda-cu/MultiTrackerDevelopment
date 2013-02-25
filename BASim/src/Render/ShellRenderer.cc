@@ -228,6 +228,25 @@ bool junctionNeighbor(const DeformableObject & mesh, FaceHandle f)
 
   return false;
 }
+    
+int onBBWall(const Vec3d & pos)
+{
+    int walls = 0;
+    if (pos.x() < 0 + 1e-6)
+        walls |= (1 << 0);
+    if (pos.y() < 0 + 1e-6)
+        walls |= (1 << 1);
+    if (pos.z() < 0 + 1e-6)
+        walls |= (1 << 2);
+    if (pos.x() > 1 - 1e-6)
+        walls |= (1 << 3);
+    if (pos.y() > 1 - 1e-6)
+        walls |= (1 << 4);
+    if (pos.z() > 1 - 1e-6)
+        walls |= (1 << 5);
+    
+    return walls;
+}
 
 void ShellRenderer::keyboard(unsigned char key, int x, int y)
 {
@@ -889,11 +908,11 @@ void ShellRenderer::render()
       } else if (maxangle > 177 * M_PI / 180)
       {
           glColor4f(1.0, 0.0, 1.0, 1.0);
-      } else if(!m_shell.getDefoObj().isConstrained(vh)) {
-        OpenGL::color(Color(0.0,0.0,0.0,0.1));
+      } else if(onBBWall(vertPos)) {
+        OpenGL::color(Color(0.0,1.0,0.0,1.0));
       }
       else {
-        OpenGL::color(Color(0.0,1.0,0.0,0.1));
+        OpenGL::color(Color(0.0,0.0,0.0,0.1));
       }
       
       OpenGL::vertex(vertPos);
