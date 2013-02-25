@@ -1202,8 +1202,8 @@ void ElasticShell::remesh(bool initial)
   surface_tracker.m_mesh.m_vertex_constraint_labels = vert_const_labels;
   surface_tracker.set_all_remesh_velocities(vert_vel);
     
-    for (size_t i = 0; i < vert_data.size(); i++)
-        std::cout << "vertex " << i << ": " << vert_data[i] << std::endl;
+//    for (size_t i = 0; i < vert_data.size(); i++)
+//        std::cout << "vertex " << i << ": " << vert_data[i] << std::endl;
     
     //remove faces that are completely within a BB wall (equivalent to a flap face if BB walls are triangulated). these faces result in collision handling difficulties when they collide within BB walls.
     for (size_t i = 0; i < surface_tracker.m_mesh.nt(); i++)
