@@ -1271,7 +1271,8 @@ bool EdgeCollapser::collapse_will_produce_irregular_junction(size_t edge)
         if (l[0] >= 0 && l[1] >= 0)
             regiongraph[l[0] * nr + l[1]] = regiongraph[l[1] * nr + l[0]] = true;
     }
-    
+
+//    std::cout << "Edge " << edge << ": " << a << " (" << m_surf.get_position(a) << ") - " << b << " (" << m_surf.get_position(b) << ")" << std::endl;
 //    std::cout << "RG: " << std::endl;
 //    std::cout << "    ";
 //    for (int i = 0; i < nr; i++)
