@@ -1198,6 +1198,7 @@ void ElasticShell::remesh(bool initial)
   
   ElTopo::SurfTrack surface_tracker( vert_data, tri_data, tri_labels, masses, construction_parameters ); 
   surface_tracker.m_constrained_vertices_callback = this;
+  surface_tracker.m_mesheventcallback = m_mesheventcallback;
   surface_tracker.m_mesh.m_vertex_constraint_labels = vert_const_labels;
   surface_tracker.set_all_remesh_velocities(vert_vel);
     

@@ -430,6 +430,7 @@ void DoubleBubbleTest::Setup()
   //Call the appropriate scene setup function.
   (*this.*db_scenes[sceneChoice])();
 
+  shell->setMeshEventCallback(this);
   shell->getVertexConstraintLabels().assign(0);
   
 //  shell->setThickness(thickness); /////////////////////////

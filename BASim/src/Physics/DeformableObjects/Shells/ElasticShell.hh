@@ -204,6 +204,8 @@ public:
     bool m_remesh_t1transition;
     bool m_remesh_smooth_subdivision;
 
+    void setMeshEventCallback(ElTopo::SurfTrack::MeshEventCallback * cb) { m_mesheventcallback = cb; }
+    
 protected:
 
   void performTearing(const EdgeHandle & eh);
@@ -316,7 +318,9 @@ protected:
   
   // stepping callback
   SteppingCallback * m_stepping_callback;
-  
+
+  // other callbacks
+  ElTopo::SurfTrack::MeshEventCallback * m_mesheventcallback;
 };
 
 }
