@@ -1023,6 +1023,9 @@ bool T1Transition::pop_vertices()
             
             pop_occurred = true;
             
+            if (m_surf.m_mesheventcallback)
+                m_surf.m_mesheventcallback->t1(m_surf, xj);
+            
             break;
             
         }

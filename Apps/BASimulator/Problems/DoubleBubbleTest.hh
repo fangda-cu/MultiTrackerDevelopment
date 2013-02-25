@@ -100,6 +100,7 @@ protected:
     void collapse(const ElTopo::SurfTrack & st, size_t e);
     void split(const ElTopo::SurfTrack & st, size_t e);
     void flip(const ElTopo::SurfTrack & st, size_t e);
+    void t1(const ElTopo::SurfTrack & st, size_t v);
     
 public:
   void setupScene1(); // VIIM test: single film in cube

@@ -2816,3 +2816,8 @@ void DoubleBubbleTest::flip(const ElTopo::SurfTrack & st, size_t e)
 {
     g_recording.recordSurfTrack(st);
 }
+
+void DoubleBubbleTest::t1(const ElTopo::SurfTrack & st, size_t e)
+{
+    g_recording.recordSurfTrack(st);
+}

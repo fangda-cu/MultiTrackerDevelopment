@@ -670,7 +670,7 @@ public:
         virtual void collapse(const SurfTrack & st, size_t e) { }
         virtual void split(const SurfTrack & st, size_t e) { }
         virtual void flip(const SurfTrack & st, size_t e) { }
-        
+        virtual void t1(const SurfTrack & st, size_t v) { }
     };
     
     MeshEventCallback * m_mesheventcallback;
