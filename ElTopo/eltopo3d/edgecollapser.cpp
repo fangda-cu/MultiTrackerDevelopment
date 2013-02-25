@@ -287,7 +287,7 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
             if ( m_surf.m_verbose ) { std::cout << "collapse edge introduces normal inversion" << std::endl; }
             
             g_stats.add_to_int( "EdgeCollapser:collapse_normal_inversion", 1 );
-          std::cout << "!!!!!! normal inv" << std::endl;
+//          std::cout << "!!!!!! normal inv" << std::endl;
             return true;
         } 
         
@@ -296,7 +296,7 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
             if ( m_surf.m_verbose ) { std::cout << "collapse edge introduces tiny triangle area" << std::endl; }
             
             g_stats.add_to_int( "EdgeCollapser:collapse_degenerate_triangle", 1 );
-          std::cout << "!!!!!! degen triangle" << std::endl;
+//          std::cout << "!!!!!! degen triangle" << std::endl;
             return true;
         } 
         
@@ -485,9 +485,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   
   if (dot(rel_vel, edge_vec) > 0 && collapse_will_produce_irregular_junction(edge))
   {
-    if (m_surf.m_verbose || true)
+    if (m_surf.m_verbose)
       std::cout << "The collapse will produce irregular junction, but the endpoints are moving apart. No need to collapse." << std::endl;
-    std::cout << "!!!rel vel" << std::endl;
+//    std::cout << "!!!rel vel" << std::endl;
     return false;
   }
   
@@ -530,7 +530,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
         {
           if ( m_surf.m_verbose ) { std::cout << "would_be_non_manifold" << std::endl; }
           would_be_non_manifold = true;
-          std::cout << "!!!non man" << std::endl;
+//          std::cout << "!!!non man" << std::endl;
           return false;
         }            
       }
@@ -575,13 +575,13 @@ bool EdgeCollapser::collapse_edge( size_t edge )
             // found a vertex adjacent to both edge vertices, which doesn't lie on the incident triangles
 
             //
-            if ( m_surf.m_verbose || true )
+            if ( m_surf.m_verbose )
             {
               std::cout << " --- Edge Collapser: found a vertex adjacent to both edge vertices, which doesn't lie on the incident triangles " << std::endl;
               std::cout << " --- Adjacent vertex: " << adj_vertices0[i] << ", incident triangles: ";
             }
 
-            std::cout << "!!!tunnel close" << std::endl;
+//            std::cout << "!!!tunnel close" << std::endl;
             return false;
           }
 
@@ -605,8 +605,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
       if ( triangle_i[0] == triangle_i[1] || triangle_i[1] == triangle_i[2] || triangle_i[2] == triangle_i[0] )
       {
-        if ( m_surf.m_verbose || true ) { std::cout << "duplicate vertices on triangle" << std::endl; }
-        std::cout << "!!!deleted triangle" << std::endl;
+        if ( m_surf.m_verbose ) { std::cout << "duplicate vertices on triangle" << std::endl; }
+//        std::cout << "!!!deleted triangle" << std::endl;
         return false;
       }
 
@@ -616,9 +616,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
         if ( NonDestructiveTriMesh::triangle_has_these_verts( triangle_i, triangle_j ) )            
         {
-          if ( m_surf.m_verbose || true ) { std::cout << "two triangles share vertices" << std::endl; }
+          if ( m_surf.m_verbose ) { std::cout << "two triangles share vertices" << std::endl; }
           g_stats.add_to_int( "EdgeCollapser:collapse_degen_tet", 1 );
-          std::cout << "!!!share vert" << std::endl;
+//          std::cout << "!!!share vert" << std::endl;
           return false;
         }
       }
@@ -727,9 +727,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     if (!m_surf.m_constrained_vertices_callback->generate_collapsed_position(m_surf, vertex_to_keep, vertex_to_delete, newpos))
     {
       // the callback decides this edge should not be collapsed
-      if (m_surf.m_verbose || true)
+      if (m_surf.m_verbose)
         std::cout << "Constraint callback vetoed collapsing." << std::endl;
-      std::cout << "!!!callback veto" << std::endl;
+//      std::cout << "!!!callback veto" << std::endl;
       return false;
     }
     
@@ -904,8 +904,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
       g_stats.add_to_int( "EdgeCollapser:collapse_volume_change", 1 );
 
-      if ( m_surf.m_verbose || true) { std::cout << "collapse_volume_change" << std::endl; }
-      std::cout << "!!!vol change" << std::endl;
+      if ( m_surf.m_verbose ) { std::cout << "collapse_volume_change" << std::endl; }
+//      std::cout << "!!!vol change" << std::endl;
       return false;
     }
 
@@ -917,8 +917,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       m_surf.set_newposition( vertex_to_keep, m_surf.get_position(vertex_to_keep) );
       m_surf.set_newposition( vertex_to_delete, m_surf.get_position(vertex_to_delete) );
 
-      if ( m_surf.m_verbose || true ) { std::cout << "normal_inversion" << std::endl; }
-      std::cout << "!!!normal inv" << std::endl;
+      if ( m_surf.m_verbose ) { std::cout << "normal_inversion" << std::endl; }
+//      std::cout << "!!!normal inv" << std::endl;
       return false;
     }
 
@@ -930,10 +930,10 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       m_surf.set_newposition( vertex_to_keep, m_surf.get_position(vertex_to_keep) );
       m_surf.set_newposition( vertex_to_delete, m_surf.get_position(vertex_to_delete) );
 
-      if ( m_surf.m_verbose || true ) { std::cout << "bad_angle" << std::endl; }
+      if ( m_surf.m_verbose ) { std::cout << "bad_angle" << std::endl; }
 
       g_stats.add_to_int( "EdgeCollapser:collapse_bad_angle", 1 );
-      std::cout << "!!!bad angle" << std::endl;
+//      std::cout << "!!!bad angle" << std::endl;
       return false;
 
     }
@@ -947,10 +947,10 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
     if ( collision ) 
     { 
-      if ( m_surf.m_verbose || true ) { std::cout << "collision" << std::endl; }
-      std::cout << "vert to delete: " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
-      std::cout << "vert to keep: " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ")" << std::endl;
-      std::cout << "new position: " << 0 << " (" << vertex_new_position << ")" << std::endl;
+      if ( m_surf.m_verbose ) { std::cout << "collision" << std::endl; }
+//      std::cout << "vert to delete: " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
+//      std::cout << "vert to keep: " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ")" << std::endl;
+//      std::cout << "new position: " << 0 << " (" << vertex_new_position << ")" << std::endl;
       g_stats.add_to_int( "EdgeCollapser:collapse_collisions", 1 ); 
     }
 
@@ -961,7 +961,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     if ( collision )
     {
       // edge collapse would introduce collision or change volume too much or invert triangle normals
-      std::cout << "!!!collision" << std::endl;
+//      std::cout << "!!!collision" << std::endl;
       return false;
     }
   }
