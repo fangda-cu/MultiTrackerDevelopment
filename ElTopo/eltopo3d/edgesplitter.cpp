@@ -881,6 +881,8 @@ bool EdgeSplitter::large_angle_split_pass()
         if ( result )
         {
           g_stats.add_to_int( "EdgeSplitter:large_angle_split_success", 1 );
+          if (m_surf.m_mesheventcallback)
+            m_surf.m_mesheventcallback->split(m_surf, e);
         }
         else
         {
