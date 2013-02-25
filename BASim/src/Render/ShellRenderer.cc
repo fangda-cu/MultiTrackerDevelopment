@@ -593,18 +593,18 @@ void ShellRenderer::render()
       //p0 = p0 + 0.05*dir;
       //p1 = p1 - 0.05*dir;
       if ( m_shell.shouldFracture(*eit) ){
-        OpenGL::color(Color(1.0, 1.0, 0.0, 1.0));
+        OpenGL::color(Color(1.0, 1.0, 0.0, 0.2));
       } else if (mesh.isBoundary(*eit)){
-        OpenGL::color(Color(0.0, 1.0, 0.0, 1.0));
+        OpenGL::color(Color(0.0, 1.0, 0.0, 0.2));
       }
       else {
-        OpenGL::color(Color(0.0,0.0,0.0, 1.0));
+        OpenGL::color(Color(0.0,0.0,0.0, 0.2));
       }
         
         if ((p0 - p1).norm() <= 0.1)
         {
             glLineWidth(5);
-            glColor4f(0.0, 0.5, 1.0, 1.0);
+            glColor4f(0.0, 0.5, 1.0, 0.2);
             glLineWidth(2);
         }
       
@@ -612,11 +612,11 @@ void ShellRenderer::render()
       {
         int ne = junction(mesh, eh);
         if (ne == 3)
-          OpenGL::color(Color(1.0, 0.0, 1.0, 1.0));
+          OpenGL::color(Color(1.0, 0.0, 1.0, 0.2));
         else if (ne == 4)
-          OpenGL::color(Color(0.3, 0.8, 0.9, 1.0));
+          OpenGL::color(Color(0.3, 0.8, 0.9, 0.2));
         else if (ne > 4)
-          OpenGL::color(Color(0.2, 0.3, 1.0, 1.0));
+          OpenGL::color(Color(0.2, 0.3, 1.0, 0.2));
       }
       
       bool visible = false;
@@ -706,7 +706,7 @@ void ShellRenderer::render()
         if (regions.x() >= 0)
         {
           OpenGL::vertex(c);
-          OpenGL::vertex(Vec3d(c - n * mean_edge_length * 0.1));
+          OpenGL::vertex(Vec3d(c - n * mean_edge_length * 0.02));
         }
         
         Vec3d color1 = labelcolors[std::max(0, regions.y() + 1)];
@@ -715,7 +715,7 @@ void ShellRenderer::render()
         if (regions.y() >= 0)
         {
           OpenGL::vertex(c);
-          OpenGL::vertex(Vec3d(c + n * mean_edge_length * 0.1));          
+          OpenGL::vertex(Vec3d(c + n * mean_edge_length * 0.02));          
         }
       }
       glEnd();
@@ -764,7 +764,7 @@ void ShellRenderer::render()
       }
       barycentre /= 3.0;
 
-      Scalar alpha = 0.25;
+      Scalar alpha = 0.1;
       OpenGL::color(Color(1.0,0.0,0.0,alpha));
 
       Vec2i regions = m_shell.getFaceLabel(sorted_faces[i].first);
@@ -827,6 +827,9 @@ void ShellRenderer::render()
     
     //Render all vertices
     glPointSize(4);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
     glBegin(GL_POINTS);
     
     for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) 
@@ -839,16 +842,18 @@ void ShellRenderer::render()
           continue;
       
       if(!m_shell.getDefoObj().isConstrained(vh)) {
-        OpenGL::color(Color(0,0,0));
+        OpenGL::color(Color(0.0,0.0,0.0,0.2));
       }
       else {
-        OpenGL::color(Color(0,255,0));
+        OpenGL::color(Color(0.0,1.0,0.0,0.2));
       }
       
       OpenGL::vertex(vertPos);
     }
     glEnd();
-    
+    glDisable(GL_BLEND);
+    glDepthMask(GL_TRUE);
+
     //Draw collision springs
     std::vector<Vec3d> starts, ends;
     m_shell.getSpringList(starts, ends);
