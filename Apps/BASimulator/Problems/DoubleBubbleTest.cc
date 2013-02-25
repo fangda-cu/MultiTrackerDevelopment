@@ -2730,6 +2730,7 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
       surftrack2mesh(*st);
       delete st;
       
+      glutPostRedisplay();
     }
     
   }
