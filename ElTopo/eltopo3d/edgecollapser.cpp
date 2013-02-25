@@ -656,7 +656,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   {
     assert(m_surf.m_constrained_vertices_callback);
     new_vert_constraint_label = m_surf.m_constrained_vertices_callback->generate_collapsed_constraint_label(m_surf, vertex_to_keep, vertex_to_delete, m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep), m_surf.m_mesh.get_vertex_constraint_label(vertex_to_delete));
-      std::cout << "new cl = " << new_vert_constraint_label << std::endl;
+//      std::cout << "new cl = " << new_vert_constraint_label << std::endl;
   }
   
   if (keep_vert_is_constrained)   keep_rank = 5;
@@ -1058,8 +1058,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   // Store the history
   m_surf.m_mesh_change_history.push_back(collapse);
-  std::cout << "  collapse successful" << std::endl;
-    std::cout << " resulting vertex constraint label: " << m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep) << std::endl;
+//  std::cout << "  collapse successful" << std::endl;
+//    std::cout << " resulting vertex constraint label: " << m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep) << std::endl;
   return true;
 }
 
