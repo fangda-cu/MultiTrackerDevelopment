@@ -837,15 +837,52 @@ void ShellRenderer::render()
       Vec3d vertPos = m_shell.getVertexPosition(*vit); 
       VertexHandle vh = *vit;
       
+        double minangle = -1;
+        double maxangle = -1;
+        for (VertexFaceIterator vfit = mesh.vf_iter(vh); vfit; ++vfit)
+        {
+            FaceVertexIterator fvit = mesh.fv_iter(*vfit); assert(fvit);
+            VertexHandle v0 = *fvit; ++fvit; assert(fvit);
+            VertexHandle v1 = *fvit; ++fvit; assert(fvit);
+            VertexHandle v2 = *fvit; ++fvit; assert(!fvit);
+            
+            double angle = 0;
+            Vec3d a, b;
+            if (v0 == vh)
+            {
+                a = m_shell.getVertexPosition(v1);
+                b = m_shell.getVertexPosition(v2);
+            } else if (v1 == vh)
+            {
+                a = m_shell.getVertexPosition(v2);
+                b = m_shell.getVertexPosition(v0);
+            } else
+            {
+                a = m_shell.getVertexPosition(v0);
+                b = m_shell.getVertexPosition(v1);
+            }
+            angle = acos(((a - vertPos).squaredNorm() + (b - vertPos).squaredNorm() - (a - b).squaredNorm()) / (2 * (a - vertPos).norm() * (b - vertPos).norm()));
+            if (minangle < 0 || angle < minangle)
+                minangle = angle;
+            if (maxangle < 0 || angle > maxangle)
+                maxangle = angle;
+        }
+        
       if (m_mode == DBG_JUNCTION)
         if (!junctionNeighbor(mesh, vh))
           continue;
       
-      if(!m_shell.getDefoObj().isConstrained(vh)) {
-        OpenGL::color(Color(0.0,0.0,0.0,0.2));
+      if (minangle < 3 * M_PI / 180)
+      {
+          glColor4f(0.0, 1.0, 1.0, 1.0);
+      } else if (maxangle > 177 * M_PI / 180)
+      {
+          glColor4f(1.0, 0.0, 1.0, 1.0);
+      } else if(!m_shell.getDefoObj().isConstrained(vh)) {
+        OpenGL::color(Color(0.0,0.0,0.0,0.1));
       }
       else {
-        OpenGL::color(Color(0.0,1.0,0.0,0.2));
+        OpenGL::color(Color(0.0,1.0,0.0,0.1));
       }
       
       OpenGL::vertex(vertPos);
