@@ -104,7 +104,11 @@ void Recording::readSurfTrack(std::istream & is, ElTopo::SurfTrack & st)
 {
   // clear the mesh
   for (size_t i = 0; i < st.m_mesh.nt(); i++)
+  {
+    if (st.m_mesh.get_triangle(i)[0] == st.m_mesh.get_triangle(i)[1])
+      continue;
     st.remove_triangle(i);
+  }
   
   for (size_t i = 0; i < st.m_mesh.nv(); i++)
     st.remove_vertex(i);
@@ -112,6 +116,7 @@ void Recording::readSurfTrack(std::istream & is, ElTopo::SurfTrack & st)
   size_t n;
   n = st.m_mesh.nv();
   is.read((char *)&n, sizeof (size_t));
+//  std::cout << " nv = " << n << std::endl;
   st.m_mesh.set_num_vertices(n);
   std::vector<ElTopo::Vec3d> pos(n);
   for (size_t i = 0; i < n; i++)
@@ -157,6 +162,7 @@ void Recording::readSurfTrack(std::istream & is, ElTopo::SurfTrack & st)
   
   n = st.m_mesh.nt();
   is.read((char *)&n, sizeof (size_t));
+//  std::cout << "nt = " << n << std::endl;
   std::vector<ElTopo::Vec3st> tris;
   std::vector<ElTopo::Vec2i> labels;
   for (size_t i = 0; i < n; i++)
@@ -213,7 +219,7 @@ void Recording::recordSurfTrack(const ElTopo::SurfTrack & st)
   m_current_step++;
 }
 
-void Recording::loadRecording(ElTopo::SurfTrack & st)
+void Recording::loadRecording(ElTopo::SurfTrack & st, int next)
 {
   if (!isPlaybackOn())
     return;
@@ -229,8 +235,36 @@ void Recording::loadRecording(ElTopo::SurfTrack & st)
       std::cout << "Requested recording frame not found!" << std::endl;
       return;
     }
+    
+    m_step_pos.clear();
+    m_step_pos.push_back(m_if.tellg());
+    while (!m_if.eof())
+    {
+      int step = 0;
+      m_if.read((char *)&step, sizeof (step));
+      /////////
+//      readSurfTrack(m_if, st);
+      /////////
+      size_t n;
+      char buffer[100];
+      m_if.read((char *)&n, sizeof (n));
+      for (size_t i = 0; i < n; i++) m_if.read(buffer, sizeof (double) * 3);
+      m_if.read((char *)&n, sizeof (n));
+      for (size_t i = 0; i < n; i++) m_if.read(buffer, sizeof (size_t) * 3 + sizeof (int) * 2);
+      /////////
+      m_if.peek();
+      if (!m_if.eof())
+        m_step_pos.push_back(m_if.tellg());
+    }
+    std::cout << "Recording file " << filename << " contains " << m_step_pos.size() << " steps." << std::endl;
+    
+    m_if.seekg(m_step_pos.front());
+    m_if.clear();
   }
   
+  assert(m_current_step < m_step_pos.size());
+//  std::cout << "Loading step " << (m_current_step + next) % m_step_pos.size() << std::endl;
+  m_if.seekg(m_step_pos[(m_current_step + next) % m_step_pos.size()]);
   m_if.read((char *)&m_current_step, sizeof (m_current_step));
   readSurfTrack(m_if, st);
 
@@ -238,9 +272,8 @@ void Recording::loadRecording(ElTopo::SurfTrack & st)
   if (m_if.eof())
     m_if.close();
   
-  std::cout << "Loaded recording: step " << m_current_step << " of frame " << m_current_frame << std::endl;
+  std::cout << "Loaded recording: step " << m_current_step << "/" << m_step_pos.size() << " of frame " << m_current_frame << std::endl;
 }
-
 
 DoubleBubbleTest::DoubleBubbleTest() : 
   Problem("Double Bubble Test", "Various bubble dynamics tests"), 
@@ -2719,14 +2752,18 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
       setTime(getDt() * (f + 1));
       glutPostRedisplay();
       
-    } else if (k == '\\' || k == '|')
+    } else if (k == '>' || k == '.')
     {
       ElTopo::SurfTrack * st = mesh2surftrack();
-      g_recording.loadRecording(*st);
+      g_recording.loadRecording(*st, 1);
+      surftrack2mesh(*st);
+      delete st;
       
-//      std::cout << "nv 2: " << st->pm_positions.size() << " " << st->pm_velocities.size() << " " << st->m_mesh.m_vertex_constraint_labels.size() << " " << st->m_mesh.m_vertex_to_triangle_map.size() << std::endl;
-//      std::cout << "nv 2: " << st->m_mesh.nv() << std::endl;
-      
+      glutPostRedisplay();
+    } else if (k == '<' || k == ',')
+    {
+      ElTopo::SurfTrack * st = mesh2surftrack();
+      g_recording.loadRecording(*st, -1);
       surftrack2mesh(*st);
       delete st;
       

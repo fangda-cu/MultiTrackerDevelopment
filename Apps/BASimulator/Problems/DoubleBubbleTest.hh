@@ -28,7 +28,7 @@ public:
   int currentFrame() const { return m_current_frame; }
   
   void recordSurfTrack(const ElTopo::SurfTrack & st);
-  void loadRecording(ElTopo::SurfTrack & st);
+  void loadRecording(ElTopo::SurfTrack & st, int next = 1);
   
   void turnOnRecording() { m_recording = true; m_playback = false; }
   void turnOffRecording() { m_recording = false; }
@@ -49,6 +49,8 @@ protected:
   
   bool m_recording;
   bool m_playback;
+    
+  std::vector<std::streampos> m_step_pos;
   
   std::ofstream m_of;
   std::ifstream m_if;
