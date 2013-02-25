@@ -753,6 +753,12 @@ bool EdgeFlipper::flip_pass( )
             //}
             
             flip_occurred |= flipped;
+            
+            if (flipped)
+            {
+                if (m_surf.m_mesheventcallback)
+                    m_surf.m_mesheventcallback->flip(m_surf, i);
+            }
         }
         
         flip_occurred_ever |= flip_occurred;

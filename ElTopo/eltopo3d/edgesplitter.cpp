@@ -951,6 +951,11 @@ bool EdgeSplitter::split_pass()
            size_t result_vert;
             bool result = split_edge(longest_edge, result_vert);
             split_occurred |= result;
+            if (result)
+            {
+                if (m_surf.m_mesheventcallback)
+                    m_surf.m_mesheventcallback->split(m_surf, longest_edge);
+            }
         }
 
     }
