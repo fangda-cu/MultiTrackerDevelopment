@@ -1271,6 +1271,26 @@ bool EdgeCollapser::collapse_will_produce_irregular_junction(size_t edge)
         if (l[0] >= 0 && l[1] >= 0)
             regiongraph[l[0] * nr + l[1]] = true;
     }
+    
+    std::cout << "RG: " << std::endl;
+    std::cout << "    ";
+    for (int i = 0; i < nr; i++)
+        std::cout << regions[i] << " ";
+    std::cout << std::endl;
+    std::cout << "    ";
+    for (int i = 0; i < nr; i++)
+        std::cout << "--";
+    std::cout << std::endl;
+    
+    for (int i = 0; i < nr; i++)
+    {
+        std::cout << regions[i] << " | ";
+        for (int j = 0; j < nr; j++)
+        {
+            std::cout << regiongraph[i * nr + j] << " ";
+        }
+        std::cout << std::endl;
+    }
 
     bool irregular = false;
     for (int i = 0; i < nr; i++)
@@ -1280,6 +1300,7 @@ bool EdgeCollapser::collapse_will_produce_irregular_junction(size_t edge)
                 if (!regiongraph[i * nr + j])
                     irregular = true;
         }
+    std::cout << "irregular: " << irregular << std::endl;
     
     delete []regiongraph;
     
