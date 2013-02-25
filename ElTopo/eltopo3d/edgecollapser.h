@@ -128,6 +128,9 @@ private:
     ///
     bool edge_is_collapsible( size_t edge_index, double& cur_length );
     
+    /// Test if the result of a collapse will contain an irregular vertex that t1 may resolve
+    ///
+    bool collapse_will_produce_irregular_junction(size_t edge);
     
 };
 
