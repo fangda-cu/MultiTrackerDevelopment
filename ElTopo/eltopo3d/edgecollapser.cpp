@@ -466,7 +466,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   size_t vertex_to_keep = m_surf.m_mesh.m_edges[edge][0];
   size_t vertex_to_delete = m_surf.m_mesh.m_edges[edge][1];
   
-  std::cout << "attempting to collapse edge " << edge << ": " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") - " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
+//  std::cout << "attempting to collapse edge " << edge << ": " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") - " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
   
   bool keep_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_keep];
   bool del_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_delete];
