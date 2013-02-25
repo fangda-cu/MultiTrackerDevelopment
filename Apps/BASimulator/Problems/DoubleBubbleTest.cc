@@ -2804,20 +2804,24 @@ void DoubleBubbleTest::setupScene12()
 
 void DoubleBubbleTest::collapse(const ElTopo::SurfTrack & st, size_t e)
 {
+    std::cout << "collapse---" << std::endl;
     g_recording.recordSurfTrack(st);
 }
 
 void DoubleBubbleTest::split(const ElTopo::SurfTrack & st, size_t e)
 {
+    std::cout << "split---" << std::endl;
     g_recording.recordSurfTrack(st);
 }
 
 void DoubleBubbleTest::flip(const ElTopo::SurfTrack & st, size_t e)
 {
+    std::cout << "flip---" << std::endl;
     g_recording.recordSurfTrack(st);
 }
 
 void DoubleBubbleTest::t1(const ElTopo::SurfTrack & st, size_t e)
 {
+    std::cout << "t1---" << std::endl;
     g_recording.recordSurfTrack(st);
 }
