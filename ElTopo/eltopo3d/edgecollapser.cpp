@@ -1263,13 +1263,13 @@ bool EdgeCollapser::collapse_will_produce_irregular_junction(size_t edge)
     {
         const Vec2i & l = mesh.get_triangle_label(mesh.m_vertex_to_triangle_map[a][i]);
         if (l[0] >= 0 && l[1] >= 0)
-            regiongraph[l[0] * nr + l[1]] = true;
+            regiongraph[l[0] * nr + l[1]] = regiongraph[l[1] * nr + l[0]] = true;
     }
     for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[b].size(); i++)
     {
         const Vec2i & l = mesh.get_triangle_label(mesh.m_vertex_to_triangle_map[b][i]);
         if (l[0] >= 0 && l[1] >= 0)
-            regiongraph[l[0] * nr + l[1]] = true;
+            regiongraph[l[0] * nr + l[1]] = regiongraph[l[1] * nr + l[0]] = true;
     }
     
     std::cout << "RG: " << std::endl;
@@ -1294,7 +1294,7 @@ bool EdgeCollapser::collapse_will_produce_irregular_junction(size_t edge)
 
     bool irregular = false;
     for (int i = 0; i < nr; i++)
-        for (int j = 0; j < nr; j++)
+        for (int j = i + 1; j < nr; j++)
         {
             if (regions[i] && regions[j])
                 if (!regiongraph[i * nr + j])
