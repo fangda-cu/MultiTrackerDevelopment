@@ -2806,3 +2806,13 @@ void DoubleBubbleTest::collapse(const ElTopo::SurfTrack & st, size_t e)
 {
     g_recording.recordSurfTrack(st);
 }
+
+void DoubleBubbleTest::split(const ElTopo::SurfTrack & st, size_t e)
+{
+    g_recording.recordSurfTrack(st);
+}
+
+void DoubleBubbleTest::flip(const ElTopo::SurfTrack & st, size_t e)
+{
+    g_recording.recordSurfTrack(st);
+}
