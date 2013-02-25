@@ -868,11 +868,22 @@ void ShellRenderer::render()
                 maxangle = angle;
         }
         
+        double minedge = -1;
+        for (VertexEdgeIterator veit = mesh.ve_iter(vh); veit; ++veit)
+        {
+            double edgelength = (m_shell.getVertexPosition(m_shell.getDefoObj().fromVertex(*veit)) - m_shell.getVertexPosition(m_shell.getDefoObj().toVertex(*veit))).norm();
+            if (minedge < 0 || edgelength < minedge)
+                minedge = edgelength;
+        }
+        
       if (m_mode == DBG_JUNCTION)
         if (!junctionNeighbor(mesh, vh))
           continue;
       
-      if (minangle < 3 * M_PI / 180)
+      if (minedge < 0.01)
+      {
+          glColor4f(1.0, 1.0, 0.0, 1.0);
+      } else if (minangle < 3 * M_PI / 180)
       {
           glColor4f(0.0, 1.0, 1.0, 1.0);
       } else if (maxangle > 177 * M_PI / 180)
