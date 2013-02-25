@@ -183,6 +183,12 @@ void Recording::recordSurfTrack(const ElTopo::SurfTrack & st)
     std::stringstream filename;
     filename << m_recording_name << "_" << m_current_frame << ".rec";
     m_of.open(filename.str().c_str());
+      
+    if (!m_of.is_open())
+    {
+      std::cout << "Cannot open recording frame file " << filename.str() << std::endl;
+      return;
+    }
   }
   
   m_of.write((char *)&m_current_step, sizeof (m_current_step));
@@ -390,7 +396,39 @@ int DoubleBubbleTest::onBBWall(const Vec3d & pos) const
 
 void DoubleBubbleTest::Setup()
 {
-
+    if (GetBoolOpt("record"))
+    {
+        assert(!GetBoolOpt("playback"));
+        
+        g_recording.turnOnRecording();
+        g_recording.setRecordingName(outputdirectory + "/rec");
+    }
+    
+    if (GetBoolOpt("playback"))
+    {
+        assert(!g_obj_dump);
+        assert(!g_ply_dump);
+        assert(!g_recording.isRecording());
+        
+        g_recording.turnOnPlayback();
+        
+        std::string playback_path = GetStringOpt("playback-path");
+        assert(playback_path != "");
+        
+        g_recording.setRecordingName(playback_path + "/rec");
+    }
+    
+    g_obj_dump = GetBoolOpt("generate-OBJ");
+    g_ply_dump = GetBoolOpt("generate-PLY");
+    
+    if (g_obj_dump || g_ply_dump || g_recording.isRecording()){
+#ifdef _MSC_VER
+        _mkdir(outputdirectory.c_str());
+#else
+        mkdir(outputdirectory.c_str(), 0755);
+#endif
+    }
+    
   loadDynamicsProps();
 
   //General shell forces and properties
@@ -581,39 +619,6 @@ void DoubleBubbleTest::Setup()
   m_world->addController(stepper);
   RenderBase* shellRender = new ShellRenderer(*shell);
   m_world->addRenderer(shellRender);
-  
-  g_obj_dump = GetBoolOpt("generate-OBJ");
-  g_ply_dump = GetBoolOpt("generate-PLY");
-  
-  if (GetBoolOpt("record"))
-  {
-    assert(!GetBoolOpt("playback"));
-    
-    g_recording.turnOnRecording();
-    g_recording.setRecordingName(outputdirectory + "/rec");
-  }
-  
-  if (GetBoolOpt("playback"))
-  {
-    assert(!g_obj_dump);
-    assert(!g_ply_dump);
-    assert(!g_recording.isRecording());
-
-    g_recording.turnOnPlayback();
-    
-    std::string playback_path = GetStringOpt("playback-path");
-    assert(playback_path != "");
-    
-    g_recording.setRecordingName(playback_path + "/rec");
-  }
-  
-  if (g_obj_dump || g_ply_dump || g_recording.isRecording()){
-#ifdef _MSC_VER
-    _mkdir(outputdirectory.c_str());
-#else
-    mkdir(outputdirectory.c_str(), 0755);
-#endif
-  }
   
 }
 
