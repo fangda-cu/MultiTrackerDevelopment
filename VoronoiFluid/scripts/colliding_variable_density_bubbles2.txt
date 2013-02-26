@@ -1,15 +1,15 @@
 
 
 frame_rate 10.0
-sim_dx 0.4
-surface_dx 0.2
+sim_dx 0.3
+surface_dx 0.15
 
 
 region
 (
     label 0
     density 1.0
-    output 0
+    output 1
 )
 
 region

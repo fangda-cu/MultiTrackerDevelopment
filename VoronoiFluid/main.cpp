@@ -1339,25 +1339,27 @@ void file_output( unsigned int frame )
    sprintf( sgifileformat, "%s/screenshot%%04d.sgi", g_path );
    Gluvi::sgi_screenshot(sgifileformat, frame);      
    
-   char binfile[256];
+  /* char binfile[256];
    sprintf( binfile, "%s/surface%04d.bin", g_path, frame );
    write_binary_file( g_dual_sim->surface_tracker->m_mesh,
                       g_dual_sim->surface_tracker->get_positions(),
                       g_dual_sim->surface_tracker->m_masses,
                       0.0,
-                      binfile );
-   
+                      binfile );*/
    
    for(size_t i = 0; i < recording_regions.size(); ++i) {
-      int label = recording_regions[i];
-      char objfile[256];
-      sprintf( objfile, "%s/surface_label%02d_%04d.obj", g_path, label, frame );
-      bool write_success = write_objfile_per_region(g_dual_sim->surface_tracker->m_mesh, 
-         g_dual_sim->surface_tracker->get_positions(),
-         label,
-         objfile);
-      std::cout << "Finished region #" << label << ".\n";
+      for(size_t j = i+1; j < recording_regions.size(); ++j) {
+         Vec2i label(recording_regions[i], recording_regions[j]);
+
+         char objfile[256];
+         sprintf( objfile, "%s/surface_%02d_%02d_frame_%04d.obj", g_path, label[0], label[1], frame );
+         bool write_success = write_objfile_per_region_pair(g_dual_sim->surface_tracker->m_mesh,
+            g_dual_sim->surface_tracker->get_positions(), label, objfile);
+         std::cout << "Finished region pair: " << label << ".\n";
+      }
    }
+
+  
 
 //   char elefile[256];
 //   sprintf( elefile, "%s/tetmesh%04d.ele", g_path, frame );

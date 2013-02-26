@@ -26,6 +26,9 @@ shell-remeshing-iterations 1
 smooth-subdivision-scheme 0
 t1-transition-enabled 0
 
+obj-mode 2
+generate-OBJ true
+
 integrator implicit	# type of integrator to use for the shell
 
 shell-density 0.1	# volumetric density of the shell 
