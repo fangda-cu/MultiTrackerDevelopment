@@ -70,7 +70,8 @@ private:
     void parse_curved_sheet( const ParseTree& curved_sheet_branch );
     void parse_sphere( const ParseTree& sphere_branch );
     void parse_dumbbell( const ParseTree& dumbbell_branch );
-    
+    void parse_doublebubble( const ParseTree& bubble_branch );
+
 public:
     
     

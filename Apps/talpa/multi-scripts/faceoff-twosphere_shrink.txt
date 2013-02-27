@@ -3,16 +3,18 @@ relative_output_path faceofftwosphere
 
 frame_dt 0.005
 sim_dt 0.005
-end_sim_t 8.0
+end_sim_t 5.0
 
 region_count 3
 
 faceoff_simulation
 (
-   speedvector [0 0.2 0.2 -0.2 0 0 -0.2 0 0  ]
+   speedvector  [0 -1 -1 
+		      1 0 0 
+		      1 0 0]
    expanding_surface 0
    reverse_time 1.0
-   smooth_using_all 0
+   smooth_using_all 1
 )
 
 surftrack_parameters
@@ -29,28 +31,15 @@ surftrack_parameters
    perform_improvement 1
    allow_topology_changes 1
    collision_safety 1
-   subdivision_scheme modified
+   subdivision_scheme midpoint
 )
 
-sphere0
+doublebubble
 ( 
-   sphere_center [-0.25 0 0] 
-   sphere_radius 0.2
-   sphere_dx 0.07072
-   in_label 1
-   out_label 0
-   is_solid 0 
+
 )
 
-sphere1
-( 
-   sphere_center [0.25 0 0] 
-   sphere_radius 0.2
-   sphere_dx 0.07072
-   in_label 2
-   out_label 0
-   is_solid 0 
-)
+
 
 
 camera

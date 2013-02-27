@@ -46,7 +46,8 @@ public:
     render_fill_triangles( true ),
     render_vertex_rank( false ),
     smooth_shading( false ),
-    two_sided( true )
+    two_sided( true ),
+    render_nonmanifold_curve(true)
     {}
     
     /// Whether to show mesh edges (wireframe)
@@ -68,6 +69,10 @@ public:
     /// Render both sides of the triangles
     ///    
     bool two_sided;
+
+    /// Render the non-manifold curve highlighted red
+    ///    
+    bool render_nonmanifold_curve;
     
     /// Display the surface in OpenGL using the current options settings
     ///

@@ -81,6 +81,9 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <pthread.h>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
 
 // conditional includes
 #ifdef USE_GUI 
@@ -135,6 +138,7 @@ struct hack_camera
 
 SurfTrack* g_surf = NULL;        // The dynamic surface
 
+
 std::vector<Vec3d> renderable_vertices;
 std::vector<Vec3d> renderable_vertex_normals;
 std::vector<Vec3d> renderable_tri_normals;
@@ -149,7 +153,7 @@ std::vector<bool> renderable_edge_manifolds;
 namespace {    
 
     MeshDriver* driver = NULL;     // The thing that makes the dynamic surface go
-
+    
     // ---------------------------------------------------------
     // Interface declarations for functions local to this file
     // ---------------------------------------------------------
@@ -184,7 +188,7 @@ namespace {
     
     Simulation* sim = NULL;        // Timekeeping
     FrameStepper* frame_stepper = NULL;
-    
+    int region_count;
     
 #ifdef USE_GUI
     
@@ -504,7 +508,7 @@ namespace {
                 g_stats.add_per_frame_double( "frame_defrag_time", frame_stepper->get_frame(), post_defrag_time - pre_defrag_time );
                 
                 // Update driver
-                
+                driver->update(*g_surf, sim->m_curr_t);
                 driver->update_simulation_elements( *g_surf );
                 
             }
@@ -586,13 +590,28 @@ namespace {
             // file output
             //
             
-            char binary_filename[256];
+           /* char binary_filename[256];
             sprintf( binary_filename, "%s/frame%04d.bin", g_output_path, frame_stepper->get_frame() );      
-            write_binary_file( g_surf->m_mesh, g_surf->get_positions(), g_surf->m_masses, sim->m_curr_t, binary_filename );   
+            write_binary_file( g_surf->m_mesh, g_surf->get_positions(), g_surf->m_masses, sim->m_curr_t, binary_filename );   */
             
             char stats_filename[256];
             sprintf( stats_filename, "%s/aaa-stats.txt", g_output_path );      
             g_stats.write_to_file( stats_filename );
+
+            // dump one OBJ file per region pair
+            for (int i = 0; i < region_count; i++)
+            {
+               for (int j = i + 1; j < region_count; j++)
+               {
+                  std::stringstream name;
+                  name << std::setfill('0');
+                  name << g_output_path << "/" << "label_" << std::setw(4) << i << "_" << std::setw(4) << j << "_frame" << std::setw(6) << frame_stepper->get_frame() << ".OBJ";
+
+                  write_objfile_per_region_pair(g_surf->m_mesh, g_surf->get_positions(), ElTopo::Vec2i(i, j), name.str().c_str());
+                  //std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+               }
+
+            }
             
         }
         
@@ -935,6 +954,17 @@ namespace {
         if ( key == 'e' )
         {
             mesh_renderer.render_edges = !mesh_renderer.render_edges;
+        }
+
+        if ( key == 'f' )
+        {
+           mesh_renderer.smooth_shading = !mesh_renderer.smooth_shading;
+        }
+
+
+        if ( key == 'm' )
+        {
+           mesh_renderer.render_nonmanifold_curve = !mesh_renderer.render_nonmanifold_curve;
         }
         
         if ( key == 't' )
@@ -1549,6 +1579,8 @@ namespace {
             snprintf( g_output_path, 256, "%s", script_init.output_path.c_str() );
         }
         
+        region_count = script_init.region_count;
+
         // Init frame stepper
         
         frame_stepper = new FrameStepper( script_init.frame_dt );

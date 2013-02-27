@@ -232,7 +232,7 @@ public:
     /// Determine the rank of the primary space at the given vertex (see Jiao07).
     /// Rank {1, 2, 3} == {smooth, ridge, peak}
     ///
-    unsigned int vertex_primary_space_rank( size_t v ) const;
+    unsigned int vertex_primary_space_rank( size_t v, int region = -1) const;
     
     //unsigned int vertex_primary_space_rank_nonmanifold( size_t v ) const;
 
