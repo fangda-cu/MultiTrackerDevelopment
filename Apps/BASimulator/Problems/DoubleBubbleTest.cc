@@ -1085,7 +1085,37 @@ void DoubleBubbleTest::beforeEndStep()
       shell->setVertexVelocity(*vit, v);
       shell->setVertexPosition(*vit, x + v * dt);
     }  
-  }  //normal flow examples
+  } //zalesak disk test
+  else if (m_active_scene == 12)
+  {
+    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
+    {
+      Vec3d v;
+      Vec3d x = shell->getVertexPosition(*vit);
+      
+      // RK4
+      // -----------
+      // k1 = dt * f( t, x );
+      s12_zalesak_velocity(current_t, x, v);
+      Vec3d k1 = v;
+      
+      // k2 = dt * f( t + 0.5*dt, x + 0.5*k1 );
+      s12_zalesak_velocity(current_t + 0.5 * dt, x + 0.5 * dt * k1, v);
+      Vec3d k2 = v;
+      
+      // k3 = dt * f( t + 0.5*dt, x + 0.5*k2 );
+      s12_zalesak_velocity(current_t + 0.5 * dt, x + 0.5 * dt * k2, v);
+      Vec3d k3 = v;
+      
+      // k4 = dt * f( t + dt, x + k3 );
+      s12_zalesak_velocity(current_t + dt, x + dt * k3, v);
+      Vec3d k4 = v;
+      
+      v = (1./6. * (k1 + k4) + 1./3. * (k2 + k3));
+      shell->setVertexVelocity(*vit, v);
+      shell->setVertexPosition(*vit, x + v * dt);
+    }  
+  } //normal flow examples
   else if (m_active_scene == 9 || m_active_scene == 10 || m_active_scene == 11)
   {
     static Scalar speeds_scene9[3][3] = 
@@ -1195,6 +1225,14 @@ void DoubleBubbleTest::s7_enright_velocity(double t, const Vec3d & pos, Vec3d & 
   out *= sin(M_PI * t * 2 / 3);    // modulate with a period of 3
 }
 
+void DoubleBubbleTest::s12_zalesak_velocity(double t, const Vec3d & pos, Vec3d & out)
+{
+  double x = pos[0]; 
+  double y = pos[1]; 
+  double z = pos[2];
+  
+  out = Vec3d((z - 0.5), 0, -(x - 0.5));
+}
 
 
 void DoubleBubbleTest::AfterStep()
@@ -2829,8 +2867,8 @@ void DoubleBubbleTest::setupScene12()
 
   std::vector<Vec3d> obj_vs;
   std::vector<Vec3i> obj_fs;
-//  std::ifstream objfile("assets/doublebubbletest/zalesk.obj");
-  std::ifstream objfile("assets/doublebubbletest/zalesk_multiphase.obj");
+//  std::ifstream objfile("assets/doublebubbletest/zalesak.obj");
+  std::ifstream objfile("assets/doublebubbletest/zalesak_multiphase.obj");
   
   // OBJ loader
   while (!objfile.eof())

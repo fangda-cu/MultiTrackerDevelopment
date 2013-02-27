@@ -118,9 +118,10 @@ public:
   void setupScene10(); // Normal motion with cyclic speed relation VIIM figure 21
   void setupScene11();  // MCF example demonstrating pinching
 
-  void setupScene12();  // Zalesk disk test
+  void setupScene12();  // Zalesak disk test
 
   void s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out);
+  void s12_zalesak_velocity(double t, const Vec3d & pos, Vec3d & out);
   
   void createIcoSphere(DeformableObject & mesh, Vec3d & center, Scalar r, int subdivision, std::vector<VertexHandle> & vertList, std::vector<FaceHandle> & faceList, VertexProperty<Vec3d> & positions);
 
