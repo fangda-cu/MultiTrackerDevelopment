@@ -2804,6 +2804,16 @@ void DoubleBubbleTest::keyboard(unsigned char k, int x, int y)
   }
 }
 
+std::vector<std::string> explode(const std::string & s, char delim) 
+{
+  std::vector<std::string> elems;
+  std::stringstream ss(s);
+  std::string item;
+  while(std::getline(ss, item, delim)) 
+    elems.push_back(item);
+  return elems;
+}
+
 void DoubleBubbleTest::setupScene12() 
 {
   //vertices
@@ -2816,35 +2826,62 @@ void DoubleBubbleTest::setupScene12()
   EdgeProperty<Scalar> undefAngle(shellObj);
   EdgeProperty<Scalar> edgeAngle(shellObj);
   EdgeProperty<Scalar> edgeVel(shellObj);
+
+  std::vector<Vec3d> obj_vs;
+  std::vector<Vec3i> obj_fs;
+  std::ifstream objfile("assets/doublebubbletest/zalesk.obj");
   
-  //create a cube
+  // OBJ loader
+  while (!objfile.eof())
+  {
+    std::string line;
+    std::getline(objfile, line);
+    std::stringstream liness(line);
+    std::string ins;
+    liness >> ins;
+    if (ins == "v")
+    {
+      Vec3d v;
+      liness >> v.x() >> v.y() >> v.z();
+      obj_vs.push_back(v);
+    } else if (ins == "f")
+    {
+      Vec3i f;
+      for (int i = 0; i < 3; i++)
+      {
+        std::string s;
+        liness >> s;
+        std::vector<std::string> elems = explode(s, '/');
+        assert(elems.size() == 1 || elems.size() == 3);
+        std::stringstream ss(elems[0]);
+        ss >> f[i];
+        f[i]--;
+      }
+      obj_fs.push_back(f);
+    }
+  }
+  objfile.close();
+  
+  std::cout << "OBJ load report: nv = " << obj_vs.size() << " nf = " << obj_fs.size() << std::endl;
+  
+  //create the mesh
   std::vector<VertexHandle> vertList;
-  
-  for(int i = 0; i < 5; ++i) 
+  for (size_t i = 0; i < obj_vs.size(); i++) 
   {
     vertList.push_back(shellObj->addVertex());
-    velocities[vertList[i]] = Vec3d(0,0,0);
-  }
-  
-  //create positions
-  positions[vertList[ 0]] = Vec3d(0.55,0.71,0.5);
-  positions[vertList[ 1]] = Vec3d(0.65,0.5,0.3);
-  positions[vertList[ 2]] = Vec3d(0.55,0.3,0.5);
-  positions[vertList[ 3]] = Vec3d(0.65,0.5,0.7);
-  positions[vertList[ 4]] = Vec3d(0.45,0.5,0.5);
-  
-  for(int i = 0; i < 5; ++i)
+    velocities[vertList[i]] = Vec3d(0, 0, 0);
+    positions[vertList[i]] = obj_vs[i] / 200 + Vec3d(0.5, 0.5, 0.5);
     undeformed[vertList[i]] = positions[vertList[i]];
+  }
   
   std::vector<FaceHandle> faceList;
   FaceProperty<Vec2i> faceLabels(shellObj); //label face regions to do volume constrained bubbles  
   
-  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 1], vertList[ 4]));  faceLabels[faceList.back()] = Vec2i(0,1);
-  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 4], vertList[ 3]));  faceLabels[faceList.back()] = Vec2i(0,1);
-  faceList.push_back(shellObj->addFace(vertList[ 3], vertList[ 2], vertList[ 0]));  faceLabels[faceList.back()] = Vec2i(0,2);
-  faceList.push_back(shellObj->addFace(vertList[ 0], vertList[ 1], vertList[ 2]));  faceLabels[faceList.back()] = Vec2i(2,0);
-  faceList.push_back(shellObj->addFace(vertList[ 3], vertList[ 2], vertList[ 4]));  faceLabels[faceList.back()] = Vec2i(1,0);
-  faceList.push_back(shellObj->addFace(vertList[ 4], vertList[ 2], vertList[ 1]));  faceLabels[faceList.back()] = Vec2i(1,0);
+  for (size_t i = 0; i < obj_fs.size(); i++)
+  {
+    faceList.push_back(shellObj->addFace(vertList[obj_fs[i].x()], vertList[obj_fs[i].y()], vertList[obj_fs[i].z()]));
+    faceLabels[faceList.back()] = Vec2i(0, 1);
+  }
   
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj); 
@@ -2867,6 +2904,7 @@ void DoubleBubbleTest::setupScene12()
   //  shell->setEdgeVelocities(edgeVel);
   
   shell->setFaceLabels(faceLabels);
+  
   
 }
 
