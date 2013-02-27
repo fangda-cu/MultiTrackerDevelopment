@@ -182,11 +182,6 @@ bool EdgeCollapser::collapse_edge_pseudo_motion_introduces_collision( size_t sou
     Collision collision;
     if ( m_surf.m_collision_pipeline->any_collision( collision_candidates, collision ) )
     {
-        std::cout << "collision: " << collision.m_vertex_indices << " edge edge: " << collision.m_is_edge_edge << std::endl;
-      std::cout << "  " << m_surf.get_position(collision.m_vertex_indices[0]) << std::endl;
-      std::cout << "  " << m_surf.get_position(collision.m_vertex_indices[1]) << std::endl;
-      std::cout << "  " << m_surf.get_position(collision.m_vertex_indices[2]) << std::endl;
-      std::cout << "  " << m_surf.get_position(collision.m_vertex_indices[3]) << std::endl;
         return true;
     }
     
@@ -288,7 +283,6 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
             if ( m_surf.m_verbose ) { std::cout << "collapse edge introduces normal inversion" << std::endl; }
             
             g_stats.add_to_int( "EdgeCollapser:collapse_normal_inversion", 1 );
-//          std::cout << "!!!!!! normal inv" << std::endl;
             return true;
         } 
         
@@ -297,7 +291,6 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
             if ( m_surf.m_verbose ) { std::cout << "collapse edge introduces tiny triangle area" << std::endl; }
             
             g_stats.add_to_int( "EdgeCollapser:collapse_degenerate_triangle", 1 );
-//          std::cout << "!!!!!! degen triangle" << std::endl;
             return true;
         } 
         
@@ -467,8 +460,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   size_t vertex_to_keep = m_surf.m_mesh.m_edges[edge][0];
   size_t vertex_to_delete = m_surf.m_mesh.m_edges[edge][1];
   
-//  std::cout << "attempting to collapse edge " << edge << ": " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") - " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
-  
   bool keep_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_keep];
   bool del_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_delete];
   bool edge_is_boundary = m_surf.m_mesh.m_is_boundary_edge[edge];
@@ -488,7 +479,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   {
     if (m_surf.m_verbose)
       std::cout << "The collapse will produce irregular junction, but the endpoints are moving apart. No need to collapse." << std::endl;
-//    std::cout << "!!!rel vel" << std::endl;
     return false;
   }
   
@@ -531,7 +521,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
         {
           if ( m_surf.m_verbose ) { std::cout << "would_be_non_manifold" << std::endl; }
           would_be_non_manifold = true;
-//          std::cout << "!!!non man" << std::endl;
           return false;
         }            
       }
@@ -582,7 +571,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
               std::cout << " --- Adjacent vertex: " << adj_vertices0[i] << ", incident triangles: ";
             }
 
-//            std::cout << "!!!tunnel close" << std::endl;
             return false;
           }
 
@@ -607,7 +595,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       if ( triangle_i[0] == triangle_i[1] || triangle_i[1] == triangle_i[2] || triangle_i[2] == triangle_i[0] )
       {
         if ( m_surf.m_verbose ) { std::cout << "duplicate vertices on triangle" << std::endl; }
-//        std::cout << "!!!deleted triangle" << std::endl;
         return false;
       }
 
@@ -619,7 +606,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
         {
           if ( m_surf.m_verbose ) { std::cout << "two triangles share vertices" << std::endl; }
           g_stats.add_to_int( "EdgeCollapser:collapse_degen_tet", 1 );
-//          std::cout << "!!!share vert" << std::endl;
           return false;
         }
       }
@@ -657,7 +643,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   {
     assert(m_surf.m_constrained_vertices_callback);
     new_vert_constraint_label = m_surf.m_constrained_vertices_callback->generate_collapsed_constraint_label(m_surf, vertex_to_keep, vertex_to_delete, m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep), m_surf.m_mesh.get_vertex_constraint_label(vertex_to_delete));
-//      std::cout << "new cl = " << new_vert_constraint_label << std::endl;
   }
   
   if (keep_vert_is_constrained)   keep_rank = 5;
@@ -730,7 +715,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       // the callback decides this edge should not be collapsed
       if (m_surf.m_verbose)
         std::cout << "Constraint callback vetoed collapsing." << std::endl;
-//      std::cout << "!!!callback veto" << std::endl;
       return false;
     }
     
@@ -906,7 +890,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       g_stats.add_to_int( "EdgeCollapser:collapse_volume_change", 1 );
 
       if ( m_surf.m_verbose ) { std::cout << "collapse_volume_change" << std::endl; }
-//      std::cout << "!!!vol change" << std::endl;
       return false;
     }
 
@@ -919,7 +902,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       m_surf.set_newposition( vertex_to_delete, m_surf.get_position(vertex_to_delete) );
 
       if ( m_surf.m_verbose ) { std::cout << "normal_inversion" << std::endl; }
-//      std::cout << "!!!normal inv" << std::endl;
       return false;
     }
 
@@ -934,7 +916,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       if ( m_surf.m_verbose ) { std::cout << "bad_angle" << std::endl; }
 
       g_stats.add_to_int( "EdgeCollapser:collapse_bad_angle", 1 );
-//      std::cout << "!!!bad angle" << std::endl;
       return false;
 
     }
@@ -949,9 +930,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     if ( collision ) 
     { 
       if ( m_surf.m_verbose ) { std::cout << "collision" << std::endl; }
-//      std::cout << "vert to delete: " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
-//      std::cout << "vert to keep: " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ")" << std::endl;
-//      std::cout << "new position: " << 0 << " (" << vertex_new_position << ")" << std::endl;
       g_stats.add_to_int( "EdgeCollapser:collapse_collisions", 1 ); 
     }
 
@@ -962,7 +940,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     if ( collision )
     {
       // edge collapse would introduce collision or change volume too much or invert triangle normals
-//      std::cout << "!!!collision" << std::endl;
       return false;
     }
   }
@@ -1059,8 +1036,6 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   // Store the history
   m_surf.m_mesh_change_history.push_back(collapse);
-//  std::cout << "  collapse successful" << std::endl;
-//    std::cout << " resulting vertex constraint label: " << m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep) << std::endl;
   return true;
 }
 
@@ -1275,27 +1250,6 @@ bool EdgeCollapser::collapse_will_produce_irregular_junction(size_t edge)
             regiongraph[l[0] * nr + l[1]] = regiongraph[l[1] * nr + l[0]] = true;
     }
 
-//    std::cout << "Edge " << edge << ": " << a << " (" << m_surf.get_position(a) << ") - " << b << " (" << m_surf.get_position(b) << ")" << std::endl;
-//    std::cout << "RG: " << std::endl;
-//    std::cout << "    ";
-//    for (int i = 0; i < nr; i++)
-//        std::cout << regions[i] << " ";
-//    std::cout << std::endl;
-//    std::cout << "    ";
-//    for (int i = 0; i < nr; i++)
-//        std::cout << "--";
-//    std::cout << std::endl;
-//    
-//    for (int i = 0; i < nr; i++)
-//    {
-//        std::cout << regions[i] << " | ";
-//        for (int j = 0; j < nr; j++)
-//        {
-//            std::cout << regiongraph[i * nr + j] << " ";
-//        }
-//        std::cout << std::endl;
-//    }
-
     bool irregular = false;
     for (int i = 0; i < nr; i++)
         for (int j = i + 1; j < nr; j++)
@@ -1304,7 +1258,6 @@ bool EdgeCollapser::collapse_will_produce_irregular_junction(size_t edge)
                 if (!regiongraph[i * nr + j])
                     irregular = true;
         }
-//    std::cout << "irregular: " << irregular << std::endl;
     
     delete []regiongraph;
     

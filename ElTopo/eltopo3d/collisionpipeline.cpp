@@ -149,11 +149,6 @@ void CollisionPipeline::apply_impulse( const Vec4d& alphas,
     v2 += i*s2*inv_m2 * normal;
     v3 += i*s3*inv_m3 * normal;
     
-    if (i > 100.0 / dt)
-    {
-        std::cout << "v0 = " << v0 << " v1 = " << v1 << " v2 = " << v2 << " v3 = " << v3 << std::endl;
-    }
-    
     //
     // Friction
     //

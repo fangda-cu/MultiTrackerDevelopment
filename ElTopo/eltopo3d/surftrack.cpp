@@ -846,15 +846,11 @@ void SurfTrack::topology_changes( )
 //   if(merge_occurred) //always try to clean up, since merging can produce poor geometry.
 //      improve_mesh();
 
-   if (m_t1_transition_enabled)
-   {
-       m_verbose = true;
-       
+//   if (m_t1_transition_enabled)
+//   {
 //      m_t1transition.pop_vertices();
-       
-       m_verbose = false;
-       
-   }
+//       
+//   }
 
    if ( m_collision_safety )
    {
