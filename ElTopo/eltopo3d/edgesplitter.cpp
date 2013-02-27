@@ -421,7 +421,8 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
      use_constrained_point = false;
      
      new_vertex_proposed_final_position = *pos;
-     new_vert_constraint_label = m_surf.m_constrained_vertices_callback->generate_split_constraint_label(m_surf, vertex_a, vertex_b, m_surf.m_mesh.get_vertex_constraint_label(vertex_a), m_surf.m_mesh.get_vertex_constraint_label(vertex_b));
+     if (m_surf.m_constrained_vertices_callback)
+       new_vert_constraint_label = m_surf.m_constrained_vertices_callback->generate_split_constraint_label(m_surf, vertex_a, vertex_b, m_surf.m_mesh.get_vertex_constraint_label(vertex_a), m_surf.m_mesh.get_vertex_constraint_label(vertex_b));
   }
   else if (m_surf.m_mesh.get_vertex_constraint_label(vertex_a) || m_surf.m_mesh.get_vertex_constraint_label(vertex_b))
   {
