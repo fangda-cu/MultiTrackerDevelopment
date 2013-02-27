@@ -473,9 +473,9 @@ void ScriptInit::parse_multiphase_objfile( const ParseTree& obj_branch)
                 if (k == i)
                     continue;
                 
-                Vec3d & v0 = obj_vertices[obj_triangles[i][0]];
-                Vec3d & v1 = obj_vertices[obj_triangles[i][1]];
-                Vec3d & v2 = obj_vertices[obj_triangles[i][2]];
+                Vec3d & v0 = obj_vertices[obj_triangles[k][0]];
+                Vec3d & v1 = obj_vertices[obj_triangles[k][1]];
+                Vec3d & v2 = obj_vertices[obj_triangles[k][2]];
                 
                 Vec3d u = v1 - v0;
                 Vec3d v = v2 - v0;
@@ -487,7 +487,7 @@ void ScriptInit::parse_multiphase_objfile( const ParseTree& obj_branch)
                 
                 Vec3d p = c + (seed - c) * r;
                 Vec3d w = p - v0;
-                double s = (dot(u, v) * dot(w, v) - dot(v, v) * dot(w, u)) / (dot(u, v) * dot(u, v) - dot(u, u) * dot(u, u));
+                double s = (dot(u, v) * dot(w, v) - dot(v, v) * dot(w, u)) / (dot(u, v) * dot(u, v) - dot(u, u) * dot(v, v));
                 double t = (dot(u, v) * dot(w, u) - dot(u, u) * dot(w, v)) / (dot(u, v) * dot(u, v) - dot(u, u) * dot(v, v));
                 
                 if (s >= 0 && s <= 1 && t >= 0 && t <= 1 && 1 - s - t >= 0)
