@@ -375,7 +375,8 @@ DoubleBubbleTest::DoubleBubbleTest() :
   //OBJ file dump
   AddOption("generate-OBJ", "Generate an OBJ file at each timestep", g_obj_dump);
   AddOption("generate-PLY", "Generate a PLY file at each timestep", g_ply_dump);
-  AddOption("obj-mode", "0 = one OBJ for entire mesh; 1 = one OBJ per region; 2 = one OBJ per region pair", 0);
+  AddOption("obj-mode", "0 = one OBJ for entire mesh; 1 = one OBJ per region; 2 = one OBJ per region pair; 3 = regions specified in parameter 'obj-regions', plus an OBJ for the entire mesh with the interfaces involving those specified regions excluded", 0);
+  AddOption("obj-regions", "a string listing region indices of the desired regions, separated by spaces", "");
   AddOption("record", "Generate a recording", false);
   AddOption("playback", "Playback a recording", false);
   AddOption("playback-path", "The path to the recording to playback", "");
@@ -903,7 +904,7 @@ void DoubleBubbleTest::AtEachTimestep()
                 write_objfile_per_region(surface_tracker.m_mesh, surface_tracker.get_positions(), i, name.str().c_str());
                 std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
             }
-        } else 
+        } else if (RENDER_METHOD == 2)
         {
             // dump one OBJ per region pair
             for (int i = 0; i < m_nregion; i++)
@@ -920,6 +921,36 @@ void DoubleBubbleTest::AtEachTimestep()
                 
             }
             
+        } else
+        {
+            // dump one OBJ per region listed in "obj-regions", plus one OBJ for the rest of the mesh
+            std::stringstream regions_ss(GetStringOpt("obj-regions"));
+            std::set<int> regions;
+            while (!regions_ss.eof())
+            {
+                int r = -1;
+                regions_ss >> r;
+                if (r >= 0)
+                    regions.insert(r);
+            }
+            
+            for (std::set<int>::iterator i = regions.begin(); i != regions.end(); i++)
+            {
+                std::stringstream name;
+                name << std::setfill('0');
+                name << outputdirectory << "/" << "region" << std::setw(4) << *i << "_frame" << std::setw(6) << db_current_obj_frame << ".OBJ";
+                
+                write_objfile_per_region(surface_tracker.m_mesh, surface_tracker.get_positions(), *i, name.str().c_str());
+                std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+            }
+            
+            std::stringstream name;
+            name << std::setfill('0');
+            name << outputdirectory << "/" << "rest_of_the_mesh_frame" << std::setw(6) << db_current_obj_frame << ".OBJ";
+            
+            write_objfile_excluding_regions(surface_tracker.m_mesh, surface_tracker.get_positions(), regions, name.str().c_str());
+            std::cout << "Frame: " << db_current_obj_frame << "   Time: " << getTime() << "   OBJDump: " << name.str() << std::endl;
+          
         }
       
         delete(st);
