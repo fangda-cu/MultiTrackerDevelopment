@@ -2829,7 +2829,8 @@ void DoubleBubbleTest::setupScene12()
 
   std::vector<Vec3d> obj_vs;
   std::vector<Vec3i> obj_fs;
-  std::ifstream objfile("assets/doublebubbletest/zalesk.obj");
+//  std::ifstream objfile("assets/doublebubbletest/zalesk.obj");
+  std::ifstream objfile("assets/doublebubbletest/zalesk_multiphase.obj");
   
   // OBJ loader
   while (!objfile.eof())
@@ -2870,7 +2871,7 @@ void DoubleBubbleTest::setupScene12()
   {
     vertList.push_back(shellObj->addVertex());
     velocities[vertList[i]] = Vec3d(0, 0, 0);
-    positions[vertList[i]] = obj_vs[i] / 200 + Vec3d(0.5, 0.5, 0.5);
+    positions[vertList[i]] = obj_vs[i] / 200 + Vec3d(0.5, 0.5, 0.5);  // scale the model back to be within [0, 1]. note that remeshing resolution should be at least 0.1 to be high enough to preserve the sharp features in this model.
     undeformed[vertList[i]] = positions[vertList[i]];
   }
   
@@ -2880,9 +2881,73 @@ void DoubleBubbleTest::setupScene12()
   for (size_t i = 0; i < obj_fs.size(); i++)
   {
     faceList.push_back(shellObj->addFace(vertList[obj_fs[i].x()], vertList[obj_fs[i].y()], vertList[obj_fs[i].z()]));
-    faceLabels[faceList.back()] = Vec2i(0, 1);
+    faceLabels[faceList.back()] = Vec2i(0, 1);  // placeholder here; real labels will be set below
   }
   
+  // put a few seeds for each region, and decide face labels using visibility. for all convex regions, one seed for each region is enough.
+  // regions unlabeled in the end will be assigned label 0.
+  std::vector<std::pair<Vec3d, int> > seeds;
+  seeds.push_back(std::pair<Vec3d, int>(Vec3d(0.5, 0.4, 0.3), 1)); 
+  seeds.push_back(std::pair<Vec3d, int>(Vec3d(0.2, 0.4, 0.5), 2)); 
+  seeds.push_back(std::pair<Vec3d, int>(Vec3d(0.5, 0.4, 0.7), 3)); 
+  seeds.push_back(std::pair<Vec3d, int>(Vec3d(0.5, 0.6, 0.3), 4)); 
+  seeds.push_back(std::pair<Vec3d, int>(Vec3d(0.2, 0.6, 0.5), 5)); 
+  seeds.push_back(std::pair<Vec3d, int>(Vec3d(0.5, 0.6, 0.7), 6));
+  
+  // the loops here are unoptimized.
+  for (size_t i = 0; i < obj_fs.size(); i++)
+  {
+    Vec3d & x0 = positions[vertList[obj_fs[i].x()]];
+    Vec3d & x1 = positions[vertList[obj_fs[i].y()]];
+    Vec3d & x2 = positions[vertList[obj_fs[i].z()]];
+    Vec3d c = (x0 + x1 + x2) / 3;
+    
+    faceLabels[faceList[i]] = Vec2i(0, 0);
+    
+    for (size_t j = 0; j < seeds.size(); j++)
+    {
+      // reference for line-triangle intersection test:
+      //  http://geomalgorithms.com/a06-_intersect-2.html
+      
+      Vec3d & seed = seeds[j].first;
+      bool collision = false;
+      
+      for (size_t k = 0; k < obj_fs.size(); k++)
+      {
+        if (k == i)
+          continue;
+        
+        Vec3d & v0 = positions[vertList[obj_fs[k].x()]];
+        Vec3d & v1 = positions[vertList[obj_fs[k].y()]];
+        Vec3d & v2 = positions[vertList[obj_fs[k].z()]];
+        
+        Vec3d u = v1 - v0;
+        Vec3d v = v2 - v0;
+        Vec3d n = u.cross(v);
+      
+        Scalar r = n.dot(v0 - c) / n.dot(seed - c);
+        if (r > 1 || r < 0)
+          continue;
+        
+        Vec3d p = c + (seed - c) * r;
+        Vec3d w = p - v0;
+        Scalar s = (u.dot(v) * w.dot(v) - v.dot(v) * w.dot(u)) / (u.dot(v) * u.dot(v) - u.dot(u) * v.dot(v));
+        Scalar t = (u.dot(v) * w.dot(u) - u.dot(u) * w.dot(v)) / (u.dot(v) * u.dot(v) - u.dot(u) * v.dot(v));
+        
+        if (s >= 0 && s <= 1 && t >= 0 && t <= 1 && 1 - s - t >= 0)
+        {
+          collision = true;
+          break;
+        }
+      }
+      
+      if (!collision)
+      {
+        faceLabels[faceList[i]][(x1 - x0).cross(x2 - x0).dot(seed - c) > 0 ? 1 : 0] = seeds[j].second;
+      }
+    }
+  }
+    
   //create a face property to flag which of the faces are part of the object. (All of them, in this case.)
   FaceProperty<char> shellFaces(shellObj); 
   DeformableObject::face_iter fIt;
