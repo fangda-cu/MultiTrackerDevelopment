@@ -19,6 +19,7 @@
 #include "drivers/normaldriver.h"
 #include "drivers/sisccurlnoisedriver.h"
 #include <subdivisionscheme.h>
+#include <sstream>
 
 using namespace ElTopo;
 
@@ -385,6 +386,125 @@ void ScriptInit::parse_objfile( const ParseTree& obj_branch) {
    std::vector<Vec2i> obj_labels(obj_triangles.size(), Vec2i(in_label, out_label));
    std::cout << "read mesh with " << triangles.size() << " triangles and " << vertices.size() << " vertices.\n";
    append_mesh( triangles, vertices, labels, masses, obj_triangles, obj_vertices, obj_labels, obj_masses );
+}
+
+// ---------------------------------------------------------
+
+void ScriptInit::parse_multiphase_objfile( const ParseTree& obj_branch) 
+{
+    std::string meshpath;
+    obj_branch.get_string("filepath", meshpath);
+    printf("Got path: %s\n", meshpath.c_str());
+    
+    NonDestructiveTriMesh trimesh;
+    
+    printf("Reading file\n");
+    
+    std::vector<Vec3d> obj_vertices;
+    
+    std::vector<Vec3st> obj_triangles;
+    read_objfile( obj_triangles, obj_vertices, meshpath.c_str() );
+    
+    Vec3d translate;
+    if ( obj_branch.get_vec3d("translate", translate) )
+    {
+        for ( size_t i = 0; i < obj_vertices.size(); ++i )
+        {
+            obj_vertices[i] += translate;
+        }
+    }
+    
+    std::vector<double> obj_masses(0);
+    int is_solid = 0;
+    obj_branch.get_int( "is_solid", is_solid );
+    
+    if ( is_solid )
+    {
+        obj_masses.resize( obj_vertices.size(), std::numeric_limits<double>::infinity() );
+    }
+    else
+    {
+        obj_masses.resize( obj_vertices.size(), 1.0 );
+    }
+    
+    std::cout << "read mesh with " << obj_triangles.size() << " triangles and " << obj_vertices.size() << " vertices.\n";
+
+    std::vector<std::pair<Vec3d, int> > seeds;
+    while (true)
+    {
+        std::stringstream ss;
+        ss << "seed" << seeds.size();
+        std::string seedname = ss.str();
+        
+        Vec3d pos;
+        int label;
+        if (!obj_branch.get_vec3d(seedname + "_pos", pos))
+            break;
+        if (!obj_branch.get_int(seedname + "_label", label))
+            break;
+        
+        seeds.push_back(std::pair<Vec3d, int>(pos, label));
+    }
+    
+    std::cout << "read " << seeds.size() << " region seeds." << std::endl;
+    
+    std::vector<Vec2i> obj_labels(obj_triangles.size(), Vec2i(0, 0));
+    
+    // determine face labels by visibility to seeds; code adapted from BASim DoubleBubbleTest::scene12
+    for (size_t i = 0; i < obj_triangles.size(); i++)
+    {
+        Vec3d & x0 = obj_vertices[obj_triangles[i][0]];
+        Vec3d & x1 = obj_vertices[obj_triangles[i][1]];
+        Vec3d & x2 = obj_vertices[obj_triangles[i][2]];
+        Vec3d c = (x0 + x1 + x2) / 3;
+        
+        obj_labels[i] = Vec2i(0, 0);
+        
+        for (size_t j = 0; j < seeds.size(); j++)
+        {
+            // reference for line-triangle intersection test:
+            //  http://geomalgorithms.com/a06-_intersect-2.html
+            
+            Vec3d & seed = seeds[j].first;
+            bool collision = false;
+            
+            for (size_t k = 0; k < obj_triangles.size(); k++)
+            {
+                if (k == i)
+                    continue;
+                
+                Vec3d & v0 = obj_vertices[obj_triangles[i][0]];
+                Vec3d & v1 = obj_vertices[obj_triangles[i][1]];
+                Vec3d & v2 = obj_vertices[obj_triangles[i][2]];
+                
+                Vec3d u = v1 - v0;
+                Vec3d v = v2 - v0;
+                Vec3d n = cross(u, v);
+                
+                double r = dot(n, v0 - c) / dot(n, seed - c);
+                if (r > 1 || r < 0)
+                    continue;
+                
+                Vec3d p = c + (seed - c) * r;
+                Vec3d w = p - v0;
+                double s = (dot(u, v) * dot(w, v) - dot(v, v) * dot(w, u)) / (dot(u, v) * dot(u, v) - dot(u, u) * dot(u, u));
+                double t = (dot(u, v) * dot(w, u) - dot(u, u) * dot(w, v)) / (dot(u, v) * dot(u, v) - dot(u, u) * dot(v, v));
+                
+                if (s >= 0 && s <= 1 && t >= 0 && t <= 1 && 1 - s - t >= 0)
+                {
+                    collision = true;
+                    break;
+                }
+            }
+            
+            if (!collision)
+            {
+                obj_labels[i][dot(cross(x1 - x0, x2 - x0), seed - c) > 0 ? 1 : 0] = seeds[j].second;
+            }
+        }
+    }
+    
+    append_mesh( triangles, vertices, labels, masses, obj_triangles, obj_vertices, obj_labels, obj_masses );
 }
 
 // ---------------------------------------------------------
@@ -822,6 +942,26 @@ void ScriptInit::parse_script( const char* filename )
        }
     
     }
+
+    {
+        unsigned int obj_n = 0;   
+        char obj_name[256];
+        snprintf( obj_name, 256, "multiphase_objfile%d", obj_n );
+        const ParseTree* obj_branch = tree.get_branch( obj_name );
+        
+        while ( obj_branch != NULL )
+        {
+            printf("Found multiphase obj branch\n");
+            parse_multiphase_objfile( *obj_branch );
+            obj_branch = NULL;
+            ++obj_n;
+            snprintf( obj_name, 256, "multiphase_objfile%d", obj_n );
+            obj_branch = tree.get_branch( obj_name );
+        }
+        
+    }
+
+    
     //
     // SurfTrack parameters
     //

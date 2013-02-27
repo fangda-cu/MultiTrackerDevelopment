@@ -784,6 +784,17 @@ bool read_objfile(std::vector<Vec3st> &tris, std::vector<Vec3d> &x, const char *
    std::vector<int> vertex_list;
    while(input.good()){
       input.getline(line, LINESIZE);
+      
+      // remove leading whitespaces
+      while (line[0] == ' ')
+      {
+         char * p = line;
+         do {
+            *p = *(p + 1);
+            p++;
+         } while (*(p + 1));
+      }
+      
       switch(line[0]){
       case 'v': // vertex data
          if(line[1]==' '){
