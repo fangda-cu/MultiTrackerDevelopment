@@ -599,6 +599,8 @@ bool T1Transition::pop_vertices()
     int max_region = -1;
     for (size_t i = 0; i < mesh.nt(); i++)
     {
+        if (mesh.get_triangle(i)[0] == mesh.get_triangle(i)[1] && mesh.get_triangle(i)[0] == mesh.get_triangle(i)[2])
+            continue;
         Vec2i label = mesh.get_triangle_label(i);
         assert(label[0] >= 0);
         assert(label[1] >= 0);
@@ -733,7 +735,12 @@ bool T1Transition::pop_vertices()
         // skip the vertex if the graph is complete already
         if (candidate_pairs.size() == 0)
             continue;
-
+        
+        if (m_surf.m_verbose)
+        {
+            std::cout << candidate_pairs.size() << " pop candidate pairs collected for vertex " << xj << " (" << m_surf.get_position(xj) << ")" << std::endl;
+        }
+        
         // sort the candidate pairs according to the strength of the tensile force
         less_pair_first<double, std::pair<Vec2i, Vec3d> > comp;
         std::sort(candidate_pairs.begin(), candidate_pairs.end(), comp);
@@ -743,6 +750,11 @@ bool T1Transition::pop_vertices()
             int A = (*cp).second.first[0];
             int B = (*cp).second.first[1];
             Vec3d pull_apart_direction = (*cp).second.second;
+            
+            if (m_surf.m_verbose)
+            {
+                std::cout << "Attempting to pop vertex " << xj << " region " << A << " from region " << B << std::endl;
+            }
             
             // compute the desired destination positions, enforcing constraints
             bool original_constraint = m_surf.m_mesh.get_vertex_constraint_label(xj);
@@ -976,6 +988,10 @@ bool T1Transition::pop_vertices()
                 }
             }
             
+            if (m_surf.m_verbose)
+            {
+                std::cout << "Vertex " << xj << " (" << m_surf.get_position(xj) << " is splitted into vertex " << a << " (" << a_desired_position << ") and vertex " << b << " (" << b_desired_position << ")" << std::endl;
+            }
             
             // apply the deletion/addition
             assert(faces_to_create.size() == face_labels_to_create.size());
@@ -987,6 +1003,8 @@ bool T1Transition::pop_vertices()
             
             for (size_t i = 0; i < faces_to_delete.size(); i++)
                 m_surf.remove_triangle(faces_to_delete[i]);
+          
+            m_surf.remove_vertex(xj);
             
             // mark the two new vertices a and b as dirty
             vertices_to_process.push_back(a);
@@ -1004,6 +1022,9 @@ bool T1Transition::pop_vertices()
             m_surf.m_mesh_change_history.push_back(vertpop);
             
             pop_occurred = true;
+            
+            if (m_surf.m_mesheventcallback)
+                m_surf.m_mesheventcallback->t1(m_surf, xj);
             
             break;
             

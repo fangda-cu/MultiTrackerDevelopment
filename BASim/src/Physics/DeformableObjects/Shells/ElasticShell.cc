@@ -502,6 +502,11 @@ void ElasticShell::resolveCollisions(Scalar timestep) {
   ElTopo::DynamicSurface dynamic_surface( vert_old, tri_data, std::vector<ElTopo::Vec2i>(tri_data.size(), ElTopo::Vec2i(0, 0)), masses, m_collision_epsilon, friction_coeff, true, false );
 
   dynamic_surface.set_all_newpositions( vert_new );
+    
+//    for (size_t i = 0; i < vert_old.size(); i++)
+//        std::cout << "old vertex " << i << ": " << vert_old[i] << std::endl;
+//    for (size_t i = 0; i < vert_new.size(); i++)
+//        std::cout << "new vertex " << i << ": " << vert_new[i] << std::endl;
   
   // advance by dt
   double actual_dt;
@@ -692,6 +697,12 @@ void ElasticShell::setSelfCollision(bool enabled) {
 
 
 void ElasticShell::endStep(Scalar time, Scalar timestep) {
+    
+//    for (VertexIterator v = m_obj->vertices_begin(); v != m_obj->vertices_end(); ++v)
+//    {
+//        assert(getVertexPosition(*v) == getVertexPosition(*v));
+//        std::cout << "vertex " << (*v).idx() << ": " << getVertexPosition(*v) << std::endl;
+//    }
 
   if (m_stepping_callback)
     m_stepping_callback->beforeEndStep();
@@ -1068,7 +1079,8 @@ void ElasticShell::remesh(bool initial)
   for (VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit)
     if (m_obj->vertexIncidentEdges(*vit) == 0)
       m_obj->deleteVertex(*vit);
-
+  
+    
   //Set up a SurfTrack, run remeshing, render the new mesh
   ElTopo::SurfTrackInitializationParameters construction_parameters;
   construction_parameters.m_proximity_epsilon = m_collision_epsilon;
@@ -1186,12 +1198,41 @@ void ElasticShell::remesh(bool initial)
   
   ElTopo::SurfTrack surface_tracker( vert_data, tri_data, tri_labels, masses, construction_parameters ); 
   surface_tracker.m_constrained_vertices_callback = this;
+  surface_tracker.m_mesheventcallback = m_mesheventcallback;
   surface_tracker.m_mesh.m_vertex_constraint_labels = vert_const_labels;
   surface_tracker.set_all_remesh_velocities(vert_vel);
+    
+//    for (size_t i = 0; i < vert_data.size(); i++)
+//        std::cout << "vertex " << i << ": " << vert_data[i] << std::endl;
+    
+    //remove faces that are completely within a BB wall (equivalent to a flap face if BB walls are triangulated). these faces result in collision handling difficulties when they collide within BB walls.
+    for (size_t i = 0; i < surface_tracker.m_mesh.nt(); i++)
+    {
+        ElTopo::Vec3st tri = surface_tracker.m_mesh.get_triangle(i);
+        if (tri[0] == tri[1] && tri[0] == tri[2])
+            continue;
+        
+        ElTopo::Vec3d v0 = surface_tracker.get_position(tri[0]);
+        ElTopo::Vec3d v1 = surface_tracker.get_position(tri[1]);
+        ElTopo::Vec3d v2 = surface_tracker.get_position(tri[2]);
+        
+        Vec3d x0(v0[0], v0[1], v0[2]);
+        Vec3d x1(v1[0], v1[1], v1[2]);
+        Vec3d x2(v2[0], v2[1], v2[2]);
+        
+        int onwall0 = onBBWall(x0);
+        int onwall1 = onBBWall(x1);
+        int onwall2 = onBBWall(x2);
+        if ((onwall0 & onwall1 & onwall2) != 0)
+        {
+            surface_tracker.remove_triangle(i);
+        }
+    }
   
   for(int i = 0; i < m_remeshing_iters; ++i) {
     surface_tracker.topology_changes();
     surface_tracker.improve_mesh();
+    surface_tracker.m_t1transition.pop_vertices();
   }
   
   // copy ElTopo mesh back, instead of repeating the operation history incrementally.
@@ -1246,9 +1287,87 @@ void ElasticShell::remesh(bool initial)
   for(unsigned int j = 0; j < surface_tracker.m_mesh_change_history.size(); ++j) 
   {
     ElTopo::MeshUpdateEvent event = surface_tracker.m_mesh_change_history[j];
-    //std::cout << "Event type = " << event.m_type << std::endl;
+    std::cout << "Event type = " << event.m_type << std::endl;
   }
+
+    double minangle = M_PI;
+    double maxangle = 0;
+    
+    double minedge = 10;
+    double maxedge = 0;
+    
+    for (size_t i = 0; i < surface_tracker.m_mesh.nt(); i++)
+    {
+        if (surface_tracker.m_mesh.get_triangle(i)[0] == surface_tracker.m_mesh.get_triangle(i)[1] && surface_tracker.m_mesh.get_triangle(i)[0] == surface_tracker.m_mesh.get_triangle(i)[2])
+            continue;
         
+        ElTopo::Vec3d v0 = surface_tracker.get_position(surface_tracker.m_mesh.get_triangle(i)[0]);
+        ElTopo::Vec3d v1 = surface_tracker.get_position(surface_tracker.m_mesh.get_triangle(i)[1]);
+        ElTopo::Vec3d v2 = surface_tracker.get_position(surface_tracker.m_mesh.get_triangle(i)[2]);
+        
+        ElTopo::Vec3d x0, x1, x2;
+        double angle;
+        
+        x0 = v0; x1 = v1; x2 = v2;
+        angle = acos((dot(x1 - x0, x1 - x0) + dot(x2 - x0, x2 - x0) - dot(x2 - x1, x2 - x1)) / 2 / mag(x1 - x0) / mag(x2 - x0));
+        if (angle > maxangle) maxangle = angle;
+        if (angle < minangle) minangle = angle;
+        
+        x0 = v1; x1 = v2; x2 = v0;
+        angle = acos((dot(x1 - x0, x1 - x0) + dot(x2 - x0, x2 - x0) - dot(x2 - x1, x2 - x1)) / 2 / mag(x1 - x0) / mag(x2 - x0));
+        if (angle > maxangle) maxangle = angle;
+        if (angle < minangle) minangle = angle;
+        
+        x0 = v2; x1 = v0; x2 = v1;
+        angle = acos((dot(x1 - x0, x1 - x0) + dot(x2 - x0, x2 - x0) - dot(x2 - x1, x2 - x1)) / 2 / mag(x1 - x0) / mag(x2 - x0));
+        if (angle > maxangle) maxangle = angle;
+        if (angle < minangle) minangle = angle;
+        
+        double e0 = mag(v2 - v1);
+        double e1 = mag(v2 - v0);
+        double e2 = mag(v1 - v0);
+        
+        if (e0 > maxedge) maxedge = e0;
+        if (e0 < minedge) minedge = e0;
+        if (e1 > maxedge) maxedge = e1;
+        if (e1 < minedge) minedge = e1;
+        if (e2 > maxedge) maxedge = e2;
+        if (e2 < minedge) minedge = e2;
+    }
+    
+    std::cout << "minangle = " << minangle * 180 / M_PI << " maxangle = " << maxangle * 180 / M_PI << " minedge = " << minedge << " maxedge = " << maxedge << std::endl;
+    
+  // remove faces completely inside BB walls
+  for (FaceIterator fit = m_obj->faces_begin(); fit != m_obj->faces_end(); ++fit)
+  {
+    FaceVertexIterator fvit = m_obj->fv_iter(*fit); assert(fvit);
+    Vec3d x0 = getVertexPosition(*fvit); ++fvit; assert(fvit);
+    Vec3d x1 = getVertexPosition(*fvit); ++fvit; assert(fvit);
+    Vec3d x2 = getVertexPosition(*fvit); ++fvit; assert(!fvit);
+    
+//    if (x0.y() == 0 || x1.y() == 0 || x2.y() == 0)
+//      std::cout << "face: " << x0 << " " << x1 << " " << x2 << std::endl;
+    
+    int w0 = onBBWall(x0);
+    int w1 = onBBWall(x1);
+    int w2 = onBBWall(x2);
+    if (((w0 & w1) & w2) != 0)
+    {
+//      std::cout << "face: " << x0 << " " << x1 << " " << x2 << std::endl;
+      m_obj->deleteFace(*fit, false);
+    }
+  }
+  
+  // prune orphan edges and vertices
+  for (EdgeIterator eit = m_obj->edges_begin(); eit != m_obj->edges_end(); ++eit)
+    if (m_obj->edgeIncidentFaces(*eit) == 0)
+      m_obj->deleteEdge(*eit, true);
+  
+  for (VertexIterator vit = m_obj->vertices_begin(); vit != m_obj->vertices_end(); ++vit)
+    if (m_obj->vertexIncidentEdges(*vit) == 0)
+      m_obj->deleteVertex(*vit);
+  
+
 }
 
 int ElasticShell::onBBWall(const Vec3d & pos) const

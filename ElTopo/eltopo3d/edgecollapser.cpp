@@ -25,6 +25,7 @@
 namespace ElTopo {
 
 extern RunStats g_stats;
+  
 
 // ---------------------------------------------------------
 // Member function definitions
@@ -181,6 +182,11 @@ bool EdgeCollapser::collapse_edge_pseudo_motion_introduces_collision( size_t sou
     Collision collision;
     if ( m_surf.m_collision_pipeline->any_collision( collision_candidates, collision ) )
     {
+        std::cout << "collision: " << collision.m_vertex_indices << " edge edge: " << collision.m_is_edge_edge << std::endl;
+      std::cout << "  " << m_surf.get_position(collision.m_vertex_indices[0]) << std::endl;
+      std::cout << "  " << m_surf.get_position(collision.m_vertex_indices[1]) << std::endl;
+      std::cout << "  " << m_surf.get_position(collision.m_vertex_indices[2]) << std::endl;
+      std::cout << "  " << m_surf.get_position(collision.m_vertex_indices[3]) << std::endl;
         return true;
     }
     
@@ -214,6 +220,17 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
     {
         moving_triangles.push_back( m_surf.m_mesh.m_vertex_to_triangle_map[destination_vertex][i] );
     }
+  
+    double min_triangle_area = -1;
+    for (size_t i = 0; i < moving_triangles.size(); i++)
+    {
+        Vec3st current_triangle = m_surf.m_mesh.get_triangle(moving_triangles[i]);
+        double area = triangle_area(m_surf.get_position(current_triangle[0]), m_surf.get_position(current_triangle[1]), m_surf.get_position(current_triangle[2]));
+        if (min_triangle_area < 0 || area < min_triangle_area)
+            min_triangle_area = area;
+    }
+    assert(min_triangle_area > 0);
+    min_triangle_area = std::min(min_triangle_area, m_surf.m_min_triangle_area);
     
     //
     // check for normal inversion
@@ -271,16 +288,16 @@ bool EdgeCollapser::collapse_edge_introduces_normal_inversion( size_t source_ver
             if ( m_surf.m_verbose ) { std::cout << "collapse edge introduces normal inversion" << std::endl; }
             
             g_stats.add_to_int( "EdgeCollapser:collapse_normal_inversion", 1 );
-            
+//          std::cout << "!!!!!! normal inv" << std::endl;
             return true;
         } 
         
-        if ( new_area < m_surf.m_min_triangle_area )
+        if ( new_area < min_triangle_area )
         {
             if ( m_surf.m_verbose ) { std::cout << "collapse edge introduces tiny triangle area" << std::endl; }
             
             g_stats.add_to_int( "EdgeCollapser:collapse_degenerate_triangle", 1 );
-            
+//          std::cout << "!!!!!! degen triangle" << std::endl;
             return true;
         } 
         
@@ -353,6 +370,28 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
     std::vector<size_t> moving_triangles;
     get_moving_triangles( source_vertex, destination_vertex,  moving_triangles );
     
+    double min_tri_angle = -1;
+    double max_tri_angle = -1;
+    for ( size_t i = 0; i < moving_triangles.size(); ++i )
+    {
+        const Vec3st& tri = m_surf.m_mesh.get_triangle( moving_triangles[i] );
+        double mina = min_triangle_angle(m_surf.get_position(tri[0]), m_surf.get_position(tri[1]), m_surf.get_position(tri[2]));
+        double maxa = max_triangle_angle(m_surf.get_position(tri[0]), m_surf.get_position(tri[1]), m_surf.get_position(tri[2]));
+        assert(mina > 0);
+        assert(maxa > mina);
+        assert(M_PI > maxa);
+        if (min_tri_angle < 0 || mina < min_tri_angle)
+            min_tri_angle = mina;
+        if (max_tri_angle < 0 || maxa > max_tri_angle)
+            max_tri_angle = maxa;
+    }
+    assert(min_tri_angle > 0);
+    assert(max_tri_angle > min_tri_angle);
+    assert(M_PI > max_tri_angle);
+    
+    min_tri_angle = std::min(min_tri_angle, m_surf.m_min_triangle_angle);
+    max_tri_angle = std::max(max_tri_angle, m_surf.m_max_triangle_angle);
+    
     for ( size_t i = 0; i < moving_triangles.size(); ++i )
     {
         const Vec3st& tri = m_surf.m_mesh.get_triangle( moving_triangles[i] );
@@ -399,14 +438,14 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
         
         double min_angle = min_triangle_angle( a, b, c );
         
-        if ( rad2deg(min_angle) < m_surf.m_min_triangle_angle )
+        if ( rad2deg(min_angle) < min_tri_angle )
         {
             return true;
         }
         
         double max_angle = max_triangle_angle( a, b, c );
         
-        if ( rad2deg(max_angle) > m_surf.m_max_triangle_angle )
+        if ( rad2deg(max_angle) > max_tri_angle )
         {
             return true;
         }
@@ -425,9 +464,10 @@ bool EdgeCollapser::collapse_edge_introduces_bad_angle(size_t source_vertex,
 
 bool EdgeCollapser::collapse_edge( size_t edge )
 {
-
   size_t vertex_to_keep = m_surf.m_mesh.m_edges[edge][0];
   size_t vertex_to_delete = m_surf.m_mesh.m_edges[edge][1];
+  
+//  std::cout << "attempting to collapse edge " << edge << ": " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ") - " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
   
   bool keep_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_keep];
   bool del_vert_is_boundary = m_surf.m_mesh.m_is_boundary_vertex[vertex_to_delete];
@@ -444,10 +484,11 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   Vec3d edge_vec = m_surf.get_position(vertex_to_keep) - m_surf.get_position(vertex_to_delete);
   Vec3d rel_vel = m_surf.get_remesh_velocity(vertex_to_keep) - m_surf.get_remesh_velocity(vertex_to_delete);
   
-  if (dot(rel_vel, edge_vec) > 0)
+  if (dot(rel_vel, edge_vec) > 0 && collapse_will_produce_irregular_junction(edge))
   {
     if (m_surf.m_verbose)
-      std::cout << "The endpoints are moving apart. No need to collapse." << std::endl;
+      std::cout << "The collapse will produce irregular junction, but the endpoints are moving apart. No need to collapse." << std::endl;
+//    std::cout << "!!!rel vel" << std::endl;
     return false;
   }
   
@@ -490,6 +531,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
         {
           if ( m_surf.m_verbose ) { std::cout << "would_be_non_manifold" << std::endl; }
           would_be_non_manifold = true;
+//          std::cout << "!!!non man" << std::endl;
           return false;
         }            
       }
@@ -540,6 +582,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
               std::cout << " --- Adjacent vertex: " << adj_vertices0[i] << ", incident triangles: ";
             }
 
+//            std::cout << "!!!tunnel close" << std::endl;
             return false;
           }
 
@@ -564,6 +607,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       if ( triangle_i[0] == triangle_i[1] || triangle_i[1] == triangle_i[2] || triangle_i[2] == triangle_i[0] )
       {
         if ( m_surf.m_verbose ) { std::cout << "duplicate vertices on triangle" << std::endl; }
+//        std::cout << "!!!deleted triangle" << std::endl;
         return false;
       }
 
@@ -575,6 +619,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
         {
           if ( m_surf.m_verbose ) { std::cout << "two triangles share vertices" << std::endl; }
           g_stats.add_to_int( "EdgeCollapser:collapse_degen_tet", 1 );
+//          std::cout << "!!!share vert" << std::endl;
           return false;
         }
       }
@@ -612,6 +657,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
   {
     assert(m_surf.m_constrained_vertices_callback);
     new_vert_constraint_label = m_surf.m_constrained_vertices_callback->generate_collapsed_constraint_label(m_surf, vertex_to_keep, vertex_to_delete, m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep), m_surf.m_mesh.get_vertex_constraint_label(vertex_to_delete));
+//      std::cout << "new cl = " << new_vert_constraint_label << std::endl;
   }
   
   if (keep_vert_is_constrained)   keep_rank = 5;
@@ -684,6 +730,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       // the callback decides this edge should not be collapsed
       if (m_surf.m_verbose)
         std::cout << "Constraint callback vetoed collapsing." << std::endl;
+//      std::cout << "!!!callback veto" << std::endl;
       return false;
     }
     
@@ -859,6 +906,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       g_stats.add_to_int( "EdgeCollapser:collapse_volume_change", 1 );
 
       if ( m_surf.m_verbose ) { std::cout << "collapse_volume_change" << std::endl; }
+//      std::cout << "!!!vol change" << std::endl;
       return false;
     }
 
@@ -871,6 +919,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       m_surf.set_newposition( vertex_to_delete, m_surf.get_position(vertex_to_delete) );
 
       if ( m_surf.m_verbose ) { std::cout << "normal_inversion" << std::endl; }
+//      std::cout << "!!!normal inv" << std::endl;
       return false;
     }
 
@@ -885,6 +934,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
       if ( m_surf.m_verbose ) { std::cout << "bad_angle" << std::endl; }
 
       g_stats.add_to_int( "EdgeCollapser:collapse_bad_angle", 1 );
+//      std::cout << "!!!bad angle" << std::endl;
       return false;
 
     }
@@ -899,6 +949,9 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     if ( collision ) 
     { 
       if ( m_surf.m_verbose ) { std::cout << "collision" << std::endl; }
+//      std::cout << "vert to delete: " << vertex_to_delete << " (" << m_surf.get_position(vertex_to_delete) << ")" << std::endl;
+//      std::cout << "vert to keep: " << vertex_to_keep << " (" << m_surf.get_position(vertex_to_keep) << ")" << std::endl;
+//      std::cout << "new position: " << 0 << " (" << vertex_new_position << ")" << std::endl;
       g_stats.add_to_int( "EdgeCollapser:collapse_collisions", 1 ); 
     }
 
@@ -909,6 +962,7 @@ bool EdgeCollapser::collapse_edge( size_t edge )
     if ( collision )
     {
       // edge collapse would introduce collision or change volume too much or invert triangle normals
+//      std::cout << "!!!collision" << std::endl;
       return false;
     }
   }
@@ -1005,6 +1059,8 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   // Store the history
   m_surf.m_mesh_change_history.push_back(collapse);
+//  std::cout << "  collapse successful" << std::endl;
+//    std::cout << " resulting vertex constraint label: " << m_surf.m_mesh.get_vertex_constraint_label(vertex_to_keep) << std::endl;
   return true;
 }
 
@@ -1153,6 +1209,9 @@ bool EdgeCollapser::collapse_pass()
           { 
             // clean up degenerate triangles and tets
             m_surf.trim_degeneracies( m_surf.m_dirty_triangles );            
+            
+              if (m_surf.m_mesheventcallback)
+                  m_surf.m_mesheventcallback->collapse(m_surf, e);
           }
 
           collapse_occurred |= result;
@@ -1163,5 +1222,94 @@ bool EdgeCollapser::collapse_pass()
     
 }
 
+bool EdgeCollapser::collapse_will_produce_irregular_junction(size_t edge)
+{
+    NonDestructiveTriMesh & mesh = m_surf.m_mesh;
+    
+    size_t a = mesh.m_edges[edge][0];
+    size_t b = mesh.m_edges[edge][1];
+    
+    std::vector<bool> regions;
+    for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[a].size(); i++)
+    {
+        const Vec2i & l = mesh.get_triangle_label(mesh.m_vertex_to_triangle_map[a][i]);
+        if (l[0] >= 0)
+        {
+            if (l[0] >= regions.size()) regions.resize(l[0] + 1, false);
+            regions[l[0]] = true;
+        }
+        if (l[1] >= 0)
+        {
+            if (l[1] >= regions.size()) regions.resize(l[1] + 1, false);
+            regions[l[1]] = true;
+        }
+    }
+    for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[b].size(); i++)
+    {
+        const Vec2i & l = mesh.get_triangle_label(mesh.m_vertex_to_triangle_map[b][i]);
+        if (l[0] >= 0)
+        {
+            if (l[0] >= regions.size()) regions.resize(l[0] + 1, false);
+            regions[l[0]] = true;
+        }
+        if (l[1] >= 0)
+        {
+            if (l[1] >= regions.size()) regions.resize(l[1] + 1, false);
+            regions[l[1]] = true;
+        }
+    }
+    
+    int nr = regions.size();
+    bool * regiongraph = new bool[nr * nr];
+    memset(regiongraph, 0, sizeof(bool) * nr * nr);
+    for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[a].size(); i++)
+    {
+        const Vec2i & l = mesh.get_triangle_label(mesh.m_vertex_to_triangle_map[a][i]);
+        if (l[0] >= 0 && l[1] >= 0)
+            regiongraph[l[0] * nr + l[1]] = regiongraph[l[1] * nr + l[0]] = true;
+    }
+    for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[b].size(); i++)
+    {
+        const Vec2i & l = mesh.get_triangle_label(mesh.m_vertex_to_triangle_map[b][i]);
+        if (l[0] >= 0 && l[1] >= 0)
+            regiongraph[l[0] * nr + l[1]] = regiongraph[l[1] * nr + l[0]] = true;
+    }
+
+//    std::cout << "Edge " << edge << ": " << a << " (" << m_surf.get_position(a) << ") - " << b << " (" << m_surf.get_position(b) << ")" << std::endl;
+//    std::cout << "RG: " << std::endl;
+//    std::cout << "    ";
+//    for (int i = 0; i < nr; i++)
+//        std::cout << regions[i] << " ";
+//    std::cout << std::endl;
+//    std::cout << "    ";
+//    for (int i = 0; i < nr; i++)
+//        std::cout << "--";
+//    std::cout << std::endl;
+//    
+//    for (int i = 0; i < nr; i++)
+//    {
+//        std::cout << regions[i] << " | ";
+//        for (int j = 0; j < nr; j++)
+//        {
+//            std::cout << regiongraph[i * nr + j] << " ";
+//        }
+//        std::cout << std::endl;
+//    }
+
+    bool irregular = false;
+    for (int i = 0; i < nr; i++)
+        for (int j = i + 1; j < nr; j++)
+        {
+            if (regions[i] && regions[j])
+                if (!regiongraph[i * nr + j])
+                    irregular = true;
+        }
+//    std::cout << "irregular: " << irregular << std::endl;
+    
+    delete []regiongraph;
+    
+    return irregular;
+}
+    
 }
 

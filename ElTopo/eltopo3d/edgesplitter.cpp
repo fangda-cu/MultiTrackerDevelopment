@@ -393,6 +393,7 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
     other_verts.push_back(mesh.get_third_vertex(vertex_a, vertex_b, tri_data));
   }
   
+//  std::cout << " split: " << vertex_a << " (" << m_surf.get_position(vertex_a) << ") [" << mesh.get_vertex_constraint_label(vertex_a) << "] - " << vertex_b << " (" << m_surf.get_position(vertex_b) << ") [" << mesh.get_vertex_constraint_label(vertex_b) << "]" << std::endl;
 
   // --------------
   // set up point data for the various options
@@ -421,6 +422,7 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
      use_constrained_point = false;
      
      new_vertex_proposed_final_position = *pos;
+     new_vert_constraint_label = m_surf.m_constrained_vertices_callback->generate_split_constraint_label(m_surf, vertex_a, vertex_b, m_surf.m_mesh.get_vertex_constraint_label(vertex_a), m_surf.m_mesh.get_vertex_constraint_label(vertex_b));
   }
   else if (m_surf.m_mesh.get_vertex_constraint_label(vertex_a) || m_surf.m_mesh.get_vertex_constraint_label(vertex_b))
   {
@@ -438,6 +440,7 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
         return false;
      }
      new_vert_constraint_label = m_surf.m_constrained_vertices_callback->generate_split_constraint_label(m_surf, vertex_a, vertex_b, m_surf.m_mesh.get_vertex_constraint_label(vertex_a), m_surf.m_mesh.get_vertex_constraint_label(vertex_b));
+//    std::cout << "new cl = " << new_vert_constraint_label << ", new pos = " << new_vertex_constrained_position << std::endl;
   }
   else if( incident_tris.size() == 2 || typeid(m_surf.m_subdivision_scheme) == typeid(ModifiedButterflyScheme)) {
      // Use smooth subdivision if the geometry and subd scheme will allow us
@@ -726,6 +729,8 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
 
   //store the resulting vertex as output.
   result_vert = vertex_e;
+  
+//  std::cout << "split result cl = " << m_surf.m_mesh.get_vertex_constraint_label(result_vert) << std::endl;
 
   return true;
 
@@ -881,6 +886,8 @@ bool EdgeSplitter::large_angle_split_pass()
         if ( result )
         {
           g_stats.add_to_int( "EdgeSplitter:large_angle_split_success", 1 );
+          if (m_surf.m_mesheventcallback)
+            m_surf.m_mesheventcallback->split(m_surf, e);
         }
         else
         {
@@ -951,6 +958,11 @@ bool EdgeSplitter::split_pass()
            size_t result_vert;
             bool result = split_edge(longest_edge, result_vert);
             split_occurred |= result;
+            if (result)
+            {
+                if (m_surf.m_mesheventcallback)
+                    m_surf.m_mesheventcallback->split(m_surf, longest_edge);
+            }
         }
 
     }

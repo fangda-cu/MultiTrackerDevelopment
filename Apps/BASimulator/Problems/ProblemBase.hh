@@ -47,6 +47,8 @@ public:
   void BaseSetup(int argc, char** argv);
   void BaseFinalize();
   void BaseAtEachTimestep();
+  
+  virtual void keyboard(unsigned char k, int x, int y) { }
 
   const std::string& ProblemName() const { return m_problemName; }
   const std::string& ProblemDescription() const { return m_problemDesc; }
