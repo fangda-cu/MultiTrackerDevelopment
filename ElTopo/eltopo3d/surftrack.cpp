@@ -192,6 +192,8 @@ m_mesheventcallback(NULL)
         m_max_volume_change = initial_parameters.m_max_volume_change;  
     }
     
+    std::cout << "min/max edge: " << m_collapser.m_min_edge_length << " " << m_collapser.m_max_edge_length << std::endl;
+    
     if ( m_verbose )
     {
         std::cout << "m_min_edge_length: " << m_min_edge_length << std::endl;
