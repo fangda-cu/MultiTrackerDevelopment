@@ -441,12 +441,11 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
      }
      new_vert_constraint_label = m_surf.m_constrained_vertices_callback->generate_split_constraint_label(m_surf, vertex_a, vertex_b, m_surf.m_mesh.get_vertex_constraint_label(vertex_a), m_surf.m_mesh.get_vertex_constraint_label(vertex_b));
   }
-  else if( incident_tris.size() == 2 || typeid(m_surf.m_subdivision_scheme) == typeid(ModifiedButterflyScheme)) {
+  else if( incident_tris.size() == 2 || typeid(*m_surf.m_subdivision_scheme) == typeid(ModifiedButterflyScheme)) {
      // Use smooth subdivision if the geometry and subd scheme will allow us
      use_smooth_point = true;
      use_average_point = false;
      use_constrained_point = false;
-
      m_surf.m_subdivision_scheme->generate_new_midpoint( edge, m_surf, new_vertex_smooth_position );
   }
   else {
@@ -953,13 +952,14 @@ bool EdgeSplitter::split_pass()
         
         if(should_split) {
            size_t result_vert;
-            bool result = split_edge(longest_edge, result_vert);
-            split_occurred |= result;
-            if (result)
-            {
-                if (m_surf.m_mesheventcallback)
-                    m_surf.m_mesheventcallback->split(m_surf, longest_edge);
-            }
+           bool result = split_edge(longest_edge, result_vert);
+
+           split_occurred |= result;
+           if (result)
+           {
+              if (m_surf.m_mesheventcallback)
+                 m_surf.m_mesheventcallback->split(m_surf, longest_edge);
+           }
         }
 
     }

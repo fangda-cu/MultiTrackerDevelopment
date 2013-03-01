@@ -260,6 +260,7 @@ ModifiedButterflyScheme::ModifiedButterflyScheme() {
 
 void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const SurfTrack& surface, Vec3d& new_point )
 {
+   
     const NonDestructiveTriMesh& mesh = surface.m_mesh;
     const std::vector<Vec3d>& positions = surface.get_positions();
 
@@ -268,7 +269,7 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
 
     new_point = Vec3d(0,0,0);
     Vec2st edge_data = mesh.m_edges[edge_index];
-
+    
     //require internal edge and not a triple-junction for standard subdivision
     if(!mesh.m_is_boundary_edge[edge_index] && !mesh.is_edge_nonmanifold(edge_index)) { 
         
@@ -398,8 +399,10 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
         }
     }
     else if(mesh.is_edge_nonmanifold(edge_index)) {
-       //non-manifold edge - treat as a curve if possible.
-       
+       //non-manifold edge - treat as a curve if possible, exactly like the boundary case
+
+       new_point = 9.0 / 16.0 *(surface.get_position(p1_index) + surface.get_position(p2_index));
+
        //find the next and previous non-manifold edges, fit a curve, and away you go.
        //if this is not just a single smooth curve (i.e. there are > 2 non-manifold edges come out of the
        //adjacent vertex) do midpoint subdivision instead.
@@ -415,31 +418,36 @@ void ModifiedButterflyScheme::generate_new_midpoint( size_t edge_index, const Su
                 size_t other_vert = mesh.m_edges[nbr_edge][0] == p1_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
                 new_point += -1.0/16.0 * surface.get_position(other_vert);
                 found_next_nmf = true;
-             }
-             else {
-                //already found a next nmf-edge, so fail back to midpoint.
-                new_point = 0.5*(surface.get_position(p1_index) + surface.get_position(p2_index));
-                return;
+                break;
              }
           }
        }
 
+       //TODO Treat it like a straight line if there isn't another one?
+       if(!found_next_nmf) {
+          //couldn't find another nmf-edge, so fail back to midpoint.
+          new_point = 0.5*(surface.get_position(p1_index) + surface.get_position(p2_index));
+          return;
+       }
+       
+       //then find the previous one and do the same
        found_next_nmf = false;
        for(unsigned int i = 0; i < mesh.m_vertex_to_edge_map[p2_index].size(); ++i) {
           size_t nbr_edge = mesh.m_vertex_to_edge_map[p2_index][i];
           if(nbr_edge == edge_index) continue;
           if(mesh.is_edge_nonmanifold(nbr_edge)){
-             if(!found_next_nmf) {//grab the other vertex
-                size_t other_vert = mesh.m_edges[nbr_edge][0] == p2_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
-                new_point += -1.0/16.0 * surface.get_position(other_vert);
-                found_next_nmf = true;
-             }
-             else {
-                //already found a next nmf-edge, so fail back to midpoint.
-                new_point = 0.5*(surface.get_position(p1_index) + surface.get_position(p2_index));
-                return;
-             }
+            size_t other_vert = mesh.m_edges[nbr_edge][0] == p2_index? mesh.m_edges[nbr_edge][1] : mesh.m_edges[nbr_edge][0];
+            new_point += -1.0/16.0 * surface.get_position(other_vert);
+            found_next_nmf = true;
+            break;
           }
+       }
+
+       //TODO Treat it like a straight line if there isn't another one?
+       if(!found_next_nmf) {
+          //couldn't find another nmf-edge, so fail back to midpoint.
+          new_point = 0.5*(surface.get_position(p1_index) + surface.get_position(p2_index));
+          return;
        }
 
     }
