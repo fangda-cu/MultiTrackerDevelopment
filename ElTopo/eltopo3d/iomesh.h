@@ -16,6 +16,7 @@
 #include <vector>
 #include <vec.h>
 #include <fstream>
+#include <set>
 
 // ---------------------------------------------------------
 //  Forwards and typedefs
@@ -57,6 +58,7 @@ bool read_objfile(ElTopo::NonDestructiveTriMesh &mesh, std::vector<ElTopo::Vec3d
 bool read_objfile(std::vector<ElTopo::Vec3st> &tris, std::vector<ElTopo::Vec3d> &x, const char *filename_format, ...);
 bool write_objfile_per_region(const ElTopo::NonDestructiveTriMesh &mesh, const std::vector<ElTopo::Vec3d> &x, int label, const char *filename_format, ...);
 bool write_objfile_per_region_pair(const ElTopo::NonDestructiveTriMesh &mesh, const std::vector<ElTopo::Vec3d> &x, ElTopo::Vec2i label, const char *filename_format, ...);
+bool write_objfile_excluding_regions(const ElTopo::NonDestructiveTriMesh &mesh, const std::vector<ElTopo::Vec3d> &x, const std::set<int> & labels, const char *filename_format, ...);
 // ---------------------------------------------------------
 //
 // Write mesh in Renderman RIB format (geometry only)

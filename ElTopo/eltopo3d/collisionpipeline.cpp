@@ -136,6 +136,8 @@ void CollisionPipeline::apply_impulse( const Vec4d& alphas,
     if ( i > 100.0 / dt )
     {
         std::cout << "big impulse: " << i << std::endl;
+        if (i == std::numeric_limits<double>::infinity())
+            return;
     }
     
     Vec3d pre_relative_velocity = s0*v0 + s1*v1 + s2*v2 + s3*v3;

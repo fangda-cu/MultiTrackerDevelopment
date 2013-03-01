@@ -43,7 +43,11 @@
 #include <vector>
 #include <queue>
 
+#ifdef _MSC_VER
 #include <direct.h>
+#else
+#include <sys/stat.h>
+#endif
 
 // common
 #include <array2.h>
@@ -143,6 +147,7 @@ std::vector<Vec3st> renderable_non_solid_triangles;
 std::vector<Vec2st> renderable_edges;
 std::vector<int> renderable_ranks;
 std::vector<bool> renderable_edge_manifolds;
+std::vector<Vec2i> renderable_labels;
 
 
 // Local to main.cpp
@@ -734,7 +739,11 @@ namespace {
             //char mkdir_command[1024];
             //sprintf( mkdir_command, "mkdir -p %s", g_output_path );
             //system(mkdir_command);
+#ifdef _MSC_VER
             _mkdir(g_output_path);
+#else
+            mkdir(g_output_path, 777);
+#endif
 
             run_simulation();
             
@@ -771,6 +780,7 @@ namespace {
         renderable_tri_normals.clear();
         renderable_solid_triangles.clear();
         renderable_non_solid_triangles.clear();
+        renderable_labels.clear();
         for ( size_t i = 0; i < mesh_triangles.size(); ++i )
         {
             if ( g_surf->triangle_is_all_solid(i) )
@@ -781,6 +791,7 @@ namespace {
             {
                 renderable_non_solid_triangles.push_back( mesh_triangles[i] );
                 renderable_tri_normals.push_back( g_surf->get_triangle_normal(i));
+                renderable_labels.push_back(g_surf->m_mesh.get_triangle_label(i));
             }
         }
         
@@ -968,6 +979,11 @@ namespace {
         if ( key == 'v' )
         {
             mesh_renderer.render_vertex_rank = !mesh_renderer.render_vertex_rank;
+        }
+        
+        if ( key == 'l' )
+        {
+            mesh_renderer.render_face_labels = !mesh_renderer.render_face_labels;
         }
         
         
@@ -1424,14 +1440,15 @@ namespace {
         //
         // Render the mesh
         //
-                
+        
         mesh_renderer.render(renderable_vertices, 
                              renderable_vertex_normals,
                              renderable_non_solid_triangles,
                              renderable_tri_normals,
                              renderable_edges,
                              renderable_ranks,
-                             renderable_edge_manifolds);
+                             renderable_edge_manifolds,
+                             renderable_labels);
         
         //
         // Render the simulation
@@ -1532,7 +1549,11 @@ namespace {
         char mkdir_command[1024];
         sprintf( mkdir_command, "mkdir %s", g_output_path );
         //system(mkdir_command);
+#ifdef _MSC_VER
         _mkdir(g_output_path);
+#else
+        mkdir(g_output_path, 777);
+#endif
                 
     }
     

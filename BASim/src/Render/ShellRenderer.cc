@@ -228,6 +228,25 @@ bool junctionNeighbor(const DeformableObject & mesh, FaceHandle f)
 
   return false;
 }
+    
+int onBBWall(const Vec3d & pos)
+{
+    int walls = 0;
+    if (pos.x() < 0 + 1e-6)
+        walls |= (1 << 0);
+    if (pos.y() < 0 + 1e-6)
+        walls |= (1 << 1);
+    if (pos.z() < 0 + 1e-6)
+        walls |= (1 << 2);
+    if (pos.x() > 1 - 1e-6)
+        walls |= (1 << 3);
+    if (pos.y() > 1 - 1e-6)
+        walls |= (1 << 4);
+    if (pos.z() > 1 - 1e-6)
+        walls |= (1 << 5);
+    
+    return walls;
+}
 
 void ShellRenderer::keyboard(unsigned char key, int x, int y)
 {
@@ -593,23 +612,30 @@ void ShellRenderer::render()
       //p0 = p0 + 0.05*dir;
       //p1 = p1 - 0.05*dir;
       if ( m_shell.shouldFracture(*eit) ){
-        OpenGL::color(Color(1.0, 1.0, 0.0, 1.0));
+        OpenGL::color(Color(1.0, 1.0, 0.0, 0.2));
       } else if (mesh.isBoundary(*eit)){
-        OpenGL::color(Color(0.0, 1.0, 0.0, 1.0));
+        OpenGL::color(Color(0.0, 1.0, 0.0, 0.2));
       }
       else {
-        OpenGL::color(Color(0.0,0.0,0.0, 1.0));
+        OpenGL::color(Color(0.0,0.0,0.0, 0.2));
       }
+        
+        if ((p0 - p1).norm() <= 0.1)
+        {
+            glLineWidth(5);
+            glColor4f(0.0, 0.5, 1.0, 1.0);
+            glLineWidth(2);
+        }
       
       if (m_mode == DBG_JUNCTION)
       {
         int ne = junction(mesh, eh);
         if (ne == 3)
-          OpenGL::color(Color(1.0, 0.0, 1.0, 1.0));
+          OpenGL::color(Color(1.0, 0.0, 1.0, 0.2));
         else if (ne == 4)
-          OpenGL::color(Color(0.3, 0.8, 0.9, 1.0));
+          OpenGL::color(Color(0.3, 0.8, 0.9, 0.2));
         else if (ne > 4)
-          OpenGL::color(Color(0.2, 0.3, 1.0, 1.0));
+          OpenGL::color(Color(0.2, 0.3, 1.0, 0.2));
       }
       
       bool visible = false;
@@ -690,6 +716,8 @@ void ShellRenderer::render()
         
         Vec3d c = (p0 + p1 + p2) / 3;
         Vec3d n = (p1 - p0).cross(p2 - p0).normalized();
+          
+        Scalar mean_edge_length = ((p0 - p1).norm() + (p1 - p2).norm() + (p2 - p0).norm()) / 3;
 
         Vec3d color0 = labelcolors[std::max(0, regions.x() + 1)];
         glColor3d(color0.x(), color0.y(), color0.z());
@@ -697,7 +725,7 @@ void ShellRenderer::render()
         if (regions.x() >= 0)
         {
           OpenGL::vertex(c);
-          OpenGL::vertex(Vec3d(c - n * 0.02));
+          OpenGL::vertex(Vec3d(c - n * mean_edge_length * 0.05));
         }
         
         Vec3d color1 = labelcolors[std::max(0, regions.y() + 1)];
@@ -706,7 +734,7 @@ void ShellRenderer::render()
         if (regions.y() >= 0)
         {
           OpenGL::vertex(c);
-          OpenGL::vertex(Vec3d(c + n * 0.02));          
+          OpenGL::vertex(Vec3d(c + n * mean_edge_length * 0.05));          
         }
       }
       glEnd();
@@ -755,7 +783,7 @@ void ShellRenderer::render()
       }
       barycentre /= 3.0;
 
-      Scalar alpha = 0.25;
+      Scalar alpha = 0.1;
       OpenGL::color(Color(1.0,0.0,0.0,alpha));
 
       Vec2i regions = m_shell.getFaceLabel(sorted_faces[i].first);
@@ -818,6 +846,9 @@ void ShellRenderer::render()
     
     //Render all vertices
     glPointSize(4);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
     glBegin(GL_POINTS);
     
     for( VertexIterator vit = mesh.vertices_begin(); vit != mesh.vertices_end(); ++vit ) 
@@ -825,21 +856,71 @@ void ShellRenderer::render()
       Vec3d vertPos = m_shell.getVertexPosition(*vit); 
       VertexHandle vh = *vit;
       
+        double minangle = -1;
+        double maxangle = -1;
+        for (VertexFaceIterator vfit = mesh.vf_iter(vh); vfit; ++vfit)
+        {
+            FaceVertexIterator fvit = mesh.fv_iter(*vfit); assert(fvit);
+            VertexHandle v0 = *fvit; ++fvit; assert(fvit);
+            VertexHandle v1 = *fvit; ++fvit; assert(fvit);
+            VertexHandle v2 = *fvit; ++fvit; assert(!fvit);
+            
+            double angle = 0;
+            Vec3d a, b;
+            if (v0 == vh)
+            {
+                a = m_shell.getVertexPosition(v1);
+                b = m_shell.getVertexPosition(v2);
+            } else if (v1 == vh)
+            {
+                a = m_shell.getVertexPosition(v2);
+                b = m_shell.getVertexPosition(v0);
+            } else
+            {
+                a = m_shell.getVertexPosition(v0);
+                b = m_shell.getVertexPosition(v1);
+            }
+            angle = acos(((a - vertPos).squaredNorm() + (b - vertPos).squaredNorm() - (a - b).squaredNorm()) / (2 * (a - vertPos).norm() * (b - vertPos).norm()));
+            if (minangle < 0 || angle < minangle)
+                minangle = angle;
+            if (maxangle < 0 || angle > maxangle)
+                maxangle = angle;
+        }
+        
+        double minedge = -1;
+        for (VertexEdgeIterator veit = mesh.ve_iter(vh); veit; ++veit)
+        {
+            double edgelength = (m_shell.getVertexPosition(m_shell.getDefoObj().fromVertex(*veit)) - m_shell.getVertexPosition(m_shell.getDefoObj().toVertex(*veit))).norm();
+            if (minedge < 0 || edgelength < minedge)
+                minedge = edgelength;
+        }
+        
       if (m_mode == DBG_JUNCTION)
         if (!junctionNeighbor(mesh, vh))
           continue;
       
-      if(!m_shell.getDefoObj().isConstrained(vh)) {
-        OpenGL::color(Color(0,0,0));
+      if (minedge < 0.01)
+      {
+          glColor4f(1.0, 1.0, 0.0, 1.0);
+      } else if (minangle < 3 * M_PI / 180)
+      {
+          glColor4f(0.0, 1.0, 1.0, 1.0);
+      } else if (maxangle > 177 * M_PI / 180)
+      {
+          glColor4f(1.0, 0.0, 1.0, 1.0);
+      } else if(onBBWall(vertPos)) {
+        OpenGL::color(Color(0.0,1.0,0.0,1.0));
       }
       else {
-        OpenGL::color(Color(0,255,0));
+        OpenGL::color(Color(0.0,0.0,0.0,0.1));
       }
       
       OpenGL::vertex(vertPos);
     }
     glEnd();
-    
+    glDisable(GL_BLEND);
+    glDepthMask(GL_TRUE);
+
     //Draw collision springs
     std::vector<Vec3d> starts, ends;
     m_shell.getSpringList(starts, ends);

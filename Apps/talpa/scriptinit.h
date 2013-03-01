@@ -61,6 +61,7 @@ private:
     void parse_sisc_curl_noise( const ParseTree& sisc_curl_noise_sim_branch );
     void parse_enright( const ParseTree& enright_sim_branch );      
     void parse_objfile( const ParseTree& obj_branch );
+    void parse_multiphase_objfile( const ParseTree& obj_branch );
     void parse_camera( const ParseTree& camera_branch );
     
     // Geometry

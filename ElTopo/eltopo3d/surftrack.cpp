@@ -143,7 +143,9 @@ m_perform_smoothing( initial_parameters.m_perform_smoothing),
 m_vertex_change_history(),
 m_triangle_change_history(),
 m_defragged_triangle_map(),
-m_defragged_vertex_map()
+m_defragged_vertex_map(),
+m_constrained_vertices_callback(NULL),
+m_mesheventcallback(NULL)
 {
     
     if ( m_verbose )
@@ -841,14 +843,14 @@ void SurfTrack::topology_changes( )
    //bool merge_occurred = merge_occurred = m_merger.merge_pass(); //OLD MERGING CODE
    bool merge_occurred = m_snapper.snap_pass();   //NEW MERGING CODE
    
-   if(merge_occurred) //always try to clean up, since merging can produce poor geometry.
-      improve_mesh();
+//   if(merge_occurred) //always try to clean up, since merging can produce poor geometry.
+//      improve_mesh();
 
-   if (m_t1_transition_enabled)
-   {
-      m_t1transition.pop_vertices();
-
-   }
+//   if (m_t1_transition_enabled)
+//   {
+//      m_t1transition.pop_vertices();
+//       
+//   }
 
    if ( m_collision_safety )
    {

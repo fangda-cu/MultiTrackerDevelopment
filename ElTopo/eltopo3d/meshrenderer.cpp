@@ -126,7 +126,10 @@ void MeshRenderer::render( const DynamicSurface& surface )
         }
         
         glEnable(GL_DEPTH_TEST);
-        glDepthMask(GL_TRUE);
+//        glDepthMask(GL_TRUE);
+        glDepthMask(GL_FALSE);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_BLEND);
         
         glBegin(GL_TRIANGLES);
         if(smooth_shading) {
@@ -181,6 +184,8 @@ void MeshRenderer::render( const DynamicSurface& surface )
         
         glDisable(GL_LIGHTING);
         
+        glDisable(GL_BLEND);
+        glDepthMask(GL_TRUE);
     }
     
 }
@@ -198,8 +203,8 @@ void MeshRenderer::render(const std::vector<Vec3d>& xs,
                           const std::vector<Vec3d>& tri_normals,
                           const std::vector<Vec2st>& edges,
                           const std::vector<int>& ranks,
-                          const std::vector<bool>& edge_manifold)
-
+                          const std::vector<bool>& edge_manifold,
+                          const std::vector<Vec2i>& labels)
 {
     
     //
@@ -295,6 +300,52 @@ void MeshRenderer::render(const std::vector<Vec3d>& xs,
         glEnd();
     }   
     
+    
+    //
+    // face labels
+    //
+    
+    const static float colors[][3] = 
+    {
+        { 1, 0, 0 },
+        { 0, 1, 0 },
+        { 0, 0, 1 },
+        { 0, 1, 1 },
+        { 1, 0, 1 },
+        { 1, 1, 0 },
+        { 0, 0.5, 1 },
+        { 1, 0, 0.5 },
+        { 0.5, 1, 0 },
+        { 0, 1, 0.5 },
+        { 0.5, 0, 1 },
+        { 1, 0.5, 0 }
+    };
+    
+    if (render_face_labels)
+    {
+        glDisable(GL_LIGHTING);
+        glBegin(GL_LINES);
+        for(size_t i = 0; i < triangles.size(); i++)
+        {
+            const Vec3st & tri = triangles[i];
+            const Vec2i & label = labels[i];
+            Vec3d x0 = xs[tri[0]];
+            Vec3d x1 = xs[tri[1]];
+            Vec3d x2 = xs[tri[2]];
+            Vec3d n = cross(x1 - x0, x2 - x0);
+            n /= mag(n);
+            Vec3d c = (x0 + x1 + x2) / 3;
+            double e = (mag(x1 - x0) + mag(x2 - x1) + mag(x0 - x2)) / 3;
+            glColor3fv(colors[label[0]]);
+            glVertex3dv(c.v);
+            glVertex3dv((c - n * e * 0.1).v);
+            glColor3fv(colors[label[1]]);
+            glVertex3dv(c.v);
+            glVertex3dv((c + n * e * 0.1).v);
+        } 
+        glEnd();
+    }
+    
     //
     // triangles
     //
@@ -329,7 +380,10 @@ void MeshRenderer::render(const std::vector<Vec3d>& xs,
         }
         
         glEnable(GL_DEPTH_TEST);
-        glDepthMask(GL_TRUE);
+//        glDepthMask(GL_TRUE);
+        glDepthMask(GL_FALSE);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_BLEND);
         
         glBegin(GL_TRIANGLES);
         if(smooth_shading) {
@@ -365,6 +419,9 @@ void MeshRenderer::render(const std::vector<Vec3d>& xs,
         }
         
         glDisable(GL_LIGHTING);
+        
+        glDisable(GL_BLEND);
+        glDepthMask(GL_TRUE);
     }
     
 }
