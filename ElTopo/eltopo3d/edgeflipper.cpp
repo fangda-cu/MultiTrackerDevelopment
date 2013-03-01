@@ -737,10 +737,27 @@ bool EdgeFlipper::flip_pass( )
             
             bool flipped = false;
             
+            //valences...
+            int val_a, val_b, val_0, val_1;
+            val_0 = m_mesh.m_vertex_to_edge_map[m_mesh.m_edges[i][0]].size();
+            val_1 = m_mesh.m_vertex_to_edge_map[m_mesh.m_edges[i][1]].size();
+            val_a = m_mesh.m_vertex_to_edge_map[third_vertex_0].size();
+            val_b = m_mesh.m_vertex_to_edge_map[third_vertex_1].size();
+
+            int max_v_before = max(max(val_0, val_1), max(val_a, val_b));
+            int min_v_before = min(min(val_0, val_1), min(val_a, val_b));
+            
+            //now work out the valences after
+            val_a++; val_b++;
+            val_0--; val_1--;
+            
+            int max_v_after = max(max(val_0, val_1), max(val_a, val_b));
+            int min_v_after = min(min(val_0, val_1), min(val_a, val_b));
+            bool need_valence_flip = (max_v_after - min_v_after) < (max_v_before - min_v_before);
             
             double current_length = mag( xs[m_mesh.m_edges[i][1]] - xs[m_mesh.m_edges[i][0]] );        
             double potential_length = mag( xs[third_vertex_1] - xs[third_vertex_0] );     
-            if ( potential_length < current_length - m_edge_flip_min_length_change )
+            if ( potential_length < current_length - m_edge_flip_min_length_change || need_valence_flip)
             {
                 flipped = flip_edge( i, triangle_a, triangle_b, third_vertex_0, third_vertex_1 );            
             }
