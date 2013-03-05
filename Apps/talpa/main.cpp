@@ -485,7 +485,7 @@ namespace {
 #else
             {         
                 // Improve
-                
+                std::cout << "Improve\n";
                 double pre_improve_time = get_time_in_seconds();
                 g_surf->improve_mesh();
                 double post_improve_time = get_time_in_seconds();
@@ -494,7 +494,7 @@ namespace {
                 g_stats.add_per_frame_double( "frame_improve_time", frame_stepper->get_frame(), post_improve_time - pre_improve_time );
 
                 // Topology changes
-                
+                std::cout << "Topology\n";
                 double pre_topology_time = get_time_in_seconds();
                 g_surf->topology_changes();
                 double post_topology_time = get_time_in_seconds();
@@ -502,6 +502,7 @@ namespace {
                 
                 g_stats.add_per_frame_double( "frame_topo_time", frame_stepper->get_frame(), post_topology_time - pre_topology_time );
                 
+                std::cout << "Defrag\n";
                 double pre_defrag_time = get_time_in_seconds();
                 g_surf->defrag_mesh();
                 double post_defrag_time = get_time_in_seconds();
@@ -509,6 +510,7 @@ namespace {
                 g_stats.add_per_frame_double( "frame_defrag_time", frame_stepper->get_frame(), post_defrag_time - pre_defrag_time );
                 
                 // Update driver
+                std::cout << "Update driver\n";
                 driver->update(*g_surf, sim->m_curr_t);
                 driver->update_simulation_elements( *g_surf );
                 
@@ -532,16 +534,15 @@ namespace {
             double curr_dt = sim_dt - accum_dt;
             curr_dt = min( curr_dt, sim->m_max_t - sim->m_curr_t - accum_dt );
             
-            std::cout << "curr_dt: " << curr_dt << std::endl;
+            std::cout << "Requested timestep: " << curr_dt << std::endl;
             
             double time_before_driver = get_time_in_seconds();
             
             std::vector<Vec3d> new_positions( g_surf->get_num_vertices() );
+            std::cout << "Predict new positions\n";
             driver->set_predicted_vertex_positions( *g_surf, new_positions, sim->m_curr_t + accum_dt, curr_dt );
             
             g_surf->set_all_newpositions( new_positions );
-            
-            std::cout << "sim_dt: " << curr_dt << std::endl;
             
             double time_after_driver = get_time_in_seconds();
             g_stats.add_to_double( "total_driver_time", time_after_driver - time_before_driver );
@@ -552,7 +553,7 @@ namespace {
             
             double time_before_integration = get_time_in_seconds();             
             double actual_dt;
-            
+            std::cout << "Do collision integration\n";
             std::vector<Vec3d> initial_positions = g_surf->get_positions();
             
 #ifdef USE_C_API
@@ -563,7 +564,7 @@ namespace {
             
             curr_dt = actual_dt;    // the time step actually taken by el topo
             
-            std::cout << "actual_dt: " << actual_dt << std::endl;
+            std::cout << "Actual timestep: " << actual_dt << std::endl;
             
             std::vector<Vec3d> final_positions = g_surf->get_positions();
             

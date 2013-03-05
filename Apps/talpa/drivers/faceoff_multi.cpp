@@ -334,6 +334,7 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
     //
     // Primary space displacement - to get normal component
     //
+    
     for ( size_t p = 0; p < surf.get_num_vertices(); ++p )
     {
 
@@ -433,6 +434,7 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
 
         //add the normal displacement to the tangential one we already have
         displacements[p] += length * normal_displacement / mag(normal_displacement);
+
     }
     
     //compute timestep that will avoid self intersection and mesh folding
@@ -445,7 +447,6 @@ void FaceOffMultiDriver::set_predicted_vertex_positions( const SurfTrack& surf,
         new_positions[i] = surf.get_position(i) + beta * displacements[i];
         assert(!std::isnan(new_positions[i][0]) && !std::isnan(new_positions[i][1]) && !std::isnan(new_positions[i][2]));
     }
-
 }
 
 
