@@ -491,6 +491,9 @@ bool EdgeFlipper::flip_edge( size_t edge,
     
     m_surf.m_mesh_change_history.push_back(flip);
 
+    if (m_surf.m_mesheventcallback)
+        m_surf.m_mesheventcallback->flip(m_surf, edge);
+  
     return true;
     
 }
@@ -769,13 +772,7 @@ bool EdgeFlipper::flip_pass( )
             //    flipped = flip_edge( i, triangle_a, triangle_b, third_vertex_0, third_vertex_1 );            
             //}
             
-            flip_occurred |= flipped;
-            
-            if (flipped)
-            {
-                if (m_surf.m_mesheventcallback)
-                    m_surf.m_mesheventcallback->flip(m_surf, i);
-            }
+            flip_occurred |= flipped;            
         }
         
         flip_occurred_ever |= flip_occurred;

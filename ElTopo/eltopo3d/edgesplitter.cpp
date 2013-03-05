@@ -723,6 +723,9 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   
   m_surf.m_mesh_change_history.push_back(split);
   
+  if (m_surf.m_mesheventcallback)
+    m_surf.m_mesheventcallback->split(m_surf, edge);
+  
   ////////////////////////////////////////////////////////////
 
   //store the resulting vertex as output.
@@ -882,8 +885,6 @@ bool EdgeSplitter::large_angle_split_pass()
         if ( result )
         {
           g_stats.add_to_int( "EdgeSplitter:large_angle_split_success", 1 );
-          if (m_surf.m_mesheventcallback)
-            m_surf.m_mesheventcallback->split(m_surf, e);
         }
         else
         {
@@ -955,11 +956,6 @@ bool EdgeSplitter::split_pass()
            bool result = split_edge(longest_edge, result_vert);
 
            split_occurred |= result;
-           if (result)
-           {
-              if (m_surf.m_mesheventcallback)
-                 m_surf.m_mesheventcallback->split(m_surf, longest_edge);
-           }
         }
 
     }

@@ -422,6 +422,10 @@ bool MeshSnapper::snap_vertex_pair( size_t vertex_to_keep, size_t vertex_to_dele
 
    // Store the history
    m_surf.m_mesh_change_history.push_back(collapse);
+  
+   if (m_surf.m_mesheventcallback)
+      m_surf.m_mesheventcallback->snap(m_surf, vertex_to_delete, vertex_to_keep);
+
    return true;
 }
 
@@ -930,9 +934,6 @@ bool MeshSnapper::snap_pass()
             result = snap_face_vertex_pair(face, vertex);
             attempted = true;
          }
-         if (result)
-             if (m_surf.m_mesheventcallback)
-                 m_surf.m_mesheventcallback->vfsnap(m_surf, vertex, face);
       }
       else {
          //perform edge-edge split-n-snap
@@ -944,9 +945,6 @@ bool MeshSnapper::snap_pass()
             result = snap_edge_pair(edge0, edge1);
             attempted = true;
          }
-         if (result)
-             if (m_surf.m_mesheventcallback)
-                 m_surf.m_mesheventcallback->eesnap(m_surf, edge0, edge1);
       }
       
       if ( result )

@@ -790,8 +790,6 @@ void SurfTrack::improve_mesh( )
       {
           //std::cout << "Smooth\n";
           m_smoother.null_space_smoothing_pass( 1.0 );
-          if (m_mesheventcallback)
-              m_mesheventcallback->smoothing(*this);
       }
 
 

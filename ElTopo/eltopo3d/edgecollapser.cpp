@@ -1036,6 +1036,10 @@ bool EdgeCollapser::collapse_edge( size_t edge )
 
   // Store the history
   m_surf.m_mesh_change_history.push_back(collapse);
+  
+  if (m_surf.m_mesheventcallback)
+    m_surf.m_mesheventcallback->collapse(m_surf, edge);
+
   return true;
 }
 
@@ -1183,10 +1187,7 @@ bool EdgeCollapser::collapse_pass()
           if ( result )
           { 
             // clean up degenerate triangles and tets
-            m_surf.trim_degeneracies( m_surf.m_dirty_triangles );            
-            
-              if (m_surf.m_mesheventcallback)
-                  m_surf.m_mesheventcallback->collapse(m_surf, e);
+            m_surf.trim_degeneracies( m_surf.m_dirty_triangles );                        
           }
 
           collapse_occurred |= result;

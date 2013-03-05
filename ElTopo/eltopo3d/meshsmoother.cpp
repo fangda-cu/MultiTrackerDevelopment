@@ -479,6 +479,9 @@ bool MeshSmoother::null_space_smoothing_pass( double dt )
         converged = true;
     }
     
+    if (m_surf.m_mesheventcallback)
+        m_surf.m_mesheventcallback->smoothing(m_surf);
+
     return !converged;
 }
 
