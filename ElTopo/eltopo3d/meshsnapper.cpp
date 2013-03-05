@@ -930,7 +930,9 @@ bool MeshSnapper::snap_pass()
             result = snap_face_vertex_pair(face, vertex);
             attempted = true;
          }
-
+         if (result)
+             if (m_surf.m_mesheventcallback)
+                 m_surf.m_mesheventcallback->vfsnap(m_surf, vertex, face);
       }
       else {
          //perform edge-edge split-n-snap
@@ -942,12 +944,15 @@ bool MeshSnapper::snap_pass()
             result = snap_edge_pair(edge0, edge1);
             attempted = true;
          }
+         if (result)
+             if (m_surf.m_mesheventcallback)
+                 m_surf.m_mesheventcallback->eesnap(m_surf, edge0, edge1);
       }
       
       if ( result )
       { 
          // clean up degenerate triangles and tets
-         m_surf.trim_degeneracies( m_surf.m_dirty_triangles );  
+         m_surf.trim_degeneracies( m_surf.m_dirty_triangles );          
       }
       else if(attempted) {
          //Snapping attempted and failed

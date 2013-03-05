@@ -671,6 +671,11 @@ public:
         virtual void split(const SurfTrack & st, size_t e) { }
         virtual void flip(const SurfTrack & st, size_t e) { }
         virtual void t1(const SurfTrack & st, size_t v) { }
+        virtual void vfsnap(const SurfTrack & st, size_t v, size_t f) { }
+        virtual void eesnap(const SurfTrack & st, size_t e1, size_t e2) { }
+        virtual void smoothing(const SurfTrack & st) { }
+      
+        std::ostream & log() { return std::cout; }
     };
     
     MeshEventCallback * m_mesheventcallback;

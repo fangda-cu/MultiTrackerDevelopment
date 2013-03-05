@@ -3186,3 +3186,29 @@ void DoubleBubbleTest::t1(const ElTopo::SurfTrack & st, size_t e)
     g_recording.log() << "T1 pop vertex " << e << std::endl;
     g_recording.recordSurfTrack(st);
 }
+
+void DoubleBubbleTest::vfsnap(const ElTopo::SurfTrack & st, size_t v, size_t f)\
+{
+//    std::cout << "vfsnap---" << std::endl;
+    g_recording.log() << "Snap vertex " << v << " to face " << f << std::endl;
+    g_recording.recordSurfTrack(st);
+}
+
+void DoubleBubbleTest::eesnap(const ElTopo::SurfTrack & st, size_t e1, size_t e2)
+{
+//    std::cout << "eesnap---" << std::endl;
+    g_recording.log() << "Snap edge " << e1 << " to edge " << e2 << std::endl;
+    g_recording.recordSurfTrack(st);
+}
+
+void DoubleBubbleTest::smoothing(const ElTopo::SurfTrack & st)
+{
+//    std::cout << "smooth---" << std::endl;
+    g_recording.log() << "Null space smoothing " << std::endl;
+    g_recording.recordSurfTrack(st);
+}
+
+std::ostream & DoubleBubbleTest::log()
+{
+    return g_recording.log();
+}
