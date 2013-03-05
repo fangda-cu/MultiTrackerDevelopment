@@ -724,7 +724,16 @@ bool EdgeSplitter::split_edge( size_t edge, size_t& result_vert, bool ignore_bad
   m_surf.m_mesh_change_history.push_back(split);
   
   if (m_surf.m_mesheventcallback)
+  {
+    if (ignore_bad_angles && use_specified_point)
+      m_surf.m_mesheventcallback->log() << "Edge split: large angle split" << std::endl;
+    else if (!ignore_bad_angles && use_specified_point) 
+      m_surf.m_mesheventcallback->log() << "Edge split: snap" << std::endl;
+    else
+      m_surf.m_mesheventcallback->log() << "Edge split: long edge split" << std::endl;
+      
     m_surf.m_mesheventcallback->split(m_surf, edge);
+  }
   
   ////////////////////////////////////////////////////////////
 

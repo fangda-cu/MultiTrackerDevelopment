@@ -108,8 +108,8 @@ protected:
     void split(const ElTopo::SurfTrack & st, size_t e);
     void flip(const ElTopo::SurfTrack & st, size_t e);
     void t1(const ElTopo::SurfTrack & st, size_t v);
-    void vfsnap(const ElTopo::SurfTrack & st, size_t v, size_t f);
-    void eesnap(const ElTopo::SurfTrack & st, size_t e1, size_t e2);
+    void facesplit(const ElTopo::SurfTrack & st, size_t f);
+    void snap(const ElTopo::SurfTrack & st, size_t v0, size_t v1);
     void smoothing(const ElTopo::SurfTrack & st);  
     std::ostream & log();
 

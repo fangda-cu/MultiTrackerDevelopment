@@ -3188,17 +3188,17 @@ void DoubleBubbleTest::t1(const ElTopo::SurfTrack & st, size_t e)
     g_recording.recordSurfTrack(st);
 }
 
-void DoubleBubbleTest::vfsnap(const ElTopo::SurfTrack & st, size_t v, size_t f)\
+void DoubleBubbleTest::facesplit(const ElTopo::SurfTrack & st, size_t f)
 {
-//    std::cout << "vfsnap---" << std::endl;
-    g_recording.log() << "Snap vertex " << v << " to face " << f << std::endl;
+//    std::cout << "face split---" << std::endl;
+    g_recording.log() << "Split face " << f << std::endl;
     g_recording.recordSurfTrack(st);
 }
 
-void DoubleBubbleTest::eesnap(const ElTopo::SurfTrack & st, size_t e1, size_t e2)
+void DoubleBubbleTest::snap(const ElTopo::SurfTrack & st, size_t v0, size_t v1)
 {
-//    std::cout << "eesnap---" << std::endl;
-    g_recording.log() << "Snap edge " << e1 << " to edge " << e2 << std::endl;
+//    std::cout << "snap---" << std::endl;
+    g_recording.log() << "Snap vertex " << v0 << " to vertex " << v1 << std::endl;
     g_recording.recordSurfTrack(st);
 }
 
