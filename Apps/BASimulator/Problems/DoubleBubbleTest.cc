@@ -983,6 +983,7 @@ void DoubleBubbleTest::AtEachTimestep()
     if (g_recording.isRecording())
     {
         ElTopo::SurfTrack * st = mesh2surftrack();
+        g_recording.log() << "Begin time step" << std::endl;
         g_recording.recordSurfTrack(*st);
         delete st;
     }
@@ -1063,17 +1064,18 @@ void DoubleBubbleTest::updateBBWallConstraints()
 
 void DoubleBubbleTest::beforeEndStep()
 {
-  //
-  //  RK4 integration of the Enright velocity field
-  //  code adapted from El Topo's Enright driver:
-  //    https://github.com/tysonbrochu/eltopo/blob/master/talpa/drivers/enrightdriver.h
-  //
-  
   Scalar dt = getDt();
   Scalar current_t = getTime();
   
   if (m_active_scene == 7 || m_active_scene == 13)
-  { //Enright test
+  {
+    //
+    //  RK4 integration of the Enright velocity field
+    //  code adapted from El Topo's Enright driver:
+    //    https://github.com/tysonbrochu/eltopo/blob/master/talpa/drivers/enrightdriver.h
+    //
+    
+    //Enright test
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
       Vec3d v;
@@ -1101,9 +1103,10 @@ void DoubleBubbleTest::beforeEndStep()
       shell->setVertexVelocity(*vit, v);
       shell->setVertexPosition(*vit, x + v * dt);
     }  
-  } //zalesak disk test
+  }
   else if (m_active_scene == 12)
   {
+    //zalesak disk test
     for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
     {
       Vec3d v;
@@ -1131,9 +1134,10 @@ void DoubleBubbleTest::beforeEndStep()
       shell->setVertexVelocity(*vit, v);
       shell->setVertexPosition(*vit, x + v * dt);
     }  
-  } //normal flow examples
+  }
   else if (m_active_scene == 9 || m_active_scene == 10 || m_active_scene == 11)
   {
+    //normal flow examples
     static Scalar speeds_scene9[3][3] = 
     {
       { 0, -1, -1 },
@@ -1209,19 +1213,16 @@ void DoubleBubbleTest::beforeEndStep()
       shell->setVertexVelocity(*vit, velocities[*vit]);
       shell->setVertexPosition(*vit, shell->getVertexPosition(*vit) + velocities[*vit] * dt);
     }
-  } else if (m_active_scene == 11)
-  {
-    for (VertexIterator vit = shellObj->vertices_begin(); vit != shellObj->vertices_end(); ++vit)
-    {
-      Vec3d v;
-      if (shell->getVertexPosition(*vit).y() > 0.55 || shell->getVertexPosition(*vit).y() < 0.45)
-        v = Vec3d(-1, 0, 0);
-      else
-        v = Vec3d(0, 0, 0);
-      v *= 0.1;
-      shell->setVertexPosition(*vit, shell->getVertexPosition(*vit) + v * dt);
-    }
   }
+  
+  if (g_recording.isRecording())
+  {
+    ElTopo::SurfTrack * st = mesh2surftrack();
+    g_recording.log() << "End time step" << std::endl;
+    g_recording.recordSurfTrack(*st);
+    delete st;
+  }
+
 }
 
 void DoubleBubbleTest::s7_enright_velocity(double t, const Vec3d & pos, Vec3d & out)
@@ -1350,7 +1351,7 @@ void DoubleBubbleTest::setupScene1()
     shellFaces[*fIt] = true;
   
   //now create the physical model to hang on the mesh
-  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
   shellObj->addModel(shell);
   
   //positions
@@ -1454,7 +1455,7 @@ void DoubleBubbleTest::setupScene2()
     shellFaces[*fIt] = true;
   
   //now create the physical model to hang on the mesh
-  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
   shellObj->addModel(shell);
   
   //positions
@@ -1607,7 +1608,7 @@ void DoubleBubbleTest::setupScene5()
     shellFaces[*fIt] = true;
   
   //now create the physical model to hang on the mesh
-  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
   shellObj->addModel(shell);
   
   //positions
@@ -1708,7 +1709,7 @@ void DoubleBubbleTest::setupScene6()
     shellFaces[*fIt] = true;
   
   //now create the physical model to hang on the mesh
-  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
   shellObj->addModel(shell);
   
   //positions
@@ -2349,7 +2350,7 @@ void DoubleBubbleTest::setupScene8()
         shellFaces[*fIt] = true;
     
     //now create the physical model to hang on the mesh
-    shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+    shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
     shellObj->addModel(shell);
     
     //positions
@@ -2776,7 +2777,7 @@ void DoubleBubbleTest::setupScene11()
     shellFaces[*fIt] = true;
   
   //now create the physical model to hang on the mesh
-  shell = new ElasticShell(shellObj, shellFaces, m_timestep);
+  shell = new ElasticShell(shellObj, shellFaces, m_timestep, this);
   shellObj->addModel(shell);
   
   //positions
