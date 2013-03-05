@@ -42,6 +42,9 @@ public:
   static void writeSurfTrack(std::ostream & os, const ElTopo::SurfTrack & st);
   static void readSurfTrack(std::istream & is, ElTopo::SurfTrack & st);
   
+public:
+  std::ostream & log() { return m_log; }
+  
 protected:
   std::string m_recording_name;
   int m_current_frame;  // frame number
@@ -54,6 +57,8 @@ protected:
   
   std::ofstream m_of;
   std::ifstream m_if;
+  
+  std::stringstream m_log;
 };
 
 extern Recording g_recording;

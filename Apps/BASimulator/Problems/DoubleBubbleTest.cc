@@ -214,6 +214,12 @@ void Recording::recordSurfTrack(const ElTopo::SurfTrack & st)
   }
   
   m_of.write((char *)&m_current_step, sizeof (m_current_step));
+  
+  size_t loglen = m_log.str().size();
+  m_of.write((char *)&loglen, sizeof (size_t));
+  m_of.write((char *)m_log.str().c_str(), loglen);
+  m_log.str("");
+  
   writeSurfTrack(m_of, st);
   
   m_current_step++;
@@ -246,11 +252,12 @@ void Recording::loadRecording(ElTopo::SurfTrack & st, int next)
 //      readSurfTrack(m_if, st);
       /////////
       size_t n;
-      char buffer[100];
-      m_if.read((char *)&n, sizeof (n));
-      for (size_t i = 0; i < n; i++) m_if.read(buffer, sizeof (double) * 3);
-      m_if.read((char *)&n, sizeof (n));
-      for (size_t i = 0; i < n; i++) m_if.read(buffer, sizeof (size_t) * 3 + sizeof (int) * 2);
+      m_if.read((char *)&n, sizeof (n));  // skip log
+      m_if.seekg(n, ios_base::cur);
+      m_if.read((char *)&n, sizeof (n));  // skip vertices
+      m_if.seekg(sizeof (double) * 3 * n, ios_base::cur);
+      m_if.read((char *)&n, sizeof (n));  // skip faces
+      m_if.seekg((sizeof (size_t) * 3 + sizeof (int) * 2) * n, ios_base::cur);
       /////////
       m_if.peek();
       if (!m_if.eof())
@@ -266,6 +273,13 @@ void Recording::loadRecording(ElTopo::SurfTrack & st, int next)
 //  std::cout << "Loading step " << (m_current_step + next) % m_step_pos.size() << std::endl;
   m_if.seekg(m_step_pos[(m_current_step + + m_step_pos.size() + next) % m_step_pos.size()]);
   m_if.read((char *)&m_current_step, sizeof (m_current_step));
+  
+  size_t loglen;
+  m_if.read((char *)&loglen, sizeof (size_t));
+  char * log = new char[loglen + 1];
+  m_if.read((char *)log, loglen);
+  *(log + loglen) = NULL;
+  
   readSurfTrack(m_if, st);
 
   m_if.peek();
@@ -273,6 +287,7 @@ void Recording::loadRecording(ElTopo::SurfTrack & st, int next)
     m_if.close();
   
   std::cout << "Loaded recording: step " << m_current_step << "/" << m_step_pos.size() << " of frame " << m_current_frame << std::endl;
+  std::cout << log << std::endl;
 }
 
 DoubleBubbleTest::DoubleBubbleTest() : 
@@ -3147,23 +3162,27 @@ void DoubleBubbleTest::setupScene13()
 void DoubleBubbleTest::collapse(const ElTopo::SurfTrack & st, size_t e)
 {
 //    std::cout << "collapse---" << std::endl;
+    g_recording.log() << "Collapse edge " << e << std::endl;
     g_recording.recordSurfTrack(st);
 }
 
 void DoubleBubbleTest::split(const ElTopo::SurfTrack & st, size_t e)
 {
 //    std::cout << "split---" << std::endl;
+    g_recording.log() << "Split edge " << e << std::endl;
     g_recording.recordSurfTrack(st);
 }
 
 void DoubleBubbleTest::flip(const ElTopo::SurfTrack & st, size_t e)
 {
 //    std::cout << "flip---" << std::endl;
+    g_recording.log() << "Flip edge " << e << std::endl;
     g_recording.recordSurfTrack(st);
 }
 
 void DoubleBubbleTest::t1(const ElTopo::SurfTrack & st, size_t e)
 {
 //    std::cout << "t1---" << std::endl;
+    g_recording.log() << "T1 pop vertex " << e << std::endl;
     g_recording.recordSurfTrack(st);
 }
