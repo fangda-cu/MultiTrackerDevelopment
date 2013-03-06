@@ -464,7 +464,7 @@ bool MeshSnapper::snap_edge_pair( size_t edge0, size_t edge1)
    //Check if we're fairly close to an end vertex; if so just use the vertex directly for snapping.
    //otherwise, do a split to create a new point which will then be snapped.
       
-  m_surf.m_mesheventcallback->log() << "ee snap: edge0 = " << edge_data0[0] << " (" << v0 << ") -> " << edge_data0[1] << " (" << v1 << ") edge1 = " << edge_data1[0] << " (" << v2 << ") -> " << edge_data1[1] << " (" << v3 << ")" << std::endl;
+  m_surf.m_mesheventcallback->log() << "ee snap: edge0 = " << edge0 << ": " << edge_data0[0] << " (" << v0 << ") -> " << edge_data0[1] << " (" << v1 << ") edge1 = " << edge1 << ": " << edge_data1[0] << " (" << v2 << ") -> " << edge_data1[1] << " (" << v3 << ")" << std::endl;
   m_surf.m_mesheventcallback->log() << "s0 = " << s0 << " s2 = " << s2 << " dist = " << distance << " midpoint0 = " << midpoint0 << " midpoint1 = " << midpoint1 << std::endl;
   
    size_t snapping_vert0;
@@ -947,12 +947,17 @@ bool MeshSnapper::snap_pass()
    //
 
    m_surf.assert_mesh_is_intersection_free(false);
+  
+  for (size_t si = 0; si < sortable_pairs_to_try.size(); si++)
+    m_surf.m_mesheventcallback->log() << "Snap pair: " << sortable_pairs_to_try[si].m_length << ", " << (sortable_pairs_to_try[si].m_face_vert_proximity ? "vf" : "ee") << " pair: " << sortable_pairs_to_try[si].m_index0 << " and " << sortable_pairs_to_try[si].m_index1 << std::endl;
 
    for ( size_t si = 0; si < sortable_pairs_to_try.size(); ++si )
    {
       size_t ind0 = sortable_pairs_to_try[si].m_index0;
       size_t ind1 = sortable_pairs_to_try[si].m_index1;
       
+     m_surf.m_mesheventcallback->log() << "Snap pair to try: " << (sortable_pairs_to_try[si].m_face_vert_proximity ? "vf" : "ee") << " pair: " << ind0 << " and " << ind1 << " with distance " << sortable_pairs_to_try[si].m_length << std::endl;
+     
       bool result = false;
       bool attempted = false;
       if(sortable_pairs_to_try[si].m_face_vert_proximity) {
@@ -981,14 +986,18 @@ bool MeshSnapper::snap_pass()
       
       if ( result )
       { 
+        m_surf.m_mesheventcallback->log() << "snap successful" << std::endl;
+        
          // clean up degenerate triangles and tets
          m_surf.trim_degeneracies( m_surf.m_dirty_triangles );          
       }
       else if(attempted) {
+        m_surf.m_mesheventcallback->log() << "snap failed" << std::endl;
          //Snapping attempted and failed
          //std::cout << "Snap failed.\n";
       }
       else {
+        m_surf.m_mesheventcallback->log() << "snap not attempted" << std::endl;
          //std::cout << "Snap not attempted.\n";
          //Snapping not attempted because the situation changed.
       }
