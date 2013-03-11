@@ -62,6 +62,10 @@ public:
     /// Constructor
     ///
     T1Transition(SurfTrack & surf, VelocityFieldCallback * vfc, bool remesh_boundaries);
+
+    /// Perform a pass of t1 by vertex popping
+    ///
+    bool t1_pass();
     
     /// Perform edge popping (first step of T1 transition)
     ///
