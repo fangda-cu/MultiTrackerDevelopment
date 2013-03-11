@@ -752,7 +752,12 @@ bool T1Transition::t1_pass()
         Vec3d pull_apart_direction = candidates.back().direction;
         double pull_apart_tendency = candidates.back().tendency;
         
-        // check if this candidate is still valid (due to processing other candidates prior to this, region A and B may have already come into contact, or the tendency has dropped to negative).
+        // check if this candidate is still valid 
+        // due to processing other candidates prior to this, the vertex xj may have been deleted, region A and B may have 
+        //  already come into contact, or the tendency may have dropped to negative.
+        if (mesh.m_vertex_to_triangle_map[xj].size() == 0)
+            continue;
+        
         bool contact = false;
         for (size_t i = 0; i < mesh.m_vertex_to_triangle_map[xj].size(); i++)
         {
