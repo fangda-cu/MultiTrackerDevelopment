@@ -816,7 +816,6 @@ void ElasticShell::endStep(Scalar time, Scalar timestep) {
   if(m_tearing){
     std::cout << "Processing tearing. \n";
     //fracture();
-    fracture();
     do_relabel = true;
     only_twice++;
   }
